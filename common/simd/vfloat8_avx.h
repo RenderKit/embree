@@ -382,7 +382,7 @@ namespace embree
   }
 
   template<int i>
-  __forceinline vfloat8 alignr(const vfloat8 &a, const vfloat8 &b) {
+  __forceinline vfloat8 align_shift_right(const vfloat8 &a, const vfloat8 &b) {
     return _mm256_castsi256_ps(_mm256_alignr_epi8(_mm256_castps_si256(a), _mm256_castps_si256(b), i));
   }  
 #endif

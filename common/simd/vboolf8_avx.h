@@ -59,7 +59,7 @@ namespace embree
       vh = _mm_lookupmask_ps[a >> 4];
 #endif
     }
-    
+
     __forceinline vboolf ( const vboolf4& a                  ) : v(_mm256_insertf128_ps(_mm256_castps128_ps256(a),a,1)) {}
     __forceinline vboolf ( const vboolf4& a, const vboolf4& b) : v(_mm256_insertf128_ps(_mm256_castps128_ps256(a),b,1)) {}
     __forceinline vboolf ( const __m128 a, const __m128 b) : vl(a), vh(b) {}

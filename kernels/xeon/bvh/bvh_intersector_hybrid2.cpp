@@ -375,11 +375,12 @@ namespace embree
     }
 
 #else
+
     /* loop-based ray traversal */
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK, bool single>
     void BVHNIntersectorKHybrid2<N,K,types,robust,PrimitiveIntersectorK,single>::intersect(vint<K>* __restrict__ valid_i, BVH* __restrict__ bvh, RayK<K>& __restrict__ ray)
     {
-#if defined(__AVX512F__)
+#if defined(__AVX2__)
       /* filter out invalid rays */
       vbool<K> valid0 = *valid_i == -1;
 #if defined(RTCORE_IGNORE_INVALID_RAYS)
@@ -418,7 +419,7 @@ namespace embree
           (nearXYZ.x[first] == nearXYZ.x) &
           (nearXYZ.y[first] == nearXYZ.y) &
           (nearXYZ.z[first] == nearXYZ.z);
-        assert(m_samesign);
+        assert(any(m_samesign));
 
         m_active &=!m_samesign;
         DBG(m_samesign);
@@ -434,24 +435,9 @@ namespace embree
         stack[1].mask = movemask(m_samesign);
         stack[1].dist = neg_inf;
 
-        const vint<K> one(1);
-        const vint<K> shift_one = one << (vint<K>( step ));
-#if defined(__AVX512F__)
-        const vint<K> id( step );
-        const vint<K> id2 = align_shift_right<8>(id,id);
- 
-        const vint<K> permX = select(vfloat<K>(rdir.x[first]) >= 0.0f,id,id2);
-        const vint<K> permY = select(vfloat<K>(rdir.y[first]) >= 0.0f,id,id2);
-        const vint<K> permZ = select(vfloat<K>(rdir.z[first]) >= 0.0f,id,id2);
-#else
-        const size_t nearX = nearXYZ.x[first];
-        const size_t nearY = nearXYZ.y[first];
-        const size_t nearZ = nearXYZ.z[first];
-        const size_t farX  = nearX ^ sizeof(vfloat<8>);
-        const size_t farY  = nearY ^ sizeof(vfloat<8>);
-        const size_t farZ  = nearZ ^ sizeof(vfloat<8>);
-#endif
+        const vint<K> shift_one = vint<K>(1) << (vint<K>( step ));
 
+        LoopTraversalPreCompute<K> prl(rdir,org_rdir, nearXYZ,first);
 
         while (1) pop:
         {
@@ -467,106 +453,22 @@ namespace embree
 
           /*! if popped node is too far, pop next one */
           //if (unlikely(none(lt(vbool<K>((unsigned int)m_trav_active),vfloat<K>(*(float*)&stackPtr->dist),ray.tfar)))) continue;
-#if 0
-          if (likely(__popcnt(m_trav_active) == 1))
-          {            
-            const size_t rayID = __bsf(m_trav_active);
-            const vfloat<K> rdir_x = rdir.x[rayID];
-            const vfloat<K> rdir_y = rdir.y[rayID];
-            const vfloat<K> rdir_z = rdir.z[rayID];
-            const vfloat<K> org_rdir_x = org_rdir.x[rayID];
-            const vfloat<K> org_rdir_y = org_rdir.y[rayID];
-            const vfloat<K> org_rdir_z = org_rdir.z[rayID];
-            const vfloat<K> tnear      = ray_tnear[rayID];
-            const vfloat<K> tfar       = ray_tfar[rayID];
-            const vint<K> mask16       = one << vint<K>(rayID); 
-            while (likely(!cur.isLeaf()))
-            {
-              STAT3(normal.trav_nodes,1,1,1);                          
-              const Node* __restrict__ const node = cur.node();
-              STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                         
-              const vfloat<K> bminmaxX = permute(vfloat<K>::load((float*)&node->lower_x),permX);
-              const vfloat<K> bminmaxY = permute(vfloat<K>::load((float*)&node->lower_y),permY);
-              const vfloat<K> bminmaxZ = permute(vfloat<K>::load((float*)&node->lower_z),permZ);
-              const vfloat<K> tNearFarX = msub(bminmaxX, rdir_x, org_rdir_x);
-              const vfloat<K> tNearFarY = msub(bminmaxY, rdir_y, org_rdir_y);
-              const vfloat<K> tNearFarZ = msub(bminmaxZ, rdir_z, org_rdir_z);
-              const vfloat<K> tNear     = max(tNearFarX,tNearFarY,tNearFarZ,tnear);
-              const vfloat<K> tFar      = min(tNearFarX,tNearFarY,tNearFarZ,tfar);
-              const vbool<K> vmask      = le(tNear,align_shift_right<8>(tFar,tFar));
-              if (unlikely(none(vmask))) goto pop;
 
-              BVHNNodeTraverserKHit<types,K>::traverseClosestHit(cur,m_trav_active,vmask,tNear,mask16,stackPtr,stackEnd);
-            }          
-          }
-          else
-#endif
+          while (likely(!cur.isLeaf()))
           {
-            while (likely(!cur.isLeaf()))
-            {
-              DBG("TRAVERSAL");
-              DBG(cur);
-              const Node* __restrict__ const node = cur.node();
-              STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
+            DBG("TRAVERSAL");
+            DBG(cur);
 
-#if 0
-              const vfloat<K> bminX = vfloat<K>(*(vfloat8*)((const char*)&node->lower_x+nearX));
-              const vfloat<K> bminY = vfloat<K>(*(vfloat8*)((const char*)&node->lower_x+nearY));
-              const vfloat<K> bminZ = vfloat<K>(*(vfloat8*)((const char*)&node->lower_x+nearZ));
-              const vfloat<K> bmaxX = vfloat<K>(*(vfloat8*)((const char*)&node->lower_x+farX));
-              const vfloat<K> bmaxY = vfloat<K>(*(vfloat8*)((const char*)&node->lower_x+farY));
-              const vfloat<K> bmaxZ = vfloat<K>(*(vfloat8*)((const char*)&node->lower_x+farZ));
-#else
-              const vfloat<K> bminmaxX = permute(vfloat<K>::load((float*)&node->lower_x),permX);
-              const vfloat<K> bminmaxY = permute(vfloat<K>::load((float*)&node->lower_y),permY);
-              const vfloat<K> bminmaxZ = permute(vfloat<K>::load((float*)&node->lower_z),permZ);
+            vfloat<K> dist; 
+            vint<K> maskK; 
+            const vbool<K> vmask = loopIntersect(cur,m_trav_active,prl,rdir,org_rdir,ray_tnear,ray_tfar,dist,maskK,inf,shift_one);
 
-#endif
-              vfloat<K> dist( inf );
-              size_t bits = m_trav_active;
-              vint<K> mask16( zero );
-              do
-              {            
-                STAT3(normal.trav_nodes,1,1,1);                          
-                const size_t i = __bscf(bits);
-#if 0            
-                const vfloat<K> tNearX = msub(bminX, rdir.x[i], org_rdir.x[i]); // optimize loading of 'i
-                const vfloat<K> tNearY = msub(bminY, rdir.y[i], org_rdir.y[i]);
-                const vfloat<K> tNearZ = msub(bminZ, rdir.z[i], org_rdir.z[i]);
-                const vfloat<K> tFarX  = msub(bmaxX, rdir.x[i], org_rdir.x[i]);
-                const vfloat<K> tFarY  = msub(bmaxY, rdir.y[i], org_rdir.y[i]);
-                const vfloat<K> tFarZ  = msub(bmaxZ, rdir.z[i], org_rdir.z[i]);      
-                const vint<K> bitmask  = one << vint<K>(i);
-                const vfloat<K> tNear  = max(tNearX,tNearY,tNearZ,vfloat<K>(ray_tnear[i]));
-                const vfloat<K> tFar   = min(tFarX ,tFarY ,tFarZ ,vfloat<K>(ray_tfar[i]));
-                const vbool<K> vmask   = le(tNear,tFar);
-                dist   = select(vmask,min(tNear,dist),dist);
-                mask16 = select(vmask,mask16 | bitmask,mask16); // optimize
-#else 
-                const vfloat<K> tNearFarX = msub(bminmaxX, rdir.x[i], org_rdir.x[i]);
-                const vfloat<K> tNearFarY = msub(bminmaxY, rdir.y[i], org_rdir.y[i]);
-                const vfloat<K> tNearFarZ = msub(bminmaxZ, rdir.z[i], org_rdir.z[i]);
-                const vint<K> bitmask     = shift_one[i]; //one << vint<K>(i);
-                //const vint<K> bitmask  = one << vint<K>(i);
-                const vfloat<K> tNear     = max(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(ray_tnear[i]));
-                const vfloat<K> tFar      = min(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(ray_tfar[i]));
-                const vbool<K> vmask      = le(tNear,align_shift_right<8>(tFar,tFar));              
-                dist   = select(vmask,min(tNear,dist),dist);
-                mask16 = mask_or(vmask,mask16,mask16,bitmask); 
-#endif
+            if (unlikely(none(vmask))) goto pop;
 
-              } while(bits);
-              const vbool<K> vmask   = lt(vbool<K>(0xff),dist,inf);
-              DBG(dist);
-              DBG(mask16);
-              DBG(vmask);
-              if (unlikely(none(vmask))) goto pop;
+            DBG("SORT");
 
-              DBG("SORT");
-
-              BVHNNodeTraverserKHit<types,K>::traverseClosestHit(cur, m_trav_active, vmask,dist,mask16,stackPtr,stackEnd);              
-              DBG(m_trav_active);
-            }          
+            BVHNNodeTraverserKHit<types,K>::traverseClosestHit(cur, m_trav_active, movemask(vmask),dist,maskK,stackPtr,stackEnd);              
+            DBG(m_trav_active);
           }
           DBG("INTERSECTION");
 
@@ -582,14 +484,14 @@ namespace embree
           size_t lazy_node = 0;
           size_t bits = m_trav_active;
           if (unlikely(__popcnt(bits) >= 4))
-            PrimitiveIntersectorK::intersect(m_trav_active,pre,ray,prim,num,bvh->scene,lazy_node);
+            PrimitiveIntersectorK::intersect((int)m_trav_active,pre,ray,prim,num,bvh->scene,lazy_node);
           else
             for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) 
             {                                              
               PrimitiveIntersectorK::intersect(pre, ray, i, prim, num, bvh->scene, lazy_node);
             }
 
-          if (unlikely((lt(vbool<K>((unsigned int)m_trav_active),ray.tfar,ray_tfar))))
+          if (unlikely(m_trav_active & movemask(ray.tfar < ray_tfar)))
           {
 #if 1
             /* stack compaction */
@@ -599,11 +501,11 @@ namespace embree
                 /* optimize */
 #if 1
                 const vint4 r = *(vint4*)right; 
-                const vbool<K> m_valid = lt(vbool<K>(right->mask),vfloat<K>(*(float*)&right->dist),ray.tfar);
+                const unsigned int m_valid = right->mask & movemask((vfloat<K>(*(float*)&right->dist) < ray.tfar));
                 *(vint4*)left = r;
                 left +=  m_valid ? 1 : 0;
 #else
-                if (unlikely(lt(vbool<K>(right->mask),vfloat<K>(*(float*)&right->dist),ray.tfar)))
+                if (unlikely(lt(vbool4(right->mask),vfloat4(*(float*)&right->dist),ray.tfar)))
                 {
                   *(vint4*)left = *(vint4*)right; 
                   left++;
@@ -628,7 +530,6 @@ namespace embree
 #endif
       }
       DBG(ray);
-      //exit(0);
       AVX_ZERO_UPPER();
 #endif
     }
@@ -775,7 +676,7 @@ namespace embree
           DBG(bits);
           if (unlikely(__popcnt(bits) >= 4))
           {
-            terminated |= PrimitiveIntersectorK::occluded(m_trav_active,pre,ray,prim,num,bvh->scene,lazy_node);
+            terminated |= PrimitiveIntersectorK::occluded(vbool<K>((int)m_trav_active),pre,ray,prim,num,bvh->scene,lazy_node);
           }
           else
           {
@@ -824,9 +725,14 @@ namespace embree
     DEFINE_INTERSECTOR16(BVH8Triangle4Intersector16HybridMoeller2, BVHNIntersectorKHybrid2<8 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 16 COMMA 16 COMMA true> > >);
     DEFINE_INTERSECTOR16(BVH8Triangle4Intersector16HybridMoellerNoFilter2, BVHNIntersectorKHybrid2<8 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 16 COMMA 16 COMMA false> > >);
 
+#elif defined(__AVX__)
+
+    DEFINE_INTERSECTOR8(BVH8Triangle4Intersector8HybridMoeller2, BVHNIntersectorKHybrid2<8 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 4 COMMA 8 COMMA true> > >);
+
+    DEFINE_INTERSECTOR8(BVH8Triangle4Intersector8HybridMoellerNoFilter2, BVHNIntersectorKHybrid2<8 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 4 COMMA 8 COMMA false> > >);
+
 #endif
 
-    //DEFINE_INTERSECTOR8(BVH8Triangle4Intersector8HybridMoeller2, BVHNIntersectorKHybrid2<8 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 4 COMMA 8 COMMA true> > >);
 
   }
 }
