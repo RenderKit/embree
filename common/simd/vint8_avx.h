@@ -249,13 +249,6 @@ namespace embree
 
   __forceinline int toScalar(const vint8& a) { return _mm_cvtsi128_si32(_mm256_castsi256_si128(a)); }
 
-    template<int i>
-    __forceinline vint8 align_shift_right(const vint8& a, const vint8& b)
-  {
-    FATAL("not implemented");
-    return a; //_mm256_alignr_epi32(a,b,i); 
-  };
-
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Reductions

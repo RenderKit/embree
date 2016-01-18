@@ -114,6 +114,7 @@ namespace embree
                               const Vec3viK &nearXYZ, 
                               const size_t first) 
       {
+#if defined(__AVX2__)
         const vint<K> id( step );
         const vint<K> id2 = align_shift_right<K/2>(id,id);
  
@@ -126,6 +127,7 @@ namespace embree
         const size_t farX  = nearX ^ sizeof(vfloat<8>);
         const size_t farY  = nearY ^ sizeof(vfloat<8>);
         const size_t farZ  = nearZ ^ sizeof(vfloat<8>);
+#endif
       }
     };
 
