@@ -115,6 +115,12 @@ RTCORE_API void rtcIntersect8 (const void* valid, RTCScene scene, RTCRay8& ray);
  *  called if the CPU supports the 16-wide Xeon Phi instructions. */
 RTCORE_API void rtcIntersect16 (const void* valid, RTCScene scene, RTCRay16& ray);
 
+/*! Intersects a stream of N rays with the scene. RayN structure needs
+ *  to be aligned to 64 bytes. This function can only be called for
+ *  scenes with the RTC_INTERSECTN flag set. */
+RTCORE_API void rtcIntersectN (const size_t N, RTCScene scene, void* rayN);
+
+
 /*! Tests if a single ray is occluded by the scene. The ray has to be
  *  aligned to 16 bytes. This function can only be called for scenes
  *  with the RTC_INTERSECT1 flag set. */
@@ -140,6 +146,10 @@ RTCORE_API void rtcOccluded8 (const void* valid, RTCScene scene, RTCRay8& ray);
  *  only get called if the CPU supports the 16-wide Xeon Phi
  *  instructions. */
 RTCORE_API void rtcOccluded16 (const void* valid, RTCScene scene, RTCRay16& ray);
+
+/*! Tests if a stream of N rays is occluded by the scene. RayN structure needs to be aligned to 64 bytes. This function can only be
+ *  called for scenes with the RTC_INTERSECTN flag set. */
+RTCORE_API void rtcOccludedN (const size_t N, RTCScene scene, void* rayN);
 
 /*! Deletes the scene. All contained geometry get also destroyed. */
 RTCORE_API void rtcDeleteScene (RTCScene scene);
