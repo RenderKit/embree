@@ -51,6 +51,9 @@ enum RTCAlgorithmFlags
   RTC_INTERSECT8 = (1 << 2),    //!< enables the rtcIntersect8 and rtcOccluded8 functions for this scene
   RTC_INTERSECT16 = (1 << 3),   //!< enables the rtcIntersect16 and rtcOccluded16 functions for this scene
   RTC_INTERPOLATE = (1 << 4),   //!< enables the rtcInterpolate function for this scene
+
+  RTC_INTERSECTN = (1 << 5),    //!< enables the rtcIntersectN and rtcOccludedN functions for this scene
+  
 };
 
 /*! \brief Defines an opaque scene type */
