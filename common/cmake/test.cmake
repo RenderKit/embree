@@ -25,6 +25,7 @@ IF (BUILD_TESTING)
   CMAKE_HOST_SYSTEM_INFORMATION(RESULT memory QUERY TOTAL_PHYSICAL_MEMORY)
   
   SET(BUILD_TESTING_MODEL_DIR "${PROJECT_SOURCE_DIR}/models" CACHE FILEPATH "Path to the folder containing the Embree models for regression testing.")
+  SET(BUILD_TESTING_INTENSIVE OFF CACHE BOOL "Turns on intensive testing.")
 
   IF(   NOT EXISTS "${BUILD_TESTING_MODEL_DIR}/embree-models-subdiv.txt"
      OR NOT EXISTS "${BUILD_TESTING_MODEL_DIR}/embree-models-small-win32.txt"
@@ -44,10 +45,14 @@ IF (BUILD_TESTING)
   
   FILE(READ "${BUILD_TESTING_MODEL_DIR}/embree-models-large.txt" models_large)
   STRING(REGEX REPLACE "\n" ";" models_large "${models_large}")
-  
-  SET(models ${models_small_x64})
-  IF (${memory} GREATER 10000) 
-    SET(models ${models} ${models_large})
+
+  IF (BUILD_TESTING_INTENSIVE)
+    SET(models ${models_small_x64})
+    IF (${memory} GREATER 10000) 
+      SET(models ${models} ${models_large})
+    ENDIF()
+  ELSE()
+    SET(models ${models_small_win32})
   ENDIF()
   
   MACRO (ADD_EMBREE_MODEL_TEST name reference executable args model)
