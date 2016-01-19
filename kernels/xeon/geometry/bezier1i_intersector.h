@@ -36,7 +36,7 @@ namespace embree
         const Vec3fa a1 = in->vertex(prim.vertexID+1,0);
         const Vec3fa a2 = in->vertex(prim.vertexID+2,0);
         const Vec3fa a3 = in->vertex(prim.vertexID+3,0);
-        pre.intersect(ray,a0,a1,a2,a3,Intersect1EpilogU<4,true>(ray,prim.geomID(),prim.primID(),scene,geomID_to_instID));
+        pre.intersect(ray,a0,a1,a2,a3,Intersect1EpilogU<VSIZEX,true>(ray,prim.geomID(),prim.primID(),scene,geomID_to_instID));
       }
       
       static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& prim, Scene* scene, const unsigned* geomID_to_instID)
@@ -47,7 +47,7 @@ namespace embree
         const Vec3fa a1 = in->vertex(prim.vertexID+1,0);
         const Vec3fa a2 = in->vertex(prim.vertexID+2,0);
         const Vec3fa a3 = in->vertex(prim.vertexID+3,0);
-        return pre.intersect(ray,a0,a1,a2,a3,Occluded1EpilogU<4,true>(ray,prim.geomID(),prim.primID(),scene,geomID_to_instID));
+        return pre.intersect(ray,a0,a1,a2,a3,Occluded1EpilogU<VSIZEX,true>(ray,prim.geomID(),prim.primID(),scene,geomID_to_instID));
       }
     };
 
@@ -65,7 +65,7 @@ namespace embree
         const Vec3fa a1 = in->vertex(curve.vertexID+1,0);
         const Vec3fa a2 = in->vertex(curve.vertexID+2,0);
         const Vec3fa a3 = in->vertex(curve.vertexID+3,0);
-        pre.intersect(ray,k,a0,a1,a2,a3,Intersect1KEpilogU<4,K,true>(ray,k,curve.geomID(),curve.primID(),scene));
+        pre.intersect(ray,k,a0,a1,a2,a3,Intersect1KEpilogU<VSIZEX,K,true>(ray,k,curve.geomID(),curve.primID(),scene));
       }
       
       static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const Primitive& curve, Scene* scene)
@@ -82,7 +82,7 @@ namespace embree
         const Vec3fa a1 = in->vertex(curve.vertexID+1,0);
         const Vec3fa a2 = in->vertex(curve.vertexID+2,0);
         const Vec3fa a3 = in->vertex(curve.vertexID+3,0);
-        return pre.intersect(ray,k,a0,a1,a2,a3,Occluded1KEpilogU<4,K,true>(ray,k,curve.geomID(),curve.primID(),scene));
+        return pre.intersect(ray,k,a0,a1,a2,a3,Occluded1KEpilogU<VSIZEX,K,true>(ray,k,curve.geomID(),curve.primID(),scene));
       }
       
       static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const Primitive& curve, Scene* scene)
@@ -120,7 +120,7 @@ namespace embree
         const Vec3fa p1 = t0*a1 + t1*b1;
         const Vec3fa p2 = t0*a2 + t1*b2;
         const Vec3fa p3 = t0*a3 + t1*b3;
-        pre.intersect(ray,p0,p1,p2,p3,Intersect1EpilogU<4,true>(ray,prim.geomID(),prim.primID(),scene,geomID_to_instID));
+        pre.intersect(ray,p0,p1,p2,p3,Intersect1EpilogU<VSIZEX,true>(ray,prim.geomID(),prim.primID(),scene,geomID_to_instID));
       }
       
       static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Primitive& prim, Scene* scene, const unsigned* geomID_to_instID) 
@@ -140,7 +140,7 @@ namespace embree
         const Vec3fa p1 = t0*a1 + t1*b1;
         const Vec3fa p2 = t0*a2 + t1*b2;
         const Vec3fa p3 = t0*a3 + t1*b3;
-        return pre.intersect(ray,p0,p1,p2,p3,Occluded1EpilogU<4,true>(ray,prim.geomID(),prim.primID(),scene,geomID_to_instID));
+        return pre.intersect(ray,p0,p1,p2,p3,Occluded1EpilogU<VSIZEX,true>(ray,prim.geomID(),prim.primID(),scene,geomID_to_instID));
       }
     };
 
@@ -167,7 +167,7 @@ namespace embree
         const Vec3fa p1 = t0*a1 + t1*b1;
         const Vec3fa p2 = t0*a2 + t1*b2;
         const Vec3fa p3 = t0*a3 + t1*b3;
-        pre.intersect(ray,k,p0,p1,p2,p3,Intersect1KEpilogU<4,K,true>(ray,k,curve.geomID(),curve.primID(),scene));
+        pre.intersect(ray,k,p0,p1,p2,p3,Intersect1KEpilogU<VSIZEX,K,true>(ray,k,curve.geomID(),curve.primID(),scene));
       }
       
       static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, const size_t k, const Primitive& curve, Scene* scene)
@@ -187,7 +187,7 @@ namespace embree
         const Vec3fa p1 = t0*a1 + t1*b1;
         const Vec3fa p2 = t0*a2 + t1*b2;
         const Vec3fa p3 = t0*a3 + t1*b3;
-        return pre.intersect(ray,k,p0,p1,p2,p3,Occluded1KEpilogU<4,K,true>(ray,k,curve.geomID(),curve.primID(),scene));
+        return pre.intersect(ray,k,p0,p1,p2,p3,Occluded1KEpilogU<VSIZEX,K,true>(ray,k,curve.geomID(),curve.primID(),scene));
       }
     };
   }

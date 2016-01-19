@@ -128,12 +128,12 @@ namespace embree
     template<int M>
       __forceinline Vec4<vfloat<M>> eval0(const vbool<M>& valid, const int ofs, const int size) const
     {
-      assert(size < BezierCoefficients::N);
+      assert(size <= BezierCoefficients::N);
       assert(ofs < size);
-      const Vec4vf4 p0 = Vec4<vfloat<M>>(v0);
-      const Vec4vf4 p1 = Vec4<vfloat<M>>(v1);
-      const Vec4vf4 p2 = Vec4<vfloat<M>>(v2);
-      const Vec4vf4 p3 = Vec4<vfloat<M>>(v3);
+      const Vec4<vfloat<M>> p0(v0);
+      const Vec4<vfloat<M>> p1(v1);
+      const Vec4<vfloat<M>> p2(v2);
+      const Vec4<vfloat<M>> p3(v3);
       const vfloat<M> c0 = vfloat<M>::loadu(&bezier_coeff0.c0[size][ofs]);
       const vfloat<M> c1 = vfloat<M>::loadu(&bezier_coeff0.c1[size][ofs]);
       const vfloat<M> c2 = vfloat<M>::loadu(&bezier_coeff0.c2[size][ofs]);
@@ -146,12 +146,12 @@ namespace embree
     template<int M>
       __forceinline Vec4<vfloat<M>> eval1(const vbool<M>& valid, const int ofs, const int size) const
     {
-      assert(size < BezierCoefficients::N);
+      assert(size <= BezierCoefficients::N);
       assert(ofs < size);
-      const Vec4vf4 p0 = Vec4<vfloat<M>>(v0);
-      const Vec4vf4 p1 = Vec4<vfloat<M>>(v1);
-      const Vec4vf4 p2 = Vec4<vfloat<M>>(v2);
-      const Vec4vf4 p3 = Vec4<vfloat<M>>(v3);
+      const Vec4<vfloat<M>> p0(v0);
+      const Vec4<vfloat<M>> p1(v1);
+      const Vec4<vfloat<M>> p2(v2);
+      const Vec4<vfloat<M>> p3(v3);
       const vfloat<M> c0 = vfloat<M>::loadu(&bezier_coeff1.c0[size][ofs]);
       const vfloat<M> c1 = vfloat<M>::loadu(&bezier_coeff1.c1[size][ofs]);
       const vfloat<M> c2 = vfloat<M>::loadu(&bezier_coeff1.c2[size][ofs]);
