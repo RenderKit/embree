@@ -56,7 +56,7 @@ namespace embree
           BBox3fa bounds1 = empty;
           for (size_t i=pinfo.begin; i<pinfo.end; i++) // FIXME: parallelize
           {
-            Bezier1v& prim = prims[i];
+            BezierPrim& prim = prims[i];
             const size_t geomID = prim.geomID();
             const BezierCurves* curves = scene->getBezierCurves(geomID);
             bounds0.extend(curves->bounds(prim.primID(),0));

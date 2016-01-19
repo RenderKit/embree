@@ -51,7 +51,7 @@ namespace embree
           Vec3fa axis(0,0,1);
           for (size_t i=pinfo.begin; i<pinfo.end; i++)
           {
-            const Bezier1v& prim = prims[i];
+            const BezierPrim& prim = prims[i];
             const Vec3fa axis1 = normalize(prim.p3 - prim.p0);
             if (sqr_length(prim.p3 - prim.p0) > 1E-18f) {
               axis = axis1;
@@ -69,7 +69,7 @@ namespace embree
 
           for (size_t i=pinfo.begin; i<pinfo.end; i++)
           {
-            const Bezier1v& prim = prims[i];
+            const BezierPrim& prim = prims[i];
             const size_t geomID = prim.geomID();
             const size_t primID = prim.primID();
             const BezierCurves* curves = scene->getBezierCurves(geomID);
@@ -120,7 +120,7 @@ namespace embree
           BBox3fa s0t0 = empty, s1t1 = empty;
           for (size_t i=pinfo.begin; i<pinfo.end; i++)  // FIXME: parallelize
           {
-            const Bezier1v& prim = prims[i];
+            const BezierPrim& prim = prims[i];
             const size_t geomID = prim.geomID();
             const size_t primID = prim.primID();
 
