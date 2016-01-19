@@ -109,6 +109,11 @@ namespace embree
     /*! called if geometry is switching from enabled to disabled state */
     virtual void disabling() = 0;
 
+    /*! sets constant tessellation rate for the geometry */
+    virtual void setTessellationRate(float N) {
+      throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
+    }
+
     /*! Set user data pointer. */
     virtual void setUserData (void* ptr);
       

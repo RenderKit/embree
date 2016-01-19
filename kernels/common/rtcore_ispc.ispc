@@ -97,6 +97,7 @@ extern "C" void ispcDeleteGeometry (RTCScene scene, uniform unsigned int geomID)
 
 extern "C" void ispcSetBoundsFunction (RTCScene scene, uniform unsigned int geomID, void* uniform bounds);
 extern "C" void ispcSetBoundsFunction2 (RTCScene scene, uniform unsigned int geomID, void* uniform bounds, void* uniform userPtr);
+extern "C" void ispcSetTessellationRate (RTCScene hscene, uniform unsigned geomID, uniform float tessellationRate);
 extern "C" void ispcSetUserData (RTCScene scene, uniform unsigned int geomID, void* uniform ptr);
 extern "C" void* uniform ispcGetUserData (RTCScene scene, uniform unsigned int geomID);
 
@@ -367,6 +368,10 @@ void rtcDisable (RTCScene scene, uniform unsigned int geomID) {
 
 void rtcDeleteGeometry (RTCScene scene, uniform unsigned int geomID) {
   ispcDeleteGeometry(scene,geomID);
+}
+
+void rtcSetTessellationRate (RTCScene hscene, uniform unsigned geomID, uniform float tessellationRate) {
+  ispcSetTessellationRate(hscene,geomID,tessellationRate);
 }
 
 void rtcSetUserData (RTCScene scene, uniform unsigned int geomID, void* uniform ptr) {

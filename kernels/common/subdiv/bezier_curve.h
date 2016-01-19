@@ -159,5 +159,22 @@ namespace embree
       return c0*p0 + c1*p1 + c2*p2 + c3*p3; // FIXME: use fmadd
     }
 #endif
+
+#if defined(__SSE__)
+    __forceinline BBox3fa bounds(int N) const
+    {
+      Vec4vfx pl(pos_inf), pu(neg_inf);
+      for (int i=0; i<N; i+=VSIZEX)
+      {
+        vboolx valid = vintx(i)+vintx(step) < vintx(N);
+        const Vec4vfx pi = eval0(valid,i,N);
+        pl = min(pl,pi); pu = max(pu,pi);
+      }
+      const Vec3fa lower(reduce_min(pl.x),reduce_min(pl.y),reduce_min(pl.z));
+      const Vec3fa upper(reduce_max(pu.x),reduce_max(pu.y),reduce_max(pu.z));
+      const Vec3fa upper_r = Vec3fa(reduce_max(pu.w));
+      return enlarge(BBox3fa(min(lower,v3),max(upper,v3)),max(upper_r,Vec3fa(v3.w)));
+    }
+#endif
   };
 }

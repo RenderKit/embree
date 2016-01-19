@@ -760,6 +760,17 @@ namespace embree
     RTCORE_CATCH_END(scene->device);
   }
 
+  RTCORE_API void rtcSetTessellationRate (RTCScene hscene, unsigned geomID, float tessellationRate)
+  {
+    Scene* scene = (Scene*) hscene;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetTessellationRate);
+    RTCORE_VERIFY_HANDLE(hscene);
+    RTCORE_VERIFY_GEOMID(geomID);
+    scene->get_locked(geomID)->setTessellationRate(tessellationRate);
+    RTCORE_CATCH_END(scene->device);
+  }
+
   RTCORE_API void rtcSetUserData (RTCScene hscene, unsigned geomID, void* ptr) 
   {
     Scene* scene = (Scene*) hscene;

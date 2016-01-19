@@ -225,6 +225,10 @@ namespace embree
   extern "C" void ispcDeleteGeometry (RTCScene scene, unsigned geomID) {
     rtcDeleteGeometry(scene,geomID);
   }
+
+  extern "C" void ispcSetTessellationRate (RTCScene hscene, unsigned geomID, float tessellationRate) {
+    rtcSetTessellationRate(hscene,geomID,tessellationRate);
+  }
     
   extern "C" void ispcSetUserData (RTCScene hscene, unsigned geomID, void* ptr) 
   {

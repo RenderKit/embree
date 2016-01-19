@@ -78,7 +78,7 @@ namespace embree
     }
 
     /*! returns true of the buffer is not empty */
-    __forceinline operator bool() { 
+    __forceinline operator bool() const { 
       return ptr; 
     }
 

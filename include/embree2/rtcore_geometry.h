@@ -260,6 +260,11 @@ RTCORE_API unsigned rtcNewHairGeometry (RTCScene scene,                    //!< 
                                         size_t numTimeSteps = 1            //!< number of motion blur time steps
   );
 
+/*! Sets a uniform tessellation rate for subdiv meshes and hair
+ *  geometry. For subdivision meshes the RTC_LEVEL_BUFFER can also be used
+ *  optionally to set a different tessellation rate per edge.*/
+RTCORE_API void rtcSetTessellationRate (RTCScene scene, unsigned geomID, float tessellationRate);
+
 /*! \brief Creates a new line segment geometry, consisting of multiple
   segments with varying radii. The number of line segments (numSegments),
   number of vertices (numVertices), and number of time steps (1 for

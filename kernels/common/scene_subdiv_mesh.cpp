@@ -38,7 +38,8 @@ namespace embree
       boundary(RTC_BOUNDARY_EDGE_ONLY),
       displFunc(nullptr), 
       displBounds(empty),
-      levelUpdate(false)
+      levelUpdate(false),
+      tessellationRate(2.0f)
   {
     for (size_t i=0; i<numTimeSteps; i++)
       vertices[i].init(parent->device,numVertices,sizeof(Vec3fa));
@@ -229,6 +230,15 @@ namespace embree
     else        this->displBounds = empty;
   }
 
+  void SubdivMesh::setTessellationRate(float N)
+  {
+    if (parent->isStatic() && parent->isBuild()) 
+      throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
+
+    tessellationRate = N;
+    levels.setModified(true);
+  }
+
   void SubdivMesh::immutable () 
   {
     const bool freeIndices = !parent->needSubdivIndices;
@@ -294,17 +304,13 @@ namespace embree
 	  const unsigned int endVertex = vertexIndices[e + nextIndex]; 
 	  const uint64_t key = SubdivMesh::Edge(startVertex,endVertex);
 	  
-	  float edge_level = 1.0f;
-	  if (levels) edge_level = levels[e+de];
-	  edge_level = clamp(edge_level,1.0f,4096.0f); // FIXME: do we want to limit edge level?
-	  
 	  edge->vtx_index              = startVertex;
 	  edge->next_half_edge_ofs     = (de == (N-1)) ? -(N-1) : +1;
 	  edge->prev_half_edge_ofs     = (de ==     0) ? +(N-1) : -1;
 	  edge->opposite_half_edge_ofs = 0;
 	  edge->edge_crease_weight     = edgeCreaseMap.lookup(key,0.0f);
 	  edge->vertex_crease_weight   = vertexCreaseMap.lookup(startVertex,0.0f);
-	  edge->edge_level             = edge_level;
+	  edge->edge_level             = getEdgeLevel(e+de);
           edge->patch_type             = HalfEdge::COMPLEX_PATCH; // type gets updated below
           edge->vertex_type            = HalfEdge::REGULAR_VERTEX;
 
@@ -411,11 +417,8 @@ namespace embree
 	HalfEdge& edge = halfEdges[i];
 	const unsigned int startVertex = edge.vtx_index;
  
-	if (updateLevels) {
-	  float edge_level = 1.0f;
-	  if (levels) edge_level = levels[i];
-	  edge.edge_level = clamp(edge_level,1.0f,4096.0f); // FIXME: do we want to limit edge levels?
-	}
+	if (updateLevels)
+	  edge.edge_level = getEdgeLevel(i); 
         
 	if (updateEdgeCreases) {
 	  const unsigned int endVertex   = edge.next()->vtx_index;

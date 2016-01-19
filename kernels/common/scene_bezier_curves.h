@@ -47,6 +47,7 @@ namespace embree
     void immutable ();
     bool verify ();
     void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats);
+    void setTessellationRate(float N);
     // FIXME: implement interpolateN
 
   public:
@@ -136,7 +137,7 @@ namespace embree
       const BBox3fa b = merge(BBox3fa(v0),BBox3fa(v1),BBox3fa(v2),BBox3fa(v3));
       return enlarge(b,Vec3fa(max(r0,r1,r2,r3)));
     }
-    
+
 #if defined(__MIC__)
     
     __forceinline const Vec3fa* fristVertexPtr(size_t i) const { // FIXME: remove, use buffer to access vertices instead!
@@ -170,6 +171,7 @@ namespace embree
 #endif
     
   public:
+    int tessellationRate;                           //!< tessellation rate for bezier curve
     BufferT<int> curves;                            //!< array of curve indices
     array_t<BufferT<Vec3fa>,2> vertices;            //!< vertex array
     array_t<std::unique_ptr<Buffer>,2> userbuffers; //!< user buffers
