@@ -37,7 +37,7 @@
 
 #define BLANK  
 //std::cout << std::endl
-#define DBG(x) 
+#define DBG(x)
 //PRINT(x)
 
 namespace embree
@@ -446,7 +446,7 @@ namespace embree
           stackPtr--;
           NodeRef cur = NodeRef(stackPtr->ptr);
           unsigned int m_trav_active = stackPtr->mask;
-
+          
           DBG("pop");
           DBG(cur);
           DBG(m_trav_active);
@@ -462,12 +462,13 @@ namespace embree
             vfloat<K> dist; 
             vint<K> maskK; 
             const vbool<K> vmask = loopIntersect(cur,m_trav_active,prl,rdir,org_rdir,ray_tnear,ray_tfar,dist,maskK,inf,shift_one);
-
+            DBG(vmask);
             if (unlikely(none(vmask))) goto pop;
 
             DBG("SORT");
 
-            BVHNNodeTraverserKHit<types,K>::traverseClosestHit(cur, m_trav_active, movemask(vmask),dist,maskK,stackPtr,stackEnd);              
+            BVHNNodeTraverserKHit<types,K>::traverseClosestHit(cur, m_trav_active, movemask(vmask),dist,maskK,stackPtr,stackEnd);
+            assert(m_trav_active);
             DBG(m_trav_active);
           }
           DBG("INTERSECTION");
