@@ -129,7 +129,7 @@ namespace embree
     if (parent->isStatic() && parent->isBuild()) 
       throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
 
-    tessellationRate = clamp((int)N,4,16);
+    tessellationRate = clamp((int)N,1,16);
   }
 
   void BezierCurves::immutable () 
