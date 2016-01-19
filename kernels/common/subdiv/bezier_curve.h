@@ -164,12 +164,21 @@ namespace embree
       {
         vboolx valid = vintx(i)+vintx(step) < vintx(N);
         const Vec4vfx pi = eval0(valid,i,N);
-        pl = min(pl,pi); pu = max(pu,pi);
+
+        pl.x = select(valid,min(pl.x,pi.x),pl.x); // FIXME: use masked min
+        pl.y = select(valid,min(pl.y,pi.y),pl.y); 
+        pl.z = select(valid,min(pl.z,pi.z),pl.z); 
+        pl.w = select(valid,min(pl.w,pi.w),pl.w); 
+
+        pu.x = select(valid,max(pu.x,pi.x),pu.x); // FIXME: use masked min
+        pu.y = select(valid,max(pu.y,pi.y),pu.y); 
+        pu.z = select(valid,max(pu.z,pi.z),pu.z); 
+        pu.w = select(valid,max(pu.w,pi.w),pu.w); 
       }
       const Vec3fa lower(reduce_min(pl.x),reduce_min(pl.y),reduce_min(pl.z));
       const Vec3fa upper(reduce_max(pu.x),reduce_max(pu.y),reduce_max(pu.z));
-      const Vec3fa upper_r = Vec3fa(reduce_max(pu.w));
-      return enlarge(BBox3fa(min(lower,v3),max(upper,v3)),max(upper_r,Vec3fa(v3.w)));
+      const Vec3fa upper_r = Vec3fa(reduce_max(max(-pl.w,pu.w)));
+      return enlarge(BBox3fa(min(lower,v3),max(upper,v3)),max(upper_r,Vec3fa(abs(v3.w))));
     }
 #endif
   };

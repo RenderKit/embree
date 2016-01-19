@@ -52,21 +52,11 @@ namespace embree
       return xfmPoint(space,p0)+xfmPoint(space,p3);
     }
 
-
     /*! calculate the bounds of the curve */
     __forceinline const BBox3fa bounds() const 
     {
-#if 1
-      const BezierCurve3fa curve2D(p0,p1,p2,p3,0.0f,1.0f,0);
-      const Vec4vf4 pi = curve2D.eval0(vbool4(true),0,4);
-      const Vec3fa lower(reduce_min(pi.x),reduce_min(pi.y),reduce_min(pi.z));
-      const Vec3fa upper(reduce_max(pi.x),reduce_max(pi.y),reduce_max(pi.z));
-      const Vec3fa upper_r = Vec3fa(reduce_max(abs(pi.w)));
-      return enlarge(BBox3fa(min(lower,p3),max(upper,p3)),max(upper_r,Vec3fa(p3.w)));
-#else
-      const BBox3fa b = merge(BBox3fa(p0),BBox3fa(p1),BBox3fa(p2),BBox3fa(p3));
-      return enlarge(b,Vec3fa(b.upper.w));
-#endif
+      const BezierCurve3fa curve(p0,p1,p2,p3,0.0f,1.0f,0);
+      return curve.bounds(N);
     }
     
     /*! calculate bounds in specified coordinate space */
@@ -76,17 +66,8 @@ namespace embree
       Vec3fa b1 = xfmPoint(space,p1); b1.w = p1.w;
       Vec3fa b2 = xfmPoint(space,p2); b2.w = p2.w;
       Vec3fa b3 = xfmPoint(space,p3); b3.w = p3.w;
-#if 1
-      const BezierCurve3fa curve2D(b0,b1,b2,b3,0.0f,1.0f,0);
-      const Vec4vf4 pi = curve2D.eval0(vbool4(true),0,4);
-      const Vec3fa lower(reduce_min(pi.x),reduce_min(pi.y),reduce_min(pi.z));
-      const Vec3fa upper(reduce_max(pi.x),reduce_max(pi.y),reduce_max(pi.z));
-      const Vec3fa upper_r = Vec3fa(reduce_max(abs(pi.w)));
-      return enlarge(BBox3fa(min(lower,b3),max(upper,b3)),max(upper_r,Vec3fa(b3.w)));
-#else
-      const BBox3fa b = merge(BBox3fa(b0),BBox3fa(b1),BBox3fa(b2),BBox3fa(b3));
-      return enlarge(b,Vec3fa(b.upper.w));
-#endif
+      const BezierCurve3fa curve(b0,b1,b2,b3,0.0f,1.0f,0);
+      return curve.bounds(N);
     }
     
     __forceinline uint64_t id64() const {
@@ -199,42 +180,6 @@ namespace embree
       return xfmPoint(space,p0)+xfmPoint(space,p3);
     }
 
-
-    /*! calculate the bounds of the curve */
-    __forceinline const BBox3fa bounds() const 
-    {
-#if 1
-      const BezierCurve3fa curve2D(p0,p1,p2,p3,0.0f,1.0f,0);
-      const Vec4vf4 pi = curve2D.eval0(vbool4(true),0,4);
-      const Vec3fa lower(reduce_min(pi.x),reduce_min(pi.y),reduce_min(pi.z));
-      const Vec3fa upper(reduce_max(pi.x),reduce_max(pi.y),reduce_max(pi.z));
-      const Vec3fa upper_r = Vec3fa(reduce_max(abs(pi.w)));
-      return enlarge(BBox3fa(min(lower,p3),max(upper,p3)),max(upper_r,Vec3fa(p3.w)));
-#else
-      const BBox3fa b = merge(BBox3fa(p0),BBox3fa(p1),BBox3fa(p2),BBox3fa(p3));
-      return enlarge(b,Vec3fa(b.upper.w));
-#endif
-    }
-    
-    /*! calculate bounds in specified coordinate space */
-    __forceinline const BBox3fa bounds(const AffineSpace3fa& space) const 
-    {
-      Vec3fa b0 = xfmPoint(space,p0); b0.w = p0.w;
-      Vec3fa b1 = xfmPoint(space,p1); b1.w = p1.w;
-      Vec3fa b2 = xfmPoint(space,p2); b2.w = p2.w;
-      Vec3fa b3 = xfmPoint(space,p3); b3.w = p3.w;
-#if 1
-      const BezierCurve3fa curve2D(b0,b1,b2,b3,0.0f,1.0f,0);
-      const Vec4vf4 pi = curve2D.eval0(vbool4(true),0,4);
-      const Vec3fa lower(reduce_min(pi.x),reduce_min(pi.y),reduce_min(pi.z));
-      const Vec3fa upper(reduce_max(pi.x),reduce_max(pi.y),reduce_max(pi.z));
-      const Vec3fa upper_r = Vec3fa(reduce_max(abs(pi.w)));
-      return enlarge(BBox3fa(min(lower,b3),max(upper,b3)),max(upper_r,Vec3fa(b3.w)));
-#else
-      const BBox3fa b = merge(BBox3fa(b0),BBox3fa(b1),BBox3fa(b2),BBox3fa(b3));
-      return enlarge(b,Vec3fa(b.upper.w));
-#endif
-    }
     
     /*! subdivide the bezier curve */
     __forceinline void subdivide(Bezier1v& left_o, Bezier1v& right_o, const float T = 0.5f) const
