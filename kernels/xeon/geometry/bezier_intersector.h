@@ -73,12 +73,10 @@ namespace embree
 
       template<typename Epilog>
       __forceinline bool intersect(Ray& ray,
-                                   const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, //const int N,
+                                   const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const int N,
                                    const Epilog& epilog) const
       {
-        const int N = 4;
-
-       /* transform control points into ray space */
+        /* transform control points into ray space */
         STAT3(normal.trav_prims,1,1,1);
         Vec3fa w0 = xfmVector(ray_space,v0-ray.org); w0.w = v0.w;
         Vec3fa w1 = xfmVector(ray_space,v1-ray.org); w1.w = v1.w;
@@ -86,32 +84,60 @@ namespace embree
         Vec3fa w3 = xfmVector(ray_space,v3-ray.org); w3.w = v3.w;
         BezierCurve3fa curve2D(w0,w1,w2,w3,0.0f,1.0f,4);
         
-        /* process SIMD-size many segments per iteration */
-        bool ishit = false;
-        for (int i=0; i<N; i+=VSIZEX)
-        {
-          /* evaluate the bezier curve */
-          vboolx valid = vintx(i)+vintx(step) < vintx(N);
-          const Vec4vfx p0 = curve2D.eval0(valid,i,N);
-          const Vec4vfx p1 = curve2D.eval1(valid,i,N);
-          
-          /* approximative intersection with cone */
-          const Vec4vfx v = p1-p0;
-          const Vec4vfx w = -p0;
-          const vfloatx d0 = w.x*v.x + w.y*v.y;
-          const vfloatx d1 = v.x*v.x + v.y*v.y;
-          const vfloatx u = clamp(d0*rcp(d1),vfloatx(zero),vfloatx(one));
-          const Vec4vfx p = p0 + u*v;
-          const vfloatx t = p.z*depth_scale;
-          const vfloatx d2 = p.x*p.x + p.y*p.y; 
-          const vfloatx r = p.w;
-          const vfloatx r2 = r*r;
-          valid &= d2 <= r2 & vfloatx(ray.tnear) < t & t < vfloatx(ray.tfar);
-          if (likely(none(valid))) continue;
+        /* evaluate the bezier curve */
+        vboolx valid = vfloatx(step) < vfloatx(N);
+        const Vec4vfx p0 = curve2D.eval0(valid,0,N);
+        const Vec4vfx p1 = curve2D.eval1(valid,0,N);
         
-          /* update hit information */
-          BezierHit<VSIZEX> hit(valid,u,0.0f,t,i,N,v0,v1,v2,v3);
+        /* approximative intersection with cone */
+        const Vec4vfx v = p1-p0;
+        const Vec4vfx w = -p0;
+        const vfloatx d0 = w.x*v.x + w.y*v.y;
+        const vfloatx d1 = v.x*v.x + v.y*v.y;
+        const vfloatx u = clamp(d0*rcp(d1),vfloatx(zero),vfloatx(one));
+        const Vec4vfx p = p0 + u*v;
+        const vfloatx t = p.z*depth_scale;
+        const vfloatx d2 = p.x*p.x + p.y*p.y; 
+        const vfloatx r = p.w;
+        const vfloatx r2 = r*r;
+        valid &= d2 <= r2 & vfloatx(ray.tnear) < t & t < vfloatx(ray.tfar);
+
+        /* update hit information */
+         bool ishit = false;
+        if (unlikely(any(valid))) {
+          BezierHit<VSIZEX> hit(valid,u,0.0f,t,0,N,v0,v1,v2,v3);
           ishit |= epilog(valid,hit);
+        }
+
+        if (unlikely(VSIZEX < N)) 
+        {
+          /* process SIMD-size many segments per iteration */
+          for (int i=VSIZEX; i<N; i+=VSIZEX)
+          {
+            /* evaluate the bezier curve */
+            vboolx valid = vintx(i)+vintx(step) < vintx(N);
+            const Vec4vfx p0 = curve2D.eval0(valid,i,N);
+            const Vec4vfx p1 = curve2D.eval1(valid,i,N);
+            
+            /* approximative intersection with cone */
+            const Vec4vfx v = p1-p0;
+            const Vec4vfx w = -p0;
+            const vfloatx d0 = w.x*v.x + w.y*v.y;
+            const vfloatx d1 = v.x*v.x + v.y*v.y;
+            const vfloatx u = clamp(d0*rcp(d1),vfloatx(zero),vfloatx(one));
+            const Vec4vfx p = p0 + u*v;
+            const vfloatx t = p.z*depth_scale;
+            const vfloatx d2 = p.x*p.x + p.y*p.y; 
+            const vfloatx r = p.w;
+            const vfloatx r2 = r*r;
+            valid &= d2 <= r2 & vfloatx(ray.tnear) < t & t < vfloatx(ray.tfar);
+
+             /* update hit information */
+            if (unlikely(any(valid))) {
+              BezierHit<VSIZEX> hit(valid,u,0.0f,t,i,N,v0,v1,v2,v3);
+              ishit |= epilog(valid,hit);
+            }
+          }
         }
         return ishit;
       }
@@ -142,11 +168,9 @@ namespace embree
       
       template<typename Epilog>
       __forceinline bool intersect(RayK<K>& ray, size_t k,
-                                   const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, //const int N,
+                                   const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const int N,
                                    const Epilog& epilog) const
       {
-        const int N = 4;
-
         /* load ray */
         const Vec3fa ray_org(ray.org.x[k],ray.org.y[k],ray.org.z[k]);
         const Vec3fa ray_dir(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]);

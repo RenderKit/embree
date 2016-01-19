@@ -130,15 +130,13 @@ namespace embree
     {
       assert(size <= BezierCoefficients::N);
       assert(ofs < size);
-      const Vec4<vfloat<M>> p0(v0);
-      const Vec4<vfloat<M>> p1(v1);
-      const Vec4<vfloat<M>> p2(v2);
-      const Vec4<vfloat<M>> p3(v3);
-      const vfloat<M> c0 = vfloat<M>::loadu(&bezier_coeff0.c0[size][ofs]);
-      const vfloat<M> c1 = vfloat<M>::loadu(&bezier_coeff0.c1[size][ofs]);
-      const vfloat<M> c2 = vfloat<M>::loadu(&bezier_coeff0.c2[size][ofs]);
-      const vfloat<M> c3 = vfloat<M>::loadu(&bezier_coeff0.c3[size][ofs]);
-      return c0*p0 + c1*p1 + c2*p2 + c3*p3; // FIXME: use fmadd
+      BezierCurve3fa* volatile This = (BezierCurve3fa* volatile) this;
+      Vec4<vfloat<M>> r;
+      r  = Vec4<vfloat<M>>(This->v0) * vfloat<M>::loadu(&bezier_coeff0.c0[size][ofs]);
+      r += Vec4<vfloat<M>>(This->v1) * vfloat<M>::loadu(&bezier_coeff0.c1[size][ofs]); // FIXME: use fmadd
+      r += Vec4<vfloat<M>>(This->v2) * vfloat<M>::loadu(&bezier_coeff0.c2[size][ofs]);
+      r += Vec4<vfloat<M>>(This->v3) * vfloat<M>::loadu(&bezier_coeff0.c3[size][ofs]);
+      return r;
     }
 #endif
 
@@ -148,15 +146,13 @@ namespace embree
     {
       assert(size <= BezierCoefficients::N);
       assert(ofs < size);
-      const Vec4<vfloat<M>> p0(v0);
-      const Vec4<vfloat<M>> p1(v1);
-      const Vec4<vfloat<M>> p2(v2);
-      const Vec4<vfloat<M>> p3(v3);
-      const vfloat<M> c0 = vfloat<M>::loadu(&bezier_coeff1.c0[size][ofs]);
-      const vfloat<M> c1 = vfloat<M>::loadu(&bezier_coeff1.c1[size][ofs]);
-      const vfloat<M> c2 = vfloat<M>::loadu(&bezier_coeff1.c2[size][ofs]);
-      const vfloat<M> c3 = vfloat<M>::loadu(&bezier_coeff1.c3[size][ofs]);
-      return c0*p0 + c1*p1 + c2*p2 + c3*p3; // FIXME: use fmadd
+      BezierCurve3fa* volatile This = (BezierCurve3fa* volatile) this;
+      Vec4<vfloat<M>> r;
+      r  = Vec4<vfloat<M>>(This->v0) * vfloat<M>::loadu(&bezier_coeff1.c0[size][ofs]);
+      r += Vec4<vfloat<M>>(This->v1) * vfloat<M>::loadu(&bezier_coeff1.c1[size][ofs]); // FIXME: use fmadd
+      r += Vec4<vfloat<M>>(This->v2) * vfloat<M>::loadu(&bezier_coeff1.c2[size][ofs]);
+      r += Vec4<vfloat<M>>(This->v3) * vfloat<M>::loadu(&bezier_coeff1.c3[size][ofs]);
+      return r;
     }
 #endif
 
