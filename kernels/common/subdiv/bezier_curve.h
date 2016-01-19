@@ -130,12 +130,11 @@ namespace embree
     {
       assert(size <= BezierCoefficients::N);
       assert(ofs < size);
-      BezierCurve3fa* volatile This = (BezierCurve3fa* volatile) this;
       Vec4<vfloat<M>> r;
-      r  = Vec4<vfloat<M>>(This->v0) * vfloat<M>::loadu(&bezier_coeff0.c0[size][ofs]);
-      r += Vec4<vfloat<M>>(This->v1) * vfloat<M>::loadu(&bezier_coeff0.c1[size][ofs]); // FIXME: use fmadd
-      r += Vec4<vfloat<M>>(This->v2) * vfloat<M>::loadu(&bezier_coeff0.c2[size][ofs]);
-      r += Vec4<vfloat<M>>(This->v3) * vfloat<M>::loadu(&bezier_coeff0.c3[size][ofs]);
+      r  = Vec4<vfloat<M>>(v0) * vfloat<M>::loadu(&bezier_coeff0.c0[size][ofs]);
+      r += Vec4<vfloat<M>>(v1) * vfloat<M>::loadu(&bezier_coeff0.c1[size][ofs]); // FIXME: use fmadd
+      r += Vec4<vfloat<M>>(v2) * vfloat<M>::loadu(&bezier_coeff0.c2[size][ofs]);
+      r += Vec4<vfloat<M>>(v3) * vfloat<M>::loadu(&bezier_coeff0.c3[size][ofs]);
       return r;
     }
 #endif
@@ -146,12 +145,11 @@ namespace embree
     {
       assert(size <= BezierCoefficients::N);
       assert(ofs < size);
-      BezierCurve3fa* volatile This = (BezierCurve3fa* volatile) this;
       Vec4<vfloat<M>> r;
-      r  = Vec4<vfloat<M>>(This->v0) * vfloat<M>::loadu(&bezier_coeff1.c0[size][ofs]);
-      r += Vec4<vfloat<M>>(This->v1) * vfloat<M>::loadu(&bezier_coeff1.c1[size][ofs]); // FIXME: use fmadd
-      r += Vec4<vfloat<M>>(This->v2) * vfloat<M>::loadu(&bezier_coeff1.c2[size][ofs]);
-      r += Vec4<vfloat<M>>(This->v3) * vfloat<M>::loadu(&bezier_coeff1.c3[size][ofs]);
+      r  = Vec4<vfloat<M>>(v0) * vfloat<M>::loadu(&bezier_coeff1.c0[size][ofs]);
+      r += Vec4<vfloat<M>>(v1) * vfloat<M>::loadu(&bezier_coeff1.c1[size][ofs]); // FIXME: use fmadd
+      r += Vec4<vfloat<M>>(v2) * vfloat<M>::loadu(&bezier_coeff1.c2[size][ofs]);
+      r += Vec4<vfloat<M>>(v3) * vfloat<M>::loadu(&bezier_coeff1.c3[size][ofs]);
       return r;
     }
 #endif
@@ -159,26 +157,37 @@ namespace embree
 #if defined(__SSE__)
     __forceinline BBox3fa bounds(int N) const
     {
-      Vec4vfx pl(pos_inf), pu(neg_inf);
-      for (int i=0; i<N; i+=VSIZEX)
+      if (likely(N == 4))
       {
-        vboolx valid = vintx(i)+vintx(step) < vintx(N);
-        const Vec4vfx pi = eval0(valid,i,N);
-
-        pl.x = select(valid,min(pl.x,pi.x),pl.x); // FIXME: use masked min
-        pl.y = select(valid,min(pl.y,pi.y),pl.y); 
-        pl.z = select(valid,min(pl.z,pi.z),pl.z); 
-        pl.w = select(valid,min(pl.w,pi.w),pl.w); 
-
-        pu.x = select(valid,max(pu.x,pi.x),pu.x); // FIXME: use masked min
-        pu.y = select(valid,max(pu.y,pi.y),pu.y); 
-        pu.z = select(valid,max(pu.z,pi.z),pu.z); 
-        pu.w = select(valid,max(pu.w,pi.w),pu.w); 
+        const Vec4vf4 pi = eval0(vbool4(true),0,4);
+        const Vec3fa lower(reduce_min(pi.x),reduce_min(pi.y),reduce_min(pi.z));
+        const Vec3fa upper(reduce_max(pi.x),reduce_max(pi.y),reduce_max(pi.z));
+        const Vec3fa upper_r = Vec3fa(reduce_max(abs(pi.w)));
+        return enlarge(BBox3fa(min(lower,v3),max(upper,v3)),max(upper_r,Vec3fa(v3.w)));
+      } 
+      else
+      {
+        Vec4vfx pl(pos_inf), pu(neg_inf);
+        for (int i=0; i<N; i+=VSIZEX)
+        {
+          vboolx valid = vintx(i)+vintx(step) < vintx(N);
+          const Vec4vfx pi = eval0(valid,i,N);
+          
+          pl.x = select(valid,min(pl.x,pi.x),pl.x); // FIXME: use masked min
+          pl.y = select(valid,min(pl.y,pi.y),pl.y); 
+          pl.z = select(valid,min(pl.z,pi.z),pl.z); 
+          pl.w = select(valid,min(pl.w,pi.w),pl.w); 
+          
+          pu.x = select(valid,max(pu.x,pi.x),pu.x); // FIXME: use masked min
+          pu.y = select(valid,max(pu.y,pi.y),pu.y); 
+          pu.z = select(valid,max(pu.z,pi.z),pu.z); 
+          pu.w = select(valid,max(pu.w,pi.w),pu.w); 
+        }
+        const Vec3fa lower(reduce_min(pl.x),reduce_min(pl.y),reduce_min(pl.z));
+        const Vec3fa upper(reduce_max(pu.x),reduce_max(pu.y),reduce_max(pu.z));
+        const Vec3fa upper_r = Vec3fa(reduce_max(max(-pl.w,pu.w)));
+        return enlarge(BBox3fa(min(lower,v3),max(upper,v3)),max(upper_r,Vec3fa(abs(v3.w))));
       }
-      const Vec3fa lower(reduce_min(pl.x),reduce_min(pl.y),reduce_min(pl.z));
-      const Vec3fa upper(reduce_max(pu.x),reduce_max(pu.y),reduce_max(pu.z));
-      const Vec3fa upper_r = Vec3fa(reduce_max(max(-pl.w,pu.w)));
-      return enlarge(BBox3fa(min(lower,v3),max(upper,v3)),max(upper_r,Vec3fa(abs(v3.w))));
     }
 #endif
   };
