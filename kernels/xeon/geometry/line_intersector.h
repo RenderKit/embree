@@ -195,20 +195,32 @@ namespace embree
                                                       const Vec3fa& p1, const Vec3fa& n1, const float r1,
                                                       float& u)
         {
-          //PRINT(d);
-          //PRINT3(p0,n0,r0);
-          //PRINT3(p1,n1,r1);
-          u = 0.5f;
+          float u0 = 0.0f;
           for (int i=0; i<10; i++) {
-            const float fu0 = f(u+0.000f,d,p0,n0,r0,p1,n1,r1);
-            const float fu1 = f(u+0.001f,d,p0,n0,r0,p1,n1,r1);
-            const float dfu = dfds(u,d,p0,n0,r0,p1,n1,r1);
-            //PRINT2(u,fu0);
-            //PRINT2(u,dfu);
-            //PRINT2(u,(fu1-fu0)/0.001f);
-            u = u - fu0/dfu;
+            const float fu = f(u0,d,p0,n0,r0,p1,n1,r1);
+            const float dfu = dfds(u0,d,p0,n0,r0,p1,n1,r1);
+            u0 = u0 - fu/dfu;
           }
-          //PRINT2(u,f(u,d,p0,n0,r0,p1,n1,r1));
+          const Vec3fa ps0 = (1.0f-u0)*p0 + u0*p1;
+          const Vec3fa ns0 = (1.0f-u0)*n0 + u0*n1;
+          const float t0 = dot(ps0,ns0)/dot(d,ns0);
+          
+          float u1 = 1.0f;
+          for (int i=0; i<10; i++) {
+            const float fu = f(u1,d,p0,n0,r0,p1,n1,r1);
+            const float dfu = dfds(u1,d,p0,n0,r0,p1,n1,r1);
+            u1 = u1 - fu/dfu;
+          }
+          const Vec3fa ps1 = (1.0f-u1)*p0 + u1*p1;
+          const Vec3fa ns1 = (1.0f-u1)*n0 + u1*n1;
+          const float t1 = dot(ps1,ns1)/dot(d,ns1);
+
+          if (t0 < t1) {
+            u = u0;
+          } else {
+            u = u1;
+          }
+          
           return u >= 0.0f && u <= 1.0f;
         }
 
@@ -366,8 +378,8 @@ namespace embree
             const Vec3fa p1(v1.x[i],v1.y[i],v1.z[i]);
             const Vec3fa p2(v2.x[i],v2.y[i],v2.z[i]);
             const Vec3fa p3(v3.x[i],v3.y[i],v3.z[i]);
-            const Vec3fa n1 = normalize(p0 == p1 ? p1-p2 : p0-p1);
-            const Vec3fa n2 = normalize(p2 == p3 ? p1-p2 : p2-p3);
+            const Vec3fa n1 = normalize(Vec3fa(-1,-1,0)); //normalize(p0 == p1 ? p1-p2 : p0-p1);
+            const Vec3fa n2 = normalize(Vec3fa(1,-1,0)); //normalize(p2 == p3 ? p1-p2 : p2-p3);
             float u = 0.0f;
             if (!intersect_iterative(ray.dir,p1-ray.org,n1,v1.w[i],p2-ray.org,n2,v2.w[i],u)) continue;
             //PRINT("hit");
