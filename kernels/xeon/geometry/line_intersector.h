@@ -26,6 +26,8 @@ namespace embree
     template<int M>
       struct LineIntersectorHitM
       {
+        __forceinline LineIntersectorHitM() {}
+
         __forceinline LineIntersectorHitM(const vfloat<M>& u, const vfloat<M>& v, const vfloat<M>& t, const Vec3<vfloat<M>>& Ng)
           : vu(u), vv(v), vt(t), vNg(Ng) {}
         
@@ -156,6 +158,60 @@ namespace embree
           return std::make_pair(lower,upper);
         }
 
+        static __forceinline Vec3fa distributator(const Vec3fa& A, const Vec3fa& B, const Vec3fa& C) {
+          return dot(A,B)*C - A*dot(B,C);
+        }
+
+        static __forceinline float f(const float u, 
+                                     const Vec3fa& d,
+                                     const Vec3fa& p0, const Vec3fa& n0, const float r0,
+                                     const Vec3fa& p1, const Vec3fa& n1, const float r1)
+        {
+          const Vec3fa ps = (1.0f-u)*p0 + u*p1;
+          const Vec3fa ns = (1.0f-u)*n0 + u*n1;
+          const float  rs = (1.0f-u)*r0 + u*r1;
+          const Vec3fa A = distributator(ps,ns,d);
+          const float  B = rs*dot(ns,d);
+          return dot(A,A) - sqr(B);
+        }
+
+        static __forceinline float dfds(const float u,
+                                        const Vec3fa& d,
+                                        const Vec3fa& p0, const Vec3fa& n0, const float r0,
+                                        const Vec3fa& p1, const Vec3fa& n1, const float r1)
+        {
+          const Vec3fa ps = (1.0f-u)*p0 + u*p1, dps = p1-p0;
+          const Vec3fa ns = (1.0f-u)*n0 + u*n1, dns = n1-n0;
+          const float  rs = (1.0f-u)*r0 + u*r1, drs = r1-r0;
+          const Vec3fa A  = distributator(ps,ns,d);
+          const Vec3fa dA = distributator(dps,ns,d)+distributator(ps,dns,d);
+          const float  B  = rs*dot(ns,d);
+          const float  dB = drs*dot(ns,d) + rs*dot(dns,d);
+          return 2.0f*dot(dA,A) - 2.0f*dB*B;
+        }
+
+        static __forceinline bool intersect_iterative(const Vec3fa& d,
+                                                      const Vec3fa& p0, const Vec3fa& n0, const float r0,
+                                                      const Vec3fa& p1, const Vec3fa& n1, const float r1,
+                                                      float& u)
+        {
+          //PRINT(d);
+          //PRINT3(p0,n0,r0);
+          //PRINT3(p1,n1,r1);
+          u = 0.5f;
+          for (int i=0; i<10; i++) {
+            const float fu0 = f(u+0.000f,d,p0,n0,r0,p1,n1,r1);
+            const float fu1 = f(u+0.001f,d,p0,n0,r0,p1,n1,r1);
+            const float dfu = dfds(u,d,p0,n0,r0,p1,n1,r1);
+            //PRINT2(u,fu0);
+            //PRINT2(u,dfu);
+            //PRINT2(u,(fu1-fu0)/0.001f);
+            u = u - fu0/dfu;
+          }
+          //PRINT2(u,f(u,d,p0,n0,r0,p1,n1,r1));
+          return u >= 0.0f && u <= 1.0f;
+        }
+
         template<typename Epilog>
         static __forceinline bool intersect(Ray& ray, const Precalculations& pre,
                                             const vbool<M>& valid_i, const Vec4vfM& v0, const Vec4vfM& v1, const Vec4vfM& v2, const Vec4vfM& v3, 
@@ -232,7 +288,7 @@ namespace embree
 
 #endif
 
-#if 1
+#if 0
 
           Vec3<vfloat<M>> q0(v0.x,v0.y,v0.z);
           Vec3<vfloat<M>> q1(v1.x,v1.y,v1.z);
@@ -295,6 +351,43 @@ namespace embree
           if (none(valid)) return false;
           
           LineIntersectorHitM<M> hit(u,zero,t,Ng);
+          return epilog(valid,hit);
+
+#endif
+
+#if 1
+          vbool<M> valid = false;
+          LineIntersectorHitM<M> hit;
+          
+          for (size_t i=0; i<M; i++)
+          {
+            if (!valid_i[i]) continue;
+            const Vec3fa p0(v0.x[i],v0.y[i],v0.z[i]);
+            const Vec3fa p1(v1.x[i],v1.y[i],v1.z[i]);
+            const Vec3fa p2(v2.x[i],v2.y[i],v2.z[i]);
+            const Vec3fa p3(v3.x[i],v3.y[i],v3.z[i]);
+            const Vec3fa n1 = normalize(p0 == p1 ? p1-p2 : p0-p1);
+            const Vec3fa n2 = normalize(p2 == p3 ? p1-p2 : p2-p3);
+            float u = 0.0f;
+            if (!intersect_iterative(ray.dir,p1-ray.org,n1,v1.w[i],p2-ray.org,n2,v2.w[i],u)) continue;
+            //PRINT("hit");
+            const Vec3fa ps = (1.0f-u)*p1 + u*p2;
+            const Vec3fa ns = (1.0f-u)*n1 + u*n2;
+            const float t = dot(ps-ray.org,ns)/dot(ray.dir,ns);
+            const Vec3fa os = ray.org+t*ray.dir;
+            const Vec3fa Ng = os-ps;
+            hit.vu[i] = u;
+            hit.vv[i] = 0.0f;
+            hit.vt[i] = t;
+            hit.vNg.x[i] = Ng.x;
+            hit.vNg.y[i] = Ng.y;
+            hit.vNg.z[i] = Ng.z;
+            //PRINT(u);
+            //PRINT(t);
+            //PRINT(Ng);
+            valid[i] = 0xFFFFFFFF;
+          }
+          if (none(valid)) return false;
           return epilog(valid,hit);
 
 #endif
