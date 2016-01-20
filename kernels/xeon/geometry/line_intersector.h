@@ -196,24 +196,28 @@ namespace embree
                                                       float& u)
         {
           float u0 = 0.0f;
-          for (int i=0; i<10; i++) {
+          for (int i=0; i<20; i++) {
             const float fu = f(u0,d,p0,n0,r0,p1,n1,r1);
             const float dfu = dfds(u0,d,p0,n0,r0,p1,n1,r1);
             u0 = u0 - fu/dfu;
           }
+          if (f(u0,d,p0,n0,r0,p1,n1,r1) > 0.01f) u0 = 2;
           const Vec3fa ps0 = (1.0f-u0)*p0 + u0*p1;
           const Vec3fa ns0 = (1.0f-u0)*n0 + u0*n1;
-          const float t0 = dot(ps0,ns0)/dot(d,ns0);
+          float t0 = dot(ps0,ns0)/dot(d,ns0);
+          if (u0 < 0.0f || u0 > 1.0f) t0 = inf;
           
           float u1 = 1.0f;
-          for (int i=0; i<10; i++) {
+          for (int i=0; i<20; i++) {
             const float fu = f(u1,d,p0,n0,r0,p1,n1,r1);
             const float dfu = dfds(u1,d,p0,n0,r0,p1,n1,r1);
             u1 = u1 - fu/dfu;
           }
+          if (f(u1,d,p0,n0,r0,p1,n1,r1) > 0.01f) u1 = 2;
           const Vec3fa ps1 = (1.0f-u1)*p0 + u1*p1;
           const Vec3fa ns1 = (1.0f-u1)*n0 + u1*n1;
-          const float t1 = dot(ps1,ns1)/dot(d,ns1);
+          float t1 = dot(ps1,ns1)/dot(d,ns1);
+          if (u1 < 0.0f || u1 > 1.0f) t1 = inf;
 
           if (t0 < t1) {
             u = u0;
@@ -378,8 +382,8 @@ namespace embree
             const Vec3fa p1(v1.x[i],v1.y[i],v1.z[i]);
             const Vec3fa p2(v2.x[i],v2.y[i],v2.z[i]);
             const Vec3fa p3(v3.x[i],v3.y[i],v3.z[i]);
-            const Vec3fa n1 = normalize(Vec3fa(-1,-1,0)); //normalize(p0 == p1 ? p1-p2 : p0-p1);
-            const Vec3fa n2 = normalize(Vec3fa(1,-1,0)); //normalize(p2 == p3 ? p1-p2 : p2-p3);
+            const Vec3fa n1 = normalize_safe(p1-p0) + normalize_safe(p2-p1);
+            const Vec3fa n2 = normalize_safe(p2-p1) + normalize_safe(p3-p2);
             float u = 0.0f;
             if (!intersect_iterative(ray.dir,p1-ray.org,n1,v1.w[i],p2-ray.org,n2,v2.w[i],u)) continue;
             //PRINT("hit");
