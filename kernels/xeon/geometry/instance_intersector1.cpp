@@ -20,7 +20,7 @@ namespace embree
 {
   namespace isa
   {
-    void InstanceBoundsFunction(const Instance* instance, size_t item, BBox3fa& bounds_o)
+    void InstanceBoundsFunction(void* userPtr, const Instance* instance, size_t item, BBox3fa* bounds_o)
     {
       Vec3fa lower = instance->object->bounds.lower;
       Vec3fa upper = instance->object->bounds.upper;
@@ -33,11 +33,11 @@ namespace embree
       Vec3fa p101 = xfmPoint(local2world,Vec3fa(upper.x,lower.y,upper.z));
       Vec3fa p110 = xfmPoint(local2world,Vec3fa(upper.x,upper.y,lower.z));
       Vec3fa p111 = xfmPoint(local2world,Vec3fa(upper.x,upper.y,upper.z));
-      bounds_o.lower = min(min(min(p000,p001),min(p010,p011)),min(min(p100,p101),min(p110,p111)));
-      bounds_o.upper = max(max(max(p000,p001),max(p010,p011)),max(max(p100,p101),max(p110,p111)));
+      bounds_o->lower = min(min(min(p000,p001),min(p010,p011)),min(min(p100,p101),min(p110,p111)));
+      bounds_o->upper = max(max(max(p000,p001),max(p010,p011)),max(max(p100,p101),max(p110,p111)));
     }
 
-    RTCBoundsFunc InstanceBoundsFunc = (RTCBoundsFunc) InstanceBoundsFunction;
+    RTCBoundsFunc2 InstanceBoundsFunc = (RTCBoundsFunc2) InstanceBoundsFunction;
 
     void FastInstanceIntersector1::intersect(const Instance* instance, Ray& ray, size_t item)
     {

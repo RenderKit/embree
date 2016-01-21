@@ -19,7 +19,7 @@
 
 namespace embree
 {
-  DECLARE_SYMBOL2(RTCBoundsFunc,InstanceBoundsFunc);
+  DECLARE_SYMBOL2(RTCBoundsFunc2,InstanceBoundsFunc);
   DECLARE_SYMBOL2(AccelSet::Intersector1,InstanceIntersector1);
   DECLARE_SYMBOL2(AccelSet::Intersector4,InstanceIntersector4);
   DECLARE_SYMBOL2(AccelSet::Intersector8,InstanceIntersector8);
@@ -46,7 +46,7 @@ namespace embree
     : AccelSet(parent,1,1), local2world(one), world2local(one), object(object)
   {
     intersectors.ptr = this;
-    boundsFunc = parent->device->instance_factory->InstanceBoundsFunc;
+    boundsFunc2 = parent->device->instance_factory->InstanceBoundsFunc;
     intersectors.intersector1 = parent->device->instance_factory->InstanceIntersector1;
     intersectors.intersector4 = parent->device->instance_factory->InstanceIntersector4; 
     intersectors.intersector8 = parent->device->instance_factory->InstanceIntersector8; 
