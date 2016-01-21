@@ -50,7 +50,7 @@ namespace embree
         world2local = instance->world2local[0];
       } else {
         vfloat<K> t1 = ray.time, t0 = vfloat<K>(1.0f)-t1;
-        world2local = t0*AffineSpace3vfK(instance->world2local[0]) + t1*AffineSpace3vfK(instance->world2local[1]);
+        world2local = rcp(t0*AffineSpace3vfK(instance->local2world[0]) + t1*AffineSpace3vfK(instance->local2world[1]));
       }
       
       const Vec3vfK ray_org = ray.org;
@@ -80,7 +80,7 @@ namespace embree
         world2local = instance->world2local[0];
       } else {
         vfloat<K> t1 = ray.time, t0 = vfloat<K>(1.0f)-t1;
-        world2local = t0*AffineSpace3vfK(instance->world2local[0]) + t1*AffineSpace3vfK(instance->world2local[1]);
+        world2local = rcp(t0*AffineSpace3vfK(instance->local2world[0]) + t1*AffineSpace3vfK(instance->local2world[1]));
       }
 
       const Vec3vfK ray_org = ray.org;

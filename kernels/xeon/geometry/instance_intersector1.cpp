@@ -38,7 +38,7 @@ namespace embree
       if (likely(instance->numTimeSteps == 1)) {
         world2local = instance->world2local[0];
       } else {
-        world2local = (1.0f-ray.time)*instance->world2local[0] + ray.time*instance->world2local[1];
+        world2local = rcp((1.0f-ray.time)*instance->local2world[0] + ray.time*instance->local2world[1]);
       }
       
       const Vec3fa ray_org = ray.org;
@@ -64,7 +64,7 @@ namespace embree
       if (likely(instance->numTimeSteps == 1)) {
         world2local = instance->world2local[0];
       } else {
-        world2local = (1.0f-ray.time)*instance->world2local[0] + ray.time*instance->world2local[1];
+        world2local = rcp((1.0f-ray.time)*instance->local2world[0] + ray.time*instance->local2world[1]);
       }
       const Vec3fa ray_org = ray.org;
       const Vec3fa ray_dir = ray.dir;
