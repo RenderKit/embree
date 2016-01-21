@@ -22,7 +22,12 @@ namespace embree
   {
     void InstanceBoundsFunction(void* userPtr, const Instance* instance, size_t item, BBox3fa* bounds_o) 
     {
-      *bounds_o = xfmBounds(instance->local2world[0],instance->object->bounds);
+      if (instance->numTimeSteps == 1) {
+        bounds_o[0] = xfmBounds(instance->local2world[0],instance->object->bounds);
+      } else {
+        bounds_o[0] = xfmBounds(instance->local2world[0],instance->object->bounds);
+        bounds_o[1] = xfmBounds(instance->local2world[1],instance->object->bounds);
+      }
     }
 
     RTCBoundsFunc2 InstanceBoundsFunc = (RTCBoundsFunc2) InstanceBoundsFunction;
