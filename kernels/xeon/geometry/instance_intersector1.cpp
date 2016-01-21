@@ -22,8 +22,8 @@ namespace embree
   {
     void InstanceBoundsFunction(const Instance* instance, size_t item, BBox3fa& bounds_o)
     {
-      Vec3fa lower = instance->object->bounds[0].lower;
-      Vec3fa upper = instance->object->bounds[0].upper;
+      Vec3fa lower = instance->object->bounds.lower;
+      Vec3fa upper = instance->object->bounds.upper;
       AffineSpace3fa local2world = instance->local2world;
       Vec3fa p000 = xfmPoint(local2world,Vec3fa(lower.x,lower.y,lower.z));
       Vec3fa p001 = xfmPoint(local2world,Vec3fa(lower.x,lower.y,upper.z));

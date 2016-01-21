@@ -37,11 +37,9 @@ namespace embree
     }
 
   public:
-    void build (size_t threadIndex, size_t threadCount) 
-    {
+    void build (size_t threadIndex, size_t threadCount) {
       if (builder) builder->build(threadIndex,threadCount);
-      bounds[0] = accel->bounds[0];
-      bounds[1] = accel->bounds[1];
+      bounds = accel->bounds;
     }
 
     void deleteGeometry(size_t geomID) {

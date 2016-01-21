@@ -593,8 +593,7 @@ namespace embree
   {
     /* update bounds */
     is_build = true;
-    bounds[0] = accels.bounds[0];
-    bounds[1] = accels.bounds[1];
+    bounds = accels.bounds;
     intersectors = accels.intersectors;
 
     /* enable only algorithms choosen by application */

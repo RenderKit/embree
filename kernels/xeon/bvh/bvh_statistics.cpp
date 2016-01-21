@@ -34,10 +34,10 @@ namespace embree
     childrenAlignedNodes = childrenUnalignedNodes = 0;
     childrenAlignedNodesMB = childrenUnalignedNodesMB = 0;
     bvhSAH = 0.0f; leafSAH = 0.0f;
-    float A = max(0.0f,halfArea(bvh->getBounds()));
+    float A = max(0.0f,halfArea(bvh->bounds));
     statistics(bvh->root,A,depth);
-    bvhSAH /= halfArea(bvh->getBounds());
-    leafSAH /= halfArea(bvh->getBounds());
+    bvhSAH /= halfArea(bvh->bounds);
+    leafSAH /= halfArea(bvh->bounds);
     assert(depth <= BVH::maxDepth);
   }
   

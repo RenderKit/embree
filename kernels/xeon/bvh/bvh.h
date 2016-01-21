@@ -746,9 +746,6 @@ namespace embree
     /*! sets BVH members after build */
     void set (NodeRef root, const BBox3fa& bounds, size_t numPrimitives);
 
-    /*! sets BVH members after build */
-    void set (NodeRef root, const BBox3fa& bounds0, const BBox3fa& bounds1, size_t numPrimitives);
-
     /*! prints statistics about the BVH */
     void printStatistics();
 

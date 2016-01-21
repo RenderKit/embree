@@ -147,7 +147,7 @@ namespace embree
     /* create list of non-empty acceleration structures */
     validAccels.clear();
     for (size_t i=0; i<accels.size(); i++) {
-      if (accels[i]->isEmpty()) continue;
+      if (accels[i]->bounds.empty()) continue;
       validAccels.push_back(accels[i]);
     }
 
@@ -164,11 +164,9 @@ namespace embree
     }
     
     /*! calculate bounds */
-    bounds[0] = bounds[1] = empty;
-    for (size_t i=0; i<validAccels.size(); i++) {
-      bounds[0].extend(validAccels[i]->bounds[0]);
-      bounds[1].extend(validAccels[i]->bounds[1]);
-    }
+    bounds = empty;
+    for (size_t i=0; i<validAccels.size(); i++) 
+      bounds.extend(validAccels[i]->bounds);
   }
 
   void AccelN::select(bool filter4, bool filter8, bool filter16, bool filterN)
