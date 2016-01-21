@@ -27,8 +27,9 @@ namespace embree
     enum Type { TY_UNKNOWN = 0, TY_ACCELN = 1, TY_ACCEL_INSTANCE = 2, TY_BVH4 = 3, TY_BVH8 = 4 };
 
   public:
-    AccelData (const Type type) 
-      : bounds(empty), type(type) {}
+    AccelData (const Type type) : type(type) {
+      bounds[0] = bounds[1] = empty;
+    }
 
     /*! notifies the acceleration structure about the deletion of some geometry */
     virtual void deleteGeometry(size_t geomID) {};
@@ -36,9 +37,30 @@ namespace embree
     /*! clears the acceleration structure data */
     virtual void clear() = 0;
 
+    /*! checks if the object has empty bounds */
+    __forceinline bool isEmpty() const {
+      return bounds[0].empty() || bounds[1].empty();
+    }
+
+    /*! calculate full bounding box */
+    __forceinline BBox3fa getBounds() const {
+      return merge(bounds[0],bounds[1]);
+    }
+
+    /*! set single bounding box */
+    __forceinline void setBounds(const BBox3fa& a) {
+      bounds[0] = bounds[1] = a;
+    }
+
+    /*! set two bounding boxes */
+    __forceinline void setBounds(const BBox3fa& a, const BBox3fa& b) {
+      bounds[0] = a;
+      bounds[1] = b;
+    }
+
   public:
-    BBox3fa bounds;
-    Type type;
+    Type type;         //!< type of the acceleration structure
+    BBox3fa bounds[2]; //!< bounds for timestep 0 and 1
   };
 
   /*! Base class for all intersectable and buildable acceleration structures. */

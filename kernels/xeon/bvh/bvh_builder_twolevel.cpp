@@ -116,8 +116,8 @@ namespace embree
             builder->build(0,0);
           
           /* create build primitive */
-          if (!object->bounds.empty())
-            refs[nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->bounds,object->root);
+          if (!object->isEmpty())
+            refs[nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->getBounds(),object->root);
         }
       });
       

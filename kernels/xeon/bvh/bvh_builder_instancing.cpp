@@ -186,9 +186,9 @@ namespace embree
             if (!instance->isEnabled()) continue;
             BVH* object = objects[instance->geom->id];
             if (object == nullptr) continue;
-            if (object->bounds.empty()) continue;
+            if (object->isEmpty()) continue;
             int s = slot(geom->getType() & ~Geometry::INSTANCE, geom->numTimeSteps);
-            refs[nextRef++] = BVHNBuilderInstancing::BuildRef(instance->local2world,object->bounds,object->root,instance->mask,objectID,hash(instance->local2world),s);
+            refs[nextRef++] = BVHNBuilderInstancing::BuildRef(instance->local2world,object->getBounds(),object->root,instance->mask,objectID,hash(instance->local2world),s);
           }
         });
       refs.resize(nextRef);

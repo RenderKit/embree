@@ -145,7 +145,7 @@ namespace embree
     {
 #if STATIC_SUBTREE_EXTRACTION
       if (bvh->numPrimitives <= block_size) {
-        bvh->bounds = recurse_bottom(bvh->root);
+        bvh->setBounds(recurse_bottom(bvh->root));
       }
       else
       {
@@ -161,13 +161,13 @@ namespace embree
             });
 
         numSubTrees = 0;        
-        bvh->bounds = refit_toplevel(bvh->root,numSubTrees,0);
+        bvh->setBounds(refit_toplevel(bvh->root,numSubTrees,0));
       }
 #else
       /* single threaded fallback */
       size_t numRoots = roots.size();
       if (numRoots <= 1) {
-        bvh->bounds = recurse_bottom(bvh->root);
+        bvh->setBounds(recurse_bottom(bvh->root));
       }
 
       /* parallel refit */
@@ -181,7 +181,7 @@ namespace embree
               ref.setBarrier();
             }
           });
-        bvh->bounds = recurse_top(bvh->root);
+        bvh->setBounds(recurse_top(bvh->root));
       }
 #endif
     
