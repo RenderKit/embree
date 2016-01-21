@@ -24,7 +24,7 @@ namespace embree
     {
       Vec3fa lower = instance->object->bounds.lower;
       Vec3fa upper = instance->object->bounds.upper;
-      AffineSpace3fa local2world = instance->local2world;
+      AffineSpace3fa local2world = instance->local2world[0];
       Vec3fa p000 = xfmPoint(local2world,Vec3fa(lower.x,lower.y,lower.z));
       Vec3fa p001 = xfmPoint(local2world,Vec3fa(lower.x,lower.y,upper.z));
       Vec3fa p010 = xfmPoint(local2world,Vec3fa(lower.x,upper.y,lower.z));
@@ -45,8 +45,8 @@ namespace embree
       const Vec3fa ray_dir = ray.dir;
       const int ray_geomID = ray.geomID;
       const int ray_instID = ray.instID;
-      ray.org = xfmPoint (instance->world2local,ray_org);
-      ray.dir = xfmVector(instance->world2local,ray_dir);
+      ray.org = xfmPoint (instance->world2local[0],ray_org);
+      ray.dir = xfmVector(instance->world2local[0],ray_dir);
       ray.geomID = -1;
       ray.instID = instance->id;
       instance->object->intersect((RTCRay&)ray);
@@ -62,8 +62,8 @@ namespace embree
     {
       const Vec3fa ray_org = ray.org;
       const Vec3fa ray_dir = ray.dir;
-      ray.org = xfmPoint (instance->world2local,ray_org);
-      ray.dir = xfmVector(instance->world2local,ray_dir);
+      ray.org = xfmPoint (instance->world2local[0],ray_org);
+      ray.dir = xfmVector(instance->world2local[0],ray_dir);
       instance->object->occluded((RTCRay&)ray);
       ray.org = ray_org;
       ray.dir = ray_dir;

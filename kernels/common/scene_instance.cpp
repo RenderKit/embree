@@ -42,9 +42,11 @@ namespace embree
 #endif
   }
 
-  Instance::Instance (Scene* parent, Accel* object) 
-    : AccelSet(parent,1,1), local2world(one), world2local(one), object(object)
+  Instance::Instance (Scene* parent, Accel* object, size_t numTimeSteps) 
+    : AccelSet(parent,1,numTimeSteps), object(object)
   {
+    local2world[0] = local2world[1] = one;
+    world2local[0] = world2local[1] = one;
     intersectors.ptr = this;
     boundsFunc2 = parent->device->instance_factory->InstanceBoundsFunc;
     intersectors.intersector1 = parent->device->instance_factory->InstanceIntersector1;
@@ -58,11 +60,11 @@ namespace embree
     if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
-    if (timeStep != 0)
-      throw_RTCError(RTC_INVALID_OPERATION,"scene instances only support a single timestep");
+    if (timeStep >= numTimeSteps)
+      throw_RTCError(RTC_INVALID_OPERATION,"invalid timestep");
 
-    local2world = xfm;
-    world2local = rcp(xfm);
+    local2world[timeStep] = xfm;
+    world2local[timeStep] = rcp(xfm);
   }
 
   void Instance::setMask (unsigned mask) 

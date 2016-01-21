@@ -20,8 +20,9 @@ namespace embree
 {
   namespace isa
   {
-    void InstanceBoundsFunction(void* userPtr, const Instance* instance, size_t item, BBox3fa* bounds_o) {
-      *bounds_o = xfmBounds(instance->local2world,instance->object->bounds);
+    void InstanceBoundsFunction(void* userPtr, const Instance* instance, size_t item, BBox3fa* bounds_o) 
+    {
+      *bounds_o = xfmBounds(instance->local2world[0],instance->object->bounds);
     }
 
     RTCBoundsFunc2 InstanceBoundsFunc = (RTCBoundsFunc2) InstanceBoundsFunction;
@@ -32,8 +33,8 @@ namespace embree
       const Vec3fa ray_dir = ray.dir;
       const int ray_geomID = ray.geomID;
       const int ray_instID = ray.instID;
-      ray.org = xfmPoint (instance->world2local,ray_org);
-      ray.dir = xfmVector(instance->world2local,ray_dir);
+      ray.org = xfmPoint (instance->world2local[0],ray_org);
+      ray.dir = xfmVector(instance->world2local[0],ray_dir);
       ray.geomID = -1;
       ray.instID = instance->id;
       instance->object->intersect((RTCRay&)ray);
@@ -49,8 +50,8 @@ namespace embree
     {
       const Vec3fa ray_org = ray.org;
       const Vec3fa ray_dir = ray.dir;
-      ray.org = xfmPoint (instance->world2local,ray_org);
-      ray.dir = xfmVector(instance->world2local,ray_dir);
+      ray.org = xfmPoint (instance->world2local[0],ray_org);
+      ray.dir = xfmVector(instance->world2local[0],ray_dir);
       ray.instID = instance->id;
       instance->object->occluded((RTCRay&)ray);
       ray.org = ray_org;
