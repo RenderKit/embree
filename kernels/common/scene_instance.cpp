@@ -53,10 +53,13 @@ namespace embree
     intersectors.intersector16 = parent->device->instance_factory->InstanceIntersector16;
   }
   
-  void Instance::setTransform(const AffineSpace3fa& xfm)
+  void Instance::setTransform(const AffineSpace3fa& xfm, size_t timeStep)
   {
     if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
+
+    if (timeStep != 0)
+      throw_RTCError(RTC_INVALID_OPERATION,"scene instances only support a single timestep");
 
     local2world = xfm;
     world2local = rcp(xfm);

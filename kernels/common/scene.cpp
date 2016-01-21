@@ -456,7 +456,8 @@ namespace embree
     return geom->id;
   }
 
-  unsigned Scene::newInstance (Scene* scene) {
+  unsigned Scene::newInstance (Scene* scene, size_t numTimeSteps) 
+  {
     Geometry* geom = new Instance(this,scene);
     return geom->id;
   }

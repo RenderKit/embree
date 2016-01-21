@@ -123,7 +123,7 @@ namespace embree
     unsigned int newUserGeometry (size_t items, size_t numTimeSteps);
 
     /*! Creates a new scene instance. */
-    unsigned int newInstance (Scene* scene);
+    unsigned int newInstance (Scene* scene, size_t numTimeSteps);
 
     /*! Creates a new geometry instance. */
     unsigned int newGeometryInstance (Geometry* geom);

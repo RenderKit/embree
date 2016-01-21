@@ -122,12 +122,35 @@ RTCORE_API unsigned rtcNewInstance (RTCScene target,                  //!< the s
                                     RTCScene source                   //!< the scene to instantiate
   );
 
+/*! \brief Creates a new scene instance. 
+
+  A scene instance contains a reference to a scene to instantiate and
+  the transformation to instantiate the scene with. For motion blurred
+  instances, a number of timesteps can get specified (currently only 1
+  or 2 timesteps are supported). An implementation will typically
+  transform the ray with the inverse of the provided transformation
+  and continue traversing the ray through the provided scene. If any
+  geometry is hit, the instance ID (instID) member of the ray will get
+  set to the geometry ID of the instance. */
+RTCORE_API unsigned rtcNewInstance2 (RTCScene target,                  //!< the scene the instance belongs to
+                                     RTCScene source,                  //!< the scene to instantiate
+                                     size_t numTimeSteps = 1);         //!< number of timesteps, one matrix per timestep
+
 /*! \brief Sets transformation of the instance */
 RTCORE_API void rtcSetTransform (RTCScene scene,                          //!< scene handle
                                  unsigned geomID,                         //!< ID of geometry
                                  RTCMatrixType layout,                    //!< layout of transformation matrix
-                                 const float* xfm                         //!< transformation matrix
-                                 );
+                                 const float* xfm                         //!< pointer to transformation matrix
+  );
+
+
+/*! \brief Sets transformation of the instance for specified timestep */
+RTCORE_API void rtcSetTransform2 (RTCScene scene,                         //!< scene handle
+                                  unsigned int geomID,                    //!< ID of geometry 
+                                  RTCMatrixType layout,                   //!< layout of transformation matrix
+                                  const float* xfm,                       //!< pointer to transformation matrix
+                                  size_t timeStep = 0                     //!< timestep to set the matrix for 
+  );
 
 /*! \brief Creates a new triangle mesh. The number of triangles
   (numTriangles), number of vertices (numVertices), and number of time

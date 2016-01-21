@@ -561,7 +561,21 @@ namespace embree
     RTCORE_VERIFY_HANDLE(htarget);
     RTCORE_VERIFY_HANDLE(hsource);
     if (target->device != source->device) throw_RTCError(RTC_INVALID_OPERATION,"scenes do not belong to the same device");
-    return target->newInstance(source);
+    return target->newInstance(source,1);
+    RTCORE_CATCH_END(target->device);
+    return -1;
+  }
+
+  RTCORE_API unsigned rtcNewInstance2 (RTCScene htarget, RTCScene hsource, size_t numTimeSteps) 
+  {
+    Scene* target = (Scene*) htarget;
+    Scene* source = (Scene*) hsource;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcNewInstance2);
+    RTCORE_VERIFY_HANDLE(htarget);
+    RTCORE_VERIFY_HANDLE(hsource);
+    if (target->device != source->device) throw_RTCError(RTC_INVALID_OPERATION,"scenes do not belong to the same device");
+    return target->newInstance(source,numTimeSteps);
     RTCORE_CATCH_END(target->device);
     return -1;
   }
@@ -578,15 +592,8 @@ namespace embree
     return -1;
     }*/
 
-  RTCORE_API void rtcSetTransform (RTCScene hscene, unsigned geomID, RTCMatrixType layout, const float* xfm) 
+  AffineSpace3fa convertTransform(RTCMatrixType layout, const float* xfm)
   {
-    Scene* scene = (Scene*) hscene;
-    RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetTransform);
-    RTCORE_VERIFY_HANDLE(hscene);
-    RTCORE_VERIFY_GEOMID(geomID);
-    RTCORE_VERIFY_HANDLE(xfm);
-
     AffineSpace3fa transform = one;
     switch (layout) 
     {
@@ -615,8 +622,32 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"Unknown matrix type");
       break;
     }
-    ((Scene*) scene)->get_locked(geomID)->setTransform(transform);
+    return transform;
+  }
 
+  RTCORE_API void rtcSetTransform (RTCScene hscene, unsigned geomID, RTCMatrixType layout, const float* xfm) 
+  {
+    Scene* scene = (Scene*) hscene;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetTransform);
+    RTCORE_VERIFY_HANDLE(hscene);
+    RTCORE_VERIFY_GEOMID(geomID);
+    RTCORE_VERIFY_HANDLE(xfm);
+    const AffineSpace3fa transform = convertTransform(layout,xfm);
+    ((Scene*) scene)->get_locked(geomID)->setTransform(transform,0);
+    RTCORE_CATCH_END(scene->device);
+  }
+
+  RTCORE_API void rtcSetTransform2 (RTCScene hscene, unsigned geomID, RTCMatrixType layout, const float* xfm, size_t timeStep) 
+  {
+    Scene* scene = (Scene*) hscene;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetTransform);
+    RTCORE_VERIFY_HANDLE(hscene);
+    RTCORE_VERIFY_GEOMID(geomID);
+    RTCORE_VERIFY_HANDLE(xfm);
+    const AffineSpace3fa transform = convertTransform(layout,xfm);
+    ((Scene*) scene)->get_locked(geomID)->setTransform(transform,timeStep);
     RTCORE_CATCH_END(scene->device);
   }
 
