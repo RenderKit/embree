@@ -83,6 +83,7 @@ __forceinline Vec3f  neg(const Vec3f& a ) { return -a; }
 __forceinline Vec3fa neg(const Vec3fa& a) { return -a; }
 __forceinline bool   eq (const Vec3fa& a, const Vec3fa& b) { return a == b; }
 __forceinline bool   ne (const Vec3fa& a, const Vec3fa& b) { return a != b; }
+__forceinline bool   eq (const AffineSpace3fa& a, const AffineSpace3fa& b) { return a == b; }
 
 /* parallel invokation of renderTile function */
 void launch_renderTile (int numTiles, 

@@ -144,11 +144,12 @@ namespace embree
     {
       ALIGNED_STRUCT;
 
-      Instance(const AffineSpace3fa& space, int geomID)
-        : Geometry(INSTANCE), space(space), geomID(geomID) {}
+    Instance(const AffineSpace3fa& space0, const AffineSpace3fa& space1, int geomID)
+      : Geometry(INSTANCE), space0(space0), space1(space1), geomID(geomID) {}
 
     public:
-      AffineSpace3fa space;
+      AffineSpace3fa space0;
+      AffineSpace3fa space1;
       int geomID;
     };
 

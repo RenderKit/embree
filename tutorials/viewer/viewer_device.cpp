@@ -250,9 +250,17 @@ unsigned int convertInstance(ISPCInstance* instance, int meshID, RTCScene scene_
     } else */
   {
     RTCScene scene_inst = geomID_to_scene[instance->geomID];
-    unsigned int geomID = rtcNewInstance(scene_out, scene_inst);
-    rtcSetTransform(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->space.l.vx.x);
-    return geomID;
+    if (eq(AffineSpace3fa(instance->space0),AffineSpace3fa(instance->space1))) {
+      unsigned int geomID = rtcNewInstance(scene_out, scene_inst);
+      rtcSetTransform(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->space0.l.vx.x);
+      return geomID;
+    } 
+    else {
+      unsigned int geomID = rtcNewInstance2(scene_out, scene_inst, 2);
+      rtcSetTransform2(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->space0.l.vx.x,0);
+      rtcSetTransform2(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->space1.l.vx.x,1);
+      return geomID;
+    }
   } 
 }     
 
@@ -476,8 +484,9 @@ inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
 
     /* convert normals */
     if (instance) {
-      dg.Ng = dg.Ng.x * Vec3fa(instance->space.l.vx) + dg.Ng.y * Vec3fa(instance->space.l.vy) + dg.Ng.z * Vec3fa(instance->space.l.vz);
-      dg.Ns = dg.Ns.x * Vec3fa(instance->space.l.vx) + dg.Ns.y * Vec3fa(instance->space.l.vy) + dg.Ns.z * Vec3fa(instance->space.l.vz);
+      AffineSpace3fa space = (1.0f-ray.time)*AffineSpace3fa(instance->space0) + ray.time*AffineSpace3fa(instance->space1);
+      dg.Ng = xfmVector(space,dg.Ng);
+      dg.Ns = xfmVector(space,dg.Ns);
     }
   }
 

@@ -24,6 +24,12 @@ struct AffineSpace3f
   Vec3f p;
 };
 
+struct AffineSpace3fa
+{
+  LinearSpace3fa l;
+  Vec3fa p;
+};
+
 ////////////////////////////////////////////////////////////////////////////////
 /// Constructors
 ////////////////////////////////////////////////////////////////////////////////
@@ -36,6 +42,10 @@ inline uniform AffineSpace3f make_AffineSpace3f(const uniform LinearSpace3f l, c
 }
 inline varying AffineSpace3f make_AffineSpace3f(const varying LinearSpace3f l, const varying Vec3f p) {
   varying AffineSpace3f xfm; xfm.l = l; xfm.p = p; return xfm;
+}
+
+inline uniform AffineSpace3f make_AffineSpace3f(const uniform AffineSpace3fa l) {
+  uniform AffineSpace3f xfm; xfm.l = make_LinearSpace3f(l.l); xfm.p = make_Vec3f(l.p); return xfm;
 }
 
 inline uniform AffineSpace3f make_AffineSpace3f(const uniform Vec3f x, const uniform Vec3f y, const uniform Vec3f z, const uniform Vec3f p) {

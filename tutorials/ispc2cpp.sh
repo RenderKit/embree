@@ -78,7 +78,7 @@ sed -i.backup 's/make_LinearSpace3f_rotate/LinearSpace3f::rotate/g' $2
 sed -i.backup 's/LinearSpace3f/LinearSpace3fa/g' $2
 
 sed -i.backup 's/make_AffineSpace3f_rotate/AffineSpace3f::rotate/g' $2
-sed -i.backup 's/AffineSpace3f/AffineSpace3fa/g' $2
+sed -i.backup 's/AffineSpace3f\([^a]\)/AffineSpace3fa\1/g' $2
 
 sed -i.backup 's/int8/char/g' $2
 sed -i.backup 's/int16/int16_t/g' $2
