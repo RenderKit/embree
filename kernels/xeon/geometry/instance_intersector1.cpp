@@ -20,21 +20,8 @@ namespace embree
 {
   namespace isa
   {
-    void InstanceBoundsFunction(void* userPtr, const Instance* instance, size_t item, BBox3fa* bounds_o)
-    {
-      Vec3fa lower = instance->object->bounds.lower;
-      Vec3fa upper = instance->object->bounds.upper;
-      AffineSpace3fa local2world = instance->local2world;
-      Vec3fa p000 = xfmPoint(local2world,Vec3fa(lower.x,lower.y,lower.z));
-      Vec3fa p001 = xfmPoint(local2world,Vec3fa(lower.x,lower.y,upper.z));
-      Vec3fa p010 = xfmPoint(local2world,Vec3fa(lower.x,upper.y,lower.z));
-      Vec3fa p011 = xfmPoint(local2world,Vec3fa(lower.x,upper.y,upper.z));
-      Vec3fa p100 = xfmPoint(local2world,Vec3fa(upper.x,lower.y,lower.z));
-      Vec3fa p101 = xfmPoint(local2world,Vec3fa(upper.x,lower.y,upper.z));
-      Vec3fa p110 = xfmPoint(local2world,Vec3fa(upper.x,upper.y,lower.z));
-      Vec3fa p111 = xfmPoint(local2world,Vec3fa(upper.x,upper.y,upper.z));
-      bounds_o->lower = min(min(min(p000,p001),min(p010,p011)),min(min(p100,p101),min(p110,p111)));
-      bounds_o->upper = max(max(max(p000,p001),max(p010,p011)),max(max(p100,p101),max(p110,p111)));
+    void InstanceBoundsFunction(void* userPtr, const Instance* instance, size_t item, BBox3fa* bounds_o) {
+      *bounds_o = xfmBounds(instance->local2world,instance->object->bounds);
     }
 
     RTCBoundsFunc2 InstanceBoundsFunc = (RTCBoundsFunc2) InstanceBoundsFunction;
