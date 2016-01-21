@@ -29,12 +29,19 @@ namespace embree
 
     void FastInstanceIntersector1::intersect(const Instance* instance, Ray& ray, size_t item)
     {
+      AffineSpace3fa world2local;
+      if (likely(instance->numTimeSteps == 1)) {
+        world2local = instance->world2local[0];
+      } else {
+        world2local = (1.0f-ray.time)*instance->world2local[0] + ray.time*instance->world2local[1];
+      }
+      
       const Vec3fa ray_org = ray.org;
       const Vec3fa ray_dir = ray.dir;
       const int ray_geomID = ray.geomID;
       const int ray_instID = ray.instID;
-      ray.org = xfmPoint (instance->world2local[0],ray_org);
-      ray.dir = xfmVector(instance->world2local[0],ray_dir);
+      ray.org = xfmPoint (world2local,ray_org);
+      ray.dir = xfmVector(world2local,ray_dir);
       ray.geomID = -1;
       ray.instID = instance->id;
       instance->object->intersect((RTCRay&)ray);
@@ -48,10 +55,16 @@ namespace embree
     
     void FastInstanceIntersector1::occluded (const Instance* instance, Ray& ray, size_t item)
     {
+      AffineSpace3fa world2local;
+      if (likely(instance->numTimeSteps == 1)) {
+        world2local = instance->world2local[0];
+      } else {
+        world2local = (1.0f-ray.time)*instance->world2local[0] + ray.time*instance->world2local[1];
+      }
       const Vec3fa ray_org = ray.org;
       const Vec3fa ray_dir = ray.dir;
-      ray.org = xfmPoint (instance->world2local[0],ray_org);
-      ray.dir = xfmVector(instance->world2local[0],ray_dir);
+      ray.org = xfmPoint (world2local,ray_org);
+      ray.dir = xfmVector(world2local,ray_dir);
       ray.instID = instance->id;
       instance->object->occluded((RTCRay&)ray);
       ray.org = ray_org;
