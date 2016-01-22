@@ -35,8 +35,9 @@ extern "C" void ispcDebug();
 extern "C" RTCScene ispcNewScene (uniform RTCSceneFlags flags, uniform RTCAlgorithmFlags aflags);
 extern "C" RTCScene ispcNewScene2 (RTCDevice device, uniform RTCSceneFlags flags, uniform RTCAlgorithmFlags aflags);
 extern "C" void ispcSetProgressMonitorFunction (RTCScene scene, void* uniform func, void* uniform ptr);
-extern "C" void ispcCommitScene (RTCScene scene);
-extern "C" void ispcCommitSceneThread (RTCScene scene, uniform unsigned int threadID, uniform unsigned int numThreads);
+extern "C" void ispcCommit (RTCScene scene);
+extern "C" void ispcCommitThread (RTCScene scene, uniform unsigned int threadID, uniform unsigned int numThreads);
+extern "C" void ispcGetBounds(RTCScene scene, uniform RTCBounds& bounds_o);
 extern "C" void ispcIntersect1 (RTCScene scene, uniform RTCRay1& ray);
 extern "C" void ispcIntersect4 (void* uniform valid, RTCScene scene, void* uniform ray);
 extern "C" void ispcIntersect8 (void* uniform valid, RTCScene scene, void* uniform ray);
@@ -213,11 +214,15 @@ void rtcSetProgressMonitorFunction(RTCScene scene, uniform RTC_PROGRESS_MONITOR_
 }
 
 void rtcCommit (RTCScene scene) {
-  ispcCommitScene(scene);
+  ispcCommit(scene);
 }
 
 void rtcCommitThread (RTCScene scene, uniform unsigned int threadID, uniform unsigned int numThreads) {
-  ispcCommitSceneThread(scene,threadID,numThreads);
+  ispcCommitThread(scene,threadID,numThreads);
+}
+
+void rtcGetBounds(RTCScene scene, uniform RTCBounds& bounds_o) {
+  ispcGetBounds(scene,bounds_o);
 }
 
 void rtcIntersect1 (RTCScene scene, uniform RTCRay1& ray) {

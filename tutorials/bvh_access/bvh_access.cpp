@@ -238,7 +238,6 @@ namespace embree
     addHair(scene);
     addGroundPlane(scene);
     rtcCommit (scene);
-
     /* print triangle BVH */
     print_bvh(scene);
 
