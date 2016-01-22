@@ -303,9 +303,8 @@ namespace embree
     intersectors.intersector16_filter   = BVH8Triangle4Intersector16HybridMoeller2;
     intersectors.intersector16_nofilter = BVH8Triangle4Intersector16HybridMoellerNoFilter2;
 #endif
-	PING;
-	intersectors.intersectorN_filter = BVH8Triangle4StreamIntersector;
-	intersectors.intersectorN_nofilter = BVH8Triangle4StreamIntersector;
+    intersectors.intersectorN_filter   = BVH8Triangle4StreamIntersector;
+    intersectors.intersectorN_nofilter = BVH8Triangle4StreamIntersector;
     return intersectors;
   }
 
