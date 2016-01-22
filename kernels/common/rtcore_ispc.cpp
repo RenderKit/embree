@@ -100,12 +100,16 @@ namespace embree
     return rtcSetProgressMonitorFunction(scene,(RTCProgressMonitorFunc)func,ptr);
   }
 
-  extern "C" void ispcCommitScene (RTCScene scene) {
+  extern "C" void ispcCommit (RTCScene scene) {
     return rtcCommit(scene);
   }
 
-  extern "C" void ispcCommitSceneThread (RTCScene scene, unsigned int threadID, unsigned int numThreads) {
+  extern "C" void ispcCommitThread (RTCScene scene, unsigned int threadID, unsigned int numThreads) {
     return rtcCommitThread(scene,threadID,numThreads);
+  }
+
+  extern "C" void ispcGetBounds(RTCScene scene, RTCBounds& bounds_o) {
+    rtcGetBounds(scene,bounds_o);
   }
   
   extern "C" void ispcIntersect1 (RTCScene scene, RTCRay& ray) {

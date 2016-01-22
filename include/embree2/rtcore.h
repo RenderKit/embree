@@ -65,6 +65,13 @@ typedef int ssize_t;
 
 /*! \{ */
 
+/*! Axis aligned bounding box representation */
+struct RTCORE_ALIGN(16) RTCBounds
+{
+  float lower_x, lower_y, lower_z, align0;
+  float upper_x, upper_y, upper_z, align1;
+};
+
 /*! \brief Defines an opaque device type */
 typedef struct __RTCDevice {}* RTCDevice;
 

@@ -40,6 +40,13 @@
 
 /*! \{ */
 
+/*! Axis aligned bounding box representation */
+RTCORE_ALIGN(16) struct RTCBounds
+{
+  float lower_x, lower_y, lower_z, align0;
+  float upper_x, upper_y, upper_z, align1;
+};
+
 /*! \brief Defines an opaque device type */
 typedef uniform struct __RTCDevice {}* uniform RTCDevice;
 

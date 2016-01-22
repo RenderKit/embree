@@ -245,6 +245,24 @@ namespace embree
 
     RTCORE_CATCH_END(scene->device);
   }
+
+  RTCORE_API void rtcGetBounds(RTCScene hscene, RTCBounds& bounds_o)
+  {
+    Scene* scene = (Scene*) hscene;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcGetBounds);
+    RTCORE_VERIFY_HANDLE(hscene);
+    if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
+    bounds_o.lower_x = scene->bounds.lower.x;
+    bounds_o.lower_y = scene->bounds.lower.y;
+    bounds_o.lower_z = scene->bounds.lower.z;
+    bounds_o.align0  = 0;
+    bounds_o.upper_x = scene->bounds.upper.x;
+    bounds_o.upper_y = scene->bounds.upper.y;
+    bounds_o.upper_z = scene->bounds.upper.z;
+    bounds_o.align1  = 0;
+    RTCORE_CATCH_END(scene->device);
+  }
   
   RTCORE_API void rtcIntersect (RTCScene hscene, RTCRay& ray) 
   {

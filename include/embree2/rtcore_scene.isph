@@ -83,6 +83,10 @@ void rtcCommit (RTCScene scene);
  *  coprocessor. */
 void rtcCommitThread(RTCScene scene, uniform unsigned int threadID, uniform unsigned int numThreads);
 
+/*! Returns to AABB of the scene. rtcCommit has to get called
+ *  previously to this function. */
+void rtcGetBounds(RTCScene scene, uniform RTCBounds& bounds_o);
+
 /*! Intersects a uniform ray with the scene. This function can only be
  *  called for scenes with the RTC_INTERSECT_UNIFORM flag set. The ray
  *  has to be aligned to 16 bytes. */

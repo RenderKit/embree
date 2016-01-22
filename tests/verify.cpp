@@ -565,7 +565,7 @@ namespace embree
     return mesh;
   }
 
-  unsigned addSphere (const RTCSceneRef& scene, RTCGeometryFlags flag, const Vec3fa& pos, const float r, size_t numPhi, size_t maxTriangles = -1, float motion = 0.0f)
+  unsigned addSphere (const RTCSceneRef& scene, RTCGeometryFlags flag, const Vec3fa& pos, const float r, size_t numPhi, size_t maxTriangles = -1, float motion = 0.0f, BBox3fa* bounds_o = nullptr)
   {
     /* create a triangulated sphere */
     size_t numTheta = 2*numPhi;
@@ -584,6 +584,7 @@ namespace embree
     if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene,mesh); return -1; }
 
     /* create sphere geometry */
+    BBox3fa bounds = empty;
     size_t tri = 0;
     const float rcpNumTheta = 1.0f/float(numTheta);
     const float rcpNumPhi   = 1.0f/float(numPhi);
@@ -598,6 +599,7 @@ namespace embree
         v->x = pos.x + r*sin(phif)*sin(thetaf);
         v->y = pos.y + r*cos(phif);
         v->z = pos.z + r*sin(phif)*cosThetaf;
+        bounds.extend(Vec3fa(v->x,v->y,v->z));
 
         if (vertices1) {
           Vertex3f* v1 = &vertices1[phi*numTheta+theta];
@@ -605,6 +607,7 @@ namespace embree
           v1->x = motion + pos.x + r*sin(phif)*sin(thetaf);
           v1->y = motion + pos.y + r*cos(phif);
           v1->z = motion + pos.z + r*sin(phif)*cosThetaf;
+          bounds.extend(Vec3fa(v1->x,v1->y,v1->z));
         }
       }
       if (phi == 0) continue;
@@ -639,6 +642,8 @@ namespace embree
     //if (numTimeSteps >= 1) rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER0); 
     //if (numTimeSteps >= 2) rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER1); 
     rtcUnmapBuffer(scene,mesh,RTC_INDEX_BUFFER);
+
+    if (bounds_o) *bounds_o = bounds;
     return mesh;
   }
 
@@ -1280,6 +1285,22 @@ namespace embree
     AssertError(RTC_INVALID_OPERATION); // error, buffers still mapped
     scene = nullptr;
     return true;
+  }
+
+  bool rtcore_rtcGetBounds()
+  {
+    ClearBuffers clear_before_return;
+    RTCSceneRef scene = rtcDeviceNewScene(g_device,RTC_SCENE_STATIC,RTC_INTERSECT1);
+    AssertNoError();
+    BBox3fa bounds0;
+    unsigned geom0 = addSphere(scene,RTC_GEOMETRY_STATIC,zero,1.0f,50,-1,0,&bounds0);
+    AssertNoError();
+    rtcCommit (scene);
+    AssertNoError();
+    BBox3fa bounds1;
+    rtcGetBounds(scene,(RTCBounds&)bounds1);
+    scene = nullptr;
+    return bounds0 == bounds1;
   }
 
   bool rtcore_buffer_stride()
@@ -3672,6 +3693,7 @@ namespace embree
     POSITIVE("static_scene",              rtcore_static_scene());
     //POSITIVE("deformable_geometry",       rtcore_deformable_geometry()); // FIXME
     POSITIVE("unmapped_before_commit",    rtcore_unmapped_before_commit());
+    POSITIVE("get_bounds",                rtcore_rtcGetBounds());
 
 #if defined(RTCORE_BUFFER_STRIDE)
     POSITIVE("buffer_stride",             rtcore_buffer_stride());

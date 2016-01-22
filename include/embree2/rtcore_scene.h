@@ -91,6 +91,10 @@ RTCORE_API void rtcCommit (RTCScene scene);
  *  coprocessor. */
 RTCORE_API void rtcCommitThread(RTCScene scene, unsigned int threadID, unsigned int numThreads);
 
+/*! Returns to AABB of the scene. rtcCommit has to get called
+ *  previously to this function. */
+RTCORE_API void rtcGetBounds(RTCScene scene, RTCBounds& bounds_o);
+
 /*! Intersects a single ray with the scene. The ray has to be aligned
  *  to 16 bytes. This function can only be called for scenes with the
  *  RTC_INTERSECT1 flag set. */
