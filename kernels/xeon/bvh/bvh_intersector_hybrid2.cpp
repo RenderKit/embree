@@ -44,6 +44,20 @@ namespace embree
 {
   namespace isa
   {
+	  template<int N, int types, bool robust, typename PrimitiveIntersector>
+	  void BVHNStreamIntersector<N, types, robust, PrimitiveIntersector>::intersect(const size_t numRays, BVH* __restrict__ bvh, void *rays)
+	  {
+		  PING;
+	  }
+
+	  template<int N, int types, bool robust, typename PrimitiveIntersector>
+	  void BVHNStreamIntersector<N, types, robust, PrimitiveIntersector>::occluded(const size_t numRays, BVH* __restrict__ bvh, void *rays)
+	  {
+		  PING;
+	  }
+#if defined(__AVX__)
+	  DEFINE_INTERSECTORN(BVH8Triangle4StreamIntersector, BVHNStreamIntersector<8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<4 COMMA 4 COMMA false> > >);
+#endif
 
 #if 0
     /* two rays traversal + refill */

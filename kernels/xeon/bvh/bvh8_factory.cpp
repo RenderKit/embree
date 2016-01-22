@@ -93,6 +93,7 @@ namespace embree
   DECLARE_SYMBOL2(Accel::Intersector16,BVH8Triangle4Intersector16HybridMoeller2);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH8Triangle4Intersector16HybridMoellerNoFilter2);
 
+  
   DECLARE_SYMBOL2(Accel::Intersector16,BVH8Triangle8Intersector16HybridMoeller);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH8Triangle8Intersector16HybridMoellerNoFilter);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH8Triangle4vMBIntersector16HybridMoeller);
@@ -105,6 +106,8 @@ namespace embree
 
   DECLARE_SYMBOL2(Accel::Intersector16,BVH8Quad4vIntersector16HybridMoeller2);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH8Quad4vIntersector16HybridMoellerNoFilter2);
+
+  DECLARE_SYMBOL2(Accel::IntersectorN, BVH8Triangle4StreamIntersector);
 
   DECLARE_BUILDER2(void,Scene,size_t,BVH8Bezier1vBuilder_OBB_New);
   DECLARE_BUILDER2(void,Scene,size_t,BVH8Bezier1iBuilder_OBB_New);
@@ -202,6 +205,8 @@ namespace embree
     SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Triangle4Intersector8HybridMoeller2);
     SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Triangle4Intersector8HybridMoellerNoFilter2);
 
+	SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Triangle4StreamIntersector);
+
     /* select intersectors16 */
     SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Line4iIntersector16);
     SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Line4iMBIntersector16);
@@ -298,6 +303,9 @@ namespace embree
     intersectors.intersector16_filter   = BVH8Triangle4Intersector16HybridMoeller2;
     intersectors.intersector16_nofilter = BVH8Triangle4Intersector16HybridMoellerNoFilter2;
 #endif
+	PING;
+	intersectors.intersectorN_filter = BVH8Triangle4StreamIntersector;
+	intersectors.intersectorN_nofilter = BVH8Triangle4StreamIntersector;
     return intersectors;
   }
 

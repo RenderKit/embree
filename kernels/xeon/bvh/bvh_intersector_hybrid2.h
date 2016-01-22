@@ -114,6 +114,12 @@ namespace embree
                               const Vec3viK &nearXYZ, 
                               const size_t first) 
       {
+		  nearX = nearXYZ.x[first];
+		  nearY = nearXYZ.y[first];
+		  nearZ = nearXYZ.z[first];
+		  farX  = nearX ^ sizeof(vfloat<8>);
+		  farY  = nearY ^ sizeof(vfloat<8>);
+		  farZ  = nearZ ^ sizeof(vfloat<8>);
 #if defined(__AVX2__)
         const vint<K> id( step );
         const vint<K> id2 = align_shift_right<K/2>(id,id);
@@ -121,12 +127,7 @@ namespace embree
         permX = select(vfloat<K>(rdir.x[first]) >= 0.0f,id,id2);
         permY = select(vfloat<K>(rdir.y[first]) >= 0.0f,id,id2);
         permZ = select(vfloat<K>(rdir.z[first]) >= 0.0f,id,id2);
-        nearX = nearXYZ.x[first];
-        nearY = nearXYZ.y[first];
-        nearZ = nearXYZ.z[first];
-        farX  = nearX ^ sizeof(vfloat<8>);
-        farY  = nearY ^ sizeof(vfloat<8>);
-        farZ  = nearZ ^ sizeof(vfloat<8>);
+ 
 #endif
       }
     };
@@ -422,6 +423,75 @@ namespace embree
           static void intersect(vint<K>* valid, BVH* bvh, RayK<K>& ray);
           static void occluded (vint<K>* valid, BVH* bvh, RayK<K>& ray);
         };
+
+
+		/*! BVH ray stream intersector. */
+		template<int N, int types, bool robust, typename PrimitiveIntersector>
+		class BVHNStreamIntersector
+		{
+			/* shortcuts for frequently used types */
+			typedef typename PrimitiveIntersector::Precalculations Precalculations;
+			typedef typename PrimitiveIntersector::Primitive Primitive;
+			typedef BVHN<N> BVH;
+			typedef typename BVH::NodeRef NodeRef;
+			typedef typename BVH::BaseNode BaseNode;
+			typedef typename BVH::Node Node;
+			typedef typename BVH::NodeMB NodeMB;
+
+			static const size_t stackSizeChunk  = N*BVH::maxDepth+1;
+			static const size_t stackSizeSingle = 1+(N-1)*BVH::maxDepth;
+
+
+
+#if 0
+			static __forceinline vbool<K> loopIntersect( const NodeRef &cur,
+				const unsigned int &m_trav_active,
+				const LoopTraversalPreCompute<K> &prl,
+				const Vec3vfK& rdir,
+				const Vec3vfK& org_rdir, 
+				const vfloat<K> &ray_tnear,
+				const vfloat<K> &ray_tfar,
+				vfloat<K> &dist,
+				vint<K>   &maskK,
+				const vfloat<K> &inf,
+				const vint<K>& shift_one)
+			{
+				const Node* __restrict__ const node = cur.node();
+				STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                                      
+				const vfloat<K> bminX = vfloat<K>(*(vfloat8*)((const char*)&node->lower_x + prl.nearX));
+				const vfloat<K> bminY = vfloat<K>(*(vfloat8*)((const char*)&node->lower_x + prl.nearY));
+				const vfloat<K> bminZ = vfloat<K>(*(vfloat8*)((const char*)&node->lower_x + prl.nearZ));
+				const vfloat<K> bmaxX = vfloat<K>(*(vfloat8*)((const char*)&node->lower_x + prl.farX));
+				const vfloat<K> bmaxY = vfloat<K>(*(vfloat8*)((const char*)&node->lower_x + prl.farY));
+				const vfloat<K> bmaxZ = vfloat<K>(*(vfloat8*)((const char*)&node->lower_x + prl.farZ));
+
+				dist = inf;
+				maskK = vint<K>(zero);
+				size_t bits = m_trav_active;
+				do
+				{
+					STAT3(normal.trav_nodes, 1, 1, 1);
+					const size_t i = __bscf(bits);
+					const vfloat<K> tNearX = msub(bminX, rdir.x[i], org_rdir.x[i]); // optimize loading of 'i
+					const vfloat<K> tNearY = msub(bminY, rdir.y[i], org_rdir.y[i]);
+					const vfloat<K> tNearZ = msub(bminZ, rdir.z[i], org_rdir.z[i]);
+					const vfloat<K> tFarX = msub(bmaxX, rdir.x[i], org_rdir.x[i]);
+					const vfloat<K> tFarY = msub(bmaxY, rdir.y[i], org_rdir.y[i]);
+					const vfloat<K> tFarZ = msub(bmaxZ, rdir.z[i], org_rdir.z[i]);
+					const vint<K> bitmask = vint<K>((int)1 << i);
+					const vfloat<K> tNear = max(tNearX, tNearY, tNearZ, vfloat<K>(ray_tnear[i]));
+					const vfloat<K> tFar = min(tFarX, tFarY, tFarZ, vfloat<K>(ray_tfar[i]));
+					const vbool<K> vmask = tNear <= tFar;
+					dist = select(vmask, min(tNear, dist), dist);
+					maskK = select(vmask, maskK | bitmask, maskK);
+				} while (bits);
+				return dist < inf;
+		  }
+#endif
+		public:
+			static void intersect(size_t numRays, BVH* bvh, void *ray);
+			static void occluded(size_t numRays, BVH* bvh, void *ray);
+		};
 
     }
 
