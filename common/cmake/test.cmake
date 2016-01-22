@@ -54,27 +54,33 @@ IF (BUILD_TESTING)
   ELSE()
     SET(models ${models_small_win32})
   ENDIF()
+
+  IF (WIN32)
+    SET(MY_PROJECT_BINARY_DIR "${PROJECT_BINARY_DIR}/${CMAKE_BUILD_TYPE}")
+  ELSE()
+    SET(MY_PROJECT_BINARY_DIR "${PROJECT_BINARY_DIR}")
+  ENDIF()
   
   MACRO (ADD_EMBREE_MODEL_TEST name reference executable args model)
   
     ADD_TEST(NAME ${name}
-             WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
+             WORKING_DIRECTORY ${MY_PROJECT_BINARY_DIR}
              COMMAND ${PROJECT_SOURCE_DIR}/scripts/invoke_test.py
                      --name ${name}
                      --modeldir ${BUILD_TESTING_MODEL_DIR}
                      --reference ${reference}
                      --model ${model}
-                     --execute ${PROJECT_BINARY_DIR}/${executable} ${args})
+                     --execute ${MY_PROJECT_BINARY_DIR}/${executable} ${args})
                      
     IF (ENABLE_ISPC_SUPPORT AND RTCORE_RAY_PACKETS)
       ADD_TEST(NAME ${name}_ispc
-               WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
+               WORKING_DIRECTORY ${MY_PROJECT_BINARY_DIR}
                COMMAND ${PROJECT_SOURCE_DIR}/scripts/invoke_test.py
                        --name ${name}_ispc
                        --modeldir ${BUILD_TESTING_MODEL_DIR}
                        --reference ${reference}
                        --model ${model}
-                       --execute ${PROJECT_BINARY_DIR}/${executable}_ispc ${args})
+                       --execute ${MY_PROJECT_BINARY_DIR}/${executable}_ispc ${args})
     ENDIF()
   ENDMACRO()
   
