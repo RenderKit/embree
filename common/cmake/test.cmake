@@ -65,7 +65,7 @@ IF (BUILD_TESTING)
   
     ADD_TEST(NAME ${name}
              WORKING_DIRECTORY ${MY_PROJECT_BINARY_DIR}
-             COMMAND ${PROJECT_SOURCE_DIR}/scripts/invoke_test.py
+             COMMAND python ${PROJECT_SOURCE_DIR}/scripts/invoke_test.py
                      --name ${name}
                      --modeldir ${BUILD_TESTING_MODEL_DIR}
                      --reference ${reference}
@@ -75,7 +75,7 @@ IF (BUILD_TESTING)
     IF (ENABLE_ISPC_SUPPORT AND RTCORE_RAY_PACKETS)
       ADD_TEST(NAME ${name}_ispc
                WORKING_DIRECTORY ${MY_PROJECT_BINARY_DIR}
-               COMMAND ${PROJECT_SOURCE_DIR}/scripts/invoke_test.py
+               COMMAND python ${PROJECT_SOURCE_DIR}/scripts/invoke_test.py
                        --name ${name}_ispc
                        --modeldir ${BUILD_TESTING_MODEL_DIR}
                        --reference ${reference}
