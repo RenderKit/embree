@@ -102,15 +102,15 @@ if ret == 0 and model != "":
   if not compareImages(outImageFileTga,refImageFileTga,diffImageFileTga):
     
     if os.path.isfile(outImageFileTga):
-      os.system("convert -quality 10 " + outImageFileTga    + " " + outImageFileJpg)
+      os.system("convert -quality 98 " + outImageFileTga    + " " + outImageFileJpg)
       sys.stdout.write("<DartMeasurementFile name=\"Output\"    type=\"image/jpeg\">" + outImageFileJpg + "</DartMeasurementFile>\n");
       
     if os.path.isfile(refImageFileTga):
-      os.system("convert -quality 10 " + refImageFileTga + " " + refImageFileJpg)
+      os.system("convert -quality 98 " + refImageFileTga + " " + refImageFileJpg)
       sys.stdout.write("<DartMeasurementFile name=\"Reference\" type=\"image/jpeg\">" + refImageFileJpg + "</DartMeasurementFile>\n");
       
     if os.path.isfile(diffImageFileTga):
-      os.system("convert -quality 10 " + diffImageFileTga + " " + diffImageFileJpg)
+      os.system("convert -quality 98 " + diffImageFileTga + " " + diffImageFileJpg)
       sys.stdout.write("<DartMeasurementFile name=\"Difference\" type=\"image/jpeg\">" + diffImageFileJpg + "</DartMeasurementFile>\n");
       
     sys.stdout.write(" [failed] [images differ]\n")
