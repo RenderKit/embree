@@ -19,7 +19,10 @@ set(CTEST_NIGHTLY_START_TIME "01:00:00 UTC")
 
 IF (NOT CTEST_DROP_SITE)
   set(CTEST_DROP_METHOD "http")
-  set(CTEST_DROP_SITE "cdashserver")
+  set(CTEST_DROP_SITE "cdash")
   set(CTEST_DROP_LOCATION "/CDash/submit.php?project=Embree")
   set(CTEST_DROP_SITE_CDASH TRUE)
 endif()
+
+list (APPEND CTEST_CUSTOM_WARNING_EXCEPTION "warning #1478")  # deprecated function used
+list (APPEND CTEST_CUSTOM_WARNING_EXCEPTION "icpc: warning #10237: -lcilkrts linked in dynamically, static library not available")
