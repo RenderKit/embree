@@ -388,7 +388,7 @@ namespace embree
 #endif
 
 #if defined (RTCORE_RAY_PACKETS)
-  RTCORE_API void rtcIntersectN (const size_t N, RTCScene hscene, void* ray) 
+  RTCORE_API void rtcIntersectN (RTCScene hscene, void* rayN, const size_t N, const size_t stride, const size_t flags) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -399,12 +399,12 @@ namespace embree
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
-    if (((size_t)ray ) & 0x3F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 64 bytes");   
+    if (((size_t)rayN ) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 64 bytes");   
 #endif
     //STAT(size_t cnt=0; for (size_t i=0; i<16; i++) cnt += ((int*)valid)[i] == -1;);
     //STAT3(normal.travs,1,cnt,16);
 
-    scene->intersectN(N,ray);
+    scene->intersectN(rayN,N,stride,flags);
 #endif
     RTCORE_CATCH_END(scene->device);
   }
@@ -536,7 +536,7 @@ namespace embree
 
   
 #if defined (RTCORE_RAY_PACKETS)
-  RTCORE_API void rtcOccludedN (const size_t N, RTCScene hscene, void* rayN) 
+  RTCORE_API void rtcOccludedN(RTCScene hscene, void* rayN, const size_t N, const size_t stride, const size_t flags) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -547,12 +547,12 @@ namespace embree
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
-    if (((size_t)rayN ) & 0x3F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 64 bytes");   
+    if (((size_t)rayN ) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 64 bytes");   
 #endif
     //STAT(size_t cnt=0; for (size_t i=0; i<16; i++) cnt += ((int*)valid)[i] == -1;);
     //STAT3(shadow.travs,1,cnt,16);
 
-    scene->occludedN(N,rayN);
+    scene->occludedN(rayN,N,stride,flags);
     
 #endif
     RTCORE_CATCH_END(scene->device);

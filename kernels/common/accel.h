@@ -67,9 +67,11 @@ namespace embree
                                     RTCRay16& ray      /*!< ray packet to intersect */);
 
     /*! Type of intersect function pointer for ray packets of size N. */
-    typedef void (*IntersectFuncN)(const size_t N,    /*!< number of rays in stream */   
-                                   void* ptr,         /*!< pointer to user data */
-                                   void* ray          /*!< ray stream to intersect */);
+    typedef void (*IntersectFuncN)(void* ptr,           /*!< pointer to user data */
+                                   void* ray,           /*!< ray stream to intersect */
+                                   const size_t N,      /*!< number of rays in stream */
+                                   const size_t stride, /*!< stride in bytes */
+                                   const size_t flags   /*!< layout flags */);
     
     
     /*! Type of occlusion function pointer for single rays. */
@@ -92,10 +94,11 @@ namespace embree
                                     RTCRay16& ray      /*!< Ray packet to test occlusion. */);
 
     /*! Type of intersect function pointer for ray packets of size N. */
-    typedef void (*OccludedFuncN)(const size_t N,    /*!< number of rays in stream */   
-                                  void* ptr,         /*!< pointer to user data */
-                                  void* ray          /*!< ray stream to intersect */);
-
+    typedef void (*OccludedFuncN)(void* ptr,           /*!< pointer to user data */
+                                  void* ray,           /*!< ray stream to intersect */
+                                  const size_t N,      /*!< number of rays in stream */
+                                  const size_t stride, /*!< stride in bytes */
+                                  const size_t flags   /*!< layout flags */);
     typedef void (*ErrorFunc) ();
 
     struct Intersector1
@@ -297,9 +300,9 @@ namespace embree
     }
 
     /*! Intersects a packet of N rays in SOA layout with the scene. */
-    __forceinline void intersectN (const size_t N, void* rayN) {
+    __forceinline void intersectN (void* rayN, const size_t N, const size_t stride, const size_t flags) {
       assert(intersectors.intersectorN.intersect);
-      intersectors.intersectorN.intersect(N,intersectors.ptr,rayN);
+      intersectors.intersectorN.intersect(intersectors.ptr,rayN, N, stride, flags);
     }
 
     /*! Tests if single ray is occluded by the scene. */
@@ -327,9 +330,9 @@ namespace embree
     }
 
     /*! Tests if a packet of N rays in SOA layout is occluded by the scene. */
-    __forceinline void occludedN (const size_t N, void* rayN) {
+    __forceinline void occludedN (void* rayN, const size_t N, const size_t stride, const size_t flags) {
       assert(intersectors.intersectorN.occluded);
-      intersectors.intersectorN.occluded(N,intersectors.ptr,rayN);
+      intersectors.intersectorN.occluded(intersectors.ptr,rayN, N, stride, flags);
     }
 
   public:

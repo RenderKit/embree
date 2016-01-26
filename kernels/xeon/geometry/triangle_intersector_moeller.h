@@ -71,6 +71,8 @@ namespace embree
     template<int M>
       struct MoellerTrumboreIntersector1
     {
+      __forceinline MoellerTrumboreIntersector1() {}
+
       __forceinline MoellerTrumboreIntersector1(const Ray& ray, const void* ptr) {}
 
       __forceinline bool intersect(Ray& ray, 
