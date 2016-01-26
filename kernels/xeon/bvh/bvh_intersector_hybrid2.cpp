@@ -64,6 +64,7 @@ namespace embree
         for (;inputRayID<numRays;)
         {
           Ray &ray = *(Ray*)((char*)input_rays + inputRayID * stride);
+          /* skip invalid rays */
           if (unlikely(ray.tnear > ray.tfar)) { inputRayID++; continue; }
 
           const unsigned int octantID = (ray.dir.x < 0.0f ? 1 : 0) + (ray.dir.y < 0.0f ? 2 : 0) + (ray.dir.z < 0.0f ? 4 : 0);
@@ -111,7 +112,7 @@ namespace embree
           ray_ctx[i].org_rdir   = org * ray_ctx[i].rdir;
           ray_ctx[i].rdir.w     = rays[i]->tnear;
           ray_ctx[i].org_rdir.w = rays[i]->tfar;
-          m_active |= rays[i]->tnear <= rays[i]->tfar ? ((size_t)1 << i) : 0;
+          m_active |= rays[i]->tnear <= rays[i]->tfar ? ((size_t)1 << i) : 0; //todo: optimize
           pre[i] = Precalculations(*rays[i],bvh);
         }       
 
@@ -257,6 +258,7 @@ namespace embree
         for (;inputRayID<numRays;)
         {
           Ray &ray = *(Ray*)((char*)input_rays + inputRayID * stride);
+          /* skip invalid rays */
           if (unlikely(ray.tnear > ray.tfar)) { inputRayID++; continue; }
 
           const unsigned int octantID = (ray.dir.x < 0.0f ? 1 : 0) + (ray.dir.y < 0.0f ? 2 : 0) + (ray.dir.z < 0.0f ? 4 : 0);
@@ -304,7 +306,7 @@ namespace embree
           ray_ctx[i].org_rdir   = org * ray_ctx[i].rdir;
           ray_ctx[i].rdir.w     = rays[i]->tnear;
           ray_ctx[i].org_rdir.w = rays[i]->tfar;
-          m_active |= rays[i]->tnear <= rays[i]->tfar ? ((size_t)1 << i) : 0;
+          m_active |= rays[i]->tnear <= rays[i]->tfar ? ((size_t)1 << i) : 0; //todo: optimize
           pre[i] = Precalculations(*rays[i],bvh);
         }       
 
@@ -331,7 +333,7 @@ namespace embree
         while (1) pop:
         {
           /*! pop next node */
-          STAT3(normal.trav_stack_pop,1,1,1);                          
+          STAT3(shadow.trav_stack_pop,1,1,1);                          
           //if (unlikely(stackPtr == stack)) break;
           stackPtr--;
           NodeRef cur = NodeRef(stackPtr->ptr);
@@ -342,7 +344,7 @@ namespace embree
           while (likely(!cur.isLeaf()))
           {
             const Node* __restrict__ const node = cur.node();
-            STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);
+            STAT3(shadow.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);
 
             const vfloat<K> bminX = vfloat<K>(*(vfloat8*)((const char*)&node->lower_x+nearX));
             const vfloat<K> bminY = vfloat<K>(*(vfloat8*)((const char*)&node->lower_x+nearY));
@@ -357,7 +359,7 @@ namespace embree
             size_t bits = m_trav_active;
             do
             {            
-              STAT3(normal.trav_nodes,1,1,1);                          
+              STAT3(shadow.trav_nodes,1,1,1);                          
               const size_t i = __bscf(bits);
               RayContext &ray = ray_ctx[i];
               const vfloat<K> tNearX = msub(bminX, ray.rdir.x, ray.org_rdir.x);
@@ -385,10 +387,10 @@ namespace embree
 
           /*! this is a leaf node */
           assert(cur != BVH::emptyNode);
-          STAT3(normal.trav_leaves, 1, 1, 1);
+          STAT3(shadow.trav_leaves, 1, 1, 1);
           size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
 
-          //STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
+          //STAT3(shadow.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
 
           size_t lazy_node = 0;
           size_t bits = m_trav_active & m_active;
