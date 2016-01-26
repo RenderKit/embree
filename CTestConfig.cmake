@@ -25,4 +25,5 @@ IF (NOT CTEST_DROP_SITE)
 endif()
 
 list (APPEND CTEST_CUSTOM_WARNING_EXCEPTION "warning #1478")  # deprecated function used
-list (APPEND CTEST_CUSTOM_WARNING_EXCEPTION "icpc: warning #10237: -lcilkrts linked in dynamically, static library not available")
+list (APPEND CTEST_CUSTOM_WARNING_EXCEPTION "warning #10237") # -lcilkrts linked in dynamically, static library not available")
+list (APPEND CTEST_CUSTOM_WARNING_EXCEPTION "-Wextern-initializer")
