@@ -60,10 +60,12 @@ namespace embree
       while(1)
       {
         int cur_octant = -1;
-        /* non sorted rays left in stream? */
+        /* sort rays into octants */
         for (;inputRayID<numRays;)
         {
           Ray &ray = *(Ray*)((char*)input_rays + inputRayID * stride);
+          if (unlikely(ray.tnear > ray.tfar)) { inputRayID++; continue; }
+
           const unsigned int octantID = (ray.dir.x < 0.0f ? 1 : 0) + (ray.dir.y < 0.0f ? 2 : 0) + (ray.dir.z < 0.0f ? 4 : 0);
           assert(octantID < 8);
           octants[octantID][rays_in_octant[octantID]++] = &ray;
@@ -118,7 +120,7 @@ namespace embree
         StackItemMaskT<NodeRef>* stackPtr = stack + 2;    //!< current stack pointer
         StackItemMaskT<NodeRef>* stackEnd = stack + stackSizeSingle;
         stack[0].ptr  = BVH::invalidNode;
-        stack[0].mask = 0;
+        stack[0].mask = (unsigned int)-1;
         stack[0].dist = neg_inf;
         stack[1].ptr  = bvh->root;
         stack[1].mask = m_active;
@@ -136,20 +138,14 @@ namespace embree
         while (1) pop:
         {
           /*! pop next node */
+          STAT3(normal.trav_stack_pop,1,1,1);                          
           //if (unlikely(stackPtr == stack)) break;
           stackPtr--;
           NodeRef cur = NodeRef(stackPtr->ptr);
           unsigned int m_trav_active = stackPtr->mask;
-          
-          DBG("pop");
-          DBG(cur);
-          DBG(m_trav_active);
-
-          /*! if popped node is too far, pop next one */
-          //if (unlikely(none(lt(vbool<K>((unsigned int)m_trav_active),vfloat<K>(*(float*)&stackPtr->dist),ray.tfar)))) continue;
+          assert(m_trav_active);
 
           const vfloat<K> inf(pos_inf);
-
           while (likely(!cur.isLeaf()))
           {
             const Node* __restrict__ const node = cur.node();
@@ -203,15 +199,16 @@ namespace embree
 
           size_t lazy_node = 0;
           size_t bits = m_trav_active;
-
+          size_t m_valid_intersection = 0;
           for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) 
           {
             PrimitiveIntersector::intersect(pre[i],*(rays[i]),0,prim,num,bvh->scene,NULL,lazy_node);
+            m_valid_intersection |= rays[i]->tfar < ray_ctx[i].org_rdir.w ? ((size_t)1 << i) : 0;
             ray_ctx[i].org_rdir.w = rays[i]->tfar;
           }
 
 #if 0
-          if (unlikely(m_trav_active & movemask(ray.tfar < ray_tfar)))
+          if (unlikely(m_valid_intersection))
           {
             /* stack compaction */
             StackItemMaskT<NodeRef>* left = stack + 1;
@@ -219,14 +216,21 @@ namespace embree
             {
               /* optimize */
               const vint4 r = *(vint4*)right; 
-              const unsigned int m_valid = right->mask & movemask((vfloat<K>(*(float*)&right->dist) < ray.tfar));
               *(vint4*)left = r;
-              left +=  m_valid ? 1 : 0;
+              unsigned int mask = right->mask;
+              const float dist = *(float*)&right->dist;
+              size_t bits = mask & m_valid_intersection;
+              for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) 
+                if (rays[i]->tfar < dist)
+                {
+                  assert(mask & ((size_t)1 << i));
+                  mask &= ~((size_t)1 << i);
+                }
+              left->mask = mask;
+              left += mask ? 1 : 0;
             }
             stackPtr = left;            
           }
-
-          ray_tfar = min(ray_tfar,ray.tfar);
 #endif
         } // traversal + intersection
 
@@ -238,9 +242,171 @@ namespace embree
     }
 
     template<int N, int types, bool robust, typename PrimitiveIntersector>
-    void BVHNStreamIntersector<N, types, robust, PrimitiveIntersector>::occluded(BVH* __restrict__ bvh, void *_rays, size_t numRays, size_t stride, size_t flags)
+    void BVHNStreamIntersector<N, types, robust, PrimitiveIntersector>::occluded(BVH* __restrict__ bvh, void *input_rays, size_t numRays, size_t stride, size_t flags)
     {
-      
+      __aligned(64) Ray* octants[8][MAX_RAYS_PER_OCTANT];
+      unsigned int rays_in_octant[8];
+
+      for (size_t i=0;i<8;i++) rays_in_octant[i] = 0;
+      size_t inputRayID = 0;
+      DBG(numRays);
+      while(1)
+      {
+        int cur_octant = -1;
+        /* sort rays into octants */
+        for (;inputRayID<numRays;)
+        {
+          Ray &ray = *(Ray*)((char*)input_rays + inputRayID * stride);
+          if (unlikely(ray.tnear > ray.tfar)) { inputRayID++; continue; }
+
+          const unsigned int octantID = (ray.dir.x < 0.0f ? 1 : 0) + (ray.dir.y < 0.0f ? 2 : 0) + (ray.dir.z < 0.0f ? 4 : 0);
+          assert(octantID < 8);
+          octants[octantID][rays_in_octant[octantID]++] = &ray;
+          inputRayID++;
+          if (unlikely(rays_in_octant[octantID] == MAX_RAYS_PER_OCTANT))
+          {
+            cur_octant = octantID;
+            break;
+          }
+        }
+        /* need to flush rays in octant ? */
+        if (unlikely(cur_octant == -1))
+          for (size_t i=0;i<8;i++)
+            if (rays_in_octant[i])
+            {
+              cur_octant = i;
+              break;
+            }
+
+        /* all rays traced ? */
+        if (unlikely(cur_octant == -1))
+          break;
+
+        /* trace rays in current octant */
+        /////////////////////////////////////////////////////////////////////////
+        DBG(cur_octant);
+        DBG(rays_in_octant[cur_octant]);
+
+        Ray** rays = &octants[cur_octant][0];
+        const size_t numOctantRays = rays_in_octant[cur_octant];
+        rays_in_octant[cur_octant] = 0;
+
+        __aligned(64) RayContext ray_ctx[MAX_RAYS_PER_OCTANT];
+
+        Precalculations pre[MAX_RAYS_PER_OCTANT]; 
+
+        size_t m_active = 0;
+        for (size_t i=0;i<numOctantRays;i++)
+        {
+          Vec3fa &org = rays[i]->org;
+          Vec3fa &dir = rays[i]->dir;
+          ray_ctx[i].rdir       = rcp_safe(dir);
+          ray_ctx[i].org_rdir   = org * ray_ctx[i].rdir;
+          ray_ctx[i].rdir.w     = rays[i]->tnear;
+          ray_ctx[i].org_rdir.w = rays[i]->tfar;
+          m_active |= rays[i]->tnear <= rays[i]->tfar ? ((size_t)1 << i) : 0;
+          pre[i] = Precalculations(*rays[i],bvh);
+        }       
+
+
+        StackItemMaskT<NodeRef>  stack[stackSizeSingle];  //!< stack of nodes 
+        StackItemMaskT<NodeRef>* stackPtr = stack + 2;    //!< current stack pointer
+        StackItemMaskT<NodeRef>* stackEnd = stack + stackSizeSingle;
+        stack[0].ptr  = BVH::invalidNode;
+        stack[0].mask = (unsigned int)-1;
+        stack[0].dist = neg_inf;
+        stack[1].ptr  = bvh->root;
+        stack[1].mask = m_active;
+        stack[1].dist = neg_inf;
+ 
+
+        const size_t nearX = (cur_octant & 1) ? 1*sizeof(vfloat<N>) : 0*sizeof(vfloat<N>);
+        const size_t nearY = (cur_octant & 2) ? 3*sizeof(vfloat<N>) : 2*sizeof(vfloat<N>);
+        const size_t nearZ = (cur_octant & 4) ? 5*sizeof(vfloat<N>) : 4*sizeof(vfloat<N>);
+
+        const size_t farX  = nearX ^ sizeof(vfloat<8>);
+        const size_t farY  = nearY ^ sizeof(vfloat<8>);
+        const size_t farZ  = nearZ ^ sizeof(vfloat<8>);
+
+        while (1) pop:
+        {
+          /*! pop next node */
+          STAT3(normal.trav_stack_pop,1,1,1);                          
+          //if (unlikely(stackPtr == stack)) break;
+          stackPtr--;
+          NodeRef cur = NodeRef(stackPtr->ptr);
+          unsigned int m_trav_active = stackPtr->mask & m_active;
+          assert(m_trav_active);
+
+          const vfloat<K> inf(pos_inf);
+          while (likely(!cur.isLeaf()))
+          {
+            const Node* __restrict__ const node = cur.node();
+            STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);
+
+            const vfloat<K> bminX = vfloat<K>(*(vfloat8*)((const char*)&node->lower_x+nearX));
+            const vfloat<K> bminY = vfloat<K>(*(vfloat8*)((const char*)&node->lower_x+nearY));
+            const vfloat<K> bminZ = vfloat<K>(*(vfloat8*)((const char*)&node->lower_x+nearZ));
+            const vfloat<K> bmaxX = vfloat<K>(*(vfloat8*)((const char*)&node->lower_x+farX));
+            const vfloat<K> bmaxY = vfloat<K>(*(vfloat8*)((const char*)&node->lower_x+farY));
+            const vfloat<K> bmaxZ = vfloat<K>(*(vfloat8*)((const char*)&node->lower_x+farZ));
+
+            vfloat<K> dist(inf);
+            vint<K>   maskK(zero);
+
+            size_t bits = m_trav_active;
+            do
+            {            
+              STAT3(normal.trav_nodes,1,1,1);                          
+              const size_t i = __bscf(bits);
+              RayContext &ray = ray_ctx[i];
+              const vfloat<K> tNearX = msub(bminX, ray.rdir.x, ray.org_rdir.x);
+              const vfloat<K> tNearY = msub(bminY, ray.rdir.y, ray.org_rdir.y);
+              const vfloat<K> tNearZ = msub(bminZ, ray.rdir.z, ray.org_rdir.z);
+              const vfloat<K> tFarX  = msub(bmaxX, ray.rdir.x, ray.org_rdir.x);
+              const vfloat<K> tFarY  = msub(bmaxY, ray.rdir.y, ray.org_rdir.y);
+              const vfloat<K> tFarZ  = msub(bmaxZ, ray.rdir.z, ray.org_rdir.z);
+              const vint<K> bitmask  = vint<K>((int)1 << i);
+              const vfloat<K> tNear  = max(tNearX,tNearY,tNearZ,vfloat<K>(ray.rdir.w));
+              const vfloat<K> tFar   = min(tFarX ,tFarY ,tFarZ ,vfloat<K>(ray.org_rdir.w));
+              const vbool<K> vmask   = tNear <= tFar;
+              dist   = select(vmask,min(tNear,dist),dist);
+              maskK = select(vmask,maskK | bitmask,maskK); 
+            } while(bits);              
+            const vbool<K> vmask = dist < inf;
+            if (unlikely(none(vmask))) goto pop;
+
+            m_trav_active = BVHNNodeTraverserKHit<types,K>::traverseAnyHit(cur,movemask(vmask),dist,maskK,stackPtr,stackEnd); 
+
+          }
+          DBG("INTERSECTION");
+
+          if (unlikely(cur == BVH::invalidNode)) break;
+
+          /*! this is a leaf node */
+          assert(cur != BVH::emptyNode);
+          STAT3(normal.trav_leaves, 1, 1, 1);
+          size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
+
+          //STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
+
+          size_t lazy_node = 0;
+          size_t bits = m_trav_active & m_active;
+          size_t m_valid_intersection = 0;
+          for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) 
+            if (PrimitiveIntersector::occluded(pre[i],*(rays[i]),0,prim,num,bvh->scene,NULL,lazy_node))
+            {
+              m_active &= ~((size_t)1 << i);
+              //if (unlikely(m_active == 0)) break;
+            }
+
+          if (unlikely(m_active == 0)) break;
+        } // traversal + intersection
+
+
+        /////////////////////////////////////////////////////////////////////////
+        
+      }      
     }
 
 	  DEFINE_INTERSECTORN(BVH8Triangle4StreamIntersector, BVHNStreamIntersector<8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<4 COMMA 4 COMMA false> > >);

@@ -39,6 +39,8 @@ namespace embree
   { 
   public:
 
+    static const size_t SIZE_HISTOGRAM = 32+1;
+
     /*! constructs stat counter class */
     Stat ();
 
@@ -68,7 +70,7 @@ namespace embree
 	    AtomicCounter trav_leaves;
 	    AtomicCounter trav_prims;
 	    AtomicCounter trav_prim_hits;
-	    AtomicCounter trav_hit_boxes[16+1];
+	    AtomicCounter trav_hit_boxes[SIZE_HISTOGRAM+1];
 	    AtomicCounter trav_stack_pop;
 	    AtomicCounter trav_stack_nodes; 
             AtomicCounter trav_xfm_nodes; 

@@ -401,8 +401,7 @@ namespace embree
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
     if (((size_t)rayN ) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 64 bytes");   
 #endif
-    //STAT(size_t cnt=0; for (size_t i=0; i<16; i++) cnt += ((int*)valid)[i] == -1;);
-    //STAT3(normal.travs,1,cnt,16);
+    STAT3(normal.travs,1,N,N);
 
     scene->intersectN(rayN,N,stride,flags);
 #endif
@@ -549,8 +548,7 @@ namespace embree
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
     if (((size_t)rayN ) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 64 bytes");   
 #endif
-    //STAT(size_t cnt=0; for (size_t i=0; i<16; i++) cnt += ((int*)valid)[i] == -1;);
-    //STAT3(shadow.travs,1,cnt,16);
+    STAT3(shadow.travs,1,N,N);
 
     scene->occludedN(rayN,N,stride,flags);
     
