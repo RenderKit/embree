@@ -175,7 +175,7 @@ namespace embree
               const vfloat<K> tFarY  = msub(bmaxY, ray.rdir.y, ray.org_rdir.y);
               const vfloat<K> tFarZ  = msub(bmaxZ, ray.rdir.z, ray.org_rdir.z);
               const vint<K> bitmask  = vint<K>((int)1 << i);
-              const vfloat<K> tNear  = max(tNearX,tNearY,tNearZ,vfloat<K>(ray.rdir.w));
+              const vfloat<K> tNear  = max(tNearX,tNearY,tNearZ,vfloat<K>(ray.rdir.w)); // todo: max_i
               const vfloat<K> tFar   = min(tFarX ,tFarY ,tFarZ ,vfloat<K>(ray.org_rdir.w));
               const vbool<K> vmask   = tNear <= tFar;
               dist   = select(vmask,min(tNear,dist),dist);
@@ -338,6 +338,8 @@ namespace embree
           stackPtr--;
           NodeRef cur = NodeRef(stackPtr->ptr);
           unsigned int m_trav_active = stackPtr->mask & m_active;
+          if (unlikely(!m_trav_active)) continue;
+
           assert(m_trav_active);
 
           const vfloat<K> inf(pos_inf);
@@ -399,7 +401,7 @@ namespace embree
             if (PrimitiveIntersector::occluded(pre[i],*(rays[i]),0,prim,num,bvh->scene,NULL,lazy_node))
             {
               m_active &= ~((size_t)1 << i);
-              //if (unlikely(m_active == 0)) break;
+              rays[i]->geomID = 0;
             }
 
           if (unlikely(m_active == 0)) break;
