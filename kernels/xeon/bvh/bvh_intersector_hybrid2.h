@@ -425,110 +425,70 @@ namespace embree
         };
 
 
-		/*! BVH ray stream intersector. */
-		template<int N, int types, bool robust, typename PrimitiveIntersector>
-		class BVHNStreamIntersector
-		{
-			/* shortcuts for frequently used types */
-			typedef typename PrimitiveIntersector::Precalculations Precalculations;
-			typedef typename PrimitiveIntersector::Primitive Primitive;
-			typedef BVHN<N> BVH;
-			typedef typename BVH::NodeRef NodeRef;
-			typedef typename BVH::BaseNode BaseNode;
-			typedef typename BVH::Node Node;
-			typedef typename BVH::NodeMB NodeMB;
+      /*! BVH ray stream intersector. */
+      template<int N, int types, bool robust, typename PrimitiveIntersector>
+        class BVHNStreamIntersector
+      {
+        /* shortcuts for frequently used types */
+        typedef typename PrimitiveIntersector::Precalculations Precalculations;
+        typedef typename PrimitiveIntersector::Primitive Primitive;
+        typedef BVHN<N> BVH;
+        typedef typename BVH::NodeRef NodeRef;
+        typedef typename BVH::BaseNode BaseNode;
+        typedef typename BVH::Node Node;
+        typedef typename BVH::NodeMB NodeMB;
 
-			static const size_t stackSizeChunk  = N*BVH::maxDepth+1;
-			static const size_t stackSizeSingle = 1+(N-1)*BVH::maxDepth;
+        static const size_t stackSizeChunk  = N*BVH::maxDepth+1;
+        static const size_t stackSizeSingle = 1+(N-1)*BVH::maxDepth;
+        static const size_t MAX_RAYS_PER_OCTANT = 32;
+        static const size_t K = 8;
 
+        struct RayContext {
+          Vec3fa rdir;      //     rdir.w = tnear;
+          Vec3fa org_rdir;  // org_rdir.w = tfar;
+        };
 
-
-#if 0
-			static __forceinline vbool<K> loopIntersect( const NodeRef &cur,
-				const unsigned int &m_trav_active,
-				const LoopTraversalPreCompute<K> &prl,
-				const Vec3vfK& rdir,
-				const Vec3vfK& org_rdir, 
-				const vfloat<K> &ray_tnear,
-				const vfloat<K> &ray_tfar,
-				vfloat<K> &dist,
-				vint<K>   &maskK,
-				const vfloat<K> &inf,
-				const vint<K>& shift_one)
-			{
-				const Node* __restrict__ const node = cur.node();
-				STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                                      
-				const vfloat<K> bminX = vfloat<K>(*(vfloat8*)((const char*)&node->lower_x + prl.nearX));
-				const vfloat<K> bminY = vfloat<K>(*(vfloat8*)((const char*)&node->lower_x + prl.nearY));
-				const vfloat<K> bminZ = vfloat<K>(*(vfloat8*)((const char*)&node->lower_x + prl.nearZ));
-				const vfloat<K> bmaxX = vfloat<K>(*(vfloat8*)((const char*)&node->lower_x + prl.farX));
-				const vfloat<K> bmaxY = vfloat<K>(*(vfloat8*)((const char*)&node->lower_x + prl.farY));
-				const vfloat<K> bmaxZ = vfloat<K>(*(vfloat8*)((const char*)&node->lower_x + prl.farZ));
-
-				dist = inf;
-				maskK = vint<K>(zero);
-				size_t bits = m_trav_active;
-				do
-				{
-					STAT3(normal.trav_nodes, 1, 1, 1);
-					const size_t i = __bscf(bits);
-					const vfloat<K> tNearX = msub(bminX, rdir.x[i], org_rdir.x[i]); // optimize loading of 'i
-					const vfloat<K> tNearY = msub(bminY, rdir.y[i], org_rdir.y[i]);
-					const vfloat<K> tNearZ = msub(bminZ, rdir.z[i], org_rdir.z[i]);
-					const vfloat<K> tFarX = msub(bmaxX, rdir.x[i], org_rdir.x[i]);
-					const vfloat<K> tFarY = msub(bmaxY, rdir.y[i], org_rdir.y[i]);
-					const vfloat<K> tFarZ = msub(bmaxZ, rdir.z[i], org_rdir.z[i]);
-					const vint<K> bitmask = vint<K>((int)1 << i);
-					const vfloat<K> tNear = max(tNearX, tNearY, tNearZ, vfloat<K>(ray_tnear[i]));
-					const vfloat<K> tFar = min(tFarX, tFarY, tFarZ, vfloat<K>(ray_tfar[i]));
-					const vbool<K> vmask = tNear <= tFar;
-					dist = select(vmask, min(tNear, dist), dist);
-					maskK = select(vmask, maskK | bitmask, maskK);
-				} while (bits);
-				return dist < inf;
-		  }
-#endif
-		public:
-			static void intersect(size_t numRays, BVH* bvh, void *ray);
-			static void occluded(size_t numRays, BVH* bvh, void *ray);
-		};
-
-    }
-
-
-#if 0
-          if (likely(__popcnt(m_trav_active) == 1))
-          {            
-            const size_t rayID = __bsf(m_trav_active);
-            const vfloat<K> rdir_x = rdir.x[rayID];
-            const vfloat<K> rdir_y = rdir.y[rayID];
-            const vfloat<K> rdir_z = rdir.z[rayID];
-            const vfloat<K> org_rdir_x = org_rdir.x[rayID];
-            const vfloat<K> org_rdir_y = org_rdir.y[rayID];
-            const vfloat<K> org_rdir_z = org_rdir.z[rayID];
-            const vfloat<K> tnear      = ray_tnear[rayID];
-            const vfloat<K> tfar       = ray_tfar[rayID];
-            const vint<K> mask16       = one << vint<K>(rayID); 
-            while (likely(!cur.isLeaf()))
-            {
-              STAT3(normal.trav_nodes,1,1,1);                          
-              const Node* __restrict__ const node = cur.node();
-              STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                         
-              const vfloat<K> bminmaxX = permute(vfloat<K>::load((float*)&node->lower_x),permX);
-              const vfloat<K> bminmaxY = permute(vfloat<K>::load((float*)&node->lower_y),permY);
-              const vfloat<K> bminmaxZ = permute(vfloat<K>::load((float*)&node->lower_z),permZ);
-              const vfloat<K> tNearFarX = msub(bminmaxX, rdir_x, org_rdir_x);
-              const vfloat<K> tNearFarY = msub(bminmaxY, rdir_y, org_rdir_y);
-              const vfloat<K> tNearFarZ = msub(bminmaxZ, rdir_z, org_rdir_z);
-              const vfloat<K> tNear     = max(tNearFarX,tNearFarY,tNearFarZ,tnear);
-              const vfloat<K> tFar      = min(tNearFarX,tNearFarY,tNearFarZ,tfar);
-              const vbool<K> vmask      = le(tNear,align_shift_right<8>(tFar,tFar));
-              if (unlikely(none(vmask))) goto pop;
-
-              BVHNNodeTraverserKHit<types,K>::traverseClosestHit(cur,m_trav_active,vmask,tNear,mask16,stackPtr,stackEnd);
-            }          
-          }
-          else
-#endif
+      public:
+        static void intersect(BVH* bvh, void *ray, size_t numRays, size_t stride, size_t flags);
+        static void occluded(BVH* bvh, void *ray, size_t numRays, size_t stride, size_t flags);
+      };
 
   }
+
+
+#if 0
+  if (likely(__popcnt(m_trav_active) == 1))
+  {            
+    const size_t rayID = __bsf(m_trav_active);
+    const vfloat<K> rdir_x = rdir.x[rayID];
+    const vfloat<K> rdir_y = rdir.y[rayID];
+    const vfloat<K> rdir_z = rdir.z[rayID];
+    const vfloat<K> org_rdir_x = org_rdir.x[rayID];
+    const vfloat<K> org_rdir_y = org_rdir.y[rayID];
+    const vfloat<K> org_rdir_z = org_rdir.z[rayID];
+    const vfloat<K> tnear      = ray_tnear[rayID];
+    const vfloat<K> tfar       = ray_tfar[rayID];
+    const vint<K> mask16       = one << vint<K>(rayID); 
+    while (likely(!cur.isLeaf()))
+    {
+      STAT3(normal.trav_nodes,1,1,1);                          
+      const Node* __restrict__ const node = cur.node();
+      STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                         
+      const vfloat<K> bminmaxX = permute(vfloat<K>::load((float*)&node->lower_x),permX);
+      const vfloat<K> bminmaxY = permute(vfloat<K>::load((float*)&node->lower_y),permY);
+      const vfloat<K> bminmaxZ = permute(vfloat<K>::load((float*)&node->lower_z),permZ);
+      const vfloat<K> tNearFarX = msub(bminmaxX, rdir_x, org_rdir_x);
+      const vfloat<K> tNearFarY = msub(bminmaxY, rdir_y, org_rdir_y);
+      const vfloat<K> tNearFarZ = msub(bminmaxZ, rdir_z, org_rdir_z);
+      const vfloat<K> tNear     = max(tNearFarX,tNearFarY,tNearFarZ,tnear);
+      const vfloat<K> tFar      = min(tNearFarX,tNearFarY,tNearFarZ,tfar);
+      const vbool<K> vmask      = le(tNear,align_shift_right<8>(tFar,tFar));
+      if (unlikely(none(vmask))) goto pop;
+
+      BVHNNodeTraverserKHit<types,K>::traverseClosestHit(cur,m_trav_active,vmask,tNear,mask16,stackPtr,stackEnd);
+    }          
+  }
+  else
+#endif
+
+    }
