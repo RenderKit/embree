@@ -15,7 +15,7 @@
 ## ======================================================================== ##
 
 set(CTEST_PROJECT_NAME "Embree")
-set(CTEST_NIGHTLY_START_TIME "01:00:00 UTC")
+set(CTEST_NIGHTLY_START_TIME "00:00:00 UTC")
 
 IF (NOT CTEST_DROP_SITE)
   set(CTEST_DROP_METHOD "http")
