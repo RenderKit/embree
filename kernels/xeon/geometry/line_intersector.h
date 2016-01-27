@@ -289,10 +289,10 @@ namespace embree
           const Vec3fa p1 = p1_i-ray.org;
           if (length(p1-p0) < 1E-5f) return false;
 
-          if (abs(dot(Vec3fa(zero)-p0,normalize_safe(cross(p1-p0,ray.dir)))) > max(r0,r1)) {
-            STAT(Stat::get().user[1]++); 
-            return false;
-          }
+          //if (abs(dot(Vec3fa(zero)-p0,normalize_safe(cross(p1-p0,ray.dir)))) > max(r0,r1)) {
+          //  STAT(Stat::get().user[1]++); 
+          //  return false;
+          //}
 
           //PRINT(length(p1-p0));
           const Vec3fa d = ray.dir;
