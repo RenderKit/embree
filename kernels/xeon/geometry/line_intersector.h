@@ -379,14 +379,14 @@ namespace embree
             const Vec3fa N = cross(p-p0,p1-p0);
             const Vec3fa q0 = p0+r0*normalize(cross(n0,N));
             const Vec3fa q1 = p1+r1*normalize(cross(n1,N));
-            dt = dot(p-q0,normalize(cross(q1-q0,N)));
+            Ng = normalize(cross(q1-q0,N));
+            dt = dot(p-q0,Ng);
             t += dt;
             //if (p == t*d) break;
             p = t*d;
             if (unlikely(dt < t_term)) {
               STAT(Stat::get().user[7]++); 
               u = dot(p-q0,normalize(q1-q0))*rcp_length(q1-q0);
-              Ng = cross(q1-q0,N);
               break;
             }
           }
