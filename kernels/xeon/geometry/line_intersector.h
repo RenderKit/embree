@@ -198,7 +198,7 @@ namespace embree
                                                  float& t1_o)
 
         {
-          const float rl = 1.0f/length(v1-v0);
+          const float rl = rcp_length(v1-v0);
           const Vec3fa P0 = v0, dP = (v1-v0)*rl;
           const float dr = (r1-r0)*rl;
           const Vec3fa O = org-P0, dO = dir;
@@ -218,8 +218,9 @@ namespace embree
           if (D < 0.0f) return false;
           
           const float Q = sqrt(D);
-          t0_o = (-B-Q)/(2.0f*A);
-          t1_o = (-B+Q)/(2.0f*A);
+          const float rcp_2A = rcp(2.0f*A);
+          t0_o = (-B-Q)*rcp_2A;
+          t1_o = (-B+Q)*rcp_2A;
 
           u0_o = (Oz+t0_o*dOz)*rl;
           const Vec3fa Pr = org + t0_o*dir;
@@ -365,12 +366,13 @@ namespace embree
           Vec3fa p = t*d;
           for (size_t i=0;; i++) 
           {
+            //__asm("nop2");
             STAT(Stat::get().user[4]++); 
-            if (i == 20) {
+            if (unlikely(i == 20)) {
               STAT(Stat::get().user[5]++); 
               return false;
             }
-            if (t > tc_upper) {
+            if (unlikely(t > tc_upper)) {
               STAT(Stat::get().user[6]++); 
               break;
             }
@@ -383,7 +385,7 @@ namespace embree
             p = t*d;
             if (unlikely(dt < t_term)) {
               STAT(Stat::get().user[7]++); 
-              u = dot(p-q0,normalize(q1-q0))/length(q1-q0);
+              u = dot(p-q0,normalize(q1-q0))*rcp_length(q1-q0);
               Ng = cross(q1-q0,N);
               break;
             }
@@ -454,7 +456,7 @@ namespace embree
           return epilog(valid1,hit1);
 #endif
 
-#if 1
+#if 0
           Vec3<vfloat<M>> q0(v0.x,v0.y,v0.z);
           Vec3<vfloat<M>> q1(v1.x,v1.y,v1.z);
           Vec3<vfloat<M>> q2(v2.x,v2.y,v2.z);
@@ -602,7 +604,7 @@ namespace embree
 
 #endif
 
-#if 0
+#if 1
           vbool<M> valid_o = false;
           LineIntersectorHitM<M> hit;
 
@@ -615,6 +617,7 @@ namespace embree
           
           for (size_t m=movemask(valid), i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m))
           {
+            //__asm("nop");
             const Vec3fa p1(vp1.x[i],vp1.y[i],vp1.z[i]);
             const Vec3fa p2(vp2.x[i],vp2.y[i],vp2.z[i]);
             const Vec3fa n1(vn1.x[i],vn1.y[i],vn1.z[i]);
