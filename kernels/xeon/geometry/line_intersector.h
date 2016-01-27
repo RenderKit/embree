@@ -345,8 +345,8 @@ namespace embree
             STAT(Stat::get().user[1]++); 
             return false;
           }
-          if (std::isnan(u0) || u0 < 0 || u0 > 1.0f) return false;
 #if 0
+          if (std::isnan(u0) || u0 < 0 || u0 > 1.0f) return false;
           t = tc_lower;
           u = u0;
           Ng = Ng0;
