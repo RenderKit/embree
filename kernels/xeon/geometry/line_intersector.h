@@ -539,12 +539,18 @@ namespace embree
 #endif
 
 #if 1
-          vbool<M> valid = false;
+          vbool<M> valid = valid_i;
+          const Vec3vfM p1(v1.x,v1.y,v1.z);
+          const Vec3vfM p2(v2.x,v2.y,v2.z);
+          valid &= abs(dot(Vec3vfM(ray.org)-p1,normalize_safe(cross(p2-p1,Vec3vfM(ray.dir))))) <= max(v1.w,v2.w);
+          if (none(valid)) return false;
+          
+          vbool<M> valid_o = false;
           LineIntersectorHitM<M> hit;
           
           for (size_t i=0; i<M; i++)
           {
-            if (!valid_i[i]) continue;
+            if (!valid[i]) continue;
             const Vec3fa p0(v0.x[i],v0.y[i],v0.z[i]);
             const Vec3fa p1(v1.x[i],v1.y[i],v1.z[i]);
             const Vec3fa p2(v2.x[i],v2.y[i],v2.z[i]);
@@ -561,10 +567,10 @@ namespace embree
             hit.vNg.x[i] = Ng.x;
             hit.vNg.y[i] = Ng.y;
             hit.vNg.z[i] = Ng.z;
-            valid[i] = 0xFFFFFFFF;
+            valid_o[i] = 0xFFFFFFFF;
           }
-          if (none(valid)) return false;
-          return epilog(valid,hit);
+          if (none(valid_o)) return false;
+          return epilog(valid_o,hit);
 
 #endif
         }
