@@ -276,14 +276,17 @@ namespace embree
                                                        const Vec3fa& p1_i, const Vec3fa& n1, const float r1,
                                                        float& u, float& t, Vec3fa& Ng)
         {
-          /*PRINT(p0_i);
-          PRINT(n0);
-          PRINT(r0);
-          PRINT(p1_i);
-          PRINT(n1);
-          PRINT(r1);*/
+          //PING;
+          //PRINT(p0_i);
+          //PRINT(n0);
+          //PRINT(r0);
+          //PRINT(p1_i);
+          //PRINT(n1);
+          //PRINT(r1);
+          //PRINT(length(p1_i-p0_i));
           const Vec3fa p0 = p0_i-ray.org;
           const Vec3fa p1 = p1_i-ray.org;
+          //PRINT(length(p1-p0));
           const Vec3fa d = ray.dir;
           auto tp0 = intersect_half_plane(zero,d,+n0,p0);
           auto tp1 = intersect_half_plane(zero,d,-n1,p1);
@@ -293,31 +296,53 @@ namespace embree
           float t_term = 0.001f*max(r0,r1);
           const float r01 = max(r0,r1)+t_term;
           float tc_lower,tc_upper;
-          if (!intersect_cone(zero,d,p0,r01,p1,r01,tc_lower,tc_upper))
+          if (!intersect_cone(zero,d,p0,r01,p1,r01,tc_lower,tc_upper)) {
+            //PRINT("missed cone");
             return false;
+          }
 
           tc_lower = max(tc_lower,tp0.first ,tp1.first );
           tc_upper = min(tc_upper,tp0.second,tp1.second);
 
           t = tc_lower; float dt = inf;
           Vec3fa p = t*d;
-          for (size_t i=0; i<200; i++) 
+          for (size_t i=0;; i++) 
           {
+            //std::cout << std::endl;
+            //PRINT(i);
+            if (i == 200) return false;
             if (t > tc_upper) break;
             const Vec3fa N = cross(p-p0,p1-p0);
             const Vec3fa q0 = p0+r0*normalize(cross(n0,N));
             const Vec3fa q1 = p1+r1*normalize(cross(n1,N));
             dt = dot(p-q0,normalize(cross(q1-q0,N)));
+            //PRINT(N);
+            //PRINT(q0);
+            //PRINT(q1);
+            //PRINT(dt);
             t += dt;
+            //if (p == t*d) break;
             p = t*d;
+            //PRINT(t);
+            //PRINT(p);
             if (unlikely(dt < t_term)) {
               u = dot(p-q0,normalize(q1-q0))/length(q1-q0);
               Ng = cross(q1-q0,N);
+              //PRINT(Ng);
+              //PRINT("break2");
+              //if (length(Ng) < 1E-5f) return false;
               break;
             }
           }
+          //if (std::isnan(t)) return false;
+          //PRINT3(t,tc_lower,tc_upper);
+          //PRINT3(t,ray.tnear,ray.tfar);
           if (t < tc_lower  || t > tc_upper) return false;
           if (t < ray.tnear || t > ray.tfar) return false;
+          //PRINT("hit");
+          //PRINT(t);
+          //PRINT(u);
+          //PRINT(Ng);
           return true;
         }
 

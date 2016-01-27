@@ -574,7 +574,7 @@ void renderTile(int taskIndex, int* pixels,
 
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
-    //if (x > 0 || y > 0) continue;
+    //if (!(x == 21 && y == 250)) continue;
     Vec3fa color = renderPixel(x,y,vx,vy,vz,p);
     //PRINT(color);
     //exit(1);
