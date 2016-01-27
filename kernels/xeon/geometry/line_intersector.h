@@ -585,15 +585,20 @@ namespace embree
 #if 1
           vbool<M> valid_o = false;
           LineIntersectorHitM<M> hit;
+
+          const Vec3vfM vp0(v0.x,v0.y,v0.z);
+          const Vec3vfM vp1(v1.x,v1.y,v1.z);
+          const Vec3vfM vp2(v2.x,v2.y,v2.z);
+          const Vec3vfM vp3(v3.x,v3.y,v3.z);
+          const Vec3vfM vn1 = normalize_safe(vp1-vp0) + normalize_safe(vp2-vp1);
+          const Vec3vfM vn2 = normalize_safe(vp2-vp1) + normalize_safe(vp3-vp2);
           
           for (size_t m=movemask(valid), i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m))
           {
-            const Vec3fa p0(v0.x[i],v0.y[i],v0.z[i]);
-            const Vec3fa p1(v1.x[i],v1.y[i],v1.z[i]);
-            const Vec3fa p2(v2.x[i],v2.y[i],v2.z[i]);
-            const Vec3fa p3(v3.x[i],v3.y[i],v3.z[i]);
-            const Vec3fa n1 = normalize_safe(p1-p0) + normalize_safe(p2-p1);
-            const Vec3fa n2 = normalize_safe(p2-p1) + normalize_safe(p3-p2);
+            const Vec3fa p1(vp1.x[i],vp1.y[i],vp1.z[i]);
+            const Vec3fa p2(vp2.x[i],vp2.y[i],vp2.z[i]);
+            const Vec3fa n1(vn1.x[i],vn1.y[i],vn1.z[i]);
+            const Vec3fa n2(vn2.x[i],vn2.y[i],vn2.z[i]);
             float u = 0.0f;
             float t = 0.0f;
             Vec3fa Ng = zero;
