@@ -274,12 +274,13 @@ namespace embree
         static __forceinline float g(const Vec3fa& p,
                                      const Vec3fa& p0, const Vec3fa& n0, const float r0,
                                      const Vec3fa& p1, const Vec3fa& n1, const float r1,
-                                     Vec3fa& q0, Vec3fa& q1)
+                                     Vec3fa& q0, Vec3fa& q1, Vec3fa& Ng)
         {
           const Vec3fa N = cross(p-p0,p1-p0);
           q0 = p0+r0*normalize(cross(n0,N));
           q1 = p1+r1*normalize(cross(n1,N));
-          return  dot(p-q0,normalize(cross(q1-q0,N)));
+          Ng = cross(q1-q0,N);
+          return dot(p-q0,normalize(cross(q1-q0,N)));
           //return length(cross(p-q0,p-q1))/length(q1-q0);
         }
 
@@ -302,51 +303,25 @@ namespace embree
 
           tc_lower = max(tc_lower,tp0.first ,tp1.first );
           tc_upper = min(tc_upper,tp0.second,tp1.second);
-          //PRINT(tc_lower);
-          //PRINT(tc_upper);
 
-          //t = tc_lower;
-          //u = 0.0f;
-          //Ng = Vec3fa(0,1,0);
-          //return true;
-          
-          //const Vec3fa l = p1-p0;
-          //t = max(0.0f,min(tp0,tp1)); float dt = 0.0f;
           t = tc_lower; float dt = inf;
           Vec3fa p = t*d;
           for (size_t i=0; i<200; i++) 
-            //while (t < tc_upper || dt > 0.01f)
           {
             if (t > tc_upper) break;
             if (dt < t_term) break;
-            //std::cout << std::endl;
-            //PRINT(i);
+
             Vec3fa q0,q1;
-            dt = g(p,p0,n0,r0,p1,n1,r1,q0,q1);
-            //const Vec3fa N = cross(p-p0,l);
-            //const Vec3fa q0 = p0+r0*normalize(cross(n0,N));
-            //const Vec3fa q1 = p1+r1*normalize(cross(n1,N));
-            //dt = dot(p-q0,normalize(cross(q1-q0,N)));
-            //dt = length(cross(p-q0,p-q1))/length(q1-q0);
-            //PRINT(N);
-            //PRINT(q0);
-            //PRINT(q1);
-            //PRINT(h);
-            //PRINT(dt);
-            //
+            dt = g(p,p0,n0,r0,p1,n1,r1,q0,q1,Ng);
+
             t += dt;
             p = t*d;
             u = dot(p-q0,normalize(q1-q0))/length(q1-q0);
-            Ng = p-(q0+u*q1);
+            //Ng = p-(q0+u*q1);
           }
-          //PRINT(t);
-          if (t < tc_lower || t > tc_upper) return false;
+          if (t < tc_lower  || t > tc_upper) return false;
           if (t < ray.tnear || t > ray.tfar) return false;
-          //if (t < tp0.first || t > tp0.second) return false;
-          //if (t < tp1.first || t > tp1.second) return false;
-          //PRINT(dt);
-          //if (t > max(tp0,tp1)) return false;
-          return true; //abs(dt) < 0.01f;
+          return true;
         }
 
         template<typename Epilog>
