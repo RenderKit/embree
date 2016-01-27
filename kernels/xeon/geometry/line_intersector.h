@@ -194,7 +194,8 @@ namespace embree
         static __forceinline bool intersect_cone(const Vec3fa& org, const Vec3fa& dir, 
                                                  const Vec3fa& v0, const float r0, 
                                                  const Vec3fa& v1, const float r1,
-                                                 float& t0_o, float& t1_o)
+                                                 float& t0_o, float& u0_o, Vec3fa& Ng0_o,
+                                                 float& t1_o)
 
         {
           const float rl = 1.0f/length(v1-v0);
@@ -219,6 +220,11 @@ namespace embree
           const float Q = sqrt(D);
           t0_o = (-B-Q)/(2.0f*A);
           t1_o = (-B+Q)/(2.0f*A);
+
+          u0_o = (Oz+t0_o*dOz)*rl;
+          const Vec3fa Pr = org + t0_o*dir;
+          const Vec3fa Pl = v0 + u0_o*(v1-v0);
+          Ng0_o = Pr-Pl;
           return true;
         }
 
@@ -334,10 +340,18 @@ namespace embree
           float t_term = 0.001f*max(r0,r1);
           const float r01 = max(r0,r1)+t_term;
           float tc_lower,tc_upper;
-          if (!intersect_cone(zero,d,p0,r01,p1,r01,tc_lower,tc_upper)) {
+          float u0; Vec3fa Ng0;
+          if (!intersect_cone(zero,d,p0,r01,p1,r01,tc_lower,u0,Ng0,tc_upper)) {
             STAT(Stat::get().user[1]++); 
             return false;
           }
+          if (std::isnan(u0) || u0 < 0 || u0 > 1.0f) return false;
+#if 0
+          t = tc_lower;
+          u = u0;
+          Ng = Ng0;
+          return true;
+#endif
            
           tc_lower = max(tc_lower,tp0.first ,tp1.first );
           tc_upper = min(tc_upper,tp0.second,tp1.second);
