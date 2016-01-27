@@ -271,19 +271,6 @@ namespace embree
           return u >= 0.0f && u <= 1.0f;
         }
 
-        static __forceinline float g(const Vec3fa& p,
-                                     const Vec3fa& p0, const Vec3fa& n0, const float r0,
-                                     const Vec3fa& p1, const Vec3fa& n1, const float r1,
-                                     Vec3fa& q0, Vec3fa& q1, Vec3fa& Ng)
-        {
-          const Vec3fa N = cross(p-p0,p1-p0);
-          q0 = p0+r0*normalize(cross(n0,N));
-          q1 = p1+r1*normalize(cross(n1,N));
-          Ng = cross(q1-q0,N);
-          return dot(p-q0,normalize(cross(q1-q0,N)));
-          //return length(cross(p-q0,p-q1))/length(q1-q0);
-        }
-
         static __forceinline bool intersect_iterative2(const Ray& ray,
                                                        const Vec3fa& p0_i, const Vec3fa& n0, const float r0,
                                                        const Vec3fa& p1_i, const Vec3fa& n1, const float r1,
@@ -311,8 +298,11 @@ namespace embree
             if (t > tc_upper) break;
             if (dt < t_term) break;
 
-            Vec3fa q0,q1;
-            dt = g(p,p0,n0,r0,p1,n1,r1,q0,q1,Ng);
+            const Vec3fa N = cross(p-p0,p1-p0);
+            const Vec3fa q0 = p0+r0*normalize(cross(n0,N));
+            const Vec3fa q1 = p1+r1*normalize(cross(n1,N));
+            Ng = cross(q1-q0,N);
+            dt = dot(p-q0,normalize(cross(q1-q0,N)));
 
             t += dt;
             p = t*d;
