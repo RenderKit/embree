@@ -33,9 +33,10 @@ namespace embree
       static __forceinline void intersect(Precalculations& pre, Ray& ray, const Primitive& line, Scene* scene, const unsigned* geomID_to_instID)
       {
         STAT3(normal.trav_prims,1,1,1);
-        //Vec4<vfloat<M>> v0,v1; line.gather(v0,v1,scene);
-        Vec4<vfloat<M>> v0,v1,v2,v3; line.gather(v0,v1,v2,v3,scene);
-        LineIntersector1<Mx>::intersect(ray,pre,line.valid(),v0,v1,v2,v3,Intersect1Epilog<M,Mx,filter>(ray,line.geomIDs,line.primIDs,scene,geomID_to_instID));
+        Vec4<vfloat<M>> v0,v1; line.gather(v0,v1,scene);
+        LineIntersector1<Mx>::intersect(ray,pre,line.valid(),v0,v0,v1,v1,Intersect1Epilog<M,Mx,filter>(ray,line.geomIDs,line.primIDs,scene,geomID_to_instID));
+        //Vec4<vfloat<M>> v0,v1,v2,v3; line.gather(v0,v1,v2,v3,scene);
+        //LineIntersector1<Mx>::intersect(ray,pre,line.valid(),v0,v1,v2,v3,Intersect1Epilog<M,Mx,filter>(ray,line.geomIDs,line.primIDs,scene,geomID_to_instID));
       }
 
       static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Primitive& line, Scene* scene, const unsigned* geomID_to_instID)

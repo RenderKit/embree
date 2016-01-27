@@ -323,10 +323,10 @@ namespace embree
           return u >= 0.0f && u <= 1.0f;
         }
 
-        static __forceinline bool intersect_iterative2(const Ray& ray,
-                                                       const Vec3fa& p0_i, const Vec3fa& n0, const float r0,
-                                                       const Vec3fa& p1_i, const Vec3fa& n1, const float r1,
-                                                       float& u, float& t, Vec3fa& Ng)
+        static __noinline bool intersect_iterative2(const Ray& ray,
+                                                    const Vec3fa& p0_i, const Vec3fa& n0, const float r0,
+                                                    const Vec3fa& p1_i, const Vec3fa& n1, const float r1,
+                                                    float& u, float& t, Vec3fa& Ng)
         {
           STAT(Stat::get().user[0]++); 
 
