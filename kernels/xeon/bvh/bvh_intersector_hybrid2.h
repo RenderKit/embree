@@ -274,7 +274,26 @@ namespace embree
         size_t r = __bscf(mask);
         cur = node->child(r);         
         cur.prefetch(types);
+
         
+#if 1
+        /* simple in order sequence */
+        const unsigned int mm = tMask[r];
+
+        while (mask)
+        {
+          assert(stackPtr < stackEnd);
+          r = __bscf(mask);
+          NodeRef c = node->child(r); 
+          c.prefetch(types); 
+          int m = tMask[r];
+          stackPtr->ptr  = c; 
+          stackPtr->mask = m;
+          stackPtr++;
+          assert(c != BVH::emptyNode);
+        }
+        return mm;
+#else
         if (likely(mask == 0)) {
           assert(cur != BVH::emptyNode);
           return tMask[r];
@@ -322,6 +341,7 @@ namespace embree
         unsigned int mm = stackPtr[-1].mask;
         stackPtr--;
         return mm;
+#endif
       }
 
     };

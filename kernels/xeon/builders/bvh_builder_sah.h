@@ -37,11 +37,12 @@ namespace embree
         
         __forceinline GeneralBuildRecord (const PrimInfo& pinfo, size_t depth, size_t* parent, const Set &prims) 
           : pinfo(pinfo), depth(depth), parent(parent), prims(prims) {}
+
+        __forceinline BBox3fa bounds() const { return pinfo.geomBounds; }
         
         __forceinline friend bool operator< (const GeneralBuildRecord& a, const GeneralBuildRecord& b) { return a.pinfo.size() < b.pinfo.size(); }
-	__forceinline friend bool operator> (const GeneralBuildRecord& a, const GeneralBuildRecord& b) { return a.pinfo.size() > b.pinfo.size(); }
+	__forceinline friend bool operator> (const GeneralBuildRecord& a, const GeneralBuildRecord& b) { return a.pinfo.size() > b.pinfo.size();  }
         
-        __forceinline BBox3fa bounds() const { return pinfo.geomBounds; }
 
         __forceinline size_t size() const { return this->pinfo.size(); }
         
@@ -219,8 +220,8 @@ namespace embree
             
           } while (numChildren < branchingFactor);
           
-          /* sort buildrecords for optimal cache locality */
-          //std::sort(&children[0],&children[numChildren]); // FIXME: reduces traversal performance of bvh8.triangle4 !!
+          /* sort buildrecords for simpler shadow ray traversal */
+          std::sort(&children[0],&children[numChildren]); // FIXME: reduces traversal performance of bvh8.triangle4 (need to verified) !!
           
           /*! create an inner node */
           auto node = createNode(current,children,numChildren,alloc);

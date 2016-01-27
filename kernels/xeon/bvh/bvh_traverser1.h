@@ -558,8 +558,20 @@ namespace embree
 
         /*! one child is hit, continue with that child */
         size_t r = __bscf(mask);
+        cur = node->child(r); 
+        cur.prefetch(types);
+#if 1
+        /* simpler in sequence traversal order */
+        while (mask)
+        {
+          assert(stackPtr < stackEnd);
+          r = __bscf(mask);
+          NodeRef c = node->child(r); c.prefetch(types); *stackPtr = c; stackPtr++;
+          assert(c != BVH::emptyNode);
+        }
+
+#else
         if (likely(mask == 0)) {
-          cur = node->child(r); cur.prefetch(types);
           assert(cur != BVH::emptyNode);
           return;
         }
@@ -598,6 +610,7 @@ namespace embree
           if (unlikely(mask == 0)) break;
         }
         cur = (NodeRef) stackPtr[-1]; stackPtr--;
+#endif
       }
     };
 
