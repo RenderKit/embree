@@ -290,14 +290,18 @@ namespace embree
           const float r01 = max(r0,r1)+t_term;
           float tc_lower,tc_upper;
           if (!intersect_cone(zero,d,p0,r01,p1,r01,tc_lower,tc_upper)) {
+            STAT(Stat::get().user[1]++); 
+            return false;
+          }
+           
+          tc_lower = max(tc_lower,tp0.first ,tp1.first );
+          tc_upper = min(tc_upper,tp0.second,tp1.second);
+          if (tc_lower > tc_upper) {
             STAT(Stat::get().user[2]++); 
             return false;
           }
-          STAT(Stat::get().user[3]++); 
 
-          tc_lower = max(tc_lower,tp0.first ,tp1.first );
-          tc_upper = min(tc_upper,tp0.second,tp1.second);
-
+          STAT(Stat::get().user[3]++);
           t = tc_lower; float dt = inf;
           Vec3fa p = t*d;
           for (size_t i=0;; i++) 
