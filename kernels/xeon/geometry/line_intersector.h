@@ -527,9 +527,8 @@ namespace embree
           vbool<M> valid_o = false;
           LineIntersectorHitM<M> hit;
           
-          for (size_t i=0; i<M; i++)
+          for (size_t m=movemask(valid), i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m))
           {
-            if (!valid[i]) continue;
             const Vec3fa p0(v0.x[i],v0.y[i],v0.z[i]);
             const Vec3fa p1(v1.x[i],v1.y[i],v1.z[i]);
             const Vec3fa p2(v2.x[i],v2.y[i],v2.z[i]);
