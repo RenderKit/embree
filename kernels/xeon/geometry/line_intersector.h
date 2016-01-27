@@ -276,13 +276,21 @@ namespace embree
                                                        const Vec3fa& p1_i, const Vec3fa& n1, const float r1,
                                                        float& u, float& t, Vec3fa& Ng)
         {
+          /*PRINT(p0_i);
+          PRINT(n0);
+          PRINT(r0);
+          PRINT(p1_i);
+          PRINT(n1);
+          PRINT(r1);*/
           const Vec3fa p0 = p0_i-ray.org;
           const Vec3fa p1 = p1_i-ray.org;
           const Vec3fa d = ray.dir;
           auto tp0 = intersect_half_plane(zero,d,+n0,p0);
           auto tp1 = intersect_half_plane(zero,d,-n1,p1);
 
-          float t_term = 0.01f;
+          if (length(p1-p0) < 1E-5f) return false;
+
+          float t_term = 0.001f*max(r0,r1);
           const float r01 = max(r0,r1)+t_term;
           float tc_lower,tc_upper;
           if (!intersect_cone(zero,d,p0,r01,p1,r01,tc_lower,tc_upper))
