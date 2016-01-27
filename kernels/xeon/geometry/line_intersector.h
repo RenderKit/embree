@@ -332,11 +332,8 @@ namespace embree
           const Vec3fa p0 = p0_i-ray.org;
           const Vec3fa p1 = p1_i-ray.org;
           //if (length(p1-p0) < 1E-5f) return false;
-
           const Vec3fa d = ray.dir;
-          auto tp0 = intersect_half_plane(zero,d,+n0,p0);
-          auto tp1 = intersect_half_plane(zero,d,-n1,p1);
-
+         
           float t_term = 0.001f*max(r0,r1);
           const float r01 = max(r0,r1)+t_term;
           float tc_lower,tc_upper;
@@ -352,6 +349,9 @@ namespace embree
           Ng = Ng0;
           return true;
 #endif
+
+          auto tp0 = intersect_half_plane(zero,d,+n0,p0);
+          auto tp1 = intersect_half_plane(zero,d,-n1,p1);
            
           tc_lower = max(tc_lower,tp0.first ,tp1.first );
           tc_upper = min(tc_upper,tp0.second,tp1.second);
