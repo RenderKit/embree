@@ -271,11 +271,14 @@ namespace embree
           return u >= 0.0f && u <= 1.0f;
         }
 
-        static __forceinline bool intersect_iterative2(const Vec3fa& d,
-                                                       const Vec3fa& p0, const Vec3fa& n0, const float r0,
-                                                       const Vec3fa& p1, const Vec3fa& n1, const float r1,
+        static __forceinline bool intersect_iterative2(const Ray& ray,
+                                                       const Vec3fa& p0_i, const Vec3fa& n0, const float r0,
+                                                       const Vec3fa& p1_i, const Vec3fa& n1, const float r1,
                                                        float& u, float& t, Vec3fa& Ng)
         {
+          const Vec3fa p0 = p0_i-ray.org;
+          const Vec3fa p1 = p1_i-ray.org;
+          const Vec3fa d = ray.dir;
           auto tp0 = intersect_half_plane(zero,d,+n0,p0);
           auto tp1 = intersect_half_plane(zero,d,-n1,p1);
 
@@ -323,9 +326,8 @@ namespace embree
             Ng = p-(q0+u*q1);
           }
           //PRINT(t);
-          //PRINT(tc_lower);
-          //PRINT(tc_upper);
           if (t < tc_lower || t > tc_upper) return false;
+          if (t < ray.tnear || t > ray.tfar) return false;
           //if (t < tp0.first || t > tp0.second) return false;
           //if (t < tp1.first || t > tp1.second) return false;
           //PRINT(dt);
@@ -493,7 +495,7 @@ namespace embree
 #if 1
             float t = 0.0f;
             Vec3fa Ng = zero;
-            if (!intersect_iterative2(ray.dir,p1-ray.org,n1,v1.w[i],p2-ray.org,n2,v2.w[i],u,t,Ng)) continue;
+            if (!intersect_iterative2(ray,p1,n1,v1.w[i],p2,n2,v2.w[i],u,t,Ng)) continue;
 #else
             if (!intersect_iterative1(ray.dir,p1-ray.org,n1,v1.w[i],p2-ray.org,n2,v2.w[i],u)) continue;
             const Vec3fa ps = (1.0f-u)*p1 + u*p2;
