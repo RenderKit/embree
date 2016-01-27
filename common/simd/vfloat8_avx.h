@@ -490,7 +490,7 @@ namespace embree
 
 
   ////////////////////////////////////////////////////////////////////////////////
-  /// Euclidian Space Operators
+  /// Euclidian Space Operators (pairs of Vec3fa's)
   ////////////////////////////////////////////////////////////////////////////////
 
   //__forceinline vfloat8 dot ( const vfloat8& a, const vfloat8& b ) {
@@ -509,6 +509,20 @@ namespace embree
     const vfloat8 b1 = b;
     return shuffle<1,2,0,3>(msub(a0,b0,a1*b1));
   }
+
+  //__forceinline float  sqr_length ( const vfloat<8>& a )                { return dot(a,a); }
+  //__forceinline float  rcp_length ( const vfloat<8>& a )                { return rsqrt(dot(a,a)); }
+  //__forceinline float  rcp_length2( const vfloat<8>& a )                { return rcp(dot(a,a)); }
+  //__forceinline float  length   ( const vfloat<8>& a )                  { return sqrt(dot(a,a)); }
+  __forceinline vfloat<8> normalize( const vfloat<8>& a )               { return a*rsqrt(dot(a,a)); }
+  //__forceinline float  distance ( const vfloat<8>& a, const vfloat<8>& b ) { return length(a-b); }
+  //__forceinline float  halfArea ( const vfloat<8>& d )                  { return d.x*(d.y+d.z)+d.y*d.z; }
+  //__forceinline float  area     ( const vfloat<8>& d )                  { return 2.0f*halfArea(d); }
+  //__forceinline vfloat<8> reflect  ( const vfloat<8>& V, const vfloat<8>& N ) { return 2.0f*dot(V,N)*N-V; }
+
+  //__forceinline vfloat<8> normalize_safe( const vfloat<8>& a ) { 
+  //  const float d = dot(a,a); if (unlikely(d == 0.0f)) return a; else return a*rsqrt(d);
+  //}
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Output Operators

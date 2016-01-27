@@ -378,8 +378,18 @@ namespace embree
               break;
             }
             const Vec3fa N = cross(p-p0,p1p0);
+#if defined (__AVX__)
+            const vfloat<8> p0p1 = vfloat<8>(vfloat<4>(p0),vfloat<4>(p1));
+            const vfloat<8> n0n1 = vfloat<8>(vfloat<4>(n0),vfloat<4>(n1));
+            const vfloat<8> r0r1 = vfloat<8>(vfloat<4>(r0),vfloat<4>(r1));
+            const vfloat<8> NN   = vfloat<8>(vfloat<4>(N));
+            const vfloat<8> q0q1 = p0p1 + r0r1*normalize(cross(n0n1,NN));
+            const Vec3fa q0 = (Vec3fa)extract4<0>(q0q1);
+            const Vec3fa q1 = (Vec3fa)extract4<1>(q0q1);
+#else
             const Vec3fa q0 = p0+r0*normalize(cross(n0,N));
             const Vec3fa q1 = p1+r1*normalize(cross(n1,N));
+#endif
             Ng = normalize(cross(q1-q0,N));
             dt = dot(p-q0,Ng);
             t += dt;
