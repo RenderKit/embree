@@ -431,7 +431,7 @@ namespace embree
           return epilog(valid1,hit1);
 #endif
 
-#if 1
+#if 0
           vfloat<M> t1,u1; Vec3<vfloat<M>> Ng1; 
           vbool<M> valid1 = intersect_cylinder(valid,ray,Vec3vfM(v1.x,v1.y,v1.z),Vec3vfM(v2.x,v2.y,v2.z),0.5f*(v0.w+v1.w),t1,u1,Ng1);
           valid1 &= u1 >= 0.0f & u1 <= 1.0f;
@@ -582,7 +582,7 @@ namespace embree
 
 #endif
 
-#if 0
+#if 1
           vbool<M> valid_o = false;
           LineIntersectorHitM<M> hit;
           
