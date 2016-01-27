@@ -277,24 +277,11 @@ namespace embree
                                                        float& u, float& t, Vec3fa& Ng)
         {
           STAT(Stat::get().user[0]++); 
-          //PING;
-          //PRINT(p0_i);
-          //PRINT(n0);
-          //PRINT(r0);
-          //PRINT(p1_i);
-          //PRINT(n1);
-          //PRINT(r1);
-          //PRINT(length(p1_i-p0_i));
+
           const Vec3fa p0 = p0_i-ray.org;
           const Vec3fa p1 = p1_i-ray.org;
           if (length(p1-p0) < 1E-5f) return false;
 
-          //if (abs(dot(Vec3fa(zero)-p0,normalize_safe(cross(p1-p0,ray.dir)))) > max(r0,r1)) {
-          //  STAT(Stat::get().user[1]++); 
-          //  return false;
-          //}
-
-          //PRINT(length(p1-p0));
           const Vec3fa d = ray.dir;
           auto tp0 = intersect_half_plane(zero,d,+n0,p0);
           auto tp1 = intersect_half_plane(zero,d,-n1,p1);
@@ -303,7 +290,6 @@ namespace embree
           const float r01 = max(r0,r1)+t_term;
           float tc_lower,tc_upper;
           if (!intersect_cone(zero,d,p0,r01,p1,r01,tc_lower,tc_upper)) {
-            //PRINT("missed cone");
             STAT(Stat::get().user[2]++); 
             return false;
           }
@@ -317,8 +303,6 @@ namespace embree
           for (size_t i=0;; i++) 
           {
             STAT(Stat::get().user[4]++); 
-            //std::cout << std::endl;
-            //PRINT(i);
             if (i == 20) {
               STAT(Stat::get().user[5]++); 
               return false;
@@ -331,34 +315,19 @@ namespace embree
             const Vec3fa q0 = p0+r0*normalize(cross(n0,N));
             const Vec3fa q1 = p1+r1*normalize(cross(n1,N));
             dt = dot(p-q0,normalize(cross(q1-q0,N)));
-            //PRINT(N);
-            //PRINT(q0);
-            //PRINT(q1);
-            //PRINT(dt);
             t += dt;
             //if (p == t*d) break;
             p = t*d;
-            //PRINT(t);
-            //PRINT(p);
             if (unlikely(dt < t_term)) {
               STAT(Stat::get().user[7]++); 
               u = dot(p-q0,normalize(q1-q0))/length(q1-q0);
               Ng = cross(q1-q0,N);
-              //PRINT(Ng);
-              //PRINT("break2");
-              //if (length(Ng) < 1E-5f) return false;
               break;
             }
           }
           //if (std::isnan(t)) return false;
-          //PRINT3(t,tc_lower,tc_upper);
-          //PRINT3(t,ray.tnear,ray.tfar);
           if (t < tc_lower  || t > tc_upper) return false;
           if (t < ray.tnear || t > ray.tfar) return false;
-          //PRINT("hit");
-          //PRINT(t);
-          //PRINT(u);
-          //PRINT(Ng);
           return true;
         }
 
