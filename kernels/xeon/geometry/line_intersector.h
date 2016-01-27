@@ -276,6 +276,7 @@ namespace embree
                                                        const Vec3fa& p1_i, const Vec3fa& n1, const float r1,
                                                        float& u, float& t, Vec3fa& Ng)
         {
+          STAT(Stat::get().user[0]++); 
           //PING;
           //PRINT(p0_i);
           //PRINT(n0);
@@ -286,20 +287,27 @@ namespace embree
           //PRINT(length(p1_i-p0_i));
           const Vec3fa p0 = p0_i-ray.org;
           const Vec3fa p1 = p1_i-ray.org;
+          if (length(p1-p0) < 1E-5f) return false;
+
+          if (abs(dot(Vec3fa(zero)-p0,normalize_safe(cross(p1-p0,ray.dir)))) > max(r0,r1)) {
+            STAT(Stat::get().user[1]++); 
+            return false;
+          }
+
           //PRINT(length(p1-p0));
           const Vec3fa d = ray.dir;
           auto tp0 = intersect_half_plane(zero,d,+n0,p0);
           auto tp1 = intersect_half_plane(zero,d,-n1,p1);
-
-          if (length(p1-p0) < 1E-5f) return false;
 
           float t_term = 0.001f*max(r0,r1);
           const float r01 = max(r0,r1)+t_term;
           float tc_lower,tc_upper;
           if (!intersect_cone(zero,d,p0,r01,p1,r01,tc_lower,tc_upper)) {
             //PRINT("missed cone");
+            STAT(Stat::get().user[2]++); 
             return false;
           }
+          STAT(Stat::get().user[3]++); 
 
           tc_lower = max(tc_lower,tp0.first ,tp1.first );
           tc_upper = min(tc_upper,tp0.second,tp1.second);
@@ -308,10 +316,17 @@ namespace embree
           Vec3fa p = t*d;
           for (size_t i=0;; i++) 
           {
+            STAT(Stat::get().user[4]++); 
             //std::cout << std::endl;
             //PRINT(i);
-            if (i == 200) return false;
-            if (t > tc_upper) break;
+            if (i == 20) {
+              STAT(Stat::get().user[5]++); 
+              return false;
+            }
+            if (t > tc_upper) {
+              STAT(Stat::get().user[6]++); 
+              break;
+            }
             const Vec3fa N = cross(p-p0,p1-p0);
             const Vec3fa q0 = p0+r0*normalize(cross(n0,N));
             const Vec3fa q1 = p1+r1*normalize(cross(n1,N));
@@ -326,6 +341,7 @@ namespace embree
             //PRINT(t);
             //PRINT(p);
             if (unlikely(dt < t_term)) {
+              STAT(Stat::get().user[7]++); 
               u = dot(p-q0,normalize(q1-q0))/length(q1-q0);
               Ng = cross(q1-q0,N);
               //PRINT(Ng);
