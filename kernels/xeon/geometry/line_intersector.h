@@ -391,8 +391,9 @@ namespace embree
             }
           }
           //if (std::isnan(t)) return false;
-          if (t < tc_lower  || t > tc_upper) return false;
-          if (t < ray.tnear || t > ray.tfar) return false;
+          if (t < max(ray.tnear,tc_lower) || t > min(ray.tfar,tc_upper))
+            return false;
+
           return true;
         }
 
