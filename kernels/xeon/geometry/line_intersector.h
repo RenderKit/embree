@@ -386,7 +386,7 @@ namespace embree
             p = t*d;
             if (unlikely(dt < t_term)) {
               STAT(Stat::get().user[7]++); 
-              u = dot(p-q0,normalize(q1-q0))*rcp_length(q1-q0);
+              u = dot(p-q0,q1-q0)*rcp_length2(q1-q0);
               break;
             }
           }
