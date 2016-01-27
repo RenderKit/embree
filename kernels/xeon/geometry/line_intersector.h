@@ -158,17 +158,16 @@ namespace embree
           return std::make_pair(lower,upper);
         }
 
-        static __forceinline float intersect_half_plane(const Vec3fa& ray_org, const Vec3fa& ray_dir, const Vec3fa& N, const Vec3fa& P)
+        static __forceinline std::pair<float,float> intersect_half_plane(const Vec3fa& ray_org, const Vec3fa& ray_dir, const Vec3fa& N, const Vec3fa& P)
         {
           Vec3fa O = Vec3fa(ray_org) - P;
           Vec3fa D = Vec3fa(ray_dir);
           float ON = dot(O,N);
           float DN = dot(D,N);
           float t = -ON*rcp(DN);
-          return t;
-          //float lower = select(DN < 0.0f, float(neg_inf), t);
-          //float upper = select(DN < 0.0f, t, float(pos_inf));
-          //return std::make_pair(lower,upper);
+          float lower = select(DN < 0.0f, float(neg_inf), t);
+          float upper = select(DN < 0.0f, t, float(pos_inf));
+          return std::make_pair(lower,upper);
         }
 
         static __forceinline Vec3fa distributator(const Vec3fa& A, const Vec3fa& B, const Vec3fa& C) {
@@ -246,8 +245,8 @@ namespace embree
                                                        const Vec3fa& p1, const Vec3fa& n1, const float r1,
                                                        float& u, float& t, Vec3fa& Ng)
         {
-          float tp0 = intersect_half_plane(zero,d,+n0,p0);
-          float tp1 = intersect_half_plane(zero,d,-n1,p1);
+          auto tp0 = intersect_half_plane(zero,d,+n0,p0);
+          auto tp1 = intersect_half_plane(zero,d,-n1,p1);
 
           const Vec3fa l = p1-p0;
           //t = max(0.0f,min(tp0,tp1)); float dt = 0.0f;
@@ -255,18 +254,30 @@ namespace embree
           Vec3fa p = zero;
           for (size_t i=0; i<20; i++) 
           {
+            //std::cout << std::endl;
+            //PRINT(i);
             const Vec3fa N = cross(p-p0,l);
             const Vec3fa q0 = p0+r0*normalize(cross(n0,N));
             const Vec3fa q1 = p1+r1*normalize(cross(n1,N));
             const Vec3fa h = normalize(cross(q1-q0,N));
             dt = dot(p-q0,h);
+            //PRINT(N);
+            //PRINT(q0);
+            //PRINT(q1);
+            //PRINT(h);
+            //PRINT(dt);
             //dt = length(cross(p-q0,p-q1))/length(q1-q0);
             t += dt;
             p = t*d;
             u = dot(p-q0,normalize(q1-q0));
             Ng = p-(q0+u*q1);
           }
-          if (t < min(tp0,tp1) || t > max(tp0,tp1)) return false;
+          //PRINT(t);
+          //PRINT(tp0);
+          //PRINT(tp1);
+          if (t < tp0.first || t > tp0.second) return false;
+          if (t < tp1.first || t > tp1.second) return false;
+          //PRINT(dt);
           //if (t > max(tp0,tp1)) return false;
           return abs(dt) < 0.01f;
         }
@@ -426,7 +437,6 @@ namespace embree
             const Vec3fa p2(v2.x[i],v2.y[i],v2.z[i]);
             const Vec3fa p3(v3.x[i],v3.y[i],v3.z[i]);
             const Vec3fa n1 = normalize_safe(p1-p0) + normalize_safe(p2-p1);
-            //Vec3fa n1 = normalize(Vec3fa(1.0,0.1,0));
             const Vec3fa n2 = normalize_safe(p2-p1) + normalize_safe(p3-p2);
             float u = 0.0f;
 #if 1
