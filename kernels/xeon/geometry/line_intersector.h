@@ -296,18 +296,17 @@ namespace embree
           for (size_t i=0; i<200; i++) 
           {
             if (t > tc_upper) break;
-            if (dt < t_term) break;
-
             const Vec3fa N = cross(p-p0,p1-p0);
             const Vec3fa q0 = p0+r0*normalize(cross(n0,N));
             const Vec3fa q1 = p1+r1*normalize(cross(n1,N));
-            Ng = cross(q1-q0,N);
             dt = dot(p-q0,normalize(cross(q1-q0,N)));
-
             t += dt;
             p = t*d;
-            u = dot(p-q0,normalize(q1-q0))/length(q1-q0);
-            //Ng = p-(q0+u*q1);
+            if (unlikely(dt < t_term)) {
+              u = dot(p-q0,normalize(q1-q0))/length(q1-q0);
+              Ng = cross(q1-q0,N);
+              break;
+            }
           }
           if (t < tc_lower  || t > tc_upper) return false;
           if (t < ray.tnear || t > ray.tfar) return false;
