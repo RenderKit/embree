@@ -505,6 +505,39 @@ namespace embree
 
 #endif
 
+#if 0
+          vbool<M> valid = false;
+          LineIntersectorHitM<M> hit;
+          
+          for (size_t i=0; i<M; i++)
+          {
+            if (!valid_i[i]) continue;
+            const Vec3fa p0(v0.x[i],v0.y[i],v0.z[i]);
+            const Vec3fa p1(v1.x[i],v1.y[i],v1.z[i]);
+            const Vec3fa p2(v2.x[i],v2.y[i],v2.z[i]);
+            const Vec3fa p3(v3.x[i],v3.y[i],v3.z[i]);
+            const Vec3fa n1 = normalize_safe(p1-p0) + normalize_safe(p2-p1);
+            const Vec3fa n2 = normalize_safe(p2-p1) + normalize_safe(p3-p2);
+            float u = 0.0f;
+            if (!intersect_iterative1(ray.dir,p1-ray.org,n1,v1.w[i],p2-ray.org,n2,v2.w[i],u)) continue;
+            const Vec3fa ps = (1.0f-u)*p1 + u*p2;
+            const Vec3fa ns = (1.0f-u)*n1 + u*n2;
+            const float t = dot(ps-ray.org,ns)/dot(ray.dir,ns);
+            const Vec3fa os = ray.org+t*ray.dir;
+            const Vec3fa Ng = os-ps;
+            hit.vu[i] = u;
+            hit.vv[i] = 0.0f;
+            hit.vt[i] = t;
+            hit.vNg.x[i] = Ng.x;
+            hit.vNg.y[i] = Ng.y;
+            hit.vNg.z[i] = Ng.z;
+            valid[i] = 0xFFFFFFFF;
+          }
+          if (none(valid)) return false;
+          return epilog(valid,hit);
+
+#endif
+
 #if 1
           vbool<M> valid = false;
           LineIntersectorHitM<M> hit;
@@ -519,18 +552,9 @@ namespace embree
             const Vec3fa n1 = normalize_safe(p1-p0) + normalize_safe(p2-p1);
             const Vec3fa n2 = normalize_safe(p2-p1) + normalize_safe(p3-p2);
             float u = 0.0f;
-#if 1
             float t = 0.0f;
             Vec3fa Ng = zero;
             if (!intersect_iterative2(ray,p1,n1,v1.w[i],p2,n2,v2.w[i],u,t,Ng)) continue;
-#else
-            if (!intersect_iterative1(ray.dir,p1-ray.org,n1,v1.w[i],p2-ray.org,n2,v2.w[i],u)) continue;
-            const Vec3fa ps = (1.0f-u)*p1 + u*p2;
-            const Vec3fa ns = (1.0f-u)*n1 + u*n2;
-            const float t = dot(ps-ray.org,ns)/dot(ray.dir,ns);
-            const Vec3fa os = ray.org+t*ray.dir;
-            const Vec3fa Ng = os-ps;
-#endif
             hit.vu[i] = u;
             hit.vv[i] = 0.0f;
             hit.vt[i] = t;
