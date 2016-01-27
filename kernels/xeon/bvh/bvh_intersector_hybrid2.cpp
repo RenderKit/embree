@@ -41,6 +41,8 @@
 #define BLANK  
 // DBG(std::cout << std::endl)
 
+// todo: permute = 2 x broadcast + mask
+
 namespace embree
 {
   namespace isa
@@ -175,11 +177,19 @@ namespace embree
               const vfloat<K> tFarY  = msub(bmaxY, ray.rdir.y, ray.org_rdir.y);
               const vfloat<K> tFarZ  = msub(bmaxZ, ray.rdir.z, ray.org_rdir.z);
               const vint<K> bitmask  = vint<K>((int)1 << i);
-              const vfloat<K> tNear  = max(tNearX,tNearY,tNearZ,vfloat<K>(ray.rdir.w)); // todo: max_i
+#if defined(__AVX2__)
+              const vfloat<K> tNear  = maxi(maxi(tNearX,tNearY),maxi(tNearZ,vfloat<K>(ray.rdir.w)));
+              const vfloat<K> tFar   = mini(mini(tFarX,tFarY),mini(tFarZ,vfloat<K>(ray.org_rdir.w)));
+              const vbool<K> vmask   = asInt(tNear) <= asInt(tFar);
+              dist   = select(vmask,mini(tNear,dist),dist);
+              maskK = maskK | (bitmask & vint<K>((__m256i)vmask));
+#else
+              const vfloat<K> tNear  = max(tNearX,tNearY,tNearZ,vfloat<K>(ray.rdir.w));
               const vfloat<K> tFar   = min(tFarX ,tFarY ,tFarZ ,vfloat<K>(ray.org_rdir.w));
               const vbool<K> vmask   = tNear <= tFar;
               dist   = select(vmask,min(tNear,dist),dist);
               maskK = select(vmask,maskK | bitmask,maskK); 
+#endif
             } while(bits);              
             const vbool<K> vmask = dist < inf;
             if (unlikely(none(vmask))) goto pop;
@@ -219,6 +229,8 @@ namespace embree
               const vint4 r = *(vint4*)right; 
               *(vint4*)left = r;
               unsigned int mask = right->mask;
+              //if (unlikely(right->ptr.isLeaf()))
+              {
               const float dist = *(float*)&right->dist;
               size_t bits = mask & m_valid_intersection;
               for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) 
@@ -227,6 +239,7 @@ namespace embree
                   assert(mask & ((size_t)1 << i));
                   mask &= ~((size_t)1 << i);
                 }
+              }
               left->mask = mask;
               left += mask ? 1 : 0;
             }
@@ -371,11 +384,22 @@ namespace embree
               const vfloat<K> tFarY  = msub(bmaxY, ray.rdir.y, ray.org_rdir.y);
               const vfloat<K> tFarZ  = msub(bmaxZ, ray.rdir.z, ray.org_rdir.z);
               const vint<K> bitmask  = vint<K>((int)1 << i);
+#if defined(__AVX2__)
+              const vfloat<K> tNear  = maxi(maxi(tNearX,tNearY),maxi(tNearZ,vfloat<K>(ray.rdir.w)));
+              const vfloat<K> tFar   = mini(mini(tFarX,tFarY),mini(tFarZ,vfloat<K>(ray.org_rdir.w)));
+              const vbool<K> vmask   = asInt(tNear) <= asInt(tFar);
+              //dist   = select(vmask,dist,mini(tNear,dist));
+              //maskK = select(vmask,maskK,maskK | bitmask); 
+              dist   = select(vmask,mini(tNear,dist),dist);
+              //maskK = select(vmask,maskK | bitmask,maskK); 
+              maskK = maskK | (bitmask & vint<K>((__m256i)vmask));
+#else
               const vfloat<K> tNear  = max(tNearX,tNearY,tNearZ,vfloat<K>(ray.rdir.w));
               const vfloat<K> tFar   = min(tFarX ,tFarY ,tFarZ ,vfloat<K>(ray.org_rdir.w));
               const vbool<K> vmask   = tNear <= tFar;
               dist   = select(vmask,min(tNear,dist),dist);
               maskK = select(vmask,maskK | bitmask,maskK); 
+#endif
             } while(bits);              
             const vbool<K> vmask = dist < inf;
             if (unlikely(none(vmask))) goto pop;
