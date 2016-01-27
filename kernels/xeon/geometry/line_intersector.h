@@ -148,6 +148,49 @@ namespace embree
           return valid;
         }
 
+         static __forceinline vbool<M> intersect_cylinder(vbool<M> valid, 
+                                                          Ray& ray, const Vec3vfM& v0, const Vec3vfM& v1, const vfloat<M>& R,
+                                                          vfloat<M>& t_o,
+                                                          vfloat<M>& u_o,
+                                                          Vec3<vfloat<M>>& Ng_o)
+        {
+          const vfloat<M> rl = rcp_length(v1-v0);
+          const Vec3<vfloat<M>> dP = (v1-v0)*rl;
+          const Vec3<vfloat<M>> O = Vec3<vfloat<M>>(ray.org)-v0, dO = ray.dir;
+          
+          const vfloat<M> dOdO = dot(dO,dO);
+          const vfloat<M> OdO = dot(dO,O);
+          const vfloat<M> OO = dot(O,O);
+          const vfloat<M> dOz = dot(dP,dO);
+          const vfloat<M> Oz = dot(dP,O);
+
+          const vfloat<M> A = dOdO - sqr(dOz);
+          const vfloat<M> B = 2.0f * (OdO - dOz*Oz);
+          const vfloat<M> C = OO - (sqr(Oz) + sqr(R));
+          
+          const vfloat<M> D = B*B - 4.0f*A*C;
+          valid &= D >= 0.0f;
+          if (none(valid)) return false;
+          
+          const vfloat<M> Q = sqrt(D);
+          //const vfloat<M> t0 = (-B-Q)*rcp2A;
+          //const vfloat<M> t1 = (-B+Q)*rcp2A;
+          const vfloat<M> t0 = (-B-Q)/(2.0f*A);
+          const vfloat<M> u0 = Oz+t0*dOz;
+          const vfloat<M> t = t0;
+          const vfloat<M> u = u0*rl;
+          //valid &= (ray.tnear < t) & (t < ray.tfar);// & (0.0f <= u) & (u <= 1.0f); 
+          //if (unlikely(none(valid))) return false;
+          
+          /* update hit information */
+          const Vec3<vfloat<M>> Pr = Vec3<vfloat<M>>(ray.org) + t*Vec3<vfloat<M>>(ray.dir);
+          const Vec3<vfloat<M>> Pl = v0 + u*(v1-v0);
+          t_o = t;
+          u_o = u;
+          Ng_o = Pr-Pl;
+          return valid;
+        }
+
         static __forceinline bool intersect_cone(const Vec3fa& org, const Vec3fa& dir, 
                                                  const Vec3fa& v0, const float r0, 
                                                  const Vec3fa& v1, const float r1,
@@ -379,9 +422,18 @@ namespace embree
           return epilog(valid,hit);
 #endif
 
-#if 1
+#if 0
           vfloat<M> t1,u1; Vec3<vfloat<M>> Ng1; 
           vbool<M> valid1 = intersect_cone(valid,ray,v1,v2,t1,u1,Ng1);
+          valid1 &= u1 >= 0.0f & u1 <= 1.0f;
+          if (none(valid1)) return false;
+          LineIntersectorHitM<M> hit1(u1,zero,t1,Ng1);
+          return epilog(valid1,hit1);
+#endif
+
+#if 1
+          vfloat<M> t1,u1; Vec3<vfloat<M>> Ng1; 
+          vbool<M> valid1 = intersect_cylinder(valid,ray,Vec3vfM(v1.x,v1.y,v1.z),Vec3vfM(v2.x,v2.y,v2.z),0.5f*(v0.w+v1.w),t1,u1,Ng1);
           valid1 &= u1 >= 0.0f & u1 <= 1.0f;
           if (none(valid1)) return false;
           LineIntersectorHitM<M> hit1(u1,zero,t1,Ng1);
