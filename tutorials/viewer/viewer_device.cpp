@@ -635,7 +635,7 @@ extern "C" void device_render (int* pixels,
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   launch_renderTile(numTilesX*numTilesY,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); 
-  rtcDebug();
+  //rtcDebug();
 }
 
 /* called by the C++ code for cleanup */

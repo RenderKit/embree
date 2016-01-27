@@ -107,6 +107,8 @@ namespace embree
           Vec3<vfloat<M>> a3(v0.x,v0.y,v0.z);
           Vec3<vfloat<M>> b3(v1.x,v1.y,v1.z);
 
+          //valid &= length(b3-a3) > 1E-5f;
+
           const vfloat<M> rl = rcp_length(b3-a3);
           const Vec3<vfloat<M>> P0 = a3, dP = (b3-a3)*rl;
           const vfloat<M> r0 = a.w, dr = (b.w-a.w)*rl;
@@ -377,9 +379,10 @@ namespace embree
           return epilog(valid,hit);
 #endif
 
-#if 0
+#if 1
           vfloat<M> t1,u1; Vec3<vfloat<M>> Ng1; 
           vbool<M> valid1 = intersect_cone(valid,ray,v1,v2,t1,u1,Ng1);
+          valid1 &= u1 >= 0.0f & u1 <= 1.0f;
           if (none(valid1)) return false;
           LineIntersectorHitM<M> hit1(u1,zero,t1,Ng1);
           return epilog(valid1,hit1);
@@ -527,7 +530,7 @@ namespace embree
 
 #endif
 
-#if 1
+#if 0
           vbool<M> valid_o = false;
           LineIntersectorHitM<M> hit;
           
