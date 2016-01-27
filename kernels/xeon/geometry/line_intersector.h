@@ -336,6 +336,14 @@ namespace embree
                                             const vbool<M>& valid_i, const Vec4vfM& v0, const Vec4vfM& v1, const Vec4vfM& v2, const Vec4vfM& v3, 
                                             const Epilog& epilog)
         {
+          vbool<M> valid = valid_i;
+#if 1
+          const Vec3vfM Q1(v1.x,v1.y,v1.z);
+          const Vec3vfM Q2(v2.x,v2.y,v2.z);
+          valid &= abs(dot(Vec3vfM(ray.org)-Q1,normalize_safe(cross(Q2-Q1,Vec3vfM(ray.dir))))) <= max(v1.w,v2.w);
+          if (none(valid)) return false;
+#endif
+
 #if 0
           /* transform end points into ray space */
           Vec4vfM p0(xfmVector(pre.ray_space,v1.xyz()-Vec3vfM(ray.org)), v1.w);
@@ -352,7 +360,7 @@ namespace embree
           const vfloat<M> d2 = p.x*p.x + p.y*p.y;
           const vfloat<M> r = p.w;
           const vfloat<M> r2 = r*r;
-          vbool<M> valid = valid_i & d2 <= r2 & vfloat<M>(ray.tnear) < t & t < vfloat<M>(ray.tfar);
+          valid &= d2 <= r2 & vfloat<M>(ray.tnear) < t & t < vfloat<M>(ray.tfar);
           if (unlikely(none(valid))) return false;
           
           /* ignore denormalized segments */
@@ -366,6 +374,14 @@ namespace embree
 #endif
 
 #if 0
+          vfloat<M> t1,u1; Vec3<vfloat<M>> Ng1; 
+          vbool<M> valid1 = intersect_cone(valid,ray,v1,v2,t1,u1,Ng1);
+          if (none(valid1)) return false;
+          LineIntersectorHitM<M> hit1(u1,zero,t1,Ng1);
+          return epilog(valid1,hit1);
+#endif
+
+#if 0
           Vec3<vfloat<M>> q0(v0.x,v0.y,v0.z);
           Vec3<vfloat<M>> q1(v1.x,v1.y,v1.z);
           Vec3<vfloat<M>> q2(v2.x,v2.y,v2.z);
@@ -374,10 +390,10 @@ namespace embree
           auto Hl = normalize_safe(q1-q0) + normalize_safe(q2-q1);
           auto Hr = normalize_safe(q1-q2) + normalize_safe(q2-q3);
           
-          vfloat<M> t1,u1; Vec3<vfloat<M>> Ng1; vbool<M> valid1 = intersect_cone(valid_i,ray,v1,v2,t1,u1,Ng1);
+          vfloat<M> t1,u1; Vec3<vfloat<M>> Ng1; vbool<M> valid1 = intersect_cone(valid,ray,v1,v2,t1,u1,Ng1);
           valid1 &= (ray.tnear < t1) & (t1 < ray.tfar);
 
-          vfloat<M> tl,ul; Vec3<vfloat<M>> Ngl; vbool<M> validl = intersect_sphere(valid_i,ray,v1,tl,Ngl); ul = 0.0f;
+          vfloat<M> tl,ul; Vec3<vfloat<M>> Ngl; vbool<M> validl = intersect_sphere(valid,ray,v1,tl,Ngl); ul = 0.0f;
           auto left = u1 < 0.0f;
           valid1 = select(left,validl,valid1);
           t1 = select(left, tl, t1);
@@ -386,7 +402,7 @@ namespace embree
           Ng1.y = select(left, Ngl.y, Ng1.y);
           Ng1.z = select(left, Ngl.z, Ng1.z);
 
-          vfloat<M> tr,ur; Vec3<vfloat<M>> Ngr; vbool<M> validr = intersect_sphere(valid_i,ray,v2,tr,Ngr); ur = 1.0f;
+          vfloat<M> tr,ur; Vec3<vfloat<M>> Ngr; vbool<M> validr = intersect_sphere(valid,ray,v2,tr,Ngr); ur = 1.0f;
           auto right = u1 > 1.0f;
           valid1 = select(right,validr,valid1);
           t1 = select(right, tr, t1);
@@ -423,30 +439,30 @@ namespace embree
           auto tpr0 = intersect_half_plane(ray,Hr,q2);
           auto tpr1 = intersect_half_plane(ray,q2-q1,q2);
 
-          vfloat<M> tl,ul; Vec3<vfloat<M>> Ngl; vbool<M> validl = intersect_sphere(valid_i,ray,v1,tl,Ngl); ul = 0.0f;
+          vfloat<M> tl,ul; Vec3<vfloat<M>> Ngl; vbool<M> validl = intersect_sphere(valid,ray,v1,tl,Ngl); ul = 0.0f;
           validl &= max(tpl0.first,tpl1.first) <= tl & tl <= min(tpl0.second,tpl1.second);
 
-          //vfloat<M> t0,u0; Vec3<vfloat<M>> Ng0; vbool<M> valid0 = intersect_cone(valid_i,ray,v0,v1,t0,u0,Ng0);
+          //vfloat<M> t0,u0; Vec3<vfloat<M>> Ng0; vbool<M> valid0 = intersect_cone(valid,ray,v0,v1,t0,u0,Ng0);
           //valid0 &= (0.0f <= u0) & (u0 <= 1.0f);
-          vfloat<M> t1,u1; Vec3<vfloat<M>> Ng1; vbool<M> valid1 = intersect_cone(valid_i,ray,v1,v2,t1,u1,Ng1);
+          vfloat<M> t1,u1; Vec3<vfloat<M>> Ng1; vbool<M> valid1 = intersect_cone(valid,ray,v1,v2,t1,u1,Ng1);
           valid1 &= (0.0f <= u1) & (u1 <= 1.0f);
-          //vfloat<M> t2,u2; Vec3<vfloat<M>> Ng2; vbool<M> valid2 = intersect_cone(valid_i,ray,v2,v3,t2,u2,Ng2);
+          //vfloat<M> t2,u2; Vec3<vfloat<M>> Ng2; vbool<M> valid2 = intersect_cone(valid,ray,v2,v3,t2,u2,Ng2);
           //valid2 &= (0.0f <= u2) & (u2 <= 1.0f);
 
           //valid1 &= !valid0 | (t0 > t1);
           //valid1 &= !valid2 | (t2 > t1);
           valid1 &= (ray.tnear < t1) & (t1 < ray.tfar);
 
-          vfloat<M> tr,ur; Vec3<vfloat<M>> Ngr; vbool<M> validr = intersect_sphere(valid_i,ray,v2,tr,Ngr); ur = 1.0f;
+          vfloat<M> tr,ur; Vec3<vfloat<M>> Ngr; vbool<M> validr = intersect_sphere(valid,ray,v2,tr,Ngr); ur = 1.0f;
           validr &= max(tpr0.first,tpr1.first) <= tr & tr <= min(tpr0.second,tpr1.second);
 
           //if (none(validr)) return false;
           //LineIntersectorHitM<M> hitr(ur,zero,tr,Ngr);
           //return epilog(validr,hitr);
 
-          vbool<M> valid;
+          vbool<M> validk;
           vfloat<M> t,u; Vec3<vfloat<M>> Ng;
-          valid = valid1; t = select(valid1,t1,float(inf)); u = u1; Ng = Ng1;
+          validk = valid1; t = select(valid1,t1,float(inf)); u = u1; Ng = Ng1;
 
           vbool<M> va = !valid1 & validl & (tl < t);
           t = select(va, tl, t);
@@ -465,22 +481,22 @@ namespace embree
           Ng.z = select(va, Ngl.z, Ng.z);
           Ng.z = select(vb, Ngr.z, Ng.z);
 
-          valid = select(va, validl, valid);
-          valid = select(vb, validr, valid);
-          if (none(valid)) return false;
+          validk = select(va, validl, validk);
+          validk = select(vb, validr, validk);
+          if (none(validk)) return false;
           
           LineIntersectorHitM<M> hit(u,zero,t,Ng);
-          return epilog(valid,hit);
+          return epilog(validk,hit);
 
 #endif
 
 #if 0
-          vbool<M> valid = false;
+          vbool<M> valid_o = false;
           LineIntersectorHitM<M> hit;
           
           for (size_t i=0; i<M; i++)
           {
-            if (!valid_i[i]) continue;
+            if (!valid[i]) continue;
             const Vec3fa p0(v0.x[i],v0.y[i],v0.z[i]);
             const Vec3fa p1(v1.x[i],v1.y[i],v1.z[i]);
             const Vec3fa p2(v2.x[i],v2.y[i],v2.z[i]);
@@ -500,20 +516,14 @@ namespace embree
             hit.vNg.x[i] = Ng.x;
             hit.vNg.y[i] = Ng.y;
             hit.vNg.z[i] = Ng.z;
-            valid[i] = 0xFFFFFFFF;
+            valid_o[i] = 0xFFFFFFFF;
           }
-          if (none(valid)) return false;
-          return epilog(valid,hit);
+          if (none(valid_o)) return false;
+          return epilog(valid_o,hit);
 
 #endif
 
 #if 1
-          vbool<M> valid = valid_i;
-          const Vec3vfM p1(v1.x,v1.y,v1.z);
-          const Vec3vfM p2(v2.x,v2.y,v2.z);
-          valid &= abs(dot(Vec3vfM(ray.org)-p1,normalize_safe(cross(p2-p1,Vec3vfM(ray.dir))))) <= max(v1.w,v2.w);
-          if (none(valid)) return false;
-          
           vbool<M> valid_o = false;
           LineIntersectorHitM<M> hit;
           
@@ -540,7 +550,6 @@ namespace embree
           }
           if (none(valid_o)) return false;
           return epilog(valid_o,hit);
-
 #endif
         }
       };
