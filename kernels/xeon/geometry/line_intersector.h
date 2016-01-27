@@ -146,6 +146,37 @@ namespace embree
           return valid;
         }
 
+        static __forceinline bool intersect_cone(const Vec3fa& org, const Vec3fa& dir, 
+                                                 const Vec3fa& v0, const float r0, 
+                                                 const Vec3fa& v1, const float r1,
+                                                 float& t0_o, float& t1_o)
+
+        {
+          const float rl = 1.0f/length(v1-v0);
+          const Vec3fa P0 = v0, dP = (v1-v0)*rl;
+          const float dr = (r1-r0)*rl;
+          const Vec3fa O = org-P0, dO = dir;
+          
+          const float dOdO = dot(dO,dO);
+          const float OdO = dot(dO,O);
+          const float OO = dot(O,O);
+          const float dOz = dot(dP,dO);
+          const float Oz = dot(dP,O);
+
+          const float R = r0 + Oz*dr;          
+          const float A = dOdO - sqr(dOz) * (1.0f+sqr(dr));
+          const float B = 2.0f * (OdO - dOz*(Oz + R*dr));
+          const float C = OO - (sqr(Oz) + sqr(R));
+          
+          const float D = B*B - 4.0f*A*C;
+          if (D < 0.0f) return false;
+          
+          const float Q = sqrt(D);
+          t0_o = (-B-Q)/(2.0f*A);
+          t1_o = (-B+Q)/(2.0f*A);
+          return true;
+        }
+
         static __forceinline std::pair<vfloat<M>,vfloat<M>> intersect_half_plane(Ray& ray, const Vec3<vfloat<M>>& N, const Vec3<vfloat<M>>& P)
         {
           Vec3<vfloat<M>> O = Vec3<vfloat<M>>(ray.org) - P;
@@ -248,12 +279,28 @@ namespace embree
           auto tp0 = intersect_half_plane(zero,d,+n0,p0);
           auto tp1 = intersect_half_plane(zero,d,-n1,p1);
 
+          const float r01 = max(r0,r1);
+          float tc_lower,tc_upper;
+          if (!intersect_cone(zero,d,p0,r01,p1,r01,tc_lower,tc_upper))
+            return false;
+
+          tc_lower = max(tc_lower,tp0.first ,tp1.first );
+          tc_upper = min(tc_upper,tp0.second,tp1.second);
+
+          //t = tc_lower;
+          //u = 0.0f;
+          //Ng = Vec3fa(0,1,0);
+          //return true;
+          
           const Vec3fa l = p1-p0;
           //t = max(0.0f,min(tp0,tp1)); float dt = 0.0f;
-          t = 0.0f; float dt = 0.0f;
-          Vec3fa p = zero;
-          for (size_t i=0; i<20; i++) 
+          t = tc_lower; float dt = inf;
+          Vec3fa p = t*d;
+          for (size_t i=0; i<200; i++) 
+            //while (t < tc_upper || dt > 0.01f)
           {
+            if (t > tc_upper) break;
+            if (dt < 0.01f) break;
             //std::cout << std::endl;
             //PRINT(i);
             const Vec3fa N = cross(p-p0,l);
@@ -275,11 +322,12 @@ namespace embree
           //PRINT(t);
           //PRINT(tp0);
           //PRINT(tp1);
-          if (t < tp0.first || t > tp0.second) return false;
-          if (t < tp1.first || t > tp1.second) return false;
+          if (t < tc_lower || t > tc_upper) return false;
+          //if (t < tp0.first || t > tp0.second) return false;
+          //if (t < tp1.first || t > tp1.second) return false;
           //PRINT(dt);
           //if (t > max(tp0,tp1)) return false;
-          return abs(dt) < 0.01f;
+          return true; //abs(dt) < 0.01f;
         }
 
         template<typename Epilog>
