@@ -454,7 +454,7 @@ namespace embree
           return epilog(valid1,hit1);
 #endif
 
-#if 0
+#if 1
           Vec3<vfloat<M>> q0(v0.x,v0.y,v0.z);
           Vec3<vfloat<M>> q1(v1.x,v1.y,v1.z);
           Vec3<vfloat<M>> q2(v2.x,v2.y,v2.z);
@@ -466,23 +466,29 @@ namespace embree
           vfloat<M> t1,u1; Vec3<vfloat<M>> Ng1; vbool<M> valid1 = intersect_cone(valid,ray,v1,v2,t1,u1,Ng1);
           valid1 &= (ray.tnear < t1) & (t1 < ray.tfar);
 
-          vfloat<M> tl,ul; Vec3<vfloat<M>> Ngl; vbool<M> validl = intersect_sphere(valid,ray,v1,tl,Ngl); ul = 0.0f;
-          auto left = u1 < 0.0f;
-          valid1 = select(left,validl,valid1);
-          t1 = select(left, tl, t1);
-          u1 = select(left, ul, u1);
-          Ng1.x = select(left, Ngl.x, Ng1.x);
-          Ng1.y = select(left, Ngl.y, Ng1.y);
-          Ng1.z = select(left, Ngl.z, Ng1.z);
+          //if (unlikely(any(valid,v1.w != v2.w | u1*length(q2-q1) < v1.w)))
+          {
+            vfloat<M> tl,ul; Vec3<vfloat<M>> Ngl; vbool<M> validl = intersect_sphere(valid,ray,v1,tl,Ngl); ul = 0.0f;
+            auto left = u1 < 0.0f;
+            valid1 = select(left,validl,valid1);
+            t1 = select(left, tl, t1);
+            u1 = select(left, ul, u1);
+            Ng1.x = select(left, Ngl.x, Ng1.x);
+            Ng1.y = select(left, Ngl.y, Ng1.y);
+            Ng1.z = select(left, Ngl.z, Ng1.z);
+          }
 
-          vfloat<M> tr,ur; Vec3<vfloat<M>> Ngr; vbool<M> validr = intersect_sphere(valid,ray,v2,tr,Ngr); ur = 1.0f;
-          auto right = u1 > 1.0f;
-          valid1 = select(right,validr,valid1);
-          t1 = select(right, tr, t1);
-          u1 = select(right, ur, u1);
-          Ng1.x = select(right, Ngr.x, Ng1.x);
-          Ng1.y = select(right, Ngr.y, Ng1.y);
-          Ng1.z = select(right, Ngr.z, Ng1.z);
+          //if (unlikely(any(valid,v1.w != v2.w | (1.0f-u1)*length(q2-q1) < v1.w)))
+          {
+            vfloat<M> tr,ur; Vec3<vfloat<M>> Ngr; vbool<M> validr = intersect_sphere(valid,ray,v2,tr,Ngr); ur = 1.0f;
+            auto right = u1 > 1.0f;
+            valid1 = select(right,validr,valid1);
+            t1 = select(right, tr, t1);
+            u1 = select(right, ur, u1);
+            Ng1.x = select(right, Ngr.x, Ng1.x);
+            Ng1.y = select(right, Ngr.y, Ng1.y);
+            Ng1.z = select(right, Ngr.z, Ng1.z);
+          }
 
           auto thl = intersect_half_plane(ray,Hl,q1);
           valid1 &= thl.first <= t1 & t1 <= thl.second;
@@ -596,7 +602,7 @@ namespace embree
 
 #endif
 
-#if 1
+#if 0
           vbool<M> valid_o = false;
           LineIntersectorHitM<M> hit;
 
