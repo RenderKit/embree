@@ -364,6 +364,7 @@ namespace embree
           STAT(Stat::get().user[3]++);
           t = tc_lower; float dt = inf;
           Vec3fa p = t*d;
+          const Vec3fa p1p0 = p1-p0;
           for (size_t i=0;; i++) 
           {
             //__asm("nop2");
@@ -376,7 +377,7 @@ namespace embree
               STAT(Stat::get().user[6]++); 
               break;
             }
-            const Vec3fa N = cross(p-p0,p1-p0);
+            const Vec3fa N = cross(p-p0,p1p0);
             const Vec3fa q0 = p0+r0*normalize(cross(n0,N));
             const Vec3fa q1 = p1+r1*normalize(cross(n1,N));
             Ng = normalize(cross(q1-q0,N));
