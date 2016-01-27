@@ -322,7 +322,7 @@ namespace embree
             //dt = length(cross(p-q0,p-q1))/length(q1-q0);
             t += dt;
             p = t*d;
-            u = dot(p-q0,normalize(q1-q0));
+            u = dot(p-q0,normalize(q1-q0))/length(q1-q0);
             Ng = p-(q0+u*q1);
           }
           //PRINT(t);
