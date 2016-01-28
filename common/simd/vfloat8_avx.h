@@ -406,6 +406,20 @@ namespace embree
     return vfloat8::broadcast(&a[k]);
   }
 
+#if defined(__AVX2__)
+  __forceinline vfloat8 shift_right_1( const vfloat8& x) {
+    return align_shift_right<1>(vfloat8(zero),x);
+  }
+#else
+  __forceinline vfloat8 shift_right_1( const vfloat8& x) 
+  {
+    __m256 t0 = _mm256_permute_ps(x,0x39);
+    __m256 t1 = _mm256_permute2f128_ps(t0,t0,0x81);
+    __m256 y  = _mm256_blend_ps(t0,t1,0x88);
+    return y;
+  }
+#endif
+
   ////////////////////////////////////////////////////////////////////////////////
   /// Transpose
   ////////////////////////////////////////////////////////////////////////////////

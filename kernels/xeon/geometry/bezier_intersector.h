@@ -87,13 +87,12 @@ namespace embree
           /* evaluate the bezier curve */
           vboolx valid = vintx(i)+vintx(step) < vintx(N);
           const Vec4vfx p  = curve2D.eval0(valid,i,N);
-          const Vec4vfx p1  = curve2D.eval1(valid,i,N); // FIXME: optimize away
           const Vec4vfx dp = curve2D.derivative(valid,i,N);
 
           /* early exit */
           const Vec3vfx Q1(p.x,p.y,p.z);
-          const Vec3vfx Q2(p1.x,p1.y,p1.z);
-          valid &= abs(dot(Vec3vfx(ray.org)-Q1,normalize_safe(cross(Q2-Q1,Vec3vfx(ray.dir))))) <= max(p.w,p1.w);
+          const Vec3vfx Q2(shift_right_1(p.x),shift_right_1(p.y),shift_right_1(p.z));
+          valid &= abs(dot(Vec3vfx(ray.org)-Q1,normalize_safe(cross(Q2-Q1,Vec3vfx(ray.dir))))) <= max(p.w,shift_right_1(p.w));
           if (none(valid)) continue;
          
           /* intersect each bezier segment */
@@ -118,7 +117,7 @@ namespace embree
             hit.vNg.x[j] = Ng.x;
             hit.vNg.y[j] = Ng.y;
             hit.vNg.z[j] = Ng.z;
-            valid_o[j] = 0xFFFFFFFF;
+            set(valid_o,j);
           }
           
           /* update hit information */

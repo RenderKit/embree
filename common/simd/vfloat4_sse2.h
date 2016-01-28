@@ -409,6 +409,10 @@ namespace embree
     return vfloat4::broadcast(&a[k]);
   }
 
+  __forceinline vfloat4 shift_right_1( const vfloat4& x) {
+    return _mm_castsi128_ps(_mm_srli_si128(_mm_castps_si128(x), 4)); 
+  }
+
 #if defined (__AVX2__)
   __forceinline vfloat4 permute(const vfloat4 &a, const __m128i &index) {
     return _mm_permutevar_ps(a,index);

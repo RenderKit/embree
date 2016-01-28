@@ -675,7 +675,7 @@ namespace embree
             hit.vNg.x[i] = Ng.x;
             hit.vNg.y[i] = Ng.y;
             hit.vNg.z[i] = Ng.z;
-            valid_o[i] = 0xFFFFFFFF;
+            set(valid_o,i);
           }
           if (none(valid_o)) return false;
           return epilog(valid_o,hit);
@@ -710,7 +710,7 @@ namespace embree
             hit.vNg.x[i] = Ng.x;
             hit.vNg.y[i] = Ng.y;
             hit.vNg.z[i] = Ng.z;
-            valid_o[i] = 0xFFFFFFFF;
+            set(valid_o,i);
           }
           if (none(valid_o)) return false;
           return epilog(valid_o,hit);
