@@ -191,17 +191,22 @@ namespace embree
           return valid;
         }
 
-        static __forceinline bool intersect_cone(const Vec3fa& org, const Vec3fa& dir, 
-                                                 const Vec3fa& v0, const float r0, 
-                                                 const Vec3fa& v1, const float r1,
+        static __forceinline bool intersect_cone(const Vec3fa& org_i, const Vec3fa& dir, 
+                                                 const Vec3fa& v0_i, const float r0, 
+                                                 const Vec3fa& v1_i, const float r1,
                                                  float& t0_o, float& u0_o, Vec3fa& Ng0_o,
                                                  float& t1_o)
 
         {
+          const float tb = length(0.5f*(v0_i+v1_i)-org_i);
+          const Vec3fa org = org_i+tb*dir;
+          const Vec3fa v0 = v0_i-org;
+          const Vec3fa v1 = v1_i-org;
+
           const float rl = rcp_length(v1-v0);
           const Vec3fa P0 = v0, dP = (v1-v0)*rl;
           const float dr = (r1-r0)*rl;
-          const Vec3fa O = org-P0, dO = dir;
+          const Vec3fa O = -P0, dO = dir;
           
           const float dOdO = dot(dO,dO);
           const float OdO = dot(dO,O);
@@ -223,9 +228,11 @@ namespace embree
           t1_o = (-B+Q)*rcp_2A;
 
           u0_o = (Oz+t0_o*dOz)*rl;
-          const Vec3fa Pr = org + t0_o*dir;
+          const Vec3fa Pr = t0_o*dir;
           const Vec3fa Pl = v0 + u0_o*(v1-v0);
           Ng0_o = Pr-Pl;
+          t0_o += tb;
+          t1_o += tb;
           return true;
         }
 
@@ -339,11 +346,11 @@ namespace embree
           const float r01 = max(r0,r1)+t_term;
           float tc_lower,tc_upper;
           float u0; Vec3fa Ng0;
-          if (!intersect_cone(zero,d,p0,r01,p1,r01,tc_lower,u0,Ng0,tc_upper)) {
+          if (!intersect_cone(ray.org,d,p0_i,r01,p1_i,r01,tc_lower,u0,Ng0,tc_upper)) {
             STAT(Stat::get().user[1]++); 
             return false;
           }
-#if 0
+#if 1
           if (std::isnan(u0) || u0 < 0 || u0 > 1.0f) return false;
           t = tc_lower;
           u = u0;
