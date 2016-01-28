@@ -198,7 +198,7 @@ namespace embree
                                                  float& t1_o)
 
         {
-          const float tb = length(0.5f*(v0_i+v1_i)-org_i);
+          const float tb = dot(0.5f*(v0_i+v1_i)-org_i,normalize(dir));
           const Vec3fa org = org_i+tb*dir;
           const Vec3fa v0 = v0_i-org;
           const Vec3fa v1 = v1_i-org;
@@ -351,7 +351,7 @@ namespace embree
             return false;
           }
 #if 1
-          if (std::isnan(u0) || u0 < 0 || u0 > 1.0f) return false;
+          if (std::isnan(u0) || u0 < 0 || u0 > 1.0f || tc_lower < ray.tnear || tc_lower > ray.tfar) return false;
           t = tc_lower;
           u = u0;
           Ng = Ng0;
