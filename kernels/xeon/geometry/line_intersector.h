@@ -138,7 +138,7 @@ namespace embree
       const Vec3fa p1 = p1_i-org;
       
       float t_term = 0.0001f*max(r0,r1);
-      float t_err = 0.001f*max(r0,r1);
+      float t_err = 0.0001f*max(r0,r1);
       const float r01 = max(r0,r1)+t_err;
       float tc_lower,tc_upper;
       Vec3fa Ng0;
