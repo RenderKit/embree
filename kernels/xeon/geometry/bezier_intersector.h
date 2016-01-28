@@ -86,16 +86,16 @@ namespace embree
           /* evaluate the bezier curve */
           vboolx valid = vintx(i)+vintx(step) < vintx(N);
           const Vec4vfx p  = curve2D.eval0(valid,i,N);
-          const Vec4vfx p1  = curve2D.eval0(valid,i,N); // FIXME: optimize away
+          const Vec4vfx p1  = curve2D.eval1(valid,i,N); // FIXME: optimize away
           const Vec4vfx dp_ = curve2D.derivative(valid,i,N);
           const Vec3vfx dp = normalize(Vec3vfx(dp_.x,dp_.y,dp_.z));
 
           /* early exit */
-          /*const Vec3vfx Q1(p.x,p.y,p.z);
+          const Vec3vfx Q1(p.x,p.y,p.z);
           const Vec3vfx Q2(p1.x,p1.y,p1.z);
           valid &= abs(dot(Vec3vfx(ray.org)-Q1,normalize_safe(cross(Q2-Q1,Vec3vfx(ray.dir))))) <= max(p.w,p1.w);
-          if (none(valid)) continue;*/
-          
+          if (none(valid)) continue;
+         
           /* intersect each bezier segment */
           vboolx valid_o = false;
           LineIntersectorHitM<VSIZEX> hit;
