@@ -38,7 +38,7 @@ namespace embree
     static __forceinline bool intersect_cone(const Vec3fa& org_i, const Vec3fa& dir, 
                                              const Vec3fa& v0_i, const float r0, 
                                              const Vec3fa& v1_i, const float r1,
-                                             float& t0_o, float& u0_o, Vec3fa& Ng0_o,
+                                             float& t0_o, //float& u0_o, Vec3fa& Ng0_o,
                                              float& t1_o)
       
     {
@@ -71,10 +71,10 @@ namespace embree
       t0_o = (-B-Q)*rcp_2A;
       t1_o = (-B+Q)*rcp_2A;
       
-      u0_o = (Oz+t0_o*dOz)*rl;
-      const Vec3fa Pr = t0_o*dir;
-      const Vec3fa Pl = v0 + u0_o*(v1-v0);
-      Ng0_o = Pr-Pl;
+      //u0_o = (Oz+t0_o*dOz)*rl;
+      //const Vec3fa Pr = t0_o*dir;
+      //const Vec3fa Pl = v0 + u0_o*(v1-v0);
+      //Ng0_o = Pr-Pl;
       t0_o += tb;
       t1_o += tb;
       return true;
@@ -95,8 +95,8 @@ namespace embree
       float t_term = 0.001f*max(r0,r1);
       const float r01 = max(r0,r1)+t_term;
       float tc_lower,tc_upper;
-      float u0; Vec3fa Ng0;
-      if (!intersect_cone(ray.org,d,p0_i,r01,p1_i,r01,tc_lower,u0,Ng0,tc_upper)) {
+      //float u0; Vec3fa Ng0;
+      if (!intersect_cone(ray.org,d,p0_i,r01,p1_i,r01,tc_lower,/*u0,Ng0,*/tc_upper)) {
         STAT(Stat::get().user[1]++); 
         return false;
       }
