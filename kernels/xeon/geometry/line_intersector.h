@@ -38,7 +38,7 @@ namespace embree
     static __forceinline bool intersect_cone(const Vec3fa& org_i, const Vec3fa& dir, 
                                              const Vec3fa& v0_i, const float r0, 
                                              const Vec3fa& v1_i, const float r1,
-                                             float& t0_o, //float& u0_o, Vec3fa& Ng0_o,
+                                             float& t0_o, float& u0_o, Vec3fa& Ng0_o,
                                              float& t1_o)
       
     {
@@ -71,10 +71,10 @@ namespace embree
       t0_o = (-B-Q)*rcp_2A;
       t1_o = (-B+Q)*rcp_2A;
       
-      //u0_o = (Oz+t0_o*dOz)*rl;
-      //const Vec3fa Pr = t0_o*dir;
-      //const Vec3fa Pl = v0 + u0_o*(v1-v0);
-      //Ng0_o = Pr-Pl;
+      u0_o = (Oz+t0_o*dOz)*rl;
+      const Vec3fa Pr = t0_o*dir;
+      const Vec3fa Pl = v0 + u0_o*(v1-v0);
+      Ng0_o = Pr-Pl;
       t0_o += tb;
       t1_o += tb;
       return true;
@@ -93,10 +93,10 @@ namespace embree
       const Vec3fa d = ray.dir;
       
       float t_term = 0.001f*max(r0,r1);
-      const float r01 = max(r0,r1)+t_term;
+      const float r01 = max(r0,r1);
       float tc_lower,tc_upper;
-      //float u0; Vec3fa Ng0;
-      if (!intersect_cone(ray.org,d,p0_i,r01,p1_i,r01,tc_lower,/*u0,Ng0,*/tc_upper)) {
+      float u0; Vec3fa Ng0;
+      if (!intersect_cone(ray.org,d,p0_i,r01,p1_i,r01,tc_lower,u0,Ng0,tc_upper)) {
         STAT(Stat::get().user[1]++); 
         return false;
       }
@@ -118,6 +118,14 @@ namespace embree
         return false;
       }
       
+#if 0
+      if (tc_lower < ray.tnear || tc_lower > ray.tfar) return false;
+      t = tc_lower;
+      u = u0;
+      Ng = Ng0;
+      return true;
+#endif
+
       STAT(Stat::get().user[3]++);
       t = tc_lower; float dt = inf;
       Vec3fa p = t*d;
@@ -125,13 +133,16 @@ namespace embree
       for (size_t i=0;; i++) 
       {
         //__asm("nop2");
+      //PRINT(i);
         STAT(Stat::get().user[4]++); 
-        if (unlikely(i == 20)) {
+        if (unlikely(i == 200)) {
           STAT(Stat::get().user[5]++); 
+          //PRINT("miss2");
           return false;
         }
         if (unlikely(t > tc_upper)) {
           STAT(Stat::get().user[6]++); 
+          //PRINT("break1");
           break;
         }
         const Vec3fa N = cross(p-p0,p1p0);
@@ -148,22 +159,30 @@ namespace embree
         const Vec3fa q1 = p1+r1*normalize(cross(n1,N));
 #endif
         Ng = normalize(cross(q1-q0,N));
+        //PRINT(Ng);
         dt = dot(p-q0,Ng);
+        //PRINT(dt);
         t += dt;
+        //PRINT(t);
         //if (p == t*d) break;
         p = t*d;
         if (unlikely(dt < t_term)) {
           STAT(Stat::get().user[7]++); 
+          //PRINT("break2");
           u = dot(p-q0,q1-q0)*rcp_length2(q1-q0);
           break;
         }
       }
       //if (std::isnan(t)) return false;
-      //if (t < max(ray.tnear,tc_lower) || t > min(ray.tfar,tc_upper)) {
-      if (t < ray.tnear || t > min(ray.tfar,tc_upper)) {
+      if (t+1.5f*t_term < max(ray.tnear,tc_lower) || t-1.5f*t_term > min(ray.tfar,tc_upper)) {
+      //if (t < ray.tnear || t > min(ray.tfar,tc_upper)) {
+      //PRINT("miss1");
         return false;
       }
-      
+      //PRINT("hit2");
+      //PRINT(t);
+      //PRINT(u);
+      //PRINT(Ng);
       return true;
     }
         

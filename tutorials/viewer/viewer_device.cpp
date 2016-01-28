@@ -520,6 +520,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
+  //PRINT(ray);
   
   /* shade background black */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
@@ -677,8 +678,13 @@ void renderTile(int taskIndex, int* pixels,
 
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
-    //if (x != 360 || y != 512-109) continue;
+    //if (x != 176 || y != 512-193)
+      // if (x != 176 || y != 512-185) { pixels[y*width+x]=0; continue; }
+    //PRINT2(x,y);
     Vec3fa color = renderPixel(x,y,vx,vy,vz,p);
+    //PRINT(color);
+    //exit(1);
+    
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
     unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
@@ -737,6 +743,7 @@ extern "C" void device_render (int* pixels,
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   launch_renderTile(numTilesX*numTilesY,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); 
   //rtcDebug();
+  //exit(1);
 }
 
 /* called by the C++ code for cleanup */

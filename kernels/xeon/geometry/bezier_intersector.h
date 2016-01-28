@@ -101,6 +101,9 @@ namespace embree
 
           for (size_t j=0; j<min(VSIZEX-1,N-i); j++)
           {
+            //if (j != 1) continue;
+            //std::cout << std::endl;
+            //PRINT(j);
             const Vec3fa p1( p.x[j+0], p.y[j+0] ,p.z[j+0]);
             const Vec3fa p2( p.x[j+1], p.y[j+1] ,p.z[j+1]);
             const Vec3fa n1(dp.x[j+0],dp.y[j+0],dp.z[j+0]);
