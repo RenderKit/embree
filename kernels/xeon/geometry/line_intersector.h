@@ -23,11 +23,155 @@ namespace embree
 {
   namespace isa
   {
+    static __forceinline std::pair<float,float> intersect_half_plane(const Vec3fa& ray_org, const Vec3fa& ray_dir, const Vec3fa& N, const Vec3fa& P)
+    {
+      Vec3fa O = Vec3fa(ray_org) - P;
+      Vec3fa D = Vec3fa(ray_dir);
+      float ON = dot(O,N);
+      float DN = dot(D,N);
+      float t = -ON*rcp(DN);
+      float lower = select(DN < 0.0f, float(neg_inf), t);
+      float upper = select(DN < 0.0f, t, float(pos_inf));
+      return std::make_pair(lower,upper);
+    }
+
+    static __forceinline bool intersect_cone(const Vec3fa& org_i, const Vec3fa& dir, 
+                                             const Vec3fa& v0_i, const float r0, 
+                                             const Vec3fa& v1_i, const float r1,
+                                             float& t0_o, float& u0_o, Vec3fa& Ng0_o,
+                                             float& t1_o)
+      
+    {
+      const float tb = dot(0.5f*(v0_i+v1_i)-org_i,normalize(dir));
+      const Vec3fa org = org_i+tb*dir;
+      const Vec3fa v0 = v0_i-org;
+      const Vec3fa v1 = v1_i-org;
+      
+      const float rl = rcp_length(v1-v0);
+      const Vec3fa P0 = v0, dP = (v1-v0)*rl;
+      const float dr = (r1-r0)*rl;
+      const Vec3fa O = -P0, dO = dir;
+      
+      const float dOdO = dot(dO,dO);
+      const float OdO = dot(dO,O);
+      const float OO = dot(O,O);
+      const float dOz = dot(dP,dO);
+      const float Oz = dot(dP,O);
+      
+      const float R = r0 + Oz*dr;          
+      const float A = dOdO - sqr(dOz) * (1.0f+sqr(dr));
+      const float B = 2.0f * (OdO - dOz*(Oz + R*dr));
+      const float C = OO - (sqr(Oz) + sqr(R));
+      
+      const float D = B*B - 4.0f*A*C;
+      if (D < 0.0f) return false;
+      
+      const float Q = sqrt(D);
+      const float rcp_2A = rcp(2.0f*A);
+      t0_o = (-B-Q)*rcp_2A;
+      t1_o = (-B+Q)*rcp_2A;
+      
+      u0_o = (Oz+t0_o*dOz)*rl;
+      const Vec3fa Pr = t0_o*dir;
+      const Vec3fa Pl = v0 + u0_o*(v1-v0);
+      Ng0_o = Pr-Pl;
+      t0_o += tb;
+      t1_o += tb;
+      return true;
+    }
+
+    static __noinline bool intersect_iterative2(const Ray& ray,
+                                                const Vec3fa& p0_i, const Vec3fa& n0, const float r0,
+                                                const Vec3fa& p1_i, const Vec3fa& n1, const float r1,
+                                                float& u, float& t, Vec3fa& Ng)
+    {
+      STAT(Stat::get().user[0]++); 
+      
+      const Vec3fa p0 = p0_i-ray.org;
+      const Vec3fa p1 = p1_i-ray.org;
+      //if (length(p1-p0) < 1E-5f) return false;
+      const Vec3fa d = ray.dir;
+      
+      float t_term = 0.001f*max(r0,r1);
+      const float r01 = max(r0,r1)+t_term;
+      float tc_lower,tc_upper;
+      float u0; Vec3fa Ng0;
+      if (!intersect_cone(ray.org,d,p0_i,r01,p1_i,r01,tc_lower,u0,Ng0,tc_upper)) {
+        STAT(Stat::get().user[1]++); 
+        return false;
+      }
+#if 0
+      if (std::isnan(u0) || u0 < 0 || u0 > 1.0f || tc_lower < ray.tnear || tc_lower > ray.tfar) return false;
+      t = tc_lower;
+      u = u0;
+      Ng = Ng0;
+      return true;
+#endif
+      
+      auto tp0 = intersect_half_plane(zero,d,+n0,p0);
+      auto tp1 = intersect_half_plane(zero,d,-n1,p1);
+      
+      tc_lower = max(tc_lower,tp0.first ,tp1.first );
+      tc_upper = min(tc_upper,tp0.second,tp1.second);
+      if (tc_lower > tc_upper) {
+        STAT(Stat::get().user[2]++); 
+        return false;
+      }
+      
+      STAT(Stat::get().user[3]++);
+      t = tc_lower; float dt = inf;
+      Vec3fa p = t*d;
+      const Vec3fa p1p0 = p1-p0;
+      for (size_t i=0;; i++) 
+      {
+        //__asm("nop2");
+        STAT(Stat::get().user[4]++); 
+        if (unlikely(i == 20)) {
+          STAT(Stat::get().user[5]++); 
+          return false;
+        }
+        if (unlikely(t > tc_upper)) {
+          STAT(Stat::get().user[6]++); 
+          break;
+        }
+        const Vec3fa N = cross(p-p0,p1p0);
+#if defined (__AVX__)
+        const vfloat<8> p0p1 = vfloat<8>(vfloat<4>(p0),vfloat<4>(p1));
+        const vfloat<8> n0n1 = vfloat<8>(vfloat<4>(n0),vfloat<4>(n1));
+        const vfloat<8> r0r1 = vfloat<8>(vfloat<4>(r0),vfloat<4>(r1));
+        const vfloat<8> NN   = vfloat<8>(vfloat<4>(N));
+        const vfloat<8> q0q1 = p0p1 + r0r1*normalize(cross(n0n1,NN));
+        const Vec3fa q0 = (Vec3fa)extract4<0>(q0q1);
+        const Vec3fa q1 = (Vec3fa)extract4<1>(q0q1);
+#else
+        const Vec3fa q0 = p0+r0*normalize(cross(n0,N));
+        const Vec3fa q1 = p1+r1*normalize(cross(n1,N));
+#endif
+        Ng = normalize(cross(q1-q0,N));
+        dt = dot(p-q0,Ng);
+        t += dt;
+        //if (p == t*d) break;
+        p = t*d;
+        if (unlikely(dt < t_term)) {
+          STAT(Stat::get().user[7]++); 
+          u = dot(p-q0,q1-q0)*rcp_length2(q1-q0);
+          break;
+        }
+      }
+      //if (std::isnan(t)) return false;
+      //if (t < max(ray.tnear,tc_lower) || t > min(ray.tfar,tc_upper)) {
+      if (t < ray.tnear || t > min(ray.tfar,tc_upper)) {
+        return false;
+      }
+      
+      return true;
+    }
+        
     template<int M>
       struct LineIntersectorHitM
       {
         __forceinline LineIntersectorHitM() {}
-
+        
         __forceinline LineIntersectorHitM(const vfloat<M>& u, const vfloat<M>& v, const vfloat<M>& t, const Vec3<vfloat<M>>& Ng)
           : vu(u), vv(v), vt(t), vNg(Ng) {}
         
@@ -328,93 +472,6 @@ namespace embree
           }
           
           return u >= 0.0f && u <= 1.0f;
-        }
-
-        static __noinline bool intersect_iterative2(const Ray& ray,
-                                                    const Vec3fa& p0_i, const Vec3fa& n0, const float r0,
-                                                    const Vec3fa& p1_i, const Vec3fa& n1, const float r1,
-                                                    float& u, float& t, Vec3fa& Ng)
-        {
-          STAT(Stat::get().user[0]++); 
-
-          const Vec3fa p0 = p0_i-ray.org;
-          const Vec3fa p1 = p1_i-ray.org;
-          //if (length(p1-p0) < 1E-5f) return false;
-          const Vec3fa d = ray.dir;
-         
-          float t_term = 0.001f*max(r0,r1);
-          const float r01 = max(r0,r1)+t_term;
-          float tc_lower,tc_upper;
-          float u0; Vec3fa Ng0;
-          if (!intersect_cone(ray.org,d,p0_i,r01,p1_i,r01,tc_lower,u0,Ng0,tc_upper)) {
-            STAT(Stat::get().user[1]++); 
-            return false;
-          }
-#if 0
-          if (std::isnan(u0) || u0 < 0 || u0 > 1.0f || tc_lower < ray.tnear || tc_lower > ray.tfar) return false;
-          t = tc_lower;
-          u = u0;
-          Ng = Ng0;
-          return true;
-#endif
-
-          auto tp0 = intersect_half_plane(zero,d,+n0,p0);
-          auto tp1 = intersect_half_plane(zero,d,-n1,p1);
-           
-          tc_lower = max(tc_lower,tp0.first ,tp1.first );
-          tc_upper = min(tc_upper,tp0.second,tp1.second);
-          if (tc_lower > tc_upper) {
-            STAT(Stat::get().user[2]++); 
-            return false;
-          }
-
-          STAT(Stat::get().user[3]++);
-          t = tc_lower; float dt = inf;
-          Vec3fa p = t*d;
-          const Vec3fa p1p0 = p1-p0;
-          for (size_t i=0;; i++) 
-          {
-            //__asm("nop2");
-            STAT(Stat::get().user[4]++); 
-            if (unlikely(i == 20)) {
-              STAT(Stat::get().user[5]++); 
-              return false;
-            }
-            if (unlikely(t > tc_upper)) {
-              STAT(Stat::get().user[6]++); 
-              break;
-            }
-            const Vec3fa N = cross(p-p0,p1p0);
-#if defined (__AVX__)
-            const vfloat<8> p0p1 = vfloat<8>(vfloat<4>(p0),vfloat<4>(p1));
-            const vfloat<8> n0n1 = vfloat<8>(vfloat<4>(n0),vfloat<4>(n1));
-            const vfloat<8> r0r1 = vfloat<8>(vfloat<4>(r0),vfloat<4>(r1));
-            const vfloat<8> NN   = vfloat<8>(vfloat<4>(N));
-            const vfloat<8> q0q1 = p0p1 + r0r1*normalize(cross(n0n1,NN));
-            const Vec3fa q0 = (Vec3fa)extract4<0>(q0q1);
-            const Vec3fa q1 = (Vec3fa)extract4<1>(q0q1);
-#else
-            const Vec3fa q0 = p0+r0*normalize(cross(n0,N));
-            const Vec3fa q1 = p1+r1*normalize(cross(n1,N));
-#endif
-            Ng = normalize(cross(q1-q0,N));
-            dt = dot(p-q0,Ng);
-            t += dt;
-            //if (p == t*d) break;
-            p = t*d;
-            if (unlikely(dt < t_term)) {
-              STAT(Stat::get().user[7]++); 
-              u = dot(p-q0,q1-q0)*rcp_length2(q1-q0);
-              break;
-            }
-          }
-          //if (std::isnan(t)) return false;
-          //if (t < max(ray.tnear,tc_lower) || t > min(ray.tfar,tc_upper)) {
-          if (t < ray.tnear || t > min(ray.tfar,tc_upper)) {
-            return false;
-          }
-
-          return true;
         }
 
         template<typename Epilog>
