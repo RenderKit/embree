@@ -80,22 +80,70 @@ namespace embree
       return true;
     }
 
+    static __forceinline bool intersect_cone(const Vec3fa& dir, 
+                                             const Vec3fa& v0, const float r0, 
+                                             const Vec3fa& v1, const float r1,
+                                             float& t0_o, //float& u0_o, Vec3fa& Ng0_o,
+                                             float& t1_o)
+      
+    {
+      const float rl = rcp_length(v1-v0);
+      const Vec3fa P0 = v0, dP = (v1-v0)*rl;
+      const float dr = (r1-r0)*rl;
+      const Vec3fa O = -P0, dO = dir;
+      
+      const float dOdO = dot(dO,dO);
+      const float OdO = dot(dO,O);
+      const float OO = dot(O,O);
+      const float dOz = dot(dP,dO);
+      const float Oz = dot(dP,O);
+      
+      const float R = r0 + Oz*dr;          
+      const float A = dOdO - sqr(dOz) * (1.0f+sqr(dr));
+      const float B = 2.0f * (OdO - dOz*(Oz + R*dr));
+      const float C = OO - (sqr(Oz) + sqr(R));
+      
+      const float D = B*B - 4.0f*A*C;
+      if (D < 0.0f) return false;
+      
+      const float Q = sqrt(D);
+      const float rcp_2A = rcp(2.0f*A);
+      t0_o = (-B-Q)*rcp_2A;
+      t1_o = (-B+Q)*rcp_2A;
+      
+      //u0_o = (Oz+t0_o*dOz)*rl;
+      //const Vec3fa Pr = t0_o*dir;
+      //const Vec3fa Pl = v0 + u0_o*(v1-v0);
+      //Ng0_o = Pr-Pl;
+      //t0_o += tb;
+      //t1_o += tb;
+      return true;
+    }
+
     static __noinline bool intersect_fill_cone(const Ray& ray,
                                                const Vec3fa& p0_i, const Vec3fa& n0, const float r0,
                                                const Vec3fa& p1_i, const Vec3fa& n1, const float r1,
                                                float& u, float& t, Vec3fa& Ng)
     {
       STAT(Stat::get().user[0]++); 
-      
-      const Vec3fa p0 = p0_i-ray.org;
-      const Vec3fa p1 = p1_i-ray.org;
-      //if (length(p1-p0) < 1E-5f) return false;
+
+      /* move closer to geometry to make intersection stable */
+      const float tb = dot(0.5f*(p0_i+p1_i)-ray.org,normalize(ray.dir));
+      const Vec3fa org = ray.org+tb*normalize(ray.dir);
       const Vec3fa d = ray.dir;
+      
+      const Vec3fa p0 = p0_i-org;
+      const Vec3fa p1 = p1_i-org;
+      
+      //const Vec3fa p0 = p0_i-ray.org;
+      //const Vec3fa p1 = p1_i-ray.org;
+      //if (length(p1-p0) < 1E-5f) return false;
+      
       
       float t_term = 0.001f*max(r0,r1);
       const float r01 = max(r0,r1);
       float tc_lower,tc_upper;
-      if (!intersect_cone(ray.org,d,p0_i,r01,p1_i,r01,tc_lower,tc_upper)) {
+      if (!intersect_cone(d,p0,r01,p1,r01,tc_lower,tc_upper)) {
         STAT(Stat::get().user[1]++); 
         return false;
       }
@@ -158,7 +206,7 @@ namespace embree
         }
       }
       //if (std::isnan(t)) return false;
-      if (t+1.5f*t_term < max(ray.tnear,tc_lower) || t-1.5f*t_term > min(ray.tfar,tc_upper)) {
+      if (t+1.5f*t_term < max(ray.tnear-tb,tc_lower) || t-1.5f*t_term > min(ray.tfar-tb,tc_upper)) {
       //if (t < ray.tnear || t > min(ray.tfar,tc_upper)) {
       //PRINT("miss1");
         return false;
@@ -169,7 +217,7 @@ namespace embree
       const Vec3fa q1 = p1+r1*normalize(cross(n1,N));
       Ng = normalize(cross(q1-q0,N));
       const Vec3fa P = (1.0f-u)*q0 + u*q1;
-      t = dot(q0,Ng)/dot(d,Ng);
+      t = tb+dot(q0,Ng)/dot(d,Ng);
       //PRINT("hit2");
       //PRINT(t);
       //PRINT(u);
