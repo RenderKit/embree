@@ -207,7 +207,7 @@ namespace embree
       }
       //if (std::isnan(t)) return false;
       if (t+1.5f*t_term < max(ray.tnear-tb,tc_lower) || t-1.5f*t_term > min(ray.tfar-tb,tc_upper)) {
-      //if (t < ray.tnear || t > min(ray.tfar,tc_upper)) {
+      //if (t < ray.tnear-tb || t > min(ray.tfar-tb,tc_upper)) {
       //PRINT("miss1");
         return false;
       }
