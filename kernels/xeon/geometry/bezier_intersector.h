@@ -72,13 +72,13 @@ namespace embree
 
       template<typename Epilog>
       __forceinline bool intersect(Ray& ray,
-                                   const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const int N0,
+                                   const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const int Np,
                                    const Epilog& epilog) const
       {
         STAT3(normal.trav_prims,1,1,1);
         bool ishit = false;
         BezierCurve3fa curve2D(v0,v1,v2,v3,0.0f,1.0f,4);
-        const int N = 3; // FIXME
+        int N = Np-1; // calculate number of segments
 
         /* process SIMD-size-1 many segments per iteration */
         for (int i=0; i<N; i+=VSIZEX-1)
