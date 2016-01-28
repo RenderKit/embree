@@ -129,7 +129,9 @@ namespace embree
       STAT(Stat::get().user[0]++); 
 
       /* move closer to geometry to make intersection stable */
-      const float tb = dot(0.5f*(p0_i+p1_i)-ray.org,normalize(ray.dir));
+      //const Vec3fa C = Vec3fa(-10.5103f, 24.6401f, -4.18285f);
+      const Vec3fa C = 0.5f*(p0_i+p1_i);
+      const float tb = dot(C-ray.org,normalize(ray.dir));
       const Vec3fa org = ray.org+tb*normalize(ray.dir);
       const Vec3fa dir = ray.dir;
       const Vec3fa p0 = p0_i-org;
@@ -154,7 +156,7 @@ namespace embree
         return false;
       }
 
-#if 1
+#if 0
       if (tc_lower > ray.tnear-tb && tc_lower < ray.tfar-tb) 
       {
         u = 0.0f;
