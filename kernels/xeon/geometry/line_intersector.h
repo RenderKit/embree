@@ -130,26 +130,20 @@ namespace embree
       /* move closer to geometry to make intersection stable */
       const float tb = dot(0.5f*(p0_i+p1_i)-ray.org,normalize(ray.dir));
       const Vec3fa org = ray.org+tb*normalize(ray.dir);
-      const Vec3fa d = ray.dir;
-      
+      const Vec3fa dir = ray.dir;
       const Vec3fa p0 = p0_i-org;
       const Vec3fa p1 = p1_i-org;
-      
-      //const Vec3fa p0 = p0_i-ray.org;
-      //const Vec3fa p1 = p1_i-ray.org;
-      //if (length(p1-p0) < 1E-5f) return false;
-      
       
       float t_term = 0.001f*max(r0,r1);
       const float r01 = max(r0,r1);
       float tc_lower,tc_upper;
-      if (!intersect_cone(d,p0,r01,p1,r01,tc_lower,tc_upper)) {
+      if (!intersect_cone(dir,p0,r01,p1,r01,tc_lower,tc_upper)) {
         STAT(Stat::get().user[1]++); 
         return false;
       }
       
-      auto tp0 = intersect_half_plane(zero,d,+n0,p0);
-      auto tp1 = intersect_half_plane(zero,d,-n1,p1);
+      auto tp0 = intersect_half_plane(zero,dir,+n0,p0);
+      auto tp1 = intersect_half_plane(zero,dir,-n1,p1);
       
       tc_lower = max(tc_lower,tp0.first ,tp1.first );
       tc_upper = min(tc_upper,tp0.second,tp1.second);
@@ -160,7 +154,7 @@ namespace embree
       
       STAT(Stat::get().user[3]++);
       t = tc_lower; float dt = inf;
-      Vec3fa p = t*d;
+      Vec3fa p = t*dir;
       const Vec3fa p1p0 = p1-p0;
       for (size_t i=0;; i++) 
       {
@@ -197,7 +191,7 @@ namespace embree
         t += dt;
         //PRINT(t);
         //if (p == t*d) break;
-        p = t*d;
+        p = t*dir;
         if (unlikely(dt < t_term)) {
           STAT(Stat::get().user[7]++); 
           //PRINT("break2");
@@ -217,7 +211,7 @@ namespace embree
       const Vec3fa q1 = p1+r1*normalize(cross(n1,N));
       Ng = normalize(cross(q1-q0,N));
       const Vec3fa P = (1.0f-u)*q0 + u*q1;
-      t = tb+dot(q0,Ng)/dot(d,Ng);
+      t = tb+dot(q0,Ng)/dot(dir,Ng);
       //PRINT("hit2");
       //PRINT(t);
       //PRINT(u);
