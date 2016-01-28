@@ -243,7 +243,7 @@ namespace embree
     void convertInstances(Ref<SceneGraph::Node> node, const AffineSpace3fa& space0, const AffineSpace3fa& space1)
     {
       if (node->isClosed()) {
-        scene->geometries.push_back(new TutorialScene::Instance(space0,lookupGeometries(node)));
+        scene->geometries.push_back(new TutorialScene::Instance(space0,space1,lookupGeometries(node)));
       }
       else if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
         convertInstances(xfmNode->child, space0*xfmNode->xfm0, space1*xfmNode->xfm1);

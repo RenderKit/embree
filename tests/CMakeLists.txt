@@ -41,26 +41,16 @@ ENDIF()
   ADD_EXECUTABLE(verify verify.cpp)
   TARGET_LINK_LIBRARIES(verify sys embree)
   SET_PROPERTY(TARGET verify PROPERTY FOLDER tests)
+  ADD_TEST(NAME verify COMMAND verify)
 
   ADD_EXECUTABLE(benchmark benchmark.cpp)
   TARGET_LINK_LIBRARIES(benchmark sys embree)
   SET_PROPERTY(TARGET benchmark PROPERTY FOLDER tests)
+  ADD_TEST(NAME benchmark COMMAND benchmark)
 
   ADD_EXECUTABLE(retrace retrace.cpp)
   TARGET_LINK_LIBRARIES(retrace sys simd embree)
   SET_PROPERTY(TARGET retrace PROPERTY FOLDER tests)
-
-  #IF (TASKING_TBB) # FIXME: remove test
-  #  FIND_PACKAGE(TBB REQUIRED)
-  #  ADD_EXECUTABLE(benchmark_tasking 
-  #    benchmark_tasking.cpp
-  #    ../../common/tasking/taskscheduler.cpp
-  #    ../../common/tasking/taskscheduler_sys.cpp
-  #    ../../common/tasking/taskscheduler_new.cpp
-  #  )             
-  #  TARGET_LINK_LIBRARIES(benchmark_tasking sys ${TBB_LIBRARIES})
-  #  SET_PROPERTY(TARGET benchmark_tasking PROPERTY FOLDER tests)
-  #ENDIF()
 
   INSTALL(TARGETS verify benchmark retrace DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT examples)
 
@@ -84,18 +74,6 @@ ELSEIF (RTCORE_RAY_PACKETS)
   ADD_EXECUTABLE(retrace_xeonphi retrace.cpp)
   TARGET_LINK_LIBRARIES(retrace_xeonphi sys_xeonphi embree_xeonphi)
   SET_PROPERTY(TARGET retrace_xeonphi PROPERTY FOLDER tests)
-
-  #IF (TASKING_TBB) # FIXME: remove test
-  #  FIND_PACKAGE(TBB REQUIRED)
-  #  ADD_EXECUTABLE(benchmark_tasking_xeonphi 
-  #    benchmark_tasking.cpp
-  #    ../../common/tasking/taskscheduler.cpp
-  #    ../../common/tasking/taskscheduler_mic.cpp
-  #    ../../common/tasking/taskscheduler_new.cpp
-  #  )             
-  #  TARGET_LINK_LIBRARIES(benchmark_tasking_xeonphi sys_xeonphi ${TBB_LIBRARIES_MIC})
-  #  SET_PROPERTY(TARGET benchmark_tasking_xeonphi PROPERTY FOLDER tests)
-  #ENDIF()
 
   INSTALL(TARGETS verify_xeonphi benchmark_xeonphi retrace_xeonphi DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT examples_xeonphi)
 

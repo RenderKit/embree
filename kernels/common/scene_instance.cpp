@@ -19,7 +19,7 @@
 
 namespace embree
 {
-  DECLARE_SYMBOL2(RTCBoundsFunc,InstanceBoundsFunc);
+  DECLARE_SYMBOL2(RTCBoundsFunc2,InstanceBoundsFunc);
   DECLARE_SYMBOL2(AccelSet::Intersector1,InstanceIntersector1);
   DECLARE_SYMBOL2(AccelSet::Intersector4,InstanceIntersector4);
   DECLARE_SYMBOL2(AccelSet::Intersector8,InstanceIntersector8);
@@ -42,24 +42,29 @@ namespace embree
 #endif
   }
 
-  Instance::Instance (Scene* parent, Accel* object) 
-    : AccelSet(parent,1,1), local2world(one), world2local(one), object(object)
+  Instance::Instance (Scene* parent, Accel* object, size_t numTimeSteps) 
+    : AccelSet(parent,1,numTimeSteps), object(object)
   {
+    local2world[0] = local2world[1] = one;
+    world2local[0] = world2local[1] = one;
     intersectors.ptr = this;
-    boundsFunc = parent->device->instance_factory->InstanceBoundsFunc;
+    boundsFunc2 = parent->device->instance_factory->InstanceBoundsFunc;
     intersectors.intersector1 = parent->device->instance_factory->InstanceIntersector1;
     intersectors.intersector4 = parent->device->instance_factory->InstanceIntersector4; 
     intersectors.intersector8 = parent->device->instance_factory->InstanceIntersector8; 
     intersectors.intersector16 = parent->device->instance_factory->InstanceIntersector16;
   }
   
-  void Instance::setTransform(const AffineSpace3fa& xfm)
+  void Instance::setTransform(const AffineSpace3fa& xfm, size_t timeStep)
   {
     if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
-    local2world = xfm;
-    world2local = rcp(xfm);
+    if (timeStep >= numTimeSteps)
+      throw_RTCError(RTC_INVALID_OPERATION,"invalid timestep");
+
+    local2world[timeStep] = xfm;
+    world2local[timeStep] = rcp(xfm);
   }
 
   void Instance::setMask (unsigned mask) 

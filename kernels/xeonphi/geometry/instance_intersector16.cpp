@@ -26,7 +26,7 @@ namespace embree
       const Vec3vf16 ray_dir = ray.dir;
       const vint16 ray_geomID = ray.geomID;
       const vint16 ray_instID = ray.instID;
-      const AffineSpace3vf16 world2local(instance->world2local);
+      const AffineSpace3vf16 world2local(instance->world2local[0]);
       ray.org = xfmPoint (world2local,ray_org);
       ray.dir = xfmVector(world2local,ray_dir);
       ray.geomID = -1;
@@ -44,7 +44,7 @@ namespace embree
       const Vec3vf16 ray_org = ray.org;
       const Vec3vf16 ray_dir = ray.dir;
       const vint16 ray_geomID = ray.geomID;
-      const AffineSpace3vf16 world2local(instance->world2local);
+      const AffineSpace3vf16 world2local(instance->world2local[0]);
       ray.org = xfmPoint (world2local,ray_org);
       ray.dir = xfmVector(world2local,ray_dir);
       ray.instID = instance->id;

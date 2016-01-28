@@ -149,7 +149,7 @@ namespace embree
     return true;
   }
 
-  void QuadMesh::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats)  // FIXME: do not interpolate bilinearly here!
+  void QuadMesh::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats)
   {
     /* test if interpolation is enabled */
 #if defined(DEBUG)
@@ -174,39 +174,46 @@ namespace embree
 
     for (size_t i=0; i<numFloats; i+=4)
     {
-      size_t ofs = i*sizeof(float);
+      const vbool4 valid = vint4(i)+vint4(step) < vint4(numFloats);
+      const size_t ofs = i*sizeof(float);
       const Quad& tri = quad(primID);
       const vfloat4 p0 = vfloat4::loadu((float*)&src[tri.v[0]*stride+ofs]);
       const vfloat4 p1 = vfloat4::loadu((float*)&src[tri.v[1]*stride+ofs]);
       const vfloat4 p2 = vfloat4::loadu((float*)&src[tri.v[2]*stride+ofs]);
-      const vfloat4 p3 = vfloat4::loadu((float*)&src[tri.v[3]*stride+ofs]);
-      const vbool4 valid = vint4(i)+vint4(step) < vint4(numFloats);
-      const vfloat4 p  = ((1.0f-u)*p0 + u*p1)*(1.0f-v) + v*((1.0f-u)*p3 + u*p2);
-      const vfloat4 du = (1.0f-v) * (p1-p0) + v * (p2-p3);
-      const vfloat4 dv = (1.0f-u) * (p3-p0) + u * (p2-p1);
-      if (P   ) vfloat4::storeu(valid,P+i,p);
-      if (dPdu) vfloat4::storeu(valid,dPdu+i,du);
-      if (dPdv) vfloat4::storeu(valid,dPdv+i,dv);
+      const vfloat4 p3 = vfloat4::loadu((float*)&src[tri.v[3]*stride+ofs]);      
+      const vbool4 left = u+v <= 1.0f;
+      const vfloat4 Q0 = select(left,p0,p2);
+      const vfloat4 Q1 = select(left,p1,p3);
+      const vfloat4 Q2 = select(left,p3,p1);
+      const vfloat4 U  = select(left,u,vfloat4(1.0f)-u);
+      const vfloat4 V  = select(left,v,vfloat4(1.0f)-v);
+      const vfloat4 W  = 1.0f-U-V;
+      if (P   ) vfloat4::storeu(valid,P+i,W*Q0 + U*Q1 + V*Q2);
+      if (dPdu) vfloat4::storeu(valid,dPdu+i,select(left,Q1-Q0,Q0-Q1));
+      if (dPdv) vfloat4::storeu(valid,dPdv+i,select(left,Q2-Q0,Q0-Q2));
     }
 
 #else
 
     for (size_t i=0; i<numFloats; i+=16) 
     {
-      size_t ofs = i*sizeof(float);
-      vbool16 mask = (i+16 > numFloats) ? (vbool16)(((unsigned int)1 << (numFloats-i))-1) : vbool16( true );
-      const float w = 1.0f-u-v;
+      const vbool16 valid = vint16(i)+vint16(step) < vint16(numFloats);
+      const size_t ofs = i*sizeof(float);
       const Quad& tri = quad(primID);
-      const vfloat16 p0 = vfloat16::loadu(mask,(float*)&src[tri.v[0]*stride+ofs]);
-      const vfloat16 p1 = vfloat16::loadu(mask,(float*)&src[tri.v[1]*stride+ofs]);
-      const vfloat16 p2 = vfloat16::loadu(mask,(float*)&src[tri.v[2]*stride+ofs]);
-      const vfloat16 p3 = vfloat16::loadu(mask,(float*)&src[tri.v[3]*stride+ofs]);
-      const vfloat16 p  = (1.0f-v)*((1.0f-u)*p0 + u*p1) + v*((1.0f-u)*p3 + u*p2);
-      const vfloat16 du = (1.0f-v) * (p1-p0) + v * (p2-p3);
-      const vfloat16 dv = (1.0f-u) * (p3-p0) + u * (p2-p1);
-      if (P   ) vfloat16::storeu_compact(mask,P+i,p);
-      if (dPdu) vfloat16::storeu_compact(mask,dPdu+i,du);
-      if (dPdv) vfloat16::storeu_compact(mask,dPdv+i,dv);
+      const vfloat16 p0 = vfloat16::loadu(valid,(float*)&src[tri.v[0]*stride+ofs]);
+      const vfloat16 p1 = vfloat16::loadu(valid,(float*)&src[tri.v[1]*stride+ofs]);
+      const vfloat16 p2 = vfloat16::loadu(valid,(float*)&src[tri.v[2]*stride+ofs]);
+      const vfloat16 p3 = vfloat16::loadu(valid,(float*)&src[tri.v[3]*stride+ofs]);
+      const vbool16 left = u+v <= 1.0f;
+      const vfloat16 Q0 = select(left,p0,p2);
+      const vfloat16 Q1 = select(left,p1,p3);
+      const vfloat16 Q2 = select(left,p3,p1);
+      const vfloat16 U  = select(left,u,vfloat16(1.0f)-u);
+      const vfloat16 V  = select(left,v,vfloat16(1.0f)-v);
+      const vfloat16 W  = 1.0f-U-V;
+      if (P   ) vfloat16::storeu_compact(valid,P+i,W*Q0 + U*Q1 + V*Q2);
+      if (dPdu) vfloat16::storeu_compact(valid,dPdu+i,select(left,Q1-Q0,Q0-Q1));
+      if (dPdv) vfloat16::storeu_compact(valid,dPdv+i,select(left,Q2-Q0,Q0-Q2));
     }
 #endif
   }

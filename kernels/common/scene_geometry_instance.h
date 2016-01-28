@@ -29,7 +29,7 @@ namespace embree
     virtual void enabling ();
     virtual void disabling();
     virtual void setMask (unsigned mask);
-    virtual void setTransform(const AffineSpace3fa& local2world);
+    virtual void setTransform(const AffineSpace3fa& local2world, size_t timeStep);
     
     void count(ssize_t f);
   public:

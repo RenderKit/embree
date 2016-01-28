@@ -44,12 +44,19 @@ namespace embree
     {
       typedef Vec3<vfloat<K>> Vec3vfK;
       typedef AffineSpaceT<LinearSpace3<Vec3vfK>> AffineSpace3vfK;
-
+      
+      AffineSpace3vfK world2local;
+      if (likely(instance->numTimeSteps == 1)) {
+        world2local = instance->world2local[0];
+      } else {
+        vfloat<K> t1 = ray.time, t0 = vfloat<K>(1.0f)-t1;
+        world2local = rcp(t0*AffineSpace3vfK(instance->local2world[0]) + t1*AffineSpace3vfK(instance->local2world[1]));
+      }
+      
       const Vec3vfK ray_org = ray.org;
       const Vec3vfK ray_dir = ray.dir;
       const vint<K> ray_geomID = ray.geomID;
       const vint<K> ray_instID = ray.instID;
-      const AffineSpace3vfK world2local(instance->world2local);
       ray.org = xfmPoint (world2local,ray_org);
       ray.dir = xfmVector(world2local,ray_dir);
       ray.geomID = -1;
@@ -68,10 +75,17 @@ namespace embree
       typedef Vec3<vfloat<K>> Vec3vfK;
       typedef AffineSpaceT<LinearSpace3<Vec3vfK>> AffineSpace3vfK;
 
+      AffineSpace3vfK world2local;
+      if (likely(instance->numTimeSteps == 1)) {
+        world2local = instance->world2local[0];
+      } else {
+        vfloat<K> t1 = ray.time, t0 = vfloat<K>(1.0f)-t1;
+        world2local = rcp(t0*AffineSpace3vfK(instance->local2world[0]) + t1*AffineSpace3vfK(instance->local2world[1]));
+      }
+
       const Vec3vfK ray_org = ray.org;
       const Vec3vfK ray_dir = ray.dir;
       const vint<K> ray_geomID = ray.geomID;
-      const AffineSpace3vfK world2local(instance->world2local);
       ray.org = xfmPoint (world2local,ray_org);
       ray.dir = xfmVector(world2local,ray_dir);
       ray.instID = instance->id;

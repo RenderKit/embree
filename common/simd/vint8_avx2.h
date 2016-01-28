@@ -152,6 +152,9 @@ namespace embree
   __forceinline const vint8 operator <<( const vint8& a, const int n ) { return _mm256_slli_epi32(a.v, n); }
   __forceinline const vint8 operator >>( const vint8& a, const int n ) { return _mm256_srai_epi32(a.v, n); }
 
+  __forceinline const vint8 operator <<( const vint8& a, const vint8& n ) { return _mm256_sllv_epi32(a.v, n); }
+  __forceinline const vint8 operator >>( const vint8& a, const vint8& n ) { return _mm256_srav_epi32(a.v, n); }
+
   __forceinline const vint8 sra ( const vint8& a, const int b ) { return _mm256_srai_epi32(a.v, b); }
   __forceinline const vint8 srl ( const vint8& a, const int b ) { return _mm256_srli_epi32(a.v, b); }
 
@@ -278,6 +281,12 @@ namespace embree
   __forceinline vint8 shuffle(const vint8& a, const __m256i& index) {
     return _mm256_castps_si256(_mm256_permutevar_ps(_mm256_castsi256_ps(a),index));
   }
+
+  template<int i>
+  __forceinline vint8 align_shift_right(const vint8 &a, const vint8 &b) {
+    return _mm256_alignr_epi8(a, b, i);
+  }  
+
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Reductions

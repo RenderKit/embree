@@ -258,7 +258,7 @@ void setQuadSubdivCubeLevels (RTCScene scene_i, unsigned int geomID, const Vec3f
   rtcUpdateBuffer(scene_i, geomID, RTC_LEVEL_BUFFER);
 }
 
-/* adds a cube to the scene */
+/* adds a triangle cube to the scene */
 unsigned int addTriangleCube (RTCScene scene_i, const Vec3fa& pos)
 {
   unsigned int geomID = rtcNewTriangleMesh(scene_i, RTC_GEOMETRY_DYNAMIC, NUM_TRI_INDICES/3, NUM_VERTICES);
@@ -269,6 +269,21 @@ unsigned int addTriangleCube (RTCScene scene_i, const Vec3fa& pos)
   rtcUnmapBuffer(scene_i, geomID, RTC_VERTEX_BUFFER);
 
   rtcSetBuffer(scene_i, geomID, RTC_INDEX_BUFFER,  cube_tri_indices , 0, 3*sizeof(unsigned int));
+  rtcSetBuffer(scene_i, geomID, RTC_USER_VERTEX_BUFFER0, cube_vertex_colors, 0, sizeof(Vec3fa));
+  return geomID;
+}
+
+/* adds a quad cube to the scene */
+unsigned int addQuadCube (RTCScene scene_i, const Vec3fa& pos)
+{
+  unsigned int geomID = rtcNewQuadMesh(scene_i, RTC_GEOMETRY_DYNAMIC, NUM_QUAD_INDICES/4, NUM_VERTICES);
+
+  //rtcSetBuffer(scene_i, geomID, RTC_VERTEX_BUFFER, cube_vertices, 0, sizeof(Vec3fa  ));
+  Vec3fa* vtx = (Vec3fa*) rtcMapBuffer(scene_i, geomID, RTC_VERTEX_BUFFER);
+  for (size_t i=0; i<NUM_VERTICES; i++) vtx[i] = Vec3fa(cube_vertices[i][0]+pos.x,cube_vertices[i][1]+pos.y,cube_vertices[i][2]+pos.z);
+  rtcUnmapBuffer(scene_i, geomID, RTC_VERTEX_BUFFER);
+
+  rtcSetBuffer(scene_i, geomID, RTC_INDEX_BUFFER,  cube_quad_indices , 0, 4*sizeof(unsigned int));
   rtcSetBuffer(scene_i, geomID, RTC_USER_VERTEX_BUFFER0, cube_vertex_colors, 0, sizeof(Vec3fa));
   return geomID;
 }
@@ -332,14 +347,14 @@ extern "C" void device_init (char* cfg)
   /* add ground plane */
   addGroundPlane(g_scene);
 
-  /* add cube */
-  addHair(g_scene,Vec3fa(0.0f,-1.0f,-4.5f));
-  addTriangleCube(g_scene,Vec3fa(0.0f,0.0f,5.0f));
-
-  triCubeID  = addTriangleSubdivCube(g_scene,Vec3fa(0.0f,0.0f,1.5f));
-  quadCubeID = addQuadSubdivCube(g_scene,Vec3fa(0.0f,0.0f,-1.5f));
-  quadCubeID2 = addQuadSubdivCube(g_scene,Vec3fa(0.0f,0.0f,-1.5f));
-  rtcDisable(g_scene,quadCubeID2);
+  /* add cubes */
+  addHair(g_scene,Vec3fa(4.0f,-1.0f,-3.5f));
+  quadCubeID = addQuadSubdivCube(g_scene,Vec3fa(4.0f,0.0f,0.0f));
+  quadCubeID2 = addQuadSubdivCube(g_scene,Vec3fa(4.0f,0.0f,0.0f));
+  triCubeID  = addTriangleSubdivCube(g_scene,Vec3fa(4.0f,0.0f,3.5f));
+  rtcDisable(g_scene,quadCubeID2);  
+  addTriangleCube(g_scene,Vec3fa(0.0f,0.0f,-3.0f));
+  addQuadCube(g_scene,Vec3fa(0.0f,0.0f,3.0f));
   
   /* commit changes to scene */
   rtcCommit (g_scene);

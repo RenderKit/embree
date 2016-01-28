@@ -76,9 +76,9 @@ namespace embree
     }
 
     /*! fill triangle from triangle list */
-    __forceinline void fill(const Bezier1v* prims, size_t& i, size_t end, Scene* scene, const bool list)
+    __forceinline void fill(const BezierPrim* prims, size_t& i, size_t end, Scene* scene, const bool list)
     {
-      const Bezier1v& curve = prims[i]; i++;
+      const BezierPrim& curve = prims[i]; i++;
       const unsigned geomID = curve.geomID();
       const unsigned primID = curve.primID();
       const BezierCurves* curves = scene->getBezierCurves(geomID);

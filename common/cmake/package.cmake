@@ -81,21 +81,23 @@ ELSE()
   SET(EMBREE_CONFIG_VERSION ${EMBREE_VERSION_MAJOR})
 ENDIF()
 
+IF (APPLE AND NOT RTCORE_ZIP_MODE)
+  CONFIGURE_FILE(scripts/install_macosx/uninstall.command uninstall.command @ONLY)
+  INSTALL(PROGRAMS "${PROJECT_BINARY_DIR}/uninstall.command" DESTINATION ${CMAKE_INSTALL_BINDIR}/.. COMPONENT lib)
+ENDIF()
+
 IF (WIN32)
   CONFIGURE_FILE(common/cmake/embree-config-windows.cmake embree-config.cmake @ONLY)
 ELSEIF (APPLE)
   CONFIGURE_FILE(common/cmake/embree-config-macosx.cmake embree-config.cmake @ONLY)
-  IF (NOT RTCORE_ZIP_MODE)
-    CONFIGURE_FILE(scripts/install_macosx/uninstall.command uninstall.command @ONLY)
-    INSTALL(PROGRAMS "${PROJECT_BINARY_DIR}/uninstall.command" DESTINATION ${CMAKE_INSTALL_BINDIR}/.. COMPONENT lib)
-  ENDIF()
 ELSE()
   CONFIGURE_FILE(common/cmake/embree-config-linux.cmake embree-config.cmake @ONLY)
 ENDIF()
-
+CONFIGURE_FILE(common/cmake/embree-config-default.cmake embree-config-default.cmake @ONLY)
 CONFIGURE_FILE(common/cmake/embree-config-version.cmake embree-config-version.cmake @ONLY)
 
-INSTALL(FILES "${PROJECT_BINARY_DIR}/embree-config.cmake" DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/embree-${EMBREE_VERSION}" COMPONENT devel)
+INSTALL(FILES "${PROJECT_BINARY_DIR}/embree-config.cmake"         DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/embree-${EMBREE_VERSION}" COMPONENT devel)
+INSTALL(FILES "${PROJECT_BINARY_DIR}/embree-config-default.cmake" DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/embree-${EMBREE_VERSION}" COMPONENT devel)
 INSTALL(FILES "${PROJECT_BINARY_DIR}/embree-config-version.cmake" DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/embree-${EMBREE_VERSION}" COMPONENT devel)
 
 ##############################################################

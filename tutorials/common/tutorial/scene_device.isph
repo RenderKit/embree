@@ -128,14 +128,8 @@ struct ISPCInstance
 {
   uniform ISPCGeometry geom;
   int8 align[12];
-  struct {
-    struct {
-      Vec3fa vx;
-      Vec3fa vy;
-      Vec3fa vz;
-    } l;
-    Vec3fa p;
-  } space;
+  AffineSpace3fa space0;
+  AffineSpace3fa space1;
   int geomID;
 };
 

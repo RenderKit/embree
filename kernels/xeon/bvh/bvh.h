@@ -163,7 +163,7 @@ namespace embree
         if ((N >= 8) || (types > BVH_FLAG_ALIGNED_NODE)) {
           prefetchL1(((char*)ptr)+2*64);
 #if defined(__AVX512F__)
-          prefetchL2(((char*)ptr)+3*64);
+          prefetchL1(((char*)ptr)+3*64);
 #else
           prefetchL1(((char*)ptr)+3*64);
 #endif

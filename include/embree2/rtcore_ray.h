@@ -149,6 +149,41 @@ public:
   unsigned instID[16];  //!< instance ID
 };
 
+
+/*! \brief Ray structure template for packets of N rays in SOA layout. */
+template<int N>
+struct RTCORE_ALIGN(64) RTCRayN
+{
+	/* ray data */
+public:
+	float orgx[N];  //!< x coordinate of ray origin
+	float orgy[N];  //!< y coordinate of ray origin
+	float orgz[N];  //!< z coordinate of ray origin
+
+	float dirx[N];  //!< x coordinate of ray direction
+	float diry[N];  //!< y coordinate of ray direction
+	float dirz[N];  //!< z coordinate of ray direction
+
+	float tnear[N]; //!< Start of ray segment 
+	float tfar[N];  //!< End of ray segment (set to hit distance)
+
+	float time[N];  //!< Time of this ray for motion blur
+	unsigned mask[N];  //!< Used to mask out objects during traversal
+
+	/* hit data */
+public:
+	float Ngx[N];   //!< x coordinate of geometry normal
+	float Ngy[N];   //!< y coordinate of geometry normal
+	float Ngz[N];   //!< z coordinate of geometry normal
+
+	float u[N];     //!< Barycentric u coordinate of hit
+	float v[N];     //!< Barycentric v coordinate of hit
+
+	unsigned geomID[N];  //!< geometry ID
+	unsigned primID[N];  //!< primitive ID
+	unsigned instID[N];  //!< instance ID
+};
+
 /*! @} */
 
 #endif

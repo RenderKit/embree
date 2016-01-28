@@ -1107,12 +1107,26 @@ namespace embree
 
       srand48(threadIndex*334124);
       Vec3f* numbers = new Vec3f[N];
+#if 0
+      assert(N % 16 == 0);
+      for (size_t i=0; i<N; i++) {
+        size_t j = i >> 4;
+        float tx = (j & 1) ? 1.0f : -1.0f;
+        float ty = (j & 2) ? 1.0f : -1.0f;
+        float tz = (j & 4) ? 1.0f : -1.0f;
+        float x = drand48()*tx;
+        float y = drand48()*ty;
+        float z = drand48()*tz;
+        numbers[i] = Vec3f(x,y,z);
+      }      
+#else
       for (size_t i=0; i<N; i++) {
         float x = 2.0f*drand48()-1.0f;
         float y = 2.0f*drand48()-1.0f;
         float z = 2.0f*drand48()-1.0f;
         numbers[i] = Vec3f(x,y,z);
       }
+#endif
       __aligned(16) int valid16[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
 
       if (threadIndex != 0) g_barrier_active.wait(threadIndex);
@@ -1420,7 +1434,7 @@ namespace embree
 #if HAS_INTERSECT16
     if (hasISA(AVX512KNL) || hasISA(KNC)) {
       benchmarks.push_back(new benchmark_rtcore_intersect16_throughput<true>());
-      benchmarks.push_back(new benchmark_rtcore_intersect16_throughput<false>());
+      //benchmarks.push_back(new benchmark_rtcore_intersect16_throughput<false>());
     }
 #endif
 

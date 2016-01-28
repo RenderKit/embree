@@ -46,6 +46,14 @@ namespace embree
   };
 
   template<int N>
+  struct vuint
+  {
+    unsigned int i[N];
+    __forceinline const unsigned int& operator [](size_t index) const { assert(index < N); return i[index]; }
+    __forceinline       unsigned int& operator [](size_t index)       { assert(index < N); return i[index]; }
+  };
+
+  template<int N>
   struct vlong
   {
     int64_t i[N];
@@ -115,6 +123,7 @@ namespace embree
   typedef vdouble<16> vdouble16;
   typedef vreal<16>   vreal16;
   typedef vint<16>    vint16;
+  typedef vuint<16>   vuint16;
   typedef vlong<16>   vlong16;
   typedef vbool<16>   vbool16;
   typedef vboolf<16>  vboolf16;

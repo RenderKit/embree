@@ -215,8 +215,7 @@ namespace embree
   }
 #endif
 
-#if defined(__MIC__)
-  //template<> __forceinline Vec4<vfloat4>::Vec4( const Vec3fa& a ) : x(a.x), y(a.y), z(a.z), w(a.w) {}
+#if defined(__MIC__) || defined(__AVX512F__)
   template<> __forceinline Vec4<vfloat16>::Vec4( const Vec3fa& a ) : x(a.x), y(a.y), z(a.z), w(a.w) {}
 #endif
 }

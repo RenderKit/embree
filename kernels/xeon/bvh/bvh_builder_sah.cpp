@@ -106,7 +106,7 @@ namespace embree
           bvh->clear();
           return;
         }
-        
+
         double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + toString(N) + "BuilderSAH");
 
 #if PROFILE

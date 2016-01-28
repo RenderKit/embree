@@ -19,12 +19,15 @@
 #include "sse.h"
 
 #include "vboolf8_avx.h"
+#include "vboold4_avx.h"
+
 #if defined (__AVX2__)
 #include "vint8_avx2.h"
 #else
 #include "vint8_avx.h"
 #endif
 #include "vfloat8_avx.h"
+#include "vdouble4_avx.h"
 
 #if defined (__AVX512F__)
 #include "avx512.h"

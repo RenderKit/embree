@@ -33,6 +33,7 @@ namespace embree
   void invalid_rtcIntersect4() { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect4 and rtcOccluded4 not enabled"); }
   void invalid_rtcIntersect8() { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect8 and rtcOccluded8 not enabled"); }
   void invalid_rtcIntersect16() { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect16 and rtcOccluded16 not enabled"); }
+  void invalid_rtcIntersectN() { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersectN and rtcOccludedN not enabled"); }
 
  
 /* number of created scene */
@@ -47,7 +48,7 @@ namespace embree
       needBezierIndices(false), needBezierVertices(false),
       needLineIndices(false), needLineVertices(false),
       needSubdivIndices(false), needSubdivVertices(false),
-      numIntersectionFilters4(0), numIntersectionFilters8(0), numIntersectionFilters16(0),
+      numIntersectionFilters4(0), numIntersectionFilters8(0), numIntersectionFilters16(0),numIntersectionFiltersN(0),
       commitCounter(0), commitCounterSubdiv(0), 
       progress_monitor_function(nullptr), progress_monitor_ptr(nullptr), progress_monitor_counter(0),
       progressInterface(this)
@@ -455,8 +456,9 @@ namespace embree
     return geom->id;
   }
 
-  unsigned Scene::newInstance (Scene* scene) {
-    Geometry* geom = new Instance(this,scene);
+  unsigned Scene::newInstance (Scene* scene, size_t numTimeSteps) 
+  {
+    Geometry* geom = new Instance(this,scene,numTimeSteps);
     return geom->id;
   }
   
@@ -599,6 +601,7 @@ namespace embree
     if ((aflags & RTC_INTERSECT4) == 0) intersectors.intersector4 = Accel::Intersector4(&invalid_rtcIntersect4);
     if ((aflags & RTC_INTERSECT8) == 0) intersectors.intersector8 = Accel::Intersector8(&invalid_rtcIntersect8);
     if ((aflags & RTC_INTERSECT16) == 0) intersectors.intersector16 = Accel::Intersector16(&invalid_rtcIntersect16);
+    if ((aflags & RTC_INTERSECTN) == 0) intersectors.intersectorN = Accel::IntersectorN(&invalid_rtcIntersectN);
 
     /* update commit counter */
     commitCounter++;
@@ -615,7 +618,7 @@ namespace embree
     progress_monitor_counter = 0;
 
     /* select fast code path if no intersection filter is present */
-    accels.select(numIntersectionFilters4,numIntersectionFilters8,numIntersectionFilters16);
+    accels.select(numIntersectionFilters4,numIntersectionFilters8,numIntersectionFilters16,numIntersectionFiltersN);
   
     /* build all hierarchies of this scene */
     accels.build(0,0);
@@ -672,7 +675,7 @@ namespace embree
     }
 
     /* select fast code path if no intersection filter is present */
-    accels.select(numIntersectionFilters4,numIntersectionFilters8,numIntersectionFilters16);
+    accels.select(numIntersectionFilters4,numIntersectionFilters8,numIntersectionFilters16,numIntersectionFiltersN);
 
     /* if user provided threads use them */
     if (threadCount)

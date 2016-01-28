@@ -16,3 +16,4 @@
 
 INCLUDE(tutorial)
 ADD_TUTORIAL(instanced_geometry)
+ADD_EMBREE_TEST(instanced_geometry)

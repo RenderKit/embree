@@ -35,8 +35,9 @@ extern "C" void ispcDebug();
 extern "C" RTCScene ispcNewScene (uniform RTCSceneFlags flags, uniform RTCAlgorithmFlags aflags);
 extern "C" RTCScene ispcNewScene2 (RTCDevice device, uniform RTCSceneFlags flags, uniform RTCAlgorithmFlags aflags);
 extern "C" void ispcSetProgressMonitorFunction (RTCScene scene, void* uniform func, void* uniform ptr);
-extern "C" void ispcCommitScene (RTCScene scene);
-extern "C" void ispcCommitSceneThread (RTCScene scene, uniform unsigned int threadID, uniform unsigned int numThreads);
+extern "C" void ispcCommit (RTCScene scene);
+extern "C" void ispcCommitThread (RTCScene scene, uniform unsigned int threadID, uniform unsigned int numThreads);
+extern "C" void ispcGetBounds(RTCScene scene, uniform RTCBounds& bounds_o);
 extern "C" void ispcIntersect1 (RTCScene scene, uniform RTCRay1& ray);
 extern "C" void ispcIntersect4 (void* uniform valid, RTCScene scene, void* uniform ray);
 extern "C" void ispcIntersect8 (void* uniform valid, RTCScene scene, void* uniform ray);
@@ -47,8 +48,10 @@ extern "C" void ispcOccluded8 (void* uniform valid, RTCScene scene, void* unifor
 extern "C" void ispcOccluded16 (void* uniform valid, RTCScene scene, void* uniform ray);
 extern "C" void ispcDeleteScene (RTCScene scene);
 extern "C" uniform unsigned int ispcNewInstance (RTCScene target, RTCScene source);
+extern "C" uniform unsigned int ispcNewInstance2 (RTCScene target, RTCScene source, uniform size_tt numTimeSteps);
 //extern "C" uniform unsigned int ispcNewGeometryInstance (RTCScene scene, uniform unsigned int geomID);
 extern "C" void ispcSetTransform (RTCScene scene, uniform unsigned int geomID, uniform RTCMatrixType layout, const uniform float* uniform xfm);
+extern "C" void ispcSetTransform2 (RTCScene scene, uniform unsigned int geomID, uniform RTCMatrixType layout, const uniform float* uniform xfm, uniform size_tt timeStep);
 extern "C" uniform unsigned int ispcNewUserGeometry (RTCScene scene, uniform size_tt numItems);
 extern "C" uniform unsigned int ispcNewUserGeometry2 (RTCScene scene, uniform size_tt numItems, uniform size_tt numTimeSteps);
 extern "C" uniform unsigned int ispcNewTriangleMesh (RTCScene scene,
@@ -97,6 +100,7 @@ extern "C" void ispcDeleteGeometry (RTCScene scene, uniform unsigned int geomID)
 
 extern "C" void ispcSetBoundsFunction (RTCScene scene, uniform unsigned int geomID, void* uniform bounds);
 extern "C" void ispcSetBoundsFunction2 (RTCScene scene, uniform unsigned int geomID, void* uniform bounds, void* uniform userPtr);
+extern "C" void ispcSetTessellationRate (RTCScene hscene, uniform unsigned geomID, uniform float tessellationRate);
 extern "C" void ispcSetUserData (RTCScene scene, uniform unsigned int geomID, void* uniform ptr);
 extern "C" void* uniform ispcGetUserData (RTCScene scene, uniform unsigned int geomID);
 
@@ -210,11 +214,15 @@ void rtcSetProgressMonitorFunction(RTCScene scene, uniform RTC_PROGRESS_MONITOR_
 }
 
 void rtcCommit (RTCScene scene) {
-  ispcCommitScene(scene);
+  ispcCommit(scene);
 }
 
 void rtcCommitThread (RTCScene scene, uniform unsigned int threadID, uniform unsigned int numThreads) {
-  ispcCommitSceneThread(scene,threadID,numThreads);
+  ispcCommitThread(scene,threadID,numThreads);
+}
+
+void rtcGetBounds(RTCScene scene, uniform RTCBounds& bounds_o) {
+  ispcGetBounds(scene,bounds_o);
 }
 
 void rtcIntersect1 (RTCScene scene, uniform RTCRay1& ray) {
@@ -263,12 +271,20 @@ uniform unsigned int rtcNewInstance (RTCScene target, RTCScene source) {
   return ispcNewInstance(target,source);
 }
 
+uniform unsigned int rtcNewInstance2 (RTCScene target, RTCScene source, uniform size_t numTimeSteps) {
+  return ispcNewInstance2(target,source,numTimeSteps);
+}
+
 /*uniform unsigned int rtcNewGeometryInstance(RTCScene scene, uniform unsigned int geomID) {
   return ispcNewGeometryInstance(scene,geomID);
   }*/
 
 void rtcSetTransform (RTCScene scene, uniform unsigned int geomID, uniform RTCMatrixType layout, const uniform float* uniform xfm) {
   ispcSetTransform(scene,geomID,layout,xfm);
+}
+
+void rtcSetTransform2 (RTCScene scene, uniform unsigned int geomID, uniform RTCMatrixType layout, const uniform float* uniform xfm, uniform size_t timeStep) {
+  ispcSetTransform2(scene,geomID,layout,xfm,timeStep);
 }
 
 uniform unsigned int rtcNewUserGeometry (RTCScene scene, uniform size_t numItems) {
@@ -367,6 +383,10 @@ void rtcDisable (RTCScene scene, uniform unsigned int geomID) {
 
 void rtcDeleteGeometry (RTCScene scene, uniform unsigned int geomID) {
   ispcDeleteGeometry(scene,geomID);
+}
+
+void rtcSetTessellationRate (RTCScene hscene, uniform unsigned geomID, uniform float tessellationRate) {
+  ispcSetTessellationRate(hscene,geomID,tessellationRate);
 }
 
 void rtcSetUserData (RTCScene scene, uniform unsigned int geomID, void* uniform ptr) {

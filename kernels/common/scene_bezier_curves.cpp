@@ -21,7 +21,7 @@
 namespace embree
 {
   BezierCurves::BezierCurves (Scene* parent, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps) 
-    : Geometry(parent,BEZIER_CURVES,numPrimitives,numTimeSteps,flags)
+    : Geometry(parent,BEZIER_CURVES,numPrimitives,numTimeSteps,flags), tessellationRate(4)
   {
     curves.init(parent->device,numPrimitives,sizeof(int));
     for (size_t i=0; i<numTimeSteps; i++) {
@@ -122,6 +122,14 @@ namespace embree
     case RTC_VERTEX_BUFFER1: vertices[1].unmap(parent->numMappedBuffers); break;
     default: throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); break;
     }
+  }
+  
+  void BezierCurves::setTessellationRate(float N)
+  {
+    if (parent->isStatic() && parent->isBuild()) 
+      throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
+
+    tessellationRate = clamp((int)N,1,16);
   }
 
   void BezierCurves::immutable () 

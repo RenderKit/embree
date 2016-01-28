@@ -46,7 +46,7 @@ namespace embree
     void print(size_t ident);
     void immutable();
     void build (size_t threadIndex, size_t threadCount);
-    void select(bool filter4, bool filter8, bool filter16);
+    void select(bool filter4, bool filter8, bool filter16, bool filterN);
     void deleteGeometry(size_t geomID);
     void clear ();
       

@@ -175,47 +175,10 @@ namespace embree
     return ptr;
   }
 
-  void* os_reserve(size_t bytes)
+  void* os_reserve(size_t bytes) 
   {
-    int flags = MAP_PRIVATE | MAP_ANON | MAP_NORESERVE;
-
-    if (isHugePageCandidate(bytes)) 
-    {
-#if defined(__MIC__)
-      flags |= MAP_POPULATE;
-#endif
-      bytes = (bytes+PAGE_SIZE_2M-1)&ssize_t(-PAGE_SIZE_2M);
-
-#if !defined(__MACOSX__)
-      /* try direct huge page allocation first */
-      if (tryDirectHugePageAllocation)
-      {
-        void* ptr = mmap(0, bytes, PROT_READ | PROT_WRITE, flags | MAP_HUGETLB, -1, 0);
-      
-        if (ptr == nullptr || ptr == MAP_FAILED)
-        {
-          /* direct huge page allocation failed, disable it for the future */
-          tryDirectHugePageAllocation = false;     
-        }
-        else
-          return ptr;          
-      }
-#endif
-    } 
-    else
-      bytes = (bytes+PAGE_SIZE_4K-1)&ssize_t(-PAGE_SIZE_4K);
-
-    /* standard mmap call */
-    char* ptr = (char*) mmap(0, bytes, PROT_READ | PROT_WRITE, flags, -1, 0);
-    assert( ptr != MAP_FAILED );
-    if (ptr == nullptr || ptr == MAP_FAILED) throw std::bad_alloc();
-
-#if USE_MADVISE
-    /* advise huge page hint for THP */
-    os_madvise(ptr,bytes);
-#endif
-
-    return ptr;
+    /* linux always allocates pages on demand, thus just call allocate */
+    return os_malloc(bytes);
   }
 
   void os_commit (void* ptr, size_t bytes) {

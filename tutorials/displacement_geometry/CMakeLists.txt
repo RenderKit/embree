@@ -14,8 +14,7 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-INCLUDE(CMakeDependentOption)
-
 INCLUDE(tutorial)
 ADD_TUTORIAL(displacement_geometry)
+ADD_EMBREE_TEST(displacement_geometry)
 

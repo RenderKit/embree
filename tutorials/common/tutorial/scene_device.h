@@ -265,10 +265,11 @@ namespace embree
     struct ISPCInstance
     {
       ISPCInstance (Ref<TutorialScene::Instance> in)
-      : geom(INSTANCE), space(in->space), geomID(in->geomID) {}
+      : geom(INSTANCE), space0(in->space0), space1(in->space1), geomID(in->geomID) {}
       
       ISPCGeometry geom;
-      AffineSpace3fa space;
+      AffineSpace3fa space0;
+      AffineSpace3fa space1;
       int geomID;
     };
     

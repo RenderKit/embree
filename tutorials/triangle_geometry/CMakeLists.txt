@@ -16,3 +16,4 @@
 
 INCLUDE(tutorial)
 ADD_TUTORIAL(triangle_geometry)
+ADD_EMBREE_TEST(triangle_geometry)

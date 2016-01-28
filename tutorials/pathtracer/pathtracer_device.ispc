@@ -204,7 +204,7 @@ inline Vec3f Minneart__eval(const varying Minneart* uniform This,
                      const Vec3f &wo, const DifferentialGeometry &dg, const Vec3f &wi) 
 {
   const float cosThetaI = clamp(dot(wi,dg.Ns));
-  const float backScatter = pow(clamp(dot(wo,wi)), This->b);
+  const float backScatter = powf(clamp(dot(wo,wi)), This->b);
   return (backScatter * cosThetaI * one_over_pi) * This->R;
 }
 
@@ -251,7 +251,7 @@ inline Vec3f Velvety__eval(const varying Velvety* uniform This,
   const float cosThetaO = clamp(dot(wo,dg.Ns));
   const float cosThetaI = clamp(dot(wi,dg.Ns));
   const float sinThetaO = sqrt(1.0f - cosThetaO * cosThetaO);
-  const float horizonScatter = pow(sinThetaO, This->f);
+  const float horizonScatter = powf(sinThetaO, This->f);
   return (horizonScatter * cosThetaI * one_over_pi) * This->R;
 }
 
@@ -461,7 +461,7 @@ inline float AnisotropicBlinn__eval(const varying AnisotropicBlinn* uniform This
   const float R = sqr(cosPhiH)+sqr(sinPhiH);
   if (R == 0.0f) return This->norm2;
   const float n = (This->nx*sqr(cosPhiH)+This->ny*sqr(sinPhiH))*rcp(R);
-  return This->norm2 * pow(abs(cosThetaH), n);
+  return This->norm2 * powf(abs(cosThetaH), n);
 }
 
 /*! Samples the distribution. \param s is the sample location
@@ -592,7 +592,7 @@ Vec3f OBJMaterial__eval(OBJMaterial* uniform material, const BRDF& brdf, const V
   if (Ms > 0.0f) {
     const Sample3f refl = reflect_(wo,dg.Ns);
     if (dot(refl.v,wi) > 0.0f) 
-      R = R + (brdf.Ns+2) * one_over_two_pi * pow(max(1e-10f,dot(refl.v,wi)),brdf.Ns) * clamp(dot(wi,dg.Ns)) * brdf.Ks;
+      R = R + (brdf.Ns+2) * one_over_two_pi * powf(max(1e-10f,dot(refl.v,wi)),brdf.Ns) * clamp(dot(wi,dg.Ns)) * brdf.Ks;
   }
   if (Mt > 0.0f) {
   }
@@ -614,7 +614,7 @@ Vec3f OBJMaterial__sample(OBJMaterial* uniform material, const BRDF& brdf, const
   {
     const Sample3f refl = reflect_(wo,dg.Ns);
     wis = powerCosineSampleHemisphere(s.x,s.y,refl.v,brdf.Ns);
-    cs = (brdf.Ns+2) * one_over_two_pi * pow(dot(refl.v,wis.v),brdf.Ns) * clamp(dot(wis.v,dg.Ns)) * brdf.Ks;
+    cs = (brdf.Ns+2) * one_over_two_pi * powf(max(dot(refl.v,wis.v),1e-10f),brdf.Ns) * clamp(dot(wis.v,dg.Ns)) * brdf.Ks;
   }
 
   Vec3f ct = make_Vec3f(0.0f); 
@@ -1141,9 +1141,17 @@ uniform unsigned int convertInstance(uniform ISPCInstance* uniform instance, uni
     } else */
   {
     RTCScene scene_inst = geomID_to_scene[instance->geomID];
-    uniform unsigned int geomID = rtcNewInstance(scene_out, scene_inst);
-    rtcSetTransform(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->space.l.vx.x);
-    return geomID;
+    if (eq(make_AffineSpace3f(instance->space0),make_AffineSpace3f(instance->space1))) {
+      uniform unsigned int geomID = rtcNewInstance(scene_out, scene_inst);
+      rtcSetTransform(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->space0.l.vx.x);
+      return geomID;
+    } 
+    else {
+      uniform unsigned int geomID = rtcNewInstance2(scene_out, scene_inst, 2);
+      rtcSetTransform2(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->space0.l.vx.x,0);
+      rtcSetTransform2(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->space1.l.vx.x,1);
+      return geomID;
+    }
   } 
 }     
 
@@ -1440,8 +1448,9 @@ inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
 
     /* convert normals */
     if (instance) {
-      dg.Ng = dg.Ng.x * make_Vec3f(instance->space.l.vx) + dg.Ng.y * make_Vec3f(instance->space.l.vy) + dg.Ng.z * make_Vec3f(instance->space.l.vz);
-      dg.Ns = dg.Ns.x * make_Vec3f(instance->space.l.vx) + dg.Ns.y * make_Vec3f(instance->space.l.vy) + dg.Ns.z * make_Vec3f(instance->space.l.vz);
+      AffineSpace3f space = (1.0f-ray.time)*make_AffineSpace3f(instance->space0) + ray.time*make_AffineSpace3f(instance->space1);
+      dg.Ng = xfmVector(space,dg.Ng);
+      dg.Ns = xfmVector(space,dg.Ns);
     }
   }
 

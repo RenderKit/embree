@@ -70,13 +70,6 @@ enum RTCBoundaryMode
   RTC_BOUNDARY_EDGE_AND_CORNER = 2     //!< boundary corner vertices are sharp vertices
 };
 
-/*! Axis aligned bounding box representation */
-struct RTCORE_ALIGN(16) RTCBounds
-{
-  float lower_x, lower_y, lower_z, align0;
-  float upper_x, upper_y, upper_z, align1;
-};
-
 /*! Intersection filter function for single rays. */
 typedef void (*RTCFilterFunc)(void* ptr,           /*!< pointer to user data */
                               RTCRay& ray          /*!< intersection to filter */);
@@ -122,12 +115,35 @@ RTCORE_API unsigned rtcNewInstance (RTCScene target,                  //!< the s
                                     RTCScene source                   //!< the scene to instantiate
   );
 
+/*! \brief Creates a new scene instance. 
+
+  A scene instance contains a reference to a scene to instantiate and
+  the transformation to instantiate the scene with. For motion blurred
+  instances, a number of timesteps can get specified (currently only 1
+  or 2 timesteps are supported). An implementation will typically
+  transform the ray with the inverse of the provided transformation
+  and continue traversing the ray through the provided scene. If any
+  geometry is hit, the instance ID (instID) member of the ray will get
+  set to the geometry ID of the instance. */
+RTCORE_API unsigned rtcNewInstance2 (RTCScene target,                  //!< the scene the instance belongs to
+                                     RTCScene source,                  //!< the scene to instantiate
+                                     size_t numTimeSteps = 1);         //!< number of timesteps, one matrix per timestep
+
 /*! \brief Sets transformation of the instance */
 RTCORE_API void rtcSetTransform (RTCScene scene,                          //!< scene handle
                                  unsigned geomID,                         //!< ID of geometry
                                  RTCMatrixType layout,                    //!< layout of transformation matrix
-                                 const float* xfm                         //!< transformation matrix
-                                 );
+                                 const float* xfm                         //!< pointer to transformation matrix
+  );
+
+
+/*! \brief Sets transformation of the instance for specified timestep */
+RTCORE_API void rtcSetTransform2 (RTCScene scene,                         //!< scene handle
+                                  unsigned int geomID,                    //!< ID of geometry 
+                                  RTCMatrixType layout,                   //!< layout of transformation matrix
+                                  const float* xfm,                       //!< pointer to transformation matrix
+                                  size_t timeStep = 0                     //!< timestep to set the matrix for 
+  );
 
 /*! \brief Creates a new triangle mesh. The number of triangles
   (numTriangles), number of vertices (numVertices), and number of time
@@ -259,6 +275,11 @@ RTCORE_API unsigned rtcNewHairGeometry (RTCScene scene,                    //!< 
                                         size_t numVertices,                //!< number of vertices
                                         size_t numTimeSteps = 1            //!< number of motion blur time steps
   );
+
+/*! Sets a uniform tessellation rate for subdiv meshes and hair
+ *  geometry. For subdivision meshes the RTC_LEVEL_BUFFER can also be used
+ *  optionally to set a different tessellation rate per edge.*/
+RTCORE_API void rtcSetTessellationRate (RTCScene scene, unsigned geomID, float tessellationRate);
 
 /*! \brief Creates a new line segment geometry, consisting of multiple
   segments with varying radii. The number of line segments (numSegments),

@@ -123,7 +123,7 @@ namespace embree
     unsigned int newUserGeometry (size_t items, size_t numTimeSteps);
 
     /*! Creates a new scene instance. */
-    unsigned int newInstance (Scene* scene);
+    unsigned int newInstance (Scene* scene, size_t numTimeSteps);
 
     /*! Creates a new geometry instance. */
     unsigned int newGeometryInstance (Geometry* geom);
@@ -377,6 +377,7 @@ namespace embree
     atomic_t numIntersectionFilters4;   //!< number of enabled intersection/occlusion filters for 4-wide ray packets
     atomic_t numIntersectionFilters8;   //!< number of enabled intersection/occlusion filters for 8-wide ray packets
     atomic_t numIntersectionFilters16;  //!< number of enabled intersection/occlusion filters for 16-wide ray packets
+    atomic_t numIntersectionFiltersN;  //!< number of enabled intersection/occlusion filters for N-wide ray streams    
   };
 
   template<> __forceinline size_t Scene::getNumPrimitives<TriangleMesh,1>() const { return world1.numTriangles; } 

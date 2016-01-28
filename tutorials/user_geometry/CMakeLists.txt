@@ -16,3 +16,4 @@
 
 INCLUDE(tutorial)
 ADD_TUTORIAL(user_geometry)
+ADD_EMBREE_TEST(user_geometry)

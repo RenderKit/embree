@@ -227,9 +227,10 @@ namespace embree
           ray.u = uv.x;
           ray.v = uv.y;
           ray.tfar = hit.vt[i];
-          ray.Ng.x = hit.vNg.x[i];
-          ray.Ng.y = hit.vNg.y[i];
-          ray.Ng.z = hit.vNg.z[i];
+          const Vec3fa Ng = hit.Ng(i);
+          ray.Ng.x = Ng.x;
+          ray.Ng.y = Ng.y;
+          ray.Ng.z = Ng.z;
           ray.geomID = geomID;
           ray.primID = primID;
           return true;
@@ -678,9 +679,10 @@ namespace embree
           ray.u[k] = uv.x;
           ray.v[k] = uv.y;
           ray.tfar[k] = hit.vt[i];
-          ray.Ng.x[k] = hit.vNg.x[i];
-          ray.Ng.y[k] = hit.vNg.y[i];
-          ray.Ng.z[k] = hit.vNg.z[i];
+          const Vec3fa Ng = hit.Ng(i);
+          ray.Ng.x[k] = Ng.x;
+          ray.Ng.y[k] = Ng.y;
+          ray.Ng.z[k] = Ng.z;
           ray.geomID[k] = geomID;
           ray.primID[k] = primID;
           return true;
