@@ -70,7 +70,7 @@ namespace embree
     exit(1);
   }
 
-  RTCAlgorithmFlags aflags = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT4 | RTC_INTERSECT8 | RTC_INTERSECT16);
+  RTCAlgorithmFlags aflags = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT4 | RTC_INTERSECT8 | RTC_INTERSECT16 | RTC_INTERSECTN);
 
   /* configuration */
   static std::string g_rtcore = "";
@@ -1192,6 +1192,99 @@ namespace embree
 #endif
 
 
+
+#if HAS_INTERSECT8
+
+  template<bool intersect>
+  class benchmark_rtcore_intersect_stream_throughput : public Benchmark
+  {
+  public:
+    enum { N = 1024*128 };
+    static RTCScene scene;
+
+    benchmark_rtcore_intersect_stream_throughput () 
+      : Benchmark(intersect ? "incoherent_intersect_stream_throughput" : "incoherent_occluded_stream_throughput","MRays/s (all HW threads)") {}
+
+    static double benchmark_rtcore_intersect_stream_throughput_thread(void* arg) 
+    {
+      size_t threadIndex = (size_t) arg;
+      size_t threadCount = g_num_threads;
+
+      srand48(threadIndex*334124);
+      Vec3f* numbers = new Vec3f[N];
+      for (size_t i=0; i<N; i++) {
+        float x = 2.0f*drand48()-1.0f;
+        float y = 2.0f*drand48()-1.0f;
+        float z = 2.0f*drand48()-1.0f;
+        numbers[i] = Vec3f(x,y,z);
+      }
+
+
+      if (threadIndex != 0) g_barrier_active.wait(threadIndex);
+      double t0 = getSeconds();
+
+#define STREAM_SIZE 256
+      for (size_t i=0; i<N; i+=STREAM_SIZE) {
+        RTCRay rays[STREAM_SIZE];
+        for (size_t j=0;j<STREAM_SIZE;j++)        
+        {
+          rays[j] = makeRay(zero,numbers[i+j]);
+        }
+        if (intersect)
+          rtcIntersectN(scene,rays,STREAM_SIZE,sizeof(RTCRay),RTC_RAYN_AOS);
+        else
+          rtcOccludedN(scene,rays,STREAM_SIZE,sizeof(RTCRay),RTC_RAYN_AOS);
+      }        
+
+      if (threadIndex != 0) g_barrier_active.wait(threadIndex);
+      double t1 = getSeconds();
+
+      delete [] numbers;
+      return t1-t0;
+    }
+    
+    double run (size_t numThreads)
+    {
+      RTCDevice device = rtcNewDevice((g_rtcore+",threads="+toString(numThreads)).c_str());
+      error_handler(rtcDeviceGetError(device));
+
+      int numPhi = 501;
+
+      RTCSceneFlags flags = RTC_SCENE_STATIC;
+      scene = rtcDeviceNewScene(device,flags,aflags);
+      addSphere (scene, RTC_GEOMETRY_STATIC, zero, 1, numPhi);
+      rtcCommit (scene);
+
+
+      g_num_threads = numThreads;
+      g_barrier_active.init(numThreads);
+      for (size_t i=1; i<numThreads; i++)
+	g_threads.push_back(createThread((thread_func)benchmark_rtcore_intersect_stream_throughput_thread,(void*)i,1000000,i));
+      setAffinity(0);
+      
+      g_barrier_active.wait(0);
+      double t0 = getSeconds();
+
+      double delta = benchmark_rtcore_intersect_stream_throughput_thread(0);
+
+      g_barrier_active.wait(0);
+      double t1 = getSeconds();
+      
+      for (size_t i=0; i<g_threads.size(); i++)	join(g_threads[i]);
+      g_threads.clear();
+      
+      rtcDeleteScene(scene);
+      rtcDeleteDevice(device);
+      return 1E-6*double(N)/(delta)*double(numThreads);
+    }
+  };
+
+  template<> RTCScene benchmark_rtcore_intersect_stream_throughput<true>::scene = nullptr;
+  template<> RTCScene benchmark_rtcore_intersect_stream_throughput<false>::scene = nullptr;
+
+#endif
+
+
   void rtcore_coherent_intersect1(RTCScene scene)
   {
     size_t width = 1024;
@@ -1434,9 +1527,17 @@ namespace embree
 #if HAS_INTERSECT16
     if (hasISA(AVX512KNL) || hasISA(KNC)) {
       benchmarks.push_back(new benchmark_rtcore_intersect16_throughput<true>());
-      //benchmarks.push_back(new benchmark_rtcore_intersect16_throughput<false>());
+      benchmarks.push_back(new benchmark_rtcore_intersect16_throughput<false>());
     }
 #endif
+
+#if HAS_INTERSECT8
+    if (hasISA(AVX)) {
+      benchmarks.push_back(new benchmark_rtcore_intersect_stream_throughput<true>());
+      benchmarks.push_back(new benchmark_rtcore_intersect_stream_throughput<false>());
+    }
+#endif
+
 
     benchmarks.push_back(new benchmark_mutex_sys());
     benchmarks.push_back(new benchmark_barrier_sys());
