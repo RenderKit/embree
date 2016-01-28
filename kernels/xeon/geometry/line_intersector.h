@@ -80,10 +80,10 @@ namespace embree
       return true;
     }
 
-    static __noinline bool intersect_iterative2(const Ray& ray,
-                                                const Vec3fa& p0_i, const Vec3fa& n0, const float r0,
-                                                const Vec3fa& p1_i, const Vec3fa& n1, const float r1,
-                                                float& u, float& t, Vec3fa& Ng)
+    static __noinline bool intersect_fill_cone(const Ray& ray,
+                                               const Vec3fa& p0_i, const Vec3fa& n0, const float r0,
+                                               const Vec3fa& p1_i, const Vec3fa& n1, const float r1,
+                                               float& u, float& t, Vec3fa& Ng)
     {
       STAT(Stat::get().user[0]++); 
       
@@ -703,7 +703,7 @@ namespace embree
             float u = 0.0f;
             float t = 0.0f;
             Vec3fa Ng = zero;
-            if (!intersect_iterative2(ray,p1,n1,v1.w[i],p2,n2,v2.w[i],u,t,Ng)) continue;
+            if (!intersect_fill_cone(ray,p1,n1,v1.w[i],p2,n2,v2.w[i],u,t,Ng)) continue;
             hit.vu[i] = u;
             hit.vv[i] = 0.0f;
             hit.vt[i] = t;
