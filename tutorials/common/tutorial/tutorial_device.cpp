@@ -374,7 +374,10 @@ extern "C" bool device_pick(const float x,
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
   PRINT2(x,y);
-  PRINT(ray);
+  PRINT(ray.geomID);
+  PRINT(ray.primID);
+  Vec3fa hit_point = ray.org + ray.tnear*ray.dir;
+  PRINT(hit_point);
 
   /* shade pixel */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {

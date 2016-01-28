@@ -154,7 +154,7 @@ namespace embree
         return false;
       }
 
-#if 0
+#if 1
       if (tc_lower > ray.tnear-tb && tc_lower < ray.tfar-tb) 
       {
         u = 0.0f;
