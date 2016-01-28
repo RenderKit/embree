@@ -79,6 +79,7 @@ namespace embree
         bool ishit = false;
         BezierCurve3fa curve2D(v0,v1,v2,v3,0.0f,1.0f,4);
         int N = Np-1; // calculate number of segments
+        float rcpN = 1.0f/float(N);
 
         /* process SIMD-size-1 many segments per iteration */
         for (int i=0; i<N; i+=VSIZEX-1)
@@ -111,7 +112,7 @@ namespace embree
             float t = 0.0f;
             Vec3fa Ng = zero;
             if (!intersect_fill_cone(ray,p1,n1,r1,p2,n2,r2,u,t,Ng)) continue;
-            hit.vu[j] = u;
+            hit.vu[j] = (float(i+j)+u)*rcpN;
             hit.vv[j] = 0.0f;
             hit.vt[j] = t;
             hit.vNg.x[j] = Ng.x;
