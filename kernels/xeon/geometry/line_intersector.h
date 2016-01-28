@@ -350,7 +350,7 @@ namespace embree
             STAT(Stat::get().user[1]++); 
             return false;
           }
-#if 1
+#if 0
           if (std::isnan(u0) || u0 < 0 || u0 > 1.0f || tc_lower < ray.tnear || tc_lower > ray.tfar) return false;
           t = tc_lower;
           u = u0;
@@ -409,8 +409,10 @@ namespace embree
             }
           }
           //if (std::isnan(t)) return false;
-          if (t < max(ray.tnear,tc_lower) || t > min(ray.tfar,tc_upper))
+          //if (t < max(ray.tnear,tc_lower) || t > min(ray.tfar,tc_upper)) {
+          if (t < ray.tnear || t > min(ray.tfar,tc_upper)) {
             return false;
+          }
 
           return true;
         }
