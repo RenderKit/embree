@@ -149,8 +149,8 @@ namespace embree
       auto tp0 = intersect_half_plane(zero,dir,+n0,p0);
       auto tp1 = intersect_half_plane(zero,dir,-n1,p1);
       
-      tc_lower = max(tc_lower,tp0.first ,tp1.first );
-      tc_upper = min(tc_upper,tp0.second,tp1.second);
+      tc_lower = max(tc_lower,tp0.first ,tp1.first )-2.5f*t_term;
+      tc_upper = min(tc_upper,tp0.second,tp1.second)+2.5f*t_term;
       if (tc_lower > tc_upper) {
         STAT(Stat::get().user[2]++); 
         return false;
@@ -214,7 +214,7 @@ namespace embree
         }
       }
       //if (std::isnan(t)) return false;
-      if (t+1.5f*t_term < max(ray.tnear-tb,tc_lower) || t-1.5f*t_term > min(ray.tfar-tb,tc_upper)) {
+      if (t < max(ray.tnear-tb,tc_lower) || t > min(ray.tfar-tb,tc_upper)) {
       //if (t < ray.tnear-tb || t > min(ray.tfar-tb,tc_upper)) {
       //PRINT("miss1");
         return false;

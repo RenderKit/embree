@@ -34,7 +34,6 @@ namespace embree
       {
         STAT3(normal.trav_prims,1,1,1);
         const int N = ((BezierCurves*)scene->get(prim.geomID()))->tessellationRate;
-        if (prim.primID() == 1872033)
         pre.intersect(ray,prim.p0,prim.p1,prim.p2,prim.p3,N,Intersect1EpilogU<VSIZEX,true>(ray,prim.geomID(),prim.primID(),scene,geomID_to_instID));
       }
       
