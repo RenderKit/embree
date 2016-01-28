@@ -640,7 +640,8 @@ namespace embree
   }
 
   __forceinline vfloat16 shift_right_1( const vfloat16& x) {
-    return align_shift_right<1>(vfloat16(zero),x);
+    NOT_IMPLEMENTED; // FIXME: implement
+    return zero;
   }
 
   __forceinline float toScalar(const vfloat16& a) { return _mm512_cvtss_f32(a); }
