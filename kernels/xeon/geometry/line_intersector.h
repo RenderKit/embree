@@ -179,6 +179,13 @@ namespace embree
       //PRINT("miss1");
         return false;
       }
+
+      const Vec3fa N = cross(p-p0,p1p0);
+      const Vec3fa q0 = p0+r0*normalize(cross(n0,N));
+      const Vec3fa q1 = p1+r1*normalize(cross(n1,N));
+      Ng = normalize(cross(q1-q0,N));
+      const Vec3fa P = (1.0f-u)*q0 + u*q1;
+      t = dot(q0,Ng)/dot(d,Ng);
       //PRINT("hit2");
       //PRINT(t);
       //PRINT(u);
