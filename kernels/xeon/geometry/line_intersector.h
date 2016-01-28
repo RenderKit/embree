@@ -138,6 +138,7 @@ namespace embree
       const Vec3fa p1 = p1_i-org;
       
       float t_term = 0.0001f*max(r0,r1);
+      float t_err = 0.01f*max(r0,r1);
       const float r01 = max(r0,r1);
       float tc_lower,tc_upper;
       Vec3fa Ng0;
@@ -149,12 +150,15 @@ namespace embree
       auto tp0 = intersect_half_plane(zero,dir,+n0,p0);
       auto tp1 = intersect_half_plane(zero,dir,-n1,p1);
       
-      tc_lower = max(tc_lower,tp0.first ,tp1.first )-2.5f*t_term;
-      tc_upper = min(tc_upper,tp0.second,tp1.second)+2.5f*t_term;
+      tc_lower = max(tc_lower,tp0.first ,tp1.first );
+      tc_upper = min(tc_upper,tp0.second,tp1.second);
       if (tc_lower > tc_upper) {
         STAT(Stat::get().user[2]++); 
         return false;
       }
+
+      tc_lower -= t_err;
+      tc_upper += t_err;
 
 #if 0
       if (tc_lower > ray.tnear-tb && tc_lower < ray.tfar-tb) 
