@@ -19,6 +19,7 @@
 #include "../../common/ray.h"
 #include "../../common/globals.h"
 #include "filter.h"
+#include "line_intersector.h" // FIXME: remove later
 
 namespace embree
 {
@@ -63,6 +64,73 @@ namespace embree
       vfloat<M> vt;
     };
     
+#if 1
+
+    struct Bezier1Intersector1
+    {
+      __forceinline Bezier1Intersector1(const Ray& ray, const void* ptr) {}
+
+      template<typename Epilog>
+      __forceinline bool intersect(Ray& ray,
+                                   const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const int N0,
+                                   const Epilog& epilog) const
+      {
+        STAT3(normal.trav_prims,1,1,1);
+        bool ishit = false;
+        BezierCurve3fa curve2D(v0,v1,v2,v3,0.0f,1.0f,4);
+        const int N = 3; // FIXME
+
+        /* process SIMD-size-1 many segments per iteration */
+        for (int i=0; i<N; i+=VSIZEX-1)
+        {
+          /* evaluate the bezier curve */
+          vboolx valid = vintx(i)+vintx(step) < vintx(N);
+          const Vec4vfx p  = curve2D.eval0(valid,i,N);
+          const Vec4vfx p1  = curve2D.eval0(valid,i,N); // FIXME: optimize away
+          const Vec4vfx dp_ = curve2D.derivative(valid,i,N);
+          const Vec3vfx dp = normalize(Vec3vfx(dp_.x,dp_.y,dp_.z));
+
+          /* early exit */
+          /*const Vec3vfx Q1(p.x,p.y,p.z);
+          const Vec3vfx Q2(p1.x,p1.y,p1.z);
+          valid &= abs(dot(Vec3vfx(ray.org)-Q1,normalize_safe(cross(Q2-Q1,Vec3vfx(ray.dir))))) <= max(p.w,p1.w);
+          if (none(valid)) continue;*/
+          
+          /* intersect each bezier segment */
+          vboolx valid_o = false;
+          LineIntersectorHitM<VSIZEX> hit;
+
+          for (size_t j=0; j<min(VSIZEX-1,N-i); j++)
+          {
+            const Vec3fa p1( p.x[j+0], p.y[j+0] ,p.z[j+0]);
+            const Vec3fa p2( p.x[j+1], p.y[j+1] ,p.z[j+1]);
+            const Vec3fa n1(dp.x[j+0],dp.y[j+0],dp.z[j+0]);
+            const Vec3fa n2(dp.x[j+1],dp.y[j+1],dp.z[j+1]);
+            const float  r1 =  p.w[j+0];
+            const float  r2 =  p.w[j+1];
+            float u = 0.0f;
+            float t = 0.0f;
+            Vec3fa Ng = zero;
+            if (!intersect_fill_cone(ray,p1,n1,r1,p2,n2,r2,u,t,Ng)) continue;
+            hit.vu[j] = u;
+            hit.vv[j] = 0.0f;
+            hit.vt[j] = t;
+            hit.vNg.x[j] = Ng.x;
+            hit.vNg.y[j] = Ng.y;
+            hit.vNg.z[j] = Ng.z;
+            valid_o[j] = 0xFFFFFFFF;
+          }
+          
+          /* update hit information */
+          if (unlikely(none(valid_o))) continue;
+          ishit |= epilog(valid_o,hit);
+        }
+        return ishit;
+      }
+    };
+
+#else
+
     struct Bezier1Intersector1
     {
       float depth_scale;
@@ -142,6 +210,7 @@ namespace embree
         return ishit;
       }
     };
+#endif
 
     template<int K>
     struct Bezier1IntersectorK

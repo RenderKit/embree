@@ -107,11 +107,20 @@ namespace embree
     enum { N = 16 };
   public:
     BezierCoefficients(int shift);
+
+    /* coefficients for function evaluation */
   public:
-    float c0[N+1][N];
-    float c1[N+1][N];
-    float c2[N+1][N];
-    float c3[N+1][N];
+    float c0[N+1][N+1];
+    float c1[N+1][N+1];
+    float c2[N+1][N+1];
+    float c3[N+1][N+1];
+
+    /* coefficients for derivative evaluation */
+  public:
+    float d0[N+1][N+1];
+    float d1[N+1][N+1];
+    float d2[N+1][N+1];
+    float d3[N+1][N+1];
   };
   extern BezierCoefficients bezier_coeff0;
   extern BezierCoefficients bezier_coeff1;
@@ -135,6 +144,21 @@ namespace embree
       r += Vec4<vfloat<M>>(v1) * vfloat<M>::loadu(&bezier_coeff0.c1[size][ofs]); // FIXME: use fmadd
       r += Vec4<vfloat<M>>(v2) * vfloat<M>::loadu(&bezier_coeff0.c2[size][ofs]);
       r += Vec4<vfloat<M>>(v3) * vfloat<M>::loadu(&bezier_coeff0.c3[size][ofs]);
+      return r;
+    }
+#endif
+
+#if defined(__SSE__)
+    template<int M>
+      __forceinline Vec4<vfloat<M>> derivative(const vbool<M>& valid, const int ofs, const int size) const
+    {
+      assert(size <= BezierCoefficients::N);
+      assert(ofs < size);
+      Vec4<vfloat<M>> r;
+      r  = Vec4<vfloat<M>>(v0) * vfloat<M>::loadu(&bezier_coeff0.d0[size][ofs]);
+      r += Vec4<vfloat<M>>(v1) * vfloat<M>::loadu(&bezier_coeff0.d1[size][ofs]); // FIXME: use fmadd
+      r += Vec4<vfloat<M>>(v2) * vfloat<M>::loadu(&bezier_coeff0.d2[size][ofs]);
+      r += Vec4<vfloat<M>>(v3) * vfloat<M>::loadu(&bezier_coeff0.d3[size][ofs]);
       return r;
     }
 #endif

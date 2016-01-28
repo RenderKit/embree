@@ -20,14 +20,22 @@ namespace embree
 {
   BezierCoefficients::BezierCoefficients(int dj)
   {
-    for (size_t i=0; i<=N; i++) {
-      for (size_t j=0; j<N; j++) {
+    for (size_t i=0; i<=N; i++) 
+    {
+      for (size_t j=0; j<=N; j++) 
+      {
         const float t1 = float(j+dj)/float(i);
         const float t0 = 1.0f-t1;
+
         c0[i][j] = t0 * t0 * t0;
         c1[i][j] = 3.0f * t1 * t0 * t0;
         c2[i][j] = 3.0f * t1 * t1 * t0;
         c3[i][j] = t1 * t1 * t1;
+
+        d0[i][j] = -3.0f*(t0*t0);
+        d1[i][j] = -6.0f*(t0*t1) + 3.0f*(t0*t0);
+        d2[i][j] = +6.0f*(t0*t1) - 3.0f*(t1*t1);
+        d3[i][j] = +3.0f*(t1*t1);
       }
     }
   }
