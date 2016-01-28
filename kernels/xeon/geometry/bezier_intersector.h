@@ -87,8 +87,7 @@ namespace embree
           vboolx valid = vintx(i)+vintx(step) < vintx(N);
           const Vec4vfx p  = curve2D.eval0(valid,i,N);
           const Vec4vfx p1  = curve2D.eval1(valid,i,N); // FIXME: optimize away
-          const Vec4vfx dp_ = curve2D.derivative(valid,i,N);
-          const Vec3vfx dp = normalize(Vec3vfx(dp_.x,dp_.y,dp_.z));
+          const Vec4vfx dp = curve2D.derivative(valid,i,N);
 
           /* early exit */
           const Vec3vfx Q1(p.x,p.y,p.z);
