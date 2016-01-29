@@ -1395,12 +1395,12 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
   {
     ISPCLineSegments* mesh = (ISPCLineSegments*) geometry;
     materialID = mesh->materialID;
-    const Vec3fa dx = normalize(dg.Ng);
+    /*const Vec3fa dx = normalize(dg.Ng);
     const Vec3fa dy = normalize(cross(neg(ray.dir),dx));
     const Vec3fa dz = normalize(cross(dy,dx));
     dg.Tx = dx;
     dg.Ty = dy;
-    dg.Ng = dg.Ns = dz;
+    dg.Ng = dg.Ns = dz;*/
     int vtx = mesh->indices[ray.primID];
     dg.tnear_eps = 1.1f*mesh->v[vtx].w;
   }
