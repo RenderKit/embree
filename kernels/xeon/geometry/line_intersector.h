@@ -142,8 +142,8 @@ namespace embree
       float t_err = 0.0001f*maxR;
       const float r01 = maxR+t_err;
       float tc_lower,tc_upper;
-      Vec3fa Ng0;
-      if (!intersect_cone(dir,p0,r01,p1,r01,tc_lower,tc_upper,Ng0)) {
+      Vec3fa NgA;
+      if (!intersect_cone(dir,p0,r01,p1,r01,tc_lower,tc_upper,NgA)) {
         STAT(Stat::get().user[1]++); 
         return false;
       }
@@ -166,7 +166,7 @@ namespace embree
       {
         u = 0.0f;
         t = tb+tc_lower;
-        Ng = Ng0;
+        Ng = NgA;
         return true;
       }
 #endif
@@ -177,7 +177,7 @@ namespace embree
       
       float A0 = abs(dot(norm_p1p0,normalize(n0)));
       float A1 = abs(dot(norm_p1p0,normalize(n1)));
-      float rcpMaxDerivative = max(0.001f,min(A0,A1));
+      float rcpMaxDerivative = max(0.01f,min(A0,A1));
       
       STAT(Stat::get().user[3]++);
       t = td_lower; float dt = inf;
@@ -234,11 +234,16 @@ namespace embree
       }
 
       const Vec3fa N = cross(p-p0,p1p0);
-      const Vec3fa q0 = p0+r0*normalize(cross(n0,N));
-      const Vec3fa q1 = p1+r1*normalize(cross(n1,N));
+      const Vec3fa Ng0 = normalize(cross(n0,N));
+      const Vec3fa Ng1 = normalize(cross(n1,N));
+      const Vec3fa q0 = p0+r0*Ng0;
+      const Vec3fa q1 = p1+r1*Ng1;
       Ng = normalize(cross(q1-q0,N));
+      //Ng = normalize((1.0f-u)*Ng0 + u*Ng1);
       const Vec3fa P = (1.0f-u)*q0 + u*q1;
       t = tb+dot(q0,Ng)/dot(dir,Ng);
+      //Ng = normalize((1.0f-u)*Ng0 + u*Ng1);
+
       //PRINT("hit2");
       //PRINT(t);
       //PRINT(u);

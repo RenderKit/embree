@@ -2,6 +2,24 @@
 
 <scene>
   <Group>
+    <QuadMesh>
+      <positions>
+        -20 0 -20
+        -20 0 +20
+        +20 0 +20
+        +20 0 -20
+      </positions>
+      <indices>
+        0 1 2 3
+      </indices>
+      <material>
+        <code>"OBJ"</code>
+        <parameters>
+          <float3 name="Kd">1 1 1</float3>
+        </parameters>
+      </material>
+    </QuadMesh>
+
     <LineSegments>
 
       <positions>
