@@ -148,6 +148,102 @@ namespace embree
       return dot(p-q0,Ng);
     }
 
+     __forceinline float distance_f(const Vec3fa& p,
+                                   const Vec3fa& p0, const Vec3fa& n0, const float r0,
+                                   const Vec3fa& p1, const Vec3fa& n1, const float r1)
+    {
+      Vec3fa q0; Vec3fa q1; Vec3fa Ng;
+      return distance_f(p,q0,q1,Ng,p0,n0,r0,p1,n1,r1);
+    }
+
+    __forceinline float pow_3_2(float x) {
+      return x*sqrt(x);
+    }
+    
+    __forceinline Vec3fa normalize_dx(const Vec3fa& p, const Vec3fa& dpdx)
+    {
+      float pp = dot(p,p);
+      float x = - p.x*p.x*dpdx.x + pp*dpdx.x;
+      float y = - p.x*p.y*dpdx.x; 
+      float z = - p.x*p.z*dpdx.x;
+      return Vec3fa(x,y,z)/pow_3_2(pp);
+    }
+
+    __forceinline Vec3fa normalize_dy(const Vec3fa& p, const Vec3fa& dpdy)
+    {
+      float pp = dot(p,p);
+      float x = - p.y*p.x*dpdy.y;
+      float y = - p.y*p.y*dpdy.y + pp*dpdy.y; 
+      float z = - p.y*p.z*dpdy.y;
+      return Vec3fa(x,y,z)/pow_3_2(pp);
+    }
+
+    __forceinline Vec3fa normalize_dz(const Vec3fa& p, const Vec3fa& dpdz)
+    {
+      float pp = dot(p,p);
+      float x = - p.z*p.x*dpdz.z;
+      float y = - p.z*p.y*dpdz.z; 
+      float z = - p.z*p.z*dpdz.z + pp*dpdz.z;
+      return Vec3fa(x,y,z)/pow_3_2(pp);
+
+    }
+
+    __forceinline Vec3fa grad_distance_f(const Vec3fa& p, 
+                                         const Vec3fa& p0, const Vec3fa& n0, const float r0,
+                                         const Vec3fa& p1, const Vec3fa& n1, const float r1)
+    {
+#if 1
+      const float e = 0.001f;
+      const float v = distance_f(p,p0,n0,r0,p1,n1,r1);
+      const float x = distance_f(p+Vec3fa(e,0,0),p0,n0,r0,p1,n1,r1);
+      const float y = distance_f(p+Vec3fa(0,e,0),p0,n0,r0,p1,n1,r1);
+      const float z = distance_f(p+Vec3fa(0,0,e),p0,n0,r0,p1,n1,r1);
+      return Vec3fa(x-v,y-v,z-v)/e;
+#else
+      const Vec3fa N    = cross(p-p0,p1-p0);
+      const Vec3fa dNdx = cross(Vec3fa(1,0,0),p1-p0);
+      const Vec3fa dNdy = cross(Vec3fa(0,1,0),p1-p0);
+      const Vec3fa dNdz = cross(Vec3fa(0,0,1),p1-p0);
+
+      const Vec3fa N0    = cross(n0,N);
+      const Vec3fa dN0dx = cross(n0,dNdx); 
+      const Vec3fa dN0dy = cross(n0,dNdy); 
+      const Vec3fa dN0dz = cross(n0,dNdz); 
+
+      const Vec3fa N1    = cross(n1,N);
+      const Vec3fa dN1dx = cross(n1,dNdx); 
+      const Vec3fa dN1dy = cross(n1,dNdy); 
+      const Vec3fa dN1dz = cross(n1,dNdz); 
+
+      const Vec3fa q0    = p0+r0*normalize(N0);
+      const Vec3fa dq0dx = r0*normalize_dx(N0,dN0dx);
+      const Vec3fa dq0dy = r0*normalize_dy(N0,dN0dy);
+      const Vec3fa dq0dz = r0*normalize_dz(N0,dN0dz);
+
+      const Vec3fa q1 = p1+r1*normalize(N1);
+      const Vec3fa dq1dx = r1*normalize_dx(N1,dN1dx);
+      const Vec3fa dq1dy = r1*normalize_dy(N1,dN1dy);
+      const Vec3fa dq1dz = r1*normalize_dz(N1,dN1dz);
+
+      const Vec3fa K    = cross(q1-q0,N);
+      const Vec3fa dKdx = cross(q1-q0,dNdx);
+      const Vec3fa dKdy = cross(q1-q0,dNdy);
+      const Vec3fa dKdz = cross(q1-q0,dNdz);
+
+      const Vec3fa Ng    = normalize(K);
+      const Vec3fa dNgdx = normalize_dx(K,dKdx); 
+      const Vec3fa dNgdy = normalize_dy(K,dKdy); 
+      const Vec3fa dNgdz = normalize_dz(K,dKdz); 
+
+      const float f    = dot(p-q0,Ng);
+      const float dfdx = dot(Vec3fa(1,0,0),Ng) + dot(p-q0,dNgdx); 
+      const float dfdy = dot(Vec3fa(0,1,0),Ng) + dot(p-q0,dNgdy); 
+      const float dfdz = dot(Vec3fa(0,0,1),Ng) + dot(p-q0,dNgdz); 
+
+      return Vec3fa(dfdx,dfdy,dfdz);
+#endif
+    }
+
     static __noinline bool intersect_fill_cone(const Ray& ray,
                                                const Vec3fa& p0_i, const Vec3fa& n0, const float r0,
                                                const Vec3fa& p1_i, const Vec3fa& n1, const float r1,
@@ -245,6 +341,8 @@ namespace embree
       Ng = normalize(cross(q1-q0,N));
       const Vec3fa P = (1.0f-u)*q0 + u*q1;
       t = tb+dot(q0,Ng)/dot(dir,Ng);
+
+      Ng = grad_distance_f(p,p0,n0,r0,p1,n1,r1);
       return true;
     }
         
