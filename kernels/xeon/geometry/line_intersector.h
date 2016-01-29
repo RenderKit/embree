@@ -136,7 +136,7 @@ namespace embree
       const Vec3fa dir = ray.dir;
       const Vec3fa p0 = p0_i-org;
       const Vec3fa p1 = p1_i-org;
-      
+
       float maxR = max(r0,r1);
       float t_term = 0.0001f*maxR;
       float t_err = 0.0001f*maxR;
@@ -169,12 +169,20 @@ namespace embree
         Ng = Ng0;
         return true;
       }
-#endif 
+#endif
 
+      const Vec3fa p1p0 = p1-p0;
+      const Vec3fa norm_p1p0 = normalize(p1p0);
+
+      
+      float A0 = abs(dot(norm_p1p0,normalize(n0)));
+      float A1 = abs(dot(norm_p1p0,normalize(n1)));
+      float rcpMaxDerivative = max(0.001f,min(A0,A1));
+      
       STAT(Stat::get().user[3]++);
       t = td_lower; float dt = inf;
       Vec3fa p = t*dir;
-      const Vec3fa p1p0 = p1-p0;
+      
       for (size_t i=0;; i++) 
       {
         //__asm("nop2");
@@ -207,7 +215,7 @@ namespace embree
         //PRINT(Ng);
         dt = dot(p-q0,Ng);
         //PRINT(dt);
-        t += dt;
+        t += rcpMaxDerivative*dt;
         //PRINT(t);
         //if (p == t*d) break;
         p = t*dir;
