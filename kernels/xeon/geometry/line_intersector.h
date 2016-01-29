@@ -188,7 +188,7 @@ namespace embree
         //__asm("nop2");
       //PRINT(i);
         STAT(Stat::get().user[4]++); 
-        if (unlikely(i == 200)) {
+        if (unlikely(i == 2000)) {
           STAT(Stat::get().user[5]++); 
           //PRINT("miss2");
           return false;
