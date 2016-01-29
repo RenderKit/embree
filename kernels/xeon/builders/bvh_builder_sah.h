@@ -193,17 +193,19 @@ namespace embree
           do {
             
             /*! find best child to split */
-            float bestSAH = 0;
+            //float bestSAH = 0;
+            float bestSAH = neg_inf;
             ssize_t bestChild = -1;
             for (size_t i=0; i<numChildren; i++) 
             {
-              float dSAH = children[i].split.splitSAH()-children[i].pinfo.leafSAH(logBlockSize);
+              //float dSAH = children[i].split.splitSAH()-children[i].pinfo.leafSAH(logBlockSize);
               if (children[i].pinfo.size() <= minLeafSize) continue; 
-              if (children[i].pinfo.size() > maxLeafSize) dSAH = min(dSAH,0.0f); //< force split for large jobs
-              if (dSAH <= bestSAH) { bestChild = i; bestSAH = dSAH; }
-              //if (area(children[i].pinfo.geomBounds) > bestSAH) { bestChild = i; bestSAH = area(children[i].pinfo.geomBounds); } // FIXME: measure over all scenes if this line creates better tree
+              //if (children[i].pinfo.size() > maxLeafSize) dSAH = min(dSAH,0.0f); //< force split for large jobs
+              //if (dSAH <= bestSAH) { bestChild = i; bestSAH = dSAH; }
+              if (area(children[i].pinfo.geomBounds) > bestSAH) { bestChild = i; bestSAH = area(children[i].pinfo.geomBounds); } // FIXME: measure over all scenes if this line creates better tree
             }
             if (bestChild == -1) break;
+
             
             /* perform best found split */
             BuildRecord& brecord = children[bestChild];
