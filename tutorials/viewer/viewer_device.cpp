@@ -511,6 +511,8 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   RTCRay ray;
   ray.org = p;
   ray.dir = normalize(x*vx + y*vy + vz);
+  //ray.org = Vec3fa(0.07f*(256-x),10,0.07f*(256-y));
+  //ray.dir = Vec3fa(0.0f,-1.0f,0.0f);
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -678,8 +680,7 @@ void renderTile(int taskIndex, int* pixels,
 
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
-    //if (x != 176 || y != 512-193)
-      // if (x != 176 || y != 512-185) { pixels[y*width+x]=0; continue; }
+    //if (x != 186 || y != 512-21) continue;
     //PRINT2(x,y);
     Vec3fa color = renderPixel(x,y,vx,vy,vz,p);
     //PRINT(color);

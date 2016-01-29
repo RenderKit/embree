@@ -29,7 +29,7 @@ namespace embree
       Vec3fa D = Vec3fa(ray_dir);
       float ON = dot(O,N);
       float DN = dot(D,N);
-      float t = -ON*rcp(DN);
+      float t = -ON*rcp(abs(DN) < min_rcp_input ? min_rcp_input : DN );
       float lower = select(DN < 0.0f, float(neg_inf), t);
       float upper = select(DN < 0.0f, t, float(pos_inf));
       return std::make_pair(lower,upper);
@@ -150,6 +150,8 @@ namespace embree
 
       auto tp0 = intersect_half_plane(zero,dir,+n0,p0);
       auto tp1 = intersect_half_plane(zero,dir,-n1,p1);
+      //PRINT2(tp0.first,tp0.second);
+      //PRINT2(tp1.first,tp1.second);
       
       float td_lower = max(tc_lower,tp0.first ,tp1.first );
       float td_upper = min(tc_upper,tp0.second,tp1.second);
@@ -186,7 +188,7 @@ namespace embree
       for (size_t i=0;; i++) 
       {
         //__asm("nop2");
-      //PRINT(i);
+        //PRINT(i);
         STAT(Stat::get().user[4]++); 
         if (unlikely(i == 2000)) {
           STAT(Stat::get().user[5]++); 
@@ -229,7 +231,7 @@ namespace embree
       //if (std::isnan(t)) return false;
       if (t < max(ray.tnear-tb,tc_lower) || t > min(ray.tfar-tb,tc_upper)) {
       //if (t < ray.tnear-tb || t > min(ray.tfar-tb,tc_upper)) {
-      //PRINT("miss1");
+        //PRINT("miss1");
         return false;
       }
 
