@@ -139,6 +139,7 @@ namespace embree
       const Vec3fa C = 0.5f*(p0_i+p1_i);
       const float tb = dot(C-ray.org,normalize(ray.dir));
       const Vec3fa org = ray.org+tb*normalize(ray.dir);
+      const float dirlen = length(ray.dir);
       const Vec3fa dir = ray.dir;
       const Vec3fa p0 = p0_i-org;
       const Vec3fa p1 = p1_i-org;
@@ -189,7 +190,7 @@ namespace embree
       
       float A0 = abs(dot(norm_p1p0,normalize(n0)));
       float A1 = abs(dot(norm_p1p0,normalize(n1)));
-      float rcpMaxDerivative = max(0.01f,min(A0,A1));
+      float rcpMaxDerivative = max(0.01f,min(A0,A1))/dirlen;
       
       STAT(Stat::get().user[3]++);
       t = td_lower; float dt = inf;
