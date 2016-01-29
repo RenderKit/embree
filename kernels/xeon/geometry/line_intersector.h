@@ -163,6 +163,8 @@ namespace embree
       
       float td_lower = max(tc_lower,tp0.first ,tp1.first );
       float td_upper = min(tc_upper,tp0.second,tp1.second);
+      //PRINT(td_lower);
+      //PRINT(td_upper);
       if (td_lower > td_upper) {
         STAT(Stat::get().user[2]++); 
         return false;
@@ -222,6 +224,11 @@ namespace embree
         const Vec3fa q0 = p0+r0*normalize(cross(n0,N));
         const Vec3fa q1 = p1+r1*normalize(cross(n1,N));
 #endif
+        
+        //PRINT(p-p0);
+        //PRINT(N);
+        //PRINT(cross(n0,N));
+        //PRINT(cross(n1,N));
         //PRINT(p);
         //PRINT(p0);
         //PRINT(p1p0);
@@ -231,6 +238,8 @@ namespace embree
         Ng = normalize(cross(q1-q0,N));
         //PRINT(Ng);
         dt = dot(p-q0,Ng);
+        if (unlikely(std::isnan(dt)))
+          return false;
         //PRINT(dt);
         t += rcpMaxDerivative*dt;
         //PRINT(t);
