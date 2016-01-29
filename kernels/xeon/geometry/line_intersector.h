@@ -163,36 +163,17 @@ namespace embree
     __forceinline Vec3fa normalize_dx(const Vec3fa& p, const Vec3fa& dpdx)
     {
       float pp = dot(p,p);
-      float x = - p.x*p.x*dpdx.x + pp*dpdx.x;
-      float y = - p.x*p.y*dpdx.x; 
-      float z = - p.x*p.z*dpdx.x;
+      float x = pp*dpdx.x - p.x*(p.x*dpdx.x + p.y*dpdx.y + p.z*dpdx.z);
+      float y = pp*dpdx.y - p.y*(p.x*dpdx.x + p.y*dpdx.y + p.z*dpdx.z);
+      float z = pp*dpdx.z - p.z*(p.x*dpdx.x + p.y*dpdx.y + p.z*dpdx.z);
       return Vec3fa(x,y,z)/pow_3_2(pp);
-    }
-
-    __forceinline Vec3fa normalize_dy(const Vec3fa& p, const Vec3fa& dpdy)
-    {
-      float pp = dot(p,p);
-      float x = - p.y*p.x*dpdy.y;
-      float y = - p.y*p.y*dpdy.y + pp*dpdy.y; 
-      float z = - p.y*p.z*dpdy.y;
-      return Vec3fa(x,y,z)/pow_3_2(pp);
-    }
-
-    __forceinline Vec3fa normalize_dz(const Vec3fa& p, const Vec3fa& dpdz)
-    {
-      float pp = dot(p,p);
-      float x = - p.z*p.x*dpdz.z;
-      float y = - p.z*p.y*dpdz.z; 
-      float z = - p.z*p.z*dpdz.z + pp*dpdz.z;
-      return Vec3fa(x,y,z)/pow_3_2(pp);
-
     }
 
     __forceinline Vec3fa grad_distance_f(const Vec3fa& p, 
                                          const Vec3fa& p0, const Vec3fa& n0, const float r0,
                                          const Vec3fa& p1, const Vec3fa& n1, const float r1)
     {
-#if 1
+#if 0
       const float e = 0.001f;
       const float v = distance_f(p,p0,n0,r0,p1,n1,r1);
       const float x = distance_f(p+Vec3fa(e,0,0),p0,n0,r0,p1,n1,r1);
@@ -217,28 +198,28 @@ namespace embree
 
       const Vec3fa q0    = p0+r0*normalize(N0);
       const Vec3fa dq0dx = r0*normalize_dx(N0,dN0dx);
-      const Vec3fa dq0dy = r0*normalize_dy(N0,dN0dy);
-      const Vec3fa dq0dz = r0*normalize_dz(N0,dN0dz);
+      const Vec3fa dq0dy = r0*normalize_dx(N0,dN0dy);
+      const Vec3fa dq0dz = r0*normalize_dx(N0,dN0dz);
 
-      const Vec3fa q1 = p1+r1*normalize(N1);
+      const Vec3fa q1    = p1+r1*normalize(N1);
       const Vec3fa dq1dx = r1*normalize_dx(N1,dN1dx);
-      const Vec3fa dq1dy = r1*normalize_dy(N1,dN1dy);
-      const Vec3fa dq1dz = r1*normalize_dz(N1,dN1dz);
+      const Vec3fa dq1dy = r1*normalize_dx(N1,dN1dy);
+      const Vec3fa dq1dz = r1*normalize_dx(N1,dN1dz);
 
       const Vec3fa K    = cross(q1-q0,N);
-      const Vec3fa dKdx = cross(q1-q0,dNdx);
-      const Vec3fa dKdy = cross(q1-q0,dNdy);
-      const Vec3fa dKdz = cross(q1-q0,dNdz);
+      const Vec3fa dKdx = cross(dq1dx-dq0dx,N) + cross(q1-q0,dNdx);
+      const Vec3fa dKdy = cross(dq1dy-dq0dy,N) + cross(q1-q0,dNdy);
+      const Vec3fa dKdz = cross(dq1dz-dq0dz,N) + cross(q1-q0,dNdz);
 
       const Vec3fa Ng    = normalize(K);
       const Vec3fa dNgdx = normalize_dx(K,dKdx); 
-      const Vec3fa dNgdy = normalize_dy(K,dKdy); 
-      const Vec3fa dNgdz = normalize_dz(K,dKdz); 
+      const Vec3fa dNgdy = normalize_dx(K,dKdy); 
+      const Vec3fa dNgdz = normalize_dx(K,dKdz); 
 
       const float f    = dot(p-q0,Ng);
-      const float dfdx = dot(Vec3fa(1,0,0),Ng) + dot(p-q0,dNgdx); 
-      const float dfdy = dot(Vec3fa(0,1,0),Ng) + dot(p-q0,dNgdy); 
-      const float dfdz = dot(Vec3fa(0,0,1),Ng) + dot(p-q0,dNgdz); 
+      const float dfdx = dot(Vec3fa(1,0,0)-dq0dx,Ng) + dot(p-q0,dNgdx); 
+      const float dfdy = dot(Vec3fa(0,1,0)-dq0dy,Ng) + dot(p-q0,dNgdy); 
+      const float dfdz = dot(Vec3fa(0,0,1)-dq0dz,Ng) + dot(p-q0,dNgdz); 
 
       return Vec3fa(dfdx,dfdy,dfdz);
 #endif
