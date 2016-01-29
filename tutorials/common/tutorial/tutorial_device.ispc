@@ -53,7 +53,6 @@ Vec3f renderPixelEyeLight(float x, float y, const uniform Vec3f& vx, const unifo
   /* shade pixel */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f);
   else return make_Vec3f(abs(dot(ray.dir,normalize(ray.Ng))));
-  //else return make_Vec3f(clamp(dot(ray.dir,normalize(ray.Ng))));
 }
 
 /* renders a single pixel with wireframe shading */
