@@ -108,8 +108,11 @@ namespace embree
       if (D < 0.0f) return false;
       
       const float Q = sqrt(D);
-      if (unlikely(A < min_rcp_input))
-        return false;
+      if (unlikely(A < min_rcp_input)) {
+        t0_o = float(neg_inf);
+        t1_o = float(pos_inf);
+        return true;
+      }
 
       const float rcp_2A = 0.5f*rcp(A);
       t0_o = (-B-Q)*rcp_2A;
