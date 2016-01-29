@@ -135,7 +135,6 @@ namespace embree
       STAT(Stat::get().user[0]++); 
 
       /* move closer to geometry to make intersection stable */
-      //const Vec3fa C = Vec3fa(-10.5103f, 24.6401f, -4.18285f);
       const Vec3fa C = 0.5f*(p0_i+p1_i);
       const float tb = dot(C-ray.org,normalize(ray.dir));
       const Vec3fa org = ray.org+tb*normalize(ray.dir);
@@ -154,18 +153,12 @@ namespace embree
         STAT(Stat::get().user[1]++); 
         return false;
       }
-      //PRINT(tc_lower);
-      //PRINT(tc_upper);
 
       auto tp0 = intersect_half_plane(zero,dir,+n0,p0);
       auto tp1 = intersect_half_plane(zero,dir,-n1,p1);
-      //PRINT2(tp0.first,tp0.second);
-      //PRINT2(tp1.first,tp1.second);
       
       float td_lower = max(tc_lower,tp0.first ,tp1.first );
       float td_upper = min(tc_upper,tp0.second,tp1.second);
-      //PRINT(td_lower);
-      //PRINT(td_upper);
       if (td_lower > td_upper) {
         STAT(Stat::get().user[2]++); 
         return false;
@@ -195,21 +188,16 @@ namespace embree
       STAT(Stat::get().user[3]++);
       t = td_lower; float dt = inf;
       Vec3fa p = t*dir;
-      //PRINT(td_lower);
       
       for (size_t i=0;; i++) 
       {
-        //__asm("nop2");
-        //PRINT(i);
         STAT(Stat::get().user[4]++); 
         if (unlikely(i == 2000)) {
           STAT(Stat::get().user[5]++); 
-          //PRINT("miss2");
           return false;
         }
         if (unlikely(t > tc_upper)) {
           STAT(Stat::get().user[6]++); 
-          //PRINT("break1");
           break;
         }
         const Vec3fa N = cross(p-p0,p1p0);
@@ -226,55 +214,30 @@ namespace embree
         const Vec3fa q1 = p1+r1*normalize(cross(n1,N));
 #endif
         
-        //PRINT(p-p0);
-        //PRINT(N);
-        //PRINT(cross(n0,N));
-        //PRINT(cross(n1,N));
-        //PRINT(p);
-        //PRINT(p0);
-        //PRINT(p1p0);
-        //PRINT(N);
-        //PRINT(q0);
-        //PRINT(q1);
         Ng = normalize(cross(q1-q0,N));
-        //PRINT(Ng);
         dt = dot(p-q0,Ng);
         if (unlikely(std::isnan(dt)))
           return false;
-        //PRINT(dt);
         t += rcpMaxDerivative*dt;
-        //PRINT(t);
         //if (p == t*d) break;
         p = t*dir;
         if (unlikely(dt < t_term)) {
           STAT(Stat::get().user[7]++); 
-          //PRINT("break2");
           u = dot(p-q0,q1-q0)*rcp_length2(q1-q0);
           break;
         }
       }
-      //if (std::isnan(t)) return false;
-      if (t < max(ray.tnear-tb,tc_lower) || t > min(ray.tfar-tb,tc_upper)) {
-      //if (t < ray.tnear-tb || t > min(ray.tfar-tb,tc_upper)) {
-        //PRINT("miss1");
+      if (t < max(ray.tnear-tb,tc_lower) || t > min(ray.tfar-tb,tc_upper))
         return false;
-      }
-
+      
       const Vec3fa N = cross(p-p0,p1p0);
       const Vec3fa Ng0 = normalize(cross(n0,N));
       const Vec3fa Ng1 = normalize(cross(n1,N));
       const Vec3fa q0 = p0+r0*Ng0;
       const Vec3fa q1 = p1+r1*Ng1;
       Ng = normalize(cross(q1-q0,N));
-      //Ng = normalize((1.0f-u)*Ng0 + u*Ng1);
       const Vec3fa P = (1.0f-u)*q0 + u*q1;
       t = tb+dot(q0,Ng)/dot(dir,Ng);
-      //Ng = normalize((1.0f-u)*Ng0 + u*Ng1);
-
-      //PRINT("hit2");
-      //PRINT(t);
-      //PRINT(u);
-      //PRINT(Ng);
       return true;
     }
         
