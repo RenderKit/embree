@@ -108,7 +108,10 @@ namespace embree
       if (D < 0.0f) return false;
       
       const float Q = sqrt(D);
-      const float rcp_2A = rcp(2.0f*A);
+      if (unlikely(A < min_rcp_input))
+        return false;
+
+      const float rcp_2A = 0.5f*rcp(A);
       t0_o = (-B-Q)*rcp_2A;
       t1_o = (-B+Q)*rcp_2A;
       
@@ -147,6 +150,8 @@ namespace embree
         STAT(Stat::get().user[1]++); 
         return false;
       }
+      //PRINT(tc_lower);
+      //PRINT(tc_upper);
 
       auto tp0 = intersect_half_plane(zero,dir,+n0,p0);
       auto tp1 = intersect_half_plane(zero,dir,-n1,p1);
@@ -184,6 +189,7 @@ namespace embree
       STAT(Stat::get().user[3]++);
       t = td_lower; float dt = inf;
       Vec3fa p = t*dir;
+      //PRINT(td_lower);
       
       for (size_t i=0;; i++) 
       {
@@ -213,6 +219,12 @@ namespace embree
         const Vec3fa q0 = p0+r0*normalize(cross(n0,N));
         const Vec3fa q1 = p1+r1*normalize(cross(n1,N));
 #endif
+        //PRINT(p);
+        //PRINT(p0);
+        //PRINT(p1p0);
+        //PRINT(N);
+        //PRINT(q0);
+        //PRINT(q1);
         Ng = normalize(cross(q1-q0,N));
         //PRINT(Ng);
         dt = dot(p-q0,Ng);
