@@ -127,6 +127,27 @@ namespace embree
       return true;
     }
 
+    __forceinline float distance_f(const Vec3fa& p,Vec3fa& q0, Vec3fa& q1, Vec3fa& Ng,
+                                   const Vec3fa& p0, const Vec3fa& n0, const float r0,
+                                   const Vec3fa& p1, const Vec3fa& n1, const float r1)
+    {
+      const Vec3fa N = cross(p-p0,p1-p0);
+#if defined (__AVX__)
+      const vfloat<8> p0p1 = vfloat<8>(vfloat<4>(p0),vfloat<4>(p1));
+      const vfloat<8> n0n1 = vfloat<8>(vfloat<4>(n0),vfloat<4>(n1));
+      const vfloat<8> r0r1 = vfloat<8>(vfloat<4>(r0),vfloat<4>(r1));
+      const vfloat<8> NN   = vfloat<8>(vfloat<4>(N));
+      const vfloat<8> q0q1 = p0p1 + r0r1*normalize(cross(n0n1,NN));
+      q0 = (Vec3fa)extract4<0>(q0q1);
+      q1 = (Vec3fa)extract4<1>(q0q1);
+#else
+      q0 = p0+r0*normalize(cross(n0,N));
+      q1 = p1+r1*normalize(cross(n1,N));
+#endif
+      Ng = normalize(cross(q1-q0,N));
+      return dot(p-q0,Ng);
+    }
+
     static __noinline bool intersect_fill_cone(const Ray& ray,
                                                const Vec3fa& p0_i, const Vec3fa& n0, const float r0,
                                                const Vec3fa& p1_i, const Vec3fa& n1, const float r1,
@@ -179,7 +200,6 @@ namespace embree
 
       const Vec3fa p1p0 = p1-p0;
       const Vec3fa norm_p1p0 = normalize(p1p0);
-
       
       float A0 = abs(dot(norm_p1p0,normalize(n0)));
       float A1 = abs(dot(norm_p1p0,normalize(n1)));
@@ -200,22 +220,9 @@ namespace embree
           STAT(Stat::get().user[6]++); 
           break;
         }
-        const Vec3fa N = cross(p-p0,p1p0);
-#if defined (__AVX__)
-        const vfloat<8> p0p1 = vfloat<8>(vfloat<4>(p0),vfloat<4>(p1));
-        const vfloat<8> n0n1 = vfloat<8>(vfloat<4>(n0),vfloat<4>(n1));
-        const vfloat<8> r0r1 = vfloat<8>(vfloat<4>(r0),vfloat<4>(r1));
-        const vfloat<8> NN   = vfloat<8>(vfloat<4>(N));
-        const vfloat<8> q0q1 = p0p1 + r0r1*normalize(cross(n0n1,NN));
-        const Vec3fa q0 = (Vec3fa)extract4<0>(q0q1);
-        const Vec3fa q1 = (Vec3fa)extract4<1>(q0q1);
-#else
-        const Vec3fa q0 = p0+r0*normalize(cross(n0,N));
-        const Vec3fa q1 = p1+r1*normalize(cross(n1,N));
-#endif
-        
-        Ng = normalize(cross(q1-q0,N));
-        dt = dot(p-q0,Ng);
+        Vec3fa q0,q1,Ng;
+        dt = distance_f(p,q0,q1,Ng,p0,n0,r0,p1,n1,r1);
+
         if (unlikely(std::isnan(dt)))
           return false;
         t += rcpMaxDerivative*dt;
