@@ -137,9 +137,10 @@ namespace embree
       const Vec3fa p0 = p0_i-org;
       const Vec3fa p1 = p1_i-org;
       
-      float t_term = 0.0001f*max(r0,r1);
-      float t_err = 0.0001f*max(r0,r1);
-      const float r01 = max(r0,r1)+t_err;
+      float maxR = max(r0,r1);
+      float t_term = 0.0001f*maxR;
+      float t_err = 0.0001f*maxR;
+      const float r01 = maxR+t_err;
       float tc_lower,tc_upper;
       Vec3fa Ng0;
       if (!intersect_cone(dir,p0,r01,p1,r01,tc_lower,tc_upper,Ng0)) {
@@ -150,15 +151,15 @@ namespace embree
       auto tp0 = intersect_half_plane(zero,dir,+n0,p0);
       auto tp1 = intersect_half_plane(zero,dir,-n1,p1);
       
-      tc_lower = max(tc_lower,tp0.first ,tp1.first );
-      tc_upper = min(tc_upper,tp0.second,tp1.second);
-      if (tc_lower > tc_upper) {
+      float td_lower = max(tc_lower,tp0.first ,tp1.first );
+      float td_upper = min(tc_upper,tp0.second,tp1.second);
+      if (td_lower > td_upper) {
         STAT(Stat::get().user[2]++); 
         return false;
       }
-
-      tc_lower -= t_err;
-      tc_upper += t_err;
+      
+      tc_lower = max(tp0.first ,tp1.first );
+      tc_upper = min(tc_upper+0.1f*maxR,tp0.second,tp1.second);
 
 #if 0
       if (tc_lower > ray.tnear-tb && tc_lower < ray.tfar-tb) 
@@ -171,7 +172,7 @@ namespace embree
 #endif 
 
       STAT(Stat::get().user[3]++);
-      t = tc_lower; float dt = inf;
+      t = td_lower; float dt = inf;
       Vec3fa p = t*dir;
       const Vec3fa p1p0 = p1-p0;
       for (size_t i=0;; i++) 
