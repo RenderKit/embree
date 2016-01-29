@@ -376,7 +376,7 @@ extern "C" bool device_pick(const float x,
   PRINT2(x,y);
   PRINT(ray.geomID);
   PRINT(ray.primID);
-  Vec3fa hit_point = ray.org + ray.tnear*ray.dir;
+  Vec3fa hit_point = ray.org + ray.tfar*ray.dir;
   PRINT(hit_point);
 
   /* shade pixel */
