@@ -278,21 +278,26 @@ namespace embree
         
 #if 1
         /* simple in order sequence */
-        const unsigned int mm = tMask[r];
+        assert(cur != BVH::emptyNode);
+        if (likely(mask == 0)) return tMask[r];
+        assert(stackPtr < stackEnd);
+        stackPtr->ptr  = cur;
+        stackPtr->mask = tMask[r];
+        stackPtr++;
 
-        while (mask)
+        for (; ;)
         {
           assert(stackPtr < stackEnd);
           r = __bscf(mask);
-          NodeRef c = node->child(r); 
-          c.prefetch(types); 
-          int m = tMask[r];
-          stackPtr->ptr  = c; 
-          stackPtr->mask = m;
+          cur = node->child(r);
+          cur.prefetch(types);
+          assert(cur != BVH::emptyNode);
+          if (likely(mask == 0)) return tMask[r];
+          assert(stackPtr < stackEnd);
+          stackPtr->ptr  = cur;
+          stackPtr->mask = tMask[r];
           stackPtr++;
-          assert(c != BVH::emptyNode);
         }
-        return mm;
 #else
         if (likely(mask == 0)) {
           assert(cur != BVH::emptyNode);

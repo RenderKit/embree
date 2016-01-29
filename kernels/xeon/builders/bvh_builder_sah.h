@@ -221,7 +221,7 @@ namespace embree
           } while (numChildren < branchingFactor);
           
           /* sort buildrecords for simpler shadow ray traversal */
-          std::sort(&children[0],&children[numChildren]); // FIXME: reduces traversal performance of bvh8.triangle4 (need to verified) !!
+          std::sort(&children[0],&children[numChildren],std::greater<BuildRecord>()); // FIXME: reduces traversal performance of bvh8.triangle4 (need to verified) !!
           
           /*! create an inner node */
           auto node = createNode(current,children,numChildren,alloc);

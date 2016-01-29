@@ -562,14 +562,20 @@ namespace embree
         cur.prefetch(types);
 #if 1
         /* simpler in sequence traversal order */
-        while (mask)
-        {
-          assert(stackPtr < stackEnd);
-          r = __bscf(mask);
-          NodeRef c = node->child(r); c.prefetch(types); *stackPtr = c; stackPtr++;
-          assert(c != BVH::emptyNode);
-        }
+        assert(cur != BVH::emptyNode);
+        if (likely(mask == 0)) return;
+        assert(stackPtr < stackEnd);
+        *stackPtr = cur; stackPtr++;
 
+        for (; ;)
+        {
+          r = __bscf(mask);
+          cur = node->child(r); cur.prefetch(types);
+          assert(cur != BVH::emptyNode);
+          if (likely(mask == 0)) return;
+          assert(stackPtr < stackEnd);
+          *stackPtr = cur; stackPtr++;
+        }
 #else
         if (likely(mask == 0)) {
           assert(cur != BVH::emptyNode);
