@@ -278,6 +278,7 @@ ADD_SUBDIRECTORY(kernels)
 
 IF (ENABLE_TUTORIALS)
   ADD_SUBDIRECTORY(tutorials)
+ENDIF()
 
   SET (__XEON__ 1)
   ADD_SUBDIRECTORY(tests)
@@ -286,7 +287,6 @@ IF (ENABLE_TUTORIALS)
     SET (__XEON__ 0)
     ADD_SUBDIRECTORY(tests tests_xeonphi)
   ENDIF ()
-ENDIF()
 
 ##############################################################
 # Uninstall

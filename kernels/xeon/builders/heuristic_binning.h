@@ -41,6 +41,7 @@ namespace embree
           assert(num == 16);
 #else
           num = min(BINS,size_t(4.0f + 0.05f*pinfo.size()));
+          //num = BINS;
 #endif
           const vfloat4 diag = (vfloat4) pinfo.centBounds.size();
           scale = select(diag > vfloat4(1E-34f),vfloat4(0.99f*num)/diag,vfloat4(0.0f));
@@ -313,7 +314,6 @@ namespace embree
           bz.extend(bounds[i][2]); rAreas[i][2] = halfArea(bz);
           rAreas[i][3] = 0.0f;
         }
-	
 	/* sweep from left to right and compute SAH */
 	vint4 blocks_add = (1 << blocks_shift)-1;
 	vint4 ii = 1; vfloat4 vbestSAH = pos_inf; vint4 vbestPos = 0; 
