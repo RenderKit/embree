@@ -1320,7 +1320,7 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
   return dot(dir,Ng) < 0.0f ? Ng : neg(Ng);
 }
 
-inline Vec3fa evalBezier(const ISPCHairSet* hair, const int primID, const float t)
+inline Vec3fa evalBezier(const ISPCHairSet* hair, const int primID, const float t, Vec3fa& tangent)
 {
   const float t0 = 1.0f - t, t1 = t;
   const Vec3fa* vertices = hair->v;
@@ -1339,8 +1339,8 @@ inline Vec3fa evalBezier(const ISPCHairSet* hair, const int primID, const float 
   const Vec3fa p21 = p11 * t0 + p12 * t1;
   const Vec3fa p30 = p20 * t0 + p21 * t1;
   
+  tangent = p21-p20;
   return p30;
-  //tangent = p21-p20;
 }
 
 void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeometry* geometry, int& materialID)
@@ -1402,7 +1402,7 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
     dg.Ty = dy;
     dg.Ng = dg.Ns = dz;*/
     //dg.Ns = -dg.Ng;
-    int vtx = mesh->indices[ray.primID];
+    //int vtx = mesh->indices[ray.primID];
     //dg.tnear_eps = 1.1f*mesh->v[vtx].w;
     dg.tnear_eps = 1024.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar));
   }
@@ -1410,14 +1410,21 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
   {
     ISPCHairSet* mesh = (ISPCHairSet*) geometry;
     materialID = mesh->materialID;
-    const Vec3fa dx = normalize(dg.Ng);
-    const Vec3fa dy = normalize(cross(neg(ray.dir),dx));
-    const Vec3fa dz = normalize(cross(dy,dx));
+    Vec3fa tangent;
+    Vec3fa p = evalBezier(mesh,ray.primID,ray.u,tangent);
+    dg.tnear_eps = 1.1f*p.w;
+
+    //const Vec3fa dx = normalize(normalize(dg.Ng);
+    //const Vec3fa dy = normalize(cross(neg(ray.dir),dx));
+    //const Vec3fa dz = normalize(cross(dy,dx));
+    const Vec3fa dx = normalize(tangent);
+    const Vec3fa dy = normalize(cross(tangent,dg.Ng));
+    const Vec3fa dz = normalize(dg.Ng);
     dg.Tx = dx;
     dg.Ty = dy;
     dg.Ng = dg.Ns = dz;
-    Vec3fa p = evalBezier(mesh,ray.primID,ray.u);
-    dg.tnear_eps = 1.1f*p.w;
+    
+    //dg.tnear_eps = 1024.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar));
   }
   else if (geometry->type == GROUP) {
     int geomID = ray.geomID; {

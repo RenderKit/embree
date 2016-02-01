@@ -244,12 +244,12 @@ namespace embree
       const float ray_tnear = ray.tnear-tb;
       const float ray_tfar = ray.tfar-tb;
 
-      //PRINT(ray_tnear);
-      //PRINT(ray_tfar);
+      ////PRINT(ray_tnear);
+      ////PRINT(ray_tfar);
       //PRINT(r0);
       //PRINT(r1);
       float maxR = max(r0,r1);
-      ////PRINT(maxR);
+      //PRINT(maxR);
       float t_term = max(0.00001f*maxR,1024.0f*1.19209e-07f*abs(tb));
 
       const float r01 = maxR;
@@ -264,10 +264,10 @@ namespace embree
 
       auto tp0 = intersect_half_plane(zero,dir,+n0,p0);
       auto tp1 = intersect_half_plane(zero,dir,-n1,p1);
-      //PRINT(tp0.first);
-      //PRINT(tp0.second);
-      //PRINT(tp1.first);
-      //PRINT(tp1.second);
+      ////PRINT(tp0.first);
+      ////PRINT(tp0.second);
+      ////PRINT(tp1.first);
+      ////PRINT(tp1.second);
       
       float td_lower = max(ray_tnear,tc_lower,tp0.first ,tp1.first );
       float td_upper = min(ray_tfar,tc_upper,tp0.second,tp1.second);
@@ -298,8 +298,8 @@ namespace embree
       float A1 = abs(dot(norm_p1p0,normalize(n1)));
       float rcpMaxDerivative = max(0.01f,min(A0,A1))/dirlen;
 
-      ////PRINT(tc_lower);
-      ////PRINT(tc_upper);
+      //PRINT(tc_lower);
+      //PRINT(tc_upper);
       
       STAT(Stat::get().user[3]++);
       t = td_lower; float dt = inf;
@@ -357,6 +357,7 @@ namespace embree
       t = tb+dot(q0,Ng)/dot(dir,Ng);
 
       Ng = grad_distance_f(p,p0,n0,r0,p1,n1,r1);
+      if (std::isnan(Ng.x) || std::isnan(Ng.y) || std::isnan(Ng.z)) return false;
       //PRINT("hit");
       //PRINT(t);
       //PRINT(Ng);
