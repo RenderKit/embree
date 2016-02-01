@@ -37,7 +37,7 @@
 #define MAX_EDGE_LEVEL 128.0f
 #define MIN_EDGE_LEVEL   4.0f
 #define LEVEL_FACTOR    64.0f
-#define MAX_PATH_LENGTH  8
+#define MAX_PATH_LENGTH  1
 
 bool g_subdiv_mode = false;
 unsigned int keyframeID = 0;
@@ -1403,7 +1403,7 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
     dg.Ng = dg.Ns = dz;*/
     //dg.Ns = -dg.Ng;
     int vtx = mesh->indices[ray.primID];
-    dg.tnear_eps = 1.1f*mesh->v[vtx].w;
+    //dg.tnear_eps = 1.1f*mesh->v[vtx].w;
   }
   else if (geometry->type == HAIR_SET) 
   {
@@ -1688,7 +1688,7 @@ Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const Vec3f
     {
       Vec3fa Ll = DirectionalLight__sample(g_ispc_scene->dirLights[i],dg,wi,tMax,RandomSampler_get2D(sampler));
       if (wi.pdf <= 0.0f) continue;
-      //if (dot(wi.v,dg.Ng) < 0.0f) continue;
+      if (dot(wi.v,dg.Ng) < 0.0f) continue;
       RTCRay shadow = RTCRay(dg.P,wi.v,dg.tnear_eps,tMax,time); shadow.transparency = Vec3fa(1.0f);
       rtcOccluded(g_scene,shadow);
       //if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
@@ -1763,7 +1763,10 @@ void renderTile(int taskIndex, int* pixels,
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
     /* calculate pixel color */
+    //if (x != 220 || y != 512-326) break;
     Vec3fa color = renderPixel(x,y,vx,vy,vz,p);
+    //PRINT(color);
+    //exit(1);
 
     /* write color to framebuffer */
     Vec3fa accu_color = g_accu[y*width+x] + Vec3fa(color.x,color.y,color.z,1.0f); g_accu[y*width+x] = accu_color;

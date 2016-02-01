@@ -230,6 +230,7 @@ namespace embree
                                                const Vec3fa& p1_i, const Vec3fa& n1, const float r1,
                                                float& u, float& t, Vec3fa& Ng)
     {
+      //PING;
       STAT(Stat::get().user[0]++); 
 
       /* move closer to geometry to make intersection stable */
@@ -243,13 +244,15 @@ namespace embree
       const float ray_tnear = ray.tnear-tb;
       const float ray_tfar = ray.tfar-tb;
 
+      //PRINT(ray_tnear);
+      //PRINT(ray_tfar);
       //PRINT(r0);
       //PRINT(r1);
       float maxR = max(r0,r1);
-      //PRINT(maxR);
+      ////PRINT(maxR);
       float t_term = 0.0001f*maxR;
       float t_err = 0.0001f*maxR;
-      const float r01 = maxR+t_err;
+      const float r01 = maxR;//+t_err;
       float tc_lower,tc_upper;
       Vec3fa NgA;
       if (!intersect_cone(dir,p0,r01,p1,r01,tc_lower,tc_upper,NgA)) {
@@ -261,6 +264,10 @@ namespace embree
 
       auto tp0 = intersect_half_plane(zero,dir,+n0,p0);
       auto tp1 = intersect_half_plane(zero,dir,-n1,p1);
+      //PRINT(tp0.first);
+      //PRINT(tp0.second);
+      //PRINT(tp1.first);
+      //PRINT(tp1.second);
       
       float td_lower = max(ray_tnear,tc_lower,tp0.first ,tp1.first );
       float td_upper = min(ray_tfar,tc_upper,tp0.second,tp1.second);
@@ -271,8 +278,8 @@ namespace embree
         return false;
       }
       
-      tc_lower = max(tp0.first ,tp1.first );
-      tc_upper = min(tc_upper+0.1f*maxR,tp0.second,tp1.second);
+      tc_lower = max(ray_tnear,tp0.first ,tp1.first );
+      tc_upper = min(ray_tfar,tc_upper+0.1f*maxR,tp0.second,tp1.second);
 
 #if 0
       if (tc_lower > ray_tnear-tb && tc_lower < ray_tfar-tb) 
@@ -291,8 +298,8 @@ namespace embree
       float A1 = abs(dot(norm_p1p0,normalize(n1)));
       float rcpMaxDerivative = max(0.01f,min(A0,A1))/dirlen;
 
-      //PRINT(tc_lower);
-      //PRINT(tc_upper);
+      ////PRINT(tc_lower);
+      ////PRINT(tc_upper);
       
       STAT(Stat::get().user[3]++);
       t = td_lower; float dt = inf;
@@ -334,7 +341,7 @@ namespace embree
           break;
         }
       }
-      if (t < max(ray_tnear,tc_lower) || t > min(ray_tfar,tc_upper)) {
+      if (t < tc_lower || t > tc_upper) {
         //PRINT("miss3");
         return false;
       }
