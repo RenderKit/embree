@@ -131,7 +131,9 @@ namespace embree
       }
     };
 
-#else
+#endif
+
+#if 0
 
     struct Bezier1Intersector1
     {
