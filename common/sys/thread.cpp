@@ -172,11 +172,17 @@ namespace embree
 ////////////////////////////////////////////////////////////////////////////////
 
 #if defined(__LINUX__)
+/* to parse thread topology */
+#include <sstream>
+
 namespace embree
 {
+
+
   ssize_t mapThreadID(ssize_t threadID)
   {
-#if 0
+#if 1
+
 #warning special affinity settings active    
 #define THREADS_PER_CORE 4
 #define CORES 54
@@ -185,14 +191,52 @@ namespace embree
 #define OFFSET 43
 #define CORES2 10
 
+
 #define OFFSET2 1    
-    ssize_t ID = OFFSET + ((threadID%THREADS_PER_CORE)*CORES) + (threadID/THREADS_PER_CORE);
-    if (threadID >= CORES*THREADS_PER_CORE)
-      ID = OFFSET2 +  ((threadID%THREADS_PER_CORE)*CORES2) + (threadID/THREADS_PER_CORE);
+    //ssize_t ID = OFFSET + ((threadID%THREADS_PER_CORE)*CORES) + (threadID/THREADS_PER_CORE);
+    //if (threadID >= CORES*THREADS_PER_CORE)
+    //  ID = OFFSET2 +  ((threadID%THREADS_PER_CORE)*CORES2) + (threadID/THREADS_PER_CORE);
+
+    static std::vector<int> threadIDs;
+
+    if (threadIDs.size() == 0)
+    {
+      PRINT("parsing");
+      /* parse thread/CPU topology */
+      for (size_t cpuID=0;;cpuID++)
+      {
+        std::string cpu = std::string("/sys/devices/system/cpu/cpu") + std::to_string(cpuID) + std::string("/topology/thread_siblings_list");
+        FILE *file = fopen(cpu.c_str(), "r");
+        if(file)
+        {
+          char buffer[256];
+          if (fgets(buffer,256,file) != NULL)
+          {
+            std::stringstream threads_config(buffer);
+            int i;
+            while (threads_config >> i)
+            {
+              threadIDs.push_back(i);
+              if (threads_config.peek() == ',')
+                threads_config.ignore();
+            }
+          }
+          fclose(file);
+        }
+        else
+          break;
+      }
+    }
+
+    ssize_t ID = threadID;
+
+    if (threadID < threadIDs.size())
+      ID = threadIDs[threadID];
 #else
     ssize_t ID = threadID;
 #endif
-    //std::cout << threadID << " -> " << ID << std::endl;
+
+    std::cout << threadID << " -> " << ID << std::endl;
     return ID;
   }
   /*! set affinity of the calling thread */

@@ -82,6 +82,10 @@ namespace embree
 #include <stdlib.h>
 #include <string.h>
 
+#if defined(RTCORE_MEMKIND_ALLOCATOR)
+#include <hbwmalloc.h>
+#endif
+
 /* hint for transparent huge pages (THP) */
 #if defined(__MACOSX__)
 #define USE_MADVISE 0
@@ -114,6 +118,54 @@ namespace embree
     return false;
   }
 
+#if defined(RTCORE_MEMKIND_ALLOCATOR)
+  void* mk_malloc(size_t bytes)
+  {
+    //PING;
+    //f (hbw_check_available())
+    //  PRINT("!hbw_check_available()");
+    assert(hbw_check_available());
+    void *ptr = NULL;
+    //if ((bytes / PAGE_SIZE_2M) >= 1 && ((bytes % PAGE_SIZE_2M) == 0))
+    {
+#if defined(DEBUG)
+      PRINT(ptr);
+#endif
+
+#if 1
+      int res = hbw_posix_memalign(&ptr,PAGE_SIZE_2M,bytes);
+      //int res = hbw_posix_memalign_psize(&ptr,PAGE_SIZE_2M,bytes,HBW_PAGESIZE_2MB);
+
+      //PRINT(res);
+      if (res == 0)
+      {
+        //PRINT("2M HBW PATH");
+        //PRINT(bytes);
+        return ptr;
+      }
+      // memkind_error_message(res,"error",0);
+
+      FATAL("NO HBW 2M ALLOC");
+      //PRINT(bytes);
+#endif
+    }
+
+    /* standard 2M allocation */
+    if (hbw_posix_memalign(&ptr,PAGE_SIZE_2M,bytes) == 0)
+    {
+      PRINT("HBW FALLBACK PATH");
+      PRINT(ptr); 
+      return ptr;
+    }
+    return NULL;
+  }
+
+  void mk_free(void* ptr) 
+  {
+    hbw_free(ptr);
+  }
+#endif
+
 // ============================================
 // ============================================
 // ============================================
@@ -136,6 +188,11 @@ namespace embree
   {
     int flags = MAP_PRIVATE | MAP_ANON | additional_flags;
         
+#if defined(RTCORE_MEMKIND_ALLOCATOR)
+    char *memkind_ptr = (char*)mk_malloc(bytes);
+    if (memkind_ptr) return memkind_ptr;
+#endif
+
     if (isHugePageCandidate(bytes)) 
     {
 #if defined(__MIC__)
@@ -177,6 +234,7 @@ namespace embree
 
   void* os_reserve(size_t bytes) 
   {
+
     /* linux always allocates pages on demand, thus just call allocate */
     return os_malloc(bytes);
   }
@@ -186,6 +244,10 @@ namespace embree
 
   size_t os_shrink(void* ptr, size_t bytesNew, size_t bytesOld) 
   {
+#if defined(RTCORE_MEMKIND_ALLOCATOR)
+    return bytesOld;
+#endif
+
     size_t pageSize = PAGE_SIZE_4K;
     if (isHugePageCandidate(bytesOld)) 
       pageSize = PAGE_SIZE_2M;
@@ -206,6 +268,11 @@ namespace embree
   {
     if (bytes == 0)
       return;
+
+#if defined(RTCORE_MEMKIND_ALLOCATOR)
+    mk_free(ptr);
+    return;
+#endif
 
     size_t pageSize = PAGE_SIZE_4K;
     if (isHugePageCandidate(bytes)) 
