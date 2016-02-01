@@ -201,7 +201,6 @@ namespace embree
 
     if (threadIDs.size() == 0)
     {
-      PRINT("parsing");
       /* parse thread/CPU topology */
       for (size_t cpuID=0;;cpuID++)
       {
