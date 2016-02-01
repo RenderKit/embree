@@ -240,6 +240,8 @@ namespace embree
       const Vec3fa dir = ray.dir;
       const Vec3fa p0 = p0_i-org;
       const Vec3fa p1 = p1_i-org;
+      const float ray_tnear = ray.tnear-tb;
+      const float ray_tfar = ray.tfar-tb;
 
       //PRINT(r0);
       //PRINT(r1);
@@ -260,8 +262,8 @@ namespace embree
       auto tp0 = intersect_half_plane(zero,dir,+n0,p0);
       auto tp1 = intersect_half_plane(zero,dir,-n1,p1);
       
-      float td_lower = max(tc_lower,tp0.first ,tp1.first );
-      float td_upper = min(tc_upper,tp0.second,tp1.second);
+      float td_lower = max(ray_tnear,tc_lower,tp0.first ,tp1.first );
+      float td_upper = min(ray_tfar,tc_upper,tp0.second,tp1.second);
       //PRINT(td_lower);
       //PRINT(td_upper);
       if (td_lower > td_upper) {
@@ -273,7 +275,7 @@ namespace embree
       tc_upper = min(tc_upper+0.1f*maxR,tp0.second,tp1.second);
 
 #if 0
-      if (tc_lower > ray.tnear-tb && tc_lower < ray.tfar-tb) 
+      if (tc_lower > ray_tnear-tb && tc_lower < ray_tfar-tb) 
       {
         u = 0.0f;
         t = tb+tc_lower;
@@ -295,6 +297,7 @@ namespace embree
       STAT(Stat::get().user[3]++);
       t = td_lower; float dt = inf;
       Vec3fa p = t*dir;
+      float inout = 1.0f;
       
       for (size_t i=0;; i++) 
       {
@@ -312,6 +315,8 @@ namespace embree
         }
         Vec3fa q0,q1,Ng;
         dt = distance_f(p,q0,q1,Ng,p0,n0,r0,p1,n1,r1);
+        if (i == 0 && dt < 0.0f) inout = -1.0f;
+        dt *= inout;
         //PRINT(dt);
         if (unlikely(std::isnan(dt))) {
           //PRINT("miss2");
@@ -329,7 +334,7 @@ namespace embree
           break;
         }
       }
-      if (t < max(ray.tnear-tb,tc_lower) || t > min(ray.tfar-tb,tc_upper)) {
+      if (t < max(ray_tnear,tc_lower) || t > min(ray_tfar,tc_upper)) {
         //PRINT("miss3");
         return false;
       }
