@@ -1688,7 +1688,7 @@ Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const Vec3f
     {
       Vec3fa Ll = DirectionalLight__sample(g_ispc_scene->dirLights[i],dg,wi,tMax,RandomSampler_get2D(sampler));
       if (wi.pdf <= 0.0f) continue;
-      if (dot(wi.v,dg.Ng) < 0.0f) continue;
+      //if (dot(wi.v,dg.Ng) < 0.0f) continue;
       RTCRay shadow = RTCRay(dg.P,wi.v,dg.tnear_eps,tMax,time); shadow.transparency = Vec3fa(1.0f);
       rtcOccluded(g_scene,shadow);
       //if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
