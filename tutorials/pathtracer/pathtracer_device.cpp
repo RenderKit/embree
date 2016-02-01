@@ -37,7 +37,7 @@
 #define MAX_EDGE_LEVEL 128.0f
 #define MIN_EDGE_LEVEL   4.0f
 #define LEVEL_FACTOR    64.0f
-#define MAX_PATH_LENGTH  1
+#define MAX_PATH_LENGTH  8
 
 bool g_subdiv_mode = false;
 unsigned int keyframeID = 0;
@@ -1404,6 +1404,7 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
     //dg.Ns = -dg.Ng;
     int vtx = mesh->indices[ray.primID];
     //dg.tnear_eps = 1.1f*mesh->v[vtx].w;
+    dg.tnear_eps = 1024.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar));
   }
   else if (geometry->type == HAIR_SET) 
   {
