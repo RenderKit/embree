@@ -250,9 +250,9 @@ namespace embree
       //PRINT(r1);
       float maxR = max(r0,r1);
       ////PRINT(maxR);
-      float t_term = 0.00001f*maxR;
-      float t_err = 0.0001f*maxR;
-      const float r01 = maxR; //+t_err;
+      float t_term = max(0.00001f*maxR,1024.0f*1.19209e-07f*abs(tb));
+
+      const float r01 = maxR;
       float tc_lower,tc_upper;
       Vec3fa NgA;
       if (!intersect_cone(dir,p0,r01,p1,r01,tc_lower,tc_upper,NgA)) {
