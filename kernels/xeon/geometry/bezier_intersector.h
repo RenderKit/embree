@@ -25,6 +25,47 @@ namespace embree
 {
   namespace isa
   {
+    __forceinline bool intersect_bezier_iterative(const Ray& ray, const BezierCurve3fa& curve, float u, float& u_o, float& t_o, Vec3fa& Ng)
+    {
+      float t = 0.0f, d = 0.0f;
+      for (size_t i=0; i<100; i++) 
+      {
+        const float du = 0.0001f;
+        Vec3fa P,dPdu,dPdu2; curve.eval(u,P,dPdu,dPdu2);
+        //Vec3fa _P,_dPdu,_dPdu2; curve.eval(u+du,_P,_dPdu,_dPdu2);
+        //PRINT2(dPdu,(_P-P)/du);
+        //PRINT2(dPdu2,(_dPdu-dPdu)/du);
+        float A = dot(P-ray.org,dPdu);
+        //float _A = dot(_P-ray.org,_dPdu);
+        float dAdu = dot(dPdu,dPdu) + dot(P-ray.org,dPdu2);
+        //PRINT2(dAdu,(_A-A)/du);
+        float B = dot(ray.dir,dPdu);
+        //float _B = dot(ray.dir,_dPdu);
+        float dBdu = dot(ray.dir,dPdu2);
+        //PRINT2(dBdu,(_B-B)/du);
+        t = A/B;
+        //float _t = _A/_B;
+        float dtdu = dAdu/B - A*dBdu/sqr(B);
+        //PRINT2(dtdu,(_t-t)/du);
+        Ng = ray.org+t*ray.dir-P;
+        //Vec3fa _Ng = ray.org+_t*ray.dir-P;
+        Vec3fa dNgdu = dtdu*ray.dir;
+        //PRINT2(dNgdu,(_Ng-Ng)/du);
+        d = length(Ng)-P.w;
+        //float _d = length(_Ng)-_P.w;
+        float ddu = dot(Ng,dNgdu)/length(Ng)-dPdu.w;
+        //PRINT2(ddu,(_d-d)/du);
+        //u += 0.1f*abs(d);
+        u -= d/ddu;
+        if (abs(d) < 0.001f) {
+          u_o = u;
+          t_o = t;
+          return true;
+        }
+      }
+      return false;
+    }
+
     template<int M>
       struct BezierHit
     {
@@ -114,6 +155,7 @@ namespace embree
             float t = 0.0f;
             Vec3fa Ng = zero;
             if (!intersect_fill_cone(ray,p1,n1,r1,p2,n2,r2,u,t,Ng)) continue;
+            //if (!intersect_bezier_iterative(ray, curve2D,float(i+j)*rcpN,u,t,Ng)) continue;
             hit.vu[j] = (float(i+j)+u)*rcpN;
             hit.vv[j] = 0.0f;
             hit.vt[j] = t;

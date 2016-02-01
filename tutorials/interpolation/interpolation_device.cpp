@@ -305,6 +305,7 @@ unsigned int addHair (RTCScene scene, const Vec3fa& pos)
 
   rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  hair_indices , 0, sizeof(unsigned int));
   rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER0, hair_vertex_colors, 0, sizeof(Vec3fa));
+  rtcSetTessellationRate(scene,geomID,8.0f);
   return geomID;
 }
 
