@@ -327,7 +327,8 @@ namespace embree
         //PRINT(dt);
         if (unlikely(std::isnan(dt))) {
           //PRINT("miss2");
-          return false;
+          dt = 1.0f;
+          //return false;
         }
         t += rcpMaxDerivative*dt;
         //if (p == t*d) break;
