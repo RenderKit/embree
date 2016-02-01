@@ -85,7 +85,8 @@ namespace embree
                                              const Vec3fa& v1, const float r1,
                                              float& t0_o,
                                              float& t1_o,
-                                             Vec3fa& Ng)
+                                             float& u0_o,
+                                             Vec3fa& Ng_o)
       
     {
       const float rl = rcp_length(v1-v0);
@@ -118,10 +119,11 @@ namespace embree
       t0_o = (-B-Q)*rcp_2A;
       t1_o = (-B+Q)*rcp_2A;
       
-      float u0_o = (Oz+t0_o*dOz)*rl;
+      u0_o = (Oz+t0_o*dOz)*rl;
+      //if (u0_o < 0.0f || u0_o > 1.0f) return false;
       const Vec3fa Pr = t0_o*dir;
       const Vec3fa Pl = v0 + u0_o*(v1-v0);
-      Ng = Pr-Pl;
+      Ng_o = Pr-Pl;
       //t0_o += tb;
       //t1_o += tb;
       return true;
@@ -254,8 +256,8 @@ namespace embree
 
       const float r01 = maxR;
       float tc_lower,tc_upper;
-      Vec3fa NgA;
-      if (!intersect_cone(dir,p0,r01,p1,r01,tc_lower,tc_upper,NgA)) {
+      Vec3fa NgA; float uA;
+      if (!intersect_cone(dir,p0,r01,p1,r01,tc_lower,tc_upper,uA,NgA)) {
         STAT(Stat::get().user[1]++); 
         return false;
       }
@@ -278,18 +280,18 @@ namespace embree
         return false;
       }
       
-      tc_lower = max(ray_tnear,tp0.first ,tp1.first );
-      tc_upper = min(ray_tfar,tc_upper+0.1f*maxR,tp0.second,tp1.second);
-
 #if 0
-      if (tc_lower > ray_tnear-tb && tc_lower < ray_tfar-tb) 
-      {
-        u = 0.0f;
+      if (uA >= 0.0f && uA <= 1.0f) {
+        u = uA;
         t = tb+tc_lower;
         Ng = NgA;
         return true;
       }
+      return false;
 #endif
+
+      tc_lower = max(ray_tnear,tp0.first ,tp1.first );
+      tc_upper = min(ray_tfar,tc_upper+0.1f*maxR,tp0.second,tp1.second);
 
       const Vec3fa p1p0 = p1-p0;
       const Vec3fa norm_p1p0 = normalize(p1p0);
