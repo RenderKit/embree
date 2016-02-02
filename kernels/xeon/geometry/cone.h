@@ -74,9 +74,10 @@ namespace embree
       }
 
       __forceinline bool intersect(const Vec3fa& dir, 
-                                   BBox1f& t_o, 
-                                   float& u0_o,
-                                   Vec3fa& Ng_o) const
+                                   BBox1f& t_o
+                                   //float& u0_o,
+                                   //Vec3fa& Ng_o
+        ) const
       {
         const Vec3fa v0 = p0;
         const Vec3fa v1 = p1;
@@ -110,10 +111,10 @@ namespace embree
         t_o.lower = (-B-Q)*rcp_2A;
         t_o.upper = (-B+Q)*rcp_2A;
         
-        u0_o = (Oz+t_o.lower*dOz)*rl;
-        const Vec3fa Pr = t_o.lower*dir;
-        const Vec3fa Pl = v0 + u0_o*(v1-v0);
-        Ng_o = Pr-Pl;
+        //u0_o = (Oz+t_o.lower*dOz)*rl;
+        //const Vec3fa Pr = t_o.lower*dir;
+        //const Vec3fa Pl = v0 + u0_o*(v1-v0);
+        //Ng_o = Pr-Pl;
         return true;
       }
     };

@@ -142,11 +142,9 @@ namespace embree
         float maxR = max(r0,r1);
         float t_term = 128.0f*1.19209e-07f*abs(tb);
         
-        const float r01 = maxR;
         BBox1f tc;
-        Vec3fa NgA; float uA;
-        const Cone cone(p0,r01,p1,r01);
-        if (!cone.intersect(dir,tc,uA,NgA)) {
+        const Cone cone(p0,maxR,p1,maxR);
+        if (!cone.intersect(dir,tc)) {
           STAT(Stat::get().user[1]++); 
           return false;
         }
