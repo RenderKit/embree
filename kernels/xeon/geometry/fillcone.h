@@ -137,18 +137,19 @@ namespace embree
         const Vec3fa dir = ray.dir;
         const Vec3fa p0 = p0_i-org;
         const Vec3fa p1 = p1_i-org;
-        BBox1f tp(ray.tnear-tb,ray.tfar-tb);
+        const float r01 = max(r0,r1);
+        const float eps = 128.0f*1.19209e-07f*abs(tb);
         
-        float maxR = max(r0,r1);
-        float t_term = 128.0f*1.19209e-07f*abs(tb);
-        
+        /* intersect with bounding cone */
         BBox1f tc;
-        const Cone cone(p0,maxR,p1,maxR);
+        const Cone cone(p0,r01,p1,r01);
         if (!cone.intersect(dir,tc)) {
           STAT(Stat::get().user[1]++); 
           return false;
         }
         
+        /* intersect with cap-planes */
+        BBox1f tp(ray.tnear-tb,ray.tfar-tb);
         tp = embree::intersect(tp,intersect_half_plane(zero,dir,+n0,p0));
         tp = embree::intersect(tp,intersect_half_plane(zero,dir,-n1,p1));
         const BBox1f td = embree::intersect(tc,tp);
@@ -158,7 +159,7 @@ namespace embree
         }
         
         tc.lower = tp.lower;
-        tc.upper = min(tc.upper+0.1f*maxR,tp.upper);
+        tc.upper = min(tc.upper+0.1f*r01,tp.upper);
         
         const Vec3fa p1p0 = p1-p0;
         const Vec3fa norm_p1p0 = normalize(p1p0);
@@ -193,7 +194,7 @@ namespace embree
           t += rcpMaxDerivative*dt;
           //if (p == t*d) break;
           p = t*dir;
-          if (unlikely(abs(dt) < t_term)) {
+          if (unlikely(abs(dt) < eps)) {
             STAT(Stat::get().user[7]++); 
             u = dot(p-q0,q1-q0)*rcp_length2(q1-q0);
             break;
