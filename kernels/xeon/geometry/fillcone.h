@@ -139,12 +139,7 @@ namespace embree
         const Vec3fa p1 = p1_i-org;
         const BBox1f ray_t(ray.tnear-tb,ray.tfar-tb);
         
-        ////PRINT(ray_tnear);
-        ////PRINT(ray_tfar);
-        //PRINT(r0);
-        //PRINT(r1);
         float maxR = max(r0,r1);
-        //PRINT(maxR);
         float t_term = 128.0f*1.19209e-07f*abs(tb);
         
         const float r01 = maxR;
@@ -155,35 +150,14 @@ namespace embree
           STAT(Stat::get().user[1]++); 
           return false;
         }
-        //PRINT(tc_lower);
-        //PRINT(tc_upper);
         
         const BBox1f tp0 = intersect_half_plane(zero,dir,+n0,p0);
         const BBox1f tp1 = intersect_half_plane(zero,dir,-n1,p1);
-        ////PRINT(tp0.first);
-        ////PRINT(tp0.second);
-        ////PRINT(tp1.first);
-        ////PRINT(tp1.second);
-        
         const BBox1f td = embree::intersect(ray_t,tc,tp0,tp1);
-        //float td_lower = max(ray_tnear,tc.lower,tp0.lower ,tp1.lower );
-        //float td_upper = min(ray_tfar,tc.upper,tp0.upper,tp1.upper);
-        //PRINT(td_lower);
-        //PRINT(td_upper);
         if (td.lower > td.upper) {
           STAT(Stat::get().user[2]++); 
           return false;
         }
-        
-#if 0
-        if (uA >= 0.0f && uA <= 1.0f) {
-          u = uA;
-          t = tb+tc.lower;
-          Ng = NgA;
-          return true;
-        }
-        return false;
-#endif
         
         tc.lower = max(ray_t.lower,tp0.lower ,tp1.lower );
         tc.upper = min(ray_t.upper,tc.upper+0.1f*maxR,tp0.upper,tp1.upper);
@@ -195,9 +169,6 @@ namespace embree
         float A1 = abs(dot(norm_p1p0,normalize(n1)));
         float rcpMaxDerivative = max(0.01f,min(A0,A1))/dirlen;
         
-        //PRINT(tc_lower);
-        //PRINT(tc_upper);
-        
         STAT(Stat::get().user[3]++);
         t = td.lower; float dt = inf;
         Vec3fa p = t*dir;
@@ -205,45 +176,35 @@ namespace embree
         
         for (size_t i=0;; i++) 
         {
-          //PRINT(i);
           STAT(Stat::get().user[4]++); 
           if (unlikely(i == 2000)) {
             STAT(Stat::get().user[5]++); 
-            //PRINT("miss1");
             return false;
           }
           if (unlikely(t > tc.upper)) {
             STAT(Stat::get().user[6]++); 
-            //PRINT("break1");
             break;
           }
           Vec3fa q0,q1,Ng;
           dt = distance_f(p,q0,q1,Ng,p0,n0,r0,p1,n1,r1);
           if (i == 0 && dt < 0.0f) inout = -1.0f;
           dt *= inout;
-          //PRINT(dt);
           if (unlikely(std::isnan(dt))) {
-            //PRINT("miss2");
             dt = 1.0f;
-            //return false;
           }
           t += rcpMaxDerivative*dt;
           //if (p == t*d) break;
           p = t*dir;
-          //PRINT(t);
-          //PRINT(p);
           if (unlikely(abs(dt) < t_term)) {
-            //PRINT("break2");
             STAT(Stat::get().user[7]++); 
             u = dot(p-q0,q1-q0)*rcp_length2(q1-q0);
             break;
           }
         }
         if (t < tc.lower || t > tc.upper) {
-          //PRINT("miss3");
           return false;
         }
-        
+
         /*const Vec3fa N = cross(p-p0,p1p0);
         const Vec3fa Ng0 = normalize(cross(n0,N));
         const Vec3fa Ng1 = normalize(cross(n1,N));
@@ -252,14 +213,10 @@ namespace embree
         Ng = normalize(cross(q1-q0,N));
         const Vec3fa P = (1.0f-u)*q0 + u*q1;
         t = tb+dot(q0,Ng)/dot(dir,Ng);*/
+
         t += tb;
         Ng = grad_distance_f(p,p0,n0,r0,p1,n1,r1);
         if (std::isnan(Ng.x) || std::isnan(Ng.y) || std::isnan(Ng.z)) return false;
-
-        //PRINT("hit");
-        //PRINT(t);
-        //PRINT(Ng);
-        //PRINT(P);
         return true;
       }
     };
