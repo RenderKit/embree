@@ -160,10 +160,10 @@ namespace embree
         
         tc.lower = tp.lower;
         tc.upper = min(tc.upper+0.1f*r01,tp.upper);
-        
+
+        /* shrink stepsize for distorted fill-cones */
         const Vec3fa p1p0 = p1-p0;
         const Vec3fa norm_p1p0 = normalize(p1p0);
-        
         float A0 = abs(dot(norm_p1p0,normalize(n0)));
         float A1 = abs(dot(norm_p1p0,normalize(n1)));
         float rcpMaxDerivative = max(0.01f,min(A0,A1))/dirlen;
@@ -173,13 +173,10 @@ namespace embree
         Vec3fa p = t*dir;
         float inout = 1.0f;
         
-        for (size_t i=0;; i++) 
+        for (size_t i=0; i<2000; i++) 
         {
           STAT(Stat::get().user[4]++); 
-          if (unlikely(i == 2000)) {
-            STAT(Stat::get().user[5]++); 
-            return false;
-          }
+          
           if (unlikely(t > tc.upper)) {
             STAT(Stat::get().user[6]++); 
             break;
