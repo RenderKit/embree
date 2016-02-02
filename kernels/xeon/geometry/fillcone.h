@@ -137,7 +137,7 @@ namespace embree
         const Vec3fa dir = ray.dir;
         const Vec3fa p0 = p0_i-org;
         const Vec3fa p1 = p1_i-org;
-        const BBox1f ray_t(ray.tnear-tb,ray.tfar-tb);
+        BBox1f tp(ray.tnear-tb,ray.tfar-tb);
         
         float maxR = max(r0,r1);
         float t_term = 128.0f*1.19209e-07f*abs(tb);
@@ -151,16 +151,16 @@ namespace embree
           return false;
         }
         
-        const BBox1f tp0 = intersect_half_plane(zero,dir,+n0,p0);
-        const BBox1f tp1 = intersect_half_plane(zero,dir,-n1,p1);
-        const BBox1f td = embree::intersect(ray_t,tc,tp0,tp1);
+        tp = embree::intersect(tp,intersect_half_plane(zero,dir,+n0,p0));
+        tp = embree::intersect(tp,intersect_half_plane(zero,dir,-n1,p1));
+        const BBox1f td = embree::intersect(tc,tp);
         if (td.lower > td.upper) {
           STAT(Stat::get().user[2]++); 
           return false;
         }
         
-        tc.lower = max(ray_t.lower,tp0.lower ,tp1.lower );
-        tc.upper = min(ray_t.upper,tc.upper+0.1f*maxR,tp0.upper,tp1.upper);
+        tc.lower = tp.lower;
+        tc.upper = min(tc.upper+0.1f*maxR,tp.upper);
         
         const Vec3fa p1p0 = p1-p0;
         const Vec3fa norm_p1p0 = normalize(p1p0);
