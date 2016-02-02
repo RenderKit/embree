@@ -1431,7 +1431,7 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
       dg.Ty = dy;
       dg.Ng = dg.Ns = dz;
     }    
-    //dg.tnear_eps = 1024.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar));
+    dg.tnear_eps = 1024.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar));
   }
   else if (geometry->type == GROUP) {
     int geomID = ray.geomID; {
