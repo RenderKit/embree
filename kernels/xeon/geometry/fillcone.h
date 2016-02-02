@@ -243,17 +243,18 @@ namespace embree
           return false;
         }
         
-        const Vec3fa N = cross(p-p0,p1p0);
+        /*const Vec3fa N = cross(p-p0,p1p0);
         const Vec3fa Ng0 = normalize(cross(n0,N));
         const Vec3fa Ng1 = normalize(cross(n1,N));
         const Vec3fa q0 = p0+r0*Ng0;
         const Vec3fa q1 = p1+r1*Ng1;
         Ng = normalize(cross(q1-q0,N));
         const Vec3fa P = (1.0f-u)*q0 + u*q1;
-        t = tb+dot(q0,Ng)/dot(dir,Ng);
-        
+        t = tb+dot(q0,Ng)/dot(dir,Ng);*/
+        t += tb;
         Ng = grad_distance_f(p,p0,n0,r0,p1,n1,r1);
         if (std::isnan(Ng.x) || std::isnan(Ng.y) || std::isnan(Ng.z)) return false;
+
         //PRINT("hit");
         //PRINT(t);
         //PRINT(Ng);
