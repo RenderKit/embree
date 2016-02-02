@@ -76,16 +76,12 @@ namespace embree
         return distance_f(p,q0,q1,Ng,p0,n0,r0,p1,n1,r1);
       }
       
-      __forceinline float pow_3_2(float x) const {
-        return x*sqrt(x);
-      }
-      
       /*! differentiated normalization */
       __forceinline Vec3fa dnormalize(const Vec3fa& p, const Vec3fa& dp) const
       {
         const float pp  = dot(p,p);
         const float pdp = dot(p,dp);
-        return (pp*dp-pdp*p)/pow_3_2(pp);
+        return (pp*dp-pdp*p)*rcp(pp)*rsqrt(pp);
       }
 
       __forceinline Vec3fa grad_distance_f(const Vec3fa& p, 
