@@ -23,7 +23,7 @@ namespace embree
 {
   namespace isa
   {
-    static __forceinline std::pair<float,float> intersect_half_plane(const Vec3fa& ray_org, const Vec3fa& ray_dir, const Vec3fa& N, const Vec3fa& P)
+    static __forceinline BBox1f intersect_half_plane(const Vec3fa& ray_org, const Vec3fa& ray_dir, const Vec3fa& N, const Vec3fa& P)
     {
       Vec3fa O = Vec3fa(ray_org) - P;
       Vec3fa D = Vec3fa(ray_dir);
@@ -32,7 +32,7 @@ namespace embree
       float t = -ON*rcp(abs(DN) < min_rcp_input ? min_rcp_input : DN );
       float lower = select(DN < 0.0f, float(neg_inf), t);
       float upper = select(DN < 0.0f, t, float(pos_inf));
-      return std::make_pair(lower,upper);
+      return BBox1f(lower,upper);
     }
 
     struct FillCone
@@ -158,15 +158,15 @@ namespace embree
         //PRINT(tc_lower);
         //PRINT(tc_upper);
         
-        auto tp0 = intersect_half_plane(zero,dir,+n0,p0);
-        auto tp1 = intersect_half_plane(zero,dir,-n1,p1);
+        BBox1f tp0 = intersect_half_plane(zero,dir,+n0,p0);
+        BBox1f tp1 = intersect_half_plane(zero,dir,-n1,p1);
         ////PRINT(tp0.first);
         ////PRINT(tp0.second);
         ////PRINT(tp1.first);
         ////PRINT(tp1.second);
         
-        float td_lower = max(ray_tnear,tc_lower,tp0.first ,tp1.first );
-        float td_upper = min(ray_tfar,tc_upper,tp0.second,tp1.second);
+        float td_lower = max(ray_tnear,tc_lower,tp0.lower ,tp1.lower );
+        float td_upper = min(ray_tfar,tc_upper,tp0.upper,tp1.upper);
         //PRINT(td_lower);
         //PRINT(td_upper);
         if (td_lower > td_upper) {
@@ -184,8 +184,8 @@ namespace embree
         return false;
 #endif
         
-        tc_lower = max(ray_tnear,tp0.first ,tp1.first );
-        tc_upper = min(ray_tfar,tc_upper+0.1f*maxR,tp0.second,tp1.second);
+        tc_lower = max(ray_tnear,tp0.lower ,tp1.lower );
+        tc_upper = min(ray_tfar,tc_upper+0.1f*maxR,tp0.upper,tp1.upper);
         
         const Vec3fa p1p0 = p1-p0;
         const Vec3fa norm_p1p0 = normalize(p1p0);
