@@ -24,23 +24,23 @@ namespace embree
   {
     struct Cone
     {
-      const Vec3fa v0_i;
-      const Vec3fa v1_i;
-      const float r0;
-      const float r1;
+      const Vec3fa p0; //!< start location of cone
+      const Vec3fa p1; //!< end position of cone
+      const float r0;  //!< start radius of cone
+      const float r1;  //!< end radius of cone
 
       __forceinline Cone(const Vec3fa& v0, const float r0, const Vec3fa& v1, const float r1) 
-        : v0_i(v0), r0(r0), v1_i(v1), r1(r1) {}
+        : p0(v0), r0(r0), p1(v1), r1(r1) {}
 
       __forceinline bool intersect(const Vec3fa& org_i, const Vec3fa& dir,
                                    float& t0_o, float& u0_o, Vec3fa& Ng0_o,
                                    float& t1_o) const
         
       {
-        const float tb = dot(0.5f*(v0_i+v1_i)-org_i,normalize(dir));
+        const float tb = dot(0.5f*(p0+p1)-org_i,normalize(dir));
         const Vec3fa org = org_i+tb*dir;
-        const Vec3fa v0 = v0_i-org;
-        const Vec3fa v1 = v1_i-org;
+        const Vec3fa v0 = p0-org;
+        const Vec3fa v1 = p1-org;
         
         const float rl = rcp_length(v1-v0);
         const Vec3fa P0 = v0, dP = (v1-v0)*rl;
@@ -81,8 +81,8 @@ namespace embree
                                    float& u0_o,
                                    Vec3fa& Ng_o) const
       {
-        const Vec3fa v0 = v0_i;
-        const Vec3fa v1 = v1_i;
+        const Vec3fa v0 = p0;
+        const Vec3fa v1 = p1;
         const float rl = rcp_length(v1-v0);
         const Vec3fa P0 = v0, dP = (v1-v0)*rl;
         const float dr = (r1-r0)*rl;
@@ -114,12 +114,9 @@ namespace embree
         t1_o = (-B+Q)*rcp_2A;
         
         u0_o = (Oz+t0_o*dOz)*rl;
-        //if (u0_o < 0.0f || u0_o > 1.0f) return false;
         const Vec3fa Pr = t0_o*dir;
         const Vec3fa Pl = v0 + u0_o*(v1-v0);
         Ng_o = Pr-Pl;
-        //t0_o += tb;
-        //t1_o += tb;
         return true;
       }
     };
