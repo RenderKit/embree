@@ -50,7 +50,7 @@ namespace embree
         
         const float A = dOdO - sqr(dOz);
         const float B = 2.0f * (OdO - dOz*Oz);
-        const float C = OO - sqr(Oz) - sqr(r0);
+        const float C = OO - sqr(Oz) - sqr(r);
         
         const float D = B*B - 4.0f*A*C;
         if (D < 0.0f) return false;
@@ -89,7 +89,7 @@ namespace embree
         
         const float A = dOdO - sqr(dOz);
         const float B = 2.0f * (OdO - dOz*Oz);
-        const float C = OO - sqr(Oz) - sqr(r0);
+        const float C = OO - sqr(Oz) - sqr(r);
         
         const float D = B*B - 4.0f*A*C;
         if (D < 0.0f) return false;
@@ -110,6 +110,58 @@ namespace embree
         //const Vec3fa Pl = v0 + u0_o*(v1-v0);
         //Ng_o = Pr-Pl;
         return true;
+      }
+    };
+
+    template<int N>
+      struct CylinderN
+    {
+      typedef Vec3<vfloat<N>> Vec3vfN;
+      
+      const Vec3vfN p0; //!< start location
+      const Vec3vfN p1; //!< end position
+      const vfloat<N> r;   //!< radius of cylinder
+
+      __forceinline CylinderN(const Vec3vfN& p0, const Vec3vfN& p1, const vfloat<N>& r) 
+        : p0(p0), p1(p1), r(r) {}
+
+      __forceinline vbool<N> intersect(const Vec3fa& org_i, const Vec3fa& dir, BBox<vfloat<N>>& t_o, vfloat<N>& u0_o, Vec3vfN& Ng0_o) const
+      {
+        const vfloat<N> tb = dot(vfloatx(0.5f)*(p0+p1)-Vec3vfN(org_i),Vec3vfN(normalize(dir)));
+        const Vec3vfN org = Vec3vfN(org_i)+tb*Vec3vfN(dir);
+        const Vec3vfN v0 = p0-org;
+        const Vec3vfN v1 = p1-org;
+        
+        const vfloat<N> rl = rcp_length(v1-v0);
+        const Vec3vfN P0 = v0, dP = (v1-v0)*rl;
+        const Vec3vfN O = -P0, dO = dir;
+        
+        const vfloat<N> dOdO = dot(dO,dO);
+        const vfloat<N> OdO = dot(dO,O);
+        const vfloat<N> OO = dot(O,O);
+        const vfloat<N> dOz = dot(dP,dO);
+        const vfloat<N> Oz = dot(dP,O);
+        
+        const vfloat<N> A = dOdO - sqr(dOz);
+        const vfloat<N> B = 2.0f * (OdO - dOz*Oz);
+        const vfloat<N> C = OO - sqr(Oz) - sqr(r);
+        
+        const vfloat<N> D = B*B - 4.0f*A*C;
+        vbool<N> valid = D >= 0.0f;
+        if (none(valid)) return valid;
+        
+        const vfloat<N> Q = sqrt(D);
+        const vfloat<N> rcp_2A = rcp(2.0f*A);
+        t_o.lower = (-B-Q)*rcp_2A;
+        t_o.upper = (-B+Q)*rcp_2A;
+        
+        u0_o = (Oz+t_o.lower*dOz)*rl;
+        const Vec3vfN Pr = t_o.lower*Vec3vfN(dir);
+        const Vec3vfN Pl = v0 + u0_o*(v1-v0);
+        Ng0_o = Pr-Pl;
+        t_o.lower += tb;
+        t_o.upper += tb;
+        return valid;
       }
     };
   }

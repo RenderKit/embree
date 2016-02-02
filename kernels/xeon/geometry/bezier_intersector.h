@@ -19,6 +19,7 @@
 #include "../../common/ray.h"
 #include "../../common/globals.h"
 #include "filter.h"
+#include "cylinder.h"
 #include "fillcone.h"
 #include "line_intersector.h"
 
@@ -63,6 +64,40 @@ namespace embree
           t_o = t;
           return true;
         }
+      }
+      return false;
+    }
+
+    __forceinline bool intersect_bezier_recursive(const Ray& ray, const BezierCurve3fa& curve, float& u_o, float& t_o, Vec3fa& Ng_o)
+    {
+      const Vec4vfx P0    = curve.eval0(vboolx(true),0,VSIZEX);
+      const Vec4vfx dP0du = curve.derivative(vboolx(true),0,VSIZEX);
+      const Vec4vfx P3   (shift_right_1(P0.x   ),shift_right_1(P0.y   ),shift_right_1(P0.z   ),shift_right_1(P0.w)   );
+      const Vec4vfx dP3du(shift_right_1(dP0du.x),shift_right_1(dP0du.y),shift_right_1(dP0du.z),shift_right_1(dP0du.w));
+      const Vec4vfx P1    = P0 + Vec4vfx(1.0f/3.0f)*dP0du;
+      const Vec4vfx P2    = P3 - Vec4vfx(1.0f/3.0f)*dP3du;
+      const vfloatx r01 = max(P0.w,P3.w);
+      const CylinderN<VSIZEX> cylinder(Vec3vfx(P0.x,P0.y,P0.z),Vec3vfx(P3.x,P3.y,P3.z),r01);
+
+      BBox<vfloatx> t; vfloatx u; Vec3vfx Ng;
+      const vboolx hit = cylinder.intersect(ray.org,ray.dir,t,u,Ng);
+      for (size_t m=movemask(hit), i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m))
+      {
+        if (curve.depth == 4) {
+          u_o = u[i];
+          t_o = t.lower[i];
+          Ng_o = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
+          return true;
+        }
+        const Vec3fa p0(P0.x[i],P0.y[i],P0.z[i],P0.w[i]);
+        const Vec3fa p1(P1.x[i],P1.y[i],P1.z[i],P1.w[i]);
+        const Vec3fa p2(P2.x[i],P2.y[i],P2.z[i],P2.w[i]);
+        const Vec3fa p3(P3.x[i],P3.y[i],P3.z[i],P3.w[i]);
+        const float t0 = curve.t0+(curve.t1-curve.t0)*float(i+0)/float(VSIZEX);
+        const float t1 = curve.t1+(curve.t1-curve.t0)*float(i+1)/float(VSIZEX);
+        const BezierCurve3fa subcurve(p0,p1,p2,p3,t0,t1,curve.depth+1);
+        if (intersect_bezier_recursive(ray,subcurve,u_o,t_o,Ng_o))
+          return true;
       }
       return false;
     }
@@ -146,18 +181,22 @@ namespace embree
             //if (j != 1) continue;
             //std::cout << std::endl;
             //PRINT(j);
-            const Vec3fa p1( p.x[j+0], p.y[j+0] ,p.z[j+0]);
-            const Vec3fa p2( p.x[j+1], p.y[j+1] ,p.z[j+1]);
-            const Vec3fa n1(dp.x[j+0],dp.y[j+0],dp.z[j+0]);
-            const Vec3fa n2(dp.x[j+1],dp.y[j+1],dp.z[j+1]);
+            const Vec3fa p1( p.x[j+0], p.y[j+0] ,p.z[j+0], p.w[j+0]);
+            const Vec3fa p2( p.x[j+1], p.y[j+1] ,p.z[j+1], p.w[j+1]);
+            const Vec3fa n1(dp.x[j+0],dp.y[j+0],dp.z[j+0],dp.w[j+0]);
+            const Vec3fa n2(dp.x[j+1],dp.y[j+1],dp.z[j+1],dp.w[j+1]);
             const float  r1 =  p.w[j+0];
             const float  r2 =  p.w[j+1];
             float u = 0.0f;
             float t = 0.0f;
             Vec3fa Ng = zero;
             const FillCone cone(p1,n1,r1,p2,n2,r2);
+            const float t0 = float(i+j+0)*rcpN;
+            const float t1 = float(i+j+1)*rcpN;
             if (!cone.intersect(ray,u,t,Ng)) continue;
-            //if (!intersect_bezier_iterative(ray, curve2D,float(i+j)*rcpN,u,t,Ng)) continue;
+            //if (!intersect_bezier_iterative(ray, curve2D,t0,u,t,Ng)) continue;
+            //const BezierCurve3fa subcurve(p1,p1+(1.0f/3.0f)*n1,p2-(1.0f/3.0f)*n2,p2,t0,t1,0);
+            //if (!intersect_bezier_recursive(ray,subcurve,u,t,Ng)) continue;
             hit.vu[j] = (float(i+j)+u)*rcpN;
             hit.vv[j] = 0.0f;
             hit.vt[j] = t;
