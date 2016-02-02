@@ -137,8 +137,7 @@ namespace embree
         const Vec3fa dir = ray.dir;
         const Vec3fa p0 = p0_i-org;
         const Vec3fa p1 = p1_i-org;
-        const float ray_tnear = ray.tnear-tb;
-        const float ray_tfar = ray.tfar-tb;
+        const BBox1f ray_t(ray.tnear-tb,ray.tfar-tb);
         
         ////PRINT(ray_tnear);
         ////PRINT(ray_tfar);
@@ -159,18 +158,19 @@ namespace embree
         //PRINT(tc_lower);
         //PRINT(tc_upper);
         
-        BBox1f tp0 = intersect_half_plane(zero,dir,+n0,p0);
-        BBox1f tp1 = intersect_half_plane(zero,dir,-n1,p1);
+        const BBox1f tp0 = intersect_half_plane(zero,dir,+n0,p0);
+        const BBox1f tp1 = intersect_half_plane(zero,dir,-n1,p1);
         ////PRINT(tp0.first);
         ////PRINT(tp0.second);
         ////PRINT(tp1.first);
         ////PRINT(tp1.second);
         
-        float td_lower = max(ray_tnear,tc.lower,tp0.lower ,tp1.lower );
-        float td_upper = min(ray_tfar,tc.upper,tp0.upper,tp1.upper);
+        const BBox1f td = embree::intersect(ray_t,tc,tp0,tp1);
+        //float td_lower = max(ray_tnear,tc.lower,tp0.lower ,tp1.lower );
+        //float td_upper = min(ray_tfar,tc.upper,tp0.upper,tp1.upper);
         //PRINT(td_lower);
         //PRINT(td_upper);
-        if (td_lower > td_upper) {
+        if (td.lower > td.upper) {
           STAT(Stat::get().user[2]++); 
           return false;
         }
@@ -185,8 +185,8 @@ namespace embree
         return false;
 #endif
         
-        tc.lower = max(ray_tnear,tp0.lower ,tp1.lower );
-        tc.upper = min(ray_tfar,tc.upper+0.1f*maxR,tp0.upper,tp1.upper);
+        tc.lower = max(ray_t.lower,tp0.lower ,tp1.lower );
+        tc.upper = min(ray_t.upper,tc.upper+0.1f*maxR,tp0.upper,tp1.upper);
         
         const Vec3fa p1p0 = p1-p0;
         const Vec3fa norm_p1p0 = normalize(p1p0);
@@ -199,7 +199,7 @@ namespace embree
         //PRINT(tc_upper);
         
         STAT(Stat::get().user[3]++);
-        t = td_lower; float dt = inf;
+        t = td.lower; float dt = inf;
         Vec3fa p = t*dir;
         float inout = 1.0f;
         
