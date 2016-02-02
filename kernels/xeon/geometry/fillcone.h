@@ -130,9 +130,10 @@ namespace embree
         
         /* move closer to geometry to make intersection stable */
         const Vec3fa C = 0.5f*(p0_i+p1_i);
-        const float tb = dot(C-ray.org,normalize(ray.dir));
-        const Vec3fa org = ray.org+tb*normalize(ray.dir);
+        const Vec3fa ndir = normalize(ray.dir);
         const float dirlen = length(ray.dir);
+        const float tb = dot(C-ray.org,ndir);
+        const Vec3fa org = ray.org+tb*ndir;
         const Vec3fa dir = ray.dir;
         const Vec3fa p0 = p0_i-org;
         const Vec3fa p1 = p1_i-org;
@@ -148,10 +149,10 @@ namespace embree
         float t_term = 128.0f*1.19209e-07f*abs(tb);
         
         const float r01 = maxR;
-        float tc_lower,tc_upper;
+        BBox1f tc;
         Vec3fa NgA; float uA;
         const Cone cone(p0,r01,p1,r01);
-        if (!cone.intersect(dir,tc_lower,tc_upper,uA,NgA)) {
+        if (!cone.intersect(dir,tc,uA,NgA)) {
           STAT(Stat::get().user[1]++); 
           return false;
         }
@@ -165,8 +166,8 @@ namespace embree
         ////PRINT(tp1.first);
         ////PRINT(tp1.second);
         
-        float td_lower = max(ray_tnear,tc_lower,tp0.lower ,tp1.lower );
-        float td_upper = min(ray_tfar,tc_upper,tp0.upper,tp1.upper);
+        float td_lower = max(ray_tnear,tc.lower,tp0.lower ,tp1.lower );
+        float td_upper = min(ray_tfar,tc.upper,tp0.upper,tp1.upper);
         //PRINT(td_lower);
         //PRINT(td_upper);
         if (td_lower > td_upper) {
@@ -177,15 +178,15 @@ namespace embree
 #if 0
         if (uA >= 0.0f && uA <= 1.0f) {
           u = uA;
-          t = tb+tc_lower;
+          t = tb+tc.lower;
           Ng = NgA;
           return true;
         }
         return false;
 #endif
         
-        tc_lower = max(ray_tnear,tp0.lower ,tp1.lower );
-        tc_upper = min(ray_tfar,tc_upper+0.1f*maxR,tp0.upper,tp1.upper);
+        tc.lower = max(ray_tnear,tp0.lower ,tp1.lower );
+        tc.upper = min(ray_tfar,tc.upper+0.1f*maxR,tp0.upper,tp1.upper);
         
         const Vec3fa p1p0 = p1-p0;
         const Vec3fa norm_p1p0 = normalize(p1p0);
@@ -211,7 +212,7 @@ namespace embree
             //PRINT("miss1");
             return false;
           }
-          if (unlikely(t > tc_upper)) {
+          if (unlikely(t > tc.upper)) {
             STAT(Stat::get().user[6]++); 
             //PRINT("break1");
             break;
@@ -238,7 +239,7 @@ namespace embree
             break;
           }
         }
-        if (t < tc_lower || t > tc_upper) {
+        if (t < tc.lower || t > tc.upper) {
           //PRINT("miss3");
           return false;
         }

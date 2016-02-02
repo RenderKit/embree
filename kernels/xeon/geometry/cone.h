@@ -32,9 +32,7 @@ namespace embree
       __forceinline Cone(const Vec3fa& p0, const float r0, const Vec3fa& p1, const float r1) 
         : p0(p0), r0(r0), p1(p1), r1(r1) {}
 
-      __forceinline bool intersect(const Vec3fa& org_i, const Vec3fa& dir,
-                                   float& t0_o, float& u0_o, Vec3fa& Ng0_o,
-                                   float& t1_o) const
+      __forceinline bool intersect(const Vec3fa& org_i, const Vec3fa& dir, BBox1f& t_o, float& u0_o, Vec3fa& Ng0_o) const
         
       {
         const float tb = dot(0.5f*(p0+p1)-org_i,normalize(dir));
@@ -63,21 +61,20 @@ namespace embree
         
         const float Q = sqrt(D);
         const float rcp_2A = rcp(2.0f*A);
-        t0_o = (-B-Q)*rcp_2A;
-        t1_o = (-B+Q)*rcp_2A;
+        t_o.lower = (-B-Q)*rcp_2A;
+        t_o.upper = (-B+Q)*rcp_2A;
         
-        u0_o = (Oz+t0_o*dOz)*rl;
-        const Vec3fa Pr = t0_o*dir;
+        u0_o = (Oz+t_o.lower*dOz)*rl;
+        const Vec3fa Pr = t_o.lower*dir;
         const Vec3fa Pl = v0 + u0_o*(v1-v0);
         Ng0_o = Pr-Pl;
-        t0_o += tb;
-        t1_o += tb;
+        t_o.lower += tb;
+        t_o.upper += tb;
         return true;
       }
 
       __forceinline bool intersect(const Vec3fa& dir, 
-                                   float& t0_o,
-                                   float& t1_o,
+                                   BBox1f& t_o, 
                                    float& u0_o,
                                    Vec3fa& Ng_o) const
       {
@@ -104,17 +101,17 @@ namespace embree
         
         const float Q = sqrt(D);
         if (unlikely(A < min_rcp_input)) {
-          t0_o = float(neg_inf);
-          t1_o = float(pos_inf);
+          t_o.lower = float(neg_inf);
+          t_o.upper = float(pos_inf);
           return true;
         }
         
         const float rcp_2A = 0.5f*rcp(A);
-        t0_o = (-B-Q)*rcp_2A;
-        t1_o = (-B+Q)*rcp_2A;
+        t_o.lower = (-B-Q)*rcp_2A;
+        t_o.upper = (-B+Q)*rcp_2A;
         
-        u0_o = (Oz+t0_o*dOz)*rl;
-        const Vec3fa Pr = t0_o*dir;
+        u0_o = (Oz+t_o.lower*dOz)*rl;
+        const Vec3fa Pr = t_o.lower*dir;
         const Vec3fa Pl = v0 + u0_o*(v1-v0);
         Ng_o = Pr-Pl;
         return true;
