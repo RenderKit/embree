@@ -75,14 +75,6 @@ namespace embree
         Vec3fa q0; Vec3fa q1; Vec3fa Ng;
         return distance_f(p,q0,q1,Ng,p0,n0,r0,p1,n1,r1);
       }
-      
-      /*! differentiated normalization */
-      __forceinline Vec3fa dnormalize(const Vec3fa& p, const Vec3fa& dp) const
-      {
-        const float pp  = dot(p,p);
-        const float pdp = dot(p,dp);
-        return (pp*dp-pdp*p)*rcp(pp)*rsqrt(pp);
-      }
 
       __forceinline Vec3fa grad_distance_f(const Vec3fa& p, 
                                            const Vec3fa& p0, const Vec3fa& n0, const float r0,
@@ -153,7 +145,7 @@ namespace embree
         //PRINT(r1);
         float maxR = max(r0,r1);
         //PRINT(maxR);
-        float t_term = max(0.00001f*maxR,1024.0f*1.19209e-07f*abs(tb));
+        float t_term = 128.0f*1.19209e-07f*abs(tb);
         
         const float r01 = maxR;
         float tc_lower,tc_upper;

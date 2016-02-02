@@ -281,6 +281,14 @@ namespace embree
     const float d = dot(a,a); if (unlikely(d == 0.0f)) return a; else return a*rsqrt(d);
   }
 
+  /*! differentiated normalization */
+  __forceinline Vec3fa dnormalize(const Vec3fa& p, const Vec3fa& dp)
+  {
+    const float pp  = dot(p,p);
+    const float pdp = dot(p,dp);
+    return (pp*dp-pdp*p)*rcp(pp)*rsqrt(pp);
+  }
+  
   ////////////////////////////////////////////////////////////////////////////////
   /// Select
   ////////////////////////////////////////////////////////////////////////////////
