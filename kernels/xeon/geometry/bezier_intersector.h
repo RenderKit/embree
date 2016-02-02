@@ -19,7 +19,8 @@
 #include "../../common/ray.h"
 #include "../../common/globals.h"
 #include "filter.h"
-#include "line_intersector.h" // FIXME: remove later
+#include "fillcone.h"
+#include "line_intersector.h"
 
 namespace embree
 {
@@ -154,7 +155,8 @@ namespace embree
             float u = 0.0f;
             float t = 0.0f;
             Vec3fa Ng = zero;
-            if (!intersect_fill_cone(ray,p1,n1,r1,p2,n2,r2,u,t,Ng)) continue;
+            const FillCone cone(p1,n1,r1,p2,n2,r2);
+            if (!cone.intersect(ray,u,t,Ng)) continue;
             //if (!intersect_bezier_iterative(ray, curve2D,float(i+j)*rcpN,u,t,Ng)) continue;
             hit.vu[j] = (float(i+j)+u)*rcpN;
             hit.vv[j] = 0.0f;
