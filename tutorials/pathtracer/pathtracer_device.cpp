@@ -1417,13 +1417,20 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
     //const Vec3fa dx = normalize(normalize(dg.Ng);
     //const Vec3fa dy = normalize(cross(neg(ray.dir),dx));
     //const Vec3fa dz = normalize(cross(dy,dx));
-    const Vec3fa dx = normalize(tangent);
-    const Vec3fa dy = normalize(cross(tangent,dg.Ng));
-    const Vec3fa dz = normalize(dg.Ng);
-    dg.Tx = dx;
-    dg.Ty = dy;
-    dg.Ng = dg.Ns = dz;
-    
+    if (length(tangent) < 1E-6f) { // some hair are just points
+      dg.Tx = Vec3fa(1,0,0);
+      dg.Ty = Vec3fa(0,1,0);
+      dg.Ng = dg.Ns = Vec3fa(0,0,1);
+    }
+    else
+    {
+      const Vec3fa dx = normalize(tangent);
+      const Vec3fa dy = normalize(cross(tangent,dg.Ng));
+      const Vec3fa dz = normalize(dg.Ng);
+      dg.Tx = dx;
+      dg.Ty = dy;
+      dg.Ng = dg.Ns = dz;
+    }    
     //dg.tnear_eps = 1024.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar));
   }
   else if (geometry->type == GROUP) {
