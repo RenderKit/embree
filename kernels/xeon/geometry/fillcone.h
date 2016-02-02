@@ -80,13 +80,12 @@ namespace embree
         return x*sqrt(x);
       }
       
-      __forceinline Vec3fa normalize_dx(const Vec3fa& p, const Vec3fa& dpdx) const
+      /*! differentiated normalization */
+      __forceinline Vec3fa dnormalize(const Vec3fa& p, const Vec3fa& dp) const
       {
-        float pp = dot(p,p);
-        float x = pp*dpdx.x - p.x*(p.x*dpdx.x + p.y*dpdx.y + p.z*dpdx.z);
-        float y = pp*dpdx.y - p.y*(p.x*dpdx.x + p.y*dpdx.y + p.z*dpdx.z);
-        float z = pp*dpdx.z - p.z*(p.x*dpdx.x + p.y*dpdx.y + p.z*dpdx.z);
-        return Vec3fa(x,y,z)/pow_3_2(pp);
+        const float pp  = dot(p,p);
+        const float pdp = dot(p,dp);
+        return (pp*dp-pdp*p)/pow_3_2(pp);
       }
 
       __forceinline Vec3fa grad_distance_f(const Vec3fa& p, 
@@ -117,14 +116,14 @@ namespace embree
         const Vec3fa dN1dz = cross(n1,dNdz); 
         
         const Vec3fa q0    = p0+r0*normalize(N0);
-        const Vec3fa dq0dx = r0*normalize_dx(N0,dN0dx);
-        const Vec3fa dq0dy = r0*normalize_dx(N0,dN0dy);
-        const Vec3fa dq0dz = r0*normalize_dx(N0,dN0dz);
+        const Vec3fa dq0dx = r0*dnormalize(N0,dN0dx);
+        const Vec3fa dq0dy = r0*dnormalize(N0,dN0dy);
+        const Vec3fa dq0dz = r0*dnormalize(N0,dN0dz);
         
         const Vec3fa q1    = p1+r1*normalize(N1);
-        const Vec3fa dq1dx = r1*normalize_dx(N1,dN1dx);
-        const Vec3fa dq1dy = r1*normalize_dx(N1,dN1dy);
-        const Vec3fa dq1dz = r1*normalize_dx(N1,dN1dz);
+        const Vec3fa dq1dx = r1*dnormalize(N1,dN1dx);
+        const Vec3fa dq1dy = r1*dnormalize(N1,dN1dy);
+        const Vec3fa dq1dz = r1*dnormalize(N1,dN1dz);
         
         const Vec3fa K    = cross(q1-q0,N);
         const Vec3fa dKdx = cross(dq1dx-dq0dx,N) + cross(q1-q0,dNdx);
@@ -132,9 +131,9 @@ namespace embree
         const Vec3fa dKdz = cross(dq1dz-dq0dz,N) + cross(q1-q0,dNdz);
         
         const Vec3fa Ng    = normalize(K);
-        const Vec3fa dNgdx = normalize_dx(K,dKdx); 
-        const Vec3fa dNgdy = normalize_dx(K,dKdy); 
-        const Vec3fa dNgdz = normalize_dx(K,dKdz); 
+        const Vec3fa dNgdx = dnormalize(K,dKdx); 
+        const Vec3fa dNgdy = dnormalize(K,dKdy); 
+        const Vec3fa dNgdz = dnormalize(K,dKdz); 
         
         const float f    = dot(p-q0,Ng);
         const float dfdx = dot(Vec3fa(1,0,0)-dq0dx,Ng) + dot(p-q0,dNgdx); 
