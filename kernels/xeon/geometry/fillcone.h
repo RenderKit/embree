@@ -92,14 +92,6 @@ namespace embree
                                            const Vec3fa& p0, const Vec3fa& n0, const float r0,
                                            const Vec3fa& p1, const Vec3fa& n1, const float r1) const
       {
-#if 0
-        const float e = 0.001f;
-        const float v = distance_f(p,p0,n0,r0,p1,n1,r1);
-        const float x = distance_f(p+Vec3fa(e,0,0),p0,n0,r0,p1,n1,r1);
-        const float y = distance_f(p+Vec3fa(0,e,0),p0,n0,r0,p1,n1,r1);
-        const float z = distance_f(p+Vec3fa(0,0,e),p0,n0,r0,p1,n1,r1);
-        return Vec3fa(x-v,y-v,z-v)/e;
-#else
         const Vec3fa N    = cross(p-p0,p1-p0);
         const Vec3fa dNdx = cross(Vec3fa(1,0,0),p1-p0);
         const Vec3fa dNdy = cross(Vec3fa(0,1,0),p1-p0);
@@ -141,7 +133,6 @@ namespace embree
         const float dfdz = dot(Vec3fa(0,0,1)-dq0dz,Ng) + dot(p-q0,dNgdz); 
         
         return Vec3fa(dfdx,dfdy,dfdz);
-#endif
       }
       
       __forceinline bool intersect(const Ray& ray, float& u, float& t, Vec3fa& Ng) const
