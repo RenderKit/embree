@@ -65,7 +65,9 @@ namespace embree
         q1 = p1+r1*normalize(cross(n1,N));
 #endif
         Ng = normalize(cross(q1-q0,N));
-        return dot(p-q0,Ng);
+        float dt = dot(p-q0,Ng);
+        if (unlikely(std::isnan(dt))) return 1.0f;
+        return dt;
       }
       
       __forceinline float distance_f(const Vec3fa& p,
@@ -125,7 +127,6 @@ namespace embree
       
       __forceinline bool intersect(const Ray& ray, float& u, float& t, Vec3fa& Ng) const
       {
-        //PING;
         STAT(Stat::get().user[0]++); 
         
         /* move closer to geometry to make intersection stable */
@@ -169,7 +170,7 @@ namespace embree
         float rcpMaxDerivative = max(0.01f,min(A0,A1))/dirlen;
         
         STAT(Stat::get().user[3]++);
-        t = td.lower; float dt = inf;
+        t = td.lower;
         Vec3fa p = t*dir;
         float inout = 1.0f;
         
@@ -182,13 +183,9 @@ namespace embree
             break;
           }
           Vec3fa q0,q1,Ng;
-          dt = distance_f(p,q0,q1,Ng,p0,n0,r0,p1,n1,r1);
+          float dt = distance_f(p,q0,q1,Ng,p0,n0,r0,p1,n1,r1);
           if (i == 0 && dt < 0.0f) inout = -1.0f;
-          dt *= inout;
-          if (unlikely(std::isnan(dt))) {
-            dt = 1.0f;
-          }
-          t += rcpMaxDerivative*dt;
+          t += rcpMaxDerivative*inout*dt;
           //if (p == t*d) break;
           p = t*dir;
           if (unlikely(abs(dt) < eps)) {
