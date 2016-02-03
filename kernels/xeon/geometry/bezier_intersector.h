@@ -27,6 +27,46 @@ namespace embree
 {
   namespace isa
   {
+    __forceinline bool intersect_bezier_iterative2(const Ray& ray, const BezierCurve3fa& curve, float& u_o, float& t_o, Vec3fa& Ng)
+    {
+      Vec3fa p0,n0; curve.eval(0.0f,p0,n0);
+      Vec3fa p1,n1; curve.eval(1.0f,p1,n1);
+      float r01 = max(curve.v0.w,curve.v1.w,curve.v2.w,curve.v3.w);
+      
+      /* intersect with bounding cone */
+      BBox1f tc;
+      const Cone cone(p0,r01,p1,r01);
+      if (!cone.intersect(ray.org,ray.dir,tc))
+        return false;
+        
+      /* intersect with cap-planes */
+      BBox1f tp(ray.tnear,ray.tfar);
+      tp = embree::intersect(tp,tc);
+      tp = embree::intersect(tp,intersect_half_plane(ray.org,ray.dir,+n0,p0));
+      tp = embree::intersect(tp,intersect_half_plane(ray.org,ray.dir,-n1,p1));
+      if (tp.lower > tp.upper)
+        return false;
+
+      /* iterative double step solver */
+      float t = tp.lower;
+      float u = dot(ray.org+t*ray.dir-p0,normalize(p1-p0));
+      for (size_t i=0; i<100; i++)
+      {
+        Vec3fa Q = ray.org + t*ray.dir;
+        Vec3fa P,dPdu,dPdu2; curve.eval(u,P,dPdu,dPdu2);
+        Vec3fa T = normalize(dPdu);
+        float du = dot(Q-P,T);
+        float dt = dot(Q-P,Q-P)-sqr(du)-sqr(P.w);
+        u += du;
+        t += dt;
+        if (max(abs(du),abs(dt)) < 0.001f) {
+          Ng = cross(dPdu,Q-P);
+          return true;
+        }
+      }
+      return false;
+    }
+    
     __forceinline bool intersect_bezier_iterative(const Ray& ray, const BezierCurve3fa& curve, float u, float& u_o, float& t_o, Vec3fa& Ng)
     {
       float t = 0.0f, d = 0.0f;
@@ -190,11 +230,12 @@ namespace embree
             float u = 0.0f;
             float t = 0.0f;
             Vec3fa Ng = zero;
-            const FillCone cone(p1,n1,r1,p2,n2,r2);
             const float t0 = float(i+j+0)*rcpN;
             const float t1 = float(i+j+1)*rcpN;
-            if (!cone.intersect(ray,u,t,Ng)) continue;
+            //const FillCone cone(p1,n1,r1,p2,n2,r2);
+            //if (!cone.intersect(ray,u,t,Ng)) continue;
             //if (!intersect_bezier_iterative(ray, curve2D,t0,u,t,Ng)) continue;
+            if (!intersect_bezier_iterative2(ray, curve2D,u,t,Ng)) continue;
             //const BezierCurve3fa subcurve(p1,p1+(1.0f/3.0f)*n1,p2-(1.0f/3.0f)*n2,p2,t0,t1,0);
             //if (!intersect_bezier_recursive(ray,subcurve,u,t,Ng)) continue;
             hit.vu[j] = (float(i+j)+u)*rcpN;
