@@ -296,7 +296,7 @@ namespace embree
       if (isStatic())
       {
 #if defined (__TARGET_AVX__)
-        if (device->hasISA(AVX))
+        if (device->hasISA(AVX2)) // only enable on HSW machines, for SNB this codepath is slower
         {
           switch (mode) {
           case /*0b00*/ 0: accels.add(device->bvh8_factory->BVH8OBBBezier1v(this,isHighQuality())); break;
@@ -306,7 +306,7 @@ namespace embree
           }
         }
         else
-  #endif
+#endif
         {
           switch (mode) {
           case /*0b00*/ 0: accels.add(device->bvh4_factory->BVH4OBBBezier1v(this,isHighQuality())); break;
@@ -342,7 +342,7 @@ namespace embree
     if (device->hair_accel_mb == "default")
     {
 #if defined (__TARGET_AVX__)
-      if (device->hasISA(AVX))
+      if (device->hasISA(AVX2)) // only enable on HSW machines, on SNB this codepath is slower
       {
         accels.add(device->bvh8_factory->BVH8OBBBezier1iMB(this,false));
       }
