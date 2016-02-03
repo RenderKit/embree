@@ -2,12 +2,14 @@
 
 namespace embree
 {
-  namespace isa
-  {
-#define MAX_RAYS_PER_OCTANT 32
+  //namespace isa
+  //{
 
-    void RayStream::intersectAOS(Scene *scene, Ray* rayN, const size_t N, const size_t stride, const size_t flags)
+
+    void RayStream::filterAOS(Scene *scene, RTCRay* _rayN, const size_t N, const size_t stride, const size_t flags, const bool intersect)
     {
+      Ray* __restrict__ rayN = (Ray*)_rayN;
+
       __aligned(64) Ray* octants[8][MAX_RAYS_PER_OCTANT];
       unsigned int rays_in_octant[8];
 
@@ -53,7 +55,10 @@ namespace embree
         Ray** rays = &octants[cur_octant][0];
         const size_t numOctantRays = rays_in_octant[cur_octant];
 
-        //scene->intersectN(rays,numOctantRays,flags);
+        if (intersect)
+          scene->intersectN((RTCRay**)rays,numOctantRays,flags);
+        else
+          scene->occludedN((RTCRay**)rays,numOctantRays,flags);
 
         rays_in_octant[cur_octant] = 0;
 
@@ -61,5 +66,5 @@ namespace embree
     }
 
 
-  };
+  //};
 };

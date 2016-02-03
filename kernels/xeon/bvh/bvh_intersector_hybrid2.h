@@ -474,8 +474,8 @@ namespace embree
         };
 
       public:
-        static void intersect(BVH* bvh, void *ray, size_t numRays, size_t stride, size_t flags);
-        static void occluded(BVH* bvh, void *ray, size_t numRays, size_t stride, size_t flags);
+        static void intersect(BVH* bvh, Ray **ray, size_t numRays, size_t flags);
+        static void occluded (BVH* bvh, Ray **ray, size_t numRays, size_t flags);
       };
 
   }

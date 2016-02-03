@@ -51,55 +51,12 @@ namespace embree
 #if defined(__AVX__)
 
     template<int N, int types, bool robust, typename PrimitiveIntersector>
-    void BVHNStreamIntersector<N, types, robust, PrimitiveIntersector>::intersect(BVH* __restrict__ bvh, void *input_rays, size_t numRays, size_t stride, size_t flags)
+    void BVHNStreamIntersector<N, types, robust, PrimitiveIntersector>::intersect(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, size_t flags)
     {
-      __aligned(64) Ray* octants[8][MAX_RAYS_PER_OCTANT];
-      unsigned int rays_in_octant[8];
-
-      for (size_t i=0;i<8;i++) rays_in_octant[i] = 0;
-      size_t inputRayID = 0;
-      DBG(numRays);
-      while(1)
+      for (size_t r=0;r<numTotalRays;r+=MAX_RAYS_PER_OCTANT)
       {
-        int cur_octant = -1;
-        /* sort rays into octants */
-        for (;inputRayID<numRays;)
-        {
-          Ray &ray = *(Ray*)((char*)input_rays + inputRayID * stride);
-          /* skip invalid rays */
-          if (unlikely(ray.tnear > ray.tfar)) { inputRayID++; continue; }
-
-          const unsigned int octantID = (ray.dir.x < 0.0f ? 1 : 0) + (ray.dir.y < 0.0f ? 2 : 0) + (ray.dir.z < 0.0f ? 4 : 0);
-          assert(octantID < 8);
-          octants[octantID][rays_in_octant[octantID]++] = &ray;
-          inputRayID++;
-          if (unlikely(rays_in_octant[octantID] == MAX_RAYS_PER_OCTANT))
-          {
-            cur_octant = octantID;
-            break;
-          }
-        }
-        /* need to flush rays in octant ? */
-        if (unlikely(cur_octant == -1))
-          for (size_t i=0;i<8;i++)
-            if (rays_in_octant[i])
-            {
-              cur_octant = i;
-              break;
-            }
-
-        /* all rays traced ? */
-        if (unlikely(cur_octant == -1))
-          break;
-
-        /* trace rays in current octant */
-        /////////////////////////////////////////////////////////////////////////
-        DBG(cur_octant);
-        DBG(rays_in_octant[cur_octant]);
-
-        Ray** rays = &octants[cur_octant][0];
-        const size_t numOctantRays = rays_in_octant[cur_octant];
-        rays_in_octant[cur_octant] = 0;
+        Ray** rays = input_rays + r;
+        const size_t numOctantRays = (r + MAX_RAYS_PER_OCTANT >= numTotalRays) ? numTotalRays-r : MAX_RAYS_PER_OCTANT;
 
         __aligned(64) RayContext ray_ctx[MAX_RAYS_PER_OCTANT];
 
@@ -130,9 +87,9 @@ namespace embree
         stack[1].dist = neg_inf;
  
 
-        const size_t nearX = (cur_octant & 1) ? 1*sizeof(vfloat<N>) : 0*sizeof(vfloat<N>);
-        const size_t nearY = (cur_octant & 2) ? 3*sizeof(vfloat<N>) : 2*sizeof(vfloat<N>);
-        const size_t nearZ = (cur_octant & 4) ? 5*sizeof(vfloat<N>) : 4*sizeof(vfloat<N>);
+        const size_t nearX = (rays[0]->dir.x < 0.0f) ? 1*sizeof(vfloat<N>) : 0*sizeof(vfloat<N>);
+        const size_t nearY = (rays[0]->dir.y < 0.0f) ? 3*sizeof(vfloat<N>) : 2*sizeof(vfloat<N>);
+        const size_t nearZ = (rays[0]->dir.z < 0.0f) ? 5*sizeof(vfloat<N>) : 4*sizeof(vfloat<N>);
 
         const size_t farX  = nearX ^ sizeof(vfloat<8>);
         const size_t farY  = nearY ^ sizeof(vfloat<8>);
@@ -231,14 +188,14 @@ namespace embree
               unsigned int mask = right->mask;
               //if (unlikely(right->ptr.isLeaf()))
               {
-              const float dist = *(float*)&right->dist;
-              size_t bits = mask & m_valid_intersection;
-              for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) 
-                if (rays[i]->tfar < dist)
-                {
-                  assert(mask & ((size_t)1 << i));
-                  mask &= ~((size_t)1 << i);
-                }
+                const float dist = *(float*)&right->dist;
+                size_t bits = mask & m_valid_intersection;
+                for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) 
+                  if (rays[i]->tfar < dist)
+                  {
+                    assert(mask & ((size_t)1 << i));
+                    mask &= ~((size_t)1 << i);
+                  }
               }
               left->mask = mask;
               left += mask ? 1 : 0;
@@ -247,64 +204,17 @@ namespace embree
           }
 #endif
         } // traversal + intersection
-
-
-        /////////////////////////////////////////////////////////////////////////
-        
       }
-
     }
 
     template<int N, int types, bool robust, typename PrimitiveIntersector>
-    void BVHNStreamIntersector<N, types, robust, PrimitiveIntersector>::occluded(BVH* __restrict__ bvh, void *input_rays, size_t numRays, size_t stride, size_t flags)
+    void BVHNStreamIntersector<N, types, robust, PrimitiveIntersector>::occluded(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, size_t flags)
     {
-      __aligned(64) Ray* octants[8][MAX_RAYS_PER_OCTANT];
-      unsigned int rays_in_octant[8];
 
-      for (size_t i=0;i<8;i++) rays_in_octant[i] = 0;
-      size_t inputRayID = 0;
-      DBG(numRays);
-      while(1)
+      for (size_t r=0;r<numTotalRays;r+=MAX_RAYS_PER_OCTANT)
       {
-        int cur_octant = -1;
-        /* sort rays into octants */
-        for (;inputRayID<numRays;)
-        {
-          Ray &ray = *(Ray*)((char*)input_rays + inputRayID * stride);
-          /* skip invalid rays */
-          if (unlikely(ray.tnear > ray.tfar)) { inputRayID++; continue; }
-
-          const unsigned int octantID = (ray.dir.x < 0.0f ? 1 : 0) + (ray.dir.y < 0.0f ? 2 : 0) + (ray.dir.z < 0.0f ? 4 : 0);
-          assert(octantID < 8);
-          octants[octantID][rays_in_octant[octantID]++] = &ray;
-          inputRayID++;
-          if (unlikely(rays_in_octant[octantID] == MAX_RAYS_PER_OCTANT))
-          {
-            cur_octant = octantID;
-            break;
-          }
-        }
-        /* need to flush rays in octant ? */
-        if (unlikely(cur_octant == -1))
-          for (size_t i=0;i<8;i++)
-            if (rays_in_octant[i])
-            {
-              cur_octant = i;
-              break;
-            }
-
-        /* all rays traced ? */
-        if (unlikely(cur_octant == -1))
-          break;
-
-        /* trace rays in current octant */
-        /////////////////////////////////////////////////////////////////////////
-        DBG(cur_octant);
-        DBG(rays_in_octant[cur_octant]);
-
-        Ray** rays = &octants[cur_octant][0];
-        const size_t numOctantRays = rays_in_octant[cur_octant];
-        rays_in_octant[cur_octant] = 0;
+        Ray** rays = input_rays + r;
+        const size_t numOctantRays = (r + MAX_RAYS_PER_OCTANT >= numTotalRays) ? numTotalRays-r : MAX_RAYS_PER_OCTANT;
 
         __aligned(64) RayContext ray_ctx[MAX_RAYS_PER_OCTANT];
 
@@ -335,9 +245,9 @@ namespace embree
         stack[1].dist = neg_inf;
  
 
-        const size_t nearX = (cur_octant & 1) ? 1*sizeof(vfloat<N>) : 0*sizeof(vfloat<N>);
-        const size_t nearY = (cur_octant & 2) ? 3*sizeof(vfloat<N>) : 2*sizeof(vfloat<N>);
-        const size_t nearZ = (cur_octant & 4) ? 5*sizeof(vfloat<N>) : 4*sizeof(vfloat<N>);
+        const size_t nearX = (rays[0]->dir.x < 0.0f) ? 1*sizeof(vfloat<N>) : 0*sizeof(vfloat<N>);
+        const size_t nearY = (rays[0]->dir.y < 0.0f) ? 3*sizeof(vfloat<N>) : 2*sizeof(vfloat<N>);
+        const size_t nearZ = (rays[0]->dir.z < 0.0f) ? 5*sizeof(vfloat<N>) : 4*sizeof(vfloat<N>);
 
         const size_t farX  = nearX ^ sizeof(vfloat<8>);
         const size_t farY  = nearY ^ sizeof(vfloat<8>);
@@ -429,11 +339,7 @@ namespace embree
             }
 
           if (unlikely(m_active == 0)) break;
-        } // traversal + intersection
-
-
-        /////////////////////////////////////////////////////////////////////////
-        
+        } // traversal + intersection        
       }      
     }
 

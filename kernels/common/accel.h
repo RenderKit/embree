@@ -68,9 +68,8 @@ namespace embree
 
     /*! Type of intersect function pointer for ray packets of size N. */
     typedef void (*IntersectFuncN)(void* ptr,           /*!< pointer to user data */
-                                   void* ray,           /*!< ray stream to intersect */
+                                   RTCRay** ray,        /*!< ray stream to intersect */
                                    const size_t N,      /*!< number of rays in stream */
-                                   const size_t stride, /*!< stride in bytes */
                                    const size_t flags   /*!< layout flags */);
     
     
@@ -95,9 +94,8 @@ namespace embree
 
     /*! Type of intersect function pointer for ray packets of size N. */
     typedef void (*OccludedFuncN)(void* ptr,           /*!< pointer to user data */
-                                  void* ray,           /*!< ray stream to intersect */
+                                  RTCRay** ray,        /*!< ray stream to intersect */
                                   const size_t N,      /*!< number of rays in stream */
-                                  const size_t stride, /*!< stride in bytes */
                                   const size_t flags   /*!< layout flags */);
     typedef void (*ErrorFunc) ();
 
@@ -300,9 +298,9 @@ namespace embree
     }
 
     /*! Intersects a packet of N rays in SOA layout with the scene. */
-    __forceinline void intersectN (void* rayN, const size_t N, const size_t stride, const size_t flags) {
+    __forceinline void intersectN (RTCRay **rayN, const size_t N, const size_t flags) {
       assert(intersectors.intersectorN.intersect);
-      intersectors.intersectorN.intersect(intersectors.ptr,rayN, N, stride, flags);
+      intersectors.intersectorN.intersect(intersectors.ptr,rayN, N, flags);
     }
 
     /*! Tests if single ray is occluded by the scene. */
@@ -330,9 +328,9 @@ namespace embree
     }
 
     /*! Tests if a packet of N rays in SOA layout is occluded by the scene. */
-    __forceinline void occludedN (void* rayN, const size_t N, const size_t stride, const size_t flags) {
+    __forceinline void occludedN (RTCRay** rayN, const size_t N, const size_t flags) {
       assert(intersectors.intersectorN.occluded);
-      intersectors.intersectorN.occluded(intersectors.ptr,rayN, N, stride, flags);
+      intersectors.intersectorN.occluded(intersectors.ptr,rayN, N, flags);
     }
 
   public:

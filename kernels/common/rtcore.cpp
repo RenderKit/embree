@@ -23,6 +23,7 @@
 #include "device.h"
 #include "scene.h"
 #include "raystream_log.h"
+#include "raystreams/raystreams.h"
 
 namespace embree
 {  
@@ -403,7 +404,8 @@ namespace embree
 #endif
     STAT3(normal.travs,1,N,N);
 
-    scene->intersectN(rayN,N,stride,flags);
+    RayStream::filterAOS(scene,rayN,N,stride,flags,true);
+    
 #endif
     RTCORE_CATCH_END(scene->device);
   }
@@ -591,8 +593,8 @@ namespace embree
 #endif
     STAT3(shadow.travs,1,N,N);
 
-    scene->occludedN(rayN,N,stride,flags);
-    
+    RayStream::filterAOS(scene,rayN,N,stride,flags,false);
+
 #endif
     RTCORE_CATCH_END(scene->device);
   }

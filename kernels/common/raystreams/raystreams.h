@@ -14,6 +14,9 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#pragma once
+
+#include "../../common/default.h"
 #include "../../common/scene.h"
 #include "../../common/ray.h"
 
@@ -21,10 +24,11 @@ namespace embree
 {
   class RayStream
   {
-  public:
-    RayStream();
 
-    void intersectAOS(Scene *scene, Ray* rayN, const size_t N, const size_t stride, const size_t flags);
+  static const size_t MAX_RAYS_PER_OCTANT = 32;
+
+  public:
+    static void filterAOS(Scene *scene, RTCRay* rayN, const size_t N, const size_t stride, const size_t flags, const bool intersect);
 
   };
 };
