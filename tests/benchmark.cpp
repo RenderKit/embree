@@ -1231,9 +1231,9 @@ namespace embree
           rays[j] = makeRay(zero,numbers[i+j]);
         }
         if (intersect)
-          rtcIntersectN(scene,rays,STREAM_SIZE,sizeof(RTCRay),RTC_RAYN_AOS);
+          rtcIntersectN(scene,rays,STREAM_SIZE,sizeof(RTCRay),RTC_RAYN_DEFAULT);
         else
-          rtcOccludedN(scene,rays,STREAM_SIZE,sizeof(RTCRay),RTC_RAYN_AOS);
+          rtcOccludedN(scene,rays,STREAM_SIZE,sizeof(RTCRay),RTC_RAYN_DEFAULT);
       }        
 
       if (threadIndex != 0) g_barrier_active.wait(threadIndex);

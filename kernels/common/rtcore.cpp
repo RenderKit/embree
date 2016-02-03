@@ -388,7 +388,7 @@ namespace embree
 #endif
 
 #if defined (RTCORE_RAY_PACKETS)
-  RTCORE_API void rtcIntersectN (RTCScene hscene, void* rayN, const size_t N, const size_t stride, const size_t flags) 
+  RTCORE_API void rtcIntersectN (RTCScene hscene, RTCRay* rayN, const size_t N, const size_t stride, const size_t flags) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -399,7 +399,7 @@ namespace embree
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
-    if (((size_t)rayN ) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 64 bytes");   
+    if (((size_t)rayN ) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 16 bytes");   
 #endif
     STAT3(normal.travs,1,N,N);
 
@@ -407,6 +407,47 @@ namespace embree
 #endif
     RTCORE_CATCH_END(scene->device);
   }
+
+  RTCORE_API void rtcIntersectN_SOA (RTCScene hscene, RTCRaySOA& rayN, const size_t N, const size_t streams, const size_t offset, const size_t flags) 
+  {
+    Scene* scene = (Scene*) hscene;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcIntersectN_SOA);
+#if !defined(__TARGET_SIMD8__)
+    throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersectN_SOA not supported");
+#else
+#if defined(DEBUG)
+    RTCORE_VERIFY_HANDLE(hscene);
+    if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)rayN.orgx   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.orgx not aligned to 4 bytes");   
+    if (((size_t)rayN.orgy   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.orgy not aligned to 4 bytes");   
+    if (((size_t)rayN.orgz   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.orgz not aligned to 4 bytes");   
+    if (((size_t)rayN.dirx   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.dirx not aligned to 4 bytes");   
+    if (((size_t)rayN.diry   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.diry not aligned to 4 bytes");   
+    if (((size_t)rayN.dirz   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.dirz not aligned to 4 bytes");   
+    if (((size_t)rayN.tnear  ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.dirx not aligned to 4 bytes");   
+    if (((size_t)rayN.tfar   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.tnear not aligned to 4 bytes");   
+    if (((size_t)rayN.time   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.time not aligned to 4 bytes");   
+    if (((size_t)rayN.mask   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.mask not aligned to 4 bytes");   
+    if (((size_t)rayN.Ngx    ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.Ngx not aligned to 4 bytes");   
+    if (((size_t)rayN.Ngy    ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.Ngy not aligned to 4 bytes");   
+    if (((size_t)rayN.Ngz    ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.Ngz not aligned to 4 bytes");   
+    if (((size_t)rayN.u      ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.u not aligned to 4 bytes");   
+    if (((size_t)rayN.v      ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.v not aligned to 4 bytes");   
+    if (((size_t)rayN.geomID ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.geomID not aligned to 4 bytes");   
+    if (((size_t)rayN.primID ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.primID not aligned to 4 bytes");   
+    if (((size_t)rayN.instID ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.instID not aligned to 4 bytes");   
+#endif
+    STAT3(normal.travs,1,N,N);
+
+    //scene->intersectN(rayN,N,stride,flags);
+    FATAL("not yet implemented");
+#endif
+    RTCORE_CATCH_END(scene->device);
+  }
+
+
+
 #endif
 
   
@@ -535,7 +576,7 @@ namespace embree
 
   
 #if defined (RTCORE_RAY_PACKETS)
-  RTCORE_API void rtcOccludedN(RTCScene hscene, void* rayN, const size_t N, const size_t stride, const size_t flags) 
+  RTCORE_API void rtcOccludedN(RTCScene hscene, RTCRay* rayN, const size_t N, const size_t stride, const size_t flags) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -555,6 +596,48 @@ namespace embree
 #endif
     RTCORE_CATCH_END(scene->device);
   }
+
+
+  RTCORE_API void rtcOccludedN_SOA(RTCScene hscene, RTCRaySOA& rayN, const size_t N, const size_t streams, const size_t offset, const size_t flags) 
+  {
+    Scene* scene = (Scene*) hscene;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcOccludedN_SOA);
+#if !defined(__TARGET_SIMD8__)
+    throw_RTCError(RTC_INVALID_OPERATION,"rtcOccludedN_SOA not supported");
+#else
+#if defined(DEBUG)
+    RTCORE_VERIFY_HANDLE(hscene);
+    if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)rayN.orgx   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.orgx not aligned to 4 bytes");   
+    if (((size_t)rayN.orgy   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.orgy not aligned to 4 bytes");   
+    if (((size_t)rayN.orgz   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.orgz not aligned to 4 bytes");   
+    if (((size_t)rayN.dirx   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.dirx not aligned to 4 bytes");   
+    if (((size_t)rayN.diry   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.diry not aligned to 4 bytes");   
+    if (((size_t)rayN.dirz   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.dirz not aligned to 4 bytes");   
+    if (((size_t)rayN.tnear  ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.dirx not aligned to 4 bytes");   
+    if (((size_t)rayN.tfar   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.tnear not aligned to 4 bytes");   
+    if (((size_t)rayN.time   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.time not aligned to 4 bytes");   
+    if (((size_t)rayN.mask   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.mask not aligned to 4 bytes");   
+    if (((size_t)rayN.Ngx    ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.Ngx not aligned to 4 bytes");   
+    if (((size_t)rayN.Ngy    ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.Ngy not aligned to 4 bytes");   
+    if (((size_t)rayN.Ngz    ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.Ngz not aligned to 4 bytes");   
+    if (((size_t)rayN.u      ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.u not aligned to 4 bytes");   
+    if (((size_t)rayN.v      ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.v not aligned to 4 bytes");   
+    if (((size_t)rayN.geomID ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.geomID not aligned to 4 bytes");   
+    if (((size_t)rayN.primID ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.primID not aligned to 4 bytes");   
+    if (((size_t)rayN.instID ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.instID not aligned to 4 bytes");   
+#endif
+    STAT3(shadow.travs,1,N,N);
+
+    //scene->occludedN(rayN,N,stride,flags);
+    FATAL("not yet implemented");
+
+#endif
+    RTCORE_CATCH_END(scene->device);
+  }
+
+
 #endif
   
   RTCORE_API void rtcDeleteScene (RTCScene hscene) 

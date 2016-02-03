@@ -589,7 +589,7 @@ void renderPixelStream(int x0, int y0, int x1, int y1, const Vec3fa& vx, const V
     }
   
   /* intersect ray with scene */
-  rtcIntersectN(g_scene,rays,numRays,sizeof(RTCRay),RTC_RAYN_AOS);
+  rtcIntersectN(g_scene,rays,numRays,sizeof(RTCRay),RTC_RAYN_DEFAULT);
 
   for (int i = 0,y = y0; y<y1; y++) 
     for (int x = x0; x<x1; x++,i++)
