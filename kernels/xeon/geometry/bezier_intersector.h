@@ -252,7 +252,7 @@ namespace embree
             if (!intersect_bezier_iterative2(ray,curve2D,t0,t1,u,t,Ng)) continue;
             //const BezierCurve3fa subcurve(p1,p1+(1.0f/3.0f)*n1,p2-(1.0f/3.0f)*n2,p2,t0,t1,0);
             //if (!intersect_bezier_recursive(ray,subcurve,u,t,Ng)) continue;
-            hit.vu[j] = (float(i+j)+u)*rcpN;
+            hit.vu[j] = u; //(float(i+j)+u)*rcpN;
             hit.vv[j] = 0.0f;
             hit.vt[j] = t;
             hit.vNg.x[j] = Ng.x;
