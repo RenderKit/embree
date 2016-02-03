@@ -55,6 +55,7 @@ namespace embree
       //return true;
 
       /* iterative double step solver */
+      float eps = 128.0f*float(ulp);
       float rcpLenP0P1 = rcp_length(p1-p0);
       float t = tp.lower;
       float u = u0 + (u1-u0)*dot(ray.org+t*ray.dir-p0,normalize(p1-p0))*rcpLenP0P1;
@@ -66,9 +67,9 @@ namespace embree
         float du = dot(Q-P,T);
         float dt = sqrt(dot(Q-P,Q-P)-sqr(du))-P.w;
         u += du*rcpLenP0P1*(u1-u0);
-        t += dt*abs(dot(ray.dir,T));
+        t += dt;//*abs(dot(ray.dir,T));
         if (t > tp.upper) return false;
-        if (max(abs(du),abs(dt)) < 128.0f*float(ulp)) 
+        if (max(abs(du),abs(dt)) < eps) 
         {
           if (t < tp.lower || t > tp.upper) return false;
           u_o = u;
