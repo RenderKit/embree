@@ -75,7 +75,7 @@ namespace embree
           if (t < tp.lower || t > tp.upper) return false;
           u_o = u;
           t_o = t;
-          Ng_o = cross(dPdu,Q-P);
+          Ng_o = Q-P;
           return true;
         }
       }
