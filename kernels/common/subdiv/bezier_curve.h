@@ -178,7 +178,7 @@ namespace embree
       __forceinline Vec4<vfloat<M>> eval0(const vbool<M>& valid, const int ofs, const int size) const
     {
       assert(size <= BezierCoefficients::N);
-      assert(ofs < size);
+      assert(ofs <= size);
       Vec4<vfloat<M>> r;
       r  = Vec4<vfloat<M>>(v0) * vfloat<M>::loadu(&bezier_coeff0.c0[size][ofs]);
       r += Vec4<vfloat<M>>(v1) * vfloat<M>::loadu(&bezier_coeff0.c1[size][ofs]); // FIXME: use fmadd
@@ -193,7 +193,7 @@ namespace embree
       __forceinline Vec4<vfloat<M>> derivative(const vbool<M>& valid, const int ofs, const int size) const
     {
       assert(size <= BezierCoefficients::N);
-      assert(ofs < size);
+      assert(ofs <= size);
       Vec4<vfloat<M>> r;
       r  = Vec4<vfloat<M>>(v0) * vfloat<M>::loadu(&bezier_coeff0.d0[size][ofs]);
       r += Vec4<vfloat<M>>(v1) * vfloat<M>::loadu(&bezier_coeff0.d1[size][ofs]); // FIXME: use fmadd
@@ -208,7 +208,7 @@ namespace embree
       __forceinline Vec4<vfloat<M>> eval1(const vbool<M>& valid, const int ofs, const int size) const
     {
       assert(size <= BezierCoefficients::N);
-      assert(ofs < size);
+      assert(ofs <= size);
       Vec4<vfloat<M>> r;
       r  = Vec4<vfloat<M>>(v0) * vfloat<M>::loadu(&bezier_coeff1.c0[size][ofs]);
       r += Vec4<vfloat<M>>(v1) * vfloat<M>::loadu(&bezier_coeff1.c1[size][ofs]); // FIXME: use fmadd
@@ -218,6 +218,42 @@ namespace embree
     }
 #endif
 
+#if 1
+#if defined(__SSE__)
+    __forceinline BBox3fa bounds(int N) const
+    {
+      Vec4vfx pl(pos_inf), pu(neg_inf);
+      for (int i=0; i<=N; i+=VSIZEX)
+      {
+        vboolx valid = vintx(i)+vintx(step) <= vintx(N);
+        const Vec4vfx p  = eval0(valid,i,N);
+        const Vec4vfx dp = derivative(valid,i,N);
+
+        const Vec4vfx pm = p-Vec4vfx(1.0f/3.0f)*dp;
+        const Vec4vfx pp = p+Vec4vfx(1.0f/3.0f)*dp;
+
+        Vec4vfx l = p;
+        Vec4vfx u = p;
+        if (i != 0) { l = min(l,pm); u = max(u,pm); }
+        if (i != N) { l = min(l,pp); u = max(u,pp); }
+
+        pl.x = select(valid,min(pl.x,l.x),pl.x); // FIXME: use masked min
+        pl.y = select(valid,min(pl.y,l.y),pl.y); 
+        pl.z = select(valid,min(pl.z,l.z),pl.z); 
+        pl.w = select(valid,min(pl.w,l.w),pl.w); 
+        
+        pu.x = select(valid,max(pu.x,u.x),pu.x); // FIXME: use masked min
+        pu.y = select(valid,max(pu.y,u.y),pu.y); 
+        pu.z = select(valid,max(pu.z,u.z),pu.z); 
+        pu.w = select(valid,max(pu.w,u.w),pu.w); 
+      }
+      const Vec3fa lower(reduce_min(pl.x),reduce_min(pl.y),reduce_min(pl.z));
+      const Vec3fa upper(reduce_max(pu.x),reduce_max(pu.y),reduce_max(pu.z));
+      const Vec3fa upper_r = Vec3fa(reduce_max(max(-pl.w,pu.w)));
+      return enlarge(BBox3fa(lower,upper),upper_r);
+    }
+#endif
+#else
 #if defined(__SSE__)
     __forceinline BBox3fa bounds(int N) const
     {
@@ -253,6 +289,7 @@ namespace embree
         return enlarge(BBox3fa(min(lower,v3),max(upper,v3)),max(upper_r,Vec3fa(abs(v3.w))));
       }
     }
+#endif
 #endif
   };
 }
