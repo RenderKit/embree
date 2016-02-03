@@ -67,7 +67,7 @@ namespace embree
         float dt = sqrt(dot(Q-P,Q-P)-sqr(du))-P.w;
         u += 0.1f*du*rcpLenP0P1*(u1-u0);
         t += 0.1f*dt*abs(dot(ray.dir,T));
-        //if (t > tp.upper) return false;
+        if (t > tp.upper) return false;
         if (max(abs(du),abs(dt)) < 0.001f) 
         {
           if (t < tp.lower || t > tp.upper) return false;
