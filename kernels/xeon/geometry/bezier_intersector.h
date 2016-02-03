@@ -65,10 +65,10 @@ namespace embree
         Vec3fa T = normalize(dPdu);
         float du = dot(Q-P,T);
         float dt = sqrt(dot(Q-P,Q-P)-sqr(du))-P.w;
-        u += 0.1f*du*rcpLenP0P1*(u1-u0);
-        t += 0.1f*dt*abs(dot(ray.dir,T));
+        u += du*rcpLenP0P1*(u1-u0);
+        t += dt*abs(dot(ray.dir,T));
         if (t > tp.upper) return false;
-        if (max(abs(du),abs(dt)) < 0.001f) 
+        if (max(abs(du),abs(dt)) < 128.0f*float(ulp)) 
         {
           if (t < tp.lower || t > tp.upper) return false;
           u_o = u;
