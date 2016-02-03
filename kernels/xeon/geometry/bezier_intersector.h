@@ -27,16 +27,20 @@ namespace embree
 {
   namespace isa
   {
-    __forceinline bool intersect_bezier_iterative2(const Ray& ray, const BezierCurve3fa& curve, float& u_o, float& t_o, Vec3fa& Ng)
+    __forceinline bool intersect_bezier_iterative2(const Ray& ray, const BezierCurve3fa& curve, float u0, float u1, float& u_o, float& t_o, Vec3fa& Ng_o)
     {
-      Vec3fa p0,n0; curve.eval(0.0f,p0,n0);
-      Vec3fa p1,n1; curve.eval(1.0f,p1,n1);
-      float r01 = max(curve.v0.w,curve.v1.w,curve.v2.w,curve.v3.w);
+      Vec3fa p0,n0,ddp0; curve.eval(u0,p0,n0,ddp0);
+      Vec3fa p1,n1,ddp1; curve.eval(u1,p1,n1,ddp1);
+      Vec3fa q0 = p0+n0*(1.0f/3.0f);
+      Vec3fa q1 = p1-n1*(1.0f/3.0f);
+      float rq0 = length(cross(p0-q0,p1-q0))/length(p1-p0)+q0.w;
+      float rq1 = length(cross(p0-q1,p1-q1))/length(p1-p0)+q1.w;
+      float r01 = max(p0.w,rq0,rq1,p1.w);
       
       /* intersect with bounding cone */
       BBox1f tc;
       const Cone cone(p0,r01,p1,r01);
-      if (!cone.intersect(ray.org,ray.dir,tc))
+      if (!cone.intersect(ray.org,ray.dir,tc,u_o,Ng_o))
         return false;
         
       /* intersect with cap-planes */
@@ -47,20 +51,29 @@ namespace embree
       if (tp.lower > tp.upper)
         return false;
 
+      //t_o = tc.lower;
+      //return true;
+
       /* iterative double step solver */
+      float rcpLenP0P1 = rcp_length(p1-p0);
       float t = tp.lower;
-      float u = dot(ray.org+t*ray.dir-p0,normalize(p1-p0));
-      for (size_t i=0; i<100; i++)
+      float u = u0 + (u1-u0)*dot(ray.org+t*ray.dir-p0,normalize(p1-p0))*rcpLenP0P1;
+      for (size_t i=0; i<1000; i++)
       {
         Vec3fa Q = ray.org + t*ray.dir;
-        Vec3fa P,dPdu,dPdu2; curve.eval(u,P,dPdu,dPdu2);
+        Vec3fa P,dPdu,ddPdu; curve.eval(u,P,dPdu,ddPdu);
         Vec3fa T = normalize(dPdu);
         float du = dot(Q-P,T);
-        float dt = dot(Q-P,Q-P)-sqr(du)-sqr(P.w);
-        u += du;
-        t += dt;
-        if (max(abs(du),abs(dt)) < 0.001f) {
-          Ng = cross(dPdu,Q-P);
+        float dt = sqrt(dot(Q-P,Q-P)-sqr(du))-P.w;
+        u += 0.1f*du*rcpLenP0P1*(u1-u0);
+        t += 0.1f*dt*abs(dot(ray.dir,T));
+        //if (t > tp.upper) return false;
+        if (max(abs(du),abs(dt)) < 0.001f) 
+        {
+          if (t < tp.lower || t > tp.upper) return false;
+          u_o = u;
+          t_o = t;
+          Ng_o = cross(dPdu,Q-P);
           return true;
         }
       }
@@ -114,7 +127,7 @@ namespace embree
       const Vec4vfx dP0du = curve.derivative(vboolx(true),0,VSIZEX);
       const Vec4vfx P3   (shift_right_1(P0.x   ),shift_right_1(P0.y   ),shift_right_1(P0.z   ),shift_right_1(P0.w)   );
       const Vec4vfx dP3du(shift_right_1(dP0du.x),shift_right_1(dP0du.y),shift_right_1(dP0du.z),shift_right_1(dP0du.w));
-      const Vec4vfx P1    = P0 + Vec4vfx(1.0f/3.0f)*dP0du;
+      const Vec4vfx P1    = P0 + Vec4vfx(1.0f/3.0f)*dP0du; 
       const Vec4vfx P2    = P3 - Vec4vfx(1.0f/3.0f)*dP3du;
       const vfloatx r01 = max(P0.w,P3.w);
       const CylinderN<VSIZEX> cylinder(Vec3vfx(P0.x,P0.y,P0.z),Vec3vfx(P3.x,P3.y,P3.z),r01);
@@ -218,7 +231,7 @@ namespace embree
 
           for (size_t j=0; j<min(VSIZEX-1,N-i); j++)
           {
-            //if (j != 1) continue;
+            //if (i+j != 0) continue;
             //std::cout << std::endl;
             //PRINT(j);
             const Vec3fa p1( p.x[j+0], p.y[j+0] ,p.z[j+0], p.w[j+0]);
@@ -235,7 +248,7 @@ namespace embree
             //const FillCone cone(p1,n1,r1,p2,n2,r2);
             //if (!cone.intersect(ray,u,t,Ng)) continue;
             //if (!intersect_bezier_iterative(ray, curve2D,t0,u,t,Ng)) continue;
-            if (!intersect_bezier_iterative2(ray, curve2D,u,t,Ng)) continue;
+            if (!intersect_bezier_iterative2(ray,curve2D,t0,t1,u,t,Ng)) continue;
             //const BezierCurve3fa subcurve(p1,p1+(1.0f/3.0f)*n1,p2-(1.0f/3.0f)*n2,p2,t0,t1,0);
             //if (!intersect_bezier_recursive(ray,subcurve,u,t,Ng)) continue;
             hit.vu[j] = (float(i+j)+u)*rcpN;

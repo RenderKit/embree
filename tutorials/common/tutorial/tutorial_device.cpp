@@ -144,7 +144,7 @@ Vec3fa renderPixelNg(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const
   /* shade pixel */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(0.0f);
   else {
-    if (dot(ray.dir,ray.Ng) > 0.0f) return Vec3fa(zero); else
+    //if (dot(ray.dir,ray.Ng) > 0.0f) return Vec3fa(zero); else
     return normalize(abs(Vec3fa(ray.Ng.x,ray.Ng.y,ray.Ng.z)));
   }
 }
