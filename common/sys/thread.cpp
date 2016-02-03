@@ -178,25 +178,8 @@ namespace embree
 namespace embree
 {
 
-
   ssize_t mapThreadID(ssize_t threadID)
   {
-#if 1
-
-#warning special affinity settings active    
-#define THREADS_PER_CORE 4
-#define CORES 54
-//#define OFFSET 49
-//#define CORES2 12
-#define OFFSET 43
-#define CORES2 10
-
-
-#define OFFSET2 1    
-    //ssize_t ID = OFFSET + ((threadID%THREADS_PER_CORE)*CORES) + (threadID/THREADS_PER_CORE);
-    //if (threadID >= CORES*THREADS_PER_CORE)
-    //  ID = OFFSET2 +  ((threadID%THREADS_PER_CORE)*CORES2) + (threadID/THREADS_PER_CORE);
-
     static std::vector<int> threadIDs;
 
     if (threadIDs.size() == 0)
@@ -231,11 +214,8 @@ namespace embree
 
     if (threadID < threadIDs.size())
       ID = threadIDs[threadID];
-#else
-    ssize_t ID = threadID;
-#endif
 
-    std::cout << threadID << " -> " << ID << std::endl;
+    //std::cout << threadID << " -> " << ID << std::endl;
     return ID;
   }
   /*! set affinity of the calling thread */

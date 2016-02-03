@@ -223,6 +223,9 @@ namespace embree
       
       else if (tok == Token::Id("set_affinity")&& cin->trySymbol("=")) 
         set_affinity = cin->get().Int();
+
+      else if (tok == Token::Id("affinity")&& cin->trySymbol("=")) 
+        set_affinity = cin->get().Int();
       
       else if (tok == Token::Id("isa") && cin->trySymbol("=")) {
         std::string isa = toLowerCase(cin->get().Identifier());

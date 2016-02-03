@@ -84,6 +84,7 @@ namespace embree
 
 #if defined(RTCORE_MEMKIND_ALLOCATOR)
 #include <hbwmalloc.h>
+#include <memkind.h>
 #endif
 
 /* hint for transparent huge pages (THP) */
@@ -121,48 +122,20 @@ namespace embree
 #if defined(RTCORE_MEMKIND_ALLOCATOR)
   void* mk_malloc(size_t bytes)
   {
-    //PING;
-    //f (hbw_check_available())
-    //  PRINT("!hbw_check_available()");
     assert(hbw_check_available());
     void *ptr = NULL;
-    //if ((bytes / PAGE_SIZE_2M) >= 1 && ((bytes % PAGE_SIZE_2M) == 0))
-    {
-#if defined(DEBUG)
-      PRINT(ptr);
-#endif
-
-#if 1
-      int res = hbw_posix_memalign(&ptr,PAGE_SIZE_2M,bytes);
-      //int res = hbw_posix_memalign_psize(&ptr,PAGE_SIZE_2M,bytes,HBW_PAGESIZE_2MB);
-
-      //PRINT(res);
-      if (res == 0)
-      {
-        //PRINT("2M HBW PATH");
-        //PRINT(bytes);
-        return ptr;
-      }
-      // memkind_error_message(res,"error",0);
-
-      FATAL("NO HBW 2M ALLOC");
-      //PRINT(bytes);
-#endif
-    }
-
-    /* standard 2M allocation */
-    if (hbw_posix_memalign(&ptr,PAGE_SIZE_2M,bytes) == 0)
-    {
-      PRINT("HBW FALLBACK PATH");
-      PRINT(ptr); 
-      return ptr;
-    }
+    ptr = memkind_malloc(MEMKIND_HBW_PREFERRED_HUGETLB, bytes);
+    if (ptr) return ptr;
+    ptr = memkind_malloc(MEMKIND_HBW_PREFERRED, bytes);
+    if (ptr) return ptr;
+    perror("memkind_malloc()");
     return NULL;
   }
 
   void mk_free(void* ptr) 
   {
-    hbw_free(ptr);
+    assert(ptr);
+    memkind_free(MEMKIND_DEFAULT,ptr);
   }
 #endif
 
