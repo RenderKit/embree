@@ -325,7 +325,6 @@ unsigned int addHair (RTCScene scene, const Vec3fa& pos)
      vtx[4*i+1] = P + (2.0f/3.0f)*v1 + (1.0f/3.0f)*v2;
      vtx[4*i+2] = P + (1.0f/3.0f)*v1 + (2.0f/3.0f)*v2;
      vtx[4*i+3] = P + (1.0f/6.0f)*v1 + (2.0f/3.0f)*v2 + (1.0f/6.0f)*v3;
-     PRINT4(vtx[4*i+0],vtx[4*i+1],vtx[4*i+2],vtx[4*i+3]);
    }
    rtcUnmapBuffer(scene, geomID, RTC_VERTEX_BUFFER);
    
