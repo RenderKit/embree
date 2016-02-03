@@ -106,6 +106,9 @@ namespace embree
               scene->intersectN((RTCRay**)rays_ptr,MAX_RAYS_PER_OCTANT,flags);
             else
               scene->occludedN((RTCRay**)rays_ptr,MAX_RAYS_PER_OCTANT,flags);
+
+            for (size_t j=0;j<MAX_RAYS_PER_OCTANT;j++)
+              rayN.scatterByOffset(octants[octantID][j],rays[j]);
             
             rays_in_octant[octantID] = 0;
           }
@@ -124,6 +127,10 @@ namespace embree
           scene->intersectN((RTCRay**)rays_ptr,rays_in_octant[i],flags);
         else
           scene->occludedN((RTCRay**)rays_ptr,rays_in_octant[i],flags);        
+
+        for (size_t j=0;j<rays_in_octant[i];j++)
+          rayN.scatterByOffset(octants[i][j],rays[j]);
+
       }
   }
 

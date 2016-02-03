@@ -297,14 +297,37 @@ namespace embree
     __forceinline Ray gatherByOffset(const size_t offset)
     {
       Ray ray;
-      ray.org.x = *(float*  __restrict__)((char*)orgx + offset);
+      ray.org.x = *(float* __restrict__ )((char*)orgx + offset);
       ray.org.y = *(float* __restrict__ )((char*)orgy + offset);
       ray.org.z = *(float* __restrict__ )((char*)orgz + offset);
       ray.dir.x = *(float* __restrict__ )((char*)dirx + offset);
       ray.dir.y = *(float* __restrict__ )((char*)diry + offset);
       ray.dir.z = *(float* __restrict__ )((char*)dirz + offset);
+      ray.tfar  = *(float* __restrict__ )((char*)tfar + offset);
+      /* optional inputs */
+      ray.tnear = tnear ? *(float* __restrict__ )((char*)tnear + offset) : 0.0f;
+      ray.time  = time  ? *(float* __restrict__ )((char*)time  + offset) : 0.0f;
+      ray.mask  = mask  ? *(float* __restrict__ )((char*)mask  + offset) : 0;
+      /* init geomID */
+      ray.geomID = RTC_INVALID_GEOMETRY_ID;
       return ray;
     }
+
+    __forceinline void scatterByOffset(const size_t offset, const Ray& ray)
+    {
+      if (ray.geomID !=  RTC_INVALID_GEOMETRY_ID)
+      {
+        *(float* __restrict__ )((char*)u + offset) = ray.u;
+        *(float* __restrict__ )((char*)v + offset) = ray.v;
+        *(float* __restrict__ )((char*)geomID + offset) = ray.geomID;
+        *(float* __restrict__ )((char*)primID + offset) = ray.primID;
+        if (likely(Ngx)) *(float* __restrict__ )((char*)Ngx + offset) = ray.Ng.x;
+        if (likely(Ngy)) *(float* __restrict__ )((char*)Ngy + offset) = ray.Ng.y;
+        if (likely(Ngz)) *(float* __restrict__ )((char*)Ngz + offset) = ray.Ng.z;
+        if (likely(instID)) *(float* __restrict__ )((char*)instID + offset) = ray.instID;
+      }
+    }
+
   };
 
 }

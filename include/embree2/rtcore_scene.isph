@@ -23,6 +23,7 @@
 /*! forward declarations for ray structures */
 struct RTCRay1;
 struct RTCRay;
+struct RTCRaySOA;
 
 /*! scene flags */
 enum RTCSceneFlags 
@@ -48,6 +49,13 @@ enum RTCAlgorithmFlags
   RTC_INTERSECT_VARYING = (1 << 1),    //!< enables the varying rtcIntersect and varying rtcOccluded functions for this scene
   RTC_INTERPOLATE       = (1 << 4)     //!< enables the rtcInterpolate function for this scene
 };
+
+/*! layout flags for ray streams */
+enum RTCRayNFlags
+{
+  RTC_RAYN_DEFAULT = (1 << 0)
+};
+
 
 /*! \brief Defines an opaque scene type */
 typedef uniform struct __RTCScene {}* uniform RTCScene;
@@ -98,6 +106,14 @@ void rtcIntersect1 (RTCScene scene, uniform RTCRay1& ray);
  *  bytes. */
 void rtcIntersect (RTCScene scene, varying RTCRay& ray);
 
+
+/*! Intersects a stream of N uniform rays in AOS layout with the scene. */
+void rtcIntersectN (RTCScene scene, uniform RTCRay* uniform rayN, const uniform size_t N, const uniform size_t stride, const uniform size_t flags);
+
+/*! Intersects a stream of N rays in SOA layout with the scene. */
+void rtcIntersectN_SOA (RTCScene scene, uniform RTCRaySOA& rayN, const uniform size_t N, const uniform size_t streams, const uniform size_t offset, const uniform size_t flags);
+
+
 /*! Tests if a uniform ray is occluded by the scene. This function can
  *  only be called for scenes with the RTC_INTERSECT_UNIFORM flag
  *  set. The ray has to be aligned to 16 bytes. */
@@ -108,6 +124,13 @@ void rtcOccluded1 (RTCScene scene, uniform RTCRay1& ray);
  *  set. The valid mask and ray have both to be aligned to
  *  sizeof(varing float) bytes. */
 void rtcOccluded (RTCScene scene, varying RTCRay& ray);
+
+
+/*! Tests a stream of N uniform rays in AOS layout for occlusion with the scene. */
+void rtcOccludedN (RTCScene scene, uniform RTCRay* uniform rayN, const uniform size_t N, const uniform size_t stride, const uniform size_t flags);
+
+/*! Intersects a stream of N rays in SOA layout for occlusion with the scene. */
+void rtcOccludedN_SOA (RTCScene scene, uniform RTCRaySOA& rayN, const uniform size_t N, const uniform size_t streams, const uniform size_t offset, const uniform size_t flags);
 
 /*! Deletes the geometry again. */
 void rtcDeleteScene (RTCScene scene);
