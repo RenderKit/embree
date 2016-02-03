@@ -350,7 +350,7 @@ unsigned int addHair (RTCScene scene, const Vec3fa& pos)
    //rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  hair_indices , 0, sizeof(unsigned int));
    //rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER0, hair_vertex_colors, 0, sizeof(Vec3fa));
    rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER0, colors, 0, sizeof(Vec3fa));
-   rtcSetTessellationRate(scene,geomID,8.0f);
+   rtcSetTessellationRate(scene,geomID,4.0f);
    return geomID;
 }
 
@@ -432,7 +432,6 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
   {
     /* interpolate diffuse color */
-
     Vec3fa diffuse = Vec3fa(1.0f,0.0f,0.0f);
     if (ray.geomID > 0) 
     {

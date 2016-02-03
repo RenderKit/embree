@@ -40,17 +40,23 @@ namespace embree
       /* intersect with bounding cone */
       BBox1f tc;
       const Cone cone(p0,r01,p1,r01);
-      if (!cone.intersect(ray.org,ray.dir,tc,u_o,Ng_o))
+      if (!cone.intersect(ray.org,ray.dir,tc,u_o,Ng_o)) {
+        //PRINT("missed cone");
         return false;
+      }
+      //PRINT(tc);
 
       /* intersect with cap-planes */
       BBox1f tp(ray.tnear,ray.tfar);
       tp = embree::intersect(tp,tc);
       tp = embree::intersect(tp,intersect_half_plane(ray.org,ray.dir,+n0,p0));
       tp = embree::intersect(tp,intersect_half_plane(ray.org,ray.dir,-n1,p1));
-      if (tp.lower > tp.upper)
+      if (tp.lower > tp.upper) {
+        //PRINT("missed culling");
         return false;
+      }
 
+      //PRINT(tp);
       //t_o = tc.lower;
       //return true;
 
@@ -62,6 +68,7 @@ namespace embree
       float u = u0 + (u1-u0)*dot(ray.org+t*ray.dir-p0,normalize(p1-p0))*rcpLenP0P1;
       for (size_t i=0; i<1000; i++)
       {
+        //PRINT(i);
         Vec3fa Q = ray.org + t*ray.dir;
         Vec3fa P,dPdu,ddPdu; curve.eval(u,P,dPdu,ddPdu);
         Vec3fa T = normalize(dPdu);
@@ -69,16 +76,28 @@ namespace embree
         float dt = sqrt(dot(Q-P,Q-P)-sqr(du))-P.w;
         u += du*rcpLenP0P1*(u1-u0);
         t += dt*rcpLenDir;
-        if (t > tp.upper) return false;
+        //PRINT(du);
+        //PRINT(dt);
+        //PRINT(u);
+        //PRINT(t);
+        if (t > tc.upper) {
+          //PRINT("miss1");
+          return false;
+        }
         if (max(abs(du),abs(dt)) < eps) 
         {
-          if (t < tp.lower || t > tp.upper) return false;
+          //PRINT("hit");
+          if (t < tp.lower || t > tp.upper) {
+            //PRINT("miss2");
+            return false;
+          }
           u_o = u;
           t_o = t;
           Ng_o = Q-P;
           return true;
         }
       }
+      //PRINT("miss3");
       return false;
     }
     
@@ -233,6 +252,7 @@ namespace embree
 
           for (size_t j=0; j<min(VSIZEX-1,N-i); j++)
           {
+            //PRINT(i+j);
             //if (i+j != 5) continue;
             //std::cout << std::endl;
             //PRINT(j);
