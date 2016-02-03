@@ -36,13 +36,13 @@ namespace embree
       float rq0 = length(cross(p0-q0,p1-q0))/length(p1-p0)+q0.w;
       float rq1 = length(cross(p0-q1,p1-q1))/length(p1-p0)+q1.w;
       float r01 = max(p0.w,rq0,rq1,p1.w);
-      
+
       /* intersect with bounding cone */
       BBox1f tc;
       const Cone cone(p0,r01,p1,r01);
       if (!cone.intersect(ray.org,ray.dir,tc,u_o,Ng_o))
         return false;
-        
+
       /* intersect with cap-planes */
       BBox1f tp(ray.tnear,ray.tfar);
       tp = embree::intersect(tp,tc);
@@ -222,10 +222,10 @@ namespace embree
           const Vec4vfx dp = curve2D.derivative(valid,i,N);
 
           /* early exit */
-          const Vec3vfx Q1(p.x,p.y,p.z);
+          /*const Vec3vfx Q1(p.x,p.y,p.z);
           const Vec3vfx Q2(shift_right_1(p.x),shift_right_1(p.y),shift_right_1(p.z));
           valid &= abs(dot(Vec3vfx(ray.org)-Q1,normalize_safe(cross(Q2-Q1,Vec3vfx(ray.dir))))) <= max(p.w,shift_right_1(p.w));
-          if (none(valid)) continue;
+          if (none(valid)) continue;*/
          
           /* intersect each bezier segment */
           vboolx valid_o = false;
@@ -233,7 +233,7 @@ namespace embree
 
           for (size_t j=0; j<min(VSIZEX-1,N-i); j++)
           {
-            //if (i+j != 0) continue;
+            //if (i+j != 5) continue;
             //std::cout << std::endl;
             //PRINT(j);
             const Vec3fa p1( p.x[j+0], p.y[j+0] ,p.z[j+0], p.w[j+0]);
