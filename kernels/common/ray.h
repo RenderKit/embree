@@ -256,4 +256,55 @@ namespace embree
                 << " Ng = " << ray.Ng
                 << " }";
   }
+
+
+  struct RaySOA
+  {
+    /* ray data */
+  public:
+
+    float* __restrict__ orgx;  //!< x coordinate of ray origin
+    float* __restrict__ orgy;  //!< y coordinate of ray origin
+    float* __restrict__ orgz;  //!< z coordinate of ray origin
+
+    float* __restrict__ dirx;  //!< x coordinate of ray direction
+    float* __restrict__ diry;  //!< y coordinate of ray direction
+    float* __restrict__ dirz;  //!< z coordinate of ray direction
+
+    float* __restrict__ tnear; //!< Start of ray segment (optional)
+    float* __restrict__ tfar;  //!< End of ray segment (set to hit distance)
+
+ 
+    float* __restrict__ time;     //!< Time of this ray for motion blur (optional)
+    unsigned* __restrict__ mask;  //!< Used to mask out objects during traversal (optional)
+
+    /* hit data */
+
+    float* __restrict__ Ngx;   //!< x coordinate of geometry normal (optional)
+    float* __restrict__ Ngy;   //!<y coordinate of geometry normal (optional)
+    float* __restrict__ Ngz;   //!< z coordinate of geometry normal (optional)
+
+ 
+
+    float* __restrict__ u;     //!< Barycentric u coordinate of hit
+    float* __restrict__ v;     //!< Barycentric v coordinate of hit
+
+ 
+    unsigned* __restrict__ geomID;  //!< geometry ID
+    unsigned* __restrict__ primID;  //!< primitive ID
+    unsigned* __restrict__ instID;  //!< instance ID (optional)
+
+    __forceinline Ray gatherByOffset(const size_t offset)
+    {
+      Ray ray;
+      ray.org.x = *(float*  __restrict__)((char*)orgx + offset);
+      ray.org.y = *(float* __restrict__ )((char*)orgy + offset);
+      ray.org.z = *(float* __restrict__ )((char*)orgz + offset);
+      ray.dir.x = *(float* __restrict__ )((char*)dirx + offset);
+      ray.dir.y = *(float* __restrict__ )((char*)diry + offset);
+      ray.dir.z = *(float* __restrict__ )((char*)dirz + offset);
+      return ray;
+    }
+  };
+
 }

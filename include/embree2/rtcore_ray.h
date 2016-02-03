@@ -151,7 +151,7 @@ public:
 
 
 /*! \brief Ray structure template for packets of N rays in SOA layout. */
-struct RTCORE_ALIGN(64) RTCRaySOA
+struct RTCRaySOA
 {
   /* ray data */
 public:
