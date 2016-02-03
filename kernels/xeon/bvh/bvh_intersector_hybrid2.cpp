@@ -53,14 +53,14 @@ namespace embree
     template<int N, int types, bool robust, typename PrimitiveIntersector>
     void BVHNStreamIntersector<N, types, robust, PrimitiveIntersector>::intersect(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, size_t flags)
     {
+      __aligned(64) RayContext ray_ctx[MAX_RAYS_PER_OCTANT];
+      __aligned(64) Precalculations pre[MAX_RAYS_PER_OCTANT]; 
+      __aligned(64) StackItemMaskT<NodeRef>  stack[stackSizeSingle];  //!< stack of nodes 
+
       for (size_t r=0;r<numTotalRays;r+=MAX_RAYS_PER_OCTANT)
       {
-        Ray** rays = input_rays + r;
+        Ray** __restrict__ rays = input_rays + r;
         const size_t numOctantRays = (r + MAX_RAYS_PER_OCTANT >= numTotalRays) ? numTotalRays-r : MAX_RAYS_PER_OCTANT;
-
-        __aligned(64) RayContext ray_ctx[MAX_RAYS_PER_OCTANT];
-
-        Precalculations pre[MAX_RAYS_PER_OCTANT]; 
 
         size_t m_active = 0;
         for (size_t i=0;i<numOctantRays;i++)
@@ -75,8 +75,6 @@ namespace embree
           pre[i] = Precalculations(*rays[i],bvh);
         }       
 
-
-        StackItemMaskT<NodeRef>  stack[stackSizeSingle];  //!< stack of nodes 
         StackItemMaskT<NodeRef>* stackPtr = stack + 2;    //!< current stack pointer
         StackItemMaskT<NodeRef>* stackEnd = stack + stackSizeSingle;
         stack[0].ptr  = BVH::invalidNode;
@@ -86,7 +84,6 @@ namespace embree
         stack[1].mask = m_active;
         stack[1].dist = neg_inf;
  
-
         const size_t nearX = (rays[0]->dir.x < 0.0f) ? 1*sizeof(vfloat<N>) : 0*sizeof(vfloat<N>);
         const size_t nearY = (rays[0]->dir.y < 0.0f) ? 3*sizeof(vfloat<N>) : 2*sizeof(vfloat<N>);
         const size_t nearZ = (rays[0]->dir.z < 0.0f) ? 5*sizeof(vfloat<N>) : 4*sizeof(vfloat<N>);

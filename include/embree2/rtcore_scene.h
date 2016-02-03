@@ -128,11 +128,11 @@ RTCORE_API void rtcIntersect16 (const void* valid, RTCScene scene, RTCRay16& ray
 
 /*! Intersects a stream of N rays in AOS layout with the scene. This function can
  *  only be called for scenes with the RTC_INTERSECTN flag set. */
-RTCORE_API void rtcIntersectN (RTCScene scene, RTCRay* rayN, const size_t N, const size_t stride, const size_t flags);
+RTCORE_API void rtcIntersectN (RTCScene scene, RTCRay* rayN, const size_t N, const size_t stride, const size_t flags = RTC_RAYN_DEFAULT);
 
 /*! Intersects a stream of N rays in SOA layout with the scene. This function can
  *  only be called for scenes with the RTC_INTERSECTN flag set. */
-RTCORE_API void rtcIntersectN_SOA (RTCScene scene, RTCRaySOA& rayN, const size_t N, const size_t streams, const size_t offset, const size_t flags);
+RTCORE_API void rtcIntersectN_SOA (RTCScene scene, RTCRaySOA& rayN, const size_t N, const size_t streams, const size_t offset, const size_t flags = RTC_RAYN_DEFAULT);
 
 
 /*! Tests if a single ray is occluded by the scene. The ray has to be
@@ -164,11 +164,11 @@ RTCORE_API void rtcOccluded16 (const void* valid, RTCScene scene, RTCRay16& ray)
 /*! Tests if a stream of N rays on AOS layout is occluded by the scene. This
  *  function can only be called for scenes with the RTC_INTERSECTN
  *  flag set. */
-RTCORE_API void rtcOccludedN (RTCScene scene, RTCRay* rayN, const size_t N, const size_t stride, const size_t flags);
+RTCORE_API void rtcOccludedN (RTCScene scene, RTCRay* rayN, const size_t N, const size_t stride, const size_t flags = RTC_RAYN_DEFAULT);
 
 /*! Intersects a stream of N rays in SOA layout with the scene. This function can
  *  only be called for scenes with the RTC_INTERSECTN flag set. */
-RTCORE_API void rtcOccludedN_SOA (RTCScene scene, RTCRaySOA& rayN, const size_t N, const size_t streams, const size_t offset, const size_t flags);
+RTCORE_API void rtcOccludedN_SOA (RTCScene scene, RTCRaySOA& rayN, const size_t N, const size_t streams, const size_t offset, const size_t flags = RTC_RAYN_DEFAULT);
 
 /*! Deletes the scene. All contained geometry get also destroyed. */
 RTCORE_API void rtcDeleteScene (RTCScene scene);
