@@ -199,6 +199,8 @@ RTCScene rtcNewScene (uniform RTCSceneFlags flags, uniform RTCAlgorithmFlags afl
       aflags = (uniform RTCAlgorithmFlags) ((aflags & ~RTC_INTERSECT_VARYING) | (1 << 2));
     else if (sizeof(varying float) == 64)
       aflags = (uniform RTCAlgorithmFlags) ((aflags & ~RTC_INTERSECT_VARYING) | (1 << 3));
+
+    aflags |= (uniform RTCAlgorithmFlags)(1 << 5); /* ray stream interface */
   }
   return ispcNewScene(flags,aflags);
 }
@@ -212,6 +214,7 @@ RTCScene rtcDeviceNewScene (RTCDevice device, uniform RTCSceneFlags flags, unifo
       aflags = (uniform RTCAlgorithmFlags) ((aflags & ~RTC_INTERSECT_VARYING) | (1 << 2));
     else if (sizeof(varying float) == 64)
       aflags = (uniform RTCAlgorithmFlags) ((aflags & ~RTC_INTERSECT_VARYING) | (1 << 3));
+    aflags |= (uniform RTCAlgorithmFlags)(1 << 5); /* ray stream interface */
   }
   return ispcNewScene2(device,flags,aflags);
 }

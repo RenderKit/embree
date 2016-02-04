@@ -76,6 +76,9 @@ namespace embree
 
     size_t octants[8][MAX_RAYS_PER_OCTANT];
     unsigned int rays_in_octant[8];
+
+    for (size_t i=0;i<8;i++) rays_in_octant[i] = 0;
+
     size_t soffset = 0;
     RaySOA &rayN = *(RaySOA*)&_rayN;
 
@@ -83,19 +86,15 @@ namespace embree
     {
       for (size_t i=0;i<N;i++)
       {
-        if (unlikely(rayN.tnear[i] > rayN.tfar[i])) continue;
+        /* global + local offset */
+        const size_t offset = soffset + sizeof(float) * i;
 
-        const float dirx = rayN.dirx[i];
-        const float diry = rayN.diry[i];
-        const float dirz = rayN.dirz[i];
+        if (unlikely(!rayN.isValidByOffset(offset))) continue;
 
-        const unsigned int octantID =           \
-          (dirx < 0.0f ? 1 : 0) + 
-          (diry < 0.0f ? 2 : 0) + 
-          (dirz < 0.0f ? 4 : 0);
+        const size_t octantID = rayN.getOctantByOffset(offset);
 
         assert(octantID < 8);
-        octants[octantID][rays_in_octant[octantID]++] = soffset + sizeof(float) * i;
+        octants[octantID][rays_in_octant[octantID]++] = offset;
         
         if (unlikely(rays_in_octant[octantID] == MAX_RAYS_PER_OCTANT))
           {
@@ -108,7 +107,7 @@ namespace embree
               scene->occludedN((RTCRay**)rays_ptr,MAX_RAYS_PER_OCTANT,flags);
 
             for (size_t j=0;j<MAX_RAYS_PER_OCTANT;j++)
-              rayN.scatterByOffset(octants[octantID][j],rays[j]);
+              rayN.scatterByOffset(octants[octantID][j],rays[j],intersect);
             
             rays_in_octant[octantID] = 0;
           }
@@ -116,7 +115,6 @@ namespace embree
     }
 
     /* flush remaining rays per octant */
-
     for (size_t i=0;i<8;i++)
       if (rays_in_octant[i])
       {
@@ -129,7 +127,7 @@ namespace embree
           scene->occludedN((RTCRay**)rays_ptr,rays_in_octant[i],flags);        
 
         for (size_t j=0;j<rays_in_octant[i];j++)
-          rayN.scatterByOffset(octants[i][j],rays[j]);
+          rayN.scatterByOffset(octants[i][j],rays[j],intersect);
 
       }
   }

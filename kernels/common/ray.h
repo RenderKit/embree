@@ -294,6 +294,29 @@ namespace embree
     unsigned* __restrict__ primID;  //!< primitive ID
     unsigned* __restrict__ instID;  //!< instance ID (optional)
 
+    template<class T>
+    __forceinline void init(T &t)
+    {
+      orgx   = (float*)&t.org.x;
+      orgy   = (float*)&t.org.y;
+      orgz   = (float*)&t.org.z;
+      dirx   = (float*)&t.dir.x;
+      diry   = (float*)&t.dir.y;
+      dirz   = (float*)&t.dir.z;
+      tnear  = (float*)&t.tnear;
+      tfar   = (float*)&t.tfar;
+      time   = (float*)&t.time;
+      mask   = (unsigned *)&t.mask;
+      Ngx    = (float*)&t.Ng.x;
+      Ngy    = (float*)&t.Ng.y;
+      Ngz    = (float*)&t.Ng.z;
+      u      = (float*)&t.u;
+      v      = (float*)&t.v;
+      geomID = (unsigned *)&t.geomID;
+      primID = (unsigned *)&t.primID;
+      instID = (unsigned *)&t.instID;
+    }
+
     __forceinline Ray gatherByOffset(const size_t offset)
     {
       Ray ray;
@@ -307,25 +330,43 @@ namespace embree
       /* optional inputs */
       ray.tnear = tnear ? *(float* __restrict__ )((char*)tnear + offset) : 0.0f;
       ray.time  = time  ? *(float* __restrict__ )((char*)time  + offset) : 0.0f;
-      ray.mask  = mask  ? *(float* __restrict__ )((char*)mask  + offset) : 0;
+      ray.mask  = mask  ? *(unsigned * __restrict__ )((char*)mask  + offset) : 0;
       /* init geomID */
       ray.geomID = RTC_INVALID_GEOMETRY_ID;
       return ray;
     }
 
-    __forceinline void scatterByOffset(const size_t offset, const Ray& ray)
+    __forceinline void scatterByOffset(const size_t offset, const Ray& ray, const bool all=true)
     {
-      if (ray.geomID !=  RTC_INVALID_GEOMETRY_ID)
-      {
-        *(float* __restrict__ )((char*)u + offset) = ray.u;
-        *(float* __restrict__ )((char*)v + offset) = ray.v;
-        *(float* __restrict__ )((char*)geomID + offset) = ray.geomID;
-        *(float* __restrict__ )((char*)primID + offset) = ray.primID;
-        if (likely(Ngx)) *(float* __restrict__ )((char*)Ngx + offset) = ray.Ng.x;
-        if (likely(Ngy)) *(float* __restrict__ )((char*)Ngy + offset) = ray.Ng.y;
-        if (likely(Ngz)) *(float* __restrict__ )((char*)Ngz + offset) = ray.Ng.z;
-        if (likely(instID)) *(float* __restrict__ )((char*)instID + offset) = ray.instID;
-      }
+      *(unsigned * __restrict__ )((char*)geomID + offset) = ray.geomID;
+      if (all)
+        if (ray.geomID !=  RTC_INVALID_GEOMETRY_ID)
+        {
+          *(float* __restrict__ )((char*)tfar + offset) = ray.tfar;
+          *(float* __restrict__ )((char*)u + offset) = ray.u;
+          *(float* __restrict__ )((char*)v + offset) = ray.v;
+          *(unsigned * __restrict__ )((char*)primID + offset) = ray.primID;
+          if (likely(Ngx)) *(float* __restrict__ )((char*)Ngx + offset) = ray.Ng.x;
+          if (likely(Ngy)) *(float* __restrict__ )((char*)Ngy + offset) = ray.Ng.y;
+          if (likely(Ngz)) *(float* __restrict__ )((char*)Ngz + offset) = ray.Ng.z;
+          if (likely(instID)) *(unsigned * __restrict__ )((char*)instID + offset) = ray.instID;
+        }
+    }
+
+    __forceinline size_t getOctantByOffset(const size_t offset)
+    {
+      const float dx = *(float* __restrict__ )((char*)dirx + offset);
+      const float dy = *(float* __restrict__ )((char*)diry + offset);
+      const float dz = *(float* __restrict__ )((char*)dirz + offset);
+      const size_t octantID = (dx < 0.0f ? 1 : 0) + (dy < 0.0f ? 2 : 0) + (dz < 0.0f ? 4 : 0);
+      return octantID;
+    }
+
+    __forceinline bool isValidByOffset(const size_t offset)
+    {
+      const float near = *(float* __restrict__ )((char*)tnear + offset);
+      const float far  = *(float* __restrict__ )((char*)tfar  + offset);
+      return near <= far;
     }
 
   };
