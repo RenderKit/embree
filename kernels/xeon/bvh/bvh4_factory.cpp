@@ -123,6 +123,8 @@ namespace embree
   DECLARE_SYMBOL2(Accel::Intersector16,BVH4VirtualIntersector16Chunk);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH4VirtualMBIntersector16Chunk);
 
+  DECLARE_SYMBOL2(Accel::IntersectorN, BVH4Triangle4StreamIntersector);
+
   DECLARE_BUILDER2(void,Scene,const createLineSegmentsAccelTy,BVH4BuilderTwoLevelLineSegmentsSAH);
   DECLARE_BUILDER2(void,Scene,const createTriangleMeshAccelTy,BVH4BuilderTwoLevelTriangleMeshSAH);
   DECLARE_BUILDER2(void,Scene,const createTriangleMeshAccelTy,BVH4BuilderInstancingTriangleMeshSAH);
@@ -327,6 +329,9 @@ namespace embree
     SELECT_SYMBOL_INIT_AVX512KNL(features,BVH4VirtualIntersector16Chunk);
     SELECT_SYMBOL_INIT_AVX512KNL(features,BVH4VirtualMBIntersector16Chunk);
 
+    /* select stream intersectors */
+    SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH4Triangle4StreamIntersector);
+
 #endif
   }
 
@@ -418,6 +423,8 @@ namespace embree
     intersectors.intersector8_nofilter  = BVH4Triangle4Intersector8HybridMoellerNoFilter;
     intersectors.intersector16_filter   = BVH4Triangle4Intersector16HybridMoeller;
     intersectors.intersector16_nofilter = BVH4Triangle4Intersector16HybridMoellerNoFilter;
+    intersectors.intersectorN_filter    = BVH4Triangle4StreamIntersector;
+    intersectors.intersectorN_nofilter  = BVH4Triangle4StreamIntersector;
     return intersectors;
   }
 
