@@ -167,7 +167,7 @@ RTCORE_API void rtcOccluded16 (const void* valid, RTCScene scene, RTCRay16& ray)
 RTCORE_API void rtcOccludedN (RTCScene scene, RTCRay* rayN, const size_t N, const size_t stride, const size_t flags = RTC_RAYN_DEFAULT);
 
 /*! Intersects a stream of N rays in SOA layout with the scene. This function can
- *  only be called for scenes with the RTC_INTERSECTN flag set. */
+  *  only be called for scenes with the RTC_INTERSECTN flag set. */
 RTCORE_API void rtcOccludedN_SOA (RTCScene scene, RTCRaySOA& rayN, const size_t N, const size_t streams, const size_t offset, const size_t flags = RTC_RAYN_DEFAULT);
 
 /*! Deletes the scene. All contained geometry get also destroyed. */

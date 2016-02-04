@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "bvh_intersector_hybrid2.h"
+#include "bvh_intersector_stream.h"
 #include "bvh_intersector_single.h"
 #include "bvh_intersector_node.h"
 
