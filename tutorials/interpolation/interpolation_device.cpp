@@ -145,7 +145,7 @@ __aligned(16) float hair_vertices[9][4] =
 
   { +0.0f,-1.0f, +0.0f, 0.2f },
   { +   W, 0.0f, +1.0f, 0.2f },
-  { +   W, 0.0f, -1.0f, 0.2f },
+  { +   W, 0.0f, -1.0f, 0.6f },
   { +0.0f,+1.0f, +0.0f, 0.2f },
   { -   W, 0.0f, +1.0f, 0.2f },
   { -   W, 0.0f, -1.0f, 0.2f },
@@ -431,6 +431,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   Vec3fa color = Vec3fa(0.0f);
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
   {
+    //return abs(normalize(ray.Ng));
     /* interpolate diffuse color */
     Vec3fa diffuse = Vec3fa(1.0f,0.0f,0.0f);
     if (ray.geomID > 0) 
@@ -504,7 +505,11 @@ void renderTile(int taskIndex, int* pixels,
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
     /* calculate pixel color */
+    //if (x != 297 || y != 241) continue;
+    //PRINT2(x,y);
     Vec3fa color = renderPixel(x,y,vx,vy,vz,p);
+    //PRINT(color);
+    //exit(1);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));

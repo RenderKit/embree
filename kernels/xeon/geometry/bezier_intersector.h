@@ -29,6 +29,7 @@ namespace embree
   {
     __forceinline bool intersect_bezier_iterative2(const Ray& ray, const BezierCurve3fa& curve, float u0, float u1, float& u_o, float& t_o, Vec3fa& Ng_o)
     {
+      //PRINT("intersecting");
       Vec3fa p0,n0,ddp0; curve.eval(u0,p0,n0,ddp0);
       Vec3fa p1,n1,ddp1; curve.eval(u1,p1,n1,ddp1);
       Vec3fa q0 = p0+n0*(1.0f/3.0f);
@@ -72,9 +73,10 @@ namespace embree
         Vec3fa Q = ray.org + t*ray.dir;
         Vec3fa P,dPdu,ddPdu; curve.eval(u,P,dPdu,ddPdu);
         Vec3fa T = normalize(dPdu);
+        float C = length(ddPdu)/length(dPdu); // FIXME: is this the proper curvature?
         float du = dot(Q-P,T);
         float dt = sqrt(dot(Q-P,Q-P)-sqr(du))-P.w;
-        u += du*rcpLenP0P1*(u1-u0);
+        u += du*rcpLenP0P1*(u1-u0)/(1.0f+P.w*C);
         t += dt*rcpLenDir;
         //PRINT(du);
         //PRINT(dt);
@@ -87,10 +89,14 @@ namespace embree
         if (max(abs(du),abs(dt)) < eps) 
         {
           //PRINT("hit");
-          if (t < tp.lower || t > tp.upper) {
+          if (t+eps*rcpLenDir < tp.lower || t-eps*rcpLenDir > tp.upper) {
             //PRINT("miss2");
             return false;
           }
+          //if (t < ray.tnear || t > t_o) {
+            //PRINT("miss2");
+          //  return false;
+          //}
           u_o = u;
           t_o = t;
           Ng_o = Q-P;
@@ -232,6 +238,10 @@ namespace embree
         int N = Np-1; // calculate number of segments
         float rcpN = 1.0f/float(N);
 
+        float u = 0.0f;
+        float t = ray.tfar;
+        Vec3fa Ng = zero;
+
         /* process SIMD-size-1 many segments per iteration */
         for (int i=0; i<N; i+=VSIZEX-1)
         {
@@ -253,7 +263,7 @@ namespace embree
           for (size_t j=0; j<min(VSIZEX-1,N-i); j++)
           {
             //PRINT(i+j);
-            //if (i+j != 5) continue;
+            //if (i+j != 0 && i+j != 1) continue;
             //std::cout << std::endl;
             //PRINT(j);
             const Vec3fa p1( p.x[j+0], p.y[j+0] ,p.z[j+0], p.w[j+0]);
@@ -262,9 +272,6 @@ namespace embree
             const Vec3fa n2(dp.x[j+1],dp.y[j+1],dp.z[j+1],dp.w[j+1]);
             const float  r1 =  p.w[j+0];
             const float  r2 =  p.w[j+1];
-            float u = 0.0f;
-            float t = 0.0f;
-            Vec3fa Ng = zero;
             const float t0 = float(i+j+0)*rcpN;
             const float t1 = float(i+j+1)*rcpN;
             //const FillCone cone(p1,n1,r1,p2,n2,r2);
