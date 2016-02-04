@@ -60,6 +60,19 @@ namespace embree
       //PRINT(tp);
       //t_o = tc.lower;
       //return true;
+      
+      /* calculate bounds on curvature */
+      float minN = min(length(n0),length(n1));
+      float maxN = max(length(n0),length(n1));
+      float maxR = max(p0.w,q0.w,q1.w,p1.w);
+      //PRINT2(maxN,length(p1-p0));
+      float maxC = length(max(abs(ddp0),abs(ddp1)))/minN; //length(ddPdu)/length(dPdu); // FIXME: is this the proper curvature?
+      //PRINT(minN);
+      //PRINT(maxN);
+      //PRINT(maxC);
+      //PRINT(maxR);
+      //PRINT(1.0f/maxC-maxR);
+      float minDT = max(0.001f,1.0f/maxC-maxR);
 
       /* iterative double step solver */
       float eps = 128.0f*float(ulp);
@@ -67,17 +80,22 @@ namespace embree
       float rcpLenDir = rcp_length(ray.dir);
       float t = tp.lower;
       float u = u0 + (u1-u0)*dot(ray.org+t*ray.dir-p0,normalize(p1-p0))*rcpLenP0P1;
-      for (size_t i=0; i<1000; i++)
+      for (size_t i=0; i<10000; i++)
       {
         //PRINT(i);
         Vec3fa Q = ray.org + t*ray.dir;
         Vec3fa P,dPdu,ddPdu; curve.eval(u,P,dPdu,ddPdu);
+        //PRINT(P);
+        //PRINT(dPdu);
+        //PRINT(ddPdu);
+        //PRINT(length(dnormalize(dPdu,ddPdu)));
         Vec3fa T = normalize(dPdu);
-        float C = length(ddPdu)/length(dPdu); // FIXME: is this the proper curvature?
+        //float C = length(ddPdu)/length(dPdu); // FIXME: is this the proper curvature?
         float du = dot(Q-P,T);
         float dt = sqrt(dot(Q-P,Q-P)-sqr(du))-P.w;
-        u += du*rcpLenP0P1*(u1-u0)/(1.0f+P.w*C);
-        t += dt*rcpLenDir;
+        u += du*rcpLenP0P1*(u1-u0)/(1.0f+P.w*maxC);
+        if (du < 10.0f*eps)
+          t += min(minDT,dt*rcpLenDir);
         //PRINT(du);
         //PRINT(dt);
         //PRINT(u);
@@ -89,12 +107,15 @@ namespace embree
         if (max(abs(du),abs(dt)) < eps) 
         {
           //PRINT("hit");
+          //PRINT(eps*rcpLenDir);
+          //PRINT(t+eps*rcpLenDir);
+          //PRINT(t-eps*rcpLenDir);
           if (t+eps*rcpLenDir < tp.lower || t-eps*rcpLenDir > tp.upper) {
             //PRINT("miss2");
             return false;
           }
           //if (t < ray.tnear || t > t_o) {
-            //PRINT("miss2");
+          ////PRINT("miss2");
           //  return false;
           //}
           u_o = u;
