@@ -1169,14 +1169,8 @@ namespace embree
 	g_threads.push_back(createThread((thread_func)benchmark_rtcore_intersect16_throughput_thread,(void*)i,1000000,i));
       setAffinity(0);
       
-      g_barrier_active.wait(0);
-      double t0 = getSeconds();
-
       double delta = benchmark_rtcore_intersect16_throughput_thread(0);
 
-      g_barrier_active.wait(0);
-      double t1 = getSeconds();
-      
       for (size_t i=0; i<g_threads.size(); i++)	join(g_threads[i]);
       g_threads.clear();
       
