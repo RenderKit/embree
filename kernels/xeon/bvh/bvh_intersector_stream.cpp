@@ -115,6 +115,7 @@ namespace embree
 
             vfloat<K> dist(inf);
             vint<K>   maskK(zero);
+            //size_t mask64[K]; for (size_t i=0;i<8;i++) mask64[i] = 0;
 
             size_t bits = m_trav_active;
             do
@@ -136,13 +137,14 @@ namespace embree
               dist   = select(vmask,mini(tNear,dist),dist);
               //maskK = maskK | (bitmask & vint<K>((__m256i)vmask));
               maskK = select(vmask,maskK | bitmask,maskK); 
-
+              //size_t m64 = movemask(vmask);
+              //for (size_t j=__bsf(m64); m64!=0; m64=__btc(m64,j), j=__bsf(m64)) mask64[j] |= (size_t)1 << i;
 #else
               const vfloat<K> tNear  = max(tNearX,tNearY,tNearZ,vfloat<K>(ray.rdir.w));
               const vfloat<K> tFar   = min(tFarX ,tFarY ,tFarZ ,vfloat<K>(ray.org_rdir.w));
               const vbool<K> vmask   = tNear <= tFar;
               dist   = select(vmask,min(tNear,dist),dist);
-              maskK = select(vmask,maskK | bitmask,maskK); 
+              //maskK = select(vmask,maskK | bitmask,maskK); 
 #endif
             } while(bits);              
             const vbool<K> vmask = dist < inf;
@@ -150,7 +152,9 @@ namespace embree
 
 
 #if defined(__AVX2__)
-            BVHNNodeTraverserKHit<types,K>::traverseClosestHit(cur, m_trav_active, vmask, dist,maskK,stackPtr,stackEnd);
+            BVHNNodeTraverserKHit<types,K>::traverseClosestHit(cur, m_trav_active, vmask, dist, (unsigned int*)&maskK, stackPtr, stackEnd);
+            //BVHNNodeTraverserKHit<types,K>::traverseClosestHit(cur, m_trav_active, vmask, dist, mask64, stackPtr, stackEnd);
+
 #else
             FATAL("not yet implemented");
 #endif
@@ -284,7 +288,7 @@ namespace embree
             const vbool<K> vmask = dist < inf;
             if (unlikely(none(vmask))) goto pop;
 
-            BVHNNodeTraverserKHit<types,K>::traverseAnyHit(cur,m_trav_active,vmask,maskK,stackPtr,stackEnd); 
+            BVHNNodeTraverserKHit<types,K>::traverseAnyHit(cur,m_trav_active,vmask,(unsigned int*)&maskK,stackPtr,stackEnd); 
 
           }
           DBG("INTERSECTION");

@@ -510,9 +510,9 @@ namespace embree
           const vbool16 m_update_y = step16 == bin1;
           const vbool16 m_update_z = step16 == bin2;
 
-          assert(__popcnt(m_update_x) == 1);
-          assert(__popcnt(m_update_y) == 1);
-          assert(__popcnt(m_update_z) == 1);
+          assert(__popcnt((size_t)m_update_x) == 1);
+          assert(__popcnt((size_t)m_update_y) == 1);
+          assert(__popcnt((size_t)m_update_z) == 1);
 
           min_x0 = mask_min(m_update_x,min_x0,min_x0,b_min_x);
           min_y0 = mask_min(m_update_x,min_y0,min_y0,b_min_y);
