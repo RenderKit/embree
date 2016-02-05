@@ -1224,6 +1224,7 @@ namespace embree
       double t0 = getSeconds();
 
 #define STREAM_SIZE 256
+      //while(1)
       for (size_t i=0; i<N; i+=STREAM_SIZE) {
         RTCRay rays[STREAM_SIZE];
         for (size_t j=0;j<STREAM_SIZE;j++)        

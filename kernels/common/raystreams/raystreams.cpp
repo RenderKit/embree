@@ -81,6 +81,7 @@ namespace embree
 
     for (size_t s=0;s<streams;s++,soffset+=stream_offset)
     {
+      // todo: use SIMD width to compute octants
       for (size_t i=0;i<N;i++)
       {
         /* global + local offset */
