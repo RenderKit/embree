@@ -25,10 +25,7 @@ namespace embree
           /* skip invalid rays */
           if (unlikely(ray.tnear > ray.tfar)) { inputRayID++; continue; }
 
-          const unsigned int octantID = \
-            (ray.dir.x < 0.0f ? 1 : 0) + 
-            (ray.dir.y < 0.0f ? 2 : 0) + 
-            (ray.dir.z < 0.0f ? 4 : 0);
+          const unsigned int octantID = movemask(vfloat4(ray.dir) < 0.0f) & 0x7;
 
           assert(octantID < 8);
           octants[octantID][rays_in_octant[octantID]++] = &ray;
