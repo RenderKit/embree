@@ -330,7 +330,7 @@ namespace embree
     SELECT_SYMBOL_INIT_AVX512KNL(features,BVH4VirtualMBIntersector16Chunk);
 
     /* select stream intersectors */
-    SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH4Triangle4StreamIntersector);
+    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH4Triangle4StreamIntersector);
 
 #endif
   }

@@ -33,10 +33,10 @@ namespace embree
     };
 
 #if defined(__AVX__)
-    template<int types, int K>
+    template<int types, int N, int K>
       class BVHNNodeTraverserKHit
     {
-      typedef BVHN<K> BVH;
+      typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
       typedef typename BVH::BaseNode BaseNode;
 
@@ -154,7 +154,7 @@ namespace embree
 
 
     /*! BVH ray stream intersector. */
-    template<int N, int types, bool robust, typename PrimitiveIntersector>
+    template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
       class BVHNStreamIntersector
     {
       /* shortcuts for frequently used types */
@@ -169,8 +169,6 @@ namespace embree
       static const size_t stackSizeChunk  = N*BVH::maxDepth+1;
       static const size_t stackSizeSingle = 1+(N-1)*BVH::maxDepth;
       static const size_t MAX_RAYS_PER_OCTANT = 32;
-
-      static const size_t K = N;
 
       struct RayContext {
         Vec3fa rdir;      //     rdir.w = tnear;

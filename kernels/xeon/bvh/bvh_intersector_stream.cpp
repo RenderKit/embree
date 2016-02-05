@@ -50,8 +50,8 @@ namespace embree
 
 #if defined(__AVX__)
 
-    template<int N, int types, bool robust, typename PrimitiveIntersector>
-    void BVHNStreamIntersector<N, types, robust, PrimitiveIntersector>::intersect(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, size_t flags)
+    template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
+    void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, size_t flags)
     {
       __aligned(64) RayContext ray_ctx[MAX_RAYS_PER_OCTANT];
       __aligned(64) Precalculations pre[MAX_RAYS_PER_OCTANT]; 
@@ -106,12 +106,12 @@ namespace embree
             const Node* __restrict__ const node = cur.node();
             STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);
 
-            const vfloat<K> bminX = vfloat<K>(*(vfloat<K>*)((const char*)&node->lower_x+nearX));
-            const vfloat<K> bminY = vfloat<K>(*(vfloat<K>*)((const char*)&node->lower_x+nearY));
-            const vfloat<K> bminZ = vfloat<K>(*(vfloat<K>*)((const char*)&node->lower_x+nearZ));
-            const vfloat<K> bmaxX = vfloat<K>(*(vfloat<K>*)((const char*)&node->lower_x+farX));
-            const vfloat<K> bmaxY = vfloat<K>(*(vfloat<K>*)((const char*)&node->lower_x+farY));
-            const vfloat<K> bmaxZ = vfloat<K>(*(vfloat<K>*)((const char*)&node->lower_x+farZ));
+            const vfloat<K> bminX = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+nearX));
+            const vfloat<K> bminY = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+nearY));
+            const vfloat<K> bminZ = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+nearZ));
+            const vfloat<K> bmaxX = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+farX));
+            const vfloat<K> bmaxY = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+farY));
+            const vfloat<K> bmaxZ = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+farZ));
 
             vfloat<K> dist(inf);
             vint<K>   maskK(zero);
@@ -147,13 +147,19 @@ namespace embree
               //maskK = select(vmask,maskK | bitmask,maskK); 
 #endif
             } while(bits);              
+
+#if defined(__AVX512F__)
+            const vbool<K> vmask = lt(0xff,dist,inf);
+#else
             const vbool<K> vmask = dist < inf;
+#endif
+
             if (unlikely(none(vmask))) goto pop;
 
 
 #if defined(__AVX2__)
-            BVHNNodeTraverserKHit<types,K>::traverseClosestHit(cur, m_trav_active, vmask, dist, (unsigned int*)&maskK, stackPtr, stackEnd);
-            //BVHNNodeTraverserKHit<types,K>::traverseClosestHit(cur, m_trav_active, vmask, dist, mask64, stackPtr, stackEnd);
+            BVHNNodeTraverserKHit<types,N,K>::traverseClosestHit(cur, m_trav_active, vmask, dist, (unsigned int*)&maskK, stackPtr, stackEnd);
+            //BVHNNodeTraverserKHit<types,N,K>::traverseClosestHit(cur, m_trav_active, vmask, dist, mask64, stackPtr, stackEnd);
 
 #else
             FATAL("not yet implemented");
@@ -185,8 +191,8 @@ namespace embree
       }
     }
 
-    template<int N, int types, bool robust, typename PrimitiveIntersector>
-    void BVHNStreamIntersector<N, types, robust, PrimitiveIntersector>::occluded(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, size_t flags)
+    template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
+    void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::occluded(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, size_t flags)
     {
 
       for (size_t r=0;r<numTotalRays;r+=MAX_RAYS_PER_OCTANT)
@@ -284,11 +290,15 @@ namespace embree
               dist   = select(vmask,min(tNear,dist),dist);
               maskK = select(vmask,maskK | bitmask,maskK); 
 #endif
-            } while(bits);              
+            } while(bits);          
+#if defined(__AVX512F__)
+            const vbool<K> vmask = lt(0xff,dist,inf);
+#else
             const vbool<K> vmask = dist < inf;
+#endif
             if (unlikely(none(vmask))) goto pop;
 
-            BVHNNodeTraverserKHit<types,K>::traverseAnyHit(cur,m_trav_active,vmask,(unsigned int*)&maskK,stackPtr,stackEnd); 
+            BVHNNodeTraverserKHit<types,N,K>::traverseAnyHit(cur,m_trav_active,vmask,(unsigned int*)&maskK,stackPtr,stackEnd); 
 
           }
           DBG("INTERSECTION");
@@ -317,8 +327,17 @@ namespace embree
       }      
     }
 
-    DEFINE_INTERSECTORN(BVH8Triangle4StreamIntersector, BVHNStreamIntersector<8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<4 COMMA 4 COMMA false> > >);
-    DEFINE_INTERSECTORN(BVH4Triangle4StreamIntersector, BVHNStreamIntersector<4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<4 COMMA 4 COMMA false> > >);
+#if defined(__AVX512F__)
+    DEFINE_INTERSECTORN(BVH8Triangle4StreamIntersector, BVHNStreamIntersector<8 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<4 COMMA 16 COMMA false> > >);
+    DEFINE_INTERSECTORN(BVH4Triangle4StreamIntersector, BVHNStreamIntersector<4 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<4 COMMA 16 COMMA false> > >);
+
+#else
+    DEFINE_INTERSECTORN(BVH8Triangle4StreamIntersector, BVHNStreamIntersector<8 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<4 COMMA 4 COMMA false> > >);
+    DEFINE_INTERSECTORN(BVH4Triangle4StreamIntersector, BVHNStreamIntersector<4 COMMA 4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<4 COMMA 4 COMMA false> > >);
+
+#endif
+
+
 #endif
 
   }

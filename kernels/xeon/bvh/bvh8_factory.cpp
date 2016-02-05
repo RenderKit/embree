@@ -211,7 +211,7 @@ namespace embree
     SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Quad4iMBIntersector16HybridPluecker);
 
     /* select stream intersectors */
-    SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Triangle4StreamIntersector);
+    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Triangle4StreamIntersector);
 
 #endif
   }
@@ -282,8 +282,8 @@ namespace embree
     intersectors.intersector8_nofilter  = BVH8Triangle4Intersector8HybridMoellerNoFilter;
     intersectors.intersector16_filter   = BVH8Triangle4Intersector16HybridMoeller;
     intersectors.intersector16_nofilter = BVH8Triangle4Intersector16HybridMoellerNoFilter;
-    intersectors.intersectorN_filter   = BVH8Triangle4StreamIntersector;
-    intersectors.intersectorN_nofilter = BVH8Triangle4StreamIntersector;
+    intersectors.intersectorN_filter    = BVH8Triangle4StreamIntersector;
+    intersectors.intersectorN_nofilter  = BVH8Triangle4StreamIntersector;
     return intersectors;
   }
 
