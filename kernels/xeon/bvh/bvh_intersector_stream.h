@@ -59,6 +59,7 @@ namespace embree
 
         /*! one child is hit, continue with that child */
         const size_t r0 = __bscf(mask);
+        assert(r0 < 8);
         cur = node->child(r0);         
         cur.prefetch(types);
         m_trav_active = tMask[r0]; 
@@ -71,6 +72,7 @@ namespace embree
         NodeRef c0 = cur; 
         unsigned int d0 = tNear_i[r0];
         const size_t r1 = __bscf(mask);
+        assert(r1 < 8);
         NodeRef c1 = node->child(r1); 
         c1.prefetch(types); 
         unsigned int d1 = tNear_i[r1];
@@ -86,13 +88,19 @@ namespace embree
         /*! slow path for more than two hits */
         const size_t hits = __popcnt(movemask(vmask));
         const vint<K> dist_i = select(vmask,(asInt(tNear) & 0xfffffff8) | vint<K>( step ),0x7fffffff);
+#if defined(__AVX512F__)
+        const vint8 tmp = _mm512_castsi512_si256(dist_i);
+        const vint<K> dist_i_sorted = sortNetwork(tmp);
+#else
         const vint<K> dist_i_sorted = sortNetwork(dist_i);
+#endif
         const vint<K> sorted_index = dist_i_sorted & 7;
 
         size_t i = hits-1;
         for (;;)
         {
           const unsigned int index = sorted_index[i];
+          assert(index < 8);
           cur = node->child(index);
           m_trav_active = tMask[index];
           cur.prefetch(types);

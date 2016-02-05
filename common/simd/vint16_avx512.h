@@ -194,14 +194,19 @@ namespace embree
       return _mm512_set1_epi64(v);
     }
 
-    static __forceinline size_t extract64bit(const vint16& v)
+    static __forceinline size_t extracti64bit(const vint16& v)
     {
       return _mm_cvtsi128_si64(_mm512_castsi512_si128(v));
     }
 
-    static __forceinline vint4 extract128bit(const vint16& v)
+    static __forceinline vint4 extracti128bit(const vint16& v)
     {
       return _mm512_castsi512_si128(v);
+    }
+
+    static __forceinline vint8 extracti256bit(const vint16& v)
+    {
+      return _mm512_castsi512_si256(v);
     }
 
 #endif

@@ -1102,6 +1102,20 @@ namespace embree
     return vv;        
   }
 
+
+#if defined(__AVX512F__)
+
+    static __forceinline vfloat4 extractf128bit(const vfloat16& v)
+    {
+      return _mm512_castps512_ps128(v);
+    }
+
+    static __forceinline vfloat8 extractf256bit(const vfloat16& v)
+    {
+      return _mm512_castps512_ps256(v);
+    }
+
+#endif
   ////////////////////////////////////////////////////////////////////////////////
   /// Output Operators
   ////////////////////////////////////////////////////////////////////////////////

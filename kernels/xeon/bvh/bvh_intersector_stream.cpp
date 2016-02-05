@@ -144,7 +144,7 @@ namespace embree
               const vfloat<K> tFar   = min(tFarX ,tFarY ,tFarZ ,vfloat<K>(ray.org_rdir.w));
               const vbool<K> vmask   = tNear <= tFar;
               dist   = select(vmask,min(tNear,dist),dist);
-              //maskK = select(vmask,maskK | bitmask,maskK); 
+              maskK = select(vmask,maskK | bitmask,maskK); 
 #endif
             } while(bits);              
 
@@ -156,14 +156,13 @@ namespace embree
 
             if (unlikely(none(vmask))) goto pop;
 
-
-#if defined(__AVX2__)
+#if defined(__AVX2__) || defined(__AVX512F__)
             BVHNNodeTraverserKHit<types,N,K>::traverseClosestHit(cur, m_trav_active, vmask, dist, (unsigned int*)&maskK, stackPtr, stackEnd);
-            //BVHNNodeTraverserKHit<types,N,K>::traverseClosestHit(cur, m_trav_active, vmask, dist, mask64, stackPtr, stackEnd);
-
 #else
             FATAL("not yet implemented");
 #endif
+
+            //BVHNNodeTraverserKHit<types,N,K>::traverseClosestHit(cur, m_trav_active, vmask, dist, mask64, stackPtr, stackEnd);
 
           }
           DBG("INTERSECTION");
