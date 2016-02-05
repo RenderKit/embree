@@ -330,7 +330,7 @@ namespace embree
       /* optional inputs */
       ray.tnear = tnear ? *(float* __restrict__ )((char*)tnear + offset) : 0.0f;
       ray.time  = time  ? *(float* __restrict__ )((char*)time  + offset) : 0.0f;
-      ray.mask  = mask  ? *(unsigned * __restrict__ )((char*)mask  + offset) : 0;
+      ray.mask  = mask  ? *(unsigned * __restrict__ )((char*)mask  + offset) : -1;
       /* init geomID */
       ray.geomID = RTC_INVALID_GEOMETRY_ID;
       return ray;
@@ -364,7 +364,7 @@ namespace embree
 
     __forceinline bool isValidByOffset(const size_t offset)
     {
-      const float near = *(float* __restrict__ )((char*)tnear + offset);
+      const float near = tnear ? *(float* __restrict__ )((char*)tnear + offset) : 0.0f;
       const float far  = *(float* __restrict__ )((char*)tfar  + offset);
       return near <= far;
     }
