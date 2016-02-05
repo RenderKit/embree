@@ -97,7 +97,7 @@ namespace embree
           //if (unlikely(stackPtr == stack)) break;
           stackPtr--;
           NodeRef cur = NodeRef(stackPtr->ptr);
-          unsigned int m_trav_active = stackPtr->mask;
+          size_t m_trav_active = stackPtr->mask;
           assert(m_trav_active);
 
           const vfloat<K> inf(pos_inf);
@@ -232,7 +232,7 @@ namespace embree
           //if (unlikely(stackPtr == stack)) break;
           stackPtr--;
           NodeRef cur = NodeRef(stackPtr->ptr);
-          unsigned int m_trav_active = stackPtr->mask & m_active;
+          size_t m_trav_active = stackPtr->mask & m_active;
           if (unlikely(!m_trav_active)) continue;
 
           assert(m_trav_active);
@@ -284,7 +284,7 @@ namespace embree
             const vbool<K> vmask = dist < inf;
             if (unlikely(none(vmask))) goto pop;
 
-            m_trav_active = BVHNNodeTraverserKHit<types,K>::traverseAnyHit(cur,movemask(vmask),dist,maskK,stackPtr,stackEnd); 
+            BVHNNodeTraverserKHit<types,K>::traverseAnyHit(cur,m_trav_active,vmask,maskK,stackPtr,stackEnd); 
 
           }
           DBG("INTERSECTION");

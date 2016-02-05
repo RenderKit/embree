@@ -44,7 +44,7 @@ namespace embree
     public:
 
       static __forceinline void traverseClosestHit(NodeRef& cur,
-                                                   unsigned int &m_trav_active,
+                                                   size_t &m_trav_active,
                                                    const vbool<K> &vmask,
                                                    const vfloat<K>& tNear,
                                                    const vint<K>& tMask,
@@ -60,7 +60,7 @@ namespace embree
         const size_t r0 = __bscf(mask);
         cur = node->child(r0);         
         cur.prefetch(types);
-        m_trav_active = tMask[r0]; 
+        m_trav_active = ((unsigned int*)&tMask)[r0]; 
         assert(cur != BVH::emptyNode);
         if (unlikely(mask == 0)) return;
 
@@ -78,8 +78,8 @@ namespace embree
         assert(c1 != BVH::emptyNode);
         if (likely(mask == 0)) {
           assert(stackPtr < stackEnd);
-          if (d0 < d1) { stackPtr->ptr = c1; stackPtr->mask = tMask[r1]; stackPtr++; cur = c0; m_trav_active = tMask[r0]; return; }
-          else         { stackPtr->ptr = c0; stackPtr->mask = tMask[r0]; stackPtr++; cur = c1; m_trav_active = tMask[r1]; return; }
+          if (d0 < d1) { stackPtr->ptr = c1; stackPtr->mask = ((unsigned int*)&tMask)[r1]; stackPtr++; cur = c0; m_trav_active = ((unsigned int*)&tMask)[r0]; return; }
+          else         { stackPtr->ptr = c0; stackPtr->mask = ((unsigned int*)&tMask)[r0]; stackPtr++; cur = c1; m_trav_active = ((unsigned int*)&tMask)[r1]; return; }
         }
 
         /*! slow path for more than two hits */
@@ -93,7 +93,7 @@ namespace embree
         {
           const unsigned int index = sorted_index[i];
           cur = node->child(index);
-          m_trav_active = tMask[index];
+          m_trav_active = ((unsigned int*)&tMask)[index];
           cur.prefetch(types);
           if (unlikely(i==0)) break;
           i--;
@@ -106,13 +106,14 @@ namespace embree
                
       }
 
-      static __forceinline int traverseAnyHit(NodeRef& cur,
-                                              size_t mask,
-                                              const vfloat<K>& tNear,
-                                              const vint<K>& tMask,
-                                              StackItemMask*& stackPtr,
-                                              StackItemMask* stackEnd)
+      static __forceinline void traverseAnyHit(NodeRef& cur,
+                                               size_t &m_trav_active,
+                                               const vbool<K> &vmask,
+                                               const vint<K>& tMask,
+                                               StackItemMask*& stackPtr,
+                                               StackItemMask* stackEnd)
       {
+        size_t mask = movemask(vmask);
         assert(mask != 0);
         const BaseNode* node = cur.baseNode(types);
 
@@ -120,27 +121,28 @@ namespace embree
         size_t r = __bscf(mask);
         cur = node->child(r);         
         cur.prefetch(types);
-
+        m_trav_active = ((unsigned int*)&tMask)[r];
         
         /* simple in order sequence */
         assert(cur != BVH::emptyNode);
-        if (likely(mask == 0)) return tMask[r];
+        if (likely(mask == 0)) return;
         assert(stackPtr < stackEnd);
         stackPtr->ptr  = cur;
-        stackPtr->mask = tMask[r];
+        stackPtr->mask = m_trav_active;
         stackPtr++;
 
         for (; ;)
         {
           assert(stackPtr < stackEnd);
           r = __bscf(mask);
-          cur = node->child(r);
+          cur = node->child(r);          
           cur.prefetch(types);
+          m_trav_active = ((unsigned int*)&tMask)[r];
           assert(cur != BVH::emptyNode);
-          if (likely(mask == 0)) return tMask[r];
+          if (likely(mask == 0)) return;
           assert(stackPtr < stackEnd);
           stackPtr->ptr  = cur;
-          stackPtr->mask = tMask[r];
+          stackPtr->mask = m_trav_active;
           stackPtr++;
         }
       }
