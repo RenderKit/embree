@@ -980,6 +980,7 @@ namespace embree
     }
   };
 
+
   template<bool intersect>
   class benchmark_rtcore_intersect1_throughput : public Benchmark
   {
@@ -990,10 +991,6 @@ namespace embree
     benchmark_rtcore_intersect1_throughput () 
       : Benchmark(intersect ? "incoherent_intersect1_throughput" : "incoherent_occluded1_throughput","MRays/s (all HW threads)") {}
 
-    virtual void trace(Vec3f* numbers)
-    {
-    }
-
     static double benchmark_rtcore_intersect1_throughput_thread(void* arg) 
     {
       size_t threadIndex = (size_t) arg;
@@ -1001,32 +998,25 @@ namespace embree
 
       srand48(threadIndex*334124);
       Vec3f* numbers = new Vec3f[N];
-
-#if 1
+#if 0
+      assert(N % 16 == 0);
+      for (size_t i=0; i<N; i++) {
+        size_t j = i >> 4;
+        float tx = (j & 1) ? 1.0f : -1.0f;
+        float ty = (j & 2) ? 1.0f : -1.0f;
+        float tz = (j & 4) ? 1.0f : -1.0f;
+        float x = drand48()*tx;
+        float y = drand48()*ty;
+        float z = drand48()*tz;
+        numbers[i] = Vec3f(x,y,z);
+      }      
+#else
       for (size_t i=0; i<N; i++) {
         float x = 2.0f*drand48()-1.0f;
         float y = 2.0f*drand48()-1.0f;
         float z = 2.0f*drand48()-1.0f;
         numbers[i] = Vec3f(x,y,z);
       }
-#else
-#define NUM 512
-      float rx[NUM];
-      float ry[NUM];
-      float rz[NUM];
-
-      for (size_t i=0; i<NUM; i++) {
-        rx[i] = drand48();
-        ry[i] = drand48();
-        rz[i] = drand48();
-      }
-
-      for (size_t i=0; i<N; i++) {
-        float x = 2.0f*rx[i%NUM]-1.0f;
-        float y = 2.0f*ry[i%NUM]-1.0f;
-        float z = 2.0f*rz[i%NUM]-1.0f;
-        numbers[i] = Vec3f(x,y,z);
-      }      
 #endif
 
       if (threadIndex != 0) g_barrier_active.wait(threadIndex);
@@ -1053,8 +1043,6 @@ namespace embree
       error_handler(rtcDeviceGetError(device));
 
       int numPhi = 501;
-      //int numPhi = 61;
-      //int numPhi = 1601;
 
       RTCSceneFlags flags = RTC_SCENE_STATIC;
       scene = rtcDeviceNewScene(device,flags,aflags);
@@ -1068,13 +1056,13 @@ namespace embree
 	g_threads.push_back(createThread((thread_func)benchmark_rtcore_intersect1_throughput_thread,(void*)i,1000000,i));
       setAffinity(0);
       
-      //g_barrier_active.wait(0);
-      //double t0 = getSeconds();
+      g_barrier_active.wait(0);
+      double t0 = getSeconds();
 
       double delta = benchmark_rtcore_intersect1_throughput_thread(0);
 
-      //g_barrier_active.wait(0);
-      //double t1 = getSeconds();
+      g_barrier_active.wait(0);
+      double t1 = getSeconds();
       
       for (size_t i=0; i<g_threads.size(); i++)	join(g_threads[i]);
       g_threads.clear();
@@ -1141,8 +1129,8 @@ namespace embree
           rtcIntersect16(valid16,scene,ray16);
         else
           rtcOccluded16(valid16,scene,ray16);
-
       }        
+
       if (threadIndex != 0) g_barrier_active.wait(threadIndex);
       double t1 = getSeconds();
 
@@ -1169,8 +1157,14 @@ namespace embree
 	g_threads.push_back(createThread((thread_func)benchmark_rtcore_intersect16_throughput_thread,(void*)i,1000000,i));
       setAffinity(0);
       
+      g_barrier_active.wait(0);
+      double t0 = getSeconds();
+
       double delta = benchmark_rtcore_intersect16_throughput_thread(0);
 
+      g_barrier_active.wait(0);
+      double t1 = getSeconds();
+      
       for (size_t i=0; i<g_threads.size(); i++)	join(g_threads[i]);
       g_threads.clear();
       
@@ -1218,7 +1212,7 @@ namespace embree
       double t0 = getSeconds();
 
 #define STREAM_SIZE 256
-     //while(1)
+      //while(1)
       for (size_t i=0; i<N; i+=STREAM_SIZE) {
         RTCRay rays[STREAM_SIZE];
         for (size_t j=0;j<STREAM_SIZE;j++)        
