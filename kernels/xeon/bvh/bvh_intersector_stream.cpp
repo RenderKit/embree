@@ -55,7 +55,7 @@ namespace embree
     {
       __aligned(64) RayContext ray_ctx[MAX_RAYS_PER_OCTANT];
       __aligned(64) Precalculations pre[MAX_RAYS_PER_OCTANT]; 
-      __aligned(64) StackItemMaskT<NodeRef>  stack[stackSizeSingle];  //!< stack of nodes 
+      __aligned(64) StackItemMask  stack[stackSizeSingle];  //!< stack of nodes 
 
       for (size_t r=0;r<numTotalRays;r+=MAX_RAYS_PER_OCTANT)
       {
@@ -75,14 +75,12 @@ namespace embree
           pre[i] = Precalculations(*rays[i],bvh);
         }       
 
-        StackItemMaskT<NodeRef>* stackPtr = stack + 2;    //!< current stack pointer
-        StackItemMaskT<NodeRef>* stackEnd = stack + stackSizeSingle;
+        StackItemMask* stackPtr = stack + 2;    //!< current stack pointer
+        StackItemMask* stackEnd = stack + stackSizeSingle;
         stack[0].ptr  = BVH::invalidNode;
-        stack[0].mask = (unsigned int)-1;
-        stack[0].dist = neg_inf;
+        stack[0].mask = (size_t)-1;
         stack[1].ptr  = bvh->root;
         stack[1].mask = m_active;
-        stack[1].dist = neg_inf;
  
         const size_t nearX = (rays[0]->dir.x < 0.0f) ? 1*sizeof(vfloat<N>) : 0*sizeof(vfloat<N>);
         const size_t nearY = (rays[0]->dir.y < 0.0f) ? 3*sizeof(vfloat<N>) : 2*sizeof(vfloat<N>);
@@ -150,7 +148,12 @@ namespace embree
             const vbool<K> vmask = dist < inf;
             if (unlikely(none(vmask))) goto pop;
 
-            BVHNNodeTraverserKHit<types,K>::traverseClosestHit(cur, m_trav_active, movemask(vmask),dist,maskK,stackPtr,stackEnd);
+
+#if defined(__AVX2__)
+            BVHNNodeTraverserKHit<types,K>::traverseClosestHit(cur, m_trav_active, vmask, dist,maskK,stackPtr,stackEnd);
+#else
+            FATAL("not yet implemented");
+#endif
 
           }
           DBG("INTERSECTION");
@@ -174,34 +177,6 @@ namespace embree
             ray_ctx[i].org_rdir.w = rays[i]->tfar;
           }
 
-#if 0
-          if (unlikely(m_valid_intersection))
-          {
-            /* stack compaction */
-            StackItemMaskT<NodeRef>* left = stack + 1;
-            for (StackItemMaskT<NodeRef>* right = stack+1; right<stackPtr; right++) 
-            {
-              /* optimize */
-              const vint4 r = *(vint4*)right; 
-              *(vint4*)left = r;
-              unsigned int mask = right->mask;
-              //if (unlikely(right->ptr.isLeaf()))
-              {
-                const float dist = *(float*)&right->dist;
-                size_t bits = mask & m_valid_intersection;
-                for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) 
-                  if (rays[i]->tfar < dist)
-                  {
-                    assert(mask & ((size_t)1 << i));
-                    mask &= ~((size_t)1 << i);
-                  }
-              }
-              left->mask = mask;
-              left += mask ? 1 : 0;
-            }
-            stackPtr = left;            
-          }
-#endif
         } // traversal + intersection
       }
     }
@@ -233,15 +208,13 @@ namespace embree
         }       
 
 
-        StackItemMaskT<NodeRef>  stack[stackSizeSingle];  //!< stack of nodes 
-        StackItemMaskT<NodeRef>* stackPtr = stack + 2;    //!< current stack pointer
-        StackItemMaskT<NodeRef>* stackEnd = stack + stackSizeSingle;
+        StackItemMask  stack[stackSizeSingle];  //!< stack of nodes 
+        StackItemMask* stackPtr = stack + 2;    //!< current stack pointer
+        StackItemMask* stackEnd = stack + stackSizeSingle;
         stack[0].ptr  = BVH::invalidNode;
-        stack[0].mask = (unsigned int)-1;
-        stack[0].dist = neg_inf;
+        stack[0].mask = (size_t)-1;
         stack[1].ptr  = bvh->root;
         stack[1].mask = m_active;
-        stack[1].dist = neg_inf;
  
 
         const size_t nearX = (rays[0]->dir.x < 0.0f) ? 1*sizeof(vfloat<N>) : 0*sizeof(vfloat<N>);
