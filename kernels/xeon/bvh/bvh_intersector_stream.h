@@ -48,7 +48,7 @@ namespace embree
                                                    size_t &m_trav_active,
                                                    const vbool<K> &vmask,
                                                    const vfloat<K>& tNear,
-                                                   const T *__restrict__ const tMask,
+                                                   const T * const tMask,
                                                    StackItemMask*& stackPtr,
                                                    StackItemMask* stackEnd)
       {
@@ -111,7 +111,7 @@ namespace embree
       static __forceinline void traverseAnyHit(NodeRef& cur,
                                                size_t &m_trav_active,
                                                const vbool<K> &vmask,
-                                               const T *__restrict__ const tMask,
+                                               const T * const tMask,
                                                StackItemMask*& stackPtr,
                                                StackItemMask* stackEnd)
       {

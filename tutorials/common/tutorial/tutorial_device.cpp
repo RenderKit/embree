@@ -306,7 +306,7 @@ Vec3fa renderPixelAmbientOcclusion(float x, float y, const Vec3fa& vx, const Vec
       shadow.time = 0;    
      }
 
-    rtcOccludedN(g_scene,rays,AMBIENT_OCCLUSION_SAMPLES,sizeof(RTCRay));
+  rtcOccludedN(g_scene,rays,AMBIENT_OCCLUSION_SAMPLES,sizeof(RTCRay));
 
     for (int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++) 
       if (rays[i].geomID == RTC_INVALID_GEOMETRY_ID)
