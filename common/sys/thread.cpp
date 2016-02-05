@@ -180,6 +180,7 @@ namespace embree
 
   ssize_t mapThreadID(ssize_t threadID)
   {
+#if 1
     static std::vector<int> threadIDs;
 
     if (threadIDs.size() == 0)
@@ -207,6 +208,7 @@ namespace embree
         }
         else
           break;
+
       }
     }
 
@@ -214,7 +216,10 @@ namespace embree
 
     if (threadID < threadIDs.size())
       ID = threadIDs[threadID];
+#else
+    ssize_t ID = threadID;
 
+#endif
     //std::cout << threadID << " -> " << ID << std::endl;
     return ID;
   }

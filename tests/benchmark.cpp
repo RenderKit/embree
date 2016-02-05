@@ -1029,9 +1029,9 @@ namespace embree
       }      
 #endif
 
-      g_barrier_active.wait(threadIndex);
+      if (threadIndex != 0) g_barrier_active.wait(threadIndex);
       double t0 = getSeconds();
-      
+
       for (size_t i=0; i<N; i++) {
         RTCRay ray = makeRay(zero,numbers[i]);
         if (intersect)
@@ -1040,7 +1040,7 @@ namespace embree
           rtcOccluded(scene,ray);
       }        
 
-      g_barrier_active.wait(threadIndex);
+      if (threadIndex != 0) g_barrier_active.wait(threadIndex);
       double t1 = getSeconds();
 
       delete [] numbers;
@@ -1224,7 +1224,7 @@ namespace embree
       double t0 = getSeconds();
 
 #define STREAM_SIZE 256
-      //while(1)
+     //while(1)
       for (size_t i=0; i<N; i+=STREAM_SIZE) {
         RTCRay rays[STREAM_SIZE];
         for (size_t j=0;j<STREAM_SIZE;j++)        
