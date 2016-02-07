@@ -66,6 +66,11 @@ namespace embree
       v = _mm512_insertf32x4(v, d, 3);
     }
 
+    __forceinline vfloat(const vboolf16& mask, const vfloat4 &a, const vfloat4 &b) { 
+      v = _mm512_broadcast_f32x4(a);
+      v = _mm512_mask_broadcast_f32x4(v,mask,b);
+    }
+
     __forceinline vfloat(const vfloat8 &i) {
       v = _mm512_castpd_ps(_mm512_broadcast_f64x4(_mm256_castps_pd(i)));
     }
@@ -74,6 +79,13 @@ namespace embree
       const vfloat aa = _mm512_castpd_ps(_mm512_broadcast_f64x4(_mm256_castps_pd(a)));
       const vfloat bb = _mm512_castpd_ps(_mm512_broadcast_f64x4(_mm256_castps_pd(b)));
       v = _mm512_mask_blend_ps(0xff, bb, aa);
+    }
+
+    /* WARNING: due to f64x4 the mask is considered as 8bit mask */
+    __forceinline vfloat(const vboolf16& mask, const vfloat8 &a, const vfloat8 &b) { 
+      __m512d aa = _mm512_broadcast_f64x4(_mm256_castps_pd(a));
+      aa = _mm512_mask_broadcast_f64x4(aa,mask,_mm256_castps_pd(b));
+      v = _mm512_castpd_ps(aa);
     }
 #endif
     

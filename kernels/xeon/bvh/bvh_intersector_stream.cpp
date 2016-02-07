@@ -83,13 +83,134 @@ namespace embree
         stack[1].mask = m_active;
  
 #if defined(__AVX512F__)
+        ///////////////////////////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////////////
+
         const vint<K> id( step );
         const vint<K> id2 = align_shift_right<K/2>(id,id);
  
+
         const vint<K> permX = select(vfloat<K>(ray_ctx[0].rdir.x) >= 0.0f,id,id2);
         const vint<K> permY = select(vfloat<K>(ray_ctx[0].rdir.y) >= 0.0f,id,id2);
         const vint<K> permZ = select(vfloat<K>(ray_ctx[0].rdir.z) >= 0.0f,id,id2);
+
+        // const vbool<K> maskX = ray_ctx[0].rdir.x >= 0.0f ? 0xf0 : 0x0f;
+        // const vbool<K> maskY = ray_ctx[0].rdir.y >= 0.0f ? 0xf0 : 0x0f;
+        // const vbool<K> maskZ = ray_ctx[0].rdir.z >= 0.0f ? 0xf0 : 0x0f;
+
+        while (1) pop:
+        {
+          /*! pop next node */
+          STAT3(normal.trav_stack_pop,1,1,1);                          
+          //if (unlikely(stackPtr == stack)) break;
+          stackPtr--;
+          size_t m_trav_active = stackPtr->mask;
+          size_t util = __popcnt(m_trav_active);
+          NodeRef cur = NodeRef(stackPtr->ptr);
+          assert(m_trav_active);
+
+          const vfloat<K> inf(pos_inf);
+
+#if 1
+          if (likely(util == 1))
+          {
+            const size_t i = __bsf(m_trav_active);
+            const vint<K> maskK(m_trav_active);
+            RayContext &ray = ray_ctx[i];
+
+            while (likely(!cur.isLeaf()))
+            {
+              const Node* __restrict__ const node = cur.node();
+              STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);
+
+              const vfloat<K> bminmaxX = permute(vfloat<K>::load((float*)&node->lower_x),permX);
+              const vfloat<K> bminmaxY = permute(vfloat<K>::load((float*)&node->lower_y),permY);
+              const vfloat<K> bminmaxZ = permute(vfloat<K>::load((float*)&node->lower_z),permZ);
+              STAT3(normal.trav_nodes,1,1,1);                          
+              const vfloat<K> tNearFarX = msub(bminmaxX, ray.rdir.x, ray.org_rdir.x);
+              const vfloat<K> tNearFarY = msub(bminmaxY, ray.rdir.y, ray.org_rdir.y);
+              const vfloat<K> tNearFarZ = msub(bminmaxZ, ray.rdir.z, ray.org_rdir.z);
+              const vfloat<K> tNear     = max(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(ray.rdir.w));
+              const vfloat<K> tFar      = min(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(ray.org_rdir.w));
+              const vbool<K> vmask      = le(0xff,tNear,align_shift_right<8>(tFar,tFar));                
+              if (unlikely(none(vmask))) goto pop;
+
+              BVHNNodeTraverserKHit<types,N,K>::traverseClosestHit(cur, m_trav_active, vmask, tNear, (unsigned int*)&maskK, stackPtr, stackEnd);
+            }
+          }
+          else
+#endif
+          {
+            while (likely(!cur.isLeaf()))
+            {
+              const Node* __restrict__ const node = cur.node();
+              STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);
+
+              const vfloat<K> bminmaxX = permute(vfloat<K>::load((float*)&node->lower_x),permX);
+              const vfloat<K> bminmaxY = permute(vfloat<K>::load((float*)&node->lower_y),permY);
+              const vfloat<K> bminmaxZ = permute(vfloat<K>::load((float*)&node->lower_z),permZ);
+
+              vfloat<K> dist(inf);
+              vint<K>   maskK(zero);
+              size_t bits = m_trav_active;
+              do
+              {            
+                STAT3(normal.trav_nodes,1,1,1);                          
+                const size_t i = __bscf(bits);
+                RayContext &ray = ray_ctx[i];
+                const vfloat<K> tNearFarX = msub(bminmaxX, ray.rdir.x, ray.org_rdir.x);
+                const vfloat<K> tNearFarY = msub(bminmaxY, ray.rdir.y, ray.org_rdir.y);
+                const vfloat<K> tNearFarZ = msub(bminmaxZ, ray.rdir.z, ray.org_rdir.z);
+                const vfloat<K> tNear     = max(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(ray.rdir.w));
+                const vfloat<K> tFar      = min(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(ray.org_rdir.w));
+                const vbool<K> vmask      = le(tNear,align_shift_right<8>(tFar,tFar));                
+                const vint<K> bitmask  = vint<K>((int)1 << i);
+                dist   = select(vmask,min(tNear,dist),dist);
+                maskK = mask_or(vmask,maskK,maskK,bitmask); 
+
+              } while(bits);              
+
+
+              const vbool<K> vmask = lt(0xff,dist,inf);
+
+              if (unlikely(none(vmask))) goto pop;
+
+              BVHNNodeTraverserKHit<types,N,K>::traverseClosestHit(cur, m_trav_active, vmask, dist, (unsigned int*)&maskK, stackPtr, stackEnd);
+            }
+          }
+          DBG("INTERSECTION");
+
+          if (unlikely(cur == BVH::invalidNode)) break;
+
+          /*! this is a leaf node */
+          assert(cur != BVH::emptyNode);
+          STAT3(normal.trav_leaves, 1, 1, 1);
+          size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
+
+          //STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
+
+          size_t lazy_node = 0;
+          size_t bits = m_trav_active;
+          size_t m_valid_intersection = 0;
+          for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) 
+          {
+            PrimitiveIntersector::intersect(pre[i],*(rays[i]),0,prim,num,bvh->scene,NULL,lazy_node);
+            m_valid_intersection |= rays[i]->tfar < ray_ctx[i].org_rdir.w ? ((size_t)1 << i) : 0;
+            ray_ctx[i].org_rdir.w = rays[i]->tfar;
+          }
+
+        } // traversal + intersection
+        ///////////////////////////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////////////
+
 #else
+
+        ///////////////////////////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////////////
+
         const size_t nearX = (rays[0]->dir.x < 0.0f) ? 1*sizeof(vfloat<N>) : 0*sizeof(vfloat<N>);
         const size_t nearY = (rays[0]->dir.y < 0.0f) ? 3*sizeof(vfloat<N>) : 2*sizeof(vfloat<N>);
         const size_t nearZ = (rays[0]->dir.z < 0.0f) ? 5*sizeof(vfloat<N>) : 4*sizeof(vfloat<N>);
@@ -97,7 +218,7 @@ namespace embree
         const size_t farX  = nearX ^ sizeof(vfloat<N>);
         const size_t farY  = nearY ^ sizeof(vfloat<N>);
         const size_t farZ  = nearZ ^ sizeof(vfloat<N>);
-#endif
+
         while (1) pop:
         {
           /*! pop next node */
@@ -113,31 +234,7 @@ namespace embree
           {
             const Node* __restrict__ const node = cur.node();
             STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);
-#if defined(__AVX512F__)
-            const vfloat<K> bminmaxX = permute(vfloat<K>::load((float*)&node->lower_x),permX);
-            const vfloat<K> bminmaxY = permute(vfloat<K>::load((float*)&node->lower_y),permY);
-            const vfloat<K> bminmaxZ = permute(vfloat<K>::load((float*)&node->lower_z),permZ);
-            vfloat<K> dist(inf);
-            vint<K>   maskK(zero);
-            size_t bits = m_trav_active;
-            do
-            {            
-              STAT3(normal.trav_nodes,1,1,1);                          
-              const size_t i = __bscf(bits);
-              RayContext &ray = ray_ctx[i];
-              const vfloat<K> tNearFarX = msub(bminmaxX, ray.rdir.x, ray.org_rdir.x);
-              const vfloat<K> tNearFarY = msub(bminmaxY, ray.rdir.y, ray.org_rdir.y);
-              const vfloat<K> tNearFarZ = msub(bminmaxZ, ray.rdir.z, ray.org_rdir.z);
-              const vfloat<K> tNear     = max(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(ray.rdir.w));
-              const vfloat<K> tFar      = min(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(ray.org_rdir.w));
-              const vbool<K> vmask      = le(tNear,align_shift_right<8>(tFar,tFar));                
-              const vint<K> bitmask  = vint<K>((int)1 << i);
-              dist   = select(vmask,min(tNear,dist),dist);
-              maskK = mask_or(vmask,maskK,maskK,bitmask); 
 
-            } while(bits);              
-
-#else
             const vfloat<K> bminX = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+nearX));
             const vfloat<K> bminY = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+nearY));
             const vfloat<K> bminZ = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+nearZ));
@@ -179,23 +276,18 @@ namespace embree
               maskK = select(vmask,maskK | bitmask,maskK); 
 #endif
             } while(bits);              
-#endif
 
-#if defined(__AVX512F__)
-            const vbool<K> vmask = lt(0xff,dist,inf);
-#else
             const vbool<K> vmask = dist < inf;
-#endif
 
             if (unlikely(none(vmask))) goto pop;
 
-#if defined(__AVX2__) || defined(__AVX512F__)
+#if defined(__AVX2__) 
             BVHNNodeTraverserKHit<types,N,K>::traverseClosestHit(cur, m_trav_active, vmask, dist, (unsigned int*)&maskK, stackPtr, stackEnd);
+            //BVHNNodeTraverserKHit<types,N,K>::traverseClosestHit(cur, m_trav_active, vmask, dist, mask64, stackPtr, stackEnd);
 #else
             FATAL("not yet implemented");
 #endif
 
-            //BVHNNodeTraverserKHit<types,N,K>::traverseClosestHit(cur, m_trav_active, vmask, dist, mask64, stackPtr, stackEnd);
 
           }
           DBG("INTERSECTION");
@@ -220,6 +312,13 @@ namespace embree
           }
 
         } // traversal + intersection
+
+        ///////////////////////////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////////////
+
+#endif
+
       }
     }
 

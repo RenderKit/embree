@@ -1271,6 +1271,91 @@ namespace embree
   template<> RTCScene benchmark_rtcore_intersect_stream_throughput<true>::scene = nullptr;
   template<> RTCScene benchmark_rtcore_intersect_stream_throughput<false>::scene = nullptr;
 
+
+  class benchmark_rtcore_intersect_coherent_stream_throughput : public Benchmark
+  {
+  public:
+#define COHERENT_STREAM_TILE_X 8
+#define COHERENT_STREAM_TILE_Y 8
+#define IMAGE_SIZE 1024
+    enum { N = IMAGE_SIZE*IMAGE_SIZE };
+    static RTCScene scene;
+
+    benchmark_rtcore_intersect_coherent_stream_throughput () 
+      : Benchmark("coherent_intersect_stream_throughput","MRays/s (all HW threads)") {}
+
+    static double benchmark_rtcore_intersect_coherent_stream_throughput_thread(void* arg) 
+    {
+      size_t threadIndex = (size_t) arg;
+      size_t threadCount = g_num_threads;
+
+      size_t width = IMAGE_SIZE;
+      size_t height = IMAGE_SIZE;
+      float rcpWidth = 1.0f/IMAGE_SIZE;
+      float rcpHeight = 1.0f/IMAGE_SIZE;
+
+
+      RTCRay rays[COHERENT_STREAM_TILE_X*COHERENT_STREAM_TILE_Y];
+      
+
+      if (threadIndex != 0) g_barrier_active.wait(threadIndex);
+      double t0 = getSeconds();
+
+      for (size_t yy=0; yy<height; yy+=COHERENT_STREAM_TILE_Y) {
+        for (size_t xx=0; xx<width; xx+=COHERENT_STREAM_TILE_X) {
+          size_t index=0;
+          for (size_t y=yy;y<yy+COHERENT_STREAM_TILE_Y;y++)
+            for (size_t x=xx;x<xx+COHERENT_STREAM_TILE_X;x++)
+              rays[index++] = makeRay(zero,Vec3f(float(x)*rcpWidth,1,float(y)*rcpHeight));
+          rtcIntersectN(scene,rays,index,sizeof(RTCRay),RTC_RAYN_DEFAULT);
+        }
+      }
+
+      if (threadIndex != 0) g_barrier_active.wait(threadIndex);
+      double t1 = getSeconds();
+
+      return t1-t0;
+    }
+    
+    double run (size_t numThreads)
+    {
+      RTCDevice device = rtcNewDevice((g_rtcore+",threads="+toString(numThreads)).c_str());
+      error_handler(rtcDeviceGetError(device));
+
+      int numPhi = 501;
+
+      RTCSceneFlags flags = RTC_SCENE_STATIC;
+      scene = rtcDeviceNewScene(device,flags,aflags);
+      addSphere (scene, RTC_GEOMETRY_STATIC, zero, 1, numPhi);
+      rtcCommit (scene);
+    
+
+
+      g_num_threads = numThreads;
+      g_barrier_active.init(numThreads);
+      for (size_t i=1; i<numThreads; i++)
+	g_threads.push_back(createThread((thread_func)benchmark_rtcore_intersect_coherent_stream_throughput_thread,(void*)i,1000000,i));
+      setAffinity(0);
+      
+      g_barrier_active.wait(0);
+      double t0 = getSeconds();
+
+      double delta = benchmark_rtcore_intersect_coherent_stream_throughput_thread(0);
+
+      g_barrier_active.wait(0);
+      double t1 = getSeconds();
+      
+      for (size_t i=0; i<g_threads.size(); i++)	join(g_threads[i]);
+      g_threads.clear();
+      
+      rtcDeleteScene(scene);
+      rtcDeleteDevice(device);
+      return 1E-6*double(N)/(delta)*double(numThreads);
+    }
+  };
+
+  RTCScene benchmark_rtcore_intersect_coherent_stream_throughput::scene = nullptr;
+
 #endif
 
 
@@ -1524,6 +1609,8 @@ namespace embree
     if (hasISA(AVX)) {
       benchmarks.push_back(new benchmark_rtcore_intersect_stream_throughput<true>());
       benchmarks.push_back(new benchmark_rtcore_intersect_stream_throughput<false>());
+      benchmarks.push_back(new benchmark_rtcore_intersect_coherent_stream_throughput());
+
     }
 #endif
 

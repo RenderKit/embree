@@ -124,9 +124,9 @@ namespace embree
   {
     assert(hbw_check_available());
     void *ptr = NULL;
-    ptr = memkind_malloc(MEMKIND_HBW_PREFERRED_HUGETLB, bytes);
+    ptr = memkind_malloc(MEMKIND_HBW_HUGETLB, bytes);
     if (ptr) return ptr;
-    ptr = memkind_malloc(MEMKIND_HBW_PREFERRED, bytes);
+    ptr = memkind_malloc(MEMKIND_HBW, bytes);
     if (ptr) return ptr;
     perror("memkind_malloc()");
     return NULL;
