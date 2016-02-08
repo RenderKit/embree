@@ -378,18 +378,27 @@ namespace embree
 
         Precalculations pre[MAX_RAYS_PER_OCTANT]; 
 
-        size_t m_active = (size_t)1 << numOctantRays;
+        /* inactive rays should have been filtered out before */
+        size_t m_active = ((size_t)1 << numOctantRays)-1;
         for (size_t i=0;i<numOctantRays;i++)
         {
-          /* inactive rays should have been filtered out before */
-          assert(rays[i]->tnear <= rays[i]->tfar);
+#if defined(__AVX512F__)
+          vfloat<K> org(vfloat4(rays[i]->org));
+          vfloat<K> dir(vfloat4(rays[i]->dir));
+          vfloat<K> rdir       = select(0x7777,rcp_safe(dir),rays[i]->tnear);
+          vfloat<K> org_rdir   = select(0x7777,org * rdir,rays[i]->tfar);
+          vfloat<K> res = select(0xf,rdir,org_rdir);
+          vfloat8 r = extractf256bit(res);
+          *(vfloat8*)&ray_ctx[i] = r;          
+#else
           Vec3fa &org = rays[i]->org;
           Vec3fa &dir = rays[i]->dir;
           ray_ctx[i].rdir       = rcp_safe(dir);
           ray_ctx[i].org_rdir   = org * ray_ctx[i].rdir;
           ray_ctx[i].rdir.w     = rays[i]->tnear;
           ray_ctx[i].org_rdir.w = rays[i]->tfar;
-          pre[i] = Precalculations(*rays[i],bvh);
+#endif
+
         }       
 
 
