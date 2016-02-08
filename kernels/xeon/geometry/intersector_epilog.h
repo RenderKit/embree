@@ -108,7 +108,7 @@ namespace embree
         }
       };
 
-#if 1
+#if defined(__AVX512F__)
     template<int M, bool filter>
       struct Intersect1Epilog<M,16,filter>
       {

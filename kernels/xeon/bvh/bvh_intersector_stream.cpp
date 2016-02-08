@@ -442,6 +442,7 @@ namespace embree
             {            
               STAT3(shadow.trav_nodes,1,1,1);                          
               const size_t i = __bscf(bits);
+              assert(i<MAX_RAYS_PER_OCTANT);
               RayContext &ray = ray_ctx[i];
               const vfloat<K> tNearFarX = msub(bminmaxX, ray.rdir.x, ray.org_rdir.x);
               const vfloat<K> tNearFarY = msub(bminmaxY, ray.rdir.y, ray.org_rdir.y);
@@ -453,7 +454,7 @@ namespace embree
               dist   = select(vmask,min(tNear,dist),dist);
               maskK = mask_or(vmask,maskK,maskK,bitmask);
             } while(bits);          
-            const vbool<K> vmask = dist < inf;
+            const vbool<K> vmask = lt(0xff,dist,inf);
             if (unlikely(none(vmask))) goto pop;
 
             BVHNNodeTraverserKHit<types,N,K>::traverseAnyHit(cur,m_trav_active,vmask,(unsigned int*)&maskK,stackPtr,stackEnd); 
