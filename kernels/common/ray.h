@@ -192,13 +192,34 @@ namespace embree
       geomID = new_geomID;
       primID = new_primID;
 
-      compactustore16f_low(m_mask,&tfar,new_t);
-      compactustore16f_low(m_mask,&u,new_u); 
-      compactustore16f_low(m_mask,&v,new_v); 
-      compactustore16f_low(m_mask,&Ng.x,new_gnormalx); 
-      compactustore16f_low(m_mask,&Ng.y,new_gnormaly); 
-      compactustore16f_low(m_mask,&Ng.z,new_gnormalz);       
+      vfloat16::storeu_compact_single(m_mask,&tfar,new_t);
+      vfloat16::storeu_compact_single(m_mask,&u,new_u); 
+      vfloat16::storeu_compact_single(m_mask,&v,new_v); 
+      vfloat16::storeu_compact_single(m_mask,&Ng.x,new_gnormalx); 
+      vfloat16::storeu_compact_single(m_mask,&Ng.y,new_gnormaly); 
+      vfloat16::storeu_compact_single(m_mask,&Ng.z,new_gnormalz);       
     }
+
+    __forceinline void update(const vbool16& m_mask,
+                              const vfloat16& new_t,
+                              const vfloat16& new_u,
+                              const vfloat16& new_v,
+                              const vfloat16& new_gnormalx,
+                              const vfloat16& new_gnormaly,
+                              const vfloat16& new_gnormalz,
+			      const vint16 &new_geomID,
+			      const vint16 &new_primID)
+    {
+      vint16::storeu_compact_single(m_mask,&geomID,new_geomID);
+      vint16::storeu_compact_single(m_mask,&primID,new_primID);
+      vfloat16::storeu_compact_single(m_mask,&tfar,new_t);
+      vfloat16::storeu_compact_single(m_mask,&u,new_u); 
+      vfloat16::storeu_compact_single(m_mask,&v,new_v); 
+      vfloat16::storeu_compact_single(m_mask,&Ng.x,new_gnormalx); 
+      vfloat16::storeu_compact_single(m_mask,&Ng.y,new_gnormaly); 
+      vfloat16::storeu_compact_single(m_mask,&Ng.z,new_gnormalz);       
+    }
+
 #endif
   };
 

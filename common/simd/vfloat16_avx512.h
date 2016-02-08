@@ -81,7 +81,7 @@ namespace embree
       v = _mm512_mask_blend_ps(0xff, bb, aa);
     }
 
-    /* WARNING: due to f64x4 the mask is considered as 8bit mask */
+    /* WARNING: due to f64x4 the mask is considered as an 8bit mask */
     __forceinline vfloat(const vboolf16& mask, const vfloat8 &a, const vfloat8 &b) { 
       __m512d aa = _mm512_broadcast_f64x4(_mm256_castps_pd(a));
       aa = _mm512_mask_broadcast_f64x4(aa,mask,_mm256_castps_pd(b));
@@ -222,6 +222,15 @@ namespace embree
     _mm512_mask_extpackstorehi_ps(addr+16 ,mask, reg, _MM_DOWNCONV_PS_NONE , 0);
 #endif
   }
+
+    static __forceinline void storeu_compact_single(const vboolf16& mask, float * addr, const vfloat16 &reg) {
+#if defined(__AVX512F__)
+      //_mm512_mask_compressstoreu_ps(addr,mask,reg);
+      *addr = _mm512_cvtss_f32(_mm512_mask_compress_ps(reg,mask,reg));
+#else
+      _mm512_mask_extpackstorelo_ps(addr+0 ,mask, reg, _MM_DOWNCONV_PS_NONE , 0);
+#endif
+    }
 
 
 /* only available on KNC */

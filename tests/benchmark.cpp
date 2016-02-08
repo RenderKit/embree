@@ -1301,6 +1301,7 @@ namespace embree
       if (threadIndex != 0) g_barrier_active.wait(threadIndex);
       double t0 = getSeconds();
 
+      //while(1)
       for (size_t yy=0; yy<height; yy+=COHERENT_STREAM_TILE_Y) {
         for (size_t xx=0; xx<width; xx+=COHERENT_STREAM_TILE_X) {
           size_t index=0;

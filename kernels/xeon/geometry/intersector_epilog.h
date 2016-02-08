@@ -56,7 +56,7 @@ namespace embree
           int geomID = geomIDs[i];
           int instID = geomID_to_instID ? geomID_to_instID[0] : geomID;
           //int instID = geomID_to_instID ? (int)(size_t)geomID_to_instID : geomID;
-          
+
           /* intersection filter test */
 #if defined(RTCORE_INTERSECTION_FILTER) || defined(RTCORE_RAY_MASK)
           goto entry;
@@ -92,7 +92,7 @@ namespace embree
             break;
           }
 #endif
-          
+
           /* update hit information */
           const Vec2f uv = hit.uv(i);
           ray.u = uv.x;
@@ -104,9 +104,81 @@ namespace embree
           ray.geomID = instID;
           ray.primID = primIDs[i];
           return true;
+
         }
       };
-    
+
+#if 1
+    template<int M, bool filter>
+      struct Intersect1Epilog<M,16,filter>
+      {
+        static const size_t Mx = 16;
+        Ray& ray;
+        const vint<M>& geomIDs;
+        const vint<M>& primIDs;
+        Scene* scene;
+        const unsigned* geomID_to_instID;
+        
+        __forceinline Intersect1Epilog(Ray& ray,
+                                       const vint<M>& geomIDs, 
+                                       const vint<M>& primIDs, 
+                                       Scene* scene,
+                                       const unsigned* geomID_to_instID)
+          : ray(ray), geomIDs(geomIDs), primIDs(primIDs), scene(scene), geomID_to_instID(geomID_to_instID) {}
+        
+        template<typename Hit>
+        __forceinline bool operator() (const vbool<Mx>& valid_i, Hit& hit) const
+        {
+          vbool<Mx> valid = valid_i;
+          if (Mx > M) valid &= (1<<M)-1;
+          hit.finalize();          
+          size_t i = select_min(valid,hit.vt);
+          int geomID = geomIDs[i];
+          int instID = geomID_to_instID ? geomID_to_instID[0] : geomID;
+
+          /* intersection filter test */
+#if defined(RTCORE_INTERSECTION_FILTER) || defined(RTCORE_RAY_MASK)
+          goto entry;
+          while (true) 
+          {
+            if (unlikely(none(valid))) return false;
+            i = select_min(valid,hit.vt);
+
+            geomID = geomIDs[i];
+            instID = geomID_to_instID ? geomID_to_instID[0] : geomID;
+          entry:
+            Geometry* geometry = scene->get(geomID);
+            
+#if defined(RTCORE_RAY_MASK)
+            /* goto next hit if mask test fails */
+            if ((geometry->mask & ray.mask) == 0) {
+              clear(valid,i);
+              continue;
+            }
+#endif
+            
+#if defined(RTCORE_INTERSECTION_FILTER) 
+            /* call intersection filter function */
+            if (filter) {
+              if (unlikely(geometry->hasIntersectionFilter1())) {
+                const Vec2f uv = hit.uv(i);
+                if (runIntersectionFilter1(geometry,ray,uv.x,uv.y,hit.t(i),hit.Ng(i),instID,primIDs[i])) return true;
+                clear(valid,i);
+                continue;
+              }
+            }
+#endif
+            break;
+          }
+#endif
+
+          vbool<Mx> finalMask(((unsigned int)1 << i));
+          ray.update(finalMask,hit.vt,hit.vu,hit.vv,hit.vNg.x,hit.vNg.y,hit.vNg.z,instID,primIDs);
+          return true;
+
+        }
+      };
+#endif    
     
     template<int M, int Mx, bool filter>
       struct Occluded1Epilog

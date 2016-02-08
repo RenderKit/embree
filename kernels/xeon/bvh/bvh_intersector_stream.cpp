@@ -159,15 +159,47 @@ namespace embree
                 STAT3(normal.trav_nodes,1,1,1);                          
                 const size_t i = __bscf(bits);
                 RayContext &ray = ray_ctx[i];
-                const vfloat<K> tNearFarX = msub(bminmaxX, ray.rdir.x, ray.org_rdir.x);
-                const vfloat<K> tNearFarY = msub(bminmaxY, ray.rdir.y, ray.org_rdir.y);
-                const vfloat<K> tNearFarZ = msub(bminmaxZ, ray.rdir.z, ray.org_rdir.z);
-                const vfloat<K> tNear     = max(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(ray.rdir.w));
-                const vfloat<K> tFar      = min(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(ray.org_rdir.w));
-                const vbool<K> vmask      = le(tNear,align_shift_right<8>(tFar,tFar));                
-                const vint<K> bitmask  = vint<K>((int)1 << i);
-                dist   = select(vmask,min(tNear,dist),dist);
-                maskK = mask_or(vmask,maskK,maskK,bitmask); 
+                //if (unlikely(bits == 0))
+                {
+                  const vfloat<K> tNearFarX = msub(bminmaxX, ray.rdir.x, ray.org_rdir.x);
+                  const vfloat<K> tNearFarY = msub(bminmaxY, ray.rdir.y, ray.org_rdir.y);
+                  const vfloat<K> tNearFarZ = msub(bminmaxZ, ray.rdir.z, ray.org_rdir.z);
+                  const vfloat<K> tNear     = max(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(ray.rdir.w));
+                  const vfloat<K> tFar      = min(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(ray.org_rdir.w));
+                  const vbool<K> vmask      = le(tNear,align_shift_right<8>(tFar,tFar));                
+                  const vint<K> bitmask  = vint<K>((int)1 << i);
+                  dist   = select(vmask,min(tNear,dist),dist);
+                  maskK = mask_or(vmask,maskK,maskK,bitmask);
+                  //break;
+                }
+                // else
+                // {
+                //   const size_t j = __bscf(bits);
+                //   RayContext &ray1 = ray_ctx[j];
+                //   const vfloat<K> tNearFarX0 = msub(bminmaxX, ray.rdir.x, ray.org_rdir.x);
+                //   const vfloat<K> tNearFarY0 = msub(bminmaxY, ray.rdir.y, ray.org_rdir.y);
+                //   const vfloat<K> tNearFarZ0 = msub(bminmaxZ, ray.rdir.z, ray.org_rdir.z);
+
+                //   const vfloat<K> tNearFarX1 = msub(bminmaxX, ray1.rdir.x, ray1.org_rdir.x);
+                //   const vfloat<K> tNearFarY1 = msub(bminmaxY, ray1.rdir.y, ray1.org_rdir.y);
+                //   const vfloat<K> tNearFarZ1 = msub(bminmaxZ, ray1.rdir.z, ray1.org_rdir.z);
+
+                //   const vfloat<K> tNear0     = max(tNearFarX0,tNearFarY0,tNearFarZ0,vfloat<K>(ray.rdir.w));
+                //   const vfloat<K> tFar0      = min(tNearFarX0,tNearFarY0,tNearFarZ0,vfloat<K>(ray.org_rdir.w));
+
+                //   const vfloat<K> tNear1     = max(tNearFarX1,tNearFarY1,tNearFarZ1,vfloat<K>(ray1.rdir.w));
+                //   const vfloat<K> tFar1      = min(tNearFarX1,tNearFarY1,tNearFarZ1,vfloat<K>(ray1.org_rdir.w));
+
+                //   const vbool<K> vmask0      = le(tNear0,align_shift_right<8>(tFar0,tFar0));                
+                //   const vint<K> bitmask0  = vint<K>((int)1 << i);
+                //   dist   = select(vmask0,min(tNear0,dist),dist);
+                //   maskK = mask_or(vmask0,maskK,maskK,bitmask0); 
+
+                //   const vbool<K> vmask1      = le(tNear1,align_shift_right<8>(tFar1,tFar1));                
+                //   const vint<K> bitmask1  = vint<K>((int)1 << j);
+                //   dist   = select(vmask1,min(tNear1,dist),dist);
+                //   maskK = mask_or(vmask1,maskK,maskK,bitmask1);                   
+                // }
 
               } while(bits);              
 
@@ -356,7 +388,18 @@ namespace embree
         stack[0].mask = (size_t)-1;
         stack[1].ptr  = bvh->root;
         stack[1].mask = m_active;
+
+#if defined(__AVX512F__)
+
+        const vint<K> id( step );
+        const vint<K> id2 = align_shift_right<K/2>(id,id);
  
+
+        const vint<K> permX = select(vfloat<K>(ray_ctx[0].rdir.x) >= 0.0f,id,id2);
+        const vint<K> permY = select(vfloat<K>(ray_ctx[0].rdir.y) >= 0.0f,id,id2);
+        const vint<K> permZ = select(vfloat<K>(ray_ctx[0].rdir.z) >= 0.0f,id,id2);
+
+#else 
 
         const size_t nearX = (rays[0]->dir.x < 0.0f) ? 1*sizeof(vfloat<N>) : 0*sizeof(vfloat<N>);
         const size_t nearY = (rays[0]->dir.y < 0.0f) ? 3*sizeof(vfloat<N>) : 2*sizeof(vfloat<N>);
@@ -365,6 +408,8 @@ namespace embree
         const size_t farX  = nearX ^ sizeof(vfloat<N>);
         const size_t farY  = nearY ^ sizeof(vfloat<N>);
         const size_t farZ  = nearZ ^ sizeof(vfloat<N>);
+
+#endif
 
         while (1) pop:
         {
@@ -378,6 +423,44 @@ namespace embree
 
           assert(m_trav_active);
 
+#if defined(__AVX512F__)
+          const vfloat<K> inf(pos_inf);
+          while (likely(!cur.isLeaf()))
+          {
+            const Node* __restrict__ const node = cur.node();
+            STAT3(shadow.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);
+
+            const vfloat<K> bminmaxX = permute(vfloat<K>::load((float*)&node->lower_x),permX);
+            const vfloat<K> bminmaxY = permute(vfloat<K>::load((float*)&node->lower_y),permY);
+            const vfloat<K> bminmaxZ = permute(vfloat<K>::load((float*)&node->lower_z),permZ);
+
+            vfloat<K> dist(inf);
+            vint<K>   maskK(zero);
+
+            size_t bits = m_trav_active;
+            do
+            {            
+              STAT3(shadow.trav_nodes,1,1,1);                          
+              const size_t i = __bscf(bits);
+              RayContext &ray = ray_ctx[i];
+              const vfloat<K> tNearFarX = msub(bminmaxX, ray.rdir.x, ray.org_rdir.x);
+              const vfloat<K> tNearFarY = msub(bminmaxY, ray.rdir.y, ray.org_rdir.y);
+              const vfloat<K> tNearFarZ = msub(bminmaxZ, ray.rdir.z, ray.org_rdir.z);
+              const vfloat<K> tNear     = max(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(ray.rdir.w));
+              const vfloat<K> tFar      = min(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(ray.org_rdir.w));
+              const vbool<K> vmask      = le(tNear,align_shift_right<8>(tFar,tFar));                
+              const vint<K> bitmask  = vint<K>((int)1 << i);
+              dist   = select(vmask,min(tNear,dist),dist);
+              maskK = mask_or(vmask,maskK,maskK,bitmask);
+            } while(bits);          
+            const vbool<K> vmask = dist < inf;
+            if (unlikely(none(vmask))) goto pop;
+
+            BVHNNodeTraverserKHit<types,N,K>::traverseAnyHit(cur,m_trav_active,vmask,(unsigned int*)&maskK,stackPtr,stackEnd); 
+
+          }
+
+#else
           const vfloat<K> inf(pos_inf);
           while (likely(!cur.isLeaf()))
           {
@@ -422,16 +505,13 @@ namespace embree
               maskK = select(vmask,maskK | bitmask,maskK); 
 #endif
             } while(bits);          
-#if defined(__AVX512F__)
-            const vbool<K> vmask = lt(0xff,dist,inf);
-#else
             const vbool<K> vmask = dist < inf;
-#endif
             if (unlikely(none(vmask))) goto pop;
 
             BVHNNodeTraverserKHit<types,N,K>::traverseAnyHit(cur,m_trav_active,vmask,(unsigned int*)&maskK,stackPtr,stackEnd); 
 
           }
+#endif
           DBG("INTERSECTION");
 
           if (unlikely(cur == BVH::invalidNode)) break;
