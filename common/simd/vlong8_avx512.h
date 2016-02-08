@@ -45,6 +45,10 @@ namespace embree
     __forceinline vlong(const long i) {
       v = _mm512_set_1to8_epi64(i);
     }
+
+    __forceinline vlong(const unsigned long i) {
+      v = _mm512_set_1to8_epi64(i);
+    }
     
     __forceinline vlong(const long a, const long b, const long c, const long d) {
       v = _mm512_set_4to8_epi64(d,c,b,a);      

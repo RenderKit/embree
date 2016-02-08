@@ -104,7 +104,7 @@ namespace embree
         const vint<K> permX = select(vfloat<K>(ray_ctx[0].rdir.x) >= 0.0f,id,id2);
         const vint<K> permY = select(vfloat<K>(ray_ctx[0].rdir.y) >= 0.0f,id,id2);
         const vint<K> permZ = select(vfloat<K>(ray_ctx[0].rdir.z) >= 0.0f,id,id2);
-        const vint<K> one(1);
+        const vlong<K/2> one((size_t)1);
         // const vbool<K> maskX = ray_ctx[0].rdir.x >= 0.0f ? 0xf0 : 0x0f;
         // const vbool<K> maskY = ray_ctx[0].rdir.y >= 0.0f ? 0xf0 : 0x0f;
         // const vbool<K> maskZ = ray_ctx[0].rdir.z >= 0.0f ? 0xf0 : 0x0f;
@@ -126,7 +126,7 @@ namespace embree
           if (likely(util == 1))
           {
             const size_t i = __bsf(m_trav_active);
-            const vint<K> maskK(m_trav_active);
+            const vlong<K/2> maskK(m_trav_active);
             RayContext &ray = ray_ctx[i];
 
             while (likely(!cur.isLeaf()))
@@ -146,7 +146,7 @@ namespace embree
               const vbool<K> vmask      = le(0xff,tNear,align_shift_right<8>(tFar,tFar));                
               if (unlikely(none(vmask))) goto pop;
 
-              BVHNNodeTraverserKHit<types,N,K>::traverseClosestHit(cur, m_trav_active, vmask, tNear, (unsigned int*)&maskK, stackPtr, stackEnd);
+              BVHNNodeTraverserKHit<types,N,K>::traverseClosestHit(cur, m_trav_active, vmask, tNear, (size_t*)&maskK, stackPtr, stackEnd);
             }
           }
           else
@@ -162,7 +162,7 @@ namespace embree
               const vfloat<K> bminmaxZ = permute(vfloat<K>::load((float*)&node->lower_z),permZ);
 
               vfloat<K> dist(inf);
-              vint<K>   maskK(zero);
+              vlong<K/2>   maskK(zero);
               size_t bits = m_trav_active;
               do
               {            
@@ -178,9 +178,9 @@ namespace embree
                   const vfloat<K> tFar      = min(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(ray.org_rdir.w));
                   const vbool<K> vmask      = le(tNear,align_shift_right<8>(tFar,tFar));                
                   //const vint<K> bitmask  = vint<K>((size_t)1 << i);
-                  const vint<K> bitmask  = one << vint<K>(i);
+                  const vlong<K/2> bitmask  = one << vlong<K/2>(i);
                   dist   = select(vmask,min(tNear,dist),dist);
-                  maskK = mask_or(vmask,maskK,maskK,bitmask);
+                  maskK = mask_or((vboold8)vmask,maskK,maskK,bitmask);
                   //break;
                 }
                 // else
@@ -219,7 +219,7 @@ namespace embree
 
               if (unlikely(none(vmask))) goto pop;
 
-              BVHNNodeTraverserKHit<types,N,K>::traverseClosestHit(cur, m_trav_active, vmask, dist, (unsigned int*)&maskK, stackPtr, stackEnd);
+              BVHNNodeTraverserKHit<types,N,K>::traverseClosestHit(cur, m_trav_active, vmask, dist, (size_t*)&maskK, stackPtr, stackEnd);
             }
           }
           DBG("INTERSECTION");
