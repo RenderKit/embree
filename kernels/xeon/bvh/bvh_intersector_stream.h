@@ -173,6 +173,8 @@ namespace embree
       typedef typename BVH::BaseNode BaseNode;
       typedef typename BVH::Node Node;
       typedef typename BVH::NodeMB NodeMB;
+      typedef Vec3<vfloat<K>> Vec3vfK;
+      typedef Vec3<vint<K>> Vec3viK;
 
       static const size_t stackSizeChunk  = N*BVH::maxDepth+1;
       static const size_t stackSizeSingle = 1+(N-1)*BVH::maxDepth;
