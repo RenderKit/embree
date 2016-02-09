@@ -51,7 +51,6 @@ namespace embree
                                                    const T * const tMask,
                                                    StackItemMask*& stackPtr)
       {
-        
         size_t mask = movemask(vmask);
         assert(mask != 0);
         const BaseNode* node = cur.baseNode(types);
@@ -61,7 +60,7 @@ namespace embree
         assert(r0 < 8);
         cur = node->child(r0);         
         cur.prefetch(types);
-        m_trav_active = tMask[r0];
+        m_trav_active = tMask[r0];        
         assert(cur != BVH::emptyNode);
         if (unlikely(mask == 0)) return;
 
