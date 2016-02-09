@@ -52,17 +52,17 @@ namespace embree
                                                    StackItemMask*& stackPtr,
                                                    StackItemMask* stackEnd)
       {
-
+        
         size_t mask = movemask(vmask);
         assert(mask != 0);
         const BaseNode* node = cur.baseNode(types);
 
         /*! one child is hit, continue with that child */
-        const size_t r0 = __bscf(mask);
+        const size_t r0 = __bscf(mask);          
         assert(r0 < 8);
         cur = node->child(r0);         
         cur.prefetch(types);
-        m_trav_active = tMask[r0]; 
+        m_trav_active = tMask[r0];
         assert(cur != BVH::emptyNode);
         if (unlikely(mask == 0)) return;
 
@@ -103,6 +103,7 @@ namespace embree
           assert(index < 8);
           cur = node->child(index);
           m_trav_active = tMask[index];
+          assert(m_trav_active);
           cur.prefetch(types);
           if (unlikely(i==0)) break;
           i--;
@@ -112,7 +113,6 @@ namespace embree
           stackPtr->mask = m_trav_active;
           stackPtr++;
         }
-               
       }
 
       template<class T>

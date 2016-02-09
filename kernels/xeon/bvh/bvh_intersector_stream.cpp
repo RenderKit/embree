@@ -262,7 +262,6 @@ namespace embree
 
             vfloat<K> dist(inf);
             vint<K>   maskK(zero);
-            //size_t mask64[K]; for (size_t i=0;i<8;i++) mask64[i] = 0;
 
             size_t bits = m_trav_active;
             do
@@ -276,7 +275,7 @@ namespace embree
               const vfloat<K> tFarX  = msub(bmaxX, ray.rdir.x, ray.org_rdir.x);
               const vfloat<K> tFarY  = msub(bmaxY, ray.rdir.y, ray.org_rdir.y);
               const vfloat<K> tFarZ  = msub(bmaxZ, ray.rdir.z, ray.org_rdir.z);
-              const vint<K> bitmask  = vint<K>((size_t)1 << i);
+              const vint<K> bitmask  = vint<K>((int)1 << i);
 #if defined(__AVX2__)
               const vfloat<K> tNear  = maxi(maxi(tNearX,tNearY),maxi(tNearZ,vfloat<K>(ray.rdir.w)));
               const vfloat<K> tFar   = mini(mini(tFarX,tFarY),mini(tFarZ,vfloat<K>(ray.org_rdir.w)));
@@ -284,8 +283,6 @@ namespace embree
               dist   = select(vmask,mini(tNear,dist),dist);
               //maskK = maskK | (bitmask & vint<K>((__m256i)vmask));
               maskK = select(vmask,maskK | bitmask,maskK); 
-              //size_t m64 = movemask(vmask);
-              //for (size_t j=__bsf(m64); m64!=0; m64=__btc(m64,j), j=__bsf(m64)) mask64[j] |= (size_t)1 << i;
 #else
               const vfloat<K> tNear  = max(tNearX,tNearY,tNearZ,vfloat<K>(ray.rdir.w));
               const vfloat<K> tFar   = min(tFarX ,tFarY ,tFarZ ,vfloat<K>(ray.org_rdir.w));
@@ -299,8 +296,9 @@ namespace embree
 
             if (unlikely(none(vmask))) goto pop;
 
-#if defined(__AVX2__) 
+#if defined(__AVX2__)
             BVHNNodeTraverserKHit<types,N,K>::traverseClosestHit(cur, m_trav_active, vmask, dist, (unsigned int*)&maskK, stackPtr, stackEnd);
+            assert(m_trav_active);
             //BVHNNodeTraverserKHit<types,N,K>::traverseClosestHit(cur, m_trav_active, vmask, dist, mask64, stackPtr, stackEnd);
 #else
             FATAL("not yet implemented");
@@ -485,7 +483,7 @@ namespace embree
               const vfloat<K> tFarX  = msub(bmaxX, ray.rdir.x, ray.org_rdir.x);
               const vfloat<K> tFarY  = msub(bmaxY, ray.rdir.y, ray.org_rdir.y);
               const vfloat<K> tFarZ  = msub(bmaxZ, ray.rdir.z, ray.org_rdir.z);
-              const vint<K> bitmask  = vint<K>((size_t)1 << i);
+              const vint<K> bitmask  = vint<K>((int)1 << i);
 #if defined(__AVX2__)
               const vfloat<K> tNear  = maxi(maxi(tNearX,tNearY),maxi(tNearZ,vfloat<K>(ray.rdir.w)));
               const vfloat<K> tFar   = mini(mini(tFarX,tFarY),mini(tFarZ,vfloat<K>(ray.org_rdir.w)));
