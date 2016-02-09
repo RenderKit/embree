@@ -22,8 +22,8 @@
 
 namespace embree
 {
-  namespace isa
-  {
+  //namespace isa
+  //{
 
     class RayStream
     {
@@ -37,5 +37,5 @@ namespace embree
 
 
     };
-  }
+    //}
 };
