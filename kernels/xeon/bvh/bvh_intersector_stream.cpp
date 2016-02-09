@@ -43,6 +43,12 @@
 
 // todo: permute = 2 x broadcast + mask
 
+#if defined(__AVX512F__)
+static const size_t MAX_RAYS_PER_OCTANT = 64;
+#else
+static const size_t MAX_RAYS_PER_OCTANT = 32;
+#endif
+
 namespace embree
 {
   namespace isa
@@ -63,7 +69,9 @@ namespace embree
         const size_t numOctantRays = (r + MAX_RAYS_PER_OCTANT >= numTotalRays) ? numTotalRays-r : MAX_RAYS_PER_OCTANT;
 
         /* inactive rays should have been filtered out before */
-        size_t m_active = ((size_t)1 << numOctantRays)-1;
+        /* needed as 1<<64 results to 1 */
+        size_t m_active = numOctantRays == MAX_RAYS_PER_OCTANT ? (size_t)-1 : (((size_t)1 << numOctantRays))-1;
+
         for (size_t i=0;i<numOctantRays;i++)
         {
 #if defined(__AVX512F__)
@@ -122,7 +130,7 @@ namespace embree
 
           const vfloat<K> inf(pos_inf);
 
-#if 1
+#if 0
           if (likely(util == 1))
           {
             const size_t i = __bsf(m_trav_active);
@@ -169,49 +177,16 @@ namespace embree
                 STAT3(normal.trav_nodes,1,1,1);                          
                 const size_t i = __bscf(bits);
                 RayContext &ray = ray_ctx[i];
-                //if (unlikely(bits == 0))
-                {
-                  const vfloat<K> tNearFarX = msub(bminmaxX, ray.rdir.x, ray.org_rdir.x);
-                  const vfloat<K> tNearFarY = msub(bminmaxY, ray.rdir.y, ray.org_rdir.y);
-                  const vfloat<K> tNearFarZ = msub(bminmaxZ, ray.rdir.z, ray.org_rdir.z);
-                  const vfloat<K> tNear     = max(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(ray.rdir.w));
-                  const vfloat<K> tFar      = min(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(ray.org_rdir.w));
-                  const vbool<K> vmask      = le(tNear,align_shift_right<8>(tFar,tFar));                
-                  //const vint<K> bitmask  = vint<K>((size_t)1 << i);
-                  const vlong<K/2> bitmask  = one << vlong<K/2>(i);
-                  dist   = select(vmask,min(tNear,dist),dist);
-                  maskK = mask_or((vboold8)vmask,maskK,maskK,bitmask);
-                  //break;
-                }
-                // else
-                // {
-                //   const size_t j = __bscf(bits);
-                //   RayContext &ray1 = ray_ctx[j];
-                //   const vfloat<K> tNearFarX0 = msub(bminmaxX, ray.rdir.x, ray.org_rdir.x);
-                //   const vfloat<K> tNearFarY0 = msub(bminmaxY, ray.rdir.y, ray.org_rdir.y);
-                //   const vfloat<K> tNearFarZ0 = msub(bminmaxZ, ray.rdir.z, ray.org_rdir.z);
-
-                //   const vfloat<K> tNearFarX1 = msub(bminmaxX, ray1.rdir.x, ray1.org_rdir.x);
-                //   const vfloat<K> tNearFarY1 = msub(bminmaxY, ray1.rdir.y, ray1.org_rdir.y);
-                //   const vfloat<K> tNearFarZ1 = msub(bminmaxZ, ray1.rdir.z, ray1.org_rdir.z);
-
-                //   const vfloat<K> tNear0     = max(tNearFarX0,tNearFarY0,tNearFarZ0,vfloat<K>(ray.rdir.w));
-                //   const vfloat<K> tFar0      = min(tNearFarX0,tNearFarY0,tNearFarZ0,vfloat<K>(ray.org_rdir.w));
-
-                //   const vfloat<K> tNear1     = max(tNearFarX1,tNearFarY1,tNearFarZ1,vfloat<K>(ray1.rdir.w));
-                //   const vfloat<K> tFar1      = min(tNearFarX1,tNearFarY1,tNearFarZ1,vfloat<K>(ray1.org_rdir.w));
-
-                //   const vbool<K> vmask0      = le(tNear0,align_shift_right<8>(tFar0,tFar0));                
-                //   const vint<K> bitmask0  = vint<K>((size_t)1 << i);
-                //   dist   = select(vmask0,min(tNear0,dist),dist);
-                //   maskK = mask_or(vmask0,maskK,maskK,bitmask0); 
-
-                //   const vbool<K> vmask1      = le(tNear1,align_shift_right<8>(tFar1,tFar1));                
-                //   const vint<K> bitmask1  = vint<K>((size_t)1 << j);
-                //   dist   = select(vmask1,min(tNear1,dist),dist);
-                //   maskK = mask_or(vmask1,maskK,maskK,bitmask1);                   
-                // }
-
+                const vfloat<K> tNearFarX = msub(bminmaxX, ray.rdir.x, ray.org_rdir.x);
+                const vfloat<K> tNearFarY = msub(bminmaxY, ray.rdir.y, ray.org_rdir.y);
+                const vfloat<K> tNearFarZ = msub(bminmaxZ, ray.rdir.z, ray.org_rdir.z);
+                const vfloat<K> tNear     = max(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(ray.rdir.w));
+                const vfloat<K> tFar      = min(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(ray.org_rdir.w));
+                const vbool<K> vmask      = le(tNear,align_shift_right<8>(tFar,tFar));                
+                //const vint<K> bitmask  = vint<K>((size_t)1 << i);
+                const vlong<K/2> bitmask  = one << vlong<K/2>(i);
+                dist   = select(vmask,min(tNear,dist),dist);
+                maskK = mask_or((vboold8)vmask,maskK,maskK,bitmask);
               } while(bits);              
 
 
@@ -379,7 +354,7 @@ namespace embree
         Precalculations pre[MAX_RAYS_PER_OCTANT]; 
 
         /* inactive rays should have been filtered out before */
-        size_t m_active = ((size_t)1 << numOctantRays)-1;
+        size_t m_active = numOctantRays == MAX_RAYS_PER_OCTANT ? (size_t)-1 : (((size_t)1 << numOctantRays))-1;
         for (size_t i=0;i<numOctantRays;i++)
         {
 #if defined(__AVX512F__)

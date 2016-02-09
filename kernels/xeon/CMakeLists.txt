@@ -131,7 +131,7 @@ ENDIF()
 SET(EMBREE_LIBRARY_FILES_AVX
     
     ../common/scene_subdiv_mesh_avx.cpp
-
+  
     geometry/primitive.cpp
     geometry/instance_intersector1.cpp
     

@@ -178,7 +178,6 @@ namespace embree
 
       static const size_t stackSizeChunk  = N*BVH::maxDepth+1;
       static const size_t stackSizeSingle = 1+(N-1)*BVH::maxDepth;
-      static const size_t MAX_RAYS_PER_OCTANT = 32;
 
       struct RayContext {
         Vec3fa rdir;      //     rdir.w = tnear;

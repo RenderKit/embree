@@ -2,8 +2,8 @@
 
 namespace embree
 {
-  //namespace isa
-  //{
+  namespace isa
+  {
 
 
     void RayStream::filterAOS(Scene *scene, RTCRay* _rayN, const size_t N, const size_t stride, const size_t flags, const bool intersect)
@@ -131,5 +131,5 @@ namespace embree
   }
 
 
-  //};
+  };
 };
