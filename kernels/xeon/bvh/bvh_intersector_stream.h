@@ -49,8 +49,7 @@ namespace embree
                                                    const vbool<K> &vmask,
                                                    const vfloat<K>& tNear,
                                                    const T * const tMask,
-                                                   StackItemMask*& stackPtr,
-                                                   StackItemMask* stackEnd)
+                                                   StackItemMask*& stackPtr)
       {
         
         size_t mask = movemask(vmask);
@@ -80,7 +79,6 @@ namespace embree
         assert(c0 != BVH::emptyNode);
         assert(c1 != BVH::emptyNode);
         if (likely(mask == 0)) {
-          assert(stackPtr < stackEnd);
           if (d0 < d1) { stackPtr->ptr = c1; stackPtr->mask = tMask[r1]; stackPtr++; cur = c0; m_trav_active = tMask[r0]; return; }
           else         { stackPtr->ptr = c0; stackPtr->mask = tMask[r0]; stackPtr++; cur = c1; m_trav_active = tMask[r1]; return; }
         }
@@ -108,7 +106,6 @@ namespace embree
           if (unlikely(i==0)) break;
           i--;
           assert(cur != BVH::emptyNode);
-          assert(stackPtr < stackEnd);
           stackPtr->ptr = cur; 
           stackPtr->mask = m_trav_active;
           stackPtr++;
@@ -120,8 +117,7 @@ namespace embree
                                                size_t &m_trav_active,
                                                const vbool<K> &vmask,
                                                const T * const tMask,
-                                               StackItemMask*& stackPtr,
-                                               StackItemMask* stackEnd)
+                                               StackItemMask*& stackPtr)
       {
         size_t mask = movemask(vmask);
         assert(mask != 0);
@@ -136,21 +132,18 @@ namespace embree
         /* simple in order sequence */
         assert(cur != BVH::emptyNode);
         if (likely(mask == 0)) return;
-        assert(stackPtr < stackEnd);
         stackPtr->ptr  = cur;
         stackPtr->mask = m_trav_active;
         stackPtr++;
 
         for (; ;)
         {
-          assert(stackPtr < stackEnd);
           r = __bscf(mask);
           cur = node->child(r);          
           cur.prefetch(types);
           m_trav_active = tMask[r];
           assert(cur != BVH::emptyNode);
           if (likely(mask == 0)) return;
-          assert(stackPtr < stackEnd);
           stackPtr->ptr  = cur;
           stackPtr->mask = m_trav_active;
           stackPtr++;
