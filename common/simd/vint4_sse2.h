@@ -262,7 +262,7 @@ namespace embree
  
 
 #if defined(__SSE4_1__) 
-#if defined(__clang__) && !defined(__INTEL_COMPILER) || defined(_MSC_VER) && !defined(__INTEL_COMPILER) // still required for clang
+#if defined(__clang__) && !defined(__INTEL_COMPILER) || defined(_MSC_VER) && !defined(__INTEL_COMPILER) || defined(__GNUC__) && !defined(__INTEL_COMPILER) // still required for clang
   __forceinline const vint4 select(const int mask, const vint4& t, const vint4& f) {
           return select(vboolf4(mask), t, f);
   }

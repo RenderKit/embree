@@ -81,7 +81,6 @@ namespace embree
           if (d0 < d1) { stackPtr->ptr = c1; stackPtr->mask = tMask[r1]; stackPtr++; cur = c0; m_trav_active = tMask[r0]; return; }
           else         { stackPtr->ptr = c0; stackPtr->mask = tMask[r0]; stackPtr++; cur = c1; m_trav_active = tMask[r1]; return; }
         }
-
         /*! slow path for more than two hits */
         const size_t hits = __popcnt(movemask(vmask));
         const vint<K> dist_i = select(vmask,(asInt(tNear) & 0xfffffff8) | vint<K>( step ),0x7fffffff);
