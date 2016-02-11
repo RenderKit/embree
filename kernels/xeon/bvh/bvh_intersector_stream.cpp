@@ -49,7 +49,7 @@ static const size_t MAX_RAYS_PER_OCTANT = 64;
 static const size_t MAX_RAYS_PER_OCTANT = 32;
 #endif
 
-#define ENABLE_FIBERS 1
+#define ENABLE_FIBERS 0
 
 namespace embree
 {
@@ -325,9 +325,9 @@ namespace embree
       {
         Ray** __restrict__ rays = input_rays + r;
         const size_t numOctantRays = (r + MAX_RAYS_PER_OCTANT >= numTotalRays) ? numTotalRays-r : MAX_RAYS_PER_OCTANT;
-
         /* inactive rays should have been filtered out before */
         size_t m_active = numOctantRays == 64 ? (size_t)-1 : (((size_t)1 << numOctantRays))-1;
+        //STAT3(normal.trav_hit_boxes[__popcnt(m_active)],1,1,1);
         assert(m_active);
         for (size_t i=0;i<numOctantRays;i++)
         {

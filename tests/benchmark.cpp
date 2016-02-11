@@ -81,6 +81,8 @@ namespace embree
   static std::string g_plot_test = "";
   static bool executed_benchmarks = false;
 
+  static size_t g_profile_loop_iterations = 1;
+
   /* vertex and triangle layout */
   struct Vertex   { float x,y,z,a; };
   struct Triangle { int v0, v1, v2; };
@@ -1022,13 +1024,14 @@ namespace embree
       if (threadIndex != 0) g_barrier_active.wait(threadIndex);
       double t0 = getSeconds();
 
-      for (size_t i=0; i<N; i++) {
-        RTCRay ray = makeRay(zero,numbers[i]);
-        if (intersect)
-          rtcIntersect(scene,ray);
-        else
-          rtcOccluded(scene,ray);
-      }        
+      for (size_t p=0;p<g_profile_loop_iterations;p++)
+        for (size_t i=0; i<N; i++) {
+          RTCRay ray = makeRay(zero,numbers[i]);
+          if (intersect)
+            rtcIntersect(scene,ray);
+          else
+            rtcOccluded(scene,ray);
+        }        
 
       if (threadIndex != 0) g_barrier_active.wait(threadIndex);
       double t1 = getSeconds();
@@ -1120,7 +1123,7 @@ namespace embree
       if (threadIndex != 0) g_barrier_active.wait(threadIndex);
       double t0 = getSeconds();
 
-      //while(1)
+      for (size_t p=0;p<g_profile_loop_iterations;p++)
       for (size_t i=0; i<N; i+=16) {
         RTCRay16 ray16;
         for (size_t j=0;j<16;j++)        
@@ -1212,7 +1215,7 @@ namespace embree
       double t0 = getSeconds();
 
 #define STREAM_SIZE 256
-      //while(1)
+      for (size_t p=0;p<g_profile_loop_iterations;p++)
       for (size_t i=0; i<N; i+=STREAM_SIZE) {
         RTCRay rays[STREAM_SIZE];
         for (size_t j=0;j<STREAM_SIZE;j++)        
@@ -1301,7 +1304,7 @@ namespace embree
       if (threadIndex != 0) g_barrier_active.wait(threadIndex);
       double t0 = getSeconds();
 
-      //while(1)
+      for (size_t p=0;p<g_profile_loop_iterations;p++)
       for (size_t yy=0; yy<height; yy+=COHERENT_STREAM_TILE_Y) {
         for (size_t xx=0; xx<width; xx+=COHERENT_STREAM_TILE_X) {
           size_t index=0;
@@ -1799,6 +1802,9 @@ namespace embree
 
   static void parseCommandLine(int argc, char** argv)
   {
+    Benchmark* benchmark = NULL;
+    size_t numThreads = 1;
+
     for (int i=1; i<argc; i++)
     {
       std::string tag = argv[i];
@@ -1821,16 +1827,20 @@ namespace embree
       /* run single benchmark */
       else if (tag == "-run" && i+2<argc) 
       {
-	size_t numThreads = atoi(argv[++i]);
+	numThreads = atoi(argv[++i]);
 	std::string name = argv[++i];
-	Benchmark* benchmark = getBenchmark(name);
-	benchmark->print(numThreads,16);
-        executed_benchmarks = true;
+	benchmark = getBenchmark(name);
       }
 
       else if (tag == "-threads" && i+1<argc) 
       {
 	g_num_threads_init = atoi(argv[++i]);
+      }
+
+      else if (tag == "-profile") 
+      {
+        std::cout << "ENABLE_PROFILING" << std::endl;
+	g_profile_loop_iterations = (size_t)-1;
       }
 
       /* skip unknown command line parameter */
@@ -1839,6 +1849,12 @@ namespace embree
         std::cerr << std::endl;
       }
     }
+    if (benchmark)
+    {
+      benchmark->print(numThreads,16);
+      executed_benchmarks = true;
+    }
+
   }
 
   /* main function in embree namespace */
