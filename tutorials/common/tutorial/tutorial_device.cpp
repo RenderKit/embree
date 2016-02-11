@@ -307,6 +307,7 @@ Vec3fa renderPixelAmbientOcclusion(float x, float y, const Vec3fa& vx, const Vec
      }
 
   rtcOccludedN(g_scene,rays,AMBIENT_OCCLUSION_SAMPLES,sizeof(RTCRay));
+  //rtcIntersectN(g_scene,rays,AMBIENT_OCCLUSION_SAMPLES,sizeof(RTCRay));
 
     for (int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++) 
       if (rays[i].geomID == RTC_INVALID_GEOMETRY_ID)
@@ -339,6 +340,7 @@ Vec3fa renderPixelAmbientOcclusion(float x, float y, const Vec3fa& vx, const Vec
     
       /* trace shadow ray */
       rtcOccluded(g_scene,shadow);
+      //rtcIntersect(g_scene,shadow);
     
       /* add light contribution */
       if (shadow.geomID == RTC_INVALID_GEOMETRY_ID)

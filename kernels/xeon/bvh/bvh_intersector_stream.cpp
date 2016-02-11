@@ -78,12 +78,22 @@ namespace embree
         assert(m_active);
         for (size_t i=0;i<numOctantRays;i++)
         {
+#if defined(__AVX512F__)
+          vfloat<K> org(vfloat4(rays[i]->org));
+          vfloat<K> dir(vfloat4(rays[i]->dir));
+          vfloat<K> rdir       = select(0x7777,rcp_safe(dir),rays[i]->tnear);
+          vfloat<K> org_rdir   = select(0x7777,org * rdir,rays[i]->tfar);
+          vfloat<K> res = select(0xf,rdir,org_rdir);
+          vfloat8 r = extractf256bit(res);
+          *(vfloat8*)&ray_ctx[i] = r;          
+#else
           Vec3fa &org = rays[i]->org;
           Vec3fa &dir = rays[i]->dir;
           ray_ctx[i].rdir       = rcp_safe(dir);
           ray_ctx[i].org_rdir   = org * ray_ctx[i].rdir;
           ray_ctx[i].rdir.w     = rays[i]->tnear;
           ray_ctx[i].org_rdir.w = rays[i]->tfar;
+#endif
         }       
 
         stack0[0].ptr  = BVH::invalidNode;
@@ -91,13 +101,20 @@ namespace embree
 
         stack1[0].ptr  = BVH::invalidNode;
         stack1[0].mask = (size_t)-1;
-        
-        StackItemMask* stackPtrs[2] = { stack0 + 1, stack1 + 1 };    //!< current stack pointer
-        
+                
         ///////////////////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////
+#if defined(__AVX512F__)
+        const vint<K> id( step );
+        const vint<K> id2 = align_shift_right<K/2>(id,id);
+ 
 
+        const vint<K> permX = select(vfloat<K>(ray_ctx[0].rdir.x) >= 0.0f,id,id2);
+        const vint<K> permY = select(vfloat<K>(ray_ctx[0].rdir.y) >= 0.0f,id,id2);
+        const vint<K> permZ = select(vfloat<K>(ray_ctx[0].rdir.z) >= 0.0f,id,id2);
+        const vlong<K/2> one((size_t)1);
+#else
         const size_t nearX = (rays[0]->dir.x < 0.0f) ? 1*sizeof(vfloat<N>) : 0*sizeof(vfloat<N>);
         const size_t nearY = (rays[0]->dir.y < 0.0f) ? 3*sizeof(vfloat<N>) : 2*sizeof(vfloat<N>);
         const size_t nearZ = (rays[0]->dir.z < 0.0f) ? 5*sizeof(vfloat<N>) : 4*sizeof(vfloat<N>);
@@ -105,14 +122,19 @@ namespace embree
         const size_t farX  = nearX ^ sizeof(vfloat<N>);
         const size_t farY  = nearY ^ sizeof(vfloat<N>);
         const size_t farZ  = nearZ ^ sizeof(vfloat<N>);
-
-        StackItemMask* stackPtr      = stackPtrs[0];
-        StackItemMask* stackPtr_next = stackPtrs[1];
+#endif
+        const size_t fiberMask = ((size_t)1 << ((__popcnt(m_active)+1)>>1))-1;
+        assert(fiberMask);
+        assert( ((fiberMask | (~fiberMask)) & m_active) == m_active);
+        assert( __popcnt(fiberMask) + __popcnt((~fiberMask) & m_active) == __popcnt(m_active));
+        
+        StackItemMask* stackPtr      = stack0 + 1;
+        StackItemMask* stackPtr_next = stack1 + 1;
 
         NodeRef cur               = bvh->root;
-        size_t m_trav_active      = m_active & 0x0000ffff; // lower 16 rays
+        size_t m_trav_active      = m_active & fiberMask; // lower half of active rays
         NodeRef cur_next          = bvh->root;
-        size_t m_trav_active_next = m_active & 0xffff0000; // upper 16 rays
+        size_t m_trav_active_next = m_active & (~fiberMask); // upper half of active rays
 
         if (m_trav_active_next == 0) cur_next = 0;
         
@@ -132,7 +154,49 @@ namespace embree
             if (unlikely(cur.isLeaf())) break;
             const Node* __restrict__ const node = cur.node();
             STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);
+#if defined(__AVX512F__)
+              const vfloat<K> bminmaxX = permute(vfloat<K>::load((float*)&node->lower_x),permX);
+              const vfloat<K> bminmaxY = permute(vfloat<K>::load((float*)&node->lower_y),permY);
+              const vfloat<K> bminmaxZ = permute(vfloat<K>::load((float*)&node->lower_z),permZ);
 
+              vfloat<K> dist(inf);
+              vlong<K/2>   maskK(zero);
+              size_t bits = m_trav_active;
+              do
+              {            
+                STAT3(normal.trav_nodes,1,1,1);                          
+                const size_t i = __bscf(bits);
+                RayContext &ray = ray_ctx[i];
+                const vfloat<K> tNearFarX = msub(bminmaxX, ray.rdir.x, ray.org_rdir.x);
+                const vfloat<K> tNearFarY = msub(bminmaxY, ray.rdir.y, ray.org_rdir.y);
+                const vfloat<K> tNearFarZ = msub(bminmaxZ, ray.rdir.z, ray.org_rdir.z);
+                const vfloat<K> tNear     = max(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(ray.rdir.w));
+                const vfloat<K> tFar      = min(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(ray.org_rdir.w));
+                const vbool<K> vmask      = le(tNear,align_shift_right<8>(tFar,tFar));                
+                //const vint<K> bitmask  = vint<K>((size_t)1 << i);
+                const vlong<K/2> bitmask  = one << vlong<K/2>(i);
+                dist   = select(vmask,min(tNear,dist),dist);
+                maskK = mask_or((vboold8)vmask,maskK,maskK,bitmask);
+              } while(bits);              
+
+
+              const vbool<K> vmask = lt(0xff,dist,inf);
+
+              if (unlikely(none(vmask))) 
+              {
+                /*! pop next node */
+                STAT3(normal.trav_stack_pop,1,1,1);                          
+                // todo: directly assign to *_next
+                stackPtr--;
+                cur = NodeRef(stackPtr->ptr);
+                m_trav_active = stackPtr->mask;
+                assert(m_trav_active);
+                goto pop;
+              }
+
+              BVHNNodeTraverserKHit<types,N,K>::traverseClosestHit(cur, m_trav_active, vmask, dist, (size_t*)&maskK, stackPtr);
+
+#else
             const vfloat<K> bminX = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+nearX));
             const vfloat<K> bminY = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+nearY));
             const vfloat<K> bminZ = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+nearZ));
@@ -171,9 +235,7 @@ namespace embree
               maskK = select(vmask,maskK | bitmask,maskK); 
 #endif
             } while(bits);              
-
             const vbool<K> vmask = dist < inf;
-
             if (unlikely(none(vmask))) 
             {
               /*! pop next node */
@@ -193,7 +255,7 @@ namespace embree
             FATAL("not yet implemented");
 #endif
 
-
+#endif
           }
           DBG("INTERSECTION");
 
