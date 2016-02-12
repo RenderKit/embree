@@ -190,7 +190,7 @@ namespace embree
 		    const Geometry* const geom = geometry->get(geomID);
 		    if (likely(!geom->hasIntersectionFilter<vfloat16>())) 
 		      {
-			ray16.update(m_tri,rayIndex,min_dist,u,v,gnormalx,gnormaly,gnormalz,geomID,primID);
+			ray16.updateK(bitscan(m_tri)/*m_tri*/,rayIndex,min_dist,u,v,gnormalx,gnormaly,gnormalz,geomID,primID);
 			break;
 		      }
                 
@@ -227,7 +227,7 @@ namespace embree
 		max_dist_xyz = min_dist;
 
 	
-		ray16.update(m_tri,rayIndex,min_dist,u,v,gnormalx,gnormaly,gnormalz,tri_ptr->geomID(),tri_ptr->primID());
+		ray16.updateK(bitscan(m_tri)/*m_tri*/,rayIndex,min_dist,u,v,gnormalx,gnormaly,gnormalz,tri_ptr->geomID(),tri_ptr->primID());
 	      }
 	    return true;
       
@@ -713,7 +713,7 @@ namespace embree
 		    const Geometry* const geom = geometry->get(geomID);
 		    if (likely(!geom->hasIntersectionFilter<vfloat16>())) 
 		      {
-			ray16.update(m_tri,rayIndex,min_dist,u,v,gnormalx,gnormaly,gnormalz,geomID,primID);
+			ray16.updateK(bitscan(m_tri) /*m_tri*/,rayIndex,min_dist,u,v,gnormalx,gnormaly,gnormalz,geomID,primID);
 			break;
 		      }
                 
@@ -750,7 +750,7 @@ namespace embree
 		max_dist_xyz = min_dist;
 
 	
-		ray16.update(m_tri,rayIndex,min_dist,u,v,gnormalx,gnormaly,gnormalz,tri_ptr->geomID(),tri_ptr->primID());
+		ray16.updateK(bitscan(m_tri)/*m_tri*/,rayIndex,min_dist,u,v,gnormalx,gnormaly,gnormalz,tri_ptr->geomID(),tri_ptr->primID());
 	      }
 	    return true;
       
@@ -875,7 +875,7 @@ namespace embree
 		    const Geometry* const geom = geometry->get(geomID);
 		    if (likely(!geom->hasIntersectionFilter<vfloat16>())) 
 		      {
-			ray16.update(m_tri,rayIndex,min_dist,u,v,gnormalx,gnormaly,gnormalz,geomID,primID);
+			ray16.updateK(bitscan(m_tri)/*m_tri*/,rayIndex,min_dist,u,v,gnormalx,gnormaly,gnormalz,geomID,primID);
 			break;
 		      }
                 
@@ -912,7 +912,7 @@ namespace embree
 		max_dist_xyz = min_dist;
 
 	
-		ray16.update(m_tri,rayIndex,min_dist,u,v,gnormalx,gnormaly,gnormalz,tri_ptr->geomID(),tri_ptr->primID());
+		ray16.updateK(bitscan(m_tri)/*m_tri*/,rayIndex,min_dist,u,v,gnormalx,gnormaly,gnormalz,tri_ptr->geomID(),tri_ptr->primID());
 	      }
 	    return true;
       

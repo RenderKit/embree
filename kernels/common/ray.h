@@ -89,16 +89,26 @@ namespace embree
       vint<K>::store(m_mask,(int*)&primID,new_primID);
     }
 
-    __forceinline void update(const vbool<K>& m_mask,
-                              const size_t rayIndex,
-                              const vfloat<K>& new_t,
-                              const vfloat<K>& new_u,
-                              const vfloat<K>& new_v,
-                              const vfloat<K>& new_gnormalx,
-                              const vfloat<K>& new_gnormaly,
-                              const vfloat<K>& new_gnormalz,
-                              const int new_geomID,
-                              const int new_primID);
+    __forceinline void updateK(const size_t i,
+                               const size_t rayIndex,
+                               const vfloat<K>& new_t,
+                               const vfloat<K>& new_u,
+                               const vfloat<K>& new_v,
+                               const vfloat<K>& new_gnormalx,
+                               const vfloat<K>& new_gnormaly,
+                               const vfloat<K>& new_gnormalz,
+                               const int new_geomID,
+                               const vint<K> &new_primID)
+    {
+      ray.u[rayIndex] = new_u[i];
+      ray.v[rayIndex] = new_v[i];
+      ray.tfar[rayIndex] = new_t[i];
+      ray.Ng.x[rayIndex] = new_gnormalx[i];
+      ray.Ng.y[rayIndex] = new_gnormaly[i];
+      ray.Ng.z[rayIndex] = new_gnormalz[i];
+      ray.geomID[rayIndex] = new_geomID;
+      ray.primID[rayIndex] = new_primIDs[i];
+    }
 
     /* Ray data */
     Vec3<vfloat<K>> org; // ray origin
@@ -119,26 +129,26 @@ namespace embree
 
 #if defined(__AVX512F__) || defined(__MIC__)
   template<>
-  __forceinline void RayK<16>::update(const vbool16& m_mask,
-                                      const size_t rayIndex,
-                                      const vfloat16& new_t,
-                                      const vfloat16& new_u,
-                                      const vfloat16& new_v,
-                                      const vfloat16& new_gnormalx,
-                                      const vfloat16& new_gnormaly,
-                                      const vfloat16& new_gnormalz,
-                                      const int new_geomID,
-                                      const int new_primID)
+  __forceinline void RayK<16>::updateK(const size_t i,
+                                       const size_t rayIndex,
+                                       const vfloat16& new_t,
+                                       const vfloat16& new_u,
+                                       const vfloat16& new_v,
+                                       const vfloat16& new_gnormalx,
+                                       const vfloat16& new_gnormaly,
+                                       const vfloat16& new_gnormalz,
+                                       const int new_geomID,
+                                       const vint16 &new_primID)
   {
+    const vbool16 m_mask((unsigned int)1 << i);
+    vfloat16::storeu_compact_single(m_mask,&tfar[rayIndex],new_t);
+    vfloat16::storeu_compact_single(m_mask,&Ng.x[rayIndex],new_gnormalx);
+    vfloat16::storeu_compact_single(m_mask,&Ng.y[rayIndex],new_gnormaly);
+    vfloat16::storeu_compact_single(m_mask,&Ng.z[rayIndex],new_gnormalz);
+    vfloat16::storeu_compact_single(m_mask,&u[rayIndex],new_u);
+    vfloat16::storeu_compact_single(m_mask,&v[rayIndex],new_v);
+    vint16::storeu_compact_single(m_mask,&primID[rayIndex],new_primID);
     geomID[rayIndex] = new_geomID;
-    primID[rayIndex] = new_primID;
-
-    compactustore16f_low(m_mask,&tfar[rayIndex],new_t);
-    compactustore16f_low(m_mask,&u[rayIndex],new_u);
-    compactustore16f_low(m_mask,&v[rayIndex],new_v);
-    compactustore16f_low(m_mask,&Ng.x[rayIndex],new_gnormalx);
-    compactustore16f_low(m_mask,&Ng.y[rayIndex],new_gnormaly);
-    compactustore16f_low(m_mask,&Ng.z[rayIndex],new_gnormalz);
   }
 #endif
 

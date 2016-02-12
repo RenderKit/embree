@@ -190,7 +190,7 @@ namespace embree
       eval(uu,p0123,P,T);
       assert( T != vfloat16::zero() );
 
-      ray.update(1,k,vfloat16(t[i]),vfloat16(uu),vfloat16::zero(),swAAAA(T),swBBBB(T),swCCCC(T),curve_in.geomID,curve_in.primID);
+      ray.updateK(1,k,vfloat16(t[i]),vfloat16(uu),vfloat16::zero(),swAAAA(T),swBBBB(T),swCCCC(T),curve_in.geomID,curve_in.primID);
       return true;
     }
 
