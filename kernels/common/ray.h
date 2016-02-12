@@ -100,14 +100,14 @@ namespace embree
                                const int new_geomID,
                                const vint<K> &new_primID)
     {
-      ray.u[rayIndex] = new_u[i];
-      ray.v[rayIndex] = new_v[i];
-      ray.tfar[rayIndex] = new_t[i];
-      ray.Ng.x[rayIndex] = new_gnormalx[i];
-      ray.Ng.y[rayIndex] = new_gnormaly[i];
-      ray.Ng.z[rayIndex] = new_gnormalz[i];
-      ray.geomID[rayIndex] = new_geomID;
-      ray.primID[rayIndex] = new_primIDs[i];
+      u[rayIndex] = new_u[i];
+      v[rayIndex] = new_v[i];
+      tfar[rayIndex] = new_t[i];
+      Ng.x[rayIndex] = new_gnormalx[i];
+      Ng.y[rayIndex] = new_gnormaly[i];
+      Ng.z[rayIndex] = new_gnormalz[i];
+      geomID[rayIndex] = new_geomID;
+      primID[rayIndex] = new_primID[i];
     }
 
     /* Ray data */
