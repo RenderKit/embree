@@ -146,6 +146,7 @@ namespace embree
             /* context swap */
             if (likely(cur_next))
             {
+              cur_next.prefetchL1C();
               std::swap(cur,cur_next);
               std::swap(m_trav_active,m_trav_active_next);
               std::swap(stackPtr,stackPtr_next);

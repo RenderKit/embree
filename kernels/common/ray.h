@@ -111,30 +111,6 @@ namespace embree
       primID[rayIndex] = new_primID[i];
     }
 
-#if defined(__AVX512F__) || defined(__MIC__)
-    template<int M>
-    __forceinline void updateK(const size_t i,
-                               const size_t rayIndex,
-                               const vfloat16& new_t,
-                               const vfloat16& new_u,
-                               const vfloat16& new_v,
-                               const vfloat16& new_gnormalx,
-                               const vfloat16& new_gnormaly,
-                               const vfloat16& new_gnormalz,
-                               const int new_geomID,
-                               const vint16 &new_primID)
-    {
-      const vbool16 m_mask((unsigned int)1 << i);
-      vfloat16::storeu_compact_single(m_mask,&tfar[rayIndex],new_t);
-      vfloat16::storeu_compact_single(m_mask,&Ng.x[rayIndex],new_gnormalx);
-      vfloat16::storeu_compact_single(m_mask,&Ng.y[rayIndex],new_gnormaly);
-      vfloat16::storeu_compact_single(m_mask,&Ng.z[rayIndex],new_gnormalz);
-      vfloat16::storeu_compact_single(m_mask,&u[rayIndex],new_u);
-      vfloat16::storeu_compact_single(m_mask,&v[rayIndex],new_v);
-      vint16::storeu_compact_single(m_mask,&primID[rayIndex],new_primID);
-      geomID[rayIndex] = new_geomID;
-    }
-#endif
 
     /* Ray data */
     Vec3<vfloat<K>> org; // ray origin
@@ -152,6 +128,31 @@ namespace embree
     vint<K> primID;      // primitive ID
     vint<K> instID;      // instance ID
   };
+
+#if defined(__AVX512F__) || defined(__MIC__)
+    template<>
+      __forceinline void RayK<16>::updateK<16>(const size_t i,
+                                             const size_t rayIndex,
+                                             const vfloat16& new_t,
+                                             const vfloat16& new_u,
+                                             const vfloat16& new_v,
+                                             const vfloat16& new_gnormalx,
+                                             const vfloat16& new_gnormaly,
+                                             const vfloat16& new_gnormalz,
+                                             const int new_geomID,
+                                             const vint16 &new_primID)
+    {
+      const vbool16 m_mask((unsigned int)1 << i);
+      vfloat16::storeu_compact_single(m_mask,&tfar[rayIndex],new_t);
+      vfloat16::storeu_compact_single(m_mask,&Ng.x[rayIndex],new_gnormalx);
+      vfloat16::storeu_compact_single(m_mask,&Ng.y[rayIndex],new_gnormaly);
+      vfloat16::storeu_compact_single(m_mask,&Ng.z[rayIndex],new_gnormalz);
+      vfloat16::storeu_compact_single(m_mask,&u[rayIndex],new_u);
+      vfloat16::storeu_compact_single(m_mask,&v[rayIndex],new_v);
+      vint16::storeu_compact_single(m_mask,&primID[rayIndex],new_primID);
+      geomID[rayIndex] = new_geomID;
+    }
+#endif
 
 
   /* Specialization for a single ray */

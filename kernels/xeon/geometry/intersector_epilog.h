@@ -622,7 +622,7 @@ namespace embree
           assert(i<M);
           /* update hit information */
 #if defined(__AVX512F__)
-          ray.updateK(i,k,hit.vt,hit.vu,hit.vv,hit.vNg.x,hit.vNg.y,hit.vNg.z,geomID,vint<Mx>(primIDs));
+          ray.updateK(i,k,hit.vt,hit.vu,hit.vv,vfloat<Mx>(hit.vNg.x),vfloat<Mx>(hit.vNg.y),vfloat<Mx>(hit.vNg.z),geomID,vint<Mx>(primIDs));
 #else
           const Vec2f uv = hit.uv(i);
           ray.u[k] = uv.x;
