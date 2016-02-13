@@ -621,9 +621,8 @@ namespace embree
 #endif
           assert(i<M);
           /* update hit information */
-#if 0 //defined(__AVX512F__)
-          vbool<Mx> finalMask(((unsigned int)1 << i));
-          ray.update(finalMask,k,hit.vt,hit.vu,hit.vv,hit.vNg.x,hit.vNg.y,hit.vNg.z,geomID,primIDs);
+#if defined(__AVX512F__)
+          ray.updateK(i,k,hit.vt,hit.vu,hit.vv,hit.vNg.x,hit.vNg.y,hit.vNg.z,geomID,vint<Mx>(primIDs));
 #else
           const Vec2f uv = hit.uv(i);
           ray.u[k] = uv.x;
@@ -752,10 +751,9 @@ namespace embree
 #endif
           
           /* update hit information */
-#if 0 // defined(__AVX512F__)
-          vbool<Mx> finalMask(((unsigned int)1 << i));
+#if defined(__AVX512F__)
           const Vec3fa Ng = hit.Ng(i);
-          ray.update(finalMask,k,hit.vt,hit.vu,hit.vv,vNg.x,vNg.y,vNg.z,instID,primID);
+          ray.updateK(i,k,hit.vt,hit.vu,hit.vv,vfloat<M>(Ng.x),vfloat<M>(Ng.y),vfloat<M>(Ng.z),geomID,vint<M>(primID));
 #else
           const Vec2f uv = hit.uv(i);
           ray.u[k] = uv.x;
