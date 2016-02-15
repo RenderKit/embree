@@ -43,11 +43,6 @@
 
 // todo: permute = 2 x broadcast + mask, stack size for streams
 
-#if defined(__AVX512F__)
-static const size_t MAX_RAYS_PER_OCTANT = 64;
-#else
-static const size_t MAX_RAYS_PER_OCTANT = 32;
-#endif
 
 #define FIBERS 2
 
@@ -59,7 +54,9 @@ namespace embree
 #if defined(__AVX__)
 
     
-#if 0
+#if 1
+
+    static const size_t MAX_RAYS_PER_OCTANT = 64;
 
     template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
     void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, size_t flags)
@@ -146,6 +143,8 @@ namespace embree
           DBG(__popcnt(m_active_fibers));
           size_t m_cur_active_fibers = m_active_fibers;
           DBG(__popcnt(m_cur_active_fibers));
+          STAT3(normal.trav_hit_boxes[__popcnt(m_cur_active_fibers)],1,1,1);
+
           do
           {
             assert(m_cur_active_fibers);
@@ -153,11 +152,10 @@ namespace embree
             DBG(ctxID);
             RayContext &ctx = ray_ctx[ctxID];
             NodeRef cur     = ctx.cur;
-
+            
             if (likely(!cur.isLeaf())) 
             {
               const Node* __restrict__ const node = cur.node();
-              STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);
               STAT3(normal.trav_nodes,1,1,1);                          
 
 #if defined(__AVX512F__)
@@ -288,7 +286,14 @@ namespace embree
       }
     }
 
-#elif 1
+#elif 0
+
+#if defined(__AVX512F__)
+    static const size_t MAX_RAYS_PER_OCTANT = 64;
+#else
+    static const size_t MAX_RAYS_PER_OCTANT = 32;
+#endif
+    
     template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
     void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, size_t flags)
     {

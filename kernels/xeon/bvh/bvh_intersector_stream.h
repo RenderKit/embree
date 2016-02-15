@@ -27,8 +27,11 @@ namespace embree
 
     /*! An item on the stack holds the node ID and distance of that node. */
     struct __aligned(16) StackItemMask
-    {    
-      size_t mask;
+    {
+      union {
+        size_t mask;
+        size_t dist;
+      };
       size_t ptr; 
     };
 
