@@ -55,6 +55,7 @@ namespace embree
     __forceinline vint            ( int  a, int  b, int  c, int  d, int  e, int  f, int  g, int  h) : v(_mm256_set_epi32(h, g, f, e, d, c, b, a)) {}
 
     __forceinline explicit vint( const __m256 a ) : v(_mm256_cvtps_epi32(a)) {}
+    __forceinline explicit vint( const vboolf8 &a ) : v(_mm256_castps_si256((__m256)a)) {}
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Constants

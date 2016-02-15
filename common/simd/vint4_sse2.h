@@ -43,6 +43,7 @@ namespace embree
     __forceinline operator const __m128i&( void ) const { return v; }
     __forceinline operator       __m128i&( void )       { return v; }
 
+
     __forceinline vint            ( const int&  a ) : v(_mm_shuffle_epi32(_mm_castps_si128(_mm_load_ss((float*)&a)), _MM_SHUFFLE(0, 0, 0, 0))) {}
     __forceinline vint            ( const uint32_t& a ) : v(_mm_shuffle_epi32(_mm_castps_si128(_mm_load_ss((float*)&a)), _MM_SHUFFLE(0, 0, 0, 0))) {}
 #if defined(__X86_64__)
@@ -51,6 +52,7 @@ namespace embree
     __forceinline vint            ( int  a, int  b, int  c, int  d) : v(_mm_set_epi32(d, c, b, a)) {}
 
     __forceinline explicit vint( const __m128 a ) : v(_mm_cvtps_epi32(a)) {}
+    __forceinline explicit vint( const vboolf4 &a ) : v(_mm_castps_si128((__m128)a)) {}
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Constants

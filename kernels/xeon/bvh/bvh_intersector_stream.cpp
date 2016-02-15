@@ -44,7 +44,7 @@
 // todo: permute = 2 x broadcast + mask, stack size for streams
 
 
-#define FIBERS 2
+#define FIBERS 4
 
 namespace embree
 {
@@ -54,7 +54,7 @@ namespace embree
 #if defined(__AVX__)
 
     
-#if 1
+#if 0
 
     static const size_t MAX_RAYS_PER_OCTANT = 64;
 
@@ -152,7 +152,7 @@ namespace embree
             DBG(ctxID);
             RayContext &ctx = ray_ctx[ctxID];
             NodeRef cur     = ctx.cur;
-            
+
             if (likely(!cur.isLeaf())) 
             {
               const Node* __restrict__ const node = cur.node();
@@ -286,7 +286,7 @@ namespace embree
       }
     }
 
-#elif 0
+#elif 1
 
 #if defined(__AVX512F__)
     static const size_t MAX_RAYS_PER_OCTANT = 64;
@@ -380,7 +380,9 @@ namespace embree
             /* context swap */
             if (likely(cur_next))
             {
+#if defined(__AVX512F__)
               cur_next.prefetchL1C();
+#endif
               std::swap(cur,cur_next);
               std::swap(m_trav_active,m_trav_active_next);
               std::swap(stackPtr,stackPtr_next);
@@ -460,8 +462,8 @@ namespace embree
               const vfloat<K> tFar   = mini(mini(tFarX,tFarY),mini(tFarZ,vfloat<K>(ray.org_rdir.w)));
               const vbool<K> vmask   = tNear <= tFar;
               dist   = select(vmask,min(tNear,dist),dist);
-              //maskK = maskK | (bitmask & vint<K>((__m256i)vmask));
-              maskK = select(vmask,maskK | bitmask,maskK); 
+              maskK = maskK | (bitmask & vint<K>(vmask));
+              //maskK = select(vmask,maskK | bitmask,maskK); 
 #else
               const vfloat<K> tNear  = max(tNearX,tNearY,tNearZ,vfloat<K>(ray.rdir.w));
               const vfloat<K> tFar   = min(tFarX ,tFarY ,tFarZ ,vfloat<K>(ray.org_rdir.w));
@@ -516,7 +518,7 @@ namespace embree
           assert(cur != BVH::emptyNode);
           STAT3(normal.trav_leaves, 1, 1, 1);
           size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
-
+          
           //STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
 
           size_t lazy_node = 0;
@@ -548,6 +550,11 @@ namespace embree
     
 #else
     
+#if defined(__AVX512F__)
+    static const size_t MAX_RAYS_PER_OCTANT = 64;
+#else
+    static const size_t MAX_RAYS_PER_OCTANT = 32;
+#endif
     
     template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
     void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, size_t flags)

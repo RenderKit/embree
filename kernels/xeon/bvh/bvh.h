@@ -185,7 +185,6 @@ namespace embree
           prefetchL1(((char*)ptr)+7*64);
         }
 #endif
-
       }
 
       __forceinline void prefetchLLC(int types=0) const {
