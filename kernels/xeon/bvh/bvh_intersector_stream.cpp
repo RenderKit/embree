@@ -36,7 +36,7 @@
 #include "../geometry/object_intersector.h"
 
 #define DBG(x) 
-// PRINT(x)
+//PRINT(x)
 
 #define BLANK  
 // DBG(std::cout << std::endl)
@@ -49,7 +49,7 @@ static const size_t MAX_RAYS_PER_OCTANT = 64;
 static const size_t MAX_RAYS_PER_OCTANT = 32;
 #endif
 
-#define ENABLE_FIBERS 1
+#define FIBERS 2
 
 namespace embree
 {
@@ -58,8 +58,237 @@ namespace embree
 
 #if defined(__AVX__)
 
-#if ENABLE_FIBERS == 1
+    
+#if 0
 
+    template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
+    void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, size_t flags)
+    {
+      __aligned(64) RayContext ray_ctx[MAX_RAYS_PER_OCTANT];
+      __aligned(64) Precalculations pre[MAX_RAYS_PER_OCTANT]; 
+      __aligned(64) StackItemMask  stacks[FIBERS][stackSizeSingle];  //!< stack of nodes 
+      for (size_t r=0;r<numTotalRays;r+=MAX_RAYS_PER_OCTANT)
+      {
+        Ray** __restrict__ rays = input_rays + r;
+        const size_t numOctantRays = (r + MAX_RAYS_PER_OCTANT >= numTotalRays) ? numTotalRays-r : MAX_RAYS_PER_OCTANT;
+
+        /* inactive rays should have been filtered out before */
+        size_t m_active = numOctantRays == 64 ? (size_t)-1 : (((size_t)1 << numOctantRays))-1;
+        assert(m_active);
+        for (size_t i=0;i<numOctantRays;i++)
+        {
+#if defined(__AVX512F__)
+          vfloat<K> org(vfloat4(rays[i]->org));
+          vfloat<K> dir(vfloat4(rays[i]->dir));
+          vfloat<K> rdir       = select(0x7777,rcp_safe(dir),rays[i]->tnear);
+          vfloat<K> org_rdir   = select(0x7777,org * rdir,rays[i]->tfar);
+          vfloat<K> res = select(0xf,rdir,org_rdir);
+          vfloat8 r = extractf256bit(res);
+          *(vfloat8*)&ray_ctx[i] = r;          
+#else
+          Vec3fa &org = rays[i]->org;
+          Vec3fa &dir = rays[i]->dir;
+          ray_ctx[i].rdir       = rcp_safe(dir);
+          ray_ctx[i].org_rdir   = org * ray_ctx[i].rdir;
+          ray_ctx[i].rdir.w     = rays[i]->tnear;
+          ray_ctx[i].org_rdir.w = rays[i]->tfar;
+#endif
+        }       
+        
+
+        /* stack sentinel */
+        for (size_t i=0;i<FIBERS;i++)
+          stacks[i][0].ptr = BVH::invalidNode;
+
+        size_t m_active_fibers = m_active & (((size_t)1 << FIBERS)-1);
+        m_active &= ~m_active_fibers;
+
+        DBG(__popcnt(m_active_fibers));
+        DBG(__popcnt(m_active));
+
+        for (size_t bits = m_active_fibers, i=__bsf(bits), fiberID = 0; bits!=0; bits=__btc(bits,i), i=__bsf(bits),fiberID++) 
+        {
+          DBG(i);
+          DBG(fiberID);
+
+          ray_ctx[i].cur      = bvh->root;
+          ray_ctx[i].stackPtr = &stacks[fiberID][1];
+          ray_ctx[i].fiberID  = fiberID;
+          ray_ctx[i].rayID    = i;
+        }
+                
+        ///////////////////////////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////////////
+#if defined(__AVX512F__)
+        const vint<K> id( step );
+        const vint<K> id2 = align_shift_right<K/2>(id,id);
+ 
+
+        const vint<K> permX = select(vfloat<K>(ray_ctx[0].rdir.x) >= 0.0f,id,id2);
+        const vint<K> permY = select(vfloat<K>(ray_ctx[0].rdir.y) >= 0.0f,id,id2);
+        const vint<K> permZ = select(vfloat<K>(ray_ctx[0].rdir.z) >= 0.0f,id,id2);
+        const vlong<K/2> one((size_t)1);
+#else
+        const size_t nearX = (rays[0]->dir.x < 0.0f) ? 1*sizeof(vfloat<N>) : 0*sizeof(vfloat<N>);
+        const size_t nearY = (rays[0]->dir.y < 0.0f) ? 3*sizeof(vfloat<N>) : 2*sizeof(vfloat<N>);
+        const size_t nearZ = (rays[0]->dir.z < 0.0f) ? 5*sizeof(vfloat<N>) : 4*sizeof(vfloat<N>);
+
+        const size_t farX  = nearX ^ sizeof(vfloat<N>);
+        const size_t farY  = nearY ^ sizeof(vfloat<N>);
+        const size_t farZ  = nearZ ^ sizeof(vfloat<N>);
+#endif
+
+        const vfloat<K> inf(pos_inf);
+        
+        while (m_active_fibers) 
+        {                    
+          DBG(__popcnt(m_active_fibers));
+          size_t m_cur_active_fibers = m_active_fibers;
+          DBG(__popcnt(m_cur_active_fibers));
+          do
+          {
+            assert(m_cur_active_fibers);
+            const size_t ctxID = __bscf(m_cur_active_fibers);
+            DBG(ctxID);
+            RayContext &ctx = ray_ctx[ctxID];
+            NodeRef cur     = ctx.cur;
+
+            if (likely(!cur.isLeaf())) 
+            {
+              const Node* __restrict__ const node = cur.node();
+              STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);
+              STAT3(normal.trav_nodes,1,1,1);                          
+
+#if defined(__AVX512F__)
+              const vfloat<K> bminmaxX = permute(vfloat<K>::load((float*)&node->lower_x),permX);
+              const vfloat<K> bminmaxY = permute(vfloat<K>::load((float*)&node->lower_y),permY);
+              const vfloat<K> bminmaxZ = permute(vfloat<K>::load((float*)&node->lower_z),permZ);
+
+              const vfloat<K> tNearFarX = msub(bminmaxX, ctx.rdir.x, ctx.org_rdir.x);
+              const vfloat<K> tNearFarY = msub(bminmaxY, ctx.rdir.y, ctx.org_rdir.y);
+              const vfloat<K> tNearFarZ = msub(bminmaxZ, ctx.rdir.z, ctx.org_rdir.z);
+              const vfloat<K> tNear     = max(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(ctx.rdir.w));
+              const vfloat<K> tFar      = min(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(ctx.org_rdir.w));
+              const vbool<K> vmask      = le(0xff,tNear,align_shift_right<8>(tFar,tFar));                
+              if (unlikely(none(vmask))) 
+              {
+                /*! pop next node */
+                STAT3(normal.trav_stack_pop,1,1,1);                          
+                ctx.stackPtr--;
+                ctx.cur = NodeRef(ctx.stackPtr->ptr);
+              }
+              else                
+              {
+                BVHNNodeTraverserKHit<types,N,K>::traverseClosestHit(cur, vmask, tNear, ctx.stackPtr);
+                ctx.cur = cur;
+              }                
+
+
+#else
+              const vfloat<K> bminX = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+nearX));
+              const vfloat<K> bminY = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+nearY));
+              const vfloat<K> bminZ = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+nearZ));
+              const vfloat<K> bmaxX = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+farX));
+              const vfloat<K> bmaxY = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+farY));
+              const vfloat<K> bmaxZ = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+farZ));
+
+              const vfloat<K> tNearX = msub(bminX, ctx.rdir.x, ctx.org_rdir.x);
+              const vfloat<K> tNearY = msub(bminY, ctx.rdir.y, ctx.org_rdir.y);
+              const vfloat<K> tNearZ = msub(bminZ, ctx.rdir.z, ctx.org_rdir.z);
+              const vfloat<K> tFarX  = msub(bmaxX, ctx.rdir.x, ctx.org_rdir.x);
+              const vfloat<K> tFarY  = msub(bmaxY, ctx.rdir.y, ctx.org_rdir.y);
+              const vfloat<K> tFarZ  = msub(bmaxZ, ctx.rdir.z, ctx.org_rdir.z);
+#if defined(__AVX2__)
+              const vfloat<K> tNear  = maxi(maxi(tNearX,tNearY),maxi(tNearZ,vfloat<K>(ctx.rdir.w)));
+              const vfloat<K> tFar   = mini(mini(tFarX,tFarY),mini(tFarZ,vfloat<K>(ctx.org_rdir.w)));
+              const vbool<K> vmask   = tNear <= tFar;
+#else
+              const vfloat<K> tNear  = max(tNearX,tNearY,tNearZ,vfloat<K>(ctx.rdir.w));
+              const vfloat<K> tFar   = min(tFarX ,tFarY ,tFarZ ,vfloat<K>(ctx.org_rdir.w));
+              const vbool<K> vmask   = tNear <= tFar;
+#endif
+              if (unlikely(none(vmask))) 
+              {
+                /*! pop next node */
+                STAT3(normal.trav_stack_pop,1,1,1);                          
+                assert(ctx.stackPtr >= &stacks[ctx.fiberID][0]);
+                ctx.stackPtr--;
+                ctx.cur = NodeRef(ctx.stackPtr->ptr);
+              }
+              else
+              {
+#if defined(__AVX2__)
+                BVHNNodeTraverserKHit<types,N,K>::traverseClosestHit(cur, vmask, tNear, ctx.stackPtr);
+#else
+                FATAL("not yet implemented");
+#endif
+                ctx.cur = cur;
+              }
+
+#endif
+            }
+            else
+            {
+              DBG("INTERSECTION");
+
+              /* current ray terminated? */
+              if (unlikely(cur == BVH::invalidNode))
+              {
+                DBG("TERMINATE");
+                /* deactivate current ray */
+                m_active_fibers ^= (size_t)1 << ctx.rayID;
+
+                DBG(__popcnt(m_active));
+
+                /* refill */
+                if (m_active)
+                {
+                  DBG("REFILL");
+
+                  const size_t newID = __bscf(m_active);
+                  DBG(newID);
+                  DBG(ctx.fiberID);
+                  DBG(__popcnt(m_active));
+
+                  m_active_fibers |= (size_t)1 << newID;
+                  ray_ctx[newID].cur      = bvh->root;
+                  ray_ctx[newID].stackPtr = &stacks[ctx.fiberID][1];
+                  ray_ctx[newID].fiberID  = ctx.fiberID;
+                  ray_ctx[newID].rayID    = newID;
+                }                  
+              }
+              else
+              {
+
+                /*! this is a leaf node */
+                assert(cur != BVH::emptyNode);
+                STAT3(normal.trav_leaves, 1, 1, 1);
+                size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
+
+                //STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
+
+                size_t lazy_node = 0;
+                PrimitiveIntersector::intersect(pre[ctx.rayID],*rays[ctx.rayID],0,prim,num,bvh->scene,NULL,lazy_node);
+                ctx.org_rdir.w = rays[ctx.rayID]->tfar;
+
+                STAT3(normal.trav_stack_pop,1,1,1);                          
+                assert(ctx.stackPtr >= &stacks[ctx.fiberID][0]);
+                ctx.stackPtr--;
+                ctx.cur = NodeRef(ctx.stackPtr->ptr);
+                
+              }
+            } // intersection
+          } while (m_cur_active_fibers);
+          
+          ///////////////////////////////////////////////////////////////////////////////////
+          ///////////////////////////////////////////////////////////////////////////////////
+          ///////////////////////////////////////////////////////////////////////////////////
+        }
+      }
+    }
+
+#elif 1
     template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
     void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, size_t flags)
     {
