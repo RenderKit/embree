@@ -285,12 +285,12 @@ namespace embree
           size_t lazy_node = 0;
           size_t bits = m_trav_active;
           size_t m_valid_intersection = 0;
-          for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) 
-          {
+          do {
+            const size_t i = __bscf(bits);
             PrimitiveIntersector::intersect(pre[i],*(rays[i]),0,prim,num,bvh->scene,NULL,lazy_node);
             m_valid_intersection |= rays[i]->tfar < ray_ctx[i].org_rdir.w ? ((size_t)1 << i) : 0;
             ray_ctx[i].org_rdir.w = rays[i]->tfar;
-          }
+          } while(unlikely(bits));
 
           /*! pop next node */
           STAT3(normal.trav_stack_pop,1,1,1);                          
@@ -531,13 +531,14 @@ namespace embree
 
           size_t lazy_node = 0;
           size_t bits = m_trav_active & m_active;
-          size_t m_valid_intersection = 0;
-          for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) 
+          do {
+            const size_t i = __bscf(bits);
             if (PrimitiveIntersector::occluded(pre[i],*(rays[i]),0,prim,num,bvh->scene,NULL,lazy_node))
             {
               m_active &= ~((size_t)1 << i);
               rays[i]->geomID = 0;
             }
+          } while(bits);
 
           if (unlikely(m_active == 0)) break;
 
@@ -681,13 +682,13 @@ namespace embree
 
           size_t lazy_node = 0;
           size_t bits = m_trav_active;
-          size_t m_valid_intersection = 0;
-          for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) 
-          {
+          do {
+            const size_t i = __bscf(bits);
             PrimitiveIntersector::intersect(pre[i],*(rays[i]),0,prim,num,bvh->scene,NULL,lazy_node);
             m_valid_intersection |= rays[i]->tfar < ray_ctx[i].org_rdir.w ? ((size_t)1 << i) : 0;
             ray_ctx[i].org_rdir.w = rays[i]->tfar;
-          }
+          } while(bits);
+          
 
         } // traversal + intersection
         ///////////////////////////////////////////////////////////////////////////////////
@@ -790,13 +791,12 @@ namespace embree
 
           size_t lazy_node = 0;
           size_t bits = m_trav_active;
-          size_t m_valid_intersection = 0;
-          for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) 
-          {
+          do {
+            const size_t i = __bscf(bits);
             PrimitiveIntersector::intersect(pre[i],*(rays[i]),0,prim,num,bvh->scene,NULL,lazy_node);
             m_valid_intersection |= rays[i]->tfar < ray_ctx[i].org_rdir.w ? ((size_t)1 << i) : 0;
             ray_ctx[i].org_rdir.w = rays[i]->tfar;
-          }
+          } while(bits);
 
         } // traversal + intersection
 
