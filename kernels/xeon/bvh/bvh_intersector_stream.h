@@ -174,10 +174,10 @@ namespace embree
         }
       }
 
-      template<class T>
+      template<class T, class M>
       static __forceinline void traverseAnyHit(NodeRef& cur,
                                                size_t &m_trav_active,
-                                               const vbool<K> &vmask,
+                                               const M &vmask,
                                                const T * const tMask,
                                                StackItemMask*& stackPtr)
       {
