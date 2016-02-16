@@ -233,14 +233,7 @@ namespace embree
 
       struct __aligned(64) RayContext {
         Vec3fa rdir;      //     rdir.w = tnear;
-        Vec3fa org_rdir;  // org_rdir.w = tfar;
-#if 1
-        NodeRef cur;
-        StackItemMask *stackPtr;
-        size_t fiberID;
-        size_t rayID;
-#endif
-        
+        Vec3fa org_rdir;  // org_rdir.w = tfar;        
       };
 
 

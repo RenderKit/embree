@@ -19,7 +19,7 @@
 #include "../scenegraph/texture.h"
 #include "scene_device.h"
 
-#define TEST_STREAM_TRACING 0
+#define TEST_STREAM_TRACING 1
 
 /* the scene to render */
 extern RTCScene g_scene;

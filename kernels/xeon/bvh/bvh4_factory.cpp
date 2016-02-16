@@ -124,6 +124,9 @@ namespace embree
   DECLARE_SYMBOL2(Accel::Intersector16,BVH4VirtualMBIntersector16Chunk);
 
   DECLARE_SYMBOL2(Accel::IntersectorN, BVH4Triangle4StreamIntersector);
+  DECLARE_SYMBOL2(Accel::IntersectorN, BVH4Triangle4StreamIntersectorNoFilter);
+  DECLARE_SYMBOL2(Accel::IntersectorN, BVH4Quad4vStreamIntersector);
+  DECLARE_SYMBOL2(Accel::IntersectorN, BVH4Quad4vStreamIntersectorNoFilter);
 
   DECLARE_BUILDER2(void,Scene,const createLineSegmentsAccelTy,BVH4BuilderTwoLevelLineSegmentsSAH);
   DECLARE_BUILDER2(void,Scene,const createTriangleMeshAccelTy,BVH4BuilderTwoLevelTriangleMeshSAH);
@@ -331,6 +334,9 @@ namespace embree
 
     /* select stream intersectors */
     SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH4Triangle4StreamIntersector);
+    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH4Triangle4StreamIntersectorNoFilter);
+    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH4Quad4vStreamIntersector);
+    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH4Quad4vStreamIntersectorNoFilter);
 
 #endif
   }
@@ -424,7 +430,7 @@ namespace embree
     intersectors.intersector16_filter   = BVH4Triangle4Intersector16HybridMoeller;
     intersectors.intersector16_nofilter = BVH4Triangle4Intersector16HybridMoellerNoFilter;
     intersectors.intersectorN_filter    = BVH4Triangle4StreamIntersector;
-    intersectors.intersectorN_nofilter  = BVH4Triangle4StreamIntersector;
+    intersectors.intersectorN_nofilter  = BVH4Triangle4StreamIntersectorNoFilter;
     return intersectors;
   }
 
@@ -494,6 +500,8 @@ namespace embree
     intersectors.intersector8_nofilter  = BVH4Quad4vIntersector8HybridMoellerNoFilter;
     intersectors.intersector16_filter   = BVH4Quad4vIntersector16HybridMoeller;
     intersectors.intersector16_nofilter = BVH4Quad4vIntersector16HybridMoellerNoFilter;
+    intersectors.intersectorN_filter    = BVH4Quad4vStreamIntersector;
+    intersectors.intersectorN_nofilter  = BVH4Quad4vStreamIntersectorNoFilter;
     return intersectors;
   }
 

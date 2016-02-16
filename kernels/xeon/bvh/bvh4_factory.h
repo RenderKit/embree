@@ -199,7 +199,10 @@ namespace embree
     DEFINE_SYMBOL2(Accel::Intersector16,BVH4VirtualMBIntersector16Chunk);
 
     DEFINE_SYMBOL2(Accel::IntersectorN,BVH4Triangle4StreamIntersector);
+    DEFINE_SYMBOL2(Accel::IntersectorN,BVH4Triangle4StreamIntersectorNoFilter);
 
+    DEFINE_SYMBOL2(Accel::IntersectorN,BVH4Quad4vStreamIntersector);
+    DEFINE_SYMBOL2(Accel::IntersectorN,BVH4Quad4vStreamIntersectorNoFilter);
     
     DEFINE_BUILDER2(void,Scene,const createLineSegmentsAccelTy,BVH4BuilderTwoLevelLineSegmentsSAH);
     DEFINE_BUILDER2(void,Scene,const createTriangleMeshAccelTy,BVH4BuilderTwoLevelTriangleMeshSAH);
