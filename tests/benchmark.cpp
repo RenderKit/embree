@@ -457,6 +457,7 @@ namespace embree
 
   char* benchmark_bandwidth::ptr = nullptr;
 
+#if 0
   RTCRay makeRay(Vec3f org, Vec3f dir) 
   {
     RTCRay ray;
@@ -464,6 +465,20 @@ namespace embree
     ray.dir[0] = dir.x; ray.dir[1] = dir.y; ray.dir[2] = dir.z;
     ray.tnear = 0.0f; ray.tfar = inf;
     ray.time = 0; ray.mask = -1;
+    ray.geomID = ray.primID = ray.instID = -1;
+    return ray;
+  }
+#endif
+
+  RTCRay makeRay(const Vec3fa &org, const Vec3fa &dir) 
+  {
+    RTCRay ray;
+    *(Vec3fa*)ray.org = org;
+    *(Vec3fa*)ray.dir = dir;
+    ray.tnear = 0.0f; 
+    ray.tfar = inf;
+    ray.time = 0; 
+    ray.mask = -1;
     ray.geomID = ray.primID = ray.instID = -1;
     return ray;
   }
@@ -999,7 +1014,7 @@ namespace embree
       size_t threadCount = g_num_threads;
 
       srand48(threadIndex*334124);
-      Vec3f* numbers = new Vec3f[N];
+      Vec3fa* numbers = new Vec3fa[N];
 #if 0
       assert(N % 16 == 0);
       for (size_t i=0; i<N; i++) {
@@ -1017,7 +1032,7 @@ namespace embree
         float x = 2.0f*drand48()-1.0f;
         float y = 2.0f*drand48()-1.0f;
         float z = 2.0f*drand48()-1.0f;
-        numbers[i] = Vec3f(x,y,z);
+        numbers[i] = Vec3fa(x,y,z);
       }
 #endif
 
@@ -1026,7 +1041,7 @@ namespace embree
 
       for (size_t p=0;p<g_profile_loop_iterations;p++)
         for (size_t i=0; i<N; i++) {
-          RTCRay ray = makeRay(zero,numbers[i]);
+          RTCRay ray = makeRay(Vec3fa(zero),numbers[i]);
           if (intersect)
             rtcIntersect(scene,ray);
           else
@@ -1127,7 +1142,7 @@ namespace embree
       for (size_t i=0; i<N; i+=16) {
         RTCRay16 ray16;
         for (size_t j=0;j<16;j++)        
-          setRay(ray16,j,makeRay(zero,numbers[i+j]));
+          setRay(ray16,j,makeRay(Vec3fa(zero),numbers[i+j]));
         if (intersect)
           rtcIntersect16(valid16,scene,ray16);
         else
@@ -1202,12 +1217,12 @@ namespace embree
       size_t threadCount = g_num_threads;
 
       srand48(threadIndex*334124);
-      Vec3f* numbers = new Vec3f[N];
+      Vec3fa* numbers = new Vec3fa[N];
       for (size_t i=0; i<N; i++) {
         float x = 2.0f*drand48()-1.0f;
         float y = 2.0f*drand48()-1.0f;
         float z = 2.0f*drand48()-1.0f;
-        numbers[i] = Vec3f(x,y,z);
+        numbers[i] = Vec3fa(x,y,z);
       }
 
 
@@ -1220,7 +1235,7 @@ namespace embree
         RTCRay rays[STREAM_SIZE];
         for (size_t j=0;j<STREAM_SIZE;j++)        
         {
-          rays[j] = makeRay(zero,numbers[i+j]);
+          rays[j] = makeRay(Vec3fa(zero),numbers[i+j]);
         }
         if (intersect)
           rtcIntersectN(scene,rays,STREAM_SIZE,sizeof(RTCRay),RTC_RAYN_DEFAULT);
@@ -1310,7 +1325,7 @@ namespace embree
           size_t index=0;
           for (size_t y=yy;y<yy+COHERENT_STREAM_TILE_Y;y++)
             for (size_t x=xx;x<xx+COHERENT_STREAM_TILE_X;x++)
-              rays[index++] = makeRay(zero,Vec3f(float(x)*rcpWidth,1,float(y)*rcpHeight));
+              rays[index++] = makeRay(Vec3fa(zero),Vec3fa(float(x)*rcpWidth,1,float(y)*rcpHeight));
           rtcIntersectN(scene,rays,index,sizeof(RTCRay),RTC_RAYN_DEFAULT);
         }
       }

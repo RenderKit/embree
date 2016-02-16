@@ -380,9 +380,6 @@ namespace embree
             /* context swap */
             if (likely(cur_next))
             {
-#if defined(__AVX512F__)
-              cur_next.prefetchL1C();
-#endif
               std::swap(cur,cur_next);
               std::swap(m_trav_active,m_trav_active_next);
               std::swap(stackPtr,stackPtr_next);
@@ -472,6 +469,7 @@ namespace embree
               maskK = select(vmask,maskK | bitmask,maskK); 
 #endif
             } while(bits);              
+
             const vbool<K> vmask = dist < inf;
             if (unlikely(none(vmask))) 
             {
@@ -536,6 +534,7 @@ namespace embree
           // todo: directly assign to *_next
           stackPtr--;
           cur = NodeRef(stackPtr->ptr);
+
           m_trav_active = stackPtr->mask;
           assert(m_trav_active);
         } // traversal + intersection

@@ -25,7 +25,7 @@ ENDMACRO ()
 
 IF (ENABLE_ISPC_SUPPORT)
 
-SET(ISPC_VERSION_REQUIRED "1.8.2")
+SET(ISPC_VERSION_REQUIRED "1.9")
 
 IF (NOT ISPC_EXECUTABLE)
   # try sibling folder as hint for path of ISPC
@@ -132,7 +132,8 @@ MACRO (ISPC_COMPILE)
       LIST(LENGTH ISPC_TARGETS NUM_TARGETS)
       IF (NUM_TARGETS GREATER 1)
         FOREACH(target ${ISPC_TARGETS})
-          SET(results ${results} "${outdir}/${fname}.dev_${target}${ISPC_TARGET_EXT}")
+          STRING(REPLACE "-i32x16" "" targetname "${target}")
+          SET(results ${results} "${outdir}/${fname}.dev_${targetname}${ISPC_TARGET_EXT}")
         ENDFOREACH()
       ENDIF()
     ENDIF()
