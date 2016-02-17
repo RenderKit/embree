@@ -43,11 +43,11 @@ namespace embree
     __forceinline operator __m256i () const { return _mm512_castsi512_si256(v); }
 
     __forceinline vlong(const long i) {
-      v = _mm512_set_1to8_epi64(i);
+      v = _mm512_set1_epi64(i);
     }
 
     __forceinline vlong(const unsigned long i) {
-      v = _mm512_set_1to8_epi64(i);
+      v = _mm512_set1_epi64(i);
     }
     
     __forceinline vlong(const long a, const long b, const long c, const long d) {
@@ -118,6 +118,10 @@ namespace embree
 
     static __forceinline vlong8 compact64bit(const vboold8& mask, vlong8 &v) {
       return _mm512_mask_compress_epi64(v,mask,v);
+    }
+
+    static __forceinline vlong8 compact64bit(const vboold8& mask, vlong8 &dest, const vlong8 &source) {
+      return _mm512_mask_compress_epi64(dest,mask,source);
     }
 
     static __forceinline vlong8 compact(const vboold8& mask, vlong8 &v) {
