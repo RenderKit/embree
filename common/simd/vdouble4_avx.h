@@ -18,6 +18,8 @@
 
 namespace embree
 { 
+#if defined(__AVX__) && defined(__X86_64__)
+
 #define _MM_SHUF_PERM2(e3, e2, e1, e0) \
   ((int)(((e3)<<3) | ((e2)<<2) | ((e1)<<1) | (e0)))
 
@@ -281,4 +283,5 @@ namespace embree
     cout << ">";
     return cout;
   }
+#endif
 }
