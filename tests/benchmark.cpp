@@ -457,18 +457,6 @@ namespace embree
 
   char* benchmark_bandwidth::ptr = nullptr;
 
-#if 0
-  RTCRay makeRay(Vec3f org, Vec3f dir) 
-  {
-    RTCRay ray;
-    ray.org[0] = org.x; ray.org[1] = org.y; ray.org[2] = org.z;
-    ray.dir[0] = dir.x; ray.dir[1] = dir.y; ray.dir[2] = dir.z;
-    ray.tnear = 0.0f; ray.tfar = inf;
-    ray.time = 0; ray.mask = -1;
-    ray.geomID = ray.primID = ray.instID = -1;
-    return ray;
-  }
-#endif
 
   RTCRay makeRay(const Vec3fa &org, const Vec3fa &dir) 
   {
@@ -481,6 +469,17 @@ namespace embree
     ray.mask = -1;
     ray.geomID = ray.primID = ray.instID = -1;
     return ray;
+  }
+
+  __forceinline void setRay(RTCRay &ray, const Vec3fa &org, const Vec3fa &dir) 
+  {
+    *(Vec3fa*)ray.org = org;
+    *(Vec3fa*)ray.dir = dir;
+    ray.tnear = 0.0f; 
+    ray.tfar = inf;
+    ray.time = 0; 
+    ray.mask = -1;
+    ray.geomID = ray.primID = ray.instID = -1;
   }
 
   RTCRay makeRay(Vec3f org, Vec3f dir, float tnear, float tfar) 
@@ -1141,8 +1140,13 @@ namespace embree
       for (size_t p=0;p<g_profile_loop_iterations;p++)
       for (size_t i=0; i<N; i+=16) {
         RTCRay16 ray16;
+        
         for (size_t j=0;j<16;j++)        
-          setRay(ray16,j,makeRay(Vec3fa(zero),numbers[i+j]));
+        {
+          RTCRay ray;
+          setRay(ray,Vec3fa(zero),numbers[i+j]);
+          setRay(ray16,j,ray);
+        }
         if (intersect)
           rtcIntersect16(valid16,scene,ray16);
         else
@@ -1234,9 +1238,8 @@ namespace embree
       for (size_t i=0; i<N; i+=STREAM_SIZE) {
         RTCRay rays[STREAM_SIZE];
         for (size_t j=0;j<STREAM_SIZE;j++)        
-        {
-          rays[j] = makeRay(Vec3fa(zero),numbers[i+j]);
-        }
+          setRay(rays[j],Vec3fa(zero),numbers[i+j]);
+
         if (intersect)
           rtcIntersectN(scene,rays,STREAM_SIZE,sizeof(RTCRay),RTC_RAYN_DEFAULT);
         else

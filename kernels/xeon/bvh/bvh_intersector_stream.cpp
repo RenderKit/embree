@@ -148,7 +148,6 @@ namespace embree
                 const vfloat<K> tNear     = max(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(ray.rdir.w));
                 const vfloat<K> tFar      = min(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(ray.org_rdir.w));
                 const vbool<K> vmask      = le(tNear,align_shift_right<8>(tFar,tFar));                
-                //const vint<K> bitmask  = vint<K>((size_t)1 << i);
                 const vlong<K/2> bitmask  = one << vlong<K/2>(i);
                 dist   = select(vmask,min(tNear,dist),dist);
                 maskK = mask_or((vboold8)vmask,maskK,maskK,bitmask);
@@ -200,7 +199,6 @@ namespace embree
               const vbool<K> vmask   = tNear <= tFar;
               dist   = select(vmask,min(tNear,dist),dist);
               maskK = maskK | (bitmask & vint<K>(vmask));
-              //maskK = select(vmask,maskK | bitmask,maskK); 
 #else
               const vfloat<K> tNear  = max(tNearX,tNearY,tNearZ,vfloat<K>(ray.rdir.w));
               const vfloat<K> tFar   = min(tFarX ,tFarY ,tFarZ ,vfloat<K>(ray.org_rdir.w));
@@ -223,13 +221,8 @@ namespace embree
               goto pop;
             }
 
-#if defined(__AVX2__)
             BVHNNodeTraverserKHit<types,N,K>::traverseClosestHit(cur, m_trav_active, vmask, dist, (unsigned int*)&maskK, stackPtr);
             assert(m_trav_active);
-#else
-            FATAL("not yet implemented");
-#endif
-
 #endif
           }
           DBG("INTERSECTION");
@@ -429,8 +422,7 @@ namespace embree
               const vfloat<K> tFar   = mini(mini(tFarX,tFarY),mini(tFarZ,vfloat<K>(ray.org_rdir.w)));
               const vbool<K> vmask   = tNear <= tFar;
               dist   = select(vmask,min(tNear,dist),dist);
-              maskK = select(vmask,maskK | bitmask,maskK); 
-              //maskK = maskK | (bitmask & vint<K>((__m256i)vmask));
+              maskK = maskK | (bitmask & vint<K>(vmask));
 #else
               const vfloat<K> tNear  = max(tNearX,tNearY,tNearZ,vfloat<K>(ray.rdir.w));
               const vfloat<K> tFar   = min(tFarX ,tFarY ,tFarZ ,vfloat<K>(ray.org_rdir.w));

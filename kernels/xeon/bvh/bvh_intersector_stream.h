@@ -90,8 +90,11 @@ namespace embree
 #if defined(__AVX512F__)
         const vint8 tmp = _mm512_castsi512_si256(dist_i);
         const vint<K> dist_i_sorted = sortNetwork(tmp);
-#else
+#elif defined(__AVX2__)
         const vint<K> dist_i_sorted = sortNetwork(dist_i);
+#else
+        const vint<K> dist_i_sorted = asInt(sortNetwork(asFloat(dist_i)));
+
 #endif
         const vint<K> sorted_index = dist_i_sorted & 7;
 
