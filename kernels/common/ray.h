@@ -398,9 +398,9 @@ namespace embree
 
     __forceinline bool isValidByOffset(const size_t offset)
     {
-      const float near = tnear ? *(float* __restrict__ )((char*)tnear + offset) : 0.0f;
-      const float far  = *(float* __restrict__ )((char*)tfar  + offset);
-      return near <= far;
+      const float nnear = tnear ? *(float* __restrict__ )((char*)tnear + offset) : 0.0f;
+      const float ffar  = *(float* __restrict__ )((char*)tfar  + offset);
+      return nnear <= ffar;
     }
 
   };
