@@ -34,6 +34,7 @@
 #include "../geometry/subdivpatch1cached_intersector1.h"
 #include "../geometry/subdivpatch1cached.h"
 #include "../geometry/object_intersector.h"
+#include "../../common/scene.h"
 
 #define DBG(x) 
 //PRINT(x)
@@ -539,6 +540,7 @@ namespace embree
 
   }
 }
+
 
 
 // ===================================================================================================================================================================

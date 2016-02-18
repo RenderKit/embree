@@ -299,8 +299,13 @@ namespace embree
 
     /*! Intersects a packet of N rays in SOA layout with the scene. */
     __forceinline void intersectN (RTCRay **rayN, const size_t N, const size_t flags) {
-      assert(intersectors.intersectorN.intersect);
-      intersectors.intersectorN.intersect(intersectors.ptr,rayN, N, flags);
+      //assert(intersectors.intersectorN.intersect);
+      if (likely(intersectors.intersectorN.intersect))
+        intersectors.intersectorN.intersect(intersectors.ptr,rayN, N, flags);
+      else
+        /* fallback path */
+        for (size_t i=0;i<N;i++)
+          intersect(*rayN[i]);
     }
 
     /*! Tests if single ray is occluded by the scene. */
@@ -329,8 +334,13 @@ namespace embree
 
     /*! Tests if a packet of N rays in SOA layout is occluded by the scene. */
     __forceinline void occludedN (RTCRay** rayN, const size_t N, const size_t flags) {
-      assert(intersectors.intersectorN.occluded);
-      intersectors.intersectorN.occluded(intersectors.ptr,rayN, N, flags);
+      //assert(intersectors.intersectorN.occluded);
+      if(likely(intersectors.intersectorN.occluded))
+        intersectors.intersectorN.occluded(intersectors.ptr,rayN, N, flags);
+      else
+        /* fallback path */
+        for (size_t i=0;i<N;i++)
+          occluded(*rayN[i]);
     }
 
   public:

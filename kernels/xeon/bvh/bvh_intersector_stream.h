@@ -86,19 +86,12 @@ namespace embree
         }
         /*! slow path for more than two hits */
         const size_t hits = __popcnt(movemask(vmask));
-#if defined(__AVX512F__)
         const vint<K> dist_i = select(vmask,(asInt(tNear) & 0xfffffff8) | vint<K>( step ),0x7fffffff);
+#if defined(__AVX512F__)
         const vint8 tmp = _mm512_castsi512_si256(dist_i);
         const vint<K> dist_i_sorted = sortNetwork(tmp);
-#elif defined(__AVX2__)
-        const vint<K> dist_i = select(vmask,(asInt(tNear) & 0xfffffff8) | vint<K>( step ),0x7fffffff);
-        const vint<K> dist_i_sorted = sortNetwork(dist_i);
 #else
-        const vint<K> dist_i = select(vmask,(asInt(tNear) & 0xfffffff8) | vint<K>( step ),0x7fffffff);
-        __aligned(64) unsigned int distK[K];
-        vint<K>::store(distK,dist_i);
-        insertionsort_ascending(distK,K);
-        const vint<K> dist_i_sorted = vint<K>::load(distK);
+        const vint<K> dist_i_sorted = sortNetwork(dist_i);
 #endif
         const vint<K> sorted_index = dist_i_sorted & 7;
 
@@ -241,8 +234,6 @@ namespace embree
       static void intersect(BVH* bvh, Ray **ray, size_t numRays, size_t flags);
       static void occluded (BVH* bvh, Ray **ray, size_t numRays, size_t flags);
     };
-
-
 
   }
 }
