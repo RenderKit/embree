@@ -175,6 +175,40 @@ namespace embree
         Vec3fa org_rdir;  // org_rdir.w = tfar;        
       };
 
+      struct __aligned(32) RayFiberContext {
+        NodeRef node;
+        size_t mask;
+        StackItemMask* stackPtr;
+        RayFiberContext *next;
+
+        __forceinline void init(NodeRef _node,
+                                size_t  _mask,
+                                StackItemMask* _stackPtr,
+                                RayFiberContext *_next)
+        {
+          node = _node;
+          mask = _mask;
+          stackPtr = _stackPtr;
+          next = _next;
+        }
+
+        __forceinline RayFiberContext *swapContext(NodeRef &_node,
+                                                   size_t  &_mask,
+                                                   StackItemMask*&_stackPtr)
+        {
+          node = _node;
+          mask = _mask;
+          stackPtr = _stackPtr;          
+          assert(next);
+          _node     = next->node;
+          _mask     = next->mask;
+          _stackPtr = next->stackPtr;          
+          return next;
+        }
+                           
+      };
+
+
       struct NearFarPreCompute
       {
 #if defined(__AVX512F__)

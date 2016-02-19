@@ -54,6 +54,7 @@ namespace embree
 
     
 #define MULTI_CONTEXT 1
+#define FIBERS 0
 
     template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
     void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, size_t flags)
@@ -102,6 +103,15 @@ namespace embree
         NodeRef cur_next          = bvh->root;
         size_t m_trav_active_next = m_active & (~fiberMask); // upper half of active rays
         if (m_trav_active_next == 0) cur_next = 0;
+
+#if FIBERS == 1
+        RayFiberContext fiber[2];
+        fiber[0].init(cur,m_trav_active,stackPtr,&fiber[1]);
+        fiber[1].init(cur_next,m_trav_active_next,stackPtr_next,&fiber[0]);
+        if (m_trav_active_next == 0) fiber[0].next = &fiber[0];
+        RayFiberContext *cur_fiber = &fiber[0];
+#endif
+
 #else
         StackItemMask* stackPtr = stack0 + 1;
         NodeRef cur             = bvh->root;
@@ -115,12 +125,18 @@ namespace embree
           {
 #if MULTI_CONTEXT == 1
             /* context swap */
+
+#if FIBERS == 0
             if (likely(cur_next))
             {
               std::swap(cur,cur_next);
               std::swap(m_trav_active,m_trav_active_next);
               std::swap(stackPtr,stackPtr_next);
             }
+#else
+            cur_fiber = cur_fiber->swapContext(cur,m_trav_active,stackPtr);
+#endif
+
 #endif
 
             if (unlikely(cur.isLeaf())) break;
@@ -229,6 +245,8 @@ namespace embree
           if (unlikely(cur == BVH::invalidNode))
           {
 #if MULTI_CONTEXT == 1
+
+#if FIBERS == 0
             /* both ray streams are done? */ 
             if (unlikely(cur_next == 0)) 
               break;
@@ -240,6 +258,16 @@ namespace embree
               cur_next      = 0;
               goto pop;
             }
+#else
+            if (cur_fiber->next == cur_fiber)
+              break;
+            else
+            {
+              cur_fiber->next->next = cur_fiber->next;
+              goto pop;
+            }
+#endif
+
 #else
             break;
 #endif
