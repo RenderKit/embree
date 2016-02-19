@@ -125,7 +125,7 @@ namespace embree
 
             if (unlikely(cur.isLeaf())) break;
                 const Node* __restrict__ const node = cur.node();
-            STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);
+                STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);
 #if defined(__AVX512F__)
             const vlong<K/2> one((size_t)1);
 
@@ -160,7 +160,6 @@ namespace embree
               {
                 /*! pop next node */
                 STAT3(normal.trav_stack_pop,1,1,1);                          
-                // todo: directly assign to *_next
                 stackPtr--;
                 cur = NodeRef(stackPtr->ptr);
                 m_trav_active = stackPtr->mask;
@@ -214,7 +213,6 @@ namespace embree
             {
               /*! pop next node */
               STAT3(normal.trav_stack_pop,1,1,1);                          
-              // todo: directly assign to *_next
               stackPtr--;
               cur = NodeRef(stackPtr->ptr);
               m_trav_active = stackPtr->mask;
@@ -226,7 +224,6 @@ namespace embree
             assert(m_trav_active);
 #endif
           }
-          DBG("INTERSECTION");
 
           /* current ray stream is done? */
           if (unlikely(cur == BVH::invalidNode))
@@ -267,7 +264,6 @@ namespace embree
 
           /*! pop next node */
           STAT3(normal.trav_stack_pop,1,1,1);                          
-          // todo: directly assign to *_next
           stackPtr--;
           cur = NodeRef(stackPtr->ptr);
 
@@ -437,7 +433,6 @@ namespace embree
             {
               /*! pop next node */
               STAT3(shadow.trav_stack_pop,1,1,1);                          
-              //if (unlikely(stackPtr == stack)) break;
               do {
                 stackPtr--;
                 cur = NodeRef(stackPtr->ptr);
@@ -452,7 +447,6 @@ namespace embree
 #endif
 
           }
-          DBG("INTERSECTION");
 
           /* current ray stream is done? */
           if (unlikely(cur == BVH::invalidNode))
@@ -479,10 +473,11 @@ namespace embree
           STAT3(shadow.trav_leaves, 1, 1, 1);
           size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
 
-          //STAT3(shadow.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
 
           size_t lazy_node = 0;
           size_t bits = m_trav_active & m_active;
+          //STAT3(shadow.trav_hit_boxes[__popcnt(bits)],1,1,1);                          
+
           do {
             const size_t i = __bscf(bits);
             if (PrimitiveIntersector::occluded(pre[i],*(rays[i]),0,prim,num,bvh->scene,NULL,lazy_node))
