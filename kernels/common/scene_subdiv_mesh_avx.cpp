@@ -25,7 +25,7 @@ namespace embree
                                size_t numCreases, size_t numCorners, size_t numHoles, size_t numTimeSteps)
                                : SubdivMesh(parent,flags,numFaces,numEdges,numVertices,numCreases,numCorners,numHoles,numTimeSteps) {}
     
-  void SubdivMeshAVX::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats) 
+  void SubdivMeshAVX::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats) 
   {
 #if defined(DEBUG)
     if ((parent->aflags & RTC_INTERPOLATE) == 0) 
@@ -81,7 +81,7 @@ namespace embree
   
   template<typename vbool, typename vint, typename vfloat>
   void SubdivMeshAVX::interpolateHelper(const vbool& valid1, const vint& primID, const vfloat& uu, const vfloat& vv, size_t numUVs, 
-                                        RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats)
+                                        RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats)
   {
     /* calculate base pointer and stride */
     assert((buffer >= RTC_VERTEX_BUFFER0 && buffer <= RTC_VERTEX_BUFFER1) ||
@@ -125,7 +125,7 @@ namespace embree
   }
 
   void SubdivMeshAVX::interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
-                                   RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats)
+                                   RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats)
   {
 #if defined(DEBUG)
     if ((parent->aflags & RTC_INTERPOLATE) == 0) 

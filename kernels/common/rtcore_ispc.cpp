@@ -487,6 +487,14 @@ namespace embree
   {
     rtcInterpolateN(scene,geomID,valid,primIDs,u,v,numUVs,buffer,P,dPdu,dPdv,numFloats);
   }
+
+  extern "C" void ispcInterpolateN2(RTCScene scene, unsigned int geomID, 
+                                    const void* valid, const unsigned int* primIDs, const float* u, const float* v, size_t numUVs, 
+                                    RTCBufferType buffer, 
+                                    float* P, float* dPdu, float* dPdv,
+                                    float* ddPdudu, float* ddPdvdv, float* ddPdudv,
+                                    size_t numFloats)
+  {
+    rtcInterpolateN2(scene,geomID,valid,primIDs,u,v,numUVs,buffer,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,numFloats);
+  }
 }
-
-

@@ -583,7 +583,7 @@ namespace embree
     return true;
   }
 
-  void SubdivMesh::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats) 
+  void SubdivMesh::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats) 
   {
     /* test if interpolation is enabled */
 #if defined(DEBUG) 
@@ -627,7 +627,7 @@ namespace embree
   }
 
   void SubdivMesh::interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
-                                RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats)
+                                RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats)
   {
     /* test if interpolation is enabled */
 #if defined(DEBUG)

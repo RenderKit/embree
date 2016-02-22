@@ -161,7 +161,7 @@ namespace embree
     return true;
   }
 
-  void BezierCurves::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats) 
+  void BezierCurves::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats) 
   {
     /* test if interpolation is enabled */
 #if defined(DEBUG) 
@@ -183,42 +183,21 @@ namespace embree
       stride = vertices[buffer&0xFFFF].getStride();
     }
 
-#if !defined(__MIC__) 
-
-    for (size_t i=0; i<numFloats; i+=4)
+    for (size_t i=0; i<numFloats; i+=VSIZEX)
     {
       size_t ofs = i*sizeof(float);
       const size_t curve = curves[primID];
-      const vfloat4 p0 = vfloat4::loadu((float*)&src[(curve+0)*stride+ofs]);
-      const vfloat4 p1 = vfloat4::loadu((float*)&src[(curve+1)*stride+ofs]);
-      const vfloat4 p2 = vfloat4::loadu((float*)&src[(curve+2)*stride+ofs]);
-      const vfloat4 p3 = vfloat4::loadu((float*)&src[(curve+3)*stride+ofs]);
-      const vbool4 valid = vint4(i)+vint4(step) < vint4(numFloats);
-      const BezierCurveT<vfloat4> bezier(p0,p1,p2,p3,0.0f,1.0f,0);
-      vfloat4 Q, dQdu; bezier.eval(u,Q,dQdu);
-      if (P   ) vfloat4::storeu(valid,P+i,Q);
-      if (dPdu) vfloat4::storeu(valid,dPdu+i,dQdu);
+      const vboolx valid = vintx(i)+vintx(step) < vintx(numFloats);
+      const vfloatx p0 = vfloatx::loadu(valid,(float*)&src[(curve+0)*stride+ofs]);
+      const vfloatx p1 = vfloatx::loadu(valid,(float*)&src[(curve+1)*stride+ofs]);
+      const vfloatx p2 = vfloatx::loadu(valid,(float*)&src[(curve+2)*stride+ofs]);
+      const vfloatx p3 = vfloatx::loadu(valid,(float*)&src[(curve+3)*stride+ofs]);
+      
+      const BezierCurveT<vfloatx> bezier(p0,p1,p2,p3,0.0f,1.0f,0);
+      if (P      ) vfloatx::storeu(valid,P+i,      bezier.eval(u));
+      if (dPdu   ) vfloatx::storeu(valid,dPdu+i,   bezier.eval_du(u));
+      if (ddPdudu) vfloatx::storeu(valid,ddPdudu+i,bezier.eval_dudu(u));
     }
-
-#else
-
-    for (size_t i=0; i<numFloats; i+=16) 
-    {
-      size_t ofs = i*sizeof(float);
-      vbool16 mask = (i+16 > numFloats) ? (vbool16)(((unsigned int)1 << (numFloats-i))-1) : vbool16( true );
-      const size_t curve = curves[primID];
-      const vfloat16 p0 = vfloat16::loadu(mask,(float*)&src[(curve+0)*stride+ofs]);
-      const vfloat16 p1 = vfloat16::loadu(mask,(float*)&src[(curve+1)*stride+ofs]);
-      const vfloat16 p2 = vfloat16::loadu(mask,(float*)&src[(curve+2)*stride+ofs]);
-      const vfloat16 p3 = vfloat16::loadu(mask,(float*)&src[(curve+3)*stride+ofs]);
-      const BezierCurveT<vfloat16> bezier(p0,p1,p2,p3,0.0f,1.0f,0);
-      vfloat16 Q, dQdu; bezier.eval(u,Q,dQdu);
-      if (P   ) vfloat16::storeu_compact(mask,P+i,Q);
-      if (dPdu) vfloat16::storeu_compact(mask,dPdu+i,dQdu);
-    }
-
-
-#endif
   }
 
   void BezierCurves::write(std::ofstream& file)

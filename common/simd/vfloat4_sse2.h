@@ -76,6 +76,11 @@ namespace embree
       return _mm_loadu_ps((float*)a); 
     }
 
+    static __forceinline vfloat4 loadu( const vbool4& mask, const void* const a ) {
+      // FIXME: use mask for AVX512VL
+      return _mm_loadu_ps((float*)a); 
+    }
+
     static __forceinline vfloat4 load_nt ( const float* ptr ) {
 #if defined (__SSE4_1__)
     return _mm_castsi128_ps(_mm_stream_load_si128((__m128i*)ptr));

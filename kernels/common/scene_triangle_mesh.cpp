@@ -148,7 +148,7 @@ namespace embree
     return true;
   }
 
-  void TriangleMesh::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats) 
+  void TriangleMesh::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats) 
   {
     /* test if interpolation is enabled */
 #if defined(DEBUG)
@@ -169,39 +169,29 @@ namespace embree
       stride = vertices[buffer&0xFFFF].getStride();
     }
 
-#if !defined(__MIC__)
-
-    for (size_t i=0; i<numFloats; i+=4)
+    for (size_t i=0; i<numFloats; i+=VSIZEX)
     {
       size_t ofs = i*sizeof(float);
       const float w = 1.0f-u-v;
       const Triangle& tri = triangle(primID);
-      const vfloat4 p0 = vfloat4::loadu((float*)&src[tri.v[0]*stride+ofs]);
-      const vfloat4 p1 = vfloat4::loadu((float*)&src[tri.v[1]*stride+ofs]);
-      const vfloat4 p2 = vfloat4::loadu((float*)&src[tri.v[2]*stride+ofs]);
-      const vbool4 valid = vint4(i)+vint4(step) < vint4(numFloats);
-      if (P   ) vfloat4::storeu(valid,P+i,w*p0 + u*p1 + v*p2);
-      if (dPdu) vfloat4::storeu(valid,dPdu+i,p1-p0);
-      if (dPdv) vfloat4::storeu(valid,dPdv+i,p2-p0);
+      const vboolx valid = vintx(i)+vintx(step) < vintx(numFloats);
+      const vfloatx p0 = vfloatx::loadu(valid,(float*)&src[tri.v[0]*stride+ofs]);
+      const vfloatx p1 = vfloatx::loadu(valid,(float*)&src[tri.v[1]*stride+ofs]);
+      const vfloatx p2 = vfloatx::loadu(valid,(float*)&src[tri.v[2]*stride+ofs]);
+      
+      if (P) {
+        vfloatx::storeu(valid,P+i,w*p0 + u*p1 + v*p2);
+      }
+      if (dPdu) {
+        assert(dPdu); vfloatx::storeu(valid,dPdu+i,p1-p0);
+        assert(dPdv); vfloatx::storeu(valid,dPdv+i,p2-p0);
+      }
+      if (ddPdudu) {
+        assert(ddPdudu); vfloatx::storeu(valid,ddPdudu+i,vfloatx(zero));
+        assert(ddPdvdv); vfloatx::storeu(valid,ddPdvdv+i,vfloatx(zero));
+        assert(ddPdudv); vfloatx::storeu(valid,ddPdudv+i,vfloatx(zero));
+      }
     }
-
-#else
-
-    for (size_t i=0; i<numFloats; i+=16) 
-    {
-      size_t ofs = i*sizeof(float);
-      vbool16 mask = (i+16 > numFloats) ? (vbool16)(((unsigned int)1 << (numFloats-i))-1) : vbool16( true );
-      const float w = 1.0f-u-v;
-      const Triangle& tri = triangle(primID);
-      const vfloat16 p0 = vfloat16::loadu(mask,(float*)&src[tri.v[0]*stride+ofs]);
-      const vfloat16 p1 = vfloat16::loadu(mask,(float*)&src[tri.v[1]*stride+ofs]);
-      const vfloat16 p2 = vfloat16::loadu(mask,(float*)&src[tri.v[2]*stride+ofs]);
-      if (P   ) vfloat16::storeu_compact(mask,P+i,w*p0 + u*p1 + v*p2);
-      if (dPdu) vfloat16::storeu_compact(mask,dPdu+i,p1-p0);
-      if (dPdv) vfloat16::storeu_compact(mask,dPdv+i,p2-p0);
-    }
-
-#endif
   }
 
   void TriangleMesh::write(std::ofstream& file)

@@ -77,7 +77,7 @@ namespace embree
       right.depth = depth-1;
     }
 
-    __forceinline void eval(const float t, Vertex& point, Vertex& tangent) const
+    __forceinline Vertex eval(const float t) const
     {
       const float t0 = 1.0f - t, t1 = t;
 
@@ -92,9 +92,27 @@ namespace embree
       const Vertex p20 = p10 * t0 + p11 * t1;
       const Vertex p21 = p11 * t0 + p12 * t1;
       const Vertex p30 = p20 * t0 + p21 * t1;
+      return p30;
+    }
+    
+    __forceinline Vertex eval_du(const float t) const
+    {
+      const float t0 = 1.0f - t, t1 = t;
+      float B0 = -3.0f*(t0*t0);
+      float B1 = -6.0f*(t0*t1) + 3.0f*(t0*t0);
+      float B2 = +6.0f*(t0*t1) - 3.0f*(t1*t1);
+      float B3 = +3.0f*(t1*t1);
+      return B0*v0 + B1*v1 + B2*v2 + B3*v3;
+    }
 
-      point = p30;
-      tangent = p21-p20;
+    __forceinline Vertex eval_dudu(const float t) const
+    {
+      const float t0 = 1.0f - t, t1 = t;
+      float C0 = 6.0f*t0;
+      float C1 = 6.0f*t1 - 12.0f*t0;
+      float C2 = 6.0f*t0 - 12.0f*t1;
+      float C3 = 6.0f*t1;
+      return C0*v0 + C1*v1 + C2*v2 + C3*v3;
     }
 
     friend inline std::ostream& operator<<(std::ostream& cout, const BezierCurveT& curve) {
