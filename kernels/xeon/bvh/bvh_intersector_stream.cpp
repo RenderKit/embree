@@ -46,15 +46,9 @@ namespace embree
 
 #if defined(__AVX__)
 
-#if defined(__AVX512F__)
     static const size_t MAX_RAYS_PER_OCTANT = 64;
-#else
-    static const size_t MAX_RAYS_PER_OCTANT = 32;
-#endif
-
     
-#define MULTI_CONTEXT 1
-#define FIBERS 0
+#define FIBERS 1
 
     template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
     void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, size_t flags)
@@ -62,9 +56,8 @@ namespace embree
       __aligned(64) RayContext ray_ctx[MAX_RAYS_PER_OCTANT];
       __aligned(64) Precalculations pre[MAX_RAYS_PER_OCTANT]; 
       __aligned(64) StackItemMask  stack0[stackSizeSingle];  //!< stack of nodes 
-#if MULTI_CONTEXT == 1
       __aligned(64) StackItemMask  stack1[stackSizeSingle];  //!< stack of nodes 
-#endif
+
       for (size_t r=0;r<numTotalRays;r+=MAX_RAYS_PER_OCTANT)
       {
         Ray** __restrict__ rays = input_rays + r;
@@ -79,17 +72,14 @@ namespace embree
         stack0[0].ptr  = BVH::invalidNode;
         stack0[0].mask = (size_t)-1;
 
-#if MULTI_CONTEXT == 1
         stack1[0].ptr  = BVH::invalidNode;
         stack1[0].mask = (size_t)-1;
-#endif                
         ///////////////////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////
 
         const NearFarPreCompute pc(ray_ctx[0].rdir);
 
-#if MULTI_CONTEXT == 1
         const size_t fiberMask = ((size_t)1 << ((__popcnt(m_active)+1)>>1))-1;
         assert(fiberMask);
         assert( ((fiberMask | (~fiberMask)) & m_active) == m_active);
@@ -104,26 +94,26 @@ namespace embree
         size_t m_trav_active_next = m_active & (~fiberMask); // upper half of active rays
         if (m_trav_active_next == 0) cur_next = 0;
 
+        assert(__popcnt(m_trav_active_next) <= 32);
 #if FIBERS == 1
         RayFiberContext fiber[2];
-        fiber[0].init(cur,m_trav_active,stackPtr,&fiber[1]);
-        fiber[1].init(cur_next,m_trav_active_next,stackPtr_next,&fiber[0]);
+        fiber[0].init(cur,m_trav_active,stackPtr,&fiber[1],0);
+#if defined(__AVX512F__)
+        const size_t offset = 0; // have 8-wide 64bit vector support
+#else
+        const size_t offset = __bsf(m_trav_active_next);
+#endif
+        fiber[1].init(cur_next,m_trav_active_next >> offset,stackPtr_next,&fiber[0],offset);
         if (m_trav_active_next == 0) fiber[0].next = &fiber[0];
         RayFiberContext *cur_fiber = &fiber[0];
 #endif
 
-#else
-        StackItemMask* stackPtr = stack0 + 1;
-        NodeRef cur             = bvh->root;
-        size_t m_trav_active    = m_active;
-#endif
         
         while (1) pop:
         {          
           const vfloat<K> inf(pos_inf);
           while (1)
           {
-#if MULTI_CONTEXT == 1
             /* context swap */
 
 #if FIBERS == 0
@@ -137,11 +127,11 @@ namespace embree
             cur_fiber = cur_fiber->swapContext(cur,m_trav_active,stackPtr);
 #endif
 
-#endif
 
             if (unlikely(cur.isLeaf())) break;
                 const Node* __restrict__ const node = cur.node();
                 STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);
+
 #if defined(__AVX512F__)
             const vlong<K/2> one((size_t)1);
 
@@ -152,13 +142,12 @@ namespace embree
               vfloat<K> dist(inf);
               vlong<K/2>   maskK(zero);
               
-              
               size_t bits = m_trav_active;
               do
               {            
                 STAT3(normal.trav_nodes,1,1,1);                          
                 const size_t i = __bscf(bits);
-                RayContext &ray = ray_ctx[i];
+                const RayContext &ray = ray_ctx[i];
                 const vfloat<K> tNearFarX = msub(bminmaxX, ray.rdir.x, ray.org_rdir.x);
                 const vfloat<K> tNearFarY = msub(bminmaxY, ray.rdir.y, ray.org_rdir.y);
                 const vfloat<K> tNearFarZ = msub(bminmaxZ, ray.rdir.z, ray.org_rdir.z);
@@ -196,12 +185,14 @@ namespace embree
             vfloat<K> dist(inf);
             vint<K>   maskK(zero);
 
+            const RayContext *__restrict__ const cur_ray_ctx = &ray_ctx[cur_fiber->offset];
+
             size_t bits = m_trav_active;
             do
             {            
               STAT3(normal.trav_nodes,1,1,1);                          
               const size_t i = __bscf(bits);
-              RayContext &ray = ray_ctx[i];
+              const RayContext &ray = cur_ray_ctx[i];
               const vfloat<K> tNearX = msub(bminX, ray.rdir.x, ray.org_rdir.x);
               const vfloat<K> tNearY = msub(bminY, ray.rdir.y, ray.org_rdir.y);
               const vfloat<K> tNearZ = msub(bminZ, ray.rdir.z, ray.org_rdir.z);
@@ -244,8 +235,6 @@ namespace embree
           /* current ray stream is done? */
           if (unlikely(cur == BVH::invalidNode))
           {
-#if MULTI_CONTEXT == 1
-
 #if FIBERS == 0
             /* both ray streams are done? */ 
             if (unlikely(cur_next == 0)) 
@@ -267,10 +256,6 @@ namespace embree
               goto pop;
             }
 #endif
-
-#else
-            break;
-#endif
           }
 
           /*! this is a leaf node */
@@ -281,7 +266,7 @@ namespace embree
           //STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
 
           size_t lazy_node = 0;
-          size_t bits = m_trav_active;
+          size_t bits = m_trav_active << cur_fiber->offset;
           size_t m_valid_intersection = 0;
           do {
             const size_t i = __bscf(bits);
@@ -311,9 +296,8 @@ namespace embree
       __aligned(64) RayContext ray_ctx[MAX_RAYS_PER_OCTANT];
       __aligned(64) Precalculations pre[MAX_RAYS_PER_OCTANT]; 
       __aligned(64) StackItemMask  stack0[stackSizeSingle];  //!< stack of nodes 
-#if MULTI_CONTEXT == 1
       __aligned(64) StackItemMask  stack1[stackSizeSingle];  //!< stack of nodes 
-#endif
+
       for (size_t r=0;r<numTotalRays;r+=MAX_RAYS_PER_OCTANT)
       {
         Ray** rays = input_rays + r;
@@ -327,13 +311,9 @@ namespace embree
         stack0[0].ptr  = BVH::invalidNode;
         stack0[0].mask = (size_t)-1;
 
-#if MULTI_CONTEXT == 1
         stack1[0].ptr  = BVH::invalidNode;
         stack1[0].mask = (size_t)-1;
-#endif
 
-
-#if MULTI_CONTEXT == 1
 
         const size_t fiberMask = ((size_t)1 << ((__popcnt(m_active)+1)>>1))-1;
         assert(fiberMask);
@@ -349,11 +329,19 @@ namespace embree
         size_t m_trav_active_next = m_active & (~fiberMask); // upper half of active rays
 
         if (m_trav_active_next == 0) cur_next = 0;
+
+        assert(__popcnt(m_trav_active_next) <= 32);
+
+        RayFiberContext fiber[2];
+        fiber[0].init(cur,m_trav_active,stackPtr,&fiber[1],0);
+#if defined(__AVX512F__)
+        const size_t offset = 0; // have 8-wide 64bit vector support
 #else
-        StackItemMask* stackPtr = stack0 + 1;
-        NodeRef cur             = bvh->root;
-        size_t m_trav_active    = m_active;
+        const size_t offset = __bsf(m_trav_active_next);
 #endif
+        fiber[1].init(cur_next,m_trav_active_next >> offset,stackPtr_next,&fiber[0],offset);
+        if (m_trav_active_next == 0) fiber[0].next = &fiber[0];
+        RayFiberContext *cur_fiber = &fiber[0];
 
         const NearFarPreCompute pc(ray_ctx[0].rdir);
 
@@ -363,15 +351,8 @@ namespace embree
 
           while (1)
           {
-#if MULTI_CONTEXT == 1
-            /* context swap */
-            if (likely(cur_next))
-            {
-              std::swap(cur,cur_next);
-              std::swap(m_trav_active,m_trav_active_next);
-              std::swap(stackPtr,stackPtr_next);
-            }
-#endif
+
+            cur_fiber = cur_fiber->swapContext(cur,m_trav_active,stackPtr);
 
             if (likely(cur.isLeaf())) break;
 
@@ -429,7 +410,10 @@ namespace embree
             vfloat<K> dist(inf);
             vint<K>   maskK(zero);
 
+            const RayContext *__restrict__ const cur_ray_ctx = &ray_ctx[cur_fiber->offset];
+
             size_t bits = m_trav_active;
+            assert(__popcnt(m_trav_active) <= 32);
             do
             {            
               STAT3(shadow.trav_nodes,1,1,1);                          
@@ -464,7 +448,7 @@ namespace embree
               do {
                 stackPtr--;
                 cur = NodeRef(stackPtr->ptr);
-                m_trav_active = stackPtr->mask & m_active;
+                m_trav_active = stackPtr->mask & (m_active>>cur_fiber->offset);
               } while (unlikely(!m_trav_active));
               assert(m_trav_active);
               goto pop;
@@ -479,21 +463,13 @@ namespace embree
           /* current ray stream is done? */
           if (unlikely(cur == BVH::invalidNode))
           {
-#if MULTI_CONTEXT == 1
-            /* both ray streams are done? */ 
-            if (unlikely(cur_next == 0))
+            if (cur_fiber->next == cur_fiber)
               break;
             else
             {
-              cur           = cur_next;
-              m_trav_active = m_trav_active_next;
-              stackPtr      = stackPtr_next;
-              cur_next      = 0;
+              cur_fiber->next->next = cur_fiber->next;
               goto pop;
             }
-#else
-            break;
-#endif
           }
 
           /*! this is a leaf node */
@@ -501,13 +477,13 @@ namespace embree
           STAT3(shadow.trav_leaves, 1, 1, 1);
           size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
 
-
           size_t lazy_node = 0;
-          size_t bits = m_trav_active & m_active;
+          const size_t offset = cur_fiber->offset;
+          size_t bits = (m_trav_active<<offset) & m_active;
+          assert(bits);
           //STAT3(shadow.trav_hit_boxes[__popcnt(bits)],1,1,1);                          
-
           do {
-            const size_t i = __bscf(bits);
+            const size_t i = __bscf(bits);            
             if (PrimitiveIntersector::occluded(pre[i],*(rays[i]),0,prim,num,bvh->scene,NULL,lazy_node))
             {
               m_active &= ~((size_t)1 << i);
@@ -522,7 +498,7 @@ namespace embree
           do {
             stackPtr--;
             cur = NodeRef(stackPtr->ptr);
-            m_trav_active = stackPtr->mask & m_active;
+            m_trav_active = stackPtr->mask & (m_active>>cur_fiber->offset);
           } while (unlikely(!m_trav_active));
           assert(m_trav_active);
         } // traversal + intersection        

@@ -175,21 +175,24 @@ namespace embree
         Vec3fa org_rdir;  // org_rdir.w = tfar;        
       };
 
-      struct __aligned(32) RayFiberContext {
+      struct __aligned(64) RayFiberContext {
         NodeRef node;
         size_t mask;
         StackItemMask* stackPtr;
         RayFiberContext *next;
-
+        size_t offset;
+        
         __forceinline void init(NodeRef _node,
                                 size_t  _mask,
                                 StackItemMask* _stackPtr,
-                                RayFiberContext *_next)
+                                RayFiberContext *_next,
+                                size_t _offset)
         {
-          node = _node;
-          mask = _mask;
-          stackPtr = _stackPtr;
-          next = _next;
+          node        = _node;
+          mask        = _mask;
+          stackPtr    = _stackPtr;
+          next        = _next;
+          offset      = _offset;
         }
 
         __forceinline RayFiberContext *swapContext(NodeRef &_node,
