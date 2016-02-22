@@ -33,8 +33,9 @@ namespace embree
         typedef CatmullClarkPatchT<Vertex,Vertex_t> CatmullClarkPatch;
         
         PatchEval (SharedLazyTessellationCache::CacheEntry& entry, size_t commitCounter, 
-                   const HalfEdge* edge, const char* vertices, size_t stride, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
-        : P(P), dPdu(dPdu), dPdv(dPdv)
+                   const HalfEdge* edge, const char* vertices, size_t stride, const float u, const float v, 
+                   Vertex* P, Vertex* dPdu, Vertex* dPdv, Vertex* ddPdudu, Vertex* ddPdvdv, Vertex* ddPdudv)
+        : P(P), dPdu(dPdu), dPdv(dPdv), ddPdudu(ddPdudu), ddPdvdv(ddPdvdv), ddPdudv(ddPdudv)
         {
           Ref patch = SharedLazyTessellationCache::lookup(entry,commitCounter,[&] () {
               auto alloc = [](size_t bytes) { return SharedLazyTessellationCache::malloc(bytes); };
@@ -46,7 +47,7 @@ namespace embree
             return;
           }
           SharedLazyTessellationCache::unlock();
-          FeatureAdaptiveEval<Vertex,Vertex_t>(edge,vertices,stride,u,v,P,dPdu,dPdv);
+          FeatureAdaptiveEval<Vertex,Vertex_t>(edge,vertices,stride,u,v,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv);
           PATCH_DEBUG_SUBDIVISION(edge,c,-1,-1);
         }
         
@@ -101,22 +102,22 @@ namespace embree
           switch (This.type()) 
           {
           case Patch::BILINEAR_PATCH: {
-            ((typename Patch::BilinearPatch*)This.object())->patch.eval(u,v,P,dPdu,dPdv,dscale); 
+            ((typename Patch::BilinearPatch*)This.object())->patch.eval(u,v,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,dscale); 
             PATCH_DEBUG_SUBDIVISION(This,-1,c,c);
             return true;
           }
           case Patch::BSPLINE_PATCH: {
-            ((typename Patch::BSplinePatch*)This.object())->patch.eval(u,v,P,dPdu,dPdv,dscale);
+            ((typename Patch::BSplinePatch*)This.object())->patch.eval(u,v,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,dscale);
             PATCH_DEBUG_SUBDIVISION(This,-1,c,-1);
             return true;
           }
           case Patch::BEZIER_PATCH: {
-            ((typename Patch::BezierPatch*)This.object())->patch.eval(u,v,P,dPdu,dPdv,dscale);
+            ((typename Patch::BezierPatch*)This.object())->patch.eval(u,v,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,dscale);
             PATCH_DEBUG_SUBDIVISION(This,-1,c,-1);
             return true;
           }
           case Patch::GREGORY_PATCH: {
-            ((typename Patch::GregoryPatch*)This.object())->patch.eval(u,v,P,dPdu,dPdv,dscale); 
+            ((typename Patch::GregoryPatch*)This.object())->patch.eval(u,v,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,dscale); 
             PATCH_DEBUG_SUBDIVISION(This,-1,-1,c);
             return true;
           }
@@ -133,7 +134,7 @@ namespace embree
           }
           case Patch::EVAL_PATCH: { 
             CatmullClarkPatch patch; patch.deserialize(This.object());
-            FeatureAdaptiveEval<Vertex,Vertex_t>(patch,u,v,dscale,depth,P,dPdu,dPdv);
+            FeatureAdaptiveEval<Vertex,Vertex_t>(patch,u,v,dscale,depth,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv);
             return true;
           }
           default: 
@@ -146,6 +147,9 @@ namespace embree
         Vertex* const P;
         Vertex* const dPdu;
         Vertex* const dPdv;
+        Vertex* const ddPdudu;
+        Vertex* const ddPdvdv;
+        Vertex* const ddPdudv;
       };
   }
 }

@@ -40,13 +40,14 @@ namespace embree
         
       public:
         
-        FeatureAdaptiveEval (const HalfEdge* edge, const char* vertices, size_t stride, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
-        : P(P), dPdu(dPdu), dPdv(dPdv)
+        FeatureAdaptiveEval (const HalfEdge* edge, const char* vertices, size_t stride, const float u, const float v, 
+                             Vertex* P, Vertex* dPdu, Vertex* dPdv, Vertex* ddPdudu, Vertex* ddPdvdv, Vertex* ddPdudv)
+        : P(P), dPdu(dPdu), dPdv(dPdv), ddPdudu(ddPdudu), ddPdvdv(ddPdvdv), ddPdudv(ddPdudv)
         {
           switch (edge->patch_type) {
-          case HalfEdge::REGULAR_QUAD_PATCH: RegularPatchT(edge,vertices,stride).eval(u,v,P,dPdu,dPdv,1.0f); break;
+          case HalfEdge::REGULAR_QUAD_PATCH: RegularPatchT(edge,vertices,stride).eval(u,v,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,1.0f); break;
 #if PATCH_USE_GREGORY == 2
-          case HalfEdge::IRREGULAR_QUAD_PATCH: GregoryPatch(edge,vertices,stride).eval(u,v,P,dPdu,dPdv,1.0f); break;
+          case HalfEdge::IRREGULAR_QUAD_PATCH: GregoryPatch(edge,vertices,stride).eval(u,v,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,1.0f); break;
 #endif
           default: {
             GeneralCatmullClarkPatch patch(edge,vertices,stride);
@@ -56,8 +57,9 @@ namespace embree
           }
         }
 
-        FeatureAdaptiveEval (CatmullClarkPatch& patch, const float u, const float v, float dscale, size_t depth, Vertex* P, Vertex* dPdu, Vertex* dPdv)
-        : P(P), dPdu(dPdu), dPdv(dPdv)
+        FeatureAdaptiveEval (CatmullClarkPatch& patch, const float u, const float v, float dscale, size_t depth, 
+                             Vertex* P, Vertex* dPdu, Vertex* dPdv, Vertex* ddPdudu, Vertex* ddPdvdv, Vertex* ddPdudv)
+        : P(P), dPdu(dPdu), dPdv(dPdv), ddPdudu(ddPdudu), ddPdvdv(ddPdvdv), ddPdudv(ddPdudv)
         {
           eval(patch,Vec2f(u,v),dscale,depth);
         }
@@ -191,25 +193,25 @@ namespace embree
             if (unlikely(final(patch,ty,depth)))
             {
               if (ty & CatmullClarkRing::TYPE_REGULAR) { 
-                RegularPatch(patch,border0,border1,border2,border3).eval(uv.x,uv.y,P,dPdu,dPdv,dscale); 
+                RegularPatch(patch,border0,border1,border2,border3).eval(uv.x,uv.y,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,dscale); 
                 PATCH_DEBUG_SUBDIVISION(234423,c,c,-1);
                 return;
               } else {
-                IrregularFillPatch(patch,border0,border1,border2,border3).eval(uv.x,uv.y,P,dPdu,dPdv,dscale); 
+                IrregularFillPatch(patch,border0,border1,border2,border3).eval(uv.x,uv.y,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,dscale); 
                 PATCH_DEBUG_SUBDIVISION(34534,c,-1,c);
                 return;
               }
             }
             else if (ty & CatmullClarkRing::TYPE_REGULAR_CREASES) { 
               assert(depth > 0); 
-              RegularPatch(patch,border0,border1,border2,border3).eval(uv.x,uv.y,P,dPdu,dPdv,dscale); 
+              RegularPatch(patch,border0,border1,border2,border3).eval(uv.x,uv.y,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,dscale); 
               PATCH_DEBUG_SUBDIVISION(43524,c,c,-1);
               return;
             }
 #if PATCH_USE_GREGORY == 2
             else if (ty & CatmullClarkRing::TYPE_GREGORY_CREASES) { 
               assert(depth > 0); 
-              GregoryPatch(patch,border0,border1,border2,border3).eval(uv.x,uv.y,P,dPdu,dPdv,dscale); 
+              GregoryPatch(patch,border0,border1,border2,border3).eval(uv.x,uv.y,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,dscale); 
               PATCH_DEBUG_SUBDIVISION(23498,c,-1,c);
               return;
             }
@@ -276,6 +278,9 @@ namespace embree
         Vertex* const P;
         Vertex* const dPdu;
         Vertex* const dPdv;
+        Vertex* const ddPdudu;
+        Vertex* const ddPdvdv;
+        Vertex* const ddPdudv;
       };
   }
 }

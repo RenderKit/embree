@@ -38,13 +38,14 @@ namespace embree
         typedef BilinearPatchT<Vertex,Vertex_t> BilinearPatch;
         typedef BezierCurveT<Vertex> BezierCurve;
 
-        FeatureAdaptiveEvalSimd (const HalfEdge* edge, const char* vertices, size_t stride, const vbool& valid, const vfloat& u, const vfloat& v, float* P, float* dPdu, float* dPdv, const size_t dstride, const size_t N)
-        : P(P), dPdu(dPdu), dPdv(dPdv), dstride(dstride), N(N)
+        FeatureAdaptiveEvalSimd (const HalfEdge* edge, const char* vertices, size_t stride, const vbool& valid, const vfloat& u, const vfloat& v, 
+                                 float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, const size_t dstride, const size_t N)
+        : P(P), dPdu(dPdu), dPdv(dPdv), ddPdudu(ddPdudu), ddPdvdv(ddPdvdv), ddPdudv(ddPdudv), dstride(dstride), N(N)
         {
           switch (edge->patch_type) {
-          case HalfEdge::REGULAR_QUAD_PATCH: RegularPatchT(edge,vertices,stride).eval(valid,u,v,P,dPdu,dPdv,1.0f,dstride,N); break;
+          case HalfEdge::REGULAR_QUAD_PATCH: RegularPatchT(edge,vertices,stride).eval(valid,u,v,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,1.0f,dstride,N); break;
 #if PATCH_USE_GREGORY == 2
-          case HalfEdge::IRREGULAR_QUAD_PATCH: GregoryPatchT<Vertex,Vertex_t>(edge,vertices,stride).eval(valid,u,v,P,dPdu,dPdv,1.0f,dstride,N); break;
+          case HalfEdge::IRREGULAR_QUAD_PATCH: GregoryPatchT<Vertex,Vertex_t>(edge,vertices,stride).eval(valid,u,v,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,1.0f,dstride,N); break;
 #endif
           default: {
             GeneralCatmullClarkPatch patch(edge,vertices,stride);
@@ -54,8 +55,9 @@ namespace embree
           }
         }
 
-        FeatureAdaptiveEvalSimd (const CatmullClarkPatch& patch, const vbool& valid, const vfloat& u, const vfloat& v, float dscale, size_t depth, float* P, float* dPdu, float* dPdv, const size_t dstride, const size_t N)
-        : P(P), dPdu(dPdu), dPdv(dPdv), dstride(dstride), N(N)
+        FeatureAdaptiveEvalSimd (const CatmullClarkPatch& patch, const vbool& valid, const vfloat& u, const vfloat& v, float dscale, size_t depth, 
+                                 float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, const size_t dstride, const size_t N)
+        : P(P), dPdu(dPdu), dPdv(dPdv), ddPdudu(ddPdudu), ddPdvdv(ddPdvdv), ddPdudv(ddPdudv), dstride(dstride), N(N)
         {
           eval_direct(valid,patch,Vec2<vfloat>(u,v),dscale,depth);
         }
@@ -173,17 +175,17 @@ namespace embree
           if (unlikely(final(patch,ty,depth)))
           {
             if (ty & CatmullClarkRing::TYPE_REGULAR) { 
-              RegularPatch(patch,border0,border1,border2,border3).eval(valid,uv.x,uv.y,P,dPdu,dPdv,dscale,dstride,N);
+              RegularPatch(patch,border0,border1,border2,border3).eval(valid,uv.x,uv.y,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,dscale,dstride,N);
             } else {
-              IrregularFillPatch(patch,border0,border1,border2,border3).eval(valid,uv.x,uv.y,P,dPdu,dPdv,dscale,dstride,N);
+              IrregularFillPatch(patch,border0,border1,border2,border3).eval(valid,uv.x,uv.y,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,dscale,dstride,N);
             }
           }
           else if (ty & CatmullClarkRing::TYPE_REGULAR_CREASES) { 
-            assert(depth > 0); RegularPatch(patch,border0,border1,border2,border3).eval(valid,uv.x,uv.y,P,dPdu,dPdv,dscale,dstride,N);
+            assert(depth > 0); RegularPatch(patch,border0,border1,border2,border3).eval(valid,uv.x,uv.y,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,dscale,dstride,N);
           }
 #if PATCH_USE_GREGORY == 2
           else if (ty & CatmullClarkRing::TYPE_GREGORY_CREASES) { 
-            assert(depth > 0); GregoryPatch(patch,border0,border1,border2,border3).eval(valid,uv.x,uv.y,P,dPdu,dPdv,dscale,dstride,N);
+            assert(depth > 0); GregoryPatch(patch,border0,border1,border2,border3).eval(valid,uv.x,uv.y,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,dscale,dstride,N);
           }
 #endif
           else
@@ -238,6 +240,9 @@ namespace embree
         float* const P;
         float* const dPdu;
         float* const dPdv;
+        float* const ddPdudu;
+        float* const ddPdvdv;
+        float* const ddPdudv;
         const size_t dstride;
         const size_t N;
       };

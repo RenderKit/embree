@@ -34,8 +34,8 @@ namespace embree
 
         PatchEvalSimd (SharedLazyTessellationCache::CacheEntry& entry, size_t commitCounter, 
                        const HalfEdge* edge, const char* vertices, size_t stride, const vbool& valid0, const vfloat& u, const vfloat& v, 
-                       float* P, float* dPdu, float* dPdv, const size_t dstride, const size_t N)
-        : P(P), dPdu(dPdu), dPdv(dPdv), dstride(dstride), N(N)
+                       float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, const size_t dstride, const size_t N)
+        : P(P), dPdu(dPdu), dPdv(dPdv), ddPdudu(ddPdudu), ddPdvdv(ddPdvdv), ddPdudv(ddPdudv), dstride(dstride), N(N)
         {
           Ref patch = SharedLazyTessellationCache::lookup(entry,commitCounter,[&] () {
               auto alloc = [](size_t bytes) { return SharedLazyTessellationCache::malloc(bytes); };
@@ -47,7 +47,7 @@ namespace embree
           SharedLazyTessellationCache::unlock();
           const vbool valid2 = valid0 & !valid1;
           if (any(valid2)) {
-            FeatureAdaptiveEvalSimd<vbool,vint,vfloat,Vertex,Vertex_t>(edge,vertices,stride,valid2,u,v,P,dPdu,dPdv,dstride,N);
+            FeatureAdaptiveEvalSimd<vbool,vint,vfloat,Vertex,Vertex_t>(edge,vertices,stride,valid2,u,v,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,dstride,N);
           }
         }
         
@@ -115,19 +115,19 @@ namespace embree
           switch (This.type()) 
           {
           case Patch::BILINEAR_PATCH: {
-            ((typename Patch::BilinearPatch*)This.object())->patch.eval(valid,u,v,P,dPdu,dPdv,dscale,dstride,N); 
+            ((typename Patch::BilinearPatch*)This.object())->patch.eval(valid,u,v,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,dscale,dstride,N); 
             return valid;
           }
           case Patch::BSPLINE_PATCH: {
-            ((typename Patch::BSplinePatch*)This.object())->patch.eval(valid,u,v,P,dPdu,dPdv,dscale,dstride,N);
+            ((typename Patch::BSplinePatch*)This.object())->patch.eval(valid,u,v,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,dscale,dstride,N);
             return valid;
           }
           case Patch::BEZIER_PATCH: {
-            ((typename Patch::BezierPatch*)This.object())->patch.eval(valid,u,v,P,dPdu,dPdv,dscale,dstride,N);
+            ((typename Patch::BezierPatch*)This.object())->patch.eval(valid,u,v,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,dscale,dstride,N);
             return valid;
           }
           case Patch::GREGORY_PATCH: {
-            ((typename Patch::GregoryPatch*)This.object())->patch.eval(valid,u,v,P,dPdu,dPdv,dscale,dstride,N); 
+            ((typename Patch::GregoryPatch*)This.object())->patch.eval(valid,u,v,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,dscale,dstride,N); 
             return valid;
           }
           case Patch::SUBDIVIDED_QUAD_PATCH: {
@@ -143,7 +143,7 @@ namespace embree
           }
           case Patch::EVAL_PATCH: { 
             CatmullClarkPatch patch; patch.deserialize(This.object());
-            FeatureAdaptiveEvalSimd<vbool,vint,vfloat,Vertex,Vertex_t>(patch,valid,u,v,dscale,depth,P,dPdu,dPdv,dstride,N);
+            FeatureAdaptiveEvalSimd<vbool,vint,vfloat,Vertex,Vertex_t>(patch,valid,u,v,dscale,depth,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,dstride,N);
             return valid;
           }
           default: 
@@ -156,6 +156,9 @@ namespace embree
         float* const P;
         float* const dPdu;
         float* const dPdv;
+        float* const ddPdudu;
+        float* const ddPdvdv;
+        float* const ddPdudv;
         const size_t dstride;
         const size_t N;
       };

@@ -73,6 +73,18 @@ namespace embree
       const T n3 = 3.0f*(t*t);
       return Vec4<T>(n0,n1,n2,n3);
     }
+
+    template<class T>
+      static __forceinline Vec4<T>  derivative2(const T& u)
+    {
+      const T t1 = u;
+      const T t0 = 1.0f - t1;
+      const T n0 = 6.0f*t0;
+      const T n1 = 6.0f*t1 - 12.0f*t0;
+      const T n2 = 6.0f*t0 - 12.0f*t1;
+      const T n3 = 6.0f*t1;
+      return Vec4<T>(n0,n1,n2,n3);
+    }
   };
 
   template<typename Vertex>
@@ -168,35 +180,72 @@ namespace embree
         (Bu.x * matrix[3][0] + Bu.y * matrix[3][1] + Bu.z * matrix[3][2] + Bu.w * matrix[3][3]) * Bv.w; 
     }
 
-    static __forceinline Vertex_t tangentU(const Vertex matrix[4][4], const float uu, const float vv) 
+    static __forceinline Vertex_t eval_du(const Vertex matrix[4][4], const float uu, const float vv) 
     {
-      const Vertex_t col0 = deCasteljau(vv, (Vertex_t)matrix[0][0], (Vertex_t)matrix[1][0], (Vertex_t)matrix[2][0], (Vertex_t)matrix[3][0]);
-      const Vertex_t col1 = deCasteljau(vv, (Vertex_t)matrix[0][1], (Vertex_t)matrix[1][1], (Vertex_t)matrix[2][1], (Vertex_t)matrix[3][1]);
-      const Vertex_t col2 = deCasteljau(vv, (Vertex_t)matrix[0][2], (Vertex_t)matrix[1][2], (Vertex_t)matrix[2][2], (Vertex_t)matrix[3][2]);
-      const Vertex_t col3 = deCasteljau(vv, (Vertex_t)matrix[0][3], (Vertex_t)matrix[1][3], (Vertex_t)matrix[2][3], (Vertex_t)matrix[3][3]);
-      return deCasteljau_tangent(uu, col0, col1, col2, col3);
+      const Vec4f Bu = BezierBasis::derivative(uu);
+      const Vec4f Bv = BezierBasis::eval(vv);
+      return 
+        (Bu.x * matrix[0][0] + Bu.y * matrix[0][1] + Bu.z * matrix[0][2] + Bu.w * matrix[0][3]) * Bv.x + 
+        (Bu.x * matrix[1][0] + Bu.y * matrix[1][1] + Bu.z * matrix[1][2] + Bu.w * matrix[1][3]) * Bv.y + 
+        (Bu.x * matrix[2][0] + Bu.y * matrix[2][1] + Bu.z * matrix[2][2] + Bu.w * matrix[2][3]) * Bv.z + 
+        (Bu.x * matrix[3][0] + Bu.y * matrix[3][1] + Bu.z * matrix[3][2] + Bu.w * matrix[3][3]) * Bv.w; 
     }
 
-    static __forceinline Vertex_t tangentV(const Vertex matrix[4][4], const float uu, const float vv) 
+    static __forceinline Vertex_t eval_dv(const Vertex matrix[4][4], const float uu, const float vv) 
     {
-      const Vertex_t row0 = deCasteljau(uu, (Vertex_t)matrix[0][0], (Vertex_t)matrix[0][1], (Vertex_t)matrix[0][2], (Vertex_t)matrix[0][3]);
-      const Vertex_t row1 = deCasteljau(uu, (Vertex_t)matrix[1][0], (Vertex_t)matrix[1][1], (Vertex_t)matrix[1][2], (Vertex_t)matrix[1][3]);
-      const Vertex_t row2 = deCasteljau(uu, (Vertex_t)matrix[2][0], (Vertex_t)matrix[2][1], (Vertex_t)matrix[2][2], (Vertex_t)matrix[2][3]);
-      const Vertex_t row3 = deCasteljau(uu, (Vertex_t)matrix[3][0], (Vertex_t)matrix[3][1], (Vertex_t)matrix[3][2], (Vertex_t)matrix[3][3]);
-      return deCasteljau_tangent(vv, row0, row1, row2, row3);
+      const Vec4f Bu = BezierBasis::eval(uu);
+      const Vec4f Bv = BezierBasis::derivative(vv);
+      return 
+        (Bu.x * matrix[0][0] + Bu.y * matrix[0][1] + Bu.z * matrix[0][2] + Bu.w * matrix[0][3]) * Bv.x + 
+        (Bu.x * matrix[1][0] + Bu.y * matrix[1][1] + Bu.z * matrix[1][2] + Bu.w * matrix[1][3]) * Bv.y + 
+        (Bu.x * matrix[2][0] + Bu.y * matrix[2][1] + Bu.z * matrix[2][2] + Bu.w * matrix[2][3]) * Bv.z + 
+        (Bu.x * matrix[3][0] + Bu.y * matrix[3][1] + Bu.z * matrix[3][2] + Bu.w * matrix[3][3]) * Bv.w; 
+    }
+
+    static __forceinline Vertex_t eval_dudu(const Vertex matrix[4][4], const float uu, const float vv) 
+    {
+      const Vec4f Bu = BezierBasis::derivative2(uu);
+      const Vec4f Bv = BezierBasis::eval(vv);
+      return 
+        (Bu.x * matrix[0][0] + Bu.y * matrix[0][1] + Bu.z * matrix[0][2] + Bu.w * matrix[0][3]) * Bv.x + 
+        (Bu.x * matrix[1][0] + Bu.y * matrix[1][1] + Bu.z * matrix[1][2] + Bu.w * matrix[1][3]) * Bv.y + 
+        (Bu.x * matrix[2][0] + Bu.y * matrix[2][1] + Bu.z * matrix[2][2] + Bu.w * matrix[2][3]) * Bv.z + 
+        (Bu.x * matrix[3][0] + Bu.y * matrix[3][1] + Bu.z * matrix[3][2] + Bu.w * matrix[3][3]) * Bv.w; 
+    }
+
+    static __forceinline Vertex_t eval_dvdv(const Vertex matrix[4][4], const float uu, const float vv) 
+    {
+      const Vec4f Bu = BezierBasis::eval(uu);
+      const Vec4f Bv = BezierBasis::derivative2(vv);
+      return 
+        (Bu.x * matrix[0][0] + Bu.y * matrix[0][1] + Bu.z * matrix[0][2] + Bu.w * matrix[0][3]) * Bv.x + 
+        (Bu.x * matrix[1][0] + Bu.y * matrix[1][1] + Bu.z * matrix[1][2] + Bu.w * matrix[1][3]) * Bv.y + 
+        (Bu.x * matrix[2][0] + Bu.y * matrix[2][1] + Bu.z * matrix[2][2] + Bu.w * matrix[2][3]) * Bv.z + 
+        (Bu.x * matrix[3][0] + Bu.y * matrix[3][1] + Bu.z * matrix[3][2] + Bu.w * matrix[3][3]) * Bv.w; 
+    }
+
+    static __forceinline Vertex_t eval_dudv(const Vertex matrix[4][4], const float uu, const float vv) 
+    {
+      const Vec4f Bu = BezierBasis::derivative(uu);
+      const Vec4f Bv = BezierBasis::derivative(vv);
+      return 
+        (Bu.x * matrix[0][0] + Bu.y * matrix[0][1] + Bu.z * matrix[0][2] + Bu.w * matrix[0][3]) * Bv.x + 
+        (Bu.x * matrix[1][0] + Bu.y * matrix[1][1] + Bu.z * matrix[1][2] + Bu.w * matrix[1][3]) * Bv.y + 
+        (Bu.x * matrix[2][0] + Bu.y * matrix[2][1] + Bu.z * matrix[2][2] + Bu.w * matrix[2][3]) * Bv.z + 
+        (Bu.x * matrix[3][0] + Bu.y * matrix[3][1] + Bu.z * matrix[3][2] + Bu.w * matrix[3][3]) * Bv.w; 
     }
 
     static __forceinline Vertex_t normal(const Vertex matrix[4][4], const float uu, const float vv) 
     {
-      const Vertex_t dPdu = tangentU(matrix,uu,vv);
-      const Vertex_t dPdv = tangentV(matrix,uu,vv);
+      const Vertex_t dPdu = eval_du(matrix,uu,vv);
+      const Vertex_t dPdv = eval_dv(matrix,uu,vv);
       return cross(dPdv,dPdu);
     }
 
     __forceinline Vertex_t normal(const float uu, const float vv) 
     {
-      const Vertex_t dPdu = tangentU(matrix,uu,vv);
-      const Vertex_t dPdv = tangentV(matrix,uu,vv);
+      const Vertex_t dPdu = eval_du(matrix,uu,vv);
+      const Vertex_t dPdv = eval_dv(matrix,uu,vv);
       return cross(dPdv,dPdu);
     }
 
@@ -204,19 +253,40 @@ namespace embree
       return eval(matrix,uu,vv);
     }
 
-    __forceinline Vertex_t tangentU(const float uu, const float vv) const { 
-      return tangentU(matrix,uu,vv);
+    __forceinline Vertex_t eval_du(const float uu, const float vv) const { 
+      return eval_du(matrix,uu,vv);
     }
 
-    __forceinline Vertex_t tangentV(const float uu, const float vv) const {
-      return tangentV(matrix,uu,vv);
+    __forceinline Vertex_t eval_dv(const float uu, const float vv) const {
+      return eval_dv(matrix,uu,vv);
+    }
+
+    __forceinline Vertex_t eval_dudu(const float uu, const float vv) const { 
+      return eval_dudu(matrix,uu,vv);
     }
     
-    __forceinline void eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv, const float dscale = 1.0f) const
+    __forceinline Vertex_t eval_dvdv(const float uu, const float vv) const { 
+      return eval_dvdv(matrix,uu,vv);
+    }
+
+    __forceinline Vertex_t eval_dudv(const float uu, const float vv) const { 
+      return eval_dudv(matrix,uu,vv);
+    }
+
+    __forceinline void eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv, Vertex* ddPdudu, Vertex* ddPdvdv, Vertex* ddPdudv, const float dscale = 1.0f) const
     {
-      if (P)    *P    = eval(u,v); 
-      if (dPdu) *dPdu = tangentU(u,v)*dscale; 
-      if (dPdv) *dPdv = tangentV(u,v)*dscale; 
+      if (P) {
+        *P = eval(u,v); 
+      }
+      if (dPdu) {
+        assert(dPdu); *dPdu = eval_du(u,v)*dscale; 
+        assert(dPdv); *dPdv = eval_dv(u,v)*dscale; 
+      }
+      if (ddPdudu) {
+        assert(ddPdudu); *ddPdudu = eval_dudu(u,v)*sqr(dscale); 
+        assert(ddPdvdv); *ddPdvdv = eval_dvdv(u,v)*sqr(dscale); 
+        assert(ddPdudv); *ddPdudv = eval_dudv(u,v)*sqr(dscale); 
+      }
     }
 
     template<class vfloat>
@@ -230,22 +300,50 @@ namespace embree
       }
 
     template<typename vbool, typename vfloat>
-      __forceinline void eval(const vbool& valid, const vfloat& uu, const vfloat& vv, float* P, float* dPdu, float* dPdv, const float dscale, const size_t dstride, const size_t N) const
+      __forceinline void eval(const vbool& valid, const vfloat& uu, const vfloat& vv, 
+                              float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv,
+                              const float dscale, const size_t dstride, const size_t N) const
       {
         if (P) {
           const Vec4<vfloat> u_n = BezierBasis::eval(uu); 
           const Vec4<vfloat> v_n = BezierBasis::eval(vv); 
           for (size_t i=0; i<N; i++) vfloat::store(valid,P+i*dstride,eval(i,uu,vv,u_n,v_n));
         }
-        if (dPdu) {
-          const Vec4<vfloat> u_n = BezierBasis::derivative(uu);
-          const Vec4<vfloat> v_n = BezierBasis::eval(vv); 
-          for (size_t i=0; i<N; i++) vfloat::store(valid,dPdu+i*dstride,eval(i,uu,vv,u_n,v_n)*dscale);
+        if (dPdu) 
+        {
+          {
+            assert(dPdu);
+            const Vec4<vfloat> u_n = BezierBasis::derivative(uu);
+            const Vec4<vfloat> v_n = BezierBasis::eval(vv); 
+            for (size_t i=0; i<N; i++) vfloat::store(valid,dPdu+i*dstride,eval(i,uu,vv,u_n,v_n)*dscale);
+          }
+          {
+            assert(dPdv);
+            const Vec4<vfloat> u_n = BezierBasis::eval(uu);
+            const Vec4<vfloat> v_n = BezierBasis::derivative(vv); 
+            for (size_t i=0; i<N; i++) vfloat::store(valid,dPdv+i*dstride,eval(i,uu,vv,u_n,v_n)*dscale);
+          }
         }
-        if (dPdv) {
-          const Vec4<vfloat> u_n = BezierBasis::eval(uu);
-          const Vec4<vfloat> v_n = BezierBasis::derivative(vv); 
-          for (size_t i=0; i<N; i++) vfloat::store(valid,dPdv+i*dstride,eval(i,uu,vv,u_n,v_n)*dscale);
+        if (ddPdudu) 
+        {
+          {
+            assert(ddPdudu);
+            const Vec4<vfloat> u_n = BezierBasis::derivative2(uu);
+            const Vec4<vfloat> v_n = BezierBasis::eval(vv); 
+            for (size_t i=0; i<N; i++) vfloat::store(valid,ddPdudu+i*dstride,eval(i,uu,vv,u_n,v_n)*sqr(dscale));
+          }
+          {
+            assert(ddPdvdv);
+            const Vec4<vfloat> u_n = BezierBasis::eval(uu);
+            const Vec4<vfloat> v_n = BezierBasis::derivative2(vv); 
+            for (size_t i=0; i<N; i++) vfloat::store(valid,ddPdvdv+i*dstride,eval(i,uu,vv,u_n,v_n)*sqr(dscale));
+          }
+          {
+            assert(ddPdudv);
+            const Vec4<vfloat> u_n = BezierBasis::derivative(uu);
+            const Vec4<vfloat> v_n = BezierBasis::derivative(vv); 
+            for (size_t i=0; i<N; i++) vfloat::store(valid,ddPdudv+i*dstride,eval(i,uu,vv,u_n,v_n)*sqr(dscale));
+          }
         }
       }
     

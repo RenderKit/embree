@@ -63,29 +63,52 @@ namespace embree
         return sy0*(sx0*v[0]+sx1*v[1]) + sy1*(sx0*v[3]+sx1*v[2]);
       }
 
-      __forceinline Vertex tangentU(const float uu, const float vv) const
+      __forceinline Vertex eval_du(const float uu, const float vv) const
       {
         const float sx1 = uu, sx0 = 1.0f-sx1;
         const float sy1 = vv, sy0 = 1.0f-sy1;
         return sy0*(v[1]-v[0]) + sy1*(v[2]-v[3]); 
       }
 
-      __forceinline Vertex tangentV(const float uu, const float vv) const
+      __forceinline Vertex eval_dv(const float uu, const float vv) const
       {
         const float sx1 = uu, sx0 = 1.0f-sx1;
         const float sy1 = vv, sy0 = 1.0f-sy1;
         return sx0*(v[3]-v[0]) + sx1*(v[2]-v[1]);
       }
 
+      __forceinline Vertex eval_dudu(const float uu, const float vv) const {
+        return Vertex(zero);
+      }
+
+      __forceinline Vertex eval_dvdv(const float uu, const float vv) const {
+        return Vertex(zero);
+      }
+
+      __forceinline Vertex eval_dudv(const float uu, const float vv) const {
+        return (v[2]-v[3]) - (v[1]-v[0]);
+      }
+
       __forceinline Vertex normal(const float uu, const float vv) const {
-        return cross(tangentV(uu,vv),tangentU(uu,vv));
+        return cross(eval_dv(uu,vv),eval_du(uu,vv));
       }
       
-      __forceinline void eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv, const float dscale = 1.0f) const
+      __forceinline void eval(const float u, const float v, 
+                              Vertex* P, Vertex* dPdu, Vertex* dPdv, Vertex* ddPdudu, Vertex* ddPdvdv, Vertex* ddPdudv,
+                              const float dscale = 1.0f) const
       {
-        if (P)    *P    = eval(u,v); 
-        if (dPdu) *dPdu = tangentU(u,v)*dscale; 
-        if (dPdv) *dPdv = tangentV(u,v)*dscale; 
+        if (P) {
+          *P = eval(u,v); 
+        }
+        if (dPdu) {
+          assert(dPdu); *dPdu = eval_du(u,v)*dscale; 
+          assert(dPdv); *dPdv = eval_dv(u,v)*dscale; 
+        }
+        if (ddPdudu) {
+          assert(ddPdudu); *ddPdudu = eval_dudu(u,v)*sqr(dscale); 
+          assert(ddPdvdv); *ddPdvdv = eval_dvdv(u,v)*sqr(dscale); 
+          assert(ddPdudv); *ddPdudv = eval_dudv(u,v)*sqr(dscale); 
+        }
       }
 
       template<class vfloat>
@@ -100,7 +123,7 @@ namespace embree
       }
 
       template<class vfloat>
-      __forceinline Vec3<vfloat> tangentU(const vfloat& uu, const vfloat& vv) const
+      __forceinline Vec3<vfloat> eval_du(const vfloat& uu, const vfloat& vv) const
       {
         const vfloat sx1 = uu, sx0 = 1.0f-sx1;
         const vfloat sy1 = vv, sy0 = 1.0f-sy1;
@@ -111,7 +134,7 @@ namespace embree
       }
 
       template<class vfloat>
-      __forceinline Vec3<vfloat> tangentV(const vfloat& uu, const vfloat& vv) const
+      __forceinline Vec3<vfloat> eval_dv(const vfloat& uu, const vfloat& vv) const
       {
         const vfloat sx1 = uu, sx0 = 1.0f-sx1;
         const vfloat sy1 = vv, sy0 = 1.0f-sy1;
@@ -123,7 +146,7 @@ namespace embree
 
       template<typename vfloat>
       __forceinline Vec3<vfloat> normal(const vfloat& uu, const vfloat& vv) const {
-        return cross(tangentV(uu,vv),tangentU(uu,vv));
+        return cross(eval_dv(uu,vv),eval_du(uu,vv));
       }
 
        template<class vfloat>
@@ -135,7 +158,7 @@ namespace embree
       }
 
       template<class vfloat>
-      __forceinline vfloat tangentU(const size_t i, const vfloat& uu, const vfloat& vv) const
+      __forceinline vfloat eval_du(const size_t i, const vfloat& uu, const vfloat& vv) const
       {
         const vfloat sx1 = uu, sx0 = 1.0f-sx1;
         const vfloat sy1 = vv, sy0 = 1.0f-sy1;
@@ -143,27 +166,50 @@ namespace embree
       }
 
       template<class vfloat>
-      __forceinline vfloat tangentV(const size_t i, const vfloat& uu, const vfloat& vv) const
+      __forceinline vfloat eval_dv(const size_t i, const vfloat& uu, const vfloat& vv) const
       {
         const vfloat sx1 = uu, sx0 = 1.0f-sx1;
         const vfloat sy1 = vv, sy0 = 1.0f-sy1;
         return sx0*(v[3][i]-v[0][i]) + sx1*(v[2][i]-v[1][i]);
       }
 
+      template<class vfloat>
+      __forceinline vfloat eval_dudu(const size_t i, const vfloat& uu, const vfloat& vv) const {
+        return vfloat(zero);
+      }
+
+      template<class vfloat>
+      __forceinline vfloat eval_dvdv(const size_t i, const vfloat& uu, const vfloat& vv) const {
+        return vfloat(zero);
+      }
+
+      template<class vfloat>
+      __forceinline vfloat eval_dudv(const size_t i, const vfloat& uu, const vfloat& vv) const {
+        return (v[2][i]-v[3][i]) - (v[1][i]-v[0][i]);
+      }
+
       template<typename vbool, typename vfloat>
-      __forceinline void eval(const vbool& valid, const vfloat& uu, const vfloat& vv, float* P, float* dPdu, float* dPdv, const float dscale, const size_t dstride, const size_t N) const
+      __forceinline void eval(const vbool& valid, const vfloat& uu, const vfloat& vv, 
+                              float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv,
+                              const float dscale, const size_t dstride, const size_t N) const
       {
         if (P) {
           for (size_t i=0; i<N; i++) vfloat::store(valid,P+i*dstride,eval(i,uu,vv));
         }
         if (dPdu) {
-          for (size_t i=0; i<N; i++) vfloat::store(valid,dPdu+i*dstride,tangentU(i,uu,vv)*dscale);
+          for (size_t i=0; i<N; i++) {
+            assert(dPdu); vfloat::store(valid,dPdu+i*dstride,eval_du(i,uu,vv)*dscale);
+            assert(dPdv); vfloat::store(valid,dPdv+i*dstride,eval_dv(i,uu,vv)*dscale);
+          }
         }
-        if (dPdv) {
-          for (size_t i=0; i<N; i++) vfloat::store(valid,dPdv+i*dstride,tangentV(i,uu,vv)*dscale);
+        if (ddPdudu) {
+          for (size_t i=0; i<N; i++) {
+            assert(ddPdudu); vfloat::store(valid,ddPdudu+i*dstride,eval_dudu(i,uu,vv)*sqr(dscale));
+            assert(ddPdvdv); vfloat::store(valid,ddPdvdv+i*dstride,eval_dvdv(i,uu,vv)*sqr(dscale));
+            assert(ddPdudv); vfloat::store(valid,ddPdudv+i*dstride,eval_dudv(i,uu,vv)*sqr(dscale));
+          }
         }
       }
-
     };
   
   typedef BilinearPatchT<Vec3fa,Vec3fa_t> BilinearPatch3fa;

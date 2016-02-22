@@ -21,12 +21,12 @@
 
 namespace embree
 {
-  class BSplineBasis
+  class BSplineBasis // FIXME: factor of 1.0f/6.0f should be inside basis
   {
   public:
 
     template<class T>
-      static __forceinline Vec4<T>  eval(const T& u)
+      static __forceinline Vec4<T>  eval(const T& u) 
     {
       const T t  = u;
       const T s  = T(1.0f) - u;
@@ -47,6 +47,18 @@ namespace embree
       const T n2 =  s*s + 4.0f*(s*t);
       const T n3 =  t*t;
       return Vec4<T>(3.0f*n0,3.0f*n1,3.0f*n2,3.0f*n3);
+    }
+
+    template<class T>
+      static __forceinline Vec4<T>  derivative2(const T& u)
+    {
+      const T t  =  u;
+      const T s  =  1.0f - u;
+      const T n0 = s;
+      const T n1 = t - 2.0f*s;
+      const T n2 = s - 2.0f*t;
+      const T n3 = t;
+      return Vec4<T>(6.0f*n0,6.0f*n1,6.0f*n2,6.0f*n3);
     }
   };
 
@@ -255,7 +267,7 @@ namespace embree
         return (u_n[0] * curve0 + u_n[1] * curve1 + u_n[2] * curve2 + u_n[3] * curve3) * (1.0f/36.0f);
       }
       
-      __forceinline Vertex tangentU(const float uu, const float vv) const
+      __forceinline Vertex eval_du(const float uu, const float vv) const
       {
         const Vec4f v_n = BSplineBasis::eval(vv);
         const Vertex_t curve0 = v_n[0] * v[0][0] + v_n[1] * v[1][0] + v_n[2] * v[2][0] + v_n[3] * v[3][0];
@@ -267,7 +279,7 @@ namespace embree
         return (u_n[0] * curve0 + u_n[1] * curve1 + u_n[2] * curve2 + u_n[3] * curve3) * (1.0f/36.0f);
       }
       
-      __forceinline Vertex tangentV(const float uu, const float vv) const
+      __forceinline Vertex eval_dv(const float uu, const float vv) const
       {
         const Vec4f v_n = BSplineBasis::derivative(vv);
         const Vertex_t curve0 = v_n[0] * v[0][0] + v_n[1] * v[1][0] + v_n[2] * v[2][0] + v_n[3] * v[3][0];
@@ -278,14 +290,49 @@ namespace embree
         const Vec4f u_n = BSplineBasis::eval(uu);
         return (u_n[0] * curve0 + u_n[1] * curve1 + u_n[2] * curve2 + u_n[3] * curve3) * (1.0f/36.0f);
       }
+
+      __forceinline Vertex eval_dudu(const float uu, const float vv) const
+      {
+        const Vec4f v_n = BSplineBasis::eval(vv);
+        const Vertex_t curve0 = v_n[0] * v[0][0] + v_n[1] * v[1][0] + v_n[2] * v[2][0] + v_n[3] * v[3][0];
+        const Vertex_t curve1 = v_n[0] * v[0][1] + v_n[1] * v[1][1] + v_n[2] * v[2][1] + v_n[3] * v[3][1];
+        const Vertex_t curve2 = v_n[0] * v[0][2] + v_n[1] * v[1][2] + v_n[2] * v[2][2] + v_n[3] * v[3][2];
+        const Vertex_t curve3 = v_n[0] * v[0][3] + v_n[1] * v[1][3] + v_n[2] * v[2][3] + v_n[3] * v[3][3];
+        
+        const Vec4f u_n = BSplineBasis::derivative2(uu);
+        return (u_n[0] * curve0 + u_n[1] * curve1 + u_n[2] * curve2 + u_n[3] * curve3) * (1.0f/36.0f);
+      }
+
+      __forceinline Vertex eval_dvdv(const float uu, const float vv) const
+      {
+        const Vec4f v_n = BSplineBasis::derivative2(vv);
+        const Vertex_t curve0 = v_n[0] * v[0][0] + v_n[1] * v[1][0] + v_n[2] * v[2][0] + v_n[3] * v[3][0];
+        const Vertex_t curve1 = v_n[0] * v[0][1] + v_n[1] * v[1][1] + v_n[2] * v[2][1] + v_n[3] * v[3][1];
+        const Vertex_t curve2 = v_n[0] * v[0][2] + v_n[1] * v[1][2] + v_n[2] * v[2][2] + v_n[3] * v[3][2];
+        const Vertex_t curve3 = v_n[0] * v[0][3] + v_n[1] * v[1][3] + v_n[2] * v[2][3] + v_n[3] * v[3][3];
+        
+        const Vec4f u_n = BSplineBasis::eval(uu);
+        return (u_n[0] * curve0 + u_n[1] * curve1 + u_n[2] * curve2 + u_n[3] * curve3) * (1.0f/36.0f);
+      }
+
+      __forceinline Vertex eval_dudv(const float uu, const float vv) const
+      {
+        const Vec4f v_n = BSplineBasis::derivative(vv);
+        const Vertex_t curve0 = v_n[0] * v[0][0] + v_n[1] * v[1][0] + v_n[2] * v[2][0] + v_n[3] * v[3][0];
+        const Vertex_t curve1 = v_n[0] * v[0][1] + v_n[1] * v[1][1] + v_n[2] * v[2][1] + v_n[3] * v[3][1];
+        const Vertex_t curve2 = v_n[0] * v[0][2] + v_n[1] * v[1][2] + v_n[2] * v[2][2] + v_n[3] * v[3][2];
+        const Vertex_t curve3 = v_n[0] * v[0][3] + v_n[1] * v[1][3] + v_n[2] * v[2][3] + v_n[3] * v[3][3];
+        
+        const Vec4f u_n = BSplineBasis::derivative(uu);
+        return (u_n[0] * curve0 + u_n[1] * curve1 + u_n[2] * curve2 + u_n[3] * curve3) * (1.0f/36.0f);
+      }
       
       __forceinline Vertex normal(const float uu, const float vv) const
       {
-        const Vertex tu = tangentU(uu,vv);
-        const Vertex tv = tangentV(uu,vv);
+        const Vertex tu = eval_du(uu,vv);
+        const Vertex tv = eval_dv(uu,vv);
         return cross(tv,tu);
       }   
-      
 
       template<class T>
       __forceinline Vec3<T> eval(const T& uu, const T& vv, const Vec4<T>& u_n, const Vec4<T>& v_n) const
@@ -320,7 +367,7 @@ namespace embree
       }
 
       template<typename T>
-      __forceinline Vec3<T> tangentU(const T& uu, const T& vv) const
+      __forceinline Vec3<T> eval_du(const T& uu, const T& vv) const
       {
         const Vec4<T> u_n = BSplineBasis::derivative(uu); 
         const Vec4<T> v_n = BSplineBasis::eval(vv); 
@@ -328,24 +375,58 @@ namespace embree
       }
       
       template<typename T>
-      __forceinline Vec3<T> tangentV(const T& uu, const T& vv) const
+      __forceinline Vec3<T> eval_dv(const T& uu, const T& vv) const
       {
         const Vec4<T> u_n = BSplineBasis::eval(uu); 
         const Vec4<T> v_n = BSplineBasis::derivative(vv); 
         return eval(uu,vv,u_n,v_n);      
       }
-      
+
       template<typename T>
-      __forceinline Vec3<T> normal(const T& uu, const T& vv) const
+      __forceinline Vec3<T> eval_dudu(const T& uu, const T& vv) const
       {
-        return cross(tangentV(uu,vv),tangentU(uu,vv));
+        const Vec4<T> u_n = BSplineBasis::derivative2(uu); 
+        const Vec4<T> v_n = BSplineBasis::eval(vv); 
+        return eval(uu,vv,u_n,v_n);      
       }
 
-      __forceinline void eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv, const float dscale = 1.0f) const
+      template<typename T>
+      __forceinline Vec3<T> eval_dvdv(const T& uu, const T& vv) const
       {
-        if (P)    *P    = eval(u,v); 
-        if (dPdu) *dPdu = tangentU(u,v)*dscale; 
-        if (dPdv) *dPdv = tangentV(u,v)*dscale; 
+        const Vec4<T> u_n = BSplineBasis::eval(uu); 
+        const Vec4<T> v_n = BSplineBasis::derivative2(vv); 
+        return eval(uu,vv,u_n,v_n);      
+      }
+
+      template<typename T>
+      __forceinline Vec3<T> eval_dudv(const T& uu, const T& vv) const
+      {
+        const Vec4<T> u_n = BSplineBasis::derivative(uu); 
+        const Vec4<T> v_n = BSplineBasis::derivative(vv); 
+        return eval(uu,vv,u_n,v_n);      
+      }
+      
+      template<typename T>
+      __forceinline Vec3<T> normal(const T& uu, const T& vv) const {
+        return cross(eval_dv(uu,vv),eval_du(uu,vv));
+      }
+
+      __forceinline void eval(const float u, const float v, 
+                              Vertex* P, Vertex* dPdu, Vertex* dPdv, Vertex* ddPdudu, Vertex* ddPdvdv, Vertex* ddPdudv, 
+                              const float dscale = 1.0f) const
+      {
+        if (P) {
+          *P = eval(u,v); 
+        }
+        if (dPdu) {
+          assert(dPdu); *dPdu = eval_du(u,v)*dscale; 
+          assert(dPdv); *dPdv = eval_dv(u,v)*dscale; 
+        }
+        if (ddPdudu) {
+          assert(ddPdudu); *ddPdudu = eval_dudu(u,v)*sqr(dscale); 
+          assert(ddPdvdv); *ddPdvdv = eval_dvdv(u,v)*sqr(dscale); 
+          assert(ddPdudv); *ddPdudv = eval_dudv(u,v)*sqr(dscale); 
+        }
       }
 
       template<class vfloat>
@@ -359,22 +440,50 @@ namespace embree
       }
         
       template<typename vbool, typename vfloat>
-      __forceinline void eval(const vbool& valid, const vfloat& uu, const vfloat& vv, float* P, float* dPdu, float* dPdv, const float dscale, const size_t dstride, const size_t N) const
+      __forceinline void eval(const vbool& valid, const vfloat& uu, const vfloat& vv, 
+                              float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, 
+                              const float dscale, const size_t dstride, const size_t N) const
       {
         if (P) {
           const Vec4<vfloat> u_n = BSplineBasis::eval(uu); 
           const Vec4<vfloat> v_n = BSplineBasis::eval(vv); 
           for (size_t i=0; i<N; i++) vfloat::store(valid,P+i*dstride,eval(i,uu,vv,u_n,v_n));
         }
-        if (dPdu) {
-          const Vec4<vfloat> u_n = BSplineBasis::derivative(uu); 
-          const Vec4<vfloat> v_n = BSplineBasis::eval(vv);
-          for (size_t i=0; i<N; i++) vfloat::store(valid,dPdu+i*dstride,eval(i,uu,vv,u_n,v_n)*dscale);
+        if (dPdu) 
+        {
+          {
+            assert(dPdu);
+            const Vec4<vfloat> u_n = BSplineBasis::derivative(uu); 
+            const Vec4<vfloat> v_n = BSplineBasis::eval(vv);
+            for (size_t i=0; i<N; i++) vfloat::store(valid,dPdu+i*dstride,eval(i,uu,vv,u_n,v_n)*dscale);
+          }
+          {
+            assert(dPdv);
+            const Vec4<vfloat> u_n = BSplineBasis::eval(uu); 
+            const Vec4<vfloat> v_n = BSplineBasis::derivative(vv);
+            for (size_t i=0; i<N; i++) vfloat::store(valid,dPdv+i*dstride,eval(i,uu,vv,u_n,v_n)*dscale);
+          }
         }
-        if (dPdv) {
-          const Vec4<vfloat> u_n = BSplineBasis::eval(uu); 
-          const Vec4<vfloat> v_n = BSplineBasis::derivative(vv);
-          for (size_t i=0; i<N; i++) vfloat::store(valid,dPdv+i*dstride,eval(i,uu,vv,u_n,v_n)*dscale);
+        if (ddPdudu) 
+        {
+          {
+            assert(ddPdudu);
+            const Vec4<vfloat> u_n = BSplineBasis::derivative2(uu); 
+            const Vec4<vfloat> v_n = BSplineBasis::eval(vv);
+            for (size_t i=0; i<N; i++) vfloat::store(valid,ddPdudu+i*dstride,eval(i,uu,vv,u_n,v_n)*sqr(dscale));
+          }
+          {
+            assert(ddPdvdv);
+            const Vec4<vfloat> u_n = BSplineBasis::eval(uu); 
+            const Vec4<vfloat> v_n = BSplineBasis::derivative2(vv);
+            for (size_t i=0; i<N; i++) vfloat::store(valid,ddPdvdv+i*dstride,eval(i,uu,vv,u_n,v_n)*sqr(dscale));
+          }
+          {
+            assert(ddPdudv);
+            const Vec4<vfloat> u_n = BSplineBasis::derivative(uu); 
+            const Vec4<vfloat> v_n = BSplineBasis::derivative(vv);
+            for (size_t i=0; i<N; i++) vfloat::store(valid,ddPdudv+i*dstride,eval(i,uu,vv,u_n,v_n)*sqr(dscale));
+          }
         }
       }
 

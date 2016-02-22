@@ -38,7 +38,7 @@ bool g_subdiv_mode = false;
 #define MIN_EDGE_LEVEL  4.0f
 #define LEVEL_FACTOR   64.0f
 
-#define TEST_STREAM_TRACING 1
+#define TEST_STREAM_TRACING 0
 
 inline float updateEdgeLevel( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, const size_t e0, const size_t e1)
 {
@@ -542,6 +542,21 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   if (g_use_smooth_normals)
     if (ray.geomID != RTC_INVALID_GEOMETRY_ID) // FIXME: workaround for ISPC bug, location reached with empty execution mask
   {
+    /*int geomID = ray.geomID;
+    float epss = 0.001f;
+    Vec3fa P00, P01, P10, P11;
+    Vec3fa dP00du, dP01du, dP10du, dP11du;
+    Vec3fa dP00dv, dP01dv, dP10dv, dP11dv;
+    rtcInterpolate(g_scene,geomID,ray.primID,ray.u+0.0f,ray.v+0.0f,RTC_VERTEX_BUFFER0,&P00.x,&dP00du.x,&dP00dv.x,3);
+    rtcInterpolate(g_scene,geomID,ray.primID,ray.u+0.0f,ray.v+epss,RTC_VERTEX_BUFFER0,&P01.x,&dP01du.x,&dP01dv.x,3);
+    rtcInterpolate(g_scene,geomID,ray.primID,ray.u+epss,ray.v+0.0f,RTC_VERTEX_BUFFER0,&P10.x,&dP10du.x,&dP10dv.x,3);
+    rtcInterpolate(g_scene,geomID,ray.primID,ray.u+epss,ray.v+epss,RTC_VERTEX_BUFFER0,&P11.x,&dP11du.x,&dP11dv.x,3);
+    Vec3fa dPduD = (dP10-dP00)/epss;
+    Vec3fa dPdvD = (dP01-dP00)/epss;
+
+    Vec3fa dPdu, dPdv, ddPdudu, ddPdvdv, ddPdudv;
+    rtcInterpolate2(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER0,nullptr,&dPdu.x,&dPdv.x,&ddPdudu.x,&ddPdvdv.x,&ddPdudv.x,3);*/
+  
     Vec3fa dPdu,dPdv;
     int geomID = ray.geomID; {
       rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER0,nullptr,&dPdu.x,&dPdv.x,3);
