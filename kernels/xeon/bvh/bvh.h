@@ -159,7 +159,7 @@ namespace embree
       /*! Prefetches the node this reference points to */
       __forceinline void prefetch(int types=0) const {
 #if defined(__AVX512F__)
-        prefetchL2(((char*)ptr)+0*64);
+        prefetchL1(((char*)ptr)+0*64);
         prefetchL2(((char*)ptr)+1*64);
         if ((N >= 8) || (types > BVH_FLAG_ALIGNED_NODE)) {
           prefetchL2(((char*)ptr)+2*64);
@@ -203,6 +203,14 @@ namespace embree
       }
 
       __forceinline void prefetchL1C(int types=0) const {
+#if defined(__AVX512F__)
+        //embree::prefetchL1(((char*)ptr)+0*64);
+        embree::prefetchL1(((char*)ptr)+1*64);
+        if ((N >= 8) || (types > BVH_FLAG_ALIGNED_NODE)) {
+          embree::prefetchL1(((char*)ptr)+2*64);
+          embree::prefetchL1(((char*)ptr)+3*64);
+        }
+#else
         embree::prefetchL1(((char*)ptr)+0*64);
         embree::prefetchL1(((char*)ptr)+1*64);
         if ((N >= 8) || (types > BVH_FLAG_ALIGNED_NODE)) {
@@ -215,6 +223,7 @@ namespace embree
           embree::prefetchL1(((char*)ptr)+6*64);
           embree::prefetchL1(((char*)ptr)+7*64);
         }
+#endif
       }
 
       __forceinline void prefetchW(int types=0) const {

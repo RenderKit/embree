@@ -38,6 +38,7 @@
 
 #define DBG(x) 
 //PRINT(x)
+// todo: make offset constant in AVX512 mode
 
 namespace embree
 {
@@ -351,7 +352,7 @@ namespace embree
 
           while (1)
           {
-
+            
             cur_fiber = cur_fiber->swapContext(cur,m_trav_active,stackPtr);
 
             if (likely(cur.isLeaf())) break;
