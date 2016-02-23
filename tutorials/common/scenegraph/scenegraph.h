@@ -91,6 +91,12 @@ namespace embree
         for (size_t i=0; i<children.size(); i++)
           children[i] = convert_triangles_to_quads(children[i]);
       }
+
+      void quads_to_subdivs()
+      {
+        for (size_t i=0; i<children.size(); i++)
+          children[i] = convert_quads_to_subdivs(children[i]);
+      }
       
       void bezier_to_lines()
       {
@@ -255,6 +261,7 @@ namespace embree
     static void store(Ref<SceneGraph::Node> root, const FileName& fname, bool embedTextures);
     static void set_motion_blur(Ref<Node> node0, Ref<Node> node1);
     static Ref<SceneGraph::Node> convert_triangles_to_quads(Ref<SceneGraph::Node> node);
+    static Ref<SceneGraph::Node> convert_quads_to_subdivs(Ref<SceneGraph::Node> node);
     static Ref<SceneGraph::Node> convert_bezier_to_lines(Ref<SceneGraph::Node> node);
   };
 }

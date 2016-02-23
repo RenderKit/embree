@@ -156,6 +156,12 @@ namespace embree
         g_scene->triangles_to_quads();
       }
 
+      /* convert to subdivs */
+      else if (tag == "-convert-to-subdivs") {
+        g_scene->triangles_to_quads();
+        g_scene->quads_to_subdivs();
+      }
+
       /* convert bezier to lines */
       else if (tag == "-convert-bezier-to-lines") {
         g_scene->bezier_to_lines();
