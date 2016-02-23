@@ -64,51 +64,6 @@ namespace embree
           eval(patch,Vec2f(u,v),dscale,depth);
         }
         
-        void eval_general_triangle(const GeneralCatmullClarkPatch& patch, array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE>& patches, const Vec2f& uv, size_t depth)
-        {
-          const bool ab_abc = right_of_line_ab_abc(uv);
-          const bool ac_abc = right_of_line_ac_abc(uv);
-          const bool bc_abc = right_of_line_bc_abc(uv);
-          
-          const float u = uv.x, v = uv.y, w = 1.0f-u-v;
-          if  (!ab_abc &&  ac_abc) {
-            const Vec2f xy = map_tri_to_quad(Vec2f(u,v));
-#if PATCH_USE_GREGORY == 2
-            BezierCurve borders[2]; patch.getLimitBorder(borders,0);
-            BezierCurve border0l,border0r; borders[0].subdivide(border0l,border0r);
-            BezierCurve border2l,border2r; borders[1].subdivide(border2l,border2r);
-            eval(patches[0],xy,1.0f,depth+1, &border0l, nullptr, nullptr, &border2r);
-#else
-            eval(patches[0],xy,1.0f,depth+1);
-#endif
-            if (dPdu && dPdv) map_quad0_to_tri(xy,*dPdu,*dPdv);
-          }
-          else if ( ab_abc && !bc_abc) {
-            const Vec2f xy = map_tri_to_quad(Vec2f(v,w));
-#if PATCH_USE_GREGORY == 2
-            BezierCurve borders[2]; patch.getLimitBorder(borders,1);
-            BezierCurve border0l,border0r; borders[0].subdivide(border0l,border0r);
-            BezierCurve border2l,border2r; borders[1].subdivide(border2l,border2r);
-            eval(patches[1],xy,1.0f,depth+1, &border0l, nullptr, nullptr, &border2r);
-#else
-            eval(patches[1],xy,1.0f,depth+1);
-#endif
-            if (dPdu && dPdv) map_quad1_to_tri(xy,*dPdu,*dPdv);
-          }
-          else {
-            const Vec2f xy = map_tri_to_quad(Vec2f(w,u));
-#if PATCH_USE_GREGORY == 2
-            BezierCurve borders[2]; patch.getLimitBorder(borders,2);
-            BezierCurve border0l,border0r; borders[0].subdivide(border0l,border0r);
-            BezierCurve border2l,border2r; borders[1].subdivide(border2l,border2r);
-            eval(patches[2],xy,1.0f,depth+1, &border0l, nullptr, nullptr, &border2r);
-#else
-            eval(patches[2],xy,1.0f,depth+1);
-#endif
-            if (dPdu && dPdv) map_quad2_to_tri(xy,*dPdu,*dPdv);
-          }
-        }
-        
         void eval_general_quad(const GeneralCatmullClarkPatch& patch, array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE>& patches, const Vec2f& uv, size_t depth)
         {
           float u = uv.x, v = uv.y;
@@ -248,12 +203,8 @@ namespace embree
           array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE> patches; 
           patch.subdivide(patches,N); // FIXME: only have to generate one of the patches
           
-          /* parametrization for triangles */
-          if (N == 3)
-            eval_general_triangle(patch,patches,uv,depth);
-          
           /* parametrization for quads */
-          else if (N == 4) 
+          if (N == 4) 
             eval_general_quad(patch,patches,uv,depth);
           
           /* parametrization for arbitrary polygons */

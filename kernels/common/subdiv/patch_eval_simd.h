@@ -67,35 +67,6 @@ namespace embree
           return ret;
         }
         
-        vbool eval_general_triangle(const vbool& valid, const typename Patch::SubdividedGeneralTrianglePatch* This, const vfloat& u, const vfloat& v, const size_t depth)
-        {
-          vbool ret = false;
-          const vbool ab_abc = right_of_line_ab_abc(Vec2<vfloat>(u,v));
-          const vbool ac_abc = right_of_line_ac_abc(Vec2<vfloat>(u,v));
-          const vbool bc_abc = right_of_line_bc_abc(Vec2<vfloat>(u,v));
-          const vbool tri0_mask = valid & !ab_abc &  ac_abc;
-          const vbool tri1_mask = valid &  ab_abc & !bc_abc & !tri0_mask;
-          const vbool tri2_mask = valid & !tri0_mask & !tri1_mask;
-          const vfloat w = 1.0f-u-v;
-          
-          if  (any(tri0_mask)) {
-            const Vec2<vfloat> xy = map_tri_to_quad(Vec2<vfloat>(u,v));
-            ret |= eval(tri0_mask,This->child[0],xy.x,xy.y,1.0f,depth+1);
-            if (dPdu && dPdv) for (size_t i=0; i<N; i++) map_quad0_to_tri(tri0_mask,xy,dPdu,dPdv,dstride,i);
-          }
-          if (any(tri1_mask)) {
-            const Vec2<vfloat> xy = map_tri_to_quad(Vec2<vfloat>(v,w));
-            ret |= eval(tri1_mask,This->child[1],xy.x,xy.y,1.0f,depth+1);
-            if (dPdu && dPdv) for (size_t i=0; i<N; i++) map_quad1_to_tri(tri1_mask,xy,dPdu,dPdv,dstride,i);
-          }
-          if (any(tri2_mask)) {
-            const Vec2<vfloat> xy = map_tri_to_quad(Vec2<vfloat>(w,u));
-            ret |= eval(tri2_mask,This->child[2],xy.x,xy.y,1.0f,depth+1);
-            if (dPdu && dPdv) for (size_t i=0; i<N; i++) map_quad2_to_tri(tri2_mask,xy,dPdu,dPdv,dstride,i);
-          }
-          return ret;
-        }
-        
         vbool eval_general(const vbool& valid, const typename Patch::SubdividedGeneralPatch* patch, const vfloat& U, const vfloat& V, const size_t depth)
         {
           vbool ret = false;
@@ -132,10 +103,6 @@ namespace embree
           }
           case Patch::SUBDIVIDED_QUAD_PATCH: {
             return eval_quad(valid,((typename Patch::SubdividedQuadPatch*)This.object()),u,v,dscale,depth);
-          }
-          case Patch::SUBDIVIDED_GENERAL_TRIANGLE_PATCH: { 
-            assert(dscale == 1.0f); 
-            return eval_general_triangle(valid,((typename Patch::SubdividedGeneralTrianglePatch*)This.object()),u,v,depth); 
           }
           case Patch::SUBDIVIDED_GENERAL_PATCH: { 
             assert(dscale == 1.0f); 

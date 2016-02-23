@@ -375,7 +375,7 @@ Vec3fa renderPixelDifferentials(float x, float y, const Vec3fa& vx, const Vec3fa
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(0.0f);
   
   /* calculate differentials */
-  float eps = 0.001f;
+  float eps = 0.0001f;
   Vec3fa P00, P01, P10, P11;
   Vec3fa dP00du, dP01du, dP10du, dP11du;
   Vec3fa dP00dv, dP01dv, dP10dv, dP11dv;
