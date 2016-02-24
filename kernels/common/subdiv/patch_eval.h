@@ -73,37 +73,46 @@ namespace embree
         bool eval(Ref This, const float& u, const float& v, const float dscale, const size_t depth) 
         {
           if (!This) return false;
+          //PRINT(depth);
+          //PRINT2(u,v);
           
           switch (This.type()) 
           {
           case Patch::BILINEAR_PATCH: {
+            //PRINT("bilinear");
             ((typename Patch::BilinearPatch*)This.object())->patch.eval(u,v,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,dscale); 
             PATCH_DEBUG_SUBDIVISION(This,-1,c,c);
             return true;
           }
           case Patch::BSPLINE_PATCH: {
+            //PRINT("bspline");
             ((typename Patch::BSplinePatch*)This.object())->patch.eval(u,v,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,dscale);
             PATCH_DEBUG_SUBDIVISION(This,-1,c,-1);
             return true;
           }
           case Patch::BEZIER_PATCH: {
+            //PRINT("bezier");
             ((typename Patch::BezierPatch*)This.object())->patch.eval(u,v,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,dscale);
             PATCH_DEBUG_SUBDIVISION(This,-1,c,-1);
             return true;
           }
           case Patch::GREGORY_PATCH: {
+            //PRINT("gregory");
             ((typename Patch::GregoryPatch*)This.object())->patch.eval(u,v,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,dscale); 
             PATCH_DEBUG_SUBDIVISION(This,-1,-1,c);
             return true;
           }
           case Patch::SUBDIVIDED_QUAD_PATCH: {
+            //PRINT("subdivided quad");
             return eval_quad(((typename Patch::SubdividedQuadPatch*)This.object()),u,v,dscale,depth);
           }
           case Patch::SUBDIVIDED_GENERAL_PATCH: { 
+            //PRINT("general_patch");
             assert(dscale == 1.0f); 
             return eval_general(((typename Patch::SubdividedGeneralPatch*)This.object()),u,v,depth); 
           }
           case Patch::EVAL_PATCH: { 
+            //PRINT("eval_patch");
             CatmullClarkPatch patch; patch.deserialize(This.object());
             FeatureAdaptiveEval<Vertex,Vertex_t>(patch,u,v,dscale,depth,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv);
             return true;

@@ -62,7 +62,7 @@ namespace embree
     }
 
     __forceinline Vec2f getUV(const size_t i) const {
-      return Vec2f((float)u[i],(float)v[i]) * (1.0f/65535.0f);
+      return Vec2f((float)u[i],(float)v[i]) * (1.0f/32768.0f);
     }
 
     static void computeEdgeLevels(const float edge_level[4], const int subdiv[4], float level[4]);

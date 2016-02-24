@@ -19,6 +19,7 @@
 #include "../common/scenegraph/xml_loader.h"
 #include "../common/tutorial/scene.h"
 #include "../common/image/image.h"
+#include "../common/tutorial/tutorial_device.h"
 
 namespace embree
 {
@@ -261,6 +262,7 @@ namespace embree
 
     /* initialize ray tracing core */
     init(g_rtcore.c_str());
+    key_pressed(GLUT_KEY_F12);
 
     /* send model */
     g_obj_scene.add(g_scene.dynamicCast<SceneGraph::Node>(),(TutorialScene::InstancingMode)g_instancing_mode); 

@@ -19,7 +19,7 @@
 #include "../scenegraph/texture.h"
 #include "scene_device.h"
 
-#define TEST_STREAM_TRACING 1 // FIMXE: remove
+#define TEST_STREAM_TRACING 1 // FIXME: remove
 
 /* the scene to render */
 extern RTCScene g_scene;
@@ -375,7 +375,7 @@ Vec3fa renderPixelDifferentials(float x, float y, const Vec3fa& vx, const Vec3fa
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(0.0f);
   
   /* calculate differentials */
-  float eps = 0.0001f;
+  float eps = 0.001f/16.0f;
   Vec3fa P00, P01, P10, P11;
   Vec3fa dP00du, dP01du, dP10du, dP11du;
   Vec3fa dP00dv, dP01dv, dP10dv, dP11dv;
@@ -388,16 +388,16 @@ Vec3fa renderPixelDifferentials(float x, float y, const Vec3fa& vx, const Vec3fa
   Vec3fa ddPdudu0 = (dP10du-dP00du)/eps;
   Vec3fa ddPdvdv0 = (dP01dv-dP00dv)/eps;
   Vec3fa ddPdudv0 = (dP01du-dP00du)/eps;
-  
+
   Vec3fa dPdu1, dPdv1, ddPdudu1, ddPdvdv1, ddPdudv1;
   rtcInterpolate2(g_scene,ray.geomID,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER0,nullptr,&dPdu1.x,&dPdv1.x,&ddPdudu1.x,&ddPdvdv1.x,&ddPdudv1.x,3);
-  
+ 
   Vec3fa color = zero;
   switch (differentialMode)
   {
   case  0: color = dPdu0; break;
   case  1: color = dPdu1; break;
-  case  2: color = dPdu1-dPdu0; break;
+  case  2: color = 10.0f*(dPdu1-dPdu0); break;
 
   case  3: color = dPdv0; break;
   case  4: color = dPdv1; break;
@@ -414,6 +414,18 @@ Vec3fa renderPixelDifferentials(float x, float y, const Vec3fa& vx, const Vec3fa
   case 12: color = ddPdudv0; break;
   case 13: color = ddPdudv1; break;
   case 14: color = 10.0f*(ddPdudv1-ddPdudv0); break;
+
+  case 15: 
+    color.x = length(dnormalize(dPdu1,ddPdudu1))/length(dPdu1); 
+    color.y = length(dnormalize(dPdv1,ddPdvdv1))/length(dPdv1); 
+    color.z = 0.0f;
+    break;
+  case 16: {
+    float Cu = length(dnormalize(dPdu1,ddPdudu1))/length(dPdu1); 
+    float Cv = length(dnormalize(dPdv1,ddPdvdv1))/length(dPdv1); 
+    color = Vec3fa(sqrt(Cu*Cu + Cv*Cv));
+    break;
+  }
   }
   return clamp(color,Vec3fa(zero),Vec3fa(one));
 }
@@ -510,7 +522,7 @@ extern "C" void device_key_pressed_default(int key)
   else if (key == GLUT_KEY_F12) 
   {
     if (renderPixel == renderPixelDifferentials) {
-      differentialMode = (differentialMode+1)%15;
+      differentialMode = (differentialMode+1)%17;
     } else {
       renderPixel = renderPixelDifferentials;
       differentialMode = 0;
