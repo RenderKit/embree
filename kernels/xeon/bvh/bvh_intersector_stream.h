@@ -180,16 +180,23 @@ namespace embree
         size_t mask;
         StackItemMask* stackPtr;
         RayFiberContext *next;
-
+#if !defined(__AVX512F__)
+        size_t offset;
+#endif
+        
         __forceinline void init(NodeRef _node,
                                 size_t  _mask,
                                 StackItemMask* _stackPtr,
-                                RayFiberContext *_next)
+                                RayFiberContext *_next,
+                                size_t _offset)
         {
-          node = _node;
-          mask = _mask;
-          stackPtr = _stackPtr;
-          next = _next;
+          node        = _node;
+          mask        = _mask;
+          stackPtr    = _stackPtr;
+          next        = _next;
+#if !defined(__AVX512F__)
+          offset      = _offset;
+#endif
         }
 
         __forceinline RayFiberContext *swapContext(NodeRef &_node,
@@ -204,6 +211,16 @@ namespace embree
           _mask     = next->mask;
           _stackPtr = next->stackPtr;          
           return next;
+        }
+
+        __forceinline size_t getOffset()
+        {
+#if !defined(__AVX512F__)
+          return offset;
+#else
+          return 0;
+#endif
+
         }
                            
       };
