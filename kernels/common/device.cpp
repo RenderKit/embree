@@ -435,7 +435,81 @@ namespace embree
   {
     switch (parm) {
     case RTC_SOFTWARE_CACHE_SIZE: setCacheSize(val); break;
-    default: throw_RTCError(RTC_INVALID_ARGUMENT, "unknown parameter"); break;
+    default: throw_RTCError(RTC_INVALID_ARGUMENT, "unknown writable parameter"); break;
+    };
+  }
+
+  ssize_t Device::getParameter1i(const RTCParameter parm)
+  {
+    switch (parm) 
+    {
+    case RTC_CONFIG_VERSION_MAJOR: return __EMBREE_VERSION_MAJOR__;
+    case RTC_CONFIG_VERSION_MINOR: return __EMBREE_VERSION_MINOR__;
+    case RTC_CONFIG_VERSION_PATCH: return __EMBREE_VERSION_PATCH__;
+    case RTC_CONFIG_VERSION      : return __EMBREE_VERSION_NUMBER__;
+
+    case RTC_CONFIG_INTERSECT1: return 1;
+    case RTC_CONFIG_INTERSECTN: return 1;
+
+#if defined(RTCORE_RAY_PACKETS)
+    case RTC_CONFIG_INTERSECT4:  return hasISA(SSE2);
+    case RTC_CONFIG_INTERSECT8:  return hasISA(AVX);
+    case RTC_CONFIG_INTERSECT16: return hasISA(AVX512KNL) | hasISA(KNC);
+#else
+    case RTC_CONFIG_INTERSECT4:  return 0;
+    case RTC_CONFIG_INTERSECT8:  return 0;
+    case RTC_CONFIG_INTERSECT16: return 0;
+#endif
+    
+#if defined(RTCORE_RAY_MASK)
+    case RTC_CONFIG_RAY_MASK: return 1;
+#else
+    case RTC_CONFIG_RAY_MASK: return 0;
+#endif
+
+#if defined(RTC_BACKFACE_CULLING)
+    case RTC_CONFIG_BACKFACE_CULLING: return 1;
+#else
+    case RTC_CONFIG_BACKFACE_CULLING: return 0;
+#endif
+
+#if defined(RTC_INTERSECTION_FILTER)
+    case RTC_CONFIG_INTERSECTION_FILTER: return 1;
+#else
+    case RTC_CONFIG_INTERSECTION_FILTER: return 0;
+#endif
+
+#if defined(RTC_INTERSECTION_FILTER_RESTORE)
+    case RTC_CONFIG_INTERSECTION_FILTER_RESTORE: return 1;
+#else
+    case RTC_CONFIG_INTERSECTION_FILTER_RESTORE: return 0;
+#endif
+
+#if defined(RTC_BUFFER_STRIDE)
+    case RTC_CONFIG_BUFFER_STRIDE: return 1;
+#else
+    case RTC_CONFIG_BUFFER_STRIDE: return 0;
+#endif
+      
+#if defined(RTC_IGNORE_INVALID_RAYS)
+    case RTC_CONFIG_IGNORE_INVALID_RAYS: return 1;
+#else
+    case RTC_CONFIG_IGNORE_INVALID_RAYS: return 0;
+#endif
+
+#if defined(TASKING_TBB_INTERNAL)
+    case RTC_CONFIG_TASKING_SYSTEM: return 0;
+#endif
+
+#if defined(TASKING_LOCKSTEP)
+    case RTC_CONFIG_TASKING_SYSTEM: return 0;
+#endif
+
+#if defined(TASKING_TBB)
+    case RTC_CONFIG_TASKING_SYSTEM: return 1;
+#endif
+
+    default: throw_RTCError(RTC_INVALID_ARGUMENT, "unknown readable parameter"); break;
     };
   }
 }

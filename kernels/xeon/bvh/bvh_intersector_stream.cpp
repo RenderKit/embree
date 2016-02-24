@@ -391,7 +391,7 @@ namespace embree
               /*! pop next node */
               STAT3(shadow.trav_stack_pop,1,1,1);                          
               do {
-                assert(stackPtr > stack);
+                //assert(stackPtr > stack);
                 stackPtr--;
                 cur = NodeRef(stackPtr->ptr);
                 assert(stackPtr->mask);

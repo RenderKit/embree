@@ -62,6 +62,9 @@ namespace embree
     /*! configures some parameter */
     void setParameter1i(const RTCParameter parm, ssize_t val);
 
+    /*! returns some configuration */
+    ssize_t getParameter1i(const RTCParameter parm);
+
   private:
 
     /*! initializes the tasking system */

@@ -82,6 +82,17 @@ namespace embree
     RTCORE_CATCH_END(g_device);
   }
 
+  RTCORE_API ssize_t rtcGetParameter1i(const RTCParameter parm)
+  {
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcGetParameter1i);
+    assert(g_device);
+    Lock<MutexSys> lock(g_mutex);
+    return g_device->getParameter1i(parm);
+    RTCORE_CATCH_END(g_device);
+    return 0;
+  }
+
   RTCORE_API void rtcDeviceSetParameter1i(RTCDevice hdevice, const RTCParameter parm, ssize_t val)
   {
     Device* device = (Device*) hdevice;
@@ -91,6 +102,18 @@ namespace embree
     Lock<MutexSys> lock(g_mutex);
     device->setParameter1i(parm,val);
     RTCORE_CATCH_END(device);
+  }
+
+  RTCORE_API ssize_t rtcDeviceGetParameter1i(RTCDevice hdevice, const RTCParameter parm)
+  {
+    Device* device = (Device*) hdevice;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcDeviceGetParameter1i);
+    RTCORE_VERIFY_HANDLE(hdevice);
+    Lock<MutexSys> lock(g_mutex);
+    return device->getParameter1i(parm);
+    RTCORE_CATCH_END(device);
+    return 0;
   }
 
   RTCORE_API RTCError rtcGetError()

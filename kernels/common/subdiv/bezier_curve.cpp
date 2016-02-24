@@ -31,6 +31,6 @@ namespace embree
       }
     }
   }
-  extern BezierCoefficients bezier_coeff0(0);
-  extern BezierCoefficients bezier_coeff1(1);
+  BezierCoefficients bezier_coeff0(0);
+  BezierCoefficients bezier_coeff1(1);
 }

@@ -131,12 +131,31 @@ RTCORE_API RTCORE_DEPRECATED void rtcExit();
 
 /*! \brief Parameters that can get configured using the rtcSetParameter functions. */
 enum RTCParameter {
-  RTC_SOFTWARE_CACHE_SIZE = 0      /*! Configures the software cache size (used
-                                     to cache subdivision surfaces for
-                                     instance). The size is specified as an
-                                     integer number of bytes. The software
-                                     cache cannot be configured during
-                                     rendering. */
+  RTC_SOFTWARE_CACHE_SIZE = 0,                /*! Configures the software cache size (used
+                                                to cache subdivision surfaces for
+                                                instance). The size is specified as an
+                                                integer number of bytes. The software
+                                                cache cannot be configured during
+                                                rendering. (write only) */
+
+  RTC_CONFIG_INTERSECT1 = 1,                  //!< checks if rtcIntersect1 is supported (read only)
+  RTC_CONFIG_INTERSECT4 = 2,                  //!< checks if rtcIntersect4 is supported (read only)
+  RTC_CONFIG_INTERSECT8 = 3,                  //!< checks if rtcIntersect8 is supported (read only)
+  RTC_CONFIG_INTERSECT16 = 4,                 //!< checks if rtcIntersect16 is supported (read only)
+  RTC_CONFIG_INTERSECTN = 5,                  //!< checks if rtcIntersectN is supported (read only)
+
+  RTC_CONFIG_RAY_MASK = 6,                    //!< checks if ray masks are supported (read only)
+  RTC_CONFIG_BACKFACE_CULLING = 7,            //!< checks if backface culling is supported (read only)
+  RTC_CONFIG_INTERSECTION_FILTER = 8,         //!< checks if intersection filters are enabled (read only)
+  RTC_CONFIG_INTERSECTION_FILTER_RESTORE = 9, //!< checks if intersection filters restores previous hit (read only)
+  RTC_CONFIG_BUFFER_STRIDE = 10,              //!< checks if buffer strides are supported (read only)
+  RTC_CONFIG_IGNORE_INVALID_RAYS = 11,        //!< checks if invalid rays are ignored (read only)
+  RTC_CONFIG_TASKING_SYSTEM = 12,             //!< return used tasking system (0 = INTERNAL, 1 = TBB) (read only)
+
+  RTC_CONFIG_VERSION_MAJOR = 13,           //!< returns Embree major version (read only)
+  RTC_CONFIG_VERSION_MINOR = 14,           //!< returns Embree minor version (read only)
+  RTC_CONFIG_VERSION_PATCH = 15,           //!< returns Embree patch version (read only)
+  RTC_CONFIG_VERSION = 16,                 //!< returns Embree version as integer (e.g. Embree v2.8.2 -> 20802) (read only)
 };
 
 /*! \brief Configures some parameters. 
@@ -144,8 +163,16 @@ enum RTCParameter {
 */
 RTCORE_API RTCORE_DEPRECATED void rtcSetParameter1i(const RTCParameter parm, ssize_t val);
 
+/*! \brief Reads some device parameter. 
+    WARNING: This function is deprecated, use rtcDeviceGetParameter1i instead.
+*/
+RTCORE_API RTCORE_DEPRECATED ssize_t rtcGetParameter1i(const RTCParameter parm);
+
 /*! \brief Configures some device parameters. */
 RTCORE_API void rtcDeviceSetParameter1i(RTCDevice device, const RTCParameter parm, ssize_t val);
+
+/*! \brief Reads some device parameter. */
+RTCORE_API ssize_t rtcDeviceGetParameter1i(RTCDevice device, const RTCParameter parm);
 
 /*! \brief Error codes returned by the rtcGetError function. */
 enum RTCError {
