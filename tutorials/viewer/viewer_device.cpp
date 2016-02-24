@@ -679,6 +679,7 @@ void renderTile(int taskIndex, int* pixels,
   {
     //if (x != 256 || y != 256) continue; 
     Vec3fa color = renderPixel(x,y,vx,vy,vz,p);
+    //exit(1);
     
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));

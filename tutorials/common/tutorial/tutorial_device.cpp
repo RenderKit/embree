@@ -391,7 +391,7 @@ Vec3fa renderPixelDifferentials(float x, float y, const Vec3fa& vx, const Vec3fa
 
   Vec3fa dPdu1, dPdv1, ddPdudu1, ddPdvdv1, ddPdudv1;
   rtcInterpolate2(g_scene,ray.geomID,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER0,nullptr,&dPdu1.x,&dPdv1.x,&ddPdudu1.x,&ddPdvdv1.x,&ddPdudv1.x,3);
- 
+  
   Vec3fa color = zero;
   switch (differentialMode)
   {
@@ -415,11 +415,15 @@ Vec3fa renderPixelDifferentials(float x, float y, const Vec3fa& vx, const Vec3fa
   case 13: color = ddPdudv1; break;
   case 14: color = 10.0f*(ddPdudv1-ddPdudv0); break;
 
-  case 15: 
+  case 15: {
     color.x = length(dnormalize(dPdu1,ddPdudu1))/length(dPdu1); 
     color.y = length(dnormalize(dPdv1,ddPdvdv1))/length(dPdv1); 
     color.z = 0.0f;
+    /*float Cu = length(dnormalize(dPdu0,ddPdudu0))/length(dPdu0); 
+    float Cv = length(dnormalize(dPdv0,ddPdvdv0))/length(dPdv0); 
+    color = Vec3fa(sqrt(Cu*Cu + Cv*Cv));*/
     break;
+  }
   case 16: {
     float Cu = length(dnormalize(dPdu1,ddPdudu1))/length(dPdu1); 
     float Cv = length(dnormalize(dPdv1,ddPdvdv1))/length(dPdv1); 
