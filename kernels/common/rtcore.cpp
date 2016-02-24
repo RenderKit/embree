@@ -51,7 +51,7 @@ namespace embree
   }
 
   /* global device for compatibility with old rtcInit / rtcExit scheme */
-  Device* g_device = nullptr;
+  static Device* g_device = nullptr;
 
   RTCORE_API void rtcInit(const char* cfg) 
   {
