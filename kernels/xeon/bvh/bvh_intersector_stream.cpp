@@ -35,7 +35,6 @@
 #include "../geometry/subdivpatch1cached.h"
 #include "../geometry/object_intersector.h"
 #include "../../common/scene.h"
-
 #define DBG(x) 
 //PRINT(x)
 // todo: make offset constant in AVX512 mode
@@ -132,6 +131,7 @@ namespace embree
             if (unlikely(cur.isLeaf())) break;
                 const Node* __restrict__ const node = cur.node();
                 STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);
+            assert(m_trav_active);
 
 #if defined(__AVX512F__)
             const vlong<K/2> one((size_t)1);
@@ -186,7 +186,7 @@ namespace embree
             vfloat<K> dist(inf);
             vint<K>   maskK(zero);
 
-            const RayContext *__restrict__ const cur_ray_ctx = &ray_ctx[cur_fiber->offset];
+            const RayContext *__restrict__ const cur_ray_ctx = &ray_ctx[cur_fiber->getOffset()];
 
             size_t bits = m_trav_active;
             do
@@ -267,7 +267,7 @@ namespace embree
           //STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
 
           size_t lazy_node = 0;
-          size_t bits = m_trav_active << cur_fiber->offset;
+          size_t bits = m_trav_active << cur_fiber->getOffset();
           size_t m_valid_intersection = 0;
           do {
             const size_t i = __bscf(bits);
@@ -315,7 +315,6 @@ namespace embree
         stack1[0].ptr  = BVH::invalidNode;
         stack1[0].mask = (size_t)-1;
 
-
         const size_t fiberMask = ((size_t)1 << ((__popcnt(m_active)+1)>>1))-1;
         assert(fiberMask);
         assert( ((fiberMask | (~fiberMask)) & m_active) == m_active);
@@ -338,8 +337,9 @@ namespace embree
 #if defined(__AVX512F__)
         const size_t offset = 0; // have 8-wide 64bit vector support
 #else
-        const size_t offset = __bsf(m_trav_active_next);
+        const size_t offset = m_trav_active_next != 0 ? __bsf(m_trav_active_next) : 0;
 #endif
+
         fiber[1].init(cur_next,m_trav_active_next >> offset,stackPtr_next,&fiber[0],offset);
         if (m_trav_active_next == 0) fiber[0].next = &fiber[0];
         RayFiberContext *cur_fiber = &fiber[0];
@@ -354,8 +354,8 @@ namespace embree
           {
             
             cur_fiber = cur_fiber->swapContext(cur,m_trav_active,stackPtr);
-
             if (likely(cur.isLeaf())) break;
+            assert(m_trav_active);
 
             const Node* __restrict__ const node = cur.node();
             STAT3(shadow.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);
@@ -391,8 +391,10 @@ namespace embree
               /*! pop next node */
               STAT3(shadow.trav_stack_pop,1,1,1);                          
               do {
+                assert(stackPtr > stack);
                 stackPtr--;
                 cur = NodeRef(stackPtr->ptr);
+                assert(stackPtr->mask);
                 m_trav_active = stackPtr->mask & m_active;
               } while (unlikely(!m_trav_active));
               assert(m_trav_active);
@@ -411,15 +413,15 @@ namespace embree
             vfloat<K> dist(inf);
             vint<K>   maskK(zero);
 
-            const RayContext *__restrict__ const cur_ray_ctx = &ray_ctx[cur_fiber->offset];
-
+            const RayContext *__restrict__ const cur_ray_ctx = &ray_ctx[cur_fiber->getOffset()];
             size_t bits = m_trav_active;
+
             assert(__popcnt(m_trav_active) <= 32);
             do
             {            
               STAT3(shadow.trav_nodes,1,1,1);                          
               const size_t i = __bscf(bits);
-              RayContext &ray = ray_ctx[i];
+              const RayContext &ray = cur_ray_ctx[i];
               const vfloat<K> tNearX = msub(bminX, ray.rdir.x, ray.org_rdir.x);
               const vfloat<K> tNearY = msub(bminY, ray.rdir.y, ray.org_rdir.y);
               const vfloat<K> tNearZ = msub(bminZ, ray.rdir.z, ray.org_rdir.z);
@@ -445,13 +447,14 @@ namespace embree
             if (unlikely(none(vmask))) 
             {
               /*! pop next node */
-              STAT3(shadow.trav_stack_pop,1,1,1);                          
+              STAT3(shadow.trav_stack_pop,1,1,1);  
               do {
                 stackPtr--;
                 cur = NodeRef(stackPtr->ptr);
-                m_trav_active = stackPtr->mask & (m_active>>cur_fiber->offset);
-              } while (unlikely(!m_trav_active));
-              assert(m_trav_active);
+                assert(stackPtr->mask);
+                m_trav_active = stackPtr->mask & (m_active>>cur_fiber->getOffset());
+              } while (unlikely(cur != BVH::invalidNode && m_trav_active == 0));
+              assert(__popcnt(m_trav_active) <= 32);
               goto pop;
             }
 
@@ -479,8 +482,7 @@ namespace embree
           size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
 
           size_t lazy_node = 0;
-          const size_t offset = cur_fiber->offset;
-          size_t bits = (m_trav_active<<offset) & m_active;
+          size_t bits = (m_trav_active<<cur_fiber->getOffset()) & m_active;          
           assert(bits);
           //STAT3(shadow.trav_hit_boxes[__popcnt(bits)],1,1,1);                          
           do {
@@ -492,16 +494,17 @@ namespace embree
             }
           } while(bits);
 
-          if (unlikely(m_active == 0)) break;
+          if (unlikely(m_active == 0)) 
+            break;
 
           /*! pop next node */
           STAT3(shadow.trav_stack_pop,1,1,1);                          
           do {
             stackPtr--;
             cur = NodeRef(stackPtr->ptr);
-            m_trav_active = stackPtr->mask & (m_active>>cur_fiber->offset);
-          } while (unlikely(!m_trav_active));
-          assert(m_trav_active);
+            assert(stackPtr->mask);
+            m_trav_active = stackPtr->mask & (m_active>>cur_fiber->getOffset());
+          } while (unlikely(cur != BVH::invalidNode && m_trav_active == 0));
         } // traversal + intersection        
       }      
     }
@@ -603,4 +606,4 @@ namespace embree
           else
 
 #endif
-    
+
