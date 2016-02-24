@@ -152,10 +152,10 @@ enum RTCParameter {
   RTC_CONFIG_IGNORE_INVALID_RAYS = 11,        //!< checks if invalid rays are ignored (read only)
   RTC_CONFIG_TASKING_SYSTEM = 12,             //!< return used tasking system (0 = INTERNAL, 1 = TBB) (read only)
 
-  RTC_CONFIG_VERSION_MAJOR = 13,           //!< returns Embree major version
-  RTC_CONFIG_VERSION_MINOR = 14,           //!< returns Embree minor version
-  RTC_CONFIG_VERSION_PATCH = 15,           //!< returns Embree patch version
-  RTC_CONFIG_VERSION = 16,                 //!< returns Embree version as integer (e.g. Embree v2.8.2 -> 20802)
+  RTC_CONFIG_VERSION_MAJOR = 13,           //!< returns Embree major version (read only)
+  RTC_CONFIG_VERSION_MINOR = 14,           //!< returns Embree minor version (read only)
+  RTC_CONFIG_VERSION_PATCH = 15,           //!< returns Embree patch version (read only)
+  RTC_CONFIG_VERSION = 16,                 //!< returns Embree version as integer (e.g. Embree v2.8.2 -> 20802) (read only)
 };
 
 /*! \brief Configures some parameters. 
