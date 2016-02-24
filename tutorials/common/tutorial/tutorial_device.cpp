@@ -415,21 +415,19 @@ Vec3fa renderPixelDifferentials(float x, float y, const Vec3fa& vx, const Vec3fa
   case 14: color = 10.0f*(ddPdudv1-ddPdudv0); break;
 
   case 15: {
-    color.x = length(dnormalize(dPdu1,ddPdudu1))/length(dPdu1); 
-    color.y = length(dnormalize(dPdv1,ddPdvdv1))/length(dPdv1); 
+    color.x = length(dnormalize(cross(dPdu1,dPdv1),cross(ddPdudu1,dPdv1)+cross(dPdu1,ddPdudv1)))/length(dPdu1); 
+    color.y = length(dnormalize(cross(dPdu1,dPdv1),cross(ddPdudv1,dPdv1)+cross(dPdu1,ddPdvdv1)))/length(dPdv1); 
     color.z = 0.0f;
-    /*float Cu = length(dnormalize(dPdu0,ddPdudu0))/length(dPdu0); 
-    float Cv = length(dnormalize(dPdv0,ddPdvdv0))/length(dPdv0); 
-    color = Vec3fa(sqrt(Cu*Cu + Cv*Cv));*/
     break;
   }
   case 16: {
-    float Cu = length(dnormalize(dPdu1,ddPdudu1))/length(dPdu1); 
-    float Cv = length(dnormalize(dPdv1,ddPdvdv1))/length(dPdv1); 
+    float Cu = length(dnormalize(cross(dPdu1,dPdv1),cross(ddPdudu1,dPdv1)+cross(dPdu1,ddPdudv1)))/length(dPdu1); 
+    float Cv = length(dnormalize(cross(dPdu1,dPdv1),cross(ddPdudv1,dPdv1)+cross(dPdu1,ddPdvdv1)))/length(dPdv1); 
     color = Vec3fa(sqrt(Cu*Cu + Cv*Cv));
     break;
   }
   }
+  color = color * pow(0.5f,10.0f*g_debug);
   return clamp(color,Vec3fa(zero),Vec3fa(one));
 }
 
