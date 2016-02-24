@@ -88,7 +88,7 @@ namespace embree
       }
       else
       {
-        vfloat8 Pt, dPdut, dPdvt; 
+        vfloat8 Pt, dPdut, dPdvt, ddPdudut, ddPdvdvt, ddPdudvt; 
         isa::PatchEval<vfloat8>(baseEntry->at(interpolationSlot(primID,slot,stride)),parent->commitCounterSubdiv,
                                 getHalfEdge(primID),src+i*sizeof(float),stride,u,v,
                                 P ? &Pt : nullptr, 
