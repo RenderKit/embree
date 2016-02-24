@@ -75,7 +75,7 @@ namespace embree
     return (cpu_features & isa) == isa;
   }
 
-  RTCDevice g_device = nullptr;
+  static RTCDevice g_device = nullptr;
 
 #if !defined(__MIC__)
   RTCAlgorithmFlags aflags = (RTCAlgorithmFlags) (RTC_INTERSECT1 
