@@ -43,6 +43,16 @@
 #  define HAS_INTERSECT16 0
 #endif
 
+#if defined(__INTEL_COMPILER)
+#pragma warning (disable: 1478) // warning: function was declared deprecated
+#elif defined(_MSC_VER)
+#pragma warning (disable: 4996) // warning: function was declared deprecated
+#elif defined(__clang__)
+#pragma clang diagnostic ignored "-Wdeprecated-declarations" // warning: xxx is deprecated
+#elif defined(__GNUC__)
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations" // warning: xxx is deprecated
+#endif
+
 namespace embree
 {
   /* error reporting function */
