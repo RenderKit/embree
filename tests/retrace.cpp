@@ -50,7 +50,7 @@
 
 namespace embree
 {
-  RTCDevice g_device = nullptr;
+  static RTCDevice g_device = nullptr;
 
   struct RayStreamStats
   {
