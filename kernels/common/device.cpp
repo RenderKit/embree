@@ -139,6 +139,9 @@ namespace embree
     if (State::regression_testing) 
       runRegressionTests();
 #endif
+
+    filterAOS = NULL;
+    filterSOA = NULL;
   }
 
   Device::~Device ()

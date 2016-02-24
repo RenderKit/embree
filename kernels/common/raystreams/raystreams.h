@@ -17,14 +17,29 @@
 #pragma once
 
 #include "../../common/default.h"
-#include "../../common/scene.h"
 #include "../../common/ray.h"
 
 namespace embree
 {
-  //namespace isa
-  //{
+  class Scene;
 
+  typedef void (*filterAOS_func)(Scene *scene, 
+                                 RTCRay* rayN, 
+                                 const size_t N, 
+                                 const size_t stride, 
+                                 const size_t flags, 
+                                 const bool intersect);
+
+  typedef void (*filterSOA_func)(Scene *scene, 
+                                 RTCRaySOA& rayN, 
+                                 const size_t N, 
+                                 const size_t streams, 
+                                 const size_t offset, 
+                                 const size_t flags, 
+                                 const bool intersect);
+
+  namespace isa
+  {
     class RayStream
     {
 
@@ -32,8 +47,10 @@ namespace embree
       static void filterAOS(Scene *scene, RTCRay* rayN, const size_t N, const size_t stride, const size_t flags, const bool intersect);
 
       static void filterSOA(Scene *scene, RTCRaySOA& rayN, const size_t N, const size_t streams, const size_t offset, const size_t flags, const bool intersect);
-
-
+    
     };
-    //}
+
+    DEFINE_SYMBOL2(RayStream*,RayStreamFilter);
+
+  }
 };

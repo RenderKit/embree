@@ -1,4 +1,5 @@
 #include "raystreams.h"
+#include "../../common/scene.h"
 
 
 namespace embree
@@ -6,8 +7,8 @@ namespace embree
   //static const size_t MAX_RAYS_PER_OCTANT = 32;
   static const size_t MAX_RAYS_PER_OCTANT = 64;
 
-  //namespace isa
-  //{
+  namespace isa
+  {
 
 
     void RayStream::filterAOS(Scene *scene, RTCRay* _rayN, const size_t N, const size_t stride, const size_t flags, const bool intersect)
@@ -135,5 +136,5 @@ namespace embree
   }
 
 
-//  };
+  };
 };
