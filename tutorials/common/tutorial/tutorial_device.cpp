@@ -379,18 +379,17 @@ Vec3fa renderPixelDifferentials(float x, float y, const Vec3fa& vx, const Vec3fa
   Vec3fa P00, P01, P10, P11;
   Vec3fa dP00du, dP01du, dP10du, dP11du;
   Vec3fa dP00dv, dP01dv, dP10dv, dP11dv;
+  Vec3fa dPdu1, dPdv1, ddPdudu1, ddPdvdv1, ddPdudv1;
   rtcInterpolate(g_scene,ray.geomID,ray.primID,ray.u+0.f,ray.v+0.f,RTC_VERTEX_BUFFER0,&P00.x,&dP00du.x,&dP00dv.x,3);
   rtcInterpolate(g_scene,ray.geomID,ray.primID,ray.u+0.f,ray.v+eps,RTC_VERTEX_BUFFER0,&P01.x,&dP01du.x,&dP01dv.x,3);
   rtcInterpolate(g_scene,ray.geomID,ray.primID,ray.u+eps,ray.v+0.f,RTC_VERTEX_BUFFER0,&P10.x,&dP10du.x,&dP10dv.x,3);
   rtcInterpolate(g_scene,ray.geomID,ray.primID,ray.u+eps,ray.v+eps,RTC_VERTEX_BUFFER0,&P11.x,&dP11du.x,&dP11dv.x,3);
+  rtcInterpolate2(g_scene,ray.geomID,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER0,nullptr,&dPdu1.x,&dPdv1.x,&ddPdudu1.x,&ddPdvdv1.x,&ddPdudv1.x,3);
   Vec3fa dPdu0 = (P10-P00)/eps;
   Vec3fa dPdv0 = (P01-P00)/eps;
   Vec3fa ddPdudu0 = (dP10du-dP00du)/eps;
   Vec3fa ddPdvdv0 = (dP01dv-dP00dv)/eps;
   Vec3fa ddPdudv0 = (dP01du-dP00du)/eps;
-
-  Vec3fa dPdu1, dPdv1, ddPdudu1, ddPdvdv1, ddPdudv1;
-  rtcInterpolate2(g_scene,ray.geomID,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER0,nullptr,&dPdu1.x,&dPdv1.x,&ddPdudu1.x,&ddPdvdv1.x,&ddPdudv1.x,3);
   
   Vec3fa color = zero;
   switch (differentialMode)
