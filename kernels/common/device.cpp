@@ -440,6 +440,11 @@ namespace embree
   {
     switch (parm) 
     {
+    case RTC_CONFIG_VERSION_MAJOR: return __EMBREE_VERSION_MAJOR__;
+    case RTC_CONFIG_VERSION_MINOR: return __EMBREE_VERSION_MINOR__;
+    case RTC_CONFIG_VERSION_PATCH: return __EMBREE_VERSION_PATCH__;
+    case RTC_CONFIG_VERSION      : return __EMBREE_VERSION_NUMBER__;
+
     case RTC_CONFIG_INTERSECT1: return 1;
     case RTC_CONFIG_INTERSECTN: return 1;
 
