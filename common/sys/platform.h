@@ -244,8 +244,7 @@ typedef int32_t ssize_t;
 /// Basic utility functions
 ////////////////////////////////////////////////////////////////////////////////
 
-__forceinline std::string toString(long long value)
-{
+__forceinline std::string toString(long long value) {
   return std::to_string(value);
 }
 

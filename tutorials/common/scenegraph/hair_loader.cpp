@@ -28,73 +28,99 @@ namespace embree
     FILE* f = fopen(fileName.c_str(),"r");
     if (!f) THROW_RUNTIME_ERROR("could not open " + fileName.str());
 
-    char line[10000];
-    fgets(line,10000,f);
-    int numCurves = 0;
-    
-    while (fgets(line,10000,f) && !feof(f))
+    try
     {
-      /* comment */
-      if (line[0] == '#')
-	continue;
+      char line[10000];
+      if (fgets(line,10000,f) != line)
+        THROW_RUNTIME_ERROR("error reading line from file " + fileName.str());
+      int numCurves = 0;
       
-      if (!strncmp(line,"Curve:",strlen("Curve:")))
+      while (fgets(line,10000,f) && !feof(f))
       {
-        char name[1000];
-        unsigned int tracks, points;
-        sscanf(line,"Curve: %s %d Tracks %d Points",name,&tracks,&points);
-
-        /* skip Tracks line */
-        fgets(line,10000,f);
+        /* comment */
+        if (line[0] == '#')
+          continue;
         
-        const int vertex_start_id = hairset->v.size();
-        
-        unsigned int id = 0;
-        for (int i=0; i<points; i++)
+        if (!strncmp(line,"Curve:",strlen("Curve:")))
         {
-          fgets(line,10000,f);
-
-          /* comment */
-          if (line[0] == '#' || !strncmp(line," Tracks:",strlen(" Tracks:")))
-            continue;
-
-          Vec3fa v;
-          if (i == 0) sscanf(line,"%d : Bezier %f %f %f %f",&id,&v.x,&v.y,&v.z,&v.w);
-          else        sscanf(line,"%d : %f %f %f %f",&id,&v.x,&v.y,&v.z,&v.w);
-          //printf("%d %d : %f %f %f %f \n",id,vertex_start_id+id,v.x,v.y,v.z,v.w);		
-          hairset->v.push_back(v);
+          char name[1000];
+          unsigned int tracks, points;
+          sscanf(line,"Curve: %s %d Tracks %d Points",name,&tracks,&points);
+          
+          /* skip Tracks line */
+          if (fgets(line,10000,f) != line)
+            THROW_RUNTIME_ERROR("error reading line from file " + fileName.str());
+          
+          const int vertex_start_id = hairset->v.size();
+          
+          unsigned int id = 0;
+          for (int i=0; i<points; i++)
+          {
+            if (fgets(line,10000,f) != line)
+              THROW_RUNTIME_ERROR("error reading line from file " + fileName.str());
+            
+            /* comment */
+            if (line[0] == '#' || !strncmp(line," Tracks:",strlen(" Tracks:")))
+              continue;
+            
+            Vec3fa v;
+            if (i == 0) sscanf(line,"%d : Bezier %f %f %f %f",&id,&v.x,&v.y,&v.z,&v.w);
+            else        sscanf(line,"%d : %f %f %f %f",&id,&v.x,&v.y,&v.z,&v.w);
+            //printf("%d %d : %f %f %f %f \n",id,vertex_start_id+id,v.x,v.y,v.z,v.w);		
+            hairset->v.push_back(v);
+          }
+          
+          /* add indices to hair starts */
+          for (int i=0; i<points-1; i+=3)
+            hairset->hairs.push_back(SceneGraph::HairSetNode::Hair(vertex_start_id + i,numCurves));
+          
+          if (id != points-1) 
+            THROW_RUNTIME_ERROR("hair parsing error");
+          
+          numCurves++;
         }
-        
-        /* add indices to hair starts */
-        for (int i=0; i<points-1; i+=3)
-          hairset->hairs.push_back(SceneGraph::HairSetNode::Hair(vertex_start_id + i,numCurves));
-	
-        if (id != points-1) 
-          THROW_RUNTIME_ERROR("hair parsing error");
-
-        numCurves++;
       }
+      fclose(f);
+      return numCurves;
     }
-    fclose(f);
-    return numCurves;
+    catch (...) {
+      fclose(f);
+      throw;
+    }
   }
 
   int loadHairBin(const FileName& fileName, Ref<SceneGraph::HairSetNode> hairset)
   {  
     FILE* fin = fopen(fileName.c_str(),"rb");
     if (!fin) THROW_RUNTIME_ERROR("could not open " + fileName.str());
-    int magick; fread(&magick,sizeof(int),1,fin);
-    if (magick != hair_bin_magick)
-      THROW_RUNTIME_ERROR("invalid binary hair file " + fileName.str());
-    int numHairs; fread(&numHairs,sizeof(int),1,fin);
-    int numPoints; fread(&numPoints,sizeof(int),1,fin);
-    int numSegments; fread(&numSegments,sizeof(int),1,fin);
-    hairset->v.resize(numPoints);
-    hairset->hairs.resize(numSegments);
-    if (numPoints) fread(&hairset->v[0],sizeof(Vec3fa),numPoints,fin);
-    if (numSegments) fread(&hairset->hairs[0],sizeof(SceneGraph::HairSetNode::Hair),numSegments,fin);
-    fclose(fin);
-    return numHairs;
+    try {
+      int magick; fread(&magick,sizeof(int),1,fin);
+      if (magick != hair_bin_magick)
+        THROW_RUNTIME_ERROR("invalid binary hair file " + fileName.str());
+      int numHairs, numPoints, numSegments; 
+      if (fread(&numHairs,sizeof(int),1,fin) != 1) 
+        THROW_RUNTIME_ERROR("invalid binary hair file " + fileName.str());
+      if (fread(&numPoints,sizeof(int),1,fin) != 1)
+        THROW_RUNTIME_ERROR("invalid binary hair file " + fileName.str());
+      if (fread(&numSegments,sizeof(int),1,fin) != 1)
+        THROW_RUNTIME_ERROR("invalid binary hair file " + fileName.str());
+      hairset->v.resize(numPoints);
+      hairset->hairs.resize(numSegments);
+      if (numPoints) {
+        if (fread(&hairset->v[0],sizeof(Vec3fa),numPoints,fin) != numPoints)
+          THROW_RUNTIME_ERROR("invalid binary hair file " + fileName.str());
+      }
+      if (numSegments) {
+        if (fread(&hairset->hairs[0],sizeof(SceneGraph::HairSetNode::Hair),numSegments,fin) != numSegments)
+          THROW_RUNTIME_ERROR("invalid binary hair file " + fileName.str());
+      }
+      fclose(fin);
+      return numHairs;
+    } 
+    catch (...) {
+      fclose(fin);
+      throw;
+    }
   }
 
   Ref<SceneGraph::Node> loadBinHair(const FileName& fileName)
