@@ -427,7 +427,7 @@ namespace embree
 #endif
     STAT3(normal.travs,1,N,N);
 
-    scene->device->filterAOS(scene,rayN,N,stride,flags,true);
+    scene->device->rayStreamFilters.filterAOS(scene,rayN,N,stride,flags,true);
     
 #endif
     RTCORE_CATCH_END(scene->device);
@@ -465,7 +465,7 @@ namespace embree
 #endif
     STAT3(normal.travs,1,N,N);
 
-    scene->device->filterSOA(scene,rayN,N,streams,offset,flags,true);
+    scene->device->rayStreamFilters.filterSOA(scene,rayN,N,streams,offset,flags,true);
 
 #endif
     RTCORE_CATCH_END(scene->device);
@@ -616,7 +616,7 @@ namespace embree
 #endif
     STAT3(shadow.travs,1,N,N);
 
-    scene->device->filterAOS(scene,rayN,N,stride,flags,false);
+    scene->device->rayStreamFilters.filterAOS(scene,rayN,N,stride,flags,false);
 
 #endif
     RTCORE_CATCH_END(scene->device);
@@ -655,7 +655,7 @@ namespace embree
 #endif
     STAT3(shadow.travs,1,N,N);
 
-    scene->device->filterSOA(scene,rayN,N,streams,offset,flags,false);
+    scene->device->rayStreamFilters.filterSOA(scene,rayN,N,streams,offset,flags,false);
 
 #endif
     RTCORE_CATCH_END(scene->device);

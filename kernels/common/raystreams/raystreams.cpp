@@ -4,7 +4,6 @@
 
 namespace embree
 {
-  //static const size_t MAX_RAYS_PER_OCTANT = 32;
   static const size_t MAX_RAYS_PER_OCTANT = 64;
 
   namespace isa
@@ -68,38 +67,38 @@ namespace embree
     }
 
 
-  void RayStream::filterSOA(Scene *scene, RTCRaySOA& _rayN, const size_t N, const size_t streams, const size_t stream_offset, const size_t flags, const bool intersect)
-  {
-    __aligned(64) Ray rays[MAX_RAYS_PER_OCTANT];
-    __aligned(64) Ray *rays_ptr[MAX_RAYS_PER_OCTANT];
-
-    for (size_t i=0;i<MAX_RAYS_PER_OCTANT;i++)
-      rays_ptr[i] = &rays[i];
-
-    size_t octants[8][MAX_RAYS_PER_OCTANT];
-    unsigned int rays_in_octant[8];
-
-    for (size_t i=0;i<8;i++) rays_in_octant[i] = 0;
-
-    size_t soffset = 0;
-    RaySOA &rayN = *(RaySOA*)&_rayN;
-
-    for (size_t s=0;s<streams;s++,soffset+=stream_offset)
+    void RayStream::filterSOA(Scene *scene, RTCRaySOA& _rayN, const size_t N, const size_t streams, const size_t stream_offset, const size_t flags, const bool intersect)
     {
-      // todo: use SIMD width to compute octants
-      for (size_t i=0;i<N;i++)
+      __aligned(64) Ray rays[MAX_RAYS_PER_OCTANT];
+      __aligned(64) Ray *rays_ptr[MAX_RAYS_PER_OCTANT];
+
+      for (size_t i=0;i<MAX_RAYS_PER_OCTANT;i++)
+        rays_ptr[i] = &rays[i];
+
+      size_t octants[8][MAX_RAYS_PER_OCTANT];
+      unsigned int rays_in_octant[8];
+
+      for (size_t i=0;i<8;i++) rays_in_octant[i] = 0;
+
+      size_t soffset = 0;
+      RaySOA &rayN = *(RaySOA*)&_rayN;
+
+      for (size_t s=0;s<streams;s++,soffset+=stream_offset)
       {
-        /* global + local offset */
-        const size_t offset = soffset + sizeof(float) * i;
+        // todo: use SIMD width to compute octants
+        for (size_t i=0;i<N;i++)
+        {
+          /* global + local offset */
+          const size_t offset = soffset + sizeof(float) * i;
 
-        if (unlikely(!rayN.isValidByOffset(offset))) continue;
+          if (unlikely(!rayN.isValidByOffset(offset))) continue;
 
-        const size_t octantID = rayN.getOctantByOffset(offset);
+          const size_t octantID = rayN.getOctantByOffset(offset);
 
-        assert(octantID < 8);
-        octants[octantID][rays_in_octant[octantID]++] = offset;
+          assert(octantID < 8);
+          octants[octantID][rays_in_octant[octantID]++] = offset;
         
-        if (unlikely(rays_in_octant[octantID] == MAX_RAYS_PER_OCTANT))
+          if (unlikely(rays_in_octant[octantID] == MAX_RAYS_PER_OCTANT))
           {
             for (size_t j=0;j<MAX_RAYS_PER_OCTANT;j++)
               rays[j] = rayN.gatherByOffset(octants[octantID][j]);
@@ -114,27 +113,29 @@ namespace embree
             
             rays_in_octant[octantID] = 0;
           }
-      }        
+        }        
+      }
+
+      /* flush remaining rays per octant */
+      for (size_t i=0;i<8;i++)
+        if (rays_in_octant[i])
+        {
+          for (size_t j=0;j<rays_in_octant[i];j++)
+            rays[j] = rayN.gatherByOffset(octants[i][j]);
+
+          if (intersect)
+            scene->intersectN((RTCRay**)rays_ptr,rays_in_octant[i],flags);
+          else
+            scene->occludedN((RTCRay**)rays_ptr,rays_in_octant[i],flags);        
+
+          for (size_t j=0;j<rays_in_octant[i];j++)
+            rayN.scatterByOffset(octants[i][j],rays[j],intersect);
+
+        }
     }
 
-    /* flush remaining rays per octant */
-    for (size_t i=0;i<8;i++)
-      if (rays_in_octant[i])
-      {
-        for (size_t j=0;j<rays_in_octant[i];j++)
-          rays[j] = rayN.gatherByOffset(octants[i][j]);
 
-        if (intersect)
-          scene->intersectN((RTCRay**)rays_ptr,rays_in_octant[i],flags);
-        else
-          scene->occludedN((RTCRay**)rays_ptr,rays_in_octant[i],flags);        
-
-        for (size_t j=0;j<rays_in_octant[i];j++)
-          rayN.scatterByOffset(octants[i][j],rays[j],intersect);
-
-      }
-  }
-
+    //DECLARE_SYMBOL2(RayStreamFilterFuncs,rayStreamFilters(RayStream::filterAOS,RayStream::filterSOA));
 
   };
 };

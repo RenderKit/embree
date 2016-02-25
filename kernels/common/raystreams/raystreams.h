@@ -38,6 +38,19 @@ namespace embree
                                  const size_t flags, 
                                  const bool intersect);
 
+  struct RayStreamFilterFuncs
+  {
+    RayStreamFilterFuncs() {};
+
+    RayStreamFilterFuncs(filterAOS_func aos, filterSOA_func soa) { 
+      filterAOS = aos;
+      filterSOA = soa;
+    };
+    filterAOS_func filterAOS;
+    filterSOA_func filterSOA;
+  };
+  
+
   namespace isa
   {
     class RayStream
@@ -50,7 +63,7 @@ namespace embree
     
     };
 
-    DEFINE_SYMBOL2(RayStream*,RayStreamFilter);
-
+    
+    //DEFINE_SYMBOL2(RayStreamFilterFuncs,rayStreamFilters(RayStream::filterAOS,RayStream::filterSOA));
   }
 };

@@ -94,8 +94,7 @@ namespace embree
 #endif
 
   /* ray streams filter */
-  filterAOS_func filterAOS;
-  filterSOA_func filterSOA;
+  RayStreamFilterFuncs rayStreamFilters;
 
   };
 }

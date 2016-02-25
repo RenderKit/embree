@@ -43,6 +43,8 @@ namespace embree
   /* functions to initialize global constants */
   void init_globals();
 
+  //DECLARE_SYMBOL2(RayStreamFilterFuncs,rayStreamFilters);
+
 #if defined(__MIC__)
   void BVH4iRegister();
   void BVH4MBRegister();
@@ -140,8 +142,11 @@ namespace embree
       runRegressionTests();
 #endif
 
-    filterAOS = NULL;
-    filterSOA = NULL;
+    /* ray filter */
+    //RayStream  RayStreamFilter;
+    //SELECT_SYMBOL_INIT_SSE42_AVX_AVX2_AVX512KNL(enabled_cpu_features,rayStreamFilters);
+    rayStreamFilters.filterAOS = NULL;
+    rayStreamFilters.filterSOA = NULL;      
   }
 
   Device::~Device ()
