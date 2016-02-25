@@ -134,9 +134,6 @@ namespace embree
         }
     }
 
-
-    //DECLARE_SYMBOL2(RayStreamFilterFuncs,rayStreamFilters(RayStream::filterAOS,RayStream::filterSOA));
-
     RayStreamFilterFuncs rayStreamFilters(RayStream::filterAOS,RayStream::filterSOA);
 
   };
