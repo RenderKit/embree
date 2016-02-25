@@ -42,6 +42,11 @@ namespace embree
   {
     RayStreamFilterFuncs() {};
 
+    RayStreamFilterFuncs(void (*ptr) ()) {
+      filterAOS = (filterAOS_func) filterAOS;
+      filterSOA = (filterSOA_func) filterSOA;
+    };
+
     RayStreamFilterFuncs(filterAOS_func aos, filterSOA_func soa) { 
       filterAOS = aos;
       filterSOA = soa;
