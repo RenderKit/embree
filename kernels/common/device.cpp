@@ -144,9 +144,9 @@ namespace embree
 
     /* ray filter */
     //RayStream  RayStreamFilter;
-    SELECT_SYMBOL_INIT_SSE42_AVX_AVX2_AVX512KNL(enabled_cpu_features,rayStreamFilters);
-    rayStreamFilters.filterAOS = NULL;
-    rayStreamFilters.filterSOA = NULL;      
+    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(enabled_cpu_features,rayStreamFilters);
+    assert(rayStreamFilters.filterAOS);
+    assert(rayStreamFilters.filterSOA);      
   }
 
   Device::~Device ()
