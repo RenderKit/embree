@@ -71,7 +71,7 @@ namespace embree
         //PRINT(i);
         Vec3fa Q = ray.org + t*ray.dir;
         Vec3fa P,dPdu,ddPdu; curve.eval(u,P,dPdu,ddPdu);
-        Vec3fa T = normalize(dPdu);
+        Vec3fa T = normalize(dPdu); // can be optimized away
         float du = dot(Q-P,T);
         float dt = sqrt(dot(Q-P,Q-P)-sqr(du))-P.w;
         u += du*rcpLenP0P1*(u1-u0);
