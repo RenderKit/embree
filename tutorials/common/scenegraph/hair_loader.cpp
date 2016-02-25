@@ -94,7 +94,9 @@ namespace embree
     FILE* fin = fopen(fileName.c_str(),"rb");
     if (!fin) THROW_RUNTIME_ERROR("could not open " + fileName.str());
     try {
-      int magick; fread(&magick,sizeof(int),1,fin);
+      int magick; 
+      if (fread(&magick,sizeof(int),1,fin) != 1)
+        THROW_RUNTIME_ERROR("invalid binary hair file " + fileName.str());
       if (magick != hair_bin_magick)
         THROW_RUNTIME_ERROR("invalid binary hair file " + fileName.str());
       int numHairs, numPoints, numSegments; 
