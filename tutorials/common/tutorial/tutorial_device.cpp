@@ -31,12 +31,13 @@ unsigned int g_subdivision_levels = 0;
 //float scale = 0.001f;
 float scale = 1.0f / 1000000.0f;
 
-extern "C" bool g_changed = false;
+extern "C" {
+  bool g_changed = false;
+}
+extern "C" float g_debug;
 
 /* stores pointer to currently used rendePixel function */
 extern renderPixelFunc renderPixel;
-
-extern "C" float g_debug;
 
 /* standard rendering function for each tutorial */
 Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
@@ -534,10 +535,13 @@ extern "C" void device_key_pressed_default(int key)
 }
 
 /* called when a key is pressed */
-extern "C" void (*key_pressed_handler)(int key) = nullptr;
+extern "C" 
+{
+  void (*key_pressed_handler)(int key) = nullptr;
 
-extern "C" void call_key_pressed_handler(int key) {
-  if (key_pressed_handler) key_pressed_handler(key);
+  void call_key_pressed_handler(int key) {
+    if (key_pressed_handler) key_pressed_handler(key);
+  }
 }
 
 void renderTile(int taskIndex,
