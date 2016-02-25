@@ -14,6 +14,8 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
+message("${TBB_ROOT}")
+
 SET(EMBREE_VERSION_MAJOR 2)
 SET(EMBREE_VERSION_MINOR 8)
 SET(EMBREE_VERSION_PATCH 1)
