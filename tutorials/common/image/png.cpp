@@ -39,8 +39,9 @@ namespace embree
       THROW_RUNTIME_ERROR("cannot open file "+fileName.str());
 
     //read the header
-    fread(header, 1, 8, fp);
- 
+    if (fread(header, 1, 8, fp) != 8)
+      THROW_RUNTIME_ERROR("invalid PNG file "+fileName.str());
+
     //test if png
     int is_png = !png_sig_cmp(header, 0, 8);
     if (!is_png) {
