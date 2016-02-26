@@ -154,12 +154,14 @@ namespace embree
           break;
       }
 
+      if (t < ray.tnear || t > ray.tfar) return false;
+      if (std::isnan(u)) return false;
+      if (std::isnan(t)) return false;
+      if (Q == P) return false;
+
       u_o = u;
       t_o = t;
       Ng_o = Q-P;
-      /*if (std::isnan(u_o)) return false;
-      if (std::isnan(t_o)) return false;
-      if (Q == P) return false;*/
       return true;
     }
     
