@@ -223,10 +223,10 @@ namespace embree
       const Vec4vfx P3 = Vec4vfx(shift_right_1(P0.x   ),shift_right_1(P0.y   ),shift_right_1(P0.z   ),shift_right_1(P0.w)   );
       const Vec4vfx P1 = P0 + Vec4vfx(1.0f/(3.0f*VSIZEX))*dP0du; 
       const Vec4vfx P2 = P3 - Vec4vfx(1.0f/(3.0f*VSIZEX))*dP3du;
-      const vfloatx rr1 = sqr_point_to_line_distance(Vec3vfx(P1),Vec3vfx(P0),Vec3vfx(P3));
-      const vfloatx rr2 = sqr_point_to_line_distance(Vec3vfx(P2),Vec3vfx(P0),Vec3vfx(P3));
-      const vfloatx rr01 = max(sqr(P0.w),rr1,rr2,sqr(P3.w));
-      const CylinderN<VSIZEX> cylinder(Vec3vfx(P0.x,P0.y,P0.z),Vec3vfx(P3.x,P3.y,P3.z),rr01,true);
+      const vfloatx r1 = sqrt(sqr_point_to_line_distance(Vec3vfx(P1),Vec3vfx(P0),Vec3vfx(P3)));
+      const vfloatx r2 = sqrt(sqr_point_to_line_distance(Vec3vfx(P2),Vec3vfx(P0),Vec3vfx(P3)));
+      const vfloatx r = max(r1,r2)+max(P0.w,P1.w,P2.w,P3.w);
+      const CylinderN<VSIZEX> cylinder(Vec3vfx(P0.x,P0.y,P0.z),Vec3vfx(P3.x,P3.y,P3.z),r);
       vboolx valid = true; clear(valid,VSIZEX-1);
 
       /* intersect with cylinder */
