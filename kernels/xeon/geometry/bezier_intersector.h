@@ -182,10 +182,10 @@ namespace embree
       /* subdivide curve */
       const Vec4vfx dP0du = curve.derivative(vboolx(true),0,VSIZEX-1);
       const Vec4vfx dP3du = Vec4vfx(shift_right_1(dP0du.x),shift_right_1(dP0du.y),shift_right_1(dP0du.z),shift_right_1(dP0du.w));
-      const Vec4vfx P0 = curve.eval0     (vboolx(true),0,VSIZEX-1);
+      const Vec4vfx P0 = curve.eval0(vboolx(true),0,VSIZEX-1);
       const Vec4vfx P3 = Vec4vfx(shift_right_1(P0.x   ),shift_right_1(P0.y   ),shift_right_1(P0.z   ),shift_right_1(P0.w)   );
-      const Vec4vfx P1 = P0 + Vec4vfx(1.0f/3.0f)*dP0du; 
-      const Vec4vfx P2 = P3 - Vec4vfx(1.0f/3.0f)*dP3du;
+      const Vec4vfx P1 = P0 + Vec4vfx(1.0f/(3.0f*VSIZEX))*dP0du; 
+      const Vec4vfx P2 = P3 - Vec4vfx(1.0f/(3.0f*VSIZEX))*dP3du;
       const vfloatx rr1 = sqr_point_to_line_distance(Vec3vfx(P1),Vec3vfx(P0),Vec3vfx(P3));
       const vfloatx rr2 = sqr_point_to_line_distance(Vec3vfx(P2),Vec3vfx(P0),Vec3vfx(P3));
       const vfloatx rr01 = max(sqr(P0.w),rr1,rr2,sqr(P3.w));
@@ -212,9 +212,11 @@ namespace embree
       while (any(valid))
       {
         size_t i = select_min(valid,tp.lower);
+        clear(valid,i);
 
-        if (curve.depth == 4) {
-          u_o = u[i];
+        if (curve.depth == 2) {
+          float uu = (float(i)+u[i])/float(VSIZEX);
+          u_o = (1.0f-uu)*curve.t0 + uu*curve.t1;
           t_o = tp.lower[i];
           Ng_o = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
           return true;
@@ -225,7 +227,7 @@ namespace embree
         const Vec3fa p2(P2.x[i],P2.y[i],P2.z[i],P2.w[i]);
         const Vec3fa p3(P3.x[i],P3.y[i],P3.z[i],P3.w[i]);
         const float t0 = curve.t0+(curve.t1-curve.t0)*float(i+0)/float(VSIZEX);
-        const float t1 = curve.t1+(curve.t1-curve.t0)*float(i+1)/float(VSIZEX);
+        const float t1 = curve.t0+(curve.t1-curve.t0)*float(i+1)/float(VSIZEX);
         const BezierCurve3fa subcurve(p0,p1,p2,p3,t0,t1,curve.depth+1);
         if (intersect_bezier_recursive(ray,subcurve,u_o,t_o,Ng_o))
           return true;
@@ -289,7 +291,7 @@ namespace embree
         float t = ray.tfar;
         Vec3fa Ng = zero;
 
-        BezierCurve3fa curve(v0,v1,v2,v3,0.0f,1.0f,4);
+        BezierCurve3fa curve(v0,v1,v2,v3,0.0f,1.0f,1);
         if (!intersect_bezier_recursive(ray,curve,u,t,Ng))
           return false;
 
