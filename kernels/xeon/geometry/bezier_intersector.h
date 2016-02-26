@@ -127,6 +127,41 @@ namespace embree
       //PRINT("miss3");
       return false;
     }
+
+    __forceinline bool intersect_bezier_iterative3(const Ray& ray, const BezierCurve3fa& curve, float u0, float u1, float t0, float& u_o, float& t_o, Vec3fa& Ng_o)
+    {
+      Vec3fa Q,P;
+      Vec3fa p0 = curve.v0;
+      Vec3fa p1 = curve.v3;
+
+      /* iterative double step solver */
+      float eps = 128.0f*float(ulp);
+      float rcpLenP0P1 = rcp_length(p1-p0);
+      float rcpLenDir = rcp_length(ray.dir);
+      float t = t0;
+      float u = u0 + (u1-u0)*dot(ray.org+t*ray.dir-p0,normalize(p1-p0))*rcpLenP0P1;
+      for (size_t i=0; i<10; i++)
+      {
+        Q = ray.org + t*ray.dir;
+        Vec3fa dPdu,ddPdu; curve.eval(u,P,dPdu,ddPdu);
+        Vec3fa T = normalize(dPdu); // can be optimized away
+        float du = dot(Q-P,T);
+        float dt = sqrt(dot(Q-P,Q-P)-sqr(du))-P.w;
+        u += du*rcpLenP0P1*(u1-u0); ///(1.0f+P.w*maxC);
+        t += dt*rcpLenDir;
+
+        if (max(abs(du),abs(dt)) < eps) 
+          break;
+      }
+
+      u_o = u;
+      t_o = t;
+      Ng_o = Q-P;
+      /*if (std::isnan(u_o)) return false;
+      if (std::isnan(t_o)) return false;
+      if (Q == P) return false;*/
+      return true;
+    }
     
     __forceinline bool intersect_bezier_iterative(const Ray& ray, const BezierCurve3fa& curve, float u, float& u_o, float& t_o, Vec3fa& Ng)
     {
@@ -216,12 +251,13 @@ namespace embree
 
         if (curve.depth == 4) 
         {
-#if 0
+#if 1
           const float u0 = float(i+0)/float(VSIZEX);
           const float u1 = float(i+1)/float(VSIZEX);
-          if (intersect_bezier_iterative2(ray,curve, u0, u1, u_o, t_o, Ng_o))
-            return true;
-          continue;
+          bool h = intersect_bezier_iterative3(ray,curve, u0, u1, tp.lower[i], u_o, t_o, Ng_o);
+          u_o = (1.0f-u_o)*curve.t0 + u_o*curve.t1;
+          if (u_o < 0.0f || u_o > 1.0f) return false;
+          return h;
 #else
           float uu = (float(i)+u[i])/float(VSIZEX);
           u_o = (1.0f-uu)*curve.t0 + uu*curve.t1;
