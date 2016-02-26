@@ -505,7 +505,8 @@ void renderTile(int taskIndex, int* pixels,
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
     /* calculate pixel color */
-    //if (x != 256 || y != 512-256) continue;
+
+    //if (x != 298 || y != 512-240) continue;
     //PRINT2(x,y);
     Vec3fa color = renderPixel(x,y,vx,vy,vz,p);
     //PRINT(color);

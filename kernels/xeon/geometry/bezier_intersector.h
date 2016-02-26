@@ -233,17 +233,18 @@ namespace embree
       BBox<vfloatx> tc; vfloatx u; Vec3vfx Ng;
       valid &= cylinder.intersect(ray.org,ray.dir,tc,u,Ng);
       if (none(valid)) return false;
+      u = clamp(u,vfloatx(0.0f),vfloatx(1.0f));
 
       /* intersect with cap-planes */
       BBox<vfloatx> tp(ray.tnear,ray.tfar);
       tp = embree::intersect(tp,tc);
-      tp = embree::intersect(tp,intersect_half_planeN(ray.org,ray.dir,+Vec3vfx(dP0du),Vec3vfx(P0)));
-      tp = embree::intersect(tp,intersect_half_planeN(ray.org,ray.dir,-Vec3vfx(dP3du),Vec3vfx(P3)));
+      auto h0 = intersect_half_planeN(ray.org,ray.dir,+Vec3vfx(dP0du),Vec3vfx(P0));
+      tp = embree::intersect(tp,h0);
+      auto h1 = intersect_half_planeN(ray.org,ray.dir,-Vec3vfx(dP3du),Vec3vfx(P3));
+      tp = embree::intersect(tp,h1);
+
       valid &= tp.lower <= tp.upper;
-      if (none(valid)) {
-        //PRINT("missed culling");
-        return false;
-      }
+      if (none(valid)) return false;
 
       /* iterate over all hits front to back */
       while (any(valid))
@@ -251,9 +252,9 @@ namespace embree
         size_t i = select_min(valid,tp.lower);
         clear(valid,i);
 
-        if (curve.depth == 4) 
+        if (curve.depth == 3) 
         {
-#if 1
+#if 0
           const float u0 = float(i+0)/float(VSIZEX);
           const float u1 = float(i+1)/float(VSIZEX);
           bool h = intersect_bezier_iterative3(ray,curve, u0, u1, tp.lower[i], u_o, t_o, Ng_o);
@@ -265,6 +266,8 @@ namespace embree
           u_o = (1.0f-uu)*curve.t0 + uu*curve.t1;
           t_o = tp.lower[i];
           Ng_o = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
+          //if (h0.lower[i] == tp.lower[i]) Ng_o = Vec3fa(dP0du.x[i],dP0du.y[i],dP0du.z[i]);
+          //if (h1.lower[i] == tp.lower[i]) Ng_o = Vec3fa(dP3du.x[i],dP3du.y[i],dP3du.z[i]);
           return true;
 #endif
         }
