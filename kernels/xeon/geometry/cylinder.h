@@ -130,7 +130,7 @@ namespace embree
 
       __forceinline vbool<N> intersect(const Vec3fa& org_i, const Vec3fa& dir, BBox<vfloat<N>>& t_o, vfloat<N>& u0_o, Vec3vfN& Ng0_o) const
       {
-        const vfloat<N> tb = dot(vfloatx(0.5f)*(p0+p1)-Vec3vfN(org_i),Vec3vfN(normalize(dir)));
+        const vfloat<N> tb = dot(vfloat<N>(0.5f)*(p0+p1)-Vec3vfN(org_i),Vec3vfN(normalize(dir)));
         const Vec3vfN org = Vec3vfN(org_i)+tb*Vec3vfN(dir);
         const Vec3vfN v0 = p0-org;
         const Vec3vfN v1 = p1-org;

@@ -216,6 +216,8 @@ namespace embree
 
     __forceinline bool intersect_bezier_recursive(const Ray& ray, const BezierCurve3fa& curve, float& u_o, float& t_o, Vec3fa& Ng_o)
     {
+      static const int maxDepth = 3;
+
       /* subdivide curve */
       const Vec4vfx dP0du = curve.derivative(vboolx(true),0,VSIZEX-1);
       const Vec4vfx dP3du = Vec4vfx(shift_right_1(dP0du.x),shift_right_1(dP0du.y),shift_right_1(dP0du.z),shift_right_1(dP0du.w));
@@ -227,11 +229,13 @@ namespace embree
       const vfloatx r2 = sqrt(sqr_point_to_line_distance(Vec3vfx(P2),Vec3vfx(P0),Vec3vfx(P3)));
       const vfloatx r = max(r1,r2)+max(P0.w,P1.w,P2.w,P3.w);
       const CylinderN<VSIZEX> cylinder(Vec3vfx(P0.x,P0.y,P0.z),Vec3vfx(P3.x,P3.y,P3.z),r);
+      const ConeN<VSIZEX> cone(Vec3vfx(P0.x,P0.y,P0.z),Vec3vfx(P3.x,P3.y,P3.z),P0.w,P3.w);
       vboolx valid = true; clear(valid,VSIZEX-1);
 
       /* intersect with cylinder */
       BBox<vfloatx> tc; vfloatx u; Vec3vfx Ng;
-      valid &= cylinder.intersect(ray.org,ray.dir,tc,u,Ng);
+      if (curve.depth == maxDepth) valid &= cone    .intersect(ray.org,ray.dir,tc,u,Ng);
+      else                         valid &= cylinder.intersect(ray.org,ray.dir,tc,u,Ng);
       if (none(valid)) return false;
       u = clamp(u,vfloatx(0.0f),vfloatx(1.0f));
 
@@ -252,7 +256,7 @@ namespace embree
         size_t i = select_min(valid,tp.lower);
         clear(valid,i);
 
-        if (curve.depth == 3) 
+        if (curve.depth == maxDepth) 
         {
 #if 0
           const float u0 = float(i+0)/float(VSIZEX);
