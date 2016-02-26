@@ -120,10 +120,13 @@ namespace embree
       
       const Vec3vfN p0; //!< start location
       const Vec3vfN p1; //!< end position
-      const vfloat<N> r;   //!< radius of cylinder
+      const vfloat<N> rr;   //!< squared radius of cylinder
 
       __forceinline CylinderN(const Vec3vfN& p0, const Vec3vfN& p1, const vfloat<N>& r) 
-        : p0(p0), p1(p1), r(r) {}
+        : p0(p0), p1(p1), rr(sqr(r)) {}
+
+      __forceinline CylinderN(const Vec3vfN& p0, const Vec3vfN& p1, const vfloat<N>& rr, bool) 
+        : p0(p0), p1(p1), rr(rr) {}
 
       __forceinline vbool<N> intersect(const Vec3fa& org_i, const Vec3fa& dir, BBox<vfloat<N>>& t_o, vfloat<N>& u0_o, Vec3vfN& Ng0_o) const
       {
@@ -144,7 +147,7 @@ namespace embree
         
         const vfloat<N> A = dOdO - sqr(dOz);
         const vfloat<N> B = 2.0f * (OdO - dOz*Oz);
-        const vfloat<N> C = OO - sqr(Oz) - sqr(r);
+        const vfloat<N> C = OO - sqr(Oz) - rr;
         
         const vfloat<N> D = B*B - 4.0f*A*C;
         vbool<N> valid = D >= 0.0f;

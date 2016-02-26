@@ -89,7 +89,7 @@ namespace embree
         //PRINT(dPdu);
         //PRINT(ddPdu);
         //PRINT(length(dnormalize(dPdu,ddPdu)));
-        Vec3fa T = normalize(dPdu);
+        Vec3fa T = normalize(dPdu); // can be optimized away
         //float C = length(ddPdu)/length(dPdu); // FIXME: is this the proper curvature?
         float du = dot(Q-P,T);
         float dt = sqrt(dot(Q-P,Q-P)-sqr(du))-P.w;
@@ -169,16 +169,27 @@ namespace embree
       return false;
     }
 
+    template<int M>
+      __forceinline vfloat<M> sqr_point_to_line_distance(const Vec3<vfloat<M>>& P, const Vec3<vfloat<M>>& Q0, const Vec3<vfloat<M>>& Q1) 
+    {
+      const Vec3<vfloat<M>> N = cross(P-Q0,P-Q1);
+      const Vec3<vfloat<M>> D = Q1-Q0;
+      return dot(N,N)*rcp(dot(D,D));
+    }
+
+#if 0
     __forceinline bool intersect_bezier_recursive(const Ray& ray, const BezierCurve3fa& curve, float& u_o, float& t_o, Vec3fa& Ng_o)
     {
-      const Vec4vfx P0    = curve.eval0(vboolx(true),0,VSIZEX);
-      const Vec4vfx dP0du = curve.derivative(vboolx(true),0,VSIZEX);
-      const Vec4vfx P3   (shift_right_1(P0.x   ),shift_right_1(P0.y   ),shift_right_1(P0.z   ),shift_right_1(P0.w)   );
-      const Vec4vfx dP3du(shift_right_1(dP0du.x),shift_right_1(dP0du.y),shift_right_1(dP0du.z),shift_right_1(dP0du.w));
-      const Vec4vfx P1    = P0 + Vec4vfx(1.0f/3.0f)*dP0du; 
-      const Vec4vfx P2    = P3 - Vec4vfx(1.0f/3.0f)*dP3du;
-      const vfloatx r01 = max(P0.w,P3.w);
-      const CylinderN<VSIZEX> cylinder(Vec3vfx(P0.x,P0.y,P0.z),Vec3vfx(P3.x,P3.y,P3.z),r01);
+      const Vec4vfx dP0du = curve.derivative(vboolx(true),0,VSIZEX-1);
+      const Vec4vfx dP3du = Vec4vfx(shift_right_1(dP0du.x),shift_right_1(dP0du.y),shift_right_1(dP0du.z),shift_right_1(dP0du.w));
+      const Vec4vfx P0 = curve.eval0     (vboolx(true),0,VSIZEX-1);
+      const Vec4vfx P3 = Vec4vfx(shift_right_1(P0.x   ),shift_right_1(P0.y   ),shift_right_1(P0.z   ),shift_right_1(P0.w)   );
+      const Vec4vfx P1 = P0 + Vec4vfx(1.0f/3.0f)*dP0du; 
+      const Vec4vfx P2 = P3 - Vec4vfx(1.0f/3.0f)*dP3du;
+      const vfloatx rr1 = sqr_point_to_line_distance(P1,P0,P3);
+      const vfloatx rr2 = sqr_point_to_lint_distance(P2,P0,P3);
+      const vfloatx rr01 = max(sqr(P0.w),rr1,rr2,sqr(P3.w));
+      const CylinderN<VSIZEX> cylinder(Vec3vfx(P0.x,P0.y,P0.z),Vec3vfx(P3.x,P3.y,P3.z),rr01,true);
 
       BBox<vfloatx> t; vfloatx u; Vec3vfx Ng;
       const vboolx hit = cylinder.intersect(ray.org,ray.dir,t,u,Ng);
@@ -202,6 +213,7 @@ namespace embree
       }
       return false;
     }
+#endif
 
     template<int M>
       struct BezierHit
@@ -242,6 +254,45 @@ namespace embree
       vfloat<M> vt;
     };
     
+#if 0
+
+    struct Bezier1Intersector1
+    {
+      __forceinline Bezier1Intersector1(const Ray& ray, const void* ptr) {}
+
+      template<typename Epilog>
+      __forceinline bool intersect(Ray& ray,
+                                   const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const int Np,
+                                   const Epilog& epilog) const
+      {
+        STAT3(normal.trav_prims,1,1,1);
+
+        float u = 0.0f;
+        float t = ray.tfar;
+        Vec3fa Ng = zero;
+
+        BezierCurve3fa curve2D(v0,v1,v2,v3,0.0f,1.0f,4);
+        if (!intersect_bezier_recursive(ray,curve,u,t,Ng))
+          return false;
+
+        LineIntersectorHitM<VSIZEX> hit;
+        hit.vu[0] = u;
+        hit.vv[0] = 0.0f;
+        hit.vt[0] = t;
+        hit.vNg.x[0] = Ng.x;
+        hit.vNg.y[0] = Ng.y;
+        hit.vNg.z[0] = Ng.z;
+        vboolx valid_o = false;
+        set(valid_o,0);
+                  
+        /* update hit information */
+        if (unlikely(none(valid_o))) continue;
+        return epilog(valid_o,hit);
+      }
+    };
+
+#endif
+
 #if 1
 
     struct Bezier1Intersector1
