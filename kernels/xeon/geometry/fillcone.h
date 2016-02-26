@@ -35,6 +35,19 @@ namespace embree
       return BBox1f(lower,upper);
     }
 
+    template<int M>
+      static __forceinline BBox<vfloat<M>> intersect_half_planeN(const Vec3fa& ray_org, const Vec3fa& ray_dir, const Vec3<vfloat<M>>& N, const Vec3<vfloat<M>>& P)
+    {
+      Vec3<vfloat<M>> O = Vec3<vfloat<M>>(ray_org) - P;
+      Vec3<vfloat<M>> D = Vec3<vfloat<M>>(ray_dir);
+      vfloat<M> ON = dot(O,N);
+      vfloat<M> DN = dot(D,N);
+      vfloat<M> t = -ON*rcp(select(abs(DN) < min_rcp_input, min_rcp_input, DN) );
+      vfloat<M> lower = select(DN < 0.0f, vfloat<M>(neg_inf), t);
+      vfloat<M> upper = select(DN < 0.0f, t, vfloat<M>(pos_inf));
+      return BBox<vfloat<M>>(lower,upper);
+    }
+
     struct FillCone
     {
       const Vec3fa p0_i; //!< start location

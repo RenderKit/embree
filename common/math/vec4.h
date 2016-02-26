@@ -47,6 +47,8 @@ namespace embree
     template<typename T1> __forceinline Vec4( const Vec4<T1>& a ) : x(T(a.x)), y(T(a.y)), z(T(a.z)), w(T(a.w)) {}
     template<typename T1> __forceinline Vec4& operator =(const Vec4<T1>& other) { x = other.x; y = other.y; z = other.z; w = other.w; return *this; }
 
+    __forceinline operator Vec3<T> () const { return Vec3<T>(x,y,z); }
+
     ////////////////////////////////////////////////////////////////////////////////
     /// Constants
     ////////////////////////////////////////////////////////////////////////////////
