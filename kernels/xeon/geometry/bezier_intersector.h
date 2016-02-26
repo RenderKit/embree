@@ -214,12 +214,21 @@ namespace embree
         size_t i = select_min(valid,tp.lower);
         clear(valid,i);
 
-        if (curve.depth == 2) {
+        if (curve.depth == 4) 
+        {
+#if 0
+          const float u0 = float(i+0)/float(VSIZEX);
+          const float u1 = float(i+1)/float(VSIZEX);
+          if (intersect_bezier_iterative2(ray,curve, u0, u1, u_o, t_o, Ng_o))
+            return true;
+          continue;
+#else
           float uu = (float(i)+u[i])/float(VSIZEX);
           u_o = (1.0f-uu)*curve.t0 + uu*curve.t1;
           t_o = tp.lower[i];
           Ng_o = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
           return true;
+#endif
         }
 
         const Vec3fa p0(P0.x[i],P0.y[i],P0.z[i],P0.w[i]);
