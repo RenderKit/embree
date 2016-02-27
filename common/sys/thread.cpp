@@ -199,7 +199,15 @@ namespace embree
             int i;
             while (threads_config >> i)
             {
-              threadIDs.push_back(i);
+              bool found = false;
+              for (size_t j=0;j<threadIDs.size();j++)
+                if (threadIDs[j] == i)
+                {
+                  found = true;
+                  break;
+                }
+              if (!found)
+                threadIDs.push_back(i);
               if (threads_config.peek() == ',')
                 threads_config.ignore();
             }
@@ -210,12 +218,30 @@ namespace embree
           break;
 
       }
+
+      for (size_t i=0;i<threadIDs.size();i++)
+        for (size_t j=0;j<threadIDs.size();j++)
+          if (i != j)
+            if (threadIDs[i] == threadIDs[j])
+            {
+              PRINT(i);
+              PRINT(j);
+              PRINT(threadIDs[i]);
+              PRINT(threadIDs[j]);
+              FATAL("threadID error");
+            }
+
+#if 0
+      for (size_t i=0;i<threadIDs.size();i++)
+        std::cout << "i " << i << " threadIDs[i] " << threadIDs[i] << std::endl;
+#endif
     }
 
     ssize_t ID = threadID;
 
     if (threadID < threadIDs.size())
       ID = threadIDs[threadID];
+
 #else
     ssize_t ID = threadID;
 
