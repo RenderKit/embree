@@ -423,7 +423,6 @@ namespace embree
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (N < 1) throw_RTCError(RTC_INVALID_OPERATION,"number of rays too small");
-    if (stride < sizeof(RTCRay)) throw_RTCError(RTC_INVALID_OPERATION,"stride too small");
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
     if (((size_t)rayN ) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 16 bytes");   
 #endif
@@ -445,6 +444,8 @@ namespace embree
 #else
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
+    if (N < 1) throw_RTCError(RTC_INVALID_OPERATION,"number of rays too small");
+    if (streams < 1) throw_RTCError(RTC_INVALID_OPERATION,"streams too small");
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
     if (((size_t)rayN.orgx   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.orgx not aligned to 4 bytes");   
     if (((size_t)rayN.orgy   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.orgy not aligned to 4 bytes");   
@@ -637,6 +638,8 @@ namespace embree
 #else
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
+    if (N < 1) throw_RTCError(RTC_INVALID_OPERATION,"number of rays too small");
+    if (streams < 1) throw_RTCError(RTC_INVALID_OPERATION,"streams too small");
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
     if (((size_t)rayN.orgx   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.orgx not aligned to 4 bytes");   
     if (((size_t)rayN.orgy   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.orgy not aligned to 4 bytes");   
