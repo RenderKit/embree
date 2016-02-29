@@ -319,8 +319,8 @@ namespace embree
           const vfloat<N> z0 = Oz+t*dOz;
           const vfloat<N> z0r = r0+z0*dr;
           valid &= z0r >= 0.0f;
-          t_o.lower = select(validt, select(dOz > 0.0f, t, vfloat<N>(neg_inf)), t_o.lower);
-          t_o.upper = select(validt, select(dOz > 0.0f, vfloat<N>(pos_inf), t), t_o.upper);
+          t_o.lower = select(validt, select(dOz*dr > 0.0f, t, vfloat<N>(neg_inf)), t_o.lower);
+          t_o.upper = select(validt, select(dOz*dr > 0.0f, vfloat<N>(pos_inf), t), t_o.upper);
         }
 
         if (any(validf))
@@ -339,8 +339,8 @@ namespace embree
           } 
 
           if (any(validff)) {
-            t_o.lower = select(validff, select(dOz > 0.0f, t_o.lower, float(neg_inf)), t_o.lower);
-            t_o.upper = select(validff, select(dOz > 0.0f, float(pos_inf), t_o.upper), t_o.upper);
+            t_o.lower = select(validff, select(dOz*dr > 0.0f, t_o.lower, float(neg_inf)), t_o.lower);
+            t_o.upper = select(validff, select(dOz*dr > 0.0f, float(pos_inf), t_o.upper), t_o.upper);
           }
         }
 

@@ -240,23 +240,7 @@ namespace embree
       /* intersect with cylinder */
       BBox<vfloatx> tc; vfloatx u; Vec3vfx Ng;
       if (curve.depth == maxDepth) {
-        //valid &= cone    .intersect(ray.org,ray.dir,tc,u,Ng);
-        for (size_t i=0; i<VSIZEX-1; i++) {
-          //if (i != 0) { clear(valid,i); continue; }
-          Cone cone1 = cone[i];
-          //PRINT(cone1);
-          BBox1f _tc; float _u; Vec3fa _Ng;
-          bool v = cone1.intersect(ray.org,ray.dir,_tc,_u,_Ng);
-          //PRINT(v);
-          //PRINT(_tc);
-          //PRINT(_u);
-          //PRINT(_Ng);
-          if (!v) clear(valid,i);
-          tc.lower[i] = _tc.lower;
-          tc.upper[i] = _tc.upper;
-          u[i] = _u;
-          Ng.x[i] = _Ng.x; Ng.y[i] = _Ng.y; Ng.z[i] = _Ng.z;
-        }
+        valid &= cone    .intersect(ray.org,ray.dir,tc,u,Ng);
         valid &= tc.lower > ray.tnear;
       }
       else
