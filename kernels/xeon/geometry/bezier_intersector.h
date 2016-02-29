@@ -251,17 +251,6 @@ namespace embree
       //PRINT(valid);
       //PRINT(tc);
 
-      //if (valid[6] == false) return false;
-      //if (tc.lower[6] <= ray.tnear || tc.lower[6] >= ray.tfar) return false;
-      //if (std::isnan(tc.lower[6])) return false;
-      //u_o = u[6];
-      //t_o = tc.lower[6];
-      //Ng_o = Vec3fa(Ng.x[6],Ng.y[6],Ng.z[6]);
-      //PRINT(u_o);
-      //PRINT(t_o);
-      //PRINT(Ng_o);
-      //return true;
-
       /* intersect with cap-planes */
       BBox<vfloatx> tp(ray.tnear,ray.tfar);
       //PRINT(tp);
