@@ -188,7 +188,7 @@ namespace embree
       /* parse thread/CPU topology */
       for (size_t cpuID=0;;cpuID++)
       {
-        std::string cpu = std::string("/sys/devices/system/cpu/cpu") + std::to_string((int)cpuID) + std::string("/topology/thread_siblings_list");
+        std::string cpu = std::string("/sys/devices/system/cpu/cpu") + std::to_string((long long)cpuID) + std::string("/topology/thread_siblings_list");
         FILE *file = fopen(cpu.c_str(), "r");
         if(file)
         {
