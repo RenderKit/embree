@@ -24,7 +24,7 @@ namespace embree
   {
     struct Cone
     {
-      const Vec3fa p0; //!< start location of cone
+      const Vec3fa p0; //!< start position of cone
       const Vec3fa p1; //!< end position of cone
       const float r0;  //!< start radius of cone
       const float r1;  //!< end radius of cone
@@ -35,7 +35,7 @@ namespace embree
       __forceinline bool intersect(const Vec3fa& org_i, const Vec3fa& dir, BBox1f& t_o, float& u0_o, Vec3fa& Ng0_o) const
         
       {
-        const float tb = dot(0.5f*(p0+p1)-org_i,normalize(dir));
+        const float tb = 0.0f; //dot(0.5f*(p0+p1)-org_i,normalize(dir));
         const Vec3fa org = org_i+tb*dir;
         const Vec3fa v0 = p0-org;
         const Vec3fa v1 = p1-org;
@@ -55,7 +55,7 @@ namespace embree
         const float A = dOdO - sqr(dOz) * (1.0f+sqr(dr));
         const float B = 2.0f * (OdO - dOz*(Oz + R*dr));
         const float C = OO - (sqr(Oz) + sqr(R));
-        
+
         const float D = B*B - 4.0f*A*C;
         if (D < 0.0f) return false;
 
@@ -67,8 +67,8 @@ namespace embree
           const float z0r = r0+z0*dr;
           if (z0r < 0.0f) return false;
 
-          if (dOz > 0.0f) t_o = BBox1f(t,pos_inf);
-          else            t_o = BBox1f(neg_inf,t);
+          if (dOz*dr > 0.0f) t_o = BBox1f(t,pos_inf);
+          else               t_o = BBox1f(neg_inf,t);
         }
         else
         {
@@ -82,8 +82,8 @@ namespace embree
             const float z0r = r0+z0*dr;
             if (z0r < 0.0f) return false;
           } else {
-            if (dOz > 0) t_o.upper = pos_inf;
-            else         t_o.lower = neg_inf;
+            if (dOz*dr > 0) t_o.upper = pos_inf;
+            else            t_o.lower = neg_inf;
           }
         }
 
@@ -154,6 +154,8 @@ namespace embree
         const Ray ray7(Vec3fa(+0.0f,1.0f,0.0f),Vec3fa(-1.0f,-1.0f,+0.0f),0.0f,float(inf));
         const Ray ray8(Vec3fa(+0.0f,1.0f,0.0f),Vec3fa(+1.0f,-1.0f,+0.0f),0.0f,float(inf));
         const Ray ray9(Vec3fa(+0.0f,1.0f,0.0f),Vec3fa(-1.0f,+1.0f,+0.0f),0.0f,float(inf));
+
+        const Cone cone1(Vec3fa(0.0f,0.0f,0.0f),1.0f,Vec3fa(1.0f,0.0f,0.0f),0.0f);
 
         float eps = 0.001f;
 
@@ -238,6 +240,27 @@ namespace embree
           PRINT2(hit,t);
         }
         std::cout << std::endl; 
+
+        PRINT(0);
+        hit = cone1.intersect(ray0.org,ray0.dir,t,u,Ng);
+        if (hit != true || t.lower != float(neg_inf) || abs(2.0f-t.upper) > eps)  {
+          PRINT("error0");
+          PRINT2(hit,t);
+        }
+        std::cout << std::endl; 
+
+        PRINT(2);
+        hit = cone1.intersect(ray2.org,ray2.dir,t,u,Ng);
+        if (hit != true || abs(0.0f-t.lower) > eps || abs(4.0f-t.upper) > eps)  {
+          PRINT("error2");
+          PRINT2(hit,t);
+        }
+        std::cout << std::endl; 
+      }
+
+      /*! output operator */
+      friend __forceinline std::ostream& operator<<(std::ostream& cout, const Cone& c) {
+        return cout << "Cone { p0 = " << c.p0 << ", r0 = " << c.r0 << ", p1 = " << c.p1 << ", r1 = " << c.r1 << "}";
       }
     };
 
@@ -246,23 +269,23 @@ namespace embree
     {
       typedef Vec3<vfloat<N>> Vec3vfN;
       
-      const Vec3vfN p0; //!< start location
-      const Vec3vfN p1; //!< end position
+      const Vec3vfN p0; //!< start position of cone
+      const Vec3vfN p1; //!< end position of cone
       const vfloat<N> r0;   //!< start radius of cone
       const vfloat<N> r1;   //!< end radius of cone
 
       __forceinline ConeN(const Vec3vfN& p0, const vfloat<N>& r0, const Vec3vfN& p1, const vfloat<N>& r1) 
         : p0(p0), p1(p1), r0(r0), r1(r1) {}
 
-      __forceinline Cone operator[] (const size_t i) 
+      __forceinline Cone operator[] (const size_t i) const
       {
         assert(i<N);
-        return Cone(Vec3fa(p0.x[i],p0.y[i].p0.z[i]),r0[i],Vec3fa(p1.x[i],p1.y[i].p1.z[i]),r1[i]);
+        return Cone(Vec3fa(p0.x[i],p0.y[i],p0.z[i]),r0[i],Vec3fa(p1.x[i],p1.y[i],p1.z[i]),r1[i]);
       }
 
       __forceinline vbool<N> intersect(const Vec3fa& org_i, const Vec3fa& dir, BBox<vfloat<N>>& t_o, vfloat<N>& u0_o, Vec3vfN& Ng0_o) const
       {
-        const vfloat<N> tb = dot(vfloat<N>(0.5f)*(p0+p1)-Vec3vfN(org_i),Vec3vfN(normalize(dir)));
+        const vfloat<N> tb = 0.0f; //dot(vfloat<N>(0.5f)*(p0+p1)-Vec3vfN(org_i),Vec3vfN(normalize(dir)));
         const Vec3vfN org = Vec3vfN(org_i)+tb*Vec3vfN(dir);
         const Vec3vfN v0 = p0-org;
         const Vec3vfN v1 = p1-org;
