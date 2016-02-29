@@ -251,8 +251,14 @@ namespace embree
       const vfloat<N> r0;   //!< start radius of cone
       const vfloat<N> r1;   //!< end radius of cone
 
-      __forceinline ConeN(const Vec3vfN& p0, const Vec3vfN& p1, const vfloat<N>& r0, const vfloat<N>& r1) 
+      __forceinline ConeN(const Vec3vfN& p0, const vfloat<N>& r0, const Vec3vfN& p1, const vfloat<N>& r1) 
         : p0(p0), p1(p1), r0(r0), r1(r1) {}
+
+      __forceinline Cone operator[] (const size_t i) 
+      {
+        assert(i<N);
+        return Cone(Vec3fa(p0.x[i],p0.y[i].p0.z[i]),r0[i],Vec3fa(p1.x[i],p1.y[i].p1.z[i]),r1[i]);
+      }
 
       __forceinline vbool<N> intersect(const Vec3fa& org_i, const Vec3fa& dir, BBox<vfloat<N>>& t_o, vfloat<N>& u0_o, Vec3vfN& Ng0_o) const
       {
