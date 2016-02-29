@@ -50,7 +50,7 @@ namespace embree
         const float OO = dot(O,O);
         const float dOz = dot(dP,dO);
         const float Oz = dot(dP,O);
-        
+
         const float R = r0 + Oz*dr;          
         const float A = dOdO - sqr(dOz) * (1.0f+sqr(dr));
         const float B = 2.0f * (OdO - dOz*(Oz + R*dr));
@@ -58,12 +58,35 @@ namespace embree
         
         const float D = B*B - 4.0f*A*C;
         if (D < 0.0f) return false;
-        
-        const float Q = sqrt(D);
-        const float rcp_2A = rcp(2.0f*A);
-        t_o.lower = (-B-Q)*rcp_2A;
-        t_o.upper = (-B+Q)*rcp_2A;
-        
+
+        const float eps = float(1<<12)*float(ulp)*max(abs(dOdO),abs(sqr(dOz)));
+        if (abs(A) < eps) 
+        {
+          const float t = -C/B;
+          const float z0 = Oz+t*dOz;
+          const float r0 = r0+z0*dr;
+          if (r0 < 0.0f) return false;
+
+          if (dOz > 0.0f) t_o = BBox1f(t,pos_inf);
+          else            t_o = BBox1f(neg_inf,t);
+        }
+        else
+        {
+          const float Q = sqrt(D);
+          const float rcp_2A = rcp(2.0f*A);
+          t_o.lower = (-B-Q)*rcp_2A;
+          t_o.upper = (-B+Q)*rcp_2A;
+          
+          if (A > 0.0f) {
+            const float z0 = Oz+t_o.lower*dOz;
+            const float  r0 = r0+z0*dr;
+            if (r0 < 0.0f) return false;
+          } else {
+            if (dOz > 0) t_o.upper = pos_inf;
+            else         t_o.lower = neg_inf;
+          }
+        }
+
         u0_o = (Oz+t_o.lower*dOz)*rl;
         const Vec3fa Pr = t_o.lower*dir;
         const Vec3fa Pl = v0 + u0_o*(v1-v0);
@@ -117,6 +140,105 @@ namespace embree
         //Ng_o = Pr-Pl;
         return true;
       }
+
+      static void verify()
+      {
+        const Cone cone(Vec3fa(0.0f,0.0f,0.0f),0.0f,Vec3fa(1.0f,0.0f,0.0f),1.0f);
+        const Ray ray0(Vec3fa(-2.0f,1.0f,0.0f),Vec3fa(+1.0f,+0.0f,+0.0f),0.0f,float(inf));
+        const Ray ray1(Vec3fa(+2.0f,1.0f,0.0f),Vec3fa(-1.0f,+0.0f,+0.0f),0.0f,float(inf));
+        const Ray ray2(Vec3fa(-1.0f,0.0f,2.0f),Vec3fa(+0.0f,+0.0f,-1.0f),0.0f,float(inf));
+        const Ray ray3(Vec3fa(+1.0f,0.0f,2.0f),Vec3fa(+0.0f,+0.0f,-1.0f),0.0f,float(inf));
+        const Ray ray4(Vec3fa(-1.0f,0.0f,0.0f),Vec3fa(+1.0f,+0.0f,+0.0f),0.0f,float(inf));
+        const Ray ray5(Vec3fa(+1.0f,0.0f,0.0f),Vec3fa(-1.0f,+0.0f,+0.0f),0.0f,float(inf));
+        const Ray ray6(Vec3fa(+0.0f,0.0f,1.0f),Vec3fa(+0.0f,+0.0f,-1.0f),0.0f,float(inf));
+        const Ray ray7(Vec3fa(+0.0f,1.0f,0.0f),Vec3fa(-1.0f,-1.0f,+0.0f),0.0f,float(inf));
+        const Ray ray8(Vec3fa(+0.0f,1.0f,0.0f),Vec3fa(+1.0f,-1.0f,+0.0f),0.0f,float(inf));
+        const Ray ray9(Vec3fa(+0.0f,1.0f,0.0f),Vec3fa(-1.0f,+1.0f,+0.0f),0.0f,float(inf));
+
+        float eps = 0.001f;
+
+        BBox1f t; float u; Vec3fa Ng; bool hit;
+
+        PRINT(0);
+        hit = cone.intersect(ray0.org,ray0.dir,t,u,Ng);
+        if (hit != true || abs(3.0f-t.lower) > eps || t.upper !=  float(inf)) {
+          PRINT("error0");
+          PRINT2(hit,t); 
+        }
+        std::cout << std::endl; 
+
+        PRINT(1);
+        hit = cone.intersect(ray1.org,ray1.dir,t,u,Ng);
+        if (hit != true || t.lower != float(neg_inf) || abs(1.0f-t.upper) > eps)  {
+          PRINT("error1");
+          PRINT2(hit,t);
+        }
+        std::cout << std::endl; 
+
+        PRINT(2);
+        hit = cone.intersect(ray2.org,ray2.dir,t,u,Ng);
+        if (hit != false) {
+          PRINT("error2");
+          PRINT2(hit,t);
+        }
+        std::cout << std::endl; 
+
+        PRINT(3);
+        hit = cone.intersect(ray3.org,ray3.dir,t,u,Ng);
+        if (hit != true || abs(1.0f-t.lower) > eps || abs(3.0f-t.upper) > eps)  {
+          PRINT("error3");
+          PRINT2(hit,t);
+        }
+        std::cout << std::endl; 
+
+        PRINT(4);
+        hit = cone.intersect(ray4.org,ray4.dir,t,u,Ng);
+        if (hit != true || abs(1.0f-t.lower) > eps || t.upper != float(inf))  {
+          PRINT("error4");
+          PRINT2(hit,t);
+        }
+        std::cout << std::endl; 
+        
+        PRINT(5);
+        hit = cone.intersect(ray5.org,ray5.dir,t,u,Ng);
+        if (hit != true || t.lower != float(neg_inf) || abs(1.0f-t.upper) > eps)  {
+          PRINT("error5");
+          PRINT2(hit,t);
+        }
+        std::cout << std::endl; 
+        
+        PRINT(6);
+        hit = cone.intersect(ray6.org,ray6.dir,t,u,Ng);
+        if (hit != true || abs(1.0f-t.lower) > eps || abs(1.0f-t.upper) > eps)  {
+          PRINT("error6");
+          PRINT2(hit,t);
+        }
+        std::cout << std::endl; 
+
+        PRINT(7);
+        hit = cone.intersect(ray7.org,ray7.dir,t,u,Ng);
+        if (hit != false) {
+          PRINT("error7");
+          PRINT2(hit,t);
+        }
+        std::cout << std::endl; 
+
+        PRINT(8);
+        hit = cone.intersect(ray8.org,ray8.dir,t,u,Ng);
+        if (hit != true || abs(0.5f-t.lower) > eps || t.upper < 1e6f)  {
+          PRINT("error8");
+          PRINT2(hit,t);
+        }
+        std::cout << std::endl; 
+
+        PRINT(9);
+        hit = cone.intersect(ray9.org,ray9.dir,t,u,Ng);
+        if (hit != true || t.lower > -1e6f || abs(-0.5f-t.upper) > eps)  {
+          PRINT("error9");
+          PRINT2(hit,t);
+        }
+        std::cout << std::endl; 
+      }
     };
 
     template<int N>
@@ -158,12 +280,12 @@ namespace embree
         const vfloat<N> D = B*B - 4.0f*A*C;
         vbool<N> valid = D >= 0.0f;
         if (none(valid)) return valid;
-        
+
         const vfloat<N> Q = sqrt(D);
         const vfloat<N> rcp_2A = 0.5f*rcp(A);
         t_o.lower = (-B-Q)*rcp_2A;
         t_o.upper = (-B+Q)*rcp_2A;
-        
+
         u0_o = (Oz+t_o.lower*dOz)*rl;
         const Vec3vfN Pr = t_o.lower*Vec3vfN(dir);
         const Vec3vfN Pl = v0 + u0_o*(v1-v0);

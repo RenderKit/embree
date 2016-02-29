@@ -77,6 +77,10 @@ namespace embree
     __forceinline BBox( PosInfTy ): lower(neg_inf), upper(pos_inf) {}
   };
 
+  template<> __forceinline bool BBox<float>::empty() const {
+    return lower > upper;
+  }
+
 #if defined(__SSE__)
   template<> __forceinline bool BBox<Vec3fa>::empty() const {
     return !all(le_mask(lower,upper));

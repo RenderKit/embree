@@ -216,7 +216,12 @@ namespace embree
 
     __forceinline bool intersect_bezier_recursive(const Ray& ray, const BezierCurve3fa& curve, float& u_o, float& t_o, Vec3fa& Ng_o)
     {
-      static const int maxDepth = 3;
+      //Cone::verify();
+      //exit(1);
+
+      //PRINT(curve);
+      static const int maxDepth = 1;
+      bool found = false;
 
       /* subdivide curve */
       const Vec4vfx dP0du = curve.derivative(vboolx(true),0,VSIZEX-1);
@@ -235,26 +240,49 @@ namespace embree
       /* intersect with cylinder */
       BBox<vfloatx> tc; vfloatx u; Vec3vfx Ng;
       if (curve.depth == maxDepth) valid &= cone    .intersect(ray.org,ray.dir,tc,u,Ng);
-      else                         valid &= cylinder.intersect(ray.org,ray.dir,tc,u,Ng);
+      else
+        valid &= cylinder.intersect(ray.org,ray.dir,tc,u,Ng);
       if (none(valid)) return false;
+      //PRINT(valid);
       u = clamp(u,vfloatx(0.0f),vfloatx(1.0f));
+      //PRINT(valid);
+      //PRINT(tc);
+
+      //if (valid[6] == false) return false;
+      //if (tc.lower[6] <= ray.tnear || tc.lower[6] >= ray.tfar) return false;
+      //if (std::isnan(tc.lower[6])) return false;
+      //u_o = u[6];
+      //t_o = tc.lower[6];
+      //Ng_o = Vec3fa(Ng.x[6],Ng.y[6],Ng.z[6]);
+      //PRINT(u_o);
+      //PRINT(t_o);
+      //PRINT(Ng_o);
+      //return true;
 
       /* intersect with cap-planes */
       BBox<vfloatx> tp(ray.tnear,ray.tfar);
+      //PRINT(tp);
       tp = embree::intersect(tp,tc);
+      //PRINT(tp);
       auto h0 = intersect_half_planeN(ray.org,ray.dir,+Vec3vfx(dP0du),Vec3vfx(P0));
+      //PRINT(h0);
       tp = embree::intersect(tp,h0);
+      //PRINT(tp);
       auto h1 = intersect_half_planeN(ray.org,ray.dir,-Vec3vfx(dP3du),Vec3vfx(P3));
+      //PRINT(h1);
       tp = embree::intersect(tp,h1);
+      //PRINT(tp);
 
       valid &= tp.lower <= tp.upper;
       if (none(valid)) return false;
+      //PRINT(valid);
 
       /* iterate over all hits front to back */
       while (any(valid))
       {
         size_t i = select_min(valid,tp.lower);
         clear(valid,i);
+        //PRINT2(curve.depth,i);
 
         if (curve.depth == maxDepth) 
         {
@@ -266,13 +294,24 @@ namespace embree
           if (u_o < 0.0f || u_o > 1.0f) return false;
           return h;
 #else
-          float uu = (float(i)+u[i])/float(VSIZEX);
-          u_o = (1.0f-uu)*curve.t0 + uu*curve.t1;
-          t_o = tp.lower[i];
-          Ng_o = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
-          //if (h0.lower[i] == tp.lower[i]) Ng_o = Vec3fa(dP0du.x[i],dP0du.y[i],dP0du.z[i]);
-          //if (h1.lower[i] == tp.lower[i]) Ng_o = Vec3fa(dP3du.x[i],dP3du.y[i],dP3du.z[i]);
-          return true;
+          if (tp.lower[i] < t_o) {
+            float uu = (float(i)+u[i])/float(VSIZEX);
+            u_o = (1.0f-uu)*curve.t0 + uu*curve.t1;
+            t_o = tp.lower[i];
+            Ng_o = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
+            u_o = float(i+1)/float(VSIZEX);
+            //PRINT(u_o);
+            //PRINT(t_o);
+            //PRINT(Ng_o);
+            //if (h0.lower[i] == tp.lower[i]) Ng_o = Vec3fa(dP0du.x[i],dP0du.y[i],dP0du.z[i]);
+            //if (h1.lower[i] == tp.lower[i]) Ng_o = Vec3fa(dP3du.x[i],dP3du.y[i],dP3du.z[i]);
+            return true;
+            //found = true;
+          } else {
+            //PRINT("miss");
+          }
+          return false;
+          //continue;
 #endif
         }
 
@@ -285,8 +324,10 @@ namespace embree
         const BezierCurve3fa subcurve(p0,p1,p2,p3,t0,t1,curve.depth+1);
         if (intersect_bezier_recursive(ray,subcurve,u_o,t_o,Ng_o))
           return true;
+          //found = true;
       }
       return false;
+      //return found;
     }
 
     template<int M>
