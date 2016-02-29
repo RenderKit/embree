@@ -107,10 +107,16 @@ void rtcIntersect1 (RTCScene scene, uniform RTCRay1& ray);
 void rtcIntersect (RTCScene scene, varying RTCRay& ray);
 
 
-/*! Intersects a stream of N uniform rays in AOS layout with the scene. */
+/*! Intersects a stream of N rays in AOS layout with the scene. This
+ *  function can only be called for scenes with the RTC_INTERSECTN
+ *  flag set. The stride specifies the offset between rays in
+ *  bytes. */
 void rtcIntersectN (RTCScene scene, uniform RTCRay* uniform rayN, const uniform size_t N, const uniform size_t stride, const uniform size_t flags);
 
-/*! Intersects a stream of N rays in SOA layout with the scene. */
+/*! Intersects a stream of N rays in SOA layout with the scene. This
+ *  function can only be called for scenes with the RTC_INTERSECTN
+ *  flag set. 'streams' specifies the number of dense SOA ray
+ *  sub-streams, and 'stride' the offset between those. */
 void rtcIntersectN_SOA (RTCScene scene, uniform RTCRaySOA& rayN, const uniform size_t N, const uniform size_t streams, const uniform size_t offset, const uniform size_t flags);
 
 
@@ -126,10 +132,16 @@ void rtcOccluded1 (RTCScene scene, uniform RTCRay1& ray);
 void rtcOccluded (RTCScene scene, varying RTCRay& ray);
 
 
-/*! Tests a stream of N uniform rays in AOS layout for occlusion with the scene. */
+/*! Tests if a stream of N rays on AOS layout is occluded by the
+ *  scene. This function can only be called for scenes with the
+ *  RTC_INTERSECTN flag set. The stride specifies the offset between
+ *  rays in bytes.*/
 void rtcOccludedN (RTCScene scene, uniform RTCRay* uniform rayN, const uniform size_t N, const uniform size_t stride, const uniform size_t flags);
 
-/*! Intersects a stream of N rays in SOA layout for occlusion with the scene. */
+/*! Intersects a stream of N rays in SOA layout with the scene. This
+  *  function can only be called for scenes with the RTC_INTERSECTN
+  *  flag set. 'streams' specifies the number of dense SOA ray
+  *  sub-streams, and 'stride' the offset between those. */
 void rtcOccludedN_SOA (RTCScene scene, uniform RTCRaySOA& rayN, const uniform size_t N, const uniform size_t streams, const uniform size_t offset, const uniform size_t flags);
 
 /*! Deletes the geometry again. */

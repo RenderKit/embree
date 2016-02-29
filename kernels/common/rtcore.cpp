@@ -422,6 +422,8 @@ namespace embree
 #else
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
+    if (N < 1) throw_RTCError(RTC_INVALID_OPERATION,"number of rays too small");
+    if (stride < sizeof(RTCRay)) throw_RTCError(RTC_INVALID_OPERATION,"stride too small");
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
     if (((size_t)rayN ) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 16 bytes");   
 #endif
@@ -433,7 +435,7 @@ namespace embree
     RTCORE_CATCH_END(scene->device);
   }
 
-  RTCORE_API void rtcIntersectN_SOA (RTCScene hscene, RTCRaySOA& rayN, const size_t N, const size_t streams, const size_t offset, const size_t flags) 
+  RTCORE_API void rtcIntersectN_SOA (RTCScene hscene, RTCRaySOA& rayN, const size_t N, const size_t streams, const size_t stride, const size_t flags) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -465,7 +467,7 @@ namespace embree
 #endif
     STAT3(normal.travs,1,N,N);
 
-    scene->device->rayStreamFilters.filterSOA(scene,rayN,N,streams,offset,flags,true);
+    scene->device->rayStreamFilters.filterSOA(scene,rayN,N,streams,stride,flags,true);
 
 #endif
     RTCORE_CATCH_END(scene->device);
@@ -611,6 +613,8 @@ namespace embree
 #else
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
+    if (N < 1) throw_RTCError(RTC_INVALID_OPERATION,"number of rays too small");
+    if (stride < sizeof(RTCRay)) throw_RTCError(RTC_INVALID_OPERATION,"stride too small");
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
     if (((size_t)rayN ) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 64 bytes");   
 #endif
@@ -623,7 +627,7 @@ namespace embree
   }
 
 
-  RTCORE_API void rtcOccludedN_SOA(RTCScene hscene, RTCRaySOA& rayN, const size_t N, const size_t streams, const size_t offset, const size_t flags) 
+  RTCORE_API void rtcOccludedN_SOA(RTCScene hscene, RTCRaySOA& rayN, const size_t N, const size_t streams, const size_t stride, const size_t flags) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -655,7 +659,7 @@ namespace embree
 #endif
     STAT3(shadow.travs,1,N,N);
 
-    scene->device->rayStreamFilters.filterSOA(scene,rayN,N,streams,offset,flags,false);
+    scene->device->rayStreamFilters.filterSOA(scene,rayN,N,streams,stride,flags,false);
 
 #endif
     RTCORE_CATCH_END(scene->device);
