@@ -64,8 +64,8 @@ namespace embree
         {
           const float t = -C/B;
           const float z0 = Oz+t*dOz;
-          const float r0 = r0+z0*dr;
-          if (r0 < 0.0f) return false;
+          const float z0r = r0+z0*dr;
+          if (z0r < 0.0f) return false;
 
           if (dOz > 0.0f) t_o = BBox1f(t,pos_inf);
           else            t_o = BBox1f(neg_inf,t);
@@ -79,8 +79,8 @@ namespace embree
           
           if (A > 0.0f) {
             const float z0 = Oz+t_o.lower*dOz;
-            const float  r0 = r0+z0*dr;
-            if (r0 < 0.0f) return false;
+            const float z0r = r0+z0*dr;
+            if (z0r < 0.0f) return false;
           } else {
             if (dOz > 0) t_o.upper = pos_inf;
             else         t_o.lower = neg_inf;
@@ -281,10 +281,39 @@ namespace embree
         vbool<N> valid = D >= 0.0f;
         if (none(valid)) return valid;
 
-        const vfloat<N> Q = sqrt(D);
-        const vfloat<N> rcp_2A = 0.5f*rcp(A);
-        t_o.lower = (-B-Q)*rcp_2A;
-        t_o.upper = (-B+Q)*rcp_2A;
+        const vfloat<N> eps = float(1<<12)*float(ulp)*max(abs(dOdO),abs(sqr(dOz)));
+        const vbool<N> validt = valid &  (abs(A) < eps);
+        const vbool<N> validf = valid & !(abs(A) < eps);
+        if (any(validt))
+        {
+          const vfloat<N> t = -C/B;
+          const vfloat<N> z0 = Oz+t*dOz;
+          const vfloat<N> z0r = r0+z0*dr;
+          valid &= z0r >= 0.0f;
+          t_o.lower = select(validt, select(dOz > 0.0f, t, vfloat<N>(neg_inf)), t_o.lower);
+          t_o.upper = select(validt, select(dOz > 0.0f, vfloat<N>(pos_inf), t), t_o.upper);
+        }
+
+        if (any(validf))
+        {
+          const vfloat<N> Q = sqrt(D);
+          const vfloat<N> rcp_2A = 0.5f*rcp(A);
+          t_o.lower = (-B-Q)*rcp_2A;
+          t_o.upper = (-B+Q)*rcp_2A;
+          
+          const vbool<N> validft = validf &   A>0.0f;
+          const vbool<N> validff = validf & !(A>0.0f);
+          if (any(validft)) {
+            const vfloat<N> z0 = Oz+t_o.lower*dOz;
+            const vfloat<N> z0r = r0+z0*dr;
+            valid &= z0r >= 0.0f;
+          } 
+
+          if (any(validff)) {
+            t_o.lower = select(validff, select(dOz > 0.0f, t_o.lower, float(neg_inf)), t_o.lower);
+            t_o.upper = select(validff, select(dOz > 0.0f, float(pos_inf), t_o.upper), t_o.upper);
+          }
+        }
 
         u0_o = (Oz+t_o.lower*dOz)*rl;
         const Vec3vfN Pr = t_o.lower*Vec3vfN(dir);
