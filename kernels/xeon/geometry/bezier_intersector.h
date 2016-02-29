@@ -220,7 +220,7 @@ namespace embree
       //exit(1);
 
       //PRINT(curve);
-      static const int maxDepth = 1;
+      static const int maxDepth = 2;
       bool found = false;
 
       /* subdivide curve */
