@@ -131,8 +131,23 @@ namespace embree
     __forceinline bool intersect_bezier_iterative3(const Ray& ray, const BezierCurve3fa& curve, float u0, float u1, float t0, float& u_o, float& t_o, Vec3fa& Ng_o)
     {
       Vec3fa Q,P;
-      Vec3fa p0 = curve.v0;
-      Vec3fa p1 = curve.v3;
+      //Vec3fa p0 = curve.v0;
+      //Vec3fa p1 = curve.v3;
+
+      Vec3fa p0,n0,ddp0; curve.eval(u0,p0,n0,ddp0);
+      Vec3fa p1,n1,ddp1; curve.eval(u1,p1,n1,ddp1);
+      Vec3fa q0 = p0+n0*(1.0f/3.0f);
+      Vec3fa q1 = p1-n1*(1.0f/3.0f);
+      float rq0 = length(cross(p0-q0,p1-q0))/length(p1-p0)+q0.w;
+      float rq1 = length(cross(p0-q1,p1-q1))/length(p1-p0)+q1.w;
+      float r01 = max(p0.w,rq0,rq1,p1.w);
+
+       /* calculate bounds on curvature */
+      float minN = min(length(n0),length(n1));
+      float maxN = max(length(n0),length(n1));
+      float maxR = max(p0.w,q0.w,q1.w,p1.w);
+      //PRINT2(maxN,length(p1-p0));
+      float maxC = length(max(abs(ddp0),abs(ddp1)))/minN; //length(ddPdu)/length(dPdu); // FIXME: is this the proper curvature?
 
       /* iterative double step solver */
       float eps = 128.0f*float(ulp);
@@ -147,7 +162,7 @@ namespace embree
         Vec3fa T = normalize(dPdu); // can be optimized away
         float du = dot(Q-P,T);
         float dt = sqrt(dot(Q-P,Q-P)-sqr(du))-P.w;
-        u += du*rcpLenP0P1*(u1-u0); ///(1.0f+P.w*maxC);
+        u += du*rcpLenP0P1*(u1-u0)/(1.0f+P.w*maxC);
         t += dt*rcpLenDir;
 
         if (max(abs(du),abs(dt)) < eps) 
