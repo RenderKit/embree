@@ -40,17 +40,20 @@ namespace embree
 
   struct RayStreamFilterFuncs
   {
-    RayStreamFilterFuncs() {};
+    RayStreamFilterFuncs()
+    : filterAOS(nullptr), filterSOA(nullptr) {}
 
     RayStreamFilterFuncs(void (*ptr) ()) {
       filterAOS = (filterAOS_func) filterAOS;
       filterSOA = (filterSOA_func) filterSOA;
-    };
+    }
 
     RayStreamFilterFuncs(filterAOS_func aos, filterSOA_func soa) { 
       filterAOS = aos;
       filterSOA = soa;
-    };
+    }
+
+  public:
     filterAOS_func filterAOS;
     filterSOA_func filterSOA;
   };
