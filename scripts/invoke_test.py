@@ -96,6 +96,8 @@ if (model != "" and model != "default"):
 if (model != ""):
   executable = executable + " -o " + outImageFileTga
 
+print(executable)
+  
 ret = os.system(executable)
 
 if ret == 0 and model != "":
