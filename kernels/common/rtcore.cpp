@@ -417,9 +417,6 @@ namespace embree
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcIntersectN);
-#if !defined(__TARGET_SIMD8__)
-    throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersectN not supported");
-#else
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (N < 1) throw_RTCError(RTC_INVALID_OPERATION,"number of rays too small");
@@ -430,7 +427,6 @@ namespace embree
 
     scene->device->rayStreamFilters.filterAOS(scene,rayN,N,stride,flags,true);
     
-#endif
     RTCORE_CATCH_END(scene->device);
   }
 
@@ -439,9 +435,6 @@ namespace embree
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcIntersectN_SOA);
-#if !defined(__TARGET_SIMD8__)
-    throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersectN_SOA not supported");
-#else
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (N < 1) throw_RTCError(RTC_INVALID_OPERATION,"number of rays too small");
@@ -470,7 +463,6 @@ namespace embree
 
     scene->device->rayStreamFilters.filterSOA(scene,rayN,N,streams,stride,flags,true);
 
-#endif
     RTCORE_CATCH_END(scene->device);
   }
 
@@ -609,9 +601,6 @@ namespace embree
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcOccludedN);
-#if !defined(__TARGET_SIMD8__)
-    throw_RTCError(RTC_INVALID_OPERATION,"rtcOccludedN not supported");
-#else
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (N < 1) throw_RTCError(RTC_INVALID_OPERATION,"number of rays too small");
@@ -623,7 +612,6 @@ namespace embree
 
     scene->device->rayStreamFilters.filterAOS(scene,rayN,N,stride,flags,false);
 
-#endif
     RTCORE_CATCH_END(scene->device);
   }
 
@@ -633,9 +621,6 @@ namespace embree
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcOccludedN_SOA);
-#if !defined(__TARGET_SIMD8__)
-    throw_RTCError(RTC_INVALID_OPERATION,"rtcOccludedN_SOA not supported");
-#else
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (N < 1) throw_RTCError(RTC_INVALID_OPERATION,"number of rays too small");
@@ -664,7 +649,6 @@ namespace embree
 
     scene->device->rayStreamFilters.filterSOA(scene,rayN,N,streams,stride,flags,false);
 
-#endif
     RTCORE_CATCH_END(scene->device);
   }
 

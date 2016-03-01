@@ -13,7 +13,6 @@ namespace embree
     void RayStream::filterAOS(Scene *scene, RTCRay* _rayN, const size_t N, const size_t stride, const size_t flags, const bool intersect)
     {
       Ray* __restrict__ rayN = (Ray*)_rayN;
-
       __aligned(64) Ray* octants[8][MAX_RAYS_PER_OCTANT];
       unsigned int rays_in_octant[8];
 
