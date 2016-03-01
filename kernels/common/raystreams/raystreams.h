@@ -67,8 +67,5 @@ namespace embree
       static void filterSOA(Scene *scene, RTCRaySOA& rayN, const size_t N, const size_t streams, const size_t offset, const size_t flags, const bool intersect);
     
     };
-
-    
-    //DEFINE_SYMBOL2(RayStreamFilterFuncs,rayStreamFilters(RayStream::filterAOS,RayStream::filterSOA));
   }
 };
