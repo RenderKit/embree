@@ -194,10 +194,10 @@ namespace embree
           //  PRINT("miss2");
           //  return false;
           //}
-          //if (t < ray.tnear || t > t_o) {
-          ////PRINT("miss2");
-          //  return false;
-          //}
+          if (t < ray.tnear || t > t_o) {
+            //PRINT("miss2");
+            return false;
+          }
           u_o = u;
           t_o = t;
           Ng_o = Q-P;
@@ -328,8 +328,8 @@ namespace embree
 #if 1
           float uu = (float(i)+u[i])/float(VSIZEX);
           float ru = (1.0f-uu)*u0 + uu*u1;
-          bool h = intersect_bezier_iterative(ray,curve, ru, u_o, t_o, Ng_o);
-          //bool h = intersect_bezier_iterative3(ray,curve, vu0[i], vu0[i+1], tp.lower[i], tp.upper[i], tc.upper[i], u_o, t_o, Ng_o);
+          //bool h = intersect_bezier_iterative(ray,curve, ru, u_o, t_o, Ng_o);
+          bool h = intersect_bezier_iterative3(ray,curve, vu0[i], vu0[i+1], tp.lower[i], tp.upper[i], tc.upper[i], u_o, t_o, Ng_o);
           if (u_o < 0.0f || u_o > 1.0f) return false;
           return h;
 #else
