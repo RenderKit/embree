@@ -1277,8 +1277,6 @@ namespace embree
 
 
 
-#if HAS_INTERSECT8
-
   template<bool intersect>
   class benchmark_rtcore_intersect_stream_throughput : public Benchmark
   {
@@ -1455,8 +1453,6 @@ namespace embree
   };
 
   RTCScene benchmark_rtcore_intersect_coherent_stream_throughput::scene = nullptr;
-
-#endif
 
 
   void rtcore_coherent_intersect1(RTCScene scene)
@@ -1709,13 +1705,13 @@ namespace embree
     if (hasISA(AVX)) {
       benchmarks.push_back(new benchmark_rtcore_intersect8_throughput<true>());
       benchmarks.push_back(new benchmark_rtcore_intersect8_throughput<false>());
-      benchmarks.push_back(new benchmark_rtcore_intersect_stream_throughput<true>());
-      benchmarks.push_back(new benchmark_rtcore_intersect_stream_throughput<false>());
-      benchmarks.push_back(new benchmark_rtcore_intersect_coherent_stream_throughput());
-
     }
+
 #endif
 
+    benchmarks.push_back(new benchmark_rtcore_intersect_stream_throughput<true>());
+    benchmarks.push_back(new benchmark_rtcore_intersect_stream_throughput<false>());
+    benchmarks.push_back(new benchmark_rtcore_intersect_coherent_stream_throughput());
 
     benchmarks.push_back(new benchmark_mutex_sys());
     benchmarks.push_back(new benchmark_barrier_sys());
