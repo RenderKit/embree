@@ -108,19 +108,19 @@ namespace embree
     }
 
   /* pass by value to avoid compiler generating inefficient code */
-    static __forceinline void storeu_compact(const vboold8 mask,void * addr, const vdouble8 reg) {
+    static __forceinline void storeu_compact(const vboold8 mask,void * addr, const vdouble8& reg) {
       _mm512_mask_compressstoreu_pd(addr,mask,reg);
     }
 
-    static __forceinline vdouble8 compact64bit(const vboold8& mask, vdouble8 &v) {
+    static __forceinline vdouble8 compact64bit(const vboold8& mask, vdouble8& v) {
       return _mm512_mask_compress_pd(v,mask,v);
     }
 
-    static __forceinline vdouble8 compact(const vboold8& mask, vdouble8 &v) {
+    static __forceinline vdouble8 compact(const vboold8& mask, vdouble8& v) {
       return _mm512_mask_compress_pd(v,mask,v);
     }
 
-    static __forceinline vdouble8 compact(const vboold8& mask, const vdouble8 &a, vdouble8 &b) {
+    static __forceinline vdouble8 compact(const vboold8& mask, const vdouble8& a, vdouble8& b) {
       return _mm512_mask_compress_pd(a,mask,b);
     }
 
@@ -138,7 +138,7 @@ namespace embree
   /// Unary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline const vdouble8 asDouble    ( const __m512& a ) { return _mm512_castps_si512(a); }
+  __forceinline const vdouble8 asDouble  ( const __m512&   a ) { return _mm512_castps_si512(a); }
   __forceinline const vdouble8 operator +( const vdouble8& a ) { return a; }
   __forceinline const vdouble8 operator -( const vdouble8& a ) { return _mm512_sub_pd(_mm512_setzero_pd(), a); }
 
@@ -146,29 +146,29 @@ namespace embree
   /// Binary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline const vdouble8 operator +( const vdouble8& a, const vdouble8& b )     { return _mm512_add_pd(a, b); }
-  __forceinline const vdouble8 operator +( const vdouble8& a, const double b ) { return a + vdouble8(b); }
-  __forceinline const vdouble8 operator +( const double a, const vdouble8& b ) { return vdouble8(a) + b; }
+  __forceinline const vdouble8 operator +( const vdouble8& a, const vdouble8& b ) { return _mm512_add_pd(a, b); }
+  __forceinline const vdouble8 operator +( const vdouble8& a, const double b    ) { return a + vdouble8(b); }
+  __forceinline const vdouble8 operator +( const double    a, const vdouble8& b ) { return vdouble8(a) + b; }
 
-  __forceinline const vdouble8 operator -( const vdouble8& a, const vdouble8& b     ) { return _mm512_sub_pd(a, b); }
-  __forceinline const vdouble8 operator -( const vdouble8& a, const double b ) { return a - vdouble8(b); }
-  __forceinline const vdouble8 operator -( const double a, const vdouble8& b ) { return vdouble8(a) - b; }
+  __forceinline const vdouble8 operator -( const vdouble8& a, const vdouble8& b ) { return _mm512_sub_pd(a, b); }
+  __forceinline const vdouble8 operator -( const vdouble8& a, const double b    ) { return a - vdouble8(b); }
+  __forceinline const vdouble8 operator -( const double    a, const vdouble8& b ) { return vdouble8(a) - b; }
 
-  __forceinline const vdouble8 operator *( const vdouble8& a, const vdouble8& b )     { return _mm512_mul_pd(a, b); }
-  __forceinline const vdouble8 operator *( const vdouble8& a, const double b ) { return a * vdouble8(b); }
-  __forceinline const vdouble8 operator *( const double a, const vdouble8& b ) { return vdouble8(a) * b; }
+  __forceinline const vdouble8 operator *( const vdouble8& a, const vdouble8& b ) { return _mm512_mul_pd(a, b); }
+  __forceinline const vdouble8 operator *( const vdouble8& a, const double b    ) { return a * vdouble8(b); }
+  __forceinline const vdouble8 operator *( const double    a, const vdouble8& b ) { return vdouble8(a) * b; }
 
-  __forceinline const vdouble8 operator &( const vdouble8& a, const vdouble8& b )     { return _mm512_and_pd(a, b); }
-  __forceinline const vdouble8 operator &( const vdouble8& a, const double b ) { return a & vdouble8(b); }
-  __forceinline const vdouble8 operator &( const double a, const vdouble8& b ) { return vdouble8(a) & b; }
+  __forceinline const vdouble8 operator &( const vdouble8& a, const vdouble8& b ) { return _mm512_and_pd(a, b); }
+  __forceinline const vdouble8 operator &( const vdouble8& a, const double b    ) { return a & vdouble8(b); }
+  __forceinline const vdouble8 operator &( const double    a, const vdouble8& b ) { return vdouble8(a) & b; }
 
-  __forceinline const vdouble8 operator |( const vdouble8& a, const vdouble8& b )     { return _mm512_or_pd(a, b); }
-  __forceinline const vdouble8 operator |( const vdouble8& a, const double b ) { return a | vdouble8(b); }
-  __forceinline const vdouble8 operator |( const double a, const vdouble8& b ) { return vdouble8(a) | b; }
+  __forceinline const vdouble8 operator |( const vdouble8& a, const vdouble8& b ) { return _mm512_or_pd(a, b); }
+  __forceinline const vdouble8 operator |( const vdouble8& a, const double b    ) { return a | vdouble8(b); }
+  __forceinline const vdouble8 operator |( const double    a, const vdouble8& b ) { return vdouble8(a) | b; }
 
-  __forceinline const vdouble8 operator ^( const vdouble8& a, const vdouble8& b )     { return _mm512_xor_pd(a, b); }
-  __forceinline const vdouble8 operator ^( const vdouble8& a, const double b ) { return a ^ vdouble8(b); }
-  __forceinline const vdouble8 operator ^( const double a, const vdouble8& b ) { return vdouble8(a) ^ b; }
+  __forceinline const vdouble8 operator ^( const vdouble8& a, const vdouble8& b ) { return _mm512_xor_pd(a, b); }
+  __forceinline const vdouble8 operator ^( const vdouble8& a, const double b    ) { return a ^ vdouble8(b); }
+  __forceinline const vdouble8 operator ^( const double    a, const vdouble8& b ) { return vdouble8(a) ^ b; }
 
   __forceinline const vdouble8 operator <<( const vdouble8& a, const unsigned int n ) { return _mm512_castsi512_pd(_mm512_slli_epi64(_mm512_castpd_si512(a), n)); }
   __forceinline const vdouble8 operator >>( const vdouble8& a, const unsigned int n ) { return _mm512_castsi512_pd(_mm512_srai_epi64(_mm512_castpd_si512(a), n)); }
@@ -179,13 +179,13 @@ namespace embree
   __forceinline const vdouble8 sra ( const vdouble8& a, const unsigned int b ) { return  _mm512_castsi512_pd(_mm512_srai_epi64(_mm512_castpd_si512(a), b)); }
   __forceinline const vdouble8 srl ( const vdouble8& a, const unsigned int b ) { return  _mm512_castsi512_pd(_mm512_srli_epi64(_mm512_castpd_si512(a), b)); }
   
-  __forceinline const vdouble8 min( const vdouble8& a, const vdouble8& b )     { return _mm512_min_pd(a, b); }
-  __forceinline const vdouble8 min( const vdouble8& a, const double b ) { return min(a,vdouble8(b)); }
-  __forceinline const vdouble8 min( const double a, const vdouble8& b ) { return min(vdouble8(a),b); }
+  __forceinline const vdouble8 min( const vdouble8& a, const vdouble8& b ) { return _mm512_min_pd(a, b); }
+  __forceinline const vdouble8 min( const vdouble8& a, const double b    ) { return min(a,vdouble8(b)); }
+  __forceinline const vdouble8 min( const double    a, const vdouble8& b ) { return min(vdouble8(a),b); }
 
-  __forceinline const vdouble8 max( const vdouble8& a, const vdouble8& b )     { return _mm512_max_pd(a, b); }
-  __forceinline const vdouble8 max( const vdouble8& a, const double b ) { return max(a,vdouble8(b)); }
-  __forceinline const vdouble8 max( const double a, const vdouble8& b ) { return max(vdouble8(a),b); }
+  __forceinline const vdouble8 max( const vdouble8& a, const vdouble8& b ) { return _mm512_max_pd(a, b); }
+  __forceinline const vdouble8 max( const vdouble8& a, const double b    ) { return max(a,vdouble8(b)); }
+  __forceinline const vdouble8 max( const double    a, const vdouble8& b ) { return max(vdouble8(a),b); }
   
   __forceinline const vdouble8 mask_add(const vboold8& mask, vdouble8& c, const vdouble8& a, const vdouble8& b) { return _mm512_mask_add_pd(c,mask,a,b); }
   __forceinline const vdouble8 mask_sub(const vboold8& mask, vdouble8& c, const vdouble8& a, const vdouble8& b) { return _mm512_mask_sub_pd(c,mask,a,b); }
@@ -198,19 +198,19 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
   __forceinline vdouble8& operator +=( vdouble8& a, const vdouble8& b ) { return a = a + b; }
-  __forceinline vdouble8& operator +=( vdouble8& a, const double     b ) { return a = a + b; }
+  __forceinline vdouble8& operator +=( vdouble8& a, const double    b ) { return a = a + b; }
   
   __forceinline vdouble8& operator -=( vdouble8& a, const vdouble8& b ) { return a = a - b; }
-  __forceinline vdouble8& operator -=( vdouble8& a, const double     b ) { return a = a - b; }
+  __forceinline vdouble8& operator -=( vdouble8& a, const double    b ) { return a = a - b; }
 
   __forceinline vdouble8& operator *=( vdouble8& a, const vdouble8& b ) { return a = a * b; }
-  __forceinline vdouble8& operator *=( vdouble8& a, const double     b ) { return a = a * b; }
+  __forceinline vdouble8& operator *=( vdouble8& a, const double    b ) { return a = a * b; }
   
   __forceinline vdouble8& operator &=( vdouble8& a, const vdouble8& b ) { return a = a & b; }
-  __forceinline vdouble8& operator &=( vdouble8& a, const double     b ) { return a = a & b; }
+  __forceinline vdouble8& operator &=( vdouble8& a, const double    b ) { return a = a & b; }
   
   __forceinline vdouble8& operator |=( vdouble8& a, const vdouble8& b ) { return a = a | b; }
-  __forceinline vdouble8& operator |=( vdouble8& a, const double     b ) { return a = a | b; }
+  __forceinline vdouble8& operator |=( vdouble8& a, const double    b ) { return a = a | b; }
   
   __forceinline vdouble8& operator <<=( vdouble8& a, const double b ) { return a = a << b; }
   __forceinline vdouble8& operator >>=( vdouble8& a, const double b ) { return a = a >> b; }
@@ -221,48 +221,47 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
   __forceinline const vboold8 operator ==( const vdouble8& a, const vdouble8& b ) { return _mm512_cmp_pd_mask(a,b,_MM_CMPINT_EQ); }
-  __forceinline const vboold8 operator ==( const vdouble8& a, const double b ) { return a == vdouble8(b); }
-  __forceinline const vboold8 operator ==( const double a, const vdouble8& b ) { return vdouble8(a) == b; }
+  __forceinline const vboold8 operator ==( const vdouble8& a, const double b    ) { return a == vdouble8(b); }
+  __forceinline const vboold8 operator ==( const double    a, const vdouble8& b ) { return vdouble8(a) == b; }
   
   __forceinline const vboold8 operator !=( const vdouble8& a, const vdouble8& b ) { return _mm512_cmp_pd_mask(a,b,_MM_CMPINT_NE); }
-  __forceinline const vboold8 operator !=( const vdouble8& a, const double b ) { return a != vdouble8(b); }
-  __forceinline const vboold8 operator !=( const double a, const vdouble8& b ) { return vdouble8(a) != b; }
+  __forceinline const vboold8 operator !=( const vdouble8& a, const double b    ) { return a != vdouble8(b); }
+  __forceinline const vboold8 operator !=( const double    a, const vdouble8& b ) { return vdouble8(a) != b; }
   
   __forceinline const vboold8 operator < ( const vdouble8& a, const vdouble8& b ) { return _mm512_cmp_pd_mask(a,b,_MM_CMPINT_LT); }
-  __forceinline const vboold8 operator < ( const vdouble8& a, const double b ) { return a <  vdouble8(b); }
-  __forceinline const vboold8 operator < ( const double a, const vdouble8& b ) { return vdouble8(a) <  b; }
+  __forceinline const vboold8 operator < ( const vdouble8& a, const double b    ) { return a <  vdouble8(b); }
+  __forceinline const vboold8 operator < ( const double    a, const vdouble8& b ) { return vdouble8(a) <  b; }
   
   __forceinline const vboold8 operator >=( const vdouble8& a, const vdouble8& b ) { return _mm512_cmp_pd_mask(a,b,_MM_CMPINT_GE); }
-  __forceinline const vboold8 operator >=( const vdouble8& a, const double b ) { return a >= vdouble8(b); }
-  __forceinline const vboold8 operator >=( const double a, const vdouble8& b ) { return vdouble8(a) >= b; }
+  __forceinline const vboold8 operator >=( const vdouble8& a, const double    b ) { return a >= vdouble8(b); }
+  __forceinline const vboold8 operator >=( const double    a, const vdouble8& b ) { return vdouble8(a) >= b; }
 
   __forceinline const vboold8 operator > ( const vdouble8& a, const vdouble8& b ) { return _mm512_cmp_pd_mask(a,b,_MM_CMPINT_GT); }
-  __forceinline const vboold8 operator > ( const vdouble8& a, const double b ) { return a >  vdouble8(b); }
-  __forceinline const vboold8 operator > ( const double a, const vdouble8& b ) { return vdouble8(a) >  b; }
+  __forceinline const vboold8 operator > ( const vdouble8& a, const double    b ) { return a >  vdouble8(b); }
+  __forceinline const vboold8 operator > ( const double    a, const vdouble8& b ) { return vdouble8(a) >  b; }
 
   __forceinline const vboold8 operator <=( const vdouble8& a, const vdouble8& b ) { return _mm512_cmp_pd_mask(a,b,_MM_CMPINT_LE); }
-  __forceinline const vboold8 operator <=( const vdouble8& a, const double b ) { return a <= vdouble8(b); }
-  __forceinline const vboold8 operator <=( const double a, const vdouble8& b ) { return vdouble8(a) <= b; }
+  __forceinline const vboold8 operator <=( const vdouble8& a, const double    b ) { return a <= vdouble8(b); }
+  __forceinline const vboold8 operator <=( const double    a, const vdouble8& b ) { return vdouble8(a) <= b; }
 
-  __forceinline vboold8 eq(                     const vdouble8& a, const vdouble8& b) { return _mm512_cmp_pd_mask(a,b,_MM_CMPINT_EQ); }
+  __forceinline vboold8 eq(                    const vdouble8& a, const vdouble8& b) { return _mm512_cmp_pd_mask(a,b,_MM_CMPINT_EQ); }
   __forceinline vboold8 eq(const vboold8 mask, const vdouble8& a, const vdouble8& b) { return _mm512_mask_cmp_pd_mask(mask,a,b,_MM_CMPINT_EQ); }
   
-  __forceinline vboold8 ne(                     const vdouble8& a, const vdouble8& b) { return _mm512_cmp_pd_mask(a,b,_MM_CMPINT_NE); }
+  __forceinline vboold8 ne(                    const vdouble8& a, const vdouble8& b) { return _mm512_cmp_pd_mask(a,b,_MM_CMPINT_NE); }
   __forceinline vboold8 ne(const vboold8 mask, const vdouble8& a, const vdouble8& b) { return _mm512_mask_cmp_pd_mask(mask,a,b,_MM_CMPINT_NE); }
 
-  __forceinline vboold8 lt(                     const vdouble8& a, const vdouble8& b) { return _mm512_cmp_pd_mask(a,b,_MM_CMPINT_LT); }
+  __forceinline vboold8 lt(                    const vdouble8& a, const vdouble8& b) { return _mm512_cmp_pd_mask(a,b,_MM_CMPINT_LT); }
   __forceinline vboold8 lt(const vboold8 mask, const vdouble8& a, const vdouble8& b) { return _mm512_mask_cmp_pd_mask(mask,a,b,_MM_CMPINT_LT); }
  
-  __forceinline vboold8 ge(                     const vdouble8& a, const vdouble8& b) { return _mm512_cmp_pd_mask(a,b,_MM_CMPINT_GE); }
+  __forceinline vboold8 ge(                    const vdouble8& a, const vdouble8& b) { return _mm512_cmp_pd_mask(a,b,_MM_CMPINT_GE); }
   __forceinline vboold8 ge(const vboold8 mask, const vdouble8& a, const vdouble8& b) { return _mm512_mask_cmp_pd_mask(mask,a,b,_MM_CMPINT_GE); }
   
-  __forceinline vboold8 gt(                     const vdouble8& a, const vdouble8& b) { return _mm512_cmp_pd_mask(a,b,_MM_CMPINT_GT); }
+  __forceinline vboold8 gt(                    const vdouble8& a, const vdouble8& b) { return _mm512_cmp_pd_mask(a,b,_MM_CMPINT_GT); }
   __forceinline vboold8 gt(const vboold8 mask, const vdouble8& a, const vdouble8& b) { return _mm512_mask_cmp_pd_mask(mask,a,b,_MM_CMPINT_GT); }
   
-  __forceinline vboold8 le(                     const vdouble8& a, const vdouble8& b) { return _mm512_cmp_pd_mask(a,b,_MM_CMPINT_LE); }
+  __forceinline vboold8 le(                    const vdouble8& a, const vdouble8& b) { return _mm512_cmp_pd_mask(a,b,_MM_CMPINT_LE); }
   __forceinline vboold8 le(const vboold8 mask, const vdouble8& a, const vdouble8& b) { return _mm512_mask_cmp_pd_mask(mask,a,b,_MM_CMPINT_LE); }
     
- 
   __forceinline const vdouble8 select( const vboold8& m, const vdouble8& t, const vdouble8& f ) {
     return _mm512_mask_or_pd(f,m,t,t); 
   }
@@ -307,46 +306,41 @@ namespace embree
   /// Reductions
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline double reduce_add(vdouble8 a) { return _mm512_reduce_add_pd(a); }
-  __forceinline double reduce_min(vdouble8 a) { return _mm512_reduce_min_pd(a); }
-  __forceinline double reduce_max(vdouble8 a) { return _mm512_reduce_max_pd(a); }
+  __forceinline double reduce_add(const vdouble8& a) { return _mm512_reduce_add_pd(a); }
+  __forceinline double reduce_min(const vdouble8& a) { return _mm512_reduce_min_pd(a); }
+  __forceinline double reduce_max(const vdouble8& a) { return _mm512_reduce_max_pd(a); }
   
-  __forceinline vdouble8 vreduce_min2(vdouble8 x) {                      return min(x,shuffle(x,_MM_SHUF_PERM(2,3,0,1))); }
-  __forceinline vdouble8 vreduce_min4(vdouble8 x) { x = vreduce_min2(x); return min(x,shuffle(x,_MM_SHUF_PERM(1,0,3,2))); }
-  __forceinline vdouble8 vreduce_min (vdouble8 x) { x = vreduce_min4(x); return min(x,shuffle4(x,_MM_SHUF_PERM(1,0,3,2))); }
+  __forceinline vdouble8 vreduce_min2(const vdouble8& x) {                                     return min(x,shuffle(x,_MM_SHUF_PERM(2,3,0,1))); }
+  __forceinline vdouble8 vreduce_min4(const vdouble8& y) { const vdouble8 x = vreduce_min2(y); return min(x,shuffle(x,_MM_SHUF_PERM(1,0,3,2))); }
+  __forceinline vdouble8 vreduce_min (const vdouble8& y) { const vdouble8 x = vreduce_min4(y); return min(x,shuffle4(x,_MM_SHUF_PERM(1,0,3,2))); }
 
-  __forceinline vdouble8 vreduce_max2(vdouble8 x) {                      return max(x,shuffle(x,_MM_SHUF_PERM(1,0,3,2))); }
-  __forceinline vdouble8 vreduce_max4(vdouble8 x) { x = vreduce_max2(x); return max(x,shuffle(x,_MM_SHUF_PERM(2,3,0,1))); }
-  __forceinline vdouble8 vreduce_max (vdouble8 x) { x = vreduce_max4(x); return max(x,shuffle4(x,_MM_SHUF_PERM(1,0,3,2))); }
+  __forceinline vdouble8 vreduce_max2(const vdouble8& x) {                                     return max(x,shuffle(x,_MM_SHUF_PERM(1,0,3,2))); }
+  __forceinline vdouble8 vreduce_max4(const vdouble8& y) { const vdouble8 x = vreduce_max2(y); return max(x,shuffle(x,_MM_SHUF_PERM(2,3,0,1))); }
+  __forceinline vdouble8 vreduce_max (const vdouble8& y) { const vdouble8 x = vreduce_max4(y); return max(x,shuffle4(x,_MM_SHUF_PERM(1,0,3,2))); }
 
-  __forceinline vdouble8 vreduce_and2(vdouble8 x) {                      return x & shuffle(x,_MM_SHUF_PERM(1,0,3,2)); }
-  __forceinline vdouble8 vreduce_and4(vdouble8 x) { x = vreduce_and2(x); return x & shuffle(x,_MM_SHUF_PERM(2,3,0,1)); }
-  __forceinline vdouble8 vreduce_and (vdouble8 x) { x = vreduce_and4(x); return x & shuffle4(x,_MM_SHUF_PERM(1,0,3,2)); }
+  __forceinline vdouble8 vreduce_and2(const vdouble8& x) {                                     return x & shuffle(x,_MM_SHUF_PERM(1,0,3,2)); }
+  __forceinline vdouble8 vreduce_and4(const vdouble8& y) { const vdouble8 x = vreduce_and2(y); return x & shuffle(x,_MM_SHUF_PERM(2,3,0,1)); }
+  __forceinline vdouble8 vreduce_and (const vdouble8& y) { const vdouble8 x = vreduce_and4(y); return x & shuffle4(x,_MM_SHUF_PERM(1,0,3,2)); }
 
-  __forceinline vdouble8 vreduce_or2(vdouble8 x) {                     return x | shuffle(x,_MM_SHUF_PERM(1,0,3,2)); }
-  __forceinline vdouble8 vreduce_or4(vdouble8 x) { x = vreduce_or2(x); return x | shuffle(x,_MM_SHUF_PERM(2,3,0,1)); }
-  __forceinline vdouble8 vreduce_or (vdouble8 x) { x = vreduce_or4(x); return x | shuffle4(x,_MM_SHUF_PERM(1,0,3,2)); }
+  __forceinline vdouble8 vreduce_or2(const vdouble8& x) {                                    return x | shuffle(x,_MM_SHUF_PERM(1,0,3,2)); }
+  __forceinline vdouble8 vreduce_or4(const vdouble8& y) { const vdouble8 x = vreduce_or2(y); return x | shuffle(x,_MM_SHUF_PERM(2,3,0,1)); }
+  __forceinline vdouble8 vreduce_or (const vdouble8& y) { const vdouble8 x = vreduce_or4(y); return x | shuffle4(x,_MM_SHUF_PERM(1,0,3,2)); }
 
-  __forceinline vdouble8 vreduce_add2(vdouble8 x) {                      return x + shuffle(x,_MM_SHUF_PERM(1,0,3,2)); }
-  __forceinline vdouble8 vreduce_add4(vdouble8 x) { x = vreduce_add2(x); return x + shuffle(x,_MM_SHUF_PERM(2,3,0,1)); }
-  __forceinline vdouble8 vreduce_add (vdouble8 x) { x = vreduce_add4(x); return x + shuffle4(x,_MM_SHUF_PERM(1,0,3,2)); }
+  __forceinline vdouble8 vreduce_add2(const vdouble8& x) {                                     return x + shuffle(x,_MM_SHUF_PERM(1,0,3,2)); }
+  __forceinline vdouble8 vreduce_add4(const vdouble8& y) { const vdouble8 x = vreduce_add2(y); return x + shuffle(x,_MM_SHUF_PERM(2,3,0,1)); }
+  __forceinline vdouble8 vreduce_add (const vdouble8& y) { const vdouble8 x = vreduce_add4(y); return x + shuffle4(x,_MM_SHUF_PERM(1,0,3,2)); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Memory load and store operations
   ////////////////////////////////////////////////////////////////////////////////
 
-
-  __forceinline vdouble8 permute(vdouble8 v,vlong8 index)
-  {
+  __forceinline vdouble8 permute(const vdouble8& v, const vlong8& index) {
     return _mm512_permutexvar_pd(index,v);  
   }
 
-  __forceinline vdouble8 reverse(const vdouble8 &a)
-  {
+  __forceinline vdouble8 reverse(const vdouble8& a) {
     return permute(a,vlong8(reverse_step));
   }
-
-
   
   ////////////////////////////////////////////////////////////////////////////////
   /// Output Operators
