@@ -173,6 +173,27 @@ namespace embree
 	__forceinline BezierCurve3fa(const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const float t0 = 0.0f, const float t1 = 1.0f, const int depth = 0)
       : BezierCurveT<Vec3fa>(v0,v1,v2,v3,t0,t1,depth) {}
 
+    __forceinline void evalN(const vfloatx& t, Vec4vfx& p, Vec4vfx& dp) const
+    {
+      const vfloatx t0 = vfloatx(1.0f) - t, t1 = t;
+
+      const Vec4vfx p00 = v0;
+      const Vec4vfx p01 = v1;
+      const Vec4vfx p02 = v2;
+      const Vec4vfx p03 = v3;
+
+      const Vec4vfx p10 = p00 * t0 + p01 * t1;
+      const Vec4vfx p11 = p01 * t0 + p02 * t1;
+      const Vec4vfx p12 = p02 * t0 + p03 * t1;
+      const Vec4vfx p20 = p10 * t0 + p11 * t1;
+      const Vec4vfx p21 = p11 * t0 + p12 * t1;
+      const Vec4vfx p30 = p20 * t0 + p21 * t1;
+
+      p = p30;
+      dp = vfloatx(0.5f*3.0f)*(p21-p20); // FIXME: unstable for t=1.0f
+    }
+
+
 #if defined(__SSE__)
     template<int M>
       __forceinline Vec4<vfloat<M>> eval0(const vbool<M>& valid, const int ofs, const int size) const

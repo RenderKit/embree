@@ -231,7 +231,7 @@ namespace embree
       return dot(N,N)*rcp(dot(D,D));
     }
 
-    __forceinline bool intersect_bezier_recursive(const Ray& ray, const BezierCurve3fa& curve, float& u_o, float& t_o, Vec3fa& Ng_o)
+    __forceinline bool intersect_bezier_recursive(const Ray& ray, const BezierCurve3fa& curve, const float u0, const float u1, const size_t depth, float& u_o, float& t_o, Vec3fa& Ng_o)
     {
       //Cone::verify();
       //exit(1);
@@ -241,12 +241,13 @@ namespace embree
       bool found = false;
 
       /* subdivide curve */
-      const Vec4vfx dP0du = curve.derivative(vboolx(true),0,VSIZEX-1);
+      const vfloatx lu = vfloatx(step)*(1.0f/(VSIZEX-1));
+      const vfloatx vu0 = (vfloatx(one)-lu)*u0 + lu*u1;
+      Vec4vfx P0, dP0du; curve.evalN(vu0,P0,dP0du);
+      const Vec4vfx  P3   = Vec4vfx(shift_right_1(P0.x   ),shift_right_1(P0.y   ),shift_right_1(P0.z   ),shift_right_1(P0.w)   );
       const Vec4vfx dP3du = Vec4vfx(shift_right_1(dP0du.x),shift_right_1(dP0du.y),shift_right_1(dP0du.z),shift_right_1(dP0du.w));
-      const Vec4vfx P0 = curve.eval0(vboolx(true),0,VSIZEX-1);
-      const Vec4vfx P3 = Vec4vfx(shift_right_1(P0.x   ),shift_right_1(P0.y   ),shift_right_1(P0.z   ),shift_right_1(P0.w)   );
-      const Vec4vfx P1 = P0 + Vec4vfx(1.0f/(3.0f*(VSIZEX-1)))*dP0du; 
-      const Vec4vfx P2 = P3 - Vec4vfx(1.0f/(3.0f*(VSIZEX-1)))*dP3du;
+      const Vec4vfx P1 = P0 + Vec4vfx((u1-u0)/(3.0f*(VSIZEX-1)))*dP0du; 
+      const Vec4vfx P2 = P3 - Vec4vfx((u1-u0)/(3.0f*(VSIZEX-1)))*dP3du;
       const vfloatx r1 = sqrt(sqr_point_to_line_distance(Vec3vfx(P1),Vec3vfx(P0),Vec3vfx(P3)));
       const vfloatx r2 = sqrt(sqr_point_to_line_distance(Vec3vfx(P2),Vec3vfx(P0),Vec3vfx(P3)));
       const vfloatx r = max(r1,r2)+max(P0.w,P1.w,P2.w,P3.w);
@@ -257,7 +258,7 @@ namespace embree
 
       /* intersect with cylinder */
       BBox<vfloatx> tc; vfloatx u; Vec3vfx Ng;
-      if (curve.depth == maxDepth) {
+      if (depth == maxDepth) {
         //valid &= cylinder.intersect(ray.org,ray.dir,tc,u,Ng);
         valid &= cone    .intersect(ray.org,ray.dir,tc,u,Ng);
         //valid &= tc.lower > ray.tnear;
@@ -296,19 +297,16 @@ namespace embree
         clear(valid,i);
         //PRINT2(curve.depth,i);
 
-        if (curve.depth == maxDepth) 
+        if (depth == maxDepth) 
         {
 #if 0
-          const float u0 = float(i+0)/float(VSIZEX);
-          const float u1 = float(i+1)/float(VSIZEX);
-          bool h = intersect_bezier_iterative3(ray,curve, u0, u1, tp.lower[i], u_o, t_o, Ng_o);
-          u_o = (1.0f-u_o)*curve.t0 + u_o*curve.t1;
+          bool h = intersect_bezier_iterative3(ray,curve, vu0[i], vu0[i+1], tp.lower[i], u_o, t_o, Ng_o);
           if (u_o < 0.0f || u_o > 1.0f) return false;
           return h;
 #else
           if (tp.lower[i] < t_o) {
             float uu = (float(i)+u[i])/float(VSIZEX);
-            u_o = (1.0f-uu)*curve.t0 + uu*curve.t1;
+            u_o = (1.0f-uu)*u0 + uu*u1;
             t_o = tp.lower[i];
             Ng_o = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
             //u_o = float(i+1)/float(VSIZEX);
@@ -327,14 +325,7 @@ namespace embree
 #endif
         }
 
-        const Vec3fa p0(P0.x[i],P0.y[i],P0.z[i],P0.w[i]);
-        const Vec3fa p1(P1.x[i],P1.y[i],P1.z[i],P1.w[i]);
-        const Vec3fa p2(P2.x[i],P2.y[i],P2.z[i],P2.w[i]);
-        const Vec3fa p3(P3.x[i],P3.y[i],P3.z[i],P3.w[i]);
-        const float t0 = curve.t0+(curve.t1-curve.t0)*float(i+0)/float(VSIZEX);
-        const float t1 = curve.t0+(curve.t1-curve.t0)*float(i+1)/float(VSIZEX);
-        const BezierCurve3fa subcurve(p0,p1,p2,p3,t0,t1,curve.depth+1);
-        if (intersect_bezier_recursive(ray,subcurve,u_o,t_o,Ng_o))
+        if (intersect_bezier_recursive(ray,curve,vu0[i+0],vu0[i+1],depth+1,u_o,t_o,Ng_o))
           return true;
           //found = true;
       }
@@ -399,7 +390,7 @@ namespace embree
         Vec3fa Ng = zero;
 
         BezierCurve3fa curve(v0,v1,v2,v3,0.0f,1.0f,1);
-        if (!intersect_bezier_recursive(ray,curve,u,t,Ng))
+        if (!intersect_bezier_recursive(ray,curve,0.0f,1.0f,1,u,t,Ng))
           return false;
 
         LineIntersectorHitM<VSIZEX> hit;
