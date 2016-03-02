@@ -190,10 +190,10 @@ namespace embree
           //PRINT(eps*rcpLenDir);
           //PRINT(t+eps*rcpLenDir);
           //PRINT(t-eps*rcpLenDir);
-          if (t+eps*rcpLenDir < t0 || t-eps*rcpLenDir > t1) {
-            //PRINT("miss2");
-            return false;
-          }
+          //if (t+eps*rcpLenDir < t0 || t-eps*rcpLenDir > t1) {
+          //  PRINT("miss2");
+          //  return false;
+          //}
           //if (t < ray.tnear || t > t_o) {
           ////PRINT("miss2");
           //  return false;
