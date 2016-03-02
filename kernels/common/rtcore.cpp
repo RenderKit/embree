@@ -24,6 +24,8 @@
 #include "scene.h"
 #include "raystream_log.h"
 
+RTCORE_API int g_debug_int = 1;
+
 namespace embree
 {  
   /* mutex to make API thread safe */

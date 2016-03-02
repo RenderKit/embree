@@ -23,6 +23,8 @@
 #include "fillcone.h"
 #include "line_intersector.h"
 
+extern "C" int g_debug_int;
+
 namespace embree
 {
   namespace isa
@@ -185,7 +187,7 @@ namespace embree
       float t = 0.0f, d = 0.0f;
       for (size_t i=0; i<100; i++) 
       {
-        const float du = 0.0001f;
+        //const float du = 0.0001f;
         Vec3fa P,dPdu,dPdu2; curve.eval(u,P,dPdu,dPdu2);
         //Vec3fa _P,_dPdu,_dPdu2; curve.eval(u+du,_P,_dPdu,_dPdu2);
         //PRINT2(dPdu,(_P-P)/du);
@@ -235,7 +237,7 @@ namespace embree
       //exit(1);
 
       //PRINT(curve);
-      static const int maxDepth = 4;
+      int maxDepth = g_debug_int;
       bool found = false;
 
       /* subdivide curve */
@@ -243,8 +245,8 @@ namespace embree
       const Vec4vfx dP3du = Vec4vfx(shift_right_1(dP0du.x),shift_right_1(dP0du.y),shift_right_1(dP0du.z),shift_right_1(dP0du.w));
       const Vec4vfx P0 = curve.eval0(vboolx(true),0,VSIZEX-1);
       const Vec4vfx P3 = Vec4vfx(shift_right_1(P0.x   ),shift_right_1(P0.y   ),shift_right_1(P0.z   ),shift_right_1(P0.w)   );
-      const Vec4vfx P1 = P0 + Vec4vfx(1.0f/(3.0f*VSIZEX))*dP0du; 
-      const Vec4vfx P2 = P3 - Vec4vfx(1.0f/(3.0f*VSIZEX))*dP3du;
+      const Vec4vfx P1 = P0 + Vec4vfx(1.0f/(3.0f*(VSIZEX-1)))*dP0du; 
+      const Vec4vfx P2 = P3 - Vec4vfx(1.0f/(3.0f*(VSIZEX-1)))*dP3du;
       const vfloatx r1 = sqrt(sqr_point_to_line_distance(Vec3vfx(P1),Vec3vfx(P0),Vec3vfx(P3)));
       const vfloatx r2 = sqrt(sqr_point_to_line_distance(Vec3vfx(P2),Vec3vfx(P0),Vec3vfx(P3)));
       const vfloatx r = max(r1,r2)+max(P0.w,P1.w,P2.w,P3.w);
@@ -310,8 +312,8 @@ namespace embree
             //PRINT(u_o);
             //PRINT(t_o);
             //PRINT(Ng_o);
-            //if (h0.lower[i] == tp.lower[i]) Ng_o = -Vec3fa(dP0du.x[i],dP0du.y[i],dP0du.z[i]);
-            //if (h1.lower[i] == tp.lower[i]) Ng_o = +Vec3fa(dP3du.x[i],dP3du.y[i],dP3du.z[i]);
+            if (h0.lower[i] == tp.lower[i]) Ng_o = -Vec3fa(dP0du.x[i],dP0du.y[i],dP0du.z[i]);
+            if (h1.lower[i] == tp.lower[i]) Ng_o = +Vec3fa(dP3du.x[i],dP3du.y[i],dP3du.z[i]);
             return true;
             //found = true;
           } else {

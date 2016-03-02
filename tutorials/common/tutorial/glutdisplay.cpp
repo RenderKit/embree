@@ -38,6 +38,7 @@
 #endif
 
 extern "C" float g_debug = 0.0f;
+extern "C" int g_debug_int;
 
 namespace embree
 {
@@ -128,8 +129,10 @@ namespace embree
     switch (key) {
     case GLUT_KEY_LEFT      : g_camera.rotate(-0.02f,0.0f); break;
     case GLUT_KEY_RIGHT     : g_camera.rotate(+0.02f,0.0f); break;
-    case GLUT_KEY_UP        : g_camera.move(0.0f,0.0f,+g_speed); break;
-    case GLUT_KEY_DOWN      : g_camera.move(0.0f,0.0f,-g_speed); break;
+      //case GLUT_KEY_UP        : g_camera.move(0.0f,0.0f,+g_speed); break;
+      //case GLUT_KEY_DOWN      : g_camera.move(0.0f,0.0f,-g_speed); break;
+    case GLUT_KEY_UP        : g_debug_int++; PRINT(g_debug_int); break;
+    case GLUT_KEY_DOWN      : g_debug_int--; PRINT(g_debug_int); break;
     case GLUT_KEY_PAGE_UP   : g_speed *= 1.2f; break;
     case GLUT_KEY_PAGE_DOWN : g_speed /= 1.2f; break;
     }
