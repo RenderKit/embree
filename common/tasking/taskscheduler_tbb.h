@@ -209,6 +209,8 @@ namespace embree
     /*! thread local structure for each thread */
     struct Thread 
     {
+      ALIGNED_STRUCT;
+
       Thread (size_t threadIndex, const Ref<TaskSchedulerTBB>& scheduler)
       : threadIndex(threadIndex), scheduler(scheduler), task(nullptr) {}
 

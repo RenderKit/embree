@@ -23,6 +23,7 @@ namespace embree
   /*! Instanced geometry */
   struct GeometryInstance : public Geometry
   {
+    ALIGNED_STRUCT;
   public:
     GeometryInstance (Scene* parent, Geometry* geom); 
     virtual void build(size_t threadIndex, size_t threadCount) {}

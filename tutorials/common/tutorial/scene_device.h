@@ -264,6 +264,8 @@ namespace embree
 
     struct ISPCInstance
     {
+      ALIGNED_STRUCT;
+
       ISPCInstance (Ref<TutorialScene::Instance> in)
       : geom(INSTANCE), space0(in->space0), space1(in->space1), geomID(in->geomID) {}
       
