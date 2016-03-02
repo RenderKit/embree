@@ -286,7 +286,7 @@ namespace embree
         Vec2f ut = Vec2f(u,t) - dut;
         u = ut.x; t = ut.y;
 
-        if (abs(dut.x) < 0.001f*length(dPdu) && abs(dut.y) < 0.001f*length(ray.dir)) 
+        if (abs(f) < 0.0001f*length(dPdu) && abs(g) < 0.0001f*length(ray.dir)) 
         {
           u_o = u;
           t_o = t;
@@ -380,7 +380,7 @@ namespace embree
           float ru = (1.0f-uu)*u0 + uu*u1;
           //bool h = intersect_bezier_iterative(ray,curve, ru, u_o, t_o, Ng_o);
           //bool h = intersect_bezier_iterative3(ray,curve, vu0[i], vu0[i+1], tp.lower[i], tp.upper[i], tc.upper[i], u_o, t_o, Ng_o);
-          bool h = intersect_bezier_iterative_jacobian(ray,curve,ru,tp.lower[i],u_o,t_o,Ng_o);
+          bool h = intersect_bezier_iterative_jacobian(ray,curve,ru,tc.lower[i],u_o,t_o,Ng_o);
           if (u_o < 0.0f || u_o > 1.0f) return false;
           return h;
 #else
