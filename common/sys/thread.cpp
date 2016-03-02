@@ -175,7 +175,7 @@ namespace embree
 
   ssize_t mapThreadID(ssize_t threadID)
   {
-#if 1
+#if !defined(__MIC__)
     static std::vector<int> threadIDs;
 
     if (threadIDs.size() == 0)
@@ -239,9 +239,8 @@ namespace embree
 
 #else
     ssize_t ID = threadID;
-
-#endif
     //std::cout << threadID << " -> " << ID << std::endl;
+#endif
     return ID;
   }
   /*! set affinity of the calling thread */
