@@ -27,9 +27,14 @@ namespace embree
           Ray &ray = *(Ray*)((char*)rayN + inputRayID * stride);
           /* skip invalid rays */
           if (unlikely(ray.tnear > ray.tfar)) { inputRayID++; continue; }
-
+#if defined(__MIC__)
+          const unsigned int octantID = \
+            (ray.dir.x < 0.0f ? 1 : 0) |
+            (ray.dir.y < 0.0f ? 2 : 0) |
+            (ray.dir.z < 0.0f ? 4 : 0);
+#else
           const unsigned int octantID = movemask(vfloat4(ray.dir) < 0.0f) & 0x7;
-
+#endif
           assert(octantID < 8);
           octants[octantID][rays_in_octant[octantID]++] = &ray;
           inputRayID++;
