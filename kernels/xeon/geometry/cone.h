@@ -327,8 +327,8 @@ namespace embree
         {
           const vfloat<N> Q = sqrt(D);
           const vfloat<N> rcp_2A = 0.5f*rcp(A);
-          t_o.lower = (-B-Q)*rcp_2A;
-          t_o.upper = (-B+Q)*rcp_2A;
+          t_o.lower = select(validf, (-B-Q)*rcp_2A, t_o.lower);
+          t_o.upper = select(validf, (-B+Q)*rcp_2A, t_o.upper);
           
           const vbool<N> validft = validf &   A>0.0f;
           const vbool<N> validff = validf & !(A>0.0f);
