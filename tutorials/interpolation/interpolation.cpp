@@ -159,7 +159,7 @@ namespace embree
 
     /* initialize ray tracing core */
     init(g_rtcore.c_str());
-    key_pressed(GLUT_KEY_F5);
+    //key_pressed(GLUT_KEY_F5);
 
      /* benchmark mode */
     if (g_numBenchmarkFrames)

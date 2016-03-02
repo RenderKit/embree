@@ -281,7 +281,7 @@ namespace embree
       const CylinderN<VSIZEX> cylinder(Vec3vfx(P0.x,P0.y,P0.z),Vec3vfx(P3.x,P3.y,P3.z),r);
       const ConeN<VSIZEX> cone(Vec3vfx(P0.x,P0.y,P0.z),P0.w,Vec3vfx(P3.x,P3.y,P3.z),P3.w);
       vboolx valid = true; clear(valid,VSIZEX-1);
-      //valid = false; set(valid,1);
+      //if (depth == 1) { valid = false; set(valid,1); }
 
       /* intersect with cylinder */
       BBox<vfloatx> tc; vfloatx u; Vec3vfx Ng;
@@ -326,7 +326,10 @@ namespace embree
         if (depth == maxDepth) 
         {
 #if 1
-          bool h = intersect_bezier_iterative3(ray,curve, vu0[i], vu0[i+1], tp.lower[i], tp.upper[i], tc.upper[i], u_o, t_o, Ng_o);
+          float uu = (float(i)+u[i])/float(VSIZEX);
+          float ru = (1.0f-uu)*u0 + uu*u1;
+          bool h = intersect_bezier_iterative(ray,curve, ru, u_o, t_o, Ng_o);
+          //bool h = intersect_bezier_iterative3(ray,curve, vu0[i], vu0[i+1], tp.lower[i], tp.upper[i], tc.upper[i], u_o, t_o, Ng_o);
           if (u_o < 0.0f || u_o > 1.0f) return false;
           return h;
 #else
