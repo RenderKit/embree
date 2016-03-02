@@ -130,12 +130,9 @@ namespace embree
       return false;
     }
 
-    __forceinline bool intersect_bezier_iterative3(const Ray& ray, const BezierCurve3fa& curve, float u0, float u1, float t0, float& u_o, float& t_o, Vec3fa& Ng_o)
+    __forceinline bool intersect_bezier_iterative3(const Ray& ray, const BezierCurve3fa& curve, float u0, float u1, float t0, float t1, float t2, float& u_o, float& t_o, Vec3fa& Ng_o)
     {
-      Vec3fa Q,P;
-      //Vec3fa p0 = curve.v0;
-      //Vec3fa p1 = curve.v3;
-
+      //PRINT("intersecting");
       Vec3fa p0,n0,ddp0; curve.eval(u0,p0,n0,ddp0);
       Vec3fa p1,n1,ddp1; curve.eval(u1,p1,n1,ddp1);
       Vec3fa q0 = p0+n0*(1.0f/3.0f);
@@ -144,12 +141,18 @@ namespace embree
       float rq1 = length(cross(p0-q1,p1-q1))/length(p1-p0)+q1.w;
       float r01 = max(p0.w,rq0,rq1,p1.w);
 
-       /* calculate bounds on curvature */
+      /* calculate bounds on curvature */
       float minN = min(length(n0),length(n1));
       float maxN = max(length(n0),length(n1));
       float maxR = max(p0.w,q0.w,q1.w,p1.w);
       //PRINT2(maxN,length(p1-p0));
       float maxC = length(max(abs(ddp0),abs(ddp1)))/minN; //length(ddPdu)/length(dPdu); // FIXME: is this the proper curvature?
+      //PRINT(minN);
+      //PRINT(maxN);
+      //PRINT(maxC);
+      //PRINT(maxR);
+      //PRINT(1.0f/maxC-maxR);
+      float minDT = max(0.001f,1.0f/maxC-maxR);
 
       /* iterative double step solver */
       float eps = 128.0f*float(ulp);
@@ -157,30 +160,54 @@ namespace embree
       float rcpLenDir = rcp_length(ray.dir);
       float t = t0;
       float u = u0 + (u1-u0)*dot(ray.org+t*ray.dir-p0,normalize(p1-p0))*rcpLenP0P1;
-      for (size_t i=0; i<10; i++)
+      for (size_t i=0; i<10000; i++)
       {
-        Q = ray.org + t*ray.dir;
-        Vec3fa dPdu,ddPdu; curve.eval(u,P,dPdu,ddPdu);
+        //PRINT(i);
+        Vec3fa Q = ray.org + t*ray.dir;
+        Vec3fa P,dPdu,ddPdu; curve.eval(u,P,dPdu,ddPdu);
+        //PRINT(P);
+        //PRINT(dPdu);
+        //PRINT(ddPdu);
+        //PRINT(length(dnormalize(dPdu,ddPdu)));
         Vec3fa T = normalize(dPdu); // can be optimized away
+        //float C = length(ddPdu)/length(dPdu); // FIXME: is this the proper curvature?
         float du = dot(Q-P,T);
         float dt = sqrt(dot(Q-P,Q-P)-sqr(du))-P.w;
         u += du*rcpLenP0P1*(u1-u0)/(1.0f+P.w*maxC);
-        t += dt*rcpLenDir;
-
+        //if (du < 10.0f*eps)
+        t += min(minDT,dt*rcpLenDir);
+        //PRINT(du);
+        //PRINT(dt);
+        //PRINT(u);
+        //PRINT(t);
+        if (t > t2) {
+          //PRINT("miss1");
+          return false;
+        }
         if (max(abs(du),abs(dt)) < eps) 
-          break;
+        {
+          //PRINT("hit");
+          //PRINT(eps*rcpLenDir);
+          //PRINT(t+eps*rcpLenDir);
+          //PRINT(t-eps*rcpLenDir);
+          if (t+eps*rcpLenDir < t0 || t-eps*rcpLenDir > t1) {
+            //PRINT("miss2");
+            return false;
+          }
+          //if (t < ray.tnear || t > t_o) {
+          ////PRINT("miss2");
+          //  return false;
+          //}
+          u_o = u;
+          t_o = t;
+          Ng_o = Q-P;
+          return true;
+        }
       }
-
-      if (t < ray.tnear || t > ray.tfar) return false;
-      if (std::isnan(u)) return false;
-      if (std::isnan(t)) return false;
-      if (Q == P) return false;
-
-      u_o = u;
-      t_o = t;
-      Ng_o = Q-P;
-      return true;
+      //PRINT("miss3");
+      return false;
     }
+
     
     __forceinline bool intersect_bezier_iterative(const Ray& ray, const BezierCurve3fa& curve, float u, float& u_o, float& t_o, Vec3fa& Ng)
     {
@@ -258,12 +285,11 @@ namespace embree
 
       /* intersect with cylinder */
       BBox<vfloatx> tc; vfloatx u; Vec3vfx Ng;
-      if (depth == maxDepth) {
-        //valid &= cylinder.intersect(ray.org,ray.dir,tc,u,Ng);
-        valid &= cone    .intersect(ray.org,ray.dir,tc,u,Ng);
+      //if (depth == maxDepth) {
+        //valid &= cone    .intersect(ray.org,ray.dir,tc,u,Ng);
         //valid &= tc.lower > ray.tnear;
-      }
-      else
+      //}
+      //else
         valid &= cylinder.intersect(ray.org,ray.dir,tc,u,Ng);
 
       if (none(valid)) return false;
@@ -299,8 +325,8 @@ namespace embree
 
         if (depth == maxDepth) 
         {
-#if 0
-          bool h = intersect_bezier_iterative3(ray,curve, vu0[i], vu0[i+1], tp.lower[i], u_o, t_o, Ng_o);
+#if 1
+          bool h = intersect_bezier_iterative3(ray,curve, vu0[i], vu0[i+1], tp.lower[i], tp.upper[i], tc.upper[i], u_o, t_o, Ng_o);
           if (u_o < 0.0f || u_o > 1.0f) return false;
           return h;
 #else
