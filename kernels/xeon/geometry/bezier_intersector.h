@@ -282,14 +282,17 @@ namespace embree
       const ConeN<VSIZEX> cone(Vec3vfx(P0.x,P0.y,P0.z),P0.w,Vec3vfx(P3.x,P3.y,P3.z),P3.w);
       vboolx valid = true; clear(valid,VSIZEX-1);
       //if (depth == 1) { valid = false; set(valid,1); }
+      //if (depth == 2) { valid = false; set(valid,0); }
 
       /* intersect with cylinder */
       BBox<vfloatx> tc; vfloatx u; Vec3vfx Ng;
-      //if (depth == maxDepth) {
-        //valid &= cone    .intersect(ray.org,ray.dir,tc,u,Ng);
-        //valid &= tc.lower > ray.tnear;
-      //}
-      //else
+#if 1
+      if (depth == maxDepth) {
+        valid &= cone    .intersect(ray.org,ray.dir,tc,u,Ng);
+        valid &= tc.lower > ray.tnear;
+      }
+      else
+#endif
         valid &= cylinder.intersect(ray.org,ray.dir,tc,u,Ng);
 
       if (none(valid)) return false;
