@@ -239,21 +239,20 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
   
-  __forceinline vdouble4 vreduce_min2(const vdouble4& x) {                      return min(x,shuffle<0,1>(x)); }
-  __forceinline vdouble4 vreduce_min (const vdouble4& x) { x = vreduce_min2(x); return min(x,shuffle2<0,1>(x)); }
+  __forceinline vdouble4 vreduce_min2(const vdouble4& x) { return min(x,shuffle<0,1>(x)); }
+  __forceinline vdouble4 vreduce_min (const vdouble4& y) { const vdouble4 x = vreduce_min2(y); return min(x,shuffle2<0,1>(x)); }
 
-  __forceinline vdouble4 vreduce_max2(const vdouble4& x) {                      return max(x,shuffle<0,1>(x)); }
-  __forceinline vdouble4 vreduce_max (const vdouble4& x) { x = vreduce_max2(x); return max(x,shuffle2<0,1>(x)); }
+  __forceinline vdouble4 vreduce_max2(const vdouble4& x) { return max(x,shuffle<0,1>(x)); }
+  __forceinline vdouble4 vreduce_max (const vdouble4& y) { const vdouble4 x = vreduce_max2(y); return max(x,shuffle2<0,1>(x)); }
 
-  __forceinline vdouble4 vreduce_and2(const vdouble4& x) {                      return x & shuffle<0,1>(x); }
-  __forceinline vdouble4 vreduce_and (const vdouble4& x) { x = vreduce_and2(x); return x & shuffle2<0,1>(x); }
+  __forceinline vdouble4 vreduce_and2(const vdouble4& x) { return x & shuffle<0,1>(x); }
+  __forceinline vdouble4 vreduce_and (const vdouble4& y) { const vdouble4 x = vreduce_and2(y); return x & shuffle2<0,1>(x); }
 
-  __forceinline vdouble4 vreduce_or2(const vdouble4& x) {                     return x | shuffle<0,1>(x); }
-  __forceinline vdouble4 vreduce_or (const vdouble4& x) { x = vreduce_or2(x); return x | shuffle2<0,1>(x); }
+  __forceinline vdouble4 vreduce_or2(const vdouble4& x) { return x | shuffle<0,1>(x); }
+  __forceinline vdouble4 vreduce_or (const vdouble4& y) { const vdouble4 x = vreduce_or2(y); return x | shuffle2<0,1>(x); }
 
-  __forceinline vdouble4 vreduce_add2(const vdouble4& x) {                      return x + shuffle<0,1>(x); }
-  __forceinline vdouble4 vreduce_add (const vdouble4& x) { x = vreduce_add2(x); return x + shuffle2<0,1>(x); }
-
+  __forceinline vdouble4 vreduce_add2(const vdouble4& x) { return x + shuffle<0,1>(x); }
+  __forceinline vdouble4 vreduce_add (const vdouble4& y) { const vdouble4 x = vreduce_add2(y); return x + shuffle2<0,1>(x); }
 
   __forceinline double reduce_add(const vdouble4& a) { return toScalar(vreduce_add(a)); }
   __forceinline double reduce_min(const vdouble4& a) { return toScalar(vreduce_min(a)); }

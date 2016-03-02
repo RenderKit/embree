@@ -310,25 +310,25 @@ namespace embree
   __forceinline double reduce_min(const vdouble8& a) { return _mm512_reduce_min_pd(a); }
   __forceinline double reduce_max(const vdouble8& a) { return _mm512_reduce_max_pd(a); }
   
-  __forceinline vdouble8 vreduce_min2(const vdouble8& x) {                      return min(x,shuffle(x,_MM_SHUF_PERM(2,3,0,1))); }
-  __forceinline vdouble8 vreduce_min4(const vdouble8& x) { x = vreduce_min2(x); return min(x,shuffle(x,_MM_SHUF_PERM(1,0,3,2))); }
-  __forceinline vdouble8 vreduce_min (const vdouble8& x) { x = vreduce_min4(x); return min(x,shuffle4(x,_MM_SHUF_PERM(1,0,3,2))); }
+  __forceinline vdouble8 vreduce_min2(const vdouble8& x) {                                     return min(x,shuffle(x,_MM_SHUF_PERM(2,3,0,1))); }
+  __forceinline vdouble8 vreduce_min4(const vdouble8& y) { const vdouble8 x = vreduce_min2(y); return min(x,shuffle(x,_MM_SHUF_PERM(1,0,3,2))); }
+  __forceinline vdouble8 vreduce_min (const vdouble8& y) { const vdouble8 x = vreduce_min4(y); return min(x,shuffle4(x,_MM_SHUF_PERM(1,0,3,2))); }
 
-  __forceinline vdouble8 vreduce_max2(const vdouble8& x) {                      return max(x,shuffle(x,_MM_SHUF_PERM(1,0,3,2))); }
-  __forceinline vdouble8 vreduce_max4(const vdouble8& x) { x = vreduce_max2(x); return max(x,shuffle(x,_MM_SHUF_PERM(2,3,0,1))); }
-  __forceinline vdouble8 vreduce_max (const vdouble8& x) { x = vreduce_max4(x); return max(x,shuffle4(x,_MM_SHUF_PERM(1,0,3,2))); }
+  __forceinline vdouble8 vreduce_max2(const vdouble8& x) {                                     return max(x,shuffle(x,_MM_SHUF_PERM(1,0,3,2))); }
+  __forceinline vdouble8 vreduce_max4(const vdouble8& y) { const vdouble8 x = vreduce_max2(y); return max(x,shuffle(x,_MM_SHUF_PERM(2,3,0,1))); }
+  __forceinline vdouble8 vreduce_max (const vdouble8& y) { const vdouble8 x = vreduce_max4(y); return max(x,shuffle4(x,_MM_SHUF_PERM(1,0,3,2))); }
 
-  __forceinline vdouble8 vreduce_and2(const vdouble8& x) {                      return x & shuffle(x,_MM_SHUF_PERM(1,0,3,2)); }
-  __forceinline vdouble8 vreduce_and4(const vdouble8& x) { x = vreduce_and2(x); return x & shuffle(x,_MM_SHUF_PERM(2,3,0,1)); }
-  __forceinline vdouble8 vreduce_and (const vdouble8& x) { x = vreduce_and4(x); return x & shuffle4(x,_MM_SHUF_PERM(1,0,3,2)); }
+  __forceinline vdouble8 vreduce_and2(const vdouble8& x) {                                     return x & shuffle(x,_MM_SHUF_PERM(1,0,3,2)); }
+  __forceinline vdouble8 vreduce_and4(const vdouble8& y) { const vdouble8 x = vreduce_and2(y); return x & shuffle(x,_MM_SHUF_PERM(2,3,0,1)); }
+  __forceinline vdouble8 vreduce_and (const vdouble8& y) { const vdouble8 x = vreduce_and4(y); return x & shuffle4(x,_MM_SHUF_PERM(1,0,3,2)); }
 
-  __forceinline vdouble8 vreduce_or2(const vdouble8& x) {                     return x | shuffle(x,_MM_SHUF_PERM(1,0,3,2)); }
-  __forceinline vdouble8 vreduce_or4(const vdouble8& x) { x = vreduce_or2(x); return x | shuffle(x,_MM_SHUF_PERM(2,3,0,1)); }
-  __forceinline vdouble8 vreduce_or (const vdouble8& x) { x = vreduce_or4(x); return x | shuffle4(x,_MM_SHUF_PERM(1,0,3,2)); }
+  __forceinline vdouble8 vreduce_or2(const vdouble8& x) {                                    return x | shuffle(x,_MM_SHUF_PERM(1,0,3,2)); }
+  __forceinline vdouble8 vreduce_or4(const vdouble8& y) { const vdouble8 x = vreduce_or2(y); return x | shuffle(x,_MM_SHUF_PERM(2,3,0,1)); }
+  __forceinline vdouble8 vreduce_or (const vdouble8& y) { const vdouble8 x = vreduce_or4(y); return x | shuffle4(x,_MM_SHUF_PERM(1,0,3,2)); }
 
-  __forceinline vdouble8 vreduce_add2(const vdouble8& x) {                      return x + shuffle(x,_MM_SHUF_PERM(1,0,3,2)); }
-  __forceinline vdouble8 vreduce_add4(const vdouble8& x) { x = vreduce_add2(x); return x + shuffle(x,_MM_SHUF_PERM(2,3,0,1)); }
-  __forceinline vdouble8 vreduce_add (const vdouble8& x) { x = vreduce_add4(x); return x + shuffle4(x,_MM_SHUF_PERM(1,0,3,2)); }
+  __forceinline vdouble8 vreduce_add2(const vdouble8& x) {                                     return x + shuffle(x,_MM_SHUF_PERM(1,0,3,2)); }
+  __forceinline vdouble8 vreduce_add4(const vdouble8& y) { const vdouble8 x = vreduce_add2(y); return x + shuffle(x,_MM_SHUF_PERM(2,3,0,1)); }
+  __forceinline vdouble8 vreduce_add (const vdouble8& y) { const vdouble8 x = vreduce_add4(y); return x + shuffle4(x,_MM_SHUF_PERM(1,0,3,2)); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Memory load and store operations
