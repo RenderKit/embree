@@ -325,7 +325,7 @@ namespace embree
 
         if (depth == maxDepth) 
         {
-#if 1
+#if 0
           float uu = (float(i)+u[i])/float(VSIZEX);
           float ru = (1.0f-uu)*u0 + uu*u1;
           //bool h = intersect_bezier_iterative(ray,curve, ru, u_o, t_o, Ng_o);
@@ -342,8 +342,8 @@ namespace embree
             //PRINT(u_o);
             //PRINT(t_o);
             //PRINT(Ng_o);
-            if (h0.lower[i] == tp.lower[i]) Ng_o = -Vec3fa(dP0du.x[i],dP0du.y[i],dP0du.z[i]);
-            if (h1.lower[i] == tp.lower[i]) Ng_o = +Vec3fa(dP3du.x[i],dP3du.y[i],dP3du.z[i]);
+            //if (h0.lower[i] == tp.lower[i]) Ng_o = -Vec3fa(dP0du.x[i],dP0du.y[i],dP0du.z[i]);
+            //if (h1.lower[i] == tp.lower[i]) Ng_o = +Vec3fa(dP3du.x[i],dP3du.y[i],dP3du.z[i]);
             return true;
             //found = true;
           } else {
