@@ -250,6 +250,53 @@ namespace embree
       return false;
     }
 
+    __forceinline bool intersect_bezier_iterative_jacobian(const Ray& ray, const BezierCurve3fa& curve, float u, float t, float& u_o, float& t_o, Vec3fa& Ng_o)
+    {
+      for (size_t i=0; i<100; i++) 
+      {
+        Vec3fa Q = ray.org + t*ray.dir;
+        Vec3fa dQdu = zero;
+        Vec3fa dQdt = ray.dir;
+
+        Vec3fa P,dPdu,ddPdu; curve.eval(u,P,dPdu,ddPdu);
+        Vec3fa dPdt = zero;
+
+        Vec3fa R = Q-P;
+        Vec3fa dRdu = dQdu-dPdu;
+        Vec3fa dRdt = dQdt-dPdt;
+
+        Vec3fa T = normalize(dPdu);
+        Vec3fa dTdu = dnormalize(dPdu,ddPdu);
+        Vec3fa dTdt = zero;
+
+        float f = dot(R,T);
+        float dfdu = dot(dRdu,T) + dot(R,dTdu);
+        float dfdt = dot(dRdt,T) + dot(R,dTdt);
+
+        float K = dot(R,R)-sqr(f);
+        float dKdu = 2.0f*dot(R,dRdu)-2.0f*f*dfdu;
+        float dKdt = 2.0f*dot(R,dRdt)-2.0f*f*dfdt;
+
+        float g = sqrt(K)-P.w;
+        float dgdu = 0.5f*dKdu*rsqrt(K)-dPdu.w;
+        float dgdt = 0.5f*dKdt*rsqrt(K)-dPdt.w;
+
+        LinearSpace2f rcp_jacobian = rcp(LinearSpace2f(dfdu,dfdt,dgdu,dgdt));
+        Vec2f dut = rcp_jacobian*Vec2f(f,g);
+        Vec2f ut = Vec2f(u,t) - dut;
+        u = ut.x; t = ut.y;
+
+        if (abs(dut.x) < 0.001f*length(dPdu) && abs(dut.y) < 0.001f*length(ray.dir)) 
+        {
+          u_o = u;
+          t_o = t;
+          Ng_o = Q-P;
+          return true;
+        }
+      }
+      return false;
+    }
+
     template<int M>
       __forceinline vfloat<M> sqr_point_to_line_distance(const Vec3<vfloat<M>>& P, const Vec3<vfloat<M>>& Q0, const Vec3<vfloat<M>>& Q1) 
     {
@@ -328,11 +375,12 @@ namespace embree
 
         if (depth == maxDepth) 
         {
-#if 0
+#if 1
           float uu = (float(i)+u[i])/float(VSIZEX);
           float ru = (1.0f-uu)*u0 + uu*u1;
           //bool h = intersect_bezier_iterative(ray,curve, ru, u_o, t_o, Ng_o);
-          bool h = intersect_bezier_iterative3(ray,curve, vu0[i], vu0[i+1], tp.lower[i], tp.upper[i], tc.upper[i], u_o, t_o, Ng_o);
+          //bool h = intersect_bezier_iterative3(ray,curve, vu0[i], vu0[i+1], tp.lower[i], tp.upper[i], tc.upper[i], u_o, t_o, Ng_o);
+          bool h = intersect_bezier_iterative_jacobian(ray,curve,ru,tp.lower[i],u_o,t_o,Ng_o);
           if (u_o < 0.0f || u_o > 1.0f) return false;
           return h;
 #else
