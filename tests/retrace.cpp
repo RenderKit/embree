@@ -14,9 +14,9 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#include "../kernels/common/default.h"
 #include "../include/embree2/rtcore.h"
 #include "../include/embree2/rtcore_ray.h"
-#include "../kernels/common/default.h"
 #include "../kernels/common/raystream_log.h"
 #include <vector>
 #include <iostream>
