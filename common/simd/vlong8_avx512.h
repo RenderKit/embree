@@ -327,25 +327,25 @@ namespace embree
   __forceinline long reduce_max(const vlong8& a) { return _mm512_reduce_max_epi64(a); }
   __forceinline long reduce_and(const vlong8& a) { return _mm512_reduce_and_epi64(a); }
   
-  __forceinline vlong8 vreduce_min2(const vlong8& x) {                      return min(x,shuffle(x,_MM_SHUF_PERM(2,3,0,1))); }
-  __forceinline vlong8 vreduce_min4(const vlong8& x) { x = vreduce_min2(x); return min(x,shuffle(x,_MM_SHUF_PERM(1,0,3,2))); }
-  __forceinline vlong8 vreduce_min (const vlong8& x) { x = vreduce_min4(x); return min(x,shuffle4(x,_MM_SHUF_PERM(1,0,3,2))); }
+  __forceinline vlong8 vreduce_min2(const vlong8& x) {                                   return min(x,shuffle(x,_MM_SHUF_PERM(2,3,0,1))); }
+  __forceinline vlong8 vreduce_min4(const vlong8& y) { const vlong8 x = vreduce_min2(y); return min(x,shuffle(x,_MM_SHUF_PERM(1,0,3,2))); }
+  __forceinline vlong8 vreduce_min (const vlong8& y) { const vlong8 x = vreduce_min4(y); return min(x,shuffle4(x,_MM_SHUF_PERM(1,0,3,2))); }
 
-  __forceinline vlong8 vreduce_max2(const vlong8& x) {                      return max(x,shuffle(x,_MM_SHUF_PERM(1,0,3,2))); }
-  __forceinline vlong8 vreduce_max4(const vlong8& x) { x = vreduce_max2(x); return max(x,shuffle(x,_MM_SHUF_PERM(2,3,0,1))); }
-  __forceinline vlong8 vreduce_max (const vlong8& x) { x = vreduce_max4(x); return max(x,shuffle4(x,_MM_SHUF_PERM(1,0,3,2))); }
+  __forceinline vlong8 vreduce_max2(const vlong8& x) {                                   return max(x,shuffle(x,_MM_SHUF_PERM(1,0,3,2))); }
+  __forceinline vlong8 vreduce_max4(const vlong8& y) { const vlong8 x = vreduce_max2(y); return max(x,shuffle(x,_MM_SHUF_PERM(2,3,0,1))); }
+  __forceinline vlong8 vreduce_max (const vlong8& y) { const vlong8 x = vreduce_max4(y); return max(x,shuffle4(x,_MM_SHUF_PERM(1,0,3,2))); }
 
-  __forceinline vlong8 vreduce_and2(const vlong8& x) {                      return x & shuffle(x,_MM_SHUF_PERM(1,0,3,2)); }
-  __forceinline vlong8 vreduce_and4(const vlong8& x) { x = vreduce_and2(x); return x & shuffle(x,_MM_SHUF_PERM(2,3,0,1)); }
-  __forceinline vlong8 vreduce_and (const vlong8& x) { x = vreduce_and4(x); return x & shuffle4(x,_MM_SHUF_PERM(1,0,3,2)); }
+  __forceinline vlong8 vreduce_and2(const vlong8& x) {                                   return x & shuffle(x,_MM_SHUF_PERM(1,0,3,2)); }
+  __forceinline vlong8 vreduce_and4(const vlong8& y) { const vlong8 x = vreduce_and2(y); return x & shuffle(x,_MM_SHUF_PERM(2,3,0,1)); }
+  __forceinline vlong8 vreduce_and (const vlong8& y) { const vlong8 x = vreduce_and4(y); return x & shuffle4(x,_MM_SHUF_PERM(1,0,3,2)); }
 
-  __forceinline vlong8 vreduce_or2(const vlong8& x) {                     return x | shuffle(x,_MM_SHUF_PERM(1,0,3,2)); }
-  __forceinline vlong8 vreduce_or4(const vlong8& x) { x = vreduce_or2(x); return x | shuffle(x,_MM_SHUF_PERM(2,3,0,1)); }
-  __forceinline vlong8 vreduce_or (const vlong8& x) { x = vreduce_or4(x); return x | shuffle4(x,_MM_SHUF_PERM(1,0,3,2)); }
+  __forceinline vlong8 vreduce_or2(const vlong8& x) {                                  return x | shuffle(x,_MM_SHUF_PERM(1,0,3,2)); }
+  __forceinline vlong8 vreduce_or4(const vlong8& y) { const vlong8 x = vreduce_or2(y); return x | shuffle(x,_MM_SHUF_PERM(2,3,0,1)); }
+  __forceinline vlong8 vreduce_or (const vlong8& y) { const vlong8 x = vreduce_or4(y); return x | shuffle4(x,_MM_SHUF_PERM(1,0,3,2)); }
 
-  __forceinline vlong8 vreduce_add2(const vlong8& x) {                      return x + shuffle(x,_MM_SHUF_PERM(1,0,3,2)); }
-  __forceinline vlong8 vreduce_add4(const vlong8& x) { x = vreduce_add2(x); return x + shuffle(x,_MM_SHUF_PERM(2,3,0,1)); }
-  __forceinline vlong8 vreduce_add (const vlong8& x) { x = vreduce_add4(x); return x + shuffle4(x,_MM_SHUF_PERM(1,0,3,2)); }
+  __forceinline vlong8 vreduce_add2(const vlong8& x) {                                   return x + shuffle(x,_MM_SHUF_PERM(1,0,3,2)); }
+  __forceinline vlong8 vreduce_add4(const vlong8& y) { const vlong8 x = vreduce_add2(y); return x + shuffle(x,_MM_SHUF_PERM(2,3,0,1)); }
+  __forceinline vlong8 vreduce_add (const vlong8& y) { const vlong8 x = vreduce_add4(y); return x + shuffle4(x,_MM_SHUF_PERM(1,0,3,2)); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Memory load and store operations
