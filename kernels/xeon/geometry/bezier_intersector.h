@@ -327,7 +327,10 @@ namespace embree
           //PRINT("hit");
           u_o = u;
           t_o = t;
-          Ng_o = Q-P;
+          Vec3fa R = normalize(Q-P);
+          Vec3fa U = dPdu+dPdu.w*R;
+          Vec3fa V = cross(dPdu,R);
+          Ng_o = cross(U,V);
           return true;
         }
       }
