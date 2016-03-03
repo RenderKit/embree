@@ -23,7 +23,8 @@
 #include "fillcone.h"
 #include "line_intersector.h"
 
-extern "C" int g_debug_int;
+extern "C" int g_debug_int0;
+extern "C" int g_debug_int1;
 
 namespace embree
 {
@@ -311,7 +312,7 @@ namespace embree
       //exit(1);
 
       //PRINT(curve);
-      int maxDepth = g_debug_int;
+      int maxDepth = g_debug_int0;
       bool found = false;
 
       /* subdivide curve */
@@ -333,7 +334,7 @@ namespace embree
 
       /* intersect with cylinder */
       BBox<vfloatx> tc; vfloatx u; Vec3vfx Ng;
-#if 1
+#if 0
       if (depth == maxDepth) {
         valid &= cone    .intersect(ray.org,ray.dir,tc,u,Ng);
         valid &= tc.lower > ray.tnear;
@@ -375,12 +376,12 @@ namespace embree
 
         if (depth == maxDepth) 
         {
-#if 1
+#if 0
           float uu = (float(i)+u[i])/float(VSIZEX);
           float ru = (1.0f-uu)*u0 + uu*u1;
           //bool h = intersect_bezier_iterative(ray,curve, ru, u_o, t_o, Ng_o);
           //bool h = intersect_bezier_iterative3(ray,curve, vu0[i], vu0[i+1], tp.lower[i], tp.upper[i], tc.upper[i], u_o, t_o, Ng_o);
-          bool h = intersect_bezier_iterative_jacobian(ray,curve,ru,tc.lower[i],u_o,t_o,Ng_o);
+          bool h = intersect_bezier_iterative_jacobian(ray,curve,ru,tp.lower[i],u_o,t_o,Ng_o);
           if (u_o < 0.0f || u_o > 1.0f) return false;
           return h;
 #else
@@ -471,6 +472,14 @@ namespace embree
 
         BezierCurve3fa curve(v0,v1,v2,v3,0.0f,1.0f,1);
         if (!intersect_bezier_recursive(ray,curve,0.0f,1.0f,1,u,t,Ng))
+          return false;
+
+        if (g_debug_int1 % 2) {
+          if (!intersect_bezier_iterative_jacobian(ray,curve,u,t,u,t,Ng))
+            return false;
+        }
+
+        if (u < 0.0f || u > 1.0f) 
           return false;
 
         LineIntersectorHitM<VSIZEX> hit;
