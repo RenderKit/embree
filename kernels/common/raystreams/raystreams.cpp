@@ -4,7 +4,7 @@
 
 namespace embree
 {
-  static const size_t MAX_RAYS_PER_OCTANT = 64;
+  static const size_t MAX_RAYS_PER_OCTANT = 8*sizeof(size_t);
 
   namespace isa
   {
