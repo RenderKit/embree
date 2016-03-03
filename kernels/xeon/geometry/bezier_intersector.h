@@ -289,6 +289,7 @@ namespace embree
 
         if (abs(f) < 0.0001f*length(dPdu) && abs(g) < 0.0001f*length(ray.dir)) 
         {
+          if (t < ray.tnear || t > ray.tfar) return false;
           u_o = u;
           t_o = t;
           Ng_o = Q-P;
@@ -376,34 +377,35 @@ namespace embree
 
         if (depth == maxDepth) 
         {
-#if 0
-          float uu = (float(i)+u[i])/float(VSIZEX);
-          float ru = (1.0f-uu)*u0 + uu*u1;
-          //bool h = intersect_bezier_iterative(ray,curve, ru, u_o, t_o, Ng_o);
-          //bool h = intersect_bezier_iterative3(ray,curve, vu0[i], vu0[i+1], tp.lower[i], tp.upper[i], tc.upper[i], u_o, t_o, Ng_o);
-          bool h = intersect_bezier_iterative_jacobian(ray,curve,ru,tp.lower[i],u_o,t_o,Ng_o);
-          if (u_o < 0.0f || u_o > 1.0f) return false;
-          return h;
-#else
-          if (tp.lower[i] < t_o) {
+          if (g_debug_int1 % 2)
+          {
             float uu = (float(i)+u[i])/float(VSIZEX);
-            u_o = (1.0f-uu)*u0 + uu*u1;
-            t_o = tp.lower[i];
-            Ng_o = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
-            //u_o = float(i+1)/float(VSIZEX);
-            //PRINT(u_o);
-            //PRINT(t_o);
-            //PRINT(Ng_o);
-            //if (h0.lower[i] == tp.lower[i]) Ng_o = -Vec3fa(dP0du.x[i],dP0du.y[i],dP0du.z[i]);
-            //if (h1.lower[i] == tp.lower[i]) Ng_o = +Vec3fa(dP3du.x[i],dP3du.y[i],dP3du.z[i]);
-            return true;
-            //found = true;
-          } else {
-            //PRINT("miss");
+            float ru = (1.0f-uu)*u0 + uu*u1;
+            //bool h = intersect_bezier_iterative(ray,curve, ru, u_o, t_o, Ng_o);
+            //bool h = intersect_bezier_iterative3(ray,curve, vu0[i], vu0[i+1], tp.lower[i], tp.upper[i], tc.upper[i], u_o, t_o, Ng_o);
+
+            bool h = intersect_bezier_iterative_jacobian(ray,curve,ru,tp.lower[i],u_o,t_o,Ng_o);
+            if (u_o < 0.0f || u_o > 1.0f) return false;
+            return h;
           }
-          return false;
-          //continue;
-#endif
+          else
+          {
+            if (tp.lower[i] < t_o) {
+              float uu = (float(i)+u[i])/float(VSIZEX);
+              u_o = (1.0f-uu)*u0 + uu*u1;
+              t_o = tp.lower[i];
+              Ng_o = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
+              //u_o = float(i+1)/float(VSIZEX);
+              //if (h0.lower[i] == tp.lower[i]) Ng_o = -Vec3fa(dP0du.x[i],dP0du.y[i],dP0du.z[i]);
+              //if (h1.lower[i] == tp.lower[i]) Ng_o = +Vec3fa(dP3du.x[i],dP3du.y[i],dP3du.z[i]);
+              return true;
+              //found = true;
+            } else {
+              //PRINT("miss");
+            }
+            return false;
+            //continue;
+          }
         }
 
         if (intersect_bezier_recursive(ray,curve,vu0[i+0],vu0[i+1],depth+1,u_o,t_o,Ng_o))
@@ -474,6 +476,7 @@ namespace embree
         if (!intersect_bezier_recursive(ray,curve,0.0f,1.0f,1,u,t,Ng))
           return false;
 
+#if 0
         if (g_debug_int1 % 2) {
           if (!intersect_bezier_iterative_jacobian(ray,curve,u,t,u,t,Ng))
             return false;
@@ -481,6 +484,7 @@ namespace embree
 
         if (u < 0.0f || u > 1.0f) 
           return false;
+#endif
 
         LineIntersectorHitM<VSIZEX> hit;
         hit.vu[0] = u;
