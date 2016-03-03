@@ -505,28 +505,27 @@ namespace embree
       {
         STAT3(normal.trav_prims,1,1,1);
 
+        /* move ray closer to make intersection stable */
+        const float dt = dot(0.25f*(v0+v1+v2+v3)-ray.org,ray.dir)*rcp(dot(ray.dir,ray.dir));
+        const Vec3fa ref(ray.org+dt*ray.dir,0.0f);
+        const Vec3fa p0 = v0-ref;
+        const Vec3fa p1 = v1-ref;
+        const Vec3fa p2 = v2-ref;
+        const Vec3fa p3 = v3-ref;
+
         float u = 0.0f;
-        float t = ray.tfar;
+        float t = ray.tfar-dt;
         Vec3fa Ng = zero;
 
-        BezierCurve3fa curve(v0,v1,v2,v3,0.0f,1.0f,1);
-        if (!intersect_bezier_recursive(ray,curve,0.0f,1.0f,1,u,t,Ng))
+        const Ray ray1(zero,ray.dir,ray.tnear-dt,ray.tfar-dt);
+        const BezierCurve3fa curve(p0,p1,p2,p3,0.0f,1.0f,1);
+        if (!intersect_bezier_recursive(ray1,curve,0.0f,1.0f,1,u,t,Ng))
           return false;
-
-#if 0
-        if (g_debug_int1 % 2) {
-          if (!intersect_bezier_iterative_jacobian(ray,curve,u,t,u,t,Ng))
-            return false;
-        }
-
-        if (u < 0.0f || u > 1.0f) 
-          return false;
-#endif
 
         LineIntersectorHitM<VSIZEX> hit;
         hit.vu[0] = u;
         hit.vv[0] = 0.0f;
-        hit.vt[0] = t;
+        hit.vt[0] = t+dt;
         hit.vNg.x[0] = Ng.x;
         hit.vNg.y[0] = Ng.y;
         hit.vNg.z[0] = Ng.z;
