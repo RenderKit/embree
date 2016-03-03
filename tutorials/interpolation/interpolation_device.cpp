@@ -477,7 +477,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     //PRINT(shadow);
     
     /* add light contribution */
-    if (dot(shadow.dir,ray.Ng) < 0.0f) return Vec3fa(1,0,0);
+    //if (dot(shadow.dir,ray.Ng) < 0.0f) return Vec3fa(1,0,0);
 
     if (shadow.geomID) {
       Vec3fa r = normalize(reflect(ray.dir,Ng));
