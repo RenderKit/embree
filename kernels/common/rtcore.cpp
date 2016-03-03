@@ -24,7 +24,7 @@
 #include "scene.h"
 #include "raystream_log.h"
 
-RTCORE_API int g_debug_int0 = 1;
+RTCORE_API int g_debug_int0 = 4;
 RTCORE_API int g_debug_int1 = 1;
 
 namespace embree

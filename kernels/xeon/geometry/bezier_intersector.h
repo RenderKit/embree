@@ -253,8 +253,10 @@ namespace embree
 
     __forceinline bool intersect_bezier_iterative_jacobian(const Ray& ray, const BezierCurve3fa& curve, float u, float t, float& u_o, float& t_o, Vec3fa& Ng_o)
     {
-      for (size_t i=0; i<100; i++) 
+      //PRINT2(u,t);
+      for (size_t i=0; i<1000; i++) 
       {
+        //PRINT(i);
         Vec3fa Q = ray.org + t*ray.dir;
         Vec3fa dQdu = zero;
         Vec3fa dQdt = ray.dir;
@@ -286,10 +288,14 @@ namespace embree
         Vec2f dut = rcp_jacobian*Vec2f(f,g);
         Vec2f ut = Vec2f(u,t) - dut;
         u = ut.x; t = ut.y;
+        //PRINT2(u,t);
 
-        if (abs(f) < 0.0001f*length(dPdu) && abs(g) < 0.0001f*length(ray.dir)) 
+        if (abs(f) < 16.0f*float(ulp)*length(dPdu) && abs(g) < 16.0f*float(ulp)*length(ray.dir)) 
         {
+          //PRINT("converged");
+          //PRINT2(f,g);
           if (t < ray.tnear || t > ray.tfar) return false;
+          //PRINT("hit");
           u_o = u;
           t_o = t;
           Ng_o = Q-P;

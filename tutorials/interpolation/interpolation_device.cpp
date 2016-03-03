@@ -425,7 +425,9 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   ray.time = 0;
   
   /* intersect ray with scene */
+  //std::cout << std::endl;
   rtcIntersect(g_scene,ray);
+  //PRINT(ray);
   
   /* shade pixels */
   Vec3fa color = Vec3fa(0.0f);
@@ -460,7 +462,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     
     /* initialize shadow ray */
     RTCRay shadow;
-    shadow.org = ray.org + ray.tfar*ray.dir;
+    shadow.org = ray.org + ray.tfar*ray.dir + 0.001f*normalize(ray.Ng);
     shadow.dir = neg(lightDir);
     shadow.tnear = 0.001f;
     shadow.tfar = inf;
@@ -470,9 +472,13 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     shadow.time = 0;
     
     /* trace shadow ray */
+    //std::cout << std::endl;
     rtcOccluded(g_scene,shadow);
+    //PRINT(shadow);
     
     /* add light contribution */
+    if (dot(shadow.dir,ray.Ng) < 0.0f) return Vec3fa(1,0,0);
+
     if (shadow.geomID) {
       Vec3fa r = normalize(reflect(ray.dir,Ng));
       float s = pow(clamp(dot(r,lightDir),0.0f,1.0f),10.0f);
@@ -505,7 +511,7 @@ void renderTile(int taskIndex, int* pixels,
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
     /* calculate pixel color */
-    //if (x != 19 || y != 512-277) continue;
+    //if (x != 265 || y != 512-219) continue;
     //PRINT2(x,y);
     Vec3fa color = renderPixel(x,y,vx,vy,vz,p);
     //PRINT(color);
