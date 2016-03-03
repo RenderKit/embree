@@ -396,8 +396,8 @@ namespace embree
               t_o = tp.lower[i];
               Ng_o = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
               //u_o = float(i+1)/float(VSIZEX);
-              //if (h0.lower[i] == tp.lower[i]) Ng_o = -Vec3fa(dP0du.x[i],dP0du.y[i],dP0du.z[i]);
-              //if (h1.lower[i] == tp.lower[i]) Ng_o = +Vec3fa(dP3du.x[i],dP3du.y[i],dP3du.z[i]);
+              if (h0.lower[i] == tp.lower[i]) Ng_o = -Vec3fa(dP0du.x[i],dP0du.y[i],dP0du.z[i]);
+              if (h1.lower[i] == tp.lower[i]) Ng_o = +Vec3fa(dP3du.x[i],dP3du.y[i],dP3du.z[i]);
               return true;
               //found = true;
             } else {
