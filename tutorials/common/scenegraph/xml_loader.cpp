@@ -951,7 +951,7 @@ namespace embree
 
     hair->hairs.resize(indices.size());
     for (size_t i=0; i<indices.size(); i++) {
-      hair->hairs[i] = SceneGraph::HairSetNode::Hair(indices[i],0);
+      hair->hairs[i] = SceneGraph::HairSetNode::Hair(4*i,0);
     }
       
     if (positions.size())
