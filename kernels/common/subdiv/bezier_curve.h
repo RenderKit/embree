@@ -115,6 +115,7 @@ namespace embree
       return C0*v0 + C1*v1 + C2*v2 + C3*v3;
     }
 
+#if 0
     __forceinline void eval(const float t, Vertex& p, Vertex& dp) const
     {
       const float t0 = 1.0f - t, t1 = t;
@@ -174,6 +175,7 @@ namespace embree
       dp  = B0*v0 + B1*v1 + B2*v2 + B3*v3;
       ddp = C0*v0 + C1*v1 + C2*v2 + C3*v3;
     }
+#endif
 
     friend inline std::ostream& operator<<(std::ostream& cout, const BezierCurveT& curve) {
       return cout << "{ v0 = " << curve.v0 << ", v1 = " << curve.v1 << ", v2 = " << curve.v2 << ", v3 = " << curve.v3 << ", depth = " << curve.depth << " }";

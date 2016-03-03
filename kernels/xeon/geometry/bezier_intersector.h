@@ -33,8 +33,16 @@ namespace embree
     __forceinline bool intersect_bezier_iterative2(const Ray& ray, const BezierCurve3fa& curve, float u0, float u1, float& u_o, float& t_o, Vec3fa& Ng_o)
     {
       //PRINT("intersecting");
-      Vec3fa p0,n0,ddp0; curve.eval(u0,p0,n0,ddp0);
-      Vec3fa p1,n1,ddp1; curve.eval(u1,p1,n1,ddp1);
+      //Vec3fa p0,n0,ddp0; curve.eval(u0,p0,n0,ddp0);
+      Vec3fa p0 = curve.eval(u0);
+      Vec3fa n0 = curve.eval_du(u0);
+      Vec3fa ddp0 = curve.eval_dudu(u0);
+
+      //Vec3fa p1,n1,ddp1; curve.eval(u1,p1,n1,ddp1);
+      Vec3fa p1 = curve.eval(u1);
+      Vec3fa n1 = curve.eval_du(u1);
+      Vec3fa ddp1 = curve.eval_dudu(u1);
+
       Vec3fa q0 = p0+n0*(1.0f/3.0f);
       Vec3fa q1 = p1-n1*(1.0f/3.0f);
       float rq0 = length(cross(p0-q0,p1-q0))/length(p1-p0)+q0.w;
@@ -87,7 +95,9 @@ namespace embree
       {
         //PRINT(i);
         Vec3fa Q = ray.org + t*ray.dir;
-        Vec3fa P,dPdu,ddPdu; curve.eval(u,P,dPdu,ddPdu);
+        Vec3fa P = curve.eval(u);
+        Vec3fa dPdu = curve.eval_du(u);
+        Vec3fa ddPdu = curve.eval_dudu(u);
         //PRINT(P);
         //PRINT(dPdu);
         //PRINT(ddPdu);
@@ -134,8 +144,16 @@ namespace embree
     __forceinline bool intersect_bezier_iterative3(const Ray& ray, const BezierCurve3fa& curve, float u0, float u1, float t0, float t1, float t2, float& u_o, float& t_o, Vec3fa& Ng_o)
     {
       //PRINT("intersecting");
-      Vec3fa p0,n0,ddp0; curve.eval(u0,p0,n0,ddp0);
-      Vec3fa p1,n1,ddp1; curve.eval(u1,p1,n1,ddp1);
+      //Vec3fa p0,n0,ddp0; curve.eval(u0,p0,n0,ddp0);
+      Vec3fa p0 = curve.eval(u0);
+      Vec3fa n0 = curve.eval_du(u0);
+      Vec3fa ddp0 = curve.eval_dudu(u0);
+
+      //Vec3fa p1,n1,ddp1; curve.eval(u1,p1,n1,ddp1);
+      Vec3fa p1 = curve.eval(u1);
+      Vec3fa n1 = curve.eval_du(u1);
+      Vec3fa ddp1 = curve.eval_dudu(u1);
+
       Vec3fa q0 = p0+n0*(1.0f/3.0f);
       Vec3fa q1 = p1-n1*(1.0f/3.0f);
       float rq0 = length(cross(p0-q0,p1-q0))/length(p1-p0)+q0.w;
@@ -165,7 +183,11 @@ namespace embree
       {
         //PRINT(i);
         Vec3fa Q = ray.org + t*ray.dir;
-        Vec3fa P,dPdu,ddPdu; curve.eval(u,P,dPdu,ddPdu);
+        //Vec3fa P,dPdu,ddPdu; curve.eval(u,P,dPdu,ddPdu);
+        Vec3fa P = curve.eval(u);
+        Vec3fa dPdu = curve.eval_du(u);
+        Vec3fa ddPdu = curve.eval_dudu(u);
+
         //PRINT(P);
         //PRINT(dPdu);
         //PRINT(ddPdu);
@@ -216,7 +238,11 @@ namespace embree
       for (size_t i=0; i<100; i++) 
       {
         //const float du = 0.0001f;
-        Vec3fa P,dPdu,dPdu2; curve.eval(u,P,dPdu,dPdu2);
+        //Vec3fa P,dPdu,dPdu2; curve.eval(u,P,dPdu,dPdu2);
+        Vec3fa P = curve.eval(u);
+        Vec3fa dPdu = curve.eval_du(u);
+        Vec3fa dPdu2 = curve.eval_dudu(u);
+
         //Vec3fa _P,_dPdu,_dPdu2; curve.eval(u+du,_P,_dPdu,_dPdu2);
         //PRINT2(dPdu,(_P-P)/du);
         //PRINT2(dPdu2,(_dPdu-dPdu)/du);
@@ -261,7 +287,10 @@ namespace embree
         Vec3fa dQdu = zero;
         Vec3fa dQdt = ray.dir;
 
-        Vec3fa P,dPdu,ddPdu; curve.eval(u,P,dPdu,ddPdu);
+        //Vec3fa P,dPdu,ddPdu; curve.eval(u,P,dPdu,ddPdu);
+        Vec3fa P = curve.eval(u);
+        Vec3fa dPdu = curve.eval_du(u);
+        Vec3fa ddPdu = curve.eval_dudu(u);
         Vec3fa dPdt = zero;
 
         Vec3fa R = Q-P;
