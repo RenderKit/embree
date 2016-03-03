@@ -60,5 +60,27 @@
       </material>
 
     </BSplineCurves>
+
+    <BezierCurves>
+
+      <positions>
+        0 0 -2 0.2
+        8 4 -2 0.2
+       -4 4 -2 0.2
+        4 0 -3 0.2
+      </positions>
+
+      <indices>
+        0 0
+      </indices>
+
+      <material>
+        <code>"OBJ"</code>
+        <parameters>
+          <float3 name="Kd">1 0 0</float3>
+        </parameters>
+      </material>
+
+    </BezierCurves>
   </Group>
 </scene>
