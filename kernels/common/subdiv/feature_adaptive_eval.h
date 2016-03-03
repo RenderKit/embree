@@ -40,13 +40,14 @@ namespace embree
         
       public:
         
-        FeatureAdaptiveEval (const HalfEdge* edge, const char* vertices, size_t stride, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
-        : P(P), dPdu(dPdu), dPdv(dPdv)
+        FeatureAdaptiveEval (const HalfEdge* edge, const char* vertices, size_t stride, const float u, const float v, 
+                             Vertex* P, Vertex* dPdu, Vertex* dPdv, Vertex* ddPdudu, Vertex* ddPdvdv, Vertex* ddPdudv)
+        : P(P), dPdu(dPdu), dPdv(dPdv), ddPdudu(ddPdudu), ddPdvdv(ddPdvdv), ddPdudv(ddPdudv)
         {
           switch (edge->patch_type) {
-          case HalfEdge::REGULAR_QUAD_PATCH: RegularPatchT(edge,vertices,stride).eval(u,v,P,dPdu,dPdv,1.0f); break;
+          case HalfEdge::REGULAR_QUAD_PATCH: RegularPatchT(edge,vertices,stride).eval(u,v,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,1.0f); break;
 #if PATCH_USE_GREGORY == 2
-          case HalfEdge::IRREGULAR_QUAD_PATCH: GregoryPatch(edge,vertices,stride).eval(u,v,P,dPdu,dPdv,1.0f); break;
+          case HalfEdge::IRREGULAR_QUAD_PATCH: GregoryPatch(edge,vertices,stride).eval(u,v,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,1.0f); break;
 #endif
           default: {
             GeneralCatmullClarkPatch patch(edge,vertices,stride);
@@ -56,55 +57,11 @@ namespace embree
           }
         }
 
-        FeatureAdaptiveEval (CatmullClarkPatch& patch, const float u, const float v, float dscale, size_t depth, Vertex* P, Vertex* dPdu, Vertex* dPdv)
-        : P(P), dPdu(dPdu), dPdv(dPdv)
+        FeatureAdaptiveEval (CatmullClarkPatch& patch, const float u, const float v, float dscale, size_t depth, 
+                             Vertex* P, Vertex* dPdu, Vertex* dPdv, Vertex* ddPdudu, Vertex* ddPdvdv, Vertex* ddPdudv)
+        : P(P), dPdu(dPdu), dPdv(dPdv), ddPdudu(ddPdudu), ddPdvdv(ddPdvdv), ddPdudv(ddPdudv)
         {
           eval(patch,Vec2f(u,v),dscale,depth);
-        }
-        
-        void eval_general_triangle(const GeneralCatmullClarkPatch& patch, array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE>& patches, const Vec2f& uv, size_t depth)
-        {
-          const bool ab_abc = right_of_line_ab_abc(uv);
-          const bool ac_abc = right_of_line_ac_abc(uv);
-          const bool bc_abc = right_of_line_bc_abc(uv);
-          
-          const float u = uv.x, v = uv.y, w = 1.0f-u-v;
-          if  (!ab_abc &&  ac_abc) {
-            const Vec2f xy = map_tri_to_quad(Vec2f(u,v));
-#if PATCH_USE_GREGORY == 2
-            BezierCurve borders[2]; patch.getLimitBorder(borders,0);
-            BezierCurve border0l,border0r; borders[0].subdivide(border0l,border0r);
-            BezierCurve border2l,border2r; borders[1].subdivide(border2l,border2r);
-            eval(patches[0],xy,1.0f,depth+1, &border0l, nullptr, nullptr, &border2r);
-#else
-            eval(patches[0],xy,1.0f,depth+1);
-#endif
-            if (dPdu && dPdv) map_quad0_to_tri(xy,*dPdu,*dPdv);
-          }
-          else if ( ab_abc && !bc_abc) {
-            const Vec2f xy = map_tri_to_quad(Vec2f(v,w));
-#if PATCH_USE_GREGORY == 2
-            BezierCurve borders[2]; patch.getLimitBorder(borders,1);
-            BezierCurve border0l,border0r; borders[0].subdivide(border0l,border0r);
-            BezierCurve border2l,border2r; borders[1].subdivide(border2l,border2r);
-            eval(patches[1],xy,1.0f,depth+1, &border0l, nullptr, nullptr, &border2r);
-#else
-            eval(patches[1],xy,1.0f,depth+1);
-#endif
-            if (dPdu && dPdv) map_quad1_to_tri(xy,*dPdu,*dPdv);
-          }
-          else {
-            const Vec2f xy = map_tri_to_quad(Vec2f(w,u));
-#if PATCH_USE_GREGORY == 2
-            BezierCurve borders[2]; patch.getLimitBorder(borders,2);
-            BezierCurve border0l,border0r; borders[0].subdivide(border0l,border0r);
-            BezierCurve border2l,border2r; borders[1].subdivide(border2l,border2r);
-            eval(patches[2],xy,1.0f,depth+1, &border0l, nullptr, nullptr, &border2r);
-#else
-            eval(patches[2],xy,1.0f,depth+1);
-#endif
-            if (dPdu && dPdv) map_quad2_to_tri(xy,*dPdu,*dPdv);
-          }
         }
         
         void eval_general_quad(const GeneralCatmullClarkPatch& patch, array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE>& patches, const Vec2f& uv, size_t depth)
@@ -191,25 +148,25 @@ namespace embree
             if (unlikely(final(patch,ty,depth)))
             {
               if (ty & CatmullClarkRing::TYPE_REGULAR) { 
-                RegularPatch(patch,border0,border1,border2,border3).eval(uv.x,uv.y,P,dPdu,dPdv,dscale); 
+                RegularPatch(patch,border0,border1,border2,border3).eval(uv.x,uv.y,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,dscale); 
                 PATCH_DEBUG_SUBDIVISION(234423,c,c,-1);
                 return;
               } else {
-                IrregularFillPatch(patch,border0,border1,border2,border3).eval(uv.x,uv.y,P,dPdu,dPdv,dscale); 
+                IrregularFillPatch(patch,border0,border1,border2,border3).eval(uv.x,uv.y,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,dscale); 
                 PATCH_DEBUG_SUBDIVISION(34534,c,-1,c);
                 return;
               }
             }
             else if (ty & CatmullClarkRing::TYPE_REGULAR_CREASES) { 
               assert(depth > 0); 
-              RegularPatch(patch,border0,border1,border2,border3).eval(uv.x,uv.y,P,dPdu,dPdv,dscale); 
+              RegularPatch(patch,border0,border1,border2,border3).eval(uv.x,uv.y,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,dscale); 
               PATCH_DEBUG_SUBDIVISION(43524,c,c,-1);
               return;
             }
 #if PATCH_USE_GREGORY == 2
             else if (ty & CatmullClarkRing::TYPE_GREGORY_CREASES) { 
               assert(depth > 0); 
-              GregoryPatch(patch,border0,border1,border2,border3).eval(uv.x,uv.y,P,dPdu,dPdv,dscale); 
+              GregoryPatch(patch,border0,border1,border2,border3).eval(uv.x,uv.y,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,dscale); 
               PATCH_DEBUG_SUBDIVISION(23498,c,-1,c);
               return;
             }
@@ -246,12 +203,8 @@ namespace embree
           array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE> patches; 
           patch.subdivide(patches,N); // FIXME: only have to generate one of the patches
           
-          /* parametrization for triangles */
-          if (N == 3)
-            eval_general_triangle(patch,patches,uv,depth);
-          
           /* parametrization for quads */
-          else if (N == 4) 
+          if (N == 4) 
             eval_general_quad(patch,patches,uv,depth);
           
           /* parametrization for arbitrary polygons */
@@ -276,6 +229,9 @@ namespace embree
         Vertex* const P;
         Vertex* const dPdu;
         Vertex* const dPdv;
+        Vertex* const ddPdudu;
+        Vertex* const ddPdvdv;
+        Vertex* const ddPdudv;
       };
   }
 }

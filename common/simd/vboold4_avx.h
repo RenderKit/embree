@@ -139,7 +139,7 @@ namespace embree
   __forceinline bool none      ( const vboold4& valid, const vboold4& b ) { return none(valid & b); }
 
   __forceinline unsigned int movemask( const vboold4& a ) { return _mm256_movemask_pd(a); }
-  __forceinline size_t       popcnt  ( const vboold4& a ) { return __popcnt(_mm256_movemask_pd(a)); }
+  __forceinline size_t       popcnt  ( const vboold4& a ) { return __popcnt((size_t)_mm256_movemask_pd(a)); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Get/Set Functions

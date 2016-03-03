@@ -43,6 +43,7 @@ namespace embree
     __forceinline operator const __m128i&( void ) const { return v; }
     __forceinline operator       __m128i&( void )       { return v; }
 
+
     __forceinline vint            ( const int&  a ) : v(_mm_shuffle_epi32(_mm_castps_si128(_mm_load_ss((float*)&a)), _MM_SHUFFLE(0, 0, 0, 0))) {}
     __forceinline vint            ( const uint32_t& a ) : v(_mm_shuffle_epi32(_mm_castps_si128(_mm_load_ss((float*)&a)), _MM_SHUFFLE(0, 0, 0, 0))) {}
 #if defined(__X86_64__)
@@ -51,6 +52,7 @@ namespace embree
     __forceinline vint            ( int  a, int  b, int  c, int  d) : v(_mm_set_epi32(d, c, b, a)) {}
 
     __forceinline explicit vint( const __m128 a ) : v(_mm_cvtps_epi32(a)) {}
+    __forceinline explicit vint( const vboolf4 &a ) : v(_mm_castps_si128((__m128)a)) {}
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Constants
@@ -262,7 +264,7 @@ namespace embree
  
 
 #if defined(__SSE4_1__) 
-#if defined(__clang__) && !defined(__INTEL_COMPILER) || defined(_MSC_VER) && !defined(__INTEL_COMPILER) // still required for clang
+#if defined(__clang__) && !defined(__INTEL_COMPILER) || defined(_MSC_VER) && !defined(__INTEL_COMPILER) || defined(__GNUC__) && !defined(__INTEL_COMPILER) // still required for clang
   __forceinline const vint4 select(const int mask, const vint4& t, const vint4& f) {
           return select(vboolf4(mask), t, f);
   }

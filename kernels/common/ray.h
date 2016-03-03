@@ -89,16 +89,28 @@ namespace embree
       vint<K>::store(m_mask,(int*)&primID,new_primID);
     }
 
-    __forceinline void update(const vbool<K>& m_mask,
-                              const size_t rayIndex,
-                              const vfloat<K>& new_t,
-                              const vfloat<K>& new_u,
-                              const vfloat<K>& new_v,
-                              const vfloat<K>& new_gnormalx,
-                              const vfloat<K>& new_gnormaly,
-                              const vfloat<K>& new_gnormalz,
-                              const int new_geomID,
-                              const int new_primID);
+    template<int M>
+    __forceinline void updateK(const size_t i,
+                               const size_t rayIndex,
+                               const vfloat<M>& new_t,
+                               const vfloat<M>& new_u,
+                               const vfloat<M>& new_v,
+                               const vfloat<M>& new_gnormalx,
+                               const vfloat<M>& new_gnormaly,
+                               const vfloat<M>& new_gnormalz,
+                               const int new_geomID,
+                               const vint<M> &new_primID)
+    {
+      u[rayIndex] = new_u[i];
+      v[rayIndex] = new_v[i];
+      tfar[rayIndex] = new_t[i];
+      Ng.x[rayIndex] = new_gnormalx[i];
+      Ng.y[rayIndex] = new_gnormaly[i];
+      Ng.z[rayIndex] = new_gnormalz[i];
+      geomID[rayIndex] = new_geomID;
+      primID[rayIndex] = new_primID[i];
+    }
+
 
     /* Ray data */
     Vec3<vfloat<K>> org; // ray origin
@@ -118,29 +130,30 @@ namespace embree
   };
 
 #if defined(__AVX512F__) || defined(__MIC__)
-  template<>
-  __forceinline void RayK<16>::update(const vbool16& m_mask,
-                                      const size_t rayIndex,
-                                      const vfloat16& new_t,
-                                      const vfloat16& new_u,
-                                      const vfloat16& new_v,
-                                      const vfloat16& new_gnormalx,
-                                      const vfloat16& new_gnormaly,
-                                      const vfloat16& new_gnormalz,
-                                      const int new_geomID,
-                                      const int new_primID)
-  {
-    geomID[rayIndex] = new_geomID;
-    primID[rayIndex] = new_primID;
-
-    compactustore16f_low(m_mask,&tfar[rayIndex],new_t);
-    compactustore16f_low(m_mask,&u[rayIndex],new_u);
-    compactustore16f_low(m_mask,&v[rayIndex],new_v);
-    compactustore16f_low(m_mask,&Ng.x[rayIndex],new_gnormalx);
-    compactustore16f_low(m_mask,&Ng.y[rayIndex],new_gnormaly);
-    compactustore16f_low(m_mask,&Ng.z[rayIndex],new_gnormalz);
-  }
+    template<>
+      __forceinline void RayK<16>::updateK<16>(const size_t i,
+                                             const size_t rayIndex,
+                                             const vfloat16& new_t,
+                                             const vfloat16& new_u,
+                                             const vfloat16& new_v,
+                                             const vfloat16& new_gnormalx,
+                                             const vfloat16& new_gnormaly,
+                                             const vfloat16& new_gnormalz,
+                                             const int new_geomID,
+                                             const vint16 &new_primID)
+    {
+      const vbool16 m_mask((unsigned int)1 << i);
+      vfloat16::storeu_compact_single(m_mask,&tfar[rayIndex],new_t);
+      vfloat16::storeu_compact_single(m_mask,&Ng.x[rayIndex],new_gnormalx);
+      vfloat16::storeu_compact_single(m_mask,&Ng.y[rayIndex],new_gnormaly);
+      vfloat16::storeu_compact_single(m_mask,&Ng.z[rayIndex],new_gnormalz);
+      vfloat16::storeu_compact_single(m_mask,&u[rayIndex],new_u);
+      vfloat16::storeu_compact_single(m_mask,&v[rayIndex],new_v);
+      vint16::storeu_compact_single(m_mask,&primID[rayIndex],new_primID);
+      geomID[rayIndex] = new_geomID;
+    }
 #endif
+
 
   /* Specialization for a single ray */
   template<>
@@ -192,13 +205,34 @@ namespace embree
       geomID = new_geomID;
       primID = new_primID;
 
-      compactustore16f_low(m_mask,&tfar,new_t);
-      compactustore16f_low(m_mask,&u,new_u); 
-      compactustore16f_low(m_mask,&v,new_v); 
-      compactustore16f_low(m_mask,&Ng.x,new_gnormalx); 
-      compactustore16f_low(m_mask,&Ng.y,new_gnormaly); 
-      compactustore16f_low(m_mask,&Ng.z,new_gnormalz);       
+      vfloat16::storeu_compact_single(m_mask,&tfar,new_t);
+      vfloat16::storeu_compact_single(m_mask,&u,new_u); 
+      vfloat16::storeu_compact_single(m_mask,&v,new_v); 
+      vfloat16::storeu_compact_single(m_mask,&Ng.x,new_gnormalx); 
+      vfloat16::storeu_compact_single(m_mask,&Ng.y,new_gnormaly); 
+      vfloat16::storeu_compact_single(m_mask,&Ng.z,new_gnormalz);       
     }
+
+    __forceinline void update(const vbool16& m_mask,
+                              const vfloat16& new_t,
+                              const vfloat16& new_u,
+                              const vfloat16& new_v,
+                              const vfloat16& new_gnormalx,
+                              const vfloat16& new_gnormaly,
+                              const vfloat16& new_gnormalz,
+			      const vint16 &new_geomID,
+			      const vint16 &new_primID)
+    {
+      vint16::storeu_compact_single(m_mask,&geomID,new_geomID);
+      vint16::storeu_compact_single(m_mask,&primID,new_primID);
+      vfloat16::storeu_compact_single(m_mask,&tfar,new_t);
+      vfloat16::storeu_compact_single(m_mask,&u,new_u); 
+      vfloat16::storeu_compact_single(m_mask,&v,new_v); 
+      vfloat16::storeu_compact_single(m_mask,&Ng.x,new_gnormalx); 
+      vfloat16::storeu_compact_single(m_mask,&Ng.y,new_gnormaly); 
+      vfloat16::storeu_compact_single(m_mask,&Ng.z,new_gnormalz);       
+    }
+
 #endif
   };
 
@@ -256,4 +290,119 @@ namespace embree
                 << " Ng = " << ray.Ng
                 << " }";
   }
+
+
+  struct RaySOA
+  {
+    /* ray data */
+  public:
+
+    float* __restrict__ orgx;  //!< x coordinate of ray origin
+    float* __restrict__ orgy;  //!< y coordinate of ray origin
+    float* __restrict__ orgz;  //!< z coordinate of ray origin
+
+    float* __restrict__ dirx;  //!< x coordinate of ray direction
+    float* __restrict__ diry;  //!< y coordinate of ray direction
+    float* __restrict__ dirz;  //!< z coordinate of ray direction
+
+    float* __restrict__ tnear; //!< Start of ray segment (optional)
+    float* __restrict__ tfar;  //!< End of ray segment (set to hit distance)
+
+ 
+    float* __restrict__ time;     //!< Time of this ray for motion blur (optional)
+    unsigned* __restrict__ mask;  //!< Used to mask out objects during traversal (optional)
+
+    /* hit data */
+
+    float* __restrict__ Ngx;   //!< x coordinate of geometry normal (optional)
+    float* __restrict__ Ngy;   //!<y coordinate of geometry normal (optional)
+    float* __restrict__ Ngz;   //!< z coordinate of geometry normal (optional)
+
+ 
+
+    float* __restrict__ u;     //!< Barycentric u coordinate of hit
+    float* __restrict__ v;     //!< Barycentric v coordinate of hit
+
+ 
+    unsigned* __restrict__ geomID;  //!< geometry ID
+    unsigned* __restrict__ primID;  //!< primitive ID
+    unsigned* __restrict__ instID;  //!< instance ID (optional)
+
+    template<class T>
+    __forceinline void init(T &t)
+    {
+      orgx   = (float*)&t.org.x;
+      orgy   = (float*)&t.org.y;
+      orgz   = (float*)&t.org.z;
+      dirx   = (float*)&t.dir.x;
+      diry   = (float*)&t.dir.y;
+      dirz   = (float*)&t.dir.z;
+      tnear  = (float*)&t.tnear;
+      tfar   = (float*)&t.tfar;
+      time   = (float*)&t.time;
+      mask   = (unsigned *)&t.mask;
+      Ngx    = (float*)&t.Ng.x;
+      Ngy    = (float*)&t.Ng.y;
+      Ngz    = (float*)&t.Ng.z;
+      u      = (float*)&t.u;
+      v      = (float*)&t.v;
+      geomID = (unsigned *)&t.geomID;
+      primID = (unsigned *)&t.primID;
+      instID = (unsigned *)&t.instID;
+    }
+
+    __forceinline Ray gatherByOffset(const size_t offset)
+    {
+      Ray ray;
+      ray.org.x = *(float* __restrict__ )((char*)orgx + offset);
+      ray.org.y = *(float* __restrict__ )((char*)orgy + offset);
+      ray.org.z = *(float* __restrict__ )((char*)orgz + offset);
+      ray.dir.x = *(float* __restrict__ )((char*)dirx + offset);
+      ray.dir.y = *(float* __restrict__ )((char*)diry + offset);
+      ray.dir.z = *(float* __restrict__ )((char*)dirz + offset);
+      ray.tfar  = *(float* __restrict__ )((char*)tfar + offset);
+      /* optional inputs */
+      ray.tnear = tnear ? *(float* __restrict__ )((char*)tnear + offset) : 0.0f;
+      ray.time  = time  ? *(float* __restrict__ )((char*)time  + offset) : 0.0f;
+      ray.mask  = mask  ? *(unsigned * __restrict__ )((char*)mask  + offset) : -1;
+      /* init geomID */
+      ray.geomID = RTC_INVALID_GEOMETRY_ID;
+      return ray;
+    }
+
+    __forceinline void scatterByOffset(const size_t offset, const Ray& ray, const bool all=true)
+    {
+      *(unsigned * __restrict__ )((char*)geomID + offset) = ray.geomID;
+      if (all)
+        if (ray.geomID !=  RTC_INVALID_GEOMETRY_ID)
+        {
+          *(float* __restrict__ )((char*)tfar + offset) = ray.tfar;
+          *(float* __restrict__ )((char*)u + offset) = ray.u;
+          *(float* __restrict__ )((char*)v + offset) = ray.v;
+          *(unsigned * __restrict__ )((char*)primID + offset) = ray.primID;
+          if (likely(Ngx)) *(float* __restrict__ )((char*)Ngx + offset) = ray.Ng.x;
+          if (likely(Ngy)) *(float* __restrict__ )((char*)Ngy + offset) = ray.Ng.y;
+          if (likely(Ngz)) *(float* __restrict__ )((char*)Ngz + offset) = ray.Ng.z;
+          if (likely(instID)) *(unsigned * __restrict__ )((char*)instID + offset) = ray.instID;
+        }
+    }
+
+    __forceinline size_t getOctantByOffset(const size_t offset)
+    {
+      const float dx = *(float* __restrict__ )((char*)dirx + offset);
+      const float dy = *(float* __restrict__ )((char*)diry + offset);
+      const float dz = *(float* __restrict__ )((char*)dirz + offset);
+      const size_t octantID = (dx < 0.0f ? 1 : 0) + (dy < 0.0f ? 2 : 0) + (dz < 0.0f ? 4 : 0);
+      return octantID;
+    }
+
+    __forceinline bool isValidByOffset(const size_t offset)
+    {
+      const float nnear = tnear ? *(float* __restrict__ )((char*)tnear + offset) : 0.0f;
+      const float ffar  = *(float* __restrict__ )((char*)tfar  + offset);
+      return nnear <= ffar;
+    }
+
+  };
+
 }

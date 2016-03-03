@@ -133,3 +133,72 @@ inline void init_Ray(RTCRay &ray,
 inline bool noHit(const RTCRay& r) { return r.geomID < 0; }
 
 inline bool hadHit(const RTCRay& r) { return r.geomID >= 0; }
+
+struct RTCRaySOA
+{
+  /* ray data */
+
+  uniform float* uniform orgx;  //!< x coordinate of ray origin
+  uniform float* uniform orgy;  //!< y coordinate of ray origin
+  uniform float* uniform orgz;  //!< z coordinate of ray origin
+
+  uniform float* uniform dirx;  //!< x coordinate of ray direction
+  uniform float* uniform diry;  //!< y coordinate of ray direction
+  uniform float* uniform dirz;  //!< z coordinate of ray direction
+
+  uniform float* uniform tnear; //!< Start of ray segment (optional)
+  uniform float* uniform tfar;  //!< End of ray segment (set to hit distance)
+ 
+  uniform float* uniform time;  //!< Time of this ray for motion blur (optional)
+  uniform int* uniform mask;  //!< Used to mask out objects during traversal (optional)
+
+  /* hit data */
+
+  uniform float* uniform Ngx;   //!< x coordinate of geometry normal (optional)
+  uniform float* uniform Ngy;   //!< y coordinate of geometry normal (optional)
+  uniform float* uniform Ngz;   //!< z coordinate of geometry normal (optional)
+
+  uniform float* uniform u;     //!< Barycentric u coordinate of hit
+  uniform float* uniform v;     //!< Barycentric v coordinate of hit
+ 
+  uniform int* uniform geomID;  //!< geometry ID
+  uniform int* uniform primID;  //!< primitive ID
+  uniform int* uniform instID;  //!< instance ID (optional)
+};
+
+#if 0
+  Vec3f org;     //!< Ray origin
+  Vec3f dir;     //!< Ray direction
+  float tnear;   //!< Start of ray segment
+  float tfar;    //!< End of ray segment
+  float time;    //!< Time of this ray for motion blur.
+  int mask;      //!< used to mask out objects during traversal
+  Vec3f Ng;      //!< Geometric normal.
+  float u;       //!< Barycentric u coordinate of hit
+  float v;       //!< Barycentric v coordinate of hit
+  int geomID;    //!< geometry ID
+  int primID;    //!< primitive ID
+  int instID;    //!< instance ID
+#endif
+
+inline void initRTCRaySOA(uniform RTCRaySOA &ray_soa, varying RTCRay &ray)
+{
+  ray_soa.orgx   = (uniform float*)&ray.org.x;
+  ray_soa.orgy   = (uniform float*)&ray.org.y;
+  ray_soa.orgz   = (uniform float*)&ray.org.z;
+  ray_soa.dirx   = (uniform float*)&ray.dir.x;
+  ray_soa.diry   = (uniform float*)&ray.dir.y;
+  ray_soa.dirz   = (uniform float*)&ray.dir.z;
+  ray_soa.tnear  = (uniform float*)&ray.tnear;
+  ray_soa.tfar   = (uniform float*)&ray.tfar;
+  ray_soa.time   = (uniform float*)&ray.time;
+  ray_soa.mask   = (uniform int*)&ray.mask;
+  ray_soa.Ngx    = (uniform float*)&ray.Ng.x;
+  ray_soa.Ngy    = (uniform float*)&ray.Ng.y;
+  ray_soa.Ngz    = (uniform float*)&ray.Ng.z;
+  ray_soa.u      = (uniform float*)&ray.u;
+  ray_soa.v      = (uniform float*)&ray.v;
+  ray_soa.geomID = (uniform int*)&ray.geomID;
+  ray_soa.primID = (uniform int*)&ray.primID;
+  ray_soa.instID = (uniform int*)&ray.instID;
+}

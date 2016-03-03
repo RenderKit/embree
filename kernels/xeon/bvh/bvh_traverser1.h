@@ -101,44 +101,27 @@ namespace embree
                                                NodeRef*& stackPtr,
                                                NodeRef* stackEnd)
       {
-        assert(mask != 0);
         const BaseNode* node = cur.baseNode(types);
 
         /*! one child is hit, continue with that child */
         size_t r = __bscf(mask);
-        if (likely(mask == 0)) {
-          cur = node->child(r); cur.prefetch(types);
-          assert(cur != BVH::emptyNode);
-          return;
-        }
-
-        /*! two children are hit, push far child, and continue with closer child */
-        NodeRef c0 = node->child(r); c0.prefetch(types); const unsigned int d0 = ((unsigned int*)&tNear)[r];
-        r = __bscf(mask);
-        NodeRef c1 = node->child(r); c1.prefetch(types); const unsigned int d1 = ((unsigned int*)&tNear)[r];
-        assert(c0 != BVH::emptyNode);
-        assert(c1 != BVH::emptyNode);
-        if (likely(mask == 0)) {
-          assert(stackPtr < stackEnd);
-          if (d0 < d1) { *stackPtr = c1; stackPtr++; cur = c0; return; }
-          else         { *stackPtr = c0; stackPtr++; cur = c1; return; }
-        }
-        assert(stackPtr < stackEnd);
-        *stackPtr = c0; stackPtr++;
-        assert(stackPtr < stackEnd);
-        *stackPtr = c1; stackPtr++;
-
-        /*! three children are hit */
-        r = __bscf(mask);
-        cur = node->child(r); cur.prefetch(types);
+        cur = node->child(r); 
+        cur.prefetch(types);
+        /* simpler in sequence traversal order */
         assert(cur != BVH::emptyNode);
         if (likely(mask == 0)) return;
         assert(stackPtr < stackEnd);
         *stackPtr = cur; stackPtr++;
 
-        /*! four children are hit */
-        cur = node->child(3); cur.prefetch(types);
-        assert(cur != BVH::emptyNode);
+        for (; ;)
+        {
+          r = __bscf(mask);
+          cur = node->child(r); cur.prefetch(types);
+          assert(cur != BVH::emptyNode);
+          if (likely(mask == 0)) return;
+          assert(stackPtr < stackEnd);
+          *stackPtr = cur; stackPtr++;
+        }
       }
     };
 
@@ -223,45 +206,29 @@ namespace embree
                                                NodeRef*& stackPtr,
                                                NodeRef* stackEnd)
       {
-        assert(mask != 0);
         const BaseNode* node = cur.baseNode(types);
 
         /*! one child is hit, continue with that child */
         size_t r = __bscf(mask);
-        if (likely(mask == 0)) {
-          cur = node->child(r); cur.prefetch(types);
-          assert(cur != BVH::emptyNode);
-          return;
-        }
-
-        /*! two children are hit, push far child, and continue with closer child */
-        NodeRef c0 = node->child(r); c0.prefetch(types); const unsigned int d0 = ((unsigned int*)&tNear)[r];
-        r = __bscf(mask);
-        NodeRef c1 = node->child(r); c1.prefetch(types); const unsigned int d1 = ((unsigned int*)&tNear)[r];
-        assert(c0 != BVH::emptyNode);
-        assert(c1 != BVH::emptyNode);
-        if (likely(mask == 0)) {
-          assert(stackPtr < stackEnd);
-          if (d0 < d1) { *stackPtr = c1; stackPtr++; cur = c0; return; }
-          else         { *stackPtr = c0; stackPtr++; cur = c1; return; }
-        }
-        assert(stackPtr < stackEnd);
-        *stackPtr = c0; stackPtr++;
-        assert(stackPtr < stackEnd);
-        *stackPtr = c1; stackPtr++;
-
-        /*! three children are hit */
-        r = __bscf(mask);
-        cur = node->child(r); cur.prefetch(types);
+        cur = node->child(r); 
+        cur.prefetch(types);
+        /* simpler in sequence traversal order */
         assert(cur != BVH::emptyNode);
         if (likely(mask == 0)) return;
         assert(stackPtr < stackEnd);
         *stackPtr = cur; stackPtr++;
 
-        /*! four children are hit */
-        cur = node->child(3); cur.prefetch(types);
-        assert(cur != BVH::emptyNode);
+        for (; ;)
+        {
+          r = __bscf(mask);
+          cur = node->child(r); cur.prefetch(types);
+          assert(cur != BVH::emptyNode);
+          if (likely(mask == 0)) return;
+          assert(stackPtr < stackEnd);
+          *stackPtr = cur; stackPtr++;
+        }
       }
+
     };
 
 
@@ -311,46 +278,6 @@ namespace embree
           if (d0 < d1) { stackPtr->ptr = c1; stackPtr->dist = d1; stackPtr++; cur = c0; return; }
           else         { stackPtr->ptr = c0; stackPtr->dist = d0; stackPtr++; cur = c1; return; }
         }
-#if 0
-        /* const vint16 tNear_i = (asInt(tNear) & (~7)) | vint16(step); */
-        /* const vint16 dist    = select((vbool16)(int)org_mask,tNear_i,vint16(0xffffffff)); */
-        const vbool16 vmask = (int)org_mask;
-        const vint16 offsets = vint16::load((int*)node->children);
-        gather_prefetch64((void*)(0*64),vmask,offsets);
-        gather_prefetch64((void*)(1*64),vmask,offsets);
-        gather_prefetch64((void*)(2*64),vmask,offsets);
-        gather_prefetch64((void*)(3*64),vmask,offsets);
-
-        const size_t hits    = __popcnt(org_mask);
-        vint16 tNear_i = vint16(0xffffffff);
-        const vint16 dist = vint16::compact((vbool16)(int)org_mask,(asInt(tNear) & (~7)) | vint16(step),tNear_i);
-
-        
-        /* if (likely(hits <=4)) */
-        /* { */
-        /* } */
-        /* else */
-        {
-          const vint8 order = sortNetwork((__m256i)dist) & 7;
-          const unsigned int cur_index = toScalar(order);
-          cur = node->child(cur_index);
-          //cur.prefetch();
-          // FIXME: replace with scatter
-          for (size_t i=0;i<hits-1;i++) 
-          {
-            r = order[hits-1-i];
-            assert( ((unsigned int)1 << r) & org_mask);
-            const NodeRef c = node->child(r); 
-            assert(c != BVH8::emptyNode);
-            //c.prefetch(); 
-            const unsigned int d = *(unsigned int*)&tNear[r]; 
-            stackPtr->ptr = c; 
-            stackPtr->dist = d; 
-            stackPtr++;            
-          }
-        }
-
-#else
         /*! Here starts the slow path for 3 or 4 hit children. We push
          *  all nodes onto the stack to sort them there. */
         assert(stackPtr < stackEnd);
@@ -392,7 +319,6 @@ namespace embree
         }
         sort(stackFirst,stackPtr);
         cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
-#endif
       }
 
       // FIXME: optimize sequence
@@ -402,51 +328,27 @@ namespace embree
                                                NodeRef*& stackPtr,
                                                NodeRef* stackEnd)
       {
-        assert(mask != 0);
         const BaseNode* node = cur.baseNode(types);
 
         /*! one child is hit, continue with that child */
         size_t r = __bscf(mask);
-        if (likely(mask == 0)) {
-          cur = node->child(r); cur.prefetch(types);
-          assert(cur != BVH::emptyNode);
-          return;
-        }
-
-        /*! two children are hit, push far child, and continue with closer child */
-        NodeRef c0 = node->child(r); c0.prefetch(types); const unsigned int d0 = ((unsigned int*)&tNear)[r];
-        r = __bscf(mask);
-        NodeRef c1 = node->child(r); c1.prefetch(types); const unsigned int d1 = ((unsigned int*)&tNear)[r];
-        assert(c0 != BVH::emptyNode);
-        assert(c1 != BVH::emptyNode);
-        if (likely(mask == 0)) {
-          assert(stackPtr < stackEnd);
-          if (d0 < d1) { *stackPtr = c1; stackPtr++; cur = c0; return; }
-          else         { *stackPtr = c0; stackPtr++; cur = c1; return; }
-        }
-        assert(stackPtr < stackEnd);
-        *stackPtr = c0; stackPtr++;
-        assert(stackPtr < stackEnd);
-        *stackPtr = c1; stackPtr++;
-
-        /*! three children are hit */
-        r = __bscf(mask);
-        cur = node->child(r); cur.prefetch(types);
+        cur = node->child(r); 
+        cur.prefetch(types);
+        /* simpler in sequence traversal order */
         assert(cur != BVH::emptyNode);
         if (likely(mask == 0)) return;
         assert(stackPtr < stackEnd);
         *stackPtr = cur; stackPtr++;
 
-        /*! fallback case if more than 3 children are hit */
-        while (1)
+        for (; ;)
         {
-          assert(stackPtr < stackEnd);
           r = __bscf(mask);
-          NodeRef c = node->child(r); c.prefetch(types); *stackPtr = c; stackPtr++;
-          assert(c != BVH::emptyNode);
-          if (unlikely(mask == 0)) break;
+          cur = node->child(r); cur.prefetch(types);
+          assert(cur != BVH::emptyNode);
+          if (likely(mask == 0)) return;
+          assert(stackPtr < stackEnd);
+          *stackPtr = cur; stackPtr++;
         }
-        cur = (NodeRef) stackPtr[-1]; stackPtr--;
       }
     };
 
@@ -560,57 +462,21 @@ namespace embree
         size_t r = __bscf(mask);
         cur = node->child(r); 
         cur.prefetch(types);
-#if 1
         /* simpler in sequence traversal order */
-        while (mask)
-        {
-          assert(stackPtr < stackEnd);
-          r = __bscf(mask);
-          NodeRef c = node->child(r); c.prefetch(types); *stackPtr = c; stackPtr++;
-          assert(c != BVH::emptyNode);
-        }
-
-#else
-        if (likely(mask == 0)) {
-          assert(cur != BVH::emptyNode);
-          return;
-        }
-
-        /*! two children are hit, push far child, and continue with closer child */
-        NodeRef c0 = node->child(r); c0.prefetch(types); const unsigned int d0 = ((unsigned int*)&tNear)[r];
-        r = __bscf(mask);
-        NodeRef c1 = node->child(r); c1.prefetch(types); const unsigned int d1 = ((unsigned int*)&tNear)[r];
-        assert(c0 != BVH::emptyNode);
-        assert(c1 != BVH::emptyNode);
-        if (likely(mask == 0)) {
-          assert(stackPtr < stackEnd);
-          if (d0 < d1) { *stackPtr = c1; stackPtr++; cur = c0; return; }
-          else         { *stackPtr = c0; stackPtr++; cur = c1; return; }
-        }
-        assert(stackPtr < stackEnd);
-        *stackPtr = c0; stackPtr++;
-        assert(stackPtr < stackEnd);
-        *stackPtr = c1; stackPtr++;
-
-        /*! three children are hit */
-        r = __bscf(mask);
-        cur = node->child(r); cur.prefetch(types);
         assert(cur != BVH::emptyNode);
         if (likely(mask == 0)) return;
         assert(stackPtr < stackEnd);
         *stackPtr = cur; stackPtr++;
 
-        /*! fallback case if more than 3 children are hit */
-        while (1)
+        for (; ;)
         {
-          assert(stackPtr < stackEnd);
           r = __bscf(mask);
-          NodeRef c = node->child(r); c.prefetch(types); *stackPtr = c; stackPtr++;
-          assert(c != BVH::emptyNode);
-          if (unlikely(mask == 0)) break;
+          cur = node->child(r); cur.prefetch(types);
+          assert(cur != BVH::emptyNode);
+          if (likely(mask == 0)) return;
+          assert(stackPtr < stackEnd);
+          *stackPtr = cur; stackPtr++;
         }
-        cur = (NodeRef) stackPtr[-1]; stackPtr--;
-#endif
       }
     };
 

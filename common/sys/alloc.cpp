@@ -82,6 +82,11 @@ namespace embree
 #include <stdlib.h>
 #include <string.h>
 
+#if defined(RTCORE_MEMKIND_ALLOCATOR)
+#include <hbwmalloc.h>
+#include <memkind.h>
+#endif
+
 /* hint for transparent huge pages (THP) */
 #if defined(__MACOSX__)
 #define USE_MADVISE 0
@@ -114,6 +119,26 @@ namespace embree
     return false;
   }
 
+#if defined(RTCORE_MEMKIND_ALLOCATOR)
+  void* mk_malloc(size_t bytes)
+  {
+    assert(hbw_check_available());
+    void *ptr = NULL;
+    ptr = memkind_malloc(MEMKIND_HBW_HUGETLB, bytes);
+    if (ptr) return ptr;
+    ptr = memkind_malloc(MEMKIND_HBW, bytes);
+    if (ptr) return ptr;
+    perror("memkind_malloc()");
+    return NULL;
+  }
+
+  void mk_free(void* ptr) 
+  {
+    assert(ptr);
+    memkind_free(MEMKIND_DEFAULT,ptr);
+  }
+#endif
+
 // ============================================
 // ============================================
 // ============================================
@@ -136,6 +161,11 @@ namespace embree
   {
     int flags = MAP_PRIVATE | MAP_ANON | additional_flags;
         
+#if defined(RTCORE_MEMKIND_ALLOCATOR)
+    char *memkind_ptr = (char*)mk_malloc(bytes);
+    if (memkind_ptr) return memkind_ptr;
+#endif
+
     if (isHugePageCandidate(bytes)) 
     {
 #if defined(__MIC__)
@@ -177,6 +207,7 @@ namespace embree
 
   void* os_reserve(size_t bytes) 
   {
+
     /* linux always allocates pages on demand, thus just call allocate */
     return os_malloc(bytes);
   }
@@ -186,6 +217,10 @@ namespace embree
 
   size_t os_shrink(void* ptr, size_t bytesNew, size_t bytesOld) 
   {
+#if defined(RTCORE_MEMKIND_ALLOCATOR)
+    return bytesOld;
+#endif
+
     size_t pageSize = PAGE_SIZE_4K;
     if (isHugePageCandidate(bytesOld)) 
       pageSize = PAGE_SIZE_2M;
@@ -206,6 +241,11 @@ namespace embree
   {
     if (bytes == 0)
       return;
+
+#if defined(RTCORE_MEMKIND_ALLOCATOR)
+    mk_free(ptr);
+    return;
+#endif
 
     size_t pageSize = PAGE_SIZE_4K;
     if (isHugePageCandidate(bytes)) 

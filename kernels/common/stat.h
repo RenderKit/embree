@@ -39,7 +39,7 @@ namespace embree
   { 
   public:
 
-    static const size_t SIZE_HISTOGRAM = 32+1;
+    static const size_t SIZE_HISTOGRAM = 64+1;
 
     /*! constructs stat counter class */
     Stat ();

@@ -24,7 +24,6 @@ SET(CPACK_RPM_PACKAGE_RELEASE 1)
 
 PROJECT(embree${EMBREE_VERSION_MAJOR})
 
-
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8.11)
 CONFIGURE_FILE(
   "${PROJECT_SOURCE_DIR}/kernels/version.h.in"
@@ -100,6 +99,7 @@ OPTION(RTCORE_EXPORT_ALL_SYMBOLS "Lets Embree library export all symbols.")
 OPTION(RTCORE_ENABLE_RAYSTREAM_LOGGER "Enables ray stream logger.")
 OPTION(RTCORE_IGNORE_INVALID_RAYS "Ignores invalid rays." OFF) # FIXME: enable by default?
 OPTION(RTCORE_RAY_PACKETS "Enabled support for ray packets." ON)
+OPTION(RTCORE_MEMKIND_ALLOCATOR "Enables memory allocation through the memkind library." OFF)
 
 SET(RTCORE_TASKING_SYSTEM "TBB" CACHE STRING "Selects tasking system")
 SET_PROPERTY(CACHE RTCORE_TASKING_SYSTEM PROPERTY STRINGS TBB INTERNAL)
@@ -278,6 +278,7 @@ ADD_SUBDIRECTORY(kernels)
 
 IF (ENABLE_TUTORIALS)
   ADD_SUBDIRECTORY(tutorials)
+ENDIF()
 
   SET (__XEON__ 1)
   ADD_SUBDIRECTORY(tests)
@@ -286,7 +287,6 @@ IF (ENABLE_TUTORIALS)
     SET (__XEON__ 0)
     ADD_SUBDIRECTORY(tests tests_xeonphi)
   ENDIF ()
-ENDIF()
 
 ##############################################################
 # Uninstall

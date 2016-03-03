@@ -19,7 +19,7 @@
 #include "../scenegraph/texture.h"
 #include "scene_device.h"
 
-#define TEST_STREAM_TRACING 0
+#define TEST_STREAM_TRACING 1 // FIXME: remove
 
 /* the scene to render */
 extern RTCScene g_scene;
@@ -31,12 +31,13 @@ unsigned int g_subdivision_levels = 0;
 //float scale = 0.001f;
 float scale = 1.0f / 1000000.0f;
 
-extern "C" bool g_changed = false;
+extern "C" {
+  bool g_changed = false;
+}
+extern "C" float g_debug;
 
 /* stores pointer to currently used rendePixel function */
 extern renderPixelFunc renderPixel;
-
-extern "C" float g_debug;
 
 /* standard rendering function for each tutorial */
 Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
@@ -306,7 +307,8 @@ Vec3fa renderPixelAmbientOcclusion(float x, float y, const Vec3fa& vx, const Vec
       shadow.time = 0;    
      }
 
-    rtcOccludedN(g_scene,rays,AMBIENT_OCCLUSION_SAMPLES,sizeof(RTCRay),RTC_RAYN_AOS);
+  rtcOccludedN(g_scene,rays,AMBIENT_OCCLUSION_SAMPLES,sizeof(RTCRay));
+  //rtcIntersectN(g_scene,rays,AMBIENT_OCCLUSION_SAMPLES,sizeof(RTCRay));
 
     for (int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++) 
       if (rays[i].geomID == RTC_INVALID_GEOMETRY_ID)
@@ -339,6 +341,7 @@ Vec3fa renderPixelAmbientOcclusion(float x, float y, const Vec3fa& vx, const Vec
     
       /* trace shadow ray */
       rtcOccluded(g_scene,shadow);
+      //rtcIntersect(g_scene,shadow);
     
       /* add light contribution */
       if (shadow.geomID == RTC_INVALID_GEOMETRY_ID)
@@ -350,6 +353,85 @@ Vec3fa renderPixelAmbientOcclusion(float x, float y, const Vec3fa& vx, const Vec
   /* shade pixel */
   return col * intensity;
 }
+
+/* differential visualization */
+static int differentialMode = 0;
+Vec3fa renderPixelDifferentials(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
+{
+  /* initialize ray */
+  RTCRay ray;
+  ray.org = p;
+  ray.dir = normalize(x*vx + y*vy + vz);
+  ray.tnear = 0.0f;
+  ray.tfar = inf;
+  ray.geomID = RTC_INVALID_GEOMETRY_ID;
+  ray.primID = RTC_INVALID_GEOMETRY_ID;
+  ray.mask = -1;
+  ray.time = g_debug;
+
+  /* intersect ray with scene */
+  rtcIntersect(g_scene,ray);
+
+  /* shade pixel */
+  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(0.0f);
+  
+  /* calculate differentials */
+  float eps = 0.001f/16.0f;
+  Vec3fa P00, P01, P10, P11;
+  Vec3fa dP00du, dP01du, dP10du, dP11du;
+  Vec3fa dP00dv, dP01dv, dP10dv, dP11dv;
+  Vec3fa dPdu1, dPdv1, ddPdudu1, ddPdvdv1, ddPdudv1;
+  rtcInterpolate(g_scene,ray.geomID,ray.primID,ray.u+0.f,ray.v+0.f,RTC_VERTEX_BUFFER0,&P00.x,&dP00du.x,&dP00dv.x,3);
+  rtcInterpolate(g_scene,ray.geomID,ray.primID,ray.u+0.f,ray.v+eps,RTC_VERTEX_BUFFER0,&P01.x,&dP01du.x,&dP01dv.x,3);
+  rtcInterpolate(g_scene,ray.geomID,ray.primID,ray.u+eps,ray.v+0.f,RTC_VERTEX_BUFFER0,&P10.x,&dP10du.x,&dP10dv.x,3);
+  rtcInterpolate(g_scene,ray.geomID,ray.primID,ray.u+eps,ray.v+eps,RTC_VERTEX_BUFFER0,&P11.x,&dP11du.x,&dP11dv.x,3);
+  rtcInterpolate2(g_scene,ray.geomID,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER0,nullptr,&dPdu1.x,&dPdv1.x,&ddPdudu1.x,&ddPdvdv1.x,&ddPdudv1.x,3);
+  Vec3fa dPdu0 = (P10-P00)/eps;
+  Vec3fa dPdv0 = (P01-P00)/eps;
+  Vec3fa ddPdudu0 = (dP10du-dP00du)/eps;
+  Vec3fa ddPdvdv0 = (dP01dv-dP00dv)/eps;
+  Vec3fa ddPdudv0 = (dP01du-dP00du)/eps;
+  
+  Vec3fa color = zero;
+  switch (differentialMode)
+  {
+  case  0: color = dPdu0; break;
+  case  1: color = dPdu1; break;
+  case  2: color = 10.0f*(dPdu1-dPdu0); break;
+
+  case  3: color = dPdv0; break;
+  case  4: color = dPdv1; break;
+  case  5: color = 10.0f*(dPdv1-dPdv0); break;
+
+  case  6: color = ddPdudu0; break;
+  case  7: color = ddPdudu1; break;
+  case  8: color = 10.0f*(ddPdudu1-ddPdudu0); break;
+
+  case  9: color = ddPdvdv0; break;
+  case 10: color = ddPdvdv1; break;
+  case 11: color = 10.0f*(ddPdvdv1-ddPdvdv0); break;
+
+  case 12: color = ddPdudv0; break;
+  case 13: color = ddPdudv1; break;
+  case 14: color = 10.0f*(ddPdudv1-ddPdudv0); break;
+
+  case 15: {
+    color.x = length(dnormalize(cross(dPdu1,dPdv1),cross(ddPdudu1,dPdv1)+cross(dPdu1,ddPdudv1)))/length(dPdu1); 
+    color.y = length(dnormalize(cross(dPdu1,dPdv1),cross(ddPdudv1,dPdv1)+cross(dPdu1,ddPdvdv1)))/length(dPdv1); 
+    color.z = 0.0f;
+    break;
+  }
+  case 16: {
+    float Cu = length(dnormalize(cross(dPdu1,dPdv1),cross(ddPdudu1,dPdv1)+cross(dPdu1,ddPdudv1)))/length(dPdu1); 
+    float Cv = length(dnormalize(cross(dPdu1,dPdv1),cross(ddPdudv1,dPdv1)+cross(dPdu1,ddPdvdv1)))/length(dPdv1); 
+    color = Vec3fa(sqrt(Cu*Cu + Cv*Cv));
+    break;
+  }
+  }
+  color = color * pow(0.5f,10.0f*g_debug);
+  return clamp(color,Vec3fa(zero),Vec3fa(one));
+}
+
 
 /* returns the point seen through specified pixel */
 extern "C" bool device_pick(const float x,
@@ -442,16 +524,27 @@ extern "C" void device_key_pressed_default(int key)
     renderPixel = renderPixelAmbientOcclusion;
     g_changed = true;
   }
-  else if (key == GLUT_KEY_F12) {
+  else if (key == GLUT_KEY_F12) 
+  {
+    if (renderPixel == renderPixelDifferentials) {
+      differentialMode = (differentialMode+1)%17;
+    } else {
+      renderPixel = renderPixelDifferentials;
+      differentialMode = 0;
+    }
+    PRINT(differentialMode);
     g_changed = true;
   }
 }
 
 /* called when a key is pressed */
-extern "C" void (*key_pressed_handler)(int key) = nullptr;
+extern "C" 
+{
+  void (*key_pressed_handler)(int key) = nullptr;
 
-extern "C" void call_key_pressed_handler(int key) {
-  if (key_pressed_handler) key_pressed_handler(key);
+  void call_key_pressed_handler(int key) {
+    if (key_pressed_handler) key_pressed_handler(key);
+  }
 }
 
 void renderTile(int taskIndex,

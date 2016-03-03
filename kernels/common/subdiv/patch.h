@@ -65,123 +65,6 @@
 
 namespace embree
 {
-  template<typename vfloat>
-  __forceinline Vec2<vfloat> map_tri_to_quad(const Vec2<vfloat>& uv)
-  {
-    const Vec2<vfloat> a(0.0f,0.0f), b(1.0f,0.0f), c(0.0f,1.0f);
-    const Vec2<vfloat> ab = vfloat(0.5f)*(a+b), ac = vfloat(0.5f)*(a+c), bc = vfloat(0.5f)*(b+c), abc = vfloat(1.0f/3.0f)*(a+b+c);
-    const Vec2<vfloat> A = a, B = ab-a, C = ac-a, D = a-ab-ac+abc;
-    const vfloat AA = det(D,C), BB = det(D,A) + det(B,C) + det(uv,D), CC = det(B,A) + det(uv,B);
-    const vfloat vv = (-BB+sqrt(BB*BB-4.0f*AA*CC))/(2.0f*AA);
-    const vfloat uu = (uv.x - A.x - vv*C.x)/(B.x + vv*D.x);
-    return Vec2<vfloat>(uu,vv);
-  }
-  
-  template<typename vfloat>
-    __forceinline Vec2<vfloat> map_quad_to_tri_dx(const Vec2f& a, const Vec2f& ab, const Vec2f& abc, const Vec2f& ac, const Vec2<vfloat>& xy) {
-    return (1.0f-xy.y)*Vec2<vfloat>(ab-a) + xy.y*Vec2<vfloat>(abc-ac);
-  }
-  
-  template<typename vfloat>
-    __forceinline Vec2<vfloat> map_quad_to_tri_dy(const Vec2f& a, const Vec2f& ab, const Vec2f& abc, const Vec2f& ac, const Vec2<vfloat>& xy) {
-    return (1.0f-xy.x)*Vec2<vfloat>(ac-a) + xy.x*Vec2<vfloat>(abc-ab);
-  }
-  
-  template<typename vfloat>
-    __forceinline auto right_of_line(const Vec2f& A, const Vec2f& B, const Vec2<vfloat>& P) -> decltype(P.x<P.x) {
-    return det(Vec2<vfloat>(A)-P,Vec2<vfloat>(B)-P) <= 0.0f;
-  }
-  
-  template<typename vfloat>
-    __forceinline auto right_of_line_ab_abc(const Vec2<vfloat>& uv) -> decltype(uv.x<uv.x)
-  {
-    const Vec2f a(0.0f,0.0f), b(1.0f,0.0f), c(0.0f,1.0f);
-    const Vec2f ab = 0.5f*(a+b), ac = 0.5f*(a+c), bc = 0.5f*(b+c), abc = (1.0f/3.0f)*(a+b+c);
-    return right_of_line(ab,abc,uv);
-  }
-  
-  template<typename vfloat>
-    __forceinline auto right_of_line_ac_abc(const Vec2<vfloat>& uv) -> decltype(uv.x<uv.x)
-  {
-    const Vec2f a(0.0f,0.0f), b(1.0f,0.0f), c(0.0f,1.0f);
-    const Vec2f ab = 0.5f*(a+b), ac = 0.5f*(a+c), bc = 0.5f*(b+c), abc = (1.0f/3.0f)*(a+b+c);
-    return right_of_line(ac,abc,uv);
-  }
-  
-  template<typename vfloat>
-    __forceinline auto right_of_line_bc_abc(const Vec2<vfloat>& uv) -> decltype(uv.x<uv.x)
-  {
-    const Vec2f a(0.0f,0.0f), b(1.0f,0.0f), c(0.0f,1.0f);
-    const Vec2f ab = 0.5f*(a+b), ac = 0.5f*(a+c), bc = 0.5f*(b+c), abc = (1.0f/3.0f)*(a+b+c);
-    return right_of_line(bc,abc,uv);
-  }
-  
-  template<typename vfloat, typename Vertex>
-    __forceinline void map_quad0_to_tri(const Vec2<vfloat>& xy, Vertex& dPdu, Vertex& dPdv)
-  {
-    const Vec2f a(0.0f,0.0f), b(1.0f,0.0f), c(0.0f,1.0f);
-    const Vec2f ab = 0.5f*(a+b), ac = 0.5f*(a+c), bc = 0.5f*(b+c), abc = (1.0f/3.0f)*(a+b+c);
-    const Vertex dpdx = dPdu, dpdy = dPdv;
-    const Vec2<vfloat> duvdx = map_quad_to_tri_dx(a,ab,abc,ac,xy);
-    const Vec2<vfloat> duvdy = map_quad_to_tri_dy(a,ab,abc,ac,xy);
-    const LinearSpace2<Vec2<vfloat> > J = rcp(LinearSpace2<Vec2<vfloat> >(duvdx,duvdy));
-    dPdu = dpdx*J.vx.x + dpdy*J.vx.y;
-    dPdv = dpdx*J.vy.x + dpdy*J.vy.y;
-  }
-  
-  template<typename vfloat, typename Vertex>
-    __forceinline void map_quad1_to_tri(const Vec2<vfloat>& xy, Vertex& dPdu, Vertex& dPdv)
-  {
-    const Vec2f a(0.0f,0.0f), b(1.0f,0.0f), c(0.0f,1.0f);
-    const Vec2f ab = 0.5f*(a+b), ac = 0.5f*(a+c), bc = 0.5f*(b+c), abc = (1.0f/3.0f)*(a+b+c);
-    const Vertex dpdx = dPdu, dpdy = dPdv;
-    const Vec2<vfloat> duvdx = map_quad_to_tri_dx(b,bc,abc,ab,xy);
-    const Vec2<vfloat> duvdy = map_quad_to_tri_dy(b,bc,abc,ab,xy);
-    const LinearSpace2<Vec2<vfloat> > J = rcp(LinearSpace2<Vec2<vfloat> >(duvdx,duvdy));
-    dPdu = dpdx*J.vx.x + dpdy*J.vx.y;
-    dPdv = dpdx*J.vy.x + dpdy*J.vy.y;
-  }
-  
-  template<typename vfloat, typename Vertex>
-    __forceinline void map_quad2_to_tri(const Vec2<vfloat>& xy, Vertex& dPdu, Vertex& dPdv)
-  {
-    const Vec2f a(0.0f,0.0f), b(1.0f,0.0f), c(0.0f,1.0f);
-    const Vec2f ab = 0.5f*(a+b), ac = 0.5f*(a+c), bc = 0.5f*(b+c), abc = (1.0f/3.0f)*(a+b+c);
-    const Vertex dpdx = dPdu, dpdy = dPdv;
-    const Vec2<vfloat> duvdx = map_quad_to_tri_dx(c,ac,abc,bc,xy);
-    const Vec2<vfloat> duvdy = map_quad_to_tri_dy(c,ac,abc,bc,xy);
-    const LinearSpace2<Vec2<vfloat> > J = rcp(LinearSpace2<Vec2<vfloat> >(duvdx,duvdy));
-    dPdu = dpdx*J.vx.x + dpdy*J.vx.y;
-    dPdv = dpdx*J.vy.x + dpdy*J.vy.y;
-  }
-  
-  template<typename vbool, typename vfloat>
-    __forceinline void map_quad0_to_tri(const vbool& valid, const Vec2<vfloat>& xy, float* dPdu, float* dPdv, size_t dstride, size_t i)
-  {
-    vfloat dPdut = vfloat::loadu(dPdu+i*dstride), dPdvt = vfloat::loadu(dPdv+i*dstride);
-    map_quad0_to_tri(xy,dPdut,dPdvt); 
-    vfloat::store(valid,dPdu+i*dstride,dPdut);
-    vfloat::store(valid,dPdv+i*dstride,dPdvt);
-  }
-
-  template<typename vbool, typename vfloat>
-    __forceinline void map_quad1_to_tri(const vbool& valid, const Vec2<vfloat>& xy, float* dPdu, float* dPdv, size_t dstride, size_t i)
-  {
-    vfloat dPdut = vfloat::loadu(dPdu+i*dstride), dPdvt = vfloat::loadu(dPdv+i*dstride);
-    map_quad1_to_tri(xy,dPdut,dPdvt); 
-    vfloat::store(valid,dPdu+i*dstride,dPdut);
-    vfloat::store(valid,dPdv+i*dstride,dPdvt);
-  }
-
-  template<typename vbool, typename vfloat>
-    __forceinline void map_quad2_to_tri(const vbool& valid, const Vec2<vfloat>& xy, float* dPdu, float* dPdv, size_t dstride, size_t i)
-  {
-    vfloat dPdut = vfloat::loadu(dPdu+i*dstride), dPdvt = vfloat::loadu(dPdv+i*dstride);
-    map_quad2_to_tri(xy,dPdut,dPdvt); 
-    vfloat::store(valid,dPdu+i*dstride,dPdut);
-    vfloat::store(valid,dPdv+i*dstride,dPdvt);
-  }
-
   template<typename Vertex, typename Vertex_t = Vertex>
     struct __aligned(64) PatchT
     {
@@ -198,8 +81,6 @@ namespace embree
       BSPLINE_PATCH = 2,  
       BEZIER_PATCH = 3,  
       GREGORY_PATCH = 4,
-      SUBDIVIDED_GENERAL_TRIANGLE_PATCH = 5,
-      //SUBDIVIDED_GENERAL_QUAD_PATCH = 6,
       SUBDIVIDED_GENERAL_PATCH = 7,
       SUBDIVIDED_QUAD_PATCH = 8,
       EVAL_PATCH = 9,
@@ -327,20 +208,6 @@ namespace embree
       GregoryPatchT<Vertex,Vertex_t> patch;
     };
     
-    struct SubdividedGeneralTrianglePatch
-    {
-      template<typename Allocator>
-      __noinline static Ref create(const Allocator& alloc, Ref children[3]) {
-        return Ref(SUBDIVIDED_GENERAL_TRIANGLE_PATCH, new (alloc(sizeof(SubdividedGeneralTrianglePatch))) SubdividedGeneralTrianglePatch(children));
-      }
-      
-      __forceinline SubdividedGeneralTrianglePatch(Ref children[3]) {
-        for (size_t i=0; i<3; i++) child[i] = children[i];
-      }
-      
-      Ref child[3];
-    };
-    
     struct SubdividedQuadPatch
     {
       template<typename Allocator>
@@ -412,24 +279,7 @@ namespace embree
       array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE> patches; 
       patch.subdivide(patches,N);
       
-      if (N == 3) 
-      {
-        Ref child[3];
-#if PATCH_USE_GREGORY == 2
-        BezierCurve borders[GeneralCatmullClarkPatch::SIZE]; patch.getLimitBorder(borders);
-        BezierCurve border0l,border0r; borders[0].subdivide(border0l,border0r);
-        BezierCurve border1l,border1r; borders[1].subdivide(border1l,border1r);
-        BezierCurve border2l,border2r; borders[2].subdivide(border2l,border2r);
-        child[0] = PatchT::create(alloc,patches[0],edge,vertices,stride,depth+1, &border0l, nullptr, nullptr, &border2r);
-        child[1] = PatchT::create(alloc,patches[1],edge,vertices,stride,depth+1, &border1l, nullptr, nullptr, &border0r);
-        child[2] = PatchT::create(alloc,patches[2],edge,vertices,stride,depth+1, &border2l, nullptr, nullptr, &border1r);
-#else
-        for (size_t i=0; i<3; i++)
-          child[i] = PatchT::create(alloc,patches[i],edge,vertices,stride,depth+1);
-#endif
-        return SubdividedGeneralTrianglePatch::create(alloc,child);
-      } 
-      else if (N == 4) 
+      if (N == 4) 
       {
         Ref child[4];
 #if PATCH_USE_GREGORY == 2

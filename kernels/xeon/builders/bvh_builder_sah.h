@@ -193,6 +193,15 @@ namespace embree
           do {
             
             /*! find best child to split */
+#if 1
+            float bestSAH = neg_inf;
+            ssize_t bestChild = -1;
+            for (size_t i=0; i<numChildren; i++) 
+            {
+              if (children[i].pinfo.size() <= minLeafSize) continue; 
+              if (area(children[i].pinfo.geomBounds) > bestSAH) { bestChild = i; bestSAH = area(children[i].pinfo.geomBounds); } // FIXME: measure over all scenes if this line creates better tree
+            }
+#else
             float bestSAH = 0;
             ssize_t bestChild = -1;
             for (size_t i=0; i<numChildren; i++) 
@@ -201,9 +210,12 @@ namespace embree
               if (children[i].pinfo.size() <= minLeafSize) continue; 
               if (children[i].pinfo.size() > maxLeafSize) dSAH = min(dSAH,0.0f); //< force split for large jobs
               if (dSAH <= bestSAH) { bestChild = i; bestSAH = dSAH; }
-              //if (area(children[i].pinfo.geomBounds) > bestSAH) { bestChild = i; bestSAH = area(children[i].pinfo.geomBounds); } // FIXME: measure over all scenes if this line creates better tree
             }
+
+#endif
+
             if (bestChild == -1) break;
+
             
             /* perform best found split */
             BuildRecord& brecord = children[bestChild];
@@ -221,7 +233,7 @@ namespace embree
           } while (numChildren < branchingFactor);
           
           /* sort buildrecords for simpler shadow ray traversal */
-          std::sort(&children[0],&children[numChildren]); // FIXME: reduces traversal performance of bvh8.triangle4 (need to verified) !!
+          std::sort(&children[0],&children[numChildren],std::greater<BuildRecord>()); // FIXME: reduces traversal performance of bvh8.triangle4 (need to verified) !!
           
           /*! create an inner node */
           auto node = createNode(current,children,numChildren,alloc);

@@ -38,7 +38,7 @@ bool g_subdiv_mode = false;
 #define MIN_EDGE_LEVEL  4.0f
 #define LEVEL_FACTOR   64.0f
 
-#define TEST_STREAM_TRACING 0
+#define TEST_STREAM_TRACING 0 // FIXME: remove or disable
 
 inline float updateEdgeLevel( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, const size_t e0, const size_t e1)
 {
@@ -592,7 +592,7 @@ void renderPixelStream(int x0, int y0, int x1, int y1, const Vec3fa& vx, const V
     }
   
   /* intersect ray with scene */
-  rtcIntersectN(g_scene,rays,numRays,sizeof(RTCRay),RTC_RAYN_AOS);
+  rtcIntersectN(g_scene,rays,numRays,sizeof(RTCRay));
 
   for (int i = 0,y = y0; y<y1; y++) 
     for (int x = x0; x<x1; x++,i++)
@@ -680,12 +680,8 @@ void renderTile(int taskIndex, int* pixels,
 
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
-    //if (abs(x-194) > 4 || abs(y-(512-192)) > 4) continue;
-    //if (x != 192 || y != 322) continue;
-    //  continue;
-    //PRINT2(x,y);
+    //if (x != 256 || y != 256) continue; 
     Vec3fa color = renderPixel(x,y,vx,vy,vz,p);
-    //PRINT(color);
     //exit(1);
     
     /* write color to framebuffer */

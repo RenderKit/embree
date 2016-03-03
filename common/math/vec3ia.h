@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "../sys/alloc.h"
 #include "math.h"
 #include "../simd/sse.h"
 
@@ -27,6 +28,8 @@ namespace embree
 
   struct __aligned(16) Vec3ia
   {
+    ALIGNED_STRUCT;
+
     union {
       __m128i m128;
       struct { int x,y,z; int a; };

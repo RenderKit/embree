@@ -340,7 +340,46 @@ namespace embree
     }
     return node;
   }
-    
+
+  Ref<SceneGraph::Node> SceneGraph::convert_quads_to_subdivs(Ref<SceneGraph::Node> node)
+  {
+    if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
+      xfmNode->child = convert_quads_to_subdivs(xfmNode->child);
+    } 
+    else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) 
+    {
+      for (size_t i=0; i<groupNode->children.size(); i++) 
+        groupNode->children[i] = convert_quads_to_subdivs(groupNode->children[i]);
+    }
+    else if (Ref<SceneGraph::QuadMeshNode> tmesh = node.dynamicCast<SceneGraph::QuadMeshNode>()) 
+    {
+      SceneGraph::SubdivMeshNode* smesh = new SceneGraph::SubdivMeshNode(tmesh->material);
+      smesh->positions = tmesh->v;
+      smesh->positions2 = tmesh->v2;
+      for (size_t i=0; i<tmesh->quads.size(); i++) {
+        smesh->position_indices.push_back(tmesh->quads[i].v0);
+        smesh->position_indices.push_back(tmesh->quads[i].v1);
+        smesh->position_indices.push_back(tmesh->quads[i].v2);
+        if (tmesh->quads[i].v2 != tmesh->quads[i].v3)
+          smesh->position_indices.push_back(tmesh->quads[i].v3);
+      }
+      
+      smesh->normals = tmesh->vn;
+      if (smesh->normals.size())
+        smesh->normal_indices = smesh->position_indices;
+      
+      smesh->texcoords = tmesh->vt;
+      if (smesh->texcoords.size())
+        smesh->texcoord_indices = smesh->position_indices;
+      
+      for (size_t i=0; i<tmesh->quads.size(); i++) 
+        smesh->verticesPerFace.push_back(3 + (int)(tmesh->quads[i].v2 != tmesh->quads[i].v3));
+
+      return smesh;
+    }
+    return node;
+  }
+
   Ref<SceneGraph::Node> SceneGraph::convert_bezier_to_lines(Ref<SceneGraph::Node> node)
   {
     if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {

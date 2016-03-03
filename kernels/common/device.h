@@ -18,6 +18,7 @@
 
 #include "default.h"
 #include "state.h"
+#include "raystreams/raystreams.h"
 
 namespace embree
 {
@@ -61,6 +62,9 @@ namespace embree
     /*! configures some parameter */
     void setParameter1i(const RTCParameter parm, ssize_t val);
 
+    /*! returns some configuration */
+    ssize_t getParameter1i(const RTCParameter parm);
+
   private:
 
     /*! initializes the tasking system */
@@ -88,5 +92,9 @@ namespace embree
 #if USE_TASK_ARENA
   tbb::task_arena* arena;
 #endif
+
+  /* ray streams filter */
+  RayStreamFilterFuncs rayStreamFilters;
+
   };
 }

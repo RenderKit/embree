@@ -583,7 +583,7 @@ namespace embree
     return true;
   }
 
-  void SubdivMesh::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats) 
+  void SubdivMesh::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats) 
   {
     /* test if interpolation is enabled */
 #if defined(DEBUG) 
@@ -616,18 +616,40 @@ namespace embree
 
     for (size_t i=0; i<numFloats; i+=4)
     {
-      vfloat4 Pt, dPdut, dPdvt;
+      vfloat4 Pt, dPdut, dPdvt, ddPdudut, ddPdvdvt, ddPdudvt;
       isa::PatchEval<vfloat4,vfloat4_t>(baseEntry->at(interpolationSlot(primID,i/4,stride)),parent->commitCounterSubdiv,
-                                      getHalfEdge(primID),src+i*sizeof(float),stride,u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
+                                        getHalfEdge(primID),src+i*sizeof(float),stride,u,v,
+                                        P ? &Pt : nullptr, 
+                                        dPdu ? &dPdut : nullptr, 
+                                        dPdv ? &dPdvt : nullptr,
+                                        ddPdudu ? &ddPdudut : nullptr, 
+                                        ddPdvdv ? &ddPdvdvt : nullptr, 
+                                        ddPdudv ? &ddPdudvt : nullptr);
 
-      if (P   ) for (size_t j=i; j<min(i+4,numFloats); j++) P[j] = Pt[j-i];
-      if (dPdu) for (size_t j=i; j<min(i+4,numFloats); j++) dPdu[j] = dPdut[j-i];
-      if (dPdv) for (size_t j=i; j<min(i+4,numFloats); j++) dPdv[j] = dPdvt[j-i];
+      if (P) {
+        for (size_t j=i; j<min(i+4,numFloats); j++) 
+          P[j] = Pt[j-i];
+      }
+      if (dPdu) 
+      {
+        for (size_t j=i; j<min(i+4,numFloats); j++) {
+          dPdu[j] = dPdut[j-i];
+          dPdv[j] = dPdvt[j-i];
+        }
+      }
+      if (ddPdudu) 
+      {
+        for (size_t j=i; j<min(i+4,numFloats); j++) {
+          ddPdudu[j] = ddPdudut[j-i];
+          ddPdvdv[j] = ddPdvdvt[j-i];
+          ddPdudv[j] = ddPdudvt[j-i];
+        }
+      }
     }
   }
 
   void SubdivMesh::interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
-                                RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats)
+                                RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats)
   {
     /* test if interpolation is enabled */
 #if defined(DEBUG)
@@ -671,8 +693,14 @@ namespace embree
         {
           const size_t M = min(size_t(4),numFloats-j);
           isa::PatchEvalSimd<vbool16,vint16,vfloat16,Vec3fa,Vec3fa_t>(baseEntry->at(interpolationSlot(primID,j/4,stride)),parent->commitCounterSubdiv,
-                                                                   getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
-                                                                   P ? P+j*numUVs+i : nullptr,dPdu ? dPdu+j*numUVs+i : nullptr,dPdv ? dPdv+j*numUVs+i : nullptr,numUVs,M);
+                                                                      getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
+                                                                      P ? P+j*numUVs+i : nullptr,
+                                                                      dPdu ? dPdu+j*numUVs+i : nullptr,
+                                                                      dPdv ? dPdv+j*numUVs+i : nullptr,
+                                                                      ddPdudu ? ddPdudu+j*numUVs+i : nullptr,
+                                                                      ddPdvdv ? ddPdvdv+j*numUVs+i : nullptr,
+                                                                      ddPdudv ? ddPdudv+j*numUVs+i : nullptr,
+                                                                      numUVs,M);
         }
       });
     }
@@ -693,8 +721,14 @@ namespace embree
         {
           const size_t M = min(size_t(4),numFloats-j);
           isa::PatchEvalSimd<vbool4,vint4,vfloat4,vfloat4>(baseEntry->at(interpolationSlot(primID,j/4,stride)),parent->commitCounterSubdiv,
-                                                       getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
-                                                       P ? P+j*numUVs+i : nullptr,dPdu ? dPdu+j*numUVs+i : nullptr,dPdv ? dPdv+j*numUVs+i : nullptr,numUVs,M);
+                                                           getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
+                                                           P ? P+j*numUVs+i : nullptr,
+                                                           dPdu ? dPdu+j*numUVs+i : nullptr,
+                                                           dPdv ? dPdv+j*numUVs+i : nullptr,
+                                                           ddPdudu ? ddPdudu+j*numUVs+i : nullptr,
+                                                           ddPdvdv ? ddPdvdv+j*numUVs+i : nullptr,
+                                                           ddPdudv ? ddPdudv+j*numUVs+i : nullptr,
+                                                           numUVs,M);
         }
       });
     }

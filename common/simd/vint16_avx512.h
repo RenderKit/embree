@@ -177,6 +177,16 @@ namespace embree
 #endif
     }
 
+    static __forceinline void storeu_compact_single(const vboolf16 mask,void * addr, const vint16 reg) {
+#if defined(__AVX512F__)
+      //_mm512_mask_compressstoreu_epi32(addr,mask,reg);
+      *(float*)addr = _mm512_cvtss_f32(_mm512_mask_compress_ps(_mm512_castsi512_ps(reg),mask,_mm512_castsi512_ps(reg)));
+#else
+      _mm512_mask_extpackstorelo_epi32((int*)addr+0  ,mask, reg, _MM_DOWNCONV_EPI32_NONE, _MM_HINT_NONE);
+#endif
+    }
+
+
 #if defined(__AVX512F__)
     static __forceinline vint16 compact64bit(const vboolf16& mask, vint16 &v) {
       return _mm512_mask_compress_epi64(v,mask,v);
@@ -194,14 +204,19 @@ namespace embree
       return _mm512_set1_epi64(v);
     }
 
-    static __forceinline size_t extract64bit(const vint16& v)
+    static __forceinline size_t extracti64bit(const vint16& v)
     {
       return _mm_cvtsi128_si64(_mm512_castsi512_si128(v));
     }
 
-    static __forceinline vint4 extract128bit(const vint16& v)
+    static __forceinline vint4 extracti128bit(const vint16& v)
     {
       return _mm512_castsi512_si128(v);
+    }
+
+    static __forceinline vint8 extracti256bit(const vint16& v)
+    {
+      return _mm512_castsi512_si256(v);
     }
 
 #endif

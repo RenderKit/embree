@@ -199,11 +199,6 @@ namespace embree
 
         switch (This.type()) 
         {
-        case Patch::SUBDIVIDED_GENERAL_TRIANGLE_PATCH: { 
-          Patch::SubdividedGeneralTrianglePatch* patch = (Patch::SubdividedGeneralTrianglePatch*)This.object();
-          assert(subPatch < 3);
-          return eval(patch->child[subPatch],srange,erange,1);
-        }
         case Patch::SUBDIVIDED_GENERAL_PATCH: { 
           Patch::SubdividedGeneralPatch* patch = (Patch::SubdividedGeneralPatch*)This.object();
           assert(subPatch < patch->N);
@@ -240,28 +235,6 @@ namespace embree
       {
         const Vec2f uv[4] = { Vec2f(0.0f,0.0f), Vec2f(1.0f,0.0f), Vec2f(1.0f,1.0f), Vec2f(0.0f,1.0f) };
         tessellator(uv,neighborSubdiv,levels,0);
-      }
-      else if (N == 3)
-      {
-        const Vec2f uv_0(0.0f,0.0f);
-        const Vec2f uv01(0.5f,0.0f);
-        const Vec2f uv_1(1.0f,0.0f);
-        const Vec2f uv12(0.5f,0.5f);
-        const Vec2f uv_2(0.0f,1.0f);
-        const Vec2f uv20(0.0f,0.5f);
-        const Vec2f uvcc(1.0f/3.0f);
-        const Vec2f uv0[4] = { uv_0,uv01,uvcc,uv20 };
-        const Vec2f uv1[4] = { uv_1,uv12,uvcc,uv01 };
-        const Vec2f uv2[4] = { uv_2,uv20,uvcc,uv12 };
-        const int neighborSubdiv0[4] = { 0,0,0,0 };
-        const int neighborSubdiv1[4] = { 0,0,0,0 };
-        const int neighborSubdiv2[4] = { 0,0,0,0 };
-        const float levels0[4] = { 0.5f*levels[0], 0.5f*levels[0], 0.5f*levels[2], 0.5f*levels[2] };
-        const float levels1[4] = { 0.5f*levels[1], 0.5f*levels[1], 0.5f*levels[0], 0.5f*levels[0] };
-        const float levels2[4] = { 0.5f*levels[2], 0.5f*levels[2], 0.5f*levels[1], 0.5f*levels[1] };
-        tessellator(uv0, neighborSubdiv0, levels0, 0);
-        tessellator(uv1, neighborSubdiv1, levels1, 1);
-        tessellator(uv2, neighborSubdiv2, levels2, 2);
       }
       else
       {

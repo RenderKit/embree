@@ -186,6 +186,8 @@ namespace embree
     template<int M, bool filter>
       struct QuadMIntersector1MoellerTrumbore
     {
+      __forceinline QuadMIntersector1MoellerTrumbore() {}
+
       __forceinline QuadMIntersector1MoellerTrumbore(const Ray& ray, const void* ptr) {}
 
       __forceinline void intersect(Ray& ray, const Vec3<vfloat<M>>& v0, const Vec3<vfloat<M>>& v1, const Vec3<vfloat<M>>& v2, const Vec3<vfloat<M>>& v3, 
@@ -244,6 +246,8 @@ namespace embree
     template<bool filter>
       struct QuadMIntersector1MoellerTrumbore<4,filter>
     {
+      __forceinline QuadMIntersector1MoellerTrumbore() {}
+
       __forceinline QuadMIntersector1MoellerTrumbore(const Ray& ray, const void* ptr) {}
 
       template<typename Epilog>
@@ -289,6 +293,8 @@ namespace embree
     template<bool filter>
       struct QuadMIntersector1MoellerTrumbore<4,filter>
     {
+      __forceinline QuadMIntersector1MoellerTrumbore() {}
+
       __forceinline QuadMIntersector1MoellerTrumbore(const Ray& ray, const void* ptr) {}
       
       template<typename Epilog>

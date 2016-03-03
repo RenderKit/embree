@@ -14,9 +14,9 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#include "../kernels/common/default.h"
 #include "../include/embree2/rtcore.h"
 #include "../include/embree2/rtcore_ray.h"
-#include "../kernels/common/default.h"
 #include "../kernels/algorithms/parallel_for.h"
 #include <vector>
 
@@ -70,7 +70,7 @@ namespace embree
     exit(1);
   }
 
-  RTCAlgorithmFlags aflags = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT4 | RTC_INTERSECT8 | RTC_INTERSECT16);
+  RTCAlgorithmFlags aflags = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT4 | RTC_INTERSECT8 | RTC_INTERSECT16 | RTC_INTERSECTN);
 
   /* configuration */
   static std::string g_rtcore = "";
@@ -80,6 +80,8 @@ namespace embree
   static size_t g_plot_step= 0;
   static std::string g_plot_test = "";
   static bool executed_benchmarks = false;
+
+  static size_t g_profile_loop_iterations = 1;
 
   /* vertex and triangle layout */
   struct Vertex   { float x,y,z,a; };
@@ -455,15 +457,29 @@ namespace embree
 
   char* benchmark_bandwidth::ptr = nullptr;
 
-  RTCRay makeRay(Vec3f org, Vec3f dir) 
+
+  RTCRay makeRay(const Vec3fa &org, const Vec3fa &dir) 
   {
     RTCRay ray;
-    ray.org[0] = org.x; ray.org[1] = org.y; ray.org[2] = org.z;
-    ray.dir[0] = dir.x; ray.dir[1] = dir.y; ray.dir[2] = dir.z;
-    ray.tnear = 0.0f; ray.tfar = inf;
-    ray.time = 0; ray.mask = -1;
+    *(Vec3fa*)ray.org = org;
+    *(Vec3fa*)ray.dir = dir;
+    ray.tnear = 0.0f; 
+    ray.tfar = inf;
+    ray.time = 0; 
+    ray.mask = -1;
     ray.geomID = ray.primID = ray.instID = -1;
     return ray;
+  }
+
+  __forceinline void setRay(RTCRay &ray, const Vec3fa &org, const Vec3fa &dir) 
+  {
+    *(Vec3fa*)ray.org = org;
+    *(Vec3fa*)ray.dir = dir;
+    ray.tnear = 0.0f; 
+    ray.tfar = inf;
+    ray.time = 0; 
+    ray.mask = -1;
+    ray.geomID = ray.primID = ray.instID = -1;
   }
 
   RTCRay makeRay(Vec3f org, Vec3f dir, float tnear, float tfar) 
@@ -980,19 +996,16 @@ namespace embree
     }
   };
 
+
   template<bool intersect>
   class benchmark_rtcore_intersect1_throughput : public Benchmark
   {
   public:
-    enum { N = 1024*128 };
+    enum { N = 1024*128*2 };
     static RTCScene scene;
 
     benchmark_rtcore_intersect1_throughput () 
       : Benchmark(intersect ? "incoherent_intersect1_throughput" : "incoherent_occluded1_throughput","MRays/s (all HW threads)") {}
-
-    virtual void trace(Vec3f* numbers)
-    {
-    }
 
     static double benchmark_rtcore_intersect1_throughput_thread(void* arg) 
     {
@@ -1000,47 +1013,30 @@ namespace embree
       size_t threadCount = g_num_threads;
 
       srand48(threadIndex*334124);
-      Vec3f* numbers = new Vec3f[N];
-
-#if 1
+      Vec3fa* numbers = new Vec3fa[N];
       for (size_t i=0; i<N; i++) {
         float x = 2.0f*drand48()-1.0f;
         float y = 2.0f*drand48()-1.0f;
         float z = 2.0f*drand48()-1.0f;
-        numbers[i] = Vec3f(x,y,z);
-      }
-#else
-#define NUM 512
-      float rx[NUM];
-      float ry[NUM];
-      float rz[NUM];
-
-      for (size_t i=0; i<NUM; i++) {
-        rx[i] = drand48();
-        ry[i] = drand48();
-        rz[i] = drand48();
+        numbers[i] = Vec3fa(x,y,z);
       }
 
-      for (size_t i=0; i<N; i++) {
-        float x = 2.0f*rx[i%NUM]-1.0f;
-        float y = 2.0f*ry[i%NUM]-1.0f;
-        float z = 2.0f*rz[i%NUM]-1.0f;
-        numbers[i] = Vec3f(x,y,z);
-      }      
-#endif
-
+      //if (threadIndex != 0) 
       g_barrier_active.wait(threadIndex);
       double t0 = getSeconds();
-      
-      for (size_t i=0; i<N; i++) {
-        RTCRay ray = makeRay(zero,numbers[i]);
-        if (intersect)
-          rtcIntersect(scene,ray);
-        else
-          rtcOccluded(scene,ray);
-      }        
 
+      for (size_t p=0;p<g_profile_loop_iterations;p++)
+        for (size_t i=0; i<N; i++) {
+          RTCRay ray = makeRay(Vec3fa(zero),numbers[i]);
+          if (intersect)
+            rtcIntersect(scene,ray);
+          else
+            rtcOccluded(scene,ray);
+        }        
+
+      //if (threadIndex != 0) 
       g_barrier_active.wait(threadIndex);
+
       double t1 = getSeconds();
 
       delete [] numbers;
@@ -1053,8 +1049,6 @@ namespace embree
       error_handler(rtcDeviceGetError(device));
 
       int numPhi = 501;
-      //int numPhi = 61;
-      //int numPhi = 1601;
 
       RTCSceneFlags flags = RTC_SCENE_STATIC;
       scene = rtcDeviceNewScene(device,flags,aflags);
@@ -1069,12 +1063,12 @@ namespace embree
       setAffinity(0);
       
       //g_barrier_active.wait(0);
-      //double t0 = getSeconds();
+      double t0 = getSeconds();
 
       double delta = benchmark_rtcore_intersect1_throughput_thread(0);
 
       //g_barrier_active.wait(0);
-      //double t1 = getSeconds();
+      double t1 = getSeconds();
       
       for (size_t i=0; i<g_threads.size(); i++)	join(g_threads[i]);
       g_threads.clear();
@@ -1107,43 +1101,36 @@ namespace embree
 
       srand48(threadIndex*334124);
       Vec3f* numbers = new Vec3f[N];
-#if 0
-      assert(N % 16 == 0);
-      for (size_t i=0; i<N; i++) {
-        size_t j = i >> 4;
-        float tx = (j & 1) ? 1.0f : -1.0f;
-        float ty = (j & 2) ? 1.0f : -1.0f;
-        float tz = (j & 4) ? 1.0f : -1.0f;
-        float x = drand48()*tx;
-        float y = drand48()*ty;
-        float z = drand48()*tz;
-        numbers[i] = Vec3f(x,y,z);
-      }      
-#else
       for (size_t i=0; i<N; i++) {
         float x = 2.0f*drand48()-1.0f;
         float y = 2.0f*drand48()-1.0f;
         float z = 2.0f*drand48()-1.0f;
         numbers[i] = Vec3f(x,y,z);
       }
-#endif
-      __aligned(16) int valid16[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
+      __aligned(64) int valid16[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
 
-      if (threadIndex != 0) g_barrier_active.wait(threadIndex);
+      //if (threadIndex != 0) 
+        g_barrier_active.wait(threadIndex);
       double t0 = getSeconds();
 
-      //while(1)
+      for (size_t p=0;p<g_profile_loop_iterations;p++)
       for (size_t i=0; i<N; i+=16) {
         RTCRay16 ray16;
+        
         for (size_t j=0;j<16;j++)        
-          setRay(ray16,j,makeRay(zero,numbers[i+j]));
+        {
+          RTCRay ray;
+          setRay(ray,Vec3fa(zero),numbers[i+j]);
+          setRay(ray16,j,ray);
+        }
         if (intersect)
           rtcIntersect16(valid16,scene,ray16);
         else
           rtcOccluded16(valid16,scene,ray16);
-
       }        
-      if (threadIndex != 0) g_barrier_active.wait(threadIndex);
+
+      //if (threadIndex != 0) 
+        g_barrier_active.wait(threadIndex);
       double t1 = getSeconds();
 
       delete [] numbers;
@@ -1169,12 +1156,12 @@ namespace embree
 	g_threads.push_back(createThread((thread_func)benchmark_rtcore_intersect16_throughput_thread,(void*)i,1000000,i));
       setAffinity(0);
       
-      g_barrier_active.wait(0);
+      //g_barrier_active.wait(0);
       double t0 = getSeconds();
 
       double delta = benchmark_rtcore_intersect16_throughput_thread(0);
 
-      g_barrier_active.wait(0);
+      //g_barrier_active.wait(0);
       double t1 = getSeconds();
       
       for (size_t i=0; i<g_threads.size(); i++)	join(g_threads[i]);
@@ -1188,6 +1175,286 @@ namespace embree
 
   template<> RTCScene benchmark_rtcore_intersect16_throughput<true>::scene = nullptr;
   template<> RTCScene benchmark_rtcore_intersect16_throughput<false>::scene = nullptr;
+
+#endif
+
+
+#if HAS_INTERSECT8
+
+  template<bool intersect>
+  class benchmark_rtcore_intersect8_throughput : public Benchmark
+  {
+  public:
+    enum { N = 1024*128 };
+    static RTCScene scene;
+
+    benchmark_rtcore_intersect8_throughput () 
+      : Benchmark(intersect ? "incoherent_intersect8_throughput" : "incoherent_occluded8_throughput","MRays/s (all HW threads)") {}
+
+    static double benchmark_rtcore_intersect8_throughput_thread(void* arg) 
+    {
+      size_t threadIndex = (size_t) arg;
+      size_t threadCount = g_num_threads;
+
+      srand48(threadIndex*334124);
+      Vec3f* numbers = new Vec3f[N];
+      for (size_t i=0; i<N; i++) {
+        float x = 2.0f*drand48()-1.0f;
+        float y = 2.0f*drand48()-1.0f;
+        float z = 2.0f*drand48()-1.0f;
+        numbers[i] = Vec3f(x,y,z);
+      }
+      __aligned(64) int valid8[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
+
+      //if (threadIndex != 0) 
+        g_barrier_active.wait(threadIndex);
+      double t0 = getSeconds();
+
+      for (size_t p=0;p<g_profile_loop_iterations;p++)
+      for (size_t i=0; i<N; i+=8) {
+        RTCRay8 ray8;
+        
+        for (size_t j=0;j<8;j++)        
+        {
+          RTCRay ray;
+          setRay(ray,Vec3fa(zero),numbers[i+j]);
+          setRay(ray8,j,ray);
+        }
+        if (intersect)
+          rtcIntersect8(valid8,scene,ray8);
+        else
+          rtcOccluded8(valid8,scene,ray8);
+      }        
+
+      //if (threadIndex != 0) 
+        g_barrier_active.wait(threadIndex);
+      double t1 = getSeconds();
+
+      delete [] numbers;
+      return t1-t0;
+    }
+    
+    double run (size_t numThreads)
+    {
+      RTCDevice device = rtcNewDevice((g_rtcore+",threads="+toString(numThreads)).c_str());
+      error_handler(rtcDeviceGetError(device));
+
+      int numPhi = 501;
+
+      RTCSceneFlags flags = RTC_SCENE_STATIC;
+      scene = rtcDeviceNewScene(device,flags,aflags);
+      addSphere (scene, RTC_GEOMETRY_STATIC, zero, 1, numPhi);
+      rtcCommit (scene);
+
+
+      g_num_threads = numThreads;
+      g_barrier_active.init(numThreads);
+      for (size_t i=1; i<numThreads; i++)
+	g_threads.push_back(createThread((thread_func)benchmark_rtcore_intersect8_throughput_thread,(void*)i,1000000,i));
+      setAffinity(0);
+      
+      //g_barrier_active.wait(0);
+      double t0 = getSeconds();
+
+      double delta = benchmark_rtcore_intersect8_throughput_thread(0);
+
+      //g_barrier_active.wait(0);
+      double t1 = getSeconds();
+      
+      for (size_t i=0; i<g_threads.size(); i++)	join(g_threads[i]);
+      g_threads.clear();
+      
+      rtcDeleteScene(scene);
+      rtcDeleteDevice(device);
+      return 1E-6*double(N)/(delta)*double(numThreads);
+    }
+  };
+
+  template<> RTCScene benchmark_rtcore_intersect8_throughput<true>::scene = nullptr;
+  template<> RTCScene benchmark_rtcore_intersect8_throughput<false>::scene = nullptr;
+
+#endif
+
+
+
+#if HAS_INTERSECT8
+
+  template<bool intersect>
+  class benchmark_rtcore_intersect_stream_throughput : public Benchmark
+  {
+  public:
+    enum { N = 1024*128 };
+    static RTCScene scene;
+
+    benchmark_rtcore_intersect_stream_throughput () 
+      : Benchmark(intersect ? "incoherent_intersect_stream_throughput" : "incoherent_occluded_stream_throughput","MRays/s (all HW threads)") {}
+
+    static double benchmark_rtcore_intersect_stream_throughput_thread(void* arg) 
+    {
+      size_t threadIndex = (size_t) arg;
+      size_t threadCount = g_num_threads;
+
+      srand48(threadIndex*334124);
+      Vec3fa* numbers = new Vec3fa[N];
+      for (size_t i=0; i<N; i++) {
+        float x = 2.0f*drand48()-1.0f;
+        float y = 2.0f*drand48()-1.0f;
+        float z = 2.0f*drand48()-1.0f;
+        numbers[i] = Vec3fa(x,y,z);
+      }
+
+
+      //if (threadIndex != 0) 
+        g_barrier_active.wait(threadIndex);
+      double t0 = getSeconds();
+
+#define STREAM_SIZE 256
+      for (size_t p=0;p<g_profile_loop_iterations;p++)
+      for (size_t i=0; i<N; i+=STREAM_SIZE) {
+        RTCRay rays[STREAM_SIZE];
+        for (size_t j=0;j<STREAM_SIZE;j++)        
+          setRay(rays[j],Vec3fa(zero),numbers[i+j]);
+
+        if (intersect)
+          rtcIntersectN(scene,rays,STREAM_SIZE,sizeof(RTCRay),RTC_RAYN_DEFAULT);
+        else
+          rtcOccludedN(scene,rays,STREAM_SIZE,sizeof(RTCRay),RTC_RAYN_DEFAULT);
+      }        
+
+      //if (threadIndex != 0) 
+        g_barrier_active.wait(threadIndex);
+      double t1 = getSeconds();
+
+      delete [] numbers;
+      return t1-t0;
+    }
+    
+    double run (size_t numThreads)
+    {
+      RTCDevice device = rtcNewDevice((g_rtcore+",threads="+toString(numThreads)).c_str());
+      error_handler(rtcDeviceGetError(device));
+
+      int numPhi = 501;
+
+      RTCSceneFlags flags = RTC_SCENE_STATIC;
+      scene = rtcDeviceNewScene(device,flags,aflags);
+      addSphere (scene, RTC_GEOMETRY_STATIC, zero, 1, numPhi);
+      rtcCommit (scene);
+
+
+      g_num_threads = numThreads;
+      g_barrier_active.init(numThreads);
+      for (size_t i=1; i<numThreads; i++)
+	g_threads.push_back(createThread((thread_func)benchmark_rtcore_intersect_stream_throughput_thread,(void*)i,1000000,i));
+      setAffinity(0);
+      
+      //g_barrier_active.wait(0);
+      double t0 = getSeconds();
+
+      double delta = benchmark_rtcore_intersect_stream_throughput_thread(0);
+
+      //g_barrier_active.wait(0);
+      double t1 = getSeconds();
+      
+      for (size_t i=0; i<g_threads.size(); i++)	join(g_threads[i]);
+      g_threads.clear();
+      
+      rtcDeleteScene(scene);
+      rtcDeleteDevice(device);
+      return 1E-6*double(N)/(delta)*double(numThreads);
+    }
+  };
+
+  template<> RTCScene benchmark_rtcore_intersect_stream_throughput<true>::scene = nullptr;
+  template<> RTCScene benchmark_rtcore_intersect_stream_throughput<false>::scene = nullptr;
+
+
+  class benchmark_rtcore_intersect_coherent_stream_throughput : public Benchmark
+  {
+  public:
+#define COHERENT_STREAM_TILE_X 8
+#define COHERENT_STREAM_TILE_Y 8
+#define IMAGE_SIZE 1024
+    enum { N = IMAGE_SIZE*IMAGE_SIZE };
+    static RTCScene scene;
+
+    benchmark_rtcore_intersect_coherent_stream_throughput () 
+      : Benchmark("coherent_intersect_stream_throughput","MRays/s (all HW threads)") {}
+
+    static double benchmark_rtcore_intersect_coherent_stream_throughput_thread(void* arg) 
+    {
+      size_t threadIndex = (size_t) arg;
+      size_t threadCount = g_num_threads;
+
+      size_t width = IMAGE_SIZE;
+      size_t height = IMAGE_SIZE;
+      float rcpWidth = 1.0f/IMAGE_SIZE;
+      float rcpHeight = 1.0f/IMAGE_SIZE;
+
+
+      RTCRay rays[COHERENT_STREAM_TILE_X*COHERENT_STREAM_TILE_Y];
+      
+
+      //if (threadIndex != 0) 
+        g_barrier_active.wait(threadIndex);
+      double t0 = getSeconds();
+
+      for (size_t p=0;p<g_profile_loop_iterations;p++)
+      for (size_t yy=0; yy<height; yy+=COHERENT_STREAM_TILE_Y) {
+        for (size_t xx=0; xx<width; xx+=COHERENT_STREAM_TILE_X) {
+          size_t index=0;
+          for (size_t y=yy;y<yy+COHERENT_STREAM_TILE_Y;y++)
+            for (size_t x=xx;x<xx+COHERENT_STREAM_TILE_X;x++)
+              rays[index++] = makeRay(Vec3fa(zero),Vec3fa(float(x)*rcpWidth,1,float(y)*rcpHeight));
+          rtcIntersectN(scene,rays,index,sizeof(RTCRay),RTC_RAYN_DEFAULT);
+        }
+      }
+
+      //if (threadIndex != 0) 
+        g_barrier_active.wait(threadIndex);
+      double t1 = getSeconds();
+
+      return t1-t0;
+    }
+    
+    double run (size_t numThreads)
+    {
+      RTCDevice device = rtcNewDevice((g_rtcore+",threads="+toString(numThreads)).c_str());
+      error_handler(rtcDeviceGetError(device));
+
+      int numPhi = 501;
+
+      RTCSceneFlags flags = RTC_SCENE_STATIC;
+      scene = rtcDeviceNewScene(device,flags,aflags);
+      addSphere (scene, RTC_GEOMETRY_STATIC, zero, 1, numPhi);
+      rtcCommit (scene);
+    
+
+
+      g_num_threads = numThreads;
+      g_barrier_active.init(numThreads);
+      for (size_t i=1; i<numThreads; i++)
+	g_threads.push_back(createThread((thread_func)benchmark_rtcore_intersect_coherent_stream_throughput_thread,(void*)i,1000000,i));
+      setAffinity(0);
+      
+      //g_barrier_active.wait(0);
+      double t0 = getSeconds();
+
+      double delta = benchmark_rtcore_intersect_coherent_stream_throughput_thread(0);
+
+      //g_barrier_active.wait(0);
+      double t1 = getSeconds();
+      
+      for (size_t i=0; i<g_threads.size(); i++)	join(g_threads[i]);
+      g_threads.clear();
+      
+      rtcDeleteScene(scene);
+      rtcDeleteDevice(device);
+      return 1E-6*double(N)/(delta)*double(numThreads);
+    }
+  };
+
+  RTCScene benchmark_rtcore_intersect_coherent_stream_throughput::scene = nullptr;
 
 #endif
 
@@ -1434,9 +1701,21 @@ namespace embree
 #if HAS_INTERSECT16
     if (hasISA(AVX512KNL) || hasISA(KNC)) {
       benchmarks.push_back(new benchmark_rtcore_intersect16_throughput<true>());
-      //benchmarks.push_back(new benchmark_rtcore_intersect16_throughput<false>());
+      benchmarks.push_back(new benchmark_rtcore_intersect16_throughput<false>());
     }
 #endif
+
+#if HAS_INTERSECT8
+    if (hasISA(AVX)) {
+      benchmarks.push_back(new benchmark_rtcore_intersect8_throughput<true>());
+      benchmarks.push_back(new benchmark_rtcore_intersect8_throughput<false>());
+      benchmarks.push_back(new benchmark_rtcore_intersect_stream_throughput<true>());
+      benchmarks.push_back(new benchmark_rtcore_intersect_stream_throughput<false>());
+      benchmarks.push_back(new benchmark_rtcore_intersect_coherent_stream_throughput());
+
+    }
+#endif
+
 
     benchmarks.push_back(new benchmark_mutex_sys());
     benchmarks.push_back(new benchmark_barrier_sys());
@@ -1621,6 +1900,9 @@ namespace embree
 
   static void parseCommandLine(int argc, char** argv)
   {
+    Benchmark* benchmark = NULL;
+    size_t numThreads = 1;
+
     for (int i=1; i<argc; i++)
     {
       std::string tag = argv[i];
@@ -1643,16 +1925,20 @@ namespace embree
       /* run single benchmark */
       else if (tag == "-run" && i+2<argc) 
       {
-	size_t numThreads = atoi(argv[++i]);
+	numThreads = atoi(argv[++i]);
 	std::string name = argv[++i];
-	Benchmark* benchmark = getBenchmark(name);
-	benchmark->print(numThreads,16);
-        executed_benchmarks = true;
+	benchmark = getBenchmark(name);
       }
 
       else if (tag == "-threads" && i+1<argc) 
       {
 	g_num_threads_init = atoi(argv[++i]);
+      }
+
+      else if (tag == "-profile") 
+      {
+        std::cout << "ENABLE_PROFILING" << std::endl;
+	g_profile_loop_iterations = (size_t)-1;
       }
 
       /* skip unknown command line parameter */
@@ -1661,6 +1947,12 @@ namespace embree
         std::cerr << std::endl;
       }
     }
+    if (benchmark)
+    {
+      benchmark->print(numThreads,16);
+      executed_benchmarks = true;
+    }
+
   }
 
   /* main function in embree namespace */

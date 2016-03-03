@@ -40,7 +40,7 @@ namespace embree
   static int g_numBenchmarkFrames = 0;
   static bool g_interactive = true;
   static bool g_anim_mode = false;
-  extern "C" int g_instancing_mode = 0;
+  extern "C" { int g_instancing_mode = 0; }
   static Shader g_shader = SHADER_DEFAULT;
   static bool convert_tris_to_quads = false;
   static bool convert_bezier_to_lines = false;

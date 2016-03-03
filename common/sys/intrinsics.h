@@ -364,6 +364,10 @@ namespace embree
   __forceinline unsigned int __popcnt(unsigned int in) {
     int r = 0; asm ("popcnt %1,%0" : "=r"(r) : "r"(in)); return r;
   }
+
+  __forceinline int __popcnt(int in) {
+    int r = 0; asm ("popcnt %1,%0" : "=r"(r) : "r"(in)); return r;
+  }
 #endif
   
   __forceinline int __bsf(int v) {
@@ -394,6 +398,16 @@ namespace embree
     size_t r = 0; asm ("bsf %1,%0" : "=r"(r) : "r"(v)); return r;
 #endif
   }
+
+#if defined(__X86_64__) && defined(__SSE4_2__)
+  __forceinline size_t __popcnt(size_t v) {
+#if defined(__INTEL_COMPILER)
+    return _mm_countbits_64(v); 
+#else
+    return _mm_popcnt_u64(v);
+#endif
+  }
+#endif
   
   __forceinline int __bscf(int& v) 
   {

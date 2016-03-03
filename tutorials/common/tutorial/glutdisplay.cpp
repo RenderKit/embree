@@ -37,9 +37,11 @@
 #  include <GL/glut.h>
 #endif
 
-extern "C" float g_debug = 0.0f;
-extern "C" int g_debug_int0;
-extern "C" int g_debug_int1;
+extern "C" {
+  float g_debug = 0.0f;
+  int g_debug_int0;
+  int g_debug_int1;
+}
 
 namespace embree
 {

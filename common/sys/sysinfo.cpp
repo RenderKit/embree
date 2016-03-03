@@ -372,19 +372,13 @@ namespace embree
     static int nThreads = -1;
     if (nThreads != -1) return nThreads;
 
-    OSVERSIONINFO osvi;
-    ZeroMemory(&osvi, sizeof(OSVERSIONINFO));
-    osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-    GetVersionEx(&osvi);
-
     typedef WORD (WINAPI *GetActiveProcessorGroupCountFunc)();
     typedef DWORD (WINAPI *GetActiveProcessorCountFunc)(WORD);
     HMODULE hlib = LoadLibrary("Kernel32");
     GetActiveProcessorGroupCountFunc pGetActiveProcessorGroupCount = (GetActiveProcessorGroupCountFunc)GetProcAddress(hlib, "GetActiveProcessorGroupCount");
     GetActiveProcessorCountFunc      pGetActiveProcessorCount      = (GetActiveProcessorCountFunc)     GetProcAddress(hlib, "GetActiveProcessorCount");
 
-    if (pGetActiveProcessorGroupCount && pGetActiveProcessorCount &&
-       ((osvi.dwMajorVersion > 6) || ((osvi.dwMajorVersion == 6) && (osvi.dwMinorVersion >= 1)))) 
+    if (pGetActiveProcessorGroupCount && pGetActiveProcessorCount) 
     {
       int groups = pGetActiveProcessorGroupCount();
       int totalProcessors = 0;

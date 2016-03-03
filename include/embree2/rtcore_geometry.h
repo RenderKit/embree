@@ -412,6 +412,23 @@ RTCORE_API void* rtcGetUserData (RTCScene scene, unsigned geomID);
 RTCORE_API void rtcInterpolate(RTCScene scene, unsigned geomID, unsigned primID, float u, float v, RTCBufferType buffer, 
                                float* P, float* dPdu, float* dPdv, size_t numFloats);
 
+/*! Interpolates user data to some u/v location. The data buffer
+ *  specifies per vertex data to interpolate and can be one of the
+ *  RTC_VERTEX_BUFFER0/1 or RTC_USER_VERTEX_BUFFER0/1 and has to
+ *  contain numFloats floating point values to interpolate for each
+ *  vertex of the geometry. The P array will get filled with the
+ *  interpolated datam the dPdu and dPdv arrays with the u and v
+ *  derivative of the interpolation, and the ddPdudu, ddPdvdv, and
+ *  ddPdudv arrays with the respective second derivatives. One can
+ *  disable 1) the calculation of the interpolated value by setting P
+ *  to NULL, 2) the calculation of the 1st order derivatives by
+ *  setting dPdu and dPdv to NULL, 3) the calculation of the second
+ *  order derivatives by setting ddPdudu, ddPdvdv, and ddPdudv to
+ *  NULL. The buffers have to be padded at the end such that the last
+ *  element can be read or written safely using SSE instructions. */
+RTCORE_API void rtcInterpolate2(RTCScene scene, unsigned geomID, unsigned primID, float u, float v, RTCBufferType buffer, 
+                                float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
+
 /*! Interpolates user data to an array of u/v locations. The valid
  *  pointer points to an integer array that specified which entries in
  *  the u/v arrays are valid (-1 denotes valid, and 0 invalid). If the
@@ -419,9 +436,9 @@ RTCORE_API void rtcInterpolate(RTCScene scene, unsigned geomID, unsigned primID,
  *  buffer specifies per vertex data to interpolate and can be one of
  *  the RTC_VERTEX_BUFFER0/1 or RTC_USER_VERTEX_BUFFER0/1 and has to
  *  contain numFloats floating point values to interpolate for each
- *  vertex of the geometry. The dP array will get filled with the
+ *  vertex of the geometry. The P array will get filled with the
  *  interpolated data, and the dPdu and dPdv arrays with the u and v
- *  derivative of the interpolation. If the pointers dP is NULL, the
+ *  derivative of the interpolation. If the pointers P is NULL, the
  *  value will not get calculated. If dPdu and dPdv are NULL the
  *  derivatives will not get calculated. Both dPdu and dPdv have to be
  *  either valid or NULL. These destination arrays are filled in
@@ -432,6 +449,30 @@ RTCORE_API void rtcInterpolateN(RTCScene scene, unsigned geomID,
                                 const void* valid, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
                                 RTCBufferType buffer, 
                                 float* P, float* dPdu, float* dPdv, size_t numFloats);
+
+/*! Interpolates user data to an array of u/v locations. The valid
+ *  pointer points to an integer array that specified which entries in
+ *  the u/v arrays are valid (-1 denotes valid, and 0 invalid). If the
+ *  valid pointer is NULL all elements are considers valid. The data
+ *  buffer specifies per vertex data to interpolate and can be one of
+ *  the RTC_VERTEX_BUFFER0/1 or RTC_USER_VERTEX_BUFFER0/1 and has to
+ *  contain numFloats floating point values to interpolate for each
+ *  vertex of the geometry. The P array will get filled with the
+ *  interpolated datam the dPdu and dPdv arrays with the u and v
+ *  derivative of the interpolation, and the ddPdudu, ddPdvdv, and
+ *  ddPdudv arrays with the respective second derivatives. One can
+ *  disable 1) the calculation of the interpolated value by setting P
+ *  to NULL, 2) the calculation of the 1st order derivatives by
+ *  setting dPdu and dPdv to NULL, 3) the calculation of the second
+ *  order derivatives by setting ddPdudu, ddPdvdv, and ddPdudv to
+ *  NULL. These destination arrays are filled in structure of array
+ *  (SoA) layout. The buffer has to be padded at the end such that
+ *  the last element can be read safely using SSE
+ *  instructions. */
+RTCORE_API void rtcInterpolateN2(RTCScene scene, unsigned geomID, 
+                                const void* valid, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
+                                RTCBufferType buffer, 
+                                float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
 
 /*! \brief Deletes the geometry. */
 RTCORE_API void rtcDeleteGeometry (RTCScene scene, unsigned geomID);

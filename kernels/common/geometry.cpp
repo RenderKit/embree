@@ -206,7 +206,7 @@ namespace embree
   }
 
   void Geometry::interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
-                              RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats)
+                              RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats)
   {
     if (numFloats > 256) throw_RTCError(RTC_INVALID_OPERATION,"maximally 256 floating point values can be interpolated per vertex");
     const int* valid = (const int*) valid_i;
@@ -214,17 +214,40 @@ namespace embree
     __aligned(64) float P_tmp[256];
     __aligned(64) float dPdu_tmp[256];
     __aligned(64) float dPdv_tmp[256];
-    float* Pt = P ? P_tmp : nullptr;
-    float* dPdut = dPdu ? dPdu_tmp : nullptr;
-    float* dPdvt = dPdv ? dPdv_tmp : nullptr;
+    __aligned(64) float ddPdudu_tmp[256];
+    __aligned(64) float ddPdvdv_tmp[256];
+    __aligned(64) float ddPdudv_tmp[256];
 
+    float* Pt = P ? P_tmp : nullptr;
+    float* dPdut = nullptr, *dPdvt = nullptr;
+    if (dPdu) { dPdut = dPdu_tmp; dPdvt = dPdv_tmp; }
+    float* ddPdudut = nullptr, *ddPdvdvt = nullptr, *ddPdudvt = nullptr;
+    if (ddPdudu) { ddPdudut = ddPdudu_tmp; ddPdvdvt = ddPdvdv_tmp; ddPdudvt = ddPdudv_tmp; }
+    
     for (size_t i=0; i<numUVs; i++)
     {
       if (valid && !valid[i]) continue;
-      interpolate(primIDs[i],u[i],v[i],buffer,Pt,dPdut,dPdvt,numFloats);
-      if (P   ) for (size_t j=0; j<numFloats; j++) P[j*numUVs+i] = Pt[j];
-      if (dPdu) for (size_t j=0; j<numFloats; j++) dPdu[j*numUVs+i] = dPdut[j];
-      if (dPdv) for (size_t j=0; j<numFloats; j++) dPdv[j*numUVs+i] = dPdvt[j];
+      interpolate(primIDs[i],u[i],v[i],buffer,Pt,dPdut,dPdvt,ddPdudut,ddPdvdvt,ddPdudvt,numFloats);
+      
+      if (likely(P)) {
+        for (size_t j=0; j<numFloats; j++) 
+          P[j*numUVs+i] = Pt[j];
+      }
+      if (likely(dPdu)) 
+      {
+        for (size_t j=0; j<numFloats; j++) {
+          dPdu[j*numUVs+i] = dPdut[j];
+          dPdv[j*numUVs+i] = dPdvt[j];
+        }
+      }
+      if (likely(ddPdudu)) 
+      {
+        for (size_t j=0; j<numFloats; j++) {
+          ddPdudu[j*numUVs+i] = ddPdudut[j];
+          ddPdvdv[j*numUVs+i] = ddPdvdvt[j];
+          ddPdudv[j*numUVs+i] = ddPdudvt[j];
+        }
+      }
     }
   }
 }

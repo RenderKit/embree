@@ -17,6 +17,7 @@
 INCLUDE(tutorial)
 ADD_TUTORIAL(viewer)
 ADD_EMBREE_MODELS_TEST(viewer viewer viewer)
+ADD_EMBREE_MODELS_TEST(viewer_quad viewer viewer -convert-triangles-to-quads)
 ADD_EMBREE_SUBDIV_MODELS_TEST(viewer viewer viewer viewer)
 
 IF (BUILD_TESTING_INTENSIVE)

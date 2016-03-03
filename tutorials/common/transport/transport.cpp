@@ -32,7 +32,9 @@ namespace embree
   int g_height = -1;
 
   /* scene */
-  extern "C" ISPCScene* g_ispc_scene = nullptr;
+  extern "C" {
+    ISPCScene* g_ispc_scene = nullptr;
+  }
 
   void init(const char* cfg) {
     device_init(cfg);

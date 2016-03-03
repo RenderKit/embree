@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "../sys/alloc.h"
 #include "math.h"
 #include "../simd/sse.h"
 
@@ -27,6 +28,8 @@ namespace embree
 
   struct __aligned(16) Vec3fa
   {
+    ALIGNED_STRUCT;
+
     typedef float Scalar;
     enum { N = 3 };
     union {
@@ -280,7 +283,7 @@ namespace embree
   __forceinline Vec3fa normalize_safe( const Vec3fa& a ) { 
     const float d = dot(a,a); if (unlikely(d == 0.0f)) return a; else return a*rsqrt(d);
   }
-
+  
   /*! differentiated normalization */
   __forceinline Vec3fa dnormalize(const Vec3fa& p, const Vec3fa& dp)
   {

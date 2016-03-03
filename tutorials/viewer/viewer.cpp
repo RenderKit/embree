@@ -19,6 +19,7 @@
 #include "../common/scenegraph/xml_loader.h"
 #include "../common/tutorial/scene.h"
 #include "../common/image/image.h"
+#include "../common/tutorial/tutorial_device.h"
 
 namespace embree
 {
@@ -39,7 +40,7 @@ namespace embree
   static int g_numBenchmarkFrames = 0;
   static bool g_interactive = true;
   static bool g_anim_mode = false;
-  extern "C" int g_instancing_mode = 0;
+  extern "C" { int g_instancing_mode = 0; }
   static FileName keyframeList = "";
   static bool convert_tris_to_quads = false;
   static bool convert_bezier_to_lines = false;

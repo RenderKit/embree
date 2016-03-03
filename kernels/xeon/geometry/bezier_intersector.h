@@ -442,8 +442,7 @@ namespace embree
       __forceinline float t  (const size_t i) const { return vt[i]; }
       __forceinline Vec3fa Ng(const size_t i) const 
       { 
-        const BezierCurve3fa curve3D(p0,p1,p2,p3,0.0f,1.0f,0);
-        Vec3fa P,T; curve3D.eval(vu[i],P,T);
+        Vec3fa T = BezierCurve3fa(p0,p1,p2,p3,0.0f,1.0f,0).eval_du(vu[i]);
         return T == Vec3fa(zero) ? Vec3fa(one) : T; 
       }
       

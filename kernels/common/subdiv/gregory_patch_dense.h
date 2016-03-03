@@ -105,12 +105,23 @@ namespace embree
       return GregoryPatch3fa::normal_t(matrix,f_m,uu,vv);
     }
 
-    __forceinline void eval(const float u, const float v, Vec3fa* P, Vec3fa* dPdu, Vec3fa* dPdv, const float dscale = 1.0f) const
+    __forceinline void eval(const float u, const float v, 
+                            Vec3fa* P, Vec3fa* dPdu, Vec3fa* dPdv, Vec3fa* ddPdudu, Vec3fa* ddPdvdv, Vec3fa* ddPdudv,
+                            const float dscale = 1.0f) const
     {
       __aligned(64) Vec3fa f_m[2][2]; extract_f_m(f_m);
-      if (P)    *P    = GregoryPatch3fa::eval(matrix,f_m,u,v); 
-      if (dPdu) *dPdu = GregoryPatch3fa::tangentU(matrix,f_m,u,v)*dscale; 
-      if (dPdv) *dPdv = GregoryPatch3fa::tangentV(matrix,f_m,u,v)*dscale; 
+      if (P) {
+        *P    = GregoryPatch3fa::eval(matrix,f_m,u,v); 
+      }
+      if (dPdu) {
+        assert(dPdu); *dPdu = GregoryPatch3fa::eval_du(matrix,f_m,u,v)*dscale; 
+        assert(dPdv); *dPdv = GregoryPatch3fa::eval_dv(matrix,f_m,u,v)*dscale; 
+      }
+      if (ddPdudu) {
+        assert(ddPdudu); *ddPdudu = GregoryPatch3fa::eval_dudu(matrix,f_m,u,v)*sqr(dscale); 
+        assert(ddPdvdv); *ddPdvdv = GregoryPatch3fa::eval_dvdv(matrix,f_m,u,v)*sqr(dscale); 
+        assert(ddPdudv); *ddPdudv = GregoryPatch3fa::eval_dudv(matrix,f_m,u,v)*sqr(dscale); 
+      }
     }
 
     template<typename vbool, typename vfloat>

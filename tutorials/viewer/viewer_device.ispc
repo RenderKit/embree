@@ -31,6 +31,8 @@ uniform bool g_subdiv_mode = false;
 
 #define SPP 1
 
+#define TEST_STREAM_INTERFACE 0
+
 //#define FORCE_FIXED_EDGE_TESSELLATION
 #define FIXED_EDGE_TESSELLATION_VALUE 3
 
@@ -560,6 +562,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
   return color*dot(neg(ray.dir),dg.Ns);
 }
 
+
 /* task that renders a single screen tile */
 task void renderTile(uniform int* uniform pixels,
                      const uniform int width,
@@ -580,6 +583,44 @@ task void renderTile(uniform int* uniform pixels,
   const uniform int y0 = tileY * TILE_SIZE_Y;
   const uniform int y1 = min(y0+TILE_SIZE_Y,height);
 
+#if TEST_STREAM_INTERFACE == 1
+  RTCRay rays[8];
+  uniform int packets = 0;
+  uniform RTCRaySOA ray_soa;
+  initRTCRaySOA(ray_soa,rays[0]);
+
+  foreach_tiled (y = y0 ... y1, x = x0 ... x1)
+  {
+    RandomSampler sampler;
+    RandomSampler_init(sampler, x, y, 0);
+
+    /* initialize ray */
+    RTCRay &ray = rays[packets];
+    ray.org = p;
+    ray.dir = normalize(x*vx + y*vy + vz);
+    ray.tnear = 0.0f;
+    ray.tfar = inf;
+    ray.geomID = RTC_INVALID_GEOMETRY_ID;
+    ray.primID = RTC_INVALID_GEOMETRY_ID;
+    ray.mask = -1;
+    ray.time = RandomSampler_get1D(sampler);
+    packets++;
+  }
+  rtcIntersectN_SOA(g_scene,ray_soa,8,8,sizeof(RTCRay),0);
+
+  packets = 0;
+  foreach_tiled (y = y0 ... y1, x = x0 ... x1)
+  {
+    RTCRay &ray = rays[packets++];
+    Vec3f color = make_Vec3f(0.0f);
+    if (ray.geomID != RTC_INVALID_GEOMETRY_ID) color = make_Vec3f(abs(dot(ray.dir,normalize(ray.Ng))));
+    /* write color to framebuffer */
+    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
+    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
+    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
+    pixels[y*width+x] = (b << 16) + (g << 8) + r;
+  }
+#else
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
@@ -591,6 +632,9 @@ task void renderTile(uniform int* uniform pixels,
     unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
     pixels[y*width+x] = (b << 16) + (g << 8) + r;
   }
+
+#endif
+
 }
 
 uniform Vec3f old_p; 

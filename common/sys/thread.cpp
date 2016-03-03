@@ -39,10 +39,6 @@ namespace embree
   /*! set the affinity of a given thread */
   void setAffinity(HANDLE thread, ssize_t affinity)
   {
-    OSVERSIONINFO osvi;
-    ZeroMemory(&osvi, sizeof(OSVERSIONINFO));
-    osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-    GetVersionEx(&osvi);
     typedef WORD (WINAPI *GetActiveProcessorGroupCountFunc)();
     typedef DWORD (WINAPI *GetActiveProcessorCountFunc)(WORD);
     typedef BOOL (WINAPI *SetThreadGroupAffinityFunc)(HANDLE, const GROUP_AFFINITY *, PGROUP_AFFINITY);
@@ -52,8 +48,7 @@ namespace embree
     GetActiveProcessorCountFunc pGetActiveProcessorCount = (GetActiveProcessorCountFunc)GetProcAddress(hlib, "GetActiveProcessorCount");
     SetThreadGroupAffinityFunc pSetThreadGroupAffinity = (SetThreadGroupAffinityFunc)GetProcAddress(hlib, "SetThreadGroupAffinity");
     SetThreadIdealProcessorExFunc pSetThreadIdealProcessorEx = (SetThreadIdealProcessorExFunc)GetProcAddress(hlib, "SetThreadIdealProcessorEx");
-    if (pGetActiveProcessorGroupCount && pGetActiveProcessorCount && pSetThreadGroupAffinity && pSetThreadIdealProcessorEx &&
-       ((osvi.dwMajorVersion > 6) || ((osvi.dwMajorVersion == 6) && (osvi.dwMinorVersion >= 1)))) 
+    if (pGetActiveProcessorGroupCount && pGetActiveProcessorCount && pSetThreadGroupAffinity && pSetThreadIdealProcessorEx) 
     {
       int groups = pGetActiveProcessorGroupCount();
       int totalProcessors = 0, group = 0, number = 0;
@@ -172,22 +167,79 @@ namespace embree
 ////////////////////////////////////////////////////////////////////////////////
 
 #if defined(__LINUX__)
+/* to parse thread topology */
+#include <sstream>
+
 namespace embree
 {
+
   ssize_t mapThreadID(ssize_t threadID)
   {
+#if 1
+    static std::vector<int> threadIDs;
+
+    if (threadIDs.size() == 0)
+    {
+      /* parse thread/CPU topology */
+      for (size_t cpuID=0;;cpuID++)
+      {
+        std::string cpu = std::string("/sys/devices/system/cpu/cpu") + std::to_string((long long)cpuID) + std::string("/topology/thread_siblings_list");
+        FILE *file = fopen(cpu.c_str(), "r");
+        if(file)
+        {
+          char buffer[256];
+          if (fgets(buffer,256,file) != NULL)
+          {
+            std::stringstream threads_config(buffer);
+            int i;
+            while (threads_config >> i)
+            {
+              bool found = false;
+              for (size_t j=0;j<threadIDs.size();j++)
+                if (threadIDs[j] == i)
+                {
+                  found = true;
+                  break;
+                }
+              if (!found)
+                threadIDs.push_back(i);
+              if (threads_config.peek() == ',')
+                threads_config.ignore();
+            }
+          }
+          fclose(file);
+        }
+        else
+          break;
+
+      }
+
+      for (size_t i=0;i<threadIDs.size();i++)
+        for (size_t j=0;j<threadIDs.size();j++)
+          if (i != j)
+            if (threadIDs[i] == threadIDs[j])
+            {
+              PRINT(i);
+              PRINT(j);
+              PRINT(threadIDs[i]);
+              PRINT(threadIDs[j]);
+              FATAL("threadID error");
+            }
+
 #if 0
-#warning special affinity settings active    
-#define THREADS_PER_CORE 4
-#define CORES 54
-#define OFFSET 49
-#define CORES2 12
-#define OFFSET2 1    
-    ssize_t ID = OFFSET + ((threadID%THREADS_PER_CORE)*CORES) + (threadID/THREADS_PER_CORE);
-    if (threadID >= CORES*THREADS_PER_CORE)
-      ID = OFFSET2 +  ((threadID%THREADS_PER_CORE)*CORES2) + (threadID/THREADS_PER_CORE);
+      for (size_t i=0;i<threadIDs.size();i++)
+        std::cout << "i " << i << " threadIDs[i] " << threadIDs[i] << std::endl;
+#endif
+    }
+
+    ssize_t ID = threadID;
+
+    if (threadID < threadIDs.size())
+      ID = threadIDs[threadID];
+
 #else
     ssize_t ID = threadID;
+
 #endif
     //std::cout << threadID << " -> " << ID << std::endl;
     return ID;

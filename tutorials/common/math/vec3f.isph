@@ -93,6 +93,16 @@ inline uniform Vec3f pow(const uniform Vec3f a, const uniform float b) { return 
 inline varying Vec3f pow(const varying Vec3f a, const varying float b) { return make_Vec3f(pow(a.x,b), pow(a.y,b), pow(a.z,b)); }
 
 ////////////////////////////////////////////////////////////////////////////////
+/// Ternary Operators
+////////////////////////////////////////////////////////////////////////////////
+
+inline uniform Vec3f lerp(const uniform float s, const uniform Vec3f v0, const uniform Vec3f v1) { return (1.0f-s)*v0+s*v1; }
+inline varying Vec3f lerp(const varying float s, const varying Vec3f v0, const varying Vec3f v1) { return (1.0f-s)*v0+s*v1; }
+
+inline uniform Vec3f clamp(const uniform Vec3f v, const uniform Vec3f vmin, const uniform Vec3f vmax) { return max(min(v,vmax),vmin); }
+inline varying Vec3f clamp(const varying Vec3f v, const varying Vec3f vmin, const varying Vec3f vmax) { return max(min(v,vmax),vmin); }
+
+////////////////////////////////////////////////////////////////////////////////
 /// Reduction Operators
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -134,6 +144,14 @@ inline varying float length(const varying Vec3f a) { return sqrt(dot(a,a)); }
 inline uniform Vec3f normalize(const uniform Vec3f a) { return rsqrt(dot(a,a))*a; }
 inline varying Vec3f normalize(const varying Vec3f a) { return rsqrt(dot(a,a))*a; }
 
+/*! differentiated normalization */
+inline varying Vec3f dnormalize(const varying Vec3f& p, const varying Vec3f& dp)
+{
+  const float pp  = dot(p,p);
+  const float pdp = dot(p,dp);
+  return (pp*dp-pdp*p)*rcp(pp)*rsqrt(pp);
+}
+
 inline uniform float distance(const uniform Vec3f a, const uniform Vec3f b) { return length(a-b); }
 inline varying float distance(const varying Vec3f a, const uniform Vec3f b) { return length(a-b); }
 
@@ -143,9 +161,6 @@ inline uniform Vec3f cross(const uniform Vec3f a, const uniform Vec3f b) {
 inline varying Vec3f cross(const varying Vec3f a, const varying Vec3f b) { 
   return make_Vec3f(a.y*b.z-a.z*b.y,a.z*b.x-a.x*b.z,a.x*b.y-a.y*b.x);
 }
-
-inline uniform Vec3f lerp(const uniform float s, const uniform Vec3f v0, const uniform Vec3f v1) { return (1.0f-s)*v0+s*v1; }
-inline varying Vec3f lerp(const varying float s, const varying Vec3f v0, const varying Vec3f v1) { return (1.0f-s)*v0+s*v1; }
 
 inline uniform Vec3f reflect(const uniform Vec3f& V, const uniform Vec3f& N) { return 2.0f*dot(V,N)*N-V; }
 inline varying Vec3f reflect(const uniform Vec3f& V, const varying Vec3f& N) { return 2.0f*dot(V,N)*N-V; }
