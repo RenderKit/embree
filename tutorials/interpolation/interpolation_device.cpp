@@ -426,6 +426,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   
   /* intersect ray with scene */
   //std::cout << std::endl;
+  //PRINT("primary ray");
   rtcIntersect(g_scene,ray);
   //PRINT(ray);
   
@@ -473,6 +474,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     
     /* trace shadow ray */
     //std::cout << std::endl;
+    //PRINT("tracing occlusion rays");
     rtcOccluded(g_scene,shadow);
     //PRINT(shadow);
     
