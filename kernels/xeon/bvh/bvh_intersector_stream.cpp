@@ -46,7 +46,7 @@ namespace embree
 
 #if defined(__AVX__)
 
-    static const size_t MAX_RAYS_PER_OCTANT = 64;
+    static const size_t MAX_RAYS_PER_OCTANT = 8*sizeof(size_t);
     
 #define FIBERS 1
 
@@ -64,7 +64,7 @@ namespace embree
         const size_t numOctantRays = (r + MAX_RAYS_PER_OCTANT >= numTotalRays) ? numTotalRays-r : MAX_RAYS_PER_OCTANT;
 
         /* inactive rays should have been filtered out before */
-        size_t m_active = numOctantRays == 64 ? (size_t)-1 : (((size_t)1 << numOctantRays))-1;
+        size_t m_active = numOctantRays == 8*sizeof(size_t) ? (size_t)-1 : (((size_t)1 << numOctantRays))-1;
         assert(m_active);
 
         initRayContext(ray_ctx,rays,numOctantRays);
@@ -305,7 +305,7 @@ namespace embree
         const size_t numOctantRays = (r + MAX_RAYS_PER_OCTANT >= numTotalRays) ? numTotalRays-r : MAX_RAYS_PER_OCTANT;
 
         /* inactive rays should have been filtered out before */
-        size_t m_active = numOctantRays == 64 ? (size_t)-1 : (((size_t)1 << numOctantRays))-1;
+        size_t m_active = numOctantRays ==  8*sizeof(size_t) ? (size_t)-1 : (((size_t)1 << numOctantRays))-1;
 
         initRayContext(ray_ctx,rays,numOctantRays);
 

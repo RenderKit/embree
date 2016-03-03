@@ -18,7 +18,7 @@
 #include "scene.h"
 
 #if defined(__INTEL_COMPILER)
-#pragma warning (disable: 1478) // warning: function was declared deprecated
+#pragma warning (disable: 1478)   // warning: function was declared deprecated
 #elif defined(_MSC_VER)
 #pragma warning (disable: 4996) // warning: function was declared deprecated
 #elif defined(__clang__)
