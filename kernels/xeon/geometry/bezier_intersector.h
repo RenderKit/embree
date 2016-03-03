@@ -323,6 +323,9 @@ namespace embree
         {
           //PRINT("converged");
           //PRINT2(f,g);
+          //if (std::isnan(t) || std::isinf(t)) return false;
+          //if (std::isnan(u) || std::isinf(t)) return false;
+          if (t > t_o) return false;
           if (t < ray.tnear || t > ray.tfar) return false;
           //PRINT("hit");
           u_o = u;
@@ -331,6 +334,9 @@ namespace embree
           Vec3fa U = dPdu+dPdu.w*R;
           Vec3fa V = cross(dPdu,R);
           Ng_o = cross(V,U);
+          //PRINT(u_o);
+          //PRINT(t_o);
+          //PRINT(Ng_o);
           return true;
         }
       }
@@ -403,6 +409,7 @@ namespace embree
       //PRINT(tp);
 
       valid &= tp.lower <= tp.upper;
+      valid &= tp.lower < t_o;
       if (none(valid)) return false;
       //PRINT(valid);
 
@@ -422,9 +429,15 @@ namespace embree
             //bool h = intersect_bezier_iterative(ray,curve, ru, u_o, t_o, Ng_o);
             //bool h = intersect_bezier_iterative3(ray,curve, vu0[i], vu0[i+1], tp.lower[i], tp.upper[i], tc.upper[i], u_o, t_o, Ng_o);
 
-            bool h = intersect_bezier_iterative_jacobian(ray,curve,ru,tp.lower[i],u_o,t_o,Ng_o);
-            if (u_o < 0.0f || u_o > 1.0f) return false;
-            return h;
+            if (!intersect_bezier_iterative_jacobian(ray,curve,ru,tp.lower[i],u_o,t_o,Ng_o))
+              continue;
+            
+            if (u_o < 0.0f || u_o > 1.0f)
+              continue;
+
+            found = true;
+            valid &= tp.lower < t_o;
+            continue;
           }
           else
           {
@@ -436,22 +449,24 @@ namespace embree
               //u_o = float(i+1)/float(VSIZEX);
               if (h0.lower[i] == tp.lower[i]) Ng_o = -Vec3fa(dP0du.x[i],dP0du.y[i],dP0du.z[i]);
               if (h1.lower[i] == tp.lower[i]) Ng_o = +Vec3fa(dP3du.x[i],dP3du.y[i],dP3du.z[i]);
-              return true;
-              //found = true;
+              //return true;
+              found = true;
+              valid &= tp.lower < t_o;
             } else {
               //PRINT("miss");
             }
-            return false;
-            //continue;
+            //return false;
+            continue;
           }
         }
 
-        if (intersect_bezier_recursive(ray,curve,vu0[i+0],vu0[i+1],depth+1,u_o,t_o,Ng_o))
-          return true;
-          //found = true;
+        if (intersect_bezier_recursive(ray,curve,vu0[i+0],vu0[i+1],depth+1,u_o,t_o,Ng_o)) {
+          //return true;
+          found = true; valid &= tp.lower < t_o;
+        }
       }
-      return false;
-      //return found;
+      //return false;
+      return found;
     }
 
     template<int M>
