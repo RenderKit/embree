@@ -239,7 +239,8 @@ namespace embree
     Ref<SceneGraph::Node> loadQuadMesh(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadSubdivMesh(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadLineSegments(const Ref<XML>& xml);
-    Ref<SceneGraph::Node> loadHairSet(const Ref<XML>& xml);
+    Ref<SceneGraph::Node> loadBezierCurves(const Ref<XML>& xml);
+    Ref<SceneGraph::Node> loadBSplineCurves(const Ref<XML>& xml);
 
   private:
     Ref<SceneGraph::MaterialNode> loadMaterial(const Ref<XML>& xml);
@@ -924,7 +925,7 @@ namespace embree
     return mesh;
   }
 
-  Ref<SceneGraph::Node> XMLLoader::loadHairSet(const Ref<XML>& xml) 
+  Ref<SceneGraph::Node> XMLLoader::loadBezierCurves(const Ref<XML>& xml) 
   {
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
     std::vector<Vec3fa> positions  = loadVec4fArray(xml->childOpt("positions"));
@@ -935,6 +936,63 @@ namespace embree
     hair->v .resize(positions .size()); for (size_t i=0; i<positions .size(); i++) hair->v [i] = positions [i];
     hair->v2.resize(positions2.size()); for (size_t i=0; i<positions2.size(); i++) hair->v2[i] = positions2[i];
     hair->hairs.resize(indices.size()); for (size_t i=0; i<indices.size(); i++) hair->hairs[i] = SceneGraph::HairSetNode::Hair(indices[i].x,indices[i].y);
+    hair->verify();
+    return hair;
+  }
+
+  Ref<SceneGraph::Node> XMLLoader::loadBSplineCurves(const Ref<XML>& xml) 
+  {
+    Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
+    std::vector<Vec3fa> positions  = loadVec4fArray(xml->childOpt("positions"));
+    std::vector<Vec3fa> positions2 = loadVec4fArray(xml->childOpt("positions2"));
+    std::vector<int> indices       = loadIntArray(xml->childOpt("indices"));
+
+    SceneGraph::HairSetNode* hair = new SceneGraph::HairSetNode(material);
+
+    hair->hairs.resize(indices.size());
+    for (size_t i=0; i<indices.size(); i++) {
+      hair->hairs[i] = SceneGraph::HairSetNode::Hair(indices[i],0);
+    }
+      
+    if (positions.size())
+    {
+      /* converts b-spline to bezier basis */
+      hair->v.resize(4*indices.size());
+      for (size_t i=0; i<indices.size(); i++) 
+      {
+        const size_t idx = indices[i];
+        vfloat4 v0 = vfloat4::loadu(&positions[idx-1]);  
+        vfloat4 v1 = vfloat4::loadu(&positions[idx+0]);
+        vfloat4 v2 = vfloat4::loadu(&positions[idx+1]);
+        vfloat4 v3 = vfloat4::loadu(&positions[idx+2]);
+        v0 = select(isnan(v0),2.0f*v1-v2,v0); // nan triggers edge rule
+        v3 = select(isnan(v3),2.0f*v2-v1,v3); // nan triggers edge rule
+        hair->v[4*i+0] = Vec3fa((1.0f/6.0f)*v0 + (2.0f/3.0f)*v1 + (1.0f/6.0f)*v2);
+        hair->v[4*i+1] = Vec3fa((2.0f/3.0f)*v1 + (1.0f/3.0f)*v2);
+        hair->v[4*i+2] = Vec3fa((1.0f/3.0f)*v1 + (2.0f/3.0f)*v2);
+        hair->v[4*i+3] = Vec3fa((1.0f/6.0f)*v1 + (2.0f/3.0f)*v2 + (1.0f/6.0f)*v3);
+      }
+    }
+
+    if (positions2.size()) 
+    {
+      /* converts b-spline to bezier basis */
+      hair->v2.resize(4*indices.size());
+      for (size_t i=0; i<indices.size(); i++) 
+      {
+        const size_t idx = indices[i];
+        vfloat4 v0 = vfloat4::loadu(&positions2[idx-1]);
+        vfloat4 v1 = vfloat4::loadu(&positions2[idx+0]);
+        vfloat4 v2 = vfloat4::loadu(&positions2[idx+1]);
+        vfloat4 v3 = vfloat4::loadu(&positions2[idx+2]);
+        v0 = select(isnan(v0),2.0f*v1-v2,v0); // nan triggers edge rule
+        v3 = select(isnan(v3),2.0f*v2-v1,v3); // nan triggers edge rule
+        hair->v2[4*i+0] = Vec3fa((1.0f/6.0f)*v0 + (2.0f/3.0f)*v1 + (1.0f/6.0f)*v2);
+        hair->v2[4*i+1] = Vec3fa((2.0f/3.0f)*v1 + (1.0f/3.0f)*v2);
+        hair->v2[4*i+2] = Vec3fa((1.0f/3.0f)*v1 + (2.0f/3.0f)*v2);
+        hair->v2[4*i+3] = Vec3fa((1.0f/6.0f)*v1 + (2.0f/3.0f)*v2 + (1.0f/6.0f)*v3);
+      }
+    }
     hair->verify();
     return hair;
   }
@@ -1017,7 +1075,9 @@ namespace embree
       else if (xml->name == "QuadMesh"        ) return sceneMap[id] = loadQuadMesh        (xml);
       else if (xml->name == "SubdivisionMesh" ) return sceneMap[id] = loadSubdivMesh      (xml);
       else if (xml->name == "LineSegments"    ) return sceneMap[id] = loadLineSegments    (xml);
-      else if (xml->name == "Hair"            ) return sceneMap[id] = loadHairSet         (xml);
+      else if (xml->name == "Hair"            ) return sceneMap[id] = loadBezierCurves    (xml);
+      else if (xml->name == "BezierCurves"    ) return sceneMap[id] = loadBezierCurves    (xml);
+      else if (xml->name == "BSplineCurves"   ) return sceneMap[id] = loadBSplineCurves   (xml);
       else if (xml->name == "Group"           ) return sceneMap[id] = loadGroupNode       (xml);
       else if (xml->name == "Transform"       ) return sceneMap[id] = loadTransformNode   (xml);
       else if (xml->name == "Transform2"      ) return sceneMap[id] = loadTransform2Node  (xml);

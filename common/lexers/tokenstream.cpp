@@ -86,6 +86,10 @@ namespace embree
   {
     bool ok = false;
     std::string str;
+    if (trySymbol("nan")) {
+      token = Token(float(nan));
+      return true;
+    }
     if (trySymbol("+inf")) {
       token = Token(float(pos_inf));
       return true;

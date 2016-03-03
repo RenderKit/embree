@@ -191,6 +191,10 @@ namespace embree
     return _mm_add_ps(_mm_mul_ps(_mm_set_ps(1.5f, 1.5f, 1.5f, 1.5f), r),
                       _mm_mul_ps(_mm_mul_ps(_mm_mul_ps(a, _mm_set_ps(-0.5f, -0.5f, -0.5f, -0.5f)), r), _mm_mul_ps(r, r)));
   }
+  __forceinline const vbool4 isnan( const vfloat4& a ) {
+    const vfloat4 b = _mm_and_ps(a.v, _mm_castsi128_ps(_mm_set1_epi32(0x7fffffff)));
+    return _mm_castsi128_ps(_mm_cmpgt_epi32 (_mm_castps_si128(b),_mm_set1_epi32(0x7f800000)));  
+  }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Binary Operators
