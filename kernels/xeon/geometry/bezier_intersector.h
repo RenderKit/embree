@@ -330,7 +330,7 @@ namespace embree
           Vec3fa R = normalize(Q-P);
           Vec3fa U = dPdu+dPdu.w*R;
           Vec3fa V = cross(dPdu,R);
-          Ng_o = cross(U,V);
+          Ng_o = cross(V,U);
           return true;
         }
       }
