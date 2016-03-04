@@ -99,10 +99,11 @@ namespace embree
       const Vec4vfx P2 = P3 - dP3du;
 
       /* calculate bounding cylinders */
-      const vfloatx r1 = sqrt(sqr_point_to_line_distance(Vec3vfx(dP0du),Vec3vfx(P3-P0)));
-      const vfloatx r2 = sqrt(sqr_point_to_line_distance(Vec3vfx(dP3du),Vec3vfx(P3-P0)));
-      const vfloatx r_outer = max(P0.w,P1.w,P2.w,P3.w)+max(r1,r2);
-      const vfloatx r_inner = max(0.0f,min(P0.w,P1.w,P2.w,P3.w)-max(r1,r2));
+      const vfloatx rr1 = sqr_point_to_line_distance(Vec3vfx(dP0du),Vec3vfx(P3-P0));
+      const vfloatx rr2 = sqr_point_to_line_distance(Vec3vfx(dP3du),Vec3vfx(P3-P0));
+      const vfloatx maxr12 = sqrt(max(rr1,rr2));
+      const vfloatx r_outer = max(P0.w,P1.w,P2.w,P3.w)+maxr12;
+      const vfloatx r_inner = max(0.0f,min(P0.w,P1.w,P2.w,P3.w)-maxr12);
       const CylinderN<VSIZEX> cylinder_outer(Vec3vfx(P0),Vec3vfx(P3),r_outer);
       const CylinderN<VSIZEX> cylinder_inner(Vec3vfx(P0),Vec3vfx(P3),r_inner);
       vboolx valid = true; clear(valid,VSIZEX-1);
