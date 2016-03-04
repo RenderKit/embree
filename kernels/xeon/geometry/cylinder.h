@@ -154,29 +154,32 @@ namespace embree
         
         const vfloat<N> D = B*B - 4.0f*A*C;
         vbool<N> valid = D >= 0.0f;
-        if (none(valid)) return valid;
+        if (none(valid)) {
+          t_o = BBox<vfloat<N>>(empty);
+          return valid;
+        }
         
         const vfloat<N> Q = sqrt(D);
         const vfloat<N> rcp_2A = rcp(2.0f*A);
-        t_o.lower = (-B-Q)*rcp_2A;
-        t_o.upper = (-B+Q)*rcp_2A;
+        const vfloat<N> t0 = (-B-Q)*rcp_2A;
+        const vfloat<N> t1 = (-B+Q)*rcp_2A;
         
         {
-          u0_o = (Oz+t_o.lower*dOz)*rl;
-          const Vec3vfN Pr = t_o.lower*Vec3vfN(dir);
+          u0_o = (Oz+t0*dOz)*rl;
+          const Vec3vfN Pr = t0*Vec3vfN(dir);
           const Vec3vfN Pl = v0 + u0_o*(v1-v0);
           Ng0_o = Pr-Pl;
         }
         
         {
-          u1_o = (Oz+t_o.upper*dOz)*rl;
-          const Vec3vfN Pr = t_o.upper*Vec3vfN(dir);
+          u1_o = (Oz+t1*dOz)*rl;
+          const Vec3vfN Pr = t1*Vec3vfN(dir);
           const Vec3vfN Pl = v0 + u1_o*(v1-v0);
           Ng1_o = Pr-Pl;
         }
 
-        t_o.lower += tb;
-        t_o.upper += tb;
+        t_o.lower = select(valid, t0+tb, vfloat<N>(pos_inf));
+        t_o.upper = select(valid, t1+tb, vfloat<N>(neg_inf));
         return valid;
       }
 
