@@ -20,7 +20,7 @@
 #include "../../common/globals.h"
 #include "filter.h"
 #include "cylinder.h"
-#include "fillcone.h"
+#include "plane.h"
 #include "line_intersector.h"
 
 extern "C" int g_debug_int0;
