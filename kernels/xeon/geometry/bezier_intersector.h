@@ -90,13 +90,13 @@ namespace embree
       const int maxDepth = g_debug_int0;
 
       /* subdivide curve */
-      const vfloatx vu0 = lerp(u0,u1,vfloatx(step)*(1.0f/(VSIZEX-1)));
-      Vec4vfx P0, dP0du; curve.evalN(vu0,P0,dP0du);
-      const Vec4vfx  P3   = shift_right_1(P0);
-      const Vec4vfx dP3du = shift_right_1(dP0du);
       const float dscale = (u1-u0)*(1.0f/(3.0f*(VSIZEX-1)));
-      const Vec4vfx P1 = P0 + Vec4vfx(dscale)*dP0du; 
-      const Vec4vfx P2 = P3 - Vec4vfx(dscale)*dP3du;
+      const vfloatx vu0 = lerp(u0,u1,vfloatx(step)*(1.0f/(VSIZEX-1)));
+      Vec4vfx P0, dP0du; curve.evalN(vu0,P0,dP0du); dP0du = dP0du * Vec4vfx(dscale);
+      const Vec4vfx P3 = shift_right_1(P0);
+      const Vec4vfx dP3du = Vec4vfx(dscale)*shift_right_1(dP0du); 
+      const Vec4vfx P1 = P0 + dP0du; 
+      const Vec4vfx P2 = P3 - dP3du;
 
       /* calculate bounding cylinders */
       const vfloatx r1 = sqrt(sqr_point_to_line_distance(Vec3vfx(P1),Vec3vfx(P0),Vec3vfx(P3)));
