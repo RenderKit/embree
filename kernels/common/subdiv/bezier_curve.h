@@ -98,21 +98,21 @@ namespace embree
     __forceinline Vertex eval_du(const float t) const
     {
       const float t0 = 1.0f - t, t1 = t;
-      float B0 = -3.0f*(t0*t0);
-      float B1 = -6.0f*(t0*t1) + 3.0f*(t0*t0);
-      float B2 = +6.0f*(t0*t1) - 3.0f*(t1*t1);
-      float B3 = +3.0f*(t1*t1);
-      return B0*v0 + B1*v1 + B2*v2 + B3*v3;
+      const float B0 = -(t0*t0);
+      const float B1 = -2.0f*(t0*t1) + (t0*t0);
+      const float B2 = +2.0f*(t0*t1) - (t1*t1);
+      const float B3 = +(t1*t1);
+      return 3.0f*(B0*v0 + B1*v1 + B2*v2 + B3*v3);
     }
 
     __forceinline Vertex eval_dudu(const float t) const
     {
       const float t0 = 1.0f - t, t1 = t;
-      float C0 = 6.0f*t0;
-      float C1 = 6.0f*t1 - 12.0f*t0;
-      float C2 = 6.0f*t0 - 12.0f*t1;
-      float C3 = 6.0f*t1;
-      return C0*v0 + C1*v1 + C2*v2 + C3*v3;
+      const float C0 = t0;
+      const float C1 = t1 - 2.0f*t0;
+      const float C2 = t0 - 2.0f*t1;
+      const float C3 = t1;
+      return 6.0f*(C0*v0 + C1*v1 + C2*v2 + C3*v3);
     }
 
     __forceinline void eval(const float t, Vertex& p, Vertex& dp, Vertex& ddp) const
@@ -132,6 +132,7 @@ namespace embree
       const Vertex p30 = p20 * t0 + p21 * t1;
       p = p30;
       dp = 3.0f*(p21-p20);
+      //dp = eval_du(t);
       ddp = eval_dudu(t);
       //ddp = 6.0f*((p30-2.0f*p21+p12)/(1.0f-t) + (p30-2.0f*p20+p10)/t);
     }
