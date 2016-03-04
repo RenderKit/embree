@@ -26,7 +26,7 @@
 #include "raystreams/raystreams.h"
 
 RTCORE_API int g_debug_int0 = 4;
-RTCORE_API int g_debug_int1 = 1;
+RTCORE_API int g_debug_int1 = 5;
 
 namespace embree
 {  

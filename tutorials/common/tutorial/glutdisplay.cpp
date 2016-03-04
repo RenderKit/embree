@@ -136,8 +136,8 @@ namespace embree
       //case GLUT_KEY_DOWN      : g_camera.move(0.0f,0.0f,-g_speed); break;
     case GLUT_KEY_UP        : g_debug_int0++; PRINT(g_debug_int0); break;
     case GLUT_KEY_DOWN      : g_debug_int0--; PRINT(g_debug_int0); break;
-    case GLUT_KEY_LEFT      : g_debug_int1++; PRINT(g_debug_int1); break;
-    case GLUT_KEY_RIGHT     : g_debug_int1--; PRINT(g_debug_int1); break;
+    case GLUT_KEY_LEFT      : g_debug_int1--; PRINT(g_debug_int1); break;
+    case GLUT_KEY_RIGHT     : g_debug_int1++; PRINT(g_debug_int1); break;
     case GLUT_KEY_PAGE_UP   : g_speed *= 1.2f; break;
     case GLUT_KEY_PAGE_DOWN : g_speed /= 1.2f; break;
     }

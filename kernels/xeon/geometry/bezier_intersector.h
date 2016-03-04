@@ -281,7 +281,7 @@ namespace embree
     {
       //PRINT("jacobian solver");
       //PRINT2(u,t);
-      for (size_t i=0; i<5; i++) 
+      for (size_t i=0; i<g_debug_int1; i++) 
       {
         //PRINT(i);
         Vec3fa Q = ray.org + t*ray.dir;
@@ -451,7 +451,7 @@ namespace embree
         
         if (depth == maxDepth) 
         {
-          if (g_debug_int1 % 2)
+          if (g_debug_int1)
           {
             float uu = u[i];
             float ru = (1.0f-uu)*u0 + uu*u1;
