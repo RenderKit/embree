@@ -87,8 +87,7 @@ namespace embree
 
     __forceinline bool intersect_bezier_recursive(const Ray& ray, const BezierCurve3fa& curve, const float u0, const float u1, const size_t depth, float& u_o, float& t_o, Vec3fa& Ng_o)
     {
-      int maxDepth = g_debug_int0;
-      bool found = false;
+      const int maxDepth = g_debug_int0;
 
       /* subdivide curve */
       const vfloatx lu = vfloatx(step)*(1.0f/(VSIZEX-1));
@@ -142,6 +141,7 @@ namespace embree
       float Ng_z    [2*VSIZEX]; vfloatx::storeu(&Ng_z    [0*VSIZEX],Ng_outer0.z); vfloatx::storeu(&Ng_z    [1*VSIZEX],Ng_outer1.z);
 
       /* iterate over all hits front to back */
+      bool found = false;
       while (any(valid0 | valid1))
       {
         const size_t i = select_min(valid0,tp0.lower,valid1,tp1.lower);
@@ -155,10 +155,7 @@ namespace embree
           {
             float uu = u[i];
             float ru = (1.0f-uu)*u0 + uu*u1;
-            if (!intersect_bezier_iterative_jacobian(ray,curve,ru,tp_outer[i],u_o,t_o,Ng_o))
-              continue;
-            
-            found = true;
+            found |= intersect_bezier_iterative_jacobian(ray,curve,ru,tp_outer[i],u_o,t_o,Ng_o);
             valid0 &= tp0.lower < t_o;
             valid1 &= tp1.lower < t_o;
             continue;
@@ -180,11 +177,9 @@ namespace embree
           }
         }
 
-        if (intersect_bezier_recursive(ray,curve,vu0[j+0],vu0[j+1],depth+1,u_o,t_o,Ng_o)) {
-          found = true; 
-          valid0 &= tp0.lower < t_o;
-          valid1 &= tp1.lower < t_o;
-        }
+        found |= intersect_bezier_recursive(ray,curve,vu0[j+0],vu0[j+1],depth+1,u_o,t_o,Ng_o);
+        valid0 &= tp0.lower < t_o;
+        valid1 &= tp1.lower < t_o;
       }
       return found;
     }
