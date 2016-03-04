@@ -184,32 +184,18 @@ namespace embree
       bool found = false;
       while (any(valid0))
       {
-        const size_t i = select_min(valid0,tp0.lower);
-        clear(valid0,i);
-        
-        if (depth == maxDepth) 
-        {
-          found |= intersect_bezier_iterative_jacobian(ray,curve,u_outer0[i],tp0.lower[i],u_o,t_o,Ng_o);
-          valid0 &= tp0.lower < t_o;
-          continue;
-        }
-        found |= intersect_bezier_recursive(ray,curve,vu0[i+0],vu0[i+1],depth+1,u_o,t_o,Ng_o);
+        const size_t i = select_min(valid0,tp0.lower); clear(valid0,i);
+        if (depth == maxDepth) found |= intersect_bezier_iterative_jacobian(ray,curve,u_outer0[i],tp0.lower[i],u_o,t_o,Ng_o);
+        else                   found |= intersect_bezier_recursive(ray,curve,vu0[i+0],vu0[i+1],depth+1,u_o,t_o,Ng_o);
         valid0 &= tp0.lower < t_o;
       }
 
       /* iterate over all second hits front to back */
       while (any(valid1))
       {
-        const size_t i = select_min(valid1,tp1.lower);
-        clear(valid1,i);
-        
-        if (depth == maxDepth) 
-        {
-          found |= intersect_bezier_iterative_jacobian(ray,curve,u_outer1[i],tp1.upper[i],u_o,t_o,Ng_o);
-          valid1 &= tp1.lower < t_o;
-          continue;
-        }
-        found |= intersect_bezier_recursive(ray,curve,vu0[i+0],vu0[i+1],depth+1,u_o,t_o,Ng_o);
+        const size_t i = select_min(valid1,tp1.lower); clear(valid1,i);
+        if (depth == maxDepth) found |= intersect_bezier_iterative_jacobian(ray,curve,u_outer1[i],tp1.upper[i],u_o,t_o,Ng_o);
+        else                   found |= intersect_bezier_recursive(ray,curve,vu0[i+0],vu0[i+1],depth+1,u_o,t_o,Ng_o);
         valid1 &= tp1.lower < t_o;
       }
 #endif
