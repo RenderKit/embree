@@ -351,6 +351,28 @@ namespace embree
       return dot(N,N)*rcp(dot(D,D));
     }
 
+    __forceinline void subtract(const BBox<vfloatx>& a, const BBox<vfloatx>& b, BBox<vfloatx>& c, BBox<vfloatx>& d)
+    {
+      //c = intersect(a,BBox<vfloatx>(vfloatx(neg_inf),b.lower));
+      //d = intersect(a,BBox<vfloatx>(b.upper,vfloatx(pos_inf)));
+      c.lower = a.lower;
+      c.upper = min(a.upper,b.lower);
+      d.lower = max(a.lower,b.upper);
+      d.upper = a.upper;
+    }
+
+    __forceinline size_t select_min(const vboolx& valid0, const vfloatx& v0, const vboolx& valid1, const vfloatx& v1) 
+    { 
+      const vfloat4 a0 = select(valid0,v0,vfloat4(pos_inf)); 
+      const vfloat4 a1 = select(valid1,v1,vfloat4(pos_inf)); 
+      const vfloatx m = vreduce_min(min(a0,a1));
+      const vboolx valid_min0 = valid0 & (a0 == m);
+      const vboolx valid_min1 = valid1 & (a1 == m);
+      size_t m0 = movemask(any(valid_min0) ? valid_min0 : valid0);
+      size_t m1 = movemask(any(valid_min1) ? valid_min1 : valid1);
+      return __bsf(m0 | (m1 << VSIZEX)); 
+    }
+
     __forceinline bool intersect_bezier_recursive(const Ray& ray, const BezierCurve3fa& curve, const float u0, const float u1, const size_t depth, float& u_o, float& t_o, Vec3fa& Ng_o)
     {
       //Cone::verify();
@@ -370,15 +392,18 @@ namespace embree
       const Vec4vfx P2 = P3 - Vec4vfx((u1-u0)/(3.0f*(VSIZEX-1)))*dP3du;
       const vfloatx r1 = sqrt(sqr_point_to_line_distance(Vec3vfx(P1),Vec3vfx(P0),Vec3vfx(P3)));
       const vfloatx r2 = sqrt(sqr_point_to_line_distance(Vec3vfx(P2),Vec3vfx(P0),Vec3vfx(P3)));
-      const vfloatx r = max(r1,r2)+max(P0.w,P1.w,P2.w,P3.w);
-      const CylinderN<VSIZEX> cylinder(Vec3vfx(P0.x,P0.y,P0.z),Vec3vfx(P3.x,P3.y,P3.z),r);
+      const vfloatx r_outer = max(P0.w,P1.w,P2.w,P3.w)+max(r1,r2);
+      const vfloatx r_inner = max(0.0f,min(P0.w,P1.w,P2.w,P3.w)-max(r1,r2));
+      const CylinderN<VSIZEX> cylinder_outer(Vec3vfx(P0.x,P0.y,P0.z),Vec3vfx(P3.x,P3.y,P3.z),r_outer);
+      const CylinderN<VSIZEX> cylinder_inner(Vec3vfx(P0.x,P0.y,P0.z),Vec3vfx(P3.x,P3.y,P3.z),r_inner);
       const ConeN<VSIZEX> cone(Vec3vfx(P0.x,P0.y,P0.z),P0.w,Vec3vfx(P3.x,P3.y,P3.z),P3.w);
       vboolx valid = true; clear(valid,VSIZEX-1);
       //if (depth == 1) { valid = false; set(valid,1); }
       //if (depth == 2) { valid = false; set(valid,0); }
 
       /* intersect with cylinder */
-      BBox<vfloatx> tc; vfloatx u; Vec3vfx Ng;
+      BBox<vfloatx> tc_outer; vfloatx u_outer; Vec3vfx Ng_outer;
+      BBox<vfloatx> tc_inner; vfloatx u_inner; Vec3vfx Ng_inner;
 #if 0
       if (depth == maxDepth) {
         valid &= cone    .intersect(ray.org,ray.dir,tc,u,Ng);
@@ -386,18 +411,25 @@ namespace embree
       }
       else
 #endif
-        valid &= cylinder.intersect(ray.org,ray.dir,tc,u,Ng);
-
+      {
+        valid &= cylinder_outer.intersect(ray.org,ray.dir,tc_outer,u_outer,Ng_outer);
+        vboolx valid_inner = cylinder_inner.intersect(ray.org,ray.dir,tc_inner,u_inner,Ng_inner);
+        tc_inner.lower = select(valid_inner,tc_inner.lower,float(pos_inf));
+        tc_inner.upper = select(valid_inner,tc_inner.upper,float(neg_inf));
+      }
       if (none(valid)) return false;
       //PRINT(valid);
-      u = clamp(u,vfloatx(0.0f),vfloatx(1.0f));
+      u_outer = clamp(u_outer,vfloatx(0.0f),vfloatx(1.0f));
+      u_inner = clamp(u_inner,vfloatx(0.0f),vfloatx(1.0f));
+      u_outer = (vfloatx(step)+u_outer)*(1.0f/float(VSIZEX));
+      u_inner = (vfloatx(step)+u_inner)*(1.0f/float(VSIZEX));
       //PRINT(valid);
       //PRINT(tc);
 
       /* intersect with cap-planes */
       BBox<vfloatx> tp(ray.tnear,ray.tfar);
       //PRINT(tp);
-      tp = embree::intersect(tp,tc);
+      tp = embree::intersect(tp,tc_outer);
       //PRINT(tp);
       auto h0 = intersect_half_planeN(ray.org,ray.dir,+Vec3vfx(dP0du),Vec3vfx(P0));
       //PRINT(h0);
@@ -413,45 +445,62 @@ namespace embree
       if (none(valid)) return false;
       //PRINT(valid);
 
+      BBox<vfloatx> tp0, tp1;
+      subtract(tp,tc_inner,tp0,tp1);
+      vboolx valid0 = valid & (tp0.lower <= tp0.upper);
+      vboolx valid1 = valid & (tp1.lower <= tp1.upper);
+
+      float tp_lower[2*VSIZEX]; vfloatx::storeu(&tp_lower[0*VSIZEX],tp0.lower ); vfloatx::storeu(&tp_lower[1*VSIZEX],tp1.lower );
+      float tp_upper[2*VSIZEX]; vfloatx::storeu(&tp_upper[0*VSIZEX],tp0.upper ); vfloatx::storeu(&tp_upper[1*VSIZEX],tp1.upper );
+      float u       [2*VSIZEX]; vfloatx::storeu(&u       [0*VSIZEX],u_outer   ); vfloatx::storeu(&u       [1*VSIZEX],u_inner   );
+      float Ng_x    [2*VSIZEX]; vfloatx::storeu(&Ng_x    [0*VSIZEX],Ng_outer.x); vfloatx::storeu(&Ng_x    [1*VSIZEX],Ng_inner.x);
+      float Ng_y    [2*VSIZEX]; vfloatx::storeu(&Ng_y    [0*VSIZEX],Ng_outer.y); vfloatx::storeu(&Ng_y    [1*VSIZEX],Ng_inner.y);
+      float Ng_z    [2*VSIZEX]; vfloatx::storeu(&Ng_z    [0*VSIZEX],Ng_outer.z); vfloatx::storeu(&Ng_z    [1*VSIZEX],Ng_inner.z);
+
       /* iterate over all hits front to back */
-      while (any(valid))
+      while (any(valid0 | valid1))
       {
-        size_t i = select_min(valid,tp.lower);
-        clear(valid,i);
+        const size_t i = select_min(valid0,tp0.lower,valid1,tp1.lower);
+        const size_t j = i & (VSIZEX-1);
+        if (i < VSIZEX) clear(valid0,j);
+        else            clear(valid1,j);
+        
         //PRINT2(curve.depth,i);
 
         if (depth == maxDepth) 
         {
           if (g_debug_int1 % 2)
           {
-            float uu = (float(i)+u[i])/float(VSIZEX);
+            float uu = u[i];
             float ru = (1.0f-uu)*u0 + uu*u1;
             //bool h = intersect_bezier_iterative(ray,curve, ru, u_o, t_o, Ng_o);
             //bool h = intersect_bezier_iterative3(ray,curve, vu0[i], vu0[i+1], tp.lower[i], tp.upper[i], tc.upper[i], u_o, t_o, Ng_o);
 
-            if (!intersect_bezier_iterative_jacobian(ray,curve,ru,tp.lower[i],u_o,t_o,Ng_o))
+            if (!intersect_bezier_iterative_jacobian(ray,curve,ru,tp_lower[i],u_o,t_o,Ng_o))
               continue;
             
             if (u_o < 0.0f || u_o > 1.0f)
               continue;
 
             found = true;
-            valid &= tp.lower < t_o;
+            valid0 &= tp0.lower < t_o;
+            valid1 &= tp1.lower < t_o;
             continue;
           }
           else
           {
-            if (tp.lower[i] < t_o) {
-              float uu = (float(i)+u[i])/float(VSIZEX);
+            if (tp_lower[i] < t_o) {
+              float uu = u[i]; //(float(i)+u[i])/float(VSIZEX);
               u_o = (1.0f-uu)*u0 + uu*u1;
-              t_o = tp.lower[i];
-              Ng_o = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
+              t_o = tp_lower[i];
+              Ng_o = Vec3fa(Ng_x[i],Ng_y[i],Ng_z[i]);
               //u_o = float(i+1)/float(VSIZEX);
-              if (h0.lower[i] == tp.lower[i]) Ng_o = -Vec3fa(dP0du.x[i],dP0du.y[i],dP0du.z[i]);
-              if (h1.lower[i] == tp.lower[i]) Ng_o = +Vec3fa(dP3du.x[i],dP3du.y[i],dP3du.z[i]);
+              if (h0.lower[j] == tp_lower[i]) Ng_o = -Vec3fa(dP0du.x[j],dP0du.y[j],dP0du.z[j]);
+              if (h1.lower[j] == tp_lower[i]) Ng_o = +Vec3fa(dP3du.x[j],dP3du.y[j],dP3du.z[j]);
               //return true;
               found = true;
-              valid &= tp.lower < t_o;
+              valid0 &= tp0.lower < t_o;
+              valid1 &= tp1.lower < t_o;
             } else {
               //PRINT("miss");
             }
@@ -460,9 +509,11 @@ namespace embree
           }
         }
 
-        if (intersect_bezier_recursive(ray,curve,vu0[i+0],vu0[i+1],depth+1,u_o,t_o,Ng_o)) {
+        if (intersect_bezier_recursive(ray,curve,vu0[j+0],vu0[j+1],depth+1,u_o,t_o,Ng_o)) {
           //return true;
-          found = true; valid &= tp.lower < t_o;
+          found = true; 
+          valid0 &= tp0.lower < t_o;
+          valid1 &= tp1.lower < t_o;
         }
       }
       //return false;
