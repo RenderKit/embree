@@ -35,25 +35,25 @@ namespace embree
       for (size_t i=0; i<g_debug_int1; i++) 
       {
         Vec3fa Q = ray.org + t*ray.dir;
-        Vec3fa dQdu = zero;
+        //Vec3fa dQdu = zero;
         Vec3fa dQdt = ray.dir;
 
         Vec3fa P = curve.eval(u);
         Vec3fa dPdu = curve.eval_du(u);
         Vec3fa ddPdu = curve.eval_dudu(u);
-        Vec3fa dPdt = zero;
+        //Vec3fa dPdt = zero;
 
         Vec3fa R = Q-P;
-        Vec3fa dRdu = dQdu-dPdu;
-        Vec3fa dRdt = dQdt-dPdt;
+        Vec3fa dRdu = /*dQdu*/-dPdu;
+        Vec3fa dRdt = dQdt;//-dPdt;
 
         Vec3fa T = normalize(dPdu);
         Vec3fa dTdu = dnormalize(dPdu,ddPdu);
-        Vec3fa dTdt = zero;
+        //Vec3fa dTdt = zero;
 
         float f = dot(R,T);
         float dfdu = dot(dRdu,T) + dot(R,dTdu);
-        float dfdt = dot(dRdt,T) + dot(R,dTdt);
+        float dfdt = dot(dRdt,T);// + dot(R,dTdt);
 
         float K = dot(R,R)-sqr(f);
         float dKdu = 2.0f*dot(R,dRdu)-2.0f*f*dfdu;
@@ -61,7 +61,7 @@ namespace embree
 
         float g = sqrt(K)-P.w;
         float dgdu = 0.5f*dKdu*rsqrt(K)-dPdu.w;
-        float dgdt = 0.5f*dKdt*rsqrt(K)-dPdt.w;
+        float dgdt = 0.5f*dKdt*rsqrt(K);//-dPdt.w;
 
         LinearSpace2f rcp_jacobian = rcp(LinearSpace2f(dfdu,dfdt,dgdu,dgdt));
         Vec2f dut = rcp_jacobian*Vec2f(f,g);
