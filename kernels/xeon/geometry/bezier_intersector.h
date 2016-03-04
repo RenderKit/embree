@@ -405,8 +405,8 @@ namespace embree
       //if (depth == 2) { valid = false; set(valid,0); }
 
       /* intersect with cylinder */
-      BBox<vfloatx> tc_outer; vfloatx u_outer; Vec3vfx Ng_outer;
-      BBox<vfloatx> tc_inner; vfloatx u_inner; Vec3vfx Ng_inner;
+      BBox<vfloatx> tc_outer; vfloatx u_outer0; Vec3vfx Ng_outer0; vfloatx u_outer1; Vec3vfx Ng_outer1;
+      BBox<vfloatx> tc_inner;
 #if 0
       if (depth == maxDepth) {
         valid &= cone    .intersect(ray.org,ray.dir,tc,u,Ng);
@@ -415,18 +415,18 @@ namespace embree
       else
 #endif
       {
-        valid &= cylinder_outer.intersect(ray.org,ray.dir,tc_outer,u_outer,Ng_outer);
-        vboolx valid_inner = cylinder_inner.intersect(ray.org,ray.dir,tc_inner,u_inner,Ng_inner);
-        tc_inner.lower = select(valid_inner,tc_inner.lower,float(pos_inf));
+        valid &= cylinder_outer.intersect(ray.org,ray.dir,tc_outer,u_outer0,Ng_outer0,u_outer1,Ng_outer1);
+        vboolx valid_inner = cylinder_inner.intersect(ray.org,ray.dir,tc_inner);
+        tc_inner.lower = select(valid_inner,tc_inner.lower,float(pos_inf)); // FIXME: move to cylinder code
         tc_inner.upper = select(valid_inner,tc_inner.upper,float(neg_inf));
       }
       //PRINT(valid);
       if (none(valid)) return false;
       //PRINT(valid);
-      u_outer = clamp(u_outer,vfloatx(0.0f),vfloatx(1.0f));
-      u_inner = clamp(u_inner,vfloatx(0.0f),vfloatx(1.0f));
-      u_outer = (vfloatx(step)+u_outer)*(1.0f/float(VSIZEX));
-      u_inner = (vfloatx(step)+u_inner)*(1.0f/float(VSIZEX));
+      u_outer0 = clamp(u_outer0,vfloatx(0.0f),vfloatx(1.0f));
+      u_outer1 = clamp(u_outer1,vfloatx(0.0f),vfloatx(1.0f));
+      u_outer0 = (vfloatx(step)+u_outer0)*(1.0f/float(VSIZEX));
+      u_outer1 = (vfloatx(step)+u_outer1)*(1.0f/float(VSIZEX));
       //PRINT(valid);
       //PRINT(tc);
 
@@ -455,11 +455,12 @@ namespace embree
       vboolx valid1 = valid & (tp1.lower <= tp1.upper);
 
       float tp_lower[2*VSIZEX]; vfloatx::storeu(&tp_lower[0*VSIZEX],tp0.lower ); vfloatx::storeu(&tp_lower[1*VSIZEX],tp1.lower );
-      float tp_upper[2*VSIZEX]; vfloatx::storeu(&tp_upper[0*VSIZEX],tp0.upper ); vfloatx::storeu(&tp_upper[1*VSIZEX],tp1.upper );
-      float u       [2*VSIZEX]; vfloatx::storeu(&u       [0*VSIZEX],u_outer   ); vfloatx::storeu(&u       [1*VSIZEX],u_inner   );
-      float Ng_x    [2*VSIZEX]; vfloatx::storeu(&Ng_x    [0*VSIZEX],Ng_outer.x); vfloatx::storeu(&Ng_x    [1*VSIZEX],Ng_inner.x);
-      float Ng_y    [2*VSIZEX]; vfloatx::storeu(&Ng_y    [0*VSIZEX],Ng_outer.y); vfloatx::storeu(&Ng_y    [1*VSIZEX],Ng_inner.y);
-      float Ng_z    [2*VSIZEX]; vfloatx::storeu(&Ng_z    [0*VSIZEX],Ng_outer.z); vfloatx::storeu(&Ng_z    [1*VSIZEX],Ng_inner.z);
+      float tp_outer[2*VSIZEX]; vfloatx::storeu(&tp_outer[0*VSIZEX],tp0.lower ); vfloatx::storeu(&tp_outer[1*VSIZEX],tp1.upper );
+      //float tp_upper[2*VSIZEX]; vfloatx::storeu(&tp_upper[0*VSIZEX],tp0.upper ); vfloatx::storeu(&tp_upper[1*VSIZEX],tp1.upper );
+      float u       [2*VSIZEX]; vfloatx::storeu(&u       [0*VSIZEX],u_outer0   ); vfloatx::storeu(&u       [1*VSIZEX],u_outer1   );
+      float Ng_x    [2*VSIZEX]; vfloatx::storeu(&Ng_x    [0*VSIZEX],Ng_outer0.x); vfloatx::storeu(&Ng_x    [1*VSIZEX],Ng_outer1.x);
+      float Ng_y    [2*VSIZEX]; vfloatx::storeu(&Ng_y    [0*VSIZEX],Ng_outer0.y); vfloatx::storeu(&Ng_y    [1*VSIZEX],Ng_outer1.y);
+      float Ng_z    [2*VSIZEX]; vfloatx::storeu(&Ng_z    [0*VSIZEX],Ng_outer0.z); vfloatx::storeu(&Ng_z    [1*VSIZEX],Ng_outer1.z);
 
       /* iterate over all hits front to back */
       while (any(valid0 | valid1))
@@ -480,7 +481,7 @@ namespace embree
             //bool h = intersect_bezier_iterative(ray,curve, ru, u_o, t_o, Ng_o);
             //bool h = intersect_bezier_iterative3(ray,curve, vu0[i], vu0[i+1], tp.lower[i], tp.upper[i], tc.upper[i], u_o, t_o, Ng_o);
 
-            if (!intersect_bezier_iterative_jacobian(ray,curve,ru,tp_lower[i],u_o,t_o,Ng_o))
+            if (!intersect_bezier_iterative_jacobian(ray,curve,ru,tp_outer[i],u_o,t_o,Ng_o))
               continue;
             
             //if (u_o < 0.0f || u_o > 1.0f)
