@@ -63,8 +63,8 @@ namespace embree
         float dgdu = 0.5f*dKdu*rsqrt(K)-dPdu.w;
         float dgdt = 0.5f*dKdt*rsqrt(K);//-dPdt.w;
 
-        LinearSpace2f rcp_jacobian = rcp(LinearSpace2f(dfdu,dfdt,dgdu,dgdt));
-        Vec2f dut = rcp_jacobian*Vec2f(f,g);
+        LinearSpace2f J = LinearSpace2f(dfdu,dfdt,dgdu,dgdt);
+        Vec2f dut = rcp(J)*Vec2f(f,g);
         Vec2f ut = Vec2f(u,t) - dut;
         u = ut.x; t = ut.y;
 
