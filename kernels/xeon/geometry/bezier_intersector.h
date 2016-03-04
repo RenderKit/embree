@@ -110,9 +110,7 @@ namespace embree
       BBox<vfloatx> tc_outer; vfloatx u_outer0; Vec3vfx Ng_outer0; vfloatx u_outer1; Vec3vfx Ng_outer1;
       BBox<vfloatx> tc_inner;
       valid &= cylinder_outer.intersect(ray.org,ray.dir,tc_outer,u_outer0,Ng_outer0,u_outer1,Ng_outer1);
-      vboolx valid_inner = cylinder_inner.intersect(ray.org,ray.dir,tc_inner);
-      tc_inner.lower = select(valid_inner,tc_inner.lower,float(pos_inf)); // FIXME: move to cylinder code
-      tc_inner.upper = select(valid_inner,tc_inner.upper,float(neg_inf));
+      cylinder_inner.intersect(ray.org,ray.dir,tc_inner);
       if (none(valid)) return false;
       u_outer0 = clamp(u_outer0,vfloatx(0.0f),vfloatx(1.0f));
       u_outer1 = clamp(u_outer1,vfloatx(0.0f),vfloatx(1.0f));
