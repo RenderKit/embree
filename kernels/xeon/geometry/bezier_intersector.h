@@ -130,11 +130,14 @@ namespace embree
 
       /* intersect with inner cylinder */
       BBox<vfloatx> tc_inner;
-      BBox<vfloatx> tp0, tp1;
       cylinder_inner.intersect(ray.org,ray.dir,tc_inner);
+
+      /* subtract the inner interval from the current hit interval */
+      BBox<vfloatx> tp0, tp1;
       subtract(tp,tc_inner,tp0,tp1);
       vboolx valid0 = valid & (tp0.lower <= tp0.upper);
       vboolx valid1 = valid & (tp1.lower <= tp1.upper);
+      if (none(valid0 | valid1)) return false;
 
       float tp_lower[2*VSIZEX]; vfloatx::storeu(&tp_lower[0*VSIZEX],tp0.lower ); vfloatx::storeu(&tp_lower[1*VSIZEX],tp1.lower );
       float tp_outer[2*VSIZEX]; vfloatx::storeu(&tp_outer[0*VSIZEX],tp0.lower ); vfloatx::storeu(&tp_outer[1*VSIZEX],tp1.upper );
