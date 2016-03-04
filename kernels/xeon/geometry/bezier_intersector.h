@@ -56,12 +56,12 @@ namespace embree
         const float dfdt = dot(dRdt,T);// + dot(R,dTdt);
 
         const float K = dot(R,R)-sqr(f);
-        const float dKdu = 2.0f*dot(R,dRdu)-2.0f*f*dfdu;
-        const float dKdt = 2.0f*dot(R,dRdt)-2.0f*f*dfdt;
+        const float dKdu = /*2.0f*/(dot(R,dRdu)-f*dfdu);
+        const float dKdt = /*2.0f*/(dot(R,dRdt)-f*dfdt);
 
         const float g = sqrt(K)-P.w;
-        const float dgdu = 0.5f*dKdu*rsqrt(K)-dPdu.w;
-        const float dgdt = 0.5f*dKdt*rsqrt(K);//-dPdt.w;
+        const float dgdu = /*0.5f*/dKdu*rsqrt(K)-dPdu.w;
+        const float dgdt = /*0.5f*/dKdt*rsqrt(K);//-dPdt.w;
 
         const LinearSpace2f J = LinearSpace2f(dfdu,dfdt,dgdu,dgdt);
         const Vec2f dut = rcp(J)*Vec2f(f,g);
