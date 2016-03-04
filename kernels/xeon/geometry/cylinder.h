@@ -168,7 +168,7 @@ namespace embree
           t_o = BBox<vfloat<N>>(empty);
           return valid;
         }
-        
+
         const vfloat<N> Q = sqrt(D);
         const vfloat<N> rcp_2A = rcp(2.0f*A);
         const vfloat<N> t0 = (-B-Q)*rcp_2A;
@@ -190,6 +190,16 @@ namespace embree
 
         t_o.lower = select(valid, t0+tb, vfloat<N>(pos_inf));
         t_o.upper = select(valid, t1+tb, vfloat<N>(neg_inf));
+
+        const vfloat<N> eps = 16.0f*float(ulp)*max(abs(dOdO),abs(sqr(dOz)));
+        vbool<N> validt = valid & (abs(A) < eps); 
+        if (unlikely(any(validt))) 
+        {
+          vbool<N> inside = C <= 0.0f;
+          t_o.lower = select(validt,select(inside,vfloat<N>(neg_inf),vfloat<N>(pos_inf)),t_o.lower);
+          t_o.upper = select(validt,select(inside,vfloat<N>(pos_inf),vfloat<N>(neg_inf)),t_o.upper);
+          valid &= inside;
+        }
         return valid;
       }
 
