@@ -53,19 +53,23 @@ namespace embree
         const float C = OO - sqr(Oz) - sqr(r);
         
         const float D = B*B - 4.0f*A*C;
-        if (D < 0.0f) return false;
+        if (D < 0.0f) {
+          t_o = empty;
+          return false;
+        }
         
         const float Q = sqrt(D);
         const float rcp_2A = rcp(2.0f*A);
-        t_o.lower = (-B-Q)*rcp_2A;
-        t_o.upper = (-B+Q)*rcp_2A;
+        const float t0 = (-B-Q)*rcp_2A;
+        const float t1 = (-B+Q)*rcp_2A;
         
-        u0_o = (Oz+t_o.lower*dOz)*rl;
+        u0_o = (Oz+t0*dOz)*rl;
         const Vec3fa Pr = t_o.lower*dir;
         const Vec3fa Pl = v0 + u0_o*(v1-v0);
         Ng0_o = Pr-Pl;
-        t_o.lower += tb;
-        t_o.upper += tb;
+        
+        t_o.lower = t0+tb;
+        t_o.upper = t1+tb;
         return true;
       }
     };
