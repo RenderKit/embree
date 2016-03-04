@@ -138,4 +138,30 @@ namespace embree
   typedef vbool<VSIZEX>   vboolx;
   typedef vboolf<VSIZEX>  vboolfx;
   typedef vboold<VSIZEX>  vbooldx;
+
+  /* select minimal component from pair of vectors */
+  template<int N> __forceinline size_t select_min(const vbool<N>& valid0, const vfloat<N>& v0, const vbool<N>& valid1, const vfloat<N>& v1) 
+  { 
+    const vfloat<N> a0 = select(valid0,v0,vfloat<N>(pos_inf)); 
+    const vfloat<N> a1 = select(valid1,v1,vfloat<N>(pos_inf)); 
+    const vfloat<N> m = vreduce_min(min(a0,a1));
+    const vbool<N> valid_min0 = valid0 & (a0 == m);
+    const vbool<N> valid_min1 = valid1 & (a1 == m);
+    const size_t m0 = movemask(any(valid_min0) ? valid_min0 : valid0);
+    const size_t m1 = movemask(any(valid_min1) ? valid_min1 : valid1);
+    return __bsf(m0 | (m1 << N)); 
+  }
+
+  /* select maximal component from pair of vectors */
+  template<int N> __forceinline size_t select_max(const vbool<N>& valid0, const vfloat<N>& v0, const vbool<N>& valid1, const vfloat<N>& v1) 
+  { 
+    const vfloat<N> a0 = select(valid0,v0,vfloat<N>(neg_inf)); 
+    const vfloat<N> a1 = select(valid1,v1,vfloat<N>(neg_inf)); 
+    const vfloat<N> m = vreduce_max(max(a0,a1));
+    const vbool<N> valid_max0 = valid0 & (a0 == m);
+    const vbool<N> valid_max1 = valid1 & (a1 == m);
+    const size_t m0 = movemask(any(valid_max0) ? valid_max0 : valid0);
+    const size_t m1 = movemask(any(valid_max1) ? valid_max1 : valid1);
+    return __bsf(m0 | (m1 << N)); 
+  }
 }

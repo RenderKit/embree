@@ -30,265 +30,14 @@ namespace embree
 {
   namespace isa
   {
-    __forceinline bool intersect_bezier_iterative2(const Ray& ray, const BezierCurve3fa& curve, float u0, float u1, float& u_o, float& t_o, Vec3fa& Ng_o)
-    {
-      //PRINT("intersecting");
-      //Vec3fa p0,n0,ddp0; curve.eval(u0,p0,n0,ddp0);
-      Vec3fa p0 = curve.eval(u0);
-      Vec3fa n0 = curve.eval_du(u0);
-      Vec3fa ddp0 = curve.eval_dudu(u0);
-
-      //Vec3fa p1,n1,ddp1; curve.eval(u1,p1,n1,ddp1);
-      Vec3fa p1 = curve.eval(u1);
-      Vec3fa n1 = curve.eval_du(u1);
-      Vec3fa ddp1 = curve.eval_dudu(u1);
-
-      Vec3fa q0 = p0+n0*(1.0f/3.0f);
-      Vec3fa q1 = p1-n1*(1.0f/3.0f);
-      float rq0 = length(cross(p0-q0,p1-q0))/length(p1-p0)+q0.w;
-      float rq1 = length(cross(p0-q1,p1-q1))/length(p1-p0)+q1.w;
-      float r01 = max(p0.w,rq0,rq1,p1.w);
-
-      /* intersect with bounding cone */
-      BBox1f tc;
-      const Cone cone(p0,r01,p1,r01);
-      if (!cone.intersect(ray.org,ray.dir,tc,u_o,Ng_o)) {
-        //PRINT("missed cone");
-        return false;
-      }
-      //PRINT(tc);
-
-      /* intersect with cap-planes */
-      BBox1f tp(ray.tnear,ray.tfar);
-      tp = embree::intersect(tp,tc);
-      tp = embree::intersect(tp,intersect_half_plane(ray.org,ray.dir,+n0,p0));
-      tp = embree::intersect(tp,intersect_half_plane(ray.org,ray.dir,-n1,p1));
-      if (tp.lower > tp.upper) {
-        //PRINT("missed culling");
-        return false;
-      }
-
-      //PRINT(tp);
-      //t_o = tc.lower;
-      //return true;
-      
-      /* calculate bounds on curvature */
-      float minN = min(length(n0),length(n1));
-      float maxN = max(length(n0),length(n1));
-      float maxR = max(p0.w,q0.w,q1.w,p1.w);
-      //PRINT2(maxN,length(p1-p0));
-      float maxC = length(max(abs(ddp0),abs(ddp1)))/minN; //length(ddPdu)/length(dPdu); // FIXME: is this the proper curvature?
-      //PRINT(minN);
-      //PRINT(maxN);
-      //PRINT(maxC);
-      //PRINT(maxR);
-      //PRINT(1.0f/maxC-maxR);
-      float minDT = max(0.001f,1.0f/maxC-maxR);
-
-      /* iterative double step solver */
-      float eps = 128.0f*float(ulp);
-      float rcpLenP0P1 = rcp_length(p1-p0);
-      float rcpLenDir = rcp_length(ray.dir);
-      float t = tp.lower;
-      float u = u0 + (u1-u0)*dot(ray.org+t*ray.dir-p0,normalize(p1-p0))*rcpLenP0P1;
-      for (size_t i=0; i<10000; i++)
-      {
-        //PRINT(i);
-        Vec3fa Q = ray.org + t*ray.dir;
-        Vec3fa P = curve.eval(u);
-        Vec3fa dPdu = curve.eval_du(u);
-        Vec3fa ddPdu = curve.eval_dudu(u);
-        //PRINT(P);
-        //PRINT(dPdu);
-        //PRINT(ddPdu);
-        //PRINT(length(dnormalize(dPdu,ddPdu)));
-        Vec3fa T = normalize(dPdu); // can be optimized away
-        //float C = length(ddPdu)/length(dPdu); // FIXME: is this the proper curvature?
-        float du = dot(Q-P,T);
-        float dt = sqrt(dot(Q-P,Q-P)-sqr(du))-P.w;
-        u += du*rcpLenP0P1*(u1-u0)/(1.0f+P.w*maxC);
-        if (du < 10.0f*eps)
-          t += min(minDT,dt*rcpLenDir);
-        //PRINT(du);
-        //PRINT(dt);
-        //PRINT(u);
-        //PRINT(t);
-        if (t > tc.upper) {
-          //PRINT("miss1");
-          return false;
-        }
-        if (max(abs(du),abs(dt)) < eps) 
-        {
-          //PRINT("hit");
-          //PRINT(eps*rcpLenDir);
-          //PRINT(t+eps*rcpLenDir);
-          //PRINT(t-eps*rcpLenDir);
-          if (t+eps*rcpLenDir < tp.lower || t-eps*rcpLenDir > tp.upper) {
-            //PRINT("miss2");
-            return false;
-          }
-          //if (t < ray.tnear || t > t_o) {
-          ////PRINT("miss2");
-          //  return false;
-          //}
-          u_o = u;
-          t_o = t;
-          Ng_o = Q-P;
-          return true;
-        }
-      }
-      //PRINT("miss3");
-      return false;
-    }
-
-    __forceinline bool intersect_bezier_iterative3(const Ray& ray, const BezierCurve3fa& curve, float u0, float u1, float t0, float t1, float t2, float& u_o, float& t_o, Vec3fa& Ng_o)
-    {
-      //PRINT("intersecting");
-      //Vec3fa p0,n0,ddp0; curve.eval(u0,p0,n0,ddp0);
-      Vec3fa p0 = curve.eval(u0);
-      Vec3fa n0 = curve.eval_du(u0);
-      Vec3fa ddp0 = curve.eval_dudu(u0);
-
-      //Vec3fa p1,n1,ddp1; curve.eval(u1,p1,n1,ddp1);
-      Vec3fa p1 = curve.eval(u1);
-      Vec3fa n1 = curve.eval_du(u1);
-      Vec3fa ddp1 = curve.eval_dudu(u1);
-
-      Vec3fa q0 = p0+n0*(1.0f/3.0f);
-      Vec3fa q1 = p1-n1*(1.0f/3.0f);
-      float rq0 = length(cross(p0-q0,p1-q0))/length(p1-p0)+q0.w;
-      float rq1 = length(cross(p0-q1,p1-q1))/length(p1-p0)+q1.w;
-      float r01 = max(p0.w,rq0,rq1,p1.w);
-
-      /* calculate bounds on curvature */
-      float minN = min(length(n0),length(n1));
-      float maxN = max(length(n0),length(n1));
-      float maxR = max(p0.w,q0.w,q1.w,p1.w);
-      //PRINT2(maxN,length(p1-p0));
-      float maxC = length(max(abs(ddp0),abs(ddp1)))/minN; //length(ddPdu)/length(dPdu); // FIXME: is this the proper curvature?
-      //PRINT(minN);
-      //PRINT(maxN);
-      //PRINT(maxC);
-      //PRINT(maxR);
-      //PRINT(1.0f/maxC-maxR);
-      float minDT = max(0.001f,1.0f/maxC-maxR);
-
-      /* iterative double step solver */
-      float eps = 128.0f*float(ulp);
-      float rcpLenP0P1 = rcp_length(p1-p0);
-      float rcpLenDir = rcp_length(ray.dir);
-      float t = t0;
-      float u = u0 + (u1-u0)*dot(ray.org+t*ray.dir-p0,normalize(p1-p0))*rcpLenP0P1;
-      for (size_t i=0; i<10000; i++)
-      {
-        //PRINT(i);
-        Vec3fa Q = ray.org + t*ray.dir;
-        //Vec3fa P,dPdu,ddPdu; curve.eval(u,P,dPdu,ddPdu);
-        Vec3fa P = curve.eval(u);
-        Vec3fa dPdu = curve.eval_du(u);
-        Vec3fa ddPdu = curve.eval_dudu(u);
-
-        //PRINT(P);
-        //PRINT(dPdu);
-        //PRINT(ddPdu);
-        //PRINT(length(dnormalize(dPdu,ddPdu)));
-        Vec3fa T = normalize(dPdu); // can be optimized away
-        //float C = length(ddPdu)/length(dPdu); // FIXME: is this the proper curvature?
-        float du = dot(Q-P,T);
-        float dt = sqrt(dot(Q-P,Q-P)-sqr(du))-P.w;
-        u += du*rcpLenP0P1*(u1-u0)/(1.0f+P.w*maxC);
-        //if (du < 10.0f*eps)
-        t += min(minDT,dt*rcpLenDir);
-        //PRINT(du);
-        //PRINT(dt);
-        //PRINT(u);
-        //PRINT(t);
-        if (t > t2) {
-          //PRINT("miss1");
-          return false;
-        }
-        if (max(abs(du),abs(dt)) < eps) 
-        {
-          //PRINT("hit");
-          //PRINT(eps*rcpLenDir);
-          //PRINT(t+eps*rcpLenDir);
-          //PRINT(t-eps*rcpLenDir);
-          //if (t+eps*rcpLenDir < t0 || t-eps*rcpLenDir > t1) {
-          //  PRINT("miss2");
-          //  return false;
-          //}
-          if (t < ray.tnear || t > t_o) {
-            //PRINT("miss2");
-            return false;
-          }
-          u_o = u;
-          t_o = t;
-          Ng_o = Q-P;
-          return true;
-        }
-      }
-      //PRINT("miss3");
-      return false;
-    }
-
-    
-    __forceinline bool intersect_bezier_iterative(const Ray& ray, const BezierCurve3fa& curve, float u, float& u_o, float& t_o, Vec3fa& Ng)
-    {
-      float t = 0.0f, d = 0.0f;
-      for (size_t i=0; i<100; i++) 
-      {
-        //const float du = 0.0001f;
-        //Vec3fa P,dPdu,dPdu2; curve.eval(u,P,dPdu,dPdu2);
-        Vec3fa P = curve.eval(u);
-        Vec3fa dPdu = curve.eval_du(u);
-        Vec3fa dPdu2 = curve.eval_dudu(u);
-
-        //Vec3fa _P,_dPdu,_dPdu2; curve.eval(u+du,_P,_dPdu,_dPdu2);
-        //PRINT2(dPdu,(_P-P)/du);
-        //PRINT2(dPdu2,(_dPdu-dPdu)/du);
-        float A = dot(P-ray.org,dPdu);
-        //float _A = dot(_P-ray.org,_dPdu);
-        float dAdu = dot(dPdu,dPdu) + dot(P-ray.org,dPdu2);
-        //PRINT2(dAdu,(_A-A)/du);
-        float B = dot(ray.dir,dPdu);
-        //float _B = dot(ray.dir,_dPdu);
-        float dBdu = dot(ray.dir,dPdu2);
-        //PRINT2(dBdu,(_B-B)/du);
-        t = A/B;
-        //float _t = _A/_B;
-        float dtdu = dAdu/B - A*dBdu/sqr(B);
-        //PRINT2(dtdu,(_t-t)/du);
-        Ng = ray.org+t*ray.dir-P;
-        //Vec3fa _Ng = ray.org+_t*ray.dir-P;
-        Vec3fa dNgdu = dtdu*ray.dir;
-        //PRINT2(dNgdu,(_Ng-Ng)/du);
-        d = length(Ng)-P.w;
-        //float _d = length(_Ng)-_P.w;
-        float ddu = dot(Ng,dNgdu)/length(Ng)-dPdu.w;
-        //PRINT2(ddu,(_d-d)/du);
-        //u += 0.1f*abs(d);
-        u -= d/ddu;
-        if (abs(d) < 0.001f) {
-          u_o = u;
-          t_o = t;
-          return true;
-        }
-      }
-      return false;
-    }
-
     __forceinline bool intersect_bezier_iterative_jacobian(const Ray& ray, const BezierCurve3fa& curve, float u, float t, float& u_o, float& t_o, Vec3fa& Ng_o)
     {
-      //PRINT("jacobian solver");
-      //PRINT2(u,t);
       for (size_t i=0; i<g_debug_int1; i++) 
       {
-        //PRINT(i);
         Vec3fa Q = ray.org + t*ray.dir;
         Vec3fa dQdu = zero;
         Vec3fa dQdt = ray.dir;
 
-        //Vec3fa P,dPdu,ddPdu; curve.eval(u,P,dPdu,ddPdu);
         Vec3fa P = curve.eval(u);
         Vec3fa dPdu = curve.eval_du(u);
         Vec3fa ddPdu = curve.eval_dudu(u);
@@ -318,59 +67,22 @@ namespace embree
         Vec2f dut = rcp_jacobian*Vec2f(f,g);
         Vec2f ut = Vec2f(u,t) - dut;
         u = ut.x; t = ut.y;
-        //PRINT4(u,t,f,g);
 
         if (abs(f) < 16.0f*float(ulp)*length(dPdu) && abs(g) < 16.0f*float(ulp)*length(ray.dir)) 
         {
-          //PRINT("converged");
-          //PRINT2(f,g);
-          //if (std::isnan(t) || std::isinf(t)) return false;
-          //if (std::isnan(u) || std::isinf(t)) return false;
           if (t > t_o) return false;
           if (t < ray.tnear || t > ray.tfar) return false;
           if (u < 0.0f || u_o > 1.0f) return false;
-          //PRINT("hit");
           u_o = u;
           t_o = t;
           Vec3fa R = normalize(Q-P);
           Vec3fa U = dPdu+dPdu.w*R;
           Vec3fa V = cross(dPdu,R);
           Ng_o = cross(V,U);
-          //PRINT(u_o);
-          //PRINT(t_o);
-          //PRINT(Ng_o);
           return true;
         }
       }
       return false;
-    }
-
-    template<int M>
-      __forceinline vfloat<M> sqr_point_to_line_distance(const Vec3<vfloat<M>>& P, const Vec3<vfloat<M>>& Q0, const Vec3<vfloat<M>>& Q1) 
-    {
-      const Vec3<vfloat<M>> N = cross(P-Q0,P-Q1);
-      const Vec3<vfloat<M>> D = Q1-Q0;
-      return dot(N,N)*rcp(dot(D,D));
-    }
-
-    __forceinline void subtract(const BBox<vfloatx>& a, const BBox<vfloatx>& b, BBox<vfloatx>& c, BBox<vfloatx>& d)
-    {
-      c.lower = a.lower;
-      c.upper = min(a.upper,b.lower);
-      d.lower = max(a.lower,b.upper);
-      d.upper = a.upper;
-    }
-
-    __forceinline size_t select_min(const vboolx& valid0, const vfloatx& v0, const vboolx& valid1, const vfloatx& v1) 
-    { 
-      const vfloat4 a0 = select(valid0,v0,vfloat4(pos_inf)); 
-      const vfloat4 a1 = select(valid1,v1,vfloat4(pos_inf)); 
-      const vfloatx m = vreduce_min(min(a0,a1));
-      const vboolx valid_min0 = valid0 & (a0 == m);
-      const vboolx valid_min1 = valid1 & (a1 == m);
-      size_t m0 = movemask(any(valid_min0) ? valid_min0 : valid0);
-      size_t m1 = movemask(any(valid_min1) ? valid_min1 : valid1);
-      return __bsf(m0 | (m1 << VSIZEX)); 
     }
 
     __forceinline bool intersect_bezier_recursive(const Ray& ray, const BezierCurve3fa& curve, const float u0, const float u1, const size_t depth, float& u_o, float& t_o, Vec3fa& Ng_o)
@@ -392,25 +104,15 @@ namespace embree
       const vfloatx r_inner = max(0.0f,min(P0.w,P1.w,P2.w,P3.w)-max(r1,r2));
       const CylinderN<VSIZEX> cylinder_outer(Vec3vfx(P0.x,P0.y,P0.z),Vec3vfx(P3.x,P3.y,P3.z),r_outer);
       const CylinderN<VSIZEX> cylinder_inner(Vec3vfx(P0.x,P0.y,P0.z),Vec3vfx(P3.x,P3.y,P3.z),r_inner);
-      const ConeN<VSIZEX> cone(Vec3vfx(P0.x,P0.y,P0.z),P0.w,Vec3vfx(P3.x,P3.y,P3.z),P3.w);
       vboolx valid = true; clear(valid,VSIZEX-1);
 
       /* intersect with cylinder */
       BBox<vfloatx> tc_outer; vfloatx u_outer0; Vec3vfx Ng_outer0; vfloatx u_outer1; Vec3vfx Ng_outer1;
       BBox<vfloatx> tc_inner;
-#if 0
-      if (depth == maxDepth) {
-        valid &= cone    .intersect(ray.org,ray.dir,tc,u,Ng);
-        valid &= tc.lower > ray.tnear;
-      }
-      else
-#endif
-      {
-        valid &= cylinder_outer.intersect(ray.org,ray.dir,tc_outer,u_outer0,Ng_outer0,u_outer1,Ng_outer1);
-        vboolx valid_inner = cylinder_inner.intersect(ray.org,ray.dir,tc_inner);
-        tc_inner.lower = select(valid_inner,tc_inner.lower,float(pos_inf)); // FIXME: move to cylinder code
-        tc_inner.upper = select(valid_inner,tc_inner.upper,float(neg_inf));
-      }
+      valid &= cylinder_outer.intersect(ray.org,ray.dir,tc_outer,u_outer0,Ng_outer0,u_outer1,Ng_outer1);
+      vboolx valid_inner = cylinder_inner.intersect(ray.org,ray.dir,tc_inner);
+      tc_inner.lower = select(valid_inner,tc_inner.lower,float(pos_inf)); // FIXME: move to cylinder code
+      tc_inner.upper = select(valid_inner,tc_inner.upper,float(neg_inf));
       if (none(valid)) return false;
       u_outer0 = clamp(u_outer0,vfloatx(0.0f),vfloatx(1.0f));
       u_outer1 = clamp(u_outer1,vfloatx(0.0f),vfloatx(1.0f));
@@ -420,9 +122,9 @@ namespace embree
       /* intersect with cap-planes */
       BBox<vfloatx> tp(ray.tnear,ray.tfar);
       tp = embree::intersect(tp,tc_outer);
-      auto h0 = intersect_half_planeN(ray.org,ray.dir,+Vec3vfx(dP0du),Vec3vfx(P0));
+      BBox<vfloatx> h0 = intersect_half_planeN(ray.org,ray.dir,+Vec3vfx(dP0du),Vec3vfx(P0));
       tp = embree::intersect(tp,h0);
-      auto h1 = intersect_half_planeN(ray.org,ray.dir,-Vec3vfx(dP3du),Vec3vfx(P3));
+      BBox<vfloatx> h1 = intersect_half_planeN(ray.org,ray.dir,-Vec3vfx(dP3du),Vec3vfx(P3));
       tp = embree::intersect(tp,h1);
 
       valid &= tp.lower <= tp.upper;
@@ -567,84 +269,6 @@ namespace embree
         vboolx valid_o = false;
         set(valid_o,0);
         return epilog(valid_o,hit);
-      }
-    };
-
-#endif
-
-#if 0
-
-    struct Bezier1Intersector1
-    {
-      __forceinline Bezier1Intersector1(const Ray& ray, const void* ptr) {}
-
-      template<typename Epilog>
-      __forceinline bool intersect(Ray& ray,
-                                   const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const int Np,
-                                   const Epilog& epilog) const
-      {
-        STAT3(normal.trav_prims,1,1,1);
-        bool ishit = false;
-        BezierCurve3fa curve2D(v0,v1,v2,v3,0.0f,1.0f,4);
-        int N = Np-1; // calculate number of segments
-        float rcpN = 1.0f/float(N);
-
-        float u = 0.0f;
-        float t = ray.tfar;
-        Vec3fa Ng = zero;
-
-        /* process SIMD-size-1 many segments per iteration */
-        for (int i=0; i<N; i+=VSIZEX-1)
-        {
-          /* evaluate the bezier curve */
-          vboolx valid = vintx(i)+vintx(step) < vintx(N);
-          const Vec4vfx p  = curve2D.eval0(valid,i,N);
-          const Vec4vfx dp = curve2D.derivative(valid,i,N);
-
-          /* early exit */
-          /*const Vec3vfx Q1(p.x,p.y,p.z);
-          const Vec3vfx Q2(shift_right_1(p.x),shift_right_1(p.y),shift_right_1(p.z));
-          valid &= abs(dot(Vec3vfx(ray.org)-Q1,normalize_safe(cross(Q2-Q1,Vec3vfx(ray.dir))))) <= max(p.w,shift_right_1(p.w));
-          if (none(valid)) continue;*/
-         
-          /* intersect each bezier segment */
-          vboolx valid_o = false;
-          LineIntersectorHitM<VSIZEX> hit;
-
-          for (size_t j=0; j<min(VSIZEX-1,N-i); j++)
-          {
-            //PRINT(i+j);
-            //if (i+j != 0 && i+j != 1) continue;
-            //std::cout << std::endl;
-            //PRINT(j);
-            const Vec3fa p1( p.x[j+0], p.y[j+0] ,p.z[j+0], p.w[j+0]);
-            const Vec3fa p2( p.x[j+1], p.y[j+1] ,p.z[j+1], p.w[j+1]);
-            const Vec3fa n1(dp.x[j+0],dp.y[j+0],dp.z[j+0],dp.w[j+0]);
-            const Vec3fa n2(dp.x[j+1],dp.y[j+1],dp.z[j+1],dp.w[j+1]);
-            const float  r1 =  p.w[j+0];
-            const float  r2 =  p.w[j+1];
-            const float t0 = float(i+j+0)*rcpN;
-            const float t1 = float(i+j+1)*rcpN;
-            //const FillCone cone(p1,n1,r1,p2,n2,r2);
-            //if (!cone.intersect(ray,u,t,Ng)) continue;
-            //if (!intersect_bezier_iterative(ray, curve2D,t0,u,t,Ng)) continue;
-            if (!intersect_bezier_iterative2(ray,curve2D,t0,t1,u,t,Ng)) continue;
-            //const BezierCurve3fa subcurve(p1,p1+(1.0f/3.0f)*n1,p2-(1.0f/3.0f)*n2,p2,t0,t1,0);
-            //if (!intersect_bezier_recursive(ray,subcurve,u,t,Ng)) continue;
-            hit.vu[j] = u; //(float(i+j)+u)*rcpN;
-            hit.vv[j] = 0.0f;
-            hit.vt[j] = t;
-            hit.vNg.x[j] = Ng.x;
-            hit.vNg.y[j] = Ng.y;
-            hit.vNg.z[j] = Ng.z;
-            set(valid_o,j);
-          }
-          
-          /* update hit information */
-          if (unlikely(none(valid_o))) continue;
-          ishit |= epilog(valid_o,hit);
-        }
-        return ishit;
       }
     };
 
