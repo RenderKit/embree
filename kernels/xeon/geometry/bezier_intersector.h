@@ -39,9 +39,10 @@ namespace embree
         //const Vec3fa dQdu = zero;
         const Vec3fa dQdt = ray.dir;
 
-        const Vec3fa P = curve.eval(u);
-        const Vec3fa dPdu = curve.eval_du(u);
-        const Vec3fa ddPdu = curve.eval_dudu(u);
+        //const Vec3fa P = curve.eval(u);
+        //const Vec3fa dPdu = curve.eval_du(u);
+        //const Vec3fa ddPdu = curve.eval_dudu(u);
+        Vec3fa P,dPdu,ddPdu; curve.eval(u,P,dPdu,ddPdu);
         //const Vec3fa dPdt = zero;
 
         const Vec3fa R = Q-P;

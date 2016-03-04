@@ -115,6 +115,26 @@ namespace embree
       return C0*v0 + C1*v1 + C2*v2 + C3*v3;
     }
 
+    __forceinline void eval(const float t, Vertex& p, Vertex& dp, Vertex& ddp) const
+    {
+      const float t0 = 1.0f - t, t1 = t;
+
+      const Vertex p00 = v0;
+      const Vertex p01 = v1;
+      const Vertex p02 = v2;
+      const Vertex p03 = v3;
+
+      const Vertex p10 = p00 * t0 + p01 * t1;
+      const Vertex p11 = p01 * t0 + p02 * t1;
+      const Vertex p12 = p02 * t0 + p03 * t1;
+      const Vertex p20 = p10 * t0 + p11 * t1;
+      const Vertex p21 = p11 * t0 + p12 * t1;
+      const Vertex p30 = p20 * t0 + p21 * t1;
+      p = p30;
+      dp = 3.0f*(p21-p20);
+      ddp = eval_dudu(t);
+    }
+
     friend inline std::ostream& operator<<(std::ostream& cout, const BezierCurveT& curve) {
       return cout << "{ v0 = " << curve.v0 << ", v1 = " << curve.v1 << ", v2 = " << curve.v2 << ", v3 = " << curve.v3 << ", depth = " << curve.depth << " }";
     }
