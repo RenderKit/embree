@@ -34,38 +34,38 @@ namespace embree
     {
       for (size_t i=0; i<g_debug_int1; i++) 
       {
-        Vec3fa Q = ray.org + t*ray.dir;
-        //Vec3fa dQdu = zero;
-        Vec3fa dQdt = ray.dir;
+        const Vec3fa Q = ray.org + t*ray.dir;
+        //const Vec3fa dQdu = zero;
+        const Vec3fa dQdt = ray.dir;
 
-        Vec3fa P = curve.eval(u);
-        Vec3fa dPdu = curve.eval_du(u);
-        Vec3fa ddPdu = curve.eval_dudu(u);
-        //Vec3fa dPdt = zero;
+        const Vec3fa P = curve.eval(u);
+        const Vec3fa dPdu = curve.eval_du(u);
+        const Vec3fa ddPdu = curve.eval_dudu(u);
+        //const Vec3fa dPdt = zero;
 
-        Vec3fa R = Q-P;
-        Vec3fa dRdu = /*dQdu*/-dPdu;
-        Vec3fa dRdt = dQdt;//-dPdt;
+        const Vec3fa R = Q-P;
+        const Vec3fa dRdu = /*dQdu*/-dPdu;
+        const Vec3fa dRdt = dQdt;//-dPdt;
 
-        Vec3fa T = normalize(dPdu);
-        Vec3fa dTdu = dnormalize(dPdu,ddPdu);
-        //Vec3fa dTdt = zero;
+        const Vec3fa T = normalize(dPdu);
+        const Vec3fa dTdu = dnormalize(dPdu,ddPdu);
+        //const Vec3fa dTdt = zero;
 
-        float f = dot(R,T);
-        float dfdu = dot(dRdu,T) + dot(R,dTdu);
-        float dfdt = dot(dRdt,T);// + dot(R,dTdt);
+        const float f = dot(R,T);
+        const float dfdu = dot(dRdu,T) + dot(R,dTdu);
+        const float dfdt = dot(dRdt,T);// + dot(R,dTdt);
 
-        float K = dot(R,R)-sqr(f);
-        float dKdu = 2.0f*dot(R,dRdu)-2.0f*f*dfdu;
-        float dKdt = 2.0f*dot(R,dRdt)-2.0f*f*dfdt;
+        const float K = dot(R,R)-sqr(f);
+        const float dKdu = 2.0f*dot(R,dRdu)-2.0f*f*dfdu;
+        const float dKdt = 2.0f*dot(R,dRdt)-2.0f*f*dfdt;
 
-        float g = sqrt(K)-P.w;
-        float dgdu = 0.5f*dKdu*rsqrt(K)-dPdu.w;
-        float dgdt = 0.5f*dKdt*rsqrt(K);//-dPdt.w;
+        const float g = sqrt(K)-P.w;
+        const float dgdu = 0.5f*dKdu*rsqrt(K)-dPdu.w;
+        const float dgdt = 0.5f*dKdt*rsqrt(K);//-dPdt.w;
 
-        LinearSpace2f J = LinearSpace2f(dfdu,dfdt,dgdu,dgdt);
-        Vec2f dut = rcp(J)*Vec2f(f,g);
-        Vec2f ut = Vec2f(u,t) - dut;
+        const LinearSpace2f J = LinearSpace2f(dfdu,dfdt,dgdu,dgdt);
+        const Vec2f dut = rcp(J)*Vec2f(f,g);
+        const Vec2f ut = Vec2f(u,t) - dut;
         u = ut.x; t = ut.y;
 
         if (abs(f) < 16.0f*float(ulp)*length(dPdu) && abs(g) < 16.0f*float(ulp)*length(ray.dir)) 
@@ -75,9 +75,9 @@ namespace embree
           if (u < 0.0f || u_o > 1.0f) return false;
           u_o = u;
           t_o = t;
-          Vec3fa R = normalize(Q-P);
-          Vec3fa U = dPdu+dPdu.w*R;
-          Vec3fa V = cross(dPdu,R);
+          const Vec3fa R = normalize(Q-P);
+          const Vec3fa U = dPdu+dPdu.w*R;
+          const Vec3fa V = cross(dPdu,R);
           Ng_o = cross(V,U);
           return true;
         }
