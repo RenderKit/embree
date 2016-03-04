@@ -217,6 +217,13 @@ namespace embree
     return dot(N,N)*rcp(dot(D,D));
   }
 
+  template<typename T> __forceinline T sqr_point_to_line_distance(const Vec3<T>& PmQ0, const Vec3<T>& Q1mQ0) 
+  {
+    const Vec3<T> N = cross(PmQ0,Q1mQ0);
+    const Vec3<T> D = Q1mQ0;
+    return dot(N,N)*rcp(dot(D,D));
+  }
+
   ////////////////////////////////////////////////////////////////////////////////
   /// Output Operators
   ////////////////////////////////////////////////////////////////////////////////
