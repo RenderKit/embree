@@ -279,6 +279,7 @@ namespace embree
 
     __forceinline bool intersect_bezier_iterative_jacobian(const Ray& ray, const BezierCurve3fa& curve, float u, float t, float& u_o, float& t_o, Vec3fa& Ng_o)
     {
+      //PRINT("jacobian solver");
       //PRINT2(u,t);
       for (size_t i=0; i<5; i++) 
       {
@@ -327,6 +328,7 @@ namespace embree
           //if (std::isnan(u) || std::isinf(t)) return false;
           if (t > t_o) return false;
           if (t < ray.tnear || t > ray.tfar) return false;
+          if (u < 0.0f || u_o > 1.0f) return false;
           //PRINT("hit");
           u_o = u;
           t_o = t;
@@ -375,6 +377,7 @@ namespace embree
 
     __forceinline bool intersect_bezier_recursive(const Ray& ray, const BezierCurve3fa& curve, const float u0, const float u1, const size_t depth, float& u_o, float& t_o, Vec3fa& Ng_o)
     {
+      //PRINT(depth);
       //Cone::verify();
       //exit(1);
 
@@ -417,6 +420,7 @@ namespace embree
         tc_inner.lower = select(valid_inner,tc_inner.lower,float(pos_inf));
         tc_inner.upper = select(valid_inner,tc_inner.upper,float(neg_inf));
       }
+      //PRINT(valid);
       if (none(valid)) return false;
       //PRINT(valid);
       u_outer = clamp(u_outer,vfloatx(0.0f),vfloatx(1.0f));
@@ -479,8 +483,8 @@ namespace embree
             if (!intersect_bezier_iterative_jacobian(ray,curve,ru,tp_lower[i],u_o,t_o,Ng_o))
               continue;
             
-            if (u_o < 0.0f || u_o > 1.0f)
-              continue;
+            //if (u_o < 0.0f || u_o > 1.0f)
+            //continue;
 
             found = true;
             valid0 &= tp0.lower < t_o;
