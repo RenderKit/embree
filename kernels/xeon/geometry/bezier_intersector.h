@@ -94,8 +94,9 @@ namespace embree
       Vec4vfx P0, dP0du; curve.evalN(vu0,P0,dP0du);
       const Vec4vfx  P3   = Vec4vfx(shift_right_1(P0.x   ),shift_right_1(P0.y   ),shift_right_1(P0.z   ),shift_right_1(P0.w)   );
       const Vec4vfx dP3du = Vec4vfx(shift_right_1(dP0du.x),shift_right_1(dP0du.y),shift_right_1(dP0du.z),shift_right_1(dP0du.w));
-      const Vec4vfx P1 = P0 + Vec4vfx((u1-u0)/(3.0f*(VSIZEX-1)))*dP0du; 
-      const Vec4vfx P2 = P3 - Vec4vfx((u1-u0)/(3.0f*(VSIZEX-1)))*dP3du;
+      const float dscale = (u1-u0)/(3.0f*(VSIZEX-1));
+      const Vec4vfx P1 = P0 + Vec4vfx(dscale)*dP0du; 
+      const Vec4vfx P2 = P3 - Vec4vfx(dscale)*dP3du;
 
       /* calculate bounding cylinders */
       const vfloatx r1 = sqrt(sqr_point_to_line_distance(Vec3vfx(P1),Vec3vfx(P0),Vec3vfx(P3)));
