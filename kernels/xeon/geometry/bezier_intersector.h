@@ -119,13 +119,14 @@ namespace embree
       tp = embree::intersect(tp,h0);
       BBox<vfloatx> h1 = HalfPlaneN<VSIZEX>(Vec3vfx(P3),-Vec3vfx(dP3du)).intersect(ray.org,ray.dir);
       tp = embree::intersect(tp,h1);
+      valid &= tp.lower <= tp.upper;
+      if (none(valid)) return false;
+
+      /* clamp and correct u parameter */
       u_outer0 = clamp(u_outer0,vfloatx(0.0f),vfloatx(1.0f));
       u_outer1 = clamp(u_outer1,vfloatx(0.0f),vfloatx(1.0f));
       u_outer0 = lerp(u0,u1,(vfloatx(step)+u_outer0)*(1.0f/float(VSIZEX)));
       u_outer1 = lerp(u0,u1,(vfloatx(step)+u_outer1)*(1.0f/float(VSIZEX)));
-
-      valid &= tp.lower <= tp.upper;
-      if (none(valid)) return false;
 
       /* intersect with inner cylinder */
       BBox<vfloatx> tc_inner;
