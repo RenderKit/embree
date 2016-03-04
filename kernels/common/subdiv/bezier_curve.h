@@ -180,7 +180,8 @@ namespace embree
 
     __forceinline void evalN(const vfloatx& t, Vec4vfx& p, Vec4vfx& dp) const
     {
-      /*const vfloatx t0 = vfloatx(1.0f) - t, t1 = t;
+#if 1
+      const vfloatx t0 = vfloatx(1.0f) - t, t1 = t;
 
       const Vec4vfx p00 = v0;
       const Vec4vfx p01 = v1;
@@ -195,8 +196,8 @@ namespace embree
       const Vec4vfx p30 = p20 * t0 + p21 * t1;
 
       p = p30;
-      dp = vfloatx(0.5f*3.0f)*(p21-p20);*/
-      
+      dp = vfloatx(3.0f)*(p21-p20);
+#else
       const vfloatx t0 = 1.0f - t, t1 = t;
 
       vfloatx A0 = t0 * t0 * t0;
@@ -211,6 +212,7 @@ namespace embree
 
       p   = A0*Vec4vfx(v0) + A1*Vec4vfx(v1) + A2*Vec4vfx(v2) + A3*Vec4vfx(v3);
       dp  = B0*Vec4vfx(v0) + B1*Vec4vfx(v1) + B2*Vec4vfx(v2) + B3*Vec4vfx(v3);
+#endif
     }
 
 
