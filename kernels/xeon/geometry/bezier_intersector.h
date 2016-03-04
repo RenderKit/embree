@@ -94,7 +94,7 @@ namespace embree
       Vec4vfx P0, dP0du; curve.evalN(vu0,P0,dP0du);
       const Vec4vfx  P3   = shift_right_1(P0);
       const Vec4vfx dP3du = shift_right_1(dP0du);
-      const float dscale = (u1-u0)/(3.0f*(VSIZEX-1));
+      const float dscale = (u1-u0)*(1.0f/(3.0f*(VSIZEX-1)));
       const Vec4vfx P1 = P0 + Vec4vfx(dscale)*dP0du; 
       const Vec4vfx P2 = P3 - Vec4vfx(dscale)*dP3du;
 
