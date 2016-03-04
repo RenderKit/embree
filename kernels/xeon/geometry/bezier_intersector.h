@@ -103,8 +103,8 @@ namespace embree
       const vfloatx r2 = sqrt(sqr_point_to_line_distance(Vec3vfx(P2),Vec3vfx(P0),Vec3vfx(P3)));
       const vfloatx r_outer = max(P0.w,P1.w,P2.w,P3.w)+max(r1,r2);
       const vfloatx r_inner = max(0.0f,min(P0.w,P1.w,P2.w,P3.w)-max(r1,r2));
-      const CylinderN<VSIZEX> cylinder_outer(Vec3vfx(P0.x,P0.y,P0.z),Vec3vfx(P3.x,P3.y,P3.z),r_outer);
-      const CylinderN<VSIZEX> cylinder_inner(Vec3vfx(P0.x,P0.y,P0.z),Vec3vfx(P3.x,P3.y,P3.z),r_inner);
+      const CylinderN<VSIZEX> cylinder_outer(Vec3vfx(P0),Vec3vfx(P3),r_outer);
+      const CylinderN<VSIZEX> cylinder_inner(Vec3vfx(P0),Vec3vfx(P3),r_inner);
       vboolx valid = true; clear(valid,VSIZEX-1);
 
       /* intersect with cylinder */
