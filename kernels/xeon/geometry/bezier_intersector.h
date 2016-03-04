@@ -69,7 +69,7 @@ namespace embree
         const Vec2f ut = Vec2f(u,t) - dut;
         u = ut.x; t = ut.y;
         
-        if (abs(f) < 16.0f*float(ulp)*length(dPdu) && abs(g) < 16.0f*float(ulp)*length_ray_dir) 
+        if (abs(f) < 16.0f*float(ulp)*reduce_max(abs(dPdu)) && abs(g) < 16.0f*float(ulp)*length_ray_dir) 
         {
           if (t > t_o) return false;
           if (t < ray.tnear || t > ray.tfar) return false;
