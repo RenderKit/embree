@@ -120,6 +120,20 @@ namespace embree
     }
   };
 
+  template<int N>
+    struct BezierCurve4N
+    {
+      Vec4<vfloat<N>> v0,v1,v2,v3;
+
+    __forceinline BezierCurve4N() {}
+
+    __forceinline BezierCurve4N(const Vec4<vfloat<N>>& v0, 
+                                const Vec4<vfloat<N>>& v1, 
+                                const Vec4<vfloat<N>>& v2, 
+                                const Vec4<vfloat<N>>& v3)
+      : v0(v0), v1(v1), v2(v2), v3(v3) {}
+    };
+
   struct BezierCoefficients
   {
     enum { N = 16 };
@@ -150,6 +164,19 @@ namespace embree
 	__forceinline BezierCurve3fa() {}
 	__forceinline BezierCurve3fa(const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const float t0 = 0.0f, const float t1 = 1.0f, const int depth = 0)
       : BezierCurveT<Vec3fa>(v0,v1,v2,v3,t0,t1,depth) {}
+        
+        template<int N>
+          __forceinline BezierCurve4N<N> subdivide(const float u0, const float u1) const
+        {
+          const vfloat<N> lu = vfloat<N>(step)*(1.0f/(N-1));
+          const vfloat<N> vu0 = (vfloat<N>(one)-lu)*u0 + lu*u1;
+          Vec4<vfloat<N>> P0, dP0du; evalN(vu0,P0,dP0du);
+          const Vec4<vfloat<N>>  P3   = Vec4<vfloat<N>>(shift_right_1(P0.x   ),shift_right_1(P0.y   ),shift_right_1(P0.z   ),shift_right_1(P0.w)   );
+          const Vec4<vfloat<N>> dP3du = Vec4<vfloat<N>>(shift_right_1(dP0du.x),shift_right_1(dP0du.y),shift_right_1(dP0du.z),shift_right_1(dP0du.w));
+          const Vec4<vfloat<N>> P1 = P0 + Vec4<vfloat<N>>((u1-u0)/(3.0f*(VSIZEX-1)))*dP0du; 
+          const Vec4<vfloat<N>> P2 = P3 - Vec4<vfloat<N>>((u1-u0)/(3.0f*(VSIZEX-1)))*dP3du;
+          return BezierCurve4N<N>(P0,P1,P2,P3);
+        }
 
     __forceinline void evalN(const vfloatx& t, Vec4vfx& p, Vec4vfx& dp) const
     {
