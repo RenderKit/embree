@@ -107,11 +107,9 @@ namespace embree
       const CylinderN<VSIZEX> cylinder_inner(Vec3vfx(P0),Vec3vfx(P3),r_inner);
       vboolx valid = true; clear(valid,VSIZEX-1);
 
-      /* intersect with cylinder */
+      /* intersect with outer cylinder */
       BBox<vfloatx> tc_outer; vfloatx u_outer0; Vec3vfx Ng_outer0; vfloatx u_outer1; Vec3vfx Ng_outer1;
-      BBox<vfloatx> tc_inner;
       valid &= cylinder_outer.intersect(ray.org,ray.dir,tc_outer,u_outer0,Ng_outer0,u_outer1,Ng_outer1);
-      cylinder_inner.intersect(ray.org,ray.dir,tc_inner);
       if (none(valid)) return false;
 
       /* intersect with cap-planes */
@@ -130,7 +128,10 @@ namespace embree
       valid &= tp.lower < t_o;
       if (none(valid)) return false;
 
+      /* intersect with inner cylinder */
+      BBox<vfloatx> tc_inner;
       BBox<vfloatx> tp0, tp1;
+      cylinder_inner.intersect(ray.org,ray.dir,tc_inner);
       subtract(tp,tc_inner,tp0,tp1);
       vboolx valid0 = valid & (tp0.lower <= tp0.upper);
       vboolx valid1 = valid & (tp1.lower <= tp1.upper);
