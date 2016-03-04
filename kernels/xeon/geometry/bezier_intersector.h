@@ -355,8 +355,6 @@ namespace embree
 
     __forceinline void subtract(const BBox<vfloatx>& a, const BBox<vfloatx>& b, BBox<vfloatx>& c, BBox<vfloatx>& d)
     {
-      //c = intersect(a,BBox<vfloatx>(vfloatx(neg_inf),b.lower));
-      //d = intersect(a,BBox<vfloatx>(b.upper,vfloatx(pos_inf)));
       c.lower = a.lower;
       c.upper = min(a.upper,b.lower);
       d.lower = max(a.lower,b.upper);
@@ -377,11 +375,6 @@ namespace embree
 
     __forceinline bool intersect_bezier_recursive(const Ray& ray, const BezierCurve3fa& curve, const float u0, const float u1, const size_t depth, float& u_o, float& t_o, Vec3fa& Ng_o)
     {
-      //PRINT(depth);
-      //Cone::verify();
-      //exit(1);
-
-      //PRINT(curve);
       int maxDepth = g_debug_int0;
       bool found = false;
 
@@ -401,8 +394,6 @@ namespace embree
       const CylinderN<VSIZEX> cylinder_inner(Vec3vfx(P0.x,P0.y,P0.z),Vec3vfx(P3.x,P3.y,P3.z),r_inner);
       const ConeN<VSIZEX> cone(Vec3vfx(P0.x,P0.y,P0.z),P0.w,Vec3vfx(P3.x,P3.y,P3.z),P3.w);
       vboolx valid = true; clear(valid,VSIZEX-1);
-      //if (depth == 1) { valid = false; set(valid,1); }
-      //if (depth == 2) { valid = false; set(valid,0); }
 
       /* intersect with cylinder */
       BBox<vfloatx> tc_outer; vfloatx u_outer0; Vec3vfx Ng_outer0; vfloatx u_outer1; Vec3vfx Ng_outer1;
@@ -420,34 +411,23 @@ namespace embree
         tc_inner.lower = select(valid_inner,tc_inner.lower,float(pos_inf)); // FIXME: move to cylinder code
         tc_inner.upper = select(valid_inner,tc_inner.upper,float(neg_inf));
       }
-      //PRINT(valid);
       if (none(valid)) return false;
-      //PRINT(valid);
       u_outer0 = clamp(u_outer0,vfloatx(0.0f),vfloatx(1.0f));
       u_outer1 = clamp(u_outer1,vfloatx(0.0f),vfloatx(1.0f));
       u_outer0 = (vfloatx(step)+u_outer0)*(1.0f/float(VSIZEX));
       u_outer1 = (vfloatx(step)+u_outer1)*(1.0f/float(VSIZEX));
-      //PRINT(valid);
-      //PRINT(tc);
 
       /* intersect with cap-planes */
       BBox<vfloatx> tp(ray.tnear,ray.tfar);
-      //PRINT(tp);
       tp = embree::intersect(tp,tc_outer);
-      //PRINT(tp);
       auto h0 = intersect_half_planeN(ray.org,ray.dir,+Vec3vfx(dP0du),Vec3vfx(P0));
-      //PRINT(h0);
       tp = embree::intersect(tp,h0);
-      //PRINT(tp);
       auto h1 = intersect_half_planeN(ray.org,ray.dir,-Vec3vfx(dP3du),Vec3vfx(P3));
-      //PRINT(h1);
       tp = embree::intersect(tp,h1);
-      //PRINT(tp);
 
       valid &= tp.lower <= tp.upper;
       valid &= tp.lower < t_o;
       if (none(valid)) return false;
-      //PRINT(valid);
 
       BBox<vfloatx> tp0, tp1;
       subtract(tp,tc_inner,tp0,tp1);
@@ -456,7 +436,6 @@ namespace embree
 
       float tp_lower[2*VSIZEX]; vfloatx::storeu(&tp_lower[0*VSIZEX],tp0.lower ); vfloatx::storeu(&tp_lower[1*VSIZEX],tp1.lower );
       float tp_outer[2*VSIZEX]; vfloatx::storeu(&tp_outer[0*VSIZEX],tp0.lower ); vfloatx::storeu(&tp_outer[1*VSIZEX],tp1.upper );
-      //float tp_upper[2*VSIZEX]; vfloatx::storeu(&tp_upper[0*VSIZEX],tp0.upper ); vfloatx::storeu(&tp_upper[1*VSIZEX],tp1.upper );
       float u       [2*VSIZEX]; vfloatx::storeu(&u       [0*VSIZEX],u_outer0   ); vfloatx::storeu(&u       [1*VSIZEX],u_outer1   );
       float Ng_x    [2*VSIZEX]; vfloatx::storeu(&Ng_x    [0*VSIZEX],Ng_outer0.x); vfloatx::storeu(&Ng_x    [1*VSIZEX],Ng_outer1.x);
       float Ng_y    [2*VSIZEX]; vfloatx::storeu(&Ng_y    [0*VSIZEX],Ng_outer0.y); vfloatx::storeu(&Ng_y    [1*VSIZEX],Ng_outer1.y);
@@ -470,23 +449,15 @@ namespace embree
         if (i < VSIZEX) clear(valid0,j);
         else            clear(valid1,j);
         
-        //PRINT2(curve.depth,i);
-
         if (depth == maxDepth) 
         {
           if (g_debug_int1 % 2)
           {
             float uu = u[i];
             float ru = (1.0f-uu)*u0 + uu*u1;
-            //bool h = intersect_bezier_iterative(ray,curve, ru, u_o, t_o, Ng_o);
-            //bool h = intersect_bezier_iterative3(ray,curve, vu0[i], vu0[i+1], tp.lower[i], tp.upper[i], tc.upper[i], u_o, t_o, Ng_o);
-
             if (!intersect_bezier_iterative_jacobian(ray,curve,ru,tp_outer[i],u_o,t_o,Ng_o))
               continue;
             
-            //if (u_o < 0.0f || u_o > 1.0f)
-            //continue;
-
             found = true;
             valid0 &= tp0.lower < t_o;
             valid1 &= tp1.lower < t_o;
@@ -495,33 +466,26 @@ namespace embree
           else
           {
             if (tp_lower[i] < t_o) {
-              float uu = u[i]; //(float(i)+u[i])/float(VSIZEX);
+              float uu = u[i];
               u_o = (1.0f-uu)*u0 + uu*u1;
               t_o = tp_lower[i];
               Ng_o = Vec3fa(Ng_x[i],Ng_y[i],Ng_z[i]);
-              //u_o = float(i+1)/float(VSIZEX);
               if (h0.lower[j] == tp_lower[i]) Ng_o = -Vec3fa(dP0du.x[j],dP0du.y[j],dP0du.z[j]);
               if (h1.lower[j] == tp_lower[i]) Ng_o = +Vec3fa(dP3du.x[j],dP3du.y[j],dP3du.z[j]);
-              //return true;
               found = true;
               valid0 &= tp0.lower < t_o;
               valid1 &= tp1.lower < t_o;
-            } else {
-              //PRINT("miss");
             }
-            //return false;
             continue;
           }
         }
 
         if (intersect_bezier_recursive(ray,curve,vu0[j+0],vu0[j+1],depth+1,u_o,t_o,Ng_o)) {
-          //return true;
           found = true; 
           valid0 &= tp0.lower < t_o;
           valid1 &= tp1.lower < t_o;
         }
       }
-      //return false;
       return found;
     }
 
