@@ -113,7 +113,7 @@ namespace embree
       if (none(valid)) return false;
 
       /* intersect with cap-planes */
-      BBox<vfloatx> tp(ray.tnear,ray.tfar);
+      BBox<vfloatx> tp(ray.tnear,min(t_o,ray.tfar));
       tp = embree::intersect(tp,tc_outer);
       BBox<vfloatx> h0 = HalfPlaneN<VSIZEX>(Vec3vfx(P0),+Vec3vfx(dP0du)).intersect(ray.org,ray.dir);
       tp = embree::intersect(tp,h0);
@@ -125,7 +125,6 @@ namespace embree
       u_outer1 = lerp(u0,u1,(vfloatx(step)+u_outer1)*(1.0f/float(VSIZEX)));
 
       valid &= tp.lower <= tp.upper;
-      valid &= tp.lower < t_o;
       if (none(valid)) return false;
 
       /* intersect with inner cylinder */
