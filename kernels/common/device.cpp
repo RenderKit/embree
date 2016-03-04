@@ -26,6 +26,7 @@
 
 #include "acceln.h"
 #include "geometry.h"
+#include "../xeon/geometry/cylinder.h"
 
 #if !defined(__MIC__)
 #include "../xeon/bvh/bvh4_factory.h"
@@ -93,6 +94,9 @@ namespace embree
     if (FileName::homeFolder() != FileName("")) // home folder is not available on KNC
       State::parseFile(FileName::homeFolder()+FileName(".embree" TOSTRING(__EMBREE_VERSION_MAJOR__)));
     State::verify();
+
+    /*! do some internal tests */
+    sse2::Cylinder::verify();
     
     /*! set tessellation cache size */
     setCacheSize( State::tessellation_cache_size );

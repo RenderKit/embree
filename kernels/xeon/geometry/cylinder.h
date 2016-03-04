@@ -24,8 +24,8 @@ namespace embree
   {
     struct Cylinder
     {
-      const Vec3fa p0; //!< start location
-      const Vec3fa p1; //!< end position
+      const Vec3fa p0;  //!< start location
+      const Vec3fa p1;  //!< end position
       const float rr;   //!< squared radius of cylinder
 
       __forceinline Cylinder(const Vec3fa& p0, const Vec3fa& p1, const float r) 
@@ -57,8 +57,20 @@ namespace embree
         
         const float D = B*B - 4.0f*A*C;
         if (D < 0.0f) {
-          t_o = empty;
+          t_o = BBox1f(pos_inf,neg_inf);
           return false;
+        }
+
+        const float eps = 16.0f*float(ulp)*max(abs(dOdO),abs(sqr(dOz)));
+        if (abs(A) < eps) 
+        {
+          if (C <= 0.0f) {
+            t_o = BBox1f(neg_inf,pos_inf);
+            return true;
+          } else {
+            t_o = BBox1f(pos_inf,neg_inf);
+            return false;
+          }
         }
         
         const float Q = sqrt(D);
@@ -74,6 +86,40 @@ namespace embree
         t_o.lower = t0+tb;
         t_o.upper = t1+tb;
         return true;
+      }
+
+      static bool verify(const size_t id, const Cylinder& cylinder, const Ray& ray, bool shouldhit, const float t0, const float t1)
+      {
+        float eps = 0.001f;
+        BBox1f t; float u; Vec3fa Ng; bool hit;
+        hit = cylinder.intersect(ray.org,ray.dir,t,u,Ng);
+
+        bool failed = hit != shouldhit;
+        if (shouldhit) failed |= isinf(t0) ? t0 != t.lower : abs(t0-t.lower) > eps;
+        if (shouldhit) failed |= isinf(t1) ? t1 != t.upper : abs(t1-t.upper) > eps;
+        if (!failed) return true;
+        std::cout << "Cylinder test " << id << " failed: cylinder = " << cylinder << ", ray = " << ray << ", hit = " << hit << ", t = " << t << std::endl; 
+        return false;
+      }
+
+      /* verify cylinder class */
+      static bool verify()
+      {
+        bool passed = true;
+        const Cylinder cylinder(Vec3fa(0.0f,0.0f,0.0f),Vec3fa(1.0f,0.0f,0.0f),1.0f);
+        passed &= verify(0,cylinder,Ray(Vec3fa(-2.0f,1.0f,0.0f),Vec3fa( 0.0f,-1.0f,+0.0f),0.0f,float(inf)),true,0.0f,2.0f);
+        passed &= verify(1,cylinder,Ray(Vec3fa(+2.0f,1.0f,0.0f),Vec3fa( 0.0f,-1.0f,+0.0f),0.0f,float(inf)),true,0.0f,2.0f);
+        passed &= verify(2,cylinder,Ray(Vec3fa(+2.0f,1.0f,2.0f),Vec3fa( 0.0f,-1.0f,+0.0f),0.0f,float(inf)),false,0.0f,0.0f);
+        passed &= verify(3,cylinder,Ray(Vec3fa(+0.0f,0.0f,0.0f),Vec3fa( 1.0f, 0.0f,+0.0f),0.0f,float(inf)),true,neg_inf,pos_inf);
+        passed &= verify(4,cylinder,Ray(Vec3fa(+0.0f,0.0f,0.0f),Vec3fa(-1.0f, 0.0f,+0.0f),0.0f,float(inf)),true,neg_inf,pos_inf);
+        passed &= verify(5,cylinder,Ray(Vec3fa(+0.0f,2.0f,0.0f),Vec3fa( 1.0f, 0.0f,+0.0f),0.0f,float(inf)),false,pos_inf,neg_inf);
+        passed &= verify(6,cylinder,Ray(Vec3fa(+0.0f,2.0f,0.0f),Vec3fa(-1.0f, 0.0f,+0.0f),0.0f,float(inf)),false,pos_inf,neg_inf);
+        return passed;
+      }
+
+      /*! output operator */
+      friend __forceinline std::ostream& operator<<(std::ostream& cout, const Cylinder& c) {
+        return cout << "Cylinder { p0 = " << c.p0 << ", p1 = " << c.p1 << ", r = " << sqrtf(c.rr) << "}";
       }
     };
 
