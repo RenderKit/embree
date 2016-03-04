@@ -115,9 +115,9 @@ namespace embree
       /* intersect with cap-planes */
       BBox<vfloatx> tp(ray.tnear,ray.tfar);
       tp = embree::intersect(tp,tc_outer);
-      BBox<vfloatx> h0 = intersect_half_planeN(ray.org,ray.dir,+Vec3vfx(dP0du),Vec3vfx(P0));
+      BBox<vfloatx> h0 = intersect_half_plane(ray.org,ray.dir,+Vec3vfx(dP0du),Vec3vfx(P0));
       tp = embree::intersect(tp,h0);
-      BBox<vfloatx> h1 = intersect_half_planeN(ray.org,ray.dir,-Vec3vfx(dP3du),Vec3vfx(P3));
+      BBox<vfloatx> h1 = intersect_half_plane(ray.org,ray.dir,-Vec3vfx(dP3du),Vec3vfx(P3));
       tp = embree::intersect(tp,h1);
       u_outer0 = clamp(u_outer0,vfloatx(0.0f),vfloatx(1.0f));
       u_outer1 = clamp(u_outer1,vfloatx(0.0f),vfloatx(1.0f));

@@ -35,7 +35,7 @@ namespace embree
     }
 
     template<int M>
-      static __forceinline BBox<vfloat<M>> intersect_half_planeN(const Vec3fa& ray_org, const Vec3fa& ray_dir, const Vec3<vfloat<M>>& N, const Vec3<vfloat<M>>& P)
+      static __forceinline BBox<vfloat<M>> intersect_half_plane(const Vec3fa& ray_org, const Vec3fa& ray_dir, const Vec3<vfloat<M>>& N, const Vec3<vfloat<M>>& P)
     {
       Vec3<vfloat<M>> O = Vec3<vfloat<M>>(ray_org) - P;
       Vec3<vfloat<M>> D = Vec3<vfloat<M>>(ray_dir);
