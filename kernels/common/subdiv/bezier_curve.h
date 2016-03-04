@@ -133,6 +133,7 @@ namespace embree
       p = p30;
       dp = 3.0f*(p21-p20);
       ddp = eval_dudu(t);
+      //ddp = 6.0f*((p30-2.0f*p21+p12)/(1.0f-t) + (p30-2.0f*p20+p10)/t);
     }
 
     friend inline std::ostream& operator<<(std::ostream& cout, const BezierCurveT& curve) {
