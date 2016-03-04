@@ -34,7 +34,9 @@ namespace embree
       __forceinline Cylinder(const Vec3fa& p0, const Vec3fa& p1, const float rr, bool) 
         : p0(p0), p1(p1), rr(rr) {}
 
-      __forceinline bool intersect(const Vec3fa& org_i, const Vec3fa& dir, BBox1f& t_o, float& u0_o, Vec3fa& Ng0_o) const
+      __forceinline bool intersect(const Vec3fa& org_i, const Vec3fa& dir, BBox1f& t_o, 
+                                   float& u0_o, Vec3fa& Ng0_o,
+                                   float& u1_o, Vec3fa& Ng1_o) const
       {
         const float tb = dot(0.5f*(p0+p1)-org_i,normalize(dir));
         const Vec3fa org = org_i+tb*dir;
@@ -78,21 +80,37 @@ namespace embree
         const float t0 = (-B-Q)*rcp_2A;
         const float t1 = (-B+Q)*rcp_2A;
         
-        u0_o = (Oz+t0*dOz)*rl;
-        const Vec3fa Pr = t_o.lower*dir;
-        const Vec3fa Pl = v0 + u0_o*(v1-v0);
-        Ng0_o = Pr-Pl;
+        {
+          u0_o = (Oz+t0*dOz)*rl;
+          const Vec3fa Pr = t_o.lower*dir;
+          const Vec3fa Pl = v0 + u0_o*(v1-v0);
+          Ng0_o = Pr-Pl;
+        }
+
+        {
+          u1_o = (Oz+t1*dOz)*rl;
+          const Vec3fa Pr = t_o.lower*dir;
+          const Vec3fa Pl = v0 + u1_o*(v1-v0);
+          Ng1_o = Pr-Pl;
+        }
         
         t_o.lower = t0+tb;
         t_o.upper = t1+tb;
         return true;
       }
 
+      __forceinline bool intersect(const Vec3fa& org_i, const Vec3fa& dir, BBox1f& t_o) const
+      {
+        float u0_o; Vec3fa Ng0_o;
+        float u1_o; Vec3fa Ng1_o;
+        return intersect(org_i,dir,t_o,u0_o,Ng0_o,u1_o,Ng1_o);
+      }
+
       static bool verify(const size_t id, const Cylinder& cylinder, const Ray& ray, bool shouldhit, const float t0, const float t1)
       {
         float eps = 0.001f;
-        BBox1f t; float u; Vec3fa Ng; bool hit;
-        hit = cylinder.intersect(ray.org,ray.dir,t,u,Ng);
+        BBox1f t; bool hit;
+        hit = cylinder.intersect(ray.org,ray.dir,t);
 
         bool failed = hit != shouldhit;
         if (shouldhit) failed |= isinf(t0) ? t0 != t.lower : abs(t0-t.lower) > eps;
@@ -201,12 +219,6 @@ namespace embree
           valid &= inside;
         }
         return valid;
-      }
-
-      __forceinline vbool<N> intersect(const Vec3fa& org_i, const Vec3fa& dir, BBox<vfloat<N>>& t_o, vfloat<N>& u0_o, Vec3vfN& Ng0_o) const
-      {
-        vfloat<N> u1_o; Vec3vfN Ng1_o;
-        return intersect(org_i,dir,t_o,u0_o,Ng0_o,u1_o,Ng1_o);
       }
 
       __forceinline vbool<N> intersect(const Vec3fa& org_i, const Vec3fa& dir, BBox<vfloat<N>>& t_o) const
