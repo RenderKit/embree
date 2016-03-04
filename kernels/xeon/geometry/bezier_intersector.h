@@ -111,10 +111,6 @@ namespace embree
       valid &= cylinder_outer.intersect(ray.org,ray.dir,tc_outer,u_outer0,Ng_outer0,u_outer1,Ng_outer1);
       cylinder_inner.intersect(ray.org,ray.dir,tc_inner);
       if (none(valid)) return false;
-      u_outer0 = clamp(u_outer0,vfloatx(0.0f),vfloatx(1.0f));
-      u_outer1 = clamp(u_outer1,vfloatx(0.0f),vfloatx(1.0f));
-      u_outer0 = (vfloatx(step)+u_outer0)*(1.0f/float(VSIZEX));
-      u_outer1 = (vfloatx(step)+u_outer1)*(1.0f/float(VSIZEX));
 
       /* intersect with cap-planes */
       BBox<vfloatx> tp(ray.tnear,ray.tfar);
@@ -123,6 +119,10 @@ namespace embree
       tp = embree::intersect(tp,h0);
       BBox<vfloatx> h1 = intersect_half_planeN(ray.org,ray.dir,-Vec3vfx(dP3du),Vec3vfx(P3));
       tp = embree::intersect(tp,h1);
+      u_outer0 = clamp(u_outer0,vfloatx(0.0f),vfloatx(1.0f));
+      u_outer1 = clamp(u_outer1,vfloatx(0.0f),vfloatx(1.0f));
+      u_outer0 = lerp(u0,u1,(vfloatx(step)+u_outer0)*(1.0f/float(VSIZEX)));
+      u_outer1 = lerp(u0,u1,(vfloatx(step)+u_outer1)*(1.0f/float(VSIZEX)));
 
       valid &= tp.lower <= tp.upper;
       valid &= tp.lower < t_o;
@@ -153,18 +153,16 @@ namespace embree
         {
           if (g_debug_int1)
           {
-            float uu = u[i];
-            float ru = (1.0f-uu)*u0 + uu*u1;
-            found |= intersect_bezier_iterative_jacobian(ray,curve,ru,tp_outer[i],u_o,t_o,Ng_o);
+            found |= intersect_bezier_iterative_jacobian(ray,curve,u[i],tp_outer[i],u_o,t_o,Ng_o);
             valid0 &= tp0.lower < t_o;
             valid1 &= tp1.lower < t_o;
             continue;
           }
           else
           {
-            if (tp_lower[i] < t_o) {
-              float uu = u[i];
-              u_o = (1.0f-uu)*u0 + uu*u1;
+            if (tp_lower[i] < t_o) 
+            {
+              u_o = u[i];
               t_o = tp_lower[i];
               Ng_o = Vec3fa(Ng_x[i],Ng_y[i],Ng_z[i]);
               if (h0.lower[j] == tp_lower[i]) Ng_o = -Vec3fa(dP0du.x[j],dP0du.y[j],dP0du.z[j]);
