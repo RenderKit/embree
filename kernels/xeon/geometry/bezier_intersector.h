@@ -180,28 +180,36 @@ namespace embree
       vboolx valid1 = valid & (tp1.lower <= tp1.upper);
       if (none(valid0 | valid1)) return false;
 
-      float tp_lower[2*VSIZEX]; vfloatx::storeu(&tp_lower[0*VSIZEX],tp0.lower ); vfloatx::storeu(&tp_lower[1*VSIZEX],tp1.lower );
-      float tp_outer[2*VSIZEX]; vfloatx::storeu(&tp_outer[0*VSIZEX],tp0.lower ); vfloatx::storeu(&tp_outer[1*VSIZEX],tp1.upper );
-      float u       [2*VSIZEX]; vfloatx::storeu(&u       [0*VSIZEX],u_outer0   ); vfloatx::storeu(&u       [1*VSIZEX],u_outer1   );
-
-      /* iterate over all hits front to back */
+      /* iterate over all first hits front to back */
       bool found = false;
-      while (any(valid0 | valid1))
+      while (any(valid0))
       {
-        const size_t i = select_min(valid0,tp0.lower,valid1,tp1.lower);
-        const size_t j = i & (VSIZEX-1);
-        if (i < VSIZEX) clear(valid0,j);
-        else            clear(valid1,j);
+        const size_t i = select_min(valid0,tp0.lower);
+        clear(valid0,i);
         
         if (depth == maxDepth) 
         {
-          found |= intersect_bezier_iterative_jacobian(ray,curve,u[i],tp_outer[i],u_o,t_o,Ng_o);
+          found |= intersect_bezier_iterative_jacobian(ray,curve,u_outer0[i],tp0.lower[i],u_o,t_o,Ng_o);
           valid0 &= tp0.lower < t_o;
+          continue;
+        }
+        found |= intersect_bezier_recursive(ray,curve,vu0[i+0],vu0[i+1],depth+1,u_o,t_o,Ng_o);
+        valid0 &= tp0.lower < t_o;
+      }
+
+      /* iterate over all second hits front to back */
+      while (any(valid1))
+      {
+        const size_t i = select_min(valid1,tp1.lower);
+        clear(valid1,i);
+        
+        if (depth == maxDepth) 
+        {
+          found |= intersect_bezier_iterative_jacobian(ray,curve,u_outer1[i],tp1.upper[i],u_o,t_o,Ng_o);
           valid1 &= tp1.lower < t_o;
           continue;
         }
-        found |= intersect_bezier_recursive(ray,curve,vu0[j+0],vu0[j+1],depth+1,u_o,t_o,Ng_o);
-        valid0 &= tp0.lower < t_o;
+        found |= intersect_bezier_recursive(ray,curve,vu0[i+0],vu0[i+1],depth+1,u_o,t_o,Ng_o);
         valid1 &= tp1.lower < t_o;
       }
 #endif
