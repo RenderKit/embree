@@ -128,45 +128,6 @@ namespace embree
       u_outer0 = lerp(u0,u1,(vfloatx(step)+u_outer0)*(1.0f/float(VSIZEX)));
       u_outer1 = lerp(u0,u1,(vfloatx(step)+u_outer1)*(1.0f/float(VSIZEX)));
 
-#if 0
-      
-      /* iterate over all hits front to back */
-      bool found = false;
-      while (any(valid))
-      {
-        const size_t i = select_min(valid,tp.lower);
-        clear(valid,i);
-        
-        if (depth == maxDepth) 
-        {
-          if (g_debug_int1)
-          {
-            found |= intersect_bezier_iterative_jacobian(ray,curve,u_outer0[i],tp.lower[i],u_o,t_o,Ng_o);
-            valid &= tp.lower < t_o;
-            continue;
-          }
-          else
-          {
-            if (tp.lower[i] < t_o) 
-            {
-              u_o = u_outer0[i];
-              t_o = tp.lower[i];
-              Ng_o = Vec3fa(Ng_outer0.x[i],Ng_outer0.y[i],Ng_outer0.z[i]);
-              if (h0.lower[i] == tp.lower[i]) Ng_o = -Vec3fa(dP0du.x[i],dP0du.y[i],dP0du.z[i]);
-              if (h1.lower[i] == tp.lower[i]) Ng_o = +Vec3fa(dP3du.x[i],dP3du.y[i],dP3du.z[i]);
-              found = true;
-              valid &= tp.lower < t_o;
-            }
-            continue;
-          }
-        }
-
-        found |= intersect_bezier_recursive(ray,curve,vu0[i+0],vu0[i+1],depth+1,u_o,t_o,Ng_o);
-        valid &= tp.lower < t_o;
-      }
-
-#endif
-
 #if 1
 
       /* intersect with inner cylinder */
