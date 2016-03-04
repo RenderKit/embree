@@ -17,37 +17,13 @@
 #pragma once
 
 #include "../../common/ray.h"
+#include "plane.h"
 #include "cone.h"
 
 namespace embree
 {
   namespace isa
   {
-    static __forceinline BBox1f intersect_half_plane(const Vec3fa& ray_org, const Vec3fa& ray_dir, const Vec3fa& N, const Vec3fa& P)
-    {
-      Vec3fa O = Vec3fa(ray_org) - P;
-      Vec3fa D = Vec3fa(ray_dir);
-      float ON = dot(O,N);
-      float DN = dot(D,N);
-      float t = -ON*rcp(abs(DN) < min_rcp_input ? min_rcp_input : DN );
-      float lower = select(DN < 0.0f, float(neg_inf), t);
-      float upper = select(DN < 0.0f, t, float(pos_inf));
-      return BBox1f(lower,upper);
-    }
-
-    template<int M>
-      static __forceinline BBox<vfloat<M>> intersect_half_planeN(const Vec3fa& ray_org, const Vec3fa& ray_dir, const Vec3<vfloat<M>>& N, const Vec3<vfloat<M>>& P)
-    {
-      Vec3<vfloat<M>> O = Vec3<vfloat<M>>(ray_org) - P;
-      Vec3<vfloat<M>> D = Vec3<vfloat<M>>(ray_dir);
-      vfloat<M> ON = dot(O,N);
-      vfloat<M> DN = dot(D,N);
-      vfloat<M> t = -ON*rcp(select(abs(DN) < min_rcp_input, min_rcp_input, DN) );
-      vfloat<M> lower = select(DN < 0.0f, vfloat<M>(neg_inf), t);
-      vfloat<M> upper = select(DN < 0.0f, t, vfloat<M>(pos_inf));
-      return BBox<vfloat<M>>(lower,upper);
-    }
-
     struct FillCone
     {
       const Vec3fa p0_i; //!< start location
