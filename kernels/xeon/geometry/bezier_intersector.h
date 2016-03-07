@@ -31,6 +31,20 @@ namespace embree
 {
   namespace isa
   {
+     __forceinline bool intersect_bezier_iterative_debug(const Ray& ray, const BezierCurve3fa& curve, size_t i, 
+                                                        const vfloatx& u, const BBox<vfloatx>& tp, const BBox<vfloatx>& h0, const BBox<vfloatx>& h1, 
+                                                        const Vec3vfx& Ng, const Vec4vfx& dP0du, const Vec4vfx& dP3du,
+                                                        float& u_o, float& t_o, Vec3fa& Ng_o)
+    {
+      if (tp.lower[i] >= t_o) return false;
+      u_o = u[i];
+      t_o = tp.lower[i];
+      Ng_o = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
+      if (h0.lower[i] == tp.lower[i]) Ng_o = -Vec3fa(dP0du.x[i],dP0du.y[i],dP0du.z[i]);
+      if (h1.lower[i] == tp.lower[i]) Ng_o = +Vec3fa(dP3du.x[i],dP3du.y[i],dP3du.z[i]);
+      return true;
+    }
+
     __forceinline bool intersect_bezier_iterative_jacobian(const Ray& ray, const BezierCurve3fa& curve, float u, float t, float& u_o, float& t_o, Vec3fa& Ng_o)
     {
       const float length_ray_dir = length(ray.dir);
@@ -83,20 +97,6 @@ namespace embree
         }
       }
       return false;
-    }
-
-    __forceinline bool intersect_bezier_iterative_debug(const Ray& ray, const BezierCurve3fa& curve, size_t i, 
-                                                        const vfloatx& u, const BBox<vfloatx>& tp, const BBox<vfloatx>& h0, const BBox<vfloatx>& h1, 
-                                                        const Vec3vfx& Ng, const Vec4vfx& dP0du, const Vec4vfx& dP3du,
-                                                        float& u_o, float& t_o, Vec3fa& Ng_o)
-    {
-      if (tp.lower[i] >= t_o) return false;
-      u_o = u[i];
-      t_o = tp.lower[i];
-      Ng_o = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
-      if (h0.lower[i] == tp.lower[i]) Ng_o = -Vec3fa(dP0du.x[i],dP0du.y[i],dP0du.z[i]);
-      if (h1.lower[i] == tp.lower[i]) Ng_o = +Vec3fa(dP3du.x[i],dP3du.y[i],dP3du.z[i]);
-      return true;
     }
 
     __forceinline bool intersect_bezier_recursive_jacobian(const Ray& ray, const BezierCurve3fa& curve, const float u0, const float u1, const size_t depth, float& u_o, float& t_o, Vec3fa& Ng_o)
@@ -364,8 +364,8 @@ namespace embree
 
         const Ray ray1(zero,ray.dir,ray.tnear-dt,ray.tfar-dt);
         const BezierCurve3fa curve(p0,p1,p2,p3,0.0f,1.0f,1);
-        //if (!intersect_bezier_recursive_jacobian(ray1,curve,0.0f,1.0f,1,u,t,Ng))
-        if (!intersect_bezier_recursive_cone(ray1,curve,0.0f,1.0f,1,u,t,Ng))
+        if (!intersect_bezier_recursive_jacobian(ray1,curve,0.0f,1.0f,1,u,t,Ng))
+        //if (!intersect_bezier_recursive_cone(ray1,curve,0.0f,1.0f,1,u,t,Ng))
           return false;
 
         LineIntersectorHitM<VSIZEX> hit;
