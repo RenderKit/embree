@@ -46,19 +46,19 @@ namespace embree
       float v; 
       Vec3fa Ng;
     };
-
-     __forceinline bool intersect_bezier_iterative_debug(const Ray& ray, const BezierCurve3fa& curve, size_t i, 
+    
+    template<typename Epilog>
+    __forceinline bool intersect_bezier_iterative_debug(const Ray& ray, const float dt, const BezierCurve3fa& curve, size_t i, 
                                                         const vfloatx& u, const BBox<vfloatx>& tp, const BBox<vfloatx>& h0, const BBox<vfloatx>& h1, 
                                                         const Vec3vfx& Ng, const Vec4vfx& dP0du, const Vec4vfx& dP3du,
-                                                        float& u_o, float& t_o, Vec3fa& Ng_o)
+                                                        const Epilog& epilog)
     {
-      if (tp.lower[i] >= t_o) return false;
-      u_o = u[i];
-      t_o = tp.lower[i];
-      Ng_o = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
+      if (tp.lower[i]+dt >= ray.tfar) return false;
+      Vec3fa Ng_o = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
       if (h0.lower[i] == tp.lower[i]) Ng_o = -Vec3fa(dP0du.x[i],dP0du.y[i],dP0du.z[i]);
       if (h1.lower[i] == tp.lower[i]) Ng_o = +Vec3fa(dP3du.x[i],dP3du.y[i],dP3du.z[i]);
-      return true;
+      BezierGeometryHit hit(tp.lower[i]+dt,u[i],Ng_o);
+      return epilog(hit);
     }
 
    template<typename Epilog> 
@@ -181,7 +181,7 @@ namespace embree
       {
         const size_t i = select_min(valid0,tp0.lower); clear(valid0,i);
         if (depth == maxDepth) found |= intersect_bezier_iterative_jacobian(ray,dt,curve,u_outer0[i],tp0.lower[i],epilog);
-        //if (depth == maxDepth) found |= intersect_bezier_iterative_debug   (ray,dt,curve,i,u_outer0,tp0,h0,h1,Ng_outer0,dP0du,dP3du,u_o,t_o,Ng_o);
+        //if (depth == maxDepth) found |= intersect_bezier_iterative_debug   (ray,dt,curve,i,u_outer0,tp0,h0,h1,Ng_outer0,dP0du,dP3du,epilog);
         else                   found |= intersect_bezier_recursive_jacobian(ray,dt,curve,vu0[i+0],vu0[i+1],depth+1,epilog);
         valid0 &= tp0.lower+dt < ray.tfar;
       }
@@ -191,7 +191,7 @@ namespace embree
       {
         const size_t i = select_min(valid1,tp1.lower); clear(valid1,i);
         if (depth == maxDepth) found |= intersect_bezier_iterative_jacobian(ray,dt,curve,u_outer1[i],tp1.upper[i],epilog);
-        //if (depth == maxDepth) found |= intersect_bezier_iterative_debug   (ray,dt,curve,i,u_outer1,tp1,h0,h1,Ng_outer1,dP0du,dP3du,u_o,t_o,Ng_o);
+        //if (depth == maxDepth) found |= intersect_bezier_iterative_debug   (ray,dt,curve,i,u_outer1,tp1,h0,h1,Ng_outer1,dP0du,dP3du,epilog);
         else                   found |= intersect_bezier_recursive_jacobian(ray,dt,curve,vu0[i+0],vu0[i+1],depth+1,epilog);
         valid1 &= tp1.lower+dt < ray.tfar;
       }
