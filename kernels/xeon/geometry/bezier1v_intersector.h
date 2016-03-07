@@ -18,6 +18,7 @@
 
 #include "bezier1v.h"
 #include "bezier_intersector.h"
+#include "bezier_geometry_intersector.h"
 #include "intersector_epilog.h"
 
 namespace embree
@@ -33,15 +34,23 @@ namespace embree
       static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& prim, Scene* scene, const unsigned* geomID_to_instID)
       {
         STAT3(normal.trav_prims,1,1,1);
+#if 0
         const int N = ((BezierCurves*)scene->get(prim.geomID()))->tessellationRate;
         pre.intersect(ray,prim.p0,prim.p1,prim.p2,prim.p3,N,Intersect1EpilogU<VSIZEX,true>(ray,prim.geomID(),prim.primID(),scene,geomID_to_instID));
+#else
+      BezierGeometry1Intersector1(ray,nullptr).intersect(ray,prim.p0,prim.p1,prim.p2,prim.p3,Intersect1EpilogU<VSIZEX,true>(ray,prim.geomID(),prim.primID(),scene,geomID_to_instID));
+#endif
       }
       
       static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& prim, Scene* scene, const unsigned* geomID_to_instID)
       {
         STAT3(shadow.trav_prims,1,1,1);
+#if 0
         const int N = ((BezierCurves*)scene->get(prim.geomID()))->tessellationRate;
         return pre.intersect(ray,prim.p0,prim.p1,prim.p2,prim.p3,N,Occluded1EpilogU<VSIZEX,true>(ray,prim.geomID(),prim.primID(),scene,geomID_to_instID));
+#else
+        return BezierGeometry1Intersector1(ray,nullptr).intersect(ray,prim.p0,prim.p1,prim.p2,prim.p3,Intersect1EpilogU<VSIZEX,true>(ray,prim.geomID(),prim.primID(),scene,geomID_to_instID));
+#endif
       }
     };
 
