@@ -39,9 +39,6 @@ namespace embree
         //const Vec3fa dQdu = zero;
         const Vec3fa dQdt = ray.dir;
 
-        //const Vec3fa P = curve.eval(u);
-        //const Vec3fa dPdu = curve.eval_du(u);
-        //const Vec3fa ddPdu = curve.eval_dudu(u);
         Vec3fa P,dPdu,ddPdu; curve.eval(u,P,dPdu,ddPdu);
         //const Vec3fa dPdt = zero;
 
@@ -206,8 +203,8 @@ namespace embree
       while (any(valid0))
       {
         const size_t i = select_min(valid0,tp0.lower); clear(valid0,i);
-        //if (depth == maxDepth) found |= intersect_bezier_iterative_jacobian(ray,curve,u_outer0[i],tp0.lower[i],u_o,t_o,Ng_o);
-        if (depth == maxDepth) found |= intersect_bezier_iterative_step(ray,curve,vu0[i+0],vu0[i+1],tp0.lower[i],tp0.upper[i],tp0.upper[i],u_o,t_o,Ng_o);
+        if (depth == maxDepth) found |= intersect_bezier_iterative_jacobian(ray,curve,u_outer0[i],tp0.lower[i],u_o,t_o,Ng_o);
+        //if (depth == maxDepth) found |= intersect_bezier_iterative_step(ray,curve,vu0[i+0],vu0[i+1],tp0.lower[i],tp0.upper[i],tp0.upper[i],u_o,t_o,Ng_o);
         else                   found |= intersect_bezier_recursive(ray,curve,vu0[i+0],vu0[i+1],depth+1,u_o,t_o,Ng_o);
         valid0 &= tp0.lower < t_o;
       }
@@ -216,8 +213,8 @@ namespace embree
       while (any(valid1))
       {
         const size_t i = select_min(valid1,tp1.lower); clear(valid1,i);
-        //if (depth == maxDepth) found |= intersect_bezier_iterative_jacobian(ray,curve,u_outer1[i],tp1.upper[i],u_o,t_o,Ng_o);
-        if (depth == maxDepth) found |= intersect_bezier_iterative_step(ray,curve,vu0[i+0],vu0[i+1],tp1.lower[i],tp1.upper[i],tp1.upper[i],u_o,t_o,Ng_o);
+        if (depth == maxDepth) found |= intersect_bezier_iterative_jacobian(ray,curve,u_outer1[i],tp1.upper[i],u_o,t_o,Ng_o);
+        //if (depth == maxDepth) found |= intersect_bezier_iterative_step(ray,curve,vu0[i+0],vu0[i+1],tp1.lower[i],tp1.upper[i],tp1.upper[i],u_o,t_o,Ng_o);
         else                   found |= intersect_bezier_recursive(ray,curve,vu0[i+0],vu0[i+1],depth+1,u_o,t_o,Ng_o);
         valid1 &= tp1.lower < t_o;
       }
