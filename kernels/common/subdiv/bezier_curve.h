@@ -285,32 +285,21 @@ namespace embree
 
 #if 1
 #if defined(__SSE__)
-    __forceinline BBox3fa bounds(int N) const
+    __forceinline BBox3fa bounds(int _N) const
     {
+      const int N = 7;
+      const float scale = 1.0f/(3.0f*(N-1));
       Vec4vfx pl(pos_inf), pu(neg_inf);
       for (int i=0; i<=N; i+=VSIZEX)
       {
-        vboolx valid = vintx(i)+vintx(step) <= vintx(N);
+        vintx vi = vintx(i)+vintx(step);
+        vboolx valid = vi <= vintx(N);
         const Vec4vfx p  = eval0(valid,i,N);
         const Vec4vfx dp = derivative(valid,i,N);
-
-        const Vec4vfx pm = p-Vec4vfx(1.0f/3.0f)*dp;
-        const Vec4vfx pp = p+Vec4vfx(1.0f/3.0f)*dp;
-
-        Vec4vfx l = p;
-        Vec4vfx u = p;
-        if (i != 0) { l = min(l,pm); u = max(u,pm); }
-        if (i != N) { l = min(l,pp); u = max(u,pp); }
-
-        pl.x = select(valid,min(pl.x,l.x),pl.x); // FIXME: use masked min
-        pl.y = select(valid,min(pl.y,l.y),pl.y); 
-        pl.z = select(valid,min(pl.z,l.z),pl.z); 
-        pl.w = select(valid,min(pl.w,l.w),pl.w); 
-        
-        pu.x = select(valid,max(pu.x,u.x),pu.x); // FIXME: use masked min
-        pu.y = select(valid,max(pu.y,u.y),pu.y); 
-        pu.z = select(valid,max(pu.z,u.z),pu.z); 
-        pu.w = select(valid,max(pu.w,u.w),pu.w); 
+        const Vec4vfx pm = p-Vec4vfx(scale)*select(vi!=vintx(0),dp,Vec4vfx(zero));
+        const Vec4vfx pp = p+Vec4vfx(scale)*select(vi!=vintx(N),dp,Vec4vfx(zero));
+        pl = select(valid,min(pl,p,pm,pp),pl); // FIXME: use masked min
+        pu = select(valid,max(pu,p,pm,pp),pu); // FIXME: use masked min
       }
       const Vec3fa lower(reduce_min(pl.x),reduce_min(pl.y),reduce_min(pl.z));
       const Vec3fa upper(reduce_max(pu.x),reduce_max(pu.y),reduce_max(pu.z));

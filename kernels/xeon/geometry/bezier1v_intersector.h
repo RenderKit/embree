@@ -38,7 +38,7 @@ namespace embree
         const int N = ((BezierCurves*)scene->get(prim.geomID()))->tessellationRate;
         pre.intersect(ray,prim.p0,prim.p1,prim.p2,prim.p3,N,Intersect1EpilogU<VSIZEX,true>(ray,prim.geomID(),prim.primID(),scene,geomID_to_instID));
 #else
-      BezierGeometry1Intersector1(ray,nullptr).intersect(ray,prim.p0,prim.p1,prim.p2,prim.p3,Intersect1Epilog1<true>(ray,prim.geomID(),prim.primID(),scene,geomID_to_instID));
+        BezierGeometry1Intersector1(ray,nullptr).intersect(ray,prim.p0,prim.p1,prim.p2,prim.p3,Intersect1Epilog1<true>(ray,prim.geomID(),prim.primID(),scene,geomID_to_instID));
 #endif
       }
       

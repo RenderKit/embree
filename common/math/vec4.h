@@ -153,6 +153,14 @@ namespace embree
     return Vec4<T>(select(s,t.x,f.x),select(s,t.y,f.y),select(s,t.z,f.z),select(s,t.w,f.w));
   }
 
+  template<typename T> __forceinline Vec4<T> select ( const Vec4<bool>& s, const Vec4<T>& t, const Vec4<T>& f ) {
+    return Vec4<T>(select(s.x,t.x,f.x),select(s.y,t.y,f.y),select(s.z,t.z,f.z),select(s.w,t.w,f.w));
+  }
+
+  template<typename T> __forceinline Vec4<T> select ( const typename T::Bool& s, const Vec4<T>& t, const Vec4<T>& f ) {
+    return Vec4<T>(select(s,t.x,f.x),select(s,t.y,f.y),select(s,t.z,f.z),select(s,t.w,f.w));
+  }
+
   ////////////////////////////////////////////////////////////////////////////////
   /// Output Operators
   ////////////////////////////////////////////////////////////////////////////////
