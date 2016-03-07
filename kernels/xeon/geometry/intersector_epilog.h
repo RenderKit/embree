@@ -29,6 +29,86 @@ namespace embree
         __forceinline void operator() (vfloat<M>& u, vfloat<M>& v) const {
         }
       };
+
+    template<bool filter>
+      struct Intersect1Epilog1
+      {
+        Ray& ray;
+        const int geomID;
+        const int primID;
+        Scene* scene;
+        const unsigned* geomID_to_instID;
+        
+        __forceinline Intersect1Epilog1(Ray& ray,
+                                        const int geomID, 
+                                        const int primID, 
+                                        Scene* scene,
+                                        const unsigned* geomID_to_instID = nullptr)
+          : ray(ray), geomID(geomID), primID(primID), scene(scene), geomID_to_instID(geomID_to_instID) {}
+        
+        template<typename Hit>
+        __forceinline bool operator() (Hit& hit) const
+        {
+          /* ray mask test */
+          Geometry* geometry = scene->get(geomID);
+#if defined(RTCORE_RAY_MASK)
+          if ((geometry->mask & ray.mask) == 0) return false;
+#endif
+          hit.finalize();
+          int instID = geomID_to_instID ? geomID_to_instID[0] : geomID;
+          
+          /* intersection filter test */
+#if defined(RTCORE_INTERSECTION_FILTER)
+          if (unlikely(filter && geometry->hasIntersectionFilter1())) 
+            return runIntersectionFilter1(geometry,ray,hit.u,hit.v,hit.t,hit.Ng,instID,primID);
+#endif
+          
+          /* update hit information */
+          ray.u = hit.u;
+          ray.v = hit.v;
+          ray.tfar = hit.t;
+          ray.Ng = hit.Ng;
+          ray.geomID = instID;
+          ray.primID = primID;
+          return true;
+        }
+      };
+
+    template<bool filter>
+      struct Occluded1Epilog1
+      {
+        Ray& ray;
+        const int geomID;
+        const int primID;
+        Scene* scene;
+        const unsigned* geomID_to_instID;
+        
+        __forceinline Occluded1Epilog1(Ray& ray,
+                                       const int geomID, 
+                                       const int primID, 
+                                       Scene* scene,
+                                       const unsigned* geomID_to_instID = nullptr)
+          : ray(ray), geomID(geomID), primID(primID), scene(scene), geomID_to_instID(geomID_to_instID) {}
+        
+        template<typename Hit>
+        __forceinline bool operator() (Hit& hit) const
+        {
+          /* ray mask test */
+          Geometry* geometry = scene->get(geomID);
+#if defined(RTCORE_RAY_MASK)
+          if ((geometry->mask & ray.mask) == 0) return false;
+#endif
+          hit.finalize();
+          int instID = geomID_to_instID ? geomID_to_instID[0] : geomID;
+          
+          /* intersection filter test */
+#if defined(RTCORE_INTERSECTION_FILTER)
+          if (unlikely(filter && geometry->hasOcclusionFilter1())) 
+              return runOcclusionFilter1(geometry,ray,hit.u,hit.v,hit.t,hit.Ng,instID,primID);
+#endif
+          return true;
+        }
+      };
     
     template<int M, int Mx, bool filter>
       struct Intersect1Epilog
