@@ -195,6 +195,7 @@ namespace embree
         else                   found |= intersect_bezier_recursive_jacobian(ray,dt,curve,vu0[i+0],vu0[i+1],depth+1,epilog);
         valid0 &= tp0.lower+dt < ray.tfar;
       }
+      valid1 &= tp1.lower+dt < ray.tfar;
 
       /* iterate over all second hits front to back */
       while (any(valid1))
