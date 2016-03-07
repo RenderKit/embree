@@ -204,8 +204,8 @@ namespace embree
       if (depth == maxDepth) 
       {
         const ConeN<VSIZEX> cone(Vec3vfx(P0),P0.w,Vec3vfx(P3),P3.w);
-        BBox<vfloatx> tc; vfloatx uc0; Vec3vfx Ng0; //vfloatx uc1; Vec3vfx Ng1;
-        valid &= cone.intersect(ray.org,ray.dir,tc,uc0,Ng0); //,uc1,Ng1);
+        BBox<vfloatx> tc; vfloatx uc0; Vec3vfx Ng0; vfloatx uc1; Vec3vfx Ng1;
+        valid &= cone.intersect(ray.org,ray.dir,tc,uc0,Ng0,uc1,Ng1);
         if (none(valid)) return false;
 
         /* intersect with cap-planes */
@@ -220,20 +220,32 @@ namespace embree
         
         /* clamp and correct u parameter */
         uc0 = clamp(uc0,vfloatx(0.0f),vfloatx(1.0f));
-        //uc1 = clamp(uc1,vfloatx(0.0f),vfloatx(1.0f));
+        uc1 = clamp(uc1,vfloatx(0.0f),vfloatx(1.0f));
         uc0 = lerp(u0,u1,(vfloatx(step)+uc0)*(1.0f/float(VSIZEX)));
-        //uc1 = lerp(u0,u1,(vfloatx(step)+uc1)*(1.0f/float(VSIZEX)));
+        uc1 = lerp(u0,u1,(vfloatx(step)+uc1)*(1.0f/float(VSIZEX)));
 
-        valid &= tp.lower < t_o;
-        if (none(valid)) return false;
+        const vboolx valid0 = valid & (tp.lower < t_o);
+        if (any(valid0)) 
+        {
+          const size_t i = select_min(valid0,tp.lower); 
+          u_o = uc0[i];
+          t_o = tp.lower[i];
+          Ng_o = Vec3fa(Ng0.x[i],Ng0.y[i],Ng0.z[i]);
+          if (h0.lower[i] == t_o) Ng_o = -Vec3fa(dP0du.x[i],dP0du.y[i],dP0du.z[i]);
+          if (h1.lower[i] == t_o) Ng_o = +Vec3fa(dP3du.x[i],dP3du.y[i],dP3du.z[i]);
+        }
 
-        const size_t i = select_min(valid,tp.lower); 
-        u_o = uc0[i];
-        t_o = tp.lower[i];
-        Ng_o = Vec3fa(Ng0.x[i],Ng0.y[i],Ng0.z[i]);
-        if (h0.lower[i] == tp.lower[i]) Ng_o = -Vec3fa(dP0du.x[i],dP0du.y[i],dP0du.z[i]);
-        if (h1.lower[i] == tp.lower[i]) Ng_o = +Vec3fa(dP3du.x[i],dP3du.y[i],dP3du.z[i]);
-        return true;
+        const vboolx valid1 = valid & (tp.upper < t_o);
+        if (any(valid1)) 
+        {
+          const size_t i = select_min(valid1,tp.upper); 
+          u_o = uc1[i];
+          t_o = tp.upper[i];
+          Ng_o = Vec3fa(Ng1.x[i],Ng1.y[i],Ng1.z[i]);
+          if (h0.lower[i] == t_o) Ng_o = -Vec3fa(dP0du.x[i],dP0du.y[i],dP0du.z[i]);
+          if (h1.lower[i] == t_o) Ng_o = +Vec3fa(dP3du.x[i],dP3du.y[i],dP3du.z[i]);
+        }
+        return any(valid0 | valid1);
       }
 
       /* intersect with outer cylinder */
@@ -352,8 +364,8 @@ namespace embree
 
         const Ray ray1(zero,ray.dir,ray.tnear-dt,ray.tfar-dt);
         const BezierCurve3fa curve(p0,p1,p2,p3,0.0f,1.0f,1);
-        if (!intersect_bezier_recursive_jacobian(ray1,curve,0.0f,1.0f,1,u,t,Ng))
-        //if (!intersect_bezier_recursive_cone(ray1,curve,0.0f,1.0f,1,u,t,Ng))
+        //if (!intersect_bezier_recursive_jacobian(ray1,curve,0.0f,1.0f,1,u,t,Ng))
+        if (!intersect_bezier_recursive_cone(ray1,curve,0.0f,1.0f,1,u,t,Ng))
           return false;
 
         LineIntersectorHitM<VSIZEX> hit;

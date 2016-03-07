@@ -283,7 +283,7 @@ namespace embree
         return Cone(Vec3fa(p0.x[i],p0.y[i],p0.z[i]),r0[i],Vec3fa(p1.x[i],p1.y[i],p1.z[i]),r1[i]);
       }
 
-      __forceinline vbool<N> intersect(const Vec3fa& org_i, const Vec3fa& dir, BBox<vfloat<N>>& t_o, vfloat<N>& u0_o, Vec3vfN& Ng0_o) const
+      __forceinline vbool<N> intersect(const Vec3fa& org_i, const Vec3fa& dir, BBox<vfloat<N>>& t_o, vfloat<N>& u0_o, Vec3vfN& Ng0_o, vfloat<N>& u1_o, Vec3vfN& Ng1_o) const
       {
         const vfloat<N> tb = 0.0f; //dot(vfloat<N>(0.5f)*(p0+p1)-Vec3vfN(org_i),Vec3vfN(normalize(dir)));
         const Vec3vfN org = Vec3vfN(org_i)+tb*Vec3vfN(dir);
@@ -344,13 +344,29 @@ namespace embree
           }
         }
 
-        u0_o = (Oz+t_o.lower*dOz)*rl;
-        const Vec3vfN Pr = t_o.lower*Vec3vfN(dir);
-        const Vec3vfN Pl = v0 + u0_o*(v1-v0);
-        Ng0_o = Pr-Pl;
+        {
+          u0_o = (Oz+t_o.lower*dOz)*rl;
+          const Vec3vfN Pr = t_o.lower*Vec3vfN(dir);
+          const Vec3vfN Pl = v0 + u0_o*(v1-v0);
+          Ng0_o = Pr-Pl;
+        }
+
+        {
+          u1_o = (Oz+t_o.upper*dOz)*rl;
+          const Vec3vfN Pr = t_o.lower*Vec3vfN(dir);
+          const Vec3vfN Pl = v0 + u1_o*(v1-v0);
+          Ng1_o = Pr-Pl;
+        }
+
         t_o.lower += tb;
         t_o.upper += tb;
         return valid;
+      }
+ 
+      __forceinline vbool<N> intersect(const Vec3fa& org_i, const Vec3fa& dir, BBox<vfloat<N>>& t_o) const
+      {
+        vfloat<N> u0_o; Vec3vfN Ng0_o; vfloat<N> u1_o; Vec3vfN Ng1_o;
+        return intersect(org_i,dir,t_o,u0_o,Ng0_o,u1_o,Ng1_o);
       }
     };
   }
