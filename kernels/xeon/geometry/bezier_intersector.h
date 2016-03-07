@@ -87,6 +87,63 @@ namespace embree
       return false;
     }
 
+     __forceinline bool intersect_bezier_iterative_step(const Ray& ray, const BezierCurve3fa& curve, float u0, float u1, float t0, float t1, float t2, float& u_o, float& t_o, Vec3fa& Ng_o)
+    {
+      Vec3fa p0,n0,ddp0; curve.eval(u0,p0,n0,ddp0);
+      Vec3fa p1,n1,ddp1; curve.eval(u1,p1,n1,ddp1);
+
+      Vec3fa q0 = p0+n0*(1.0f/3.0f);
+      Vec3fa q1 = p1-n1*(1.0f/3.0f);
+      float rq0 = length(cross(p0-q0,p1-q0))/length(p1-p0)+q0.w;
+      float rq1 = length(cross(p0-q1,p1-q1))/length(p1-p0)+q1.w;
+      float r01 = max(p0.w,rq0,rq1,p1.w);
+
+      /* calculate bounds on curvature */
+      float minN = min(length(n0),length(n1));
+      float maxN = max(length(n0),length(n1));
+      float maxR = max(p0.w,q0.w,q1.w,p1.w);
+      float maxC = length(max(abs(ddp0),abs(ddp1)))/minN; //length(ddPdu)/length(dPdu); // FIXME: is this the proper curvature?
+      float minDT = max(0.001f,1.0f/maxC-maxR);
+
+      /* iterative double step solver */
+      float eps = 128.0f*float(ulp);
+      float rcpLenP0P1 = rcp_length(p1-p0);
+      float rcpLenDir = rcp_length(ray.dir);
+      float t = t0;
+      float u = u0 + (u1-u0)*dot(ray.org+t*ray.dir-p0,normalize(p1-p0))*rcpLenP0P1;
+      for (size_t i=0; i<10000; i++)
+      {
+        Vec3fa Q = ray.org + t*ray.dir;
+        Vec3fa P,dPdu,ddPdu; curve.eval(u,P,dPdu,ddPdu);
+        Vec3fa T = normalize(dPdu); // can be optimized away
+        //float C = length(ddPdu)/length(dPdu); // FIXME: is this the proper curvature?
+        float du = dot(Q-P,T);
+        float dt = sqrt(dot(Q-P,Q-P)-sqr(du))-P.w;
+        u += du*rcpLenP0P1*(u1-u0)/(1.0f+P.w*maxC);
+        //if (du < 10.0f*eps)
+        //t += min(minDT,dt*rcpLenDir);
+        t += dt*rcpLenDir;
+
+        if (t > t2) {
+          return false;
+        }
+        if (max(abs(du),abs(dt)) < eps) 
+        {
+          //if (t+eps*rcpLenDir < t0 || t-eps*rcpLenDir > t1) {
+          //  return false;
+          //}
+          if (t < ray.tnear || t > t_o) {
+            return false;
+          }
+          u_o = u;
+          t_o = t;
+          Ng_o = Q-P;
+          return true;
+        }
+      }
+      return false;
+    }
+
     __forceinline bool intersect_bezier_recursive(const Ray& ray, const BezierCurve3fa& curve, const float u0, const float u1, const size_t depth, float& u_o, float& t_o, Vec3fa& Ng_o)
     {
       const int maxDepth = g_debug_int0;
@@ -149,7 +206,8 @@ namespace embree
       while (any(valid0))
       {
         const size_t i = select_min(valid0,tp0.lower); clear(valid0,i);
-        if (depth == maxDepth) found |= intersect_bezier_iterative_jacobian(ray,curve,u_outer0[i],tp0.lower[i],u_o,t_o,Ng_o);
+        //if (depth == maxDepth) found |= intersect_bezier_iterative_jacobian(ray,curve,u_outer0[i],tp0.lower[i],u_o,t_o,Ng_o);
+        if (depth == maxDepth) found |= intersect_bezier_iterative_step(ray,curve,vu0[i+0],vu0[i+1],tp0.lower[i],tp0.upper[i],tp0.upper[i],u_o,t_o,Ng_o);
         else                   found |= intersect_bezier_recursive(ray,curve,vu0[i+0],vu0[i+1],depth+1,u_o,t_o,Ng_o);
         valid0 &= tp0.lower < t_o;
       }
@@ -158,7 +216,8 @@ namespace embree
       while (any(valid1))
       {
         const size_t i = select_min(valid1,tp1.lower); clear(valid1,i);
-        if (depth == maxDepth) found |= intersect_bezier_iterative_jacobian(ray,curve,u_outer1[i],tp1.upper[i],u_o,t_o,Ng_o);
+        //if (depth == maxDepth) found |= intersect_bezier_iterative_jacobian(ray,curve,u_outer1[i],tp1.upper[i],u_o,t_o,Ng_o);
+        if (depth == maxDepth) found |= intersect_bezier_iterative_step(ray,curve,vu0[i+0],vu0[i+1],tp1.lower[i],tp1.upper[i],tp1.upper[i],u_o,t_o,Ng_o);
         else                   found |= intersect_bezier_recursive(ray,curve,vu0[i+0],vu0[i+1],depth+1,u_o,t_o,Ng_o);
         valid1 &= tp1.lower < t_o;
       }
