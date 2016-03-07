@@ -31,6 +31,16 @@ namespace embree
 {
   namespace isa
   {
+    static const size_t numJacobianIterations = 5;
+#if defined(__SSE__)
+    static const size_t numBezierSubdivisions = 4;
+#elif defined(__AVX__)
+    static const size_t numBezierSubdivisions = 2;
+#else
+    static const size_t numBezierSubdivisions = 2;
+#endif
+
+
     struct BezierGeometryHit
     {
       __forceinline BezierGeometryHit() {}
@@ -68,7 +78,7 @@ namespace embree
       const Vec3fa dir = ray.dir;
 
       const float length_ray_dir = length(dir);
-      for (size_t i=0; i<g_debug_int1; i++) 
+      for (size_t i=0; i<numJacobianIterations; i++) 
       {
         const Vec3fa Q = org + t*dir;
         //const Vec3fa dQdu = zero;
@@ -120,7 +130,7 @@ namespace embree
     template<typename Epilog>
       __forceinline bool intersect_bezier_recursive_jacobian(const Ray& ray, const float dt, const BezierCurve3fa& curve, const float u0, const float u1, const size_t depth, const Epilog& epilog)
     {
-      const int maxDepth = g_debug_int0;
+      const int maxDepth = numBezierSubdivisions;
       const Vec3fa org = zero;
       const Vec3fa dir = ray.dir;
 
