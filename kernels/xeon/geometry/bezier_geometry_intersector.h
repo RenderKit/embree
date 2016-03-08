@@ -129,8 +129,8 @@ namespace embree
     template<typename Epilog>
       __forceinline bool intersect_bezier_recursive_jacobian(const Ray& ray, const float dt, const BezierCurve3fa& curve, const float u0, const float u1, const size_t depth, const Epilog& epilog)
     {
-      const int maxDepth = numBezierSubdivisions;
-      //const int maxDepth = Device::debug_int1+1;
+      int maxDepth = numBezierSubdivisions;
+      //int maxDepth = Device::debug_int1+1;
       const Vec3fa org = zero;
       const Vec3fa dir = ray.dir;
 
@@ -157,7 +157,7 @@ namespace embree
       BBox<vfloatx> tc_outer; vfloatx u_outer0; Vec3vfx Ng_outer0; vfloatx u_outer1; Vec3vfx Ng_outer1;
       valid &= cylinder_outer.intersect(org,dir,tc_outer,u_outer0,Ng_outer0,u_outer1,Ng_outer1);
       if (none(valid)) return false;
-
+     
       /* intersect with cap-planes */
       BBox<vfloatx> tp(ray.tnear-dt,ray.tfar-dt);
       tp = embree::intersect(tp,tc_outer);
@@ -176,8 +176,11 @@ namespace embree
 
       /* intersect with inner cylinder */
       BBox<vfloatx> tc_inner;
-      cylinder_inner.intersect(org,dir,tc_inner);
-
+      vfloatx u_inner0; Vec3vfx Ng_inner0; vfloatx u_inner1; Vec3vfx Ng_inner1;
+      vboolx valid_inner = cylinder_inner.intersect(org,dir,tc_inner,u_inner0,Ng_inner0,u_inner1,Ng_inner1);
+      vfloatx unstable0 = select(valid_inner,abs(dot(Vec3vfx(normalize(ray.dir)),normalize(Ng_inner0))),0.0f);
+      vfloatx unstable1 = select(valid_inner,abs(dot(Vec3vfx(normalize(ray.dir)),normalize(Ng_inner1))),0.0f);
+      
       /* subtract the inner interval from the current hit interval */
       BBox<vfloatx> tp0, tp1;
       subtract(tp,tc_inner,tp0,tp1);
@@ -190,8 +193,9 @@ namespace embree
       while (any(valid0))
       {
         const size_t i = select_min(valid0,tp0.lower); clear(valid0,i);
-        if (depth == maxDepth) found |= intersect_bezier_iterative_jacobian(ray,dt,curve,u_outer0[i],tp0.lower[i],epilog);
-        //if (depth == maxDepth) found |= intersect_bezier_iterative_debug   (ray,dt,curve,i,u_outer0,tp0,h0,h1,Ng_outer0,dP0du,dP3du,epilog);
+        const size_t termDepth = unstable0[i] > 0.3f ? maxDepth : maxDepth+1;
+        if (depth >= termDepth) found |= intersect_bezier_iterative_jacobian(ray,dt,curve,u_outer0[i],tp0.lower[i],epilog);
+        //if (depth >= termDepth) found |= intersect_bezier_iterative_debug   (ray,dt,curve,i,u_outer0,tp0,h0,h1,Ng_outer0,dP0du,dP3du,epilog);
         else                   found |= intersect_bezier_recursive_jacobian(ray,dt,curve,vu0[i+0],vu0[i+1],depth+1,epilog);
         valid0 &= tp0.lower+dt < ray.tfar;
       }
@@ -201,8 +205,9 @@ namespace embree
       while (any(valid1))
       {
         const size_t i = select_min(valid1,tp1.lower); clear(valid1,i);
-        if (depth == maxDepth) found |= intersect_bezier_iterative_jacobian(ray,dt,curve,u_outer1[i],tp1.upper[i],epilog);
-        //if (depth == maxDepth) found |= intersect_bezier_iterative_debug   (ray,dt,curve,i,u_outer1,tp1,h0,h1,Ng_outer1,dP0du,dP3du,epilog);
+        const size_t termDepth = unstable1[i] > 0.3f ? maxDepth : maxDepth+1;
+        if (depth >= termDepth) found |= intersect_bezier_iterative_jacobian(ray,dt,curve,u_outer1[i],tp1.upper[i],epilog);
+        //if (depth >= termDepth) found |= intersect_bezier_iterative_debug   (ray,dt,curve,i,u_outer1,tp1,h0,h1,Ng_outer1,dP0du,dP3du,epilog);
         else                   found |= intersect_bezier_recursive_jacobian(ray,dt,curve,vu0[i+0],vu0[i+1],depth+1,epilog);
         valid1 &= tp1.lower+dt < ray.tfar;
       }

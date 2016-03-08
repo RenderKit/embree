@@ -1594,10 +1594,10 @@ void occlusionFilterHair(void* ptr, RTCRay& ray)
     }
     else if (geometry->type == CURVES) 
     {
-      if (dot(ray.dir,ray.Ng) > 0.0f) {
+      /*if (dot(ray.dir,ray.Ng) > 0.0f) {
         Kt = Vec3fa(1.0f);
       }
-      else
+      else*/
       {
         int materialID = ((ISPCHairSet*)geometry)->materialID;
         ISPCMaterial* material = &g_ispc_scene->materials[materialID];
