@@ -104,6 +104,12 @@ namespace embree
           children[i] = convert_bezier_to_lines(children[i]);
       }
 
+      void hair_to_curves()
+      {
+        for (size_t i=0; i<children.size(); i++)
+          children[i] = convert_hair_to_curves(children[i]);
+      }
+
       virtual void resetNode(std::set<Ref<Node>>& done);
       virtual void calculateInDegree();
       virtual bool calculateClosed();
@@ -264,5 +270,6 @@ namespace embree
     static Ref<SceneGraph::Node> convert_triangles_to_quads(Ref<SceneGraph::Node> node);
     static Ref<SceneGraph::Node> convert_quads_to_subdivs(Ref<SceneGraph::Node> node);
     static Ref<SceneGraph::Node> convert_bezier_to_lines(Ref<SceneGraph::Node> node);
+    static Ref<SceneGraph::Node> convert_hair_to_curves(Ref<SceneGraph::Node> node);
   };
 }
