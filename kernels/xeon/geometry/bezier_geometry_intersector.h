@@ -349,11 +349,6 @@ namespace embree
         const Vec3fa p2 = v2-ref;
         const Vec3fa p3 = v3-ref;
 
-        //float u = 0.0f;
-        //float t = ray.tfar-dt;
-        //Vec3fa Ng = zero;
-
-        //const Ray ray1(zero,ray.dir,ray.tnear-dt,ray.tfar-dt);
         const BezierCurve3fa curve(p0,p1,p2,p3,0.0f,1.0f,1);
         return intersect_bezier_recursive_jacobian(ray,dt,curve,0.0f,1.0f,1,epilog);
         //return intersect_bezier_recursive_cone(ray1,curve,0.0f,1.0f,1,u,t,Ng);
