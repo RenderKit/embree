@@ -34,23 +34,21 @@ namespace embree
       static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& prim, Scene* scene, const unsigned* geomID_to_instID)
       {
         STAT3(normal.trav_prims,1,1,1);
-        if (likely(Device::debug_int0 % 2)) {
-          const int N = ((BezierCurves*)scene->get(prim.geomID()))->tessellationRate;
-          pre.intersect(ray,prim.p0,prim.p1,prim.p2,prim.p3,N,Intersect1EpilogU<VSIZEX,true>(ray,prim.geomID(),prim.primID(),scene,geomID_to_instID));
-        } else {
+        const BezierCurves* geom = (BezierCurves*)scene->get(prim.geomID());
+        if (likely(geom->subtype == BezierCurves::HAIR))
+          pre.intersect(ray,prim.p0,prim.p1,prim.p2,prim.p3,geom->tessellationRate,Intersect1EpilogU<VSIZEX,true>(ray,prim.geomID(),prim.primID(),scene,geomID_to_instID));
+        else
           BezierGeometry1Intersector1(ray,nullptr).intersect(ray,prim.p0,prim.p1,prim.p2,prim.p3,Intersect1Epilog1<true>(ray,prim.geomID(),prim.primID(),scene,geomID_to_instID));
-        }
       }
       
       static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& prim, Scene* scene, const unsigned* geomID_to_instID)
       {
         STAT3(shadow.trav_prims,1,1,1);
-        if (likely(Device::debug_int0 % 2)) {
-          const int N = ((BezierCurves*)scene->get(prim.geomID()))->tessellationRate;
-          return pre.intersect(ray,prim.p0,prim.p1,prim.p2,prim.p3,N,Occluded1EpilogU<VSIZEX,true>(ray,prim.geomID(),prim.primID(),scene,geomID_to_instID));
-        } else {
+        const BezierCurves* geom = (BezierCurves*)scene->get(prim.geomID());
+        if (likely(geom->subtype == BezierCurves::HAIR))
+          return pre.intersect(ray,prim.p0,prim.p1,prim.p2,prim.p3,geom->tessellationRate,Occluded1EpilogU<VSIZEX,true>(ray,prim.geomID(),prim.primID(),scene,geomID_to_instID));
+        else
           return BezierGeometry1Intersector1(ray,nullptr).intersect(ray,prim.p0,prim.p1,prim.p2,prim.p3,Occluded1Epilog1<true>(ray,prim.geomID(),prim.primID(),scene,geomID_to_instID));
-        }
       }
     };
 

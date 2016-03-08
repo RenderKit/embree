@@ -135,7 +135,7 @@ namespace embree
     unsigned int newQuadMesh (RTCGeometryFlags flags, size_t maxQuads, size_t maxVertices, size_t numTimeSteps);
 
     /*! Creates a new collection of quadratic bezier curves. */
-    unsigned int newBezierCurves (RTCGeometryFlags flags, size_t maxCurves, size_t maxVertices, size_t numTimeSteps);
+    unsigned int newBezierCurves (BezierCurves::SubType subtype, RTCGeometryFlags flags, size_t maxCurves, size_t maxVertices, size_t numTimeSteps);
 
     /*! Creates a new collection of line segments. */
     unsigned int newLineSegments (RTCGeometryFlags flags, size_t maxSegments, size_t maxVertices, size_t numTimeSteps);

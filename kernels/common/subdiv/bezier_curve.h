@@ -283,9 +283,9 @@ namespace embree
     }
 #endif
 
-#if 1
+    /* calculates bounds of bezier curve geometry */
 #if defined(__SSE__)
-    __forceinline BBox3fa bounds(int _N) const
+    __forceinline BBox3fa bounds() const
     {
       const int N = 7;
       const float scale = 1.0f/(3.0f*(N-1));
@@ -307,7 +307,8 @@ namespace embree
       return enlarge(BBox3fa(lower,upper),upper_r);
     }
 #endif
-#else
+
+    /* calculates bounds of bezier curve geometry when tessellated into N line segments */
 #if defined(__SSE__)
     __forceinline BBox3fa bounds(int N) const
     {
@@ -343,7 +344,6 @@ namespace embree
         return enlarge(BBox3fa(min(lower,v3),max(upper,v3)),max(upper_r,Vec3fa(abs(v3.w))));
       }
     }
-#endif
 #endif
   };
 }

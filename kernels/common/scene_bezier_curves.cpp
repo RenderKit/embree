@@ -20,8 +20,8 @@
 
 namespace embree
 {
-  BezierCurves::BezierCurves (Scene* parent, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps) 
-    : Geometry(parent,BEZIER_CURVES,numPrimitives,numTimeSteps,flags), tessellationRate(4)
+  BezierCurves::BezierCurves (Scene* parent, SubType subtype, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps) 
+    : Geometry(parent,BEZIER_CURVES,numPrimitives,numTimeSteps,flags), subtype(subtype), tessellationRate(4)
   {
     curves.init(parent->device,numPrimitives,sizeof(int));
     for (size_t i=0; i<numTimeSteps; i++) {

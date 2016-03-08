@@ -522,7 +522,7 @@ namespace embree
   }
 
 
-  unsigned Scene::newBezierCurves (RTCGeometryFlags gflags, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
+  unsigned Scene::newBezierCurves (BezierCurves::SubType subtype, RTCGeometryFlags gflags, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
   {
     if (isStatic() && (gflags != RTC_GEOMETRY_STATIC)) {
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
@@ -534,7 +534,7 @@ namespace embree
       return -1;
     }
     
-    Geometry* geom = new BezierCurves(this,gflags,numCurves,numVertices,numTimeSteps);
+    Geometry* geom = new BezierCurves(this,subtype,gflags,numCurves,numVertices,numTimeSteps);
     return geom->id;
   }
 
