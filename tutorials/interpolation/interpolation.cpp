@@ -16,7 +16,6 @@
 
 #include "../common/tutorial/tutorial.h"
 #include "../common/image/image.h"
-#include "../common/tutorial/tutorial_device.h"
 
 namespace embree
 {
@@ -159,7 +158,6 @@ namespace embree
 
     /* initialize ray tracing core */
     init(g_rtcore.c_str());
-    //key_pressed(GLUT_KEY_F5);
 
      /* benchmark mode */
     if (g_numBenchmarkFrames)

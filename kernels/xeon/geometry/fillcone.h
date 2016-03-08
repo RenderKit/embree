@@ -28,10 +28,10 @@ namespace embree
     {
       const Vec3fa p0_i; //!< start location
       const Vec3fa p1_i; //!< end position
-      const Vec3fa n0; //!< start direction
-      const Vec3fa n1; //!< end direction
-      const float r0;  //!< start radius
-      const float r1;  //!< end radius
+      const Vec3fa n0;   //!< start direction
+      const Vec3fa n1;   //!< end direction
+      const float r0;    //!< start radius
+      const float r1;    //!< end radius
 
       __forceinline FillCone(const Vec3fa& p0, const Vec3fa& n0, const float r0, const Vec3fa& p1, const Vec3fa& n1, const float r1) 
         : p0_i(p0), n0(n0), r0(r0), p1_i(p1), n1(n1), r1(r1) {}
@@ -140,8 +140,8 @@ namespace embree
         
         /* intersect with cap-planes */
         BBox1f tp(ray.tnear-tb,ray.tfar-tb);
-        tp = embree::intersect(tp,intersect_half_plane(zero,dir,+n0,p0));
-        tp = embree::intersect(tp,intersect_half_plane(zero,dir,-n1,p1));
+        tp = embree::intersect(tp,HalfPlane(p0,+n0).intersect(zero,dir));
+        tp = embree::intersect(tp,HalfPlane(p1,-n1)intersect(zero,dir));
         const BBox1f td = embree::intersect(tc,tp);
         if (td.lower > td.upper) {
           STAT(Stat::get().user[2]++); 
@@ -186,15 +186,6 @@ namespace embree
         if (t < tc.lower || t > tc.upper) {
           return false;
         }
-
-        /*const Vec3fa N = cross(p-p0,p1p0);
-        const Vec3fa Ng0 = normalize(cross(n0,N));
-        const Vec3fa Ng1 = normalize(cross(n1,N));
-        const Vec3fa q0 = p0+r0*Ng0;
-        const Vec3fa q1 = p1+r1*Ng1;
-        Ng = normalize(cross(q1-q0,N));
-        const Vec3fa P = (1.0f-u)*q0 + u*q1;
-        t = tb+dot(q0,Ng)/dot(dir,Ng);*/
 
         t += tb;
         Ng = grad_distance_f(p,p0,n0,r0,p1,n1,r1);
