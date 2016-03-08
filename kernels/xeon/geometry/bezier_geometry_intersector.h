@@ -29,14 +29,13 @@ namespace embree
   namespace isa
   {
     static const size_t numJacobianIterations = 5;
-#if defined(__SSE__)
-    static const size_t numBezierSubdivisions = 4;
+#if defined(__AVX512F__)
+    static const size_t numBezierSubdivisions = 2;
 #elif defined(__AVX__)
     static const size_t numBezierSubdivisions = 2;
 #else
-    static const size_t numBezierSubdivisions = 2;
+    static const size_t numBezierSubdivisions = 3;
 #endif
-
 
     struct BezierGeometryHit
     {
@@ -128,6 +127,7 @@ namespace embree
       __forceinline bool intersect_bezier_recursive_jacobian(const Ray& ray, const float dt, const BezierCurve3fa& curve, const float u0, const float u1, const size_t depth, const Epilog& epilog)
     {
       const int maxDepth = numBezierSubdivisions;
+      //const int maxDepth = Device::debug_int1+1;
       const Vec3fa org = zero;
       const Vec3fa dir = ray.dir;
 
