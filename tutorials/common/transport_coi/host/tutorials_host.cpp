@@ -122,6 +122,9 @@ namespace embree
       THROW_RUNTIME_ERROR("COIPipelineRunFunction failed: "+std::string(COIResultGetName(result)));
   }
 
+  void set_parameter(size_t parm, ssize_t val) {
+  }
+
   void send_hairset (Ref<TutorialScene::HairSet> hairset)
   {
     COIRESULT result;

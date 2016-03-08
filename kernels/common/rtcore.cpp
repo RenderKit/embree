@@ -25,9 +25,6 @@
 #include "raystream_log.h"
 #include "raystreams/raystreams.h"
 
-RTCORE_API int g_debug_int0 = 4;
-RTCORE_API int g_debug_int1 = 5;
-
 namespace embree
 {  
   /* mutex to make API thread safe */
@@ -101,7 +98,8 @@ namespace embree
     Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcDeviceSetParameter1i);
-    RTCORE_VERIFY_HANDLE(hdevice);
+    const bool internal_parm = parm >= 1000000 && parm < 1000004;
+    if (!internal_parm) RTCORE_VERIFY_HANDLE(hdevice); // allow NULL device for special internal settings
     Lock<MutexSys> lock(g_mutex);
     device->setParameter1i(parm,val);
     RTCORE_CATCH_END(device);

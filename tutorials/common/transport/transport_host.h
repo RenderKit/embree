@@ -26,6 +26,9 @@ namespace embree
   /* keypressed event */
   void key_pressed(int key);
 
+  /* passes parameters to the backend */
+  void set_parameter(size_t parm, ssize_t val);
+
   /* resize framebuffer */
   void resize(int width, int height);
 

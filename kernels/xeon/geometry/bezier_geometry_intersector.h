@@ -24,9 +24,6 @@
 #include "plane.h"
 #include "line_intersector.h"
 
-extern "C" int g_debug_int0;
-extern "C" int g_debug_int1;
-
 namespace embree
 {
   namespace isa
@@ -212,7 +209,7 @@ namespace embree
 #if 0
     __forceinline bool intersect_bezier_recursive_cone(const Ray& ray, const BezierCurve3fa& curve, const float u0, const float u1, const size_t depth, float& u_o, float& t_o, Vec3fa& Ng_o)
     {
-      const int maxDepth = g_debug_int0;
+      const int maxDepth = Device::debug_int0;
 
       /* subdivide curve */
       const float dscale = (u1-u0)*(1.0f/(3.0f*(VSIZEX-1)));
