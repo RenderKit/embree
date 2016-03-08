@@ -29,16 +29,19 @@ namespace embree
     struct Bezier1vIntersector1
     {
       typedef Bezier1v Primitive;
-      typedef Bezier1Intersector1 Precalculations;
+      typedef Bezier1vIntersector1 Precalculations;
+
+      __forceinline Bezier1vIntersector1(const Ray& ray, const void* ptr)
+        : intersectorHair(ray,ptr), intersectorCurve(ray,ptr) {}
       
       static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& prim, Scene* scene, const unsigned* geomID_to_instID)
       {
         STAT3(normal.trav_prims,1,1,1);
         const BezierCurves* geom = (BezierCurves*)scene->get(prim.geomID());
         if (likely(geom->subtype == BezierCurves::HAIR))
-          pre.intersect(ray,prim.p0,prim.p1,prim.p2,prim.p3,geom->tessellationRate,Intersect1EpilogU<VSIZEX,true>(ray,prim.geomID(),prim.primID(),scene,geomID_to_instID));
+          pre.intersectorHair.intersect(ray,prim.p0,prim.p1,prim.p2,prim.p3,geom->tessellationRate,Intersect1EpilogU<VSIZEX,true>(ray,prim.geomID(),prim.primID(),scene,geomID_to_instID));
         else 
-          BezierGeometry1Intersector1(ray,nullptr).intersect(ray,prim.p0,prim.p1,prim.p2,prim.p3,Intersect1Epilog1<true>(ray,prim.geomID(),prim.primID(),scene,geomID_to_instID));
+          pre.intersectorCurve.intersect(ray,prim.p0,prim.p1,prim.p2,prim.p3,Intersect1Epilog1<true>(ray,prim.geomID(),prim.primID(),scene,geomID_to_instID));
       }
       
       static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& prim, Scene* scene, const unsigned* geomID_to_instID)
@@ -46,10 +49,14 @@ namespace embree
         STAT3(shadow.trav_prims,1,1,1);
         const BezierCurves* geom = (BezierCurves*)scene->get(prim.geomID());
         if (likely(geom->subtype == BezierCurves::HAIR))
-          return pre.intersect(ray,prim.p0,prim.p1,prim.p2,prim.p3,geom->tessellationRate,Occluded1EpilogU<VSIZEX,true>(ray,prim.geomID(),prim.primID(),scene,geomID_to_instID));
+          return pre.intersectorHair.intersect(ray,prim.p0,prim.p1,prim.p2,prim.p3,geom->tessellationRate,Occluded1EpilogU<VSIZEX,true>(ray,prim.geomID(),prim.primID(),scene,geomID_to_instID));
         else
-          return BezierGeometry1Intersector1(ray,nullptr).intersect(ray,prim.p0,prim.p1,prim.p2,prim.p3,Occluded1Epilog1<true>(ray,prim.geomID(),prim.primID(),scene,geomID_to_instID));
+          return pre.intersectorCurve.intersect(ray,prim.p0,prim.p1,prim.p2,prim.p3,Occluded1Epilog1<true>(ray,prim.geomID(),prim.primID(),scene,geomID_to_instID));
       }
+
+    public:
+      Bezier1Intersector1 intersectorHair;
+      BezierGeometry1Intersector1 intersectorCurve;
     };
 
     /*! Intersector for a single ray from a ray packet with a bezier curve. */
