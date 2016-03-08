@@ -134,43 +134,26 @@ unsigned int cube_tri_faces[12] = {
   3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3
 };
 
-#define NUM_HAIR_VERTICES 9
-#define NUM_HAIR_CURVES 6
+#define NUM_HAIR_VERTICES 4
 
-#define W 2.0f
-
-__aligned(16) float hair_vertices[9][4] = 
+__aligned(16) float hair_vertices[4][4] = 
 {
-  { -   W, 0.0f, -1.0f, 0.2f },
-
-  { +0.0f,-1.0f, +0.0f, 0.2f },
-  { +   W, 0.0f, +1.0f, 0.2f },
-  { +   W, 0.0f, -1.0f, 0.6f },
-  { +0.0f,+1.0f, +0.0f, 0.2f },
-  { -   W, 0.0f, +1.0f, 0.2f },
-  { -   W, 0.0f, -1.0f, 0.2f },
-
-  { +0.0f,-1.0f, +0.0f, 0.2f },
-  { +   W, 0.0f, +1.0f, 0.2f },
+  { 0.0f, 0.0f, 0.0f, 0.1f },
+  { 0.5f, 1.0f, 0.0f, 0.1f },
+  { 0.0f, 2.0f, -0.5f, 0.1f },
+  { 0.0f, 3.0f, 0.0f, 0.1f }
 };
 
-__aligned(16) float hair_vertex_colors[9][4] = 
+__aligned(16) float hair_vertex_colors[4][4] = 
 {
-  {  1.0f,  1.0f,  0.0f, 0.0f },
-
   {  1.0f,  0.0f,  0.0f, 0.0f },
   {  1.0f,  1.0f,  0.0f, 0.0f },
   {  0.0f,  0.0f,  1.0f, 0.0f },
   {  1.0f,  1.0f,  1.0f, 0.0f },
-  {  1.0f,  0.0f,  0.0f, 0.0f },
-  {  1.0f,  1.0f,  0.0f, 0.0f },
-
-  {  1.0f,  0.0f,  0.0f, 0.0f },
-  {  1.0f,  1.0f,  0.0f, 0.0f },
 };
 
-unsigned int hair_indices[6] = {
-  0, 1, 2, 3, 4, 5
+unsigned int hair_indices[1] = {
+  0
 };
 
 inline float updateEdgeLevel(const Vec3fa& cam_pos, Vec3fa* vtx, unsigned int* indices, const size_t e0, const size_t e1)
@@ -308,50 +291,21 @@ unsigned int addQuadCube (RTCScene scene_i, const Vec3fa& pos)
 /* add hair geometry */
 unsigned int addHair (RTCScene scene, const Vec3fa& pos)
 {
-  unsigned int geomID = rtcNewHairGeometry (scene, RTC_GEOMETRY_DYNAMIC, NUM_HAIR_CURVES, 4*NUM_HAIR_CURVES);
+  unsigned int geomID = rtcNewHairGeometry (scene, RTC_GEOMETRY_DYNAMIC, 1, 4);
 
   //rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER, hair_vertices, 0, sizeof(Vec3fa));
-   vfloat4* vtx = (vfloat4*) rtcMapBuffer(scene, geomID, RTC_VERTEX_BUFFER);
+   Vec3fa* vtx = (Vec3fa*) rtcMapBuffer(scene, geomID, RTC_VERTEX_BUFFER);
+   for (size_t i=0; i<NUM_HAIR_VERTICES; i++) {
+     vtx[i].x = hair_vertices[i][0]+pos.x;
+     vtx[i].y = hair_vertices[i][1]+pos.y;
+     vtx[i].z = hair_vertices[i][2]+pos.z;
+     vtx[i].w = hair_vertices[i][3];
+   }
+  rtcUnmapBuffer(scene, geomID, RTC_VERTEX_BUFFER);
 
-   /* converts b-spline to bezier basis */
-   for (size_t i=0; i<NUM_HAIR_CURVES; i++) 
-   {
-     vfloat4 P(pos.x,pos.y,pos.z,0.0f);
-     const vfloat4 v0 = vfloat4::loadu(&hair_vertices[i+0][0]);
-     const vfloat4 v1 = vfloat4::loadu(&hair_vertices[i+1][0]);
-     const vfloat4 v2 = vfloat4::loadu(&hair_vertices[i+2][0]);
-     const vfloat4 v3 = vfloat4::loadu(&hair_vertices[i+3][0]);
-     vtx[4*i+0] = P + (1.0f/6.0f)*v0 + (2.0f/3.0f)*v1 + (1.0f/6.0f)*v2;
-     vtx[4*i+1] = P + (2.0f/3.0f)*v1 + (1.0f/3.0f)*v2;
-     vtx[4*i+2] = P + (1.0f/3.0f)*v1 + (2.0f/3.0f)*v2;
-     vtx[4*i+3] = P + (1.0f/6.0f)*v1 + (2.0f/3.0f)*v2 + (1.0f/6.0f)*v3;
-   }
-   rtcUnmapBuffer(scene, geomID, RTC_VERTEX_BUFFER);
-   
-   Vec3fa* colors = new Vec3fa[4*NUM_HAIR_CURVES];
-   for (size_t i=0; i<NUM_HAIR_CURVES; i++) 
-   {
-     const Vec3fa v0 = Vec3fa::loadu(&hair_vertex_colors[i+0][0]);
-     const Vec3fa v1 = Vec3fa::loadu(&hair_vertex_colors[i+1][0]);
-     const Vec3fa v2 = Vec3fa::loadu(&hair_vertex_colors[i+2][0]);
-     const Vec3fa v3 = Vec3fa::loadu(&hair_vertex_colors[i+3][0]);
-     colors[4*i+0] = (1.0f/6.0f)*v0 + (2.0f/3.0f)*v1 + (1.0f/6.0f)*v2;
-     colors[4*i+1] = (2.0f/3.0f)*v1 + (1.0f/3.0f)*v2;
-     colors[4*i+2] = (1.0f/3.0f)*v1 + (2.0f/3.0f)*v2;
-     colors[4*i+3] = (1.0f/6.0f)*v1 + (2.0f/3.0f)*v2 + (1.0f/6.0f)*v3;
-   }
-
-   int* index = (int*) rtcMapBuffer(scene, geomID, RTC_INDEX_BUFFER);
-   for (size_t i=0; i<NUM_HAIR_CURVES; i++) {
-     index[i] = 4*i;
-   }
-   rtcUnmapBuffer(scene,geomID,RTC_INDEX_BUFFER);
-   
-   //rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  hair_indices , 0, sizeof(unsigned int));
-   //rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER0, hair_vertex_colors, 0, sizeof(Vec3fa));
-   rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER0, colors, 0, sizeof(Vec3fa));
-   rtcSetTessellationRate(scene,geomID,4.0f);
-   return geomID;
+  rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  hair_indices , 0, sizeof(unsigned int));
+  rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER0, hair_vertex_colors, 0, sizeof(Vec3fa));
+  return geomID;
 }
 
 /* adds a ground plane to the scene */
@@ -425,17 +379,14 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   ray.time = 0;
   
   /* intersect ray with scene */
-  //std::cout << std::endl;
-  //PRINT("primary ray");
   rtcIntersect(g_scene,ray);
-  //PRINT(ray);
   
   /* shade pixels */
   Vec3fa color = Vec3fa(0.0f);
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
   {
-    //return abs(normalize(ray.Ng));
     /* interpolate diffuse color */
+
     Vec3fa diffuse = Vec3fa(1.0f,0.0f,0.0f);
     if (ray.geomID > 0) 
     {
@@ -463,7 +414,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     
     /* initialize shadow ray */
     RTCRay shadow;
-    shadow.org = ray.org + ray.tfar*ray.dir + 0.001f*normalize(ray.Ng);
+    shadow.org = ray.org + ray.tfar*ray.dir;
     shadow.dir = neg(lightDir);
     shadow.tnear = 0.001f;
     shadow.tfar = inf;
@@ -473,14 +424,9 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     shadow.time = 0;
     
     /* trace shadow ray */
-    //std::cout << std::endl;
-    //PRINT("tracing occlusion rays");
     rtcOccluded(g_scene,shadow);
-    //PRINT(shadow);
     
     /* add light contribution */
-    //if (dot(shadow.dir,ray.Ng) < 0.0f) return Vec3fa(1,0,0);
-
     if (shadow.geomID) {
       Vec3fa r = normalize(reflect(ray.dir,Ng));
       float s = pow(clamp(dot(r,lightDir),0.0f,1.0f),10.0f);
@@ -513,11 +459,7 @@ void renderTile(int taskIndex, int* pixels,
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
     /* calculate pixel color */
-    //if (x != 265 || y != 512-219) continue;
-    //PRINT2(x,y);
     Vec3fa color = renderPixel(x,y,vx,vy,vz,p);
-    //PRINT(color);
-    //exit(1);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));

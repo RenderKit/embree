@@ -23,10 +23,10 @@
 
 #include <zmmintrin.h>
 
-#define _MM_SHUF_PERM(e3, e2, e1, e0) \
-  ((_MM_PERM_ENUM)((e3)*64 + (e2)*16 + (e1)*4 + (e0)))
-
-#define _MM_SHUF_PERM_NONE   _MM_SHUF_PERM(3,2,1,0)
+#if !defined(_MM_SHUF_PERM)
+#define _MM_SHUF_PERM(e3, e2, e1, e0) ((_MM_PERM_ENUM)((e3)*64 + (e2)*16 + (e1)*4 + (e0)))
+#define _MM_SHUF_PERM_NONE _MM_SHUF_PERM(3,2,1,0)
+#endif
 
 #include "vboolf16_avx512.h"
 #include "vint16_avx512.h"
@@ -88,12 +88,6 @@ namespace embree
   {
     _mm512_mask_prefetch_i32extscatter_ps(ptr,m_active,index,up,scale,mode);
   }
- 
-
-#if !defined(_MM_SHUF_PERM)
-#define _MM_SHUF_PERM(e3, e2, e1, e0) ((_MM_PERM_ENUM)((e3)*64 + (e2)*16 + (e1)*4 + (e0)))
-#define _MM_SHUF_PERM_NONE _MM_SHUF_PERM(3,2,1,0)
-#endif
 
   template<const int D, const int C, const int B, const int A> 
     __forceinline vfloat16 lshuf(const vfloat16 &in)
