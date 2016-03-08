@@ -98,7 +98,7 @@ namespace embree
     Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcDeviceSetParameter1i);
-    const bool internal_parm = parm >= 1000000 && parm < 1000004;
+    const bool internal_parm = (size_t)parm >= 1000000 && (size_t)parm < 1000004;
     if (!internal_parm) RTCORE_VERIFY_HANDLE(hdevice); // allow NULL device for special internal settings
     Lock<MutexSys> lock(g_mutex);
     device->setParameter1i(parm,val);

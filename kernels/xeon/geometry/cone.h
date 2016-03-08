@@ -32,8 +32,7 @@ namespace embree
       __forceinline Cone(const Vec3fa& p0, const float r0, const Vec3fa& p1, const float r1) 
         : p0(p0), r0(r0), p1(p1), r1(r1) {}
 
-      __forceinline bool intersect(const Vec3fa& org_i, const Vec3fa& dir, BBox1f& t_o, float& u0_o, Vec3fa& Ng0_o) const
-        
+      __forceinline bool intersect(const Vec3fa& org_i, const Vec3fa& dir, BBox1f& t_o, float& u0_o, Vec3fa& Ng0_o) const 
       {
         const float tb = 0.0f; //dot(0.5f*(p0+p1)-org_i,normalize(dir));
         const Vec3fa org = org_i+tb*dir;
@@ -96,166 +95,45 @@ namespace embree
         return true;
       }
 
-      __forceinline bool intersect(const Vec3fa& dir, 
-                                   BBox1f& t_o
-                                   //float& u0_o,
-                                   //Vec3fa& Ng_o
-        ) const
+      __forceinline bool intersect(const Vec3fa& org_i, const Vec3fa& dir, BBox1f& t_o) const 
       {
-        const Vec3fa v0 = p0;
-        const Vec3fa v1 = p1;
-        const float rl = rcp_length(v1-v0);
-        const Vec3fa P0 = v0, dP = (v1-v0)*rl;
-        const float dr = (r1-r0)*rl;
-        const Vec3fa O = -P0, dO = dir;
-       
-        const float dOdO = dot(dO,dO);
-        const float OdO = dot(dO,O);
-        const float OO = dot(O,O);
-        const float dOz = dot(dP,dO);
-        const float Oz = dot(dP,O);
-        
-        const float R = r0 + Oz*dr;          
-        const float A = dOdO - sqr(dOz) * (1.0f+sqr(dr));
-        const float B = 2.0f * (OdO - dOz*(Oz + R*dr));
-        const float C = OO - (sqr(Oz) + sqr(R));
-        
-        const float D = B*B - 4.0f*A*C;
-        if (D < 0.0f) return false;
-        
-        const float Q = sqrt(D);
-        if (unlikely(A < min_rcp_input)) {
-          t_o.lower = float(neg_inf);
-          t_o.upper = float(pos_inf);
-          return true;
-        }
-        
-        const float rcp_2A = 0.5f*rcp(A);
-        t_o.lower = (-B-Q)*rcp_2A;
-        t_o.upper = (-B+Q)*rcp_2A;
-        
-        //u0_o = (Oz+t_o.lower*dOz)*rl;
-        //const Vec3fa Pr = t_o.lower*dir;
-        //const Vec3fa Pl = v0 + u0_o*(v1-v0);
-        //Ng_o = Pr-Pl;
-        return true;
+        float u0_o; Vec3fa Ng0_o;
+        return intersect(org_i,dir,t_o,u0_o,Ng0_o);
       }
 
-      static void verify()
+      static bool verify(const size_t id, const Cone& cone, const Ray& ray, bool shouldhit, const float t0, const float t1)
       {
-        const Cone cone(Vec3fa(0.0f,0.0f,0.0f),0.0f,Vec3fa(1.0f,0.0f,0.0f),1.0f);
-        const Ray ray0(Vec3fa(-2.0f,1.0f,0.0f),Vec3fa(+1.0f,+0.0f,+0.0f),0.0f,float(inf));
-        const Ray ray1(Vec3fa(+2.0f,1.0f,0.0f),Vec3fa(-1.0f,+0.0f,+0.0f),0.0f,float(inf));
-        const Ray ray2(Vec3fa(-1.0f,0.0f,2.0f),Vec3fa(+0.0f,+0.0f,-1.0f),0.0f,float(inf));
-        const Ray ray3(Vec3fa(+1.0f,0.0f,2.0f),Vec3fa(+0.0f,+0.0f,-1.0f),0.0f,float(inf));
-        const Ray ray4(Vec3fa(-1.0f,0.0f,0.0f),Vec3fa(+1.0f,+0.0f,+0.0f),0.0f,float(inf));
-        const Ray ray5(Vec3fa(+1.0f,0.0f,0.0f),Vec3fa(-1.0f,+0.0f,+0.0f),0.0f,float(inf));
-        const Ray ray6(Vec3fa(+0.0f,0.0f,1.0f),Vec3fa(+0.0f,+0.0f,-1.0f),0.0f,float(inf));
-        const Ray ray7(Vec3fa(+0.0f,1.0f,0.0f),Vec3fa(-1.0f,-1.0f,+0.0f),0.0f,float(inf));
-        const Ray ray8(Vec3fa(+0.0f,1.0f,0.0f),Vec3fa(+1.0f,-1.0f,+0.0f),0.0f,float(inf));
-        const Ray ray9(Vec3fa(+0.0f,1.0f,0.0f),Vec3fa(-1.0f,+1.0f,+0.0f),0.0f,float(inf));
-
-        const Cone cone1(Vec3fa(0.0f,0.0f,0.0f),1.0f,Vec3fa(1.0f,0.0f,0.0f),0.0f);
-
         float eps = 0.001f;
+        BBox1f t; bool hit;
+        hit = cone.intersect(ray.org,ray.dir,t);
 
-        BBox1f t; float u; Vec3fa Ng; bool hit;
+        bool failed = hit != shouldhit;
+        if (shouldhit) failed |= isinf(t0) ? t0 != t.lower : (t0 == -1E6) ? t.lower > -1E6f : abs(t0-t.lower) > eps;
+        if (shouldhit) failed |= isinf(t1) ? t1 != t.upper : (t1 == +1E6) ? t.upper < +1E6f : abs(t1-t.upper) > eps;
+        if (!failed) return true;
+        std::cout << "Cone test " << id << " failed: cone = " << cone << ", ray = " << ray << ", hit = " << hit << ", t = " << t << std::endl; 
+        return false;
+      }
 
-        PRINT(0);
-        hit = cone.intersect(ray0.org,ray0.dir,t,u,Ng);
-        if (hit != true || abs(3.0f-t.lower) > eps || t.upper !=  float(inf)) {
-          PRINT("error0");
-          PRINT2(hit,t); 
-        }
-        std::cout << std::endl; 
-
-        PRINT(1);
-        hit = cone.intersect(ray1.org,ray1.dir,t,u,Ng);
-        if (hit != true || t.lower != float(neg_inf) || abs(1.0f-t.upper) > eps)  {
-          PRINT("error1");
-          PRINT2(hit,t);
-        }
-        std::cout << std::endl; 
-
-        PRINT(2);
-        hit = cone.intersect(ray2.org,ray2.dir,t,u,Ng);
-        if (hit != false) {
-          PRINT("error2");
-          PRINT2(hit,t);
-        }
-        std::cout << std::endl; 
-
-        PRINT(3);
-        hit = cone.intersect(ray3.org,ray3.dir,t,u,Ng);
-        if (hit != true || abs(1.0f-t.lower) > eps || abs(3.0f-t.upper) > eps)  {
-          PRINT("error3");
-          PRINT2(hit,t);
-        }
-        std::cout << std::endl; 
-
-        PRINT(4);
-        hit = cone.intersect(ray4.org,ray4.dir,t,u,Ng);
-        if (hit != true || abs(1.0f-t.lower) > eps || t.upper != float(inf))  {
-          PRINT("error4");
-          PRINT2(hit,t);
-        }
-        std::cout << std::endl; 
-        
-        PRINT(5);
-        hit = cone.intersect(ray5.org,ray5.dir,t,u,Ng);
-        if (hit != true || t.lower != float(neg_inf) || abs(1.0f-t.upper) > eps)  {
-          PRINT("error5");
-          PRINT2(hit,t);
-        }
-        std::cout << std::endl; 
-        
-        PRINT(6);
-        hit = cone.intersect(ray6.org,ray6.dir,t,u,Ng);
-        if (hit != true || abs(1.0f-t.lower) > eps || abs(1.0f-t.upper) > eps)  {
-          PRINT("error6");
-          PRINT2(hit,t);
-        }
-        std::cout << std::endl; 
-
-        PRINT(7);
-        hit = cone.intersect(ray7.org,ray7.dir,t,u,Ng);
-        if (hit != false) {
-          PRINT("error7");
-          PRINT2(hit,t);
-        }
-        std::cout << std::endl; 
-
-        PRINT(8);
-        hit = cone.intersect(ray8.org,ray8.dir,t,u,Ng);
-        if (hit != true || abs(0.5f-t.lower) > eps || t.upper < 1e6f)  {
-          PRINT("error8");
-          PRINT2(hit,t);
-        }
-        std::cout << std::endl; 
-
-        PRINT(9);
-        hit = cone.intersect(ray9.org,ray9.dir,t,u,Ng);
-        if (hit != true || t.lower > -1e6f || abs(-0.5f-t.upper) > eps)  {
-          PRINT("error9");
-          PRINT2(hit,t);
-        }
-        std::cout << std::endl; 
-
-        PRINT(0);
-        hit = cone1.intersect(ray0.org,ray0.dir,t,u,Ng);
-        if (hit != true || t.lower != float(neg_inf) || abs(2.0f-t.upper) > eps)  {
-          PRINT("error0");
-          PRINT2(hit,t);
-        }
-        std::cout << std::endl; 
-
-        PRINT(2);
-        hit = cone1.intersect(ray2.org,ray2.dir,t,u,Ng);
-        if (hit != true || abs(0.0f-t.lower) > eps || abs(4.0f-t.upper) > eps)  {
-          PRINT("error2");
-          PRINT2(hit,t);
-        }
-        std::cout << std::endl; 
+      /* verify cone class */
+      static bool verify()
+      {
+        bool passed = true;
+        const Cone cone0(Vec3fa(0.0f,0.0f,0.0f),0.0f,Vec3fa(1.0f,0.0f,0.0f),1.0f);
+        passed &= verify(0,cone0,Ray(Vec3fa(-2.0f,1.0f,0.0f),Vec3fa(+1.0f,+0.0f,+0.0f),0.0f,float(inf)),true,3.0f,pos_inf);
+        passed &= verify(1,cone0,Ray(Vec3fa(+2.0f,1.0f,0.0f),Vec3fa(-1.0f,+0.0f,+0.0f),0.0f,float(inf)),true,neg_inf,1.0f);
+        passed &= verify(2,cone0,Ray(Vec3fa(-1.0f,0.0f,2.0f),Vec3fa(+0.0f,+0.0f,-1.0f),0.0f,float(inf)),false,0.0f,0.0f);
+        passed &= verify(3,cone0,Ray(Vec3fa(+1.0f,0.0f,2.0f),Vec3fa(+0.0f,+0.0f,-1.0f),0.0f,float(inf)),true,1.0f,3.0f);
+        passed &= verify(4,cone0,Ray(Vec3fa(-1.0f,0.0f,0.0f),Vec3fa(+1.0f,+0.0f,+0.0f),0.0f,float(inf)),true,1.0f,pos_inf);
+        passed &= verify(5,cone0,Ray(Vec3fa(+1.0f,0.0f,0.0f),Vec3fa(-1.0f,+0.0f,+0.0f),0.0f,float(inf)),true,neg_inf,1.0f);
+        passed &= verify(6,cone0,Ray(Vec3fa(+0.0f,0.0f,1.0f),Vec3fa(+0.0f,+0.0f,-1.0f),0.0f,float(inf)),true,1.0f,1.0f);
+        passed &= verify(7,cone0,Ray(Vec3fa(+0.0f,1.0f,0.0f),Vec3fa(-1.0f,-1.0f,+0.0f),0.0f,float(inf)),false,0.0f,0.0f);
+        passed &= verify(8,cone0,Ray(Vec3fa(+0.0f,1.0f,0.0f),Vec3fa(+1.0f,-1.0f,+0.0f),0.0f,float(inf)),true,0.5f,+1E6);
+        passed &= verify(9,cone0,Ray(Vec3fa(+0.0f,1.0f,0.0f),Vec3fa(-1.0f,+1.0f,+0.0f),0.0f,float(inf)),true,-1E6,-0.5f);
+        const Cone cone1(Vec3fa(0.0f,0.0f,0.0f),1.0f,Vec3fa(1.0f,0.0f,0.0f),0.0f);
+        passed &= verify(10,cone1,Ray(Vec3fa(-2.0f,1.0f,0.0f),Vec3fa(+1.0f,+0.0f,+0.0f),0.0f,float(inf)),true,neg_inf,2.0f);
+        passed &= verify(11,cone1,Ray(Vec3fa(-1.0f,0.0f,2.0f),Vec3fa(+0.0f,+0.0f,-1.0f),0.0f,float(inf)),true,0.0f,4.0f);
+        return passed;
       }
 
       /*! output operator */
