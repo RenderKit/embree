@@ -62,6 +62,7 @@ namespace embree
     struct UnalignedNode;
     struct UnalignedNodeMB;
     struct TransformNode;
+    struct QuantizedNode;
 
     /*! Number of bytes the nodes and primitives are minimally aligned to.*/
     static const size_t byteAlignment = 16;
@@ -132,6 +133,45 @@ namespace embree
         }
         *current.parent = bvh->encodeNode(node);
         return node;
+      }
+
+      BVHN* bvh;
+    };
+
+    /*! Builder interface to create Node */
+    struct CreateQuantizedNode
+    {
+      __forceinline CreateQuantizedNode (BVHN* bvh) : bvh(bvh) {}
+
+      template<typename BuildRecord>
+      __forceinline Node* operator() (const BuildRecord& current, BuildRecord* children, const size_t n, FastAllocator::ThreadLocal2* alloc)
+      {
+        Node node;
+        node.clear();
+        for (size_t i=0; i<n; i++) {
+          node.set(i,children[i].bounds());
+        }
+        QuantizedNode *qnode = (QuantizedNode*) alloc->alloc0.malloc(sizeof(QuantizedNode), byteNodeAlignment);
+        assert(((size_t)qnode & 0xf) == 0);
+
+        qnode->init(node);
+
+        for (size_t i=0; i<n; i++) {
+          children[i].parent = (size_t*)&qnode->child(i);
+        };
+
+        if (unlikely((size_t)current.parent == 0))
+        {
+          /* root node */
+          *(size_t*)current.parent = (size_t)qnode;
+        }
+        else
+        {
+          /* encode as relative 32bit offset */
+          *(unsigned int*)current.parent = bvh->encodeQuantizedNode((size_t)current.parent,(size_t)qnode);
+        }
+
+        return NULL;
       }
 
       BVHN* bvh;
@@ -714,6 +754,69 @@ namespace embree
       unsigned int type;
     };
 
+
+    /*! BVHN Quantized Node */
+    struct __aligned(32) QuantizedNode
+    {
+      static const unsigned char MIN_QUAN_8BIT = 0;
+      static const unsigned char MAX_QUAN_8BIT = 255;
+
+      /*! Clears the node. */
+      __forceinline void clear() {
+        for (size_t i=0; i<N; i++) children[i] = emptyNode;
+        for (size_t i=0; i<N; i++) lower_x[i] = lower_y[i] = lower_z[i] = MAX_QUAN_8BIT;
+        for (size_t i=0; i<N; i++) upper_x[i] = upper_y[i] = upper_z[i] = MIN_QUAN_8BIT;
+      }
+
+        /*! Returns reference to specified child */
+      __forceinline       unsigned int& child(size_t i)       { assert(i<N); return children[i]; }
+      __forceinline const unsigned int& child(size_t i) const { assert(i<N); return children[i]; }
+
+      /*! verifies the node */
+      __forceinline bool verify() const
+      {
+        for (size_t i=0; i<N; i++) {
+          if (child(i) == BVHN::emptyNode) {
+            for (; i<N; i++) {
+              if (child(i) != BVHN::emptyNode)
+                return false;
+            }
+            break;
+          }
+        }
+        return true;
+      }
+
+      /*! Returns bounds of specified child. */
+      __forceinline BBox3fa bounds(size_t i) const
+      {
+        assert(i < N);
+        const Vec3fa lower(start.x + scale.x * (float)lower_x[i],
+                           start.y + scale.y * (float)lower_y[i],
+                           start.z + scale.z * (float)lower_z[i]);
+        const Vec3fa upper(start.x + scale.x * (float)upper_x[i],
+                           start.y + scale.y * (float)upper_y[i],
+                           start.z + scale.z * (float)upper_z[i]);
+        return BBox3fa(lower,upper);
+      }
+
+      __forceinline void init(Node &node) const
+      {
+        PING;
+      }
+
+      unsigned char lower_x[N]; //!< 8bit discretized X dimension of lower bounds of all N children
+      unsigned char upper_x[N]; //!< 8bit discretized X dimension of upper bounds of all N children
+      unsigned char lower_y[N]; //!< 8bit discretized Y dimension of lower bounds of all N children
+      unsigned char upper_y[N]; //!< 8bit discretized Y dimension of upper bounds of all N children
+      unsigned char lower_z[N]; //!< 8bit discretized Z dimension of lower bounds of all N children
+      unsigned char upper_z[N]; //!< 8bit discretized Z dimension of upper bounds of all N children
+      unsigned int children[N]; //!< 32bit offset to the N children (can be a node or leaf)
+      Vec3f start;
+      Vec3f scale;
+    };
+
+
     /*! swap the children of two nodes */
     __forceinline static void swap(Node* a, size_t i, Node* b, size_t j)
     {
@@ -818,6 +921,13 @@ namespace embree
     static __forceinline NodeRef encodeNode(Node* node) {
       assert(!((size_t)node & align_mask));
       return NodeRef((size_t) node);
+    }
+
+    static __forceinline unsigned int encodeQuantizedNode(size_t base, size_t node) {
+      assert(!((size_t)node & align_mask));
+      ssize_t offset = (ssize_t)node-(ssize_t)base;
+      assert(offset > 0);
+      return (unsigned int)offset;
     }
 
     /*! Encodes a node */

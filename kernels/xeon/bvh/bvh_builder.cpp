@@ -29,6 +29,16 @@ namespace embree
       return 0;
     }
 
+    template<int N>
+    __forceinline size_t dummy(typename BVHN<N>::Node* node, const size_t* counts, const size_t num) {
+      return 0;
+    }
+
+    // template<int N>
+    // __forceinline size_t rotate(typename BVHN<N>::QuantizedNode* node, const size_t* counts, const size_t num) {
+    //   return 0;
+    // }
+
 #if ROTATE_TREE
     template<>
     __forceinline size_t rotate<4>(BVH4::Node* node, const size_t* counts, const size_t num)
@@ -80,6 +90,30 @@ namespace embree
 #endif
       
       bvh->layoutLargeNodes(pinfo.size()*0.005f);
+    }
+
+
+    template<int N>
+    void BVHNBuilderQuantized<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progress_in, PrimRef* prims, const PrimInfo& pinfo, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost)
+    {
+      //bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
+
+      auto progressFunc = [&] (size_t dn) { 
+        progress_in(dn); 
+      };
+            
+      auto createLeafFunc = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> size_t {
+        return createLeaf(current,alloc);
+      };
+      
+      NodeRef root = 0;
+      BVHBuilderBinnedSAH::build_reduce<NodeRef>
+        (root,typename BVH::CreateAlloc(bvh),size_t(0),typename BVH::CreateQuantizedNode(bvh),dummy<N>,createLeafFunc,progressFunc,
+         prims,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
+
+      bvh->set(root,pinfo.geomBounds,pinfo.size());
+            
+      //bvh->layoutLargeNodes(pinfo.size()*0.005f);
     }
 
     template<int N>
@@ -191,11 +225,13 @@ namespace embree
     }
 
     template struct BVHNBuilder<4>;
+    template struct BVHNBuilderQuantized<4>;
     template struct BVHNBuilderMblur<4>;    
     template struct BVHNBuilderSpatial<4>;
 
 #if defined(__AVX__)
     template struct BVHNBuilder<8>;
+    template struct BVHNBuilderQuantized<8>;
     template struct BVHNBuilderMblur<8>;
     template struct BVHNBuilderSpatial<8>;
 #endif
