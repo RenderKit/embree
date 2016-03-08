@@ -338,7 +338,7 @@ namespace embree
       __forceinline BezierGeometry1Intersector1(const Ray& ray, const void* ptr) {}
 
       template<typename Epilog>
-      __forceinline bool intersect(Ray& ray,
+      __noinline bool intersect(Ray& ray,
                                    const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3,
                                    const Epilog& epilog) const
       {
