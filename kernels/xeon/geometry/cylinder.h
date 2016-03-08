@@ -34,13 +34,17 @@ namespace embree
       __forceinline Cylinder(const Vec3fa& p0, const Vec3fa& p1, const float rr, bool) 
         : p0(p0), p1(p1), rr(rr) {}
 
-      __forceinline bool intersect(const Vec3fa& dir, 
+      __forceinline bool intersect(const Vec3fa& org,
+                                   const Vec3fa& dir, 
                                    BBox1f& t_o, 
                                    float& u0_o, Vec3fa& Ng0_o,
                                    float& u1_o, Vec3fa& Ng1_o) const
       {
-        const float rl = rcp_length(p1-p0);
-        const Vec3fa P0 = p0, dP = (p1-p0)*rl;
+        const Vec3fa v0 = p0-org;
+        const Vec3fa v1 = p1-org;
+
+        const float rl = rcp_length(v1-v0);
+        const Vec3fa P0 = v0, dP = (v1-v0)*rl;
         const Vec3fa O = -P0, dO = dir;
         
         const float dOdO = dot(dO,dO);
@@ -79,34 +83,20 @@ namespace embree
         {
           u0_o = (Oz+t0*dOz)*rl;
           const Vec3fa Pr = t_o.lower*dir;
-          const Vec3fa Pl = p0 + u0_o*(p1-p0);
+          const Vec3fa Pl = v0 + u0_o*(v1-v0);
           Ng0_o = Pr-Pl;
         }
 
         {
           u1_o = (Oz+t1*dOz)*rl;
           const Vec3fa Pr = t_o.lower*dir;
-          const Vec3fa Pl = p0 + u1_o*(p1-p0);
+          const Vec3fa Pl = v0 + u1_o*(v1-v0);
           Ng1_o = Pr-Pl;
         }
 
         t_o.lower = t0;
         t_o.upper = t1;
         return true;
-      }
-
-      __forceinline bool intersect(const Vec3fa& org, const Vec3fa& dir, BBox1f& t_o, 
-                                   float& u0_o, Vec3fa& Ng0_o,
-                                   float& u1_o, Vec3fa& Ng1_o) const
-      {
-        const float dt = dot(0.5f*(p0+p1)-org,normalize(dir));
-        const Vec3fa ref = org+dt*dir;
-        const Vec3fa v0 = p0-ref;
-        const Vec3fa v1 = p1-ref;
-        bool hit = Cylinder(v0,v1,rr,true).intersect(dir,t_o,u0_o,Ng0_o,u1_o,Ng1_o);
-        t_o.lower += dt;
-        t_o.upper += dt;
-        return hit;
       }
 
       __forceinline bool intersect(const Vec3fa& org_i, const Vec3fa& dir, BBox1f& t_o) const
@@ -167,14 +157,12 @@ namespace embree
         : p0(p0), p1(p1), rr(rr) {}
 
      
-      __forceinline vbool<N> intersect(const Vec3fa& org_i, const Vec3fa& dir, BBox<vfloat<N>>& t_o, 
+      __forceinline vbool<N> intersect(const Vec3fa& org, const Vec3fa& dir, BBox<vfloat<N>>& t_o, 
                                        vfloat<N>& u0_o, Vec3vfN& Ng0_o,
                                        vfloat<N>& u1_o, Vec3vfN& Ng1_o) const
       {
-        const vfloat<N> tb = dot(vfloat<N>(0.5f)*(p0+p1)-Vec3vfN(org_i),Vec3vfN(normalize(dir)));
-        const Vec3vfN org = Vec3vfN(org_i)+tb*Vec3vfN(dir);
-        const Vec3vfN v0 = p0-org;
-        const Vec3vfN v1 = p1-org;
+        const Vec3vfN v0 = p0-Vec3vfN(org);
+        const Vec3vfN v1 = p1-Vec3vfN(org);
         
         const vfloat<N> rl = rcp_length(v1-v0);
         const Vec3vfN P0 = v0, dP = (v1-v0)*rl;
@@ -216,8 +204,8 @@ namespace embree
           Ng1_o = Pr-Pl;
         }
 
-        t_o.lower = select(valid, t0+tb, vfloat<N>(pos_inf));
-        t_o.upper = select(valid, t1+tb, vfloat<N>(neg_inf));
+        t_o.lower = select(valid, t0, vfloat<N>(pos_inf));
+        t_o.upper = select(valid, t1, vfloat<N>(neg_inf));
 
         const vfloat<N> eps = 16.0f*float(ulp)*max(abs(dOdO),abs(sqr(dOz)));
         vbool<N> validt = valid & (abs(A) < eps); 
