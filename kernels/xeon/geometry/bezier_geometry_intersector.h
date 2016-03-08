@@ -177,9 +177,11 @@ namespace embree
       /* intersect with inner cylinder */
       BBox<vfloatx> tc_inner;
       vfloatx u_inner0; Vec3vfx Ng_inner0; vfloatx u_inner1; Vec3vfx Ng_inner1;
-      vboolx valid_inner = cylinder_inner.intersect(org,dir,tc_inner,u_inner0,Ng_inner0,u_inner1,Ng_inner1);
-      vfloatx unstable0 = select(valid_inner,abs(dot(Vec3vfx(normalize(ray.dir)),normalize(Ng_inner0))),0.0f);
-      vfloatx unstable1 = select(valid_inner,abs(dot(Vec3vfx(normalize(ray.dir)),normalize(Ng_inner1))),0.0f);
+      const vboolx valid_inner = cylinder_inner.intersect(org,dir,tc_inner,u_inner0,Ng_inner0,u_inner1,Ng_inner1);
+
+      /* at the unstable area we subdivide deeper */
+      const vboolx unstable0 = !valid_inner | abs(dot(Vec3vfx(normalize(ray.dir)),normalize(Ng_inner0))) < 0.3f;
+      const vboolx unstable1 = !valid_inner | abs(dot(Vec3vfx(normalize(ray.dir)),normalize(Ng_inner1))) < 0.3f;
       
       /* subtract the inner interval from the current hit interval */
       BBox<vfloatx> tp0, tp1;
@@ -193,7 +195,7 @@ namespace embree
       while (any(valid0))
       {
         const size_t i = select_min(valid0,tp0.lower); clear(valid0,i);
-        const size_t termDepth = unstable0[i] > 0.3f ? maxDepth : maxDepth+1;
+        const size_t termDepth = unstable0[i] ? maxDepth+1 : maxDepth;
         if (depth >= termDepth) found |= intersect_bezier_iterative_jacobian(ray,dt,curve,u_outer0[i],tp0.lower[i],epilog);
         //if (depth >= termDepth) found |= intersect_bezier_iterative_debug   (ray,dt,curve,i,u_outer0,tp0,h0,h1,Ng_outer0,dP0du,dP3du,epilog);
         else                   found |= intersect_bezier_recursive_jacobian(ray,dt,curve,vu0[i+0],vu0[i+1],depth+1,epilog);
@@ -205,7 +207,7 @@ namespace embree
       while (any(valid1))
       {
         const size_t i = select_min(valid1,tp1.lower); clear(valid1,i);
-        const size_t termDepth = unstable1[i] > 0.3f ? maxDepth : maxDepth+1;
+        const size_t termDepth = unstable1[i] ? maxDepth+1 : maxDepth;
         if (depth >= termDepth) found |= intersect_bezier_iterative_jacobian(ray,dt,curve,u_outer1[i],tp1.upper[i],epilog);
         //if (depth >= termDepth) found |= intersect_bezier_iterative_debug   (ray,dt,curve,i,u_outer1,tp1,h0,h1,Ng_outer1,dP0du,dP3du,epilog);
         else                   found |= intersect_bezier_recursive_jacobian(ray,dt,curve,vu0[i+0],vu0[i+1],depth+1,epilog);
