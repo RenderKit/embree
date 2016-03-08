@@ -98,17 +98,20 @@ namespace embree
         const float K = dot(R,R)-sqr(f);
         const float dKdu = /*2.0f*/(dot(R,dRdu)-f*dfdu);
         const float dKdt = /*2.0f*/(dot(R,dRdt)-f*dfdt);
+        const float rsqrt_K = rsqrt(K);
 
         const float g = sqrt(K)-P.w;
-        const float dgdu = /*0.5f*/dKdu*rsqrt(K)-dPdu.w;
-        const float dgdt = /*0.5f*/dKdt*rsqrt(K);//-dPdt.w;
+        const float dgdu = /*0.5f*/dKdu*rsqrt_K-dPdu.w;
+        const float dgdt = /*0.5f*/dKdt*rsqrt_K;//-dPdt.w;
 
         const LinearSpace2f J = LinearSpace2f(dfdu,dfdt,dgdu,dgdt);
         const Vec2f dut = rcp(J)*Vec2f(f,g);
         const Vec2f ut = Vec2f(u,t) - dut;
         u = ut.x; t = ut.y;
         
-        if (abs(f) < 16.0f*float(ulp)*reduce_max(abs(dPdu)) && abs(g) < 16.0f*float(ulp)*length_ray_dir) 
+        const bool converged_u = abs(f) < 16.0f*float(ulp)*reduce_max(abs(dPdu));
+        const bool converged_t = abs(g) < 16.0f*float(ulp)*length_ray_dir;
+        if (converged_u && converged_t) 
         {
           t+=dt;
           if (t < ray.tnear || t > ray.tfar) return false;
