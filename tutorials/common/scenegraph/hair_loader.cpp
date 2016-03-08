@@ -129,7 +129,7 @@ namespace embree
   {
     Material objmtl; new (&objmtl) OBJMaterial;
     Ref<SceneGraph::MaterialNode> material = new SceneGraph::MaterialNode(objmtl);
-    Ref<SceneGraph::HairSetNode> hairset = new SceneGraph::HairSetNode(material); 
+    Ref<SceneGraph::HairSetNode> hairset = new SceneGraph::HairSetNode(true,material); 
     loadHairBin(fileName,hairset);
     hairset->verify();
     return hairset.cast<SceneGraph::Node>();
@@ -139,7 +139,7 @@ namespace embree
   {
     Material objmtl; new (&objmtl) OBJMaterial;
     Ref<SceneGraph::MaterialNode> material = new SceneGraph::MaterialNode(objmtl);
-    Ref<SceneGraph::HairSetNode> hairset = new SceneGraph::HairSetNode(material); 
+    Ref<SceneGraph::HairSetNode> hairset = new SceneGraph::HairSetNode(true,material); 
     int numHairs = loadHairASCII(fileName,hairset);
     hairset->verify();
 

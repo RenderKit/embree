@@ -151,7 +151,7 @@ namespace embree
     {
       int materialID = convert(mesh->material);
       
-      TutorialScene::HairSet* hairset = new TutorialScene::HairSet;
+      TutorialScene::HairSet* hairset = new TutorialScene::HairSet(mesh->hair);
       
       hairset->v.resize(mesh->v.size()); 
       for (size_t i=0; i<mesh->v.size(); i++) {

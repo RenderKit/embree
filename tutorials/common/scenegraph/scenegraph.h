@@ -244,12 +244,13 @@ namespace embree
       };
       
     public:
-      HairSetNode (Ref<MaterialNode> material)
-        : Node(true), material(material) {}
+      HairSetNode (bool hair, Ref<MaterialNode> material)
+        : Node(true), hair(hair), material(material) {}
       
       void verify() const;
 
     public:
+      bool hair;                //!< true is this is hair geometry, false if this are curves
       avector<Vec3fa> v;        //!< hair control points (x,y,z,r)
       avector<Vec3fa> v2;       //!< hair control points (x,y,z,r)
       std::vector<Hair> hairs;  //!< list of hairs
