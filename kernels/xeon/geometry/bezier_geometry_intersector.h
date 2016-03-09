@@ -215,11 +215,14 @@ namespace embree
       }
       return found;
     }
-
-#if 0
-    __forceinline bool intersect_bezier_recursive_cone(const Ray& ray, const BezierCurve3fa& curve, const float u0, const float u1, const size_t depth, float& u_o, float& t_o, Vec3fa& Ng_o)
+    
+    template<typename Epilog>
+      __forceinline bool intersect_bezier_recursive_cone(const Ray& ray, const float dt, const BezierCurve3fa& curve, const float u0, const float u1, const size_t depth, const Epilog& epilog)
     {
-      const int maxDepth = Device::debug_int0;
+      //int maxDepth = numBezierSubdivisions;
+      int maxDepth = Device::debug_int1+1;
+      const Vec3fa org = zero;
+      const Vec3fa dir = ray.dir;
 
       /* subdivide curve */
       const float dscale = (u1-u0)*(1.0f/(3.0f*(VSIZEX-1)));
@@ -245,15 +248,15 @@ namespace embree
       {
         const ConeN<VSIZEX> cone(Vec3vfx(P0),P0.w,Vec3vfx(P3),P3.w);
         BBox<vfloatx> tc; vfloatx uc0; Vec3vfx Ng0; vfloatx uc1; Vec3vfx Ng1;
-        valid &= cone.intersect(ray.org,ray.dir,tc,uc0,Ng0,uc1,Ng1);
+        valid &= cone.intersect(org,dir,tc,uc0,Ng0,uc1,Ng1);
         if (none(valid)) return false;
 
         /* intersect with cap-planes */
-        BBox<vfloatx> tp(ray.tnear,min(t_o,ray.tfar));
+        BBox<vfloatx> tp(ray.tnear-dt,ray.tfar-dt);
         tp = embree::intersect(tp,tc);
-        BBox<vfloatx> h0 = HalfPlaneN<VSIZEX>(Vec3vfx(P0),+Vec3vfx(dP0du)).intersect(ray.org,ray.dir);
+        BBox<vfloatx> h0 = HalfPlaneN<VSIZEX>(Vec3vfx(P0),+Vec3vfx(dP0du)).intersect(org,dir);
         tp = embree::intersect(tp,h0);
-        BBox<vfloatx> h1 = HalfPlaneN<VSIZEX>(Vec3vfx(P3),-Vec3vfx(dP3du)).intersect(ray.org,ray.dir);
+        BBox<vfloatx> h1 = HalfPlaneN<VSIZEX>(Vec3vfx(P3),-Vec3vfx(dP3du)).intersect(org,dir);
         tp = embree::intersect(tp,h1);
         valid &= tp.lower <= tp.upper;
         if (none(valid)) return false;
@@ -264,41 +267,41 @@ namespace embree
         uc0 = lerp(u0,u1,(vfloatx(step)+uc0)*(1.0f/float(VSIZEX)));
         uc1 = lerp(u0,u1,(vfloatx(step)+uc1)*(1.0f/float(VSIZEX)));
 
-        const vboolx valid0 = valid & (tp.lower < t_o);
+        const vboolx valid0 = valid & (tp.lower+dt < ray.tfar);
         if (any(valid0)) 
         {
           const size_t i = select_min(valid0,tp.lower); 
-          u_o = uc0[i];
-          t_o = tp.lower[i];
-          Ng_o = Vec3fa(Ng0.x[i],Ng0.y[i],Ng0.z[i]);
-          if (h0.lower[i] == t_o) Ng_o = -Vec3fa(dP0du.x[i],dP0du.y[i],dP0du.z[i]);
-          if (h1.lower[i] == t_o) Ng_o = +Vec3fa(dP3du.x[i],dP3du.y[i],dP3du.z[i]);
+          Vec3fa Ng_o = Vec3fa(Ng0.x[i],Ng0.y[i],Ng0.z[i]);
+          if (h0.lower[i] == tp.lower[i]) Ng_o = -Vec3fa(dP0du.x[i],dP0du.y[i],dP0du.z[i]);
+          if (h1.lower[i] == tp.lower[i]) Ng_o = +Vec3fa(dP3du.x[i],dP3du.y[i],dP3du.z[i]);
+          BezierGeometryHit hit(tp.lower[i]+dt,uc0[i],Ng_o);
+          return epilog(hit);
         }
 
-        const vboolx valid1 = valid & (tp.upper < t_o);
+        const vboolx valid1 = valid & (tp.upper+dt < ray.tfar);
         if (any(valid1)) 
         {
           const size_t i = select_min(valid1,tp.upper); 
-          u_o = uc1[i];
-          t_o = tp.upper[i];
-          Ng_o = Vec3fa(Ng1.x[i],Ng1.y[i],Ng1.z[i]);
-          if (h0.lower[i] == t_o) Ng_o = -Vec3fa(dP0du.x[i],dP0du.y[i],dP0du.z[i]);
-          if (h1.lower[i] == t_o) Ng_o = +Vec3fa(dP3du.x[i],dP3du.y[i],dP3du.z[i]);
+          Vec3fa Ng_o = Vec3fa(Ng1.x[i],Ng1.y[i],Ng1.z[i]);
+          if (h0.lower[i] == tp.upper[i]) Ng_o = -Vec3fa(dP0du.x[i],dP0du.y[i],dP0du.z[i]);
+          if (h1.lower[i] == tp.upper[i]) Ng_o = +Vec3fa(dP3du.x[i],dP3du.y[i],dP3du.z[i]);
+          BezierGeometryHit hit(tp.upper[i]+dt,uc1[i],Ng_o);
+          return epilog(hit);
         }
         return any(valid0 | valid1);
       }
 
       /* intersect with outer cylinder */
       BBox<vfloatx> tc_outer; vfloatx u_outer0; Vec3vfx Ng_outer0; vfloatx u_outer1; Vec3vfx Ng_outer1;
-      valid &= cylinder_outer.intersect(ray.org,ray.dir,tc_outer,u_outer0,Ng_outer0,u_outer1,Ng_outer1);
+      valid &= cylinder_outer.intersect(org,dir,tc_outer,u_outer0,Ng_outer0,u_outer1,Ng_outer1);
       if (none(valid)) return false;
 
       /* intersect with cap-planes */
-      BBox<vfloatx> tp(ray.tnear,ray.tfar);
+      BBox<vfloatx> tp(ray.tnear-dt,ray.tfar-dt);
       tp = embree::intersect(tp,tc_outer);
-      BBox<vfloatx> h0 = HalfPlaneN<VSIZEX>(Vec3vfx(P0),+Vec3vfx(dP0du)).intersect(ray.org,ray.dir);
+      BBox<vfloatx> h0 = HalfPlaneN<VSIZEX>(Vec3vfx(P0),+Vec3vfx(dP0du)).intersect(org,dir);
       tp = embree::intersect(tp,h0);
-      BBox<vfloatx> h1 = HalfPlaneN<VSIZEX>(Vec3vfx(P3),-Vec3vfx(dP3du)).intersect(ray.org,ray.dir);
+      BBox<vfloatx> h1 = HalfPlaneN<VSIZEX>(Vec3vfx(P3),-Vec3vfx(dP3du)).intersect(org,dir);
       tp = embree::intersect(tp,h1);
       valid &= tp.lower <= tp.upper;
       if (none(valid)) return false;
@@ -311,7 +314,7 @@ namespace embree
 
       /* intersect with inner cylinder */
       BBox<vfloatx> tc_inner;
-      cylinder_inner.intersect(ray.org,ray.dir,tc_inner);
+      cylinder_inner.intersect(org,dir,tc_inner);
 
       /* subtract the inner interval from the current hit interval */
       BBox<vfloatx> tp0, tp1;
@@ -325,20 +328,19 @@ namespace embree
       while (any(valid0))
       {
         const size_t i = select_min(valid0,tp0.lower); clear(valid0,i);
-        found |= intersect_bezier_recursive_cone(ray,curve,vu0[i+0],vu0[i+1],depth+1,epilog);
-        valid0 &= tp0.lower < ray.tfar;
+        found |= intersect_bezier_recursive_cone(ray,dt,curve,vu0[i+0],vu0[i+1],depth+1,epilog);
+        valid0 &= tp0.lower+dt < ray.tfar;
       }
 
       /* iterate over all second hits front to back */
       while (any(valid1))
       {
         const size_t i = select_min(valid1,tp1.lower); clear(valid1,i);
-        found |= intersect_bezier_recursive_cone(ray,curve,vu0[i+0],vu0[i+1],depth+1,epilog);
-        valid1 &= tp1.lower < ray.tfar;
+        found |= intersect_bezier_recursive_cone(ray,dt,curve,vu0[i+0],vu0[i+1],depth+1,epilog);
+        valid1 &= tp1.lower+dt < ray.tfar;
       }
       return found;
     }
-#endif
 
     struct BezierGeometry1Intersector1
     {
@@ -346,8 +348,8 @@ namespace embree
 
       template<typename Epilog>
       __noinline bool intersect(Ray& ray,
-                                   const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3,
-                                   const Epilog& epilog) const
+                                const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3,
+                                const Epilog& epilog) const
       {
         STAT3(normal.trav_prims,1,1,1);
 
@@ -360,8 +362,8 @@ namespace embree
         const Vec3fa p3 = v3-ref;
 
         const BezierCurve3fa curve(p0,p1,p2,p3,0.0f,1.0f,1);
-        return intersect_bezier_recursive_jacobian(ray,dt,curve,0.0f,1.0f,1,epilog);
-        //return intersect_bezier_recursive_cone(ray1,curve,0.0f,1.0f,1,u,t,Ng);
+        //return intersect_bezier_recursive_jacobian(ray,dt,curve,0.0f,1.0f,1,epilog);
+        return intersect_bezier_recursive_cone(ray,dt,curve,0.0f,1.0f,1,epilog);
       }
     };
   }
