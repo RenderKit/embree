@@ -87,8 +87,15 @@ namespace embree
           accel[i].fill(prims,start,current.prims.end(),bvh->scene,false);
         }
         //*current.parent = node;
-        *(unsigned int*)current.parent = bvh->encodeQuantizedNode((size_t)current.parent,(size_t)node);
+        PRINT("LEAF");
+        PRINT(accel);
 
+        typename BVH::QuantizedNode *parent = (typename BVH::QuantizedNode *)((size_t)current.parent & (~0x7));
+        const size_t index = (size_t)current.parent & 0x7;
+        PRINT(parent);
+        PRINT(index);
+        parent->childOffset(index) = bvh->encodeQuantizedLeaf((size_t)parent,(size_t)node);
+        assert((ssize_t)node == (ssize_t)parent + parent->childOffset(index));
 	return n;
       }
 

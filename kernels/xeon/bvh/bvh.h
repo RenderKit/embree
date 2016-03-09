@@ -146,31 +146,36 @@ namespace embree
       template<typename BuildRecord>
       __forceinline Node* operator() (const BuildRecord& current, BuildRecord* children, const size_t n, FastAllocator::ThreadLocal2* alloc)
       {
-        Node node;
+        PING;
+        PRINT((size_t*)current.parent);
+
+        __aligned(64) Node node;
         node.clear();
         for (size_t i=0; i<n; i++) {
           node.set(i,children[i].bounds());
         }
         QuantizedNode *qnode = (QuantizedNode*) alloc->alloc0.malloc(sizeof(QuantizedNode), byteNodeAlignment);
-        assert(((size_t)qnode & 0xf) == 0);
+        PRINT(qnode);
+        PRINT((size_t)qnode - (size_t)current.parent);
+
+        assert(((size_t)qnode & 0x7) == 0);
 
         qnode->init(node);
 
         for (size_t i=0; i<n; i++) {
-          children[i].parent = (size_t*)&qnode->child(i);
+          //children[i].parent = (size_t*)&qnode->child(i);
+          children[i].parent = (size_t*)((size_t)qnode | i);
         };
 
-        if (unlikely((size_t)current.parent == 0))
-        {
-          /* root node */
-          *(size_t*)current.parent = (size_t)qnode;
-        }
-        else
-        {
-          /* encode as relative 32bit offset */
-          *(unsigned int*)current.parent = bvh->encodeQuantizedNode((size_t)current.parent,(size_t)qnode);
-        }
-
+        PRINT("INNER NODE");
+        PRINT((void*)current.parent);
+        /* encode 64bit pointer as relative 32bit offset to parent node address */
+        QuantizedNode *parent = (QuantizedNode *)((size_t)current.parent & (~0x7));
+        const size_t index = (size_t)current.parent & 0x7;
+        assert(index < N);
+        PRINT(parent);
+        PRINT(index);
+        parent->childOffset(index) = bvh->encodeQuantizedNode((size_t)parent,(size_t)qnode);
         return NULL;
       }
 
@@ -769,16 +774,16 @@ namespace embree
       }
 
         /*! Returns reference to specified child */
-      __forceinline       unsigned int& child(size_t i)       { assert(i<N); return children[i]; }
-      __forceinline const unsigned int& child(size_t i) const { assert(i<N); return children[i]; }
+      __forceinline       int& childOffset(size_t i)       { assert(i<N); return children[i]; }
+      __forceinline const int& childOffset(size_t i) const { assert(i<N); return children[i]; }
 
       /*! verifies the node */
       __forceinline bool verify() const
       {
         for (size_t i=0; i<N; i++) {
-          if (child(i) == BVHN::emptyNode) {
+          if (childOffset(i) == BVHN::emptyNode) {
             for (; i<N; i++) {
-              if (child(i) != BVHN::emptyNode)
+              if (childOffset(i) != BVHN::emptyNode)
                 return false;
             }
             break;
@@ -811,7 +816,7 @@ namespace embree
       unsigned char upper_y[N]; //!< 8bit discretized Y dimension of upper bounds of all N children
       unsigned char lower_z[N]; //!< 8bit discretized Z dimension of lower bounds of all N children
       unsigned char upper_z[N]; //!< 8bit discretized Z dimension of upper bounds of all N children
-      unsigned int children[N]; //!< 32bit offset to the N children (can be a node or leaf)
+      int children[N]; //!< signed 32bit offset to the N children (can be a node or leaf)
       Vec3f start;
       Vec3f scale;
     };
@@ -925,9 +930,20 @@ namespace embree
 
     static __forceinline unsigned int encodeQuantizedNode(size_t base, size_t node) {
       assert(!((size_t)node & align_mask));
-      ssize_t offset = (ssize_t)node-(ssize_t)base;
-      assert(offset > 0);
-      return (unsigned int)offset;
+      ssize_t node_offset = (ssize_t)node-(ssize_t)base;
+      PRINT((void*)base);
+      PRINT((void*)node);
+      PRINT(node_offset);
+      assert(node_offset > 0);
+      return (unsigned int)node_offset;
+    }
+
+    static __forceinline int encodeQuantizedLeaf(size_t base, size_t node) {
+      ssize_t leaf_offset = (ssize_t)node-(ssize_t)base;
+      PRINT((void*)base);
+      PRINT((void*)node);
+      PRINT(leaf_offset);
+      return (int)leaf_offset;
     }
 
     /*! Encodes a node */

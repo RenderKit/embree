@@ -106,14 +106,24 @@ namespace embree
         return createLeaf(current,alloc);
       };
       
-      NodeRef root = 0;
+      //NodeRef root = 0;
+
+      typename BVH::QuantizedNode *first = (typename BVH::QuantizedNode*)bvh->alloc.malloc(sizeof(typename BVH::QuantizedNode), bvh->byteNodeAlignment);
+      NodeRef &root = *(NodeRef*)first; // as the builder assigns current.parent = (size_t*)&root
+      assert(((size_t)first & 0x7) == 0); 
+      PRINT(first);
+      PRINT((size_t)root);
+
       BVHBuilderBinnedSAH::build_reduce<NodeRef>
         (root,typename BVH::CreateAlloc(bvh),size_t(0),typename BVH::CreateQuantizedNode(bvh),dummy<N>,createLeafFunc,progressFunc,
          prims,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
-      bvh->set(root,pinfo.geomBounds,pinfo.size());
+      NodeRef new_root = (size_t)first + first->childOffset(0);
+      PRINT(new_root);
+      bvh->set(new_root,pinfo.geomBounds,pinfo.size());
       PRINT("DONE");
       exit(0);
+
       //bvh->layoutLargeNodes(pinfo.size()*0.005f);
     }
 
@@ -206,6 +216,8 @@ namespace embree
       };
       
       NodeRef root;
+
+
       BVHBuilderBinnedSpatialSAH::build_reduce<NodeRef>
         (root,typename BVH::CreateAlloc(bvh),size_t(0),typename BVH::CreateNode(bvh),rotate<N>,
          createLeafFunc,splitPrimitiveFunc,progressFunc,
