@@ -32,7 +32,10 @@ namespace embree
       __forceinline Cone(const Vec3fa& p0, const float r0, const Vec3fa& p1, const float r1) 
         : p0(p0), r0(r0), p1(p1), r1(r1) {}
 
-      __forceinline bool intersect(const Vec3fa& org, const Vec3fa& dir, BBox1f& t_o, float& u0_o, Vec3fa& Ng0_o, float& u1_o, Vec3fa& Ng1_o) const 
+      __forceinline bool intersect(const Vec3fa& org, const Vec3fa& dir, 
+                                   BBox1f& t_o, 
+                                   float& u0_o, Vec3fa& Ng0_o, 
+                                   float& u1_o, Vec3fa& Ng1_o) const 
       {
         /* calculate quadratic equation to solve */
         const Vec3fa v0 = p0-org;
@@ -54,7 +57,7 @@ namespace embree
         const float B = 2.0f * (OdO - dOz*(Oz + R*dr));
         const float C = OO - (sqr(Oz) + sqr(R));
 
-        /* we miss the cone of determinant is smaller than zero */
+        /* we miss the cone if determinant is smaller than zero */
         const float D = B*B - 4.0f*A*C;
         if (D < 0.0f) return false;
 
@@ -199,7 +202,10 @@ namespace embree
         return Cone(Vec3fa(p0.x[i],p0.y[i],p0.z[i]),r0[i],Vec3fa(p1.x[i],p1.y[i],p1.z[i]),r1[i]);
       }
 
-      __forceinline vbool<N> intersect(const Vec3fa& org, const Vec3fa& dir, BBox<vfloat<N>>& t_o, vfloat<N>& u0_o, Vec3vfN& Ng0_o, vfloat<N>& u1_o, Vec3vfN& Ng1_o) const
+      __forceinline vbool<N> intersect(const Vec3fa& org, const Vec3fa& dir, 
+                                       BBox<vfloat<N>>& t_o, 
+                                       vfloat<N>& u0_o, Vec3vfN& Ng0_o, 
+                                       vfloat<N>& u1_o, Vec3vfN& Ng1_o) const
       {
         /* calculate quadratic equation to solve */
         const Vec3vfN v0 = p0-Vec3vfN(org);
@@ -221,7 +227,7 @@ namespace embree
         const vfloat<N> B = 2.0f * (OdO - dOz*(Oz + R*dr));
         const vfloat<N> C = OO - (sqr(Oz) + sqr(R));
 
-        /* we miss the cone of determinant is smaller than zero */
+        /* we miss the cone if determinant is smaller than zero */
         const vfloat<N> D = B*B - 4.0f*A*C;
         vbool<N> valid = D >= 0.0f;
         if (none(valid)) return valid;

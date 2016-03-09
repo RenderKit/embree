@@ -40,6 +40,7 @@ namespace embree
                                    float& u0_o, Vec3fa& Ng0_o,
                                    float& u1_o, Vec3fa& Ng1_o) const
       {
+        /* calculate quadratic equation to solve */
         const Vec3fa v0 = p0-org;
         const Vec3fa v1 = p1-org;
 
@@ -57,12 +58,14 @@ namespace embree
         const float B = 2.0f * (OdO - dOz*Oz);
         const float C = OO - sqr(Oz) - rr;
         
+        /* we miss the cylinder if determinant is smaller than zero */
         const float D = B*B - 4.0f*A*C;
         if (D < 0.0f) {
           t_o = BBox1f(pos_inf,neg_inf);
           return false;
         }
-
+        
+        /* special case for rays that are parallel to the cylinder */
         const float eps = 16.0f*float(ulp)*max(abs(dOdO),abs(sqr(dOz)));
         if (abs(A) < eps) 
         {
@@ -75,11 +78,13 @@ namespace embree
           }
         }
         
+        /* standard case for rays that are not parallel to the cylinder */
         const float Q = sqrt(D);
         const float rcp_2A = rcp(2.0f*A);
         const float t0 = (-B-Q)*rcp_2A;
         const float t1 = (-B+Q)*rcp_2A;
         
+        /* calculates u and Ng for near hit */
         {
           u0_o = (Oz+t0*dOz)*rl;
           const Vec3fa Pr = t_o.lower*dir;
@@ -87,6 +92,7 @@ namespace embree
           Ng0_o = Pr-Pl;
         }
 
+        /* calculates u and Ng for far hit */
         {
           u1_o = (Oz+t1*dOz)*rl;
           const Vec3fa Pr = t_o.lower*dir;
@@ -157,10 +163,12 @@ namespace embree
         : p0(p0), p1(p1), rr(rr) {}
 
      
-      __forceinline vbool<N> intersect(const Vec3fa& org, const Vec3fa& dir, BBox<vfloat<N>>& t_o, 
+      __forceinline vbool<N> intersect(const Vec3fa& org, const Vec3fa& dir, 
+                                       BBox<vfloat<N>>& t_o, 
                                        vfloat<N>& u0_o, Vec3vfN& Ng0_o,
                                        vfloat<N>& u1_o, Vec3vfN& Ng1_o) const
       {
+        /* calculate quadratic equation to solve */
         const Vec3vfN v0 = p0-Vec3vfN(org);
         const Vec3vfN v1 = p1-Vec3vfN(org);
         
@@ -178,6 +186,7 @@ namespace embree
         const vfloat<N> B = 2.0f * (OdO - dOz*Oz);
         const vfloat<N> C = OO - sqr(Oz) - rr;
         
+        /* we miss the cylinder if determinant is smaller than zero */
         const vfloat<N> D = B*B - 4.0f*A*C;
         vbool<N> valid = D >= 0.0f;
         if (none(valid)) {
@@ -185,11 +194,13 @@ namespace embree
           return valid;
         }
 
+        /* standard case for rays that are not parallel to the cylinder */
         const vfloat<N> Q = sqrt(D);
         const vfloat<N> rcp_2A = rcp(2.0f*A);
         const vfloat<N> t0 = (-B-Q)*rcp_2A;
         const vfloat<N> t1 = (-B+Q)*rcp_2A;
         
+        /* calculates u and Ng for near hit */
         {
           u0_o = (Oz+t0*dOz)*rl;
           const Vec3vfN Pr = t0*Vec3vfN(dir);
@@ -197,6 +208,7 @@ namespace embree
           Ng0_o = Pr-Pl;
         }
         
+        /* calculates u and Ng for far hit */
         {
           u1_o = (Oz+t1*dOz)*rl;
           const Vec3vfN Pr = t1*Vec3vfN(dir);
@@ -207,6 +219,7 @@ namespace embree
         t_o.lower = select(valid, t0, vfloat<N>(pos_inf));
         t_o.upper = select(valid, t1, vfloat<N>(neg_inf));
 
+        /* special case for rays that are parallel to the cylinder */
         const vfloat<N> eps = 16.0f*float(ulp)*max(abs(dOdO),abs(sqr(dOz)));
         vbool<N> validt = valid & (abs(A) < eps); 
         if (unlikely(any(validt))) 
