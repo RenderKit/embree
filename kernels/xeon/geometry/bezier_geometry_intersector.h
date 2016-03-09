@@ -53,7 +53,7 @@ namespace embree
       Vec3fa Ng;
     };
     
-    template<typename Epilog>
+    template<typename Ray, typename Epilog>
     __forceinline bool intersect_bezier_iterative_debug(const Ray& ray, const float dt, const BezierCurve3fa& curve, size_t i, 
                                                         const vfloatx& u, const BBox<vfloatx>& tp, const BBox<vfloatx>& h0, const BBox<vfloatx>& h1, 
                                                         const Vec3vfx& Ng, const Vec4vfx& dP0du, const Vec4vfx& dP3du,
@@ -67,7 +67,7 @@ namespace embree
       return epilog(hit);
     }
 
-   template<typename Epilog> 
+    template<typename Ray, typename Epilog> 
      __forceinline bool intersect_bezier_iterative_jacobian(const Ray& ray, const float dt, const BezierCurve3fa& curve, float u, float t, const Epilog& epilog)
     {
       const Vec3fa org = zero;
@@ -126,7 +126,7 @@ namespace embree
       return false;
     }
 
-    template<typename Epilog>
+   template<typename Ray, typename Epilog>
       __forceinline bool intersect_bezier_recursive_jacobian(const Ray& ray, const float dt, const BezierCurve3fa& curve, const float u0, const float u1, const size_t depth, const Epilog& epilog)
     {
       int maxDepth = numBezierSubdivisions;
@@ -216,7 +216,7 @@ namespace embree
       return found;
     }
     
-    template<typename Epilog>
+    template<typename Ray, typename Epilog>
       __forceinline bool intersect_bezier_recursive_cone(const Ray& ray, const float dt, const BezierCurve3fa& curve, const float u0, const float u1, const size_t depth, const Epilog& epilog)
     {
       int maxDepth = numBezierSubdivisions;
@@ -352,6 +352,46 @@ namespace embree
                                 const Epilog& epilog) const
       {
         STAT3(normal.trav_prims,1,1,1);
+
+        /* move ray closer to make intersection stable */
+        const float dt = dot(0.25f*(v0+v1+v2+v3)-ray.org,ray.dir)*rcp(dot(ray.dir,ray.dir));
+        const Vec3fa ref(ray.org+dt*ray.dir,0.0f);
+        const Vec3fa p0 = v0-ref;
+        const Vec3fa p1 = v1-ref;
+        const Vec3fa p2 = v2-ref;
+        const Vec3fa p3 = v3-ref;
+
+        const BezierCurve3fa curve(p0,p1,p2,p3,0.0f,1.0f,1);
+        return intersect_bezier_recursive_jacobian(ray,dt,curve,0.0f,1.0f,1,epilog);
+        //return intersect_bezier_recursive_cone(ray,dt,curve,0.0f,1.0f,1,epilog);
+      }
+    };
+
+    template<int K>
+      struct BezierGeometry1IntersectorK
+    {
+      struct Ray1
+      {
+        __forceinline Ray1(RayK<K>& ray, size_t k) 
+          : org(ray.org.x[k],ray.org.y[k],ray.org.z[k]), dir(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]), tnear(ray.tnear), tfar(ray.tfar) {}
+
+        Vec3fa org;
+        Vec3fa dir;
+        float tnear;
+        float& tfar;
+      };
+
+      __forceinline BezierGeometry1IntersectorK(const vbool<K>& valid, const RayK<K>& ray) {} // FIXME: why is this required for the single ray packet traverser?
+
+      __forceinline BezierGeometry1IntersectorK (const RayK<K>& ray, size_t k) {}
+      
+      template<typename Epilog>
+      __forceinline bool intersect(RayK<K>& vray, size_t k,
+                                   const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3,
+                                   const Epilog& epilog) const
+      {
+        STAT3(normal.trav_prims,1,1,1);
+        Ray1 ray(vray,k);
 
         /* move ray closer to make intersection stable */
         const float dt = dot(0.25f*(v0+v1+v2+v3)-ray.org,ray.dir)*rcp(dot(ray.dir,ray.dir));
