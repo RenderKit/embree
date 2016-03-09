@@ -41,12 +41,9 @@ namespace embree
                                    float& u1_o, Vec3fa& Ng1_o) const
       {
         /* calculate quadratic equation to solve */
-        const Vec3fa v0 = p0-org;
-        const Vec3fa v1 = p1-org;
-
-        const float rl = rcp_length(v1-v0);
-        const Vec3fa P0 = v0, dP = (v1-v0)*rl;
-        const Vec3fa O = -P0, dO = dir;
+        const float rl = rcp_length(p1-p0);
+        const Vec3fa P0 = p0, dP = (p1-p0)*rl;
+        const Vec3fa O = org-P0, dO = dir;
         
         const float dOdO = dot(dO,dO);
         const float OdO = dot(dO,O);
@@ -88,7 +85,7 @@ namespace embree
         {
           u0_o = (Oz+t0*dOz)*rl;
           const Vec3fa Pr = t_o.lower*dir;
-          const Vec3fa Pl = v0 + u0_o*(v1-v0);
+          const Vec3fa Pl = p0 + u0_o*(p1-p0);
           Ng0_o = Pr-Pl;
         }
 
@@ -96,7 +93,7 @@ namespace embree
         {
           u1_o = (Oz+t1*dOz)*rl;
           const Vec3fa Pr = t_o.lower*dir;
-          const Vec3fa Pl = v0 + u1_o*(v1-v0);
+          const Vec3fa Pl = p0 + u1_o*(p1-p0);
           Ng1_o = Pr-Pl;
         }
 
@@ -169,12 +166,9 @@ namespace embree
                                        vfloat<N>& u1_o, Vec3vfN& Ng1_o) const
       {
         /* calculate quadratic equation to solve */
-        const Vec3vfN v0 = p0-Vec3vfN(org);
-        const Vec3vfN v1 = p1-Vec3vfN(org);
-        
-        const vfloat<N> rl = rcp_length(v1-v0);
-        const Vec3vfN P0 = v0, dP = (v1-v0)*rl;
-        const Vec3vfN O = -P0, dO = dir;
+        const vfloat<N> rl = rcp_length(p1-p0);
+        const Vec3vfN P0 = p0, dP = (p1-p0)*rl;
+        const Vec3vfN O = Vec3vfN(org)-P0, dO = dir;
         
         const vfloat<N> dOdO = dot(dO,dO);
         const vfloat<N> OdO = dot(dO,O);
@@ -204,7 +198,7 @@ namespace embree
         {
           u0_o = (Oz+t0*dOz)*rl;
           const Vec3vfN Pr = t0*Vec3vfN(dir);
-          const Vec3vfN Pl = v0 + u0_o*(v1-v0);
+          const Vec3vfN Pl = p0 + u0_o*(p1-p0);
           Ng0_o = Pr-Pl;
         }
         
@@ -212,7 +206,7 @@ namespace embree
         {
           u1_o = (Oz+t1*dOz)*rl;
           const Vec3vfN Pr = t1*Vec3vfN(dir);
-          const Vec3vfN Pl = v0 + u1_o*(v1-v0);
+          const Vec3vfN Pl = p0 + u1_o*(p1-p0);
           Ng1_o = Pr-Pl;
         }
 
