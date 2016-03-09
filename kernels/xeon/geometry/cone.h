@@ -62,7 +62,7 @@ namespace embree
         if (D < 0.0f) return false;
 
         /* special case for rays that are "parallel" to the cone */
-        const float eps = float(1<<12)*float(ulp)*max(abs(dOdO),abs(sqr(dOz)));
+        const float eps = float(1<<8)*float(ulp)*max(abs(dOdO),abs(sqr(dOz)));
         if (unlikely(abs(A) < eps))
         {
           /* if we hit the negative cone there cannot be a hit */
@@ -239,7 +239,7 @@ namespace embree
         if (none(valid)) return valid;
 
         /* special case for rays that are "parallel" to the cone */
-        const vfloat<N> eps = float(1<<12)*float(ulp)*max(abs(dOdO),abs(sqr(dOz)));
+        const vfloat<N> eps = float(1<<8)*float(ulp)*max(abs(dOdO),abs(sqr(dOz)));
         const vbool<N> validt = valid &  (abs(A) < eps);
         const vbool<N> validf = valid & !(abs(A) < eps);
         if (unlikely(any(validt)))

@@ -272,8 +272,8 @@ namespace embree
         {
           const size_t i = select_min(valid0,tp.lower); 
           Vec3fa Ng_o = Vec3fa(Ng0.x[i],Ng0.y[i],Ng0.z[i]);
-          if (h0.lower[i] == tp.lower[i]) Ng_o = -Vec3fa(dP0du.x[i],dP0du.y[i],dP0du.z[i]);
-          if (h1.lower[i] == tp.lower[i]) Ng_o = +Vec3fa(dP3du.x[i],dP3du.y[i],dP3du.z[i]);
+          //if (h0.lower[i] == tp.lower[i]) Ng_o = -Vec3fa(dP0du.x[i],dP0du.y[i],dP0du.z[i]);
+          //if (h1.lower[i] == tp.lower[i]) Ng_o = +Vec3fa(dP3du.x[i],dP3du.y[i],dP3du.z[i]);
           BezierGeometryHit hit(tp.lower[i]+dt,uc0[i],Ng_o);
           return epilog(hit);
         }
@@ -283,8 +283,8 @@ namespace embree
         {
           const size_t i = select_min(valid1,tp.upper); 
           Vec3fa Ng_o = Vec3fa(Ng1.x[i],Ng1.y[i],Ng1.z[i]);
-          if (h0.lower[i] == tp.upper[i]) Ng_o = -Vec3fa(dP0du.x[i],dP0du.y[i],dP0du.z[i]);
-          if (h1.lower[i] == tp.upper[i]) Ng_o = +Vec3fa(dP3du.x[i],dP3du.y[i],dP3du.z[i]);
+          //if (h0.lower[i] == tp.upper[i]) Ng_o = -Vec3fa(dP0du.x[i],dP0du.y[i],dP0du.z[i]);
+          //if (h1.lower[i] == tp.upper[i]) Ng_o = +Vec3fa(dP3du.x[i],dP3du.y[i],dP3du.z[i]);
           BezierGeometryHit hit(tp.upper[i]+dt,uc1[i],Ng_o);
           return epilog(hit);
         }
