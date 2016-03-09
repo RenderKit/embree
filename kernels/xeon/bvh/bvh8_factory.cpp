@@ -123,6 +123,8 @@ namespace embree
 
   DECLARE_BUILDER2(void,Scene,size_t,BVH8SubdivGridEagerBuilderBinnedSAH);
 
+  DECLARE_BUILDER2(void,Scene,size_t,BVH8QuantizedTriangle4SceneBuilderSAH);
+
   BVH8Factory::BVH8Factory (int features)
   {
     /* select builders */
@@ -140,6 +142,8 @@ namespace embree
     SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Quad4iSceneBuilderSAH);
     SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Quad4iMBSceneBuilderSAH);
 
+    SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8QuantizedTriangle4SceneBuilderSAH);
+   
     SELECT_SYMBOL_INIT_AVX(features,BVH8Triangle4SceneBuilderSpatialSAH);
     SELECT_SYMBOL_INIT_AVX(features,BVH8Triangle8SceneBuilderSpatialSAH);
 
@@ -420,6 +424,17 @@ namespace embree
 
     return new AccelInstance(accel,builder,intersectors);
   }
+
+
+  Accel* BVH8Factory::BVH8QuantizedTriangle4(Scene* scene)
+  {
+    BVH8* accel = new BVH8(Triangle4::type,scene);
+    Accel::Intersectors intersectors; //= BVH8Triangle4Intersectors(accel);
+
+    Builder* builder = BVH8QuantizedTriangle4SceneBuilderSAH(accel,scene,0);
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
 
   Accel* BVH8Factory::BVH8Triangle4ObjectSplit(Scene* scene)
   {

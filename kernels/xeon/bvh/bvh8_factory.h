@@ -41,6 +41,8 @@ namespace embree
     Accel* BVH8Triangle4ObjectSplit(Scene* scene);
     Accel* BVH8Triangle4SpatialSplit(Scene* scene);
 
+    Accel* BVH8QuantizedTriangle4(Scene* scene);
+
     Accel* BVH8Triangle8(Scene* scene);
     //Accel* BVH8Triangle8v(Scene* scene);
     Accel* BVH8Triangle8ObjectSplit(Scene* scene);
@@ -150,6 +152,8 @@ namespace embree
     DEFINE_BUILDER2(void,Scene,size_t,BVH8Quad4iSceneBuilderSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH8Quad4iMBSceneBuilderSAH);
     DEFINE_BUILDER2(void,QuadMesh,size_t,BVH8Quad4iMBMeshBuilderSAH);
+
+    DEFINE_BUILDER2(void,Scene,size_t,BVH8QuantizedTriangle4SceneBuilderSAH);
     
     DEFINE_BUILDER2(void,Scene,size_t,BVH8Triangle4SceneBuilderSpatialSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH8Triangle8SceneBuilderSpatialSAH);

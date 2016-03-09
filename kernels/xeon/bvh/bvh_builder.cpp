@@ -97,7 +97,7 @@ namespace embree
     void BVHNBuilderQuantized<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progress_in, PrimRef* prims, const PrimInfo& pinfo, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost)
     {
       //bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
-
+      PING;
       auto progressFunc = [&] (size_t dn) { 
         progress_in(dn); 
       };
@@ -112,7 +112,8 @@ namespace embree
          prims,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
       bvh->set(root,pinfo.geomBounds,pinfo.size());
-            
+      PRINT("DONE");
+      exit(0);
       //bvh->layoutLargeNodes(pinfo.size()*0.005f);
     }
 

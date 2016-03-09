@@ -67,6 +67,34 @@ namespace embree
       BVH* bvh;
       PrimRef* prims;
     };
+
+
+    template<int N, typename Primitive>
+    struct CreateLeafQuantized
+    {
+      typedef BVHN<N> BVH;
+
+      __forceinline CreateLeafQuantized (BVH* bvh, PrimRef* prims) : bvh(bvh), prims(prims) {}
+      
+      __forceinline size_t operator() (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc)
+      {
+        size_t n = current.prims.size();
+        size_t items = Primitive::blocks(n);
+        size_t start = current.prims.begin();
+        Primitive* accel = (Primitive*) alloc->alloc1.malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
+        typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,items);
+        for (size_t i=0; i<items; i++) {
+          accel[i].fill(prims,start,current.prims.end(),bvh->scene,false);
+        }
+        //*current.parent = node;
+        *(unsigned int*)current.parent = bvh->encodeQuantizedNode((size_t)current.parent,(size_t)node);
+
+	return n;
+      }
+
+      BVH* bvh;
+      PrimRef* prims;
+    };
     
     /************************************************************************************/ 
     /************************************************************************************/
@@ -241,7 +269,7 @@ namespace embree
         
         /* call BVH builder */
         bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
-        BVHNBuilderQuantized<N>::build(bvh,CreateLeaf<N,Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
+        BVHNBuilderQuantized<N>::build(bvh,CreateLeafQuantized<N,Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
 #if PROFILE
           }); 
