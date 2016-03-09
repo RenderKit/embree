@@ -24,10 +24,8 @@ namespace embree
   namespace isa
   {
     template<int M>
-      struct UVIdentity
-      {
-        __forceinline void operator() (vfloat<M>& u, vfloat<M>& v) const {
-        }
+      struct UVIdentity {
+        __forceinline void operator() (vfloat<M>& u, vfloat<M>& v) const {}
       };
 
     template<bool filter>
@@ -106,6 +104,87 @@ namespace embree
           if (unlikely(filter && geometry->hasOcclusionFilter1())) 
               return runOcclusionFilter1(geometry,ray,hit.u,hit.v,hit.t,hit.Ng,instID,primID);
 #endif
+          return true;
+        }
+      };
+
+    template<int K, bool filter>
+      struct Intersect1KEpilog1
+      {
+        RayK<K>& ray;
+        int k;
+        const unsigned int geomID;
+        const unsigned int primID;
+        Scene* const scene;
+        
+        __forceinline Intersect1KEpilog1(RayK<K>& ray, int k,
+                                         const unsigned int geomID, 
+                                         const unsigned int primID, 
+                                         Scene* scene)
+          : ray(ray), k(k), geomID(geomID), primID(primID), scene(scene) {}
+        
+        template<typename Hit>
+        __forceinline bool operator() (Hit& hit) const
+        {
+          /* ray mask test */
+          Geometry* geometry = scene->get(geomID);
+#if defined(RTCORE_RAY_MASK)
+          if ((geometry->mask & ray.mask[k]) == 0) 
+            return false;
+#endif
+          hit.finalize();
+          
+          /* intersection filter test */
+#if defined(RTCORE_INTERSECTION_FILTER)
+          if (filter && unlikely(geometry->hasIntersectionFilter<vfloat<K>>())) 
+            return runIntersectionFilter(geometry,ray,k,hit.u,hit.v,hit.t,hit.Ng,geomID,primID);
+#endif
+          
+          /* update hit information */
+          ray.u[k] = hit.u;
+          ray.v[k] = hit.v;
+          ray.tfar[k] = hit.t;
+          ray.Ng.x[k] = hit.Ng.x;
+          ray.Ng.y[k] = hit.Ng.y;
+          ray.Ng.z[k] = hit.Ng.z;
+          ray.geomID[k] = geomID;
+          ray.primID[k] = primID;
+          return true;
+        }
+      };
+    
+    template<int K, bool filter>
+      struct Occluded1KEpilog1
+      {
+        RayK<K>& ray;
+        int k;
+        const unsigned int geomID;
+        const unsigned int primID;
+        Scene* const scene;
+        
+        __forceinline Occluded1KEpilog1(RayK<K>& ray, int k,
+                                        const unsigned int geomID, 
+                                        const unsigned int primID, 
+                                        Scene* scene)
+          : ray(ray), k(k), geomID(geomID), primID(primID), scene(scene) {}
+        
+        template<typename Hit>
+        __forceinline bool operator() (Hit& hit) const
+        {
+          /* ray mask test */
+          Geometry* geometry = scene->get(geomID);
+#if defined(RTCORE_RAY_MASK)
+          if ((geometry->mask & ray.mask[k]) == 0) 
+            return false;
+#endif
+
+          /* intersection filter test */
+#if defined(RTCORE_INTERSECTION_FILTER)
+          if (filter && unlikely(geometry->hasOcclusionFilter<vfloat<K>>())) {
+            hit.finalize();
+            return runOcclusionFilter(geometry,ray,k,hit.u,hit.v,hit.t,hit.Ng,geomID,primID);
+          }
+#endif 
           return true;
         }
       };

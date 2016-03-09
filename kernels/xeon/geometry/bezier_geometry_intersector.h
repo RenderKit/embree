@@ -373,7 +373,7 @@ namespace embree
       struct Ray1
       {
         __forceinline Ray1(RayK<K>& ray, size_t k) 
-          : org(ray.org.x[k],ray.org.y[k],ray.org.z[k]), dir(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]), tnear(ray.tnear), tfar(ray.tfar) {}
+          : org(ray.org.x[k],ray.org.y[k],ray.org.z[k]), dir(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]), tnear(ray.tnear[k]), tfar(ray.tfar[k]) {}
 
         Vec3fa org;
         Vec3fa dir;
