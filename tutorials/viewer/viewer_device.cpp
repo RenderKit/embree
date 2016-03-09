@@ -31,14 +31,14 @@ bool g_subdiv_mode = false;
 
 #define SPP 1
 
+#define TEST_STREAM_INTERFACE 0
+
 //#define FORCE_FIXED_EDGE_TESSELLATION
 #define FIXED_EDGE_TESSELLATION_VALUE 3
 
 #define MAX_EDGE_LEVEL 64.0f
 #define MIN_EDGE_LEVEL  4.0f
 #define LEVEL_FACTOR   64.0f
-
-#define TEST_STREAM_TRACING 0 // FIXME: remove or disable
 
 inline float updateEdgeLevel( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, const size_t e0, const size_t e1)
 {
@@ -295,7 +295,7 @@ RTCScene convertScene(ISPCScene* scene_in)
   geomID_to_inst  = new ISPCInstance_ptr[numGeometries];
 
   int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
-  int scene_aflags = RTC_INTERSECT1 | RTC_INTERPOLATE | RTC_INTERSECTN;
+  int scene_aflags = RTC_INTERSECT1 | RTC_INTERPOLATE;
   if (g_subdiv_mode) 
     scene_flags = RTC_SCENE_DYNAMIC | RTC_SCENE_INCOHERENT | RTC_SCENE_ROBUST;
 
@@ -542,8 +542,6 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   RTCRay ray;
   ray.org = p;
   ray.dir = normalize(x*vx + y*vy + vz);
-  //ray.org = Vec3fa(0.03f*(256-x),10,0.03f*(256-y));
-  //ray.dir = Vec3fa(0.0f,-1.0f,0.0f);
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -553,7 +551,6 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
-  //PRINT(ray);
   
   /* shade background black */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
@@ -596,82 +593,6 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   return color*dot(neg(ray.dir),dg.Ns);
 }
 
-void renderPixelStream(int x0, int y0, int x1, int y1, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p, Vec3fa *colors)
-{
-  RTCORE_ALIGN(16) RTCRay rays[TILE_SIZE_X*TILE_SIZE_Y];
-
-  const size_t numRays = (y1-y0)*(x1-x0);
-
-  for (int i = 0,y = y0; y<y1; y++) 
-    for (int x = x0; x<x1; x++,i++)
-    {
-      /* initialize sampler */
-      float xx = x;
-      float yy = y;
-      RandomSampler sampler;
-      RandomSampler_init(sampler, xx, yy, 0);
-      /* initialize ray */
-      RTCRay &ray = rays[i];
-      ray.org = p;
-      ray.dir = normalize(xx*vx + yy*vy + vz);
-      ray.tnear = 0.0f;
-      ray.tfar = inf;
-      ray.geomID = RTC_INVALID_GEOMETRY_ID;
-      ray.primID = RTC_INVALID_GEOMETRY_ID;
-      ray.mask = -1;
-      ray.time = RandomSampler_get1D(sampler);
-    }
-  
-  /* intersect ray with scene */
-  rtcIntersectN(g_scene,rays,numRays,sizeof(RTCRay));
-
-  for (int i = 0,y = y0; y<y1; y++) 
-    for (int x = x0; x<x1; x++,i++)
-    {
-      RTCRay &ray = rays[i];
-  
-      /* shade background black */
-      if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
-        colors[i] = Vec3fa(0.0f);
-        continue;
-      }
-
-      /* shade all rays that hit something */
-      Vec3fa color = Vec3fa(0.5f);
-  
-      /* compute differential geometry */
-      DifferentialGeometry dg;
-      dg.geomID = ray.geomID;
-      dg.primID = ray.primID;
-      dg.u = ray.u;
-      dg.v = ray.v;
-      dg.P  = ray.org+ray.tfar*ray.dir;
-      dg.Ng = ray.Ng;
-      dg.Ns = ray.Ng;
-
-      if (g_use_smooth_normals)
-        if (ray.geomID != RTC_INVALID_GEOMETRY_ID) // FIXME: workaround for ISPC bug, location reached with empty execution mask
-        {
-          Vec3fa dPdu,dPdv;
-          int geomID = ray.geomID; {
-            rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER0,nullptr,&dPdu.x,&dPdv.x,3);
-          }
-          dg.Ns = cross(dPdv,dPdu);
-        }
-
-      int materialID = postIntersect(ray,dg);
-      dg.Ng = face_forward(ray.dir,normalize(dg.Ng));
-      dg.Ns = face_forward(ray.dir,normalize(dg.Ns));
-  
-      /* shade */
-      if (g_ispc_scene->materials[materialID].ty == MATERIAL_OBJ) {
-        OBJMaterial* material = (OBJMaterial*) &g_ispc_scene->materials[materialID];
-        color = Vec3fa(material->Kd);
-      }
-
-      colors[i] =  color*dot(neg(ray.dir),dg.Ns);
-    }
-}
 
 /* task that renders a single screen tile */
 void renderTile(int taskIndex, int* pixels,
@@ -693,35 +614,58 @@ void renderTile(int taskIndex, int* pixels,
   const int y0 = tileY * TILE_SIZE_Y;
   const int y1 = min(y0+TILE_SIZE_Y,height);
 
-
-#if TEST_STREAM_TRACING == 1
-  Vec3fa color[TILE_SIZE_X*TILE_SIZE_Y];
-  renderPixelStream(x0,y0,x1,y1,vx,vy,vz,p,color);
-  int i = 0;
-  for (int y = y0; y<y1; y++) 
-    for (int x = x0; x<x1; x++,i++)
-    {
-      /* write color to framebuffer */
-      unsigned int r = (unsigned int) (255.0f * clamp(color[i].x,0.0f,1.0f));
-      unsigned int g = (unsigned int) (255.0f * clamp(color[i].y,0.0f,1.0f));
-      unsigned int b = (unsigned int) (255.0f * clamp(color[i].z,0.0f,1.0f));
-      pixels[y*width+x] = (b << 16) + (g << 8) + r;
-    }  
-#else
+#if TEST_STREAM_INTERFACE == 1
+  RTCRay rays[8];
+  int packets = 0;
+  RTCRaySOA ray_soa;
+  initRTCRaySOA(ray_soa,rays[0]);
 
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
-    //if (x != 256 || y != 256) continue; 
-    Vec3fa color = renderPixel(x,y,vx,vy,vz,p);
-    //exit(1);
-    
+    RandomSampler sampler;
+    RandomSampler_init(sampler, x, y, 0);
+
+    /* initialize ray */
+    RTCRay &ray = rays[packets];
+    ray.org = p;
+    ray.dir = normalize(x*vx + y*vy + vz);
+    ray.tnear = 0.0f;
+    ray.tfar = inf;
+    ray.geomID = RTC_INVALID_GEOMETRY_ID;
+    ray.primID = RTC_INVALID_GEOMETRY_ID;
+    ray.mask = -1;
+    ray.time = RandomSampler_get1D(sampler);
+    packets++;
+  }
+  rtcIntersectN_SOA(g_scene,ray_soa,8,8,sizeof(RTCRay),0);
+
+  packets = 0;
+  for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
+  {
+    RTCRay &ray = rays[packets++];
+    Vec3fa color = Vec3fa(0.0f);
+    if (ray.geomID != RTC_INVALID_GEOMETRY_ID) color = Vec3fa(abs(dot(ray.dir,normalize(ray.Ng))));
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
     unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
     unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
     pixels[y*width+x] = (b << 16) + (g << 8) + r;
   }
+#else
+
+  for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
+  {
+    Vec3fa color = renderPixel(x,y,vx,vy,vz,p);
+
+    /* write color to framebuffer */
+    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
+    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
+    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
+    pixels[y*width+x] = (b << 16) + (g << 8) + r;
+  }
+
 #endif
+
 }
 
 Vec3fa old_p; 
@@ -773,7 +717,6 @@ extern "C" void device_render (int* pixels,
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   launch_renderTile(numTilesX*numTilesY,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); 
   //rtcDebug();
-  //exit(1);
 }
 
 /* called by the C++ code for cleanup */
