@@ -115,7 +115,10 @@ namespace embree
           u0_o = (Oz+t_o.lower*dOz)*rl;
           const Vec3fa Pr = t_o.lower*dir;
           const Vec3fa Pl = v0 + u0_o*(v1-v0);
-          Ng0_o = Pr-Pl;
+          const Vec3fa R = normalize(Pr-Pl);
+          const Vec3fa U = (p1-p0)+(r1-r0)*R;
+          const Vec3fa V = cross(p1-p0,R);
+          Ng0_o = cross(V,U);
         }
 
         /* calculates u and Ng for far hit */
@@ -123,7 +126,10 @@ namespace embree
           u1_o = (Oz+t_o.upper*dOz)*rl;
           const Vec3fa Pr = t_o.upper*dir;
           const Vec3fa Pl = v0 + u1_o*(v1-v0);
-          Ng1_o = Pr-Pl;
+          const Vec3fa R = normalize(Pr-Pl);
+          const Vec3fa U = (p1-p0)+(r1-r0)*R;
+          const Vec3fa V = cross(p1-p0,R);
+          Ng1_o = cross(V,U);
         }
         return true;
       }
@@ -294,7 +300,10 @@ namespace embree
           u0_o = (Oz+t_o.lower*dOz)*rl;
           const Vec3vfN Pr = t_o.lower*Vec3vfN(dir);
           const Vec3vfN Pl = v0 + u0_o*(v1-v0);
-          Ng0_o = Pr-Pl;
+          const Vec3vfN R = normalize(Pr-Pl);
+          const Vec3vfN U = (p1-p0)+(r1-r0)*R;
+          const Vec3vfN V = cross(p1-p0,R);
+          Ng0_o = cross(V,U);
         }
 
         /* calculates u and Ng for far hit */
@@ -302,7 +311,10 @@ namespace embree
           u1_o = (Oz+t_o.upper*dOz)*rl;
           const Vec3vfN Pr = t_o.lower*Vec3vfN(dir);
           const Vec3vfN Pl = v0 + u1_o*(v1-v0);
-          Ng1_o = Pr-Pl;
+          const Vec3vfN R = normalize(Pr-Pl);
+          const Vec3vfN U = (p1-p0)+(r1-r0)*R;
+          const Vec3vfN V = cross(p1-p0,R);
+          Ng1_o = cross(V,U);
         }
         return valid;
       }
