@@ -66,6 +66,18 @@ namespace embree
           const float z0r = r0+z0*dr;
           if (z0r < 0.0f) return false;
 
+          /* cylinder case */
+          if (dr < 16.0f*float(ulp)) 
+          {
+            if (C <= 0.0f) {
+              t_o = BBox1f(neg_inf,pos_inf);
+              return true;
+            } else {
+              t_o = BBox1f(pos_inf,neg_inf);
+              return false;
+            }
+          }
+          /* cone case */
           if (dOz*dr > 0.0f) t_o = BBox1f(t,pos_inf);
           else               t_o = BBox1f(neg_inf,t);
         }
@@ -133,6 +145,14 @@ namespace embree
         const Cone cone1(Vec3fa(0.0f,0.0f,0.0f),1.0f,Vec3fa(1.0f,0.0f,0.0f),0.0f);
         passed &= verify(10,cone1,Ray(Vec3fa(-2.0f,1.0f,0.0f),Vec3fa(+1.0f,+0.0f,+0.0f),0.0f,float(inf)),true,neg_inf,2.0f);
         passed &= verify(11,cone1,Ray(Vec3fa(-1.0f,0.0f,2.0f),Vec3fa(+0.0f,+0.0f,-1.0f),0.0f,float(inf)),true,0.0f,4.0f);
+        const Cone cylinder(Vec3fa(0.0f,0.0f,0.0f),1.0f,Vec3fa(1.0f,0.0f,0.0f),1.0f);
+        passed &= verify(12,cylinder,Ray(Vec3fa(-2.0f,1.0f,0.0f),Vec3fa( 0.0f,-1.0f,+0.0f),0.0f,float(inf)),true,0.0f,2.0f);
+        passed &= verify(13,cylinder,Ray(Vec3fa(+2.0f,1.0f,0.0f),Vec3fa( 0.0f,-1.0f,+0.0f),0.0f,float(inf)),true,0.0f,2.0f);
+        passed &= verify(14,cylinder,Ray(Vec3fa(+2.0f,1.0f,2.0f),Vec3fa( 0.0f,-1.0f,+0.0f),0.0f,float(inf)),false,0.0f,0.0f);
+        passed &= verify(15,cylinder,Ray(Vec3fa(+0.0f,0.0f,0.0f),Vec3fa( 1.0f, 0.0f,+0.0f),0.0f,float(inf)),true,neg_inf,pos_inf);
+        passed &= verify(16,cylinder,Ray(Vec3fa(+0.0f,0.0f,0.0f),Vec3fa(-1.0f, 0.0f,+0.0f),0.0f,float(inf)),true,neg_inf,pos_inf);
+        passed &= verify(17,cylinder,Ray(Vec3fa(+0.0f,2.0f,0.0f),Vec3fa( 1.0f, 0.0f,+0.0f),0.0f,float(inf)),false,pos_inf,neg_inf);
+        passed &= verify(18,cylinder,Ray(Vec3fa(+0.0f,2.0f,0.0f),Vec3fa(-1.0f, 0.0f,+0.0f),0.0f,float(inf)),false,pos_inf,neg_inf);
         return passed;
       }
 
@@ -196,9 +216,24 @@ namespace embree
           const vfloat<N> t = -C/B;
           const vfloat<N> z0 = Oz+t*dOz;
           const vfloat<N> z0r = r0+z0*dr;
-          valid &= z0r >= 0.0f;
-          t_o.lower = select(validt, select(dOz*dr > 0.0f, t, vfloat<N>(neg_inf)), t_o.lower);
-          t_o.upper = select(validt, select(dOz*dr > 0.0f, vfloat<N>(pos_inf), t), t_o.upper);
+          valid &= !validt | z0r >= 0.0f;
+
+          const vboolx validtt = validt & (dr <  16.0f*float(ulp));
+          const vboolx validtf = validt & (dr >= 16.0f*float(ulp));
+          
+          /* cylinder case */
+          if (unlikely(any(validtt)))
+          {
+            t_o.lower = select(validtt, select(C <= 0.0f, vfloat<N>(neg_inf), vfloat<N>(pos_inf)), t_o.lower);
+            t_o.upper = select(validtt, select(C <= 0.0f, vfloat<N>(pos_inf), vfloat<N>(neg_inf)), t_o.upper);
+            valid &= !validtt | C <= 0.0f;
+          }
+
+          /* cone case */
+          if (any(validtf)) {
+            t_o.lower = select(validtf, select(dOz*dr > 0.0f, t, vfloat<N>(neg_inf)), t_o.lower);
+            t_o.upper = select(validtf, select(dOz*dr > 0.0f, vfloat<N>(pos_inf), t), t_o.upper);
+          }
         }
 
         if (any(validf))
@@ -213,7 +248,7 @@ namespace embree
           if (any(validft)) {
             const vfloat<N> z0 = Oz+t_o.lower*dOz;
             const vfloat<N> z0r = r0+z0*dr;
-            valid &= z0r >= 0.0f;
+            valid &= !validft | z0r >= 0.0f;
           } 
 
           if (any(validff)) {
