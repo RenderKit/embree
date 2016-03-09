@@ -197,7 +197,7 @@ namespace embree
         const size_t i = select_min(valid0,tp0.lower); clear(valid0,i);
         const size_t termDepth = unstable0[i] ? maxDepth+1 : maxDepth;
         if (depth >= termDepth) found |= intersect_bezier_iterative_jacobian(ray,dt,curve,u_outer0[i],tp0.lower[i],epilog);
-        //if (depth >= termDepth) found |= intersect_bezier_iterative_debug   (ray,dt,curve,i,u_outer0,tp0,h0,h1,Ng_outer0,dP0du,dP3du,epilog);
+        //if (depth >= maxDepth) found |= intersect_bezier_iterative_debug   (ray,dt,curve,i,u_outer0,tp0,h0,h1,Ng_outer0,dP0du,dP3du,epilog);
         else                   found |= intersect_bezier_recursive_jacobian(ray,dt,curve,vu0[i+0],vu0[i+1],depth+1,epilog);
         valid0 &= tp0.lower+dt < ray.tfar;
       }
@@ -209,7 +209,7 @@ namespace embree
         const size_t i = select_min(valid1,tp1.lower); clear(valid1,i);
         const size_t termDepth = unstable1[i] ? maxDepth+1 : maxDepth;
         if (depth >= termDepth) found |= intersect_bezier_iterative_jacobian(ray,dt,curve,u_outer1[i],tp1.upper[i],epilog);
-        //if (depth >= termDepth) found |= intersect_bezier_iterative_debug   (ray,dt,curve,i,u_outer1,tp1,h0,h1,Ng_outer1,dP0du,dP3du,epilog);
+        //if (depth >= maxDepth) found |= intersect_bezier_iterative_debug   (ray,dt,curve,i,u_outer1,tp1,h0,h1,Ng_outer1,dP0du,dP3du,epilog);
         else                   found |= intersect_bezier_recursive_jacobian(ray,dt,curve,vu0[i+0],vu0[i+1],depth+1,epilog);
         valid1 &= tp1.lower+dt < ray.tfar;
       }
