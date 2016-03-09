@@ -219,8 +219,8 @@ namespace embree
     template<typename Epilog>
       __forceinline bool intersect_bezier_recursive_cone(const Ray& ray, const float dt, const BezierCurve3fa& curve, const float u0, const float u1, const size_t depth, const Epilog& epilog)
     {
-      int maxDepth = numBezierSubdivisions;
-      //int maxDepth = Device::debug_int1+1;
+      //int maxDepth = numBezierSubdivisions;
+      int maxDepth = Device::debug_int1+1;
       const Vec3fa org = zero;
       const Vec3fa dir = ray.dir;
 
@@ -362,8 +362,8 @@ namespace embree
         const Vec3fa p3 = v3-ref;
 
         const BezierCurve3fa curve(p0,p1,p2,p3,0.0f,1.0f,1);
-        return intersect_bezier_recursive_jacobian(ray,dt,curve,0.0f,1.0f,1,epilog);
-        //return intersect_bezier_recursive_cone(ray,dt,curve,0.0f,1.0f,1,epilog);
+        //return intersect_bezier_recursive_jacobian(ray,dt,curve,0.0f,1.0f,1,epilog);
+        return intersect_bezier_recursive_cone(ray,dt,curve,0.0f,1.0f,1,epilog);
       }
     };
   }

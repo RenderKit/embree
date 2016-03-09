@@ -72,7 +72,7 @@ namespace embree
           if (z0r < 0.0f) return false;
 
           /* cylinder case */
-          if (dr < 16.0f*float(ulp)) {
+          if (abs(dr) < 16.0f*float(ulp)) {
             if (C <= 0.0f) { t_o = BBox1f(neg_inf,pos_inf); return true; } 
             else           { t_o = BBox1f(pos_inf,neg_inf); return false; }
           }
@@ -250,8 +250,8 @@ namespace embree
           const vfloat<N> z0r = r0+z0*dr;
           valid &= !validt | z0r >= 0.0f;
 
-          const vboolx validtt = validt & (dr <  16.0f*float(ulp));
-          const vboolx validtf = validt & (dr >= 16.0f*float(ulp));
+          const vboolx validtt = validt & (abs(dr) <  16.0f*float(ulp));
+          const vboolx validtf = validt & (abs(dr) >= 16.0f*float(ulp));
           
           /* cylinder case */
           if (unlikely(any(validtt))) 
