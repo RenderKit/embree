@@ -15,3 +15,4 @@ all:
 	@./ispc2cpp.sh lazy_geometry/lazy_geometry_device.ispc lazy_geometry/lazy_geometry_device.cpp
 	@./ispc2cpp.sh motion_blur_geometry/motion_blur_geometry_device.ispc motion_blur_geometry/motion_blur_geometry_device.cpp
 	@./ispc2cpp.sh interpolation/interpolation_device.ispc interpolation/interpolation_device.cpp
+	@./ispc2cpp.sh curve_geometry/curve_geometry_device.ispc curve_geometry/curve_geometry_device.cpp
