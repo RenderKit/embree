@@ -32,10 +32,8 @@ namespace embree
       __forceinline Cone(const Vec3fa& p0, const float r0, const Vec3fa& p1, const float r1) 
         : p0(p0), r0(r0), p1(p1), r1(r1) {}
 
-      __forceinline bool intersect(const Vec3fa& org_i, const Vec3fa& dir, BBox1f& t_o, float& u0_o, Vec3fa& Ng0_o) const 
+      __forceinline bool intersect(const Vec3fa& org, const Vec3fa& dir, BBox1f& t_o, float& u0_o, Vec3fa& Ng0_o, float& u1_o, Vec3fa& Ng1_o) const 
       {
-        const float tb = 0.0f; //dot(0.5f*(p0+p1)-org_i,normalize(dir));
-        const Vec3fa org = org_i+tb*dir;
         const Vec3fa v0 = p0-org;
         const Vec3fa v1 = p1-org;
         
@@ -98,19 +96,26 @@ namespace embree
           }
         }
 
-        u0_o = (Oz+t_o.lower*dOz)*rl;
-        const Vec3fa Pr = t_o.lower*dir;
-        const Vec3fa Pl = v0 + u0_o*(v1-v0);
-        Ng0_o = Pr-Pl;
-        t_o.lower += tb;
-        t_o.upper += tb;
+        {
+          u0_o = (Oz+t_o.lower*dOz)*rl;
+          const Vec3fa Pr = t_o.lower*dir;
+          const Vec3fa Pl = v0 + u0_o*(v1-v0);
+          Ng0_o = Pr-Pl;
+        }
+
+        {
+          u1_o = (Oz+t_o.upper*dOz)*rl;
+          const Vec3fa Pr = t_o.upper*dir;
+          const Vec3fa Pl = v0 + u1_o*(v1-v0);
+          Ng1_o = Pr-Pl;
+        }
         return true;
       }
 
-      __forceinline bool intersect(const Vec3fa& org_i, const Vec3fa& dir, BBox1f& t_o) const 
+      __forceinline bool intersect(const Vec3fa& org, const Vec3fa& dir, BBox1f& t_o) const 
       {
-        float u0_o; Vec3fa Ng0_o;
-        return intersect(org_i,dir,t_o,u0_o,Ng0_o);
+        float u0_o; Vec3fa Ng0_o; float u1_o; Vec3fa Ng1_o;
+        return intersect(org,dir,t_o,u0_o,Ng0_o,u1_o,Ng1_o);
       }
 
       static bool verify(const size_t id, const Cone& cone, const Ray& ray, bool shouldhit, const float t0, const float t1)
@@ -167,8 +172,8 @@ namespace embree
     {
       typedef Vec3<vfloat<N>> Vec3vfN;
       
-      const Vec3vfN p0; //!< start position of cone
-      const Vec3vfN p1; //!< end position of cone
+      const Vec3vfN p0;     //!< start position of cone
+      const Vec3vfN p1;     //!< end position of cone
       const vfloat<N> r0;   //!< start radius of cone
       const vfloat<N> r1;   //!< end radius of cone
 
@@ -181,12 +186,10 @@ namespace embree
         return Cone(Vec3fa(p0.x[i],p0.y[i],p0.z[i]),r0[i],Vec3fa(p1.x[i],p1.y[i],p1.z[i]),r1[i]);
       }
 
-      __forceinline vbool<N> intersect(const Vec3fa& org_i, const Vec3fa& dir, BBox<vfloat<N>>& t_o, vfloat<N>& u0_o, Vec3vfN& Ng0_o, vfloat<N>& u1_o, Vec3vfN& Ng1_o) const
+      __forceinline vbool<N> intersect(const Vec3fa& org, const Vec3fa& dir, BBox<vfloat<N>>& t_o, vfloat<N>& u0_o, Vec3vfN& Ng0_o, vfloat<N>& u1_o, Vec3vfN& Ng1_o) const
       {
-        const vfloat<N> tb = 0.0f; //dot(vfloat<N>(0.5f)*(p0+p1)-Vec3vfN(org_i),Vec3vfN(normalize(dir)));
-        const Vec3vfN org = Vec3vfN(org_i)+tb*Vec3vfN(dir);
-        const Vec3vfN v0 = p0-org;
-        const Vec3vfN v1 = p1-org;
+        const Vec3vfN v0 = p0-Vec3vfN(org);
+        const Vec3vfN v1 = p1-Vec3vfN(org);
 
         const vfloat<N> rl = rcp_length(v1-v0);
         const Vec3vfN P0 = v0, dP = (v1-v0)*rl;
@@ -270,16 +273,13 @@ namespace embree
           const Vec3vfN Pl = v0 + u1_o*(v1-v0);
           Ng1_o = Pr-Pl;
         }
-
-        t_o.lower += tb;
-        t_o.upper += tb;
         return valid;
       }
  
-      __forceinline vbool<N> intersect(const Vec3fa& org_i, const Vec3fa& dir, BBox<vfloat<N>>& t_o) const
+      __forceinline vbool<N> intersect(const Vec3fa& org, const Vec3fa& dir, BBox<vfloat<N>>& t_o) const
       {
         vfloat<N> u0_o; Vec3vfN Ng0_o; vfloat<N> u1_o; Vec3vfN Ng1_o;
-        return intersect(org_i,dir,t_o,u0_o,Ng0_o,u1_o,Ng1_o);
+        return intersect(org,dir,t_o,u0_o,Ng0_o,u1_o,Ng1_o);
       }
     };
   }
