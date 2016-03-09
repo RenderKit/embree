@@ -34,6 +34,7 @@ namespace embree
 
       __forceinline bool intersect(const Vec3fa& org, const Vec3fa& dir, BBox1f& t_o, float& u0_o, Vec3fa& Ng0_o, float& u1_o, Vec3fa& Ng1_o) const 
       {
+        /* calculate quadratic equation to solve */
         const Vec3fa v0 = p0-org;
         const Vec3fa v1 = p1-org;
         
@@ -53,32 +54,34 @@ namespace embree
         const float B = 2.0f * (OdO - dOz*(Oz + R*dr));
         const float C = OO - (sqr(Oz) + sqr(R));
 
+        /* we miss the cone of determinant is smaller than zero */
         const float D = B*B - 4.0f*A*C;
         if (D < 0.0f) return false;
 
+        /* special case for rays that are "parallel" to the cone */
         const float eps = float(1<<12)*float(ulp)*max(abs(dOdO),abs(sqr(dOz)));
-        if (abs(A) < eps) 
+        if (unlikely(abs(A) < eps))
         {
+          /* if we hit the negative cone there cannot be a hit */
           const float t = -C/B;
           const float z0 = Oz+t*dOz;
           const float z0r = r0+z0*dr;
           if (z0r < 0.0f) return false;
 
           /* cylinder case */
-          if (dr < 16.0f*float(ulp)) 
-          {
-            if (C <= 0.0f) {
-              t_o = BBox1f(neg_inf,pos_inf);
-              return true;
-            } else {
-              t_o = BBox1f(pos_inf,neg_inf);
-              return false;
-            }
+          if (dr < 16.0f*float(ulp)) {
+            if (C <= 0.0f) { t_o = BBox1f(neg_inf,pos_inf); return true; } 
+            else           { t_o = BBox1f(pos_inf,neg_inf); return false; }
           }
+
           /* cone case */
-          if (dOz*dr > 0.0f) t_o = BBox1f(t,pos_inf);
-          else               t_o = BBox1f(neg_inf,t);
+          else {
+            if (dOz*dr > 0.0f) t_o = BBox1f(t,pos_inf);
+            else               t_o = BBox1f(neg_inf,t);
+          }
         }
+
+        /* standard case for "non-parallel" rays */
         else
         {
           const float Q = sqrt(D);
@@ -86,16 +89,25 @@ namespace embree
           t_o.lower = (-B-Q)*rcp_2A;
           t_o.upper = (-B+Q)*rcp_2A;
           
-          if (A > 0.0f) {
+          /* standard case where both hits are on same cone */
+          if (likely(A > 0.0f)) {
             const float z0 = Oz+t_o.lower*dOz;
             const float z0r = r0+z0*dr;
             if (z0r < 0.0f) return false;
-          } else {
+          } 
+
+          /* special case where the hits are on the positive and negative cone */
+          else 
+          {
+            /* depending on the ray direction and the open direction
+             * of the cone we have a hit from inside or outside the
+             * cone */
             if (dOz*dr > 0) t_o.upper = pos_inf;
             else            t_o.lower = neg_inf;
           }
         }
 
+        /* calculates u and Ng for near hit */
         {
           u0_o = (Oz+t_o.lower*dOz)*rl;
           const Vec3fa Pr = t_o.lower*dir;
@@ -103,6 +115,7 @@ namespace embree
           Ng0_o = Pr-Pl;
         }
 
+        /* calculates u and Ng for far hit */
         {
           u1_o = (Oz+t_o.upper*dOz)*rl;
           const Vec3fa Pr = t_o.upper*dir;
@@ -188,6 +201,7 @@ namespace embree
 
       __forceinline vbool<N> intersect(const Vec3fa& org, const Vec3fa& dir, BBox<vfloat<N>>& t_o, vfloat<N>& u0_o, Vec3vfN& Ng0_o, vfloat<N>& u1_o, Vec3vfN& Ng1_o) const
       {
+        /* calculate quadratic equation to solve */
         const Vec3vfN v0 = p0-Vec3vfN(org);
         const Vec3vfN v1 = p1-Vec3vfN(org);
 
@@ -206,16 +220,19 @@ namespace embree
         const vfloat<N> A = dOdO - sqr(dOz) * (vfloat<N>(1.0f)+sqr(dr));
         const vfloat<N> B = 2.0f * (OdO - dOz*(Oz + R*dr));
         const vfloat<N> C = OO - (sqr(Oz) + sqr(R));
-        
+
+        /* we miss the cone of determinant is smaller than zero */
         const vfloat<N> D = B*B - 4.0f*A*C;
         vbool<N> valid = D >= 0.0f;
         if (none(valid)) return valid;
 
+        /* special case for rays that are "parallel" to the cone */
         const vfloat<N> eps = float(1<<12)*float(ulp)*max(abs(dOdO),abs(sqr(dOz)));
         const vbool<N> validt = valid &  (abs(A) < eps);
         const vbool<N> validf = valid & !(abs(A) < eps);
-        if (any(validt))
+        if (unlikely(any(validt)))
         {
+          /* if we hit the negative cone there cannot be a hit */
           const vfloat<N> t = -C/B;
           const vfloat<N> z0 = Oz+t*dOz;
           const vfloat<N> z0r = r0+z0*dr;
@@ -225,7 +242,7 @@ namespace embree
           const vboolx validtf = validt & (dr >= 16.0f*float(ulp));
           
           /* cylinder case */
-          if (unlikely(any(validtt)))
+          if (unlikely(any(validtt))) 
           {
             t_o.lower = select(validtt, select(C <= 0.0f, vfloat<N>(neg_inf), vfloat<N>(pos_inf)), t_o.lower);
             t_o.upper = select(validtt, select(C <= 0.0f, vfloat<N>(pos_inf), vfloat<N>(neg_inf)), t_o.upper);
@@ -239,13 +256,15 @@ namespace embree
           }
         }
 
-        if (any(validf))
+        /* standard case for "non-parallel" rays */
+        if (likely(any(validf)))
         {
           const vfloat<N> Q = sqrt(D);
           const vfloat<N> rcp_2A = 0.5f*rcp(A);
           t_o.lower = select(validf, (-B-Q)*rcp_2A, t_o.lower);
           t_o.upper = select(validf, (-B+Q)*rcp_2A, t_o.upper);
           
+          /* standard case where both hits are on same cone */
           const vbool<N> validft = validf &   A>0.0f;
           const vbool<N> validff = validf & !(A>0.0f);
           if (any(validft)) {
@@ -254,12 +273,17 @@ namespace embree
             valid &= !validft | z0r >= 0.0f;
           } 
 
+          /* special case where the hits are on the positive and negative cone */
           if (any(validff)) {
+            /* depending on the ray direction and the open direction
+             * of the cone we have a hit from inside or outside the
+             * cone */
             t_o.lower = select(validff, select(dOz*dr > 0.0f, t_o.lower, float(neg_inf)), t_o.lower);
             t_o.upper = select(validff, select(dOz*dr > 0.0f, float(pos_inf), t_o.upper), t_o.upper);
           }
         }
 
+        /* calculates u and Ng for near hit */
         {
           u0_o = (Oz+t_o.lower*dOz)*rl;
           const Vec3vfN Pr = t_o.lower*Vec3vfN(dir);
@@ -267,6 +291,7 @@ namespace embree
           Ng0_o = Pr-Pl;
         }
 
+        /* calculates u and Ng for far hit */
         {
           u1_o = (Oz+t_o.upper*dOz)*rl;
           const Vec3vfN Pr = t_o.lower*Vec3vfN(dir);
