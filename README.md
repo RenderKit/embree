@@ -1,4 +1,4 @@
-% Embree: High Performance Ray Tracing Kernels 2.8.0
+% Embree: High Performance Ray Tracing Kernels 2.9.0
 % Intel Corporation
 
 Embree Overview
@@ -47,8 +47,8 @@ Renderer]).
 Supported Platforms
 -------------------
 
-Embree supports Windows (32\ bit and 64\ bit), Linux (64\ bit) and Mac
-OS\ X (64\ bit). The code compiles with the Intel Compiler, GCC, Clang
+Embree supports Windows (32 bit and 64 bit), Linux (64 bit) and Mac
+OS X (64 bit). The code compiles with the Intel Compiler, GCC, Clang
 and the Microsoft Compiler. Embree is tested with Intel
 Compiler 15.0.2, Clang 3.4.2, GCC 4.8.2, and Visual Studio
 12 2013. Using the Intel Compiler improves performance by
@@ -58,7 +58,7 @@ Performance also varies across different operating systems. Embree is
 optimized for Intel CPUs supporting SSE, AVX, and AVX2 instructions,
 and requires at least a CPU with support for SSE2.
 
-The Xeon Phi version of Embree only works under Linux in 64\ bit mode.
+The Xeon Phi version of Embree only works under Linux in 64 bit mode.
 For compilation of the the Xeon Phi code the Intel Compiler is required.
 The host side code compiles with GCC, Clang, and the Intel Compiler.
 
@@ -90,17 +90,17 @@ Installation of Embree
 Windows Installer
 -----------------
 
-You can install the 64\ bit version of the Embree library using the
+You can install the 64 bit version of the Embree library using the
 Windows installer application
-[embree-2.8.0-x64.exe](https://github.com/embree/embree/releases/download/v2.8.0/embree-2.8.0.x64.exe). This
-will install the 64 bit Embree version by default in `Program
-Files\Intel\Embree v2.8.0 x64`. To install the 32\ bit
+[embree-2.9.0-x64.exe](https://github.com/embree/embree/releases/download/v2.9.0/embree-2.9.0.x64.exe). This
+will install the 64 bit Embree version by default in `Program
+Files\Intel\Embree v2.9.0 x64`. To install the 32 bit
 Embree library use the
-[embree-2.8.0-win32.exe](https://github.com/embree/embree/releases/download/v2.8.0/embree-2.8.0.win32.exe)
-installer. This will install the 32\ bit Embree version by default in
-`Program Files\Intel\Embree v2.8.0 win32` on 32\ bit
-systems and `Program Files (x86)\Intel\Embree v2.8.0 win32`
-on 64\ bit systems.
+[embree-2.9.0-win32.exe](https://github.com/embree/embree/releases/download/v2.9.0/embree-2.9.0.win32.exe)
+installer. This will install the 32 bit Embree version by default in
+`Program Files\Intel\Embree v2.9.0 win32` on 32 bit
+systems and `Program Files (x86)\Intel\Embree v2.9.0 win32`
+on 64 bit systems.
 
 You have to set the path to the `lib` folder manually to your `PATH`
 environment variable for applications to find Embree. To compile
@@ -111,15 +111,15 @@ Embree installation.
 To uninstall Embree again open `Programs and Features` by clicking the
 `Start button`, clicking `Control Panel`, clicking `Programs`, and
 then clicking `Programs and Features`. Select `Embree
-2.8.0` and uninstall it.
+2.9.0` and uninstall it.
 
 Windows ZIP File
 -----------------
 
-Embree is also delivered as a ZIP file for 64 bit
-[embree-2.8.0.x64.windows.zip](https://github.com/embree/embree/releases/download/v2.8.0/embree-2.8.0.x64.windows.zip)
-and 32 bit
-[embree-2.8.0.win32.windows.zip](https://github.com/embree/embree/releases/download/v2.8.0/embree-2.8.0.win32.windows.zip). After
+Embree is also delivered as a ZIP file for 64 bit
+[embree-2.9.0.x64.windows.zip](https://github.com/embree/embree/releases/download/v2.9.0/embree-2.9.0.x64.windows.zip)
+and 32 bit
+[embree-2.9.0.win32.windows.zip](https://github.com/embree/embree/releases/download/v2.9.0/embree-2.9.0.win32.windows.zip). After
 unpacking this ZIP file you should set the path to the `lib` folder
 manually to your `PATH` environment variable for applications to find
 Embree. To compile applications with Embree you also have to set the
@@ -133,24 +133,24 @@ Linux RPMs
 ----------
 
 Uncompress the 'tar.gz' file
-[embree-2.8.0.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v2.8.0/embree-2.8.0.x86_64.rpm.tar.gz)
+[embree-2.9.0.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v2.9.0/embree-2.9.0.x86_64.rpm.tar.gz)
 to
 obtain the individual RPM files:
 
-    tar xzf embree-2.8.0.x86_64.rpm.tar.gz
+    tar xzf embree-2.9.0.x86_64.rpm.tar.gz
 
 To install the Embree using the RPM packages on your Linux system type
 the following:
 
-    sudo rpm --install embree-lib-2.8.0-1.x86_64.rpm
-    sudo rpm --install embree-devel-2.8.0-1.x86_64.rpm
-    sudo rpm --install embree-examples-2.8.0-1.x86_64.rpm
+    sudo rpm --install embree-lib-2.9.0-1.x86_64.rpm
+    sudo rpm --install embree-devel-2.9.0-1.x86_64.rpm
+    sudo rpm --install embree-examples-2.9.0-1.x86_64.rpm
 
 To also install the Intel® Xeon Phi™ version of Embree additionally
 install the following Xeon Phi™ RPMs:
 
-    sudo rpm --install --nodeps embree-lib_xeonphi-2.8.0-1.x86_64.rpm
-    sudo rpm --install --nodeps embree-examples_xeonphi-2.8.0-1.x86_64.rpm
+    sudo rpm --install --nodeps embree-lib_xeonphi-2.9.0-1.x86_64.rpm
+    sudo rpm --install --nodeps embree-examples_xeonphi-2.9.0-1.x86_64.rpm
 
 To use the Xeon Phi™ version of Embree you additionally have configure your
 `SINK_LD_LIBRARY_PATH` to point to `/usr/lib`:
@@ -185,37 +185,37 @@ the tutorials to start them.
 
 To uninstall Embree again just execute the following:
 
-    sudo rpm --erase embree-lib-2.8.0-1.x86_64
-    sudo rpm --erase embree-devel-2.8.0-1.x86_64
-    sudo rpm --erase embree-examples-2.8.0-1.x86_64
+    sudo rpm --erase embree-lib-2.9.0-1.x86_64
+    sudo rpm --erase embree-devel-2.9.0-1.x86_64
+    sudo rpm --erase embree-examples-2.9.0-1.x86_64
 
 If you also installed the Xeon Phi™ RPMs you have to uninstall them
 too:
 
-    sudo rpm --erase embree-lib_xeonphi-2.8.0-1.x86_64
-    sudo rpm --erase embree-examples_xeonphi-2.8.0-1.x86_64
+    sudo rpm --erase embree-lib_xeonphi-2.9.0-1.x86_64
+    sudo rpm --erase embree-examples_xeonphi-2.9.0-1.x86_64
 
 Linux tar.gz files
 ------------------
 
 The Linux version of Embree is also delivered as a tar.gz file
-[embree-2.8.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v2.8.0/embree-2.8.0.x86_64.linux.tar.gz). Unpack
+[embree-2.9.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v2.9.0/embree-2.9.0.x86_64.linux.tar.gz). Unpack
 this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to setup the environment properly:
 
-    tar xzf embree-2.8.0.x64.linux.tar.gz
-    source embree-2.8.0.x64.linux/embree-vars.sh
+    tar xzf embree-2.9.0.x64.linux.tar.gz
+    source embree-2.9.0.x64.linux/embree-vars.sh
 
 If you want to ship Embree with your application best use the Embree
 version provided through the tar.gz file.
 
-Mac OS X PKG Installer
+Mac OS X PKG Installer
 -----------------------
 
-To install the Embree library on your Mac\ OS\ X system use the
+To install the Embree library on your Mac OS X system use the
 provided package installer inside
-[embree-2.8.0.x86_64.dmg](https://github.com/embree/embree/releases/download/v2.8.0/embree-2.8.0.x86_64.dmg). This
+[embree-2.9.0.x86_64.dmg](https://github.com/embree/embree/releases/download/v2.9.0/embree-2.9.0.x86_64.dmg). This
 will install Embree by default into `/opt/local/lib` and
 `/opt/local/include` directories. The Embree tutorials are installed
 into the `/Applications/Embree2` folder.
@@ -233,17 +233,17 @@ to the TBB library.
 To uninstall Embree again execute the uninstaller script
 `/Applications/Embree2/uninstall.command`.
 
-Mac OS X tar.gz file
+Mac OS X tar.gz file
 ---------------------
 
-The Mac\ OS\ X version of Embree is also delivered as a tar.gz file
-[embree-2.8.0.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v2.8.0/embree-2.8.0.x86_64.macosx.tar.gz). Unpack
+The Mac OS X version of Embree is also delivered as a tar.gz file
+[embree-2.9.0.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v2.9.0/embree-2.9.0.x86_64.macosx.tar.gz). Unpack
 this file using `tar` and and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to setup the environment properly:
 
-    tar xzf embree-2.8.0.x64.macosx.tar.gz
-    source embree-2.8.0.x64.macosx/embree-vars.sh
+    tar xzf embree-2.9.0.x64.macosx.tar.gz
+    source embree-2.9.0.x64.macosx/embree-vars.sh
 
 If you want to ship Embree with your application please use the Embree
 library of the provided tar.gz file. The library name of that Embree
@@ -264,12 +264,12 @@ compiling your application with ISPC, e.g.:
 Compiling Embree
 ================
 
-Linux and Mac OS\ X
+Linux and Mac OS X
 -------------------
 
 To compile Embree you need a modern C++ compiler that supports C++11.
-Embree is tested with Intel® Compiler 15.0.2, Clang 3.4.2, and GCC
-4.8.2. If the GCC that comes with your Fedora/Red Hat/CentOS
+Embree is tested with Intel® Compiler 16.0.1, Clang 3.4.2, and GCC
+4.8.3. If the GCC that comes with your Fedora/Red Hat/CentOS
 distribution is too old then you can run the provided script
 `scripts/install_linux_gcc.sh` to locally install a recent GCC into
 `$HOME/devtools-2`.
@@ -284,7 +284,7 @@ Embree supported the Intel® SPMD Program Compiler (ISPC), which allows
 straight forward parallelization of an entire renderer. If you do not
 want to use ISPC then you can disable `ENABLE_ISPC_SUPPORT` in
 CMake. Otherwise, download and install the ISPC binaries (we have
-tested ISPC version 1.8.2) from
+tested ISPC version 1.9.0) from
 [ispc.github.io](https://ispc.github.io/downloads.html). After
 installation, put the path to `ispc` permanently into your `PATH`
 environment variable or you need to correctly set the
@@ -293,12 +293,12 @@ environment variable or you need to correctly set the
 You additionally have to install CMake 2.8.11 or higher and the developer
 version of GLUT.
 
-Under Mac OS\ X, all these dependencies can be installed
+Under Mac OS X, all these dependencies can be installed
 using [MacPorts](http://www.macports.org/):
 
     sudo port install cmake tbb freeglut
 
-Depending on you Linux distribution you can install these dependencies
+Depending on your Linux distribution you can install these dependencies
 using `yum` or `apt-get`.  Some of these packages might already be
 installed or might have slightly different names.
 
@@ -404,7 +404,7 @@ Embree supported the Intel® SPMD Program Compiler (ISPC), which allows
 straight forward parallelization of an entire renderer. If you do not
 want to use ISPC then you can disable `ENABLE_ISPC_SUPPORT` in
 CMake. Otherwise, download and install the ISPC binaries (we have
-tested ISPC version 1.8.2) from
+tested ISPC version 1.9.0) from
 [ispc.github.io](https://ispc.github.io/downloads.html). After
 installation, put the path to `ispc.exe` permanently into your `PATH`
 environment variable or you need to correctly set the
@@ -419,8 +419,8 @@ for Visual Studio.
 
 Run `cmake-gui`, browse to the Embree sources, set the build directory
 and click Configure. Now you can select the Generator, e.g. "Visual
-Studio 12 2013" for a 32\ bit build or "Visual Studio 12 2013 Win64" for
-a 64\ bit build. Most configuration parameters described for the [Linux
+Studio 12 2013" for a 32 bit build or "Visual Studio 12 2013 Win64" for
+a 64 bit build. Most configuration parameters described for the [Linux
 build](#linux-and-mac-osx) can be set under Windows as well. Finally,
 click "Generate" to create the Visual Studio solution files.
 
@@ -441,11 +441,11 @@ For compilation of Embree under Windows use the generated Visual Studio
 solution file `embree2.sln`. The solution is by default setup to use the
 Microsoft Compiler. You can switch to the Intel Compiler by right
 clicking onto the solution in the Solution Explorer and then selecting
-the Intel Compiler. We recommend using 64\ bit mode and the Intel
+the Intel Compiler. We recommend using 64 bit mode and the Intel
 Compiler for best performance.
 
 To build Embree with support for the AVX2 instruction set you need at
-least Visual Studio 2013 Update\ 4. When switching to the Intel Compiler
+least Visual Studio 2013 Update 4. When switching to the Intel Compiler
 to build with AVX2 you currently need to manually *remove* the switch
 `/arch:AVX2` from the `embree_avx2` project, which can be found under
 Properties ⇒ C/C++ ⇒ All Options ⇒ Additional Options.
@@ -786,6 +786,10 @@ if the user enables any ray packet query.
                     functions (16-wide packet interface) for this
                     scene.
 
+  RTC_INTERSECTN    Enables the `rtcIntersectN`, `rtcOccludedN`, 
+                    `rtcIntersectN_SOA`, and `rtcOccludedN_SOA`
+                    functions for this scene.
+
   RTC_INTERPOLATE   Enables the `rtcInterpolate` and `rtcInterpolateN`
                     interpolation functions.
 
@@ -800,7 +804,7 @@ geometry is assigned an integer ID at creation time, which is unique
 for that scene. The current version of the API supports triangle
 meshes (`rtcNewTriangleMesh`), Catmull-Clark subdivision surfaces
 (`rtcNewSubdivisionMesh`), hair geometries (`rtcNewHairGeometry`),
-single level instances of other scenes (`rtcNewInstance`), and user
+single level instances of other scenes (`rtcNewInstance2`), and user
 defined geometries (`rtcNewUserGeometry`). The API is designed in a
 way that easily allows adding new geometry types in later releases.
 
@@ -869,7 +873,7 @@ create a triangle mesh without motion blur:
 The triangle indices can be set by mapping and writing to the index
 buffer (`RTC_INDEX_BUFFER`) and the triangle vertices can be set by
 mapping and writing into the vertex buffer (`RTC_VERTEX_BUFFER`). The
-index buffer contains an array of three 32\ bit indices, while the
+index buffer contains an array of three 32 bit indices, while the
 vertex buffer contains an array of three float values aligned to 16
 bytes. The 4th component of the aligned vertices can be arbitrary. All
 buffers have to get unmapped before an `rtcCommit` call to the scene.
@@ -919,7 +923,7 @@ create a quad mesh without motion blur:
 The quad indices can be set by mapping and writing to the index
 buffer (`RTC_INDEX_BUFFER`) and the quad vertices can be set by
 mapping and writing into the vertex buffer (`RTC_VERTEX_BUFFER`). The
-index buffer contains an array of four 32\ bit indices, while the
+index buffer contains an array of four 32 bit indices, while the
 vertex buffer contains an array of three float values aligned to 16
 bytes. The 4th component of the aligned vertices can be arbitrary. All
 buffers have to get unmapped before an `rtcCommit` call to the scene.
@@ -974,18 +978,18 @@ The number of faces (`numFaces`), edges/indices (`numEdges`), vertices
 The following buffers have to get setup by the application: the face
 buffer (`RTC_FACE_BUFFER`) contains the number edges/indices (3 or 4) of
 each of the `numFaces` faces, the index buffer (`RTC_INDEX_BUFFER`)
-contains multiple (3 or 4) 32\ bit vertex indices for each face and
+contains multiple (3 or 4) 32 bit vertex indices for each face and
 `numEdges` indices in total, the vertex buffer (`RTC_VERTEX_BUFFER`)
 stores `numVertices` vertices as single precision `x`, `y`, `z` floating
 point coordinates aligned to 16 bytes. The value of the 4th float used
 for alignment can be arbitrary.
 
 Optionally, the application can setup the hole buffer (`RTC_HOLE_BUFFER`)
-with `numHoles` many 32\ bit indices of faces that should be considered
+with `numHoles` many 32 bit indices of faces that should be considered
 non-existing.
 
 Optionally, the application can fill the level buffer
-(`RTC_LEVEL_BUFFER`) with a tessellation level for each or the edges of
+(`RTC_LEVEL_BUFFER`) with a tessellation rate for each or the edges of
 each face, making a total of `numEdges` values. The tessellation level
 is a positive floating point value, that specifies how many quads
 along the edge should get generated during tessellation. The
@@ -993,12 +997,16 @@ tessellation level is a lower bound, thus the implementation is free
 to choose a larger level. If no level buffer is specified a level of 1
 is used. Note that some edge may be shared between (typically 2)
 faces. To guarantee a watertight tessellation, the level of these
-shared edges has to be exactly identical.
+shared edges has to be exactly identical. A uniform tessellation rate
+for an entire subdivision mesh can be set by using the
+`rtcSetTessellationRate(RTCScene scene, unsigned geomID, float rate)`
+function. The existance of a level buffer has preference over the
+uniform tessellation rate.
 
 Optionally, the application can fill the sparse edge crease buffers to
 make some edges appear sharper. The edge crease index buffer
 (`RTC_EDGE_CREASE_INDEX_BUFFER`) contains `numEdgeCreases` many pairs of
-32\ bit vertex indices that specify unoriented edges. The edge crease
+32 bit vertex indices that specify unoriented edges. The edge crease
 weight buffer (`RTC_EDGE_CREASE_WEIGHT_BUFFER`) stores for each of
 theses crease edges a positive floating point weight. The larger this
 weight, the sharper the edge. Specifying a weight of infinity is
@@ -1012,7 +1020,7 @@ considered the same edge.
 Optionally, the application can fill the sparse vertex crease buffers
 to make some vertices appear sharper. The vertex crease index buffer
 (`RTC_VERTEX_CREASE_INDEX_BUFFER`), contains `numVertexCreases` many
-32\ bit vertex indices to specify a set of vertices. The vertex crease
+32 bit vertex indices to specify a set of vertices. The vertex crease
 weight buffer (`RTC_VERTEX_CREASE_WEIGHT_BUFFER`) specifies for each of
 these vertices a positive floating point weight. The larger this
 weight, the sharper the vertex. Specifying a weight of infinity is
@@ -1021,20 +1029,10 @@ multiple times with the same crease weight is allowed, but has lower
 performance. Storing a vertex multiple times with different crease
 weights results in undefined behavior.
 
-One triangles and quadrilaterals are supported as primitives of a
-subdivision mesh. The parametrization of a triangle uses the first
-vertex `p0` as base point, and the vector `p1 - p0` as u-direction and
-`p2 - p0` as v-direction. The following picture additionally
-illustrates the direction the geometry normal is pointing into.
+Faces with 3 to 15 vertices are supported (triangles, quadrilateral,
+pentagons, etc).
 
-![][imgTriangleUV]
-
-Some texture coordinates `t0,t1,t2` can be linearly
-interpolated over the triangle the following way:
-
-    t_uv = (1-u-v)*t0 + u*(t1-t0) + v*(t2-t0)
-
-The parametrization of a quadrilateral uses the first vertex `p0` as
+The parametrization of a regular quadrilateral uses the first vertex `p0` as
 base point, and the vector `p1 - p0` as u-direction and `p3 - p0` as
 v-direction. The following picture additionally illustrates the
 direction the geometry normal is pointing into.
@@ -1046,9 +1044,25 @@ interpolated over the quadrilateral the following way:
 
     t_uv = (1-v)((1-u)*t0 + u*t1) + v*((1-u)*t3 + u*t2) 
 
+The parametrization for all other face types where the number of
+vertices is not equal to 4, have a special parametrization where the
+n'th quadrilateral (that would be obtained by a single subdivision
+step) is encoded in the higher order bits of the UV coordinates and
+the local hit location inside this quadrilateral in the lower order
+bits. The following piece of code extracts the sub-patch ID i and UVs
+of this subpatch:
+
+    const unsigned l = floorf(4.0f*U); 
+    const unsigned h = floorf(4.0f*V); 
+    const unsigned i = 4*h+l;
+    const float u = 2.0f*fracf(4.0f*U);
+    const float v = 2.0f*fracf(4.0f*V);
+
 To smoothly interpolate texture coordinates over the subdivision
-surface we recommend using the `rtcInterpolate` function, which will
-apply the standard subdivision rules for interpolation.
+surface we recommend using the `rtcInterpolate2` function, which will
+apply the standard subdivision rules for interpolation and
+automatically take care of the special UV encoding for
+non-quadrilaterals.
 
 Using the `rtcSetBoundaryMode` API call one can specify how corner
 vertices are handled. Specifying `RTC_BOUNDARY_NONE` ignores all
@@ -1087,7 +1101,7 @@ writing into the vertex buffer (`RTC_VERTEX_BUFFER`). In case of linear
 motion blur, two vertex buffers (`RTC_VERTEX_BUFFER0` and
 `RTC_VERTEX_BUFFER1`) have to get filled, one for each time step.
 
-The index buffer contains an array of 32\ bit indices pointing to the
+The index buffer contains an array of 32 bit indices pointing to the
 ID of the first of two vertices, while the vertex buffer
 stores all control points in the form of a single precision position
 and radius stored in `x`, `y`, `z`, `r` order in memory. The
@@ -1136,12 +1150,18 @@ writing into the vertex buffer (`RTC_VERTEX_BUFFER`). In case of linear
 motion blur, two vertex buffers (`RTC_VERTEX_BUFFER0` and
 `RTC_VERTEX_BUFFER1`) have to get filled, one for each time step.
 
-The index buffer contains an array of 32\ bit indices pointing to the
+The index buffer contains an array of 32 bit indices pointing to the
 ID of the first of four control vertices, while the vertex buffer
 stores all control points in the form of a single precision position
 and radius stored in `x`, `y`, `z`, `r` order in memory. The hair
 radii have to be greater or equal zero. All buffers have to get
 unmapped before an `rtcCommit` call to the scene.
+
+The implementation may choose to subdivide the bezier curve into
+multiple cylinders-like primitives. The number of cylinders the curve
+gets subdivided into can be specified per hair geometry through the
+`rtcSetTessellationRate(RTCScene scene, unsigned geomID, float rate)`
+function. By default the tessellation rate for hair curves is 4.
 
 Like for triangle meshes, the user can also specify a geometry mask and
 additional flags that choose the strategy to handle that mesh in dynamic
@@ -1176,9 +1196,10 @@ well as user defined intersect and occluded functions to create a set of
 user geometries. The user geometry to process is specified by passing
 its geometry user data pointer and index to each invocation of the bounding,
 intersect, and occluded function. The bounding function is used to query
-the bounds of all timesteps of each user geometry. When performing ray queries, Embree
-will invoke the user intersect (and occluded) functions to test rays for
-intersection (and occlusion) with the specified user defined geometry.
+the bounds of all timesteps of each user geometry. When performing ray
+queries, Embree will invoke the user intersect (and occluded) functions
+to test rays for intersection (and occlusion) with the specified user
+defined geometry.
 
 As Embree supports different ray packet sizes, one potentially has to
 provide different versions of user intersect and occluded function
@@ -1245,11 +1266,12 @@ functions also get a pointer to a valid mask as input. The user provided
 functions should not modify any ray that is disabled by that valid mask.
 
 The user intersect function should return without modifying the ray
-structure if the user geometry is missed. If the geometry is hit, it has
-to update the hit information of the ray (`tfar`, `u`, `v`, `Ng`,
+structure if the user geometry is missed. Whereas, if an intersection
+of the geometry with the ray segment was found, the intersect function
+has to update the hit information of the ray (`tfar`, `u`, `v`, `Ng`,
 `geomID`, `primID`).
 
-Also the user occluded function should return without modifying the ray
+The user occluded function should also return without modifying the ray
 structure if the user geometry is missed. If the geometry is hit, it
 should set the `geomID` member of the ray to 0.
 
@@ -1265,14 +1287,22 @@ create extremely large scenes. Only single level instancing is supported
 by Embree natively, however, multi-level instancing can principally be
 implemented through user geometries.
 
-Instances are created using the `rtcNewInstance` function call, and
+Instances are created using the `rtcNewInstance2
+(RTCScene target, RTCScene source, size_t numTimeSteps)` function call, and
 potentially deleted using the `rtcDeleteGeometry` function call. To
 instantiate a scene, one first has to generate the scene B to
 instantiate. Now one can add an instance of this scene inside a scene A
 the following way:
 
-    unsigned instID = rtcNewInstance(sceneA, sceneB);
-    rtcSetTransform(sceneA, instID, RTC_MATRIX_COLUMN_MAJOR, &column_matrix_3x4);
+    unsigned instID = rtcNewInstance2(sceneA, sceneB, 1);
+    rtcSetTransform2(sceneA, instID, RTC_MATRIX_COLUMN_MAJOR, &column_matrix_3x4, 0);
+
+To create some motion blurred instance just pass 2 as the number of
+timesteps and specify two matrices:
+
+    unsigned instID = rtcNewInstance2(sceneA, sceneB, 2);
+    rtcSetTransform2(sceneA, instID, RTC_MATRIX_COLUMN_MAJOR, &column_matrix_t0_3x4, 0);
+    rtcSetTransform2(sceneA, instID, RTC_MATRIX_COLUMN_MAJOR, &column_matrix_t1_3x4, 1);
 
 Both scenes have to belong to the same device. One has to call
 `rtcCommit` on scene B before one calls `rtcCommit` on scene A. When
@@ -1280,9 +1310,9 @@ modifying scene B one has to call `rtcUpdate` for all instances of
 that scene. If a ray hits the instance, then the `geomID` and `primID`
 members of the ray are set to the geometry ID and primitive ID of the
 primitive hit in scene B, and the `instID` member of the ray is set to
-the instance ID returned from the `rtcNewInstance` function.
+the instance ID returned from the `rtcNewInstance2` function.
 
-The `rtcSetTransform` call can be passed an affine transformation matrix
+The `rtcSetTransform2` call can be passed an affine transformation matrix
 with different data layouts:
 
   ----------------------------------- ----------------------------------
@@ -1299,7 +1329,7 @@ with different data layouts:
                                       column padded by an additional 4th
                                       component.
   ----------------------------------- ----------------------------------
-  : Matrix layouts for `rtcSetTransform`.
+  : Matrix layouts for `rtcSetTransform2`.
 
 Passing homogeneous 4×4 matrices is possible as long as the last row is
 (0, 0, 0, 1). If this homogeneous matrix is laid out in row major form,
@@ -1308,7 +1338,7 @@ laid out in column major form, use the
 `RTC_MATRIX_COLUMN_MAJOR_ALIGNED16` mode. In both cases, Embree will
 ignore the last row of the matrix.
 
-The transformation passed to `rtcSetTransform` transforms from the local
+The transformation passed to `rtcSetTransform2` transforms from the local
 space of the instantiated scene to world space.
 
 See tutorial [Instanced Geometry] for an example of how to use
@@ -1321,14 +1351,18 @@ The API supports finding the closest hit of a ray segment with the scene
 (`rtcIntersect` functions), and determining if any hit between a ray
 segment and the scene exists (`rtcOccluded` functions).
 
-    void rtcIntersect  (                   RTCScene scene, RTCRay&   ray);
-    void rtcIntersect4 (const void* valid, RTCScene scene, RTCRay4&  ray);
-    void rtcIntersect8 (const void* valid, RTCScene scene, RTCRay8&  ray);
-    void rtcIntersect16(const void* valid, RTCScene scene, RTCRay16& ray);
-    void rtcOccluded   (                   RTCScene scene, RTCRay&   ray);
-    void rtcOccluded4  (const void* valid, RTCScene scene, RTCRay4&  ray);
-    void rtcOccluded8  (const void* valid, RTCScene scene, RTCRay8&  ray);
-    void rtcOccluded16 (const void* valid, RTCScene scene, RTCRay16& ray);
+    void rtcIntersect      (                   RTCScene scene, RTCRay&    ray);
+    void rtcIntersect4     (const void* valid, RTCScene scene, RTCRay4&   ray);
+    void rtcIntersect8     (const void* valid, RTCScene scene, RTCRay8&   ray);
+    void rtcIntersect16    (const void* valid, RTCScene scene, RTCRay16&  ray);
+    void rtcIntersectN     (                   RTCScene scene, RTCRay*    rayN, size_t N, size_t stride, size_t flags);
+    void rtcIntersectN_SOA (                   RTCScene scene, RTCRaySOA& rayN, size_t N, size_t streams, size_t stride, size_t flags);
+    void rtcOccluded       (                   RTCScene scene, RTCRay&    ray);
+    void rtcOccluded4      (const void* valid, RTCScene scene, RTCRay4&   ray);
+    void rtcOccluded8      (const void* valid, RTCScene scene, RTCRay8&   ray);
+    void rtcOccluded16     (const void* valid, RTCScene scene, RTCRay16&  ray);
+    void rtcOccludedN      (                   RTCScene scene, RTCRay*    rayN, size_t N, size_t stride, size_t flags);
+    void rtcOccludedN_SOA  (                   RTCScene scene, RTCRaySOA& rayN, size_t N, size_t streams, size_t stride, size_t flags);
 
 The ray layout to be passed to the ray tracing core is defined in the
 `embree2/rtcore_ray.h` header file. It is up to the user if he wants
@@ -1358,22 +1392,37 @@ does not change. The ray contains the following data members:
 This structure is in struct of array layout (SOA) for ray packets. Note
 that the `tfar` member functions as an input and output.
 
-In the ray packet mode (with packet size of N), the user has to provide
-a pointer to N 32\ bit integers that act as a ray activity mask. If one
+For the ray packet mode (with packet size of N), the user has to provide
+a pointer to N 32 bit integers that act as a ray activity mask. If one
 of these integers is set to `0x00000000` the corresponding ray is
 considered inactive and if the integer is set to `0xFFFFFFFF`, the ray
 is considered active. Rays that are inactive will not update any hit
 information. Data alignment requirements for ray query functions
 operating on single rays is 16 bytes for the ray.
 
-Data alignment requirements for query functions operating on AOS packets
-of 4, 8, or 16 rays, is 16, 32, and 64 bytes respectively, for the valid
-mask and the ray. To operate on packets of 4 rays, the CPU has to
-support SSE, to operate on packets of 8 rays, the CPU has to support
-AVX-256, and to operate on packets of 16 rays, the CPU has to support
-the Intel® Xeon Phi™ coprocessor instructions. Additionally, the
-required ISA has to be enabled in Embree at compile time to use the
-desired packet size.
+Data alignment requirements for query functions operating on AOS
+packets of 4, 8, or 16 rays, is 16, 32, and 64 bytes respectively, for
+the valid mask and the ray. To operate on packets of 4 rays, the CPU
+has to support SSE, to operate on packets of 8 rays, the CPU has to
+support AVX-256, and to operate on packets of 16 rays, the CPU has to
+support the Intel® Xeon Phi™ coprocessor or AVX512
+instructions. Additionally, the required ISA has to be enabled in
+Embree at compile time to use the desired packet size.
+
+The ray streams functions `rtcIntersectN` and `rtcOccludedN` operate
+on an arbitrary sized array of rays. The offset in bytes between
+consecutive RTCRay elements can be specified by the `stride`
+parameter. For ray stream input data given in SOA layout (e.g. as used
+by the ISPC interface) the ray stream functions `rtcIntersectN_SOA`
+and `rtcOccludedN_SOA` have to be used, together with the setup of the
+RTCRaySOA structure. These functions support either a single large ray
+stream in SOA layout or multiple SOA streams. Tracing for example a
+SOA ray stream consisting of 8 times 8-wide SOA ray packets just
+requires to set the parameters `N` and `streams` both to 8 and the
+`stride` to sizeof(RTCRay8). Regardless of the input layout a single
+ray in a ray stream is considered `inactive` during
+traversal/intersection if its `tnear` value is larger than its `tfar`
+value.
 
 Finding the closest hit distance is done through the `rtcIntersect`
 functions. These get the activity mask, the scene, and a ray as input.
@@ -1423,16 +1472,19 @@ Interpolation of Vertex Data
 ----------------------------
 
 Smooth interpolation of per-vertex data is supported for triangle
-meshes, hair geometry, and subdivision geometry using the
-`rtcInterpolate` API call. This interpolation function does ignore
-displacements and always interpolates the underlying base surface.
+meshes, quad meshs, hair geometry, line segment geometry, and
+subdivision geometry using the `rtcInterpolate2` API call. This
+interpolation function does ignore displacements and always
+interpolates the underlying base surface.
 
-    void rtcInterpolate(RTCScene scene,
-                        unsigned geomID, unsigned primID,
-                        float u, float v,
-                        RTCBufferType buffer, 
-                        float* P, float* dPdu, float* dPdv,
-                        size_t numFloats);
+    void rtcInterpolate2(RTCScene scene,
+                         unsigned geomID, unsigned primID,
+                         float u, float v,
+                         RTCBufferType buffer, 
+                         float* P,
+                         float* dPdu, float* dPdv,
+                         float* ddPdudu, float* ddPdvdv, float* ddPdudv,
+                         size_t numFloats);
 
 This call smoothly interpolates the per-vertex data stored in the
 specified geometry buffer (`buffer` parameter) to the u/v location
@@ -1450,12 +1502,16 @@ has to be padded to 16 bytes, such that it can be read safely using
 SSE instructions.
 
 The `rtcInterpolate` call stores `numFloats` interpolated floating
-point values to the memory location pointed to by `P`. The derivative
-of the interpolation by u and v are stored at `dPdu` and `dPdv`. The
-`P` pointer can be NULL to avoid calculating the interpolated
-value. Similar the `dPdu` and `dPdv` parameters can both be NULL to
-not calculate derivatives. If `dPdu` is NULL also `dPdv` has to be
-NULL.
+point values to the memory location pointed to by `P`. One can avoid
+storing the interpolated value by setting `P` to NULL.
+
+The first order derivative of the interpolation by u and v are stored
+at the `dPdu` and `dPdv` memory locations. One can avoid storing first
+order derivatives by setting both `dPdu` and `dPdv` to NULL.
+
+The second order derivatives are stored at the `ddPdudu`, `ddPdvdv`,
+and `ddPdudv` memory locations. One can avoid storing second order
+derivatives by setting these three pointers to NULL.
 
 The `RTC_INTERPOLATE` algorithm flag of a scene has to be enabled to
 perform interpolations.
@@ -1466,17 +1522,20 @@ with different vertex creases, edge creases, and boundary handling for
 interpolation of texture coordinates if that is necessary.
 
 The applied interpolation will do linear interpolation for triangle
-meshes, cubic Bézier interpolation for hair, and apply the full
-subdivision rules for subdivision geometry.
+and quad meshes, linear interpolation for line segments, cubic Bézier
+interpolation for hair, and apply the full subdivision rules for
+subdivision geometry.
 
-There is also a second interpolate call `rtcInterpolateN` that can be
+There is also a second interpolate call `rtcInterpolateN2` that can be
 used for ray packets.
 
-    void rtcInterpolateN(RTCScene scene, unsigned geomID, 
+    void rtcInterpolateN2(RTCScene scene, unsigned geomID, 
                          const void* valid, const unsigned* primIDs,
                          const float* u, const float* v, size_t numUVs, 
                          RTCBufferType buffer, 
-                         float* dP, float* dPdu, float* dPdv,
+                         float* dP,
+                         float* dPdu, float* dPdv,
+                         float* ddPdudu, float* ddPdvdv, float* ddPdudv,
                          size_t numFloats);
 
 This call is similar to the first version, but gets passed `numUVs`
@@ -1487,7 +1546,7 @@ the valid pointer is NULL all elements are considers valid. The
 destination arrays are filled in structure of array (SoA) layout.
 
 See tutorial [Interpolation] for an example of using the
-`rtcInterpolate` function.
+`rtcInterpolate2` function.
 
 Buffer Sharing
 --------------
@@ -1515,7 +1574,7 @@ element and the `stride` parameter specifies a byte stride between the
 different elements of the shared buffer. This support for offset and
 stride allows the application quite some freedom in the data layout of
 these buffers, however, some restrictions apply. Index buffers always
-store 32\ bit indices and vertex buffers always store single precision
+store 32 bit indices and vertex buffers always store single precision
 floating point data. The start address ptr+offset and stride always have
 to be aligned to 4 bytes on Intel® Xeon® CPUs and 16 bytes on Xeon Phi
 accelerators, otherwise the `rtcSetBuffer` function will fail.
@@ -1587,7 +1646,7 @@ while modifying the scene with other threads.
 Geometry Mask
 -------------
 
-A 32\ bit geometry mask can be assigned to triangle meshes and hair
+A 32 bit geometry mask can be assigned to triangle meshes and hair
 geometries using the `rtcSetMask` call.
 
     rtcSetMask(scene, geomID, mask);
@@ -1759,14 +1818,10 @@ by also invoking `rtcCommit`. A thread that calls `rtcCommit` after
 the build finishes, will directly return from the `rtcCommit`
 call (even for static scenes).
 
-*Note:* Due to some limitation of the task_arena implementation of the
-Intel® Threading Building Blocks, threads that call `rtcCommit` to
-join a running build will just wait for the build to finish. Thus the
-join mode does just not work properly when using TBB, and might cause
-the build to run sequential (if all threads want to join).
-
-*Note:* The join mode works properly with the internal tasking
- scheduler of Embree.
+*Note:* When using Embree with the Intel® Threading Building Blocks,
+the join mode only works properly starting with TBB v4.4 Update 1. For
+earlier TBB versions threads that call `rtcCommit` to join a running
+build will just wait for the build to finish.
 
 Memory Monitor Callback
 ---------------------------
@@ -1842,12 +1897,54 @@ multiple cancel requests for the same build operation is allowed.
 Configuring Embree
 ------------------
 
-Some internal device parameters can get configured using the
-`rtcDeviceSetParameter1i` API call. 
+Some internal device parameters can be set and queried using the
+`rtcDeviceSetParameter1i` and `rtcDeviceGetParameter1i` API call. The
+parameters from the following table are available to set/query:
 
-Currently we support to configure the size of the internal software
-cache that is used to handle subdivision surfaces by setting the
-`RTC_SOFTWARE_CACHE_SIZE` parameter to the desired size of the cache
+  -------------------------------------- ------------------------------------- ------------
+  Parameter                              Description                           Read/Write
+  -------------------------------------- ------------------------------------- ------------
+  RTC_CONFIG_INTERSECT1                  checks if rtcIntersect1 is supported  Read only
+  RTC_CONFIG_INTERSECT4                  checks if rtcIntersect4 is supported  Read only
+  RTC_CONFIG_INTERSECT8                  checks if rtcIntersect8 is supported  Read only
+  RTC_CONFIG_INTERSECT16                 checks if rtcIntersect16 is supported Read only
+  RTC_CONFIG_INTERSECTN                  checks if rtcIntersectN is supported  Read only
+
+  RTC_CONFIG_RAY_MASK                    checks if ray masks are supported     Read only
+  RTC_CONFIG_BACKFACE_CULLING            checks if backface culling is         Read only
+  supported
+  
+  RTC_CONFIG_INTERSECTION_FILTER         checks if intersection filters        Read only
+                                         are enabled
+
+  RTC_CONFIG_INTERSECTION_FILTER_RESTORE checks if intersection filters        Read only
+                                         restore previous hit
+
+  RTC_CONFIG_BUFFER_STRIDE               checks if buffer strides              Read only
+                                         are supported
+  
+  RTC_CONFIG_IGNORE_INVALID_RAYS         checks if invalid rays are ignored    Read only
+  RTC_CONFIG_TASKING_SYSTEM              return used tasking system            Read only
+                                         (0 = INTERNAL, 1 = TBB)
+
+  RTC_CONFIG_VERSION_MAJOR               returns Embree major version          Read only
+  RTC_CONFIG_VERSION_MINOR               returns Embree minor version          Read only
+  RTC_CONFIG_VERSION_PATCH               returns Embree patch version          Read only
+  RTC_CONFIG_VERSION                     returns Embree version as integer     Read only
+                                         e.g. Embree v2.8.2 -> 20802
+
+  RTC_SOFTWARE_CACHE_SIZE                Configures the software cache size    Write only
+                                         (used to cache subdivision surfaces
+                                         for instance). The size is specified
+                                         as an integer number of bytes. The
+                                         software cache cannot be configured
+                                         during rendering.
+  -------------------------------------- ------------------------------------- ------------
+  : Parameters for `rtcDeviceSetParameter` and `rtcDeviceGetParameter`.
+
+For example, to configure the size of the internal software
+cache that is used to handle subdivision surfaces use the
+`RTC_SOFTWARE_CACHE_SIZE` parameter to set desired size of the cache
 in bytes:
 
     rtcDeviceSetParameter1i(device, RTC_SOFTWARE_CACHE_SIZE, bytes);
@@ -1855,6 +1952,7 @@ in bytes:
 The software cache cannot get configured while any Embree API call is
 executed. Best configure the size of the cache only once at
 application start.
+
 
 Limiting number of Build Threads
 --------------------------------
@@ -1867,6 +1965,41 @@ use:
     #include <tbb/tbb.h>
 
     tbb::task_scheduler_init init(numThreads);
+
+Huge Page Support
+--------------------------------
+
+We recommend using 2MB huge pages with Embree as this improves ray
+tracing performance by about 10%. Huge pages are currently only
+working under Linux with Embree.
+
+To enable transparent huge page support under Linux execute the
+following as root:
+
+    echo always >/sys/kernel/mm/transparent_hugepage/enabled
+
+When transparent huge pages are enabled, the kernel tries to merge 4k
+pages to 2MB pages when possible as a background job. See the
+following webpage for more information on transparent huge pages under Linux
+[https://www.kernel.org/doc/Documentation/vm/transhuge.txt](https://www.kernel.org/doc/Documentation/vm/transhuge.txt).
+
+Using that first approach the transitioning from 4k to 2MB pages might
+take some time. For that reason Embree also supports allocating 2MB
+pages directly when a huge page pool is configured. To configure 2GB
+of adress space for huge page allocation, execute the following as root:
+
+    echo 1000 > /proc/sys/vm/nr_overcommit_hugepages
+
+See the following webpage for more information on huge pages under
+Linux [https://www.kernel.org/doc/Documentation/vm/hugetlbpage.txt](https://www.kernel.org/doc/Documentation/vm/hugetlbpage.txt).
+
+Scene Bounding Box
+------------------
+
+The scene bounding box can get read by the function
+`rtcGetBounds(RTCScene scene, RTCBounds& bounds_o)`. This function
+will write the AABB of the scene to `bounds_o`. Invoking this function
+is only valid when all scene changes got committed using `rtcCommit`.
 Embree Tutorials
 ================
 
@@ -2137,7 +2270,7 @@ Find Embree
 -----------
 
 This tutorial demonstrates how to use the `FIND_PACKAGE` CMake feature
-to use an installed Embree. Under Linux and Mac\ OS\ X the tutorial finds
+to use an installed Embree. Under Linux and Mac OS X the tutorial finds
 the Embree installation automatically, under Windows the `embree_DIR`
 CMake variable has to be set to the following folder of the Embree
 installation: `C:\Program Files\Intel\Embree
@@ -2154,7 +2287,6 @@ X.Y.Z\lib\cmake\embree-X.Y.Z`.
 [Displacement Geometry]: #displacement-geometry
 [BVH Builder]: #bvh-builder
 [Interpolation]: #interpolation
-[Configuring Embree]: #configuring-embree
 [Individual Contributor License Agreement (ICLA)]: https://embree.github.io/data/Embree-ICLA.pdf
 [Corporate Contributor License Agreement (CCLA)]: https://embree.github.io/data/Embree-CCLA.pdf
 [imgTriangleUV]: https://embree.github.io/images/triangle_uv.png
