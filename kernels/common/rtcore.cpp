@@ -98,7 +98,8 @@ namespace embree
     Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcDeviceSetParameter1i);
-    RTCORE_VERIFY_HANDLE(hdevice);
+    const bool internal_parm = (size_t)parm >= 1000000 && (size_t)parm < 1000004;
+    if (!internal_parm) RTCORE_VERIFY_HANDLE(hdevice); // allow NULL device for special internal settings
     Lock<MutexSys> lock(g_mutex);
     device->setParameter1i(parm,val);
     RTCORE_CATCH_END(device);
@@ -815,7 +816,18 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcNewHairGeometry);
     RTCORE_VERIFY_HANDLE(hscene);
-    return scene->newBezierCurves(flags,numCurves,numVertices,numTimeSteps);
+    return scene->newBezierCurves(BezierCurves::HAIR,flags,numCurves,numVertices,numTimeSteps);
+    RTCORE_CATCH_END(scene->device);
+    return -1;
+  }
+
+  RTCORE_API unsigned rtcNewCurveGeometry (RTCScene hscene, RTCGeometryFlags flags, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
+  {
+    Scene* scene = (Scene*) hscene;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcNewCurveGeometry);
+    RTCORE_VERIFY_HANDLE(hscene);
+    return scene->newBezierCurves(BezierCurves::SURFACE,flags,numCurves,numVertices,numTimeSteps);
     RTCORE_CATCH_END(scene->device);
     return -1;
   }

@@ -125,5 +125,15 @@ namespace embree
 
     }
     cout << std::endl;
+
+     /* print user counters for performance tuning */
+    cout << "--------- USER ---------" << std::endl;
+    for (size_t i=0; i<10; i++)
+      cout << "#user" << i << " = " << float(cntrs.user[i])/float(cntrs.all.normal.travs+cntrs.all.shadow.travs) << " per traversal" << std::endl;
+
+    cout << "#user5/user3 " << 100.0f*float(cntrs.user[5])/float(cntrs.user[3]) << "%" << std::endl;
+    cout << "#user6/user3 " << 100.0f*float(cntrs.user[6])/float(cntrs.user[3]) << "%" << std::endl;
+    cout << "#user7/user3 " << 100.0f*float(cntrs.user[7])/float(cntrs.user[3]) << "%" << std::endl;
+    cout << std::endl;
   }
 }

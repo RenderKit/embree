@@ -44,6 +44,7 @@ namespace embree
   static Shader g_shader = SHADER_DEFAULT;
   static bool convert_tris_to_quads = false;
   static bool convert_bezier_to_lines = false;
+  static bool convert_hair_to_curves = false;
 
   /* scene */
   TutorialScene g_obj_scene;
@@ -79,6 +80,11 @@ namespace embree
       /* convert bezier to lines */
       else if (tag == "-convert-bezier-to-lines") {
         convert_bezier_to_lines = true;
+      }
+
+      /* convert hair to curves */
+      else if (tag == "-convert-hair-to-curves") {
+        convert_hair_to_curves = true;
       }
 
       /* parse camera parameters */
@@ -299,6 +305,10 @@ namespace embree
     /* convert bezier to lines */
     if (convert_bezier_to_lines)
         g_scene->bezier_to_lines();
+
+    /* convert hair to curves */
+    if (convert_hair_to_curves)
+        g_scene->hair_to_curves();
 
     /* initialize ray tracing core */
     g_obj_scene.add(g_scene.dynamicCast<SceneGraph::Node>(),(TutorialScene::InstancingMode)g_instancing_mode); 

@@ -77,6 +77,7 @@ namespace embree
 	  } normal, shadow;
 	} all, active, code; 
 
+        AtomicCounter user[10];
     };
 
   public:

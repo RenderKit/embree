@@ -76,6 +76,13 @@ namespace embree
     /*! shuts down the tasking system */
     void exitTaskingSystem();
 
+    /*! some variables that can be set via rtcSetParameter1i for debugging purposes */
+  public:
+    static ssize_t debug_int0;
+    static ssize_t debug_int1;
+    static ssize_t debug_int2;
+    static ssize_t debug_int3;
+
   public:
     bool singledevice;      //!< true if this is the device created implicitely through rtcInit
 

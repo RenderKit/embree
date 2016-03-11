@@ -146,7 +146,7 @@ Vec3fa renderPixelNg(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(0.0f);
   else {
     //if (dot(ray.dir,ray.Ng) > 0.0f) return Vec3fa(zero); else
-    return normalize(Vec3fa(ray.Ng.x,ray.Ng.y,ray.Ng.z));
+    return normalize(abs(Vec3fa(ray.Ng.x,ray.Ng.y,ray.Ng.z)));
   }
 }
 
@@ -458,6 +458,9 @@ extern "C" bool device_pick(const float x,
   PRINT2(x,y);
   PRINT(ray.geomID);
   PRINT(ray.primID);
+  Vec3fa hit_point = ray.org + ray.tfar*ray.dir;
+  PRINT(hit_point);
+  PRINT(ray);
 
   /* shade pixel */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {

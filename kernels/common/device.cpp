@@ -28,6 +28,11 @@
 #include "geometry.h"
 
 #if !defined(__MIC__)
+#include "../xeon/geometry/cylinder.h"
+#include "../xeon/geometry/cone.h"
+#endif
+
+#if !defined(__MIC__)
 #include "../xeon/bvh/bvh4_factory.h"
 #include "../xeon/bvh/bvh8_factory.h"
 #endif
@@ -40,6 +45,12 @@
 
 namespace embree
 {
+  /*! some global variables that can be set via rtcSetParameter1i for debugging purposes */
+  ssize_t Device::debug_int0 = 0;
+  ssize_t Device::debug_int1 = 0;
+  ssize_t Device::debug_int2 = 0;
+  ssize_t Device::debug_int3 = 0;
+
   /* functions to initialize global constants */
   void init_globals();
 
@@ -93,6 +104,12 @@ namespace embree
     if (FileName::homeFolder() != FileName("")) // home folder is not available on KNC
       State::parseFile(FileName::homeFolder()+FileName(".embree" TOSTRING(__EMBREE_VERSION_MAJOR__)));
     State::verify();
+
+    /*! do some internal tests */
+#if !defined(__MIC__)
+    sse2::Cylinder::verify();
+    sse2::Cone::verify();
+#endif
     
     /*! set tessellation cache size */
     setCacheSize( State::tessellation_cache_size );
@@ -439,6 +456,15 @@ namespace embree
 
   void Device::setParameter1i(const RTCParameter parm, ssize_t val)
   {
+    /* hidden internal parameters */
+    switch ((size_t)parm)
+    {
+    case 1000000: debug_int0 = val; return;
+    case 1000001: debug_int1 = val; return;
+    case 1000002: debug_int2 = val; return;
+    case 1000003: debug_int3 = val; return;
+    }
+
     switch (parm) {
     case RTC_SOFTWARE_CACHE_SIZE: setCacheSize(val); break;
     default: throw_RTCError(RTC_INVALID_ARGUMENT, "unknown writable parameter"); break;

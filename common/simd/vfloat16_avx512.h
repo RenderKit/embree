@@ -660,6 +660,16 @@ namespace embree
     return mask_align_shift_right<15>(0xfffe,z,a,a);
   }
 
+#if defined(__AVX512F__)
+  __forceinline vfloat16 shift_right_1( const vfloat16& x) 
+  {
+    __m512 t0 = _mm512_permute_ps(x,_MM_PERM_ADCB);
+    __m512 t1 = _mm512_permute4f128_ps(t0,_MM_PERM_ADCB);
+    __m512 y  = _mm512_mask_blend_ps(0x8888,t0,t1);
+    return y;
+  }
+#endif
+
   __forceinline float toScalar(const vfloat16& a) { return _mm512_cvtss_f32(a); }
 
 

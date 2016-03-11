@@ -77,6 +77,10 @@ namespace embree
     __forceinline BBox( PosInfTy ): lower(neg_inf), upper(pos_inf) {}
   };
 
+  template<> __forceinline bool BBox<float>::empty() const {
+    return lower > upper;
+  }
+
 #if defined(__SSE__)
   template<> __forceinline bool BBox<Vec3fa>::empty() const {
     return !all(le_mask(lower,upper));
@@ -151,6 +155,16 @@ namespace embree
   /*! intersect bounding boxes */
   template<typename T> __forceinline const BBox<T> intersect( const BBox<T>& a, const BBox<T>& b ) { return BBox<T>(max(a.lower, b.lower), min(a.upper, b.upper)); }
   template<typename T> __forceinline const BBox<T> intersect( const BBox<T>& a, const BBox<T>& b, const BBox<T>& c ) { return intersect(a,intersect(b,c)); }
+  template<typename T> __forceinline const BBox<T> intersect( const BBox<T>& a, const BBox<T>& b, const BBox<T>& c, const BBox<T>& d ) { return intersect(intersect(a,b),intersect(c,d)); }
+
+  /*! subtract bounds from each other */
+  template<typename T> __forceinline void subtract(const BBox<T>& a, const BBox<T>& b, BBox<T>& c, BBox<T>& d)
+  {
+    c.lower = a.lower;
+    c.upper = min(a.upper,b.lower);
+    d.lower = max(a.lower,b.upper);
+    d.upper = a.upper;
+  }
 
   /*! tests if bounding boxes (and points) are disjoint (empty intersection) */
   template<typename T> __inline bool disjoint( const BBox<T>& a, const BBox<T>& b ) { return intersect(a,b).empty(); }
@@ -176,6 +190,7 @@ namespace embree
   }
 
   /*! default template instantiations */
+  typedef BBox<float> BBox1f;
   typedef BBox<Vec2f> BBox2f;
   typedef BBox<Vec3f> BBox3f;
   typedef BBox<Vec3fa> BBox3fa;

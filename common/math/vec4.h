@@ -47,6 +47,8 @@ namespace embree
     template<typename T1> __forceinline Vec4( const Vec4<T1>& a ) : x(T(a.x)), y(T(a.y)), z(T(a.z)), w(T(a.w)) {}
     template<typename T1> __forceinline Vec4& operator =(const Vec4<T1>& other) { x = other.x; y = other.y; z = other.z; w = other.w; return *this; }
 
+    __forceinline operator Vec3<T> () const { return Vec3<T>(x,y,z); }
+
     ////////////////////////////////////////////////////////////////////////////////
     /// Constants
     ////////////////////////////////////////////////////////////////////////////////
@@ -126,6 +128,14 @@ namespace embree
   }
 
   ////////////////////////////////////////////////////////////////////////////////
+  /// Shift Operators
+  ////////////////////////////////////////////////////////////////////////////////
+
+  template<typename T> __forceinline Vec4<T> shift_right_1( const Vec4<T>& a ) {
+    return Vec4<T>(shift_right_1(a.x),shift_right_1(a.y),shift_right_1(a.z),shift_right_1(a.w));
+  }
+
+  ////////////////////////////////////////////////////////////////////////////////
   /// Euclidian Space Operators
   ////////////////////////////////////////////////////////////////////////////////
 
@@ -140,6 +150,14 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
   template<typename T> __forceinline Vec4<T> select ( bool s, const Vec4<T>& t, const Vec4<T>& f ) {
+    return Vec4<T>(select(s,t.x,f.x),select(s,t.y,f.y),select(s,t.z,f.z),select(s,t.w,f.w));
+  }
+
+  template<typename T> __forceinline Vec4<T> select ( const Vec4<bool>& s, const Vec4<T>& t, const Vec4<T>& f ) {
+    return Vec4<T>(select(s.x,t.x,f.x),select(s.y,t.y,f.y),select(s.z,t.z,f.z),select(s.w,t.w,f.w));
+  }
+
+  template<typename T> __forceinline Vec4<T> select ( const typename T::Bool& s, const Vec4<T>& t, const Vec4<T>& f ) {
     return Vec4<T>(select(s,t.x,f.x),select(s,t.y,f.y),select(s,t.z,f.z),select(s,t.w,f.w));
   }
 

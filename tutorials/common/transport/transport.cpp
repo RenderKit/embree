@@ -19,6 +19,7 @@
 #include "../../common/tutorial/scene.h"
 #include "../../common/tutorial/tutorial_device.h"
 #include "../../common/tutorial/scene_device.h"
+#include "../../../include/embree2/rtcore.h"
 
 extern "C" int64_t get_tsc() {
   return read_tsc();
@@ -38,6 +39,10 @@ namespace embree
 
   void init(const char* cfg) {
     device_init(cfg);
+  }
+
+  void set_parameter(size_t parm, ssize_t val) {
+    rtcDeviceSetParameter1i(nullptr,(RTCParameter)parm,val);
   }
 
   void key_pressed (int key) {
