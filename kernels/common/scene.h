@@ -374,10 +374,10 @@ namespace embree
 
     template<typename Mesh, int timeSteps> __forceinline size_t getNumPrimitives() const;
    
+    atomic_t numIntersectionFilters1;  //!< number of enabled intersection/occlusion filters for single rays or N-wide ray streams    
     atomic_t numIntersectionFilters4;   //!< number of enabled intersection/occlusion filters for 4-wide ray packets
     atomic_t numIntersectionFilters8;   //!< number of enabled intersection/occlusion filters for 8-wide ray packets
     atomic_t numIntersectionFilters16;  //!< number of enabled intersection/occlusion filters for 16-wide ray packets
-    atomic_t numIntersectionFiltersN;  //!< number of enabled intersection/occlusion filters for N-wide ray streams    
   };
 
   template<> __forceinline size_t Scene::getNumPrimitives<TriangleMesh,1>() const { return world1.numTriangles; } 
