@@ -1,6 +1,24 @@
 Version History
 ---------------
 
+### New Features in Embree 2.9.0
+	
+-   Improved shadow ray performance (10--100% depending on the scene).
+-   Added initial support for ray streams (10--30% higher performance
+    depending on ray coherence in the stream).
+-   Added support to calculate second order derivatives using the
+    `rtcInterpolate2` function.
+-   Changed the parametrization for triangular subdivision faces to
+    the same scheme used for pentagons.
+-   Added support to query the Embree configuration using the
+    `rtcDeviceGetParameter` function.
+
+### New Features in Embree 2.8.1
+
+-   Added support for setting per geometry tessellation rate (supported
+    for subdivision and bezier geometries).
+-   Added support for motion blurred instances.
+
 ### New Features in Embree 2.8.0
 
 -   Added support for line segment geometry.
@@ -39,7 +57,7 @@ Version History
 -   Fixed bug in tesselation cache that caused crashes for subdivision
     surfaces.
 -   Fixed bug in internal task scheduler that caused deadlocks when
-    using rtcCommitThread.
+    using `rtcCommitThread`.
 -   Improved hit-distance accuracy for thin triangles in robust mode.
 -   Added support to disable ray packet support in cmake.
 
@@ -140,7 +158,7 @@ Version History
 
 -   Improved mixed AABB/OBB-BVH for hair geometry (Xeon Phi)
 -   Reduced amount of pre-allocated memory for BVH builders (Xeon Phi)
--   New 64\ bit Morton code-based BVH builder (Xeon Phi)
+-   New 64 bit Morton code-based BVH builder (Xeon Phi)
 -   (Enhanced) Morton code-based BVH builders use now tree rotations to
     improve BVH quality (Xeon Phi)
 -   Bug fixes (Xeon and Xeon Phi)
@@ -201,7 +219,7 @@ Version History
 BVH rebuild performance (including triangle accel generation, excluding
 memory allocation) for scenes with 2--12 million triangles:
 
--   Intel® Core™ i7 (Haswell-based CPU, 4 cores @ 3.0\ GHz)
+-   Intel® Core™ i7 (Haswell-based CPU, 4 cores @ 3.0 GHz)
     -   7--8 million triangles/s for the SAH-based BVH builder
     -   30--36 million triangles/s for the Morton code-based BVH builder
 -   Intel® Xeon Phi™ 7120
@@ -209,10 +227,10 @@ memory allocation) for scenes with 2--12 million triangles:
     -   140--160 million triangles/s for the Morton code-based BVH
         builder
 
-Rendering of the Crown model (`crown.ecs`) with 4\ samples per pixel
+Rendering of the Crown model (`crown.ecs`) with 4 samples per pixel
 (`-spp 4`):
 
--   Intel® Core™ i7 (Haswell-based CPU, 4 cores CPU @ 3.0\ GHz)
+-   Intel® Core™ i7 (Haswell-based CPU, 4 cores CPU @ 3.0 GHz)
     -   1024×1024 resolution: 7.8 million rays per sec
     -   1920×1080 resolution: 9.9 million rays per sec
 -   Intel® Xeon Phi™ 7120
