@@ -143,12 +143,15 @@ namespace embree
       const Vec4vfx P1 = P0 + dP0du; 
       const Vec4vfx P2 = P3 - dP3du;
 
+
       /* calculate bounding cylinders */
+      const Vec3vfx nP3P0 = normalize(P3-P0);
       const vfloatx rr1 = sqr_point_to_line_distance(Vec3vfx(dP0du),Vec3vfx(P3-P0));
       const vfloatx rr2 = sqr_point_to_line_distance(Vec3vfx(dP3du),Vec3vfx(P3-P0));
       const vfloatx maxr12 = sqrt(max(rr1,rr2));
       const vfloatx r_outer = max(P0.w,P1.w,P2.w,P3.w)+maxr12;
-      const vfloatx r_inner = max(0.0f,min(P0.w,P1.w,P2.w,P3.w)-maxr12);
+      const vfloatx sr = min(abs(dot(nP3P0,normalize(Vec3vfx(dP0du)))),abs(dot(nP3P0,normalize(Vec3vfx(dP3du)))));
+      const vfloatx r_inner = max(0.0f,min(P0.w,P1.w,P2.w,P3.w)-maxr12)*sr;
       const CylinderN<VSIZEX> cylinder_outer(Vec3vfx(P0),Vec3vfx(P3),r_outer);
       const CylinderN<VSIZEX> cylinder_inner(Vec3vfx(P0),Vec3vfx(P3),r_inner);
       vboolx valid = true; clear(valid,VSIZEX-1);
@@ -234,11 +237,13 @@ namespace embree
       const Vec4vfx P2 = P3 - dP3du;
 
       /* calculate bounding cylinders */
+      const Vec3vfx nP3P0 = normalize(P3-P0);
       const vfloatx rr1 = sqr_point_to_line_distance(Vec3vfx(dP0du),Vec3vfx(P3-P0));
       const vfloatx rr2 = sqr_point_to_line_distance(Vec3vfx(dP3du),Vec3vfx(P3-P0));
       const vfloatx maxr12 = sqrt(max(rr1,rr2));
       const vfloatx r_outer = max(P0.w,P1.w,P2.w,P3.w)+maxr12;
-      const vfloatx r_inner = max(0.0f,min(P0.w,P1.w,P2.w,P3.w)-maxr12);
+      const vfloatx sr = min(abs(dot(nP3P0,normalize(Vec3vfx(dP0du)))),abs(dot(nP3P0,normalize(Vec3vfx(dP3du)))));
+      const vfloatx r_inner = max(0.0f,min(P0.w,P1.w,P2.w,P3.w)-maxr12)*sr;
       const CylinderN<VSIZEX> cylinder_outer(Vec3vfx(P0),Vec3vfx(P3),r_outer);
       const CylinderN<VSIZEX> cylinder_inner(Vec3vfx(P0),Vec3vfx(P3),r_inner);
       vboolx valid = true; clear(valid,VSIZEX-1);
