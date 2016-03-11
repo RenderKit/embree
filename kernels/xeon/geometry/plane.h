@@ -22,45 +22,6 @@ namespace embree
 {
   namespace isa
   {
-    struct Plane
-    {
-      const Vec3fa P;  //!< plane origin
-      const Vec3fa N;  //!< plane normal
-
-      __forceinline Plane(const Vec3fa& P, const Vec3fa& N) 
-        : P(P), N(N) {}
-      
-      __forceinline float intersect(const Vec3fa& ray_org, const Vec3fa& ray_dir) const
-      {
-        Vec3fa O = Vec3fa(ray_org) - P;
-        Vec3fa D = Vec3fa(ray_dir);
-        float ON = dot(O,N);
-        float DN = dot(D,N);
-        float t = -ON*rcp(abs(DN) < min_rcp_input ? min_rcp_input : DN );
-        return t;
-      }
-    };
-
-    template<int M>
-      struct PlaneN
-      {
-        const Vec3<vfloat<M>> P;  //!< plane origin
-        const Vec3<vfloat<M>> N;  //!< plane normal
-
-        __forceinline PlaneN(const Vec3<vfloat<M>>& P, const Vec3<vfloat<M>>& N)
-          : P(P), N(N) {}
-
-        __forceinline vfloat<M> intersect(const Vec3fa& ray_org, const Vec3fa& ray_dir) const
-        {
-          Vec3<vfloat<M>> O = Vec3<vfloat<M>>(ray_org) - P;
-          Vec3<vfloat<M>> D = Vec3<vfloat<M>>(ray_dir);
-          vfloat<M> ON = dot(O,N);
-          vfloat<M> DN = dot(D,N);
-          vfloat<M> t = -ON*rcp(select(abs(DN) < min_rcp_input, min_rcp_input, DN) );
-          return t;
-        }
-      };
-
     struct HalfPlane
     {
       const Vec3fa P;  //!< plane origin
