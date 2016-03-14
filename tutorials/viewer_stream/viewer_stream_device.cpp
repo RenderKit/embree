@@ -167,28 +167,6 @@ RTCScene convertScene(ISPCScene* scene_in)
   return scene_out;
 }
 
-struct RangeIterator
-{
-  __forceinline RangeIterator(int x0, int x1, int y0, int y1)
-    : x0(x0), x1(x1), y0(y0), y1(y1), cx(x0), cy(y0) {}
-
-  __forceinline bool next(std::pair<int,int>& r)
-  {
-    if (cx>=x1) { cx = x0; cy++; } else cx++;
-    if (cy>=y1) return false;
-    r = std::make_pair(cx,cy);
-    return true;
-  }
-
-  __forceinline bool empty() const {
-    return cy >= y1;
-  }
-
-public:
-  int x0,x1,y0,y1;
-  int cx,cy;
-};
-
 /* task that renders a single pixel */
 Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p) {
   return zero;
@@ -214,58 +192,53 @@ void renderTile(int taskIndex, int* pixels,
   const int y0 = tileY * TILE_SIZE_Y;
   const int y1 = min(y0+TILE_SIZE_Y,height);
 
-  RTCRay rays[8];
-  int sx[8], sy[8];
-  RangeIterator iter(x0,x1,y0,y1);
-
-  while (!iter.empty())
+  RTCRay rays[TILE_SIZE_X*TILE_SIZE_Y];
+  
+  size_t N = 0;
+  for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
-    size_t N=0;
-    for (size_t i=0; i<8; i++)
-    {
-      std::pair<int,int> pixel;
-      if (!iter.next(pixel)) break;
-      const int x = pixel.first;  sx[i] = x;
-      const int y = pixel.second; sy[i] = y;
-      RTCRay& ray = rays[i];
+    RTCRay& ray = rays[N];
       
-      /* initialize sampler */
-      RandomSampler sampler;
-      RandomSampler_init(sampler, x, y, 0);
-      
-      /* initialize ray */
-      ray.org = p;
-      ray.dir = normalize(x*vx + y*vy + vz);
-      ray.tnear = 0.0f;
-      ray.tfar = inf;
-      ray.geomID = RTC_INVALID_GEOMETRY_ID;
-      ray.primID = RTC_INVALID_GEOMETRY_ID;
-      ray.mask = -1;
-      ray.time = RandomSampler_get1D(sampler);
-      N++;
-    }
+    /* initialize sampler */
+    RandomSampler sampler;
+    RandomSampler_init(sampler, x, y, 0);
     
-    /* intersect ray stream with scene */
-    rtcIntersectN(g_scene,rays,N,sizeof(RTCRay));
+    /* initialize ray */
+    ray.org = p;
+    ray.dir = normalize(x*vx + y*vy + vz);
+    ray.tnear = 0.0f;
+    ray.tfar = inf;
+    ray.geomID = RTC_INVALID_GEOMETRY_ID;
+    ray.primID = RTC_INVALID_GEOMETRY_ID;
+    ray.mask = -1;
+    ray.time = RandomSampler_get1D(sampler);
+    N++;
+  }
     
-    /* shade ray stream */
-    for (size_t i=0; i<N; i++)
-    {
-      RTCRay& ray = rays[i];
-      
-      /* shade background black */
-      Vec3fa color = Vec3fa(0.0f);
-      
-      /* shade all rays that hit something */
-      if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
-        color = Vec3fa(abs(dot(ray.dir,normalize(ray.Ng))));
-      
-      /* write color to framebuffer */
-      unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
-      unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
-      unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-      pixels[sy[i]*width+sx[i]] = (b << 16) + (g << 8) + r;
-    }
+  /* intersect ray stream with scene */
+  //for (size_t i=0; i<N; i+=8)
+  //rtcIntersectN(g_scene,&rays[i],min(N-i,size_t(8)),sizeof(RTCRay));
+  rtcIntersectN(g_scene,rays,N,sizeof(RTCRay));
+    
+  /* shade ray stream */
+  N = 0;
+  for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
+  {
+    RTCRay& ray = rays[N];
+    
+    /* shade background black */
+    Vec3fa color = Vec3fa(0.0f);
+    
+    /* shade all rays that hit something */
+    if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
+      color = Vec3fa(abs(dot(ray.dir,normalize(ray.Ng))));
+    
+    /* write color to framebuffer */
+    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
+    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
+    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
+    pixels[y*width+x] = (b << 16) + (g << 8) + r;
+    N++;
   }
 }
 
