@@ -23,7 +23,7 @@ const int numTheta = 2*numPhi;
 renderPixelFunc renderPixel;
 
 /* error reporting function */
- void error_handler(const RTCError code, const char* str = nullptr)
+void error_handler(const RTCError code, const char* str = nullptr)
 {
   if (code == RTC_NO_ERROR) 
     return;
@@ -63,7 +63,7 @@ struct Instance
   Vec3fa upper;
 };
 
- void instanceBoundsFunc(const Instance* instance, size_t item, RTCBounds* bounds_o)
+void instanceBoundsFunc(const Instance* instance, size_t item, RTCBounds* bounds_o)
 {
   Vec3fa l = instance->lower;
   Vec3fa u = instance->upper;
@@ -153,7 +153,7 @@ struct Sphere
   unsigned int geomID;
 };
 
- void sphereBoundsFunc(const Sphere* spheres, size_t item, RTCBounds* bounds_o)
+void sphereBoundsFunc(const Sphere* spheres, size_t item, RTCBounds* bounds_o)
 {
   const Sphere& sphere = spheres[item];
   bounds_o->lower_x = sphere.p.x-sphere.r;

@@ -87,7 +87,7 @@ unsigned int convertSubdivMesh(ISPCSubdivMesh* mesh, RTCScene scene_out)
   unsigned int geomID = rtcNewSubdivisionMesh(scene_out, RTC_GEOMETRY_STATIC, mesh->numFaces, mesh->numEdges, mesh->numVertices, 
                                                       mesh->numEdgeCreases, mesh->numVertexCreases, mesh->numHoles);
   mesh->geomID = geomID;												
-  for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = 8.0f;
+  for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = 16.0f;
   rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa  ));
   rtcSetBuffer(scene_out, geomID, RTC_LEVEL_BUFFER,  mesh->subdivlevel, 0, sizeof(float));
   rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->position_indices  , 0, sizeof(unsigned int));
@@ -129,8 +129,9 @@ unsigned int convertCurveGeometry(ISPCHairSet* hair, RTCScene scene_out)
 
 RTCScene convertScene(ISPCScene* scene_in)
 {
+  size_t numGeometries = scene_in->numGeometries;
   int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
-  int scene_aflags = RTC_INTERSECT1 | RTC_INTERPOLATE | RTC_INTERSECTN;
+  int scene_aflags = RTC_INTERSECT1 | RTC_INTERSECTN | RTC_INTERPOLATE;
   RTCScene scene_out = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
 
   for (size_t i=0; i<scene_in->numGeometries; i++)
@@ -163,13 +164,12 @@ RTCScene convertScene(ISPCScene* scene_in)
     else
       assert(false);
   }
-  
   return scene_out;
 }
 
-/* task that renders a single pixel */
+/* task that renders a single screen tile */
 Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p) {
-  return zero;
+  return Vec3fa(0.0f);
 }
 
 /* task that renders a single screen tile */
@@ -193,17 +193,15 @@ void renderTile(int taskIndex, int* pixels,
   const int y1 = min(y0+TILE_SIZE_Y,height);
 
   RTCRay rays[TILE_SIZE_X*TILE_SIZE_Y];
-  
-  size_t N = 0;
+
+  int packets = 0;
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
-    RTCRay& ray = rays[N];
-      
-    /* initialize sampler */
     RandomSampler sampler;
     RandomSampler_init(sampler, x, y, 0);
-    
+
     /* initialize ray */
+    RTCRay& ray = rays[packets];
     ray.org = p;
     ray.dir = normalize(x*vx + y*vy + vz);
     ray.tnear = 0.0f;
@@ -212,48 +210,38 @@ void renderTile(int taskIndex, int* pixels,
     ray.primID = RTC_INVALID_GEOMETRY_ID;
     ray.mask = -1;
     ray.time = RandomSampler_get1D(sampler);
-    N++;
+    packets++;
   }
-    
-  /* intersect ray stream with scene */
-  //for (size_t i=0; i<N; i+=8)
-  //rtcIntersectN(g_scene,&rays[i],min(N-i,size_t(8)),sizeof(RTCRay));
-  rtcIntersectN(g_scene,rays,N,sizeof(RTCRay));
-    
-  /* shade ray stream */
-  N = 0;
+
+  rtcIntersectN(g_scene,rays,packets,sizeof(RTCRay),0);
+
+  packets = 0;
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
-    RTCRay& ray = rays[N];
-    
-    /* shade background black */
+    RTCRay &ray = rays[packets++];
     Vec3fa color = Vec3fa(0.0f);
-    
-    /* shade all rays that hit something */
-    if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
-      color = Vec3fa(abs(dot(ray.dir,normalize(ray.Ng))));
-    
+    if (ray.geomID != RTC_INVALID_GEOMETRY_ID) color = Vec3fa(abs(dot(ray.dir,normalize(ray.Ng))));
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
     unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
     unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
     pixels[y*width+x] = (b << 16) + (g << 8) + r;
-    N++;
   }
 }
 
 /* called by the C++ code to render */
 extern "C" void device_render (int* pixels,
-                               const int width,
-                               const int height, 
-                               const float time,
-                               const Vec3fa& vx, 
-                               const Vec3fa& vy, 
-                               const Vec3fa& vz, 
-                               const Vec3fa& p)
+                           const int width,
+                           const int height, 
+                           const float time,
+                           const Vec3fa& vx, 
+                           const Vec3fa& vy, 
+                           const Vec3fa& vz, 
+                           const Vec3fa& p)
 {
   /* create scene */
-  if (g_scene == nullptr) { 
+  if (g_scene == nullptr) 
+  { 
     g_scene = convertScene(g_ispc_scene);
     rtcCommit (g_scene);
   }

@@ -31,7 +31,7 @@ renderPixelFunc renderPixel;
 Vec3fa old_p; 
 
 /* error reporting function */
- void error_handler(const RTCError code, const char* str = nullptr)
+void error_handler(const RTCError code, const char* str = nullptr)
 {
   if (code == RTC_NO_ERROR) 
     return;
@@ -128,7 +128,7 @@ float displacement_dv(const Vec3fa& P, const Vec3fa& dPdv)
   return (displacement(P+dv*dPdv)-displacement(P))/dv;
 }
 
- void displacementFunction(void* ptr, unsigned int geomID, int unsigned primID, 
+void displacementFunction(void* ptr, unsigned int geomID, int unsigned primID, 
                                    const float* u,      /*!< u coordinates (source) */
                                    const float* v,      /*!< v coordinates (source) */
                                    const float* nx,     /*!< x coordinates of normal at point to displace (source) */
