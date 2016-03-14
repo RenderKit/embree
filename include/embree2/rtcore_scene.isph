@@ -111,7 +111,13 @@ void rtcIntersect (RTCScene scene, varying RTCRay& ray);
  *  function can only be called for scenes with the RTC_INTERSECTN
  *  flag set. The stride specifies the offset between rays in
  *  bytes. */
-void rtcIntersectN (RTCScene scene, uniform RTCRay* uniform rayN, const uniform size_t N, const uniform size_t stride, const uniform size_t flags);
+void rtcIntersect1N (RTCScene scene, uniform RTCRay1* uniform rayN, const uniform size_t N, const uniform size_t stride, const uniform size_t flags);
+
+/*! Intersects a stream of N rays in AOS layout with the scene. This
+ *  function can only be called for scenes with the RTC_INTERSECTN
+ *  flag set. The stride specifies the offset between rays in
+ *  bytes. */
+void rtcIntersectN (RTCScene scene, varying RTCRay* uniform rayN, const uniform size_t N, const uniform size_t stride, const uniform size_t flags);
 
 /*! Intersects one or multiple streams of N rays in compact SOA layout with the scene. This
  *  function can only be called for scenes with the RTC_INTERSECTN

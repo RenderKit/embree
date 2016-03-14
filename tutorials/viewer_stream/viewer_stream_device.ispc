@@ -213,9 +213,7 @@ task void renderTile(uniform int* uniform pixels,
     packets++;
   }
 
-  uniform RTCRaySOA ray_soa;
-  initRTCRaySOA(ray_soa,rays[0]);
-  rtcIntersectN_SOA(g_scene,ray_soa,8,8,sizeof(RTCRay),0);
+  rtcIntersectN(g_scene,rays,packets,sizeof(RTCRay),0);
 
   packets = 0;
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
