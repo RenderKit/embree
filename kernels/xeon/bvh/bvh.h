@@ -773,7 +773,10 @@ namespace embree
         for (size_t i=0; i<N; i++) upper_x[i] = upper_y[i] = upper_z[i] = MIN_QUAN_8BIT;
       }
 
-        /*! Returns reference to specified child */
+        /*! Returns NodeRef to specified child which is combined from 64bit this pointer + 32bit offset*/
+      __forceinline       NodeRef child(size_t i)       { assert(i<N); return (size_t)this + children[i]; }
+      __forceinline const NodeRef child(size_t i) const { assert(i<N); return (size_t)this + children[i]; }
+
       __forceinline       int& childOffset(size_t i)       { assert(i<N); return children[i]; }
       __forceinline const int& childOffset(size_t i) const { assert(i<N); return children[i]; }
 
@@ -815,23 +818,17 @@ namespace embree
         const vbool<N> m_valid = lower != vfloat<N>(pos_inf);
         const vfloat<N> minF = vreduce_min(lower);
         const vfloat<N> maxF = vreduce_max(upper);
-        const vfloat<N> diff = (maxF - minF);
+        const vfloat<N> diff = (maxF - minF)+vfloat<N>(2.0f*(float)ulp); //todo: add extracted difference here
         const vfloat<N> scale_diff = diff / 255.0f;
-        const vfloat<N> inv_diff = 1.0f / diff;
-        vfloat<N> floor_lower = floor( ( (lower - minF) * inv_diff) * vfloat<N>(255.0f));
-        vfloat<N> ceil_upper  = ceil ( ( (upper - minF) * inv_diff) * vfloat<N>(255.0f));
+        const vfloat<N> inv_diff = 255.0f / diff;
+        vfloat<N> floor_lower = floor(  (lower - minF) * inv_diff );
+        vfloat<N> ceil_upper  = ceil (  (upper - minF) * inv_diff );
         vint<N> i_floor_lower( floor_lower );
         vint<N> i_ceil_upper ( ceil_upper  );        
         i_floor_lower = select(m_valid,i_floor_lower,255);
         i_ceil_upper  = select(m_valid,i_ceil_upper ,0);
 
-        /* accomodate for floating point inaccuracy */
-        vfloat<N> test_extract_upper( i_ceil_upper );
-        vfloat<N> test_final_upper = minF + test_extract_upper * scale_diff;
-        vbool<N> m_ceil = (test_final_upper < upper) & m_valid;
-        PRINT(m_ceil);
-        
-        
+                
         vint<N>::store_uchar(lower_quant,i_floor_lower);
         vint<N>::store_uchar(upper_quant,i_ceil_upper);
         start = toScalar(minF);
@@ -841,8 +838,11 @@ namespace embree
         vfloat<N> extract_upper( vint<N>::load(upper_quant) );
         vfloat<N> final_extract_lower = minF + extract_lower * scale_diff;
         vfloat<N> final_extract_upper = minF + extract_upper * scale_diff;
+#if 1        
         PRINT(lower);
         PRINT(upper);
+        PRINT(minF);
+        PRINT(maxF);        
         PRINT(i_floor_lower);
         PRINT(i_ceil_upper);        
         PRINT(vint<N>::load(lower_quant));
@@ -852,6 +852,10 @@ namespace embree
         PRINT(final_extract_lower <= lower);
         PRINT(final_extract_upper >= upper);
         PRINT(m_valid);
+        vfloat<N> e_upper = minF + scale_diff * vfloat<N>(255.0f);
+        assert(all(e_upper >= maxF));
+ 
+#endif        
         assert( (movemask(final_extract_lower <= lower ) & movemask(m_valid)) == movemask(m_valid));
         assert( (movemask(final_extract_upper >= upper ) & movemask(m_valid)) == movemask(m_valid)); 
 #endif        
