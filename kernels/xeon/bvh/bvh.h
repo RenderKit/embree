@@ -805,39 +805,66 @@ namespace embree
         return BBox3fa(lower,upper);
       }
 
+      static __forceinline void init_dim(const vfloat<N> &lower,
+                                         const vfloat<N> &upper,
+                                         unsigned char lower_quant[N],
+                                         unsigned char upper_quant[N],
+                                         float &start,
+                                         float &scale)
+      {
+        const vbool<N> m_valid = lower != vfloat<N>(pos_inf);
+        const vfloat<N> minF = vreduce_min(lower);
+        const vfloat<N> maxF = vreduce_max(upper);
+        const vfloat<N> diff = (maxF - minF);
+        const vfloat<N> scale_diff = diff / 255.0f;
+        const vfloat<N> inv_diff = 1.0f / diff;
+        vfloat<N> floor_lower = floor( ( (lower - minF) * inv_diff) * vfloat<N>(255.0f));
+        vfloat<N> ceil_upper  = ceil ( ( (upper - minF) * inv_diff) * vfloat<N>(255.0f));
+        vint<N> i_floor_lower( floor_lower );
+        vint<N> i_ceil_upper ( ceil_upper  );        
+        i_floor_lower = select(m_valid,i_floor_lower,255);
+        i_ceil_upper  = select(m_valid,i_ceil_upper ,0);
+
+        /* accomodate for floating point inaccuracy */
+        vfloat<N> test_extract_upper( i_ceil_upper );
+        vfloat<N> test_final_upper = minF + test_extract_upper * scale_diff;
+        vbool<N> m_ceil = (test_final_upper < upper) & m_valid;
+        PRINT(m_ceil);
+        
+        
+        vint<N>::store_uchar(lower_quant,i_floor_lower);
+        vint<N>::store_uchar(upper_quant,i_ceil_upper);
+        start = toScalar(minF);
+        scale = toScalar(scale_diff);
+#if DEBUG
+        vfloat<N> extract_lower( vint<N>::load(lower_quant) );
+        vfloat<N> extract_upper( vint<N>::load(upper_quant) );
+        vfloat<N> final_extract_lower = minF + extract_lower * scale_diff;
+        vfloat<N> final_extract_upper = minF + extract_upper * scale_diff;
+        PRINT(lower);
+        PRINT(upper);
+        PRINT(i_floor_lower);
+        PRINT(i_ceil_upper);        
+        PRINT(vint<N>::load(lower_quant));
+        PRINT(vint<N>::load(upper_quant));        
+        PRINT(final_extract_lower);
+        PRINT(final_extract_upper);
+        PRINT(final_extract_lower <= lower);
+        PRINT(final_extract_upper >= upper);
+        PRINT(m_valid);
+        assert( (movemask(final_extract_lower <= lower ) & movemask(m_valid)) == movemask(m_valid));
+        assert( (movemask(final_extract_upper >= upper ) & movemask(m_valid)) == movemask(m_valid)); 
+#endif        
+      }
+                                         
+                                         
+      
+      
       __forceinline void init(Node &node)
       {
-        // todo: doubles to improve precession,avx int code path ?
-        PING;
-        const vbool<N> m_lowerX = node.lower_x != vfloat<N>(pos_inf);
-        const vbool<N> m_upperX = node.upper_x != vfloat<N>(neg_inf);
-        PRINT(node.lower_x);
-        PRINT(node.upper_x);
-
-        const vfloat<N> minX = vreduce_min(node.lower_x);
-        const vfloat<N> maxX = vreduce_max(node.upper_x);
-        PRINT(minX);
-        PRINT(maxX);
-
-        const vfloat<N> inv_diffX = 1.0f / (maxX - minX);
-        vfloat<N> floor_lower_x = floor(( (node.lower_x - minX) * vfloat<N>(255.0f) * inv_diffX));
-        vfloat<N> ceil_upper_x  = ceil (( (node.upper_x - minX) * vfloat<N>(255.0f) * inv_diffX));
-        PRINT(floor_lower_x);
-        PRINT(ceil_upper_x);
-        vint<N> i_floor_lower_x( floor_lower_x );
-        vint<N> i_ceil_upper_x ( ceil_upper_x  );
-
-        vint<N>::store_uchar(lower_x,i_floor_lower_x);
-        vint<N>::store_uchar(upper_x,i_ceil_upper_x);
-        
-        PRINT( vint<N>::load(lower_x) );
-        PRINT( vint<N>::load(upper_x) );
-
-        vfloat<N> extract_lower_x( vint<N>::load(lower_x) );
-        vfloat<N> extract_upper_x( vint<N>::load(upper_x) );
-        PRINT(extract_lower_x);
-        PRINT(extract_upper_x);
-        exit(0);
+        init_dim(node.lower_x,node.upper_x,lower_x,upper_x,start.x,scale.x);
+        init_dim(node.lower_y,node.upper_y,lower_y,upper_y,start.y,scale.y);
+        init_dim(node.lower_z,node.upper_z,lower_z,upper_z,start.z,scale.z);        
       }
 
       unsigned char lower_x[N]; //!< 8bit discretized X dimension of lower bounds of all N children
