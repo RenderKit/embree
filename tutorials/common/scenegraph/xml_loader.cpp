@@ -266,7 +266,7 @@ namespace embree
     std::vector<float> loadFloatArray(const Ref<XML>& xml);
     std::vector<Vec2f> loadVec2fArray(const Ref<XML>& xml);
     std::vector<Vec3f> loadVec3fArray(const Ref<XML>& xml);
-    std::vector<Vec3fa> loadVec4fArray(const Ref<XML>& xml);
+    avector<Vec3fa> loadVec4fArray(const Ref<XML>& xml);
     std::vector<int>   loadIntArray(const Ref<XML>& xml);
     std::vector<Vec2i> loadVec2iArray(const Ref<XML>& xml);
     std::vector<Vec3i> loadVec3iArray(const Ref<XML>& xml);
@@ -481,10 +481,10 @@ namespace embree
     return res;
   }
 
-  std::vector<Vec3fa> XMLLoader::loadVec4fArray(const Ref<XML>& xml)
+  avector<Vec3fa> XMLLoader::loadVec4fArray(const Ref<XML>& xml)
   {
     /*! do not fail of array does not exist */
-    if (!xml) { return std::vector<Vec3fa>(); }
+    if (!xml) { return avector<Vec3fa>(); }
 
     size_t size = 0;
     Vec3fa* data = nullptr;
@@ -499,7 +499,7 @@ namespace embree
       for (size_t i=0; i<size; i++) 
         data[i] = Vec3fa(xml->body[4*i+0].Float(),xml->body[4*i+1].Float(),xml->body[4*i+2].Float(),xml->body[4*i+3].Float());
     }
-    std::vector<Vec3fa> res;
+    avector<Vec3fa> res;
     for (size_t i=0; i<size; i++) res.push_back(data[i]);
     alignedFree(data);
     return res;
@@ -914,8 +914,8 @@ namespace embree
   Ref<SceneGraph::Node> XMLLoader::loadLineSegments(const Ref<XML>& xml) 
   {
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
-    std::vector<Vec3fa> positions  = loadVec4fArray(xml->childOpt("positions"));
-    std::vector<Vec3fa> positions2 = loadVec4fArray(xml->childOpt("positions2"));
+    avector<Vec3fa> positions  = loadVec4fArray(xml->childOpt("positions"));
+    avector<Vec3fa> positions2 = loadVec4fArray(xml->childOpt("positions2"));
     std::vector<int>    indices    = loadIntArray(xml->childOpt("indices"));
 
     SceneGraph::LineSegmentsNode* mesh = new SceneGraph::LineSegmentsNode(material);
@@ -929,8 +929,8 @@ namespace embree
   Ref<SceneGraph::Node> XMLLoader::loadBezierHair(const Ref<XML>& xml) 
   {
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
-    std::vector<Vec3fa> positions  = loadVec4fArray(xml->childOpt("positions"));
-    std::vector<Vec3fa> positions2 = loadVec4fArray(xml->childOpt("positions2"));
+    avector<Vec3fa> positions  = loadVec4fArray(xml->childOpt("positions"));
+    avector<Vec3fa> positions2 = loadVec4fArray(xml->childOpt("positions2"));
     std::vector<Vec2i> indices     = loadVec2iArray(xml->childOpt("indices"));
 
     SceneGraph::HairSetNode* hair = new SceneGraph::HairSetNode(true,material);
@@ -944,8 +944,8 @@ namespace embree
   Ref<SceneGraph::Node> XMLLoader::loadBezierCurves(const Ref<XML>& xml) 
   {
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
-    std::vector<Vec3fa> positions  = loadVec4fArray(xml->childOpt("positions"));
-    std::vector<Vec3fa> positions2 = loadVec4fArray(xml->childOpt("positions2"));
+    avector<Vec3fa> positions  = loadVec4fArray(xml->childOpt("positions"));
+    avector<Vec3fa> positions2 = loadVec4fArray(xml->childOpt("positions2"));
     std::vector<Vec2i> indices     = loadVec2iArray(xml->childOpt("indices"));
 
     SceneGraph::HairSetNode* hair = new SceneGraph::HairSetNode(false,material);
@@ -959,8 +959,8 @@ namespace embree
   Ref<SceneGraph::Node> XMLLoader::loadBSplineCurves(const Ref<XML>& xml) 
   {
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
-    std::vector<Vec3fa> positions  = loadVec4fArray(xml->childOpt("positions"));
-    std::vector<Vec3fa> positions2 = loadVec4fArray(xml->childOpt("positions2"));
+    avector<Vec3fa> positions  = loadVec4fArray(xml->childOpt("positions"));
+    avector<Vec3fa> positions2 = loadVec4fArray(xml->childOpt("positions2"));
     std::vector<int> indices       = loadIntArray(xml->childOpt("indices"));
 
     SceneGraph::HairSetNode* hair = new SceneGraph::HairSetNode(false,material);
