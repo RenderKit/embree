@@ -137,7 +137,6 @@ inline bool hadHit(const RTCRay& r) { return r.geomID >= 0; }
 struct RTCRaySOA
 {
   /* ray data */
-
   uniform float* uniform orgx;  //!< x coordinate of ray origin
   uniform float* uniform orgy;  //!< y coordinate of ray origin
   uniform float* uniform orgz;  //!< z coordinate of ray origin
@@ -150,10 +149,9 @@ struct RTCRaySOA
   uniform float* uniform tfar;  //!< End of ray segment (set to hit distance)
  
   uniform float* uniform time;  //!< Time of this ray for motion blur (optional)
-  uniform int* uniform mask;  //!< Used to mask out objects during traversal (optional)
+  uniform int* uniform mask;    //!< Used to mask out objects during traversal (optional)
 
   /* hit data */
-
   uniform float* uniform Ngx;   //!< x coordinate of geometry normal (optional)
   uniform float* uniform Ngy;   //!< y coordinate of geometry normal (optional)
   uniform float* uniform Ngz;   //!< z coordinate of geometry normal (optional)
@@ -165,21 +163,6 @@ struct RTCRaySOA
   uniform int* uniform primID;  //!< primitive ID
   uniform int* uniform instID;  //!< instance ID (optional)
 };
-
-#if 0
-  Vec3f org;     //!< Ray origin
-  Vec3f dir;     //!< Ray direction
-  float tnear;   //!< Start of ray segment
-  float tfar;    //!< End of ray segment
-  float time;    //!< Time of this ray for motion blur.
-  int mask;      //!< used to mask out objects during traversal
-  Vec3f Ng;      //!< Geometric normal.
-  float u;       //!< Barycentric u coordinate of hit
-  float v;       //!< Barycentric v coordinate of hit
-  int geomID;    //!< geometry ID
-  int primID;    //!< primitive ID
-  int instID;    //!< instance ID
-#endif
 
 inline void initRTCRaySOA(uniform RTCRaySOA &ray_soa, varying RTCRay &ray)
 {

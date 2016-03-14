@@ -192,18 +192,16 @@ task void renderTile(uniform int* uniform pixels,
   const uniform int y0 = tileY * TILE_SIZE_Y;
   const uniform int y1 = min(y0+TILE_SIZE_Y,height);
 
-  RTCRay rays[8];
-  uniform int packets = 0;
-  uniform RTCRaySOA ray_soa;
-  initRTCRaySOA(ray_soa,rays[0]);
+  RTCRay rays[TILE_SIZE_X*TILE_SIZE_Y];
 
+  uniform int packets = 0;
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
     RandomSampler sampler;
     RandomSampler_init(sampler, x, y, 0);
 
     /* initialize ray */
-    RTCRay &ray = rays[packets];
+    RTCRay& ray = rays[packets];
     ray.org = p;
     ray.dir = normalize(x*vx + y*vy + vz);
     ray.tnear = 0.0f;
@@ -214,6 +212,9 @@ task void renderTile(uniform int* uniform pixels,
     ray.time = RandomSampler_get1D(sampler);
     packets++;
   }
+
+  uniform RTCRaySOA ray_soa;
+  initRTCRaySOA(ray_soa,rays[0]);
   rtcIntersectN_SOA(g_scene,ray_soa,8,8,sizeof(RTCRay),0);
 
   packets = 0;
