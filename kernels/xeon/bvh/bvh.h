@@ -805,9 +805,33 @@ namespace embree
         return BBox3fa(lower,upper);
       }
 
-      __forceinline void init(Node &node) const
+      __forceinline void init(Node &node)
       {
+        // todo: doubles to improve precession,avx int code path ?
         PING;
+        const vbool<N> m_lowerX = node.lower_x != vfloat<N>(pos_inf);
+        const vbool<N> m_upperX = node.upper_x != vfloat<N>(neg_inf);
+        PRINT(node.lower_x);
+        PRINT(node.upper_x);
+
+        const vfloat<N> minX = vreduce_min(node.lower_x);
+        const vfloat<N> maxX = vreduce_max(node.upper_x);
+        PRINT(minX);
+        PRINT(maxX);
+
+        const vfloat<N> inv_diffX = 1.0f / (maxX - minX);
+        vfloat<N> floor_lower_x = floor(( (node.lower_x - minX) * vfloat<N>(255.0f) * inv_diffX));
+        vfloat<N> ceil_upper_x  = ceil (( (node.upper_x - minX) * vfloat<N>(255.0f) * inv_diffX));
+        PRINT(floor_lower_x);
+        PRINT(ceil_upper_x);
+        vfloat<N>::store(lower_x,floor_lower_x);
+        vfloat<N>::store(upper_x,ceil_upper_x);
+
+        vfloat<N> extract_lower_x( vint<N>::load(lower_x) );
+        vfloat<N> extract_upper_x( vint<N>::load(upper_x) );
+        PRINT(extract_lower_x);
+        PRINT(extract_upper_x);
+        exit(0);
       }
 
       unsigned char lower_x[N]; //!< 8bit discretized X dimension of lower bounds of all N children

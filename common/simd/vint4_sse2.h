@@ -108,6 +108,16 @@ namespace embree
       *(vint4*)ptr = select(mask,i,*(vint4*)ptr);
 #endif
     }
+
+#if defined(__SSE4_1__)
+    static __forceinline void store( unsigned char* const ptr, const vint4& i ) {
+      __m128i x = i;
+      x = _mm_packus_epi32(x, x);
+      x = _mm_packus_epi16(x, x);
+      *(int*)ptr = _mm_cvtsi128_si32(x);
+    }
+#endif
+
     
     static __forceinline vint4 load_nt (void* ptr) {
 #if defined(__SSE4_1__)
