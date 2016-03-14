@@ -127,7 +127,8 @@ namespace embree
     }
 
    template<typename Ray, typename Epilog>
-      __forceinline bool intersect_bezier_recursive_jacobian(const Ray& ray, const float dt, const BezierCurve3fa& curve, const float u0, const float u1, const size_t depth, const Epilog& epilog)
+     bool intersect_bezier_recursive_jacobian(const Ray& ray, const float dt, const BezierCurve3fa& curve, 
+                                              const float u0, const float u1, const size_t depth, const Epilog& epilog)
     {
       int maxDepth = numBezierSubdivisions;
       //int maxDepth = Device::debug_int1+1;
@@ -142,7 +143,6 @@ namespace embree
       const Vec4vfx dP3du = shift_right_1(dP0du); 
       const Vec4vfx P1 = P0 + dP0du; 
       const Vec4vfx P2 = P3 - dP3du;
-
 
       /* calculate bounding cylinders */
       const Vec3vfx nP3P0 = normalize(P3-P0);
@@ -220,7 +220,7 @@ namespace embree
     }
     
     template<typename Ray, typename Epilog>
-      __forceinline bool intersect_bezier_recursive_cone(const Ray& ray, const float dt, const BezierCurve3fa& curve, const float u0, const float u1, const size_t depth, const Epilog& epilog)
+      bool intersect_bezier_recursive_cone(const Ray& ray, const float dt, const BezierCurve3fa& curve, const float u0, const float u1, const size_t depth, const Epilog& epilog)
     {
       int maxDepth = numBezierSubdivisions;
       //int maxDepth = Device::debug_int1+1;
