@@ -60,10 +60,6 @@ extern "C" void device_init (char* cfg)
 
   /* set error handler */
   rtcDeviceSetErrorFunction(g_device,error_handler);
-
-  /* set start render mode */
-  renderPixel = renderPixelStandard;
-  //renderPixel = renderPixelEyeLight;	
 }
 
 unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
@@ -171,29 +167,32 @@ RTCScene convertScene(ISPCScene* scene_in)
   return scene_out;
 }
 
-/* task that renders a single screen tile */
-Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
-{
- 
-}
-
 struct RangeIterator
 {
   __forceinline RangeIterator(int x0, int x1, int y0, int y1)
     : x0(x0), x1(x1), y0(y0), y1(y1), cx(x0), cy(y0) {}
 
-  bool next(std::pair<int,int>& r)
+  __forceinline bool next(std::pair<int,int>& r)
   {
-    if (cx>=x1) { cx = x0; cy++; }
+    if (cx>=x1) { cx = x0; cy++; } else cx++;
     if (cy>=y1) return false;
-    r = make_pair(cx,cy);
+    r = std::make_pair(cx,cy);
     return true;
+  }
+
+  __forceinline bool empty() const {
+    return cy >= y1;
   }
 
 public:
   int x0,x1,y0,y1;
   int cx,cy;
 };
+
+/* task that renders a single pixel */
+Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p) {
+  return zero;
+}
 
 /* task that renders a single screen tile */
 void renderTile(int taskIndex, int* pixels,
@@ -215,47 +214,59 @@ void renderTile(int taskIndex, int* pixels,
   const int y0 = tileY * TILE_SIZE_Y;
   const int y1 = min(y0+TILE_SIZE_Y,height);
 
-  Ray rays[8];
+  RTCRay rays[8];
+  int sx[8], sy[8];
   RangeIterator iter(x0,x1,y0,y1);
 
-  for (size_t i=0; i<8; i++)
+  while (!iter.empty())
   {
-    std::pair<int,int> p;
-    if (!iter.next(p)) break;
-    int x = p.first;
-    int y = p.second;
-
-    /* initialize sampler */
-    RandomSampler sampler;
-    RandomSampler_init(sampler, x, y, 0);
+    size_t N=0;
+    for (size_t i=0; i<8; i++)
+    {
+      std::pair<int,int> pixel;
+      if (!iter.next(pixel)) break;
+      const int x = pixel.first;  sx[i] = x;
+      const int y = pixel.second; sy[i] = y;
+      RTCRay& ray = rays[i];
+      
+      /* initialize sampler */
+      RandomSampler sampler;
+      RandomSampler_init(sampler, x, y, 0);
+      
+      /* initialize ray */
+      ray.org = p;
+      ray.dir = normalize(x*vx + y*vy + vz);
+      ray.tnear = 0.0f;
+      ray.tfar = inf;
+      ray.geomID = RTC_INVALID_GEOMETRY_ID;
+      ray.primID = RTC_INVALID_GEOMETRY_ID;
+      ray.mask = -1;
+      ray.time = RandomSampler_get1D(sampler);
+      N++;
+    }
     
-    /* initialize ray */
-    ray.org = p;
-    ray.dir = normalize(x*vx + y*vy + vz);
-    ray.tnear = 0.0f;
-    ray.tfar = inf;
-    ray.geomID = RTC_INVALID_GEOMETRY_ID;
-    ray.primID = RTC_INVALID_GEOMETRY_ID;
-    ray.mask = -1;
-    ray.time = RandomSampler_get1D(sampler);
+    /* intersect ray stream with scene */
+    rtcIntersectN(g_scene,rays,N,sizeof(RTCRay));
     
-    /* intersect ray with scene */
-    rtcIntersect(g_scene,ray);
-    
-    /* shade background black */
-    if (ray.geomID == RTC_INVALID_GEOMETRY_ID)
-      return Vec3fa(0.0f);
-    
-    /* shade all rays that hit something */
-    return Vec3fa(abs(dot(ray.dir,normalize(ray.Ng))));
-    
-    /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;
+    /* shade ray stream */
+    for (size_t i=0; i<N; i++)
+    {
+      RTCRay& ray = rays[i];
+      
+      /* shade background black */
+      Vec3fa color = Vec3fa(0.0f);
+      
+      /* shade all rays that hit something */
+      if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
+        color = Vec3fa(abs(dot(ray.dir,normalize(ray.Ng))));
+      
+      /* write color to framebuffer */
+      unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
+      unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
+      unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
+      pixels[sy[i]*width+sx[i]] = (b << 16) + (g << 8) + r;
+    }
   }
-#endif
 }
 
 /* called by the C++ code to render */
