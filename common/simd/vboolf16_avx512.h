@@ -66,6 +66,14 @@ namespace embree
     __forceinline vboolf( FalseTy ) : v(0x0000) {}
     __forceinline vboolf( TrueTy  ) : v(0xffff) {}
 
+    ////////////////////////////////////////////////////////////////////////////////
+    /// Array Access
+    ////////////////////////////////////////////////////////////////////////////////
+  
+    __forceinline bool operator []( const size_t index ) const { 
+      assert(index < 16); return (_mm512_mask2int(v) >> index) & 1; 
+    }
+  
     static unsigned int shift1[32];
   };
 
