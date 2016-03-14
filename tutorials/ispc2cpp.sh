@@ -6,6 +6,7 @@ sed -i.backup  's/.isph\"/.h\"/g' $2
 sed -i.backup  's/RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING/RTC_INTERSECT1/g' $2
 sed -i.backup  's/RTC_INTERSECT_VARYING/RTC_INTERSECT1/g' $2
 sed -i.backup  's/print(/printf(/g' $2
+sed -i.backup  's/unmasked//g' $2
 sed -i.backup  's/uniform //g' $2
 sed -i.backup  's/ uniform//g' $2
 sed -i.backup  's/varying //g' $2

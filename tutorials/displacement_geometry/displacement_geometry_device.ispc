@@ -31,7 +31,7 @@ renderPixelFunc renderPixel;
 uniform Vec3f old_p; 
 
 /* error reporting function */
-void error_handler(const uniform RTCError code, const uniform int8* uniform str = NULL)
+unmasked void error_handler(const uniform RTCError code, const uniform int8* uniform str = NULL)
 {
   if (code == RTC_NO_ERROR) 
     return;
@@ -128,16 +128,16 @@ float displacement_dv(const Vec3f& P, const Vec3f& dPdv)
   return (displacement(P+dv*dPdv)-displacement(P))/dv;
 }
 
-void displacementFunction(void* uniform ptr, uniform unsigned int geomID, uniform int unsigned primID, 
-                      const uniform float* uniform u,      /*!< u coordinates (source) */
-                      const uniform float* uniform v,      /*!< v coordinates (source) */
-                      const uniform float* uniform nx,     /*!< x coordinates of normal at point to displace (source) */
-                      const uniform float* uniform ny,     /*!< y coordinates of normal at point to displace (source) */
-                      const uniform float* uniform nz,     /*!< z coordinates of normal at point to displace (source) */
-                      uniform float* uniform px,           /*!< x coordinates of points to displace (source and target) */
-                      uniform float* uniform py,           /*!< y coordinates of points to displace (source and target) */
-                      uniform float* uniform pz,           /*!< z coordinates of points to displace (source and target) */
-                      uniform size_t N)
+unmasked void displacementFunction(void* uniform ptr, uniform unsigned int geomID, uniform int unsigned primID, 
+                                   const uniform float* uniform u,      /*!< u coordinates (source) */
+                                   const uniform float* uniform v,      /*!< v coordinates (source) */
+                                   const uniform float* uniform nx,     /*!< x coordinates of normal at point to displace (source) */
+                                   const uniform float* uniform ny,     /*!< y coordinates of normal at point to displace (source) */
+                                   const uniform float* uniform nz,     /*!< z coordinates of normal at point to displace (source) */
+                                   uniform float* uniform px,           /*!< x coordinates of points to displace (source and target) */
+                                   uniform float* uniform py,           /*!< y coordinates of points to displace (source and target) */
+                                   uniform float* uniform pz,           /*!< z coordinates of points to displace (source and target) */
+                                   uniform size_t N)
 {
   foreach (i=0 ... N) {
     const Vec3f P = make_Vec3f(px[i],py[i],pz[i]);

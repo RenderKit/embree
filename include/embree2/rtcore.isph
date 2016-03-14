@@ -178,7 +178,7 @@ RTCORE_DEPRECATED uniform RTCError rtcGetError();
 uniform RTCError rtcDeviceGetError(RTCDevice device);
 
 /*! \brief Type of error callback function. */
-typedef void (*uniform RTCErrorFunc)(const uniform RTCError code, const uniform int8* uniform str);
+typedef unmasked void (*uniform RTCErrorFunc)(const uniform RTCError code, const uniform int8* uniform str);
 RTCORE_DEPRECATED typedef RTCErrorFunc RTC_ERROR_FUNCTION;
 
 /*! \brief Sets a callback function that is called whenever an error occurs. 

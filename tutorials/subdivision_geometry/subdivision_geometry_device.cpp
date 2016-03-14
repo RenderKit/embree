@@ -39,7 +39,7 @@ renderPixelFunc renderPixel;
 Vec3fa old_p; 
 
 /* error reporting function */
-void error_handler(const RTCError code, const char* str = nullptr)
+ void error_handler(const RTCError code, const char* str = nullptr)
 {
   if (code == RTC_NO_ERROR) 
     return;

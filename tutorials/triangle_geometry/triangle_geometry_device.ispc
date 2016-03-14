@@ -26,7 +26,7 @@ uniform Vec3fa* uniform vertex_colors = NULL;
 renderPixelFunc renderPixel;
 
 /* error reporting function */
-void error_handler(const uniform RTCError code, const uniform int8* uniform str = NULL)
+unmasked void error_handler(const uniform RTCError code, const uniform int8* uniform str = NULL)
 {
   if (code == RTC_NO_ERROR) 
     return;

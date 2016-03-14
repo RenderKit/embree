@@ -31,7 +31,7 @@ renderPixelFunc renderPixel;
 Vec3fa old_p; 
 
 /* error reporting function */
-void error_handler(const RTCError code, const char* str = nullptr)
+ void error_handler(const RTCError code, const char* str = nullptr)
 {
   if (code == RTC_NO_ERROR) 
     return;
@@ -128,16 +128,16 @@ float displacement_dv(const Vec3fa& P, const Vec3fa& dPdv)
   return (displacement(P+dv*dPdv)-displacement(P))/dv;
 }
 
-void displacementFunction(void* ptr, unsigned int geomID, int unsigned primID, 
-                      const float* u,      /*!< u coordinates (source) */
-                      const float* v,      /*!< v coordinates (source) */
-                      const float* nx,     /*!< x coordinates of normal at point to displace (source) */
-                      const float* ny,     /*!< y coordinates of normal at point to displace (source) */
-                      const float* nz,     /*!< z coordinates of normal at point to displace (source) */
-                      float* px,           /*!< x coordinates of points to displace (source and target) */
-                      float* py,           /*!< y coordinates of points to displace (source and target) */
-                      float* pz,           /*!< z coordinates of points to displace (source and target) */
-                      size_t N)
+ void displacementFunction(void* ptr, unsigned int geomID, int unsigned primID, 
+                                   const float* u,      /*!< u coordinates (source) */
+                                   const float* v,      /*!< v coordinates (source) */
+                                   const float* nx,     /*!< x coordinates of normal at point to displace (source) */
+                                   const float* ny,     /*!< y coordinates of normal at point to displace (source) */
+                                   const float* nz,     /*!< z coordinates of normal at point to displace (source) */
+                                   float* px,           /*!< x coordinates of points to displace (source and target) */
+                                   float* py,           /*!< y coordinates of points to displace (source and target) */
+                                   float* pz,           /*!< z coordinates of points to displace (source and target) */
+                                   size_t N)
 {
   for (size_t i = 0; i<N; i++) {
     const Vec3fa P = Vec3fa(px[i],py[i],pz[i]);

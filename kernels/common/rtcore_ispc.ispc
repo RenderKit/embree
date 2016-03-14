@@ -193,19 +193,19 @@ uniform RTCError rtcDeviceGetError(RTCDevice device) {
   return ispcDeviceGetError(device);
 }
 
-void rtcSetErrorFunction(uniform RTC_ERROR_FUNCTION func) {
+void rtcSetErrorFunction(uniform RTCErrorFunc func) {
   ispcSetErrorFunction(func);
 }
 
-void rtcDeviceSetErrorFunction(RTCDevice device, uniform RTC_ERROR_FUNCTION func) {
+void rtcDeviceSetErrorFunction(RTCDevice device, uniform RTCErrorFunc func) {
   ispcDeviceSetErrorFunction(device,func);
 }
 
-void rtcSetMemoryMonitorFunction(uniform RTC_MEMORY_MONITOR_FUNCTION func) {
+void rtcSetMemoryMonitorFunction(uniform RTCMemoryMonitorFunc func) {
   ispcSetMemoryMonitorFunction(func);
 }
 
-void rtcDeviceSetMemoryMonitorFunction(RTCDevice device, uniform RTC_MEMORY_MONITOR_FUNCTION func) {
+void rtcDeviceSetMemoryMonitorFunction(RTCDevice device, uniform RTCMemoryMonitorFunc func) {
   ispcDeviceSetMemoryMonitorFunction(device,func);
 }
 

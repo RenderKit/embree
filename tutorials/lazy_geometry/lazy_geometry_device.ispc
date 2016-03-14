@@ -26,7 +26,7 @@ const uniform int numSpheres = 64;
 renderPixelFunc renderPixel;
 
 /* error reporting function */
-void error_handler(const uniform RTCError code, const uniform int8* uniform str = NULL)
+unmasked void error_handler(const uniform RTCError code, const uniform int8* uniform str = NULL)
 {
   if (code == RTC_NO_ERROR) 
     return;
@@ -70,7 +70,7 @@ struct LazyGeometry
   float radius;
 };
 
-void instanceBoundsFunc(const uniform LazyGeometry* uniform instance, uniform size_t item, uniform RTCBounds* uniform bounds_o)
+unmasked void instanceBoundsFunc(const uniform LazyGeometry* uniform instance, uniform size_t item, uniform RTCBounds* uniform bounds_o)
 {
   uniform Vec3f lower = instance->center-make_Vec3f(instance->radius);
   uniform Vec3f upper = instance->center+make_Vec3f(instance->radius);

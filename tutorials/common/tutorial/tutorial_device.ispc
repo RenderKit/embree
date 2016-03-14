@@ -648,14 +648,14 @@ Vec3f noise3D(const Vec3f& p)
 }
 
 /* draws progress bar */
-void progressStart() {
+unmasked void progressStart() {
 }
 
-uniform bool progressMonitor(void* uniform ptr, const uniform double n) {
+unmasked uniform bool progressMonitor(void* uniform ptr, const uniform double n) {
   return true;
 }
 
-void progressEnd() {
+unmasked void progressEnd() {
 }
 
 Vec2f getTextureCoordinatesSubdivMesh(void* uniform _mesh, const unsigned int primID, const float u, const float v)
