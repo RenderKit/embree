@@ -194,6 +194,7 @@ void renderTile(int taskIndex, int* pixels,
 
   RTCRay rays[TILE_SIZE_X*TILE_SIZE_Y];
 
+  /* generate stream of primary rays */
   int packets = 0;
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
@@ -213,14 +214,20 @@ void renderTile(int taskIndex, int* pixels,
     packets++;
   }
 
+  /* trace stream of rays */
   rtcIntersectN(g_scene,rays,packets,sizeof(RTCRay),0);
 
+  /* shade stream of rays */
   packets = 0;
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
-    RTCRay &ray = rays[packets++];
+    RTCRay& ray = rays[packets++];
+
+    /* eyelight shading */
     Vec3fa color = Vec3fa(0.0f);
-    if (ray.geomID != RTC_INVALID_GEOMETRY_ID) color = Vec3fa(abs(dot(ray.dir,normalize(ray.Ng))));
+    if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
+      color = Vec3fa(abs(dot(ray.dir,normalize(ray.Ng))));
+
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
     unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
