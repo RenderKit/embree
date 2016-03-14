@@ -107,8 +107,8 @@ namespace embree
 
     /*! do some internal tests */
 #if !defined(__MIC__)
-    sse2::Cylinder::verify();
-    sse2::Cone::verify();
+    isa::Cylinder::verify();
+    isa::Cone::verify();
 #endif
     
     /*! set tessellation cache size */
