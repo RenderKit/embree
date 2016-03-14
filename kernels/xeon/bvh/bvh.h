@@ -824,8 +824,14 @@ namespace embree
         vfloat<N> ceil_upper_x  = ceil (( (node.upper_x - minX) * vfloat<N>(255.0f) * inv_diffX));
         PRINT(floor_lower_x);
         PRINT(ceil_upper_x);
-        vfloat<N>::store(lower_x,floor_lower_x);
-        vfloat<N>::store(upper_x,ceil_upper_x);
+        vint<N> i_floor_lower_x( floor_lower_x );
+        vint<N> i_ceil_upper_x ( ceil_upper_x  );
+
+        vint<N>::store_uchar(lower_x,i_floor_lower_x);
+        vint<N>::store_uchar(upper_x,i_ceil_upper_x);
+        
+        PRINT( vint<N>::load(lower_x) );
+        PRINT( vint<N>::load(upper_x) );
 
         vfloat<N> extract_lower_x( vint<N>::load(lower_x) );
         vfloat<N> extract_upper_x( vint<N>::load(upper_x) );
