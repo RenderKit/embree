@@ -147,8 +147,8 @@ namespace embree
         hit = cone.intersect(ray.org,ray.dir,t);
 
         bool failed = hit != shouldhit;
-        if (shouldhit) failed |= isinf(t0) ? t0 != t.lower : (t0 == -1E6) ? t.lower > -1E6f : abs(t0-t.lower) > eps;
-        if (shouldhit) failed |= isinf(t1) ? t1 != t.upper : (t1 == +1E6) ? t.upper < +1E6f : abs(t1-t.upper) > eps;
+        if (shouldhit) failed |= std::isinf(t0) ? t0 != t.lower : (t0 == -1E6) ? t.lower > -1E6f : abs(t0-t.lower) > eps;
+        if (shouldhit) failed |= std::isinf(t1) ? t1 != t.upper : (t1 == +1E6) ? t.upper < +1E6f : abs(t1-t.upper) > eps;
         if (!failed) return true;
         std::cout << "Cone test " << id << " failed: cone = " << cone << ", ray = " << ray << ", hit = " << hit << ", t = " << t << std::endl; 
         return false;

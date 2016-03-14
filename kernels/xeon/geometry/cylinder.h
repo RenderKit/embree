@@ -116,8 +116,8 @@ namespace embree
         hit = cylinder.intersect(ray.org,ray.dir,t);
 
         bool failed = hit != shouldhit;
-        if (shouldhit) failed |= isinf(t0) ? t0 != t.lower : abs(t0-t.lower) > eps;
-        if (shouldhit) failed |= isinf(t1) ? t1 != t.upper : abs(t1-t.upper) > eps;
+        if (shouldhit) failed |= std::isinf(t0) ? t0 != t.lower : abs(t0-t.lower) > eps;
+        if (shouldhit) failed |= std::isinf(t1) ? t1 != t.upper : abs(t1-t.upper) > eps;
         if (!failed) return true;
         std::cout << "Cylinder test " << id << " failed: cylinder = " << cylinder << ", ray = " << ray << ", hit = " << hit << ", t = " << t << std::endl; 
         return false;
