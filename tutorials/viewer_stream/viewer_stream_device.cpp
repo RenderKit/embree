@@ -19,7 +19,7 @@
 #include "../common/tutorial/random_sampler.h"
 #include "../pathtracer/shapesampler.h"
 
-#define USE_STREAM_INTERFACE 1
+#define USE_INTERFACE 0 // 0 = stream, 1 = single rays/packets, 2 = single rays/packets using stream interface
 #define AMBIENT_OCCLUSION_SAMPLES 64
 
 extern "C" ISPCScene* g_ispc_scene;
@@ -194,13 +194,14 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
   } 
   
   /* trace occlusion rays */
-#if USE_STREAM_INTERFACE
+#if USE_INTERFACE == 0
   rtcOccludedN(g_scene,rays,AMBIENT_OCCLUSION_SAMPLES,sizeof(RTCRay),0);
-#else
-  for (size_t i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++) {
+#elif USE_INTERFACE == 1
+  for (size_t i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
     rtcOccluded(g_scene,rays[i]);
-    //rtcOccludedN(g_scene,&rays[i],1,sizeof(RTCRay));
-  }
+#else
+  for (size_t i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
+    rtcOccludedN(g_scene,&rays[i],1,sizeof(RTCRay),0);
 #endif
 
   /* accumulate illumination */
@@ -255,13 +256,14 @@ void renderTileStandard(int taskIndex,
   }
 
   /* trace stream of rays */
-#if USE_STREAM_INTERFACE
+#if USE_INTERFACE == 0
   rtcIntersectN(g_scene,rays,N,sizeof(RTCRay),0);
-#else
-  for (size_t i=0; i<N; i++) {
+#elif USE_INTERFACE == 1
+  for (size_t i=0; i<N; i++)
     rtcIntersect(g_scene,rays[i]);
-    //rtcIntersectN(g_scene,&rays[i],1,sizeof(RTCRay));
-  }
+#else
+  for (size_t i=0; i<N; i++)
+    rtcIntersectN(g_scene,&rays[i],1,sizeof(RTCRay),0);
 #endif
 
   /* shade stream of rays */

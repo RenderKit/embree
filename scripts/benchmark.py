@@ -25,7 +25,8 @@ import re
 dash = '/'
 #models = [ 'conference' ]
 #models = [ 'conference', 'sponza', 'headlight', 'crown']
-models = [ 'conference', 'sponza', 'headlight', 'crown', 'bentley', 'xyz_dragon', 'powerplant' ]
+models = [ 'conference', 'sponza', 'bentley', 'xyz_dragon', 'powerplant']
+#models = [ 'conference', 'sponza', 'headlight', 'crown', 'bentley', 'xyz_dragon', 'powerplant' ]
 #models = [ 'sophie', 'sophie_mblur']
 
 arg = ''
