@@ -29,6 +29,8 @@ namespace embree
     typedef typename BVH::NodeMB AlignedNodeMB;
     typedef typename BVH::UnalignedNodeMB UnalignedNodeMB;
     typedef typename BVH::TransformNode TransformNode;
+    typedef typename BVH::QuantizedNode QuantizedNode;
+
     typedef typename BVH::NodeRef NodeRef;
 
   public:
@@ -55,10 +57,12 @@ namespace embree
     size_t numAlignedNodesMB;          //!< Number of aligned internal nodes.
     size_t numUnalignedNodesMB;        //!< Number of unaligned internal nodes.
     size_t numTransformNodes;          //!< Number of transformation nodes;
+    size_t numQuantizedNodes;          //!< Number of transformation nodes;
     size_t childrenAlignedNodes;       //!< Number of children of aligned nodes
     size_t childrenUnalignedNodes;     //!< Number of children of unaligned internal nodes.
     size_t childrenAlignedNodesMB;     //!< Number of children of aligned nodes
     size_t childrenUnalignedNodesMB;   //!< Number of children of unaligned internal nodes.
+    size_t childrenQuantizedNodes;     //!< Number of children of quantized internal nodes.
     size_t numLeaves;                  //!< Number of leaf nodes.
     size_t numPrims;                   //!< Number of primitives.
     size_t numPrimBlocks;              //!< Number of primitive blocks.

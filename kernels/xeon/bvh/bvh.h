@@ -83,6 +83,7 @@ namespace embree
     static const size_t tyUnalignedNode = 2;
     static const size_t tyUnalignedNodeMB = 3;
     static const size_t tyTransformNode = 4;
+    static const size_t tyQuantizedNode = 5;
     static const size_t tyLeaf = 8;
 
     /*! Empty node */
@@ -319,6 +320,10 @@ namespace embree
       __forceinline int isTransformNode() const { return (ptr & (size_t)align_mask) == tyTransformNode; }
       __forceinline int isTransformNode(int types) const { return (types == BVH_FLAG_TRANSFORM_NODE) || ((types & BVH_FLAG_TRANSFORM_NODE) && isTransformNode()); }
 
+
+      /*! checks if this is a quantized node */
+      __forceinline int isQuantizedNode() const { return (ptr & (size_t)align_mask) == tyQuantizedNode; }
+
       /*! returns base node pointer */
       __forceinline BaseNode* baseNode(int types)
       {
@@ -360,6 +365,10 @@ namespace embree
       /*! returns transformation pointer */
       __forceinline       TransformNode* transformNode()       { assert(isTransformNode()); return (      TransformNode*)(ptr & ~(size_t)align_mask); }
       __forceinline const TransformNode* transformNode() const { assert(isTransformNode()); return (const TransformNode*)(ptr & ~(size_t)align_mask); }
+
+      /*! returns quantized node pointer */
+      __forceinline       QuantizedNode* quantizedNode()       { assert(isQuantizedNode()); return (      QuantizedNode*)(ptr & ~(size_t)align_mask); }
+      __forceinline const QuantizedNode* quantizedNode() const { assert(isQuantizedNode()); return (const QuantizedNode*)(ptr & ~(size_t)align_mask); }
 
       /*! returns leaf pointer */
       __forceinline char* leaf(size_t& num) const {
@@ -776,8 +785,8 @@ namespace embree
       }
 
         /*! Returns NodeRef to specified child which is combined from 64bit this pointer + 32bit offset*/
-      __forceinline       NodeRef child(size_t i)       { assert(i<N); return ((ssize_t)this + children[i]); }
-      __forceinline const NodeRef child(size_t i) const { assert(i<N); return ((ssize_t)this + children[i]); }
+      __forceinline       NodeRef child(size_t i)       { assert(i<N); assert(children[i] != emptyNode); return ((ssize_t)this + children[i]); }
+      __forceinline const NodeRef child(size_t i) const { assert(i<N); assert(children[i] != emptyNode); return ((ssize_t)this + children[i]); }
 
       __forceinline       int& childOffset(size_t i)       { assert(i<N); return children[i]; }
       __forceinline const int& childOffset(size_t i) const { assert(i<N); return children[i]; }
@@ -809,6 +818,13 @@ namespace embree
                            start.z + scale.z * (float)upper_z[i]);
         return BBox3fa(lower,upper);
       }
+
+
+      /*! Returns extent of bounds of specified child. */
+      __forceinline Vec3fa extend(size_t i) const {
+        return bounds(i).size();
+      }
+
 
       static __forceinline void init_dim(const vfloat<N> &lower,
                                          const vfloat<N> &upper,
@@ -892,6 +908,7 @@ namespace embree
       
       __forceinline void init(Node &node)
       {
+        for (size_t i=0;i<N;i++) children[i] = emptyNode;
         init_dim(node.lower_x,node.upper_x,lower_x,upper_x,start.x,scale.x);
         init_dim(node.lower_y,node.upper_y,lower_y,upper_y,start.y,scale.y);
         init_dim(node.lower_z,node.upper_z,lower_z,upper_z,start.z,scale.z);        
@@ -1034,7 +1051,7 @@ namespace embree
       PRINT((void*)node);
       PRINT(node_offset);
       //assert(node_offset > 0);
-      return (unsigned int)node_offset;
+      return (unsigned int)node_offset | tyQuantizedNode;
     }
 
     static __forceinline int encodeQuantizedLeaf(size_t base, size_t node) {

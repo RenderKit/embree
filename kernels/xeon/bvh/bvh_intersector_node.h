@@ -326,6 +326,12 @@ namespace embree
       const vfloat8 upper_y = node->dequantizeY(ray.farY  >> 2);
       const vfloat8 lower_z = node->dequantizeZ(ray.nearZ >> 2);
       const vfloat8 upper_z = node->dequantizeZ(ray.farZ  >> 2);
+      PRINT(lower_x);
+      PRINT(upper_x);
+      PRINT(lower_y);
+      PRINT(upper_y);
+      PRINT(lower_z);
+      PRINT(upper_z);
 #if defined (__AVX2__)
       const vfloat8 tNearX = msub(lower_x, ray.rdir.x, ray.org_rdir.x);
       const vfloat8 tNearY = msub(lower_y, ray.rdir.y, ray.org_rdir.y);

@@ -29,10 +29,11 @@ namespace embree
   {
     numAlignedNodes = numUnalignedNodes = 0;
     numAlignedNodesMB = numUnalignedNodesMB = 0;
-    numTransformNodes = 0;
+    numTransformNodes = numQuantizedNodes = 0;
     numLeaves = numPrims = numPrimBlocks = depth = 0;
     childrenAlignedNodes = childrenUnalignedNodes = 0;
     childrenAlignedNodesMB = childrenUnalignedNodesMB = 0;
+    childrenQuantizedNodes = 0;
     bvhSAH = 0.0f; leafSAH = 0.0f;
     float A = max(0.0f,halfArea(bvh->bounds));
     statistics(bvh->root,A,depth);
@@ -49,10 +50,11 @@ namespace embree
     size_t bytesAlignedNodesMB = numAlignedNodesMB*sizeof(AlignedNodeMB);
     size_t bytesUnalignedNodesMB = numUnalignedNodesMB*sizeof(UnalignedNodeMB);
     size_t bytesTransformNodes = numTransformNodes*sizeof(TransformNode);
+    size_t bytesQuantizedNodes = numQuantizedNodes*sizeof(QuantizedNode);
     size_t bytesPrims  = numPrimBlocks*bvh->primTy.bytes;
     size_t numVertices = bvh->numVertices;
     size_t bytesVertices = numVertices*sizeof(Vec3fa); 
-    return bytesAlignedNodes+bytesUnalignedNodes+bytesAlignedNodesMB+bytesUnalignedNodesMB+bytesTransformNodes+bytesPrims+bytesVertices;
+    return bytesAlignedNodes+bytesUnalignedNodes+bytesAlignedNodesMB+bytesUnalignedNodesMB+bytesTransformNodes+bytesQuantizedNodes+bytesPrims+bytesVertices;
   }
   
   template<int N>
@@ -64,10 +66,11 @@ namespace embree
     size_t bytesAlignedNodesMB = numAlignedNodesMB*sizeof(AlignedNodeMB);
     size_t bytesUnalignedNodesMB = numUnalignedNodesMB*sizeof(UnalignedNodeMB);
     size_t bytesTransformNodes = numTransformNodes*sizeof(TransformNode);
+    size_t bytesQuantizedNodes = numQuantizedNodes*sizeof(QuantizedNode);
     size_t bytesPrims  = numPrimBlocks*bvh->primTy.bytes;
     size_t numVertices = bvh->numVertices;
     size_t bytesVertices = numVertices*sizeof(Vec3fa); 
-    size_t bytesTotal = bytesAlignedNodes+bytesUnalignedNodes+bytesAlignedNodesMB+bytesUnalignedNodesMB+bytesTransformNodes+bytesPrims+bytesVertices;
+    size_t bytesTotal = bytesAlignedNodes+bytesUnalignedNodes+bytesAlignedNodesMB+bytesUnalignedNodesMB+bytesTransformNodes+bytesQuantizedNodes+bytesPrims+bytesVertices;
     //size_t bytesTotalAllocated = bvh->alloc.bytes();
     stream.setf(std::ios::fixed, std::ios::floatfield);
     stream << "  primitives = " << bvh->numPrimitives << ", vertices = " << bvh->numVertices << std::endl;
@@ -112,6 +115,14 @@ namespace embree
 	     << "(" << 100.0*double(bytesTransformNodes)/double(bytesTotal) << "% of total)"
 	     << std::endl;
     }
+    if (numQuantizedNodes) {
+      stream << "  quantizedNodes = "  << numQuantizedNodes << " "
+             << "(" << 100.0*double(childrenQuantizedNodes)/double(N*numQuantizedNodes) << "% filled) "
+	     << "(" << bytesQuantizedNodes/1E6  << " MB) " 
+	     << "(" << 100.0*double(bytesQuantizedNodes)/double(bytesTotal) << "% of total)"
+	     << std::endl;
+    }
+
     stream << "  leaves = " << numLeaves << " "
            << "(" << bytesPrims/1E6  << " MB) "
            << "(" << 100.0*double(bytesPrims)/double(bytesTotal) << "% of total)"
@@ -128,6 +139,9 @@ namespace embree
   template<int N>
   void BVHNStatistics<N>::statistics(NodeRef node, const float A, size_t& depth)
   {
+    PRINT((size_t)node & BVH::align_mask);
+    PRINT(node.isLeaf());
+
     if (node.isNode())
     {
       numAlignedNodes++;
@@ -202,6 +216,23 @@ namespace embree
       const float Ai = max(0.0f,halfArea(worldBounds));
       //size_t cdepth; statistics(n->child,Ai,cdepth); 
       //depth=max(depth,cdepth)+1;
+    }
+    else if (node.isQuantizedNode())
+    {
+      numQuantizedNodes++;
+      QuantizedNode* n = (QuantizedNode*)node.quantizedNode();
+      bvhSAH += A*travCostAligned;
+      depth = 0;
+      for (size_t i=0; i<N; i++) {
+        PRINT(i);
+        PRINT(n->childOffset(i));
+        if (n->childOffset(i) == BVH::emptyNode) continue; 
+        childrenQuantizedNodes++;
+        const float Ai = max(0.0f,halfArea(n->extend(i)));
+        size_t cdepth; statistics(n->child(i),Ai,cdepth); 
+        depth=max(depth,cdepth);
+      }
+      depth++;
     }
     else
     {

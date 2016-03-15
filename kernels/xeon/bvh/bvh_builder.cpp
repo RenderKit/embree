@@ -118,7 +118,8 @@ namespace embree
         (root,typename BVH::CreateAlloc(bvh),size_t(0),typename BVH::CreateQuantizedNode(bvh),dummy<N>,createLeafFunc,progressFunc,
          prims,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
-      NodeRef new_root = (size_t)first + first->childOffset(0);
+      NodeRef new_root = ((size_t)first + first->childOffset(0)) | BVH::tyQuantizedNode;
+      assert(new_root.isQuantizedNode());
       PRINT(new_root);
       bvh->set(new_root,pinfo.geomBounds,pinfo.size());
       PRINT("DONE QBVH ");
