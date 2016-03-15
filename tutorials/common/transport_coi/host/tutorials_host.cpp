@@ -46,9 +46,13 @@ namespace embree
   int g_width = -1, g_height = -1;
 
   extern const char* tutorialName;
+  static bool phi_started = false;
 
-  void init(const char* cfg)
+  void start_phi()
   {
+    if (phi_started) return;
+    phi_started = true;
+
     /* get number of Xeon Phi devices */
     uint32_t engines = 0;
     COIEngineGetCount( COI_ISA_MIC, &engines );
@@ -103,9 +107,15 @@ namespace embree
     result = COIProcessGetFunctionHandles (process, 9, fctNameArray, &runInit);
     if (result != COI_SUCCESS) 
       THROW_RUNTIME_ERROR("COIProcessGetFunctionHandles failed: "+std::string(COIResultGetName(result)));
+  }
+
+  void init(const char* cfg)
+  {
+    start_phi();
 
     /* run init runfunction */
     InitData parms;
+    COIRESULT result;
     strncpy(parms.cfg,cfg,sizeof(parms.cfg));
     result = COIPipelineRunFunction (pipeline, runInit, 0, nullptr, nullptr, 0, nullptr, &parms, sizeof(parms), nullptr, 0, nullptr);
     if (result != COI_SUCCESS) 
@@ -435,6 +445,8 @@ namespace embree
   /* set scene to use */
   void set_scene (TutorialScene* scene)
   {
+    start_phi();
+
     COIRESULT result;
     COIBUFFER buffers[5];
     COI_ACCESS_FLAGS flags[5] = { COI_SINK_READ, COI_SINK_READ, COI_SINK_READ, COI_SINK_READ, COI_SINK_READ };
