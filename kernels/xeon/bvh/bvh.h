@@ -821,7 +821,7 @@ namespace embree
         float diff = maxF - minF; //todo: add extracted difference here
         float scale_diff = diff / 255.0f;
 
-        /* accomodate floating point accuracy issues */
+        /* accomodate floating point accuracy issues in 'diff' */
         size_t iterations = 0;
         while(minF + scale_diff * 255.0f < maxF)
         {
@@ -834,21 +834,31 @@ namespace embree
         vfloat<N> floor_lower = floor(  (lower - vfloat<N>(minF)) * vfloat<N>(inv_diff) );
         vfloat<N> ceil_upper  = ceil (  (upper - vfloat<N>(minF)) * vfloat<N>(inv_diff) );
         vint<N> i_floor_lower( floor_lower );
-        vint<N> i_ceil_upper ( ceil_upper  );        
+        vint<N> i_ceil_upper ( ceil_upper  );     
+
+        /* lower/upper correction */
+        vbool<N> m_lower_correction = ((minF + vfloat<N>(i_floor_lower) * scale_diff) > lower) & m_valid;        
+        vbool<N> m_upper_correction = ((minF + vfloat<N>(i_ceil_upper) * scale_diff) < upper) & m_valid;        
+        i_floor_lower  = select(m_lower_correction,i_floor_lower-1,i_floor_lower);
+        i_ceil_upper   = select(m_upper_correction,i_ceil_upper +1,i_ceil_upper);
+        
+        /* disable invalid lanes */
         i_floor_lower = select(m_valid,i_floor_lower,255);
         i_ceil_upper  = select(m_valid,i_ceil_upper ,0);
 
-                
+        /* store as uchar to memory */
         vint<N>::store_uchar(lower_quant,i_floor_lower);
         vint<N>::store_uchar(upper_quant,i_ceil_upper);
         start = minF;
         scale = scale_diff;
+
 #if DEBUG
         vfloat<N> extract_lower( vint<N>::load(lower_quant) );
         vfloat<N> extract_upper( vint<N>::load(upper_quant) );
         vfloat<N> final_extract_lower = minF + extract_lower * scale_diff;
         vfloat<N> final_extract_upper = minF + extract_upper * scale_diff;
-#if 1        
+#if 0        
+        PING;
         PRINT(lower);
         PRINT(upper);
         PRINT(minF);
@@ -862,6 +872,9 @@ namespace embree
         PRINT(final_extract_lower <= lower);
         PRINT(final_extract_upper >= upper);
         PRINT(m_valid);
+        PRINT(iterations);
+        PRINT(m_lower_correction);
+        PRINT(m_upper_correction);
         vfloat<N> e_upper = minF + scale_diff * vfloat<N>(255.0f);
         assert(all(e_upper >= maxF));
         assert(iterations <= 4);
