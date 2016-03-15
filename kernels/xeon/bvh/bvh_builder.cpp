@@ -121,8 +121,8 @@ namespace embree
       NodeRef new_root = (size_t)first + first->childOffset(0);
       PRINT(new_root);
       bvh->set(new_root,pinfo.geomBounds,pinfo.size());
-      PRINT("DONE");
-      exit(0);
+      PRINT("DONE QBVH ");
+      //exit(0);
 
       //bvh->layoutLargeNodes(pinfo.size()*0.005f);
     }

@@ -34,6 +34,7 @@ namespace embree
     BVH_FLAG_UNALIGNED_NODE = 0x00100,
     BVH_FLAG_UNALIGNED_NODE_MB = 0x01000,
     BVH_FLAG_TRANSFORM_NODE = 0x10000,
+    BVH_FLAG_QUANTIZED_NODE = 0x100000,
 
     /* short versions */
     BVH_AN1 = BVH_FLAG_ALIGNED_NODE,
@@ -45,6 +46,7 @@ namespace embree
     BVH_AN2_UN2 = BVH_FLAG_ALIGNED_NODE_MB | BVH_FLAG_UNALIGNED_NODE_MB,
     BVH_TN_AN1 = BVH_FLAG_TRANSFORM_NODE | BVH_FLAG_ALIGNED_NODE,
     BVH_TN_AN1_AN2 = BVH_FLAG_TRANSFORM_NODE | BVH_FLAG_ALIGNED_NODE | BVH_FLAG_ALIGNED_NODE_MB,
+    BVH_QN1 = BVH_FLAG_QUANTIZED_NODE
   };
 
   /*! Multi BVH with N children. Each node stores the bounding box of
@@ -894,6 +896,18 @@ namespace embree
         init_dim(node.lower_y,node.upper_y,lower_y,upper_y,start.y,scale.y);
         init_dim(node.lower_z,node.upper_z,lower_z,upper_z,start.z,scale.z);        
       }
+
+      __forceinline vfloat<N> dequantizeLowerX() const { return vfloat<N>(start.x) + vfloat<N>(vint<N>::load(lower_x)) * scale.x; }
+      __forceinline vfloat<N> dequantizeUpperX() const { return vfloat<N>(start.x) + vfloat<N>(vint<N>::load(upper_x)) * scale.x; }
+      __forceinline vfloat<N> dequantizeLowerY() const { return vfloat<N>(start.y) + vfloat<N>(vint<N>::load(lower_y)) * scale.y; }
+      __forceinline vfloat<N> dequantizeUpperY() const { return vfloat<N>(start.y) + vfloat<N>(vint<N>::load(upper_y)) * scale.y; }
+      __forceinline vfloat<N> dequantizeLowerZ() const { return vfloat<N>(start.z) + vfloat<N>(vint<N>::load(lower_z)) * scale.z; }
+      __forceinline vfloat<N> dequantizeUpperZ() const { return vfloat<N>(start.z) + vfloat<N>(vint<N>::load(upper_z)) * scale.z; }
+
+      __forceinline vfloat<N> dequantizeX(const size_t offset) const { return vfloat<N>(start.x) + vfloat<N>(vint<N>::load(lower_x+offset)) * scale.x; }
+      __forceinline vfloat<N> dequantizeY(const size_t offset) const { return vfloat<N>(start.y) + vfloat<N>(vint<N>::load(lower_x+offset)) * scale.y; }
+      __forceinline vfloat<N> dequantizeZ(const size_t offset) const { return vfloat<N>(start.z) + vfloat<N>(vint<N>::load(lower_x+offset)) * scale.z; }
+
 
       unsigned char lower_x[N]; //!< 8bit discretized X dimension of lower bounds of all N children
       unsigned char upper_x[N]; //!< 8bit discretized X dimension of upper bounds of all N children
