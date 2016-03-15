@@ -136,34 +136,6 @@ RTCScene convertScene(ISPCScene* scene_in)
 //////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////
 
-
-/* called by the C++ code for initialization */
-extern "C" void device_init (char* cfg)
-{
-  /* initialize last seen camera */
-  g_accu_vx = Vec3fa(0.0f);
-  g_accu_vy = Vec3fa(0.0f);
-  g_accu_vz = Vec3fa(0.0f);
-  g_accu_p  = Vec3fa(0.0f);
-
-  /* initialize hair colors */
-  hair_K  = Vec3fa(0.8f,0.57f,0.32f);
-  hair_dK = Vec3fa(0.1f,0.12f,0.08f);
-  hair_Kr = 0.2f*hair_K;    //!< reflectivity of hair
-  hair_Kt = 0.8f*hair_K;    //!< transparency of hair
-
-  /* create new Embree device */
-  g_device = rtcNewDevice(cfg);
-  error_handler(rtcDeviceGetError(g_device));
-
-  /* set error handler */
-  rtcDeviceSetErrorFunction(g_device,error_handler);
-
-  /* set start render mode */
-  renderPixel = renderPixelStandard;
-  key_pressed_handler = device_key_pressed_default;
-}
-
 #if !defined(__XEON_PHI__)
 
 /*! Anisotropic power cosine microfacet distribution. */
@@ -562,6 +534,37 @@ void renderTile(int taskIndex, int* pixels,
   }
 }
 
+/* called by the C++ code for initialization */
+extern "C" void device_init (char* cfg)
+{
+  /* initialize last seen camera */
+  g_accu_vx = Vec3fa(0.0f);
+  g_accu_vy = Vec3fa(0.0f);
+  g_accu_vz = Vec3fa(0.0f);
+  g_accu_p  = Vec3fa(0.0f);
+
+  /* initialize hair colors */
+  hair_K  = Vec3fa(0.8f,0.57f,0.32f);
+  hair_dK = Vec3fa(0.1f,0.12f,0.08f);
+  hair_Kr = 0.2f*hair_K;    //!< reflectivity of hair
+  hair_Kt = 0.8f*hair_K;    //!< transparency of hair
+
+  /* create new Embree device */
+  g_device = rtcNewDevice(cfg);
+  error_handler(rtcDeviceGetError(g_device));
+
+  /* set error handler */
+  rtcDeviceSetErrorFunction(g_device,error_handler);
+
+  /* set start render mode */
+  renderPixel = renderPixelStandard;
+  key_pressed_handler = device_key_pressed_default;
+
+  /* create scene */
+  g_scene = convertScene(g_ispc_scene);
+}
+
+
 /* called by the C++ code to render */
 extern "C" void device_render (int* pixels,
                            const int width,
@@ -572,10 +575,6 @@ extern "C" void device_render (int* pixels,
                            const Vec3fa& vz, 
                            const Vec3fa& p)
 {
-  /* create scene */
-  if (g_scene == nullptr)
-    g_scene = convertScene(g_ispc_scene);
-
   /* create accumulator */
   if (g_accu_width != width || g_accu_height != height) {
     g_accu = (Vec3fa*) alignedMalloc(width*height*sizeof(Vec3fa));

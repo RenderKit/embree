@@ -150,22 +150,6 @@ void device_key_pressed(int key)
 Vec3fa renderPixelEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
 
 
-/* called by the C++ code for initialization */
-extern "C" void device_init (char* cfg)
-{
-  /* create new Embree device */
-  g_device = rtcNewDevice(cfg);
-  error_handler(rtcDeviceGetError(g_device));
-
-  /* set error handler */
-  rtcDeviceSetErrorFunction(g_device,error_handler);
-
-  /* set start render mode */
-  renderPixel = renderPixelStandard;
-  //renderPixel = renderPixelEyeLight;	
-  key_pressed_handler = device_key_pressed;
-}
-
 unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
 {
   unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices, mesh->positions2 ? 2 : 1);
@@ -670,6 +654,27 @@ void renderTile(int taskIndex, int* pixels,
 
 Vec3fa old_p; 
 
+/* called by the C++ code for initialization */
+extern "C" void device_init (char* cfg)
+{
+  /* create new Embree device */
+  g_device = rtcNewDevice(cfg);
+  error_handler(rtcDeviceGetError(g_device));
+
+  /* set error handler */
+  rtcDeviceSetErrorFunction(g_device,error_handler);
+
+  /* set start render mode */
+  renderPixel = renderPixelStandard;
+  //renderPixel = renderPixelEyeLight;	
+  key_pressed_handler = device_key_pressed;
+
+  /* create scene */
+  g_scene = convertScene(g_ispc_scene);
+  rtcCommit (g_scene);
+  old_p = Vec3fa(1E10);
+}
+
 /* called by the C++ code to render */
 extern "C" void device_render (int* pixels,
                            const int width,
@@ -682,24 +687,11 @@ extern "C" void device_render (int* pixels,
 {
   Vec3fa cam_org = Vec3fa(p.x,p.y,p.z);
 
-  /* create scene */
-  if (g_scene == nullptr) { 
-    g_scene = convertScene(g_ispc_scene);
-
-#if !defined(FORCE_FIXED_EDGE_TESSELLATION)
-    if (g_subdiv_mode)
-      updateEdgeLevels(g_ispc_scene, cam_org);
-#endif
-    old_p = p;
-    rtcCommit (g_scene);
-  }
-
   bool camera_changed = g_changed; g_changed = false;
-  if ((p.x != old_p.x || p.y != old_p.y || p.z != old_p.z))
-    {
-     camera_changed = true;
-     old_p = p;
-    } 
+  if ((p.x != old_p.x || p.y != old_p.y || p.z != old_p.z)) {
+    camera_changed = true;
+    old_p = p;
+  } 
 
   if (camera_changed) {
 #if !defined(FORCE_FIXED_EDGE_TESSELLATION)

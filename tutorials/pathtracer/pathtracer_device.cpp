@@ -991,33 +991,6 @@ void device_key_pressed(int key)
   else device_key_pressed_default(key);
 }
 
-/* called by the C++ code for initialization */
-extern "C" void device_init (char* cfg)
-{
-  /* initialize last seen camera */
-  g_accu_vx = Vec3fa(0.0f);
-  g_accu_vy = Vec3fa(0.0f);
-  g_accu_vz = Vec3fa(0.0f);
-  g_accu_p  = Vec3fa(0.0f);
-
-  /* create new Embree device */
-  g_device = rtcNewDevice(cfg);
-  error_handler(rtcDeviceGetError(g_device));
-
-  /* set error handler */
-  rtcDeviceSetErrorFunction(g_device,error_handler);
-
-  /* set start render mode */
-  renderPixel = renderPixelStandard;
-  //  renderPixel = renderPixelEyeLight;
-  key_pressed_handler = device_key_pressed;
-
-#if ENABLE_FILTER_FUNCTION == 0
-  printf("Warning: filter functions disabled\n");
-#endif
-
-} // device_init
-
 unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
 {
   unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices, mesh->positions2 ? 2 : 1);
@@ -1170,7 +1143,7 @@ unsigned int convertInstance(ISPCInstance* instance, int meshID, RTCScene scene_
 typedef ISPCInstance* ISPCInstance_ptr;
 typedef ISPCGeometry* ISPCGeometry_ptr;
 
-RTCScene convertScene(ISPCScene* scene_in,const Vec3fa& cam_org)
+RTCScene convertScene(ISPCScene* scene_in)
 {  
   for (size_t i=0; i<scene_in->numGeometries; i++)
   {
@@ -1916,6 +1889,36 @@ void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
   }
 }
 
+/* called by the C++ code for initialization */
+extern "C" void device_init (char* cfg)
+{
+  /* initialize last seen camera */
+  g_accu_vx = Vec3fa(0.0f);
+  g_accu_vy = Vec3fa(0.0f);
+  g_accu_vz = Vec3fa(0.0f);
+  g_accu_p  = Vec3fa(0.0f);
+
+  /* create new Embree device */
+  g_device = rtcNewDevice(cfg);
+  error_handler(rtcDeviceGetError(g_device));
+
+  /* set error handler */
+  rtcDeviceSetErrorFunction(g_device,error_handler);
+
+  /* set start render mode */
+  renderPixel = renderPixelStandard;
+  //  renderPixel = renderPixelEyeLight;
+  key_pressed_handler = device_key_pressed;
+
+#if ENABLE_FILTER_FUNCTION == 0
+  printf("Warning: filter functions disabled\n");
+#endif
+
+  /* create scene */
+  g_scene = convertScene(g_ispc_scene);
+
+} // device_init
+
 /* called by the C++ code to render */
 extern "C" void device_render (int* pixels,
                            const int width,
@@ -1927,18 +1930,6 @@ extern "C" void device_render (int* pixels,
                            const Vec3fa& p)
 {
   Vec3fa cam_org = Vec3fa(p.x,p.y,p.z);
-
-  /* create scene */
-  if (g_scene == nullptr)
-   {
-     g_scene = convertScene(g_ispc_scene,cam_org);
-
-#if !defined(FORCE_FIXED_EDGE_TESSELLATION)
-    if (g_subdiv_mode)
-      updateEdgeLevels(g_ispc_scene, cam_org);
-#endif
-
-   }
 
   /* create accumulator */
   if (g_accu_width != width || g_accu_height != height) {
@@ -1956,12 +1947,11 @@ extern "C" void device_render (int* pixels,
   camera_changed |= ne(g_accu_vz,vz); g_accu_vz = vz;
   camera_changed |= ne(g_accu_p,  p); g_accu_p  = p;
 
-  if (g_animation && g_ispc_scene->numSubdivMeshKeyFrames)
-    {
-      updateKeyFrame(g_ispc_scene);
-      rtcCommit(g_scene);
-      g_changed = true;
-    }
+  if (g_animation && g_ispc_scene->numSubdivMeshKeyFrames) {
+    updateKeyFrame(g_ispc_scene);
+    rtcCommit(g_scene);
+    g_changed = true;
+  }
 
 #if  FIXED_SAMPLING == 0
   g_accu_count++;
@@ -1972,11 +1962,10 @@ extern "C" void device_render (int* pixels,
     memset(g_accu,0,width*height*sizeof(Vec3fa));
 
 #if !defined(FORCE_FIXED_EDGE_TESSELLATION)
-    if (g_subdiv_mode)
-      {
-       updateEdgeLevels(g_ispc_scene, cam_org);
-       rtcCommit (g_scene);
-      }
+    if (g_subdiv_mode) {
+      updateEdgeLevels(g_ispc_scene, cam_org);
+      rtcCommit (g_scene);
+    }
 #endif
 
   }

@@ -51,17 +51,6 @@ void error_handler(const RTCError code, const char* str = nullptr)
   exit(1);
 }
 
-/* called by the C++ code for initialization */
-extern "C" void device_init (char* cfg)
-{
-  /* create new Embree device */
-  g_device = rtcNewDevice(cfg);
-  error_handler(rtcDeviceGetError(g_device));
-
-  /* set error handler */
-  rtcDeviceSetErrorFunction(g_device,error_handler);
-}
-
 unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
 {
   unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices, mesh->positions2 ? 2 : 1);
@@ -172,6 +161,21 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   return Vec3fa(0.0f);
 }
 
+/* called by the C++ code for initialization */
+extern "C" void device_init (char* cfg)
+{
+  /* create new Embree device */
+  g_device = rtcNewDevice(cfg);
+  error_handler(rtcDeviceGetError(g_device));
+
+  /* set error handler */
+  rtcDeviceSetErrorFunction(g_device,error_handler);
+
+  /* create scene */
+  g_scene = convertScene(g_ispc_scene);
+  rtcCommit (g_scene);
+}
+
 /* task that renders a single screen tile */
 void renderTile(int taskIndex, int* pixels,
                      const int width,
@@ -246,13 +250,6 @@ extern "C" void device_render (int* pixels,
                            const Vec3fa& vz, 
                            const Vec3fa& p)
 {
-  /* create scene */
-  if (g_scene == nullptr) 
-  { 
-    g_scene = convertScene(g_ispc_scene);
-    rtcCommit (g_scene);
-  }
-
   /* render image */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;

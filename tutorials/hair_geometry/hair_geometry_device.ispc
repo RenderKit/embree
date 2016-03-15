@@ -136,34 +136,6 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
 //////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////
 
-
-/* called by the C++ code for initialization */
-export void device_init (uniform int8* uniform cfg)
-{
-  /* initialize last seen camera */
-  g_accu_vx = make_Vec3f(0.0f);
-  g_accu_vy = make_Vec3f(0.0f);
-  g_accu_vz = make_Vec3f(0.0f);
-  g_accu_p  = make_Vec3f(0.0f);
-
-  /* initialize hair colors */
-  hair_K  = make_Vec3f(0.8f,0.57f,0.32f);
-  hair_dK = make_Vec3f(0.1f,0.12f,0.08f);
-  hair_Kr = 0.2f*hair_K;    //!< reflectivity of hair
-  hair_Kt = 0.8f*hair_K;    //!< transparency of hair
-
-  /* create new Embree device */
-  g_device = rtcNewDevice(cfg);
-  error_handler(rtcDeviceGetError(g_device));
-
-  /* set error handler */
-  rtcDeviceSetErrorFunction(g_device,error_handler);
-
-  /* set start render mode */
-  renderPixel = renderPixelStandard;
-  key_pressed_handler = device_key_pressed_default;
-}
-
 #if !defined(__XEON_PHI__)
 
 /*! Anisotropic power cosine microfacet distribution. */
@@ -562,6 +534,37 @@ task void renderTile(uniform int* uniform pixels,
   }
 }
 
+/* called by the C++ code for initialization */
+export void device_init (uniform int8* uniform cfg)
+{
+  /* initialize last seen camera */
+  g_accu_vx = make_Vec3f(0.0f);
+  g_accu_vy = make_Vec3f(0.0f);
+  g_accu_vz = make_Vec3f(0.0f);
+  g_accu_p  = make_Vec3f(0.0f);
+
+  /* initialize hair colors */
+  hair_K  = make_Vec3f(0.8f,0.57f,0.32f);
+  hair_dK = make_Vec3f(0.1f,0.12f,0.08f);
+  hair_Kr = 0.2f*hair_K;    //!< reflectivity of hair
+  hair_Kt = 0.8f*hair_K;    //!< transparency of hair
+
+  /* create new Embree device */
+  g_device = rtcNewDevice(cfg);
+  error_handler(rtcDeviceGetError(g_device));
+
+  /* set error handler */
+  rtcDeviceSetErrorFunction(g_device,error_handler);
+
+  /* set start render mode */
+  renderPixel = renderPixelStandard;
+  key_pressed_handler = device_key_pressed_default;
+
+  /* create scene */
+  g_scene = convertScene(g_ispc_scene);
+}
+
+
 /* called by the C++ code to render */
 export void device_render (uniform int* uniform pixels,
                            const uniform int width,
@@ -572,10 +575,6 @@ export void device_render (uniform int* uniform pixels,
                            const uniform Vec3f& vz, 
                            const uniform Vec3f& p)
 {
-  /* create scene */
-  if (g_scene == NULL)
-    g_scene = convertScene(g_ispc_scene);
-
   /* create accumulator */
   if (g_accu_width != width || g_accu_height != height) {
     g_accu = uniform new uniform Vec3fa[width*height];
