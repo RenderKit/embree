@@ -896,7 +896,7 @@ namespace embree
       __forceinline vfloat<N> dequantizeLowerZ() const { return vfloat<N>(start.z) + vfloat<N>(vint<N>::load(lower_z)) * scale.z; }
       __forceinline vfloat<N> dequantizeUpperZ() const { return vfloat<N>(start.z) + vfloat<N>(vint<N>::load(upper_z)) * scale.z; }
 
-      __forceinline vfloat<N> dequantize(const size_t offset, const vfloat<N> &vstart, const vfloat<N> &vscale) const { return vfloat<N>(vint<N>::load(lower_x+offset)) * vscale + vstart; }
+      __forceinline vfloat<N> dequantize(const size_t offset) const { return vfloat<N>(vint<N>::load(lower_x+offset)); }
 
       unsigned char lower_x[N]; //!< 8bit discretized X dimension of lower bounds of all N children
       unsigned char upper_x[N]; //!< 8bit discretized X dimension of upper bounds of all N children

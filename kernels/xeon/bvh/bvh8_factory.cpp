@@ -143,7 +143,7 @@ namespace embree
     SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Quad4iSceneBuilderSAH);
     SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Quad4iMBSceneBuilderSAH);
 
-    SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8QuantizedTriangle4SceneBuilderSAH);
+    SELECT_SYMBOL_INIT_AVX(features,BVH8QuantizedTriangle4SceneBuilderSAH);
    
     SELECT_SYMBOL_INIT_AVX(features,BVH8Triangle4SceneBuilderSpatialSAH);
     SELECT_SYMBOL_INIT_AVX(features,BVH8Triangle8SceneBuilderSpatialSAH);
