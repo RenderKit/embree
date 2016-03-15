@@ -19,6 +19,7 @@
 #include "../common/tutorial/random_sampler.isph"
 #include "../pathtracer/shapesampler.isph"
 
+#define USE_STREAM_INTERFACE 1
 #define AMBIENT_OCCLUSION_SAMPLES 64
 
 extern uniform ISPCScene* uniform g_ispc_scene;
@@ -191,7 +192,12 @@ Vec3f ambientOcclusionShading(int x, int y, RTCRay& ray)
   } 
   
   /* trace occlusion rays */
+#if USE_STREAM_INTERFACE
   rtcOccludedN(g_scene,rays,AMBIENT_OCCLUSION_SAMPLES,sizeof(RTCRay),0);
+#else
+  for (uniform size_t i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
+    rtcOccluded(g_scene,rays[i]);
+#endif
 
   /* accumulate illumination */
   for (uniform int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++) {
@@ -226,15 +232,15 @@ void renderTileStandard(uniform int taskIndex,
   RTCRay rays[TILE_SIZE_X*TILE_SIZE_Y];
 
   /* generate stream of primary rays */
-  uniform int packets = 0;
+  uniform int N = 0;
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
     RandomSampler sampler;
     RandomSampler_init(sampler, x, y, 0);
     
     /* initialize ray */
-    RTCRay& ray = rays[packets];
-    ray.org = p;
+    RTCRay& ray = rays[N++];
+    ray.org = p; // FIXME: make invalid rays empty
     ray.dir = normalize(x*vx + y*vy + vz);
     ray.tnear = 0.0f;
     ray.tfar = inf;
@@ -242,17 +248,21 @@ void renderTileStandard(uniform int taskIndex,
     ray.primID = RTC_INVALID_GEOMETRY_ID;
     ray.mask = -1;
     ray.time = RandomSampler_get1D(sampler);
-    packets++; // FIXME: make invalid rays empty
   }
 
   /* trace stream of rays */
-  rtcIntersectN(g_scene,rays,packets,sizeof(RTCRay),0);
+#if USE_STREAM_INTERFACE
+  rtcIntersectN(g_scene,rays,N,sizeof(RTCRay),0);
+#else
+  for (uniform size_t i=0; i<N; i++)
+    rtcIntersect(g_scene,rays[i]);
+#endif
 
   /* shade stream of rays */
-  packets = 0;
+  N = 0;
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
-    RTCRay& ray = rays[packets++];
+    RTCRay& ray = rays[N++];
 
     /* eyelight shading */
     Vec3f color = make_Vec3f(0.0f);
