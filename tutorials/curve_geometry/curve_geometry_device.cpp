@@ -1,0 +1,297 @@
+// ======================================================================== //
+// Copyright 2009-2016 Intel Corporation                                    //
+//                                                                          //
+// Licensed under the Apache License, Version 2.0 (the "License");          //
+// you may not use this file except in compliance with the License.         //
+// You may obtain a copy of the License at                                  //
+//                                                                          //
+//     http://www.apache.org/licenses/LICENSE-2.0                           //
+//                                                                          //
+// Unless required by applicable law or agreed to in writing, software      //
+// distributed under the License is distributed on an "AS IS" BASIS,        //
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
+// See the License for the specific language governing permissions and      //
+// limitations under the License.                                           //
+// ======================================================================== //
+
+#include "../common/tutorial/tutorial_device.h"
+
+/* scene data */
+RTCDevice g_device = nullptr;
+RTCScene g_scene = nullptr;
+
+/* render function to use */
+renderPixelFunc renderPixel;
+
+/* error reporting function */
+void error_handler(const RTCError code, const char* str = nullptr)
+{
+  if (code == RTC_NO_ERROR) 
+    return;
+
+  printf("Embree: ");
+  switch (code) {
+  case RTC_UNKNOWN_ERROR    : printf("RTC_UNKNOWN_ERROR"); break;
+  case RTC_INVALID_ARGUMENT : printf("RTC_INVALID_ARGUMENT"); break;
+  case RTC_INVALID_OPERATION: printf("RTC_INVALID_OPERATION"); break;
+  case RTC_OUT_OF_MEMORY    : printf("RTC_OUT_OF_MEMORY"); break;
+  case RTC_UNSUPPORTED_CPU  : printf("RTC_UNSUPPORTED_CPU"); break;
+  case RTC_CANCELLED        : printf("RTC_CANCELLED"); break;
+  default                   : printf("invalid error code"); break;
+  }
+  if (str) { 
+    printf(" ("); 
+    while (*str) putchar(*str++); 
+    printf(")\n"); 
+  }
+  exit(1);
+}
+
+#define NUM_HAIR_VERTICES 9
+#define NUM_HAIR_CURVES 6
+
+#define W 2.0f
+
+float hair_vertices[9][4] = 
+{
+  { -1.0f, 0.0f, -   W, 0.2f },
+
+  { +0.0f,-1.0f, +0.0f, 0.2f },
+  { +1.0f, 0.0f, +   W, 0.2f },
+  { -1.0f, 0.0f, +   W, 0.2f },
+  { +0.0f,+1.0f, +0.0f, 0.6f },
+  { +1.0f, 0.0f, -   W, 0.2f },
+  { -1.0f, 0.0f, -   W, 0.2f },
+
+  { +0.0f,-1.0f, +0.0f, 0.2f },
+  { +1.0f, 0.0f, +   W, 0.2f },
+};
+
+float hair_vertex_colors[9][4] = 
+{
+  {  1.0f,  1.0f,  0.0f, 0.0f },
+
+  {  1.0f,  0.0f,  0.0f, 0.0f },
+  {  1.0f,  1.0f,  0.0f, 0.0f },
+  {  0.0f,  0.0f,  1.0f, 0.0f },
+  {  1.0f,  1.0f,  1.0f, 0.0f },
+  {  1.0f,  0.0f,  0.0f, 0.0f },
+  {  1.0f,  1.0f,  0.0f, 0.0f },
+
+  {  1.0f,  0.0f,  0.0f, 0.0f },
+  {  1.0f,  1.0f,  0.0f, 0.0f },
+};
+
+unsigned int hair_indices[6] = {
+  0, 1, 2, 3, 4, 5
+};
+
+/* add hair geometry */
+unsigned int addCurve (RTCScene scene, const Vec3fa& pos)
+{
+  unsigned int geomID = rtcNewCurveGeometry (scene, RTC_GEOMETRY_DYNAMIC, NUM_HAIR_CURVES, 4*NUM_HAIR_CURVES);
+
+  /* converts b-spline to bezier basis */
+  Vec3fa* vtx = (Vec3fa*) rtcMapBuffer(scene, geomID, RTC_VERTEX_BUFFER);
+  for (size_t i=0; i<NUM_HAIR_CURVES; i++) 
+  {
+    Vec3fa P = Vec3fa(pos.x,pos.y,pos.z,0.0f);
+    const Vec3fa v0 = Vec3fa(hair_vertices[i+0][0],hair_vertices[i+0][1],hair_vertices[i+0][2],hair_vertices[i+0][3]);
+    const Vec3fa v1 = Vec3fa(hair_vertices[i+1][0],hair_vertices[i+1][1],hair_vertices[i+1][2],hair_vertices[i+1][3]);
+    const Vec3fa v2 = Vec3fa(hair_vertices[i+2][0],hair_vertices[i+2][1],hair_vertices[i+2][2],hair_vertices[i+2][3]);
+    const Vec3fa v3 = Vec3fa(hair_vertices[i+3][0],hair_vertices[i+3][1],hair_vertices[i+3][2],hair_vertices[i+3][3]);
+    vtx[4*i+0] = P + (1.0f/6.0f)*v0 + (2.0f/3.0f)*v1 + (1.0f/6.0f)*v2;
+    vtx[4*i+1] = P + (2.0f/3.0f)*v1 + (1.0f/3.0f)*v2;
+    vtx[4*i+2] = P + (1.0f/3.0f)*v1 + (2.0f/3.0f)*v2;
+    vtx[4*i+3] = P + (1.0f/6.0f)*v1 + (2.0f/3.0f)*v2 + (1.0f/6.0f)*v3;
+  }
+  rtcUnmapBuffer(scene, geomID, RTC_VERTEX_BUFFER);
+   
+  Vec3fa* colors = new Vec3fa[4*NUM_HAIR_CURVES];
+  for (size_t i=0; i<NUM_HAIR_CURVES; i++) 
+  {
+    const Vec3fa v0 = Vec3fa(hair_vertex_colors[i+0][0],hair_vertex_colors[i+0][1],hair_vertex_colors[i+0][2],hair_vertex_colors[i+0][3]);
+    const Vec3fa v1 = Vec3fa(hair_vertex_colors[i+1][0],hair_vertex_colors[i+1][1],hair_vertex_colors[i+1][2],hair_vertex_colors[i+1][3]);
+    const Vec3fa v2 = Vec3fa(hair_vertex_colors[i+2][0],hair_vertex_colors[i+2][1],hair_vertex_colors[i+2][2],hair_vertex_colors[i+2][3]);
+    const Vec3fa v3 = Vec3fa(hair_vertex_colors[i+3][0],hair_vertex_colors[i+3][1],hair_vertex_colors[i+3][2],hair_vertex_colors[i+3][3]);
+    colors[4*i+0] = (1.0f/6.0f)*v0 + (2.0f/3.0f)*v1 + (1.0f/6.0f)*v2;
+    colors[4*i+1] = (2.0f/3.0f)*v1 + (1.0f/3.0f)*v2;
+    colors[4*i+2] = (1.0f/3.0f)*v1 + (2.0f/3.0f)*v2;
+    colors[4*i+3] = (1.0f/6.0f)*v1 + (2.0f/3.0f)*v2 + (1.0f/6.0f)*v3;
+  }
+  
+  int* index = (int*) rtcMapBuffer(scene, geomID, RTC_INDEX_BUFFER);
+  for (size_t i=0; i<NUM_HAIR_CURVES; i++) {
+    index[i] = 4*i;
+  }
+  rtcUnmapBuffer(scene,geomID,RTC_INDEX_BUFFER);
+  
+  rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER0, colors, 0, sizeof(Vec3fa));
+  return geomID;
+}
+
+/* adds a ground plane to the scene */
+unsigned int addGroundPlane (RTCScene scene_i)
+{
+  /* create a triangulated plane with 2 triangles and 4 vertices */
+  unsigned int mesh = rtcNewTriangleMesh (scene_i, RTC_GEOMETRY_STATIC, 2, 4);
+
+  /* set vertices */
+  Vertex* vertices = (Vertex*) rtcMapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER); 
+  vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10; 
+  vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10; 
+  vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10; 
+  vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
+  rtcUnmapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER); 
+
+  /* set triangles */
+  Triangle* triangles = (Triangle*) rtcMapBuffer(scene_i,mesh,RTC_INDEX_BUFFER);
+  triangles[0].v0 = 0; triangles[0].v1 = 2; triangles[0].v2 = 1;
+  triangles[1].v0 = 1; triangles[1].v1 = 2; triangles[1].v2 = 3;
+  rtcUnmapBuffer(scene_i,mesh,RTC_INDEX_BUFFER);
+
+  return mesh;
+}
+
+/* called by the C++ code for initialization */
+extern "C" void device_init (char* cfg)
+{
+  /* create new Embree device */
+  g_device = rtcNewDevice(cfg);
+  error_handler(rtcDeviceGetError(g_device));
+
+  /* set error handler */
+  rtcDeviceSetErrorFunction(g_device,error_handler);
+ 
+  /* create scene */
+  g_scene = rtcDeviceNewScene(g_device, RTC_SCENE_DYNAMIC,RTC_INTERSECT1 | RTC_INTERPOLATE);
+
+  /* add ground plane */
+  addGroundPlane(g_scene);
+
+  /* add curve */
+  addCurve(g_scene,Vec3fa(0.0f,0.0f,0.0f));
+  
+  /* commit changes to scene */
+  rtcCommit (g_scene);
+
+  /* set start render mode */
+  renderPixel = renderPixelStandard;
+  key_pressed_handler = device_key_pressed_default;
+}
+
+/* task that renders a single screen tile */
+Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
+{
+  /* initialize ray */
+  RTCRay ray;
+  ray.org = p;
+  ray.dir = normalize(x*vx + y*vy + vz);
+  ray.tnear = 0.0f;
+  ray.tfar = inf;
+  ray.geomID = RTC_INVALID_GEOMETRY_ID;
+  ray.primID = RTC_INVALID_GEOMETRY_ID;
+  ray.mask = -1;
+  ray.time = 0;
+  
+  /* intersect ray with scene */
+  rtcIntersect(g_scene,ray);
+  
+  /* shade pixels */
+  Vec3fa color = Vec3fa(0.0f);
+  if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
+  {
+    /* interpolate diffuse color */
+
+    Vec3fa diffuse = Vec3fa(1.0f,0.0f,0.0f);
+    if (ray.geomID > 0) 
+    {
+      int geomID = ray.geomID; {
+        rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_USER_VERTEX_BUFFER0,&diffuse.x,nullptr,nullptr,3); 
+      }
+      diffuse = 0.5f*diffuse;
+    }
+
+    /* calculate smooth shading normal */
+    Vec3fa Ng = normalize(ray.Ng);
+    color = color + diffuse*0.5f;
+    Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
+    
+    /* initialize shadow ray */
+    RTCRay shadow;
+    shadow.org = ray.org + ray.tfar*ray.dir;
+    shadow.dir = neg(lightDir);
+    shadow.tnear = 0.001f;
+    shadow.tfar = inf;
+    shadow.geomID = 1;
+    shadow.primID = 0;
+    shadow.mask = -1;
+    shadow.time = 0;
+    
+    /* trace shadow ray */
+    rtcOccluded(g_scene,shadow);
+    
+    /* add light contribution */
+    if (shadow.geomID) {
+      Vec3fa r = normalize(reflect(ray.dir,Ng));
+      float s = pow(clamp(dot(r,lightDir),0.0f,1.0f),10.0f);
+      float d = clamp(-dot(lightDir,Ng),0.0f,1.0f);
+      color = color + diffuse*d + 0.5f*Vec3fa(s);
+    }
+  }
+  return color;
+}
+
+/* task that renders a single screen tile */
+void renderTile(int taskIndex, int* pixels,
+                     const int width,
+                     const int height, 
+                     const float time,
+                     const Vec3fa& vx, 
+                     const Vec3fa& vy, 
+                     const Vec3fa& vz, 
+                     const Vec3fa& p,
+                     const int numTilesX, 
+                     const int numTilesY)
+{
+  const int tileY = taskIndex / numTilesX;
+  const int tileX = taskIndex - tileY * numTilesX;
+  const int x0 = tileX * TILE_SIZE_X;
+  const int x1 = min(x0+TILE_SIZE_X,width);
+  const int y0 = tileY * TILE_SIZE_Y;
+  const int y1 = min(y0+TILE_SIZE_Y,height);
+
+  for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
+  {
+    /* calculate pixel color */
+    Vec3fa color = renderPixel(x,y,vx,vy,vz,p);
+
+    /* write color to framebuffer */
+    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
+    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
+    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
+    pixels[y*width+x] = (b << 16) + (g << 8) + r;  
+  }
+}
+
+/* called by the C++ code to render */
+extern "C" void device_render (int* pixels,
+                    const int width,
+                    const int height,
+                    const float time,
+                    const Vec3fa& vx, 
+                    const Vec3fa& vy, 
+                    const Vec3fa& vz, 
+                    const Vec3fa& p)
+{
+  const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
+  const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
+  launch_renderTile(numTilesX*numTilesY,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); 
+}
+
+/* called by the C++ code for cleanup */
+extern "C" void device_cleanup ()
+{
+  rtcDeleteScene (g_scene);
+  rtcDeleteDevice(g_device);
+}

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2015 Intel Corporation                                    //
+// Copyright 2009-2016 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -270,7 +270,9 @@ namespace embree
     return Vec3fa(shuffle<1,2,0,3>(msub(a0,b0,a1*b1)));
   }
 
-  __forceinline float  sqr_length( const Vec3fa& a )                 { return dot(a,a); }
+  __forceinline float  sqr_length ( const Vec3fa& a )                { return dot(a,a); }
+  __forceinline float  rcp_length ( const Vec3fa& a )                { return rsqrt(dot(a,a)); }
+  __forceinline float  rcp_length2( const Vec3fa& a )                { return rcp(dot(a,a)); }
   __forceinline float  length   ( const Vec3fa& a )                  { return sqrt(dot(a,a)); }
   __forceinline Vec3fa normalize( const Vec3fa& a )                  { return a*rsqrt(dot(a,a)); }
   __forceinline float  distance ( const Vec3fa& a, const Vec3fa& b ) { return length(a-b); }
@@ -289,7 +291,7 @@ namespace embree
     const float pdp = dot(p,dp);
     return (pp*dp-pdp*p)*rcp(pp)*rsqrt(pp);
   }
-
+  
   ////////////////////////////////////////////////////////////////////////////////
   /// Select
   ////////////////////////////////////////////////////////////////////////////////

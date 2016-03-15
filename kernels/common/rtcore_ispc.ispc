@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2015 Intel Corporation                                    //
+// Copyright 2009-2016 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "../../include/embree2/rtcore.isph" 
+#include "../../include/embree2/rtcore_ray.isph" 
 
 #define size_tt int // FIXME: workaround of ISPC bug
 #define ssize_tt int // FIXME: workaround of ISPC bug
@@ -44,7 +45,7 @@ extern "C" void ispcIntersect1 (RTCScene scene, uniform RTCRay1& ray);
 extern "C" void ispcIntersect4 (void* uniform valid, RTCScene scene, void* uniform ray);
 extern "C" void ispcIntersect8 (void* uniform valid, RTCScene scene, void* uniform ray);
 extern "C" void ispcIntersect16 (void* uniform valid, RTCScene scene, void* uniform ray);
-extern "C" void ispcIntersectN (RTCScene scene, void* uniform rayN, const uniform size_t N, const uniform size_t stride, const uniform size_t flags);
+extern "C" void ispcIntersect1N (RTCScene scene, void* uniform rayN, const uniform size_t N, const uniform size_t stride, const uniform size_t flags);
 extern "C" void ispcIntersectN_SOA (RTCScene scene, uniform RTCRaySOA& rayN, const uniform size_t N, const uniform size_t streams, const uniform size_t offset, const uniform size_t flags);
 
 
@@ -81,6 +82,12 @@ extern "C" uniform unsigned int ispcNewLineSegments (RTCScene scene,
                                                      uniform size_tt numTimeSteps);
 
 extern "C" uniform unsigned int ispcNewHairGeometry (RTCScene scene,
+                                                     uniform RTCGeometryFlags flags,
+                                                     uniform size_tt numCurves,
+                                                     uniform size_tt numVertices,
+                                                     uniform size_tt numTimeSteps);
+
+extern "C" uniform unsigned int ispcNewCurveGeometry (RTCScene scene,
                                                      uniform RTCGeometryFlags flags,
                                                      uniform size_tt numCurves,
                                                      uniform size_tt numVertices,
@@ -187,19 +194,19 @@ uniform RTCError rtcDeviceGetError(RTCDevice device) {
   return ispcDeviceGetError(device);
 }
 
-void rtcSetErrorFunction(uniform RTC_ERROR_FUNCTION func) {
+void rtcSetErrorFunction(uniform RTCErrorFunc func) {
   ispcSetErrorFunction(func);
 }
 
-void rtcDeviceSetErrorFunction(RTCDevice device, uniform RTC_ERROR_FUNCTION func) {
+void rtcDeviceSetErrorFunction(RTCDevice device, uniform RTCErrorFunc func) {
   ispcDeviceSetErrorFunction(device,func);
 }
 
-void rtcSetMemoryMonitorFunction(uniform RTC_MEMORY_MONITOR_FUNCTION func) {
+void rtcSetMemoryMonitorFunction(uniform RTCMemoryMonitorFunc func) {
   ispcSetMemoryMonitorFunction(func);
 }
 
-void rtcDeviceSetMemoryMonitorFunction(RTCDevice device, uniform RTC_MEMORY_MONITOR_FUNCTION func) {
+void rtcDeviceSetMemoryMonitorFunction(RTCDevice device, uniform RTCMemoryMonitorFunc func) {
   ispcDeviceSetMemoryMonitorFunction(device,func);
 }
 
@@ -231,7 +238,6 @@ RTCScene rtcDeviceNewScene (RTCDevice device, uniform RTCSceneFlags flags, unifo
       aflags = (uniform RTCAlgorithmFlags) ((aflags & ~RTC_INTERSECT_VARYING) | (1 << 2));
     else if (sizeof(varying float) == 64)
       aflags = (uniform RTCAlgorithmFlags) ((aflags & ~RTC_INTERSECT_VARYING) | (1 << 3));
-    aflags |= (uniform RTCAlgorithmFlags)(1 << 5); /* ray stream interface */
   }
   return ispcNewScene2(device,flags,aflags);
 }
@@ -271,16 +277,42 @@ void rtcIntersect (RTCScene scene, varying RTCRay& ray)
     ispcIntersect16(&imask,scene,&ray);
 }
 
-void rtcIntersectN (RTCScene scene, uniform RTCRay* uniform rayN, const uniform size_t N, const uniform size_t stride, const uniform size_t flags)
-{
-  ispcIntersectN(scene,rayN,N,stride,flags);
+void rtcIntersect1N (RTCScene scene, uniform RTCRay1* uniform rayN, const uniform size_t N, const uniform size_t stride, const uniform size_t flags) {
+  ispcIntersect1N(scene,rayN,N,stride,flags);
 }
 
-void rtcIntersectN_SOA (RTCScene scene, uniform RTCRaySOA& rayN, const uniform size_t N, const uniform size_t streams, const uniform size_t offset, const uniform size_t flags)
+inline void initRTCRaySOA(uniform RTCRaySOA& ray_soa, varying RTCRay& ray)
 {
+  ray_soa.orgx   = (uniform float* uniform)&ray.orgx;
+  ray_soa.orgy   = (uniform float* uniform)&ray.orgy;
+  ray_soa.orgz   = (uniform float* uniform)&ray.orgz;
+  ray_soa.dirx   = (uniform float* uniform)&ray.dirx;
+  ray_soa.diry   = (uniform float* uniform)&ray.diry;
+  ray_soa.dirz   = (uniform float* uniform)&ray.dirz;
+  ray_soa.tnear  = (uniform float* uniform)&ray.tnear;
+  ray_soa.tfar   = (uniform float* uniform)&ray.tfar;
+  ray_soa.time   = (uniform float* uniform)&ray.time;
+  ray_soa.mask   = (uniform unsigned int* uniform)&ray.mask;
+  ray_soa.Ngx    = (uniform float* uniform)&ray.Ngx;
+  ray_soa.Ngy    = (uniform float* uniform)&ray.Ngy;
+  ray_soa.Ngz    = (uniform float* uniform)&ray.Ngz;
+  ray_soa.u      = (uniform float* uniform)&ray.u;
+  ray_soa.v      = (uniform float* uniform)&ray.v;
+  ray_soa.geomID = (uniform unsigned int* uniform)&ray.geomID;
+  ray_soa.primID = (uniform unsigned int* uniform)&ray.primID;
+  ray_soa.instID = (uniform unsigned int* uniform)&ray.instID;
+}
+
+void rtcIntersectN (RTCScene scene, varying RTCRay* uniform rayN, const uniform size_t N, const uniform size_t stride, const uniform size_t flags) 
+{
+  uniform RTCRaySOA ray_soa;
+  initRTCRaySOA(ray_soa,rayN[0]);
+  ispcIntersectN_SOA(scene,ray_soa,sizeof(varying float)/4,N,stride,flags);
+}
+
+void rtcIntersectN_SOA (RTCScene scene, uniform RTCRaySOA& rayN, const uniform size_t N, const uniform size_t streams, const uniform size_t offset, const uniform size_t flags) {
   ispcIntersectN_SOA(scene,rayN,N,streams,offset,flags);
 }
-
 
 void rtcOccluded1 (RTCScene scene, uniform RTCRay1& ray) {
   ispcOccluded1(scene,ray);
@@ -378,6 +410,15 @@ uniform unsigned int rtcNewHairGeometry (RTCScene scene,
                                          uniform size_t numTimeSteps)
 {
   return ispcNewHairGeometry (scene,flags,numCurves,numVertices,numTimeSteps);
+}
+
+uniform unsigned int rtcNewCurveGeometry (RTCScene scene,
+                                         uniform RTCGeometryFlags flags,
+                                         uniform size_t numCurves,
+                                         uniform size_t numVertices,
+                                         uniform size_t numTimeSteps)
+{
+  return ispcNewCurveGeometry (scene,flags,numCurves,numVertices,numTimeSteps);
 }
 
 uniform unsigned int rtcNewSubdivisionMesh (RTCScene scene,

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2015 Intel Corporation                                    //
+// Copyright 2009-2016 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -151,7 +151,7 @@ namespace embree
     {
       int materialID = convert(mesh->material);
       
-      TutorialScene::HairSet* hairset = new TutorialScene::HairSet;
+      TutorialScene::HairSet* hairset = new TutorialScene::HairSet(mesh->hair);
       
       hairset->v.resize(mesh->v.size()); 
       for (size_t i=0; i<mesh->v.size(); i++) {

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2015 Intel Corporation                                    //
+// Copyright 2009-2016 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -411,6 +411,14 @@ namespace embree
     return vfloat8::broadcast(&a[k]);
   }
 
+  __forceinline vfloat8 shift_right_1( const vfloat8& x) 
+  {
+    __m256 t0 = _mm256_permute_ps(x,0x39);
+    __m256 t1 = _mm256_permute2f128_ps(t0,t0,0x81);
+    __m256 y  = _mm256_blend_ps(t0,t1,0x88);
+    return y;
+  }
+
   ////////////////////////////////////////////////////////////////////////////////
   /// Transpose
   ////////////////////////////////////////////////////////////////////////////////
@@ -495,7 +503,7 @@ namespace embree
 
 
   ////////////////////////////////////////////////////////////////////////////////
-  /// Euclidian Space Operators
+  /// Euclidian Space Operators (pairs of Vec3fa's)
   ////////////////////////////////////////////////////////////////////////////////
 
   //__forceinline vfloat8 dot ( const vfloat8& a, const vfloat8& b ) {
@@ -514,6 +522,20 @@ namespace embree
     const vfloat8 b1 = b;
     return shuffle<1,2,0,3>(msub(a0,b0,a1*b1));
   }
+
+  //__forceinline float  sqr_length ( const vfloat<8>& a )                { return dot(a,a); }
+  //__forceinline float  rcp_length ( const vfloat<8>& a )                { return rsqrt(dot(a,a)); }
+  //__forceinline float  rcp_length2( const vfloat<8>& a )                { return rcp(dot(a,a)); }
+  //__forceinline float  length   ( const vfloat<8>& a )                  { return sqrt(dot(a,a)); }
+  __forceinline vfloat<8> normalize( const vfloat<8>& a )               { return a*rsqrt(dot(a,a)); }
+  //__forceinline float  distance ( const vfloat<8>& a, const vfloat<8>& b ) { return length(a-b); }
+  //__forceinline float  halfArea ( const vfloat<8>& d )                  { return d.x*(d.y+d.z)+d.y*d.z; }
+  //__forceinline float  area     ( const vfloat<8>& d )                  { return 2.0f*halfArea(d); }
+  //__forceinline vfloat<8> reflect  ( const vfloat<8>& V, const vfloat<8>& N ) { return 2.0f*dot(V,N)*N-V; }
+
+  //__forceinline vfloat<8> normalize_safe( const vfloat<8>& a ) { 
+  //  const float d = dot(a,a); if (unlikely(d == 0.0f)) return a; else return a*rsqrt(d);
+  //}
 
   ////////////////////////////////////////////////////////////////////////////////
   /// In Register Sorting

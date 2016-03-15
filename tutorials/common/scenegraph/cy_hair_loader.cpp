@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2015 Intel Corporation                                    //
+// Copyright 2009-2016 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -150,7 +150,7 @@ namespace embree
     
     Material objmtl; new (&objmtl) OBJMaterial;
     Ref<SceneGraph::MaterialNode> material = new SceneGraph::MaterialNode(objmtl);
-    Ref<SceneGraph::HairSetNode> hairset = new SceneGraph::HairSetNode(material);
+    Ref<SceneGraph::HairSetNode> hairset = new SceneGraph::HairSetNode(true,material);
     
     for (size_t i=0;i<cyFile.header.numPoints;i++)
     {

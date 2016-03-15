@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2015 Intel Corporation                                    //
+// Copyright 2009-2016 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -48,7 +48,7 @@ namespace embree
       needBezierIndices(false), needBezierVertices(false),
       needLineIndices(false), needLineVertices(false),
       needSubdivIndices(false), needSubdivVertices(false),
-      numIntersectionFilters4(0), numIntersectionFilters8(0), numIntersectionFilters16(0),numIntersectionFiltersN(0),
+      numIntersectionFilters1(0), numIntersectionFilters4(0), numIntersectionFilters8(0), numIntersectionFilters16(0),
       commitCounter(0), commitCounterSubdiv(0), 
       progress_monitor_function(nullptr), progress_monitor_ptr(nullptr), progress_monitor_counter(0),
       progressInterface(this)
@@ -523,7 +523,7 @@ namespace embree
   }
 
 
-  unsigned Scene::newBezierCurves (RTCGeometryFlags gflags, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
+  unsigned Scene::newBezierCurves (BezierCurves::SubType subtype, RTCGeometryFlags gflags, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
   {
     if (isStatic() && (gflags != RTC_GEOMETRY_STATIC)) {
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
@@ -535,7 +535,7 @@ namespace embree
       return -1;
     }
     
-    Geometry* geom = new BezierCurves(this,gflags,numCurves,numVertices,numTimeSteps);
+    Geometry* geom = new BezierCurves(this,subtype,gflags,numCurves,numVertices,numTimeSteps);
     return geom->id;
   }
 
@@ -619,7 +619,7 @@ namespace embree
     progress_monitor_counter = 0;
 
     /* select fast code path if no intersection filter is present */
-    accels.select(numIntersectionFilters4,numIntersectionFilters8,numIntersectionFilters16,numIntersectionFiltersN);
+    accels.select(numIntersectionFilters4,numIntersectionFilters8,numIntersectionFilters16,numIntersectionFilters1);
   
     /* build all hierarchies of this scene */
     accels.build(0,0);
@@ -676,7 +676,7 @@ namespace embree
     }
 
     /* select fast code path if no intersection filter is present */
-    accels.select(numIntersectionFilters4,numIntersectionFilters8,numIntersectionFilters16,numIntersectionFiltersN);
+    accels.select(numIntersectionFilters4,numIntersectionFilters8,numIntersectionFilters16,numIntersectionFilters1);
 
     /* if user provided threads use them */
     if (threadCount)

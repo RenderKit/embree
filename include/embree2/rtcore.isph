@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2015 Intel Corporation                                    //
+// Copyright 2009-2016 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -178,7 +178,7 @@ RTCORE_DEPRECATED uniform RTCError rtcGetError();
 uniform RTCError rtcDeviceGetError(RTCDevice device);
 
 /*! \brief Type of error callback function. */
-typedef void (*uniform RTCErrorFunc)(const uniform RTCError code, const uniform int8* uniform str);
+typedef unmasked void (*uniform RTCErrorFunc)(const uniform RTCError code, const uniform int8* uniform str);
 RTCORE_DEPRECATED typedef RTCErrorFunc RTC_ERROR_FUNCTION;
 
 /*! \brief Sets a callback function that is called whenever an error occurs. 

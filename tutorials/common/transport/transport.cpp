@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2015 Intel Corporation                                    //
+// Copyright 2009-2016 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -19,6 +19,7 @@
 #include "../../common/tutorial/scene.h"
 #include "../../common/tutorial/tutorial_device.h"
 #include "../../common/tutorial/scene_device.h"
+#include "../../../include/embree2/rtcore.h"
 
 extern "C" int64_t get_tsc() {
   return read_tsc();
@@ -38,6 +39,10 @@ namespace embree
 
   void init(const char* cfg) {
     device_init(cfg);
+  }
+
+  void set_parameter(size_t parm, ssize_t val) {
+    rtcDeviceSetParameter1i(nullptr,(RTCParameter)parm,val);
   }
 
   void key_pressed (int key) {

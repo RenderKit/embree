@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2015 Intel Corporation                                    //
+// Copyright 2009-2016 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -1111,6 +1111,16 @@ unsigned int convertHairSet(ISPCHairSet* hair, RTCScene scene_out)
   return geomID;
 }
 
+unsigned int convertCurveGeometry(ISPCHairSet* hair, RTCScene scene_out)
+{
+  unsigned int geomID = rtcNewCurveGeometry (scene_out, RTC_GEOMETRY_STATIC, hair->numHairs, hair->numVertices, hair->v2 ? 2 : 1);
+  rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER,hair->v,0,sizeof(Vertex));
+  if (hair->v2) rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER1,hair->v2,0,sizeof(Vertex));
+  rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair));
+  rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&occlusionFilterHair);
+  return geomID;
+}
+
 void convertGroup(ISPCGroup* group, RTCScene scene_out)
 {
   for (size_t i=0; i<group->numGeometries; i++)
@@ -1126,6 +1136,8 @@ void convertGroup(ISPCGroup* group, RTCScene scene_out)
       convertLineSegments((ISPCLineSegments*) geometry, scene_out);
     else if (geometry->type == HAIR_SET)
       convertHairSet((ISPCHairSet*) geometry, scene_out);
+    else if (geometry->type == CURVES)
+      convertCurveGeometry((ISPCHairSet*) geometry, scene_out);
     else
       assert(false);
   }
@@ -1174,7 +1186,7 @@ RTCScene convertScene(ISPCScene* scene_in,const Vec3fa& cam_org)
 
   /* create scene */
   int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
-  int scene_aflags = RTC_INTERSECT1 | RTC_INTERSECTN;
+  int scene_aflags = RTC_INTERSECT1;
 
   if (g_subdiv_mode)   
     scene_flags = RTC_SCENE_DYNAMIC | RTC_SCENE_INCOHERENT | RTC_SCENE_ROBUST;
@@ -1211,6 +1223,11 @@ RTCScene convertScene(ISPCScene* scene_in,const Vec3fa& cam_org)
       }
       else if (geometry->type == HAIR_SET) {
         unsigned int geomID = convertHairSet((ISPCHairSet*) geometry, scene_out);
+        assert(geomID == i); 
+        rtcDisable(scene_out,geomID);
+      }
+      else if (geometry->type == CURVES) {
+        unsigned int geomID = convertCurveGeometry((ISPCHairSet*) geometry, scene_out);
         assert(geomID == i); 
         rtcDisable(scene_out,geomID);
       }
@@ -1259,6 +1276,12 @@ RTCScene convertScene(ISPCScene* scene_in,const Vec3fa& cam_org)
         geomID_to_scene[i] = objscene;
         rtcCommit(objscene);
       }
+      else if (geometry->type == CURVES) {
+        RTCScene objscene = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
+        convertCurveGeometry((ISPCHairSet*) geometry, objscene);
+        geomID_to_scene[i] = objscene;
+        rtcCommit(objscene);
+      }
       else if (geometry->type == GROUP) {
         RTCScene objscene = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
         convertGroup((ISPCGroup*) geometry, objscene);
@@ -1300,6 +1323,10 @@ RTCScene convertScene(ISPCScene* scene_in,const Vec3fa& cam_org)
         unsigned int geomID = convertHairSet((ISPCHairSet*) geometry, scene_out);
         assert(geomID == i);
       }
+      else if (geometry->type == CURVES) {
+        unsigned int geomID = convertCurveGeometry((ISPCHairSet*) geometry, scene_out);
+        assert(geomID == i);
+      }
       else
         assert(false);
     }
@@ -1320,7 +1347,7 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
   return dot(dir,Ng) < 0.0f ? Ng : neg(Ng);
 }
 
-inline Vec3fa evalBezier(const ISPCHairSet* hair, const int primID, const float t)
+inline void evalBezier(const ISPCHairSet* hair, const int primID, const float t, Vec3fa& p, Vec3fa& dp)
 {
   const float t0 = 1.0f - t, t1 = t;
   const Vec3fa* vertices = hair->v;
@@ -1339,8 +1366,8 @@ inline Vec3fa evalBezier(const ISPCHairSet* hair, const int primID, const float 
   const Vec3fa p21 = p11 * t0 + p12 * t1;
   const Vec3fa p30 = p20 * t0 + p21 * t1;
   
-  return p30;
-  //tangent = p21-p20;
+  p = p30;
+  dp = 3.0f*(p21-p20);
 }
 
 void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeometry* geometry, int& materialID)
@@ -1408,14 +1435,35 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
   {
     ISPCHairSet* mesh = (ISPCHairSet*) geometry;
     materialID = mesh->materialID;
+    Vec3fa p,dp; evalBezier(mesh,ray.primID,ray.u,p,dp);
     const Vec3fa dx = normalize(dg.Ng);
     const Vec3fa dy = normalize(cross(neg(ray.dir),dx));
     const Vec3fa dz = normalize(cross(dy,dx));
     dg.Tx = dx;
     dg.Ty = dy;
     dg.Ng = dg.Ns = dz;
-    Vec3fa p = evalBezier(mesh,ray.primID,ray.u);
     dg.tnear_eps = 1.1f*p.w;
+  }
+  else if (geometry->type == CURVES) 
+  {
+    ISPCHairSet* mesh = (ISPCHairSet*) geometry;
+    materialID = mesh->materialID;
+    Vec3fa p,dp; evalBezier(mesh,ray.primID,ray.u,p,dp);
+    if (length(dp) < 1E-6f) { // some hair are just points
+      dg.Tx = Vec3fa(1,0,0);
+      dg.Ty = Vec3fa(0,1,0);
+      dg.Ng = dg.Ns = Vec3fa(0,0,1);
+    }
+    else
+    {
+      const Vec3fa dx = normalize(Vec3fa(dp));
+      const Vec3fa dy = normalize(cross(Vec3fa(dp),dg.Ng));
+      const Vec3fa dz = normalize(dg.Ng);
+      dg.Tx = dx;
+      dg.Ty = dy;
+      dg.Ng = dg.Ns = dz;
+    }
+    dg.tnear_eps = 1024.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar));
   }
   else if (geometry->type == GROUP) {
     int geomID = ray.geomID; {
@@ -1542,6 +1590,21 @@ void occlusionFilterHair(void* ptr, RTCRay& ray)
       switch (material->ty) {
       case MATERIAL_HAIR: Kt = Vec3fa(((HairMaterial*)material)->Kt); break;
       default: break;
+      }
+    }
+    else if (geometry->type == CURVES) 
+    {
+      /*if (dot(ray.dir,ray.Ng) > 0.0f) {
+        Kt = Vec3fa(1.0f);
+      }
+      else*/
+      {
+        int materialID = ((ISPCHairSet*)geometry)->materialID;
+        ISPCMaterial* material = &g_ispc_scene->materials[materialID];
+        switch (material->ty) {
+        case MATERIAL_HAIR: Kt = Vec3fa(((HairMaterial*)material)->Kt); break;
+        default: break;
+        }
       }
     }
   }

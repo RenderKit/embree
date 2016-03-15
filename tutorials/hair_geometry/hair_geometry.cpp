@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2015 Intel Corporation                                    //
+// Copyright 2009-2016 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -254,7 +254,7 @@ float noise(float x, float y, float z)
     //generateHairOnTriangleMesh(scene,mesh,0.5f*r,0.001f*r,80);
 
     const float thickness = 0.001f*r;
-    TutorialScene::HairSet* hairset = new TutorialScene::HairSet;
+    TutorialScene::HairSet* hairset = new TutorialScene::HairSet(true);
 
     int s = 0;
     for (size_t iy=0; iy<300; iy++)

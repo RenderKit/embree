@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2015 Intel Corporation                                    //
+// Copyright 2009-2016 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -94,9 +94,9 @@ float noise(const Vec3f& p);
 Vec3f noise3D(const Vec3f& p);
 
 /* draws progress bar */
-void progressStart();
-uniform bool progressMonitor(void* uniform ptr, const uniform double n);
-void progressEnd();
+unmasked void progressStart();
+unmasked uniform bool progressMonitor(void* uniform ptr, const uniform double n);
+unmasked void progressEnd();
 
 Vec2f  getTextureCoordinatesSubdivMesh(void* uniform mesh, const unsigned int primID, const float u, const float v);
 

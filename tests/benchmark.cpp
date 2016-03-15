@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2015 Intel Corporation                                    //
+// Copyright 2009-2016 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -1275,7 +1275,7 @@ namespace embree
 
 #endif
 
-
+#if defined(RTCORE_RAY_PACKETS)
 
   template<bool intersect>
   class benchmark_rtcore_intersect_stream_throughput : public Benchmark
@@ -1454,6 +1454,7 @@ namespace embree
 
   RTCScene benchmark_rtcore_intersect_coherent_stream_throughput::scene = nullptr;
 
+#endif
 
   void rtcore_coherent_intersect1(RTCScene scene)
   {
@@ -1709,9 +1710,11 @@ namespace embree
 
 #endif
 
+#if defined(RTCORE_RAY_PACKETS)
     benchmarks.push_back(new benchmark_rtcore_intersect_stream_throughput<true>());
     benchmarks.push_back(new benchmark_rtcore_intersect_stream_throughput<false>());
     benchmarks.push_back(new benchmark_rtcore_intersect_coherent_stream_throughput());
+#endif
 
     benchmarks.push_back(new benchmark_mutex_sys());
     benchmarks.push_back(new benchmark_barrier_sys());

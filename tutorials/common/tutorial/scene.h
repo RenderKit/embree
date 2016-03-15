@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2015 Intel Corporation                                    //
+// Copyright 2009-2016 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -60,7 +60,7 @@ namespace embree
 
     struct Geometry : public RefCount
     {
-      enum Type { TRIANGLE_MESH, SUBDIV_MESH, HAIR_SET, INSTANCE, GROUP, QUAD_MESH, LINE_SEGMENTS };
+      enum Type { TRIANGLE_MESH, SUBDIV_MESH, HAIR_SET, INSTANCE, GROUP, QUAD_MESH, LINE_SEGMENTS, CURVES };
       Type type;
 
       Geometry (Type type) : type(type) {}
@@ -133,10 +133,10 @@ namespace embree
     /*! Hair Set. */
     struct HairSet : public Geometry
     {
-      HairSet () : Geometry(HAIR_SET) {}
+      HairSet (bool hair) : Geometry(hair ? HAIR_SET : CURVES) {}
       avector<Vec3fa> v;       //!< hair control points (x,y,z,r)
-      avector<Vec3fa> v2;       //!< hair control points (x,y,z,r)
-      std::vector<Hair> hairs;  //!< list of hairs
+      avector<Vec3fa> v2;      //!< hair control points (x,y,z,r)
+      std::vector<Hair> hairs; //!< list of hairs
       int materialID;
     };
 

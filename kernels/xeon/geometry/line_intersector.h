@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2015 Intel Corporation                                    //
+// Copyright 2009-2016 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -26,6 +26,8 @@ namespace embree
     template<int M>
       struct LineIntersectorHitM
       {
+        __forceinline LineIntersectorHitM() {}
+
         __forceinline LineIntersectorHitM(const vfloat<M>& u, const vfloat<M>& v, const vfloat<M>& t, const Vec3<vfloat<M>>& Ng)
           : vu(u), vv(v), vt(t), vNg(Ng) {}
         

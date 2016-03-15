@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2015 Intel Corporation                                    //
+// Copyright 2009-2016 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -102,6 +102,12 @@ namespace embree
       {
         for (size_t i=0; i<children.size(); i++)
           children[i] = convert_bezier_to_lines(children[i]);
+      }
+
+      void hair_to_curves()
+      {
+        for (size_t i=0; i<children.size(); i++)
+          children[i] = convert_hair_to_curves(children[i]);
       }
 
       virtual void resetNode(std::set<Ref<Node>>& done);
@@ -244,12 +250,13 @@ namespace embree
       };
       
     public:
-      HairSetNode (Ref<MaterialNode> material)
-        : Node(true), material(material) {}
+      HairSetNode (bool hair, Ref<MaterialNode> material)
+        : Node(true), hair(hair), material(material) {}
       
       void verify() const;
 
     public:
+      bool hair;                //!< true is this is hair geometry, false if this are curves
       avector<Vec3fa> v;        //!< hair control points (x,y,z,r)
       avector<Vec3fa> v2;       //!< hair control points (x,y,z,r)
       std::vector<Hair> hairs;  //!< list of hairs
@@ -263,5 +270,6 @@ namespace embree
     static Ref<SceneGraph::Node> convert_triangles_to_quads(Ref<SceneGraph::Node> node);
     static Ref<SceneGraph::Node> convert_quads_to_subdivs(Ref<SceneGraph::Node> node);
     static Ref<SceneGraph::Node> convert_bezier_to_lines(Ref<SceneGraph::Node> node);
+    static Ref<SceneGraph::Node> convert_hair_to_curves(Ref<SceneGraph::Node> node);
   };
 }

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2015 Intel Corporation                                    //
+// Copyright 2009-2016 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -71,13 +71,27 @@ enum RTCBoundaryMode
 };
 
 /*! Intersection filter function for uniform rays. */
-typedef void (*uniform RTCFilterFuncUniform)(void* uniform ptr,    /*!< pointer to user data */
-                                             uniform RTCRay1& ray  /*!< intersection to filter */);
+typedef unmasked void (*uniform RTCFilterFuncUniform)(void* uniform ptr,    /*!< pointer to user data */
+                                                      uniform RTCRay1& ray  /*!< intersection to filter */);
 
 /*! Intersection filter function for varying rays. */
 typedef void (*uniform RTCFilterFuncVarying)(void* uniform ptr,   /*!< pointer to user data */
                                              varying RTCRay& ray  /*!< intersection to filter */);
 
+
+/*! Type of displacement callback functions */
+typedef unmasked void (*RTCDisplacementFunc)(void* uniform ptr,               /*!< pointer to user data of geometry */
+                                             uniform unsigned int geomID,     /*!< ID of geometry to displace */
+                                             uniform unsigned int primID,     /*!< ID of primitive of geometry to displace */
+                                             uniform const float* uniform u,  /*!< u coordinates (source) */
+                                             uniform const float* uniform v,  /*!< v coordinates (source) */
+                                             uniform const float* uniform nx, /*!< x coordinates of normal at point to displace (source) */
+                                             uniform const float* uniform ny, /*!< y coordinates of normal at point to displace (source) */
+                                             uniform const float* uniform nz, /*!< z coordinates of normal at point to displace (source) */
+                                             uniform float* uniform px,       /*!< x coordinates of points to displace (source and target) */
+                                             uniform float* uniform py,       /*!< y coordinates of points to displace (source and target) */
+                                             uniform float* uniform pz,       /*!< z coordinates of points to displace (source and target) */
+                                             uniform size_t N                 /*!< number of points to displace */ );
 
 /*! \brief Creates a new scene instance. 
 
@@ -250,6 +264,29 @@ uniform unsigned int rtcNewHairGeometry (RTCScene scene,                    //!<
                                          uniform size_t numCurves,          //!< number of curves
                                          uniform size_t numVertices,        //!< number of vertices
                                          uniform size_t numTimeSteps = 1    //!< number of motion blur time steps
+  );
+
+/*! \brief Creates a new curve geometry, consisting of multiple curves
+  represented as cubic bezier curves with varying radii. The
+  intersected surface is defined as the sweep of a varying radius
+  circle perpendicular along the curve. The number of curves
+  (numCurves), number of vertices (numVertices), and number of time
+  steps (1 for normal curves, and 2 for linear motion blur), have to
+  get specified at construction time. Further, the curve index buffer
+  (RTC_INDEX_BUFFER) and the curve vertex buffer (RTC_VERTEX_BUFFER)
+  have to get set by mapping and writing to the appropiate buffers. In
+  case of linear motion blur, two vertex buffers have to get filled
+  (RTC_VERTEX_BUFFER0, RTC_VERTEX_BUFFER1), one for each time
+  step. The index buffer has the default layout of a single 32 bit
+  integer index for each curve, that references the start vertex of
+  the curve. The vertex buffer stores 4 control points per curve, each
+  such control point consists of a single precision (x,y,z) position
+  and radius, stored in that order in memory. */
+uniform unsigned int rtcNewCurveGeometry (RTCScene scene,                    //!< the scene the curves belong to
+                                          uniform RTCGeometryFlags flags,    //!< geometry flags
+                                          uniform size_t numCurves,          //!< number of curves
+                                          uniform size_t numVertices,        //!< number of vertices
+                                          uniform size_t numTimeSteps = 1    //!< number of motion blur time steps
   );
 
 /*! Sets a uniform tessellation rate for subdiv meshes and hair

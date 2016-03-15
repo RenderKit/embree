@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2015 Intel Corporation                                    //
+// Copyright 2009-2016 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -129,15 +129,15 @@ float displacement_dv(const Vec3fa& P, const Vec3fa& dPdv)
 }
 
 void displacementFunction(void* ptr, unsigned int geomID, int unsigned primID, 
-                      const float* u,      /*!< u coordinates (source) */
-                      const float* v,      /*!< v coordinates (source) */
-                      const float* nx,     /*!< x coordinates of normal at point to displace (source) */
-                      const float* ny,     /*!< y coordinates of normal at point to displace (source) */
-                      const float* nz,     /*!< z coordinates of normal at point to displace (source) */
-                      float* px,           /*!< x coordinates of points to displace (source and target) */
-                      float* py,           /*!< y coordinates of points to displace (source and target) */
-                      float* pz,           /*!< z coordinates of points to displace (source and target) */
-                      size_t N)
+                                   const float* u,      /*!< u coordinates (source) */
+                                   const float* v,      /*!< v coordinates (source) */
+                                   const float* nx,     /*!< x coordinates of normal at point to displace (source) */
+                                   const float* ny,     /*!< y coordinates of normal at point to displace (source) */
+                                   const float* nz,     /*!< z coordinates of normal at point to displace (source) */
+                                   float* px,           /*!< x coordinates of points to displace (source and target) */
+                                   float* py,           /*!< y coordinates of points to displace (source and target) */
+                                   float* pz,           /*!< z coordinates of points to displace (source and target) */
+                                   size_t N)
 {
   for (size_t i = 0; i<N; i++) {
     const Vec3fa P = Vec3fa(px[i],py[i],pz[i]);

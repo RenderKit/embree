@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2015 Intel Corporation                                    //
+// Copyright 2009-2016 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -120,6 +120,9 @@ namespace embree
     COIRESULT result = COIPipelineRunFunction (pipeline, runKeyPressed, 0, nullptr, nullptr, 0, nullptr, &parms, sizeof(parms), nullptr, 0, nullptr);
     if (result != COI_SUCCESS) 
       THROW_RUNTIME_ERROR("COIPipelineRunFunction failed: "+std::string(COIResultGetName(result)));
+  }
+
+  void set_parameter(size_t parm, ssize_t val) {
   }
 
   void send_hairset (Ref<TutorialScene::HairSet> hairset)

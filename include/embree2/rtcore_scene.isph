@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2015 Intel Corporation                                    //
+// Copyright 2009-2016 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -47,7 +47,8 @@ enum RTCAlgorithmFlags
 {
   RTC_INTERSECT_UNIFORM = (1 << 0),    //!< enables the uniform rtcIntersect1 and uniform rtcOccluded1 functions for this scene
   RTC_INTERSECT_VARYING = (1 << 1),    //!< enables the varying rtcIntersect and varying rtcOccluded functions for this scene
-  RTC_INTERPOLATE       = (1 << 4)     //!< enables the rtcInterpolate function for this scene
+  RTC_INTERPOLATE       = (1 << 4),    //!< enables the rtcInterpolate function for this scene
+  RTC_INTERSECTN        = (1 << 5),    //!< enables the rtcIntersectN and rtcOccludedN functions for this scene  
 };
 
 /*! layout flags for ray streams */
@@ -69,7 +70,7 @@ RTCORE_DEPRECATED RTCScene rtcNewScene (uniform RTCSceneFlags flags, uniform RTC
 RTCScene rtcDeviceNewScene (RTCDevice device, uniform RTCSceneFlags flags, uniform RTCAlgorithmFlags aflags);
 
 /*! \brief Type of progress callback function. */
-typedef uniform bool (*uniform RTC_PROGRESS_MONITOR_FUNCTION)(void* uniform ptr, const uniform double n);
+typedef unmasked uniform bool (*uniform RTC_PROGRESS_MONITOR_FUNCTION)(void* uniform ptr, const uniform double n);
 
 /*! \brief Sets the progress callback function which is called during hierarchy build. */
 void rtcSetProgressMonitorFunction(RTCScene scene, RTC_PROGRESS_MONITOR_FUNCTION func, void* uniform ptr);
@@ -111,7 +112,13 @@ void rtcIntersect (RTCScene scene, varying RTCRay& ray);
  *  function can only be called for scenes with the RTC_INTERSECTN
  *  flag set. The stride specifies the offset between rays in
  *  bytes. */
-void rtcIntersectN (RTCScene scene, uniform RTCRay* uniform rayN, const uniform size_t N, const uniform size_t stride, const uniform size_t flags);
+void rtcIntersect1N (RTCScene scene, uniform RTCRay1* uniform rayN, const uniform size_t N, const uniform size_t stride, const uniform size_t flags);
+
+/*! Intersects a stream of N rays in AOS layout with the scene. This
+ *  function can only be called for scenes with the RTC_INTERSECTN
+ *  flag set. The stride specifies the offset between rays in
+ *  bytes. */
+void rtcIntersectN (RTCScene scene, varying RTCRay* uniform rayN, const uniform size_t N, const uniform size_t stride, const uniform size_t flags);
 
 /*! Intersects one or multiple streams of N rays in compact SOA layout with the scene. This
  *  function can only be called for scenes with the RTC_INTERSECTN

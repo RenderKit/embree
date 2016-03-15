@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2015 Intel Corporation                                    //
+// Copyright 2009-2016 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -53,7 +53,6 @@ Vec3f renderPixelEyeLight(float x, float y, const uniform Vec3f& vx, const unifo
   /* shade pixel */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f);
   else return make_Vec3f(abs(dot(ray.dir,normalize(ray.Ng))));
-  //else return make_Vec3f(clamp(dot(ray.dir,normalize(ray.Ng))));
 }
 
 /* renders a single pixel with wireframe shading */
@@ -649,14 +648,14 @@ Vec3f noise3D(const Vec3f& p)
 }
 
 /* draws progress bar */
-void progressStart() {
+unmasked void progressStart() {
 }
 
-uniform bool progressMonitor(void* uniform ptr, const uniform double n) {
+unmasked uniform bool progressMonitor(void* uniform ptr, const uniform double n) {
   return true;
 }
 
-void progressEnd() {
+unmasked void progressEnd() {
 }
 
 Vec2f getTextureCoordinatesSubdivMesh(void* uniform _mesh, const unsigned int primID, const float u, const float v)

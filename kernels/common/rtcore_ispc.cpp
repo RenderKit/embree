@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2015 Intel Corporation                                    //
+// Copyright 2009-2016 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -136,13 +136,11 @@ namespace embree
     rtcIntersect16(valid,scene,ray);
   }
 
-  extern "C" void ispcIntersectN (RTCScene scene, void* rayN, const size_t N, const size_t stride, const size_t flags)
-  {
-    rtcIntersectN(scene,(RTCRay*)rayN,N,stride,flags);
+  extern "C" void ispcIntersect1N (RTCScene scene, RTCRay* rayN, const size_t N, const size_t stride, const size_t flags) {
+    rtcIntersectN(scene,rayN,N,stride,flags);
   }
 
-  extern "C" void ispcIntersectN_SOA (RTCScene scene,  RTCRaySOA& rayN, const  size_t N, const  size_t streams, const  size_t offset, const  size_t flags)
-  {
+  extern "C" void ispcIntersectN_SOA (RTCScene scene,  RTCRaySOA& rayN, const  size_t N, const  size_t streams, const  size_t offset, const  size_t flags) {
     rtcIntersectN_SOA(scene,rayN,N,streams,offset,flags);
   }
   
@@ -218,6 +216,10 @@ namespace embree
 
   extern "C" unsigned ispcNewHairGeometry (RTCScene scene, RTCGeometryFlags flags, size_t numCurves, size_t numVertices, size_t numTimeSteps) {
     return rtcNewHairGeometry(scene,flags,numCurves,numVertices,numTimeSteps);
+  }
+
+  extern "C" unsigned ispcNewCurveGeometry (RTCScene scene, RTCGeometryFlags flags, size_t numCurves, size_t numVertices, size_t numTimeSteps) {
+    return rtcNewCurveGeometry(scene,flags,numCurves,numVertices,numTimeSteps);
   }
 
   extern "C" unsigned ispcNewSubdivisionMesh (RTCScene scene, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, 

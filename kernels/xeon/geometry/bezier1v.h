@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2015 Intel Corporation                                    //
+// Copyright 2009-2016 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -30,9 +30,10 @@ namespace embree
     __forceinline BezierPrim () {}
 
     /*! Construction from vertices and IDs. */
-    __forceinline BezierPrim (const Vec3fa& p0, const Vec3fa& p1, const Vec3fa& p2, const Vec3fa& p3, const int N,
+    __forceinline BezierPrim (bool hair,
+                              const Vec3fa& p0, const Vec3fa& p1, const Vec3fa& p2, const Vec3fa& p3, const int N,
                               const unsigned int geomID, const unsigned int primID)
-      : p0(p0), p1(p1), p2(p2), p3(p3), N(N), geom(geomID), prim(primID) {}
+      : p0(p0), p1(p1), p2(p2), p3(p3), N(N), geom(geomID), prim(primID), hair(hair) {}
 
     /*! access hidden members */
     __forceinline unsigned int primID() const { 
@@ -56,7 +57,8 @@ namespace embree
     __forceinline const BBox3fa bounds() const 
     {
       const BezierCurve3fa curve(p0,p1,p2,p3,0.0f,1.0f,0);
-      return curve.bounds(N);
+      if (likely(hair)) return curve.bounds(N);
+      else              return curve.bounds();
     }
     
     /*! calculate bounds in specified coordinate space */
@@ -67,7 +69,8 @@ namespace embree
       Vec3fa b2 = xfmPoint(space,p2); b2.w = p2.w;
       Vec3fa b3 = xfmPoint(space,p3); b3.w = p3.w;
       const BezierCurve3fa curve(b0,b1,b2,b3,0.0f,1.0f,0);
-      return curve.bounds(N);
+      if (likely(hair)) return curve.bounds(N);
+      else              return curve.bounds();
     }
     
     __forceinline uint64_t id64() const {
@@ -98,7 +101,7 @@ namespace embree
     int N;                //!< tessellation rate
     unsigned geom;        //!< geometry ID
     unsigned prim;        //!< primitive ID
-    int align;
+    int hair;             //!< 0=surface, 1=hair
   };
 
   struct Bezier1v

@@ -1,5 +1,5 @@
 ## ======================================================================== ##
-## Copyright 2009-2015 Intel Corporation                                    ##
+## Copyright 2009-2016 Intel Corporation                                    ##
 ##                                                                          ##
 ## Licensed under the Apache License, Version 2.0 (the "License");          ##
 ## you may not use this file except in compliance with the License.         ##
@@ -21,6 +21,7 @@ ADD_SUBDIRECTORY(triangle_geometry)
 ADD_SUBDIRECTORY(dynamic_scene)
 ADD_SUBDIRECTORY(user_geometry)
 ADD_SUBDIRECTORY(viewer)
+ADD_SUBDIRECTORY(viewer_stream)
 ADD_SUBDIRECTORY(instanced_geometry)
 ADD_SUBDIRECTORY(intersection_filter)
 ADD_SUBDIRECTORY(pathtracer)
@@ -33,6 +34,7 @@ ADD_SUBDIRECTORY(bvh_access)
 ADD_SUBDIRECTORY(motion_blur_geometry)
 ADD_SUBDIRECTORY(interpolation)
 ADD_SUBDIRECTORY(convert)
+ADD_SUBDIRECTORY(curve_geometry)
 
 IF (ENABLE_XEON_PHI_SUPPORT AND RTCORE_RAY_PACKETS)
   SET (__XEON__ 0)

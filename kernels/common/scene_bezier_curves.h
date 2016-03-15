@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2015 Intel Corporation                                    //
+// Copyright 2009-2016 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -28,11 +28,14 @@ namespace embree
   {
     /*! type of this geometry */
     static const Geometry::Type geom_type = Geometry::BEZIER_CURVES;
-    
+
+    /*! this geometry represents approximate hair geometry and real bezier surface geometry */
+    enum SubType { HAIR = 1, SURFACE = 0 };
+
   public:
     
     /*! bezier curve construction */
-    BezierCurves (Scene* parent, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps); 
+    BezierCurves (Scene* parent, SubType subtype, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps); 
     
     /*! writes the bezier curve geometry to disk */
     void write(std::ofstream& file);
@@ -172,6 +175,7 @@ namespace embree
     
   public:
     int tessellationRate;                           //!< tessellation rate for bezier curve
+    SubType subtype;                                //!< hair or surface geometry
     BufferT<int> curves;                            //!< array of curve indices
     array_t<BufferT<Vec3fa>,2> vertices;            //!< vertex array
     array_t<std::unique_ptr<Buffer>,2> userbuffers; //!< user buffers

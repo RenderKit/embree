@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2015 Intel Corporation                                    //
+// Copyright 2009-2016 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -60,6 +60,9 @@ namespace embree
 
   /* ID of created window */
   static int g_window = 0;
+
+  static int g_debug_int0 = 0;
+  static int g_debug_int1 = 0;
 
   /*************************************************************************************************/
   /*                                  Keyboard control                                             */
@@ -128,10 +131,14 @@ namespace embree
     key_pressed(key);
 
     switch (key) {
-    case GLUT_KEY_LEFT      : g_camera.rotate(-0.02f,0.0f); break;
-    case GLUT_KEY_RIGHT     : g_camera.rotate(+0.02f,0.0f); break;
-    case GLUT_KEY_UP        : g_camera.move(0.0f,0.0f,+g_speed); break;
-    case GLUT_KEY_DOWN      : g_camera.move(0.0f,0.0f,-g_speed); break;
+      //case GLUT_KEY_LEFT      : g_camera.rotate(-0.02f,0.0f); break;
+      //case GLUT_KEY_RIGHT     : g_camera.rotate(+0.02f,0.0f); break;
+      //case GLUT_KEY_UP        : g_camera.move(0.0f,0.0f,+g_speed); break;
+      //case GLUT_KEY_DOWN      : g_camera.move(0.0f,0.0f,-g_speed); break;
+    case GLUT_KEY_UP        : g_debug_int0++; set_parameter(1000000,g_debug_int0); PRINT(g_debug_int0); break;
+    case GLUT_KEY_DOWN      : g_debug_int0--; set_parameter(1000000,g_debug_int0); PRINT(g_debug_int0); break;
+    case GLUT_KEY_LEFT      : g_debug_int1--; set_parameter(1000001,g_debug_int1); PRINT(g_debug_int1); break;
+    case GLUT_KEY_RIGHT     : g_debug_int1++; set_parameter(1000001,g_debug_int1); PRINT(g_debug_int1); break;
     case GLUT_KEY_PAGE_UP   : g_speed *= 1.2f; break;
     case GLUT_KEY_PAGE_DOWN : g_speed /= 1.2f; break;
     }

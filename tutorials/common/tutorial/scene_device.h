@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2015 Intel Corporation                                    //
+// Copyright 2009-2016 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -40,7 +40,7 @@ namespace embree
     int id;
   };
   
-  enum ISPCType { TRIANGLE_MESH, SUBDIV_MESH, HAIR_SET, INSTANCE, GROUP, QUAD_MESH, LINE_SEGMENTS };
+  enum ISPCType { TRIANGLE_MESH, SUBDIV_MESH, HAIR_SET, INSTANCE, GROUP, QUAD_MESH, LINE_SEGMENTS, CURVES };
   
   struct ISPCAmbientLight
   {
@@ -243,7 +243,7 @@ namespace embree
 
     struct ISPCHairSet
     {
-      ISPCHairSet (Ref<TutorialScene::HairSet> in) : geom(HAIR_SET) 
+      ISPCHairSet (bool hair, Ref<TutorialScene::HairSet> in) : geom(hair ? HAIR_SET : CURVES) 
       {
         v = in->v.size() ? &in->v[0] : nullptr;
         v2 = in->v2.size() ? &in->v2[0] : nullptr;
@@ -335,7 +335,9 @@ namespace embree
       else if (in->type == TutorialScene::Geometry::LINE_SEGMENTS)
         return (ISPCGeometry*) new ISPCLineSegments(in.dynamicCast<TutorialScene::LineSegments>());
       else if (in->type == TutorialScene::Geometry::HAIR_SET)
-        return (ISPCGeometry*) new ISPCHairSet(in.dynamicCast<TutorialScene::HairSet>());
+        return (ISPCGeometry*) new ISPCHairSet(true,in.dynamicCast<TutorialScene::HairSet>());
+      else if (in->type == TutorialScene::Geometry::CURVES)
+        return (ISPCGeometry*) new ISPCHairSet(false,in.dynamicCast<TutorialScene::HairSet>());
       else if (in->type == TutorialScene::Geometry::INSTANCE)
         return (ISPCGeometry*) new ISPCInstance(in.dynamicCast<TutorialScene::Instance>());
       else if (in->type == TutorialScene::Geometry::GROUP)

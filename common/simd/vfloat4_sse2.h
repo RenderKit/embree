@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2015 Intel Corporation                                    //
+// Copyright 2009-2016 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -416,6 +416,10 @@ namespace embree
 
   __forceinline vfloat4 broadcast4f( const vfloat4& a, const size_t k ) {
     return vfloat4::broadcast(&a[k]);
+  }
+
+  __forceinline vfloat4 shift_right_1( const vfloat4& x) {
+    return _mm_castsi128_ps(_mm_srli_si128(_mm_castps_si128(x), 4)); 
   }
 
 #if defined (__AVX2__)

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2015 Intel Corporation                                    //
+// Copyright 2009-2016 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -124,6 +124,16 @@ namespace embree
       cout << "    #prim_hits  = " << float(cntrs.all.shadow.trav_prim_hits  )/float(cntrs.all.shadow.travs) << ", " << 100.0f*active_shadow_trav_prim_hits   << "% active" << std::endl;
 
     }
+    cout << std::endl;
+
+     /* print user counters for performance tuning */
+    cout << "--------- USER ---------" << std::endl;
+    for (size_t i=0; i<10; i++)
+      cout << "#user" << i << " = " << float(cntrs.user[i])/float(cntrs.all.normal.travs+cntrs.all.shadow.travs) << " per traversal" << std::endl;
+
+    cout << "#user5/user3 " << 100.0f*float(cntrs.user[5])/float(cntrs.user[3]) << "%" << std::endl;
+    cout << "#user6/user3 " << 100.0f*float(cntrs.user[6])/float(cntrs.user[3]) << "%" << std::endl;
+    cout << "#user7/user3 " << 100.0f*float(cntrs.user[7])/float(cntrs.user[3]) << "%" << std::endl;
     cout << std::endl;
   }
 }

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2015 Intel Corporation                                    //
+// Copyright 2009-2016 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -19,7 +19,7 @@
 #include "../scenegraph/texture.h"
 #include "scene_device.h"
 
-#define TEST_STREAM_TRACING 1 // FIXME: remove
+#define TEST_STREAM_TRACING 0 // FIXME: remove
 
 /* the scene to render */
 extern RTCScene g_scene;
@@ -146,7 +146,7 @@ Vec3fa renderPixelNg(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(0.0f);
   else {
     //if (dot(ray.dir,ray.Ng) > 0.0f) return Vec3fa(zero); else
-    return normalize(Vec3fa(ray.Ng.x,ray.Ng.y,ray.Ng.z));
+    return normalize(abs(Vec3fa(ray.Ng.x,ray.Ng.y,ray.Ng.z)));
   }
 }
 
@@ -458,6 +458,9 @@ extern "C" bool device_pick(const float x,
   PRINT2(x,y);
   PRINT(ray.geomID);
   PRINT(ray.primID);
+  Vec3fa hit_point = ray.org + ray.tfar*ray.dir;
+  PRINT(hit_point);
+  PRINT(ray);
 
   /* shade pixel */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {

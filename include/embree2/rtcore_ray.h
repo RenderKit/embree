@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2015 Intel Corporation                                    //
+// Copyright 2009-2016 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -163,27 +163,22 @@ public:
   float* dirx;  //!< x coordinate of ray direction
   float* diry;  //!< y coordinate of ray direction
   float* dirz;  //!< z coordinate of ray direction
-
+  
   float* tnear; //!< Start of ray segment (optional)
   float* tfar;  //!< End of ray segment (set to hit distance)
-
  
   float* time;  //!< Time of this ray for motion blur (optional)
   unsigned* mask;  //!< Used to mask out objects during traversal (optional)
 
   /* hit data */
-
 public:
 
   float* Ngx;   //!< x coordinate of geometry normal (optional)
   float* Ngy;   //!< y coordinate of geometry normal (optional)
   float* Ngz;   //!< z coordinate of geometry normal (optional)
 
- 
-
   float* u;     //!< Barycentric u coordinate of hit
   float* v;     //!< Barycentric v coordinate of hit
-
  
   unsigned* geomID;  //!< geometry ID
   unsigned* primID;  //!< primitive ID

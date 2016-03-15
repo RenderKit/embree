@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2015 Intel Corporation                                    //
+// Copyright 2009-2016 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -66,6 +66,14 @@ namespace embree
     __forceinline vboolf( FalseTy ) : v(0x0000) {}
     __forceinline vboolf( TrueTy  ) : v(0xffff) {}
 
+    ////////////////////////////////////////////////////////////////////////////////
+    /// Array Access
+    ////////////////////////////////////////////////////////////////////////////////
+  
+    __forceinline bool operator []( const size_t index ) const { 
+      assert(index < 16); return (_mm512_mask2int(v) >> index) & 1; 
+    }
+  
     static unsigned int shift1[32];
   };
 
