@@ -206,7 +206,7 @@ namespace embree
 #if defined (__TARGET_AVX__)
     else if (device->tri_accel == "bvh4.triangle8")       accels.add(device->bvh4_factory->BVH4Triangle8(this));
     else if (device->tri_accel == "bvh8.triangle4")       accels.add(device->bvh8_factory->BVH8Triangle4(this));
-    else if (device->tri_accel == "bvh8q.triangle4")      accels.add(device->bvh8_factory->BVH8QuantizedTriangle4(this));
+    else if (device->tri_accel == "qbvh8.triangle4")      accels.add(device->bvh8_factory->BVH8QuantizedTriangle4(this));
     else if (device->tri_accel == "bvh8.triangle8")       accels.add(device->bvh8_factory->BVH8Triangle8(this));
 #endif
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown triangle acceleration structure "+device->tri_accel);

@@ -81,20 +81,16 @@ namespace embree
         size_t n = current.prims.size();
         size_t items = Primitive::blocks(n);
         size_t start = current.prims.begin();
-        // todo alloc0/1
+        // todo alloc0/1 or alloc
         Primitive* accel = (Primitive*) alloc->alloc0.malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
         typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,items);
         for (size_t i=0; i<items; i++) {
           accel[i].fill(prims,start,current.prims.end(),bvh->scene,false);
         }
         //*current.parent = node;
-        PRINT("LEAF");
-        PRINT(accel);
 
         typename BVH::QuantizedNode *parent = (typename BVH::QuantizedNode *)((size_t)current.parent & (~0x7));
         const size_t index = (size_t)current.parent & 0x7;
-        PRINT(parent);
-        PRINT(index);
         parent->childOffset(index) = bvh->encodeQuantizedLeaf((size_t)parent,(size_t)node);
         assert((ssize_t)node == (ssize_t)parent + parent->childOffset(index));
 	return n;
@@ -258,7 +254,7 @@ namespace embree
           return;
         }
 
-        double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + toString(N) + "BuilderSAH");
+        double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::QBVH" + toString(N) + "BuilderSAH");
 
 #if PROFILE
         profile(2,PROFILE_RUNS,numPrimitives,[&] (ProfileTimer& timer) {

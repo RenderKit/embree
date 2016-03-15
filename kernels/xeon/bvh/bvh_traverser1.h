@@ -482,6 +482,7 @@ namespace embree
 
 
     /* Specialization for BVH8. */
+    template<>
       class BVHNNodeTraverser1Hit<8,8,BVH_QN1>
     {
       typedef BVH8 BVH;
@@ -566,7 +567,6 @@ namespace embree
                                                    StackItemT<NodeRef>*& stackPtr,
                                                    StackItemT<NodeRef>* stackEnd)
       {
-        PING;
         const QuantizedNode* node = cur.quantizedNode();
         traverseClosestHit(cur,node,mask,tNear,stackPtr,stackEnd);
       }

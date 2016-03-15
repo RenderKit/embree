@@ -326,12 +326,6 @@ namespace embree
       const vfloat8 upper_y = node->dequantizeY(ray.farY  >> 2);
       const vfloat8 lower_z = node->dequantizeZ(ray.nearZ >> 2);
       const vfloat8 upper_z = node->dequantizeZ(ray.farZ  >> 2);
-      PRINT(lower_x);
-      PRINT(upper_x);
-      PRINT(lower_y);
-      PRINT(upper_y);
-      PRINT(lower_z);
-      PRINT(upper_z);
 #if defined (__AVX2__)
       const vfloat8 tNearX = msub(lower_x, ray.rdir.x, ray.org_rdir.x);
       const vfloat8 tNearY = msub(lower_y, ray.rdir.y, ray.org_rdir.y);
@@ -607,7 +601,7 @@ namespace embree
     {
       static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N,Nx>& ray, const vfloat<Nx>& tnear, const vfloat<Nx>& tfar, const float time, vfloat<Nx>& dist, size_t& mask)
       {
-        mask = intersectNode<N,Nx>((const typename BVHN<N>::QuantizedNode*)node.node(),ray,tnear,tfar,dist);
+        mask = intersectNode<N,Nx>((const typename BVHN<N>::QuantizedNode*)node.quantizedNode(),ray,tnear,tfar,dist);
         return true;
       }
     };
@@ -617,7 +611,7 @@ namespace embree
     {
       static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N,Nx>& ray, const vfloat<Nx>& tnear, const vfloat<Nx>& tfar, const float time, vfloat<Nx>& dist, size_t& mask)
       {
-        mask = intersectNodeRobust<N,Nx>((const typename BVHN<N>::QuantizedNode*)node.node(),ray,tnear,tfar,dist);
+        mask = intersectNodeRobust<N,Nx>((const typename BVHN<N>::QuantizedNode*)node.quantizedNode(),ray,tnear,tfar,dist);
         return true;
       }
     };

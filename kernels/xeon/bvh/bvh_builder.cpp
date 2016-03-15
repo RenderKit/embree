@@ -97,7 +97,6 @@ namespace embree
     void BVHNBuilderQuantized<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progress_in, PrimRef* prims, const PrimInfo& pinfo, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost)
     {
       //bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
-      PING;
       auto progressFunc = [&] (size_t dn) { 
         progress_in(dn); 
       };
@@ -106,13 +105,9 @@ namespace embree
         return createLeaf(current,alloc);
       };
       
-      //NodeRef root = 0;
-
       typename BVH::QuantizedNode *first = (typename BVH::QuantizedNode*)bvh->alloc.malloc(sizeof(typename BVH::QuantizedNode), bvh->byteNodeAlignment);
       NodeRef &root = *(NodeRef*)first; // as the builder assigns current.parent = (size_t*)&root
       assert(((size_t)first & 0x7) == 0); 
-      PRINT(first);
-      PRINT((size_t)root);
 
       BVHBuilderBinnedSAH::build_reduce<NodeRef>
         (root,typename BVH::CreateAlloc(bvh),size_t(0),typename BVH::CreateQuantizedNode(bvh),dummy<N>,createLeafFunc,progressFunc,
@@ -120,11 +115,8 @@ namespace embree
 
       NodeRef new_root = ((size_t)first + first->childOffset(0)) | BVH::tyQuantizedNode;
       assert(new_root.isQuantizedNode());
-      PRINT(new_root);
       bvh->set(new_root,pinfo.geomBounds,pinfo.size());
-      PRINT("DONE QBVH ");
-      //exit(0);
-
+      // todo: COPY LAYOUT FOR LARGE NODES !!!
       //bvh->layoutLargeNodes(pinfo.size()*0.005f);
     }
 

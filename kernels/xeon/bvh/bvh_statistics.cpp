@@ -139,9 +139,6 @@ namespace embree
   template<int N>
   void BVHNStatistics<N>::statistics(NodeRef node, const float A, size_t& depth)
   {
-    PRINT((size_t)node & BVH::align_mask);
-    PRINT(node.isLeaf());
-
     if (node.isNode())
     {
       numAlignedNodes++;
@@ -224,8 +221,6 @@ namespace embree
       bvhSAH += A*travCostAligned;
       depth = 0;
       for (size_t i=0; i<N; i++) {
-        PRINT(i);
-        PRINT(n->childOffset(i));
         if (n->childOffset(i) == BVH::emptyNode) continue; 
         childrenQuantizedNodes++;
         const float Ai = max(0.0f,halfArea(n->extend(i)));

@@ -447,7 +447,6 @@ namespace embree
 
   Accel* BVH8Factory::BVH8QuantizedTriangle4(Scene* scene)
   {
-    PING;
     BVH8* accel = new BVH8(Triangle4::type,scene);
     Accel::Intersectors intersectors = QBVH8Triangle4Intersectors(accel);
 
