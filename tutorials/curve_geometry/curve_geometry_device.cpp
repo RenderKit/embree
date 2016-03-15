@@ -18,7 +18,7 @@
 
 /* scene data */
 RTCDevice g_device = nullptr;
-RTCScene g_scene = nullptr;
+RTCScene  g_scene  = nullptr;
 
 /* render function to use */
 renderPixelFunc renderPixel;
@@ -47,8 +47,8 @@ void error_handler(const RTCError code, const char* str = nullptr)
   exit(1);
 }
 
-#define NUM_HAIR_VERTICES 9
-#define NUM_HAIR_CURVES 6
+#define NUM_VERTICES 9
+#define NUM_CURVES 6
 
 #define W 2.0f
 
@@ -89,11 +89,11 @@ unsigned int hair_indices[6] = {
 /* add hair geometry */
 unsigned int addCurve (RTCScene scene, const Vec3fa& pos)
 {
-  unsigned int geomID = rtcNewCurveGeometry (scene, RTC_GEOMETRY_DYNAMIC, NUM_HAIR_CURVES, 4*NUM_HAIR_CURVES);
+  unsigned int geomID = rtcNewCurveGeometry (scene, RTC_GEOMETRY_STATIC, NUM_CURVES, 4*NUM_CURVES);
 
   /* converts b-spline to bezier basis */
   Vec3fa* vtx = (Vec3fa*) rtcMapBuffer(scene, geomID, RTC_VERTEX_BUFFER);
-  for (size_t i=0; i<NUM_HAIR_CURVES; i++) 
+  for (size_t i=0; i<NUM_CURVES; i++) 
   {
     Vec3fa P = Vec3fa(pos.x,pos.y,pos.z,0.0f);
     const Vec3fa v0 = Vec3fa(hair_vertices[i+0][0],hair_vertices[i+0][1],hair_vertices[i+0][2],hair_vertices[i+0][3]);
@@ -107,8 +107,8 @@ unsigned int addCurve (RTCScene scene, const Vec3fa& pos)
   }
   rtcUnmapBuffer(scene, geomID, RTC_VERTEX_BUFFER);
    
-  Vec3fa* colors = new Vec3fa[4*NUM_HAIR_CURVES];
-  for (size_t i=0; i<NUM_HAIR_CURVES; i++) 
+  Vec3fa* colors = new Vec3fa[4*NUM_CURVES];
+  for (size_t i=0; i<NUM_CURVES; i++) 
   {
     const Vec3fa v0 = Vec3fa(hair_vertex_colors[i+0][0],hair_vertex_colors[i+0][1],hair_vertex_colors[i+0][2],hair_vertex_colors[i+0][3]);
     const Vec3fa v1 = Vec3fa(hair_vertex_colors[i+1][0],hair_vertex_colors[i+1][1],hair_vertex_colors[i+1][2],hair_vertex_colors[i+1][3]);
@@ -121,7 +121,7 @@ unsigned int addCurve (RTCScene scene, const Vec3fa& pos)
   }
   
   int* index = (int*) rtcMapBuffer(scene, geomID, RTC_INDEX_BUFFER);
-  for (size_t i=0; i<NUM_HAIR_CURVES; i++) {
+  for (size_t i=0; i<NUM_CURVES; i++) {
     index[i] = 4*i;
   }
   rtcUnmapBuffer(scene,geomID,RTC_INDEX_BUFFER);
@@ -164,7 +164,7 @@ extern "C" void device_init (char* cfg)
   rtcDeviceSetErrorFunction(g_device,error_handler);
  
   /* create scene */
-  g_scene = rtcDeviceNewScene(g_device, RTC_SCENE_DYNAMIC,RTC_INTERSECT1 | RTC_INTERPOLATE);
+  g_scene = rtcDeviceNewScene(g_device, RTC_SCENE_STATIC,RTC_INTERSECT1 | RTC_INTERPOLATE);
 
   /* add ground plane */
   addGroundPlane(g_scene);
@@ -202,7 +202,6 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
   {
     /* interpolate diffuse color */
-
     Vec3fa diffuse = Vec3fa(1.0f,0.0f,0.0f);
     if (ray.geomID > 0) 
     {
