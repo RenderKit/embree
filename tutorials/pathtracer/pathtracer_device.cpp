@@ -935,9 +935,6 @@ RTCScene g_scene = nullptr;
 RTCScene* geomID_to_scene = nullptr;
 ISPCInstance** geomID_to_inst = nullptr;
 
-/* render function to use */
-renderPixelFunc renderPixel;
-
 /* occlusion filter function */
 void intersectionFilterReject(void* ptr, RTCRay& ray);
 void intersectionFilterOBJ(void* ptr, RTCRay& ray);
@@ -1588,7 +1585,6 @@ void occlusionFilterHair(void* ptr, RTCRay& ray)
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
 }
 
-
 Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
   /* radiance accumulator and weight */
@@ -1775,17 +1771,18 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   return L;
 }
 
-/* task that renders a single screen tile */
-void renderTile(int taskIndex, int* pixels,
-                     const int width,
-                     const int height, 
-                     const float time,
-                     const Vec3fa& vx, 
-                     const Vec3fa& vy, 
-                     const Vec3fa& vz, 
-                     const Vec3fa& p,
-                     const int numTilesX, 
-                     const int numTilesY)
+/* renders a single screen tile */
+void renderTileStandard(int taskIndex, 
+                        int* pixels,
+                        const int width,
+                        const int height, 
+                        const float time,
+                        const Vec3fa& vx, 
+                        const Vec3fa& vy, 
+                        const Vec3fa& vz, 
+                        const Vec3fa& p,
+                        const int numTilesX, 
+                        const int numTilesY)
 {
   const int tileY = taskIndex / numTilesX;
   const int tileX = taskIndex - tileY * numTilesX;
@@ -1797,7 +1794,7 @@ void renderTile(int taskIndex, int* pixels,
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
     /* calculate pixel color */
-    Vec3fa color = renderPixel(x,y,vx,vy,vz,p);
+    Vec3fa color = renderPixelStandard(x,y,vx,vy,vz,p);
 
     /* write color to framebuffer */
     Vec3fa accu_color = g_accu[y*width+x] + Vec3fa(color.x,color.y,color.z,1.0f); g_accu[y*width+x] = accu_color;
@@ -1807,7 +1804,22 @@ void renderTile(int taskIndex, int* pixels,
     unsigned int b = (unsigned int) (255.0f * clamp(accu_color.z*f,0.0f,1.0f));
     pixels[y*width+x] = (b << 16) + (g << 8) + r;
   }
-} // renderTile
+}
+
+/* task that renders a single screen tile */
+void renderTileTask(int taskIndex, int* pixels,
+                         const int width,
+                         const int height, 
+                         const float time,
+                         const Vec3fa& vx, 
+                         const Vec3fa& vy, 
+                         const Vec3fa& vz, 
+                         const Vec3fa& p,
+                         const int numTilesX, 
+                         const int numTilesY)
+{
+  renderTile(taskIndex,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY);
+}
 
 
 /***************************************************************************************/
@@ -1906,8 +1918,7 @@ extern "C" void device_init (char* cfg)
   rtcDeviceSetErrorFunction(g_device,error_handler);
 
   /* set start render mode */
-  renderPixel = renderPixelStandard;
-  //  renderPixel = renderPixelEyeLight;
+  renderTile = renderTileStandard;
   key_pressed_handler = device_key_pressed;
 
 #if ENABLE_FILTER_FUNCTION == 0

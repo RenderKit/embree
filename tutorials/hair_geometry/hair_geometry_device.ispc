@@ -78,11 +78,6 @@ unmasked void error_handler(const uniform RTCError code, const uniform int8* uni
   abort();
 }
 
-/* render function to use */
-renderPixelFunc renderPixel;
-
-Vec3f renderPixelTestEyeLight(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p);
-
 /*! Uniform hemisphere sampling. Up direction is the z direction. */
 Vec3fa sampleSphere(const float u, const float v) 
 {
@@ -523,8 +518,7 @@ void renderTileStandard(uniform int taskIndex,
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
     /* calculate pixel color */
-    Vec3f color = renderPixel(x,y,vx,vy,vz,p);
-    //Vec3f color = renderPixelTestEyeLight(x,y,vx,vy,vz,p);
+    Vec3f color = renderPixelStandard(x,y,vx,vy,vz,p);
 
     /* write color to framebuffer */
     Vec3fa accu_color = g_accu[y*width+x] + make_Vec3fa(color.x,color.y,color.z,1.0f); g_accu[y*width+x] = accu_color;
@@ -537,18 +531,18 @@ void renderTileStandard(uniform int taskIndex,
 }
 
 /* task that renders a single screen tile */
-task void renderTile(uniform int* uniform pixels,
-                     const uniform int width,
-                     const uniform int height, 
-                     const uniform float time,
-                     const uniform Vec3f& vx, 
-                     const uniform Vec3f& vy, 
-                     const uniform Vec3f& vz, 
-                     const uniform Vec3f& p,
-                     const uniform int numTilesX, 
-                     const uniform int numTilesY)
+task void renderTileTask(uniform int* uniform pixels,
+                         const uniform int width,
+                         const uniform int height, 
+                         const uniform float time,
+                         const uniform Vec3f& vx, 
+                         const uniform Vec3f& vy, 
+                         const uniform Vec3f& vz, 
+                         const uniform Vec3f& p,
+                         const uniform int numTilesX, 
+                         const uniform int numTilesY)
 {
-  renderTileStandard(taskIndex,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY);
+  renderTile(taskIndex,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY);
 }
 
 /* called by the C++ code for initialization */
@@ -574,7 +568,7 @@ export void device_init (uniform int8* uniform cfg)
   rtcDeviceSetErrorFunction(g_device,error_handler);
 
   /* set start render mode */
-  renderPixel = renderPixelStandard;
+  renderTile = renderTileStandard;
   key_pressed_handler = device_key_pressed_default;
 
   /* create scene */
@@ -615,8 +609,8 @@ export void device_render (uniform int* uniform pixels,
   /* render frame */
   uniform const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   uniform const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  enableFilterDispatch = renderPixel == renderPixelStandard; 
-  launch[numTilesX*numTilesY] renderTile(pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); sync;
+  enableFilterDispatch = renderTile == renderTileStandard; 
+  launch[numTilesX*numTilesY] renderTileTask(pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); sync;
   enableFilterDispatch = false;
 }
 

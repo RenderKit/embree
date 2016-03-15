@@ -24,9 +24,6 @@ extern "C" ISPCScene* g_ispc_scene;
 RTCDevice g_device = nullptr;
 RTCScene g_scene = nullptr;
 
-/* render function to use */
-renderPixelFunc renderPixel;
-
 /* error reporting function */
 void error_handler(const RTCError code, const char* str = nullptr)
 {
@@ -156,41 +153,21 @@ RTCScene convertScene(ISPCScene* scene_in)
   return scene_out;
 }
 
-/* task that renders a single screen tile */
-Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p) {
-  return Vec3fa(0.0f);
-}
-
-/* called by the C++ code for initialization */
-extern "C" void device_init (char* cfg)
+/* renders a single screen tile */
+void renderTileStandard(int taskIndex, 
+                        int* pixels,
+                        const int width,
+                        const int height, 
+                        const float time,
+                        const Vec3fa& vx, 
+                        const Vec3fa& vy, 
+                        const Vec3fa& vz, 
+                        const Vec3fa& p,
+                        const int numTilesX, 
+                        const int numTilesY)
 {
-  /* create new Embree device */
-  g_device = rtcNewDevice(cfg);
-  error_handler(rtcDeviceGetError(g_device));
-
-  /* set error handler */
-  rtcDeviceSetErrorFunction(g_device,error_handler);
-
-  /* create scene */
-  g_scene = convertScene(g_ispc_scene);
-  rtcCommit (g_scene);
-}
-
-/* task that renders a single screen tile */
-void renderTile(int taskIndex, int* pixels,
-                     const int width,
-                     const int height, 
-                     const float time,
-                     const Vec3fa& vx, 
-                     const Vec3fa& vy, 
-                     const Vec3fa& vz, 
-                     const Vec3fa& p,
-                     const int numTilesX, 
-                     const int numTilesY)
-{
-  const int t = taskIndex;
-  const int tileY = t / numTilesX;
-  const int tileX = t - tileY * numTilesX;
+  const int tileY = taskIndex / numTilesX;
+  const int tileX = taskIndex - tileY * numTilesX;
   const int x0 = tileX * TILE_SIZE_X;
   const int x1 = min(x0+TILE_SIZE_X,width);
   const int y0 = tileY * TILE_SIZE_Y;
@@ -238,6 +215,40 @@ void renderTile(int taskIndex, int* pixels,
     unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
     pixels[y*width+x] = (b << 16) + (g << 8) + r;
   }
+}
+
+/* task that renders a single screen tile */
+void renderTileTask(int taskIndex, int* pixels,
+                         const int width,
+                         const int height, 
+                         const float time,
+                         const Vec3fa& vx, 
+                         const Vec3fa& vy, 
+                         const Vec3fa& vz, 
+                         const Vec3fa& p,
+                         const int numTilesX, 
+                         const int numTilesY)
+{
+  renderTile(taskIndex,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY);
+}
+
+/* called by the C++ code for initialization */
+extern "C" void device_init (char* cfg)
+{
+  /* create new Embree device */
+  g_device = rtcNewDevice(cfg);
+  error_handler(rtcDeviceGetError(g_device));
+
+  /* set error handler */
+  rtcDeviceSetErrorFunction(g_device,error_handler);
+
+  /* create scene */
+  g_scene = convertScene(g_ispc_scene);
+  rtcCommit (g_scene);
+
+  /* set render tile function to use */
+  renderTile = renderTileStandard;
+  key_pressed_handler = device_key_pressed_default;
 }
 
 /* called by the C++ code to render */

@@ -24,9 +24,6 @@
 RTCDevice g_device = nullptr;
 RTCScene g_scene = nullptr;
 
-/* render function to use */
-renderPixelFunc renderPixel;
-
 /* previous camera position */
 Vec3fa old_p; 
 
@@ -215,7 +212,7 @@ extern "C" void device_init (char* cfg)
   rtcCommit (g_scene);
 
   /* set start render mode */
-  renderPixel = renderPixelStandard;
+  renderTile = renderTileStandard;
   key_pressed_handler = device_key_pressed_default;
 }
 
@@ -280,17 +277,18 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   return color;
 }
 
-/* task that renders a single screen tile */
-void renderTile(int taskIndex, int* pixels,
-                     const int width,
-                     const int height, 
-                     const float time,
-                     const Vec3fa& vx, 
-                     const Vec3fa& vy, 
-                     const Vec3fa& vz, 
-                     const Vec3fa& p,
-                     const int numTilesX, 
-                     const int numTilesY)
+/* renders a single screen tile */
+void renderTileStandard(int taskIndex, 
+                        int* pixels,
+                        const int width,
+                        const int height, 
+                        const float time,
+                        const Vec3fa& vx, 
+                        const Vec3fa& vy, 
+                        const Vec3fa& vz, 
+                        const Vec3fa& p,
+                        const int numTilesX, 
+                        const int numTilesY)
 {
   const int tileY = taskIndex / numTilesX;
   const int tileX = taskIndex - tileY * numTilesX;
@@ -302,7 +300,7 @@ void renderTile(int taskIndex, int* pixels,
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
     /* calculate pixel color */
-    Vec3fa color = renderPixel(x,y,vx,vy,vz,p);
+    Vec3fa color = renderPixelStandard(x,y,vx,vy,vz,p);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -310,6 +308,21 @@ void renderTile(int taskIndex, int* pixels,
     unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
     pixels[y*width+x] = (b << 16) + (g << 8) + r;
   }
+}
+
+/* task that renders a single screen tile */
+void renderTileTask(int taskIndex, int* pixels,
+                         const int width,
+                         const int height, 
+                         const float time,
+                         const Vec3fa& vx, 
+                         const Vec3fa& vy, 
+                         const Vec3fa& vz, 
+                         const Vec3fa& p,
+                         const int numTilesX, 
+                         const int numTilesY)
+{
+  renderTile(taskIndex,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY);
 }
 
 /* called by the C++ code to render */

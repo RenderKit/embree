@@ -68,16 +68,17 @@ enum Shader {
 };
 
 /* standard shading function */
-typedef Vec3fa (* renderPixelFunc)(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
+typedef void (* renderTileFunc)(int taskIndex, int* pixels, const int width, const int height, 
+                                const float time, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p,
+                                const int numTilesX, const int numTilesY);
+extern renderTileFunc renderTile;
 
 extern "C" void device_key_pressed_default(int key);
 extern "C" void (*key_pressed_handler)(int key);
 
-Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
-Vec3fa renderPixelUV      (float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
-Vec3fa renderPixelGeomIDPrimID(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
-Vec3fa renderPixelGeomID      (float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
-Vec3fa renderPixelCycles(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
+void renderTileStandard(int taskIndex, int* pixels, const int width, const int height, 
+                        const float time, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p,
+                        const int numTilesX, const int numTilesY);
 
 __forceinline Vec3f  neg(const Vec3f& a ) { return -a; }
 __forceinline Vec3fa neg(const Vec3fa& a) { return -a; }

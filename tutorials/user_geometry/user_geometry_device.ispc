@@ -19,9 +19,6 @@
 const uniform int numPhi = 5;
 const uniform int numTheta = 2*numPhi;
 
-/* render function to use */
-renderPixelFunc renderPixel;
-
 /* error reporting function */
 unmasked void error_handler(const uniform RTCError code, const uniform int8* uniform str = NULL)
 {
@@ -406,7 +403,7 @@ export void device_init (uniform int8* uniform cfg)
   colors[4][3] = make_Vec3f(1.0,1.0,1.0);
 
   /* set start render mode */
-  renderPixel = renderPixelStandard;
+  renderTile = renderTileStandard;
   key_pressed_handler = device_key_pressed_default;
 }
 
@@ -486,7 +483,7 @@ void renderTileStandard(uniform int taskIndex,
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
     /* calculate pixel color */
-    Vec3f color = renderPixel(x,y,vx,vy,vz,p);
+    Vec3f color = renderPixelStandard(x,y,vx,vy,vz,p);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -497,18 +494,18 @@ void renderTileStandard(uniform int taskIndex,
 }
 
 /* task that renders a single screen tile */
-task void renderTile(uniform int* uniform pixels,
-                     const uniform int width,
-                     const uniform int height, 
-                     const uniform float time,
-                     const uniform Vec3f& vx, 
-                     const uniform Vec3f& vy, 
-                     const uniform Vec3f& vz, 
-                     const uniform Vec3f& p,
-                     const uniform int numTilesX, 
-                     const uniform int numTilesY)
+task void renderTileTask(uniform int* uniform pixels,
+                         const uniform int width,
+                         const uniform int height, 
+                         const uniform float time,
+                         const uniform Vec3f& vx, 
+                         const uniform Vec3f& vy, 
+                         const uniform Vec3f& vz, 
+                         const uniform Vec3f& p,
+                         const uniform int numTilesX, 
+                         const uniform int numTilesY)
 {
-  renderTileStandard(taskIndex,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY);
+  renderTile(taskIndex,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY);
 }
 
 /* called by the C++ code to render */
@@ -546,7 +543,7 @@ export void device_render (uniform int* uniform pixels,
   /* render all pixels */
   const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  launch[numTilesX*numTilesY] renderTile(pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); sync;
+  launch[numTilesX*numTilesY] renderTileTask(pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); sync;
 }
 
 /* called by the C++ code for cleanup */

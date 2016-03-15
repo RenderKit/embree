@@ -78,11 +78,6 @@ void error_handler(const RTCError code, const char* str = nullptr)
   exit(1);
 }
 
-/* render function to use */
-renderPixelFunc renderPixel;
-
-Vec3fa renderPixelTestEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
-
 /*! Uniform hemisphere sampling. Up direction is the z direction. */
 Vec3fa sampleSphere(const float u, const float v) 
 {
@@ -497,17 +492,18 @@ Vec3fa renderPixelTestEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa&
   return color;
 }
 
-/* task that renders a single screen tile */
-void renderTile(int taskIndex, int* pixels,
-                     const int width,
-                     const int height, 
-                     const float time,
-                     const Vec3fa& vx, 
-                     const Vec3fa& vy, 
-                     const Vec3fa& vz, 
-                     const Vec3fa& p,
-                     const int numTilesX, 
-                     const int numTilesY)
+/* renders a single screen tile */
+void renderTileStandard(int taskIndex, 
+                        int* pixels,
+                        const int width,
+                        const int height, 
+                        const float time,
+                        const Vec3fa& vx, 
+                        const Vec3fa& vy, 
+                        const Vec3fa& vz, 
+                        const Vec3fa& p,
+                        const int numTilesX, 
+                        const int numTilesY)
 {
   const int tileY = taskIndex / numTilesX;
   const int tileX = taskIndex - tileY * numTilesX;
@@ -515,14 +511,14 @@ void renderTile(int taskIndex, int* pixels,
   const int x1 = min(x0+TILE_SIZE_X,width);
   const int y0 = tileY * TILE_SIZE_Y;
   const int y1 = min(y0+TILE_SIZE_Y,height);
+
   //int seed = tileY*numTilesX+tileX+0 + g_accu_count;
   int seed = (tileY*numTilesX+tileX+0) * g_accu_count;
 
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
     /* calculate pixel color */
-    Vec3fa color = renderPixel(x,y,vx,vy,vz,p);
-    //Vec3fa color = renderPixelTestEyeLight(x,y,vx,vy,vz,p);
+    Vec3fa color = renderPixelStandard(x,y,vx,vy,vz,p);
 
     /* write color to framebuffer */
     Vec3fa accu_color = g_accu[y*width+x] + Vec3fa(color.x,color.y,color.z,1.0f); g_accu[y*width+x] = accu_color;
@@ -532,6 +528,21 @@ void renderTile(int taskIndex, int* pixels,
     unsigned int b = (unsigned int) (255.0f * clamp(accu_color.z*f,0.0f,1.0f));
     pixels[y*width+x] = (b << 16) + (g << 8) + r;
   }
+}
+
+/* task that renders a single screen tile */
+void renderTileTask(int taskIndex, int* pixels,
+                         const int width,
+                         const int height, 
+                         const float time,
+                         const Vec3fa& vx, 
+                         const Vec3fa& vy, 
+                         const Vec3fa& vz, 
+                         const Vec3fa& p,
+                         const int numTilesX, 
+                         const int numTilesY)
+{
+  renderTile(taskIndex,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY);
 }
 
 /* called by the C++ code for initialization */
@@ -557,7 +568,7 @@ extern "C" void device_init (char* cfg)
   rtcDeviceSetErrorFunction(g_device,error_handler);
 
   /* set start render mode */
-  renderPixel = renderPixelStandard;
+  renderTile = renderTileStandard;
   key_pressed_handler = device_key_pressed_default;
 
   /* create scene */
@@ -598,7 +609,7 @@ extern "C" void device_render (int* pixels,
   /* render frame */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  enableFilterDispatch = renderPixel == renderPixelStandard; 
+  enableFilterDispatch = renderTile == renderTileStandard; 
   launch_renderTile(numTilesX*numTilesY,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); 
   enableFilterDispatch = false;
 }

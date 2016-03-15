@@ -36,11 +36,8 @@ extern "C" {
 }
 extern "C" float g_debug;
 
-/* stores pointer to currently used rendePixel function */
-extern renderPixelFunc renderPixel;
-
-/* standard rendering function for each tutorial */
-Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
+/* stores pointer to currently used rendeTile function */
+renderTileFunc renderTile;
 
 /* renders a single pixel with eyelight shading */
 Vec3fa renderPixelEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
@@ -62,6 +59,30 @@ Vec3fa renderPixelEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   /* shade pixel */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(0.0f);
   else return Vec3fa(embree::abs(dot(ray.dir,normalize(ray.Ng))));
+}
+
+void renderTileEyeLight(int taskIndex, int* pixels, const int width, const int height, 
+                        const float time, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p,
+                        const int numTilesX, const int numTilesY)
+{
+  const int tileY = taskIndex / numTilesX;
+  const int tileX = taskIndex - tileY * numTilesX;
+  const int x0 = tileX * TILE_SIZE_X;
+  const int x1 = min(x0+TILE_SIZE_X,width);
+  const int y0 = tileY * TILE_SIZE_Y;
+  const int y1 = min(y0+TILE_SIZE_Y,height);
+
+  for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
+  {
+    /* calculate pixel color */
+    Vec3fa color = renderPixelEyeLight(x,y,vx,vy,vz,p);
+
+    /* write color to framebuffer */
+    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
+    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
+    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
+    pixels[y*width+x] = (b << 16) + (g << 8) + r;  
+  }
 }
 
 __noinline void setray(RTCRay& ray)
@@ -103,6 +124,30 @@ Vec3fa renderPixelWireframe(float x, float y, const Vec3fa& vx, const Vec3fa& vy
   return color*Vec3fa(embree::abs(dot(ray.dir,normalize(ray.Ng))));
 }
 
+void renderTileWireframe(int taskIndex, int* pixels, const int width, const int height, 
+                         const float time, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p,
+                         const int numTilesX, const int numTilesY)
+{
+  const int tileY = taskIndex / numTilesX;
+  const int tileX = taskIndex - tileY * numTilesX;
+  const int x0 = tileX * TILE_SIZE_X;
+  const int x1 = min(x0+TILE_SIZE_X,width);
+  const int y0 = tileY * TILE_SIZE_Y;
+  const int y1 = min(y0+TILE_SIZE_Y,height);
+
+  for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
+  {
+    /* calculate pixel color */
+    Vec3fa color = renderPixelWireframe(x,y,vx,vy,vz,p);
+
+    /* write color to framebuffer */
+    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
+    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
+    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
+    pixels[y*width+x] = (b << 16) + (g << 8) + r;  
+  }
+}
+
 /* renders a single pixel with UV shading */
 Vec3fa renderPixelUV(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
@@ -123,6 +168,30 @@ Vec3fa renderPixelUV(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const
   /* shade pixel */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(0.0f);
   else return Vec3fa(ray.u,ray.v,1.0f-ray.u-ray.v);
+}
+
+void renderTileUV(int taskIndex, int* pixels, const int width, const int height, 
+                  const float time, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p,
+                  const int numTilesX, const int numTilesY)
+{
+  const int tileY = taskIndex / numTilesX;
+  const int tileX = taskIndex - tileY * numTilesX;
+  const int x0 = tileX * TILE_SIZE_X;
+  const int x1 = min(x0+TILE_SIZE_X,width);
+  const int y0 = tileY * TILE_SIZE_Y;
+  const int y1 = min(y0+TILE_SIZE_Y,height);
+
+  for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
+  {
+    /* calculate pixel color */
+    Vec3fa color = renderPixelUV(x,y,vx,vy,vz,p);
+
+    /* write color to framebuffer */
+    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
+    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
+    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
+    pixels[y*width+x] = (b << 16) + (g << 8) + r;  
+  }
 }
 
 /* renders a single pixel with geometry normal shading */
@@ -147,6 +216,30 @@ Vec3fa renderPixelNg(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const
   else {
     //if (dot(ray.dir,ray.Ng) > 0.0f) return Vec3fa(zero); else
     return normalize(abs(Vec3fa(ray.Ng.x,ray.Ng.y,ray.Ng.z)));
+  }
+}
+
+void renderTileNg(int taskIndex, int* pixels, const int width, const int height, 
+                  const float time, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p,
+                  const int numTilesX, const int numTilesY)
+{
+  const int tileY = taskIndex / numTilesX;
+  const int tileX = taskIndex - tileY * numTilesX;
+  const int x0 = tileX * TILE_SIZE_X;
+  const int x1 = min(x0+TILE_SIZE_X,width);
+  const int y0 = tileY * TILE_SIZE_Y;
+  const int y1 = min(y0+TILE_SIZE_Y,height);
+
+  for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
+  {
+    /* calculate pixel color */
+    Vec3fa color = renderPixelNg(x,y,vx,vy,vz,p);
+
+    /* write color to framebuffer */
+    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
+    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
+    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
+    pixels[y*width+x] = (b << 16) + (g << 8) + r;  
   }
 }
 
@@ -181,6 +274,30 @@ Vec3fa renderPixelGeomID(float x, float y, const Vec3fa& vx, const Vec3fa& vy, c
   else return embree::abs(dot(ray.dir,normalize(ray.Ng)))*randomColor(ray.geomID);
 }
 
+void renderTileGeomID(int taskIndex, int* pixels, const int width, const int height, 
+                      const float time, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p,
+                      const int numTilesX, const int numTilesY)
+{
+  const int tileY = taskIndex / numTilesX;
+  const int tileX = taskIndex - tileY * numTilesX;
+  const int x0 = tileX * TILE_SIZE_X;
+  const int x1 = min(x0+TILE_SIZE_X,width);
+  const int y0 = tileY * TILE_SIZE_Y;
+  const int y1 = min(y0+TILE_SIZE_Y,height);
+
+  for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
+  {
+    /* calculate pixel color */
+    Vec3fa color = renderPixelGeomID(x,y,vx,vy,vz,p);
+
+    /* write color to framebuffer */
+    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
+    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
+    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
+    pixels[y*width+x] = (b << 16) + (g << 8) + r;  
+  }
+}
+
 /* geometry ID and primitive ID shading */
 Vec3fa renderPixelGeomIDPrimID(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
@@ -203,6 +320,30 @@ Vec3fa renderPixelGeomIDPrimID(float x, float y, const Vec3fa& vx, const Vec3fa&
   else return randomColor(ray.geomID ^ ray.primID)*Vec3fa(embree::abs(dot(ray.dir,normalize(ray.Ng))));
 }
 
+void renderTileGeomIDPrimID(int taskIndex, int* pixels, const int width, const int height, 
+                            const float time, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p,
+                            const int numTilesX, const int numTilesY)
+{
+  const int tileY = taskIndex / numTilesX;
+  const int tileX = taskIndex - tileY * numTilesX;
+  const int x0 = tileX * TILE_SIZE_X;
+  const int x1 = min(x0+TILE_SIZE_X,width);
+  const int y0 = tileY * TILE_SIZE_Y;
+  const int y1 = min(y0+TILE_SIZE_Y,height);
+
+  for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
+  {
+    /* calculate pixel color */
+    Vec3fa color = renderPixelGeomIDPrimID(x,y,vx,vy,vz,p);
+
+    /* write color to framebuffer */
+    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
+    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
+    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
+    pixels[y*width+x] = (b << 16) + (g << 8) + r;  
+  }
+}
+
 /* vizualizes the traversal cost of a pixel */
 Vec3fa renderPixelCycles(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
@@ -223,6 +364,30 @@ Vec3fa renderPixelCycles(float x, float y, const Vec3fa& vx, const Vec3fa& vy, c
   int64_t c1 = get_tsc();
   /* shade pixel */
   return Vec3fa((float)(c1-c0)*scale,0.0f,0.0f);
+}
+
+void renderTileCycles(int taskIndex, int* pixels, const int width, const int height, 
+                      const float time, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p,
+                      const int numTilesX, const int numTilesY)
+{
+  const int tileY = taskIndex / numTilesX;
+  const int tileX = taskIndex - tileY * numTilesX;
+  const int x0 = tileX * TILE_SIZE_X;
+  const int x1 = min(x0+TILE_SIZE_X,width);
+  const int y0 = tileY * TILE_SIZE_Y;
+  const int y1 = min(y0+TILE_SIZE_Y,height);
+
+  for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
+  {
+    /* calculate pixel color */
+    Vec3fa color = renderPixelCycles(x,y,vx,vy,vz,p);
+
+    /* write color to framebuffer */
+    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
+    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
+    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
+    pixels[y*width+x] = (b << 16) + (g << 8) + r;  
+  }
 }
 
 /* renders a single pixel with UV shading */
@@ -248,6 +413,30 @@ Vec3fa renderPixelUV16(float x, float y, const Vec3fa& vx, const Vec3fa& vy, con
   /* shade pixel */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(0.0f);
   else return Vec3fa(ray.u,ray.v,1.0f-ray.u-ray.v);
+}
+
+void renderTileUV16(int taskIndex, int* pixels, const int width, const int height, 
+                      const float time, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p,
+                      const int numTilesX, const int numTilesY)
+{
+  const int tileY = taskIndex / numTilesX;
+  const int tileX = taskIndex - tileY * numTilesX;
+  const int x0 = tileX * TILE_SIZE_X;
+  const int x1 = min(x0+TILE_SIZE_X,width);
+  const int y0 = tileY * TILE_SIZE_Y;
+  const int y1 = min(y0+TILE_SIZE_Y,height);
+
+  for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
+  {
+    /* calculate pixel color */
+    Vec3fa color = renderPixelUV16(x,y,vx,vy,vz,p);
+
+    /* write color to framebuffer */
+    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
+    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
+    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
+    pixels[y*width+x] = (b << 16) + (g << 8) + r;  
+  }
 }
 
 /* renders a single pixel casting with ambient occlusion */
@@ -354,6 +543,30 @@ Vec3fa renderPixelAmbientOcclusion(float x, float y, const Vec3fa& vx, const Vec
   return col * intensity;
 }
 
+void renderTileAmbientOcclusion(int taskIndex, int* pixels, const int width, const int height, 
+                                const float time, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p,
+                                const int numTilesX, const int numTilesY)
+{
+  const int tileY = taskIndex / numTilesX;
+  const int tileX = taskIndex - tileY * numTilesX;
+  const int x0 = tileX * TILE_SIZE_X;
+  const int x1 = min(x0+TILE_SIZE_X,width);
+  const int y0 = tileY * TILE_SIZE_Y;
+  const int y1 = min(y0+TILE_SIZE_Y,height);
+
+  for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
+  {
+    /* calculate pixel color */
+    Vec3fa color = renderPixelAmbientOcclusion(x,y,vx,vy,vz,p);
+
+    /* write color to framebuffer */
+    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
+    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
+    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
+    pixels[y*width+x] = (b << 16) + (g << 8) + r;  
+  }
+}
+
 /* differential visualization */
 static int differentialMode = 0;
 Vec3fa renderPixelDifferentials(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
@@ -432,6 +645,29 @@ Vec3fa renderPixelDifferentials(float x, float y, const Vec3fa& vx, const Vec3fa
   return clamp(color,Vec3fa(zero),Vec3fa(one));
 }
 
+void renderTileDifferentials(int taskIndex, int* pixels, const int width, const int height, 
+                             const float time, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p,
+                             const int numTilesX, const int numTilesY)
+{
+  const int tileY = taskIndex / numTilesX;
+  const int tileX = taskIndex - tileY * numTilesX;
+  const int x0 = tileX * TILE_SIZE_X;
+  const int x1 = min(x0+TILE_SIZE_X,width);
+  const int y0 = tileY * TILE_SIZE_Y;
+  const int y1 = min(y0+TILE_SIZE_Y,height);
+
+  for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
+  {
+    /* calculate pixel color */
+    Vec3fa color = renderPixelDifferentials(x,y,vx,vy,vz,p);
+
+    /* write color to framebuffer */
+    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
+    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
+    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
+    pixels[y*width+x] = (b << 16) + (g << 8) + r;  
+  }
+}
 
 /* returns the point seen through specified pixel */
 extern "C" bool device_pick(const float x,
@@ -477,59 +713,59 @@ extern "C" bool device_pick(const float x,
 extern "C" void device_key_pressed_default(int key)
 {
   if (key == GLUT_KEY_F1) {
-    renderPixel = renderPixelStandard;
+    renderTile = renderTileStandard;
     g_changed = true;
   }
   else if (key == GLUT_KEY_F2) {
-    renderPixel = renderPixelEyeLight;
+    renderTile = renderTileEyeLight;
     g_changed = true;
   }    
   else if (key == GLUT_KEY_F3) {
-    renderPixel = renderPixelWireframe;
+    renderTile = renderTileWireframe;
     g_changed = true;
   }
   else if (key == GLUT_KEY_F4) {
-    renderPixel = renderPixelUV;
+    renderTile = renderTileUV;
     g_changed = true;
   }
   else if (key == GLUT_KEY_F5) {
-    renderPixel = renderPixelNg;
+    renderTile = renderTileNg;
     g_changed = true;
   }
   else if (key == GLUT_KEY_F6) {
-    renderPixel = renderPixelGeomID;
+    renderTile = renderTileGeomID;
     g_changed = true;
   }
   else if (key == GLUT_KEY_F7) {
-    renderPixel = renderPixelGeomIDPrimID;
+    renderTile = renderTileGeomIDPrimID;
     g_changed = true;
   }
   else if (key == GLUT_KEY_F8) {
-    renderPixel = renderPixelUV16;
+    renderTile = renderTileUV16;
     g_changed = true;
   }
   else if (key == GLUT_KEY_F9) {
-    if (renderPixel == renderPixelCycles) scale *= 2.0f;
+    if (renderTile == renderTileCycles) scale *= 2.0f;
     PRINT(scale);
-    renderPixel = renderPixelCycles;
+    renderTile = renderTileCycles;
     g_changed = true;
   }
   else if (key == GLUT_KEY_F10) {
-    if (renderPixel == renderPixelCycles) scale *= 0.5f;
+    if (renderTile == renderTileCycles) scale *= 0.5f;
     PRINT(scale);
-    renderPixel = renderPixelCycles;
+    renderTile = renderTileCycles;
     g_changed = true;
   }
   else if (key == GLUT_KEY_F11) {
-    renderPixel = renderPixelAmbientOcclusion;
+    renderTile = renderTileAmbientOcclusion;
     g_changed = true;
   }
   else if (key == GLUT_KEY_F12) 
   {
-    if (renderPixel == renderPixelDifferentials) {
+    if (renderTile == renderTileDifferentials) {
       differentialMode = (differentialMode+1)%17;
     } else {
-      renderPixel = renderPixelDifferentials;
+      renderTile = renderTileDifferentials;
       differentialMode = 0;
     }
     PRINT(differentialMode);
@@ -547,17 +783,17 @@ extern "C"
   }
 }
 
-void renderTile(int taskIndex,
-                int* pixels,
-                const int width,
-                const int height, 
-                const float time,
-                const Vec3fa& vx, 
-                const Vec3fa& vy, 
-                const Vec3fa& vz, 
-                const Vec3fa& p,
-                const int numTilesX, 
-                const int numTilesY);
+void renderTileTask(int taskIndex,
+                    int* pixels,
+                    const int width,
+                    const int height, 
+                    const float time,
+                    const Vec3fa& vx, 
+                    const Vec3fa& vy, 
+                    const Vec3fa& vz, 
+                    const Vec3fa& p,
+                    const int numTilesX, 
+                    const int numTilesY);
 
 //thread_local bool inrender = false;
 
@@ -572,7 +808,7 @@ void launch_renderTile (int numTiles,
         while (true) {
           size_t i = atomic_add(&tileID,1);
           if (i >= numTiles) break;
-          renderTile(i,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY);
+          renderTileTask(i,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY);
         }
       }
     });
@@ -582,7 +818,7 @@ void launch_renderTile (int numTiles,
       //if (inrender) PING;
       //inrender = true;
       for (size_t i=r.begin(); i<r.end(); i++)
-        renderTile(i,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY);
+        renderTileTask(i,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY);
       //inrender = false;
     });
 #endif

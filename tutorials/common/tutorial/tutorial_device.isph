@@ -63,16 +63,33 @@ inline Vec3f faceforward( Vec3f N, Vec3f I, Vec3f Ng ) {
 #define GLUT_KEY_F12 12
 
 /* standard shading function */
-typedef Vec3f (* uniform renderPixelFunc)(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p);
+typedef void (* uniform renderTileFunc)(uniform int taskIndex, 
+                                        uniform int* uniform pixels,
+                                        const uniform int width,
+                                        const uniform int height, 
+                                        const uniform float time,
+                                        const uniform Vec3f& vx, 
+                                        const uniform Vec3f& vy, 
+                                        const uniform Vec3f& vz, 
+                                        const uniform Vec3f& p,
+                                        const uniform int numTilesX, 
+                                        const uniform int numTilesY);
+extern renderTileFunc renderTile;
 
 extern void device_key_pressed_default(uniform int key);
 extern void (* uniform key_pressed_handler)(uniform int key);
 
-Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p);
-
-Vec3f renderPixelEyeLight(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p);
-
-Vec3f renderPixelUV(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p);
+void renderTileStandard(uniform int taskIndex, 
+                        uniform int* uniform pixels,
+                        const uniform int width,
+                        const uniform int height, 
+                        const uniform float time,
+                        const uniform Vec3f& vx, 
+                        const uniform Vec3f& vy, 
+                        const uniform Vec3f& vz, 
+                        const uniform Vec3f& p,
+                        const uniform int numTilesX, 
+                        const uniform int numTilesY);
 
 uniform unsigned int getNumHWThreads();
 

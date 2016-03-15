@@ -935,9 +935,6 @@ RTCScene g_scene = NULL;
 RTCScene* uniform geomID_to_scene = NULL;
 ISPCInstance* uniform* uniform geomID_to_inst = NULL;
 
-/* render function to use */
-renderPixelFunc renderPixel;
-
 /* occlusion filter function */
 void intersectionFilterReject(void* uniform ptr, RTCRay& ray);
 void intersectionFilterOBJ(void* uniform ptr, RTCRay& ray);
@@ -1588,7 +1585,6 @@ void occlusionFilterHair(void* uniform ptr, RTCRay& ray)
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
 }
 
-
 Vec3f renderPixelFunction(float x, float y, RandomSampler& sampler, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
 {
   /* radiance accumulator and weight */
@@ -1798,7 +1794,7 @@ void renderTileStandard(uniform int taskIndex,
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
     /* calculate pixel color */
-    Vec3f color = renderPixel(x,y,vx,vy,vz,p);
+    Vec3f color = renderPixelStandard(x,y,vx,vy,vz,p);
 
     /* write color to framebuffer */
     Vec3fa accu_color = g_accu[y*width+x] + make_Vec3fa(color.x,color.y,color.z,1.0f); g_accu[y*width+x] = accu_color;
@@ -1811,18 +1807,18 @@ void renderTileStandard(uniform int taskIndex,
 }
 
 /* task that renders a single screen tile */
-task void renderTile(uniform int* uniform pixels,
-                     const uniform int width,
-                     const uniform int height, 
-                     const uniform float time,
-                     const uniform Vec3f& vx, 
-                     const uniform Vec3f& vy, 
-                     const uniform Vec3f& vz, 
-                     const uniform Vec3f& p,
-                     const uniform int numTilesX, 
-                     const uniform int numTilesY)
+task void renderTileTask(uniform int* uniform pixels,
+                         const uniform int width,
+                         const uniform int height, 
+                         const uniform float time,
+                         const uniform Vec3f& vx, 
+                         const uniform Vec3f& vy, 
+                         const uniform Vec3f& vz, 
+                         const uniform Vec3f& p,
+                         const uniform int numTilesX, 
+                         const uniform int numTilesY)
 {
-  renderTileStandard(taskIndex,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY);
+  renderTile(taskIndex,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY);
 }
 
 
@@ -1922,8 +1918,7 @@ export void device_init (uniform int8* uniform cfg)
   rtcDeviceSetErrorFunction(g_device,error_handler);
 
   /* set start render mode */
-  renderPixel = renderPixelStandard;
-  //  renderPixel = renderPixelEyeLight;
+  renderTile = renderTileStandard;
   key_pressed_handler = device_key_pressed;
 
 #if ENABLE_FILTER_FUNCTION == 0
@@ -1989,7 +1984,7 @@ export void device_render (uniform int* uniform pixels,
   /* render image */
   const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  launch[numTilesX*numTilesY] renderTile(pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); sync;
+  launch[numTilesX*numTilesY] renderTileTask(pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); sync;
   //rtcDebug();
 } // device_render
 
