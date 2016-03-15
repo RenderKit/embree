@@ -197,16 +197,16 @@ namespace embree
 
       /*! Prefetches the node this reference points to */
       __forceinline void prefetch(int types=0) const {
-        if (types != BVH_FLAG_QUANTIZED_NODE) {
+        if (types == BVH_FLAG_QUANTIZED_NODE) {
           prefetchL1(((char*)ptr)+0*64);
           prefetchL1(((char*)ptr)+1*64);
         } else {
 #if defined(__AVX512F__)
           prefetchL1(((char*)ptr)+0*64);
-          prefetchL2(((char*)ptr)+1*64);
+          prefetchL1(((char*)ptr)+1*64);
           if ((N >= 8) || (types > BVH_FLAG_ALIGNED_NODE)) {
-            prefetchL2(((char*)ptr)+2*64);
-            prefetchL2(((char*)ptr)+3*64);
+            prefetchL1(((char*)ptr)+2*64);
+            prefetchL1(((char*)ptr)+3*64);
           }
           if ((N >= 8) && (types > BVH_FLAG_ALIGNED_NODE)) {
             prefetchL2(((char*)ptr)+4*64);
@@ -234,15 +234,17 @@ namespace embree
       __forceinline void prefetchLLC(int types=0) const {
         embree::prefetchL2(((char*)ptr)+0*64);
         embree::prefetchL2(((char*)ptr)+1*64);
-        if ((N >= 8) || (types > BVH_FLAG_ALIGNED_NODE)) {
-          embree::prefetchL2(((char*)ptr)+2*64);
-          embree::prefetchL2(((char*)ptr)+3*64);
-        }
-        if ((N >= 8) && (types > BVH_FLAG_ALIGNED_NODE)) {
-          embree::prefetchL2(((char*)ptr)+4*64);
-          embree::prefetchL2(((char*)ptr)+5*64);
-          embree::prefetchL2(((char*)ptr)+6*64);
-          embree::prefetchL2(((char*)ptr)+7*64);
+        if (types != BVH_FLAG_QUANTIZED_NODE) {
+          if ((N >= 8) || (types > BVH_FLAG_ALIGNED_NODE)) {
+            embree::prefetchL2(((char*)ptr)+2*64);
+            embree::prefetchL2(((char*)ptr)+3*64);
+          }
+          if ((N >= 8) && (types > BVH_FLAG_ALIGNED_NODE)) {
+            embree::prefetchL2(((char*)ptr)+4*64);
+            embree::prefetchL2(((char*)ptr)+5*64);
+            embree::prefetchL2(((char*)ptr)+6*64);
+            embree::prefetchL2(((char*)ptr)+7*64);
+          }
         }
       }
 
@@ -894,10 +896,7 @@ namespace embree
       __forceinline vfloat<N> dequantizeLowerZ() const { return vfloat<N>(start.z) + vfloat<N>(vint<N>::load(lower_z)) * scale.z; }
       __forceinline vfloat<N> dequantizeUpperZ() const { return vfloat<N>(start.z) + vfloat<N>(vint<N>::load(upper_z)) * scale.z; }
 
-      __forceinline vfloat<N> dequantizeX(const size_t offset) const { return vfloat<N>(start.x) + vfloat<N>(vint<N>::load(lower_x+offset)) * scale.x; }
-      __forceinline vfloat<N> dequantizeY(const size_t offset) const { return vfloat<N>(start.y) + vfloat<N>(vint<N>::load(lower_x+offset)) * scale.y; }
-      __forceinline vfloat<N> dequantizeZ(const size_t offset) const { return vfloat<N>(start.z) + vfloat<N>(vint<N>::load(lower_x+offset)) * scale.z; }
-
+      __forceinline vfloat<N> dequantize(const size_t offset, const vfloat<N> &vstart, const vfloat<N> &vscale) const { return vfloat<N>(vint<N>::load(lower_x+offset)) * vscale + vstart; }
 
       unsigned char lower_x[N]; //!< 8bit discretized X dimension of lower bounds of all N children
       unsigned char upper_x[N]; //!< 8bit discretized X dimension of upper bounds of all N children
