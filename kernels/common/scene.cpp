@@ -28,12 +28,12 @@
 namespace embree
 {
   /* error raising rtcIntersect and rtcOccluded functions */
-  void missing_rtcCommit()     { throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed"); }
-  void invalid_rtcIntersect1() { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect and rtcOccluded not enabled"); }
-  void invalid_rtcIntersect4() { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect4 and rtcOccluded4 not enabled"); }
-  void invalid_rtcIntersect8() { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect8 and rtcOccluded8 not enabled"); }
+  void missing_rtcCommit()      { throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed"); }
+  void invalid_rtcIntersect1()  { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect and rtcOccluded not enabled"); }
+  void invalid_rtcIntersect4()  { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect4 and rtcOccluded4 not enabled"); }
+  void invalid_rtcIntersect8()  { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect8 and rtcOccluded8 not enabled"); }
   void invalid_rtcIntersect16() { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect16 and rtcOccluded16 not enabled"); }
-  void invalid_rtcIntersectN() { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersectN and rtcOccludedN not enabled"); }
+  void invalid_rtcIntersectN()  { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersectN and rtcOccludedN not enabled"); }
 
  
 /* number of created scene */
@@ -206,6 +206,7 @@ namespace embree
 #if defined (__TARGET_AVX__)
     else if (device->tri_accel == "bvh4.triangle8")       accels.add(device->bvh4_factory->BVH4Triangle8(this));
     else if (device->tri_accel == "bvh8.triangle4")       accels.add(device->bvh8_factory->BVH8Triangle4(this));
+    else if (device->tri_accel == "qbvh8.triangle4")      accels.add(device->bvh8_factory->BVH8QuantizedTriangle4(this));
     else if (device->tri_accel == "bvh8.triangle8")       accels.add(device->bvh8_factory->BVH8Triangle8(this));
 #endif
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown triangle acceleration structure "+device->tri_accel);

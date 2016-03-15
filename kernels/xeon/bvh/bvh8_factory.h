@@ -41,6 +41,8 @@ namespace embree
     Accel* BVH8Triangle4ObjectSplit(Scene* scene);
     Accel* BVH8Triangle4SpatialSplit(Scene* scene);
 
+    Accel* BVH8QuantizedTriangle4(Scene* scene);
+
     Accel* BVH8Triangle8(Scene* scene);
     //Accel* BVH8Triangle8v(Scene* scene);
     Accel* BVH8Triangle8ObjectSplit(Scene* scene);
@@ -65,6 +67,7 @@ namespace embree
     Accel::Intersectors BVH8Quad4vIntersectors(BVH8* bvh);
     Accel::Intersectors BVH8Quad4iIntersectors(BVH8* bvh);
     Accel::Intersectors BVH8Quad4iMBIntersectors(BVH8* bvh);
+    Accel::Intersectors QBVH8Triangle4Intersectors(BVH8* bvh);
 
   private:
     DEFINE_SYMBOL2(Accel::Intersector1,BVH8Line4iIntersector1);
@@ -79,6 +82,7 @@ namespace embree
     DEFINE_SYMBOL2(Accel::Intersector1,BVH8Quad4iIntersector1Pluecker);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH8Quad4iMBIntersector1Pluecker);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH8GridAOSIntersector1);
+    DEFINE_SYMBOL2(Accel::Intersector1,QBVH8Triangle4Intersector1Moeller);
 
     DEFINE_SYMBOL2(Accel::Intersector4,BVH8Line4iIntersector4);
     DEFINE_SYMBOL2(Accel::Intersector4,BVH8Line4iMBIntersector4);
@@ -150,6 +154,8 @@ namespace embree
     DEFINE_BUILDER2(void,Scene,size_t,BVH8Quad4iSceneBuilderSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH8Quad4iMBSceneBuilderSAH);
     DEFINE_BUILDER2(void,QuadMesh,size_t,BVH8Quad4iMBMeshBuilderSAH);
+
+    DEFINE_BUILDER2(void,Scene,size_t,BVH8QuantizedTriangle4SceneBuilderSAH);
     
     DEFINE_BUILDER2(void,Scene,size_t,BVH8Triangle4SceneBuilderSpatialSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH8Triangle8SceneBuilderSpatialSAH);

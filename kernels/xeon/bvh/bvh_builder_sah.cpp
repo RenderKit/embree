@@ -67,6 +67,38 @@ namespace embree
       BVH* bvh;
       PrimRef* prims;
     };
+
+
+    template<int N, typename Primitive>
+    struct CreateLeafQuantized
+    {
+      typedef BVHN<N> BVH;
+
+      __forceinline CreateLeafQuantized (BVH* bvh, PrimRef* prims) : bvh(bvh), prims(prims) {}
+      
+      __forceinline size_t operator() (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc)
+      {
+        size_t n = current.prims.size();
+        size_t items = Primitive::blocks(n);
+        size_t start = current.prims.begin();
+        // todo alloc0/1 or alloc
+        Primitive* accel = (Primitive*) alloc->alloc0.malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
+        typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,items);
+        for (size_t i=0; i<items; i++) {
+          accel[i].fill(prims,start,current.prims.end(),bvh->scene,false);
+        }
+        //*current.parent = node;
+
+        typename BVH::QuantizedNode *parent = (typename BVH::QuantizedNode *)((size_t)current.parent & (~0x7));
+        const size_t index = (size_t)current.parent & 0x7;
+        parent->childOffset(index) = bvh->encodeQuantizedLeaf((size_t)parent,(size_t)node);
+        assert((ssize_t)node == (ssize_t)parent + parent->childOffset(index));
+	return n;
+      }
+
+      BVH* bvh;
+      PrimRef* prims;
+    };
     
     /************************************************************************************/ 
     /************************************************************************************/
@@ -181,6 +213,98 @@ namespace embree
 
 #if defined(__AVX__)
     Builder* BVH4Triangle8MeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVHNBuilderSAH<4,TriangleMesh,Triangle8>((BVH4*)bvh,mesh,4,1.0f,8,inf,mode); }
+#endif
+
+    /************************************************************************************/ 
+    /************************************************************************************/
+    /************************************************************************************/
+    /************************************************************************************/
+
+    template<int N, typename Mesh, typename Primitive>
+    struct BVHNBuilderSAHQuantized : public Builder
+    {
+      typedef BVHN<N> BVH;
+      BVH* bvh;
+      Scene* scene;
+      Mesh* mesh;
+      mvector<PrimRef> prims;
+      const size_t sahBlockSize;
+      const float intCost;
+      const size_t minLeafSize;
+      const size_t maxLeafSize;
+      const float presplitFactor;
+
+      BVHNBuilderSAHQuantized (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
+        : bvh(bvh), scene(scene), mesh(nullptr), prims(scene->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)),
+          presplitFactor((mode & MODE_HIGH_QUALITY) ? 1.5f : 1.0f) {}
+
+      BVHNBuilderSAHQuantized (BVH* bvh, Mesh* mesh, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
+        : bvh(bvh), scene(nullptr), mesh(mesh), prims(bvh->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)),
+          presplitFactor((mode & MODE_HIGH_QUALITY) ? 1.5f : 1.0f) {}
+
+      // FIXME: shrink bvh->alloc in destructor here and in other builders too
+
+      void build(size_t, size_t) 
+      {
+	/* skip build for empty scene */
+	const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,1>();
+        if (numPrimitives == 0) {
+          prims.clear();
+          bvh->clear();
+          return;
+        }
+
+        double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::QBVH" + toString(N) + "BuilderSAH");
+
+#if PROFILE
+        profile(2,PROFILE_RUNS,numPrimitives,[&] (ProfileTimer& timer) {
+#endif
+
+        /* create primref array */
+        const size_t numSplitPrimitives = max(numPrimitives,size_t(presplitFactor*numPrimitives));
+        prims.resize(numSplitPrimitives);
+        PrimInfo pinfo = mesh ? 
+          createPrimRefArray<Mesh>  (mesh ,prims,bvh->scene->progressInterface) : 
+          createPrimRefArray<Mesh,1>(scene,prims,bvh->scene->progressInterface);
+        
+        /* perform pre-splitting */
+        if (presplitFactor > 1.0f) 
+          pinfo = presplit<Mesh>(scene, pinfo, prims);
+        
+        /* call BVH builder */
+        bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
+        BVHNBuilderQuantized<N>::build(bvh,CreateLeafQuantized<N,Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
+
+#if PROFILE
+          }); 
+#endif	
+
+	/* clear temporary data for static geometry */
+	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
+	if (staticGeom) {
+          prims.clear();
+          bvh->shrink();
+        }
+	bvh->cleanup();
+        bvh->postBuild(t0);
+      }
+
+      void clear() {
+        prims.clear();
+      }
+    };
+
+    Builder* BVH4QuantizedTriangle4SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHQuantized<4,TriangleMesh,Triangle4>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
+    Builder* BVH4QuantizedTriangle4vSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHQuantized<4,TriangleMesh,Triangle4v>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
+    Builder* BVH4QuantizedTriangle4iSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHQuantized<4,TriangleMesh,Triangle4i>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
+    Builder* BVH4QuantizedQuad4vSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHQuantized<4,QuadMesh,Quad4v>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
+    Builder* BVH4QuantizedQuad4iSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHQuantized<4,QuadMesh,Quad4i>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
+#if defined(__AVX__)
+    Builder* BVH4QuantizedTriangle8SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHQuantized<4,TriangleMesh,Triangle8>((BVH4*)bvh,scene,4,1.0f,8,inf,mode); }
+    Builder* BVH8QuantizedTriangle4SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHQuantized<8,TriangleMesh,Triangle4>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
+    Builder* BVH8QuantizedTriangle8SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHQuantized<8,TriangleMesh,Triangle8>((BVH8*)bvh,scene,8,1.0f,8,inf,mode); }
+    Builder* BVH8QuantizedQuad4vSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHQuantized<8,QuadMesh,Quad4v>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
+    Builder* BVH8QuantizedQuad4iSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHQuantized<8,QuadMesh,Quad4i>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
 #endif
 
     /************************************************************************************/ 

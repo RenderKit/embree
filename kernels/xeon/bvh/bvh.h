@@ -34,6 +34,7 @@ namespace embree
     BVH_FLAG_UNALIGNED_NODE = 0x00100,
     BVH_FLAG_UNALIGNED_NODE_MB = 0x01000,
     BVH_FLAG_TRANSFORM_NODE = 0x10000,
+    BVH_FLAG_QUANTIZED_NODE = 0x100000,
 
     /* short versions */
     BVH_AN1 = BVH_FLAG_ALIGNED_NODE,
@@ -45,6 +46,7 @@ namespace embree
     BVH_AN2_UN2 = BVH_FLAG_ALIGNED_NODE_MB | BVH_FLAG_UNALIGNED_NODE_MB,
     BVH_TN_AN1 = BVH_FLAG_TRANSFORM_NODE | BVH_FLAG_ALIGNED_NODE,
     BVH_TN_AN1_AN2 = BVH_FLAG_TRANSFORM_NODE | BVH_FLAG_ALIGNED_NODE | BVH_FLAG_ALIGNED_NODE_MB,
+    BVH_QN1 = BVH_FLAG_QUANTIZED_NODE
   };
 
   /*! Multi BVH with N children. Each node stores the bounding box of
@@ -62,6 +64,7 @@ namespace embree
     struct UnalignedNode;
     struct UnalignedNodeMB;
     struct TransformNode;
+    struct QuantizedNode;
 
     /*! Number of bytes the nodes and primitives are minimally aligned to.*/
     static const size_t byteAlignment = 16;
@@ -80,6 +83,7 @@ namespace embree
     static const size_t tyUnalignedNode = 2;
     static const size_t tyUnalignedNodeMB = 3;
     static const size_t tyTransformNode = 4;
+    static const size_t tyQuantizedNode = 5;
     static const size_t tyLeaf = 8;
 
     /*! Empty node */
@@ -137,6 +141,41 @@ namespace embree
       BVHN* bvh;
     };
 
+    /*! Builder interface to create Node */
+    struct CreateQuantizedNode
+    {
+      __forceinline CreateQuantizedNode (BVHN* bvh) : bvh(bvh) {}
+
+      template<typename BuildRecord>
+      __forceinline Node* operator() (const BuildRecord& current, BuildRecord* children, const size_t n, FastAllocator::ThreadLocal2* alloc)
+      {
+        __aligned(64) Node node;
+        node.clear();
+        for (size_t i=0; i<n; i++) {
+          node.set(i,children[i].bounds());
+        }
+        QuantizedNode *qnode = (QuantizedNode*) alloc->alloc0.malloc(sizeof(QuantizedNode), byteNodeAlignment);
+
+        assert(((size_t)qnode & 0x7) == 0);
+
+        /* init quantized node first */
+        qnode->init(node);
+
+        for (size_t i=0; i<n; i++) {
+          children[i].parent = (size_t*)((size_t)qnode | i);
+        };
+
+        /* encode 64bit pointer as relative 32bit offset to parent node address */
+        QuantizedNode *parent = (QuantizedNode *)((size_t)current.parent & (~0x7));
+        const size_t index = (size_t)current.parent & 0x7;
+        assert(index < N);
+        parent->childOffset(index) = bvh->encodeQuantizedNode((size_t)parent,(size_t)qnode);
+        return NULL;
+      }
+
+      BVHN* bvh;
+    };
+
     struct NoRotate
     {
       __forceinline size_t operator() (Node* node, const size_t* counts, const size_t n) {
@@ -158,33 +197,38 @@ namespace embree
 
       /*! Prefetches the node this reference points to */
       __forceinline void prefetch(int types=0) const {
+        if (types != BVH_FLAG_QUANTIZED_NODE) {
+          prefetchL1(((char*)ptr)+0*64);
+          prefetchL1(((char*)ptr)+1*64);
+        } else {
 #if defined(__AVX512F__)
-        prefetchL1(((char*)ptr)+0*64);
-        prefetchL2(((char*)ptr)+1*64);
-        if ((N >= 8) || (types > BVH_FLAG_ALIGNED_NODE)) {
-          prefetchL2(((char*)ptr)+2*64);
-          prefetchL2(((char*)ptr)+3*64);
-        }
-        if ((N >= 8) && (types > BVH_FLAG_ALIGNED_NODE)) {
-          prefetchL2(((char*)ptr)+4*64);
-          prefetchL2(((char*)ptr)+5*64);
-          prefetchL2(((char*)ptr)+6*64);
-          prefetchL2(((char*)ptr)+7*64);
-        }
+          prefetchL1(((char*)ptr)+0*64);
+          prefetchL2(((char*)ptr)+1*64);
+          if ((N >= 8) || (types > BVH_FLAG_ALIGNED_NODE)) {
+            prefetchL2(((char*)ptr)+2*64);
+            prefetchL2(((char*)ptr)+3*64);
+          }
+          if ((N >= 8) && (types > BVH_FLAG_ALIGNED_NODE)) {
+            prefetchL2(((char*)ptr)+4*64);
+            prefetchL2(((char*)ptr)+5*64);
+            prefetchL2(((char*)ptr)+6*64);
+            prefetchL2(((char*)ptr)+7*64);
+          }
 #else
-        prefetchL1(((char*)ptr)+0*64);
-        prefetchL1(((char*)ptr)+1*64);
-        if ((N >= 8) || (types > BVH_FLAG_ALIGNED_NODE)) {
-          prefetchL1(((char*)ptr)+2*64);
-          prefetchL1(((char*)ptr)+3*64);
-        }
-        if ((N >= 8) && (types > BVH_FLAG_ALIGNED_NODE)) {
-          prefetchL1(((char*)ptr)+4*64);
-          prefetchL1(((char*)ptr)+5*64);
-          prefetchL1(((char*)ptr)+6*64);
-          prefetchL1(((char*)ptr)+7*64);
-        }
+          prefetchL1(((char*)ptr)+0*64);
+          prefetchL1(((char*)ptr)+1*64);
+          if ((N >= 8) || (types > BVH_FLAG_ALIGNED_NODE)) {
+            prefetchL1(((char*)ptr)+2*64);
+            prefetchL1(((char*)ptr)+3*64);
+          }
+          if ((N >= 8) && (types > BVH_FLAG_ALIGNED_NODE)) {
+            prefetchL1(((char*)ptr)+4*64);
+            prefetchL1(((char*)ptr)+5*64);
+            prefetchL1(((char*)ptr)+6*64);
+            prefetchL1(((char*)ptr)+7*64);
+          }
 #endif
+        }
       }
 
       __forceinline void prefetchLLC(int types=0) const {
@@ -202,29 +246,6 @@ namespace embree
         }
       }
 
-      __forceinline void prefetchL1C(int types=0) const {
-#if defined(__AVX512F__)
-        //embree::prefetchL1(((char*)ptr)+0*64);
-        embree::prefetchL1(((char*)ptr)+1*64);
-        if ((N >= 8) || (types > BVH_FLAG_ALIGNED_NODE)) {
-          embree::prefetchL1(((char*)ptr)+2*64);
-          embree::prefetchL1(((char*)ptr)+3*64);
-        }
-#else
-        embree::prefetchL1(((char*)ptr)+0*64);
-        embree::prefetchL1(((char*)ptr)+1*64);
-        if ((N >= 8) || (types > BVH_FLAG_ALIGNED_NODE)) {
-          embree::prefetchL1(((char*)ptr)+2*64);
-          embree::prefetchL1(((char*)ptr)+3*64);
-        }
-        if ((N >= 8) && (types > BVH_FLAG_ALIGNED_NODE)) {
-          embree::prefetchL1(((char*)ptr)+4*64);
-          embree::prefetchL1(((char*)ptr)+5*64);
-          embree::prefetchL1(((char*)ptr)+6*64);
-          embree::prefetchL1(((char*)ptr)+7*64);
-        }
-#endif
-      }
 
       __forceinline void prefetchW(int types=0) const {
         embree::prefetchEX(((char*)ptr)+0*64);
@@ -272,6 +293,10 @@ namespace embree
       __forceinline int isTransformNode() const { return (ptr & (size_t)align_mask) == tyTransformNode; }
       __forceinline int isTransformNode(int types) const { return (types == BVH_FLAG_TRANSFORM_NODE) || ((types & BVH_FLAG_TRANSFORM_NODE) && isTransformNode()); }
 
+
+      /*! checks if this is a quantized node */
+      __forceinline int isQuantizedNode() const { return (ptr & (size_t)align_mask) == tyQuantizedNode; }
+
       /*! returns base node pointer */
       __forceinline BaseNode* baseNode(int types)
       {
@@ -313,6 +338,10 @@ namespace embree
       /*! returns transformation pointer */
       __forceinline       TransformNode* transformNode()       { assert(isTransformNode()); return (      TransformNode*)(ptr & ~(size_t)align_mask); }
       __forceinline const TransformNode* transformNode() const { assert(isTransformNode()); return (const TransformNode*)(ptr & ~(size_t)align_mask); }
+
+      /*! returns quantized node pointer */
+      __forceinline       QuantizedNode* quantizedNode()       { assert(isQuantizedNode()); return (      QuantizedNode*)(ptr & ~(size_t)align_mask); }
+      __forceinline const QuantizedNode* quantizedNode() const { assert(isQuantizedNode()); return (const QuantizedNode*)(ptr & ~(size_t)align_mask); }
 
       /*! returns leaf pointer */
       __forceinline char* leaf(size_t& num) const {
@@ -714,6 +743,174 @@ namespace embree
       unsigned int type;
     };
 
+
+    /*! BVHN Quantized Node */
+    struct __aligned(32) QuantizedNode
+    {
+      static const unsigned char MIN_QUAN_8BIT = 0;
+      static const unsigned char MAX_QUAN_8BIT = 255;
+
+      /*! Clears the node. */
+      __forceinline void clear() {
+        for (size_t i=0; i<N; i++) children[i] = emptyNode;
+        for (size_t i=0; i<N; i++) lower_x[i] = lower_y[i] = lower_z[i] = MAX_QUAN_8BIT;
+        for (size_t i=0; i<N; i++) upper_x[i] = upper_y[i] = upper_z[i] = MIN_QUAN_8BIT;
+      }
+
+        /*! Returns NodeRef to specified child which is combined from 64bit this pointer + 32bit offset*/
+      __forceinline       NodeRef child(size_t i)       { assert(i<N); assert(children[i] != emptyNode); return ((ssize_t)this + children[i]); }
+      __forceinline const NodeRef child(size_t i) const { assert(i<N); assert(children[i] != emptyNode); return ((ssize_t)this + children[i]); }
+
+      __forceinline       int& childOffset(size_t i)       { assert(i<N); return children[i]; }
+      __forceinline const int& childOffset(size_t i) const { assert(i<N); return children[i]; }
+
+      /*! verifies the node */
+      __forceinline bool verify() const
+      {
+        for (size_t i=0; i<N; i++) {
+          if (childOffset(i) == BVHN::emptyNode) {
+            for (; i<N; i++) {
+              if (childOffset(i) != BVHN::emptyNode)
+                return false;
+            }
+            break;
+          }
+        }
+        return true;
+      }
+
+      /*! Returns bounds of specified child. */
+      __forceinline BBox3fa bounds(size_t i) const
+      {
+        assert(i < N);
+        const Vec3fa lower(start.x + scale.x * (float)lower_x[i],
+                           start.y + scale.y * (float)lower_y[i],
+                           start.z + scale.z * (float)lower_z[i]);
+        const Vec3fa upper(start.x + scale.x * (float)upper_x[i],
+                           start.y + scale.y * (float)upper_y[i],
+                           start.z + scale.z * (float)upper_z[i]);
+        return BBox3fa(lower,upper);
+      }
+
+
+      /*! Returns extent of bounds of specified child. */
+      __forceinline Vec3fa extend(size_t i) const {
+        return bounds(i).size();
+      }
+
+
+      static __forceinline void init_dim(const vfloat<N> &lower,
+                                         const vfloat<N> &upper,
+                                         unsigned char lower_quant[N],
+                                         unsigned char upper_quant[N],
+                                         float &start,
+                                         float &scale)
+      {
+        const vbool<N> m_valid = lower != vfloat<N>(pos_inf);
+        const float minF = reduce_min(lower);
+        const float maxF = reduce_max(upper);
+        float diff = maxF - minF; //todo: add extracted difference here
+        float scale_diff = diff / 255.0f;
+
+        /* accomodate floating point accuracy issues in 'diff' */
+        size_t iterations = 0;
+        while(minF + scale_diff * 255.0f < maxF)
+        {
+          diff = nextafterf(diff, FLT_MAX);
+          scale_diff = diff / 255.0f;
+          iterations++;
+        }
+        const float inv_diff   = 255.0f / diff;
+
+        vfloat<N> floor_lower = floor(  (lower - vfloat<N>(minF)) * vfloat<N>(inv_diff) );
+        vfloat<N> ceil_upper  = ceil (  (upper - vfloat<N>(minF)) * vfloat<N>(inv_diff) );
+        vint<N> i_floor_lower( floor_lower );
+        vint<N> i_ceil_upper ( ceil_upper  );     
+
+        /* lower/upper correction */
+        vbool<N> m_lower_correction = ((minF + vfloat<N>(i_floor_lower) * scale_diff) > lower) & m_valid;        
+        vbool<N> m_upper_correction = ((minF + vfloat<N>(i_ceil_upper) * scale_diff) < upper) & m_valid;        
+        i_floor_lower  = select(m_lower_correction,i_floor_lower-1,i_floor_lower);
+        i_ceil_upper   = select(m_upper_correction,i_ceil_upper +1,i_ceil_upper);
+        
+        /* disable invalid lanes */
+        i_floor_lower = select(m_valid,i_floor_lower,255);
+        i_ceil_upper  = select(m_valid,i_ceil_upper ,0);
+
+        /* store as uchar to memory */
+        vint<N>::store_uchar(lower_quant,i_floor_lower);
+        vint<N>::store_uchar(upper_quant,i_ceil_upper);
+        start = minF;
+        scale = scale_diff;
+
+#if DEBUG
+        vfloat<N> extract_lower( vint<N>::load(lower_quant) );
+        vfloat<N> extract_upper( vint<N>::load(upper_quant) );
+        vfloat<N> final_extract_lower = minF + extract_lower * scale_diff;
+        vfloat<N> final_extract_upper = minF + extract_upper * scale_diff;
+#if 0        
+        PING;
+        PRINT(lower);
+        PRINT(upper);
+        PRINT(minF);
+        PRINT(maxF);        
+        PRINT(i_floor_lower);
+        PRINT(i_ceil_upper);        
+        PRINT(vint<N>::load(lower_quant));
+        PRINT(vint<N>::load(upper_quant));        
+        PRINT(final_extract_lower);
+        PRINT(final_extract_upper);
+        PRINT(final_extract_lower <= lower);
+        PRINT(final_extract_upper >= upper);
+        PRINT(m_valid);
+        PRINT(iterations);
+        PRINT(m_lower_correction);
+        PRINT(m_upper_correction);
+        vfloat<N> e_upper = minF + scale_diff * vfloat<N>(255.0f);
+        assert(all(e_upper >= maxF));
+        assert(iterations <= 4);
+ 
+#endif        
+        assert( (movemask(final_extract_lower <= lower ) & movemask(m_valid)) == movemask(m_valid));
+        assert( (movemask(final_extract_upper >= upper ) & movemask(m_valid)) == movemask(m_valid)); 
+#endif        
+      }
+                                         
+                                         
+      
+      
+      __forceinline void init(Node &node)
+      {
+        for (size_t i=0;i<N;i++) children[i] = emptyNode;
+        init_dim(node.lower_x,node.upper_x,lower_x,upper_x,start.x,scale.x);
+        init_dim(node.lower_y,node.upper_y,lower_y,upper_y,start.y,scale.y);
+        init_dim(node.lower_z,node.upper_z,lower_z,upper_z,start.z,scale.z);        
+      }
+
+      __forceinline vfloat<N> dequantizeLowerX() const { return vfloat<N>(start.x) + vfloat<N>(vint<N>::load(lower_x)) * scale.x; }
+      __forceinline vfloat<N> dequantizeUpperX() const { return vfloat<N>(start.x) + vfloat<N>(vint<N>::load(upper_x)) * scale.x; }
+      __forceinline vfloat<N> dequantizeLowerY() const { return vfloat<N>(start.y) + vfloat<N>(vint<N>::load(lower_y)) * scale.y; }
+      __forceinline vfloat<N> dequantizeUpperY() const { return vfloat<N>(start.y) + vfloat<N>(vint<N>::load(upper_y)) * scale.y; }
+      __forceinline vfloat<N> dequantizeLowerZ() const { return vfloat<N>(start.z) + vfloat<N>(vint<N>::load(lower_z)) * scale.z; }
+      __forceinline vfloat<N> dequantizeUpperZ() const { return vfloat<N>(start.z) + vfloat<N>(vint<N>::load(upper_z)) * scale.z; }
+
+      __forceinline vfloat<N> dequantizeX(const size_t offset) const { return vfloat<N>(start.x) + vfloat<N>(vint<N>::load(lower_x+offset)) * scale.x; }
+      __forceinline vfloat<N> dequantizeY(const size_t offset) const { return vfloat<N>(start.y) + vfloat<N>(vint<N>::load(lower_x+offset)) * scale.y; }
+      __forceinline vfloat<N> dequantizeZ(const size_t offset) const { return vfloat<N>(start.z) + vfloat<N>(vint<N>::load(lower_x+offset)) * scale.z; }
+
+
+      unsigned char lower_x[N]; //!< 8bit discretized X dimension of lower bounds of all N children
+      unsigned char upper_x[N]; //!< 8bit discretized X dimension of upper bounds of all N children
+      unsigned char lower_y[N]; //!< 8bit discretized Y dimension of lower bounds of all N children
+      unsigned char upper_y[N]; //!< 8bit discretized Y dimension of upper bounds of all N children
+      unsigned char lower_z[N]; //!< 8bit discretized Z dimension of lower bounds of all N children
+      unsigned char upper_z[N]; //!< 8bit discretized Z dimension of upper bounds of all N children
+      int children[N]; //!< signed 32bit offset to the N children (can be a node or leaf)
+      Vec3f start;
+      Vec3f scale;
+    };
+
+
     /*! swap the children of two nodes */
     __forceinline static void swap(Node* a, size_t i, Node* b, size_t j)
     {
@@ -818,6 +1015,18 @@ namespace embree
     static __forceinline NodeRef encodeNode(Node* node) {
       assert(!((size_t)node & align_mask));
       return NodeRef((size_t) node);
+    }
+
+    static __forceinline unsigned int encodeQuantizedNode(size_t base, size_t node) {
+      assert(!((size_t)node & align_mask));
+      ssize_t node_offset = (ssize_t)node-(ssize_t)base;
+      assert(node_offset != 0);
+      return (unsigned int)node_offset | tyQuantizedNode;
+    }
+
+    static __forceinline int encodeQuantizedLeaf(size_t base, size_t node) {
+      ssize_t leaf_offset = (ssize_t)node-(ssize_t)base;
+      return (int)leaf_offset;
     }
 
     /*! Encodes a node */
