@@ -161,6 +161,8 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
 Vec3f ambientOcclusionShading(int x, int y, RTCRay& ray)
 {
   Vec3f Ng = normalize(ray.Ng);
+  if (dot(ray.dir,Ng) > 0.0f) Ng = neg(Ng);
+
   Vec3f col = make_Vec3f(min(1.0f,0.3f+0.8f*abs(dot(Ng,normalize(ray.dir)))));
 
   /* calculate hit point */
@@ -195,8 +197,10 @@ Vec3f ambientOcclusionShading(int x, int y, RTCRay& ray)
 #if USE_STREAM_INTERFACE
   rtcOccludedN(g_scene,rays,AMBIENT_OCCLUSION_SAMPLES,sizeof(RTCRay),0);
 #else
-  for (uniform size_t i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
+  for (uniform size_t i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++) {
     rtcOccluded(g_scene,rays[i]);
+    //rtcOccludedN(g_scene,&rays[i],1,sizeof(RTCRay));
+  }
 #endif
 
   /* accumulate illumination */
@@ -254,8 +258,10 @@ void renderTileStandard(uniform int taskIndex,
 #if USE_STREAM_INTERFACE
   rtcIntersectN(g_scene,rays,N,sizeof(RTCRay),0);
 #else
-  for (uniform size_t i=0; i<N; i++)
+  for (uniform size_t i=0; i<N; i++) {
     rtcIntersect(g_scene,rays[i]);
+    //rtcIntersectN(g_scene,&rays[i],1,sizeof(RTCRay));
+  }
 #endif
 
   /* shade stream of rays */
