@@ -19,8 +19,6 @@
 #include "../scenegraph/texture.h"
 #include "scene_device.h"
 
-#define TEST_STREAM_TRACING 0 // FIXME: remove
-
 /* the scene to render */
 extern RTCScene g_scene;
 
@@ -468,75 +466,38 @@ Vec3fa renderPixelAmbientOcclusion(float x, float y, const Vec3fa& vx, const Vec
 
 #define AMBIENT_OCCLUSION_SAMPLES 64
 
-#if TEST_STREAM_TRACING == 1
-
-  RTCRay rays[AMBIENT_OCCLUSION_SAMPLES];
-
-  int seed = 34*x+12*y;
-  for (int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++) 
-     {
-      Vec3fa dir; 
-      const float oneOver10000f = 1.f/10000.f;
-      seed = 1103515245 * seed + 12345;
-      dir.x = (seed%10000)*oneOver10000f;
-      seed = 1103515245 * seed + 12345;
-      dir.y = (seed%10000)*oneOver10000f;
-      seed = 1103515245 * seed + 12345;
-      dir.z = (seed%10000)*oneOver10000f;
-    
-      /* initialize shadow ray */
-      RTCRay &shadow = rays[i];
-      shadow.org = hitPos;
-      shadow.dir = dir;
-      shadow.tnear = 0.001f;
-      shadow.tfar = inf;
-      shadow.geomID = RTC_INVALID_GEOMETRY_ID;
-      shadow.primID = RTC_INVALID_GEOMETRY_ID;
-      shadow.mask = -1;
-      shadow.time = 0;    
-     }
-
-  rtcOccludedN(g_scene,rays,AMBIENT_OCCLUSION_SAMPLES,sizeof(RTCRay));
-  //rtcIntersectN(g_scene,rays,AMBIENT_OCCLUSION_SAMPLES,sizeof(RTCRay));
-
-    for (int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++) 
-      if (rays[i].geomID == RTC_INVALID_GEOMETRY_ID)
-        intensity += 1.0f;   
-
-#else
   /* trace some ambient occlusion rays */
   int seed = 34*x+12*y;
   for (int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++) 
-     {
-      Vec3fa dir; 
-      const float oneOver10000f = 1.f/10000.f;
-      seed = 1103515245 * seed + 12345;
-      dir.x = (seed%10000)*oneOver10000f;
-      seed = 1103515245 * seed + 12345;
-      dir.y = (seed%10000)*oneOver10000f;
-      seed = 1103515245 * seed + 12345;
-      dir.z = (seed%10000)*oneOver10000f;
+  {
+    Vec3fa dir; 
+    const float oneOver10000f = 1.f/10000.f;
+    seed = 1103515245 * seed + 12345;
+    dir.x = (seed%10000)*oneOver10000f;
+    seed = 1103515245 * seed + 12345;
+    dir.y = (seed%10000)*oneOver10000f;
+    seed = 1103515245 * seed + 12345;
+    dir.z = (seed%10000)*oneOver10000f;
     
-      /* initialize shadow ray */
-      RTCRay shadow;
-      shadow.org = hitPos;
-      shadow.dir = dir;
-      shadow.tnear = 0.001f;
-      shadow.tfar = inf;
-      shadow.geomID = RTC_INVALID_GEOMETRY_ID;
-      shadow.primID = RTC_INVALID_GEOMETRY_ID;
-      shadow.mask = -1;
-      shadow.time = 0;
+    /* initialize shadow ray */
+    RTCRay shadow;
+    shadow.org = hitPos;
+    shadow.dir = dir;
+    shadow.tnear = 0.001f;
+    shadow.tfar = inf;
+    shadow.geomID = RTC_INVALID_GEOMETRY_ID;
+    shadow.primID = RTC_INVALID_GEOMETRY_ID;
+    shadow.mask = -1;
+    shadow.time = 0;
     
-      /* trace shadow ray */
-      rtcOccluded(g_scene,shadow);
-      //rtcIntersect(g_scene,shadow);
+    /* trace shadow ray */
+    rtcOccluded(g_scene,shadow);
     
-      /* add light contribution */
-      if (shadow.geomID == RTC_INVALID_GEOMETRY_ID)
-        intensity += 1.0f;   
-     }
-#endif
+    /* add light contribution */
+    if (shadow.geomID == RTC_INVALID_GEOMETRY_ID)
+      intensity += 1.0f;   
+  }
+
   intensity *= 1.0f/AMBIENT_OCCLUSION_SAMPLES;
 
   /* shade pixel */

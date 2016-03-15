@@ -53,7 +53,7 @@ extern "C" void ispcOccluded1 (RTCScene scene, uniform RTCRay1& ray);
 extern "C" void ispcOccluded4 (void* uniform valid, RTCScene scene, void* uniform ray);
 extern "C" void ispcOccluded8 (void* uniform valid, RTCScene scene, void* uniform ray);
 extern "C" void ispcOccluded16 (void* uniform valid, RTCScene scene, void* uniform ray);
-extern "C" void ispcOccludedN (RTCScene scene, void* uniform rayN, const uniform size_t N, const uniform size_t stride, const uniform size_t flags);
+extern "C" void ispcOccluded1N (RTCScene scene, void* uniform rayN, const uniform size_t N, const uniform size_t stride, const uniform size_t flags);
 extern "C" void ispcOccludedN_SOA (RTCScene scene, uniform RTCRaySOA& rayN, const uniform size_t N, const uniform size_t streams, const uniform size_t offset, const uniform size_t flags);
 
 extern "C" void ispcDeleteScene (RTCScene scene);
@@ -334,13 +334,18 @@ void rtcOccluded (RTCScene scene, varying RTCRay& ray)
 }
 
 
-void rtcOccludedN (RTCScene scene, uniform RTCRay* uniform rayN, const uniform size_t N, const uniform size_t stride, const uniform size_t flags)
-{
-  ispcOccludedN(scene,rayN,N,stride,flags);
+void rtcOccluded1N (RTCScene scene, uniform RTCRay1* uniform rayN, const uniform size_t N, const uniform size_t stride, const uniform size_t flags) {
+  ispcOccluded1N(scene,rayN,N,stride,flags);
 }
 
-void rtcOccludedN_SOA (RTCScene scene, uniform RTCRaySOA& rayN, const uniform size_t N, const uniform size_t streams, const uniform size_t offset, const uniform size_t flags)
+void rtcOccludedN (RTCScene scene, varying RTCRay* uniform rayN, const uniform size_t N, const uniform size_t stride, const uniform size_t flags) 
 {
+  uniform RTCRaySOA ray_soa;
+  initRTCRaySOA(ray_soa,rayN[0]);
+  ispcOccludedN_SOA(scene,ray_soa,sizeof(varying float)/4,N,stride,flags);
+}
+
+void rtcOccludedN_SOA (RTCScene scene, uniform RTCRaySOA& rayN, const uniform size_t N, const uniform size_t streams, const uniform size_t offset, const uniform size_t flags) {
   ispcOccludedN_SOA(scene,rayN,N,streams,offset,flags);
 }
 

@@ -17,6 +17,9 @@
 #include "../common/tutorial/tutorial_device.h"
 #include "../common/tutorial/scene_device.h"
 #include "../common/tutorial/random_sampler.h"
+#include "../pathtracer/shapesampler.h"
+
+#define AMBIENT_OCCLUSION_SAMPLES 64
 
 extern "C" ISPCScene* g_ispc_scene;
 
@@ -153,6 +156,53 @@ RTCScene convertScene(ISPCScene* scene_in)
   return scene_out;
 }
 
+/* renders a single pixel casting with ambient occlusion */
+Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
+{
+  Vec3fa Ng = normalize(ray.Ng);
+  Vec3fa col = Vec3fa(min(1.0f,0.3f+0.8f*abs(dot(Ng,normalize(ray.dir)))));
+
+  /* calculate hit point */
+  float intensity = 0;
+  Vec3fa hitPos = ray.org + ray.tfar * ray.dir;
+
+  RTCRay rays[AMBIENT_OCCLUSION_SAMPLES];
+
+  RandomSampler sampler;
+  RandomSampler_init(sampler,x,y,0);
+  
+  for (int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
+  {
+    /* sample random direction */
+    float sx = RandomSampler_get1D(sampler);
+    float sy = RandomSampler_get1D(sampler);
+    Sample3f dir = cosineSampleHemisphere(sx,sy,Ng);
+
+    /* initialize shadow ray */
+    RTCRay& shadow = rays[i];
+    shadow.org = hitPos;
+    shadow.dir = dir.v;
+    shadow.tnear = 0.001f;
+    shadow.tfar = inf;
+    shadow.geomID = RTC_INVALID_GEOMETRY_ID;
+    shadow.primID = RTC_INVALID_GEOMETRY_ID;
+    shadow.mask = -1;
+    shadow.time = 0;    // FIXME: invalidate inactive rays
+  } 
+  
+  /* trace occlusion rays */
+  rtcOccludedN(g_scene,rays,AMBIENT_OCCLUSION_SAMPLES,sizeof(RTCRay),0);
+
+  /* accumulate illumination */
+  for (int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++) {
+    if (rays[i].geomID == RTC_INVALID_GEOMETRY_ID)
+      intensity += 1.0f;   
+  }
+  
+  /* shade pixel */
+  return col * (intensity/AMBIENT_OCCLUSION_SAMPLES);
+}
+
 /* renders a single screen tile */
 void renderTileStandard(int taskIndex, 
                         int* pixels,
@@ -181,7 +231,7 @@ void renderTileStandard(int taskIndex,
   {
     RandomSampler sampler;
     RandomSampler_init(sampler, x, y, 0);
-
+    
     /* initialize ray */
     RTCRay& ray = rays[packets];
     ray.org = p;
@@ -192,7 +242,7 @@ void renderTileStandard(int taskIndex,
     ray.primID = RTC_INVALID_GEOMETRY_ID;
     ray.mask = -1;
     ray.time = RandomSampler_get1D(sampler);
-    packets++;
+    packets++; // FIXME: make invalid rays empty
   }
 
   /* trace stream of rays */
@@ -207,7 +257,8 @@ void renderTileStandard(int taskIndex,
     /* eyelight shading */
     Vec3fa color = Vec3fa(0.0f);
     if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
-      color = Vec3fa(abs(dot(ray.dir,normalize(ray.Ng))));
+      //color = Vec3fa(abs(dot(ray.dir,normalize(ray.Ng))));
+      color = ambientOcclusionShading(x,y,ray);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
