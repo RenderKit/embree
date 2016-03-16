@@ -31,8 +31,6 @@ uniform bool g_subdiv_mode = false;
 
 #define SPP 1
 
-#define TEST_STREAM_INTERFACE 0
-
 //#define FORCE_FIXED_EDGE_TESSELLATION
 #define FIXED_EDGE_TESSELLATION_VALUE 3
 
@@ -112,9 +110,6 @@ void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa&
   }
 }
 
-/* render function to use */
-renderPixelFunc renderPixel;
-
 /* error reporting function */
 unmasked void error_handler(const uniform RTCError code, const uniform int8* uniform str = NULL)
 {
@@ -145,25 +140,6 @@ void device_key_pressed(uniform int key)
   //print("key = %\n",key);
   if (key == 115 /*c*/) g_use_smooth_normals = !g_use_smooth_normals;
   else device_key_pressed_default(key);
-}
-
-Vec3fa renderPixelEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
-
-
-/* called by the C++ code for initialization */
-export void device_init (uniform int8* uniform cfg)
-{
-  /* create new Embree device */
-  g_device = rtcNewDevice(cfg);
-  error_handler(rtcDeviceGetError(g_device));
-
-  /* set error handler */
-  rtcDeviceSetErrorFunction(g_device,error_handler);
-
-  /* set start render mode */
-  renderPixel = renderPixelStandard;
-  //renderPixel = renderPixelEyeLight;	
-  key_pressed_handler = device_key_pressed;
 }
 
 uniform unsigned int convertTriangleMesh(uniform ISPCTriangleMesh* uniform mesh, RTCScene scene_out)
@@ -593,18 +569,18 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
   return color*dot(neg(ray.dir),dg.Ns);
 }
 
-
-/* task that renders a single screen tile */
-task void renderTile(uniform int* uniform pixels,
-                     const uniform int width,
-                     const uniform int height, 
-                     const uniform float time,
-                     const uniform Vec3f& vx, 
-                     const uniform Vec3f& vy, 
-                     const uniform Vec3f& vz, 
-                     const uniform Vec3f& p,
-                     const uniform int numTilesX, 
-                     const uniform int numTilesY)
+/* renders a single screen tile */
+void renderTileStandard(uniform int taskIndex, 
+                        uniform int* uniform pixels,
+                        const uniform int width,
+                        const uniform int height, 
+                        const uniform float time,
+                        const uniform Vec3f& vx, 
+                        const uniform Vec3f& vy, 
+                        const uniform Vec3f& vz, 
+                        const uniform Vec3f& p,
+                        const uniform int numTilesX, 
+                        const uniform int numTilesY)
 {
   const uniform int t = taskIndex;
   const uniform int tileY = t / numTilesX;
@@ -614,48 +590,9 @@ task void renderTile(uniform int* uniform pixels,
   const uniform int y0 = tileY * TILE_SIZE_Y;
   const uniform int y1 = min(y0+TILE_SIZE_Y,height);
 
-#if TEST_STREAM_INTERFACE == 1
-  RTCRay rays[8];
-  uniform int packets = 0;
-  uniform RTCRaySOA ray_soa;
-  initRTCRaySOA(ray_soa,rays[0]);
-
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
-    RandomSampler sampler;
-    RandomSampler_init(sampler, x, y, 0);
-
-    /* initialize ray */
-    RTCRay &ray = rays[packets];
-    ray.org = p;
-    ray.dir = normalize(x*vx + y*vy + vz);
-    ray.tnear = 0.0f;
-    ray.tfar = inf;
-    ray.geomID = RTC_INVALID_GEOMETRY_ID;
-    ray.primID = RTC_INVALID_GEOMETRY_ID;
-    ray.mask = -1;
-    ray.time = RandomSampler_get1D(sampler);
-    packets++;
-  }
-  rtcIntersectN_SOA(g_scene,ray_soa,8,8,sizeof(RTCRay),0);
-
-  packets = 0;
-  foreach_tiled (y = y0 ... y1, x = x0 ... x1)
-  {
-    RTCRay &ray = rays[packets++];
-    Vec3f color = make_Vec3f(0.0f);
-    if (ray.geomID != RTC_INVALID_GEOMETRY_ID) color = make_Vec3f(abs(dot(ray.dir,normalize(ray.Ng))));
-    /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;
-  }
-#else
-
-  foreach_tiled (y = y0 ... y1, x = x0 ... x1)
-  {
-    Vec3f color = renderPixel(x,y,vx,vy,vz,p);
+    Vec3f color = renderPixelStandard(x,y,vx,vy,vz,p);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -663,12 +600,44 @@ task void renderTile(uniform int* uniform pixels,
     unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
     pixels[y*width+x] = (b << 16) + (g << 8) + r;
   }
+}
 
-#endif
-
+/* task that renders a single screen tile */
+task void renderTileTask(uniform int* uniform pixels,
+                         const uniform int width,
+                         const uniform int height, 
+                         const uniform float time,
+                         const uniform Vec3f& vx, 
+                         const uniform Vec3f& vy, 
+                         const uniform Vec3f& vz, 
+                         const uniform Vec3f& p,
+                         const uniform int numTilesX, 
+                         const uniform int numTilesY)
+{
+  renderTile(taskIndex,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY);
 }
 
 uniform Vec3f old_p; 
+
+/* called by the C++ code for initialization */
+export void device_init (uniform int8* uniform cfg)
+{
+  /* create new Embree device */
+  g_device = rtcNewDevice(cfg);
+  error_handler(rtcDeviceGetError(g_device));
+
+  /* set error handler */
+  rtcDeviceSetErrorFunction(g_device,error_handler);
+
+  /* set start render mode */
+  renderTile = renderTileStandard;
+  key_pressed_handler = device_key_pressed;
+
+  /* create scene */
+  g_scene = convertScene(g_ispc_scene);
+  rtcCommit (g_scene);
+  old_p = make_Vec3f(1E10);
+}
 
 /* called by the C++ code to render */
 export void device_render (uniform int* uniform pixels,
@@ -682,24 +651,11 @@ export void device_render (uniform int* uniform pixels,
 {
   uniform Vec3fa cam_org = make_Vec3fa(p.x,p.y,p.z);
 
-  /* create scene */
-  if (g_scene == NULL) { 
-    g_scene = convertScene(g_ispc_scene);
-
-#if !defined(FORCE_FIXED_EDGE_TESSELLATION)
-    if (g_subdiv_mode)
-      updateEdgeLevels(g_ispc_scene, cam_org);
-#endif
-    old_p = p;
-    rtcCommit (g_scene);
-  }
-
   uniform bool camera_changed = g_changed; g_changed = false;
-  if ((p.x != old_p.x || p.y != old_p.y || p.z != old_p.z))
-    {
-     camera_changed = true;
-     old_p = p;
-    } 
+  if ((p.x != old_p.x || p.y != old_p.y || p.z != old_p.z)) {
+    camera_changed = true;
+    old_p = p;
+  } 
 
   if (camera_changed) {
 #if !defined(FORCE_FIXED_EDGE_TESSELLATION)
@@ -715,7 +671,7 @@ export void device_render (uniform int* uniform pixels,
   /* render image */
   const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  launch[numTilesX*numTilesY] renderTile(pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); sync;
+  launch[numTilesX*numTilesY] renderTileTask(pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); sync;
   //rtcDebug();
 }
 

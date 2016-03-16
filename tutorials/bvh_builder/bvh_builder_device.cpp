@@ -22,9 +22,6 @@
 RTCDevice g_device = nullptr;
 RTCScene g_scene  = nullptr;
 
-/* render function to use */
-renderPixelFunc renderPixel;
-
 /* error reporting function */
 void error_handler(const RTCError code, const char* str = NULL)
 {
@@ -243,7 +240,7 @@ extern "C" void device_init (char* cfg)
   rtcDeviceSetErrorFunction(g_device,error_handler);
   
   /* set start render mode */
-  renderPixel = renderPixelStandard;
+  renderTile = renderTileStandard;
 
   /* create random bounding boxes */
   const size_t N = 2300000;
@@ -262,56 +259,43 @@ extern "C" void device_init (char* cfg)
 }
 
 /* task that renders a single screen tile */
-Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
+void renderTileStandard(int taskIndex, int* pixels,
+                        const int width,
+                        const int height, 
+                        const float time,
+                        const Vec3fa& vx, 
+                        const Vec3fa& vy, 
+                        const Vec3fa& vz, 
+                        const Vec3fa& p,
+                        const int numTilesX, 
+                        const int numTilesY)
 {
-  return Vec3fa(zero);
 }
 
 /* task that renders a single screen tile */
-void renderTile(int taskIndex, int* pixels,
-                     const int width,
-                     const int height, 
-                     const float time,
-                     const Vec3fa& vx, 
-                     const Vec3fa& vy, 
-                     const Vec3fa& vz, 
-                     const Vec3fa& p,
-                     const int numTilesX, 
-                     const int numTilesY)
-{
-  const int tileY = taskIndex / numTilesX;
-  const int tileX = taskIndex - tileY * numTilesX;
-  const int x0 = tileX * TILE_SIZE_X;
-  const int x1 = min(x0+TILE_SIZE_X,width);
-  const int y0 = tileY * TILE_SIZE_Y;
-  const int y1 = min(y0+TILE_SIZE_Y,height);
-
-  for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
-  {
-    /* calculate pixel color */
-    Vec3fa color = renderPixel(x,y,vx,vy,vz,p);
-    
-    /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;
-  }
-}
-
-/* called by the C++ code to render */
-extern "C" void device_render (int* pixels,
+void renderTileTask(int taskIndex, int* pixels,
                     const int width,
-                    const int height,
+                    const int height, 
                     const float time,
                     const Vec3fa& vx, 
                     const Vec3fa& vy, 
                     const Vec3fa& vz, 
-                    const Vec3fa& p)
+                    const Vec3fa& p,
+                    const int numTilesX, 
+                    const int numTilesY)
 {
-  const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
-  const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  launch_renderTile(numTilesX*numTilesY,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); 
+}
+
+/* called by the C++ code to render */
+extern "C" void device_render (int* pixels,
+                               const int width,
+                               const int height,
+                               const float time,
+                               const Vec3fa& vx, 
+                               const Vec3fa& vy, 
+                               const Vec3fa& vz, 
+                               const Vec3fa& p)
+{
 }
 
 /* called by the C++ code for cleanup */

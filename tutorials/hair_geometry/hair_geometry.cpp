@@ -442,9 +442,6 @@ float noise(float x, float y, float z)
     if (g_numThreads) 
       g_rtcore += ",threads=" + toString(g_numThreads);
 
-    /* initialize ray tracing core */
-    init(g_rtcore.c_str());
-
     /* load scene */
     if (sceneFilename.str() != "" && sceneFilename.str() != "none")
       g_scene->add(SceneGraph::load(sceneFilename));
@@ -461,6 +458,9 @@ float noise(float x, float y, float z)
 
     /* send model */
     set_scene(&g_obj_scene);
+
+    /* initialize ray tracing core */
+    init(g_rtcore.c_str());
     
     /* benchmark mode */
     if (g_numBenchmarkFrames)

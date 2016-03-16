@@ -78,11 +78,6 @@ void error_handler(const RTCError code, const char* str = nullptr)
   exit(1);
 }
 
-/* render function to use */
-renderPixelFunc renderPixel;
-
-Vec3fa renderPixelTestEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
-
 /*! Uniform hemisphere sampling. Up direction is the z direction. */
 Vec3fa sampleSphere(const float u, const float v) 
 {
@@ -135,34 +130,6 @@ RTCScene convertScene(ISPCScene* scene_in)
 //////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////
-
-
-/* called by the C++ code for initialization */
-extern "C" void device_init (char* cfg)
-{
-  /* initialize last seen camera */
-  g_accu_vx = Vec3fa(0.0f);
-  g_accu_vy = Vec3fa(0.0f);
-  g_accu_vz = Vec3fa(0.0f);
-  g_accu_p  = Vec3fa(0.0f);
-
-  /* initialize hair colors */
-  hair_K  = Vec3fa(0.8f,0.57f,0.32f);
-  hair_dK = Vec3fa(0.1f,0.12f,0.08f);
-  hair_Kr = 0.2f*hair_K;    //!< reflectivity of hair
-  hair_Kt = 0.8f*hair_K;    //!< transparency of hair
-
-  /* create new Embree device */
-  g_device = rtcNewDevice(cfg);
-  error_handler(rtcDeviceGetError(g_device));
-
-  /* set error handler */
-  rtcDeviceSetErrorFunction(g_device,error_handler);
-
-  /* set start render mode */
-  renderPixel = renderPixelStandard;
-  key_pressed_handler = device_key_pressed_default;
-}
 
 #if !defined(__XEON_PHI__)
 
@@ -525,17 +492,18 @@ Vec3fa renderPixelTestEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa&
   return color;
 }
 
-/* task that renders a single screen tile */
-void renderTile(int taskIndex, int* pixels,
-                     const int width,
-                     const int height, 
-                     const float time,
-                     const Vec3fa& vx, 
-                     const Vec3fa& vy, 
-                     const Vec3fa& vz, 
-                     const Vec3fa& p,
-                     const int numTilesX, 
-                     const int numTilesY)
+/* renders a single screen tile */
+void renderTileStandard(int taskIndex, 
+                        int* pixels,
+                        const int width,
+                        const int height, 
+                        const float time,
+                        const Vec3fa& vx, 
+                        const Vec3fa& vy, 
+                        const Vec3fa& vz, 
+                        const Vec3fa& p,
+                        const int numTilesX, 
+                        const int numTilesY)
 {
   const int tileY = taskIndex / numTilesX;
   const int tileX = taskIndex - tileY * numTilesX;
@@ -543,14 +511,14 @@ void renderTile(int taskIndex, int* pixels,
   const int x1 = min(x0+TILE_SIZE_X,width);
   const int y0 = tileY * TILE_SIZE_Y;
   const int y1 = min(y0+TILE_SIZE_Y,height);
+
   //int seed = tileY*numTilesX+tileX+0 + g_accu_count;
   int seed = (tileY*numTilesX+tileX+0) * g_accu_count;
 
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
     /* calculate pixel color */
-    Vec3fa color = renderPixel(x,y,vx,vy,vz,p);
-    //Vec3fa color = renderPixelTestEyeLight(x,y,vx,vy,vz,p);
+    Vec3fa color = renderPixelStandard(x,y,vx,vy,vz,p);
 
     /* write color to framebuffer */
     Vec3fa accu_color = g_accu[y*width+x] + Vec3fa(color.x,color.y,color.z,1.0f); g_accu[y*width+x] = accu_color;
@@ -562,6 +530,52 @@ void renderTile(int taskIndex, int* pixels,
   }
 }
 
+/* task that renders a single screen tile */
+void renderTileTask(int taskIndex, int* pixels,
+                         const int width,
+                         const int height, 
+                         const float time,
+                         const Vec3fa& vx, 
+                         const Vec3fa& vy, 
+                         const Vec3fa& vz, 
+                         const Vec3fa& p,
+                         const int numTilesX, 
+                         const int numTilesY)
+{
+  renderTile(taskIndex,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY);
+}
+
+/* called by the C++ code for initialization */
+extern "C" void device_init (char* cfg)
+{
+  /* initialize last seen camera */
+  g_accu_vx = Vec3fa(0.0f);
+  g_accu_vy = Vec3fa(0.0f);
+  g_accu_vz = Vec3fa(0.0f);
+  g_accu_p  = Vec3fa(0.0f);
+
+  /* initialize hair colors */
+  hair_K  = Vec3fa(0.8f,0.57f,0.32f);
+  hair_dK = Vec3fa(0.1f,0.12f,0.08f);
+  hair_Kr = 0.2f*hair_K;    //!< reflectivity of hair
+  hair_Kt = 0.8f*hair_K;    //!< transparency of hair
+
+  /* create new Embree device */
+  g_device = rtcNewDevice(cfg);
+  error_handler(rtcDeviceGetError(g_device));
+
+  /* set error handler */
+  rtcDeviceSetErrorFunction(g_device,error_handler);
+
+  /* set start render mode */
+  renderTile = renderTileStandard;
+  key_pressed_handler = device_key_pressed_default;
+
+  /* create scene */
+  g_scene = convertScene(g_ispc_scene);
+}
+
+
 /* called by the C++ code to render */
 extern "C" void device_render (int* pixels,
                            const int width,
@@ -572,10 +586,6 @@ extern "C" void device_render (int* pixels,
                            const Vec3fa& vz, 
                            const Vec3fa& p)
 {
-  /* create scene */
-  if (g_scene == nullptr)
-    g_scene = convertScene(g_ispc_scene);
-
   /* create accumulator */
   if (g_accu_width != width || g_accu_height != height) {
     g_accu = (Vec3fa*) alignedMalloc(width*height*sizeof(Vec3fa));
@@ -599,7 +609,7 @@ extern "C" void device_render (int* pixels,
   /* render frame */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  enableFilterDispatch = renderPixel == renderPixelStandard; 
+  enableFilterDispatch = renderTile == renderTileStandard; 
   launch_renderTile(numTilesX*numTilesY,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); 
   enableFilterDispatch = false;
 }

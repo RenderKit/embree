@@ -59,7 +59,7 @@ namespace embree
     __forceinline Vec3fa( const Vec3fa& other, const float    w1) { m128 = other.m128; w = w1; }
     //__forceinline Vec3fa( const float x, const float y, const float z, const int      a) : x(x), y(y), z(z), a(a) {} // not working properly!
     //__forceinline Vec3fa( const float x, const float y, const float z, const unsigned a) : x(x), y(y), z(z), u(a) {} // not working properly!
-    __forceinline Vec3fa( const float x, const float y, const float z, const float    w) : x(x), y(y), z(z), w(w) {}
+    __forceinline Vec3fa( const float x, const float y, const float z, const float w) : m128(_mm_set_ps(w, z, y, x)) {}
 
     __forceinline explicit Vec3fa( const __m128i a ) : m128(_mm_cvtepi32_ps(a)) {}
 

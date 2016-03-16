@@ -18,10 +18,7 @@
 
 /* scene data */
 RTCDevice g_device = NULL;
-RTCScene g_scene = NULL;
-
-/* render function to use */
-renderPixelFunc renderPixel;
+RTCScene  g_scene  = NULL;
 
 /* error reporting function */
 unmasked void error_handler(const uniform RTCError code, const uniform int8* uniform str = NULL)
@@ -47,8 +44,8 @@ unmasked void error_handler(const uniform RTCError code, const uniform int8* uni
   abort();
 }
 
-#define NUM_HAIR_VERTICES 9
-#define NUM_HAIR_CURVES 6
+#define NUM_VERTICES 9
+#define NUM_CURVES 6
 
 #define W 2.0f
 
@@ -89,11 +86,11 @@ uniform unsigned int hair_indices[6] = {
 /* add hair geometry */
 uniform unsigned int addCurve (RTCScene scene, const uniform Vec3f& pos)
 {
-  uniform unsigned int geomID = rtcNewCurveGeometry (scene, RTC_GEOMETRY_DYNAMIC, NUM_HAIR_CURVES, 4*NUM_HAIR_CURVES);
+  uniform unsigned int geomID = rtcNewCurveGeometry (scene, RTC_GEOMETRY_STATIC, NUM_CURVES, 4*NUM_CURVES);
 
   /* converts b-spline to bezier basis */
   uniform Vec3fa* uniform vtx = (uniform Vec3fa* uniform) rtcMapBuffer(scene, geomID, RTC_VERTEX_BUFFER);
-  for (uniform size_t i=0; i<NUM_HAIR_CURVES; i++) 
+  for (uniform size_t i=0; i<NUM_CURVES; i++) 
   {
     uniform Vec3fa P = make_Vec3fa(pos.x,pos.y,pos.z,0.0f);
     const uniform Vec3fa v0 = make_Vec3fa(hair_vertices[i+0][0],hair_vertices[i+0][1],hair_vertices[i+0][2],hair_vertices[i+0][3]);
@@ -107,8 +104,8 @@ uniform unsigned int addCurve (RTCScene scene, const uniform Vec3f& pos)
   }
   rtcUnmapBuffer(scene, geomID, RTC_VERTEX_BUFFER);
    
-  uniform Vec3fa* uniform colors = uniform new uniform Vec3fa[4*NUM_HAIR_CURVES];
-  for (uniform size_t i=0; i<NUM_HAIR_CURVES; i++) 
+  uniform Vec3fa* uniform colors = uniform new uniform Vec3fa[4*NUM_CURVES];
+  for (uniform size_t i=0; i<NUM_CURVES; i++) 
   {
     const uniform Vec3fa v0 = make_Vec3fa(hair_vertex_colors[i+0][0],hair_vertex_colors[i+0][1],hair_vertex_colors[i+0][2],hair_vertex_colors[i+0][3]);
     const uniform Vec3fa v1 = make_Vec3fa(hair_vertex_colors[i+1][0],hair_vertex_colors[i+1][1],hair_vertex_colors[i+1][2],hair_vertex_colors[i+1][3]);
@@ -121,7 +118,7 @@ uniform unsigned int addCurve (RTCScene scene, const uniform Vec3f& pos)
   }
   
   uniform int* uniform index = (uniform int* uniform) rtcMapBuffer(scene, geomID, RTC_INDEX_BUFFER);
-  for (uniform size_t i=0; i<NUM_HAIR_CURVES; i++) {
+  for (uniform size_t i=0; i<NUM_CURVES; i++) {
     index[i] = 4*i;
   }
   rtcUnmapBuffer(scene,geomID,RTC_INDEX_BUFFER);
@@ -164,7 +161,7 @@ export void device_init (uniform int8* uniform cfg)
   rtcDeviceSetErrorFunction(g_device,error_handler);
  
   /* create scene */
-  g_scene = rtcDeviceNewScene(g_device, RTC_SCENE_DYNAMIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING | RTC_INTERPOLATE);
+  g_scene = rtcDeviceNewScene(g_device, RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING | RTC_INTERPOLATE);
 
   /* add ground plane */
   addGroundPlane(g_scene);
@@ -176,7 +173,7 @@ export void device_init (uniform int8* uniform cfg)
   rtcCommit (g_scene);
 
   /* set start render mode */
-  renderPixel = renderPixelStandard;
+  renderTile = renderTileStandard;
   key_pressed_handler = device_key_pressed_default;
 }
 
@@ -202,7 +199,6 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
   {
     /* interpolate diffuse color */
-
     Vec3f diffuse = make_Vec3f(1.0f,0.0f,0.0f);
     if (ray.geomID > 0) 
     {
@@ -242,17 +238,18 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
   return color;
 }
 
-/* task that renders a single screen tile */
-task void renderTile(uniform int* uniform pixels,
-                     const uniform int width,
-                     const uniform int height, 
-                     const uniform float time,
-                     const uniform Vec3f& vx, 
-                     const uniform Vec3f& vy, 
-                     const uniform Vec3f& vz, 
-                     const uniform Vec3f& p,
-                     const uniform int numTilesX, 
-                     const uniform int numTilesY)
+/* renders a single screen tile */
+void renderTileStandard(uniform int taskIndex, 
+                        uniform int* uniform pixels,
+                        const uniform int width,
+                        const uniform int height, 
+                        const uniform float time,
+                        const uniform Vec3f& vx, 
+                        const uniform Vec3f& vy, 
+                        const uniform Vec3f& vz, 
+                        const uniform Vec3f& p,
+                        const uniform int numTilesX, 
+                        const uniform int numTilesY)
 {
   const uniform int tileY = taskIndex / numTilesX;
   const uniform int tileX = taskIndex - tileY * numTilesX;
@@ -264,7 +261,7 @@ task void renderTile(uniform int* uniform pixels,
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
     /* calculate pixel color */
-    Vec3f color = renderPixel(x,y,vx,vy,vz,p);
+    Vec3f color = renderPixelStandard(x,y,vx,vy,vz,p);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -272,6 +269,21 @@ task void renderTile(uniform int* uniform pixels,
     unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
     pixels[y*width+x] = (b << 16) + (g << 8) + r;  
   }
+}
+
+/* task that renders a single screen tile */
+task void renderTileTask(uniform int* uniform pixels,
+                         const uniform int width,
+                         const uniform int height, 
+                         const uniform float time,
+                         const uniform Vec3f& vx, 
+                         const uniform Vec3f& vy, 
+                         const uniform Vec3f& vz, 
+                         const uniform Vec3f& p,
+                         const uniform int numTilesX, 
+                         const uniform int numTilesY)
+{
+  renderTile(taskIndex,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY);
 }
 
 /* called by the C++ code to render */
@@ -286,7 +298,7 @@ export void device_render (uniform int* uniform pixels,
 {
   const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  launch[numTilesX*numTilesY] renderTile(pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); sync;
+  launch[numTilesX*numTilesY] renderTileTask(pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); sync;
 }
 
 /* called by the C++ code for cleanup */

@@ -310,9 +310,16 @@ namespace embree
     if (convert_hair_to_curves)
         g_scene->hair_to_curves();
 
-    /* initialize ray tracing core */
+    /* convert model */
     g_obj_scene.add(g_scene.dynamicCast<SceneGraph::Node>(),(TutorialScene::InstancingMode)g_instancing_mode); 
     g_scene = nullptr;
+
+    /* send model */
+    set_scene(&g_obj_scene);
+    if (g_keyframes.size())
+      set_scene_keyframes(&*g_keyframes.begin(),g_keyframes.size());
+
+    /* initialize ray tracing core */
     init(g_rtcore.c_str());
 
     /* set shader mode */
@@ -326,13 +333,6 @@ namespace embree
     case SHADER_AMBIENT_OCCLUSION: key_pressed(GLUT_KEY_F11); break;
     };
     
-    /* send model */
-    set_scene(&g_obj_scene);
-    
-    /* send keyframes */
-    if (g_keyframes.size())
-      set_scene_keyframes(&*g_keyframes.begin(),g_keyframes.size());
-
     /* benchmark mode */
     if (g_numBenchmarkFrames)
       renderBenchmark(outFilename);

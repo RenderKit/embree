@@ -78,11 +78,6 @@ unmasked void error_handler(const uniform RTCError code, const uniform int8* uni
   abort();
 }
 
-/* render function to use */
-renderPixelFunc renderPixel;
-
-Vec3f renderPixelTestEyeLight(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p);
-
 /*! Uniform hemisphere sampling. Up direction is the z direction. */
 Vec3fa sampleSphere(const float u, const float v) 
 {
@@ -135,34 +130,6 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
 //////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////
-
-
-/* called by the C++ code for initialization */
-export void device_init (uniform int8* uniform cfg)
-{
-  /* initialize last seen camera */
-  g_accu_vx = make_Vec3f(0.0f);
-  g_accu_vy = make_Vec3f(0.0f);
-  g_accu_vz = make_Vec3f(0.0f);
-  g_accu_p  = make_Vec3f(0.0f);
-
-  /* initialize hair colors */
-  hair_K  = make_Vec3f(0.8f,0.57f,0.32f);
-  hair_dK = make_Vec3f(0.1f,0.12f,0.08f);
-  hair_Kr = 0.2f*hair_K;    //!< reflectivity of hair
-  hair_Kt = 0.8f*hair_K;    //!< transparency of hair
-
-  /* create new Embree device */
-  g_device = rtcNewDevice(cfg);
-  error_handler(rtcDeviceGetError(g_device));
-
-  /* set error handler */
-  rtcDeviceSetErrorFunction(g_device,error_handler);
-
-  /* set start render mode */
-  renderPixel = renderPixelStandard;
-  key_pressed_handler = device_key_pressed_default;
-}
 
 #if !defined(__XEON_PHI__)
 
@@ -525,17 +492,18 @@ Vec3f renderPixelTestEyeLight(float x, float y, const uniform Vec3f& vx, const u
   return color;
 }
 
-/* task that renders a single screen tile */
-task void renderTile(uniform int* uniform pixels,
-                     const uniform int width,
-                     const uniform int height, 
-                     const uniform float time,
-                     const uniform Vec3f& vx, 
-                     const uniform Vec3f& vy, 
-                     const uniform Vec3f& vz, 
-                     const uniform Vec3f& p,
-                     const uniform int numTilesX, 
-                     const uniform int numTilesY)
+/* renders a single screen tile */
+void renderTileStandard(uniform int taskIndex, 
+                        uniform int* uniform pixels,
+                        const uniform int width,
+                        const uniform int height, 
+                        const uniform float time,
+                        const uniform Vec3f& vx, 
+                        const uniform Vec3f& vy, 
+                        const uniform Vec3f& vz, 
+                        const uniform Vec3f& p,
+                        const uniform int numTilesX, 
+                        const uniform int numTilesY)
 {
   const uniform int tileY = taskIndex / numTilesX;
   const uniform int tileX = taskIndex - tileY * numTilesX;
@@ -543,14 +511,14 @@ task void renderTile(uniform int* uniform pixels,
   const uniform int x1 = min(x0+TILE_SIZE_X,width);
   const uniform int y0 = tileY * TILE_SIZE_Y;
   const uniform int y1 = min(y0+TILE_SIZE_Y,height);
+
   //int seed = tileY*numTilesX+tileX+programIndex + g_accu_count;
   int seed = (tileY*numTilesX+tileX+programIndex) * g_accu_count;
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
     /* calculate pixel color */
-    Vec3f color = renderPixel(x,y,vx,vy,vz,p);
-    //Vec3f color = renderPixelTestEyeLight(x,y,vx,vy,vz,p);
+    Vec3f color = renderPixelStandard(x,y,vx,vy,vz,p);
 
     /* write color to framebuffer */
     Vec3fa accu_color = g_accu[y*width+x] + make_Vec3fa(color.x,color.y,color.z,1.0f); g_accu[y*width+x] = accu_color;
@@ -562,6 +530,52 @@ task void renderTile(uniform int* uniform pixels,
   }
 }
 
+/* task that renders a single screen tile */
+task void renderTileTask(uniform int* uniform pixels,
+                         const uniform int width,
+                         const uniform int height, 
+                         const uniform float time,
+                         const uniform Vec3f& vx, 
+                         const uniform Vec3f& vy, 
+                         const uniform Vec3f& vz, 
+                         const uniform Vec3f& p,
+                         const uniform int numTilesX, 
+                         const uniform int numTilesY)
+{
+  renderTile(taskIndex,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY);
+}
+
+/* called by the C++ code for initialization */
+export void device_init (uniform int8* uniform cfg)
+{
+  /* initialize last seen camera */
+  g_accu_vx = make_Vec3f(0.0f);
+  g_accu_vy = make_Vec3f(0.0f);
+  g_accu_vz = make_Vec3f(0.0f);
+  g_accu_p  = make_Vec3f(0.0f);
+
+  /* initialize hair colors */
+  hair_K  = make_Vec3f(0.8f,0.57f,0.32f);
+  hair_dK = make_Vec3f(0.1f,0.12f,0.08f);
+  hair_Kr = 0.2f*hair_K;    //!< reflectivity of hair
+  hair_Kt = 0.8f*hair_K;    //!< transparency of hair
+
+  /* create new Embree device */
+  g_device = rtcNewDevice(cfg);
+  error_handler(rtcDeviceGetError(g_device));
+
+  /* set error handler */
+  rtcDeviceSetErrorFunction(g_device,error_handler);
+
+  /* set start render mode */
+  renderTile = renderTileStandard;
+  key_pressed_handler = device_key_pressed_default;
+
+  /* create scene */
+  g_scene = convertScene(g_ispc_scene);
+}
+
+
 /* called by the C++ code to render */
 export void device_render (uniform int* uniform pixels,
                            const uniform int width,
@@ -572,10 +586,6 @@ export void device_render (uniform int* uniform pixels,
                            const uniform Vec3f& vz, 
                            const uniform Vec3f& p)
 {
-  /* create scene */
-  if (g_scene == NULL)
-    g_scene = convertScene(g_ispc_scene);
-
   /* create accumulator */
   if (g_accu_width != width || g_accu_height != height) {
     g_accu = uniform new uniform Vec3fa[width*height];
@@ -599,8 +609,8 @@ export void device_render (uniform int* uniform pixels,
   /* render frame */
   uniform const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   uniform const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  enableFilterDispatch = renderPixel == renderPixelStandard; 
-  launch[numTilesX*numTilesY] renderTile(pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); sync;
+  enableFilterDispatch = renderTile == renderTileStandard; 
+  launch[numTilesX*numTilesY] renderTileTask(pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); sync;
   enableFilterDispatch = false;
 }
 

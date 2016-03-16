@@ -264,19 +264,19 @@ namespace embree
 
     /* convert bezier to lines */
     if (convert_bezier_to_lines)
-        g_scene->bezier_to_lines();
+      g_scene->bezier_to_lines();
 
     /* convert hair to curves */
     if (convert_hair_to_curves)
         g_scene->hair_to_curves();
 
-    /* initialize ray tracing core */
-    init(g_rtcore.c_str());
-
     /* send model */
     g_obj_scene.add(g_scene.dynamicCast<SceneGraph::Node>(),(TutorialScene::InstancingMode)g_instancing_mode); 
     g_scene = nullptr;
     set_scene(&g_obj_scene);
+
+    /* initialize ray tracing core */
+    init(g_rtcore.c_str());
     
     /* benchmark mode */
     if (g_numBenchmarkFrames)

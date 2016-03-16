@@ -31,8 +31,6 @@ bool g_subdiv_mode = false;
 
 #define SPP 1
 
-#define TEST_STREAM_INTERFACE 0
-
 //#define FORCE_FIXED_EDGE_TESSELLATION
 #define FIXED_EDGE_TESSELLATION_VALUE 3
 
@@ -112,9 +110,6 @@ void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
   }
 }
 
-/* render function to use */
-renderPixelFunc renderPixel;
-
 /* error reporting function */
 void error_handler(const RTCError code, const char* str = nullptr)
 {
@@ -145,25 +140,6 @@ void device_key_pressed(int key)
   //printf("key = %\n",key);
   if (key == 115 /*c*/) g_use_smooth_normals = !g_use_smooth_normals;
   else device_key_pressed_default(key);
-}
-
-Vec3fa renderPixelEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
-
-
-/* called by the C++ code for initialization */
-extern "C" void device_init (char* cfg)
-{
-  /* create new Embree device */
-  g_device = rtcNewDevice(cfg);
-  error_handler(rtcDeviceGetError(g_device));
-
-  /* set error handler */
-  rtcDeviceSetErrorFunction(g_device,error_handler);
-
-  /* set start render mode */
-  renderPixel = renderPixelStandard;
-  //renderPixel = renderPixelEyeLight;	
-  key_pressed_handler = device_key_pressed;
 }
 
 unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
@@ -593,18 +569,18 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   return color*dot(neg(ray.dir),dg.Ns);
 }
 
-
-/* task that renders a single screen tile */
-void renderTile(int taskIndex, int* pixels,
-                     const int width,
-                     const int height, 
-                     const float time,
-                     const Vec3fa& vx, 
-                     const Vec3fa& vy, 
-                     const Vec3fa& vz, 
-                     const Vec3fa& p,
-                     const int numTilesX, 
-                     const int numTilesY)
+/* renders a single screen tile */
+void renderTileStandard(int taskIndex, 
+                        int* pixels,
+                        const int width,
+                        const int height, 
+                        const float time,
+                        const Vec3fa& vx, 
+                        const Vec3fa& vy, 
+                        const Vec3fa& vz, 
+                        const Vec3fa& p,
+                        const int numTilesX, 
+                        const int numTilesY)
 {
   const int t = taskIndex;
   const int tileY = t / numTilesX;
@@ -614,48 +590,9 @@ void renderTile(int taskIndex, int* pixels,
   const int y0 = tileY * TILE_SIZE_Y;
   const int y1 = min(y0+TILE_SIZE_Y,height);
 
-#if TEST_STREAM_INTERFACE == 1
-  RTCRay rays[8];
-  int packets = 0;
-  RTCRaySOA ray_soa;
-  initRTCRaySOA(ray_soa,rays[0]);
-
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
-    RandomSampler sampler;
-    RandomSampler_init(sampler, x, y, 0);
-
-    /* initialize ray */
-    RTCRay &ray = rays[packets];
-    ray.org = p;
-    ray.dir = normalize(x*vx + y*vy + vz);
-    ray.tnear = 0.0f;
-    ray.tfar = inf;
-    ray.geomID = RTC_INVALID_GEOMETRY_ID;
-    ray.primID = RTC_INVALID_GEOMETRY_ID;
-    ray.mask = -1;
-    ray.time = RandomSampler_get1D(sampler);
-    packets++;
-  }
-  rtcIntersectN_SOA(g_scene,ray_soa,8,8,sizeof(RTCRay),0);
-
-  packets = 0;
-  for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
-  {
-    RTCRay &ray = rays[packets++];
-    Vec3fa color = Vec3fa(0.0f);
-    if (ray.geomID != RTC_INVALID_GEOMETRY_ID) color = Vec3fa(abs(dot(ray.dir,normalize(ray.Ng))));
-    /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;
-  }
-#else
-
-  for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
-  {
-    Vec3fa color = renderPixel(x,y,vx,vy,vz,p);
+    Vec3fa color = renderPixelStandard(x,y,vx,vy,vz,p);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -663,12 +600,44 @@ void renderTile(int taskIndex, int* pixels,
     unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
     pixels[y*width+x] = (b << 16) + (g << 8) + r;
   }
+}
 
-#endif
-
+/* task that renders a single screen tile */
+void renderTileTask(int taskIndex, int* pixels,
+                         const int width,
+                         const int height, 
+                         const float time,
+                         const Vec3fa& vx, 
+                         const Vec3fa& vy, 
+                         const Vec3fa& vz, 
+                         const Vec3fa& p,
+                         const int numTilesX, 
+                         const int numTilesY)
+{
+  renderTile(taskIndex,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY);
 }
 
 Vec3fa old_p; 
+
+/* called by the C++ code for initialization */
+extern "C" void device_init (char* cfg)
+{
+  /* create new Embree device */
+  g_device = rtcNewDevice(cfg);
+  error_handler(rtcDeviceGetError(g_device));
+
+  /* set error handler */
+  rtcDeviceSetErrorFunction(g_device,error_handler);
+
+  /* set start render mode */
+  renderTile = renderTileStandard;
+  key_pressed_handler = device_key_pressed;
+
+  /* create scene */
+  g_scene = convertScene(g_ispc_scene);
+  rtcCommit (g_scene);
+  old_p = Vec3fa(1E10);
+}
 
 /* called by the C++ code to render */
 extern "C" void device_render (int* pixels,
@@ -682,24 +651,11 @@ extern "C" void device_render (int* pixels,
 {
   Vec3fa cam_org = Vec3fa(p.x,p.y,p.z);
 
-  /* create scene */
-  if (g_scene == nullptr) { 
-    g_scene = convertScene(g_ispc_scene);
-
-#if !defined(FORCE_FIXED_EDGE_TESSELLATION)
-    if (g_subdiv_mode)
-      updateEdgeLevels(g_ispc_scene, cam_org);
-#endif
-    old_p = p;
-    rtcCommit (g_scene);
-  }
-
   bool camera_changed = g_changed; g_changed = false;
-  if ((p.x != old_p.x || p.y != old_p.y || p.z != old_p.z))
-    {
-     camera_changed = true;
-     old_p = p;
-    } 
+  if ((p.x != old_p.x || p.y != old_p.y || p.z != old_p.z)) {
+    camera_changed = true;
+    old_p = p;
+  } 
 
   if (camera_changed) {
 #if !defined(FORCE_FIXED_EDGE_TESSELLATION)
