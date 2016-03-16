@@ -352,6 +352,127 @@ namespace embree
       }
     };
 
+
+    template<>
+      class BVHNNodeTraverser1Hit<8,16,BVH_QN1>
+    {
+      typedef BVH8 BVH;
+      typedef BVH8::NodeRef NodeRef;
+      typedef BVH8::QuantizedNode QuantizedNode;
+
+    public:
+
+      // FIXME: optimize sequence
+      static __forceinline void traverseClosestHit(NodeRef& cur,
+                                                   size_t mask,
+                                                   const vfloat16& tNear,
+                                                   StackItemT<NodeRef>*& stackPtr,
+                                                   StackItemT<NodeRef>* stackEnd)
+      {
+        assert(mask != 0);
+        const QuantizedNode* node = cur.quantizedNode();
+        const vbool16 org_mask = (int)mask;
+        /*! one child is hit, continue with that child */
+        size_t r = __bscf(mask);
+        cur = node->child(r); 
+        cur.prefetch(BVH_QN1);
+        if (likely(mask == 0)) {
+          assert(cur != BVH::emptyNode);
+          return;
+        }
+
+        /*! two children are hit, push far child, and continue with closer child */
+        //NodeRef c0 = node->child(r); 
+        //c0.prefetch(BVH_QN1); 
+        NodeRef c0 = cur; // node->child(r); 
+        //c0.prefetch(BVH_QN1); 
+        const unsigned int d0 = ((unsigned int*)&tNear)[r];
+        r = __bscf(mask);
+        NodeRef c1 = node->child(r); 
+        c1.prefetch(BVH_QN1); 
+        const unsigned int d1 = ((unsigned int*)&tNear)[r];
+
+        assert(c0 != BVH::emptyNode);
+        assert(c1 != BVH::emptyNode);
+        if (likely(mask == 0)) {
+          assert(stackPtr < stackEnd);
+          if (d0 < d1) { stackPtr->ptr = c1; stackPtr->dist = d1; stackPtr++; cur = c0; return; }
+          else         { stackPtr->ptr = c0; stackPtr->dist = d0; stackPtr++; cur = c1; return; }
+        }
+        /*! Here starts the slow path for 3 or 4 hit children. We push
+         *  all nodes onto the stack to sort them there. */
+        assert(stackPtr < stackEnd);
+        stackPtr->ptr = c0; stackPtr->dist = d0; stackPtr++;
+        assert(stackPtr < stackEnd);
+        stackPtr->ptr = c1; stackPtr->dist = d1; stackPtr++;
+
+        /*! three children are hit, push all onto stack and sort 3 stack items, continue with closest child */
+        assert(stackPtr < stackEnd);
+        r = __bscf(mask);
+        NodeRef c = node->child(r); c.prefetch(BVH_QN1); unsigned int d = ((unsigned int*)&tNear)[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
+        assert(c != BVH::emptyNode);
+        if (likely(mask == 0)) {
+          sort(stackPtr[-1],stackPtr[-2],stackPtr[-3]);
+          cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
+          return;
+        }
+
+        /*! four children are hit, push all onto stack and sort 4 stack items, continue with closest child */
+        assert(stackPtr < stackEnd);
+        r = __bscf(mask);
+        c = node->child(r); c.prefetch(BVH_QN1); d = *(unsigned int*)&tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
+        assert(c != BVH::emptyNode);
+        if (likely(mask == 0)) {
+          sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
+          cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
+          return;
+        }
+
+        /*! fallback case if more than 4 children are hit */
+        StackItemT<NodeRef>* stackFirst = stackPtr-4;
+        while (1)
+        {
+          assert(stackPtr < stackEnd);
+          r = __bscf(mask);
+          c = node->child(r); c.prefetch(BVH_QN1); d = *(unsigned int*)&tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
+          assert(c != BVH::emptyNode);
+          if (unlikely(mask == 0)) break;
+        }
+        sort(stackFirst,stackPtr);
+        cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
+      }
+
+      // FIXME: optimize sequence
+      static __forceinline void traverseAnyHit(NodeRef& cur,
+                                               size_t mask,
+                                               const vfloat16& tNear,
+                                               NodeRef*& stackPtr,
+                                               NodeRef* stackEnd)
+      {
+        const QuantizedNode* node = cur.quantizedNode();
+
+        /*! one child is hit, continue with that child */
+        size_t r = __bscf(mask);
+        cur = node->child(r); 
+        cur.prefetch(BVH_QN1);
+        /* simpler in sequence traversal order */
+        assert(cur != BVH::emptyNode);
+        if (likely(mask == 0)) return;
+        assert(stackPtr < stackEnd);
+        *stackPtr = cur; stackPtr++;
+
+        for (; ;)
+        {
+          r = __bscf(mask);
+          cur = node->child(r); cur.prefetch(BVH_QN1);
+          assert(cur != BVH::emptyNode);
+          if (likely(mask == 0)) return;
+          assert(stackPtr < stackEnd);
+          *stackPtr = cur; stackPtr++;
+        }
+      }
+    };
+
     // ====================================================================================
     // ====================================================================================
     // ====================================================================================
@@ -479,6 +600,128 @@ namespace embree
         }
       }
     };
+
+
+    /* Specialization for BVH8. */
+    template<>
+      class BVHNNodeTraverser1Hit<8,8,BVH_QN1>
+    {
+      typedef BVH8 BVH;
+      typedef BVH8::NodeRef NodeRef;
+      typedef BVH8::QuantizedNode QuantizedNode;
+
+    public:
+      static __forceinline void traverseClosestHit(NodeRef& cur,
+                                                   const QuantizedNode* node,
+                                                   size_t mask,
+                                                   const vfloat8& tNear,
+                                                   StackItemT<NodeRef>*& stackPtr,
+                                                   StackItemT<NodeRef>* stackEnd)
+      {
+
+        /*! one child is hit, continue with that child */
+        size_t r = __bscf(mask);
+        if (likely(mask == 0)) {
+          cur = node->child(r); cur.prefetch(BVH_QN1);
+          assert(cur != BVH::emptyNode);
+          return;
+        }
+
+        /*! two children are hit, push far child, and continue with closer child */
+        NodeRef c0 = node->child(r); c0.prefetch(BVH_QN1); const unsigned int d0 = ((unsigned int*)&tNear)[r];
+        r = __bscf(mask);
+        NodeRef c1 = node->child(r); c1.prefetch(BVH_QN1); const unsigned int d1 = ((unsigned int*)&tNear)[r];
+        assert(c0 != BVH::emptyNode);
+        assert(c1 != BVH::emptyNode);
+        if (likely(mask == 0)) {
+          assert(stackPtr < stackEnd);
+          if (d0 < d1) { stackPtr->ptr = c1; stackPtr->dist = d1; stackPtr++; cur = c0; return; }
+          else         { stackPtr->ptr = c0; stackPtr->dist = d0; stackPtr++; cur = c1; return; }
+        }
+
+        /*! Here starts the slow path for 3 or 4 hit children. We push
+         *  all nodes onto the stack to sort them there. */
+        assert(stackPtr < stackEnd);
+        stackPtr->ptr = c0; stackPtr->dist = d0; stackPtr++;
+        assert(stackPtr < stackEnd);
+        stackPtr->ptr = c1; stackPtr->dist = d1; stackPtr++;
+
+        /*! three children are hit, push all onto stack and sort 3 stack items, continue with closest child */
+        assert(stackPtr < stackEnd);
+        r = __bscf(mask);
+        NodeRef c = node->child(r); c.prefetch(BVH_QN1); unsigned int d = ((unsigned int*)&tNear)[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
+        assert(c != BVH::emptyNode);
+        if (likely(mask == 0)) {
+          sort(stackPtr[-1],stackPtr[-2],stackPtr[-3]);
+          cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
+          return;
+        }
+
+        /*! four children are hit, push all onto stack and sort 4 stack items, continue with closest child */
+        assert(stackPtr < stackEnd);
+        r = __bscf(mask);
+        c = node->child(r); c.prefetch(BVH_QN1); d = *(unsigned int*)&tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
+        assert(c != BVH::emptyNode);
+        if (likely(mask == 0)) {
+          sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
+          cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
+          return;
+        }
+
+        /*! fallback case if more than 4 children are hit */
+        StackItemT<NodeRef>* stackFirst = stackPtr-4;
+        while (1)
+        {
+          assert(stackPtr < stackEnd);
+          r = __bscf(mask);
+          c = node->child(r); c.prefetch(BVH_QN1); d = *(unsigned int*)&tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
+          assert(c != BVH::emptyNode);
+          if (unlikely(mask == 0)) break;
+        }
+        sort(stackFirst,stackPtr);
+        cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
+      }
+
+      static __forceinline void traverseClosestHit(NodeRef& cur,
+                                                   size_t mask,
+                                                   const vfloat8& tNear,
+                                                   StackItemT<NodeRef>*& stackPtr,
+                                                   StackItemT<NodeRef>* stackEnd)
+      {
+        const QuantizedNode* node = cur.quantizedNode();
+        traverseClosestHit(cur,node,mask,tNear,stackPtr,stackEnd);
+      }
+
+      static __forceinline void traverseAnyHit(NodeRef& cur,
+                                               size_t mask,
+                                               const vfloat8& tNear,
+                                               NodeRef*& stackPtr,
+                                               NodeRef* stackEnd)
+      {
+        const QuantizedNode* node = cur.quantizedNode();
+
+        /*! one child is hit, continue with that child */
+        size_t r = __bscf(mask);
+        cur = node->child(r); 
+        cur.prefetch(BVH_QN1);
+        /* simpler in sequence traversal order */
+        assert(cur != BVH::emptyNode);
+        if (likely(mask == 0)) return;
+        assert(stackPtr < stackEnd);
+        *stackPtr = cur; stackPtr++;
+
+        for (; ;)
+        {
+          r = __bscf(mask);
+          cur = node->child(r); cur.prefetch(BVH_QN1);
+          assert(cur != BVH::emptyNode);
+          if (likely(mask == 0)) return;
+          assert(stackPtr < stackEnd);
+          *stackPtr = cur; stackPtr++;
+        }
+      }
+    };
+
 
     /*! BVH transform node traversal for single rays. */
     template<int N, int Nx, int types, bool transform>

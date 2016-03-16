@@ -71,6 +71,12 @@ namespace embree
     /// Loads and Stores
     ////////////////////////////////////////////////////////////////////////////////
     
+    static __forceinline vint8 load( const unsigned char* const ptr ) {
+      vint4 il = vint4::load(ptr+0);
+      vint4 ih = vint4::load(ptr+4);
+      return vint8(il,ih);
+    }
+
     static __forceinline vint8 load( const void* const a) {
       return _mm256_castps_si256(_mm256_load_ps((float*)a)); 
     }
@@ -93,6 +99,13 @@ namespace embree
 
     static __forceinline void store_nt(void* ptr, const vint8& v) {
       _mm256_stream_ps((float*)ptr,_mm256_castsi256_ps(v));
+    }
+
+    static __forceinline void store_uchar( unsigned char* const ptr, const vint8& i ) {
+      vint4 il(i.vl);
+      vint4 ih(i.vh);
+      vint4::store_uchar(ptr + 0,il);
+      vint4::store_uchar(ptr + 4,ih);
     }
 
     

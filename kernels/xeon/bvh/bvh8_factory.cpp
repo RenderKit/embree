@@ -44,6 +44,7 @@ namespace embree
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8Quad4vIntersector1Moeller);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8Quad4iIntersector1Pluecker);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8Quad4iMBIntersector1Pluecker);
+  DECLARE_SYMBOL2(Accel::Intersector1,QBVH8Triangle4Intersector1Moeller);
 
   DECLARE_SYMBOL2(Accel::Intersector4,BVH8Line4iIntersector4);
   DECLARE_SYMBOL2(Accel::Intersector4,BVH8Line4iMBIntersector4);
@@ -123,6 +124,8 @@ namespace embree
 
   DECLARE_BUILDER2(void,Scene,size_t,BVH8SubdivGridEagerBuilderBinnedSAH);
 
+  DECLARE_BUILDER2(void,Scene,size_t,BVH8QuantizedTriangle4SceneBuilderSAH);
+
   BVH8Factory::BVH8Factory (int features)
   {
     /* select builders */
@@ -140,6 +143,8 @@ namespace embree
     SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Quad4iSceneBuilderSAH);
     SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Quad4iMBSceneBuilderSAH);
 
+    SELECT_SYMBOL_INIT_AVX(features,BVH8QuantizedTriangle4SceneBuilderSAH);
+   
     SELECT_SYMBOL_INIT_AVX(features,BVH8Triangle4SceneBuilderSpatialSAH);
     SELECT_SYMBOL_INIT_AVX(features,BVH8Triangle8SceneBuilderSpatialSAH);
 
@@ -158,6 +163,7 @@ namespace embree
     SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Quad4iIntersector1Pluecker);
     SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Quad4iMBIntersector1Pluecker);
     SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8GridAOSIntersector1);
+    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,QBVH8Triangle4Intersector1Moeller);
 
 #if defined (RTCORE_RAY_PACKETS)
 
@@ -358,6 +364,23 @@ namespace embree
     return intersectors;
   }
 
+  Accel::Intersectors BVH8Factory::QBVH8Triangle4Intersectors(BVH8* bvh)
+  {
+    Accel::Intersectors intersectors;
+    intersectors.ptr = bvh;
+    intersectors.intersector1           = QBVH8Triangle4Intersector1Moeller;
+    intersectors.intersector4_filter    = nullptr;
+    intersectors.intersector4_nofilter  = nullptr;
+    intersectors.intersector8_filter    = nullptr;
+    intersectors.intersector8_nofilter  = nullptr;
+    intersectors.intersector16_filter   = nullptr;
+    intersectors.intersector16_nofilter = nullptr;
+    intersectors.intersectorN_filter    = nullptr;
+    intersectors.intersectorN_nofilter  = nullptr;
+    return intersectors;
+  }
+
+
   Accel* BVH8Factory::BVH8OBBBezier1v(Scene* scene, bool highQuality)
   {
     BVH8* accel = new BVH8(Bezier1v::type,scene);
@@ -420,6 +443,17 @@ namespace embree
 
     return new AccelInstance(accel,builder,intersectors);
   }
+
+
+  Accel* BVH8Factory::BVH8QuantizedTriangle4(Scene* scene)
+  {
+    BVH8* accel = new BVH8(Triangle4::type,scene);
+    Accel::Intersectors intersectors = QBVH8Triangle4Intersectors(accel);
+
+    Builder* builder = BVH8QuantizedTriangle4SceneBuilderSAH(accel,scene,0);
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
 
   Accel* BVH8Factory::BVH8Triangle4ObjectSplit(Scene* scene)
   {
