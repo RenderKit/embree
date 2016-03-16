@@ -40,7 +40,7 @@ namespace embree
         1+(N-1)*BVH::maxDepth;   // transform feature
 
       /* right now AVX512KNL SIMD extension only for standard node types */
-      static const size_t Nx = (types == BVH_AN1 | types == BVH_QN1) ? vextend<N>::size : N;
+      static const size_t Nx = (types == BVH_AN1 || types == BVH_QN1) ? vextend<N>::size : N;
 
     public:
       static void intersect(const BVH* This, Ray& ray);
