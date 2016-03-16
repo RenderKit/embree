@@ -32,10 +32,14 @@ cd build
 rm CMakeCache.txt # make sure to use default settings
 rm version.h
 
-# set release settings
+# set compiler settings
 cmake \
 -D CMAKE_C_COMPILER:FILEPATH=icc \
 -D CMAKE_CXX_COMPILER:FILEPATH=icpc \
+..
+
+# set release settings
+cmake \
 -D XEON_ISA=AVX512KNL \
 -D ENABLE_XEON_PHI_SUPPORT=ON \
 -D USE_IMAGE_MAGICK=OFF \

@@ -21,7 +21,10 @@ IF (NOT RTCORE_ZIP_MODE AND NOT WIN32 AND NOT APPLE)
   SET(CMAKE_INSTALL_FULL_BINDIR ${CMAKE_INSTALL_FULL_BINDIR}/embree${EMBREE_VERSION_MAJOR})
 ENDIF()
 
-SET(CMAKE_INSTALL_NAME_DIR ${CMAKE_INSTALL_FULL_LIBDIR})
+# use full absolute path as install name for PKG installer under MacOSX
+IF (NOT RTCORE_ZIP_MODE)
+  SET(CMAKE_INSTALL_NAME_DIR ${CMAKE_INSTALL_FULL_LIBDIR})
+ENDIF()
 
 ##############################################################
 # Install Headers
