@@ -29,7 +29,6 @@
 #define FIXED_SAMPLING 0
 #define SAMPLES_PER_PIXEL 1
 
-//#define FORCE_FIXED_EDGE_TESSELLATION
 #define FIXED_EDGE_TESSELLATION_VALUE 4
 
 #define ENABLE_FILTER_FUNCTION 1
@@ -1925,9 +1924,6 @@ export void device_init (uniform int8* uniform cfg)
   print("Warning: filter functions disabled\n");
 #endif
 
-  /* create scene */
-  g_scene = convertScene(g_ispc_scene);
-
 } // device_init
 
 /* called by the C++ code to render */
@@ -1941,6 +1937,13 @@ export void device_render (uniform int* uniform pixels,
                            const uniform Vec3f& p)
 {
   uniform Vec3fa cam_org = make_Vec3fa(p.x,p.y,p.z);
+
+  /* create scene */
+  if (g_scene == NULL) {
+    g_scene = convertScene(g_ispc_scene);
+    if (g_subdiv_mode) updateEdgeLevels(g_ispc_scene, cam_org);
+    rtcCommit (g_scene);
+  }
 
   /* create accumulator */
   if (g_accu_width != width || g_accu_height != height) {
@@ -1968,17 +1971,15 @@ export void device_render (uniform int* uniform pixels,
   g_accu_count++;
 #endif
 
-  if (camera_changed) {
+  if (camera_changed) 
+  {
     g_accu_count=0;
     memset(g_accu,0,width*height*sizeof(uniform Vec3fa));
 
-#if !defined(FORCE_FIXED_EDGE_TESSELLATION)
     if (g_subdiv_mode) {
       updateEdgeLevels(g_ispc_scene, cam_org);
       rtcCommit (g_scene);
     }
-#endif
-
   }
 
   /* render image */
