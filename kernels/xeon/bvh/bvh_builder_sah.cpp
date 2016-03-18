@@ -121,11 +121,12 @@ namespace embree
 
       BVHNBuilderSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
         : bvh(bvh), scene(scene), mesh(nullptr), prims(scene->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)),
-          presplitFactor((mode & MODE_HIGH_QUALITY) ? 1.5f : 1.0f) {}
+          presplitFactor((mode & MODE_HIGH_QUALITY) ? 1.1f : 1.0f) {}
+
 
       BVHNBuilderSAH (BVH* bvh, Mesh* mesh, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
         : bvh(bvh), scene(nullptr), mesh(mesh), prims(bvh->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)),
-          presplitFactor((mode & MODE_HIGH_QUALITY) ? 1.5f : 1.0f) {}
+          presplitFactor((mode & MODE_HIGH_QUALITY) ? 1.1f : 1.0f) {}
 
       // FIXME: shrink bvh->alloc in destructor here and in other builders too
 
@@ -153,8 +154,11 @@ namespace embree
           createPrimRefArray<Mesh,1>(scene,prims,bvh->scene->progressInterface);
         
         /* perform pre-splitting */
+        PRINT(presplitFactor);
+        PRINT(pinfo.size());
         if (presplitFactor > 1.0f) 
           pinfo = presplit<Mesh>(scene, pinfo, prims);
+        PRINT(pinfo.size());
         
         /* call BVH builder */
         bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));

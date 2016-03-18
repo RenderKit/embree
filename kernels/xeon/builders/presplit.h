@@ -158,24 +158,25 @@ namespace embree
         { 
           size_t N=0;
           for (size_t i=r.begin(); i<r.end(); i++) {
-            const float nf = ceil(f*pinfo.size()*area(prims[i])/A);
+            const float nf = floor(f*pinfo.size()*area(prims[i])/A);
             const size_t n = min(ssize_t(4096), max(ssize_t(1), ssize_t(nf)));
             N+=n-1;
           }
           return N;
         },std::plus<size_t>());
-        if (iter++ == 10) // to avoid infinite loop, e.g. for pinfo.size()==1 and prims.size()==1
+        PRINT(N);
+        if (iter++ == 50) // to avoid infinite loop, e.g. for pinfo.size()==1 and prims.size()==1
           return pinfo;
 
-      } while (pinfo.size()+N > prims.size());
-      assert(pinfo.size()+N <= prims.size());
+      } while (N > prims.size());
+      assert(N <= prims.size());
 
       /* split all primitives */
       parallel_prefix_sum (state, size_t(0), pinfo.size(), size_t(1024), size_t(0), [&] (const range<size_t>& r, size_t ofs) -> size_t
       {
         size_t N = 0;
         for (size_t i=r.begin(); i<r.end(); i++) {
-          const float nf = ceil(f*pinfo.size()*area(prims[i])/A);
+          const float nf = floor(f*pinfo.size()*area(prims[i])/A);
           const size_t n = min(ssize_t(4096), max(ssize_t(1), ssize_t(nf)));
           split_primref(pinfo,split,prims[i],&prims[pinfo.size()+ofs+N],n);
           N+=n-1;
