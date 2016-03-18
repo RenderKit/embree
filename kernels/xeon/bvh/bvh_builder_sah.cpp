@@ -40,6 +40,7 @@ namespace embree
   namespace isa
   {
     static const float travCost = 1.0f;
+    static const float defaultPresplitFactor = 1.2f;
 
     typedef FastAllocator::ThreadLocal2 Allocator;
 
@@ -121,11 +122,12 @@ namespace embree
 
       BVHNBuilderSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
         : bvh(bvh), scene(scene), mesh(nullptr), prims(scene->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)),
-          presplitFactor((mode & MODE_HIGH_QUALITY) ? 1.5f : 1.0f) {}
+          presplitFactor((mode & MODE_HIGH_QUALITY) ? defaultPresplitFactor : 1.0f) {}
+
 
       BVHNBuilderSAH (BVH* bvh, Mesh* mesh, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
         : bvh(bvh), scene(nullptr), mesh(mesh), prims(bvh->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)),
-          presplitFactor((mode & MODE_HIGH_QUALITY) ? 1.5f : 1.0f) {}
+          presplitFactor((mode & MODE_HIGH_QUALITY) ? defaultPresplitFactor : 1.0f) {}
 
       // FIXME: shrink bvh->alloc in destructor here and in other builders too
 
@@ -236,11 +238,11 @@ namespace embree
 
       BVHNBuilderSAHQuantized (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
         : bvh(bvh), scene(scene), mesh(nullptr), prims(scene->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)),
-          presplitFactor((mode & MODE_HIGH_QUALITY) ? 1.5f : 1.0f) {}
+          presplitFactor((mode & MODE_HIGH_QUALITY) ? defaultPresplitFactor : 1.0f) {}
 
       BVHNBuilderSAHQuantized (BVH* bvh, Mesh* mesh, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
         : bvh(bvh), scene(nullptr), mesh(mesh), prims(bvh->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)),
-          presplitFactor((mode & MODE_HIGH_QUALITY) ? 1.5f : 1.0f) {}
+          presplitFactor((mode & MODE_HIGH_QUALITY) ? defaultPresplitFactor : 1.0f) {}
 
       // FIXME: shrink bvh->alloc in destructor here and in other builders too
 
@@ -363,7 +365,7 @@ namespace embree
       BVHNBuilderSpatialSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize,
                              const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
         : bvh(bvh), scene(scene), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)),
-          presplitFactor((mode & MODE_HIGH_QUALITY) ? 1.5f : 1.0f) {}
+          presplitFactor((mode & MODE_HIGH_QUALITY) ? defaultPresplitFactor : 1.0f) {}
 
       void build(size_t, size_t) 
       {

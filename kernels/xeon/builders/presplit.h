@@ -77,7 +77,7 @@ namespace embree
 
       /* put first element onto heap */
       size_t i = 0;
-      Item items[4096];
+      dynamic_large_stack_array(Item,items,N,4096*sizeof(Item));
       items[i++] = Item(pinfo.geomBounds,prim);
 
       /* heap returns item with largest surface area */
@@ -121,8 +121,6 @@ namespace embree
         {
           PrimRef lprim,rprim;
           split(item.prim,dim,center,lprim,rprim);
-          assert(area(lprim.bounds()) > 0.0);
-          assert(area(rprim.bounds()) > 0.0);
 
           items[i++] = Item(lsceneBounds,lprim);
           std::push_heap (&items[0],&items[i],order);
@@ -145,45 +143,59 @@ namespace embree
       float A = 0.0f;
       for (size_t i=0; i<pinfo.size(); i++) // FIXME: parallelize
         A += area(prims[i]);
+      if (A == 0.0f) A = 1.0f;
 
       /* try to calculate a number of splits per primitive, such that
        * we do not generate more primitives than the size of the prims
        * array */
       ParallelPrefixSumState<size_t> state;
-      float f = float(prims.size())/float(pinfo.size())/0.9f;
+      float f = 1.0f;
       size_t N = 0, iter = 0;
       do {
-        f *= 0.9f;
+        f *= 0.7f;
         N = pinfo.size() + parallel_prefix_sum (state, size_t(0), pinfo.size(), size_t(1024), size_t(0), [&] (const range<size_t>& r, const size_t sum) -> size_t
         { 
           size_t N=0;
           for (size_t i=r.begin(); i<r.end(); i++) {
-            const float nf = ceil(f*pinfo.size()*area(prims[i])/A);
-            const size_t n = min(ssize_t(4096), max(ssize_t(1), ssize_t(nf)));
+            const float nf = floor(f*prims.size()*area(prims[i])/A);
+            size_t n = min(ssize_t(4096), max(ssize_t(1), ssize_t(nf)));
+            //if (n<16) n = 1;
             N+=n-1;
           }
           return N;
         },std::plus<size_t>());
-        if (iter++ == 10) // to avoid infinite loop, e.g. for pinfo.size()==1 and prims.size()==1
-          return pinfo;
+        if (iter++ == 5) break; // to avoid infinite loop, e.g. for pinfo.size()==1 and prims.size()==1
+      } while (N > prims.size());
+      //assert(N <= prims.size());
+      assert(N >= pinfo.size());
 
-      } while (pinfo.size()+N > prims.size());
-      assert(pinfo.size()+N <= prims.size());
+      /* compute the target number of replications dNtarget */
+      size_t dN = N-pinfo.size();
+      size_t dNtarget = dN;
+      if (N>prims.size()) dNtarget = prims.size()-pinfo.size(); // does never create more than prims.size() primitives
+      if (dN == 0) { dN = 1; dNtarget = 1; } // special case to avoid division by zero
+      assert(pinfo.size()+dNtarget <= prims.size());
 
       /* split all primitives */
       parallel_prefix_sum (state, size_t(0), pinfo.size(), size_t(1024), size_t(0), [&] (const range<size_t>& r, size_t ofs) -> size_t
       {
         size_t N = 0;
         for (size_t i=r.begin(); i<r.end(); i++) {
-          const float nf = ceil(f*pinfo.size()*area(prims[i])/A);
-          const size_t n = min(ssize_t(4096), max(ssize_t(1), ssize_t(nf)));
-          split_primref(pinfo,split,prims[i],&prims[pinfo.size()+ofs+N],n);
+          const float nf = floor(f*prims.size()*area(prims[i])/A);
+          size_t n = min(ssize_t(4096), max(ssize_t(1), ssize_t(nf)));
+          //if (n<16) n = 1;
+          const size_t base0 = (ofs+N+0  )*dNtarget/dN;
+          const size_t basen = (ofs+N+n-1)*dNtarget/dN;
+          assert(pinfo.size()+basen <= prims.size());
+          split_primref(pinfo,split,prims[i],prims.data()+base0,basen-base0+1);
+          //split_primref(pinfo,split,prims[i],&prims[pinfo.size()+ofs+N],n);
           N+=n-1;
         }
         return N;
       },std::plus<size_t>());
 
       /* compute new priminfo */
+      N = pinfo.size()+dNtarget;
       const PrimInfo pinfo_o = parallel_reduce (size_t(0), size_t(N), PrimInfo(empty), [&] (const range<size_t>& r) -> PrimInfo
       {
         PrimInfo pinfo(empty);
@@ -201,7 +213,7 @@ namespace embree
       return pinfo;
     }
 
-    __forceinline float triangleArea(const Vec2f& v0, const Vec2f& v1, const Vec2f& v2)
+    __forceinline float parallelogramArea(const Vec2f& v0, const Vec2f& v1, const Vec2f& v2)
     {
       return abs((v1.x-v0.x)*(v2.y-v0.y)-(v2.x-v0.x)*(v1.y-v0.y));
     }
@@ -211,20 +223,19 @@ namespace embree
     {
       return presplit(pinfo,prims, 
                       [&] (const PrimRef& prim) -> float { 
-                        const size_t geomID = prim.geomID();
-                        const size_t primID = prim.primID();
-                        const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
-                        const TriangleMesh::Triangle& tri = mesh->triangle(primID);
-                        const Vec3fa v0 = mesh->vertex(tri.v[0]);
-                        const Vec3fa v1 = mesh->vertex(tri.v[1]);
-                        const Vec3fa v2 = mesh->vertex(tri.v[2]);
-                        const float triAreaX = triangleArea(Vec2f(v0.y,v0.z),Vec2f(v1.y,v1.z),Vec2f(v2.y,v2.z));
-                        const float triAreaY = triangleArea(Vec2f(v0.x,v0.z),Vec2f(v1.x,v1.z),Vec2f(v2.x,v2.z));
-                        const float triAreaZ = triangleArea(Vec2f(v0.x,v0.y),Vec2f(v1.x,v1.y),Vec2f(v2.x,v2.y));
-                        const float triBoxArea = triAreaX+triAreaY+triAreaZ;
+                        //const size_t geomID = prim.geomID();
+                        //const size_t primID = prim.primID();
+                        //const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
+                        //const TriangleMesh::Triangle& tri = mesh->triangle(primID);
+                        //const Vec3fa v0 = mesh->vertex(tri.v[0]);
+                        //const Vec3fa v1 = mesh->vertex(tri.v[1]);
+                        //const Vec3fa v2 = mesh->vertex(tri.v[2]);
+                        //const float triAreaX = parallelogramArea(Vec2f(v0.y,v0.z),Vec2f(v1.y,v1.z),Vec2f(v2.y,v2.z));
+                        //const float triAreaY = parallelogramArea(Vec2f(v0.x,v0.z),Vec2f(v1.x,v1.z),Vec2f(v2.x,v2.z));
+                        //const float triAreaZ = parallelogramArea(Vec2f(v0.x,v0.y),Vec2f(v1.x,v1.y),Vec2f(v2.x,v2.y));
+                        //const float triBoxArea = triAreaX+triAreaY+triAreaZ;
                         const float boxArea = area(prim.bounds());
-                        //assert(boxArea>=2.0f*triBoxArea);
-                        //return max(0.0f,boxArea-0.9f*2.0f*triBoxArea);
+                        //return max(0.0f,boxArea-2.0f*triBoxArea);
                         return boxArea;
                       },
                       [&] (const PrimRef& prim, const int dim, const float pos, PrimRef& lprim, PrimRef& rprim) {
