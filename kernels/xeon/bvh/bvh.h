@@ -1,3 +1,4 @@
+
 // ======================================================================== //
 // Copyright 2009-2016 Intel Corporation                                    //
 //                                                                          //
@@ -818,7 +819,12 @@ namespace embree
         size_t iterations = 0;
         while(minF + scale_diff * 255.0f < maxF)
         {
+          // win / visual studio workaround
+#if _MSC_VER == 1600 || _MSC_VER == 1700
+          diff *= (1.0f + ulp);
+#else
           diff = nextafterf(diff, FLT_MAX);
+#endif
           scale_diff = diff / 255.0f;
           iterations++;
         }
