@@ -821,7 +821,7 @@ namespace embree
         {
           // win / visual studio workaround
 #if _MSC_VER == 1600 || _MSC_VER == 1700
-          diff *= (1.0f + ulp);
+          diff *= (1.0f + (float)ulp);
 #else
           diff = nextafterf(diff, FLT_MAX);
 #endif
