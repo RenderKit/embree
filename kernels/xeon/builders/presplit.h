@@ -187,7 +187,7 @@ namespace embree
           const size_t base0 = (ofs+N+0  )*dNtarget/dN;
           const size_t basen = (ofs+N+n-1)*dNtarget/dN;
           assert(pinfo.size()+basen <= prims.size());
-          split_primref(pinfo,split,prims[i],prims.data()+base0,basen-base0+1);
+          split_primref(pinfo,split,prims[i],prims.data()+pinfo.size()+base0,basen-base0+1);
           //split_primref(pinfo,split,prims[i],&prims[pinfo.size()+ofs+N],n);
           N+=n-1;
         }
