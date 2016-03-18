@@ -31,7 +31,6 @@ uniform bool g_subdiv_mode = false;
 
 #define SPP 1
 
-//#define FORCE_FIXED_EDGE_TESSELLATION
 #define FIXED_EDGE_TESSELLATION_VALUE 3
 
 #define MAX_EDGE_LEVEL 64.0f
@@ -632,10 +631,6 @@ export void device_init (uniform int8* uniform cfg)
   /* set start render mode */
   renderTile = renderTileStandard;
   key_pressed_handler = device_key_pressed;
-
-  /* create scene */
-  g_scene = convertScene(g_ispc_scene);
-  rtcCommit (g_scene);
   old_p = make_Vec3f(1E10);
 }
 
@@ -650,23 +645,30 @@ export void device_render (uniform int* uniform pixels,
                            const uniform Vec3f& p)
 {
   uniform Vec3fa cam_org = make_Vec3fa(p.x,p.y,p.z);
-
   uniform bool camera_changed = g_changed; g_changed = false;
-  if ((p.x != old_p.x || p.y != old_p.y || p.z != old_p.z)) {
-    camera_changed = true;
-    old_p = p;
-  } 
 
-  if (camera_changed) {
-#if !defined(FORCE_FIXED_EDGE_TESSELLATION)
-    if (g_subdiv_mode)
-      {
-       updateEdgeLevels(g_ispc_scene, cam_org);
-       rtcCommit (g_scene);
-      }
-#endif
+  /* create scene */
+  if (g_scene == NULL) {
+    g_scene = convertScene(g_ispc_scene);
+    if (g_subdiv_mode) updateEdgeLevels(g_ispc_scene, cam_org);
+    rtcCommit (g_scene);
+    old_p = p;
   }
 
+  else
+  {
+    /* check if camera changed */
+    if ((p.x != old_p.x || p.y != old_p.y || p.z != old_p.z)) {
+      camera_changed = true;
+      old_p = p;
+    } 
+    
+    /* update edge levels if camera changed */
+    if (camera_changed && g_subdiv_mode) {
+      updateEdgeLevels(g_ispc_scene, cam_org);
+      rtcCommit (g_scene);
+    }
+  }
 
   /* render image */
   const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
