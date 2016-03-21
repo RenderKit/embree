@@ -44,11 +44,11 @@ namespace embree
   namespace isa
   {
 
-#define FIBERS 1
+#define TWO_STREAMS_FIBER_MODE 1
 
 #if defined(__AVX__)
 
-#if FIBERS == 0 && !defined(__AVX512F__)
+#if TWO_STREAMS_FIBER_MODE == 0 && !defined(__AVX512F__)
     static const size_t MAX_RAYS_PER_OCTANT = 8*sizeof(unsigned int);
 #else
     static const size_t MAX_RAYS_PER_OCTANT = 8*sizeof(size_t);
@@ -85,7 +85,7 @@ namespace embree
 
         const NearFarPreCompute pc(ray_ctx[0].rdir);
 
-#if FIBERS == 0 && !defined(__AVX512F__)
+#if TWO_STREAMS_FIBER_MODE == 0 && !defined(__AVX512F__)
         const size_t fiberMask = ((size_t)1 << ((__popcnt(m_active)+1)))-1;
 #else
         const size_t fiberMask = ((size_t)1 << ((__popcnt(m_active)+1)>>1))-1;
@@ -104,7 +104,7 @@ namespace embree
         if (m_trav_active_next == 0) cur_next = 0;
 
         assert(__popcnt(m_trav_active_next) <= 32);
-#if FIBERS == 1
+#if TWO_STREAMS_FIBER_MODE == 1
         RayFiberContext fiber[2];
         fiber[0].init(cur,m_trav_active,stackPtr,&fiber[1],0);
 #if defined(__AVX512F__)
@@ -125,7 +125,7 @@ namespace embree
           {
             /* context swap */
 
-#if FIBERS == 1
+#if TWO_STREAMS_FIBER_MODE == 1
             cur_fiber = cur_fiber->swapContext(cur,m_trav_active,stackPtr);
 #endif
 
@@ -187,7 +187,7 @@ namespace embree
             vfloat<K> dist(inf);
             vint<K>   maskK(zero);
 
-#if FIBERS == 0
+#if TWO_STREAMS_FIBER_MODE == 0
             const RayContext *__restrict__ const cur_ray_ctx = ray_ctx;
 #else
             const RayContext *__restrict__ const cur_ray_ctx = &ray_ctx[cur_fiber->getOffset()];
@@ -240,7 +240,7 @@ namespace embree
           /* current ray stream is done? */
           if (unlikely(cur == BVH::invalidNode))
           {
-#if FIBERS == 0
+#if TWO_STREAMS_FIBER_MODE == 0
             break;
 #else
             /* both ray streams are done? */ 
@@ -262,7 +262,7 @@ namespace embree
           //STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
 
           size_t lazy_node = 0;
-#if FIBERS == 0
+#if TWO_STREAMS_FIBER_MODE == 0
           size_t bits = m_trav_active;
 #else
           size_t bits = m_trav_active << cur_fiber->getOffset();
@@ -314,7 +314,7 @@ namespace embree
         stack1[0].ptr  = BVH::invalidNode;
         stack1[0].mask = (size_t)-1;
 
-#if FIBERS == 0 && !defined(__AVX512F__)
+#if TWO_STREAMS_FIBER_MODE == 0 && !defined(__AVX512F__)
         const size_t fiberMask = ((size_t)1 << ((__popcnt(m_active)+1)))-1;
 #else
         const size_t fiberMask = ((size_t)1 << ((__popcnt(m_active)+1)>>1))-1;
@@ -335,7 +335,7 @@ namespace embree
 
         assert(__popcnt(m_trav_active_next) <= 32);
 
-#if FIBERS == 1
+#if TWO_STREAMS_FIBER_MODE == 1
         RayFiberContext fiber[2];
         fiber[0].init(cur,m_trav_active,stackPtr,&fiber[1],0);
 #if defined(__AVX512F__)
@@ -357,7 +357,7 @@ namespace embree
 
           while (1)
           {
-#if FIBERS == 1            
+#if TWO_STREAMS_FIBER_MODE == 1            
             cur_fiber = cur_fiber->swapContext(cur,m_trav_active,stackPtr);
 #endif
 
@@ -420,7 +420,7 @@ namespace embree
             vfloat<K> dist(inf);
             vint<K>   maskK(zero);
 
-#if FIBERS == 0
+#if TWO_STREAMS_FIBER_MODE == 0
             const RayContext *__restrict__ const cur_ray_ctx = ray_ctx;
 #else
             const RayContext *__restrict__ const cur_ray_ctx = &ray_ctx[cur_fiber->getOffset()];
@@ -463,7 +463,7 @@ namespace embree
                 stackPtr--;
                 cur = NodeRef(stackPtr->ptr);
                 assert(stackPtr->mask);
-#if FIBERS == 0
+#if TWO_STREAMS_FIBER_MODE == 0
                 m_trav_active = stackPtr->mask & m_active;
 #else
                 m_trav_active = stackPtr->mask & (m_active>>cur_fiber->getOffset());
@@ -482,7 +482,7 @@ namespace embree
           /* current ray stream is done? */
           if (unlikely(cur == BVH::invalidNode))
           {
-#if FIBERS == 0
+#if TWO_STREAMS_FIBER_MODE == 0
             break;
 #else
             if (cur_fiber->next == cur_fiber)
@@ -501,7 +501,7 @@ namespace embree
           size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
 
           size_t lazy_node = 0;
-#if FIBERS == 0
+#if TWO_STREAMS_FIBER_MODE == 0
           size_t bits = m_trav_active & m_active;          
 #else
           size_t bits = (m_trav_active<<cur_fiber->getOffset()) & m_active;          
@@ -526,7 +526,7 @@ namespace embree
             stackPtr--;
             cur = NodeRef(stackPtr->ptr);
             assert(stackPtr->mask);
-#if FIBERS == 0
+#if TWO_STREAMS_FIBER_MODE == 0
             m_trav_active = stackPtr->mask & m_active;
 #else
             m_trav_active = stackPtr->mask & (m_active>>cur_fiber->getOffset());
