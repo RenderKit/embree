@@ -43,17 +43,28 @@ namespace embree
 {
   namespace isa
   {
+/* experimental fiber mode */
+#define EXPERIMENTAL_FIBER_MODE 0
+#define NUM_FIBERS 2
 
+/* enable traversal of either two small streams or one large stream */
 #define TWO_STREAMS_FIBER_MODE 1
 
 #if defined(__AVX__)
 
-#if TWO_STREAMS_FIBER_MODE == 0 && !defined(__AVX512F__)
+#if TWO_STREAMS_FIBER_MODE == 0 && !defined(__AVX512F__) && EXPERIMENTAL_FIBER_MODE == 0
     static const size_t MAX_RAYS_PER_OCTANT = 8*sizeof(unsigned int);
 #else
     static const size_t MAX_RAYS_PER_OCTANT = 8*sizeof(size_t);
 #endif
     
+
+#if EXPERIMENTAL_FIBER_MODE == 1
+    /* pure fiber mode, no streams */
+
+
+    
+#else
 
     template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
     void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, size_t flags)
@@ -289,6 +300,8 @@ namespace embree
         ///////////////////////////////////////////////////////////////////////////////////
       }
     }
+
+#endif
     
     template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
     void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::occluded(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, size_t flags)

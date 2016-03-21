@@ -198,38 +198,37 @@ namespace embree
 
       /*! Prefetches the node this reference points to */
       __forceinline void prefetch(int types=0) const {
-        if (types == BVH_FLAG_QUANTIZED_NODE) {
-          prefetchL1(((char*)ptr)+0*64);
-          prefetchL1(((char*)ptr)+1*64);
-        } else {
 #if defined(__AVX512F__)
-          prefetchL1(((char*)ptr)+0*64);
-          prefetchL1(((char*)ptr)+1*64);
-          if ((N >= 8) || (types > BVH_FLAG_ALIGNED_NODE)) {
-            prefetchL1(((char*)ptr)+2*64);
-            prefetchL1(((char*)ptr)+3*64);
-          }
-          if ((N >= 8) && (types > BVH_FLAG_ALIGNED_NODE)) {
-            prefetchL2(((char*)ptr)+4*64);
-            prefetchL2(((char*)ptr)+5*64);
-            prefetchL2(((char*)ptr)+6*64);
-            prefetchL2(((char*)ptr)+7*64);
+          prefetchL2(((char*)ptr)+0*64);
+          prefetchL2(((char*)ptr)+1*64);
+          if (types != BVH_FLAG_QUANTIZED_NODE) {
+            if ((N >= 8) || (types > BVH_FLAG_ALIGNED_NODE)) {
+              prefetchL2(((char*)ptr)+2*64);
+              prefetchL2(((char*)ptr)+3*64);
+            }
+            if ((N >= 8) && (types > BVH_FLAG_ALIGNED_NODE)) {
+              prefetchL2(((char*)ptr)+4*64);
+              prefetchL2(((char*)ptr)+5*64);
+              prefetchL2(((char*)ptr)+6*64);
+              prefetchL2(((char*)ptr)+7*64);
+            }
           }
 #else
           prefetchL1(((char*)ptr)+0*64);
           prefetchL1(((char*)ptr)+1*64);
-          if ((N >= 8) || (types > BVH_FLAG_ALIGNED_NODE)) {
-            prefetchL1(((char*)ptr)+2*64);
-            prefetchL1(((char*)ptr)+3*64);
-          }
-          if ((N >= 8) && (types > BVH_FLAG_ALIGNED_NODE)) {
-            prefetchL1(((char*)ptr)+4*64);
-            prefetchL1(((char*)ptr)+5*64);
-            prefetchL1(((char*)ptr)+6*64);
-            prefetchL1(((char*)ptr)+7*64);
+          if (types != BVH_FLAG_QUANTIZED_NODE) {
+            if ((N >= 8) || (types > BVH_FLAG_ALIGNED_NODE)) {
+              prefetchL1(((char*)ptr)+2*64);
+              prefetchL1(((char*)ptr)+3*64);
+            }
+            if ((N >= 8) && (types > BVH_FLAG_ALIGNED_NODE)) {
+              prefetchL1(((char*)ptr)+4*64);
+              prefetchL1(((char*)ptr)+5*64);
+              prefetchL1(((char*)ptr)+6*64);
+              prefetchL1(((char*)ptr)+7*64);
+            }
           }
 #endif
-        }
       }
 
       __forceinline void prefetchLLC(int types=0) const {
