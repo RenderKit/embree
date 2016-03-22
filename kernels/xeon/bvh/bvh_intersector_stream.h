@@ -19,6 +19,7 @@
 #include "bvh.h"
 #include "../../common/ray.h"
 #include "../../common/stack_item.h"
+#include "bvh_traverser1.h"
 
 namespace embree
 {
@@ -169,6 +170,53 @@ namespace embree
       typedef typename BVH::NodeMB NodeMB;
       typedef Vec3<vfloat<K>> Vec3vfK;
       typedef Vec3<vint<K>> Vec3viK;
+      static const size_t stackSize = 
+        1+(N-1)*BVH::maxDepth+   // standard depth
+        1+(N-1)*BVH::maxDepth;   // transform feature
+
+      struct TraversalContext 
+      {
+      public:
+
+        __forceinline TraversalContext() 
+          : pray(nullptr), suspended(false) {}
+
+        __forceinline void init(Ray& ray, BVH* __restrict__ bvh, StackItemT<NodeRef>* stack)
+        {
+          pray = &ray;
+          stackBegin = stack;
+
+          /*! perform per ray precalculations required by the primitive intersector */
+          new (&pre) Precalculations(ray,bvh);
+        
+          /*! stack state */
+          stackPtr = stack+1;
+          stackEnd = stack+stackSize;
+          stack[0].ptr  = bvh->root;
+          stack[0].dist = neg_inf;
+          
+          /*! expand ray */
+          new (&vray) TravRay<N,N>(ray.org,ray.dir);
+          ray_near = max(ray.tnear,0.0f);
+          ray_far  = max(ray.tfar ,0.0f);
+        
+          /*! initialize the node traverser */
+          //new (&nodeTraverser) BVHNNodeTraverser1<N,N,types>(vray);
+        }
+
+      public:
+        bool suspended;
+        Precalculations pre;
+        //StackItemT<NodeRef> stack[stackSize];
+         StackItemT<NodeRef>* stackBegin;
+        StackItemT<NodeRef>* stackPtr;
+        StackItemT<NodeRef>* stackEnd;
+        Ray* pray;
+        TravRay<N,N> vray;
+        vfloat<N> ray_near;
+        vfloat<N> ray_far;
+        //BVHNNodeTraverser1<N,N,types> nodeTraverser;
+      };
 
       struct __aligned(32) RayContext {
         Vec3fa rdir;      //     rdir.w = tnear;
