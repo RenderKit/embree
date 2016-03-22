@@ -479,16 +479,16 @@ namespace embree
     case RTC_CONFIG_VERSION      : return __EMBREE_VERSION_NUMBER__;
 
     case RTC_CONFIG_INTERSECT1: return 1;
-    case RTC_CONFIG_INTERSECTN: return 1;
-
 #if defined(RTCORE_RAY_PACKETS)
     case RTC_CONFIG_INTERSECT4:  return hasISA(SSE2);
     case RTC_CONFIG_INTERSECT8:  return hasISA(AVX);
     case RTC_CONFIG_INTERSECT16: return hasISA(AVX512KNL) | hasISA(KNC);
+    case RTC_CONFIG_INTERSECTN:  return 1;
 #else
     case RTC_CONFIG_INTERSECT4:  return 0;
     case RTC_CONFIG_INTERSECT8:  return 0;
     case RTC_CONFIG_INTERSECT16: return 0;
+    case RTC_CONFIG_INTERSECTN:  return 0;
 #endif
     
 #if defined(RTCORE_RAY_MASK)
