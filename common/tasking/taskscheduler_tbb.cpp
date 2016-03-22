@@ -308,7 +308,7 @@ namespace embree
     condition.wait(mutex, [&] () { return hasRootTask; });
     mutex.unlock();
     std::exception_ptr except = thread_loop(threadIndex);
-    if (except != 0) std::rethrow_exception(except);
+    if (except != nullptr) std::rethrow_exception(except);
   }
 
   void TaskSchedulerTBB::reset() {

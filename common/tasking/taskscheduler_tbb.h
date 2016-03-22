@@ -329,7 +329,7 @@ namespace embree
       cancellingException = nullptr;
 
       /* re-throw proper exception */
-      if (except) 
+      if (except != nullptr) 
         std::rethrow_exception(except);
     }
 
