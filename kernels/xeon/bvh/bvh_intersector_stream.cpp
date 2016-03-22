@@ -48,7 +48,7 @@ namespace embree
 #define NUM_FIBERS 2
 
 /* enable traversal of either two small streams or one large stream */
-#define TWO_STREAMS_FIBER_MODE 1
+#define TWO_STREAMS_FIBER_MODE 0
 
 #if defined(__AVX__)
 
