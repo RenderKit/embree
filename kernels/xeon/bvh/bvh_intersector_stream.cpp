@@ -54,7 +54,7 @@ namespace embree
 #if defined(__AVX__)
 
 #if TWO_STREAMS_FIBER_MODE == 0 && !defined(__AVX512F__) && EXPERIMENTAL_FIBER_MODE == 0
-    static const size_t MAX_RAYS_PER_OCTANT = 1; //8*sizeof(unsigned int);
+    static const size_t MAX_RAYS_PER_OCTANT = 8*sizeof(unsigned int);
 #else
     static const size_t MAX_RAYS_PER_OCTANT = 8*sizeof(size_t);
 #endif
