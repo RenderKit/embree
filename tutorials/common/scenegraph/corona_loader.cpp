@@ -31,6 +31,7 @@ namespace embree
     template<typename T> T load(const Ref<XML>& xml) { assert(false); return T(zero); }
     Ref<SceneGraph::MaterialNode> loadMaterial(const Ref<XML>& xml);
     void  loadMaterialDefinition(const Ref<XML>& xml);
+    Texture* loadMap(const Ref<XML>& xml);
     void  loadMapDefinition(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadMaterialLibrary(const FileName& fileName);
     Ref<SceneGraph::Node> loadObject(const Ref<XML>& xml);
@@ -41,6 +42,8 @@ namespace embree
   private:
     FileName path; 
     std::map<std::string,Ref<SceneGraph::MaterialNode> > materialMap; 
+    std::map<std::string,Texture* > textureMap; 
+    std::map<std::string,Texture* > textureFileMap; 
   public:
     Ref<SceneGraph::Node> root;
   };
@@ -98,8 +101,11 @@ namespace embree
       OBJMaterial objmaterial;
       for (auto child : xml->children)
       {
-        if (child->name == "diffuse") 
+        if (child->name == "diffuse") {
           objmaterial.Kd = load<Vec3fa>(child);
+          if (child->children.size() && child->children[0]->name == "map")
+            objmaterial.map_Kd = loadMap(child->children[0]);
+        }
         else if (child->name == "reflect") {
           objmaterial.Ks = load<Vec3fa>(child->child("color"));
           objmaterial.Ni = load<float >(child->child("ior"));
@@ -107,6 +113,11 @@ namespace embree
         }
         else if (child->name == "translucency") {
           objmaterial.Kt = load<Vec3fa>(child->child("color"));
+        }
+        else if (child->name == "opacity") {
+          objmaterial.d = load<Vec3fa>(child).x;
+          if (child->children.size() && child->children[0]->name == "map")
+            objmaterial.map_d = loadMap(child->children[0]);
         }
       }
       
@@ -141,6 +152,42 @@ namespace embree
     materialMap[name] = loadMaterial(xml->children[0]);
   }
 
+  Texture* CoronaLoader::loadMap(const Ref<XML>& xml) 
+  {
+    /* process map node */
+    if (xml->name == "map")
+    {
+      std::string mapClass = xml->parm("class");
+
+      /* load textures */
+      if (mapClass == "Texture")
+      {
+        const FileName src = load<FileName>(xml->child("image"));
+        
+        /* load images only once */
+        if (textureFileMap.find(src) != textureFileMap.end())
+          return textureFileMap[src];
+        
+        try {
+          return Texture::load(path+src);
+        } catch (std::runtime_error e) {
+          std::cerr << "failed to load " << path+src << ": " << e.what() << std::endl;
+        }
+      }
+      else if (mapClass == "Reference") {
+        const std::string name = load<std::string>(xml);
+        return textureMap[name];
+      }
+    }
+
+    /* recurse into every unknown node to find some texture */
+    for (auto child : xml->children) {
+      Texture* texture = loadMap(child);
+      if (texture) return texture;
+    }
+    return nullptr;
+  }
+
   void CoronaLoader::loadMapDefinition(const Ref<XML>& xml) 
   {
     if (xml->name != "mapDefinition") 
@@ -148,8 +195,9 @@ namespace embree
     if (xml->children.size() != 1) 
       THROW_RUNTIME_ERROR(xml->loc.str()+": invalid map definition");
 
-    //const std::string name = xml->parm("name");
-    //textureMap[name] = loadMap(xml->children[0]);
+    const std::string name = xml->parm("name");
+    Texture* texture = loadMap(xml->children[0]);
+    if (texture) textureMap[name] = texture;
   }
 
   Ref<SceneGraph::Node> CoronaLoader::loadMaterialLibrary(const FileName& fileName) 
@@ -160,8 +208,9 @@ namespace embree
     
     for (auto child : xml->children)
     {
-      if (child->name == "materialDefinition")
+      if (child->name == "materialDefinition") {
         loadMaterialDefinition(child);
+      }
       else if (child->name == "mapDefinition")
         loadMapDefinition(child);
     }
