@@ -231,8 +231,8 @@ namespace embree
 
         const NearFarPreCompute pc(ray_ctx[0].rdir);
 
-#if TWO_STREAMS_FIBER_MODE == 0 && !defined(__AVX512F__)
-        const size_t fiberMask = ((size_t)1 << ((__popcnt(m_active)+1)))-1;
+#if TWO_STREAMS_FIBER_MODE == 0 
+        const size_t fiberMask = m_active;
 #else
         const size_t fiberMask = ((size_t)1 << ((__popcnt(m_active)+1)>>1))-1;
         assert( ((fiberMask | (~fiberMask)) & m_active) == m_active);
@@ -263,7 +263,6 @@ namespace embree
         RayFiberContext *cur_fiber = &fiber[0];
 #endif
 
-        
         while (1) pop:
         {          
           const vfloat<K> inf(pos_inf);
@@ -530,8 +529,8 @@ namespace embree
         stack1[0].ptr  = BVH::invalidNode;
         stack1[0].mask = (size_t)-1;
 
-#if TWO_STREAMS_FIBER_MODE == 0 && !defined(__AVX512F__)
-        const size_t fiberMask = ((size_t)1 << ((__popcnt(m_active)+1)))-1;
+#if TWO_STREAMS_FIBER_MODE == 0 
+        const size_t fiberMask = m_active;
 #else
         const size_t fiberMask = ((size_t)1 << ((__popcnt(m_active)+1)>>1))-1;
         assert( ((fiberMask | (~fiberMask)) & m_active) == m_active);
@@ -549,9 +548,10 @@ namespace embree
 
         if (m_trav_active_next == 0) cur_next = 0;
 
-        assert(__popcnt(m_trav_active_next) <= 32);
 
 #if TWO_STREAMS_FIBER_MODE == 1
+        assert(__popcnt(m_trav_active_next) <= 32);
+
         RayFiberContext fiber[2];
         fiber[0].init(cur,m_trav_active,stackPtr,&fiber[1],0);
 #if defined(__AVX512F__)
