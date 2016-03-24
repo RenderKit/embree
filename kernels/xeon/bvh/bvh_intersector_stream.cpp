@@ -871,11 +871,14 @@ namespace embree
         /* loop until finished */
         do
         {
+          size_t trav_queue_left = queue_left[0];
+          size_t trav_queue_right = queue_right[0];
+
           /* traverse all rays */
-          while (queue_right[0]-queue_left[0])
+          while (trav_queue_right-trav_queue_left)
           {
-            const int r = queue[0][queue_left[0] % queue_size];
-            queue_left[0]++;
+            const int r = queue[0][trav_queue_left % queue_size];
+            trav_queue_left++;
 
             Ray& ray = *rays[r];
             const RayContext& rayctx = ray_ctx[r];
@@ -921,8 +924,11 @@ namespace embree
             stack_ptr[r] = sptr;
             if (unlikely(sptr == 0)) continue;
             const int q = stack[r][sptr-1].isLeaf() != 0;
+            queue_right[0] = trav_queue_right;
             queue[q][queue_right[q]++  % queue_size ] = r;
+            trav_queue_right = queue_right[0];
           }
+          queue_left[0] = trav_queue_left;
           
           /* intersect all rays */
           while (queue_right[1]-queue_left[1])
