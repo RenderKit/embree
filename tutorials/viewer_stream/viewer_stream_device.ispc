@@ -253,12 +253,15 @@ void renderTileStandard(uniform int taskIndex,
   uniform int N = 0;
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
+    /* ISPC workaround for mask == 0 */
+    if (all(__mask == 0)) continue;
+
     RandomSampler sampler;
     RandomSampler_init(sampler, x, y, 0);
     
     /* initialize ray */
-    assert(N < TILE_SIZE_X*TILE_SIZE_Y);
     RTCRay& ray = rays[N++];
+
     ray.org = p; // FIXME: make invalid rays empty
     ray.dir = normalize(x*vx + y*vy + vz);
     ray.tnear = 0.0f;
@@ -284,15 +287,16 @@ void renderTileStandard(uniform int taskIndex,
   N = 0;
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
-    assert(N < TILE_SIZE_X*TILE_SIZE_Y);
+    /* ISPC workaround for mask == 0 */
+    if (all(__mask == 0)) continue;
     RTCRay& ray = rays[N++];
 
 
     /* eyelight shading */
     Vec3f color = make_Vec3f(0.0f);
     if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
-      color = make_Vec3f(abs(dot(ray.dir,normalize(ray.Ng))));
-      //color = ambientOcclusionShading(x,y,ray);
+      //color = make_Vec3f(abs(dot(ray.dir,normalize(ray.Ng))));
+      color = ambientOcclusionShading(x,y,ray);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
