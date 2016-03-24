@@ -966,7 +966,9 @@ namespace embree
             
             stack_ptr[r] = sptr;
             if (unlikely(sptr == 0)) continue;
-            const int q = stack[r][sptr-1].isLeaf() != 0;
+            NodeRef next = stack[r][sptr-1];
+            next.prefetch_L1();
+            const int q = next.isLeaf() != 0;
             queue[q][queue_right[q]++  % queue_size ] = r;
           }
         }
