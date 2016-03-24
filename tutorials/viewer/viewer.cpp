@@ -249,14 +249,10 @@ namespace embree
     g_rtcore += g_subdiv_mode;
 
     /* load scene */
-    if (toLowerCase(filename.ext()) == std::string("obj")) {
+    if (toLowerCase(filename.ext()) == std::string("obj"))
       g_scene->add(loadOBJ(filename,g_subdiv_mode != ""));
-    }
-    else if (toLowerCase(filename.ext()) == std::string("xml")) {
-      g_scene->add(loadXML(filename,one));
-    }
     else if (filename.ext() != "")
-      THROW_RUNTIME_ERROR("invalid scene type: "+toLowerCase(filename.ext()));
+      g_scene->add(SceneGraph::load(filename));
 
     /* convert triangles to quads */
     if (convert_tris_to_quads)

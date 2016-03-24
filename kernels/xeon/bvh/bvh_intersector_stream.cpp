@@ -48,7 +48,8 @@ namespace embree
 #define NUM_FIBERS 2
 
 /* enable traversal of either two small streams or one large stream */
-#define TWO_STREAMS_FIBER_MODE 1
+#define TWO_STREAMS_FIBER_MODE 0
+#define SINGLE_RAY_OPTIMIZATION 0
 
 #if defined(__AVX__)
 
@@ -62,8 +63,142 @@ namespace embree
 #if EXPERIMENTAL_FIBER_MODE == 1
     /* pure fiber mode, no streams */
 
+#define FIBERING 1
 
+    template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
+    void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, size_t flags)
+    {
+      StackItemT<NodeRef> stack[2][stackSize];           //!< stack of nodes 
+      TraversalContext contexts[2];
+      size_t ctxID = 0;
+      //TraversalContext* ctx = &contexts[ctxID];
+      TraversalContext context; TraversalContext* ctx = &context;
+      
+#if FIBERING == 0
+      for (size_t r=0; r<numTotalRays; r++)
+      {
+        ctx->init((Ray&)*input_rays[r],bvh,stack[ctxID]);
+#else
+      size_t r = 0;
+      {
+        if (r >= numTotalRays) return;
+        ctx->init((Ray&)*input_rays[r++],bvh,stack[ctxID]);
+        if (r < numTotalRays) {
+          ctxID =(ctxID+1)%2;
+          ctx = &contexts[ctxID];
+          ctx->init((Ray&)*input_rays[r++],bvh,stack[ctxID]);
+        }
+#endif
+       
+        /* pop loop */
+        while (true) pop:
+        {
+          /*! pop next node */
+          if (unlikely(ctx->stackPtr == ctx->stackBegin)) 
+#if FIBERING == 0
+            break;
+#else
+          {
+            /* fill in new ray */
+            if (likely(r < numTotalRays))
+              ctx->init((Ray&)*input_rays[r++],bvh,stack[ctxID]);
+            
+            /* terminate fiber */
+            else 
+            {
+              ctx->pray = nullptr;
+
+              /* switch to next fiber */
+              ctxID =(ctxID+1)%2;
+              ctx = &contexts[ctxID];
+              if (ctx->pray == nullptr) break;
+            }
+            continue;
+          }
+#endif
+          ctx->stackPtr--;
+          NodeRef cur = NodeRef(ctx->stackPtr->ptr);
+          
+          /*! if popped node is too far, pop next one */
+          if (unlikely(*(float*)&ctx->stackPtr->dist > ctx->pray->tfar))
+            continue;
+          
+          /* downtraversal loop */
+          while (true)
+          {
+            size_t mask;
+            vfloat<N> tNear;
+            
+            /*! stop if we found a leaf node */
+            if (unlikely(cur.isLeaf())) break;
+            STAT3(normal.trav_nodes,1,1,1);
+            
+            /* intersect node */
+            bool nodeIntersected = BVHNNodeIntersector1<N,N,types,robust>::intersect(cur,ctx->vray,ctx->ray_near,ctx->ray_far,ctx->pray->time,tNear,mask);
+            if (unlikely(!nodeIntersected)) break;
+            
+            /*! if no child is hit, pop next node */
+            if (unlikely(mask == 0))
+              goto pop;
+      
+            /*! initialize the node traverser */
+            BVHNNodeTraverser1<N,N,types> nodeTraverser(ctx->vray);
+      
+            /* select next child and push other children */
+            nodeTraverser.traverseClosestHit(cur,mask,tNear,ctx->stackPtr,ctx->stackEnd);
+            
+#if 0 //FIBERING
+            /* switch to other fiber */
+            size_t nextCtxID=(ctxID+1)%2;
+            if (unlikely(contexts[nextCtxID].pray))
+            {
+              /* suspend current fiber */
+              ctx->stackPtr->ptr = cur; ctx->stackPtr->dist = neg_inf; ctx->stackPtr++;
+              
+              /* switch to next fiber */
+              ctxID = nextCtxID;
+              ctx = &contexts[ctxID];
+              goto pop;
+            } 
+#endif
+          }
+      
+#if FIBERING
+          /* switch to other fiber */
+          size_t nextCtxID=(ctxID+1)%2;
+          if (!ctx->suspended && unlikely(contexts[nextCtxID].pray))
+          {
+            /* suspend current fiber */
+            ctx->stackPtr->ptr = cur; ctx->stackPtr->dist = neg_inf; ctx->stackPtr++;
+            ctx->suspended = true;
+            
+            /* switch to next fiber */
+            ctxID = nextCtxID;
+            ctx = &contexts[ctxID];
+            goto pop;
+          } 
+          ctx->suspended = false;
+#endif
     
+          /*! this is a leaf node */
+          assert(cur != BVH::emptyNode);
+          STAT3(normal.trav_leaves,1,1,1);
+          size_t num; Primitive* prim = (Primitive*) cur.leaf(num);
+          size_t lazy_node = 0;
+          PrimitiveIntersector::intersect(ctx->pre,*ctx->pray,0,prim,num,bvh->scene,nullptr,lazy_node);
+          ctx->ray_far = ctx->pray->tfar;
+        }
+      }
+      AVX_ZERO_UPPER();
+    }
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 #else
 
     template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
@@ -96,8 +231,8 @@ namespace embree
 
         const NearFarPreCompute pc(ray_ctx[0].rdir);
 
-#if TWO_STREAMS_FIBER_MODE == 0 && !defined(__AVX512F__)
-        const size_t fiberMask = ((size_t)1 << ((__popcnt(m_active)+1)))-1;
+#if TWO_STREAMS_FIBER_MODE == 0 
+        const size_t fiberMask = m_active;
 #else
         const size_t fiberMask = ((size_t)1 << ((__popcnt(m_active)+1)>>1))-1;
         assert( ((fiberMask | (~fiberMask)) & m_active) == m_active);
@@ -128,10 +263,76 @@ namespace embree
         RayFiberContext *cur_fiber = &fiber[0];
 #endif
 
-        
         while (1) pop:
         {          
           const vfloat<K> inf(pos_inf);
+
+#if SINGLE_RAY_OPTIMIZATION && !defined(__AVX512F__)
+
+          if (likely(__popcnt(m_trav_active) == 1))
+          {
+            const size_t i = __bsf(m_trav_active);
+            const RayContext &ray = ray_ctx[i];
+            const vfloat<K> ray_org_rdir_x = ray.org_rdir.x;
+            const vfloat<K> ray_org_rdir_y = ray.org_rdir.y;
+            const vfloat<K> ray_org_rdir_z = ray.org_rdir.z;
+            const vfloat<K> ray_rdir_x = ray.rdir.x;
+            const vfloat<K> ray_rdir_y = ray.rdir.y;
+            const vfloat<K> ray_rdir_z = ray.rdir.z;
+            
+            while (1)
+            {
+              /* context swap */
+              if (unlikely(cur.isLeaf())) break;
+              const Node* __restrict__ const node = cur.node();
+              STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);
+              assert(m_trav_active);
+              
+              STAT3(normal.trav_nodes,1,1,1);                          
+              const vfloat<K> bminX = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.nearX));
+              const vfloat<K> tNearX = msub(bminX, ray_rdir_x, ray_org_rdir_x);
+              const vfloat<K> bminY = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.nearY));
+              const vfloat<K> tNearY = msub(bminY, ray_rdir_y, ray_org_rdir_y);
+              const vfloat<K> bminZ = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.nearZ));
+              const vfloat<K> tNearZ = msub(bminZ, ray_rdir_z, ray_org_rdir_z);
+              const vfloat<K> bmaxX = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farX));
+              const vfloat<K> tFarX  = msub(bmaxX, ray_rdir_x, ray_org_rdir_x);
+              const vfloat<K> bmaxY = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farY));
+              const vfloat<K> tFarY  = msub(bmaxY, ray_rdir_y, ray_org_rdir_y);
+              const vfloat<K> bmaxZ = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farZ));
+              const vfloat<K> tFarZ  = msub(bmaxZ, ray_rdir_z, ray_org_rdir_z);
+              const vint<K> bitmask  = vint<K>(m_trav_active);
+#if defined(__AVX2__)
+              const vfloat<K> tNear  = maxi(maxi(tNearX,tNearY),maxi(tNearZ,vfloat<K>(ray.rdir.w)));
+              const vfloat<K> tFar   = mini(mini(tFarX,tFarY),mini(tFarZ,vfloat<K>(ray.org_rdir.w)));
+              const vbool<K> vmask   = tNear <= tFar;
+              vint<K> maskK = (bitmask & vint<K>(vmask));
+#else
+              const vfloat<K> tNear  = max(tNearX,tNearY,tNearZ,vfloat<K>(ray.rdir.w));
+              const vfloat<K> tFar   = min(tFarX ,tFarY ,tFarZ ,vfloat<K>(ray.org_rdir.w));
+              const vbool<K> vmask   = tNear <= tFar;
+              vint<K> maskK = select(vmask,bitmask,vint<K>(zero)); 
+#endif
+
+              /* pop if we hit no node */
+              if (unlikely(none(vmask))) 
+              {
+                /*! pop next node */
+                STAT3(normal.trav_stack_pop,1,1,1);                          
+                stackPtr--;
+                cur = NodeRef(stackPtr->ptr);
+                m_trav_active = stackPtr->mask;
+                assert(m_trav_active);
+                goto pop;
+              }
+              
+              BVHNNodeTraverserKHit<types,N,K>::traverseClosestHit(cur, m_trav_active, vmask, tNear, (unsigned int*)&maskK, stackPtr);
+              assert(m_trav_active);
+            }
+            goto leaf;
+          }
+#endif
+
           while (1)
           {
             /* context swap */
@@ -247,6 +448,7 @@ namespace embree
             assert(m_trav_active);
 #endif
           }
+        leaf:
 
           /* current ray stream is done? */
           if (unlikely(cur == BVH::invalidNode))
@@ -327,8 +529,8 @@ namespace embree
         stack1[0].ptr  = BVH::invalidNode;
         stack1[0].mask = (size_t)-1;
 
-#if TWO_STREAMS_FIBER_MODE == 0 && !defined(__AVX512F__)
-        const size_t fiberMask = ((size_t)1 << ((__popcnt(m_active)+1)))-1;
+#if TWO_STREAMS_FIBER_MODE == 0 
+        const size_t fiberMask = m_active;
 #else
         const size_t fiberMask = ((size_t)1 << ((__popcnt(m_active)+1)>>1))-1;
         assert( ((fiberMask | (~fiberMask)) & m_active) == m_active);
@@ -346,9 +548,10 @@ namespace embree
 
         if (m_trav_active_next == 0) cur_next = 0;
 
-        assert(__popcnt(m_trav_active_next) <= 32);
 
 #if TWO_STREAMS_FIBER_MODE == 1
+        assert(__popcnt(m_trav_active_next) <= 32);
+
         RayFiberContext fiber[2];
         fiber[0].init(cur,m_trav_active,stackPtr,&fiber[1],0);
 #if defined(__AVX512F__)
@@ -367,6 +570,75 @@ namespace embree
         while (1) pop:
         {
           const vfloat<K> inf(pos_inf);
+
+#if SINGLE_RAY_OPTIMIZATION && !defined(__AVX512F__)
+
+          if (likely(__popcnt(m_trav_active) == 1))
+          {
+            const size_t i = __bsf(m_trav_active);
+            const RayContext &ray = ray_ctx[i];
+            const vfloat<K> ray_org_rdir_x = ray.org_rdir.x;
+            const vfloat<K> ray_org_rdir_y = ray.org_rdir.y;
+            const vfloat<K> ray_org_rdir_z = ray.org_rdir.z;
+            const vfloat<K> ray_rdir_x = ray.rdir.x;
+            const vfloat<K> ray_rdir_y = ray.rdir.y;
+            const vfloat<K> ray_rdir_z = ray.rdir.z;
+            
+            while (1)
+            {
+              /* context swap */
+              if (unlikely(cur.isLeaf())) break;
+              const Node* __restrict__ const node = cur.node();
+              STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);
+              assert(m_trav_active);
+              
+              STAT3(normal.trav_nodes,1,1,1);                          
+              const vfloat<K> bminX = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.nearX));
+              const vfloat<K> tNearX = msub(bminX, ray_rdir_x, ray_org_rdir_x);
+              const vfloat<K> bminY = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.nearY));
+              const vfloat<K> tNearY = msub(bminY, ray_rdir_y, ray_org_rdir_y);
+              const vfloat<K> bminZ = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.nearZ));
+              const vfloat<K> tNearZ = msub(bminZ, ray_rdir_z, ray_org_rdir_z);
+              const vfloat<K> bmaxX = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farX));
+              const vfloat<K> tFarX  = msub(bmaxX, ray_rdir_x, ray_org_rdir_x);
+              const vfloat<K> bmaxY = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farY));
+              const vfloat<K> tFarY  = msub(bmaxY, ray_rdir_y, ray_org_rdir_y);
+              const vfloat<K> bmaxZ = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farZ));
+              const vfloat<K> tFarZ  = msub(bmaxZ, ray_rdir_z, ray_org_rdir_z);
+              const vint<K> bitmask  = vint<K>(m_trav_active);
+#if defined(__AVX2__)
+              const vfloat<K> tNear  = maxi(maxi(tNearX,tNearY),maxi(tNearZ,vfloat<K>(ray.rdir.w)));
+              const vfloat<K> tFar   = mini(mini(tFarX,tFarY),mini(tFarZ,vfloat<K>(ray.org_rdir.w)));
+              const vbool<K> vmask   = tNear <= tFar;
+              vint<K> maskK = (bitmask & vint<K>(vmask));
+#else
+              const vfloat<K> tNear  = max(tNearX,tNearY,tNearZ,vfloat<K>(ray.rdir.w));
+              const vfloat<K> tFar   = min(tFarX ,tFarY ,tFarZ ,vfloat<K>(ray.org_rdir.w));
+              const vbool<K> vmask   = tNear <= tFar;
+              vint<K> maskK = select(vmask,bitmask,vint<K>(zero)); 
+#endif
+
+              /* pop if we hit no node */
+              if (unlikely(none(vmask))) 
+              {
+                /*! pop next node */
+                STAT3(shadow.trav_stack_pop,1,1,1);  
+                do {
+                  stackPtr--;
+                  cur = NodeRef(stackPtr->ptr);
+                  assert(stackPtr->mask);
+                  m_trav_active = stackPtr->mask & m_active;
+                } while (unlikely(cur != BVH::invalidNode && m_trav_active == 0));
+                //assert(__popcnt(m_trav_active) <= 32);
+                goto pop;
+              }
+              
+              BVHNNodeTraverserKHit<types,N,K>::traverseAnyHit(cur, m_trav_active, vmask, (unsigned int*)&maskK, stackPtr);
+              assert(m_trav_active);
+            }
+            goto leaf;
+          }
+#endif
 
           while (1)
           {
@@ -491,6 +763,7 @@ namespace embree
 #endif
 
           }
+       leaf:
 
           /* current ray stream is done? */
           if (unlikely(cur == BVH::invalidNode))

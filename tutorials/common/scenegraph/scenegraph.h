@@ -23,6 +23,8 @@ namespace embree
 {  
   struct SceneGraph
   {
+    struct MaterialNode;
+
     struct Node : public RefCount
     {
       Node (bool closed = false)
@@ -34,6 +36,9 @@ namespace embree
         std::set<Ref<Node>> done;
         resetNode(done);
       }
+
+      /* sets material */
+      virtual void setMaterial(Ref<MaterialNode> material) {};
 
       /* resets indegree and closed parameters */
       virtual void resetNode(std::set<Ref<Node>>& done);
@@ -61,6 +66,10 @@ namespace embree
 
       TransformNode (const AffineSpace3fa& xfm0, const AffineSpace3fa& xfm1, const Ref<Node>& child)
         : xfm0(xfm0), xfm1(xfm1), child(child) {}
+
+      virtual void setMaterial(Ref<MaterialNode> material) {
+        child->setMaterial(material);
+      }
 
       virtual void resetNode(std::set<Ref<Node>>& done);
       virtual void calculateInDegree();
@@ -110,6 +119,10 @@ namespace embree
           children[i] = convert_hair_to_curves(children[i]);
       }
 
+      virtual void setMaterial(Ref<MaterialNode> material) {
+        for (auto child : children) child->setMaterial(material);
+      }
+
       virtual void resetNode(std::set<Ref<Node>>& done);
       virtual void calculateInDegree();
       virtual bool calculateClosed();
@@ -156,6 +169,10 @@ namespace embree
       TriangleMeshNode (Ref<MaterialNode> material) 
         : Node(true), material(material) {}
       
+      virtual void setMaterial(Ref<MaterialNode> material) {
+        this->material = material;
+      }
+
       void verify() const;
 
     public:
@@ -184,6 +201,10 @@ namespace embree
       QuadMeshNode (Ref<MaterialNode> material) 
         : Node(true), material(material) {}
       
+      virtual void setMaterial(Ref<MaterialNode> material) {
+        this->material = material;
+      }
+
       void verify() const;
 
     public:
@@ -201,8 +222,13 @@ namespace embree
       SubdivMeshNode (Ref<MaterialNode> material) 
         : Node(true), material(material) {}
 
+      virtual void setMaterial(Ref<MaterialNode> material) {
+        this->material = material;
+      }
+
       void verify() const;
-      
+
+    public:
       avector<Vec3fa> positions;            //!< vertex positions
       avector<Vec3fa> positions2;           //!< vertex positions for 2nd timestep
       avector<Vec3fa> normals;              //!< face vertex normals
@@ -226,6 +252,10 @@ namespace embree
       LineSegmentsNode (Ref<MaterialNode> material)
         : Node(true), material(material) {}
       
+      virtual void setMaterial(Ref<MaterialNode> material) {
+        this->material = material;
+      }
+
       void verify() const;
 
     public:
@@ -252,7 +282,11 @@ namespace embree
     public:
       HairSetNode (bool hair, Ref<MaterialNode> material)
         : Node(true), hair(hair), material(material) {}
-      
+
+      virtual void setMaterial(Ref<MaterialNode> material) {
+        this->material = material;
+      }
+
       void verify() const;
 
     public:

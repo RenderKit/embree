@@ -21,6 +21,8 @@
 
 #define USE_INTERFACE 0 // 0 = stream, 1 = single rays/packets, 2 = single rays/packets using stream interface
 #define AMBIENT_OCCLUSION_SAMPLES 64
+//#define rtcOccluded rtcIntersect // FIXME
+//#define rtcOccludedN rtcIntersectN // FIXME
 
 extern "C" ISPCScene* g_ispc_scene;
 
