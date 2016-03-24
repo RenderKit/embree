@@ -841,7 +841,7 @@ namespace embree
       __aligned(64) Precalculations pre[queue_size]; // FIXME: initialize
       //__aligned(64) int trav_queue[queue_size]; size_t trav_queue_left = 0; size_t trav_queue_right = 0;
       //__aligned(64) int int_queue [queue_size]; size_t int_queue_left  = 0; size_t int_queue_right  = 0;
-      __aligned(64) int queue[2][queue_size]; 
+      __aligned(64) int queue[2][queue_size+1]; 
       size_t queue_left[2] = { 0, 0 }; 
       size_t queue_right[2] = { 0, 0 };
 
@@ -859,6 +859,10 @@ namespace embree
         const int q = bvh->root.isLeaf() != 0;
         for (size_t r=0; r<numRays; r++) 
           queue[q][queue_right[q]++] = r;
+        for (size_t r=numRays; r<queue_size; r++)
+          queue[0][r] = 0;
+
+        //queue[0][numRays] = 0; // for prefetch to work
 
         /* push termination node and root node onto stack for each ray */
         for (size_t r=0; r<numRays; r++) 
@@ -879,6 +883,10 @@ namespace embree
           {
             const int r = queue[0][trav_queue_left % queue_size];
             trav_queue_left++;
+
+            /* prefetch next node */
+            const int r1 = queue[0][trav_queue_left % queue_size];
+            stack[r1][stack_ptr[r1]-1].prefetch();
 
             Ray& ray = *rays[r];
             const RayContext& rayctx = ray_ctx[r];
