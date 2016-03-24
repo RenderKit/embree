@@ -248,6 +248,40 @@ namespace embree
         }
       }
 
+      __forceinline void prefetch_L1(int types=0) const {
+        embree::prefetchL1(((char*)ptr)+0*64);
+        embree::prefetchL1(((char*)ptr)+1*64);
+        if (types != BVH_FLAG_QUANTIZED_NODE) {
+          if ((N >= 8) || (types > BVH_FLAG_ALIGNED_NODE)) {
+            embree::prefetchL1(((char*)ptr)+2*64);
+            embree::prefetchL1(((char*)ptr)+3*64);
+          }
+          if ((N >= 8) && (types > BVH_FLAG_ALIGNED_NODE)) {
+            embree::prefetchL1(((char*)ptr)+4*64);
+            embree::prefetchL1(((char*)ptr)+5*64);
+            embree::prefetchL1(((char*)ptr)+6*64);
+            embree::prefetchL1(((char*)ptr)+7*64);
+          }
+        }
+      }
+
+      __forceinline void prefetch_L2(int types=0) const {
+        embree::prefetchL2(((char*)ptr)+0*64);
+        embree::prefetchL2(((char*)ptr)+1*64);
+        if (types != BVH_FLAG_QUANTIZED_NODE) {
+          if ((N >= 8) || (types > BVH_FLAG_ALIGNED_NODE)) {
+            embree::prefetchL2(((char*)ptr)+2*64);
+            embree::prefetchL2(((char*)ptr)+3*64);
+          }
+          if ((N >= 8) && (types > BVH_FLAG_ALIGNED_NODE)) {
+            embree::prefetchL2(((char*)ptr)+4*64);
+            embree::prefetchL2(((char*)ptr)+5*64);
+            embree::prefetchL2(((char*)ptr)+6*64);
+            embree::prefetchL2(((char*)ptr)+7*64);
+          }
+        }
+      }
+
 
       __forceinline void prefetchW(int types=0) const {
         embree::prefetchEX(((char*)ptr)+0*64);

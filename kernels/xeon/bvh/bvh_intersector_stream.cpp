@@ -933,7 +933,7 @@ namespace embree
             stack_ptr[r] = sptr;
             if (unlikely(sptr == 0)) continue;
             NodeRef next = stack[r][sptr-1];
-            next.prefetch();
+            next.prefetch_L1();
             const int q = next.isLeaf() != 0;
             queue_right[0] = trav_queue_right;
             queue[q][queue_right[q]++  % queue_size ] = r;
