@@ -508,7 +508,7 @@ namespace embree
 
 #endif
 
-#if 0
+#if 1
     
     template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
     void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::occluded(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, size_t flags)
@@ -830,7 +830,7 @@ namespace embree
 #endif
 
 
-#if 1
+#if 0
 
     /* experimental multi-stack mode */
     template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
@@ -881,8 +881,8 @@ namespace embree
             Ray& ray = *rays[r];
             const RayContext& rayctx = ray_ctx[r];
             ssize_t sptr = stack_ptr[r];
-            NodeRef ref = stack[r][--sptr];
-            const Node* __restrict__ const node = ref.node();
+            NodeRef cur = stack[r][--sptr];
+            const Node* __restrict__ const node = cur.node();
           
             /* box intersection */
             const vfloat<K> bminX = vfloat<K>(*(vfloat<K>*)((const char*)&node->lower_x+pc.nearX));
@@ -942,11 +942,11 @@ namespace embree
             
             /* pop next node from stack */
             ssize_t sptr = stack_ptr[r];
-            NodeRef ref = stack[r][--sptr];
+            NodeRef cur = stack[r][--sptr];
 
             /* primitive intersection */
             size_t lazy_node = 0;
-            size_t num; Primitive* prim = (Primitive*)ref.leaf(num);
+            size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
             if (PrimitiveIntersector::occluded(pre[r],*rays[r],0,prim,num,bvh->scene,nullptr,lazy_node)) {
               rays[r]->geomID = 0;
               continue;
