@@ -120,7 +120,10 @@ namespace embree
           if (unlikely(rays_in_octant[octantID] == MAX_RAYS_PER_OCTANT))
           {
             for (size_t j=0;j<MAX_RAYS_PER_OCTANT;j++)
+            {
               rays[j] = rayN.gatherByOffset(octants[octantID][j]);
+              assert(rays[j].valid());
+            }
 
             if (intersect)
               scene->intersectN((RTCRay**)rays_ptr,MAX_RAYS_PER_OCTANT,flags);
@@ -140,7 +143,11 @@ namespace embree
         if (rays_in_octant[i])
         {
           for (size_t j=0;j<rays_in_octant[i];j++)
+          {
             rays[j] = rayN.gatherByOffset(octants[i][j]);
+            //if (!rays[j].valid()) PRINT(rays[j]);
+            assert(rays[j].valid());
+          }
 
           if (intersect)
             scene->intersectN((RTCRay**)rays_ptr,rays_in_octant[i],flags);

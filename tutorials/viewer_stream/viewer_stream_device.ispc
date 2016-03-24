@@ -160,6 +160,18 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
 /* renders a single pixel casting with ambient occlusion */
 Vec3f ambientOcclusionShading(int x, int y, RTCRay& ray)
 {
+  RTCRay rays[AMBIENT_OCCLUSION_SAMPLES];
+
+  /* disable all rays first bet setting tnear > tfar */
+  unmasked {
+    for (uniform int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
+    {
+      RTCRay& shadow = rays[i];
+      shadow.tnear = inf;
+      shadow.tfar = 0;      
+    }  
+  }
+
   Vec3f Ng = normalize(ray.Ng);
   if (dot(ray.dir,Ng) > 0.0f) Ng = neg(Ng);
 
@@ -169,11 +181,12 @@ Vec3f ambientOcclusionShading(int x, int y, RTCRay& ray)
   float intensity = 0;
   Vec3f hitPos = ray.org + ray.tfar * ray.dir;
 
-  RTCRay rays[AMBIENT_OCCLUSION_SAMPLES];
 
   RandomSampler sampler;
   RandomSampler_init(sampler,x,y,0);
-  
+
+
+  /* enable only valid rays */
   for (uniform int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
   {
     /* sample random direction */
@@ -244,6 +257,7 @@ void renderTileStandard(uniform int taskIndex,
     RandomSampler_init(sampler, x, y, 0);
     
     /* initialize ray */
+    assert(N < TILE_SIZE_X*TILE_SIZE_Y);
     RTCRay& ray = rays[N++];
     ray.org = p; // FIXME: make invalid rays empty
     ray.dir = normalize(x*vx + y*vy + vz);
@@ -270,13 +284,15 @@ void renderTileStandard(uniform int taskIndex,
   N = 0;
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
+    assert(N < TILE_SIZE_X*TILE_SIZE_Y);
     RTCRay& ray = rays[N++];
+
 
     /* eyelight shading */
     Vec3f color = make_Vec3f(0.0f);
     if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
-      //color = make_Vec3f(abs(dot(ray.dir,normalize(ray.Ng))));
-      color = ambientOcclusionShading(x,y,ray);
+      color = make_Vec3f(abs(dot(ray.dir,normalize(ray.Ng))));
+      //color = ambientOcclusionShading(x,y,ray);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
