@@ -508,7 +508,7 @@ namespace embree
 
 #endif
 
-#if 1
+#if 0
     
     template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
     void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::occluded(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, size_t flags)
@@ -830,7 +830,7 @@ namespace embree
 #endif
 
 
-#if 0
+#if 1
 
     /* experimental multi-stack mode */
     template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
@@ -909,14 +909,14 @@ namespace embree
             const vbool<K> vmask   = tNear <= tFar;
 #endif
             
-            const NodeRef c0 = node->child(0);
-            if (vmask[0]) stack[r][sptr++] = c0;
-            const NodeRef c1 = node->child(1);
-            if (vmask[1]) stack[r][sptr++] = c1;
-            const NodeRef c2 = node->child(2);
-            if (vmask[2]) stack[r][sptr++] = c2;
-            const NodeRef c3 = node->child(3);
-            if (vmask[3]) stack[r][sptr++] = c3;
+            stack[r][sptr] = node->child(0);
+            sptr += vmask[0] & 1;
+            stack[r][sptr] = node->child(1); 
+            sptr += vmask[1] & 1;
+            stack[r][sptr] = node->child(2); 
+            sptr += vmask[2] & 1;
+            stack[r][sptr] = node->child(3); 
+            sptr += vmask[3] & 1;
             stack_ptr[r] = sptr;
 
             if (unlikely(sptr == 0)) continue;
