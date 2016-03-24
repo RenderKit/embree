@@ -839,14 +839,9 @@ namespace embree
       const size_t queue_size = 64;
       __aligned(64) RayContext ray_ctx[queue_size];
       __aligned(64) Precalculations pre[queue_size]; // FIXME: initialize
-      //__aligned(64) int trav_queue[queue_size]; size_t trav_queue_left = 0; size_t trav_queue_right = 0;
-      //__aligned(64) int int_queue [queue_size]; size_t int_queue_left  = 0; size_t int_queue_right  = 0;
       __aligned(64) int queue[2][queue_size]; 
       size_t queue_left[2] = { 0, 0 }; 
       size_t queue_right[2] = { 0, 0 };
-      //void* trav_prefetch_queue[queue_size]; 
-      //size_t trav_prefetch_cur_L1 = 4;
-      //size_t trav_prefetch_cur = 5;
 
       NodeRef stack[queue_size][1024]; ssize_t stack_ptr[queue_size];
 
@@ -863,12 +858,8 @@ namespace embree
         for (size_t r=0; r<numRays; r++) 
           queue[q][queue_right[q]++] = r;
 
-        //queue[0][numRays] = 0; // for prefetch to work
-
-        /* push termination node and root node onto stack for each ray */
-        for (size_t r=0; r<numRays; r++) 
-        {
-          //stack[r][0] = BVH::invalidNode;
+        /* push root node onto stack for each ray */
+        for (size_t r=0; r<numRays; r++) {
           stack[r][0] = bvh->root;
           stack_ptr[r] = 1;
         }
@@ -882,21 +873,18 @@ namespace embree
           /* traverse all rays */
           while (trav_queue_right-trav_queue_left)
           {
+            /* take next ray */
             const int r = queue[0][trav_queue_left % queue_size];
             trav_queue_left++;
 
-            /* prefetch next node */
-            //const int r1 = queue[0][trav_queue_left % queue_size];
-            //stack[r1][stack_ptr[r1]-1].prefetch();
-
+            /* pop next node from stack */
             Ray& ray = *rays[r];
             const RayContext& rayctx = ray_ctx[r];
-            
             ssize_t sptr = stack_ptr[r];
-            
             NodeRef ref = stack[r][--sptr];
             const Node* __restrict__ const node = ref.node();
-            
+          
+            /* box intersection */
             const vfloat<K> bminX = vfloat<K>(*(vfloat<K>*)((const char*)&node->lower_x+pc.nearX));
             const vfloat<K> bminY = vfloat<K>(*(vfloat<K>*)((const char*)&node->lower_x+pc.nearY));
             const vfloat<K> bminZ = vfloat<K>(*(vfloat<K>*)((const char*)&node->lower_x+pc.nearZ));
@@ -921,6 +909,7 @@ namespace embree
             const vbool<K> vmask   = tNear <= tFar;
 #endif
             
+            /* push nodes to stack */
             stack[r][sptr] = node->child(0);
             sptr += vmask[0] & 1;
             stack[r][sptr] = node->child(1); 
@@ -930,8 +919,11 @@ namespace embree
             stack[r][sptr] = node->child(3); 
             sptr += vmask[3] & 1;
 
+            /* terminate rays */
             stack_ptr[r] = sptr;
             if (unlikely(sptr == 0)) continue;
+
+            /* continue rays */
             NodeRef next = stack[r][sptr-1];
             next.prefetch_L1();
             const int q = next.isLeaf() != 0;
@@ -944,28 +936,27 @@ namespace embree
           /* intersect all rays */
           while (queue_right[1]-queue_left[1])
           {
+            /* take next ray */
             const int r = queue[1][queue_left[1] % queue_size];
             queue_left[1]++;
             
-            Ray& ray = *rays[r];
-
+            /* pop next node from stack */
             ssize_t sptr = stack_ptr[r];
             NodeRef ref = stack[r][--sptr];
 
-            size_t num; Primitive* prim = (Primitive*)ref.leaf(num);
-
+            /* primitive intersection */
             size_t lazy_node = 0;
-#if 1
-            if (PrimitiveIntersector::occluded(pre[r],ray,0,prim,num,bvh->scene,nullptr,lazy_node)) {
+            size_t num; Primitive* prim = (Primitive*)ref.leaf(num);
+            if (PrimitiveIntersector::occluded(pre[r],*rays[r],0,prim,num,bvh->scene,nullptr,lazy_node)) {
               rays[r]->geomID = 0;
               continue;
             }
-#else
-            PrimitiveIntersector::intersect(pre[r],ray,0,prim,num,bvh->scene,nullptr,lazy_node);
-#endif
             
+            /* terminate rays */
             stack_ptr[r] = sptr;
             if (unlikely(sptr == 0)) continue;
+
+            /* continue rays */
             NodeRef next = stack[r][sptr-1];
             next.prefetch_L1();
             const int q = next.isLeaf() != 0;
