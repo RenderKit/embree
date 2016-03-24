@@ -63,6 +63,7 @@ namespace embree
 #if EXPERIMENTAL_FIBER_MODE == 1
     /* pure fiber mode, no streams */
 
+#if 1
 #define FIBERING 1
 
     template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
@@ -191,6 +192,8 @@ namespace embree
       }
       AVX_ZERO_UPPER();
     }
+
+#endif
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -504,6 +507,8 @@ namespace embree
     }
 
 #endif
+
+#if 1
     
     template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
     void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::occluded(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, size_t flags)
@@ -822,8 +827,148 @@ namespace embree
       }      
     }
 
-    
-    
+#endif
+
+
+#if 0
+
+    /* experimental multi-stack mode */
+    template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
+    void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::occluded(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, size_t flags)
+    {
+      const size_t queue_size = 64;
+      __aligned(64) RayContext ray_ctx[queue_size];
+      __aligned(64) Precalculations pre[queue_size]; // FIXME: initialize
+      __aligned(64) int trav_queue[queue_size]; size_t trav_queue_left = 0; size_t trav_queue_right = 0;
+      __aligned(64) int int_queue [queue_size]; size_t int_queue_left  = 0; size_t int_queue_right  = 0;
+
+      NodeRef stack[queue_size][1024]; ssize_t stack_ptr[queue_size];
+
+      for (size_t i=0; i<numTotalRays; i+=queue_size)
+      {
+        Ray** __restrict__ rays = input_rays + i;
+        const size_t numRays = (i + queue_size >= numTotalRays) ? numTotalRays-i : queue_size;
+
+        initRayContext(ray_ctx,rays,numRays);
+        const NearFarPreCompute pc(ray_ctx[0].rdir);
+      
+        /* fill queues */
+        if (unlikely(bvh->root.isLeaf()))
+          for (size_t r=0; r<numRays; r++) 
+            int_queue[int_queue_right++] = r;
+        else
+          for (size_t r=0; r<numRays; r++) 
+            trav_queue[trav_queue_right++] = r;
+
+        /* push termination node and root node onto stack for each ray */
+        for (size_t r=0; r<numRays; r++) 
+        {
+          //stack[r][0] = BVH::invalidNode;
+          stack[r][0] = bvh->root;
+          stack_ptr[r] = 1;
+        }
+        
+        /* loop until finished */
+        do
+        {
+          /* traverse all rays */
+          while (trav_queue_right-trav_queue_left)
+          {
+            const int r = trav_queue[trav_queue_left % queue_size];
+            trav_queue_left++;
+
+            Ray& ray = *rays[r];
+            const RayContext& rayctx = ray_ctx[r];
+            
+            ssize_t sptr = stack_ptr[r];
+            
+            NodeRef ref = stack[r][--sptr];
+            const Node* __restrict__ const node = ref.node();
+            
+            const vfloat<K> bminX = vfloat<K>(*(vfloat<K>*)((const char*)&node->lower_x+pc.nearX));
+            const vfloat<K> bminY = vfloat<K>(*(vfloat<K>*)((const char*)&node->lower_x+pc.nearY));
+            const vfloat<K> bminZ = vfloat<K>(*(vfloat<K>*)((const char*)&node->lower_x+pc.nearZ));
+            const vfloat<K> bmaxX = vfloat<K>(*(vfloat<K>*)((const char*)&node->lower_x+pc.farX));
+            const vfloat<K> bmaxY = vfloat<K>(*(vfloat<K>*)((const char*)&node->lower_x+pc.farY));
+            const vfloat<K> bmaxZ = vfloat<K>(*(vfloat<K>*)((const char*)&node->lower_x+pc.farZ));
+            
+            const vfloat<K> tNearX = msub(bminX, rayctx.rdir.x, rayctx.org_rdir.x);
+            const vfloat<K> tNearY = msub(bminY, rayctx.rdir.y, rayctx.org_rdir.y);
+            const vfloat<K> tNearZ = msub(bminZ, rayctx.rdir.z, rayctx.org_rdir.z);
+            const vfloat<K> tFarX  = msub(bmaxX, rayctx.rdir.x, rayctx.org_rdir.x);
+            const vfloat<K> tFarY  = msub(bmaxY, rayctx.rdir.y, rayctx.org_rdir.y);
+            const vfloat<K> tFarZ  = msub(bmaxZ, rayctx.rdir.z, rayctx.org_rdir.z);
+            
+#if defined(__AVX2__)
+            const vfloat<K> tNear  = maxi(maxi(tNearX,tNearY),maxi(tNearZ,vfloat<K>(ray.tnear)));
+            const vfloat<K> tFar   = mini(mini(tFarX,tFarY),mini(tFarZ,vfloat<K>(ray.tfar)));
+            const vbool<K> vmask   = tNear <= tFar;
+#else
+            const vfloat<K> tNear  = max(tNearX,tNearY,tNearZ,vfloat<K>(ray.tnear));
+            const vfloat<K> tFar   = min(tFarX ,tFarY ,tFarZ ,vfloat<K>(ray.tfar));
+            const vbool<K> vmask   = tNear <= tFar;
+#endif
+            
+            const NodeRef c0 = node->child(0);
+            if (vmask[0]) stack[r][sptr++] = c0;
+            const NodeRef c1 = node->child(1);
+            if (vmask[1]) stack[r][sptr++] = c1;
+            const NodeRef c2 = node->child(2);
+            if (vmask[2]) stack[r][sptr++] = c2;
+            const NodeRef c3 = node->child(3);
+            if (vmask[3]) stack[r][sptr++] = c3;
+            stack_ptr[r] = sptr;
+
+            if (unlikely(sptr == 0)) continue;
+            
+            if (stack[r][sptr-1].isNode()) {
+              trav_queue[trav_queue_right++  % queue_size ] = r;
+            }
+            else {
+              int_queue[int_queue_right++  % queue_size ] = r;
+            }
+          }
+          
+          /* intersect all rays */
+          while (int_queue_right-int_queue_left)
+          {
+            const int r = int_queue[int_queue_left % queue_size];
+            int_queue_left++;
+            
+            Ray& ray = *rays[r];
+
+            ssize_t sptr = stack_ptr[r];
+            NodeRef ref = stack[r][--sptr];
+
+            size_t num; Primitive* prim = (Primitive*)ref.leaf(num);
+
+            size_t lazy_node = 0;
+#if 1
+            if (PrimitiveIntersector::occluded(pre[r],ray,0,prim,num,bvh->scene,nullptr,lazy_node)) {
+              rays[r]->geomID = 0;
+              continue;
+            }
+#else
+            PrimitiveIntersector::intersect(pre[r],ray,0,prim,num,bvh->scene,nullptr,lazy_node);
+#endif
+            
+            stack_ptr[r] = sptr;
+            if (unlikely(sptr == 0)) continue;
+
+            if (stack[r][sptr-1].isNode()) {
+              trav_queue[trav_queue_right++  % queue_size ] = r;
+            }
+            else {
+              int_queue[int_queue_right++  % queue_size ] = r;
+            }
+          }
+        }
+        while (trav_queue_right-trav_queue_left);
+      }
+    }
+
+#endif
+
 
 #if defined(__AVX512F__)
     DEFINE_INTERSECTORN(BVH8Triangle4StreamIntersector, BVHNStreamIntersector<8 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<4 COMMA 16 COMMA true> > >);
