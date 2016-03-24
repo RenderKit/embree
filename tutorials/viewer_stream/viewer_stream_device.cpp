@@ -277,8 +277,8 @@ void renderTileStandard(int taskIndex,
     /* eyelight shading */
     Vec3fa color = Vec3fa(0.0f);
     if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
-      //color = Vec3fa(abs(dot(ray.dir,normalize(ray.Ng))));
-      color = ambientOcclusionShading(x,y,ray);
+      //  color = Vec3fa(abs(dot(ray.dir,normalize(ray.Ng))));
+    color = ambientOcclusionShading(x,y,ray);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));

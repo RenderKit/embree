@@ -30,6 +30,7 @@ namespace embree
   static std::string g_rtcore = "";
   static size_t g_numThreads = 0;
   static std::string g_subdiv_mode = "";
+  static Shader g_shader = SHADER_DEFAULT;
 
   /* output settings */
   static size_t g_width = 512;
@@ -175,6 +176,18 @@ namespace embree
         const Vec3fa L = cin->getVec3fa();
         const float halfAngle = cin->getFloat();
         g_scene->add(new SceneGraph::LightNode<DistantLight>(DistantLight(D,L,halfAngle)));
+      }
+
+      else if (tag == "-shader") {
+        std::string mode = cin->getString();
+        if      (mode == "default" ) g_shader = SHADER_DEFAULT;
+        else if (mode == "eyelight") g_shader = SHADER_EYELIGHT;
+        else if (mode == "uv"      ) g_shader = SHADER_UV;
+        else if (mode == "Ng"      ) g_shader = SHADER_NG;
+        else if (mode == "geomID"  ) g_shader = SHADER_GEOMID;
+        else if (mode == "primID"  ) g_shader = SHADER_GEOMID_PRIMID;
+        else if (mode == "ao"      ) g_shader = SHADER_AMBIENT_OCCLUSION;
+        else throw std::runtime_error("invalid shader:" +mode);
       }
 
       /* skip unknown command line parameter */
