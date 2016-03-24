@@ -839,8 +839,11 @@ namespace embree
       const size_t queue_size = 64;
       __aligned(64) RayContext ray_ctx[queue_size];
       __aligned(64) Precalculations pre[queue_size]; // FIXME: initialize
-      __aligned(64) int trav_queue[queue_size]; size_t trav_queue_left = 0; size_t trav_queue_right = 0;
-      __aligned(64) int int_queue [queue_size]; size_t int_queue_left  = 0; size_t int_queue_right  = 0;
+      //__aligned(64) int trav_queue[queue_size]; size_t trav_queue_left = 0; size_t trav_queue_right = 0;
+      //__aligned(64) int int_queue [queue_size]; size_t int_queue_left  = 0; size_t int_queue_right  = 0;
+      __aligned(64) int queue[2][queue_size]; 
+      size_t queue_left[2] = { 0, 0 }; 
+      size_t queue_right[2] = { 0, 0 };
 
       NodeRef stack[queue_size][1024]; ssize_t stack_ptr[queue_size];
 
@@ -853,12 +856,9 @@ namespace embree
         const NearFarPreCompute pc(ray_ctx[0].rdir);
       
         /* fill queues */
-        if (unlikely(bvh->root.isLeaf()))
-          for (size_t r=0; r<numRays; r++) 
-            int_queue[int_queue_right++] = r;
-        else
-          for (size_t r=0; r<numRays; r++) 
-            trav_queue[trav_queue_right++] = r;
+        const int q = bvh->root.isLeaf() != 0;
+        for (size_t r=0; r<numRays; r++) 
+          queue[q][queue_right[q]++] = r;
 
         /* push termination node and root node onto stack for each ray */
         for (size_t r=0; r<numRays; r++) 
@@ -872,10 +872,10 @@ namespace embree
         do
         {
           /* traverse all rays */
-          while (trav_queue_right-trav_queue_left)
+          while (queue_right[0]-queue_left[0])
           {
-            const int r = trav_queue[trav_queue_left % queue_size];
-            trav_queue_left++;
+            const int r = queue[0][queue_left[0] % queue_size];
+            queue_left[0]++;
 
             Ray& ray = *rays[r];
             const RayContext& rayctx = ray_ctx[r];
@@ -917,23 +917,18 @@ namespace embree
             sptr += vmask[2] & 1;
             stack[r][sptr] = node->child(3); 
             sptr += vmask[3] & 1;
-            stack_ptr[r] = sptr;
 
+            stack_ptr[r] = sptr;
             if (unlikely(sptr == 0)) continue;
-            
-            if (stack[r][sptr-1].isNode()) {
-              trav_queue[trav_queue_right++  % queue_size ] = r;
-            }
-            else {
-              int_queue[int_queue_right++  % queue_size ] = r;
-            }
+            const int q = stack[r][sptr-1].isLeaf() != 0;
+            queue[q][queue_right[q]++  % queue_size ] = r;
           }
           
           /* intersect all rays */
-          while (int_queue_right-int_queue_left)
+          while (queue_right[1]-queue_left[1])
           {
-            const int r = int_queue[int_queue_left % queue_size];
-            int_queue_left++;
+            const int r = queue[1][queue_left[1] % queue_size];
+            queue_left[1]++;
             
             Ray& ray = *rays[r];
 
@@ -954,16 +949,11 @@ namespace embree
             
             stack_ptr[r] = sptr;
             if (unlikely(sptr == 0)) continue;
-
-            if (stack[r][sptr-1].isNode()) {
-              trav_queue[trav_queue_right++  % queue_size ] = r;
-            }
-            else {
-              int_queue[int_queue_right++  % queue_size ] = r;
-            }
+            const int q = stack[r][sptr-1].isLeaf() != 0;
+            queue[q][queue_right[q]++  % queue_size ] = r;
           }
         }
-        while (trav_queue_right-trav_queue_left);
+        while (queue_right[0]-queue_left[0]);
       }
     }
 
