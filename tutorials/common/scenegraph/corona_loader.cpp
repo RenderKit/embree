@@ -35,7 +35,7 @@ namespace embree
     void  loadMapDefinition(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadMaterialLibrary(const FileName& fileName);
     Ref<SceneGraph::Node> loadObject(const Ref<XML>& xml);
-    std::tuple<Ref<SceneGraph::MaterialNode>, avector<AffineSpace3fa> > loadInstances(const Ref<XML>& xml);
+    std::pair<Ref<SceneGraph::MaterialNode>, avector<AffineSpace3fa> > loadInstances(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadGroupNode(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadNode(const Ref<XML>& xml);
 
@@ -228,7 +228,7 @@ namespace embree
     return SceneGraph::load(path+fileName);
   }
 
-  std::tuple<Ref<SceneGraph::MaterialNode>, avector<AffineSpace3fa> > CoronaLoader::loadInstances(const Ref<XML>& xml) 
+  std::pair<Ref<SceneGraph::MaterialNode>, avector<AffineSpace3fa> > CoronaLoader::loadInstances(const Ref<XML>& xml) 
   {
     if (xml->name != "instance") 
       THROW_RUNTIME_ERROR(xml->loc.str()+": invalid instance node");
@@ -246,7 +246,7 @@ namespace embree
       else THROW_RUNTIME_ERROR(child->loc.str()+": unknown node: "+child->name);
     }
 
-    return std::make_tuple(material,xfms);
+    return std::make_pair(material,xfms);
   }
 
   Ref<SceneGraph::Node> CoronaLoader::loadGroupNode(const Ref<XML>& xml) 
@@ -255,9 +255,9 @@ namespace embree
       THROW_RUNTIME_ERROR(xml->loc.str()+": invalid group node");
 
     /* load instances */
-    Ref<SceneGraph::MaterialNode> material;
-    avector<AffineSpace3fa> xfms;
-    std::tie(material,xfms) = loadInstances(xml->children[0]);
+    auto p = loadInstances(xml->children[0]);
+    Ref<SceneGraph::MaterialNode> material = p.first;
+    avector<AffineSpace3fa>& xfms = p.second;
     
     /* load meshes */
     Ref<SceneGraph::GroupNode> objects = new SceneGraph::GroupNode;
