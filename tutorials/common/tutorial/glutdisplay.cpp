@@ -289,11 +289,8 @@ namespace embree
     glutPostRedisplay();
   }
 
-  void enterWindowRunLoop(bool anim)
+  void enterWindowRunLoop()
   {
-    if (anim)
-      g_camera.enableAnimMode();
-
     glutMainLoop();
   }
 

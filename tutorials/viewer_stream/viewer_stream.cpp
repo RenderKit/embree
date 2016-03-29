@@ -40,7 +40,6 @@ namespace embree
   static int g_skipBenchmarkFrames = 0;
   static int g_numBenchmarkFrames = 0;
   static bool g_interactive = true;
-  static bool g_anim_mode = false;
   extern "C" { int g_instancing_mode = 0; }
   static FileName keyframeList = "";
   static bool convert_tris_to_quads = false;
@@ -118,9 +117,6 @@ namespace embree
 
       else if (tag == "-pregenerate") 
 	g_subdiv_mode = ",subdiv_accel=bvh4.grid.eager";
-
-      else if (tag == "-anim") 
-	g_anim_mode = true;
 
       else if (tag == "-instancing") {
         std::string mode = cin->getString();
@@ -302,7 +298,7 @@ namespace embree
     /* interactive mode */
     if (g_interactive) {
       initWindowState(argc,argv,tutorialName, g_width, g_height, g_fullscreen);
-      enterWindowRunLoop(g_anim_mode);
+      enterWindowRunLoop();
     }
 
     return 0;

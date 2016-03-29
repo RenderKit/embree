@@ -27,7 +27,7 @@ namespace embree
   extern Camera g_camera;
 
   /* enter the GLUT main run loop */
-  void enterWindowRunLoop(const bool anim = false);
+  void enterWindowRunLoop();
 
   /* initialize GLUT */
   void initWindowState(int& argc, char** argv, const std::string name, const size_t width, const size_t height, const bool fullscreen, const bool mouseMode = true);
