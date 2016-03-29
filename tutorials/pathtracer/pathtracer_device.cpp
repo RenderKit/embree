@@ -1584,7 +1584,7 @@ void occlusionFilterHair(void* ptr, RTCRay& ray)
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
 }
 
-Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
+Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCCamera& camera)
 {
   /* radiance accumulator and weight */
   Vec3fa L = Vec3fa(0.0f);
@@ -1593,7 +1593,8 @@ Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const Vec3f
   float time = RandomSampler_get1D(sampler);
 
   /* initialize ray */
-  RTCRay ray = RTCRay(p,normalize(x*vx + y*vy + vz),0.0f,inf,time);
+  RTCRay ray = RTCRay(Vec3fa(camera.xfm.p),
+                        Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)),0.0f,inf,time);
 
   /* iterative path tracer loop */
   for (int i=0; i<MAX_PATH_LENGTH; i++)
@@ -1751,7 +1752,7 @@ Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const Vec3f
 }
 
 /* task that renders a single screen tile */
-Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
+Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
 {
   RandomSampler sampler;
 
@@ -1764,7 +1765,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     /* calculate pixel color */
     float fx = x + RandomSampler_get1D(sampler);
     float fy = y + RandomSampler_get1D(sampler);
-    L = L + renderPixelFunction(fx,fy,sampler,vx,vy,vz,p);
+    L = L + renderPixelFunction(fx,fy,sampler,camera);
   }
   L = L*(1.0f/SAMPLES_PER_PIXEL);
   return L;
@@ -1776,10 +1777,7 @@ void renderTileStandard(int taskIndex,
                         const int width,
                         const int height, 
                         const float time,
-                        const Vec3fa& vx, 
-                        const Vec3fa& vy, 
-                        const Vec3fa& vz, 
-                        const Vec3fa& p,
+                        const ISPCCamera& camera,
                         const int numTilesX, 
                         const int numTilesY)
 {
@@ -1793,7 +1791,7 @@ void renderTileStandard(int taskIndex,
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
     /* calculate pixel color */
-    Vec3fa color = renderPixelStandard(x,y,vx,vy,vz,p);
+    Vec3fa color = renderPixelStandard(x,y,camera);
 
     /* write color to framebuffer */
     Vec3fa accu_color = g_accu[y*width+x] + Vec3fa(color.x,color.y,color.z,1.0f); g_accu[y*width+x] = accu_color;
@@ -1810,14 +1808,11 @@ void renderTileTask(int taskIndex, int* pixels,
                          const int width,
                          const int height, 
                          const float time,
-                         const Vec3fa& vx, 
-                         const Vec3fa& vy, 
-                         const Vec3fa& vz, 
-                         const Vec3fa& p,
+                         const ISPCCamera& camera,
                          const int numTilesX, 
                          const int numTilesY)
 {
-  renderTile(taskIndex,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY);
+  renderTile(taskIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
 }
 
 
@@ -1931,17 +1926,12 @@ extern "C" void device_render (int* pixels,
                            const int width,
                            const int height, 
                            const float time,
-                           const Vec3fa& vx, 
-                           const Vec3fa& vy, 
-                           const Vec3fa& vz, 
-                           const Vec3fa& p)
+                           const ISPCCamera& camera)
 {
-  Vec3fa cam_org = Vec3fa(p.x,p.y,p.z);
-
   /* create scene */
   if (g_scene == nullptr) {
     g_scene = convertScene(g_ispc_scene);
-    if (g_subdiv_mode) updateEdgeLevels(g_ispc_scene, cam_org);
+    if (g_subdiv_mode) updateEdgeLevels(g_ispc_scene,camera.xfm.p);
     rtcCommit (g_scene);
   }
 
@@ -1956,10 +1946,10 @@ extern "C" void device_render (int* pixels,
 
   /* reset accumulator */
   bool camera_changed = g_changed; g_changed = false;
-  camera_changed |= ne(g_accu_vx,vx); g_accu_vx = vx;
-  camera_changed |= ne(g_accu_vy,vy); g_accu_vy = vy;
-  camera_changed |= ne(g_accu_vz,vz); g_accu_vz = vz;
-  camera_changed |= ne(g_accu_p,  p); g_accu_p  = p;
+  camera_changed |= ne(g_accu_vx,camera.xfm.l.vx); g_accu_vx = camera.xfm.l.vx;
+  camera_changed |= ne(g_accu_vy,camera.xfm.l.vy); g_accu_vy = camera.xfm.l.vy;
+  camera_changed |= ne(g_accu_vz,camera.xfm.l.vz); g_accu_vz = camera.xfm.l.vz;
+  camera_changed |= ne(g_accu_p, camera.xfm.p);    g_accu_p  = camera.xfm.p;
 
   if (g_animation && g_ispc_scene->numSubdivMeshKeyFrames) {
     updateKeyFrame(g_ispc_scene);
@@ -1977,7 +1967,7 @@ extern "C" void device_render (int* pixels,
     memset(g_accu,0,width*height*sizeof(Vec3fa));
 
     if (g_subdiv_mode) {
-      updateEdgeLevels(g_ispc_scene, cam_org);
+      updateEdgeLevels(g_ispc_scene,camera.xfm.p);
       rtcCommit (g_scene);
     }
   }
@@ -1985,7 +1975,7 @@ extern "C" void device_render (int* pixels,
   /* render image */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  launch_renderTile(numTilesX*numTilesY,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); 
+  launch_renderTile(numTilesX*numTilesY,pixels,width,height,time,camera,numTilesX,numTilesY); 
   //rtcDebug();
 } // device_render
 

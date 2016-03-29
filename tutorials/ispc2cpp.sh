@@ -11,6 +11,7 @@ sed -i.backup  's/uniform //g' $2
 sed -i.backup  's/ uniform//g' $2
 sed -i.backup  's/varying //g' $2
 sed -i.backup  's/ varying//g' $2
+sed -i.backup  's/__mask/1/g' $2
 sed -i.backup  's/NULL/nullptr/g' $2
 sed -i.backup  's/programIndex/0/g' $2
 sed -i.backup  's/extern/extern \"C\"/g' $2

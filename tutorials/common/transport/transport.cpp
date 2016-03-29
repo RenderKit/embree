@@ -87,11 +87,11 @@ namespace embree
   }
   
   bool pick(const float x, const float y, const ISPCCamera& camera, Vec3fa& hitPos) {
-    return device_pick(x,y,camera.xfm.l.vx,camera.xfm.l.vy,camera.xfm.l.vz,camera.xfm.p,hitPos);
+    return device_pick(x,y,camera,hitPos);
   }
 
   void render(const float time, const ISPCCamera& camera) {
-    device_render(g_pixels,g_width,g_height,time,camera.xfm.l.vx,camera.xfm.l.vy,camera.xfm.l.vz,camera.xfm.p);
+    device_render(g_pixels,g_width,g_height,time,camera);
   }
 
   int* map () {

@@ -507,7 +507,7 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
 }
 
 /* task that renders a single screen tile */
-Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
+Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
 {
   /* initialize sampler */
   RandomSampler sampler;
@@ -515,8 +515,8 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
 
   /* initialize ray */
   RTCRay ray;
-  ray.org = p;
-  ray.dir = normalize(x*vx + y*vy + vz);
+  ray.org = Vec3fa(camera.xfm.p);
+  ray.dir = Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -574,10 +574,7 @@ void renderTileStandard(int taskIndex,
                         const int width,
                         const int height, 
                         const float time,
-                        const Vec3fa& vx, 
-                        const Vec3fa& vy, 
-                        const Vec3fa& vz, 
-                        const Vec3fa& p,
+                        const ISPCCamera& camera,
                         const int numTilesX, 
                         const int numTilesY)
 {
@@ -591,7 +588,7 @@ void renderTileStandard(int taskIndex,
 
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
-    Vec3fa color = renderPixelStandard(x,y,vx,vy,vz,p);
+    Vec3fa color = renderPixelStandard(x,y,camera);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -606,14 +603,11 @@ void renderTileTask(int taskIndex, int* pixels,
                          const int width,
                          const int height, 
                          const float time,
-                         const Vec3fa& vx, 
-                         const Vec3fa& vy, 
-                         const Vec3fa& vz, 
-                         const Vec3fa& p,
+                         const ISPCCamera& camera,
                          const int numTilesX, 
                          const int numTilesY)
 {
-  renderTile(taskIndex,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY);
+  renderTile(taskIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
 }
 
 Vec3fa old_p; 
@@ -639,33 +633,29 @@ extern "C" void device_render (int* pixels,
                            const int width,
                            const int height, 
                            const float time,
-                           const Vec3fa& vx, 
-                           const Vec3fa& vy, 
-                           const Vec3fa& vz, 
-                           const Vec3fa& p)
+                           const ISPCCamera& camera)
 {
-  Vec3fa cam_org = Vec3fa(p.x,p.y,p.z);
   bool camera_changed = g_changed; g_changed = false;
 
   /* create scene */
   if (g_scene == nullptr) {
     g_scene = convertScene(g_ispc_scene);
-    if (g_subdiv_mode) updateEdgeLevels(g_ispc_scene, cam_org);
+    if (g_subdiv_mode) updateEdgeLevels(g_ispc_scene, camera.xfm.p);
     rtcCommit (g_scene);
-    old_p = p;
+    old_p = camera.xfm.p;
   }
 
   else
   {
     /* check if camera changed */
-    if ((p.x != old_p.x || p.y != old_p.y || p.z != old_p.z)) {
+    if (ne(camera.xfm.p,old_p)) {
       camera_changed = true;
-      old_p = p;
+      old_p = camera.xfm.p;
     } 
     
     /* update edge levels if camera changed */
     if (camera_changed && g_subdiv_mode) {
-      updateEdgeLevels(g_ispc_scene, cam_org);
+      updateEdgeLevels(g_ispc_scene,camera.xfm.p);
       rtcCommit (g_scene);
     }
   }
@@ -673,7 +663,7 @@ extern "C" void device_render (int* pixels,
   /* render image */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  launch_renderTile(numTilesX*numTilesY,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); 
+  launch_renderTile(numTilesX*numTilesY,pixels,width,height,time,camera,numTilesX,numTilesY); 
   //rtcDebug();
 }
 

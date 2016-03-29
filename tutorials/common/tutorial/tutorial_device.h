@@ -31,7 +31,7 @@ struct Quad     { int v0, v1, v2, v3; };
 
 #include "../../../include/embree2/rtcore.h"
 #include "ray.h"
-
+#include "camera.h"
 #include "scene.h"
 using namespace embree;
 
@@ -69,7 +69,7 @@ enum Shader {
 
 /* standard shading function */
 typedef void (* renderTileFunc)(int taskIndex, int* pixels, const int width, const int height, 
-                                const float time, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p,
+                                const float time, const ISPCCamera& camera,
                                 const int numTilesX, const int numTilesY);
 extern renderTileFunc renderTile;
 
@@ -77,7 +77,7 @@ extern "C" void device_key_pressed_default(int key);
 extern "C" void (*key_pressed_handler)(int key);
 
 void renderTileStandard(int taskIndex, int* pixels, const int width, const int height, 
-                        const float time, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p,
+                        const float time, const ISPCCamera& camera,
                         const int numTilesX, const int numTilesY);
 
 __forceinline Vec3f  neg(const Vec3f& a ) { return -a; }
@@ -89,7 +89,7 @@ __forceinline bool   eq (const AffineSpace3fa& a, const AffineSpace3fa& b) { ret
 /* parallel invokation of renderTile function */
 void launch_renderTile (int numTiles, 
                         int* pixels, const int width, const int height, const float time, 
-                        const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p, const int numTilesX, const int numTilesY);
+                        const ISPCCamera& camera, const int numTilesX, const int numTilesY);
 
 /* parallel invokation of animateSphere function */
 typedef void (*animateSphereFunc) (int taskIndex, Vertex* vertices, 

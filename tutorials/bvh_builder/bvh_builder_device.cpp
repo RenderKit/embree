@@ -263,10 +263,7 @@ void renderTileStandard(int taskIndex, int* pixels,
                         const int width,
                         const int height, 
                         const float time,
-                        const Vec3fa& vx, 
-                        const Vec3fa& vy, 
-                        const Vec3fa& vz, 
-                        const Vec3fa& p,
+                        const ISPCCamera& camera,
                         const int numTilesX, 
                         const int numTilesY)
 {
@@ -277,10 +274,7 @@ void renderTileTask(int taskIndex, int* pixels,
                     const int width,
                     const int height, 
                     const float time,
-                    const Vec3fa& vx, 
-                    const Vec3fa& vy, 
-                    const Vec3fa& vz, 
-                    const Vec3fa& p,
+                    const ISPCCamera& camera,
                     const int numTilesX, 
                     const int numTilesY)
 {
@@ -291,10 +285,7 @@ extern "C" void device_render (int* pixels,
                                const int width,
                                const int height,
                                const float time,
-                               const Vec3fa& vx, 
-                               const Vec3fa& vy, 
-                               const Vec3fa& vz, 
-                               const Vec3fa& p)
+                               const ISPCCamera& camera)
 {
 }
 

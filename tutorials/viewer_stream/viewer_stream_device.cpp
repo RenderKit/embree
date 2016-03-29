@@ -21,8 +21,6 @@
 
 #define USE_INTERFACE 0 // 0 = stream, 1 = single rays/packets, 2 = single rays/packets using stream interface
 #define AMBIENT_OCCLUSION_SAMPLES 64
-//#define rtcOccluded rtcIntersect // FIXME
-//#define rtcOccludedN rtcIntersectN // FIXME
 
 extern "C" ISPCScene* g_ispc_scene;
 
@@ -162,6 +160,18 @@ RTCScene convertScene(ISPCScene* scene_in)
 /* renders a single pixel casting with ambient occlusion */
 Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
 {
+  RTCRay rays[AMBIENT_OCCLUSION_SAMPLES];
+
+  /* disable all rays first bet setting tnear > tfar */
+  {
+    for (int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
+    {
+      RTCRay& shadow = rays[i];
+      shadow.tnear = inf;
+      shadow.tfar = 0;      
+    }  
+  }
+
   Vec3fa Ng = normalize(ray.Ng);
   if (dot(ray.dir,Ng) > 0.0f) Ng = neg(Ng);
 
@@ -171,11 +181,12 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
   float intensity = 0;
   Vec3fa hitPos = ray.org + ray.tfar * ray.dir;
 
-  RTCRay rays[AMBIENT_OCCLUSION_SAMPLES];
 
   RandomSampler sampler;
   RandomSampler_init(sampler,x,y,0);
-  
+
+
+  /* enable only valid rays */
   for (int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
   {
     /* sample random direction */
@@ -222,10 +233,7 @@ void renderTileStandard(int taskIndex,
                         const int width,
                         const int height, 
                         const float time,
-                        const Vec3fa& vx, 
-                        const Vec3fa& vy, 
-                        const Vec3fa& vz, 
-                        const Vec3fa& p,
+                        const ISPCCamera& camera,
                         const int numTilesX, 
                         const int numTilesY)
 {
@@ -242,13 +250,17 @@ void renderTileStandard(int taskIndex,
   int N = 0;
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
+    /* ISPC workaround for mask == 0 */
+    if (all(1 == 0)) continue;
+
     RandomSampler sampler;
     RandomSampler_init(sampler, x, y, 0);
     
     /* initialize ray */
     RTCRay& ray = rays[N++];
-    ray.org = p; // FIXME: make invalid rays empty
-    ray.dir = normalize(x*vx + y*vy + vz);
+
+    ray.org = Vec3fa(camera.xfm.p); // FIXME: make invalid rays empty
+    ray.dir = Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
     ray.tnear = 0.0f;
     ray.tfar = inf;
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -272,13 +284,16 @@ void renderTileStandard(int taskIndex,
   N = 0;
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
+    /* ISPC workaround for mask == 0 */
+    if (all(1 == 0)) continue;
     RTCRay& ray = rays[N++];
+
 
     /* eyelight shading */
     Vec3fa color = Vec3fa(0.0f);
     if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
-      //  color = Vec3fa(abs(dot(ray.dir,normalize(ray.Ng))));
-    color = ambientOcclusionShading(x,y,ray);
+      //color = Vec3fa(abs(dot(ray.dir,normalize(ray.Ng))));
+      color = ambientOcclusionShading(x,y,ray);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -293,14 +308,11 @@ void renderTileTask(int taskIndex, int* pixels,
                          const int width,
                          const int height, 
                          const float time,
-                         const Vec3fa& vx, 
-                         const Vec3fa& vy, 
-                         const Vec3fa& vz, 
-                         const Vec3fa& p,
+                         const ISPCCamera& camera,
                          const int numTilesX, 
                          const int numTilesY)
 {
-  renderTile(taskIndex,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY);
+  renderTile(taskIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
 }
 
 /* called by the C++ code for initialization */
@@ -327,15 +339,12 @@ extern "C" void device_render (int* pixels,
                            const int width,
                            const int height, 
                            const float time,
-                           const Vec3fa& vx, 
-                           const Vec3fa& vy, 
-                           const Vec3fa& vz, 
-                           const Vec3fa& p)
+                           const ISPCCamera& camera)
 {
   /* render image */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  launch_renderTile(numTilesX*numTilesY,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); 
+  launch_renderTile(numTilesX*numTilesY,pixels,width,height,time,camera,numTilesX,numTilesY); 
 }
 
 /* called by the C++ code for cleanup */

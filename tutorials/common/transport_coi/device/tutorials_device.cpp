@@ -491,12 +491,13 @@ struct ISPCSubdivMeshKeyFrame {
                            uint16_t         in_ReturnValueLength)
   {
     Vec3fa hitPos = zero;
+    ISPCCamera camera(AffineSpace3fa(in_pMiscData->vx,
+                                     in_pMiscData->vy,
+                                     in_pMiscData->vz,
+                                     in_pMiscData->p));
     bool hit = device_pick(in_pMiscData->x,
                            in_pMiscData->y,
-                           in_pMiscData->vx,
-                           in_pMiscData->vy,
-                           in_pMiscData->vz,
-                           in_pMiscData->p,
+                           camera,
                            hitPos);
     in_pReturnValue->pos = hitPos;
     in_pReturnValue->hit = hit;
@@ -511,14 +512,15 @@ struct ISPCSubdivMeshKeyFrame {
                              uint16_t         in_ReturnValueLength)
   {
     //double t0 = getSeconds();
+    ISPCCamera camera(AffineSpace3fa(in_pMiscData->vx,
+                                     in_pMiscData->vy,
+                                     in_pMiscData->vz,
+                                     in_pMiscData->p));
     device_render((int*)in_ppBufferPointers[0],
                   in_pMiscData->width,
                   in_pMiscData->height,
                   in_pMiscData->time, 
-                  in_pMiscData->vx, 
-                  in_pMiscData->vy, 
-                  in_pMiscData->vz,
-                  in_pMiscData->p);
+                  camera);
     //double dt = getSeconds() - t0;
     //printf("render %3.2f fps, %.2f ms\n",1.0f/dt,dt*1000.0f); flush(std::cout);
   }

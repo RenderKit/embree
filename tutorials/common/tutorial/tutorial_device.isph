@@ -28,6 +28,7 @@ struct Triangle { int v0, v1, v2; };
 #include "../math/math.isph"
 #include "../math/vec.isph"
 #include "../math/affinespace.isph"
+#include "camera.isph"
 #include "ray.isph"
 #include "scene_device.isph"
 
@@ -68,10 +69,7 @@ typedef void (* uniform renderTileFunc)(uniform int taskIndex,
                                         const uniform int width,
                                         const uniform int height, 
                                         const uniform float time,
-                                        const uniform Vec3f& vx, 
-                                        const uniform Vec3f& vy, 
-                                        const uniform Vec3f& vz, 
-                                        const uniform Vec3f& p,
+                                        const uniform ISPCCamera& camera, 
                                         const uniform int numTilesX, 
                                         const uniform int numTilesY);
 extern renderTileFunc renderTile;
@@ -84,10 +82,7 @@ void renderTileStandard(uniform int taskIndex,
                         const uniform int width,
                         const uniform int height, 
                         const uniform float time,
-                        const uniform Vec3f& vx, 
-                        const uniform Vec3f& vy, 
-                        const uniform Vec3f& vz, 
-                        const uniform Vec3f& p,
+                        const uniform ISPCCamera& camera,
                         const uniform int numTilesX, 
                         const uniform int numTilesY);
 
