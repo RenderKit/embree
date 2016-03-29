@@ -105,21 +105,14 @@ namespace embree
       /*! Skip unknown command line parameters. */
       else std::cerr << "Unknown command line parameter: " << getParameterString(cin, term) << std::endl;
       
-    }
-    
+    }    
   }
   
   void renderToFile(const FileName& fileName)
   {
     resize(g_width,g_height);
-    AffineSpace3fa pixel2world = g_camera.pixel2world(g_width,g_height);
-    
-    render(0.0f,
-           pixel2world.l.vx,
-           pixel2world.l.vy,
-           pixel2world.l.vz,
-           pixel2world.p);
-    
+    ISPCCamera camera = g_camera.getISPCCamera(g_width,g_height);
+    render(0.0f,camera);
     void* ptr = map();
     Ref<Image> image = new Image4uc(g_width, g_height, (Col4uc*)ptr);
     storeImage(image, fileName);

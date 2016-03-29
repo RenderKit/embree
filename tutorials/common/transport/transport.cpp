@@ -86,12 +86,12 @@ namespace embree
     }
   }
   
-  bool pick(const float x, const float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p, Vec3fa& hitPos) {
-    return device_pick(x,y,vx,vy,vz,p,hitPos);
+  bool pick(const float x, const float y, const ISPCCamera& camera, Vec3fa& hitPos) {
+    return device_pick(x,y,camera.xfm.l.vx,camera.xfm.l.vy,camera.xfm.l.vz,camera.xfm.p,hitPos);
   }
 
-  void render(const float time, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p) {
-    device_render(g_pixels,g_width,g_height,time,vx,vy,vz,p);
+  void render(const float time, const ISPCCamera& camera) {
+    device_render(g_pixels,g_width,g_height,time,camera.xfm.l.vx,camera.xfm.l.vy,camera.xfm.l.vz,camera.xfm.p);
   }
 
   int* map () {
