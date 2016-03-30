@@ -1804,7 +1804,7 @@ void renderTileStandard(int taskIndex,
 }
 
 /* task that renders a single screen tile */
-void renderTileTask(int taskIndex, int* pixels,
+void renderTileTask (int taskIndex, int* pixels,
                          const int width,
                          const int height, 
                          const float time,
@@ -1846,7 +1846,7 @@ void updateEdgeLevelBuffer( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, size_t 
 }
 
 #if defined(ISPC)
-task void updateEdgeLevelBufferTask( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos )
+void updateEdgeLevelBufferTask (int taskIndex,  ISPCSubdivMesh* mesh, const Vec3fa& cam_pos )
 {
   const size_t size = mesh->numFaces;
   const size_t startID = ((taskIndex+0)*size)/taskCount;

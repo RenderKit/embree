@@ -491,7 +491,7 @@ void renderTileStandard(int taskIndex,
 }
 
 /* task that renders a single screen tile */
-void renderTileTask(int taskIndex, int* pixels,
+void renderTileTask (int taskIndex, int* pixels,
                          const int width,
                          const int height, 
                          const float time,

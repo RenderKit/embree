@@ -21,6 +21,7 @@ sed -i.backup  's/__mask/1/g' $2
 sed -i.backup  's/NULL/nullptr/g' $2
 
 sed -i.backup  's/programIndex/0/g' $2
+sed -i.backup  's/task[ ]*void[ ]*\([a-zA-Z0-9_]*\)[ ]*(/void \1 (int taskIndex, /g' $2
 sed -i.backup  's/launch\[\([^]]*\)\][ ]*\([a-zA-Z0-9_]*\)[ ]*(\([^)]*\))/parallel_for(size_t(0),size_t(\1),[\&](const range<size_t>\& range) \{\n    for (size_t i=range.begin(); i<range.end(); i++)\n      \2(i,\3);\n  \})/g' $2
 
 sed -i.backup  's/foreach[ ]*([ ]*\([a-zA-Z0-9_]*\)[ ]*=[ ]*\([^ \.]*\)[ ]*\.\.\.[ ]*\([^ ),]*\)[ ]*)/for (int \1=\2; \1<\3; \1++)/g' $2
@@ -60,8 +61,8 @@ sed -i.backup  's/RTC_INTERSECT_VARYING/RTC_INTERSECT1/g' $2
 sed -i.backup  's/RTC_MATRIX_COLUMN_MAJOR/RTC_MATRIX_COLUMN_MAJOR_ALIGNED16/g' $2
 sed -i.backup  's/RTC_MATRIX_COLUMN_MAJOR_ALIGNED16_ALIGNED16/RTC_MATRIX_COLUMN_MAJOR_ALIGNED16/g' $2
 
-sed -i.backup  's/task void renderTileTask(int\* pixels,/void renderTileTask(int taskIndex, int\* pixels,/g' $2
-sed -i.backup  's/task void animateSphere (Vertex\* vertices,/void animateSphere (int taskIndex, Vertex\* vertices,/g' $2
+#sed -i.backup  's/task void renderTileTask(int\* pixels,/void renderTileTask(int taskIndex, int\* pixels,/g' $2
+#sed -i.backup  's/task void animateSphere (Vertex\* vertices,/void animateSphere (int taskIndex, Vertex\* vertices,/g' $2
 sed -i.backup  's/Vec3f renderPixelStandard(float x, float y, const Vec3f\& vx, const Vec3f\& vy, const Vec3f\& vz, const Vec3f\& p)/Vec3fa renderPixelStandard(float x, float y, const Vec3fa\& vx, const Vec3fa\& vy, const Vec3fa\& vz, const Vec3fa\& p)/g' $2
 sed -i.backup  's/RTCIntersectFuncVarying/RTCIntersectFunc/g' $2
 sed -i.backup  's/RTCOccludedFuncVarying/RTCOccludedFunc/g' $2
