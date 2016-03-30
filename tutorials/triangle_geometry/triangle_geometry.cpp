@@ -15,7 +15,6 @@
 // ======================================================================== //
 
 #include "../common/tutorial/tutorial.h"
-#include "../common/image/image.h"
 
 namespace embree
 {
