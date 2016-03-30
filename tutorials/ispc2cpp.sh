@@ -17,8 +17,7 @@ sed -i.backup  's/__mask/1/g' $2
 sed -i.backup  's/NULL/nullptr/g' $2
 
 sed -i.backup  's/programIndex/0/g' $2
-sed -i.backup  's/launch\[numTilesX\*numTilesY\] renderTileTask(/launch_renderTileTask(numTilesX\*numTilesY,/g' $2
-sed -i.backup  's/launch\[numPhi+1\] animateSphere(/launch_animateSphere(animateSphere,numPhi+1,/g' $2
+sed -i.backup 's/launch\[\([^]]*\)\][ ]*\([a-zA-Z0-9_]*\)[ ]*(\([^)]*\))/parallel_for(size_t(0),size_t(\1),[\&](const range<size_t>\& range) \{\n    for (size_t i=range.begin(); i<range.end(); i++)\n      \2(i,\3);\n  \})/g' $2
 sed -i.backup  's/sync;//g' $2
 
 # Embree specific

@@ -15,7 +15,6 @@
 // ======================================================================== //
 
 #include "tutorial_device.h"
-#include "../../../kernels/algorithms/parallel_for.h"
 #include "../scenegraph/texture.h"
 #include "scene_device.h"
 
@@ -739,66 +738,6 @@ extern "C"
   void call_key_pressed_handler(int key) {
     if (key_pressed_handler) key_pressed_handler(key);
   }
-}
-
-void renderTileTask(int taskIndex,
-                    int* pixels,
-                    const int width,
-                    const int height, 
-                    const float time,
-                    const ISPCCamera& camera,
-                    const int numTilesX, 
-                    const int numTilesY);
-
-//thread_local bool inrender = false;
-
-void launch_renderTileTask (int numTiles, 
-                            int* pixels, const int width, const int height, const float time, 
-                            const ISPCCamera& camera, const int numTilesX, const int numTilesY)
-{
-#if 0
-  atomic_t tileID = 0;
-  parallel_for(size_t(0),size_t(getNumberOfLogicalThreads()),[&] (const range<size_t>& r) {
-      for (size_t tid=r.begin(); tid<r.end(); tid++) {
-        while (true) {
-          size_t i = atomic_add(&tileID,1);
-          if (i >= numTiles) break;
-          renderTileTask(i,pixels,width,height,time,camera,numTilesX,numTilesY);
-        }
-      }
-    });
-
-#else
-  parallel_for(size_t(0),size_t(numTiles),[&] (const range<size_t>& r) {
-      //if (inrender) PING;
-      //inrender = true;
-      for (size_t i=r.begin(); i<r.end(); i++)
-        renderTileTask(i,pixels,width,height,time,camera,numTilesX,numTilesY);
-      //inrender = false;
-    });
-#endif
-}
-
-typedef void (*animateSphereFunc) (int taskIndex, Vertex* vertices, 
-				   const float rcpNumTheta,
-				   const float rcpNumPhi,
-				   const Vec3fa& pos, 
-				   const float r,
-				   const float f);
-
-void launch_animateSphere(animateSphereFunc func,
-			  int taskSize,
-			  Vertex* vertices, 
-			  const float rcpNumTheta,
-			  const float rcpNumPhi,
-			  const Vec3fa& pos, 
-			  const float r,
-			  const float f)
-{
-  parallel_for(size_t(0),size_t(taskSize),[&] (const range<size_t>& m) {
-      for (size_t i=m.begin(); i<m.end(); i++)
-        func(i,vertices,rcpNumTheta,rcpNumPhi,pos,r,f);
-    });
 }
 
 static int p[513] = { 

@@ -17,6 +17,7 @@
 #pragma once
 
 #include "../../../common/sys/platform.h"
+#include "../../../kernels/algorithms/parallel_for.h"
 
 /* size of screen tiles */
 #define TILE_SIZE_X 8
@@ -85,28 +86,6 @@ __forceinline Vec3fa neg(const Vec3fa& a) { return -a; }
 __forceinline bool   eq (const Vec3fa& a, const Vec3fa& b) { return a == b; }
 __forceinline bool   ne (const Vec3fa& a, const Vec3fa& b) { return a != b; }
 __forceinline bool   eq (const AffineSpace3fa& a, const AffineSpace3fa& b) { return a == b; }
-
-/* parallel invokation of renderTile function */
-void launch_renderTileTask (int numTiles, 
-                            int* pixels, const int width, const int height, const float time, 
-                            const ISPCCamera& camera, const int numTilesX, const int numTilesY);
-
-/* parallel invokation of animateSphere function */
-typedef void (*animateSphereFunc) (int taskIndex, Vertex* vertices, 
-				   const float rcpNumTheta,
-				   const float rcpNumPhi,
-				   const Vec3fa& pos, 
-				   const float r,
-				   const float f);
-
-void launch_animateSphere(animateSphereFunc func,
-			  int taskSize, 
-			  Vertex* vertices, 
-			  const float rcpNumTheta,
-			  const float rcpNumPhi,
-			  const Vec3fa& pos, 
-			  const float r,
-			  const float f);
 
 struct Sample3f
 {

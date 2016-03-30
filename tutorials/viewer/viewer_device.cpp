@@ -90,7 +90,10 @@ void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
 {
   /* first update small meshes */
 #if defined(ISPC)
-  launch[ scene_in->numGeometries ] updateMeshEdgeLevelBufferTask(scene_in,cam_pos); 
+  parallel_for(size_t(0),size_t( scene_in->numGeometries ),[&](const range<size_t>& range) {
+    for (size_t i=range.begin(); i<range.end(); i++)
+      updateMeshEdgeLevelBufferTask(i,scene_in,cam_pos);
+  }); 
 #endif
 
   /* now update large meshes */
@@ -101,7 +104,10 @@ void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
     ISPCSubdivMesh* mesh = (ISPCSubdivMesh*) geometry;
 #if defined(ISPC)
     if (mesh->numFaces < 10000) continue;
-    launch[ getNumHWThreads() ] updateSubMeshEdgeLevelBufferTask(mesh,cam_pos); 	           
+    parallel_for(size_t(0),size_t( getNumHWThreads() ),[&](const range<size_t>& range) {
+    for (size_t i=range.begin(); i<range.end(); i++)
+      updateSubMeshEdgeLevelBufferTask(i,mesh,cam_pos);
+  }); 	           
 #else
     updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
 #endif
@@ -663,7 +669,10 @@ extern "C" void device_render (int* pixels,
   /* render image */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  launch_renderTileTask(numTilesX*numTilesY,pixels,width,height,time,camera,numTilesX,numTilesY); 
+  parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
+    for (size_t i=range.begin(); i<range.end(); i++)
+      renderTileTask(i,pixels,width,height,time,camera,numTilesX,numTilesY);
+  }); 
   //rtcDebug();
 }
 
