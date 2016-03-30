@@ -369,18 +369,26 @@ namespace embree
   void TutorialApplication::specialFunc(int key, int x, int y)
   {
     key_pressed(key);
-
-    switch (key) {
-      //case GLUT_KEY_LEFT      : camera.rotate(-0.02f,0.0f); break;
-      //case GLUT_KEY_RIGHT     : camera.rotate(+0.02f,0.0f); break;
-      //case GLUT_KEY_UP        : camera.move(0.0f,0.0f,+speed); break;
-      //case GLUT_KEY_DOWN      : camera.move(0.0f,0.0f,-speed); break;
-    case GLUT_KEY_UP        : debug_int0++; set_parameter(1000000,debug_int0); PRINT(debug_int0); break;
-    case GLUT_KEY_DOWN      : debug_int0--; set_parameter(1000000,debug_int0); PRINT(debug_int0); break;
-    case GLUT_KEY_LEFT      : debug_int1--; set_parameter(1000001,debug_int1); PRINT(debug_int1); break;
-    case GLUT_KEY_RIGHT     : debug_int1++; set_parameter(1000001,debug_int1); PRINT(debug_int1); break;
-    case GLUT_KEY_PAGE_UP   : speed *= 1.2f; break;
-    case GLUT_KEY_PAGE_DOWN : speed /= 1.2f; break;
+    
+    if (glutGetModifiers() == GLUT_ACTIVE_CTRL)
+    {
+      switch (key) {
+      case GLUT_KEY_UP        : debug_int0++; set_parameter(1000000,debug_int0); PRINT(debug_int0); break;
+      case GLUT_KEY_DOWN      : debug_int0--; set_parameter(1000000,debug_int0); PRINT(debug_int0); break;
+      case GLUT_KEY_LEFT      : debug_int1--; set_parameter(1000001,debug_int1); PRINT(debug_int1); break;
+      case GLUT_KEY_RIGHT     : debug_int1++; set_parameter(1000001,debug_int1); PRINT(debug_int1); break;
+      }
+    }
+    else
+    {
+      switch (key) {
+      case GLUT_KEY_LEFT      : camera.rotate(-0.02f,0.0f); break;
+      case GLUT_KEY_RIGHT     : camera.rotate(+0.02f,0.0f); break;
+      case GLUT_KEY_UP        : camera.move(0.0f,0.0f,+speed); break;
+      case GLUT_KEY_DOWN      : camera.move(0.0f,0.0f,-speed); break;
+      case GLUT_KEY_PAGE_UP   : speed *= 1.2f; break;
+      case GLUT_KEY_PAGE_DOWN : speed /= 1.2f; break;
+      }
     }
   }
 
