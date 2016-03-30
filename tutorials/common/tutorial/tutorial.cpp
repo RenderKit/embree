@@ -48,31 +48,34 @@ namespace embree
   TutorialApplication::TutorialApplication (const std::string& tutorialName)
 
     : tutorialName(tutorialName),
+
       rtcore(""),
       subdiv_mode(""),
-      outputImageFilename(""),
-      skipBenchmarkFrames(0),
-      numBenchmarkFrames(0),
-      interactive(true),
-      instancing_mode(0),
-      shader(SHADER_DEFAULT),
+
+      scene(new SceneGraph::GroupNode),
       convert_tris_to_quads(false),
       convert_bezier_to_lines(false),
       convert_hair_to_curves(false),
-      scene(new SceneGraph::GroupNode),
       sceneFilename(""),
 
-      time0(getSeconds()),
+      shader(SHADER_DEFAULT),
+      instancing_mode(0),
 
-      /* output settings */
       width(512),
       height(512),
 
+      outputImageFilename(""),
+
+      skipBenchmarkFrames(0),
+      numBenchmarkFrames(0),
+
+      interactive(true),
       fullscreen(false),
       window_width(512),
       window_height(512),
       windowID(0),
-    
+
+      time0(getSeconds()),
       debug_int0(0),
       debug_int1(0),
     

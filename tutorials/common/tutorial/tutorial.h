@@ -109,14 +109,7 @@ namespace embree
     /* embree configuration */
     std::string rtcore;
     std::string subdiv_mode;
-    
-    /* image output settings */
-    FileName outputImageFilename;
-
-    /* benchmark mode settings */
-    int skipBenchmarkFrames;
-    int numBenchmarkFrames;
-    
+      
     /* scene settings */
     TutorialScene obj_scene;
     Ref<SceneGraph::GroupNode> scene;
@@ -134,6 +127,13 @@ namespace embree
     size_t width;
     size_t height;
 
+    /* image output settings */
+    FileName outputImageFilename;
+
+    /* benchmark mode settings */
+    int skipBenchmarkFrames;
+    int numBenchmarkFrames;
+  
     /* window settings */
     bool interactive;
     bool fullscreen;
@@ -150,6 +150,7 @@ namespace embree
     
     float speed;
 
+  public:
     static TutorialApplication* instance;
   };
 }
