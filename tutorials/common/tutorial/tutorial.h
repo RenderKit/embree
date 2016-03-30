@@ -129,19 +129,19 @@ namespace embree
     Camera camera;
     Shader shader;
     int instancing_mode;
-    double time0;
     
     /* framebuffer settings */
     size_t width;
     size_t height;
-    int window;
 
-    /* fullscreen settings */
+    /* window settings */
     bool interactive;
     bool fullscreen;
     size_t window_width;
     size_t window_height;
+    int windowID;
     
+    double time0;
     int debug_int0;
     int debug_int1;
     

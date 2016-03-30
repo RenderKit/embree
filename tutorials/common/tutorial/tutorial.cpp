@@ -71,7 +71,7 @@ namespace embree
       fullscreen(false),
       window_width(512),
       window_height(512),
-      window(0),
+      windowID(0),
     
       debug_int0(0),
       debug_int1(0),
@@ -355,7 +355,7 @@ namespace embree
 
     case '\033': case 'q': case 'Q':
       cleanup();
-      glutDestroyWindow(window);
+      glutDestroyWindow(windowID);
 #if defined(__MACOSX__)
       exit(1);
 #endif
@@ -584,7 +584,7 @@ namespace embree
       glutInitWindowSize((GLsizei)width, (GLsizei)height);
       glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
       glutInitWindowPosition(0, 0);
-      window = glutCreateWindow(tutorialName.c_str());
+      windowID = glutCreateWindow(tutorialName.c_str());
       if (fullscreen) glutFullScreen();
       glutDisplayFunc(embree::displayFunc);
       glutIdleFunc(embree::idleFunc);
