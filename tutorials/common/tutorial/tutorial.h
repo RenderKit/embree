@@ -103,7 +103,6 @@ namespace embree
     virtual void reshapeFunc(int width, int height);
     virtual void idleFunc();
     
-    
   public:
     std::string tutorialName;
     
@@ -155,10 +154,3 @@ namespace embree
     static TutorialApplication* instance;
   };
 }
-
-#if defined __WIN32__
-inline double drand48() {
-  return (double)rand()/(double)RAND_MAX;
-}
-
-#endif
