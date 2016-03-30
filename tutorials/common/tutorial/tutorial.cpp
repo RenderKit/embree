@@ -41,35 +41,9 @@ extern "C" {
 
 namespace embree
 {
-  TutorialApplication* TutorialApplication::instance = nullptr;
-
- static const double g_time0 = getSeconds();
-
-  /* camera */
-  Camera g_camera;
-
-  /* output settings */
-  static size_t g_width = 512;
-  static size_t g_height = 512;
-  static bool g_display = true;
-
-  /* fullscreen settings */
-  static bool g_fullscreen = false;
-  static size_t g_window_width = 512;
-  static size_t g_window_height = 512;
-
-  /* ID of created window */
-  static int g_window = 0;
-
-  static int g_debug_int0 = 0;
-  static int g_debug_int1 = 0;
-
-
-  static int mouseMode = 0;
-  static int clickX = 0, clickY = 0;
-  static bool flip14 = false;
-
   std::string g_tutorialName;
+
+  TutorialApplication* TutorialApplication::instance = nullptr; 
 
   TutorialApplication::TutorialApplication (const std::string& tutorialName)
 
@@ -88,7 +62,26 @@ namespace embree
       convert_bezier_to_lines(false),
       convert_hair_to_curves(false),
       scene(new SceneGraph::GroupNode),
-      filename("")
+      filename(""),
+
+      g_time0(getSeconds()),
+
+      /* output settings */
+      g_width(512),
+      g_height(512),
+      g_display(true),
+
+      g_fullscreen(false),
+      g_window_width(512),
+      g_window_height(512),
+      g_window(0),
+    
+      g_debug_int0(0),
+      g_debug_int1(0),
+    
+      mouseMode(0),
+      clickX(0), clickY(0),
+      flip14(false)
   {
     /* only a single instance of this class is supported */
     assert(instance == nullptr);

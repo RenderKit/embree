@@ -116,6 +116,29 @@ namespace embree
     TutorialScene obj_scene;
     Ref<SceneGraph::GroupNode> scene;
     FileName filename;
+    
+    double g_time0;
+    Camera g_camera;
+ 
+    /* output settings */
+    size_t g_width;
+    size_t g_height;
+    bool g_display;
+
+    /* fullscreen settings */
+    bool g_fullscreen;
+    size_t g_window_width;
+    size_t g_window_height;
+    
+    /* ID of created window */
+    int g_window;
+    
+    int g_debug_int0;
+    int g_debug_int1;
+    
+    int mouseMode;
+    int clickX, clickY;
+    bool flip14;
 
     static TutorialApplication* instance;
   };
