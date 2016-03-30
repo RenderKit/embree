@@ -49,7 +49,6 @@ namespace embree
 
     : tutorialName(tutorialName),
       rtcore(""),
-      numThreads(0),
       subdiv_mode(""),
       outFilename(""),
       skipBenchmarkFrames(0),
@@ -160,8 +159,7 @@ namespace embree
       }, "--rtcore <string>: uses <string> to configure Embree device");
     
     registerOption("threads", [this] (Ref<ParseStream> cin, const FileName& path) {
-        numThreads = cin->getInt();
-        rtcore += ",threads=" + toString(numThreads);
+        rtcore += ",threads=" + toString(cin->getInt());
       }, "--threads <int>: number of threads to use");
     
     registerOption("benchmark", [this] (Ref<ParseStream> cin, const FileName& path) {
