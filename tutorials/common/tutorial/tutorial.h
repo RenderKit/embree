@@ -108,7 +108,6 @@ namespace embree
     
     /* configuration */
     std::string rtcore;
-    size_t numThreads;
     std::string subdiv_mode;
     
     /* output settings */
