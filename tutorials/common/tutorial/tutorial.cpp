@@ -327,6 +327,185 @@ namespace embree
     cleanup();
   }
 
+  void TutorialApplication::keyboardFunc(unsigned char key, int x, int y)
+  {
+    /* call tutorial keyboard handler */
+    key_pressed(key);
+
+    switch (key)
+    {
+    case 'f' : 
+      if (fullscreen) {
+        fullscreen = false;
+        glutReshapeWindow(window_width,window_height);
+      } else {
+        fullscreen = true;
+        window_width = width;
+        window_height = height;
+        glutFullScreen(); 
+      }
+      break;
+    case 'c' : {
+      std::cout.precision(10);
+      std::cout << "-vp " << camera.from.x    << " " << camera.from.y    << " " << camera.from.z    << " " 
+                << "-vi " << camera.to.x << " " << camera.to.y << " " << camera.to.z << " " 
+                << "-vu " << camera.up.x     << " " << camera.up.y     << " " << camera.up.z     << " " 
+                << "-fov " << camera.fov << std::endl;
+      break;
+    }
+    case '+' : g_debug=clamp(g_debug+0.01f); PRINT(g_debug); break;
+    case '-' : g_debug=clamp(g_debug-0.01f); PRINT(g_debug); break;
+
+    case '\033': case 'q': case 'Q':
+      cleanup();
+      glutDestroyWindow(window);
+#if defined(__MACOSX__)
+      exit(1);
+#endif
+      break;
+    }
+  }
+
+  void TutorialApplication::specialFunc(int key, int x, int y)
+  {
+    key_pressed(key);
+
+    switch (key) {
+      //case GLUT_KEY_LEFT      : camera.rotate(-0.02f,0.0f); break;
+      //case GLUT_KEY_RIGHT     : camera.rotate(+0.02f,0.0f); break;
+      //case GLUT_KEY_UP        : camera.move(0.0f,0.0f,+speed); break;
+      //case GLUT_KEY_DOWN      : camera.move(0.0f,0.0f,-speed); break;
+    case GLUT_KEY_UP        : debug_int0++; set_parameter(1000000,debug_int0); PRINT(debug_int0); break;
+    case GLUT_KEY_DOWN      : debug_int0--; set_parameter(1000000,debug_int0); PRINT(debug_int0); break;
+    case GLUT_KEY_LEFT      : debug_int1--; set_parameter(1000001,debug_int1); PRINT(debug_int1); break;
+    case GLUT_KEY_RIGHT     : debug_int1++; set_parameter(1000001,debug_int1); PRINT(debug_int1); break;
+    case GLUT_KEY_PAGE_UP   : speed *= 1.2f; break;
+    case GLUT_KEY_PAGE_DOWN : speed /= 1.2f; break;
+    }
+  }
+
+  void TutorialApplication::clickFunc(int button, int state, int x, int y) 
+  {
+    if (state == GLUT_UP) 
+    {
+      mouseMode = 0;
+      if (button == GLUT_LEFT_BUTTON && glutGetModifiers() == GLUT_ACTIVE_SHIFT) 
+      {
+        ISPCCamera ispccamera = camera.getISPCCamera(width,height);
+        Vec3fa p; bool hit = pick(x,y,ispccamera,p);
+
+        if (hit) {
+          Vec3fa delta = p - camera.to;
+          Vec3fa right = normalize(ispccamera.xfm.l.vx);
+          Vec3fa up    = normalize(ispccamera.xfm.l.vy);
+          camera.to = p;
+          camera.from += dot(delta,right)*right + dot(delta,up)*up;
+        }
+      }
+      else if (button == GLUT_LEFT_BUTTON && glutGetModifiers() == (GLUT_ACTIVE_CTRL | GLUT_ACTIVE_SHIFT)) 
+      {
+        ISPCCamera ispccamera = camera.getISPCCamera(width,height);
+        Vec3fa p; bool hit = pick(x,y,ispccamera,p);
+        if (hit) camera.to = p;
+      }
+
+    } else {
+      clickX = x; clickY = y;
+      int modifiers = glutGetModifiers();
+      if      (button == GLUT_LEFT_BUTTON && modifiers == GLUT_ACTIVE_SHIFT) mouseMode = 1;
+      else if (button == GLUT_MIDDLE_BUTTON) mouseMode = 2;
+      else if (button == GLUT_RIGHT_BUTTON ) mouseMode = 3;
+      else if (button == GLUT_LEFT_BUTTON && modifiers == GLUT_ACTIVE_CTRL ) mouseMode = 3;
+      else if (button == GLUT_LEFT_BUTTON  ) mouseMode = 4;
+    }
+  }
+  
+  void TutorialApplication::motionFunc(int x, int y)
+  {
+    float dClickX = float(clickX - x), dClickY = float(clickY - y);
+    clickX = x; clickY = y;
+
+    switch (mouseMode) {
+    case 1: camera.rotateOrbit(-0.005f*dClickX,0.005f*dClickY); break;
+    case 2: break;
+    case 3: camera.dolly(-dClickY); break;
+    case 4: camera.rotate(-0.005f*dClickX,0.005f*dClickY); break;
+    }
+  }
+
+  void TutorialApplication::displayFunc(void) 
+  {
+    ISPCCamera ispccamera = camera.getISPCCamera(width,height,true);
+    
+    /* render image using ISPC */
+    double t0 = getSeconds();
+    render(time0-t0,ispccamera);
+    double dt0 = getSeconds()-t0;
+
+    if (display) 
+    {
+      /* draw pixels to screen */
+      int* pixels = map();
+      glDrawPixels(width,height,GL_RGBA,GL_UNSIGNED_BYTE,pixels);
+
+      if (fullscreen) 
+      {
+        glMatrixMode( GL_PROJECTION );
+        glPushMatrix();
+        glLoadIdentity();
+        gluOrtho2D( 0, width, 0, height );
+        glMatrixMode( GL_MODELVIEW );
+        glPushMatrix();
+        glLoadIdentity();
+
+         /* print frame rate */
+        std::ostringstream stream;
+        stream.setf(std::ios::fixed, std::ios::floatfield);
+        stream.precision(2);
+        stream << 1.0f/dt0 << " fps";
+        std::string str = stream.str();
+
+        glRasterPos2i( width-str.size()*12, height - 24); 
+        for ( int i = 0; i < str.size(); ++i )
+          glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, str[i]);
+        
+        glRasterPos2i( 0, 0 ); 
+        glPopMatrix();
+        glMatrixMode( GL_PROJECTION );
+        glPopMatrix();
+        glMatrixMode( GL_MODELVIEW );
+      }
+      
+      glutSwapBuffers();
+      unmap();
+    }
+    double dt1 = getSeconds()-t0;
+
+    /* print frame rate */
+    std::ostringstream stream;
+    stream.setf(std::ios::fixed, std::ios::floatfield);
+    stream.precision(2);
+    stream << "render: ";
+    stream << 1.0f/dt0 << " fps, ";
+    stream << dt0*1000.0f << " ms, ";
+    stream << "display: ";
+    stream << 1.0f/dt1 << " fps, ";
+    stream << dt1*1000.0f << " ms, ";
+    stream << width << "x" << height << " pixels";
+    std::cout << stream.str() << std::endl;
+  }
+
+  void TutorialApplication::reshapeFunc(int width, int height) 
+  {
+    resize(width,height);
+    glViewport(0, 0, width, height);
+    this->width = width; this->height = height;
+  }
+  
+  void TutorialApplication::idleFunc() {
+    glutPostRedisplay();
+  }
+
   void keyboardFunc(unsigned char key, int x, int y) {
     TutorialApplication::instance->keyboardFunc(key,x,y);
   }
@@ -431,207 +610,5 @@ namespace embree
   catch (...) {
     std::cout << "Error: unknown exception caught." << std::endl;
     return 1;
-  }
-
- 
-
-  /*************************************************************************************************/
-  /*                                  Keyboard control                                             */
-  /*************************************************************************************************/
-
-
-  void TutorialApplication::keyboardFunc(unsigned char key, int x, int y)
-  {
-    /* call tutorial keyboard handler */
-    key_pressed(key);
-
-    switch (key)
-    {
-    case 'f' : 
-      if (fullscreen) {
-        fullscreen = false;
-        glutReshapeWindow(window_width,window_height);
-      } else {
-        fullscreen = true;
-        window_width = width;
-        window_height = height;
-        glutFullScreen(); 
-      }
-      break;
-    case 'c' : {
-      std::cout.precision(10);
-      std::cout << "-vp " << camera.from.x    << " " << camera.from.y    << " " << camera.from.z    << " " 
-                << "-vi " << camera.to.x << " " << camera.to.y << " " << camera.to.z << " " 
-        //<< "-vd " << camera.to.x-camera.from.x << " " << camera.to.y-camera.from.y << " " << camera.to.z-camera.from.z << " " << std::endl
-                << "-vu " << camera.up.x     << " " << camera.up.y     << " " << camera.up.z     << " " 
-                << "-fov " << camera.fov << std::endl;
-      break;
-    }
-      //case 'a' : camera.rotate(-0.02f,0.0f); break;
-      //case 'd' : camera.rotate(+0.02f,0.0f); break;
-      //case 'w' : camera.move(0.0f,0.0f,+speed); break;
-      //case 's' : camera.move(0.0f,0.0f,-speed); break;
-      //case ' ' : display = !display; break;
-
-    case '+' : g_debug=clamp(g_debug+0.01f); PRINT(g_debug); break;
-    case '-' : g_debug=clamp(g_debug-0.01f); PRINT(g_debug); break;
-
-    case '\033': case 'q': case 'Q':
-      cleanup();
-      glutDestroyWindow(window);
-#if defined(__MACOSX__)
-      exit(1);
-#endif
-      break;
-    }
-  }
-
-  void TutorialApplication::specialFunc(int key, int, int)
-  {
-    key_pressed(key);
-
-    switch (key) {
-      //case GLUT_KEY_LEFT      : camera.rotate(-0.02f,0.0f); break;
-      //case GLUT_KEY_RIGHT     : camera.rotate(+0.02f,0.0f); break;
-      //case GLUT_KEY_UP        : camera.move(0.0f,0.0f,+speed); break;
-      //case GLUT_KEY_DOWN      : camera.move(0.0f,0.0f,-speed); break;
-    case GLUT_KEY_UP        : debug_int0++; set_parameter(1000000,debug_int0); PRINT(debug_int0); break;
-    case GLUT_KEY_DOWN      : debug_int0--; set_parameter(1000000,debug_int0); PRINT(debug_int0); break;
-    case GLUT_KEY_LEFT      : debug_int1--; set_parameter(1000001,debug_int1); PRINT(debug_int1); break;
-    case GLUT_KEY_RIGHT     : debug_int1++; set_parameter(1000001,debug_int1); PRINT(debug_int1); break;
-    case GLUT_KEY_PAGE_UP   : speed *= 1.2f; break;
-    case GLUT_KEY_PAGE_DOWN : speed /= 1.2f; break;
-    }
-  }
-
-  /*************************************************************************************************/
-  /*                                   Mouse control                                               */
-  /*************************************************************************************************/
-
-  void TutorialApplication::clickFunc(int button, int state, int x, int y) 
-  {
-    if (state == GLUT_UP) 
-    {
-      mouseMode = 0;
-      if (button == GLUT_LEFT_BUTTON && glutGetModifiers() == GLUT_ACTIVE_SHIFT) 
-      {
-        ISPCCamera ispccamera = camera.getISPCCamera(width,height);
-        Vec3fa p; bool hit = pick(x,y,ispccamera,p);
-
-        if (hit) {
-          Vec3fa delta = p - camera.to;
-          Vec3fa right = normalize(ispccamera.xfm.l.vx);
-          Vec3fa up    = normalize(ispccamera.xfm.l.vy);
-          camera.to = p;
-          camera.from += dot(delta,right)*right + dot(delta,up)*up;
-        }
-      }
-      else if (button == GLUT_LEFT_BUTTON && glutGetModifiers() == (GLUT_ACTIVE_CTRL | GLUT_ACTIVE_SHIFT)) 
-      {
-        ISPCCamera ispccamera = camera.getISPCCamera(width,height);
-        Vec3fa p; bool hit = pick(x,y,ispccamera,p);
-        if (hit) camera.to = p;
-      }
-
-    } else {
-      clickX = x; clickY = y;
-      int modifiers = glutGetModifiers();
-      if      (button == GLUT_LEFT_BUTTON && modifiers == GLUT_ACTIVE_SHIFT) mouseMode = 1;
-      else if (button == GLUT_MIDDLE_BUTTON) mouseMode = 2;
-      else if (button == GLUT_RIGHT_BUTTON ) mouseMode = 3;
-      else if (button == GLUT_LEFT_BUTTON && modifiers == GLUT_ACTIVE_CTRL ) mouseMode = 3;
-      else if (button == GLUT_LEFT_BUTTON  ) mouseMode = 4;
-    }
-  }
-  
-  void TutorialApplication::motionFunc(int x, int y)
-  {
-    float dClickX = float(clickX - x), dClickY = float(clickY - y);
-    clickX = x; clickY = y;
-
-    switch (mouseMode) {
-    case 1: camera.rotateOrbit(-0.005f*dClickX,0.005f*dClickY); break;
-    case 2: break;
-    case 3: camera.dolly(-dClickY); break;
-    case 4: camera.rotate(-0.005f*dClickX,0.005f*dClickY); break;
-    }
-  }
- 
-  /*************************************************************************************************/
-  /*                                   Window control                                              */
-  /*************************************************************************************************/
-
-  void TutorialApplication::displayFunc(void) 
-  {
-    ISPCCamera ispccamera = camera.getISPCCamera(width,height,true);
-    
-    /* render image using ISPC */
-    double t0 = getSeconds();
-    render(time0-t0,ispccamera);
-    double dt0 = getSeconds()-t0;
-
-    if (display) 
-    {
-      /* draw pixels to screen */
-      int* pixels = map();
-      glDrawPixels(width,height,GL_RGBA,GL_UNSIGNED_BYTE,pixels);
-
-      if (fullscreen) 
-      {
-        glMatrixMode( GL_PROJECTION );
-        glPushMatrix();
-        glLoadIdentity();
-        gluOrtho2D( 0, width, 0, height );
-        glMatrixMode( GL_MODELVIEW );
-        glPushMatrix();
-        glLoadIdentity();
-
-         /* print frame rate */
-        std::ostringstream stream;
-        stream.setf(std::ios::fixed, std::ios::floatfield);
-        stream.precision(2);
-        stream << 1.0f/dt0 << " fps";
-        std::string str = stream.str();
-
-        glRasterPos2i( width-str.size()*12, height - 24); 
-        for ( int i = 0; i < str.size(); ++i )
-          glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, str[i]);
-        
-        glRasterPos2i( 0, 0 ); 
-        glPopMatrix();
-        glMatrixMode( GL_PROJECTION );
-        glPopMatrix();
-        glMatrixMode( GL_MODELVIEW );
-      }
-      
-      glutSwapBuffers();
-      unmap();
-    }
-    double dt1 = getSeconds()-t0;
-
-    /* print frame rate */
-    std::ostringstream stream;
-    stream.setf(std::ios::fixed, std::ios::floatfield);
-    stream.precision(2);
-    stream << "render: ";
-    stream << 1.0f/dt0 << " fps, ";
-    stream << dt0*1000.0f << " ms, ";
-    stream << "display: ";
-    stream << 1.0f/dt1 << " fps, ";
-    stream << dt1*1000.0f << " ms, ";
-    stream << width << "x" << height << " pixels";
-    std::cout << stream.str() << std::endl;
-  }
-
-  void TutorialApplication::reshapeFunc(int width, int height) 
-  {
-    resize(width,height);
-    glViewport(0, 0, width, height);
-    this->width = width; this->height = height;
-  }
-  
-  void TutorialApplication::idleFunc()
-  {
-    glutPostRedisplay();
   }
 }
