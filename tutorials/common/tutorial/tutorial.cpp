@@ -172,7 +172,8 @@ namespace embree
         const Vec3fa L = cin->getVec3fa();
         scene->add(new SceneGraph::LightNode<AmbientLight>(AmbientLight(L)));
       }, "--ambientlight r g b: adds an ambient light with intensity rgb");
-    
+    registerAlternativeOption("ambientlight","ambient");
+
     registerOption("pointlight", [this] (Ref<ParseStream> cin, const FileName& path) {
         const Vec3fa P = cin->getVec3fa();
         const Vec3fa I = cin->getVec3fa();
