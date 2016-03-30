@@ -104,7 +104,7 @@ unsigned int addCurve (RTCScene scene, const Vec3fa& pos)
   }
   rtcUnmapBuffer(scene, geomID, RTC_VERTEX_BUFFER);
    
-  Vec3fa* colors = new Vec3fa[4*NUM_CURVES];
+  Vec3fa* colors = (Vec3fa*) alignedMalloc(4*NUM_CURVES*sizeof(Vec3fa));
   for (size_t i=0; i<NUM_CURVES; i++) 
   {
     const Vec3fa v0 = Vec3fa(hair_vertex_colors[i+0][0],hair_vertex_colors[i+0][1],hair_vertex_colors[i+0][2],hair_vertex_colors[i+0][3]);

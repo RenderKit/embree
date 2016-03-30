@@ -25,6 +25,8 @@ sed -i.backup  's/foreach_tiled[ ]*([ ]*\([a-zA-Z0-9_]*\)[ ]*=[ ]*\([^ \.]*\)[ ]
 sed -i.backup  's/foreach[ ]*([ ]*\([a-zA-Z0-9_]*\)[ ]*=[ ]*\([^ \.]*\)[ ]*\.\.\.[ ]*\([^ ),]*\)[ ]*\,[ ]*\([a-zA-Z0-9_]*\)[ ]*=[ ]*\([^ \.]*\)[ ]*\.\.\.[ ]*\([^ ),]*\)[ ]*)/for (int \1=\2; \1<\3; \1++) for (int \4=\5; \4<\6; \4++)/g' $2
 sed -i.backup  's/foreach_tiled[ ]*([ ]*\([a-zA-Z0-9_]*\)[ ]*=[ ]*\([^ \.]*\)[ ]*\.\.\.[ ]*\([^ ),]*\)[ ]*\,[ ]*\([a-zA-Z0-9_]*\)[ ]*=[ ]*\([^ \.]*\)[ ]*\.\.\.[ ]*\([^ ),]*\)[ ]*)/for (int \1=\2; \1<\3; \1++) for (int \4=\5; \4<\6; \4++)/g' $2
 
+sed -i.backup  's/new[ ]*\([a-zA-Z0-9_]*\)[ ]*\[\([^]]*\)\]/(\1\*) alignedMalloc(\2\*sizeof(\1))/g' $2
+sed -i.backup  's/delete[ ]*\[[ ]*\][ ]*\([a-zA-Z0-9_]*\)/alignedFree(\1)/g' $2
 
 sed -i.backup  's/sync;//g' $2
 sed -i.backup  's/print(/printf(/g' $2
@@ -60,19 +62,6 @@ sed -i.backup  's/RTCOccludedFuncVarying/RTCOccludedFunc/g' $2
 #sed -i.backup  's/\#if 1 \/\/ enables parallel execution/\#if 0/g' $2
 sed -i.backup  's/RTCFilterFuncVarying/RTCFilterFunc/g' $2
 sed -i.backup  's/Vec3f\([^a]\)/Vec3fa\1/g' $2
-
-sed -i.backup  's/new Vec3fa\[6\]/(Vec3fa\*) alignedMalloc(6\*sizeof(Vec3fa))/g' $2
-sed -i.backup  's/new Vec3fa\[8\]/(Vec3fa\*) alignedMalloc(8\*sizeof(Vec3fa))/g' $2
-sed -i.backup  's/new Vec3fa\[12\]/(Vec3fa\*) alignedMalloc(12\*sizeof(Vec3fa))/g' $2
-
-sed -i.backup  's/delete\[\] colors/alignedFree(colors)/g' $2
-sed -i.backup  's/delete\[\] face_colors/alignedFree(face_colors)/g' $2
-sed -i.backup  's/delete\[\] vertex_colors/alignedFree(vertex_colors)/g' $2
-
-sed -i.backup  's/new Vec3fa\[width\*height\]/(Vec3fa\*) alignedMalloc(width\*height\*sizeof(Vec3fa))/g' $2
-sed -i.backup  's/delete\[\] g_accu/alignedFree(g_accu)/g' $2
-
-#sed -i.backup  's/if (id < 0 || id >= numMaterials) continue;//g' $2
 
 sed -i.backup  's/foreach_unique[ ]*([ ]*\([[:alnum:]_]*\)[ ]*in[ ]*\([[:alnum:]._]*\))/int \1 = \2;/g' $2
 #sed -i.backup  's/foreach_unique (geomID in ray.geomID)/int geomID = ray.geomID; /g' $2

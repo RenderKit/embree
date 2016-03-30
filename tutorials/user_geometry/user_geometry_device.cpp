@@ -230,7 +230,7 @@ Sphere* createAnalyticalSphere (RTCScene scene, const Vec3fa& p, float r)
 Sphere* createAnalyticalSpheres (RTCScene scene, size_t N)
 {
   unsigned int geomID = rtcNewUserGeometry(scene,N);
-  Sphere* spheres = new Sphere[N];
+  Sphere* spheres = (Sphere*) alignedMalloc(N*sizeof(Sphere));
   for (int i=0; i<N; i++) spheres[i].geomID = geomID;
   rtcSetUserData(scene,geomID,spheres);
   rtcSetBoundsFunction(scene,geomID,(RTCBoundsFunc)&sphereBoundsFunc);
