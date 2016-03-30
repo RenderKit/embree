@@ -106,7 +106,7 @@ namespace embree
   public:
     std::string tutorialName;
     
-    /* configuration */
+    /* embree configuration */
     std::string rtcore;
     std::string subdiv_mode;
     
@@ -123,7 +123,7 @@ namespace embree
     bool convert_tris_to_quads;
     bool convert_bezier_to_lines;
     bool convert_hair_to_curves;
-    FileName filename;
+    FileName sceneFilename;
     
     /* render settings */
     Camera camera;
@@ -135,7 +135,6 @@ namespace embree
     size_t width;
     size_t height;
     int window;
-    bool display;
 
     /* fullscreen settings */
     bool interactive;

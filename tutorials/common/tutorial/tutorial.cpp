@@ -60,14 +60,13 @@ namespace embree
       convert_bezier_to_lines(false),
       convert_hair_to_curves(false),
       scene(new SceneGraph::GroupNode),
-      filename(""),
+      sceneFilename(""),
 
       time0(getSeconds()),
 
       /* output settings */
       width(512),
       height(512),
-      display(true),
 
       fullscreen(false),
       window_width(512),
@@ -103,7 +102,7 @@ namespace embree
       }, "-c <filename>: parses command line option from <filename>");
     
     registerOption("i", [this] (Ref<ParseStream> cin, const FileName& path) {
-        filename = path + cin->getFileName();
+        sceneFilename = path + cin->getFileName();
       }, "-i <filename>: parses scene from <filename>");
     
     registerOption("o", [this] (Ref<ParseStream> cin, const FileName& path) {
@@ -440,43 +439,41 @@ namespace embree
     render(time0-t0,ispccamera);
     double dt0 = getSeconds()-t0;
 
-    if (display) 
+    /* draw pixels to screen */
+    int* pixels = map();
+    glDrawPixels(width,height,GL_RGBA,GL_UNSIGNED_BYTE,pixels);
+    
+    if (fullscreen) 
     {
-      /* draw pixels to screen */
-      int* pixels = map();
-      glDrawPixels(width,height,GL_RGBA,GL_UNSIGNED_BYTE,pixels);
-
-      if (fullscreen) 
-      {
-        glMatrixMode( GL_PROJECTION );
-        glPushMatrix();
-        glLoadIdentity();
-        gluOrtho2D( 0, width, 0, height );
-        glMatrixMode( GL_MODELVIEW );
-        glPushMatrix();
-        glLoadIdentity();
-
-         /* print frame rate */
-        std::ostringstream stream;
-        stream.setf(std::ios::fixed, std::ios::floatfield);
-        stream.precision(2);
-        stream << 1.0f/dt0 << " fps";
-        std::string str = stream.str();
-
-        glRasterPos2i( width-str.size()*12, height - 24); 
-        for ( int i = 0; i < str.size(); ++i )
-          glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, str[i]);
-        
-        glRasterPos2i( 0, 0 ); 
-        glPopMatrix();
-        glMatrixMode( GL_PROJECTION );
-        glPopMatrix();
-        glMatrixMode( GL_MODELVIEW );
-      }
+      glMatrixMode( GL_PROJECTION );
+      glPushMatrix();
+      glLoadIdentity();
+      gluOrtho2D( 0, width, 0, height );
+      glMatrixMode( GL_MODELVIEW );
+      glPushMatrix();
+      glLoadIdentity();
       
-      glutSwapBuffers();
-      unmap();
+      /* print frame rate */
+      std::ostringstream stream;
+      stream.setf(std::ios::fixed, std::ios::floatfield);
+      stream.precision(2);
+      stream << 1.0f/dt0 << " fps";
+      std::string str = stream.str();
+      
+      glRasterPos2i( width-str.size()*12, height - 24); 
+      for ( int i = 0; i < str.size(); ++i )
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, str[i]);
+      
+      glRasterPos2i( 0, 0 ); 
+      glPopMatrix();
+      glMatrixMode( GL_PROJECTION );
+      glPopMatrix();
+      glMatrixMode( GL_MODELVIEW );
     }
+    
+    glutSwapBuffers();
+    unmap();
+    
     double dt1 = getSeconds()-t0;
 
     /* print frame rate */
@@ -532,10 +529,10 @@ namespace embree
     parseCommandLine(argc,argv);
 
     /* load scene */
-    if (toLowerCase(filename.ext()) == std::string("obj"))
-      scene->add(loadOBJ(filename,subdiv_mode != ""));
-    else if (filename.ext() != "")
-      scene->add(SceneGraph::load(filename));
+    if (toLowerCase(sceneFilename.ext()) == std::string("obj"))
+      scene->add(loadOBJ(sceneFilename,subdiv_mode != ""));
+    else if (sceneFilename.ext() != "")
+      scene->add(SceneGraph::load(sceneFilename));
 
     /* convert triangles to quads */
     if (convert_tris_to_quads)
