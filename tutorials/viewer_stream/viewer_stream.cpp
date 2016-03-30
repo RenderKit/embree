@@ -18,8 +18,6 @@
 
 namespace embree
 {
-  /* name of the tutorial */
-  const char* tutorialName = "viewer_stream";
   extern "C" { int g_instancing_mode = 0; }
 
   struct Tutorial : public TutorialApplication

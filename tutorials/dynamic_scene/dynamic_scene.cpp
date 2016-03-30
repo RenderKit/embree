@@ -18,9 +18,6 @@
 
 namespace embree
 {
-  /* name of the tutorial */
-  const char* tutorialName = "dynamic_scene";
-
   struct Tutorial : public TutorialApplication 
   {
     Tutorial() : TutorialApplication("dynamic_scene") 

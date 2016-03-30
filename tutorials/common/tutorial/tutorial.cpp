@@ -67,6 +67,8 @@ namespace embree
   static int clickX = 0, clickY = 0;
   static bool flip14 = false;
 
+  std::string g_tutorialName;
+
   TutorialApplication::TutorialApplication (const std::string& tutorialName)
 
     : tutorialName(tutorialName),
@@ -86,6 +88,9 @@ namespace embree
       scene(new SceneGraph::GroupNode),
       filename("")
   {
+    /* the coi device needs this name in a static variable */
+    g_tutorialName = tutorialName;
+
     /* for best performance set FTZ and DAZ flags in MXCSR control and status register */
     _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
     _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);

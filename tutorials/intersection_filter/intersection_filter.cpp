@@ -18,9 +18,6 @@
 
 namespace embree
 {
-  /* name of the tutorial */
-  const char* tutorialName = "intersection_filter";
-
   struct Tutorial : public TutorialApplication 
   {
     Tutorial() : TutorialApplication("intersection_filter") 

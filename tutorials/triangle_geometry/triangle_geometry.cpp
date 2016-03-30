@@ -18,9 +18,6 @@
 
 namespace embree
 {
-  /* name of the tutorial */
-  const char* tutorialName = "triangle_geometry";
-
   struct Tutorial : public TutorialApplication
   {
     Tutorial() : TutorialApplication("triangle_geometry")

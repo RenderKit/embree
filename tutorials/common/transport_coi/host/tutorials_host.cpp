@@ -45,7 +45,7 @@ namespace embree
   COIMAPINSTANCE mapInst;
   int g_width = -1, g_height = -1;
 
-  extern const char* tutorialName;
+  extern std::string g_tutorialName;
   static bool phi_started = false;
 
   void start_phi()
@@ -70,7 +70,7 @@ namespace embree
     std::cout << "Found Xeon Phi device with " << info.NumCores << " cores and " << (info.PhysicalMemory/1024/1024) << "MB memory" << std::endl;
     
     /* create process */
-    const FileName executable = FileName::executableFolder()+(std::string(tutorialName)+"_xeonphi_device");
+    const FileName executable = FileName::executableFolder()+(g_tutorialName+"_xeonphi_device");
     result = COIProcessCreateFromFile
       (engine,
        executable.c_str(), // The local path to the sink side binary to launch.

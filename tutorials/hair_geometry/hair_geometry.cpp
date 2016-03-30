@@ -18,9 +18,6 @@
 
 namespace embree
 {
-  /* name of the tutorial */
-  const char* tutorialName = "hair_geometry";
-
   extern "C" {
     embree::Vec3fa g_dirlight_direction = embree::normalize(embree::Vec3fa(1,-1,1));
     embree::Vec3fa g_dirlight_intensity = embree::Vec3fa(4.0f);

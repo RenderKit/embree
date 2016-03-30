@@ -18,9 +18,6 @@
 
 namespace embree
 {
-  /* name of the tutorial */
-  const char* tutorialName = "bvh_builder";
-
   struct Tutorial : public TutorialApplication
   {
     Tutorial() : TutorialApplication("bvh_builder") {
