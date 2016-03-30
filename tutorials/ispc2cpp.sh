@@ -13,6 +13,10 @@ sed -i.backup  's/unmasked //g' $2
 sed -i.backup  's/extern/extern \"C\"/g' $2
 sed -i.backup  's/export/extern \"C\"/g' $2
 
+sed -i.backup 's/int8/char/g' $2
+sed -i.backup 's/int16/int16_t/g' $2
+sed -i.backup 's/int32/int32_t/g' $2
+
 sed -i.backup  's/__mask/1/g' $2
 sed -i.backup  's/NULL/nullptr/g' $2
 
@@ -24,6 +28,8 @@ sed -i.backup  's/foreach_tiled[ ]*([ ]*\([a-zA-Z0-9_]*\)[ ]*=[ ]*\([^ \.]*\)[ ]
 
 sed -i.backup  's/foreach[ ]*([ ]*\([a-zA-Z0-9_]*\)[ ]*=[ ]*\([^ \.]*\)[ ]*\.\.\.[ ]*\([^ ),]*\)[ ]*\,[ ]*\([a-zA-Z0-9_]*\)[ ]*=[ ]*\([^ \.]*\)[ ]*\.\.\.[ ]*\([^ ),]*\)[ ]*)/for (int \1=\2; \1<\3; \1++) for (int \4=\5; \4<\6; \4++)/g' $2
 sed -i.backup  's/foreach_tiled[ ]*([ ]*\([a-zA-Z0-9_]*\)[ ]*=[ ]*\([^ \.]*\)[ ]*\.\.\.[ ]*\([^ ),]*\)[ ]*\,[ ]*\([a-zA-Z0-9_]*\)[ ]*=[ ]*\([^ \.]*\)[ ]*\.\.\.[ ]*\([^ ),]*\)[ ]*)/for (int \1=\2; \1<\3; \1++) for (int \4=\5; \4<\6; \4++)/g' $2
+
+sed -i.backup  's/foreach_unique[ ]*([ ]*\([[:alnum:]_]*\)[ ]*in[ ]*\([[:alnum:]._]*\))/int \1 = \2;/g' $2
 
 sed -i.backup  's/new[ ]*\([a-zA-Z0-9_]*\)[ ]*\[\([^]]*\)\]/(\1\*) alignedMalloc(\2\*sizeof(\1))/g' $2
 sed -i.backup  's/delete[ ]*\[[ ]*\][ ]*\([a-zA-Z0-9_]*\)/alignedFree(\1)/g' $2
@@ -63,9 +69,6 @@ sed -i.backup  's/RTCOccludedFuncVarying/RTCOccludedFunc/g' $2
 sed -i.backup  's/RTCFilterFuncVarying/RTCFilterFunc/g' $2
 sed -i.backup  's/Vec3f\([^a]\)/Vec3fa\1/g' $2
 
-sed -i.backup  's/foreach_unique[ ]*([ ]*\([[:alnum:]_]*\)[ ]*in[ ]*\([[:alnum:]._]*\))/int \1 = \2;/g' $2
-#sed -i.backup  's/foreach_unique (geomID in ray.geomID)/int geomID = ray.geomID; /g' $2
-#sed -i.backup  's/foreach_unique (id in materialID)//g' $2
 sed -i.backup  's/ISPCMaterial\* material = \&materials\[id\];/ISPCMaterial\* material = \&materials\[materialID\];/g' $2
 sed -i.backup  's/\#define __device__//g' $2
 sed -i.backup  's/__device__//g' $2
@@ -82,6 +85,3 @@ sed -i.backup 's/LinearSpace3f/LinearSpace3fa/g' $2
 sed -i.backup 's/make_AffineSpace3f_rotate/AffineSpace3f::rotate/g' $2
 sed -i.backup 's/AffineSpace3f\([^a]\)/AffineSpace3fa\1/g' $2
 
-sed -i.backup 's/int8/char/g' $2
-sed -i.backup 's/int16/int16_t/g' $2
-sed -i.backup 's/int32/int32_t/g' $2
