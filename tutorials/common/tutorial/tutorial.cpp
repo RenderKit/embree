@@ -20,15 +20,7 @@
 #include "../scenegraph/obj_loader.h"
 #include "../scenegraph/xml_loader.h"
 #include "../image/image.h"
-
-#include "../../../common/sys/filename.h"
-#include "../../../common/sys/sysinfo.h"
-#include "../../../common/lexers/streamfilters.h"
-#include "../../../common/lexers/parsestream.h"
 #include "../transport/transport_host.h"
-
-#include <map>
-#include <sstream>
 
 /* include GLUT for display */
 #if defined(__MACOSX__)

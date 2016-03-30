@@ -29,6 +29,7 @@
 #include "../../common/lexers/streamfilters.h"
 #include "../../common/lexers/parsestream.h"
 
+#include <sstream>
 #include <vector>
 #include <memory>
 #include <map>
