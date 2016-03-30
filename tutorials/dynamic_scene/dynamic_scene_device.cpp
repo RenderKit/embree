@@ -304,7 +304,7 @@ void animateSphere (int id, float time)
       animateSphere(i,vertices,rcpNumTheta,rcpNumPhi,pos,r,f);
   }); 
 #else
-  for (int phi = 0; phi <numPhi+1; phi++) for (int theta = 0; theta<numTheta; theta++)
+  for (int phi=0; phi<numPhi+1; phi++) for (int theta=0; theta<numTheta; theta++)
   {
     Vertex* v = &vertices[phi*numTheta+theta];
     const float phif   = phi*float(pi)*rcpNumPhi;
