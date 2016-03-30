@@ -18,7 +18,8 @@ sed -i.backup  's/NULL/nullptr/g' $2
 
 sed -i.backup  's/programIndex/0/g' $2
 sed -i.backup  's/launch\[\([^]]*\)\][ ]*\([a-zA-Z0-9_]*\)[ ]*(\([^)]*\))/parallel_for(size_t(0),size_t(\1),[\&](const range<size_t>\& range) \{\n    for (size_t i=range.begin(); i<range.end(); i++)\n      \2(i,\3);\n  \})/g' $2
-sed -i.backup  's/foreach[ ]*([ ]*\([a-zA-Z0-9_]*\)[ ]*=\([a-zA-Z0-9]*\)[ ]*\.\.\.[ ]*\([a-zA-Z0-9]*\)[ ]*)/for (int \1=\2; i<\3; i++)/g' $2
+sed -i.backup  's/foreach[ ]*([ ]*\([a-zA-Z0-9_]*\)[ ]*=[ ]*\([a-zA-Z0-9]*\)[ ]*\.\.\.[ ]*\([a-zA-Z0-9]*\)[ ]*)/for (int \1=\2; \1<\3; \1++)/g' $2
+sed -i.backup  's/foreach_tiled[ ]*([ ]*\([a-zA-Z0-9_]*\)[ ]*=[ ]*\([a-zA-Z0-9]*\)[ ]*\.\.\.[ ]*\([a-zA-Z0-9]*\)[ ]*\,[ ]*\([a-zA-Z0-9_]*\)[ ]*=[ ]*\([a-zA-Z0-9]*\)[ ]*\.\.\.[ ]*\([a-zA-Z0-9]*\)[ ]*)/for (int \1=\2; \1<\3; \1++) for (int \4=\5; \4<\6; \4++)/g' $2
 
 sed -i.backup  's/sync;//g' $2
 sed -i.backup  's/print(/printf(/g' $2
@@ -49,8 +50,8 @@ sed -i.backup  's/RTC_MATRIX_COLUMN_MAJOR_ALIGNED16_ALIGNED16/RTC_MATRIX_COLUMN_
 
 
 #sed -i.backup  's/foreach (i=0 ... N)/for (size_t i = 0; i<N; i++)/g' $2
-sed -i.backup  's/foreach (y = y0 ... y1, x = x0 ... x1)/for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)/g' $2
-sed -i.backup  's/foreach_tiled (y = y0 ... y1, x = x0 ... x1)/for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)/g' $2
+#sed -i.backup  's/foreach (y = y0 ... y1, x = x0 ... x1)/for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)/g' $2
+#sed -i.backup  's/foreach_tiled (y = y0 ... y1, x = x0 ... x1)/for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)/g' $2
 sed -i.backup  's/foreach (phi = 0 ... numPhi+1, theta = 0 ... numTheta)/for (int phi = 0; phi <numPhi+1; phi++) for (int theta = 0; theta<numTheta; theta++)/g' $2
 sed -i.backup  's/foreach (theta = 0 ... numTheta)/for (int theta = 0; theta<numTheta; theta++)/g' $2
 sed -i.backup  's/task void renderTileTask(int\* pixels,/void renderTileTask(int taskIndex, int\* pixels,/g' $2

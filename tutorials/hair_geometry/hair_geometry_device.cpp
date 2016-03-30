@@ -511,7 +511,7 @@ void renderTileStandard(int taskIndex,
   //int seed = tileY*numTilesX+tileX+0 + g_accu_count;
   int seed = (tileY*numTilesX+tileX+0) * g_accu_count;
 
-  for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
+  for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
   {
     /* calculate pixel color */
     Vec3fa color = renderPixelStandard(x,y,camera);
