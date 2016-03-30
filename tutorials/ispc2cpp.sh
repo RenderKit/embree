@@ -3,7 +3,7 @@
 echo Converting ISPC tutorial $1 to CPP tutorial $2
 cp $1 $2
 
-# core ISPC
+# ISPC language
 sed -i.backup  's/.isph\"/.h\"/g' $2
 sed -i.backup  's/uniform //g' $2
 sed -i.backup  's/ uniform//g' $2
@@ -35,9 +35,12 @@ sed -i.backup  's/foreach_unique[ ]*([ ]*\([[:alnum:]_]*\)[ ]*in[ ]*\([[:alnum:]
 sed -i.backup  's/new[ ]*\([a-zA-Z0-9_]*\)[ ]*\[\([^]]*\)\]/(\1\*) alignedMalloc(\2\*sizeof(\1))/g' $2
 sed -i.backup  's/delete[ ]*\[[ ]*\][ ]*\([a-zA-Z0-9_]*\)/alignedFree(\1)/g' $2
 
+# system library
 sed -i.backup  's/sync;//g' $2
 sed -i.backup  's/print(/printf(/g' $2
 sed -i.backup  's/abort()/exit(1)/g' $2
+sed -i.backup 's/atomic_compare_exchange_global/atomic_cmpxchg/g' $2 
+sed -i.backup 's/memory_barrier/__memory_barrier/g' $2 
 
 # math library
 sed -i.backup  's/M_PI/float(pi)/g' $2
@@ -61,22 +64,17 @@ sed -i.backup  's/RTC_INTERSECT_VARYING/RTC_INTERSECT1/g' $2
 sed -i.backup  's/RTC_MATRIX_COLUMN_MAJOR/RTC_MATRIX_COLUMN_MAJOR_ALIGNED16/g' $2
 sed -i.backup  's/RTC_MATRIX_COLUMN_MAJOR_ALIGNED16_ALIGNED16/RTC_MATRIX_COLUMN_MAJOR_ALIGNED16/g' $2
 
-#sed -i.backup  's/Vec3f renderPixelStandard(float x, float y, const Vec3f\& vx, const Vec3f\& vy, const Vec3f\& vz, const Vec3f\& p)/Vec3fa renderPixelStandard(float x, float y, const Vec3fa\& vx, const Vec3fa\& vy, const Vec3fa\& vz, const Vec3fa\& p)/g' $2
 sed -i.backup  's/RTCIntersectFuncVarying/RTCIntersectFunc/g' $2
 sed -i.backup  's/RTCOccludedFuncVarying/RTCOccludedFunc/g' $2
-#sed -i.backup  's/\#if 1 \/\/ enables parallel execution/\#if 0/g' $2
 sed -i.backup  's/RTCFilterFuncVarying/RTCFilterFunc/g' $2
 sed -i.backup  's/Vec3f\([^a]\)/Vec3fa\1/g' $2
 
 sed -i.backup  's/ISPCMaterial\* material = \&materials\[id\];/ISPCMaterial\* material = \&materials\[materialID\];/g' $2
-sed -i.backup  's/\#define __device__//g' $2
-sed -i.backup  's/__device__//g' $2
 
 sed -i.backup  's/make_Ray/RTCRay/g' $2
 
-sed -i.backup 's/\#define PARALLEL_COMMIT//g' $2
-sed -i.backup 's/atomic_compare_exchange_global/atomic_cmpxchg/g' $2 
-sed -i.backup 's/memory_barrier/__memory_barrier/g' $2 
+#sed -i.backup 's/\#define PARALLEL_COMMIT//g' $2
+
 
 sed -i.backup 's/make_LinearSpace3f_rotate/LinearSpace3f::rotate/g' $2
 sed -i.backup 's/LinearSpace3f/LinearSpace3fa/g' $2
