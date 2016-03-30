@@ -110,37 +110,38 @@ namespace embree
     std::string rtcore;
     std::string subdiv_mode;
     
-    /* output settings */
+    /* image output settings */
     FileName outFilename;
+
+    /* benchmark mode settings */
     int skipBenchmarkFrames;
     int numBenchmarkFrames;
-    bool interactive;
-    int instancing_mode;
-    Shader shader;
+    
+    /* scene settings */
+    TutorialScene obj_scene;
+    Ref<SceneGraph::GroupNode> scene;
     bool convert_tris_to_quads;
     bool convert_bezier_to_lines;
     bool convert_hair_to_curves;
-    
-    /* scene */
-    TutorialScene obj_scene;
-    Ref<SceneGraph::GroupNode> scene;
     FileName filename;
     
-    double time0;
+    /* render settings */
     Camera camera;
- 
-    /* output settings */
+    Shader shader;
+    int instancing_mode;
+    double time0;
+    
+    /* framebuffer settings */
     size_t width;
     size_t height;
+    int window;
     bool display;
 
     /* fullscreen settings */
+    bool interactive;
     bool fullscreen;
     size_t window_width;
     size_t window_height;
-    
-    /* ID of created window */
-    int window;
     
     int debug_int0;
     int debug_int1;
