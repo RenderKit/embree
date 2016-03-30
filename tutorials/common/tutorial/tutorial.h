@@ -111,7 +111,6 @@ namespace embree
     
     /* embree configuration */
     std::string rtcore;
-    std::string subdiv_mode;
           
     /* render settings */
     Camera camera;
@@ -152,10 +151,10 @@ namespace embree
   {
   public:
     SceneLoadingTutorialApplication (const std::string& tutorialName);
+
     virtual int main(int argc, char** argv);
 
   public:
-    /* scene settings */
     TutorialScene obj_scene;
     Ref<SceneGraph::GroupNode> scene;
     bool convert_tris_to_quads;
@@ -163,5 +162,6 @@ namespace embree
     bool convert_hair_to_curves;
     FileName sceneFilename;
     int instancing_mode;
+    std::string subdiv_mode;
   };
 }

@@ -50,7 +50,6 @@ namespace embree
     : tutorialName(tutorialName),
 
       rtcore(""),
-      subdiv_mode(""),
 
       shader(SHADER_DEFAULT),
 
@@ -168,16 +167,6 @@ namespace embree
       "  geomID: visualization of geometry ID\n"
       "  primID: visualization of geometry and primitive ID\n"
       "  ao: ambient occlusion shader");
-    
-    registerOption("cache", [this] (Ref<ParseStream> cin, const FileName& path) {
-        subdiv_mode = ",subdiv_accel=bvh4.subdivpatch1cached";
-        rtcore += subdiv_mode;
-      }, "--cache: enabled cached subdiv mode");
-    
-    registerOption("pregenerate", [this] (Ref<ParseStream> cin, const FileName& path) {
-        subdiv_mode = ",subdiv_accel=bvh4.grid.eager";
-        rtcore += subdiv_mode;
-      }, "--pregenerate: enabled pregenerate subdiv mode");    
   }
 
   SceneLoadingTutorialApplication::SceneLoadingTutorialApplication (const std::string& tutorialName)
@@ -188,7 +177,8 @@ namespace embree
       convert_bezier_to_lines(false),
       convert_hair_to_curves(false),
       sceneFilename(""),
-      instancing_mode(0)
+      instancing_mode(0),
+      subdiv_mode("")
   {
     registerOption("i", [this] (Ref<ParseStream> cin, const FileName& path) {
         sceneFilename = path + cin->getFileName();
@@ -244,6 +234,16 @@ namespace embree
         const float halfAngle = cin->getFloat();
         scene->add(new SceneGraph::LightNode<DistantLight>(DistantLight(D,L,halfAngle)));
       }, "--distantlight x y z r g b a: adds a distant light with direction xyz, intensity rgb, and opening angle a");
+
+    registerOption("cache", [this] (Ref<ParseStream> cin, const FileName& path) {
+        subdiv_mode = ",subdiv_accel=bvh4.subdivpatch1cached";
+        rtcore += subdiv_mode;
+      }, "--cache: enabled cached subdiv mode");
+    
+    registerOption("pregenerate", [this] (Ref<ParseStream> cin, const FileName& path) {
+        subdiv_mode = ",subdiv_accel=bvh4.grid.eager";
+        rtcore += subdiv_mode;
+      }, "--pregenerate: enabled pregenerate subdiv mode");    
   }
   
   void TutorialApplication::registerOptionAlias(const std::string& name, const std::string& alternativeName) {
