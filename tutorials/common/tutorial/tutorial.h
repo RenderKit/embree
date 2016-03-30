@@ -28,6 +28,7 @@ namespace embree
     
   public:
     
+    /* virtual interface for command line option processing */
     struct CommandLineOption : public RefCount 
     {
     public:
@@ -40,6 +41,7 @@ namespace embree
       std::string description;
     };
     
+    /* helper class to provide parsing function via lambda function */
     template<typename F>
       struct CommandLineOptionClosure : public CommandLineOption
     {
@@ -54,6 +56,7 @@ namespace embree
       F f;
     };
     
+    /* registers a command line option */
     template<typename F>
       void registerOption(const std::string& name, const F& f, const std::string& description) 
     {
@@ -62,7 +65,8 @@ namespace embree
       commandLineOptionMap[name] = closure;
     }
 
-    void registerAlternativeOption(const std::string& name, const std::string& alternativeName); 
+    /* registers an alias for a command line option */
+    void registerOptionAlias(const std::string& name, const std::string& alternativeName); 
     
     void parseCommandLine(int argc, char** argv);
     void parseCommandLine(Ref<ParseStream> cin, const FileName& path);

@@ -219,7 +219,7 @@ namespace embree
         const Vec3fa L = cin->getVec3fa();
         scene->add(new SceneGraph::LightNode<AmbientLight>(AmbientLight(L)));
       }, "--ambientlight r g b: adds an ambient light with intensity rgb");
-    registerAlternativeOption("ambientlight","ambient");
+    registerOptionAlias("ambientlight","ambient");
 
     registerOption("pointlight", [this] (Ref<ParseStream> cin, const FileName& path) {
         const Vec3fa P = cin->getVec3fa();
@@ -232,7 +232,7 @@ namespace embree
         const Vec3fa E = cin->getVec3fa();
         scene->add(new SceneGraph::LightNode<DirectionalLight>(DirectionalLight(D,E)));
       }, "--directionallight x y z r g b: adds a directional light with direction xyz and intensity rgb");
-    registerAlternativeOption("directionallight","dirlight");
+    registerOptionAlias("directionallight","dirlight");
     
     registerOption("distantlight", [this] (Ref<ParseStream> cin, const FileName& path) {
         const Vec3fa D = cin->getVec3fa();
@@ -242,7 +242,7 @@ namespace embree
       }, "--distantlight x y z r g b a: adds a distant light with direction xyz, intensity rgb, and opening angle a");
   }
   
-  void TutorialApplication::registerAlternativeOption(const std::string& name, const std::string& alternativeName) {
+  void TutorialApplication::registerOptionAlias(const std::string& name, const std::string& alternativeName) {
     commandLineOptionMap[alternativeName] = commandLineOptionMap[name];
   }
   

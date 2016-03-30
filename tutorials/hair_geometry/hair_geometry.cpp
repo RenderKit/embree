@@ -282,13 +282,13 @@ float noise(float x, float y, float z)
       registerOption("ambientlight", [this] (Ref<ParseStream> cin, const FileName& path) {
           g_ambient_intensity = cin->getVec3fa();
         }, "--ambientlight r g b: adds an ambient light with intensity rgb");
-      registerAlternativeOption("ambientlight","ambient");
+      registerOptionAlias("ambientlight","ambient");
 
       registerOption("directionallight", [this] (Ref<ParseStream> cin, const FileName& path) {
           g_dirlight_direction = normalize(cin->getVec3fa());
           g_dirlight_intensity = cin->getVec3fa();
         }, "--directionallight x y z r g b: adds a directional light with direction xyz and intensity rgb");
-      registerAlternativeOption("directionallight","dirlight");
+      registerOptionAlias("directionallight","dirlight");
       
       /* set default camera */
       camera.from = Vec3fa(-3,3,3);
