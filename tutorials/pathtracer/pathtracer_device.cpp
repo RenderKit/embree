@@ -851,7 +851,7 @@ inline void Material__preprocess(ISPCMaterial* materials, int materialID, int nu
   {
     if (id >= 0 && id < numMaterials) // FIXME: workaround for ISPC bug, location reached with empty execution mask
     {
-      ISPCMaterial* material = &materials[materialID];
+      ISPCMaterial* material = &materials[id];
 
       switch (material->ty) {
       case MATERIAL_OBJ  : OBJMaterial__preprocess  ((OBJMaterial*)  material,brdf,wo,dg,medium); break;
@@ -877,7 +877,7 @@ inline Vec3fa Material__eval(ISPCMaterial* materials, int materialID, int numMat
   {
     if (id >= 0 && id < numMaterials) // FIXME: workaround for ISPC bug, location reached with empty execution mask
     {
-      ISPCMaterial* material = &materials[materialID];
+      ISPCMaterial* material = &materials[id];
       switch (material->ty) {
       case MATERIAL_OBJ  : c = OBJMaterial__eval  ((OBJMaterial*)  material, brdf, wo, dg, wi); break;
       case MATERIAL_METAL: c = MetalMaterial__eval((MetalMaterial*)material, brdf, wo, dg, wi); break;
@@ -903,7 +903,7 @@ inline Vec3fa Material__sample(ISPCMaterial* materials, int materialID, int numM
   {
     if (id >= 0 && id < numMaterials) // FIXME: workaround for ISPC bug, location reached with empty execution mask
     {
-      ISPCMaterial* material = &materials[materialID];
+      ISPCMaterial* material = &materials[id];
       switch (material->ty) {
       case MATERIAL_OBJ  : c = OBJMaterial__sample  ((OBJMaterial*)  material, brdf, Lw, wo, dg, wi_o, medium, s); break;
       case MATERIAL_METAL: c = MetalMaterial__sample((MetalMaterial*)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
