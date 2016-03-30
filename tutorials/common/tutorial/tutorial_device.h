@@ -87,9 +87,9 @@ __forceinline bool   ne (const Vec3fa& a, const Vec3fa& b) { return a != b; }
 __forceinline bool   eq (const AffineSpace3fa& a, const AffineSpace3fa& b) { return a == b; }
 
 /* parallel invokation of renderTile function */
-void launch_renderTile (int numTiles, 
-                        int* pixels, const int width, const int height, const float time, 
-                        const ISPCCamera& camera, const int numTilesX, const int numTilesY);
+void launch_renderTileTask (int numTiles, 
+                            int* pixels, const int width, const int height, const float time, 
+                            const ISPCCamera& camera, const int numTilesX, const int numTilesY);
 
 /* parallel invokation of animateSphere function */
 typedef void (*animateSphereFunc) (int taskIndex, Vertex* vertices, 

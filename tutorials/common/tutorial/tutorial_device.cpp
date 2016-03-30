@@ -752,9 +752,9 @@ void renderTileTask(int taskIndex,
 
 //thread_local bool inrender = false;
 
-void launch_renderTile (int numTiles, 
-                        int* pixels, const int width, const int height, const float time, 
-                        const ISPCCamera& camera, const int numTilesX, const int numTilesY)
+void launch_renderTileTask (int numTiles, 
+                            int* pixels, const int width, const int height, const float time, 
+                            const ISPCCamera& camera, const int numTilesX, const int numTilesY)
 {
 #if 0
   atomic_t tileID = 0;

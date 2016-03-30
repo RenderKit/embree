@@ -1975,7 +1975,7 @@ extern "C" void device_render (int* pixels,
   /* render image */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  launch_renderTile(numTilesX*numTilesY,pixels,width,height,time,camera,numTilesX,numTilesY); 
+  launch_renderTileTask(numTilesX*numTilesY,pixels,width,height,time,camera,numTilesX,numTilesY); 
   //rtcDebug();
 } // device_render
 
