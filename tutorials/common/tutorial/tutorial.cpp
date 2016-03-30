@@ -50,7 +50,7 @@ namespace embree
     : tutorialName(tutorialName),
       rtcore(""),
       subdiv_mode(""),
-      outFilename(""),
+      outputImageFilename(""),
       skipBenchmarkFrames(0),
       numBenchmarkFrames(0),
       interactive(true),
@@ -107,7 +107,7 @@ namespace embree
       }, "-i <filename>: parses scene from <filename>");
     
     registerOption("o", [this] (Ref<ParseStream> cin, const FileName& path) {
-        outFilename = cin->getFileName();
+        outputImageFilename = cin->getFileName();
         interactive = false;
       }, "-o: output image filename");
     
@@ -290,7 +290,7 @@ namespace embree
     }
   }
 
-  void TutorialApplication::renderBenchmark(const FileName& fileName)
+  void TutorialApplication::renderBenchmark()
   {
     resize(width,height);
     ISPCCamera ispccamera = camera.getISPCCamera(width,height);
@@ -572,11 +572,11 @@ namespace embree
     
     /* benchmark mode */
     if (numBenchmarkFrames)
-      renderBenchmark(outFilename);
+      renderBenchmark();
     
     /* render to disk */
-    if (outFilename.str() != "")
-      renderToFile(outFilename);
+    if (outputImageFilename.str() != "")
+      renderToFile(outputImageFilename);
     
     /* interactive mode */
     if (interactive) 

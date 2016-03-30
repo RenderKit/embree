@@ -88,7 +88,7 @@ namespace embree
     virtual void postParseCommandLine() {}
    
     /* benchmark mode */
-    void renderBenchmark(const FileName& fileName);
+    void renderBenchmark();
     
     /* render to file mode */
     void renderToFile(const FileName& fileName);
@@ -111,7 +111,7 @@ namespace embree
     std::string subdiv_mode;
     
     /* image output settings */
-    FileName outFilename;
+    FileName outputImageFilename;
 
     /* benchmark mode settings */
     int skipBenchmarkFrames;
