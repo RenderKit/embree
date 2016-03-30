@@ -68,15 +68,31 @@ namespace embree
     /* registers an alias for a command line option */
     void registerOptionAlias(const std::string& name, const std::string& alternativeName); 
     
+    /* command line parsing */
     void parseCommandLine(int argc, char** argv);
     void parseCommandLine(Ref<ParseStream> cin, const FileName& path);
+
+    /* prints help for all supported command line options */
     void printCommandLineHelp();
 
-    void renderBenchmark(const FileName& fileName);
-    void renderToFile(const FileName& fileName);
+    /* command line options database */
+  public:
+    std::vector<         Ref<CommandLineOption> > commandLineOptionList;
+    std::map<std::string,Ref<CommandLineOption> > commandLineOptionMap;
+ 
+  public:
+    /* virtual main function, contains all tutorial logic */
     virtual int main(int argc, char** argv);
+
+    /* callback called after command line parsing finished */
     virtual void postParseCommandLine() {}
+   
+    /* benchmark mode */
+    void renderBenchmark(const FileName& fileName);
     
+    /* render to file mode */
+    void renderToFile(const FileName& fileName);
+
     /* GLUT callback functions */
   public:
     virtual void keyboardFunc(unsigned char key, int x, int y);
@@ -87,9 +103,6 @@ namespace embree
     virtual void reshapeFunc(int width, int height);
     virtual void idleFunc();
     
-  public:
-    std::vector<         Ref<CommandLineOption> > commandLineOptionList;
-    std::map<std::string,Ref<CommandLineOption> > commandLineOptionMap;
     
   public:
     std::string tutorialName;
