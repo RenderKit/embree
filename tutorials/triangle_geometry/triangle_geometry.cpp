@@ -22,6 +22,38 @@ namespace embree
   /* name of the tutorial */
   const char* tutorialName = "triangle_geometry";
 
+  struct TriangleGeometryTutorial : public TutorialApplication
+  {
+    TriangleGeometryTutorial() : TutorialApplication(tutorialName)
+    {
+      /* set default camera */
+      g_camera.from = Vec3fa(1.5f,1.5f,-1.5f);
+      g_camera.to   = Vec3fa(0.0f,0.0f,0.0f);
+    }
+  };
+
+}
+
+int main(int argc, char** argv)
+{
+  try {
+    TriangleGeometryTutorial tutorial;
+    tutorial.main(argc,argv);
+  }
+  catch (const std::exception& e) {
+    std::cout << "Error: " << e.what() << std::endl;
+    return 1;
+  }
+  catch (...) {
+    std::cout << "Error: unknown exception caught." << std::endl;
+    return 1;
+  }
+}
+
+#if 0
+  /* name of the tutorial */
+  const char* tutorialName = "triangle_geometry";
+
   /* configuration */
   static std::string g_rtcore = "";
   static size_t g_numThreads = 0;
@@ -147,3 +179,4 @@ int main(int argc, char** argv)
     return 1;
   }
 }
+#endif
