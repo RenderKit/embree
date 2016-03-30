@@ -23,8 +23,8 @@ namespace embree
     Tutorial() : TutorialApplication("dynamic_scene") 
     {
       /* set start camera */
-      g_camera.from = Vec3f(2,2,2);
-      g_camera.to = Vec3f(0,0,0);
+      camera.from = Vec3f(2,2,2);
+      camera.to = Vec3f(0,0,0);
     }
   };
 

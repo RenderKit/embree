@@ -23,8 +23,8 @@ namespace embree
     Tutorial() : TutorialApplication("interpolation") 
     {
       /* set default camera */
-      g_camera.from = Vec3fa(9.0f,4.0f,1.0f);
-      g_camera.to   = Vec3fa(0.0f,0.0f,1.0f);
+      camera.from = Vec3fa(9.0f,4.0f,1.0f);
+      camera.to   = Vec3fa(0.0f,0.0f,1.0f);
     }
   };
 

@@ -291,9 +291,9 @@ float noise(float x, float y, float z)
       registerAlternativeOption("directionallight","dirlight");
       
       /* set default camera */
-      g_camera.from = Vec3fa(-3,3,3);
-      g_camera.to = Vec3fa(0,1,0);
-      g_camera.up = Vec3fa(0,1,0);
+      camera.from = Vec3fa(-3,3,3);
+      camera.to = Vec3fa(0,1,0);
+      camera.up = Vec3fa(0,1,0);
     }
 
     void postParseCommandLine() 

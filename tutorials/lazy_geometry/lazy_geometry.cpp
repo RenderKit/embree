@@ -23,8 +23,8 @@ namespace embree
     Tutorial() : TutorialApplication("intersection_filter") 
     {
       /* set default camera */
-      g_camera.from = Vec3fa(2.5f,2.5f,2.5f);
-      g_camera.to   = Vec3fa(0.0f,0.0f,0.0f);
+      camera.from = Vec3fa(2.5f,2.5f,2.5f);
+      camera.to   = Vec3fa(0.0f,0.0f,0.0f);
     }
   };
 

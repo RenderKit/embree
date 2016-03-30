@@ -51,7 +51,6 @@ namespace embree
       rtcore(""),
       numThreads(0),
       subdiv_mode(""),
-      width(512), height(512), fullscreen(false),
       outFilename(""),
       skipBenchmarkFrames(0),
       numBenchmarkFrames(0),
@@ -64,20 +63,20 @@ namespace embree
       scene(new SceneGraph::GroupNode),
       filename(""),
 
-      g_time0(getSeconds()),
+      time0(getSeconds()),
 
       /* output settings */
-      g_width(512),
-      g_height(512),
-      g_display(true),
+      width(512),
+      height(512),
+      display(true),
 
-      g_fullscreen(false),
-      g_window_width(512),
-      g_window_height(512),
-      g_window(0),
+      fullscreen(false),
+      window_width(512),
+      window_height(512),
+      window(0),
     
-      g_debug_int0(0),
-      g_debug_int1(0),
+      debug_int0(0),
+      debug_int1(0),
     
       mouseMode(0),
       clickX(0), clickY(0),
@@ -127,23 +126,23 @@ namespace embree
     
     /* camera settings */
     registerOption("vp", [this] (Ref<ParseStream> cin, const FileName& path) {
-        g_camera.from = cin->getVec3fa();
+        camera.from = cin->getVec3fa();
       }, "--vp <float> <float> <float>: camera position");
     
     registerOption("vi", [this] (Ref<ParseStream> cin, const FileName& path) {
-        g_camera.to = cin->getVec3fa();
+        camera.to = cin->getVec3fa();
       }, "--vi <float> <float> <float>: camera lookat position");
     
     registerOption("vd", [this] (Ref<ParseStream> cin, const FileName& path) {
-        g_camera.to = g_camera.from + cin->getVec3fa();
+        camera.to = camera.from + cin->getVec3fa();
       }, "--vd <float> <float> <float>: camera direction vector");
     
     registerOption("vu", [this] (Ref<ParseStream> cin, const FileName& path) {
-        g_camera.up = cin->getVec3fa();
+        camera.up = cin->getVec3fa();
       }, "--vu <float> <float> <float>: camera up vector");
     
     registerOption("fov", [this] (Ref<ParseStream> cin, const FileName& path) {
-        g_camera.fov = cin->getFloat();
+        camera.fov = cin->getFloat();
       }, "--fov <float>: vertical field of view");
     
     /* framebuffer settings */
@@ -296,14 +295,14 @@ namespace embree
   void TutorialApplication::renderBenchmark(const FileName& fileName)
   {
     resize(width,height);
-    ISPCCamera camera = g_camera.getISPCCamera(width,height);
+    ISPCCamera ispccamera = camera.getISPCCamera(width,height);
 
     double dt = 0.0f;
     size_t numTotalFrames = skipBenchmarkFrames + numBenchmarkFrames;
     for (size_t i=0; i<numTotalFrames; i++) 
     {
       double t0 = getSeconds();
-      render(0.0f,camera);
+      render(0.0f,ispccamera);
       double t1 = getSeconds();
       std::cout << "frame [" << i << " / " << numTotalFrames << "] ";
       std::cout << 1.0/(t1-t0) << "fps ";
@@ -319,8 +318,8 @@ namespace embree
   void TutorialApplication::renderToFile(const FileName& fileName)
   {
     resize(width,height);
-    ISPCCamera camera = g_camera.getISPCCamera(width,height);
-    render(0.0f,camera);
+    ISPCCamera ispccamera = camera.getISPCCamera(width,height);
+    render(0.0f,ispccamera);
     void* ptr = map();
     Ref<Image> image = new Image4uc(width, height, (Col4uc*)ptr);
     storeImage(image, fileName);
@@ -405,18 +404,15 @@ namespace embree
     /* interactive mode */
     if (interactive) 
     {
-      g_width = width;
-      g_height = height;
-      resize(g_width,g_height);
+      resize(width,height);
 
-      g_fullscreen = fullscreen;
       flip14 = mouseMode;
       glutInit(&argc, argv);
-      glutInitWindowSize((GLsizei)g_width, (GLsizei)g_height);
+      glutInitWindowSize((GLsizei)width, (GLsizei)height);
       glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
       glutInitWindowPosition(0, 0);
-      g_window = glutCreateWindow(tutorialName.c_str());
-      if (g_fullscreen) glutFullScreen();
+      window = glutCreateWindow(tutorialName.c_str());
+      if (fullscreen) glutFullScreen();
       glutDisplayFunc(embree::displayFunc);
       glutIdleFunc(embree::idleFunc);
       glutKeyboardFunc(embree::keyboardFunc);
@@ -454,37 +450,37 @@ namespace embree
     switch (key)
     {
     case 'f' : 
-      if (g_fullscreen) {
-        g_fullscreen = false;
-        glutReshapeWindow(g_window_width,g_window_height);
+      if (fullscreen) {
+        fullscreen = false;
+        glutReshapeWindow(window_width,window_height);
       } else {
-        g_fullscreen = true;
-        g_window_width = g_width;
-        g_window_height = g_height;
+        fullscreen = true;
+        window_width = width;
+        window_height = height;
         glutFullScreen(); 
       }
       break;
     case 'c' : {
       std::cout.precision(10);
-      std::cout << "-vp " << g_camera.from.x    << " " << g_camera.from.y    << " " << g_camera.from.z    << " " 
-                << "-vi " << g_camera.to.x << " " << g_camera.to.y << " " << g_camera.to.z << " " 
-        //<< "-vd " << g_camera.to.x-g_camera.from.x << " " << g_camera.to.y-g_camera.from.y << " " << g_camera.to.z-g_camera.from.z << " " << std::endl
-                << "-vu " << g_camera.up.x     << " " << g_camera.up.y     << " " << g_camera.up.z     << " " 
-                << "-fov " << g_camera.fov << std::endl;
+      std::cout << "-vp " << camera.from.x    << " " << camera.from.y    << " " << camera.from.z    << " " 
+                << "-vi " << camera.to.x << " " << camera.to.y << " " << camera.to.z << " " 
+        //<< "-vd " << camera.to.x-camera.from.x << " " << camera.to.y-camera.from.y << " " << camera.to.z-camera.from.z << " " << std::endl
+                << "-vu " << camera.up.x     << " " << camera.up.y     << " " << camera.up.z     << " " 
+                << "-fov " << camera.fov << std::endl;
       break;
     }
-      //case 'a' : g_camera.rotate(-0.02f,0.0f); break;
-      //case 'd' : g_camera.rotate(+0.02f,0.0f); break;
-      //case 'w' : g_camera.move(0.0f,0.0f,+g_speed); break;
-      //case 's' : g_camera.move(0.0f,0.0f,-g_speed); break;
-      //case ' ' : g_display = !g_display; break;
+      //case 'a' : camera.rotate(-0.02f,0.0f); break;
+      //case 'd' : camera.rotate(+0.02f,0.0f); break;
+      //case 'w' : camera.move(0.0f,0.0f,+speed); break;
+      //case 's' : camera.move(0.0f,0.0f,-speed); break;
+      //case ' ' : display = !display; break;
 
     case '+' : g_debug=clamp(g_debug+0.01f); PRINT(g_debug); break;
     case '-' : g_debug=clamp(g_debug-0.01f); PRINT(g_debug); break;
 
     case '\033': case 'q': case 'Q':
       cleanup();
-      glutDestroyWindow(g_window);
+      glutDestroyWindow(window);
 #if defined(__MACOSX__)
       exit(1);
 #endif
@@ -497,14 +493,14 @@ namespace embree
     key_pressed(key);
 
     switch (key) {
-      //case GLUT_KEY_LEFT      : g_camera.rotate(-0.02f,0.0f); break;
-      //case GLUT_KEY_RIGHT     : g_camera.rotate(+0.02f,0.0f); break;
-      //case GLUT_KEY_UP        : g_camera.move(0.0f,0.0f,+g_speed); break;
-      //case GLUT_KEY_DOWN      : g_camera.move(0.0f,0.0f,-g_speed); break;
-    case GLUT_KEY_UP        : g_debug_int0++; set_parameter(1000000,g_debug_int0); PRINT(g_debug_int0); break;
-    case GLUT_KEY_DOWN      : g_debug_int0--; set_parameter(1000000,g_debug_int0); PRINT(g_debug_int0); break;
-    case GLUT_KEY_LEFT      : g_debug_int1--; set_parameter(1000001,g_debug_int1); PRINT(g_debug_int1); break;
-    case GLUT_KEY_RIGHT     : g_debug_int1++; set_parameter(1000001,g_debug_int1); PRINT(g_debug_int1); break;
+      //case GLUT_KEY_LEFT      : camera.rotate(-0.02f,0.0f); break;
+      //case GLUT_KEY_RIGHT     : camera.rotate(+0.02f,0.0f); break;
+      //case GLUT_KEY_UP        : camera.move(0.0f,0.0f,+speed); break;
+      //case GLUT_KEY_DOWN      : camera.move(0.0f,0.0f,-speed); break;
+    case GLUT_KEY_UP        : debug_int0++; set_parameter(1000000,debug_int0); PRINT(debug_int0); break;
+    case GLUT_KEY_DOWN      : debug_int0--; set_parameter(1000000,debug_int0); PRINT(debug_int0); break;
+    case GLUT_KEY_LEFT      : debug_int1--; set_parameter(1000001,debug_int1); PRINT(debug_int1); break;
+    case GLUT_KEY_RIGHT     : debug_int1++; set_parameter(1000001,debug_int1); PRINT(debug_int1); break;
     case GLUT_KEY_PAGE_UP   : g_speed *= 1.2f; break;
     case GLUT_KEY_PAGE_DOWN : g_speed /= 1.2f; break;
     }
@@ -521,22 +517,22 @@ namespace embree
       mouseMode = 0;
       if (button == GLUT_LEFT_BUTTON && glutGetModifiers() == GLUT_ACTIVE_SHIFT) 
       {
-        ISPCCamera camera = g_camera.getISPCCamera(g_width,g_height);
-        Vec3fa p; bool hit = pick(x,y,camera,p);
+        ISPCCamera ispccamera = camera.getISPCCamera(width,height);
+        Vec3fa p; bool hit = pick(x,y,ispccamera,p);
 
         if (hit) {
-          Vec3fa delta = p - g_camera.to;
-          Vec3fa right = normalize(camera.xfm.l.vx);
-          Vec3fa up    = normalize(camera.xfm.l.vy);
-          g_camera.to = p;
-          g_camera.from += dot(delta,right)*right + dot(delta,up)*up;
+          Vec3fa delta = p - camera.to;
+          Vec3fa right = normalize(ispccamera.xfm.l.vx);
+          Vec3fa up    = normalize(ispccamera.xfm.l.vy);
+          camera.to = p;
+          camera.from += dot(delta,right)*right + dot(delta,up)*up;
         }
       }
       else if (button == GLUT_LEFT_BUTTON && glutGetModifiers() == (GLUT_ACTIVE_CTRL | GLUT_ACTIVE_SHIFT)) 
       {
-        ISPCCamera camera = g_camera.getISPCCamera(g_width,g_height);
-        Vec3fa p; bool hit = pick(x,y,camera,p);
-        if (hit) g_camera.to = p;
+        ISPCCamera ispccamera = camera.getISPCCamera(width,height);
+        Vec3fa p; bool hit = pick(x,y,ispccamera,p);
+        if (hit) camera.to = p;
       }
 
     } else {
@@ -561,10 +557,10 @@ namespace embree
     clickX = x; clickY = y;
 
     switch (mouseMode) {
-    case 1: g_camera.rotateOrbit(-0.005f*dClickX,0.005f*dClickY); break;
+    case 1: camera.rotateOrbit(-0.005f*dClickX,0.005f*dClickY); break;
     case 2: break;
-    case 3: g_camera.dolly(-dClickY); break;
-    case 4: g_camera.rotate(-0.005f*dClickX,0.005f*dClickY); break;
+    case 3: camera.dolly(-dClickY); break;
+    case 4: camera.rotate(-0.005f*dClickX,0.005f*dClickY); break;
     }
   }
  
@@ -574,25 +570,25 @@ namespace embree
 
   void TutorialApplication::displayFunc(void) 
   {
-    ISPCCamera camera = g_camera.getISPCCamera(g_width,g_height,true);
+    ISPCCamera ispccamera = camera.getISPCCamera(width,height,true);
     
     /* render image using ISPC */
     double t0 = getSeconds();
-    render(g_time0-t0,camera);
+    render(time0-t0,ispccamera);
     double dt0 = getSeconds()-t0;
 
-    if (g_display) 
+    if (display) 
     {
       /* draw pixels to screen */
       int* pixels = map();
-      glDrawPixels(g_width,g_height,GL_RGBA,GL_UNSIGNED_BYTE,pixels);
+      glDrawPixels(width,height,GL_RGBA,GL_UNSIGNED_BYTE,pixels);
 
-      if (g_fullscreen) 
+      if (fullscreen) 
       {
         glMatrixMode( GL_PROJECTION );
         glPushMatrix();
         glLoadIdentity();
-        gluOrtho2D( 0, g_width, 0, g_height );
+        gluOrtho2D( 0, width, 0, height );
         glMatrixMode( GL_MODELVIEW );
         glPushMatrix();
         glLoadIdentity();
@@ -604,7 +600,7 @@ namespace embree
         stream << 1.0f/dt0 << " fps";
         std::string str = stream.str();
 
-        glRasterPos2i( g_width-str.size()*12, g_height - 24); 
+        glRasterPos2i( width-str.size()*12, height - 24); 
         for ( int i = 0; i < str.size(); ++i )
           glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, str[i]);
         
@@ -630,7 +626,7 @@ namespace embree
     stream << "display: ";
     stream << 1.0f/dt1 << " fps, ";
     stream << dt1*1000.0f << " ms, ";
-    stream << g_width << "x" << g_height << " pixels";
+    stream << width << "x" << height << " pixels";
     std::cout << stream.str() << std::endl;
   }
 
@@ -638,7 +634,7 @@ namespace embree
   {
     resize(width,height);
     glViewport(0, 0, width, height);
-    g_width = width; g_height = height;
+    this->width = width; this->height = height;
   }
   
   void TutorialApplication::idleFunc()

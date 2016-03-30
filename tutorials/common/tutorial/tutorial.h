@@ -21,9 +21,6 @@
 
 namespace embree
 {
-  /* camera */
-  extern Camera g_camera;
-
   class TutorialApplication
   {
   public:
@@ -99,9 +96,6 @@ namespace embree
     std::string subdiv_mode;
     
     /* output settings */
-    size_t width;
-    size_t height;
-    bool fullscreen;
     FileName outFilename;
     int skipBenchmarkFrames;
     int numBenchmarkFrames;
@@ -117,24 +111,24 @@ namespace embree
     Ref<SceneGraph::GroupNode> scene;
     FileName filename;
     
-    double g_time0;
-    Camera g_camera;
+    double time0;
+    Camera camera;
  
     /* output settings */
-    size_t g_width;
-    size_t g_height;
-    bool g_display;
+    size_t width;
+    size_t height;
+    bool display;
 
     /* fullscreen settings */
-    bool g_fullscreen;
-    size_t g_window_width;
-    size_t g_window_height;
+    bool fullscreen;
+    size_t window_width;
+    size_t window_height;
     
     /* ID of created window */
-    int g_window;
+    int window;
     
-    int g_debug_int0;
-    int g_debug_int1;
+    int debug_int0;
+    int debug_int1;
     
     int mouseMode;
     int clickX, clickY;
