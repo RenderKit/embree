@@ -79,7 +79,8 @@ namespace embree
       debug_int1(0),
     
       mouseMode(0),
-      clickX(0), clickY(0)
+      clickX(0), clickY(0),
+      speed(1.0f)
   {
     /* only a single instance of this class is supported */
     assert(instance == nullptr);
@@ -438,7 +439,6 @@ namespace embree
   /*                                  Keyboard control                                             */
   /*************************************************************************************************/
 
-  static float g_speed = 1.0f;
 
   void TutorialApplication::keyboardFunc(unsigned char key, int x, int y)
   {
@@ -499,8 +499,8 @@ namespace embree
     case GLUT_KEY_DOWN      : debug_int0--; set_parameter(1000000,debug_int0); PRINT(debug_int0); break;
     case GLUT_KEY_LEFT      : debug_int1--; set_parameter(1000001,debug_int1); PRINT(debug_int1); break;
     case GLUT_KEY_RIGHT     : debug_int1++; set_parameter(1000001,debug_int1); PRINT(debug_int1); break;
-    case GLUT_KEY_PAGE_UP   : g_speed *= 1.2f; break;
-    case GLUT_KEY_PAGE_DOWN : g_speed /= 1.2f; break;
+    case GLUT_KEY_PAGE_UP   : speed *= 1.2f; break;
+    case GLUT_KEY_PAGE_DOWN : speed /= 1.2f; break;
     }
   }
 

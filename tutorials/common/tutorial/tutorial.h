@@ -132,6 +132,8 @@ namespace embree
     
     int mouseMode;
     int clickX, clickY;
+    
+    float speed;
 
     static TutorialApplication* instance;
   };
