@@ -38,8 +38,15 @@ namespace embree
     
   public:
     
-    struct CommandLineOption : public RefCount {
+    struct CommandLineOption : public RefCount 
+    {
+    public:
+      CommandLineOption (const std::string& description) 
+        : description(description) {}
+
       virtual void parse(Ref<ParseStream> cin, const FileName& path) = 0;
+      
+    public:
       std::string description;
     };
     
@@ -47,14 +54,13 @@ namespace embree
       struct CommandLineOptionClosure : public CommandLineOption
     {
       CommandLineOptionClosure (std::string description, const F& f) 
-        : description(description), f(f) {}
+        : CommandLineOption(description), f(f) {}
       
       virtual void parse(Ref<ParseStream> cin, const FileName& path) {
         f(cin,path);
       }
       
     public:
-      std::string description;
       F f;
     };
     

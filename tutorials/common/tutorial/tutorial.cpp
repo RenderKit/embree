@@ -289,6 +289,7 @@ namespace embree
   
   void TutorialApplication::main(int argc, char** argv)
   {
+    /* parse command line options */
     parseCommandLine(argc,argv);
 
     /* load scene */
