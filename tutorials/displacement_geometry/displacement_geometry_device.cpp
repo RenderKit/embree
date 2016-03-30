@@ -136,7 +136,7 @@ void displacementFunction(void* ptr, unsigned int geomID, int unsigned primID,
                                    float* pz,           /*!< z coordinates of points to displace (source and target) */
                                    size_t N)
 {
-  for (size_t i = 0; i<N; i++) {
+  for (int i=0; i<N; i++) {
     const Vec3fa P = Vec3fa(px[i],py[i],pz[i]);
     const Vec3fa Ng = Vec3fa(nx[i],ny[i],nz[i]);
     const Vec3fa dP = displacement(P)*Ng;

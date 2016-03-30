@@ -17,19 +17,14 @@ sed -i.backup  's/__mask/1/g' $2
 sed -i.backup  's/NULL/nullptr/g' $2
 
 sed -i.backup  's/programIndex/0/g' $2
-sed -i.backup 's/launch\[\([^]]*\)\][ ]*\([a-zA-Z0-9_]*\)[ ]*(\([^)]*\))/parallel_for(size_t(0),size_t(\1),[\&](const range<size_t>\& range) \{\n    for (size_t i=range.begin(); i<range.end(); i++)\n      \2(i,\3);\n  \})/g' $2
+sed -i.backup  's/launch\[\([^]]*\)\][ ]*\([a-zA-Z0-9_]*\)[ ]*(\([^)]*\))/parallel_for(size_t(0),size_t(\1),[\&](const range<size_t>\& range) \{\n    for (size_t i=range.begin(); i<range.end(); i++)\n      \2(i,\3);\n  \})/g' $2
+sed -i.backup  's/foreach[ ]*([ ]*\([a-zA-Z0-9_]*\)[ ]*=\([a-zA-Z0-9]*\)[ ]*\.\.\.[ ]*\([a-zA-Z0-9]*\)[ ]*)/for (int \1=\2; i<\3; i++)/g' $2
+
 sed -i.backup  's/sync;//g' $2
-
-# Embree specific
-sed -i.backup  's/RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING/RTC_INTERSECT1/g' $2
-sed -i.backup  's/RTC_INTERSECT_VARYING/RTC_INTERSECT1/g' $2
-sed -i.backup  's/RTC_MATRIX_COLUMN_MAJOR/RTC_MATRIX_COLUMN_MAJOR_ALIGNED16/g' $2
-sed -i.backup  's/RTC_MATRIX_COLUMN_MAJOR_ALIGNED16_ALIGNED16/RTC_MATRIX_COLUMN_MAJOR_ALIGNED16/g' $2
-
 sed -i.backup  's/print(/printf(/g' $2
+sed -i.backup  's/abort()/exit(1)/g' $2
 
-
-
+# math library
 sed -i.backup  's/M_PI/float(pi)/g' $2
 sed -i.backup  's/\*pi\*/\*float(pi)\*/g' $2
 sed -i.backup  's/\*pi\//\*float(pi)\//g' $2
@@ -37,16 +32,23 @@ sed -i.backup  's/one_over_pi/float(one_over_pi)/g' $2
 sed -i.backup  's/one_over_two_pi/float(one_over_two_pi)/g' $2
 sed -i.backup  's/one_over_four_pi/float(one_over_four_pi)/g' $2
 sed -i.backup  's/[^_]two_pi/float(two_pi)/g' $2
-
 sed -i.backup  's/make_Vec2f/Vec2f/g' $2
 sed -i.backup  's/make_Vec3f/Vec3f/g' $2
 sed -i.backup  's/make_Vec3fa/Vec3fa/g' $2
 sed -i.backup  's/make_Sample3f/Sample3f/g' $2
 sed -i.backup  's/make_AffineSpace3f/AffineSpace3f/g' $2
 sed -i.backup  's/AffineSpace3f_rotate/AffineSpace3f::rotate/g' $2
-sed -i.backup  's/abort()/exit(1)/g' $2
-#sed -i.backup  's/\#if 0 \/\/ FIXME: pointer gather/\#if 1 \/\/ FIXME: pointer gather/g' $2
-sed -i.backup  's/foreach (i=0 ... N)/for (size_t i = 0; i<N; i++)/g' $2
+
+
+# Embree specific
+sed -i.backup  's/RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING/RTC_INTERSECT1/g' $2
+sed -i.backup  's/RTC_INTERSECT_VARYING/RTC_INTERSECT1/g' $2
+sed -i.backup  's/RTC_MATRIX_COLUMN_MAJOR/RTC_MATRIX_COLUMN_MAJOR_ALIGNED16/g' $2
+sed -i.backup  's/RTC_MATRIX_COLUMN_MAJOR_ALIGNED16_ALIGNED16/RTC_MATRIX_COLUMN_MAJOR_ALIGNED16/g' $2
+
+
+
+#sed -i.backup  's/foreach (i=0 ... N)/for (size_t i = 0; i<N; i++)/g' $2
 sed -i.backup  's/foreach (y = y0 ... y1, x = x0 ... x1)/for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)/g' $2
 sed -i.backup  's/foreach_tiled (y = y0 ... y1, x = x0 ... x1)/for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)/g' $2
 sed -i.backup  's/foreach (phi = 0 ... numPhi+1, theta = 0 ... numTheta)/for (int phi = 0; phi <numPhi+1; phi++) for (int theta = 0; theta<numTheta; theta++)/g' $2
