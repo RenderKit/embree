@@ -20,9 +20,9 @@ namespace embree
 {
   extern "C" { int g_instancing_mode = 0; }
 
-  struct Tutorial : public TutorialApplication
+  struct Tutorial : public SceneLoadingTutorialApplication
   {
-    Tutorial() : TutorialApplication("viewer") {}
+    Tutorial() : SceneLoadingTutorialApplication("viewer") {}
     
     void postParseCommandLine() 
     {

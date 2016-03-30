@@ -81,6 +81,9 @@ namespace embree
     std::map<std::string,Ref<CommandLineOption> > commandLineOptionMap;
  
   public:
+    /* starts tutorial */
+    void run(int argc, char** argv);
+
     /* virtual main function, contains all tutorial logic */
     virtual int main(int argc, char** argv);
 
@@ -109,19 +112,10 @@ namespace embree
     /* embree configuration */
     std::string rtcore;
     std::string subdiv_mode;
-      
-    /* scene settings */
-    TutorialScene obj_scene;
-    Ref<SceneGraph::GroupNode> scene;
-    bool convert_tris_to_quads;
-    bool convert_bezier_to_lines;
-    bool convert_hair_to_curves;
-    FileName sceneFilename;
-    
+          
     /* render settings */
     Camera camera;
     Shader shader;
-    int instancing_mode;
     
     /* framebuffer settings */
     size_t width;
@@ -152,5 +146,22 @@ namespace embree
 
   public:
     static TutorialApplication* instance;
+  };
+
+  class SceneLoadingTutorialApplication : public TutorialApplication
+  {
+  public:
+    SceneLoadingTutorialApplication (const std::string& tutorialName);
+    virtual int main(int argc, char** argv);
+
+  public:
+    /* scene settings */
+    TutorialScene obj_scene;
+    Ref<SceneGraph::GroupNode> scene;
+    bool convert_tris_to_quads;
+    bool convert_bezier_to_lines;
+    bool convert_hair_to_curves;
+    FileName sceneFilename;
+    int instancing_mode;
   };
 }

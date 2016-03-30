@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "../common/tutorial/tutorial.h"
+#include "../common/transport/transport_host.h"
 
 namespace embree
 {
@@ -300,7 +301,17 @@ float noise(float x, float y, float z)
     {
       addHairySphere(obj_scene,Vec3fa(0,1.5f,0),1.5f);
       addGroundPlane(obj_scene,Vec3fa(-10,0,-10),Vec3fa(-10,0,+10),Vec3fa(+10,0,-10),Vec3fa(+10,0,+10));
+
+      /* convert model */
+      obj_scene.add(scene.dynamicCast<SceneGraph::Node>(),(TutorialScene::InstancingMode)0); 
+      scene = nullptr;
+      
+      /* send model */
+      set_scene(&obj_scene);
     }
+
+    TutorialScene obj_scene;
+    Ref<SceneGraph::GroupNode> scene;
   };
 
 }

@@ -52,14 +52,7 @@ namespace embree
       rtcore(""),
       subdiv_mode(""),
 
-      scene(new SceneGraph::GroupNode),
-      convert_tris_to_quads(false),
-      convert_bezier_to_lines(false),
-      convert_hair_to_curves(false),
-      sceneFilename(""),
-
       shader(SHADER_DEFAULT),
-      instancing_mode(0),
 
       width(512),
       height(512),
@@ -104,26 +97,10 @@ namespace embree
         parseCommandLine(new ParseStream(new LineCommentFilter(file, "#")), file.path());
       }, "-c <filename>: parses command line option from <filename>");
     
-    registerOption("i", [this] (Ref<ParseStream> cin, const FileName& path) {
-        sceneFilename = path + cin->getFileName();
-      }, "-i <filename>: parses scene from <filename>");
-    
     registerOption("o", [this] (Ref<ParseStream> cin, const FileName& path) {
         outputImageFilename = cin->getFileName();
         interactive = false;
       }, "-o: output image filename");
-    
-    registerOption("convert-triangles-to-quads", [this] (Ref<ParseStream> cin, const FileName& path) {
-        convert_tris_to_quads = true;
-      }, "--convert-triangles-to-quads: converts all triangles to quads when loading");
-    
-    registerOption("convert-bezier-to-lines", [this] (Ref<ParseStream> cin, const FileName& path) {
-        convert_bezier_to_lines = true;
-      }, "--convert-bezier-to-lines: converts all bezier curves to line segments when loading");
-    
-    registerOption("convert-hair-to-curves", [this] (Ref<ParseStream> cin, const FileName& path) {
-        convert_hair_to_curves = true;
-      }, "--convert-hair-to-curves: converts all hair geometry to curves when loading");
     
     /* camera settings */
     registerOption("vp", [this] (Ref<ParseStream> cin, const FileName& path) {
@@ -200,7 +177,34 @@ namespace embree
     registerOption("pregenerate", [this] (Ref<ParseStream> cin, const FileName& path) {
         subdiv_mode = ",subdiv_accel=bvh4.grid.eager";
         rtcore += subdiv_mode;
-      }, "--pregenerate: enabled pregenerate subdiv mode");
+      }, "--pregenerate: enabled pregenerate subdiv mode");    
+  }
+
+  SceneLoadingTutorialApplication::SceneLoadingTutorialApplication (const std::string& tutorialName)
+
+    : TutorialApplication(tutorialName),
+      scene(new SceneGraph::GroupNode),
+      convert_tris_to_quads(false),
+      convert_bezier_to_lines(false),
+      convert_hair_to_curves(false),
+      sceneFilename(""),
+      instancing_mode(0)
+  {
+    registerOption("i", [this] (Ref<ParseStream> cin, const FileName& path) {
+        sceneFilename = path + cin->getFileName();
+      }, "-i <filename>: parses scene from <filename>");
+    
+    registerOption("convert-triangles-to-quads", [this] (Ref<ParseStream> cin, const FileName& path) {
+        convert_tris_to_quads = true;
+      }, "--convert-triangles-to-quads: converts all triangles to quads when loading");
+    
+    registerOption("convert-bezier-to-lines", [this] (Ref<ParseStream> cin, const FileName& path) {
+        convert_bezier_to_lines = true;
+      }, "--convert-bezier-to-lines: converts all bezier curves to line segments when loading");
+    
+    registerOption("convert-hair-to-curves", [this] (Ref<ParseStream> cin, const FileName& path) {
+        convert_hair_to_curves = true;
+      }, "--convert-hair-to-curves: converts all hair geometry to curves when loading");
     
     registerOption("instancing", [this] (Ref<ParseStream> cin, const FileName& path) {
         std::string mode = cin->getString();
@@ -536,36 +540,8 @@ namespace embree
     TutorialApplication::instance->idleFunc();
   }
 
-  int TutorialApplication::main(int argc, char** argv) try
+  void TutorialApplication::run(int argc, char** argv)
   {
-    /* parse command line options */
-    parseCommandLine(argc,argv);
-
-    /* load scene */
-    if (toLowerCase(sceneFilename.ext()) == std::string("obj"))
-      scene->add(loadOBJ(sceneFilename,subdiv_mode != ""));
-    else if (sceneFilename.ext() != "")
-      scene->add(SceneGraph::load(sceneFilename));
-
-    /* convert triangles to quads */
-    if (convert_tris_to_quads)
-      scene->triangles_to_quads();
-    
-    /* convert bezier to lines */
-    if (convert_bezier_to_lines)
-      scene->bezier_to_lines();
-    
-    /* convert hair to curves */
-    if (convert_hair_to_curves)
-      scene->hair_to_curves();
-    
-    /* convert model */
-    obj_scene.add(scene.dynamicCast<SceneGraph::Node>(),(TutorialScene::InstancingMode)instancing_mode); 
-    scene = nullptr;
-
-    /* send model */
-    set_scene(&obj_scene);
-    
     /* initialize ray tracing core */
     init(rtcore.c_str());
     
@@ -608,6 +584,59 @@ namespace embree
       glutReshapeFunc(embree::reshapeFunc);
       glutMainLoop();
     }
+  }
+
+  int TutorialApplication::main(int argc, char** argv) try
+  {
+    /* parse command line options */
+    parseCommandLine(argc,argv);
+
+    /* start tutorial */
+    run(argc,argv);
+
+    return 0;
+  }  
+  catch (const std::exception& e) {
+    std::cout << "Error: " << e.what() << std::endl;
+    return 1;
+  }
+  catch (...) {
+    std::cout << "Error: unknown exception caught." << std::endl;
+    return 1;
+  }
+
+  int SceneLoadingTutorialApplication::main(int argc, char** argv) try
+  {
+    /* parse command line options */
+    parseCommandLine(argc,argv);
+
+    /* load scene */
+    if (toLowerCase(sceneFilename.ext()) == std::string("obj"))
+      scene->add(loadOBJ(sceneFilename,subdiv_mode != ""));
+    else if (sceneFilename.ext() != "")
+      scene->add(SceneGraph::load(sceneFilename));
+
+    /* convert triangles to quads */
+    if (convert_tris_to_quads)
+      scene->triangles_to_quads();
+    
+    /* convert bezier to lines */
+    if (convert_bezier_to_lines)
+      scene->bezier_to_lines();
+    
+    /* convert hair to curves */
+    if (convert_hair_to_curves)
+      scene->hair_to_curves();
+    
+    /* convert model */
+    obj_scene.add(scene.dynamicCast<SceneGraph::Node>(),(TutorialScene::InstancingMode)instancing_mode); 
+    scene = nullptr;
+
+    /* send model */
+    set_scene(&obj_scene);
+    
+    /* start tutorial */
+    run(argc,argv);
 
     return 0;
   }  
