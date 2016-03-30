@@ -41,9 +41,6 @@ extern "C" {
 
 namespace embree
 {
-  void enterWindowRunLoop();
-  void initWindowState(int& argc, char** argv, const std::string name, const size_t width, const size_t height, const bool fullscreen, const bool mouseMode = true);
-
   TutorialApplication::TutorialApplication (const std::string& tutorialName)
 
     : tutorialName(tutorialName),
@@ -61,7 +58,7 @@ namespace embree
       convert_bezier_to_lines(false),
       convert_hair_to_curves(false),
       scene(new SceneGraph::GroupNode),
-    filename("")
+      filename("")
   {
     /* for best performance set FTZ and DAZ flags in MXCSR control and status register */
     _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
@@ -357,7 +354,7 @@ namespace embree
     /* interactive mode */
     if (interactive) {
       initWindowState(argc,argv,tutorialName, width, height, fullscreen);
-      enterWindowRunLoop();
+      glutMainLoop();
     }
 
     return 0;
@@ -396,21 +393,11 @@ namespace embree
   /*                                  Keyboard control                                             */
   /*************************************************************************************************/
 
-  typedef void (* KeyBinding)(unsigned char key, int x, int y);
-
   static float g_speed = 1.0f;
-  static std::map<unsigned char, KeyBinding> keyBindings;
 
-  void mapKeyToFunction(unsigned char key, KeyBinding binding)
+  void TutorialApplication::keyboardFunc(unsigned char key, int x, int y)
   {
-    keyBindings[key] = binding;
-  }
-
-  void keyboardFunc(unsigned char key, int x, int y)
-  {
-
-    if (keyBindings.find(key) != keyBindings.end()) { keyBindings[key](key, x, y);  return; }
-
+    /* call tutorial keyboard handler */
     key_pressed(key);
 
     switch (key)
@@ -454,7 +441,7 @@ namespace embree
     }
   }
 
-  void specialFunc(int key, int, int)
+  void TutorialApplication::specialFunc(int key, int, int)
   {
     key_pressed(key);
 
@@ -480,7 +467,7 @@ namespace embree
   static int clickX = 0, clickY = 0;
   static bool flip14 = false;
 
-  void clickFunc(int button, int state, int x, int y) 
+  void TutorialApplication::clickFunc(int button, int state, int x, int y) 
   {
     if (state == GLUT_UP) 
     {
@@ -520,8 +507,8 @@ namespace embree
       }
     }
   }
-
-  void motionFunc(int x, int y)
+  
+  void TutorialApplication::motionFunc(int x, int y)
   {
     float dClickX = float(clickX - x), dClickY = float(clickY - y);
     clickX = x; clickY = y;
@@ -538,7 +525,7 @@ namespace embree
   /*                                   Window control                                              */
   /*************************************************************************************************/
 
-  void displayFunc(void) 
+  void TutorialApplication::displayFunc(void) 
   {
     ISPCCamera camera = g_camera.getISPCCamera(g_width,g_height,true);
     
@@ -600,25 +587,19 @@ namespace embree
     std::cout << stream.str() << std::endl;
   }
 
-  void reshapeFunc(int width, int height) 
+  void TutorialApplication::reshapeFunc(int width, int height) 
   {
     resize(width,height);
     glViewport(0, 0, width, height);
     g_width = width; g_height = height;
   }
   
-  void idleFunc()
+  void TutorialApplication::idleFunc()
   {
     glutPostRedisplay();
   }
 
-  void enterWindowRunLoop()
-  {
-    glutMainLoop();
-  }
-
-  /* initialize GLUT */
-  void initWindowState(int& argc, char** argv, const std::string name, const size_t width, const size_t height, const bool fullscreen, const bool mouseMode)
+  void TutorialApplication::initWindowState(int& argc, char** argv, const std::string name, const size_t width, const size_t height, const bool fullscreen, const bool mouseMode)
   {
     g_width = width;
     g_height = height;

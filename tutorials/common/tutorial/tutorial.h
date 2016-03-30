@@ -77,6 +77,16 @@ namespace embree
     virtual void postParseCommandLine() {}
     
   public:
+    static void keyboardFunc(unsigned char key, int x, int y);
+    static void specialFunc(int key, int, int);
+    static void clickFunc(int button, int state, int x, int y);
+    static void motionFunc(int x, int y);
+    static void displayFunc(void);
+    static void reshapeFunc(int width, int height);
+    static void idleFunc();
+    static void initWindowState(int& argc, char** argv, const std::string name, const size_t width, const size_t height, const bool fullscreen, const bool mouseMode = true);
+    
+  public:
     std::vector<         Ref<CommandLineOption> > commandLineOptionList;
     std::map<std::string,Ref<CommandLineOption> > commandLineOptionMap;
     
