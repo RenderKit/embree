@@ -16,17 +16,8 @@
 
 #pragma once
 
-#include "../../../common/sys/platform.h"
-#include "../../../common/sys/sysinfo.h"
-#include "../../../common/sys/ref.h"
-#include "../../../common/lexers/streamfilters.h"
-#include "../../../common/lexers/parsestream.h"
-#include "../transport/transport_host.h"
-#include "scene.h"
+#include "../default.h"
 #include "tutorial_device.h"
-
-#include <map>
-#include <vector>
 
 namespace embree
 {

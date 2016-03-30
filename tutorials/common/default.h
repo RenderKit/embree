@@ -26,6 +26,8 @@
 #include "../../common/sys/filename.h"
 #include "../../common/sys/string.h"
 #include "../../common/lexers/tokenstream.h"
+#include "../../common/lexers/streamfilters.h"
+#include "../../common/lexers/parsestream.h"
 
 #include <vector>
 #include <memory>
