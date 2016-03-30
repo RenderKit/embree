@@ -264,24 +264,26 @@ namespace embree
     {
       std::string tag = cin->getString();
       if (tag == "") return;
+      std::string tag0 = tag;
       
       /* remove - or -- and lookup command line option */
-      if (tag.find("-") == 0) tag = tag.substr(1);
-      if (tag.find("-") == 0) tag = tag.substr(1);
-      auto option = commandLineOptionMap.find(tag);
+      if (tag.find("-") == 0) 
+      {
+        tag = tag.substr(1);
+        if (tag.find("-") == 0) tag = tag.substr(1);
+        auto option = commandLineOptionMap.find(tag);
       
-      /* process command line option */
-      if (option != commandLineOptionMap.end()) {
-        option->second->parse(cin,path);
+        /* process command line option */
+        if (option != commandLineOptionMap.end()) {
+          option->second->parse(cin,path);
+          continue;
+        }
       }
       
       /* handle unknown command line options */
-      else
-      {
-        std::cerr << "unknown command line parameter: " << tag << " ";
-        while (cin->peek() != "" && cin->peek()[0] != '-') std::cerr << cin->getString() << " ";
-        std::cerr << std::endl;
-      }    
+      std::cerr << "unknown command line parameter: " << tag0 << " ";
+      while (cin->peek() != "" && cin->peek()[0] != '-') std::cerr << cin->getString() << " ";
+      std::cerr << std::endl;
     }
   }
 
