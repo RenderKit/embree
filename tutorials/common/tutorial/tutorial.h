@@ -76,15 +76,15 @@ namespace embree
     virtual int main(int argc, char** argv);
     virtual void postParseCommandLine() {}
     
+    /* GLUT callback functions */
   public:
-    static void keyboardFunc(unsigned char key, int x, int y);
-    static void specialFunc(int key, int, int);
-    static void clickFunc(int button, int state, int x, int y);
-    static void motionFunc(int x, int y);
-    static void displayFunc(void);
-    static void reshapeFunc(int width, int height);
-    static void idleFunc();
-    static void initWindowState(int& argc, char** argv, const std::string name, const size_t width, const size_t height, const bool fullscreen, const bool mouseMode = true);
+    virtual void keyboardFunc(unsigned char key, int x, int y);
+    virtual void specialFunc(int key, int, int);
+    virtual void clickFunc(int button, int state, int x, int y);
+    virtual void motionFunc(int x, int y);
+    virtual void displayFunc(void);
+    virtual void reshapeFunc(int width, int height);
+    virtual void idleFunc();
     
   public:
     std::vector<         Ref<CommandLineOption> > commandLineOptionList;
@@ -116,6 +116,8 @@ namespace embree
     TutorialScene obj_scene;
     Ref<SceneGraph::GroupNode> scene;
     FileName filename;
+
+    static TutorialApplication* instance;
   };
 }
 

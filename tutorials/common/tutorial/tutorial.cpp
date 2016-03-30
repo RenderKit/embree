@@ -41,6 +41,8 @@ extern "C" {
 
 namespace embree
 {
+  TutorialApplication* TutorialApplication::instance = nullptr;
+
  static const double g_time0 = getSeconds();
 
   /* camera */
@@ -88,6 +90,10 @@ namespace embree
       scene(new SceneGraph::GroupNode),
       filename("")
   {
+    /* only a single instance of this class is supported */
+    assert(instance == nullptr);
+    instance = this;
+
     /* the coi device needs this name in a static variable */
     g_tutorialName = tutorialName;
 
@@ -329,7 +335,28 @@ namespace embree
     cleanup();
   }
 
-  
+  void keyboardFunc(unsigned char key, int x, int y) {
+    TutorialApplication::instance->keyboardFunc(key,x,y);
+  }
+  void specialFunc(int key, int x, int y) {
+    TutorialApplication::instance->specialFunc(key,x,y);
+  }
+  void clickFunc(int button, int state, int x, int y) {
+    TutorialApplication::instance->clickFunc(button,state,x,y);
+  }
+  void motionFunc(int x, int y) {
+    TutorialApplication::instance->motionFunc(x,y);
+  }
+  void displayFunc() {
+    TutorialApplication::instance->displayFunc();
+  }
+  void reshapeFunc(int width, int height) {
+    TutorialApplication::instance->reshapeFunc(width,height);
+  }
+  void idleFunc() {
+    TutorialApplication::instance->idleFunc();
+  }
+
   int TutorialApplication::main(int argc, char** argv) try
   {
     /* parse command line options */
@@ -397,13 +424,13 @@ namespace embree
       glutInitWindowPosition(0, 0);
       g_window = glutCreateWindow(tutorialName.c_str());
       if (g_fullscreen) glutFullScreen();
-      glutDisplayFunc(displayFunc);
-      glutIdleFunc(idleFunc);
-      glutKeyboardFunc(keyboardFunc);
-      glutSpecialFunc(specialFunc);
-      glutMouseFunc(clickFunc);
-      glutMotionFunc(motionFunc);
-      glutReshapeFunc(reshapeFunc);
+      glutDisplayFunc(embree::displayFunc);
+      glutIdleFunc(embree::idleFunc);
+      glutKeyboardFunc(embree::keyboardFunc);
+      glutSpecialFunc(embree::specialFunc);
+      glutMouseFunc(embree::clickFunc);
+      glutMotionFunc(embree::motionFunc);
+      glutReshapeFunc(embree::reshapeFunc);
       glutMainLoop();
     }
 
