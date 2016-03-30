@@ -78,7 +78,7 @@ namespace embree
 
     void renderBenchmark(const FileName& fileName);
     void renderToFile(const FileName& fileName);
-    virtual void main(int argc, char** argv);
+    virtual int main(int argc, char** argv);
     
   public:
     std::vector<         Ref<CommandLineOption> > commandLineOptionList;

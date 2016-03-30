@@ -287,7 +287,7 @@ namespace embree
   }
 
   
-  void TutorialApplication::main(int argc, char** argv)
+  int TutorialApplication::main(int argc, char** argv)
   {
     /* parse command line options */
     parseCommandLine(argc,argv);
@@ -344,5 +344,7 @@ namespace embree
       initWindowState(argc,argv,tutorialName, g_width, g_height, g_fullscreen);
       enterWindowRunLoop();
     }
+
+    return 0;
   }  
 }

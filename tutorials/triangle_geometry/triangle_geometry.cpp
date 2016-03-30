@@ -37,7 +37,7 @@ namespace embree
 int main(int argc, char** argv)
 {
   try {
-    Tutorial().main(argc,argv);
+    return Tutorial().main(argc,argv);
   }
   catch (const std::exception& e) {
     std::cout << "Error: " << e.what() << std::endl;
