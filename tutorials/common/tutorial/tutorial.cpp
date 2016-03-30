@@ -79,8 +79,7 @@ namespace embree
       debug_int1(0),
     
       mouseMode(0),
-      clickX(0), clickY(0),
-      flip14(false)
+      clickX(0), clickY(0)
   {
     /* only a single instance of this class is supported */
     assert(instance == nullptr);
@@ -406,7 +405,6 @@ namespace embree
     {
       resize(width,height);
 
-      flip14 = mouseMode;
       glutInit(&argc, argv);
       glutInitWindowSize((GLsizei)width, (GLsizei)height);
       glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
@@ -543,11 +541,6 @@ namespace embree
       else if (button == GLUT_RIGHT_BUTTON ) mouseMode = 3;
       else if (button == GLUT_LEFT_BUTTON && modifiers == GLUT_ACTIVE_CTRL ) mouseMode = 3;
       else if (button == GLUT_LEFT_BUTTON  ) mouseMode = 4;
-
-      if (flip14) {
-        if (mouseMode == 4) mouseMode = 1;
-        else if (mouseMode == 1) mouseMode = 4;
-      }
     }
   }
   

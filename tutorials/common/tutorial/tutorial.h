@@ -132,7 +132,6 @@ namespace embree
     
     int mouseMode;
     int clickX, clickY;
-    bool flip14;
 
     static TutorialApplication* instance;
   };
