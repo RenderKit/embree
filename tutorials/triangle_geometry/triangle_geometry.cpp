@@ -24,7 +24,7 @@ namespace embree
 
   struct Tutorial : public TutorialApplication
   {
-    Tutorial() : TutorialApplication(tutorialName)
+    Tutorial() : TutorialApplication("triangle_geometry")
     {
       /* set default camera */
       g_camera.from = Vec3fa(1.5f,1.5f,-1.5f);
@@ -34,17 +34,6 @@ namespace embree
 
 }
 
-int main(int argc, char** argv)
-{
-  try {
-    return Tutorial().main(argc,argv);
-  }
-  catch (const std::exception& e) {
-    std::cout << "Error: " << e.what() << std::endl;
-    return 1;
-  }
-  catch (...) {
-    std::cout << "Error: unknown exception caught." << std::endl;
-    return 1;
-  }
+int main(int argc, char** argv) {
+  return Tutorial().main(argc,argv);
 }

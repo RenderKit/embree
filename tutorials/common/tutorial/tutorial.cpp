@@ -50,7 +50,7 @@ namespace embree
         printCommandLineHelp();
         exit(1);
       }, "--help: prints help for all supported command line options");
-    
+
     registerOption("c", [this] (Ref<ParseStream> cin, const FileName& path) {
         FileName file = path + cin->getFileName();
         parseCommandLine(new ParseStream(new LineCommentFilter(file, "#")), file.path());
@@ -287,7 +287,7 @@ namespace embree
   }
 
   
-  int TutorialApplication::main(int argc, char** argv)
+  int TutorialApplication::main(int argc, char** argv) try
   {
     /* parse command line options */
     parseCommandLine(argc,argv);
@@ -347,4 +347,12 @@ namespace embree
 
     return 0;
   }  
+  catch (const std::exception& e) {
+    std::cout << "Error: " << e.what() << std::endl;
+    return 1;
+  }
+  catch (...) {
+    std::cout << "Error: unknown exception caught." << std::endl;
+    return 1;
+  }
 }
