@@ -43,6 +43,13 @@ sed -i.backup 's/atomic_compare_exchange_global/atomic_cmpxchg/g' $2
 sed -i.backup 's/memory_barrier/__memory_barrier/g' $2 
 
 # math library
+sed -i.backup  's/Vec3f\([^a]\)/Vec3fa\1/g' $2
+sed -i.backup  's/make_Ray/RTCRay/g' $2
+sed -i.backup 's/make_LinearSpace3f_rotate/LinearSpace3f::rotate/g' $2
+sed -i.backup 's/LinearSpace3f/LinearSpace3fa/g' $2
+sed -i.backup 's/make_AffineSpace3f_rotate/AffineSpace3f::rotate/g' $2
+sed -i.backup 's/AffineSpace3f\([^a]\)/AffineSpace3fa\1/g' $2
+
 sed -i.backup  's/M_PI/float(pi)/g' $2
 sed -i.backup  's/\*pi\*/\*float(pi)\*/g' $2
 sed -i.backup  's/\*pi\//\*float(pi)\//g' $2
@@ -67,18 +74,12 @@ sed -i.backup  's/RTC_MATRIX_COLUMN_MAJOR_ALIGNED16_ALIGNED16/RTC_MATRIX_COLUMN_
 sed -i.backup  's/RTCIntersectFuncVarying/RTCIntersectFunc/g' $2
 sed -i.backup  's/RTCOccludedFuncVarying/RTCOccludedFunc/g' $2
 sed -i.backup  's/RTCFilterFuncVarying/RTCFilterFunc/g' $2
-sed -i.backup  's/Vec3f\([^a]\)/Vec3fa\1/g' $2
+
 
 sed -i.backup  's/ISPCMaterial\* material = \&materials\[id\];/ISPCMaterial\* material = \&materials\[materialID\];/g' $2
 
-sed -i.backup  's/make_Ray/RTCRay/g' $2
-
-#sed -i.backup 's/\#define PARALLEL_COMMIT//g' $2
 
 
-sed -i.backup 's/make_LinearSpace3f_rotate/LinearSpace3f::rotate/g' $2
-sed -i.backup 's/LinearSpace3f/LinearSpace3fa/g' $2
 
-sed -i.backup 's/make_AffineSpace3f_rotate/AffineSpace3f::rotate/g' $2
-sed -i.backup 's/AffineSpace3f\([^a]\)/AffineSpace3fa\1/g' $2
+
 
