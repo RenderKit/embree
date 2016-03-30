@@ -44,11 +44,12 @@ sed -i.backup 's/memory_barrier/__memory_barrier/g' $2
 
 # math library
 sed -i.backup  's/Vec3f\([^a]\)/Vec3fa\1/g' $2
-sed -i.backup  's/make_Ray/RTCRay/g' $2
-sed -i.backup 's/make_LinearSpace3f_rotate/LinearSpace3f::rotate/g' $2
 sed -i.backup 's/LinearSpace3f/LinearSpace3fa/g' $2
-sed -i.backup 's/make_AffineSpace3f_rotate/AffineSpace3f::rotate/g' $2
 sed -i.backup 's/AffineSpace3f\([^a]\)/AffineSpace3fa\1/g' $2
+
+sed -i.backup  's/make_Ray/RTCRay/g' $2
+sed -i.backup 's/make_LinearSpace3fa_rotate/LinearSpace3fa::rotate/g' $2
+sed -i.backup 's/make_AffineSpace3fa_rotate/AffineSpace3fa::rotate/g' $2
 
 sed -i.backup  's/M_PI/float(pi)/g' $2
 sed -i.backup  's/\*pi\*/\*float(pi)\*/g' $2
@@ -62,8 +63,6 @@ sed -i.backup  's/make_Vec3f/Vec3f/g' $2
 sed -i.backup  's/make_Vec3fa/Vec3fa/g' $2
 sed -i.backup  's/make_Sample3f/Sample3f/g' $2
 sed -i.backup  's/make_AffineSpace3f/AffineSpace3f/g' $2
-sed -i.backup  's/AffineSpace3f_rotate/AffineSpace3f::rotate/g' $2
-
 
 # Embree specific
 sed -i.backup  's/RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING/RTC_INTERSECT1/g' $2
