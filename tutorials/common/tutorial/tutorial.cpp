@@ -26,31 +26,31 @@ namespace embree
   TutorialApplication::TutorialApplication (const std::string& tutorialName)
 
     : tutorialName(tutorialName),
-      g_rtcore(""),
-      g_numThreads(0),
-      g_subdiv_mode(""),
-      g_width(512), g_height(512), g_fullscreen(false),
+      rtcore(""),
+      numThreads(0),
+      subdiv_mode(""),
+      width(512), height(512), fullscreen(false),
       outFilename(""),
-      g_skipBenchmarkFrames(0),
-      g_numBenchmarkFrames(0),
-      g_interactive(true),
-      g_instancing_mode(0),
-      g_shader(SHADER_DEFAULT),
+      skipBenchmarkFrames(0),
+      numBenchmarkFrames(0),
+      interactive(true),
+      instancing_mode(0),
+      shader(SHADER_DEFAULT),
       convert_tris_to_quads(false),
       convert_bezier_to_lines(false),
       convert_hair_to_curves(false),
-      g_scene(new SceneGraph::GroupNode),
-      filename("")
+      scene(new SceneGraph::GroupNode),
+    filename("")
   {
-     /* for best performance set FTZ and DAZ flags in MXCSR control and status register */
+    /* for best performance set FTZ and DAZ flags in MXCSR control and status register */
     _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
     _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
-   
+    
     registerOption("help", [this] (Ref<ParseStream> cin, const FileName& path) {
         printCommandLineHelp();
         exit(1);
       }, "--help: prints help for all supported command line options");
-
+    
     registerOption("c", [this] (Ref<ParseStream> cin, const FileName& path) {
         FileName file = path + cin->getFileName();
         parseCommandLine(new ParseStream(new LineCommentFilter(file, "#")), file.path());
@@ -62,7 +62,7 @@ namespace embree
     
     registerOption("o", [this] (Ref<ParseStream> cin, const FileName& path) {
         outFilename = cin->getFileName();
-        g_interactive = false;
+        interactive = false;
       }, "-o: output image filename");
     
     registerOption("convert-triangles-to-quads", [this] (Ref<ParseStream> cin, const FileName& path) {
@@ -100,40 +100,40 @@ namespace embree
     
     /* framebuffer settings */
     registerOption("size", [this] (Ref<ParseStream> cin, const FileName& path) {
-        g_width = cin->getInt();
-        g_height = cin->getInt();
+        width = cin->getInt();
+        height = cin->getInt();
       }, "--size <width> <height>: image size");
     
     registerOption("fullscreen", [this] (Ref<ParseStream> cin, const FileName& path) {
-        g_fullscreen = true;
+        fullscreen = true;
       }, "--fullscreen: starts in fullscreen mode");
     
     registerOption("rtcore", [this] (Ref<ParseStream> cin, const FileName& path) {
-        g_rtcore += "," + cin->getString();
+        rtcore += "," + cin->getString();
       }, "--rtcore <string>: uses <string> to configure Embree device");
     
     registerOption("threads", [this] (Ref<ParseStream> cin, const FileName& path) {
-        g_numThreads = cin->getInt();
-        g_rtcore += ",threads=" + toString(g_numThreads);
+        numThreads = cin->getInt();
+        rtcore += ",threads=" + toString(numThreads);
       }, "--threads <int>: number of threads to use");
     
     registerOption("benchmark", [this] (Ref<ParseStream> cin, const FileName& path) {
-        g_skipBenchmarkFrames = cin->getInt();
-        g_numBenchmarkFrames  = cin->getInt();
-        g_interactive = false;
-        g_rtcore += ",benchmark=1";
+        skipBenchmarkFrames = cin->getInt();
+        numBenchmarkFrames  = cin->getInt();
+        interactive = false;
+        rtcore += ",benchmark=1";
       }, "--benchmark <N> <M>: enabled benchmark mode, skips N frames, renders M frames ");
     
     /* output filename */
     registerOption("shader", [this] (Ref<ParseStream> cin, const FileName& path) {
         std::string mode = cin->getString();
-        if      (mode == "default" ) g_shader = SHADER_DEFAULT;
-        else if (mode == "eyelight") g_shader = SHADER_EYELIGHT;
-        else if (mode == "uv"      ) g_shader = SHADER_UV;
-        else if (mode == "Ng"      ) g_shader = SHADER_NG;
-        else if (mode == "geomID"  ) g_shader = SHADER_GEOMID;
-        else if (mode == "primID"  ) g_shader = SHADER_GEOMID_PRIMID;
-        else if (mode == "ao"      ) g_shader = SHADER_AMBIENT_OCCLUSION;
+        if      (mode == "default" ) shader = SHADER_DEFAULT;
+        else if (mode == "eyelight") shader = SHADER_EYELIGHT;
+        else if (mode == "uv"      ) shader = SHADER_UV;
+        else if (mode == "Ng"      ) shader = SHADER_NG;
+        else if (mode == "geomID"  ) shader = SHADER_GEOMID;
+        else if (mode == "primID"  ) shader = SHADER_GEOMID_PRIMID;
+        else if (mode == "ao"      ) shader = SHADER_AMBIENT_OCCLUSION;
         else throw std::runtime_error("invalid shader:" +mode);
       }, 
       "--shader <string>: sets shader to use at startup\n"
@@ -145,67 +145,59 @@ namespace embree
       "  primID: visualization of geometry and primitive ID\n"
       "  ao: ambient occlusion shader");
     
+    registerOption("cache", [this] (Ref<ParseStream> cin, const FileName& path) {
+        subdiv_mode = ",subdiv_accel=bvh4.subdivpatch1cached";
+        rtcore += subdiv_mode;
+      }, "--cache: enabled cached subdiv mode");
     
-    /*else if (tag == "-objlist") {
-      while (cin->peek() != "" && cin->peek()[0] != '-')
-      keyframeList.push_back(path + cin->getFileName());
-      }*/
+    registerOption("pregenerate", [this] (Ref<ParseStream> cin, const FileName& path) {
+        subdiv_mode = ",subdiv_accel=bvh4.grid.eager";
+        rtcore += subdiv_mode;
+      }, "--pregenerate: enabled pregenerate subdiv mode");
     
-    /* subdivision mode */
-    //else if (tag == "-cache") 
-    //g_subdiv_mode = ",subdiv_accel=bvh4.subdivpatch1cached";
+    registerOption("instancing", [this] (Ref<ParseStream> cin, const FileName& path) {
+        std::string mode = cin->getString();
+        if      (mode == "none"    ) instancing_mode = TutorialScene::INSTANCING_NONE;
+        //else if (mode == "geometry") instancing_mode = TutorialScene::INSTANCING_GEOMETRY;
+        else if (mode == "scene_geometry") instancing_mode = TutorialScene::INSTANCING_SCENE_GEOMETRY;
+        else if (mode == "scene_group"   ) instancing_mode = TutorialScene::INSTANCING_SCENE_GROUP;
+        else throw std::runtime_error("unknown instancing mode: "+mode);
+      }, "--instancing: set instancing mode\n"
+      "  none: no instancing\n"
+      "  geometry: instance individual geometries\n"
+      "  scene_geometry: instance individual geometries as scenes\n"
+      "  scene_group: instance geometry groups as scenes\n");
     
-    //else if (tag == "-pregenerate") 
-//	g_subdiv_mode = ",subdiv_accel=bvh4.grid.eager";
+    registerOption("ambientlight", [this] (Ref<ParseStream> cin, const FileName& path) {
+        const Vec3fa L = cin->getVec3fa();
+        scene->add(new SceneGraph::LightNode<AmbientLight>(AmbientLight(L)));
+      }, "--ambientlight r g b: adds an ambient light with intensity rgb");
     
-    /*else if (tag == "-instancing") {
-      std::string mode = cin->getString();
-      if      (mode == "none"    ) g_instancing_mode = TutorialScene::INSTANCING_NONE;
-      //else if (mode == "geometry") g_instancing_mode = TutorialScene::INSTANCING_GEOMETRY;
-      else if (mode == "scene_geometry") g_instancing_mode = TutorialScene::INSTANCING_SCENE_GEOMETRY;
-      else if (mode == "scene_group"   ) g_instancing_mode = TutorialScene::INSTANCING_SCENE_GROUP;
-      else throw std::runtime_error("unknown instancing mode: "+mode);
-      }*/
+    registerOption("pointlight", [this] (Ref<ParseStream> cin, const FileName& path) {
+        const Vec3fa P = cin->getVec3fa();
+        const Vec3fa I = cin->getVec3fa();
+        scene->add(new SceneGraph::LightNode<PointLight>(PointLight(P,I)));
+      }, "--pointlight x y z r g b: adds a point light at position xyz with intensity rgb");
     
+    registerOption("directionallight", [this] (Ref<ParseStream> cin, const FileName& path) {
+        const Vec3fa D = cin->getVec3fa();
+        const Vec3fa E = cin->getVec3fa();
+        scene->add(new SceneGraph::LightNode<DirectionalLight>(DirectionalLight(D,E)));
+      }, "--directionallight x y z r g b: adds a directional light with direction xyz and intensity rgb");
+    registerAlternativeOption("directionallight","dirlight");
     
-    
-    
-    
-#if 0
-    /* ambient light source */
-    else if (tag == "-ambientlight") 
-    {
-      const Vec3fa L = cin->getVec3fa();
-      g_scene->add(new SceneGraph::LightNode<AmbientLight>(AmbientLight(L)));
-    }
-    
-    /* point light source */
-    else if (tag == "-pointlight") 
-    {
-      const Vec3fa P = cin->getVec3fa();
-      const Vec3fa I = cin->getVec3fa();
-      g_scene->add(new SceneGraph::LightNode<PointLight>(PointLight(P,I)));
-    }
-    
-    /* directional light source */
-    else if (tag == "-directionallight" || tag == "-dirlight") 
-    {
-      const Vec3fa D = cin->getVec3fa();
-      const Vec3fa E = cin->getVec3fa();
-      g_scene->add(new SceneGraph::LightNode<DirectionalLight>(DirectionalLight(D,E)));
-    }
-    
-    /* distant light source */
-    else if (tag == "-distantlight") 
-    {
-      const Vec3fa D = cin->getVec3fa();
-      const Vec3fa L = cin->getVec3fa();
-      const float halfAngle = cin->getFloat();
-      g_scene->add(new SceneGraph::LightNode<DistantLight>(DistantLight(D,L,halfAngle)));
-    }
-#endif
+    registerOption("distantlight", [this] (Ref<ParseStream> cin, const FileName& path) {
+        const Vec3fa D = cin->getVec3fa();
+        const Vec3fa L = cin->getVec3fa();
+        const float halfAngle = cin->getFloat();
+        scene->add(new SceneGraph::LightNode<DistantLight>(DistantLight(D,L,halfAngle)));
+      }, "--distantlight x y z r g b a: adds a distant light with direction xyz, intensity rgb, and opening angle a");
   }
-
+  
+  void TutorialApplication::registerAlternativeOption(const std::string& name, const std::string& alternativeName) {
+    commandLineOptionMap[alternativeName] = commandLineOptionMap[name];
+  }
+  
   void TutorialApplication::parseCommandLine(int argc, char** argv)
   {
     /* create stream for parsing */
@@ -213,22 +205,23 @@ namespace embree
     
     /* parse command line */  
     parseCommandLine(stream, FileName());
-
-    //g_rtcore += g_subdiv_mode;
+    
+    /* callback */
+    postParseCommandLine();
   }
-
+  
   void TutorialApplication::parseCommandLine(Ref<ParseStream> cin, const FileName& path)
   {
     while (true)
     {
       std::string tag = cin->getString();
       if (tag == "") return;
-
+      
       /* remove - or -- and lookup command line option */
       if (tag.find("-") == 0) tag = tag.substr(1);
       if (tag.find("-") == 0) tag = tag.substr(1);
       auto option = commandLineOptionMap.find(tag);
-
+      
       /* process command line option */
       if (option != commandLineOptionMap.end()) {
         option->second->parse(cin,path);
@@ -253,11 +246,11 @@ namespace embree
 
   void TutorialApplication::renderBenchmark(const FileName& fileName)
   {
-    resize(g_width,g_height);
-    ISPCCamera camera = g_camera.getISPCCamera(g_width,g_height);
+    resize(width,height);
+    ISPCCamera camera = g_camera.getISPCCamera(width,height);
 
     double dt = 0.0f;
-    size_t numTotalFrames = g_skipBenchmarkFrames + g_numBenchmarkFrames;
+    size_t numTotalFrames = skipBenchmarkFrames + numBenchmarkFrames;
     for (size_t i=0; i<numTotalFrames; i++) 
     {
       double t0 = getSeconds();
@@ -265,22 +258,22 @@ namespace embree
       double t1 = getSeconds();
       std::cout << "frame [" << i << " / " << numTotalFrames << "] ";
       std::cout << 1.0/(t1-t0) << "fps ";
-      if (i < g_skipBenchmarkFrames) std::cout << "(skipped)";
+      if (i < skipBenchmarkFrames) std::cout << "(skipped)";
       std::cout << std::endl;
-      if (i >= g_skipBenchmarkFrames) dt += t1-t0;
+      if (i >= skipBenchmarkFrames) dt += t1-t0;
     }
-    std::cout << "frame [" << g_skipBenchmarkFrames << " - " << numTotalFrames << "] " << std::flush;
-    std::cout << double(g_numBenchmarkFrames)/dt << "fps " << std::endl;
-    std::cout << "BENCHMARK_RENDER " << double(g_numBenchmarkFrames)/dt << std::endl;
+    std::cout << "frame [" << skipBenchmarkFrames << " - " << numTotalFrames << "] " << std::flush;
+    std::cout << double(numBenchmarkFrames)/dt << "fps " << std::endl;
+    std::cout << "BENCHMARK_RENDER " << double(numBenchmarkFrames)/dt << std::endl;
   }
 
   void TutorialApplication::renderToFile(const FileName& fileName)
   {
-    resize(g_width,g_height);
-    ISPCCamera camera = g_camera.getISPCCamera(g_width,g_height);
+    resize(width,height);
+    ISPCCamera camera = g_camera.getISPCCamera(width,height);
     render(0.0f,camera);
     void* ptr = map();
-    Ref<Image> image = new Image4uc(g_width, g_height, (Col4uc*)ptr);
+    Ref<Image> image = new Image4uc(width, height, (Col4uc*)ptr);
     storeImage(image, fileName);
     unmap();
     cleanup();
@@ -294,34 +287,34 @@ namespace embree
 
     /* load scene */
     if (toLowerCase(filename.ext()) == std::string("obj"))
-      g_scene->add(loadOBJ(filename,g_subdiv_mode != ""));
+      scene->add(loadOBJ(filename,subdiv_mode != ""));
     else if (filename.ext() != "")
-      g_scene->add(SceneGraph::load(filename));
+      scene->add(SceneGraph::load(filename));
 
     /* convert triangles to quads */
     if (convert_tris_to_quads)
-      g_scene->triangles_to_quads();
+      scene->triangles_to_quads();
     
     /* convert bezier to lines */
     if (convert_bezier_to_lines)
-      g_scene->bezier_to_lines();
+      scene->bezier_to_lines();
     
     /* convert hair to curves */
     if (convert_hair_to_curves)
-      g_scene->hair_to_curves();
+      scene->hair_to_curves();
     
     /* convert model */
-    g_obj_scene.add(g_scene.dynamicCast<SceneGraph::Node>(),(TutorialScene::InstancingMode)g_instancing_mode); 
-    g_scene = nullptr;
+    obj_scene.add(scene.dynamicCast<SceneGraph::Node>(),(TutorialScene::InstancingMode)instancing_mode); 
+    scene = nullptr;
 
     /* send model */
-    set_scene(&g_obj_scene);
+    set_scene(&obj_scene);
     
     /* initialize ray tracing core */
-    init(g_rtcore.c_str());
+    init(rtcore.c_str());
     
     /* set shader mode */
-    switch (g_shader) {
+    switch (shader) {
     case SHADER_DEFAULT : break;
     case SHADER_EYELIGHT: key_pressed(GLUT_KEY_F2); break;
     case SHADER_UV      : key_pressed(GLUT_KEY_F4); break;
@@ -332,7 +325,7 @@ namespace embree
     };
     
     /* benchmark mode */
-    if (g_numBenchmarkFrames)
+    if (numBenchmarkFrames)
       renderBenchmark(outFilename);
     
     /* render to disk */
@@ -340,8 +333,8 @@ namespace embree
       renderToFile(outFilename);
     
     /* interactive mode */
-    if (g_interactive) {
-      initWindowState(argc,argv,tutorialName, g_width, g_height, g_fullscreen);
+    if (interactive) {
+      initWindowState(argc,argv,tutorialName, width, height, fullscreen);
       enterWindowRunLoop();
     }
 

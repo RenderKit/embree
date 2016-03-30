@@ -71,6 +71,8 @@ namespace embree
       commandLineOptionList.push_back(closure);
       commandLineOptionMap[name] = closure;
     }
+
+    void registerAlternativeOption(const std::string& name, const std::string& alternativeName); 
     
     void parseCommandLine(int argc, char** argv);
     void parseCommandLine(Ref<ParseStream> cin, const FileName& path);
@@ -79,6 +81,7 @@ namespace embree
     void renderBenchmark(const FileName& fileName);
     void renderToFile(const FileName& fileName);
     virtual int main(int argc, char** argv);
+    virtual void postParseCommandLine() {}
     
   public:
     std::vector<         Ref<CommandLineOption> > commandLineOptionList;
@@ -88,31 +91,28 @@ namespace embree
     std::string tutorialName;
     
     /* configuration */
-    std::string g_rtcore;
-    size_t g_numThreads;
-    std::string g_subdiv_mode;
+    std::string rtcore;
+    size_t numThreads;
+    std::string subdiv_mode;
     
     /* output settings */
-    size_t g_width;
-    size_t g_height;
-    bool g_fullscreen;
+    size_t width;
+    size_t height;
+    bool fullscreen;
     FileName outFilename;
-    int g_skipBenchmarkFrames;
-    int g_numBenchmarkFrames;
-    bool g_interactive;
-    int g_instancing_mode;
-    Shader g_shader;//  = SHADER_DEFAULT;
+    int skipBenchmarkFrames;
+    int numBenchmarkFrames;
+    bool interactive;
+    int instancing_mode;
+    Shader shader;
     bool convert_tris_to_quads;
     bool convert_bezier_to_lines;
     bool convert_hair_to_curves;
     
     /* scene */
-    TutorialScene g_obj_scene;
-    Ref<SceneGraph::GroupNode> g_scene;
+    TutorialScene obj_scene;
+    Ref<SceneGraph::GroupNode> scene;
     FileName filename;
-    
-    //std::vector<FileName> keyframeList;
-    //std::vector<TutorialScene*> g_keyframes;
   };
 }
 
