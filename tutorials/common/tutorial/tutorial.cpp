@@ -41,6 +41,32 @@ extern "C" {
 
 namespace embree
 {
+ static const double g_time0 = getSeconds();
+
+  /* camera */
+  Camera g_camera;
+
+  /* output settings */
+  static size_t g_width = 512;
+  static size_t g_height = 512;
+  static bool g_display = true;
+
+  /* fullscreen settings */
+  static bool g_fullscreen = false;
+  static size_t g_window_width = 512;
+  static size_t g_window_height = 512;
+
+  /* ID of created window */
+  static int g_window = 0;
+
+  static int g_debug_int0 = 0;
+  static int g_debug_int1 = 0;
+
+
+  static int mouseMode = 0;
+  static int clickX = 0, clickY = 0;
+  static bool flip14 = false;
+
   TutorialApplication::TutorialApplication (const std::string& tutorialName)
 
     : tutorialName(tutorialName),
@@ -352,8 +378,27 @@ namespace embree
       renderToFile(outFilename);
     
     /* interactive mode */
-    if (interactive) {
-      initWindowState(argc,argv,tutorialName, width, height, fullscreen);
+    if (interactive) 
+    {
+      g_width = width;
+      g_height = height;
+      resize(g_width,g_height);
+
+      g_fullscreen = fullscreen;
+      flip14 = mouseMode;
+      glutInit(&argc, argv);
+      glutInitWindowSize((GLsizei)g_width, (GLsizei)g_height);
+      glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
+      glutInitWindowPosition(0, 0);
+      g_window = glutCreateWindow(tutorialName.c_str());
+      if (g_fullscreen) glutFullScreen();
+      glutDisplayFunc(displayFunc);
+      glutIdleFunc(idleFunc);
+      glutKeyboardFunc(keyboardFunc);
+      glutSpecialFunc(specialFunc);
+      glutMouseFunc(clickFunc);
+      glutMotionFunc(motionFunc);
+      glutReshapeFunc(reshapeFunc);
       glutMainLoop();
     }
 
@@ -368,26 +413,7 @@ namespace embree
     return 1;
   }
 
-  static const double g_time0 = getSeconds();
-
-  /* camera */
-  Camera g_camera;
-
-  /* output settings */
-  static size_t g_width = 512;
-  static size_t g_height = 512;
-  static bool g_display = true;
-
-  /* fullscreen settings */
-  static bool g_fullscreen = false;
-  static size_t g_window_width = 512;
-  static size_t g_window_height = 512;
-
-  /* ID of created window */
-  static int g_window = 0;
-
-  static int g_debug_int0 = 0;
-  static int g_debug_int1 = 0;
+ 
 
   /*************************************************************************************************/
   /*                                  Keyboard control                                             */
@@ -462,10 +488,6 @@ namespace embree
   /*************************************************************************************************/
   /*                                   Mouse control                                               */
   /*************************************************************************************************/
-
-  static int mouseMode = 0;
-  static int clickX = 0, clickY = 0;
-  static bool flip14 = false;
 
   void TutorialApplication::clickFunc(int button, int state, int x, int y) 
   {
@@ -597,28 +619,5 @@ namespace embree
   void TutorialApplication::idleFunc()
   {
     glutPostRedisplay();
-  }
-
-  void TutorialApplication::initWindowState(int& argc, char** argv, const std::string name, const size_t width, const size_t height, const bool fullscreen, const bool mouseMode)
-  {
-    g_width = width;
-    g_height = height;
-    resize(g_width,g_height);
-
-    g_fullscreen = fullscreen;
-    flip14 = mouseMode;
-    glutInit(&argc, argv);
-    glutInitWindowSize((GLsizei)g_width, (GLsizei)g_height);
-    glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-    glutInitWindowPosition(0, 0);
-    g_window = glutCreateWindow(name.c_str());
-    if (g_fullscreen) glutFullScreen();
-    glutDisplayFunc(displayFunc);
-    glutIdleFunc(idleFunc);
-    glutKeyboardFunc(keyboardFunc);
-    glutSpecialFunc(specialFunc);
-    glutMouseFunc(clickFunc);
-    glutMotionFunc(motionFunc);
-    glutReshapeFunc(reshapeFunc);
   }
 }
