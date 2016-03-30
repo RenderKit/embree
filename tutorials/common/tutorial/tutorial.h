@@ -21,7 +21,6 @@
 #include "../../../common/sys/ref.h"
 #include "../../../common/lexers/streamfilters.h"
 #include "../../../common/lexers/parsestream.h"
-#include "glutdisplay.h"
 #include "../transport/transport_host.h"
 #include "scene.h"
 #include "tutorial_device.h"
@@ -31,6 +30,9 @@
 
 namespace embree
 {
+  /* camera */
+  extern Camera g_camera;
+
   class TutorialApplication
   {
   public:
