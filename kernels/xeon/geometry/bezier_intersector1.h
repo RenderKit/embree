@@ -126,8 +126,9 @@ namespace embree
         const BezierCurve3D curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
         Vec3fa P,T; curve3D.eval(uu,P,T);
         if (T != Vec3fa(zero))
-            if (runIntersectionFilter1(geometry,ray,uu,0.0f,t[i],T,geomID,primID)) return;
+          runIntersectionFilter1(geometry,ray,uu,0.0f,t[i],T,geomID,primID);
         valid[i] = 0;
+        valid &= t<ray.tfar;
         if (none(valid)) return;
         i = select_min(valid,t);
         STAT3(normal.trav_prim_hits,1,1,1);
