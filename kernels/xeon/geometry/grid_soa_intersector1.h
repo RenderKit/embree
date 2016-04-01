@@ -76,7 +76,7 @@ namespace embree
         };
 
         PlueckerIntersector1<M> intersector(ray,nullptr);
-        intersector.intersect(ray,v0,v1,v2,mapUV,Intersect1EpilogU<M,true>(ray,pre.grid->geomID,pre.grid->primID,scene,nullptr));
+        intersector.intersect(ray,v0,v1,v2,mapUV,Intersect1EpilogMU<M,true>(ray,pre.grid->geomID,pre.grid->primID,scene,nullptr));
       };
       
       template<typename Loader>
@@ -110,7 +110,7 @@ namespace embree
         };
 
         PlueckerIntersector1<M> intersector(ray,nullptr);
-        return intersector.intersect(ray,v0,v1,v2,mapUV,Occluded1EpilogU<M,true>(ray,pre.grid->geomID,pre.grid->primID,scene,nullptr));
+        return intersector.intersect(ray,v0,v1,v2,mapUV,Occluded1EpilogMU<M,true>(ray,pre.grid->geomID,pre.grid->primID,scene,nullptr));
       }
       
       /*! Intersect a ray with the primitive. */

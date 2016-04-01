@@ -39,7 +39,7 @@ namespace embree
         STAT3(normal.trav_prims,1,1,1);
         const BezierCurves* geom = (BezierCurves*)scene->get(prim.geomID());
         if (likely(geom->subtype == BezierCurves::HAIR))
-          pre.intersectorHair.intersect(ray,prim.p0,prim.p1,prim.p2,prim.p3,geom->tessellationRate,Intersect1EpilogU<VSIZEX,true>(ray,prim.geomID(),prim.primID(),scene,geomID_to_instID));
+          pre.intersectorHair.intersect(ray,prim.p0,prim.p1,prim.p2,prim.p3,geom->tessellationRate,Intersect1EpilogMU<VSIZEX,true>(ray,prim.geomID(),prim.primID(),scene,geomID_to_instID));
         else 
           pre.intersectorCurve.intersect(ray,prim.p0,prim.p1,prim.p2,prim.p3,Intersect1Epilog1<true>(ray,prim.geomID(),prim.primID(),scene,geomID_to_instID));
       }
@@ -49,7 +49,7 @@ namespace embree
         STAT3(shadow.trav_prims,1,1,1);
         const BezierCurves* geom = (BezierCurves*)scene->get(prim.geomID());
         if (likely(geom->subtype == BezierCurves::HAIR))
-          return pre.intersectorHair.intersect(ray,prim.p0,prim.p1,prim.p2,prim.p3,geom->tessellationRate,Occluded1EpilogU<VSIZEX,true>(ray,prim.geomID(),prim.primID(),scene,geomID_to_instID));
+          return pre.intersectorHair.intersect(ray,prim.p0,prim.p1,prim.p2,prim.p3,geom->tessellationRate,Occluded1EpilogMU<VSIZEX,true>(ray,prim.geomID(),prim.primID(),scene,geomID_to_instID));
         else
           return pre.intersectorCurve.intersect(ray,prim.p0,prim.p1,prim.p2,prim.p3,Occluded1Epilog1<true>(ray,prim.geomID(),prim.primID(),scene,geomID_to_instID));
       }
@@ -77,7 +77,7 @@ namespace embree
         STAT3(normal.trav_prims,1,1,1);
         const BezierCurves* geom = (BezierCurves*)scene->get(prim.geomID());
         if (likely(geom->subtype == BezierCurves::HAIR))
-          pre.intersectorHair.intersect(ray,k,prim.p0,prim.p1,prim.p2,prim.p3,geom->tessellationRate,Intersect1KEpilogU<VSIZEX,K,true>(ray,k,prim.geomID(),prim.primID(),scene));
+          pre.intersectorHair.intersect(ray,k,prim.p0,prim.p1,prim.p2,prim.p3,geom->tessellationRate,Intersect1KEpilogMU<VSIZEX,K,true>(ray,k,prim.geomID(),prim.primID(),scene));
         else
           pre.intersectorCurve.intersect(ray,k,prim.p0,prim.p1,prim.p2,prim.p3,Intersect1KEpilog1<K,true>(ray,k,prim.geomID(),prim.primID(),scene));
       }
@@ -93,7 +93,7 @@ namespace embree
         STAT3(shadow.trav_prims,1,1,1);
         const BezierCurves* geom = (BezierCurves*)scene->get(prim.geomID());
          if (likely(geom->subtype == BezierCurves::HAIR))
-           return pre.intersectorHair.intersect(ray,k,prim.p0,prim.p1,prim.p2,prim.p3,geom->tessellationRate,Occluded1KEpilogU<VSIZEX,K,true>(ray,k,prim.geomID(),prim.primID(),scene));
+           return pre.intersectorHair.intersect(ray,k,prim.p0,prim.p1,prim.p2,prim.p3,geom->tessellationRate,Occluded1KEpilogMU<VSIZEX,K,true>(ray,k,prim.geomID(),prim.primID(),scene));
          else
            return pre.intersectorCurve.intersect(ray,k,prim.p0,prim.p1,prim.p2,prim.p3,Occluded1KEpilog1<K,true>(ray,k,prim.geomID(),prim.primID(),scene));
       }

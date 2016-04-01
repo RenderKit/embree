@@ -190,7 +190,7 @@ namespace embree
       };
     
     template<int M, int Mx, bool filter>
-      struct Intersect1Epilog
+      struct Intersect1EpilogM
       {
         Ray& ray;
         const vint<M>& geomIDs;
@@ -198,7 +198,7 @@ namespace embree
         Scene* scene;
         const unsigned* geomID_to_instID;
         
-        __forceinline Intersect1Epilog(Ray& ray,
+        __forceinline Intersect1EpilogM(Ray& ray,
                                        const vint<M>& geomIDs, 
                                        const vint<M>& primIDs, 
                                        Scene* scene,
@@ -214,7 +214,6 @@ namespace embree
           size_t i = select_min(valid,hit.vt);
           int geomID = geomIDs[i];
           int instID = geomID_to_instID ? geomID_to_instID[0] : geomID;
-          //int instID = geomID_to_instID ? (int)(size_t)geomID_to_instID : geomID;
 
           /* intersection filter test */
 #if defined(RTCORE_INTERSECTION_FILTER) || defined(RTCORE_RAY_MASK)
@@ -271,7 +270,7 @@ namespace embree
 
 #if defined(__AVX512F__)
     template<int M, bool filter>
-      struct Intersect1Epilog<M,16,filter>
+      struct Intersect1EpilogM<M,16,filter>
       {
         static const size_t Mx = 16;
         Ray& ray;
@@ -280,7 +279,7 @@ namespace embree
         Scene* scene;
         const unsigned* geomID_to_instID;
         
-        __forceinline Intersect1Epilog(Ray& ray,
+        __forceinline Intersect1EpilogM(Ray& ray,
                                        const vint<M>& geomIDs, 
                                        const vint<M>& primIDs, 
                                        Scene* scene,
@@ -344,7 +343,7 @@ namespace embree
 #endif    
     
     template<int M, int Mx, bool filter>
-      struct Occluded1Epilog
+      struct Occluded1EpilogM
       {
         Ray& ray;
         const vint<M>& geomIDs;
@@ -352,7 +351,7 @@ namespace embree
         Scene* scene;
         const unsigned* geomID_to_instID;
         
-        __forceinline Occluded1Epilog(Ray& ray,
+        __forceinline Occluded1EpilogM(Ray& ray,
                                       const vint<M>& geomIDs, 
                                       const vint<M>& primIDs, 
                                       Scene* scene,
@@ -409,7 +408,7 @@ namespace embree
       };
     
     template<int M, bool filter>
-      struct Intersect1EpilogU
+      struct Intersect1EpilogMU
       {
         Ray& ray;
         const unsigned int geomID;
@@ -417,7 +416,7 @@ namespace embree
         Scene* scene;
         const unsigned* geomID_to_instID;
         
-        __forceinline Intersect1EpilogU(Ray& ray,
+        __forceinline Intersect1EpilogMU(Ray& ray,
                                         const unsigned int geomID, 
                                         const unsigned int primID, 
                                         Scene* scene,
@@ -473,7 +472,7 @@ namespace embree
       };
     
     template<int M, bool filter>
-      struct Occluded1EpilogU
+      struct Occluded1EpilogMU
       {
         Ray& ray;
         const unsigned int geomID;
@@ -481,7 +480,7 @@ namespace embree
         Scene* scene;
         const unsigned* geomID_to_instID;
         
-        __forceinline Occluded1EpilogU(Ray& ray,
+        __forceinline Occluded1EpilogMU(Ray& ray,
                                        const unsigned int geomID, 
                                        const unsigned int primID, 
                                        Scene* scene,
@@ -515,7 +514,7 @@ namespace embree
       };
         
     template<int M, int K, bool filter>
-      struct IntersectKEpilog
+      struct IntersectKEpilogM
       {
         RayK<K>& ray;
         const vint<M>& geomIDs;
@@ -523,7 +522,7 @@ namespace embree
         const int i;
         Scene* const scene;
         
-        __forceinline IntersectKEpilog(RayK<K>& ray,
+        __forceinline IntersectKEpilogM(RayK<K>& ray,
                                        const vint<M>& geomIDs, 
                                        const vint<M>& primIDs, 
                                        int i,
@@ -572,7 +571,7 @@ namespace embree
       };
     
     template<int M, int K, bool filter>
-      struct OccludedKEpilog
+      struct OccludedKEpilogM
       {
         vbool<K>& valid0;
         RayK<K>& ray;
@@ -581,7 +580,7 @@ namespace embree
         const int i;
         Scene* const scene;
         
-        __forceinline OccludedKEpilog(vbool<K>& valid0,
+        __forceinline OccludedKEpilogM(vbool<K>& valid0,
                                       RayK<K>& ray,
                                       const vint<M>& geomIDs, 
                                       const vint<M>& primIDs, 
@@ -623,14 +622,14 @@ namespace embree
       };
     
     template<int M, int K, bool filter>
-      struct IntersectKEpilogU
+      struct IntersectKEpilogMU
       {
         RayK<K>& ray;
         const unsigned int geomID;
         const unsigned int primID;
         Scene* const scene;
         
-        __forceinline IntersectKEpilogU(RayK<K>& ray,
+        __forceinline IntersectKEpilogMU(RayK<K>& ray,
                                         const unsigned int geomID, 
                                         const unsigned int primID, 
                                         Scene* scene)
@@ -675,7 +674,7 @@ namespace embree
       };
     
     template<int M, int K, bool filter>
-      struct OccludedKEpilogU
+      struct OccludedKEpilogMU
       {
         vbool<K>& valid0;
         RayK<K>& ray;
@@ -683,7 +682,7 @@ namespace embree
         const unsigned int primID;
         Scene* const scene;
         
-        __forceinline OccludedKEpilogU(vbool<K>& valid0,
+        __forceinline OccludedKEpilogMU(vbool<K>& valid0,
                                        RayK<K>& ray,
                                        const unsigned int geomID, 
                                        const unsigned int primID, 
@@ -723,7 +722,7 @@ namespace embree
     
     
     template<int M, int Mx, int K, bool filter>
-      struct Intersect1KEpilog
+      struct Intersect1KEpilogM
       {
         RayK<K>& ray;
         int k;
@@ -731,7 +730,7 @@ namespace embree
         const vint<M>& primIDs;
         Scene* const scene;
         
-        __forceinline Intersect1KEpilog(RayK<K>& ray, int k,
+        __forceinline Intersect1KEpilogM(RayK<K>& ray, int k,
                                         const vint<M>& geomIDs, 
                                         const vint<M>& primIDs, 
                                         Scene* scene)
@@ -804,7 +803,7 @@ namespace embree
       };
     
     template<int M, int Mx, int K, bool filter>
-      struct Occluded1KEpilog
+      struct Occluded1KEpilogM
       {
         RayK<K>& ray;
         int k;
@@ -812,7 +811,7 @@ namespace embree
         const vint<M>& primIDs;
         Scene* const scene;
         
-        __forceinline Occluded1KEpilog(RayK<K>& ray, int k,
+        __forceinline Occluded1KEpilogM(RayK<K>& ray, int k,
                                        const vint<M>& geomIDs, 
                                        const vint<M>& primIDs, 
                                        Scene* scene)
@@ -867,7 +866,7 @@ namespace embree
       };
     
     template<int M, int K, bool filter>
-      struct Intersect1KEpilogU
+      struct Intersect1KEpilogMU
       {
         RayK<K>& ray;
         int k;
@@ -875,7 +874,7 @@ namespace embree
         const unsigned int primID;
         Scene* const scene;
         
-        __forceinline Intersect1KEpilogU(RayK<K>& ray, int k,
+        __forceinline Intersect1KEpilogMU(RayK<K>& ray, int k,
                                          const unsigned int geomID, 
                                          const unsigned int primID, 
                                          Scene* scene)
@@ -937,7 +936,7 @@ namespace embree
       };
     
     template<int M, int K, bool filter>
-      struct Occluded1KEpilogU
+      struct Occluded1KEpilogMU
       {
         RayK<K>& ray;
         int k;
@@ -945,7 +944,7 @@ namespace embree
         const unsigned int primID;
         Scene* const scene;
         
-        __forceinline Occluded1KEpilogU(RayK<K>& ray, int k,
+        __forceinline Occluded1KEpilogMU(RayK<K>& ray, int k,
                                         const unsigned int geomID, 
                                         const unsigned int primID, 
                                         Scene* scene)

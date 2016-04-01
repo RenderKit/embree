@@ -63,7 +63,7 @@ namespace embree
             const Vec3<vfloat<K>> p1 = broadcast<vfloat<K>>(quad.v1,i);
             const Vec3<vfloat<K>> p2 = broadcast<vfloat<K>>(quad.v2,i);
             const Vec3<vfloat<K>> p3 = broadcast<vfloat<K>>(quad.v3,i);
-            pre.intersectK(valid_i,ray,p0,p1,p2,p3,IntersectKEpilog<M,K,filter>(ray,quad.geomIDs,quad.primIDs,i,scene));
+            pre.intersectK(valid_i,ray,p0,p1,p2,p3,IntersectKEpilogM<M,K,filter>(ray,quad.geomIDs,quad.primIDs,i,scene));
           }
         }
         
@@ -80,7 +80,7 @@ namespace embree
             const Vec3<vfloat<K>> p1 = broadcast<vfloat<K>>(quad.v1,i);
             const Vec3<vfloat<K>> p2 = broadcast<vfloat<K>>(quad.v2,i);
             const Vec3<vfloat<K>> p3 = broadcast<vfloat<K>>(quad.v3,i);
-            if (pre.intersectK(valid0,ray,p0,p1,p2,p3,OccludedKEpilog<M,K,filter>(valid0,ray,quad.geomIDs,quad.primIDs,i,scene))) 
+            if (pre.intersectK(valid0,ray,p0,p1,p2,p3,OccludedKEpilogM<M,K,filter>(valid0,ray,quad.geomIDs,quad.primIDs,i,scene))) 
               break;
           }
           return !valid0;
