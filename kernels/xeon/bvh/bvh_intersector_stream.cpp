@@ -44,7 +44,7 @@ namespace embree
   namespace isa
   {
 /* experimental fiber mode */
-#define EXPERIMENTAL_FIBER_MODE 0
+#define EXPERIMENTAL_FIBER_MODE 1
 #define NUM_FIBERS 2
 
 /* enable traversal of either two small streams or one large stream */
@@ -72,56 +72,59 @@ namespace embree
       StackItemT<NodeRef> stack[2][stackSize];           //!< stack of nodes 
       TraversalContext contexts[2];
       size_t ctxID = 0;
-      TraversalContext* ctx = &contexts[ctxID];
+      //TraversalContext* ctx = &contexts[ctxID];
+      TraversalContext ctx;
       //TraversalContext context; TraversalContext* ctx = &context;
       
 #if FIBERING == 0
       for (size_t r=0; r<numTotalRays; r++)
       {
-        ctx->init((Ray&)*input_rays[r],bvh,stack[ctxID]);
+        ctx.init((Ray&)*input_rays[r],bvh,stack[ctxID]);
 #else
       size_t r = 0;
       {
         if (r >= numTotalRays) return;
-        ctx->init((Ray&)*input_rays[r++],bvh,stack[ctxID]);
+        contexts[ctxID].init((Ray&)*input_rays[r++],bvh,stack[ctxID]);
         if (r < numTotalRays) {
           ctxID =(ctxID+1)%2;
-          ctx = &contexts[ctxID];
-          ctx->init((Ray&)*input_rays[r++],bvh,stack[ctxID]);
+          //ctx = &contexts[ctxID];
+          contexts[ctxID].init((Ray&)*input_rays[r++],bvh,stack[ctxID]);
         }
+        ctx = contexts[ctxID];
 #endif
        
         /* pop loop */
         while (true) pop:
         {
           /*! pop next node */
-          if (unlikely(ctx->stackPtr == ctx->stackBegin)) 
+          if (unlikely(ctx.stackPtr == ctx.stackBegin)) 
 #if FIBERING == 0
             break;
 #else
           {
             /* fill in new ray */
             if (likely(r < numTotalRays))
-              ctx->init((Ray&)*input_rays[r++],bvh,stack[ctxID]);
+              ctx.init((Ray&)*input_rays[r++],bvh,stack[ctxID]);
             
             /* terminate fiber */
             else 
             {
-              ctx->pray = nullptr;
+              ctx.pray = nullptr;
+              contexts[ctxID] = ctx;
 
               /* switch to next fiber */
               ctxID =(ctxID+1)%2;
-              ctx = &contexts[ctxID];
-              if (ctx->pray == nullptr) break;
+              ctx = contexts[ctxID];
+              if (ctx.pray == nullptr) break;
             }
             continue;
           }
 #endif
-          ctx->stackPtr--;
-          NodeRef cur = NodeRef(ctx->stackPtr->ptr);
+          ctx.stackPtr--;
+          NodeRef cur = NodeRef(ctx.stackPtr->ptr);
           
           /*! if popped node is too far, pop next one */
-          if (unlikely(*(float*)&ctx->stackPtr->dist > ctx->pray->tfar))
+          if (unlikely(*(float*)&ctx.stackPtr->dist > ctx.pray->tfar))
             continue;
           
           /* downtraversal loop */
@@ -135,7 +138,8 @@ namespace embree
             STAT3(normal.trav_nodes,1,1,1);
             
             /* intersect node */
-            bool nodeIntersected = BVHNNodeIntersector1<N,N,types,robust>::intersect(cur,ctx->vray,ctx->ray_near,ctx->ray_far,ctx->pray->time,tNear,mask);
+            asm("nop");
+            bool nodeIntersected = BVHNNodeIntersector1<N,N,types,robust>::intersect(cur,ctx.vray,ctx.ray_near,ctx.ray_far,ctx.pray->time,tNear,mask);
             if (unlikely(!nodeIntersected)) break;
             
             /*! if no child is hit, pop next node */
@@ -143,10 +147,10 @@ namespace embree
               goto pop;
       
             /*! initialize the node traverser */
-            BVHNNodeTraverser1<N,N,types> nodeTraverser(ctx->vray);
+            BVHNNodeTraverser1<N,N,types> nodeTraverser(ctx.vray);
       
             /* select next child and push other children */
-            nodeTraverser.traverseClosestHit(cur,mask,tNear,ctx->stackPtr,ctx->stackEnd);
+            nodeTraverser.traverseClosestHit(cur,mask,tNear,ctx.stackPtr,ctx.stackEnd);
             
 #if 0 //FIBERING
             /* switch to other fiber */
@@ -154,11 +158,12 @@ namespace embree
             if (unlikely(contexts[nextCtxID].pray))
             {
               /* suspend current fiber */
-              ctx->stackPtr->ptr = cur; ctx->stackPtr->dist = neg_inf; ctx->stackPtr++;
-              
+              ctx.stackPtr->ptr = cur; ctx.stackPtr->dist = neg_inf; ctx.stackPtr++;
+              contexts[ctxID] = ctx;
+
               /* switch to next fiber */
               ctxID = nextCtxID;
-              ctx = &contexts[ctxID];
+              ctx = contexts[ctxID];
               goto pop;
             } 
 #endif
@@ -167,18 +172,19 @@ namespace embree
 #if FIBERING
           /* switch to other fiber */
           size_t nextCtxID=(ctxID+1)%2;
-          if (!ctx->suspended && unlikely(contexts[nextCtxID].pray))
+          if (!ctx.suspended && unlikely(contexts[nextCtxID].pray))
           {
             /* suspend current fiber */
-            ctx->stackPtr->ptr = cur; ctx->stackPtr->dist = neg_inf; ctx->stackPtr++;
-            ctx->suspended = true;
+            ctx.stackPtr->ptr = cur; ctx.stackPtr->dist = neg_inf; ctx.stackPtr++;
+            ctx.suspended = true;
+            contexts[ctxID] = ctx;
             
             /* switch to next fiber */
             ctxID = nextCtxID;
-            ctx = &contexts[ctxID];
+            ctx = contexts[ctxID];
             goto pop;
           } 
-          ctx->suspended = false;
+          ctx.suspended = false;
 #endif
     
           /*! this is a leaf node */
@@ -186,8 +192,8 @@ namespace embree
           STAT3(normal.trav_leaves,1,1,1);
           size_t num; Primitive* prim = (Primitive*) cur.leaf(num);
           size_t lazy_node = 0;
-          PrimitiveIntersector::intersect(ctx->pre,*ctx->pray,0,prim,num,bvh->scene,nullptr,lazy_node);
-          ctx->ray_far = ctx->pray->tfar;
+          PrimitiveIntersector::intersect(ctx.pre,*ctx.pray,0,prim,num,bvh->scene,nullptr,lazy_node);
+          ctx.ray_far = ctx.pray->tfar;
         }
       }
       AVX_ZERO_UPPER();
