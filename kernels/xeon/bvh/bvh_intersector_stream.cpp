@@ -508,7 +508,7 @@ namespace embree
 
 #endif
 
-#if 1
+#if 0
     
     template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
     void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::occluded(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, size_t flags)
@@ -830,7 +830,7 @@ namespace embree
 #endif
 
 
-#if 0
+#if 1
 
     /* experimental multi-stack mode */
     template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
@@ -879,6 +879,7 @@ namespace embree
 
             /* pop next node from stack */
             Ray& ray = *rays[r];
+            NodeRef* stackr = stack[r];
             const RayContext& rayctx = ray_ctx[r];
             ssize_t sptr = stack_ptr[r];
             NodeRef cur = stack[r][--sptr];
@@ -908,15 +909,47 @@ namespace embree
             const vfloat<K> tFar   = min(tFarX ,tFarY ,tFarZ ,vfloat<K>(ray.tfar));
             const vbool<K> vmask   = tNear <= tFar;
 #endif
+             size_t mask = movemask(vmask);
+
+#if 0
+            /* no child hit case */
+            if (unlikely(mask == 0)) 
+            {
+              /* terminate rays */
+              stack_ptr[r] = sptr;
+              if (unlikely(sptr == 0)) continue;
+              
+              /* continue rays */
+              NodeRef next = stackr[sptr-1];
+              next.prefetch_L1();
+              const int q = next.isLeaf() != 0;
+              queue_right[0] = trav_queue_right;
+              queue[q][queue_right[q]++  % queue_size ] = r;
+              trav_queue_right = queue_right[0];
+              continue;
+            }
+#endif
             
+            /*! two children are hit */
+            /*const size_t r0 = __bscf(mask);          
+            NodeRef c0 = node->child(r0); 
+            const size_t r1 = __bscf(mask);
+            NodeRef c1 = node->child(r1); 
+            if (likely(mask == 0)) {
+              stackr[sptr++] = node->child(0);
+              }*/
+
+            
+            //if (mask & 1) 
+           
             /* push nodes to stack */
-            stack[r][sptr] = node->child(0);
+            stackr[sptr] = node->child(0);
             sptr += vmask[0] & 1;
-            stack[r][sptr] = node->child(1); 
+            stackr[sptr] = node->child(1); 
             sptr += vmask[1] & 1;
-            stack[r][sptr] = node->child(2); 
+            stackr[sptr] = node->child(2); 
             sptr += vmask[2] & 1;
-            stack[r][sptr] = node->child(3); 
+            stackr[sptr] = node->child(3); 
             sptr += vmask[3] & 1;
 
             /* terminate rays */
@@ -924,7 +957,7 @@ namespace embree
             if (unlikely(sptr == 0)) continue;
 
             /* continue rays */
-            NodeRef next = stack[r][sptr-1];
+            NodeRef next = stackr[sptr-1];
             next.prefetch_L1();
             const int q = next.isLeaf() != 0;
             queue_right[0] = trav_queue_right;
@@ -939,10 +972,11 @@ namespace embree
             /* take next ray */
             const int r = queue[1][queue_left[1] % queue_size];
             queue_left[1]++;
+            NodeRef* stackr = stack[r];
             
             /* pop next node from stack */
             ssize_t sptr = stack_ptr[r];
-            NodeRef cur = stack[r][--sptr];
+            NodeRef cur = stackr[--sptr];
 
             /* primitive intersection */
             size_t lazy_node = 0;
@@ -957,7 +991,7 @@ namespace embree
             if (unlikely(sptr == 0)) continue;
 
             /* continue rays */
-            NodeRef next = stack[r][sptr-1];
+            NodeRef next = stackr[sptr-1];
             next.prefetch_L1();
             const int q = next.isLeaf() != 0;
             queue[q][queue_right[q]++  % queue_size ] = r;

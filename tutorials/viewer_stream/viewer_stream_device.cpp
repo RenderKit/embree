@@ -247,8 +247,10 @@ void renderTileStandard(int taskIndex,
   RTCRay rays[TILE_SIZE_X*TILE_SIZE_Y];
 
   /* generate stream of primary rays */
+  for (size_t i=0; i<1; i++)
+  {
   int N = 0;
-  for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
+  for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++) 
   {
     /* ISPC workaround for mask == 0 */
     if (all(1 == 0)) continue;
@@ -300,6 +302,7 @@ void renderTileStandard(int taskIndex,
     unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
     unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
     pixels[y*width+x] = (b << 16) + (g << 8) + r;
+  }
   }
 }
 
