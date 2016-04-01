@@ -72,8 +72,8 @@ namespace embree
       StackItemT<NodeRef> stack[2][stackSize];           //!< stack of nodes 
       TraversalContext contexts[2];
       size_t ctxID = 0;
-      //TraversalContext* ctx = &contexts[ctxID];
-      TraversalContext context; TraversalContext* ctx = &context;
+      TraversalContext* ctx = &contexts[ctxID];
+      //TraversalContext context; TraversalContext* ctx = &context;
       
 #if FIBERING == 0
       for (size_t r=0; r<numTotalRays; r++)
