@@ -44,7 +44,7 @@ namespace embree
   namespace isa
   {
 /* experimental fiber mode */
-#define EXPERIMENTAL_FIBER_MODE 1
+#define EXPERIMENTAL_FIBER_MODE 0
 #define NUM_FIBERS 2
 
 /* enable traversal of either two small streams or one large stream */
@@ -514,7 +514,7 @@ namespace embree
 
 #endif
 
-#if 0
+#if 1
     
     template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
     void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::occluded(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, size_t flags)
@@ -836,7 +836,7 @@ namespace embree
 #endif
 
 
-#if 1
+#if 0
 
     /* experimental multi-stack mode */
     template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
