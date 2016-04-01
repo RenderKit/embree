@@ -873,6 +873,8 @@ namespace embree
           /* traverse all rays */
           while (trav_queue_right-trav_queue_left)
           {
+            STAT3(shadow.trav_nodes,1,1,1);
+            
             /* take next ray */
             const int r = queue[0][trav_queue_left % queue_size];
             trav_queue_left++;
@@ -970,6 +972,8 @@ namespace embree
           /* intersect all rays */
           while (queue_right[1]-queue_left[1])
           {
+            STAT3(shadow.trav_leaves,1,1,1);
+
             /* take next ray */
             const int r = queue[1][queue_left[1] % queue_size];
             queue_left[1]++;

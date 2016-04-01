@@ -351,6 +351,8 @@ extern "C" void device_render (int* pixels,
     for (size_t i=range.begin(); i<range.end(); i++)
       renderTileTask(i,pixels,width,height,time,camera,numTilesX,numTilesY);
   }); 
+  //usleep(100000);
+  rtcDebug();
 }
 
 /* called by the C++ code for cleanup */
