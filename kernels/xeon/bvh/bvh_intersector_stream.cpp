@@ -939,18 +939,19 @@ namespace embree
               stackr[sptr++] = node->child(0);
               }*/
 
-            
-            //if (mask & 1) 
            
             /* push nodes to stack */
-            stackr[sptr] = node->child(0);
-            sptr += vmask[0] & 1;
-            stackr[sptr] = node->child(1); 
-            sptr += vmask[1] & 1;
-            stackr[sptr] = node->child(2); 
-            sptr += vmask[2] & 1;
-            stackr[sptr] = node->child(3); 
-            sptr += vmask[3] & 1;
+#if 0
+            if (mask & 1) stackr[sptr++] = node->child(0); 
+            if (mask & 2) stackr[sptr++] = node->child(1); 
+            if (mask & 4) stackr[sptr++] = node->child(2); 
+            if (mask & 8) stackr[sptr++] = node->child(3); 
+#else      
+            stackr[sptr] = node->child(0); sptr += vmask[0] & 1;
+            stackr[sptr] = node->child(1); sptr += vmask[1] & 1;
+            stackr[sptr] = node->child(2); sptr += vmask[2] & 1;
+            stackr[sptr] = node->child(3); sptr += vmask[3] & 1;
+#endif
 
             /* terminate rays */
             stack_ptr[r] = sptr;
