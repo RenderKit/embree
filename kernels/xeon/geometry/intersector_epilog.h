@@ -218,10 +218,11 @@ namespace embree
 
           /* intersection filter test */
 #if defined(RTCORE_INTERSECTION_FILTER) || defined(RTCORE_RAY_MASK)
+          bool foundhit = false;
           goto entry;
           while (true) 
           {
-            if (unlikely(none(valid))) return false;
+            if (unlikely(none(valid))) return foundhit;
             i = select_min(valid,hit.vt);
 
             geomID = geomIDs[i];
@@ -242,8 +243,9 @@ namespace embree
             if (filter) {
               if (unlikely(geometry->hasIntersectionFilter1())) {
                 const Vec2f uv = hit.uv(i);
-                if (runIntersectionFilter1(geometry,ray,uv.x,uv.y,hit.t(i),hit.Ng(i),instID,primIDs[i])) return true;
+                foundhit |= runIntersectionFilter1(geometry,ray,uv.x,uv.y,hit.t(i),hit.Ng(i),instID,primIDs[i]);
                 clear(valid,i);
+                valid &= hit.vt < ray.tfar; // intersection filters may modify tfar value
                 continue;
               }
             }
@@ -297,10 +299,11 @@ namespace embree
 
           /* intersection filter test */
 #if defined(RTCORE_INTERSECTION_FILTER) || defined(RTCORE_RAY_MASK)
+          bool foundhit = false;
           goto entry;
           while (true) 
           {
-            if (unlikely(none(valid))) return false;
+            if (unlikely(none(valid))) return foundhit;
             i = select_min(valid,hit.vt);
 
             geomID = geomIDs[i];
@@ -321,8 +324,9 @@ namespace embree
             if (filter) {
               if (unlikely(geometry->hasIntersectionFilter1())) {
                 const Vec2f uv = hit.uv(i);
-                if (runIntersectionFilter1(geometry,ray,uv.x,uv.y,hit.t(i),hit.Ng(i),instID,primIDs[i])) return true;
+                foundhit |= runIntersectionFilter1(geometry,ray,uv.x,uv.y,hit.t(i),hit.Ng(i),instID,primIDs[i]);
                 clear(valid,i);
+                valid &= hit.vt < ray.tfar; // intersection filters may modify tfar value
                 continue;
               }
             }
@@ -438,18 +442,18 @@ namespace embree
 #if defined(RTCORE_INTERSECTION_FILTER)
           if (unlikely(geometry->hasIntersectionFilter1())) 
           {
+            bool foundhit = false;
             while (true) 
             {
               /* call intersection filter function */
               Vec2f uv = hit.uv(i);
-              if (runIntersectionFilter1(geometry,ray,uv.x,uv.y,hit.t(i),hit.Ng(i),geomID,primID)) {
-                return true;
-              }
+              foundhit |= runIntersectionFilter1(geometry,ray,uv.x,uv.y,hit.t(i),hit.Ng(i),geomID,primID);
               clear(valid,i);
+              valid &= hit.vt < ray.tfar; // intersection filters may modify tfar value
               if (unlikely(none(valid))) break;
               i = select_min(valid,hit.vt);
             }
-            return false;
+            return foundhit;
           }
 #endif
           
@@ -745,10 +749,11 @@ namespace embree
           
           /* intersection filter test */
 #if defined(RTCORE_INTERSECTION_FILTER) || defined(RTCORE_RAY_MASK)
+          bool foundhit = false;
           goto entry;
           while (true) 
           {
-            if (unlikely(none(valid))) return false;
+            if (unlikely(none(valid))) return foundhit;
             i = select_min(valid,hit.vt);
             assert(i<M);            
             geomID = geomIDs[i];
@@ -769,8 +774,9 @@ namespace embree
               if (unlikely(geometry->hasIntersectionFilter<vfloat<K>>())) {
                 assert(i<M);
                 const Vec2f uv = hit.uv(i);
-                if (runIntersectionFilter(geometry,ray,k,uv.x,uv.y,hit.t(i),hit.Ng(i),geomID,primIDs[i])) return true;
+                foundhit |= runIntersectionFilter(geometry,ray,k,uv.x,uv.y,hit.t(i),hit.Ng(i),geomID,primIDs[i]);
                 clear(valid,i);
+                valid &= hit.vt < ray.tfar[k]; // intersection filters may modify tfar value
                 continue;
               }
             }
@@ -895,16 +901,17 @@ namespace embree
           if (filter) {
             if (unlikely(geometry->hasIntersectionFilter<vfloat<K>>())) 
             {
+              bool foundhit = false;
               while (true) 
               {
                 const Vec2f uv = hit.uv(i);
-                if (runIntersectionFilter(geometry,ray,k,uv.x,uv.y,hit.t(i),hit.Ng(i),geomID,primID)) return true;
+                foundhit |= runIntersectionFilter(geometry,ray,k,uv.x,uv.y,hit.t(i),hit.Ng(i),geomID,primID);
                 clear(valid,i);
-
+                valid &= hit.vt < ray.tfar[k]; // intersection filters may modify tfar value
                 if (unlikely(none(valid))) break;
                 i = select_min(valid,hit.vt);
               }
-              return false;
+              return foundhit;
             }
           }
 #endif
