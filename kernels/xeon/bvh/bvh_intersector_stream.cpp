@@ -48,7 +48,7 @@ namespace embree
 #define FIBERING 1
 
 /* enable traversal of either two small streams or one large stream */
-#define TWO_STREAMS_FIBER_MODE 0
+#define TWO_STREAMS_FIBER_MODE 0 // 0 = no fiber, 1 = switch at pop, 2 = switch at each node, 3 = switch at leaf
 #define SINGLE_RAY_OPTIMIZATION 0
 
 #if defined(__AVX__)
@@ -237,7 +237,7 @@ namespace embree
 
         const NearFarPreCompute pc(ray_ctx[0].rdir);
 
-#if TWO_STREAMS_FIBER_MODE == 0 
+#if !TWO_STREAMS_FIBER_MODE
         const size_t fiberMask = m_active;
 #else
         const size_t fiberMask = ((size_t)1 << ((__popcnt(m_active)+1)>>1))-1;
@@ -271,7 +271,7 @@ namespace embree
 
         while (1) pop:
         {          
-#if TWO_STREAMS_FIBER_MODE
+#if TWO_STREAMS_FIBER_MODE == 1
           cur_fiber = cur_fiber->swapContext(cur,m_trav_active,stackPtr);
 #endif
 
@@ -346,7 +346,7 @@ namespace embree
           while (1)
           {
             /* context swap */
-#if TWO_STREAMS_FIBER_MODE
+#if TWO_STREAMS_FIBER_MODE == 2
             cur_fiber = cur_fiber->swapContext(cur,m_trav_active,stackPtr);
 #endif
 
@@ -473,16 +473,18 @@ namespace embree
             else
             {
               cur_fiber->next->next = cur_fiber->next;
-              //cur_fiber = cur_fiber->swapContext(cur,m_trav_active,stackPtr);
+#if TWO_STREAMS_FIBER_MODE == 3
+              cur_fiber = cur_fiber->swapContext(cur,m_trav_active,stackPtr);
+#endif
               goto pop;
             }
 #endif
           }
 
-/*#if TWO_STREAMS_FIBER_MODE
+#if TWO_STREAMS_FIBER_MODE == 3
           cur_fiber = cur_fiber->swapContext(cur,m_trav_active,stackPtr);
           if (unlikely(!cur.isLeaf())) continue;
-          #endif*/
+#endif
 
           /*! this is a leaf node */
           assert(cur != BVH::emptyNode);
@@ -588,6 +590,9 @@ namespace embree
 
         while (1) pop:
         {
+#if TWO_STREAMS_FIBER_MODE == 1
+            cur_fiber = cur_fiber->swapContext(cur,m_trav_active,stackPtr);
+#endif
           const vfloat<K> inf(pos_inf);
 
 #if SINGLE_RAY_OPTIMIZATION && !defined(__AVX512F__)
@@ -661,7 +666,7 @@ namespace embree
 
           while (1)
           {
-#if TWO_STREAMS_FIBER_MODE
+#if TWO_STREAMS_FIBER_MODE == 2
             cur_fiber = cur_fiber->swapContext(cur,m_trav_active,stackPtr);
 #endif
 
@@ -795,10 +800,18 @@ namespace embree
             else
             {
               cur_fiber->next->next = cur_fiber->next;
+#if TWO_STREAMS_FIBER_MODE == 3
+              cur_fiber = cur_fiber->swapContext(cur,m_trav_active,stackPtr);
+#endif
               goto pop;
             }
 #endif
           }
+
+#if TWO_STREAMS_FIBER_MODE == 3
+          cur_fiber = cur_fiber->swapContext(cur,m_trav_active,stackPtr);
+          if (unlikely(!cur.isLeaf())) continue;
+#endif
 
           /*! this is a leaf node */
           assert(cur != BVH::emptyNode);
