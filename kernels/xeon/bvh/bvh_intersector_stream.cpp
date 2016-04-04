@@ -44,7 +44,7 @@ namespace embree
   namespace isa
   {
 /* experimental fiber mode */
-#define EXPERIMENTAL_FIBER_MODE 0
+#define EXPERIMENTAL_FIBER_MODE 1
 #define NUM_FIBERS 2
 
 /* enable traversal of either two small streams or one large stream */
@@ -60,7 +60,7 @@ namespace embree
 #endif
     
 
-#if EXPERIMENTAL_FIBER_MODE == 1
+#if EXPERIMENTAL_FIBER_MODE == 0
     /* pure fiber mode, no streams */
 
 #if 1
@@ -76,31 +76,23 @@ namespace embree
       TraversalContext ctx;
       //TraversalContext context; TraversalContext* ctx = &context;
       
-#if FIBERING == 0
-      for (size_t r=0; r<numTotalRays; r++)
-      {
-        ctx.init((Ray&)*input_rays[r],bvh,stack[ctxID]);
-#else
       size_t r = 0;
       {
         if (r >= numTotalRays) return;
         contexts[ctxID].init((Ray&)*input_rays[r++],bvh,stack[ctxID]);
+#if FIBERING
         if (r < numTotalRays) {
           ctxID =(ctxID+1)%2;
-          //ctx = &contexts[ctxID];
           contexts[ctxID].init((Ray&)*input_rays[r++],bvh,stack[ctxID]);
         }
-        ctx = contexts[ctxID];
 #endif
+        ctx = contexts[ctxID];
        
         /* pop loop */
         while (true) pop:
         {
           /*! pop next node */
           if (unlikely(ctx.stackPtr == ctx.stackBegin)) 
-#if FIBERING == 0
-            break;
-#else
           {
             /* fill in new ray */
             if (likely(r < numTotalRays))
@@ -113,13 +105,15 @@ namespace embree
               contexts[ctxID] = ctx;
 
               /* switch to next fiber */
+#if FIBERING
               ctxID =(ctxID+1)%2;
               ctx = contexts[ctxID];
+#endif
               if (ctx.pray == nullptr) break;
             }
             continue;
           }
-#endif
+
           ctx.stackPtr--;
           NodeRef cur = NodeRef(ctx.stackPtr->ptr);
           
@@ -151,21 +145,23 @@ namespace embree
       
             /* select next child and push other children */
             nodeTraverser.traverseClosestHit(cur,mask,tNear,ctx.stackPtr,ctx.stackEnd);
+      
+#if 0 && FIBERING
+          /* switch to other fiber */
+          size_t nextCtxID=(ctxID+1)%2;
+          if (!ctx.suspended && unlikely(contexts[nextCtxID].pray))
+          {
+            /* suspend current fiber */
+            ctx.stackPtr->ptr = cur; ctx.stackPtr->dist = neg_inf; ctx.stackPtr++;
+            ctx.suspended = true;
+            contexts[ctxID] = ctx;
             
-#if 0 //FIBERING
-            /* switch to other fiber */
-            size_t nextCtxID=(ctxID+1)%2;
-            if (unlikely(contexts[nextCtxID].pray))
-            {
-              /* suspend current fiber */
-              ctx.stackPtr->ptr = cur; ctx.stackPtr->dist = neg_inf; ctx.stackPtr++;
-              contexts[ctxID] = ctx;
-
-              /* switch to next fiber */
-              ctxID = nextCtxID;
-              ctx = contexts[ctxID];
-              goto pop;
-            } 
+            /* switch to next fiber */
+            ctxID = nextCtxID;
+            ctx = contexts[ctxID];
+            goto pop;
+          } 
+          ctx.suspended = false;
 #endif
           }
       
@@ -174,6 +170,12 @@ namespace embree
           size_t nextCtxID=(ctxID+1)%2;
           if (!ctx.suspended && unlikely(contexts[nextCtxID].pray))
           {
+            size_t num; Primitive* prim = (Primitive*) cur.leaf(num);
+            for (size_t i=0; i<num; i++) {
+              for (size_t j=0; j<=sizeof(Primitive); j+=64)
+                prefetchL2((char*)&prim[i]+j);
+            }
+
             /* suspend current fiber */
             ctx.stackPtr->ptr = cur; ctx.stackPtr->dist = neg_inf; ctx.stackPtr++;
             ctx.suspended = true;
