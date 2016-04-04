@@ -457,7 +457,9 @@ namespace embree
             assert(m_trav_active);
 #endif
           }
+#if SINGLE_RAY_OPTIMIZATION
         leaf:
+#endif
 
           /* current ray stream is done? */
           if (unlikely(cur == BVH::invalidNode))
