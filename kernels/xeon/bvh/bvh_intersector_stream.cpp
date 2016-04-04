@@ -45,10 +45,10 @@ namespace embree
   {
 /* experimental fiber mode */
 #define EXPERIMENTAL_FIBER_MODE 0
-#define FIBERING 0
+#define FIBERING 1
 
 /* enable traversal of either two small streams or one large stream */
-#define TWO_STREAMS_FIBER_MODE 0
+#define TWO_STREAMS_FIBER_MODE 1
 #define SINGLE_RAY_OPTIMIZATION 0
 
 #if defined(__AVX__)
@@ -470,10 +470,16 @@ namespace embree
             else
             {
               cur_fiber->next->next = cur_fiber->next;
+              //cur_fiber = cur_fiber->swapContext(cur,m_trav_active,stackPtr);
               goto pop;
             }
 #endif
           }
+
+/*#if TWO_STREAMS_FIBER_MODE == 1
+          cur_fiber = cur_fiber->swapContext(cur,m_trav_active,stackPtr);
+          if (unlikely(!cur.isLeaf())) continue;
+          #endif*/
 
           /*! this is a leaf node */
           assert(cur != BVH::emptyNode);
