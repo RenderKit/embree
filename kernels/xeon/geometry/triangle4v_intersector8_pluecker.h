@@ -281,8 +281,9 @@ namespace embree
         }
 
         const Vec3fa N(Ng.x[i],Ng.y[i],Ng.z[i]);
-        if (runIntersectionFilter8(geometry,ray,k,u[i],v[i],t[i],N,geomID,tri.primID<list>(i))) return;
+        runIntersectionFilter8(geometry,ray,k,u[i],v[i],t[i],N,geomID,tri.primID<list>(i));
         valid[i] = 0;
+        valid &= t<ray.tfar[k];
         if (unlikely(none(valid))) return;
         i = select_min(valid,t);
         geomID = tri.geomID<list>(i);

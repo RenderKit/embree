@@ -135,6 +135,17 @@ extern "C" void device_init (int8* cfg)
   //renderPixel = renderPixelEyeLight;	
 }
 
+/*void intersectionFilter(void* This, RTCRay& ray)
+{
+  bool backface = dot(ray.Ng,ray.dir) > 0.0f;
+  if (backface) ray.tfar = 1.001f*ray.tfar;
+  if (backface && ray.tfar > ray.time) {
+    ray.geomID = RTC_INVALID_GEOMETRY_ID;
+  } else {
+    ray.time = ray.tfar;
+  }
+  }*/
+
 RTCScene convertScene(ISPCScene* scene_in)
 {
   /* create scene */
@@ -171,9 +182,13 @@ RTCScene convertScene(ISPCScene* scene_in)
       triangles[j].v0 = mesh->triangles[j].v0;
       triangles[j].v1 = mesh->triangles[j].v1;
       triangles[j].v2 = mesh->triangles[j].v2;
+      /*triangles[mesh->numTriangles+j].v0 = mesh->triangles[j].v1;
+      triangles[mesh->numTriangles+j].v1 = mesh->triangles[j].v0;
+      triangles[mesh->numTriangles+j].v2 = mesh->triangles[j].v2;*/
     }
     rtcUnmapBuffer(scene_out,geometry,RTC_INDEX_BUFFER);
 #endif
+    //rtcSetIntersectionFilterFunction(scene_out,geometry,intersectionFilter);
   }
 
   /* commit changes to scene */
@@ -199,6 +214,10 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   
   /* shade background black */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(0.0f);
+  
+  /*float d = dot(normalize(ray.Ng),ray.dir);
+  if (d < 0.0f) return abs(d)*Vec3f(0.0f,1.0f,0.0f);
+  else          return abs(d)*Vec3f(1.0f,0.0f,0.0f);*/
   
   /* shade all rays that hit something */
   Vec3fa color = Vec3fa(0.0f);
