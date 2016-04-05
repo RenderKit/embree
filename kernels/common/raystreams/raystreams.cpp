@@ -27,6 +27,12 @@ namespace embree
 
     void RayStream::filterAOS(Scene *scene, RTCRay* _rayN, const size_t N, const size_t stride, const size_t flags, const bool intersect)
     {
+      /* fast path for very small ray packets */
+      if (likely(N == 1)) {
+        if (intersect) scene->intersect(*_rayN);
+        else           scene->occluded (*_rayN);
+        return;
+      }
 #if 0
       Ray* __restrict__ rayN = (Ray*)_rayN;
       __aligned(64) Ray* octants[MAX_RAYS_PER_OCTANT];
