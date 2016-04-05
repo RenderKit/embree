@@ -27,6 +27,37 @@ namespace embree
 
     void RayStream::filterAOS(Scene *scene, RTCRay* _rayN, const size_t N, const size_t stride, const size_t flags, const bool intersect)
     {
+#if 0
+      Ray* __restrict__ rayN = (Ray*)_rayN;
+      __aligned(64) Ray* octants[MAX_RAYS_PER_OCTANT];
+      unsigned int rays_in_octant = 0;
+      
+      size_t inputRayID = 0;
+      while(1)
+      {
+        /* sort rays into octants */
+        for (;inputRayID<N;)
+        {
+          Ray &ray = *(Ray*)((char*)rayN + inputRayID * stride);
+          /* skip invalid rays */
+          if (unlikely(ray.tnear > ray.tfar)) { inputRayID++; continue; }
+          octants[rays_in_octant++] = &ray;
+          inputRayID++;
+          if (unlikely(rays_in_octant == MAX_RAYS_PER_OCTANT))
+            break;
+        }
+        if (rays_in_octant == 0) 
+          break;
+        
+        if (intersect)
+          scene->intersectN((RTCRay**)&octants[0],rays_in_octant,flags);
+        else
+          scene->occludedN((RTCRay**)&octants[0],rays_in_octant,flags);
+
+        rays_in_octant = 0;
+      }
+
+#else
       Ray* __restrict__ rayN = (Ray*)_rayN;
       __aligned(64) Ray* octants[8][MAX_RAYS_PER_OCTANT];
       unsigned int rays_in_octant[8];
@@ -83,6 +114,7 @@ namespace embree
         rays_in_octant[cur_octant] = 0;
 
       }
+#endif
     }
 
 
