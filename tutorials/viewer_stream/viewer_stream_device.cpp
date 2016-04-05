@@ -19,7 +19,7 @@
 #include "../common/tutorial/random_sampler.h"
 #include "../pathtracer/shapesampler.h"
 
-#define USE_INTERFACE 2 // 0 = stream, 1 = single rays/packets, 2 = single rays/packets using stream interface
+#define USE_INTERFACE 0 // 0 = stream, 1 = single rays/packets, 2 = single rays/packets using stream interface
 #define AMBIENT_OCCLUSION_SAMPLES 64
 //#define rtcOccluded rtcIntersect
 //#define rtcOccludedN rtcIntersectN
