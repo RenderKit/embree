@@ -281,6 +281,7 @@ namespace embree
 
           if (likely(__popcnt(m_trav_active) == 1))
           {
+            const size_t current_trav_active = m_trav_active;
             const size_t i = __bsf(m_trav_active);
             const RayContext &ray = ray_ctx[i];
             const vfloat<K> ray_org_rdir_x = ray.org_rdir.x;
@@ -333,7 +334,8 @@ namespace embree
                 cur = NodeRef(stackPtr->ptr);
                 m_trav_active = stackPtr->mask;
                 assert(m_trav_active);
-                goto pop;
+                if (unlikely(current_trav_active != m_trav_active)) goto pop;
+                continue;
               }
               
               BVHNNodeTraverserKHit<types,N,K>::traverseClosestHit(cur, m_trav_active, vmask, tNear, (unsigned int*)&maskK, stackPtr);
