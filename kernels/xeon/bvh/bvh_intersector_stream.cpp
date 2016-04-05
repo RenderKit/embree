@@ -347,6 +347,7 @@ namespace embree
           {
             /* context swap */
 #if TWO_STREAMS_FIBER_MODE == 2
+            //cur.prefetch_L1(types);
             cur_fiber = cur_fiber->swapContext(cur,m_trav_active,stackPtr);
 #endif
 
