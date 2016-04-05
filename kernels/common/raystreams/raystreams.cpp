@@ -23,8 +23,6 @@ namespace embree
 
   namespace isa
   {
-
-
     void RayStream::filterAOS(Scene *scene, RTCRay* _rayN, const size_t N, const size_t stride, const size_t flags, const bool intersect)
     {
       /* fast path for very small ray packets */
@@ -33,6 +31,7 @@ namespace embree
         else           scene->occluded (*_rayN);
         return;
       }
+
 #if 0
       Ray* __restrict__ rayN = (Ray*)_rayN;
       __aligned(64) Ray* octants[MAX_RAYS_PER_OCTANT];
@@ -112,11 +111,19 @@ namespace embree
         Ray** rays = &octants[cur_octant][0];
         const size_t numOctantRays = rays_in_octant[cur_octant];
 
-        if (intersect)
-          scene->intersectN((RTCRay**)rays,numOctantRays,flags);
+        /* special codepath for very small number of rays per octant */
+        if (numOctantRays == 1)
+        {
+          if (intersect) scene->intersect((RTCRay&)*rays[0]);
+          else           scene->occluded ((RTCRay&)*rays[0]);
+        }
+        
+        /* codepath for large number of rays per octant */
         else
-          scene->occludedN((RTCRay**)rays,numOctantRays,flags);
-
+        {
+          if (intersect) scene->intersectN((RTCRay**)rays,numOctantRays,flags);
+          else           scene->occludedN((RTCRay**)rays,numOctantRays,flags);
+        }
         rays_in_octant[cur_octant] = 0;
 
       }
