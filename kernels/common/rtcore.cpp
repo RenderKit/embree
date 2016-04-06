@@ -425,7 +425,7 @@ namespace embree
 #endif
     STAT3(normal.travs,1,N,N);
 
-    scene->intersectN_AOS(scene,rayN,N,stride,flags,true);
+    scene->intersectN_AOS(rayN,N,stride,flags,true);
     
     RTCORE_CATCH_END(scene->device);
   }
@@ -461,7 +461,7 @@ namespace embree
 #endif
     STAT3(normal.travs,1,N,N);
 
-    scene->intersectN_SOA(scene,rayN,N,streams,stride,flags,true);
+    scene->intersectN_SOA(rayN,N,streams,stride,flags,true);
 
     RTCORE_CATCH_END(scene->device);
   }
@@ -610,7 +610,7 @@ namespace embree
 #endif
     STAT3(shadow.travs,1,N,N);
 
-    scene->intersectN_AOS(scene,rayN,N,stride,flags,false);
+    scene->intersectN_AOS(rayN,N,stride,flags,false);
 
     RTCORE_CATCH_END(scene->device);
   }
@@ -647,7 +647,7 @@ namespace embree
 #endif
     STAT3(shadow.travs,1,N,N);
 
-    scene->intersectN_SOA(scene,rayN,N,streams,stride,flags,false);
+    scene->intersectN_SOA(rayN,N,streams,stride,flags,false);
 
     RTCORE_CATCH_END(scene->device);
   }
