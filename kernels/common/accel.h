@@ -190,7 +190,7 @@ namespace embree
         : ptr(nullptr) {}
 
       Intersectors (ErrorFunc error) 
-      : ptr(nullptr), intersector1(error), intersector4(error), intersector8(error), intersector16(error),intersectorN(error) {}
+      : ptr(nullptr), intersector1(error), intersector4(error), intersector8(error), intersector16(error), intersectorN(error) {}
 
       void print(size_t ident) 
       {
@@ -300,7 +300,7 @@ namespace embree
     /*! Intersects a packet of N rays in SOA layout with the scene. */
     __forceinline void intersectN (RTCRay **rayN, const size_t N, const size_t flags) {
       //assert(intersectors.intersectorN.intersect);
-      if (likely(intersectors.intersectorN.intersect))
+      if (likely(intersectors.intersectorN.intersect))  // FIXME: not working properly, will be set to error function sometimes
         intersectors.intersectorN.intersect(intersectors.ptr,rayN, N, flags);
       else
         /* fallback path */
@@ -335,7 +335,7 @@ namespace embree
     /*! Tests if a packet of N rays in SOA layout is occluded by the scene. */
     __forceinline void occludedN (RTCRay** rayN, const size_t N, const size_t flags) {
       //assert(intersectors.intersectorN.occluded);
-      if(likely(intersectors.intersectorN.occluded))
+      if(likely(intersectors.intersectorN.occluded)) // FIXME: not working properly, will be set to error function sometimes
         intersectors.intersectorN.occluded(intersectors.ptr,rayN, N, flags);
       else
         /* fallback path */

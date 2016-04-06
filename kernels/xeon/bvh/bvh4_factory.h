@@ -84,6 +84,10 @@ namespace embree
     Accel::Intersectors BVH4Quad4vIntersectors(BVH4* bvh);
     Accel::Intersectors BVH4Quad4iIntersectors(BVH4* bvh);
     Accel::Intersectors BVH4Quad4iMBIntersectors(BVH4* bvh);
+    Accel::Intersectors BVH4UserGeometryIntersectors(BVH4* bvh);
+    Accel::Intersectors BVH4UserGeometryMBIntersectors(BVH4* bvh);
+    Accel::Intersectors BVH4SubdivPatch1CachedIntersectors(BVH4* bvh);
+    Accel::Intersectors BVH4SubdivGridEagerIntersectors(BVH4* bvh);
 
     static void createLineSegmentsLine4i(LineSegments* mesh, AccelData*& accel, Builder*& builder);
 
@@ -179,11 +183,28 @@ namespace embree
     DEFINE_SYMBOL2(Accel::Intersector16,BVH4VirtualIntersector16Chunk);
     DEFINE_SYMBOL2(Accel::Intersector16,BVH4VirtualMBIntersector16Chunk);
 
-    DEFINE_SYMBOL2(Accel::IntersectorN,BVH4Triangle4StreamIntersector);
-    DEFINE_SYMBOL2(Accel::IntersectorN,BVH4Triangle4StreamIntersectorNoFilter);
-
-    DEFINE_SYMBOL2(Accel::IntersectorN,BVH4Quad4vStreamIntersector);
-    DEFINE_SYMBOL2(Accel::IntersectorN,BVH4Quad4vStreamIntersectorNoFilter);
+    DEFINE_SYMBOL2(Accel::IntersectorN,BVH4Line4iStreamIntersector);
+    //DEFINE_SYMBOL2(Accel::IntersectorN,BVH4Line4iMBStreamIntersector);
+    DEFINE_SYMBOL2(Accel::IntersectorN,BVH4Bezier1vStreamIntersector);
+    DEFINE_SYMBOL2(Accel::IntersectorN,BVH4Bezier1iStreamIntersector);
+    //DEFINE_SYMBOL2(Accel::IntersectorN,BVH4Bezier1vStreamIntersector_OBB);
+    //DEFINE_SYMBOL2(Accel::IntersectorN,BVH4Bezier1iStreamIntersector_OBB);
+    //DEFINE_SYMBOL2(Accel::IntersectorN,BVH4Bezier1iMBStreamIntersector_OBB);
+    DEFINE_SYMBOL2(Accel::IntersectorN, BVH4Triangle4StreamIntersectorMoeller);
+    DEFINE_SYMBOL2(Accel::IntersectorN, BVH4Triangle4StreamIntersectorMoellerNoFilter);
+    //DEFINE_SYMBOL2(Accel::IntersectorN,BVH4XfmTriangle4StreamIntersectorMoeller);
+    DEFINE_SYMBOL2(Accel::IntersectorN,BVH4Triangle4vStreamIntersectorPluecker);
+    DEFINE_SYMBOL2(Accel::IntersectorN,BVH4Triangle4iStreamIntersectorPluecker);
+    //DEFINE_SYMBOL2(Accel::IntersectorN,BVH4Triangle4vMBStreamIntersectorMoeller);
+    //DEFINE_SYMBOL2(Accel::IntersectorN,BVH4Subdivpatch1CachedStreamIntersector);
+    //DEFINE_SYMBOL2(Accel::IntersectorN,BVH4GridAOSStreamIntersector);
+    DEFINE_SYMBOL2(Accel::IntersectorN,BVH4VirtualStreamIntersector);
+    //DEFINE_SYMBOL2(Accel::IntersectorN,BVH4VirtualMBStreamIntersector);
+    DEFINE_SYMBOL2(Accel::IntersectorN, BVH4Quad4vStreamIntersectorMoeller);
+    DEFINE_SYMBOL2(Accel::IntersectorN, BVH4Quad4vStreamIntersectorMoellerNoFilter);
+    DEFINE_SYMBOL2(Accel::IntersectorN,BVH4Quad4iStreamIntersectorPluecker);
+    //DEFINE_SYMBOL2(Accel::IntersectorN,BVH4Quad4iMBStreamIntersectorPluecker);
+    //DEFINE_SYMBOL2(Accel::IntersectorN,QBVH4Triangle4StreamIntersectorMoeller);
     
     DEFINE_BUILDER2(void,Scene,const createLineSegmentsAccelTy,BVH4BuilderTwoLevelLineSegmentsSAH);
     DEFINE_BUILDER2(void,Scene,const createTriangleMeshAccelTy,BVH4BuilderTwoLevelTriangleMeshSAH);

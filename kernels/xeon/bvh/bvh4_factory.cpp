@@ -117,10 +117,28 @@ namespace embree
   DECLARE_SYMBOL2(Accel::Intersector16,BVH4VirtualIntersector16Chunk);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH4VirtualMBIntersector16Chunk);
 
-  DECLARE_SYMBOL2(Accel::IntersectorN, BVH4Triangle4StreamIntersector);
-  DECLARE_SYMBOL2(Accel::IntersectorN, BVH4Triangle4StreamIntersectorNoFilter);
-  DECLARE_SYMBOL2(Accel::IntersectorN, BVH4Quad4vStreamIntersector);
-  DECLARE_SYMBOL2(Accel::IntersectorN, BVH4Quad4vStreamIntersectorNoFilter);
+  DECLARE_SYMBOL2(Accel::IntersectorN,BVH4Line4iStreamIntersector);
+  //DECLARE_SYMBOL2(Accel::IntersectorN,BVH4Line4iMBStreamIntersector);
+  DECLARE_SYMBOL2(Accel::IntersectorN,BVH4Bezier1vStreamIntersector);
+  DECLARE_SYMBOL2(Accel::IntersectorN,BVH4Bezier1iStreamIntersector);
+  //DECLARE_SYMBOL2(Accel::IntersectorN,BVH4Bezier1vStreamIntersector_OBB);
+  //DECLARE_SYMBOL2(Accel::IntersectorN,BVH4Bezier1iStreamIntersector_OBB);
+  //DECLARE_SYMBOL2(Accel::IntersectorN,BVH4Bezier1iMBStreamIntersector_OBB);
+  DECLARE_SYMBOL2(Accel::IntersectorN, BVH4Triangle4StreamIntersectorMoeller);
+  DECLARE_SYMBOL2(Accel::IntersectorN, BVH4Triangle4StreamIntersectorMoellerNoFilter);
+  //DECLARE_SYMBOL2(Accel::IntersectorN,BVH4XfmTriangle4StreamIntersectorMoeller);
+  DECLARE_SYMBOL2(Accel::IntersectorN,BVH4Triangle4vStreamIntersectorPluecker);
+  DECLARE_SYMBOL2(Accel::IntersectorN,BVH4Triangle4iStreamIntersectorPluecker);
+  //DECLARE_SYMBOL2(Accel::IntersectorN,BVH4Triangle4vMBStreamIntersectorMoeller);
+  //DECLARE_SYMBOL2(Accel::IntersectorN,BVH4Subdivpatch1CachedStreamIntersector);
+  //DECLARE_SYMBOL2(Accel::IntersectorN,BVH4GridAOSStreamIntersector);
+  DECLARE_SYMBOL2(Accel::IntersectorN,BVH4VirtualStreamIntersector);
+  //DECLARE_SYMBOL2(Accel::IntersectorN,BVH4VirtualMBStreamIntersector);
+  DECLARE_SYMBOL2(Accel::IntersectorN, BVH4Quad4vStreamIntersectorMoeller);
+  DECLARE_SYMBOL2(Accel::IntersectorN, BVH4Quad4vStreamIntersectorMoellerNoFilter);
+  DECLARE_SYMBOL2(Accel::IntersectorN,BVH4Quad4iStreamIntersectorPluecker);
+  //DECLARE_SYMBOL2(Accel::IntersectorN,BVH4Quad4iMBStreamIntersectorPluecker);
+  //DECLARE_SYMBOL2(Accel::IntersectorN,QBVH4Triangle4StreamIntersectorMoeller);
 
   DECLARE_BUILDER2(void,Scene,const createLineSegmentsAccelTy,BVH4BuilderTwoLevelLineSegmentsSAH);
   DECLARE_BUILDER2(void,Scene,const createTriangleMeshAccelTy,BVH4BuilderTwoLevelTriangleMeshSAH);
@@ -311,10 +329,28 @@ namespace embree
     SELECT_SYMBOL_INIT_AVX512KNL(features,BVH4VirtualMBIntersector16Chunk);
 
     /* select stream intersectors */
-    SELECT_SYMBOL_INIT_SSE42_AVX_AVX2_AVX512KNL(features,BVH4Triangle4StreamIntersector);
-    SELECT_SYMBOL_INIT_SSE42_AVX_AVX2_AVX512KNL(features,BVH4Triangle4StreamIntersectorNoFilter);
-    SELECT_SYMBOL_INIT_SSE42_AVX_AVX2_AVX512KNL(features,BVH4Quad4vStreamIntersector);
-    SELECT_SYMBOL_INIT_SSE42_AVX_AVX2_AVX512KNL(features,BVH4Quad4vStreamIntersectorNoFilter);
+    SELECT_SYMBOL_DEFAULT_AVX_AVX2      (features,BVH4Line4iIntersector1);
+    //SELECT_SYMBOL_DEFAULT_AVX_AVX2      (features,BVH4Line4iMBIntersector1);
+    SELECT_SYMBOL_DEFAULT_AVX_AVX2      (features,BVH4Bezier1vIntersector1);
+    SELECT_SYMBOL_DEFAULT_AVX_AVX2      (features,BVH4Bezier1iIntersector1);
+    //SELECT_SYMBOL_DEFAULT_AVX_AVX2      (features,BVH4Bezier1vIntersector1_OBB);
+    //SELECT_SYMBOL_DEFAULT_AVX_AVX2      (features,BVH4Bezier1iIntersector1_OBB);
+    //SELECT_SYMBOL_DEFAULT_AVX_AVX2      (features,BVH4Bezier1iMBIntersector1_OBB);
+    SELECT_SYMBOL_INIT_SSE42_AVX_AVX2_AVX512KNL(features,BVH4Triangle4StreamIntersectorMoeller);
+    SELECT_SYMBOL_INIT_SSE42_AVX_AVX2_AVX512KNL(features,BVH4Triangle4StreamIntersectorMoellerNoFilter);
+    //SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL(features,BVH4XfmTriangle4Intersector1Moeller);
+    SELECT_SYMBOL_DEFAULT_SSE42_AVX     (features,BVH4Triangle4vIntersector1Pluecker);
+    SELECT_SYMBOL_DEFAULT_SSE42_AVX     (features,BVH4Triangle4iIntersector1Pluecker);
+    //SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4Triangle4vMBIntersector1Moeller);
+    //SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4Subdivpatch1CachedIntersector1);
+    //SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4GridAOSIntersector1);
+    SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4VirtualIntersector1);
+    //SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4VirtualMBIntersector1);
+    SELECT_SYMBOL_INIT_SSE42_AVX_AVX2_AVX512KNL(features,BVH4Quad4vStreamIntersectorMoeller);
+    SELECT_SYMBOL_INIT_SSE42_AVX_AVX2_AVX512KNL(features,BVH4Quad4vStreamIntersectorMoellerNoFilter);
+    SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4Quad4iIntersector1Pluecker);
+    //SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4Quad4iMBIntersector1Pluecker);
+    //SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL(features,QBVH4Triangle4Intersector1Moeller);
 
 #endif
   }
@@ -327,6 +363,7 @@ namespace embree
     intersectors.intersector4  = BVH4Bezier1vIntersector4Single;
     intersectors.intersector8  = BVH4Bezier1vIntersector8Single;
     intersectors.intersector16 = BVH4Bezier1vIntersector16Single;
+    intersectors.intersectorN  = BVH4Bezier1vStreamIntersector;
     return intersectors;
   }
 
@@ -338,6 +375,7 @@ namespace embree
     intersectors.intersector4  = BVH4Bezier1iIntersector4Single;
     intersectors.intersector8  = BVH4Bezier1iIntersector8Single;
     intersectors.intersector16 = BVH4Bezier1iIntersector16Single;
+    intersectors.intersectorN  = BVH4Bezier1iStreamIntersector;
     return intersectors;
   }
 
@@ -349,6 +387,7 @@ namespace embree
     intersectors.intersector4  = BVH4Line4iIntersector4;
     intersectors.intersector8  = BVH4Line4iIntersector8;
     intersectors.intersector16 = BVH4Line4iIntersector16;
+    intersectors.intersectorN  = BVH4Line4iStreamIntersector;
     return intersectors;
   }
 
@@ -360,6 +399,7 @@ namespace embree
     intersectors.intersector4  = BVH4Line4iMBIntersector4;
     intersectors.intersector8  = BVH4Line4iMBIntersector8;
     intersectors.intersector16 = BVH4Line4iMBIntersector16;
+    //intersectors.intersectorN  = BVH4Line4iMBStreamIntersector;
     return intersectors;
   }
 
@@ -371,6 +411,7 @@ namespace embree
     intersectors.intersector4  = BVH4Bezier1vIntersector4Single_OBB;
     intersectors.intersector8  = BVH4Bezier1vIntersector8Single_OBB;
     intersectors.intersector16 = BVH4Bezier1vIntersector16Single_OBB;
+    //intersectors.intersectorN  = BVH4Bezier1vStreamIntersector_OBB;
     return intersectors;
   }
 
@@ -382,6 +423,7 @@ namespace embree
     intersectors.intersector4  = BVH4Bezier1iIntersector4Single_OBB;
     intersectors.intersector8  = BVH4Bezier1iIntersector8Single_OBB;
     intersectors.intersector16 = BVH4Bezier1iIntersector16Single_OBB;
+    //intersectors.intersectorN  = BVH4Bezier1iStreamIntersector_OBB;
     return intersectors;
   }
 
@@ -393,6 +435,7 @@ namespace embree
     intersectors.intersector4  = BVH4Bezier1iMBIntersector4Single_OBB;
     intersectors.intersector8  = BVH4Bezier1iMBIntersector8Single_OBB;
     intersectors.intersector16 = BVH4Bezier1iMBIntersector16Single_OBB;
+    //intersectors.intersectorN  = BVH4Bezier1iMBStreamIntersector_OBB;
     return intersectors;
   }
 
@@ -407,8 +450,8 @@ namespace embree
     intersectors.intersector8_nofilter  = BVH4Triangle4Intersector8HybridMoellerNoFilter;
     intersectors.intersector16_filter   = BVH4Triangle4Intersector16HybridMoeller;
     intersectors.intersector16_nofilter = BVH4Triangle4Intersector16HybridMoellerNoFilter;
-    intersectors.intersectorN_filter    = BVH4Triangle4StreamIntersector;
-    intersectors.intersectorN_nofilter  = BVH4Triangle4StreamIntersectorNoFilter;
+    intersectors.intersectorN_filter    = BVH4Triangle4StreamIntersectorMoeller;
+    intersectors.intersectorN_nofilter  = BVH4Triangle4StreamIntersectorMoellerNoFilter;
     return intersectors;
   }
 
@@ -428,6 +471,7 @@ namespace embree
     intersectors.intersector4  = BVH4Triangle4vIntersector4HybridPluecker;
     intersectors.intersector8  = BVH4Triangle4vIntersector8HybridPluecker;
     intersectors.intersector16 = BVH4Triangle4vIntersector16HybridPluecker;
+    intersectors.intersectorN  = BVH4Triangle4vStreamIntersectorPluecker;
     return intersectors;
   }
 
@@ -439,6 +483,7 @@ namespace embree
     intersectors.intersector4  = BVH4Triangle4iIntersector4HybridPluecker;
     intersectors.intersector8  = BVH4Triangle4iIntersector8HybridPluecker;
     intersectors.intersector16 = BVH4Triangle4iIntersector16HybridPluecker;
+    intersectors.intersectorN  = BVH4Triangle4iStreamIntersectorPluecker;
     return intersectors;
   }
 
@@ -450,6 +495,7 @@ namespace embree
     intersectors.intersector4  = BVH4Triangle4vMBIntersector4HybridMoeller;
     intersectors.intersector8  = BVH4Triangle4vMBIntersector8HybridMoeller;
     intersectors.intersector16 = BVH4Triangle4vMBIntersector16HybridMoeller;
+    //intersectors.intersectorN  = BVH4Triangle4vMBStreamIntersectorMoeller;
     return intersectors;
   }
 
@@ -464,8 +510,8 @@ namespace embree
     intersectors.intersector8_nofilter  = BVH4Quad4vIntersector8HybridMoellerNoFilter;
     intersectors.intersector16_filter   = BVH4Quad4vIntersector16HybridMoeller;
     intersectors.intersector16_nofilter = BVH4Quad4vIntersector16HybridMoellerNoFilter;
-    intersectors.intersectorN_filter    = BVH4Quad4vStreamIntersector;
-    intersectors.intersectorN_nofilter  = BVH4Quad4vStreamIntersectorNoFilter;
+    intersectors.intersectorN_filter    = BVH4Quad4vStreamIntersectorMoeller;
+    intersectors.intersectorN_nofilter  = BVH4Quad4vStreamIntersectorMoellerNoFilter;
     return intersectors;
   }
 
@@ -477,6 +523,7 @@ namespace embree
     intersectors.intersector4 = BVH4Quad4iIntersector4HybridPluecker;
     intersectors.intersector8 = BVH4Quad4iIntersector8HybridPluecker;
     intersectors.intersector16= BVH4Quad4iIntersector16HybridPluecker;
+    intersectors.intersectorN = BVH4Quad4iStreamIntersectorPluecker;
     return intersectors;
   }
 
@@ -488,6 +535,55 @@ namespace embree
     intersectors.intersector4 = BVH4Quad4iMBIntersector4HybridPluecker;
     intersectors.intersector8 = BVH4Quad4iMBIntersector8HybridPluecker;
     intersectors.intersector16= BVH4Quad4iMBIntersector16HybridPluecker;
+    //intersectors.intersectorN = BVH4Quad4iMBStreamIntersectorPluecker;
+    return intersectors;
+  }
+
+  Accel::Intersectors BVH4Factory::BVH4UserGeometryIntersectors(BVH4* bvh)
+  {
+    Accel::Intersectors intersectors;
+    intersectors.ptr = bvh;
+    intersectors.intersector1  = BVH4VirtualIntersector1;
+    intersectors.intersector4  = BVH4VirtualIntersector4Chunk;
+    intersectors.intersector8  = BVH4VirtualIntersector8Chunk;
+    intersectors.intersector16 = BVH4VirtualIntersector16Chunk;
+    intersectors.intersectorN  = BVH4VirtualStreamIntersector;
+    return intersectors;
+  }
+
+  Accel::Intersectors BVH4Factory::BVH4UserGeometryMBIntersectors(BVH4* bvh)
+  {
+    Accel::Intersectors intersectors;
+    intersectors.ptr = bvh;
+    intersectors.intersector1  = BVH4VirtualMBIntersector1;
+    intersectors.intersector4  = BVH4VirtualMBIntersector4Chunk;
+    intersectors.intersector8  = BVH4VirtualMBIntersector8Chunk;
+    intersectors.intersector16 = BVH4VirtualMBIntersector16Chunk;
+    //intersectors.intersectorN  = BVH4VirtualMBStreamIntersector;
+    return intersectors;
+  }
+
+  Accel::Intersectors BVH4Factory::BVH4SubdivPatch1CachedIntersectors(BVH4* bvh)
+  {
+    Accel::Intersectors intersectors;
+    intersectors.ptr = bvh;
+    intersectors.intersector1  = BVH4Subdivpatch1CachedIntersector1;
+    intersectors.intersector4  = BVH4Subdivpatch1CachedIntersector4;
+    intersectors.intersector8  = BVH4Subdivpatch1CachedIntersector8;
+    intersectors.intersector16 = BVH4Subdivpatch1CachedIntersector16;
+    //intersectors.intersectorN  = BVH4Subdivpatch1CachedStreamIntersector;
+    return intersectors;
+  }
+
+  Accel::Intersectors BVH4Factory::BVH4SubdivGridEagerIntersectors(BVH4* bvh)
+  {
+    Accel::Intersectors intersectors;
+    intersectors.ptr = bvh;
+    intersectors.intersector1  = BVH4GridAOSIntersector1;
+    intersectors.intersector4  = BVH4GridAOSIntersector4;
+    intersectors.intersector8  = BVH4GridAOSIntersector8;
+    intersectors.intersector16 = BVH4GridAOSIntersector16;
+    //intersectors.intersectorN  = BVH4GridAOSStreamIntersector;
     return intersectors;
   }
 
@@ -529,7 +625,7 @@ namespace embree
     BVH4Factory* factory = mesh->parent->device->bvh4_factory;
     accel = new BVH4(Triangle4::type,mesh->parent);
     switch (mesh->flags) {
-    case RTC_GEOMETRY_STATIC: builder = factory->BVH4Triangle4MeshBuilderSAH(accel,mesh,0); break;
+    case RTC_GEOMETRY_STATIC:     builder = factory->BVH4Triangle4MeshBuilderSAH(accel,mesh,0); break;
     case RTC_GEOMETRY_DEFORMABLE: builder = factory->BVH4Triangle4MeshRefitSAH(accel,mesh,0); break;
     case RTC_GEOMETRY_DYNAMIC:    builder = factory->BVH4Triangle4MeshBuilderMortonGeneral(accel,mesh,0); break;
     default: throw_RTCError(RTC_UNKNOWN_ERROR,"invalid geometry flag");
@@ -783,12 +879,7 @@ namespace embree
   Accel* BVH4Factory::BVH4SubdivPatch1Cached(Scene* scene)
   {
     BVH4* accel = new BVH4(SubdivPatch1Cached::type,scene);
-    Accel::Intersectors intersectors;
-    intersectors.ptr = accel;
-    intersectors.intersector1  = BVH4Subdivpatch1CachedIntersector1;
-    intersectors.intersector4  = BVH4Subdivpatch1CachedIntersector4;
-    intersectors.intersector8  = BVH4Subdivpatch1CachedIntersector8;
-    intersectors.intersector16 = BVH4Subdivpatch1CachedIntersector16;
+    Accel::Intersectors intersectors = BVH4SubdivPatch1CachedIntersectors(accel);
     Builder* builder = BVH4SubdivPatch1CachedBuilderBinnedSAH(accel,scene,0);
     scene->needSubdivIndices = false;
     scene->needSubdivVertices = true;
@@ -798,12 +889,7 @@ namespace embree
   Accel* BVH4Factory::BVH4SubdivGridEager(Scene* scene)
   {
     BVH4* accel = new BVH4(SubdivPatch1Eager::type,scene);
-    Accel::Intersectors intersectors;
-    intersectors.ptr = accel;
-    intersectors.intersector1  = BVH4GridAOSIntersector1;
-    intersectors.intersector4  = BVH4GridAOSIntersector4;
-    intersectors.intersector8  = BVH4GridAOSIntersector8;
-    intersectors.intersector16 = BVH4GridAOSIntersector16;
+    Accel::Intersectors intersectors = BVH4SubdivGridEagerIntersectors(accel);
     Builder* builder = BVH4SubdivGridEagerBuilderBinnedSAH(accel,scene,0);
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -811,12 +897,7 @@ namespace embree
   Accel* BVH4Factory::BVH4UserGeometry(Scene* scene)
   {
     BVH4* accel = new BVH4(Object::type,scene);
-    Accel::Intersectors intersectors;
-    intersectors.ptr = accel;
-    intersectors.intersector1  = BVH4VirtualIntersector1;
-    intersectors.intersector4  = BVH4VirtualIntersector4Chunk;
-    intersectors.intersector8  = BVH4VirtualIntersector8Chunk;
-    intersectors.intersector16 = BVH4VirtualIntersector16Chunk;
+    Accel::Intersectors intersectors = BVH4UserGeometryIntersectors(accel);
     Builder* builder = BVH4VirtualSceneBuilderSAH(accel,scene,0);
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -824,12 +905,7 @@ namespace embree
   Accel* BVH4Factory::BVH4UserGeometryMB(Scene* scene)
   {
     BVH4* accel = new BVH4(Object::type,scene);
-    Accel::Intersectors intersectors;
-    intersectors.ptr = accel;
-    intersectors.intersector1  = BVH4VirtualMBIntersector1;
-    intersectors.intersector4  = BVH4VirtualMBIntersector4Chunk;
-    intersectors.intersector8  = BVH4VirtualMBIntersector8Chunk;
-    intersectors.intersector16 = BVH4VirtualMBIntersector16Chunk;
+    Accel::Intersectors intersectors = BVH4UserGeometryMBIntersectors(accel);
     Builder* builder = BVH4VirtualMBSceneBuilderSAH(accel,scene,0);
     return new AccelInstance(accel,builder,intersectors);
   }
