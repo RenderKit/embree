@@ -87,14 +87,14 @@ namespace embree
         }
         /*! slow path for more than two hits */
         const size_t hits = __popcnt(movemask(vmask));
-        const vint<K> dist_i = select(vmask,(asInt(tNear) & 0xfffffff8) | vint<K>( step ),0x7fffffff);
+        const vfloat<K> dist = select(vmask,asFloat((asInt(tNear) & 0xfffffff8) | vint<K>( step )),pos_inf);
 #if defined(__AVX512F__)
-        const vint8 tmp = _mm512_castsi512_si256(dist_i);
-        const vint<K> dist_i_sorted = sortNetwork(tmp);
+        const vfloat8 tmp = _mm512_castps512_ps256(dist);
+        const vfloat<K> dist_i_sorted = sortNetworkInt(tmp);
 #else
-        const vint<K> dist_i_sorted = sortNetwork(dist_i);
+        const vfloat<K> dist_i_sorted = sortNetworkInt(dist);
 #endif
-        const vint<K> sorted_index = dist_i_sorted & 7;
+        const vint<K> sorted_index = asInt(dist_i_sorted) & 7;
 
         size_t i = hits-1;
         for (;;)
