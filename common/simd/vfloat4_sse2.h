@@ -435,8 +435,6 @@ namespace embree
   /// Sorting Network
   ////////////////////////////////////////////////////////////////////////////////
 
-
-#if defined(__SSE4_1__)
   __forceinline vfloat4 sortNetwork(const vfloat4& v)
   {
     const vfloat4 a0 = v;
@@ -454,7 +452,6 @@ namespace embree
     const vfloat4 a3 = select(0x2 /* 0b0010 */,c2,d2);
     return a3;
   }
-#endif
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Transpose

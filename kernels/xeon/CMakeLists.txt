@@ -108,8 +108,7 @@ IF (RTCORE_RAY_PACKETS)
   ../common/raystreams/raystreams.cpp
 
   bvh/bvh_intersector_single.cpp
-  bvh/bvh_intersector_hybrid.cpp
-  bvh/bvh_intersector_stream.cpp)
+  bvh/bvh_intersector_hybrid.cpp)
 ENDIF()
 
 SET(EMBREE_LIBRARY_FILES_SSE42

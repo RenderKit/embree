@@ -51,8 +51,6 @@ namespace embree
 #define TWO_STREAMS_FIBER_MODE 0 // 0 = no fiber, 1 = switch at pop, 2 = switch at each node, 3 = switch at leaf
 #define SINGLE_RAY_OPTIMIZATION 0
 
-#if defined(__AVX__)
-
 #if TWO_STREAMS_FIBER_MODE == 0 && !defined(__AVX512F__) && EXPERIMENTAL_FIBER_MODE == 0
     static const size_t MAX_RAYS_PER_OCTANT = 8*sizeof(unsigned int);
 #else
@@ -1037,21 +1035,19 @@ namespace embree
 
 #endif
 
-
-    DEFINE_INTERSECTORN(BVH8Triangle4StreamIntersector,         BVHNStreamIntersector<SIMD_MODE(8) COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<SIMD_MODE(4) COMMA true> > >);
-    DEFINE_INTERSECTORN(BVH8Triangle4StreamIntersectorNoFilter, BVHNStreamIntersector<SIMD_MODE(8) COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<SIMD_MODE(4) COMMA false> > >);
-
     DEFINE_INTERSECTORN(BVH4Triangle4StreamIntersector,         BVHNStreamIntersector<SIMD_MODE(4) COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<SIMD_MODE(4) COMMA true> > >);
     DEFINE_INTERSECTORN(BVH4Triangle4StreamIntersectorNoFilter, BVHNStreamIntersector<SIMD_MODE(4) COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<SIMD_MODE(4) COMMA false> > >);
 
-    DEFINE_INTERSECTORN(BVH8Quad4vStreamIntersector,         BVHNStreamIntersector<SIMD_MODE(8) COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<QuadMvIntersector1MoellerTrumbore<4 COMMA true> > >);
-    DEFINE_INTERSECTORN(BVH8Quad4vStreamIntersectorNoFilter, BVHNStreamIntersector<SIMD_MODE(8) COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<QuadMvIntersector1MoellerTrumbore<4 COMMA false> > >);
+    DEFINE_INTERSECTORN(BVH4Quad4vStreamIntersector,            BVHNStreamIntersector<SIMD_MODE(4) COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<QuadMvIntersector1MoellerTrumbore<4 COMMA true> > >);
+    DEFINE_INTERSECTORN(BVH4Quad4vStreamIntersectorNoFilter,    BVHNStreamIntersector<SIMD_MODE(4) COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<QuadMvIntersector1MoellerTrumbore<4 COMMA false> > >);
 
-    DEFINE_INTERSECTORN(BVH4Quad4vStreamIntersector,         BVHNStreamIntersector<SIMD_MODE(4) COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<QuadMvIntersector1MoellerTrumbore<4 COMMA true> > >);
-    DEFINE_INTERSECTORN(BVH4Quad4vStreamIntersectorNoFilter, BVHNStreamIntersector<SIMD_MODE(4) COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<QuadMvIntersector1MoellerTrumbore<4 COMMA false> > >);
+#if defined(__AVX__)
+    DEFINE_INTERSECTORN(BVH8Triangle4StreamIntersector,         BVHNStreamIntersector<SIMD_MODE(8) COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<SIMD_MODE(4) COMMA true> > >);
+    DEFINE_INTERSECTORN(BVH8Triangle4StreamIntersectorNoFilter, BVHNStreamIntersector<SIMD_MODE(8) COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<SIMD_MODE(4) COMMA false> > >);
 
+    DEFINE_INTERSECTORN(BVH8Quad4vStreamIntersector,            BVHNStreamIntersector<SIMD_MODE(8) COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<QuadMvIntersector1MoellerTrumbore<4 COMMA true> > >);
+    DEFINE_INTERSECTORN(BVH8Quad4vStreamIntersectorNoFilter,    BVHNStreamIntersector<SIMD_MODE(8) COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<QuadMvIntersector1MoellerTrumbore<4 COMMA false> > >);
 #endif
-
   }
 }
 

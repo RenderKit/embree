@@ -29,14 +29,10 @@ namespace embree
     /*! An item on the stack holds the node ID and distance of that node. */
     struct __aligned(16) StackItemMask
     {
-      union {
-        size_t mask;
-        size_t dist;
-      };
+      size_t mask;
       size_t ptr; 
     };
 
-#if defined(__AVX__)
     template<int types, int N, int K>
       class BVHNNodeTraverserKHit
     {
@@ -153,8 +149,6 @@ namespace embree
       }
 
     };
-#endif
-
 
     /*! BVH ray stream intersector. */
     template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
