@@ -19,22 +19,24 @@
 #include "bvh_intersector_node.h"
 
 #include "../geometry/triangle.h"
-#include "../geometry/trianglei.h"
 #include "../geometry/trianglev.h"
 #include "../geometry/trianglev_mb.h"
+#include "../geometry/trianglei.h"
 #include "../geometry/intersector_iterators.h"
 #include "../geometry/bezier1v_intersector.h"
 #include "../geometry/bezier1i_intersector.h"
+#include "../geometry/linei_intersector.h"
 #include "../geometry/triangle_intersector_moeller.h"
 #include "../geometry/triangle_intersector_pluecker.h"
 #include "../geometry/triangle4i_intersector_pluecker.h"
+#include "../geometry/subdivpatch1cached_intersector1.h"
+#include "../geometry/grid_aos_intersector1.h"
+#include "../geometry/object_intersector1.h"
 #include "../geometry/quadv_intersector_moeller.h"
 #include "../geometry/quadi_intersector_moeller.h"
 #include "../geometry/quadi_intersector_pluecker.h"
-#include "../geometry/subdivpatch1cached_intersector1.h"
-#include "../geometry/subdivpatch1cached.h"
-#include "../geometry/object_intersector.h"
 #include "../../common/scene.h"
+
 #define DBG(x) 
 //PRINT(x)
 // todo: make offset constant in AVX512 mode
@@ -502,7 +504,7 @@ namespace embree
           size_t m_valid_intersection = 0;
           do {
             const size_t i = __bscf(bits);
-            PrimitiveIntersector::intersect(pre[i],*(rays[i]),0,prim,num,bvh->scene,NULL,lazy_node);
+            PrimitiveIntersector::intersect(pre[i],*(rays[i]),0,prim,num,bvh->scene,NULL,lazy_node); 
             m_valid_intersection |= rays[i]->tfar < ray_ctx[i].org_rdir.w ? ((size_t)1 << i) : 0;
             ray_ctx[i].org_rdir.w = rays[i]->tfar;
           } while(unlikely(bits));
@@ -1035,7 +1037,7 @@ namespace embree
 
 #endif
 
-    //DEFINE_INTERSECTOR1(BVH4Line4iIntersector1,BVHNIntersector1<4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<LineMiIntersector1<4 COMMA 4 COMMA true> > >);
+    DEFINE_INTERSECTORN(BVH4Line4iStreamIntersector1,BVHNStreamIntersector<SIMD_MODE(4) COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<LineMiIntersector1<SIMD_MODE(4) COMMA true> > >);
     //DEFINE_INTERSECTOR1(BVH4Line4iMBIntersector1,BVHNIntersector1<4 COMMA BVH_AN2 COMMA false COMMA ArrayIntersector1<LineMiMBIntersector1<4 COMMA 4 COMMA true> > >);
 
     //DEFINE_INTERSECTOR1(BVH4Bezier1vIntersector1,BVHNIntersector1<4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<Bezier1vIntersector1> >);
