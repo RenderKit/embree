@@ -28,6 +28,7 @@ namespace embree
       typedef Object Primitive;
       
       struct Precalculations {
+        __forceinline Precalculations() {}
         __forceinline Precalculations (const Ray& ray, const void *ptr) {}
       };
       

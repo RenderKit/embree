@@ -31,6 +31,8 @@ namespace embree
       typedef Bezier1v Primitive;
       typedef Bezier1vIntersector1 Precalculations;
 
+      __forceinline Bezier1vIntersector1() {}
+
       __forceinline Bezier1vIntersector1(const Ray& ray, const void* ptr)
         : intersectorHair(ray,ptr), intersectorCurve(ray,ptr) {}
       

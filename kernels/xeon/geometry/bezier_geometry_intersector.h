@@ -349,6 +349,8 @@ namespace embree
 
     struct BezierGeometry1Intersector1
     {
+      __forceinline BezierGeometry1Intersector1() {}
+
       __forceinline BezierGeometry1Intersector1(const Ray& ray, const void* ptr) {}
 
       template<typename Epilog>
