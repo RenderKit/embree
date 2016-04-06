@@ -18,7 +18,6 @@
 
 #include "default.h"
 #include "state.h"
-#include "raystreams/raystreams.h"
 
 namespace embree
 {
@@ -99,9 +98,5 @@ namespace embree
 #if USE_TASK_ARENA
   tbb::task_arena* arena;
 #endif
-
-  /* ray streams filter */
-  RayStreamFilterFuncs rayStreamFilters;
-
   };
 }

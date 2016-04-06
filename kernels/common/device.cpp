@@ -54,8 +54,6 @@ namespace embree
   /* functions to initialize global constants */
   void init_globals();
 
-  DECLARE_SYMBOL2(RayStreamFilterFuncs,rayStreamFilters);
-
 #if defined(__MIC__)
   void BVH4iRegister();
   void BVH4MBRegister();
@@ -157,11 +155,6 @@ namespace embree
 #if !defined(__MIC__)
     if (State::regression_testing) 
       runRegressionTests();
-#endif
-
-    /* ray stream SOA to AOS conversion */
-#if defined(RTCORE_RAY_PACKETS)
-    SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL(enabled_cpu_features,rayStreamFilters);
 #endif
   }
 
