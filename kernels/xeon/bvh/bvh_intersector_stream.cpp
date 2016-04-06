@@ -1039,32 +1039,17 @@ namespace embree
 #endif
 
 
-#if defined(__AVX512F__)
-    DEFINE_INTERSECTORN(BVH8Triangle4StreamIntersector, BVHNStreamIntersector<8 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<4 COMMA 16 COMMA true> > >);
-    DEFINE_INTERSECTORN(BVH8Triangle4StreamIntersectorNoFilter, BVHNStreamIntersector<8 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<4 COMMA 16 COMMA false> > >);
+    DEFINE_INTERSECTORN(BVH8Triangle4StreamIntersector,         BVHNStreamIntersector<SIMD_MODE(8) COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<SIMD_MODE(4) COMMA true> > >);
+    DEFINE_INTERSECTORN(BVH8Triangle4StreamIntersectorNoFilter, BVHNStreamIntersector<SIMD_MODE(8) COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<SIMD_MODE(4) COMMA false> > >);
 
-    DEFINE_INTERSECTORN(BVH4Triangle4StreamIntersector, BVHNStreamIntersector<4 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<4 COMMA 16 COMMA true> > >);
-    DEFINE_INTERSECTORN(BVH4Triangle4StreamIntersectorNoFilter, BVHNStreamIntersector<4 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<4 COMMA 16 COMMA false> > >);
+    DEFINE_INTERSECTORN(BVH4Triangle4StreamIntersector,         BVHNStreamIntersector<SIMD_MODE(4) COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<SIMD_MODE(4) COMMA true> > >);
+    DEFINE_INTERSECTORN(BVH4Triangle4StreamIntersectorNoFilter, BVHNStreamIntersector<SIMD_MODE(4) COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<SIMD_MODE(4) COMMA false> > >);
 
-    DEFINE_INTERSECTORN(BVH8Quad4vStreamIntersector, BVHNStreamIntersector<8 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<QuadMvIntersector1MoellerTrumbore<4 COMMA true> > >);
-    DEFINE_INTERSECTORN(BVH8Quad4vStreamIntersectorNoFilter, BVHNStreamIntersector<8 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<QuadMvIntersector1MoellerTrumbore<4 COMMA false> > >);
+    DEFINE_INTERSECTORN(BVH8Quad4vStreamIntersector,         BVHNStreamIntersector<SIMD_MODE(8) COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<QuadMvIntersector1MoellerTrumbore<4 COMMA true> > >);
+    DEFINE_INTERSECTORN(BVH8Quad4vStreamIntersectorNoFilter, BVHNStreamIntersector<SIMD_MODE(8) COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<QuadMvIntersector1MoellerTrumbore<4 COMMA false> > >);
 
-    DEFINE_INTERSECTORN(BVH4Quad4vStreamIntersector, BVHNStreamIntersector<4 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<QuadMvIntersector1MoellerTrumbore<4 COMMA true> > >);
-    DEFINE_INTERSECTORN(BVH4Quad4vStreamIntersectorNoFilter, BVHNStreamIntersector<4 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<QuadMvIntersector1MoellerTrumbore<4 COMMA false> > >);
-
-#else
-    DEFINE_INTERSECTORN(BVH8Triangle4StreamIntersector, BVHNStreamIntersector<8 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<4 COMMA 4 COMMA true> > >);
-    DEFINE_INTERSECTORN(BVH8Triangle4StreamIntersectorNoFilter, BVHNStreamIntersector<8 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<4 COMMA 4 COMMA false> > >);
-    DEFINE_INTERSECTORN(BVH4Triangle4StreamIntersector, BVHNStreamIntersector<4 COMMA 4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<4 COMMA 4 COMMA true> > >);
-    DEFINE_INTERSECTORN(BVH4Triangle4StreamIntersectorNoFilter, BVHNStreamIntersector<4 COMMA 4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<4 COMMA 4 COMMA false> > >);
-
-    DEFINE_INTERSECTORN(BVH8Quad4vStreamIntersector, BVHNStreamIntersector<8 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<QuadMvIntersector1MoellerTrumbore<4 COMMA true> > >);
-    DEFINE_INTERSECTORN(BVH8Quad4vStreamIntersectorNoFilter, BVHNStreamIntersector<8 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<QuadMvIntersector1MoellerTrumbore<4 COMMA false> > >);
-    DEFINE_INTERSECTORN(BVH4Quad4vStreamIntersector, BVHNStreamIntersector<4 COMMA 4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<QuadMvIntersector1MoellerTrumbore<4 COMMA true> > >);
-    DEFINE_INTERSECTORN(BVH4Quad4vStreamIntersectorNoFilter, BVHNStreamIntersector<4 COMMA 4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<QuadMvIntersector1MoellerTrumbore<4 COMMA false> > >);
-
-#endif
-
+    DEFINE_INTERSECTORN(BVH4Quad4vStreamIntersector,         BVHNStreamIntersector<SIMD_MODE(4) COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<QuadMvIntersector1MoellerTrumbore<4 COMMA true> > >);
+    DEFINE_INTERSECTORN(BVH4Quad4vStreamIntersectorNoFilter, BVHNStreamIntersector<SIMD_MODE(4) COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<QuadMvIntersector1MoellerTrumbore<4 COMMA false> > >);
 
 #endif
 
