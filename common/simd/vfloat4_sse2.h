@@ -435,6 +435,8 @@ namespace embree
   /// Sorting Network
   ////////////////////////////////////////////////////////////////////////////////
 
+
+#if defined(__SSE4_1__)
   __forceinline vfloat4 sortNetwork(const vfloat4& v)
   {
     const vfloat4 a0 = v;
@@ -451,29 +453,6 @@ namespace embree
     const vfloat4 d2 = max(a2,b2);
     const vfloat4 a3 = select(0x2 /* 0b0010 */,c2,d2);
     return a3;
-  }
-
-#if defined(__SSE4_1__)
-  __forceinline vfloat4 sortNetworkInt(const vfloat4& v)
-  {
-    const vfloat4 a0 = v;
-    const vfloat4 b0 = shuffle<1,0,3,2>(a0);
-    const vfloat4 c0 = mini(a0,b0);
-    const vfloat4 d0 = maxi(a0,b0);
-    const vfloat4 a1 = select(0x5 /* 0b0101 */,c0,d0);
-    const vfloat4 b1 = shuffle<2,3,0,1>(a1);
-    const vfloat4 c1 = mini(a1,b1);
-    const vfloat4 d1 = maxi(a1,b1);
-    const vfloat4 a2 = select(0x3 /* 0b0011 */,c1,d1);
-    const vfloat4 b2 = shuffle<0,2,1,3>(a2);
-    const vfloat4 c2 = mini(a2,b2);
-    const vfloat4 d2 = maxi(a2,b2);
-    const vfloat4 a3 = select(0x2 /* 0b0010 */,c2,d2);
-    return a3;
-  }
-#else
-  __forceinline vfloat4 sortNetworkInt(const vfloat4& v) {
-    return sortNetwork(v);
   }
 #endif
 
