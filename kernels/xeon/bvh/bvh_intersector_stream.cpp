@@ -1038,14 +1038,14 @@ namespace embree
 #endif
 
     template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
-    void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::filterAOS(BVH* bvh, RTCRay* _rayN, const size_t N, const size_t stride, const size_t flags, const bool intersect)
+    void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::filterAOS(BVH* bvh, RTCRay* _rayN, const size_t N, const size_t stride, const size_t flags, const bool intersectmode)
     {
       Scene* scene = bvh->scene;
 
       /* fast path for very small ray packets */
       if (likely(N == 1)) {
-        if (intersect) scene->intersect(*_rayN);
-        else           scene->occluded (*_rayN);
+        if (intersectmode) scene->intersect(*_rayN);
+        else               scene->occluded (*_rayN);
         return;
       }
 
@@ -1071,7 +1071,7 @@ namespace embree
         if (rays_in_octant == 0) 
           break;
         
-        if (intersect)
+        if (intersectmode)
           scene->intersectN((RTCRay**)&octants[0],rays_in_octant,flags);
         else
           scene->occludedN((RTCRay**)&octants[0],rays_in_octant,flags);
@@ -1131,15 +1131,15 @@ namespace embree
         /* special codepath for very small number of rays per octant */
         if (numOctantRays == 1)
         {
-          if (intersect) scene->intersect((RTCRay&)*rays[0]);
-          else           scene->occluded ((RTCRay&)*rays[0]);
+          if (intersectmode) scene->intersect((RTCRay&)*rays[0]);
+          else               scene->occluded ((RTCRay&)*rays[0]);
         }
         
         /* codepath for large number of rays per octant */
         else
         {
-          if (intersect) scene->intersectN((RTCRay**)rays,numOctantRays,flags);
-          else           scene->occludedN((RTCRay**)rays,numOctantRays,flags);
+          if (intersectmode) intersect(bvh,rays,numOctantRays,flags);
+          else               occluded(bvh,rays,numOctantRays,flags);
         }
         rays_in_octant[cur_octant] = 0;
 
@@ -1149,7 +1149,7 @@ namespace embree
 
 
     template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
-    void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::filterSOA(BVH* bvh, RTCRaySOA& _rayN, const size_t N, const size_t streams, const size_t stream_offset, const size_t flags, const bool intersect)
+    void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::filterSOA(BVH* bvh, RTCRaySOA& _rayN, const size_t N, const size_t streams, const size_t stream_offset, const size_t flags, const bool intersectmode)
     {
       Scene* scene = bvh->scene;
       __aligned(64) Ray rays[MAX_RAYS_PER_OCTANT];
@@ -1189,7 +1189,7 @@ namespace embree
               assert(rays[j].valid());
             }
 
-            if (intersect)
+            if (intersectmode)
               scene->intersectN((RTCRay**)rays_ptr,MAX_RAYS_PER_OCTANT,flags);
             else
               scene->occludedN((RTCRay**)rays_ptr,MAX_RAYS_PER_OCTANT,flags);
@@ -1213,10 +1213,8 @@ namespace embree
             assert(rays[j].valid());
           }
 
-          if (intersect)
-            scene->intersectN((RTCRay**)rays_ptr,rays_in_octant[i],flags);
-          else
-            scene->occludedN((RTCRay**)rays_ptr,rays_in_octant[i],flags);        
+          if (intersectmode) intersect(bvh,rays_ptr,rays_in_octant[i],flags);
+          else               occluded (bvh,rays_ptr,rays_in_octant[i],flags);        
 
           for (size_t j=0;j<rays_in_octant[i];j++)
             rayN.scatterByOffset(octants[i][j],rays[j],intersect);
