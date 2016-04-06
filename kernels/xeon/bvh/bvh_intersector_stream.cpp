@@ -128,7 +128,6 @@ namespace embree
             STAT3(normal.trav_nodes,1,1,1);
             
             /* intersect node */
-            asm("nop");
             bool nodeIntersected = BVHNNodeIntersector1<N,N,types,robust>::intersect(cur,ctx.vray,ctx.ray_near,ctx.ray_far,ctx.pray->time,tNear,mask);
             if (unlikely(!nodeIntersected)) break;
             
