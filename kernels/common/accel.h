@@ -100,14 +100,14 @@ namespace embree
                                   const size_t N,      /*!< number of rays in stream */
                                   const size_t flags   /*!< layout flags */);
 
-    typedef void (*filterAOS_func)(void* ptr,
+    typedef void (*filterAOS_func)(Scene* scene, 
                                    RTCRay* rayN, 
                                    const size_t N, 
                                    const size_t stride, 
                                    const size_t flags, 
                                    const bool intersect);
     
-    typedef void (*filterSOA_func)(void* ptr,
+    typedef void (*filterSOA_func)(Scene* scene, 
                                    RTCRaySOA& rayN, 
                                    const size_t N, 
                                    const size_t streams, 
@@ -329,15 +329,15 @@ namespace embree
     }
 
     /*! Intersects a packet of N rays in AOS layout with the scene. */
-    __forceinline void intersectN_AOS (RTCRay* rayN, const size_t N, const size_t stride, const size_t flags, const bool intersect) {
+    __forceinline void intersectN_AOS (Scene* scene, RTCRay* rayN, const size_t N, const size_t stride, const size_t flags, const bool intersect) {
       assert(intersectors.intersectorN.intersectAOS);
-      intersectors.intersectorN.intersectAOS(intersectors.ptr,rayN,N,stride,flags,intersect);
+      intersectors.intersectorN.intersectAOS(scene,rayN,N,stride,flags,intersect);
     }
 
     /*! Intersects a packet of N rays in SOA layout with the scene. */
-    __forceinline void intersectN_SOA (RTCRaySOA& rayN, const size_t N, const size_t streams, const size_t offset, const size_t flags, const bool intersect) {
+    __forceinline void intersectN_SOA (Scene *scene, RTCRaySOA& rayN, const size_t N, const size_t streams, const size_t offset, const size_t flags, const bool intersect) {
       assert(intersectors.intersectorN.intersectSOA);
-      intersectors.intersectorN.intersectSOA(intersectors.ptr,rayN,N,streams,offset,flags,intersect);
+      intersectors.intersectorN.intersectSOA(scene,rayN,N,streams,offset,flags,intersect);
     }
 
     /*! Tests if single ray is occluded by the scene. */

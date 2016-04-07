@@ -1038,10 +1038,8 @@ namespace embree
 #endif
 
     template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
-    void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::filterAOS(BVH* bvh, RTCRay* _rayN, const size_t N, const size_t stride, const size_t flags, const bool intersectmode)
+    void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::filterAOS(Scene *scene, RTCRay* _rayN, const size_t N, const size_t stride, const size_t flags, const bool intersect)
     {
-      Scene* scene = bvh->scene;
-
       /* fast path for very small ray packets */
       if (likely(N == 1)) {
         if (intersectmode) scene->intersect(*_rayN);
@@ -1149,9 +1147,8 @@ namespace embree
 
 
     template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
-    void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::filterSOA(BVH* bvh, RTCRaySOA& _rayN, const size_t N, const size_t streams, const size_t stream_offset, const size_t flags, const bool intersectmode)
+    void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::filterSOA(Scene *scene, RTCRaySOA& _rayN, const size_t N, const size_t streams, const size_t stream_offset, const size_t flags, const bool intersect)
     {
-      Scene* scene = bvh->scene;
       __aligned(64) Ray rays[MAX_RAYS_PER_OCTANT];
       __aligned(64) Ray *rays_ptr[MAX_RAYS_PER_OCTANT];
 
