@@ -15,10 +15,12 @@
 ## ======================================================================== ##
 
 IF (WIN32)
-  FIND_PATH(TBB_ROOT include/tbb/task_scheduler_init.h
+  FIND_PATH(TBB_ROOT include/tbb/tbb.h
     DOC "Root of TBB installation"
     PATHS ${PROJECT_SOURCE_DIR}/tbb "C:/Program Files (x86)/Intel/Composer XE/tbb"
+    NO_DEFAULT_PATH
   )
+  FIND_PATH(TBB_ROOT include/tbb/tbb.h)
 
   IF (CMAKE_SIZEOF_VOID_P EQUAL 8)
     SET(TBB_ARCH intel64)
@@ -52,11 +54,13 @@ IF (WIN32)
 
 ELSE ()
 
-  FIND_PATH(TBB_ROOT include/tbb/task_scheduler_init.h
+  FIND_PATH(TBB_ROOT include/tbb/tbb.h
     DOC "Root of TBB installation"
     PATHS ${PROJECT_SOURCE_DIR}/tbb /opt/intel/composerxe/tbb
+    NO_DEFAULT_PATH
   )
-  
+  FIND_PATH(TBB_ROOT include/tbb/tbb.h)
+
   IF (TBB_ROOT STREQUAL "")
     FIND_PATH(TBB_INCLUDE_DIR tbb/task_scheduler_init.h)
     FIND_LIBRARY(TBB_LIBRARY tbb)
