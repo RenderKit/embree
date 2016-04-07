@@ -67,6 +67,7 @@ namespace embree
 
     public:
       static void filterAOS_Single(Scene *scene, RTCRay* _rayN, const size_t N, const size_t stride, const size_t flags, const bool intersect);
+      static void filterSOA_Packet(Scene *scene, char* rayN, const size_t N, const size_t streams, const size_t stream_offset, const size_t flags, const bool intersect);
 
       static void filterAOS(Scene *scene, RTCRay* rayN, const size_t M, const size_t N, const size_t stride, const size_t flags, const bool intersect);
 
