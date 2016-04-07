@@ -23,52 +23,35 @@ namespace embree
 {
   class Scene;
 
-  typedef void (*filterAOS_func)(Scene *scene, 
-                                 RTCRay* rayN, 
-                                 const size_t N, 
-                                 const size_t stride, 
-                                 const size_t flags, 
-                                 const bool intersect);
-
-  typedef void (*filterSOA_func)(Scene *scene, 
-                                 RTCRaySOA& rayN, 
-                                 const size_t N, 
-                                 const size_t streams, 
-                                 const size_t offset, 
-                                 const size_t flags, 
-                                 const bool intersect);
+  typedef void (*filterAOS_func)(Scene *scene, RTCRay* _rayN, const size_t N, const size_t stride, const size_t flags, const bool intersect);
+  typedef void (*filterSOA_func)(Scene *scene, char* rayN, const size_t N, const size_t streams, const size_t stream_offset, const size_t flags, const bool intersect);
+  typedef void (*filterSOP_func)(Scene *scene, RTCRaySOA& rayN, const size_t N, const size_t streams, const size_t offset, const size_t flags, const bool intersect);
 
   struct RayStreamFilterFuncs
   {
-    RayStreamFilterFuncs()
-    : filterAOS(nullptr), filterSOA(nullptr) {}
+    __forceinline RayStreamFilterFuncs()
+      : filterSOP(nullptr), filterAOS(nullptr), filterSOA(nullptr) {}
+    
+    __forceinline RayStreamFilterFuncs(void (*ptr) ()) 
+      : filterAOS((filterAOS_func) ptr), filterSOA((filterSOA_func) ptr), filterSOP((filterSOP_func) ptr) {}
 
-    RayStreamFilterFuncs(void (*ptr) ()) {
-      filterAOS = (filterAOS_func) filterAOS;
-      filterSOA = (filterSOA_func) filterSOA;
-    }
-
-    RayStreamFilterFuncs(filterAOS_func aos, filterSOA_func soa) { 
-      filterAOS = aos;
-      filterSOA = soa;
-    }
+    __forceinline RayStreamFilterFuncs(filterAOS_func aos, filterSOA_func soa, filterSOP_func sop) 
+      : filterAOS(aos), filterSOA(soa), filterSOP(sop) {}
 
   public:
     filterAOS_func filterAOS;
     filterSOA_func filterSOA;
+    filterSOP_func filterSOP;
   };
   
-
   namespace isa
   {
     class RayStream
     {
-
     public:
-      static void filterAOS(Scene *scene, RTCRay* rayN, const size_t N, const size_t stride, const size_t flags, const bool intersect);
-
-      static void filterSOA(Scene *scene, RTCRaySOA& rayN, const size_t N, const size_t streams, const size_t offset, const size_t flags, const bool intersect);
-    
+      static void filterAOS(Scene *scene, RTCRay* _rayN, const size_t N, const size_t stride, const size_t flags, const bool intersect);
+      static void filterSOA(Scene *scene, char* rayN, const size_t N, const size_t streams, const size_t stream_offset, const size_t flags, const bool intersect);
+      static void filterSOP(Scene *scene, RTCRaySOA& rayN, const size_t N, const size_t streams, const size_t offset, const size_t flags, const bool intersect);
     };
   }
 };

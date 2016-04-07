@@ -136,8 +136,8 @@ namespace embree
     rtcIntersect16(valid,scene,ray);
   }
 
-  extern "C" void ispcIntersect1N (RTCScene scene, RTCRay* rayN, const size_t N, const size_t stride, const size_t flags) {
-    rtcIntersectN(scene,rayN,N,stride,flags);
+  extern "C" void ispcIntersectN (RTCScene scene, RTCRay* rayN, const size_t M, const size_t N, const size_t stride, const size_t flags) {
+    rtcIntersectN(scene,rayN,M,N,stride,flags);
   }
 
   extern "C" void ispcIntersectN_SOA (RTCScene scene,  RTCRaySOA& rayN, const  size_t N, const  size_t streams, const  size_t offset, const  size_t flags) {
@@ -161,7 +161,7 @@ namespace embree
   }
 
   extern "C" void ispcOccluded1N (RTCScene scene, void*  rayN, const  size_t N, const  size_t stride, const  size_t flags) {
-    rtcOccludedN(scene,(RTCRay*)rayN,N,stride,flags);
+    rtcOccludedN(scene,(RTCRay*)rayN,1,N,stride,flags);
   }
 
   extern "C" void ispcOccludedN_SOA (RTCScene scene,  RTCRaySOA& rayN, const  size_t N, const  size_t streams, const  size_t offset, const  size_t flags) {

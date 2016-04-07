@@ -24,7 +24,7 @@
 //#define AMBIENT_OCCLUSION_SAMPLES 256
 
 //#define rtcOccluded rtcIntersect
-//#define rtcOccludedN rtcIntersectN
+//#define rtcOccluded1N rtcIntersect1N
 //#define RAYN_FLAGS RTC_RAYN_COHERENT
 #define RAYN_FLAGS RTC_RAYN_INCOHERENT
 
@@ -214,13 +214,13 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
   
   /* trace occlusion rays */
 #if USE_INTERFACE == 0
-  rtcOccludedN(g_scene,rays,AMBIENT_OCCLUSION_SAMPLES,sizeof(RTCRay),RAYN_FLAGS);
+  rtcOccluded1N(g_scene,rays,AMBIENT_OCCLUSION_SAMPLES,sizeof(RTCRay),RAYN_FLAGS);
 #elif USE_INTERFACE == 1
   for (size_t i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
     rtcOccluded(g_scene,rays[i]);
 #else
   for (size_t i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
-    rtcOccludedN(g_scene,&rays[i],1,sizeof(RTCRay),RAYN_FLAGS);
+    rtcOccluded1N(g_scene,&rays[i],1,sizeof(RTCRay),RAYN_FLAGS);
 #endif
 
   /* accumulate illumination */
@@ -277,13 +277,13 @@ void renderTileStandard(int taskIndex,
 
   /* trace stream of rays */
 #if USE_INTERFACE == 0
-  rtcIntersectN(g_scene,rays,N,sizeof(RTCRay),RAYN_FLAGS);
+  rtcIntersect1N(g_scene,rays,N,sizeof(RTCRay),RAYN_FLAGS);
 #elif USE_INTERFACE == 1
   for (size_t i=0; i<N; i++)
     rtcIntersect(g_scene,rays[i]);
 #else
   for (size_t i=0; i<N; i++)
-    rtcIntersectN(g_scene,&rays[i],1,sizeof(RTCRay),RAYN_FLAGS);
+    rtcIntersect1N(g_scene,&rays[i],1,sizeof(RTCRay),RAYN_FLAGS);
 #endif
 
   /* shade stream of rays */
