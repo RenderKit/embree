@@ -810,8 +810,11 @@ namespace embree
           }
 
 #if TWO_STREAMS_FIBER_MODE == 3
-          cur_fiber = cur_fiber->swapContext(cur,m_trav_active,stackPtr);
-          if (unlikely(!cur.isLeaf())) continue;
+          if (likely(cur_fiber->next != cur_fiber))
+          {
+            cur_fiber = cur_fiber->swapContext(cur,m_trav_active,stackPtr);
+            if (unlikely(!cur.isLeaf())) { continue; }
+          }
 #endif
 
           /*! this is a leaf node */
