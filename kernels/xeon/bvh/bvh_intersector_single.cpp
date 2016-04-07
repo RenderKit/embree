@@ -70,11 +70,12 @@ namespace embree
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK>
     void BVHNIntersectorKSingle<N,K,types,robust,PrimitiveIntersectorK>::occluded(vint<K>* __restrict__ valid_i, BVH* __restrict__ bvh, RayK<K>& __restrict__ ray)
     {
-      /* filter out invalid rays */
-      vbool<K> valid = *valid_i == -1;
+      /*! filter out already occluded and invalid rays */
+      vbool<K> valid = (*valid_i == -1) & (ray.geomID != 0);
 #if defined(RTCORE_IGNORE_INVALID_RAYS)
       valid &= ray.valid();
 #endif
+      if (none(valid)) return;
 
       /* verify correct input */
       assert(all(valid,ray.valid()));
