@@ -54,7 +54,7 @@ def render(name,model):
     command += ' -c ' + modelDir + dash + model + '_tutorial.ecs'
     for arg in args:
       command += ' ' + arg
-    command += ' -benchmark 1 4 > ' + logFile
+    command += ' -rtcore verbose=2 -benchmark 1 4 > ' + logFile
     os.system(command)
 
 def renderLoop():
