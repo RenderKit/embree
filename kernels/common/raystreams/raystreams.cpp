@@ -185,28 +185,6 @@ namespace embree
         }
     }
 
-    void RayStream::filterAOS(Scene *scene, RTCRay* _rayN, const size_t M, const size_t N, const size_t stride, const size_t flags, const bool intersect)
-    {
-      /* codepath for single rays */
-      if (likely(M == 1))
-      {
-        /* fast path for very small ray packets */
-        if (likely(N == 1)) {
-          if (intersect) scene->intersect(*_rayN);
-          else           scene->occluded (*_rayN);
-          return;
-        } 
-        /* normal codepath for ray streams */
-        else {
-          filterAOS_Single(scene,_rayN,N,stride,flags,intersect);
-        }
-      }
-      /* code path for ray packets */
-      else {
-        filterSOA_Packet(scene,(char*)_rayN,M,N,stride,flags,intersect);
-      }
-    }
-
     void RayStream::filterSOA(Scene *scene, RTCRaySOA& _rayN, const size_t N, const size_t streams, const size_t stream_offset, const size_t flags, const bool intersect)
     {
       RaySOA& rayN = *(RaySOA*)&_rayN;
@@ -302,7 +280,7 @@ namespace embree
         }
     }
 
-    RayStreamFilterFuncs rayStreamFilters(RayStream::filterAOS,RayStream::filterSOA,RayStream::filterAOS_Single,RayStream::filterSOA_Packet);
+    RayStreamFilterFuncs rayStreamFilters(RayStream::filterSOA,RayStream::filterAOS_Single,RayStream::filterSOA_Packet);
 
   };
 };

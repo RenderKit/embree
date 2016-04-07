@@ -23,14 +23,6 @@ namespace embree
 {
   class Scene;
 
-  typedef void (*filterAOS_func)(Scene *scene, 
-                                 RTCRay* rayN, 
-                                 const size_t M,
-                                 const size_t N, 
-                                 const size_t stride, 
-                                 const size_t flags, 
-                                 const bool intersect);
-
   typedef void (*filterSOA_func)(Scene *scene, 
                                  RTCRaySOA& rayN, 
                                  const size_t N, 
@@ -45,24 +37,21 @@ namespace embree
   struct RayStreamFilterFuncs
   {
     RayStreamFilterFuncs()
-    : filterAOS(nullptr), filterSOA(nullptr), filterAOSSingle(nullptr), filterSOAPacket(nullptr) {}
+    : filterSOA(nullptr), filterAOSSingle(nullptr), filterSOAPacket(nullptr) {}
 
     RayStreamFilterFuncs(void (*ptr) ()) {
-      filterAOS = (filterAOS_func) filterAOS;
       filterSOA = (filterSOA_func) filterSOA;
       filterAOSSingle = (filterAOS_Single_func) filterAOSSingle;
       filterSOAPacket = (filterSOA_Packet_func) filterSOAPacket;
     }
 
-    RayStreamFilterFuncs(filterAOS_func aos, filterSOA_func soa, filterAOS_Single_func aos_s, filterSOA_Packet_func aos_p) { 
-      filterAOS = aos;
+    RayStreamFilterFuncs(filterSOA_func soa, filterAOS_Single_func aos_s, filterSOA_Packet_func aos_p) { 
       filterSOA = soa;
       filterAOSSingle = aos_s;
       filterSOAPacket = aos_p;
     }
 
   public:
-    filterAOS_func filterAOS;
     filterSOA_func filterSOA;
     filterAOS_Single_func filterAOSSingle;
     filterSOA_Packet_func filterSOAPacket;
@@ -77,8 +66,6 @@ namespace embree
     public:
       static void filterAOS_Single(Scene *scene, RTCRay* _rayN, const size_t N, const size_t stride, const size_t flags, const bool intersect);
       static void filterSOA_Packet(Scene *scene, char* rayN, const size_t N, const size_t streams, const size_t stream_offset, const size_t flags, const bool intersect);
-
-      static void filterAOS(Scene *scene, RTCRay* rayN, const size_t M, const size_t N, const size_t stride, const size_t flags, const bool intersect);
 
       static void filterSOA(Scene *scene, RTCRaySOA& rayN, const size_t N, const size_t streams, const size_t offset, const size_t flags, const bool intersect);
     
