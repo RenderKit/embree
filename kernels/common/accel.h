@@ -233,8 +233,7 @@ namespace embree
 	if (intersectorN_filter) {
 	  if (filterN) intersectorN = intersectorN_filter;
 	  else         intersectorN = intersectorN_nofilter;
-	}
-        
+	}        
       }
 
     public:

@@ -145,6 +145,10 @@ namespace embree
     template<int N, int types, bool robust, typename PrimitiveIntersector1>
     void BVHNIntersector1<N,types,robust,PrimitiveIntersector1>::occluded(const BVH* __restrict__ bvh, Ray& __restrict__ ray)
     {
+      /*! early out for already occluded rays */
+      //if (unlikely(ray.geomID == 0))
+      //return;
+
       /*! perform per ray precalculations required by the primitive intersector */
       Precalculations pre(ray,bvh);
 

@@ -175,6 +175,17 @@ namespace embree
       return all(le_mask(abs(org),Vec3fa(FLT_LARGE)) & le_mask(abs(dir),Vec3fa(FLT_LARGE))) && fabs(tnear) <= float(inf) && fabs(tfar) <= float(inf);
     }
 
+    /* filter out all occluded rays from a stream of rays */
+    __forceinline static void filterOutOccluded(RayK<1>** ray, size_t& N)
+    {
+      size_t l=0, r=N;
+      while (l<r) {
+        if (ray[l]->geomID != 0) l++;
+        else std::swap(ray[l],ray[--r]); 
+      }
+      N = r;
+    }
+    
     /* Ray data */
     Vec3fa org;  // ray origin
     Vec3fa dir;  // ray direction
