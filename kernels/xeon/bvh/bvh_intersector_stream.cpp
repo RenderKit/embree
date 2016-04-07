@@ -51,7 +51,6 @@ namespace embree
 
 /* enable traversal of either two small streams or one large stream */
 #define TWO_STREAMS_FIBER_MODE 3 // 0 = no fiber, 1 = switch at pop, 2 = switch at each node, 3 = switch at leaf
-#define SINGLE_RAY_OPTIMIZATION 0
 
 #if TWO_STREAMS_FIBER_MODE == 0 && !defined(__AVX512F__) && EXPERIMENTAL_FIBER_MODE == 0
     static const size_t MAX_RAYS_PER_OCTANT = 8*sizeof(unsigned int);
@@ -276,74 +275,6 @@ namespace embree
 
           const vfloat<K> inf(pos_inf);
 
-#if SINGLE_RAY_OPTIMIZATION && !defined(__AVX512F__)
-
-          if (likely(__popcnt(m_trav_active) == 1))
-          {
-            const size_t current_trav_active = m_trav_active;
-            const size_t i = __bsf(m_trav_active);
-            const RayContext &ray = ray_ctx[i];
-            const vfloat<K> ray_org_rdir_x = ray.org_rdir.x;
-            const vfloat<K> ray_org_rdir_y = ray.org_rdir.y;
-            const vfloat<K> ray_org_rdir_z = ray.org_rdir.z;
-            const vfloat<K> ray_rdir_x = ray.rdir.x;
-            const vfloat<K> ray_rdir_y = ray.rdir.y;
-            const vfloat<K> ray_rdir_z = ray.rdir.z;
-            
-            while (1)
-            {
-              /* context swap */
-              if (unlikely(cur.isLeaf())) break;
-              const Node* __restrict__ const node = cur.node();
-              STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);
-              assert(m_trav_active);
-              
-              STAT3(normal.trav_nodes,1,1,1);                          
-              const vfloat<K> bminX = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.nearX));
-              const vfloat<K> tNearX = msub(bminX, ray_rdir_x, ray_org_rdir_x);
-              const vfloat<K> bminY = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.nearY));
-              const vfloat<K> tNearY = msub(bminY, ray_rdir_y, ray_org_rdir_y);
-              const vfloat<K> bminZ = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.nearZ));
-              const vfloat<K> tNearZ = msub(bminZ, ray_rdir_z, ray_org_rdir_z);
-              const vfloat<K> bmaxX = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farX));
-              const vfloat<K> tFarX  = msub(bmaxX, ray_rdir_x, ray_org_rdir_x);
-              const vfloat<K> bmaxY = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farY));
-              const vfloat<K> tFarY  = msub(bmaxY, ray_rdir_y, ray_org_rdir_y);
-              const vfloat<K> bmaxZ = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farZ));
-              const vfloat<K> tFarZ  = msub(bmaxZ, ray_rdir_z, ray_org_rdir_z);
-              const vint<K> bitmask  = vint<K>(m_trav_active);
-#if defined(__AVX2__)
-              const vfloat<K> tNear  = maxi(maxi(tNearX,tNearY),maxi(tNearZ,vfloat<K>(ray.rdir.w)));
-              const vfloat<K> tFar   = mini(mini(tFarX,tFarY),mini(tFarZ,vfloat<K>(ray.org_rdir.w)));
-              const vbool<K> vmask   = tNear <= tFar;
-              vint<K> maskK = (bitmask & vint<K>(vmask));
-#else
-              const vfloat<K> tNear  = max(tNearX,tNearY,tNearZ,vfloat<K>(ray.rdir.w));
-              const vfloat<K> tFar   = min(tFarX ,tFarY ,tFarZ ,vfloat<K>(ray.org_rdir.w));
-              const vbool<K> vmask   = tNear <= tFar;
-              vint<K> maskK = select(vmask,bitmask,vint<K>(zero)); 
-#endif
-
-              /* pop if we hit no node */
-              if (unlikely(none(vmask))) 
-              {
-                /*! pop next node */
-                STAT3(normal.trav_stack_pop,1,1,1);                          
-                stackPtr--;
-                cur = NodeRef(stackPtr->ptr);
-                m_trav_active = stackPtr->mask;
-                assert(m_trav_active);
-                if (unlikely(current_trav_active != m_trav_active)) goto pop;
-                continue;
-              }
-              
-              BVHNNodeTraverserKHit<types,N,K>::traverseClosestHit(cur, m_trav_active, vmask, tNear, (unsigned int*)&maskK, stackPtr);
-              assert(m_trav_active);
-            }
-            goto leaf;
-          }
-#endif
-
           while (1)
           {
             /* context swap */
@@ -459,9 +390,6 @@ namespace embree
             assert(m_trav_active);
 #endif
           }
-#if SINGLE_RAY_OPTIMIZATION
-        leaf:
-#endif
 
           /* current ray stream is done? */
           if (unlikely(cur == BVH::invalidNode))
@@ -595,75 +523,6 @@ namespace embree
             cur_fiber = cur_fiber->swapContext(cur,m_trav_active,stackPtr);
 #endif
           const vfloat<K> inf(pos_inf);
-
-#if SINGLE_RAY_OPTIMIZATION && !defined(__AVX512F__)
-
-          if (likely(__popcnt(m_trav_active) == 1))
-          {
-            const size_t i = __bsf(m_trav_active);
-            const RayContext &ray = ray_ctx[i];
-            const vfloat<K> ray_org_rdir_x = ray.org_rdir.x;
-            const vfloat<K> ray_org_rdir_y = ray.org_rdir.y;
-            const vfloat<K> ray_org_rdir_z = ray.org_rdir.z;
-            const vfloat<K> ray_rdir_x = ray.rdir.x;
-            const vfloat<K> ray_rdir_y = ray.rdir.y;
-            const vfloat<K> ray_rdir_z = ray.rdir.z;
-            
-            while (1)
-            {
-              /* context swap */
-              if (unlikely(cur.isLeaf())) break;
-              const Node* __restrict__ const node = cur.node();
-              STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);
-              assert(m_trav_active);
-              
-              STAT3(normal.trav_nodes,1,1,1);                          
-              const vfloat<K> bminX = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.nearX));
-              const vfloat<K> tNearX = msub(bminX, ray_rdir_x, ray_org_rdir_x);
-              const vfloat<K> bminY = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.nearY));
-              const vfloat<K> tNearY = msub(bminY, ray_rdir_y, ray_org_rdir_y);
-              const vfloat<K> bminZ = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.nearZ));
-              const vfloat<K> tNearZ = msub(bminZ, ray_rdir_z, ray_org_rdir_z);
-              const vfloat<K> bmaxX = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farX));
-              const vfloat<K> tFarX  = msub(bmaxX, ray_rdir_x, ray_org_rdir_x);
-              const vfloat<K> bmaxY = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farY));
-              const vfloat<K> tFarY  = msub(bmaxY, ray_rdir_y, ray_org_rdir_y);
-              const vfloat<K> bmaxZ = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farZ));
-              const vfloat<K> tFarZ  = msub(bmaxZ, ray_rdir_z, ray_org_rdir_z);
-              const vint<K> bitmask  = vint<K>(m_trav_active);
-#if defined(__AVX2__)
-              const vfloat<K> tNear  = maxi(maxi(tNearX,tNearY),maxi(tNearZ,vfloat<K>(ray.rdir.w)));
-              const vfloat<K> tFar   = mini(mini(tFarX,tFarY),mini(tFarZ,vfloat<K>(ray.org_rdir.w)));
-              const vbool<K> vmask   = tNear <= tFar;
-              vint<K> maskK = (bitmask & vint<K>(vmask));
-#else
-              const vfloat<K> tNear  = max(tNearX,tNearY,tNearZ,vfloat<K>(ray.rdir.w));
-              const vfloat<K> tFar   = min(tFarX ,tFarY ,tFarZ ,vfloat<K>(ray.org_rdir.w));
-              const vbool<K> vmask   = tNear <= tFar;
-              vint<K> maskK = select(vmask,bitmask,vint<K>(zero)); 
-#endif
-
-              /* pop if we hit no node */
-              if (unlikely(none(vmask))) 
-              {
-                /*! pop next node */
-                STAT3(shadow.trav_stack_pop,1,1,1);  
-                do {
-                  stackPtr--;
-                  cur = NodeRef(stackPtr->ptr);
-                  assert(stackPtr->mask);
-                  m_trav_active = stackPtr->mask & m_active;
-                } while (unlikely(cur != BVH::invalidNode && m_trav_active == 0));
-                //assert(__popcnt(m_trav_active) <= 32);
-                goto pop;
-              }
-              
-              BVHNNodeTraverserKHit<types,N,K>::traverseAnyHit(cur, m_trav_active, vmask, (unsigned int*)&maskK, stackPtr);
-              assert(m_trav_active);
-            }
-            goto leaf;
-          }
-#endif
 
           while (1)
           {
