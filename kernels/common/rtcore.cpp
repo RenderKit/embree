@@ -424,9 +424,17 @@ namespace embree
     if (((size_t)rayN ) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 16 bytes");   
 #endif
     STAT3(normal.travs,1,N,N);
+   
+    /* fast codepath for single rays */
+    if (likely(N == 1)) {
+      scene->intersect(*rayN);
+    } 
 
-    scene->device->rayStreamFilters.filterAOS(scene,rayN,1,N,stride,flags,true);
-    
+    /* codepath for streams */
+    else {
+      scene->device->rayStreamFilters.filterAOSSingle(scene,rayN,N,stride,flags,true);   
+    }
+
     RTCORE_CATCH_END(scene->device);
   }
 
@@ -442,7 +450,22 @@ namespace embree
 #endif
     STAT3(normal.travs,1,N,N);
 
-    scene->device->rayStreamFilters.filterAOS(scene,rayN,M,N,stride,flags,true);
+    /* codepath for rays */
+    if (likely(M == 1))
+    {
+      /* fast path for single rays */
+      if (likely(N == 1)) {
+        scene->intersect(*rayN);
+      } 
+      /* codepath for single ray streams */
+      else {
+        scene->device->rayStreamFilters.filterAOSSingle(scene,rayN,N,stride,flags,true);
+      }
+    }
+    /* code path for ray packets */
+    else {
+      scene->device->rayStreamFilters.filterSOAPacket(scene,(char*)rayN,M,N,stride,flags,true);
+    }
     
     RTCORE_CATCH_END(scene->device);
   }
@@ -624,7 +647,12 @@ namespace embree
 #endif
     STAT3(shadow.travs,1,N,N);
 
-    scene->device->rayStreamFilters.filterAOS(scene,rayN,1,N,stride,flags,false);
+    if (likely(N == 1)) {
+      scene->occluded (*rayN);
+    } 
+    else {
+      scene->device->rayStreamFilters.filterAOSSingle(scene,rayN,N,stride,flags,false);
+    }
 
     RTCORE_CATCH_END(scene->device);
   }
@@ -642,7 +670,22 @@ namespace embree
 #endif
     STAT3(shadow.travs,1,N,N);
 
-    scene->device->rayStreamFilters.filterAOS(scene,rayN,M,N,stride,flags,false);
+    /* codepath for single rays */
+    if (likely(M == 1))
+    {
+      /* fast path for very small ray packets */
+      if (likely(N == 1)) {
+        scene->occluded (*rayN);
+      } 
+      /* normal codepath for ray streams */
+      else {
+        scene->device->rayStreamFilters.filterAOSSingle(scene,rayN,N,stride,flags,false);
+      }
+    }
+    /* code path for ray packets */
+    else {
+      scene->device->rayStreamFilters.filterSOAPacket(scene,(char*)rayN,M,N,stride,flags,false);
+    }
 
     RTCORE_CATCH_END(scene->device);
   }

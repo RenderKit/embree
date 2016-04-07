@@ -302,7 +302,7 @@ namespace embree
         }
     }
 
-    RayStreamFilterFuncs rayStreamFilters(RayStream::filterAOS,RayStream::filterSOA);
+    RayStreamFilterFuncs rayStreamFilters(RayStream::filterAOS,RayStream::filterSOA,RayStream::filterAOS_Single,RayStream::filterSOA_Packet);
 
   };
 };
