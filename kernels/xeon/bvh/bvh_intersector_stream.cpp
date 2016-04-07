@@ -50,7 +50,7 @@ namespace embree
 #define FIBERING 1
 
 /* enable traversal of either two small streams or one large stream */
-#define TWO_STREAMS_FIBER_MODE 3 // 0 = no fiber, 1 = switch at pop, 2 = switch at each node, 3 = switch at leaf
+#define TWO_STREAMS_FIBER_MODE 0 // 0 = no fiber, 1 = switch at pop, 2 = switch at each node, 3 = switch at leaf
 
 #if TWO_STREAMS_FIBER_MODE == 0 && !defined(__AVX512F__) && EXPERIMENTAL_FIBER_MODE == 0
     static const size_t MAX_RAYS_PER_OCTANT = 8*sizeof(unsigned int);
