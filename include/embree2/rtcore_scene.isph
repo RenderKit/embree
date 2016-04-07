@@ -54,9 +54,9 @@ enum RTCAlgorithmFlags
 /*! layout flags for ray streams */
 enum RTCRayNFlags
 {
-  RTC_RAYN_DEFAULT = (1 << 0)
+  RTC_RAYN_COHERENT   = 1,  //!< optimize for coherent rays
+  RTC_RAYN_INCOHERENT = 2   //!< optimize for incoherent rays
 };
-
 
 /*! \brief Defines an opaque scene type */
 typedef uniform struct __RTCScene {}* uniform RTCScene;

@@ -17,6 +17,7 @@
 #pragma once
 
 #include "default.h"
+#include "ray.h"
 
 namespace embree
 {
@@ -307,6 +308,26 @@ namespace embree
           intersect(*rayN[i]);
     }
 
+#if defined(__SSE__)
+    __forceinline void intersect(const vbool4& valid, RayK<4>& ray) {
+      const vint<4> mask = valid.mask32();
+      intersect4(&mask,(RTCRay4&)ray);
+    }
+#endif
+#if defined(__AVX__)
+    __forceinline void intersect(const vbool8& valid, RayK<8>& ray) {
+      const vint<8> mask = valid.mask32();
+      intersect8(&mask,(RTCRay8&)ray);
+    }
+#endif
+#if defined(__AVX512F__)
+    __forceinline void intersect(const vbool16& valid, RayK<16>& ray) {
+      const vint<16> mask = valid.mask32();
+      intersect16(&mask,(RTCRay16&)ray);
+    }
+#endif
+
+
     /*! Tests if single ray is occluded by the scene. */
     __forceinline void occluded (RTCRay& ray) {
       assert(intersectors.intersector1.occluded);
@@ -341,6 +362,25 @@ namespace embree
         for (size_t i=0;i<N;i++)
           occluded(*rayN[i]);
     }
+
+#if defined(__SSE__)
+    __forceinline void occluded(const vbool4& valid, RayK<4>& ray) {
+      const vint<4> mask = valid.mask32();
+      occluded4(&mask,(RTCRay4&)ray);
+    }
+#endif
+#if defined(__AVX__)
+    __forceinline void occluded(const vbool8& valid, RayK<8>& ray) {
+      const vint<8> mask = valid.mask32();
+      occluded8(&mask,(RTCRay8&)ray);
+    }
+#endif
+#if defined(__AVX512F__)
+    __forceinline void occluded(const vbool16& valid, RayK<16>& ray) {
+      const vint<16> mask = valid.mask32();
+      occluded16(&mask,(RTCRay16&)ray);
+    }
+#endif
 
   public:
     Intersectors intersectors;

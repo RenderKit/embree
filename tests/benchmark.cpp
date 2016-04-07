@@ -1314,9 +1314,9 @@ namespace embree
           setRay(rays[j],Vec3fa(zero),numbers[i+j]);
 
         if (intersect)
-          rtcIntersectN(scene,rays,STREAM_SIZE,sizeof(RTCRay),RTC_RAYN_DEFAULT);
+          rtcIntersectN(scene,rays,STREAM_SIZE,sizeof(RTCRay),RTC_RAYN_INCOHERENT);
         else
-          rtcOccludedN(scene,rays,STREAM_SIZE,sizeof(RTCRay),RTC_RAYN_DEFAULT);
+          rtcOccludedN(scene,rays,STREAM_SIZE,sizeof(RTCRay),RTC_RAYN_INCOHERENT);
       }        
 
       //if (threadIndex != 0) 
@@ -1404,7 +1404,7 @@ namespace embree
           for (size_t y=yy;y<yy+COHERENT_STREAM_TILE_Y;y++)
             for (size_t x=xx;x<xx+COHERENT_STREAM_TILE_X;x++)
               rays[index++] = makeRay(Vec3fa(zero),Vec3fa(float(x)*rcpWidth,1,float(y)*rcpHeight));
-          rtcIntersectN(scene,rays,index,sizeof(RTCRay),RTC_RAYN_DEFAULT);
+          rtcIntersectN(scene,rays,index,sizeof(RTCRay),RTC_RAYN_INCOHERENT);
         }
       }
 

@@ -58,9 +58,9 @@ enum RTCAlgorithmFlags
 /*! layout flags for ray streams */
 enum RTCRayNFlags
 {
-  RTC_RAYN_DEFAULT = (1 << 0)
+  RTC_RAYN_COHERENT   = 1,  //!< optimize for coherent rays
+  RTC_RAYN_INCOHERENT = 2   //!< optimize for incoherent rays
 };
-
 
 /*! \brief Defines an opaque scene type */
 typedef struct __RTCScene {}* RTCScene;
@@ -129,14 +129,14 @@ RTCORE_API void rtcIntersect16 (const void* valid, RTCScene scene, RTCRay16& ray
  *  function can only be called for scenes with the RTC_INTERSECTN
  *  flag set. The stride specifies the offset between rays in
  *  bytes. */
-RTCORE_API void rtcIntersectN (RTCScene scene, RTCRay* rayN, const size_t N, const size_t stride, const size_t flags = RTC_RAYN_DEFAULT);
+RTCORE_API void rtcIntersectN (RTCScene scene, RTCRay* rayN, const size_t N, const size_t stride, const size_t flags);
 
 /*! Intersects one or multiple streams of N rays in compact SOA layout
  *  with the scene. This function can only be called for scenes with
  *  the RTC_INTERSECTN flag set. 'streams' specifies the number of
  *  dense SOA ray streams, and 'stride' the offset in bytes between
  *  those. */
-RTCORE_API void rtcIntersectN_SOA (RTCScene scene, RTCRaySOA& rayN, const size_t N, const size_t streams, const size_t stride, const size_t flags = RTC_RAYN_DEFAULT);
+RTCORE_API void rtcIntersectN_SOA (RTCScene scene, RTCRaySOA& rayN, const size_t N, const size_t streams, const size_t stride, const size_t flags);
 
 
 /*! Tests if a single ray is occluded by the scene. The ray has to be
@@ -169,14 +169,14 @@ RTCORE_API void rtcOccluded16 (const void* valid, RTCScene scene, RTCRay16& ray)
  *  scene. This function can only be called for scenes with the
  *  RTC_INTERSECTN flag set. The stride specifies the offset between
  *  rays in bytes.*/
-RTCORE_API void rtcOccludedN (RTCScene scene, RTCRay* rayN, const size_t N, const size_t stride, const size_t flags = RTC_RAYN_DEFAULT);
+RTCORE_API void rtcOccludedN (RTCScene scene, RTCRay* rayN, const size_t N, const size_t stride, const size_t flags);
 
 /*! Intersects one or multiple streams of N rays in compact SOA layout
  *  with the scene. This function can only be called for scenes with
  *  the RTC_INTERSECTN flag set. 'streams' specifies the number of
  *  dense SOA ray streams, and 'stride' the offset in bytes between
  *  those. */
-RTCORE_API void rtcOccludedN_SOA (RTCScene scene, RTCRaySOA& rayN, const size_t N, const size_t streams, const size_t stride, const size_t flags = RTC_RAYN_DEFAULT);
+RTCORE_API void rtcOccludedN_SOA (RTCScene scene, RTCRaySOA& rayN, const size_t N, const size_t streams, const size_t stride, const size_t flags);
 
 /*! Deletes the scene. All contained geometry get also destroyed. */
 RTCORE_API void rtcDeleteScene (RTCScene scene);

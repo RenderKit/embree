@@ -136,8 +136,11 @@ namespace embree
       return _mm512_load_si512(addr);
     }
 
+    static __forceinline void store(int* ptr, const vint16& v) {
+      _mm512_store_si512(ptr,v);
+    }
+
     static __forceinline void store(void* ptr, const vint16& v) {
-      //_mm512_extstore_epi32(addr,v2,_MM_DOWNCONV_EPI32_NONE,_MM_HINT_NONE);
       _mm512_store_si512(ptr,v);
     }
 

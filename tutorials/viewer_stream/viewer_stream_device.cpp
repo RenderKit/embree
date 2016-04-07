@@ -23,6 +23,8 @@
 #define AMBIENT_OCCLUSION_SAMPLES 64
 //#define rtcOccluded rtcIntersect
 //#define rtcOccludedN rtcIntersectN
+//#define RAYN_FLAGS RTC_RAYN_COHERENT
+#define RAYN_FLAGS RTC_RAYN_INCOHERENT
 
 extern "C" ISPCScene* g_ispc_scene;
 
@@ -210,13 +212,13 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
   
   /* trace occlusion rays */
 #if USE_INTERFACE == 0
-  rtcOccludedN(g_scene,rays,AMBIENT_OCCLUSION_SAMPLES,sizeof(RTCRay),0);
+  rtcOccludedN(g_scene,rays,AMBIENT_OCCLUSION_SAMPLES,sizeof(RTCRay),RAYN_FLAGS);
 #elif USE_INTERFACE == 1
   for (size_t i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
     rtcOccluded(g_scene,rays[i]);
 #else
   for (size_t i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
-    rtcOccludedN(g_scene,&rays[i],1,sizeof(RTCRay),0);
+    rtcOccludedN(g_scene,&rays[i],1,sizeof(RTCRay),RAYN_FLAGS);
 #endif
 
   /* accumulate illumination */
@@ -249,10 +251,8 @@ void renderTileStandard(int taskIndex,
   RTCRay rays[TILE_SIZE_X*TILE_SIZE_Y];
 
   /* generate stream of primary rays */
-  for (size_t i=0; i<1; i++)
-  {
   int N = 0;
-  for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++) 
+  for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
   {
     /* ISPC workaround for mask == 0 */
     if (all(1 == 0)) continue;
@@ -275,13 +275,13 @@ void renderTileStandard(int taskIndex,
 
   /* trace stream of rays */
 #if USE_INTERFACE == 0
-  rtcIntersectN(g_scene,rays,N,sizeof(RTCRay),0);
+  rtcIntersectN(g_scene,rays,N,sizeof(RTCRay),RAYN_FLAGS);
 #elif USE_INTERFACE == 1
   for (size_t i=0; i<N; i++)
     rtcIntersect(g_scene,rays[i]);
 #else
   for (size_t i=0; i<N; i++)
-    rtcIntersectN(g_scene,&rays[i],1,sizeof(RTCRay),0);
+    rtcIntersectN(g_scene,&rays[i],1,sizeof(RTCRay),RAYN_FLAGS);
 #endif
 
   /* shade stream of rays */
@@ -304,7 +304,6 @@ void renderTileStandard(int taskIndex,
     unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
     unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
     pixels[y*width+x] = (b << 16) + (g << 8) + r;
-  }
   }
 }
 
@@ -353,7 +352,6 @@ extern "C" void device_render (int* pixels,
     for (size_t i=range.begin(); i<range.end(); i++)
       renderTileTask(i,pixels,width,height,time,camera,numTilesX,numTilesY);
   }); 
-  //rtcDebug();
 }
 
 /* called by the C++ code for cleanup */

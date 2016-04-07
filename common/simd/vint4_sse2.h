@@ -85,6 +85,10 @@ namespace embree
 #endif
     } 
 
+    static  __forceinline vint4 load( const int* const a ) {
+      return _mm_load_si128((__m128i*)a); 
+    }
+
     static  __forceinline vint4 load( const void* const a ) {
       return _mm_load_si128((__m128i*)a); 
     }
@@ -93,6 +97,10 @@ namespace embree
       return _mm_loadu_si128((__m128i*)a); 
     }
     
+    static __forceinline void store(int* ptr, const vint4& v) {
+      _mm_store_si128((__m128i*)ptr,v);
+    }
+
     static __forceinline void store(void* ptr, const vint4& v) {
       _mm_store_si128((__m128i*)ptr,v);
     }

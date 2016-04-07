@@ -134,6 +134,28 @@ namespace embree
 
     void RayStream::filterSOA(Scene *scene, RTCRaySOA& _rayN, const size_t N, const size_t streams, const size_t stream_offset, const size_t flags, const bool intersect)
     {
+      RaySOA& rayN = *(RaySOA*)&_rayN;
+
+      /* use packet intersector for coherent ray mode */
+      if (likely(flags == RTC_RAYN_COHERENT))
+      {
+        for (size_t s=0; s<streams; s++)
+        {
+          for (size_t i=0; i<N; i+=VSIZEX)
+          {
+            const vintx vi = vintx(i)+vintx(step);
+            const vboolx valid = vi < vintx(N);
+            const size_t offset = s*stream_offset + sizeof(float) * i;
+            RayK<VSIZEX> ray = rayN.gather<VSIZEX>(offset);
+            if (intersect) scene->intersect(valid,ray);
+            else           scene->occluded (valid,ray);
+            rayN.scatter<VSIZEX>(offset,ray);
+          }
+        }
+        return;
+      }
+      
+      /* otherwise use stream intersector */
       __aligned(64) Ray rays[MAX_RAYS_PER_OCTANT];
       __aligned(64) Ray *rays_ptr[MAX_RAYS_PER_OCTANT];
 
@@ -146,7 +168,6 @@ namespace embree
       for (size_t i=0;i<8;i++) rays_in_octant[i] = 0;
 
       size_t soffset = 0;
-      RaySOA &rayN = *(RaySOA*)&_rayN;
 
       for (size_t s=0;s<streams;s++,soffset+=stream_offset)
       {

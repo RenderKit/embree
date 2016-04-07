@@ -77,6 +77,10 @@ namespace embree
       return vint8(il,ih);
     }
 
+    static __forceinline vint8 load( const int* const a) {
+      return _mm256_castps_si256(_mm256_load_ps((float*)a)); 
+    }
+
     static __forceinline vint8 load( const void* const a) {
       return _mm256_castps_si256(_mm256_load_ps((float*)a)); 
     }
@@ -85,6 +89,10 @@ namespace embree
       return _mm256_castps_si256(_mm256_loadu_ps((float*)a)); 
     }
     
+    static __forceinline void store(int* ptr, const vint8& f ) {
+      _mm256_store_ps((float*)ptr,_mm256_castsi256_ps(f));
+    }
+
     static __forceinline void store(void* ptr, const vint8& f ) {
       _mm256_store_ps((float*)ptr,_mm256_castsi256_ps(f));
     }

@@ -381,6 +381,26 @@ namespace embree
       return ray;
     }
 
+    template<int K>
+    __forceinline RayK<K> gather(const size_t offset)
+    {
+      RayK<K> ray;
+      ray.org.x = vfloat<K>::load((float* __restrict__ )((char*)orgx + offset));
+      ray.org.y = vfloat<K>::load((float* __restrict__ )((char*)orgy + offset));
+      ray.org.z = vfloat<K>::load((float* __restrict__ )((char*)orgz + offset));
+      ray.dir.x = vfloat<K>::load((float* __restrict__ )((char*)dirx + offset));
+      ray.dir.y = vfloat<K>::load((float* __restrict__ )((char*)diry + offset));
+      ray.dir.z = vfloat<K>::load((float* __restrict__ )((char*)dirz + offset));
+      ray.tfar  = vfloat<K>::load((float* __restrict__ )((char*)tfar + offset));
+      /* optional inputs */
+      ray.tnear = tnear ? vfloat<K>::load((float* __restrict__ )((char*)tnear + offset)) : 0.0f;
+      ray.time  = time  ? vfloat<K>::load((float* __restrict__ )((char*)time  + offset)) : 0.0f;
+      ray.mask  = mask  ? vint<K>::load((int * __restrict__ )((char*)mask  + offset)) : -1;
+      /* init geomID */
+      ray.geomID = RTC_INVALID_GEOMETRY_ID;
+      return ray;
+    }
+
     __forceinline void scatterByOffset(const size_t offset, const Ray& ray, const bool all=true)
     {
       *(unsigned * __restrict__ )((char*)geomID + offset) = ray.geomID;
@@ -396,6 +416,24 @@ namespace embree
           if (likely(Ngz)) *(float* __restrict__ )((char*)Ngz + offset) = ray.Ng.z;
           if (likely(instID)) *(unsigned * __restrict__ )((char*)instID + offset) = ray.instID;
         }
+    }
+
+    template<int K>
+    __forceinline void scatter(const size_t offset, const RayK<K>& ray, const bool all=true)
+    {
+      vint<K>::store((int * __restrict__ )((char*)geomID + offset), ray.geomID);
+      if (!all) return;
+
+      vbool<K> mask = ray.geomID !=  RTC_INVALID_GEOMETRY_ID;
+      
+      vfloat<K>::store((float* __restrict__ )((char*)tfar + offset), ray.tfar);
+      vfloat<K>::store((float* __restrict__ )((char*)u + offset), ray.u);
+      vfloat<K>::store((float* __restrict__ )((char*)v + offset), ray.v);
+      vint<K>::store((int * __restrict__ )((char*)primID + offset), ray.primID);
+      if (likely(Ngx)) vfloat<K>::store((float* __restrict__ )((char*)Ngx + offset), ray.Ng.x);
+      if (likely(Ngy)) vfloat<K>::store((float* __restrict__ )((char*)Ngy + offset), ray.Ng.y);
+      if (likely(Ngz)) vfloat<K>::store((float* __restrict__ )((char*)Ngz + offset), ray.Ng.z);
+      if (likely(instID)) vint<K>::store((int * __restrict__ )((char*)instID + offset), ray.instID);
     }
 
     __forceinline size_t getOctantByOffset(const size_t offset)
