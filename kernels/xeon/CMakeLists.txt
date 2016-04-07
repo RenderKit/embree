@@ -105,6 +105,8 @@ IF (RTCORE_RAY_PACKETS)
   ../common/rtcore_ispc.cpp
   ../common/rtcore_ispc.ispc
 
+  ../common/raystreams/raystreams.cpp
+
   bvh/bvh_intersector_single.cpp
   bvh/bvh_intersector_hybrid.cpp)
 ENDIF()
@@ -156,6 +158,8 @@ IF (RTCORE_RAY_PACKETS)
 
     geometry/instance_intersector.cpp
 
+    ../common/raystreams/raystreams.cpp
+
     bvh/bvh_intersector_single.cpp
     bvh/bvh_intersector_hybrid.cpp
     bvh/bvh_intersector_stream.cpp)
@@ -176,6 +180,8 @@ SET(EMBREE_LIBRARY_FILES_AVX2
 IF (RTCORE_RAY_PACKETS)
   SET(EMBREE_LIBRARY_FILES_AVX2 ${EMBREE_LIBRARY_FILES_AVX2}
     geometry/instance_intersector.cpp
+
+    ../common/raystreams/raystreams.cpp
 
     bvh/bvh_intersector_single.cpp
     bvh/bvh_intersector_hybrid.cpp
@@ -204,6 +210,8 @@ IF (RTCORE_RAY_PACKETS)
   SET(EMBREE_LIBRARY_FILES_AVX512KNL ${EMBREE_LIBRARY_FILES_AVX512KNL}
 
     geometry/instance_intersector.cpp
+
+    ../common/raystreams/raystreams.cpp
 
     bvh/bvh_intersector_single.cpp
     bvh/bvh_intersector_hybrid.cpp

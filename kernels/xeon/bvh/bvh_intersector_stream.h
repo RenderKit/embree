@@ -326,8 +326,7 @@ namespace embree
     public:
       static void intersect(BVH* bvh, Ray **ray, size_t numRays, size_t flags);
       static void occluded (BVH* bvh, Ray **ray, size_t numRays, size_t flags);
-      static void filterAOS(Scene *scene, RTCRay* _rayN, const size_t N, const size_t stride, const size_t flags, const bool intersect);
-      static void filterSOA(Scene *scene, RTCRaySOA& _rayN, const size_t N, const size_t streams, const size_t stream_offset, const size_t flags, const bool intersect);
     };
+
   }
 }

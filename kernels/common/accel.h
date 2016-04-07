@@ -20,8 +20,6 @@
 
 namespace embree
 {
-  class Scene;
-
   /*! Base class for the acceleration structure data. */
   class AccelData : public RefCount 
   {
@@ -73,7 +71,7 @@ namespace embree
                                    RTCRay** ray,        /*!< ray stream to intersect */
                                    const size_t N,      /*!< number of rays in stream */
                                    const size_t flags   /*!< layout flags */);
-
+    
     
     /*! Type of occlusion function pointer for single rays. */
     typedef void (*OccludedFunc) (void* ptr,           /*!< pointer to user data */ 
@@ -99,22 +97,6 @@ namespace embree
                                   RTCRay** ray,        /*!< ray stream to intersect */
                                   const size_t N,      /*!< number of rays in stream */
                                   const size_t flags   /*!< layout flags */);
-
-    typedef void (*filterAOS_func)(Scene* scene, 
-                                   RTCRay* rayN, 
-                                   const size_t N, 
-                                   const size_t stride, 
-                                   const size_t flags, 
-                                   const bool intersect);
-    
-    typedef void (*filterSOA_func)(Scene* scene, 
-                                   RTCRaySOA& rayN, 
-                                   const size_t N, 
-                                   const size_t streams, 
-                                   const size_t offset, 
-                                   const size_t flags, 
-                                   const bool intersect);
-  
     typedef void (*ErrorFunc) ();
 
     struct Intersector1
@@ -185,13 +167,13 @@ namespace embree
       OccludedFunc16 occluded;
     };
 
-    struct IntersectorN 
+     struct IntersectorN 
     {
       IntersectorN (ErrorFunc error = nullptr) 
-        : intersect((IntersectFuncN)error), occluded((OccludedFuncN)error), intersectAOS((filterAOS_func)error), intersectSOA((filterSOA_func)error), name(nullptr) {}
+      : intersect((IntersectFuncN)error), occluded((OccludedFuncN)error), name(nullptr) {}
 
-      IntersectorN (IntersectFuncN intersect, OccludedFuncN occluded, filterAOS_func intersectAOS, filterSOA_func intersectSOA, const char* name)
-        : intersect(intersect), occluded(occluded), intersectAOS(intersectAOS), intersectSOA(intersectSOA), name(name) {}
+      IntersectorN (IntersectFuncN intersect, OccludedFuncN occluded, const char* name)
+      : intersect(intersect), occluded(occluded), name(name) {}
 
       operator bool() const { return name; }
       
@@ -200,8 +182,6 @@ namespace embree
       const char* name;
       IntersectFuncN intersect;
       OccludedFuncN occluded;
-      filterAOS_func intersectAOS;
-      filterSOA_func intersectSOA;
     };
    
     struct Intersectors 
@@ -317,7 +297,7 @@ namespace embree
       intersectors.intersector16.intersect(valid,intersectors.ptr,ray);
     }
 
-    /*! Intersects a packet of N rays in AOS layout with the scene. */
+    /*! Intersects a packet of N rays in SOA layout with the scene. */
     __forceinline void intersectN (RTCRay **rayN, const size_t N, const size_t flags) {
       //assert(intersectors.intersectorN.intersect);
       if (likely(intersectors.intersectorN.intersect))  // FIXME: not working properly, will be set to error function sometimes
@@ -326,18 +306,6 @@ namespace embree
         /* fallback path */
         for (size_t i=0;i<N;i++)
           intersect(*rayN[i]);
-    }
-
-    /*! Intersects a packet of N rays in AOS layout with the scene. */
-    __forceinline void intersectN_AOS (Scene* scene, RTCRay* rayN, const size_t N, const size_t stride, const size_t flags, const bool intersect) {
-      assert(intersectors.intersectorN.intersectAOS);
-      intersectors.intersectorN.intersectAOS(scene,rayN,N,stride,flags,intersect);
-    }
-
-    /*! Intersects a packet of N rays in SOA layout with the scene. */
-    __forceinline void intersectN_SOA (Scene *scene, RTCRaySOA& rayN, const size_t N, const size_t streams, const size_t offset, const size_t flags, const bool intersect) {
-      assert(intersectors.intersectorN.intersectSOA);
-      intersectors.intersectorN.intersectSOA(scene,rayN,N,streams,offset,flags,intersect);
     }
 
     /*! Tests if single ray is occluded by the scene. */
@@ -401,9 +369,7 @@ namespace embree
 
 #define DEFINE_INTERSECTORN(symbol,intersector)                         \
   Accel::IntersectorN symbol((Accel::IntersectFuncN)intersector::intersect, \
-                             (Accel::OccludedFuncN )intersector::occluded, \
-                             (Accel::filterAOS_func)intersector::filterAOS, \
-                             (Accel::filterSOA_func)intersector::filterSOA, \
-                             TOSTRING(isa) "::" TOSTRING(symbol));
+                              (Accel::OccludedFuncN)intersector::occluded,\
+                              TOSTRING(isa) "::" TOSTRING(symbol));
  
 }
