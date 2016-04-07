@@ -136,8 +136,8 @@ namespace embree
     rtcIntersect16(valid,scene,ray);
   }
 
-  extern "C" void ispcIntersect1N (RTCScene scene, RTCRay* rayN, const size_t N, const size_t stride, const size_t flags) {
-    rtcIntersectN(scene,rayN,1,N,stride,flags);
+  extern "C" void ispcIntersectN (RTCScene scene, RTCRay* rayN, const size_t M, const size_t N, const size_t stride, const size_t flags) {
+    rtcIntersectN(scene,rayN,M,N,stride,flags);
   }
 
   extern "C" void ispcIntersectN_SOA (RTCScene scene,  RTCRaySOA& rayN, const  size_t N, const  size_t streams, const  size_t offset, const  size_t flags) {

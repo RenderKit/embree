@@ -45,7 +45,7 @@ extern "C" void ispcIntersect1 (RTCScene scene, uniform RTCRay1& ray);
 extern "C" void ispcIntersect4 (void* uniform valid, RTCScene scene, void* uniform ray);
 extern "C" void ispcIntersect8 (void* uniform valid, RTCScene scene, void* uniform ray);
 extern "C" void ispcIntersect16 (void* uniform valid, RTCScene scene, void* uniform ray);
-extern "C" void ispcIntersect1N (RTCScene scene, void* uniform rayN, const uniform size_t N, const uniform size_t stride, const uniform size_t flags);
+extern "C" void ispcIntersectN (RTCScene scene, void* uniform rayN, const uniform size_t M, const uniform size_t N, const uniform size_t stride, const uniform size_t flags);
 extern "C" void ispcIntersectN_SOA (RTCScene scene, uniform RTCRaySOA& rayN, const uniform size_t N, const uniform size_t streams, const uniform size_t offset, const uniform size_t flags);
 
 
@@ -278,7 +278,7 @@ void rtcIntersect (RTCScene scene, varying RTCRay& ray)
 }
 
 void rtcIntersect1N (RTCScene scene, uniform RTCRay1* uniform rayN, const uniform size_t N, const uniform size_t stride, const uniform size_t flags) {
-  ispcIntersect1N(scene,rayN,N,stride,flags);
+  ispcIntersectN(scene,rayN,1,N,stride,flags);
 }
 
 inline void initRTCRaySOA(uniform RTCRaySOA& ray_soa, varying RTCRay& ray)
@@ -303,11 +303,8 @@ inline void initRTCRaySOA(uniform RTCRaySOA& ray_soa, varying RTCRay& ray)
   ray_soa.instID = (uniform unsigned int* uniform)&ray.instID;
 }
 
-void rtcIntersectN (RTCScene scene, varying RTCRay* uniform rayN, const uniform size_t N, const uniform size_t stride, const uniform size_t flags) 
-{
-  uniform RTCRaySOA ray_soa;
-  initRTCRaySOA(ray_soa,rayN[0]);
-  ispcIntersectN_SOA(scene,ray_soa,sizeof(varying float)/4,N,stride,flags);
+void rtcIntersectN (RTCScene scene, varying RTCRay* uniform rayN, const uniform size_t N, const uniform size_t stride, const uniform size_t flags) {
+  ispcIntersectN(scene,rayN,sizeof(varying float)/4,N,stride,flags);
 }
 
 void rtcIntersectN_SOA (RTCScene scene, uniform RTCRaySOA& rayN, const uniform size_t N, const uniform size_t streams, const uniform size_t offset, const uniform size_t flags) {
