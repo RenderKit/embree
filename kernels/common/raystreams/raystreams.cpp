@@ -23,7 +23,7 @@ namespace embree
 
   namespace isa
   {
-    __forceinline void RayStream::filterAOS_Single(Scene *scene, RTCRay* _rayN, const size_t N, const size_t stride, const size_t flags, const bool intersect)
+    __forceinline void RayStream::filterAOS(Scene *scene, RTCRay* _rayN, const size_t N, const size_t stride, const size_t flags, const bool intersect)
     {
       Ray* __restrict__ rayN = (Ray*)_rayN;
       __aligned(64) Ray* octants[8][MAX_RAYS_PER_OCTANT];
@@ -92,7 +92,7 @@ namespace embree
       }
     }
 
-    __forceinline void RayStream::filterSOA_Packet(Scene *scene, char* rayData, const size_t N, const size_t streams, const size_t stream_offset, const size_t flags, const bool intersect)
+    __forceinline void RayStream::filterSOA(Scene *scene, char* rayData, const size_t N, const size_t streams, const size_t stream_offset, const size_t flags, const bool intersect)
     {
       RayPacket rayN(rayData,N);
 
@@ -185,7 +185,7 @@ namespace embree
         }
     }
 
-    void RayStream::filterSOA(Scene *scene, RTCRaySOA& _rayN, const size_t N, const size_t streams, const size_t stream_offset, const size_t flags, const bool intersect)
+    void RayStream::filterSOP(Scene *scene, RTCRaySOA& _rayN, const size_t N, const size_t streams, const size_t stream_offset, const size_t flags, const bool intersect)
     {
       RaySOA& rayN = *(RaySOA*)&_rayN;
 
@@ -280,7 +280,7 @@ namespace embree
         }
     }
 
-    RayStreamFilterFuncs rayStreamFilters(RayStream::filterSOA,RayStream::filterAOS_Single,RayStream::filterSOA_Packet);
+    RayStreamFilterFuncs rayStreamFilters(RayStream::filterAOS,RayStream::filterSOA,RayStream::filterSOP);
 
   };
 };

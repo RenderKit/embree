@@ -432,7 +432,7 @@ namespace embree
 
     /* codepath for streams */
     else {
-      scene->device->rayStreamFilters.filterAOSSingle(scene,rayN,N,stride,flags,true);   
+      scene->device->rayStreamFilters.filterAOS(scene,rayN,N,stride,flags,true);   
     }
 
     RTCORE_CATCH_END(scene->device);
@@ -459,12 +459,12 @@ namespace embree
       } 
       /* codepath for single ray streams */
       else {
-        scene->device->rayStreamFilters.filterAOSSingle(scene,rayN,N,stride,flags,true);
+        scene->device->rayStreamFilters.filterAOS(scene,rayN,N,stride,flags,true);
       }
     }
     /* code path for ray packets */
     else {
-      scene->device->rayStreamFilters.filterSOAPacket(scene,(char*)rayN,M,N,stride,flags,true);
+      scene->device->rayStreamFilters.filterSOA(scene,(char*)rayN,M,N,stride,flags,true);
     }
     
     RTCORE_CATCH_END(scene->device);
@@ -499,7 +499,7 @@ namespace embree
 #endif
     STAT3(normal.travs,1,N,N);
 
-    scene->device->rayStreamFilters.filterSOA(scene,rayN,N,streams,stride,flags,true);
+    scene->device->rayStreamFilters.filterSOP(scene,rayN,N,streams,stride,flags,true);
 
     RTCORE_CATCH_END(scene->device);
   }
@@ -651,7 +651,7 @@ namespace embree
       scene->occluded (*rayN);
     } 
     else {
-      scene->device->rayStreamFilters.filterAOSSingle(scene,rayN,N,stride,flags,false);
+      scene->device->rayStreamFilters.filterAOS(scene,rayN,N,stride,flags,false);
     }
 
     RTCORE_CATCH_END(scene->device);
@@ -679,12 +679,12 @@ namespace embree
       } 
       /* normal codepath for ray streams */
       else {
-        scene->device->rayStreamFilters.filterAOSSingle(scene,rayN,N,stride,flags,false);
+        scene->device->rayStreamFilters.filterAOS(scene,rayN,N,stride,flags,false);
       }
     }
     /* code path for ray packets */
     else {
-      scene->device->rayStreamFilters.filterSOAPacket(scene,(char*)rayN,M,N,stride,flags,false);
+      scene->device->rayStreamFilters.filterSOA(scene,(char*)rayN,M,N,stride,flags,false);
     }
 
     RTCORE_CATCH_END(scene->device);
@@ -719,7 +719,7 @@ namespace embree
 #endif
     STAT3(shadow.travs,1,N,N);
 
-    scene->device->rayStreamFilters.filterSOA(scene,rayN,N,streams,stride,flags,false);
+    scene->device->rayStreamFilters.filterSOP(scene,rayN,N,streams,stride,flags,false);
 
     RTCORE_CATCH_END(scene->device);
   }
