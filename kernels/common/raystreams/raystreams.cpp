@@ -69,6 +69,7 @@ namespace embree
 
       for (size_t i=0;i<8;i++) rays_in_octant[i] = 0;
       size_t inputRayID = 0;
+
       while(1)
       {
         int cur_octant = -1;
