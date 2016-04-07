@@ -54,7 +54,7 @@ def render(name,model):
     command += ' -c ' + modelDir + dash + model + '_tutorial.ecs'
     for arg in args:
       command += ' ' + arg
-    command += ' -benchmark 4 8 > ' + logFile
+    command += ' -benchmark 1 4 > ' + logFile
     os.system(command)
 
 def renderLoop():
