@@ -25,6 +25,7 @@ namespace embree
 
   typedef void (*filterAOS_func)(Scene *scene, 
                                  RTCRay* rayN, 
+                                 const size_t M,
                                  const size_t N, 
                                  const size_t stride, 
                                  const size_t flags, 
@@ -65,7 +66,9 @@ namespace embree
     {
 
     public:
-      static void filterAOS(Scene *scene, RTCRay* rayN, const size_t N, const size_t stride, const size_t flags, const bool intersect);
+      static void filterAOS_Single(Scene *scene, RTCRay* _rayN, const size_t N, const size_t stride, const size_t flags, const bool intersect);
+
+      static void filterAOS(Scene *scene, RTCRay* rayN, const size_t M, const size_t N, const size_t stride, const size_t flags, const bool intersect);
 
       static void filterSOA(Scene *scene, RTCRaySOA& rayN, const size_t N, const size_t streams, const size_t offset, const size_t flags, const bool intersect);
     

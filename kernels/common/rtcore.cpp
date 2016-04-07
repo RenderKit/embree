@@ -413,7 +413,24 @@ namespace embree
 #endif
 
 #if defined (RTCORE_RAY_PACKETS)
-  RTCORE_API void rtcIntersectN (RTCScene hscene, RTCRay* rayN, const size_t N, const size_t stride, const size_t flags) 
+  RTCORE_API void rtcIntersect1N (RTCScene hscene, RTCRay* rayN, const size_t N, const size_t stride, const size_t flags) 
+  {
+    Scene* scene = (Scene*) hscene;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcIntersect1N);
+#if defined(DEBUG)
+    RTCORE_VERIFY_HANDLE(hscene);
+    if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)rayN ) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 16 bytes");   
+#endif
+    STAT3(normal.travs,1,N,N);
+
+    scene->device->rayStreamFilters.filterAOS(scene,rayN,1,N,stride,flags,true);
+    
+    RTCORE_CATCH_END(scene->device);
+  }
+
+  RTCORE_API void rtcIntersectN (RTCScene hscene, RTCRay* rayN, const size_t M, const size_t N, const size_t stride, const size_t flags) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -425,7 +442,7 @@ namespace embree
 #endif
     STAT3(normal.travs,1,N,N);
 
-    scene->device->rayStreamFilters.filterAOS(scene,rayN,N,stride,flags,true);
+    scene->device->rayStreamFilters.filterAOS(scene,rayN,M,N,stride,flags,true);
     
     RTCORE_CATCH_END(scene->device);
   }
@@ -594,7 +611,25 @@ namespace embree
 
   
 #if defined (RTCORE_RAY_PACKETS)
-  RTCORE_API void rtcOccludedN(RTCScene hscene, RTCRay* rayN, const size_t N, const size_t stride, const size_t flags) 
+  RTCORE_API void rtcOccluded1N(RTCScene hscene, RTCRay* rayN, const size_t N, const size_t stride, const size_t flags) 
+  {
+    Scene* scene = (Scene*) hscene;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcOccludedN1);
+#if defined(DEBUG)
+    RTCORE_VERIFY_HANDLE(hscene);
+    if (stride < sizeof(RTCRay)) throw_RTCError(RTC_INVALID_OPERATION,"stride too small");
+    if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)rayN ) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 64 bytes");   
+#endif
+    STAT3(shadow.travs,1,N,N);
+
+    scene->device->rayStreamFilters.filterAOS(scene,rayN,1,N,stride,flags,false);
+
+    RTCORE_CATCH_END(scene->device);
+  }
+
+  RTCORE_API void rtcOccludedN(RTCScene hscene, RTCRay* rayN, const size_t M, const size_t N, const size_t stride, const size_t flags) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -607,11 +642,10 @@ namespace embree
 #endif
     STAT3(shadow.travs,1,N,N);
 
-    scene->device->rayStreamFilters.filterAOS(scene,rayN,N,stride,flags,false);
+    scene->device->rayStreamFilters.filterAOS(scene,rayN,M,N,stride,flags,false);
 
     RTCORE_CATCH_END(scene->device);
   }
-
 
   RTCORE_API void rtcOccludedN_SOA(RTCScene hscene, RTCRaySOA& rayN, const size_t N, const size_t streams, const size_t stride, const size_t flags) 
   {
