@@ -149,7 +149,7 @@ namespace embree
             RayK<VSIZEX> ray = rayN.gather<VSIZEX>(offset);
             if (intersect) scene->intersect(valid,ray);
             else           scene->occluded (valid,ray);
-            rayN.scatter<VSIZEX>(offset,ray);
+            rayN.scatter<VSIZEX>(offset,ray,intersect);
           }
         }
         return;
