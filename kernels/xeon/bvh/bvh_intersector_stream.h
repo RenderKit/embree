@@ -231,7 +231,7 @@ namespace embree
           vfloat<K> org_rdir   = select(0x7777,org * rdir,ray->tfar);
           vfloat<K> res = select(0xf,rdir,org_rdir);
           vfloat8 r = extractf256bit(res);
-          *(vfloat8*)&ray_ctx[i] = r;          
+          *(vfloat8*)this = r;          
 #else
           Vec3fa& org = ray->org;
           Vec3fa& dir = ray->dir;
