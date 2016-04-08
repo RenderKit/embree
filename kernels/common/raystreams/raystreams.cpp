@@ -108,8 +108,10 @@ namespace embree
             const vboolx valid = vi < vintx(N);
             const size_t offset = s*stream_offset + sizeof(float) * i;
             RayK<VSIZEX> ray = rayN.gather<VSIZEX>(offset);
+#if !defined(__MIC)
             if (intersect) scene->intersect(valid,ray);
             else           scene->occluded (valid,ray);
+#endif
             rayN.scatter<VSIZEX>(valid,offset,ray,intersect);
           }
         }
@@ -201,8 +203,10 @@ namespace embree
             const vboolx valid = vi < vintx(N);
             const size_t offset = s*stream_offset + sizeof(float) * i;
             RayK<VSIZEX> ray = rayN.gather<VSIZEX>(offset);
+#if !defined(__MIC)
             if (intersect) scene->intersect(valid,ray);
             else           scene->occluded (valid,ray);
+#endif
             rayN.scatter<VSIZEX>(valid,offset,ray,intersect);
           }
         }
