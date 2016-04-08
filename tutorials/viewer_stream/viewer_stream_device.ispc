@@ -166,16 +166,6 @@ Vec3f ambientOcclusionShading(int x, int y, RTCRay& ray)
 {
   RTCRay rays[AMBIENT_OCCLUSION_SAMPLES];
 
-  /* disable all rays first bet setting tnear > tfar */
-  unmasked {
-    for (uniform int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
-    {
-      RTCRay& shadow = rays[i];
-      shadow.tnear = inf;
-      shadow.tfar = 0;      
-    }  
-  }
-
   Vec3f Ng = normalize(ray.Ng);
   if (dot(ray.dir,Ng) > 0.0f) Ng = neg(Ng);
 
@@ -185,10 +175,8 @@ Vec3f ambientOcclusionShading(int x, int y, RTCRay& ray)
   float intensity = 0;
   Vec3f hitPos = ray.org + ray.tfar * ray.dir;
 
-
   RandomSampler sampler;
   RandomSampler_init(sampler,x,y,0);
-
 
   /* enable only valid rays */
   for (uniform int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
@@ -202,6 +190,7 @@ Vec3f ambientOcclusionShading(int x, int y, RTCRay& ray)
     RTCRay& shadow = rays[i];
     shadow.org = hitPos;
     shadow.dir = dir.v;
+    unmasked { shadow.tnear = inf; shadow.tfar = 0.0f; } // invalidate inactive rays
     shadow.tnear = 0.001f;
     shadow.tfar = inf;
     shadow.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -265,6 +254,7 @@ void renderTileStandard(uniform int taskIndex,
 
     ray.org = make_Vec3f(camera.xfm.p); // FIXME: make invalid rays empty
     ray.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
+    unmasked { ray.tnear = inf; ray.tfar = 0.0f; } // invalidate inactive rays
     ray.tnear = 0.0f;
     ray.tfar = inf;
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -291,7 +281,6 @@ void renderTileStandard(uniform int taskIndex,
     /* ISPC workaround for mask == 0 */
     if (all(__mask == 0)) continue;
     RTCRay& ray = rays[N++];
-
 
     /* eyelight shading */
     Vec3f color = make_Vec3f(0.0f);
