@@ -72,29 +72,16 @@ namespace embree
     /// Loads and Stores
     ////////////////////////////////////////////////////////////////////////////////
 
-    static __forceinline vint8 load( const unsigned char* const ptr ) {
-      return _mm256_cvtepu8_epi32(_mm_load_si128((__m128i*)ptr));
-    }
+    static __forceinline const vint8 load( const unsigned char* const ptr ) { return _mm256_cvtepu8_epi32(_mm_load_si128((__m128i*)ptr)); }
 
-    static __forceinline const vint8 load(const int* const i) {
-      return _mm256_load_si256((__m256i*)i); 
-    }
-
-    static __forceinline const vint8 uload(const int* const i) {
-      return _mm256_loadu_si256((__m256i*)i); 
-    }
+    static __forceinline const vint8 load( const void* const ptr ) { return _mm256_load_si256((__m256i*)ptr); }
+    static __forceinline const vint8 loadu(const void* const ptr ) { return _mm256_loadu_si256((__m256i*)ptr); }
     
-    static __forceinline void store(void* ptr, const vint8& i ) {
-      _mm256_store_si256((__m256i*)ptr,i);
-    }
-    
-    static __forceinline void store( const vboolf8& mask, void *ptr, const vint8& i ) {
-      _mm256_maskstore_epi32((int*)ptr,mask,i);
-    }
+    static __forceinline void store ( void* ptr, const vint8& i ) { _mm256_store_si256((__m256i*)ptr,i); }
+    static __forceinline void storeu( void* ptr, const vint8& i ) { _mm256_storeu_ps((float*)ptr,_mm256_castsi256_ps(i)); }
 
-    static __forceinline void storeu(void* ptr, const vint8& f ) {
-      _mm256_storeu_ps((float*)ptr,_mm256_castsi256_ps(f));
-    }
+    static __forceinline void store ( const vboolf8& mask, void* ptr, const vint8& i ) { _mm256_maskstore_epi32((int*)ptr,mask,i); }
+    static __forceinline void storeu( const vboolf8& mask, void* ptr, const vint8& i ) { _mm256_maskstore_epi32((int*)ptr,mask,i); }
     
 #if defined (__AVX2__)
     static __forceinline vint8 load_nt(void* ptr) {

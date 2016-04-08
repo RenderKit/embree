@@ -102,6 +102,44 @@ namespace embree
     /// Loads and Stores
     ////////////////////////////////////////////////////////////////////////////////
 
+    static __forceinline vint16 load(const void* addr) { return _mm512_load_si512((int*)addr); }
+    static __forceinline vint16 loadu(const void* addr)
+    {
+#if defined(__AVX512F__)
+      return _mm512_loadu_si512(addr);
+#else
+      vint16 r = _mm512_undefined_epi32();
+      r =_mm512_extloadunpacklo_epi32(r, addr, _MM_UPCONV_EPI32_NONE, _MM_HINT_NONE);
+      return _mm512_extloadunpackhi_epi32(r, (int*)addr+16, _MM_UPCONV_EPI32_NONE, _MM_HINT_NONE);  
+#endif
+    }
+
+    static __forceinline void store (void* ptr, const vint16& v) { _mm512_store_si512(ptr,v); }
+    static __forceinline void storeu(void* ptr, const vint16& v ) 
+    {
+#if defined(__AVX512F__)
+      _mm512_storeu_si512(ptr,v);
+#else
+      _mm512_extpackstorelo_ps((int*)ptr+0  ,_mm512_castsi512_ps(v), _MM_DOWNCONV_PS_NONE , 0);
+      _mm512_extpackstorehi_ps((int*)ptr+16 ,_mm512_castsi512_ps(v), _MM_DOWNCONV_PS_NONE , 0);
+#endif
+    }
+ 
+    static __forceinline void store (const vboolf16& mask, void* addr, const vint16& v2) { _mm512_mask_store_epi32(addr,mask,v2); }
+    static __forceinline void storeu(const vboolf16& mask, void* ptr, const vint16& f ) {
+#if defined(__AVX512F__)
+      _mm512_mask_storeu_epi32((int*)ptr,mask,f);
+#else
+      int* iptr = (int*)ptr;
+      __m512 r = _mm512_undefined();
+      r = _mm512_extloadunpacklo_ps(r, iptr,    _MM_UPCONV_PS_NONE, _MM_HINT_NONE);
+      r = _mm512_extloadunpackhi_ps(r, iptr+16, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);  
+      r = _mm512_mask_blend_ps(mask,r,_mm512_castsi512_ps(f));
+      _mm512_extpackstorelo_ps(iptr,    r, _MM_DOWNCONV_PS_NONE , 0);
+      _mm512_extpackstorehi_ps(iptr+16 ,r, _MM_DOWNCONV_PS_NONE , 0);
+#endif
+    }
+
     static __forceinline void store_nt(void *__restrict__ ptr, const vint16& a) {
 #if defined(__AVX512F__)
       _mm512_stream_si512(ptr,a);
@@ -117,60 +155,7 @@ namespace embree
     }
 #endif
 
-    static __forceinline vint16 loadu(const void* addr)
-    {
-#if defined(__AVX512F__)
-      return _mm512_loadu_si512(addr);
-#else
-      vint16 r = _mm512_undefined_epi32();
-      r =_mm512_extloadunpacklo_epi32(r, addr, _MM_UPCONV_EPI32_NONE, _MM_HINT_NONE);
-      return _mm512_extloadunpackhi_epi32(r, (int*)addr+16, _MM_UPCONV_EPI32_NONE, _MM_HINT_NONE);  
-#endif
-    }
-
-    static __forceinline vint16 load(const vint16* addr) {
-      return _mm512_load_si512(addr);
-    }
-
-    static __forceinline vint16 load(const int* addr) {
-      return _mm512_load_si512(addr);
-    }
-
-    static __forceinline void store(int* ptr, const vint16& v) {
-      _mm512_store_si512(ptr,v);
-    }
-
-    static __forceinline void store(void* ptr, const vint16& v) {
-      _mm512_store_si512(ptr,v);
-    }
-
-    static __forceinline void storeu(void* ptr, const vint16& v ) {
-#if defined(__AVX512F__)
-      _mm512_storeu_si512(ptr,v);
-#else
-      _mm512_extpackstorelo_ps((int*)ptr+0  ,_mm512_castsi512_ps(v), _MM_DOWNCONV_PS_NONE , 0);
-      _mm512_extpackstorehi_ps((int*)ptr+16 ,_mm512_castsi512_ps(v), _MM_DOWNCONV_PS_NONE , 0);
-#endif
-    }
-
-    static __forceinline void storeu(const vboolf16& mask, int* ptr, const vint16& f ) {
-#if defined(__AVX512F__)
-      _mm512_mask_storeu_epi32(ptr,mask,f);
-#else
-      __m512 r = _mm512_undefined();
-      r = _mm512_extloadunpacklo_ps(r, ptr,    _MM_UPCONV_PS_NONE, _MM_HINT_NONE);
-      r = _mm512_extloadunpackhi_ps(r, ptr+16, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);  
-      r = _mm512_mask_blend_ps(mask,r,_mm512_castsi512_ps(f));
-      _mm512_extpackstorelo_ps(ptr,    r, _MM_DOWNCONV_PS_NONE , 0);
-      _mm512_extpackstorehi_ps(ptr+16 ,r, _MM_DOWNCONV_PS_NONE , 0);
-#endif
-    }
-
-    static __forceinline void store(const vboolf16& mask, void* addr, const vint16& v2) {
-      _mm512_mask_store_epi32(addr,mask,v2);
-    }
-
-  /* pass by value to avoid compiler generating inefficient code */
+    /* pass by value to avoid compiler generating inefficient code */
     static __forceinline void storeu_compact(const vboolf16 mask,void * addr, const vint16 reg) {
 #if defined(__AVX512F__)
       _mm512_mask_compressstoreu_epi32(addr,mask,reg);

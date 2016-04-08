@@ -68,18 +68,22 @@ namespace embree
     static __forceinline vfloat4 broadcast( const void* const a ) { return _mm_set1_ps(*(float*)a); }
 #endif
 
-    static __forceinline vfloat4 load( const float* const a ) {
-      return _mm_load_ps(a); 
-    }
+    static __forceinline vfloat4 load ( const void* const a ) { return _mm_load_ps((float*)a); }
+    static __forceinline vfloat4 loadu( const void* const a ) { return _mm_loadu_ps((float*)a); }
 
-    static __forceinline vfloat4 loadu( const void* const a ) {
-      return _mm_loadu_ps((float*)a); 
-    }
+    static __forceinline vfloat4 load ( const vbool4& mask, const void* const a ) { return _mm_load_ps((float*)a); } // FIXME: use mask for AVX512VL
+    static __forceinline vfloat4 loadu( const vbool4& mask, const void* const a ) { return _mm_loadu_ps((float*)a); } // FIXME: use mask for AVX512VL
 
-    static __forceinline vfloat4 loadu( const vbool4& mask, const void* const a ) {
-      // FIXME: use mask for AVX512VL
-      return _mm_loadu_ps((float*)a); 
-    }
+    static __forceinline void store ( void* ptr, const vfloat4& v ) { _mm_store_ps((float*)ptr,v); }
+    static __forceinline void storeu( void* ptr, const vfloat4& v ) { _mm_storeu_ps((float*)ptr,v); }
+
+#if defined (__AVX__)
+    static __forceinline void store ( const vboolf4& mask, void* ptr, const vfloat4& f ) { _mm_maskstore_ps((float*)ptr,(__m128i)mask,f); }
+    static __forceinline void storeu( const vboolf4& mask, void* ptr, const vfloat4& f ) { _mm_maskstore_ps((float*)ptr,(__m128i)mask,f); }
+#else
+    static __forceinline void store ( const vboolf4& mask, void* ptr, const vfloat4& f ) { store (ptr,select(mask,f,load (ptr))); }
+    static __forceinline void storeu( const vboolf4& mask, void* ptr, const vfloat4& f ) { storeu(ptr,select(mask,f,loadu(ptr))); }
+#endif
 
     static __forceinline vfloat4 load_nt ( const float* ptr ) {
 #if defined (__SSE4_1__)
@@ -104,14 +108,6 @@ namespace embree
       return _mm_mul_ps(vfloat4(vint4::load(ptr)),vfloat4(1.0f/65535.0f));
     } 
 
-    static __forceinline void store ( void* ptr, const vfloat4& v ) {
-      _mm_store_ps((float*)ptr,v); 
-    }
-
-    static __forceinline void storeu ( void* ptr, const vfloat4& v ) {
-      _mm_storeu_ps((float*)ptr,v);
-    }
-
     static __forceinline void store_nt ( void* ptr, const vfloat4& v)
     {
 #if defined (__SSE4_1__)
@@ -119,19 +115,6 @@ namespace embree
 #else
       _mm_store_ps((float*)ptr,v);
 #endif
-    }
-    
-    static __forceinline void store ( const vboolf4& mask, void* ptr, const vfloat4& f )
-    { 
-#if defined (__AVX__)
-      _mm_maskstore_ps((float*)ptr,(__m128i)mask,f);
-#else
-      *(vfloat4*)ptr = select(mask,f,*(vfloat4*)ptr);
-#endif
-    }
-
-    static __forceinline void storeu( const vboolf4& mask, void* ptr, const vfloat4& f ) {
-      return _mm_storeu_ps((float*)ptr,select(mask,f,_mm_loadu_ps((float*)ptr)));
     }
 
     static __forceinline void store ( const vboolf4& mask, void* ptr, const vint4& ofs, const vfloat4& v, const int scale = 1 )
