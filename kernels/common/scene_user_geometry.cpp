@@ -88,6 +88,14 @@ namespace embree
     intersectors.intersector16.ispc = ispc;
   }
 
+  void UserGeometry::setIntersectFunctionN (RTCIntersectFuncN intersectN, bool ispc) 
+  {
+    if (parent->isStatic() && parent->isBuild())
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
+
+    intersectors.intersectorN.intersect = intersectN;
+  }
+
   void UserGeometry::setOccludedFunction (RTCOccludedFunc occluded1, bool ispc) 
   {
     if (parent->isStatic() && parent->isBuild())
@@ -121,5 +129,13 @@ namespace embree
 
     intersectors.intersector16.occluded = (void*)occluded16;
     intersectors.intersector16.ispc = ispc;
+  }
+
+  void UserGeometry::setOccludedFunctionN (RTCOccludedFuncN occludedN, bool ispc) 
+  {
+    if (parent->isStatic() && parent->isBuild())
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
+
+    intersectors.intersectorN.occluded = occludedN;
   }
 }
