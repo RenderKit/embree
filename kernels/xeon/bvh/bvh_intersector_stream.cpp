@@ -222,7 +222,8 @@ namespace embree
         size_t m_active = numOctantRays == 8*sizeof(size_t) ? (size_t)-1 : (((size_t)1 << numOctantRays))-1;
         assert(m_active);
 
-        initRayContext(ray_ctx,rays,numOctantRays);
+        for (size_t i=0;i<numOctantRays;i++)
+          new (&ray_ctx[i]) RayContext(rays[i]);
 
         stack0[0].ptr  = BVH::invalidNode;
         stack0[0].mask = (size_t)-1;
@@ -466,7 +467,8 @@ namespace embree
         /* inactive rays should have been filtered out before */
         size_t m_active = numOctantRays ==  8*sizeof(size_t) ? (size_t)-1 : (((size_t)1 << numOctantRays))-1;
 
-        initRayContext(ray_ctx,rays,numOctantRays);
+        for (size_t i=0;i<numOctantRays;i++)
+          new (&ray_ctx[i]) RayContext(rays[i]);
 
         stack0[0].ptr  = BVH::invalidNode;
         stack0[0].mask = (size_t)-1;

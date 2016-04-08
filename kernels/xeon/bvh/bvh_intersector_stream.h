@@ -214,8 +214,33 @@ namespace embree
 
       struct __aligned(32) RayContext 
       {
+      public:
         Vec3fa rdir;      //     rdir.w = tnear;
         Vec3fa org_rdir;  // org_rdir.w = tfar;        
+
+      public:
+
+        __forceinline RayContext() {}
+
+        __forceinline RayContext(Ray* ray)
+        {
+#if defined(__AVX512F__)
+          vfloat<K> org(vfloat4(ray->org));
+          vfloat<K> dir(vfloat4(ray->dir));
+          vfloat<K> rdir       = select(0x7777,rcp_safe(dir),ray->tnear);
+          vfloat<K> org_rdir   = select(0x7777,org * rdir,ray->tfar);
+          vfloat<K> res = select(0xf,rdir,org_rdir);
+          vfloat8 r = extractf256bit(res);
+          *(vfloat8*)&ray_ctx[i] = r;          
+#else
+          Vec3fa& org = ray->org;
+          Vec3fa& dir = ray->dir;
+          rdir       = rcp_safe(dir);
+          org_rdir   = org * rdir;
+          rdir.w     = ray->tnear;
+          org_rdir.w = ray->tfar;
+#endif
+        }
 
         __forceinline void update(const Ray* ray) {
           org_rdir.w = ray->tfar;
@@ -299,31 +324,6 @@ namespace embree
 #endif
         }
       };
-
-      static __forceinline void initRayContext(RayContext * __restrict__ ray_ctx, 
-                                               Ray ** __restrict__  rays, 
-                                               const size_t numOctantRays)
-      {
-        for (size_t i=0;i<numOctantRays;i++)
-        {
-#if defined(__AVX512F__)
-          vfloat<K> org(vfloat4(rays[i]->org));
-          vfloat<K> dir(vfloat4(rays[i]->dir));
-          vfloat<K> rdir       = select(0x7777,rcp_safe(dir),rays[i]->tnear);
-          vfloat<K> org_rdir   = select(0x7777,org * rdir,rays[i]->tfar);
-          vfloat<K> res = select(0xf,rdir,org_rdir);
-          vfloat8 r = extractf256bit(res);
-          *(vfloat8*)&ray_ctx[i] = r;          
-#else
-          Vec3fa &org = rays[i]->org;
-          Vec3fa &dir = rays[i]->dir;
-          ray_ctx[i].rdir       = rcp_safe(dir);
-          ray_ctx[i].org_rdir   = org * ray_ctx[i].rdir;
-          ray_ctx[i].rdir.w     = rays[i]->tnear;
-          ray_ctx[i].org_rdir.w = rays[i]->tfar;
-#endif
-        }       
-      }
 
       static const size_t stackSizeChunk  = N*BVH::maxDepth+1;
       static const size_t stackSizeSingle = 1+(N-1)*BVH::maxDepth;
