@@ -74,9 +74,8 @@ sed -i.backup  's/RTCIntersectFuncVarying/RTCIntersectFunc/g' $2
 sed -i.backup  's/RTCOccludedFuncVarying/RTCOccludedFunc/g' $2
 sed -i.backup  's/RTCFilterFuncVarying/RTCFilterFunc/g' $2
 
-sed -i.backup  's/rtcIntersectN/rtcIntersect1N/g' $2
-sed -i.backup  's/rtcOccludedN/rtcOccluded1N/g' $2
-
+sed -i.backup  's/rtcIntersectVN/rtcIntersect1N/g' $2
+sed -i.backup  's/rtcOccludedVN/rtcOccluded1N/g' $2
 
 
 

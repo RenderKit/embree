@@ -438,7 +438,7 @@ namespace embree
     RTCORE_CATCH_END(scene->device);
   }
 
-  RTCORE_API void rtcIntersectN (RTCScene hscene, RTCRay* rayN, const size_t M, const size_t N, const size_t stride, const size_t flags) 
+  RTCORE_API void rtcIntersectMN (RTCScene hscene, void* rays, const size_t M, const size_t N, const size_t stride, const size_t flags) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -446,25 +446,25 @@ namespace embree
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
-    if (((size_t)rayN ) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 16 bytes");   
+    if (((size_t)rays ) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 16 bytes");   
 #endif
     STAT3(normal.travs,1,N,N);
 
-    /* codepath for rays */
+    /* code path for single ray streams */
     if (likely(M == 1))
     {
-      /* fast path for single rays */
+      /* fast code path for streams of size 1 */
       if (likely(N == 1)) {
-        scene->intersect(*rayN);
+        scene->intersect(*(RTCRay*)rays);
       } 
-      /* codepath for single ray streams */
+      /* normal codepath for single ray streams */
       else {
-        scene->device->rayStreamFilters.filterAOS(scene,rayN,N,stride,flags,true);
+        scene->device->rayStreamFilters.filterAOS(scene,(RTCRay*)rays,N,stride,flags,true);
       }
     }
-    /* code path for ray packets */
+    /* code path for ray packet streams */
     else {
-      scene->device->rayStreamFilters.filterSOA(scene,(char*)rayN,M,N,stride,flags,true);
+      scene->device->rayStreamFilters.filterSOA(scene,(char*)rays,M,N,stride,flags,true);
     }
     
     RTCORE_CATCH_END(scene->device);
@@ -504,10 +504,7 @@ namespace embree
     RTCORE_CATCH_END(scene->device);
   }
 
-
-
 #endif
-
   
   RTCORE_API void rtcOccluded (RTCScene hscene, RTCRay& ray) 
   {
@@ -634,7 +631,7 @@ namespace embree
 
   
 #if defined (RTCORE_RAY_PACKETS)
-  RTCORE_API void rtcOccluded1N(RTCScene hscene, RTCRay* rayN, const size_t N, const size_t stride, const size_t flags) 
+  RTCORE_API void rtcOccluded1N(RTCScene hscene, RTCRay* rays, const size_t N, const size_t stride, const size_t flags) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -643,21 +640,23 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     if (stride < sizeof(RTCRay)) throw_RTCError(RTC_INVALID_OPERATION,"stride too small");
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
-    if (((size_t)rayN ) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 64 bytes");   
+    if (((size_t)rays ) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 64 bytes");   
 #endif
     STAT3(shadow.travs,1,N,N);
 
+    /* fast codepath for streams of size 1 */
     if (likely(N == 1)) {
-      scene->occluded (*rayN);
+      scene->occluded (*rays);
     } 
+    /* codepath for normal streams */
     else {
-      scene->device->rayStreamFilters.filterAOS(scene,rayN,N,stride,flags,false);
+      scene->device->rayStreamFilters.filterAOS(scene,rays,N,stride,flags,false);
     }
 
     RTCORE_CATCH_END(scene->device);
   }
 
-  RTCORE_API void rtcOccludedN(RTCScene hscene, RTCRay* rayN, const size_t M, const size_t N, const size_t stride, const size_t flags) 
+  RTCORE_API void rtcOccludedMN(RTCScene hscene, void* rays, const size_t M, const size_t N, const size_t stride, const size_t flags) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -666,25 +665,25 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     if (stride < sizeof(RTCRay)) throw_RTCError(RTC_INVALID_OPERATION,"stride too small");
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
-    if (((size_t)rayN ) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 64 bytes");   
+    if (((size_t)rays ) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 64 bytes");   
 #endif
     STAT3(shadow.travs,1,N,N);
 
     /* codepath for single rays */
     if (likely(M == 1))
     {
-      /* fast path for very small ray packets */
+      /* fast path for streams of size 1 */
       if (likely(N == 1)) {
-        scene->occluded (*rayN);
+        scene->occluded (*(RTCRay*)rays);
       } 
-      /* normal codepath for ray streams */
+      /* codepath for normal ray streams */
       else {
-        scene->device->rayStreamFilters.filterAOS(scene,rayN,N,stride,flags,false);
+        scene->device->rayStreamFilters.filterAOS(scene,(RTCRay*)rays,N,stride,flags,false);
       }
     }
-    /* code path for ray packets */
+    /* code path for ray packet streams */
     else {
-      scene->device->rayStreamFilters.filterSOA(scene,(char*)rayN,M,N,stride,flags,false);
+      scene->device->rayStreamFilters.filterSOA(scene,(char*)rays,M,N,stride,flags,false);
     }
 
     RTCORE_CATCH_END(scene->device);

@@ -130,11 +130,11 @@ RTCORE_API void rtcIntersect16 (const void* valid, RTCScene scene, RTCRay16& ray
  *  stride specifies the offset between rays in bytes. */
 RTCORE_API void rtcIntersect1N (RTCScene scene, RTCRay* rayN, const size_t N, const size_t stride, const size_t flags);
 
-/*! Intersects a stream of N ray packets of packet size M with the
+/*! Intersects a stream of N ray packets of size M in SOA format with the
  *  scene. This function can only be called for scenes with the
  *  RTC_INTERSECTN flag set. The stride specifies the offset between
- *  rays in bytes. */
-RTCORE_API void rtcIntersectN (RTCScene scene, RTCRay* rayN, const size_t M, const size_t N, const size_t stride, const size_t flags);
+ *  ray packets in bytes. */
+RTCORE_API void rtcIntersectMN (RTCScene scene, void* rays, const size_t M, const size_t N, const size_t stride, const size_t flags);
 
 /*! Intersects one or multiple streams of N rays in compact SOA layout
  *  with the scene. This function can only be called for scenes with
@@ -173,13 +173,13 @@ RTCORE_API void rtcOccluded16 (const void* valid, RTCScene scene, RTCRay16& ray)
 /*! Tests if a stream of N rays is occluded by the scene. This
  *  function can only be called for scenes with the RTC_INTERSECTN
  *  flag set. The stride specifies the offset between rays in bytes.*/
-RTCORE_API void rtcOccluded1N (RTCScene scene, RTCRay* rayN, const size_t N, const size_t stride, const size_t flags);
+RTCORE_API void rtcOccluded1N (RTCScene scene, RTCRay* rays, const size_t N, const size_t stride, const size_t flags);
 
-/*! Tests if a stream of N ray packets of packet size M is occluded by
+/*! Tests if a stream of N ray packets of size M in SOA format is occluded by
  *  the scene. This function can only be called for scenes with the
  *  RTC_INTERSECTN flag set. The stride specifies the offset between
  *  rays in bytes.*/
-RTCORE_API void rtcOccludedN (RTCScene scene, RTCRay* rayN, const size_t M, const size_t N, const size_t stride, const size_t flags);
+RTCORE_API void rtcOccludedMN (RTCScene scene, void* rays, const size_t M, const size_t N, const size_t stride, const size_t flags);
 
 /*! Intersects one or multiple streams of N rays in compact SOA layout
  *  with the scene. This function can only be called for scenes with

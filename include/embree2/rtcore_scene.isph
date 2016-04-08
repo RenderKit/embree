@@ -114,11 +114,17 @@ void rtcIntersect (RTCScene scene, varying RTCRay& ray);
  *  bytes. */
 void rtcIntersect1N (RTCScene scene, uniform RTCRay1* uniform rayN, const uniform size_t N, const uniform size_t stride, const uniform size_t flags);
 
-/*! Intersects a stream of N rays in AOSOA layout with the scene. This
+/*! Intersects a stream of N ray packets in SOA format with the scene. This
  *  function can only be called for scenes with the RTC_INTERSECTN
  *  flag set. The stride specifies the offset between rays in
  *  bytes. */
-void rtcIntersectN (RTCScene scene, varying RTCRay* uniform rayN, const uniform size_t N, const uniform size_t stride, const uniform size_t flags);
+void rtcIntersectVN (RTCScene scene, varying RTCRay* uniform rayN, const uniform size_t N, const uniform size_t stride, const uniform size_t flags);
+
+/*! Intersects a stream of N ray packets of size M in SOA format with the
+ *  scene. This function can only be called for scenes with the
+ *  RTC_INTERSECTN flag set. The stride specifies the offset between
+ *  ray packets in bytes. */
+void rtcIntersectMN (RTCScene scene, void* uniform rays, const uniform size_t M, const uniform size_t N, const uniform size_t stride, const uniform size_t flags);
 
 /*! Intersects one or multiple streams of N rays in compact SOA layout with the scene. This
  *  function can only be called for scenes with the RTC_INTERSECTN
@@ -145,11 +151,17 @@ void rtcOccluded (RTCScene scene, varying RTCRay& ray);
  *  rays in bytes.*/
 void rtcOccluded1N (RTCScene scene, uniform RTCRay1* uniform rayN, const uniform size_t N, const uniform size_t stride, const uniform size_t flags);
 
-/*! Tests if a stream of N rays on AOS layout is occluded by the
+/*! Tests if a stream of N ray packets in SOA format is occluded by the
  *  scene. This function can only be called for scenes with the
  *  RTC_INTERSECTN flag set. The stride specifies the offset between
  *  rays in bytes.*/
-void rtcOccludedN (RTCScene scene, varying RTCRay* uniform rayN, const uniform size_t N, const uniform size_t stride, const uniform size_t flags);
+void rtcOccludedVN (RTCScene scene, varying RTCRay* uniform rayN, const uniform size_t N, const uniform size_t stride, const uniform size_t flags);
+
+/*! Tests if a stream of N ray packets of size M in SOA format is
+ *  occluded by the scene. This function can only be called for scenes
+ *  with the RTC_INTERSECTN flag set. The stride specifies the offset
+ *  between rays in bytes.*/
+void rtcOccludedMN (RTCScene scene, void* uniform rayN, const uniform size_t M, const uniform size_t N, const uniform size_t stride, const uniform size_t flags);
 
 /*! Intersects one or multiple streams of N rays in compact SOA layout with the scene. This
  *  function can only be called for scenes with the RTC_INTERSECTN
