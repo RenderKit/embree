@@ -200,6 +200,7 @@ namespace embree
   __forceinline const vfloat8 max( const float    a, const vfloat8& b ) { return _mm256_max_ps(vfloat8(a), b.v); }
 
 #if defined (__AVX2__)
+
     __forceinline vfloat8 mini(const vfloat8& a, const vfloat8& b) {
       const vint8 ai = _mm256_castps_si256(a);
       const vint8 bi = _mm256_castps_si256(b);
@@ -212,6 +213,20 @@ namespace embree
       const vint8 ci = _mm256_max_epi32(ai,bi);
       return _mm256_castsi256_ps(ci);
     }
+
+    __forceinline vfloat8 minui(const vfloat8& a, const vfloat8& b) {
+      const vint8 ai = _mm256_castps_si256(a);
+      const vint8 bi = _mm256_castps_si256(b);
+      const vint8 ci = _mm256_min_epu32(ai,bi);
+      return _mm256_castsi256_ps(ci);
+    }
+    __forceinline vfloat8 maxui(const vfloat8& a, const vfloat8& b) {
+      const vint8 ai = _mm256_castps_si256(a);
+      const vint8 bi = _mm256_castps_si256(b);
+      const vint8 ci = _mm256_max_epu32(ai,bi);
+      return _mm256_castsi256_ps(ci);
+    }
+
 #else
     __forceinline vfloat8 mini(const vfloat8& a, const vfloat8& b) {
       return min(a,b);

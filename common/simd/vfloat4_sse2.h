@@ -223,6 +223,20 @@ namespace embree
       const vint4 ci = _mm_max_epi32(ai,bi);
       return _mm_castsi128_ps(ci);
     }
+
+    __forceinline vfloat4 minui(const vfloat4& a, const vfloat4& b) {
+      const vint4 ai = _mm_castps_si128(a);
+      const vint4 bi = _mm_castps_si128(b);
+      const vint4 ci = _mm_min_epu32(ai,bi);
+      return _mm_castsi128_ps(ci);
+    }
+    __forceinline vfloat4 maxui(const vfloat4& a, const vfloat4& b) {
+      const vint4 ai = _mm_castps_si128(a);
+      const vint4 bi = _mm_castps_si128(b);
+      const vint4 ci = _mm_max_epu32(ai,bi);
+      return _mm_castsi128_ps(ci);
+    }
+
 #else
     __forceinline vfloat4 mini(const vfloat4& a, const vfloat4& b) {
       return min(a,b);
