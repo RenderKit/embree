@@ -190,7 +190,7 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
     RTCRay& shadow = rays[i];
     shadow.org = hitPos;
     shadow.dir = dir.v;
-    { shadow.tnear = inf; shadow.tfar = 0.0f; } // invalidate inactive rays
+    { shadow.tnear = inf; shadow.tfar = -inf; } // invalidate inactive rays
     shadow.tnear = 0.001f;
     shadow.tfar = inf;
     shadow.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -254,7 +254,7 @@ void renderTileStandard(int taskIndex,
 
     ray.org = Vec3fa(camera.xfm.p); // FIXME: make invalid rays empty
     ray.dir = Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
-    { ray.tnear = inf; ray.tfar = 0.0f; } // invalidate inactive rays
+    { ray.tnear = inf; ray.tfar = -inf; } // invalidate inactive rays
     ray.tnear = 0.0f;
     ray.tfar = inf;
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
