@@ -212,9 +212,14 @@ namespace embree
         //BVHNNodeTraverser1<N,N,types> nodeTraverser;
       };
 
-      struct __aligned(32) RayContext {
+      struct __aligned(32) RayContext 
+      {
         Vec3fa rdir;      //     rdir.w = tnear;
         Vec3fa org_rdir;  // org_rdir.w = tfar;        
+
+        __forceinline void update(const Ray* ray) {
+          org_rdir.w = ray->tfar;
+        }
       };
 
       struct __aligned(32) RayFiberContext {

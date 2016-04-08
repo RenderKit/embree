@@ -422,18 +422,15 @@ namespace embree
           size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
           
           STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
-
-          size_t lazy_node = 0;
 #if !TWO_STREAMS_FIBER_MODE
           size_t bits = m_trav_active;
 #else
           size_t bits = m_trav_active << cur_fiber->getOffset();
 #endif
-          do {
-            const size_t i = __bscf(bits);
-            PrimitiveIntersector::intersect(pre[i],*(rays[i]),0,prim,num,bvh->scene,NULL,lazy_node); 
-            ray_ctx[i].org_rdir.w = rays[i]->tfar;
-          } while(unlikely(bits));
+
+          /*! intersect stream of rays with all primitives */
+          size_t lazy_node = 0;
+          PrimitiveIntersector::intersect(pre,bits,rays,ray_ctx,0,prim,num,bvh->scene,NULL,lazy_node);
 
           /*! pop next node */
           STAT3(normal.trav_stack_pop,1,1,1);                          
@@ -687,17 +684,9 @@ namespace embree
 #endif
           assert(bits);
           STAT3(shadow.trav_hit_boxes[__popcnt(bits)],1,1,1);                          
-          do {
-            const size_t i = __bscf(bits);            
-            if (PrimitiveIntersector::occluded(pre[i],*(rays[i]),0,prim,num,bvh->scene,NULL,lazy_node))
-            {
-              m_active &= ~((size_t)1 << i);
-              rays[i]->geomID = 0;
-            }
-          } while(bits);
 
-          if (unlikely(m_active == 0)) 
-            break;
+          m_active &= ~PrimitiveIntersector::occluded(pre,bits,rays,0,prim,num,bvh->scene,NULL,lazy_node);
+          if (unlikely(m_active == 0)) break;
 
           /*! pop next node */
           STAT3(shadow.trav_stack_pop,1,1,1);                          
