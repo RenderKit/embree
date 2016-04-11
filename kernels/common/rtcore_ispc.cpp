@@ -345,14 +345,14 @@ namespace embree
     RTCORE_CATCH_END(scene->device);
   }
   
-  extern "C" void ispcSetIntersectFunctionN (RTCScene hscene, unsigned geomID, RTCIntersectFuncN intersect) 
+  extern "C" void ispcSetIntersectFunctionN (RTCScene hscene, unsigned geomID, RTCIntersectFunc1N intersect) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetIntersectFunctionN);
+    RTCORE_TRACE(rtcSetIntersectFunction1N);
     RTCORE_VERIFY_HANDLE(scene);
     RTCORE_VERIFY_GEOMID(geomID);
-    scene->get_locked(geomID)->setIntersectFunctionN(intersect,true);
+    scene->get_locked(geomID)->setIntersectFunction1N(intersect,true);
     RTCORE_CATCH_END(scene->device);
   }
 
@@ -400,14 +400,14 @@ namespace embree
     RTCORE_CATCH_END(scene->device);
   }
   
-  extern "C" void ispcSetOccludedFunctionN (RTCScene hscene, unsigned geomID, RTCOccludedFuncN occluded) 
+  extern "C" void ispcSetOccludedFunctionN (RTCScene hscene, unsigned geomID, RTCOccludedFunc1N occluded) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcSetOccludedFunctionN);
+    RTCORE_TRACE(rtcSetOccludedFunction1N);
     RTCORE_VERIFY_HANDLE(scene);
     RTCORE_VERIFY_GEOMID(geomID);
-    ((Scene*)scene)->get_locked(geomID)->setOccludedFunctionN(occluded,true);
+    ((Scene*)scene)->get_locked(geomID)->setOccludedFunction1N(occluded,true);
     RTCORE_CATCH_END(scene->device);
   }
 
