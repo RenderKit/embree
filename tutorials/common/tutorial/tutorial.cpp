@@ -140,6 +140,10 @@ namespace embree
         rtcore += ",threads=" + toString(cin->getInt());
       }, "--threads <int>: number of threads to use");
     
+    registerOption("affinity", [this] (Ref<ParseStream> cin, const FileName& path) {
+        rtcore += ",set_affinity=1";
+      }, "--affinity: affinitize threads");
+    
     registerOption("benchmark", [this] (Ref<ParseStream> cin, const FileName& path) {
         skipBenchmarkFrames = cin->getInt();
         numBenchmarkFrames  = cin->getInt();
