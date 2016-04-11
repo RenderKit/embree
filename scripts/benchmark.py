@@ -108,8 +108,8 @@ def extract(name,model,prevname):
         if (prevname != ''):
           fps_gain[base] = 100.0*fps_avg[base]/fps_avg[prevBase]-100.0
           fps_davg[base] = fps_avg[base]-fps_avg[prevBase]
-      if line.count('BENCHMARK_RENDER_SIGMA ') == 1:
-        numbers = map(float, line[23:].split(" "))
+      if line.count('BENCHMARK_RENDER_AVG_SIGMA ') == 1:
+        numbers = map(float, line[27:].split(" "))
         fps_sigma[base] = numbers[0]
   except IOError :
     print('cannot open ' + logFileName)
