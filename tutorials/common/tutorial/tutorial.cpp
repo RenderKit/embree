@@ -328,6 +328,12 @@ namespace embree
       else return sqrt(max(0.0f,v2/N - sqr(v/N)));
     }
 
+    float getAvgSigma() const // standard deviation of average
+    {
+      if (N == 0) return 0.0f;
+      else return getSigma()/sqrt(float(N));
+    }
+
     float getMin() const { return vmin; }
     float getMax() const { return vmax; }
     float getAvg() const { return v/N; }
@@ -360,6 +366,7 @@ namespace embree
     }
 
     float getSigma() const { return stat.getSigma(); }
+    float getAvgSigma() const { return stat.getAvgSigma(); }
     float getMin() const { return stat.getMin(); }
     float getMax() const { return stat.getMax(); }
     float getAvg() const { return stat.getAvg(); }
@@ -405,10 +412,17 @@ namespace embree
                 << "max = " << std::setw(8) << stat.getMax() << " fps, "
                 << "sigma = " << std::setw(6) << stat.getSigma() << " (" << 100.0f*stat.getSigma()/stat.getAvg() << "%)" << std::endl;
     }
+    std::cout << "frame [" << std::setw(3) << skipBenchmarkFrames << " - " << std::setw(3) << numTotalFrames << "]: " 
+              << "              " 
+              << "min = " << std::setw(8) << stat.getMin() << " fps, " 
+              << "avg = " << std::setw(8) << stat.getAvg() << " fps, "
+              << "max = " << std::setw(8) << stat.getMax() << " fps, "
+              << "sigma = " << std::setw(6) << stat.getAvgSigma() << " (" << 100.0f*stat.getAvgSigma()/stat.getAvg() << "%)" << std::endl;
     std::cout << "BENCHMARK_RENDER_MIN " << stat.getMin() << std::endl;
     std::cout << "BENCHMARK_RENDER_AVG " << stat.getAvg() << std::endl;
     std::cout << "BENCHMARK_RENDER_MAX " << stat.getMax() << std::endl;
     std::cout << "BENCHMARK_RENDER_SIGMA " << stat.getSigma() << std::endl;
+    std::cout << "BENCHMARK_RENDER_AVG_SIGMA " << stat.getAvgSigma() << std::endl;
   }
 
   void TutorialApplication::renderToFile(const FileName& fileName)
