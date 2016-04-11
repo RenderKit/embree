@@ -298,27 +298,109 @@ namespace embree
     }
   }
 
+  /* calculates min/avg/max and sigma */
+  struct Statistics
+  {
+  public:
+    Statistics() 
+      : v(0.0f), v2(0.0f), vmin(pos_inf), vmax(neg_inf), N(0) {}
+
+    void add(float a) 
+    {
+      v += a;
+      v2 += a*a;
+      vmin = min(vmin,a);
+      vmax = max(vmax,a);
+      N++;
+    }
+
+    float getSigma() const 
+    {
+      if (N == 0) return 0.0f;
+      else return sqrt(v2/N - sqr(v/N));
+    }
+
+    float getMin() const { return vmin; }
+    float getMax() const { return vmax; }
+    float getAvg() const { return v/N; }
+
+  private:
+    float v;   // sum of all values
+    float v2;  // sum of squared of all values
+    float vmin; // min of all values
+    float vmax; // max of all values
+    size_t N;  // number of values
+  };
+
+  /* filters outlyers out */
+  struct FilteredStatistics
+  {
+  public:
+    FilteredStatistics(float fskip_small, float fskip_large) 
+      : fskip_small(fskip_small), fskip_large(fskip_large) {}
+
+    void add(float a) 
+    {
+      v.push_back(a);
+      std::sort(v.begin(),v.end(),std::less<float>());
+      size_t skip_small = floor(0.5f*fskip_small*v.size());
+      size_t skip_large = floor(0.5f*fskip_large*v.size());
+
+      new (&stat) Statistics;
+      for (size_t i=skip_small; i<v.size()-skip_large; i++)
+        stat.add(v[i]);
+    }
+
+    float getSigma() const { return stat.getSigma(); }
+    float getMin() const { return stat.getMin(); }
+    float getMax() const { return stat.getMax(); }
+    float getAvg() const { return stat.getAvg(); }
+
+  private:
+    float fskip_small; // fraction of small outlyers to filter out
+    float fskip_large; // fraction of large outlyers to filter out
+    std::vector<float> v;
+    Statistics stat;
+  };
+
   void TutorialApplication::renderBenchmark()
   {
+    IOStreamStateRestorer cout_state(std::cout);
+    std::cout.setf(std::ios::fixed, std::ios::floatfield);
+    std::cout.precision(3);
+
     resize(width,height);
     ISPCCamera ispccamera = camera.getISPCCamera(width,height);
 
-    double dt = 0.0f;
     size_t numTotalFrames = skipBenchmarkFrames + numBenchmarkFrames;
-    for (size_t i=0; i<numTotalFrames; i++) 
+    for (size_t i=0; i<skipBenchmarkFrames; i++) 
     {
       double t0 = getSeconds();
       render(0.0f,ispccamera);
       double t1 = getSeconds();
-      std::cout << "frame [" << i << " / " << numTotalFrames << "] ";
-      std::cout << 1.0/(t1-t0) << "fps ";
-      if (i < skipBenchmarkFrames) std::cout << "(skipped)";
-      std::cout << std::endl;
-      if (i >= skipBenchmarkFrames) dt += t1-t0;
+      std::cout << "frame [" << std::setw(3) << i << " / " << std::setw(3) << numTotalFrames << "]: " <<  std::setw(8) << 1.0/(t1-t0) << " fps (skipped)" << std::endl;
     }
-    std::cout << "frame [" << skipBenchmarkFrames << " - " << numTotalFrames << "] " << std::flush;
-    std::cout << double(numBenchmarkFrames)/dt << "fps " << std::endl;
-    std::cout << "BENCHMARK_RENDER " << double(numBenchmarkFrames)/dt << std::endl;
+
+    //Statistics stat;
+    FilteredStatistics stat(0.5f,0.0f);
+    for (size_t i=skipBenchmarkFrames; i<numTotalFrames; i++) 
+    {
+      double t0 = getSeconds();
+      render(0.0f,ispccamera);
+      double t1 = getSeconds();
+      float fr = 1.0f/(t1-t0);
+      stat.add(fr);
+      std::cout << "frame [" << std::setw(3) << i << " / " << std::setw(3) << numTotalFrames << "]: " 
+                << std::setw(8) << fr << " fps, " 
+                << "min = " << std::setw(8) << stat.getMin() << " fps, " 
+                << "avg = " << std::setw(8) << stat.getAvg() << " fps, "
+                << "max = " << std::setw(8) << stat.getMax() << " fps, "
+                << "sigma = " << std::setw(6) << stat.getSigma() << " (" << 100.0f*stat.getSigma()/stat.getAvg() << "%)" << std::endl;
+    }
+    std::cout << "BENCHMARK_RENDER_MIN " << stat.getMin() << std::endl;
+    std::cout << "BENCHMARK_RENDER_AVG " << stat.getAvg() << std::endl;
+    std::cout << "BENCHMARK_RENDER_MAX " << stat.getMax() << std::endl;
+    std::cout << "BENCHMARK_RENDER_SIGMA " << stat.getSigma() << std::endl;
   }
 
   void TutorialApplication::renderToFile(const FileName& fileName)

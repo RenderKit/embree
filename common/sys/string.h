@@ -20,6 +20,27 @@
 
 namespace embree
 {
+  class IOStreamStateRestorer 
+  {
+  public:
+    IOStreamStateRestorer(std::ostream& iostream)
+      : iostream(iostream), flags(iostream.flags()), precision(iostream.precision()) {
+    }
+
+    ~IOStreamStateRestorer() {
+      iostream.flags(flags);
+      iostream.precision(precision);
+    }
+    
+    IOStreamStateRestorer(const IOStreamStateRestorer &rhs) = delete;
+    IOStreamStateRestorer& operator= (const IOStreamStateRestorer& rhs) = delete;
+    
+  private:
+    std::ostream& iostream;
+    std::ios::fmtflags flags;
+    int precision;
+  };
+
   std::string toLowerCase(const std::string& s);
   std::string toUpperCase(const std::string& s);
 }
