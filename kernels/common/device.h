@@ -18,7 +18,7 @@
 
 #include "default.h"
 #include "state.h"
-#include "raystreams/raystreams.h"
+#include "accel.h"
 
 namespace embree
 {
@@ -91,17 +91,16 @@ namespace embree
 #if !defined(__MIC__)
     BVH4Factory* bvh4_factory;
 #endif
-
+    
 #if defined(__TARGET_AVX__)
     BVH8Factory* bvh8_factory;
 #endif
-
+    
 #if USE_TASK_ARENA
-  tbb::task_arena* arena;
+    tbb::task_arena* arena;
 #endif
-
-  /* ray streams filter */
-  RayStreamFilterFuncs rayStreamFilters;
-
+    
+    /* ray streams filter */
+    RayStreamFilterFuncs rayStreamFilters;
   };
 }

@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "raystreams.h"
-#include "../../common/scene.h"
+#include "bvh_intersector_stream_filters.h"
 
 namespace embree
 {

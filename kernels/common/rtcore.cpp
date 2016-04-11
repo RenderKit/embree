@@ -23,7 +23,6 @@
 #include "device.h"
 #include "scene.h"
 #include "raystream_log.h"
-#include "raystreams/raystreams.h"
 
 namespace embree
 {  
