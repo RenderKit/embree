@@ -80,6 +80,7 @@ sah      = {}
 fps_avg  = {}
 fps_sigma  = {}
 fps_gain = {}
+fps_davg = {}
 
 def extract(name,model,prevname):
   base = baseName(name,model)
@@ -92,6 +93,7 @@ def extract(name,model,prevname):
   fps_avg  [base] = 0
   fps_sigma[base] = 0
   fps_gain [base] = 0
+  fps_davg [base] = 0
   try:
     logFile = open(logFileName, 'r')
     for line in logFile:
@@ -105,6 +107,7 @@ def extract(name,model,prevname):
         fps_avg[base] = numbers[0]
         if (prevname != ''):
           fps_gain[base] = 100.0*fps_avg[base]/fps_avg[prevBase]-100.0
+          fps_davg[base] = fps_avg[base]-fps_avg[prevBase]
       if line.count('BENCHMARK_RENDER_SIGMA ') == 1:
         numbers = map(float, line[23:].split(" "))
         fps_sigma[base] = numbers[0]
@@ -118,6 +121,7 @@ def extract(name,model,prevname):
   fps_sigma[avgBase] += fps_sigma[base] / len(models)
   if (prevname != ''):
     fps_gain  [avgBase] += fps_gain  [base] / len(models)
+    fps_davg  [avgBase] += fps_davg  [base] / len(models)
 
 # Extract all data
 def extractLoop():
@@ -130,6 +134,7 @@ def extractLoop():
     fps_avg  [avgBase] = 0
     fps_sigma[avgBase] = 0
     fps_gain [avgBase] = 0
+    fps_davg [avgBase] = 0
     for model in models:
       extract(name,model,prevname)
     prevname = name
@@ -141,7 +146,8 @@ def printData(name,model):
   line += (' %#6.1f ' %  sah[base])
   line += (' %#6.3f fps' %  fps_avg[base])
   line += (' +/-%#6.3f ' %  fps_sigma[base])
-  line += (' (%#+5.1f%%)' %  fps_gain[base])
+  line += (' (%#+3.3f, ' %  fps_davg[base])
+  line += (' %#+2.1f%%)' %  fps_gain[base])
   line += '\n'
   sys.stdout.write(line)
 
