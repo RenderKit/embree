@@ -317,7 +317,7 @@ namespace embree
     float getSigma() const 
     {
       if (N == 0) return 0.0f;
-      else return sqrt(v2/N - sqr(v/N));
+      else return sqrt(max(0.0f,v2/N - sqr(v/N)));
     }
 
     float getMin() const { return vmin; }
