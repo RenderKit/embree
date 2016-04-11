@@ -345,7 +345,7 @@ namespace embree
     RTCORE_CATCH_END(scene->device);
   }
   
-  extern "C" void ispcSetIntersectFunctionN (RTCScene hscene, unsigned geomID, RTCIntersectFunc1N intersect) 
+  extern "C" void ispcSetIntersectFunction1N (RTCScene hscene, unsigned geomID, RTCIntersectFunc1N intersect) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -400,7 +400,7 @@ namespace embree
     RTCORE_CATCH_END(scene->device);
   }
   
-  extern "C" void ispcSetOccludedFunctionN (RTCScene hscene, unsigned geomID, RTCOccludedFunc1N occluded) 
+  extern "C" void ispcSetOccludedFunction1N (RTCScene hscene, unsigned geomID, RTCOccludedFunc1N occluded) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
