@@ -35,13 +35,13 @@ namespace embree
     typedef RTCIntersectFunc4 IntersectFunc4;
     typedef RTCIntersectFunc8 IntersectFunc8;
     typedef RTCIntersectFunc16 IntersectFunc16;
-    typedef RTCIntersectFuncN IntersectFuncN;
+    typedef RTCIntersectFunc1N IntersectFuncN;
     
     typedef RTCOccludedFunc OccludedFunc;
     typedef RTCOccludedFunc4 OccludedFunc4;
     typedef RTCOccludedFunc8 OccludedFunc8;
     typedef RTCOccludedFunc16 OccludedFunc16;
-    typedef RTCOccludedFuncN OccludedFuncN;
+    typedef RTCOccludedFunc1N OccludedFuncN;
 
 #if defined(__SSE__)
     typedef void (*ISPCIntersectFunc4)(void* ptr, RTCRay4& ray, size_t item, __m128 valid);

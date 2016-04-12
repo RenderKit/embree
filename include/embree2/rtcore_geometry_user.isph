@@ -108,7 +108,7 @@ void rtcSetIntersectFunction (RTCScene scene, uniform unsigned int geomID, unifo
 /*! Set intersect function for stream of rays. The rtcIntersectN function
  *  will call the passed function for intersecting the user
  *  geometry. */
-void rtcSetIntersectFunctionN (RTCScene scene, uniform unsigned geomID, uniform RTCIntersectFuncUniformN intersectN);
+void rtcSetIntersectFunction1N (RTCScene scene, uniform unsigned geomID, uniform RTCIntersectFuncUniformN intersectN);
 
 /*! Set occlusion function for uniform rays. The rtcOccluded1 function
  *  will call the passed function for intersecting the user
@@ -123,7 +123,7 @@ void rtcSetOccludedFunction (RTCScene scene, uniform unsigned int geomID, unifor
 /*! Set occlusion function for a stream of single rays. The rtcOccludedN function
  *  will call the passed function for intersecting the user
  *  geometry. */
-void rtcSetOccludedFunctionN (RTCScene scene, uniform unsigned geomID, uniform RTCOccludedFuncUniformN occludedN);
+void rtcSetOccludedFunction1N (RTCScene scene, uniform unsigned geomID, uniform RTCOccludedFuncUniformN occludedN);
 
 /*! \brief Sets the displacement function. */
 void rtcSetDisplacementFunction (RTCScene scene, uniform unsigned int geomID, uniform RTCDisplacementFunc func, uniform RTCBounds *uniform bounds);

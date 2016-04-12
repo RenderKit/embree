@@ -33,12 +33,12 @@ namespace embree
     virtual void setIntersectFunction4 (RTCIntersectFunc4 intersect4, bool ispc);
     virtual void setIntersectFunction8 (RTCIntersectFunc8 intersect8, bool ispc);
     virtual void setIntersectFunction16 (RTCIntersectFunc16 intersect16, bool ispc);
-    virtual void setIntersectFunctionN (RTCIntersectFuncN intersectN, bool ispc);
+    virtual void setIntersectFunction1N (RTCIntersectFunc1N intersectN, bool ispc);
     virtual void setOccludedFunction (RTCOccludedFunc occluded, bool ispc);
     virtual void setOccludedFunction4 (RTCOccludedFunc4 occluded4, bool ispc);
     virtual void setOccludedFunction8 (RTCOccludedFunc8 occluded8, bool ispc);
     virtual void setOccludedFunction16 (RTCOccludedFunc16 occluded16, bool ispc);
-    virtual void setOccludedFunctionN (RTCOccludedFuncN occluded, bool ispc);
+    virtual void setOccludedFunction1N (RTCOccludedFunc1N occluded, bool ispc);
     virtual void build(size_t threadIndex, size_t threadCount) {}
   };
 }

@@ -78,6 +78,11 @@ typedef unmasked void (*uniform RTCFilterFuncUniform)(void* uniform ptr,    /*!<
 typedef void (*uniform RTCFilterFuncVarying)(void* uniform ptr,   /*!< pointer to user data */
                                              varying RTCRay& ray  /*!< intersection to filter */);
 
+/*! Intersection filter function for ray packets of size N. */
+typedef unmasked void (*uniform RTCFilterFuncN)(void* uniform valid,   /*!< pointer to valid mask */
+                                                void* uniform ptr,     /*!< pointer to user data */
+                                                void* ray,             /*!< intersection to filter */
+                                                uniform const size_t N /*!< number of rays in ray packet */);
 
 /*! Type of displacement callback functions */
 typedef unmasked void (*RTCDisplacementFunc)(void* uniform ptr,               /*!< pointer to user data of geometry */
@@ -381,11 +386,17 @@ void rtcSetIntersectionFilterFunction1 (RTCScene scene, uniform unsigned int geo
 /*! \brief Sets the intersection filter function for varying rays. */
 void rtcSetIntersectionFilterFunction (RTCScene scene, uniform unsigned int geomID, uniform RTCFilterFuncVarying func);
 
+/*! \brief Sets the intersection filter function for ray packets of size N. */
+void rtcSetIntersectionFilterFunctionN (RTCScene scene, uniform unsigned int geomID, uniform RTCFilterFuncN func);
+
 /*! \brief Sets the occlusion filter function for uniform rays. */
 void rtcSetOcclusionFilterFunction1 (RTCScene scene, uniform unsigned int geomID, uniform RTCFilterFuncUniform func);
 
 /*! \brief Sets the occlusion filter function for varying rays. */
 void rtcSetOcclusionFilterFunction (RTCScene scene, uniform unsigned int geomID, uniform RTCFilterFuncVarying func);
+
+/*! \brief Sets the occlusion filter function for ray packets of size N. */
+void rtcSetOcclusionFilterFunctionN (RTCScene scene, uniform unsigned int geomID, uniform RTCFilterFuncN func);
 
 /*! Set pointer for user defined data per geometry. Invokations
  *  of the various user intersect and occluded functions get passed
