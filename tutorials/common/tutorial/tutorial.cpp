@@ -387,25 +387,6 @@ namespace embree
     Statistics stat;
   };
 
-  void flush_cache_recursive(char* p, size_t begin, size_t end, size_t depth)
-  {
-    if (depth == 0) {
-      for (size_t i=begin; i<end; i++) p[i]++;
-      return;
-    }
-
-    size_t center = (begin+end)/2;
-    flush_cache_recursive(p,begin,center,depth-1);
-    flush_cache_recursive(p,center,end,depth-1);
-  }
-
-  void flush_cache()
-  {
-    const size_t S = 64*1024*1024;
-    char* ptr = new char[S];
-    for (size_t i=0; i<20; i++) flush_cache_recursive(ptr,0,S,i);
-  }
-
   void TutorialApplication::renderBenchmark()
   {
     IOStreamStateRestorer cout_state(std::cout);
@@ -421,28 +402,18 @@ namespace embree
       double t0 = getSeconds();
       render(0.0f,ispccamera);
       double t1 = getSeconds();
-      std::cout << "frame [" << std::setw(3) << i << " / " << std::setw(3) << numTotalFrames << "]: " <<  std::setw(8) << 1.0/(t1-t0) << " fps (skipped)" << std::endl;
+      std::cout << "frame [" << std::setw(3) << i << " / " << std::setw(3) << numTotalFrames << "]: " <<  std::setw(8) << 1.0/(t1-t0) << " fps (skipped)" << std::endl << std::flush;
+      usleep(100000);
     }
-
-    //flush_cache();
 
     //Statistics stat;
     FilteredStatistics stat(0.5f,0.0f);
     for (size_t i=skipBenchmarkFrames; i<numTotalFrames; i++) 
     {
-      //double t0 = process_time();
-      //size_t c0 = read_tsc();
       double t0 = getSeconds();
-      //volatile float f = 0;
-      //for (size_t i=0; i<10000000; i++)
-      //f = 1.5f*f+0.2f;
-      //for (size_t i=0; i<10; i++)
       render(0.0f,ispccamera);
       double t1 = getSeconds();
-      //double c1 = read_tsc();
-      //double t1 = process_time();
       float fr = 1.0f/(t1-t0);
-      //float fr = 3.5E9f/(c1-c0);
       stat.add(fr);
       std::cout << "frame [" << std::setw(3) << i << " / " << std::setw(3) << numTotalFrames << "]: " 
                 << std::setw(8) << fr << " fps, " 
@@ -450,7 +421,6 @@ namespace embree
                 << "avg = " << std::setw(8) << stat.getAvg() << " fps, "
                 << "max = " << std::setw(8) << stat.getMax() << " fps, "
                 << "sigma = " << std::setw(6) << stat.getSigma() << " (" << 100.0f*stat.getSigma()/stat.getAvg() << "%)" << std::endl << std::flush;
-      //flush_cache();
       usleep(100000);
     }
     std::cout << "frame [" << std::setw(3) << skipBenchmarkFrames << " - " << std::setw(3) << numTotalFrames << "]: " 
@@ -463,7 +433,8 @@ namespace embree
     std::cout << "BENCHMARK_RENDER_AVG " << stat.getAvg() << std::endl;
     std::cout << "BENCHMARK_RENDER_MAX " << stat.getMax() << std::endl;
     std::cout << "BENCHMARK_RENDER_SIGMA " << stat.getSigma() << std::endl;
-    std::cout << "BENCHMARK_RENDER_AVG_SIGMA " << stat.getAvgSigma() << std::endl;
+    std::cout << "BENCHMARK_RENDER_AVG_SIGMA " << stat.getAvgSigma() << std::endl << std::flush;
+    usleep(100000);
   }
 
   void TutorialApplication::renderToFile(const FileName& fileName)
