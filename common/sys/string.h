@@ -32,9 +32,6 @@ namespace embree
       iostream.precision(precision);
     }
     
-    IOStreamStateRestorer(const IOStreamStateRestorer &rhs) = delete;
-    IOStreamStateRestorer& operator= (const IOStreamStateRestorer& rhs) = delete;
-    
   private:
     std::ostream& iostream;
     std::ios::fmtflags flags;
