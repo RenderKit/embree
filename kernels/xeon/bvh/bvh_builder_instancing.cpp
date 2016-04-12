@@ -137,10 +137,12 @@ namespace embree
               if (geom->numTimeSteps == 1)
               {
                 switch (geom->type) {
+#if defined(RTCORE_GEOMETRY_TRIANGLES)
                 case Geometry::TRIANGLE_MESH:
                   objects[objectID] = new BVH4(Triangle4::type,geom->parent);
                   builders[objectID] = BVH4Triangle4MeshBuilderSAH((BVH4*)objects[objectID],(TriangleMesh*)geom);
                   break;
+#endif
                 case Geometry::USER_GEOMETRY: break;
                 case Geometry::BEZIER_CURVES: break;
                 case Geometry::SUBDIV_MESH  : break;
@@ -148,10 +150,12 @@ namespace embree
                 }
               } else {
                  switch (geom->type) {
+#if defined(RTCORE_GEOMETRY_TRIANGLES)
                  case Geometry::TRIANGLE_MESH:
                    objects[objectID] = new BVH4(Triangle4vMB::type,geom->parent);
                    builders[objectID] = BVH4Triangle4vMBMeshBuilderSAH((BVH4*)objects[objectID],(TriangleMesh*)geom);
                    break;
+#endif
                  case Geometry::USER_GEOMETRY: break;
                  case Geometry::BEZIER_CURVES: break;
                  case Geometry::SUBDIV_MESH  : break;
