@@ -97,12 +97,12 @@ OPTION(RTCORE_INTERSECTION_FILTER_RESTORE "Restores previous hit when hit is fil
 OPTION(RTCORE_BUFFER_STRIDE "Enables buffer strides." ON)
 OPTION(RTCORE_IGNORE_INVALID_RAYS "Ignores invalid rays." OFF) # FIXME: enable by default?
 
-OPTION(RTCORE_GEOMETRY_TRIANGLES "Enables support for triangle geometry." ON)
-OPTION(RTCORE_GEOMETRY_QUADS "Enables support for quad geometry." ON)
-OPTION(RTCORE_GEOMETRY_LINES "Enables support for line geometry." ON)
-OPTION(RTCORE_GEOMETRY_HAIR "Enables support for hair geometry." ON)
-OPTION(RTCORE_GEOMETRY_SUBDIV "Enables support for subdiv geometry." ON)
-OPTION(RTCORE_GEOMETRY_USER "Enables support for user geometry." ON)
+OPTION(RTCORE_GEOMETRY_TRIANGLES "Enables support for triangle geometries." ON)
+OPTION(RTCORE_GEOMETRY_QUADS "Enables support for quad geometries." ON)
+OPTION(RTCORE_GEOMETRY_LINES "Enables support for line geometries." ON)
+OPTION(RTCORE_GEOMETRY_HAIR "Enables support for hair geometries." ON)
+OPTION(RTCORE_GEOMETRY_SUBDIV "Enables support for subdiv geometries." ON)
+OPTION(RTCORE_GEOMETRY_USER "Enables support for user geometries." ON)
 OPTION(RTCORE_RAY_PACKETS "Enabled support for ray packets." ON)
 
 OPTION(RTCORE_EXPORT_ALL_SYMBOLS "Lets Embree library export all symbols.")
