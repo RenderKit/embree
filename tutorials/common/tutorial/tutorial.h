@@ -126,6 +126,7 @@ namespace embree
     /* benchmark mode settings */
     int skipBenchmarkFrames;
     int numBenchmarkFrames;
+    int numBenchmarkRepetitions;
   
     /* window settings */
     bool interactive;

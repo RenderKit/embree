@@ -69,6 +69,7 @@ namespace embree
 
       skipBenchmarkFrames(0),
       numBenchmarkFrames(0),
+      numBenchmarkRepetitions(1),
 
       interactive(true),
       fullscreen(false),
@@ -160,9 +161,12 @@ namespace embree
     registerOption("benchmark", [this] (Ref<ParseStream> cin, const FileName& path) {
         skipBenchmarkFrames = cin->getInt();
         numBenchmarkFrames  = cin->getInt();
+        if (cin->peek() != "" && cin->peek()[0] != '-')
+          numBenchmarkRepetitions = cin->getInt();
+          
         interactive = false;
         rtcore += ",benchmark=1";
-      }, "--benchmark <N> <M>: enabled benchmark mode, skips N frames, renders M frames ");
+      }, "--benchmark <N> <M> <R>: enabled benchmark mode, builds scene, skips N frames, renders M frames, and repeats this R times");
     
     /* output filename */
     registerOption("shader", [this] (Ref<ParseStream> cin, const FileName& path) {
@@ -396,39 +400,53 @@ namespace embree
     resize(width,height);
     ISPCCamera ispccamera = camera.getISPCCamera(width,height);
 
-    size_t numTotalFrames = skipBenchmarkFrames + numBenchmarkFrames;
-    for (size_t i=0; i<skipBenchmarkFrames; i++) 
-    {
-      double t0 = getSeconds();
-      render(0.0f,ispccamera);
-      double t1 = getSeconds();
-      std::cout << "frame [" << std::setw(3) << i << " / " << std::setw(3) << numTotalFrames << "]: " <<  std::setw(8) << 1.0/(t1-t0) << " fps (skipped)" << std::endl << std::flush;
-      usleep(100000);
-    }
-
     //Statistics stat;
     FilteredStatistics stat(0.5f,0.0f);
-    for (size_t i=skipBenchmarkFrames; i<numTotalFrames; i++) 
+    for (size_t j=0; j<numBenchmarkRepetitions; j++)
     {
-      double t0 = getSeconds();
-      render(0.0f,ispccamera);
-      double t1 = getSeconds();
-      float fr = 1.0f/(t1-t0);
-      stat.add(fr);
-      std::cout << "frame [" << std::setw(3) << i << " / " << std::setw(3) << numTotalFrames << "]: " 
-                << std::setw(8) << fr << " fps, " 
+      size_t numTotalFrames = skipBenchmarkFrames + numBenchmarkFrames;
+      for (size_t i=0; i<skipBenchmarkFrames; i++) 
+      {
+        double t0 = getSeconds();
+        render(0.0f,ispccamera);
+        double t1 = getSeconds();
+        std::cout << "frame [" << std::setw(3) << i << " / " << std::setw(3) << numTotalFrames << "]: " <<  std::setw(8) << 1.0/(t1-t0) << " fps (skipped)" << std::endl << std::flush;
+        usleep(100000);
+      }
+      
+      for (size_t i=skipBenchmarkFrames; i<numTotalFrames; i++) 
+      {
+        double t0 = getSeconds();
+        render(0.0f,ispccamera);
+        double t1 = getSeconds();
+
+        float fr = 1.0f/(t1-t0);
+        stat.add(fr);
+        std::cout << "frame [" << std::setw(3) << i << " / " << std::setw(3) << numTotalFrames << "]: " 
+                  << std::setw(8) << fr << " fps, " 
+                  << "min = " << std::setw(8) << stat.getMin() << " fps, " 
+                  << "avg = " << std::setw(8) << stat.getAvg() << " fps, "
+                  << "max = " << std::setw(8) << stat.getMax() << " fps, "
+                  << "sigma = " << std::setw(6) << stat.getSigma() << " (" << 100.0f*stat.getSigma()/stat.getAvg() << "%)" << std::endl << std::flush;
+        usleep(100000);
+      }
+
+      /* rebuild scene between repetitions */
+      if (numBenchmarkRepetitions)
+      {
+        cleanup();
+        init(rtcore.c_str());
+        resize(width,height);     
+      }
+ 
+      std::cout << "frame [" << std::setw(3) << skipBenchmarkFrames << " - " << std::setw(3) << numTotalFrames << "]: " 
+                << "              " 
                 << "min = " << std::setw(8) << stat.getMin() << " fps, " 
                 << "avg = " << std::setw(8) << stat.getAvg() << " fps, "
                 << "max = " << std::setw(8) << stat.getMax() << " fps, "
-                << "sigma = " << std::setw(6) << stat.getSigma() << " (" << 100.0f*stat.getSigma()/stat.getAvg() << "%)" << std::endl << std::flush;
-      usleep(100000);
+                << "sigma = " << std::setw(6) << stat.getAvgSigma() << " (" << 100.0f*stat.getAvgSigma()/stat.getAvg() << "%)" << std::endl;
     }
-    std::cout << "frame [" << std::setw(3) << skipBenchmarkFrames << " - " << std::setw(3) << numTotalFrames << "]: " 
-              << "              " 
-              << "min = " << std::setw(8) << stat.getMin() << " fps, " 
-              << "avg = " << std::setw(8) << stat.getAvg() << " fps, "
-              << "max = " << std::setw(8) << stat.getMax() << " fps, "
-              << "sigma = " << std::setw(6) << stat.getAvgSigma() << " (" << 100.0f*stat.getAvgSigma()/stat.getAvg() << "%)" << std::endl;
+
     std::cout << "BENCHMARK_RENDER_MIN " << stat.getMin() << std::endl;
     std::cout << "BENCHMARK_RENDER_AVG " << stat.getAvg() << std::endl;
     std::cout << "BENCHMARK_RENDER_MAX " << stat.getMax() << std::endl;
