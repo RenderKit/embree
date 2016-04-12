@@ -245,6 +245,7 @@ namespace embree
         __forceinline void update(const Ray* ray) {
           org_rdir.w = ray->tfar;
         }
+
       };
 
       struct __aligned(32) RayFiberContext {

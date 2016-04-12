@@ -280,7 +280,6 @@ namespace embree
 
           for (size_t j=0;j<rays_in_octant[i];j++)
             rayN.scatterByOffset(octants[i][j],rays[j],intersect);
-
         }
     }
 
