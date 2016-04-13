@@ -232,6 +232,11 @@ namespace embree
 
         stack1[0].ptr  = BVH::invalidNode;
         stack1[0].mask = (size_t)-1;
+
+#if DISTANCE_TEST == 1
+        stack0[0].dist = 0;
+        stack1[0].dist = 0;
+#endif
         ///////////////////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////
@@ -288,7 +293,7 @@ namespace embree
 
             if (unlikely(cur.isLeaf())) break;
             const Node* __restrict__ const node = cur.node();
-            STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);
+            //STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);
             assert(m_trav_active);
 
 #if defined(__AVX512F__)
@@ -424,7 +429,7 @@ namespace embree
           STAT3(normal.trav_leaves, 1, 1, 1);
           size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
           
-          STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
+          //STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
 #if !TWO_STREAMS_FIBER_MODE
           size_t bits = m_trav_active;
 #else
@@ -433,13 +438,38 @@ namespace embree
 
           /*! intersect stream of rays with all primitives */
           size_t lazy_node = 0;
-          PrimitiveIntersector::intersect(pre,bits,rays,ray_ctx,0,prim,num,bvh->scene,NULL,lazy_node);
+          size_t valid_isec = PrimitiveIntersector::intersect(pre,bits,rays,ray_ctx,0,prim,num,bvh->scene,NULL,lazy_node);
 
+          STAT3(normal.trav_hit_boxes[__popcnt(valid_isec)],1,1,1);            
+
+#if DISTANCE_TEST == 1
+          if (unlikely(valid_isec))
+          {
+            StackItemMask *new_sptr = &stack0[1];
+            for (StackItemMask *sptr = new_sptr;sptr!=stackPtr;sptr++)
+            {
+              assert(sptr < stackPtr);
+              size_t mask = sptr->mask;
+              size_t bits = mask & valid_isec;
+              while (bits) {
+                const size_t i = __bscf(bits);
+                const RayContext &ray = ray_ctx[i];
+                const size_t mask_i = (sptr->dist > ray.tfar_ui()) ? ((size_t)1 << i) : 0;
+                mask &= ~mask_i;
+              };
+              if (!mask) continue;
+              new_sptr->ptr  = sptr->ptr; 
+              new_sptr->mask = mask; 
+              new_sptr->dist = sptr->dist;   
+              new_sptr++;
+            }
+            stackPtr = new_sptr;
+          }
+#endif
           /*! pop next node */
           STAT3(normal.trav_stack_pop,1,1,1);                          
           stackPtr--;
-          cur = NodeRef(stackPtr->ptr);
-
+          cur = NodeRef(stackPtr->ptr);            
           m_trav_active = stackPtr->mask;
           assert(m_trav_active);
         } // traversal + intersection
@@ -535,7 +565,7 @@ namespace embree
             assert(m_trav_active);
 
             const Node* __restrict__ const node = cur.node();
-            STAT3(shadow.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);
+            //STAT3(shadow.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);
 
 #if defined(__AVX512F__)
             const vlong<K/2> one((size_t)1);
@@ -689,7 +719,7 @@ namespace embree
           size_t bits = (m_trav_active<<cur_fiber->getOffset()) & m_active;          
 #endif
           assert(bits);
-          STAT3(shadow.trav_hit_boxes[__popcnt(bits)],1,1,1);                          
+          //STAT3(shadow.trav_hit_boxes[__popcnt(bits)],1,1,1);                          
 
           m_active &= ~PrimitiveIntersector::occluded(pre,bits,rays,0,prim,num,bvh->scene,NULL,lazy_node);
           if (unlikely(m_active == 0)) break;
@@ -987,7 +1017,7 @@ namespace embree
             while (likely(!cur.isLeaf()))
             {
               const Node* __restrict__ const node = cur.node();
-              STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);
+              //STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);
 
               const vfloat<K> bminmaxX = permute(vfloat<K>::load((float*)&node->lower_x),permX);
               const vfloat<K> bminmaxY = permute(vfloat<K>::load((float*)&node->lower_y),permY);
