@@ -35,7 +35,7 @@
 #  include <GL/glut.h>
 #endif
 
-#if !defined(win32)
+#if !defined(__WIN32__)
 #include <unistd.h>
 #endif
 
@@ -415,7 +415,7 @@ namespace embree
         render(0.0f,ispccamera);
         double t1 = getSeconds();
         std::cout << "frame [" << std::setw(3) << i << " / " << std::setw(3) << numTotalFrames << "]: " <<  std::setw(8) << 1.0/(t1-t0) << " fps (skipped)" << std::endl << std::flush;
-#if defined(WIN32)
+#if defined(__WIN32__)
         Sleep(100);
 #else        
         usleep(100000);
@@ -436,7 +436,7 @@ namespace embree
                   << "avg = " << std::setw(8) << stat.getAvg() << " fps, "
                   << "max = " << std::setw(8) << stat.getMax() << " fps, "
                   << "sigma = " << std::setw(6) << stat.getSigma() << " (" << 100.0f*stat.getSigma()/stat.getAvg() << "%)" << std::endl << std::flush;
-#if defined(WIN32)
+#if defined(__WIN32__)
         Sleep(100);
 #else        
         usleep(100000);
