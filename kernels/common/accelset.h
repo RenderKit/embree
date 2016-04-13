@@ -35,13 +35,13 @@ namespace embree
     typedef RTCIntersectFunc4 IntersectFunc4;
     typedef RTCIntersectFunc8 IntersectFunc8;
     typedef RTCIntersectFunc16 IntersectFunc16;
-    typedef RTCIntersectFunc1N IntersectFuncN;
+    typedef RTCIntersectFunc1N IntersectFunc1N;
     
     typedef RTCOccludedFunc OccludedFunc;
     typedef RTCOccludedFunc4 OccludedFunc4;
     typedef RTCOccludedFunc8 OccludedFunc8;
     typedef RTCOccludedFunc16 OccludedFunc16;
-    typedef RTCOccludedFunc1N OccludedFuncN;
+    typedef RTCOccludedFunc1N OccludedFunc1N;
 
 #if defined(__SSE__)
     typedef void (*ISPCIntersectFunc4)(void* ptr, RTCRay4& ray, size_t item, __m128 valid);
@@ -136,12 +136,12 @@ namespace embree
 	bool ispc;
       };
 
-      struct IntersectorN
+      struct Intersector1N
       {
-        IntersectorN (ErrorFunc error = nullptr) 
-        : intersect((IntersectFuncN)error), occluded((OccludedFuncN)error), name(nullptr) {}
+        Intersector1N (ErrorFunc error = nullptr) 
+        : intersect((IntersectFunc1N)error), occluded((OccludedFunc1N)error), name(nullptr) {}
         
-        IntersectorN (IntersectFuncN intersect, OccludedFuncN occluded, const char* name)
+        Intersector1N (IntersectFunc1N intersect, OccludedFunc1N occluded, const char* name)
         : intersect(intersect), occluded(occluded), name(name) {}
         
         operator bool() const { return name; }
@@ -149,8 +149,8 @@ namespace embree
       public:
         static const char* type;
         const char* name;
-        IntersectFuncN intersect;
-        OccludedFuncN occluded;  
+        IntersectFunc1N intersect;
+        OccludedFunc1N occluded;  
       };
       
     public:
@@ -263,8 +263,8 @@ namespace embree
       __forceinline void intersectN (RTCRay** rays, size_t N, size_t item) 
       {
         assert(item < size());
-        assert(intersectors.intersectorN.intersect);
-        intersectors.intersectorN.intersect(intersectors.ptr,rays,N,item);
+        assert(intersectors.intersector1N.intersect);
+        intersectors.intersector1N.intersect(intersectors.ptr,rays,N,item);
       }
       
       /*! Tests if single ray is occluded by the scene. */
@@ -329,8 +329,8 @@ namespace embree
 
       /*! Tests if a stream of rays is occluded by the scene. */
       __forceinline void occludedN (RTCRay** rays, size_t N, size_t item) {
-        assert(intersectors.intersectorN.occluded);
-        intersectors.intersectorN.occluded(intersectors.ptr,rays,N,item);
+        assert(intersectors.intersector1N.occluded);
+        intersectors.intersector1N.occluded(intersectors.ptr,rays,N,item);
       }
       
     public:
@@ -347,7 +347,7 @@ namespace embree
         Intersector4 intersector4;
         Intersector8 intersector8;
         Intersector16 intersector16;
-        IntersectorN intersectorN;
+        Intersector1N intersector1N;
       } intersectors;
   };
 

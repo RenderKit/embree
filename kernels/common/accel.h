@@ -70,7 +70,7 @@ namespace embree
                                     RTCRay16& ray      /*!< ray packet to intersect */);
 
     /*! Type of intersect function pointer for ray packets of size N. */
-    typedef void (*IntersectFunc1N)(void* ptr,           /*!< pointer to user data */
+    typedef void (*IntersectFuncN)(void* ptr,           /*!< pointer to user data */
                                    RTCRay** ray,        /*!< ray stream to intersect */
                                    const size_t N,      /*!< number of rays in stream */
                                    const size_t flags   /*!< layout flags */);
@@ -96,7 +96,7 @@ namespace embree
                                     RTCRay16& ray      /*!< Ray packet to test occlusion. */);
 
     /*! Type of intersect function pointer for ray packets of size N. */
-    typedef void (*OccludedFunc1N)(void* ptr,           /*!< pointer to user data */
+    typedef void (*OccludedFuncN)(void* ptr,           /*!< pointer to user data */
                                   RTCRay** ray,        /*!< ray stream to intersect */
                                   const size_t N,      /*!< number of rays in stream */
                                   const size_t flags   /*!< layout flags */);
@@ -173,9 +173,9 @@ namespace embree
      struct IntersectorN 
     {
       IntersectorN (ErrorFunc error = nullptr) 
-      : intersect((IntersectFunc1N)error), occluded((OccludedFunc1N)error), name(nullptr) {}
+      : intersect((IntersectFuncN)error), occluded((OccludedFuncN)error), name(nullptr) {}
 
-      IntersectorN (IntersectFunc1N intersect, OccludedFunc1N occluded, const char* name)
+      IntersectorN (IntersectFuncN intersect, OccludedFuncN occluded, const char* name)
       : intersect(intersect), occluded(occluded), name(name) {}
 
       operator bool() const { return name; }
@@ -183,8 +183,8 @@ namespace embree
     public:
       static const char* type;
       const char* name;
-      IntersectFunc1N intersect;
-      OccludedFunc1N occluded;
+      IntersectFuncN intersect;
+      OccludedFuncN occluded;
     };
    
     struct Intersectors 
@@ -409,8 +409,8 @@ namespace embree
                               TOSTRING(isa) "::" TOSTRING(symbol));
 
 #define DEFINE_INTERSECTORN(symbol,intersector)                         \
-  Accel::IntersectorN symbol((Accel::IntersectFunc1N)intersector::intersect, \
-                              (Accel::OccludedFunc1N)intersector::occluded,\
+  Accel::IntersectorN symbol((Accel::IntersectFuncN)intersector::intersect, \
+                              (Accel::OccludedFuncN)intersector::occluded,\
                               TOSTRING(isa) "::" TOSTRING(symbol));
 
   /* ray stream filter interface */
