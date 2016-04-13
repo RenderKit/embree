@@ -370,9 +370,12 @@ export void device_render (uniform int* uniform pixels,
 /* called by the C++ code for cleanup */
 export void device_cleanup ()
 {
-  rtcDeleteScene (g_scene);
-  rtcDeleteDevice(g_device);
-  delete[] face_colors;
-  delete[] g_accu;
+  rtcDeleteScene (g_scene); g_scene = NULL;
+  rtcDeleteDevice(g_device); g_device = NULL;
+  delete[] face_colors; face_colors = NULL;
+  delete[] g_accu; g_accu = NULL;
+  g_accu_width = 0;
+  g_accu_height = 0;
+  g_accu_count = 0;
 }
 

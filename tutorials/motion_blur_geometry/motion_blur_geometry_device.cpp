@@ -373,9 +373,12 @@ extern "C" void device_render (int* pixels,
 /* called by the C++ code for cleanup */
 extern "C" void device_cleanup ()
 {
-  rtcDeleteScene (g_scene);
-  rtcDeleteDevice(g_device);
-  alignedFree(face_colors);
-  alignedFree(g_accu);
+  rtcDeleteScene (g_scene); g_scene = nullptr;
+  rtcDeleteDevice(g_device); g_device = nullptr;
+  alignedFree(face_colors); face_colors = nullptr;
+  alignedFree(g_accu); g_accu = nullptr;
+  g_accu_width = 0;
+  g_accu_height = 0;
+  g_accu_count = 0;
 }
 

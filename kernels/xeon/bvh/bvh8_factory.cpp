@@ -130,104 +130,106 @@ namespace embree
   BVH8Factory::BVH8Factory (int features)
   {
     /* select builders */
-    SELECT_SYMBOL_INIT_AVX(features,BVH8Bezier1vBuilder_OBB_New);
-    SELECT_SYMBOL_INIT_AVX(features,BVH8Bezier1iBuilder_OBB_New);
-    SELECT_SYMBOL_INIT_AVX(features,BVH8Bezier1iMBBuilder_OBB_New);
+    IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX(features,BVH8Bezier1vBuilder_OBB_New));
 
-    SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Line4iSceneBuilderSAH);
-    SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Line4iMBSceneBuilderSAH);
+    IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX(features,BVH8Bezier1vBuilder_OBB_New));
+    IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX(features,BVH8Bezier1iBuilder_OBB_New));
+    IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX(features,BVH8Bezier1iMBBuilder_OBB_New));
 
-    SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Triangle4SceneBuilderSAH);
-    SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Triangle4vMBSceneBuilderSAH);
-    SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Quad4vSceneBuilderSAH);
-    SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Quad4iSceneBuilderSAH);
-    SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Quad4iMBSceneBuilderSAH);
+    IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Line4iSceneBuilderSAH));
+    IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Line4iMBSceneBuilderSAH));
 
-    SELECT_SYMBOL_INIT_AVX(features,BVH8QuantizedTriangle4SceneBuilderSAH);
+    IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Triangle4SceneBuilderSAH));
+    IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Triangle4vMBSceneBuilderSAH));
+    IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Quad4vSceneBuilderSAH));
+    IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Quad4iSceneBuilderSAH));
+    IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Quad4iMBSceneBuilderSAH));
+
+    IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX(features,BVH8QuantizedTriangle4SceneBuilderSAH));
    
-    SELECT_SYMBOL_INIT_AVX(features,BVH8Triangle4SceneBuilderSpatialSAH);
+    IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX(features,BVH8Triangle4SceneBuilderSpatialSAH));
 
-    SELECT_SYMBOL_INIT_AVX(features,BVH8SubdivGridEagerBuilderBinnedSAH);
+    IF_ENABLED_SUBDIV(SELECT_SYMBOL_INIT_AVX(features,BVH8SubdivGridEagerBuilderBinnedSAH));
 
     /* select intersectors1 */
-    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Line4iIntersector1);
-    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Line4iMBIntersector1);
-    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Bezier1vIntersector1_OBB);
-    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Bezier1iIntersector1_OBB);
-    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Bezier1iMBIntersector1_OBB);
-    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Triangle4Intersector1Moeller);
-    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Triangle4vMBIntersector1Moeller);
-    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Quad4vIntersector1Moeller);
-    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Quad4iIntersector1Pluecker);
-    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Quad4iMBIntersector1Pluecker);
-    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8GridAOSIntersector1);
-    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,QBVH8Triangle4Intersector1Moeller);
+    IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Line4iIntersector1));
+    IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Line4iMBIntersector1));
+    IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Bezier1vIntersector1_OBB));
+    IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Bezier1iIntersector1_OBB));
+    IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Bezier1iMBIntersector1_OBB));
+    IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Triangle4Intersector1Moeller));
+    IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Triangle4vMBIntersector1Moeller));
+    IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Quad4vIntersector1Moeller));
+    IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Quad4iIntersector1Pluecker));
+    IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Quad4iMBIntersector1Pluecker));
+    IF_ENABLED_SUBDIV(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8GridAOSIntersector1));
+    IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,QBVH8Triangle4Intersector1Moeller));
 
 #if defined (RTCORE_RAY_PACKETS)
 
     /* select intersectors4 */
-    SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Line4iIntersector4);
-    SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Line4iMBIntersector4);
-    SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Bezier1vIntersector4Single_OBB);
-    SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Bezier1iIntersector4Single_OBB);
-    SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Bezier1iMBIntersector4Single_OBB);
-    SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Triangle4Intersector4HybridMoeller);
-    SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Triangle4Intersector4HybridMoellerNoFilter);
-    SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Triangle4vMBIntersector4HybridMoeller);
-    SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8GridAOSIntersector4);
-    SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Quad4vIntersector4HybridMoeller);
-    SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Quad4vIntersector4HybridMoellerNoFilter);
-    SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Quad4iIntersector4HybridPluecker);
-    SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Quad4iIntersector4HybridPlueckerNoFilter);
-    SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Quad4iMBIntersector4HybridPluecker);
+    IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Line4iIntersector4));
+    IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Line4iMBIntersector4));
+    IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Bezier1vIntersector4Single_OBB));
+    IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Bezier1iIntersector4Single_OBB));
+    IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Bezier1iMBIntersector4Single_OBB));
+    IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Triangle4Intersector4HybridMoeller));
+    IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Triangle4Intersector4HybridMoellerNoFilter));
+    IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Triangle4vMBIntersector4HybridMoeller));
+    IF_ENABLED_SUBDIV(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8GridAOSIntersector4));
+    IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Quad4vIntersector4HybridMoeller));
+    IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Quad4vIntersector4HybridMoellerNoFilter));
+    IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Quad4iIntersector4HybridPluecker));
+    IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Quad4iIntersector4HybridPlueckerNoFilter));
+    IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Quad4iMBIntersector4HybridPluecker));
 
     /* select intersectors8 */
-    SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Line4iIntersector8);
-    SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Line4iMBIntersector8);
-    SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Bezier1vIntersector8Single_OBB);
-    SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Bezier1iIntersector8Single_OBB);
-    SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Bezier1iMBIntersector8Single_OBB);
-    SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Triangle4Intersector8HybridMoeller);
-    SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Triangle4Intersector8HybridMoellerNoFilter);
-    SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Triangle4vMBIntersector8HybridMoeller);
-    SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8GridAOSIntersector8);
-    SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Quad4vIntersector8HybridMoeller);
-    SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Quad4vIntersector8HybridMoellerNoFilter);
-    SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Quad4iIntersector8HybridPluecker);
-    SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Quad4iIntersector8HybridPlueckerNoFilter);
-    SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Quad4iMBIntersector8HybridPluecker);
+    IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Line4iIntersector8));
+    IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Line4iMBIntersector8));
+    IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Bezier1vIntersector8Single_OBB));
+    IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Bezier1iIntersector8Single_OBB));
+    IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Bezier1iMBIntersector8Single_OBB));
+    IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Triangle4Intersector8HybridMoeller));
+    IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Triangle4Intersector8HybridMoellerNoFilter));
+    IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Triangle4vMBIntersector8HybridMoeller));
+    IF_ENABLED_SUBDIV(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8GridAOSIntersector8));
+    IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Quad4vIntersector8HybridMoeller));
+    IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Quad4vIntersector8HybridMoellerNoFilter));
+    IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Quad4iIntersector8HybridPluecker));
+    IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Quad4iIntersector8HybridPlueckerNoFilter));
+    IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Quad4iMBIntersector8HybridPluecker));
 
     /* select intersectors16 */
-    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Line4iIntersector16);
-    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Line4iMBIntersector16);
-    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Bezier1vIntersector16Single_OBB);
-    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Bezier1iIntersector16Single_OBB);
-    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Bezier1iMBIntersector16Single_OBB);
-    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Triangle4Intersector16HybridMoeller);
-    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Triangle4Intersector16HybridMoellerNoFilter);
-    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Triangle4vMBIntersector16HybridMoeller);
-    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8GridAOSIntersector16);
-    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Quad4vIntersector16HybridMoeller);
-    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Quad4vIntersector16HybridMoellerNoFilter);
-    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Quad4iIntersector16HybridPluecker);
-    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Quad4iIntersector16HybridPlueckerNoFilter);
-    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Quad4iMBIntersector16HybridPluecker);
+    IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Line4iIntersector16));
+    IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Line4iMBIntersector16));
+    IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Bezier1vIntersector16Single_OBB));
+    IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Bezier1iIntersector16Single_OBB));
+    IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Bezier1iMBIntersector16Single_OBB));
+    IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Triangle4Intersector16HybridMoeller));
+    IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Triangle4Intersector16HybridMoellerNoFilter));
+    IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Triangle4vMBIntersector16HybridMoeller));
+    IF_ENABLED_SUBDIV(SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8GridAOSIntersector16));
+    IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Quad4vIntersector16HybridMoeller));
+    IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Quad4vIntersector16HybridMoellerNoFilter));
+    IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Quad4iIntersector16HybridPluecker));
+    IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Quad4iIntersector16HybridPlueckerNoFilter));
+    IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Quad4iMBIntersector16HybridPluecker));
 
     /* select stream intersectors */
-    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Line4iStreamIntersector);
-    //SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Line4iMBStreamIntersector);
-    //SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Bezier1vStreamIntersector_OBB);
-    //SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Bezier1iStreamIntersector_OBB);
-    //SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Bezier1iMBStreamIntersector_OBB);
-    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Triangle4StreamIntersectorMoeller);
-    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Triangle4StreamIntersectorMoellerNoFilter);
-    //SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Triangle4vMBStreamIntersectorMoeller);
-    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Quad4vStreamIntersectorMoeller);
-    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Quad4vStreamIntersectorMoellerNoFilter);
-    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Quad4iStreamIntersectorPluecker);
-    //SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Quad4iMBStreamIntersectorPluecker);
-    //SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8GridAOSStreamIntersector);
-    //SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,QBVH8Triangle4StreamIntersectorMoeller);
+    IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Line4iStreamIntersector));
+    //IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Line4iMBStreamIntersector));
+    //IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Bezier1vStreamIntersector_OBB));
+    //IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Bezier1iStreamIntersector_OBB));
+    //IF_ENABLED_HAIR(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Bezier1iMBStreamIntersector_OBB));
+    IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Triangle4StreamIntersectorMoeller));
+    IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Triangle4StreamIntersectorMoellerNoFilter));
+    //IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Triangle4vMBStreamIntersectorMoeller));
+    IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Quad4vStreamIntersectorMoeller));
+    IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Quad4vStreamIntersectorMoellerNoFilter));
+    IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Quad4iStreamIntersectorPluecker));
+    //IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Quad4iMBStreamIntersectorPluecker));
+    //IF_ENABLED_SUBDIV(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8GridAOSStreamIntersector));
+    //IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,QBVH8Triangle4StreamIntersectorMoeller));
 
 #endif
   }

@@ -235,19 +235,25 @@ namespace embree
         }
       }
     }
-    
+
+#if defined(RTCORE_GEOMETRY_LINES)    
     Builder* BVH4BuilderTwoLevelLineSegmentsSAH (void* bvh, Scene* scene, const createLineSegmentsAccelTy createMeshAccel) {
       return new BVHNBuilderTwoLevel<4,LineSegments>((BVH4*)bvh,scene,createMeshAccel);
     }
+#endif
 
+#if defined(RTCORE_GEOMETRY_TRIANGLES)
     Builder* BVH4BuilderTwoLevelTriangleMeshSAH (void* bvh, Scene* scene, const createTriangleMeshAccelTy createMeshAccel) {
-      return new BVHNBuilderTwoLevel<4,TriangleMesh>((BVH4*)bvh,scene,createMeshAccel);
+    return new BVHNBuilderTwoLevel<4,TriangleMesh>((BVH4*)bvh,scene,createMeshAccel);
     }
+#endif
 
 #if defined(__AVX__)
+#if defined(RTCORE_GEOMETRY_TRIANGLES)
     Builder* BVH8BuilderTwoLevelTriangleMeshSAH (void* bvh, Scene* scene, const createTriangleMeshAccelTy createMeshAccel) {
       return new BVHNBuilderTwoLevel<8,TriangleMesh>((BVH8*)bvh,scene,createMeshAccel);
     }
+#endif
 #endif
   }
 }

@@ -150,9 +150,16 @@ namespace embree
     createHairMBAccel();
     createLineAccel();
     createLineMBAccel();
+
+#if defined(RTCORE_GEOMETRY_TRIANGLES)
     accels.add(device->bvh4_factory->BVH4InstancedBVH4Triangle4ObjectSplit(this));
+#endif
+
+#if defined(RTCORE_GEOMETRY_USER)
     accels.add(device->bvh4_factory->BVH4UserGeometry(this)); // has to be the last as the instID field of a hit instance is not invalidated by other hit geometry
     accels.add(device->bvh4_factory->BVH4UserGeometryMB(this)); // has to be the last as the instID field of a hit instance is not invalidated by other hit geometry
+#endif
+
 #endif
 
     /* increment number of scenes */
@@ -163,6 +170,7 @@ namespace embree
 
   void Scene::createTriangleAccel()
   {
+#if defined(RTCORE_GEOMETRY_TRIANGLES)
     if (device->tri_accel == "default") 
     {
       if (isStatic()) {
@@ -208,11 +216,12 @@ namespace embree
     else if (device->tri_accel == "qbvh8.triangle4")      accels.add(device->bvh8_factory->BVH8QuantizedTriangle4(this));
 #endif
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown triangle acceleration structure "+device->tri_accel);
+#endif
   }
-
 
   void Scene::createQuadAccel()
   {
+#if defined(RTCORE_GEOMETRY_QUADS)
     if (device->quad_accel == "default") 
     {
       int mode =  2*(int)isCompact() + 1*(int)isRobust(); 
@@ -238,11 +247,12 @@ namespace embree
     else if (device->quad_accel == "bvh8.quad4i")       accels.add(device->bvh8_factory->BVH8Quad4i(this));
 #endif
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown quad acceleration structure "+device->quad_accel);
+#endif
   }
-
 
   void Scene::createQuadMBAccel()
   {
+#if defined(RTCORE_GEOMETRY_QUADS)
     if (device->quad_accel_mb == "default") 
     {
       int mode =  2*(int)isCompact() + 1*(int)isRobust(); 
@@ -262,11 +272,13 @@ namespace embree
       }
     }
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown quad acceleration structure "+device->quad_accel);
+#endif
   }
 
 
   void Scene::createTriangleMBAccel()
   {
+#if defined(RTCORE_GEOMETRY_TRIANGLES)
     if (device->tri_accel_mb == "default")
     {
 #if defined (__TARGET_AVX__)
@@ -285,10 +297,12 @@ namespace embree
     else if (device->tri_accel_mb == "bvh8.triangle4vmb") accels.add(device->bvh8_factory->BVH8Triangle4vMB(this));
 #endif
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown motion blur triangle acceleration structure "+device->tri_accel_mb);
+#endif
   }
 
   void Scene::createHairAccel()
   {
+#if defined(RTCORE_GEOMETRY_HAIR)
     if (device->hair_accel == "default")
     {
       int mode = 2*(int)isCompact() + 1*(int)isRobust();
@@ -334,10 +348,12 @@ namespace embree
     else if (device->hair_accel == "bvh8obb.bezier1i" ) accels.add(device->bvh8_factory->BVH8OBBBezier1i(this,false));
 #endif
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown hair acceleration structure "+device->hair_accel);
+#endif
   }
 
   void Scene::createHairMBAccel()
   {
+#if defined(RTCORE_GEOMETRY_HAIR)
     if (device->hair_accel_mb == "default")
     {
 #if defined (__TARGET_AVX__)
@@ -356,10 +372,12 @@ namespace embree
     else if (device->hair_accel_mb == "bvh8obb.bezier1imb") accels.add(device->bvh8_factory->BVH8OBBBezier1iMB(this,false));
 #endif
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown motion blur hair acceleration structure "+device->tri_accel_mb);
+#endif
   }
 
   void Scene::createLineAccel()
   {
+#if defined(RTCORE_GEOMETRY_LINES)
     if (device->line_accel == "default")
     {
       if (isStatic())
@@ -381,10 +399,12 @@ namespace embree
     else if (device->line_accel == "bvh8.line4i") accels.add(device->bvh8_factory->BVH8Line4i(this));
 #endif
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown line segment acceleration structure "+device->line_accel);
+#endif
   }
 
   void Scene::createLineMBAccel()
   {
+#if defined(RTCORE_GEOMETRY_LINES)
     if (device->line_accel_mb == "default")
     {
 #if defined (__TARGET_AVX__)
@@ -399,29 +419,25 @@ namespace embree
     else if (device->line_accel_mb == "bvh8.line4imb") accels.add(device->bvh8_factory->BVH8Line4iMB(this));
 #endif
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown motion blur line segment acceleration structure "+device->line_accel_mb);
+#endif
   }
 
   void Scene::createSubdivAccel()
   {
+#if defined(RTCORE_GEOMETRY_SUBDIV)
     if (device->subdiv_accel == "default") 
     {
       if (isIncoherent(flags) && isStatic())
       {
 #if defined (__TARGET_AVX__)
         if (device->hasISA(AVX))
-        {
           accels.add(device->bvh8_factory->BVH8SubdivGridEager(this));
-        }
         else
 #endif
-        {
           accels.add(device->bvh4_factory->BVH4SubdivGridEager(this));
-        }
       }
       else
-      {
         accels.add(device->bvh4_factory->BVH4SubdivPatch1Cached(this));
-      }
     }
     else if (device->subdiv_accel == "bvh4.subdivpatch1cached") accels.add(device->bvh4_factory->BVH4SubdivPatch1Cached(this));
     else if (device->subdiv_accel == "bvh4.grid.eager"        ) accels.add(device->bvh4_factory->BVH4SubdivGridEager(this));
@@ -429,6 +445,7 @@ namespace embree
     else if (device->subdiv_accel == "bvh8.grid.eager"        ) accels.add(device->bvh8_factory->BVH8SubdivGridEager(this));
 #endif
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown subdiv accel "+device->subdiv_accel);
+#endif
   }
 
 #endif

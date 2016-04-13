@@ -540,9 +540,9 @@ export void device_render (uniform int* uniform pixels,
 /* called by the C++ code for cleanup */
 export void device_cleanup ()
 {
-  rtcDeleteScene (g_scene);
-  rtcDeleteScene (g_scene0);
-  rtcDeleteScene (g_scene1);
-  rtcDeleteScene (g_scene2);
-  rtcDeleteDevice(g_device);
+  rtcDeleteScene (g_scene); g_scene = NULL;
+  rtcDeleteScene (g_scene0); g_scene0 = NULL;
+  rtcDeleteScene (g_scene1); g_scene1 = NULL;
+  rtcDeleteScene (g_scene2); g_scene2 = NULL;
+  rtcDeleteDevice(g_device); g_device = NULL;
 }

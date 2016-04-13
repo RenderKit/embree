@@ -106,5 +106,7 @@ namespace embree
     device_cleanup();
     alignedFree(g_pixels); 
     g_pixels = nullptr;
+    g_width = -1;
+    g_height = -1;
   }
 }

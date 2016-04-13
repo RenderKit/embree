@@ -88,17 +88,25 @@ ENDIF ()
 ##############################################################################
 # Configurations (add configurations also to common/cmake/embree-config-default.cmake)
 
-OPTION(RTCORE_RAY_MASK "Enables ray mask support.")
 OPTION(RTCORE_STAT_COUNTERS "Enables statistic counters.")
+
+OPTION(RTCORE_RAY_MASK "Enables ray mask support.")
 OPTION(RTCORE_BACKFACE_CULLING "Enables backface culling.")
 OPTION(RTCORE_INTERSECTION_FILTER "Enables intersection filter callback." ON)
 OPTION(RTCORE_INTERSECTION_FILTER_RESTORE "Restores previous hit when hit is filtered out." ON)
 OPTION(RTCORE_BUFFER_STRIDE "Enables buffer strides." ON)
+OPTION(RTCORE_IGNORE_INVALID_RAYS "Ignores invalid rays." OFF) # FIXME: enable by default?
+
+OPTION(RTCORE_GEOMETRY_TRIANGLES "Enables support for triangle geometries." ON)
+OPTION(RTCORE_GEOMETRY_QUADS "Enables support for quad geometries." ON)
+OPTION(RTCORE_GEOMETRY_LINES "Enables support for line geometries." ON)
+OPTION(RTCORE_GEOMETRY_HAIR "Enables support for hair geometries." ON)
+OPTION(RTCORE_GEOMETRY_SUBDIV "Enables support for subdiv geometries." ON)
+OPTION(RTCORE_GEOMETRY_USER "Enables support for user geometries." ON)
+OPTION(RTCORE_RAY_PACKETS "Enabled support for ray packets." ON)
 
 OPTION(RTCORE_EXPORT_ALL_SYMBOLS "Lets Embree library export all symbols.")
 OPTION(RTCORE_ENABLE_RAYSTREAM_LOGGER "Enables ray stream logger.")
-OPTION(RTCORE_IGNORE_INVALID_RAYS "Ignores invalid rays." OFF) # FIXME: enable by default?
-OPTION(RTCORE_RAY_PACKETS "Enabled support for ray packets." ON)
 OPTION(RTCORE_MEMKIND_ALLOCATOR "Enables memory allocation through the memkind library." OFF)
 
 SET(RTCORE_TASKING_SYSTEM "TBB" CACHE STRING "Selects tasking system")

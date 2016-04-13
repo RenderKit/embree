@@ -539,6 +539,42 @@ namespace embree
     case RTC_CONFIG_TASKING_SYSTEM: return 1;
 #endif
 
+#if defined(RTCORE_GEOMETRY_TRIANGLES)
+    case RTC_CONFIG_TRIANGLE_GEOMETRY: return 1;
+#else
+    case RTC_CONFIG_TRIANGLE_GEOMETRY: return 0;
+#endif
+        
+#if defined(RTCORE_GEOMETRY_QUADS)
+    case RTC_CONFIG_QUAD_GEOMETRY: return 1;
+#else
+    case RTC_CONFIG_QUAD_GEOMETRY: return 0;
+#endif
+
+#if defined(RTCORE_GEOMETRY_LINES)
+    case RTC_CONFIG_LINE_GEOMETRY: return 1;
+#else
+    case RTC_CONFIG_LINE_GEOMETRY: return 0;
+#endif
+
+#if defined(RTCORE_GEOMETRY_HAIR)
+    case RTC_CONFIG_HAIR_GEOMETRY: return 1;
+#else
+    case RTC_CONFIG_HAIR_GEOMETRY: return 0;
+#endif
+
+#if defined( RTCORE_GEOMETRY_SUBDIV)
+    case RTC_CONFIG_SUBDIV_GEOMETRY: return 1;
+#else
+    case RTC_CONFIG_SUBDIV_GEOMETRY: return 0;
+#endif
+
+#if defined(RTCORE_GEOMETRY_USER)
+    case RTC_CONFIG_USER_GEOMETRY: return 1;
+#else
+    case RTC_CONFIG_USER_GEOMETRY: return 0;
+#endif
+
     default: throw_RTCError(RTC_INVALID_ARGUMENT, "unknown readable parameter"); break;
     };
   }
