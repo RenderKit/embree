@@ -153,6 +153,32 @@ namespace embree
     intersectionFilter16 = filter;
     ispcIntersectionFilter16 = ispc;
   }
+  
+  void Geometry::setIntersectionFilterFunctionN (RTCFilterFuncN filter) 
+  { 
+    if (parent->isStatic() && parent->isBuild())
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
+
+    if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH)
+      throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
+
+    atomic_sub(&parent->numIntersectionFilters1,intersectionFilterN != nullptr);
+    atomic_add(&parent->numIntersectionFilters1,filter != nullptr);
+
+    atomic_sub(&parent->numIntersectionFilters4,intersectionFilterN != nullptr);
+    atomic_add(&parent->numIntersectionFilters4,filter != nullptr);
+
+    atomic_sub(&parent->numIntersectionFilters8,intersectionFilterN != nullptr);
+    atomic_add(&parent->numIntersectionFilters8,filter != nullptr);
+
+    atomic_sub(&parent->numIntersectionFilters16,intersectionFilterN != nullptr);
+    atomic_add(&parent->numIntersectionFilters16,filter != nullptr);
+
+    atomic_sub(&parent->numIntersectionFiltersN,intersectionFilterN != nullptr);
+    atomic_add(&parent->numIntersectionFiltersN,filter != nullptr);
+
+    intersectionFilterN = filter;
+  }
 
   void Geometry::setOcclusionFilterFunction (RTCFilterFunc filter, bool ispc) 
   {
@@ -207,6 +233,32 @@ namespace embree
     atomic_add(&parent->numIntersectionFilters16,filter != nullptr);
     occlusionFilter16 = filter;
     ispcOcclusionFilter16 = ispc;
+  }
+
+  void Geometry::setOcclusionFilterFunctionN (RTCFilterFuncN filter) 
+  { 
+    if (parent->isStatic() && parent->isBuild())
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
+
+    if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH) 
+      throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
+
+    atomic_sub(&parent->numIntersectionFilters1,occlusionFilterN != nullptr);
+    atomic_add(&parent->numIntersectionFilters1,filter != nullptr);
+
+    atomic_sub(&parent->numIntersectionFilters4,occlusionFilterN != nullptr);
+    atomic_add(&parent->numIntersectionFilters4,filter != nullptr);
+
+    atomic_sub(&parent->numIntersectionFilters8,occlusionFilterN != nullptr);
+    atomic_add(&parent->numIntersectionFilters8,filter != nullptr);
+
+    atomic_sub(&parent->numIntersectionFilters16,occlusionFilterN != nullptr);
+    atomic_add(&parent->numIntersectionFilters16,filter != nullptr);
+
+    atomic_sub(&parent->numIntersectionFiltersN,occlusionFilterN != nullptr);
+    atomic_add(&parent->numIntersectionFiltersN,filter != nullptr);
+
+    occlusionFilterN = filter;
   }
 
   void Geometry::interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 

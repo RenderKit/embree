@@ -60,6 +60,13 @@ typedef void (*RTCIntersectFunc1N)(void* ptr,           /*!< pointer to user dat
                                   size_t N,            /*!< number of rays in stream */
                                   size_t item          /*!< item to intersect */);
 
+/*! Type of intersect function pointer for ray packets of size N. */
+typedef void (*RTCIntersectFuncN)(const void* valid, /*!< pointer to valid mask */
+                                  void* ptr,         /*!< pointer to user data */
+                                  void* rays,        /*!< ray packet to intersect */
+                                  size_t N,          /*!< number of rays in packet */
+                                  size_t item        /*!< item to intersect */);
+
 /*! Type of occlusion function pointer for single rays. */
 typedef void (*RTCOccludedFunc) (void* ptr,           /*!< pointer to user data */ 
                                  RTCRay& ray,         /*!< ray to test occlusion */
@@ -88,6 +95,13 @@ typedef void (*RTCOccludedFunc1N) (void* ptr,           /*!< pointer to user dat
                                   RTCRay** rays,       /*!< pointers to rays to test occlusion */
                                   size_t N,            /*!< number of rays in stream */  
                                   size_t item          /*!< item to test for occlusion */);
+
+/*! Type of occlusion function pointer for ray packets of size N. */
+typedef void (*RTCOccludedFuncN) (const void* valid, /*! pointer to valid mask */
+                                  void* ptr,         /*!< pointer to user data */
+                                  void* rays,        /*!< Ray packet to test occlusion for. */
+                                  size_t N,          /*!< number of rays in packet */
+                                  size_t item        /*!< item to test for occlusion */);
 
 /*! Creates a new user geometry object. This feature makes it possible
  *  to add arbitrary types of geometry to the scene by providing
