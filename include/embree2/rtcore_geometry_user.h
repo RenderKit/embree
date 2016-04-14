@@ -160,6 +160,11 @@ RTCORE_API void rtcSetIntersectFunction16 (RTCScene scene, unsigned geomID, RTCI
  *  geometry. */
 RTCORE_API void rtcSetIntersectFunction1N (RTCScene scene, unsigned geomID, RTCIntersectFunc1N intersectN);
 
+/*! Set intersect function for ray packets of size N. The rtcIntersectN function
+ *  will call the passed function for intersecting the user
+ *  geometry. */
+RTCORE_API void rtcSetIntersectFunctionN (RTCScene scene, unsigned geomID, RTCIntersectFuncN intersectN);
+
 /*! Set occlusion function for single rays. The rtcOccluded function
  *  will call the passed function for intersecting the user
  *  geometry. */
@@ -184,6 +189,12 @@ RTCORE_API void rtcSetOccludedFunction16 (RTCScene scene, unsigned geomID, RTCOc
  *  will call the passed function for intersecting the user
  *  geometry. */
 RTCORE_API void rtcSetOccludedFunction1N (RTCScene scene, unsigned geomID, RTCOccludedFunc1N occludedN);
+
+/*! Set occlusion function for ray packets of size N. The rtcOccludedN function
+ *  will call the passed function for intersecting the user
+ *  geometry. */
+RTCORE_API void rtcSetOccludedFunctionN (RTCScene scene, unsigned geomID, RTCOccludedFuncN occludedN);
+
 
 /*! @} */
 
