@@ -220,8 +220,13 @@ namespace embree
       __forceinline void intersect (RTCRay& ray, size_t item) 
       {
         assert(item < size());
-        assert(intersectors.intersector1.intersect);
-        intersectors.intersector1.intersect(intersectors.ptr,ray,item);
+        if (likely(intersectors.intersector1.intersect)) { // old code for compatibility
+          intersectors.intersector1.intersect(intersectors.ptr,ray,item);
+        } else {
+          int mask = -1;
+          assert(intersectors.intersectorN.intersect);
+          intersectors.intersectorN.intersect(&mask,intersectors.ptr,&ray,item,1);
+        }
       }
    
       /*! Intersects a packet of 4 rays with the scene. */
@@ -229,9 +234,14 @@ namespace embree
       __forceinline void intersect4 (const vbool4& valid, RTCRay4& ray, size_t item) 
       {
         assert(item < size());
-        assert(intersectors.intersector4.intersect);
-	if (intersectors.intersector4.ispc) ((ISPCIntersectFunc4)intersectors.intersector4.intersect)(intersectors.ptr,ray,item,valid);
-        else                                ((    IntersectFunc4)intersectors.intersector4.intersect)(&valid,intersectors.ptr,ray,item);
+        if (likely(intersectors.intersector4.intersect)) { // old code for compatibility
+          if (intersectors.intersector4.ispc) ((ISPCIntersectFunc4)intersectors.intersector4.intersect)(intersectors.ptr,ray,item,valid);
+          else                                ((    IntersectFunc4)intersectors.intersector4.intersect)(&valid,intersectors.ptr,ray,item);
+        } else {
+          vint4 mask = valid.mask32();
+          assert(intersectors.intersectorN.intersect);          
+          intersectors.intersectorN.intersect(&mask,intersectors.ptr,&ray,item,4);
+        }
       }
 #endif
       
@@ -240,9 +250,14 @@ namespace embree
       __forceinline void intersect8 (const vbool8& valid, RTCRay8& ray, size_t item) 
       {
         assert(item < size());
-        assert(intersectors.intersector8.intersect);
-	if (intersectors.intersector8.ispc) ((ISPCIntersectFunc8)intersectors.intersector8.intersect)(intersectors.ptr,ray,item,valid);
-        else                                ((    IntersectFunc8)intersectors.intersector8.intersect)(&valid,intersectors.ptr,ray,item);
+        if (likely(intersectors.intersector8.intersect)) { // old code for compatibility
+          if (intersectors.intersector8.ispc) ((ISPCIntersectFunc8)intersectors.intersector8.intersect)(intersectors.ptr,ray,item,valid);
+          else                                ((    IntersectFunc8)intersectors.intersector8.intersect)(&valid,intersectors.ptr,ray,item);
+        } else {
+          vint8 mask = valid.mask32();
+          assert(intersectors.intersectorN.intersect);
+          intersectors.intersectorN.intersect(&mask,intersectors.ptr,&ray,item,8);
+        }
       }
 #endif
 
@@ -251,13 +266,18 @@ namespace embree
       __forceinline void intersect16 (const vbool16& valid, RTCRay16& ray, size_t item) 
       {
         assert(item < size());
-        assert(intersectors.intersector16.occluded);
-	if (intersectors.intersector16.ispc) {
-    	  ((ISPCIntersectFunc16)intersectors.intersector16.intersect)(intersectors.ptr,ray,item,valid.mask8());
-	}
-        else {
+        if (likely(intersectors.intersector16.occluded)) { // old code for compatibility
+          if (intersectors.intersector16.ispc) {
+            ((ISPCIntersectFunc16)intersectors.intersector16.intersect)(intersectors.ptr,ray,item,valid.mask8());
+          }
+          else {
+            vint16 mask = valid.mask32();
+            ((IntersectFunc16)intersectors.intersector16.intersect)(&mask,intersectors.ptr,ray,item);
+          }
+        } else {
           vint16 mask = valid.mask32();
-	  ((IntersectFunc16)intersectors.intersector16.intersect)(&mask,intersectors.ptr,ray,item);
+          assert(intersectors.intersectorN.intersect);
+          intersectors.intersectorN.intersect(&mask,intersectors.ptr,&ray,item,16);
         }
       }
 #endif
@@ -282,14 +302,27 @@ namespace embree
       __forceinline void intersect1N (RTCRay** rays, size_t N, size_t item) 
       {
         assert(item < size());
-        assert(intersectors.intersector1N.intersect);
-        intersectors.intersector1N.intersect(intersectors.ptr,rays,N,item);
+        if (intersectors.intersector1N.intersect) // Intersect1N callback is optional
+          intersectors.intersector1N.intersect(intersectors.ptr,rays,N,item);
+        else {
+          int mask = -1;
+          for (size_t i=0; i<N; i++) {
+            assert(intersectors.intersectorN.intersect);
+            intersectors.intersectorN.intersect(&mask,intersectors.ptr,rays[i],1,item);
+          }         
+        }
       }
       
       /*! Tests if single ray is occluded by the scene. */
-      __forceinline void occluded (RTCRay& ray, size_t item) {
-        assert(intersectors.intersector1.occluded);
-        intersectors.intersector1.occluded(intersectors.ptr,ray,item);
+      __forceinline void occluded (RTCRay& ray, size_t item) 
+      {
+        if (likely(intersectors.intersector1.occluded)) { // old code for compatibility
+          intersectors.intersector1.occluded(intersectors.ptr,ray,item);
+        } else {
+          int mask = -1;
+          assert(intersectors.intersectorN.occluded);          
+          intersectors.intersectorN.occluded(&mask,intersectors.ptr,&ray,item,1);
+        }
       }
       
       /*! Tests if a packet of 4 rays is occluded by the scene. */
@@ -297,9 +330,14 @@ namespace embree
       __forceinline void occluded4 (const vbool4& valid, RTCRay4& ray, size_t item) 
       {
         assert(item < size());
-	assert(intersectors.intersector4.occluded);
-	if (intersectors.intersector4.ispc) ((ISPCOccludedFunc4)intersectors.intersector4.occluded)(intersectors.ptr,ray,item,valid);
-        else                                ((    OccludedFunc4)intersectors.intersector4.occluded)(&valid,intersectors.ptr,ray,item);
+	if (likely(intersectors.intersector4.occluded)) { // old code for compatibility
+          if (intersectors.intersector4.ispc) ((ISPCOccludedFunc4)intersectors.intersector4.occluded)(intersectors.ptr,ray,item,valid);
+          else                                ((    OccludedFunc4)intersectors.intersector4.occluded)(&valid,intersectors.ptr,ray,item);
+        } else {
+          vint4 mask = valid.mask32();
+          assert(intersectors.intersectorN.occluded);          
+          intersectors.intersectorN.occluded(&mask,intersectors.ptr,&ray,item,4);
+        }
       }
 #endif
       
@@ -308,9 +346,14 @@ namespace embree
       __forceinline void occluded8 (const vbool8& valid, RTCRay8& ray, size_t item) 
       {
         assert(item < size());
-	assert(intersectors.intersector8.occluded);
-	if (intersectors.intersector8.ispc) ((ISPCOccludedFunc8)intersectors.intersector8.occluded)(intersectors.ptr,ray,item,valid);
-        else                                ((    OccludedFunc8)intersectors.intersector8.occluded)(&valid,intersectors.ptr,ray,item);
+	if (likely(intersectors.intersector8.occluded)) { // old code for compatibility
+          if (intersectors.intersector8.ispc) ((ISPCOccludedFunc8)intersectors.intersector8.occluded)(intersectors.ptr,ray,item,valid);
+          else                                ((    OccludedFunc8)intersectors.intersector8.occluded)(&valid,intersectors.ptr,ray,item);
+        } else {
+          vint8 mask = valid.mask32();
+          assert(intersectors.intersectorN.occluded);          
+          intersectors.intersectorN.occluded(&mask,intersectors.ptr,&ray,item,8);
+        }
       }
 #endif
       
@@ -319,13 +362,18 @@ namespace embree
       __forceinline void occluded16 (const vbool16& valid, RTCRay16& ray, size_t item) 
       {
         assert(item < size());
-        assert(intersectors.intersector16.occluded);
-	if (intersectors.intersector16.ispc) {
-	  ((ISPCOccludedFunc16)intersectors.intersector16.occluded)(intersectors.ptr,ray,item,valid.mask8());
-	}
-	else {
+        if (likely(intersectors.intersector16.occluded)) { // old code for compatibility
+          if (intersectors.intersector16.ispc) {
+            ((ISPCOccludedFunc16)intersectors.intersector16.occluded)(intersectors.ptr,ray,item,valid.mask8());
+          }
+          else {
+            vint16 mask = valid.mask32();
+            ((OccludedFunc16)intersectors.intersector16.occluded)(&mask,intersectors.ptr,ray,item);
+          }
+        } else {
           vint16 mask = valid.mask32();
-	  ((OccludedFunc16)intersectors.intersector16.occluded)(&mask,intersectors.ptr,ray,item);
+          assert(intersectors.intersectorN.occluded);          
+          intersectors.intersectorN.occluded(&mask,intersectors.ptr,&ray,item,16);
         }
       }
 #endif
@@ -347,9 +395,18 @@ namespace embree
 #endif
 
       /*! Tests if a stream of rays is occluded by the scene. */
-      __forceinline void occluded1N (RTCRay** rays, size_t N, size_t item) {
-        assert(intersectors.intersector1N.occluded);
-        intersectors.intersector1N.occluded(intersectors.ptr,rays,N,item);
+      __forceinline void occluded1N (RTCRay** rays, size_t N, size_t item) 
+      {
+        if (likely(intersectors.intersector1N.occluded)) { // Occluded1N callback is optional
+          intersectors.intersector1N.occluded(intersectors.ptr,rays,N,item);
+        } else {
+          int mask = -1;
+          for (size_t i=0; i<N; i++) {
+            assert(intersectors.intersectorN.occluded);
+            intersectors.intersectorN.occluded(&mask,intersectors.ptr,rays[i],1,item);
+          }
+          
+        }
       }
 
     public:
