@@ -302,14 +302,22 @@ namespace embree
       __forceinline void intersect1N (RTCRay** rays, size_t N, size_t item) 
       {
         assert(item < size());
-        if (intersectors.intersector1N.intersect) // Intersect1N callback is optional
+        if (intersectors.intersector1N.intersect) { // Intersect1N callback is optional
           intersectors.intersector1N.intersect(intersectors.ptr,rays,N,item);
-        else {
+        }
+        else if (N == 1) {
           int mask = -1;
-          for (size_t i=0; i<N; i++) {
-            assert(intersectors.intersectorN.intersect);
-            intersectors.intersectorN.intersect(&mask,intersectors.ptr,rays[i],1,item);
-          }         
+          assert(intersectors.intersectorN.intersect);
+          intersectors.intersectorN.intersect(&mask,intersectors.ptr,rays[0],1,item);
+        } 
+        else 
+        {
+          int mask[MAX_INTERNAL_STREAM_SIZE];
+          StackRayPacket<MAX_INTERNAL_STREAM_SIZE> packet(N);
+          for (size_t i=0; i<N; i++) packet.writeRay(i,mask,(Ray&)rays[i]);
+          assert(intersectors.intersectorN.intersect);
+          intersectors.intersectorN.intersect(mask,intersectors.ptr,packet.data,N,item);
+          for (size_t i=0; i<N; i++) packet.readHit(i,(Ray&)rays[i]);
         }
       }
       
@@ -399,13 +407,20 @@ namespace embree
       {
         if (likely(intersectors.intersector1N.occluded)) { // Occluded1N callback is optional
           intersectors.intersector1N.occluded(intersectors.ptr,rays,N,item);
-        } else {
+        }
+        else if (N == 1) {
           int mask = -1;
-          for (size_t i=0; i<N; i++) {
-            assert(intersectors.intersectorN.occluded);
-            intersectors.intersectorN.occluded(&mask,intersectors.ptr,rays[i],1,item);
-          }
-          
+          assert(intersectors.intersectorN.occluded);
+          intersectors.intersectorN.occluded(&mask,intersectors.ptr,rays[0],1,item);
+        } 
+        else 
+        {
+          int mask[MAX_INTERNAL_STREAM_SIZE];
+          StackRayPacket<MAX_INTERNAL_STREAM_SIZE> packet(N);
+          for (size_t i=0; i<N; i++) packet.writeRay(i,mask,(Ray&)rays[i]);
+          assert(intersectors.intersectorN.occluded);
+          intersectors.intersectorN.occluded(mask,intersectors.ptr,packet.data,N,item);
+          for (size_t i=0; i<N; i++) packet.readOcclusion(i,(Ray&)rays[i]);
         }
       }
 

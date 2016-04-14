@@ -69,11 +69,11 @@ namespace embree
 
     void FastInstanceIntersector1N::intersect(const Instance* instance, Ray** rays, size_t N, size_t item)
     {
-      assert(N<BLOCK_SIZE);
-      Vec3fa ray_org[BLOCK_SIZE];
-      Vec3fa ray_dir[BLOCK_SIZE];
-      int ray_geomID[BLOCK_SIZE];
-      int ray_instID[BLOCK_SIZE];
+      assert(N<MAX_INTERNAL_STREAM_SIZE);
+      Vec3fa ray_org[MAX_INTERNAL_STREAM_SIZE];
+      Vec3fa ray_dir[MAX_INTERNAL_STREAM_SIZE];
+      int ray_geomID[MAX_INTERNAL_STREAM_SIZE];
+      int ray_instID[MAX_INTERNAL_STREAM_SIZE];
       AffineSpace3fa world2local = instance->getWorld2Local();
 
       for (size_t i=0; i<N; i++)
@@ -108,9 +108,9 @@ namespace embree
     
     void FastInstanceIntersector1N::occluded (const Instance* instance, Ray** rays, size_t N, size_t item)
     {
-      assert(N<BLOCK_SIZE);
-      Vec3fa ray_org[BLOCK_SIZE];
-      Vec3fa ray_dir[BLOCK_SIZE];
+      assert(N<MAX_INTERNAL_STREAM_SIZE);
+      Vec3fa ray_org[MAX_INTERNAL_STREAM_SIZE];
+      Vec3fa ray_dir[MAX_INTERNAL_STREAM_SIZE];
       AffineSpace3fa world2local = instance->getWorld2Local();
       
       for (size_t i=0; i<N; i++)
