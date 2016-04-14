@@ -149,31 +149,31 @@ public:
   unsigned instID[16];  //!< instance ID
 };
 
-/* Helper functions to access ray packets of size N */
-__forceinline float& RayN_org_x(void* ptr, size_t N, size_t i) { return ((float*)ptr)[0*N+i]; }  //!< x coordinate of ray origin
-__forceinline float& RayN_org_y(void* ptr, size_t N, size_t i) { return ((float*)ptr)[1*N+i]; }  //!< y coordinate of ray origin
-__forceinline float& RayN_org_z(void* ptr, size_t N, size_t i) { return ((float*)ptr)[2*N+i]; }; //!< z coordinate of ray origin
+/* Helper functions to access ray packets of size M */
+__forceinline float& RayM_org_x(void* ptr, size_t M, size_t i) { return ((float*)ptr)[0*M+i]; }  //!< x coordinate of ray origin
+__forceinline float& RayM_org_y(void* ptr, size_t M, size_t i) { return ((float*)ptr)[1*M+i]; }  //!< y coordinate of ray origin
+__forceinline float& RayM_org_z(void* ptr, size_t M, size_t i) { return ((float*)ptr)[2*M+i]; }; //!< z coordinate of ray origin
 
-__forceinline float& RayN_dir_x(void* ptr, size_t N, size_t i) { return ((float*)ptr)[3*N+i]; }; //!< x coordinate of ray direction
-__forceinline float& RayN_dir_y(void* ptr, size_t N, size_t i) { return ((float*)ptr)[4*N+i]; }; //!< y coordinate of ray direction
-__forceinline float& RayN_dir_z(void* ptr, size_t N, size_t i) { return ((float*)ptr)[5*N+i]; }; //!< z coordinate of ray direction
+__forceinline float& RayM_dir_x(void* ptr, size_t M, size_t i) { return ((float*)ptr)[3*M+i]; }; //!< x coordinate of ray direction
+__forceinline float& RayM_dir_y(void* ptr, size_t M, size_t i) { return ((float*)ptr)[4*M+i]; }; //!< y coordinate of ray direction
+__forceinline float& RayM_dir_z(void* ptr, size_t M, size_t i) { return ((float*)ptr)[5*M+i]; }; //!< z coordinate of ray direction
 
-__forceinline float& RayN_tnear(void* ptr, size_t N, size_t i) { return ((float*)ptr)[6*N+i]; }; //!< Start of ray segment 
-__forceinline float& RayN_tfar (void* ptr, size_t N, size_t i) { return ((float*)ptr)[7*N+i]; }; //!< End of ray segment (set to hit distance)
+__forceinline float& RayM_tnear(void* ptr, size_t M, size_t i) { return ((float*)ptr)[6*M+i]; }; //!< Start of ray segment 
+__forceinline float& RayM_tfar (void* ptr, size_t M, size_t i) { return ((float*)ptr)[7*M+i]; }; //!< End of ray segment (set to hit distance)
 
-__forceinline float& RayN_time(void* ptr, size_t N, size_t i) { return ((float*)ptr)[8*N+i]; };  //!< Time of this ray for motion blur 
-__forceinline int&   RayN_mask(void* ptr, size_t N, size_t i) { return ((int*  )ptr)[9*N+i]; };  //!< Used to mask out objects during traversal
+__forceinline float& RayM_time(void* ptr, size_t M, size_t i) { return ((float*)ptr)[8*M+i]; };  //!< Time of this ray for motion blur 
+__forceinline int&   RayM_mask(void* ptr, size_t M, size_t i) { return ((int*  )ptr)[9*M+i]; };  //!< Used to mask out objects during traversal
 
-__forceinline float& RayN_Ng_x(void* ptr, size_t N, size_t i) { return ((float*)ptr)[10*N+i]; }; //!< x coordinate of geometry normal
-__forceinline float& RayN_Ng_y(void* ptr, size_t N, size_t i) { return ((float*)ptr)[11*N+i]; }; //!< y coordinate of geometry normal
-__forceinline float& RayN_Ng_z(void* ptr, size_t N, size_t i) { return ((float*)ptr)[12*N+i]; }; //!< z coordinate of geometry normal
+__forceinline float& RayM_Ng_x(void* ptr, size_t M, size_t i) { return ((float*)ptr)[10*M+i]; }; //!< x coordinate of geometry normal
+__forceinline float& RayM_Ng_y(void* ptr, size_t M, size_t i) { return ((float*)ptr)[11*M+i]; }; //!< y coordinate of geometry normal
+__forceinline float& RayM_Ng_z(void* ptr, size_t M, size_t i) { return ((float*)ptr)[12*M+i]; }; //!< z coordinate of geometry normal
 
-__forceinline float& RayN_u   (void* ptr, size_t N, size_t i) { return ((float*)ptr)[13*N+i]; }; //!< Barycentric u coordinate of hit
-__forceinline float& RayN_v   (void* ptr, size_t N, size_t i) { return ((float*)ptr)[14*N+i]; }; //!< Barycentric v coordinate of hit
+__forceinline float& RayM_u   (void* ptr, size_t M, size_t i) { return ((float*)ptr)[13*M+i]; }; //!< Barycentric u coordinate of hit
+__forceinline float& RayM_v   (void* ptr, size_t M, size_t i) { return ((float*)ptr)[14*M+i]; }; //!< Barycentric v coordinate of hit
 
-__forceinline int& RayN_geomID(void* ptr, size_t N, size_t i) { return ((int*  )ptr)[15*N+i]; }; //!< geometry ID
-__forceinline int& RayN_primID(void* ptr, size_t N, size_t i) { return ((int*  )ptr)[16*N+i]; }; //!< primitive ID
-__forceinline int& RayN_instID(void* ptr, size_t N, size_t i) { return ((int*  )ptr)[17*N+i]; }; //!< instance ID
+__forceinline int& RayM_geomID(void* ptr, size_t M, size_t i) { return ((int*  )ptr)[15*M+i]; }; //!< geometry ID
+__forceinline int& RayM_primID(void* ptr, size_t M, size_t i) { return ((int*  )ptr)[16*M+i]; }; //!< primitive ID
+__forceinline int& RayM_instID(void* ptr, size_t M, size_t i) { return ((int*  )ptr)[17*M+i]; }; //!< instance ID
 
 /*! \brief Ray structure template for packets of N rays in SOA layout. */
 struct RTCRaySOA
