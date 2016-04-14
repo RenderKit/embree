@@ -634,7 +634,10 @@ namespace embree
     progress_monitor_counter = 0;
 
     /* select fast code path if no intersection filter is present */
-    accels.select(numIntersectionFilters4,numIntersectionFilters8,numIntersectionFilters16,numIntersectionFilters1);
+    accels.select(numIntersectionFiltersN+numIntersectionFilters4,
+                  numIntersectionFiltersN+numIntersectionFilters8,
+                  numIntersectionFiltersN+numIntersectionFilters16,
+                  numIntersectionFiltersN);
   
     /* build all hierarchies of this scene */
     accels.build(0,0);
@@ -691,7 +694,10 @@ namespace embree
     }
 
     /* select fast code path if no intersection filter is present */
-    accels.select(numIntersectionFilters4,numIntersectionFilters8,numIntersectionFilters16,numIntersectionFilters1);
+    accels.select(numIntersectionFiltersN+numIntersectionFilters4,
+                  numIntersectionFiltersN+numIntersectionFilters8,
+                  numIntersectionFiltersN+numIntersectionFilters16,
+                  numIntersectionFiltersN);
 
     /* if user provided threads use them */
     if (threadCount)
