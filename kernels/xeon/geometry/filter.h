@@ -116,7 +116,7 @@ namespace embree
       RTCFilterFunc4  filter4 = geometry->intersectionFilter4;
       AVX_ZERO_UPPER();
       if (geometry->ispcIntersectionFilter4) ((ISPCFilterFunc4)filter4)(geometry->userPtr,(RTCRay4&)ray,valid);
-      else { const vbool4 valid_temp = valid; filter4(&valid_temp,geometry->userPtr,(RTCRay4&)ray); }
+      else { const vint4 mask = valid.mask32(); filter4(&mask,geometry->userPtr,(RTCRay4&)ray); }
       const vbool4 valid_failed = valid & (ray.geomID == vint4(-1));
       const vbool4 valid_passed = valid & (ray.geomID != vint4(-1));
       
@@ -158,7 +158,7 @@ namespace embree
       RTCFilterFunc4 filter4 = geometry->occlusionFilter4;
       AVX_ZERO_UPPER();
       if (geometry->ispcOcclusionFilter4) ((ISPCFilterFunc4)filter4)(geometry->userPtr,(RTCRay4&)ray,valid);
-      else { const vbool4 valid_temp = valid; filter4(&valid_temp,geometry->userPtr,(RTCRay4&)ray); }
+      else { const vint4 mask = valid.mask32(); filter4(&mask,geometry->userPtr,(RTCRay4&)ray); }
       const vbool4 valid_failed = valid & (ray.geomID == vint4(-1));
       const vbool4 valid_passed = valid & (ray.geomID != vint4(-1));
       
@@ -188,7 +188,7 @@ namespace embree
       RTCFilterFunc4  filter4 = geometry->intersectionFilter4;
       AVX_ZERO_UPPER();
       if (geometry->ispcIntersectionFilter4) ((ISPCFilterFunc4)filter4)(geometry->userPtr,(RTCRay4&)ray,valid);
-      else { const vbool4 valid_temp = valid; filter4(&valid_temp,geometry->userPtr,(RTCRay4&)ray); }
+      else { const vint4 mask = valid.mask32(); filter4(&mask,geometry->userPtr,(RTCRay4&)ray); }
       const bool passed = ray.geomID[k] != -1;
       
       /* restore hit if filter not passed */
@@ -227,7 +227,7 @@ namespace embree
       RTCFilterFunc4  filter4 = geometry->occlusionFilter4;
       AVX_ZERO_UPPER();
       if (geometry->ispcOcclusionFilter4) ((ISPCFilterFunc4)filter4)(geometry->userPtr,(RTCRay4&)ray,valid);
-      else { const vbool4 valid_temp = valid; filter4(&valid_temp,geometry->userPtr,(RTCRay4&)ray); }
+      else { const vint4 mask = valid.mask32(); filter4(&mask,geometry->userPtr,(RTCRay4&)ray); }
       const bool passed = ray.geomID[k] != -1;
       
       /* restore hit if filter not passed */
@@ -257,7 +257,7 @@ namespace embree
       /* invoke filter function */
       RTCFilterFunc8  filter8 = geometry->intersectionFilter8;
       if (geometry->ispcIntersectionFilter8) ((ISPCFilterFunc8)filter8)(geometry->userPtr,(RTCRay8&)ray,valid);
-      else { const vbool8 valid_temp = valid; filter8(&valid_temp,geometry->userPtr,(RTCRay8&)ray); }
+      else { const vint8 mask = valid.mask32(); filter8(&mask,geometry->userPtr,(RTCRay8&)ray); }
       const vbool8 valid_failed = valid & (ray.geomID == vint8(-1));
       const vbool8 valid_passed = valid & (ray.geomID != vint8(-1));
       
@@ -298,7 +298,7 @@ namespace embree
       /* invoke filter function */
       RTCFilterFunc8 filter8 = geometry->occlusionFilter8;
       if (geometry->ispcOcclusionFilter8) ((ISPCFilterFunc8)filter8)(geometry->userPtr,(RTCRay8&)ray,valid);
-      else { const vbool8 valid_temp = valid; filter8(&valid_temp,geometry->userPtr,(RTCRay8&)ray); }
+      else { const vint8 mask = valid.mask32(); filter8(&mask,geometry->userPtr,(RTCRay8&)ray); }
       const vbool8 valid_failed = valid & (ray.geomID == vint8(-1));
       const vbool8 valid_passed = valid & (ray.geomID != vint8(-1));
       
