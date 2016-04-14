@@ -26,6 +26,7 @@ namespace embree
       intersectionFilter4(nullptr), occlusionFilter4(nullptr), ispcIntersectionFilter4(false), ispcOcclusionFilter4(false), 
       intersectionFilter8(nullptr), occlusionFilter8(nullptr), ispcIntersectionFilter8(false), ispcOcclusionFilter8(false), 
       intersectionFilter16(nullptr), occlusionFilter16(nullptr), ispcIntersectionFilter16(false), ispcOcclusionFilter16(false), 
+      intersectionFilterN(nullptr), occlusionFilterN(nullptr),
       userPtr(nullptr)
   {
     id = parent->add(this);
