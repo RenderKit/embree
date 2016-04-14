@@ -18,8 +18,6 @@
 
 namespace embree
 {
-  static const size_t MAX_RAYS_PER_OCTANT = 8*sizeof(size_t);
-
   namespace isa
   {
     __forceinline void RayStream::filterAOS(Scene *scene, RTCRay* _rayN, const size_t N, const size_t stride, const size_t flags, const bool intersect)

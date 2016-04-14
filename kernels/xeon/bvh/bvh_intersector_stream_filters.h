@@ -27,6 +27,7 @@ namespace embree
     class RayStream
     {
     public:
+      enum { MAX_RAYS_PER_OCTANT = 8*sizeof(size_t) };
       static void filterAOS(Scene* scene, RTCRay*    rays, const size_t N, const size_t stride, const size_t flags, const bool intersect);
       static void filterSOA(Scene* scene, char*      rays, const size_t N, const size_t streams, const size_t stream_offset, const size_t flags, const bool intersect);
       static void filterSOP(Scene* scene, RTCRaySOA& rays, const size_t N, const size_t streams, const size_t offset, const size_t flags, const bool intersect);

@@ -393,4 +393,14 @@ namespace embree
                                  (void*)intersector::occluded, \
                                  TOSTRING(isa) "::" TOSTRING(symbol),\
 				 false);  
+
+#define DEFINE_SET_INTERSECTOR1N(symbol,intersector)                     \
+  AccelSet::Intersector1N symbol((AccelSet::IntersectFunc1N)intersector::intersect, \
+                                 (AccelSet::OccludedFunc1N )intersector::occluded, \
+                                 TOSTRING(isa) "::" TOSTRING(symbol));
+
+#define DEFINE_SET_INTERSECTORN(symbol,intersector)                         \
+  AccelSet::IntersectorN symbol((AccelSet::IntersectFuncN)intersector::intersect, \
+                                (AccelSet::OccludedFuncN)intersector::occluded,                     \
+                                TOSTRING(isa) "::" TOSTRING(symbol));    
 }

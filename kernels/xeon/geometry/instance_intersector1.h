@@ -18,6 +18,7 @@
 
 #include "../../common/scene_instance.h"
 #include "../../common/ray.h"
+#include "../bvh/bvh_intersector_stream_filters.h"
 
 namespace embree
 {
@@ -27,6 +28,13 @@ namespace embree
     {
       static void intersect(const Instance* instance, Ray& ray, size_t item);
       static void occluded (const Instance* instance, Ray& ray, size_t item);
+    };
+
+    struct FastInstanceIntersector1N
+    {
+      enum { BLOCK_SIZE = RayStream::MAX_RAYS_PER_OCTANT };
+      static void intersect(const Instance* instance, Ray** rays, size_t N, size_t item);
+      static void occluded (const Instance* instance, Ray** rays, size_t N, size_t item);
     };
   }
 }

@@ -29,6 +29,7 @@ namespace embree
     DEFINE_SYMBOL2(AccelSet::Intersector4,InstanceIntersector4);
     DEFINE_SYMBOL2(AccelSet::Intersector8,InstanceIntersector8);
     DEFINE_SYMBOL2(AccelSet::Intersector16,InstanceIntersector16);
+    DEFINE_SYMBOL2(AccelSet::Intersector1N,InstanceIntersector1N);
   };
 
   /*! Instanced acceleration structure */
@@ -39,6 +40,26 @@ namespace embree
     virtual void setTransform(const AffineSpace3fa& local2world, size_t timeStep);
     virtual void setMask (unsigned mask);
     virtual void build(size_t threadIndex, size_t threadCount) {}
+
+  public:
+
+    __forceinline AffineSpace3fa getWorld2Local() const {
+      return world2local[0];
+    }
+
+    __forceinline AffineSpace3fa getWorld2Local(float time) const {
+      return rcp(lerp(local2world[0],local2world[1],time));
+    }
+
+    /* calculates transformation from world to local space */
+    __forceinline AffineSpace3fa getWorld2LocalSpecial(float time) const
+    {
+      if (likely(numTimeSteps == 1)) {
+        return world2local[0];
+      } else {
+        return rcp(lerp(local2world[0],local2world[1],time));
+      }
+    }
     
   public:
     AffineSpace3fa local2world[2]; //!< transforms from local space to world space
