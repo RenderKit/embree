@@ -120,7 +120,7 @@ namespace embree
         else { const vint4 mask = valid.mask32(); filter4(&mask,geometry->userPtr,(RTCRay4&)ray); }
       } else {
         assert(geometry->intersectionFilterN);
-        const vint4 mask = valid.mask32(); geometry->intersectionFilterN(&mask,geometry->userPtr,&ray,4);
+        const vint4 mask = valid.mask32(); geometry->intersectionFilterN((int*)&mask,geometry->userPtr,&ray,4);
       }
       const vbool4 valid_failed = valid & (ray.geomID == vint4(-1));
       const vbool4 valid_passed = valid & (ray.geomID != vint4(-1));
@@ -167,7 +167,7 @@ namespace embree
         else { const vint4 mask = valid.mask32(); filter4(&mask,geometry->userPtr,(RTCRay4&)ray); }
       } else {
         assert(geometry->occlusionFilterN);
-        const vint4 mask = valid.mask32(); geometry->occlusionFilterN(&mask,geometry->userPtr,&ray,4);
+        const vint4 mask = valid.mask32(); geometry->occlusionFilterN((int*)&mask,geometry->userPtr,&ray,4);
       }
       const vbool4 valid_failed = valid & (ray.geomID == vint4(-1));
       const vbool4 valid_passed = valid & (ray.geomID != vint4(-1));
@@ -202,7 +202,7 @@ namespace embree
         else { const vint4 mask = valid.mask32(); filter4(&mask,geometry->userPtr,(RTCRay4&)ray); }
       } else {
         assert(geometry->intersectionFilterN);
-        const vint4 mask = valid.mask32(); geometry->intersectionFilterN(&mask,geometry->userPtr,&ray,4);
+        const vint4 mask = valid.mask32(); geometry->intersectionFilterN((int*)&mask,geometry->userPtr,&ray,4);
       }
       const bool passed = ray.geomID[k] != -1;
       
@@ -246,7 +246,7 @@ namespace embree
         else { const vint4 mask = valid.mask32(); filter4(&mask,geometry->userPtr,(RTCRay4&)ray); }
       } else {
         assert(geometry->occlusionFilterN);
-        const vint4 mask = valid.mask32(); geometry->occlusionFilterN(&mask,geometry->userPtr,&ray,4);
+        const vint4 mask = valid.mask32(); geometry->occlusionFilterN((int*)&mask,geometry->userPtr,&ray,4);
       }
       const bool passed = ray.geomID[k] != -1;
       
@@ -281,7 +281,7 @@ namespace embree
         else { const vint8 mask = valid.mask32(); filter8(&mask,geometry->userPtr,(RTCRay8&)ray); }
       } else {
         assert(geometry->intersectionFilterN);
-        const vint8 mask = valid.mask32(); geometry->intersectionFilterN(&mask,geometry->userPtr,&ray,8);
+        const vint8 mask = valid.mask32(); geometry->intersectionFilterN((int*)&mask,geometry->userPtr,&ray,8);
       }
       const vbool8 valid_failed = valid & (ray.geomID == vint8(-1));
       const vbool8 valid_passed = valid & (ray.geomID != vint8(-1));
@@ -327,7 +327,7 @@ namespace embree
         else { const vint8 mask = valid.mask32(); filter8(&mask,geometry->userPtr,(RTCRay8&)ray); }
       } else {
         assert(geometry->occlusionFilterN);
-        const vint8 mask = valid.mask32(); geometry->occlusionFilterN(&mask,geometry->userPtr,&ray,8);
+        const vint8 mask = valid.mask32(); geometry->occlusionFilterN((int*)&mask,geometry->userPtr,&ray,8);
       }
       const vbool8 valid_failed = valid & (ray.geomID == vint8(-1));
       const vbool8 valid_passed = valid & (ray.geomID != vint8(-1));
@@ -361,7 +361,7 @@ namespace embree
         else filter8(&valid,geometry->userPtr,(RTCRay8&)ray);
       } else {
         assert(geometry->intersectionFilterN);
-        const vint8 mask = valid.mask32(); geometry->intersectionFilterN(&mask,geometry->userPtr,&ray,8);
+        const vint8 mask = valid.mask32(); geometry->intersectionFilterN((int*)&mask,geometry->userPtr,&ray,8);
       }
       const bool passed = ray.geomID[k] != -1;
       
@@ -406,7 +406,7 @@ namespace embree
         else filter8(&valid,geometry->userPtr,(RTCRay8&)ray);
       } else {
         assert(geometry->occlusionFilterN);
-        const vint8 mask = valid.mask32(); geometry->occlusionFilterN(&mask,geometry->userPtr,&ray,8);
+        const vint8 mask = valid.mask32(); geometry->occlusionFilterN((int*)&mask,geometry->userPtr,&ray,8);
       }
       const bool passed = ray.geomID[k] != -1;
       
@@ -444,7 +444,7 @@ namespace embree
         else { const vint16 mask = valid.mask32(); filter16(&mask,geometry->userPtr,(RTCRay16&)ray); }
       } else {
         assert(geometry->intersectionFilterN);
-        const vint16 mask = valid.mask32(); geometry->intersectionFilterN(&mask,geometry->userPtr,&ray,16);
+        const vint16 mask = valid.mask32(); geometry->intersectionFilterN((int*)&mask,geometry->userPtr,&ray,16);
       }
       const vbool16 valid_failed = valid & (ray.geomID == vint16(-1));
       const vbool16 valid_passed = valid & (ray.geomID != vint16(-1));
@@ -490,7 +490,7 @@ namespace embree
         else { const vint16 mask = valid.mask32(); filter16(&mask,geometry->userPtr,(RTCRay16&)ray); }
       } else {
         assert(geometry->occlusionFilterN);
-        const vint16 mask = valid.mask32(); geometry->occlusionFilterN(&mask,geometry->userPtr,&ray,16);
+        const vint16 mask = valid.mask32(); geometry->occlusionFilterN((int*)&mask,geometry->userPtr,&ray,16);
       }
       const vbool16 valid_failed = valid & (ray.geomID == vint16(-1));
       const vbool16 valid_passed = valid & (ray.geomID != vint16(-1));
@@ -524,7 +524,7 @@ namespace embree
         else { const vint16 mask = valid.mask32(); filter16(&mask,geometry->userPtr,(RTCRay16&)ray); }
       } else {
         assert(geometry->intersectionFilterN);
-        const vint16 mask = valid.mask32(); geometry->intersectionFilterN(&mask,geometry->userPtr,&ray,16);
+        const vint16 mask = valid.mask32(); geometry->intersectionFilterN((int*)&mask,geometry->userPtr,&ray,16);
       }
       const bool passed = ray.geomID[k] != -1;
       
@@ -569,7 +569,7 @@ namespace embree
         else { const vint16 mask = valid.mask32(); filter16(&mask,geometry->userPtr,(RTCRay16&)ray); }
       } else {
         assert(geometry->occlusionFilterN);
-        const vint16 mask = valid.mask32(); geometry->occlusionFilterN(&mask,geometry->userPtr,&ray,16);
+        const vint16 mask = valid.mask32(); geometry->occlusionFilterN((int*)&mask,geometry->userPtr,&ray,16);
       }
       const bool passed = ray.geomID[k] != -1;
       

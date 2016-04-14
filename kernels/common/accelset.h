@@ -225,7 +225,7 @@ namespace embree
         } else {
           int mask = -1;
           assert(intersectors.intersectorN.intersect);
-          intersectors.intersectorN.intersect(&mask,intersectors.ptr,&ray,item,1);
+          intersectors.intersectorN.intersect((int*)&mask,intersectors.ptr,&ray,item,1);
         }
       }
    
@@ -240,7 +240,7 @@ namespace embree
         } else {
           vint4 mask = valid.mask32();
           assert(intersectors.intersectorN.intersect);          
-          intersectors.intersectorN.intersect(&mask,intersectors.ptr,&ray,item,4);
+          intersectors.intersectorN.intersect((int*)&mask,intersectors.ptr,&ray,item,4);
         }
       }
 #endif
@@ -256,7 +256,7 @@ namespace embree
         } else {
           vint8 mask = valid.mask32();
           assert(intersectors.intersectorN.intersect);
-          intersectors.intersectorN.intersect(&mask,intersectors.ptr,&ray,item,8);
+          intersectors.intersectorN.intersect((int*)&mask,intersectors.ptr,&ray,item,8);
         }
       }
 #endif
@@ -277,7 +277,7 @@ namespace embree
         } else {
           vint16 mask = valid.mask32();
           assert(intersectors.intersectorN.intersect);
-          intersectors.intersectorN.intersect(&mask,intersectors.ptr,&ray,item,16);
+          intersectors.intersectorN.intersect((int*)&mask,intersectors.ptr,&ray,item,16);
         }
       }
 #endif
@@ -308,7 +308,7 @@ namespace embree
         else if (N == 1) {
           int mask = -1;
           assert(intersectors.intersectorN.intersect);
-          intersectors.intersectorN.intersect(&mask,intersectors.ptr,rays[0],1,item);
+          intersectors.intersectorN.intersect((int*)&mask,intersectors.ptr,rays[0],1,item);
         } 
         else 
         {
@@ -329,7 +329,7 @@ namespace embree
         } else {
           int mask = -1;
           assert(intersectors.intersectorN.occluded);          
-          intersectors.intersectorN.occluded(&mask,intersectors.ptr,&ray,item,1);
+          intersectors.intersectorN.occluded((int*)&mask,intersectors.ptr,&ray,item,1);
         }
       }
       
@@ -344,7 +344,7 @@ namespace embree
         } else {
           vint4 mask = valid.mask32();
           assert(intersectors.intersectorN.occluded);          
-          intersectors.intersectorN.occluded(&mask,intersectors.ptr,&ray,item,4);
+          intersectors.intersectorN.occluded((int*)&mask,intersectors.ptr,&ray,item,4);
         }
       }
 #endif
@@ -360,7 +360,7 @@ namespace embree
         } else {
           vint8 mask = valid.mask32();
           assert(intersectors.intersectorN.occluded);          
-          intersectors.intersectorN.occluded(&mask,intersectors.ptr,&ray,item,8);
+          intersectors.intersectorN.occluded((int*)&mask,intersectors.ptr,&ray,item,8);
         }
       }
 #endif
@@ -381,7 +381,7 @@ namespace embree
         } else {
           vint16 mask = valid.mask32();
           assert(intersectors.intersectorN.occluded);          
-          intersectors.intersectorN.occluded(&mask,intersectors.ptr,&ray,item,16);
+          intersectors.intersectorN.occluded((int*)&mask,intersectors.ptr,&ray,item,16);
         }
       }
 #endif
@@ -411,7 +411,7 @@ namespace embree
         else if (N == 1) {
           int mask = -1;
           assert(intersectors.intersectorN.occluded);
-          intersectors.intersectorN.occluded(&mask,intersectors.ptr,rays[0],1,item);
+          intersectors.intersectorN.occluded((int*)&mask,intersectors.ptr,rays[0],1,item);
         } 
         else 
         {
