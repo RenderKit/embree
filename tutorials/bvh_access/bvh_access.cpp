@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "../common/tutorial/tutorial.h"
+#include "../common/tutorial/tutorial_device.h"
 #include "../../include/embree2/rtcore.h"
 #include "../../kernels/xeon/bvh/bvh.h"
 #include "../../kernels/xeon/geometry/trianglev.h"

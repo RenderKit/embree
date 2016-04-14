@@ -22,33 +22,7 @@
 #include <intrin.h>
 #endif
 
-#if defined(__SSE__)
-#include <xmmintrin.h>
-#endif
-
-#if defined(__SSE2__)
-#include <emmintrin.h>
-#endif
-
-#if defined(__SSE3__)
-#include <pmmintrin.h>
-#endif
-
-#if defined(__SSSE3__)
-#include <tmmintrin.h>
-#endif
-
-#if defined (__SSE4_1__)
-#include <smmintrin.h>
-#endif
-
-#if defined (__SSE4_2__)
-#include <nmmintrin.h>
-#endif
-
-#if defined(__AVX__) || defined(__MIC__)
 #include <immintrin.h>
-#endif
 
 #if defined(__BMI__) && defined(__GNUC__)
   #if !defined(_tzcnt_u32)
@@ -66,10 +40,6 @@
   #if !defined(_lzcnt_u64)
     #define _lzcnt_u64 __lzcnt64
   #endif
-#endif
-
-#if defined(__MIC__)
-#  include <immintrin.h>
 #endif
 
 #if defined(__WIN32__)

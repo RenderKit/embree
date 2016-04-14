@@ -66,14 +66,14 @@ void updateEdgeLevelBuffer( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, size_t 
 }
 
 #if defined(ISPC)
-task void updateSubMeshEdgeLevelBufferTask( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos )
+void updateSubMeshEdgeLevelBufferTask (int taskIndex,  ISPCSubdivMesh* mesh, const Vec3fa& cam_pos )
 {
   const size_t size = mesh->numFaces;
   const size_t startID = ((taskIndex+0)*size)/taskCount;
   const size_t endID   = ((taskIndex+1)*size)/taskCount;
   updateEdgeLevelBuffer(mesh,cam_pos,startID,endID);
 }
-task void updateMeshEdgeLevelBufferTask( ISPCScene* scene_in, const Vec3fa& cam_pos )
+void updateMeshEdgeLevelBufferTask (int taskIndex,  ISPCScene* scene_in, const Vec3fa& cam_pos )
 {
   ISPCGeometry* geometry = g_ispc_scene->geometries[taskIndex];
   if (geometry->type != SUBDIV_MESH) return;
@@ -90,7 +90,10 @@ void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
 {
   /* first update small meshes */
 #if defined(ISPC)
-  launch[ scene_in->numGeometries ] updateMeshEdgeLevelBufferTask(scene_in,cam_pos); 
+  parallel_for(size_t(0),size_t( scene_in->numGeometries ),[&](const range<size_t>& range) {
+    for (size_t i=range.begin(); i<range.end(); i++)
+      updateMeshEdgeLevelBufferTask(i,scene_in,cam_pos);
+  }); 
 #endif
 
   /* now update large meshes */
@@ -101,7 +104,10 @@ void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
     ISPCSubdivMesh* mesh = (ISPCSubdivMesh*) geometry;
 #if defined(ISPC)
     if (mesh->numFaces < 10000) continue;
-    launch[ getNumHWThreads() ] updateSubMeshEdgeLevelBufferTask(mesh,cam_pos); 	           
+    parallel_for(size_t(0),size_t( getNumHWThreads() ),[&](const range<size_t>& range) {
+    for (size_t i=range.begin(); i<range.end(); i++)
+      updateSubMeshEdgeLevelBufferTask(i,mesh,cam_pos);
+  }); 	           
 #else
     updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
 #endif
@@ -266,8 +272,8 @@ RTCScene convertScene(ISPCScene* scene_in)
   } 
 
   size_t numGeometries = scene_in->numGeometries;
-  geomID_to_scene = new RTCScene[numGeometries];
-  geomID_to_inst  = new ISPCInstance_ptr[numGeometries];
+  geomID_to_scene = (RTCScene*) alignedMalloc(numGeometries*sizeof(RTCScene));
+  geomID_to_inst  = (ISPCInstance_ptr*) alignedMalloc(numGeometries*sizeof(ISPCInstance_ptr));
 
   int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
   int scene_aflags = RTC_INTERSECT1 | RTC_INTERPOLATE;
@@ -507,7 +513,7 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
 }
 
 /* task that renders a single screen tile */
-Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
+Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
 {
   /* initialize sampler */
   RandomSampler sampler;
@@ -515,8 +521,8 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
 
   /* initialize ray */
   RTCRay ray;
-  ray.org = p;
-  ray.dir = normalize(x*vx + y*vy + vz);
+  ray.org = Vec3fa(camera.xfm.p);
+  ray.dir = Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -574,10 +580,7 @@ void renderTileStandard(int taskIndex,
                         const int width,
                         const int height, 
                         const float time,
-                        const Vec3fa& vx, 
-                        const Vec3fa& vy, 
-                        const Vec3fa& vz, 
-                        const Vec3fa& p,
+                        const ISPCCamera& camera,
                         const int numTilesX, 
                         const int numTilesY)
 {
@@ -589,9 +592,9 @@ void renderTileStandard(int taskIndex,
   const int y0 = tileY * TILE_SIZE_Y;
   const int y1 = min(y0+TILE_SIZE_Y,height);
 
-  for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
+  for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
   {
-    Vec3fa color = renderPixelStandard(x,y,vx,vy,vz,p);
+    Vec3fa color = renderPixelStandard(x,y,camera);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -602,18 +605,15 @@ void renderTileStandard(int taskIndex,
 }
 
 /* task that renders a single screen tile */
-void renderTileTask(int taskIndex, int* pixels,
+void renderTileTask (int taskIndex, int* pixels,
                          const int width,
                          const int height, 
                          const float time,
-                         const Vec3fa& vx, 
-                         const Vec3fa& vy, 
-                         const Vec3fa& vz, 
-                         const Vec3fa& p,
+                         const ISPCCamera& camera,
                          const int numTilesX, 
                          const int numTilesY)
 {
-  renderTile(taskIndex,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY);
+  renderTile(taskIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
 }
 
 Vec3fa old_p; 
@@ -639,33 +639,29 @@ extern "C" void device_render (int* pixels,
                            const int width,
                            const int height, 
                            const float time,
-                           const Vec3fa& vx, 
-                           const Vec3fa& vy, 
-                           const Vec3fa& vz, 
-                           const Vec3fa& p)
+                           const ISPCCamera& camera)
 {
-  Vec3fa cam_org = Vec3fa(p.x,p.y,p.z);
   bool camera_changed = g_changed; g_changed = false;
 
   /* create scene */
   if (g_scene == nullptr) {
     g_scene = convertScene(g_ispc_scene);
-    if (g_subdiv_mode) updateEdgeLevels(g_ispc_scene, cam_org);
+    if (g_subdiv_mode) updateEdgeLevels(g_ispc_scene, camera.xfm.p);
     rtcCommit (g_scene);
-    old_p = p;
+    old_p = camera.xfm.p;
   }
 
   else
   {
     /* check if camera changed */
-    if ((p.x != old_p.x || p.y != old_p.y || p.z != old_p.z)) {
+    if (ne(camera.xfm.p,old_p)) {
       camera_changed = true;
-      old_p = p;
+      old_p = camera.xfm.p;
     } 
     
     /* update edge levels if camera changed */
     if (camera_changed && g_subdiv_mode) {
-      updateEdgeLevels(g_ispc_scene, cam_org);
+      updateEdgeLevels(g_ispc_scene,camera.xfm.p);
       rtcCommit (g_scene);
     }
   }
@@ -673,13 +669,16 @@ extern "C" void device_render (int* pixels,
   /* render image */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  launch_renderTile(numTilesX*numTilesY,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); 
+  parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
+    for (size_t i=range.begin(); i<range.end(); i++)
+      renderTileTask(i,pixels,width,height,time,camera,numTilesX,numTilesY);
+  }); 
   //rtcDebug();
 }
 
 /* called by the C++ code for cleanup */
 extern "C" void device_cleanup ()
 {
-  rtcDeleteScene (g_scene);
-  rtcDeleteDevice(g_device);
+  rtcDeleteScene (g_scene); g_scene = nullptr;
+  rtcDeleteDevice(g_device); g_device = nullptr;
 }

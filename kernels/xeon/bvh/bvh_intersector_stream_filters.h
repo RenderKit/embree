@@ -14,22 +14,22 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "../common/tutorial/tutorial.h"
+#pragma once
+
+#include "../../common/default.h"
+#include "../../common/ray.h"
+#include "../../common/scene.h"
 
 namespace embree
 {
-  struct Tutorial : public TutorialApplication 
+  namespace isa
   {
-    Tutorial() : TutorialApplication("dynamic_scene") 
+    class RayStream
     {
-      /* set start camera */
-      camera.from = Vec3f(2,2,2);
-      camera.to = Vec3f(0,0,0);
-    }
-  };
-
-}
-
-int main(int argc, char** argv) {
-  return Tutorial().main(argc,argv);
-}
+    public:
+      static void filterAOS(Scene* scene, RTCRay*    rays, const size_t N, const size_t stride, const size_t flags, const bool intersect);
+      static void filterSOA(Scene* scene, char*      rays, const size_t N, const size_t streams, const size_t stream_offset, const size_t flags, const bool intersect);
+      static void filterSOP(Scene* scene, RTCRaySOA& rays, const size_t N, const size_t streams, const size_t offset, const size_t flags, const bool intersect);
+    };
+  }
+};

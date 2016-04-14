@@ -23,7 +23,6 @@
 #include "device.h"
 #include "scene.h"
 #include "raystream_log.h"
-#include "raystreams/raystreams.h"
 
 namespace embree
 {  
@@ -413,20 +412,59 @@ namespace embree
 #endif
 
 #if defined (RTCORE_RAY_PACKETS)
-  RTCORE_API void rtcIntersectN (RTCScene hscene, RTCRay* rayN, const size_t N, const size_t stride, const size_t flags) 
+  RTCORE_API void rtcIntersect1N (RTCScene hscene, RTCRay* rayN, const size_t N, const size_t stride, const size_t flags) 
+  {
+    Scene* scene = (Scene*) hscene;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcIntersect1N);
+#if defined(DEBUG)
+    RTCORE_VERIFY_HANDLE(hscene);
+    if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)rayN ) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 16 bytes");   
+#endif
+    STAT3(normal.travs,1,N,N);
+   
+    /* fast codepath for single rays */
+    if (likely(N == 1)) {
+      scene->intersect(*rayN);
+    } 
+
+    /* codepath for streams */
+    else {
+      scene->device->rayStreamFilters.filterAOS(scene,rayN,N,stride,flags,true);   
+    }
+
+    RTCORE_CATCH_END(scene->device);
+  }
+
+  RTCORE_API void rtcIntersectMN (RTCScene hscene, void* rays, const size_t M, const size_t N, const size_t stride, const size_t flags) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcIntersectN);
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
-    if (N < 1) throw_RTCError(RTC_INVALID_OPERATION,"number of rays too small");
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
-    if (((size_t)rayN ) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 16 bytes");   
+    if (((size_t)rays ) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 16 bytes");   
 #endif
     STAT3(normal.travs,1,N,N);
 
-    scene->device->rayStreamFilters.filterAOS(scene,rayN,N,stride,flags,true);
+    /* code path for single ray streams */
+    if (likely(M == 1))
+    {
+      /* fast code path for streams of size 1 */
+      if (likely(N == 1)) {
+        scene->intersect(*(RTCRay*)rays);
+      } 
+      /* normal codepath for single ray streams */
+      else {
+        scene->device->rayStreamFilters.filterAOS(scene,(RTCRay*)rays,N,stride,flags,true);
+      }
+    }
+    /* code path for ray packet streams */
+    else {
+      scene->device->rayStreamFilters.filterSOA(scene,(char*)rays,M,N,stride,flags,true);
+    }
     
     RTCORE_CATCH_END(scene->device);
   }
@@ -438,8 +476,6 @@ namespace embree
     RTCORE_TRACE(rtcIntersectN_SOA);
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
-    if (N < 1) throw_RTCError(RTC_INVALID_OPERATION,"number of rays too small");
-    if (streams < 1) throw_RTCError(RTC_INVALID_OPERATION,"streams too small");
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
     if (((size_t)rayN.orgx   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.orgx not aligned to 4 bytes");   
     if (((size_t)rayN.orgy   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.orgy not aligned to 4 bytes");   
@@ -462,15 +498,12 @@ namespace embree
 #endif
     STAT3(normal.travs,1,N,N);
 
-    scene->device->rayStreamFilters.filterSOA(scene,rayN,N,streams,stride,flags,true);
+    scene->device->rayStreamFilters.filterSOP(scene,rayN,N,streams,stride,flags,true);
 
     RTCORE_CATCH_END(scene->device);
   }
 
-
-
 #endif
-
   
   RTCORE_API void rtcOccluded (RTCScene hscene, RTCRay& ray) 
   {
@@ -597,25 +630,63 @@ namespace embree
 
   
 #if defined (RTCORE_RAY_PACKETS)
-  RTCORE_API void rtcOccludedN(RTCScene hscene, RTCRay* rayN, const size_t N, const size_t stride, const size_t flags) 
+  RTCORE_API void rtcOccluded1N(RTCScene hscene, RTCRay* rays, const size_t N, const size_t stride, const size_t flags) 
+  {
+    Scene* scene = (Scene*) hscene;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcOccludedN1);
+#if defined(DEBUG)
+    RTCORE_VERIFY_HANDLE(hscene);
+    if (stride < sizeof(RTCRay)) throw_RTCError(RTC_INVALID_OPERATION,"stride too small");
+    if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)rays ) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 64 bytes");   
+#endif
+    STAT3(shadow.travs,1,N,N);
+
+    /* fast codepath for streams of size 1 */
+    if (likely(N == 1)) {
+      scene->occluded (*rays);
+    } 
+    /* codepath for normal streams */
+    else {
+      scene->device->rayStreamFilters.filterAOS(scene,rays,N,stride,flags,false);
+    }
+
+    RTCORE_CATCH_END(scene->device);
+  }
+
+  RTCORE_API void rtcOccludedMN(RTCScene hscene, void* rays, const size_t M, const size_t N, const size_t stride, const size_t flags) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcOccludedN);
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
-    if (N < 1) throw_RTCError(RTC_INVALID_OPERATION,"number of rays too small");
     if (stride < sizeof(RTCRay)) throw_RTCError(RTC_INVALID_OPERATION,"stride too small");
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
-    if (((size_t)rayN ) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 64 bytes");   
+    if (((size_t)rays ) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 64 bytes");   
 #endif
     STAT3(shadow.travs,1,N,N);
 
-    scene->device->rayStreamFilters.filterAOS(scene,rayN,N,stride,flags,false);
+    /* codepath for single rays */
+    if (likely(M == 1))
+    {
+      /* fast path for streams of size 1 */
+      if (likely(N == 1)) {
+        scene->occluded (*(RTCRay*)rays);
+      } 
+      /* codepath for normal ray streams */
+      else {
+        scene->device->rayStreamFilters.filterAOS(scene,(RTCRay*)rays,N,stride,flags,false);
+      }
+    }
+    /* code path for ray packet streams */
+    else {
+      scene->device->rayStreamFilters.filterSOA(scene,(char*)rays,M,N,stride,flags,false);
+    }
 
     RTCORE_CATCH_END(scene->device);
   }
-
 
   RTCORE_API void rtcOccludedN_SOA(RTCScene hscene, RTCRaySOA& rayN, const size_t N, const size_t streams, const size_t stride, const size_t flags) 
   {
@@ -624,8 +695,6 @@ namespace embree
     RTCORE_TRACE(rtcOccludedN_SOA);
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
-    if (N < 1) throw_RTCError(RTC_INVALID_OPERATION,"number of rays too small");
-    if (streams < 1) throw_RTCError(RTC_INVALID_OPERATION,"streams too small");
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
     if (((size_t)rayN.orgx   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.orgx not aligned to 4 bytes");   
     if (((size_t)rayN.orgy   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.orgy not aligned to 4 bytes");   
@@ -648,7 +717,7 @@ namespace embree
 #endif
     STAT3(shadow.travs,1,N,N);
 
-    scene->device->rayStreamFilters.filterSOA(scene,rayN,N,streams,stride,flags,false);
+    scene->device->rayStreamFilters.filterSOP(scene,rayN,N,streams,stride,flags,false);
 
     RTCORE_CATCH_END(scene->device);
   }
@@ -1077,6 +1146,17 @@ namespace embree
     scene->get_locked(geomID)->setIntersectFunction16(intersect16);
     RTCORE_CATCH_END(scene->device);
   }
+
+  RTCORE_API void rtcSetIntersectFunctionN (RTCScene hscene, unsigned geomID, RTCIntersectFuncN intersect) 
+  {
+    Scene* scene = (Scene*) hscene;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetIntersectFunctionN);
+    RTCORE_VERIFY_HANDLE(hscene);
+    RTCORE_VERIFY_GEOMID(geomID);
+    scene->get_locked(geomID)->setIntersectFunctionN(intersect);
+    RTCORE_CATCH_END(scene->device);
+  }
 #endif
 
   RTCORE_API void rtcSetOccludedFunction (RTCScene hscene, unsigned geomID, RTCOccludedFunc occluded) 
@@ -1121,6 +1201,17 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     scene->get_locked(geomID)->setOccludedFunction16(occluded16);
+    RTCORE_CATCH_END(scene->device);
+  }
+
+  RTCORE_API void rtcSetOccludedFunctionN (RTCScene hscene, unsigned geomID, RTCOccludedFuncN occluded) 
+  {
+    Scene* scene = (Scene*) hscene;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetOccludedFunctionN);
+    RTCORE_VERIFY_HANDLE(hscene);
+    RTCORE_VERIFY_GEOMID(geomID);
+    scene->get_locked(geomID)->setOccludedFunctionN(occluded);
     RTCORE_CATCH_END(scene->device);
   }
 #endif

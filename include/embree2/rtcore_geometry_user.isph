@@ -41,6 +41,12 @@ typedef void (*RTCIntersectFuncVarying)(void* uniform ptr,       /*!< pointer to
                                         varying RTCRay& ray,     /*!< ray to intersect */
                                         uniform size_t item      /*< item to intersect */);
 
+/*! Type of intersect function pointer for stream of uniform rays. */
+typedef unmasked void (*RTCIntersectFuncUniformN)(void* uniform ptr,       /*!< pointer to user data */
+                                                  uniform RTCRay1** uniform ray, /*!< pointers to rays to intersect */
+                                                  uniform size_t N,        /*< number of rays in stream */
+                                                  uniform size_t item      /*< item to intersect */);
+
 /*! Type of occlusion function pointer for uniform rays. */
 typedef unmasked void (*RTCOccludedFuncUniform) (void* uniform ptr,       /*!< pointer to user data */ 
                                                  uniform RTCRay1& ray,    /*!< ray to test occlusion */
@@ -50,6 +56,12 @@ typedef unmasked void (*RTCOccludedFuncUniform) (void* uniform ptr,       /*!< p
 typedef void (*RTCOccludedFuncVarying) (void* uniform ptr,       /*!< pointer to user data */ 
                                         varying RTCRay& ray,     /*!< ray to test occlusion */
                                         uniform size_t item      /*< item to test for occlusion */);
+
+/*! Type of occlusion function pointer for stream of uniform rays. */
+typedef unmasked void (*RTCOccludedFuncUniformN) (void* uniform ptr,       /*!< pointer to user data */ 
+                                                  uniform RTCRay1** uniform ray, /*!< pointers to rays to test occlusion */
+                                                  uniform size_t N,        /*< number of rays in stream */
+                                                  uniform size_t item      /*< item to test for occlusion */);
 
 /*! Creates a new user geometry object. This feature makes it possible
  *  to add arbitrary types of geometry to the scene by providing
@@ -93,6 +105,11 @@ void rtcSetIntersectFunction1 (RTCScene scene, uniform unsigned int geomID, unif
  *  geometry. */
 void rtcSetIntersectFunction (RTCScene scene, uniform unsigned int geomID, uniform RTCIntersectFuncVarying intersect);
 
+/*! Set intersect function for stream of rays. The rtcIntersectN function
+ *  will call the passed function for intersecting the user
+ *  geometry. */
+void rtcSetIntersectFunctionN (RTCScene scene, uniform unsigned geomID, uniform RTCIntersectFuncUniformN intersectN);
+
 /*! Set occlusion function for uniform rays. The rtcOccluded1 function
  *  will call the passed function for intersecting the user
  *  geometry. */
@@ -103,6 +120,10 @@ void rtcSetOccludedFunction1 (RTCScene scene, uniform unsigned int geomID, unifo
  *  geometry. */
 void rtcSetOccludedFunction (RTCScene scene, uniform unsigned int geomID, uniform RTCOccludedFuncVarying occluded);
 
+/*! Set occlusion function for a stream of single rays. The rtcOccludedN function
+ *  will call the passed function for intersecting the user
+ *  geometry. */
+void rtcSetOccludedFunctionN (RTCScene scene, uniform unsigned geomID, uniform RTCOccludedFuncUniformN occludedN);
 
 /*! \brief Sets the displacement function. */
 void rtcSetDisplacementFunction (RTCScene scene, uniform unsigned int geomID, uniform RTCDisplacementFunc func, uniform RTCBounds *uniform bounds);

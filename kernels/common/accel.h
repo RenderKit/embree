@@ -17,9 +17,12 @@
 #pragma once
 
 #include "default.h"
+#include "ray.h"
 
 namespace embree
 {
+  class Scene;
+
   /*! Base class for the acceleration structure data. */
   class AccelData : public RefCount 
   {
@@ -190,7 +193,7 @@ namespace embree
         : ptr(nullptr) {}
 
       Intersectors (ErrorFunc error) 
-      : ptr(nullptr), intersector1(error), intersector4(error), intersector8(error), intersector16(error),intersectorN(error) {}
+      : ptr(nullptr), intersector1(error), intersector4(error), intersector8(error), intersector16(error), intersectorN(error) {}
 
       void print(size_t ident) 
       {
@@ -233,8 +236,7 @@ namespace embree
 	if (intersectorN_filter) {
 	  if (filterN) intersectorN = intersectorN_filter;
 	  else         intersectorN = intersectorN_nofilter;
-	}
-        
+	}        
       }
 
     public:
@@ -300,13 +302,33 @@ namespace embree
     /*! Intersects a packet of N rays in SOA layout with the scene. */
     __forceinline void intersectN (RTCRay **rayN, const size_t N, const size_t flags) {
       //assert(intersectors.intersectorN.intersect);
-      if (likely(intersectors.intersectorN.intersect))
+      if (likely(intersectors.intersectorN.intersect))  // FIXME: not working properly, will be set to error function sometimes
         intersectors.intersectorN.intersect(intersectors.ptr,rayN, N, flags);
       else
         /* fallback path */
         for (size_t i=0;i<N;i++)
           intersect(*rayN[i]);
     }
+
+#if defined(__SSE__)
+    __forceinline void intersect(const vbool4& valid, RayK<4>& ray) {
+      const vint<4> mask = valid.mask32();
+      intersect4(&mask,(RTCRay4&)ray);
+    }
+#endif
+#if defined(__AVX__)
+    __forceinline void intersect(const vbool8& valid, RayK<8>& ray) {
+      const vint<8> mask = valid.mask32();
+      intersect8(&mask,(RTCRay8&)ray);
+    }
+#endif
+#if defined(__AVX512F__)
+    __forceinline void intersect(const vbool16& valid, RayK<16>& ray) {
+      const vint<16> mask = valid.mask32();
+      intersect16(&mask,(RTCRay16&)ray);
+    }
+#endif
+
 
     /*! Tests if single ray is occluded by the scene. */
     __forceinline void occluded (RTCRay& ray) {
@@ -335,13 +357,32 @@ namespace embree
     /*! Tests if a packet of N rays in SOA layout is occluded by the scene. */
     __forceinline void occludedN (RTCRay** rayN, const size_t N, const size_t flags) {
       //assert(intersectors.intersectorN.occluded);
-      if(likely(intersectors.intersectorN.occluded))
+      if(likely(intersectors.intersectorN.occluded)) // FIXME: not working properly, will be set to error function sometimes
         intersectors.intersectorN.occluded(intersectors.ptr,rayN, N, flags);
       else
         /* fallback path */
         for (size_t i=0;i<N;i++)
           occluded(*rayN[i]);
     }
+
+#if defined(__SSE__)
+    __forceinline void occluded(const vbool4& valid, RayK<4>& ray) {
+      const vint<4> mask = valid.mask32();
+      occluded4(&mask,(RTCRay4&)ray);
+    }
+#endif
+#if defined(__AVX__)
+    __forceinline void occluded(const vbool8& valid, RayK<8>& ray) {
+      const vint<8> mask = valid.mask32();
+      occluded8(&mask,(RTCRay8&)ray);
+    }
+#endif
+#if defined(__AVX512F__)
+    __forceinline void occluded(const vbool16& valid, RayK<16>& ray) {
+      const vint<16> mask = valid.mask32();
+      occluded16(&mask,(RTCRay16&)ray);
+    }
+#endif
 
   public:
     Intersectors intersectors;
@@ -371,5 +412,26 @@ namespace embree
   Accel::IntersectorN symbol((Accel::IntersectFuncN)intersector::intersect, \
                               (Accel::OccludedFuncN)intersector::occluded,\
                               TOSTRING(isa) "::" TOSTRING(symbol));
- 
+
+  /* ray stream filter interface */
+  typedef void (*filterAOS_func)(Scene *scene, RTCRay* _rayN, const size_t N, const size_t stride, const size_t flags, const bool intersect);
+  typedef void (*filterSOA_func)(Scene *scene, char* rayN, const size_t N, const size_t streams, const size_t stream_offset, const size_t flags, const bool intersect);
+  typedef void (*filterSOP_func)(Scene *scene, RTCRaySOA& rayN, const size_t N, const size_t streams, const size_t offset, const size_t flags, const bool intersect);
+
+  struct RayStreamFilterFuncs
+  {
+    __forceinline RayStreamFilterFuncs()
+      : filterSOP(nullptr), filterAOS(nullptr), filterSOA(nullptr) {}
+    
+    __forceinline RayStreamFilterFuncs(void (*ptr) ()) 
+      : filterAOS((filterAOS_func) ptr), filterSOA((filterSOA_func) ptr), filterSOP((filterSOP_func) ptr) {}
+
+    __forceinline RayStreamFilterFuncs(filterAOS_func aos, filterSOA_func soa, filterSOP_func sop) 
+      : filterAOS(aos), filterSOA(soa), filterSOP(sop) {}
+
+  public:
+    filterAOS_func filterAOS;
+    filterSOA_func filterSOA;
+    filterSOP_func filterSOP;
+  }; 
 }

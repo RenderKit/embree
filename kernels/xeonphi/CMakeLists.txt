@@ -57,7 +57,6 @@ ADD_ISPC_LIBRARY(embree_xeonphi ${EMBREE_LIB_TYPE}
   ../common/subdiv/tessellation_cache.cpp
   ../common/subdiv/catmullclark_coefficients.cpp
   ../common/scene_line_segments.cpp
-  ../common/raystreams/raystreams.cpp
 
   ../algorithms/parallel_for.cpp
   ../algorithms/parallel_reduce.cpp

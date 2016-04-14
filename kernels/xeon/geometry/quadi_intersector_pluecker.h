@@ -70,7 +70,7 @@ namespace embree
             const Vec3<vfloat<K>> p1(_p1.x,_p1.y,_p1.z);
             const Vec3<vfloat<K>> p2(_p2.x,_p2.y,_p2.z);
             const Vec3<vfloat<K>> p3(_p3.x,_p3.y,_p3.z);
-            pre.intersectK(valid_i,ray,p0,p1,p2,p3,IntersectKEpilog<M,K,filter>(ray,quad.geomIDs,quad.primIDs,i,scene));
+            pre.intersectK(valid_i,ray,p0,p1,p2,p3,IntersectKEpilogM<M,K,filter>(ray,quad.geomIDs,quad.primIDs,i,scene));
           }
         }
         
@@ -90,7 +90,7 @@ namespace embree
             const Vec3<vfloat<K>> p1(_p1.x,_p1.y,_p1.z);
             const Vec3<vfloat<K>> p2(_p2.x,_p2.y,_p2.z);
             const Vec3<vfloat<K>> p3(_p3.x,_p3.y,_p3.z);
-            if (pre.intersectK(valid0,ray,p0,p1,p2,p3,OccludedKEpilog<M,K,filter>(valid0,ray,quad.geomIDs,quad.primIDs,i,scene)))
+            if (pre.intersectK(valid0,ray,p0,p1,p2,p3,OccludedKEpilogM<M,K,filter>(valid0,ray,quad.geomIDs,quad.primIDs,i,scene)))
               break;
           }
           return !valid0;
@@ -155,7 +155,7 @@ namespace embree
             const Vec3<vfloat<K>> p1 = quad.getVertex(quad.v1,i,scene,ray.time);
             const Vec3<vfloat<K>> p2 = quad.getVertex(quad.v2,i,scene,ray.time);
             const Vec3<vfloat<K>> p3 = quad.getVertex(quad.v3,i,scene,ray.time);            
-            pre.intersectK(valid_i,ray,p0,p1,p2,p3,IntersectKEpilog<M,K,filter>(ray,quad.geomIDs,quad.primIDs,i,scene));
+            pre.intersectK(valid_i,ray,p0,p1,p2,p3,IntersectKEpilogM<M,K,filter>(ray,quad.geomIDs,quad.primIDs,i,scene));
           }
         }
         
@@ -171,7 +171,7 @@ namespace embree
             const Vec3<vfloat<K>> p1 = quad.getVertex(quad.v1,i,scene,ray.time);
             const Vec3<vfloat<K>> p2 = quad.getVertex(quad.v2,i,scene,ray.time);
             const Vec3<vfloat<K>> p3 = quad.getVertex(quad.v3,i,scene,ray.time); 
-            if (pre.intersectK(valid0,ray,p0,p1,p2,p3,OccludedKEpilog<M,K,filter>(valid0,ray,quad.geomIDs,quad.primIDs,i,scene)))
+            if (pre.intersectK(valid0,ray,p0,p1,p2,p3,OccludedKEpilogM<M,K,filter>(valid0,ray,quad.geomIDs,quad.primIDs,i,scene)))
               break;
           }
           return !valid0;

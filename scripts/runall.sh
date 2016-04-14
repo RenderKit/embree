@@ -1,6 +1,6 @@
 #!/bin/bash
-./verify
-./benchmark
+#./verify
+#./benchmark
 ./bvh_builder
 ./bvh_access
 

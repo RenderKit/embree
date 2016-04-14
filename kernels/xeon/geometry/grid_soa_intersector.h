@@ -118,8 +118,8 @@ namespace embree
             const Vec3vfK p01(grid_x[ofs01],grid_y[ofs01],grid_z[ofs01]);
             const Vec3vfK p10(grid_x[ofs10],grid_y[ofs10],grid_z[ofs10]);
             const Vec3vfK p11(grid_x[ofs11],grid_y[ofs11],grid_z[ofs11]);
-            pre.intersector.intersectK(valid_i,ray,p00,p01,p10,MapUV0(grid_uv,ofs00,ofs01,ofs10,ofs11),IntersectKEpilogU<1,K,true>(ray,pre.grid->geomID,pre.grid->primID,scene));
-            pre.intersector.intersectK(valid_i,ray,p10,p01,p11,MapUV1(grid_uv,ofs00,ofs01,ofs10,ofs11),IntersectKEpilogU<1,K,true>(ray,pre.grid->geomID,pre.grid->primID,scene));
+            pre.intersector.intersectK(valid_i,ray,p00,p01,p10,MapUV0(grid_uv,ofs00,ofs01,ofs10,ofs11),IntersectKEpilogMU<1,K,true>(ray,pre.grid->geomID,pre.grid->primID,scene));
+            pre.intersector.intersectK(valid_i,ray,p10,p01,p11,MapUV1(grid_uv,ofs00,ofs01,ofs10,ofs11),IntersectKEpilogMU<1,K,true>(ray,pre.grid->geomID,pre.grid->primID,scene));
           }
         }
       }
@@ -148,9 +148,9 @@ namespace embree
             const Vec3vfK p10(grid_x[ofs10],grid_y[ofs10],grid_z[ofs10]);
             const Vec3vfK p11(grid_x[ofs11],grid_y[ofs11],grid_z[ofs11]);
 
-            pre.intersector.intersectK(valid,ray,p00,p01,p10,MapUV0(grid_uv,ofs00,ofs01,ofs10,ofs11),OccludedKEpilogU<1,K,true>(valid,ray,pre.grid->geomID,pre.grid->primID,scene));
+            pre.intersector.intersectK(valid,ray,p00,p01,p10,MapUV0(grid_uv,ofs00,ofs01,ofs10,ofs11),OccludedKEpilogMU<1,K,true>(valid,ray,pre.grid->geomID,pre.grid->primID,scene));
             if (none(valid)) break;
-            pre.intersector.intersectK(valid,ray,p10,p01,p11,MapUV1(grid_uv,ofs00,ofs01,ofs10,ofs11),OccludedKEpilogU<1,K,true>(valid,ray,pre.grid->geomID,pre.grid->primID,scene));
+            pre.intersector.intersectK(valid,ray,p10,p01,p11,MapUV1(grid_uv,ofs00,ofs01,ofs10,ofs11),OccludedKEpilogMU<1,K,true>(valid,ray,pre.grid->geomID,pre.grid->primID,scene));
             if (none(valid)) break;
           }
         }
@@ -196,7 +196,7 @@ namespace embree
 	const Vec3<vfloat> v0(tri_v012_x[0],tri_v012_y[0],tri_v012_z[0]);
 	const Vec3<vfloat> v1(tri_v012_x[1],tri_v012_y[1],tri_v012_z[1]);
 	const Vec3<vfloat> v2(tri_v012_x[2],tri_v012_y[2],tri_v012_z[2]);
-        pre.intersector.intersect(ray,k,v0,v1,v2,MapUV2<Loader>(grid_uv,line_offset),Intersect1KEpilogU<M,K,true>(ray,k,pre.grid->geomID,pre.grid->primID,scene));
+        pre.intersector.intersect(ray,k,v0,v1,v2,MapUV2<Loader>(grid_uv,line_offset),Intersect1KEpilogMU<M,K,true>(ray,k,pre.grid->geomID,pre.grid->primID,scene));
       };
       
       template<typename Loader>
@@ -218,7 +218,7 @@ namespace embree
 	const Vec3<vfloat> v0(tri_v012_x[0],tri_v012_y[0],tri_v012_z[0]);
 	const Vec3<vfloat> v1(tri_v012_x[1],tri_v012_y[1],tri_v012_z[1]);
 	const Vec3<vfloat> v2(tri_v012_x[2],tri_v012_y[2],tri_v012_z[2]);
-        return pre.intersector.intersect(ray,k,v0,v1,v2,MapUV2<Loader>(grid_uv,line_offset),Occluded1KEpilogU<M,K,true>(ray,k,pre.grid->geomID,pre.grid->primID,scene));
+        return pre.intersector.intersect(ray,k,v0,v1,v2,MapUV2<Loader>(grid_uv,line_offset),Occluded1KEpilogMU<M,K,true>(ray,k,pre.grid->geomID,pre.grid->primID,scene));
       }
 
       /*! Intersect a ray with the primitive. */

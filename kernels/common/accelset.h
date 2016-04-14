@@ -35,11 +35,13 @@ namespace embree
     typedef RTCIntersectFunc4 IntersectFunc4;
     typedef RTCIntersectFunc8 IntersectFunc8;
     typedef RTCIntersectFunc16 IntersectFunc16;
+    typedef RTCIntersectFuncN IntersectFuncN;
     
     typedef RTCOccludedFunc OccludedFunc;
     typedef RTCOccludedFunc4 OccludedFunc4;
     typedef RTCOccludedFunc8 OccludedFunc8;
     typedef RTCOccludedFunc16 OccludedFunc16;
+    typedef RTCOccludedFuncN OccludedFuncN;
 
 #if defined(__SSE__)
     typedef void (*ISPCIntersectFunc4)(void* ptr, RTCRay4& ray, size_t item, __m128 valid);
@@ -132,6 +134,23 @@ namespace embree
         void* intersect;
         void* occluded;
 	bool ispc;
+      };
+
+      struct IntersectorN
+      {
+        IntersectorN (ErrorFunc error = nullptr) 
+        : intersect((IntersectFuncN)error), occluded((OccludedFuncN)error), name(nullptr) {}
+        
+        IntersectorN (IntersectFuncN intersect, OccludedFuncN occluded, const char* name)
+        : intersect(intersect), occluded(occluded), name(name) {}
+        
+        operator bool() const { return name; }
+        
+      public:
+        static const char* type;
+        const char* name;
+        IntersectFuncN intersect;
+        OccludedFuncN occluded;  
       };
       
     public:
@@ -239,6 +258,14 @@ namespace embree
         }
       }
 #endif
+
+      /*! Intersects a stream of rays with the scene. */
+      __forceinline void intersectN (RTCRay** rays, size_t N, size_t item) 
+      {
+        assert(item < size());
+        assert(intersectors.intersectorN.intersect);
+        intersectors.intersectorN.intersect(intersectors.ptr,rays,N,item);
+      }
       
       /*! Tests if single ray is occluded by the scene. */
       __forceinline void occluded (RTCRay& ray, size_t item) {
@@ -299,6 +326,12 @@ namespace embree
         }
       }
 #endif
+
+      /*! Tests if a stream of rays is occluded by the scene. */
+      __forceinline void occludedN (RTCRay** rays, size_t N, size_t item) {
+        assert(intersectors.intersectorN.occluded);
+        intersectors.intersectorN.occluded(intersectors.ptr,rays,N,item);
+      }
       
     public:
       RTCBoundsFunc  boundsFunc;
@@ -314,6 +347,7 @@ namespace embree
         Intersector4 intersector4;
         Intersector8 intersector8;
         Intersector16 intersector16;
+        IntersectorN intersectorN;
       } intersectors;
   };
 

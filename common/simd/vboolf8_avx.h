@@ -69,6 +69,11 @@ namespace embree
     __forceinline vboolf ( bool a, bool b, bool c, bool d) : v(vboolf8(vboolf4(a,b), vboolf4(c,d))) {}
     __forceinline vboolf ( bool a, bool b, bool c, bool d, bool e, bool f, bool g, bool vh ) : v(vboolf8(vboolf4(a,b,c,d), vboolf4(e,f,g,vh))) {}
 
+    /* return int32 mask */
+    __forceinline __m256i mask32() const { 
+      return _mm256_castps_si256(v);
+    }
+
     ////////////////////////////////////////////////////////////////////////////////
     /// Constants
     ////////////////////////////////////////////////////////////////////////////////

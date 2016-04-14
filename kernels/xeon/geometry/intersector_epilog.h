@@ -190,7 +190,7 @@ namespace embree
       };
     
     template<int M, int Mx, bool filter>
-      struct Intersect1Epilog
+      struct Intersect1EpilogM
       {
         Ray& ray;
         const vint<M>& geomIDs;
@@ -198,7 +198,7 @@ namespace embree
         Scene* scene;
         const unsigned* geomID_to_instID;
         
-        __forceinline Intersect1Epilog(Ray& ray,
+        __forceinline Intersect1EpilogM(Ray& ray,
                                        const vint<M>& geomIDs, 
                                        const vint<M>& primIDs, 
                                        Scene* scene,
@@ -214,14 +214,14 @@ namespace embree
           size_t i = select_min(valid,hit.vt);
           int geomID = geomIDs[i];
           int instID = geomID_to_instID ? geomID_to_instID[0] : geomID;
-          //int instID = geomID_to_instID ? (int)(size_t)geomID_to_instID : geomID;
 
           /* intersection filter test */
 #if defined(RTCORE_INTERSECTION_FILTER) || defined(RTCORE_RAY_MASK)
+          bool foundhit = false;
           goto entry;
           while (true) 
           {
-            if (unlikely(none(valid))) return false;
+            if (unlikely(none(valid))) return foundhit;
             i = select_min(valid,hit.vt);
 
             geomID = geomIDs[i];
@@ -242,8 +242,9 @@ namespace embree
             if (filter) {
               if (unlikely(geometry->hasIntersectionFilter1())) {
                 const Vec2f uv = hit.uv(i);
-                if (runIntersectionFilter1(geometry,ray,uv.x,uv.y,hit.t(i),hit.Ng(i),instID,primIDs[i])) return true;
+                foundhit |= runIntersectionFilter1(geometry,ray,uv.x,uv.y,hit.t(i),hit.Ng(i),instID,primIDs[i]);
                 clear(valid,i);
+                valid &= hit.vt < ray.tfar; // intersection filters may modify tfar value
                 continue;
               }
             }
@@ -269,7 +270,7 @@ namespace embree
 
 #if defined(__AVX512F__)
     template<int M, bool filter>
-      struct Intersect1Epilog<M,16,filter>
+      struct Intersect1EpilogM<M,16,filter>
       {
         static const size_t Mx = 16;
         Ray& ray;
@@ -278,7 +279,7 @@ namespace embree
         Scene* scene;
         const unsigned* geomID_to_instID;
         
-        __forceinline Intersect1Epilog(Ray& ray,
+        __forceinline Intersect1EpilogM(Ray& ray,
                                        const vint<M>& geomIDs, 
                                        const vint<M>& primIDs, 
                                        Scene* scene,
@@ -297,10 +298,11 @@ namespace embree
 
           /* intersection filter test */
 #if defined(RTCORE_INTERSECTION_FILTER) || defined(RTCORE_RAY_MASK)
+          bool foundhit = false;
           goto entry;
           while (true) 
           {
-            if (unlikely(none(valid))) return false;
+            if (unlikely(none(valid))) return foundhit;
             i = select_min(valid,hit.vt);
 
             geomID = geomIDs[i];
@@ -321,8 +323,9 @@ namespace embree
             if (filter) {
               if (unlikely(geometry->hasIntersectionFilter1())) {
                 const Vec2f uv = hit.uv(i);
-                if (runIntersectionFilter1(geometry,ray,uv.x,uv.y,hit.t(i),hit.Ng(i),instID,primIDs[i])) return true;
+                foundhit |= runIntersectionFilter1(geometry,ray,uv.x,uv.y,hit.t(i),hit.Ng(i),instID,primIDs[i]);
                 clear(valid,i);
+                valid &= hit.vt < ray.tfar; // intersection filters may modify tfar value
                 continue;
               }
             }
@@ -340,7 +343,7 @@ namespace embree
 #endif    
     
     template<int M, int Mx, bool filter>
-      struct Occluded1Epilog
+      struct Occluded1EpilogM
       {
         Ray& ray;
         const vint<M>& geomIDs;
@@ -348,7 +351,7 @@ namespace embree
         Scene* scene;
         const unsigned* geomID_to_instID;
         
-        __forceinline Occluded1Epilog(Ray& ray,
+        __forceinline Occluded1EpilogM(Ray& ray,
                                       const vint<M>& geomIDs, 
                                       const vint<M>& primIDs, 
                                       Scene* scene,
@@ -405,7 +408,7 @@ namespace embree
       };
     
     template<int M, bool filter>
-      struct Intersect1EpilogU
+      struct Intersect1EpilogMU
       {
         Ray& ray;
         const unsigned int geomID;
@@ -413,7 +416,7 @@ namespace embree
         Scene* scene;
         const unsigned* geomID_to_instID;
         
-        __forceinline Intersect1EpilogU(Ray& ray,
+        __forceinline Intersect1EpilogMU(Ray& ray,
                                         const unsigned int geomID, 
                                         const unsigned int primID, 
                                         Scene* scene,
@@ -438,18 +441,18 @@ namespace embree
 #if defined(RTCORE_INTERSECTION_FILTER)
           if (unlikely(geometry->hasIntersectionFilter1())) 
           {
+            bool foundhit = false;
             while (true) 
             {
               /* call intersection filter function */
               Vec2f uv = hit.uv(i);
-              if (runIntersectionFilter1(geometry,ray,uv.x,uv.y,hit.t(i),hit.Ng(i),geomID,primID)) {
-                return true;
-              }
+              foundhit |= runIntersectionFilter1(geometry,ray,uv.x,uv.y,hit.t(i),hit.Ng(i),geomID,primID);
               clear(valid,i);
+              valid &= hit.vt < ray.tfar; // intersection filters may modify tfar value
               if (unlikely(none(valid))) break;
               i = select_min(valid,hit.vt);
             }
-            return false;
+            return foundhit;
           }
 #endif
           
@@ -469,7 +472,7 @@ namespace embree
       };
     
     template<int M, bool filter>
-      struct Occluded1EpilogU
+      struct Occluded1EpilogMU
       {
         Ray& ray;
         const unsigned int geomID;
@@ -477,7 +480,7 @@ namespace embree
         Scene* scene;
         const unsigned* geomID_to_instID;
         
-        __forceinline Occluded1EpilogU(Ray& ray,
+        __forceinline Occluded1EpilogMU(Ray& ray,
                                        const unsigned int geomID, 
                                        const unsigned int primID, 
                                        Scene* scene,
@@ -511,7 +514,7 @@ namespace embree
       };
         
     template<int M, int K, bool filter>
-      struct IntersectKEpilog
+      struct IntersectKEpilogM
       {
         RayK<K>& ray;
         const vint<M>& geomIDs;
@@ -519,7 +522,7 @@ namespace embree
         const int i;
         Scene* const scene;
         
-        __forceinline IntersectKEpilog(RayK<K>& ray,
+        __forceinline IntersectKEpilogM(RayK<K>& ray,
                                        const vint<M>& geomIDs, 
                                        const vint<M>& primIDs, 
                                        int i,
@@ -568,7 +571,7 @@ namespace embree
       };
     
     template<int M, int K, bool filter>
-      struct OccludedKEpilog
+      struct OccludedKEpilogM
       {
         vbool<K>& valid0;
         RayK<K>& ray;
@@ -577,7 +580,7 @@ namespace embree
         const int i;
         Scene* const scene;
         
-        __forceinline OccludedKEpilog(vbool<K>& valid0,
+        __forceinline OccludedKEpilogM(vbool<K>& valid0,
                                       RayK<K>& ray,
                                       const vint<M>& geomIDs, 
                                       const vint<M>& primIDs, 
@@ -619,14 +622,14 @@ namespace embree
       };
     
     template<int M, int K, bool filter>
-      struct IntersectKEpilogU
+      struct IntersectKEpilogMU
       {
         RayK<K>& ray;
         const unsigned int geomID;
         const unsigned int primID;
         Scene* const scene;
         
-        __forceinline IntersectKEpilogU(RayK<K>& ray,
+        __forceinline IntersectKEpilogMU(RayK<K>& ray,
                                         const unsigned int geomID, 
                                         const unsigned int primID, 
                                         Scene* scene)
@@ -671,7 +674,7 @@ namespace embree
       };
     
     template<int M, int K, bool filter>
-      struct OccludedKEpilogU
+      struct OccludedKEpilogMU
       {
         vbool<K>& valid0;
         RayK<K>& ray;
@@ -679,7 +682,7 @@ namespace embree
         const unsigned int primID;
         Scene* const scene;
         
-        __forceinline OccludedKEpilogU(vbool<K>& valid0,
+        __forceinline OccludedKEpilogMU(vbool<K>& valid0,
                                        RayK<K>& ray,
                                        const unsigned int geomID, 
                                        const unsigned int primID, 
@@ -719,7 +722,7 @@ namespace embree
     
     
     template<int M, int Mx, int K, bool filter>
-      struct Intersect1KEpilog
+      struct Intersect1KEpilogM
       {
         RayK<K>& ray;
         int k;
@@ -727,7 +730,7 @@ namespace embree
         const vint<M>& primIDs;
         Scene* const scene;
         
-        __forceinline Intersect1KEpilog(RayK<K>& ray, int k,
+        __forceinline Intersect1KEpilogM(RayK<K>& ray, int k,
                                         const vint<M>& geomIDs, 
                                         const vint<M>& primIDs, 
                                         Scene* scene)
@@ -745,10 +748,11 @@ namespace embree
           
           /* intersection filter test */
 #if defined(RTCORE_INTERSECTION_FILTER) || defined(RTCORE_RAY_MASK)
+          bool foundhit = false;
           goto entry;
           while (true) 
           {
-            if (unlikely(none(valid))) return false;
+            if (unlikely(none(valid))) return foundhit;
             i = select_min(valid,hit.vt);
             assert(i<M);            
             geomID = geomIDs[i];
@@ -769,8 +773,9 @@ namespace embree
               if (unlikely(geometry->hasIntersectionFilter<vfloat<K>>())) {
                 assert(i<M);
                 const Vec2f uv = hit.uv(i);
-                if (runIntersectionFilter(geometry,ray,k,uv.x,uv.y,hit.t(i),hit.Ng(i),geomID,primIDs[i])) return true;
+                foundhit |= runIntersectionFilter(geometry,ray,k,uv.x,uv.y,hit.t(i),hit.Ng(i),geomID,primIDs[i]);
                 clear(valid,i);
+                valid &= hit.vt < ray.tfar[k]; // intersection filters may modify tfar value
                 continue;
               }
             }
@@ -798,7 +803,7 @@ namespace embree
       };
     
     template<int M, int Mx, int K, bool filter>
-      struct Occluded1KEpilog
+      struct Occluded1KEpilogM
       {
         RayK<K>& ray;
         int k;
@@ -806,7 +811,7 @@ namespace embree
         const vint<M>& primIDs;
         Scene* const scene;
         
-        __forceinline Occluded1KEpilog(RayK<K>& ray, int k,
+        __forceinline Occluded1KEpilogM(RayK<K>& ray, int k,
                                        const vint<M>& geomIDs, 
                                        const vint<M>& primIDs, 
                                        Scene* scene)
@@ -861,7 +866,7 @@ namespace embree
       };
     
     template<int M, int K, bool filter>
-      struct Intersect1KEpilogU
+      struct Intersect1KEpilogMU
       {
         RayK<K>& ray;
         int k;
@@ -869,7 +874,7 @@ namespace embree
         const unsigned int primID;
         Scene* const scene;
         
-        __forceinline Intersect1KEpilogU(RayK<K>& ray, int k,
+        __forceinline Intersect1KEpilogMU(RayK<K>& ray, int k,
                                          const unsigned int geomID, 
                                          const unsigned int primID, 
                                          Scene* scene)
@@ -895,16 +900,17 @@ namespace embree
           if (filter) {
             if (unlikely(geometry->hasIntersectionFilter<vfloat<K>>())) 
             {
+              bool foundhit = false;
               while (true) 
               {
                 const Vec2f uv = hit.uv(i);
-                if (runIntersectionFilter(geometry,ray,k,uv.x,uv.y,hit.t(i),hit.Ng(i),geomID,primID)) return true;
+                foundhit |= runIntersectionFilter(geometry,ray,k,uv.x,uv.y,hit.t(i),hit.Ng(i),geomID,primID);
                 clear(valid,i);
-
+                valid &= hit.vt < ray.tfar[k]; // intersection filters may modify tfar value
                 if (unlikely(none(valid))) break;
                 i = select_min(valid,hit.vt);
               }
-              return false;
+              return foundhit;
             }
           }
 #endif
@@ -930,7 +936,7 @@ namespace embree
       };
     
     template<int M, int K, bool filter>
-      struct Occluded1KEpilogU
+      struct Occluded1KEpilogMU
       {
         RayK<K>& ray;
         int k;
@@ -938,7 +944,7 @@ namespace embree
         const unsigned int primID;
         Scene* const scene;
         
-        __forceinline Occluded1KEpilogU(RayK<K>& ray, int k,
+        __forceinline Occluded1KEpilogMU(RayK<K>& ray, int k,
                                         const unsigned int geomID, 
                                         const unsigned int primID, 
                                         Scene* scene)

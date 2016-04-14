@@ -153,64 +153,6 @@ namespace embree
       MortonID32Bit* morton;
     };
     
-#if defined(__AVX__)
-    
-    template<int N>
-    struct CreateMortonLeaf<N,Triangle8>
-    {
-      typedef BVHN<N> BVH;
-      typedef typename BVH::NodeRef NodeRef;
-
-      __forceinline CreateMortonLeaf (TriangleMesh* mesh, MortonID32Bit* morton)
-        : mesh(mesh), morton(morton) {}
-      
-      __noinline void operator() (MortonBuildRecord<NodeRef>& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
-      {
-        vfloat4 lower(pos_inf);
-        vfloat4 upper(neg_inf);
-        size_t items = current.size();
-        size_t start = current.begin;
-        assert(items<=8);
-        
-        /* allocate leaf node */
-        Triangle8* accel = (Triangle8*) alloc->alloc1.malloc(sizeof(Triangle8));
-        *current.parent = BVH::encodeLeaf((char*)accel,1);
-        
-        vint8 vgeomID = -1, vprimID = -1;
-        Vec3vf8 v0 = zero, v1 = zero, v2 = zero;
-        
-        for (size_t i=0; i<items; i++)
-        {
-          const size_t index = morton[start+i].index;
-          const size_t primID = index; 
-          const size_t geomID = this->mesh->id;
-          const TriangleMesh* mesh = this->mesh;
-          const TriangleMesh::Triangle& tri = mesh->triangle(primID);
-          const Vec3fa& p0 = mesh->vertex(tri.v[0]);
-          const Vec3fa& p1 = mesh->vertex(tri.v[1]);
-          const Vec3fa& p2 = mesh->vertex(tri.v[2]);
-          lower = min(lower,(vfloat4)p0,(vfloat4)p1,(vfloat4)p2);
-          upper = max(upper,(vfloat4)p0,(vfloat4)p1,(vfloat4)p2);
-          vgeomID [i] = geomID;
-          vprimID [i] = primID;
-          v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
-          v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
-          v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
-        }
-        Triangle8::store_nt(accel,Triangle8(v0,v1,v2,vgeomID,vprimID));
-        box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
-#if ROTATE_TREE
-        if (N == 4)
-          box_o.lower.a = current.size();
-#endif
-      }
-
-    private:
-      TriangleMesh* mesh;
-      MortonID32Bit* morton;
-    };
-#endif
-    
     template<int N>
     struct CreateMortonLeaf<N,Triangle4v>
     {
@@ -472,13 +414,12 @@ namespace embree
       size_t numPrimitives;
       mvector<MortonID32Bit> morton;
     };
-    
+
+#if defined(RTCORE_GEOMETRY_TRIANGLES)
     Builder* BVH4Triangle4MeshBuilderMortonGeneral  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVHNMeshBuilderMorton<4,TriangleMesh,Triangle4> ((BVH4*)bvh,mesh,4,4*BVH4::maxLeafBlocks); }
-#if defined(__AVX__)
-    Builder* BVH4Triangle8MeshBuilderMortonGeneral  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVHNMeshBuilderMorton<4,TriangleMesh,Triangle8> ((BVH4*)bvh,mesh,8,8*BVH4::maxLeafBlocks); }
-#endif
     Builder* BVH4Triangle4vMeshBuilderMortonGeneral (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVHNMeshBuilderMorton<4,TriangleMesh,Triangle4v>((BVH4*)bvh,mesh,4,4*BVH4::maxLeafBlocks); }
     Builder* BVH4Triangle4iMeshBuilderMortonGeneral (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVHNMeshBuilderMorton<4,TriangleMesh,Triangle4i>((BVH4*)bvh,mesh,4,4*BVH4::maxLeafBlocks); }
+#endif
   }
 }
 

@@ -970,10 +970,10 @@ uniform Vec3fa* uniform g_accu = NULL;
 uniform unsigned int g_accu_width = 0;
 uniform unsigned int g_accu_height = 0;
 uniform unsigned int g_accu_count = 0;
-uniform Vec3f g_accu_vx;
-uniform Vec3f g_accu_vy;
-uniform Vec3f g_accu_vz;
-uniform Vec3f g_accu_p;
+uniform Vec3fa g_accu_vx;
+uniform Vec3fa g_accu_vy;
+uniform Vec3fa g_accu_vz;
+uniform Vec3fa g_accu_p;
 extern uniform bool g_changed;
 extern uniform int g_instancing_mode;
 
@@ -1584,7 +1584,7 @@ void occlusionFilterHair(void* uniform ptr, RTCRay& ray)
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
 }
 
-Vec3f renderPixelFunction(float x, float y, RandomSampler& sampler, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
+Vec3f renderPixelFunction(float x, float y, RandomSampler& sampler, const uniform ISPCCamera& camera)
 {
   /* radiance accumulator and weight */
   Vec3f L = make_Vec3f(0.0f);
@@ -1593,7 +1593,8 @@ Vec3f renderPixelFunction(float x, float y, RandomSampler& sampler, const unifor
   float time = RandomSampler_get1D(sampler);
 
   /* initialize ray */
-  RTCRay ray = make_Ray(p,normalize(x*vx + y*vy + vz),0.0f,inf,time);
+  RTCRay ray = make_Ray(make_Vec3f(camera.xfm.p),
+                        make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)),0.0f,inf,time);
 
   /* iterative path tracer loop */
   for (uniform int i=0; i<MAX_PATH_LENGTH; i++)
@@ -1751,7 +1752,7 @@ Vec3f renderPixelFunction(float x, float y, RandomSampler& sampler, const unifor
 }
 
 /* task that renders a single screen tile */
-Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
+Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
 {
   RandomSampler sampler;
 
@@ -1764,7 +1765,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
     /* calculate pixel color */
     float fx = x + RandomSampler_get1D(sampler);
     float fy = y + RandomSampler_get1D(sampler);
-    L = L + renderPixelFunction(fx,fy,sampler,vx,vy,vz,p);
+    L = L + renderPixelFunction(fx,fy,sampler,camera);
   }
   L = L*(1.0f/SAMPLES_PER_PIXEL);
   return L;
@@ -1776,10 +1777,7 @@ void renderTileStandard(uniform int taskIndex,
                         const uniform int width,
                         const uniform int height, 
                         const uniform float time,
-                        const uniform Vec3f& vx, 
-                        const uniform Vec3f& vy, 
-                        const uniform Vec3f& vz, 
-                        const uniform Vec3f& p,
+                        const uniform ISPCCamera& camera,
                         const uniform int numTilesX, 
                         const uniform int numTilesY)
 {
@@ -1793,7 +1791,7 @@ void renderTileStandard(uniform int taskIndex,
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
     /* calculate pixel color */
-    Vec3f color = renderPixelStandard(x,y,vx,vy,vz,p);
+    Vec3f color = renderPixelStandard(x,y,camera);
 
     /* write color to framebuffer */
     Vec3fa accu_color = g_accu[y*width+x] + make_Vec3fa(color.x,color.y,color.z,1.0f); g_accu[y*width+x] = accu_color;
@@ -1810,14 +1808,11 @@ task void renderTileTask(uniform int* uniform pixels,
                          const uniform int width,
                          const uniform int height, 
                          const uniform float time,
-                         const uniform Vec3f& vx, 
-                         const uniform Vec3f& vy, 
-                         const uniform Vec3f& vz, 
-                         const uniform Vec3f& p,
+                         const uniform ISPCCamera& camera,
                          const uniform int numTilesX, 
                          const uniform int numTilesY)
 {
-  renderTile(taskIndex,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY);
+  renderTile(taskIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
 }
 
 
@@ -1904,10 +1899,10 @@ void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa&
 export void device_init (uniform int8* uniform cfg)
 {
   /* initialize last seen camera */
-  g_accu_vx = make_Vec3f(0.0f);
-  g_accu_vy = make_Vec3f(0.0f);
-  g_accu_vz = make_Vec3f(0.0f);
-  g_accu_p  = make_Vec3f(0.0f);
+  g_accu_vx = make_Vec3fa(0.0f);
+  g_accu_vy = make_Vec3fa(0.0f);
+  g_accu_vz = make_Vec3fa(0.0f);
+  g_accu_p  = make_Vec3fa(0.0f);
 
   /* create new Embree device */
   g_device = rtcNewDevice(cfg);
@@ -1931,17 +1926,12 @@ export void device_render (uniform int* uniform pixels,
                            const uniform int width,
                            const uniform int height, 
                            const uniform float time,
-                           const uniform Vec3f& vx, 
-                           const uniform Vec3f& vy, 
-                           const uniform Vec3f& vz, 
-                           const uniform Vec3f& p)
+                           const uniform ISPCCamera& camera)
 {
-  uniform Vec3fa cam_org = make_Vec3fa(p.x,p.y,p.z);
-
   /* create scene */
   if (g_scene == NULL) {
     g_scene = convertScene(g_ispc_scene);
-    if (g_subdiv_mode) updateEdgeLevels(g_ispc_scene, cam_org);
+    if (g_subdiv_mode) updateEdgeLevels(g_ispc_scene,camera.xfm.p);
     rtcCommit (g_scene);
   }
 
@@ -1956,10 +1946,10 @@ export void device_render (uniform int* uniform pixels,
 
   /* reset accumulator */
   uniform bool camera_changed = g_changed; g_changed = false;
-  camera_changed |= ne(g_accu_vx,vx); g_accu_vx = vx;
-  camera_changed |= ne(g_accu_vy,vy); g_accu_vy = vy;
-  camera_changed |= ne(g_accu_vz,vz); g_accu_vz = vz;
-  camera_changed |= ne(g_accu_p,  p); g_accu_p  = p;
+  camera_changed |= ne(g_accu_vx,camera.xfm.l.vx); g_accu_vx = camera.xfm.l.vx;
+  camera_changed |= ne(g_accu_vy,camera.xfm.l.vy); g_accu_vy = camera.xfm.l.vy;
+  camera_changed |= ne(g_accu_vz,camera.xfm.l.vz); g_accu_vz = camera.xfm.l.vz;
+  camera_changed |= ne(g_accu_p, camera.xfm.p);    g_accu_p  = camera.xfm.p;
 
   if (g_animation && g_ispc_scene->numSubdivMeshKeyFrames) {
     updateKeyFrame(g_ispc_scene);
@@ -1977,7 +1967,7 @@ export void device_render (uniform int* uniform pixels,
     memset(g_accu,0,width*height*sizeof(uniform Vec3fa));
 
     if (g_subdiv_mode) {
-      updateEdgeLevels(g_ispc_scene, cam_org);
+      updateEdgeLevels(g_ispc_scene,camera.xfm.p);
       rtcCommit (g_scene);
     }
   }
@@ -1985,15 +1975,18 @@ export void device_render (uniform int* uniform pixels,
   /* render image */
   const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  launch[numTilesX*numTilesY] renderTileTask(pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); sync;
+  launch[numTilesX*numTilesY] renderTileTask(pixels,width,height,time,camera,numTilesX,numTilesY); sync;
   //rtcDebug();
 } // device_render
 
 /* called by the C++ code for cleanup */
 export void device_cleanup ()
 {
-  rtcDeleteScene (g_scene);
-  rtcDeleteDevice(g_device);
-  delete[] g_accu;
+  rtcDeleteScene (g_scene); g_scene = NULL;
+  rtcDeleteDevice(g_device); g_device = NULL;
+  delete[] g_accu; g_accu = NULL;
+  g_accu_width = 0;
+  g_accu_height = 0;
+  g_accu_count = 0;
 } // device_cleanup
 

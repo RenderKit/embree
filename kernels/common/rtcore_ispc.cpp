@@ -136,8 +136,8 @@ namespace embree
     rtcIntersect16(valid,scene,ray);
   }
 
-  extern "C" void ispcIntersect1N (RTCScene scene, RTCRay* rayN, const size_t N, const size_t stride, const size_t flags) {
-    rtcIntersectN(scene,rayN,N,stride,flags);
+  extern "C" void ispcIntersectMN (RTCScene scene, RTCRay* rayN, const size_t M, const size_t N, const size_t stride, const size_t flags) {
+    rtcIntersectMN(scene,rayN,M,N,stride,flags);
   }
 
   extern "C" void ispcIntersectN_SOA (RTCScene scene,  RTCRaySOA& rayN, const  size_t N, const  size_t streams, const  size_t offset, const  size_t flags) {
@@ -160,8 +160,8 @@ namespace embree
     rtcOccluded16(valid,scene,ray);
   }
 
-  extern "C" void ispcOccluded1N (RTCScene scene, void*  rayN, const  size_t N, const  size_t stride, const  size_t flags) {
-    rtcOccludedN(scene,(RTCRay*)rayN,N,stride,flags);
+  extern "C" void ispcOccludedMN (RTCScene scene, void*  rayN, const size_t M, const  size_t N, const  size_t stride, const  size_t flags) {
+    rtcOccludedMN(scene,(RTCRay*)rayN,M,N,stride,flags);
   }
 
   extern "C" void ispcOccludedN_SOA (RTCScene scene,  RTCRaySOA& rayN, const  size_t N, const  size_t streams, const  size_t offset, const  size_t flags) {
@@ -345,6 +345,17 @@ namespace embree
     RTCORE_CATCH_END(scene->device);
   }
   
+  extern "C" void ispcSetIntersectFunctionN (RTCScene hscene, unsigned geomID, RTCIntersectFuncN intersect) 
+  {
+    Scene* scene = (Scene*) hscene;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetIntersectFunctionN);
+    RTCORE_VERIFY_HANDLE(scene);
+    RTCORE_VERIFY_GEOMID(geomID);
+    scene->get_locked(geomID)->setIntersectFunctionN(intersect,true);
+    RTCORE_CATCH_END(scene->device);
+  }
+
   extern "C" void ispcSetOccludedFunction1 (RTCScene hscene, unsigned geomID, RTCOccludedFunc occluded) 
   {
     Scene* scene = (Scene*) hscene;
@@ -386,6 +397,17 @@ namespace embree
     RTCORE_VERIFY_HANDLE(scene);
     RTCORE_VERIFY_GEOMID(geomID);
     ((Scene*)scene)->get_locked(geomID)->setOccludedFunction16(occluded,true);
+    RTCORE_CATCH_END(scene->device);
+  }
+  
+  extern "C" void ispcSetOccludedFunctionN (RTCScene hscene, unsigned geomID, RTCOccludedFuncN occluded) 
+  {
+    Scene* scene = (Scene*) hscene;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetOccludedFunctionN);
+    RTCORE_VERIFY_HANDLE(scene);
+    RTCORE_VERIFY_GEOMID(geomID);
+    ((Scene*)scene)->get_locked(geomID)->setOccludedFunctionN(occluded,true);
     RTCORE_CATCH_END(scene->device);
   }
 

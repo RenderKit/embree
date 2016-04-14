@@ -21,8 +21,6 @@
 #include "../math/constants.h"
 #include "varying.h"
 
-#include <zmmintrin.h>
-
 #if !defined(_MM_SHUF_PERM)
 #define _MM_SHUF_PERM(e3, e2, e1, e0) ((_MM_PERM_ENUM)((e3)*64 + (e2)*16 + (e1)*4 + (e0)))
 #define _MM_SHUF_PERM_NONE _MM_SHUF_PERM(3,2,1,0)

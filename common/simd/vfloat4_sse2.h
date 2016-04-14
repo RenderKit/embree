@@ -68,18 +68,22 @@ namespace embree
     static __forceinline vfloat4 broadcast( const void* const a ) { return _mm_set1_ps(*(float*)a); }
 #endif
 
-    static __forceinline vfloat4 load( const float* const a ) {
-      return _mm_load_ps(a); 
-    }
+    static __forceinline vfloat4 load ( const void* const a ) { return _mm_load_ps((float*)a); }
+    static __forceinline vfloat4 loadu( const void* const a ) { return _mm_loadu_ps((float*)a); }
 
-    static __forceinline vfloat4 loadu( const void* const a ) {
-      return _mm_loadu_ps((float*)a); 
-    }
+    static __forceinline vfloat4 load ( const vbool4& mask, const void* const a ) { return _mm_load_ps((float*)a); } // FIXME: use mask for AVX512VL
+    static __forceinline vfloat4 loadu( const vbool4& mask, const void* const a ) { return _mm_loadu_ps((float*)a); } // FIXME: use mask for AVX512VL
 
-    static __forceinline vfloat4 loadu( const vbool4& mask, const void* const a ) {
-      // FIXME: use mask for AVX512VL
-      return _mm_loadu_ps((float*)a); 
-    }
+    static __forceinline void store ( void* ptr, const vfloat4& v ) { _mm_store_ps((float*)ptr,v); }
+    static __forceinline void storeu( void* ptr, const vfloat4& v ) { _mm_storeu_ps((float*)ptr,v); }
+
+#if defined (__AVX__)
+    static __forceinline void store ( const vboolf4& mask, void* ptr, const vfloat4& f ) { _mm_maskstore_ps((float*)ptr,(__m128i)mask,f); }
+    static __forceinline void storeu( const vboolf4& mask, void* ptr, const vfloat4& f ) { _mm_maskstore_ps((float*)ptr,(__m128i)mask,f); }
+#else
+    static __forceinline void store ( const vboolf4& mask, void* ptr, const vfloat4& f ) { store (ptr,select(mask,f,load (ptr))); }
+    static __forceinline void storeu( const vboolf4& mask, void* ptr, const vfloat4& f ) { storeu(ptr,select(mask,f,loadu(ptr))); }
+#endif
 
     static __forceinline vfloat4 load_nt ( const float* ptr ) {
 #if defined (__SSE4_1__)
@@ -104,14 +108,6 @@ namespace embree
       return _mm_mul_ps(vfloat4(vint4::load(ptr)),vfloat4(1.0f/65535.0f));
     } 
 
-    static __forceinline void store ( void* ptr, const vfloat4& v ) {
-      _mm_store_ps((float*)ptr,v); 
-    }
-
-    static __forceinline void storeu ( void* ptr, const vfloat4& v ) {
-      _mm_storeu_ps((float*)ptr,v);
-    }
-
     static __forceinline void store_nt ( void* ptr, const vfloat4& v)
     {
 #if defined (__SSE4_1__)
@@ -119,19 +115,6 @@ namespace embree
 #else
       _mm_store_ps((float*)ptr,v);
 #endif
-    }
-    
-    static __forceinline void store ( const vboolf4& mask, void* ptr, const vfloat4& f )
-    { 
-#if defined (__AVX__)
-      _mm_maskstore_ps((float*)ptr,(__m128i)mask,f);
-#else
-      *(vfloat4*)ptr = select(mask,f,*(vfloat4*)ptr);
-#endif
-    }
-
-    static __forceinline void storeu( const vboolf4& mask, void* ptr, const vfloat4& f ) {
-      return _mm_storeu_ps((float*)ptr,select(mask,f,_mm_loadu_ps((float*)ptr)));
     }
 
     static __forceinline void store ( const vboolf4& mask, void* ptr, const vint4& ofs, const vfloat4& v, const int scale = 1 )
@@ -240,6 +223,20 @@ namespace embree
       const vint4 ci = _mm_max_epi32(ai,bi);
       return _mm_castsi128_ps(ci);
     }
+
+    __forceinline vfloat4 minui(const vfloat4& a, const vfloat4& b) {
+      const vint4 ai = _mm_castps_si128(a);
+      const vint4 bi = _mm_castps_si128(b);
+      const vint4 ci = _mm_min_epu32(ai,bi);
+      return _mm_castsi128_ps(ci);
+    }
+    __forceinline vfloat4 maxui(const vfloat4& a, const vfloat4& b) {
+      const vint4 ai = _mm_castps_si128(a);
+      const vint4 bi = _mm_castps_si128(b);
+      const vint4 ci = _mm_max_epu32(ai,bi);
+      return _mm_castsi128_ps(ci);
+    }
+
 #else
     __forceinline vfloat4 mini(const vfloat4& a, const vfloat4& b) {
       return min(a,b);
@@ -435,26 +432,23 @@ namespace embree
   /// Sorting Network
   ////////////////////////////////////////////////////////////////////////////////
 
-
-#if defined(__SSE4_1__)
   __forceinline vfloat4 sortNetwork(const vfloat4& v)
   {
     const vfloat4 a0 = v;
     const vfloat4 b0 = shuffle<1,0,3,2>(a0);
     const vfloat4 c0 = min(a0,b0);
     const vfloat4 d0 = max(a0,b0);
-    const vfloat4 a1 = select(0x55 /* 0b01010101 */,c0,d0);
+    const vfloat4 a1 = select(0x5 /* 0b0101 */,c0,d0);
     const vfloat4 b1 = shuffle<2,3,0,1>(a1);
     const vfloat4 c1 = min(a1,b1);
     const vfloat4 d1 = max(a1,b1);
-    const vfloat4 a2 = select(0x33 /* 0b00110011 */,c1,d1);
+    const vfloat4 a2 = select(0x3 /* 0b0011 */,c1,d1);
     const vfloat4 b2 = shuffle<0,2,1,3>(a2);
     const vfloat4 c2 = min(a2,b2);
     const vfloat4 d2 = max(a2,b2);
-    const vfloat4 a3 = select(0x22 /* 0b00100010 */,c2,d2);
+    const vfloat4 a3 = select(0x2 /* 0b0010 */,c2,d2);
     return a3;
   }
-#endif
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Transpose

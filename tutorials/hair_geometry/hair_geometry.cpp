@@ -15,41 +15,16 @@
 // ======================================================================== //
 
 #include "../common/tutorial/tutorial.h"
-#include "../common/tutorial/scene.h"
-#include "../common/scenegraph/obj_loader.h"
-#include "../common/scenegraph/xml_loader.h"
-#include "../common/scenegraph/hair_loader.h"
-#include "../common/scenegraph/cy_hair_loader.h"
-#include "../common/image/image.h"
-
-extern "C" {
-  embree::Vec3fa g_dirlight_direction = embree::normalize(embree::Vec3fa(1,-1,1));
-  embree::Vec3fa g_dirlight_intensity = embree::Vec3fa(4.0f);
-  embree::Vec3fa g_ambient_intensity = embree::Vec3fa(1.0f);
-}
+#include "../common/transport/transport_host.h"
 
 namespace embree
 {
-  /* name of the tutorial */
-  const char* tutorialName = "hair_geometry";
-
-  /* configuration */
-  static std::string g_rtcore = "";
-
-  static size_t g_width = 512;
-  static size_t g_height = 512;
-  static bool g_fullscreen = false;
-  static size_t g_numThreads = 0;
-
-  /* scene */
-  TutorialScene g_obj_scene;
-  Ref<SceneGraph::GroupNode> g_scene = new SceneGraph::GroupNode;
-  static FileName sceneFilename = "";
-  static FileName outFilename = "";
-  static int g_skipBenchmarkFrames = 0;
-  static int g_numBenchmarkFrames = 0;
-  static bool g_interactive = true;
-
+  extern "C" {
+    embree::Vec3fa g_dirlight_direction = embree::normalize(embree::Vec3fa(1,-1,1));
+    embree::Vec3fa g_dirlight_intensity = embree::Vec3fa(4.0f);
+    embree::Vec3fa g_ambient_intensity = embree::Vec3fa(1.0f);
+  }
+  
   Vec3fa uniformSampleSphere(const float& u, const float& v) 
   {
     const float phi = float(two_pi) * u;
@@ -301,196 +276,46 @@ float noise(float x, float y, float z)
     scene.geometries.push_back(mesh);
   }
 
-  static void parseCommandLine(Ref<ParseStream> cin, const FileName& path)
+  struct Tutorial : public TutorialApplication 
   {
-    while (true)
+    Tutorial() : TutorialApplication("hair_geometry") 
     {
-      std::string tag = cin->getString();
-      if (tag == "") return;
+      registerOption("ambientlight", [this] (Ref<ParseStream> cin, const FileName& path) {
+          g_ambient_intensity = cin->getVec3fa();
+        }, "--ambientlight r g b: adds an ambient light with intensity rgb");
+      registerOptionAlias("ambientlight","ambient");
 
-      /* parse command line parameters from a file */
-      if (tag == "-c") {
-        FileName file = path + cin->getFileName();
-        parseCommandLine(new ParseStream(new LineCommentFilter(file, "#")), file.path());
-      }
-
-      /* load OBJ model */
-      else if (tag == "-i") {
-        sceneFilename = path + cin->getFileName();
-      }
-
-      /* directional light */
-      else if (tag == "-dirlight" || tag == "--dirlight" ) {
-        g_dirlight_direction = normalize(cin->getVec3fa());
-        g_dirlight_intensity = cin->getVec3fa();
-      }
-
-      /* ambient light */
-      else if (tag == "-ambientlight" || tag == "--ambient") {
-        g_ambient_intensity = cin->getVec3fa();
-      }
-
-      /* output filename */
-      else if (tag == "-o") {
-        outFilename = cin->getFileName();
-	g_interactive = false;
-      }
-
-      /* number of frames to render in benchmark mode */
-      else if (tag == "-benchmark") {
-        g_skipBenchmarkFrames = cin->getInt();
-        g_numBenchmarkFrames  = cin->getInt();
-	g_interactive = false;
-      }
-
-      /* parse camera parameters */
-      else if (tag == "-vp") {
-	g_camera.from = cin->getVec3fa();
-      }
-      else if (tag == "-vi") g_camera.to = cin->getVec3fa();
-      else if (tag == "-vd") g_camera.to = g_camera.from + cin->getVec3fa();
-      else if (tag == "-vu") g_camera.up = cin->getVec3fa();
-      else if (tag == "-fov") g_camera.fov = cin->getFloat();
-
-      /* frame buffer size */
-      else if (tag == "-size") {
-        g_width = cin->getInt();
-        g_height = cin->getInt();
-      }
-
-      /* full screen mode */
-      else if (tag == "-fullscreen") 
-        g_fullscreen = true;
+      registerOption("directionallight", [this] (Ref<ParseStream> cin, const FileName& path) {
+          g_dirlight_direction = normalize(cin->getVec3fa());
+          g_dirlight_intensity = cin->getVec3fa();
+        }, "--directionallight x y z r g b: adds a directional light with direction xyz and intensity rgb");
+      registerOptionAlias("directionallight","dirlight");
       
-      /* rtcore configuration */
-      else if (tag == "-rtcore")
-        g_rtcore += "," + cin->getString();
-
-      /* number of threads to use */
-      else if (tag == "-threads")
-        g_numThreads = cin->getInt();
-
-      /* skip unknown command line parameter */
-      else {
-        std::cerr << "unknown command line parameter: " << tag << " ";
-        while (cin->peek() != "" && cin->peek()[0] != '-') std::cerr << cin->getString() << " ";
-        std::cerr << std::endl;
-      }
+      /* set default camera */
+      camera.from = Vec3fa(-3,3,3);
+      camera.to = Vec3fa(0,1,0);
+      camera.up = Vec3fa(0,1,0);
     }
-  }
 
-  void renderBenchmark(const FileName& fileName)
-  {
-    resize(g_width,g_height);
-    AffineSpace3fa pixel2world = g_camera.pixel2world(g_width,g_height);
-
-    double dt = 0.0f;
-    size_t numTotalFrames = g_skipBenchmarkFrames + g_numBenchmarkFrames;
-    for (size_t i=0; i<numTotalFrames; i++) 
+    void postParseCommandLine() 
     {
-      double t0 = getSeconds();
-      render(0.0f,pixel2world.l.vx,pixel2world.l.vy,pixel2world.l.vz,pixel2world.p);
-      double t1 = getSeconds();
-      std::cout << "frame [" << i << " / " << numTotalFrames << "] ";
-      std::cout << 1.0/(t1-t0) << "fps ";
-      if (i < g_skipBenchmarkFrames) std::cout << "(skipped)";
-      std::cout << std::endl;
-      if (i >= g_skipBenchmarkFrames) dt += t1-t0;
-    }
-    std::cout << "frame [" << g_skipBenchmarkFrames << " - " << numTotalFrames << "] " << std::flush;
-    std::cout << double(g_numBenchmarkFrames)/dt << "fps " << std::endl;
-    std::cout << "BENCHMARK_RENDER " << double(g_numBenchmarkFrames)/dt << std::endl;
-  }
+      addHairySphere(obj_scene,Vec3fa(0,1.5f,0),1.5f);
+      addGroundPlane(obj_scene,Vec3fa(-10,0,-10),Vec3fa(-10,0,+10),Vec3fa(+10,0,-10),Vec3fa(+10,0,+10));
 
-  void renderToFile(const FileName& fileName)
-  {
-    resize(g_width,g_height);
-    AffineSpace3fa pixel2world = g_camera.pixel2world(g_width,g_height);
-
-    render(0.0f,
-	   pixel2world.l.vx,
-	   pixel2world.l.vy,
-	   pixel2world.l.vz,
-	   pixel2world.p);
-    
-    void* ptr = map();
-    Ref<Image> image = new Image4uc(g_width, g_height, (Col4uc*)ptr);
-    storeImage(image, fileName);
-    unmap();
-    cleanup();
-  }
-
-  /* main function in embree namespace */
-  int main(int argc, char** argv) 
-  {
-    /* for best performance set FTZ and DAZ flags in MXCSR control and status register */
-    _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
-    _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
-
-    g_camera.from = Vec3fa(3.21034f,0.320831f,-0.162478f);
-    g_camera.to   = Vec3fa(2.57003f,0.524887f, 0.163145f);
-
-    g_camera.from = Vec3fa(-3,3,3);
-    g_camera.to = Vec3fa(0,1,0);
-    g_camera.up = Vec3fa(0,1,0);
-
-    /* create stream for parsing */
-    Ref<ParseStream> stream = new ParseStream(new CommandLineStream(argc, argv));
-
-    /* parse command line */  
-    parseCommandLine(stream, FileName());
-    if (g_numThreads) 
-      g_rtcore += ",threads=" + toString(g_numThreads);
-
-    /* load scene */
-    if (sceneFilename.str() != "" && sceneFilename.str() != "none")
-      g_scene->add(SceneGraph::load(sceneFilename));
-    
-    /* convert scene graph to OBJ scene */
-    g_obj_scene.add(g_scene.dynamicCast<SceneGraph::Node>(),TutorialScene::INSTANCING_NONE);
-    g_scene = nullptr;
-    
-    /* if scene is empty, create default scene */
-    if (g_obj_scene.geometries.size() == 0) {
-      addHairySphere(g_obj_scene,Vec3fa(0,1.5f,0),1.5f);
-      addGroundPlane(g_obj_scene,Vec3fa(-10,0,-10),Vec3fa(-10,0,+10),Vec3fa(+10,0,-10),Vec3fa(+10,0,+10));
+      /* convert model */
+      obj_scene.add(scene.dynamicCast<SceneGraph::Node>(),(TutorialScene::InstancingMode)0); 
+      scene = nullptr;
+      
+      /* send model */
+      set_scene(&obj_scene);
     }
 
-    /* send model */
-    set_scene(&g_obj_scene);
+    TutorialScene obj_scene;
+    Ref<SceneGraph::GroupNode> scene;
+  };
 
-    /* initialize ray tracing core */
-    init(g_rtcore.c_str());
-    
-    /* benchmark mode */
-    if (g_numBenchmarkFrames)
-      renderBenchmark(outFilename);
-    
-    /* render to disk */
-    if (outFilename.str() != "") 
-      renderToFile(outFilename);
-
-    /* interactive mode */
-    if (g_interactive) {
-      initWindowState(argc,argv,tutorialName, g_width, g_height, g_fullscreen);
-      enterWindowRunLoop();
-    }
-    
-    return 0;
-  }
 }
 
-int main(int argc, char** argv)
-{
-  try {
-    return embree::main(argc, argv);
-  }
-  catch (const std::exception& e) {
-    std::cout << "Error: " << e.what() << std::endl;
-    return 1;
-  }
-  catch (...) {
-    std::cout << "Error: unknown exception caught." << std::endl;
-    return 1;
-  }
+int main(int argc, char** argv) {
+  return Tutorial().main(argc,argv);
 }

@@ -102,86 +102,75 @@ namespace embree
     /// Loads and Stores
     ////////////////////////////////////////////////////////////////////////////////
 
-    static __forceinline vfloat16 load( const float* const ptr) {
+    static __forceinline vfloat16 load( const void* const ptr) {
 #if defined(__AVX512F__)
-      return _mm512_load_ps(ptr); 
+      return _mm512_load_ps((float*)ptr); 
 #else
-      return _mm512_extload_ps(ptr,_MM_UPCONV_PS_NONE,_MM_BROADCAST_16X16,_MM_HINT_NONE);  
+      return _mm512_extload_ps((float*)ptr,_MM_UPCONV_PS_NONE,_MM_BROADCAST_16X16,_MM_HINT_NONE);  
 #endif
     }
-
-
-    static __forceinline vfloat16 loadu(const float* const ptr) {
+    static __forceinline vfloat16 loadu(const void* const ptr) {
 #if defined(__AVX512F__)
-      return _mm512_loadu_ps(ptr); 
+      return _mm512_loadu_ps((float*)ptr); 
 #else
+      float* fptr = (float*) ptr;
       vfloat16 r = vfloat16::undefined();
-      r =_mm512_extloadunpacklo_ps(r, ptr, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);
-      return _mm512_extloadunpackhi_ps(r, ptr+16, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);  
+      r =_mm512_extloadunpacklo_ps(r, fptr, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);
+      return _mm512_extloadunpackhi_ps(r, fptr+16, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);  
 #endif
     }
 
-    static __forceinline vfloat16 loadu(vfloat16 &r, const vboolf16& mask, const float *const ptr) {
+    static __forceinline vfloat16 loadu(vfloat16& r, const vboolf16& mask, const void *const ptr) 
+    {
 #if defined(__AVX512F__)
-      return  _mm512_mask_expandloadu_ps(r,mask,ptr);
+      return  _mm512_mask_expandloadu_ps(r,mask,(float*)ptr);
 #else
-      r =_mm512_mask_extloadunpacklo_ps(r, mask,ptr, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);
-      r = _mm512_mask_extloadunpackhi_ps(r, mask, ptr+16, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);
+      float* fptr = (float*) ptr;
+      r = _mm512_mask_extloadunpacklo_ps(r, mask, fptr   , _MM_UPCONV_PS_NONE, _MM_HINT_NONE);
+      r = _mm512_mask_extloadunpackhi_ps(r, mask, fptr+16, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);
       return r;
 #endif
     }
-
-    static __forceinline vfloat16 loadu(const vboolf16& mask, const float *const ptr) {
+    static __forceinline vfloat16 loadu(const vboolf16& mask, const void *const ptr) {
       vfloat16 r = vfloat16::undefined();
-      return vfloat16::loadu(r,mask,ptr);
+      return vfloat16::loadu(r,mask,(float*)ptr);
     }
 
-    static __forceinline void store(vfloat16* const ptr, const vfloat16& v) {
+    static __forceinline void store(void* const ptr, const vfloat16& v) {
 #if defined(__AVX512F__)
-      _mm512_store_ps(ptr,v);
+      _mm512_store_ps((float*)ptr,v);
 #else
-      _mm512_extstore_ps(ptr,v,_MM_DOWNCONV_PS_NONE,0);
+      _mm512_extstore_ps((float*)ptr,v,_MM_DOWNCONV_PS_NONE,0);
+#endif
+    }
+    static __forceinline void storeu(void* const ptr, const vfloat16& v ) {
+#if defined(__AVX512F__)
+      _mm512_storeu_ps((float*)ptr,v);
+#else
+      float* fptr = (float*) ptr;
+      _mm512_extpackstorelo_ps(fptr+0  ,v, _MM_DOWNCONV_PS_NONE , 0);
+      _mm512_extpackstorehi_ps(fptr+16 ,v, _MM_DOWNCONV_PS_NONE , 0);
 #endif
     }
 
-    static __forceinline void store(float* const ptr, const vfloat16& v) {
-      vfloat16::store((vfloat16*)ptr,v);
-    }
-
-
-    static __forceinline void store(const vboolf16& mask, vfloat16* const ptr, const vfloat16& v) {
+    static __forceinline void store(const vboolf16& mask, void* const ptr, const vfloat16& v) {
 #if defined(__AVX512F__)
-      _mm512_mask_store_ps(ptr,mask,v);
+      _mm512_mask_store_ps((float*)ptr,mask,v);
 #else
-      _mm512_mask_extstore_ps(ptr,mask,v,_MM_DOWNCONV_PS_NONE,0);
+      _mm512_mask_extstore_ps((float*)ptr,mask,v,_MM_DOWNCONV_PS_NONE,0);
 #endif
     }
-
-    static __forceinline void store(const vboolf16& mask, float* const ptr, const vfloat16& v) {
-      vfloat16::store(mask,(vfloat16*)ptr,v);
-    }
-
-
-
-    static __forceinline void storeu(float* const ptr, const vfloat16& v ) {
+    static __forceinline void storeu(const vboolf16& mask, void* ptr, const vfloat16& v ) {
 #if defined(__AVX512F__)
-      _mm512_storeu_ps(ptr,v);
+      _mm512_mask_storeu_ps((float*)ptr,mask,v);
 #else
-      _mm512_extpackstorelo_ps(ptr+0  ,v, _MM_DOWNCONV_PS_NONE , 0);
-      _mm512_extpackstorehi_ps(ptr+16 ,v, _MM_DOWNCONV_PS_NONE , 0);
-#endif
-    }
-
-    static __forceinline void storeu(const vboolf16& mask, float* ptr, const vfloat16& v ) {
-#if defined(__AVX512F__)
-      _mm512_mask_storeu_ps(ptr,mask,v);
-#else
+      float* fptr = (float*) ptr;
       vfloat16 r = vfloat16::undefined();
-      r = _mm512_extloadunpacklo_ps(r, ptr,    _MM_UPCONV_PS_NONE, _MM_HINT_NONE);
-      r = _mm512_extloadunpackhi_ps(r, ptr+16, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);  
+      r = _mm512_extloadunpacklo_ps(r, fptr,    _MM_UPCONV_PS_NONE, _MM_HINT_NONE);
+      r = _mm512_extloadunpackhi_ps(r, fptr+16, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);  
       r = _mm512_mask_blend_ps(mask,r,v);
-      _mm512_extpackstorelo_ps(ptr,    r, _MM_DOWNCONV_PS_NONE , 0);
-      _mm512_extpackstorehi_ps(ptr+16 ,r, _MM_DOWNCONV_PS_NONE , 0);
+      _mm512_extpackstorelo_ps(fptr,    r, _MM_DOWNCONV_PS_NONE , 0);
+      _mm512_extpackstorehi_ps(fptr+16 ,r, _MM_DOWNCONV_PS_NONE , 0);
 #endif
     }
 

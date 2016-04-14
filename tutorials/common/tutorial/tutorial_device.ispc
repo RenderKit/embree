@@ -31,12 +31,12 @@ extern uniform float g_debug;
 renderTileFunc renderTile;
 
 /* renders a single pixel with eyelight shading */
-Vec3f renderPixelEyeLight(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
+Vec3f renderPixelEyeLight(float x, float y, const uniform ISPCCamera& camera)
 {
   /* initialize ray */
   RTCRay ray;
-  ray.org = p;
-  ray.dir = normalize(x*vx + y*vy + vz);
+  ray.org = make_Vec3f(camera.xfm.p);
+  ray.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -57,10 +57,7 @@ void renderTileEyeLight(uniform int taskIndex,
                         const uniform int width,
                         const uniform int height, 
                         const uniform float time,
-                        const uniform Vec3f& vx, 
-                        const uniform Vec3f& vy, 
-                        const uniform Vec3f& vz, 
-                        const uniform Vec3f& p,
+                        const uniform ISPCCamera& camera,
                         const uniform int numTilesX, 
                         const uniform int numTilesY)
 {
@@ -74,7 +71,7 @@ void renderTileEyeLight(uniform int taskIndex,
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
-    Vec3f color = renderPixelEyeLight(x,y,vx,vy,vz,p);
+    Vec3f color = renderPixelEyeLight(x,y,camera);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -85,12 +82,12 @@ void renderTileEyeLight(uniform int taskIndex,
 }
 
 /* renders a single pixel with wireframe shading */
-Vec3f renderPixelWireframe(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
+Vec3f renderPixelWireframe(float x, float y, const uniform ISPCCamera& camera)
 {
   /* initialize ray */
   RTCRay ray;
-  ray.org = p;
-  ray.dir = normalize(x*vx + y*vy + vz);
+  ray.org = make_Vec3f(camera.xfm.p);
+  ray.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -120,10 +117,7 @@ void renderTileWireframe(uniform int taskIndex,
                          const uniform int width,
                          const uniform int height, 
                          const uniform float time,
-                         const uniform Vec3f& vx, 
-                         const uniform Vec3f& vy, 
-                         const uniform Vec3f& vz, 
-                         const uniform Vec3f& p,
+                         const uniform ISPCCamera& camera,
                          const uniform int numTilesX, 
                          const uniform int numTilesY)
 {
@@ -137,7 +131,7 @@ void renderTileWireframe(uniform int taskIndex,
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
-    Vec3f color = renderPixelWireframe(x,y,vx,vy,vz,p);
+    Vec3f color = renderPixelWireframe(x,y,camera);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -148,12 +142,12 @@ void renderTileWireframe(uniform int taskIndex,
 }
 
 /* renders a single pixel with UV shading */
-Vec3f renderPixelUV(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
+Vec3f renderPixelUV(float x, float y, const uniform ISPCCamera& camera)
 {
   /* initialize ray */
   RTCRay ray;
-  ray.org = p;
-  ray.dir = normalize(x*vx + y*vy + vz);
+  ray.org = make_Vec3f(camera.xfm.p);
+  ray.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -174,10 +168,7 @@ void renderTileUV(uniform int taskIndex,
                   const uniform int width,
                   const uniform int height, 
                   const uniform float time,
-                  const uniform Vec3f& vx, 
-                  const uniform Vec3f& vy, 
-                  const uniform Vec3f& vz, 
-                  const uniform Vec3f& p,
+                  const uniform ISPCCamera& camera,
                   const uniform int numTilesX, 
                   const uniform int numTilesY)
 {
@@ -191,7 +182,7 @@ void renderTileUV(uniform int taskIndex,
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
-    Vec3f color = renderPixelUV(x,y,vx,vy,vz,p);
+    Vec3f color = renderPixelUV(x,y,camera);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -202,12 +193,12 @@ void renderTileUV(uniform int taskIndex,
 }
 
 /* renders a single pixel with geometry normal shading */
-Vec3f renderPixelNg(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
+Vec3f renderPixelNg(float x, float y, const uniform ISPCCamera& camera)
 {
   /* initialize ray */
   RTCRay ray;
-  ray.org = p;
-  ray.dir = normalize(x*vx + y*vy + vz);
+  ray.org = make_Vec3f(camera.xfm.p);
+  ray.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -229,10 +220,7 @@ void renderTileNg(uniform int taskIndex,
                   const uniform int width,
                   const uniform int height, 
                   const uniform float time,
-                  const uniform Vec3f& vx, 
-                  const uniform Vec3f& vy, 
-                  const uniform Vec3f& vz, 
-                  const uniform Vec3f& p,
+                  const uniform ISPCCamera& camera,
                   const uniform int numTilesX, 
                   const uniform int numTilesY)
 {
@@ -246,7 +234,7 @@ void renderTileNg(uniform int taskIndex,
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
-    Vec3f color = renderPixelNg(x,y,vx,vy,vz,p);
+    Vec3f color = renderPixelNg(x,y,camera);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -266,12 +254,12 @@ Vec3f randomColor(const int ID)
 }
 
 /* geometry ID shading */
-Vec3f renderPixelGeomID(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
+Vec3f renderPixelGeomID(float x, float y, const uniform ISPCCamera& camera)
 {
   /* initialize ray */
   RTCRay ray;
-  ray.org = p;
-  ray.dir = normalize(x*vx + y*vy + vz);
+  ray.org = make_Vec3f(camera.xfm.p);
+  ray.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -292,10 +280,7 @@ void renderTileGeomID(uniform int taskIndex,
                       const uniform int width,
                       const uniform int height, 
                       const uniform float time,
-                      const uniform Vec3f& vx, 
-                      const uniform Vec3f& vy, 
-                      const uniform Vec3f& vz, 
-                      const uniform Vec3f& p,
+                      const uniform ISPCCamera& camera,
                       const uniform int numTilesX, 
                       const uniform int numTilesY)
 {
@@ -309,7 +294,7 @@ void renderTileGeomID(uniform int taskIndex,
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
-    Vec3f color = renderPixelGeomID(x,y,vx,vy,vz,p);
+    Vec3f color = renderPixelGeomID(x,y,camera);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -320,12 +305,12 @@ void renderTileGeomID(uniform int taskIndex,
 }
 
 /* geometry ID and primitive ID shading */
-Vec3f renderPixelGeomIDPrimID(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
+Vec3f renderPixelGeomIDPrimID(float x, float y, const uniform ISPCCamera& camera)
 {
   /* initialize ray */
   RTCRay ray;
-  ray.org = p;
-  ray.dir = normalize(x*vx + y*vy + vz);
+  ray.org = make_Vec3f(camera.xfm.p);
+  ray.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -346,10 +331,7 @@ void renderTileGeomIDPrimID(uniform int taskIndex,
                             const uniform int width,
                             const uniform int height, 
                             const uniform float time,
-                            const uniform Vec3f& vx, 
-                            const uniform Vec3f& vy, 
-                            const uniform Vec3f& vz, 
-                            const uniform Vec3f& p,
+                            const uniform ISPCCamera& camera,
                             const uniform int numTilesX, 
                             const uniform int numTilesY)
 {
@@ -363,7 +345,7 @@ void renderTileGeomIDPrimID(uniform int taskIndex,
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
-    Vec3f color = renderPixelGeomIDPrimID(x,y,vx,vy,vz,p);
+    Vec3f color = renderPixelGeomIDPrimID(x,y,camera);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -374,12 +356,12 @@ void renderTileGeomIDPrimID(uniform int taskIndex,
 }
 
 /* vizualizes the traversal cost of a pixel */
-Vec3f renderPixelCycles(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
+Vec3f renderPixelCycles(float x, float y, const uniform ISPCCamera& camera)
 {
   /* initialize ray */
   RTCRay ray;
-  ray.org = p;
-  ray.dir = normalize(x*vx + y*vy + vz);
+  ray.org = make_Vec3f(camera.xfm.p);
+  ray.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -401,10 +383,7 @@ void renderTileCycles(uniform int taskIndex,
                       const uniform int width,
                       const uniform int height, 
                       const uniform float time,
-                      const uniform Vec3f& vx, 
-                      const uniform Vec3f& vy, 
-                      const uniform Vec3f& vz, 
-                        const uniform Vec3f& p,
+                      const uniform ISPCCamera& camera,
                       const uniform int numTilesX, 
                       const uniform int numTilesY)
 {
@@ -418,7 +397,7 @@ void renderTileCycles(uniform int taskIndex,
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
-    Vec3f color = renderPixelCycles(x,y,vx,vy,vz,p);
+    Vec3f color = renderPixelCycles(x,y,camera);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -429,12 +408,12 @@ void renderTileCycles(uniform int taskIndex,
 }
 
 /* renders a single pixel with UV shading and shoot ray 16 times for measurements */
-Vec3f renderPixelUV16(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
+Vec3f renderPixelUV16(float x, float y, const uniform ISPCCamera& camera)
 {
   /* initialize ray */
   RTCRay ray;
-  ray.org = p;
-  ray.dir = normalize(x*vx + y*vy + vz);
+  ray.org = make_Vec3f(camera.xfm.p);
+  ray.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -458,10 +437,7 @@ void renderTileUV16(uniform int taskIndex,
                     const uniform int width,
                     const uniform int height, 
                     const uniform float time,
-                    const uniform Vec3f& vx, 
-                    const uniform Vec3f& vy, 
-                    const uniform Vec3f& vz, 
-                    const uniform Vec3f& p,
+                    const uniform ISPCCamera& camera,
                     const uniform int numTilesX, 
                     const uniform int numTilesY)
 {
@@ -475,7 +451,7 @@ void renderTileUV16(uniform int taskIndex,
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
-    Vec3f color = renderPixelUV16(x,y,vx,vy,vz,p);
+    Vec3f color = renderPixelUV16(x,y,camera);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -486,12 +462,12 @@ void renderTileUV16(uniform int taskIndex,
 }
 
 /* renders a single pixel with ambient occlusion */
-Vec3f renderPixelAmbientOcclusion(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
+Vec3f renderPixelAmbientOcclusion(float x, float y, const uniform ISPCCamera& camera)
 {
   /* initialize ray */
   RTCRay ray;
-  ray.org = p;
-  ray.dir = normalize(x*vx + y*vy + vz);
+  ray.org = make_Vec3f(camera.xfm.p);
+  ray.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -556,10 +532,7 @@ void renderTileAmbientOcclusion(uniform int taskIndex,
                                 const uniform int width,
                                 const uniform int height, 
                                 const uniform float time,
-                                const uniform Vec3f& vx, 
-                                const uniform Vec3f& vy, 
-                                const uniform Vec3f& vz, 
-                                const uniform Vec3f& p,
+                                const uniform ISPCCamera& camera,
                                 const uniform int numTilesX, 
                                 const uniform int numTilesY)
 {
@@ -573,7 +546,7 @@ void renderTileAmbientOcclusion(uniform int taskIndex,
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
-    Vec3f color = renderPixelAmbientOcclusion(x,y,vx,vy,vz,p);
+    Vec3f color = renderPixelAmbientOcclusion(x,y,camera);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -585,12 +558,12 @@ void renderTileAmbientOcclusion(uniform int taskIndex,
 
 /* differential visualization */
 static uniform int differentialMode = 0;
-Vec3f renderPixelDifferentials(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
+Vec3f renderPixelDifferentials(float x, float y, const uniform ISPCCamera& camera)
 {
   /* initialize ray */
   RTCRay ray;
-  ray.org = p;
-  ray.dir = normalize(x*vx + y*vy + vz);
+  ray.org = make_Vec3f(camera.xfm.p);
+  ray.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -667,10 +640,7 @@ void renderTileDifferentials(uniform int taskIndex,
                              const uniform int width,
                              const uniform int height, 
                              const uniform float time,
-                             const uniform Vec3f& vx, 
-                             const uniform Vec3f& vy, 
-                             const uniform Vec3f& vz, 
-                             const uniform Vec3f& p,
+                             const uniform ISPCCamera& camera,
                              const uniform int numTilesX, 
                              const uniform int numTilesY)
 {
@@ -684,7 +654,7 @@ void renderTileDifferentials(uniform int taskIndex,
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
-    Vec3f color = renderPixelDifferentials(x,y,vx,vy,vz,p);
+    Vec3f color = renderPixelDifferentials(x,y,camera);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -697,16 +667,13 @@ void renderTileDifferentials(uniform int taskIndex,
 /* returns the point seen through specified pixel */
 export uniform bool device_pick(const uniform float x,
                                 const uniform float y, 
-                                const uniform Vec3f& vx, 
-                                const uniform Vec3f& vy, 
-                                const uniform Vec3f& vz, 
-                                const uniform Vec3f& p,
+                                const uniform ISPCCamera& camera,
                                 uniform Vec3f& hitPos)
 {
   /* initialize ray */
   uniform RTCRay1 ray;
-  ray.org = p;
-  ray.dir = normalize(x*vx + y*vy + vz);
+  ray.org = make_Vec3f(camera.xfm.p);
+  ray.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;

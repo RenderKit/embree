@@ -21,8 +21,10 @@
 
 #define USE_INTERFACE 0 // 0 = stream, 1 = single rays/packets, 2 = single rays/packets using stream interface
 #define AMBIENT_OCCLUSION_SAMPLES 64
-//#define rtcOccluded rtcIntersect // FIXME
-//#define rtcOccludedN rtcIntersectN // FIXME
+//#define rtcOccluded rtcIntersect
+//#define rtcOccluded1N rtcIntersect1N
+//#define RAYN_FLAGS RTC_RAYN_COHERENT
+#define RAYN_FLAGS RTC_RAYN_INCOHERENT
 
 extern "C" ISPCScene* g_ispc_scene;
 
@@ -162,6 +164,8 @@ RTCScene convertScene(ISPCScene* scene_in)
 /* renders a single pixel casting with ambient occlusion */
 Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
 {
+  RTCRay rays[AMBIENT_OCCLUSION_SAMPLES];
+
   Vec3fa Ng = normalize(ray.Ng);
   if (dot(ray.dir,Ng) > 0.0f) Ng = neg(Ng);
 
@@ -171,11 +175,10 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
   float intensity = 0;
   Vec3fa hitPos = ray.org + ray.tfar * ray.dir;
 
-  RTCRay rays[AMBIENT_OCCLUSION_SAMPLES];
-
   RandomSampler sampler;
   RandomSampler_init(sampler,x,y,0);
-  
+
+  /* enable only valid rays */
   for (int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
   {
     /* sample random direction */
@@ -187,6 +190,7 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
     RTCRay& shadow = rays[i];
     shadow.org = hitPos;
     shadow.dir = dir.v;
+    { shadow.tnear = pos_inf; shadow.tfar = neg_inf; } // invalidate inactive rays
     shadow.tnear = 0.001f;
     shadow.tfar = inf;
     shadow.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -197,13 +201,13 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
   
   /* trace occlusion rays */
 #if USE_INTERFACE == 0
-  rtcOccludedN(g_scene,rays,AMBIENT_OCCLUSION_SAMPLES,sizeof(RTCRay),0);
+  rtcOccluded1N(g_scene,rays,AMBIENT_OCCLUSION_SAMPLES,sizeof(RTCRay),RAYN_FLAGS);
 #elif USE_INTERFACE == 1
   for (size_t i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
     rtcOccluded(g_scene,rays[i]);
 #else
   for (size_t i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
-    rtcOccludedN(g_scene,&rays[i],1,sizeof(RTCRay),0);
+    rtcOccluded1N(g_scene,&rays[i],1,sizeof(RTCRay),RAYN_FLAGS);
 #endif
 
   /* accumulate illumination */
@@ -222,10 +226,7 @@ void renderTileStandard(int taskIndex,
                         const int width,
                         const int height, 
                         const float time,
-                        const Vec3fa& vx, 
-                        const Vec3fa& vy, 
-                        const Vec3fa& vz, 
-                        const Vec3fa& p,
+                        const ISPCCamera& camera,
                         const int numTilesX, 
                         const int numTilesY)
 {
@@ -240,15 +241,20 @@ void renderTileStandard(int taskIndex,
 
   /* generate stream of primary rays */
   int N = 0;
-  for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
+  for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
   {
+    /* ISPC workaround for mask == 0 */
+    if (all(1 == 0)) continue;
+
     RandomSampler sampler;
     RandomSampler_init(sampler, x, y, 0);
     
     /* initialize ray */
     RTCRay& ray = rays[N++];
-    ray.org = p; // FIXME: make invalid rays empty
-    ray.dir = normalize(x*vx + y*vy + vz);
+
+    ray.org = Vec3fa(camera.xfm.p); // FIXME: make invalid rays empty
+    ray.dir = Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
+    { ray.tnear = pos_inf; ray.tfar = neg_inf; } // invalidate inactive rays
     ray.tnear = 0.0f;
     ray.tfar = inf;
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -259,26 +265,28 @@ void renderTileStandard(int taskIndex,
 
   /* trace stream of rays */
 #if USE_INTERFACE == 0
-  rtcIntersectN(g_scene,rays,N,sizeof(RTCRay),0);
+  rtcIntersect1N(g_scene,rays,N,sizeof(RTCRay),RAYN_FLAGS);
 #elif USE_INTERFACE == 1
   for (size_t i=0; i<N; i++)
     rtcIntersect(g_scene,rays[i]);
 #else
   for (size_t i=0; i<N; i++)
-    rtcIntersectN(g_scene,&rays[i],1,sizeof(RTCRay),0);
+    rtcIntersect1N(g_scene,&rays[i],1,sizeof(RTCRay),RAYN_FLAGS);
 #endif
 
   /* shade stream of rays */
   N = 0;
-  for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
+  for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
   {
+    /* ISPC workaround for mask == 0 */
+    if (all(1 == 0)) continue;
     RTCRay& ray = rays[N++];
 
     /* eyelight shading */
     Vec3fa color = Vec3fa(0.0f);
     if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
-      //  color = Vec3fa(abs(dot(ray.dir,normalize(ray.Ng))));
-    color = ambientOcclusionShading(x,y,ray);
+      //color = Vec3fa(abs(dot(ray.dir,normalize(ray.Ng))));
+      color = ambientOcclusionShading(x,y,ray);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -289,18 +297,15 @@ void renderTileStandard(int taskIndex,
 }
 
 /* task that renders a single screen tile */
-void renderTileTask(int taskIndex, int* pixels,
+void renderTileTask (int taskIndex, int* pixels,
                          const int width,
                          const int height, 
                          const float time,
-                         const Vec3fa& vx, 
-                         const Vec3fa& vy, 
-                         const Vec3fa& vz, 
-                         const Vec3fa& p,
+                         const ISPCCamera& camera,
                          const int numTilesX, 
                          const int numTilesY)
 {
-  renderTile(taskIndex,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY);
+  renderTile(taskIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
 }
 
 /* called by the C++ code for initialization */
@@ -327,20 +332,20 @@ extern "C" void device_render (int* pixels,
                            const int width,
                            const int height, 
                            const float time,
-                           const Vec3fa& vx, 
-                           const Vec3fa& vy, 
-                           const Vec3fa& vz, 
-                           const Vec3fa& p)
+                           const ISPCCamera& camera)
 {
   /* render image */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  launch_renderTile(numTilesX*numTilesY,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); 
+  parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
+    for (size_t i=range.begin(); i<range.end(); i++)
+      renderTileTask(i,pixels,width,height,time,camera,numTilesX,numTilesY);
+  }); 
 }
 
 /* called by the C++ code for cleanup */
 extern "C" void device_cleanup ()
 {
-  rtcDeleteScene (g_scene);
-  rtcDeleteDevice(g_device);
+  rtcDeleteScene (g_scene); g_scene = nullptr;
+  rtcDeleteDevice(g_device); g_device = nullptr;
 }
