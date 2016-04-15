@@ -55,9 +55,9 @@ typedef void (*RTCIntersectFunc16)(const void* valid, /*!< pointer to valid mask
                                    size_t item        /*!< item to intersect */);
 
 /*! Type of intersect function pointer for stream of rays. */
-typedef void (*RTCIntersectFunc1N)(void* ptr,           /*!< pointer to user data */
+typedef void (*RTCIntersectFunc1M)(void* ptr,           /*!< pointer to user data */
                                    RTCRay** rays,       /*!< pointers to rays to intersect */
-                                   size_t N,            /*!< number of rays in stream */
+                                   size_t M,            /*!< number of rays in stream */
                                    size_t item          /*!< item to intersect */);
 
 /*! Type of intersect function pointer for ray packets of size N. */
@@ -91,9 +91,9 @@ typedef void (*RTCOccludedFunc16) (const void* valid, /*! pointer to valid mask 
                                    size_t item        /*!< item to test for occlusion */);
 
 /*! Type of occlusion function pointer for stream of rays. */
-typedef void (*RTCOccludedFunc1N) (void* ptr,           /*!< pointer to user data */ 
+typedef void (*RTCOccludedFunc1M) (void* ptr,           /*!< pointer to user data */ 
                                   RTCRay** rays,       /*!< pointers to rays to test occlusion */
-                                  size_t N,            /*!< number of rays in stream */  
+                                  size_t M,            /*!< number of rays in stream */  
                                   size_t item          /*!< item to test for occlusion */);
 
 /*! Type of occlusion function pointer for ray packets of size N. */
@@ -158,7 +158,7 @@ RTCORE_API void rtcSetIntersectFunction16 (RTCScene scene, unsigned geomID, RTCI
 /*! Set intersect function for stream of rays. The rtcIntersectN function
  *  will call the passed function for intersecting the user
  *  geometry. */
-RTCORE_API void rtcSetIntersectFunction1N (RTCScene scene, unsigned geomID, RTCIntersectFunc1N intersectN);
+RTCORE_API void rtcSetIntersectFunction1M (RTCScene scene, unsigned geomID, RTCIntersectFunc1M intersectN);
 
 /*! Set intersect function for ray packets of size N. The rtcIntersectN function
  *  will call the passed function for intersecting the user
@@ -188,7 +188,7 @@ RTCORE_API void rtcSetOccludedFunction16 (RTCScene scene, unsigned geomID, RTCOc
 /*! Set occlusion function for a stream of single rays. The rtcOccludedN function
  *  will call the passed function for intersecting the user
  *  geometry. */
-RTCORE_API void rtcSetOccludedFunction1N (RTCScene scene, unsigned geomID, RTCOccludedFunc1N occludedN);
+RTCORE_API void rtcSetOccludedFunction1M (RTCScene scene, unsigned geomID, RTCOccludedFunc1M occludedN);
 
 /*! Set occlusion function for ray packets of size N. The rtcOccludedN function
  *  will call the passed function for intersecting the user

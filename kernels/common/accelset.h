@@ -35,14 +35,14 @@ namespace embree
     typedef RTCIntersectFunc4 IntersectFunc4;
     typedef RTCIntersectFunc8 IntersectFunc8;
     typedef RTCIntersectFunc16 IntersectFunc16;
-    typedef RTCIntersectFunc1N IntersectFunc1N;
+    typedef RTCIntersectFunc1M IntersectFunc1N;
     typedef RTCIntersectFuncN IntersectFuncN;
     
     typedef RTCOccludedFunc OccludedFunc;
     typedef RTCOccludedFunc4 OccludedFunc4;
     typedef RTCOccludedFunc8 OccludedFunc8;
     typedef RTCOccludedFunc16 OccludedFunc16;
-    typedef RTCOccludedFunc1N OccludedFunc1N;
+    typedef RTCOccludedFunc1M OccludedFunc1N;
     typedef RTCOccludedFuncN OccludedFuncN;
 
 #if defined(__SSE__)
