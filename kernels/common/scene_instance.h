@@ -29,7 +29,7 @@ namespace embree
     DEFINE_SYMBOL2(AccelSet::Intersector4,InstanceIntersector4);
     DEFINE_SYMBOL2(AccelSet::Intersector8,InstanceIntersector8);
     DEFINE_SYMBOL2(AccelSet::Intersector16,InstanceIntersector16);
-    DEFINE_SYMBOL2(AccelSet::Intersector1N,InstanceIntersector1N);
+    DEFINE_SYMBOL2(AccelSet::Intersector1M,InstanceIntersector1M);
   };
 
   /*! Instanced acceleration structure */

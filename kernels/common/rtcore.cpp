@@ -1153,7 +1153,7 @@ namespace embree
     RTCORE_TRACE(rtcSetIntersectFunction1M);
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
-    scene->get_locked(geomID)->setIntersectFunction1N(intersect);
+    scene->get_locked(geomID)->setIntersectFunction1M(intersect);
     RTCORE_CATCH_END(scene->device);
   }
 
@@ -1221,7 +1221,7 @@ namespace embree
     RTCORE_TRACE(rtcSetOccludedFunction1M);
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
-    scene->get_locked(geomID)->setOccludedFunction1N(occluded);
+    scene->get_locked(geomID)->setOccludedFunction1M(occluded);
     RTCORE_CATCH_END(scene->device);
   }
 

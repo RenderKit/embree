@@ -29,10 +29,10 @@ namespace embree
       static void occluded (const Instance* instance, Ray& ray, size_t item);
     };
 
-    struct FastInstanceIntersector1N
+    struct FastInstanceIntersector1M
     {
-      static void intersect(const Instance* instance, Ray** rays, size_t N, size_t item);
-      static void occluded (const Instance* instance, Ray** rays, size_t N, size_t item);
+      static void intersect(const Instance* instance, Ray** rays, size_t M, size_t item);
+      static void occluded (const Instance* instance, Ray** rays, size_t M, size_t item);
     };
   }
 }

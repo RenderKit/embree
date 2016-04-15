@@ -89,7 +89,7 @@ namespace embree
           if (unlikely(N == 0)) continue;
 
           /* call user stream intersection function */
-          accel->intersect1N((RTCRay**)rays_filtered,N,prim.primID);
+          accel->intersect1M((RTCRay**)rays_filtered,N,prim.primID);
         }
 
         /* update all contexts */
@@ -132,7 +132,7 @@ namespace embree
           if (unlikely(N == 0)) continue;
 
           /* call user stream occluded function */
-          accel->occluded1N((RTCRay**)rays_filtered,N,prim.primID);
+          accel->occluded1M((RTCRay**)rays_filtered,N,prim.primID);
 
           /* mark occluded rays */
           for (size_t i=0; i<N; i++)

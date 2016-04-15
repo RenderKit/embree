@@ -67,16 +67,16 @@ namespace embree
     
     DEFINE_SET_INTERSECTOR1(InstanceIntersector1,FastInstanceIntersector1);
 
-    void FastInstanceIntersector1N::intersect(const Instance* instance, Ray** rays, size_t N, size_t item)
+    void FastInstanceIntersector1M::intersect(const Instance* instance, Ray** rays, size_t M, size_t item)
     {
-      assert(N<MAX_INTERNAL_STREAM_SIZE);
+      assert(M<MAX_INTERNAL_STREAM_SIZE);
       Vec3fa ray_org[MAX_INTERNAL_STREAM_SIZE];
       Vec3fa ray_dir[MAX_INTERNAL_STREAM_SIZE];
       int ray_geomID[MAX_INTERNAL_STREAM_SIZE];
       int ray_instID[MAX_INTERNAL_STREAM_SIZE];
       AffineSpace3fa world2local = instance->getWorld2Local();
 
-      for (size_t i=0; i<N; i++)
+      for (size_t i=0; i<M; i++)
       {
         if (unlikely(instance->numTimeSteps != 1)) 
           world2local = instance->getWorld2Local(rays[i]->time);
@@ -93,9 +93,9 @@ namespace embree
         rays[i]->instID = instance->id;
       }
 
-      instance->object->intersectN((RTCRay**)rays,N,RTC_RAYN_INCOHERENT);
+      instance->object->intersectN((RTCRay**)rays,M,RTC_RAYN_INCOHERENT);
         
-      for (size_t i=0; i<N; i++)
+      for (size_t i=0; i<M; i++)
       {
         rays[i]->org = ray_org[i];
         rays[i]->dir = ray_dir[i];
@@ -106,14 +106,14 @@ namespace embree
       }
     }
     
-    void FastInstanceIntersector1N::occluded (const Instance* instance, Ray** rays, size_t N, size_t item)
+    void FastInstanceIntersector1M::occluded (const Instance* instance, Ray** rays, size_t M, size_t item)
     {
-      assert(N<MAX_INTERNAL_STREAM_SIZE);
+      assert(M<MAX_INTERNAL_STREAM_SIZE);
       Vec3fa ray_org[MAX_INTERNAL_STREAM_SIZE];
       Vec3fa ray_dir[MAX_INTERNAL_STREAM_SIZE];
       AffineSpace3fa world2local = instance->getWorld2Local();
       
-      for (size_t i=0; i<N; i++)
+      for (size_t i=0; i<M; i++)
       {
         if (unlikely(instance->numTimeSteps != 1)) 
           world2local = instance->getWorld2Local(rays[i]->time);
@@ -127,15 +127,15 @@ namespace embree
         rays[i]->instID = instance->id;
       }
 
-      instance->object->occludedN((RTCRay**)rays,N,RTC_RAYN_INCOHERENT);
+      instance->object->occludedN((RTCRay**)rays,M,RTC_RAYN_INCOHERENT);
         
-      for (size_t i=0; i<N; i++)
+      for (size_t i=0; i<M; i++)
       {
         rays[i]->org = ray_org[i];
         rays[i]->dir = ray_dir[i];
       }
     }
 
-    DEFINE_SET_INTERSECTOR1N(InstanceIntersector1N,FastInstanceIntersector1N);
+    DEFINE_SET_INTERSECTOR1M(InstanceIntersector1M,FastInstanceIntersector1M);
   }
 }

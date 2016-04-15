@@ -138,12 +138,12 @@ namespace embree
 	bool ispc;
       };
 
-      struct Intersector1N
+      struct Intersector1M
       {
-        Intersector1N (ErrorFunc error = nullptr) 
+        Intersector1M (ErrorFunc error = nullptr) 
         : intersect((IntersectFunc1M)error), occluded((OccludedFunc1M)error), name(nullptr) {}
         
-        Intersector1N (IntersectFunc1M intersect, OccludedFunc1M occluded, const char* name)
+        Intersector1M (IntersectFunc1M intersect, OccludedFunc1M occluded, const char* name)
         : intersect(intersect), occluded(occluded), name(name) {}
         
         operator bool() const { return name; }
@@ -299,11 +299,11 @@ namespace embree
 #endif
 
       /*! Intersects a stream of rays with the scene. */
-      __forceinline void intersect1N (RTCRay** rays, size_t N, size_t item) 
+      __forceinline void intersect1M (RTCRay** rays, size_t N, size_t item) 
       {
         assert(item < size());
-        if (intersectors.intersector1N.intersect) { // Intersect1N callback is optional
-          intersectors.intersector1N.intersect(intersectors.ptr,rays,N,item);
+        if (intersectors.intersector1M.intersect) { // Intersect1N callback is optional
+          intersectors.intersector1M.intersect(intersectors.ptr,rays,N,item);
         }
         else if (N == 1) {
           int mask = -1;
@@ -403,10 +403,10 @@ namespace embree
 #endif
 
       /*! Tests if a stream of rays is occluded by the scene. */
-      __forceinline void occluded1N (RTCRay** rays, size_t N, size_t item) 
+      __forceinline void occluded1M (RTCRay** rays, size_t N, size_t item) 
       {
-        if (likely(intersectors.intersector1N.occluded)) { // Occluded1N callback is optional
-          intersectors.intersector1N.occluded(intersectors.ptr,rays,N,item);
+        if (likely(intersectors.intersector1M.occluded)) { // Occluded1N callback is optional
+          intersectors.intersector1M.occluded(intersectors.ptr,rays,N,item);
         }
         else if (N == 1) {
           int mask = -1;
@@ -438,7 +438,7 @@ namespace embree
         Intersector4 intersector4;
         Intersector8 intersector8;
         Intersector16 intersector16;
-        Intersector1N intersector1N;
+        Intersector1M intersector1M;
         IntersectorN intersectorN;
       } intersectors;
   };
@@ -466,8 +466,8 @@ namespace embree
                                  TOSTRING(isa) "::" TOSTRING(symbol),\
 				 false);  
 
-#define DEFINE_SET_INTERSECTOR1N(symbol,intersector)                     \
-  AccelSet::Intersector1N symbol((AccelSet::IntersectFunc1M)intersector::intersect, \
+#define DEFINE_SET_INTERSECTOR1M(symbol,intersector)                     \
+  AccelSet::Intersector1M symbol((AccelSet::IntersectFunc1M)intersector::intersect, \
                                  (AccelSet::OccludedFunc1M )intersector::occluded, \
                                  TOSTRING(isa) "::" TOSTRING(symbol));
 

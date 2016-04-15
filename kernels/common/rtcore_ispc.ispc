@@ -124,14 +124,14 @@ extern "C" void ispcSetIntersectFunction1 (RTCScene scene, uniform unsigned int 
 extern "C" void ispcSetIntersectFunction4 (RTCScene scene, uniform unsigned int geomID, void* uniform intersect); 
 extern "C" void ispcSetIntersectFunction8 (RTCScene scene, uniform unsigned int geomID, void* uniform intersect);
 extern "C" void ispcSetIntersectFunction16 (RTCScene scene, uniform unsigned int geomID, void* uniform intersect); 
-extern "C" void ispcSetIntersectFunction1N (RTCScene scene, uniform unsigned int geomID, void* uniform intersect); 
+extern "C" void ispcSetIntersectFunction1M (RTCScene scene, uniform unsigned int geomID, void* uniform intersect); 
 extern "C" void ispcSetIntersectFunctionN (RTCScene scene, uniform unsigned int geomID, void* uniform intersect); 
 
 extern "C" void ispcSetOccludedFunction1 (RTCScene scene, uniform unsigned int geomID, void* uniform occluded);
 extern "C" void ispcSetOccludedFunction4 (RTCScene scene, uniform unsigned int geomID, void* uniform occluded);
 extern "C" void ispcSetOccludedFunction8 (RTCScene scene, uniform unsigned int geomID, void* uniform occluded);
 extern "C" void ispcSetOccludedFunction16 (RTCScene scene, uniform unsigned int geomID, void* uniform occluded);
-extern "C" void ispcSetOccludedFunction1N (RTCScene scene, uniform unsigned int geomID, void* uniform occluded);
+extern "C" void ispcSetOccludedFunction1M (RTCScene scene, uniform unsigned int geomID, void* uniform occluded);
 extern "C" void ispcSetOccludedFunctionN (RTCScene scene, uniform unsigned int geomID, void* uniform occluded);
 
 extern "C" void ispcSetIntersectionFilterFunction1 (RTCScene scene, uniform unsigned int geomID, void* uniform filter);
@@ -500,7 +500,7 @@ void rtcSetIntersectFunction (RTCScene scene, uniform unsigned int geomID, unifo
 }
 
 void rtcSetIntersectFunction1M (RTCScene scene, uniform unsigned int geomID, uniform RTCIntersectFunc1M intersect) {
-  ispcSetIntersectFunction1N(scene,geomID,intersect);
+  ispcSetIntersectFunction1M(scene,geomID,intersect);
 }
 
 void rtcSetIntersectFunctionN (RTCScene scene, uniform unsigned int geomID, uniform RTCIntersectFuncN intersect) {
@@ -522,7 +522,7 @@ void rtcSetOccludedFunction (RTCScene scene, uniform unsigned int geomID, unifor
 }
 
 void rtcSetOccludedFunction1M (RTCScene scene, uniform unsigned int geomID, uniform RTCOccludedFunc1M occluded) {
-  ispcSetOccludedFunction1N(scene,geomID,occluded);
+  ispcSetOccludedFunction1M(scene,geomID,occluded);
 }
 
 void rtcSetOccludedFunctionN (RTCScene scene, uniform unsigned int geomID, uniform RTCOccludedFuncN occluded) {

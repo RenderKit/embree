@@ -24,7 +24,7 @@ namespace embree
   DECLARE_SYMBOL2(AccelSet::Intersector4,InstanceIntersector4);
   DECLARE_SYMBOL2(AccelSet::Intersector8,InstanceIntersector8);
   DECLARE_SYMBOL2(AccelSet::Intersector16,InstanceIntersector16);
-  DECLARE_SYMBOL2(AccelSet::Intersector1N,InstanceIntersector1N);
+  DECLARE_SYMBOL2(AccelSet::Intersector1M,InstanceIntersector1M);
 
   InstanceFactory::InstanceFactory(int features)
   {
@@ -35,7 +35,7 @@ namespace embree
 #else
     SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,InstanceBoundsFunc);
     SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,InstanceIntersector1);
-    SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,InstanceIntersector1N);
+    SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,InstanceIntersector1M);
 #if defined (RTCORE_RAY_PACKETS)
     SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,InstanceIntersector4);
     SELECT_SYMBOL_INIT_AVX_AVX2(features,InstanceIntersector8);
@@ -55,7 +55,7 @@ namespace embree
     intersectors.intersector4 = parent->device->instance_factory->InstanceIntersector4; 
     intersectors.intersector8 = parent->device->instance_factory->InstanceIntersector8; 
     intersectors.intersector16 = parent->device->instance_factory->InstanceIntersector16;
-    intersectors.intersector1N = parent->device->instance_factory->InstanceIntersector1N;
+    intersectors.intersector1M = parent->device->instance_factory->InstanceIntersector1M;
   }
   
   void Instance::setTransform(const AffineSpace3fa& xfm, size_t timeStep)
