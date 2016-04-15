@@ -92,6 +92,13 @@ namespace embree
     
     struct ISPCTriangleMesh
     {
+      ISPCTriangleMesh (int numTriangles, 
+                        int numQuads, 
+                        int numVertices, 
+                        int meshMaterialID) 
+      : geom(TRIANGLE_MESH), positions(nullptr), positions2(nullptr), normals(nullptr), texcoords(nullptr), triangles(nullptr), quads(nullptr), 
+        numVertices(numVertices), numTriangles(numTriangles), numQuads(numQuads), geomID(0), meshMaterialID(meshMaterialID) {}
+
       ISPCTriangleMesh (Ref<TutorialScene::TriangleMesh> in) : geom(TRIANGLE_MESH) 
       {
         positions = in->v.size() ? &in->v[0] : nullptr;
@@ -124,6 +131,10 @@ namespace embree
 
     struct ISPCQuadMesh
     {
+      ISPCQuadMesh () 
+      : geom(QUAD_MESH), positions(nullptr), positions2(nullptr), normals(nullptr), texcoords(nullptr), quads(nullptr), 
+        numVertices(0), numQuads(0), geomID(0), meshMaterialID(0) {}
+
       ISPCQuadMesh (Ref<TutorialScene::QuadMesh> in) : geom(QUAD_MESH) 
       {
         positions = in->v.size() ? &in->v[0] : nullptr;
@@ -152,6 +163,11 @@ namespace embree
 
     struct ISPCSubdivMesh
     {
+      ISPCSubdivMesh (int numVertices, int numFaces, int numEdges, int materialID)
+      : geom(SUBDIV_MESH), positions(nullptr), normals(nullptr), texcoords(nullptr), position_indices(nullptr), normal_indices(nullptr), texcoord_indices(nullptr), verticesPerFace(nullptr), holes(nullptr),
+        subdivlevel(nullptr), edge_creases(nullptr), edge_crease_weights(nullptr), vertex_creases(nullptr), vertex_crease_weights(nullptr), face_offsets(nullptr), 
+        numVertices(numVertices), numFaces(numFaces), numEdges(numEdges), numEdgeCreases(0), numVertexCreases(0), numHoles(0), materialID(materialID), geomID(0) {}
+
       ISPCSubdivMesh (Ref<TutorialScene::SubdivMesh> in) : geom(SUBDIV_MESH) 
       {
         positions = in->positions.size() ? &in->positions[0] : nullptr; // FIXME: use c++11 data() function 
@@ -222,6 +238,10 @@ namespace embree
 
     struct ISPCLineSegments
     {
+      ISPCLineSegments () 
+      : geom(LINE_SEGMENTS), v(nullptr), v2(nullptr), indices(nullptr), 
+        numVertices(0), numSegments(0), materialID(0) {}
+
       ISPCLineSegments (Ref<TutorialScene::LineSegments> in) : geom(LINE_SEGMENTS) 
       {
         v = in->v.data();
@@ -243,6 +263,10 @@ namespace embree
 
     struct ISPCHairSet
     {
+      ISPCHairSet (int numHairs, int numVertices, int materialID)
+      : geom(HAIR_SET), v(nullptr), v2(nullptr), hairs(nullptr),
+        numVertices(numVertices), numHairs(numHairs), materialID(materialID) {}
+
       ISPCHairSet (bool hair, Ref<TutorialScene::HairSet> in) : geom(hair ? HAIR_SET : CURVES) 
       {
         v = in->v.size() ? &in->v[0] : nullptr;
@@ -265,6 +289,9 @@ namespace embree
     struct ISPCInstance
     {
       ALIGNED_STRUCT;
+
+      ISPCInstance () 
+      : geom(INSTANCE), space0(one), space1(one), geomID(0) {}
 
       ISPCInstance (Ref<TutorialScene::Instance> in)
       : geom(INSTANCE), space0(in->space0), space1(in->space1), geomID(in->geomID) {}
@@ -298,6 +325,51 @@ namespace embree
       ISPCGeometry** geometries;
       size_t numGeometries;
     };
+
+    ISPCScene (int numGeometries, 
+               void* materials_in, int numMaterials,
+               void* ambientLights_in, int numAmbientLights,
+               void* pointLights_in, int numPointLights,
+               void* dirLights_in, int numDirectionalLights,
+               void* distantLights_in, int numDistantLights)
+    
+    : geometries(nullptr), numGeometries(numGeometries),
+      materials(nullptr), numMaterials(numMaterials),
+      ambientLights(nullptr), numAmbientLights(numAmbientLights),
+      pointLights(nullptr), numPointLights(numPointLights),
+      dirLights(nullptr), numDirectionalLights(numDirectionalLights),
+      distantLights(nullptr), numDistantLights(numDistantLights),
+      subdivMeshKeyFrames(nullptr), numSubdivMeshKeyFrames(0)
+    {
+      geometries = new ISPCGeometry*[numGeometries];
+      for (size_t i=0; i<numGeometries; i++)
+        geometries[i] = nullptr;
+      
+      materials = new ISPCMaterial[numMaterials];
+      memcpy(materials,materials_in,numMaterials*sizeof(Material));
+      
+      /* no texture support for Xeon Phi */
+      for (size_t i=0;i<numMaterials;i++)
+        if (materials[i].ty == MATERIAL_OBJ)
+        {
+          OBJMaterial *objm = ( OBJMaterial*)&materials[i];
+          objm->map_d     = NULL;
+          objm->map_Kd    = NULL;
+          objm->map_Displ = NULL;
+        }
+      
+      ambientLights = new ISPCAmbientLight[numAmbientLights];
+      memcpy(ambientLights,ambientLights_in,numAmbientLights*sizeof(ISPCAmbientLight));
+      
+      pointLights = new ISPCPointLight[numPointLights];
+      memcpy(pointLights,pointLights_in,numPointLights*sizeof(ISPCPointLight));
+      
+      dirLights = new ISPCDirectionalLight[numDirectionalLights];
+      memcpy(dirLights,dirLights_in,numDirectionalLights*sizeof(ISPCDirectionalLight));
+      
+      distantLights = new ISPCDistantLight[numDistantLights];
+      memcpy(distantLights,distantLights_in,numDistantLights*sizeof(ISPCDistantLight));
+    }
     
     ISPCScene(TutorialScene* in)
     {

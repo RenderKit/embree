@@ -18,6 +18,7 @@
 #include "../../transport/transport_host.h"
 #include "../../transport/transport_device.h"
 #include "../common.h"
+#include "../../tutorial/scene_device.h"
 
 #include <sink/COIPipeline_sink.h>
 #include <sink/COIProcess_sink.h>
@@ -34,257 +35,6 @@ float g_debug = 0.0f;
 
 namespace embree
 {
-  enum ISPCType { TRIANGLE_MESH, SUBDIV_MESH, HAIR_SET, INSTANCE };
-
-  struct ISPCGeometry
-  {
-    ISPCGeometry(ISPCType type) 
-      : type(type) {}
-
-    ISPCType type;
-  };
-
-  struct ISPCInstance : public ISPCGeometry
-  {
-    ISPCInstance() 
-      : ISPCGeometry(INSTANCE) {}
-
-    //ISPCGeometry geom;
-    AffineSpace3fa space;
-    int geomID;
-  };
-
-  /* ISPC compatible mesh */
-  struct ISPCTriangleMesh : public ISPCGeometry // FIXME: why all these replicated classes!!!!!!!
-  {
-    ALIGNED_CLASS;
-  public:
-    ISPCTriangleMesh (int numTriangles, 
-	      int numQuads, 
-	      int numVertices, 
-	      int meshMaterialID) 
-      : ISPCGeometry(TRIANGLE_MESH), numTriangles(numTriangles), numQuads(numQuads), numVertices(numVertices),
-        positions(nullptr), positions2(nullptr), normals(nullptr), texcoords(nullptr), triangles(nullptr), quads(nullptr), meshMaterialID(meshMaterialID)
-    {
-      sizePositions = 0;
-      sizeNormals   = 0;
-      sizeTexCoords = 0;
-      sizeTriangles = 0;
-      sizeQuads     = 0;
-    }
-
-    ~ISPCTriangleMesh () {
-      if (positions)  os_free(positions ,sizePositions);
-      if (positions2) os_free(positions2,sizePositions);
-      if (normals)    os_free(normals   ,sizeNormals);
-      if (texcoords)  os_free(texcoords ,sizeTexCoords);
-      if (triangles)  os_free(triangles ,sizeTriangles);
-      if (quads)      os_free(quads     ,sizeQuads);
-
-      positions = nullptr;
-      positions2 = nullptr;
-      normals   = nullptr;
-      texcoords = nullptr;
-      triangles = nullptr;
-      quads = nullptr;
-    }
-
-  public:
-    //ISPCGeometry geom;
-    Vec3fa* positions;     //!< vertex position array
-    Vec3fa* positions2;    //!< vertex position array
-    Vec3fa* normals;       //!< vertex normal array
-    Vec2f*  texcoords;     //!< vertex texcoord array
-    TutorialScene::Triangle* triangles;  //!< list of triangles
-    TutorialScene::Quad* quads;          //!< list of quads
-    int numVertices;
-    int numTriangles;
-    int numQuads;
-    int geomID;
-    int meshMaterialID;
-    size_t sizePositions;
-    size_t sizeNormals;
-    size_t sizeTexCoords;
-    size_t sizeTriangles;
-    size_t sizeQuads;
-  };
-
-
-  struct ISPCSubdivMesh : public ISPCGeometry
-{
-  ALIGNED_CLASS;
-public:
-  ISPCSubdivMesh(int numVertices, int numFaces, int numEdges, int materialID) : 
-    ISPCGeometry(SUBDIV_MESH), 
-    numVertices(numVertices), numFaces(numFaces), numEdges(numEdges), materialID(materialID),
-    numEdgeCreases(0),numVertexCreases(0),numHoles(0),geomID(0),
-    positions(nullptr),normals(nullptr),position_indices(nullptr),
-    normal_indices(nullptr),texcoord_indices(nullptr), verticesPerFace(nullptr),
-    holes(nullptr), subdivlevel(nullptr), 
-    edge_creases(nullptr), edge_crease_weights(nullptr), vertex_creases(nullptr), 
-    vertex_crease_weights(nullptr)
-  {
-    //PRINT(numVertices);
-    //PRINT(numFaces);
-    //PRINT(numEdges);
-  }
-
-  //ISPCGeometry geom;
-  Vec3fa* positions;       //!< vertex positions
-  Vec3fa* normals;         //!< face vertex normals
-  Vec2f* texcoords;        //!< face texture coordinates
-  int* position_indices;   //!< position indices for all faces
-  int* normal_indices;     //!< normal indices for all faces
-  int* texcoord_indices;   //!< texcoord indices for all faces
-  int* verticesPerFace;    //!< number of indices of each face
-  int* holes;              //!< face ID of holes
-  float* subdivlevel;      //!< subdivision level
-  Vec2i* edge_creases;          //!< crease index pairs
-  float* edge_crease_weights;   //!< weight for each crease
-  int* vertex_creases;          //!< indices of vertex creases
-  float* vertex_crease_weights; //!< weight for each vertex crease
-  int* face_offsets;
-  int numVertices;
-  int numFaces;
-  int numEdges;
-  int numEdgeCreases;
-  int numVertexCreases;
-  int numHoles;
-  int materialID;
-  int geomID;
-};
-
-  /* ISPC compatible scene */
-  struct ISPCHair
-  {
-  public:
-    ISPCHair () {}
-    ISPCHair (int vertex, int id)
-      : vertex(vertex), id(id) {}
-
-    int vertex,id;  //!< index of first control point and hair ID
-  };
-
-  /*! Hair Set. */
-  struct ISPCHairSet : public ISPCGeometry
-  {
-    ALIGNED_CLASS;
-  public:
-    //ISPCGeometry geom;
-    Vec3fa *positions;   //!< hair control points (x,y,z,r)
-    Vec3fa *positions2;   //!< hair control points (x,y,z,r)
-    ISPCHair *hairs;    //!< list of hairs
-    int numVertices;
-    int numHairs;
-    int materialID;
-    ISPCHairSet(int numHairs, int numVertices, int materialID) 
-      : ISPCGeometry(HAIR_SET), numHairs(numHairs),numVertices(numVertices),positions(nullptr),positions2(nullptr),hairs(nullptr),materialID(materialID) {}
-    ~ISPCHairSet() {
-      if (positions) free(positions);
-      if (positions2) free(positions2);
-      if (hairs) free(hairs);
-    }
-  };
-
-struct ISPCSubdivMeshKeyFrame {
-  ISPCSubdivMesh** subdiv;                   //!< list of subdiv meshes
-  int numSubdivMeshes;                       //!< number of subdiv meshes
-};
-
-
-  /* ISPC compatible scene */
-  struct ISPCScene
-  {
-    ALIGNED_CLASS;
-  public:
-    ISPCScene (int numGeometries, 
-               void* materials_in, int numMaterials,
-               void* ambientLights_in, int numAmbientLights,
-               void* pointLights_in, int numPointLights,
-               void* directionalLights_in, int numDirectionalLights,
-               void* distantLights_in, int numDistantLights)
-
-      : geometry(nullptr), numGeometries(numGeometries),
-        materials(nullptr), numMaterials(numMaterials),
-        ambientLights(nullptr), numAmbientLights(numAmbientLights),
-        pointLights(nullptr), numPointLights(numPointLights),
-        directionalLights(nullptr), numDirectionalLights(numDirectionalLights),
-        distantLights(nullptr), numDistantLights(numDistantLights),
-        subdivMeshKeyFrames(nullptr), numSubdivMeshKeyFrames(0),
-        instances(nullptr), numInstances(0)
-      {
-        geometry = new ISPCGeometry*[numGeometries];
-        for (size_t i=0; i<numGeometries; i++)
-          geometry[i] = nullptr;
-
-        materials = new Material[numMaterials];
-        memcpy(materials,materials_in,numMaterials*sizeof(Material));
-
-	/* no texture support for Xeon Phi */
-	for (size_t i=0;i<numMaterials;i++)
-	  if (materials[i].ty == MATERIAL_OBJ)
-	  {
-	     OBJMaterial *objm = ( OBJMaterial*)&materials[i];
-             objm->map_d     = NULL;
-	     objm->map_Kd    = NULL;
-             objm->map_Displ = NULL;
-	  }
-	
-        ambientLights = new AmbientLight[numAmbientLights];
-        memcpy(ambientLights,ambientLights_in,numAmbientLights*sizeof(AmbientLight));
-
-        pointLights = new PointLight[numPointLights];
-        memcpy(pointLights,pointLights_in,numPointLights*sizeof(PointLight));
-
-        directionalLights = new DirectionalLight[numDirectionalLights];
-        memcpy(directionalLights,directionalLights_in,numDirectionalLights*sizeof(DirectionalLight));
-
-        distantLights = new DistantLight[numDistantLights];
-        memcpy(distantLights,distantLights_in,numDistantLights*sizeof(DistantLight));
-      }
-
-    ~ISPCScene () 
-    {
-      delete[] materials;
-      delete[] ambientLights;
-      delete[] pointLights;
-      delete[] directionalLights;
-      delete[] distantLights;
-
-      /*if (geometries)  // FIXME: would need virtual destructor for this to work !!!!!!
-      {
-        for (size_t i=0; i<numGeometries; i++)
-          if (geometry[i]) delete meshes[i];
-	delete[] geometry;
-	meshes = geometry;
-        }*/
-    }
-
-  public:
-    ISPCGeometry** geometry;
-    Material* materials;  //!< material list
-    int numGeometries;
-    int numMaterials;
-
-    AmbientLight* ambientLights;
-    int numAmbientLights;
-
-    PointLight* pointLights;
-    int numPointLights;
-
-    DirectionalLight* directionalLights;
-    int numDirectionalLights;
-
-    DistantLight* distantLights;
-    int numDistantLights;
-
-    ISPCSubdivMeshKeyFrame** subdivMeshKeyFrames;
-    int numSubdivMeshKeyFrames;
-
-    ISPCInstance** instances;
-    int numInstances;
-  };
-
   /* scene */
   static size_t g_geometryID = 0;
 
@@ -333,8 +83,8 @@ struct ISPCSubdivMeshKeyFrame {
     mesh->positions = (Vec3fa*)os_malloc(in_pBufferLengths[0]);
     mesh->normals   = (Vec3fa*)os_malloc(in_pBufferLengths[1]);
     mesh->texcoords = (Vec2f* )os_malloc(in_pBufferLengths[2]);
-    mesh->triangles = (TutorialScene::Triangle*)os_malloc(in_pBufferLengths[3]);
-    mesh->quads     = (TutorialScene::Quad*)os_malloc(in_pBufferLengths[4]);
+    mesh->triangles = (ISPCTriangle*)os_malloc(in_pBufferLengths[3]);
+    mesh->quads     = (ISPCQuad*)os_malloc(in_pBufferLengths[4]);
 
     memcpy(mesh->positions,in_ppBufferPointers[0],in_pBufferLengths[0]);
     memcpy(mesh->normals  ,in_ppBufferPointers[1],in_pBufferLengths[1]);
@@ -342,11 +92,11 @@ struct ISPCSubdivMeshKeyFrame {
     memcpy(mesh->triangles,in_ppBufferPointers[3],in_pBufferLengths[3]);
     memcpy(mesh->quads    ,in_ppBufferPointers[4],in_pBufferLengths[4]);
 
-    mesh->sizePositions = in_pBufferLengths[0];
-    mesh->sizeNormals   = in_pBufferLengths[1];
-    mesh->sizeTexCoords = in_pBufferLengths[2];
-    mesh->sizeTriangles = in_pBufferLengths[3];
-    mesh->sizeQuads     = in_pBufferLengths[4];
+    //mesh->sizePositions = in_pBufferLengths[0];
+    //mesh->sizeNormals   = in_pBufferLengths[1];
+    //mesh->sizeTexCoords = in_pBufferLengths[2];
+    //mesh->sizeTriangles = in_pBufferLengths[3];
+    //mesh->sizeQuads     = in_pBufferLengths[4];
     
 #if 1 // FIXME: what does this?
     if (mesh->quads[0].v0 == 0,
@@ -356,11 +106,11 @@ struct ISPCSubdivMeshKeyFrame {
       {
 	mesh->quads = nullptr;
 	mesh->numQuads = 0;
-	mesh->sizeQuads = 0;
+	//mesh->sizeQuads = 0;
       }
 #endif
 
-    g_ispc_scene->geometry[geomID] = mesh;
+    g_ispc_scene->geometries[geomID] = (ISPCGeometry*) mesh;
   }
 
 
@@ -379,9 +129,9 @@ struct ISPCSubdivMeshKeyFrame {
     const size_t numFaces    = in_pMiscData->numVerticesPerFace;
 
     ISPCSubdivMesh* mesh = new ISPCSubdivMesh(numVertices,
-					      numFaces,
-					      numEdges,
-					      in_pMiscData->materialID);
+                                              numFaces,
+                                              numEdges,
+                                              in_pMiscData->materialID);
     assert( mesh );
        
     assert( in_pMiscData->numPositions*sizeof(Vec3fa)    == in_pBufferLengths[0] );
@@ -447,7 +197,7 @@ struct ISPCSubdivMeshKeyFrame {
         offset+=mesh->verticesPerFace[i];       
       }
  
-    g_ispc_scene->geometry[geomID] = mesh;
+    g_ispc_scene->geometries[geomID] = (ISPCGeometry*) mesh;
   }
 
   extern "C" void run_create_hairset(uint32_t         in_BufferCount,
@@ -460,9 +210,9 @@ struct ISPCSubdivMeshKeyFrame {
   {
     size_t geomID = g_geometryID++;
     ISPCHairSet* hairset = new ISPCHairSet(in_pMiscData->numHairs,in_pMiscData->numVertices,in_pMiscData->materialID);
-    memcpy(hairset->positions = (Vec3fa*)malloc(in_pBufferLengths[0]),in_ppBufferPointers[0],in_pBufferLengths[0]);
+    memcpy(hairset->v = (Vec3fa*)malloc(in_pBufferLengths[0]),in_ppBufferPointers[0],in_pBufferLengths[0]);
     memcpy(hairset->hairs = (ISPCHair*)malloc(in_pBufferLengths[1]),in_ppBufferPointers[1],in_pBufferLengths[1]);
-    g_ispc_scene->geometry[geomID] = hairset;
+    g_ispc_scene->geometries[geomID] = (ISPCGeometry*) hairset;
   }
 
   extern "C" void run_create_scene(uint32_t         in_BufferCount,
