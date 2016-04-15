@@ -152,10 +152,17 @@ enum RTCParameter {
   RTC_CONFIG_IGNORE_INVALID_RAYS = 11,        //!< checks if invalid rays are ignored (read only)
   RTC_CONFIG_TASKING_SYSTEM = 12,             //!< return used tasking system (0 = INTERNAL, 1 = TBB) (read only)
 
-  RTC_CONFIG_VERSION_MAJOR = 13,           //!< returns Embree major version (read only)
-  RTC_CONFIG_VERSION_MINOR = 14,           //!< returns Embree minor version (read only)
-  RTC_CONFIG_VERSION_PATCH = 15,           //!< returns Embree patch version (read only)
-  RTC_CONFIG_VERSION = 16,                 //!< returns Embree version as integer (e.g. Embree v2.8.2 -> 20802) (read only)
+  RTC_CONFIG_VERSION_MAJOR = 13,             //!< returns Embree major version (read only)
+  RTC_CONFIG_VERSION_MINOR = 14,             //!< returns Embree minor version (read only)
+  RTC_CONFIG_VERSION_PATCH = 15,             //!< returns Embree patch version (read only)
+  RTC_CONFIG_VERSION = 16,                   //!< returns Embree version as integer (e.g. Embree v2.8.2 -> 20802) (read only)
+
+  RTC_CONFIG_TRIANGLE_GEOMETRY = 17,         //!< checks if triangle geometries are supported
+  RTC_CONFIG_QUAD_GEOMETRY = 18,             //!< checks if quad geometries are supported
+  RTC_CONFIG_LINE_GEOMETRY = 19,             //!< checks if line geometries are supported
+  RTC_CONFIG_HAIR_GEOMETRY = 20,              //!< checks if hair geometries are supported
+  RTC_CONFIG_SUBDIV_GEOMETRY = 21,           //!< checks if subdiv geometries are supported
+  RTC_CONFIG_USER_GEOMETRY = 22,             //!< checks if user geometries are supported
 };
 
 /*! \brief Configures some parameters. 

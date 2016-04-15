@@ -62,7 +62,7 @@ namespace embree
       }
       
       template<typename Context>
-      static __forceinline void intersect(Precalculations* pre, size_t valid_in, Ray** rays, Context* ctx, size_t ty, const Primitive* prims, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node)
+      static __forceinline size_t intersect(Precalculations* pre, size_t valid_in, Ray** rays, Context* ctx, size_t ty, const Primitive* prims, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node)
       {
         AVX_ZERO_UPPER();
         
@@ -98,6 +98,7 @@ namespace embree
           const size_t i = __bscf(valid);
           ctx[i].update(rays[i]);
         }
+        return valid;
       }
 
       static __forceinline size_t occluded(Precalculations* pre, size_t valid_in, Ray** rays, size_t ty, const Primitive* prims, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node)

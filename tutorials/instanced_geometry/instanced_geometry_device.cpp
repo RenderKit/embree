@@ -337,7 +337,7 @@ extern "C" void device_render (int* pixels,
 /* called by the C++ code for cleanup */
 extern "C" void device_cleanup ()
 {
-  rtcDeleteScene (g_scene);
-  rtcDeleteScene (g_scene1);
-  rtcDeleteDevice(g_device);
+  rtcDeleteScene (g_scene); g_scene = nullptr;
+  rtcDeleteScene (g_scene1); g_scene1 = nullptr;
+  rtcDeleteDevice(g_device); g_device = nullptr;
 }

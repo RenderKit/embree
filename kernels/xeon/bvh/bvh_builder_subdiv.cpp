@@ -15,6 +15,9 @@
 // ======================================================================== //
 
 #include "bvh.h"
+
+#if defined(RTCORE_GEOMETRY_SUBDIV)
+
 #include "bvh_refit.h"
 #include "bvh_builder.h"
 
@@ -370,3 +373,4 @@ namespace embree
 #endif
   }
 }
+#endif

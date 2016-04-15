@@ -46,17 +46,6 @@ namespace embree
   namespace avx512 { extern type name; }                                 \
   void name##_error() { throw_RTCError(RTC_UNKNOWN_ERROR,"internal error in ISA selection for " TOSTRING(name)); }
 
-// FIXME: simplify ISA selection
-#define DECLARE_BUILDER(Accel,Mesh,Args,symbol)                         \
-  typedef Builder* (*symbol##Func)(Accel* accel, Mesh* mesh, Args args); \
-  namespace isa   { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
-  namespace sse41 { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
-  namespace avx   { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
-  namespace avx2  { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
-  namespace avx512  { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
-  void symbol##_error() { throw_RTCError(RTC_UNSUPPORTED_CPU,"builder " TOSTRING(symbol) " not supported by your CPU"); } \
-  symbol##Func symbol = (symbol##Func) symbol##_error;
-
 #define DEFINE_BUILDER2(Accel,Mesh,Args,symbol)                         \
   typedef Builder* (*symbol##Func)(Accel* accel, Mesh* mesh, Args args); \
   symbol##Func symbol;
@@ -69,7 +58,7 @@ namespace embree
   namespace avx512  { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
   void symbol##_error() { throw_RTCError(RTC_UNSUPPORTED_CPU,"builder " TOSTRING(symbol) " not supported by your CPU"); } \
 
-#define INIT_SYMBOL(intersector) \
+#define INIT_SYMBOL(features,intersector)                      \
   intersector = decltype(intersector)(intersector##_error);
 
 #define SELECT_SYMBOL_DEFAULT(features,intersector) \
@@ -127,7 +116,7 @@ namespace embree
 #else
 #define SELECT_SYMBOL_KNC(features,intersector)
 #endif
-  
+
 #define SELECT_SYMBOL_DEFAULT_SSE42(features,intersector)               \
   SELECT_SYMBOL_DEFAULT(features,intersector);                          \
   SELECT_SYMBOL_SSE42(features,intersector);                                  
@@ -171,27 +160,27 @@ namespace embree
   SELECT_SYMBOL_AVX512KNL(features,intersector);                        
   
 #define SELECT_SYMBOL_INIT_AVX(features,intersector)                    \
-  INIT_SYMBOL(intersector);                                             \
+  INIT_SYMBOL(features,intersector);                                             \
   SELECT_SYMBOL_AVX(features,intersector);                                
   
 #define SELECT_SYMBOL_INIT_AVX_AVX2(features,intersector)          \
-  INIT_SYMBOL(intersector);                                        \
+  INIT_SYMBOL(features,intersector);                                        \
   SELECT_SYMBOL_AVX(features,intersector);                         \
   SELECT_SYMBOL_AVX2(features,intersector);
   
 #define SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,intersector)        \
-  INIT_SYMBOL(intersector);                                        \
+  INIT_SYMBOL(features,intersector);                                        \
   SELECT_SYMBOL_AVX(features,intersector);                         \
   SELECT_SYMBOL_AVX512KNL(features,intersector);
 
 #define SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,intersector)        \
-  INIT_SYMBOL(intersector);                                        \
+  INIT_SYMBOL(features,intersector);                                        \
   SELECT_SYMBOL_AVX(features,intersector);                         \
   SELECT_SYMBOL_AVX2(features,intersector);                        \
   SELECT_SYMBOL_AVX512KNL(features,intersector);
 
 #define SELECT_SYMBOL_INIT_SSE42_AVX_AVX2_AVX512KNL(features,intersector)        \
-  INIT_SYMBOL(intersector);                                        \
+  INIT_SYMBOL(features,intersector);                                        \
   SELECT_SYMBOL_SSE42(features,intersector);                       \
   SELECT_SYMBOL_AVX(features,intersector);                         \
   SELECT_SYMBOL_AVX2(features,intersector);                        \
@@ -204,7 +193,7 @@ namespace embree
   SELECT_SYMBOL_AVX512KNL(features,intersector);
   
 #define SELECT_SYMBOL_INIT_AVX512KNL(features,intersector)            \
-  INIT_SYMBOL(intersector);                                        \
+  INIT_SYMBOL(features,intersector);                                        \
   SELECT_SYMBOL_AVX512KNL(features,intersector);
   
   struct VerifyMultiTargetLinking {
