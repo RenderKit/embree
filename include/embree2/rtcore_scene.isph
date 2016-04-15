@@ -23,7 +23,7 @@
 /*! forward declarations for ray structures */
 struct RTCRay1;
 struct RTCRay;
-struct RTCRaySOA;
+struct RTCRayPN;
 
 /*! scene flags */
 enum RTCSceneFlags 
@@ -131,7 +131,7 @@ void rtcIntersectNM (RTCScene scene, void* uniform rays, const uniform size_t N,
  *  ray packets in bytes. In contrast to the rtcIntersectNM function
  *  this function accepts a separate data pointer for each component
  *  of the ray packet. */
-void rtcIntersectNMP (RTCScene scene, uniform RTCRaySOA& rayN, const uniform size_t N, const uniform size_t M, const uniform size_t offset, const uniform size_t flags);
+void rtcIntersectPNM (RTCScene scene, uniform RTCRayPN& rayN, const uniform size_t N, const uniform size_t M, const uniform size_t offset, const uniform size_t flags);
 
 /*! Tests if a uniform ray is occluded by the scene. This function can
  *  only be called for scenes with the RTC_INTERSECT_UNIFORM flag
@@ -168,7 +168,7 @@ void rtcOccludedNM (RTCScene scene, void* uniform rayN, const uniform size_t N, 
  *  between rays in bytes. In contrast to the rtcOccludedNM function
  *  this function accepts a separate data pointer for each component
  *  of the ray packet. */
-void rtcOccludedNMP (RTCScene scene, uniform RTCRaySOA& rayN, const uniform size_t N, const uniform size_t M, const uniform size_t offset, const uniform size_t flags);
+void rtcOccludedPNM (RTCScene scene, uniform RTCRayPN& rayN, const uniform size_t N, const uniform size_t M, const uniform size_t offset, const uniform size_t flags);
 
 /*! Deletes the geometry again. */
 void rtcDeleteScene (RTCScene scene);

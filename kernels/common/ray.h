@@ -481,7 +481,7 @@ namespace embree
     char data[MAX_K/4*sizeof(Ray4)];
   };
   
-  struct RaySOA
+  struct RayPN
   {
     /* ray data */
   public:

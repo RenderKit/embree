@@ -176,7 +176,7 @@ __forceinline int& RayN_primID(void* ptr, size_t N, size_t i) { return ((int*  )
 __forceinline int& RayN_instID(void* ptr, size_t N, size_t i) { return ((int*  )ptr)[17*N+i]; }; //!< instance ID
 
 /*! \brief Ray structure template for packets of N rays in SOA layout. */
-struct RTCRaySOA
+struct RTCRayPN
 {
   /* ray data */
 public:
