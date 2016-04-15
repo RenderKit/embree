@@ -645,10 +645,23 @@ extern "C" void device_render (int* pixels,
 
   /* create scene */
   if (g_scene == nullptr) {
+#if 0
+    /* FIXME: just for testing */
+    while(1)
+    {
+      g_scene = convertScene(g_ispc_scene);
+      if (g_subdiv_mode) updateEdgeLevels(g_ispc_scene, camera.xfm.p);
+      rtcCommit (g_scene);
+      old_p = camera.xfm.p;
+      rtcDeleteScene (g_scene); 
+      g_scene = nullptr;
+    }
+#else
     g_scene = convertScene(g_ispc_scene);
     if (g_subdiv_mode) updateEdgeLevels(g_ispc_scene, camera.xfm.p);
     rtcCommit (g_scene);
     old_p = camera.xfm.p;
+#endif
   }
 
   else
