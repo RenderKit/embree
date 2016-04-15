@@ -35,14 +35,14 @@ namespace embree
     typedef RTCIntersectFunc4 IntersectFunc4;
     typedef RTCIntersectFunc8 IntersectFunc8;
     typedef RTCIntersectFunc16 IntersectFunc16;
-    typedef RTCIntersectFunc1M IntersectFunc1N;
+    typedef RTCIntersectFunc1M IntersectFunc1M;
     typedef RTCIntersectFuncN IntersectFuncN;
     
     typedef RTCOccludedFunc OccludedFunc;
     typedef RTCOccludedFunc4 OccludedFunc4;
     typedef RTCOccludedFunc8 OccludedFunc8;
     typedef RTCOccludedFunc16 OccludedFunc16;
-    typedef RTCOccludedFunc1M OccludedFunc1N;
+    typedef RTCOccludedFunc1M OccludedFunc1M;
     typedef RTCOccludedFuncN OccludedFuncN;
 
 #if defined(__SSE__)
@@ -141,9 +141,9 @@ namespace embree
       struct Intersector1N
       {
         Intersector1N (ErrorFunc error = nullptr) 
-        : intersect((IntersectFunc1N)error), occluded((OccludedFunc1N)error), name(nullptr) {}
+        : intersect((IntersectFunc1M)error), occluded((OccludedFunc1M)error), name(nullptr) {}
         
-        Intersector1N (IntersectFunc1N intersect, OccludedFunc1N occluded, const char* name)
+        Intersector1N (IntersectFunc1M intersect, OccludedFunc1M occluded, const char* name)
         : intersect(intersect), occluded(occluded), name(name) {}
         
         operator bool() const { return name; }
@@ -151,8 +151,8 @@ namespace embree
       public:
         static const char* type;
         const char* name;
-        IntersectFunc1N intersect;
-        OccludedFunc1N occluded;  
+        IntersectFunc1M intersect;
+        OccludedFunc1M occluded;  
       };
 
       struct IntersectorN
@@ -467,8 +467,8 @@ namespace embree
 				 false);  
 
 #define DEFINE_SET_INTERSECTOR1N(symbol,intersector)                     \
-  AccelSet::Intersector1N symbol((AccelSet::IntersectFunc1N)intersector::intersect, \
-                                 (AccelSet::OccludedFunc1N )intersector::occluded, \
+  AccelSet::Intersector1N symbol((AccelSet::IntersectFunc1M)intersector::intersect, \
+                                 (AccelSet::OccludedFunc1M )intersector::occluded, \
                                  TOSTRING(isa) "::" TOSTRING(symbol));
 
 #define DEFINE_SET_INTERSECTORN(symbol,intersector)                         \

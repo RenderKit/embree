@@ -78,31 +78,31 @@ struct RTCRay
   unsigned int instID;     //!< instance ID
 };
 
-/* Helper functions to access ray packets of size M */
-inline varying float& RayM_org_x(void* uniform ptr, uniform size_t M, uniform size_t i) { return *((varying float* uniform) &((uniform float*)ptr)[0*M+i]); }  //!< x coordinate of ray origin
-inline varying float& RayM_org_y(void* uniform ptr, uniform size_t M, uniform size_t i) { return *((varying float* uniform) &((uniform float*)ptr)[1*M+i]); }  //!< y coordinate of ray origin
-inline varying float& RayM_org_z(void* uniform ptr, uniform size_t M, uniform size_t i) { return *((varying float* uniform) &((uniform float*)ptr)[2*M+i]); }; //!< z coordinate of ray origin
+/* Helper functions to access ray packets of size N */
+inline varying float& RayN_org_x(void* uniform ptr, uniform size_t N, uniform size_t i) { return *((varying float* uniform) &((uniform float*)ptr)[0*N+i]); }  //!< x coordinate of ray origin
+inline varying float& RayN_org_y(void* uniform ptr, uniform size_t N, uniform size_t i) { return *((varying float* uniform) &((uniform float*)ptr)[1*N+i]); }  //!< y coordinate of ray origin
+inline varying float& RayN_org_z(void* uniform ptr, uniform size_t N, uniform size_t i) { return *((varying float* uniform) &((uniform float*)ptr)[2*N+i]); }; //!< z coordinate of ray origin
 
-inline varying float& RayM_dir_x(void* uniform ptr, uniform size_t M, uniform size_t i) { return *((varying float* uniform) &((uniform float*)ptr)[3*M+i]); }; //!< x coordinate of ray direction
-inline varying float& RayM_dir_y(void* uniform ptr, uniform size_t M, uniform size_t i) { return *((varying float* uniform) &((uniform float*)ptr)[4*M+i]); }; //!< y coordinate of ray direction
-inline varying float& RayM_dir_z(void* uniform ptr, uniform size_t M, uniform size_t i) { return *((varying float* uniform) &((uniform float*)ptr)[5*M+i]); }; //!< z coordinate of ray direction
+inline varying float& RayN_dir_x(void* uniform ptr, uniform size_t N, uniform size_t i) { return *((varying float* uniform) &((uniform float*)ptr)[3*N+i]); }; //!< x coordinate of ray direction
+inline varying float& RayN_dir_y(void* uniform ptr, uniform size_t N, uniform size_t i) { return *((varying float* uniform) &((uniform float*)ptr)[4*N+i]); }; //!< y coordinate of ray direction
+inline varying float& RayN_dir_z(void* uniform ptr, uniform size_t N, uniform size_t i) { return *((varying float* uniform) &((uniform float*)ptr)[5*N+i]); }; //!< z coordinate of ray direction
 
-inline varying float& RayM_tnear(void* uniform ptr, uniform size_t M, uniform size_t i) { return *((varying float* uniform) &((uniform float*)ptr)[6*M+i]); }; //!< Start of ray segment 
-inline varying float& RayM_tfar (void* uniform ptr, uniform size_t M, uniform size_t i) { return *((varying float* uniform) &((uniform float*)ptr)[7*M+i]); }; //!< End of ray segment (set to hit distance)
+inline varying float& RayN_tnear(void* uniform ptr, uniform size_t N, uniform size_t i) { return *((varying float* uniform) &((uniform float*)ptr)[6*N+i]); }; //!< Start of ray segment 
+inline varying float& RayN_tfar (void* uniform ptr, uniform size_t N, uniform size_t i) { return *((varying float* uniform) &((uniform float*)ptr)[7*N+i]); }; //!< End of ray segment (set to hit distance)
 
-inline varying float& RayM_time(void* uniform ptr, uniform size_t M, uniform size_t i) { return *((varying float* uniform) &((uniform float*)ptr)[8*M+i]); };  //!< Time of this ray for motion blur 
-inline varying int&   RayM_mask(void* uniform ptr, uniform size_t M, uniform size_t i) { return *((varying int*   uniform) &((uniform int*  )ptr)[9*M+i]); };  //!< Used to mask out objects during traversal
+inline varying float& RayN_time(void* uniform ptr, uniform size_t N, uniform size_t i) { return *((varying float* uniform) &((uniform float*)ptr)[8*N+i]); };  //!< Time of this ray for motion blur 
+inline varying int&   RayN_mask(void* uniform ptr, uniform size_t N, uniform size_t i) { return *((varying int*   uniform) &((uniform int*  )ptr)[9*N+i]); };  //!< Used to mask out objects during traversal
 
-inline varying float& RayM_Ng_x(void* uniform ptr, uniform size_t M, uniform size_t i) { return *((varying float* uniform) &((uniform float*)ptr)[10*M+i]); }; //!< x coordinate of geometry normal
-inline varying float& RayM_Ng_y(void* uniform ptr, uniform size_t M, uniform size_t i) { return *((varying float* uniform) &((uniform float*)ptr)[11*M+i]); }; //!< y coordinate of geometry normal
-inline varying float& RayM_Ng_z(void* uniform ptr, uniform size_t M, uniform size_t i) { return *((varying float* uniform) &((uniform float*)ptr)[12*M+i]); }; //!< z coordinate of geometry normal
+inline varying float& RayN_Ng_x(void* uniform ptr, uniform size_t N, uniform size_t i) { return *((varying float* uniform) &((uniform float*)ptr)[10*N+i]); }; //!< x coordinate of geometry normal
+inline varying float& RayN_Ng_y(void* uniform ptr, uniform size_t N, uniform size_t i) { return *((varying float* uniform) &((uniform float*)ptr)[11*N+i]); }; //!< y coordinate of geometry normal
+inline varying float& RayN_Ng_z(void* uniform ptr, uniform size_t N, uniform size_t i) { return *((varying float* uniform) &((uniform float*)ptr)[12*N+i]); }; //!< z coordinate of geometry normal
 
-inline varying float& RayM_u   (void* uniform ptr, uniform size_t M, uniform size_t i) { return *((varying float* uniform) &((uniform float*)ptr)[13*M+i]); }; //!< Barycentric u coordinate of hit
-inline varying float& RayM_v   (void* uniform ptr, uniform size_t M, uniform size_t i) { return *((varying float* uniform) &((uniform float*)ptr)[14*M+i]); }; //!< Barycentric v coordinate of hit
+inline varying float& RayN_u   (void* uniform ptr, uniform size_t N, uniform size_t i) { return *((varying float* uniform) &((uniform float*)ptr)[13*N+i]); }; //!< Barycentric u coordinate of hit
+inline varying float& RayN_v   (void* uniform ptr, uniform size_t N, uniform size_t i) { return *((varying float* uniform) &((uniform float*)ptr)[14*N+i]); }; //!< Barycentric v coordinate of hit
 
-inline varying int& RayM_geomID(void* uniform ptr, uniform size_t M, uniform size_t i) { return *((varying int*   uniform) &((uniform int*  )ptr)[15*M+i]); }; //!< geometry ID
-inline varying int& RayM_primID(void* uniform ptr, uniform size_t M, uniform size_t i) { return *((varying int*   uniform) &((uniform int*  )ptr)[16*M+i]); }; //!< primitive ID
-inline varying int& RayM_instID(void* uniform ptr, uniform size_t M, uniform size_t i) { return *((varying int*   uniform) &((uniform int*  )ptr)[17*M+i]); }; //!< instance ID
+inline varying int& RayN_geomID(void* uniform ptr, uniform size_t N, uniform size_t i) { return *((varying int*   uniform) &((uniform int*  )ptr)[15*N+i]); }; //!< geometry ID
+inline varying int& RayN_primID(void* uniform ptr, uniform size_t N, uniform size_t i) { return *((varying int*   uniform) &((uniform int*  )ptr)[16*N+i]); }; //!< primitive ID
+inline varying int& RayN_instID(void* uniform ptr, uniform size_t N, uniform size_t i) { return *((varying int*   uniform) &((uniform int*  )ptr)[17*N+i]); }; //!< instance ID
 
 struct RTCRaySOA
 {
