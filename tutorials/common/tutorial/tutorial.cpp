@@ -35,19 +35,6 @@
 #  include <GL/glut.h>
 #endif
 
-#if !defined(__WIN32__)
-#include <unistd.h>
-#endif
-
-/*#include <sys/time.h> // FIXME: remove
-#include <sys/resource.h>
-double process_time()
-{
-  struct rusage usage;
-  getrusage(RUSAGE_THREAD,&usage);
-  return double(usage.ru_utime.tv_sec) + double(usage.ru_utime.tv_usec)/1E6;
-  }*/
-
 extern "C" {
   float g_debug = 0.0f;
 }
