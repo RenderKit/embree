@@ -18,6 +18,8 @@
 
 #include "default.h"
 
+#define MAX_INTERNAL_STREAM_SIZE 64
+
 namespace embree
 {
   /* Ray structure for K rays */
@@ -338,6 +340,45 @@ namespace embree
 
   public:
 
+    __forceinline void writeRay(const size_t i, int* valid, Ray& ray)
+    {
+      const size_t offset = 4*i;
+      valid[i] = -1;
+      orgx(offset)[0] = ray.org.x;
+      orgy(offset)[0] = ray.org.y;
+      orgz(offset)[0] = ray.org.z;
+      dirx(offset)[0] = ray.dir.x;
+      diry(offset)[0] = ray.dir.y;
+      dirz(offset)[0] = ray.dir.z;
+      tnear(offset)[0] = ray.tnear;
+      tfar(offset)[0] = ray.tfar;
+      time(offset)[0] = ray.time;
+      mask(offset)[0] = ray.mask;
+      geomID(offset)[0] = RTC_INVALID_GEOMETRY_ID;
+    }
+
+    __forceinline void readHit(const size_t i, Ray& ray)
+    {
+      const size_t offset = 4*i;
+      const int geometryID = geomID(offset)[0];
+      if (geometryID != RTC_INVALID_GEOMETRY_ID)
+      {
+        ray.tfar = tfar(offset)[0];
+        ray.u = u(offset)[0];
+        ray.v = v(offset)[0];
+        ray.Ng.x = Ngx(offset)[0];
+        ray.Ng.y = Ngy(offset)[0];
+        ray.Ng.z = Ngz(offset)[0];
+        ray.instID = instID(offset)[0];
+        ray.geomID = geometryID;
+        ray.primID = primID(offset)[0];
+      }
+    }
+
+    __forceinline void readOcclusion(const size_t i, Ray& ray) {
+      ray.geomID = geomID(4*i)[0];
+    }
+
     __forceinline Ray gather(const size_t offset)
     {
       Ray ray;
@@ -430,7 +471,17 @@ namespace embree
     size_t K;
   };
 
-  struct RaySOA
+  template<size_t MAX_K>
+    struct StackRayPacket : public RayPacket
+  {
+  public:
+    __forceinline StackRayPacket(size_t K)
+      : RayPacket(data,K) { assert(K<=MAX_K); }
+  public:
+    char data[MAX_K/4*sizeof(Ray4)];
+  };
+  
+  struct RayPN
   {
     /* ray data */
   public:

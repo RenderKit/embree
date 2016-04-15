@@ -36,7 +36,7 @@ namespace embree
   void invalid_rtcIntersectN()  { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersectN and rtcOccludedN not enabled"); }
 
  
-/* number of created scene */
+  /* number of created scene */
   AtomicCounter Scene::numScenes = 0;
 
   Scene::Scene (Device* device, RTCSceneFlags sflags, RTCAlgorithmFlags aflags)
@@ -48,7 +48,7 @@ namespace embree
       needBezierIndices(false), needBezierVertices(false),
       needLineIndices(false), needLineVertices(false),
       needSubdivIndices(false), needSubdivVertices(false),
-      numIntersectionFilters1(0), numIntersectionFilters4(0), numIntersectionFilters8(0), numIntersectionFilters16(0),
+      numIntersectionFilters1(0), numIntersectionFilters4(0), numIntersectionFilters8(0), numIntersectionFilters16(0), numIntersectionFiltersN(0),
       commitCounter(0), commitCounterSubdiv(0), 
       progress_monitor_function(nullptr), progress_monitor_ptr(nullptr), progress_monitor_counter(0),
       progressInterface(this)
@@ -634,7 +634,10 @@ namespace embree
     progress_monitor_counter = 0;
 
     /* select fast code path if no intersection filter is present */
-    accels.select(numIntersectionFilters4,numIntersectionFilters8,numIntersectionFilters16,numIntersectionFilters1);
+    accels.select(numIntersectionFiltersN+numIntersectionFilters4,
+                  numIntersectionFiltersN+numIntersectionFilters8,
+                  numIntersectionFiltersN+numIntersectionFilters16,
+                  numIntersectionFiltersN);
   
     /* build all hierarchies of this scene */
     accels.build(0,0);
@@ -691,7 +694,10 @@ namespace embree
     }
 
     /* select fast code path if no intersection filter is present */
-    accels.select(numIntersectionFilters4,numIntersectionFilters8,numIntersectionFilters16,numIntersectionFilters1);
+    accels.select(numIntersectionFiltersN+numIntersectionFilters4,
+                  numIntersectionFiltersN+numIntersectionFilters8,
+                  numIntersectionFiltersN+numIntersectionFilters16,
+                  numIntersectionFiltersN);
 
     /* if user provided threads use them */
     if (threadCount)

@@ -228,8 +228,13 @@ namespace embree
   __forceinline int   select(bool s, int   t,   int f) { return s ? t : f; }
   __forceinline float select(bool s, float t, float f) { return s ? t : f; }
 
+  template<typename V> 
+    __forceinline V lerp(const V v0, const V v1, const float t) {
+    return (1.0f-t)*v0 + t*v1;
+  }
+
   template<typename T> 
-    __forceinline T lerp2(const float x0, const float x1, const float x2, const float x3,const T &u, const T &v) {
+    __forceinline T lerp2(const float x0, const float x1, const float x2, const float x3, const T& u, const T& v) {
     return (1.0f-u)*(1.0f-v)*x0 + u*(1.0f-v)*x1 + (1.0f-u)*v*x2 + u*v*x3; 
   }
 

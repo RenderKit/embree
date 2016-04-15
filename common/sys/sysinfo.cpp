@@ -404,11 +404,16 @@ namespace embree
     return info.dwSize.X;
   }
 
-  double getSeconds() {
+  double getSeconds() 
+  {
     LARGE_INTEGER freq, val;
     QueryPerformanceFrequency(&freq);
     QueryPerformanceCounter(&val);
     return (double)val.QuadPart / (double)freq.QuadPart;
+  }
+
+  void sleepSeconds(double t) {
+    Sleep(1000.0*t);
   }
 }
 #endif
@@ -515,6 +520,10 @@ namespace embree
 #else
     return double(rdtsc()) / double(micFrequency*1E6);
 #endif
+  }
+
+  void sleepSeconds(double t) {
+    usleep(1000000.0*t);
   }
 }
 #endif

@@ -57,7 +57,7 @@ namespace embree
 #else
     static const size_t MAX_RAYS_PER_OCTANT = 8*sizeof(size_t);
 #endif
-    
+    static_assert(MAX_RAYS_PER_OCTANT <= MAX_INTERNAL_STREAM_SIZE,"maximal internal stream size exceeded");
 
 #if EXPERIMENTAL_FIBER_MODE
     /* pure fiber mode, no streams */

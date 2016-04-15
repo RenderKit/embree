@@ -178,6 +178,9 @@ namespace embree
     /*! Set intersection filter function for ray packets of size 16. */
     virtual void setIntersectionFilterFunction16 (RTCFilterFunc16 filter16, bool ispc = false);
 
+    /*! Set intersection filter function for ray packets of size N. */
+    virtual void setIntersectionFilterFunctionN (RTCFilterFuncN filterN);
+
     /*! Set occlusion filter function for single rays. */
     virtual void setOcclusionFilterFunction (RTCFilterFunc filter, bool ispc = false);
     
@@ -189,6 +192,9 @@ namespace embree
     
     /*! Set occlusion filter function for ray packets of size 16. */
     virtual void setOcclusionFilterFunction16 (RTCFilterFunc16 filter16, bool ispc = false);
+
+    /*! Set occlusion filter function for ray packets of size N. */
+    virtual void setOcclusionFilterFunctionN (RTCFilterFuncN filterN);
 
     /*! for instances only */
   public:
@@ -232,7 +238,12 @@ namespace embree
     }
 
     /*! Set intersect function for streams of single rays. */
-    virtual void setIntersectFunction1N (RTCIntersectFunc1N intersect, bool ispc = false) { 
+    virtual void setIntersectFunction1N (RTCIntersectFunc1M intersect) { 
+      throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
+    }
+
+    /*! Set intersect function for ray packets of size N. */
+    virtual void setIntersectFunctionN (RTCIntersectFuncN intersect) { 
       throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
     
@@ -257,7 +268,12 @@ namespace embree
     }
 
     /*! Set occlusion function for streams of single rays. */
-    virtual void setOccludedFunction1N (RTCOccludedFunc1N occluded, bool ispc = false) { 
+    virtual void setOccludedFunction1N (RTCOccludedFunc1M occluded) { 
+      throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
+    }
+
+    /*! Set occlusion function for ray packets of size N. */
+    virtual void setOccludedFunctionN (RTCOccludedFuncN occluded) { 
       throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
@@ -292,6 +308,9 @@ namespace embree
 
     RTCFilterFunc16 intersectionFilter16;
     RTCFilterFunc16 occlusionFilter16;
+
+    RTCFilterFuncN intersectionFilterN;
+    RTCFilterFuncN occlusionFilterN;
 
     bool ispcIntersectionFilter4;	
     bool ispcOcclusionFilter4;

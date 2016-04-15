@@ -44,6 +44,7 @@ namespace embree
   __forceinline bool isIncoherent(RTCSceneFlags flags) { return flags & RTC_SCENE_INCOHERENT; }
   __forceinline bool isHighQuality(RTCSceneFlags flags) { return flags & RTC_SCENE_HIGH_QUALITY; }
   __forceinline bool isInterpolatable(RTCAlgorithmFlags flags) { return flags & RTC_INTERPOLATE; }
+  __forceinline bool isStreamMode(RTCAlgorithmFlags flags) { return flags & RTC_INTERSECTN; }
 
   /*! Base class all scenes are derived from */
   class Scene : public Accel
@@ -284,6 +285,7 @@ namespace embree
     __forceinline bool isRobust() const { return embree::isRobust(flags); }
     __forceinline bool isHighQuality() const { return embree::isHighQuality(flags); }
     __forceinline bool isInterpolatable() const { return embree::isInterpolatable(aflags); }
+    __forceinline bool isStreamMode() const { return embree::isStreamMode(aflags); }
 
     /* test if scene got already build */
     __forceinline bool isBuild() const { return is_build; }
@@ -374,10 +376,11 @@ namespace embree
 
     template<typename Mesh, int timeSteps> __forceinline size_t getNumPrimitives() const;
    
-    atomic_t numIntersectionFilters1;  //!< number of enabled intersection/occlusion filters for single rays or N-wide ray streams    
+    atomic_t numIntersectionFilters1;   //!< number of enabled intersection/occlusion filters for single rays
     atomic_t numIntersectionFilters4;   //!< number of enabled intersection/occlusion filters for 4-wide ray packets
     atomic_t numIntersectionFilters8;   //!< number of enabled intersection/occlusion filters for 8-wide ray packets
     atomic_t numIntersectionFilters16;  //!< number of enabled intersection/occlusion filters for 16-wide ray packets
+    atomic_t numIntersectionFiltersN;   //!< number of enabled intersection/occlusion filters for N-wide ray packets
   };
 
   template<> __forceinline size_t Scene::getNumPrimitives<TriangleMesh,1>() const { return world1.numTriangles; } 

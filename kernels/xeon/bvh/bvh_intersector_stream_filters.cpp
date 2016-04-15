@@ -18,10 +18,11 @@
 
 namespace embree
 {
-  static const size_t MAX_RAYS_PER_OCTANT = 8*sizeof(size_t);
-
   namespace isa
   {
+    static const size_t MAX_RAYS_PER_OCTANT = 8*sizeof(size_t);
+    static_assert(MAX_RAYS_PER_OCTANT <= MAX_INTERNAL_STREAM_SIZE,"maximal internal stream size exceeded");
+
     __forceinline void RayStream::filterAOS(Scene *scene, RTCRay* _rayN, const size_t N, const size_t stride, const size_t flags, const bool intersect)
     {
       Ray* __restrict__ rayN = (Ray*)_rayN;
@@ -187,9 +188,9 @@ namespace embree
         }
     }
 
-    void RayStream::filterSOP(Scene *scene, RTCRaySOA& _rayN, const size_t N, const size_t streams, const size_t stream_offset, const size_t flags, const bool intersect)
+    void RayStream::filterSOP(Scene *scene, RTCRayPN& _rayN, const size_t N, const size_t streams, const size_t stream_offset, const size_t flags, const bool intersect)
     {
-      RaySOA& rayN = *(RaySOA*)&_rayN;
+      RayPN& rayN = *(RayPN*)&_rayN;
 
       /* use packet intersector for coherent ray mode */
       if (likely(flags == RTC_RAYN_COHERENT))
