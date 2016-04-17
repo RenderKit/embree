@@ -229,7 +229,7 @@ namespace embree
   __forceinline float select(bool s, float t, float f) { return s ? t : f; }
 
   template<typename V> 
-    __forceinline V lerp(const V v0, const V v1, const float t) {
+    __forceinline V lerp(const V &v0, const V &v1, const float t) {
     return (1.0f-t)*v0 + t*v1;
   }
 
