@@ -167,15 +167,19 @@ namespace embree
 ////////////////////////////////////////////////////////////////////////////////
 
 #if defined(__LINUX__)
-/* to parse thread topology */
+
+#include <fstream>
 #include <sstream>
+#include <algorithm>
 
 namespace embree
 {
-
+  /* changes thread ID mapping such that we first fill up all thread on one core */
   ssize_t mapThreadID(ssize_t threadID)
   {
 #if !defined(__MIC__)
+    static MutexSys mutex;
+    Lock<MutexSys> lock(mutex);
     static std::vector<int> threadIDs;
 
     if (threadIDs.size() == 0)
@@ -183,66 +187,48 @@ namespace embree
       /* parse thread/CPU topology */
       for (size_t cpuID=0;;cpuID++)
       {
+        std::fstream fs;
         std::string cpu = std::string("/sys/devices/system/cpu/cpu") + std::to_string((long long)cpuID) + std::string("/topology/thread_siblings_list");
-        FILE *file = fopen(cpu.c_str(), "r");
-        if(file)
+        fs.open (cpu.c_str(), std::fstream::in);
+        if (fs.fail()) break;
+
+        int i;
+        while (fs >> i) 
         {
-          char buffer[256];
-          if (fgets(buffer,256,file) != NULL)
-          {
-            std::stringstream threads_config(buffer);
-            int i;
-            while (threads_config >> i)
-            {
-              bool found = false;
-              for (size_t j=0;j<threadIDs.size();j++)
-                if (threadIDs[j] == i)
-                {
-                  found = true;
-                  break;
-                }
-              if (!found)
-                threadIDs.push_back(i);
-              if (threads_config.peek() == ',')
-                threads_config.ignore();
-            }
-          }
-          fclose(file);
+          if (std::none_of(threadIDs.begin(),threadIDs.end(),[&] (int id) { return id == i; }))
+            threadIDs.push_back(i);
+          if (fs.peek() == ',') 
+            fs.ignore();
         }
-        else
-          break;
-
+        fs.close();
       }
-
-      for (size_t i=0;i<threadIDs.size();i++)
-        for (size_t j=0;j<threadIDs.size();j++)
-          if (i != j)
-            if (threadIDs[i] == threadIDs[j])
-            {
-              PRINT(i);
-              PRINT(j);
-              PRINT(threadIDs[i]);
-              PRINT(threadIDs[j]);
-              FATAL("threadID error");
-            }
 
 #if 0
       for (size_t i=0;i<threadIDs.size();i++)
-        std::cout << "i " << i << " threadIDs[i] " << threadIDs[i] << std::endl;
+        std::cout << i << " -> " << threadIDs[i] << std::endl;
 #endif
+
+      /* verify the mapping and do not use it if the mapping has errors */
+      for (size_t i=0;i<threadIDs.size();i++) {
+        for (size_t j=0;j<threadIDs.size();j++) {
+          if (i != j && threadIDs[i] == threadIDs[j]) {
+            threadIDs.clear();
+          }
+        }
+      }
     }
 
+    /* re-map threadIDs if mapping is available */
     ssize_t ID = threadID;
-
     if (threadID < threadIDs.size())
       ID = threadIDs[threadID];
 
 #else
     ssize_t ID = threadID;
-    //std::cout << threadID << " -> " << ID << std::endl;
 #endif
     return ID;
   }
+
   /*! set affinity of the calling thread */
   void setAffinity(ssize_t affinity)
   {
