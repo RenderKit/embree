@@ -104,7 +104,7 @@ inline varying int& RTCRayN_geomID(void* uniform ptr, uniform size_t N, uniform 
 inline varying int& RTCRayN_primID(void* uniform ptr, uniform size_t N, uniform size_t i) { return *((varying int*   uniform) &((uniform int*  )ptr)[16*N+i]); }; //!< primitive ID
 inline varying int& RTCRayN_instID(void* uniform ptr, uniform size_t N, uniform size_t i) { return *((varying int*   uniform) &((uniform int*  )ptr)[17*N+i]); }; //!< instance ID
 
-struct RTCRayPN
+struct RTCRayNp
 {
   /* ray data */
   uniform float* uniform orgx;  //!< x coordinate of ray origin

@@ -188,7 +188,7 @@ namespace embree
         }
     }
 
-    void RayStream::filterSOP(Scene *scene, RTCRayPN& _rayN, const size_t N, const size_t streams, const size_t stream_offset, const size_t flags, const bool intersect)
+    void RayStream::filterSOP(Scene *scene, RTCRayNp& _rayN, const size_t N, const size_t streams, const size_t stream_offset, const size_t flags, const bool intersect)
     {
       RayPN& rayN = *(RayPN*)&_rayN;
 

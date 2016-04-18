@@ -25,7 +25,7 @@ struct RTCRay;
 struct RTCRay4;
 struct RTCRay8;
 struct RTCRay16;
-struct RTCRayPN;
+struct RTCRayNp;
 
 /*! scene flags */
 enum RTCSceneFlags 
@@ -142,7 +142,7 @@ RTCORE_API void rtcIntersectNM (RTCScene scene, void* rays, const size_t N, cons
  *  ray packets in bytes. In contrast to the rtcIntersectNM function
  *  this function accepts a separate data pointer for each component
  *  of the ray packet. */
-RTCORE_API void rtcIntersectPNM (RTCScene scene, RTCRayPN& rays, const size_t N, const size_t M, const size_t stride, const size_t flags);
+RTCORE_API void rtcIntersectNMp (RTCScene scene, RTCRayNp& rays, const size_t N, const size_t M, const size_t stride, const size_t flags);
 
 /*! Tests if a single ray is occluded by the scene. The ray has to be
  *  aligned to 16 bytes. This function can only be called for scenes
@@ -187,7 +187,7 @@ RTCORE_API void rtcOccludedNM (RTCScene scene, void* rays, const size_t N, const
  *  between rays in bytes. In contrast to the rtcOccludedNM function
  *  this function accepts a separate data pointer for each component
  *  of the ray packet. */
-RTCORE_API void rtcOccludedPNM (RTCScene scene, RTCRayPN& rays, const size_t N, const size_t M, const size_t stride, const size_t flags);
+RTCORE_API void rtcOccludedNMp (RTCScene scene, RTCRayNp& rays, const size_t N, const size_t M, const size_t stride, const size_t flags);
 
 /*! Deletes the scene. All contained geometry get also destroyed. */
 RTCORE_API void rtcDeleteScene (RTCScene scene);
