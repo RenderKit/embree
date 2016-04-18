@@ -45,16 +45,16 @@ extern "C" void ispcIntersect1 (RTCScene scene, uniform RTCRay1& ray);
 extern "C" void ispcIntersect4 (void* uniform valid, RTCScene scene, void* uniform ray);
 extern "C" void ispcIntersect8 (void* uniform valid, RTCScene scene, void* uniform ray);
 extern "C" void ispcIntersect16 (void* uniform valid, RTCScene scene, void* uniform ray);
-extern "C" void ispcIntersectNM (RTCScene scene, void* uniform rayN, const uniform size_t M, const uniform size_t N, const uniform size_t stride, const uniform size_t flags);
-extern "C" void ispcIntersectPNM (RTCScene scene, uniform RTCRayPN& rayN, const uniform size_t N, const uniform size_t streams, const uniform size_t offset, const uniform size_t flags);
+extern "C" void ispcIntersectNM (RTCScene scene, void* uniform rays, const uniform size_t M, const uniform size_t N, const uniform size_t stride, const uniform size_t flags);
+extern "C" void ispcIntersectPNM (RTCScene scene, uniform RTCRayPN& rays, const uniform size_t N, const uniform size_t streams, const uniform size_t offset, const uniform size_t flags);
 
 
 extern "C" void ispcOccluded1 (RTCScene scene, uniform RTCRay1& ray);
 extern "C" void ispcOccluded4 (void* uniform valid, RTCScene scene, void* uniform ray);
 extern "C" void ispcOccluded8 (void* uniform valid, RTCScene scene, void* uniform ray);
 extern "C" void ispcOccluded16 (void* uniform valid, RTCScene scene, void* uniform ray);
-extern "C" void ispcOccludedNM (RTCScene scene, void* uniform rayN, const uniform size_t M, const uniform size_t N, const uniform size_t stride, const uniform size_t flags);
-extern "C" void ispcOccludedPNM (RTCScene scene, uniform RTCRayPN& rayN, const uniform size_t N, const uniform size_t streams, const uniform size_t offset, const uniform size_t flags);
+extern "C" void ispcOccludedNM (RTCScene scene, void* uniform rays, const uniform size_t M, const uniform size_t N, const uniform size_t stride, const uniform size_t flags);
+extern "C" void ispcOccludedPNM (RTCScene scene, uniform RTCRayPN& rays, const uniform size_t N, const uniform size_t streams, const uniform size_t offset, const uniform size_t flags);
 
 extern "C" void ispcDeleteScene (RTCScene scene);
 extern "C" uniform unsigned int ispcNewInstance (RTCScene target, RTCScene source);
@@ -330,8 +330,8 @@ void rtcOccludedNM (RTCScene scene, void* uniform rays, const uniform size_t N, 
   ispcOccludedNM(scene,rays,N,M,stride,flags);
 }
 
-void rtcOccludedPNM (RTCScene scene, uniform RTCRayPN& rayN, const uniform size_t N, const uniform size_t M, const uniform size_t offset, const uniform size_t flags) {
-  ispcOccludedPNM(scene,rayN,N,M,offset,flags);
+void rtcOccludedPNM (RTCScene scene, uniform RTCRayPN& rays, const uniform size_t N, const uniform size_t M, const uniform size_t offset, const uniform size_t flags) {
+  ispcOccludedPNM(scene,rays,N,M,offset,flags);
 }
 
 void rtcDeleteScene (RTCScene scene) {

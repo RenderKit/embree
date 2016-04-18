@@ -412,7 +412,7 @@ namespace embree
 #endif
 
 #if defined (RTCORE_RAY_PACKETS)
-  RTCORE_API void rtcIntersect1M (RTCScene hscene, RTCRay* rayN, const size_t M, const size_t stride, const size_t flags) 
+  RTCORE_API void rtcIntersect1M (RTCScene hscene, RTCRay* rays, const size_t M, const size_t stride, const size_t flags) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -420,18 +420,18 @@ namespace embree
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
-    if (((size_t)rayN ) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 16 bytes");   
+    if (((size_t)rays ) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 16 bytes");   
 #endif
     STAT3(normal.travs,M,1,1);
    
     /* fast codepath for single rays */
     if (likely(M == 1)) {
-      scene->intersect(*rayN);
+      scene->intersect(*rays);
     } 
 
     /* codepath for streams */
     else {
-      scene->device->rayStreamFilters.filterAOS(scene,rayN,M,stride,flags,true);   
+      scene->device->rayStreamFilters.filterAOS(scene,rays,M,stride,flags,true);   
     }
 
     RTCORE_CATCH_END(scene->device);
@@ -469,7 +469,7 @@ namespace embree
     RTCORE_CATCH_END(scene->device);
   }
 
-  RTCORE_API void rtcIntersectPNM (RTCScene hscene, RTCRayPN& rayN, const size_t N, const size_t M, const size_t stride, const size_t flags) 
+  RTCORE_API void rtcIntersectPNM (RTCScene hscene, RTCRayPN& rays, const size_t N, const size_t M, const size_t stride, const size_t flags) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -477,28 +477,28 @@ namespace embree
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
-    if (((size_t)rayN.orgx   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.orgx not aligned to 4 bytes");   
-    if (((size_t)rayN.orgy   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.orgy not aligned to 4 bytes");   
-    if (((size_t)rayN.orgz   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.orgz not aligned to 4 bytes");   
-    if (((size_t)rayN.dirx   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.dirx not aligned to 4 bytes");   
-    if (((size_t)rayN.diry   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.diry not aligned to 4 bytes");   
-    if (((size_t)rayN.dirz   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.dirz not aligned to 4 bytes");   
-    if (((size_t)rayN.tnear  ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.dirx not aligned to 4 bytes");   
-    if (((size_t)rayN.tfar   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.tnear not aligned to 4 bytes");   
-    if (((size_t)rayN.time   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.time not aligned to 4 bytes");   
-    if (((size_t)rayN.mask   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.mask not aligned to 4 bytes");   
-    if (((size_t)rayN.Ngx    ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.Ngx not aligned to 4 bytes");   
-    if (((size_t)rayN.Ngy    ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.Ngy not aligned to 4 bytes");   
-    if (((size_t)rayN.Ngz    ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.Ngz not aligned to 4 bytes");   
-    if (((size_t)rayN.u      ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.u not aligned to 4 bytes");   
-    if (((size_t)rayN.v      ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.v not aligned to 4 bytes");   
-    if (((size_t)rayN.geomID ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.geomID not aligned to 4 bytes");   
-    if (((size_t)rayN.primID ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.primID not aligned to 4 bytes");   
-    if (((size_t)rayN.instID ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.instID not aligned to 4 bytes");   
+    if (((size_t)rays.orgx   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.orgx not aligned to 4 bytes");   
+    if (((size_t)rays.orgy   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.orgy not aligned to 4 bytes");   
+    if (((size_t)rays.orgz   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.orgz not aligned to 4 bytes");   
+    if (((size_t)rays.dirx   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.dirx not aligned to 4 bytes");   
+    if (((size_t)rays.diry   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.diry not aligned to 4 bytes");   
+    if (((size_t)rays.dirz   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.dirz not aligned to 4 bytes");   
+    if (((size_t)rays.tnear  ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.dirx not aligned to 4 bytes");   
+    if (((size_t)rays.tfar   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.tnear not aligned to 4 bytes");   
+    if (((size_t)rays.time   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.time not aligned to 4 bytes");   
+    if (((size_t)rays.mask   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.mask not aligned to 4 bytes");   
+    if (((size_t)rays.Ngx    ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.Ngx not aligned to 4 bytes");   
+    if (((size_t)rays.Ngy    ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.Ngy not aligned to 4 bytes");   
+    if (((size_t)rays.Ngz    ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.Ngz not aligned to 4 bytes");   
+    if (((size_t)rays.u      ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.u not aligned to 4 bytes");   
+    if (((size_t)rays.v      ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.v not aligned to 4 bytes");   
+    if (((size_t)rays.geomID ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.geomID not aligned to 4 bytes");   
+    if (((size_t)rays.primID ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.primID not aligned to 4 bytes");   
+    if (((size_t)rays.instID ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.instID not aligned to 4 bytes");   
 #endif
     STAT3(normal.travs,N*M,N,N);
 
-    scene->device->rayStreamFilters.filterSOP(scene,rayN,N,M,stride,flags,true);
+    scene->device->rayStreamFilters.filterSOP(scene,rays,N,M,stride,flags,true);
 
     RTCORE_CATCH_END(scene->device);
   }
@@ -688,7 +688,7 @@ namespace embree
     RTCORE_CATCH_END(scene->device);
   }
 
-  RTCORE_API void rtcOccludedPNM(RTCScene hscene, RTCRayPN& rayN, const size_t N, const size_t M, const size_t stride, const size_t flags) 
+  RTCORE_API void rtcOccludedPNM(RTCScene hscene, RTCRayPN& rays, const size_t N, const size_t M, const size_t stride, const size_t flags) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -696,28 +696,28 @@ namespace embree
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
-    if (((size_t)rayN.orgx   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.orgx not aligned to 4 bytes");   
-    if (((size_t)rayN.orgy   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.orgy not aligned to 4 bytes");   
-    if (((size_t)rayN.orgz   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.orgz not aligned to 4 bytes");   
-    if (((size_t)rayN.dirx   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.dirx not aligned to 4 bytes");   
-    if (((size_t)rayN.diry   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.diry not aligned to 4 bytes");   
-    if (((size_t)rayN.dirz   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.dirz not aligned to 4 bytes");   
-    if (((size_t)rayN.tnear  ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.dirx not aligned to 4 bytes");   
-    if (((size_t)rayN.tfar   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.tnear not aligned to 4 bytes");   
-    if (((size_t)rayN.time   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.time not aligned to 4 bytes");   
-    if (((size_t)rayN.mask   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.mask not aligned to 4 bytes");   
-    if (((size_t)rayN.Ngx    ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.Ngx not aligned to 4 bytes");   
-    if (((size_t)rayN.Ngy    ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.Ngy not aligned to 4 bytes");   
-    if (((size_t)rayN.Ngz    ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.Ngz not aligned to 4 bytes");   
-    if (((size_t)rayN.u      ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.u not aligned to 4 bytes");   
-    if (((size_t)rayN.v      ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.v not aligned to 4 bytes");   
-    if (((size_t)rayN.geomID ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.geomID not aligned to 4 bytes");   
-    if (((size_t)rayN.primID ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.primID not aligned to 4 bytes");   
-    if (((size_t)rayN.instID ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rayN.instID not aligned to 4 bytes");   
+    if (((size_t)rays.orgx   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.orgx not aligned to 4 bytes");   
+    if (((size_t)rays.orgy   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.orgy not aligned to 4 bytes");   
+    if (((size_t)rays.orgz   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.orgz not aligned to 4 bytes");   
+    if (((size_t)rays.dirx   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.dirx not aligned to 4 bytes");   
+    if (((size_t)rays.diry   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.diry not aligned to 4 bytes");   
+    if (((size_t)rays.dirz   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.dirz not aligned to 4 bytes");   
+    if (((size_t)rays.tnear  ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.dirx not aligned to 4 bytes");   
+    if (((size_t)rays.tfar   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.tnear not aligned to 4 bytes");   
+    if (((size_t)rays.time   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.time not aligned to 4 bytes");   
+    if (((size_t)rays.mask   ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.mask not aligned to 4 bytes");   
+    if (((size_t)rays.Ngx    ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.Ngx not aligned to 4 bytes");   
+    if (((size_t)rays.Ngy    ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.Ngy not aligned to 4 bytes");   
+    if (((size_t)rays.Ngz    ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.Ngz not aligned to 4 bytes");   
+    if (((size_t)rays.u      ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.u not aligned to 4 bytes");   
+    if (((size_t)rays.v      ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.v not aligned to 4 bytes");   
+    if (((size_t)rays.geomID ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.geomID not aligned to 4 bytes");   
+    if (((size_t)rays.primID ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.primID not aligned to 4 bytes");   
+    if (((size_t)rays.instID ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.instID not aligned to 4 bytes");   
 #endif
     STAT3(shadow.travs,N*M,N,N);
 
-    scene->device->rayStreamFilters.filterSOP(scene,rayN,N,M,stride,flags,false);
+    scene->device->rayStreamFilters.filterSOP(scene,rays,N,M,stride,flags,false);
 
     RTCORE_CATCH_END(scene->device);
   }
