@@ -46,7 +46,7 @@ extern "C" void ispcIntersect4 (void* uniform valid, RTCScene scene, void* unifo
 extern "C" void ispcIntersect8 (void* uniform valid, RTCScene scene, void* uniform ray);
 extern "C" void ispcIntersect16 (void* uniform valid, RTCScene scene, void* uniform ray);
 extern "C" void ispcIntersectNM (RTCScene scene, void* uniform rays, const uniform size_t M, const uniform size_t N, const uniform size_t stride, const uniform size_t flags);
-extern "C" void ispcIntersectPNM (RTCScene scene, uniform RTCRayNp& rays, const uniform size_t N, const uniform size_t streams, const uniform size_t offset, const uniform size_t flags);
+extern "C" void ispcIntersectNMp (RTCScene scene, uniform RTCRayNp& rays, const uniform size_t N, const uniform size_t streams, const uniform size_t offset, const uniform size_t flags);
 
 
 extern "C" void ispcOccluded1 (RTCScene scene, uniform RTCRay1& ray);
@@ -54,7 +54,7 @@ extern "C" void ispcOccluded4 (void* uniform valid, RTCScene scene, void* unifor
 extern "C" void ispcOccluded8 (void* uniform valid, RTCScene scene, void* uniform ray);
 extern "C" void ispcOccluded16 (void* uniform valid, RTCScene scene, void* uniform ray);
 extern "C" void ispcOccludedNM (RTCScene scene, void* uniform rays, const uniform size_t M, const uniform size_t N, const uniform size_t stride, const uniform size_t flags);
-extern "C" void ispcOccludedPNM (RTCScene scene, uniform RTCRayNp& rays, const uniform size_t N, const uniform size_t streams, const uniform size_t offset, const uniform size_t flags);
+extern "C" void ispcOccludedNMp (RTCScene scene, uniform RTCRayNp& rays, const uniform size_t N, const uniform size_t streams, const uniform size_t offset, const uniform size_t flags);
 
 extern "C" void ispcDeleteScene (RTCScene scene);
 extern "C" uniform unsigned int ispcNewInstance (RTCScene target, RTCScene source);
@@ -124,14 +124,14 @@ extern "C" void ispcSetIntersectFunction1 (RTCScene scene, uniform unsigned int 
 extern "C" void ispcSetIntersectFunction4 (RTCScene scene, uniform unsigned int geomID, void* uniform intersect); 
 extern "C" void ispcSetIntersectFunction8 (RTCScene scene, uniform unsigned int geomID, void* uniform intersect);
 extern "C" void ispcSetIntersectFunction16 (RTCScene scene, uniform unsigned int geomID, void* uniform intersect); 
-extern "C" void ispcSetIntersectFunction1M (RTCScene scene, uniform unsigned int geomID, void* uniform intersect); 
+extern "C" void ispcSetIntersectFunction1Mp (RTCScene scene, uniform unsigned int geomID, void* uniform intersect); 
 extern "C" void ispcSetIntersectFunctionN (RTCScene scene, uniform unsigned int geomID, void* uniform intersect); 
 
 extern "C" void ispcSetOccludedFunction1 (RTCScene scene, uniform unsigned int geomID, void* uniform occluded);
 extern "C" void ispcSetOccludedFunction4 (RTCScene scene, uniform unsigned int geomID, void* uniform occluded);
 extern "C" void ispcSetOccludedFunction8 (RTCScene scene, uniform unsigned int geomID, void* uniform occluded);
 extern "C" void ispcSetOccludedFunction16 (RTCScene scene, uniform unsigned int geomID, void* uniform occluded);
-extern "C" void ispcSetOccludedFunction1M (RTCScene scene, uniform unsigned int geomID, void* uniform occluded);
+extern "C" void ispcSetOccludedFunction1Mp (RTCScene scene, uniform unsigned int geomID, void* uniform occluded);
 extern "C" void ispcSetOccludedFunctionN (RTCScene scene, uniform unsigned int geomID, void* uniform occluded);
 
 extern "C" void ispcSetIntersectionFilterFunction1 (RTCScene scene, uniform unsigned int geomID, void* uniform filter);
@@ -296,7 +296,7 @@ void rtcIntersectNM (RTCScene scene, void* uniform rays, const uniform size_t N,
 }
 
 void rtcIntersectNMp (RTCScene scene, uniform RTCRayNp& rays, const uniform size_t N, const uniform size_t M, const uniform size_t offset, const uniform size_t flags) {
-  ispcIntersectPNM(scene,rays,N,M,offset,flags);
+  ispcIntersectNMp(scene,rays,N,M,offset,flags);
 }
 
 void rtcOccluded1 (RTCScene scene, uniform RTCRay1& ray) {
@@ -331,7 +331,7 @@ void rtcOccludedNM (RTCScene scene, void* uniform rays, const uniform size_t N, 
 }
 
 void rtcOccludedNMp (RTCScene scene, uniform RTCRayNp& rays, const uniform size_t N, const uniform size_t M, const uniform size_t offset, const uniform size_t flags) {
-  ispcOccludedPNM(scene,rays,N,M,offset,flags);
+  ispcOccludedNMp(scene,rays,N,M,offset,flags);
 }
 
 void rtcDeleteScene (RTCScene scene) {
@@ -499,8 +499,8 @@ void rtcSetIntersectFunction (RTCScene scene, uniform unsigned int geomID, unifo
     ispcSetIntersectFunction16(scene,geomID,intersect);
 }
 
-void rtcSetIntersectFunction1M (RTCScene scene, uniform unsigned int geomID, uniform RTCIntersectFunc1M intersect) {
-  ispcSetIntersectFunction1M(scene,geomID,intersect);
+void rtcSetIntersectFunction1Mp (RTCScene scene, uniform unsigned int geomID, uniform RTCIntersectFunc1Mp intersect) {
+  ispcSetIntersectFunction1Mp(scene,geomID,intersect);
 }
 
 void rtcSetIntersectFunctionN (RTCScene scene, uniform unsigned int geomID, uniform RTCIntersectFuncN intersect) {
@@ -521,8 +521,8 @@ void rtcSetOccludedFunction (RTCScene scene, uniform unsigned int geomID, unifor
     ispcSetOccludedFunction16(scene,geomID,occluded);
 }
 
-void rtcSetOccludedFunction1M (RTCScene scene, uniform unsigned int geomID, uniform RTCOccludedFunc1M occluded) {
-  ispcSetOccludedFunction1M(scene,geomID,occluded);
+void rtcSetOccludedFunction1Mp (RTCScene scene, uniform unsigned int geomID, uniform RTCOccludedFunc1Mp occluded) {
+  ispcSetOccludedFunction1Mp(scene,geomID,occluded);
 }
 
 void rtcSetOccludedFunctionN (RTCScene scene, uniform unsigned int geomID, uniform RTCOccludedFuncN occluded) {
