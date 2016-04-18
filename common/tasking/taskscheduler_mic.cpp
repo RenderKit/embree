@@ -25,18 +25,18 @@ namespace embree
   /* initialization structure for threads */
   struct Thread 
   {
-    Thread (size_t threadIndex, size_t threadCount, TaskScheduler* scheduler) 
+    Thread (size_t threadIndex, size_t threadCount, TaskSchedulerBase* scheduler) 
       : threadIndex(threadIndex), threadCount(threadCount), scheduler(scheduler) {}
 
   public:
     size_t threadIndex;
     size_t threadCount;
-    TaskScheduler* scheduler;
+    TaskSchedulerBase* scheduler;
   };
   
-  TaskScheduler* TaskScheduler::instance = nullptr;
+  TaskSchedulerBase* TaskSchedulerBase::instance = nullptr;
 
-  __dllexport void TaskScheduler::create(size_t numThreads, bool set_affinity)
+  __dllexport void TaskSchedulerBase::create(size_t numThreads, bool set_affinity)
   {
     if (instance)
       THROW_RUNTIME_ERROR("Embree threads already running.");
@@ -52,58 +52,58 @@ namespace embree
     instance->createThreads(numThreads,set_affinity);
   }
 
-  __dllexport size_t TaskScheduler::getNumThreads() 
+  __dllexport size_t TaskSchedulerBase::getNumThreads() 
   {
     if (!instance) THROW_RUNTIME_ERROR("Embree threads not running.");
     return instance->numEnabledThreads;
   }
 
-  size_t TaskScheduler::enableThreads(size_t N)
+  size_t TaskSchedulerBase::enableThreads(size_t N)
   {
     if (!instance) THROW_RUNTIME_ERROR("Embree threads not running.");
     N = min(N,instance->numThreads);
-    //TaskScheduler::init(N);
+    //TaskSchedulerBase::init(N);
     return instance->numEnabledThreads = N;
   }
 
-  __dllexport void TaskScheduler::addTask(ssize_t threadIndex, QUEUE queue, Task* task)
+  __dllexport void TaskSchedulerBase::addTask(ssize_t threadIndex, QUEUE queue, Task* task)
   {
     if (!instance) THROW_RUNTIME_ERROR("Embree threads not running.");
     instance->add(threadIndex,queue,task);
   }
 
-  void TaskScheduler::executeTask(size_t threadIndex, size_t threadCount, 
+  void TaskSchedulerBase::executeTask(size_t threadIndex, size_t threadCount, 
                                   runFunction run, void* runData, size_t elts, completeFunction complete, void* completeData, const char* name)
   {
-    TaskScheduler::Event event;
-    TaskScheduler::Task task(&event,run,runData,elts,complete,completeData,name);
-    instance->add(threadIndex,TaskScheduler::GLOBAL_FRONT,&task);
+    TaskSchedulerBase::Event event;
+    TaskSchedulerBase::Task task(&event,run,runData,elts,complete,completeData,name);
+    instance->add(threadIndex,TaskSchedulerBase::GLOBAL_FRONT,&task);
     instance->wait(threadIndex,threadCount,&event);
   }
 
-  void TaskScheduler::executeTask(size_t threadIndex, size_t threadCount,  
+  void TaskSchedulerBase::executeTask(size_t threadIndex, size_t threadCount,  
                                   runFunction run, void* runData, size_t elts, const char* name)
   {
-    TaskScheduler::Event event;
-    TaskScheduler::Task task(&event,run,runData,elts,nullptr,nullptr,name);
-    instance->add(threadIndex,TaskScheduler::GLOBAL_FRONT,&task);
+    TaskSchedulerBase::Event event;
+    TaskSchedulerBase::Task task(&event,run,runData,elts,nullptr,nullptr,name);
+    instance->add(threadIndex,TaskSchedulerBase::GLOBAL_FRONT,&task);
     instance->wait(threadIndex,threadCount,&event);
   }
 
-  void TaskScheduler::executeTask(size_t threadIndex, size_t threadCount,  
+  void TaskSchedulerBase::executeTask(size_t threadIndex, size_t threadCount,  
                                   completeFunction complete, void* completeData, const char* name)
   {
-    TaskScheduler::Event event;
-    TaskScheduler::Task task(&event,nullptr,nullptr,1,complete,completeData,name);
-    instance->add(threadIndex,TaskScheduler::GLOBAL_FRONT,&task);
+    TaskSchedulerBase::Event event;
+    TaskSchedulerBase::Task task(&event,nullptr,nullptr,1,complete,completeData,name);
+    instance->add(threadIndex,TaskSchedulerBase::GLOBAL_FRONT,&task);
     instance->wait(threadIndex,threadCount,&event);
   }
 
-  void TaskScheduler::waitForEvent(Event* event) {
+  void TaskSchedulerBase::waitForEvent(Event* event) {
     instance->wait(0,instance->getNumThreads(),event);
   }
 
-  void TaskScheduler::destroy() 
+  void TaskSchedulerBase::destroy() 
   {
     enableThreads(-1);
     if (instance) {
@@ -113,10 +113,10 @@ namespace embree
     }
   }
   
-  TaskScheduler::TaskScheduler () 
+  TaskSchedulerBase::TaskSchedulerBase () 
     : terminateThreads(false), defaultNumThreads(true), numThreads(0), numEnabledThreads(0) {}
 
-  void TaskScheduler::createThreads(size_t numThreads_in, bool set_affinity)
+  void TaskSchedulerBase::createThreads(size_t numThreads_in, bool set_affinity)
   {
     numThreads = numThreads_in;
     defaultNumThreads = false;
@@ -142,7 +142,7 @@ namespace embree
     //taskBarrier.init(numThreads);
   }
 
-  void TaskScheduler::threadFunction(void* ptr) try 
+  void TaskSchedulerBase::threadFunction(void* ptr) try 
   {
     Thread thread = *(Thread*) ptr;
     thread.scheduler->run(thread.threadIndex,thread.threadCount);
@@ -173,7 +173,7 @@ namespace embree
     t_threadIndex = threadIndex;
   }
 
-  void TaskScheduler::destroyThreads ()
+  void TaskSchedulerBase::destroyThreads ()
   {
     terminate();
     for (size_t i=0; i<threads.size(); i++) join(threads[i]);
@@ -357,7 +357,7 @@ namespace embree
     DBG(std::cout << "START WORK task " << task << " threadIndex " << threadIndex << std::endl << std::flush);
     
     /* take next task from task list */
-    TaskScheduler::Event* event = task->event;
+    TaskSchedulerBase::Event* event = task->event;
     
     DBG(
 	std::cout << "GOT TASK " << (void*)task << " : threadIndex " << threadIndex << " threadCount " << threadCount << std::endl << std::flush;

@@ -260,7 +260,7 @@ namespace embree
       while (true) 
       {
         /* allocate using current block */
-        size_t threadIndex = TaskSchedulerTBB::threadIndex();
+        size_t threadIndex = TaskScheduler::threadIndex();
         size_t slot = threadIndex & slotMask;
 	Block* myUsedBlocks = threadUsedBlocks[slot];
         if (myUsedBlocks) {

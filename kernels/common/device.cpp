@@ -40,7 +40,7 @@
 #if defined(TASKING_LOCKSTEP)
 #  include "../../common/tasking/taskscheduler_mic.h"
 #elif defined(TASKING_TBB_INTERNAL)
-#  include "../../common/tasking/taskscheduler_tbb.h"
+#  include "../../common/tasking/taskscheduler.h"
 #endif
 
 namespace embree
@@ -73,7 +73,7 @@ namespace embree
 
     void on_scheduler_entry( bool ) {
       ++threadCount;
-      setAffinity(TaskSchedulerTBB::threadIndex()); // FIXME: use threadCount?
+      setAffinity(TaskScheduler::threadIndex()); // FIXME: use threadCount?
     }
 
     void on_scheduler_exit( bool ) { 
@@ -381,11 +381,11 @@ namespace embree
     if (g_num_threads_map.size() == 0)
     {
 #if defined(TASKING_LOCKSTEP)
-      TaskScheduler::destroy();
+      TaskSchedulerBase::destroy();
 #endif
       
 #if defined(TASKING_TBB_INTERNAL)
-      TaskSchedulerTBB::destroy();
+      TaskScheduler::destroy();
 #endif
       
 #if defined(TASKING_TBB)
@@ -405,11 +405,11 @@ namespace embree
       maxNumThreads = 0;
 
 #if defined(TASKING_LOCKSTEP)
-    TaskScheduler::create(maxNumThreads,State::set_affinity);
+    TaskSchedulerBase::create(maxNumThreads,State::set_affinity);
 #endif
 
 #if defined(TASKING_TBB_INTERNAL)
-    TaskSchedulerTBB::create(maxNumThreads,State::set_affinity);
+    TaskScheduler::create(maxNumThreads,State::set_affinity);
 #endif
 
 #if defined(TASKING_TBB)
@@ -430,11 +430,11 @@ namespace embree
     if (maxNumThreads == 0) 
     {
       g_tbb_threads_initialized = false;
-      TaskSchedulerTBB::g_numThreads = tbb::task_scheduler_init::default_num_threads();
+      TaskScheduler::g_numThreads = tbb::task_scheduler_init::default_num_threads();
     } else {
       g_tbb_threads_initialized = true;
       g_tbb_threads.initialize(maxNumThreads);
-      TaskSchedulerTBB::g_numThreads = maxNumThreads;
+      TaskScheduler::g_numThreads = maxNumThreads;
     }
 #if USE_TASK_ARENA
     arena = new tbb::task_arena(maxNumThreads);

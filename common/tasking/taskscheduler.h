@@ -50,12 +50,12 @@ namespace embree
     throw std::runtime_error("task group cancelled");
 #else
 #  define SPAWN_BEGIN 
-#  define SPAWN(closure) TaskSchedulerTBB::spawn(closure)
-#  define SPAWN_END if (!TaskSchedulerTBB::wait())      \
+#  define SPAWN(closure) TaskScheduler::spawn(closure)
+#  define SPAWN_END if (!TaskScheduler::wait())      \
       throw std::runtime_error("task cancelled");
 #endif
 
-  struct TaskSchedulerTBB : public RefCount
+  struct TaskScheduler : public RefCount
   {
     ALIGNED_STRUCT;
     friend class Device;
@@ -211,7 +211,7 @@ namespace embree
     {
       ALIGNED_STRUCT;
 
-      Thread (size_t threadIndex, const Ref<TaskSchedulerTBB>& scheduler)
+      Thread (size_t threadIndex, const Ref<TaskScheduler>& scheduler)
       : threadIndex(threadIndex), scheduler(scheduler), task(nullptr) {}
 
       __forceinline size_t threadCount() {
@@ -221,7 +221,7 @@ namespace embree
       size_t threadIndex;              //!< ID of this thread
       TaskQueue tasks;                 //!< local task queue
       Task* task;                      //!< current active task
-      Ref<TaskSchedulerTBB> scheduler;     //!< pointer to task scheduler
+      Ref<TaskScheduler> scheduler;     //!< pointer to task scheduler
     };
 
     /*! pool of worker threads */
@@ -237,10 +237,10 @@ namespace embree
       void setNumThreads(size_t numThreads, bool startThreads = false);
 
       /*! adds a task scheduler object for scheduling */
-      __dllexport void add(const Ref<TaskSchedulerTBB>& scheduler);
+      __dllexport void add(const Ref<TaskScheduler>& scheduler);
 
       /*! remove the task scheduler object again */
-      __dllexport void remove(const Ref<TaskSchedulerTBB>& scheduler);
+      __dllexport void remove(const Ref<TaskScheduler>& scheduler);
 
       /*! returns number of threads of the thread pool */
       size_t size() const { return numThreads; }
@@ -258,11 +258,11 @@ namespace embree
     private:
       MutexSys mutex;
       ConditionSys condition;
-      std::list<Ref<TaskSchedulerTBB> > schedulers;
+      std::list<Ref<TaskScheduler> > schedulers;
     };
 
-    TaskSchedulerTBB ();
-    ~TaskSchedulerTBB ();
+    TaskScheduler ();
+    ~TaskScheduler ();
 
     /*! initializes the task scheduler */
     static void create(size_t numThreads, bool set_affinity);
@@ -337,7 +337,7 @@ namespace embree
     template<typename Closure>
     static __forceinline void spawn(size_t size, const Closure& closure) 
     {
-      Thread* thread = TaskSchedulerTBB::thread();
+      Thread* thread = TaskScheduler::thread();
       if (likely(thread != nullptr)) thread->tasks.push_right(*thread,size,closure);
       else                           instance()->spawn_root(closure,size);
     }
@@ -382,16 +382,16 @@ namespace embree
     __dllexport static Thread* swapThread(Thread* thread);
 
     /*! returns the taskscheduler object to be used by the master thread */
-    __dllexport static TaskSchedulerTBB* instance();
+    __dllexport static TaskScheduler* instance();
 
     /*! starts the threads */
     __dllexport static void startThreads();
 
     /*! adds a task scheduler object for scheduling */
-    __dllexport static void addScheduler(const Ref<TaskSchedulerTBB>& scheduler);
+    __dllexport static void addScheduler(const Ref<TaskScheduler>& scheduler);
 
     /*! remove the task scheduler object again */
-    __dllexport static void removeScheduler(const Ref<TaskSchedulerTBB>& scheduler);
+    __dllexport static void removeScheduler(const Ref<TaskScheduler>& scheduler);
 
   private:
     std::vector<Thread*> threadLocal;
@@ -404,7 +404,7 @@ namespace embree
 
   private:
     static size_t g_numThreads;
-    static __thread TaskSchedulerTBB* g_instance;
+    static __thread TaskScheduler* g_instance;
     static __thread Thread* thread_local_thread;
     static ThreadPool* threadPool;
   };

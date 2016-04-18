@@ -22,7 +22,7 @@
 #if defined(TASKING_LOCKSTEP)
 #include "../../common/tasking/taskscheduler_mic.h"
 #endif
-#include "../../common/tasking/taskscheduler_tbb.h"
+#include "../../common/tasking/taskscheduler.h"
 
 namespace embree
 {
@@ -57,11 +57,11 @@ namespace embree
 
 #elif defined(TASKING_TBB_INTERNAL)
     if (N) {
-      TaskSchedulerTBB::spawn(Index(0),N,Index(1),[&] (const range<Index>& r) {
+      TaskScheduler::spawn(Index(0),N,Index(1),[&] (const range<Index>& r) {
           assert(r.size() == 1);
           func(r.begin());
         });
-      if (!TaskSchedulerTBB::wait())
+      if (!TaskScheduler::wait())
         throw std::runtime_error("task cancelled");
     }
 
@@ -106,8 +106,8 @@ namespace embree
       });
 
 #elif defined(TASKING_TBB_INTERNAL)
-    TaskSchedulerTBB::spawn(first,last,minStepSize,func);
-    if (!TaskSchedulerTBB::wait())
+    TaskScheduler::spawn(first,last,minStepSize,func);
+    if (!TaskScheduler::wait())
         throw std::runtime_error("task cancelled");
 #else
     tbb::parallel_for(tbb::blocked_range<Index>(first,last,minStepSize),[&](const tbb::blocked_range<Index>& r) { 

@@ -37,7 +37,7 @@ SET(EMBREE_LIBRARY_FILES
  
    embree.rc
 
-  ../../common/tasking/taskscheduler_tbb.cpp
+  ../../common/tasking/taskscheduler.cpp
   ../../common/tasking/tasksys.cpp
 
   ../algorithms/parallel_for.cpp

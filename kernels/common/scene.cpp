@@ -672,7 +672,7 @@ namespace embree
 
 #if defined(TASKING_LOCKSTEP)
 
-  void Scene::task_build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+  void Scene::task_build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskSchedulerBase::Event* event) 
   {
     LockStepTaskScheduler::Init init(threadIndex,threadCount,&lockstep_scheduler);
     if (threadIndex == 0) accels.build(threadIndex,threadCount);
@@ -706,9 +706,9 @@ namespace embree
     /* otherwise use our own threads */
     else
     {
-      TaskScheduler::EventSync event;
-      new (&task) TaskScheduler::Task(&event,_task_build_parallel,this,TaskScheduler::getNumThreads(),nullptr,nullptr,"scene_build");
-      TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_FRONT,&task);
+      TaskSchedulerBase::EventSync event;
+      new (&task) TaskSchedulerBase::Task(&event,_task_build_parallel,this,TaskSchedulerBase::getNumThreads(),nullptr,nullptr,"scene_build");
+      TaskSchedulerBase::addTask(-1,TaskSchedulerBase::GLOBAL_FRONT,&task);
       event.sync();
     }
 
@@ -748,13 +748,13 @@ namespace embree
     AutoUnlock<MutexSys> buildLock(buildMutex);
 
     /* allocates own taskscheduler for each build */
-    Ref<TaskSchedulerTBB> scheduler = nullptr;
+    Ref<TaskScheduler> scheduler = nullptr;
     { 
       Lock<MutexSys> lock(schedulerMutex);
       scheduler = this->scheduler;
       if (scheduler == null) {
         buildLock.lock();
-        this->scheduler = scheduler = new TaskSchedulerTBB;
+        this->scheduler = scheduler = new TaskScheduler;
       }
     }
 

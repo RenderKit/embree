@@ -397,7 +397,7 @@ namespace embree
         /* perform parallel sort for large N */
         else 
         {
-          const size_t numThreads = min((N+blockSize-1)/blockSize,TaskSchedulerTBB::threadCount(),size_t(MAX_TASKS));
+          const size_t numThreads = min((N+blockSize-1)/blockSize,TaskScheduler::threadCount(),size_t(MAX_TASKS));
           tbbRadixSort(numThreads);
         }
       }
