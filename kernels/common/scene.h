@@ -44,7 +44,7 @@ namespace embree
   __forceinline bool isIncoherent(RTCSceneFlags flags) { return flags & RTC_SCENE_INCOHERENT; }
   __forceinline bool isHighQuality(RTCSceneFlags flags) { return flags & RTC_SCENE_HIGH_QUALITY; }
   __forceinline bool isInterpolatable(RTCAlgorithmFlags flags) { return flags & RTC_INTERPOLATE; }
-  __forceinline bool isStreamMode(RTCAlgorithmFlags flags) { return flags & RTC_INTERSECTN; }
+  __forceinline bool isStreamMode(RTCAlgorithmFlags flags) { return flags & RTC_INTERSECT_STREAM; }
 
   /*! Base class all scenes are derived from */
   class Scene : public Accel

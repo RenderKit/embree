@@ -125,7 +125,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
 {
   uniform size_t numGeometries = scene_in->numGeometries;
   uniform int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
-  uniform int scene_aflags = RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING | RTC_INTERSECTN | RTC_INTERPOLATE;
+  uniform int scene_aflags = RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING | RTC_INTERSECT_STREAM | RTC_INTERPOLATE;
   RTCScene scene_out = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
 
   for (uniform size_t i=0; i<scene_in->numGeometries; i++)

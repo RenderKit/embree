@@ -617,7 +617,7 @@ namespace embree
     if ((aflags & RTC_INTERSECT4) == 0) intersectors.intersector4 = Accel::Intersector4(&invalid_rtcIntersect4);
     if ((aflags & RTC_INTERSECT8) == 0) intersectors.intersector8 = Accel::Intersector8(&invalid_rtcIntersect8);
     if ((aflags & RTC_INTERSECT16) == 0) intersectors.intersector16 = Accel::Intersector16(&invalid_rtcIntersect16);
-    if ((aflags & RTC_INTERSECTN) == 0) intersectors.intersectorN = Accel::IntersectorN(&invalid_rtcIntersectN);
+    if ((aflags & RTC_INTERSECT_STREAM) == 0) intersectors.intersectorN = Accel::IntersectorN(&invalid_rtcIntersectN);
 
     /* update commit counter */
     commitCounter++;
