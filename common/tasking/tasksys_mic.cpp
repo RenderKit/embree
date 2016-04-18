@@ -25,7 +25,7 @@ namespace embree
   struct ISPCTask
   {
   public:
-    ISPCTask (TaskSchedulerBase::Event* event, TaskFuncType func, void* data, int count)
+    ISPCTask (TaskScheduler::Event* event, TaskFuncType func, void* data, int count)
       : task(event,_run,this,count,_finish,this,"ISPCTask"), func(func), data(data) {}
 
     ~ISPCTask () {
@@ -36,31 +36,31 @@ namespace embree
     TASK_COMPLETE_FUNCTION(ISPCTask,finish);
     
   public:
-    TaskSchedulerBase::Task task;
+    TaskScheduler::Task task;
     TaskFuncType func;
     void* data;
   };
 
-  void ISPCTask::run(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskSchedulerBase::Event* event) {
-    func(data,threadIndex,/* threadCount */ TaskSchedulerBase::getNumThreads() ,taskIndex,taskCount);
+  void ISPCTask::run(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) {
+    func(data,threadIndex,/* threadCount */ TaskScheduler::getNumThreads() ,taskIndex,taskCount);
   }
 
-  void ISPCTask::finish(size_t threadIndex, size_t threadCount, TaskSchedulerBase::Event* event) {
+  void ISPCTask::finish(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event) {
     delete this;
   }
 
   extern "C" __dllexport void* ISPCAlloc(void** taskPtr, int64_t size, int32_t alignment) {
-    if (*taskPtr == nullptr) *taskPtr = new TaskSchedulerBase::EventSync;
+    if (*taskPtr == nullptr) *taskPtr = new TaskScheduler::EventSync;
     return (char*)_mm_malloc(size,alignment); 
   }
 
   extern "C" __dllexport void ISPCLaunch(void** taskPtr, void* func, void* data, int count) {      
-    ISPCTask* ispcTask = new ISPCTask((TaskSchedulerBase::Event*)(*taskPtr),(TaskFuncType)func,data,count);
-    TaskSchedulerBase::addTask(-1, TaskSchedulerBase::GLOBAL_BACK, &ispcTask->task);
+    ISPCTask* ispcTask = new ISPCTask((TaskScheduler::Event*)(*taskPtr),(TaskFuncType)func,data,count);
+    TaskScheduler::addTask(-1, TaskScheduler::GLOBAL_BACK, &ispcTask->task);
   }
   
   extern "C" __dllexport void ISPCSync(void* task) { // FIXME: for join other tasks would need threadIndex here
-    ((TaskSchedulerBase::EventSync*)task)->sync(); 
-    delete (TaskSchedulerBase::EventSync*)task;
+    ((TaskScheduler::EventSync*)task)->sync(); 
+    delete (TaskScheduler::EventSync*)task;
   }
 }

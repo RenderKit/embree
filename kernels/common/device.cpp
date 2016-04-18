@@ -39,8 +39,14 @@
 
 #if defined(TASKING_LOCKSTEP)
 #  include "../../common/tasking/taskscheduler_mic.h"
-#elif defined(TASKING_TBB_INTERNAL)
-#  include "../../common/tasking/taskscheduler.h"
+#endif
+
+#if defined(TASKING_TBB_INTERNAL)
+#  include "../../common/tasking/taskschedulerinternal.h"
+#endif
+
+#if defined(TASKING_TBB)
+#  include "../../common/tasking/taskschedulertbb.h"
 #endif
 
 namespace embree
@@ -60,33 +66,6 @@ namespace embree
   void BVH4iRegister();
   void BVH4MBRegister();
   void BVH4HairRegister();
-#endif
-
-#if defined(TASKING_TBB)
-
-  bool g_tbb_threads_initialized = false;
-  tbb::task_scheduler_init g_tbb_threads(tbb::task_scheduler_init::deferred);
-
-  class TBBAffinity: public tbb::task_scheduler_observer
-  {
-    tbb::atomic<int> threadCount;
-
-    void on_scheduler_entry( bool ) {
-      ++threadCount;
-      setAffinity(TaskSchedulerInternal::threadIndex()); // FIXME: use threadCount?
-    }
-
-    void on_scheduler_exit( bool ) { 
-      --threadCount; 
-    }
-  public:
-    
-    TBBAffinity() { threadCount = 0; }
-
-    int  get_concurrency()      { return threadCount; }
-    void set_concurrency(int i) { threadCount = i; }
-
-  } tbb_affinity;
 #endif
 
   static MutexSys g_mutex;
@@ -381,18 +360,15 @@ namespace embree
     if (g_num_threads_map.size() == 0)
     {
 #if defined(TASKING_LOCKSTEP)
-      TaskSchedulerBase::destroy();
+      TaskScheduler::destroy();
 #endif
       
 #if defined(TASKING_TBB_INTERNAL)
-      TaskSchedulerInternal::destroy();
+      TaskScheduler::destroy();
 #endif
       
 #if defined(TASKING_TBB)
-      if (g_tbb_threads_initialized) {
-        g_tbb_threads.terminate();
-        g_tbb_threads_initialized = false;
-      }
+      TaskScheduler::destroy();
 #endif
       return;
     }
@@ -405,37 +381,15 @@ namespace embree
       maxNumThreads = 0;
 
 #if defined(TASKING_LOCKSTEP)
-    TaskSchedulerBase::create(maxNumThreads,State::set_affinity);
+    TaskScheduler::create(maxNumThreads,State::set_affinity);
 #endif
 
 #if defined(TASKING_TBB_INTERNAL)
-    TaskSchedulerInternal::create(maxNumThreads,State::set_affinity);
+    TaskScheduler::create(maxNumThreads,State::set_affinity);
 #endif
 
 #if defined(TASKING_TBB)
-
-    /* first terminate threads in case we configured them */
-    if (g_tbb_threads_initialized) {
-      g_tbb_threads.terminate();
-      g_tbb_threads_initialized = false;
-    }
-
-    /* only set affinity if requested by the user */
-    if (State::set_affinity) {
-      tbb_affinity.set_concurrency(0);
-      tbb_affinity.observe(true); 
-    }
-
-    /* now either keep default settings are configure number of threads */
-    if (maxNumThreads == 0) 
-    {
-      g_tbb_threads_initialized = false;
-      TaskSchedulerInternal::g_numThreads = tbb::task_scheduler_init::default_num_threads();
-    } else {
-      g_tbb_threads_initialized = true;
-      g_tbb_threads.initialize(maxNumThreads);
-      TaskSchedulerInternal::g_numThreads = maxNumThreads;
-    }
+    TaskScheduler::create(maxNumThreads,State::set_affinity);
 #if USE_TASK_ARENA
     arena = new tbb::task_arena(maxNumThreads);
 #endif

@@ -57,11 +57,11 @@ namespace embree
 
 #elif defined(TASKING_TBB_INTERNAL)
     if (N) {
-      TaskSchedulerInternal::spawn(Index(0),N,Index(1),[&] (const range<Index>& r) {
+      TaskScheduler::spawn(Index(0),N,Index(1),[&] (const range<Index>& r) {
           assert(r.size() == 1);
           func(r.begin());
         });
-      if (!TaskSchedulerInternal::wait())
+      if (!TaskScheduler::wait())
         throw std::runtime_error("task cancelled");
     }
 
@@ -106,8 +106,8 @@ namespace embree
       });
 
 #elif defined(TASKING_TBB_INTERNAL)
-    TaskSchedulerInternal::spawn(first,last,minStepSize,func);
-    if (!TaskSchedulerInternal::wait())
+    TaskScheduler::spawn(first,last,minStepSize,func);
+    if (!TaskScheduler::wait())
         throw std::runtime_error("task cancelled");
 #else
     tbb::parallel_for(tbb::blocked_range<Index>(first,last,minStepSize),[&](const tbb::blocked_range<Index>& r) { 

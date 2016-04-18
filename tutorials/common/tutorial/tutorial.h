@@ -17,7 +17,9 @@
 #pragma once
 
 #include "../default.h"
-#include "tutorial_device.h"
+//#include "tutorial_device.h"
+#include "camera.h"
+#include "scene.h"
 
 namespace embree
 {

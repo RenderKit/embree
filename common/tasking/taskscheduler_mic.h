@@ -28,7 +28,7 @@
 namespace embree
 {
   /*! Interface to different task scheduler implementations. */
-  class TaskSchedulerBase : public RefCount
+  class TaskScheduler : public RefCount
   {
   public:
     struct Event;
@@ -37,24 +37,24 @@ namespace embree
     enum QUEUE { GLOBAL_FRONT, GLOBAL_BACK };
 
 #define TASK_RUN_FUNCTION(Class,name)                                   \
-    void name(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskSchedulerBase::Event* taskGroup); \
-    static void _##name(void* This, size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskSchedulerBase::Event* taskGroup) { \
+    void name(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup); \
+    static void _##name(void* This, size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup) { \
       ((Class*)This)->name(threadIndex,threadCount,taskIndex,taskCount,taskGroup); \
     }
     
 #define TASK_COMPLETE_FUNCTION(Class,name)                              \
-    void name(size_t threadIndex, size_t threadCount, TaskSchedulerBase::Event* taskGroup); \
-    static void _##name(void* This, size_t threadIndex, size_t threadCount, TaskSchedulerBase::Event* taskGroup) { \
+    void name(size_t threadIndex, size_t threadCount, TaskScheduler::Event* taskGroup); \
+    static void _##name(void* This, size_t threadIndex, size_t threadCount, TaskScheduler::Event* taskGroup) { \
       ((Class*)This)->name(threadIndex,threadCount,taskGroup); \
     }
 
 #define TASK_RUN_FUNCTION_(Class,name)                                   \
-    static void _##name(void* This, size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskSchedulerBase::Event* taskGroup) { \
+    static void _##name(void* This, size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup) { \
       ((Class*)This)->name(threadIndex,threadCount,taskIndex,taskCount,taskGroup); \
     }
     
 #define TASK_COMPLETE_FUNCTION_(Class,name)                              \
-    static void _##name(void* This, size_t threadIndex, size_t threadCount, TaskSchedulerBase::Event* taskGroup) { \
+    static void _##name(void* This, size_t threadIndex, size_t threadCount, TaskScheduler::Event* taskGroup) { \
       ((Class*)This)->name(threadIndex,threadCount,taskGroup); \
     }
     
@@ -130,12 +130,12 @@ namespace embree
   protected:
 
     /*! construction */
-    TaskSchedulerBase();
+    TaskScheduler();
 
   public:
 
     /*! single instance of task scheduler */
-    static TaskSchedulerBase* instance;
+    static TaskScheduler* instance;
     
     /*! creates the threads */
     static __dllexport void create(size_t numThreads = 0, bool set_affinity = true);
@@ -190,6 +190,9 @@ namespace embree
 
     /*! destroys all threads */
     void destroyThreads();
+
+  public:
+    static size_t threadCount();
 
     /* thread handling */
   protected:
@@ -414,19 +417,19 @@ namespace embree
       ExecuteClosureTask (const Closure& closure) 
       : closure(closure)
       {
-        TaskSchedulerBase::EventSync event;
-        TaskSchedulerBase::Task task(&event,_task_execute_parallel,this,TaskSchedulerBase::getNumThreads(),nullptr,nullptr,"executing_closure");
-        TaskSchedulerBase::addTask(-1,TaskSchedulerBase::GLOBAL_FRONT,&task);
+        TaskScheduler::EventSync event;
+        TaskScheduler::Task task(&event,_task_execute_parallel,this,TaskScheduler::getNumThreads(),nullptr,nullptr,"executing_closure");
+        TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_FRONT,&task);
         event.sync();
       }
       
-      void task_execute_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskSchedulerBase::Event* event) 
+      void task_execute_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
       {
         LockStepTaskScheduler::Init init(threadIndex,threadCount,&lockstep_scheduler);
         if (threadIndex == 0) result = closure();
       }
       
-      static void _task_execute_parallel(void* This, size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskSchedulerBase::Event* event) {
+      static void _task_execute_parallel(void* This, size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) {
         ((ExecuteClosureTask*)This)->task_execute_parallel(threadIndex,threadCount,taskIndex,taskCount,event);
       }
       
@@ -449,7 +452,7 @@ namespace embree
 namespace embree
 {
   /*! Task scheduler using active synchronization. */
-  class TaskSchedulerMIC : public TaskSchedulerBase
+  class TaskSchedulerMIC : public TaskScheduler
   {
   public:
 

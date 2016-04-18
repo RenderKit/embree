@@ -159,7 +159,7 @@ namespace embree
     /*! build task */
 #if defined(TASKING_LOCKSTEP)
     TASK_RUN_FUNCTION(Scene,task_build_parallel);
-    TaskSchedulerBase::Task task;
+    TaskScheduler::Task task;
 #endif
 
     /* return number of geometries */
@@ -324,7 +324,7 @@ namespace embree
     __aligned(64) LockStepTaskScheduler lockstep_scheduler;
 #elif defined(TASKING_TBB_INTERNAL)
     MutexSys schedulerMutex;
-    Ref<TaskSchedulerInternal> scheduler;
+    Ref<TaskScheduler> scheduler;
 #else
     tbb::task_group* group;
     BarrierActiveAutoReset group_barrier;

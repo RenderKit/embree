@@ -60,16 +60,6 @@ __forceinline Vec3f faceforward( const Vec3f& N, const Vec3f& I, const Vec3f& Ng
 #define GLUT_KEY_F12 12
 #endif
 
-enum Shader { 
-  SHADER_DEFAULT = 0, 
-  SHADER_EYELIGHT = 1,
-  SHADER_UV = 2,
-  SHADER_NG = 3,
-  SHADER_GEOMID = 4,
-  SHADER_GEOMID_PRIMID = 5,
-  SHADER_AMBIENT_OCCLUSION = 6
-};
-
 /* standard shading function */
 typedef void (* renderTileFunc)(int taskIndex, int* pixels, const int width, const int height, 
                                 const float time, const ISPCCamera& camera,

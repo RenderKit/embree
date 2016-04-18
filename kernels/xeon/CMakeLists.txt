@@ -23,22 +23,9 @@ SOURCE_GROUP("Source Files\\tasking" "/tasking/" )
 SOURCE_GROUP("Source Files\\algorithms" "/algorithms/")
 SOURCE_GROUP("" FILES embree.rc)
 
-IF (TASKING_INTERNAL)
-  ADD_DEFINITIONS(-DTASKING_TBB_INTERNAL)
-ENDIF()
-
-IF (TASKING_TBB)
-  ADD_DEFINITIONS(-DTASKING_TBB)
-  SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} ${TBB_LIBRARIES})
-ENDIF()
-
-
 SET(EMBREE_LIBRARY_FILES
  
    embree.rc
-
-  ../../common/tasking/taskscheduler.cpp
-  ../../common/tasking/tasksys.cpp
 
   ../algorithms/parallel_for.cpp
   ../algorithms/parallel_reduce.cpp
@@ -98,6 +85,23 @@ SET(EMBREE_LIBRARY_FILES
 
   bvh/bvh_intersector1.cpp
   )
+
+IF (TASKING_INTERNAL)
+  ADD_DEFINITIONS(-DTASKING_TBB_INTERNAL)
+  SET(EMBREE_LIBRARY_FILES 
+    ../../common/tasking/taskschedulerinternal.cpp
+    ../../common/tasking/tasksys.cpp
+    ${EMBREE_LIBRARY_FILES})
+ENDIF()
+
+IF (TASKING_TBB)
+  ADD_DEFINITIONS(-DTASKING_TBB)
+  SET(EMBREE_LIBRARY_FILES 
+    ../../common/tasking/taskschedulertbb.cpp
+    ../../common/tasking/tasksys.cpp
+    ${EMBREE_LIBRARY_FILES})
+  SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} ${TBB_LIBRARIES})
+ENDIF()
 
 IF (RTCORE_RAY_PACKETS)
   SET(EMBREE_LIBRARY_FILES ${EMBREE_LIBRARY_FILES}

@@ -317,5 +317,5 @@ float noise(float x, float y, float z)
 }
 
 int main(int argc, char** argv) {
-  return Tutorial().main(argc,argv);
+  return embree::Tutorial().main(argc,argv);
 }
