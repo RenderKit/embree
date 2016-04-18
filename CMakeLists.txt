@@ -55,11 +55,6 @@ SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/common/cmake ${CMAKE_MODULE_PA
 INCLUDE(test)
 
 ##############################################################
-# Create Binary Packages
-##############################################################
-include(package)
-
-##############################################################
 # Embree configuration
 ##############################################################
 
@@ -126,6 +121,16 @@ CONFIGURE_FILE(
   "${PROJECT_SOURCE_DIR}/kernels/config.h.in"
   "${PROJECT_BINARY_DIR}/config.h"
 )
+
+##############################################################
+# Create Binary Packages (uses above config options)
+##############################################################
+
+if (NOT DEFINED RTCORE_ZIP_MODE)
+  set(RTCORE_ZIP_MODE OFF)
+endif()
+
+include(package)
 
 ##############################################################
 # Compiler
@@ -288,13 +293,13 @@ IF (ENABLE_TUTORIALS)
   ADD_SUBDIRECTORY(tutorials)
 ENDIF()
 
-  SET (__XEON__ 1)
-  ADD_SUBDIRECTORY(tests)
+SET (__XEON__ 1)
+ADD_SUBDIRECTORY(tests)
 
-  IF (ENABLE_XEON_PHI_SUPPORT)
-    SET (__XEON__ 0)
-    ADD_SUBDIRECTORY(tests tests_xeonphi)
-  ENDIF ()
+IF (ENABLE_XEON_PHI_SUPPORT)
+  SET (__XEON__ 0)
+  ADD_SUBDIRECTORY(tests tests_xeonphi)
+ENDIF ()
 
 ##############################################################
 # Uninstall
