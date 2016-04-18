@@ -381,7 +381,7 @@ namespace embree
     {    
       leftReduction = init;
       rightReduction = init;
-      const size_t numThreads = min(TaskScheduler::threadCount(),MAX_TASKS);
+      const size_t numThreads = min(TaskSchedulerInternal::threadCount(),MAX_TASKS);
 
       if (N <= 2 * BLOCK_SIZE * numThreads) // need at least 1 block from the left and 1 block from the right per thread
       {
@@ -1177,7 +1177,7 @@ namespace embree
                                                                const Compare& cmp, 
                                                                const Reduction_T& reduction_t,
                                                                const Reduction_V& reduction_v,
-                                                               const size_t numThreads = TaskScheduler::threadCount())
+                                                               const size_t numThreads = TaskSchedulerInternal::threadCount())
   {
 #if defined(__X86_64__) 
     typedef parallel_partition_static_task<BLOCK_SIZE, T,V,Compare,Reduction_T,Reduction_V> partition_task;

@@ -748,13 +748,13 @@ namespace embree
     AutoUnlock<MutexSys> buildLock(buildMutex);
 
     /* allocates own taskscheduler for each build */
-    Ref<TaskScheduler> scheduler = nullptr;
+    Ref<TaskSchedulerInternal> scheduler = nullptr;
     { 
       Lock<MutexSys> lock(schedulerMutex);
       scheduler = this->scheduler;
       if (scheduler == null) {
         buildLock.lock();
-        this->scheduler = scheduler = new TaskScheduler;
+        this->scheduler = scheduler = new TaskSchedulerInternal;
       }
     }
 

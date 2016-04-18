@@ -62,7 +62,7 @@ namespace embree
           const SpatialBinMapping<BINS>& _mapping = mapping; // CLANG 3.4 parser bug workaround
           PrimRefList::iterator i=prims;
 
-          const size_t threadCount = TaskScheduler::threadCount();
+          const size_t threadCount = TaskSchedulerInternal::threadCount();
           const Binner binner = parallel_reduce(size_t(0),threadCount,Binner(empty), [&] (const range<size_t>& r) -> Binner 
           {
             Binner binner(empty);
@@ -175,7 +175,7 @@ namespace embree
           linfo_o.reset();
           rinfo_o.reset();
 
-          const size_t threadCount = TaskScheduler::threadCount();
+          const size_t threadCount = TaskSchedulerInternal::threadCount();
           const PrimInfo2 info = parallel_reduce(size_t(0),threadCount,PrimInfo2(empty), [&] (const range<size_t>& r) -> PrimInfo2
           {
             PrimInfo linfo(empty);

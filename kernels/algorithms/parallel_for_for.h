@@ -56,7 +56,7 @@ namespace embree
       this->N = N;
 
       /* calculate number of tasks to use */
-      const size_t numThreads = TaskScheduler::threadCount();
+      const size_t numThreads = TaskSchedulerInternal::threadCount();
       const size_t numBlocks  = (N+minStepSize-1)/minStepSize;
       taskCount = max(size_t(1),min(numThreads,numBlocks,size_t(ParallelForForState::MAX_TASKS)));
       

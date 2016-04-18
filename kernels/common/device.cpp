@@ -73,7 +73,7 @@ namespace embree
 
     void on_scheduler_entry( bool ) {
       ++threadCount;
-      setAffinity(TaskScheduler::threadIndex()); // FIXME: use threadCount?
+      setAffinity(TaskSchedulerInternal::threadIndex()); // FIXME: use threadCount?
     }
 
     void on_scheduler_exit( bool ) { 
@@ -385,7 +385,7 @@ namespace embree
 #endif
       
 #if defined(TASKING_TBB_INTERNAL)
-      TaskScheduler::destroy();
+      TaskSchedulerInternal::destroy();
 #endif
       
 #if defined(TASKING_TBB)
@@ -409,7 +409,7 @@ namespace embree
 #endif
 
 #if defined(TASKING_TBB_INTERNAL)
-    TaskScheduler::create(maxNumThreads,State::set_affinity);
+    TaskSchedulerInternal::create(maxNumThreads,State::set_affinity);
 #endif
 
 #if defined(TASKING_TBB)
@@ -430,11 +430,11 @@ namespace embree
     if (maxNumThreads == 0) 
     {
       g_tbb_threads_initialized = false;
-      TaskScheduler::g_numThreads = tbb::task_scheduler_init::default_num_threads();
+      TaskSchedulerInternal::g_numThreads = tbb::task_scheduler_init::default_num_threads();
     } else {
       g_tbb_threads_initialized = true;
       g_tbb_threads.initialize(maxNumThreads);
-      TaskScheduler::g_numThreads = maxNumThreads;
+      TaskSchedulerInternal::g_numThreads = maxNumThreads;
     }
 #if USE_TASK_ARENA
     arena = new tbb::task_arena(maxNumThreads);

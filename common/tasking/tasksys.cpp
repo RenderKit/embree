@@ -49,8 +49,8 @@ namespace embree
   extern "C" __dllexport void ISPCLaunch(void** taskPtr, void* func, void* data, int count) 
   {      
     parallel_for(size_t(0), size_t(count),[&] (const range<size_t>& r) {
-        const size_t threadIndex = TaskScheduler::threadIndex();
-        const size_t threadCount = TaskScheduler::threadCount();
+        const size_t threadIndex = TaskSchedulerInternal::threadIndex();
+        const size_t threadCount = TaskSchedulerInternal::threadCount();
         for (size_t i=r.begin(); i<r.end(); i++) ((TaskFuncType)func)(data,threadIndex,threadCount,i,count);
       });
   }
@@ -62,8 +62,8 @@ namespace embree
   extern "C" __dllexport void ISPCLaunch(void** taskPtr, void* func, void* data, int count) 
   {      
     parallel_for(size_t(0), size_t(count), [&] (const range<size_t>& r) {
-        const size_t threadIndex = TaskScheduler::threadIndex();
-        const size_t threadCount = TaskScheduler::threadCount();
+        const size_t threadIndex = TaskSchedulerInternal::threadIndex();
+        const size_t threadCount = TaskSchedulerInternal::threadCount();
         for (size_t i=r.begin(); i<r.end(); i++) 
           ((TaskFuncType)func)(data,threadIndex,threadCount,i,count);
       });

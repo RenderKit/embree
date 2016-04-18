@@ -324,7 +324,7 @@ namespace embree
     __aligned(64) LockStepTaskScheduler lockstep_scheduler;
 #elif defined(TASKING_TBB_INTERNAL)
     MutexSys schedulerMutex;
-    Ref<TaskScheduler> scheduler;
+    Ref<TaskSchedulerInternal> scheduler;
 #else
     tbb::task_group* group;
     BarrierActiveAutoReset group_barrier;

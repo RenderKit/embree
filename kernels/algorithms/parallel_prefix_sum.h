@@ -32,7 +32,7 @@ namespace embree
     __forceinline Value parallel_prefix_sum( ParallelPrefixSumState<Value>& state, Index first, Index last, Index minStepSize, const Value& identity, const Func& func, const Reduction& reduction)
   {
     /* calculate number of tasks to use */
-    const size_t numThreads = TaskScheduler::threadCount();
+    const size_t numThreads = TaskSchedulerInternal::threadCount();
     const size_t numBlocks  = (last-first+minStepSize-1)/minStepSize;
     const size_t taskCount  = min(numThreads,numBlocks,size_t(ParallelPrefixSumState<Value>::MAX_TASKS));
 
