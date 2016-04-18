@@ -93,7 +93,7 @@ namespace embree
         rays[i]->instID = instance->id;
       }
 
-      instance->object->intersectN((RTCRay**)rays,M,RTC_RAYN_INCOHERENT);
+      instance->object->intersectN((RTCRay**)rays,M,RTC_INTERSECT_INCOHERENT);
         
       for (size_t i=0; i<M; i++)
       {
@@ -127,7 +127,7 @@ namespace embree
         rays[i]->instID = instance->id;
       }
 
-      instance->object->occludedN((RTCRay**)rays,M,RTC_RAYN_INCOHERENT);
+      instance->object->occludedN((RTCRay**)rays,M,RTC_INTERSECT_INCOHERENT);
         
       for (size_t i=0; i<M; i++)
       {

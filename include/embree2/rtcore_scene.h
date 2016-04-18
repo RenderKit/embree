@@ -56,10 +56,10 @@ enum RTCAlgorithmFlags
 };
 
 /*! layout flags for ray streams */
-enum RTCRayNFlags
+enum RTCIntersectFlags
 {
-  RTC_RAYN_COHERENT   = 1,  //!< optimize for coherent rays
-  RTC_RAYN_INCOHERENT = 2   //!< optimize for incoherent rays
+  RTC_INTERSECT_COHERENT   = 1,  //!< optimize for coherent rays
+  RTC_INTERSECT_INCOHERENT = 2   //!< optimize for incoherent rays
 };
 
 /*! \brief Defines an opaque scene type */

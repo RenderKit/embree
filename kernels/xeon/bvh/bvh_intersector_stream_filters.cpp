@@ -98,7 +98,7 @@ namespace embree
       RayPacket rayN(rayData,N);
 
       /* use packet intersector for coherent ray mode */
-      if (likely(flags == RTC_RAYN_COHERENT))
+      if (likely(flags == RTC_INTERSECT_COHERENT))
       {
         for (size_t s=0; s<streams; s++)
         {
@@ -193,7 +193,7 @@ namespace embree
       RayPN& rayN = *(RayPN*)&_rayN;
 
       /* use packet intersector for coherent ray mode */
-      if (likely(flags == RTC_RAYN_COHERENT))
+      if (likely(flags == RTC_INTERSECT_COHERENT))
       {
         for (size_t s=0; s<streams; s++)
         {

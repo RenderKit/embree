@@ -23,8 +23,8 @@
 #define AMBIENT_OCCLUSION_SAMPLES 64
 //#define rtcOccluded rtcIntersect
 //#define rtcOccluded1M rtcIntersect1M
-//#define RAYN_FLAGS RTC_RAYN_COHERENT
-#define RAYN_FLAGS RTC_RAYN_INCOHERENT
+//#define RAYN_FLAGS RTC_INTERSECT_COHERENT
+#define RAYN_FLAGS RTC_INTERSECT_INCOHERENT
 
 extern "C" ISPCScene* g_ispc_scene;
 
