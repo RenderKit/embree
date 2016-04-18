@@ -55,7 +55,7 @@ namespace embree
 #if defined(TASKING_LOCKSTEP)
     ParallelForTask<Index,Func>(N,func);
 
-#elif defined(TASKING_TBB_INTERNAL)
+#elif defined(TASKING_INTERNAL)
     if (N) {
       TaskScheduler::spawn(Index(0),N,Index(1),[&] (const range<Index>& r) {
           assert(r.size() == 1);
@@ -105,7 +105,7 @@ namespace embree
         func(range<Index>(k0,k1));
       });
 
-#elif defined(TASKING_TBB_INTERNAL)
+#elif defined(TASKING_INTERNAL)
     TaskScheduler::spawn(first,last,minStepSize,func);
     if (!TaskScheduler::wait())
         throw std::runtime_error("task cancelled");

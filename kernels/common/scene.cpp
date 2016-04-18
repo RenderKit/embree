@@ -55,7 +55,7 @@ namespace embree
   {
 #if defined(TASKING_LOCKSTEP) 
     lockstep_scheduler.taskBarrier.init(MAX_THREADS);
-#elif defined(TASKING_TBB_INTERNAL)
+#elif defined(TASKING_INTERNAL)
     scheduler = nullptr;
 #else
     group = new tbb::task_group;
@@ -741,7 +741,7 @@ namespace embree
 
 #endif
 
-#if defined(TASKING_TBB_INTERNAL)
+#if defined(TASKING_INTERNAL)
 
   void Scene::build (size_t threadIndex, size_t threadCount) 
   {

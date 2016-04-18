@@ -41,7 +41,7 @@
 #  include "../../common/tasking/taskscheduler_mic.h"
 #endif
 
-#if defined(TASKING_TBB_INTERNAL)
+#if defined(TASKING_INTERNAL)
 #  include "../../common/tasking/taskschedulerinternal.h"
 #endif
 
@@ -228,7 +228,7 @@ namespace embree
     std::cout << "TBB" << TBB_VERSION_MAJOR << "." << TBB_VERSION_MINOR << " ";
     std::cout << "TBB_header_interface_" << TBB_INTERFACE_VERSION << " TBB_lib_interface_" << tbb::TBB_runtime_interface_version() << " ";
 #endif
-#if defined(TASKING_TBB_INTERNAL)
+#if defined(TASKING_INTERNAL)
       std::cout << "internal_tasking_system ";
 #endif
 #if defined(TASKING_LOCKSTEP)
@@ -363,7 +363,7 @@ namespace embree
       TaskScheduler::destroy();
 #endif
       
-#if defined(TASKING_TBB_INTERNAL)
+#if defined(TASKING_INTERNAL)
       TaskScheduler::destroy();
 #endif
       
@@ -384,7 +384,7 @@ namespace embree
     TaskScheduler::create(maxNumThreads,State::set_affinity);
 #endif
 
-#if defined(TASKING_TBB_INTERNAL)
+#if defined(TASKING_INTERNAL)
     TaskScheduler::create(maxNumThreads,State::set_affinity);
 #endif
 
@@ -481,7 +481,7 @@ namespace embree
     case RTC_CONFIG_IGNORE_INVALID_RAYS: return 0;
 #endif
 
-#if defined(TASKING_TBB_INTERNAL)
+#if defined(TASKING_INTERNAL)
     case RTC_CONFIG_TASKING_SYSTEM: return 0;
 #endif
 

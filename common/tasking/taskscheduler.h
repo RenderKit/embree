@@ -16,7 +16,7 @@
 
 #pragma once
 
-#if defined(TASKING_TBB_INTERNAL)
+#if defined(TASKING_INTERNAL)
 #  include "taskschedulerinternal.h"
 #endif
       

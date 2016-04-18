@@ -24,7 +24,7 @@ namespace embree
   /* Signature of ispc-generated 'task' functions */
   typedef void (*TaskFuncType)(void* data, int threadIndex, int threadCount, int taskIndex, int taskCount);
 
-#if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
+#if defined(TASKING_TBB) || defined(TASKING_INTERNAL)
 
   extern "C" __dllexport void* ISPCAlloc(void** taskPtr, int64_t size, int32_t alignment) 
   {
@@ -57,7 +57,7 @@ namespace embree
 #endif  
  
 
-#if defined(TASKING_TBB_INTERNAL)
+#if defined(TASKING_INTERNAL)
 
   extern "C" __dllexport void ISPCLaunch(void** taskPtr, void* func, void* data, int count) 
   {      

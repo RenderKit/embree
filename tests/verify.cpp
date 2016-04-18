@@ -3816,17 +3816,17 @@ namespace embree
     POSITIVE("regression_dynamic",        rtcore_regression(rtcore_regression_dynamic_thread,0));
 
 
-#if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
+#if defined(TASKING_TBB) || defined(TASKING_INTERNAL)
     POSITIVE("regression_static_user_threads", rtcore_regression(rtcore_regression_static_thread,1));
     POSITIVE("regression_dynamic_user_threads", rtcore_regression(rtcore_regression_dynamic_thread,1));
 #endif
 
-#if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
+#if defined(TASKING_TBB) || defined(TASKING_INTERNAL)
     POSITIVE("regression_static_build_join", rtcore_regression(rtcore_regression_static_thread,2));
     POSITIVE("regression_dynamic_build_join", rtcore_regression(rtcore_regression_dynamic_thread,2));
 #endif
       
-#if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
+#if defined(TASKING_TBB) || defined(TASKING_INTERNAL)
     POSITIVE("regression_static_memory_monitor",  rtcore_regression_memory_monitor(rtcore_regression_static_thread));
     POSITIVE("regression_dynamic_memory_monitor", rtcore_regression_memory_monitor(rtcore_regression_dynamic_thread));
 #endif

@@ -322,7 +322,7 @@ namespace embree
     /*! global lock step task scheduler */
 #if defined(TASKING_LOCKSTEP)
     __aligned(64) LockStepTaskScheduler lockstep_scheduler;
-#elif defined(TASKING_TBB_INTERNAL)
+#elif defined(TASKING_INTERNAL)
     MutexSys schedulerMutex;
     Ref<TaskScheduler> scheduler;
 #else

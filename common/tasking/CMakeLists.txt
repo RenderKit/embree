@@ -19,7 +19,7 @@ IF (__XEON__)
 # FIXME: have to add these CPP files directly in libembree as otherwise globals of the tasking system exist twice under VS2012 Win32
 
 #  IF (TASKING_INTERNAL)
-#    ADD_DEFINITIONS(-DTASKING_TBB_INTERNAL)
+#    ADD_DEFINITIONS(-DTASKING_INTERNAL)
 #  ENDIF()
 
 #  IF (TASKING_TBB)

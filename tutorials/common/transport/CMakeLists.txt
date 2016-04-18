@@ -15,7 +15,7 @@
 ## ======================================================================== ##
 
 IF (TASKING_INTERNAL)
-  ADD_DEFINITIONS(-DTASKING_TBB_INTERNAL)
+  ADD_DEFINITIONS(-DTASKING_INTERNAL)
 ELSE()
   ADD_DEFINITIONS(-DTASKING_TBB)
 ENDIF()

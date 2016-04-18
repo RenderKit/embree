@@ -27,7 +27,7 @@
 
 #include <list>
 
-#if !defined(TASKING_TBB_INTERNAL) && !defined(__MIC__)
+#if !defined(TASKING_INTERNAL) && !defined(__MIC__)
 #if defined(__WIN32__)
 #  define NOMINMAX
 #  if defined(__clang__) && !defined(__INTEL_COMPILER) 
