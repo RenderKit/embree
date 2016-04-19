@@ -34,6 +34,7 @@ rm version.h
 
 # set release settings
 cmake \
+-D CMAKE_BUILD_TYPE=Release \
 -D CMAKE_C_COMPILER:FILEPATH=icc \
 -D CMAKE_CXX_COMPILER:FILEPATH=icpc \
 -D XEON_ISA=AVX2 \
