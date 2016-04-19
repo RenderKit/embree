@@ -27,9 +27,9 @@ namespace embree
     class RayStream
     {
     public:
-      static void filterAOS(Scene* scene, RTCRay*    rays, const size_t N, const size_t stride, const size_t flags, const bool intersect);
-      static void filterSOA(Scene* scene, char*      rays, const size_t N, const size_t streams, const size_t stream_offset, const size_t flags, const bool intersect);
-      static void filterSOP(Scene* scene, RTCRayNp& rays, const size_t N, const size_t streams, const size_t offset, const size_t flags, const bool intersect);
+      static void filterAOS(Scene* scene, RTCRay*    rays, const size_t N, const size_t stride, const RTCIntersectionContext* context, const bool intersect);
+      static void filterSOA(Scene* scene, char*      rays, const size_t N, const size_t streams, const size_t stream_offset, const RTCIntersectionContext* context, const bool intersect);
+      static void filterSOP(Scene* scene, RTCRayNp& rays, const size_t N, const size_t streams, const size_t offset, const RTCIntersectionContext* context, const bool intersect);
     };
   }
 };

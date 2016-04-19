@@ -136,12 +136,12 @@ namespace embree
     rtcIntersect16(valid,scene,ray);
   }
 
-  extern "C" void ispcIntersectNM (RTCScene scene, RTCRay* rays, const size_t N, const size_t M, const size_t stride, const size_t flags) {
-    rtcIntersectNM(scene,rays,N,M,stride,flags);
+  extern "C" void ispcIntersectNM (RTCScene scene, RTCRay* rays, const size_t N, const size_t M, const size_t stride, const RTCIntersectionContext* context) {
+    rtcIntersectNM(scene,rays,N,M,stride,context);
   }
 
-  extern "C" void ispcIntersectNMp (RTCScene scene,  RTCRayNp& rays, const  size_t N, const  size_t M, const  size_t offset, const  size_t flags) {
-    rtcIntersectNMp(scene,rays,N,M,offset,flags);
+  extern "C" void ispcIntersectNMp (RTCScene scene,  RTCRayNp& rays, const  size_t N, const  size_t M, const  size_t offset, const RTCIntersectionContext* context) {
+    rtcIntersectNMp(scene,rays,N,M,offset,context);
   }
   
   extern "C" void ispcOccluded1 (RTCScene scene, RTCRay& ray) {
@@ -160,12 +160,12 @@ namespace embree
     rtcOccluded16(valid,scene,ray);
   }
 
-  extern "C" void ispcOccludedNM (RTCScene scene, void*  rays, const size_t N, const  size_t M, const  size_t stride, const  size_t flags) {
-    rtcOccludedNM(scene,(RTCRay*)rays,N,M,stride,flags);
+  extern "C" void ispcOccludedNM (RTCScene scene, void*  rays, const size_t N, const  size_t M, const  size_t stride, const RTCIntersectionContext* context) {
+    rtcOccludedNM(scene,(RTCRay*)rays,N,M,stride,context);
   }
 
-  extern "C" void ispcOccludedNMp (RTCScene scene,  RTCRayNp& rays, const  size_t N, const  size_t M, const  size_t offset, const  size_t flags) {
-    rtcOccludedNMp(scene,rays,N,M,offset,flags);
+  extern "C" void ispcOccludedNMp (RTCScene scene,  RTCRayNp& rays, const  size_t N, const  size_t M, const  size_t offset, const RTCIntersectionContext* context) {
+    rtcOccludedNMp(scene,rays,N,M,offset,context);
   }
   
   extern "C" void ispcDeleteScene (RTCScene scene) {

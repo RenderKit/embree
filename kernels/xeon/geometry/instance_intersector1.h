@@ -31,8 +31,8 @@ namespace embree
 
     struct FastInstanceIntersector1M
     {
-      static void intersect(const Instance* instance, Ray** rays, size_t M, size_t item);
-      static void occluded (const Instance* instance, Ray** rays, size_t M, size_t item);
+      static void intersect(const Instance* instance, Ray** rays, size_t M, size_t item, const RTCIntersectionContext* context);
+      static void occluded (const Instance* instance, Ray** rays, size_t M, size_t item, const RTCIntersectionContext* context);
     };
   }
 }

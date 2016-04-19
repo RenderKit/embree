@@ -43,16 +43,18 @@ typedef void (*RTCIntersectFuncVarying)(void* uniform ptr,       /*!< pointer to
 
 /*! Type of intersect function pointer for stream of uniform rays. */
 typedef unmasked void (*RTCIntersectFunc1Mp)(void* uniform ptr,              /*!< pointer to user data */
-                                            uniform RTCRay1** uniform ray,  /*!< pointers to rays to intersect */
-                                            uniform size_t M,               /*< number of rays in stream */
-                                            uniform size_t item             /*< item to intersect */);
+                                             uniform RTCRay1** uniform ray,  /*!< pointers to rays to intersect */
+                                             uniform size_t M,               /*< number of rays in stream */
+                                             uniform size_t item,            /*< item to intersect */
+                                             const uniform RTCIntersectionContext* uniform context  /*!< intersection context as passed to rtcIntersect/rtcOccluded */);
 
 /*! Type of intersect function pointer for ray packets of size N. */
 typedef unmasked void (*RTCIntersectFuncN)(const uniform int* uniform valid, /*! pointer to valid mask */
                                            void* uniform ptr,                /*!< pointer to user data */
                                            void* uniform rays,               /*!< ray packet of size N */
                                            uniform size_t N,                 /*< number of rays in ray packet */
-                                           uniform size_t item               /*< item to intersect */);
+                                           uniform size_t item,              /*< item to intersect */
+                                           const uniform RTCIntersectionContext* uniform context  /*!< intersection context as passed to rtcIntersect/rtcOccluded */);
 
 /*! Type of occlusion function pointer for uniform rays. */
 typedef unmasked void (*RTCOccludedFuncUniform) (void* uniform ptr,       /*!< pointer to user data */ 
@@ -66,16 +68,18 @@ typedef void (*RTCOccludedFuncVarying) (void* uniform ptr,       /*!< pointer to
 
 /*! Type of occlusion function pointer for stream of uniform rays. */
 typedef unmasked void (*RTCOccludedFunc1Mp) (void* uniform ptr,             /*!< pointer to user data */ 
-                                            uniform RTCRay1** uniform ray, /*!< pointers to rays to test occlusion */
-                                            uniform size_t M,              /*< number of rays in stream */
-                                            uniform size_t item            /*< item to test for occlusion */);
+                                             uniform RTCRay1** uniform ray, /*!< pointers to rays to test occlusion */
+                                             uniform size_t M,              /*< number of rays in stream */
+                                             uniform size_t item,           /*< item to test for occlusion */
+                                             const uniform RTCIntersectionContext* uniform context  /*!< intersection context as passed to rtcIntersect/rtcOccluded */);
 
 /*! Type of occlusion function pointer for ray packets of size N. */
 typedef unmasked void (*RTCOccludedFuncN) (const uniform int* uniform valid,  /*! pointer to valid mask */
                                            void* uniform ptr,                 /*!< pointer to user data */ 
                                            void* uniform ray,                 /*!< ray packet of size N */
                                            uniform size_t N,                  /*< number of rays in ray packet*/
-                                           uniform size_t item                /*< item to test for occlusion */);
+                                           uniform size_t item,               /*< item to test for occlusion */
+                                           const uniform RTCIntersectionContext* uniform context  /*!< intersection context as passed to rtcIntersect/rtcOccluded */);
 
 
 /*! Creates a new user geometry object. This feature makes it possible

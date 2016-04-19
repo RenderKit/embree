@@ -43,7 +43,7 @@ namespace embree
       ray.dir = xfmVector(world2local,ray_dir);
       ray.geomID = -1;
       ray.instID = instance->id;
-      instance->object->intersect((RTCRay&)ray);
+      instance->object->intersect((RTCRay&)ray,nullptr);
       ray.org = ray_org;
       ray.dir = ray_dir;
       if (ray.geomID == -1) {
@@ -60,14 +60,14 @@ namespace embree
       ray.org = xfmPoint (world2local,ray_org);
       ray.dir = xfmVector(world2local,ray_dir);
       ray.instID = instance->id;
-      instance->object->occluded((RTCRay&)ray);
+      instance->object->occluded((RTCRay&)ray,nullptr);
       ray.org = ray_org;
       ray.dir = ray_dir;
     }
     
     DEFINE_SET_INTERSECTOR1(InstanceIntersector1,FastInstanceIntersector1);
 
-    void FastInstanceIntersector1M::intersect(const Instance* instance, Ray** rays, size_t M, size_t item)
+    void FastInstanceIntersector1M::intersect(const Instance* instance, Ray** rays, size_t M, size_t item, const RTCIntersectionContext* context)
     {
       assert(M<MAX_INTERNAL_STREAM_SIZE);
       Vec3fa ray_org[MAX_INTERNAL_STREAM_SIZE];
@@ -93,7 +93,7 @@ namespace embree
         rays[i]->instID = instance->id;
       }
 
-      instance->object->intersectN((RTCRay**)rays,M,RTC_INTERSECT_INCOHERENT);
+      instance->object->intersectN((RTCRay**)rays,M,context);
         
       for (size_t i=0; i<M; i++)
       {
@@ -106,7 +106,7 @@ namespace embree
       }
     }
     
-    void FastInstanceIntersector1M::occluded (const Instance* instance, Ray** rays, size_t M, size_t item)
+    void FastInstanceIntersector1M::occluded (const Instance* instance, Ray** rays, size_t M, size_t item, const RTCIntersectionContext* context)
     {
       assert(M<MAX_INTERNAL_STREAM_SIZE);
       Vec3fa ray_org[MAX_INTERNAL_STREAM_SIZE];
@@ -127,7 +127,7 @@ namespace embree
         rays[i]->instID = instance->id;
       }
 
-      instance->object->occludedN((RTCRay**)rays,M,RTC_INTERSECT_INCOHERENT);
+      instance->object->occludedN((RTCRay**)rays,M,context);
         
       for (size_t i=0; i<M; i++)
       {

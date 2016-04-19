@@ -45,7 +45,7 @@ namespace embree
     }
   
     template<int N, int types, bool robust, typename PrimitiveIntersector1>
-    void BVHNIntersector1<N,types,robust,PrimitiveIntersector1>::intersect(const BVH* __restrict__ bvh, Ray& __restrict__ ray)
+    void BVHNIntersector1<N,types,robust,PrimitiveIntersector1>::intersect(const BVH* __restrict__ bvh, Ray& __restrict__ ray, const RTCIntersectionContext* context)
     {
       /*! perform per ray precalculations required by the primitive intersector */
       Precalculations pre(ray,bvh);
@@ -120,7 +120,7 @@ namespace embree
         STAT3(normal.trav_leaves,1,1,1);
         size_t num; Primitive* prim = (Primitive*) cur.leaf(num);
         size_t lazy_node = 0;
-        PrimitiveIntersector1::intersect(pre,ray,leafType,prim,num,bvh->scene,geomID_to_instID,lazy_node);
+        PrimitiveIntersector1::intersect(pre,ray,context,leafType,prim,num,bvh->scene,geomID_to_instID,lazy_node);
         ray_far = ray.tfar;
 
         /*! push lazy node onto stack */
@@ -143,7 +143,7 @@ namespace embree
     }
     
     template<int N, int types, bool robust, typename PrimitiveIntersector1>
-    void BVHNIntersector1<N,types,robust,PrimitiveIntersector1>::occluded(const BVH* __restrict__ bvh, Ray& __restrict__ ray)
+    void BVHNIntersector1<N,types,robust,PrimitiveIntersector1>::occluded(const BVH* __restrict__ bvh, Ray& __restrict__ ray, const RTCIntersectionContext* context)
     {
       /*! early out for already occluded rays */
       if (unlikely(ray.geomID == 0))
@@ -217,7 +217,7 @@ namespace embree
         STAT3(shadow.trav_leaves,1,1,1);
         size_t num; Primitive* prim = (Primitive*) cur.leaf(num);
         size_t lazy_node = 0;
-        if (PrimitiveIntersector1::occluded(pre,ray,leafType,prim,num,bvh->scene,geomID_to_instID,lazy_node)) {
+        if (PrimitiveIntersector1::occluded(pre,ray,context,leafType,prim,num,bvh->scene,geomID_to_instID,lazy_node)) {
           ray.geomID = 0;
           break;
         }

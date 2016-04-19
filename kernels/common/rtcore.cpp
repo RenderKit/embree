@@ -304,7 +304,7 @@ namespace embree
 #endif
 
     STAT3(normal.travs,1,1,1);
-    scene->intersect(ray);
+    scene->intersect(ray,nullptr);
 
 #if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
     RayStreamLogger::rayStreamLogger.logRay1Intersect(scene,old_ray,ray);
@@ -334,7 +334,7 @@ namespace embree
     RTCRay4 old_ray = ray;
 #endif
 
-    scene->intersect4(valid,ray);
+    scene->intersect4(valid,ray,nullptr);
 
 #if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
     RayStreamLogger::rayStreamLogger.logRay4Intersect(valid,scene,old_ray,ray);
@@ -367,7 +367,7 @@ namespace embree
     RTCRay8 old_ray = ray;
 #endif
 
-    scene->intersect8(valid,ray);
+    scene->intersect8(valid,ray,nullptr);
 
 #if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
     RayStreamLogger::rayStreamLogger.logRay8Intersect(valid,scene,old_ray,ray);
@@ -400,7 +400,7 @@ namespace embree
     RTCRay16 old_ray = ray;
 #endif
 
-    scene->intersect16(valid,ray);
+    scene->intersect16(valid,ray,nullptr);
 
 #if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
     RayStreamLogger::rayStreamLogger.logRay16Intersect(valid,scene,old_ray,ray);
@@ -412,7 +412,7 @@ namespace embree
 #endif
 
 #if defined (RTCORE_RAY_PACKETS)
-  RTCORE_API void rtcIntersect1M (RTCScene hscene, RTCRay* rays, const size_t M, const size_t stride, const size_t flags) 
+  RTCORE_API void rtcIntersect1M (RTCScene hscene, RTCRay* rays, const size_t M, const size_t stride, const RTCIntersectionContext* context) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -426,18 +426,18 @@ namespace embree
    
     /* fast codepath for single rays */
     if (likely(M == 1)) {
-      scene->intersect(*rays);
+      scene->intersect(*rays,context);
     } 
 
     /* codepath for streams */
     else {
-      scene->device->rayStreamFilters.filterAOS(scene,rays,M,stride,flags,true);   
+      scene->device->rayStreamFilters.filterAOS(scene,rays,M,stride,context,true);   
     }
 
     RTCORE_CATCH_END(scene->device);
   }
 
-  RTCORE_API void rtcIntersectNM (RTCScene hscene, void* rays, const size_t N, const size_t M, const size_t stride, const size_t flags) 
+  RTCORE_API void rtcIntersectNM (RTCScene hscene, void* rays, const size_t N, const size_t M, const size_t stride, const RTCIntersectionContext* context) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -454,22 +454,22 @@ namespace embree
     {
       /* fast code path for streams of size 1 */
       if (likely(M == 1)) {
-        scene->intersect(*(RTCRay*)rays);
+        scene->intersect(*(RTCRay*)rays,context);
       } 
       /* normal codepath for single ray streams */
       else {
-        scene->device->rayStreamFilters.filterAOS(scene,(RTCRay*)rays,M,stride,flags,true);
+        scene->device->rayStreamFilters.filterAOS(scene,(RTCRay*)rays,M,stride,context,true);
       }
     }
     /* code path for ray packet streams */
     else {
-      scene->device->rayStreamFilters.filterSOA(scene,(char*)rays,N,M,stride,flags,true);
+      scene->device->rayStreamFilters.filterSOA(scene,(char*)rays,N,M,stride,context,true);
     }
     
     RTCORE_CATCH_END(scene->device);
   }
 
-  RTCORE_API void rtcIntersectNMp (RTCScene hscene, RTCRayNp& rays, const size_t N, const size_t M, const size_t stride, const size_t flags) 
+  RTCORE_API void rtcIntersectNMp (RTCScene hscene, RTCRayNp& rays, const size_t N, const size_t M, const size_t stride, const RTCIntersectionContext* context) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -498,7 +498,7 @@ namespace embree
 #endif
     STAT3(normal.travs,N*M,N,N);
 
-    scene->device->rayStreamFilters.filterSOP(scene,rays,N,M,stride,flags,true);
+    scene->device->rayStreamFilters.filterSOP(scene,rays,N,M,stride,context,true);
 
     RTCORE_CATCH_END(scene->device);
   }
@@ -521,7 +521,7 @@ namespace embree
     RTCRay old_ray = ray;
 #endif
 
-    scene->occluded(ray);
+    scene->occluded(ray,nullptr);
 
 #if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
     RayStreamLogger::rayStreamLogger.logRay1Occluded(scene,old_ray,ray);
@@ -551,7 +551,7 @@ namespace embree
     RTCRay4 old_ray = ray;
 #endif
 
-    scene->occluded4(valid,ray);
+    scene->occluded4(valid,ray,nullptr);
 
 #if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
     RayStreamLogger::rayStreamLogger.logRay4Occluded(valid,scene,old_ray,ray);
@@ -584,7 +584,7 @@ namespace embree
     RTCRay8 old_ray = ray;
 #endif
 
-    scene->occluded8(valid,ray);
+    scene->occluded8(valid,ray,nullptr);
 
 #if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
     RayStreamLogger::rayStreamLogger.logRay8Occluded(valid,scene,old_ray,ray);
@@ -617,7 +617,7 @@ namespace embree
     RTCRay16 old_ray = ray;
 #endif
 
-    scene->occluded16(valid,ray);
+    scene->occluded16(valid,ray,nullptr);
 
 #if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
     RayStreamLogger::rayStreamLogger.logRay16Occluded(valid,scene,old_ray,ray);
@@ -630,7 +630,7 @@ namespace embree
 
   
 #if defined (RTCORE_RAY_PACKETS)
-  RTCORE_API void rtcOccluded1M(RTCScene hscene, RTCRay* rays, const size_t M, const size_t stride, const size_t flags) 
+  RTCORE_API void rtcOccluded1M(RTCScene hscene, RTCRay* rays, const size_t M, const size_t stride, const RTCIntersectionContext* context) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -645,17 +645,17 @@ namespace embree
 
     /* fast codepath for streams of size 1 */
     if (likely(M == 1)) {
-      scene->occluded (*rays);
+      scene->occluded (*rays,context);
     } 
     /* codepath for normal streams */
     else {
-      scene->device->rayStreamFilters.filterAOS(scene,rays,M,stride,flags,false);
+      scene->device->rayStreamFilters.filterAOS(scene,rays,M,stride,context,false);
     }
 
     RTCORE_CATCH_END(scene->device);
   }
 
-  RTCORE_API void rtcOccludedNM(RTCScene hscene, void* rays, const size_t N, const size_t M, const size_t stride, const size_t flags) 
+  RTCORE_API void rtcOccludedNM(RTCScene hscene, void* rays, const size_t N, const size_t M, const size_t stride, const RTCIntersectionContext* context) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -673,22 +673,22 @@ namespace embree
     {
       /* fast path for streams of size 1 */
       if (likely(M == 1)) {
-        scene->occluded (*(RTCRay*)rays);
+        scene->occluded (*(RTCRay*)rays,context);
       } 
       /* codepath for normal ray streams */
       else {
-        scene->device->rayStreamFilters.filterAOS(scene,(RTCRay*)rays,M,stride,flags,false);
+        scene->device->rayStreamFilters.filterAOS(scene,(RTCRay*)rays,M,stride,context,false);
       }
     }
     /* code path for ray packet streams */
     else {
-      scene->device->rayStreamFilters.filterSOA(scene,(char*)rays,N,M,stride,flags,false);
+      scene->device->rayStreamFilters.filterSOA(scene,(char*)rays,N,M,stride,context,false);
     }
 
     RTCORE_CATCH_END(scene->device);
   }
 
-  RTCORE_API void rtcOccludedNMp(RTCScene hscene, RTCRayNp& rays, const size_t N, const size_t M, const size_t stride, const size_t flags) 
+  RTCORE_API void rtcOccludedNMp(RTCScene hscene, RTCRayNp& rays, const size_t N, const size_t M, const size_t stride, const RTCIntersectionContext* context) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -717,7 +717,7 @@ namespace embree
 #endif
     STAT3(shadow.travs,N*M,N,N);
 
-    scene->device->rayStreamFilters.filterSOP(scene,rays,N,M,stride,flags,false);
+    scene->device->rayStreamFilters.filterSOP(scene,rays,N,M,stride,context,false);
 
     RTCORE_CATCH_END(scene->device);
   }

@@ -32,7 +32,7 @@ namespace embree
         __forceinline Precalculations (const Ray& ray, const void *ptr) {}
       };
       
-      static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& prim, Scene* scene, const unsigned* geomID_to_instID) 
+      static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& prim, Scene* scene, const unsigned* geomID_to_instID, const RTCIntersectionContext* context) 
       {
         AVX_ZERO_UPPER();
         AccelSet* accel = (AccelSet*) scene->get(prim.geomID);
@@ -43,10 +43,10 @@ namespace embree
           return;
 #endif
 
-        accel->intersect((RTCRay&)ray,prim.primID);
+        accel->intersect((RTCRay&)ray,prim.primID,context);
       }
       
-      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& prim, Scene* scene, const unsigned* geomID_to_instID) 
+      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& prim, Scene* scene, const unsigned* geomID_to_instID, const RTCIntersectionContext* context) 
       {
         AVX_ZERO_UPPER();
         AccelSet* accel = (AccelSet*) scene->get(prim.geomID);
@@ -57,12 +57,12 @@ namespace embree
           return false;
 #endif
 
-        accel->occluded((RTCRay&)ray,prim.primID);
+        accel->occluded((RTCRay&)ray,prim.primID,context);
         return ray.geomID == 0;
       }
       
       template<typename Context>
-      static __forceinline size_t intersect(Precalculations* pre, size_t valid_in, Ray** rays, Context* ctx, size_t ty, const Primitive* prims, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node)
+      static __forceinline size_t intersect(Precalculations* pre, size_t valid_in, Ray** rays, Context* ctx, size_t ty, const Primitive* prims, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node, const RTCIntersectionContext* context)
       {
         AVX_ZERO_UPPER();
         
@@ -89,7 +89,7 @@ namespace embree
           if (unlikely(N == 0)) continue;
 
           /* call user stream intersection function */
-          accel->intersect1M((RTCRay**)rays_filtered,N,prim.primID);
+          accel->intersect1M((RTCRay**)rays_filtered,N,prim.primID,context);
         }
 
         /* update all contexts */
@@ -101,7 +101,7 @@ namespace embree
         return valid;
       }
 
-      static __forceinline size_t occluded(Precalculations* pre, size_t valid_in, Ray** rays, size_t ty, const Primitive* prims, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node)
+      static __forceinline size_t occluded(Precalculations* pre, size_t valid_in, Ray** rays, size_t ty, const Primitive* prims, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node, const RTCIntersectionContext* context)
       {
         AVX_ZERO_UPPER();
         size_t hit = 0;
@@ -132,7 +132,7 @@ namespace embree
           if (unlikely(N == 0)) continue;
 
           /* call user stream occluded function */
-          accel->occluded1M((RTCRay**)rays_filtered,N,prim.primID);
+          accel->occluded1M((RTCRay**)rays_filtered,N,prim.primID,context);
 
           /* mark occluded rays */
           for (size_t i=0; i<N; i++)
