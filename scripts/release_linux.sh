@@ -66,12 +66,12 @@ check_symbols libembree.so CXXABI 1 3
 make -j 16 package
 
 # rename RPMs to have component name before version
-for i in embree-${EMBREE_VERSION}-1.*.rpm ; do 
-  newname=`echo $i | sed -e "s/embree-\(.\+\)-\([a-z_]\+\)\.rpm/embree-\2-\1.rpm/"`
+for i in embree-knc-${EMBREE_VERSION}-1.*.rpm ; do 
+  newname=`echo $i | sed -e "s/embree-knc-\(.\+\)-\([a-z_]\+\)\.rpm/embree-\2-\1.rpm/"`
   mv $i $newname
 done
 
-tar czf embree-${EMBREE_VERSION}.x86_64.rpm.tar.gz embree-*-${EMBREE_VERSION}-1.x86_64.rpm
+tar czf embree-knc-${EMBREE_VERSION}.x86_64.rpm.tar.gz embree-knc*-${EMBREE_VERSION}-1.x86_64.rpm
 
 # create tar.gz files
 cmake \
