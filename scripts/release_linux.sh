@@ -67,7 +67,7 @@ make -j 16 package
 
 # rename RPMs to have component name before version
 for i in embree-knc-${EMBREE_VERSION}-1.*.rpm ; do 
-  newname=`echo $i | sed -e "s/embree-knc-\(.\+\)-\([a-z_]\+\)\.rpm/embree-\2-\1.rpm/"`
+  newname=`echo $i | sed -e "s/embree-knc-\(.\+\)-\([a-z_]\+\)\.rpm/embree-knc-\2-\1.rpm/"`
   mv $i $newname
 done
 
