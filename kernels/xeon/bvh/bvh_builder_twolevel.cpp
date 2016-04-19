@@ -216,7 +216,7 @@ namespace embree
       if (refs.size() == 0)
 	return;
 
-      size_t num = min(numPrimitives/200,size_t(MAX_OPEN_SIZE));
+      size_t num = min(numPrimitives/400,size_t(MAX_OPEN_SIZE));
       refs.reserve(num);
       
       std::make_heap(refs.begin(),refs.end());
