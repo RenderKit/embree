@@ -55,19 +55,19 @@ typedef void (*RTCIntersectFunc16)(const void* valid, /*!< pointer to valid mask
                                    size_t item        /*!< item to intersect */);
 
 /*! Type of intersect function pointer for stream of rays. */
-typedef void (*RTCIntersectFunc1Mp)(void* ptr,                              /*!< pointer to user data */
+typedef void (*RTCIntersectFunc1Mp)(void* ptr,                              /*!< pointer to geometry user data */
+                                    const RTCIntersectionContext* context,  /*!< intersection context as passed to rtcIntersect/rtcOccluded */
                                     RTCRay** rays,                          /*!< pointers to rays to intersect */
                                     size_t M,                               /*!< number of rays in stream */
-                                    size_t item,                            /*!< item to intersect */
-                                    const RTCIntersectionContext* context   /*!< intersection context as passed to rtcIntersect/rtcOccluded */);
+                                    size_t item                             /*!< item to intersect */);
 
 /*! Type of intersect function pointer for ray packets of size N. */
 typedef void (*RTCIntersectFuncN)(const int* valid,                        /*!< pointer to valid mask */
-                                  void* ptr,                               /*!< pointer to user data */
+                                  void* ptr,                               /*!< pointer to geometry user data */
+                                  const RTCIntersectionContext* context,   /*!< intersection context as passed to rtcIntersect/rtcOccluded */
                                   void* rays,                              /*!< ray packet to intersect */
                                   size_t N,                                /*!< number of rays in packet */
-                                  size_t item,                             /*!< item to intersect */
-                                  const RTCIntersectionContext* context    /*!< intersection context as passed to rtcIntersect/rtcOccluded */);
+                                  size_t item                              /*!< item to intersect */);
 
 /*! Type of occlusion function pointer for single rays. */
 typedef void (*RTCOccludedFunc) (void* ptr,           /*!< pointer to user data */ 
@@ -93,19 +93,19 @@ typedef void (*RTCOccludedFunc16) (const void* valid, /*! pointer to valid mask 
                                    size_t item        /*!< item to test for occlusion */);
 
 /*! Type of occlusion function pointer for stream of rays. */
-typedef void (*RTCOccludedFunc1Mp) (void* ptr,                             /*!< pointer to user data */ 
+typedef void (*RTCOccludedFunc1Mp) (void* ptr,                             /*!< pointer to geometry user data */ 
+                                    const RTCIntersectionContext* context, /*!< intersection context as passed to rtcIntersect/rtcOccluded */
                                     RTCRay** rays,                         /*!< pointers to rays to test occlusion */
                                     size_t M,                              /*!< number of rays in stream */  
-                                    size_t item,                           /*!< item to test for occlusion */
-                                    const RTCIntersectionContext* context  /*!< intersection context as passed to rtcIntersect/rtcOccluded */);
+                                    size_t item                            /*!< item to test for occlusion */);
 
 /*! Type of occlusion function pointer for ray packets of size N. */
 typedef void (*RTCOccludedFuncN) (const int* valid,                      /*! pointer to valid mask */
                                   void* ptr,                             /*!< pointer to user data */
+                                  const RTCIntersectionContext* context, /*!< intersection context as passed to rtcIntersect/rtcOccluded */
                                   void* rays,                            /*!< Ray packet to test occlusion for. */
                                   size_t N,                              /*!< number of rays in packet */
-                                  size_t item,                           /*!< item to test for occlusion */
-                                  const RTCIntersectionContext* context  /*!< intersection context as passed to rtcIntersect/rtcOccluded */);
+                                  size_t item                            /*!< item to test for occlusion */);
 
 /*! Creates a new user geometry object. This feature makes it possible
  *  to add arbitrary types of geometry to the scene by providing

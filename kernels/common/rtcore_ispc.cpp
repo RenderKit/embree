@@ -136,12 +136,12 @@ namespace embree
     rtcIntersect16(valid,scene,ray);
   }
 
-  extern "C" void ispcIntersectNM (RTCScene scene, RTCRay* rays, const size_t N, const size_t M, const size_t stride, const RTCIntersectionContext* context) {
-    rtcIntersectNM(scene,rays,N,M,stride,context);
+  extern "C" void ispcIntersectNM (RTCScene scene, const RTCIntersectionContext* context, RTCRay* rays, const size_t N, const size_t M, const size_t stride) {
+    rtcIntersectNM(scene,context,rays,N,M,stride);
   }
 
-  extern "C" void ispcIntersectNMp (RTCScene scene,  RTCRayNp& rays, const  size_t N, const  size_t M, const  size_t offset, const RTCIntersectionContext* context) {
-    rtcIntersectNMp(scene,rays,N,M,offset,context);
+  extern "C" void ispcIntersectNMp (RTCScene scene, const RTCIntersectionContext* context, RTCRayNp& rays, const  size_t N, const  size_t M, const  size_t offset) {
+    rtcIntersectNMp(scene,context,rays,N,M,offset);
   }
   
   extern "C" void ispcOccluded1 (RTCScene scene, RTCRay& ray) {
@@ -160,12 +160,12 @@ namespace embree
     rtcOccluded16(valid,scene,ray);
   }
 
-  extern "C" void ispcOccludedNM (RTCScene scene, void*  rays, const size_t N, const  size_t M, const  size_t stride, const RTCIntersectionContext* context) {
-    rtcOccludedNM(scene,(RTCRay*)rays,N,M,stride,context);
+  extern "C" void ispcOccludedNM (RTCScene scene, const RTCIntersectionContext* context, void*  rays, const size_t N, const  size_t M, const  size_t stride) {
+    rtcOccludedNM(scene,context,(RTCRay*)rays,N,M,stride);
   }
 
-  extern "C" void ispcOccludedNMp (RTCScene scene,  RTCRayNp& rays, const  size_t N, const  size_t M, const  size_t offset, const RTCIntersectionContext* context) {
-    rtcOccludedNMp(scene,rays,N,M,offset,context);
+  extern "C" void ispcOccludedNMp (RTCScene scene, const RTCIntersectionContext* context, RTCRayNp& rays, const  size_t N, const  size_t M, const  size_t offset) {
+    rtcOccludedNMp(scene,context,rays,N,M,offset);
   }
   
   extern "C" void ispcDeleteScene (RTCScene scene) {

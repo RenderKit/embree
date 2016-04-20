@@ -91,10 +91,10 @@ typedef void (*RTCFilterFunc16)(const void* valid, /*!< pointer to valid mask */
 
 /*! Intersection filter function for ray packets of size N. */
 typedef void (*RTCFilterFuncN)(const int* valid,                      /*!< pointer to valid mask */
-                               void* ptr,                             /*!< pointer to user data */
+                               void* ptr,                             /*!< pointer to geometry user data */
+                               const RTCIntersectionContext* context, /*!< intersection context as passed to rtcIntersect/rtcOccluded */
                                void* ray,                             /*!< intersection to filter */
-                               const size_t N,                        /*!< size of ray packet */
-                               const RTCIntersectionContext* context  /*!< intersection context as passed to rtcIntersect/rtcOccluded */);
+                               const size_t N                         /*!< size of ray packet */);
 
 /*! Displacement mapping function. */
 typedef void (*RTCDisplacementFunc)(void* ptr,           /*!< pointer to user data of geometry */
