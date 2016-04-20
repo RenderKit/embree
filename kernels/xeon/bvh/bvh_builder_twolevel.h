@@ -35,7 +35,7 @@ namespace embree
 
       typedef void (*createMeshAccelTy)(Mesh* mesh, AccelData*& accel, Builder*& builder);
 
-      struct BuildRef
+      struct __aligned(16) BuildRef
       {
       public:
         __forceinline BuildRef () {}

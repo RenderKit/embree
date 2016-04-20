@@ -158,6 +158,12 @@ namespace embree
         interactive = false;
         rtcore += ",benchmark=1";
       }, "--benchmark <N> <M> <R>: enabled benchmark mode, builds scene, skips N frames, renders M frames, and repeats this R times");
+
+    registerOption("nodisplay", [this] (Ref<ParseStream> cin, const FileName& path) {
+        skipBenchmarkFrames = 0;
+        numBenchmarkFrames  = 2048;
+        interactive = false;
+      }, "--nodisplay: enabled benchmark mode, continously renders frames");
     
     /* output filename */
     registerOption("shader", [this] (Ref<ParseStream> cin, const FileName& path) {

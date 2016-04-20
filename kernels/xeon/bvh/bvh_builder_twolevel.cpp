@@ -69,7 +69,7 @@ namespace embree
 	profile(2,20,numPrimitives,[&] (ProfileTimer& timer)
         {
 #endif
-          
+
       /* resize object array if scene got larger */
       if (objects.size()  < num) objects.resize(num);
       if (builders.size() < num) builders.resize(num);
@@ -120,6 +120,7 @@ namespace embree
             refs[nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->bounds,object->root);
         }
       });
+
       
       /* fast path for single geometry scenes */
       if (nextRef == 1) { 
@@ -139,7 +140,7 @@ namespace embree
 
       /* compute PrimRefs */
       prims.resize(refs.size());
-      const PrimInfo pinfo = parallel_reduce(size_t(0), refs.size(), size_t(1024), PrimInfo(empty), [&] (const range<size_t>& r) -> PrimInfo
+      const PrimInfo pinfo = parallel_reduce(size_t(0), refs.size(),  PrimInfo(empty), [&] (const range<size_t>& r) -> PrimInfo
       {
         PrimInfo pinfo(empty);
         for (size_t i=r.begin(); i<r.end(); i++) {
@@ -216,9 +217,20 @@ namespace embree
       if (refs.size() == 0)
 	return;
 
+      double d0 = getSeconds();
+
       size_t num = min(numPrimitives/400,size_t(MAX_OPEN_SIZE));
       refs.reserve(num);
-      
+
+#if 1
+      for (size_t i=0;i<refs.size();i++)
+      {
+        NodeRef ref = refs.back().node;
+        if (ref.isNode())
+          ref.prefetch();
+      }
+#endif
+
       std::make_heap(refs.begin(),refs.end());
       while (refs.size()+3 <= num)
       {
@@ -231,6 +243,12 @@ namespace embree
         for (size_t i=0; i<N; i++) {
           if (node->child(i) == BVH::emptyNode) continue;
           refs.push_back(BuildRef(node->bounds(i),node->child(i)));
+         
+#if 1
+          NodeRef ref_pre = node->child(i);
+          if (ref_pre.isNode())
+            ref_pre.prefetch();
+#endif
           std::push_heap (refs.begin(),refs.end()); 
         }
       }

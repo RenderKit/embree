@@ -191,9 +191,9 @@ namespace embree
   BVH4Factory::BVH4Factory (int features)
   {
     /* select builders */
-    IF_ENABLED_LINES(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4BuilderTwoLevelLineSegmentsSAH));
-    IF_ENABLED_TRIS (SELECT_SYMBOL_DEFAULT_AVX(features,BVH4BuilderTwoLevelTriangleMeshSAH));
-    IF_ENABLED_TRIS (SELECT_SYMBOL_DEFAULT_AVX(features,BVH4BuilderInstancingTriangleMeshSAH));
+    IF_ENABLED_LINES(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4BuilderTwoLevelLineSegmentsSAH));
+    IF_ENABLED_TRIS (SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4BuilderTwoLevelTriangleMeshSAH));
+    IF_ENABLED_TRIS (SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4BuilderInstancingTriangleMeshSAH));
 
     IF_ENABLED_HAIR(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1vBuilder_OBB_New));
     IF_ENABLED_HAIR(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1iBuilder_OBB_New));
