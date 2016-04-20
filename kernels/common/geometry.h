@@ -278,10 +278,13 @@ namespace embree
     }
 
   public:
-    __forceinline bool hasIntersectionFilter1() const { return intersectionFilter1 != nullptr; }
-    __forceinline bool hasOcclusionFilter1() const { return occlusionFilter1 != nullptr; }
+    __forceinline bool hasIntersectionFilter1() const { return (hasIntersectionFilterMask & (HAS_FILTER1 | HAS_FILTERN)) != 0;  }
+    __forceinline bool hasOcclusionFilter1   () const { return (hasOcclusionFilterMask    & (HAS_FILTER1 | HAS_FILTERN)) != 0; }
     template<typename simd> __forceinline bool hasIntersectionFilter() const;
     template<typename simd> __forceinline bool hasOcclusionFilter() const;
+
+    template<typename simd> __forceinline bool hasISPCIntersectionFilter() const;
+    template<typename simd> __forceinline bool hasISPCOcclusionFilter() const;
 
   public:
     Scene* parent;             //!< pointer to scene this mesh belongs to
@@ -312,28 +315,32 @@ namespace embree
     RTCFilterFuncN intersectionFilterN;
     RTCFilterFuncN occlusionFilterN;
 
-    bool ispcIntersectionFilter4;	
-    bool ispcOcclusionFilter4;
-
-    bool ispcIntersectionFilter8;
-    bool ispcOcclusionFilter8;
-
-    bool ispcIntersectionFilter16;
-    bool ispcOcclusionFilter16;
+  public: 
+    enum { HAS_FILTER1 = 1, HAS_FILTER4 = 2, HAS_FILTER8 = 4, HAS_FILTER16 = 8, HAS_FILTERN = 16 };  
+    int hasIntersectionFilterMask;
+    int hasOcclusionFilterMask;
+    int ispcIntersectionFilterMask;
+    int ispcOcclusionFilterMask;
   };
 
 #if defined(__SSE__)
-  template<> __forceinline bool Geometry::hasIntersectionFilter<vfloat4>() const { return intersectionFilter4 != nullptr; }
-  template<> __forceinline bool Geometry::hasOcclusionFilter   <vfloat4>() const { return occlusionFilter4    != nullptr; }
+  template<> __forceinline bool Geometry::hasIntersectionFilter<vfloat4>() const { return (hasIntersectionFilterMask & (HAS_FILTER4 | HAS_FILTERN)) != 0; }
+  template<> __forceinline bool Geometry::hasOcclusionFilter   <vfloat4>() const { return (hasOcclusionFilterMask    & (HAS_FILTER4 | HAS_FILTERN)) != 0; }
+  template<> __forceinline bool Geometry::hasISPCIntersectionFilter<vfloat4>() const { return (ispcIntersectionFilterMask & HAS_FILTER4) != 0; }
+  template<> __forceinline bool Geometry::hasISPCOcclusionFilter   <vfloat4>() const { return (ispcOcclusionFilterMask    & HAS_FILTER4) != 0; }
 #endif
 
 #if defined(__AVX__)
-  template<> __forceinline bool Geometry::hasIntersectionFilter<vfloat8>() const { return intersectionFilter8 != nullptr; }
-  template<> __forceinline bool Geometry::hasOcclusionFilter   <vfloat8>() const { return occlusionFilter8    != nullptr; }
+  template<> __forceinline bool Geometry::hasIntersectionFilter<vfloat8>() const { return (hasIntersectionFilterMask & (HAS_FILTER8 | HAS_FILTERN)) != 0; }
+  template<> __forceinline bool Geometry::hasOcclusionFilter   <vfloat8>() const { return (hasOcclusionFilterMask    & (HAS_FILTER8 | HAS_FILTERN)) != 0; }
+  template<> __forceinline bool Geometry::hasISPCIntersectionFilter<vfloat8>() const { return (ispcIntersectionFilterMask & HAS_FILTER8) != 0; }
+  template<> __forceinline bool Geometry::hasISPCOcclusionFilter   <vfloat8>() const { return (ispcOcclusionFilterMask    & HAS_FILTER8) != 0; }
 #endif
 
 #if defined(__MIC__) || defined(__AVX512F__)
-  template<> __forceinline bool Geometry::hasIntersectionFilter<vfloat16>() const { return intersectionFilter16 != nullptr; }
-  template<> __forceinline bool Geometry::hasOcclusionFilter   <vfloat16>() const { return occlusionFilter16    != nullptr; }
+  template<> __forceinline bool Geometry::hasIntersectionFilter<vfloat16>() const { return (hasIntersectionFilterMask & (HAS_FILTER16 | HAS_FILTERN)) != 0; }
+  template<> __forceinline bool Geometry::hasOcclusionFilter   <vfloat16>() const { return (hasOcclusionFilterMask    & (HAS_FILTER16 | HAS_FILTERN)) != 0; }
+  template<> __forceinline bool Geometry::hasISPCIntersectionFilter<vfloat16>() const { return (ispcIntersectionFilterMask & HAS_FILTER16) != 0; }
+  template<> __forceinline bool Geometry::hasISPCOcclusionFilter   <vfloat16>() const { return (ispcOcclusionFilterMask    & HAS_FILTER16) != 0; }
 #endif
 }

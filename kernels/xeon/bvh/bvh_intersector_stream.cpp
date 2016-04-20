@@ -62,7 +62,7 @@ namespace embree
 #if EXPERIMENTAL_FIBER_MODE
     /* pure fiber mode, no streams */
     template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
-    void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, size_t flags)
+    void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, const RTCIntersectionContext* context)
     {
       StackItemT<NodeRef> stack[2][stackSize];           //!< stack of nodes 
       TraversalContext contexts[2];
@@ -188,7 +188,7 @@ namespace embree
           STAT3(normal.trav_leaves,1,1,1);
           size_t num; Primitive* prim = (Primitive*) cur.leaf(num);
           size_t lazy_node = 0;
-          PrimitiveIntersector::intersect(ctx.pre,*ctx.pray,0,prim,num,bvh->scene,nullptr,lazy_node);
+          PrimitiveIntersector::intersect(ctx.pre,*ctx.pray,0,prim,num,bvh->scene,nullptr,lazy_node,context);
           ctx.ray_far = ctx.pray->tfar;
         }
       }
@@ -206,7 +206,7 @@ namespace embree
 #else
 
     template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
-    void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, size_t flags)
+    void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, const RTCIntersectionContext* context)
     {
       __aligned(64) RayContext ray_ctx[MAX_RAYS_PER_OCTANT];
       __aligned(64) Precalculations pre[MAX_RAYS_PER_OCTANT]; 
@@ -438,7 +438,7 @@ namespace embree
 
           /*! intersect stream of rays with all primitives */
           size_t lazy_node = 0;
-          size_t valid_isec = PrimitiveIntersector::intersect(pre,bits,rays,ray_ctx,0,prim,num,bvh->scene,NULL,lazy_node);
+          size_t valid_isec = PrimitiveIntersector::intersect(pre,bits,rays,context,ray_ctx,0,prim,num,bvh->scene,NULL,lazy_node);
 
           STAT3(normal.trav_hit_boxes[__popcnt(valid_isec)],1,1,1);            
 
@@ -485,7 +485,7 @@ namespace embree
 #if 1
     
     template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
-    void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::occluded(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, size_t flags)
+    void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::occluded(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, const RTCIntersectionContext* context)
     {
       __aligned(64) RayContext ray_ctx[MAX_RAYS_PER_OCTANT];
       __aligned(64) Precalculations pre[MAX_RAYS_PER_OCTANT]; 
@@ -721,7 +721,7 @@ namespace embree
           assert(bits);
           //STAT3(shadow.trav_hit_boxes[__popcnt(bits)],1,1,1);                          
 
-          m_active &= ~PrimitiveIntersector::occluded(pre,bits,rays,0,prim,num,bvh->scene,NULL,lazy_node);
+          m_active &= ~PrimitiveIntersector::occluded(pre,bits,rays,context,0,prim,num,bvh->scene,NULL,lazy_node);
           if (unlikely(m_active == 0)) break;
 
           /*! pop next node */
@@ -747,7 +747,7 @@ namespace embree
 
     /* experimental multi-stack mode */
     template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
-    void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::occluded(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, size_t flags)
+    void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::occluded(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, const RTCIntersectionContext* context)
     {
       const size_t queue_size = 64;
       __aligned(64) RayContext ray_ctx[queue_size];
@@ -899,7 +899,7 @@ namespace embree
             /* primitive intersection */
             size_t lazy_node = 0;
             size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
-            if (PrimitiveIntersector::occluded(pre[r],*rays[r],0,prim,num,bvh->scene,nullptr,lazy_node)) {
+            if (PrimitiveIntersector::occluded(pre[r],*rays[r],context,0,prim,num,bvh->scene,nullptr,lazy_node)) {
               rays[r]->geomID = 0;
               continue;
             }

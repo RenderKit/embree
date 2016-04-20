@@ -31,7 +31,7 @@ namespace embree
       ray.dir = xfmVector(world2local,ray_dir);
       ray.geomID = -1;
       ray.instID = instance->id;
-      instance->object->intersect16(valid,(RTCRay16&)ray);
+      instance->object->intersect16(valid,(RTCRay16&)ray,nullptr);
       ray.org = ray_org;
       ray.dir = ray_dir;
       vbool16 nohit = ray.geomID == vint16(-1);
@@ -48,7 +48,7 @@ namespace embree
       ray.org = xfmPoint (world2local,ray_org);
       ray.dir = xfmVector(world2local,ray_dir);
       ray.instID = instance->id;
-      instance->object->occluded16(valid,(RTCRay16&)ray);
+      instance->object->occluded16(valid,(RTCRay16&)ray,nullptr);
       ray.org = ray_org;
       ray.dir = ray_dir;
     }

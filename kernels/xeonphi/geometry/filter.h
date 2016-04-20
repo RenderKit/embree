@@ -101,7 +101,7 @@ namespace embree
     /* invoke filter function */
     RTCFilterFunc16  filter16     = (RTCFilterFunc16)  geometry->intersectionFilter16;
     ISPCFilterFunc16 ispcFilter16 = (ISPCFilterFunc16) geometry->intersectionFilter16;
-    if (geometry->ispcIntersectionFilter16) ispcFilter16(geometry->userPtr,(RTCRay16&)ray,valid);
+    if (geometry->hasISPCIntersectionFilter<vfloat16>()) ispcFilter16(geometry->userPtr,(RTCRay16&)ray,valid);
     else filter16(&valid,geometry->userPtr,(RTCRay16&)ray);
     const vbool16 valid_failed = valid & (ray.geomID == vint16(-1));
     const vbool16 valid_passed = valid & (ray.geomID != vint16(-1));
@@ -139,7 +139,7 @@ namespace embree
     /* invoke filter function */
     RTCFilterFunc16  filter16     = (RTCFilterFunc16)  geometry->occlusionFilter16;
     ISPCFilterFunc16 ispcFilter16 = (ISPCFilterFunc16) geometry->occlusionFilter16;
-    if (geometry->ispcOcclusionFilter16) ispcFilter16(geometry->userPtr,(RTCRay16&)ray,valid);
+    if (geometry->hasISPCOcclusionFilter<vfloat16>()) ispcFilter16(geometry->userPtr,(RTCRay16&)ray,valid);
     else filter16(&valid,geometry->userPtr,(RTCRay16&)ray);
     const vbool16 valid_failed = valid & (ray.geomID == vint16(-1));
     const vbool16 valid_passed = valid & (ray.geomID != vint16(-1));
@@ -168,7 +168,7 @@ namespace embree
     const vbool16 valid(1 << k);
     RTCFilterFunc16  filter16     = (RTCFilterFunc16)  geometry->intersectionFilter16;
     ISPCFilterFunc16 ispcFilter16 = (ISPCFilterFunc16) geometry->intersectionFilter16;
-    if (geometry->ispcIntersectionFilter16) ispcFilter16(geometry->userPtr,(RTCRay16&)ray,valid);
+    if (geometry->hasISPCIntersectionFilter<vfloat16>()) ispcFilter16(geometry->userPtr,(RTCRay16&)ray,valid);
     else filter16(&valid,geometry->userPtr,(RTCRay16&)ray);
     const bool passed = ray.geomID[k] != -1;
 
@@ -206,7 +206,7 @@ namespace embree
     const vbool16 valid(1 << k);
     RTCFilterFunc16  filter16     = (RTCFilterFunc16)  geometry->occlusionFilter16;
     ISPCFilterFunc16 ispcFilter16 = (ISPCFilterFunc16) geometry->occlusionFilter16;
-    if (geometry->ispcOcclusionFilter16) ispcFilter16(geometry->userPtr,(RTCRay16&)ray,valid);
+    if (geometry->hasISPCOcclusionFilter<vfloat16>()) ispcFilter16(geometry->userPtr,(RTCRay16&)ray,valid);
     else filter16(&valid,geometry->userPtr,(RTCRay16&)ray);
     const bool passed = ray.geomID[k] != -1;
 
