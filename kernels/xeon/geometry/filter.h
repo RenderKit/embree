@@ -90,7 +90,7 @@ namespace embree
       
       /* invoke filter function */
       AVX_ZERO_UPPER();
-      if (likely(geometry->intersectionFilter1)) { // old code for compatibility
+      if (likely(geometry->occlusionFilter1)) { // old code for compatibility
         geometry->occlusionFilter1(geometry->userPtr,(RTCRay&)ray);
       } else {
         assert(geometry->occlusionFilterN);
