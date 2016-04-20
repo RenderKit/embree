@@ -116,7 +116,7 @@ namespace embree
       RTCFilterFunc4  filter4 = geometry->intersectionFilter4;
       AVX_ZERO_UPPER();
       if (likely(filter4)) { // old code for compatibility
-        if (geometry->ispcIntersectionFilter4) ((ISPCFilterFunc4)filter4)(geometry->userPtr,(RTCRay4&)ray,valid);
+        if (geometry->hasISPCIntersectionFilter<vfloat4>()) ((ISPCFilterFunc4)filter4)(geometry->userPtr,(RTCRay4&)ray,valid);
         else { const vint4 mask = valid.mask32(); filter4(&mask,geometry->userPtr,(RTCRay4&)ray); }
       } else {
         assert(geometry->intersectionFilterN);
@@ -163,7 +163,7 @@ namespace embree
       RTCFilterFunc4 filter4 = geometry->occlusionFilter4;
       AVX_ZERO_UPPER();
       if (likely(filter4)) { // old code for compatibility
-        if (geometry->ispcOcclusionFilter4) ((ISPCFilterFunc4)filter4)(geometry->userPtr,(RTCRay4&)ray,valid);
+        if (geometry->hasISPCOcclusionFilter<vfloat4>()) ((ISPCFilterFunc4)filter4)(geometry->userPtr,(RTCRay4&)ray,valid);
         else { const vint4 mask = valid.mask32(); filter4(&mask,geometry->userPtr,(RTCRay4&)ray); }
       } else {
         assert(geometry->occlusionFilterN);
@@ -198,7 +198,7 @@ namespace embree
       RTCFilterFunc4  filter4 = geometry->intersectionFilter4;
       AVX_ZERO_UPPER();
       if (likely(filter4)) { // old code for compatibility
-        if (geometry->ispcIntersectionFilter4) ((ISPCFilterFunc4)filter4)(geometry->userPtr,(RTCRay4&)ray,valid);
+        if (geometry->hasISPCIntersectionFilter<vfloat4>()) ((ISPCFilterFunc4)filter4)(geometry->userPtr,(RTCRay4&)ray,valid);
         else { const vint4 mask = valid.mask32(); filter4(&mask,geometry->userPtr,(RTCRay4&)ray); }
       } else {
         assert(geometry->intersectionFilterN);
@@ -242,7 +242,7 @@ namespace embree
       RTCFilterFunc4  filter4 = geometry->occlusionFilter4;
       AVX_ZERO_UPPER();
       if (likely(filter4)) { // old code for compatibility
-        if (geometry->ispcOcclusionFilter4) ((ISPCFilterFunc4)filter4)(geometry->userPtr,(RTCRay4&)ray,valid);
+        if (geometry->hasISPCOcclusionFilter<vfloat4>()) ((ISPCFilterFunc4)filter4)(geometry->userPtr,(RTCRay4&)ray,valid);
         else { const vint4 mask = valid.mask32(); filter4(&mask,geometry->userPtr,(RTCRay4&)ray); }
       } else {
         assert(geometry->occlusionFilterN);
@@ -277,7 +277,7 @@ namespace embree
       /* invoke filter function */
       RTCFilterFunc8  filter8 = geometry->intersectionFilter8;
       if (likely(filter8)) { // old code for compatibility
-        if (geometry->ispcIntersectionFilter8) ((ISPCFilterFunc8)filter8)(geometry->userPtr,(RTCRay8&)ray,valid);
+        if (geometry->hasISPCIntersectionFilter<vfloat8>()) ((ISPCFilterFunc8)filter8)(geometry->userPtr,(RTCRay8&)ray,valid);
         else { const vint8 mask = valid.mask32(); filter8(&mask,geometry->userPtr,(RTCRay8&)ray); }
       } else {
         assert(geometry->intersectionFilterN);
@@ -323,7 +323,7 @@ namespace embree
       /* invoke filter function */
       RTCFilterFunc8 filter8 = geometry->occlusionFilter8;
       if (likely(filter8)) { // old code for compatibility
-        if (geometry->ispcOcclusionFilter8) ((ISPCFilterFunc8)filter8)(geometry->userPtr,(RTCRay8&)ray,valid);
+        if (geometry->hasISPCOcclusionFilter<vfloat8>()) ((ISPCFilterFunc8)filter8)(geometry->userPtr,(RTCRay8&)ray,valid);
         else { const vint8 mask = valid.mask32(); filter8(&mask,geometry->userPtr,(RTCRay8&)ray); }
       } else {
         assert(geometry->occlusionFilterN);
@@ -357,7 +357,7 @@ namespace embree
       const vbool8 valid(1 << k);
       RTCFilterFunc8  filter8 = geometry->intersectionFilter8;
       if (likely(filter8)) { // old code for compatibility
-        if (geometry->ispcIntersectionFilter8) ((ISPCFilterFunc8)filter8)(geometry->userPtr,(RTCRay8&)ray,valid);
+        if (geometry->hasISPCIntersectionFilter<vfloat8>()) ((ISPCFilterFunc8)filter8)(geometry->userPtr,(RTCRay8&)ray,valid);
         else filter8(&valid,geometry->userPtr,(RTCRay8&)ray);
       } else {
         assert(geometry->intersectionFilterN);
@@ -402,7 +402,7 @@ namespace embree
       const vbool8 valid(1 << k);
       RTCFilterFunc8 filter8 = geometry->occlusionFilter8;
       if (likely(filter8)) {
-        if (geometry->ispcOcclusionFilter8) ((ISPCFilterFunc8)filter8)(geometry->userPtr,(RTCRay8&)ray,valid);
+        if (geometry->hasISPCOcclusionFilter<vfloat8>()) ((ISPCFilterFunc8)filter8)(geometry->userPtr,(RTCRay8&)ray,valid);
         else filter8(&valid,geometry->userPtr,(RTCRay8&)ray);
       } else {
         assert(geometry->occlusionFilterN);
@@ -440,7 +440,7 @@ namespace embree
       /* invoke filter function */
       RTCFilterFunc16  filter16 = geometry->intersectionFilter16;
       if (likely(filter16)) { // old code for compatibility
-        if (geometry->ispcIntersectionFilter16) ((ISPCFilterFunc16)filter16)(geometry->userPtr,(RTCRay16&)ray,valid.mask8());
+        if (geometry->hasISPCIntersectionFilter<vfloat16>()) ((ISPCFilterFunc16)filter16)(geometry->userPtr,(RTCRay16&)ray,valid.mask8());
         else { const vint16 mask = valid.mask32(); filter16(&mask,geometry->userPtr,(RTCRay16&)ray); }
       } else {
         assert(geometry->intersectionFilterN);
@@ -486,7 +486,7 @@ namespace embree
       /* invoke filter function */
       RTCFilterFunc16 filter16 = geometry->occlusionFilter16;
       if (likely(filter16)) { // old code for compatibility
-        if (geometry->ispcOcclusionFilter16) ((ISPCFilterFunc16)filter16)(geometry->userPtr,(RTCRay16&)ray,valid.mask8());
+        if (geometry->hasISPCOcclusionFilter<vfloat16>()) ((ISPCFilterFunc16)filter16)(geometry->userPtr,(RTCRay16&)ray,valid.mask8());
         else { const vint16 mask = valid.mask32(); filter16(&mask,geometry->userPtr,(RTCRay16&)ray); }
       } else {
         assert(geometry->occlusionFilterN);
@@ -520,7 +520,7 @@ namespace embree
       const vbool16 valid(1 << k);
       RTCFilterFunc16  filter16 = geometry->intersectionFilter16;
       if (likely(filter16)) { // old code for compatibility
-        if (geometry->ispcIntersectionFilter16) ((ISPCFilterFunc16)filter16)(geometry->userPtr,(RTCRay16&)ray,valid.mask8());
+        if (geometry->hasISPCIntersectionFilter<vfloat16>()) ((ISPCFilterFunc16)filter16)(geometry->userPtr,(RTCRay16&)ray,valid.mask8());
         else { const vint16 mask = valid.mask32(); filter16(&mask,geometry->userPtr,(RTCRay16&)ray); }
       } else {
         assert(geometry->intersectionFilterN);
@@ -565,7 +565,7 @@ namespace embree
       const vbool16 valid(1 << k);
       RTCFilterFunc16 filter16 = geometry->occlusionFilter16;
       if (likely(filter16)) { // old code for compatibility
-        if (geometry->ispcOcclusionFilter16) ((ISPCFilterFunc16)filter16)(geometry->userPtr,(RTCRay16&)ray,valid.mask8());
+        if (geometry->hasISPCOcclusionFilter<vfloat16>()) ((ISPCFilterFunc16)filter16)(geometry->userPtr,(RTCRay16&)ray,valid.mask8());
         else { const vint16 mask = valid.mask32(); filter16(&mask,geometry->userPtr,(RTCRay16&)ray); }
       } else {
         assert(geometry->occlusionFilterN);
