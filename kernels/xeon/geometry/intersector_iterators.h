@@ -165,7 +165,7 @@ namespace embree
           }
         }
         
-        static __forceinline vbool<K> occluded(const vbool<K>& valid, Precalculations& pre, RayK<K>& ray, const RTCIntersectionContext* context const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node) 
+        static __forceinline vbool<K> occluded(const vbool<K>& valid, Precalculations& pre, RayK<K>& ray, const RTCIntersectionContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node) 
         {
           vbool<K> valid0 = valid;
           for (size_t i=0; i<num; i++) {

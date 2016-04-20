@@ -35,7 +35,7 @@ namespace embree
   typedef void (*ISPCFilterFunc16)(void* ptr, RTCRay16& ray, __m128i valid); // mask passed as 16 bytes
 #endif
 
-    __forceinline bool runIntersectionFilter1(const Geometry* const geometry, Ray& ray, 
+    __forceinline bool runIntersectionFilter1(const Geometry* const geometry, Ray& ray, const RTCIntersectionContext* context,
                                               const float& u, const float& v, const float& t, const Vec3fa& Ng, const int geomID, const int primID)
     {
       /* temporarily update hit information */
@@ -68,7 +68,7 @@ namespace embree
       return true;
     }
     
-    __forceinline bool runOcclusionFilter1(const Geometry* const geometry, Ray& ray, 
+    __forceinline bool runOcclusionFilter1(const Geometry* const geometry, Ray& ray, const RTCIntersectionContext* context,
                                            const float& u, const float& v, const float& t, const Vec3fa& Ng, const int geomID, const int primID)
     {
       /* temporarily update hit information */

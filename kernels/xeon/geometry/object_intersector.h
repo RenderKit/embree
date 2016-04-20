@@ -83,7 +83,7 @@ namespace embree
       valid &= (ray.mask & accel->mask) != 0;
       if (none(valid)) return;
 #endif
-      accel->intersect8(valid,(RTCRay8&)ray,prim.primID);
+      accel->intersect8(valid,(RTCRay8&)ray,prim.primID,context);
     }
 
     template<>

@@ -32,7 +32,7 @@ namespace embree
         __forceinline Precalculations (const Ray& ray, const void *ptr) {}
       };
       
-      static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& prim, Scene* scene, const unsigned* geomID_to_instID, const RTCIntersectionContext* context) 
+      static __forceinline void intersect(const Precalculations& pre, Ray& ray, const RTCIntersectionContext* context, const Primitive& prim, Scene* scene, const unsigned* geomID_to_instID) 
       {
         AVX_ZERO_UPPER();
         AccelSet* accel = (AccelSet*) scene->get(prim.geomID);
@@ -46,7 +46,7 @@ namespace embree
         accel->intersect((RTCRay&)ray,prim.primID,context);
       }
       
-      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& prim, Scene* scene, const unsigned* geomID_to_instID, const RTCIntersectionContext* context) 
+      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const RTCIntersectionContext* context, const Primitive& prim, Scene* scene, const unsigned* geomID_to_instID) 
       {
         AVX_ZERO_UPPER();
         AccelSet* accel = (AccelSet*) scene->get(prim.geomID);
@@ -62,7 +62,7 @@ namespace embree
       }
       
       template<typename Context>
-      static __forceinline size_t intersect(Precalculations* pre, size_t valid_in, Ray** rays, Context* ctx, size_t ty, const Primitive* prims, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node, const RTCIntersectionContext* context)
+      static __forceinline size_t intersect(Precalculations* pre, size_t valid_in, Ray** rays, const RTCIntersectionContext* context, Context* ctx, size_t ty, const Primitive* prims, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node)
       {
         AVX_ZERO_UPPER();
         
@@ -101,7 +101,7 @@ namespace embree
         return valid;
       }
 
-      static __forceinline size_t occluded(Precalculations* pre, size_t valid_in, Ray** rays, size_t ty, const Primitive* prims, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node, const RTCIntersectionContext* context)
+      static __forceinline size_t occluded(Precalculations* pre, size_t valid_in, Ray** rays, const RTCIntersectionContext* context, size_t ty, const Primitive* prims, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node)
       {
         AVX_ZERO_UPPER();
         size_t hit = 0;

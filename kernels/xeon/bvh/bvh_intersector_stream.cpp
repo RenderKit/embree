@@ -438,7 +438,7 @@ namespace embree
 
           /*! intersect stream of rays with all primitives */
           size_t lazy_node = 0;
-          size_t valid_isec = PrimitiveIntersector::intersect(pre,bits,rays,ray_ctx,0,prim,num,bvh->scene,NULL,lazy_node,context);
+          size_t valid_isec = PrimitiveIntersector::intersect(pre,bits,rays,context,ray_ctx,0,prim,num,bvh->scene,NULL,lazy_node);
 
           STAT3(normal.trav_hit_boxes[__popcnt(valid_isec)],1,1,1);            
 
@@ -721,7 +721,7 @@ namespace embree
           assert(bits);
           //STAT3(shadow.trav_hit_boxes[__popcnt(bits)],1,1,1);                          
 
-          m_active &= ~PrimitiveIntersector::occluded(pre,bits,rays,0,prim,num,bvh->scene,NULL,lazy_node,context);
+          m_active &= ~PrimitiveIntersector::occluded(pre,bits,rays,context,0,prim,num,bvh->scene,NULL,lazy_node);
           if (unlikely(m_active == 0)) break;
 
           /*! pop next node */
@@ -899,7 +899,7 @@ namespace embree
             /* primitive intersection */
             size_t lazy_node = 0;
             size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
-            if (PrimitiveIntersector::occluded(pre[r],*rays[r],0,prim,num,bvh->scene,nullptr,lazy_node,context)) {
+            if (PrimitiveIntersector::occluded(pre[r],*rays[r],context,0,prim,num,bvh->scene,nullptr,lazy_node)) {
               rays[r]->geomID = 0;
               continue;
             }

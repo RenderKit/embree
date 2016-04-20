@@ -97,7 +97,7 @@ namespace embree
       };
 
        /*! Intersect a ray with the primitive. */
-      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
+      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const RTCIntersectionContext* context, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
       {
         const size_t dim_offset    = pre.grid->dim_offset;
         const size_t line_offset   = pre.grid->width;
@@ -118,14 +118,14 @@ namespace embree
             const Vec3vfK p01(grid_x[ofs01],grid_y[ofs01],grid_z[ofs01]);
             const Vec3vfK p10(grid_x[ofs10],grid_y[ofs10],grid_z[ofs10]);
             const Vec3vfK p11(grid_x[ofs11],grid_y[ofs11],grid_z[ofs11]);
-            pre.intersector.intersectK(valid_i,ray,p00,p01,p10,MapUV0(grid_uv,ofs00,ofs01,ofs10,ofs11),IntersectKEpilogMU<1,K,true>(ray,pre.grid->geomID,pre.grid->primID,scene));
-            pre.intersector.intersectK(valid_i,ray,p10,p01,p11,MapUV1(grid_uv,ofs00,ofs01,ofs10,ofs11),IntersectKEpilogMU<1,K,true>(ray,pre.grid->geomID,pre.grid->primID,scene));
+            pre.intersector.intersectK(valid_i,ray,p00,p01,p10,MapUV0(grid_uv,ofs00,ofs01,ofs10,ofs11),IntersectKEpilogMU<1,K,true>(ray,context,pre.grid->geomID,pre.grid->primID,scene));
+            pre.intersector.intersectK(valid_i,ray,p10,p01,p11,MapUV1(grid_uv,ofs00,ofs01,ofs10,ofs11),IntersectKEpilogMU<1,K,true>(ray,context,pre.grid->geomID,pre.grid->primID,scene));
           }
         }
       }
 
       /*! Test if the ray is occluded by the primitive */
-      static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
+      static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const RTCIntersectionContext* context, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
       {
         const size_t dim_offset    = pre.grid->dim_offset;
         const size_t line_offset   = pre.grid->width;
@@ -148,9 +148,9 @@ namespace embree
             const Vec3vfK p10(grid_x[ofs10],grid_y[ofs10],grid_z[ofs10]);
             const Vec3vfK p11(grid_x[ofs11],grid_y[ofs11],grid_z[ofs11]);
 
-            pre.intersector.intersectK(valid,ray,p00,p01,p10,MapUV0(grid_uv,ofs00,ofs01,ofs10,ofs11),OccludedKEpilogMU<1,K,true>(valid,ray,pre.grid->geomID,pre.grid->primID,scene));
+            pre.intersector.intersectK(valid,ray,p00,p01,p10,MapUV0(grid_uv,ofs00,ofs01,ofs10,ofs11),OccludedKEpilogMU<1,K,true>(valid,ray,context,pre.grid->geomID,pre.grid->primID,scene));
             if (none(valid)) break;
-            pre.intersector.intersectK(valid,ray,p10,p01,p11,MapUV1(grid_uv,ofs00,ofs01,ofs10,ofs11),OccludedKEpilogMU<1,K,true>(valid,ray,pre.grid->geomID,pre.grid->primID,scene));
+            pre.intersector.intersectK(valid,ray,p10,p01,p11,MapUV1(grid_uv,ofs00,ofs01,ofs10,ofs11),OccludedKEpilogMU<1,K,true>(valid,ray,context,pre.grid->geomID,pre.grid->primID,scene));
             if (none(valid)) break;
           }
         }
@@ -179,6 +179,7 @@ namespace embree
 
       template<typename Loader>
         static __forceinline void intersect(RayK<K>& ray, size_t k,
+                                            const RTCIntersectionContext* context, 
                                             const float* const grid_x,
                                             const float* const grid_y,
                                             const float* const grid_z,
@@ -196,11 +197,12 @@ namespace embree
 	const Vec3<vfloat> v0(tri_v012_x[0],tri_v012_y[0],tri_v012_z[0]);
 	const Vec3<vfloat> v1(tri_v012_x[1],tri_v012_y[1],tri_v012_z[1]);
 	const Vec3<vfloat> v2(tri_v012_x[2],tri_v012_y[2],tri_v012_z[2]);
-        pre.intersector.intersect(ray,k,v0,v1,v2,MapUV2<Loader>(grid_uv,line_offset),Intersect1KEpilogMU<M,K,true>(ray,k,pre.grid->geomID,pre.grid->primID,scene));
+        pre.intersector.intersect(ray,k,v0,v1,v2,MapUV2<Loader>(grid_uv,line_offset),Intersect1KEpilogMU<M,K,true>(ray,k,context,pre.grid->geomID,pre.grid->primID,scene));
       };
       
       template<typename Loader>
         static __forceinline bool occluded(RayK<K>& ray, size_t k,
+                                           const RTCIntersectionContext* context, 
                                            const float* const grid_x,
                                            const float* const grid_y,
                                            const float* const grid_z,
@@ -218,11 +220,11 @@ namespace embree
 	const Vec3<vfloat> v0(tri_v012_x[0],tri_v012_y[0],tri_v012_z[0]);
 	const Vec3<vfloat> v1(tri_v012_x[1],tri_v012_y[1],tri_v012_z[1]);
 	const Vec3<vfloat> v2(tri_v012_x[2],tri_v012_y[2],tri_v012_z[2]);
-        return pre.intersector.intersect(ray,k,v0,v1,v2,MapUV2<Loader>(grid_uv,line_offset),Occluded1KEpilogMU<M,K,true>(ray,k,pre.grid->geomID,pre.grid->primID,scene));
+        return pre.intersector.intersect(ray,k,v0,v1,v2,MapUV2<Loader>(grid_uv,line_offset),Occluded1KEpilogMU<M,K,true>(ray,k,context,pre.grid->geomID,pre.grid->primID,scene));
       }
 
       /*! Intersect a ray with the primitive. */
-      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
+      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, const RTCIntersectionContext* context, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
       {
         const size_t dim_offset    = pre.grid->dim_offset;
         const size_t line_offset   = pre.grid->width;
@@ -232,15 +234,15 @@ namespace embree
         const float* const grid_uv = grid_x + 3 * dim_offset;
         
 #if defined(__AVX__)
-        intersect<GridSOA::Gather3x3>( ray, k, grid_x,grid_y,grid_z,grid_uv, line_offset, pre, scene);
+        intersect<GridSOA::Gather3x3>( ray, k, context, grid_x,grid_y,grid_z,grid_uv, line_offset, pre, scene);
 #else
-        intersect<GridSOA::Gather2x3>(ray, k, grid_x            ,grid_y            ,grid_z            ,grid_uv            , line_offset, pre, scene);
-        intersect<GridSOA::Gather2x3>(ray, k, grid_x+line_offset,grid_y+line_offset,grid_z+line_offset,grid_uv+line_offset, line_offset, pre, scene);
+        intersect<GridSOA::Gather2x3>(ray, k, context, grid_x            ,grid_y            ,grid_z            ,grid_uv            , line_offset, pre, scene);
+        intersect<GridSOA::Gather2x3>(ray, k, context, grid_x+line_offset,grid_y+line_offset,grid_z+line_offset,grid_uv+line_offset, line_offset, pre, scene);
 #endif
       }
       
       /*! Test if the ray is occluded by the primitive */
-      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
+      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, const RTCIntersectionContext* context, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
       {
         const size_t dim_offset    = pre.grid->dim_offset;
         const size_t line_offset   = pre.grid->width;
@@ -250,10 +252,10 @@ namespace embree
         const float* const grid_uv = grid_x + 3 * dim_offset;
         
 #if defined(__AVX__)
-        return occluded<GridSOA::Gather3x3>( ray, k, grid_x,grid_y,grid_z,grid_uv, line_offset, pre, scene);
+        return occluded<GridSOA::Gather3x3>( ray, k, context, grid_x,grid_y,grid_z,grid_uv, line_offset, pre, scene);
 #else
-        if (occluded<GridSOA::Gather2x3>(ray, k, grid_x            ,grid_y            ,grid_z            ,grid_uv            , line_offset, pre, scene)) return true;
-        if (occluded<GridSOA::Gather2x3>(ray, k, grid_x+line_offset,grid_y+line_offset,grid_z+line_offset,grid_uv+line_offset, line_offset, pre, scene)) return true;
+        if (occluded<GridSOA::Gather2x3>(ray, k, context, grid_x            ,grid_y            ,grid_z            ,grid_uv            , line_offset, pre, scene)) return true;
+        if (occluded<GridSOA::Gather2x3>(ray, k, context, grid_x+line_offset,grid_y+line_offset,grid_z+line_offset,grid_uv+line_offset, line_offset, pre, scene)) return true;
 #endif
         return false;
       } 
