@@ -53,7 +53,12 @@ namespace embree
       
       /* invoke filter function */
       AVX_ZERO_UPPER();
-      geometry->intersectionFilter1(geometry->userPtr,(RTCRay&)ray);
+      if (likely(geometry->intersectionFilter1)) { // old code for compatibility
+        geometry->intersectionFilter1(geometry->userPtr,(RTCRay&)ray);
+      } else {
+        assert(geometry->intersectionFilterN);
+        const int mask = -1; geometry->intersectionFilterN(&mask,geometry->userPtr,&ray,1,context);
+      }
       
       /* restore hit if filter not passed */
       if (unlikely(ray.geomID == -1)) 
@@ -85,8 +90,13 @@ namespace embree
       
       /* invoke filter function */
       AVX_ZERO_UPPER();
-      geometry->occlusionFilter1(geometry->userPtr,(RTCRay&)ray);
-      
+      if (likely(geometry->intersectionFilter1)) { // old code for compatibility
+        geometry->occlusionFilter1(geometry->userPtr,(RTCRay&)ray);
+      } else {
+        assert(geometry->occlusionFilterN);
+        const int mask = -1; geometry->occlusionFilterN(&mask,geometry->userPtr,&ray,1,context);
+      }
+
       /* restore hit if filter not passed */
       if (unlikely(ray.geomID == -1)) 
       {
