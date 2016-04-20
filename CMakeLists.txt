@@ -24,6 +24,7 @@ SET(CPACK_RPM_PACKAGE_RELEASE 1)
 
 PROJECT(embree${EMBREE_VERSION_MAJOR})
 
+
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8.11)
 CONFIGURE_FILE(
   "${PROJECT_SOURCE_DIR}/kernels/version.h.in"
@@ -53,11 +54,6 @@ MARK_AS_ADVANCED(GLUT_cocoa_LIBRARY)
 SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/common/cmake ${CMAKE_MODULE_PATH})
 
 INCLUDE(test)
-
-##############################################################
-# Create Binary Packages
-##############################################################
-include(package)
 
 ##############################################################
 # Embree configuration
@@ -115,17 +111,29 @@ SET_PROPERTY(CACHE RTCORE_TASKING_SYSTEM PROPERTY STRINGS TBB INTERNAL)
 ###############################################################################
 
 IF (RTCORE_TASKING_SYSTEM STREQUAL "TBB")
-  SET(TASKING_TBB ON)
+  SET(TASKING_TBB      ON )
+  SET(TASKING_INTERNAL OFF)
   FIND_PACKAGE(TBB REQUIRED)
   INCLUDE_DIRECTORIES(${TBB_INCLUDE_DIRS})
 ELSE()
-  SET(TASKING_INTERNAL ON)
+  SET(TASKING_INTERNAL ON )
+  SET(TASKING_TBB      OFF)
 ENDIF()
 
 CONFIGURE_FILE(
   "${PROJECT_SOURCE_DIR}/kernels/config.h.in"
   "${PROJECT_BINARY_DIR}/config.h"
 )
+
+##############################################################
+# Create Binary Packages (uses above config options)
+##############################################################
+
+if (NOT DEFINED RTCORE_ZIP_MODE)
+  set(RTCORE_ZIP_MODE OFF)
+endif()
+
+include(package)
 
 ##############################################################
 # Compiler
@@ -288,13 +296,13 @@ IF (ENABLE_TUTORIALS)
   ADD_SUBDIRECTORY(tutorials)
 ENDIF()
 
-  SET (__XEON__ 1)
-  ADD_SUBDIRECTORY(tests)
+SET (__XEON__ 1)
+ADD_SUBDIRECTORY(tests)
 
-  IF (ENABLE_XEON_PHI_SUPPORT)
-    SET (__XEON__ 0)
-    ADD_SUBDIRECTORY(tests tests_xeonphi)
-  ENDIF ()
+IF (ENABLE_XEON_PHI_SUPPORT)
+  SET (__XEON__ 0)
+  ADD_SUBDIRECTORY(tests tests_xeonphi)
+ENDIF ()
 
 ##############################################################
 # Uninstall

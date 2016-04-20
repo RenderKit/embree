@@ -35,8 +35,8 @@ namespace embree
         typedef range<size_t> Set;
 
 #if defined(__AVX512F__)
-        static const size_t PARALLEL_THRESHOLD = 10000; 
-        static const size_t PARALLEL_FIND_BLOCK_SIZE = 1024;
+        static const size_t PARALLEL_THRESHOLD = 1024; 
+        static const size_t PARALLEL_FIND_BLOCK_SIZE = 512;
         static const size_t PARALLEL_PARITION_BLOCK_SIZE = 128;
 #else
         static const size_t PARALLEL_THRESHOLD = 10000;
