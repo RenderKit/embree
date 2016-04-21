@@ -108,12 +108,9 @@ OPTION(RTCORE_MEMKIND_ALLOCATOR "Enables memory allocation through the memkind l
 SET(RTCORE_TASKING_SYSTEM "TBB" CACHE STRING "Selects tasking system")
 SET_PROPERTY(CACHE RTCORE_TASKING_SYSTEM PROPERTY STRINGS TBB INTERNAL)
 
-###############################################################################
-
 IF (RTCORE_TASKING_SYSTEM STREQUAL "TBB")
   SET(TASKING_TBB      ON )
   SET(TASKING_INTERNAL OFF)
-  FIND_PACKAGE(TBB REQUIRED)
   INCLUDE_DIRECTORIES(${TBB_INCLUDE_DIRS})
 ELSE()
   SET(TASKING_INTERNAL ON )
@@ -128,12 +125,12 @@ CONFIGURE_FILE(
 ##############################################################
 # Create Binary Packages (uses above config options)
 ##############################################################
-
-if (NOT DEFINED RTCORE_ZIP_MODE)
-  set(RTCORE_ZIP_MODE OFF)
-endif()
-
 include(package)
+
+IF (TASKING_TBB)
+  FIND_PACKAGE(TBB REQUIRED)
+  INCLUDE_DIRECTORIES(${TBB_INCLUDE_DIRS})
+ENDIF()
 
 ##############################################################
 # Compiler
