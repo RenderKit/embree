@@ -29,8 +29,9 @@
 #include "../geometry/trianglei.h"
 
 #define ROTATE_TREE 1 // specifies number of tree rotation rounds to perform
-#define PROFILE 0
-#define BLOCK_SIZE 4096
+
+//#define BLOCK_SIZE 4096
+#define BLOCK_SIZE 1024
 
 namespace embree 
 {

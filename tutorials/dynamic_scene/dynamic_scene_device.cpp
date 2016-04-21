@@ -21,8 +21,8 @@ const int numSpheres = 1000;
 const int numPhi = 5; 
 #else
 const int numSpheres = 20;
-const int numPhi = 120; 
-//const int numPhi = 400; 
+//const int numPhi = 120; 
+const int numPhi = 256; /* otherwise big xeons are heavily under-utilized */ 
 #endif
 const int numTheta = 2*numPhi;
 
@@ -158,6 +158,8 @@ extern "C" void device_init (char* cfg)
     //RTCGeometryFlags flags = i%3 == 0 ? RTC_GEOMETRY_STATIC : i%3 == 1 ? RTC_GEOMETRY_DEFORMABLE : RTC_GEOMETRY_DYNAMIC;
     RTCGeometryFlags flags = i%2 ? RTC_GEOMETRY_DEFORMABLE : RTC_GEOMETRY_DYNAMIC;
     //RTCGeometryFlags flags = RTC_GEOMETRY_DEFORMABLE;
+    //RTCGeometryFlags flags = RTC_GEOMETRY_DYNAMIC;
+
     int id = createSphere(flags,p,r);
     position[id] = p;
     radius[id] = r;
@@ -335,6 +337,7 @@ extern "C" void device_render (int* pixels,
   /* commit changes to scene */
   rtcCommit (g_scene);
  
+#if 1
   /* render all pixels */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
@@ -342,6 +345,8 @@ extern "C" void device_render (int* pixels,
     for (size_t i=range.begin(); i<range.end(); i++)
       renderTileTask(i,pixels,width,height,time,camera,numTilesX,numTilesY);
   }); 
+#endif
+
 }
 
 /* called by the C++ code for cleanup */
