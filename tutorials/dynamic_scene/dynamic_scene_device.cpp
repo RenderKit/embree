@@ -22,7 +22,7 @@ const int numPhi = 5;
 #else
 const int numSpheres = 20;
 //const int numPhi = 120; 
-const int numPhi = 256; /* otherwise big xeons are heavily under-utilized */ 
+const int numPhi = 280; /* otherwise big xeons are heavily under-utilized */ 
 #endif
 const int numTheta = 2*numPhi;
 
