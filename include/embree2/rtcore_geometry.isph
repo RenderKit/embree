@@ -79,10 +79,11 @@ typedef void (*uniform RTCFilterFuncVarying)(void* uniform ptr,   /*!< pointer t
                                              varying RTCRay& ray  /*!< intersection to filter */);
 
 /*! Intersection filter function for ray packets of size N. */
-typedef unmasked void (*uniform RTCFilterFuncN)(const uniform int* uniform valid,   /*!< pointer to valid mask */
+typedef unmasked void (*uniform RTCFilterFuncN)(uniform int* uniform valid,         /*!< pointer to valid mask */
                                                 void* uniform ptr,                  /*!< pointer to geometry user data */
                                                 const uniform RTCIntersectionContext* uniform context,  /*!< intersection context as passed to rtcIntersect/rtcOccluded */
-                                                void* ray,                          /*!< intersection to filter */
+                                                struct RTCRayN* uniform ray,                  /*!< ray and previous hit */
+                                                const struct RTCHitN* uniform potentialHit,         /*!< potential new hit */
                                                 uniform const size_t N              /*!< number of rays in ray packet */);
 
 /*! Type of displacement callback functions */
