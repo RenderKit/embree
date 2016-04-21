@@ -138,7 +138,7 @@ void rtcIntersectNM (RTCScene scene, const uniform RTCIntersectionContext* unifo
  *  ray packets in bytes. In contrast to the rtcIntersectNM function
  *  this function accepts a separate data pointer for each component
  *  of the ray packet. */
-void rtcIntersectNMp (RTCScene scene, const uniform RTCIntersectionContext* uniform context, uniform RTCRayNp& rays, const uniform size_t N, const uniform size_t M, const uniform size_t offset);
+void rtcIntersectNp (RTCScene scene, const uniform RTCIntersectionContext* uniform context, uniform RTCRayNp& rays, const uniform size_t N);
 
 /*! Tests if a uniform ray is occluded by the scene. This function can
  *  only be called for scenes with the RTC_INTERSECT_UNIFORM flag
@@ -175,7 +175,7 @@ void rtcOccludedNM (RTCScene scene, const uniform RTCIntersectionContext* unifor
  *  between rays in bytes. In contrast to the rtcOccludedNM function
  *  this function accepts a separate data pointer for each component
  *  of the ray packet. */
-void rtcOccludedNMp (RTCScene scene, const uniform RTCIntersectionContext* uniform context, uniform RTCRayNp& rays, const uniform size_t N, const uniform size_t M, const uniform size_t offset);
+void rtcOccludedNp (RTCScene scene, const uniform RTCIntersectionContext* uniform context, uniform RTCRayNp& rays, const uniform size_t N);
 
 /*! Deletes the geometry again. */
 void rtcDeleteScene (RTCScene scene);

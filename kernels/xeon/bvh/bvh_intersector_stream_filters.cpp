@@ -188,14 +188,16 @@ namespace embree
         }
     }
 
-    void RayStream::filterSOP(Scene *scene, RTCRayNp& _rayN, const size_t N, const size_t streams, const size_t stream_offset, const RTCIntersectionContext* context, const bool intersect)
+    void RayStream::filterSOP(Scene *scene, RTCRayNp& _rayN, const size_t N, const RTCIntersectionContext* context, const bool intersect)
     {
       RayPN& rayN = *(RayPN*)&_rayN;
 
       /* use packet intersector for coherent ray mode */
       if (likely(context->flags == RTC_INTERSECT_COHERENT))
       {
-        for (size_t s=0; s<streams; s++)
+        size_t s = 0;
+        size_t stream_offset = 0;
+        //for (size_t s=0; s<streams; s++)
         {
           for (size_t i=0; i<N; i+=VSIZEX)
           {
@@ -226,8 +228,8 @@ namespace embree
       for (size_t i=0;i<8;i++) rays_in_octant[i] = 0;
 
       size_t soffset = 0;
-
-      for (size_t s=0;s<streams;s++,soffset+=stream_offset)
+      size_t s = 0;
+      //for (size_t s=0;s<streams;s++,soffset+=stream_offset)
       {
         // todo: use SIMD width to compute octants
         for (size_t i=0;i<N;i++)
@@ -285,6 +287,5 @@ namespace embree
     }
 
     RayStreamFilterFuncs rayStreamFilters(RayStream::filterAOS,RayStream::filterSOA,RayStream::filterSOP);
-
   };
 };

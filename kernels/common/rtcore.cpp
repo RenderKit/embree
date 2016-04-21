@@ -469,11 +469,11 @@ namespace embree
     RTCORE_CATCH_END(scene->device);
   }
 
-  RTCORE_API void rtcIntersectNMp (RTCScene hscene, const RTCIntersectionContext* context, RTCRayNp& rays, const size_t N, const size_t M, const size_t stride) 
+  RTCORE_API void rtcIntersectNp (RTCScene hscene, const RTCIntersectionContext* context, RTCRayNp& rays, const size_t N) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcIntersectNMp);
+    RTCORE_TRACE(rtcIntersectNp);
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
@@ -498,7 +498,7 @@ namespace embree
 #endif
     STAT3(normal.travs,N*M,N,N);
 
-    scene->device->rayStreamFilters.filterSOP(scene,rays,N,M,stride,context,true);
+    scene->device->rayStreamFilters.filterSOP(scene,rays,N,context,true);
 
     RTCORE_CATCH_END(scene->device);
   }
@@ -688,11 +688,11 @@ namespace embree
     RTCORE_CATCH_END(scene->device);
   }
 
-  RTCORE_API void rtcOccludedNMp(RTCScene hscene, const RTCIntersectionContext* context, RTCRayNp& rays, const size_t N, const size_t M, const size_t stride) 
+  RTCORE_API void rtcOccludedNp(RTCScene hscene, const RTCIntersectionContext* context, RTCRayNp& rays, const size_t N) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
-    RTCORE_TRACE(rtcOccludedNMp);
+    RTCORE_TRACE(rtcOccludedNp);
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
@@ -717,7 +717,7 @@ namespace embree
 #endif
     STAT3(shadow.travs,N*M,N,N);
 
-    scene->device->rayStreamFilters.filterSOP(scene,rays,N,M,stride,context,false);
+    scene->device->rayStreamFilters.filterSOP(scene,rays,N,context,false);
 
     RTCORE_CATCH_END(scene->device);
   }
