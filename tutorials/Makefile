@@ -1,6 +1,6 @@
 
 all:
-	@./ispc2cpp.sh common/tutorial/sampler.isph common/tutorial/sampler.h
+	@./ispc2cpp.sh common/tutorial/sampling.isph common/tutorial/sampling.h
 	@./ispc2cpp.sh common/tutorial/optics.isph common/tutorial/optics.h
 	@./ispc2cpp.sh triangle_geometry/triangle_geometry_device.ispc triangle_geometry/triangle_geometry_device.cpp
 	@./ispc2cpp.sh dynamic_scene/dynamic_scene_device.ispc dynamic_scene/dynamic_scene_device.cpp
