@@ -22,7 +22,7 @@ const int numPhi = 5;
 #else
 const int numSpheres = 20;
 //const int numPhi = 120; 
-const int numPhi = 280; /* otherwise big xeons are heavily under-utilized */ 
+const int numPhi = 256; /* otherwise big xeons are heavily under-utilized */ 
 #endif
 const int numTheta = 2*numPhi;
 
@@ -156,9 +156,9 @@ extern "C" void device_init (char* cfg)
     const float r = 2.0f*float(pi)/numSpheres;
     const Vec3fa p = 2.0f*Vec3fa(sin(phi),0.0f,-cos(phi));
     //RTCGeometryFlags flags = i%3 == 0 ? RTC_GEOMETRY_STATIC : i%3 == 1 ? RTC_GEOMETRY_DEFORMABLE : RTC_GEOMETRY_DYNAMIC;
-    //RTCGeometryFlags flags = i%2 ? RTC_GEOMETRY_DEFORMABLE : RTC_GEOMETRY_DYNAMIC;
+    RTCGeometryFlags flags = i%2 ? RTC_GEOMETRY_DEFORMABLE : RTC_GEOMETRY_DYNAMIC;
     //RTCGeometryFlags flags = RTC_GEOMETRY_DEFORMABLE;
-    RTCGeometryFlags flags = RTC_GEOMETRY_DYNAMIC;
+    //RTCGeometryFlags flags = RTC_GEOMETRY_DYNAMIC;
 
     int id = createSphere(flags,p,r);
     position[id] = p;

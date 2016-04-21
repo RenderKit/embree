@@ -22,7 +22,7 @@ const uniform int numPhi = 5;
 #else
 const uniform int numSpheres = 20;
 //const uniform int numPhi = 120; 
-const uniform int numPhi = 280; 
+const uniform int numPhi = 256; 
 #endif
 const uniform int numTheta = 2*numPhi;
 
