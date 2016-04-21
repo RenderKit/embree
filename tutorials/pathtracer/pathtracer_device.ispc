@@ -18,7 +18,7 @@
 #include "../common/tutorial/scene_device.isph"
 #include "../common/tutorial/random_sampler.isph"
 #include "../common/tutorial/differential_geometry.isph"
-#include "../common/tutorial/sampler.isph"
+#include "../common/tutorial/sampling.isph"
 #include "../common/tutorial/optics.isph"
 
 #undef TILE_SIZE_X
