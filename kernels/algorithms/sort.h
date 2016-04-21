@@ -27,7 +27,8 @@
  #include "../../common/simd/avx512.h"
 #endif
 
-#define RADIX_SORT_MIN_BLOCK_SIZE 4096
+/* the higher the less core-2-core synchronization required */
+#define RADIX_SORT_MIN_BLOCK_SIZE 8096
 
 
 namespace embree
