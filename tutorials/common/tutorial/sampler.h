@@ -16,7 +16,7 @@
 
 #pragma once
 
-/*! \file shapesampler.isph Implements sampling functions for different
+/*! \file sampler.isph Implements sampling functions for different
  *  geometric shapes. */
 
 //inline float cos2sin(const float f) { return sqrt(max(0.f,1.f-f*f)); }
@@ -24,46 +24,46 @@
 
 /*! Cosine weighted hemisphere sampling. Up direction is the z direction. */
 inline Sample3f cosineSampleHemisphere(const float u, const float v) {
-  const float phi = 2.0f * (M_PI) * u;
+  const float phi = 2.0f * (float(pi)) * u;
   const float cosTheta = sqrt(v);
   const float sinTheta = sqrt(1.0f - v);
-  return make_Sample3f(make_Vec3f(cos(phi) * sinTheta, 
-                                  sin(phi) * sinTheta, 
-                                  cosTheta), 
-                       cosTheta*(1.f/(M_PI)));
+  return Sample3f(Vec3fa(cos(phi) * sinTheta,
+                                  sin(phi) * sinTheta,
+                                  cosTheta),
+                       cosTheta*(1.f/(float(pi))));
 }
 
 /*! Cosine weighted hemisphere sampling. Up direction is provided as argument. */
-inline Sample3f cosineSampleHemisphere(const float  u, const float  v, const Vec3f& N) 
+inline Sample3f cosineSampleHemisphere(const float  u, const float  v, const Vec3fa& N)
 {
   Sample3f s = cosineSampleHemisphere(u,v);
-  return make_Sample3f(frame(N)*s.v,s.pdf);
+  return Sample3f(frame(N)*s.v,s.pdf);
 }
 
   /*! Samples hemisphere with power cosine distribution. Up direction
    *  is the z direction. */
-inline Sample3f powerCosineSampleHemisphere(const float u, const float v, const float _exp) 
+inline Sample3f powerCosineSampleHemisphere(const float u, const float v, const float _exp)
 {
-  const float phi = 2.0f * (M_PI) * u;
+  const float phi = 2.0f * (float(pi)) * u;
   const float cosTheta = pow(v,1.0f/(_exp+1.0f));
   const float sinTheta = cos2sin(cosTheta);
-  return make_Sample3f(make_Vec3f(cos(phi) * sinTheta, 
-				   sin(phi) * sinTheta, 
-				   cosTheta), 
-                       (_exp+1.0f)*pow(cosTheta,_exp)*0.5f/(M_PI));
+  return Sample3f(Vec3fa(cos(phi) * sinTheta,
+				   sin(phi) * sinTheta,
+				   cosTheta),
+                       (_exp+1.0f)*pow(cosTheta,_exp)*0.5f/(float(pi)));
 }
 
 /*! Computes the probability density for the power cosine sampling of the hemisphere. */
-inline float powerCosineSampleHemispherePDF(const Vec3f& s, const float _exp) {
+inline float powerCosineSampleHemispherePDF(const Vec3fa& s, const float _exp) {
   if (s.z < 0.f) return 0.f;
-  return (_exp+1.0f)*pow(s.z,_exp)*0.5f/M_PI;
+  return (_exp+1.0f)*pow(s.z,_exp)*0.5f/float(pi);
 }
 
 /*! Samples hemisphere with power cosine distribution. Up direction
  *  is provided as argument. */
-inline Sample3f powerCosineSampleHemisphere(const float u, const float v, const Vec3f& N, const float _exp) {
+inline Sample3f powerCosineSampleHemisphere(const float u, const float v, const Vec3fa& N, const float _exp) {
   Sample3f s = powerCosineSampleHemisphere(u,v,_exp);
-  return make_Sample3f(frame(N)*s.v,s.pdf);
+  return Sample3f(frame(N)*s.v,s.pdf);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -74,30 +74,30 @@ inline Sample3f powerCosineSampleHemisphere(const float u, const float v, const 
 /*! Uniform sampling of spherical cone. Cone direction is the z
  *  direction. */
 inline Sample3f UniformSampleCone(const float u, const float v, const float angle) {
-  const float phi = (float)(2.0f * M_PI) * u;
+  const float phi = (float)(2.0f * float(pi)) * u;
   const float cosTheta = 1.0f - v*(1.0f - cos(angle));
   const float sinTheta = cos2sin(cosTheta);
-  return make_Sample3f(make_Vec3f(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta), 1.0f/((float)(4.0f*M_PI)*sqr(sin(0.5f*angle))));
+  return Sample3f(Vec3fa(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta), 1.0f/((float)(4.0f*float(pi))*sqr(sin(0.5f*angle))));
 }
 
-/*! Computes the probability density of uniform spherical cone sampling. */
-inline float UniformSampleConePDF(const Vec3f &s, const float angle) {
-  return select(s.z < cos(angle), 0.0f, 1.0f/((float)(4.0f*M_PI)*sqr(sin(0.5f*angle))));
+/*! Computes the probability density of spherical cone sampling. */
+inline float UniformSampleConePDF(const Vec3fa &s, const float angle) {
+  return select(s.z < cos(angle), 0.0f, 1.0f/((float)(4.0f*float(pi))*sqr(sin(0.5f*angle))));
 }
 
 /*! Uniform sampling of spherical cone. Cone direction is provided as argument. */
-inline Sample3f UniformSampleCone(const float u, const float v, const float angle, const Vec3f& N) {
+inline Sample3f UniformSampleCone(const float u, const float v, const float angle, const Vec3fa& N) {
   Sample3f s = UniformSampleCone(u,v,angle);
-  return make_Sample3f(frame(N)*s.v,s.pdf);
+  return Sample3f(frame(N)*s.v,s.pdf);
 }
 
-/*! Computes the probability density of uniform spherical cone sampling. */
-inline float UniformSampleConePDF(const Vec3f &s, const float angle, const Vec3f &N) {
-  // return make_select(dot(s,N) < cos(angle), 0.0f, 1.0f/((float)(4.0f*M_PI)*sqr(sin(0.5f*angle))));
+/*! Computes the probability density of spherical cone sampling. */
+inline float UniformSampleConePDF(const Vec3fa &s, const float angle, const Vec3fa &N) {
+  // return make_select(dot(s,N) < cos(angle), 0.0f, 1.0f/((float)(4.0f*float(pi))*sqr(sin(0.5f*angle))));
   if (dot(s,N) < cos(angle))
     return 0.f;
   else
-    return 1.0f/((float)(4.0f*M_PI)*sqr(sin(0.5f*angle)));
+    return 1.0f/((float)(4.0f*float(pi))*sqr(sin(0.5f*angle)));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -105,7 +105,7 @@ inline float UniformSampleConePDF(const Vec3f &s, const float angle, const Vec3f
 ////////////////////////////////////////////////////////////////////////////////
 
 /*! Uniform sampling of triangle. */
-inline Vec3f UniformSampleTriangle(const float u, const float v, const Vec3f& A, const Vec3f& B, const Vec3f& C) {
+inline Vec3fa UniformSampleTriangle(const float u, const float v, const Vec3fa& A, const Vec3fa& B, const Vec3fa& C) {
   const float su = sqrt(u);
   return C + (1.0f-su)*(A-C) + (v*su)*(B-C);
 }
@@ -115,9 +115,9 @@ inline Vec3f UniformSampleTriangle(const float u, const float v, const Vec3f& A,
 ////////////////////////////////////////////////////////////////////////////////
 
 /*! Uniform sampling of disk. */
-inline Vec2f UniformSampleDisk(const Vec2f &sample, const float radius) 
+inline Vec2f UniformSampleDisk(const Vec2f &sample, const float radius)
 {
   const float r = sqrt(sample.x);
-  const float theta = (2.f*M_PI) * sample.y;
-  return make_Vec2f(radius*r*cos(theta), radius*r*sin(theta));
+  const float theta = (2.f*float(pi)) * sample.y;
+  return Vec2f(radius*r*cos(theta), radius*r*sin(theta));
 }
