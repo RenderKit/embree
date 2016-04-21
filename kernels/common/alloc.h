@@ -27,17 +27,10 @@ namespace embree
 
     /*! maximal allocation size */
 
-#if 1
     /* default settings */
     static const size_t defaultBlockSize = 4096;
     static const size_t maxAllocationSize = 4*1024*1024-maxAlignment;
     static const size_t MAX_THREAD_USED_BLOCK_SLOTS = 8;
-#else
-    /* less contention for large thread counts */
-    static const size_t defaultBlockSize = 2*4096;
-    static const size_t maxAllocationSize = 2*4*1024*1024-maxAlignment;
-    static const size_t MAX_THREAD_USED_BLOCK_SLOTS = 16;
-#endif
     
   public:
 

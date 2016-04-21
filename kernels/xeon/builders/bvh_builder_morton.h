@@ -420,6 +420,7 @@ namespace embree
         
         const BBox3fa bounds = recurse(br, nullptr, true);
         _mm_mfence(); // to allow non-temporal stores during build
+
         return std::make_pair(root,bounds);
       }
       
@@ -520,6 +521,7 @@ namespace embree
       std::pair<NodeRef,BBox3fa> ret;
 
       /* compute scene bounds */
+
       const BBox3fa centBounds = parallel_reduce ( size_t(0), numPrimitives, BBox3fa(empty), [&](const range<size_t>& r) -> BBox3fa
       {
         BBox3fa bounds(empty);
@@ -527,7 +529,7 @@ namespace embree
           bounds.extend(center2(calculateBounds(src[i])));
         return bounds;
       }, [] (const BBox3fa& a, const BBox3fa& b) { return merge(a,b); });
-      
+
       /* compute morton codes */
       MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
       parallel_for ( size_t(0), numPrimitives, [&](const range<size_t>& r) 
