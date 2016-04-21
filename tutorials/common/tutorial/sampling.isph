@@ -16,7 +16,7 @@
 
 #pragma once
 
-/*! \file sampler.isph Implements sampling functions for different
+/*! \file sampling.isph Implements sampling functions for different
  *  geometric shapes. */
 
 //inline float cos2sin(const float f) { return sqrt(max(0.f,1.f-f*f)); }
