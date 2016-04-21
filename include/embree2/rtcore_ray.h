@@ -150,30 +150,45 @@ public:
 };
 
 /* Helper functions to access ray packets of size N */
-__forceinline float& RTCRayN_org_x(void* ptr, size_t N, size_t i) { return ((float*)ptr)[0*N+i]; }  //!< x coordinate of ray origin
-__forceinline float& RTCRayN_org_y(void* ptr, size_t N, size_t i) { return ((float*)ptr)[1*N+i]; }  //!< y coordinate of ray origin
-__forceinline float& RTCRayN_org_z(void* ptr, size_t N, size_t i) { return ((float*)ptr)[2*N+i]; }; //!< z coordinate of ray origin
+struct RTCRayN;
+__forceinline float& RTCRayN_org_x(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((float*)ptr)[0*N+0*N1+i]; }  //!< x coordinate of ray origin
+__forceinline float& RTCRayN_org_y(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((float*)ptr)[1*N+0*N1+i]; }  //!< y coordinate of ray origin
+__forceinline float& RTCRayN_org_z(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((float*)ptr)[2*N+0*N1+i]; }; //!< z coordinate of ray origin
 
-__forceinline float& RTCRayN_dir_x(void* ptr, size_t N, size_t i) { return ((float*)ptr)[3*N+i]; }; //!< x coordinate of ray direction
-__forceinline float& RTCRayN_dir_y(void* ptr, size_t N, size_t i) { return ((float*)ptr)[4*N+i]; }; //!< y coordinate of ray direction
-__forceinline float& RTCRayN_dir_z(void* ptr, size_t N, size_t i) { return ((float*)ptr)[5*N+i]; }; //!< z coordinate of ray direction
+__forceinline float& RTCRayN_dir_x(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((float*)ptr)[3*N+1*N1+i]; }; //!< x coordinate of ray direction
+__forceinline float& RTCRayN_dir_y(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((float*)ptr)[4*N+1*N1+i]; }; //!< y coordinate of ray direction
+__forceinline float& RTCRayN_dir_z(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((float*)ptr)[5*N+1*N1+i]; }; //!< z coordinate of ray direction
 
-__forceinline float& RTCRayN_tnear(void* ptr, size_t N, size_t i) { return ((float*)ptr)[6*N+i]; }; //!< Start of ray segment 
-__forceinline float& RTCRayN_tfar (void* ptr, size_t N, size_t i) { return ((float*)ptr)[7*N+i]; }; //!< End of ray segment (set to hit distance)
+__forceinline float& RTCRayN_tnear(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((float*)ptr)[6*N+2*N1+i]; }; //!< Start of ray segment 
+__forceinline float& RTCRayN_tfar (RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((float*)ptr)[7*N+2*N1+i]; }; //!< End of ray segment (set to hit distance)
 
-__forceinline float& RTCRayN_time(void* ptr, size_t N, size_t i) { return ((float*)ptr)[8*N+i]; };  //!< Time of this ray for motion blur 
-__forceinline int&   RTCRayN_mask(void* ptr, size_t N, size_t i) { return ((int*  )ptr)[9*N+i]; };  //!< Used to mask out objects during traversal
+__forceinline float& RTCRayN_time(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((float*)ptr)[8*N+2*N1+i]; };  //!< Time of this ray for motion blur 
+__forceinline int&   RTCRayN_mask(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((int*  )ptr)[9*N+2*N1+i]; };  //!< Used to mask out objects during traversal
 
-__forceinline float& RTCRayN_Ng_x(void* ptr, size_t N, size_t i) { return ((float*)ptr)[10*N+i]; }; //!< x coordinate of geometry normal
-__forceinline float& RTCRayN_Ng_y(void* ptr, size_t N, size_t i) { return ((float*)ptr)[11*N+i]; }; //!< y coordinate of geometry normal
-__forceinline float& RTCRayN_Ng_z(void* ptr, size_t N, size_t i) { return ((float*)ptr)[12*N+i]; }; //!< z coordinate of geometry normal
+__forceinline float& RTCRayN_Ng_x(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((float*)ptr)[10*N+2*N1+i]; }; //!< x coordinate of geometry normal
+__forceinline float& RTCRayN_Ng_y(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((float*)ptr)[11*N+2*N1+i]; }; //!< y coordinate of geometry normal
+__forceinline float& RTCRayN_Ng_z(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((float*)ptr)[12*N+2*N1+i]; }; //!< z coordinate of geometry normal
 
-__forceinline float& RTCRayN_u   (void* ptr, size_t N, size_t i) { return ((float*)ptr)[13*N+i]; }; //!< Barycentric u coordinate of hit
-__forceinline float& RTCRayN_v   (void* ptr, size_t N, size_t i) { return ((float*)ptr)[14*N+i]; }; //!< Barycentric v coordinate of hit
+__forceinline float& RTCRayN_u   (RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((float*)ptr)[13*N+3*N1+i]; }; //!< Barycentric u coordinate of hit
+__forceinline float& RTCRayN_v   (RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((float*)ptr)[14*N+3*N1+i]; }; //!< Barycentric v coordinate of hit
 
-__forceinline int& RTCRayN_geomID(void* ptr, size_t N, size_t i) { return ((int*  )ptr)[15*N+i]; }; //!< geometry ID
-__forceinline int& RTCRayN_primID(void* ptr, size_t N, size_t i) { return ((int*  )ptr)[16*N+i]; }; //!< primitive ID
-__forceinline int& RTCRayN_instID(void* ptr, size_t N, size_t i) { return ((int*  )ptr)[17*N+i]; }; //!< instance ID
+__forceinline int& RTCRayN_geomID(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((int*  )ptr)[15*N+3*N1+i]; }; //!< geometry ID
+__forceinline int& RTCRayN_primID(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((int*  )ptr)[16*N+3*N1+i]; }; //!< primitive ID
+__forceinline int& RTCRayN_instID(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((int*  )ptr)[17*N+3*N1+i]; }; //!< instance ID
+
+/* Helper functions to access hit packets of size N */
+struct RTCHitN;
+__forceinline float& RTCHitN_Ng_x(RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[0*N+i]; }; //!< x coordinate of geometry normal
+__forceinline float& RTCHitN_Ng_y(RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[1*N+i]; }; //!< y coordinate of geometry normal
+__forceinline float& RTCHitN_Ng_z(RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[2*N+i]; }; //!< z coordinate of geometry normal
+
+__forceinline int& RTCHitN_instID(RTCHitN* ptr, size_t N, size_t i) { return ((int*  )ptr)[3*N+i]; }; //!< instance ID
+__forceinline int& RTCHitN_geomID(RTCHitN* ptr, size_t N, size_t i) { return ((int*  )ptr)[4*N+i]; }; //!< geometry ID
+__forceinline int& RTCHitN_primID(RTCHitN* ptr, size_t N, size_t i) { return ((int*  )ptr)[5*N+i]; }; //!< primitive ID
+
+__forceinline float& RTCHitN_u   (RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[6*N+i]; }; //!< Barycentric u coordinate of hit
+__forceinline float& RTCHitN_v   (RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[7*N+i]; }; //!< Barycentric v coordinate of hit
+__forceinline float& RTCHitN_t   (RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[8*N+i]; }; //!< Barycentric v coordinate of hit
 
 /*! \brief Ray structure template for packets of N rays in SOA layout. */
 struct RTCRayNp
