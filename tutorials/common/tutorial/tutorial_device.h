@@ -30,7 +30,13 @@ struct Vertex   { float x,y,z,r; };
 struct Triangle { int v0, v1, v2; };
 struct Quad     { int v0, v1, v2, v3; };
 
+#define __RTCRay__
+#define __RTCRay4__
+#define __RTCRay8__
+#define __RTCRay16__
 #include "../../../include/embree2/rtcore.h"
+#include "../../../include/embree2/rtcore_ray.h"
+
 #include "ray.h"
 #include "camera.h"
 #include "scene.h"

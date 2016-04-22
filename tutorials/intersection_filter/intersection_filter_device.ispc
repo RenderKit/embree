@@ -19,7 +19,17 @@
 /* scene data */
 RTCDevice g_device = NULL;
 RTCScene g_scene = NULL;
+extern uniform bool g_ray_stream_mode;
 uniform Vec3f* uniform colors = NULL;
+
+void renderTileStandardStream(uniform int taskIndex, 
+                              uniform int* uniform pixels,
+                              const uniform int width,
+                              const uniform int height, 
+                              const uniform float time,
+                              const uniform ISPCCamera& camera,
+                              const uniform int numTilesX, 
+                              const uniform int numTilesY);
 
 /* error reporting function */
 unmasked void error_handler(const uniform RTCError code, const uniform int8* uniform str = NULL)
@@ -106,9 +116,8 @@ struct RTCRay2
 };
 
 /* 3D procedural transparency */
-inline float transparencyFunction(RTCRay2& ray)
+inline float transparencyFunction(Vec3f h)
 {
-  Vec3f h = ray.org + ray.dir*ray.tfar;
   float v = abs(sin(4.0f*h.x)*cos(4.0f*h.y)*sin(4.0f*h.z));
   float T = clamp((v-0.1f)*3.0f,0.0f,1.0f);
   return T;
@@ -117,7 +126,8 @@ inline float transparencyFunction(RTCRay2& ray)
 /* intersection filter function */
 void intersectionFilter(void* uniform ptr, RTCRay2& ray)
 {
-  float T = transparencyFunction(ray);
+  Vec3f h = ray.org + ray.dir*ray.tfar;
+  float T = transparencyFunction(h);
   if (T >= 1.0f) ray.geomID = RTC_INVALID_GEOMETRY_ID;
   else ray.transparency = T;
 }
@@ -125,10 +135,87 @@ void intersectionFilter(void* uniform ptr, RTCRay2& ray)
 /* occlusion filter function */
 void occlusionFilter(void* uniform ptr, RTCRay2& ray)
 {
-  float T = transparencyFunction(ray);
+  Vec3f h = ray.org + ray.dir*ray.tfar;
+  float T = transparencyFunction(h);
   T *= ray.transparency;
   ray.transparency = T;
   if (T != 0.0f) ray.geomID = RTC_INVALID_GEOMETRY_ID;
+}
+
+void scatter(varying float& ptr, const uniform size_t stride, const size_t pid, const size_t rid, float v)
+{
+  ((uniform float*)((uniform char* uniform)&ptr + pid*stride))[rid];
+  //foreach_unique(p in pid) { 
+  //  float* uniform ptr_pid = (float* uniform)((uniform char* uniform)&ptr + p*stride);
+  //  *ptr_pid = insert(*ptr_pid,rid,v); 
+  //}
+}
+
+/* intersection filter function */
+unmasked void intersectionFilterN(uniform int* uniform valid,
+                                  void* uniform ptr, 
+                                  const uniform RTCIntersectContext* uniform context,
+                                  struct RTCRayN* uniform ray,
+                                  const struct RTCHitN* uniform potentialHit,
+                                  uniform const size_t N)
+{
+  /* iterate over all rays in ray packet */
+  foreach(i=0 ... N)
+  {
+    /* ignore inactive rays */
+    if (valid[i] != -1) continue;
+    
+    /* read ray from ray structure */
+    Vec3f ray_org = make_Vec3f(RTCRayN_org_x(ray,N,i),RTCRayN_org_y(ray,N,i),RTCRayN_org_z(ray,N,i));
+    Vec3f ray_dir = make_Vec3f(RTCRayN_dir_x(ray,N,i),RTCRayN_dir_y(ray,N,i),RTCRayN_dir_z(ray,N,i));
+    float ray_tfar = RTCRayN_tfar(ray,N,i);
+    int   ray_mask = RTCRayN_mask(ray,N,i);
+
+    /* get extended ray data */
+    int pid = ray_mask >> (sizeof(float)/4);
+    int rid = ray_mask & (sizeof(float)/4-1);
+    varying RTCRay2* uniform eray = (varying RTCRay2* uniform) potentialHit->userRayExt;
+    
+    /* calculate transparency and either skip intersection or remember transparency value */
+    Vec3f h = ray_org + ray_dir*ray_tfar;
+    float T = transparencyFunction(ray);
+    if (T >= 1.0f) valid[i] = 0;
+    else scatter(&eray->transparency,sizeof(RTCRay2),pid,rid,transparency); 
+    }
+  }
+}
+
+/* occlusion filter function */
+unmasked void occlusionFilterN(uniform int* uniform valid,
+                               void* uniform ptr, 
+                               const uniform RTCIntersectContext* uniform context,
+                               struct RTCRayN* uniform ray,
+                               const struct RTCHitN* uniform potentialHit,
+                               uniform const size_t N)
+{
+  /* iterate over all rays in ray packet */
+  foreach(i=0 ... N)
+  {
+    /* ignore inactive rays */
+    if (valid[i] != -1) continue;
+    
+    /* read ray from ray structure */
+    Vec3f ray_org = make_Vec3f(RTCRayN_org_x(ray,N,i),RTCRayN_org_y(ray,N,i),RTCRayN_org_z(ray,N,i));
+    Vec3f ray_dir = make_Vec3f(RTCRayN_dir_x(ray,N,i),RTCRayN_dir_y(ray,N,i),RTCRayN_dir_z(ray,N,i));
+    float ray_tfar = RTCRayN_tfar(ray,N,i);
+
+    /* get extended ray data */
+    int rid = RTCRayN_mask(ray,N,i);
+    RTCRay2* uniform eray = (RTCRay2* uniform)potentialHit->userRayExt;
+    float ray_transparency = at(&eray->transparency,rid);
+    
+    /* calculate transparency and either skip intersection or remember transparency value */
+    Vec3f h = ray_org + ray_dir*ray_tfar;
+    float T = transparencyFunction(ray);
+    T *= ray_transparency;
+    at(&eray->transparency,rid) = T;
+    if (T != 0.0f) valid[i] = 0;
+  }
 }
 
 /* adds a cube to the scene */
@@ -155,8 +242,14 @@ uniform unsigned int addCube (RTCScene scene_i)
   colors[11] = make_Vec3f(1,1,0);
 
   /* set intersection filter for the cube */
-  rtcSetIntersectionFilterFunction(scene_i,geomID,(RTCFilterFuncVarying)&intersectionFilter);
-  rtcSetOcclusionFilterFunction   (scene_i,geomID,(RTCFilterFuncVarying)&occlusionFilter);
+  if (g_ray_stream_mode) {
+    rtcSetIntersectionFilterFunctionN(scene_i,geomID,(RTCFilterFuncN)&intersectionFilterN);
+    rtcSetOcclusionFilterFunctionN   (scene_i,geomID,(RTCFilterFuncN)&occlusionFilterN);
+  }
+  else {
+    rtcSetIntersectionFilterFunction(scene_i,geomID,(RTCFilterFuncVarying)&intersectionFilter);
+    rtcSetOcclusionFilterFunction   (scene_i,geomID,(RTCFilterFuncVarying)&occlusionFilter);
+  }
 
   return geomID;
 }
@@ -183,8 +276,14 @@ uniform unsigned int addSubdivCube (RTCScene scene_i)
   colors[5] = make_Vec3f(1,1,0); // back side
 
   /* set intersection filter for the cube */
-  rtcSetIntersectionFilterFunction(scene_i,geomID,(RTCFilterFuncVarying)&intersectionFilter);
-  rtcSetOcclusionFilterFunction   (scene_i,geomID,(RTCFilterFuncVarying)&occlusionFilter);
+  if (g_ray_stream_mode) {
+    rtcSetIntersectionFilterFunctionN(scene_i,geomID,(RTCFilterFuncN)&intersectionFilterN);
+    rtcSetOcclusionFilterFunctionN   (scene_i,geomID,(RTCFilterFuncN)&occlusionFilterN);
+  }
+  else {
+    rtcSetIntersectionFilterFunction(scene_i,geomID,(RTCFilterFuncVarying)&intersectionFilter);
+    rtcSetOcclusionFilterFunction   (scene_i,geomID,(RTCFilterFuncVarying)&occlusionFilter);
+  }
 
   return geomID;
 }
@@ -223,7 +322,10 @@ export void device_init (uniform int8* uniform cfg)
   rtcDeviceSetErrorFunction(g_device,error_handler);
 
   /* create scene */
-  g_scene = rtcDeviceNewScene(g_device, RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
+  uniform RTCAlgorithmFlags aflags;
+  if (g_ray_stream_mode) aflags = RTC_INTERSECT_STREAM;
+  else                   aflags = RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING;
+  g_scene = rtcDeviceNewScene(g_device, RTC_SCENE_STATIC,aflags);
 
   /* add cube */
   addCube(g_scene);
@@ -236,7 +338,8 @@ export void device_init (uniform int8* uniform cfg)
   rtcCommit (g_scene);
 
   /* set start render mode */
-  renderTile = renderTileStandard;
+  if (g_ray_stream_mode) renderTile = renderTileStandardStream;
+  else                   renderTile = renderTileStandard;
   key_pressed_handler = device_key_pressed_default;
 }
 
@@ -326,6 +429,72 @@ void renderTileStandard(uniform int taskIndex,
   {
     /* calculate pixel color */
     Vec3f color = renderPixelStandard(x,y,camera);
+
+    /* write color to framebuffer */
+    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
+    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
+    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
+    pixels[y*width+x] = (b << 16) + (g << 8) + r;
+  }
+}
+
+/* renders a single screen tile */
+void renderTileStandardStream(uniform int taskIndex, 
+                              uniform int* uniform pixels,
+                              const uniform int width,
+                              const uniform int height, 
+                              const uniform float time,
+                              const uniform ISPCCamera& camera,
+                              const uniform int numTilesX, 
+                              const uniform int numTilesY)
+{
+  const uniform int tileY = taskIndex / numTilesX;
+  const uniform int tileX = taskIndex - tileY * numTilesX;
+  const uniform int x0 = tileX * TILE_SIZE_X;
+  const uniform int x1 = min(x0+TILE_SIZE_X,width);
+  const uniform int y0 = tileY * TILE_SIZE_Y;
+  const uniform int y1 = min(y0+TILE_SIZE_Y,height);
+
+  RTCRay rays[TILE_SIZE_X*TILE_SIZE_Y];
+
+  /* generate stream of primary rays */
+  uniform int N = 0;
+  foreach_tiled (y = y0 ... y1, x = x0 ... x1)
+  {
+    /* ISPC workaround for mask == 0 */
+    if (all(__mask == 0)) continue;
+    
+    /* initialize ray */
+    RTCRay& ray = rays[N++];
+    ray.org = make_Vec3f(camera.xfm.p); // FIXME: make invalid rays empty
+    ray.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
+    unmasked { ray.tnear = pos_inf; ray.tfar = neg_inf; } // invalidates inactive rays
+    ray.tnear = 0.0f;
+    ray.tfar = inf;
+    ray.geomID = RTC_INVALID_GEOMETRY_ID;
+    ray.primID = RTC_INVALID_GEOMETRY_ID;
+    ray.mask = -1;
+    ray.time = 0.0f;
+  }
+
+  /* trace primary rays */
+  uniform RTCIntersectContext context;
+  context.flags = RTC_INTERSECT_INCOHERENT;
+  rtcIntersectVM(g_scene,&context,rays,N,sizeof(RTCRay));
+
+  /* shade stream of rays */
+  N = 0;
+  foreach_tiled (y = y0 ... y1, x = x0 ... x1)
+  {
+    /* ISPC workaround for mask == 0 */
+    if (all(__mask == 0)) continue;
+    RTCRay& ray = rays[N++];
+
+    /* eyelight shading */
+    Vec3f color = make_Vec3f(0.0f);
+    if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
+      color = make_Vec3f(abs(dot(ray.dir,normalize(ray.Ng))));
+      //color = ambientOcclusionShading(x,y,ray);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
