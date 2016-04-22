@@ -18,6 +18,24 @@
 
 namespace embree
 {
+  /*! decoding of geometry flags */
+  __forceinline bool isStatic    (RTCSceneFlags flags) { return (flags & 1) == RTC_SCENE_STATIC; }
+  __forceinline bool isDynamic   (RTCSceneFlags flags) { return (flags & 1) == RTC_SCENE_DYNAMIC; }
+
+  __forceinline bool isCompact   (RTCSceneFlags flags) { return flags & RTC_SCENE_COMPACT; }
+  __forceinline bool isRobust    (RTCSceneFlags flags) { return flags & RTC_SCENE_ROBUST; }
+  __forceinline bool isCoherent  (RTCSceneFlags flags) { return flags & RTC_SCENE_COHERENT; }
+  __forceinline bool isIncoherent(RTCSceneFlags flags) { return flags & RTC_SCENE_INCOHERENT; }
+  __forceinline bool isHighQuality(RTCSceneFlags flags) { return flags & RTC_SCENE_HIGH_QUALITY; }
+
+  /*! decoding of algorithm flags */
+  __forceinline bool isInterpolatable(RTCAlgorithmFlags flags) { return flags & RTC_INTERPOLATE; }
+  __forceinline bool isStreamMode(RTCAlgorithmFlags flags) { return flags & RTC_INTERSECT_STREAM; }
+
+   /*! decoding of intersection flags */
+  __forceinline bool isCoherent  (RTCIntersectFlags flags) { return !(flags & RTC_INTERSECT_INCOHERENT); }
+  __forceinline bool isIncoherent(RTCIntersectFlags flags) { return   flags & RTC_INTERSECT_INCOHERENT;  }  
+
 #if TBB_INTERFACE_VERSION_MAJOR < 8    
 #  define USE_TASK_ARENA 0
 #else
