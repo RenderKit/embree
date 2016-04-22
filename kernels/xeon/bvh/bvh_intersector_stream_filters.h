@@ -29,7 +29,7 @@ namespace embree
     public:
       static void filterAOS(Scene* scene, RTCRay*    rays, const size_t N, const size_t stride, const RTCIntersectionContext* context, const bool intersect);
       static void filterSOA(Scene* scene, char*      rays, const size_t N, const size_t streams, const size_t stream_offset, const RTCIntersectionContext* context, const bool intersect);
-      static void filterSOP(Scene* scene, RTCRayNp& rays, const size_t N, const RTCIntersectionContext* context, const bool intersect);
+      static void filterSOP(Scene* scene, const RTCRayNp& rays, const size_t N, const RTCIntersectionContext* context, const bool intersect);
     };
   }
 };

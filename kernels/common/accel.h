@@ -424,7 +424,7 @@ namespace embree
   /* ray stream filter interface */
   typedef void (*filterAOS_func)(Scene *scene, RTCRay* _rayN, const size_t N, const size_t stride, const RTCIntersectionContext* context, const bool intersect);
   typedef void (*filterSOA_func)(Scene *scene, char* rayN, const size_t N, const size_t streams, const size_t stream_offset, const RTCIntersectionContext* context, const bool intersect);
-  typedef void (*filterSOP_func)(Scene *scene, RTCRayNp& rayN, const size_t N, const RTCIntersectionContext* context, const bool intersect);
+  typedef void (*filterSOP_func)(Scene *scene, const RTCRayNp& rayN, const size_t N, const RTCIntersectionContext* context, const bool intersect);
 
   struct RayStreamFilterFuncs
   {
