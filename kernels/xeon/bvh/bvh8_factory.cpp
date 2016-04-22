@@ -24,6 +24,7 @@
 #include "../geometry/linei.h"
 #include "../geometry/triangle.h"
 #include "../geometry/trianglev_mb.h"
+#include "../geometry/trianglei.h"
 #include "../geometry/quadv.h"
 #include "../geometry/quadi.h"
 #include "../geometry/quadi_mb.h"
@@ -43,7 +44,8 @@ namespace embree
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8Quad4vIntersector1Moeller);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8Quad4iIntersector1Pluecker);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8Quad4iMBIntersector1Pluecker);
-  DECLARE_SYMBOL2(Accel::Intersector1,QBVH8Triangle4Intersector1Moeller);
+  DECLARE_SYMBOL2(Accel::Intersector1,QBVH8Triangle4iIntersector1Moeller);
+  DECLARE_SYMBOL2(Accel::Intersector1,QBVH8Quad4iIntersector1Moeller);
 
   DECLARE_SYMBOL2(Accel::Intersector4,BVH8Line4iIntersector4);
   DECLARE_SYMBOL2(Accel::Intersector4,BVH8Line4iMBIntersector4);
@@ -125,7 +127,8 @@ namespace embree
 
   DECLARE_BUILDER2(void,Scene,size_t,BVH8SubdivGridEagerBuilderBinnedSAH);
 
-  DECLARE_BUILDER2(void,Scene,size_t,BVH8QuantizedTriangle4SceneBuilderSAH);
+  DECLARE_BUILDER2(void,Scene,size_t,BVH8QuantizedTriangle4iSceneBuilderSAH);
+  DECLARE_BUILDER2(void,Scene,size_t,BVH8QuantizedQuad4iSceneBuilderSAH);
 
   BVH8Factory::BVH8Factory (int features)
   {
@@ -145,7 +148,8 @@ namespace embree
     IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Quad4iSceneBuilderSAH));
     IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Quad4iMBSceneBuilderSAH));
 
-    IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX(features,BVH8QuantizedTriangle4SceneBuilderSAH));
+    IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX(features,BVH8QuantizedTriangle4iSceneBuilderSAH));
+    IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_AVX(features,BVH8QuantizedQuad4iSceneBuilderSAH));
    
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX(features,BVH8Triangle4SceneBuilderSpatialSAH));
 
@@ -163,7 +167,7 @@ namespace embree
     IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Quad4iIntersector1Pluecker));
     IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Quad4iMBIntersector1Pluecker));
     IF_ENABLED_SUBDIV(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8GridAOSIntersector1));
-    IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,QBVH8Triangle4Intersector1Moeller));
+    IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,QBVH8Triangle4iIntersector1Moeller))    IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,QBVH8Quad4iIntersector1Moeller));
 
 #if defined (RTCORE_RAY_PACKETS)
 
@@ -377,11 +381,19 @@ namespace embree
     return intersectors;
   }
 
-  Accel::Intersectors BVH8Factory::QBVH8Triangle4Intersectors(BVH8* bvh)
+  Accel::Intersectors BVH8Factory::QBVH8Triangle4iIntersectors(BVH8* bvh)
   {
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
-    intersectors.intersector1 = QBVH8Triangle4Intersector1Moeller;
+    intersectors.intersector1 = QBVH8Triangle4iIntersector1Moeller;
+    return intersectors;
+  }
+
+  Accel::Intersectors BVH8Factory::QBVH8Quad4iIntersectors(BVH8* bvh)
+  {
+    Accel::Intersectors intersectors;
+    intersectors.ptr = bvh;
+    intersectors.intersector1 = QBVH8Quad4iIntersector1Moeller;
     return intersectors;
   }
 
@@ -449,11 +461,12 @@ namespace embree
   }
 
 
-  Accel* BVH8Factory::BVH8QuantizedTriangle4(Scene* scene)
+  Accel* BVH8Factory::BVH8QuantizedTriangle4i(Scene* scene)
   {
-    BVH8* accel = new BVH8(Triangle4::type,scene);
-    Accel::Intersectors intersectors = QBVH8Triangle4Intersectors(accel);
-    Builder* builder = BVH8QuantizedTriangle4SceneBuilderSAH(accel,scene,0);
+    BVH8* accel = new BVH8(Triangle4i::type,scene);
+    Accel::Intersectors intersectors = QBVH8Triangle4iIntersectors(accel);
+    Builder* builder = BVH8QuantizedTriangle4iSceneBuilderSAH(accel,scene,0);
+    scene->needTriangleVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -507,6 +520,18 @@ namespace embree
     scene->needQuadVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
+
+  Accel* BVH8Factory::BVH8QuantizedQuad4i(Scene* scene)
+  {
+    BVH8* accel = new BVH8(Quad4i::type,scene);
+    Accel::Intersectors intersectors = QBVH8Quad4iIntersectors(accel);
+    Builder* builder = nullptr;
+    if      (scene->device->quad_builder == "default"     ) builder = BVH8QuantizedQuad4iSceneBuilderSAH(accel,scene,0);
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->quad_builder+" for QBVH8<Quad4i>");
+    scene->needQuadVertices = true;
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
 
   Accel* BVH8Factory::BVH8Quad4iMB(Scene* scene)
   {

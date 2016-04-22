@@ -52,7 +52,7 @@ namespace embree
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4Quad4vIntersector1Moeller);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4Quad4iIntersector1Pluecker);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4Quad4iMBIntersector1Pluecker);
-  DECLARE_SYMBOL2(Accel::Intersector1,QBVH4Triangle4Intersector1Moeller);
+  DECLARE_SYMBOL2(Accel::Intersector1,QBVH4Triangle4iIntersector1Moeller);
 
   DECLARE_SYMBOL2(Accel::Intersector4,BVH4Line4iIntersector4);
   DECLARE_SYMBOL2(Accel::Intersector4,BVH4Line4iMBIntersector4);
@@ -257,7 +257,7 @@ namespace embree
     IF_ENABLED_QUADS(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4Quad4vIntersector1Moeller));
     IF_ENABLED_QUADS(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4Quad4iIntersector1Pluecker));
     IF_ENABLED_QUADS(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4Quad4iMBIntersector1Pluecker));
-    IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL(features,QBVH4Triangle4Intersector1Moeller));
+    IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL(features,QBVH4Triangle4iIntersector1Moeller));
 
 #if defined (RTCORE_RAY_PACKETS)
 
