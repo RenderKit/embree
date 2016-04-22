@@ -17,7 +17,7 @@
 #include "../common/tutorial/tutorial_device.h"
 #include "../common/tutorial/scene_device.h"
 #include "../common/tutorial/random_sampler.h"
-#include "../pathtracer/shapesampler.h"
+#include "../common/tutorial/sampling.h"
 
 #define USE_INTERFACE 0 // 0 = stream, 1 = single rays/packets, 2 = single rays/packets using stream interface
 #define AMBIENT_OCCLUSION_SAMPLES 64
@@ -35,7 +35,7 @@ RTCScene g_scene = nullptr;
 /* error reporting function */
 void error_handler(const RTCError code, const char* str = nullptr)
 {
-  if (code == RTC_NO_ERROR) 
+  if (code == RTC_NO_ERROR)
     return;
 
   printf("Embree: ");
@@ -48,10 +48,10 @@ void error_handler(const RTCError code, const char* str = nullptr)
   case RTC_CANCELLED        : printf("RTC_CANCELLED"); break;
   default                   : printf("invalid error code"); break;
   }
-  if (str) { 
-    printf(" ("); 
-    while (*str) putchar(*str++); 
-    printf(")\n"); 
+  if (str) {
+    printf(" (");
+    while (*str) putchar(*str++);
+    printf(")\n");
   }
   exit(1);
 }
@@ -78,9 +78,9 @@ unsigned int convertQuadMesh(ISPCQuadMesh* mesh, RTCScene scene_out)
 
 unsigned int convertSubdivMesh(ISPCSubdivMesh* mesh, RTCScene scene_out)
 {
-  unsigned int geomID = rtcNewSubdivisionMesh(scene_out, RTC_GEOMETRY_STATIC, mesh->numFaces, mesh->numEdges, mesh->numVertices, 
+  unsigned int geomID = rtcNewSubdivisionMesh(scene_out, RTC_GEOMETRY_STATIC, mesh->numFaces, mesh->numEdges, mesh->numVertices,
                                                       mesh->numEdgeCreases, mesh->numVertexCreases, mesh->numHoles);
-  mesh->geomID = geomID;												
+  mesh->geomID = geomID;
   for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = 16.0f;
   rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa  ));
   rtcSetBuffer(scene_out, geomID, RTC_LEVEL_BUFFER,  mesh->subdivlevel, 0, sizeof(float));
@@ -92,7 +92,7 @@ unsigned int convertSubdivMesh(ISPCSubdivMesh* mesh, RTCScene scene_out)
   rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_INDEX_BUFFER,  mesh->vertex_creases,        0, sizeof(unsigned int));
   rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_WEIGHT_BUFFER, mesh->vertex_crease_weights, 0, sizeof(float));
   return geomID;
-} 
+}
 
 unsigned int convertLineSegments(ISPCLineSegments* mesh, RTCScene scene_out)
 {
@@ -197,8 +197,8 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
     shadow.primID = RTC_INVALID_GEOMETRY_ID;
     shadow.mask = -1;
     shadow.time = 0;    // FIXME: invalidate inactive rays
-  } 
-  
+  }
+
   RTCIntersectionContext context;
   context.flags = RAYN_FLAGS;
 
@@ -216,21 +216,21 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
   /* accumulate illumination */
   for (int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++) {
     if (rays[i].geomID == RTC_INVALID_GEOMETRY_ID)
-      intensity += 1.0f;   
+      intensity += 1.0f;
   }
-  
+
   /* shade pixel */
   return col * (intensity/AMBIENT_OCCLUSION_SAMPLES);
 }
 
 /* renders a single screen tile */
-void renderTileStandard(int taskIndex, 
+void renderTileStandard(int taskIndex,
                         int* pixels,
                         const int width,
-                        const int height, 
+                        const int height,
                         const float time,
                         const ISPCCamera& camera,
-                        const int numTilesX, 
+                        const int numTilesX,
                         const int numTilesY)
 {
   const int tileY = taskIndex / numTilesX;
@@ -251,7 +251,7 @@ void renderTileStandard(int taskIndex,
 
     RandomSampler sampler;
     RandomSampler_init(sampler, x, y, 0);
-    
+
     /* initialize ray */
     RTCRay& ray = rays[N++];
 
@@ -290,7 +290,7 @@ void renderTileStandard(int taskIndex,
 
     /* eyelight shading */
     Vec3fa color = Vec3fa(0.0f);
-    if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
+    if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
       //color = Vec3fa(abs(dot(ray.dir,normalize(ray.Ng))));
       color = ambientOcclusionShading(x,y,ray);
 
@@ -305,10 +305,10 @@ void renderTileStandard(int taskIndex,
 /* task that renders a single screen tile */
 void renderTileTask (int taskIndex, int* pixels,
                          const int width,
-                         const int height, 
+                         const int height,
                          const float time,
                          const ISPCCamera& camera,
-                         const int numTilesX, 
+                         const int numTilesX,
                          const int numTilesY)
 {
   renderTile(taskIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
@@ -336,7 +336,7 @@ extern "C" void device_init (char* cfg)
 /* called by the C++ code to render */
 extern "C" void device_render (int* pixels,
                            const int width,
-                           const int height, 
+                           const int height,
                            const float time,
                            const ISPCCamera& camera)
 {
@@ -346,7 +346,7 @@ extern "C" void device_render (int* pixels,
   parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
     for (size_t i=range.begin(); i<range.end(); i++)
       renderTileTask(i,pixels,width,height,time,camera,numTilesX,numTilesY);
-  }); 
+  });
 }
 
 /* called by the C++ code for cleanup */

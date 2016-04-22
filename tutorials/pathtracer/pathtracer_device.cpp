@@ -18,8 +18,8 @@
 #include "../common/tutorial/scene_device.h"
 #include "../common/tutorial/random_sampler.h"
 #include "../common/tutorial/differential_geometry.h"
-#include "shapesampler.h"
-#include "optics.h"
+#include "../common/tutorial/sampling.h"
+#include "../common/tutorial/optics.h"
 
 #undef TILE_SIZE_X
 #undef TILE_SIZE_Y
