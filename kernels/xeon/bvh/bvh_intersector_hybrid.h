@@ -47,8 +47,8 @@ namespace embree
                                                       0;
 
     public:
-      static void intersect(vint<K>* valid, BVH* bvh, RayK<K>& ray, const RTCIntersectionContext* context);
-      static void occluded (vint<K>* valid, BVH* bvh, RayK<K>& ray, const RTCIntersectionContext* context);
+      static void intersect(vint<K>* valid, BVH* bvh, RayK<K>& ray, const RTCIntersectContext* context);
+      static void occluded (vint<K>* valid, BVH* bvh, RayK<K>& ray, const RTCIntersectContext* context);
     };
 
     /*! BVH packet intersector. */

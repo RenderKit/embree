@@ -62,7 +62,7 @@ namespace embree
 #if EXPERIMENTAL_FIBER_MODE
     /* pure fiber mode, no streams */
     template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
-    void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, const RTCIntersectionContext* context)
+    void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, const RTCIntersectContext* context)
     {
       StackItemT<NodeRef> stack[2][stackSize];           //!< stack of nodes 
       TraversalContext contexts[2];
@@ -206,7 +206,7 @@ namespace embree
 #else
 
     template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
-    void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, const RTCIntersectionContext* context)
+    void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, const RTCIntersectContext* context)
     {
       __aligned(64) RayContext ray_ctx[MAX_RAYS_PER_OCTANT];
       __aligned(64) Precalculations pre[MAX_RAYS_PER_OCTANT]; 
@@ -485,7 +485,7 @@ namespace embree
 #if 1
     
     template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
-    void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::occluded(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, const RTCIntersectionContext* context)
+    void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::occluded(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, const RTCIntersectContext* context)
     {
       __aligned(64) RayContext ray_ctx[MAX_RAYS_PER_OCTANT];
       __aligned(64) Precalculations pre[MAX_RAYS_PER_OCTANT]; 
@@ -747,7 +747,7 @@ namespace embree
 
     /* experimental multi-stack mode */
     template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
-    void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::occluded(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, const RTCIntersectionContext* context)
+    void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::occluded(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, const RTCIntersectContext* context)
     {
       const size_t queue_size = 64;
       __aligned(64) RayContext ray_ctx[queue_size];

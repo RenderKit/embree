@@ -29,13 +29,13 @@ namespace embree
         typedef typename Intersector::Primitive Primitive;
         typedef typename Intersector::Precalculations Precalculations;
         
-        static __forceinline void intersect(Precalculations& pre, Ray& ray, const RTCIntersectionContext* context, size_t ty, const Primitive* prim, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node)
+        static __forceinline void intersect(Precalculations& pre, Ray& ray, const RTCIntersectContext* context, size_t ty, const Primitive* prim, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node)
         {
           for (size_t i=0; i<num; i++)
             Intersector::intersect(pre,ray,context,prim[i],scene,geomID_to_instID);
         }
         
-        static __forceinline bool occluded(Precalculations& pre, Ray& ray, const RTCIntersectionContext* context, size_t ty, const Primitive* prim, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) 
+        static __forceinline bool occluded(Precalculations& pre, Ray& ray, const RTCIntersectContext* context, size_t ty, const Primitive* prim, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) 
         {
           for (size_t i=0; i<num; i++) {
             if (Intersector::occluded(pre,ray,context,prim[i],scene,geomID_to_instID))
@@ -45,7 +45,7 @@ namespace embree
         }
 
         template<typename Context>
-        static __forceinline size_t intersect(Precalculations* pre, size_t valid, Ray** rays, const RTCIntersectionContext* context, Context* ctx, size_t ty, const Primitive* prim, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node)
+        static __forceinline size_t intersect(Precalculations* pre, size_t valid, Ray** rays, const RTCIntersectContext* context, Context* ctx, size_t ty, const Primitive* prim, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node)
         {
           size_t valid_isec = 0;
           do {
@@ -57,7 +57,7 @@ namespace embree
           return valid_isec;
         }
 
-        static __forceinline size_t occluded(Precalculations* pre, size_t valid, Ray** rays, const RTCIntersectionContext* context, size_t ty, const Primitive* prim, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) 
+        static __forceinline size_t occluded(Precalculations* pre, size_t valid, Ray** rays, const RTCIntersectContext* context, size_t ty, const Primitive* prim, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) 
         {
           size_t hit = 0;
           do {
@@ -92,7 +92,7 @@ namespace embree
           Precalculations2 pre2;
         };
         
-        static __forceinline void intersect(Precalculations& pre, Ray& ray, const RTCIntersectionContext* context, size_t ty, const Primitive* prim_i, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node)
+        static __forceinline void intersect(Precalculations& pre, Ray& ray, const RTCIntersectContext* context, size_t ty, const Primitive* prim_i, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node)
         {
           if (likely(ty == 0)) {
             Primitive1 prim = (Primitive1) prim_i;
@@ -105,7 +105,7 @@ namespace embree
           }
         }
         
-        static __forceinline bool occluded(Precalculations& pre, Ray& ray, const RTCIntersectionContext* context, size_t ty, const Primitive* prim_i, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) 
+        static __forceinline bool occluded(Precalculations& pre, Ray& ray, const RTCIntersectContext* context, size_t ty, const Primitive* prim_i, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) 
         {
           if (likely(ty == 0)) {
             Primitive1 prim = (Primitive1) prim_i;
@@ -130,14 +130,14 @@ namespace embree
         typedef typename Intersector::Primitive Primitive;
         typedef typename Intersector::Precalculations Precalculations;
         
-        static __forceinline void intersect(const vbool<K>& valid, Precalculations& pre, RayK<K>& ray, const RTCIntersectionContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node)
+        static __forceinline void intersect(const vbool<K>& valid, Precalculations& pre, RayK<K>& ray, const RTCIntersectContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node)
         {
           for (size_t i=0; i<num; i++) {
             Intersector::intersect(valid,pre,ray,context,prim[i],scene);
           }
         }
         
-        static __forceinline vbool<K> occluded(const vbool<K>& valid, Precalculations& pre, RayK<K>& ray, const RTCIntersectionContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node) 
+        static __forceinline vbool<K> occluded(const vbool<K>& valid, Precalculations& pre, RayK<K>& ray, const RTCIntersectContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node) 
         {
           vbool<K> valid0 = valid;
           for (size_t i=0; i<num; i++) {
@@ -148,8 +148,8 @@ namespace embree
         }
 
         /* Dummy functions for templates */
-        static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, const RTCIntersectionContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node) {}
-        static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, const RTCIntersectionContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node) { return false; }
+        static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, const RTCIntersectContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node) {}
+        static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, const RTCIntersectContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node) { return false; }
       };
     
     template<int K, typename Intersector>
@@ -158,14 +158,14 @@ namespace embree
         typedef typename Intersector::Primitive Primitive;
         typedef typename Intersector::Precalculations Precalculations;
         
-        static __forceinline void intersect(const vbool<K>& valid, Precalculations& pre, RayK<K>& ray, const RTCIntersectionContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node)
+        static __forceinline void intersect(const vbool<K>& valid, Precalculations& pre, RayK<K>& ray, const RTCIntersectContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node)
         {
           for (size_t i=0; i<num; i++) {
             Intersector::intersect(valid,pre,ray,context,prim[i],scene);
           }
         }
         
-        static __forceinline vbool<K> occluded(const vbool<K>& valid, Precalculations& pre, RayK<K>& ray, const RTCIntersectionContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node) 
+        static __forceinline vbool<K> occluded(const vbool<K>& valid, Precalculations& pre, RayK<K>& ray, const RTCIntersectContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node) 
         {
           vbool<K> valid0 = valid;
           for (size_t i=0; i<num; i++) {
@@ -175,14 +175,14 @@ namespace embree
           return !valid0;
         }
         
-        static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, const RTCIntersectionContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node)
+        static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, const RTCIntersectContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node)
         {
           for (size_t i=0; i<num; i++) {
             Intersector::intersect(pre,ray,k,context,prim[i],scene);
           }
         }
         
-        static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, const RTCIntersectionContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node) 
+        static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, const RTCIntersectContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node) 
         {
           for (size_t i=0; i<num; i++) {
             if (Intersector::occluded(pre,ray,k,context,prim[i],scene))

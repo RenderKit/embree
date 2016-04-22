@@ -67,7 +67,7 @@ namespace embree
     
     DEFINE_SET_INTERSECTOR1(InstanceIntersector1,FastInstanceIntersector1);
 
-    void FastInstanceIntersector1M::intersect(const Instance* instance, const RTCIntersectionContext* context, Ray** rays, size_t M, size_t item)
+    void FastInstanceIntersector1M::intersect(const Instance* instance, const RTCIntersectContext* context, Ray** rays, size_t M, size_t item)
     {
       assert(M<MAX_INTERNAL_STREAM_SIZE);
       Vec3fa ray_org[MAX_INTERNAL_STREAM_SIZE];
@@ -106,7 +106,7 @@ namespace embree
       }
     }
     
-    void FastInstanceIntersector1M::occluded (const Instance* instance, const RTCIntersectionContext* context, Ray** rays, size_t M, size_t item)
+    void FastInstanceIntersector1M::occluded (const Instance* instance, const RTCIntersectContext* context, Ray** rays, size_t M, size_t item)
     {
       assert(M<MAX_INTERNAL_STREAM_SIZE);
       Vec3fa ray_org[MAX_INTERNAL_STREAM_SIZE];

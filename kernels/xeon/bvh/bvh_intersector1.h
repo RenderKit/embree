@@ -43,8 +43,8 @@ namespace embree
       static const size_t Nx = (types == BVH_AN1 || types == BVH_QN1) ? vextend<N>::size : N;
 
     public:
-      static void intersect(const BVH* This, Ray& ray, const RTCIntersectionContext* context);
-      static void occluded (const BVH* This, Ray& ray, const RTCIntersectionContext* context);
+      static void intersect(const BVH* This, Ray& ray, const RTCIntersectContext* context);
+      static void occluded (const BVH* This, Ray& ray, const RTCIntersectContext* context);
     };
   }
 }
