@@ -30,14 +30,14 @@ namespace embree
       typedef LineMi<M> Primitive;
       typedef typename LineIntersector1<Mx>::Precalculations Precalculations;
 
-      static __forceinline void intersect(Precalculations& pre, Ray& ray, const RTCIntersectionContext* context, const Primitive& line, Scene* scene, const unsigned* geomID_to_instID)
+      static __forceinline void intersect(Precalculations& pre, Ray& ray, const RTCIntersectContext* context, const Primitive& line, Scene* scene, const unsigned* geomID_to_instID)
       {
         STAT3(normal.trav_prims,1,1,1);
         Vec4<vfloat<M>> v0,v1; line.gather(v0,v1,scene);
         LineIntersector1<Mx>::intersect(ray,pre,line.valid(),v0,v1,Intersect1EpilogM<M,Mx,filter>(ray,context,line.geomIDs,line.primIDs,scene,geomID_to_instID));
       }
 
-      static __forceinline bool occluded(Precalculations& pre, Ray& ray, const RTCIntersectionContext* context, const Primitive& line, Scene* scene, const unsigned* geomID_to_instID)
+      static __forceinline bool occluded(Precalculations& pre, Ray& ray, const RTCIntersectContext* context, const Primitive& line, Scene* scene, const unsigned* geomID_to_instID)
       {
         STAT3(shadow.trav_prims,1,1,1);
         Vec4<vfloat<M>> v0,v1; line.gather(v0,v1,scene);
@@ -51,14 +51,14 @@ namespace embree
       typedef LineMi<M> Primitive;
       typedef typename LineIntersector1<Mx>::Precalculations Precalculations;
 
-      static __forceinline void intersect(Precalculations& pre, Ray& ray, const RTCIntersectionContext* context, const Primitive& line, Scene* scene, const unsigned* geomID_to_instID)
+      static __forceinline void intersect(Precalculations& pre, Ray& ray, const RTCIntersectContext* context, const Primitive& line, Scene* scene, const unsigned* geomID_to_instID)
       {
         STAT3(normal.trav_prims,1,1,1);
         Vec4<vfloat<M>> v0,v1; line.gather(v0,v1,scene,ray.time);
         LineIntersector1<Mx>::intersect(ray,pre,line.valid(),v0,v1,Intersect1EpilogM<M,Mx,filter>(ray,context,line.geomIDs,line.primIDs,scene,geomID_to_instID));
       }
 
-      static __forceinline bool occluded(Precalculations& pre, Ray& ray, const RTCIntersectionContext* context, const Primitive& line, Scene* scene, const unsigned* geomID_to_instID)
+      static __forceinline bool occluded(Precalculations& pre, Ray& ray, const RTCIntersectContext* context, const Primitive& line, Scene* scene, const unsigned* geomID_to_instID)
       {
         STAT3(shadow.trav_prims,1,1,1);
         Vec4<vfloat<M>> v0,v1; line.gather(v0,v1,scene,ray.time);
@@ -72,14 +72,14 @@ namespace embree
       typedef LineMi<M> Primitive;
       typedef typename LineIntersectorK<Mx,K>::Precalculations Precalculations;
 
-      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, const RTCIntersectionContext* context, const Primitive& line, Scene* scene)
+      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, const RTCIntersectContext* context, const Primitive& line, Scene* scene)
       {
         STAT3(normal.trav_prims,1,1,1);
         Vec4<vfloat<M>> v0,v1; line.gather(v0,v1,scene);
         LineIntersectorK<Mx,K>::intersect(ray,k,pre,line.valid(),v0,v1,Intersect1KEpilogM<M,Mx,K,filter>(ray,k,context,line.geomIDs,line.primIDs,scene));
       }
       
-      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, const RTCIntersectionContext* context, const Primitive& line, Scene* scene)
+      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, const RTCIntersectContext* context, const Primitive& line, Scene* scene)
       {
         STAT3(shadow.trav_prims,1,1,1);
         Vec4<vfloat<M>> v0,v1; line.gather(v0,v1,scene);
@@ -93,14 +93,14 @@ namespace embree
       typedef LineMi<M> Primitive;
       typedef typename LineIntersectorK<Mx,K>::Precalculations Precalculations;
 
-      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, const RTCIntersectionContext* context,  const Primitive& line, Scene* scene)
+      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, const RTCIntersectContext* context,  const Primitive& line, Scene* scene)
       {
         STAT3(normal.trav_prims,1,1,1);
         Vec4<vfloat<M>> v0,v1; line.gather(v0,v1,scene,ray.time[k]);
         LineIntersectorK<Mx,K>::intersect(ray,k,pre,line.valid(),v0,v1,Intersect1KEpilogM<M,Mx,K,filter>(ray,k,context,line.geomIDs,line.primIDs,scene));
       }
 
-      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, const RTCIntersectionContext* context, const Primitive& line, Scene* scene)
+      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, const RTCIntersectContext* context, const Primitive& line, Scene* scene)
       {
         STAT3(shadow.trav_prims,1,1,1);
         Vec4<vfloat<M>> v0,v1; line.gather(v0,v1,scene,ray.time[k]);

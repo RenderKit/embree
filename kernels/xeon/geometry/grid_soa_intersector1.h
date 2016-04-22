@@ -47,7 +47,7 @@ namespace embree
       
       template<typename Loader>
         static __forceinline void intersect(Ray& ray,
-                                            const RTCIntersectionContext* context, 
+                                            const RTCIntersectContext* context, 
                                             const float* const grid_x,
                                             const float* const grid_y,
                                             const float* const grid_z,
@@ -82,7 +82,7 @@ namespace embree
       
       template<typename Loader>
         static __forceinline bool occluded(Ray& ray,
-                                           const RTCIntersectionContext* context, 
+                                           const RTCIntersectContext* context, 
                                            const float* const grid_x,
                                            const float* const grid_y,
                                            const float* const grid_z,
@@ -116,7 +116,7 @@ namespace embree
       }
       
       /*! Intersect a ray with the primitive. */
-      static __forceinline void intersect(Precalculations& pre, Ray& ray, const RTCIntersectionContext* context, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) 
+      static __forceinline void intersect(Precalculations& pre, Ray& ray, const RTCIntersectContext* context, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) 
       {
         const size_t dim_offset    = pre.grid->dim_offset;
         const size_t line_offset   = pre.grid->width;
@@ -134,7 +134,7 @@ namespace embree
       }
       
       /*! Test if the ray is occluded by the primitive */
-      static __forceinline bool occluded(Precalculations& pre, Ray& ray, const RTCIntersectionContext* context, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) 
+      static __forceinline bool occluded(Precalculations& pre, Ray& ray, const RTCIntersectContext* context, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) 
       {
         const size_t dim_offset    = pre.grid->dim_offset;
         const size_t line_offset   = pre.grid->width;

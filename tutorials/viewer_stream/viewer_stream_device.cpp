@@ -199,7 +199,7 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
     shadow.time = 0;    // FIXME: invalidate inactive rays
   }
 
-  RTCIntersectionContext context;
+  RTCIntersectContext context;
   context.flags = RAYN_FLAGS;
 
   /* trace occlusion rays */
@@ -266,7 +266,7 @@ void renderTileStandard(int taskIndex,
     ray.time = RandomSampler_get1D(sampler);
   }
 
-  RTCIntersectionContext context;
+  RTCIntersectContext context;
   context.flags = RAYN_FLAGS;
 
   /* trace stream of rays */

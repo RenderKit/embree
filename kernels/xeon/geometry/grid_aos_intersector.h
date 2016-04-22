@@ -64,7 +64,7 @@ namespace embree
         size_t nearX, nearY, nearZ;
       };
 
-      static __forceinline void intersectFinish (const Precalculations1& pre, RayK<K>& ray, size_t k, const RTCIntersectionContext* context,
+      static __forceinline void intersectFinish (const Precalculations1& pre, RayK<K>& ray, size_t k, const RTCIntersectContext* context,
                                                  const Vec3fa& p0, const Vec3fa& p1, const Vec3fa& p2, const vfloat4& uvw, const Primitive& prim, Scene* scene)
       {
         const Vec3fa Ng0 = cross(p1-p0,p2-p0);
@@ -111,7 +111,7 @@ namespace embree
 
       __forceinline static void intersectQuad(const Precalculations1& pre, 
                                               RayK<K>& ray, size_t k, 
-                                              const RTCIntersectionContext* context,
+                                              const RTCIntersectContext* context,
                                               const Vec3fa& O, const Vec3fa& D,
                                               const Vec3fa& q00, const Vec3fa& q01,
                                               const Vec3fa& q10, const Vec3fa& q11,
@@ -137,7 +137,7 @@ namespace embree
 
       __forceinline static void intersectDualQuad(const Precalculations1& pre, 
                                                   RayK<K>& ray, size_t k, 
-                                                  const RTCIntersectionContext* context,
+                                                  const RTCIntersectContext* context,
                                                   const Vec3fa& O, const Vec3fa& D,
                                                   const Vec3fa& q00, const Vec3fa& q01,
                                                   const Vec3fa& q10, const Vec3fa& q11,
@@ -180,7 +180,7 @@ namespace embree
 
       static __forceinline void intersectQuad (const Precalculations1& pre, 
                                                RayK<K>& ray, size_t k,
-                                               const RTCIntersectionContext* context,
+                                               const RTCIntersectContext* context,
                                                const Vec3fa& v00, const Vec3fa& v10,
                                                const Vec3fa& v01, const Vec3fa& v11,
                                                const Primitive& prim, Scene* scene)
@@ -194,7 +194,7 @@ namespace embree
 
       static __forceinline void intersectQuads (const Precalculations1& pre, 
                                                 RayK<K>& ray, size_t k,
-                                                const RTCIntersectionContext* context,
+                                                const RTCIntersectContext* context,
                                                 const Vec3fa& v00, const Vec3fa& v10, const Vec3fa& v20,
                                                 const Vec3fa& v01, const Vec3fa& v11, const Vec3fa& v21,
                                                 const Primitive& prim, Scene* scene)
@@ -208,7 +208,7 @@ namespace embree
 
       static __forceinline void intersectQuads (const Precalculations1& pre, 
                                                 RayK<K>& ray, size_t k,
-                                                const RTCIntersectionContext* context,
+                                                const RTCIntersectContext* context,
                                                 const Vec3fa& v00, const Vec3fa& v10, const Vec3fa& v20,
                                                 const Vec3fa& v01, const Vec3fa& v11, const Vec3fa& v21,
                                                 const Vec3fa& v02, const Vec3fa& v12, const Vec3fa& v22,
@@ -224,7 +224,7 @@ namespace embree
       }
 
       /*! Intersect a ray with the triangle and updates the hit. */
-      static __forceinline void intersect(const Precalculations1& pre, RayK<K>& ray, size_t k, const RTCIntersectionContext* context, const Primitive& prim, Scene* scene)
+      static __forceinline void intersect(const Precalculations1& pre, RayK<K>& ray, size_t k, const RTCIntersectContext* context, const Primitive& prim, Scene* scene)
       {
         STAT3(normal.trav_prims,1,1,1);
 
@@ -270,19 +270,19 @@ namespace embree
       }
 
       /*! Intersect a ray with the triangle and updates the hit. */
-      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, const RTCIntersectionContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node)
+      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, const RTCIntersectContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node)
       {
         Precalculations1 pre1(ray, k);
         intersect(pre1,ray,k,context,prim[0], scene);
       }
 
-      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const RTCIntersectionContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node)
+      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const RTCIntersectContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node)
       {
         int mask = movemask(valid_i);
         while (mask) intersect(pre, ray, context, __bscf(mask), prim, num, scene, lazy_node);
       }
 
-      static __forceinline bool occludedFinish (const Precalculations1& pre, RayK<K>& ray, size_t k, const RTCIntersectionContext* context,
+      static __forceinline bool occludedFinish (const Precalculations1& pre, RayK<K>& ray, size_t k, const RTCIntersectContext* context,
                                                 const Vec3fa& p0, const Vec3fa& p1, const Vec3fa& p2, const vfloat4& uvw, const Primitive& prim, Scene* scene)
       {
         const Vec3fa Ng0 = cross(p2-p0,p1-p0);
@@ -319,7 +319,7 @@ namespace embree
 
       __forceinline static bool occludedQuad(const Precalculations1& pre, 
                                              RayK<K>& ray, size_t k, 
-                                             const RTCIntersectionContext* context,
+                                             const RTCIntersectContext* context,
                                              const Vec3fa& O, const Vec3fa& D,
                                              const Vec3fa& q00, const Vec3fa& q01,
                                              const Vec3fa& q10, const Vec3fa& q11,
@@ -347,7 +347,7 @@ namespace embree
 
       __forceinline static bool occludedDualQuad(const Precalculations1& pre, 
                                                  RayK<K>& ray, size_t k, 
-                                                 const RTCIntersectionContext* context,
+                                                 const RTCIntersectContext* context,
                                                  const Vec3fa& O, const Vec3fa& D,
                                                  const Vec3fa& q00, const Vec3fa& q01,
                                                  const Vec3fa& q10, const Vec3fa& q11,
@@ -393,7 +393,7 @@ namespace embree
 
       static __forceinline bool occludedQuad (const Precalculations1& pre, 
                                               RayK<K>& ray, size_t k,
-                                              const RTCIntersectionContext* context,
+                                              const RTCIntersectContext* context,
                                               const Vec3fa& v00, const Vec3fa& v10,
                                               const Vec3fa& v01, const Vec3fa& v11,
                                               const Primitive& prim, Scene* scene)
@@ -407,7 +407,7 @@ namespace embree
 
       static __forceinline bool occludedQuads (const Precalculations1& pre, 
                                                RayK<K>& ray, size_t k,
-                                               const RTCIntersectionContext* context,
+                                               const RTCIntersectContext* context,
                                                const Vec3fa& v00, const Vec3fa& v10, const Vec3fa& v20,
                                                const Vec3fa& v01, const Vec3fa& v11, const Vec3fa& v21,
                                                const Primitive& prim, Scene* scene)
@@ -421,7 +421,7 @@ namespace embree
 
       static __forceinline bool occludedQuads (const Precalculations1& pre, 
                                                RayK<K>& ray, size_t k,
-                                               const RTCIntersectionContext* context,
+                                               const RTCIntersectContext* context,
                                                const Vec3fa& v00, const Vec3fa& v10, const Vec3fa& v20,
                                                const Vec3fa& v01, const Vec3fa& v11, const Vec3fa& v21,
                                                const Vec3fa& v02, const Vec3fa& v12, const Vec3fa& v22,
@@ -438,7 +438,7 @@ namespace embree
       }
 
       /*! Test if the ray is occluded by the primitive */
-      static __forceinline bool occluded(const Precalculations1& pre, RayK<K>& ray, size_t k, const RTCIntersectionContext* context, const Primitive& prim, Scene* scene)
+      static __forceinline bool occluded(const Precalculations1& pre, RayK<K>& ray, size_t k, const RTCIntersectContext* context, const Primitive& prim, Scene* scene)
       {
         STAT3(shadow.trav_prims,1,1,1);
 
@@ -486,13 +486,13 @@ namespace embree
       }
 
       /*! Test if the ray is occluded by the primitive */
-      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, const RTCIntersectionContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node)
+      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, const RTCIntersectContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node)
       {
         Precalculations1 pre1(ray, k);
         return occluded(pre1, ray, k, context, prim[0], scene);
       }
 
-      static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const RTCIntersectionContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node)
+      static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const RTCIntersectContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node)
       {
         vbool<K> valid_o = false;
         int mask = movemask(valid_i);

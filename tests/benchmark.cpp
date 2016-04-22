@@ -1313,7 +1313,7 @@ namespace embree
         for (size_t j=0;j<STREAM_SIZE;j++)        
           setRay(rays[j],Vec3fa(zero),numbers[i+j]);
 
-        RTCIntersectionContext context;
+        RTCIntersectContext context;
         context.flags = RTC_INTERSECT_INCOHERENT;
 
         if (intersect) 
@@ -1400,7 +1400,7 @@ namespace embree
       g_barrier_active.wait(threadIndex);
       double t0 = getSeconds();
 
-      RTCIntersectionContext context;
+      RTCIntersectContext context;
       context.flags = RTC_INTERSECT_INCOHERENT;
 
       for (size_t p=0;p<g_profile_loop_iterations;p++)

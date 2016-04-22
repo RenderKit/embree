@@ -217,7 +217,7 @@ namespace embree
   public:
 
       /*! Intersects a single ray with the scene. */
-      __forceinline void intersect (RTCRay& ray, size_t item, const RTCIntersectionContext* context) 
+      __forceinline void intersect (RTCRay& ray, size_t item, const RTCIntersectContext* context) 
       {
         assert(item < size());
         if (likely(intersectors.intersector1.intersect)) { // old code for compatibility
@@ -234,7 +234,7 @@ namespace embree
    
       /*! Intersects a packet of 4 rays with the scene. */
 #if defined(__SSE__)   
-      __forceinline void intersect4 (const vbool4& valid, RTCRay4& ray, size_t item, const RTCIntersectionContext* context) 
+      __forceinline void intersect4 (const vbool4& valid, RTCRay4& ray, size_t item, const RTCIntersectContext* context) 
       {
         assert(item < size());
         if (likely(intersectors.intersector4.intersect)) { // old code for compatibility
@@ -250,7 +250,7 @@ namespace embree
       
 #if defined(__AVX__)
       /*! Intersects a packet of 8 rays with the scene. */
-      __forceinline void intersect8 (const vbool8& valid, RTCRay8& ray, size_t item, const RTCIntersectionContext* context) 
+      __forceinline void intersect8 (const vbool8& valid, RTCRay8& ray, size_t item, const RTCIntersectContext* context) 
       {
         assert(item < size());
         if (likely(intersectors.intersector8.intersect)) { // old code for compatibility
@@ -266,7 +266,7 @@ namespace embree
 
       /*! Intersects a packet of 16 rays with the scene. */
 #if defined(__AVX512F__)
-      __forceinline void intersect16 (const vbool16& valid, RTCRay16& ray, size_t item, const RTCIntersectionContext* context) 
+      __forceinline void intersect16 (const vbool16& valid, RTCRay16& ray, size_t item, const RTCIntersectContext* context) 
       {
         assert(item < size());
         if (likely(intersectors.intersector16.occluded)) { // old code for compatibility
@@ -302,7 +302,7 @@ namespace embree
 #endif
 
       /*! Intersects a stream of rays with the scene. */
-      __forceinline void intersect1M (RTCRay** rays, size_t N, size_t item, const RTCIntersectionContext* context) 
+      __forceinline void intersect1M (RTCRay** rays, size_t N, size_t item, const RTCIntersectContext* context) 
       {
         assert(item < size());
         if (intersectors.intersector1M.intersect) { // Intersect1N callback is optional
@@ -325,7 +325,7 @@ namespace embree
       }
       
       /*! Tests if single ray is occluded by the scene. */
-      __forceinline void occluded (RTCRay& ray, size_t item, const RTCIntersectionContext* context) 
+      __forceinline void occluded (RTCRay& ray, size_t item, const RTCIntersectContext* context) 
       {
         if (likely(intersectors.intersector1.occluded)) { // old code for compatibility
           intersectors.intersector1.occluded(intersectors.ptr,ray,item);
@@ -341,7 +341,7 @@ namespace embree
       
       /*! Tests if a packet of 4 rays is occluded by the scene. */
 #if defined(__SSE__)
-      __forceinline void occluded4 (const vbool4& valid, RTCRay4& ray, size_t item, const RTCIntersectionContext* context) 
+      __forceinline void occluded4 (const vbool4& valid, RTCRay4& ray, size_t item, const RTCIntersectContext* context) 
       {
         assert(item < size());
 	if (likely(intersectors.intersector4.occluded)) { // old code for compatibility
@@ -357,7 +357,7 @@ namespace embree
       
       /*! Tests if a packet of 8 rays is occluded by the scene. */
 #if defined(__AVX__)
-      __forceinline void occluded8 (const vbool8& valid, RTCRay8& ray, size_t item, const RTCIntersectionContext* context) 
+      __forceinline void occluded8 (const vbool8& valid, RTCRay8& ray, size_t item, const RTCIntersectContext* context) 
       {
         assert(item < size());
 	if (likely(intersectors.intersector8.occluded)) { // old code for compatibility
@@ -373,7 +373,7 @@ namespace embree
       
       /*! Tests if a packet of 16 rays is occluded by the scene. */
 #if defined(__AVX512F__)
-      __forceinline void occluded16 (const vbool16& valid, RTCRay16& ray, size_t item, const RTCIntersectionContext* context) 
+      __forceinline void occluded16 (const vbool16& valid, RTCRay16& ray, size_t item, const RTCIntersectContext* context) 
       {
         assert(item < size());
         if (likely(intersectors.intersector16.occluded)) { // old code for compatibility
@@ -409,7 +409,7 @@ namespace embree
 #endif
 
       /*! Tests if a stream of rays is occluded by the scene. */
-      __forceinline void occluded1M (RTCRay** rays, size_t N, size_t item, const RTCIntersectionContext* context) 
+      __forceinline void occluded1M (RTCRay** rays, size_t N, size_t item, const RTCIntersectContext* context) 
       {
         if (likely(intersectors.intersector1M.occluded)) { // Occluded1N callback is optional
           intersectors.intersector1M.occluded(intersectors.ptr,context,rays,N,item);
