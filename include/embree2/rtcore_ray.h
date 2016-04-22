@@ -149,8 +149,8 @@ public:
   unsigned instID[16];  //!< instance ID
 };
 
-/* Helper functions to access ray packets of size N */
-struct RTCRayN;
+/* Helper functions to access ray packets of runtime size N */
+struct RTCRayN {};
 __forceinline float& RTCRayN_org_x(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((float*)ptr)[0*N+0*N1+i]; }  //!< x coordinate of ray origin
 __forceinline float& RTCRayN_org_y(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((float*)ptr)[1*N+0*N1+i]; }  //!< y coordinate of ray origin
 __forceinline float& RTCRayN_org_z(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((float*)ptr)[2*N+0*N1+i]; }; //!< z coordinate of ray origin
@@ -176,21 +176,41 @@ __forceinline int& RTCRayN_geomID(RTCRayN* ptr, size_t N, size_t i) { const size
 __forceinline int& RTCRayN_primID(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((int*  )ptr)[16*N+3*N1+i]; }; //!< primitive ID
 __forceinline int& RTCRayN_instID(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((int*  )ptr)[17*N+3*N1+i]; }; //!< instance ID
 
-/* Helper functions to access hit packets of size N */
-struct RTCHitN;
-__forceinline float& RTCHitN_Ng_x(RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[0*N+i]; }; //!< x coordinate of geometry normal
-__forceinline float& RTCHitN_Ng_y(RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[1*N+i]; }; //!< y coordinate of geometry normal
-__forceinline float& RTCHitN_Ng_z(RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[2*N+i]; }; //!< z coordinate of geometry normal
+/* Helper structure to create a ray packet of compile time size N */
+template<int N>
+struct RTCRayNt : public RTCRayN
+{
+  /* ray data */
+public:
+  float orgx[N];  //!< x coordinate of ray origin
+  float orgy[N];  //!< y coordinate of ray origin
+  float orgz[N];  //!< z coordinate of ray origin
+  
+  float dirx[N];  //!< x coordinate of ray direction
+  float diry[N];  //!< y coordinate of ray direction
+  float dirz[N];  //!< z coordinate of ray direction
+  
+  float tnear[N]; //!< Start of ray segment 
+  float tfar[N];  //!< End of ray segment (set to hit distance)
 
-__forceinline int& RTCHitN_instID(RTCHitN* ptr, size_t N, size_t i) { return ((int*  )ptr)[3*N+i]; }; //!< instance ID
-__forceinline int& RTCHitN_geomID(RTCHitN* ptr, size_t N, size_t i) { return ((int*  )ptr)[4*N+i]; }; //!< geometry ID
-__forceinline int& RTCHitN_primID(RTCHitN* ptr, size_t N, size_t i) { return ((int*  )ptr)[5*N+i]; }; //!< primitive ID
+  float time[N];  //!< Time of this ray for motion blur
+  unsigned mask[N];  //!< Used to mask out objects during traversal
+  
+  /* hit data */
+public:
+  float Ngx[N];   //!< x coordinate of geometry normal
+  float Ngy[N];   //!< y coordinate of geometry normal
+  float Ngz[N];   //!< z coordinate of geometry normal
+  
+  float u[N];     //!< Barycentric u coordinate of hit
+  float v[N];     //!< Barycentric v coordinate of hit
+  
+  unsigned geomID[N];  //!< geometry ID
+  unsigned primID[N];  //!< primitive ID
+  unsigned instID[N];  //!< instance ID
+};
 
-__forceinline float& RTCHitN_u   (RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[6*N+i]; }; //!< Barycentric u coordinate of hit
-__forceinline float& RTCHitN_v   (RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[7*N+i]; }; //!< Barycentric v coordinate of hit
-__forceinline float& RTCHitN_t   (RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[8*N+i]; }; //!< Barycentric v coordinate of hit
-
-/*! \brief Ray structure template for packets of N rays in SOA layout. */
+/*! \brief Ray structure template for packets of N rays in pointer SOA layout. */
 struct RTCRayNp
 {
   /* ray data */
@@ -223,6 +243,37 @@ public:
   unsigned* geomID;  //!< geometry ID
   unsigned* primID;  //!< primitive ID
   unsigned* instID;  //!< instance ID (optional)
+};
+
+/* Helper functions to access hit packets of size N */
+struct RTCHitN {};
+__forceinline float& RTCHitN_Ng_x(RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[0*N+i]; }; //!< x coordinate of geometry normal
+__forceinline float& RTCHitN_Ng_y(RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[1*N+i]; }; //!< y coordinate of geometry normal
+__forceinline float& RTCHitN_Ng_z(RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[2*N+i]; }; //!< z coordinate of geometry normal
+
+__forceinline int& RTCHitN_instID(RTCHitN* ptr, size_t N, size_t i) { return ((int*  )ptr)[3*N+i]; }; //!< instance ID
+__forceinline int& RTCHitN_geomID(RTCHitN* ptr, size_t N, size_t i) { return ((int*  )ptr)[4*N+i]; }; //!< geometry ID
+__forceinline int& RTCHitN_primID(RTCHitN* ptr, size_t N, size_t i) { return ((int*  )ptr)[5*N+i]; }; //!< primitive ID
+
+__forceinline float& RTCHitN_u   (RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[6*N+i]; }; //!< Barycentric u coordinate of hit
+__forceinline float& RTCHitN_v   (RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[7*N+i]; }; //!< Barycentric v coordinate of hit
+__forceinline float& RTCHitN_t   (RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[8*N+i]; }; //!< hit distance
+
+/* Helper structure to create a hit packet of compile time size N */
+template<int N>
+struct RTCHitNt : public RTCHitN
+{
+  float Ngx[N];        //!< x coordinate of geometry normal
+  float Ngy[N];        //!< y coordinate of geometry normal
+  float Ngz[N];        //!< z coordinate of geometry normal
+
+  unsigned instID[N];  //!< instance ID
+  unsigned geomID[N];  //!< geometry ID
+  unsigned primID[N];  //!< primitive ID
+
+  float u[N];          //!< Barycentric u coordinate of hit
+  float v[N];          //!< Barycentric v coordinate of hit
+  float t[N];          //!< hit distance
 };
 
 /*! @} */
