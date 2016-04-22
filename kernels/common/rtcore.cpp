@@ -496,7 +496,7 @@ namespace embree
     if (((size_t)rays.primID ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.primID not aligned to 4 bytes");   
     if (((size_t)rays.instID ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.instID not aligned to 4 bytes");   
 #endif
-    STAT3(normal.travs,N*M,N,N);
+    STAT3(normal.travs,N,N,N);
 
     scene->device->rayStreamFilters.filterSOP(scene,rays,N,context,true);
 
@@ -715,7 +715,7 @@ namespace embree
     if (((size_t)rays.primID ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.primID not aligned to 4 bytes");   
     if (((size_t)rays.instID ) & 0x03 ) throw_RTCError(RTC_INVALID_ARGUMENT, "rays.instID not aligned to 4 bytes");   
 #endif
-    STAT3(shadow.travs,N*M,N,N);
+    STAT3(shadow.travs,N,N,N);
 
     scene->device->rayStreamFilters.filterSOP(scene,rays,N,context,false);
 
