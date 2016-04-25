@@ -609,8 +609,8 @@ void renderTileStandardStream(uniform int taskIndex,
 
     /* trace shadow rays */
     uniform RTCIntersectContext shadow_context;
-    context.flags = RTC_INTERSECT_INCOHERENT;
-    context.userRayExt = &shadow_stream;
+    shadow_context.flags = RTC_INTERSECT_INCOHERENT;
+    shadow_context.userRayExt = &shadow_stream;
     rtcOccludedVM(g_scene,&shadow_context,(varying RTCRay* uniform)&shadow_stream,N,sizeof(RTCRay2));
     
     /* add light contribution */
