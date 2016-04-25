@@ -183,15 +183,15 @@ unmasked void intersectionFilterN(uniform int* uniform valid,
     /* read ray from ray structure */
     Vec3f ray_org = make_Vec3f(RTCRayN_org_x(ray,N,ui),RTCRayN_org_y(ray,N,ui),RTCRayN_org_z(ray,N,ui));
     Vec3f ray_dir = make_Vec3f(RTCRayN_dir_x(ray,N,ui),RTCRayN_dir_y(ray,N,ui),RTCRayN_dir_z(ray,N,ui));
-    float ray_tfar = RTCRayN_tfar(ray,N,ui);
-    int   ray_mask = RTCRayN_mask(ray,N,ui);
+    int   ray_mask= RTCRayN_mask(ray,N,ui);
+    float hit_t   = RTCHitN_t(potentialHit,N,ui);
 
     /* decode ray IDs */
     int pid = ray_mask >> (sizeof(float)/4);
     int rid = ray_mask & (sizeof(float)/4-1);
 
     /* calculate transparency */
-    Vec3f h = ray_org + ray_dir*ray_tfar;
+    Vec3f h = ray_org + ray_dir*hit_t;
     float T = transparencyFunction(h);
 
     /* ignore hit if completely transparent */
@@ -241,8 +241,8 @@ unmasked void occlusionFilterN(uniform int* uniform valid,
     /* read ray from ray structure */
     Vec3f ray_org = make_Vec3f(RTCRayN_org_x(ray,N,ui),RTCRayN_org_y(ray,N,ui),RTCRayN_org_z(ray,N,ui));
     Vec3f ray_dir = make_Vec3f(RTCRayN_dir_x(ray,N,ui),RTCRayN_dir_y(ray,N,ui),RTCRayN_dir_z(ray,N,ui));
-    float ray_tfar = RTCRayN_tfar(ray,N,ui);
-    int   ray_mask = RTCRayN_mask(ray,N,ui);
+    int   ray_mask= RTCRayN_mask(ray,N,ui);
+    float hit_t   = RTCHitN_t(potentialHit,N,ui);
 
     /* decode ray IDs */
     int pid = ray_mask >> (sizeof(float)/4);
@@ -250,7 +250,7 @@ unmasked void occlusionFilterN(uniform int* uniform valid,
     varying RTCRay2* uniform eray = (varying RTCRay2* uniform) context->userRayExt;
     
     /* calculate transparency */
-    Vec3f h = ray_org + ray_dir*ray_tfar;
+    Vec3f h = ray_org + ray_dir*hit_t;
     float T = transparencyFunction(h);
 
     /* accumulate transparency and store inside ray extensions */
@@ -527,7 +527,7 @@ void renderTileStandardStream(uniform int taskIndex,
   context.flags = RTC_INTERSECT_INCOHERENT;
   context.userRayExt = &rays;
   rtcIntersectVM(g_scene,&context,rays,N,sizeof(RTCRay));
-
+    
   /* shade stream of rays */
   N = 0;
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
@@ -538,8 +538,9 @@ void renderTileStandardStream(uniform int taskIndex,
 
     /* eyelight shading */
     Vec3f color = make_Vec3f(0.0f);
+    Vec3f diffuse = colors[ray.primID];
     if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
-      color = make_Vec3f(abs(dot(ray.dir,normalize(ray.Ng))));
+      color = diffuse*make_Vec3f(abs(dot(ray.dir,normalize(ray.Ng))));
       //color = ambientOcclusionShading(x,y,ray);
 
     /* write color to framebuffer */
