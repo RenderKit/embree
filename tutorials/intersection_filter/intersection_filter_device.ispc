@@ -482,8 +482,6 @@ void renderTileStandard(uniform int taskIndex,
   }
 }
 
-#define Ntest 6
-
 /* renders a single screen tile */
 void renderTileStandardStream(uniform int taskIndex, 
                               uniform int* uniform pixels,
@@ -536,8 +534,8 @@ void renderTileStandardStream(uniform int taskIndex,
     N++;
   }
 
-  //while (numActive)
-  for (uniform size_t I=0; I<2; I++)
+  while (numActive)
+    //for (uniform size_t I=0; I<2; I++)
   {
     /* trace rays */
     uniform RTCIntersectContext context;
@@ -556,14 +554,6 @@ void renderTileStandardStream(uniform int taskIndex,
       if (all(__mask == 0)) continue;
       RTCRay2& primary = primary_stream[N];
 
-      if (N == Ntest) {
-        //print("primary.org = % % %\n",primary.org.x,primary.org.y,primary.org.z);
-        //print("primary.dir = % % %\n",primary.dir.x,primary.dir.y,primary.dir.z);
-        //print("primary.transparency = %\n",primary.transparency);
-        //print("primary.geomID = %\n",primary.geomID);
-        //print("primary.primID = %\n",primary.primID);
-      }
-
       /* ignore invalid rays */
       if (valid_stream[N] == false) continue;
       numActive++;
@@ -577,18 +567,8 @@ void renderTileStandardStream(uniform int taskIndex,
       float opacity = 1.0f-primary.transparency;
       Vec3f diffuse = colors[primary.primID];
       Vec3f La = diffuse*0.5f;
-      //if (N == Ntest) print("weight_stream[N] = %\n",weight_stream[N]);
-      //if (N == Ntest) print("opacity = %\n",opacity);
       color_stream[N] = color_stream[N] + weight_stream[N]*opacity*La;
-      //if (N == Ntest) print("color_stream[N] = % % %\n",color_stream[N].x,color_stream[N].y,color_stream[N].z);
       Vec3f lightDir = normalize(make_Vec3f(-1,-1,-1));
-      
-      /* eyelight shading */
-      //Vec3f color = make_Vec3f(0.0f);
-      //Vec3f diffuse = colors[primary.primID];
-      //if (primary.geomID != RTC_INVALID_GEOMETRY_ID)
-      //  color = diffuse*make_Vec3f(abs(dot(primary.dir,normalize(primary.Ng))));
-      //color_stream[N] = color;
       
       /* shoot transmission ray */
       weight_stream[N] *= primary.transparency;
@@ -600,7 +580,7 @@ void renderTileStandardStream(uniform int taskIndex,
       primary.primID = RTC_INVALID_GEOMETRY_ID;
       primary.transparency = 0.0f;
     }
-    //break;
+    N++;
   }
 
   /* framebuffer writeback */
@@ -610,10 +590,6 @@ void renderTileStandardStream(uniform int taskIndex,
     /* ISPC workaround for mask == 0 */
     if (all(__mask == 0)) continue;
     
-    if (N == Ntest) {
-      //print("color_stream = %\n",color_stream[N].x);
-    }
-
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color_stream[N].x,0.0f,1.0f));
     unsigned int g = (unsigned int) (255.0f * clamp(color_stream[N].y,0.0f,1.0f));
