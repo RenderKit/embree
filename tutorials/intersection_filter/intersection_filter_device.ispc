@@ -187,8 +187,8 @@ unmasked void intersectionFilterN(uniform int* uniform valid,
     float hit_t   = RTCHitN_t(potentialHit,N,ui);
 
     /* decode ray IDs */
-    int pid = ray_mask >> (sizeof(float)/4);
-    int rid = ray_mask & (sizeof(float)/4-1);
+    int pid = ray_mask / programCount;
+    int rid = ray_mask % programCount;
 
     /* calculate transparency */
     Vec3f h = ray_org + ray_dir*hit_t;
@@ -245,8 +245,8 @@ unmasked void occlusionFilterN(uniform int* uniform valid,
     float hit_t   = RTCHitN_t(potentialHit,N,ui);
 
     /* decode ray IDs */
-    int pid = ray_mask >> (sizeof(float)/4);
-    int rid = ray_mask & (sizeof(float)/4-1);
+    int pid = ray_mask / programCount;
+    int rid = ray_mask % programCount;
     varying RTCRay2* uniform eray = (varying RTCRay2* uniform) context->userRayExt;
     
     /* calculate transparency */
@@ -482,6 +482,8 @@ void renderTileStandard(uniform int taskIndex,
   }
 }
 
+#define Ntest 6
+
 /* renders a single screen tile */
 void renderTileStandardStream(uniform int taskIndex, 
                               uniform int* uniform pixels,
@@ -501,14 +503,24 @@ void renderTileStandardStream(uniform int taskIndex,
 
   RTCRay2 primary_stream[TILE_SIZE_X*TILE_SIZE_Y];
   Vec3f color_stream[TILE_SIZE_X*TILE_SIZE_Y];
+  float weight_stream[TILE_SIZE_X*TILE_SIZE_Y];
+  bool valid_stream[TILE_SIZE_X*TILE_SIZE_Y];
 
   /* generate stream of primary rays */
   uniform int N = 0;
+  uniform int numActive = 0;
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
     /* ISPC workaround for mask == 0 */
     if (all(__mask == 0)) continue;
     
+    /* initialize variables */
+    numActive++;
+    color_stream[N] = make_Vec3f(0.0f);
+    weight_stream[N] = 1.0f;
+    unmasked { valid_stream[N] = false; }
+    valid_stream[N] = true;
+
     /* initialize ray */
     RTCRay2& primary = primary_stream[N];
     primary.org = make_Vec3f(camera.xfm.p);
@@ -520,31 +532,75 @@ void renderTileStandardStream(uniform int taskIndex,
     primary.primID = RTC_INVALID_GEOMETRY_ID;
     primary.mask = N*programCount + programIndex;
     primary.time = 0.0f;
-    primary.transparency = 1.0f;
+    primary.transparency = 0.0f;
     N++;
   }
 
-  /* trace primary rays */
-  uniform RTCIntersectContext context;
-  context.flags = RTC_INTERSECT_INCOHERENT;
-  context.userRayExt = &primary_stream;
-  rtcIntersectVM(g_scene,&context,(varying RTCRay* uniform)&primary_stream,N,sizeof(RTCRay2));
-   
-  /* shade stream of rays */
-  N = 0;
-  foreach_tiled (y = y0 ... y1, x = x0 ... x1)
+  //while (numActive)
+  for (uniform size_t I=0; I<2; I++)
   {
-    /* ISPC workaround for mask == 0 */
-    if (all(__mask == 0)) continue;
-    RTCRay2& primary = primary_stream[N];
+    /* trace rays */
+    uniform RTCIntersectContext context;
+    context.flags = RTC_INTERSECT_INCOHERENT;
+    context.userRayExt = &primary_stream;
+    rtcIntersectVM(g_scene,&context,(varying RTCRay* uniform)&primary_stream,N,sizeof(RTCRay2));
+    
+    /* shade stream of rays */
+    N = -1;
+    numActive = 0;
+    foreach_tiled (y = y0 ... y1, x = x0 ... x1)
+    {
+      N++;
 
-    /* eyelight shading */
-    Vec3f color = make_Vec3f(0.0f);
-    Vec3f diffuse = colors[primary.primID];
-    if (primary.geomID != RTC_INVALID_GEOMETRY_ID)
-      color = diffuse*make_Vec3f(abs(dot(primary.dir,normalize(primary.Ng))));
-    color_stream[N] = color;
-    N++;
+      /* ISPC workaround for mask == 0 */
+      if (all(__mask == 0)) continue;
+      RTCRay2& primary = primary_stream[N];
+
+      if (N == Ntest) {
+        //print("primary.org = % % %\n",primary.org.x,primary.org.y,primary.org.z);
+        //print("primary.dir = % % %\n",primary.dir.x,primary.dir.y,primary.dir.z);
+        //print("primary.transparency = %\n",primary.transparency);
+        //print("primary.geomID = %\n",primary.geomID);
+        //print("primary.primID = %\n",primary.primID);
+      }
+
+      /* ignore invalid rays */
+      if (valid_stream[N] == false) continue;
+      numActive++;
+      
+      /* terminate rays that hit nothing */
+      if (primary.geomID == RTC_INVALID_GEOMETRY_ID) {
+        valid_stream[N] = false;
+        continue;
+      }
+      
+      float opacity = 1.0f-primary.transparency;
+      Vec3f diffuse = colors[primary.primID];
+      Vec3f La = diffuse*0.5f;
+      //if (N == Ntest) print("weight_stream[N] = %\n",weight_stream[N]);
+      //if (N == Ntest) print("opacity = %\n",opacity);
+      color_stream[N] = color_stream[N] + weight_stream[N]*opacity*La;
+      //if (N == Ntest) print("color_stream[N] = % % %\n",color_stream[N].x,color_stream[N].y,color_stream[N].z);
+      Vec3f lightDir = normalize(make_Vec3f(-1,-1,-1));
+      
+      /* eyelight shading */
+      //Vec3f color = make_Vec3f(0.0f);
+      //Vec3f diffuse = colors[primary.primID];
+      //if (primary.geomID != RTC_INVALID_GEOMETRY_ID)
+      //  color = diffuse*make_Vec3f(abs(dot(primary.dir,normalize(primary.Ng))));
+      //color_stream[N] = color;
+      
+      /* shoot transmission ray */
+      weight_stream[N] *= primary.transparency;
+      float tfar = primary.tfar;
+      unmasked { primary.tnear = pos_inf; primary.tfar = neg_inf; }
+      primary.tnear = 1.001f*tfar;
+      primary.tfar = inf;
+      primary.geomID = RTC_INVALID_GEOMETRY_ID;
+      primary.primID = RTC_INVALID_GEOMETRY_ID;
+      primary.transparency = 0.0f;
+    }
+    //break;
   }
 
   /* framebuffer writeback */
@@ -553,6 +609,10 @@ void renderTileStandardStream(uniform int taskIndex,
   {
     /* ISPC workaround for mask == 0 */
     if (all(__mask == 0)) continue;
+    
+    if (N == Ntest) {
+      //print("color_stream = %\n",color_stream[N].x);
+    }
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color_stream[N].x,0.0f,1.0f));
@@ -561,6 +621,7 @@ void renderTileStandardStream(uniform int taskIndex,
     pixels[y*width+x] = (b << 16) + (g << 8) + r;
     N++;
   }
+  //exit(1);
 }
 
 /* task that renders a single screen tile */
