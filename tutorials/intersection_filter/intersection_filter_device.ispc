@@ -536,7 +536,6 @@ void renderTileStandardStream(uniform int taskIndex,
   }
 
   while (numActive)
-    //for (uniform size_t I=0; I<2; I++)
   {
     /* trace rays */
     uniform RTCIntersectContext context;
@@ -607,6 +606,7 @@ void renderTileStandardStream(uniform int taskIndex,
       shadow.time = 0;
       shadow.transparency = 1.0f;
     }
+    N++;
 
     /* trace shadow rays */
     uniform RTCIntersectContext shadow_context;
