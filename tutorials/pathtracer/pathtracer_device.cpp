@@ -971,7 +971,7 @@ bool g_use_smooth_normals = false;
 void device_key_pressed(int key)
 {
   if (key == 32  /* */) g_animation = !g_animation;
-  if (key == 115 /*c*/) { g_use_smooth_normals = !g_use_smooth_normals; g_changed = true; }
+  if (key == 115 /*s*/) { g_use_smooth_normals = !g_use_smooth_normals; g_changed = true; }
   else device_key_pressed_default(key);
 }
 
@@ -1342,6 +1342,12 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
       const Vec2f st = w*st0 + u*st1 + v*st2;
       dg.u = st.x;
       dg.v = st.y;
+      /*
+      const Vec3fa n0 = Vec3fa(mesh->normals[tri->v0]);
+      const Vec3fa n1 = Vec3fa(mesh->normals[tri->v1]);
+      const Vec3fa n2 = Vec3fa(mesh->normals[tri->v2]);
+      dg.Ns = w*n0 + u*n1 + v*n2;
+      */
     }
   }
   else if (geometry->type == QUAD_MESH)
@@ -1878,7 +1884,7 @@ void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
       parallel_for(size_t(0),size_t( getNumHWThreads() ),[&](const range<size_t>& range) {
     for (size_t i=range.begin(); i<range.end(); i++)
       updateEdgeLevelBufferTask(i,mesh,cam_pos);
-  });
+  }); 
 #else
       updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
 #endif
@@ -1969,7 +1975,7 @@ extern "C" void device_render (int* pixels,
   parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
     for (size_t i=range.begin(); i<range.end(); i++)
       renderTileTask(i,pixels,width,height,time,camera,numTilesX,numTilesY);
-  });
+  }); 
   //rtcDebug();
 } // device_render
 

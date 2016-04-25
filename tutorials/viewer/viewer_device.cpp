@@ -94,7 +94,7 @@ void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
   parallel_for(size_t(0),size_t( scene_in->numGeometries ),[&](const range<size_t>& range) {
     for (size_t i=range.begin(); i<range.end(); i++)
       updateMeshEdgeLevelBufferTask(i,scene_in,cam_pos);
-  });
+  }); 
 #endif
 
   /* now update large meshes */
@@ -108,7 +108,7 @@ void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
     parallel_for(size_t(0),size_t( getNumHWThreads() ),[&](const range<size_t>& range) {
     for (size_t i=range.begin(); i<range.end(); i++)
       updateSubMeshEdgeLevelBufferTask(i,mesh,cam_pos);
-  });
+  }); 
 #else
     updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
 #endif
@@ -424,6 +424,7 @@ RTCScene convertScene(ISPCScene* scene_in)
   return scene_out;
 }
 
+
 void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeometry* geometry, int& materialID)
 {
   if (geometry->type == TRIANGLE_MESH)
@@ -660,7 +661,7 @@ extern "C" void device_render (int* pixels,
   parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
     for (size_t i=range.begin(); i<range.end(); i++)
       renderTileTask(i,pixels,width,height,time,camera,numTilesX,numTilesY);
-  });
+  }); 
   //rtcDebug();
 }
 
