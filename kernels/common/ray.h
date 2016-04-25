@@ -290,18 +290,19 @@ namespace embree
   inline std::ostream& operator<<(std::ostream& cout, const RayK<K>& ray)
   {
     return cout << "{ " << std::endl
-                << "org = " << ray.org << std::endl
-                << " dir = " << ray.dir << std::endl
-                << " near = " << ray.tnear << std::endl
-                << " far = " << ray.tfar << std::endl
-                << " time = " << ray.time << std::endl
-                << " instID = " << ray.instID << std::endl
-                << " geomID = " << ray.geomID << std::endl
-                << " primID = " << ray.primID <<  std::endl
-                << " u = " << ray.u <<  std::endl
-                << " v = " << ray.v << std::endl
-                << " Ng = " << ray.Ng
-                << " }";
+                << "  org = " << ray.org << std::endl
+                << "  dir = " << ray.dir << std::endl
+                << "  near = " << ray.tnear << std::endl
+                << "  far = " << ray.tfar << std::endl
+                << "  time = " << ray.time << std::endl
+                << "  mask = " << ray.mask << std::endl
+                << "  instID = " << ray.instID << std::endl
+                << "  geomID = " << ray.geomID << std::endl
+                << "  primID = " << ray.primID <<  std::endl
+                << "  u = " << ray.u <<  std::endl
+                << "  v = " << ray.v << std::endl
+                << "  Ng = " << ray.Ng
+                << "}";
   }
 
   struct RayPacket

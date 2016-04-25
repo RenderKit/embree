@@ -189,8 +189,7 @@ unmasked void intersectionFilterN(uniform int* uniform valid,
     /* decode ray IDs */
     int pid = ray_mask >> (sizeof(float)/4);
     int rid = ray_mask & (sizeof(float)/4-1);
-    varying RTCRay2* uniform eray = (varying RTCRay2* uniform) context->userRayExt;
-    
+
     /* calculate transparency */
     Vec3f h = ray_org + ray_dir*ray_tfar;
     float T = transparencyFunction(h);
@@ -212,8 +211,11 @@ unmasked void intersectionFilterN(uniform int* uniform valid,
       RTCRayN_Ng_x(ray,N,ui) = RTCHitN_Ng_x(potentialHit,N,ui);
       RTCRayN_Ng_y(ray,N,ui) = RTCHitN_Ng_y(potentialHit,N,ui);
       RTCRayN_Ng_z(ray,N,ui) = RTCHitN_Ng_z(potentialHit,N,ui);
-      
-      scatter(eray->transparency,sizeof(RTCRay2),pid,rid,T); 
+
+      if (context) {
+        varying RTCRay2* uniform eray = (varying RTCRay2* uniform) context->userRayExt;
+        scatter(eray->transparency,sizeof(RTCRay2),pid,rid,T); 
+      }
     }
   }
 }
@@ -252,7 +254,7 @@ unmasked void occlusionFilterN(uniform int* uniform valid,
     float T = transparencyFunction(h);
 
     /* accumulate transparency and store inside ray extensions */
-    //T *= gather(eray->transparency,sizeof(RTCRay2),pid,rid);
+    T *= gather(eray->transparency,sizeof(RTCRay2),pid,rid);
     scatter(eray->transparency,sizeof(RTCRay2),pid,rid,T);
 
     /* accept a hit only if we are fully opqaue */
@@ -365,7 +367,7 @@ export void device_init (uniform int8* uniform cfg)
 
   /* create scene */
   uniform RTCAlgorithmFlags aflags;
-  if (g_ray_stream_mode) aflags = RTC_INTERSECT_STREAM;
+  if (g_ray_stream_mode) aflags = RTC_INTERSECT_UNIFORM | RTC_INTERSECT_STREAM;
   else                   aflags = RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING;
   g_scene = rtcDeviceNewScene(g_device, RTC_SCENE_STATIC,aflags);
 
@@ -507,8 +509,8 @@ void renderTileStandardStream(uniform int taskIndex,
     if (all(__mask == 0)) continue;
     
     /* initialize ray */
-    RTCRay& ray = rays[N++];
-    ray.org = make_Vec3f(camera.xfm.p); // FIXME: make invalid rays empty
+    RTCRay& ray = rays[N];
+    ray.org = make_Vec3f(camera.xfm.p);
     ray.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
     unmasked { ray.tnear = pos_inf; ray.tfar = neg_inf; } // invalidates inactive rays
     ray.tnear = 0.0f;
@@ -517,11 +519,13 @@ void renderTileStandardStream(uniform int taskIndex,
     ray.primID = RTC_INVALID_GEOMETRY_ID;
     ray.mask = N*programCount + programIndex;
     ray.time = 0.0f;
+    N++;
   }
 
   /* trace primary rays */
   uniform RTCIntersectContext context;
   context.flags = RTC_INTERSECT_INCOHERENT;
+  context.userRayExt = &rays;
   rtcIntersectVM(g_scene,&context,rays,N,sizeof(RTCRay));
 
   /* shade stream of rays */
