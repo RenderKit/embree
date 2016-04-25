@@ -148,7 +148,8 @@ inline float gather(varying float& ptr, const uniform size_t stride, const size_
   float ret;
   foreach_unique(p in pid) { 
     float* uniform ptr_pid = (float* uniform)((uniform int8* uniform)&ptr + p*stride);
-    ret = shuffle(*ptr_pid,rid); 
+    //ret = shuffle(*ptr_pid,rid); 
+    ret = ptr_pid[rid]; 
   }
   return ret;
 }
