@@ -500,6 +500,7 @@ void renderTileStandardStream(uniform int taskIndex,
   const uniform int y1 = min(y0+TILE_SIZE_Y,height);
 
   RTCRay primary_rays[TILE_SIZE_X*TILE_SIZE_Y];
+  Vec3f stream_color[TILE_SIZE_X*TILE_SIZE_Y];
 
   /* generate stream of primary rays */
   uniform int N = 0;
@@ -527,26 +528,37 @@ void renderTileStandardStream(uniform int taskIndex,
   context.flags = RTC_INTERSECT_INCOHERENT;
   context.userRayExt = &primary_rays;
   rtcIntersectVM(g_scene,&context,primary_rays,N,sizeof(RTCRay));
-    
+   
   /* shade stream of rays */
   N = 0;
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
     /* ISPC workaround for mask == 0 */
     if (all(__mask == 0)) continue;
-    RTCRay& primary = primary_rays[N++];
+    RTCRay& primary = primary_rays[N];
 
     /* eyelight shading */
     Vec3f color = make_Vec3f(0.0f);
     Vec3f diffuse = colors[primary.primID];
     if (primary.geomID != RTC_INVALID_GEOMETRY_ID)
       color = diffuse*make_Vec3f(abs(dot(primary.dir,normalize(primary.Ng))));
+    stream_color[N] = color;
+    N++;
+  }
+
+  /* framebuffer writeback */
+  N = 0;
+  foreach_tiled (y = y0 ... y1, x = x0 ... x1)
+  {
+    /* ISPC workaround for mask == 0 */
+    if (all(__mask == 0)) continue;
 
     /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
+    unsigned int r = (unsigned int) (255.0f * clamp(stream_color[N].x,0.0f,1.0f));
+    unsigned int g = (unsigned int) (255.0f * clamp(stream_color[N].y,0.0f,1.0f));
+    unsigned int b = (unsigned int) (255.0f * clamp(stream_color[N].z,0.0f,1.0f));
     pixels[y*width+x] = (b << 16) + (g << 8) + r;
+    N++;
   }
 }
 
