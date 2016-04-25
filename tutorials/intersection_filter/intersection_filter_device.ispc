@@ -499,7 +499,7 @@ void renderTileStandardStream(uniform int taskIndex,
   const uniform int y0 = tileY * TILE_SIZE_Y;
   const uniform int y1 = min(y0+TILE_SIZE_Y,height);
 
-  RTCRay primary_rays[TILE_SIZE_X*TILE_SIZE_Y];
+  RTCRay2 primary_rays[TILE_SIZE_X*TILE_SIZE_Y];
   Vec3f stream_color[TILE_SIZE_X*TILE_SIZE_Y];
 
   /* generate stream of primary rays */
@@ -510,7 +510,7 @@ void renderTileStandardStream(uniform int taskIndex,
     if (all(__mask == 0)) continue;
     
     /* initialize ray */
-    RTCRay& primary = primary_rays[N];
+    RTCRay2& primary = primary_rays[N];
     primary.org = make_Vec3f(camera.xfm.p);
     primary.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
     unmasked { primary.tnear = pos_inf; primary.tfar = neg_inf; } // invalidates inactive rays
@@ -520,6 +520,7 @@ void renderTileStandardStream(uniform int taskIndex,
     primary.primID = RTC_INVALID_GEOMETRY_ID;
     primary.mask = N*programCount + programIndex;
     primary.time = 0.0f;
+    primary.transparency = 1.0f;
     N++;
   }
 
@@ -527,7 +528,7 @@ void renderTileStandardStream(uniform int taskIndex,
   uniform RTCIntersectContext context;
   context.flags = RTC_INTERSECT_INCOHERENT;
   context.userRayExt = &primary_rays;
-  rtcIntersectVM(g_scene,&context,primary_rays,N,sizeof(RTCRay));
+  rtcIntersectVM(g_scene,&context,(varying RTCRay* uniform)&primary_rays,N,sizeof(RTCRay2));
    
   /* shade stream of rays */
   N = 0;
@@ -535,7 +536,7 @@ void renderTileStandardStream(uniform int taskIndex,
   {
     /* ISPC workaround for mask == 0 */
     if (all(__mask == 0)) continue;
-    RTCRay& primary = primary_rays[N];
+    RTCRay2& primary = primary_rays[N];
 
     /* eyelight shading */
     Vec3f color = make_Vec3f(0.0f);
