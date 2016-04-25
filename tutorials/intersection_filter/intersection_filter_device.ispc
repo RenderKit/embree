@@ -578,8 +578,6 @@ void renderTileStandardStream(uniform int taskIndex,
       color_stream[N] = color_stream[N] + weight_stream[N]*opacity*La;
     }
 
-#if 1
-
     Vec3f lightDir = normalize(make_Vec3f(-1,-1,-1));
 
     /* calculate shadow rays */
@@ -589,15 +587,19 @@ void renderTileStandardStream(uniform int taskIndex,
       N++;
       /* ISPC workaround for mask == 0 */
       if (all(__mask == 0)) continue;
+      
+      /* invalidate shadow rays by default */
+      RTCRay2& shadow = shadow_stream[N];
+      unmasked { shadow.tnear = pos_inf; shadow.tfar = neg_inf; }
+
       /* ignore invalid rays */
       if (valid_stream[N] == false) continue;
       
       /* initialize shadow ray */
       RTCRay2& primary = primary_stream[N];
-      RTCRay2& shadow = shadow_stream[N];
       shadow.org = primary.org + primary.tfar*primary.dir;
       shadow.dir = neg(lightDir);
-      unmasked { shadow.tnear = pos_inf; shadow.tfar = neg_inf; }
+      
       shadow.tnear = 0.001f;
       shadow.tfar = inf;
       shadow.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -633,7 +635,6 @@ void renderTileStandardStream(uniform int taskIndex,
         color_stream[N] = color_stream[N] + weight_stream[N]*opacity*Ll;
       }
     }
-#endif
 
     /* generate secondary rays */
     N = -1;
