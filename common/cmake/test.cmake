@@ -116,3 +116,7 @@ ENDIF()
 MACRO (ADD_EMBREE_TEST name)
   ADD_EMBREE_MODEL_TEST(${name} ${name} ${name} "" "default")
 ENDMACRO()
+
+MACRO (ADD_EMBREE_TEST2 name exe args)
+  ADD_EMBREE_MODEL_TEST(${name} ${exe} ${exe} "${args}" "default")
+ENDMACRO()
