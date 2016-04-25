@@ -270,17 +270,17 @@ public:
 #ifndef __RTCHitN__
 #define __RTCHitN__
 struct RTCHitN {};
-__forceinline float& RTCHitN_Ng_x(RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[0*N+i]; }; //!< x coordinate of geometry normal
-__forceinline float& RTCHitN_Ng_y(RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[1*N+i]; }; //!< y coordinate of geometry normal
-__forceinline float& RTCHitN_Ng_z(RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[2*N+i]; }; //!< z coordinate of geometry normal
+__forceinline float& RTCHitN_Ng_x(const RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[0*N+i]; }; //!< x coordinate of geometry normal
+__forceinline float& RTCHitN_Ng_y(const RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[1*N+i]; }; //!< y coordinate of geometry normal
+__forceinline float& RTCHitN_Ng_z(const RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[2*N+i]; }; //!< z coordinate of geometry normal
 
-__forceinline int& RTCHitN_instID(RTCHitN* ptr, size_t N, size_t i) { return ((int*  )ptr)[3*N+i]; }; //!< instance ID
-__forceinline int& RTCHitN_geomID(RTCHitN* ptr, size_t N, size_t i) { return ((int*  )ptr)[4*N+i]; }; //!< geometry ID
-__forceinline int& RTCHitN_primID(RTCHitN* ptr, size_t N, size_t i) { return ((int*  )ptr)[5*N+i]; }; //!< primitive ID
+__forceinline int& RTCHitN_instID(const RTCHitN* ptr, size_t N, size_t i) { return ((int*  )ptr)[3*N+i]; }; //!< instance ID
+__forceinline int& RTCHitN_geomID(const RTCHitN* ptr, size_t N, size_t i) { return ((int*  )ptr)[4*N+i]; }; //!< geometry ID
+__forceinline int& RTCHitN_primID(const RTCHitN* ptr, size_t N, size_t i) { return ((int*  )ptr)[5*N+i]; }; //!< primitive ID
 
-__forceinline float& RTCHitN_u   (RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[6*N+i]; }; //!< Barycentric u coordinate of hit
-__forceinline float& RTCHitN_v   (RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[7*N+i]; }; //!< Barycentric v coordinate of hit
-__forceinline float& RTCHitN_t   (RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[8*N+i]; }; //!< hit distance
+__forceinline float& RTCHitN_u   (const RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[6*N+i]; }; //!< Barycentric u coordinate of hit
+__forceinline float& RTCHitN_v   (const RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[7*N+i]; }; //!< Barycentric v coordinate of hit
+__forceinline float& RTCHitN_t   (const RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[8*N+i]; }; //!< hit distance
 #endif
 
 /* Helper structure to create a hit packet of compile time size N */

@@ -142,9 +142,20 @@ void occlusionFilter(void* uniform ptr, RTCRay2& ray)
   if (T != 0.0f) ray.geomID = RTC_INVALID_GEOMETRY_ID;
 }
 
-void scatter(varying float& ptr, const uniform size_t stride, const size_t pid, const size_t rid, float v)
+inline float gather(varying float& ptr, const uniform size_t stride, const size_t pid, const size_t rid) 
 {
-  ((uniform float*)((uniform char* uniform)&ptr + pid*stride))[rid];
+  //return ((uniform float*)(((uniform int8* uniform)&ptr) + pid*stride))[rid];
+  float ret;
+  foreach_unique(p in pid) { 
+    float* uniform ptr_pid = (float* uniform)((uniform int8* uniform)&ptr + p*stride);
+    ret = shuffle(*ptr_pid,rid); 
+  }
+  return ret;
+}
+
+inline void scatter(varying float& ptr, const uniform size_t stride, const size_t pid, const size_t rid, float v)
+{
+  ((uniform float*)(((uniform int8* uniform)&ptr) + pid*stride))[rid] = v;
   //foreach_unique(p in pid) { 
   //  float* uniform ptr_pid = (float* uniform)((uniform char* uniform)&ptr + p*stride);
   //  *ptr_pid = insert(*ptr_pid,rid,v); 
@@ -160,27 +171,49 @@ unmasked void intersectionFilterN(uniform int* uniform valid,
                                   uniform const size_t N)
 {
   /* iterate over all rays in ray packet */
-  foreach(i=0 ... N)
+  for (uniform int ui=0; ui<N; ui+=programCount)
   {
+    /* calculate varying loop and execution mask */
+    int vi = ui+programIndex;
+    if (vi>=N) continue;
+    
     /* ignore inactive rays */
-    if (valid[i] != -1) continue;
+    if (valid[vi] != -1) continue;
     
     /* read ray from ray structure */
-    Vec3f ray_org = make_Vec3f(RTCRayN_org_x(ray,N,i),RTCRayN_org_y(ray,N,i),RTCRayN_org_z(ray,N,i));
-    Vec3f ray_dir = make_Vec3f(RTCRayN_dir_x(ray,N,i),RTCRayN_dir_y(ray,N,i),RTCRayN_dir_z(ray,N,i));
-    float ray_tfar = RTCRayN_tfar(ray,N,i);
-    int   ray_mask = RTCRayN_mask(ray,N,i);
+    Vec3f ray_org = make_Vec3f(RTCRayN_org_x(ray,N,ui),RTCRayN_org_y(ray,N,ui),RTCRayN_org_z(ray,N,ui));
+    Vec3f ray_dir = make_Vec3f(RTCRayN_dir_x(ray,N,ui),RTCRayN_dir_y(ray,N,ui),RTCRayN_dir_z(ray,N,ui));
+    float ray_tfar = RTCRayN_tfar(ray,N,ui);
+    int   ray_mask = RTCRayN_mask(ray,N,ui);
 
-    /* get extended ray data */
+    /* decode ray IDs */
     int pid = ray_mask >> (sizeof(float)/4);
     int rid = ray_mask & (sizeof(float)/4-1);
-    varying RTCRay2* uniform eray = (varying RTCRay2* uniform) potentialHit->userRayExt;
+    varying RTCRay2* uniform eray = (varying RTCRay2* uniform) context->userRayExt;
     
-    /* calculate transparency and either skip intersection or remember transparency value */
+    /* calculate transparency */
     Vec3f h = ray_org + ray_dir*ray_tfar;
-    float T = transparencyFunction(ray);
-    if (T >= 1.0f) valid[i] = 0;
-    else scatter(&eray->transparency,sizeof(RTCRay2),pid,rid,transparency); 
+    float T = transparencyFunction(h);
+
+    /* ignore hit if completely transparent */
+    if (T >= 1.0f) valid[vi] = 0;
+
+    /* otherwise accept hit and remember transparency */
+    else 
+    {
+      RTCRayN_instID(ray,N,ui) = RTCHitN_instID(potentialHit,N,ui);
+      RTCRayN_geomID(ray,N,ui) = RTCHitN_geomID(potentialHit,N,ui);
+      RTCRayN_primID(ray,N,ui) = RTCHitN_primID(potentialHit,N,ui);
+
+      RTCRayN_u(ray,N,ui) = RTCHitN_u(potentialHit,N,ui);
+      RTCRayN_v(ray,N,ui) = RTCHitN_v(potentialHit,N,ui);
+      RTCRayN_tfar(ray,N,ui) = RTCHitN_t(potentialHit,N,ui);
+
+      RTCRayN_Ng_x(ray,N,ui) = RTCHitN_Ng_x(potentialHit,N,ui);
+      RTCRayN_Ng_y(ray,N,ui) = RTCHitN_Ng_y(potentialHit,N,ui);
+      RTCRayN_Ng_z(ray,N,ui) = RTCHitN_Ng_z(potentialHit,N,ui);
+      
+      scatter(eray->transparency,sizeof(RTCRay2),pid,rid,T); 
     }
   }
 }
@@ -194,27 +227,36 @@ unmasked void occlusionFilterN(uniform int* uniform valid,
                                uniform const size_t N)
 {
   /* iterate over all rays in ray packet */
-  foreach(i=0 ... N)
+  for (uniform int ui=0; ui<N; ui+=programCount)
   {
+    /* calculate varying loop and execution mask */
+    int vi = ui+programIndex;
+    if (vi>=N) continue;
+
     /* ignore inactive rays */
-    if (valid[i] != -1) continue;
+    if (valid[vi] != -1) continue;
     
     /* read ray from ray structure */
-    Vec3f ray_org = make_Vec3f(RTCRayN_org_x(ray,N,i),RTCRayN_org_y(ray,N,i),RTCRayN_org_z(ray,N,i));
-    Vec3f ray_dir = make_Vec3f(RTCRayN_dir_x(ray,N,i),RTCRayN_dir_y(ray,N,i),RTCRayN_dir_z(ray,N,i));
-    float ray_tfar = RTCRayN_tfar(ray,N,i);
+    Vec3f ray_org = make_Vec3f(RTCRayN_org_x(ray,N,ui),RTCRayN_org_y(ray,N,ui),RTCRayN_org_z(ray,N,ui));
+    Vec3f ray_dir = make_Vec3f(RTCRayN_dir_x(ray,N,ui),RTCRayN_dir_y(ray,N,ui),RTCRayN_dir_z(ray,N,ui));
+    float ray_tfar = RTCRayN_tfar(ray,N,ui);
+    int   ray_mask = RTCRayN_mask(ray,N,ui);
 
-    /* get extended ray data */
-    int rid = RTCRayN_mask(ray,N,i);
-    RTCRay2* uniform eray = (RTCRay2* uniform)potentialHit->userRayExt;
-    float ray_transparency = at(&eray->transparency,rid);
+    /* decode ray IDs */
+    int pid = ray_mask >> (sizeof(float)/4);
+    int rid = ray_mask & (sizeof(float)/4-1);
+    varying RTCRay2* uniform eray = (varying RTCRay2* uniform) context->userRayExt;
     
-    /* calculate transparency and either skip intersection or remember transparency value */
+    /* calculate transparency */
     Vec3f h = ray_org + ray_dir*ray_tfar;
-    float T = transparencyFunction(ray);
-    T *= ray_transparency;
-    at(&eray->transparency,rid) = T;
-    if (T != 0.0f) valid[i] = 0;
+    float T = transparencyFunction(h);
+
+    /* accumulate transparency and store inside ray extensions */
+    //T *= gather(eray->transparency,sizeof(RTCRay2),pid,rid);
+    scatter(eray->transparency,sizeof(RTCRay2),pid,rid,T);
+
+    /* accept a hit only if we are fully opqaue */
+    if (T != 0.0f) valid[ui] = 0;
   }
 }
 
@@ -473,7 +515,7 @@ void renderTileStandardStream(uniform int taskIndex,
     ray.tfar = inf;
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
     ray.primID = RTC_INVALID_GEOMETRY_ID;
-    ray.mask = -1;
+    ray.mask = N*programCount + programIndex;
     ray.time = 0.0f;
   }
 
