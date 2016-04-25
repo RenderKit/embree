@@ -599,7 +599,6 @@ void renderTileStandardStream(uniform int taskIndex,
       RTCRay2& primary = primary_stream[N];
       shadow.org = primary.org + primary.tfar*primary.dir;
       shadow.dir = neg(lightDir);
-      
       shadow.tnear = 0.001f;
       shadow.tfar = inf;
       shadow.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -679,7 +678,6 @@ void renderTileStandardStream(uniform int taskIndex,
     pixels[y*width+x] = (b << 16) + (g << 8) + r;
     N++;
   }
-  //exit(1);
 }
 
 /* task that renders a single screen tile */
