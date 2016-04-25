@@ -255,9 +255,9 @@ void renderTileStandard(int taskIndex,
     /* initialize ray */
     RTCRay& ray = rays[N++];
 
-    ray.org = Vec3fa(camera.xfm.p); // FIXME: make invalid rays empty
+    ray.org = Vec3fa(camera.xfm.p);
     ray.dir = Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
-    { ray.tnear = pos_inf; ray.tfar = neg_inf; } // invalidate inactive rays
+    { ray.tnear = pos_inf; ray.tfar = neg_inf; } // invalidates inactive rays
     ray.tnear = 0.0f;
     ray.tfar = inf;
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -346,7 +346,7 @@ extern "C" void device_render (int* pixels,
   parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
     for (size_t i=range.begin(); i<range.end(); i++)
       renderTileTask(i,pixels,width,height,time,camera,numTilesX,numTilesY);
-  });
+  }); 
 }
 
 /* called by the C++ code for cleanup */

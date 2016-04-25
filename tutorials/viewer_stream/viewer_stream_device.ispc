@@ -255,9 +255,9 @@ void renderTileStandard(uniform int taskIndex,
     /* initialize ray */
     RTCRay& ray = rays[N++];
 
-    ray.org = make_Vec3f(camera.xfm.p); // FIXME: make invalid rays empty
+    ray.org = make_Vec3f(camera.xfm.p);
     ray.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
-    unmasked { ray.tnear = pos_inf; ray.tfar = neg_inf; } // invalidate inactive rays
+    unmasked { ray.tnear = pos_inf; ray.tfar = neg_inf; } // invalidates inactive rays
     ray.tnear = 0.0f;
     ray.tfar = inf;
     ray.geomID = RTC_INVALID_GEOMETRY_ID;

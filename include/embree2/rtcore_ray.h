@@ -21,6 +21,8 @@
 /*! \{ */
 
 /*! \brief Ray structure for an individual ray */
+#ifndef __RTCRay__
+#define __RTCRay__
 struct RTCORE_ALIGN(16)  RTCRay
 {
   /* ray data */
@@ -49,8 +51,11 @@ public:
   unsigned primID;        //!< primitive ID
   unsigned instID;        //!< instance ID
 };
+#endif
 
 /*! Ray structure for packets of 4 rays. */
+#ifndef __RTCRay4__
+#define __RTCRay4__
 struct RTCORE_ALIGN(16) RTCRay4
 {
   /* ray data */
@@ -82,8 +87,11 @@ public:
   unsigned primID[4];  //!< primitive ID
   unsigned instID[4];  //!< instance ID
 };
+#endif
 
 /*! Ray structure for packets of 8 rays. */
+#ifndef __RTCRay8__
+#define __RTCRay8__
 struct RTCORE_ALIGN(32) RTCRay8
 {
   /* ray data */
@@ -115,8 +123,11 @@ public:
   unsigned primID[8];  //!< primitive ID
   unsigned instID[8];  //!< instance ID
 };
+#endif
 
 /*! \brief Ray structure for packets of 16 rays. */
+#ifndef __RTCRay16__
+#define __RTCRay16__
 struct RTCORE_ALIGN(64) RTCRay16
 {
   /* ray data */
@@ -148,8 +159,11 @@ public:
   unsigned primID[16];  //!< primitive ID
   unsigned instID[16];  //!< instance ID
 };
+#endif
 
 /* Helper functions to access ray packets of runtime size N */
+#ifndef __RTCRayN__
+#define __RTCRayN__
 struct RTCRayN {};
 __forceinline float& RTCRayN_org_x(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((float*)ptr)[0*N+0*N1+i]; }  //!< x coordinate of ray origin
 __forceinline float& RTCRayN_org_y(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((float*)ptr)[1*N+0*N1+i]; }  //!< y coordinate of ray origin
@@ -175,8 +189,11 @@ __forceinline float& RTCRayN_v   (RTCRayN* ptr, size_t N, size_t i) { const size
 __forceinline int& RTCRayN_geomID(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((int*  )ptr)[15*N+3*N1+i]; }; //!< geometry ID
 __forceinline int& RTCRayN_primID(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((int*  )ptr)[16*N+3*N1+i]; }; //!< primitive ID
 __forceinline int& RTCRayN_instID(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((int*  )ptr)[17*N+3*N1+i]; }; //!< instance ID
+#endif
 
 /* Helper structure to create a ray packet of compile time size N */
+#ifndef __RTCRayNt__
+#define __RTCRayNt__
 template<int N>
 struct RTCRayNt : public RTCRayN
 {
@@ -209,8 +226,11 @@ public:
   unsigned primID[N];  //!< primitive ID
   unsigned instID[N];  //!< instance ID
 };
+#endif
 
 /*! \brief Ray structure template for packets of N rays in pointer SOA layout. */
+#ifndef __RTCRayNp__
+#define __RTCRayNp__
 struct RTCRayNp
 {
   /* ray data */
@@ -244,22 +264,28 @@ public:
   unsigned* primID;  //!< primitive ID
   unsigned* instID;  //!< instance ID (optional)
 };
+#endif
 
 /* Helper functions to access hit packets of size N */
+#ifndef __RTCHitN__
+#define __RTCHitN__
 struct RTCHitN {};
-__forceinline float& RTCHitN_Ng_x(RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[0*N+i]; }; //!< x coordinate of geometry normal
-__forceinline float& RTCHitN_Ng_y(RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[1*N+i]; }; //!< y coordinate of geometry normal
-__forceinline float& RTCHitN_Ng_z(RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[2*N+i]; }; //!< z coordinate of geometry normal
+__forceinline float& RTCHitN_Ng_x(const RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[0*N+i]; }; //!< x coordinate of geometry normal
+__forceinline float& RTCHitN_Ng_y(const RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[1*N+i]; }; //!< y coordinate of geometry normal
+__forceinline float& RTCHitN_Ng_z(const RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[2*N+i]; }; //!< z coordinate of geometry normal
 
-__forceinline int& RTCHitN_instID(RTCHitN* ptr, size_t N, size_t i) { return ((int*  )ptr)[3*N+i]; }; //!< instance ID
-__forceinline int& RTCHitN_geomID(RTCHitN* ptr, size_t N, size_t i) { return ((int*  )ptr)[4*N+i]; }; //!< geometry ID
-__forceinline int& RTCHitN_primID(RTCHitN* ptr, size_t N, size_t i) { return ((int*  )ptr)[5*N+i]; }; //!< primitive ID
+__forceinline int& RTCHitN_instID(const RTCHitN* ptr, size_t N, size_t i) { return ((int*  )ptr)[3*N+i]; }; //!< instance ID
+__forceinline int& RTCHitN_geomID(const RTCHitN* ptr, size_t N, size_t i) { return ((int*  )ptr)[4*N+i]; }; //!< geometry ID
+__forceinline int& RTCHitN_primID(const RTCHitN* ptr, size_t N, size_t i) { return ((int*  )ptr)[5*N+i]; }; //!< primitive ID
 
-__forceinline float& RTCHitN_u   (RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[6*N+i]; }; //!< Barycentric u coordinate of hit
-__forceinline float& RTCHitN_v   (RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[7*N+i]; }; //!< Barycentric v coordinate of hit
-__forceinline float& RTCHitN_t   (RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[8*N+i]; }; //!< hit distance
+__forceinline float& RTCHitN_u   (const RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[6*N+i]; }; //!< Barycentric u coordinate of hit
+__forceinline float& RTCHitN_v   (const RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[7*N+i]; }; //!< Barycentric v coordinate of hit
+__forceinline float& RTCHitN_t   (const RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[8*N+i]; }; //!< hit distance
+#endif
 
 /* Helper structure to create a hit packet of compile time size N */
+#ifndef __RTCHitNt__
+#define __RTCHitNt__
 template<int N>
 struct RTCHitNt : public RTCHitN
 {
@@ -275,6 +301,7 @@ struct RTCHitNt : public RTCHitN
   float v[N];          //!< Barycentric v coordinate of hit
   float t[N];          //!< hit distance
 };
+#endif
 
 /*! @} */
 

@@ -19,7 +19,17 @@
 /* scene data */
 RTCDevice g_device = nullptr;
 RTCScene g_scene = nullptr;
+extern "C" bool g_ray_stream_mode;
 Vec3fa* colors = nullptr;
+
+void renderTileStandardStream(int taskIndex, 
+                              int* pixels,
+                              const int width,
+                              const int height, 
+                              const float time,
+                              const ISPCCamera& camera,
+                              const int numTilesX, 
+                              const int numTilesY);
 
 /* error reporting function */
 void error_handler(const RTCError code, const char* str = nullptr)
@@ -106,9 +116,8 @@ struct RTCRay2
 };
 
 /* 3D procedural transparency */
-inline float transparencyFunction(RTCRay2& ray)
+inline float transparencyFunction(Vec3fa h)
 {
-  Vec3fa h = ray.org + ray.dir*ray.tfar;
   float v = abs(sin(4.0f*h.x)*cos(4.0f*h.y)*sin(4.0f*h.z));
   float T = clamp((v-0.1f)*3.0f,0.0f,1.0f);
   return T;
@@ -117,7 +126,8 @@ inline float transparencyFunction(RTCRay2& ray)
 /* intersection filter function */
 void intersectionFilter(void* ptr, RTCRay2& ray)
 {
-  float T = transparencyFunction(ray);
+  Vec3fa h = ray.org + ray.dir*ray.tfar;
+  float T = transparencyFunction(h);
   if (T >= 1.0f) ray.geomID = RTC_INVALID_GEOMETRY_ID;
   else ray.transparency = T;
 }
@@ -125,10 +135,127 @@ void intersectionFilter(void* ptr, RTCRay2& ray)
 /* occlusion filter function */
 void occlusionFilter(void* ptr, RTCRay2& ray)
 {
-  float T = transparencyFunction(ray);
+  Vec3fa h = ray.org + ray.dir*ray.tfar;
+  float T = transparencyFunction(h);
   T *= ray.transparency;
   ray.transparency = T;
   if (T != 0.0f) ray.geomID = RTC_INVALID_GEOMETRY_ID;
+}
+
+inline float gather(float& ptr, const size_t stride, const size_t pid, const size_t rid) 
+{
+  //return ((float*)(((char*)&ptr) + pid*stride))[rid];
+  float ret;
+  int p = pid; { 
+    float* ptr_pid = (float*)((char*)&ptr + p*stride);
+    //ret = shuffle(*ptr_pid,rid); 
+    ret = ((float*) ptr_pid)[rid];
+  }
+  return ret;
+}
+
+inline void scatter(float& ptr, const size_t stride, const size_t pid, const size_t rid, float v) {
+  ((float*)(((char*)&ptr) + pid*stride))[rid] = v;
+}
+
+/* intersection filter function */
+void intersectionFilterN(int* valid,
+                                  void* ptr, 
+                                  const RTCIntersectContext* context,
+                                  struct RTCRayN* ray,
+                                  const struct RTCHitN* potentialHit,
+                                  const size_t N)
+{
+  /* iterate over all rays in ray packet */
+  for (int ui=0; ui<N; ui+=1)
+  {
+    /* calculate loop and execution mask */
+    int vi = ui+0;
+    if (vi>=N) continue;
+    
+    /* ignore inactive rays */
+    if (valid[vi] != -1) continue;
+    
+    /* read ray from ray structure */
+    Vec3fa ray_org = Vec3fa(RTCRayN_org_x(ray,N,ui),RTCRayN_org_y(ray,N,ui),RTCRayN_org_z(ray,N,ui));
+    Vec3fa ray_dir = Vec3fa(RTCRayN_dir_x(ray,N,ui),RTCRayN_dir_y(ray,N,ui),RTCRayN_dir_z(ray,N,ui));
+    int   ray_mask= RTCRayN_mask(ray,N,ui);
+    float hit_t   = RTCHitN_t(potentialHit,N,ui);
+
+    /* decode ray IDs */
+    int pid = ray_mask / 1;
+    int rid = ray_mask % 1;
+
+    /* calculate transparency */
+    Vec3fa h = ray_org + ray_dir*hit_t;
+    float T = transparencyFunction(h);
+
+    /* ignore hit if completely transparent */
+    if (T >= 1.0f) valid[vi] = 0;
+
+    /* otherwise accept hit and remember transparency */
+    else 
+    {
+      RTCRayN_instID(ray,N,ui) = RTCHitN_instID(potentialHit,N,ui);
+      RTCRayN_geomID(ray,N,ui) = RTCHitN_geomID(potentialHit,N,ui);
+      RTCRayN_primID(ray,N,ui) = RTCHitN_primID(potentialHit,N,ui);
+
+      RTCRayN_u(ray,N,ui) = RTCHitN_u(potentialHit,N,ui);
+      RTCRayN_v(ray,N,ui) = RTCHitN_v(potentialHit,N,ui);
+      RTCRayN_tfar(ray,N,ui) = RTCHitN_t(potentialHit,N,ui);
+
+      RTCRayN_Ng_x(ray,N,ui) = RTCHitN_Ng_x(potentialHit,N,ui);
+      RTCRayN_Ng_y(ray,N,ui) = RTCHitN_Ng_y(potentialHit,N,ui);
+      RTCRayN_Ng_z(ray,N,ui) = RTCHitN_Ng_z(potentialHit,N,ui);
+
+      if (context) {
+        RTCRay2* eray = (RTCRay2*) context->userRayExt;
+        scatter(eray->transparency,sizeof(RTCRay2),pid,rid,T); 
+      }
+    }
+  }
+}
+
+/* occlusion filter function */
+void occlusionFilterN(int* valid,
+                               void* ptr, 
+                               const RTCIntersectContext* context,
+                               struct RTCRayN* ray,
+                               const struct RTCHitN* potentialHit,
+                               const size_t N)
+{
+  /* iterate over all rays in ray packet */
+  for (int ui=0; ui<N; ui+=1)
+  {
+    /* calculate loop and execution mask */
+    int vi = ui+0;
+    if (vi>=N) continue;
+
+    /* ignore inactive rays */
+    if (valid[vi] != -1) continue;
+    
+    /* read ray from ray structure */
+    Vec3fa ray_org = Vec3fa(RTCRayN_org_x(ray,N,ui),RTCRayN_org_y(ray,N,ui),RTCRayN_org_z(ray,N,ui));
+    Vec3fa ray_dir = Vec3fa(RTCRayN_dir_x(ray,N,ui),RTCRayN_dir_y(ray,N,ui),RTCRayN_dir_z(ray,N,ui));
+    int   ray_mask= RTCRayN_mask(ray,N,ui);
+    float hit_t   = RTCHitN_t(potentialHit,N,ui);
+
+    /* decode ray IDs */
+    int pid = ray_mask / 1;
+    int rid = ray_mask % 1;
+    RTCRay2* eray = (RTCRay2*) context->userRayExt;
+    
+    /* calculate transparency */
+    Vec3fa h = ray_org + ray_dir*hit_t;
+    float T = transparencyFunction(h);
+
+    /* accumulate transparency and store inside ray extensions */
+    T *= gather(eray->transparency,sizeof(RTCRay2),pid,rid);
+    scatter(eray->transparency,sizeof(RTCRay2),pid,rid,T);
+
+    /* accept a hit only if we are fully opqaue */
+    if (T != 0.0f) valid[ui] = 0;
+  }
 }
 
 /* adds a cube to the scene */
@@ -155,8 +282,14 @@ unsigned int addCube (RTCScene scene_i)
   colors[11] = Vec3fa(1,1,0);
 
   /* set intersection filter for the cube */
-  rtcSetIntersectionFilterFunction(scene_i,geomID,(RTCFilterFunc)&intersectionFilter);
-  rtcSetOcclusionFilterFunction   (scene_i,geomID,(RTCFilterFunc)&occlusionFilter);
+  if (g_ray_stream_mode) {
+    rtcSetIntersectionFilterFunctionN(scene_i,geomID,(RTCFilterFuncN)&intersectionFilterN);
+    rtcSetOcclusionFilterFunctionN   (scene_i,geomID,(RTCFilterFuncN)&occlusionFilterN);
+  }
+  else {
+    rtcSetIntersectionFilterFunction(scene_i,geomID,(RTCFilterFunc)&intersectionFilter);
+    rtcSetOcclusionFilterFunction   (scene_i,geomID,(RTCFilterFunc)&occlusionFilter);
+  }
 
   return geomID;
 }
@@ -183,8 +316,14 @@ unsigned int addSubdivCube (RTCScene scene_i)
   colors[5] = Vec3fa(1,1,0); // back side
 
   /* set intersection filter for the cube */
-  rtcSetIntersectionFilterFunction(scene_i,geomID,(RTCFilterFunc)&intersectionFilter);
-  rtcSetOcclusionFilterFunction   (scene_i,geomID,(RTCFilterFunc)&occlusionFilter);
+  if (g_ray_stream_mode) {
+    rtcSetIntersectionFilterFunctionN(scene_i,geomID,(RTCFilterFuncN)&intersectionFilterN);
+    rtcSetOcclusionFilterFunctionN   (scene_i,geomID,(RTCFilterFuncN)&occlusionFilterN);
+  }
+  else {
+    rtcSetIntersectionFilterFunction(scene_i,geomID,(RTCFilterFunc)&intersectionFilter);
+    rtcSetOcclusionFilterFunction   (scene_i,geomID,(RTCFilterFunc)&occlusionFilter);
+  }
 
   return geomID;
 }
@@ -223,7 +362,10 @@ extern "C" void device_init (char* cfg)
   rtcDeviceSetErrorFunction(g_device,error_handler);
 
   /* create scene */
-  g_scene = rtcDeviceNewScene(g_device, RTC_SCENE_STATIC,RTC_INTERSECT1);
+  RTCAlgorithmFlags aflags;
+  if (g_ray_stream_mode) aflags = RTC_INTERSECT1 | RTC_INTERSECT_STREAM;
+  else                   aflags = RTC_INTERSECT1;
+  g_scene = rtcDeviceNewScene(g_device, RTC_SCENE_STATIC,aflags);
 
   /* add cube */
   addCube(g_scene);
@@ -236,7 +378,8 @@ extern "C" void device_init (char* cfg)
   rtcCommit (g_scene);
 
   /* set start render mode */
-  renderTile = renderTileStandard;
+  if (g_ray_stream_mode) renderTile = renderTileStandardStream;
+  else                   renderTile = renderTileStandard;
   key_pressed_handler = device_key_pressed_default;
 }
 
@@ -332,6 +475,204 @@ void renderTileStandard(int taskIndex,
     unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
     unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
     pixels[y*width+x] = (b << 16) + (g << 8) + r;
+  }
+}
+
+/* renders a single screen tile */
+void renderTileStandardStream(int taskIndex, 
+                              int* pixels,
+                              const int width,
+                              const int height, 
+                              const float time,
+                              const ISPCCamera& camera,
+                              const int numTilesX, 
+                              const int numTilesY)
+{
+  const int tileY = taskIndex / numTilesX;
+  const int tileX = taskIndex - tileY * numTilesX;
+  const int x0 = tileX * TILE_SIZE_X;
+  const int x1 = min(x0+TILE_SIZE_X,width);
+  const int y0 = tileY * TILE_SIZE_Y;
+  const int y1 = min(y0+TILE_SIZE_Y,height);
+
+  RTCRay2 primary_stream[TILE_SIZE_X*TILE_SIZE_Y];
+  RTCRay2 shadow_stream[TILE_SIZE_X*TILE_SIZE_Y];
+  Vec3fa color_stream[TILE_SIZE_X*TILE_SIZE_Y];
+  float weight_stream[TILE_SIZE_X*TILE_SIZE_Y];
+  bool valid_stream[TILE_SIZE_X*TILE_SIZE_Y];
+
+  /* generate stream of primary rays */
+  int N = 0;
+  int numActive = 0;
+  for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
+  {
+    /* ISPC workaround for mask == 0 */
+    if (all(1 == 0)) continue;
+    
+    /* initialize variables */
+    numActive++;
+    color_stream[N] = Vec3fa(0.0f);
+    weight_stream[N] = 1.0f;
+    { valid_stream[N] = false; }
+    valid_stream[N] = true;
+
+    /* initialize ray */
+    RTCRay2& primary = primary_stream[N];
+    primary.org = Vec3fa(camera.xfm.p);
+    primary.dir = Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
+    { primary.tnear = pos_inf; primary.tfar = neg_inf; } // invalidates inactive rays
+    primary.tnear = 0.0f;
+    primary.tfar = inf;
+    primary.geomID = RTC_INVALID_GEOMETRY_ID;
+    primary.primID = RTC_INVALID_GEOMETRY_ID;
+    primary.mask = N*1 + 0;
+    primary.time = 0.0f;
+    primary.transparency = 0.0f;
+    N++;
+  }
+
+  while (numActive)
+  {
+    /* trace rays */
+    RTCIntersectContext context;
+    context.flags = RTC_INTERSECT_INCOHERENT;
+    context.userRayExt = &primary_stream;
+    rtcIntersect1M(g_scene,&context,(RTCRay*)&primary_stream,N,sizeof(RTCRay2));
+    
+    /* terminate rays */
+    N = -1;
+    for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
+    {
+      N++;
+      /* ISPC workaround for mask == 0 */
+      if (all(1 == 0)) continue;  
+      /* ignore invalid rays */
+      if (valid_stream[N] == false) continue;
+      
+      /* terminate rays that hit nothing */
+      if (primary_stream[N].geomID == RTC_INVALID_GEOMETRY_ID) {
+        valid_stream[N] = false;
+        continue;
+      }
+    }
+      
+    /* update colors */
+    N = -1;
+    for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
+    {
+      N++;
+      /* ISPC workaround for mask == 0 */
+      if (all(1 == 0)) continue;
+      /* ignore invalid rays */
+      if (valid_stream[N] == false) continue;
+      
+      RTCRay2& primary = primary_stream[N];
+      float opacity = 1.0f-primary.transparency;
+      Vec3fa diffuse = colors[primary.primID];
+      Vec3fa La = diffuse*0.5f;
+      color_stream[N] = color_stream[N] + weight_stream[N]*opacity*La;
+    }
+
+    Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
+
+    /* calculate shadow rays */
+    N = -1;
+    for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
+    {
+      N++;
+      /* ISPC workaround for mask == 0 */
+      if (all(1 == 0)) continue;
+      
+      /* invalidate shadow rays by default */
+      RTCRay2& shadow = shadow_stream[N];
+      { shadow.tnear = pos_inf; shadow.tfar = neg_inf; }
+
+      /* ignore invalid rays */
+      if (valid_stream[N] == false) continue;
+      
+      /* initialize shadow ray */
+      RTCRay2& primary = primary_stream[N];
+      shadow.org = primary.org + primary.tfar*primary.dir;
+      shadow.dir = neg(lightDir);
+      shadow.tnear = 0.001f;
+      shadow.tfar = inf;
+      shadow.geomID = RTC_INVALID_GEOMETRY_ID;
+      shadow.primID = RTC_INVALID_GEOMETRY_ID;
+      shadow.mask = N*1 + 0;
+      shadow.time = 0;
+      shadow.transparency = 1.0f;
+    }
+    N++;
+
+    /* trace shadow rays */
+    RTCIntersectContext shadow_context;
+    shadow_context.flags = RTC_INTERSECT_INCOHERENT;
+    shadow_context.userRayExt = &shadow_stream;
+    rtcOccluded1M(g_scene,&shadow_context,(RTCRay*)&shadow_stream,N,sizeof(RTCRay2));
+    
+    /* add light contribution */
+    N = -1;
+    for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
+    {
+      N++;
+      /* ISPC workaround for mask == 0 */
+      if (all(1 == 0)) continue;
+      /* ignore invalid rays */
+      if (valid_stream[N] == false) continue;
+
+      RTCRay2& primary = primary_stream[N];
+      float opacity = 1.0f-primary.transparency;
+      Vec3fa diffuse = colors[primary.primID];
+
+      RTCRay2& shadow = shadow_stream[N];
+      if (shadow.geomID) {
+        Vec3fa Ll = diffuse*shadow.transparency*clamp(-dot(lightDir,normalize(primary.Ng)),0.0f,1.0f);
+        color_stream[N] = color_stream[N] + weight_stream[N]*opacity*Ll;
+      }
+    }
+
+    /* generate secondary rays */
+    N = -1;
+    numActive = 0;
+    for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
+    {
+      N++;
+      /* ISPC workaround for mask == 0 */
+      if (all(1 == 0)) continue;
+
+      /* invalidate rays by default */
+      RTCRay2& primary = primary_stream[N];
+      float primary_tfar = primary.tfar;
+      { primary.tnear = pos_inf; primary.tfar = neg_inf; }
+
+      /* ignore invalid rays */
+      if (valid_stream[N] == false) continue;
+      numActive++;
+
+      /* initialize transmission ray */
+      weight_stream[N] *= primary.transparency;      
+      primary.tnear = 1.001f*primary_tfar;
+      primary.tfar = inf;
+      primary.geomID = RTC_INVALID_GEOMETRY_ID;
+      primary.primID = RTC_INVALID_GEOMETRY_ID;
+      primary.transparency = 0.0f;
+    }
+    N++;
+  }
+
+  /* framebuffer writeback */
+  N = 0;
+  for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
+  {
+    /* ISPC workaround for mask == 0 */
+    if (all(1 == 0)) continue;
+    
+    /* write color to framebuffer */
+    unsigned int r = (unsigned int) (255.0f * clamp(color_stream[N].x,0.0f,1.0f));
+    unsigned int g = (unsigned int) (255.0f * clamp(color_stream[N].y,0.0f,1.0f));
+    unsigned int b = (unsigned int) (255.0f * clamp(color_stream[N].z,0.0f,1.0f));
+    pixels[y*width+x] = (b << 16) + (g << 8) + r;
+    N++;
   }
 }
 

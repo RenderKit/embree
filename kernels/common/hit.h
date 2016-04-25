@@ -79,13 +79,13 @@ namespace embree
   inline std::ostream& operator<<(std::ostream& cout, const HitK<K>& ray)
   {
     return cout << "{ " << std::endl
-                << " instID = " << ray.instID << std::endl
-                << " geomID = " << ray.geomID << std::endl
-                << " primID = " << ray.primID <<  std::endl
-                << " u = " << ray.u <<  std::endl
-                << " v = " << ray.v << std::endl
-                << " t = " << ray.v << std::endl
-                << " Ng = " << ray.Ng
-                << " }";
+                << "  instID = " << ray.instID << std::endl
+                << "  geomID = " << ray.geomID << std::endl
+                << "  primID = " << ray.primID <<  std::endl
+                << "  u = " << ray.u <<  std::endl
+                << "  v = " << ray.v << std::endl
+                << "  t = " << ray.v << std::endl
+                << "  Ng = " << ray.Ng
+                << "}";
   }
 }

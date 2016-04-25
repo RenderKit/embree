@@ -33,7 +33,10 @@ struct Triangle { int v0, v1, v2; };
 #include "scene_device.isph"
 
 /* include embree API */
+#define __RTCRay1__
+#define __RTCRay__
 #include "../../../include/embree2/rtcore.isph"
+#include "../../../include/embree2/rtcore_ray.isph"
 
 /* returns time stamp counter */
 extern "C" uniform int64 get_tsc();
