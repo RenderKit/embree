@@ -423,7 +423,7 @@ unmasked void sphereOccludedFuncN(const uniform int* uniform valid,
       RTCRayN_geomID(rays,N,ui) = 0;
     }
     if ((ray_tnear < t1) & (t1 < ray_tfar)) {
-      RTCRayN_geomID(rays,N,ui) = sphere.geomID;
+      RTCRayN_geomID(rays,N,ui) = 0;
     }
   }
 }
