@@ -14,12 +14,12 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#include "intersection_filter.h"
 #include "../common/tutorial/tutorial_device.isph"
 
 /* scene data */
 RTCDevice g_device = NULL;
 RTCScene g_scene = NULL;
-extern uniform bool g_ray_stream_mode;
 uniform Vec3f* uniform colors = NULL;
 
 /* error reporting function */
@@ -329,6 +329,9 @@ void renderTileStandardStream(uniform int taskIndex,
   float weight_stream[TILE_SIZE_X*TILE_SIZE_Y];
   bool valid_stream[TILE_SIZE_X*TILE_SIZE_Y];
 
+  /* select stream mode */
+  uniform RTCIntersectFlags iflags = g_mode == MODE_STREAM_COHERENT ?  RTC_INTERSECT_COHERENT : RTC_INTERSECT_INCOHERENT;
+
   /* generate stream of primary rays */
   uniform int N = 0;
   uniform int numActive = 0;
@@ -364,10 +367,10 @@ void renderTileStandardStream(uniform int taskIndex,
   while (numActive)
   {
     /* trace rays */
-    uniform RTCIntersectContext context;
-    context.flags = RTC_INTERSECT_INCOHERENT;
-    context.userRayExt = &primary_stream;
-    rtcIntersectVM(g_scene,&context,(varying RTCRay* uniform)&primary_stream,N,sizeof(RTCRay2));
+    uniform RTCIntersectContext primary_context;
+    primary_context.flags = iflags;
+    primary_context.userRayExt = &primary_stream;
+    rtcIntersectVM(g_scene,&primary_context,(varying RTCRay* uniform)&primary_stream,N,sizeof(RTCRay2));
     
     /* terminate rays and update color */
     N = -1;
@@ -412,7 +415,7 @@ void renderTileStandardStream(uniform int taskIndex,
 
     /* trace shadow rays */
     uniform RTCIntersectContext shadow_context;
-    shadow_context.flags = RTC_INTERSECT_INCOHERENT;
+    shadow_context.flags = iflags;
     shadow_context.userRayExt = &shadow_stream;
     rtcOccludedVM(g_scene,&shadow_context,(varying RTCRay* uniform)&shadow_stream,N,sizeof(RTCRay2));
     
@@ -538,7 +541,7 @@ uniform unsigned int addCube (RTCScene scene_i)
   colors[11] = make_Vec3f(1,1,0);
 
   /* set intersection filter for the cube */
-  if (g_ray_stream_mode) {
+  if (g_mode != MODE_NORMAL) {
     rtcSetIntersectionFilterFunctionN(scene_i,geomID,(RTCFilterFuncN)&intersectionFilterN);
     rtcSetOcclusionFilterFunctionN   (scene_i,geomID,(RTCFilterFuncN)&occlusionFilterN);
   }
@@ -572,7 +575,7 @@ uniform unsigned int addSubdivCube (RTCScene scene_i)
   colors[5] = make_Vec3f(1,1,0); // back side
 
   /* set intersection filter for the cube */
-  if (g_ray_stream_mode) {
+  if (g_mode != MODE_NORMAL) {
     rtcSetIntersectionFilterFunctionN(scene_i,geomID,(RTCFilterFuncN)&intersectionFilterN);
     rtcSetOcclusionFilterFunctionN   (scene_i,geomID,(RTCFilterFuncN)&occlusionFilterN);
   }
@@ -619,8 +622,8 @@ export void device_init (uniform int8* uniform cfg)
 
   /* create scene */
   uniform RTCAlgorithmFlags aflags;
-  if (g_ray_stream_mode) aflags = RTC_INTERSECT_UNIFORM | RTC_INTERSECT_STREAM;
-  else                   aflags = RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING;
+  if (g_mode == MODE_NORMAL) aflags = RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING;
+  else                       aflags = RTC_INTERSECT_UNIFORM | RTC_INTERSECT_STREAM;
   g_scene = rtcDeviceNewScene(g_device, RTC_SCENE_STATIC,aflags);
 
   /* add cube */
@@ -634,8 +637,8 @@ export void device_init (uniform int8* uniform cfg)
   rtcCommit (g_scene);
 
   /* set start render mode */
-  if (g_ray_stream_mode) renderTile = renderTileStandardStream;
-  else                   renderTile = renderTileStandard;
+  if (g_mode == MODE_NORMAL) renderTile = renderTileStandard;
+  else                       renderTile = renderTileStandardStream;
   key_pressed_handler = device_key_pressed_default;
 }
 

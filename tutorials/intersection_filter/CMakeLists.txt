@@ -17,4 +17,5 @@
 INCLUDE(tutorial)
 ADD_TUTORIAL(intersection_filter)
 ADD_EMBREE_TEST(intersection_filter)
-ADD_EMBREE_TEST2(intersection_filter_stream intersection_filter "--stream")
+ADD_EMBREE_TEST2(intersection_filter_stream_coherent   intersection_filter "--mode stream-coherent")
+ADD_EMBREE_TEST2(intersection_filter_stream_incoherent intersection_filter "--mode stream-incoherent")
