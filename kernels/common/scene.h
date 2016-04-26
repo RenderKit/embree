@@ -275,6 +275,14 @@ namespace embree
     __forceinline bool isInterpolatable() const { return embree::isInterpolatable(aflags); }
     __forceinline bool isStreamMode() const { return embree::isStreamMode(aflags); }
 
+    __forceinline bool isExclusiveIntersect1Mode() const { 
+      if (!embree::isIntersect1Mode(aflags)) return false;
+      if (embree::isIntersect4Mode(aflags))  return false;
+      if (embree::isIntersect8Mode(aflags))  return false;
+      if (embree::isIntersect16Mode(aflags)) return false;
+      return true;
+    }
+
     /* test if scene got already build */
     __forceinline bool isBuild() const { return is_build; }
 
