@@ -70,7 +70,7 @@ struct RTCRay2
 };
 
 /* 3D procedural transparency */
-inline float transparencyFunction(Vec3f h)
+inline float transparencyFunction(Vec3f& h)
 {
   float v = abs(sin(4.0f*h.x)*cos(4.0f*h.y)*sin(4.0f*h.z));
   float T = clamp((v-0.1f)*3.0f,0.0f,1.0f);
