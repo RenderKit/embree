@@ -359,6 +359,8 @@ void renderTileStandardStream(uniform int taskIndex,
     N++;
   }
 
+  Vec3f lightDir = normalize(make_Vec3f(-1,-1,-1));
+
   while (numActive)
   {
     /* trace rays */
@@ -367,13 +369,18 @@ void renderTileStandardStream(uniform int taskIndex,
     context.userRayExt = &primary_stream;
     rtcIntersectVM(g_scene,&context,(varying RTCRay* uniform)&primary_stream,N,sizeof(RTCRay2));
     
-    /* terminate rays */
+    /* terminate rays and update color */
     N = -1;
     foreach_tiled (y = y0 ... y1, x = x0 ... x1)
     {
       N++;
       /* ISPC workaround for mask == 0 */
       if (all(__mask == 0)) continue;  
+
+      /* invalidate shadow rays by default */
+      RTCRay2& shadow = shadow_stream[N];
+      unmasked { shadow.tnear = pos_inf; shadow.tfar = neg_inf; }
+
       /* ignore invalid rays */
       if (valid_stream[N] == false) continue;
       
@@ -382,44 +389,15 @@ void renderTileStandardStream(uniform int taskIndex,
         valid_stream[N] = false;
         continue;
       }
-    }
       
-    /* update colors */
-    N = -1;
-    foreach_tiled (y = y0 ... y1, x = x0 ... x1)
-    {
-      N++;
-      /* ISPC workaround for mask == 0 */
-      if (all(__mask == 0)) continue;
-      /* ignore invalid rays */
-      if (valid_stream[N] == false) continue;
-      
+      /* update color */
       RTCRay2& primary = primary_stream[N];
       float opacity = 1.0f-primary.transparency;
       Vec3f diffuse = colors[primary.primID];
       Vec3f La = diffuse*0.5f;
       color_stream[N] = color_stream[N] + weight_stream[N]*opacity*La;
-    }
 
-    Vec3f lightDir = normalize(make_Vec3f(-1,-1,-1));
-
-    /* calculate shadow rays */
-    N = -1;
-    foreach_tiled (y = y0 ... y1, x = x0 ... x1)
-    {
-      N++;
-      /* ISPC workaround for mask == 0 */
-      if (all(__mask == 0)) continue;
-      
-      /* invalidate shadow rays by default */
-      RTCRay2& shadow = shadow_stream[N];
-      unmasked { shadow.tnear = pos_inf; shadow.tfar = neg_inf; }
-
-      /* ignore invalid rays */
-      if (valid_stream[N] == false) continue;
-      
       /* initialize shadow ray */
-      RTCRay2& primary = primary_stream[N];
       shadow.org = primary.org + primary.tfar*primary.dir;
       shadow.dir = neg(lightDir);
       shadow.tnear = 0.001f;
