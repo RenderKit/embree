@@ -301,8 +301,11 @@ unmasked void occlusionFilterN(uniform int* uniform valid,
     T *= gather(eray->transparency,sizeof(RTCRay2),pid,rid);
     scatter(eray->transparency,sizeof(RTCRay2),pid,rid,T);
 
-    /* accept a hit only if we are fully opqaue */
-    if (T != 0.0f) valid[ui] = 0;
+    /* reject a hit if not fully opqaue */
+    if (T != 0.0f) valid[vi] = 0;
+
+    /* otherwise accept the hit */
+    else RTCRayN_geomID(ray,N,ui) = 0;
   }
 }
 
