@@ -42,14 +42,8 @@ namespace embree
           /* skip invalid rays */
           if (unlikely(ray.tnear > ray.tfar)) { inputRayID++; continue; }
           if (!intersect && ray.geomID == 0) { inputRayID++; continue; } // ignore already occluded rays
-#if defined(__MIC__)
-          const unsigned int octantID = \
-            (ray.dir.x < 0.0f ? 1 : 0) |
-            (ray.dir.y < 0.0f ? 2 : 0) |
-            (ray.dir.z < 0.0f ? 4 : 0);
-#else
+
           const unsigned int octantID = movemask(vfloat4(ray.dir) < 0.0f) & 0x7;
-#endif
           assert(octantID < 8);
           octants[octantID][rays_in_octant[octantID]++] = &ray;
           inputRayID++;
@@ -108,10 +102,8 @@ namespace embree
             const vboolx valid = vi < vintx(N);
             const size_t offset = s*stream_offset + sizeof(float) * i;
             RayK<VSIZEX> ray = rayN.gather<VSIZEX>(offset);
-#if !defined(__MIC)
             if (intersect) scene->intersect(valid,ray,context);
             else           scene->occluded (valid,ray,context);
-#endif
             rayN.scatter<VSIZEX>(valid,offset,ray,intersect);
           }
         }
@@ -205,10 +197,8 @@ namespace embree
             const vboolx valid = vi < vintx(N);
             const size_t offset = s*stream_offset + sizeof(float) * i;
             RayK<VSIZEX> ray = rayN.gather<VSIZEX>(offset);
-#if !defined(__MIC)
             if (intersect) scene->intersect(valid,ray,context);
             else           scene->occluded (valid,ray,context);
-#endif
             rayN.scatter<VSIZEX>(valid,offset,ray,intersect);
           }
         }
