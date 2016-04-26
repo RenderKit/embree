@@ -225,7 +225,6 @@ namespace embree
     if (device->quad_accel == "default") 
     {
       int mode =  2*(int)isCompact() + 1*(int)isRobust(); 
-      PRINT(mode);
       switch (mode) {
       case /*0b00*/ 0:
       case /*0b01*/ 1:
