@@ -14,7 +14,6 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "intersection_filter.h"
 #include "../common/tutorial/tutorial_device.h"
 
 /* scene data */
