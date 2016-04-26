@@ -37,6 +37,14 @@ struct Quad     { int v0, v1, v2, v3; };
 #include "../../../include/embree2/rtcore.h"
 #include "../../../include/embree2/rtcore_ray.h"
 
+enum Mode {
+  MODE_NORMAL = 0,
+  MODE_STREAM_COHERENT = 1,
+  MODE_STREAM_INCOHERENT = 2
+};
+
+extern "C" Mode g_mode;
+
 #include "ray.h"
 #include "camera.h"
 #include "scene.h"

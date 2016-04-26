@@ -38,6 +38,14 @@ struct Triangle { int v0, v1, v2; };
 #include "../../../include/embree2/rtcore.isph"
 #include "../../../include/embree2/rtcore_ray.isph"
 
+enum Mode {
+  MODE_NORMAL = 0,
+  MODE_STREAM_COHERENT = 1,
+  MODE_STREAM_INCOHERENT = 2
+};
+
+extern uniform Mode g_mode;
+
 /* returns time stamp counter */
 extern "C" uniform int64 get_tsc();
 

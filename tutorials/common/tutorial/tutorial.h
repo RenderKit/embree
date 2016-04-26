@@ -26,7 +26,9 @@ namespace embree
   class TutorialApplication
   {
   public:
-    TutorialApplication (const std::string& tutorialName);
+    enum Features { FEATURE_STREAM = 1 };
+
+    TutorialApplication (const std::string& tutorialName, const int features = 0);
     
   public:
     
@@ -110,6 +112,7 @@ namespace embree
     
   public:
     std::string tutorialName;
+    int features;
     
     /* embree configuration */
     std::string rtcore;
