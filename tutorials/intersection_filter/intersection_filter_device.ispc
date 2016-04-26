@@ -144,14 +144,8 @@ void occlusionFilter(void* uniform ptr, RTCRay2& ray)
 
 inline float gather(varying float& ptr, const uniform size_t stride, const size_t pid, const size_t rid) 
 {
-  //return ((uniform float*)(((uniform int8* uniform)&ptr) + pid*stride))[rid];
-  float ret;
-  foreach_unique(p in pid) { 
-    varying float* uniform ptr_pid = (varying float* uniform)((uniform int8* uniform)&ptr + p*stride);
-    //ret = shuffle(*ptr_pid,rid); 
-    ret = ((float* uniform) ptr_pid)[rid];
-  }
-  return ret;
+  uniform float* uptr = (uniform float*) (((uniform int8* uniform)&ptr) + pid*stride);
+  return uptr[rid];
 }
 
 inline void scatter(varying float& ptr, const uniform size_t stride, const size_t pid, const size_t rid, float v) {
