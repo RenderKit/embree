@@ -359,6 +359,8 @@ void renderTileStandardStream(int taskIndex,
     N++;
   }
 
+  Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
+
   while (numActive)
   {
     /* trace rays */
@@ -367,13 +369,18 @@ void renderTileStandardStream(int taskIndex,
     context.userRayExt = &primary_stream;
     rtcIntersect1M(g_scene,&context,(RTCRay*)&primary_stream,N,sizeof(RTCRay2));
     
-    /* terminate rays */
+    /* terminate rays and update color */
     N = -1;
     for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
     {
       N++;
       /* ISPC workaround for mask == 0 */
       if (all(1 == 0)) continue;  
+
+      /* invalidate shadow rays by default */
+      RTCRay2& shadow = shadow_stream[N];
+      { shadow.tnear = pos_inf; shadow.tfar = neg_inf; }
+
       /* ignore invalid rays */
       if (valid_stream[N] == false) continue;
       
@@ -382,44 +389,15 @@ void renderTileStandardStream(int taskIndex,
         valid_stream[N] = false;
         continue;
       }
-    }
       
-    /* update colors */
-    N = -1;
-    for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
-    {
-      N++;
-      /* ISPC workaround for mask == 0 */
-      if (all(1 == 0)) continue;
-      /* ignore invalid rays */
-      if (valid_stream[N] == false) continue;
-      
+      /* update color */
       RTCRay2& primary = primary_stream[N];
       float opacity = 1.0f-primary.transparency;
       Vec3fa diffuse = colors[primary.primID];
       Vec3fa La = diffuse*0.5f;
       color_stream[N] = color_stream[N] + weight_stream[N]*opacity*La;
-    }
 
-    Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
-
-    /* calculate shadow rays */
-    N = -1;
-    for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
-    {
-      N++;
-      /* ISPC workaround for mask == 0 */
-      if (all(1 == 0)) continue;
-      
-      /* invalidate shadow rays by default */
-      RTCRay2& shadow = shadow_stream[N];
-      { shadow.tnear = pos_inf; shadow.tfar = neg_inf; }
-
-      /* ignore invalid rays */
-      if (valid_stream[N] == false) continue;
-      
       /* initialize shadow ray */
-      RTCRay2& primary = primary_stream[N];
       shadow.org = primary.org + primary.tfar*primary.dir;
       shadow.dir = neg(lightDir);
       shadow.tnear = 0.001f;
@@ -438,28 +416,7 @@ void renderTileStandardStream(int taskIndex,
     shadow_context.userRayExt = &shadow_stream;
     rtcOccluded1M(g_scene,&shadow_context,(RTCRay*)&shadow_stream,N,sizeof(RTCRay2));
     
-    /* add light contribution */
-    N = -1;
-    for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
-    {
-      N++;
-      /* ISPC workaround for mask == 0 */
-      if (all(1 == 0)) continue;
-      /* ignore invalid rays */
-      if (valid_stream[N] == false) continue;
-
-      RTCRay2& primary = primary_stream[N];
-      float opacity = 1.0f-primary.transparency;
-      Vec3fa diffuse = colors[primary.primID];
-
-      RTCRay2& shadow = shadow_stream[N];
-      if (shadow.geomID) {
-        Vec3fa Ll = diffuse*shadow.transparency*clamp(-dot(lightDir,normalize(primary.Ng)),0.0f,1.0f);
-        color_stream[N] = color_stream[N] + weight_stream[N]*opacity*Ll;
-      }
-    }
-
-    /* generate secondary rays */
+    /* add light contribution and generate transmission ray */
     N = -1;
     numActive = 0;
     for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
@@ -476,6 +433,15 @@ void renderTileStandardStream(int taskIndex,
       /* ignore invalid rays */
       if (valid_stream[N] == false) continue;
       numActive++;
+
+      /* add light contrinution */
+      float opacity = 1.0f-primary.transparency;
+      Vec3fa diffuse = colors[primary.primID];
+      RTCRay2& shadow = shadow_stream[N];
+      if (shadow.geomID) {
+        Vec3fa Ll = diffuse*shadow.transparency*clamp(-dot(lightDir,normalize(primary.Ng)),0.0f,1.0f);
+        color_stream[N] = color_stream[N] + weight_stream[N]*opacity*Ll;
+      }
 
       /* initialize transmission ray */
       weight_stream[N] *= primary.transparency;      

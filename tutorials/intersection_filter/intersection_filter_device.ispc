@@ -416,28 +416,7 @@ void renderTileStandardStream(uniform int taskIndex,
     shadow_context.userRayExt = &shadow_stream;
     rtcOccludedVM(g_scene,&shadow_context,(varying RTCRay* uniform)&shadow_stream,N,sizeof(RTCRay2));
     
-    /* add light contribution */
-    N = -1;
-    foreach_tiled (y = y0 ... y1, x = x0 ... x1)
-    {
-      N++;
-      /* ISPC workaround for mask == 0 */
-      if (all(__mask == 0)) continue;
-      /* ignore invalid rays */
-      if (valid_stream[N] == false) continue;
-
-      RTCRay2& primary = primary_stream[N];
-      float opacity = 1.0f-primary.transparency;
-      Vec3f diffuse = colors[primary.primID];
-
-      RTCRay2& shadow = shadow_stream[N];
-      if (shadow.geomID) {
-        Vec3f Ll = diffuse*shadow.transparency*clamp(-dot(lightDir,normalize(primary.Ng)),0.0f,1.0f);
-        color_stream[N] = color_stream[N] + weight_stream[N]*opacity*Ll;
-      }
-    }
-
-    /* generate secondary rays */
+    /* add light contribution and generate transmission ray */
     N = -1;
     numActive = 0;
     foreach_tiled (y = y0 ... y1, x = x0 ... x1)
@@ -454,6 +433,15 @@ void renderTileStandardStream(uniform int taskIndex,
       /* ignore invalid rays */
       if (valid_stream[N] == false) continue;
       numActive++;
+
+      /* add light contrinution */
+      float opacity = 1.0f-primary.transparency;
+      Vec3f diffuse = colors[primary.primID];
+      RTCRay2& shadow = shadow_stream[N];
+      if (shadow.geomID) {
+        Vec3f Ll = diffuse*shadow.transparency*clamp(-dot(lightDir,normalize(primary.Ng)),0.0f,1.0f);
+        color_stream[N] = color_stream[N] + weight_stream[N]*opacity*Ll;
+      }
 
       /* initialize transmission ray */
       weight_stream[N] *= primary.transparency;      
