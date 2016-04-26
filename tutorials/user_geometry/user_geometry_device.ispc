@@ -138,16 +138,18 @@ unmasked void instanceIntersectFuncN(const uniform int* uniform valid,
     
     /* ignore inactive rays */
     if (valid[vi] != -1) continue;
-
+   
     /* create transformed ray */
     RTCRay ray;
-    unmasked { ray.tnear = pos_inf; ray.tfar = neg_inf; }
     const Vec3f ray_org = make_Vec3f(RTCRayN_org_x(rays,N,ui),RTCRayN_org_y(rays,N,ui),RTCRayN_org_z(rays,N,ui));
     const Vec3f ray_dir = make_Vec3f(RTCRayN_dir_x(rays,N,ui),RTCRayN_dir_y(rays,N,ui),RTCRayN_dir_z(rays,N,ui));
     ray.org = xfmPoint (instance->world2local,ray_org);
     ray.dir = xfmVector(instance->world2local,ray_dir);
-    ray.tnear = RTCRayN_tnear(rays,N,ui);
-    ray.tfar  = RTCRayN_tfar(rays,N,ui);
+    varying bool mask = __mask; unmasked {
+      ray.tnear = mask ? RTCRayN_tnear(rays,N,ui) : pos_inf;
+      ray.tfar  = mask ? RTCRayN_tfar(rays,N,ui)  : neg_inf;
+    }
+    //print("ray.tnear/tfar = % %\n",ray.tnear,ray.tfar);
     ray.time  = RTCRayN_time(rays,N,ui);
     ray.mask  = RTCRayN_mask(rays,N,ui);
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -191,13 +193,14 @@ unmasked void instanceOccludedFuncN(const uniform int* uniform valid,
 
     /* create transformed ray */
     RTCRay ray;
-    unmasked { ray.tnear = pos_inf; ray.tfar = neg_inf; }
     const Vec3f ray_org = make_Vec3f(RTCRayN_org_x(rays,N,ui),RTCRayN_org_y(rays,N,ui),RTCRayN_org_z(rays,N,ui));
     const Vec3f ray_dir = make_Vec3f(RTCRayN_dir_x(rays,N,ui),RTCRayN_dir_y(rays,N,ui),RTCRayN_dir_z(rays,N,ui));
     ray.org = xfmPoint (instance->world2local,ray_org);
     ray.dir = xfmVector(instance->world2local,ray_dir);
-    ray.tnear = RTCRayN_tnear(rays,N,ui);
-    ray.tfar  = RTCRayN_tfar(rays,N,ui);
+    varying bool mask = __mask; unmasked {
+      ray.tnear = mask ? RTCRayN_tnear(rays,N,ui) : pos_inf;
+      ray.tfar  = mask ? RTCRayN_tfar(rays,N,ui)  : neg_inf;
+    }
     ray.time  = RTCRayN_time(rays,N,ui);
     ray.mask  = RTCRayN_mask(rays,N,ui);
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
