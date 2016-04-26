@@ -355,6 +355,7 @@ namespace embree
       tfar(offset)[0] = ray.tfar;
       time(offset)[0] = ray.time;
       mask(offset)[0] = ray.mask;
+      instID(offset)[0] = ray.instID;
       geomID(offset)[0] = RTC_INVALID_GEOMETRY_ID;
     }
 
@@ -393,6 +394,7 @@ namespace embree
       ray.tfar  = tfar(offset)[0];
       ray.time  = time(offset)[0];
       ray.mask  = mask(offset)[0];
+      ray.instID = instID(offset)[0];
       ray.geomID = RTC_INVALID_GEOMETRY_ID;
       return ray;
     }
@@ -410,7 +412,8 @@ namespace embree
       ray.tnear = vfloat<K>::loadu(tnear(offset));
       ray.tfar  = vfloat<K>::loadu(tfar(offset));
       ray.time  = vfloat<K>::loadu(time(offset));
-      ray.mask  = vint<K>  ::loadu((int*)mask(offset));
+      ray.mask  = vint<K>  ::loadu(mask(offset));
+      ray.instID= vint<K>  ::loadu(instID(offset));
       ray.geomID = RTC_INVALID_GEOMETRY_ID;
       return ray;
     }
@@ -551,11 +554,10 @@ namespace embree
       ray.dir.y = *(float* __restrict__ )((char*)diry + offset);
       ray.dir.z = *(float* __restrict__ )((char*)dirz + offset);
       ray.tfar  = *(float* __restrict__ )((char*)tfar + offset);
-      /* optional inputs */
       ray.tnear = tnear ? *(float* __restrict__ )((char*)tnear + offset) : 0.0f;
       ray.time  = time  ? *(float* __restrict__ )((char*)time  + offset) : 0.0f;
       ray.mask  = mask  ? *(unsigned * __restrict__ )((char*)mask  + offset) : -1;
-      /* init geomID */
+      ray.instID  = instID  ? *(unsigned * __restrict__ )((char*)instID  + offset) : -1;
       ray.geomID = RTC_INVALID_GEOMETRY_ID;
       return ray;
     }
@@ -571,11 +573,10 @@ namespace embree
       ray.dir.y = vfloat<K>::load((float* __restrict__ )((char*)diry + offset));
       ray.dir.z = vfloat<K>::load((float* __restrict__ )((char*)dirz + offset));
       ray.tfar  = vfloat<K>::load((float* __restrict__ )((char*)tfar + offset));
-      /* optional inputs */
       ray.tnear = tnear ? vfloat<K>::load((float* __restrict__ )((char*)tnear + offset)) : 0.0f;
       ray.time  = time  ? vfloat<K>::load((float* __restrict__ )((char*)time  + offset)) : 0.0f;
       ray.mask  = mask  ? vint<K>::load((int * __restrict__ )((char*)mask  + offset)) : -1;
-      /* init geomID */
+      ray.instID = instID  ? vint<K>::load((int * __restrict__ )((char*)instID  + offset)) : -1;
       ray.geomID = RTC_INVALID_GEOMETRY_ID;
       return ray;
     }

@@ -20,7 +20,7 @@ namespace embree
 {
   struct Tutorial : public TutorialApplication 
   {
-    Tutorial() : TutorialApplication("user_geometry") 
+    Tutorial() : TutorialApplication("user_geometry",FEATURE_STREAM) 
     {
        /* set default camera */
       camera.from = Vec3fa(2.5f,2.5f,2.5f);

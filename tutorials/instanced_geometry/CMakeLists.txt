@@ -17,3 +17,5 @@
 INCLUDE(tutorial)
 ADD_TUTORIAL(instanced_geometry)
 ADD_EMBREE_TEST(instanced_geometry)
+ADD_EMBREE_TEST2(instanced_geometry_stream_coherent   instanced_geometry "--mode stream-coherent")
+ADD_EMBREE_TEST2(instanced_geometry_stream_incoherent instanced_geometry "--mode stream-incoherent")

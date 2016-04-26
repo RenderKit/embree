@@ -42,12 +42,14 @@ extern "C" {
 namespace embree
 {
   std::string g_tutorialName;
+  extern "C" Mode g_mode = MODE_NORMAL;
 
   TutorialApplication* TutorialApplication::instance = nullptr; 
 
-  TutorialApplication::TutorialApplication (const std::string& tutorialName)
+  TutorialApplication::TutorialApplication (const std::string& tutorialName, int features)
 
     : tutorialName(tutorialName),
+      features(features),
 
       rtcore(""),
 
@@ -185,6 +187,22 @@ namespace embree
       "  geomID: visualization of geometry ID\n"
       "  primID: visualization of geometry and primitive ID\n"
       "  ao: ambient occlusion shader");
+
+    if (features & FEATURE_STREAM)
+    {
+      /* register parsing of stream mode */
+      registerOption("mode", [this] (Ref<ParseStream> cin, const FileName& path) {
+          std::string mode = cin->getString();
+          if      (mode == "normal"           ) g_mode = MODE_NORMAL;
+          else if (mode == "stream-coherent"  ) g_mode = MODE_STREAM_COHERENT;
+          else if (mode == "stream-incoherent") g_mode = MODE_STREAM_INCOHERENT;
+          else throw std::runtime_error("invalid mode:" +mode);
+        }, 
+        "--mode: sets rendering mode\n"
+        "  normal           : normal mode\n"
+        "  stream-coherent  : coherent stream mode\n"
+        "  stream-incoherent: incoherent stream mode\n");
+    }
   }
 
   SceneLoadingTutorialApplication::SceneLoadingTutorialApplication (const std::string& tutorialName)

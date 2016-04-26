@@ -18,20 +18,13 @@
 
 namespace embree
 {
-  extern "C" bool g_ray_stream_mode = false;
-
   struct Tutorial : public TutorialApplication 
   {
-    Tutorial() : TutorialApplication("intersection_filter") 
+    Tutorial() : TutorialApplication("intersection_filter",FEATURE_STREAM) 
     {
       /* set default camera */
       camera.from = Vec3fa(1.4f,1.3f,-1.5f);
       camera.to   = Vec3fa(0.0f,0.0f,0.0f);
-
-      /* register parsing of stream mode */
-      registerOption("stream", [this] (Ref<ParseStream> cin, const FileName& path) {
-          g_ray_stream_mode = true;
-        }, "--stream: uses stream tracing");
     }
   };
 }
