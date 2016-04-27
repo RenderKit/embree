@@ -46,6 +46,9 @@ enum Mode {
 
 extern uniform Mode g_mode;
 
+/* error reporting function */
+unmasked void error_handler(const uniform RTCError code, const uniform int8* uniform str = NULL);
+
 /* returns time stamp counter */
 extern "C" uniform int64 get_tsc();
 

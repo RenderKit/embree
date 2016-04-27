@@ -929,30 +929,6 @@ void occlusionFilterOpaque(void* ptr, RTCRay& ray);
 void occlusionFilterOBJ(void* ptr, RTCRay& ray);
 void occlusionFilterHair(void* ptr, RTCRay& ray);
 
-/* error reporting function */
-void error_handler(const RTCError code, const char* str = nullptr)
-{
-  if (code == RTC_NO_ERROR)
-    return;
-
-  printf("Embree: ");
-  switch (code) {
-  case RTC_UNKNOWN_ERROR    : printf("RTC_UNKNOWN_ERROR"); break;
-  case RTC_INVALID_ARGUMENT : printf("RTC_INVALID_ARGUMENT"); break;
-  case RTC_INVALID_OPERATION: printf("RTC_INVALID_OPERATION"); break;
-  case RTC_OUT_OF_MEMORY    : printf("RTC_OUT_OF_MEMORY"); break;
-  case RTC_UNSUPPORTED_CPU  : printf("RTC_UNSUPPORTED_CPU"); break;
-  case RTC_CANCELLED        : printf("RTC_CANCELLED"); break;
-  default                   : printf("invalid error code"); break;
-  }
-  if (str) {
-    printf(" (");
-    while (*str) putchar(*str++);
-    printf(")\n");
-  }
-  exit(1);
-} // error handler
-
 /* accumulation buffer */
 Vec3fa* g_accu = nullptr;
 unsigned int g_accu_width = 0;
@@ -1142,7 +1118,7 @@ RTCScene convertScene(ISPCScene* scene_in)
   geomID_to_inst  = (ISPCInstance_ptr*) alignedMalloc(numGeometries*sizeof(ISPCInstance_ptr));
 
   /* create scene */
-  int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT /* | RTC_SCENE_COMPACT */;
+  int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
   int scene_aflags = RTC_INTERSECT1;
 
   if (g_subdiv_mode)

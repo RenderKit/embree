@@ -43,6 +43,9 @@ enum Mode {
   MODE_STREAM_INCOHERENT = 2
 };
 
+/* error reporting function */
+void error_handler(const RTCError code, const char* str = nullptr);
+
 extern "C" Mode g_mode;
 
 #include "ray.h"
