@@ -120,11 +120,11 @@ namespace embree
       NodeRef new_root = ((size_t)first + first->childOffset(0)) | BVH::tyQuantizedNode;
 #else
       NodeRef new_root = (size_t)root | BVH::tyQuantizedNode;
+      // todo: COPY LAYOUT FOR LARGE NODES !!!
+      //bvh->layoutLargeNodes(pinfo.size()*0.005f);
 #endif
       assert(new_root.isQuantizedNode());
       bvh->set(new_root,pinfo.geomBounds,pinfo.size());
-      // todo: COPY LAYOUT FOR LARGE NODES !!!
-      //bvh->layoutLargeNodes(pinfo.size()*0.005f);
     }
 
     template<int N>

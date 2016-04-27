@@ -240,10 +240,11 @@ namespace embree
 #if defined (__TARGET_AVX__)
         if (device->hasISA(AVX))
         {
-          if (isExclusiveIntersect1Mode())
-            accels.add(device->bvh8_factory->BVH8QuantizedQuad4i(this)); 
-          else
-            accels.add(device->bvh8_factory->BVH8Quad4i(this)); 
+          // todo: reduce performance overhead of 10% compared to uncompressed bvh8
+          // if (isExclusiveIntersect1Mode())
+          //   accels.add(device->bvh8_factory->BVH8QuantizedQuad4i(this)); 
+          // else
+          accels.add(device->bvh8_factory->BVH8Quad4i(this)); 
         }
         else
 #endif
