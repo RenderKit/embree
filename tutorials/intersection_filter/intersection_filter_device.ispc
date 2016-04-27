@@ -107,7 +107,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
   primary.org = make_Vec3f(camera.xfm.p);
   primary.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
   primary.tnear = 0.0f;
-  primary.tfar = inf;
+  primary.tfar = (float)(inf);
   primary.geomID = RTC_INVALID_GEOMETRY_ID;
   primary.primID = RTC_INVALID_GEOMETRY_ID;
   primary.mask = -1;
@@ -134,7 +134,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
     shadow.org = primary.org + primary.tfar*primary.dir;
     shadow.dir = neg(lightDir);
     shadow.tnear = 0.001f;
-    shadow.tfar = inf;
+    shadow.tfar = (float)(inf);
     shadow.geomID = RTC_INVALID_GEOMETRY_ID;
     shadow.primID = RTC_INVALID_GEOMETRY_ID;
     shadow.mask = -1;
@@ -153,7 +153,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
     /* shoot transmission ray */
     weight *= primary.transparency;
     primary.tnear = 1.001f*primary.tfar;
-    primary.tfar = inf;
+    primary.tfar = (float)(inf);
     primary.geomID = RTC_INVALID_GEOMETRY_ID;
     primary.primID = RTC_INVALID_GEOMETRY_ID;
     primary.transparency = 0.0f;
@@ -346,16 +346,16 @@ void renderTileStandardStream(uniform int taskIndex,
     numActive++;
     color_stream[N] = make_Vec3f(0.0f);
     weight_stream[N] = 1.0f;
-    unmasked { valid_stream[N] = false; }
-    valid_stream[N] = true;
+    bool mask = __mask; unmasked { valid_stream[N] = mask; }
 
     /* initialize ray */
     RTCRay2& primary = primary_stream[N];
     primary.org = make_Vec3f(camera.xfm.p);
     primary.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
-    unmasked { primary.tnear = pos_inf; primary.tfar = neg_inf; } // invalidates inactive rays
-    primary.tnear = 0.0f;
-    primary.tfar = inf;
+    mask = __mask; unmasked { // invalidates inactive rays
+      primary.tnear = mask ? 0.0f         : (float)(pos_inf); 
+      primary.tfar  = mask ? (float)(inf) : (float)(neg_inf); 
+    } 
     primary.geomID = RTC_INVALID_GEOMETRY_ID;
     primary.primID = RTC_INVALID_GEOMETRY_ID;
     primary.mask = N*programCount + programIndex;
@@ -384,7 +384,10 @@ void renderTileStandardStream(uniform int taskIndex,
 
       /* invalidate shadow rays by default */
       RTCRay2& shadow = shadow_stream[N];
-      unmasked { shadow.tnear = pos_inf; shadow.tfar = neg_inf; }
+      unmasked { 
+        shadow.tnear = (float)(pos_inf); 
+        shadow.tfar  = (float)(neg_inf); 
+      }
 
       /* ignore invalid rays */
       if (valid_stream[N] == false) continue;
@@ -405,8 +408,10 @@ void renderTileStandardStream(uniform int taskIndex,
       /* initialize shadow ray */
       shadow.org = primary.org + primary.tfar*primary.dir;
       shadow.dir = neg(lightDir);
-      shadow.tnear = 0.001f;
-      shadow.tfar = inf;
+      bool mask = __mask; unmasked {
+        shadow.tnear = mask ? 0.001f       : (float)(pos_inf);
+        shadow.tfar  = mask ? (float)(inf) : (float)(neg_inf);
+      }
       shadow.geomID = RTC_INVALID_GEOMETRY_ID;
       shadow.primID = RTC_INVALID_GEOMETRY_ID;
       shadow.mask = N*programCount + programIndex;
@@ -433,7 +438,10 @@ void renderTileStandardStream(uniform int taskIndex,
       /* invalidate rays by default */
       RTCRay2& primary = primary_stream[N];
       float primary_tfar = primary.tfar;
-      unmasked { primary.tnear = pos_inf; primary.tfar = neg_inf; }
+      unmasked { 
+        primary.tnear = (float)(pos_inf); 
+        primary.tfar  = (float)(neg_inf); 
+      }
 
       /* ignore invalid rays */
       if (valid_stream[N] == false) continue;
@@ -450,8 +458,10 @@ void renderTileStandardStream(uniform int taskIndex,
 
       /* initialize transmission ray */
       weight_stream[N] *= primary.transparency;      
-      primary.tnear = 1.001f*primary_tfar;
-      primary.tfar = inf;
+      bool mask = __mask; unmasked {
+        primary.tnear = mask ? 1.001f*primary_tfar : (float)(pos_inf);
+        primary.tfar  = mask ? (float)(inf)        : (float)(neg_inf);
+      }
       primary.geomID = RTC_INVALID_GEOMETRY_ID;
       primary.primID = RTC_INVALID_GEOMETRY_ID;
       primary.transparency = 0.0f;

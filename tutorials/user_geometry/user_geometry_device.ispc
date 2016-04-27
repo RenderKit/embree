@@ -145,9 +145,9 @@ unmasked void instanceIntersectFuncN(const uniform int* uniform valid,
     const Vec3f ray_dir = make_Vec3f(RTCRayN_dir_x(rays,N,ui),RTCRayN_dir_y(rays,N,ui),RTCRayN_dir_z(rays,N,ui));
     ray.org = xfmPoint (instance->world2local,ray_org);
     ray.dir = xfmVector(instance->world2local,ray_dir);
-    varying bool mask = __mask; unmasked {
-      ray.tnear = mask ? RTCRayN_tnear(rays,N,ui) : pos_inf;
-      ray.tfar  = mask ? RTCRayN_tfar(rays,N,ui)  : neg_inf;
+    bool mask = __mask; unmasked {
+      ray.tnear = mask ? RTCRayN_tnear(rays,N,ui) : (float)(pos_inf);
+      ray.tfar  = mask ? RTCRayN_tfar(rays,N,ui ) : (float)(neg_inf);
     }
     //print("ray.tnear/tfar = % %\n",ray.tnear,ray.tfar);
     ray.time  = RTCRayN_time(rays,N,ui);
@@ -197,9 +197,9 @@ unmasked void instanceOccludedFuncN(const uniform int* uniform valid,
     const Vec3f ray_dir = make_Vec3f(RTCRayN_dir_x(rays,N,ui),RTCRayN_dir_y(rays,N,ui),RTCRayN_dir_z(rays,N,ui));
     ray.org = xfmPoint (instance->world2local,ray_org);
     ray.dir = xfmVector(instance->world2local,ray_dir);
-    varying bool mask = __mask; unmasked {
-      ray.tnear = mask ? RTCRayN_tnear(rays,N,ui) : pos_inf;
-      ray.tfar  = mask ? RTCRayN_tfar(rays,N,ui)  : neg_inf;
+    bool mask = __mask; unmasked {
+      ray.tnear = mask ? RTCRayN_tnear(rays,N,ui) : (float)(pos_inf);
+      ray.tfar  = mask ? RTCRayN_tfar(rays,N,ui)  : (float)(neg_inf);
     }
     ray.time  = RTCRayN_time(rays,N,ui);
     ray.mask  = RTCRayN_mask(rays,N,ui);
@@ -646,7 +646,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
   ray.org = make_Vec3f(camera.xfm.p);
   ray.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
   ray.tnear = 0.0f;
-  ray.tfar = inf;
+  ray.tfar = (float)(inf);
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.instID = 4; // set default instance ID
@@ -675,7 +675,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
     shadow.org = ray.org + ray.tfar*ray.dir;
     shadow.dir = neg(lightDir);
     shadow.tnear = 0.001f;
-    shadow.tfar = inf;
+    shadow.tfar = (float)(inf);
     shadow.geomID = 1;
     shadow.primID = 0;
     shadow.mask = -1;
@@ -758,16 +758,16 @@ void renderTileStandardStream(uniform int taskIndex,
     /* initialize variables */
     color_stream[N] = make_Vec3f(0.0f);
     weight_stream[N] = 1.0f;
-    unmasked { valid_stream[N] = false; }
-    valid_stream[N] = true;
+    bool mask = __mask; unmasked { valid_stream[N] = mask; }
 
     /* initialize ray */
     RTCRay& primary = primary_stream[N];
     primary.org = make_Vec3f(camera.xfm.p);
     primary.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
-    unmasked { primary.tnear = pos_inf; primary.tfar = neg_inf; } // invalidates inactive rays
-    primary.tnear = 0.0f;
-    primary.tfar = inf;
+    mask = __mask; unmasked { // invalidates inactive rays
+      primary.tnear = mask ? 0.0f         : (float)(pos_inf); 
+      primary.tfar  = mask ? (float)(inf) : (float)(neg_inf); 
+    } 
     primary.instID = 4; // set default instance ID
     primary.geomID = RTC_INVALID_GEOMETRY_ID;
     primary.primID = RTC_INVALID_GEOMETRY_ID;
@@ -794,7 +794,10 @@ void renderTileStandardStream(uniform int taskIndex,
     
     /* invalidate shadow rays by default */
     RTCRay& shadow = shadow_stream[N];
-    unmasked { shadow.tnear = pos_inf; shadow.tfar = neg_inf; }
+    unmasked {
+      shadow.tnear = (float)(pos_inf); 
+      shadow.tfar  = (float)(neg_inf); 
+    }
     
     /* ignore invalid rays */
     if (valid_stream[N] == false) continue;
@@ -816,8 +819,10 @@ void renderTileStandardStream(uniform int taskIndex,
     /* initialize shadow ray */
     shadow.org = primary.org + primary.tfar*primary.dir;
     shadow.dir = neg(lightDir);
-    shadow.tnear = 0.001f;
-    shadow.tfar = inf;
+    bool mask = __mask; unmasked {
+      shadow.tnear = mask ? 0.001f       : (float)(pos_inf);
+      shadow.tfar  = mask ? (float)(inf) : (float)(neg_inf);
+    }
     shadow.geomID = RTC_INVALID_GEOMETRY_ID;
     shadow.primID = RTC_INVALID_GEOMETRY_ID;
     shadow.mask = N*programCount + programIndex;

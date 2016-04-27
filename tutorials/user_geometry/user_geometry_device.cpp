@@ -146,8 +146,8 @@ void instanceIntersectFuncN(const int* valid,
     ray.org = xfmPoint (instance->world2local,ray_org);
     ray.dir = xfmVector(instance->world2local,ray_dir);
     bool mask = 1; {
-      ray.tnear = mask ? RTCRayN_tnear(rays,N,ui) : pos_inf;
-      ray.tfar  = mask ? RTCRayN_tfar(rays,N,ui)  : neg_inf;
+      ray.tnear = mask ? RTCRayN_tnear(rays,N,ui) : (float)(pos_inf);
+      ray.tfar  = mask ? RTCRayN_tfar(rays,N,ui ) : (float)(neg_inf);
     }
     //printf("ray.tnear/tfar = % %\n",ray.tnear,ray.tfar);
     ray.time  = RTCRayN_time(rays,N,ui);
@@ -198,8 +198,8 @@ void instanceOccludedFuncN(const int* valid,
     ray.org = xfmPoint (instance->world2local,ray_org);
     ray.dir = xfmVector(instance->world2local,ray_dir);
     bool mask = 1; {
-      ray.tnear = mask ? RTCRayN_tnear(rays,N,ui) : pos_inf;
-      ray.tfar  = mask ? RTCRayN_tfar(rays,N,ui)  : neg_inf;
+      ray.tnear = mask ? RTCRayN_tnear(rays,N,ui) : (float)(pos_inf);
+      ray.tfar  = mask ? RTCRayN_tfar(rays,N,ui)  : (float)(neg_inf);
     }
     ray.time  = RTCRayN_time(rays,N,ui);
     ray.mask  = RTCRayN_mask(rays,N,ui);
@@ -646,7 +646,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
   ray.org = Vec3fa(camera.xfm.p);
   ray.dir = Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
   ray.tnear = 0.0f;
-  ray.tfar = inf;
+  ray.tfar = (float)(inf);
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.instID = 4; // set default instance ID
@@ -675,7 +675,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
     shadow.org = ray.org + ray.tfar*ray.dir;
     shadow.dir = neg(lightDir);
     shadow.tnear = 0.001f;
-    shadow.tfar = inf;
+    shadow.tfar = (float)(inf);
     shadow.geomID = 1;
     shadow.primID = 0;
     shadow.mask = -1;
@@ -758,16 +758,16 @@ void renderTileStandardStream(int taskIndex,
     /* initialize variables */
     color_stream[N] = Vec3fa(0.0f);
     weight_stream[N] = 1.0f;
-    { valid_stream[N] = false; }
-    valid_stream[N] = true;
+    bool mask = 1; { valid_stream[N] = mask; }
 
     /* initialize ray */
     RTCRay& primary = primary_stream[N];
     primary.org = Vec3fa(camera.xfm.p);
     primary.dir = Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
-    { primary.tnear = pos_inf; primary.tfar = neg_inf; } // invalidates inactive rays
-    primary.tnear = 0.0f;
-    primary.tfar = inf;
+    mask = 1; { // invalidates inactive rays
+      primary.tnear = mask ? 0.0f         : (float)(pos_inf); 
+      primary.tfar  = mask ? (float)(inf) : (float)(neg_inf); 
+    } 
     primary.instID = 4; // set default instance ID
     primary.geomID = RTC_INVALID_GEOMETRY_ID;
     primary.primID = RTC_INVALID_GEOMETRY_ID;
@@ -794,7 +794,10 @@ void renderTileStandardStream(int taskIndex,
     
     /* invalidate shadow rays by default */
     RTCRay& shadow = shadow_stream[N];
-    { shadow.tnear = pos_inf; shadow.tfar = neg_inf; }
+    {
+      shadow.tnear = (float)(pos_inf); 
+      shadow.tfar  = (float)(neg_inf); 
+    }
     
     /* ignore invalid rays */
     if (valid_stream[N] == false) continue;
@@ -816,8 +819,10 @@ void renderTileStandardStream(int taskIndex,
     /* initialize shadow ray */
     shadow.org = primary.org + primary.tfar*primary.dir;
     shadow.dir = neg(lightDir);
-    shadow.tnear = 0.001f;
-    shadow.tfar = inf;
+    bool mask = 1; {
+      shadow.tnear = mask ? 0.001f       : (float)(pos_inf);
+      shadow.tfar  = mask ? (float)(inf) : (float)(neg_inf);
+    }
     shadow.geomID = RTC_INVALID_GEOMETRY_ID;
     shadow.primID = RTC_INVALID_GEOMETRY_ID;
     shadow.mask = N*1 + 0;
