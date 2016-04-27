@@ -43,6 +43,11 @@ ENDIF()
   SET_PROPERTY(TARGET verify PROPERTY FOLDER tests)
   ADD_TEST(NAME verify COMMAND verify)
 
+  ADD_EXECUTABLE(verify2 verify2.cpp ../tutorials/common/tutorial/application.cpp)
+  TARGET_LINK_LIBRARIES(verify2 sys embree)
+  SET_PROPERTY(TARGET verify2 PROPERTY FOLDER tests)
+  ADD_TEST(NAME verify2 COMMAND verify2)
+
   ADD_EXECUTABLE(benchmark benchmark.cpp)
   TARGET_LINK_LIBRARIES(benchmark sys embree)
   SET_PROPERTY(TARGET benchmark PROPERTY FOLDER tests)
