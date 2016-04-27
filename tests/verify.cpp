@@ -3780,20 +3780,27 @@ namespace embree
     /* parse command line options */
     parseCommandLine(argc,argv);
     
-    /* print Embree version */
-    rtcInit("verbose=1");
-    error_handler(rtcGetError());
-    rtcExit();
-    
     /* perform tests */
     device = rtcNewDevice(rtcore.c_str());
     error_handler(rtcDeviceGetError(device));
 
     /* execute specific user tests */
-    if (tests_to_run.size()) {
-      for (auto test : tests_to_run) runTest(test);
-    } else {
-      for (auto test : tests) runTest(test);
+    if (tests_to_run.size()) 
+    {
+      for (auto test : tests_to_run) 
+        runTest(test);
+    } 
+    /* run all tests by default */
+    else 
+    {
+      /* print Embree version */
+      rtcInit("verbose=1");
+      error_handler(rtcGetError());
+      rtcExit();
+
+      /* run all available tests */
+      for (auto test : tests) 
+        runTest(test);
     }
 
     rtcDeleteDevice(device);
