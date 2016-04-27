@@ -217,6 +217,36 @@ namespace embree
     RTCGeometryFlags geomFlags;
   };
   
+#if 0
+  struct StaticSceneTest : public VerifyApplication::Test
+  {
+    StaticSceneTest (std::string name, VerifyApplication::TestType type, RTCSceneFlags sceneFlags, RTCGeometryFlags geomFlags)
+      : VerifyApplication::Test(name,type), sceneFlags(sceneFlags), geomFlags(geomFlags) {}
+
+    bool run(VerifyApplication* state)
+    {
+      bool rtcore_static_scene()
+  {
+    ClearBuffers clear_before_return;
+    RTCSceneRef scene = rtcDeviceNewScene(g_device,RTC_SCENE_STATIC,aflags);
+    AssertNoError();
+    unsigned geom0 = addSphere(scene,RTC_GEOMETRY_STATIC,zero,1.0f,50);
+    AssertNoError();
+    unsigned geom1 = addSubdivSphere(scene,RTC_GEOMETRY_STATIC,zero,1.0f,10,16);
+    AssertNoError();
+    unsigned geom2 = addHair(scene,RTC_GEOMETRY_STATIC,Vec3fa(0,0,0),1.0f,0.5f,100);
+    AssertNoError();
+    rtcCommit (scene);
+    AssertNoError();
+    //rtcCommit (scene); // cannot commit static scene twice
+    //AssertAnyError();
+    rtcDisable(scene,geom0); // static scene cannot get modified anymore after commit
+    AssertAnyError();
+    scene = nullptr;
+    return true;
+  }
+#endif
+
   VerifyApplication::VerifyApplication ()
     : device(nullptr), rtcore(""), regressionN(200), numFailedTests(0)
   {
@@ -234,12 +264,6 @@ namespace embree
     addTest(new FlagsTest("flags_dynamic_deformable",VerifyApplication::PASS, RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DEFORMABLE));
     addTest(new FlagsTest("flags_dynamic_dynamic"   ,VerifyApplication::PASS, RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DYNAMIC));
     
-    //POSITIVE("flags_static_static",       rtcore_dynamic_flag(RTC_SCENE_STATIC, RTC_GEOMETRY_STATIC));
-    //NEGATIVE("flags_static_deformable",   rtcore_dynamic_flag(RTC_SCENE_STATIC, RTC_GEOMETRY_DEFORMABLE));
-    //NEGATIVE("flags_static_dynamic",      rtcore_dynamic_flag(RTC_SCENE_STATIC, RTC_GEOMETRY_DYNAMIC));
-    //POSITIVE("flags_dynamic_static",      rtcore_dynamic_flag(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC));
-    //POSITIVE("flags_dynamic_deformable",  rtcore_dynamic_flag(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DEFORMABLE));
-    //POSITIVE("flags_dynamic_dynamic",     rtcore_dynamic_flag(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DYNAMIC));
     //POSITIVE("static_scene",              rtcore_static_scene());
     //POSITIVE("unmapped_before_commit",    rtcore_unmapped_before_commit());
     //POSITIVE("get_bounds",                rtcore_rtcGetBounds());
