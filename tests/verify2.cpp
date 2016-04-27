@@ -1064,6 +1064,54 @@ namespace embree
       return true;
     }
   };
+
+  struct DynamicEnableDisableTest : public VerifyApplication::Test
+  {
+    DynamicEnableDisableTest (std::string name)
+      : VerifyApplication::Test(name,VerifyApplication::PASS) {}
+    
+    bool run(VerifyApplication* state)
+    {
+      ClearBuffers clear_before_return;
+      RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_DYNAMIC,aflags);
+      AssertNoError(state->device);
+      unsigned geom0 = addSphere(state->device,scene,RTC_GEOMETRY_STATIC,Vec3fa(-1,0,-1),1.0f,50);
+      //unsigned geom1 = addSphere(state->device,scene,RTC_GEOMETRY_STATIC,Vec3fa(-1,0,+1),1.0f,50);
+      unsigned geom1 = addHair  (state->device,scene,RTC_GEOMETRY_STATIC,Vec3fa(-1,0,+1),1.0f,1.0f,1);
+      unsigned geom2 = addSphere(state->device,scene,RTC_GEOMETRY_STATIC,Vec3fa(+1,0,-1),1.0f,50);
+      //unsigned geom3 = addSphere(state->device,scene,RTC_GEOMETRY_STATIC,Vec3fa(+1,0,+1),1.0f,50);
+      unsigned geom3 = addHair  (state->device,scene,RTC_GEOMETRY_STATIC,Vec3fa(+1,0,+1),1.0f,1.0f,1);
+      AssertNoError(state->device);
+      
+      for (size_t i=0; i<16; i++) 
+      {
+        bool enabled0 = i & 1, enabled1 = i & 2, enabled2 = i & 4, enabled3 = i & 8;
+        if (enabled0) rtcEnable(scene,geom0); else rtcDisable(scene,geom0); AssertNoError(state->device);
+        if (enabled1) rtcEnable(scene,geom1); else rtcDisable(scene,geom1); AssertNoError(state->device);
+        if (enabled2) rtcEnable(scene,geom2); else rtcDisable(scene,geom2); AssertNoError(state->device);
+        if (enabled3) rtcEnable(scene,geom3); else rtcDisable(scene,geom3); AssertNoError(state->device);
+        rtcCommit (scene);
+        AssertNoError(state->device);
+        {
+          RTCRay ray0 = makeRay(Vec3fa(-1,10,-1),Vec3fa(0,-1,0));
+          RTCRay ray1 = makeRay(Vec3fa(-1,10,+1),Vec3fa(0,-1,0)); 
+          RTCRay ray2 = makeRay(Vec3fa(+1,10,-1),Vec3fa(0,-1,0)); 
+          RTCRay ray3 = makeRay(Vec3fa(+1,10,+1),Vec3fa(0,-1,0)); 
+          rtcIntersect(scene,ray0);
+          rtcIntersect(scene,ray1);
+          rtcIntersect(scene,ray2);
+          rtcIntersect(scene,ray3);
+          bool ok0 = enabled0 ? ray0.geomID == 0 : ray0.geomID == -1;
+          bool ok1 = enabled1 ? ray1.geomID == 1 : ray1.geomID == -1;
+          bool ok2 = enabled2 ? ray2.geomID == 2 : ray2.geomID == -1;
+          bool ok3 = enabled3 ? ray3.geomID == 3 : ray3.geomID == -1;
+          if (!ok0 || !ok1 || !ok2 || !ok3) return false;
+        }
+      }
+      scene = nullptr;
+      return true;
+    }
+  };
     
   VerifyApplication::VerifyApplication ()
     : device(nullptr), rtcore(""), regressionN(200), numFailedTests(0)
@@ -1090,7 +1138,7 @@ namespace embree
     addTest(new BufferStrideTest("buffer_stride"));
 #endif
 
-    //POSITIVE("dynamic_enable_disable",    rtcore_dynamic_enable_disable());
+    addTest(new DynamicEnableDisableTest("dynamic_enable_disable"));
     //POSITIVE("get_user_data"         ,    rtcore_get_user_data());
 
     //POSITIVE("update_deformable",         rtcore_update(RTC_GEOMETRY_DEFORMABLE));
