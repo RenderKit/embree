@@ -22,7 +22,6 @@
 namespace embree
 {
   /* name of the tutorial */
-  const char* tutorialName = "convert";
   bool embedTextures = true;
   
   struct HeightField : public RefCount

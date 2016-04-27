@@ -177,4 +177,7 @@ namespace embree
 
   /*! returns performance counter in seconds */
   double getSeconds();
+
+  /*! sleeps the specified number of seconds */
+  void sleepSeconds(double t);
 }

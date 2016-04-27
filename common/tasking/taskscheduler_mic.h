@@ -191,6 +191,9 @@ namespace embree
     /*! destroys all threads */
     void destroyThreads();
 
+  public:
+    static size_t threadCount();
+
     /* thread handling */
   protected:
     volatile bool terminateThreads;

@@ -57,7 +57,8 @@ namespace embree
                                            const Vec3vfK &ray_rdir, 
                                            const vfloat<K> &ray_tnear, 
                                            const vfloat<K> &ray_tfar,
-                                           const Vec3viK& nearXYZ)
+                                           const Vec3viK& nearXYZ, 
+                                           const RTCIntersectContext* context)
       {
 	/*! stack state */
 	StackItemT<NodeRef> stack[stackSizeSingle];  //!< stack of nodes 
@@ -109,7 +110,7 @@ namespace embree
 	  size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
 
           size_t lazy_node = 0;
-          PrimitiveIntersectorK::intersect(pre, ray, k, prim, num, bvh->scene, lazy_node);
+          PrimitiveIntersectorK::intersect(pre, ray, k, context, prim, num, bvh->scene, lazy_node);
 	  ray_far = ray.tfar[k];
 
           if (unlikely(lazy_node)) {
@@ -122,7 +123,7 @@ namespace embree
       
       static __forceinline bool occluded1(const BVH* bvh, NodeRef root, const size_t k, Precalculations& pre,
                                           RayK<K>& ray, const Vec3vfK &ray_org, const Vec3vfK &ray_dir, const Vec3vfK &ray_rdir, const vfloat<K> &ray_tnear, const vfloat<K> &ray_tfar,
-                                          const Vec3viK& nearXYZ)
+                                          const Vec3viK& nearXYZ, const RTCIntersectContext* context)
       {
 	/*! stack state */
 	NodeRef stack[stackSizeSingle];  //!< stack of nodes that still need to get traversed
@@ -169,7 +170,7 @@ namespace embree
 	  size_t num; Primitive* prim = (Primitive*) cur.leaf(num);
 
           size_t lazy_node = 0;
-          if (PrimitiveIntersectorK::occluded(pre,ray,k,prim,num,bvh->scene,lazy_node)) {
+          if (PrimitiveIntersectorK::occluded(pre,ray,k,context,prim,num,bvh->scene,lazy_node)) {
 	    ray.geomID[k] = 0;
 	    return true;
 	  }
@@ -182,8 +183,8 @@ namespace embree
 	return false;
       }
       
-      static void intersect(vint<K>* valid, BVH* bvh, RayK<K>& ray);
-      static void occluded (vint<K>* valid, BVH* bvh, RayK<K>& ray);
+      static void intersect(vint<K>* valid, BVH* bvh, RayK<K>& ray, const RTCIntersectContext* context);
+      static void occluded (vint<K>* valid, BVH* bvh, RayK<K>& ray, const RTCIntersectContext* context);
     };
   }
 }

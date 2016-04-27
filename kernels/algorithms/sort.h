@@ -27,7 +27,8 @@
  #include "../../common/simd/avx512.h"
 #endif
 
-#define RADIX_SORT_MIN_BLOCK_SIZE 4096
+/* the higher the less core-2-core synchronization required */
+#define RADIX_SORT_MIN_BLOCK_SIZE 8096
 
 
 namespace embree
@@ -397,7 +398,7 @@ namespace embree
         /* perform parallel sort for large N */
         else 
         {
-          const size_t numThreads = min((N+blockSize-1)/blockSize,TaskSchedulerTBB::threadCount(),size_t(MAX_TASKS));
+          const size_t numThreads = min((N+blockSize-1)/blockSize,TaskScheduler::threadCount(),size_t(MAX_TASKS));
           tbbRadixSort(numThreads);
         }
       }

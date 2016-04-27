@@ -60,7 +60,7 @@ namespace embree
           const BinMapping<BINS> mapping(pinfo);
           const BinMapping<BINS>& _mapping = mapping; // CLANG 3.4 parser bug workaround
           typename Set::iterator i=set;
-          const size_t threadCount = TaskSchedulerTBB::threadCount();
+          const size_t threadCount = TaskScheduler::threadCount();
           const Binner binner = parallel_reduce(size_t(0),threadCount,Binner(empty), [&] (const range<size_t>& r) -> Binner
           {
             Binner binner(empty);
@@ -139,7 +139,7 @@ namespace embree
           linfo_o.reset();
           rinfo_o.reset();
           
-          const size_t threadCount = TaskSchedulerTBB::threadCount();
+          const size_t threadCount = TaskScheduler::threadCount();
           const PrimInfo2 info = parallel_reduce(size_t(0),threadCount,PrimInfo2(empty), [&] (const range<size_t>& r) -> PrimInfo2
           {
             PrimRefList::item* lblock = nullptr;

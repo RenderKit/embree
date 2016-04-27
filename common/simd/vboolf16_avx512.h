@@ -37,25 +37,25 @@ namespace embree
     __forceinline vboolf(const vboolf16 &t) { v = t.v; }
     __forceinline vboolf16& operator=(const vboolf16 &f) { v = f.v; return *this; }
 
-    __forceinline vboolf(const __mmask &t) { v = t; }
-    __forceinline operator __mmask () const { return v; }
+    __forceinline vboolf(const __mmask16 &t) { v = t; }
+    __forceinline operator __mmask16 () const { return v; }
     
     __forceinline vboolf(bool b) { v = b ? 0xFFFF : 0x0000; }
-    __forceinline vboolf(int t ) { v = (__mmask)t; }
-    __forceinline vboolf(unsigned int t ) { v = (__mmask)t; }
+    __forceinline vboolf(int t ) { v = (__mmask16)t; }
+    __forceinline vboolf(unsigned int t ) { v = (__mmask16)t; }
 
     /* return int8 mask */
     __forceinline __m128i mask8() const { 
-      const __m512i f = _mm512_set_1to16_epi32(0);
-      const __m512i t = _mm512_set_1to16_epi32(-1);
+      const __m512i f = _mm512_set1_epi32(0);
+      const __m512i t = _mm512_set1_epi32(-1);
       const __m512i m =  _mm512_mask_or_epi32(f,v,t,t); 
       return _mm512_cvtepi32_epi8(m);
     }
 
     /* return int32 mask */
     __forceinline __m512i mask32() const { 
-      const __m512i f = _mm512_set_1to16_epi32(0);
-      const __m512i t = _mm512_set_1to16_epi32(-1);
+      const __m512i f = _mm512_set1_epi32(0);
+      const __m512i t = _mm512_set1_epi32(-1);
       return _mm512_mask_or_epi32(f,v,t,t); 
     }
 

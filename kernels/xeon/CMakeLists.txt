@@ -23,22 +23,9 @@ SOURCE_GROUP("Source Files\\tasking" "/tasking/" )
 SOURCE_GROUP("Source Files\\algorithms" "/algorithms/")
 SOURCE_GROUP("" FILES embree.rc)
 
-IF (TASKING_INTERNAL)
-  ADD_DEFINITIONS(-DTASKING_TBB_INTERNAL)
-ENDIF()
-
-IF (TASKING_TBB)
-  ADD_DEFINITIONS(-DTASKING_TBB)
-  SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} ${TBB_LIBRARIES})
-ENDIF()
-
-
 SET(EMBREE_LIBRARY_FILES
  
    embree.rc
-
-  ../../common/tasking/taskscheduler_tbb.cpp
-  ../../common/tasking/tasksys.cpp
 
   ../algorithms/parallel_for.cpp
   ../algorithms/parallel_reduce.cpp
@@ -99,17 +86,32 @@ SET(EMBREE_LIBRARY_FILES
   bvh/bvh_intersector1.cpp
   )
 
+IF (TASKING_INTERNAL)
+  ADD_DEFINITIONS(-DTASKING_INTERNAL)
+  SET(EMBREE_LIBRARY_FILES 
+    ../../common/tasking/taskschedulerinternal.cpp
+    ../../common/tasking/tasksys.cpp
+    ${EMBREE_LIBRARY_FILES})
+ENDIF()
+
+IF (TASKING_TBB)
+  ADD_DEFINITIONS(-DTASKING_TBB)
+  SET(EMBREE_LIBRARY_FILES 
+    ../../common/tasking/taskschedulertbb.cpp
+    ../../common/tasking/tasksys.cpp
+    ${EMBREE_LIBRARY_FILES})
+  SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} ${TBB_LIBRARIES})
+ENDIF()
+
 IF (RTCORE_RAY_PACKETS)
   SET(EMBREE_LIBRARY_FILES ${EMBREE_LIBRARY_FILES}
 
   ../common/rtcore_ispc.cpp
   ../common/rtcore_ispc.ispc
 
-  ../common/raystreams/raystreams.cpp
-
   bvh/bvh_intersector_single.cpp
   bvh/bvh_intersector_hybrid.cpp
-  bvh/bvh_intersector_stream.cpp)
+  bvh/bvh_intersector_stream_filters.cpp)
 ENDIF()
 
 SET(EMBREE_LIBRARY_FILES_SSE42
@@ -159,11 +161,10 @@ IF (RTCORE_RAY_PACKETS)
 
     geometry/instance_intersector.cpp
 
-    ../common/raystreams/raystreams.cpp
-
     bvh/bvh_intersector_single.cpp
     bvh/bvh_intersector_hybrid.cpp
-    bvh/bvh_intersector_stream.cpp)
+    bvh/bvh_intersector_stream.cpp
+    bvh/bvh_intersector_stream_filters.cpp)
 ENDIF()
 
 IF (TARGET_AVX AND EMBREE_LIBRARY_FILES_AVX)
@@ -182,11 +183,10 @@ IF (RTCORE_RAY_PACKETS)
   SET(EMBREE_LIBRARY_FILES_AVX2 ${EMBREE_LIBRARY_FILES_AVX2}
     geometry/instance_intersector.cpp
 
-    ../common/raystreams/raystreams.cpp
-
     bvh/bvh_intersector_single.cpp
     bvh/bvh_intersector_hybrid.cpp
-    bvh/bvh_intersector_stream.cpp)
+    bvh/bvh_intersector_stream.cpp
+    bvh/bvh_intersector_stream_filters.cpp)
 ENDIF()
 
 IF (TARGET_AVX2 AND EMBREE_LIBRARY_FILES_AVX2)
@@ -202,6 +202,8 @@ SET(EMBREE_LIBRARY_FILES_AVX512KNL
     builders/primrefgen.avx512.cpp
     bvh/bvh_builder.avx512.cpp
     bvh/bvh_builder_sah.avx512.cpp
+    bvh/bvh_builder_twolevel.avx512.cpp
+    bvh/bvh_builder_instancing.avx512.cpp
 
     bvh/bvh_refit.cpp
     bvh/bvh_builder_subdiv.avx512.cpp
@@ -212,11 +214,10 @@ IF (RTCORE_RAY_PACKETS)
 
     geometry/instance_intersector.cpp
 
-    ../common/raystreams/raystreams.cpp
-
     bvh/bvh_intersector_single.cpp
     bvh/bvh_intersector_hybrid.cpp
-    bvh/bvh_intersector_stream.cpp)
+    bvh/bvh_intersector_stream.cpp
+    bvh/bvh_intersector_stream_filters.cpp)
 ENDIF()
 
 IF (TARGET_AVX512KNL AND EMBREE_LIBRARY_FILES_AVX512KNL)
@@ -265,7 +266,7 @@ ENDIF()
 IF (WIN32)
   INSTALL(TARGETS embree DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT lib)
 ELSE()
-  INSTALL(TARGETS embree DESTINATION ${CMAKE_INSTALL_LIBDIR} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT lib NAMELINK_SKIP)
+  INSTALL(TARGETS embree DESTINATION ${CMAKE_INSTALL_LIBDIR} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT lib)
 ENDIF()
 
 IF (WIN32)

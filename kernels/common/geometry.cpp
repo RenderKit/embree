@@ -23,9 +23,11 @@ namespace embree
     : parent(parent), type(type), numPrimitives(numPrimitives), numTimeSteps(numTimeSteps), id(0), flags(flags),
       enabled(true), modified(true), mask(-1), used(1),
       intersectionFilter1(nullptr), occlusionFilter1(nullptr),
-      intersectionFilter4(nullptr), occlusionFilter4(nullptr), ispcIntersectionFilter4(false), ispcOcclusionFilter4(false), 
-      intersectionFilter8(nullptr), occlusionFilter8(nullptr), ispcIntersectionFilter8(false), ispcOcclusionFilter8(false), 
-      intersectionFilter16(nullptr), occlusionFilter16(nullptr), ispcIntersectionFilter16(false), ispcOcclusionFilter16(false), 
+      intersectionFilter4(nullptr), occlusionFilter4(nullptr),
+      intersectionFilter8(nullptr), occlusionFilter8(nullptr),
+      intersectionFilter16(nullptr), occlusionFilter16(nullptr),
+      intersectionFilterN(nullptr), occlusionFilterN(nullptr),
+      hasIntersectionFilterMask(0), hasOcclusionFilterMask(0), ispcIntersectionFilterMask(0), ispcOcclusionFilterMask(0),
       userPtr(nullptr)
   {
     id = parent->add(this);
@@ -41,14 +43,24 @@ namespace embree
 
   void Geometry::updateIntersectionFilters(bool enable)
   {
+    const size_t num1  = (intersectionFilter1  != nullptr) + (occlusionFilter1  != nullptr);
+    const size_t num4  = (intersectionFilter4  != nullptr) + (occlusionFilter4  != nullptr);
+    const size_t num8  = (intersectionFilter8  != nullptr) + (occlusionFilter8  != nullptr);
+    const size_t num16 = (intersectionFilter16 != nullptr) + (occlusionFilter16 != nullptr);
+    const size_t numN  = (intersectionFilterN  != nullptr) + (occlusionFilterN  != nullptr);
+
     if (enable) {
-      atomic_add(&parent->numIntersectionFilters4,(intersectionFilter4 != nullptr) + (occlusionFilter4 != nullptr));
-      atomic_add(&parent->numIntersectionFilters8,(intersectionFilter8 != nullptr) + (occlusionFilter8 != nullptr));
-      atomic_add(&parent->numIntersectionFilters16,(intersectionFilter16 != nullptr) + (occlusionFilter16 != nullptr));
+      atomic_add(&parent->numIntersectionFilters1,num1);
+      atomic_add(&parent->numIntersectionFilters4,num4);
+      atomic_add(&parent->numIntersectionFilters8,num8);
+      atomic_add(&parent->numIntersectionFilters16,num16);
+      atomic_add(&parent->numIntersectionFiltersN,numN);
     } else {
-      atomic_sub(&parent->numIntersectionFilters4,(intersectionFilter4 != nullptr) + (occlusionFilter4 != nullptr));
-      atomic_sub(&parent->numIntersectionFilters8,(intersectionFilter8 != nullptr) + (occlusionFilter8 != nullptr));
-      atomic_sub(&parent->numIntersectionFilters16,(intersectionFilter16 != nullptr) + (occlusionFilter16 != nullptr));
+      atomic_sub(&parent->numIntersectionFilters1,num1);
+      atomic_sub(&parent->numIntersectionFilters4,num4);
+      atomic_sub(&parent->numIntersectionFilters8,num8);
+      atomic_sub(&parent->numIntersectionFilters16,num16);
+      atomic_sub(&parent->numIntersectionFiltersN,numN);
     }
   }
 
@@ -101,6 +113,9 @@ namespace embree
   
   void Geometry::setIntersectionFilterFunction (RTCFilterFunc filter, bool ispc) 
   {
+    if (parent->isStreamMode())
+      throw_RTCError(RTC_INVALID_OPERATION,"you have to use rtcSetIntersectionFilterFunctionN in stream mode");
+
     if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
@@ -110,10 +125,14 @@ namespace embree
     atomic_sub(&parent->numIntersectionFilters1,intersectionFilter1 != nullptr);
     atomic_add(&parent->numIntersectionFilters1,filter != nullptr);
     intersectionFilter1 = filter;
+    if (filter) hasIntersectionFilterMask  |= HAS_FILTER1; else hasIntersectionFilterMask  &= ~HAS_FILTER1;
   }
     
   void Geometry::setIntersectionFilterFunction4 (RTCFilterFunc4 filter, bool ispc) 
   { 
+    if (parent->isStreamMode())
+      throw_RTCError(RTC_INVALID_OPERATION,"you have to use rtcSetIntersectionFilterFunctionN in stream mode");
+
     if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
@@ -123,11 +142,15 @@ namespace embree
     atomic_sub(&parent->numIntersectionFilters4,intersectionFilter4 != nullptr);
     atomic_add(&parent->numIntersectionFilters4,filter != nullptr);
     intersectionFilter4 = filter;
-    ispcIntersectionFilter4 = ispc;
+    if (filter) hasIntersectionFilterMask  |= HAS_FILTER4; else hasIntersectionFilterMask  &= ~HAS_FILTER4;
+    if (ispc  ) ispcIntersectionFilterMask |= HAS_FILTER4; else ispcIntersectionFilterMask &= ~HAS_FILTER4;
   }
     
   void Geometry::setIntersectionFilterFunction8 (RTCFilterFunc8 filter, bool ispc) 
   { 
+    if (parent->isStreamMode())
+      throw_RTCError(RTC_INVALID_OPERATION,"you have to use rtcSetIntersectionFilterFunctionN in stream mode");
+
     if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
     
@@ -137,11 +160,15 @@ namespace embree
     atomic_sub(&parent->numIntersectionFilters8,intersectionFilter8 != nullptr);
     atomic_add(&parent->numIntersectionFilters8,filter != nullptr);
     intersectionFilter8 = filter;
-    ispcIntersectionFilter8 = ispc;
+    if (filter) hasIntersectionFilterMask  |= HAS_FILTER8; else hasIntersectionFilterMask  &= ~HAS_FILTER8;
+    if (ispc  ) ispcIntersectionFilterMask |= HAS_FILTER8; else ispcIntersectionFilterMask &= ~HAS_FILTER8;
   }
   
   void Geometry::setIntersectionFilterFunction16 (RTCFilterFunc16 filter, bool ispc) 
   { 
+    if (parent->isStreamMode())
+      throw_RTCError(RTC_INVALID_OPERATION,"you have to use rtcSetIntersectionFilterFunctionN in stream mode");
+
     if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
@@ -151,11 +178,32 @@ namespace embree
     atomic_sub(&parent->numIntersectionFilters16,intersectionFilter16 != nullptr);
     atomic_add(&parent->numIntersectionFilters16,filter != nullptr);
     intersectionFilter16 = filter;
-    ispcIntersectionFilter16 = ispc;
+    if (filter) hasIntersectionFilterMask  |= HAS_FILTER16; else hasIntersectionFilterMask  &= ~HAS_FILTER16;
+    if (ispc  ) ispcIntersectionFilterMask |= HAS_FILTER16; else ispcIntersectionFilterMask &= ~HAS_FILTER16;
+  }
+  
+  void Geometry::setIntersectionFilterFunctionN (RTCFilterFuncN filter) 
+  { 
+    if (!parent->isStreamMode())
+      throw_RTCError(RTC_INVALID_OPERATION,"you can use rtcSetIntersectionFilterFunctionN only in stream mode");
+
+    if (parent->isStatic() && parent->isBuild())
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
+
+    if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH)
+      throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
+
+    atomic_sub(&parent->numIntersectionFiltersN,intersectionFilterN != nullptr);
+    atomic_add(&parent->numIntersectionFiltersN,filter != nullptr);
+    intersectionFilterN = filter;
+    if (filter) hasIntersectionFilterMask  |= HAS_FILTERN; else hasIntersectionFilterMask  &= ~HAS_FILTERN;
   }
 
   void Geometry::setOcclusionFilterFunction (RTCFilterFunc filter, bool ispc) 
   {
+    if (parent->isStreamMode())
+      throw_RTCError(RTC_INVALID_OPERATION,"you have to use rtcSetOcclusionFilterFunctionN in stream mode");
+
     if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
@@ -165,10 +213,14 @@ namespace embree
     atomic_sub(&parent->numIntersectionFilters1,occlusionFilter1 != nullptr);
     atomic_add(&parent->numIntersectionFilters1,filter != nullptr);
     occlusionFilter1 = filter;
+    if (filter) hasOcclusionFilterMask  |= HAS_FILTER1; else hasOcclusionFilterMask  &= ~HAS_FILTER1;
   }
     
   void Geometry::setOcclusionFilterFunction4 (RTCFilterFunc4 filter, bool ispc) 
   { 
+    if (parent->isStreamMode())
+      throw_RTCError(RTC_INVALID_OPERATION,"you have to use rtcSetOcclusionFilterFunctionN in stream mode");
+
     if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
@@ -178,11 +230,15 @@ namespace embree
     atomic_sub(&parent->numIntersectionFilters4,occlusionFilter4 != nullptr);
     atomic_add(&parent->numIntersectionFilters4,filter != nullptr);
     occlusionFilter4 = filter;
-    ispcOcclusionFilter4 = ispc;
+    if (filter) hasOcclusionFilterMask  |= HAS_FILTER4; else hasOcclusionFilterMask  &= ~HAS_FILTER4;
+    if (ispc  ) ispcOcclusionFilterMask |= HAS_FILTER4; else ispcOcclusionFilterMask &= ~HAS_FILTER4;
   }
     
   void Geometry::setOcclusionFilterFunction8 (RTCFilterFunc8 filter, bool ispc) 
   { 
+    if (parent->isStreamMode())
+      throw_RTCError(RTC_INVALID_OPERATION,"you have to use rtcSetOcclusionFilterFunctionN in stream mode");
+
     if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
@@ -192,11 +248,15 @@ namespace embree
     atomic_sub(&parent->numIntersectionFilters8,occlusionFilter8 != nullptr);
     atomic_add(&parent->numIntersectionFilters8,filter != nullptr);
     occlusionFilter8 = filter;
-    ispcOcclusionFilter8 = ispc;
+    if (filter) hasOcclusionFilterMask  |= HAS_FILTER8; else hasOcclusionFilterMask  &= ~HAS_FILTER8;
+    if (ispc  ) ispcOcclusionFilterMask |= HAS_FILTER8; else ispcOcclusionFilterMask &= ~HAS_FILTER8;
   }
   
   void Geometry::setOcclusionFilterFunction16 (RTCFilterFunc16 filter, bool ispc) 
   { 
+    if (parent->isStreamMode())
+      throw_RTCError(RTC_INVALID_OPERATION,"you have to use rtcSetOcclusionFilterFunctionN in stream mode");
+
     if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
@@ -206,7 +266,25 @@ namespace embree
     atomic_sub(&parent->numIntersectionFilters16,occlusionFilter16 != nullptr);
     atomic_add(&parent->numIntersectionFilters16,filter != nullptr);
     occlusionFilter16 = filter;
-    ispcOcclusionFilter16 = ispc;
+    if (filter) hasOcclusionFilterMask  |= HAS_FILTER16; else hasOcclusionFilterMask  &= ~HAS_FILTER16;
+    if (ispc  ) ispcOcclusionFilterMask |= HAS_FILTER16; else ispcOcclusionFilterMask &= ~HAS_FILTER16;
+  }
+
+  void Geometry::setOcclusionFilterFunctionN (RTCFilterFuncN filter) 
+  { 
+    if (!parent->isStreamMode())
+      throw_RTCError(RTC_INVALID_OPERATION,"you can use rtcSetOcclusionFilterFunctionN only in stream mode");
+
+    if (parent->isStatic() && parent->isBuild())
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
+
+    if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH) 
+      throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
+
+    atomic_sub(&parent->numIntersectionFiltersN,occlusionFilterN != nullptr);
+    atomic_add(&parent->numIntersectionFiltersN,filter != nullptr);
+    occlusionFilterN = filter;
+    if (filter) hasOcclusionFilterMask  |= HAS_FILTERN; else hasOcclusionFilterMask  &= ~HAS_FILTERN;
   }
 
   void Geometry::interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 

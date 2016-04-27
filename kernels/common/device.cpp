@@ -39,8 +39,14 @@
 
 #if defined(TASKING_LOCKSTEP)
 #  include "../../common/tasking/taskscheduler_mic.h"
-#elif defined(TASKING_TBB_INTERNAL)
-#  include "../../common/tasking/taskscheduler_tbb.h"
+#endif
+
+#if defined(TASKING_INTERNAL)
+#  include "../../common/tasking/taskschedulerinternal.h"
+#endif
+
+#if defined(TASKING_TBB)
+#  include "../../common/tasking/taskschedulertbb.h"
 #endif
 
 namespace embree
@@ -62,33 +68,6 @@ namespace embree
   void BVH4HairRegister();
 #endif
 
-#if defined(TASKING_TBB)
-
-  bool g_tbb_threads_initialized = false;
-  tbb::task_scheduler_init g_tbb_threads(tbb::task_scheduler_init::deferred);
-
-  class TBBAffinity: public tbb::task_scheduler_observer
-  {
-    tbb::atomic<int> threadCount;
-
-    void on_scheduler_entry( bool ) {
-      ++threadCount;
-      setAffinity(TaskSchedulerTBB::threadIndex()); // FIXME: use threadCount?
-    }
-
-    void on_scheduler_exit( bool ) { 
-      --threadCount; 
-    }
-  public:
-    
-    TBBAffinity() { threadCount = 0; }
-
-    int  get_concurrency()      { return threadCount; }
-    void set_concurrency(int i) { threadCount = i; }
-
-  } tbb_affinity;
-#endif
-
   static MutexSys g_mutex;
   static std::map<Device*,size_t> g_cache_size_map;
   static std::map<Device*,size_t> g_num_threads_map;
@@ -107,8 +86,8 @@ namespace embree
 
     /*! do some internal tests */
 #if !defined(__MIC__)
-    isa::Cylinder::verify();
-    isa::Cone::verify();
+    assert(isa::Cylinder::verify());
+    assert(isa::Cone::verify());
 #endif
     
     /*! set tessellation cache size */
@@ -160,7 +139,7 @@ namespace embree
 #endif
 
     /* ray stream SOA to AOS conversion */
-#if defined(RTCORE_RAY_PACKETS)
+#if defined(RTCORE_RAY_PACKETS) && !defined(__MIC__)
     SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL(enabled_cpu_features,rayStreamFilters);
 #endif
   }
@@ -249,7 +228,7 @@ namespace embree
     std::cout << "TBB" << TBB_VERSION_MAJOR << "." << TBB_VERSION_MINOR << " ";
     std::cout << "TBB_header_interface_" << TBB_INTERFACE_VERSION << " TBB_lib_interface_" << tbb::TBB_runtime_interface_version() << " ";
 #endif
-#if defined(TASKING_TBB_INTERNAL)
+#if defined(TASKING_INTERNAL)
       std::cout << "internal_tasking_system ";
 #endif
 #if defined(TASKING_LOCKSTEP)
@@ -384,15 +363,12 @@ namespace embree
       TaskScheduler::destroy();
 #endif
       
-#if defined(TASKING_TBB_INTERNAL)
-      TaskSchedulerTBB::destroy();
+#if defined(TASKING_INTERNAL)
+      TaskScheduler::destroy();
 #endif
       
 #if defined(TASKING_TBB)
-      if (g_tbb_threads_initialized) {
-        g_tbb_threads.terminate();
-        g_tbb_threads_initialized = false;
-      }
+      TaskScheduler::destroy();
 #endif
       return;
     }
@@ -408,34 +384,12 @@ namespace embree
     TaskScheduler::create(maxNumThreads,State::set_affinity);
 #endif
 
-#if defined(TASKING_TBB_INTERNAL)
-    TaskSchedulerTBB::create(maxNumThreads,State::set_affinity);
+#if defined(TASKING_INTERNAL)
+    TaskScheduler::create(maxNumThreads,State::set_affinity);
 #endif
 
 #if defined(TASKING_TBB)
-
-    /* first terminate threads in case we configured them */
-    if (g_tbb_threads_initialized) {
-      g_tbb_threads.terminate();
-      g_tbb_threads_initialized = false;
-    }
-
-    /* only set affinity if requested by the user */
-    if (State::set_affinity) {
-      tbb_affinity.set_concurrency(0);
-      tbb_affinity.observe(true); 
-    }
-
-    /* now either keep default settings are configure number of threads */
-    if (maxNumThreads == 0) 
-    {
-      g_tbb_threads_initialized = false;
-      TaskSchedulerTBB::g_numThreads = tbb::task_scheduler_init::default_num_threads();
-    } else {
-      g_tbb_threads_initialized = true;
-      g_tbb_threads.initialize(maxNumThreads);
-      TaskSchedulerTBB::g_numThreads = maxNumThreads;
-    }
+    TaskScheduler::create(maxNumThreads,State::set_affinity);
 #if USE_TASK_ARENA
     arena = new tbb::task_arena(maxNumThreads);
 #endif
@@ -479,16 +433,16 @@ namespace embree
     case RTC_CONFIG_VERSION      : return __EMBREE_VERSION_NUMBER__;
 
     case RTC_CONFIG_INTERSECT1: return 1;
-    case RTC_CONFIG_INTERSECTN: return 1;
-
 #if defined(RTCORE_RAY_PACKETS)
     case RTC_CONFIG_INTERSECT4:  return hasISA(SSE2);
     case RTC_CONFIG_INTERSECT8:  return hasISA(AVX);
     case RTC_CONFIG_INTERSECT16: return hasISA(AVX512KNL) | hasISA(KNC);
+    case RTC_CONFIG_INTERSECTN:  return 1;
 #else
     case RTC_CONFIG_INTERSECT4:  return 0;
     case RTC_CONFIG_INTERSECT8:  return 0;
     case RTC_CONFIG_INTERSECT16: return 0;
+    case RTC_CONFIG_INTERSECTN:  return 0;
 #endif
     
 #if defined(RTCORE_RAY_MASK)
@@ -527,7 +481,7 @@ namespace embree
     case RTC_CONFIG_IGNORE_INVALID_RAYS: return 0;
 #endif
 
-#if defined(TASKING_TBB_INTERNAL)
+#if defined(TASKING_INTERNAL)
     case RTC_CONFIG_TASKING_SYSTEM: return 0;
 #endif
 
@@ -537,6 +491,42 @@ namespace embree
 
 #if defined(TASKING_TBB)
     case RTC_CONFIG_TASKING_SYSTEM: return 1;
+#endif
+
+#if defined(RTCORE_GEOMETRY_TRIANGLES)
+    case RTC_CONFIG_TRIANGLE_GEOMETRY: return 1;
+#else
+    case RTC_CONFIG_TRIANGLE_GEOMETRY: return 0;
+#endif
+        
+#if defined(RTCORE_GEOMETRY_QUADS)
+    case RTC_CONFIG_QUAD_GEOMETRY: return 1;
+#else
+    case RTC_CONFIG_QUAD_GEOMETRY: return 0;
+#endif
+
+#if defined(RTCORE_GEOMETRY_LINES)
+    case RTC_CONFIG_LINE_GEOMETRY: return 1;
+#else
+    case RTC_CONFIG_LINE_GEOMETRY: return 0;
+#endif
+
+#if defined(RTCORE_GEOMETRY_HAIR)
+    case RTC_CONFIG_HAIR_GEOMETRY: return 1;
+#else
+    case RTC_CONFIG_HAIR_GEOMETRY: return 0;
+#endif
+
+#if defined( RTCORE_GEOMETRY_SUBDIV)
+    case RTC_CONFIG_SUBDIV_GEOMETRY: return 1;
+#else
+    case RTC_CONFIG_SUBDIV_GEOMETRY: return 0;
+#endif
+
+#if defined(RTCORE_GEOMETRY_USER)
+    case RTC_CONFIG_USER_GEOMETRY: return 1;
+#else
+    case RTC_CONFIG_USER_GEOMETRY: return 0;
 #endif
 
     default: throw_RTCError(RTC_INVALID_ARGUMENT, "unknown readable parameter"); break;

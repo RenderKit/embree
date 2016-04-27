@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "acceln.h"
+#include "ray.h"
 #include "../../include/embree2/rtcore_ray.h"
 #include "../algorithms/parallel_for.h"
 
@@ -38,48 +39,55 @@ namespace embree
     accels.push_back(accel);
   }
   
-  void AccelN::intersect (void* ptr, RTCRay& ray) 
+  void AccelN::intersect (void* ptr, RTCRay& ray, const RTCIntersectContext* context) 
   {
     AccelN* This = (AccelN*)ptr;
     for (size_t i=0; i<This->validAccels.size(); i++)
-      This->validAccels[i]->intersect(ray);
+      This->validAccels[i]->intersect(ray,context);
   }
 
-  void AccelN::intersect4 (const void* valid, void* ptr, RTCRay4& ray) 
+  void AccelN::intersect4 (const void* valid, void* ptr, RTCRay4& ray, const RTCIntersectContext* context) 
   {
     AccelN* This = (AccelN*)ptr;
     for (size_t i=0; i<This->validAccels.size(); i++)
-      This->validAccels[i]->intersect4(valid,ray);
+      This->validAccels[i]->intersect4(valid,ray,context);
   }
 
-  void AccelN::intersect8 (const void* valid, void* ptr, RTCRay8& ray) 
+  void AccelN::intersect8 (const void* valid, void* ptr, RTCRay8& ray, const RTCIntersectContext* context) 
   {
     AccelN* This = (AccelN*)ptr;
     for (size_t i=0; i<This->validAccels.size(); i++)
-      This->validAccels[i]->intersect8(valid,ray);
+      This->validAccels[i]->intersect8(valid,ray,context);
   }
 
-  void AccelN::intersect16 (const void* valid, void* ptr, RTCRay16& ray) 
+  void AccelN::intersect16 (const void* valid, void* ptr, RTCRay16& ray, const RTCIntersectContext* context) 
   {
     AccelN* This = (AccelN*)ptr;
     for (size_t i=0; i<This->validAccels.size(); i++)
-      This->validAccels[i]->intersect16(valid,ray);
+      This->validAccels[i]->intersect16(valid,ray,context);
   }
 
-  void AccelN::occluded (void* ptr, RTCRay& ray) 
+  void AccelN::intersectN (void* ptr, RTCRay** ray, const size_t N, const RTCIntersectContext* context)
+  {
+    AccelN* This = (AccelN*)ptr;
+    for (size_t i=0; i<This->validAccels.size(); i++)
+      This->validAccels[i]->intersectN(ray,N,context);
+  }
+
+  void AccelN::occluded (void* ptr, RTCRay& ray, const RTCIntersectContext* context) 
   {
     AccelN* This = (AccelN*)ptr;
     for (size_t i=0; i<This->validAccels.size(); i++) {
-      This->validAccels[i]->occluded(ray); 
+      This->validAccels[i]->occluded(ray,context); 
       if (ray.geomID == 0) break;
     }
   }
 
-  void AccelN::occluded4 (const void* valid, void* ptr, RTCRay4& ray) 
+  void AccelN::occluded4 (const void* valid, void* ptr, RTCRay4& ray, const RTCIntersectContext* context) 
   {
     AccelN* This = (AccelN*)ptr;
     for (size_t i=0; i<This->validAccels.size(); i++) {
-      This->validAccels[i]->occluded4(valid,ray);
+      This->validAccels[i]->occluded4(valid,ray,context);
 #if defined(__SSE2__)
       vbool4 valid0 = ((vbool4*)valid)[0];
       vbool4 hit0   = ((vint4*)ray.geomID)[0] == vint4(0);
@@ -88,11 +96,11 @@ namespace embree
     }
   }
 
-  void AccelN::occluded8 (const void* valid, void* ptr, RTCRay8& ray) 
+  void AccelN::occluded8 (const void* valid, void* ptr, RTCRay8& ray, const RTCIntersectContext* context) 
   {
     AccelN* This = (AccelN*)ptr;
     for (size_t i=0; i<This->validAccels.size(); i++) {
-      This->validAccels[i]->occluded8(valid,ray);
+      This->validAccels[i]->occluded8(valid,ray,context);
 #if defined(__SSE2__)
       vbool4 valid0 = ((vbool4*)valid)[0];
       vbool4 hit0   = ((vint4*)ray.geomID)[0] == vint4(0);
@@ -103,16 +111,28 @@ namespace embree
     }
   }
 
-  void AccelN::occluded16 (const void* valid, void* ptr, RTCRay16& ray) 
+  void AccelN::occluded16 (const void* valid, void* ptr, RTCRay16& ray, const RTCIntersectContext* context) 
   {
     AccelN* This = (AccelN*)ptr;
     for (size_t i=0; i<This->validAccels.size(); i++) {
-      This->validAccels[i]->occluded16(valid,ray);
-#if defined(__MIC__) || defined(__AVX512F__)
+      This->validAccels[i]->occluded16(valid,ray,context);
+#if defined(__MIC__) || defined(__AVX512F__) // FIXME: this code gets never compiler with __AVX512F__ enabled
       vbool16 valid0 = ((vbool16*)valid)[0];
       vbool16 hit0   = ((vint16*)ray.geomID)[0] == vint16(0);
       if (all(valid0,hit0)) break;
 #endif
+    }
+  }
+
+  void AccelN::occludedN (void* ptr, RTCRay** ray, const size_t N, const RTCIntersectContext* context)
+  {
+    AccelN* This = (AccelN*)ptr;
+    size_t M = N;
+    for (size_t i=0; i<This->validAccels.size(); i++)
+    {
+      This->validAccels[i]->occludedN(ray,M,context);
+      Ray::filterOutOccluded((Ray**)ray,M);
+      if (M == 0) break;
     }
   }
 
@@ -161,6 +181,7 @@ namespace embree
       intersectors.intersector4  = Intersector4(&intersect4,&occluded4,"AccelN::intersector4");
       intersectors.intersector8  = Intersector8(&intersect8,&occluded8,"AccelN::intersector8");
       intersectors.intersector16 = Intersector16(&intersect16,&occluded16,"AccelN::intersector16");
+      intersectors.intersectorN  = IntersectorN(&intersectN,&occludedN,"AccelN::intersectorN");
     }
     
     /*! calculate bounds */

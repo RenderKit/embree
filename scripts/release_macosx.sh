@@ -11,10 +11,14 @@ cd build
 rm CMakeCache.txt # make sure to use default settings
 rm version.h
 
-# set release settings
+# set compiler
 cmake \
 -D CMAKE_C_COMPILER:FILEPATH=icc \
 -D CMAKE_CXX_COMPILER:FILEPATH=icpc \
+..
+
+# set release settings
+cmake \
 -D XEON_ISA=AVX2 \
 -D USE_IMAGE_MAGICK=OFF \
 -D USE_LIBJPEG=OFF \
@@ -39,6 +43,7 @@ make -j 4 package
 cmake \
 -D RTCORE_ZIP_MODE=ON \
 -D CMAKE_SKIP_INSTALL_RPATH=ON \
+-D CMAKE_MACOSX_RPATH=ON \
 -D CMAKE_INSTALL_INCLUDEDIR=include \
 -D CMAKE_INSTALL_LIBDIR=lib \
 -D CMAKE_INSTALL_DOCDIR=doc \

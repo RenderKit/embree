@@ -181,6 +181,11 @@ namespace embree
       return bounds;
     }
 
+    /*! output operator */
+    friend __forceinline std::ostream& operator<<(std::ostream& cout, const LineMi& line) {
+      return cout << "Line" << M << "i {" << line.v0 << ", " << line.geomIDs << ", " << line.primIDs << "}";
+    }
+    
   public:
     vint<M> v0;      // index of start vertex
     vint<M> geomIDs; // geometry ID

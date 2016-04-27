@@ -28,11 +28,26 @@ struct Triangle { int v0, v1, v2; };
 #include "../math/math.isph"
 #include "../math/vec.isph"
 #include "../math/affinespace.isph"
+#include "camera.isph"
 #include "ray.isph"
 #include "scene_device.isph"
 
 /* include embree API */
+#define __RTCRay1__
+#define __RTCRay__
 #include "../../../include/embree2/rtcore.isph"
+#include "../../../include/embree2/rtcore_ray.isph"
+
+enum Mode {
+  MODE_NORMAL = 0,
+  MODE_STREAM_COHERENT = 1,
+  MODE_STREAM_INCOHERENT = 2
+};
+
+extern uniform Mode g_mode;
+
+/* error reporting function */
+unmasked void error_handler(const uniform RTCError code, const uniform int8* uniform str = NULL);
 
 /* returns time stamp counter */
 extern "C" uniform int64 get_tsc();
@@ -68,10 +83,7 @@ typedef void (* uniform renderTileFunc)(uniform int taskIndex,
                                         const uniform int width,
                                         const uniform int height, 
                                         const uniform float time,
-                                        const uniform Vec3f& vx, 
-                                        const uniform Vec3f& vy, 
-                                        const uniform Vec3f& vz, 
-                                        const uniform Vec3f& p,
+                                        const uniform ISPCCamera& camera, 
                                         const uniform int numTilesX, 
                                         const uniform int numTilesY);
 extern renderTileFunc renderTile;
@@ -84,10 +96,7 @@ void renderTileStandard(uniform int taskIndex,
                         const uniform int width,
                         const uniform int height, 
                         const uniform float time,
-                        const uniform Vec3f& vx, 
-                        const uniform Vec3f& vy, 
-                        const uniform Vec3f& vz, 
-                        const uniform Vec3f& p,
+                        const uniform ISPCCamera& camera,
                         const uniform int numTilesX, 
                         const uniform int numTilesY);
 

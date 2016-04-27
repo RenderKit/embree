@@ -47,14 +47,12 @@ namespace embree
                                                       0;
 
     public:
-      static void intersect(vint<K>* valid, BVH* bvh, RayK<K>& ray);
-      static void occluded (vint<K>* valid, BVH* bvh, RayK<K>& ray);
+      static void intersect(vint<K>* valid, BVH* bvh, RayK<K>& ray, const RTCIntersectContext* context);
+      static void occluded (vint<K>* valid, BVH* bvh, RayK<K>& ray, const RTCIntersectContext* context);
     };
 
     /*! BVH packet intersector. */
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK>
-    class BVHNIntersectorKChunk : public BVHNIntersectorKHybrid<N,K,types,robust,PrimitiveIntersectorK,false> {};
+      class BVHNIntersectorKChunk : public BVHNIntersectorKHybrid<N,K,types,robust,PrimitiveIntersectorK,false> {};
   }
-
-
 }

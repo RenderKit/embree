@@ -76,8 +76,7 @@ namespace embree
     }
 #endif
 
-    static __forceinline vint4 load(const unsigned short* const ptr)
-    {
+    static __forceinline vint4 load(const unsigned short* const ptr) {
 #if defined (__SSE4_1__)
       return _mm_cvtepu16_epi32(_mm_loadu_si128((__m128i*)ptr));
 #else
@@ -85,29 +84,19 @@ namespace embree
 #endif
     } 
 
-    static  __forceinline vint4 load( const void* const a ) {
-      return _mm_load_si128((__m128i*)a); 
-    }
+    static __forceinline vint4 load ( const void* const a ) { return _mm_load_si128((__m128i*)a); }
+    static __forceinline vint4 loadu( const void* const a ) { return _mm_loadu_si128((__m128i*)a); }
     
-    static __forceinline vint4 loadu( const void* const a ) {
-      return _mm_loadu_si128((__m128i*)a); 
-    }
+    static __forceinline void store (void* ptr, const vint4& v) { _mm_store_si128((__m128i*)ptr,v); }
+    static __forceinline void storeu(void* ptr, const vint4& v) { _mm_storeu_si128((__m128i*)ptr,v); }
     
-    static __forceinline void store(void* ptr, const vint4& v) {
-      _mm_store_si128((__m128i*)ptr,v);
-    }
-    
-    static __forceinline void storeu(void* ptr, const vint4& v) {
-      _mm_storeu_si128((__m128i*)ptr,v);
-    }
-    
-    static __forceinline void store( const vboolf4& mask, void* ptr, const vint4& i ) {
 #if defined (__AVX__)
-      _mm_maskstore_ps((float*)ptr,(__m128i)mask,_mm_castsi128_ps(i));
+    static __forceinline void store ( const vboolf4& mask, void* ptr, const vint4& i ) { _mm_maskstore_ps((float*)ptr,(__m128i)mask,_mm_castsi128_ps(i)); }
+    static __forceinline void storeu( const vboolf4& mask, void* ptr, const vint4& i ) { _mm_maskstore_ps((float*)ptr,(__m128i)mask,_mm_castsi128_ps(i)); }
 #else
-      *(vint4*)ptr = select(mask,i,*(vint4*)ptr);
+    static __forceinline void store ( const vboolf4& mask, void* ptr, const vint4& i ) { store (ptr,select(mask,i,load (ptr))); }
+    static __forceinline void storeu( const vboolf4& mask, void* ptr, const vint4& i ) { storeu(ptr,select(mask,i,loadu(ptr))); }
 #endif
-    }
 
     static __forceinline void store_uchar( unsigned char* const ptr, const vint4& v ) {
 #if defined(__SSE4_1__)
@@ -121,7 +110,6 @@ namespace embree
 #endif
     }
 
-    
     static __forceinline vint4 load_nt (void* ptr) {
 #if defined(__SSE4_1__)
       return _mm_stream_load_si128((__m128i*)ptr); 
@@ -137,8 +125,6 @@ namespace embree
       _mm_store_si128((__m128i*)ptr,v);
 #endif
     }
-
-
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Array Access
@@ -363,15 +349,15 @@ namespace embree
     const vint4 b0 = shuffle<1,0,3,2>(a0);
     const vint4 c0 = umin(a0,b0);
     const vint4 d0 = umax(a0,b0);
-    const vint4 a1 = select(0x55 /* 0b01010101 */,c0,d0);
+    const vint4 a1 = select(0x5 /* 0b0101 */,c0,d0);
     const vint4 b1 = shuffle<2,3,0,1>(a1);
     const vint4 c1 = umin(a1,b1);
     const vint4 d1 = umax(a1,b1);
-    const vint4 a2 = select(0x33 /* 0b00110011 */,c1,d1);
+    const vint4 a2 = select(0x3 /* 0b0011 */,c1,d1);
     const vint4 b2 = shuffle<0,2,1,3>(a2);
     const vint4 c2 = umin(a2,b2);
     const vint4 d2 = umax(a2,b2);
-    const vint4 a3 = select(0x22 /* 0b00100010 */,c2,d2);
+    const vint4 a3 = select(0x2 /* 0b0010 */,c2,d2);
     return a3;
   }
 #endif

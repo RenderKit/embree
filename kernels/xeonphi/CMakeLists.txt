@@ -28,9 +28,8 @@ ADD_DEFINITIONS(-D__TARGET_XEON_PHI__)
 
 ADD_ISPC_LIBRARY(embree_xeonphi ${EMBREE_LIB_TYPE}
 
-  ../../common/tasking/taskscheduler_tbb.cpp
   ../../common/tasking/taskscheduler_mic.cpp
-  ../../common/tasking/tasksys.cpp
+  ../../common/tasking/tasksys_mic.cpp
 
   ../common/device.cpp
   ../common/stat.cpp 
@@ -57,7 +56,6 @@ ADD_ISPC_LIBRARY(embree_xeonphi ${EMBREE_LIB_TYPE}
   ../common/subdiv/tessellation_cache.cpp
   ../common/subdiv/catmullclark_coefficients.cpp
   ../common/scene_line_segments.cpp
-  ../common/raystreams/raystreams.cpp
 
   ../algorithms/parallel_for.cpp
   ../algorithms/parallel_reduce.cpp
@@ -112,4 +110,4 @@ ELSE()
   SET_TARGET_PROPERTIES(embree_xeonphi PROPERTIES VERSION ${EMBREE_VERSION} SOVERSION ${EMBREE_VERSION_MAJOR})  
 ENDIF()
 
-INSTALL(TARGETS embree_xeonphi LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT lib_xeonphi NAMELINK_SKIP)
+INSTALL(TARGETS embree_xeonphi LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT lib_xeonphi)

@@ -22,30 +22,6 @@ const int numPhi = 20;
 const int numTheta = 2*numPhi;
 const int numSpheres = 64;
 
-/* error reporting function */
-void error_handler(const RTCError code, const char* str = nullptr)
-{
-  if (code == RTC_NO_ERROR) 
-    return;
-  
-  printf("Embree: ");
-  switch (code) {
-  case RTC_UNKNOWN_ERROR    : printf("RTC_UNKNOWN_ERROR"); break;
-  case RTC_INVALID_ARGUMENT : printf("RTC_INVALID_ARGUMENT"); break;
-  case RTC_INVALID_OPERATION: printf("RTC_INVALID_OPERATION"); break;
-  case RTC_OUT_OF_MEMORY    : printf("RTC_OUT_OF_MEMORY"); break;
-  case RTC_UNSUPPORTED_CPU  : printf("RTC_UNSUPPORTED_CPU"); break;
-  case RTC_CANCELLED        : printf("RTC_CANCELLED"); break;
-  default                   : printf("invalid error code"); break;
-  }
-  if (str) { 
-    printf(" ("); 
-    while (*str) putchar(*str++); 
-    printf(")\n"); 
-  }
-  exit(1);
-}
-
 /* state of the lazy geometry */
 enum LazyState 
 {
@@ -256,12 +232,12 @@ extern "C" void device_init (char* cfg)
 }
 
 /* task that renders a single screen tile */
-Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
+Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
 {
   /* initialize ray */
   RTCRay ray;
-  ray.org = p;
-  ray.dir = normalize(x*vx + y*vy + vz);
+  ray.org = Vec3fa(camera.xfm.p);
+  ray.dir = Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -308,10 +284,7 @@ void renderTileStandard(int taskIndex,
                         const int width,
                         const int height, 
                         const float time,
-                        const Vec3fa& vx, 
-                        const Vec3fa& vy, 
-                        const Vec3fa& vz, 
-                        const Vec3fa& p,
+                        const ISPCCamera& camera,
                         const int numTilesX, 
                         const int numTilesY)
 {
@@ -322,10 +295,10 @@ void renderTileStandard(int taskIndex,
   const int y0 = tileY * TILE_SIZE_Y;
   const int y1 = min(y0+TILE_SIZE_Y,height);
 
-  for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
+  for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
   {
     /* calculate pixel color */
-    Vec3fa color = renderPixelStandard(x,y,vx,vy,vz,p);
+    Vec3fa color = renderPixelStandard(x,y,camera);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -336,18 +309,15 @@ void renderTileStandard(int taskIndex,
 }
 
 /* task that renders a single screen tile */
-void renderTileTask(int taskIndex, int* pixels,
+void renderTileTask (int taskIndex, int* pixels,
                          const int width,
                          const int height, 
                          const float time,
-                         const Vec3fa& vx, 
-                         const Vec3fa& vy, 
-                         const Vec3fa& vz, 
-                         const Vec3fa& p,
+                         const ISPCCamera& camera,
                          const int numTilesX, 
                          const int numTilesY)
 {
-  renderTile(taskIndex,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY);
+  renderTile(taskIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
 }
 
 /* called by the C++ code to render */
@@ -355,20 +325,20 @@ extern "C" void device_render (int* pixels,
                            const int width,
                            const int height, 
                            const float time,
-                           const Vec3fa& vx, 
-                           const Vec3fa& vy, 
-                           const Vec3fa& vz, 
-                           const Vec3fa& p)
+                           const ISPCCamera& camera)
 {
   /* render all pixels */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  launch_renderTile(numTilesX*numTilesY,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); 
+  parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
+    for (size_t i=range.begin(); i<range.end(); i++)
+      renderTileTask(i,pixels,width,height,time,camera,numTilesX,numTilesY);
+  }); 
 }
 
 /* called by the C++ code for cleanup */
 extern "C" void device_cleanup ()
 {
-  rtcDeleteScene (g_scene);
-  rtcDeleteDevice(g_device);
+  rtcDeleteScene (g_scene); g_scene = nullptr;
+  rtcDeleteDevice(g_device); g_device = nullptr;
 }

@@ -22,8 +22,8 @@ SET(EMBREE_VERSION ${EMBREE_VERSION_MAJOR}.${EMBREE_VERSION_MINOR}.${EMBREE_VERS
 MATH(EXPR EMBREE_VERSION_NUMBER "10000*${EMBREE_VERSION_MAJOR} + 100*${EMBREE_VERSION_MINOR} + ${EMBREE_VERSION_PATCH}")
 SET(CPACK_RPM_PACKAGE_RELEASE 1)
 
-
 PROJECT(embree${EMBREE_VERSION_MAJOR})
+
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8.11)
 CONFIGURE_FILE(
@@ -56,11 +56,6 @@ SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/common/cmake ${CMAKE_MODULE_PA
 INCLUDE(test)
 
 ##############################################################
-# Create Binary Packages
-##############################################################
-include(package)
-
-##############################################################
 # Embree configuration
 ##############################################################
 
@@ -89,36 +84,52 @@ ENDIF ()
 ##############################################################################
 # Configurations (add configurations also to common/cmake/embree-config-default.cmake)
 
-OPTION(RTCORE_RAY_MASK "Enables ray mask support.")
 OPTION(RTCORE_STAT_COUNTERS "Enables statistic counters.")
+
+OPTION(RTCORE_RAY_MASK "Enables ray mask support.")
 OPTION(RTCORE_BACKFACE_CULLING "Enables backface culling.")
 OPTION(RTCORE_INTERSECTION_FILTER "Enables intersection filter callback." ON)
 OPTION(RTCORE_INTERSECTION_FILTER_RESTORE "Restores previous hit when hit is filtered out." ON)
 OPTION(RTCORE_BUFFER_STRIDE "Enables buffer strides." ON)
+OPTION(RTCORE_IGNORE_INVALID_RAYS "Ignores invalid rays." OFF) # FIXME: enable by default?
+
+OPTION(RTCORE_GEOMETRY_TRIANGLES "Enables support for triangle geometries." ON)
+OPTION(RTCORE_GEOMETRY_QUADS "Enables support for quad geometries." ON)
+OPTION(RTCORE_GEOMETRY_LINES "Enables support for line geometries." ON)
+OPTION(RTCORE_GEOMETRY_HAIR "Enables support for hair geometries." ON)
+OPTION(RTCORE_GEOMETRY_SUBDIV "Enables support for subdiv geometries." ON)
+OPTION(RTCORE_GEOMETRY_USER "Enables support for user geometries." ON)
+OPTION(RTCORE_RAY_PACKETS "Enabled support for ray packets." ON)
 
 OPTION(RTCORE_EXPORT_ALL_SYMBOLS "Lets Embree library export all symbols.")
 OPTION(RTCORE_ENABLE_RAYSTREAM_LOGGER "Enables ray stream logger.")
-OPTION(RTCORE_IGNORE_INVALID_RAYS "Ignores invalid rays." OFF) # FIXME: enable by default?
-OPTION(RTCORE_RAY_PACKETS "Enabled support for ray packets." ON)
 OPTION(RTCORE_MEMKIND_ALLOCATOR "Enables memory allocation through the memkind library." OFF)
 
 SET(RTCORE_TASKING_SYSTEM "TBB" CACHE STRING "Selects tasking system")
 SET_PROPERTY(CACHE RTCORE_TASKING_SYSTEM PROPERTY STRINGS TBB INTERNAL)
 
-###############################################################################
-
 IF (RTCORE_TASKING_SYSTEM STREQUAL "TBB")
-  SET(TASKING_TBB ON)
-  FIND_PACKAGE(TBB REQUIRED)
-  INCLUDE_DIRECTORIES(${TBB_INCLUDE_DIRS})
+  SET(TASKING_TBB      ON )
+  SET(TASKING_INTERNAL OFF)
 ELSE()
-  SET(TASKING_INTERNAL ON)
+  SET(TASKING_INTERNAL ON )
+  SET(TASKING_TBB      OFF)
 ENDIF()
 
 CONFIGURE_FILE(
   "${PROJECT_SOURCE_DIR}/kernels/config.h.in"
   "${PROJECT_BINARY_DIR}/config.h"
 )
+
+##############################################################
+# Create Binary Packages (uses above config options)
+##############################################################
+include(package)
+
+IF (TASKING_TBB)
+  FIND_PACKAGE(TBB REQUIRED)
+  INCLUDE_DIRECTORIES(${TBB_INCLUDE_DIRS})
+ENDIF()
 
 ##############################################################
 # Compiler
@@ -281,13 +292,13 @@ IF (ENABLE_TUTORIALS)
   ADD_SUBDIRECTORY(tutorials)
 ENDIF()
 
-  SET (__XEON__ 1)
-  ADD_SUBDIRECTORY(tests)
+SET (__XEON__ 1)
+ADD_SUBDIRECTORY(tests)
 
-  IF (ENABLE_XEON_PHI_SUPPORT)
-    SET (__XEON__ 0)
-    ADD_SUBDIRECTORY(tests tests_xeonphi)
-  ENDIF ()
+IF (ENABLE_XEON_PHI_SUPPORT)
+  SET (__XEON__ 0)
+  ADD_SUBDIRECTORY(tests tests_xeonphi)
+ENDIF ()
 
 ##############################################################
 # Uninstall
@@ -298,10 +309,10 @@ configure_file(
     "${CMAKE_CURRENT_BINARY_DIR}/uninstall.cmake"
     IMMEDIATE @ONLY)
 
-add_custom_target(UNINSTALL
+add_custom_target(uninstall
     COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/uninstall.cmake)
 
-SET_PROPERTY(TARGET UNINSTALL PROPERTY FOLDER CMakePredefinedTargets)
+SET_PROPERTY(TARGET uninstall PROPERTY FOLDER CMakePredefinedTargets)
 	
 ##############################################################
 # Has to be last

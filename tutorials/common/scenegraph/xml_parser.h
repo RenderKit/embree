@@ -100,7 +100,7 @@ namespace embree
   std::istream& operator>>(std::istream& cin, Ref<XML>& xml);
 
   /*! load XML file from disk */
-  Ref<XML> parseXML(const FileName& fileName);
+  Ref<XML> parseXML(const FileName& fileName, std::string id = "", bool hasHeader = true);
 
   /* store XML to stream */
   std::ostream& operator<<(std::ostream& cout, const Ref<XML>& xml);

@@ -122,21 +122,6 @@ namespace embree
   }
 #endif
 
-  /********************** Triangle8 **************************/
-
-#if defined(__TARGET_AVX__)
-#if !defined(__AVX__)
-  template<>
-  Triangle8::Type::Type () 
-    : PrimitiveType("triangle8",2*sizeof(Triangle4),8) {}
-#else
-  template<>
-  size_t Triangle8::Type::size(const char* This) const {
-    return ((Triangle8*)This)->size();
-  }
-#endif
-#endif
-
   /********************** Quad4v **************************/
 
 #if !defined(__AVX__)

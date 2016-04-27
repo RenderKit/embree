@@ -30,30 +30,6 @@ RTCScene g_scene = NULL;
 uniform Vec3fa* uniform vertex_colors = NULL;
 uniform unsigned int triCubeID, quadCubeID, quadCubeID2;
 
-/* error reporting function */
-unmasked void error_handler(const uniform RTCError code, const uniform int8* uniform str = NULL)
-{
-  if (code == RTC_NO_ERROR) 
-    return;
-
-  print("Embree: ");
-  switch (code) {
-  case RTC_UNKNOWN_ERROR    : print("RTC_UNKNOWN_ERROR"); break;
-  case RTC_INVALID_ARGUMENT : print("RTC_INVALID_ARGUMENT"); break;
-  case RTC_INVALID_OPERATION: print("RTC_INVALID_OPERATION"); break;
-  case RTC_OUT_OF_MEMORY    : print("RTC_OUT_OF_MEMORY"); break;
-  case RTC_UNSUPPORTED_CPU  : print("RTC_UNSUPPORTED_CPU"); break;
-  case RTC_CANCELLED        : print("RTC_CANCELLED"); break;
-  default                   : print("invalid error code"); break;
-  }
-  if (str) { 
-    print(" ("); 
-    while (*str) putchar(*str++); 
-    print(")\n"); 
-  }
-  abort();
-}
-
 #define NUM_VERTICES 8
 
 __aligned(16) uniform float cube_vertices[8][4] = 
@@ -362,12 +338,12 @@ export void device_init (uniform int8* uniform cfg)
 }
 
 /* task that renders a single screen tile */
-Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
+Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
 {
   /* initialize ray */
   RTCRay ray;
-  ray.org = p;
-  ray.dir = normalize(x*vx + y*vy + vz);
+  ray.org = make_Vec3f(camera.xfm.p);
+  ray.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -440,10 +416,7 @@ void renderTileStandard(uniform int taskIndex,
                         const uniform int width,
                         const uniform int height, 
                         const uniform float time,
-                        const uniform Vec3f& vx, 
-                        const uniform Vec3f& vy, 
-                        const uniform Vec3f& vz, 
-                        const uniform Vec3f& p,
+                        const uniform ISPCCamera& camera,
                         const uniform int numTilesX, 
                         const uniform int numTilesY)
 {
@@ -457,7 +430,7 @@ void renderTileStandard(uniform int taskIndex,
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
     /* calculate pixel color */
-    Vec3f color = renderPixelStandard(x,y,vx,vy,vz,p);
+    Vec3f color = renderPixelStandard(x,y,camera);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -472,45 +445,36 @@ task void renderTileTask(uniform int* uniform pixels,
                          const uniform int width,
                          const uniform int height, 
                          const uniform float time,
-                         const uniform Vec3f& vx, 
-                         const uniform Vec3f& vy, 
-                         const uniform Vec3f& vz, 
-                         const uniform Vec3f& p,
+                         const uniform ISPCCamera& camera,
                          const uniform int numTilesX, 
                          const uniform int numTilesY)
 {
-  renderTile(taskIndex,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY);
+  renderTile(taskIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
 }
 
 /* called by the C++ code to render */
 export void device_render (uniform int* uniform pixels,
-                    const uniform int width,
-                    const uniform int height,
-                    const uniform float time,
-                    const uniform Vec3f& vx, 
-                    const uniform Vec3f& vy, 
-                    const uniform Vec3f& vz, 
-                    const uniform Vec3f& p)
+                           const uniform int width,
+                           const uniform int height,
+                           const uniform float time,
+                           const uniform ISPCCamera& camera)
 {
-
-  uniform Vec3fa cam_org = make_Vec3fa(p.x,p.y,p.z);
-
 #if !defined(FORCE_FIXED_EDGE_TESSELLATION)
-  setQuadSubdivCubeLevels (g_scene, quadCubeID, cam_org);
-  setTriangleSubdivCubeLevels (g_scene, triCubeID, cam_org);
+  setQuadSubdivCubeLevels (g_scene, quadCubeID, camera.xfm.p);
+  setTriangleSubdivCubeLevels (g_scene, triCubeID, camera.xfm.p);
 #endif
 
   rtcCommit(g_scene);
 
   const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  launch[numTilesX*numTilesY] renderTileTask(pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); sync;
+  launch[numTilesX*numTilesY] renderTileTask(pixels,width,height,time,camera,numTilesX,numTilesY); sync;
 }
 
 /* called by the C++ code for cleanup */
 export void device_cleanup ()
 {
-  rtcDeleteScene (g_scene);
-  rtcDeleteDevice(g_device);
+  rtcDeleteScene (g_scene); g_scene = NULL;
+  rtcDeleteDevice(g_device); g_device = NULL;
 }
 

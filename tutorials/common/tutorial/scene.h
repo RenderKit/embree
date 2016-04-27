@@ -21,6 +21,16 @@
 
 namespace embree
 {
+  enum Shader { 
+    SHADER_DEFAULT = 0, 
+    SHADER_EYELIGHT = 1,
+    SHADER_UV = 2,
+    SHADER_NG = 3,
+    SHADER_GEOMID = 4,
+    SHADER_GEOMID_PRIMID = 5,
+    SHADER_AMBIENT_OCCLUSION = 6
+  };
+
   /*! Scene representing the OBJ file */
   struct TutorialScene
   {

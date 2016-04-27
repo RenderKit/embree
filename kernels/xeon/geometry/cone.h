@@ -65,12 +65,6 @@ namespace embree
         const float eps = float(1<<8)*float(ulp)*max(abs(dOdO),abs(sqr(dOz)));
         if (unlikely(abs(A) < eps))
         {
-          /* if we hit the negative cone there cannot be a hit */
-          const float t = -C/B;
-          const float z0 = Oz+t*dOz;
-          const float z0r = r0+z0*dr;
-          if (z0r < 0.0f) return false;
-
           /* cylinder case */
           if (abs(dr) < 16.0f*float(ulp)) {
             if (C <= 0.0f) { t_o = BBox1f(neg_inf,pos_inf); return true; } 
@@ -78,7 +72,15 @@ namespace embree
           }
 
           /* cone case */
-          else {
+          else 
+          {
+            /* if we hit the negative cone there cannot be a hit */
+            const float t = -C/B;
+            const float z0 = Oz+t*dOz;
+            const float z0r = r0+z0*dr;
+            if (z0r < 0.0f) return false;
+
+            /* test if we start inside or outside the cone */
             if (dOz*dr > 0.0f) t_o = BBox1f(t,pos_inf);
             else               t_o = BBox1f(neg_inf,t);
           }
@@ -244,12 +246,6 @@ namespace embree
         const vbool<N> validf = valid & !(abs(A) < eps);
         if (unlikely(any(validt)))
         {
-          /* if we hit the negative cone there cannot be a hit */
-          const vfloat<N> t = -C/B;
-          const vfloat<N> z0 = Oz+t*dOz;
-          const vfloat<N> z0r = r0+z0*dr;
-          valid &= !validt | z0r >= 0.0f;
-
           const vboolx validtt = validt & (abs(dr) <  16.0f*float(ulp));
           const vboolx validtf = validt & (abs(dr) >= 16.0f*float(ulp));
           
@@ -262,7 +258,15 @@ namespace embree
           }
 
           /* cone case */
-          if (any(validtf)) {
+          if (any(validtf)) 
+          {
+            /* if we hit the negative cone there cannot be a hit */
+            const vfloat<N> t = -C/B;
+            const vfloat<N> z0 = Oz+t*dOz;
+            const vfloat<N> z0r = r0+z0*dr;
+            valid &= !validtf | z0r >= 0.0f;
+
+            /* test if we start inside or outside the cone */
             t_o.lower = select(validtf, select(dOz*dr > 0.0f, t, vfloat<N>(neg_inf)), t_o.lower);
             t_o.upper = select(validtf, select(dOz*dr > 0.0f, vfloat<N>(pos_inf), t), t_o.upper);
           }

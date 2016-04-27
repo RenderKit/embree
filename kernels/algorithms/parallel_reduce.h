@@ -36,7 +36,7 @@ namespace embree
     __noinline Value parallel_reduce_internal( Index taskCount, const Index first, const Index last, const Index minStepSize, const Value& identity, const Func& func, const Reduction& reduction )
   {
     const size_t maxTasks = MAX_THREADS;
-    const size_t threadCount = TaskSchedulerTBB::threadCount();
+    const size_t threadCount = TaskScheduler::threadCount();
     taskCount = min(taskCount,threadCount,maxTasks);
 
     /* parallel invokation of all tasks */
@@ -56,7 +56,7 @@ namespace embree
   template<typename Index, typename Value, typename Func, typename Reduction>
     __forceinline Value parallel_reduce( const Index first, const Index last, const Index minStepSize, const Value& identity, const Func& func, const Reduction& reduction )
   {
-#if defined(TASKING_LOCKSTEP) || defined(TASKING_TBB_INTERNAL)
+#if defined(TASKING_LOCKSTEP) || defined(TASKING_INTERNAL)
 
     /* fast path for small number of iterations */
     Index taskCount = (last-first+minStepSize-1)/minStepSize;

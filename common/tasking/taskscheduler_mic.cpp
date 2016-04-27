@@ -66,6 +66,10 @@ namespace embree
     return instance->numEnabledThreads = N;
   }
 
+  size_t TaskScheduler::threadCount() {
+    return LockStepTaskScheduler::instance()->getNumThreads();
+  }
+
   __dllexport void TaskScheduler::addTask(ssize_t threadIndex, QUEUE queue, Task* task)
   {
     if (!instance) THROW_RUNTIME_ERROR("Embree threads not running.");

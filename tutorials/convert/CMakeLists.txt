@@ -14,6 +14,12 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
+IF (TASKING_INTERNAL)
+  ADD_DEFINITIONS(-DTASKING_INTERNAL)
+ELSE()
+  ADD_DEFINITIONS(-DTASKING_TBB)
+ENDIF()
+
 ADD_EXECUTABLE(convert convert.cpp distribution1d.cpp distribution2d.cpp)
 TARGET_LINK_LIBRARIES(convert scenegraph image)
 SET_PROPERTY(TARGET convert PROPERTY FOLDER tutorials/single)

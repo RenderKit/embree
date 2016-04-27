@@ -31,16 +31,18 @@ namespace embree
     void add(Accel* accel);
 
   public:
-    static void intersect (void* ptr, RTCRay& ray);
-    static void intersect4 (const void* valid, void* ptr, RTCRay4& ray);
-    static void intersect8 (const void* valid, void* ptr, RTCRay8& ray);
-    static void intersect16 (const void* valid, void* ptr, RTCRay16& ray);
+    static void intersect (void* ptr, RTCRay& ray, const RTCIntersectContext* context);
+    static void intersect4 (const void* valid, void* ptr, RTCRay4& ray, const RTCIntersectContext* context);
+    static void intersect8 (const void* valid, void* ptr, RTCRay8& ray, const RTCIntersectContext* context);
+    static void intersect16 (const void* valid, void* ptr, RTCRay16& ray, const RTCIntersectContext* context);
+    static void intersectN (void* ptr, RTCRay** ray, const size_t N, const RTCIntersectContext* context);
 
   public:
-    static void occluded (void* ptr, RTCRay& ray);
-    static void occluded4 (const void* valid, void* ptr, RTCRay4& ray);
-    static void occluded8 (const void* valid, void* ptr, RTCRay8& ray);
-    static void occluded16 (const void* valid, void* ptr, RTCRay16& ray);
+    static void occluded (void* ptr, RTCRay& ray, const RTCIntersectContext* context);
+    static void occluded4 (const void* valid, void* ptr, RTCRay4& ray, const RTCIntersectContext* context);
+    static void occluded8 (const void* valid, void* ptr, RTCRay8& ray, const RTCIntersectContext* context);
+    static void occluded16 (const void* valid, void* ptr, RTCRay16& ray, const RTCIntersectContext* context);
+    static void occludedN (void* ptr, RTCRay** ray, const size_t N, const RTCIntersectContext* context);
 
   public:
     void print(size_t ident);

@@ -26,11 +26,11 @@ namespace embree
     static const size_t maxAlignment = 64;
 
     /*! maximal allocation size */
-    //static const size_t maxAllocationSize = 2*1024*1024-maxAlignment;
+
+    /* default settings */
     static const size_t defaultBlockSize = 4096;
     static const size_t maxAllocationSize = 4*1024*1024-maxAlignment;
-
-    static const size_t MAX_THREAD_USED_BLOCK_SLOTS = 4;
+    static const size_t MAX_THREAD_USED_BLOCK_SLOTS = 8;
     
   public:
 
@@ -253,7 +253,7 @@ namespace embree
       while (true) 
       {
         /* allocate using current block */
-        size_t threadIndex = TaskSchedulerTBB::threadIndex();
+        size_t threadIndex = TaskScheduler::threadIndex();
         size_t slot = threadIndex & slotMask;
 	Block* myUsedBlocks = threadUsedBlocks[slot];
         if (myUsedBlocks) {

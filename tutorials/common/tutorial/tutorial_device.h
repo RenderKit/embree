@@ -17,6 +17,7 @@
 #pragma once
 
 #include "../../../common/sys/platform.h"
+#include "../../../kernels/algorithms/parallel_for.h"
 
 /* size of screen tiles */
 #define TILE_SIZE_X 8
@@ -29,9 +30,26 @@ struct Vertex   { float x,y,z,r; };
 struct Triangle { int v0, v1, v2; };
 struct Quad     { int v0, v1, v2, v3; };
 
+#define __RTCRay__
+#define __RTCRay4__
+#define __RTCRay8__
+#define __RTCRay16__
 #include "../../../include/embree2/rtcore.h"
-#include "ray.h"
+#include "../../../include/embree2/rtcore_ray.h"
 
+enum Mode {
+  MODE_NORMAL = 0,
+  MODE_STREAM_COHERENT = 1,
+  MODE_STREAM_INCOHERENT = 2
+};
+
+/* error reporting function */
+void error_handler(const RTCError code, const char* str = nullptr);
+
+extern "C" Mode g_mode;
+
+#include "ray.h"
+#include "camera.h"
 #include "scene.h"
 using namespace embree;
 
@@ -44,6 +62,7 @@ __forceinline Vec3f faceforward( const Vec3f& N, const Vec3f& I, const Vec3f& Ng
 }
 
 /* glut keys codes */
+#if !defined(GLUT_KEY_F1)
 #define GLUT_KEY_F1 1
 #define GLUT_KEY_F2 2
 #define GLUT_KEY_F3 3
@@ -56,20 +75,11 @@ __forceinline Vec3f faceforward( const Vec3f& N, const Vec3f& I, const Vec3f& Ng
 #define GLUT_KEY_F10 10
 #define GLUT_KEY_F11 11
 #define GLUT_KEY_F12 12
-
-enum Shader { 
-  SHADER_DEFAULT = 0, 
-  SHADER_EYELIGHT = 1,
-  SHADER_UV = 2,
-  SHADER_NG = 3,
-  SHADER_GEOMID = 4,
-  SHADER_GEOMID_PRIMID = 5,
-  SHADER_AMBIENT_OCCLUSION = 6
-};
+#endif
 
 /* standard shading function */
 typedef void (* renderTileFunc)(int taskIndex, int* pixels, const int width, const int height, 
-                                const float time, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p,
+                                const float time, const ISPCCamera& camera,
                                 const int numTilesX, const int numTilesY);
 extern renderTileFunc renderTile;
 
@@ -77,7 +87,7 @@ extern "C" void device_key_pressed_default(int key);
 extern "C" void (*key_pressed_handler)(int key);
 
 void renderTileStandard(int taskIndex, int* pixels, const int width, const int height, 
-                        const float time, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p,
+                        const float time, const ISPCCamera& camera,
                         const int numTilesX, const int numTilesY);
 
 __forceinline Vec3f  neg(const Vec3f& a ) { return -a; }
@@ -85,28 +95,6 @@ __forceinline Vec3fa neg(const Vec3fa& a) { return -a; }
 __forceinline bool   eq (const Vec3fa& a, const Vec3fa& b) { return a == b; }
 __forceinline bool   ne (const Vec3fa& a, const Vec3fa& b) { return a != b; }
 __forceinline bool   eq (const AffineSpace3fa& a, const AffineSpace3fa& b) { return a == b; }
-
-/* parallel invokation of renderTile function */
-void launch_renderTile (int numTiles, 
-                        int* pixels, const int width, const int height, const float time, 
-                        const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p, const int numTilesX, const int numTilesY);
-
-/* parallel invokation of animateSphere function */
-typedef void (*animateSphereFunc) (int taskIndex, Vertex* vertices, 
-				   const float rcpNumTheta,
-				   const float rcpNumPhi,
-				   const Vec3fa& pos, 
-				   const float r,
-				   const float f);
-
-void launch_animateSphere(animateSphereFunc func,
-			  int taskSize, 
-			  Vertex* vertices, 
-			  const float rcpNumTheta,
-			  const float rcpNumPhi,
-			  const Vec3fa& pos, 
-			  const float r,
-			  const float f);
 
 struct Sample3f
 {

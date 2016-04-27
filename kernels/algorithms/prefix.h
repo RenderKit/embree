@@ -55,7 +55,7 @@ namespace embree
 	/* perform parallel prefix operation for large N */
 	else 
 	{
-	  const size_t threadCount = min(MAX_TASKS, TaskSchedulerTBB::threadCount());
+	  const size_t threadCount = min(MAX_TASKS, TaskScheduler::threadCount());
           
 	  /* first calculate range for each block */
 	  parallel_for(threadCount, [&] (const size_t threadIndex) 

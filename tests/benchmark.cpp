@@ -70,7 +70,7 @@ namespace embree
     exit(1);
   }
 
-  RTCAlgorithmFlags aflags = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT4 | RTC_INTERSECT8 | RTC_INTERSECT16 | RTC_INTERSECTN);
+  RTCAlgorithmFlags aflags = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT4 | RTC_INTERSECT8 | RTC_INTERSECT16 | RTC_INTERSECT_STREAM);
 
   /* configuration */
   static std::string g_rtcore = "";
@@ -1313,10 +1313,13 @@ namespace embree
         for (size_t j=0;j<STREAM_SIZE;j++)        
           setRay(rays[j],Vec3fa(zero),numbers[i+j]);
 
-        if (intersect)
-          rtcIntersectN(scene,rays,STREAM_SIZE,sizeof(RTCRay),RTC_RAYN_DEFAULT);
+        RTCIntersectContext context;
+        context.flags = RTC_INTERSECT_INCOHERENT;
+
+        if (intersect) 
+          rtcIntersect1M(scene,&context,rays,STREAM_SIZE,sizeof(RTCRay));
         else
-          rtcOccludedN(scene,rays,STREAM_SIZE,sizeof(RTCRay),RTC_RAYN_DEFAULT);
+          rtcOccluded1M(scene,&context,rays,STREAM_SIZE,sizeof(RTCRay));
       }        
 
       //if (threadIndex != 0) 
@@ -1394,8 +1397,11 @@ namespace embree
       
 
       //if (threadIndex != 0) 
-        g_barrier_active.wait(threadIndex);
+      g_barrier_active.wait(threadIndex);
       double t0 = getSeconds();
+
+      RTCIntersectContext context;
+      context.flags = RTC_INTERSECT_INCOHERENT;
 
       for (size_t p=0;p<g_profile_loop_iterations;p++)
       for (size_t yy=0; yy<height; yy+=COHERENT_STREAM_TILE_Y) {
@@ -1404,7 +1410,7 @@ namespace embree
           for (size_t y=yy;y<yy+COHERENT_STREAM_TILE_Y;y++)
             for (size_t x=xx;x<xx+COHERENT_STREAM_TILE_X;x++)
               rays[index++] = makeRay(Vec3fa(zero),Vec3fa(float(x)*rcpWidth,1,float(y)*rcpHeight));
-          rtcIntersectN(scene,rays,index,sizeof(RTCRay),RTC_RAYN_DEFAULT);
+          rtcIntersect1M(scene,&context,rays,index,sizeof(RTCRay));
         }
       }
 

@@ -198,5 +198,4 @@ namespace embree
   typename TriangleM<M>::Type TriangleM<M>::type;
 
   typedef TriangleM<4> Triangle4;
-  typedef TriangleM<8> Triangle8;
 }

@@ -67,6 +67,8 @@ namespace embree
       float depth_scale;
       LinearSpace3fa ray_space;
 
+      __forceinline Bezier1Intersector1() {}
+
       __forceinline Bezier1Intersector1(const Ray& ray, const void* ptr) 
          : depth_scale(rsqrt(dot(ray.dir,ray.dir))), ray_space(frame(depth_scale*ray.dir).transposed()) {}
 

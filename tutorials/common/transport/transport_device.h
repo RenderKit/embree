@@ -17,6 +17,7 @@
 #pragma once
 
 #include "../../../common/math/vec3.h"
+#include "../tutorial/camera.h"
 
 namespace embree
 {
@@ -41,9 +42,9 @@ namespace embree
 
   extern "C" void device_set_scene(Scene* scene);
   extern "C" void device_resize(int width, int height);
-  extern "C" bool device_pick(const float x, const float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p, Vec3fa& hitPos);
+  extern "C" bool device_pick(const float x, const float y, const ISPCCamera& camera, Vec3fa& hitPos);
 
   extern "C" void device_render(int* pixels, const int width, const int height,
-                                const float time, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
+                                const float time, const ISPCCamera& camera);
   extern "C" void device_cleanup();
 }

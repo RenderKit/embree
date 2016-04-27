@@ -102,7 +102,7 @@ namespace embree
   }
 
   /* load XML from token stream */
-  Ref<XML> parseXML(Ref<Stream<int> > chars, bool hasHeader = true, bool hasTail = false)
+  Ref<XML> parseXML(Ref<Stream<int> > chars, std::string id, bool hasHeader = true, bool hasTail = false)
   {
     /* create lexer for XML file */
     std::vector<std::string> symbols;
@@ -115,7 +115,7 @@ namespace embree
     symbols.push_back("<");
     symbols.push_back(">");
     symbols.push_back("=");
-    Ref<Stream<Token> > cin = new TokenStream(chars,TokenStream::alpha + TokenStream::ALPHA + "_", TokenStream::separators, symbols);
+    Ref<Stream<Token> > cin = new TokenStream(chars,TokenStream::alpha + TokenStream::ALPHA + "_" + id, TokenStream::separators, symbols);
 
     if (hasHeader) parseHeader(cin);
     parseComments(cin);
@@ -130,13 +130,13 @@ namespace embree
 
   /*! load XML file from stream */
   std::istream& operator>>(std::istream& cin, Ref<XML>& xml) {
-    xml = parseXML(new StdStream(cin),false,true);
+    xml = parseXML(new StdStream(cin),"",false,true);
     return cin;
   }
 
   /*! load XML file from disk */
-  Ref<XML> parseXML(const FileName& fileName) {
-    return parseXML(new FileStream(fileName),true,false);
+  Ref<XML> parseXML(const FileName& fileName, std::string id, bool hasHeader) {
+    return parseXML(new FileStream(fileName),id,hasHeader,false);
   }
 
 

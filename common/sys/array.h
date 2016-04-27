@@ -145,6 +145,9 @@ namespace embree
     __forceinline operator       Ty* ()       { return data; }
     __forceinline operator const Ty* () const { return data; }
 
+    __forceinline       Ty& operator[](const int i)       { return data[i]; }
+    __forceinline const Ty& operator[](const int i) const { return data[i]; }
+
     __forceinline       Ty& operator[](const size_t i)       { return data[i]; }
     __forceinline const Ty& operator[](const size_t i) const { return data[i]; }
 

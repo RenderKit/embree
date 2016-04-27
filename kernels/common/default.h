@@ -44,7 +44,7 @@
 #if defined(__MIC__)
 #include "../../common/tasking/taskscheduler_mic.h"
 #else
-#include "../../common/tasking/taskscheduler_tbb.h"
+#include "../../common/tasking/taskscheduler.h"
 #endif
 
 #define COMMA ,

@@ -45,7 +45,7 @@ namespace embree
   COIMAPINSTANCE mapInst;
   int g_width = -1, g_height = -1;
 
-  extern const char* tutorialName;
+  extern std::string g_tutorialName;
   static bool phi_started = false;
 
   void start_phi()
@@ -70,7 +70,7 @@ namespace embree
     std::cout << "Found Xeon Phi device with " << info.NumCores << " cores and " << (info.PhysicalMemory/1024/1024) << "MB memory" << std::endl;
     
     /* create process */
-    const FileName executable = FileName::executableFolder()+(std::string(tutorialName)+"_xeonphi_device");
+    const FileName executable = FileName::executableFolder()+(g_tutorialName+"_xeonphi_device");
     result = COIProcessCreateFromFile
       (engine,
        executable.c_str(), // The local path to the sink side binary to launch.
@@ -539,11 +539,11 @@ namespace embree
     NOT_IMPLEMENTED;
   }
 
-  bool pick(const float x, const float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p, Vec3fa& hitPos)
+  bool pick(const float x, const float y, const ISPCCamera& camera, Vec3fa& hitPos)
   {
     PickDataSend send;
     send.x = x; send.y = y;
-    send.vx = vx; send.vy = vy; send.vz = vz; send.p = p;
+    send.vx = camera.xfm.l.vx; send.vy = camera.xfm.l.vy; send.vz = camera.xfm.l.vz; send.p = camera.xfm.p;
 
     COIEVENT event;
     memset(&event,0,sizeof(event));
@@ -559,15 +559,15 @@ namespace embree
     return receive.hit;
   }
 
-  void render(const float time, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
+  void render(const float time, const ISPCCamera& camera)
   {
     /* set parameters for rendering */
     RenderData parms;
     parms.time = time;
-    parms.vx = vx;
-    parms.vy = vy;
-    parms.vz = vz;
-    parms.p  = p;
+    parms.vx = camera.xfm.l.vx;
+    parms.vy = camera.xfm.l.vy;
+    parms.vz = camera.xfm.l.vz;
+    parms.p  = camera.xfm.p;
     parms.width = g_width;
     parms.height = g_height;
     COI_ACCESS_FLAGS flags = COI_SINK_WRITE_ENTIRE;

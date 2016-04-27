@@ -15,158 +15,21 @@
 // ======================================================================== //
 
 #include "../common/tutorial/tutorial.h"
-#include "../common/image/image.h"
 
-namespace embree 
+namespace embree
 {
-  /* name of the tutorial */
-  const char* tutorialName = "displacement_geometry";
-
-  /* configuration */
-  static std::string g_rtcore = "";
-  static size_t g_numThreads = 0;
-  static std::string g_subdiv_mode = "";
-
-  /* output settings */
-  static size_t g_width = 512;
-  static size_t g_height = 512;
-  static bool g_fullscreen = false;
-  static FileName outFilename = "";
-  static bool g_interactive = true;
-
-  /* scene */
-  static FileName filename = "";
-
-  static std::string getParameterString(Ref<ParseStream> &cin, std::string &term) {
-
-    /*! Parameter name and options. */
-    std::string parameter = term + " ";  while (cin->peek() != "" && cin->peek()[0] != '-') parameter += cin->getString();  return(parameter);
-
-  }
-
-  static void initEmbreeState(std::string configuration) {
-
-    /*! Initialize Embree state. */
-    init(configuration.c_str());
-
-  }
-  
-  static void parseCommandLine(Ref<ParseStream> cin, const FileName &path) {
-
-    for (std::string term = cin->getString() ; term != "" ; term = cin->getString()) {
-
-      /*! Command line parameters from a file. */
-      if (term == "-c") { FileName file = path + cin->getFileName();  parseCommandLine(new ParseStream(new LineCommentFilter(file, "#")), file.path()); }
-
-      /*! Camera field of view. */
-      else if (term == "-fov") g_camera.fov = cin->getFloat();
-
-      /*! Full screen mode. */
-      else if (term == "-fullscreen") g_fullscreen = true;
-
-      /* output filename */
-	  else if (term == "-o") {
-		  g_interactive = false;
-		  outFilename = cin->getFileName();
-	  }
-      
-      /*! Embree configuration. */
-      else if (term == "-rtcore") g_rtcore += "," + cin->getString();
-
-      /*! Window size. */
-      else if (term == "-size") { g_width = cin->getInt();  g_height = cin->getInt(); }
-
-      /*! Thread count. */
-      else if (term == "-threads") { g_numThreads = cin->getInt(); }
-
-      /*! Camera view direction. */
-      else if (term == "-vd") g_camera.to = g_camera.from + cin->getVec3fa();
-
-      /*! Camera look point. */
-      else if (term == "-vi") g_camera.to = cin->getVec3fa();
-
-      /*! Camera position. */
-      else if (term == "-vp") g_camera.from = cin->getVec3fa();
-
-      /*! Camera up vector. */
-      else if (term == "-vu") g_camera.up = cin->getVec3fa();
-
-      else if (term == "-cache") 
-	g_subdiv_mode = ",subdiv_accel=bvh4.subdivpatch1cached";
-
-      else if (term == "-pregenerate") 
-	g_subdiv_mode = ",subdiv_accel=bvh4.grid.eager";
-
-      /*! Skip unknown command line parameters. */
-      else std::cerr << "Unknown command line parameter: " << getParameterString(cin, term) << std::endl;
-
-    }
-
-  }
-
-  void renderToFile(const FileName& fileName)
+  struct Tutorial : public TutorialApplication 
   {
-    resize(g_width,g_height);
-    AffineSpace3fa pixel2world = g_camera.pixel2world(g_width,g_height);
-
-    render(0.0f,
-           pixel2world.l.vx,
-           pixel2world.l.vy,
-           pixel2world.l.vz,
-           pixel2world.p);
-    
-    void* ptr = map();
-    Ref<Image> image = new Image4uc(g_width, g_height, (Col4uc*)ptr);
-    storeImage(image, fileName);
-    unmap();
-    cleanup();
-  }
-
-  int main(int argc, char **argv) 
-  {
-    /* for best performance set FTZ and DAZ flags in MXCSR control and status register */
-    _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
-    _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
-
-    std::cout << " === Possible cmd line options: -pregenerate, -cache === " << std::endl;
-
-    /* set default camera */
-    g_camera.from = Vec3fa(1.5f,1.5f,-1.5f);
-    g_camera.to   = Vec3fa(0.0f,0.0f,0.0f);
-
-    /*! Parse command line options. */  
-    parseCommandLine(new ParseStream(new CommandLineStream(argc, argv)), FileName());
-
-    /*! Set the thread count in the Embree configuration string. */
-    if (g_numThreads) g_rtcore += ",threads=" + toString(g_numThreads);
-    g_rtcore += g_subdiv_mode;
-
-    /*! Initialize Embree state. */
-    init(g_rtcore.c_str());
-
-    /* render to disk */
-    if (outFilename.str() != "")
-      renderToFile(outFilename);
-    
-    /* interactive mode */
-    if (g_interactive) {
-      initWindowState(argc,argv,tutorialName, g_width, g_height, g_fullscreen);
-      enterWindowRunLoop();
+    Tutorial() : TutorialApplication("displacement_geometry") 
+    {
+      /* set default camera */
+      camera.from = Vec3fa(1.5f,1.5f,-1.5f);
+      camera.to   = Vec3fa(0.0f,0.0f,0.0f);
     }
-    return 0;
-  }
-}
-
-int main(int argc, char** argv) 
-{
-  /*! Tutorial entry point. */
-  try { return embree::main(argc, argv); }
-
-  /*! Known exception. */
-  catch (const std::exception& e) { std::cout << "Error: " << e.what() << std::endl;  return(1); }
-
-  /*! Unknown exception. */
-  catch (...) { std::cout << "Error: unknown exception caught." << std::endl;  return(1); }
+  };
 
 }
 
+int main(int argc, char** argv) {
+  return embree::Tutorial().main(argc,argv);
+}

@@ -284,17 +284,17 @@ namespace embree
         typedef PlueckerIntersector1<Mx> Precalculations;
         
         /*! Intersect a ray with M triangles and updates the hit. */
-        static __forceinline void intersect(Precalculations& pre, Ray& ray, const Primitive& tri, Scene* scene, const unsigned* geomID_to_instID)
+        static __forceinline void intersect(Precalculations& pre, Ray& ray, const RTCIntersectContext* context, const Primitive& tri, Scene* scene, const unsigned* geomID_to_instID)
         {
           STAT3(normal.trav_prims,1,1,1);
-          pre.intersect(ray,tri.v0,tri.v1,tri.v2,UVIdentity<M>(),Intersect1Epilog<M,Mx,filter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID)); 
+          pre.intersect(ray,tri.v0,tri.v1,tri.v2,UVIdentity<M>(),Intersect1EpilogM<M,Mx,filter>(ray,context,tri.geomIDs,tri.primIDs,scene,geomID_to_instID)); 
         }
         
         /*! Test if the ray is occluded by one of the M triangles. */
-        static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& tri, Scene* scene, const unsigned* geomID_to_instID)
+        static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const RTCIntersectContext* context, const Primitive& tri, Scene* scene, const unsigned* geomID_to_instID)
         {
           STAT3(shadow.trav_prims,1,1,1);
-          return pre.intersect(ray,tri.v0,tri.v1,tri.v2,UVIdentity<M>(),Occluded1Epilog<M,Mx,filter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID)); 
+          return pre.intersect(ray,tri.v0,tri.v1,tri.v2,UVIdentity<M>(),Occluded1EpilogM<M,Mx,filter>(ray,context,tri.geomIDs,tri.primIDs,scene,geomID_to_instID)); 
         }
       };
     
@@ -306,7 +306,7 @@ namespace embree
         typedef PlueckerIntersectorK<Mx,K> Precalculations;
         
         /*! Intersects K rays with M triangles. */
-        static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const Primitive& tri, Scene* scene)
+        static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const RTCIntersectContext* context, const Primitive& tri, Scene* scene)
         {
           for (size_t i=0; i<M; i++)
           {
@@ -315,12 +315,12 @@ namespace embree
             const Vec3<vfloat<K>> v0 = broadcast<vfloat<K>>(tri.v0,i);
             const Vec3<vfloat<K>> v1 = broadcast<vfloat<K>>(tri.v1,i);
             const Vec3<vfloat<K>> v2 = broadcast<vfloat<K>>(tri.v2,i);
-            pre.intersectK(valid_i,ray,v0,v1,v2,UVIdentity<K>(),IntersectKEpilog<M,K,filter>(ray,tri.geomIDs,tri.primIDs,i,scene));
+            pre.intersectK(valid_i,ray,v0,v1,v2,UVIdentity<K>(),IntersectKEpilogM<M,K,filter>(ray,context,tri.geomIDs,tri.primIDs,i,scene));
           }
         }
         
         /*! Test for K rays if they are occluded by any of the M triangles. */
-        static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const Primitive& tri, Scene* scene)
+        static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const RTCIntersectContext* context, const Primitive& tri, Scene* scene)
         {
           vbool<K> valid0 = valid_i;
           
@@ -331,24 +331,24 @@ namespace embree
             const Vec3<vfloat<K>> v0 = broadcast<vfloat<K>>(tri.v0,i);
             const Vec3<vfloat<K>> v1 = broadcast<vfloat<K>>(tri.v1,i);
             const Vec3<vfloat<K>> v2 = broadcast<vfloat<K>>(tri.v2,i);
-            pre.intersectK(valid0,ray,v0,v1,v2,UVIdentity<K>(),OccludedKEpilog<M,K,filter>(valid0,ray,tri.geomIDs,tri.primIDs,i,scene));
+            pre.intersectK(valid0,ray,v0,v1,v2,UVIdentity<K>(),OccludedKEpilogM<M,K,filter>(valid0,ray,context,tri.geomIDs,tri.primIDs,i,scene));
             if (none(valid0)) break;
           }
           return !valid0;
         }
         
         /*! Intersect a ray with M triangles and updates the hit. */
-        static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, const Primitive& tri, Scene* scene)
+        static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, const RTCIntersectContext* context, const Primitive& tri, Scene* scene)
         {
           STAT3(normal.trav_prims,1,1,1);
-          pre.intersect(ray,k,tri.v0,tri.v1,tri.v2,UVIdentity<Mx>(),Intersect1KEpilog<M,Mx,K,filter>(ray,k,tri.geomIDs,tri.primIDs,scene)); //FIXME: M,Mx
+          pre.intersect(ray,k,tri.v0,tri.v1,tri.v2,UVIdentity<Mx>(),Intersect1KEpilogM<M,Mx,K,filter>(ray,k,context,tri.geomIDs,tri.primIDs,scene)); //FIXME: M,Mx
         }
         
         /*! Test if the ray is occluded by one of the M triangles. */
-        static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, const Primitive& tri, Scene* scene)
+        static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, const RTCIntersectContext* context, const Primitive& tri, Scene* scene)
         {
           STAT3(shadow.trav_prims,1,1,1);
-          return pre.intersect(ray,k,tri.v0,tri.v1,tri.v2,UVIdentity<Mx>(),Occluded1KEpilog<M,Mx,K,filter>(ray,k,tri.geomIDs,tri.primIDs,scene)); //FIXME: M,Mx
+          return pre.intersect(ray,k,tri.v0,tri.v1,tri.v2,UVIdentity<Mx>(),Occluded1KEpilogM<M,Mx,K,filter>(ray,k,context,tri.geomIDs,tri.primIDs,scene)); //FIXME: M,Mx
         }
       };
   }

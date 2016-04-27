@@ -34,17 +34,6 @@
 
 namespace embree
 {
-  /*! decoding of geometry flags */
-  __forceinline bool isStatic    (RTCSceneFlags flags) { return (flags & 1) == RTC_SCENE_STATIC; }
-  __forceinline bool isDynamic   (RTCSceneFlags flags) { return (flags & 1) == RTC_SCENE_DYNAMIC; }
-
-  __forceinline bool isCompact   (RTCSceneFlags flags) { return flags & RTC_SCENE_COMPACT; }
-  __forceinline bool isRobust    (RTCSceneFlags flags) { return flags & RTC_SCENE_ROBUST; }
-  __forceinline bool isCoherent  (RTCSceneFlags flags) { return flags & RTC_SCENE_COHERENT; }
-  __forceinline bool isIncoherent(RTCSceneFlags flags) { return flags & RTC_SCENE_INCOHERENT; }
-  __forceinline bool isHighQuality(RTCSceneFlags flags) { return flags & RTC_SCENE_HIGH_QUALITY; }
-  __forceinline bool isInterpolatable(RTCAlgorithmFlags flags) { return flags & RTC_INTERPOLATE; }
-
   /*! Base class all scenes are derived from */
   class Scene : public Accel
   {
@@ -284,6 +273,15 @@ namespace embree
     __forceinline bool isRobust() const { return embree::isRobust(flags); }
     __forceinline bool isHighQuality() const { return embree::isHighQuality(flags); }
     __forceinline bool isInterpolatable() const { return embree::isInterpolatable(aflags); }
+    __forceinline bool isStreamMode() const { return embree::isStreamMode(aflags); }
+
+    __forceinline bool isExclusiveIntersect1Mode() const { 
+      if (!embree::isIntersect1Mode(aflags)) return false;
+      if (embree::isIntersect4Mode(aflags))  return false;
+      if (embree::isIntersect8Mode(aflags))  return false;
+      if (embree::isIntersect16Mode(aflags)) return false;
+      return true;
+    }
 
     /* test if scene got already build */
     __forceinline bool isBuild() const { return is_build; }
@@ -320,9 +318,9 @@ namespace embree
     /*! global lock step task scheduler */
 #if defined(TASKING_LOCKSTEP)
     __aligned(64) LockStepTaskScheduler lockstep_scheduler;
-#elif defined(TASKING_TBB_INTERNAL)
+#elif defined(TASKING_INTERNAL)
     MutexSys schedulerMutex;
-    Ref<TaskSchedulerTBB> scheduler;
+    Ref<TaskScheduler> scheduler;
 #else
     tbb::task_group* group;
     BarrierActiveAutoReset group_barrier;
@@ -374,10 +372,11 @@ namespace embree
 
     template<typename Mesh, int timeSteps> __forceinline size_t getNumPrimitives() const;
    
-    atomic_t numIntersectionFilters1;  //!< number of enabled intersection/occlusion filters for single rays or N-wide ray streams    
+    atomic_t numIntersectionFilters1;   //!< number of enabled intersection/occlusion filters for single rays
     atomic_t numIntersectionFilters4;   //!< number of enabled intersection/occlusion filters for 4-wide ray packets
     atomic_t numIntersectionFilters8;   //!< number of enabled intersection/occlusion filters for 8-wide ray packets
     atomic_t numIntersectionFilters16;  //!< number of enabled intersection/occlusion filters for 16-wide ray packets
+    atomic_t numIntersectionFiltersN;   //!< number of enabled intersection/occlusion filters for N-wide ray packets
   };
 
   template<> __forceinline size_t Scene::getNumPrimitives<TriangleMesh,1>() const { return world1.numTriangles; } 

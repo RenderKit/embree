@@ -20,6 +20,8 @@
 #include "../geometry/bezier1v.h"
 #include "../geometry/bezier1i.h"
 
+#if defined(RTCORE_GEOMETRY_HAIR)
+
 namespace embree
 {
   namespace isa
@@ -231,5 +233,7 @@ namespace embree
     Builder* BVH8Bezier1iBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<8,Bezier1i>((BVH8*)bvh,scene); }
     Builder* BVH8Bezier1iMBBuilder_OBB_New (void* bvh, Scene* scene, size_t mode) { return new BVHNHairMBBuilderSAH<8,Bezier1i>((BVH8*)bvh,scene); }
 #endif
+
   }
 }
+#endif

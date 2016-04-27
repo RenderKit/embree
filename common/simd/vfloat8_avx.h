@@ -83,34 +83,17 @@ namespace embree
 #endif
     }
       
-    static __forceinline vfloat8 load( const float* const a) {
-      return _mm256_load_ps(a); 
-    }
+    static __forceinline vfloat8 load ( const void* const a) { return _mm256_load_ps((float*)a); }
+    static __forceinline vfloat8 loadu( const void* const a) { return _mm256_loadu_ps((float*)a); }
     
-    static __forceinline void store(void* ptr, const vfloat8& f ) {
-      return _mm256_store_ps((float*)ptr,f);
-    }
-
-    static __forceinline vfloat8 loadu( const void* const a) {
-      return _mm256_loadu_ps((float*)a); 
-    }
-
-    static __forceinline vfloat8 loadu( const vbool8& mask, const void* const a) {
-      // FIXME: use mask on AVX512VL
-      return _mm256_loadu_ps((float*)a); 
-    }
+    static __forceinline vfloat8 load ( const vbool8& mask, const void* const a) { return _mm256_load_ps((float*)a); } // FIXME: use mask on AVX512VL
+    static __forceinline vfloat8 loadu( const vbool8& mask, const void* const a) { return _mm256_loadu_ps((float*)a); } // FIXME: use mask on AVX512VL
     
-    static __forceinline void storeu(void* ptr, const vfloat8& f ) {
-      return _mm256_storeu_ps((float*)ptr,f);
-    }
+    static __forceinline void store ( void* ptr, const vfloat8& f ) { return _mm256_store_ps((float*)ptr,f); }
+    static __forceinline void storeu( void* ptr, const vfloat8& f ) { return _mm256_storeu_ps((float*)ptr,f); }
 
-    static __forceinline void store( const vboolf8& mask, void* ptr, const vfloat8& f ) {
-      return _mm256_maskstore_ps((float*)ptr,(__m256i)mask,f);
-    }
-    
-    static __forceinline void storeu( const vboolf8& mask, void* ptr, const vfloat8& f ) {
-      return _mm256_storeu_ps((float*)ptr,_mm256_blendv_ps(_mm256_loadu_ps((float*)ptr),f,mask));
-    }
+    static __forceinline void store ( const vboolf8& mask, void* ptr, const vfloat8& f ) { _mm256_maskstore_ps((float*)ptr,(__m256i)mask,f); }
+    static __forceinline void storeu( const vboolf8& mask, void* ptr, const vfloat8& f ) { _mm256_maskstore_ps((float*)ptr,(__m256i)mask,f); }
     
 #if defined (__AVX2__)
     static __forceinline vfloat8 load_nt(void* ptr) {
@@ -217,6 +200,7 @@ namespace embree
   __forceinline const vfloat8 max( const float    a, const vfloat8& b ) { return _mm256_max_ps(vfloat8(a), b.v); }
 
 #if defined (__AVX2__)
+
     __forceinline vfloat8 mini(const vfloat8& a, const vfloat8& b) {
       const vint8 ai = _mm256_castps_si256(a);
       const vint8 bi = _mm256_castps_si256(b);
@@ -229,6 +213,20 @@ namespace embree
       const vint8 ci = _mm256_max_epi32(ai,bi);
       return _mm256_castsi256_ps(ci);
     }
+
+    __forceinline vfloat8 minui(const vfloat8& a, const vfloat8& b) {
+      const vint8 ai = _mm256_castps_si256(a);
+      const vint8 bi = _mm256_castps_si256(b);
+      const vint8 ci = _mm256_min_epu32(ai,bi);
+      return _mm256_castsi256_ps(ci);
+    }
+    __forceinline vfloat8 maxui(const vfloat8& a, const vfloat8& b) {
+      const vint8 ai = _mm256_castps_si256(a);
+      const vint8 bi = _mm256_castps_si256(b);
+      const vint8 ci = _mm256_max_epu32(ai,bi);
+      return _mm256_castsi256_ps(ci);
+    }
+
 #else
     __forceinline vfloat8 mini(const vfloat8& a, const vfloat8& b) {
       return min(a,b);

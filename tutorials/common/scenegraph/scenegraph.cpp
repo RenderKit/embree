@@ -20,6 +20,7 @@
 #include "obj_loader.h"
 #include "hair_loader.h"
 #include "cy_hair_loader.h"
+#include "corona_loader.h"
 
 namespace embree
 {
@@ -30,6 +31,7 @@ namespace embree
     else if (toLowerCase(filename.ext()) == std::string("hair")) return loadCYHair(filename);
     else if (toLowerCase(filename.ext()) == std::string("txt" )) return loadTxtHair(filename);
     else if (toLowerCase(filename.ext()) == std::string("bin" )) return loadBinHair(filename);
+    else if (toLowerCase(filename.ext()) == std::string("scn" )) return loadCorona(filename);
     else throw std::runtime_error("unknown scene format: " + filename.ext());
   }
 

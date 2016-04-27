@@ -106,7 +106,7 @@ namespace embree
     regression_testing = 0;
 
     numThreads = 0;
-#if TASKING_TBB_INTERNAL || defined(__MIC__)
+#if TASKING_INTERNAL || defined(__MIC__)
     set_affinity = true;
 #else
     set_affinity = false;

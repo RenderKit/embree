@@ -17,6 +17,7 @@
 #pragma once
 
 #include "../../../common/math/vec3.h"
+#include "../tutorial/camera.h"
 
 namespace embree
 {
@@ -39,10 +40,10 @@ namespace embree
   void set_scene_keyframes(TutorialScene** in, size_t numKeyFrames);
 
   /* pick event */
-  bool pick(const float x, const float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p, Vec3fa& hitPos);
+  bool pick(const float x, const float y, const ISPCCamera& camera, Vec3fa& hitPos);
 
   /* render frame and map framebuffer */
-  void render(const float time, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
+  void render(const float time, const ISPCCamera& camera);
 
   /* map framebuffer */
   int* map ();

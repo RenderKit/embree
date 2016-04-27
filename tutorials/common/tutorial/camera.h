@@ -27,36 +27,52 @@ namespace embree
   /* camera settings */
   struct Camera 
   {
+    struct ISPCCamera
+    {
+    public:
+      ISPCCamera (const AffineSpace3fa& xfm)
+      : xfm(xfm) {}
+
+    public:
+      AffineSpace3fa xfm;
+    };
+
   public:
-    size_t frames;
+
     Camera () 
-    : from(0.0001f,0.0001f,-3.0f), to(0,0,0), up(0,1,0), fov(90), anim(false),frames(0) {}
+    : from(0.0001f,0.0001f,-3.0f), to(0,0,0), up(0,1,0), fov(90) {}
 
     Camera (Vec3fa& from, Vec3fa& to, Vec3fa& up, float fov) 
-      : from(from), to(to), up(up), fov(fov), anim(false),frames(0) {}
+      : from(from), to(to), up(up), fov(fov) {}
 
     AffineSpace3fa camera2world () { return AffineSpace3fa::lookat(from, to, up); }
     AffineSpace3fa world2camera () { return rcp(AffineSpace3fa::lookat(from, to, up)); }
     Vec3fa world2camera(const Vec3fa& p) { return xfmPoint(world2camera(),p); }
     Vec3fa camera2world(const Vec3fa& p) { return xfmPoint(camera2world(),p); }
 
-    AffineSpace3fa pixel2world (size_t width, size_t height) 
+    /*AffineSpace3fa pixel2world (size_t width, size_t height) 
     {
-
-      if (anim)
-	{
-	  const float step = 5.0f;
-	  //if (frames % 2) 
-	    rotateOrbit(-0.005f*step,0.005f*0);
-	  frames++;
-	}
-
       const float fovScale = 1.0f/tanf(deg2rad(0.5f*fov));
       const AffineSpace3fa local2world = AffineSpace3fa::lookat(from, to, up);
       return AffineSpace3fa(local2world.l.vx,
                            -local2world.l.vy,
                            -0.5f*width*local2world.l.vx + 0.5f*height*local2world.l.vy + 0.5f*height*fovScale*local2world.l.vz,
                            local2world.p);
+                           }*/
+
+    ISPCCamera getISPCCamera (size_t width, size_t height, bool flip_y = false) 
+    {
+      const float fovScale = 1.0f/tanf(deg2rad(0.5f*fov));
+      const AffineSpace3fa local2world = AffineSpace3fa::lookat(from, to, up);
+      Vec3fa vx = local2world.l.vx;
+      Vec3fa vy = -local2world.l.vy;
+      Vec3fa vz = -0.5f*width*local2world.l.vx + 0.5f*height*local2world.l.vy + 0.5f*height*fovScale*local2world.l.vz;
+      Vec3fa p =  local2world.p;
+      if (flip_y) {
+        vz = vz+height*vy;
+        vy = -vy;
+      }
+      return ISPCCamera(AffineSpace3fa(vx,vy,vz,p));
     }
 
     void move (float dx, float dy, float dz)
@@ -99,13 +115,12 @@ namespace embree
       from += length(to-from) * (1-k) * normalize(to-from);
     }
 
-    void enableAnimMode() { anim = true; }
-
   public:
     Vec3fa from;   //!< position of camera
     Vec3fa to;     //!< look at point
     Vec3fa up;     //!< up vector
     float fov;       //!< field of view
-    bool anim;
   };
+
+  typedef Camera::ISPCCamera ISPCCamera;
 }
