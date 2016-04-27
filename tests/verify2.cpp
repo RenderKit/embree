@@ -997,6 +997,29 @@ namespace embree
     }
   };
 
+  struct GetBoundsTest : public VerifyApplication::Test
+  {
+    GetBoundsTest (std::string name)
+      : VerifyApplication::Test(name,VerifyApplication::PASS) {}
+
+    bool run(VerifyApplication* state)
+    {
+      ClearBuffers clear_before_return;
+      RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_STATIC,RTC_INTERSECT1);
+      AssertNoError(state->device);
+      BBox3fa bounds0;
+      unsigned geom0 = addSphere(state->device,scene,RTC_GEOMETRY_STATIC,zero,1.0f,50,-1,0,&bounds0);
+      AssertNoError(state->device);
+      rtcCommit (scene);
+      AssertNoError(state->device);
+      BBox3fa bounds1;
+      rtcGetBounds(scene,(RTCBounds&)bounds1);
+      scene = nullptr;
+      return bounds0 == bounds1;
+    }
+  };
+
+
   VerifyApplication::VerifyApplication ()
     : device(nullptr), rtcore(""), regressionN(200), numFailedTests(0)
   {
@@ -1016,7 +1039,7 @@ namespace embree
     
     addTest(new StaticSceneTest("static_scene"));
     addTest(new UnmappedBeforeCommitTest("unmapped_before_commit"));
-    //POSITIVE("get_bounds",                rtcore_rtcGetBounds());
+    addTest(new GetBoundsTest("get_bounds"));
 
 #if defined(RTCORE_BUFFER_STRIDE)
     //POSITIVE("buffer_stride",             rtcore_buffer_stride());
