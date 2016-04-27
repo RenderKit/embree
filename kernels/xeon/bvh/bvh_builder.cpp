@@ -105,6 +105,8 @@ namespace embree
         return createLeaf(current,alloc);
       };
 
+      PRINT(sizeof(BVH::QuantizedNode));
+
 #if ENABLE_32BIT_OFFSETS_FOR_QUANTIZED_NODES == 1 
       typename BVH::QuantizedNode *first = (typename BVH::QuantizedNode*)bvh->alloc.malloc(sizeof(typename BVH::QuantizedNode), bvh->byteNodeAlignment);
       NodeRef &root = *(NodeRef*)first; // as the builder assigns current.parent = (size_t*)&root

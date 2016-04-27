@@ -103,7 +103,6 @@ OPTION(RTCORE_RAY_PACKETS "Enabled support for ray packets." ON)
 
 OPTION(RTCORE_EXPORT_ALL_SYMBOLS "Lets Embree library export all symbols.")
 OPTION(RTCORE_ENABLE_RAYSTREAM_LOGGER "Enables ray stream logger.")
-OPTION(RTCORE_MEMKIND_ALLOCATOR "Enables memory allocation through the memkind library." OFF)
 
 SET(RTCORE_TASKING_SYSTEM "TBB" CACHE STRING "Selects tasking system")
 SET_PROPERTY(CACHE RTCORE_TASKING_SYSTEM PROPERTY STRINGS TBB INTERNAL)
