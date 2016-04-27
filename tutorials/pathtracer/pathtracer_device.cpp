@@ -1142,7 +1142,7 @@ RTCScene convertScene(ISPCScene* scene_in)
   geomID_to_inst  = (ISPCInstance_ptr*) alignedMalloc(numGeometries*sizeof(ISPCInstance_ptr));
 
   /* create scene */
-  int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
+  int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT /* | RTC_SCENE_COMPACT */;
   int scene_aflags = RTC_INTERSECT1;
 
   if (g_subdiv_mode)

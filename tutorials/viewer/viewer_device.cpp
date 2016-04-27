@@ -276,13 +276,12 @@ RTCScene convertScene(ISPCScene* scene_in)
   geomID_to_scene = (RTCScene*) alignedMalloc(numGeometries*sizeof(RTCScene));
   geomID_to_inst  = (ISPCInstance_ptr*) alignedMalloc(numGeometries*sizeof(ISPCInstance_ptr));
 
-  int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
+  int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT /* | RTC_SCENE_COMPACT */;
   int scene_aflags = RTC_INTERSECT1 | RTC_INTERPOLATE;
   if (g_subdiv_mode)
     scene_flags = RTC_SCENE_DYNAMIC | RTC_SCENE_INCOHERENT | RTC_SCENE_ROBUST;
 
   RTCScene scene_out = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
-
    /* use geometry instancing feature */
   if (g_instancing_mode == 1)
   {

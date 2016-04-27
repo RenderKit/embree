@@ -246,9 +246,10 @@ namespace embree
             accels.add(device->bvh8_factory->BVH8Quad4i(this)); 
         }
         else
-#else
-          accels.add(device->bvh4_factory->BVH4Quad4i(this));
 #endif
+        {
+          accels.add(device->bvh4_factory->BVH4Quad4i(this));
+        }
         break;
 
       case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4Quad4i(this)); break;

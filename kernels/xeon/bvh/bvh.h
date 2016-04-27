@@ -209,9 +209,9 @@ namespace embree
       /*! Prefetches the node this reference points to */
       __forceinline void prefetch(int types=0) const {
 #if defined(__AVX512F__)
-          prefetchL2(((char*)ptr)+0*64);
-          prefetchL2(((char*)ptr)+1*64);
           if (types != BVH_FLAG_QUANTIZED_NODE) {
+            prefetchL2(((char*)ptr)+0*64);
+            prefetchL2(((char*)ptr)+1*64);
             if ((N >= 8) || (types > BVH_FLAG_ALIGNED_NODE)) {
               prefetchL2(((char*)ptr)+2*64);
               prefetchL2(((char*)ptr)+3*64);
@@ -223,10 +223,17 @@ namespace embree
               prefetchL2(((char*)ptr)+7*64);
             }
           }
+          else
+          {
+            /* todo: reduce if 32bit offsets are enabled */
+            prefetchL2(((char*)ptr)+0*64);
+            prefetchL2(((char*)ptr)+1*64);
+            prefetchL2(((char*)ptr)+2*64);
+          }
 #else
-          prefetchL1(((char*)ptr)+0*64);
-          prefetchL1(((char*)ptr)+1*64);
           if (types != BVH_FLAG_QUANTIZED_NODE) {
+            prefetchL1(((char*)ptr)+0*64);
+            prefetchL1(((char*)ptr)+1*64);
             if ((N >= 8) || (types > BVH_FLAG_ALIGNED_NODE)) {
               prefetchL1(((char*)ptr)+2*64);
               prefetchL1(((char*)ptr)+3*64);
@@ -237,6 +244,13 @@ namespace embree
               prefetchL1(((char*)ptr)+6*64);
               prefetchL1(((char*)ptr)+7*64);
             }
+          }
+          else
+          {
+            /* todo: reduce if 32bit offsets are enabled */
+            prefetchL1(((char*)ptr)+0*64);
+            prefetchL1(((char*)ptr)+1*64);
+            prefetchL1(((char*)ptr)+2*64);
           }
 #endif
       }
@@ -791,7 +805,7 @@ namespace embree
 
 
     /*! BVHN Quantized Node */
-    struct __aligned(32) QuantizedNode
+    struct __aligned(16) QuantizedNode
     {
       static const unsigned char MIN_QUAN_8BIT = 0;
       static const unsigned char MAX_QUAN_8BIT = 255;
