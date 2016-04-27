@@ -1283,6 +1283,7 @@ namespace embree
               ray2.geomID != 2 || 
               ray3.geomID != 3) return false;
 
+#if defined(RTCORE_RAY_PACKETS)
           if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT4))
           {
             RTCRay4 ray4; memset(&ray4,0,sizeof(ray4));
@@ -1328,6 +1329,7 @@ namespace embree
                 ray16.geomID[2] != 2 || 
                 ray16.geomID[3] != 3) return false;
           }
+#endif
         }
       }
       scene = nullptr;
@@ -1388,6 +1390,7 @@ namespace embree
           if (!ok0 || !ok1 || !ok2 || !ok3) passed = false;
         }
         
+#if defined(RTCORE_RAY_PACKETS)
         if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT4))
         {
           RTCRay ray0 = makeRay(pos0+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray0.mask = mask0;
@@ -1450,6 +1453,7 @@ namespace embree
           bool ok16d = mask3 & 8 ? ray16.geomID[3] == 3 : ray16.geomID[3] == -1;
           if (!ok16a || !ok16b || !ok16c || !ok16d) passed = false;
         }
+#endif
       }
       scene = nullptr;
       return passed;
@@ -1499,6 +1503,7 @@ namespace embree
           if (!ok0 || !ok1 || !ok2 || !ok3) passed = false;
         }
         
+#if defined(RTCORE_RAY_PACKETS)
         if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT4))
         {
           RTCRay ray0 = makeRay(pos0+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray0.mask = mask0;
@@ -1563,6 +1568,7 @@ namespace embree
           bool ok16d = mask3 & 8 ? ray16.geomID[3] == 0 : ray16.geomID[3] == -1;
           if (!ok16a || !ok16b || !ok16c || !ok16d) passed = false;
         }
+#endif
       }
       scene = nullptr;
       return passed;
@@ -1703,6 +1709,7 @@ namespace embree
             if (!ok0) passed = false;
           }
           
+#if defined(RTCORE_RAY_PACKETS)
           if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT4))
           {
             RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
@@ -1738,6 +1745,7 @@ namespace embree
             bool ok0 = (primID & 2) ? (ray16.geomID[0] == -1) : (ray16.geomID[0] == 0);
             if (!ok0) passed = false;
           }
+#endif
         }
       }
       scene = nullptr;
@@ -1778,6 +1786,7 @@ namespace embree
           
           if (subdiv) continue; // FIXME: subdiv filter callbacks only working for single ray queries
           
+#if defined(RTCORE_RAY_PACKETS)
           if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT4))
           {
             RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
@@ -1813,6 +1822,7 @@ namespace embree
             bool ok0 = (primID & 2) ? (ray16.geomID[0] == -1) : (ray16.geomID[0] == 0);
             if (!ok0) passed = false;
           }
+#endif
         }
       }
       scene = nullptr;
@@ -1859,6 +1869,7 @@ namespace embree
       {
         RTCRay ray = makeRay(Vec3fa(-1,10,-1),Vec3fa(0,-1,0));
         
+#if defined(RTCORE_RAY_PACKETS)
         if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT4))
         {
           RTCRay4 ray4; memset(&ray4,-1,sizeof(RTCRay4));
@@ -1903,6 +1914,7 @@ namespace embree
             passed &= ((int*)&ray16)[j] == -1;
           }
         }
+#endif
       }
       return passed;
     }
@@ -2491,6 +2503,8 @@ namespace embree
       ray = frontfacing; rtcIntersectN(scene,ray,1); if (ray.geomID != 0) passed = false;
       ray = backfacing;  rtcOccludedN(scene,ray,1);  if (ray.geomID != -1) passed = false;
       ray = backfacing;  rtcIntersectN(scene,ray,1); if (ray.geomID != -1) passed = false;
+
+#if defined(RTCORE_RAY_PACKETS)
       if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT4))
       {
         ray = frontfacing; rtcOccludedN(scene,ray,4);  if (ray.geomID != 0) passed = false;
@@ -2512,6 +2526,7 @@ namespace embree
         ray = backfacing;  rtcOccludedN(scene,ray,16); if (ray.geomID != -1) passed = false;
         ray = backfacing;  rtcIntersectN(scene,ray,16);if (ray.geomID != -1) passed = false;
       }
+#endif
       return passed;
     }
     
@@ -2995,6 +3010,7 @@ namespace embree
       rtcIntersect(scene,ray);
     }
 
+#if defined(RTCORE_RAY_PACKETS)
     if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT4))
     {
       RTCRay4 ray4; memset(&ray4,0,sizeof(ray4)); 
@@ -3036,6 +3052,7 @@ namespace embree
       rtcOccluded16(valid16,scene,ray16);
       rtcIntersect16(valid16,scene,ray16);
     }
+#endif
   }
 
   static bool build_join_test = false;
@@ -3619,6 +3636,7 @@ namespace embree
     addTest(new Watertight1Test("watertight_sphere_1","sphere",watertight_pos));
     addTest(new Watertight1Test("watertight_cube_1","cube",watertight_pos));
     addTest(new WatertightPlane1Test("watertight_plane_1",100000));
+#if defined(RTCORE_RAY_PACKETS)
     if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT4)) {
       addTest(new Watertight4Test("watertight_sphere_4","sphere",watertight_pos));
       addTest(new Watertight4Test("watertight_cube_4","cube",watertight_pos));
@@ -3634,10 +3652,12 @@ namespace embree
       addTest(new Watertight16Test("watertight_cube_16","cube",watertight_pos));
       addTest(new WatertightPlane16Test("watertight_plane_16",100000));
     }
+#endif
 
 #if defined(RTCORE_IGNORE_INVALID_RAYS)
     addTest(new NaNTest("nan_test_1",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,1));
     addTest(new InfTest("inf_test_1",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,1));
+#if defined(RTCORE_RAY_PACKETS)
     if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT4)) {
       addTest(new NaNTest("nan_test_4",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,4));
       addTest(new InfTest("inf_test_4",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,4));
@@ -3650,6 +3670,7 @@ namespace embree
       addTest(new NaNTest("nan_test_16",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,16));
       addTest(new InfTest("inf_test_16",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,16));
     }
+#endif
 #endif
 
     addTest(new IntensiveRegressionTest("regression_static",rtcore_regression_static_thread,0));
