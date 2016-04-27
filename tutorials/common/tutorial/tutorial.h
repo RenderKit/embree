@@ -17,73 +17,19 @@
 #pragma once
 
 #include "../default.h"
-//#include "tutorial_device.h"
+#include "application.h"
 #include "camera.h"
 #include "scene.h"
 
 namespace embree
 {
-  class TutorialApplication
+  class TutorialApplication : public Application
   {
   public:
     enum Features { FEATURE_STREAM = 1 };
 
     TutorialApplication (const std::string& tutorialName, const int features = 0);
     
-  public:
-    
-    /* virtual interface for command line option processing */
-    struct CommandLineOption : public RefCount 
-    {
-    public:
-      CommandLineOption (const std::string& description) 
-        : description(description) {}
-
-      virtual void parse(Ref<ParseStream> cin, const FileName& path) = 0;
-      
-    public:
-      std::string description;
-    };
-    
-    /* helper class to provide parsing function via lambda function */
-    template<typename F>
-      struct CommandLineOptionClosure : public CommandLineOption
-    {
-      CommandLineOptionClosure (std::string description, const F& f) 
-        : CommandLineOption(description), f(f) {}
-      
-      virtual void parse(Ref<ParseStream> cin, const FileName& path) {
-        f(cin,path);
-      }
-      
-    public:
-      F f;
-    };
-    
-    /* registers a command line option */
-    template<typename F>
-      void registerOption(const std::string& name, const F& f, const std::string& description) 
-    {
-      Ref<CommandLineOption> closure = new CommandLineOptionClosure<F>(description,f);
-      commandLineOptionList.push_back(closure);
-      commandLineOptionMap[name] = closure;
-    }
-
-    /* registers an alias for a command line option */
-    void registerOptionAlias(const std::string& name, const std::string& alternativeName); 
-    
-    /* command line parsing */
-    void parseCommandLine(int argc, char** argv);
-    void parseCommandLine(Ref<ParseStream> cin, const FileName& path);
-
-    /* prints help for all supported command line options */
-    void printCommandLineHelp();
-
-    /* command line options database */
-  public:
-    std::vector<         Ref<CommandLineOption> > commandLineOptionList;
-    std::map<std::string,Ref<CommandLineOption> > commandLineOptionMap;
- 
   public:
     /* starts tutorial */
     void run(int argc, char** argv);
