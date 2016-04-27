@@ -192,6 +192,30 @@ namespace embree
       return distance < 0.0002f;
     }
   };
+
+  struct FlagsTest : public VerifyApplication::Test
+  {
+    FlagsTest (std::string name, VerifyApplication::TestType type, RTCSceneFlags sceneFlags, RTCGeometryFlags geomFlags)
+      : VerifyApplication::Test(name,type), sceneFlags(sceneFlags), geomFlags(geomFlags) {}
+
+    bool run(VerifyApplication* state)
+    {
+      RTCSceneRef scene = rtcDeviceNewScene(state->device,sceneFlags,aflags);
+      AssertNoError(state->device);
+      rtcNewTriangleMesh (scene, geomFlags, 0, 0);
+      AssertNoError(state->device);
+      rtcNewHairGeometry (scene, geomFlags, 0, 0);
+      AssertNoError(state->device);
+      rtcCommit (scene);
+      AssertNoError(state->device);
+      scene = nullptr;
+      return true;
+    }
+
+  public:
+    RTCSceneFlags sceneFlags;
+    RTCGeometryFlags geomFlags;
+  };
   
   VerifyApplication::VerifyApplication ()
     : device(nullptr), rtcore(""), regressionN(200), numFailedTests(0)
@@ -203,6 +227,13 @@ namespace embree
     // FIXME: add test with empty meshes
     addTest(new BaryDistanceTest("bary_distance_robust"));
 
+    addTest(new FlagsTest("flags_static_static"     ,VerifyApplication::PASS, RTC_SCENE_STATIC, RTC_GEOMETRY_STATIC));
+    addTest(new FlagsTest("flags_static_deformable" ,VerifyApplication::FAIL, RTC_SCENE_STATIC, RTC_GEOMETRY_DEFORMABLE));
+    addTest(new FlagsTest("flags_static_dynamic"    ,VerifyApplication::FAIL, RTC_SCENE_STATIC, RTC_GEOMETRY_DYNAMIC));
+    addTest(new FlagsTest("flags_dynamic_static"    ,VerifyApplication::PASS, RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC));
+    addTest(new FlagsTest("flags_dynamic_deformable",VerifyApplication::PASS, RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DEFORMABLE));
+    addTest(new FlagsTest("flags_dynamic_dynamic"   ,VerifyApplication::PASS, RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DYNAMIC));
+    
     //POSITIVE("flags_static_static",       rtcore_dynamic_flag(RTC_SCENE_STATIC, RTC_GEOMETRY_STATIC));
     //NEGATIVE("flags_static_deformable",   rtcore_dynamic_flag(RTC_SCENE_STATIC, RTC_GEOMETRY_DEFORMABLE));
     //NEGATIVE("flags_static_dynamic",      rtcore_dynamic_flag(RTC_SCENE_STATIC, RTC_GEOMETRY_DYNAMIC));
