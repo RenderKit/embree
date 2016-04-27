@@ -102,8 +102,151 @@ namespace embree
     : device(nullptr), rtcore(""), regressionN(200), numFailedTests(0)
   {
     /* add all tests */
-    addTest(new EmptySceneTest("empty_static",RTC_SCENE_STATIC));
     addTest(new MultipleDevicesTest("multiple_devices"));
+    addTest(new EmptySceneTest("empty_static",RTC_SCENE_STATIC));
+    addTest(new EmptySceneTest("empty_dynamic",RTC_SCENE_DYNAMIC));
+
+    //POSITIVE("bary_distance_robust",      rtcore_bary_distance_robust());
+    
+    //POSITIVE("flags_static_static",       rtcore_dynamic_flag(RTC_SCENE_STATIC, RTC_GEOMETRY_STATIC));
+    //NEGATIVE("flags_static_deformable",   rtcore_dynamic_flag(RTC_SCENE_STATIC, RTC_GEOMETRY_DEFORMABLE));
+    //NEGATIVE("flags_static_dynamic",      rtcore_dynamic_flag(RTC_SCENE_STATIC, RTC_GEOMETRY_DYNAMIC));
+    //POSITIVE("flags_dynamic_static",      rtcore_dynamic_flag(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC));
+    //POSITIVE("flags_dynamic_deformable",  rtcore_dynamic_flag(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DEFORMABLE));
+    //POSITIVE("flags_dynamic_dynamic",     rtcore_dynamic_flag(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DYNAMIC));
+    //POSITIVE("static_scene",              rtcore_static_scene());
+    //POSITIVE("unmapped_before_commit",    rtcore_unmapped_before_commit());
+    //POSITIVE("get_bounds",                rtcore_rtcGetBounds());
+
+#if defined(RTCORE_BUFFER_STRIDE)
+    //POSITIVE("buffer_stride",             rtcore_buffer_stride());
+#endif
+
+    //POSITIVE("dynamic_enable_disable",    rtcore_dynamic_enable_disable());
+    //POSITIVE("get_user_data"         ,    rtcore_get_user_data());
+
+    //POSITIVE("update_deformable",         rtcore_update(RTC_GEOMETRY_DEFORMABLE));
+    //POSITIVE("update_dynamic",            rtcore_update(RTC_GEOMETRY_DYNAMIC));
+    //POSITIVE("overlapping_triangles",     rtcore_overlapping_triangles(100000));
+    //POSITIVE("overlapping_hair",          rtcore_overlapping_hair(100000));
+    //POSITIVE("new_delete_geometry",       rtcore_new_delete_geometry());
+
+    //POSITIVE("interpolate_subdiv4",                rtcore_interpolate_subdiv(4));
+    //POSITIVE("interpolate_subdiv5",                rtcore_interpolate_subdiv(5));
+    //POSITIVE("interpolate_subdiv8",                rtcore_interpolate_subdiv(8));
+    //POSITIVE("interpolate_subdiv11",               rtcore_interpolate_subdiv(11));
+    //POSITIVE("interpolate_subdiv12",               rtcore_interpolate_subdiv(12));
+    //POSITIVE("interpolate_subdiv15",               rtcore_interpolate_subdiv(15));
+
+    //POSITIVE("interpolate_triangles4",                rtcore_interpolate_triangles(4));
+    //POSITIVE("interpolate_triangles5",                rtcore_interpolate_triangles(5));
+    //POSITIVE("interpolate_triangles8",                rtcore_interpolate_triangles(8));
+    //POSITIVE("interpolate_triangles11",               rtcore_interpolate_triangles(11));
+    //POSITIVE("interpolate_triangles12",               rtcore_interpolate_triangles(12));
+    //POSITIVE("interpolate_triangles15",               rtcore_interpolate_triangles(15));
+
+    //POSITIVE("interpolate_hair4",                rtcore_interpolate_hair(4));
+    //POSITIVE("interpolate_hair5",                rtcore_interpolate_hair(5));
+    //POSITIVE("interpolate_hair8",                rtcore_interpolate_hair(8));
+    //POSITIVE("interpolate_hair11",               rtcore_interpolate_hair(11));
+    //POSITIVE("interpolate_hair12",               rtcore_interpolate_hair(12));
+    //POSITIVE("interpolate_hair15",               rtcore_interpolate_hair(15));
+
+    //rtcore_build();
+
+#if defined(RTCORE_RAY_MASK)
+    //rtcore_ray_masks_all();
+#endif
+
+#if defined(RTCORE_INTERSECTION_FILTER)
+    //rtcore_filter_all(false);
+#endif
+
+#if defined(RTCORE_INTERSECTION_FILTER) && !defined(__MIC__) // FIXME: subdiv intersection filters not yet implemented for MIC
+    //rtcore_filter_all(true);
+#endif
+
+
+#if defined(RTCORE_BACKFACE_CULLING)
+    //rtcore_backface_culling_all();
+#endif
+
+    //rtcore_packet_write_test_all();
+
+    //rtcore_watertight_closed1("sphere", pos);
+    //rtcore_watertight_closed1("cube",pos);
+    //rtcore_watertight_plane1(100000);
+#if HAS_INTERSECT4
+    //rtcore_watertight_closed4("sphere",pos);
+    //rtcore_watertight_closed4("cube",pos);
+    //rtcore_watertight_plane4(100000);
+#endif
+
+#if HAS_INTERSECT8
+    //if (hasISA(AVX)) {
+    //  rtcore_watertight_closed8("sphere",pos);
+    //  rtcore_watertight_closed8("cube",pos);
+    //  rtcore_watertight_plane8(100000);
+    //}
+#endif
+
+#if HAS_INTERSECT16
+    //if (hasISA(AVX512KNL) || hasISA(KNC))
+    //{
+    //  rtcore_watertight_closed16("sphere",pos);
+    //  rtcore_watertight_closed16("cube",pos);
+    //  rtcore_watertight_plane16(100000);
+    //}
+
+#endif
+
+#if defined(RTCORE_IGNORE_INVALID_RAYS)
+    //rtcore_nan("nan_test_1",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,1);
+    //rtcore_inf("inf_test_1",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,1);
+
+#if HAS_INTERSECT4
+    //rtcore_nan("nan_test_4",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,4);
+    //rtcore_inf("inf_test_4",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,4);
+#endif
+
+#if HAS_INTERSECT8
+    //if (hasISA(AVX)) {
+    //  rtcore_nan("nan_test_8",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,8);
+    //  rtcore_inf("inf_test_8",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,8);
+    //}
+#endif
+
+#if HAS_INTERSECT16
+    //if (hasISA(AVX512KNL) || hasISA(KNC))
+    //{
+    //  rtcore_nan("nan_test_16",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,16);
+    //  rtcore_inf("inf_test_16",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,16);
+    //}
+#endif
+#endif
+
+    //POSITIVE("regression_static",         rtcore_regression(rtcore_regression_static_thread,0));
+    //POSITIVE("regression_dynamic",        rtcore_regression(rtcore_regression_dynamic_thread,0));
+
+
+#if defined(TASKING_TBB) || defined(TASKING_INTERNAL)
+    //POSITIVE("regression_static_user_threads", rtcore_regression(rtcore_regression_static_thread,1));
+    //POSITIVE("regression_dynamic_user_threads", rtcore_regression(rtcore_regression_dynamic_thread,1));
+#endif
+
+#if defined(TASKING_TBB) || defined(TASKING_INTERNAL)
+    //POSITIVE("regression_static_build_join", rtcore_regression(rtcore_regression_static_thread,2));
+    //POSITIVE("regression_dynamic_build_join", rtcore_regression(rtcore_regression_dynamic_thread,2));
+#endif
+      
+#if defined(TASKING_TBB) || defined(TASKING_INTERNAL)
+    //POSITIVE("regression_static_memory_monitor",  rtcore_regression_memory_monitor(rtcore_regression_static_thread));
+    //POSITIVE("regression_dynamic_memory_monitor", rtcore_regression_memory_monitor(rtcore_regression_dynamic_thread));
+#endif
+
+#if !defined(__MIC__)
+    //POSITIVE("regression_garbage_geom",   rtcore_regression_garbage());
+#endif
 
     /* register all command line options*/
     registerOption("rtcore", [this] (Ref<ParseStream> cin, const FileName& path) {
