@@ -38,6 +38,22 @@
 
 namespace embree
 {
+  /* vertex and triangle layout */
+  struct Vertex  {
+    Vertex() {}
+    Vertex(float x, float y, float z, float a = 0.0f) 
+      : x(x), y(y), z(z), a(a) {}
+    float x,y,z,a; 
+  };
+  typedef Vec3f  Vertex3f;
+  typedef Vec3fa Vertex3fa;
+  
+  struct Triangle {
+    Triangle () {}
+    Triangle(int v0, int v1, int v2) : v0(v0), v1(v1), v2(v2) {}
+    int v0, v1, v2; 
+  };
+
   void AssertNoError(RTCDevice device) 
   {
     RTCError error = rtcDeviceGetError(device);
@@ -61,29 +77,12 @@ namespace embree
 
   RTCAlgorithmFlags aflags = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT4 | RTC_INTERSECT8 | RTC_INTERSECT16);
 
-  struct EmptySceneTest : public VerifyApplication::Test
-  {
-    EmptySceneTest (std::string name, RTCSceneFlags sflags)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags) {}
-
-    void run(VerifyApplication* state)
-    {
-      RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,aflags);
-      AssertNoError(state->device);
-      rtcCommit (scene);
-      AssertNoError(state->device);
-    }
-
-  public:
-    RTCSceneFlags sflags;
-  };
-
   struct MultipleDevicesTest : public VerifyApplication::Test
   {
     MultipleDevicesTest (std::string name)
       : VerifyApplication::Test(name,VerifyApplication::PASS) {}
 
-    void run(VerifyApplication* state)
+    bool run(VerifyApplication* state)
     {
       /* test creation of multiple devices */
       RTCDevice device1 = rtcNewDevice("threads=4");
@@ -95,9 +94,105 @@ namespace embree
       rtcDeleteDevice(device1);
       rtcDeleteDevice(device3);
       rtcDeleteDevice(device2);
+      return true;
     }
   };
 
+  struct EmptySceneTest : public VerifyApplication::Test
+  {
+    EmptySceneTest (std::string name, RTCSceneFlags sflags)
+      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags) {}
+
+    bool run(VerifyApplication* state)
+    {
+      RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,aflags);
+      AssertNoError(state->device);
+      rtcCommit (scene);
+      AssertNoError(state->device);
+      return true;
+    }
+
+  public:
+    RTCSceneFlags sflags;
+  };
+
+  struct BaryDistanceTest : public VerifyApplication::Test
+  {
+    BaryDistanceTest (std::string name)
+      : VerifyApplication::Test(name,VerifyApplication::PASS) {}
+
+    bool run(VerifyApplication* state)
+    {
+      std::vector<Vertex> m_vertices;
+      std::vector<Triangle> m_triangles;
+      
+      const float length = 1000.0f;
+      const float width = 1000.0f;
+      
+      m_vertices.resize(4);
+      m_vertices[0] = Vertex(-length / 2.0f, -width / 2.0f, 0);
+      m_vertices[1] = Vertex( length / 2.0f, -width / 2.0f, 0);
+      m_vertices[2] = Vertex( length / 2.0f,  width / 2.0f, 0);
+      m_vertices[3] = Vertex(-length / 2.0f,  width / 2.0f, 0);
+      
+      m_triangles.resize(2);
+      m_triangles[0] = Triangle(0, 1, 2);
+      m_triangles[1] = Triangle(2, 3, 0);
+      
+      //const RTCSceneFlags flags = RTCSceneFlags(0); 
+      const RTCSceneFlags flags = RTC_SCENE_ROBUST;
+      const RTCSceneRef mainSceneId = rtcDeviceNewScene(state->device,RTC_SCENE_STATIC | flags , RTC_INTERSECT1);
+      
+      const unsigned int id = rtcNewTriangleMesh(mainSceneId, RTC_GEOMETRY_STATIC, m_triangles.size(), m_vertices.size());
+      
+      rtcSetBuffer(mainSceneId, id, RTC_VERTEX_BUFFER, m_vertices.data(), 0, sizeof(Vertex));
+      rtcSetBuffer(mainSceneId, id, RTC_INDEX_BUFFER, m_triangles.data(), 0, sizeof(Triangle));
+      
+      rtcCommit(mainSceneId);
+      
+      RTCRay ray;
+      ray.org[0] = 0.1f;
+      ray.org[1] = 1.09482f;
+      ray.org[2] = 29.8984f;
+      ray.dir[0] = 0.f;
+      ray.dir[1] = 0.99482f;
+      ray.dir[2] = -0.101655f;
+      ray.tnear = 0.05f;
+      ray.tfar  = inf;
+      ray.mask  = -1;
+      
+      ray.geomID = RTC_INVALID_GEOMETRY_ID;
+      ray.primID = RTC_INVALID_GEOMETRY_ID;
+      ray.instID = RTC_INVALID_GEOMETRY_ID;
+      
+      rtcIntersect(mainSceneId, ray);
+      
+      if (ray.geomID == RTC_INVALID_GEOMETRY_ID) 
+        throw std::runtime_error("no triangle hit");
+      
+      const Triangle &triangle = m_triangles[ray.primID];
+      
+      const Vertex &v0_ = m_vertices[triangle.v0];
+      const Vertex &v1_ = m_vertices[triangle.v1];
+      const Vertex &v2_ = m_vertices[triangle.v2];
+      
+      const Vec3fa v0(v0_.x, v0_.y, v0_.z);
+      const Vec3fa v1(v1_.x, v1_.y, v1_.z);
+      const Vec3fa v2(v2_.x, v2_.y, v2_.z);
+      
+      const Vec3fa hit_tri = v0 + ray.u * (v1 - v0) + ray.v * (v2 - v0);
+      
+      const Vec3fa ray_org = Vec3fa(ray.org[0], ray.org[1], ray.org[2]);
+      const Vec3fa ray_dir = Vec3fa(ray.dir[0], ray.dir[1], ray.dir[2]);
+      
+      const Vec3fa hit_tfar = ray_org + ray.tfar * ray_dir;
+      const Vec3fa delta = hit_tri - hit_tfar;
+      const float distance = embree::length(delta);
+      
+      return distance < 0.0002f;
+    }
+  };
+  
   VerifyApplication::VerifyApplication ()
     : device(nullptr), rtcore(""), regressionN(200), numFailedTests(0)
   {
@@ -105,9 +200,9 @@ namespace embree
     addTest(new MultipleDevicesTest("multiple_devices"));
     addTest(new EmptySceneTest("empty_static",RTC_SCENE_STATIC));
     addTest(new EmptySceneTest("empty_dynamic",RTC_SCENE_DYNAMIC));
+    // FIXME: add test with empty meshes
+    addTest(new BaryDistanceTest("bary_distance_robust"));
 
-    //POSITIVE("bary_distance_robust",      rtcore_bary_distance_robust());
-    
     //POSITIVE("flags_static_static",       rtcore_dynamic_flag(RTC_SCENE_STATIC, RTC_GEOMETRY_STATIC));
     //NEGATIVE("flags_static_deformable",   rtcore_dynamic_flag(RTC_SCENE_STATIC, RTC_GEOMETRY_DEFORMABLE));
     //NEGATIVE("flags_static_dynamic",      rtcore_dynamic_flag(RTC_SCENE_STATIC, RTC_GEOMETRY_DYNAMIC));
@@ -326,7 +421,7 @@ namespace embree
     bool ok = true;
     std::cout << std::setw(30) << test->name << " ..." << std::flush;
     try {
-      test->run(this);
+      ok &= test->run(this);
     } catch (...) {
       ok = false;
     }

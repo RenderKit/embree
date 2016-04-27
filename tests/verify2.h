@@ -32,7 +32,7 @@ namespace embree
       Test (std::string name, TestType ty = PASS) 
         : name(name), ty(ty) {}
 
-      virtual void run(VerifyApplication* state) = 0;
+      virtual bool run(VerifyApplication* state) = 0;
 
     public:
       std::string name;
