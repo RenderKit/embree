@@ -974,6 +974,29 @@ namespace embree
     }
   };
 
+  struct UnmappedBeforeCommitTest : public VerifyApplication::Test
+  {
+    UnmappedBeforeCommitTest (std::string name)
+      : VerifyApplication::Test(name,VerifyApplication::PASS) {}
+
+    bool run(VerifyApplication* state)
+    {
+      ClearBuffers clear_before_return;
+      RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_STATIC,aflags);
+      AssertNoError(state->device);
+      unsigned geom0 = addSphere(state->device,scene,RTC_GEOMETRY_STATIC,zero,1.0f,50);
+      unsigned geom1 = addSphere(state->device,scene,RTC_GEOMETRY_STATIC,zero,1.0f,50);
+      AssertNoError(state->device);
+      rtcMapBuffer(scene,geom0,RTC_INDEX_BUFFER);
+      rtcMapBuffer(scene,geom0,RTC_VERTEX_BUFFER);
+      AssertNoError(state->device);
+      rtcCommit (scene);
+      AssertError(state->device,RTC_INVALID_OPERATION); // error, buffers still mapped
+      scene = nullptr;
+      return true;
+    }
+  };
+
   VerifyApplication::VerifyApplication ()
     : device(nullptr), rtcore(""), regressionN(200), numFailedTests(0)
   {
@@ -992,7 +1015,7 @@ namespace embree
     addTest(new FlagsTest("flags_dynamic_dynamic"   ,VerifyApplication::PASS, RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DYNAMIC));
     
     addTest(new StaticSceneTest("static_scene"));
-    //POSITIVE("unmapped_before_commit",    rtcore_unmapped_before_commit());
+    addTest(new UnmappedBeforeCommitTest("unmapped_before_commit"));
     //POSITIVE("get_bounds",                rtcore_rtcGetBounds());
 
 #if defined(RTCORE_BUFFER_STRIDE)
