@@ -18,6 +18,14 @@
 
 #define DEFAULT_STACK_SIZE 4*1024*1024
 
+#if defined(__WIN32__)
+#  define GREEN(x) x
+#  define RED(x) x
+#else
+#  define GREEN(x) "\033[32m" x "\033[0m"
+#  define RED(x) "\033[31m" x "\033[0m"
+#endif
+
 #if defined(__INTEL_COMPILER)
 #pragma warning (disable: 1478) // warning: function was declared deprecated
 #elif defined(_MSC_VER)
@@ -91,7 +99,7 @@ namespace embree
   };
 
   VerifyApplication::VerifyApplication ()
-    : device(nullptr), rtcore(""), regressionN(200)
+    : device(nullptr), rtcore(""), regressionN(200), numFailedTests(0)
   {
     /* add all tests */
     addTest(new EmptySceneTest("empty_static",RTC_SCENE_STATIC));
@@ -147,14 +155,14 @@ namespace embree
 
     /* execute specific user tests */
     if (tests_to_run.size()) {
-      for (auto test : tests_to_run) test->run(this);
+      for (auto test : tests_to_run) runTest(test);
     } else {
-      for (auto test : tests) test->run(this);
+      for (auto test : tests) runTest(test);
     }
 
     rtcDeleteDevice(device);
-    return 0;
-  }  
+    return numFailedTests;
+  }
   catch (const std::exception& e) {
     std::cout << "Error: " << e.what() << std::endl;
     return 1;
@@ -163,10 +171,33 @@ namespace embree
     std::cout << "Error: unknown exception caught." << std::endl;
     return 1;
   }
+
+  void VerifyApplication::addTest(Ref<Test> test) 
+  {
+    tests.push_back(test);
+    name2test[test->name] = test;
+  }
+  
+  void VerifyApplication::runTest(Ref<Test> test)
+  {
+    bool ok = true;
+    std::cout << std::setw(30) << test->name << " ..." << std::flush;
+    try {
+      test->run(this);
+    } catch (...) {
+      ok = false;
+    }
+    if ((test->ty == PASS) == ok) 
+      std::cout << GREEN(" [PASSED]") << std::endl << std::flush;
+    else {
+      std::cout << RED(" [FAILED]") << std::endl << std::flush;
+      numFailedTests++;
+    }
+  }
 }
 
 int main(int argc, char** argv)
 {
   embree::VerifyApplication app;
-  app.main(argc,argv);
+  return app.main(argc,argv);
 }

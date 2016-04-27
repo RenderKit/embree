@@ -43,10 +43,8 @@ namespace embree
 
     VerifyApplication ();
 
-    void addTest(Ref<Test> test) {
-      tests.push_back(test);
-      name2test[test->name] = test;
-    }
+    void addTest(Ref<Test> test);
+    void runTest(Ref<Test> test);
 
     int main(int argc, char** argv);
     
@@ -54,6 +52,7 @@ namespace embree
     RTCDevice device;
     std::string rtcore;
     int regressionN;
+    size_t numFailedTests;
 
   public:
     std::vector<Ref<Test>> tests;
