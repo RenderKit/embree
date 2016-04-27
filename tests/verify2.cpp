@@ -1019,7 +1019,52 @@ namespace embree
     }
   };
 
+  struct BufferStrideTest : public VerifyApplication::Test
+  {
+    BufferStrideTest (std::string name)
+      : VerifyApplication::Test(name,VerifyApplication::PASS) {}
+    
+    bool run(VerifyApplication* state)
+    {
+      ClearBuffers clear_before_return;
+      RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_STATIC,aflags);
+      AssertNoError(state->device);
+      unsigned geom = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 16, 16);
+      AssertNoError(state->device);
+      avector<char> indexBuffer(8+16*6*sizeof(int));
+      avector<char> vertexBuffer(12+16*9*sizeof(float)+4);
+      
+      rtcSetBuffer(scene,geom,RTC_INDEX_BUFFER,indexBuffer.data(),1,3*sizeof(int));
+      AssertError(state->device,RTC_INVALID_OPERATION);
+      rtcSetBuffer(scene,geom,RTC_VERTEX_BUFFER,vertexBuffer.data(),1,3*sizeof(float));
+      AssertError(state->device,RTC_INVALID_OPERATION);
 
+      rtcSetBuffer(scene,geom,RTC_INDEX_BUFFER,indexBuffer.data(),0,3*sizeof(int)+3);
+      AssertError(state->device,RTC_INVALID_OPERATION);
+      rtcSetBuffer(scene,geom,RTC_VERTEX_BUFFER,vertexBuffer.data(),0,3*sizeof(float)+3);
+      AssertError(state->device,RTC_INVALID_OPERATION);
+      
+      rtcSetBuffer(scene,geom,RTC_INDEX_BUFFER,indexBuffer.data(),0,3*sizeof(int));
+      AssertNoError(state->device);
+      rtcSetBuffer(scene,geom,RTC_VERTEX_BUFFER,vertexBuffer.data(),0,3*sizeof(float));
+      AssertNoError(state->device);
+      
+      rtcSetBuffer(scene,geom,RTC_INDEX_BUFFER,indexBuffer.data(),8,6*sizeof(int));
+      AssertNoError(state->device);
+      rtcSetBuffer(scene,geom,RTC_VERTEX_BUFFER,vertexBuffer.data(),12,9*sizeof(float));
+      AssertNoError(state->device);
+      
+      rtcSetBuffer(scene,geom,RTC_INDEX_BUFFER,indexBuffer.data(),0,3*sizeof(int));
+      AssertNoError(state->device);
+      
+      rtcSetBuffer(scene,geom,RTC_VERTEX_BUFFER,vertexBuffer.data(),0,4*sizeof(float));
+      AssertNoError(state->device);
+      
+      scene = nullptr;
+      return true;
+    }
+  };
+    
   VerifyApplication::VerifyApplication ()
     : device(nullptr), rtcore(""), regressionN(200), numFailedTests(0)
   {
@@ -1042,7 +1087,7 @@ namespace embree
     addTest(new GetBoundsTest("get_bounds"));
 
 #if defined(RTCORE_BUFFER_STRIDE)
-    //POSITIVE("buffer_stride",             rtcore_buffer_stride());
+    addTest(new BufferStrideTest("buffer_stride"));
 #endif
 
     //POSITIVE("dynamic_enable_disable",    rtcore_dynamic_enable_disable());
