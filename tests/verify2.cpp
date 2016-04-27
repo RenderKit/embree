@@ -56,6 +56,9 @@
 
 namespace embree
 {
+  atomic_t errorCounter = 0;
+  std::vector<thread_t> g_threads;
+
   bool hasISA(const int isa) 
   {
     int cpu_features = getCPUFeatures();
@@ -355,6 +358,9 @@ namespace embree
     default: break;
     }
   }
+
+  #define CountErrors(device) \
+    if (rtcDeviceGetError(device) != RTC_NO_ERROR) atomic_add(&errorCounter,1);
 
   void AssertNoError(RTCDevice device) 
   {
@@ -3040,6 +3046,559 @@ namespace embree
     }
   };
 
+  void shootRays (const RTCSceneRef& scene)
+  {
+    Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+    Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+    RTCRay ray = makeRay(org,dir); 
+    rtcOccluded(scene,ray);
+    rtcIntersect(scene,ray);
+
+#if HAS_INTERSECT4
+    RTCRay4 ray4; memset(&ray4,0,sizeof(ray4)); 
+    for (size_t j=0; j<4; j++) {
+      Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+      Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+      RTCRay ray = makeRay(org,dir); 
+      setRay(ray4,j,ray);
+    }
+    __aligned(16) int valid4[4] = { -1,-1,-1,-1 };
+    rtcOccluded4(valid4,scene,ray4);
+    rtcIntersect4(valid4,scene,ray4);
+#endif
+
+#if HAS_INTERSECT8
+    if (hasISA(AVX)) {
+      RTCRay8 ray8; memset(&ray8,0,sizeof(ray8));
+      for (size_t j=0; j<8; j++) {
+        Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+        Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+        RTCRay ray = makeRay(org,dir); 
+        setRay(ray8,j,ray);
+      }
+      __aligned(32) int valid8[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
+      rtcOccluded8(valid8,scene,ray8);
+      rtcIntersect8(valid8,scene,ray8);
+    }
+#endif
+
+#if HAS_INTERSECT16
+    if (hasISA(AVX512KNL) || hasISA(KNC))
+    {
+      RTCRay16 ray16; memset(&ray16,0,sizeof(ray16));
+      for (size_t j=0; j<16; j++) {
+        Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+        Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+        RTCRay ray = makeRay(org,dir); 
+        setRay(ray16,j,ray);
+      }
+      __aligned(16) int valid16[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
+      rtcOccluded16(valid16,scene,ray16);
+      rtcIntersect16(valid16,scene,ray16);
+      }
+#endif
+  }
+
+  static bool build_join_test = false;
+
+  struct RegressionTask
+  {
+    RegressionTask (size_t sceneIndex, size_t sceneCount, size_t threadCount)
+      : sceneIndex(sceneIndex), sceneCount(sceneCount), scene(nullptr), numActiveThreads(0) { barrier.init(threadCount); }
+
+    size_t sceneIndex;
+    size_t sceneCount;
+    RTCSceneRef scene;
+    BarrierSys barrier;
+    volatile size_t numActiveThreads;
+  };
+
+  struct ThreadRegressionTask
+  {
+    ThreadRegressionTask (size_t threadIndex, size_t threadCount, RTCDevice device, RegressionTask* task)
+      : threadIndex(threadIndex), threadCount(threadCount), device(device), task(task) {}
+
+    size_t threadIndex;
+    size_t threadCount;
+    RTCDevice device;
+    RegressionTask* task;
+  };
+
+  ssize_t monitorProgressBreak = -1;
+  atomic_t monitorProgressInvokations = 0;
+  bool monitorProgressFunction(void* ptr, double dn) 
+  {
+    size_t n = atomic_add(&monitorProgressInvokations,1);
+    if (n == monitorProgressBreak) return false;
+    return true;
+  }
+
+  void rtcore_regression_static_thread(void* ptr)
+  {
+    ThreadRegressionTask* thread = (ThreadRegressionTask*) ptr;
+    RegressionTask* task = thread->task;
+    if (thread->threadIndex > 0) 
+    {
+      for (size_t i=0; i<task->sceneCount; i++) 
+      {
+	task->barrier.wait();
+	if (thread->threadIndex < task->numActiveThreads) 
+	{
+          if (build_join_test) rtcCommit(task->scene);
+          else                 {
+            rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);
+            rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);
+          }
+	  //CountErrors(thread->device);
+          if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) {
+            atomic_add(&errorCounter,1);
+          }
+          else {
+            for (size_t i=0; i<100; i++)
+              shootRays(task->scene);
+          }
+	}
+        task->barrier.wait();
+      }
+      delete thread; thread = nullptr;
+      return;
+    }
+
+    CountErrors(thread->device);
+    int geom[1024];
+    int types[1024];
+    Sphere spheres[1024];
+    size_t numVertices[1024];
+    for (size_t i=0; i<1024; i++)  {
+      geom[i] = -1;
+      types[i] = 0;
+      numVertices[i] = 0;
+    }
+    bool hasError = false;
+
+    for (size_t i=0; i<task->sceneCount; i++) 
+    {
+      srand(task->sceneIndex*13565+i*3242);
+      if (i%20 == 0) std::cout << "." << std::flush;
+
+      RTCSceneFlags sflag = getSceneFlag(i); 
+      task->scene = rtcDeviceNewScene(thread->device,sflag,aflags);
+      CountErrors(thread->device);
+      if (g_enable_build_cancel) rtcSetProgressMonitorFunction(task->scene,monitorProgressFunction,nullptr);
+      avector<Sphere*> spheres;
+      
+      for (size_t j=0; j<10; j++) 
+      {
+        Vec3fa pos = 100.0f*Vec3fa(drand48(),drand48(),drand48());
+	int type = random<int>()%6;
+#if !defined(__MIC__) 
+        switch (random<int>()%16) {
+        case 0: pos = Vec3fa(nan); break;
+        case 1: pos = Vec3fa(inf); break;
+        case 2: pos = Vec3fa(1E30f); break;
+        default: break;
+        };
+#endif
+	size_t numPhi = random<int>()%100;
+	if (type == 2) numPhi = random<int>()%10;
+        size_t numTriangles = 2*2*numPhi*(numPhi-1);
+	numTriangles = random<int>()%(numTriangles+1);
+        switch (type) {
+        case 0: addSphere(thread->device,task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
+	case 1: addSphere(thread->device,task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
+	case 2: addSubdivSphere(thread->device,task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
+	case 3: addHair  (thread->device,task->scene,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,numTriangles,0.0f); break;
+	case 4: addHair  (thread->device,task->scene,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,numTriangles,1.0f); break; 
+
+        case 5: {
+	  Sphere* sphere = new Sphere(pos,2.0f); spheres.push_back(sphere); 
+	  addUserGeometryEmpty(thread->device,task->scene,sphere); break;
+        }
+	}
+        //CountErrors(thread->device);
+        if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) {
+          atomic_add(&errorCounter,1);
+
+          hasError = true;
+          break;
+        }
+      }
+      
+      if (thread->threadCount) {
+	task->numActiveThreads = max(size_t(1),random<int>() % thread->threadCount);
+	task->barrier.wait();
+        if (build_join_test) rtcCommit(task->scene);
+        else                 {
+          rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);
+          rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);          
+        }
+      } else {
+        if (!hasError) {
+          rtcCommit(task->scene);
+        }
+      }
+      //CountErrors(thread->device);
+
+      if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) {
+        atomic_add(&errorCounter,1);
+      }
+      else {
+        if (!hasError) {
+          for (size_t i=0; i<100; i++) {
+            shootRays(task->scene);
+          }
+        }
+      }
+
+      if (thread->threadCount) 
+	task->barrier.wait();
+
+      task->scene = nullptr;
+      CountErrors(thread->device);
+
+      for (size_t i=0; i<spheres.size(); i++)
+	delete spheres[i];
+    }
+
+    delete thread; thread = nullptr;
+    return;
+  }
+
+  void rtcore_regression_dynamic_thread(void* ptr)
+  {
+    ThreadRegressionTask* thread = (ThreadRegressionTask*) ptr;
+    RegressionTask* task = thread->task;
+    if (thread->threadIndex > 0) 
+    {
+      for (size_t i=0; i<task->sceneCount; i++) 
+      {
+	task->barrier.wait();
+	if (thread->threadIndex < task->numActiveThreads) 
+	{
+          if (build_join_test) rtcCommit(task->scene);
+          else	               rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);
+	  //CountErrors(thread->device);
+          if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) {
+            atomic_add(&errorCounter,1);
+          }
+          else {
+            for (size_t i=0; i<100; i++)
+              shootRays(task->scene);
+          }
+	}
+	task->barrier.wait();
+      }
+      delete thread; thread = nullptr;
+      return;
+    }
+    task->scene = rtcDeviceNewScene(thread->device,RTC_SCENE_DYNAMIC,aflags);
+    CountErrors(thread->device);
+    if (g_enable_build_cancel) rtcSetProgressMonitorFunction(task->scene,monitorProgressFunction,nullptr);
+    int geom[1024];
+    int types[1024];
+    Sphere spheres[1024];
+    size_t numVertices[1024];
+    for (size_t i=0; i<1024; i++)  {
+      geom[i] = -1;
+      types[i] = 0;
+      numVertices[i] = 0;
+    }
+
+    bool hasError = false;
+
+    for (size_t i=0; i<task->sceneCount; i++) 
+    {
+      srand(task->sceneIndex*23565+i*2242);
+      if (i%20 == 0) std::cout << "." << std::flush;
+
+      for (size_t j=0; j<40; j++) 
+      {
+        int index = random<int>()%1024;
+        if (geom[index] == -1) 
+        {
+          int type = random<int>()%10;
+          Vec3fa pos = 100.0f*Vec3fa(drand48(),drand48(),drand48());
+#if !defined(__MIC__)
+          switch (random<int>()%16) {
+          case 0: pos = Vec3fa(nan); break;
+          case 1: pos = Vec3fa(inf); break;
+          case 2: pos = Vec3fa(1E30f); break;
+          default: break;
+          };
+#endif
+          size_t numPhi = random<int>()%100;
+	  if (type >= 3 || type <= 5) numPhi = random<int>()%10;
+#if defined(__WIN32__)          
+    numPhi = random<int>() % 4;
+#endif
+
+          size_t numTriangles = 2*2*numPhi*(numPhi-1);
+          numTriangles = random<int>()%(numTriangles+1);
+          types[index] = type;
+          numVertices[index] = 2*numPhi*(numPhi+1);
+          switch (type) {
+          case 0: geom[index] = addSphere(thread->device,task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
+          case 1: geom[index] = addSphere(thread->device,task->scene,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles,0.0f); break;
+          case 2: geom[index] = addSphere(thread->device,task->scene,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
+          case 3: geom[index] = addSubdivSphere(thread->device,task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
+	  case 4: geom[index] = addSubdivSphere(thread->device,task->scene,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
+	  case 5: geom[index] = addSubdivSphere(thread->device,task->scene,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
+          case 6: geom[index] = addSphere(thread->device,task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
+          case 7: geom[index] = addSphere(thread->device,task->scene,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles,1.0f); break;
+          case 8: geom[index] = addSphere(thread->device,task->scene,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
+          case 9: spheres[index] = Sphere(pos,2.0f); geom[index] = addUserGeometryEmpty(thread->device,task->scene,&spheres[index]); break;
+          }; 
+	  //CountErrors(thread->device);
+          if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) {
+            atomic_add(&errorCounter,1);
+            hasError = true;
+            break;
+          }
+        }
+        else 
+        {
+          switch (types[index]) {
+          case 0:
+          case 3:
+          case 6:
+	  case 9: {
+            rtcDeleteGeometry(task->scene,geom[index]);     
+	    CountErrors(thread->device);
+            geom[index] = -1; 
+            break;
+          }
+          case 1: 
+          case 2:
+          case 4: 
+          case 5:
+	  case 7: 
+          case 8: {
+            int op = random<int>()%2;
+            switch (op) {
+            case 0: {
+              rtcDeleteGeometry(task->scene,geom[index]);     
+	      CountErrors(thread->device);
+              geom[index] = -1; 
+              break;
+            }
+            case 1: {
+              Vertex3f* vertices = (Vertex3f*) rtcMapBuffer(task->scene,geom[index],RTC_VERTEX_BUFFER);
+              if (vertices) { 
+                for (size_t i=0; i<numVertices[index]; i++) vertices[i] += Vertex3f(0.1f);
+              }
+              rtcUnmapBuffer(task->scene,geom[index],RTC_VERTEX_BUFFER);
+              
+              if (types[index] == 7 || types[index] == 8) {
+                Vertex3f* vertices = (Vertex3f*) rtcMapBuffer(task->scene,geom[index],RTC_VERTEX_BUFFER1);
+                if (vertices) {
+                  for (size_t i=0; i<numVertices[index]; i++) vertices[i] += Vertex3f(0.1f);
+                }
+                rtcUnmapBuffer(task->scene,geom[index],RTC_VERTEX_BUFFER1);
+              }
+              break;
+            }
+            }
+            break;
+          }
+          }
+        }
+        
+        /* entirely delete all objects from time to time */
+        if (j%40 == 38) {
+          for (size_t i=0; i<1024; i++) {
+            if (geom[i] != -1) {
+              rtcDeleteGeometry(task->scene,geom[i]);
+              CountErrors(thread->device);
+              geom[i] = -1;
+            }
+          }
+        }
+      }
+
+      if (thread->threadCount) {
+	task->numActiveThreads = max(size_t(1),random<int>() % thread->threadCount);
+	task->barrier.wait();
+        if (build_join_test) rtcCommit(task->scene);
+        else                 rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);
+      } else {
+        if (!hasError) 
+          rtcCommit(task->scene);
+      }
+      //CountErrors(thread->device);
+
+      if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR)
+        atomic_add(&errorCounter,1);
+      else
+        if (!hasError)
+          for (size_t i=0; i<100; i++)
+            shootRays(task->scene);
+
+      if (thread->threadCount) 
+	task->barrier.wait();
+    }
+
+    task->scene = nullptr;
+    CountErrors(thread->device);
+
+    delete thread; thread = nullptr;
+    return;
+  }
+
+  struct IntensiveRegressionTest : public VerifyApplication::Test
+  {
+    thread_func func;
+    int mode;
+    
+    IntensiveRegressionTest (std::string name, thread_func func, int mode)
+      : VerifyApplication::Test(name,VerifyApplication::PASS), func(func), mode(mode) {}
+    
+    bool run(VerifyApplication* state)
+    {
+      errorCounter = 0;
+      size_t sceneIndex = 0;
+      while (sceneIndex < state->regressionN/5) 
+      {
+        if (mode)
+        {
+          ClearBuffers clear_before_return;
+          build_join_test = (mode == 2);
+          size_t numThreads = getNumberOfLogicalThreads();
+#if defined (__MIC__)
+          numThreads -= 4;
+#endif
+          
+          std::vector<RegressionTask*> tasks;
+          
+          while (numThreads) 
+          {
+            size_t N = max(size_t(1),random<int>()%numThreads); numThreads -= N;
+            RegressionTask* task = new RegressionTask(sceneIndex++,5,N);
+            tasks.push_back(task);
+            
+            for (size_t i=0; i<N; i++) 
+              g_threads.push_back(createThread(func,new ThreadRegressionTask(i,N,state->device,task),DEFAULT_STACK_SIZE,numThreads+i));
+          }
+          
+          for (size_t i=0; i<g_threads.size(); i++)
+            join(g_threads[i]);
+          for (size_t i=0; i<tasks.size(); i++)
+            delete tasks[i];
+          
+          g_threads.clear();
+        }
+        else
+        {
+          ClearBuffers clear_before_return;
+          RegressionTask task(sceneIndex++,5,0);
+          func(new ThreadRegressionTask(0,0,state->device,&task));
+        }	
+      }
+      return errorCounter == 0;
+    }
+  };
+
+  ssize_t monitorMemoryBreak = -1;
+  atomic_t monitorMemoryBytesUsed = 0;
+  atomic_t monitorMemoryInvokations = 0;
+  bool monitorMemoryFunction(ssize_t bytes, bool post) 
+  {
+    atomic_add(&monitorMemoryBytesUsed,bytes);
+    if (bytes > 0) {
+      size_t n = atomic_add(&monitorMemoryInvokations,1);
+      if (n == monitorMemoryBreak) {
+        if (!post) atomic_add(&monitorMemoryBytesUsed,-bytes);
+        return false;
+      }
+    }
+    return true;
+  }
+
+  struct MemoryMonitorTest : public VerifyApplication::Test
+  {
+    thread_func func;
+    
+    MemoryMonitorTest (std::string name, thread_func func)
+      : VerifyApplication::Test(name,VerifyApplication::PASS), func(func) {}
+    
+    bool run(VerifyApplication* state)
+    {
+      g_enable_build_cancel = true;
+      rtcDeviceSetMemoryMonitorFunction(state->device,monitorMemoryFunction);
+      
+      size_t sceneIndex = 0;
+      while (sceneIndex < state->regressionN/5) 
+      {
+        ClearBuffers clear_before_return;
+        errorCounter = 0;
+        monitorMemoryBreak = -1;
+        monitorMemoryBytesUsed = 0;
+        monitorMemoryInvokations = 0;
+        monitorProgressBreak = -1;
+        monitorProgressInvokations = 0;
+        RegressionTask task1(sceneIndex,1,0);
+        func(new ThreadRegressionTask(0,0,state->device,&task1));
+        if (monitorMemoryBytesUsed) {
+          rtcDeviceSetMemoryMonitorFunction(state->device,nullptr);
+          //rtcDeviceSetProgressMonitorFunction(state->device,nullptr);
+          return false;
+        }
+        monitorMemoryBreak = monitorMemoryInvokations * drand48();
+        monitorMemoryBytesUsed = 0;
+        monitorMemoryInvokations = 0;
+        monitorProgressBreak = monitorProgressInvokations * 2.0f * drand48();
+        monitorProgressInvokations = 0;
+        RegressionTask task2(sceneIndex,1,0);
+        func(new ThreadRegressionTask(0,0,state->device,&task2));
+        if (monitorMemoryBytesUsed) { // || (monitorMemoryInvokations != 0 && errorCounter != 1)) { // FIXME: test that rtcCommit has returned with error code
+          rtcDeviceSetMemoryMonitorFunction(state->device,nullptr);
+          //rtcDeviceSetProgressMonitorFunction(state->device,nullptr);
+          return false;
+        }
+        sceneIndex++;
+      }
+      g_enable_build_cancel = false;
+      rtcDeviceSetMemoryMonitorFunction(state->device,nullptr);
+      return true;
+    }
+  };
+
+  struct GarbageGeometryTest : public VerifyApplication::Test
+  {
+    GarbageGeometryTest (std::string name)
+      : VerifyApplication::Test(name,VerifyApplication::PASS) {}
+    
+    bool run(VerifyApplication* state)
+    {
+      for (size_t i=0; i<5*state->regressionN; i++) 
+      {
+        ClearBuffers clear_before_return;
+        srand(i*23565);
+        if (i%20 == 0) std::cout << "." << std::flush;
+        
+        RTCSceneFlags sflag = getSceneFlag(i); 
+        RTCSceneRef scene = rtcDeviceNewScene(state->device,sflag,aflags);
+        AssertNoError(state->device);
+        
+        for (size_t j=0; j<20; j++) 
+        {
+          size_t numTriangles = random<int>()%256;
+          switch (random<int>()%4) {
+          case 0: addGarbageTriangles(state->device,scene,RTC_GEOMETRY_STATIC,numTriangles,false); break;
+          case 1: addGarbageTriangles(state->device,scene,RTC_GEOMETRY_STATIC,numTriangles,true); break;
+          case 2: addGarbageHair     (state->device,scene,RTC_GEOMETRY_STATIC,numTriangles,false); break;
+          case 3: addGarbageHair     (state->device,scene,RTC_GEOMETRY_STATIC,numTriangles,true); break;
+          }
+          AssertNoError(state->device);
+        }
+        
+        rtcCommit(scene);
+        AssertNoError(state->device);
+        scene = nullptr;
+      }
+      return true;
+    }
+  };
+
   VerifyApplication::VerifyApplication ()
     : device(nullptr), rtcore(""), regressionN(200), numFailedTests(0)
   {
@@ -3168,28 +3727,19 @@ namespace embree
 #endif
 #endif
 
-    //POSITIVE("regression_static",         rtcore_regression(rtcore_regression_static_thread,0));
-    //POSITIVE("regression_dynamic",        rtcore_regression(rtcore_regression_dynamic_thread,0));
+    addTest(new IntensiveRegressionTest("regression_static",rtcore_regression_static_thread,0));
+    addTest(new IntensiveRegressionTest("regression_dynamic",rtcore_regression_dynamic_thread,0));
 
+    addTest(new IntensiveRegressionTest("regression_static_user_threads", rtcore_regression_static_thread,1));
+    addTest(new IntensiveRegressionTest("regression_dynamic_user_threads",rtcore_regression_dynamic_thread,1));
 
-#if defined(TASKING_TBB) || defined(TASKING_INTERNAL)
-    //POSITIVE("regression_static_user_threads", rtcore_regression(rtcore_regression_static_thread,1));
-    //POSITIVE("regression_dynamic_user_threads", rtcore_regression(rtcore_regression_dynamic_thread,1));
-#endif
-
-#if defined(TASKING_TBB) || defined(TASKING_INTERNAL)
-    //POSITIVE("regression_static_build_join", rtcore_regression(rtcore_regression_static_thread,2));
-    //POSITIVE("regression_dynamic_build_join", rtcore_regression(rtcore_regression_dynamic_thread,2));
-#endif
-      
-#if defined(TASKING_TBB) || defined(TASKING_INTERNAL)
-    //POSITIVE("regression_static_memory_monitor",  rtcore_regression_memory_monitor(rtcore_regression_static_thread));
-    //POSITIVE("regression_dynamic_memory_monitor", rtcore_regression_memory_monitor(rtcore_regression_dynamic_thread));
-#endif
-
-#if !defined(__MIC__)
-    //POSITIVE("regression_garbage_geom",   rtcore_regression_garbage());
-#endif
+    addTest(new IntensiveRegressionTest("regression_static_build_join", rtcore_regression_static_thread,2));
+    addTest(new IntensiveRegressionTest("regression_dynamic_build_join",rtcore_regression_dynamic_thread,2));
+    
+    addTest(new MemoryMonitorTest("regression_static_memory_monitor", rtcore_regression_static_thread));
+    addTest(new MemoryMonitorTest("regression_dynamic_memory_monitor",rtcore_regression_dynamic_thread));
+    
+    addTest(new GarbageGeometryTest("regression_garbage_geom"));
 
     /* register all command line options*/
     registerOption("rtcore", [this] (Ref<ParseStream> cin, const FileName& path) {
