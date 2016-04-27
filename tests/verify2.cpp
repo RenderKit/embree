@@ -1064,7 +1064,7 @@ namespace embree
       return true;
     }
   };
-
+  
   struct DynamicEnableDisableTest : public VerifyApplication::Test
   {
     DynamicEnableDisableTest (std::string name)
@@ -1112,7 +1112,46 @@ namespace embree
       return true;
     }
   };
+
+  struct GetUserDataTest : public VerifyApplication::Test
+  {
+    GetUserDataTest (std::string name)
+      : VerifyApplication::Test(name,VerifyApplication::PASS) {}
     
+    bool run(VerifyApplication* state)
+    {
+      RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_STATIC,RTC_INTERSECT1);
+      AssertNoError(state->device);
+      unsigned geom0 = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 0, 0, 1);
+      AssertNoError(state->device);
+      rtcSetUserData(scene,geom0,(void*)1);
+      
+      unsigned geom1 = rtcNewSubdivisionMesh(scene, RTC_GEOMETRY_STATIC, 0, 0, 0, 0, 0, 0, 1);
+      AssertNoError(state->device);
+      rtcSetUserData(scene,geom1,(void*)2);
+      
+      unsigned geom2 = rtcNewHairGeometry (scene, RTC_GEOMETRY_STATIC, 0, 0, 1);
+      AssertNoError(state->device);
+      rtcSetUserData(scene,geom2,(void*)3);
+      
+      unsigned geom3 = rtcNewUserGeometry (scene,0);
+      AssertNoError(state->device);
+      rtcSetUserData(scene,geom3,(void*)4);
+      
+      rtcCommit (scene);
+      AssertNoError(state->device);
+      
+      if ((size_t)rtcGetUserData(scene,geom0) != 1) return false;
+      if ((size_t)rtcGetUserData(scene,geom1) != 2) return false;
+      if ((size_t)rtcGetUserData(scene,geom2) != 3) return false;
+      if ((size_t)rtcGetUserData(scene,geom3) != 4) return false;
+      
+      scene = nullptr;
+      AssertNoError(state->device);
+      return true;
+    }
+  };
+
   VerifyApplication::VerifyApplication ()
     : device(nullptr), rtcore(""), regressionN(200), numFailedTests(0)
   {
@@ -1139,7 +1178,7 @@ namespace embree
 #endif
 
     addTest(new DynamicEnableDisableTest("dynamic_enable_disable"));
-    //POSITIVE("get_user_data"         ,    rtcore_get_user_data());
+    addTest(new GetUserDataTest("get_user_data"));
 
     //POSITIVE("update_deformable",         rtcore_update(RTC_GEOMETRY_DEFORMABLE));
     //POSITIVE("update_dynamic",            rtcore_update(RTC_GEOMETRY_DYNAMIC));
