@@ -26,24 +26,6 @@
 #  define RED(x) "\033[31m" x "\033[0m"
 #endif
 
-#if defined(RTCORE_RAY_PACKETS) && !defined(__MIC__)
-#  define HAS_INTERSECT4 1
-#else
-#  define HAS_INTERSECT4 0
-#endif
-
-#if defined(RTCORE_RAY_PACKETS) && (defined(__TARGET_AVX__) || defined(__TARGET_AVX2__))
-#  define HAS_INTERSECT8 1
-#else
-#  define HAS_INTERSECT8 0
-#endif
-
-#if defined(RTCORE_RAY_PACKETS) && (defined(__MIC__) || defined(__TARGET_AVX512KNL__))
-#  define HAS_INTERSECT16 1
-#else
-#  define HAS_INTERSECT16 0
-#endif
-
 #if defined(__INTEL_COMPILER)
 #pragma warning (disable: 1478) // warning: function was declared deprecated
 #elif defined(_MSC_VER)
@@ -284,7 +266,7 @@ namespace embree
       rtcIntersect(scene,ray); 
       break;
     }
-#if HAS_INTERSECT4
+#if defined(RTCORE_RAY_PACKETS)
     case 4: {
       RTCRay4 ray4; memset(&ray4,0,sizeof(ray4));
       for (size_t i=0; i<4; i++) setRay(ray4,i,ray);
@@ -293,8 +275,6 @@ namespace embree
       ray = getRay(ray4,0);
       break;
     }
-#endif
-#if HAS_INTERSECT8
     case 8: {
       RTCRay8 ray8; memset(&ray8,0,sizeof(ray8));
       for (size_t i=0; i<8; i++) setRay(ray8,i,ray);
@@ -303,8 +283,6 @@ namespace embree
       ray = getRay(ray8,0);
       break;
     }
-#endif
-#if HAS_INTERSECT16
     case 16: {
       RTCRay16 ray16; memset(&ray16,0,sizeof(ray16));
       for (size_t i=0; i<16; i++) setRay(ray16,i,ray);
@@ -325,7 +303,7 @@ namespace embree
       rtcOccluded(scene,ray); 
       break;
     }
-#if HAS_INTERSECT4
+#if defined(RTCORE_RAY_PACKETS)
     case 4: {
       RTCRay4 ray4; memset(&ray4,0,sizeof(ray4));
       for (size_t i=0; i<4; i++) setRay(ray4,i,ray);
@@ -334,8 +312,6 @@ namespace embree
       ray.geomID = ray4.geomID[0];
       break;
     }
-#endif
-#if HAS_INTERSECT8
     case 8: {
       RTCRay8 ray8; memset(&ray8,0,sizeof(ray8));
       for (size_t i=0; i<8; i++) setRay(ray8,i,ray);
@@ -344,8 +320,6 @@ namespace embree
       ray.geomID = ray8.geomID[0];
       break;
     }
-#endif
-#if HAS_INTERSECT16
     case 16: {
       RTCRay16 ray16; memset(&ray16,0,sizeof(ray16));
       for (size_t i=0; i<16; i++) setRay(ray16,i,ray);
@@ -1308,23 +1282,23 @@ namespace embree
               ray1.geomID != 1 || 
               ray2.geomID != 2 || 
               ray3.geomID != 3) return false;
+
+          if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT4))
+          {
+            RTCRay4 ray4; memset(&ray4,0,sizeof(ray4));
+            setRay(ray4,0,ray0);
+            setRay(ray4,1,ray1);
+            setRay(ray4,2,ray2);
+            setRay(ray4,3,ray3);
+            __aligned(16) int valid4[4] = { -1,-1,-1,-1 };
+            rtcIntersect4(valid4,scene,ray4);
+            if (ray4.geomID[0] != 0 || 
+                ray4.geomID[1] != 1 || 
+                ray4.geomID[2] != 2 || 
+                ray4.geomID[3] != 3) return false;
+          }
           
-#if HAS_INTERSECT4
-          RTCRay4 ray4; memset(&ray4,0,sizeof(ray4));
-          setRay(ray4,0,ray0);
-          setRay(ray4,1,ray1);
-          setRay(ray4,2,ray2);
-          setRay(ray4,3,ray3);
-          __aligned(16) int valid4[4] = { -1,-1,-1,-1 };
-          rtcIntersect4(valid4,scene,ray4);
-          if (ray4.geomID[0] != 0 || 
-              ray4.geomID[1] != 1 || 
-              ray4.geomID[2] != 2 || 
-              ray4.geomID[3] != 3) return false;
-#endif
-          
-#if HAS_INTERSECT8
-          if (hasISA(AVX)) 
+          if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT8))
           {
             RTCRay8 ray8; memset(&ray8,0,sizeof(ray8));
             setRay(ray8,0,ray0);
@@ -1338,10 +1312,8 @@ namespace embree
                 ray8.geomID[2] != 2 || 
                 ray8.geomID[3] != 3) return false;
           }
-#endif
           
-#if HAS_INTERSECT16
-          if (hasISA(AVX512KNL) || hasISA(KNC)) 
+          if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT16))
           {
             RTCRay16 ray16; memset(&ray16,0,sizeof(ray16));
             setRay(ray16,0,ray0);
@@ -1356,7 +1328,6 @@ namespace embree
                 ray16.geomID[2] != 2 || 
                 ray16.geomID[3] != 3) return false;
           }
-#endif
         }
       }
       scene = nullptr;
@@ -1417,7 +1388,7 @@ namespace embree
           if (!ok0 || !ok1 || !ok2 || !ok3) passed = false;
         }
         
-#if HAS_INTERSECT4
+        if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT4))
         {
           RTCRay ray0 = makeRay(pos0+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray0.mask = mask0;
           RTCRay ray1 = makeRay(pos1+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray1.mask = mask1;
@@ -1438,8 +1409,7 @@ namespace embree
           if (!ok4a || !ok4b || !ok4c || !ok4d) passed = false; 
         }
         
-#if HAS_INTERSECT8
-        if (hasISA(AVX))
+        if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT8))
         {
           RTCRay ray0 = makeRay(pos0+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray0.mask = mask0;
           RTCRay ray1 = makeRay(pos1+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray1.mask = mask1;
@@ -1459,12 +1429,8 @@ namespace embree
           bool ok8d = mask3 & 8 ? ray8.geomID[3] == 3 : ray8.geomID[3] == -1;
           if (!ok8a || !ok8b || !ok8c || !ok8d) passed = false; 
         }
-#endif
         
-#endif
-        
-#if HAS_INTERSECT16
-        if (hasISA(AVX512KNL) || hasISA(KNC))
+        if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT16))
         {
           RTCRay ray0 = makeRay(pos0+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray0.mask = mask0;
           RTCRay ray1 = makeRay(pos1+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray1.mask = mask1;
@@ -1484,9 +1450,6 @@ namespace embree
           bool ok16d = mask3 & 8 ? ray16.geomID[3] == 3 : ray16.geomID[3] == -1;
           if (!ok16a || !ok16b || !ok16c || !ok16d) passed = false;
         }
-#endif
-        
-        
       }
       scene = nullptr;
       return passed;
@@ -1536,7 +1499,7 @@ namespace embree
           if (!ok0 || !ok1 || !ok2 || !ok3) passed = false;
         }
         
-#if HAS_INTERSECT4
+        if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT4))
         {
           RTCRay ray0 = makeRay(pos0+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray0.mask = mask0;
           RTCRay ray1 = makeRay(pos1+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray1.mask = mask1;
@@ -1557,8 +1520,7 @@ namespace embree
           if (!ok4a || !ok4b || !ok4c || !ok4d) passed = false;
         }
         
-#if HAS_INTERSECT8
-        if (hasISA(AVX)) 
+        if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT8))
         {
           RTCRay ray0 = makeRay(pos0+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray0.mask = mask0;
           RTCRay ray1 = makeRay(pos1+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray1.mask = mask1;
@@ -1578,12 +1540,8 @@ namespace embree
           bool ok8d = mask3 & 8 ? ray8.geomID[3] == 0 : ray8.geomID[3] == -1;
           if (!ok8a || !ok8b || !ok8c || !ok8d) passed = false;
         }
-#endif
         
-#endif
-        
-#if HAS_INTERSECT16
-        if (hasISA(AVX512KNL) || hasISA(KNC))
+        if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT16))
         {
           RTCRay ray0 = makeRay(pos0+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray0.mask = mask0;
           RTCRay ray1 = makeRay(pos1+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray1.mask = mask1;
@@ -1605,8 +1563,6 @@ namespace embree
           bool ok16d = mask3 & 8 ? ray16.geomID[3] == 0 : ray16.geomID[3] == -1;
           if (!ok16a || !ok16b || !ok16c || !ok16d) passed = false;
         }
-        
-#endif
       }
       scene = nullptr;
       return passed;
@@ -1747,7 +1703,7 @@ namespace embree
             if (!ok0) passed = false;
           }
           
-#if HAS_INTERSECT4
+          if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT4))
           {
             RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
             
@@ -1759,8 +1715,7 @@ namespace embree
             if (!ok0) passed = false;
           }
           
-#if HAS_INTERSECT8
-          if (hasISA(AVX))
+          if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT8))
           {
             RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
             
@@ -1771,12 +1726,8 @@ namespace embree
             bool ok0 = (primID & 2) ? (ray8.geomID[0] == -1) : (ray8.geomID[0] == 0);
             if (!ok0) passed = false;
           }
-#endif
           
-#endif
-          
-#if HAS_INTERSECT16
-          if (hasISA(AVX512KNL) || hasISA(KNC))
+          if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT16))
           {
             RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
             
@@ -1786,9 +1737,7 @@ namespace embree
             rtcIntersect16(valid16,scene,ray16);
             bool ok0 = (primID & 2) ? (ray16.geomID[0] == -1) : (ray16.geomID[0] == 0);
             if (!ok0) passed = false;
-            
           }
-#endif
         }
       }
       scene = nullptr;
@@ -1829,7 +1778,7 @@ namespace embree
           
           if (subdiv) continue; // FIXME: subdiv filter callbacks only working for single ray queries
           
-#if HAS_INTERSECT4
+          if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT4))
           {
             RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
             
@@ -1841,8 +1790,7 @@ namespace embree
             if (!ok0) passed = false;
           }
           
-#if HAS_INTERSECT8
-          if (hasISA(AVX))
+          if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT8))
           {
             RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
             
@@ -1853,12 +1801,8 @@ namespace embree
             bool ok0 = (primID & 2) ? (ray8.geomID[0] == -1) : (ray8.geomID[0] == 0);
             if (!ok0) passed = false;
           }
-#endif
-          
-#endif
-          
-#if HAS_INTERSECT16
-          if (hasISA(AVX512KNL) || hasISA(KNC))
+
+          if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT16))
           {
             RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
             
@@ -1869,7 +1813,6 @@ namespace embree
             bool ok0 = (primID & 2) ? (ray16.geomID[0] == -1) : (ray16.geomID[0] == 0);
             if (!ok0) passed = false;
           }
-#endif
         }
       }
       scene = nullptr;
@@ -1916,22 +1859,23 @@ namespace embree
       {
         RTCRay ray = makeRay(Vec3fa(-1,10,-1),Vec3fa(0,-1,0));
         
-#if HAS_INTERSECT4
-        RTCRay4 ray4; memset(&ray4,-1,sizeof(RTCRay4));
-        setRay(ray4,i,ray);
-        __aligned(16) int valid4[4] = { 0,0,0,0 };
-        valid4[i] = -1;
-        rtcOccluded4(valid4,scene,ray4);
-        rtcIntersect4(valid4,scene,ray4);
-        
-        for (int j=0; j<sizeof(RTCRay4)/4; j++) {
-          if ((j%4) == i) continue;
-          passed &= ((int*)&ray4)[j] == -1;
+        if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT4))
+        {
+          RTCRay4 ray4; memset(&ray4,-1,sizeof(RTCRay4));
+          setRay(ray4,i,ray);
+          __aligned(16) int valid4[4] = { 0,0,0,0 };
+          valid4[i] = -1;
+          rtcOccluded4(valid4,scene,ray4);
+          rtcIntersect4(valid4,scene,ray4);
+          
+          for (int j=0; j<sizeof(RTCRay4)/4; j++) {
+            if ((j%4) == i) continue;
+            passed &= ((int*)&ray4)[j] == -1;
+          }
         }
-#endif
-        
-#if HAS_INTERSECT8
-        if (hasISA(AVX)) {
+       
+        if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT8))
+        {
           RTCRay8 ray8; memset(&ray8,-1,sizeof(RTCRay8));
           setRay(ray8,i,ray);
           __aligned(32) int valid8[8] = { 0,0,0,0,0,0,0,0 };
@@ -1944,10 +1888,8 @@ namespace embree
             passed &= ((int*)&ray8)[j] == -1;
           }
         }
-#endif
         
-#if HAS_INTERSECT16
-        if (hasISA(AVX512KNL) || hasISA(KNC))
+        if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT16))
         {
           __aligned(64) RTCRay16 ray16; memset(&ray16,-1,sizeof(RTCRay16));
           setRay(ray16,i,ray);
@@ -1961,7 +1903,6 @@ namespace embree
             passed &= ((int*)&ray16)[j] == -1;
           }
         }
-#endif
       }
       return passed;
     }
@@ -2550,29 +2491,27 @@ namespace embree
       ray = frontfacing; rtcIntersectN(scene,ray,1); if (ray.geomID != 0) passed = false;
       ray = backfacing;  rtcOccludedN(scene,ray,1);  if (ray.geomID != -1) passed = false;
       ray = backfacing;  rtcIntersectN(scene,ray,1); if (ray.geomID != -1) passed = false;
-#if HAS_INTERSECT4
-      ray = frontfacing; rtcOccludedN(scene,ray,4);  if (ray.geomID != 0) passed = false;
-      ray = frontfacing; rtcIntersectN(scene,ray,4); if (ray.geomID != 0) passed = false;
-      ray = backfacing;  rtcOccludedN(scene,ray,4);  if (ray.geomID != -1) passed = false;
-      ray = backfacing;  rtcIntersectN(scene,ray,4); if (ray.geomID != -1) passed = false;
-#endif
-#if HAS_INTERSECT8
-      if (hasISA(AVX)) {
+      if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT4))
+      {
+        ray = frontfacing; rtcOccludedN(scene,ray,4);  if (ray.geomID != 0) passed = false;
+        ray = frontfacing; rtcIntersectN(scene,ray,4); if (ray.geomID != 0) passed = false;
+        ray = backfacing;  rtcOccludedN(scene,ray,4);  if (ray.geomID != -1) passed = false;
+        ray = backfacing;  rtcIntersectN(scene,ray,4); if (ray.geomID != -1) passed = false;
+      }
+      if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT8))
+      {
         ray = frontfacing; rtcOccludedN(scene,ray,8);  if (ray.geomID != 0) passed = false;
         ray = frontfacing; rtcIntersectN(scene,ray,8); if (ray.geomID != 0) passed = false;
         ray = backfacing;  rtcOccludedN(scene,ray,8);  if (ray.geomID != -1) passed = false;
         ray = backfacing;  rtcIntersectN(scene,ray,8); if (ray.geomID != -1) passed = false;
       }
-#endif
-#if HAS_INTERSECT16
-      if (hasISA(AVX512KNL) || hasISA(KNC))
+      if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT16))
       {
         ray = frontfacing; rtcOccludedN(scene,ray,16); if (ray.geomID != 0) passed = false;
         ray = frontfacing; rtcIntersectN(scene,ray,16);if (ray.geomID != 0) passed = false;
         ray = backfacing;  rtcOccludedN(scene,ray,16); if (ray.geomID != -1) passed = false;
         ray = backfacing;  rtcIntersectN(scene,ray,16);if (ray.geomID != -1) passed = false;
       }
-#endif
       return passed;
     }
     
@@ -3046,29 +2985,32 @@ namespace embree
     }
   };
 
-  void shootRays (const RTCSceneRef& scene)
+  void shootRays (RTCDevice device, const RTCSceneRef& scene)
   {
-    Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-    Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-    RTCRay ray = makeRay(org,dir); 
-    rtcOccluded(scene,ray);
-    rtcIntersect(scene,ray);
-
-#if HAS_INTERSECT4
-    RTCRay4 ray4; memset(&ray4,0,sizeof(ray4)); 
-    for (size_t j=0; j<4; j++) {
+    {
       Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
       Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
       RTCRay ray = makeRay(org,dir); 
-      setRay(ray4,j,ray);
+      rtcOccluded(scene,ray);
+      rtcIntersect(scene,ray);
     }
-    __aligned(16) int valid4[4] = { -1,-1,-1,-1 };
-    rtcOccluded4(valid4,scene,ray4);
-    rtcIntersect4(valid4,scene,ray4);
-#endif
 
-#if HAS_INTERSECT8
-    if (hasISA(AVX)) {
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT4))
+    {
+      RTCRay4 ray4; memset(&ray4,0,sizeof(ray4)); 
+      for (size_t j=0; j<4; j++) {
+        Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+        Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+        RTCRay ray = makeRay(org,dir); 
+        setRay(ray4,j,ray);
+      }
+      __aligned(16) int valid4[4] = { -1,-1,-1,-1 };
+      rtcOccluded4(valid4,scene,ray4);
+      rtcIntersect4(valid4,scene,ray4);
+    }
+
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT8))
+    {
       RTCRay8 ray8; memset(&ray8,0,sizeof(ray8));
       for (size_t j=0; j<8; j++) {
         Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
@@ -3080,10 +3022,8 @@ namespace embree
       rtcOccluded8(valid8,scene,ray8);
       rtcIntersect8(valid8,scene,ray8);
     }
-#endif
 
-#if HAS_INTERSECT16
-    if (hasISA(AVX512KNL) || hasISA(KNC))
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT16))
     {
       RTCRay16 ray16; memset(&ray16,0,sizeof(ray16));
       for (size_t j=0; j<16; j++) {
@@ -3095,8 +3035,7 @@ namespace embree
       __aligned(16) int valid16[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
       rtcOccluded16(valid16,scene,ray16);
       rtcIntersect16(valid16,scene,ray16);
-      }
-#endif
+    }
   }
 
   static bool build_join_test = false;
@@ -3155,7 +3094,7 @@ namespace embree
           }
           else {
             for (size_t i=0; i<100; i++)
-              shootRays(task->scene);
+              shootRays(thread->device,task->scene);
           }
 	}
         task->barrier.wait();
@@ -3245,7 +3184,7 @@ namespace embree
       else {
         if (!hasError) {
           for (size_t i=0; i<100; i++) {
-            shootRays(task->scene);
+            shootRays(thread->device,task->scene);
           }
         }
       }
@@ -3283,7 +3222,7 @@ namespace embree
           }
           else {
             for (size_t i=0; i<100; i++)
-              shootRays(task->scene);
+              shootRays(thread->device,task->scene);
           }
 	}
 	task->barrier.wait();
@@ -3431,7 +3370,7 @@ namespace embree
       else
         if (!hasError)
           for (size_t i=0; i<100; i++)
-            shootRays(task->scene);
+            shootRays(thread->device,task->scene);
 
       if (thread->threadCount) 
 	task->barrier.wait();
@@ -3602,6 +3541,8 @@ namespace embree
   VerifyApplication::VerifyApplication ()
     : device(nullptr), rtcore(""), regressionN(200), numFailedTests(0)
   {
+    device = rtcNewDevice(rtcore.c_str());
+
     /* add all tests */
     addTest(new MultipleDevicesTest("multiple_devices"));
     addTest(new EmptySceneTest("empty_static",RTC_SCENE_STATIC));
@@ -3678,53 +3619,37 @@ namespace embree
     addTest(new Watertight1Test("watertight_sphere_1","sphere",watertight_pos));
     addTest(new Watertight1Test("watertight_cube_1","cube",watertight_pos));
     addTest(new WatertightPlane1Test("watertight_plane_1",100000));
-#if HAS_INTERSECT4
-    addTest(new Watertight4Test("watertight_sphere_4","sphere",watertight_pos));
-    addTest(new Watertight4Test("watertight_cube_4","cube",watertight_pos));
-    addTest(new WatertightPlane4Test("watertight_plane_4",100000));
-#endif
-
-#if HAS_INTERSECT8
-    if (hasISA(AVX)) {
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT4)) {
+      addTest(new Watertight4Test("watertight_sphere_4","sphere",watertight_pos));
+      addTest(new Watertight4Test("watertight_cube_4","cube",watertight_pos));
+      addTest(new WatertightPlane4Test("watertight_plane_4",100000));
+    }
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT8)) {
       addTest(new Watertight8Test("watertight_sphere_8","sphere",watertight_pos));
       addTest(new Watertight8Test("watertight_cube_8","cube",watertight_pos));
       addTest(new WatertightPlane8Test("watertight_plane_8",100000));
     }
-#endif
-
-#if HAS_INTERSECT16
-    if (hasISA(AVX512KNL) || hasISA(KNC))
-    {
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT16)) {
       addTest(new Watertight16Test("watertight_sphere_16","sphere",watertight_pos));
       addTest(new Watertight16Test("watertight_cube_16","cube",watertight_pos));
       addTest(new WatertightPlane16Test("watertight_plane_16",100000));
     }
 
-#endif
-
 #if defined(RTCORE_IGNORE_INVALID_RAYS)
     addTest(new NaNTest("nan_test_1",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,1));
     addTest(new InfTest("inf_test_1",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,1));
-
-#if HAS_INTERSECT4
-    addTest(new NaNTest("nan_test_4",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,4));
-    addTest(new InfTest("inf_test_4",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,4));
-#endif
-
-#if HAS_INTERSECT8
-    if (hasISA(AVX)) {
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT4)) {
+      addTest(new NaNTest("nan_test_4",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,4));
+      addTest(new InfTest("inf_test_4",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,4));
+    }
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT8)) {
       addTest(new NaNTest("nan_test_8",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,8));
       addTest(new InfTest("inf_test_8",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,8));
     }
-#endif
-
-#if HAS_INTERSECT16
-    if (hasISA(AVX512KNL) || hasISA(KNC))
-    {
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT16)) {
       addTest(new NaNTest("nan_test_16",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,16));
       addTest(new InfTest("inf_test_16",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,16));
     }
-#endif
 #endif
 
     addTest(new IntensiveRegressionTest("regression_static",rtcore_regression_static_thread,0));
@@ -3740,6 +3665,8 @@ namespace embree
     addTest(new MemoryMonitorTest("regression_dynamic_memory_monitor",rtcore_regression_dynamic_thread));
     
     addTest(new GarbageGeometryTest("regression_garbage_geom"));
+
+    rtcDeleteDevice(device);
 
     /* register all command line options*/
     registerOption("rtcore", [this] (Ref<ParseStream> cin, const FileName& path) {
