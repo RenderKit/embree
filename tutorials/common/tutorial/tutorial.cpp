@@ -89,11 +89,6 @@ namespace embree
     _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
     _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
     
-    registerOption("help", [this] (Ref<ParseStream> cin, const FileName& path) {
-        printCommandLineHelp();
-        exit(1);
-      }, "--help: prints help for all supported command line options");
-    
     registerOption("c", [this] (Ref<ParseStream> cin, const FileName& path) {
         FileName file = path + cin->getFileName();
         parseCommandLine(new ParseStream(new LineCommentFilter(file, "#")), file.path());
@@ -280,58 +275,6 @@ namespace embree
         subdiv_mode = ",subdiv_accel=bvh4.grid.eager";
         rtcore += subdiv_mode;
       }, "--pregenerate: enabled pregenerate subdiv mode");    
-  }
-  
-  void TutorialApplication::registerOptionAlias(const std::string& name, const std::string& alternativeName) {
-    commandLineOptionMap[alternativeName] = commandLineOptionMap[name];
-  }
-  
-  void TutorialApplication::parseCommandLine(int argc, char** argv)
-  {
-    /* create stream for parsing */
-    Ref<ParseStream> stream = new ParseStream(new CommandLineStream(argc, argv));
-    
-    /* parse command line */  
-    parseCommandLine(stream, FileName());
-    
-    /* callback */
-    postParseCommandLine();
-  }
-  
-  void TutorialApplication::parseCommandLine(Ref<ParseStream> cin, const FileName& path)
-  {
-    while (true)
-    {
-      std::string tag = cin->getString();
-      if (tag == "") return;
-      std::string tag0 = tag;
-      
-      /* remove - or -- and lookup command line option */
-      if (tag.find("-") == 0) 
-      {
-        tag = tag.substr(1);
-        if (tag.find("-") == 0) tag = tag.substr(1);
-        auto option = commandLineOptionMap.find(tag);
-      
-        /* process command line option */
-        if (option != commandLineOptionMap.end()) {
-          option->second->parse(cin,path);
-          continue;
-        }
-      }
-      
-      /* handle unknown command line options */
-      std::cerr << "unknown command line parameter: " << tag0 << " ";
-      while (cin->peek() != "" && cin->peek()[0] != '-') std::cerr << cin->getString() << " ";
-      std::cerr << std::endl;
-    }
-  }
-
-  void TutorialApplication::printCommandLineHelp()
-  {
-    for (auto c : commandLineOptionList) {
-      std::cout << c->description << std::endl;
-    }
   }
 
   /* calculates min/avg/max and sigma */
@@ -740,6 +683,9 @@ namespace embree
     /* parse command line options */
     parseCommandLine(argc,argv);
 
+    /* callback */
+    postParseCommandLine();
+
     /* start tutorial */
     run(argc,argv);
 
@@ -758,6 +704,9 @@ namespace embree
   {
     /* parse command line options */
     parseCommandLine(argc,argv);
+
+    /* callback */
+    postParseCommandLine();
 
     /* load scene */
     if (toLowerCase(sceneFilename.ext()) == std::string("obj"))
