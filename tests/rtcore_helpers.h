@@ -58,5 +58,31 @@ namespace embree
       return *this;
     }
   };
+
+  std::string string_of(RTCError code)
+  {
+    switch (code) {
+    case RTC_UNKNOWN_ERROR    : return "RTC_UNKNOWN_ERROR";
+    case RTC_INVALID_ARGUMENT : return "RTC_INVALID_ARGUMENT";
+    case RTC_INVALID_OPERATION: return "RTC_INVALID_OPERATION";
+    case RTC_OUT_OF_MEMORY    : return "RTC_OUT_OF_MEMORY";
+    case RTC_UNSUPPORTED_CPU  : return "RTC_UNSUPPORTED_CPU";
+    case RTC_CANCELLED        : return "RTC_CANCELLED";
+    default                   : return "invalid error code";
+    }
+  }
+
+  /* error reporting function */
+  void error_handler(const RTCError code, const char* str = nullptr)
+  {
+    if (code == RTC_NO_ERROR) 
+      return;
+    
+    std::string errorStr;
+    errorStr += "Embree: ";
+    errorStr += string_of(code);
+    if (str) errorStr += " (" + std::string(str) + ")";
+    throw std::runtime_error(errorStr);
+  }
 }
 
