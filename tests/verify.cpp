@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "verify.h"
+#include <regex>
 
 #define DEFAULT_STACK_SIZE 4*1024*1024
 
@@ -3300,12 +3301,17 @@ namespace embree
         rtcore += ",verbose=" + toString(cin->getInt());
       }, "--verbose <int>: sets verbosity level");
     
-    std::string run_docu = "--run testname: runs specified test, supported tests are:";
+    std::string run_docu = "--run regexpr: runs all tests that match the regular expression, supported tests are:";
     for (auto test : tests) run_docu += "\n  " + test->name;
     registerOption("run", [this] (Ref<ParseStream> cin, const FileName& path) {
-        std::string name = cin->getString();
-        if (name2test.find(name) == name2test.end()) throw std::runtime_error("Unknown test: "+name);
-        tests_to_run.push_back(name2test[name]);
+        use_tests_to_run = true;
+        std::smatch match;
+        std::regex regexpr(cin->getString());
+        for (auto test : tests) {
+          if (std::regex_match(test->name, match, regexpr)) {
+            tests_to_run.push_back(test);
+          }
+        }
       }, run_docu);
     
     registerOption("regressions", [this] (Ref<ParseStream> cin, const FileName& path) {
@@ -3327,7 +3333,7 @@ namespace embree
     error_handler(rtcDeviceGetError(device));
 
     /* execute specific user tests */
-    if (tests_to_run.size()) 
+    if (use_tests_to_run) 
     {
       for (auto test : tests_to_run) 
         runTest(test);

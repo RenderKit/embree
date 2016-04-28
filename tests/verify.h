@@ -61,6 +61,7 @@ namespace embree
 
   public:
     std::vector<IntersectMode> intersectModes;
+    bool use_tests_to_run;
     std::vector<Ref<Test>> tests_to_run;
   };
 }
