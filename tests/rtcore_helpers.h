@@ -14,6 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#include "../kernels/common/default.h"
 #include "../include/embree2/rtcore.h"
 
 namespace embree
@@ -69,6 +70,419 @@ namespace embree
     case RTC_UNSUPPORTED_CPU  : return "RTC_UNSUPPORTED_CPU";
     case RTC_CANCELLED        : return "RTC_CANCELLED";
     default                   : return "invalid error code";
+    }
+  }
+
+  RTCRay makeRay(const Vec3fa& org, const Vec3fa& dir) 
+  {
+    RTCRay ray; memset(&ray,0,sizeof(RTCRay));
+    ray.org[0] = org.x; ray.org[1] = org.y; ray.org[2] = org.z;
+    ray.dir[0] = dir.x; ray.dir[1] = dir.y; ray.dir[2] = dir.z;
+    ray.tnear = 0.0f; ray.tfar = inf;
+    ray.time = 0; ray.mask = -1;
+    ray.geomID = ray.primID = ray.instID = -1;
+    return ray;
+  }
+
+  RTCRay makeRay(const Vec3fa& org, const Vec3fa& dir, float tnear, float tfar) 
+  {
+    RTCRay ray; memset(&ray,0,sizeof(RTCRay));
+    ray.org[0] = org.x; ray.org[1] = org.y; ray.org[2] = org.z;
+    ray.dir[0] = dir.x; ray.dir[1] = dir.y; ray.dir[2] = dir.z;
+    ray.tnear = tnear; ray.tfar = tfar;
+    ray.time = 0; ray.mask = -1;
+    ray.geomID = ray.primID = ray.instID = -1;
+    return ray;
+  }
+  
+  void setRay(RTCRay4& ray_o, int i, const RTCRay& ray_i)
+  {
+    ray_o.orgx[i] = ray_i.org[0];
+    ray_o.orgy[i] = ray_i.org[1];
+    ray_o.orgz[i] = ray_i.org[2];
+    ray_o.dirx[i] = ray_i.dir[0];
+    ray_o.diry[i] = ray_i.dir[1];
+    ray_o.dirz[i] = ray_i.dir[2];
+    ray_o.tnear[i] = ray_i.tnear;
+    ray_o.tfar[i] = ray_i.tfar;
+    ray_o.time[i] = ray_i.time;
+    ray_o.mask[i] = ray_i.mask;
+    ray_o.instID[i] = ray_i.instID;
+    ray_o.geomID[i] = ray_i.geomID;
+    ray_o.primID[i] = ray_i.primID;
+    ray_o.u[i] = ray_i.u;
+    ray_o.v[i] = ray_i.v;
+    ray_o.Ngx[i] = ray_i.Ng[0];
+    ray_o.Ngy[i] = ray_i.Ng[1];
+    ray_o.Ngz[i] = ray_i.Ng[2];
+  }
+
+  void setRay(RTCRay8& ray_o, int i, const RTCRay& ray_i)
+  {
+    ray_o.orgx[i] = ray_i.org[0];
+    ray_o.orgy[i] = ray_i.org[1];
+    ray_o.orgz[i] = ray_i.org[2];
+    ray_o.dirx[i] = ray_i.dir[0];
+    ray_o.diry[i] = ray_i.dir[1];
+    ray_o.dirz[i] = ray_i.dir[2];
+    ray_o.tnear[i] = ray_i.tnear;
+    ray_o.tfar[i] = ray_i.tfar;
+    ray_o.time[i] = ray_i.time;
+    ray_o.mask[i] = ray_i.mask;
+    ray_o.instID[i] = ray_i.instID;
+    ray_o.geomID[i] = ray_i.geomID;
+    ray_o.primID[i] = ray_i.primID;
+    ray_o.u[i] = ray_i.u;
+    ray_o.v[i] = ray_i.v;
+    ray_o.Ngx[i] = ray_i.Ng[0];
+    ray_o.Ngy[i] = ray_i.Ng[1];
+    ray_o.Ngz[i] = ray_i.Ng[2];
+  }
+
+  void setRay(RTCRay16& ray_o, int i, const RTCRay& ray_i)
+  {
+    ray_o.orgx[i] = ray_i.org[0];
+    ray_o.orgy[i] = ray_i.org[1];
+    ray_o.orgz[i] = ray_i.org[2];
+    ray_o.dirx[i] = ray_i.dir[0];
+    ray_o.diry[i] = ray_i.dir[1];
+    ray_o.dirz[i] = ray_i.dir[2];
+    ray_o.tnear[i] = ray_i.tnear;
+    ray_o.tfar[i] = ray_i.tfar;
+    ray_o.time[i] = ray_i.time;
+    ray_o.mask[i] = ray_i.mask;
+    ray_o.instID[i] = ray_i.instID;
+    ray_o.geomID[i] = ray_i.geomID;
+    ray_o.primID[i] = ray_i.primID;
+    ray_o.u[i] = ray_i.u;
+    ray_o.v[i] = ray_i.v;
+    ray_o.Ngx[i] = ray_i.Ng[0];
+    ray_o.Ngy[i] = ray_i.Ng[1];
+    ray_o.Ngz[i] = ray_i.Ng[2];
+  }
+
+  void setRay(RTCRayN* ray_o, size_t N, int i, const RTCRay& ray_i)
+  {
+    RTCRayN_org_x(ray_o,N,i) = ray_i.org[0];
+    RTCRayN_org_y(ray_o,N,i) = ray_i.org[1];
+    RTCRayN_org_z(ray_o,N,i) = ray_i.org[2];
+    RTCRayN_dir_x(ray_o,N,i) = ray_i.dir[0];
+    RTCRayN_dir_y(ray_o,N,i) = ray_i.dir[1];
+    RTCRayN_dir_z(ray_o,N,i) = ray_i.dir[2];
+    RTCRayN_tnear(ray_o,N,i) = ray_i.tnear;
+    RTCRayN_tfar(ray_o,N,i) = ray_i.tfar;
+    RTCRayN_time(ray_o,N,i) = ray_i.time;
+    RTCRayN_mask(ray_o,N,i) = ray_i.mask;
+    RTCRayN_instID(ray_o,N,i) = ray_i.instID;
+    RTCRayN_geomID(ray_o,N,i) = ray_i.geomID;
+    RTCRayN_primID(ray_o,N,i) = ray_i.primID;
+    RTCRayN_u(ray_o,N,i) = ray_i.u;
+    RTCRayN_v(ray_o,N,i) = ray_i.v;
+    RTCRayN_Ng_x(ray_o,N,i) = ray_i.Ng[0];
+    RTCRayN_Ng_y(ray_o,N,i) = ray_i.Ng[1];
+    RTCRayN_Ng_z(ray_o,N,i) = ray_i.Ng[2];
+  }
+
+  RTCRay getRay(RTCRay4& ray_i, int i)
+  {
+    RTCRay ray_o;
+    ray_o.org[0] = ray_i.orgx[i];
+    ray_o.org[1] = ray_i.orgy[i];
+    ray_o.org[2] = ray_i.orgz[i];
+    ray_o.dir[0] = ray_i.dirx[i];
+    ray_o.dir[1] = ray_i.diry[i];
+    ray_o.dir[2] = ray_i.dirz[i];
+    ray_o.tnear = ray_i.tnear[i];
+    ray_o.tfar = ray_i.tfar[i];
+    ray_o.time = ray_i.time[i];
+    ray_o.mask = ray_i.mask[i];
+    ray_o.instID = ray_i.instID[i];
+    ray_o.geomID = ray_i.geomID[i];
+    ray_o.primID = ray_i.primID[i];
+    ray_o.u = ray_i.u[i];
+    ray_o.v = ray_i.v[i];
+    ray_o.Ng[0] = ray_i.Ngx[i];
+    ray_o.Ng[1] = ray_i.Ngy[i];
+    ray_o.Ng[2] = ray_i.Ngz[i];
+    return ray_o;
+  }
+
+  RTCRay getRay(RTCRay8& ray_i, int i)
+  {
+    RTCRay ray_o;
+    ray_o.org[0] = ray_i.orgx[i];
+    ray_o.org[1] = ray_i.orgy[i];
+    ray_o.org[2] = ray_i.orgz[i];
+    ray_o.dir[0] = ray_i.dirx[i];
+    ray_o.dir[1] = ray_i.diry[i];
+    ray_o.dir[2] = ray_i.dirz[i];
+    ray_o.tnear = ray_i.tnear[i];
+    ray_o.tfar = ray_i.tfar[i];
+    ray_o.time = ray_i.time[i];
+    ray_o.mask = ray_i.mask[i];
+    ray_o.instID = ray_i.instID[i];
+    ray_o.geomID = ray_i.geomID[i];
+    ray_o.primID = ray_i.primID[i];
+    ray_o.u = ray_i.u[i];
+    ray_o.v = ray_i.v[i];
+    ray_o.Ng[0] = ray_i.Ngx[i];
+    ray_o.Ng[1] = ray_i.Ngy[i];
+    ray_o.Ng[2] = ray_i.Ngz[i];
+    return ray_o;
+  }
+
+  RTCRay getRay(RTCRay16& ray_i, int i)
+  {
+    RTCRay ray_o;
+    ray_o.org[0] = ray_i.orgx[i];
+    ray_o.org[1] = ray_i.orgy[i];
+    ray_o.org[2] = ray_i.orgz[i];
+    ray_o.dir[0] = ray_i.dirx[i];
+    ray_o.dir[1] = ray_i.diry[i];
+    ray_o.dir[2] = ray_i.dirz[i];
+    ray_o.tnear = ray_i.tnear[i];
+    ray_o.tfar = ray_i.tfar[i];
+    ray_o.time = ray_i.time[i];
+    ray_o.mask = ray_i.mask[i];
+    ray_o.instID = ray_i.instID[i];
+    ray_o.geomID = ray_i.geomID[i];
+    ray_o.primID = ray_i.primID[i];
+    ray_o.u = ray_i.u[i];
+    ray_o.v = ray_i.v[i];
+    ray_o.Ng[0] = ray_i.Ngx[i];
+    ray_o.Ng[1] = ray_i.Ngy[i];
+    ray_o.Ng[2] = ray_i.Ngz[i];
+    return ray_o;
+  }
+
+  RTCRay getRay(RTCRayN* ray_i, size_t N, int i)
+  {
+    RTCRay ray_o;
+    ray_o.org[0] = RTCRayN_org_x(ray_i,N,i);
+    ray_o.org[1] = RTCRayN_org_y(ray_i,N,i);
+    ray_o.org[2] = RTCRayN_org_z(ray_i,N,i);
+    ray_o.dir[0] = RTCRayN_dir_x(ray_i,N,i);
+    ray_o.dir[1] = RTCRayN_dir_y(ray_i,N,i);
+    ray_o.dir[2] = RTCRayN_dir_z(ray_i,N,i);
+    ray_o.tnear = RTCRayN_tnear(ray_i,N,i);
+    ray_o.tfar  = RTCRayN_tfar(ray_i,N,i);
+    ray_o.time = RTCRayN_time(ray_i,N,i);
+    ray_o.mask = RTCRayN_mask(ray_i,N,i);
+    ray_o.instID = RTCRayN_instID(ray_i,N,i);
+    ray_o.geomID = RTCRayN_geomID(ray_i,N,i);
+    ray_o.primID = RTCRayN_primID(ray_i,N,i);
+    ray_o.u = RTCRayN_u(ray_i,N,i);
+    ray_o.v = RTCRayN_v(ray_i,N,i);
+    ray_o.Ng[0] = RTCRayN_Ng_x(ray_i,N,i);
+    ray_o.Ng[1] = RTCRayN_Ng_y(ray_i,N,i);
+    ray_o.Ng[2] = RTCRayN_Ng_z(ray_i,N,i);
+    return ray_o;
+  }
+
+  enum IntersectMode 
+  {
+    MODE_INTERSECT_NONE,
+    MODE_INTERSECT1,
+    MODE_INTERSECT4,
+    MODE_INTERSECT8,
+    MODE_INTERSECT16,
+    MODE_INTERSECT1M,
+    MODE_INTERSECTNM1,
+    MODE_INTERSECTNM3,
+    MODE_INTERSECTNM4,
+    MODE_INTERSECTNM8,
+    MODE_INTERSECTNM16,
+    MODE_INTERSECTNp
+  };
+
+  std::string to_string(IntersectMode imode)
+  {
+    switch (imode) {
+    case MODE_INTERSECT_NONE: return "N";
+    case MODE_INTERSECT1: return "1";
+    case MODE_INTERSECT4: return "4";
+    case MODE_INTERSECT8: return "8";
+    case MODE_INTERSECT16: return "16";
+    case MODE_INTERSECT1M: return "1M";
+    case MODE_INTERSECTNM1: return "NM1";
+    case MODE_INTERSECTNM3: return "NM3";
+    case MODE_INTERSECTNM4: return "NM4";
+    case MODE_INTERSECTNM8: return "NM8";
+    case MODE_INTERSECTNM16: return "NM16";
+    case MODE_INTERSECTNp: return "Np";
+    default                : return "U";
+    }
+  }
+
+  RTCAlgorithmFlags to_aflags(IntersectMode imode)
+  {
+    RTCAlgorithmFlags aflags_stream = (RTCAlgorithmFlags) (RTC_INTERSECT_STREAM);
+    RTCAlgorithmFlags aflags_normal = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT4 | RTC_INTERSECT8 | RTC_INTERSECT16 | RTC_INTERSECT_STREAM);
+    switch (imode) {
+    case MODE_INTERSECT1: return RTC_INTERSECT1;
+    case MODE_INTERSECT4: return RTC_INTERSECT4;
+    case MODE_INTERSECT8: return RTC_INTERSECT8;
+    case MODE_INTERSECT16: return RTC_INTERSECT16;
+    case MODE_INTERSECT1M: return RTC_INTERSECT_STREAM;
+    case MODE_INTERSECTNM1: return RTC_INTERSECT_STREAM;
+    case MODE_INTERSECTNM3: return RTC_INTERSECT_STREAM;
+    case MODE_INTERSECTNM4: return RTC_INTERSECT_STREAM;
+    case MODE_INTERSECTNM8: return RTC_INTERSECT_STREAM;
+    case MODE_INTERSECTNM16: return RTC_INTERSECT_STREAM;
+    case MODE_INTERSECTNp: return RTC_INTERSECT_STREAM;
+    default                : return RTC_INTERSECT1;
+    }
+  }
+
+  template<int N>
+  void IntersectWithNMMode(RTCScene scene, RTCRay* rays, size_t Nrays)
+  {
+    assert(Nrays<1024);
+    __aligned(16) char data[1024*sizeof(RTCRay)];
+    for (size_t i=0; i<Nrays; i+=N) 
+    {
+      size_t L = min(size_t(N),Nrays-i);
+      RTCRayN* ray = (RTCRayN*) &data[i*sizeof(RTCRay)];
+      for (size_t j=0; j<L; j++) setRay(ray,N,j,rays[i+j]);
+      for (size_t j=L; j<N; j++) {
+        RTCRayN_tnear(ray,N,j) = pos_inf;
+        RTCRayN_tfar (ray,N,j) = neg_inf;
+      }
+    }
+    
+    RTCIntersectContext context;
+    context.flags = RTC_INTERSECT_INCOHERENT;
+    context.userRayExt = nullptr;
+    size_t M = (Nrays+N-1)/N;
+    rtcIntersectNM(scene,&context,(RTCRayN*)data,N,M,N*sizeof(RTCRay));
+    
+    for (size_t i=0; i<Nrays; i+=N) 
+    {
+      size_t L = min(size_t(N),Nrays-i);
+      RTCRayN* ray = (RTCRayN*) &data[i*sizeof(RTCRay)];
+      for (size_t j=0; j<L; j++) rays[i+j] = getRay(ray,N,j);
+    }
+  }
+
+  void IntersectWithMode(IntersectMode mode, RTCScene scene, RTCRay* rays, size_t N)
+  {
+    switch (mode) 
+    {
+    case MODE_INTERSECT_NONE: 
+      break;
+    case MODE_INTERSECT1: 
+    {
+      for (size_t i=0; i<N; i++)
+        rtcIntersect(scene,rays[i]);
+      break;
+    }
+    case MODE_INTERSECT4: 
+    {
+      for (size_t i=0; i<N; i+=4) 
+      {
+        size_t M = min(size_t(4),N-i);
+        __aligned(16) int valid[4];
+        __aligned(16) RTCRay4 ray4;
+        for (size_t j=0; j<4; j++) valid[j] = j<M ? -1 : 0;
+        for (size_t j=0; j<M; j++) setRay(ray4,j,rays[i+j]);
+        rtcIntersect4(valid,scene,ray4);
+        for (size_t j=0; j<M; j++) rays[i+j] = getRay(ray4,j);
+      }
+      break;
+    }
+    case MODE_INTERSECT8: 
+    {
+      for (size_t i=0; i<N; i+=8) 
+      {
+        size_t M = min(size_t(8),N-i);
+        __aligned(32) int valid[8];
+        __aligned(32) RTCRay8 ray8;
+        for (size_t j=0; j<8; j++) valid[j] = j<M ? -1 : 0;
+        for (size_t j=0; j<M; j++) setRay(ray8,j,rays[i+j]);
+        rtcIntersect8(valid,scene,ray8);
+        for (size_t j=0; j<M; j++) rays[i+j] = getRay(ray8,j);
+      }
+      break;
+    }
+    case MODE_INTERSECT16: 
+    {
+      for (size_t i=0; i<N; i+=16) 
+      {
+        size_t M = min(size_t(16),N-i);
+        __aligned(64) int valid[16];
+        __aligned(64) RTCRay16 ray16;
+        for (size_t j=0; j<16; j++) valid[j] = j<M ? -1 : 0;
+        for (size_t j=0; j<M; j++) setRay(ray16,j,rays[i+j]);
+        rtcIntersect16(valid,scene,ray16);
+        for (size_t j=0; j<M; j++) rays[i+j] = getRay(ray16,j);
+      }
+      break;
+    }
+    case MODE_INTERSECT1M: 
+    {
+      RTCIntersectContext context;
+      context.flags = RTC_INTERSECT_INCOHERENT;
+      context.userRayExt = nullptr;
+      rtcIntersect1M(scene,&context,rays,N,sizeof(RTCRay));
+      break;
+    }
+    case MODE_INTERSECTNM1: {
+      IntersectWithNMMode<1>(scene,rays,N);
+      break;
+    }
+    case MODE_INTERSECTNM3: {
+      IntersectWithNMMode<3>(scene,rays,N);
+      break;
+    }
+    case MODE_INTERSECTNM4: {
+      IntersectWithNMMode<4>(scene,rays,N);
+      break;
+    }
+    case MODE_INTERSECTNM8: {
+      IntersectWithNMMode<8>(scene,rays,N);
+      break;
+    }
+    case MODE_INTERSECTNM16: {
+      IntersectWithNMMode<3>(scene,rays,N);
+      break;
+    }
+    case MODE_INTERSECTNp: 
+    {
+      assert(N<1024);
+      __aligned(16) char data[1024*sizeof(RTCRay)];
+      RTCRayN* ray = (RTCRayN*) &data[0];
+      for (size_t j=0; j<N; j++) setRay(ray,N,j,rays[j]);
+
+      RTCIntersectContext context;
+      context.flags = RTC_INTERSECT_INCOHERENT;
+      context.userRayExt = nullptr;
+
+      RTCRayNp rayp;
+      rayp.orgx = &RTCRayN_org_x(ray,N,0);
+      rayp.orgy = &RTCRayN_org_y(ray,N,0);
+      rayp.orgz = &RTCRayN_org_z(ray,N,0);
+      rayp.dirx = &RTCRayN_dir_x(ray,N,0); 
+      rayp.diry = &RTCRayN_dir_y(ray,N,0); 
+      rayp.dirz = &RTCRayN_dir_z(ray,N,0); 
+      rayp.tnear = &RTCRayN_tnear(ray,N,0); 
+      rayp.tfar = &RTCRayN_tfar(ray,N,0); 
+      rayp.time = &RTCRayN_time(ray,N,0); 
+      rayp.mask = &RTCRayN_mask(ray,N,0); 
+      rayp.instID = &RTCRayN_instID(ray,N,0); 
+      rayp.geomID = &RTCRayN_geomID(ray,N,0); 
+      rayp.primID = &RTCRayN_primID(ray,N,0); 
+      rayp.u = &RTCRayN_u(ray,N,0); 
+      rayp.v = &RTCRayN_v(ray,N,0); 
+      rayp.Ngx = &RTCRayN_Ng_x(ray,N,0); 
+      rayp.Ngy = &RTCRayN_Ng_y(ray,N,0); 
+      rayp.Ngz = &RTCRayN_Ng_z(ray,N,0); 
+                              
+      rtcIntersectNp(scene,&context,rayp,N);
+
+      for (size_t j=0; j<N; j++) rays[j] = getRay(ray,N,j);
+
+      break;
+    }
     }
   }
 

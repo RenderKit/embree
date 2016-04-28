@@ -176,8 +176,8 @@ __forceinline float& RTCRayN_dir_z(RTCRayN* ptr, size_t N, size_t i) { const siz
 __forceinline float& RTCRayN_tnear(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((float*)ptr)[6*N+2*N1+i]; }; //!< Start of ray segment 
 __forceinline float& RTCRayN_tfar (RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((float*)ptr)[7*N+2*N1+i]; }; //!< End of ray segment (set to hit distance)
 
-__forceinline float& RTCRayN_time(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((float*)ptr)[8*N+2*N1+i]; };  //!< Time of this ray for motion blur 
-__forceinline int&   RTCRayN_mask(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((int*  )ptr)[9*N+2*N1+i]; };  //!< Used to mask out objects during traversal
+__forceinline float&    RTCRayN_time(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((float*)   ptr)[8*N+2*N1+i]; };  //!< Time of this ray for motion blur 
+__forceinline unsigned& RTCRayN_mask(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((unsigned*)ptr)[9*N+2*N1+i]; };  //!< Used to mask out objects during traversal
 
 __forceinline float& RTCRayN_Ng_x(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((float*)ptr)[10*N+2*N1+i]; }; //!< x coordinate of geometry normal
 __forceinline float& RTCRayN_Ng_y(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((float*)ptr)[11*N+2*N1+i]; }; //!< y coordinate of geometry normal
@@ -186,9 +186,9 @@ __forceinline float& RTCRayN_Ng_z(RTCRayN* ptr, size_t N, size_t i) { const size
 __forceinline float& RTCRayN_u   (RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((float*)ptr)[13*N+3*N1+i]; }; //!< Barycentric u coordinate of hit
 __forceinline float& RTCRayN_v   (RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((float*)ptr)[14*N+3*N1+i]; }; //!< Barycentric v coordinate of hit
 
-__forceinline int& RTCRayN_geomID(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((int*  )ptr)[15*N+3*N1+i]; }; //!< geometry ID
-__forceinline int& RTCRayN_primID(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((int*  )ptr)[16*N+3*N1+i]; }; //!< primitive ID
-__forceinline int& RTCRayN_instID(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((int*  )ptr)[17*N+3*N1+i]; }; //!< instance ID
+__forceinline unsigned& RTCRayN_geomID(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((unsigned*)ptr)[15*N+3*N1+i]; }; //!< geometry ID
+__forceinline unsigned& RTCRayN_primID(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((unsigned*)ptr)[16*N+3*N1+i]; }; //!< primitive ID
+__forceinline unsigned& RTCRayN_instID(RTCRayN* ptr, size_t N, size_t i) { const size_t N1 = (size_t)(N == 1); return ((unsigned*)ptr)[17*N+3*N1+i]; }; //!< instance ID
 #endif
 
 /* Helper structure to create a ray packet of compile time size N */
@@ -274,9 +274,9 @@ __forceinline float& RTCHitN_Ng_x(const RTCHitN* ptr, size_t N, size_t i) { retu
 __forceinline float& RTCHitN_Ng_y(const RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[1*N+i]; }; //!< y coordinate of geometry normal
 __forceinline float& RTCHitN_Ng_z(const RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[2*N+i]; }; //!< z coordinate of geometry normal
 
-__forceinline int& RTCHitN_instID(const RTCHitN* ptr, size_t N, size_t i) { return ((int*  )ptr)[3*N+i]; }; //!< instance ID
-__forceinline int& RTCHitN_geomID(const RTCHitN* ptr, size_t N, size_t i) { return ((int*  )ptr)[4*N+i]; }; //!< geometry ID
-__forceinline int& RTCHitN_primID(const RTCHitN* ptr, size_t N, size_t i) { return ((int*  )ptr)[5*N+i]; }; //!< primitive ID
+__forceinline unsigned& RTCHitN_instID(const RTCHitN* ptr, size_t N, size_t i) { return ((unsigned*)ptr)[3*N+i]; }; //!< instance ID
+__forceinline unsigned& RTCHitN_geomID(const RTCHitN* ptr, size_t N, size_t i) { return ((unsigned*)ptr)[4*N+i]; }; //!< geometry ID
+__forceinline unsigned& RTCHitN_primID(const RTCHitN* ptr, size_t N, size_t i) { return ((unsigned*)ptr)[5*N+i]; }; //!< primitive ID
 
 __forceinline float& RTCHitN_u   (const RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[6*N+i]; }; //!< Barycentric u coordinate of hit
 __forceinline float& RTCHitN_v   (const RTCHitN* ptr, size_t N, size_t i) { return ((float*)ptr)[7*N+i]; }; //!< Barycentric v coordinate of hit

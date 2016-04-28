@@ -453,9 +453,9 @@ namespace embree
 #endif
 
 #if defined(RTCORE_RAY_PACKETS)
-    case RTC_CONFIG_INTERSECTN:  return 1;
+    case RTC_CONFIG_INTERSECT_STREAM:  return 1;
 #else
-    case RTC_CONFIG_INTERSECTN:  return 0;
+    case RTC_CONFIG_INTERSECT_STREAM:  return 0;
 #endif
     
 #if defined(RTCORE_RAY_MASK)

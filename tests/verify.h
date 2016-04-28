@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "../kernels/common/default.h"
+#include "../kernels/common/ray.h"
 #include "../include/embree2/rtcore.h"
 #include "../include/embree2/rtcore_ray.h"
 #include "rtcore_helpers.h"
@@ -59,6 +60,7 @@ namespace embree
     std::map<std::string,Ref<Test>> name2test;
 
   public:
+    std::vector<IntersectMode> intersectModes;
     std::vector<Ref<Test>> tests_to_run;
   };
 }

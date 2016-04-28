@@ -111,154 +111,6 @@ namespace embree
     gflags = (RTCGeometryFlags) gflag;
   }
 
-  RTCRay makeRay(const Vec3fa& org, const Vec3fa& dir) 
-  {
-    RTCRay ray;
-    ray.org[0] = org.x; ray.org[1] = org.y; ray.org[2] = org.z;
-    ray.dir[0] = dir.x; ray.dir[1] = dir.y; ray.dir[2] = dir.z;
-    ray.tnear = 0.0f; ray.tfar = inf;
-    ray.time = 0; ray.mask = -1;
-    ray.geomID = ray.primID = ray.instID = -1;
-    return ray;
-  }
-
-  RTCRay makeRay(const Vec3fa& org, const Vec3fa& dir, float tnear, float tfar) 
-  {
-    RTCRay ray;
-    ray.org[0] = org.x; ray.org[1] = org.y; ray.org[2] = org.z;
-    ray.dir[0] = dir.x; ray.dir[1] = dir.y; ray.dir[2] = dir.z;
-    ray.tnear = tnear; ray.tfar = tfar;
-    ray.time = 0; ray.mask = -1;
-    ray.geomID = ray.primID = ray.instID = -1;
-    return ray;
-  }
-  
-  void setRay(RTCRay4& ray_o, int i, const RTCRay& ray_i)
-  {
-    ray_o.orgx[i] = ray_i.org[0];
-    ray_o.orgy[i] = ray_i.org[1];
-    ray_o.orgz[i] = ray_i.org[2];
-    ray_o.dirx[i] = ray_i.dir[0];
-    ray_o.diry[i] = ray_i.dir[1];
-    ray_o.dirz[i] = ray_i.dir[2];
-    ray_o.tnear[i] = ray_i.tnear;
-    ray_o.tfar[i] = ray_i.tfar;
-    ray_o.Ngx[i] = ray_i.Ng[0];
-    ray_o.Ngy[i] = ray_i.Ng[1];
-    ray_o.Ngz[i] = ray_i.Ng[2];
-    ray_o.time[i] = ray_i.time;
-    ray_o.mask[i] = ray_i.mask;
-    ray_o.geomID[i] = ray_i.geomID;
-    ray_o.primID[i] = ray_i.primID;
-    ray_o.instID[i] = ray_i.instID;
-  }
-
-  void setRay(RTCRay8& ray_o, int i, const RTCRay& ray_i)
-  {
-    ray_o.orgx[i] = ray_i.org[0];
-    ray_o.orgy[i] = ray_i.org[1];
-    ray_o.orgz[i] = ray_i.org[2];
-    ray_o.dirx[i] = ray_i.dir[0];
-    ray_o.diry[i] = ray_i.dir[1];
-    ray_o.dirz[i] = ray_i.dir[2];
-    ray_o.tnear[i] = ray_i.tnear;
-    ray_o.tfar[i] = ray_i.tfar;
-    ray_o.Ngx[i] = ray_i.Ng[0];
-    ray_o.Ngy[i] = ray_i.Ng[1];
-    ray_o.Ngz[i] = ray_i.Ng[2];
-    ray_o.time[i] = ray_i.time;
-    ray_o.mask[i] = ray_i.mask;
-    ray_o.geomID[i] = ray_i.geomID;
-    ray_o.primID[i] = ray_i.primID;
-    ray_o.instID[i] = ray_i.instID;
-  }
-
-  void setRay(RTCRay16& ray_o, int i, const RTCRay& ray_i)
-  {
-    ray_o.orgx[i] = ray_i.org[0];
-    ray_o.orgy[i] = ray_i.org[1];
-    ray_o.orgz[i] = ray_i.org[2];
-    ray_o.dirx[i] = ray_i.dir[0];
-    ray_o.diry[i] = ray_i.dir[1];
-    ray_o.dirz[i] = ray_i.dir[2];
-    ray_o.tnear[i] = ray_i.tnear;
-    ray_o.tfar[i] = ray_i.tfar;
-    ray_o.Ngx[i] = ray_i.Ng[0];
-    ray_o.Ngy[i] = ray_i.Ng[1];
-    ray_o.Ngz[i] = ray_i.Ng[2];
-    ray_o.time[i] = ray_i.time;
-    ray_o.mask[i] = ray_i.mask;
-    ray_o.geomID[i] = ray_i.geomID;
-    ray_o.primID[i] = ray_i.primID;
-    ray_o.instID[i] = ray_i.instID;
-  }
-
-  RTCRay getRay(RTCRay4& ray_i, int i)
-  {
-    RTCRay ray_o;
-    ray_o.org[0] = ray_i.orgx[i];
-    ray_o.org[1] = ray_i.orgy[i];
-    ray_o.org[2] = ray_i.orgz[i];
-    ray_o.dir[0] = ray_i.dirx[i];
-    ray_o.dir[1] = ray_i.diry[i];
-    ray_o.dir[2] = ray_i.dirz[i];
-    ray_o.tnear = ray_i.tnear[i];
-    ray_o.tfar = ray_i.tfar[i];
-    ray_o.Ng[0] = ray_i.Ngx[i];
-    ray_o.Ng[1] = ray_i.Ngy[i];
-    ray_o.Ng[2] = ray_i.Ngz[i];
-    ray_o.time = ray_i.time[i];
-    ray_o.mask = ray_i.mask[i];
-    ray_o.geomID = ray_i.geomID[i];
-    ray_o.primID = ray_i.primID[i];
-    ray_o.instID = ray_i.instID[i];
-    return ray_o;
-  }
-
-  RTCRay getRay(RTCRay8& ray_i, int i)
-  {
-    RTCRay ray_o;
-    ray_o.org[0] = ray_i.orgx[i];
-    ray_o.org[1] = ray_i.orgy[i];
-    ray_o.org[2] = ray_i.orgz[i];
-    ray_o.dir[0] = ray_i.dirx[i];
-    ray_o.dir[1] = ray_i.diry[i];
-    ray_o.dir[2] = ray_i.dirz[i];
-    ray_o.tnear = ray_i.tnear[i];
-    ray_o.tfar = ray_i.tfar[i];
-    ray_o.Ng[0] = ray_i.Ngx[i];
-    ray_o.Ng[1] = ray_i.Ngy[i];
-    ray_o.Ng[2] = ray_i.Ngz[i];
-    ray_o.time = ray_i.time[i];
-    ray_o.mask = ray_i.mask[i];
-    ray_o.geomID = ray_i.geomID[i];
-    ray_o.primID = ray_i.primID[i];
-    ray_o.instID = ray_i.instID[i];
-    return ray_o;
-  }
-
-  RTCRay getRay(RTCRay16& ray_i, int i)
-  {
-    RTCRay ray_o;
-    ray_o.org[0] = ray_i.orgx[i];
-    ray_o.org[1] = ray_i.orgy[i];
-    ray_o.org[2] = ray_i.orgz[i];
-    ray_o.dir[0] = ray_i.dirx[i];
-    ray_o.dir[1] = ray_i.diry[i];
-    ray_o.dir[2] = ray_i.dirz[i];
-    ray_o.tnear = ray_i.tnear[i];
-    ray_o.tfar = ray_i.tfar[i];
-    ray_o.Ng[0] = ray_i.Ngx[i];
-    ray_o.Ng[1] = ray_i.Ngy[i];
-    ray_o.Ng[2] = ray_i.Ngz[i];
-    ray_o.time = ray_i.time[i];
-    ray_o.mask = ray_i.mask[i];
-    ray_o.geomID = ray_i.geomID[i];
-    ray_o.primID = ray_i.primID[i];
-    ray_o.instID = ray_i.instID[i];
-    return ray_o;
-  }
-
   void rtcIntersectN(const RTCSceneRef& scene, RTCRay& ray, int N) 
   {
     switch (N) {
@@ -850,27 +702,29 @@ namespace embree
   void OccludedFunc16 (const void* valid, void* ptr, RTCRay16& ray, size_t item) {
   }
 
-  unsigned addUserGeometryEmpty (RTCDevice g_device, const RTCSceneRef& scene, Sphere* sphere)
+  unsigned addUserGeometryEmpty (RTCDevice g_device, IntersectMode imode, const RTCSceneRef& scene, Sphere* sphere)
   {
     BBox3fa bounds = sphere->bounds(); 
     unsigned geom = rtcNewUserGeometry (scene,1);
     rtcSetBoundsFunction(scene,geom,(RTCBoundsFunc)BoundsFunc);
     rtcSetUserData(scene,geom,sphere);
-    rtcSetIntersectFunction(scene,geom,IntersectFunc);
+    if (imode != MODE_INTERSECT_NONE)
+    {
+      rtcSetIntersectFunction(scene,geom,IntersectFunc);
 #if defined(RTCORE_RAY_PACKETS)
-    rtcSetIntersectFunction4(scene,geom,IntersectFunc4);
-    rtcSetIntersectFunction8(scene,geom,IntersectFunc8);
-    rtcSetIntersectFunction16(scene,geom,&IntersectFunc16);
+      rtcSetIntersectFunction4(scene,geom,IntersectFunc4);
+      rtcSetIntersectFunction8(scene,geom,IntersectFunc8);
+      rtcSetIntersectFunction16(scene,geom,&IntersectFunc16);
 #endif
-    rtcSetOccludedFunction(scene,geom,OccludedFunc);
+      rtcSetOccludedFunction(scene,geom,OccludedFunc);
 #if defined(RTCORE_RAY_PACKETS)
-    rtcSetOccludedFunction4(scene,geom,OccludedFunc4);
-    rtcSetOccludedFunction8(scene,geom,OccludedFunc8);
-    rtcSetOccludedFunction16(scene,geom,&OccludedFunc16);
+      rtcSetOccludedFunction4(scene,geom,OccludedFunc4);
+      rtcSetOccludedFunction8(scene,geom,OccludedFunc8);
+      rtcSetOccludedFunction16(scene,geom,&OccludedFunc16);
 #endif
+    }
     return geom;
   }
-
 
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
@@ -1938,326 +1792,67 @@ namespace embree
     }
   };
 
-  struct Watertight1Test : public VerifyApplication::Test
+  struct WatertightTest : public VerifyApplication::Test
   {
     ALIGNED_STRUCT;
-    std::string type;
+    IntersectMode imode;
+    std::string model;
     Vec3fa pos;
-    static const size_t testN = 100000;
+    static const size_t N = 10;
+    static const size_t maxStreamSize = 100;
     
-    Watertight1Test (std::string name, std::string type, const Vec3fa& pos)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), type(type), pos(pos) {}
+    WatertightTest (std::string name, IntersectMode imode, std::string model, const Vec3fa& pos)
+      : VerifyApplication::Test(name,VerifyApplication::PASS), imode(imode), model(model), pos(pos) {}
     
     bool run(VerifyApplication* state)
     {
       ClearBuffers clear_before_return;
-      RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_STATIC | RTC_SCENE_ROBUST,aflags);
-      if      (type == "sphere") addSphere(state->device,scene,RTC_GEOMETRY_STATIC,pos,2.0f,500);
-      else if (type == "cube"  ) addCube  (state->device,scene,RTC_GEOMETRY_STATIC,pos,2.0f);
+      RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_STATIC | RTC_SCENE_ROBUST,to_aflags(imode));
+      if      (model == "sphere") addSphere(state->device,scene,RTC_GEOMETRY_STATIC,pos,2.0f,500);
+      else if (model == "cube"  ) addCube  (state->device,scene,RTC_GEOMETRY_STATIC,pos,2.0f);
+      else if (model == "plane" ) addPlane(state->device,scene,RTC_GEOMETRY_STATIC,500,Vec3fa(pos.x,-6.0f,-6.0f),Vec3fa(0.0f,12.0f,0.0f),Vec3fa(0.0f,0.0f,12.0f));
+      bool plane = model == "plane";
       rtcCommit (scene);
+      AssertNoError(state->device);
       
+      size_t numTests = 0;
       size_t numFailures = 0;
-      for (size_t i=0; i<testN; i++) {
-        Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-        Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-        RTCRay ray = makeRay(pos+org,dir); 
-        rtcIntersect(scene,ray);
-        numFailures += ray.primID == -1;
-      }
-      scene = nullptr;
-      double failRate = double(numFailures) / double(testN);
-      bool failed = failRate > 0.00002;
-      
-      printf(" (%f%%)", 100.0f*failRate);
-      fflush(stdout);
-      return !failed;
-    }
-  };
-  
-#if defined(RTCORE_RAY_PACKETS)
-    struct Watertight4Test : public VerifyApplication::Test
-    {
-      ALIGNED_STRUCT;
-      std::string type;
-      Vec3fa pos;
-      static const size_t testN = 100000;
-      
-      Watertight4Test (std::string name, std::string type, const Vec3fa& pos)
-        : VerifyApplication::Test(name,VerifyApplication::PASS), type(type), pos(pos) {}
-      
-      bool run(VerifyApplication* state)
+      for (size_t i=0; i<N; i++) 
       {
-        ClearBuffers clear_before_return;
-        RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_STATIC | RTC_SCENE_ROBUST,aflags);
-        if      (type == "sphere") addSphere(state->device,scene,RTC_GEOMETRY_STATIC,pos,2.0f,500);
-        else if (type == "cube"  ) addCube  (state->device,scene,RTC_GEOMETRY_STATIC,pos,2.0f);
-        rtcCommit (scene);
-        
-        size_t numFailures = 0;
-        for (size_t i=0; i<testN; i+=4) {
-          RTCRay4 ray4; memset(&ray4,0,sizeof(ray4));
-          for (size_t j=0; j<4; j++) {
-            Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-            Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-            RTCRay ray = makeRay(pos+org,dir); 
-            setRay(ray4,j,ray);
+        for (size_t M=1; M<maxStreamSize; M++)
+        {
+          __aligned(16) RTCRay rays[maxStreamSize];
+          for (size_t j=0; j<M; j++) 
+          {
+            if (plane) {
+              Vec3fa org(drand48()-0.5f,drand48()-0.5f,drand48()-0.5f);
+              Vec3fa dir(1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+              rays[j] = makeRay(Vec3fa(pos.x-3.0f,0.0f,0.0f),dir); 
+            } else {
+              Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+              Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+              rays[j] = makeRay(pos+org,dir); 
+            }
           }
-          __aligned(16) int valid[4] = { -1,-1,-1,-1 };
-          rtcIntersect4(valid,scene,ray4);
-          for (size_t j=0; j<4; j++)
-            numFailures += ray4.primID[j] == -1;
+          IntersectWithMode(imode,scene,rays,M);
+          for (size_t j=0; j<M; j++) {
+            numTests++;
+            numFailures += rays[j].primID == -1;
+          }
         }
-        scene = nullptr;
-        double failRate = double(numFailures) / double(testN);
-        bool failed = failRate > 0.00002;
-        
-        printf(" (%f%%)", 100.0f*failRate);
-        fflush(stdout);
-        return !failed;
       }
-    };
-#endif
+      AssertNoError(state->device);
+      scene = nullptr;
+      AssertNoError(state->device);
+      double failRate = double(numFailures) / double(numTests);
+      bool failed = failRate > 0.00002;
+      
+      printf(" (%f%%)", 100.0f*failRate);
+      fflush(stdout);
+      return !failed;
+    }
+  };
 
-#if defined(RTCORE_RAY_PACKETS)
-  struct Watertight8Test : public VerifyApplication::Test
-  {
-    ALIGNED_STRUCT;
-    std::string type;
-    Vec3fa pos;
-    static const size_t testN = 100000;
-    
-    Watertight8Test (std::string name, std::string type, const Vec3fa& pos)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), type(type), pos(pos) {}
-    
-    bool run(VerifyApplication* state)
-    {
-      ClearBuffers clear_before_return;
-      RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_STATIC | RTC_SCENE_ROBUST,aflags);
-      if      (type == "sphere") addSphere(state->device,scene,RTC_GEOMETRY_STATIC,pos,2.0f,500);
-      else if (type == "cube"  ) addCube  (state->device,scene,RTC_GEOMETRY_STATIC,pos,2.0f);
-      rtcCommit (scene);
-      
-      size_t numFailures = 0;
-      for (size_t i=0; i<testN; i+=8) {
-        RTCRay8 ray8; memset(&ray8,0,sizeof(ray8));
-        for (size_t j=0; j<8; j++) {
-          Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-          Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-          RTCRay ray = makeRay(pos+org,dir); 
-          setRay(ray8,j,ray);
-        }
-        __aligned(32) int valid[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
-        rtcIntersect8(valid,scene,ray8);
-        for (size_t j=0; j<8; j++)
-          numFailures += ray8.primID[j] == -1;
-      }
-      scene = nullptr;
-      double failRate = double(numFailures) / double(testN);
-      bool failed = failRate > 0.00002;
-      
-      printf(" (%f%%)", 100.0f*failRate);
-      fflush(stdout);
-      return !failed;
-    }
-  };
-#endif
-
-#if defined(RTCORE_RAY_PACKETS)
-  struct Watertight16Test : public VerifyApplication::Test
-  {
-    ALIGNED_STRUCT;
-    std::string type;
-    Vec3fa pos;
-    static const size_t testN = 100000;
-    
-    Watertight16Test (std::string name, std::string type, const Vec3fa& pos)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), type(type), pos(pos) {}
-    
-    bool run(VerifyApplication* state)
-    {
-      ClearBuffers clear_before_return;
-      RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_STATIC | RTC_SCENE_ROBUST,aflags);
-      if      (type == "sphere") addSphere(state->device,scene,RTC_GEOMETRY_STATIC,pos,2.0f,500);
-      else if (type == "cube"  ) addCube  (state->device,scene,RTC_GEOMETRY_STATIC,pos,2.0f);
-      rtcCommit (scene);
-      
-      size_t numFailures = 0;
-      for (size_t i=0; i<testN; i+=16) {
-        RTCRay16 ray16; memset(&ray16,0,sizeof(ray16));
-        for (size_t j=0; j<16; j++) {
-          Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-          Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-          RTCRay ray = makeRay(pos+org,dir); 
-          setRay(ray16,j,ray);
-        }
-        __aligned(64) int valid[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
-        rtcIntersect16(valid,scene,ray16);
-        for (size_t j=0; j<16; j++)
-          numFailures += ray16.primID[j] == -1;
-      }
-      scene = nullptr;
-      double failRate = double(numFailures) / double(testN);
-      bool failed = failRate > 0.00002;
-      
-      printf(" (%f%%)\n", 100.0f*failRate);
-      fflush(stdout);
-      return !failed;
-    }
-  };
-#endif
-
-  struct WatertightPlane1Test : public VerifyApplication::Test
-  {
-    float pos;
-    static const size_t testN = 100000;
-    
-    WatertightPlane1Test (std::string name, const float pos)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), pos(pos) {}
-    
-    bool run(VerifyApplication* state)
-    {
-      ClearBuffers clear_before_return;
-      RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_STATIC | RTC_SCENE_ROBUST,aflags);
-      unsigned geom = addPlane(state->device,scene,RTC_GEOMETRY_STATIC,500,Vec3fa(pos,-6.0f,-6.0f),Vec3fa(0.0f,12.0f,0.0f),Vec3fa(0.0f,0.0f,12.0f));
-      rtcCommit (scene);
-      size_t numFailures = 0;
-      for (size_t i=0; i<testN; i++) {
-        Vec3fa org(drand48()-0.5f,drand48()-0.5f,drand48()-0.5f);
-        Vec3fa dir(1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-        RTCRay ray = makeRay(Vec3fa(pos-3.0f,0.0f,0.0f),dir); 
-        rtcIntersect(scene,ray);
-        numFailures += ray.primID == -1;
-      }
-      scene = nullptr;
-      double failRate = double(numFailures) / double(testN);
-      bool failed = failRate > 0.00002;
-      
-      printf(" (%f%%)", 100.0f*failRate);
-      fflush(stdout);
-      return !failed;
-    }
-  };
-  
-#if defined(RTCORE_RAY_PACKETS)
-  struct WatertightPlane4Test : public VerifyApplication::Test
-  {
-    float pos;
-    static const size_t testN = 100000;
-    
-    WatertightPlane4Test (std::string name, const float pos)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), pos(pos) {}
-    
-    bool run(VerifyApplication* state)
-    {
-      ClearBuffers clear_before_return;
-      RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_STATIC | RTC_SCENE_ROBUST,aflags);
-      unsigned geom = addPlane(state->device,scene,RTC_GEOMETRY_STATIC,500,Vec3fa(pos,-6.0f,-6.0f),Vec3fa(0.0f,12.0f,0.0f),Vec3fa(0.0f,0.0f,12.0f));
-      rtcCommit (scene);
-      size_t numFailures = 0;
-      for (size_t i=0; i<testN; i+=4) {
-        RTCRay4 ray4; memset(&ray4,0,sizeof(ray4));
-        for (size_t j=0; j<4; j++) {
-          Vec3fa org(drand48()-0.5f,drand48()-0.5f,drand48()-0.5f);
-          Vec3fa dir(1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-          RTCRay ray = makeRay(Vec3fa(pos-3.0f,0.0f,0.0f),dir); 
-          setRay(ray4,j,ray);
-        }
-        __aligned(16) int valid[4] = { -1,-1,-1,-1 };
-        rtcIntersect4(valid,scene,ray4);
-        for (size_t j=0; j<4; j++)
-          numFailures += ray4.primID[j] == -1;
-      }
-      scene = nullptr;
-      double failRate = double(numFailures) / double(testN);
-      bool failed = failRate > 0.00002;
-      
-      printf(" (%f%%)", 100.0f*failRate);
-      fflush(stdout);
-      return !failed;
-    }
-  };
-#endif
-    
-#if defined(RTCORE_RAY_PACKETS)
-  struct WatertightPlane8Test : public VerifyApplication::Test
-  {
-    float pos;
-    static const size_t testN = 100000;
-    
-    WatertightPlane8Test (std::string name, const float pos)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), pos(pos) {}
-    
-    bool run(VerifyApplication* state)
-    {
-      ClearBuffers clear_before_return;
-      RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_STATIC | RTC_SCENE_ROBUST,aflags);
-      unsigned geom = addPlane(state->device,scene,RTC_GEOMETRY_STATIC,500,Vec3fa(pos,-6.0f,-6.0f),Vec3fa(0.0f,12.0f,0.0f),Vec3fa(0.0f,0.0f,12.0f));
-      rtcCommit (scene);
-      size_t numFailures = 0;
-      for (size_t i=0; i<testN; i+=8) {
-        RTCRay8 ray8; memset(&ray8,0,sizeof(ray8));
-        for (size_t j=0; j<8; j++) {
-          Vec3fa org(drand48()-0.5f,drand48()-0.5f,drand48()-0.5f);
-          Vec3fa dir(1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-          RTCRay ray = makeRay(Vec3fa(pos-3.0f,0.0f,0.0f),dir); 
-          setRay(ray8,j,ray);
-        }
-        __aligned(32) int valid[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
-        rtcIntersect8(valid,scene,ray8);
-        for (size_t j=0; j<8; j++)
-          numFailures += ray8.primID[j] == -1;
-      }
-      scene = nullptr;
-      double failRate = double(numFailures) / double(testN);
-      bool failed = failRate > 0.00002;
-      
-      printf(" (%f%%)", 100.0f*failRate);
-      fflush(stdout);
-      return !failed;
-    }
-  };
-#endif
-    
-#if defined(RTCORE_RAY_PACKETS)
-  struct WatertightPlane16Test : public VerifyApplication::Test
-  {
-    float pos;
-    static const size_t testN = 100000;
-    
-    WatertightPlane16Test (std::string name, const float pos)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), pos(pos) {}
-    
-    bool run(VerifyApplication* state)
-    {
-      ClearBuffers clear_before_return;
-      RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_STATIC | RTC_SCENE_ROBUST,aflags);
-      unsigned geom = addPlane(state->device,scene,RTC_GEOMETRY_STATIC,500,Vec3fa(pos,-6.0f,-6.0f),Vec3fa(0.0f,12.0f,0.0f),Vec3fa(0.0f,0.0f,12.0f));
-      rtcCommit (scene);
-      size_t numFailures = 0;
-      for (size_t i=0; i<testN; i+=16) {
-        RTCRay16 ray16; memset(&ray16,0,sizeof(ray16));
-        for (size_t j=0; j<16; j++) {
-          Vec3fa org(drand48()-0.5f,drand48()-0.5f,drand48()-0.5f);
-          Vec3fa dir(1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-          RTCRay ray = makeRay(Vec3fa(pos-3.0f,0.0f,0.0f),dir); 
-          setRay(ray16,j,ray);
-        }
-        __aligned(64) int valid[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
-        rtcIntersect16(valid,scene,ray16);
-        for (size_t j=0; j<16; j++)
-          numFailures += ray16.primID[j] == -1;
-      }
-      scene = nullptr;
-      double failRate = double(numFailures) / double(testN);
-      bool failed = failRate > 0.00002;
-      
-      printf(" (%f%%)", 100.0f*failRate);
-      fflush(stdout);
-      return !failed;
-    }
-  };
-#endif
-    
   struct NaNTest : public VerifyApplication::Test
   {
     RTCSceneFlags sflags;
@@ -2571,7 +2166,7 @@ namespace embree
             case 2: geom[index] = addSubdivSphere(state->device,scene,RTC_GEOMETRY_STATIC,pos,2.0f,4,4); break;
             case 3: 
               spheres[index] = Sphere(pos,2.0f);
-              geom[index] = addUserGeometryEmpty(state->device,scene,&spheres[index]); break;
+              geom[index] = addUserGeometryEmpty(state->device,MODE_INTERSECT_NONE,scene,&spheres[index]); break;
             }
             AssertNoError(state->device);
           }
@@ -3168,7 +2763,7 @@ namespace embree
 
         case 5: {
 	  Sphere* sphere = new Sphere(pos,2.0f); spheres.push_back(sphere); 
-	  addUserGeometryEmpty(thread->device,task->scene,sphere); break;
+	  addUserGeometryEmpty(thread->device,MODE_INTERSECT1,task->scene,sphere); break; // FIXME: imode
         }
 	}
         //CountErrors(thread->device);
@@ -3302,7 +2897,7 @@ namespace embree
           case 6: geom[index] = addSphere(thread->device,task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
           case 7: geom[index] = addSphere(thread->device,task->scene,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles,1.0f); break;
           case 8: geom[index] = addSphere(thread->device,task->scene,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
-          case 9: spheres[index] = Sphere(pos,2.0f); geom[index] = addUserGeometryEmpty(thread->device,task->scene,&spheres[index]); break;
+          case 9: spheres[index] = Sphere(pos,2.0f); geom[index] = addUserGeometryEmpty(thread->device,MODE_INTERSECT1,task->scene,&spheres[index]); break; // FIXME: imode
           }; 
 	  //CountErrors(thread->device);
           if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) {
@@ -3560,6 +3155,21 @@ namespace embree
   {
     device = rtcNewDevice(rtcore.c_str());
 
+    /* create list of all supported intersect modes */
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT1)) intersectModes.push_back(MODE_INTERSECT1);
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT4)) intersectModes.push_back(MODE_INTERSECT4);
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT8)) intersectModes.push_back(MODE_INTERSECT8);
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT16)) intersectModes.push_back(MODE_INTERSECT16);
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM)) {
+      intersectModes.push_back(MODE_INTERSECT1M);
+      intersectModes.push_back(MODE_INTERSECTNM1);
+      intersectModes.push_back(MODE_INTERSECTNM3);
+      intersectModes.push_back(MODE_INTERSECTNM4);
+      intersectModes.push_back(MODE_INTERSECTNM8);
+      intersectModes.push_back(MODE_INTERSECTNM16);
+      intersectModes.push_back(MODE_INTERSECTNp);
+    }
+
     /* add all tests */
     addTest(new MultipleDevicesTest("multiple_devices"));
     addTest(new EmptySceneTest("empty_static",RTC_SCENE_STATIC));
@@ -3633,26 +3243,10 @@ namespace embree
     addTest(new PacketWriteTest("packet_write_test"));
 
     const Vec3fa watertight_pos = Vec3fa(148376.0f,1234.0f,-223423.0f);
-    addTest(new Watertight1Test("watertight_sphere_1","sphere",watertight_pos));
-    addTest(new Watertight1Test("watertight_cube_1","cube",watertight_pos));
-    addTest(new WatertightPlane1Test("watertight_plane_1",100000));
-#if defined(RTCORE_RAY_PACKETS)
-    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT4)) {
-      addTest(new Watertight4Test("watertight_sphere_4","sphere",watertight_pos));
-      addTest(new Watertight4Test("watertight_cube_4","cube",watertight_pos));
-      addTest(new WatertightPlane4Test("watertight_plane_4",100000));
-    }
-    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT8)) {
-      addTest(new Watertight8Test("watertight_sphere_8","sphere",watertight_pos));
-      addTest(new Watertight8Test("watertight_cube_8","cube",watertight_pos));
-      addTest(new WatertightPlane8Test("watertight_plane_8",100000));
-    }
-    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT16)) {
-      addTest(new Watertight16Test("watertight_sphere_16","sphere",watertight_pos));
-      addTest(new Watertight16Test("watertight_cube_16","cube",watertight_pos));
-      addTest(new WatertightPlane16Test("watertight_plane_16",100000));
-    }
-#endif
+    for (auto imode : intersectModes)
+      addTest(new WatertightTest("watertight_sphere"+to_string(imode),imode,"sphere",watertight_pos));
+    for (auto imode : intersectModes)
+      addTest(new WatertightTest("watertight_plane"+to_string(imode),imode,"plane",Vec3fa(100000)));
 
 #if defined(RTCORE_IGNORE_INVALID_RAYS)
     addTest(new NaNTest("nan_test_1",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,1));
@@ -3775,6 +3369,7 @@ namespace embree
     std::cout << std::setw(30) << test->name << " ..." << std::flush;
     try {
       ok &= test->run(this);
+      AssertNoError(device);
     } catch (...) {
       ok = false;
     }
