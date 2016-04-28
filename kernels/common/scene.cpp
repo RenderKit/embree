@@ -201,7 +201,7 @@ namespace embree
         int mode =  2*(int)isCompact() + 1*(int)isRobust();
         switch (mode) {
         case /*0b00*/ 0: accels.add(device->bvh4_factory->BVH4Triangle4Twolevel(this)); break;
-        case /*0b01*/ 1: accels.add(device->bvh4_factory->BVH4Triangle4Twolevel(this)); break;
+        case /*0b01*/ 1: accels.add(device->bvh4_factory->BVH4Triangle4vTwolevel(this)); break;
         case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4Triangle4iTwolevel(this)); break;
         case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4Triangle4iTwolevel(this)); break;
         }
