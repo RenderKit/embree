@@ -314,7 +314,6 @@ namespace embree
         intersectors.intersectorN.intersect(intersectors.ptr,rayN,N,context);
       else
       {
-        PING;
         /* fallback path */
         for (size_t i=0;i<N;i++)
           intersect(*rayN[i],context);
