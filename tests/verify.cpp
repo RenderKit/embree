@@ -3290,7 +3290,7 @@ namespace embree
     rtcDeleteDevice(device);
 
     /* register all command line options*/
-    std::string run_docu = "--run regexpr: runs all tests that match the regular expression, supported tests are:";
+    std::string run_docu = "--run <regexpr>: Runs all tests whose name match the regular expression. Supported tests are:";
     for (auto test : tests) run_docu += "\n  " + test->name;
     registerOption("run", [this] (Ref<ParseStream> cin, const FileName& path) {
         use_tests_to_run = true;
