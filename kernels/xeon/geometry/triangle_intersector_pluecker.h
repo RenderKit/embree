@@ -68,6 +68,8 @@ namespace embree
     template<int M>
       struct PlueckerIntersector1
       {
+        __forceinline PlueckerIntersector1() {}
+
         __forceinline PlueckerIntersector1(const Ray& ray, const void* ptr) {}
         
         template<typename UVMapper, typename Epilog>

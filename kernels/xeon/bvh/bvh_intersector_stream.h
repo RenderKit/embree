@@ -198,50 +198,6 @@ namespace embree
         1+(N-1)*BVH::maxDepth+   // standard depth
         1+(N-1)*BVH::maxDepth;   // transform feature
 
-      struct TraversalContext 
-      {
-      public:
-
-        __forceinline TraversalContext() 
-          : pray(nullptr), suspended(false) {}
-
-        __forceinline void init(Ray& ray, BVH* __restrict__ bvh, StackItemT<NodeRef>* stack)
-        {
-          pray = &ray;
-          stackBegin = stack;
-
-          /*! perform per ray precalculations required by the primitive intersector */
-          new (&pre) Precalculations(ray,bvh);
-        
-          /*! stack state */
-          stackPtr = stack+1;
-          stackEnd = stack+stackSize;
-          stack[0].ptr  = bvh->root;
-          stack[0].dist = neg_inf;
-          
-          /*! expand ray */
-          new (&vray) TravRay<N,N>(ray.org,ray.dir);
-          ray_near = max(ray.tnear,0.0f);
-          ray_far  = max(ray.tfar ,0.0f);
-        
-          /*! initialize the node traverser */
-          //new (&nodeTraverser) BVHNNodeTraverser1<N,N,types>(vray);
-        }
-
-      public:
-        bool suspended;
-        Precalculations pre;
-        //StackItemT<NodeRef> stack[stackSize];
-         StackItemT<NodeRef>* stackBegin;
-        StackItemT<NodeRef>* stackPtr;
-        StackItemT<NodeRef>* stackEnd;
-        Ray* pray;
-        TravRay<N,N> vray;
-        vfloat<N> ray_near;
-        vfloat<N> ray_far;
-        //BVHNNodeTraverser1<N,N,types> nodeTraverser;
-      };
-
       struct __aligned(32) RayContext 
       {
       public:
@@ -282,6 +238,50 @@ namespace embree
 
         __forceinline float tfar() const {
           return org_rdir.w;
+        }
+
+        __forceinline vbool<K> intersectNode(const vfloat<K> &bminmaxX,
+                                             const vfloat<K> &bminmaxY,
+                                             const vfloat<K> &bminmaxZ,
+                                             vfloat<K> &dist) const
+        {
+          const vfloat<K> tNearFarX = msub(bminmaxX, rdir.x, org_rdir.x);
+          const vfloat<K> tNearFarY = msub(bminmaxY, rdir.y, org_rdir.y);
+          const vfloat<K> tNearFarZ = msub(bminmaxZ, rdir.z, org_rdir.z);
+          const vfloat<K> tNear     = max(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(rdir.w));
+          const vfloat<K> tFar      = min(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(org_rdir.w));
+          const vbool<K> vmask      = le(tNear,align_shift_right<8>(tFar,tFar));  
+          dist   = select(vmask,min(tNear,dist),dist);
+          return vmask;       
+        }
+
+
+        __forceinline vbool<K> intersectNode(const vfloat<K> &bminX,
+                                             const vfloat<K> &bminY,
+                                             const vfloat<K> &bminZ,
+                                             const vfloat<K> &bmaxX,
+                                             const vfloat<K> &bmaxY,
+                                             const vfloat<K> &bmaxZ,
+                                             vfloat<K> &dist) const
+        {
+          const vfloat<K> tNearX = msub(bminX, rdir.x, org_rdir.x);
+          const vfloat<K> tNearY = msub(bminY, rdir.y, org_rdir.y);
+          const vfloat<K> tNearZ = msub(bminZ, rdir.z, org_rdir.z);
+          const vfloat<K> tFarX  = msub(bmaxX, rdir.x, org_rdir.x);
+          const vfloat<K> tFarY  = msub(bmaxY, rdir.y, org_rdir.y);
+          const vfloat<K> tFarZ  = msub(bmaxZ, rdir.z, org_rdir.z);
+#if defined(__AVX2__)
+          const vfloat<K> tNear  = maxi(maxi(tNearX,tNearY),maxi(tNearZ,vfloat<K>(rdir.w)));
+          const vfloat<K> tFar   = mini(mini(tFarX,tFarY),mini(tFarZ,vfloat<K>(org_rdir.w)));
+          const vbool<K> vmask   = tNear <= tFar;
+          dist   = select(vmask,min(tNear,dist),dist);
+#else
+          const vfloat<K> tNear  = max(tNearX,tNearY,tNearZ,vfloat<K>(rdir.w));
+          const vfloat<K> tFar   = min(tFarX ,tFarY ,tFarZ ,vfloat<K>(org_rdir.w));
+          const vbool<K> vmask   = tNear <= tFar;
+          dist   = select(vmask,min(tNear,dist),dist);
+#endif
+          return vmask;    
         }
 
       };

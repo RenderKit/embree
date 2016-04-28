@@ -68,7 +68,6 @@ namespace embree
 
         Ray** rays = &octants[cur_octant][0];
         const size_t numOctantRays = rays_in_octant[cur_octant];
-
         /* special codepath for very small number of rays per octant */
         if (numOctantRays == 1)
         {

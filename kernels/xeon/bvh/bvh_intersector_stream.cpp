@@ -210,24 +210,33 @@ namespace embree
               STAT3(normal.trav_nodes,1,1,1);                          
               const size_t i = __bscf(bits);
               const RayContext &ray = cur_ray_ctx[i];
+#if 1
+              const vint<K> bitmask  = vint<K>((int)1 << i);
+
+              const vbool<K> vmask = ray.intersectNode(bminX,bminY,bminZ,bmaxX,bmaxY,bmaxZ,dist);
+#else
               const vfloat<K> tNearX = msub(bminX, ray.rdir.x, ray.org_rdir.x);
               const vfloat<K> tNearY = msub(bminY, ray.rdir.y, ray.org_rdir.y);
               const vfloat<K> tNearZ = msub(bminZ, ray.rdir.z, ray.org_rdir.z);
               const vfloat<K> tFarX  = msub(bmaxX, ray.rdir.x, ray.org_rdir.x);
               const vfloat<K> tFarY  = msub(bmaxY, ray.rdir.y, ray.org_rdir.y);
               const vfloat<K> tFarZ  = msub(bmaxZ, ray.rdir.z, ray.org_rdir.z);
-              const vint<K> bitmask  = vint<K>((int)1 << i);
 #if defined(__AVX2__)
               const vfloat<K> tNear  = maxi(maxi(tNearX,tNearY),maxi(tNearZ,vfloat<K>(ray.rdir.w)));
               const vfloat<K> tFar   = mini(mini(tFarX,tFarY),mini(tFarZ,vfloat<K>(ray.org_rdir.w)));
               const vbool<K> vmask   = tNear <= tFar;
               dist   = select(vmask,min(tNear,dist),dist);
-              maskK = maskK | (bitmask & vint<K>(vmask));
 #else
               const vfloat<K> tNear  = max(tNearX,tNearY,tNearZ,vfloat<K>(ray.rdir.w));
               const vfloat<K> tFar   = min(tFarX ,tFarY ,tFarZ ,vfloat<K>(ray.org_rdir.w));
               const vbool<K> vmask   = tNear <= tFar;
               dist   = select(vmask,min(tNear,dist),dist);
+#endif
+#endif
+
+#if defined(__AVX2__)
+              maskK = maskK | (bitmask & vint<K>(vmask));
+#else
               maskK = select(vmask,maskK | bitmask,maskK); 
 #endif
             } while(bits);              
@@ -601,7 +610,11 @@ namespace embree
     
     IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH4Triangle4StreamIntersectorMoeller,         BVHNStreamIntersector<SIMD_MODE(4) COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<SIMD_MODE(4) COMMA true> > >));
     IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH4Triangle4StreamIntersectorMoellerNoFilter, BVHNStreamIntersector<SIMD_MODE(4) COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<SIMD_MODE(4) COMMA false> > >));
-    //IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH4Triangle4vIntersector1Pluecker,BVHNStreamIntersector<4 COMMA BVH_AN1 COMMA true COMMA ArrayIntersector1<TriangleMvIntersector1Pluecker<SIMD_MODE(4) COMMA true> > >));
+
+#if !defined(__AVX512F__)
+    IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH4Triangle4vStreamIntersector1Pluecker,BVHNStreamIntersector<SIMD_MODE(4) COMMA BVH_AN1 COMMA true COMMA ArrayIntersector1<TriangleMvIntersector1Pluecker<SIMD_MODE(4) COMMA true> > >));
+#endif
+
     //IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH4Triangle4iIntersector1Pluecker,BVHNStreamIntersector<4 COMMA BVH_AN1 COMMA true COMMA ArrayIntersector1<Triangle4iIntersector1Pluecker<SIMD_MODE(4) COMMA true> > >));
     //IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH4Triangle4vMBIntersector1Moeller,BVHNStreamIntersector<4 COMMA BVH_AN2 COMMA false COMMA ArrayIntersector1<TriangleMvMBIntersector1MoellerTrumbore<SIMD_MODE(4) COMMA true> > >));
     
