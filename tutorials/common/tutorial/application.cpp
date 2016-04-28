@@ -18,12 +18,46 @@
 
 namespace embree
 {
-  Application::Application()
+  Application::Application(int features)
+    : rtcore("")
   {
     registerOption("help", [this] (Ref<ParseStream> cin, const FileName& path) {
         printCommandLineHelp();
         exit(1);
       }, "--help: prints help for all supported command line options");
+
+    if (features & FEATURE_RTCORE)
+    {
+      registerOption("rtcore", [this] (Ref<ParseStream> cin, const FileName& path) {
+          rtcore += "," + cin->getString();
+        }, "--rtcore <string>: uses <string> to configure Embree device");
+    
+      registerOption("threads", [this] (Ref<ParseStream> cin, const FileName& path) {
+          rtcore += ",threads=" + toString(cin->getInt());
+        }, "--threads <int>: number of threads to use");
+      
+      registerOption("affinity", [this] (Ref<ParseStream> cin, const FileName& path) {
+          rtcore += ",set_affinity=1";
+        }, "--affinity: affinitize threads");
+      
+      registerOption("verbose", [this] (Ref<ParseStream> cin, const FileName& path) {
+          rtcore += ",verbose=" + toString(cin->getInt());
+        }, "--verbose <int>: sets verbosity level");
+      
+      registerOption("isa", [this] (Ref<ParseStream> cin, const FileName& path) {
+          rtcore += ",isa=" + toString(cin->getInt());
+        }, "--isa <string>: selects instruction set to use:\n"
+        "  sse: select SSE codepath\n"
+        "  sse2: select SSE2 codepath\n"
+        "  sse3: select SSE3 codepath\n"
+        "  ssse3: select SSSE3 codepath\n"
+        "  sse4.1: select SSE4.1 codepath\n"
+        "  sse4.2: select SSE4.2 codepath\n"
+        "  avx: select AVX codepath\n"
+        "  avxi: select AVXI codepath\n"
+        "  avx2: select AVX2 codepath\n"
+        "  avx512knl: select AVX512 codepath for KNL");
+    } 
   }
   
   void Application::registerOptionAlias(const std::string& name, const std::string& alternativeName) {

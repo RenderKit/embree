@@ -48,10 +48,8 @@ namespace embree
 
   TutorialApplication::TutorialApplication (const std::string& tutorialName, int features)
 
-    : tutorialName(tutorialName),
-      features(features),
-
-      rtcore(""),
+    : Application(features),
+      tutorialName(tutorialName),
 
       shader(SHADER_DEFAULT),
 
@@ -97,7 +95,7 @@ namespace embree
     registerOption("o", [this] (Ref<ParseStream> cin, const FileName& path) {
         outputImageFilename = cin->getFileName();
         interactive = false;
-      }, "-o: output image filename");
+      }, "-o <filename>: output image filename");
     
     /* camera settings */
     registerOption("vp", [this] (Ref<ParseStream> cin, const FileName& path) {
@@ -124,34 +122,17 @@ namespace embree
     registerOption("size", [this] (Ref<ParseStream> cin, const FileName& path) {
         width = cin->getInt();
         height = cin->getInt();
-      }, "--size <width> <height>: image size");
+      }, "--size <width> <height>: sets image size");
     
     registerOption("fullscreen", [this] (Ref<ParseStream> cin, const FileName& path) {
         fullscreen = true;
       }, "--fullscreen: starts in fullscreen mode");
-    
-    registerOption("rtcore", [this] (Ref<ParseStream> cin, const FileName& path) {
-        rtcore += "," + cin->getString();
-      }, "--rtcore <string>: uses <string> to configure Embree device");
-    
-    registerOption("threads", [this] (Ref<ParseStream> cin, const FileName& path) {
-        rtcore += ",threads=" + toString(cin->getInt());
-      }, "--threads <int>: number of threads to use");
-    
-    registerOption("affinity", [this] (Ref<ParseStream> cin, const FileName& path) {
-        rtcore += ",set_affinity=1";
-      }, "--affinity: affinitize threads");
-    
-    registerOption("verbose", [this] (Ref<ParseStream> cin, const FileName& path) {
-        rtcore += ",verbose=" + toString(cin->getInt());
-      }, "--verbose <int>: sets verbosity level");
-    
+        
     registerOption("benchmark", [this] (Ref<ParseStream> cin, const FileName& path) {
         skipBenchmarkFrames = cin->getInt();
         numBenchmarkFrames  = cin->getInt();
         if (cin->peek() != "" && cin->peek()[0] != '-')
-          numBenchmarkRepetitions = cin->getInt();
-          
+          numBenchmarkRepetitions = cin->getInt();          
         interactive = false;
         rtcore += ",benchmark=1";
       }, "--benchmark <N> <M> <R>: enabled benchmark mode, builds scene, skips N frames, renders M frames, and repeats this R times");
@@ -200,9 +181,9 @@ namespace embree
     }
   }
 
-  SceneLoadingTutorialApplication::SceneLoadingTutorialApplication (const std::string& tutorialName)
+  SceneLoadingTutorialApplication::SceneLoadingTutorialApplication (const std::string& tutorialName, int features)
 
-    : TutorialApplication(tutorialName),
+    : TutorialApplication(tutorialName, features),
       scene(new SceneGraph::GroupNode),
       convert_tris_to_quads(false),
       convert_bezier_to_lines(false),

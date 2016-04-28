@@ -22,7 +22,8 @@ namespace embree
 
   struct Tutorial : public SceneLoadingTutorialApplication
   {
-    Tutorial() : SceneLoadingTutorialApplication("viewer") {}
+    Tutorial()
+      : SceneLoadingTutorialApplication("viewer",FEATURE_RTCORE) {}
     
     void postParseCommandLine() 
     {

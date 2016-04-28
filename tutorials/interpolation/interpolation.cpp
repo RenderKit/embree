@@ -20,7 +20,8 @@ namespace embree
 {
   struct Tutorial : public TutorialApplication 
   {
-    Tutorial() : TutorialApplication("interpolation") 
+    Tutorial()
+      : TutorialApplication("interpolation",FEATURE_RTCORE) 
     {
       /* set default camera */
       camera.from = Vec3fa(9.0f,4.0f,1.0f);

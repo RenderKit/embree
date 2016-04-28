@@ -51,7 +51,6 @@ namespace embree
     
   public:
     RTCDevice device;
-    std::string rtcore;
     int regressionN;
     size_t numFailedTests;
 

@@ -3153,7 +3153,7 @@ namespace embree
   };
 
   VerifyApplication::VerifyApplication ()
-    : device(nullptr), rtcore(""), regressionN(200), numFailedTests(0), use_tests_to_run(false)
+    : Application(Application::FEATURE_RTCORE), device(nullptr), regressionN(200), numFailedTests(0), use_tests_to_run(false)
   {
     device = rtcNewDevice(rtcore.c_str());
 
@@ -3290,22 +3290,6 @@ namespace embree
     rtcDeleteDevice(device);
 
     /* register all command line options*/
-    registerOption("rtcore", [this] (Ref<ParseStream> cin, const FileName& path) {
-        rtcore += "," + cin->getString();
-      }, "--rtcore <string>: uses <string> to configure Embree device");
-    
-    registerOption("threads", [this] (Ref<ParseStream> cin, const FileName& path) {
-        rtcore += ",threads=" + toString(cin->getInt());
-      }, "--threads <int>: number of threads to use");
-    
-    registerOption("affinity", [this] (Ref<ParseStream> cin, const FileName& path) {
-        rtcore += ",set_affinity=1";
-      }, "--affinity: affinitize threads");
-    
-    registerOption("verbose", [this] (Ref<ParseStream> cin, const FileName& path) {
-        rtcore += ",verbose=" + toString(cin->getInt());
-      }, "--verbose <int>: sets verbosity level");
-    
     std::string run_docu = "--run regexpr: runs all tests that match the regular expression, supported tests are:";
     for (auto test : tests) run_docu += "\n  " + test->name;
     registerOption("run", [this] (Ref<ParseStream> cin, const FileName& path) {
