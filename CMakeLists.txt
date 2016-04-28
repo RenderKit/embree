@@ -30,7 +30,6 @@ CONFIGURE_FILE(
   "${PROJECT_SOURCE_DIR}/kernels/version.h.in"
   "${PROJECT_BINARY_DIR}/version.h"
 )
-INCLUDE_DIRECTORIES("${PROJECT_BINARY_DIR}")
 
 IF(COMMAND cmake_policy)
   if (POLICY CMP0003)
@@ -272,6 +271,8 @@ INCLUDE (ispc)
 # Search paths
 ##############################################################
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/include)
+INCLUDE_DIRECTORIES("${PROJECT_BINARY_DIR}")
+INCLUDE_DIRECTORIES_ISPC("${PROJECT_BINARY_DIR}")
 
 ##############################################################
 # Output paths
