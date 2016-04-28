@@ -3153,7 +3153,7 @@ namespace embree
   };
 
   VerifyApplication::VerifyApplication ()
-    : device(nullptr), rtcore(""), regressionN(200), numFailedTests(0)
+    : device(nullptr), rtcore(""), regressionN(200), numFailedTests(0), use_tests_to_run(false)
   {
     device = rtcNewDevice(rtcore.c_str());
 
