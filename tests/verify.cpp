@@ -1796,19 +1796,20 @@ namespace embree
   struct WatertightTest : public VerifyApplication::Test
   {
     ALIGNED_STRUCT;
+    RTCSceneFlags sflags;
     IntersectMode imode;
     std::string model;
     Vec3fa pos;
     static const size_t N = 10;
     static const size_t maxStreamSize = 100;
     
-    WatertightTest (std::string name, IntersectMode imode, std::string model, const Vec3fa& pos)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), imode(imode), model(model), pos(pos) {}
+    WatertightTest (std::string name, RTCSceneFlags sflags, IntersectMode imode, std::string model, const Vec3fa& pos)
+      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), imode(imode), model(model), pos(pos) {}
     
     bool run(VerifyApplication* state)
     {
       ClearBuffers clear_before_return;
-      RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_STATIC | RTC_SCENE_ROBUST,to_aflags(imode));
+      RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,to_aflags(imode));
       if      (model == "sphere") addSphere(state->device,scene,RTC_GEOMETRY_STATIC,pos,2.0f,500);
       else if (model == "cube"  ) addCube  (state->device,scene,RTC_GEOMETRY_STATIC,pos,2.0f);
       else if (model == "plane" ) addPlane(state->device,scene,RTC_GEOMETRY_STATIC,500,Vec3fa(pos.x,-6.0f,-6.0f),Vec3fa(0.0f,12.0f,0.0f),Vec3fa(0.0f,0.0f,12.0f));
@@ -3244,10 +3245,14 @@ namespace embree
     addTest(new PacketWriteTest("packet_write_test"));
 
     const Vec3fa watertight_pos = Vec3fa(148376.0f,1234.0f,-223423.0f);
-    for (auto imode : intersectModes)
-      addTest(new WatertightTest("watertight_sphere"+to_string(imode),imode,"sphere",watertight_pos));
-    for (auto imode : intersectModes)
-      addTest(new WatertightTest("watertight_plane"+to_string(imode),imode,"plane",Vec3fa(100000)));
+    for (auto imode : intersectModes) {
+      for (std::string model : {"sphere", "plane"}) {
+        addTest(new WatertightTest("watertight_static_"         +model+"_"+to_string(imode),RTC_SCENE_STATIC  | RTC_SCENE_ROBUST                    ,imode,model,watertight_pos));
+        addTest(new WatertightTest("watertight_dynamic_"        +model+"_"+to_string(imode),RTC_SCENE_DYNAMIC | RTC_SCENE_ROBUST                    ,imode,model,watertight_pos));
+        addTest(new WatertightTest("watertight_static_compact_" +model+"_"+to_string(imode),RTC_SCENE_STATIC  | RTC_SCENE_ROBUST | RTC_SCENE_COMPACT,imode,model,watertight_pos));
+        addTest(new WatertightTest("watertight_dynamic_compact_"+model+"_"+to_string(imode),RTC_SCENE_DYNAMIC | RTC_SCENE_ROBUST | RTC_SCENE_COMPACT,imode,model,watertight_pos));
+      }
+    }
 
 #if defined(RTCORE_IGNORE_INVALID_RAYS)
     addTest(new NaNTest("nan_test_1",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,1));
@@ -3372,7 +3377,7 @@ namespace embree
   void VerifyApplication::runTest(Ref<Test> test)
   {
     bool ok = true;
-    std::cout << std::setw(30) << test->name << " ..." << std::flush;
+    std::cout << std::setw(50) << test->name << " ..." << std::flush;
     try {
       ok &= test->run(this);
       AssertNoError(device);
