@@ -240,6 +240,7 @@ namespace embree
           return org_rdir.w;
         }
 
+#if defined(__AVX512F__)
         __forceinline vbool<K> intersectNode(const vfloat<K> &bminmaxX,
                                              const vfloat<K> &bminmaxY,
                                              const vfloat<K> &bminmaxZ,
@@ -254,6 +255,7 @@ namespace embree
           dist   = select(vmask,min(tNear,dist),dist);
           return vmask;       
         }
+#endif
 
 
         __forceinline vbool<K> intersectNode(const vfloat<K> &bminX,
