@@ -426,7 +426,8 @@ namespace embree
    
     /* fast codepath for single rays */
     if (likely(M == 1)) {
-      scene->intersect(*rays,context);
+      if (likely(rays->tnear <= rays->tfar)) 
+        scene->intersect(*rays,context);
     } 
 
     /* codepath for streams */
@@ -454,7 +455,8 @@ namespace embree
     {
       /* fast code path for streams of size 1 */
       if (likely(M == 1)) {
-        scene->intersect(*(RTCRay*)rays,context);
+        if (likely(((RTCRay*)rays)->tnear <= ((RTCRay*)rays)->tfar))
+          scene->intersect(*(RTCRay*)rays,context);
       } 
       /* normal codepath for single ray streams */
       else {
@@ -645,7 +647,8 @@ namespace embree
 
     /* fast codepath for streams of size 1 */
     if (likely(M == 1)) {
-      scene->occluded (*rays,context);
+      if (likely(rays->tnear <= rays->tfar)) 
+        scene->occluded (*rays,context);
     } 
     /* codepath for normal streams */
     else {
@@ -673,7 +676,8 @@ namespace embree
     {
       /* fast path for streams of size 1 */
       if (likely(M == 1)) {
-        scene->occluded (*(RTCRay*)rays,context);
+        if (likely(((RTCRay*)rays)->tnear <= ((RTCRay*)rays)->tfar))
+          scene->occluded (*(RTCRay*)rays,context);
       } 
       /* codepath for normal ray streams */
       else {
