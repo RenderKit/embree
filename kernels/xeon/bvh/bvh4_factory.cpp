@@ -129,6 +129,7 @@ namespace embree
   DECLARE_SYMBOL2(Accel::IntersectorN, BVH4Triangle4StreamIntersectorMoellerNoFilter);
   //DECLARE_SYMBOL2(Accel::IntersectorN,BVH4XfmTriangle4StreamIntersectorMoeller);
   DECLARE_SYMBOL2(Accel::IntersectorN,BVH4Triangle4vStreamIntersectorPluecker);
+
   DECLARE_SYMBOL2(Accel::IntersectorN,BVH4Triangle4iStreamIntersectorPluecker);
   //DECLARE_SYMBOL2(Accel::IntersectorN,BVH4Triangle4vMBStreamIntersectorMoeller);
   //DECLARE_SYMBOL2(Accel::IntersectorN,BVH4Subdivpatch1CachedStreamIntersector);
@@ -346,8 +347,13 @@ namespace embree
     //IF_ENABLED_HAIR(SELECT_SYMBOL_DEFAULT_AVX_AVX2      (features,BVH4Bezier1iMBIntersector1_OBB));
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_SSE42_AVX_AVX2_AVX512KNL(features,BVH4Triangle4StreamIntersectorMoeller));
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_SSE42_AVX_AVX2_AVX512KNL(features,BVH4Triangle4StreamIntersectorMoellerNoFilter));
+
+    IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_SSE42_AVX_AVX2_AVX512KNL(features,BVH4Triangle4vStreamIntersectorPluecker));
+
     //IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL(features,BVH4XfmTriangle4Intersector1Moeller));
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_SSE42_AVX     (features,BVH4Triangle4vIntersector1Pluecker));
+;
+
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_SSE42_AVX     (features,BVH4Triangle4iIntersector1Pluecker));
     //IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4Triangle4vMBIntersector1Moeller));
     //IF_ENABLED_SUBDIV(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4Subdivpatch1CachedIntersector1));
