@@ -1690,7 +1690,7 @@ namespace embree
       invalid_ray = invalid_ray;
       
       size_t numFailures = 0;
-      for (size_t i=0; i<N; i++) 
+      for (size_t i=0; i<size_t(N*state->intensity); i++) 
       {
         IntersectVariant ivariant = (IntersectVariant) (i%2);
         for (size_t M=1; M<maxStreamSize; M++)
@@ -1749,7 +1749,7 @@ namespace embree
       
       size_t numTests = 0;
       size_t numFailures = 0;
-      for (size_t i=0; i<N; i++) 
+      for (size_t i=0; i<size_t(N*state->intensity); i++) 
       {
         IntersectVariant ivariant = (IntersectVariant) (i%2);
         for (size_t M=1; M<maxStreamSize; M++)
@@ -2096,7 +2096,8 @@ namespace embree
       Sphere spheres[128];
       memset(spheres,0,sizeof(spheres));
       
-      for (size_t i=0; i<50; i++) {
+      for (size_t i=0; i<size_t(50*state->intensity); i++) 
+      {
         for (size_t j=0; j<10; j++) {
           int index = random<int>()%128;
           Vec3fa pos = 100.0f*Vec3fa(drand48(),drand48(),drand48());
@@ -2948,7 +2949,7 @@ namespace embree
     {
       errorCounter = 0;
       size_t sceneIndex = 0;
-      while (sceneIndex < state->regressionN/5) 
+      while (sceneIndex < size_t(30*state->intensity)) 
       {
         if (mode)
         {
@@ -3018,7 +3019,7 @@ namespace embree
       rtcDeviceSetMemoryMonitorFunction(state->device,monitorMemoryFunction);
       
       size_t sceneIndex = 0;
-      while (sceneIndex < state->regressionN/5) 
+      while (sceneIndex < size_t(30*state->intensity)) 
       {
         ClearBuffers clear_before_return;
         errorCounter = 0;
@@ -3061,7 +3062,7 @@ namespace embree
     
     bool run(VerifyApplication* state)
     {
-      for (size_t i=0; i<5*state->regressionN; i++) 
+      for (size_t i=0; i<size_t(1000*state->intensity); i++) 
       {
         ClearBuffers clear_before_return;
         srand(i*23565);
@@ -3092,7 +3093,7 @@ namespace embree
   };
 
   VerifyApplication::VerifyApplication ()
-    : Application(Application::FEATURE_RTCORE), device(nullptr), regressionN(200), numFailedTests(0), user_specified_tests(false), use_groups(true)
+    : Application(Application::FEATURE_RTCORE), device(nullptr), intensity(1.0f), numFailedTests(0), user_specified_tests(false), use_groups(true)
   {
     device = rtcNewDevice(rtcore.c_str());
 
@@ -3249,9 +3250,9 @@ namespace embree
         use_groups = false;
       }, "--no-groups: ignore test groups");
 
-    registerOption("regressions", [this] (Ref<ParseStream> cin, const FileName& path) {
-        regressionN = cin->getInt();
-      }, "--regressions <int>: number of regressions to perform");
+    registerOption("intensity", [this] (Ref<ParseStream> cin, const FileName& path) {
+        intensity = cin->getFloat();
+      }, "--intensity <float>: intensity of testing to perform");
   }
 
   int VerifyApplication::main(int argc, char** argv) try

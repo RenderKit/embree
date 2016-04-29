@@ -55,7 +55,7 @@ namespace embree
     
   public:
     RTCDevice device;
-    int regressionN;
+    float intensity;
     size_t numFailedTests;
 
   public:
