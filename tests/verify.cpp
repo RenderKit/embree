@@ -1652,92 +1652,64 @@ namespace embree
 
   struct PacketWriteTest : public VerifyApplication::Test
   {
-    PacketWriteTest (std::string name)
-      : VerifyApplication::Test(name,VerifyApplication::PASS) {}
-   
-    bool rtcore_packet_write_test(VerifyApplication* state, RTCSceneFlags sflags, RTCGeometryFlags gflags, int type)
-    {
-      bool passed = true;
-      RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,aflags);
-      
-      switch (type) {
-      case 0: addSphere(state->device,scene,gflags,Vec3fa(-1,0,-1),1.0f,50,-1,0.0f); break;
-      case 1: addSphere(state->device,scene,gflags,Vec3fa(-1,0,-1),1.0f,50,-1,0.1f); break;
-      case 2: addHair  (state->device,scene,gflags,Vec3fa(-1,0,-1),1.0f,1.0f,1,0.0f); break;
-      case 3: addHair  (state->device,scene,gflags,Vec3fa(-1,0,-1),1.0f,1.0f,1,0.1f); break; 
-      }
-      rtcCommit (scene);
-      
-      for (size_t i=0; i<4; i++) 
-      {
-        RTCRay ray = makeRay(Vec3fa(-1,10,-1),Vec3fa(0,-1,0));
-        
-#if defined(RTCORE_RAY_PACKETS)
-        if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT4))
-        {
-          RTCRay4 ray4; memset(&ray4,-1,sizeof(RTCRay4));
-          setRay(ray4,i,ray);
-          __aligned(16) int valid4[4] = { 0,0,0,0 };
-          valid4[i] = -1;
-          rtcOccluded4(valid4,scene,ray4);
-          rtcIntersect4(valid4,scene,ray4);
-          
-          for (int j=0; j<sizeof(RTCRay4)/4; j++) {
-            if ((j%4) == i) continue;
-            passed &= ((int*)&ray4)[j] == -1;
-          }
-        }
-       
-        if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT8))
-        {
-          RTCRay8 ray8; memset(&ray8,-1,sizeof(RTCRay8));
-          setRay(ray8,i,ray);
-          __aligned(32) int valid8[8] = { 0,0,0,0,0,0,0,0 };
-          valid8[i] = -1;
-          rtcOccluded8(valid8,scene,ray8);
-          rtcIntersect8(valid8,scene,ray8);
-          
-          for (int j=0; j<sizeof(RTCRay8)/4; j++) {
-            if ((j%8) == i) continue;
-            passed &= ((int*)&ray8)[j] == -1;
-          }
-        }
-        
-        if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT16))
-        {
-          __aligned(64) RTCRay16 ray16; memset(&ray16,-1,sizeof(RTCRay16));
-          setRay(ray16,i,ray);
-          __aligned(64) int valid16[16] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
-          valid16[i] = -1;
-          rtcOccluded16(valid16,scene,ray16);
-          rtcIntersect16(valid16,scene,ray16);
-          
-          for (int j=0; j<sizeof(RTCRay16)/4; j++) {
-            if ((j%16) == i) continue;
-            passed &= ((int*)&ray16)[j] == -1;
-          }
-        }
-#endif
-      }
-      return passed;
-    }
+    RTCSceneFlags sflags;
+    RTCGeometryFlags gflags;
+    IntersectMode imode;
+    static const size_t N = 10;
+    static const size_t maxStreamSize = 100;
     
-    bool run(VerifyApplication* state)
+    PacketWriteTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode)
+      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), gflags(gflags), imode(imode) {}
+   
+     bool run(VerifyApplication* state)
     {
-      bool passed = true;
-      for (int i=0; i<numSceneFlags; i++) 
+      Vec3fa pos = zero;
+      ClearBuffers clear_before_return;
+      RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,to_aflags(imode));
+      addSphere(state->device,scene,RTC_GEOMETRY_STATIC,pos,2.0f,500); // FIXME: use different geometries too
+      rtcCommit (scene);
+      AssertNoError(state->device);
+
+      RTCRay invalid_ray;
+      memset(&invalid_ray,-1,sizeof(RTCRay));
+      invalid_ray.tnear = pos_inf;
+      invalid_ray.tfar  = neg_inf;
+      invalid_ray = invalid_ray;
+      
+      size_t numFailures = 0;
+      for (size_t i=0; i<N; i++) 
       {
-        RTCSceneFlags flag = getSceneFlag(i);
-        bool ok = true;
-        ok &= rtcore_packet_write_test(state,flag,RTC_GEOMETRY_STATIC,0);
-        ok &= rtcore_packet_write_test(state,flag,RTC_GEOMETRY_STATIC,1);
-        ok &= rtcore_packet_write_test(state,flag,RTC_GEOMETRY_STATIC,2);
-        ok &= rtcore_packet_write_test(state,flag,RTC_GEOMETRY_STATIC,3);
-        if (ok) printf(GREEN("+")); else printf(RED("-"));
-        passed &= ok;
-        fflush(stdout);
+        IntersectVariant ivariant = (IntersectVariant) (i%2);
+        for (size_t M=1; M<maxStreamSize; M++)
+        {
+          bool valid[maxStreamSize];
+          __aligned(16) RTCRay rays[maxStreamSize];
+          for (size_t j=0; j<M; j++) 
+          {
+            if (rand()%2) {
+              valid[j] = true;
+              Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+              Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+              rays[j] = makeRay(pos+org,dir); 
+            } else {
+              valid[j] = false;
+              rays[j] = invalid_ray;
+            }
+          }
+          IntersectWithMode(imode,ivariant,scene,rays,M);
+          for (size_t j=0; j<M; j++) {
+            if (valid[j]) continue;
+            for (int k=0; k<sizeof(RTCRay)/4-3; k++) { // we do not test the 3 alignment words at end of ray
+              numFailures += ((int*)&rays[j])[k] != ((int*)&invalid_ray)[k];
+            }
+          }
+        }
       }
-      return passed;
+      AssertNoError(state->device);
+      scene = nullptr;
+      AssertNoError(state->device);
+      fflush(stdout);
+      return numFailures == 0;
     }
   };
 
@@ -1932,25 +1904,25 @@ namespace embree
       IntersectWithMode(imode, VARIANT_INTERSECT,scene,rays,numRays);
 
       double c4 = getSeconds();
-      for (size_t i=0; i<numRays; i++) {
+      /*for (size_t i=0; i<numRays; i++) {
         Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
         Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
         rays[i] = makeRay(org,dir,-0.0f,inf); 
       }
       IntersectWithMode(imode, VARIANT_OCCLUDED ,scene,rays,numRays);
-      IntersectWithMode(imode, VARIANT_INTERSECT,scene,rays,numRays);
+      IntersectWithMode(imode, VARIANT_INTERSECT,scene,rays,numRays);*/ // FIXME: enable this test again
 
       double c5 = getSeconds();      
       double d1 = c1-c0;
       double d2 = c2-c1;
       double d3 = c3-c2;
       double d4 = c4-c3;
-      double d5 = c5-c4;
+      //double d5 = c5-c4;
       scene = nullptr;
       AssertNoError(state->device);
       
-      bool ok = (d2 < 2.5*d1) && (d3 < 2.5*d1) && (d4 < 2.5*d1) && (d5 < 2.5*d1);
-      float f = max(d2/d1,d3/d1,d4/d1,d5/d1);
+      bool ok = (d2 < 2.5*d1) && (d3 < 2.5*d1) && (d4 < 2.5*d1);// && (d5 < 2.5*d1);
+      float f = max(d2/d1,d3/d1,d4/d1);//,d5/d1);
       printf(" (%3.2fx)",f);
       fflush(stdout);
       return ok;
@@ -3215,7 +3187,9 @@ namespace embree
     addTest(new BackfaceCullingTest("backface_culling"));
 #endif
 
-    addTest(new PacketWriteTest("packet_write_test"));
+    for (auto sflags : sceneFlags) 
+        for (auto imode : intersectModes) 
+          addTest(new PacketWriteTest("packet_write_test_"+to_string(sflags)+"_"+to_string(imode),sflags,RTC_GEOMETRY_STATIC,imode));
     
     const Vec3fa watertight_pos = Vec3fa(148376.0f,1234.0f,-223423.0f);
     for (auto sflags : sceneFlagsRobust) 
