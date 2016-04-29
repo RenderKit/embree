@@ -701,13 +701,15 @@ namespace embree
 
   struct NewDeleteGeometryTest : public VerifyApplication::Test
   {
-    NewDeleteGeometryTest (std::string name)
-      : VerifyApplication::Test(name,VerifyApplication::PASS) {}
+    RTCSceneFlags sflags;
+
+    NewDeleteGeometryTest (std::string name,  RTCSceneFlags sflags)
+      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags) {}
     
     bool run(VerifyApplication* state)
     {
       ClearBuffers clear_before_return;
-      RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_DYNAMIC,aflags_all);
+      RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,aflags_all);
       AssertNoError(state->device);
       int geom[128];
       for (size_t i=0; i<128; i++) geom[i] = -1;
@@ -2758,7 +2760,10 @@ namespace embree
         addTest(new BuildTest("build_"+to_string(sflags)+"_"+to_string(imode),sflags,RTC_GEOMETRY_STATIC,imode));
     endTestGroup();
 
-    addTest(new NewDeleteGeometryTest("new_delete_geometry"));
+    beginTestGroup("new_delete_geometry");
+    for (auto sflags : sceneFlagsDynamic) 
+      addTest(new NewDeleteGeometryTest("new_delete_geometry_"+to_string(sflags),sflags));
+    endTestGroup();
 
     addTest(new EnableDisableTest("enable_disable"));
 
