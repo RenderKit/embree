@@ -235,8 +235,8 @@ namespace embree
         size_t p01 = (y+0)*(num+1)+(x+1);
         size_t p10 = (y+1)*(num+1)+(x+0);
         size_t p11 = (y+1)*(num+1)+(x+1);
-        triangles[i+0].v0 = p01; triangles[i+0].v1 = p00; triangles[i+0].v2 = p11;
-        triangles[i+1].v0 = p10; triangles[i+1].v1 = p11; triangles[i+1].v2 = p00;
+        triangles[i+0].v0 = p00; triangles[i+0].v1 = p01; triangles[i+0].v2 = p11;
+        triangles[i+1].v0 = p00; triangles[i+1].v1 = p11; triangles[i+1].v2 = p10;
       }
     }
     rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
@@ -1729,7 +1729,7 @@ namespace embree
       ClearBuffers clear_before_return;
       RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,to_aflags(imode));
       if      (model == "sphere") addSphere(state->device,scene,RTC_GEOMETRY_STATIC,pos,2.0f,500);
-      else if (model == "plane" ) addPlane(state->device,scene,RTC_GEOMETRY_STATIC,500,Vec3fa(pos.x,-6.0f,-6.0f),Vec3fa(0.0f,12.0f,0.0f),Vec3fa(0.0f,0.0f,12.0f));
+      else if (model == "plane" ) addPlane(state->device,scene,RTC_GEOMETRY_STATIC,500,Vec3fa(pos.x,-6.0f,-6.0f),Vec3fa(0.0f,0.0f,12.0f),Vec3fa(0.0f,12.0f,0.0f));
       bool plane = model == "plane";
       rtcCommit (scene);
       AssertNoError(state->device);
