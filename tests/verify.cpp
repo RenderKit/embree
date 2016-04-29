@@ -1650,7 +1650,7 @@ namespace embree
     }
   };
 
-  struct PacketWriteTest : public VerifyApplication::Test
+  struct InactiveRaysTest : public VerifyApplication::Test
   {
     RTCSceneFlags sflags;
     RTCGeometryFlags gflags;
@@ -1658,7 +1658,7 @@ namespace embree
     static const size_t N = 10;
     static const size_t maxStreamSize = 100;
     
-    PacketWriteTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode)
+    InactiveRaysTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode)
       : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), gflags(gflags), imode(imode) {}
    
      bool run(VerifyApplication* state)
@@ -3187,7 +3187,7 @@ namespace embree
 
     for (auto sflags : sceneFlags) 
         for (auto imode : intersectModes) 
-          addTest(new PacketWriteTest("packet_write_test_"+to_string(sflags)+"_"+to_string(imode),sflags,RTC_GEOMETRY_STATIC,imode));
+          addTest(new InactiveRaysTest("inactive_rays_"+to_string(sflags)+"_"+to_string(imode),sflags,RTC_GEOMETRY_STATIC,imode));
     
     const Vec3fa watertight_pos = Vec3fa(148376.0f,1234.0f,-223423.0f);
     for (auto sflags : sceneFlagsRobust) 
