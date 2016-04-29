@@ -3133,10 +3133,6 @@ namespace embree
     addTest(new UnmappedBeforeCommitTest("unmapped_before_commit"));
     addTest(new GetBoundsTest("get_bounds"));
 
-#if defined(RTCORE_BUFFER_STRIDE)
-    addTest(new BufferStrideTest("buffer_stride"));
-#endif
-
     addTest(new DynamicEnableDisableTest("dynamic_enable_disable"));
     addTest(new GetUserDataTest("get_user_data"));
 
@@ -3169,19 +3165,22 @@ namespace embree
 
     addTest(new BuildTest("build"));
 
-#if defined(RTCORE_RAY_MASK)
-    addTest(new RayMasksTest("ray_masks"));
-#endif
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_BUFFER_STRIDE)) {
+      addTest(new BufferStrideTest("buffer_stride"));
+    }
 
-    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECTION_FILTER))
-    {
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_RAY_MASK)) {
+      addTest(new RayMasksTest("ray_masks"));
+    }
+
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECTION_FILTER)) {
       addTest(new IntersectionFilterTest("intersection_filter_tris",false));
       addTest(new IntersectionFilterTest("intersection_filter_subdiv",true));
     }
 
-#if defined(RTCORE_BACKFACE_CULLING)
-    addTest(new BackfaceCullingTest("backface_culling"));
-#endif
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_BACKFACE_CULLING)) {
+      addTest(new BackfaceCullingTest("backface_culling"));
+    }
 
     for (auto sflags : sceneFlags) 
         for (auto imode : intersectModes) 
