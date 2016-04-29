@@ -2928,6 +2928,11 @@ namespace embree
     std::string run_docu = "--run <regexpr>: Runs all tests whose name match the regular expression. Supported tests are:";
     for (auto test : tests) run_docu += "\n  " + test->name;
     registerOption("run", [this] (Ref<ParseStream> cin, const FileName& path) {
+
+        if (!user_specified_tests) 
+          for (auto test : tests) 
+            test->enabled = false;
+
         user_specified_tests = true;
         std::smatch match;
         std::regex regexpr(cin->getString());
@@ -2937,6 +2942,22 @@ namespace embree
           }
         }
       }, run_docu);
+
+    registerOption("skip", [this] (Ref<ParseStream> cin, const FileName& path) {
+
+        if (!user_specified_tests) 
+          for (auto test : tests) 
+            test->enabled = true;
+
+        user_specified_tests = true;
+        std::smatch match;
+        std::regex regexpr(cin->getString());
+        for (auto test : tests) {
+          if (std::regex_match(test->name, match, regexpr)) {
+            test->enabled = false;
+          }
+        }
+      }, "--skip <regexpr>: Skips all tests whose name matches the regular expression.");
     
     registerOption("no-groups", [this] (Ref<ParseStream> cin, const FileName& path) {
         use_groups = false;
