@@ -2011,14 +2011,18 @@ namespace embree
 
   struct BackfaceCullingTest : public VerifyApplication::Test
   {
-    BackfaceCullingTest (std::string name)
-      : VerifyApplication::Test(name,VerifyApplication::PASS) {}
+    RTCSceneFlags sflags;
+    RTCGeometryFlags gflags;
+    IntersectMode imode;
+
+    BackfaceCullingTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode)
+      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), gflags(gflags), imode(imode) {}
     
-    bool rtcore_backface_culling (VerifyApplication* state, RTCSceneFlags sflags, RTCGeometryFlags gflags)
+    bool run(VerifyApplication* state)
     {
       /* create triangle that is front facing for a right handed 
          coordinate system if looking along the z direction */
-      RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,aflags);
+      RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,to_aflags(imode));
       unsigned mesh = rtcNewTriangleMesh (scene, gflags, 1, 3);
       Vertex3fa*   vertices  = (Vertex3fa*  ) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
       Triangle* triangles = (Triangle*) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
@@ -2029,53 +2033,28 @@ namespace embree
       rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
       rtcUnmapBuffer(scene,mesh,RTC_INDEX_BUFFER);
       rtcCommit (scene);
-      
-      bool passed = true;
-      RTCRay ray;
+      AssertNoError(state->device);
+
+      const size_t numRays = 1000;
+      RTCRay rays[numRays];
       RTCRay backfacing = makeRay(Vec3fa(0.25f,0.25f,1),Vec3fa(0,0,-1)); 
       RTCRay frontfacing = makeRay(Vec3fa(0.25f,0.25f,-1),Vec3fa(0,0,1)); 
-      
-      ray = frontfacing; rtcOccludedN(scene,ray,1);  if (ray.geomID != 0) passed = false;
-      ray = frontfacing; rtcIntersectN(scene,ray,1); if (ray.geomID != 0) passed = false;
-      ray = backfacing;  rtcOccludedN(scene,ray,1);  if (ray.geomID != -1) passed = false;
-      ray = backfacing;  rtcIntersectN(scene,ray,1); if (ray.geomID != -1) passed = false;
 
-#if defined(RTCORE_RAY_PACKETS)
-      if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT4))
-      {
-        ray = frontfacing; rtcOccludedN(scene,ray,4);  if (ray.geomID != 0) passed = false;
-        ray = frontfacing; rtcIntersectN(scene,ray,4); if (ray.geomID != 0) passed = false;
-        ray = backfacing;  rtcOccludedN(scene,ray,4);  if (ray.geomID != -1) passed = false;
-        ray = backfacing;  rtcIntersectN(scene,ray,4); if (ray.geomID != -1) passed = false;
-      }
-      if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT8))
-      {
-        ray = frontfacing; rtcOccludedN(scene,ray,8);  if (ray.geomID != 0) passed = false;
-        ray = frontfacing; rtcIntersectN(scene,ray,8); if (ray.geomID != 0) passed = false;
-        ray = backfacing;  rtcOccludedN(scene,ray,8);  if (ray.geomID != -1) passed = false;
-        ray = backfacing;  rtcIntersectN(scene,ray,8); if (ray.geomID != -1) passed = false;
-      }
-      if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT16))
-      {
-        ray = frontfacing; rtcOccludedN(scene,ray,16); if (ray.geomID != 0) passed = false;
-        ray = frontfacing; rtcIntersectN(scene,ray,16);if (ray.geomID != 0) passed = false;
-        ray = backfacing;  rtcOccludedN(scene,ray,16); if (ray.geomID != -1) passed = false;
-        ray = backfacing;  rtcIntersectN(scene,ray,16);if (ray.geomID != -1) passed = false;
-      }
-#endif
-      return passed;
-    }
-    
-    bool run(VerifyApplication* state)
-    {
       bool passed = true;
-      for (int i=0; i<numSceneFlags; i++) 
+      for (auto ivariant : { VARIANT_INTERSECT, VARIANT_OCCLUDED })
       {
-        RTCSceneFlags flag = getSceneFlag(i);
-        bool ok0 = rtcore_backface_culling(state,flag,RTC_GEOMETRY_STATIC);
-        if (ok0) printf(GREEN("+")); else printf(RED("-"));
-        passed &= ok0;
-        fflush(stdout);
+        for (size_t i=0; i<numRays; i++) {
+          if (i%2) rays[i] = backfacing;
+          else     rays[i] = frontfacing;
+        }
+
+        IntersectWithMode(imode,ivariant,scene,rays,numRays);
+        
+        for (size_t i=0; i<numRays; i++) 
+        {
+          if (i%2) passed &= rays[i].geomID == -1;
+          else     passed &= rays[i].geomID == 0;
+        }
       }
       return passed;
     }
@@ -3183,8 +3162,13 @@ namespace embree
       addTest(new IntersectionFilterTest("intersection_filter_subdiv",true));
     }
 
-    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_BACKFACE_CULLING)) {
-      addTest(new BackfaceCullingTest("backface_culling"));
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_BACKFACE_CULLING)) 
+    {
+      beginTestGroup("backface_culling");
+      for (auto sflags : sceneFlags) 
+        for (auto imode : intersectModes) 
+          addTest(new BackfaceCullingTest("backface_culling_"+to_string(sflags)+"_"+to_string(imode),sflags,RTC_GEOMETRY_STATIC,imode));
+      endTestGroup();
     }
 
     beginTestGroup("inactive_rays");
