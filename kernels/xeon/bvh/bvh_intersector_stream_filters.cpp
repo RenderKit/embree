@@ -47,7 +47,9 @@ namespace embree
           if (unlikely(!ray.valid())) {  inputRayID++; continue; }
 #endif
 
+
           const unsigned int octantID = movemask(vfloat4(ray.dir) < 0.0f) & 0x7;
+
           assert(octantID < 8);
           octants[octantID][rays_in_octant[octantID]++] = &ray;
           inputRayID++;
@@ -70,8 +72,10 @@ namespace embree
         if (unlikely(cur_octant == -1))
           break;
 
+        
         Ray** rays = &octants[cur_octant][0];
         const size_t numOctantRays = rays_in_octant[cur_octant];
+
         /* special codepath for very small number of rays per octant */
         if (numOctantRays == 1)
         {

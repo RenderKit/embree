@@ -279,6 +279,7 @@ namespace embree
         const vfloat<K> tFarX  = msub(bmaxX, rdir.x, org_rdir.x);
         const vfloat<K> tFarY  = msub(bmaxY, rdir.y, org_rdir.y);
         const vfloat<K> tFarZ  = msub(bmaxZ, rdir.z, org_rdir.z);
+
 #if defined(__AVX2__)
         const vfloat<K> tNear  = maxi(maxi(tNearX,tNearY),maxi(tNearZ,vfloat<K>(rdir.w)));
         const vfloat<K> tFar   = mini(mini(tFarX,tFarY),mini(tFarZ,vfloat<K>(org_rdir.w)));
@@ -286,6 +287,7 @@ namespace embree
         const vfloat<K> tNear  = max(tNearX,tNearY,tNearZ,vfloat<K>(rdir.w));
         const vfloat<K> tFar   = min(tFarX ,tFarY ,tFarZ ,vfloat<K>(org_rdir.w));
 #endif
+
 
 #if defined(__AVX512F__)
         const unsigned int maskN = ((unsigned int)1 << N)-1;

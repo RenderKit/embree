@@ -70,6 +70,7 @@ namespace embree
         /* inactive rays should have been filtered out before */
         size_t m_active = numOctantRays == 8*sizeof(size_t) ? (size_t)-1 : (((size_t)1 << numOctantRays))-1;
 
+        /* todo: remove as stream filtering takes care of filtering out invalid rays */
         /* filter out invalid rays */
 #if defined(RTCORE_IGNORE_INVALID_RAYS)
         for (size_t i=0; i<numOctantRays; i++) {
@@ -343,6 +344,7 @@ namespace embree
         size_t m_active = numOctantRays ==  8*sizeof(size_t) ? (size_t)-1 : (((size_t)1 << numOctantRays))-1;
 
         /* filter out invalid rays */
+        /* todo: remove as stream filtering takes care of filtering out invalid rays */
 #if defined(RTCORE_IGNORE_INVALID_RAYS)
         for (size_t i=0; i<numOctantRays; i++) {
           if (!rays[i]->valid()) m_active ^= ((size_t)1)<<i;
