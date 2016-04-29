@@ -180,7 +180,7 @@ namespace embree
 
     };
 
-    template<int K, bool robust>
+    template<int N, int K, bool robust>
     class __aligned(32) RayContext 
     {
     public:
@@ -251,8 +251,8 @@ namespace embree
                                                  vfloat<K> &dist) const
       {
         const vfloat<K> tNearFarX = (bminmaxX - org.x) * rdir.x;
-        const vfloat<K> tNearFarY = (bminmaxX - org.y) * rdir.y;
-        const vfloat<K> tNearFarZ = (bminmaxX - org.z) * rdir.z;
+        const vfloat<K> tNearFarY = (bminmaxY - org.y) * rdir.y;
+        const vfloat<K> tNearFarZ = (bminmaxZ - org.z) * rdir.z;
         const vfloat<K> tNear     = max(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(rdir.w));
         const vfloat<K> tFar      = min(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(org_rdir.w));
         const float round_down    = 1.0f-2.0f*float(ulp); // FIXME: use per instruction rounding for AVX512
@@ -286,7 +286,13 @@ namespace embree
         const vfloat<K> tNear  = max(tNearX,tNearY,tNearZ,vfloat<K>(rdir.w));
         const vfloat<K> tFar   = min(tFarX ,tFarY ,tFarZ ,vfloat<K>(org_rdir.w));
 #endif
+
+#if defined(__AVX512F__)
+        const unsigned int maskN = ((unsigned int)1 << N)-1;
+        const vbool<K> vmask   = le(maskN,tNear,tFar);        
+#else
         const vbool<K> vmask   = tNear <= tFar;
+#endif
         if (dist_update) dist  = select(vmask,min(tNear,dist),dist);
         return vmask;    
       }
@@ -316,7 +322,13 @@ namespace embree
         const vfloat<K> tNear  = max(tNearX,tNearY,tNearZ,vfloat<K>(rdir.w));
         const vfloat<K> tFar   = min(tFarX ,tFarY ,tFarZ ,vfloat<K>(org_rdir.w));
 #endif
+
+#if defined(__AVX512F__)
+        const unsigned int maskN = ((unsigned int)1 << N)-1;
+        const vbool<K> vmask   = le(maskN,round_down*tNear,round_up*tFar);        
+#else
         const vbool<K> vmask   = round_down*tNear <= round_up*tFar;
+#endif
         if (dist_update) dist  = select(vmask,min(tNear,dist),dist);
         return vmask;    
       }
@@ -333,7 +345,7 @@ namespace embree
       typedef typename PrimitiveIntersector::Precalculations Precalculations;
       typedef typename PrimitiveIntersector::Primitive Primitive;
       typedef BVHN<N> BVH;
-      typedef RayContext<K,robust> RContext;
+      typedef RayContext<N,K,robust> RContext;
       typedef typename BVH::NodeRef NodeRef;
       typedef typename BVH::BaseNode BaseNode;
       typedef typename BVH::Node Node;

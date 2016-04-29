@@ -38,7 +38,6 @@
 #include "../../common/scene.h"
 
 #define DBG(x) 
-//PRINT(x)
 
 namespace embree
 {
@@ -154,7 +153,7 @@ namespace embree
             //STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);
             assert(m_trav_active);
 
-#if defined(__AVX512F__)
+#if defined(__AVX512F__) 
             const vlong<K/2> one((size_t)1);
 
             const vfloat<K> bminmaxX = permute(vfloat<K>::load((float*)&node->lower_x),pc.permX);
@@ -170,14 +169,12 @@ namespace embree
               STAT3(normal.trav_nodes,1,1,1);                          
               const size_t i = __bscf(bits);
               const RContext &ray = ray_ctx[i];
-              const vfloat<K> tNearFarX = msub(bminmaxX, ray.rdir.x, ray.org_rdir.x);
-              const vfloat<K> tNearFarY = msub(bminmaxY, ray.rdir.y, ray.org_rdir.y);
-              const vfloat<K> tNearFarZ = msub(bminmaxZ, ray.rdir.z, ray.org_rdir.z);
-              const vfloat<K> tNear     = max(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(ray.rdir.w));
-              const vfloat<K> tFar      = min(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(ray.org_rdir.w));
-              const vbool<K> vmask      = le(tNear,align_shift_right<8>(tFar,tFar));                
               const vlong<K/2> bitmask  = one << vlong<K/2>(i);
-              dist   = select(vmask,min(tNear,dist),dist);
+
+              const vbool<K> vmask = robust ? \
+                ray.template intersectNodeRobust<true>(bminmaxX,bminmaxY,bminmaxZ,dist) : 
+                ray.template intersectNode<true>      (bminmaxX,bminmaxY,bminmaxZ,dist);
+
               maskK = mask_or((vboold8)vmask,maskK,maskK,bitmask);
             } while(bits);              
 
@@ -335,7 +332,8 @@ namespace embree
       __aligned(64) RContext ray_ctx[MAX_RAYS_PER_OCTANT];
       __aligned(64) Precalculations pre[MAX_RAYS_PER_OCTANT]; 
       __aligned(64) StackItemMask  stack0[stackSizeSingle];  //!< stack of nodes 
-      __aligned(64) StackItemMask  stack1[stackSizeSingle];  //!< stack of nodes 
+      __aligned(64) StackItemMask  stack1[stackSizeSingle];  //!< stack of nodes
+ 
       for (size_t r=0;r<numTotalRays;r+=MAX_RAYS_PER_OCTANT)
       {
         Ray** rays = input_rays + r;
@@ -421,7 +419,7 @@ namespace embree
             const Node* __restrict__ const node = cur.node();
             //STAT3(shadow.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);
 
-#if defined(__AVX512F__)
+#if defined(__AVX512F__) 
             const vlong<K/2> one((size_t)1);
             const vfloat<K> bminmaxX = permute(vfloat<K>::load((float*)&node->lower_x),pc.permX);
             const vfloat<K> bminmaxY = permute(vfloat<K>::load((float*)&node->lower_y),pc.permY);
@@ -437,13 +435,20 @@ namespace embree
               const size_t i = __bscf(bits);
               assert(i<MAX_RAYS_PER_OCTANT);
               RContext &ray = ray_ctx[i];
+              const vlong<K/2> bitmask  = one << vlong<K/2>(i);
+#if 1
+              const vbool<K> vmask = robust ? \
+                ray.template intersectNodeRobust<false>(bminmaxX,bminmaxY,bminmaxZ,dist) : 
+                ray.template intersectNode<false>      (bminmaxX,bminmaxY,bminmaxZ,dist);
+
+#else
               const vfloat<K> tNearFarX = msub(bminmaxX, ray.rdir.x, ray.org_rdir.x);
               const vfloat<K> tNearFarY = msub(bminmaxY, ray.rdir.y, ray.org_rdir.y);
               const vfloat<K> tNearFarZ = msub(bminmaxZ, ray.rdir.z, ray.org_rdir.z);
               const vfloat<K> tNear     = max(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(ray.rdir.w));
               const vfloat<K> tFar      = min(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(ray.org_rdir.w));
               const vbool<K> vmask      = le(tNear,align_shift_right<8>(tFar,tFar));                
-              const vlong<K/2> bitmask  = one << vlong<K/2>(i);
+#endif
               maskK = mask_or((vboold8)vmask,maskK,maskK,bitmask);
             } while(bits);          
             const vboold8 vmask = (maskK != vlong<K/2>(zero)); 

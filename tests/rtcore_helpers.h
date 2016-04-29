@@ -345,6 +345,7 @@ namespace embree
     case VARIANT_INTERSECT: return "intersect";
     case VARIANT_OCCLUDED : return "occluded";
     }
+    return "";
   }
 
   inline RTCAlgorithmFlags to_aflags(IntersectMode imode)

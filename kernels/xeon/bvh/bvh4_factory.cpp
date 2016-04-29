@@ -345,10 +345,9 @@ namespace embree
     //IF_ENABLED_HAIR(SELECT_SYMBOL_DEFAULT_AVX_AVX2      (features,BVH4Bezier1vIntersector1_OBB));
     //IF_ENABLED_HAIR(SELECT_SYMBOL_DEFAULT_AVX_AVX2      (features,BVH4Bezier1iIntersector1_OBB));
     //IF_ENABLED_HAIR(SELECT_SYMBOL_DEFAULT_AVX_AVX2      (features,BVH4Bezier1iMBIntersector1_OBB));
-    IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_SSE42_AVX_AVX2_AVX512KNL(features,BVH4Triangle4StreamIntersectorMoeller));
-    IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_SSE42_AVX_AVX2_AVX512KNL(features,BVH4Triangle4StreamIntersectorMoellerNoFilter));
-
-    IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_SSE42_AVX_AVX2_AVX512KNL(features,BVH4Triangle4vStreamIntersectorPluecker));
+    IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_SSE42_AVX_AVX2(features,BVH4Triangle4StreamIntersectorMoeller));
+    IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_SSE42_AVX_AVX2(features,BVH4Triangle4StreamIntersectorMoellerNoFilter));
+    IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_SSE42_AVX_AVX2(features,BVH4Triangle4vStreamIntersectorPluecker));
 
     //IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL(features,BVH4XfmTriangle4Intersector1Moeller));
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_SSE42_AVX     (features,BVH4Triangle4vIntersector1Pluecker));
@@ -360,8 +359,8 @@ namespace embree
     //IF_ENABLED_SUBDIV(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4GridAOSIntersector1));
     IF_ENABLED_USER(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4VirtualIntersector1));
     //IF_ENABLED_USER(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4VirtualMBIntersector1));
-    IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_SSE42_AVX_AVX2_AVX512KNL(features,BVH4Quad4vStreamIntersectorMoeller));
-    IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_SSE42_AVX_AVX2_AVX512KNL(features,BVH4Quad4vStreamIntersectorMoellerNoFilter));
+    IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_SSE42_AVX_AVX2(features,BVH4Quad4vStreamIntersectorMoeller));
+    IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_SSE42_AVX_AVX2(features,BVH4Quad4vStreamIntersectorMoellerNoFilter));
     IF_ENABLED_QUADS(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4Quad4iIntersector1Pluecker));
     //IF_ENABLED_QUADS(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4Quad4iMBIntersector1Pluecker));
     //IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL(features,QBVH4Triangle4Intersector1Moeller));
