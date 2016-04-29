@@ -503,58 +503,6 @@ namespace embree
     return mesh;
   }
 
-  unsigned int addCube (RTCDevice g_device, const RTCSceneRef& scene_i, RTCGeometryFlags flag, const Vec3fa& pos, const float r)
-  {
-    /* create a triangulated cube with 12 triangles and 8 vertices */
-    unsigned int mesh = rtcNewTriangleMesh (scene_i, flag, 12, 8);
-    
-    /* set vertices */
-    Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER); 
-    if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene_i,mesh); return -1; }
-    vertices[0] = pos + r*Vec3fa(-1,-1,-1); 
-    vertices[1] = pos + r*Vec3fa(-1,-1,+1); 
-    vertices[2] = pos + r*Vec3fa(-1,+1,-1); 
-    vertices[3] = pos + r*Vec3fa(-1,+1,+1); 
-    vertices[4] = pos + r*Vec3fa(+1,-1,-1); 
-    vertices[5] = pos + r*Vec3fa(+1,-1,+1); 
-    vertices[6] = pos + r*Vec3fa(+1,+1,-1); 
-    vertices[7] = pos + r*Vec3fa(+1,+1,+1); 
-    rtcUnmapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER); 
-
-    /* set triangles and colors */
-    int tri = 0;
-    Triangle* triangles = (Triangle*) rtcMapBuffer(scene_i,mesh,RTC_INDEX_BUFFER);
-    if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene_i,mesh); return -1; }
-    
-    // left side
-    triangles[tri].v0 = 0; triangles[tri].v1 = 2; triangles[tri].v2 = 1; tri++;
-    triangles[tri].v0 = 1; triangles[tri].v1 = 2; triangles[tri].v2 = 3; tri++;
-
-    // right side
-    triangles[tri].v0 = 4; triangles[tri].v1 = 5; triangles[tri].v2 = 6; tri++;
-    triangles[tri].v0 = 5; triangles[tri].v1 = 7; triangles[tri].v2 = 6; tri++;
-    
-    // bottom side
-    triangles[tri].v0 = 0; triangles[tri].v1 = 1; triangles[tri].v2 = 4; tri++;
-    triangles[tri].v0 = 1; triangles[tri].v1 = 5; triangles[tri].v2 = 4; tri++;
-    
-    // top side
-    triangles[tri].v0 = 2; triangles[tri].v1 = 6; triangles[tri].v2 = 3; tri++;
-    triangles[tri].v0 = 3; triangles[tri].v1 = 6; triangles[tri].v2 = 7; tri++;
-    
-    // front side
-    triangles[tri].v0 = 0; triangles[tri].v1 = 4; triangles[tri].v2 = 2; tri++;
-    triangles[tri].v0 = 2; triangles[tri].v1 = 4; triangles[tri].v2 = 6; tri++;
-    
-    // back side
-    triangles[tri].v0 = 1; triangles[tri].v1 = 3; triangles[tri].v2 = 5; tri++;
-    triangles[tri].v0 = 3; triangles[tri].v1 = 7; triangles[tri].v2 = 5; tri++;
-    
-    rtcUnmapBuffer(scene_i,mesh,RTC_INDEX_BUFFER);
-    
-    return mesh;
-  }
-
   unsigned addHair (RTCDevice g_device, const RTCSceneRef& scene, RTCGeometryFlags flag, const Vec3fa& pos, const float scale, const float r, size_t numHairs = 1, float motion = 0.0f)
   {
     size_t numTimeSteps = motion == 0.0f ? 1 : 2;
@@ -1811,7 +1759,6 @@ namespace embree
       ClearBuffers clear_before_return;
       RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,to_aflags(imode));
       if      (model == "sphere") addSphere(state->device,scene,RTC_GEOMETRY_STATIC,pos,2.0f,500);
-      else if (model == "cube"  ) addCube  (state->device,scene,RTC_GEOMETRY_STATIC,pos,2.0f);
       else if (model == "plane" ) addPlane(state->device,scene,RTC_GEOMETRY_STATIC,500,Vec3fa(pos.x,-6.0f,-6.0f),Vec3fa(0.0f,12.0f,0.0f),Vec3fa(0.0f,0.0f,12.0f));
       bool plane = model == "plane";
       rtcCommit (scene);
