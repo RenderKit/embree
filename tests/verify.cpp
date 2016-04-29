@@ -211,7 +211,8 @@ namespace embree
   }
 
   RTCAlgorithmFlags aflags = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT4 | RTC_INTERSECT8 | RTC_INTERSECT16);
-
+  RTCAlgorithmFlags aflags_all = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT4 | RTC_INTERSECT8 | RTC_INTERSECT16 | RTC_INTERSECT_STREAM);
+  
   bool g_enable_build_cancel = false;
 
   unsigned addPlane (RTCDevice g_device, const RTCSceneRef& scene, RTCGeometryFlags flag, size_t num, const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy)
@@ -627,51 +628,24 @@ namespace embree
     bounds_o->upper.z = sphere->pos.z+sphere->r;
   }
 
-  void IntersectFunc(void* ptr, RTCRay& ray, size_t item) {
+  void IntersectFuncN(const int* valid,
+                      void* ptr,
+                      const RTCIntersectContext* context,
+                      RTCRayN* rays,
+                      size_t N,
+                      size_t item)
+  {
   }
-
-  void IntersectFunc4(const void* valid, void* ptr, RTCRay4& ray, size_t item) {
-  }
-
-  void IntersectFunc8(const void* valid, void* ptr, RTCRay8& ray, size_t item) {
-  }
-
-  void IntersectFunc16(const void* valid, void* ptr, RTCRay16& ray, size_t item) {
-  }
-
-  void OccludedFunc (void* ptr, RTCRay& ray, size_t item) {
-  }
-
-  void OccludedFunc4 (const void* valid, void* ptr, RTCRay4& ray, size_t item) {
-  }
-
-  void OccludedFunc8 (const void* valid, void* ptr, RTCRay8& ray, size_t item) {
-  }
-
-  void OccludedFunc16 (const void* valid, void* ptr, RTCRay16& ray, size_t item) {
-  }
-
+  
+  
   unsigned addUserGeometryEmpty (RTCDevice g_device, IntersectMode imode, const RTCSceneRef& scene, Sphere* sphere)
   {
     BBox3fa bounds = sphere->bounds(); 
     unsigned geom = rtcNewUserGeometry (scene,1);
     rtcSetBoundsFunction(scene,geom,(RTCBoundsFunc)BoundsFunc);
     rtcSetUserData(scene,geom,sphere);
-    if (imode != MODE_INTERSECT_NONE)
-    {
-      rtcSetIntersectFunction(scene,geom,IntersectFunc);
-#if defined(RTCORE_RAY_PACKETS)
-      rtcSetIntersectFunction4(scene,geom,IntersectFunc4);
-      rtcSetIntersectFunction8(scene,geom,IntersectFunc8);
-      rtcSetIntersectFunction16(scene,geom,&IntersectFunc16);
-#endif
-      rtcSetOccludedFunction(scene,geom,OccludedFunc);
-#if defined(RTCORE_RAY_PACKETS)
-      rtcSetOccludedFunction4(scene,geom,OccludedFunc4);
-      rtcSetOccludedFunction8(scene,geom,OccludedFunc8);
-      rtcSetOccludedFunction16(scene,geom,&OccludedFunc16);
-#endif
-    }
+    rtcSetIntersectFunctionN(scene,geom,IntersectFuncN);
+    rtcSetOccludedFunctionN(scene,geom,IntersectFuncN);
     return geom;
   }
 
@@ -2068,7 +2042,7 @@ namespace embree
     bool run(VerifyApplication* state)
     {
       ClearBuffers clear_before_return;
-      RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_DYNAMIC,aflags);
+      RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_DYNAMIC,aflags_all);
       AssertNoError(state->device);
       int geom[128];
       for (size_t i=0; i<128; i++) geom[i] = -1;
@@ -2523,59 +2497,22 @@ namespace embree
     }
   };
 
-  void shootRays (RTCDevice device, const RTCSceneRef& scene)
+  void shootRandomRays (VerifyApplication* state, const RTCSceneRef& scene)
   {
+    const size_t numRays = 100;
+    for (auto imode : state->intersectModesOld) // FIXME: use all intersect modes
     {
-      Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-      Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-      RTCRay ray = makeRay(org,dir); 
-      rtcOccluded(scene,ray);
-      rtcIntersect(scene,ray);
-    }
-
-#if defined(RTCORE_RAY_PACKETS)
-    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT4))
-    {
-      RTCRay4 ray4; memset(&ray4,0,sizeof(ray4)); 
-      for (size_t j=0; j<4; j++) {
-        Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-        Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-        RTCRay ray = makeRay(org,dir); 
-        setRay(ray4,j,ray);
+      for (auto ivariant : { VARIANT_INTERSECT, VARIANT_OCCLUDED })
+      {
+        RTCRay rays[numRays];
+        for (size_t i=0; i<numRays; i++) {
+          Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+          Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+          rays[i] = makeRay(org,dir); 
+        }
+        IntersectWithMode(imode,ivariant,scene,rays,numRays);
       }
-      __aligned(16) int valid4[4] = { -1,-1,-1,-1 };
-      rtcOccluded4(valid4,scene,ray4);
-      rtcIntersect4(valid4,scene,ray4);
     }
-
-    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT8))
-    {
-      RTCRay8 ray8; memset(&ray8,0,sizeof(ray8));
-      for (size_t j=0; j<8; j++) {
-        Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-        Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-        RTCRay ray = makeRay(org,dir); 
-        setRay(ray8,j,ray);
-      }
-      __aligned(32) int valid8[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
-      rtcOccluded8(valid8,scene,ray8);
-      rtcIntersect8(valid8,scene,ray8);
-    }
-
-    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT16))
-    {
-      RTCRay16 ray16; memset(&ray16,0,sizeof(ray16));
-      for (size_t j=0; j<16; j++) {
-        Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-        Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-        RTCRay ray = makeRay(org,dir); 
-        setRay(ray16,j,ray);
-      }
-      __aligned(16) int valid16[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
-      rtcOccluded16(valid16,scene,ray16);
-      rtcIntersect16(valid16,scene,ray16);
-    }
-#endif
   }
 
   static bool build_join_test = false;
@@ -2587,6 +2524,7 @@ namespace embree
 
     size_t sceneIndex;
     size_t sceneCount;
+    VerifyApplication* state;
     RTCSceneRef scene;
     BarrierSys barrier;
     volatile size_t numActiveThreads;
@@ -2594,12 +2532,12 @@ namespace embree
 
   struct ThreadRegressionTask
   {
-    ThreadRegressionTask (size_t threadIndex, size_t threadCount, RTCDevice device, RegressionTask* task)
-      : threadIndex(threadIndex), threadCount(threadCount), device(device), task(task) {}
+    ThreadRegressionTask (size_t threadIndex, size_t threadCount, VerifyApplication* state, RegressionTask* task)
+      : threadIndex(threadIndex), threadCount(threadCount), state(state), task(task) {}
 
     size_t threadIndex;
     size_t threadCount;
-    RTCDevice device;
+    VerifyApplication* state;
     RegressionTask* task;
   };
 
@@ -2628,13 +2566,12 @@ namespace embree
             rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);
             rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);
           }
-	  //CountErrors(thread->device);
-          if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) {
+	  //CountErrors(thread->state->device);
+          if (rtcDeviceGetError(thread->state->device) != RTC_NO_ERROR) {
             atomic_add(&errorCounter,1);
           }
           else {
-            for (size_t i=0; i<100; i++)
-              shootRays(thread->device,task->scene);
+            shootRandomRays(thread->state,task->scene);
           }
 	}
         task->barrier.wait();
@@ -2643,7 +2580,7 @@ namespace embree
       return;
     }
 
-    CountErrors(thread->device);
+    CountErrors(thread->state->device);
     int geom[1024];
     int types[1024];
     Sphere spheres[1024];
@@ -2661,8 +2598,8 @@ namespace embree
       if (i%20 == 0) std::cout << "." << std::flush;
 
       RTCSceneFlags sflag = getSceneFlag(i); 
-      task->scene = rtcDeviceNewScene(thread->device,sflag,aflags);
-      CountErrors(thread->device);
+      task->scene = rtcDeviceNewScene(thread->state->device,sflag,aflags_all);
+      CountErrors(thread->state->device);
       if (g_enable_build_cancel) rtcSetProgressMonitorFunction(task->scene,monitorProgressFunction,nullptr);
       avector<Sphere*> spheres;
       
@@ -2683,19 +2620,19 @@ namespace embree
         size_t numTriangles = 2*2*numPhi*(numPhi-1);
 	numTriangles = random<int>()%(numTriangles+1);
         switch (type) {
-        case 0: addSphere(thread->device,task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
-	case 1: addSphere(thread->device,task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
-	case 2: addSubdivSphere(thread->device,task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
-	case 3: addHair  (thread->device,task->scene,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,numTriangles,0.0f); break;
-	case 4: addHair  (thread->device,task->scene,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,numTriangles,1.0f); break; 
+        case 0: addSphere(thread->state->device,task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
+	case 1: addSphere(thread->state->device,task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
+	case 2: addSubdivSphere(thread->state->device,task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
+	case 3: addHair  (thread->state->device,task->scene,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,numTriangles,0.0f); break;
+	case 4: addHair  (thread->state->device,task->scene,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,numTriangles,1.0f); break; 
 
         case 5: {
 	  Sphere* sphere = new Sphere(pos,2.0f); spheres.push_back(sphere); 
-	  addUserGeometryEmpty(thread->device,MODE_INTERSECT1,task->scene,sphere); break; // FIXME: imode
+	  addUserGeometryEmpty(thread->state->device,MODE_INTERSECT1,task->scene,sphere); break; // FIXME: imode
         }
 	}
-        //CountErrors(thread->device);
-        if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) {
+        //CountErrors(thread->state->device);
+        if (rtcDeviceGetError(thread->state->device) != RTC_NO_ERROR) {
           atomic_add(&errorCounter,1);
 
           hasError = true;
@@ -2716,16 +2653,14 @@ namespace embree
           rtcCommit(task->scene);
         }
       }
-      //CountErrors(thread->device);
+      //CountErrors(thread->state->device);
 
-      if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) {
+      if (rtcDeviceGetError(thread->state->device) != RTC_NO_ERROR) {
         atomic_add(&errorCounter,1);
       }
       else {
         if (!hasError) {
-          for (size_t i=0; i<100; i++) {
-            shootRays(thread->device,task->scene);
-          }
+          shootRandomRays(thread->state,task->scene);
         }
       }
 
@@ -2733,7 +2668,7 @@ namespace embree
 	task->barrier.wait();
 
       task->scene = nullptr;
-      CountErrors(thread->device);
+      CountErrors(thread->state->device);
 
       for (size_t i=0; i<spheres.size(); i++)
 	delete spheres[i];
@@ -2756,13 +2691,12 @@ namespace embree
 	{
           if (build_join_test) rtcCommit(task->scene);
           else	               rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);
-	  //CountErrors(thread->device);
-          if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) {
+	  //CountErrors(thread->state->device);
+          if (rtcDeviceGetError(thread->state->device) != RTC_NO_ERROR) {
             atomic_add(&errorCounter,1);
           }
           else {
-            for (size_t i=0; i<100; i++)
-              shootRays(thread->device,task->scene);
+            shootRandomRays(thread->state,task->scene);
           }
 	}
 	task->barrier.wait();
@@ -2770,8 +2704,8 @@ namespace embree
       delete thread; thread = nullptr;
       return;
     }
-    task->scene = rtcDeviceNewScene(thread->device,RTC_SCENE_DYNAMIC,aflags);
-    CountErrors(thread->device);
+    task->scene = rtcDeviceNewScene(thread->state->device,RTC_SCENE_DYNAMIC,aflags_all);
+    CountErrors(thread->state->device);
     if (g_enable_build_cancel) rtcSetProgressMonitorFunction(task->scene,monitorProgressFunction,nullptr);
     int geom[1024];
     int types[1024];
@@ -2816,19 +2750,19 @@ namespace embree
           types[index] = type;
           numVertices[index] = 2*numPhi*(numPhi+1);
           switch (type) {
-          case 0: geom[index] = addSphere(thread->device,task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
-          case 1: geom[index] = addSphere(thread->device,task->scene,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles,0.0f); break;
-          case 2: geom[index] = addSphere(thread->device,task->scene,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
-          case 3: geom[index] = addSubdivSphere(thread->device,task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
-	  case 4: geom[index] = addSubdivSphere(thread->device,task->scene,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
-	  case 5: geom[index] = addSubdivSphere(thread->device,task->scene,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
-          case 6: geom[index] = addSphere(thread->device,task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
-          case 7: geom[index] = addSphere(thread->device,task->scene,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles,1.0f); break;
-          case 8: geom[index] = addSphere(thread->device,task->scene,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
-          case 9: spheres[index] = Sphere(pos,2.0f); geom[index] = addUserGeometryEmpty(thread->device,MODE_INTERSECT1,task->scene,&spheres[index]); break; // FIXME: imode
+          case 0: geom[index] = addSphere(thread->state->device,task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
+          case 1: geom[index] = addSphere(thread->state->device,task->scene,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles,0.0f); break;
+          case 2: geom[index] = addSphere(thread->state->device,task->scene,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
+          case 3: geom[index] = addSubdivSphere(thread->state->device,task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
+	  case 4: geom[index] = addSubdivSphere(thread->state->device,task->scene,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
+	  case 5: geom[index] = addSubdivSphere(thread->state->device,task->scene,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
+          case 6: geom[index] = addSphere(thread->state->device,task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
+          case 7: geom[index] = addSphere(thread->state->device,task->scene,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles,1.0f); break;
+          case 8: geom[index] = addSphere(thread->state->device,task->scene,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
+          case 9: spheres[index] = Sphere(pos,2.0f); geom[index] = addUserGeometryEmpty(thread->state->device,MODE_INTERSECT1,task->scene,&spheres[index]); break; // FIXME: imode
           }; 
-	  //CountErrors(thread->device);
-          if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) {
+	  //CountErrors(thread->state->device);
+          if (rtcDeviceGetError(thread->state->device) != RTC_NO_ERROR) {
             atomic_add(&errorCounter,1);
             hasError = true;
             break;
@@ -2842,7 +2776,7 @@ namespace embree
           case 6:
 	  case 9: {
             rtcDeleteGeometry(task->scene,geom[index]);     
-	    CountErrors(thread->device);
+	    CountErrors(thread->state->device);
             geom[index] = -1; 
             break;
           }
@@ -2856,7 +2790,7 @@ namespace embree
             switch (op) {
             case 0: {
               rtcDeleteGeometry(task->scene,geom[index]);     
-	      CountErrors(thread->device);
+	      CountErrors(thread->state->device);
               geom[index] = -1; 
               break;
             }
@@ -2887,7 +2821,7 @@ namespace embree
           for (size_t i=0; i<1024; i++) {
             if (geom[i] != -1) {
               rtcDeleteGeometry(task->scene,geom[i]);
-              CountErrors(thread->device);
+              CountErrors(thread->state->device);
               geom[i] = -1;
             }
           }
@@ -2903,21 +2837,20 @@ namespace embree
         if (!hasError) 
           rtcCommit(task->scene);
       }
-      //CountErrors(thread->device);
+      //CountErrors(thread->state->device);
 
-      if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR)
+      if (rtcDeviceGetError(thread->state->device) != RTC_NO_ERROR)
         atomic_add(&errorCounter,1);
       else
         if (!hasError)
-          for (size_t i=0; i<100; i++)
-            shootRays(thread->device,task->scene);
+          shootRandomRays(thread->state,task->scene);
 
       if (thread->threadCount) 
 	task->barrier.wait();
     }
 
     task->scene = nullptr;
-    CountErrors(thread->device);
+    CountErrors(thread->state->device);
 
     delete thread; thread = nullptr;
     return;
@@ -2955,7 +2888,7 @@ namespace embree
             tasks.push_back(task);
             
             for (size_t i=0; i<N; i++) 
-              g_threads.push_back(createThread(func,new ThreadRegressionTask(i,N,state->device,task),DEFAULT_STACK_SIZE,numThreads+i));
+              g_threads.push_back(createThread(func,new ThreadRegressionTask(i,N,state,task),DEFAULT_STACK_SIZE,numThreads+i));
           }
           
           for (size_t i=0; i<g_threads.size(); i++)
@@ -2969,7 +2902,7 @@ namespace embree
         {
           ClearBuffers clear_before_return;
           RegressionTask task(sceneIndex++,5,0);
-          func(new ThreadRegressionTask(0,0,state->device,&task));
+          func(new ThreadRegressionTask(0,0,state,&task));
         }	
       }
       return errorCounter == 0;
@@ -3015,7 +2948,7 @@ namespace embree
         monitorProgressBreak = -1;
         monitorProgressInvokations = 0;
         RegressionTask task1(sceneIndex,1,0);
-        func(new ThreadRegressionTask(0,0,state->device,&task1));
+        func(new ThreadRegressionTask(0,0,state,&task1));
         if (monitorMemoryBytesUsed) {
           rtcDeviceSetMemoryMonitorFunction(state->device,nullptr);
           //rtcDeviceSetProgressMonitorFunction(state->device,nullptr);
@@ -3027,7 +2960,7 @@ namespace embree
         monitorProgressBreak = monitorProgressInvokations * 2.0f * drand48();
         monitorProgressInvokations = 0;
         RegressionTask task2(sceneIndex,1,0);
-        func(new ThreadRegressionTask(0,0,state->device,&task2));
+        func(new ThreadRegressionTask(0,0,state,&task2));
         if (monitorMemoryBytesUsed) { // || (monitorMemoryInvokations != 0 && errorCounter != 1)) { // FIXME: test that rtcCommit has returned with error code
           rtcDeviceSetMemoryMonitorFunction(state->device,nullptr);
           //rtcDeviceSetProgressMonitorFunction(state->device,nullptr);
@@ -3097,6 +3030,10 @@ namespace embree
       intersectModes.push_back(MODE_INTERSECTNM16);
       intersectModes.push_back(MODE_INTERSECTNp);
     }
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT1)) intersectModesOld.push_back(MODE_INTERSECT1);
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT4)) intersectModesOld.push_back(MODE_INTERSECT4);
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT8)) intersectModesOld.push_back(MODE_INTERSECT8);
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT16)) intersectModesOld.push_back(MODE_INTERSECT16);
 
     /* create list of all scene flags to test */
     sceneFlags.push_back(RTC_SCENE_STATIC);
