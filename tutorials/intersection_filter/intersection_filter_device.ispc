@@ -189,6 +189,10 @@ unmasked void intersectionFilterN(uniform int* uniform valid,
                                   const struct RTCHitN* uniform potentialHit,
                                   uniform const size_t N)
 {
+  /* avoid crashing when debug visualizations are used */
+  if (context == NULL)
+    return; 
+
   /* iterate over all rays in ray packet */
   for (uniform int ui=0; ui<N; ui+=programCount)
   {
@@ -247,6 +251,10 @@ unmasked void occlusionFilterN(uniform int* uniform valid,
                                const struct RTCHitN* uniform potentialHit,
                                uniform const size_t N)
 {
+  /* avoid crashing when debug visualizations are used */
+  if (context == NULL)
+    return; 
+
   /* iterate over all rays in ray packet */
   for (uniform int ui=0; ui<N; ui+=programCount)
   {

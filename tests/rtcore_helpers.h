@@ -95,7 +95,30 @@ namespace embree
     return ray;
   }
 
-   /* Outputs ray to stream */
+  inline bool neq_ray_special (const RTCRay& ray0, const RTCRay& ray1)
+  {
+    if (*(int*)&ray0.org[0] != *(int*)&ray1.org[0]) return true;
+    if (*(int*)&ray0.org[1] != *(int*)&ray1.org[1]) return true;
+    if (*(int*)&ray0.org[2] != *(int*)&ray1.org[2]) return true;
+    if (*(int*)&ray0.dir[0] != *(int*)&ray1.dir[0]) return true;
+    if (*(int*)&ray0.dir[1] != *(int*)&ray1.dir[1]) return true;
+    if (*(int*)&ray0.dir[2] != *(int*)&ray1.dir[2]) return true;
+    if (*(int*)&ray0.tnear  != *(int*)&ray1.tnear ) return true;
+    if (*(int*)&ray0.tfar   != *(int*)&ray1.tfar  ) return true;
+    if (*(int*)&ray0.time   != *(int*)&ray1.time  ) return true;
+    if (*(int*)&ray0.mask   != *(int*)&ray1.mask  ) return true;
+    if (*(int*)&ray0.u      != *(int*)&ray1.u     ) return true;
+    if (*(int*)&ray0.v      != *(int*)&ray1.v     ) return true;
+    if (*(int*)&ray0.instID != *(int*)&ray1.instID) return true;
+    if (*(int*)&ray0.geomID != *(int*)&ray1.geomID) return true;
+    if (*(int*)&ray0.primID != *(int*)&ray1.primID) return true;
+    if (*(int*)&ray0.Ng[0]  != *(int*)&ray1.Ng[0] ) return true;
+    if (*(int*)&ray0.Ng[1]  != *(int*)&ray1.Ng[1] ) return true;
+    if (*(int*)&ray0.Ng[2]  != *(int*)&ray1.Ng[2] ) return true;
+    return false;
+  }
+
+  /* Outputs ray to stream */
   inline std::ostream& operator<<(std::ostream& cout, const RTCRay& ray)
   {
     return cout << "Ray { " << std::endl
@@ -431,11 +454,11 @@ namespace embree
         size_t M = min(size_t(4),N-i);
         __aligned(16) int valid[4];
         __aligned(16) RTCRay4 ray4;
-        for (size_t j=0; j<4; j++) valid[j] = j<M ? -1 : 0;
+        for (size_t j=0; j<4; j++) valid[j] = (j<M && rays[i+j].tnear <= rays[i+j].tfar) ? -1 : 0;
         for (size_t j=0; j<M; j++) setRay(ray4,j,rays[i+j]);
         switch (ivariant) {
         case VARIANT_INTERSECT: rtcIntersect4(valid,scene,ray4); break;
-        case VARIANT_OCCLUDED : rtcIntersect4(valid,scene,ray4); break;
+        case VARIANT_OCCLUDED : rtcOccluded4 (valid,scene,ray4); break;
         }
         for (size_t j=0; j<M; j++) rays[i+j] = getRay(ray4,j);
       }
@@ -448,11 +471,11 @@ namespace embree
         size_t M = min(size_t(8),N-i);
         __aligned(32) int valid[8];
         __aligned(32) RTCRay8 ray8;
-        for (size_t j=0; j<8; j++) valid[j] = j<M ? -1 : 0;
+        for (size_t j=0; j<8; j++) valid[j] = (j<M && rays[i+j].tnear <= rays[i+j].tfar) ? -1 : 0;
         for (size_t j=0; j<M; j++) setRay(ray8,j,rays[i+j]);
         switch (ivariant) {
         case VARIANT_INTERSECT: rtcIntersect8(valid,scene,ray8); break;
-        case VARIANT_OCCLUDED : rtcIntersect8(valid,scene,ray8); break;
+        case VARIANT_OCCLUDED : rtcOccluded8 (valid,scene,ray8); break;
         }
         for (size_t j=0; j<M; j++) rays[i+j] = getRay(ray8,j);
       }
@@ -465,11 +488,11 @@ namespace embree
         size_t M = min(size_t(16),N-i);
         __aligned(64) int valid[16];
         __aligned(64) RTCRay16 ray16;
-        for (size_t j=0; j<16; j++) valid[j] = j<M ? -1 : 0;
+        for (size_t j=0; j<16; j++) valid[j] = (j<M && rays[i+j].tnear <= rays[i+j].tfar) ? -1 : 0;
         for (size_t j=0; j<M; j++) setRay(ray16,j,rays[i+j]);
         switch (ivariant) {
         case VARIANT_INTERSECT: rtcIntersect16(valid,scene,ray16); break;
-        case VARIANT_OCCLUDED : rtcIntersect16(valid,scene,ray16); break;
+        case VARIANT_OCCLUDED : rtcOccluded16 (valid,scene,ray16); break;
         }
         for (size_t j=0; j<M; j++) rays[i+j] = getRay(ray16,j);
       }
@@ -482,7 +505,7 @@ namespace embree
       context.userRayExt = nullptr;
       switch (ivariant) {
         case VARIANT_INTERSECT: rtcIntersect1M(scene,&context,rays,N,sizeof(RTCRay)); break;
-        case VARIANT_OCCLUDED : rtcIntersect1M(scene,&context,rays,N,sizeof(RTCRay)); break;
+        case VARIANT_OCCLUDED : rtcOccluded1M (scene,&context,rays,N,sizeof(RTCRay)); break;
       }
       break;
     }

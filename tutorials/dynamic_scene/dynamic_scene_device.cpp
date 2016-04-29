@@ -275,10 +275,7 @@ void animateSphere (int id, float time)
 
   /* loop over all vertices */
 #if 1 // enables parallel execution
-  parallel_for(size_t(0),size_t(numPhi+1),[&](const range<size_t>& range) {
-    for (size_t i=range.begin(); i<range.end(); i++)
-      animateSphere(i,vertices,rcpNumTheta,rcpNumPhi,pos,r,f);
-  }); 
+  parallel_for(size_t(0),size_t(numPhi+1),[&](const range<size_t>& range) {    for (size_t i=range.begin(); i<range.end(); i++)      animateSphere(i,vertices,rcpNumTheta,rcpNumPhi,pos,r,f);  }); 
 #else
   for (int phi=0; phi<numPhi+1; phi++) for (int theta=0; theta<numTheta; theta++)
   {
@@ -314,10 +311,7 @@ extern "C" void device_render (int* pixels,
   /* render all pixels */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
-    for (size_t i=range.begin(); i<range.end(); i++)
-      renderTileTask(i,pixels,width,height,time,camera,numTilesX,numTilesY);
-  }); 
+  parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {    for (size_t i=range.begin(); i<range.end(); i++)      renderTileTask(i,pixels,width,height,time,camera,numTilesX,numTilesY);  }); 
 }
 
 /* called by the C++ code for cleanup */

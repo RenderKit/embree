@@ -112,80 +112,6 @@ namespace embree
     gflags = (RTCGeometryFlags) gflag;
   }
 
-  void rtcIntersectN(const RTCSceneRef& scene, RTCRay& ray, int N) 
-  {
-    switch (N) {
-    case 1: {
-      rtcIntersect(scene,ray); 
-      break;
-    }
-#if defined(RTCORE_RAY_PACKETS)
-    case 4: {
-      RTCRay4 ray4; memset(&ray4,0,sizeof(ray4));
-      for (size_t i=0; i<4; i++) setRay(ray4,i,ray);
-      __aligned(16) int valid[4] = { -1,-1,-1,-1 };
-      rtcIntersect4(valid,scene,ray4);
-      ray = getRay(ray4,0);
-      break;
-    }
-    case 8: {
-      RTCRay8 ray8; memset(&ray8,0,sizeof(ray8));
-      for (size_t i=0; i<8; i++) setRay(ray8,i,ray);
-      __aligned(32) int valid[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
-      rtcIntersect8(valid,scene,ray8);
-      ray = getRay(ray8,0);
-      break;
-    }
-    case 16: {
-      RTCRay16 ray16; memset(&ray16,0,sizeof(ray16));
-      for (size_t i=0; i<16; i++) setRay(ray16,i,ray);
-      __aligned(64) int valid[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
-      rtcIntersect16(valid,scene,ray16);
-      ray = getRay(ray16,0);
-      break;
-    }
-#endif
-    default: break;
-    }
-  }
-
-  void rtcOccludedN(const RTCSceneRef& scene, RTCRay& ray, int N) 
-  {
-    switch (N) {
-    case 1: {
-      rtcOccluded(scene,ray); 
-      break;
-    }
-#if defined(RTCORE_RAY_PACKETS)
-    case 4: {
-      RTCRay4 ray4; memset(&ray4,0,sizeof(ray4));
-      for (size_t i=0; i<4; i++) setRay(ray4,i,ray);
-      __aligned(16) int valid[4] = { -1,-1,-1,-1 };
-      rtcOccluded4(valid,scene,ray4);
-      ray.geomID = ray4.geomID[0];
-      break;
-    }
-    case 8: {
-      RTCRay8 ray8; memset(&ray8,0,sizeof(ray8));
-      for (size_t i=0; i<8; i++) setRay(ray8,i,ray);
-      __aligned(32) int valid[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
-      rtcOccluded8(valid,scene,ray8);
-      ray.geomID = ray8.geomID[0];
-      break;
-    }
-    case 16: {
-      RTCRay16 ray16; memset(&ray16,0,sizeof(ray16));
-      for (size_t i=0; i<16; i++) setRay(ray16,i,ray);
-      __aligned(64) int valid[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
-      rtcOccluded16(valid,scene,ray16);
-      ray.geomID = ray16.geomID[0];
-      break;
-    }
-#endif
-    default: break;
-    }
-  }
-
   #define CountErrors(device) \
     if (rtcDeviceGetError(device) != RTC_NO_ERROR) atomic_add(&errorCounter,1);
 
@@ -211,7 +137,8 @@ namespace embree
   }
 
   RTCAlgorithmFlags aflags = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT4 | RTC_INTERSECT8 | RTC_INTERSECT16);
-
+  RTCAlgorithmFlags aflags_all = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT4 | RTC_INTERSECT8 | RTC_INTERSECT16 | RTC_INTERSECT_STREAM);
+  
   bool g_enable_build_cancel = false;
 
   unsigned addPlane (RTCDevice g_device, const RTCSceneRef& scene, RTCGeometryFlags flag, size_t num, const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy)
@@ -235,8 +162,8 @@ namespace embree
         size_t p01 = (y+0)*(num+1)+(x+1);
         size_t p10 = (y+1)*(num+1)+(x+0);
         size_t p11 = (y+1)*(num+1)+(x+1);
-        triangles[i+0].v0 = p01; triangles[i+0].v1 = p00; triangles[i+0].v2 = p11;
-        triangles[i+1].v0 = p10; triangles[i+1].v1 = p11; triangles[i+1].v2 = p00;
+        triangles[i+0].v0 = p00; triangles[i+0].v1 = p01; triangles[i+0].v2 = p11;
+        triangles[i+1].v0 = p00; triangles[i+1].v1 = p11; triangles[i+1].v2 = p10;
       }
     }
     rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
@@ -627,51 +554,24 @@ namespace embree
     bounds_o->upper.z = sphere->pos.z+sphere->r;
   }
 
-  void IntersectFunc(void* ptr, RTCRay& ray, size_t item) {
+  void IntersectFuncN(const int* valid,
+                      void* ptr,
+                      const RTCIntersectContext* context,
+                      RTCRayN* rays,
+                      size_t N,
+                      size_t item)
+  {
   }
-
-  void IntersectFunc4(const void* valid, void* ptr, RTCRay4& ray, size_t item) {
-  }
-
-  void IntersectFunc8(const void* valid, void* ptr, RTCRay8& ray, size_t item) {
-  }
-
-  void IntersectFunc16(const void* valid, void* ptr, RTCRay16& ray, size_t item) {
-  }
-
-  void OccludedFunc (void* ptr, RTCRay& ray, size_t item) {
-  }
-
-  void OccludedFunc4 (const void* valid, void* ptr, RTCRay4& ray, size_t item) {
-  }
-
-  void OccludedFunc8 (const void* valid, void* ptr, RTCRay8& ray, size_t item) {
-  }
-
-  void OccludedFunc16 (const void* valid, void* ptr, RTCRay16& ray, size_t item) {
-  }
-
+  
+  
   unsigned addUserGeometryEmpty (RTCDevice g_device, IntersectMode imode, const RTCSceneRef& scene, Sphere* sphere)
   {
     BBox3fa bounds = sphere->bounds(); 
     unsigned geom = rtcNewUserGeometry (scene,1);
     rtcSetBoundsFunction(scene,geom,(RTCBoundsFunc)BoundsFunc);
     rtcSetUserData(scene,geom,sphere);
-    if (imode != MODE_INTERSECT_NONE)
-    {
-      rtcSetIntersectFunction(scene,geom,IntersectFunc);
-#if defined(RTCORE_RAY_PACKETS)
-      rtcSetIntersectFunction4(scene,geom,IntersectFunc4);
-      rtcSetIntersectFunction8(scene,geom,IntersectFunc8);
-      rtcSetIntersectFunction16(scene,geom,&IntersectFunc16);
-#endif
-      rtcSetOccludedFunction(scene,geom,OccludedFunc);
-#if defined(RTCORE_RAY_PACKETS)
-      rtcSetOccludedFunction4(scene,geom,OccludedFunc4);
-      rtcSetOccludedFunction8(scene,geom,OccludedFunc8);
-      rtcSetOccludedFunction16(scene,geom,&OccludedFunc16);
-#endif
-    }
+    rtcSetIntersectFunctionN(scene,geom,IntersectFuncN);
+    rtcSetOccludedFunctionN(scene,geom,IntersectFuncN);
     return geom;
   }
 
@@ -680,6 +580,19 @@ namespace embree
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
 
+  struct InitExitTest : public VerifyApplication::Test
+  {
+    InitExitTest (std::string name)
+      : VerifyApplication::Test(name,VerifyApplication::PASS) {}
+
+    bool run(VerifyApplication* state)
+    {
+      rtcInit("verbose=1");
+      error_handler(rtcGetError());
+      rtcExit();
+      return true;
+    }
+  };
 
   struct MultipleDevicesTest : public VerifyApplication::Test
   {
@@ -702,103 +615,11 @@ namespace embree
     }
   };
 
-  struct EmptySceneTest : public VerifyApplication::Test
+   struct FlagsTest : public VerifyApplication::Test
   {
-    EmptySceneTest (std::string name, RTCSceneFlags sflags)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags) {}
+    RTCSceneFlags sceneFlags;
+    RTCGeometryFlags geomFlags;
 
-    bool run(VerifyApplication* state)
-    {
-      RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,aflags);
-      AssertNoError(state->device);
-      rtcCommit (scene);
-      AssertNoError(state->device);
-      return true;
-    }
-
-  public:
-    RTCSceneFlags sflags;
-  };
-
-  struct BaryDistanceTest : public VerifyApplication::Test
-  {
-    BaryDistanceTest (std::string name)
-      : VerifyApplication::Test(name,VerifyApplication::PASS) {}
-
-    bool run(VerifyApplication* state)
-    {
-      std::vector<Vertex> m_vertices;
-      std::vector<Triangle> m_triangles;
-      
-      const float length = 1000.0f;
-      const float width = 1000.0f;
-      
-      m_vertices.resize(4);
-      m_vertices[0] = Vertex(-length / 2.0f, -width / 2.0f, 0);
-      m_vertices[1] = Vertex( length / 2.0f, -width / 2.0f, 0);
-      m_vertices[2] = Vertex( length / 2.0f,  width / 2.0f, 0);
-      m_vertices[3] = Vertex(-length / 2.0f,  width / 2.0f, 0);
-      
-      m_triangles.resize(2);
-      m_triangles[0] = Triangle(0, 1, 2);
-      m_triangles[1] = Triangle(2, 3, 0);
-      
-      //const RTCSceneFlags flags = RTCSceneFlags(0); 
-      const RTCSceneFlags flags = RTC_SCENE_ROBUST;
-      const RTCSceneRef mainSceneId = rtcDeviceNewScene(state->device,RTC_SCENE_STATIC | flags , RTC_INTERSECT1);
-      
-      const unsigned int id = rtcNewTriangleMesh(mainSceneId, RTC_GEOMETRY_STATIC, m_triangles.size(), m_vertices.size());
-      
-      rtcSetBuffer(mainSceneId, id, RTC_VERTEX_BUFFER, m_vertices.data(), 0, sizeof(Vertex));
-      rtcSetBuffer(mainSceneId, id, RTC_INDEX_BUFFER, m_triangles.data(), 0, sizeof(Triangle));
-      
-      rtcCommit(mainSceneId);
-      
-      RTCRay ray;
-      ray.org[0] = 0.1f;
-      ray.org[1] = 1.09482f;
-      ray.org[2] = 29.8984f;
-      ray.dir[0] = 0.f;
-      ray.dir[1] = 0.99482f;
-      ray.dir[2] = -0.101655f;
-      ray.tnear = 0.05f;
-      ray.tfar  = inf;
-      ray.mask  = -1;
-      
-      ray.geomID = RTC_INVALID_GEOMETRY_ID;
-      ray.primID = RTC_INVALID_GEOMETRY_ID;
-      ray.instID = RTC_INVALID_GEOMETRY_ID;
-      
-      rtcIntersect(mainSceneId, ray);
-      
-      if (ray.geomID == RTC_INVALID_GEOMETRY_ID) 
-        throw std::runtime_error("no triangle hit");
-      
-      const Triangle &triangle = m_triangles[ray.primID];
-      
-      const Vertex &v0_ = m_vertices[triangle.v0];
-      const Vertex &v1_ = m_vertices[triangle.v1];
-      const Vertex &v2_ = m_vertices[triangle.v2];
-      
-      const Vec3fa v0(v0_.x, v0_.y, v0_.z);
-      const Vec3fa v1(v1_.x, v1_.y, v1_.z);
-      const Vec3fa v2(v2_.x, v2_.y, v2_.z);
-      
-      const Vec3fa hit_tri = v0 + ray.u * (v1 - v0) + ray.v * (v2 - v0);
-      
-      const Vec3fa ray_org = Vec3fa(ray.org[0], ray.org[1], ray.org[2]);
-      const Vec3fa ray_dir = Vec3fa(ray.dir[0], ray.dir[1], ray.dir[2]);
-      
-      const Vec3fa hit_tfar = ray_org + ray.tfar * ray_dir;
-      const Vec3fa delta = hit_tri - hit_tfar;
-      const float distance = embree::length(delta);
-      
-      return distance < 0.0002f;
-    }
-  };
-
-  struct FlagsTest : public VerifyApplication::Test
-  {
     FlagsTest (std::string name, VerifyApplication::TestType type, RTCSceneFlags sceneFlags, RTCGeometryFlags geomFlags)
       : VerifyApplication::Test(name,type), sceneFlags(sceneFlags), geomFlags(geomFlags) {}
 
@@ -815,37 +636,8 @@ namespace embree
       scene = nullptr;
       return true;
     }
-
-  public:
-    RTCSceneFlags sceneFlags;
-    RTCGeometryFlags geomFlags;
   };
   
-  struct StaticSceneTest : public VerifyApplication::Test
-  {
-    StaticSceneTest (std::string name)
-      : VerifyApplication::Test(name,VerifyApplication::PASS) {}
-
-    bool run(VerifyApplication* state)
-    {
-      ClearBuffers clear_before_return;
-      RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_STATIC,aflags);
-      AssertNoError(state->device);
-      unsigned geom0 = addSphere(state->device,scene,RTC_GEOMETRY_STATIC,zero,1.0f,50);
-      AssertNoError(state->device);
-      unsigned geom1 = addSubdivSphere(state->device,scene,RTC_GEOMETRY_STATIC,zero,1.0f,10,16);
-      AssertNoError(state->device);
-      unsigned geom2 = addHair(state->device,scene,RTC_GEOMETRY_STATIC,Vec3fa(0,0,0),1.0f,0.5f,100);
-      AssertNoError(state->device);
-      rtcCommit (scene);
-      AssertNoError(state->device);
-      rtcDisable(scene,geom0); // static scene cannot get modified anymore after commit
-      AssertAnyError(state->device);
-      scene = nullptr;
-      return true;
-    }
-  };
-
   struct UnmappedBeforeCommitTest : public VerifyApplication::Test
   {
     UnmappedBeforeCommitTest (std::string name)
@@ -888,6 +680,45 @@ namespace embree
       rtcGetBounds(scene,(RTCBounds&)bounds1);
       scene = nullptr;
       return bounds0 == bounds1;
+    }
+  };
+
+  struct GetUserDataTest : public VerifyApplication::Test
+  {
+    GetUserDataTest (std::string name)
+      : VerifyApplication::Test(name,VerifyApplication::PASS) {}
+    
+    bool run(VerifyApplication* state)
+    {
+      RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_STATIC,RTC_INTERSECT1);
+      AssertNoError(state->device);
+      unsigned geom0 = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 0, 0, 1);
+      AssertNoError(state->device);
+      rtcSetUserData(scene,geom0,(void*)1);
+      
+      unsigned geom1 = rtcNewSubdivisionMesh(scene, RTC_GEOMETRY_STATIC, 0, 0, 0, 0, 0, 0, 1);
+      AssertNoError(state->device);
+      rtcSetUserData(scene,geom1,(void*)2);
+      
+      unsigned geom2 = rtcNewHairGeometry (scene, RTC_GEOMETRY_STATIC, 0, 0, 1);
+      AssertNoError(state->device);
+      rtcSetUserData(scene,geom2,(void*)3);
+      
+      unsigned geom3 = rtcNewUserGeometry (scene,0);
+      AssertNoError(state->device);
+      rtcSetUserData(scene,geom3,(void*)4);
+      
+      rtcCommit (scene);
+      AssertNoError(state->device);
+      
+      if ((size_t)rtcGetUserData(scene,geom0) != 1) return false;
+      if ((size_t)rtcGetUserData(scene,geom1) != 2) return false;
+      if ((size_t)rtcGetUserData(scene,geom2) != 3) return false;
+      if ((size_t)rtcGetUserData(scene,geom3) != 4) return false;
+      
+      scene = nullptr;
+      AssertNoError(state->device);
+      return true;
     }
   };
 
@@ -936,1024 +767,93 @@ namespace embree
       return true;
     }
   };
-  
-  struct DynamicEnableDisableTest : public VerifyApplication::Test
-  {
-    DynamicEnableDisableTest (std::string name)
-      : VerifyApplication::Test(name,VerifyApplication::PASS) {}
-    
-    bool run(VerifyApplication* state)
-    {
-      ClearBuffers clear_before_return;
-      RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_DYNAMIC,aflags);
-      AssertNoError(state->device);
-      unsigned geom0 = addSphere(state->device,scene,RTC_GEOMETRY_STATIC,Vec3fa(-1,0,-1),1.0f,50);
-      //unsigned geom1 = addSphere(state->device,scene,RTC_GEOMETRY_STATIC,Vec3fa(-1,0,+1),1.0f,50);
-      unsigned geom1 = addHair  (state->device,scene,RTC_GEOMETRY_STATIC,Vec3fa(-1,0,+1),1.0f,1.0f,1);
-      unsigned geom2 = addSphere(state->device,scene,RTC_GEOMETRY_STATIC,Vec3fa(+1,0,-1),1.0f,50);
-      //unsigned geom3 = addSphere(state->device,scene,RTC_GEOMETRY_STATIC,Vec3fa(+1,0,+1),1.0f,50);
-      unsigned geom3 = addHair  (state->device,scene,RTC_GEOMETRY_STATIC,Vec3fa(+1,0,+1),1.0f,1.0f,1);
-      AssertNoError(state->device);
-      
-      for (size_t i=0; i<16; i++) 
-      {
-        bool enabled0 = i & 1, enabled1 = i & 2, enabled2 = i & 4, enabled3 = i & 8;
-        if (enabled0) rtcEnable(scene,geom0); else rtcDisable(scene,geom0); AssertNoError(state->device);
-        if (enabled1) rtcEnable(scene,geom1); else rtcDisable(scene,geom1); AssertNoError(state->device);
-        if (enabled2) rtcEnable(scene,geom2); else rtcDisable(scene,geom2); AssertNoError(state->device);
-        if (enabled3) rtcEnable(scene,geom3); else rtcDisable(scene,geom3); AssertNoError(state->device);
-        rtcCommit (scene);
-        AssertNoError(state->device);
-        {
-          RTCRay ray0 = makeRay(Vec3fa(-1,10,-1),Vec3fa(0,-1,0));
-          RTCRay ray1 = makeRay(Vec3fa(-1,10,+1),Vec3fa(0,-1,0)); 
-          RTCRay ray2 = makeRay(Vec3fa(+1,10,-1),Vec3fa(0,-1,0)); 
-          RTCRay ray3 = makeRay(Vec3fa(+1,10,+1),Vec3fa(0,-1,0)); 
-          rtcIntersect(scene,ray0);
-          rtcIntersect(scene,ray1);
-          rtcIntersect(scene,ray2);
-          rtcIntersect(scene,ray3);
-          bool ok0 = enabled0 ? ray0.geomID == 0 : ray0.geomID == -1;
-          bool ok1 = enabled1 ? ray1.geomID == 1 : ray1.geomID == -1;
-          bool ok2 = enabled2 ? ray2.geomID == 2 : ray2.geomID == -1;
-          bool ok3 = enabled3 ? ray3.geomID == 3 : ray3.geomID == -1;
-          if (!ok0 || !ok1 || !ok2 || !ok3) return false;
-        }
-      }
-      scene = nullptr;
-      return true;
-    }
-  };
 
-  struct GetUserDataTest : public VerifyApplication::Test
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
+
+  struct EmptySceneTest : public VerifyApplication::Test
   {
-    GetUserDataTest (std::string name)
-      : VerifyApplication::Test(name,VerifyApplication::PASS) {}
-    
+    EmptySceneTest (std::string name, RTCSceneFlags sflags)
+      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags) {}
+
     bool run(VerifyApplication* state)
     {
-      RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_STATIC,RTC_INTERSECT1);
+      RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,aflags);
       AssertNoError(state->device);
-      unsigned geom0 = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 0, 0, 1);
-      AssertNoError(state->device);
-      rtcSetUserData(scene,geom0,(void*)1);
-      
-      unsigned geom1 = rtcNewSubdivisionMesh(scene, RTC_GEOMETRY_STATIC, 0, 0, 0, 0, 0, 0, 1);
-      AssertNoError(state->device);
-      rtcSetUserData(scene,geom1,(void*)2);
-      
-      unsigned geom2 = rtcNewHairGeometry (scene, RTC_GEOMETRY_STATIC, 0, 0, 1);
-      AssertNoError(state->device);
-      rtcSetUserData(scene,geom2,(void*)3);
-      
-      unsigned geom3 = rtcNewUserGeometry (scene,0);
-      AssertNoError(state->device);
-      rtcSetUserData(scene,geom3,(void*)4);
-      
       rtcCommit (scene);
       AssertNoError(state->device);
-      
-      if ((size_t)rtcGetUserData(scene,geom0) != 1) return false;
-      if ((size_t)rtcGetUserData(scene,geom1) != 2) return false;
-      if ((size_t)rtcGetUserData(scene,geom2) != 3) return false;
-      if ((size_t)rtcGetUserData(scene,geom3) != 4) return false;
-      
-      scene = nullptr;
-      AssertNoError(state->device);
       return true;
     }
-  };
 
-  void move_mesh_vec3f(const RTCSceneRef& scene, unsigned mesh, size_t numVertices, Vec3fa& pos) 
-  {
-    Vertex3f* vertices = (Vertex3f*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
-    for (size_t i=0; i<numVertices; i++) vertices[i] += Vertex3f(pos);
-    rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER);
-    rtcUpdate(scene,mesh);
-  }
-
-  void move_mesh_vec3fa(const RTCSceneRef& scene, unsigned mesh, size_t numVertices, Vec3fa& pos) 
-  {
-    Vertex3fa* vertices = (Vertex3fa*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
-    for (size_t i=0; i<numVertices; i++) vertices[i] += Vertex3fa(pos);
-    rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER);
-    rtcUpdate(scene,mesh);
-  }
-  
-  struct UpdateTest : public VerifyApplication::Test
-  {
-    UpdateTest (std::string name, RTCGeometryFlags flags)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), flags(flags) {}
-    
-    bool run(VerifyApplication* state)
-    {
-      ClearBuffers clear_before_return;
-      RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_DYNAMIC,aflags);
-      AssertNoError(state->device);
-      size_t numPhi = 50;
-      size_t numVertices = 2*numPhi*(numPhi+1);
-      Vec3fa pos0 = Vec3fa(-10,0,-10);
-      Vec3fa pos1 = Vec3fa(-10,0,+10);
-      Vec3fa pos2 = Vec3fa(+10,0,-10);
-      Vec3fa pos3 = Vec3fa(+10,0,+10);
-      unsigned geom0 = addSphere(state->device,scene,flags,pos0,1.0f,numPhi);
-      unsigned geom1 = addHair  (state->device,scene,flags,pos1,1.0f,1.0f,1);
-      unsigned geom2 = addSphere(state->device,scene,flags,pos2,1.0f,numPhi);
-      unsigned geom3 = addHair  (state->device,scene,flags,pos3,1.0f,1.0f,1);
-      AssertNoError(state->device);
-      
-      for (size_t i=0; i<16; i++) 
-      {
-        bool move0 = i & 1, move1 = i & 2, move2 = i & 4, move3 = i & 8;
-        Vec3fa ds(2,0.1f,2);
-        if (move0) { move_mesh_vec3f (scene,geom0,numVertices,ds); pos0 += ds; }
-        if (move1) { move_mesh_vec3fa(scene,geom1,4,ds); pos1 += ds; }
-        if (move2) { move_mesh_vec3f (scene,geom2,numVertices,ds); pos2 += ds; }
-        if (move3) { move_mesh_vec3fa(scene,geom3,4,ds); pos3 += ds; }
-        rtcCommit (scene);
-        AssertNoError(state->device);
-        {
-          RTCRay ray0 = makeRay(pos0+Vec3fa(0,10,0),Vec3fa(0,-1,0)); 
-          RTCRay ray1 = makeRay(pos1+Vec3fa(0,10,0),Vec3fa(0,-1,0)); 
-          RTCRay ray2 = makeRay(pos2+Vec3fa(0,10,0),Vec3fa(0,-1,0)); 
-          RTCRay ray3 = makeRay(pos3+Vec3fa(0,10,0),Vec3fa(0,-1,0)); 
-          rtcIntersect(scene,ray0);
-          rtcIntersect(scene,ray1);
-          rtcIntersect(scene,ray2);
-          rtcIntersect(scene,ray3);
-          if (ray0.geomID != 0 || 
-              ray1.geomID != 1 || 
-              ray2.geomID != 2 || 
-              ray3.geomID != 3) return false;
-
-#if defined(RTCORE_RAY_PACKETS)
-          if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT4))
-          {
-            RTCRay4 ray4; memset(&ray4,0,sizeof(ray4));
-            setRay(ray4,0,ray0);
-            setRay(ray4,1,ray1);
-            setRay(ray4,2,ray2);
-            setRay(ray4,3,ray3);
-            __aligned(16) int valid4[4] = { -1,-1,-1,-1 };
-            rtcIntersect4(valid4,scene,ray4);
-            if (ray4.geomID[0] != 0 || 
-                ray4.geomID[1] != 1 || 
-                ray4.geomID[2] != 2 || 
-                ray4.geomID[3] != 3) return false;
-          }
-          
-          if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT8))
-          {
-            RTCRay8 ray8; memset(&ray8,0,sizeof(ray8));
-            setRay(ray8,0,ray0);
-            setRay(ray8,1,ray1);
-            setRay(ray8,2,ray2);
-            setRay(ray8,3,ray3);
-            __aligned(32) int valid8[8] = { -1,-1,-1,-1, 0, 0, 0, 0 };
-            rtcIntersect8(valid8,scene,ray8);
-            if (ray8.geomID[0] != 0 || 
-                ray8.geomID[1] != 1 || 
-                ray8.geomID[2] != 2 || 
-                ray8.geomID[3] != 3) return false;
-          }
-          
-          if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT16))
-          {
-            RTCRay16 ray16; memset(&ray16,0,sizeof(ray16));
-            setRay(ray16,0,ray0);
-            setRay(ray16,1,ray1);
-            setRay(ray16,2,ray2);
-            setRay(ray16,3,ray3);
-            __aligned(64) int valid16[16] = { -1,-1,-1,-1,+0,+0,+0,+0, 
-                                              +0,+0,+0,+0,+0,+0,+0,+0 };
-            rtcIntersect16(valid16,scene,ray16);
-            if (ray16.geomID[0] != 0 || 
-                ray16.geomID[1] != 1 || 
-                ray16.geomID[2] != 2 || 
-                ray16.geomID[3] != 3) return false;
-          }
-#endif
-        }
-      }
-      scene = nullptr;
-      return true;
-    }
-    
   public:
-    RTCGeometryFlags flags;
+    RTCSceneFlags sflags;
   };
-  
-  struct RayMasksTest : public VerifyApplication::Test
+
+  struct EmptyGeometryTest : public VerifyApplication::Test
   {
-    RayMasksTest (std::string name)
-      : VerifyApplication::Test(name,VerifyApplication::PASS) {}
-    
-    bool rtcore_ray_masks_intersect(VerifyApplication* state, RTCSceneFlags sflags, RTCGeometryFlags gflags)
-    {
-      ClearBuffers clear_before_return;
-      bool passed = true;
-      Vec3fa pos0 = Vec3fa(-10,0,-10);
-      Vec3fa pos1 = Vec3fa(-10,0,+10);
-      Vec3fa pos2 = Vec3fa(+10,0,-10);
-      Vec3fa pos3 = Vec3fa(+10,0,+10);
-      
-      RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,aflags);
-      unsigned geom0 = addSphere(state->device,scene,gflags,pos0,1.0f,50);
-      //unsigned geom1 = addSphere(state->device,scene,gflags,pos1,1.0f,50);
-      unsigned geom1 = addHair  (state->device,scene,gflags,pos1,1.0f,1.0f,1);
-      unsigned geom2 = addSphere(state->device,scene,gflags,pos2,1.0f,50);
-      //unsigned geom3 = addSphere(state->device,scene,gflags,pos3,1.0f,50);
-      unsigned geom3 = addHair  (state->device,scene,gflags,pos3,1.0f,1.0f,1);
-      rtcSetMask(scene,geom0,1);
-      rtcSetMask(scene,geom1,2);
-      rtcSetMask(scene,geom2,4);
-      rtcSetMask(scene,geom3,8);
-      rtcCommit (scene);
-      
-      for (size_t i=0; i<16; i++) 
-      {
-        int mask0 = i;
-        int mask1 = i+1;
-        int mask2 = i+2;
-        int mask3 = i+3;
-        
-        {
-          RTCRay ray0 = makeRay(pos0+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray0.mask = mask0;
-          RTCRay ray1 = makeRay(pos1+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray1.mask = mask1;
-          RTCRay ray2 = makeRay(pos2+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray2.mask = mask2;
-          RTCRay ray3 = makeRay(pos3+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray3.mask = mask3;
-          rtcIntersect(scene,ray0);
-          rtcIntersect(scene,ray1);
-          rtcIntersect(scene,ray2);
-          rtcIntersect(scene,ray3);
-          bool ok0 = mask0 & 1 ? ray0.geomID == 0 : ray0.geomID == -1;
-          bool ok1 = mask1 & 2 ? ray1.geomID == 1 : ray1.geomID == -1;
-          bool ok2 = mask2 & 4 ? ray2.geomID == 2 : ray2.geomID == -1;
-          bool ok3 = mask3 & 8 ? ray3.geomID == 3 : ray3.geomID == -1;
-          if (!ok0 || !ok1 || !ok2 || !ok3) passed = false;
-        }
-        
-#if defined(RTCORE_RAY_PACKETS)
-        if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT4))
-        {
-          RTCRay ray0 = makeRay(pos0+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray0.mask = mask0;
-          RTCRay ray1 = makeRay(pos1+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray1.mask = mask1;
-          RTCRay ray2 = makeRay(pos2+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray2.mask = mask2;
-          RTCRay ray3 = makeRay(pos3+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray3.mask = mask3;
-          
-          RTCRay4 ray4; memset(&ray4,0,sizeof(ray4));
-          setRay(ray4,0,ray0);
-          setRay(ray4,1,ray1);
-          setRay(ray4,2,ray2);
-          setRay(ray4,3,ray3);
-          __aligned(16) int valid4[4] = { -1,-1,-1,-1 };
-          rtcIntersect4(valid4,scene,ray4);
-          bool ok4a = mask0 & 1 ? ray4.geomID[0] == 0 : ray4.geomID[0] == -1;
-          bool ok4b = mask1 & 2 ? ray4.geomID[1] == 1 : ray4.geomID[1] == -1;
-          bool ok4c = mask2 & 4 ? ray4.geomID[2] == 2 : ray4.geomID[2] == -1;
-          bool ok4d = mask3 & 8 ? ray4.geomID[3] == 3 : ray4.geomID[3] == -1;
-          if (!ok4a || !ok4b || !ok4c || !ok4d) passed = false; 
-        }
-        
-        if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT8))
-        {
-          RTCRay ray0 = makeRay(pos0+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray0.mask = mask0;
-          RTCRay ray1 = makeRay(pos1+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray1.mask = mask1;
-          RTCRay ray2 = makeRay(pos2+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray2.mask = mask2;
-          RTCRay ray3 = makeRay(pos3+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray3.mask = mask3;
-          
-          RTCRay8 ray8; memset(&ray8,0,sizeof(ray8));
-          setRay(ray8,0,ray0);
-          setRay(ray8,1,ray1);
-          setRay(ray8,2,ray2);
-          setRay(ray8,3,ray3);
-          __aligned(32) int valid8[8] = { -1,-1,-1,-1,0,0,0,0 };
-          rtcIntersect8(valid8,scene,ray8);
-          bool ok8a = mask0 & 1 ? ray8.geomID[0] == 0 : ray8.geomID[0] == -1;
-          bool ok8b = mask1 & 2 ? ray8.geomID[1] == 1 : ray8.geomID[1] == -1;
-          bool ok8c = mask2 & 4 ? ray8.geomID[2] == 2 : ray8.geomID[2] == -1;
-          bool ok8d = mask3 & 8 ? ray8.geomID[3] == 3 : ray8.geomID[3] == -1;
-          if (!ok8a || !ok8b || !ok8c || !ok8d) passed = false; 
-        }
-        
-        if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT16))
-        {
-          RTCRay ray0 = makeRay(pos0+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray0.mask = mask0;
-          RTCRay ray1 = makeRay(pos1+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray1.mask = mask1;
-          RTCRay ray2 = makeRay(pos2+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray2.mask = mask2;
-          RTCRay ray3 = makeRay(pos3+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray3.mask = mask3;
-          
-          RTCRay16 ray16; memset(&ray16,0,sizeof(ray16));
-          setRay(ray16,0,ray0);
-          setRay(ray16,1,ray1);
-          setRay(ray16,2,ray2);
-          setRay(ray16,3,ray3);
-          __aligned(64) int valid16[16] = { -1,-1,-1,-1,0,0,0,0,0,0,0,0,0,0,0,0 };
-          rtcIntersect16(valid16,scene,ray16);
-          bool ok16a = mask0 & 1 ? ray16.geomID[0] == 0 : ray16.geomID[0] == -1;
-          bool ok16b = mask1 & 2 ? ray16.geomID[1] == 1 : ray16.geomID[1] == -1;
-          bool ok16c = mask2 & 4 ? ray16.geomID[2] == 2 : ray16.geomID[2] == -1;
-          bool ok16d = mask3 & 8 ? ray16.geomID[3] == 3 : ray16.geomID[3] == -1;
-          if (!ok16a || !ok16b || !ok16c || !ok16d) passed = false;
-        }
-#endif
-      }
-      scene = nullptr;
-      return passed;
-    }
-    
-    bool rtcore_ray_masks_occluded(VerifyApplication* state, RTCSceneFlags sflags, RTCGeometryFlags gflags)
-    {
-      ClearBuffers clear_before_return;
-      bool passed = true;
-      Vec3fa pos0 = Vec3fa(-10,0,-10);
-      Vec3fa pos1 = Vec3fa(-10,0,+10);
-      Vec3fa pos2 = Vec3fa(+10,0,-10);
-      Vec3fa pos3 = Vec3fa(+10,0,+10);
-      
-      RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,aflags);
-      unsigned geom0 = addSphere(state->device,scene,gflags,pos0,1.0f,50);
-      unsigned geom1 = addSphere(state->device,scene,gflags,pos1,1.0f,50);
-      unsigned geom2 = addSphere(state->device,scene,gflags,pos2,1.0f,50);
-      unsigned geom3 = addSphere(state->device,scene,gflags,pos3,1.0f,50);
-      rtcSetMask(scene,geom0,1);
-      rtcSetMask(scene,geom1,2);
-      rtcSetMask(scene,geom2,4);
-      rtcSetMask(scene,geom3,8);
-      rtcCommit (scene);
-      
-      for (size_t i=0; i<16; i++) 
-      {
-        int mask0 = i;
-        int mask1 = i+1;
-        int mask2 = i+2;
-        int mask3 = i+3;
-        
-        {
-          RTCRay ray0 = makeRay(pos0+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray0.mask = mask0;
-          RTCRay ray1 = makeRay(pos1+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray1.mask = mask1;
-          RTCRay ray2 = makeRay(pos2+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray2.mask = mask2;
-          RTCRay ray3 = makeRay(pos3+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray3.mask = mask3;
-          rtcOccluded(scene,ray0);
-          rtcOccluded(scene,ray1);
-          rtcOccluded(scene,ray2);
-          rtcOccluded(scene,ray3);
-          bool ok0 = mask0 & 1 ? ray0.geomID == 0 : ray0.geomID == -1;
-          bool ok1 = mask1 & 2 ? ray1.geomID == 0 : ray1.geomID == -1;
-          bool ok2 = mask2 & 4 ? ray2.geomID == 0 : ray2.geomID == -1;
-          bool ok3 = mask3 & 8 ? ray3.geomID == 0 : ray3.geomID == -1;
-          
-          if (!ok0 || !ok1 || !ok2 || !ok3) passed = false;
-        }
-        
-#if defined(RTCORE_RAY_PACKETS)
-        if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT4))
-        {
-          RTCRay ray0 = makeRay(pos0+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray0.mask = mask0;
-          RTCRay ray1 = makeRay(pos1+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray1.mask = mask1;
-          RTCRay ray2 = makeRay(pos2+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray2.mask = mask2;
-          RTCRay ray3 = makeRay(pos3+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray3.mask = mask3;
-          
-          RTCRay4 ray4; memset(&ray4,0,sizeof(ray4));
-          setRay(ray4,0,ray0);
-          setRay(ray4,1,ray1);
-          setRay(ray4,2,ray2);
-          setRay(ray4,3,ray3);
-          __aligned(16) int valid4[4] = { -1,-1,-1,-1 };
-          rtcOccluded4(valid4,scene,ray4);
-          bool ok4a = mask0 & 1 ? ray4.geomID[0] == 0 : ray4.geomID[0] == -1;
-          bool ok4b = mask1 & 2 ? ray4.geomID[1] == 0 : ray4.geomID[1] == -1;
-          bool ok4c = mask2 & 4 ? ray4.geomID[2] == 0 : ray4.geomID[2] == -1;
-          bool ok4d = mask3 & 8 ? ray4.geomID[3] == 0 : ray4.geomID[3] == -1;
-          if (!ok4a || !ok4b || !ok4c || !ok4d) passed = false;
-        }
-        
-        if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT8))
-        {
-          RTCRay ray0 = makeRay(pos0+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray0.mask = mask0;
-          RTCRay ray1 = makeRay(pos1+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray1.mask = mask1;
-          RTCRay ray2 = makeRay(pos2+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray2.mask = mask2;
-          RTCRay ray3 = makeRay(pos3+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray3.mask = mask3;
-          
-          RTCRay8 ray8; memset(&ray8,0,sizeof(ray8));
-          setRay(ray8,0,ray0);
-          setRay(ray8,1,ray1);
-          setRay(ray8,2,ray2);
-          setRay(ray8,3,ray3);
-          __aligned(32) int valid8[8] = { -1,-1,-1,-1,0,0,0,0 };
-          rtcOccluded8(valid8,scene,ray8);
-          bool ok8a = mask0 & 1 ? ray8.geomID[0] == 0 : ray8.geomID[0] == -1;
-          bool ok8b = mask1 & 2 ? ray8.geomID[1] == 0 : ray8.geomID[1] == -1;
-          bool ok8c = mask2 & 4 ? ray8.geomID[2] == 0 : ray8.geomID[2] == -1;
-          bool ok8d = mask3 & 8 ? ray8.geomID[3] == 0 : ray8.geomID[3] == -1;
-          if (!ok8a || !ok8b || !ok8c || !ok8d) passed = false;
-        }
-        
-        if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT16))
-        {
-          RTCRay ray0 = makeRay(pos0+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray0.mask = mask0;
-          RTCRay ray1 = makeRay(pos1+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray1.mask = mask1;
-          RTCRay ray2 = makeRay(pos2+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray2.mask = mask2;
-          RTCRay ray3 = makeRay(pos3+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray3.mask = mask3;
-          
-          RTCRay16 ray16; memset(&ray16,0,sizeof(ray16));
-          setRay(ray16,0,ray0);
-          setRay(ray16,1,ray1);
-          setRay(ray16,2,ray2);
-          setRay(ray16,3,ray3);
-          __aligned(64) int valid16[16] = { -1,-1,-1,-1,0,0,0,0,0,0,0,0,0,0,0,0 };
-          
-          rtcOccluded16(valid16,scene,ray16);
-          
-          bool ok16a = mask0 & 1 ? ray16.geomID[0] == 0 : ray16.geomID[0] == -1;
-          bool ok16b = mask1 & 2 ? ray16.geomID[1] == 0 : ray16.geomID[1] == -1;
-          bool ok16c = mask2 & 4 ? ray16.geomID[2] == 0 : ray16.geomID[2] == -1;
-          bool ok16d = mask3 & 8 ? ray16.geomID[3] == 0 : ray16.geomID[3] == -1;
-          if (!ok16a || !ok16b || !ok16c || !ok16d) passed = false;
-        }
-#endif
-      }
-      scene = nullptr;
-      return passed;
-    }
+    RTCSceneFlags sflags;
+    RTCGeometryFlags gflags;
+
+    EmptyGeometryTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags)
+      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), gflags(gflags) {}
     
     bool run(VerifyApplication* state)
     {
-      bool passed = true;
-      for (int i=0; i<numSceneFlags; i++) 
-      {
-        RTCSceneFlags flag = getSceneFlag(i);
-        bool ok0 = rtcore_ray_masks_intersect(state,flag,RTC_GEOMETRY_STATIC);
-        if (ok0) printf(GREEN("+")); else printf(RED("-"));
-        passed &= ok0;
-        bool ok1 = rtcore_ray_masks_occluded(state,flag,RTC_GEOMETRY_STATIC);
-        if (ok1) printf(GREEN("+")); else printf(RED("-"));
-        passed &= ok1;
-        fflush(stdout);
-      }
-      return passed;
-    }
-  };
-
-  struct BuildTest : public VerifyApplication::Test
-  {
-    BuildTest (std::string name)
-      : VerifyApplication::Test(name,VerifyApplication::PASS) {}
-    
-    bool rtcore_build(VerifyApplication* state, RTCSceneFlags sflags, RTCGeometryFlags gflags)
-    {
-      ClearBuffers clear_before_return;
       RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,aflags);
-      addSphere(state->device,scene,gflags,zero,1E-24f,50);
-      addHair(state->device,scene,gflags,zero,1E-24f,1E-26f,100,1E-26f);
-      addSphere(state->device,scene,gflags,zero,1E-24f,50);
-      addHair(state->device,scene,gflags,zero,1E-24f,1E-26f,100,1E-26f);
+      rtcNewTriangleMesh (scene,gflags,0,0,1);
+      rtcNewTriangleMesh (scene,gflags,0,0,2);
+      rtcNewQuadMesh (scene,gflags,0,0,1);
+      rtcNewQuadMesh (scene,gflags,0,0,2);
+      rtcNewSubdivisionMesh (scene,gflags,0,0,0,0,0,0,1);
+      rtcNewSubdivisionMesh (scene,gflags,0,0,0,0,0,0,2);
+      rtcNewHairGeometry (scene,gflags,0,0,1);
+      rtcNewHairGeometry (scene,gflags,0,0,2);
+      rtcNewCurveGeometry (scene,gflags,0,0,1);
+      rtcNewCurveGeometry (scene,gflags,0,0,2);
+      rtcNewUserGeometry2 (scene,0,1);
+      rtcNewUserGeometry2 (scene,0,2);
       rtcCommit (scene);
+      AssertNoError(state->device);
       scene = nullptr;
+      AssertNoError(state->device);
       return true;
     }
-  
-    bool run(VerifyApplication* state)
-    {
-      bool passed = true;
-      for (int i=0; i<numSceneGeomFlags; i++) 
-      {
-        RTCSceneFlags sflags; RTCGeometryFlags gflags;
-        getSceneGeomFlag(i,sflags,gflags);
-        bool ok = rtcore_build(state,sflags,gflags);
-        if (ok) printf(GREEN("+")); else printf(RED("-"));
-        passed &= ok;
-        fflush(stdout);
-      }
-      return passed;
-    }
   };
 
-  struct IntersectionFilterTest : public VerifyApplication::Test
-  {
-    bool subdiv;
-
-    IntersectionFilterTest (std::string name, bool subdiv)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), subdiv(subdiv) {}
-    
-    static void intersectionFilter1(void* ptr, RTCRay& ray) 
-    {
-      if ((size_t)ptr != 123) 
-        return;
-      
-      if (ray.primID & 2)
-        ray.geomID = -1;
-    }
-    
-    static void intersectionFilter4(const void* valid_i, void* ptr, RTCRay4& ray) 
-    {
-      if ((size_t)ptr != 123) 
-        return;
-      
-      int* valid = (int*)valid_i;
-      for (size_t i=0; i<4; i++)
-        if (valid[i] == -1)
-          if (ray.primID[i] & 2) 
-            ray.geomID[i] = -1;
-    }
-    
-    static void intersectionFilter8(const void* valid_i, void* ptr, RTCRay8& ray) 
-    {
-      if ((size_t)ptr != 123) 
-        return;
-      
-      int* valid = (int*)valid_i;
-      for (size_t i=0; i<8; i++)
-        if (valid[i] == -1)
-          if (ray.primID[i] & 2) 
-            ray.geomID[i] = -1;
-    }
-    
-    static void intersectionFilter16(const void* valid_i, void* ptr, RTCRay16& ray) 
-    {
-      if ((size_t)ptr != 123) 
-        return;
-      
-      unsigned int valid = *(unsigned int*)valid_i;
-      for (size_t i=0; i<16; i++)
-	if (valid & ((unsigned int)1 << i))
-	  if (ray.primID[i] & 2) 
-	    ray.geomID[i] = -1;
-    }
-    
-    bool rtcore_filter_intersect(VerifyApplication* state, RTCSceneFlags sflags, RTCGeometryFlags gflags, bool subdiv)
-    {
-      ClearBuffers clear_before_return;
-      bool passed = true;
-      RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,aflags);
-      Vec3fa p0(-0.75f,-0.25f,-10.0f), dx(4,0,0), dy(0,4,0);
-      int geom0 = 0;
-      if (subdiv) geom0 = addSubdivPlane (state->device,scene, gflags, 4, p0, dx, dy);
-      else        geom0 = addPlane (state->device,scene, gflags, 4, p0, dx, dy);
-      rtcSetUserData(scene,geom0,(void*)123);
-      rtcSetIntersectionFilterFunction(scene,geom0,intersectionFilter1);
-#if defined(RTCORE_RAY_PACKETS)
-      rtcSetIntersectionFilterFunction4(scene,geom0,intersectionFilter4);
-      rtcSetIntersectionFilterFunction8(scene,geom0,intersectionFilter8);
-      rtcSetIntersectionFilterFunction16(scene,geom0,intersectionFilter16);
-#endif
-      rtcCommit (scene);
-      
-      for (size_t iy=0; iy<4; iy++) 
-      {
-        for (size_t ix=0; ix<4; ix++) 
-        {
-          int primID = iy*4+ix;
-          if (!subdiv) primID *= 2;
-          {
-            RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
-            rtcIntersect(scene,ray0);
-            bool ok0 = (primID & 2) ? (ray0.geomID == -1) : (ray0.geomID == 0);
-            if (!ok0) passed = false;
-          }
-          
-#if defined(RTCORE_RAY_PACKETS)
-          if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT4))
-          {
-            RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
-            
-            RTCRay4 ray4; memset(&ray4,0,sizeof(ray4));
-            setRay(ray4,0,ray0);
-            __aligned(16) int valid4[4] = { -1,0,0,0 };
-            rtcIntersect4(valid4,scene,ray4);
-            bool ok0 = (primID & 2) ? (ray4.geomID[0] == -1) : (ray4.geomID[0] == 0);
-            if (!ok0) passed = false;
-          }
-          
-          if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT8))
-          {
-            RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
-            
-            RTCRay8 ray8; memset(&ray8,0,sizeof(ray8));
-            setRay(ray8,0,ray0);
-            __aligned(32) int valid8[8] = { -1,0,0,0,0,0,0,0 };
-            rtcIntersect8(valid8,scene,ray8);
-            bool ok0 = (primID & 2) ? (ray8.geomID[0] == -1) : (ray8.geomID[0] == 0);
-            if (!ok0) passed = false;
-          }
-          
-          if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT16))
-          {
-            RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
-            
-            RTCRay16 ray16; memset(&ray16,0,sizeof(ray16));
-            setRay(ray16,0,ray0);
-            __aligned(64) int valid16[16] = { -1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
-            rtcIntersect16(valid16,scene,ray16);
-            bool ok0 = (primID & 2) ? (ray16.geomID[0] == -1) : (ray16.geomID[0] == 0);
-            if (!ok0) passed = false;
-          }
-#endif
-        }
-      }
-      scene = nullptr;
-      return passed;
-    }
-    
-    bool rtcore_filter_occluded(VerifyApplication* state, RTCSceneFlags sflags, RTCGeometryFlags gflags, bool subdiv)
-    {
-      ClearBuffers clear_before_return;
-      bool passed = true;
-      RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,aflags);
-      Vec3fa p0(-0.75f,-0.25f,-10.0f), dx(4,0,0), dy(0,4,0);
-      int geom0 = 0;
-      if (subdiv) geom0 = addSubdivPlane (state->device, scene, gflags, 4, p0, dx, dy);
-      else        geom0 = addPlane (state->device, scene, gflags, 4, p0, dx, dy);
-      rtcSetUserData(scene,geom0,(void*)123);
-      rtcSetOcclusionFilterFunction(scene,geom0,intersectionFilter1);
-#if defined(RTCORE_RAY_PACKETS)
-      rtcSetOcclusionFilterFunction4(scene,geom0,intersectionFilter4);
-      rtcSetOcclusionFilterFunction8(scene,geom0,intersectionFilter8);
-      rtcSetOcclusionFilterFunction16(scene,geom0,intersectionFilter16);
-#endif
-      rtcCommit (scene);
-      
-      for (size_t iy=0; iy<4; iy++) 
-      {
-        for (size_t ix=0; ix<4; ix++) 
-        {
-          int primID = iy*4+ix;
-          if (!subdiv) primID *= 2;
-          
-          {
-            RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
-            rtcOccluded(scene,ray0);
-            bool ok0 = (primID & 2) ? (ray0.geomID == -1) : (ray0.geomID == 0);
-            if (!ok0) passed = false;
-          }
-          
-          if (subdiv) continue; // FIXME: subdiv filter callbacks only working for single ray queries
-          
-#if defined(RTCORE_RAY_PACKETS)
-          if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT4))
-          {
-            RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
-            
-            RTCRay4 ray4; memset(&ray4,0,sizeof(ray4));
-            setRay(ray4,0,ray0);
-            __aligned(16) int valid4[4] = { -1,0,0,0 };
-            rtcOccluded4(valid4,scene,ray4);
-            bool ok0 = (primID & 2) ? (ray4.geomID[0] == -1) : (ray4.geomID[0] == 0);
-            if (!ok0) passed = false;
-          }
-          
-          if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT8))
-          {
-            RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
-            
-            RTCRay8 ray8; memset(&ray8,0,sizeof(ray8));
-            setRay(ray8,0,ray0);
-            __aligned(32) int valid8[8] = { -1,0,0,0,0,0,0,0 };
-            rtcOccluded8(valid8,scene,ray8);
-            bool ok0 = (primID & 2) ? (ray8.geomID[0] == -1) : (ray8.geomID[0] == 0);
-            if (!ok0) passed = false;
-          }
-
-          if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT16))
-          {
-            RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
-            
-            RTCRay16 ray16; memset(&ray16,0,sizeof(ray16));
-            setRay(ray16,0,ray0);
-            __aligned(64) int valid16[16] = { -1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
-            rtcOccluded16(valid16,scene,ray16);
-            bool ok0 = (primID & 2) ? (ray16.geomID[0] == -1) : (ray16.geomID[0] == 0);
-            if (!ok0) passed = false;
-          }
-#endif
-        }
-      }
-      scene = nullptr;
-      return passed;
-    }
-    
-    bool run(VerifyApplication* state)
-    {
-      bool passed = true;
-      for (int i=0; i<numSceneFlags; i++) 
-      {
-        RTCSceneFlags flag = getSceneFlag(i);
-        bool ok0 = rtcore_filter_intersect(state,flag,RTC_GEOMETRY_STATIC, subdiv);
-        if (ok0) printf(GREEN("+")); else printf(RED("-"));
-        passed &= ok0;
-        bool ok1 = rtcore_filter_occluded(state,flag,RTC_GEOMETRY_STATIC, subdiv);
-        if (ok1) printf(GREEN("+")); else printf(RED("-"));
-        passed &= ok1;
-        fflush(stdout);
-      }
-      return passed;
-    }
-  };
-
-  struct PacketWriteTest : public VerifyApplication::Test
-  {
-    PacketWriteTest (std::string name)
-      : VerifyApplication::Test(name,VerifyApplication::PASS) {}
-   
-    bool rtcore_packet_write_test(VerifyApplication* state, RTCSceneFlags sflags, RTCGeometryFlags gflags, int type)
-    {
-      bool passed = true;
-      RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,aflags);
-      
-      switch (type) {
-      case 0: addSphere(state->device,scene,gflags,Vec3fa(-1,0,-1),1.0f,50,-1,0.0f); break;
-      case 1: addSphere(state->device,scene,gflags,Vec3fa(-1,0,-1),1.0f,50,-1,0.1f); break;
-      case 2: addHair  (state->device,scene,gflags,Vec3fa(-1,0,-1),1.0f,1.0f,1,0.0f); break;
-      case 3: addHair  (state->device,scene,gflags,Vec3fa(-1,0,-1),1.0f,1.0f,1,0.1f); break; 
-      }
-      rtcCommit (scene);
-      
-      for (size_t i=0; i<4; i++) 
-      {
-        RTCRay ray = makeRay(Vec3fa(-1,10,-1),Vec3fa(0,-1,0));
-        
-#if defined(RTCORE_RAY_PACKETS)
-        if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT4))
-        {
-          RTCRay4 ray4; memset(&ray4,-1,sizeof(RTCRay4));
-          setRay(ray4,i,ray);
-          __aligned(16) int valid4[4] = { 0,0,0,0 };
-          valid4[i] = -1;
-          rtcOccluded4(valid4,scene,ray4);
-          rtcIntersect4(valid4,scene,ray4);
-          
-          for (int j=0; j<sizeof(RTCRay4)/4; j++) {
-            if ((j%4) == i) continue;
-            passed &= ((int*)&ray4)[j] == -1;
-          }
-        }
-       
-        if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT8))
-        {
-          RTCRay8 ray8; memset(&ray8,-1,sizeof(RTCRay8));
-          setRay(ray8,i,ray);
-          __aligned(32) int valid8[8] = { 0,0,0,0,0,0,0,0 };
-          valid8[i] = -1;
-          rtcOccluded8(valid8,scene,ray8);
-          rtcIntersect8(valid8,scene,ray8);
-          
-          for (int j=0; j<sizeof(RTCRay8)/4; j++) {
-            if ((j%8) == i) continue;
-            passed &= ((int*)&ray8)[j] == -1;
-          }
-        }
-        
-        if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT16))
-        {
-          __aligned(64) RTCRay16 ray16; memset(&ray16,-1,sizeof(RTCRay16));
-          setRay(ray16,i,ray);
-          __aligned(64) int valid16[16] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
-          valid16[i] = -1;
-          rtcOccluded16(valid16,scene,ray16);
-          rtcIntersect16(valid16,scene,ray16);
-          
-          for (int j=0; j<sizeof(RTCRay16)/4; j++) {
-            if ((j%16) == i) continue;
-            passed &= ((int*)&ray16)[j] == -1;
-          }
-        }
-#endif
-      }
-      return passed;
-    }
-    
-    bool run(VerifyApplication* state)
-    {
-      bool passed = true;
-      for (int i=0; i<numSceneFlags; i++) 
-      {
-        RTCSceneFlags flag = getSceneFlag(i);
-        bool ok = true;
-        ok &= rtcore_packet_write_test(state,flag,RTC_GEOMETRY_STATIC,0);
-        ok &= rtcore_packet_write_test(state,flag,RTC_GEOMETRY_STATIC,1);
-        ok &= rtcore_packet_write_test(state,flag,RTC_GEOMETRY_STATIC,2);
-        ok &= rtcore_packet_write_test(state,flag,RTC_GEOMETRY_STATIC,3);
-        if (ok) printf(GREEN("+")); else printf(RED("-"));
-        passed &= ok;
-        fflush(stdout);
-      }
-      return passed;
-    }
-  };
-
-  struct WatertightTest : public VerifyApplication::Test
-  {
-    ALIGNED_STRUCT;
-    RTCSceneFlags sflags;
-    IntersectMode imode;
-    std::string model;
-    Vec3fa pos;
-    static const size_t N = 10;
-    static const size_t maxStreamSize = 100;
-    
-    WatertightTest (std::string name, RTCSceneFlags sflags, IntersectMode imode, std::string model, const Vec3fa& pos)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), imode(imode), model(model), pos(pos) {}
-    
-    bool run(VerifyApplication* state)
-    {
-      ClearBuffers clear_before_return;
-      RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,to_aflags(imode));
-      if      (model == "sphere") addSphere(state->device,scene,RTC_GEOMETRY_STATIC,pos,2.0f,500);
-      else if (model == "plane" ) addPlane(state->device,scene,RTC_GEOMETRY_STATIC,500,Vec3fa(pos.x,-6.0f,-6.0f),Vec3fa(0.0f,12.0f,0.0f),Vec3fa(0.0f,0.0f,12.0f));
-      bool plane = model == "plane";
-      rtcCommit (scene);
-      AssertNoError(state->device);
-      
-      size_t numTests = 0;
-      size_t numFailures = 0;
-      for (size_t i=0; i<N; i++) 
-      {
-        IntersectVariant ivariant = (IntersectVariant) (i%2);
-        for (size_t M=1; M<maxStreamSize; M++)
-        {
-          __aligned(16) RTCRay rays[maxStreamSize];
-          for (size_t j=0; j<M; j++) 
-          {
-            if (plane) {
-              Vec3fa org(drand48()-0.5f,drand48()-0.5f,drand48()-0.5f);
-              Vec3fa dir(1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-              rays[j] = makeRay(Vec3fa(pos.x-3.0f,0.0f,0.0f),dir); 
-            } else {
-              Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-              Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-              rays[j] = makeRay(pos+org,dir); 
-            }
-          }
-          IntersectWithMode(imode,ivariant,scene,rays,M);
-          for (size_t j=0; j<M; j++) {
-            numTests++;
-            numFailures += rays[j].geomID == -1;
-          }
-        }
-      }
-      AssertNoError(state->device);
-      scene = nullptr;
-      AssertNoError(state->device);
-      double failRate = double(numFailures) / double(numTests);
-      bool failed = failRate > 0.00002;
-      
-      printf(" (%f%%)", 100.0f*failRate);
-      fflush(stdout);
-      return !failed;
-    }
-  };
-
-  struct NaNTest : public VerifyApplication::Test
+   struct BuildTest : public VerifyApplication::Test
   {
     RTCSceneFlags sflags;
-    RTCGeometryFlags gflags;
+    RTCGeometryFlags gflags; 
     IntersectMode imode;
-    
-    NaNTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode)
+
+    BuildTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode)
       : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), gflags(gflags), imode(imode) {}
     
-    bool run(VerifyApplication* state)
+    bool run (VerifyApplication* state)
     {
       ClearBuffers clear_before_return;
-      const size_t numRays = 1000;
-      RTCRay rays[numRays];
-      RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,to_aflags(imode));
-      addSphere(state->device,scene,gflags,zero,2.0f,100);
-      addHair  (state->device,scene,gflags,zero,1.0f,1.0f,100);
-      rtcCommit (scene);
-      size_t numFailures = 0;
-
-      double c0 = getSeconds();
-      for (size_t i=0; i<numRays; i++) {
-        Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-        Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-        rays[i] = makeRay(org,dir); 
-      }
-      IntersectWithMode(imode, VARIANT_OCCLUDED ,scene,rays,numRays);
-      IntersectWithMode(imode, VARIANT_INTERSECT,scene,rays,numRays);
-    
-      double c1 = getSeconds();
-      for (size_t i=0; i<numRays; i++) {
-        Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-        Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-        rays[i] = makeRay(org+Vec3fa(nan),dir); 
-      }
-      IntersectWithMode(imode, VARIANT_OCCLUDED ,scene,rays,numRays);
-      IntersectWithMode(imode, VARIANT_INTERSECT,scene,rays,numRays);
-
-      double c2 = getSeconds();
-      for (size_t i=0; i<numRays; i++) {
-        Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-        Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-        rays[i] = makeRay(org+Vec3fa(nan),dir+Vec3fa(nan)); 
-      }
-      IntersectWithMode(imode, VARIANT_OCCLUDED ,scene,rays,numRays);
-      IntersectWithMode(imode, VARIANT_INTERSECT,scene,rays,numRays);
-
-      double c3 = getSeconds();
-      for (size_t i=0; i<numRays; i++) {
-        Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-        Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-        rays[i] = makeRay(org,dir,nan,nan); 
-      }
-      IntersectWithMode(imode, VARIANT_OCCLUDED ,scene,rays,numRays);
-      IntersectWithMode(imode, VARIANT_INTERSECT,scene,rays,numRays);
-
-      double c4 = getSeconds();
-      double d1 = c1-c0;
-      double d2 = c2-c1;
-      double d3 = c3-c2;
-      double d4 = c4-c3;
-      scene = nullptr;
-      
-      bool ok = (d2 < 2.5*d1) && (d3 < 2.5*d1) && (d4 < 2.5*d1);
-      float f = max(d2/d1,d3/d1,d4/d1);
-      printf(" (%3.2fx)",f);
-      fflush(stdout);
-      return ok;
-    }
-  };
-    
-  struct InfTest : public VerifyApplication::Test
-  {
-    RTCSceneFlags sflags;
-    RTCGeometryFlags gflags;
-    IntersectMode imode;
-    
-    InfTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), gflags(gflags), imode(imode) {}
-   
-    bool run(VerifyApplication* state)
-    {
-      ClearBuffers clear_before_return;
-      size_t numRays = 1000;
-      RTCRay rays[numRays];
-      RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,to_aflags(imode));
-      addSphere(state->device,scene,gflags,zero,2.0f,100);
-      addHair  (state->device,scene,gflags,zero,1.0f,1.0f,100);
+      RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,aflags);
+      addSphere(state->device,scene,gflags,zero,1E-24f,50);
+      addHair(state->device,scene,gflags,zero,1E-24f,1E-26f,100,1E-26f);
+      addSphere(state->device,scene,gflags,zero,1E-24f,50);
+      addHair(state->device,scene,gflags,zero,1E-24f,1E-26f,100,1E-26f);
       rtcCommit (scene);
       AssertNoError(state->device);
-
-      size_t numFailures = 0;
-      double c0 = getSeconds();
-      for (size_t i=0; i<numRays; i++) {
-        Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-        Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-        rays[i] = makeRay(org,dir); 
+      if ((sflags & RTC_SCENE_DYNAMIC) == 0) {
+        rtcDisable(scene,0);
+        AssertAnyError(state->device);
+        rtcDisable(scene,1);
+        AssertAnyError(state->device);
+        rtcDisable(scene,2);
+        AssertAnyError(state->device);
+        rtcDisable(scene,3);
+        AssertAnyError(state->device);
       }
-      IntersectWithMode(imode, VARIANT_OCCLUDED ,scene,rays,numRays);
-      IntersectWithMode(imode, VARIANT_INTERSECT,scene,rays,numRays);
-
-      double c1 = getSeconds();
-      for (size_t i=0; i<numRays; i++) {
-        Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-        Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-        rays[i] = makeRay(org+Vec3fa(inf),dir); 
-      }
-      IntersectWithMode(imode, VARIANT_OCCLUDED ,scene,rays,numRays);
-      IntersectWithMode(imode, VARIANT_INTERSECT,scene,rays,numRays);
-
-      double c2 = getSeconds();
-      for (size_t i=0; i<numRays; i++) {
-        Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-        Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-        rays[i] = makeRay(org,dir+Vec3fa(inf)); 
-      }
-      IntersectWithMode(imode, VARIANT_OCCLUDED ,scene,rays,numRays);
-      IntersectWithMode(imode, VARIANT_INTERSECT,scene,rays,numRays);
-
-      double c3 = getSeconds();
-      for (size_t i=0; i<numRays; i++) {
-        Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-        Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-        rays[i] = makeRay(org+Vec3fa(inf),dir+Vec3fa(inf)); 
-      }
-      IntersectWithMode(imode, VARIANT_OCCLUDED ,scene,rays,numRays);
-      IntersectWithMode(imode, VARIANT_INTERSECT,scene,rays,numRays);
-
-      double c4 = getSeconds();
-      for (size_t i=0; i<numRays; i++) {
-        Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-        Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-        rays[i] = makeRay(org,dir,-0.0f,inf); 
-      }
-      IntersectWithMode(imode, VARIANT_OCCLUDED ,scene,rays,numRays);
-      IntersectWithMode(imode, VARIANT_INTERSECT,scene,rays,numRays);
-
-      double c5 = getSeconds();      
-      double d1 = c1-c0;
-      double d2 = c2-c1;
-      double d3 = c3-c2;
-      double d4 = c4-c3;
-      double d5 = c5-c4;
       scene = nullptr;
       AssertNoError(state->device);
-      
-      bool ok = (d2 < 2.5*d1) && (d3 < 2.5*d1) && (d4 < 2.5*d1) && (d5 < 2.5*d1);
-      float f = max(d2/d1,d3/d1,d4/d1,d5/d1);
-      printf(" (%3.2fx)",f);
-      fflush(stdout);
-      return ok;
+      return true;
     }
   };
 
@@ -2030,94 +930,25 @@ namespace embree
     }
   };
 
-  struct BackfaceCullingTest : public VerifyApplication::Test
-  {
-    BackfaceCullingTest (std::string name)
-      : VerifyApplication::Test(name,VerifyApplication::PASS) {}
-    
-    bool rtcore_backface_culling (VerifyApplication* state, RTCSceneFlags sflags, RTCGeometryFlags gflags)
-    {
-      /* create triangle that is front facing for a right handed 
-         coordinate system if looking along the z direction */
-      RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,aflags);
-      unsigned mesh = rtcNewTriangleMesh (scene, gflags, 1, 3);
-      Vertex3fa*   vertices  = (Vertex3fa*  ) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
-      Triangle* triangles = (Triangle*) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
-      vertices[0].x = 0; vertices[0].y = 0; vertices[0].z = 0;
-      vertices[1].x = 0; vertices[1].y = 1; vertices[1].z = 0;
-      vertices[2].x = 1; vertices[2].y = 0; vertices[2].z = 0;
-      triangles[0].v0 = 0; triangles[0].v1 = 1; triangles[0].v2 = 2;
-      rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
-      rtcUnmapBuffer(scene,mesh,RTC_INDEX_BUFFER);
-      rtcCommit (scene);
-      
-      bool passed = true;
-      RTCRay ray;
-      RTCRay backfacing = makeRay(Vec3fa(0.25f,0.25f,1),Vec3fa(0,0,-1)); 
-      RTCRay frontfacing = makeRay(Vec3fa(0.25f,0.25f,-1),Vec3fa(0,0,1)); 
-      
-      ray = frontfacing; rtcOccludedN(scene,ray,1);  if (ray.geomID != 0) passed = false;
-      ray = frontfacing; rtcIntersectN(scene,ray,1); if (ray.geomID != 0) passed = false;
-      ray = backfacing;  rtcOccludedN(scene,ray,1);  if (ray.geomID != -1) passed = false;
-      ray = backfacing;  rtcIntersectN(scene,ray,1); if (ray.geomID != -1) passed = false;
-
-#if defined(RTCORE_RAY_PACKETS)
-      if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT4))
-      {
-        ray = frontfacing; rtcOccludedN(scene,ray,4);  if (ray.geomID != 0) passed = false;
-        ray = frontfacing; rtcIntersectN(scene,ray,4); if (ray.geomID != 0) passed = false;
-        ray = backfacing;  rtcOccludedN(scene,ray,4);  if (ray.geomID != -1) passed = false;
-        ray = backfacing;  rtcIntersectN(scene,ray,4); if (ray.geomID != -1) passed = false;
-      }
-      if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT8))
-      {
-        ray = frontfacing; rtcOccludedN(scene,ray,8);  if (ray.geomID != 0) passed = false;
-        ray = frontfacing; rtcIntersectN(scene,ray,8); if (ray.geomID != 0) passed = false;
-        ray = backfacing;  rtcOccludedN(scene,ray,8);  if (ray.geomID != -1) passed = false;
-        ray = backfacing;  rtcIntersectN(scene,ray,8); if (ray.geomID != -1) passed = false;
-      }
-      if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT16))
-      {
-        ray = frontfacing; rtcOccludedN(scene,ray,16); if (ray.geomID != 0) passed = false;
-        ray = frontfacing; rtcIntersectN(scene,ray,16);if (ray.geomID != 0) passed = false;
-        ray = backfacing;  rtcOccludedN(scene,ray,16); if (ray.geomID != -1) passed = false;
-        ray = backfacing;  rtcIntersectN(scene,ray,16);if (ray.geomID != -1) passed = false;
-      }
-#endif
-      return passed;
-    }
-    
-    bool run(VerifyApplication* state)
-    {
-      bool passed = true;
-      for (int i=0; i<numSceneFlags; i++) 
-      {
-        RTCSceneFlags flag = getSceneFlag(i);
-        bool ok0 = rtcore_backface_culling(state,flag,RTC_GEOMETRY_STATIC);
-        if (ok0) printf(GREEN("+")); else printf(RED("-"));
-        passed &= ok0;
-        fflush(stdout);
-      }
-      return passed;
-    }
-  };
-
   struct NewDeleteGeometryTest : public VerifyApplication::Test
   {
-    NewDeleteGeometryTest (std::string name)
-      : VerifyApplication::Test(name,VerifyApplication::PASS) {}
+    RTCSceneFlags sflags;
+
+    NewDeleteGeometryTest (std::string name,  RTCSceneFlags sflags)
+      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags) {}
     
     bool run(VerifyApplication* state)
     {
       ClearBuffers clear_before_return;
-      RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_DYNAMIC,aflags);
+      RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,aflags_all);
       AssertNoError(state->device);
       int geom[128];
       for (size_t i=0; i<128; i++) geom[i] = -1;
       Sphere spheres[128];
       memset(spheres,0,sizeof(spheres));
       
-      for (size_t i=0; i<50; i++) {
+      for (size_t i=0; i<size_t(50*state->intensity); i++) 
+      {
         for (size_t j=0; j<10; j++) {
           int index = random<int>()%128;
           Vec3fa pos = 100.0f*Vec3fa(drand48(),drand48(),drand48());
@@ -2144,6 +975,13 @@ namespace embree
         AssertNoError(state->device);
         if (i%2 == 0) std::cout << "." << std::flush;
       }
+      
+      /* now delete all geometries */
+      for (size_t i=0; i<128; i++) 
+        if (geom[i] != -1) rtcDeleteGeometry(scene,geom[i]);
+      rtcCommit(scene);
+      AssertNoError(state->device);
+
       rtcCommit (scene);
       AssertNoError(state->device);
       scene = nullptr;
@@ -2151,9 +989,132 @@ namespace embree
     }
   };
 
-   /*********************************************************************************/
-  /*                        rtcInterpolate                                         */
-  /*********************************************************************************/
+  struct EnableDisableGeometryTest : public VerifyApplication::Test
+  {
+    RTCSceneFlags sflags;
+
+    EnableDisableGeometryTest (std::string name, RTCSceneFlags sflags)
+      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags) {}
+    
+    bool run(VerifyApplication* state)
+    {
+      ClearBuffers clear_before_return;
+      RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,aflags);
+      AssertNoError(state->device);
+      unsigned geom0 = addSphere(state->device,scene,RTC_GEOMETRY_STATIC,Vec3fa(-1,0,-1),1.0f,50);
+      //unsigned geom1 = addSphere(state->device,scene,RTC_GEOMETRY_STATIC,Vec3fa(-1,0,+1),1.0f,50);
+      unsigned geom1 = addHair  (state->device,scene,RTC_GEOMETRY_STATIC,Vec3fa(-1,0,+1),1.0f,1.0f,1);
+      unsigned geom2 = addSphere(state->device,scene,RTC_GEOMETRY_STATIC,Vec3fa(+1,0,-1),1.0f,50);
+      //unsigned geom3 = addSphere(state->device,scene,RTC_GEOMETRY_STATIC,Vec3fa(+1,0,+1),1.0f,50);
+      unsigned geom3 = addHair  (state->device,scene,RTC_GEOMETRY_STATIC,Vec3fa(+1,0,+1),1.0f,1.0f,1);
+      AssertNoError(state->device);
+      
+      for (size_t i=0; i<16; i++) 
+      {
+        bool enabled0 = i & 1, enabled1 = i & 2, enabled2 = i & 4, enabled3 = i & 8;
+        if (enabled0) rtcEnable(scene,geom0); else rtcDisable(scene,geom0); AssertNoError(state->device);
+        if (enabled1) rtcEnable(scene,geom1); else rtcDisable(scene,geom1); AssertNoError(state->device);
+        if (enabled2) rtcEnable(scene,geom2); else rtcDisable(scene,geom2); AssertNoError(state->device);
+        if (enabled3) rtcEnable(scene,geom3); else rtcDisable(scene,geom3); AssertNoError(state->device);
+        rtcCommit (scene);
+        AssertNoError(state->device);
+        {
+          RTCRay ray0 = makeRay(Vec3fa(-1,10,-1),Vec3fa(0,-1,0));
+          RTCRay ray1 = makeRay(Vec3fa(-1,10,+1),Vec3fa(0,-1,0)); 
+          RTCRay ray2 = makeRay(Vec3fa(+1,10,-1),Vec3fa(0,-1,0)); 
+          RTCRay ray3 = makeRay(Vec3fa(+1,10,+1),Vec3fa(0,-1,0)); 
+          rtcIntersect(scene,ray0);
+          rtcIntersect(scene,ray1);
+          rtcIntersect(scene,ray2);
+          rtcIntersect(scene,ray3);
+          bool ok0 = enabled0 ? ray0.geomID == 0 : ray0.geomID == -1;
+          bool ok1 = enabled1 ? ray1.geomID == 1 : ray1.geomID == -1;
+          bool ok2 = enabled2 ? ray2.geomID == 2 : ray2.geomID == -1;
+          bool ok3 = enabled3 ? ray3.geomID == 3 : ray3.geomID == -1;
+          if (!ok0 || !ok1 || !ok2 || !ok3) return false;
+        }
+      }
+      scene = nullptr;
+      return true;
+    }
+  };
+  
+  struct UpdateTest : public VerifyApplication::Test
+  {
+    RTCSceneFlags sflags;
+    RTCGeometryFlags gflags;
+    IntersectMode imode;
+
+    UpdateTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode)
+      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), gflags(gflags), imode(imode) {}
+    
+    static void move_mesh_vec3f(const RTCSceneRef& scene, unsigned mesh, size_t numVertices, Vec3fa& pos) 
+    {
+      Vertex3f* vertices = (Vertex3f*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
+      for (size_t i=0; i<numVertices; i++) vertices[i] += Vertex3f(pos);
+      rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER);
+      rtcUpdate(scene,mesh);
+    }
+    
+    static void move_mesh_vec3fa(const RTCSceneRef& scene, unsigned mesh, size_t numVertices, Vec3fa& pos) 
+    {
+      Vertex3fa* vertices = (Vertex3fa*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
+      for (size_t i=0; i<numVertices; i++) vertices[i] += Vertex3fa(pos);
+      rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER);
+      rtcUpdate(scene,mesh);
+    }
+
+    bool run(VerifyApplication* state)
+    {
+      ClearBuffers clear_before_return;
+      RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,to_aflags(imode));
+      AssertNoError(state->device);
+      size_t numPhi = 20;
+      size_t numVertices = 2*numPhi*(numPhi+1);
+      Vec3fa pos0 = Vec3fa(-10,0,-10);
+      Vec3fa pos1 = Vec3fa(-10,0,+10);
+      Vec3fa pos2 = Vec3fa(+10,0,-10);
+      Vec3fa pos3 = Vec3fa(+10,0,+10);
+      unsigned geom0 = addSphere(state->device,scene,gflags,pos0,1.0f,numPhi);
+      unsigned geom1 = addHair  (state->device,scene,gflags,pos1,1.0f,1.0f,1);
+      unsigned geom2 = addSphere(state->device,scene,gflags,pos2,1.0f,numPhi);
+      unsigned geom3 = addHair  (state->device,scene,gflags,pos3,1.0f,1.0f,1);
+      AssertNoError(state->device);
+      
+      for (size_t i=0; i<16; i++) 
+      {
+        bool move0 = i & 1, move1 = i & 2, move2 = i & 4, move3 = i & 8;
+        Vec3fa ds(2,0.1f,2);
+        if (move0) { move_mesh_vec3f (scene,geom0,numVertices,ds); pos0 += ds; }
+        if (move1) { move_mesh_vec3fa(scene,geom1,4,ds); pos1 += ds; }
+        if (move2) { move_mesh_vec3f (scene,geom2,numVertices,ds); pos2 += ds; }
+        if (move3) { move_mesh_vec3fa(scene,geom3,4,ds); pos3 += ds; }
+        rtcCommit (scene);
+        AssertNoError(state->device);
+
+        RTCRay ray0 = makeRay(pos0+Vec3fa(0,10,0),Vec3fa(0,-1,0)); // hits geomID == 0
+        RTCRay ray1 = makeRay(pos1+Vec3fa(0,10,0),Vec3fa(0,-1,0)); // hits geomID == 1
+        RTCRay ray2 = makeRay(pos2+Vec3fa(0,10,0),Vec3fa(0,-1,0)); // hits geomID == 2
+        RTCRay ray3 = makeRay(pos3+Vec3fa(0,10,0),Vec3fa(0,-1,0)); // hits geomID == 3
+        RTCRay testRays[4] = { ray0, ray1, ray2, ray3 };
+
+        const size_t maxRays = 100;
+        RTCRay rays[maxRays];
+        for (size_t numRays=1; numRays<maxRays; numRays++) {
+          for (size_t i=0; i<numRays; i++) rays[i] = testRays[i%4];
+          IntersectWithMode(imode,VARIANT_INTERSECT,scene,rays,numRays); // FIXME: more variants
+          for (size_t i=0; i<numRays; i++) if (rays[i].geomID != i%4) return false;
+        }
+      }
+      scene = nullptr;
+      return true;
+    }
+  };
+
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
 
   const size_t num_interpolation_vertices = 16;
   const size_t num_interpolation_quad_faces = 9;
@@ -2557,59 +1518,708 @@ namespace embree
     }
   };
 
-  void shootRays (RTCDevice device, const RTCSceneRef& scene)
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
+
+
+  struct BaryDistanceTest : public VerifyApplication::Test
   {
-    {
-      Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-      Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-      RTCRay ray = makeRay(org,dir); 
-      rtcOccluded(scene,ray);
-      rtcIntersect(scene,ray);
-    }
+    BaryDistanceTest (std::string name)
+      : VerifyApplication::Test(name,VerifyApplication::PASS) {}
 
+    bool run(VerifyApplication* state)
+    {
+      std::vector<Vertex> m_vertices;
+      std::vector<Triangle> m_triangles;
+      
+      const float length = 1000.0f;
+      const float width = 1000.0f;
+      
+      m_vertices.resize(4);
+      m_vertices[0] = Vertex(-length / 2.0f, -width / 2.0f, 0);
+      m_vertices[1] = Vertex( length / 2.0f, -width / 2.0f, 0);
+      m_vertices[2] = Vertex( length / 2.0f,  width / 2.0f, 0);
+      m_vertices[3] = Vertex(-length / 2.0f,  width / 2.0f, 0);
+      
+      m_triangles.resize(2);
+      m_triangles[0] = Triangle(0, 1, 2);
+      m_triangles[1] = Triangle(2, 3, 0);
+      
+      //const RTCSceneFlags flags = RTCSceneFlags(0); 
+      const RTCSceneFlags flags = RTC_SCENE_ROBUST;
+      const RTCSceneRef mainSceneId = rtcDeviceNewScene(state->device,RTC_SCENE_STATIC | flags , RTC_INTERSECT1);
+      
+      const unsigned int id = rtcNewTriangleMesh(mainSceneId, RTC_GEOMETRY_STATIC, m_triangles.size(), m_vertices.size());
+      
+      rtcSetBuffer(mainSceneId, id, RTC_VERTEX_BUFFER, m_vertices.data(), 0, sizeof(Vertex));
+      rtcSetBuffer(mainSceneId, id, RTC_INDEX_BUFFER, m_triangles.data(), 0, sizeof(Triangle));
+      
+      rtcCommit(mainSceneId);
+      
+      RTCRay ray;
+      ray.org[0] = 0.1f;
+      ray.org[1] = 1.09482f;
+      ray.org[2] = 29.8984f;
+      ray.dir[0] = 0.f;
+      ray.dir[1] = 0.99482f;
+      ray.dir[2] = -0.101655f;
+      ray.tnear = 0.05f;
+      ray.tfar  = inf;
+      ray.mask  = -1;
+      
+      ray.geomID = RTC_INVALID_GEOMETRY_ID;
+      ray.primID = RTC_INVALID_GEOMETRY_ID;
+      ray.instID = RTC_INVALID_GEOMETRY_ID;
+      
+      rtcIntersect(mainSceneId, ray);
+      
+      if (ray.geomID == RTC_INVALID_GEOMETRY_ID) 
+        throw std::runtime_error("no triangle hit");
+      
+      const Triangle &triangle = m_triangles[ray.primID];
+      
+      const Vertex &v0_ = m_vertices[triangle.v0];
+      const Vertex &v1_ = m_vertices[triangle.v1];
+      const Vertex &v2_ = m_vertices[triangle.v2];
+      
+      const Vec3fa v0(v0_.x, v0_.y, v0_.z);
+      const Vec3fa v1(v1_.x, v1_.y, v1_.z);
+      const Vec3fa v2(v2_.x, v2_.y, v2_.z);
+      
+      const Vec3fa hit_tri = v0 + ray.u * (v1 - v0) + ray.v * (v2 - v0);
+      
+      const Vec3fa ray_org = Vec3fa(ray.org[0], ray.org[1], ray.org[2]);
+      const Vec3fa ray_dir = Vec3fa(ray.dir[0], ray.dir[1], ray.dir[2]);
+      
+      const Vec3fa hit_tfar = ray_org + ray.tfar * ray_dir;
+      const Vec3fa delta = hit_tri - hit_tfar;
+      const float distance = embree::length(delta);
+      
+      return distance < 0.0002f;
+    }
+  };
+  
+  struct RayMasksTest : public VerifyApplication::Test
+  {
+    RTCSceneFlags sflags; 
+    RTCGeometryFlags gflags; 
+    IntersectMode imode;
+
+    RayMasksTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode)
+      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), gflags(gflags), imode(imode) {}
+
+    bool run(VerifyApplication* state)
+    {
+      ClearBuffers clear_before_return;
+      bool passed = true;
+      Vec3fa pos0 = Vec3fa(-10,0,-10);
+      Vec3fa pos1 = Vec3fa(-10,0,+10);
+      Vec3fa pos2 = Vec3fa(+10,0,-10);
+      Vec3fa pos3 = Vec3fa(+10,0,+10);
+      
+      RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,to_aflags(imode));
+      unsigned geom0 = addSphere(state->device,scene,gflags,pos0,1.0f,50);
+      //unsigned geom1 = addSphere(state->device,scene,gflags,pos1,1.0f,50);
+      unsigned geom1 = addHair  (state->device,scene,gflags,pos1,1.0f,1.0f,1);
+      unsigned geom2 = addSphere(state->device,scene,gflags,pos2,1.0f,50);
+      //unsigned geom3 = addSphere(state->device,scene,gflags,pos3,1.0f,50);
+      unsigned geom3 = addHair  (state->device,scene,gflags,pos3,1.0f,1.0f,1);
+      rtcSetMask(scene,geom0,1);
+      rtcSetMask(scene,geom1,2);
+      rtcSetMask(scene,geom2,4);
+      rtcSetMask(scene,geom3,8);
+      rtcCommit (scene);
+      AssertNoError(state->device);
+      
+      for (size_t i=0; i<16; i++) 
+      {
+        int mask0 = i;
+        int mask1 = i+1;
+        int mask2 = i+2;
+        int mask3 = i+3;
+        int masks[4] = { mask0, mask1, mask2, mask3 };
+        RTCRay ray0 = makeRay(pos0+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray0.mask = mask0;
+        RTCRay ray1 = makeRay(pos1+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray1.mask = mask1;
+        RTCRay ray2 = makeRay(pos2+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray2.mask = mask2;
+        RTCRay ray3 = makeRay(pos3+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray3.mask = mask3;
+        RTCRay rays[4] = { ray0, ray1, ray2, ray3 };
+        IntersectWithMode(imode,VARIANT_INTERSECT,scene,rays,4); // FIXME: test all variants
+        for (size_t i=0; i<4; i++)
+          passed &= masks[i] & (1<<i) ? rays[i].geomID == i : rays[i].geomID == -1;
+      }
+      scene = nullptr;
+      return passed;
+    }
+  };
+
+  struct BackfaceCullingTest : public VerifyApplication::Test
+  {
+    RTCSceneFlags sflags;
+    RTCGeometryFlags gflags;
+    IntersectMode imode;
+
+    BackfaceCullingTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode)
+      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), gflags(gflags), imode(imode) {}
+    
+    bool run(VerifyApplication* state)
+    {
+      /* create triangle that is front facing for a right handed 
+         coordinate system if looking along the z direction */
+      RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,to_aflags(imode));
+      unsigned mesh = rtcNewTriangleMesh (scene, gflags, 1, 3);
+      Vertex3fa*   vertices  = (Vertex3fa*  ) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
+      Triangle* triangles = (Triangle*) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
+      vertices[0].x = 0; vertices[0].y = 0; vertices[0].z = 0;
+      vertices[1].x = 0; vertices[1].y = 1; vertices[1].z = 0;
+      vertices[2].x = 1; vertices[2].y = 0; vertices[2].z = 0;
+      triangles[0].v0 = 0; triangles[0].v1 = 1; triangles[0].v2 = 2;
+      rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
+      rtcUnmapBuffer(scene,mesh,RTC_INDEX_BUFFER);
+      rtcCommit (scene);
+      AssertNoError(state->device);
+
+      const size_t numRays = 1000;
+      RTCRay rays[numRays];
+      RTCRay backfacing = makeRay(Vec3fa(0.25f,0.25f,1),Vec3fa(0,0,-1)); 
+      RTCRay frontfacing = makeRay(Vec3fa(0.25f,0.25f,-1),Vec3fa(0,0,1)); 
+
+      bool passed = true;
+      for (auto ivariant : { VARIANT_INTERSECT, VARIANT_OCCLUDED })
+      {
+        for (size_t i=0; i<numRays; i++) {
+          if (i%2) rays[i] = backfacing;
+          else     rays[i] = frontfacing;
+        }
+
+        IntersectWithMode(imode,ivariant,scene,rays,numRays);
+        
+        for (size_t i=0; i<numRays; i++) 
+        {
+          if (i%2) passed &= rays[i].geomID == -1;
+          else     passed &= rays[i].geomID == 0;
+        }
+      }
+      return passed;
+    }
+  };
+
+  struct IntersectionFilterTest : public VerifyApplication::Test
+  {
+    bool subdiv;
+
+    IntersectionFilterTest (std::string name, bool subdiv)
+      : VerifyApplication::Test(name,VerifyApplication::PASS), subdiv(subdiv) {}
+    
+    static void intersectionFilter1(void* ptr, RTCRay& ray) 
+    {
+      if ((size_t)ptr != 123) 
+        return;
+      
+      if (ray.primID & 2)
+        ray.geomID = -1;
+    }
+    
+    static void intersectionFilter4(const void* valid_i, void* ptr, RTCRay4& ray) 
+    {
+      if ((size_t)ptr != 123) 
+        return;
+      
+      int* valid = (int*)valid_i;
+      for (size_t i=0; i<4; i++)
+        if (valid[i] == -1)
+          if (ray.primID[i] & 2) 
+            ray.geomID[i] = -1;
+    }
+    
+    static void intersectionFilter8(const void* valid_i, void* ptr, RTCRay8& ray) 
+    {
+      if ((size_t)ptr != 123) 
+        return;
+      
+      int* valid = (int*)valid_i;
+      for (size_t i=0; i<8; i++)
+        if (valid[i] == -1)
+          if (ray.primID[i] & 2) 
+            ray.geomID[i] = -1;
+    }
+    
+    static void intersectionFilter16(const void* valid_i, void* ptr, RTCRay16& ray) 
+    {
+      if ((size_t)ptr != 123) 
+        return;
+      
+      unsigned int valid = *(unsigned int*)valid_i;
+      for (size_t i=0; i<16; i++)
+	if (valid & ((unsigned int)1 << i))
+	  if (ray.primID[i] & 2) 
+	    ray.geomID[i] = -1;
+    }
+    
+    bool rtcore_filter_intersect(VerifyApplication* state, RTCSceneFlags sflags, RTCGeometryFlags gflags, bool subdiv)
+    {
+      ClearBuffers clear_before_return;
+      bool passed = true;
+      RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,aflags);
+      Vec3fa p0(-0.75f,-0.25f,-10.0f), dx(4,0,0), dy(0,4,0);
+      int geom0 = 0;
+      if (subdiv) geom0 = addSubdivPlane (state->device,scene, gflags, 4, p0, dx, dy);
+      else        geom0 = addPlane (state->device,scene, gflags, 4, p0, dx, dy);
+      rtcSetUserData(scene,geom0,(void*)123);
+      rtcSetIntersectionFilterFunction(scene,geom0,intersectionFilter1);
 #if defined(RTCORE_RAY_PACKETS)
-    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT4))
-    {
-      RTCRay4 ray4; memset(&ray4,0,sizeof(ray4)); 
-      for (size_t j=0; j<4; j++) {
-        Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-        Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-        RTCRay ray = makeRay(org,dir); 
-        setRay(ray4,j,ray);
-      }
-      __aligned(16) int valid4[4] = { -1,-1,-1,-1 };
-      rtcOccluded4(valid4,scene,ray4);
-      rtcIntersect4(valid4,scene,ray4);
-    }
-
-    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT8))
-    {
-      RTCRay8 ray8; memset(&ray8,0,sizeof(ray8));
-      for (size_t j=0; j<8; j++) {
-        Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-        Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-        RTCRay ray = makeRay(org,dir); 
-        setRay(ray8,j,ray);
-      }
-      __aligned(32) int valid8[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
-      rtcOccluded8(valid8,scene,ray8);
-      rtcIntersect8(valid8,scene,ray8);
-    }
-
-    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT16))
-    {
-      RTCRay16 ray16; memset(&ray16,0,sizeof(ray16));
-      for (size_t j=0; j<16; j++) {
-        Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-        Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-        RTCRay ray = makeRay(org,dir); 
-        setRay(ray16,j,ray);
-      }
-      __aligned(16) int valid16[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
-      rtcOccluded16(valid16,scene,ray16);
-      rtcIntersect16(valid16,scene,ray16);
-    }
+      rtcSetIntersectionFilterFunction4(scene,geom0,intersectionFilter4);
+      rtcSetIntersectionFilterFunction8(scene,geom0,intersectionFilter8);
+      rtcSetIntersectionFilterFunction16(scene,geom0,intersectionFilter16);
 #endif
+      rtcCommit (scene);
+      
+      for (size_t iy=0; iy<4; iy++) 
+      {
+        for (size_t ix=0; ix<4; ix++) 
+        {
+          int primID = iy*4+ix;
+          if (!subdiv) primID *= 2;
+          {
+            RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
+            rtcIntersect(scene,ray0);
+            bool ok0 = (primID & 2) ? (ray0.geomID == -1) : (ray0.geomID == 0);
+            if (!ok0) passed = false;
+          }
+          
+#if defined(RTCORE_RAY_PACKETS)
+          if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT4))
+          {
+            RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
+            
+            RTCRay4 ray4; memset(&ray4,0,sizeof(ray4));
+            setRay(ray4,0,ray0);
+            __aligned(16) int valid4[4] = { -1,0,0,0 };
+            rtcIntersect4(valid4,scene,ray4);
+            bool ok0 = (primID & 2) ? (ray4.geomID[0] == -1) : (ray4.geomID[0] == 0);
+            if (!ok0) passed = false;
+          }
+          
+          if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT8))
+          {
+            RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
+            
+            RTCRay8 ray8; memset(&ray8,0,sizeof(ray8));
+            setRay(ray8,0,ray0);
+            __aligned(32) int valid8[8] = { -1,0,0,0,0,0,0,0 };
+            rtcIntersect8(valid8,scene,ray8);
+            bool ok0 = (primID & 2) ? (ray8.geomID[0] == -1) : (ray8.geomID[0] == 0);
+            if (!ok0) passed = false;
+          }
+          
+          if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT16))
+          {
+            RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
+            
+            RTCRay16 ray16; memset(&ray16,0,sizeof(ray16));
+            setRay(ray16,0,ray0);
+            __aligned(64) int valid16[16] = { -1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
+            rtcIntersect16(valid16,scene,ray16);
+            bool ok0 = (primID & 2) ? (ray16.geomID[0] == -1) : (ray16.geomID[0] == 0);
+            if (!ok0) passed = false;
+          }
+#endif
+        }
+      }
+      scene = nullptr;
+      return passed;
+    }
+    
+    bool rtcore_filter_occluded(VerifyApplication* state, RTCSceneFlags sflags, RTCGeometryFlags gflags, bool subdiv)
+    {
+      ClearBuffers clear_before_return;
+      bool passed = true;
+      RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,aflags);
+      Vec3fa p0(-0.75f,-0.25f,-10.0f), dx(4,0,0), dy(0,4,0);
+      int geom0 = 0;
+      if (subdiv) geom0 = addSubdivPlane (state->device, scene, gflags, 4, p0, dx, dy);
+      else        geom0 = addPlane (state->device, scene, gflags, 4, p0, dx, dy);
+      rtcSetUserData(scene,geom0,(void*)123);
+      rtcSetOcclusionFilterFunction(scene,geom0,intersectionFilter1);
+#if defined(RTCORE_RAY_PACKETS)
+      rtcSetOcclusionFilterFunction4(scene,geom0,intersectionFilter4);
+      rtcSetOcclusionFilterFunction8(scene,geom0,intersectionFilter8);
+      rtcSetOcclusionFilterFunction16(scene,geom0,intersectionFilter16);
+#endif
+      rtcCommit (scene);
+      
+      for (size_t iy=0; iy<4; iy++) 
+      {
+        for (size_t ix=0; ix<4; ix++) 
+        {
+          int primID = iy*4+ix;
+          if (!subdiv) primID *= 2;
+          
+          {
+            RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
+            rtcOccluded(scene,ray0);
+            bool ok0 = (primID & 2) ? (ray0.geomID == -1) : (ray0.geomID == 0);
+            if (!ok0) passed = false;
+          }
+          
+          if (subdiv) continue; // FIXME: subdiv filter callbacks only working for single ray queries
+          
+#if defined(RTCORE_RAY_PACKETS)
+          if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT4))
+          {
+            RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
+            
+            RTCRay4 ray4; memset(&ray4,0,sizeof(ray4));
+            setRay(ray4,0,ray0);
+            __aligned(16) int valid4[4] = { -1,0,0,0 };
+            rtcOccluded4(valid4,scene,ray4);
+            bool ok0 = (primID & 2) ? (ray4.geomID[0] == -1) : (ray4.geomID[0] == 0);
+            if (!ok0) passed = false;
+          }
+          
+          if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT8))
+          {
+            RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
+            
+            RTCRay8 ray8; memset(&ray8,0,sizeof(ray8));
+            setRay(ray8,0,ray0);
+            __aligned(32) int valid8[8] = { -1,0,0,0,0,0,0,0 };
+            rtcOccluded8(valid8,scene,ray8);
+            bool ok0 = (primID & 2) ? (ray8.geomID[0] == -1) : (ray8.geomID[0] == 0);
+            if (!ok0) passed = false;
+          }
+
+          if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT16))
+          {
+            RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
+            
+            RTCRay16 ray16; memset(&ray16,0,sizeof(ray16));
+            setRay(ray16,0,ray0);
+            __aligned(64) int valid16[16] = { -1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
+            rtcOccluded16(valid16,scene,ray16);
+            bool ok0 = (primID & 2) ? (ray16.geomID[0] == -1) : (ray16.geomID[0] == 0);
+            if (!ok0) passed = false;
+          }
+#endif
+        }
+      }
+      scene = nullptr;
+      return passed;
+    }
+    
+    bool run(VerifyApplication* state)
+    {
+      bool passed = true;
+      for (int i=0; i<numSceneFlags; i++) 
+      {
+        RTCSceneFlags flag = getSceneFlag(i);
+        bool ok0 = rtcore_filter_intersect(state,flag,RTC_GEOMETRY_STATIC, subdiv);
+        if (ok0) printf(GREEN("+")); else printf(RED("-"));
+        passed &= ok0;
+        bool ok1 = rtcore_filter_occluded(state,flag,RTC_GEOMETRY_STATIC, subdiv);
+        if (ok1) printf(GREEN("+")); else printf(RED("-"));
+        passed &= ok1;
+        fflush(stdout);
+      }
+      return passed;
+    }
+  };
+
+  struct InactiveRaysTest : public VerifyApplication::Test
+  {
+    RTCSceneFlags sflags;
+    RTCGeometryFlags gflags;
+    IntersectMode imode;
+    static const size_t N = 10;
+    static const size_t maxStreamSize = 100;
+    
+    InactiveRaysTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode)
+      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), gflags(gflags), imode(imode) {}
+   
+     bool run(VerifyApplication* state)
+    {
+      Vec3fa pos = zero;
+      ClearBuffers clear_before_return;
+      RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,to_aflags(imode));
+      addSphere(state->device,scene,RTC_GEOMETRY_STATIC,pos,2.0f,50); // FIXME: use different geometries too
+      rtcCommit (scene);
+      AssertNoError(state->device);
+
+      RTCRay invalid_ray;
+      memset(&invalid_ray,-1,sizeof(RTCRay));
+      invalid_ray.tnear = pos_inf;
+      invalid_ray.tfar  = neg_inf;
+      invalid_ray = invalid_ray;
+      
+      size_t numFailures = 0;
+      for (size_t i=0; i<size_t(N*state->intensity); i++) 
+      {
+        IntersectVariant ivariant = (IntersectVariant) (i%2);
+        for (size_t M=1; M<maxStreamSize; M++)
+        {
+          bool valid[maxStreamSize];
+          __aligned(16) RTCRay rays[maxStreamSize];
+          for (size_t j=0; j<M; j++) 
+          {
+            if (rand()%2) {
+              valid[j] = true;
+              Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+              Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+              rays[j] = makeRay(pos+org,dir); 
+            } else {
+              valid[j] = false;
+              rays[j] = invalid_ray;
+            }
+          }
+          IntersectWithMode(imode,ivariant,scene,rays,M);
+          for (size_t j=0; j<M; j++) {
+            if (valid[j]) continue;
+            numFailures += neq_ray_special(rays[j],invalid_ray);
+          }
+        }
+      }
+      AssertNoError(state->device);
+      scene = nullptr;
+      AssertNoError(state->device);
+      fflush(stdout);
+      return numFailures == 0;
+    }
+  };
+
+  struct WatertightTest : public VerifyApplication::Test
+  {
+    ALIGNED_STRUCT;
+    RTCSceneFlags sflags;
+    IntersectMode imode;
+    std::string model;
+    Vec3fa pos;
+    static const size_t N = 10;
+    static const size_t maxStreamSize = 100;
+    
+    WatertightTest (std::string name, RTCSceneFlags sflags, IntersectMode imode, std::string model, const Vec3fa& pos)
+      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), imode(imode), model(model), pos(pos) {}
+    
+    bool run(VerifyApplication* state)
+    {
+      ClearBuffers clear_before_return;
+      RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,to_aflags(imode));
+      if      (model == "sphere") addSphere(state->device,scene,RTC_GEOMETRY_STATIC,pos,2.0f,500);
+      else if (model == "plane" ) addPlane(state->device,scene,RTC_GEOMETRY_STATIC,500,Vec3fa(pos.x,-6.0f,-6.0f),Vec3fa(0.0f,0.0f,12.0f),Vec3fa(0.0f,12.0f,0.0f));
+      bool plane = model == "plane";
+      rtcCommit (scene);
+      AssertNoError(state->device);
+      
+      size_t numTests = 0;
+      size_t numFailures = 0;
+      for (size_t i=0; i<size_t(N*state->intensity); i++) 
+      {
+        IntersectVariant ivariant = (IntersectVariant) (i%2);
+        for (size_t M=1; M<maxStreamSize; M++)
+        {
+          __aligned(16) RTCRay rays[maxStreamSize];
+          for (size_t j=0; j<M; j++) 
+          {
+            if (plane) {
+              Vec3fa org(drand48()-0.5f,drand48()-0.5f,drand48()-0.5f);
+              Vec3fa dir(1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+              rays[j] = makeRay(Vec3fa(pos.x-3.0f,0.0f,0.0f),dir); 
+            } else {
+              Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+              Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+              rays[j] = makeRay(pos+org,dir); 
+            }
+          }
+          IntersectWithMode(imode,ivariant,scene,rays,M);
+          for (size_t j=0; j<M; j++) {
+            numTests++;
+            numFailures += rays[j].geomID == -1;
+          }
+        }
+      }
+      AssertNoError(state->device);
+      scene = nullptr;
+      AssertNoError(state->device);
+      double failRate = double(numFailures) / double(numTests);
+      bool failed = failRate > 0.00002;
+      //printf(" (%f%%)", 100.0f*failRate); fflush(stdout);
+      return !failed;
+    }
+  };
+
+  struct NaNTest : public VerifyApplication::Test
+  {
+    RTCSceneFlags sflags;
+    RTCGeometryFlags gflags;
+    IntersectMode imode;
+    
+    NaNTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode)
+      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), gflags(gflags), imode(imode) {}
+    
+    bool run(VerifyApplication* state)
+    {
+      ClearBuffers clear_before_return;
+      const size_t numRays = 1000;
+      RTCRay rays[numRays];
+      RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,to_aflags(imode));
+      addSphere(state->device,scene,gflags,zero,2.0f,100);
+      addHair  (state->device,scene,gflags,zero,1.0f,1.0f,100);
+      rtcCommit (scene);
+      size_t numFailures = 0;
+
+      double c0 = getSeconds();
+      for (size_t i=0; i<numRays; i++) {
+        Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+        Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+        rays[i] = makeRay(org,dir); 
+      }
+      IntersectWithMode(imode, VARIANT_OCCLUDED ,scene,rays,numRays);
+      IntersectWithMode(imode, VARIANT_INTERSECT,scene,rays,numRays);
+    
+      double c1 = getSeconds();
+      for (size_t i=0; i<numRays; i++) {
+        Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+        Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+        rays[i] = makeRay(org+Vec3fa(nan),dir); 
+      }
+      IntersectWithMode(imode, VARIANT_OCCLUDED ,scene,rays,numRays);
+      IntersectWithMode(imode, VARIANT_INTERSECT,scene,rays,numRays);
+
+      double c2 = getSeconds();
+      for (size_t i=0; i<numRays; i++) {
+        Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+        Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+        rays[i] = makeRay(org+Vec3fa(nan),dir+Vec3fa(nan)); 
+      }
+      IntersectWithMode(imode, VARIANT_OCCLUDED ,scene,rays,numRays);
+      IntersectWithMode(imode, VARIANT_INTERSECT,scene,rays,numRays);
+
+      double c3 = getSeconds();
+      for (size_t i=0; i<numRays; i++) {
+        Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+        Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+        rays[i] = makeRay(org,dir,nan,nan); 
+      }
+      IntersectWithMode(imode, VARIANT_OCCLUDED ,scene,rays,numRays);
+      IntersectWithMode(imode, VARIANT_INTERSECT,scene,rays,numRays);
+
+      double c4 = getSeconds();
+      double d1 = c1-c0;
+      double d2 = c2-c1;
+      double d3 = c3-c2;
+      double d4 = c4-c3;
+      scene = nullptr;
+      
+      bool ok = (d2 < 2.5*d1) && (d3 < 2.5*d1) && (d4 < 2.5*d1);
+      float f = max(d2/d1,d3/d1,d4/d1);
+      //printf(" (%3.2fx)",f); fflush(stdout);
+      return ok;
+    }
+  };
+    
+  struct InfTest : public VerifyApplication::Test
+  {
+    RTCSceneFlags sflags;
+    RTCGeometryFlags gflags;
+    IntersectMode imode;
+    
+    InfTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode)
+      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), gflags(gflags), imode(imode) {}
+   
+    bool run(VerifyApplication* state)
+    {
+      ClearBuffers clear_before_return;
+      size_t numRays = 1000;
+      RTCRay rays[numRays];
+      RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,to_aflags(imode));
+      addSphere(state->device,scene,gflags,zero,2.0f,100);
+      addHair  (state->device,scene,gflags,zero,1.0f,1.0f,100);
+      rtcCommit (scene);
+      AssertNoError(state->device);
+
+      size_t numFailures = 0;
+      double c0 = getSeconds();
+      for (size_t i=0; i<numRays; i++) {
+        Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+        Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+        rays[i] = makeRay(org,dir); 
+      }
+      IntersectWithMode(imode, VARIANT_OCCLUDED ,scene,rays,numRays);
+      IntersectWithMode(imode, VARIANT_INTERSECT,scene,rays,numRays);
+
+      double c1 = getSeconds();
+      for (size_t i=0; i<numRays; i++) {
+        Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+        Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+        rays[i] = makeRay(org+Vec3fa(inf),dir); 
+      }
+      IntersectWithMode(imode, VARIANT_OCCLUDED ,scene,rays,numRays);
+      IntersectWithMode(imode, VARIANT_INTERSECT,scene,rays,numRays);
+
+      double c2 = getSeconds();
+      for (size_t i=0; i<numRays; i++) {
+        Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+        Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+        rays[i] = makeRay(org,dir+Vec3fa(inf)); 
+      }
+      IntersectWithMode(imode, VARIANT_OCCLUDED ,scene,rays,numRays);
+      IntersectWithMode(imode, VARIANT_INTERSECT,scene,rays,numRays);
+
+      double c3 = getSeconds();
+      for (size_t i=0; i<numRays; i++) {
+        Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+        Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+        rays[i] = makeRay(org+Vec3fa(inf),dir+Vec3fa(inf)); 
+      }
+      IntersectWithMode(imode, VARIANT_OCCLUDED ,scene,rays,numRays);
+      IntersectWithMode(imode, VARIANT_INTERSECT,scene,rays,numRays);
+
+      double c4 = getSeconds();
+      for (size_t i=0; i<numRays; i++) {
+        Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+        Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+        rays[i] = makeRay(org,dir,-0.0f,inf); 
+      }
+      IntersectWithMode(imode, VARIANT_OCCLUDED ,scene,rays,numRays);
+      IntersectWithMode(imode, VARIANT_INTERSECT,scene,rays,numRays);
+
+      double c5 = getSeconds();      
+      double d1 = c1-c0;
+      double d2 = c2-c1;
+      double d3 = c3-c2;
+      double d4 = c4-c3;
+      double d5 = c5-c4;
+      scene = nullptr;
+      AssertNoError(state->device);
+      
+      bool ok = (d2 < 2.5*d1) && (d3 < 2.5*d1) && (d4 < 2.5*d1) && (d5 < 2.5*d1);
+      float f = max(d2/d1,d3/d1,d4/d1,d5/d1);
+      //printf(" (%3.2fx)",f); fflush(stdout);
+      return ok;
+    }
+  };
+
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
+
+  void shootRandomRays (VerifyApplication* state, const RTCSceneRef& scene)
+  {
+    const size_t numRays = 100;
+    for (auto imode : state->intersectModes) // FIXME: use all intersect modes
+    {
+      for (auto ivariant : { VARIANT_INTERSECT, VARIANT_OCCLUDED })
+      {
+        RTCRay rays[numRays];
+        for (size_t i=0; i<numRays; i++) {
+          Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+          Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+          rays[i] = makeRay(org,dir); 
+        }
+        IntersectWithMode(imode,ivariant,scene,rays,numRays);
+      }
+    }
   }
 
   static bool build_join_test = false;
@@ -2621,6 +2231,7 @@ namespace embree
 
     size_t sceneIndex;
     size_t sceneCount;
+    VerifyApplication* state;
     RTCSceneRef scene;
     BarrierSys barrier;
     volatile size_t numActiveThreads;
@@ -2628,12 +2239,12 @@ namespace embree
 
   struct ThreadRegressionTask
   {
-    ThreadRegressionTask (size_t threadIndex, size_t threadCount, RTCDevice device, RegressionTask* task)
-      : threadIndex(threadIndex), threadCount(threadCount), device(device), task(task) {}
+    ThreadRegressionTask (size_t threadIndex, size_t threadCount, VerifyApplication* state, RegressionTask* task)
+      : threadIndex(threadIndex), threadCount(threadCount), state(state), task(task) {}
 
     size_t threadIndex;
     size_t threadCount;
-    RTCDevice device;
+    VerifyApplication* state;
     RegressionTask* task;
   };
 
@@ -2662,13 +2273,12 @@ namespace embree
             rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);
             rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);
           }
-	  //CountErrors(thread->device);
-          if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) {
+	  //CountErrors(thread->state->device);
+          if (rtcDeviceGetError(thread->state->device) != RTC_NO_ERROR) {
             atomic_add(&errorCounter,1);
           }
           else {
-            for (size_t i=0; i<100; i++)
-              shootRays(thread->device,task->scene);
+            shootRandomRays(thread->state,task->scene);
           }
 	}
         task->barrier.wait();
@@ -2677,7 +2287,7 @@ namespace embree
       return;
     }
 
-    CountErrors(thread->device);
+    CountErrors(thread->state->device);
     int geom[1024];
     int types[1024];
     Sphere spheres[1024];
@@ -2695,8 +2305,8 @@ namespace embree
       if (i%20 == 0) std::cout << "." << std::flush;
 
       RTCSceneFlags sflag = getSceneFlag(i); 
-      task->scene = rtcDeviceNewScene(thread->device,sflag,aflags);
-      CountErrors(thread->device);
+      task->scene = rtcDeviceNewScene(thread->state->device,sflag,aflags_all);
+      CountErrors(thread->state->device);
       if (g_enable_build_cancel) rtcSetProgressMonitorFunction(task->scene,monitorProgressFunction,nullptr);
       avector<Sphere*> spheres;
       
@@ -2717,19 +2327,19 @@ namespace embree
         size_t numTriangles = 2*2*numPhi*(numPhi-1);
 	numTriangles = random<int>()%(numTriangles+1);
         switch (type) {
-        case 0: addSphere(thread->device,task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
-	case 1: addSphere(thread->device,task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
-	case 2: addSubdivSphere(thread->device,task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
-	case 3: addHair  (thread->device,task->scene,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,numTriangles,0.0f); break;
-	case 4: addHair  (thread->device,task->scene,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,numTriangles,1.0f); break; 
+        case 0: addSphere(thread->state->device,task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
+	case 1: addSphere(thread->state->device,task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
+	case 2: addSubdivSphere(thread->state->device,task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
+	case 3: addHair  (thread->state->device,task->scene,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,numTriangles,0.0f); break;
+	case 4: addHair  (thread->state->device,task->scene,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,numTriangles,1.0f); break; 
 
         case 5: {
 	  Sphere* sphere = new Sphere(pos,2.0f); spheres.push_back(sphere); 
-	  addUserGeometryEmpty(thread->device,MODE_INTERSECT1,task->scene,sphere); break; // FIXME: imode
+	  addUserGeometryEmpty(thread->state->device,MODE_INTERSECT1,task->scene,sphere); break; // FIXME: imode
         }
 	}
-        //CountErrors(thread->device);
-        if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) {
+        //CountErrors(thread->state->device);
+        if (rtcDeviceGetError(thread->state->device) != RTC_NO_ERROR) {
           atomic_add(&errorCounter,1);
 
           hasError = true;
@@ -2750,16 +2360,14 @@ namespace embree
           rtcCommit(task->scene);
         }
       }
-      //CountErrors(thread->device);
+      //CountErrors(thread->state->device);
 
-      if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) {
+      if (rtcDeviceGetError(thread->state->device) != RTC_NO_ERROR) {
         atomic_add(&errorCounter,1);
       }
       else {
         if (!hasError) {
-          for (size_t i=0; i<100; i++) {
-            shootRays(thread->device,task->scene);
-          }
+          shootRandomRays(thread->state,task->scene);
         }
       }
 
@@ -2767,7 +2375,7 @@ namespace embree
 	task->barrier.wait();
 
       task->scene = nullptr;
-      CountErrors(thread->device);
+      CountErrors(thread->state->device);
 
       for (size_t i=0; i<spheres.size(); i++)
 	delete spheres[i];
@@ -2790,13 +2398,12 @@ namespace embree
 	{
           if (build_join_test) rtcCommit(task->scene);
           else	               rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);
-	  //CountErrors(thread->device);
-          if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) {
+	  //CountErrors(thread->state->device);
+          if (rtcDeviceGetError(thread->state->device) != RTC_NO_ERROR) {
             atomic_add(&errorCounter,1);
           }
           else {
-            for (size_t i=0; i<100; i++)
-              shootRays(thread->device,task->scene);
+            shootRandomRays(thread->state,task->scene);
           }
 	}
 	task->barrier.wait();
@@ -2804,8 +2411,8 @@ namespace embree
       delete thread; thread = nullptr;
       return;
     }
-    task->scene = rtcDeviceNewScene(thread->device,RTC_SCENE_DYNAMIC,aflags);
-    CountErrors(thread->device);
+    task->scene = rtcDeviceNewScene(thread->state->device,RTC_SCENE_DYNAMIC,aflags_all);
+    CountErrors(thread->state->device);
     if (g_enable_build_cancel) rtcSetProgressMonitorFunction(task->scene,monitorProgressFunction,nullptr);
     int geom[1024];
     int types[1024];
@@ -2850,19 +2457,19 @@ namespace embree
           types[index] = type;
           numVertices[index] = 2*numPhi*(numPhi+1);
           switch (type) {
-          case 0: geom[index] = addSphere(thread->device,task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
-          case 1: geom[index] = addSphere(thread->device,task->scene,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles,0.0f); break;
-          case 2: geom[index] = addSphere(thread->device,task->scene,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
-          case 3: geom[index] = addSubdivSphere(thread->device,task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
-	  case 4: geom[index] = addSubdivSphere(thread->device,task->scene,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
-	  case 5: geom[index] = addSubdivSphere(thread->device,task->scene,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
-          case 6: geom[index] = addSphere(thread->device,task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
-          case 7: geom[index] = addSphere(thread->device,task->scene,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles,1.0f); break;
-          case 8: geom[index] = addSphere(thread->device,task->scene,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
-          case 9: spheres[index] = Sphere(pos,2.0f); geom[index] = addUserGeometryEmpty(thread->device,MODE_INTERSECT1,task->scene,&spheres[index]); break; // FIXME: imode
+          case 0: geom[index] = addSphere(thread->state->device,task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
+          case 1: geom[index] = addSphere(thread->state->device,task->scene,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles,0.0f); break;
+          case 2: geom[index] = addSphere(thread->state->device,task->scene,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
+          case 3: geom[index] = addSubdivSphere(thread->state->device,task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
+	  case 4: geom[index] = addSubdivSphere(thread->state->device,task->scene,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
+	  case 5: geom[index] = addSubdivSphere(thread->state->device,task->scene,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
+          case 6: geom[index] = addSphere(thread->state->device,task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
+          case 7: geom[index] = addSphere(thread->state->device,task->scene,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles,1.0f); break;
+          case 8: geom[index] = addSphere(thread->state->device,task->scene,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
+          case 9: spheres[index] = Sphere(pos,2.0f); geom[index] = addUserGeometryEmpty(thread->state->device,MODE_INTERSECT1,task->scene,&spheres[index]); break; // FIXME: imode
           }; 
-	  //CountErrors(thread->device);
-          if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) {
+	  //CountErrors(thread->state->device);
+          if (rtcDeviceGetError(thread->state->device) != RTC_NO_ERROR) {
             atomic_add(&errorCounter,1);
             hasError = true;
             break;
@@ -2876,7 +2483,7 @@ namespace embree
           case 6:
 	  case 9: {
             rtcDeleteGeometry(task->scene,geom[index]);     
-	    CountErrors(thread->device);
+	    CountErrors(thread->state->device);
             geom[index] = -1; 
             break;
           }
@@ -2890,7 +2497,7 @@ namespace embree
             switch (op) {
             case 0: {
               rtcDeleteGeometry(task->scene,geom[index]);     
-	      CountErrors(thread->device);
+	      CountErrors(thread->state->device);
               geom[index] = -1; 
               break;
             }
@@ -2921,7 +2528,7 @@ namespace embree
           for (size_t i=0; i<1024; i++) {
             if (geom[i] != -1) {
               rtcDeleteGeometry(task->scene,geom[i]);
-              CountErrors(thread->device);
+              CountErrors(thread->state->device);
               geom[i] = -1;
             }
           }
@@ -2937,21 +2544,20 @@ namespace embree
         if (!hasError) 
           rtcCommit(task->scene);
       }
-      //CountErrors(thread->device);
+      //CountErrors(thread->state->device);
 
-      if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR)
+      if (rtcDeviceGetError(thread->state->device) != RTC_NO_ERROR)
         atomic_add(&errorCounter,1);
       else
         if (!hasError)
-          for (size_t i=0; i<100; i++)
-            shootRays(thread->device,task->scene);
+          shootRandomRays(thread->state,task->scene);
 
       if (thread->threadCount) 
 	task->barrier.wait();
     }
 
     task->scene = nullptr;
-    CountErrors(thread->device);
+    CountErrors(thread->state->device);
 
     delete thread; thread = nullptr;
     return;
@@ -2969,7 +2575,7 @@ namespace embree
     {
       errorCounter = 0;
       size_t sceneIndex = 0;
-      while (sceneIndex < state->regressionN/5) 
+      while (sceneIndex < size_t(30*state->intensity)) 
       {
         if (mode)
         {
@@ -2989,7 +2595,7 @@ namespace embree
             tasks.push_back(task);
             
             for (size_t i=0; i<N; i++) 
-              g_threads.push_back(createThread(func,new ThreadRegressionTask(i,N,state->device,task),DEFAULT_STACK_SIZE,numThreads+i));
+              g_threads.push_back(createThread(func,new ThreadRegressionTask(i,N,state,task),DEFAULT_STACK_SIZE,numThreads+i));
           }
           
           for (size_t i=0; i<g_threads.size(); i++)
@@ -3003,7 +2609,7 @@ namespace embree
         {
           ClearBuffers clear_before_return;
           RegressionTask task(sceneIndex++,5,0);
-          func(new ThreadRegressionTask(0,0,state->device,&task));
+          func(new ThreadRegressionTask(0,0,state,&task));
         }	
       }
       return errorCounter == 0;
@@ -3039,7 +2645,7 @@ namespace embree
       rtcDeviceSetMemoryMonitorFunction(state->device,monitorMemoryFunction);
       
       size_t sceneIndex = 0;
-      while (sceneIndex < state->regressionN/5) 
+      while (sceneIndex < size_t(30*state->intensity)) 
       {
         ClearBuffers clear_before_return;
         errorCounter = 0;
@@ -3049,7 +2655,7 @@ namespace embree
         monitorProgressBreak = -1;
         monitorProgressInvokations = 0;
         RegressionTask task1(sceneIndex,1,0);
-        func(new ThreadRegressionTask(0,0,state->device,&task1));
+        func(new ThreadRegressionTask(0,0,state,&task1));
         if (monitorMemoryBytesUsed) {
           rtcDeviceSetMemoryMonitorFunction(state->device,nullptr);
           //rtcDeviceSetProgressMonitorFunction(state->device,nullptr);
@@ -3061,7 +2667,7 @@ namespace embree
         monitorProgressBreak = monitorProgressInvokations * 2.0f * drand48();
         monitorProgressInvokations = 0;
         RegressionTask task2(sceneIndex,1,0);
-        func(new ThreadRegressionTask(0,0,state->device,&task2));
+        func(new ThreadRegressionTask(0,0,state,&task2));
         if (monitorMemoryBytesUsed) { // || (monitorMemoryInvokations != 0 && errorCounter != 1)) { // FIXME: test that rtcCommit has returned with error code
           rtcDeviceSetMemoryMonitorFunction(state->device,nullptr);
           //rtcDeviceSetProgressMonitorFunction(state->device,nullptr);
@@ -3082,7 +2688,7 @@ namespace embree
     
     bool run(VerifyApplication* state)
     {
-      for (size_t i=0; i<5*state->regressionN; i++) 
+      for (size_t i=0; i<size_t(1000*state->intensity); i++) 
       {
         ClearBuffers clear_before_return;
         srand(i*23565);
@@ -3112,8 +2718,13 @@ namespace embree
     }
   };
 
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
+
   VerifyApplication::VerifyApplication ()
-    : Application(Application::FEATURE_RTCORE), device(nullptr), regressionN(200), numFailedTests(0), use_tests_to_run(false)
+    : Application(Application::FEATURE_RTCORE), device(nullptr), intensity(1.0f), numFailedTests(0), user_specified_tests(false), use_groups(true)
   {
     device = rtcNewDevice(rtcore.c_str());
 
@@ -3131,6 +2742,10 @@ namespace embree
       intersectModes.push_back(MODE_INTERSECTNM16);
       intersectModes.push_back(MODE_INTERSECTNp);
     }
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT1)) intersectModesOld.push_back(MODE_INTERSECT1);
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT4)) intersectModesOld.push_back(MODE_INTERSECT4);
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT8)) intersectModesOld.push_back(MODE_INTERSECT8);
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT16)) intersectModesOld.push_back(MODE_INTERSECT16);
 
     /* create list of all scene flags to test */
     sceneFlags.push_back(RTC_SCENE_STATIC);
@@ -3145,95 +2760,154 @@ namespace embree
     sceneFlagsRobust.push_back(RTC_SCENE_DYNAMIC | RTC_SCENE_ROBUST);
     sceneFlagsRobust.push_back(RTC_SCENE_DYNAMIC | RTC_SCENE_ROBUST | RTC_SCENE_COMPACT);
 
-    /* add all tests */
+    sceneFlagsDynamic.push_back(RTC_SCENE_DYNAMIC);
+    sceneFlagsDynamic.push_back(RTC_SCENE_DYNAMIC | RTC_SCENE_ROBUST);
+    sceneFlagsDynamic.push_back(RTC_SCENE_DYNAMIC | RTC_SCENE_COMPACT);
+
+    /**************************************************************************/
+    /*                      Smaller API Tests                                 */
+    /**************************************************************************/
+
+    addTest(new InitExitTest("init_exit"));
     addTest(new MultipleDevicesTest("multiple_devices"));
-    addTest(new EmptySceneTest("empty_static",RTC_SCENE_STATIC));
-    addTest(new EmptySceneTest("empty_dynamic",RTC_SCENE_DYNAMIC));
-    // FIXME: add test with empty meshes
-    addTest(new BaryDistanceTest("bary_distance_robust"));
 
     addTest(new FlagsTest("flags_static_static"     ,VerifyApplication::PASS, RTC_SCENE_STATIC, RTC_GEOMETRY_STATIC));
     addTest(new FlagsTest("flags_static_deformable" ,VerifyApplication::FAIL, RTC_SCENE_STATIC, RTC_GEOMETRY_DEFORMABLE));
     addTest(new FlagsTest("flags_static_dynamic"    ,VerifyApplication::FAIL, RTC_SCENE_STATIC, RTC_GEOMETRY_DYNAMIC));
     addTest(new FlagsTest("flags_dynamic_static"    ,VerifyApplication::PASS, RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC));
     addTest(new FlagsTest("flags_dynamic_deformable",VerifyApplication::PASS, RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DEFORMABLE));
-    addTest(new FlagsTest("flags_dynamic_dynamic"   ,VerifyApplication::PASS, RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DYNAMIC));
-    
-    addTest(new StaticSceneTest("static_scene"));
+    addTest(new FlagsTest("flags_dynamic_dynamic"   ,VerifyApplication::PASS, RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DYNAMIC));    
     addTest(new UnmappedBeforeCommitTest("unmapped_before_commit"));
     addTest(new GetBoundsTest("get_bounds"));
-
-#if defined(RTCORE_BUFFER_STRIDE)
-    addTest(new BufferStrideTest("buffer_stride"));
-#endif
-
-    addTest(new DynamicEnableDisableTest("dynamic_enable_disable"));
     addTest(new GetUserDataTest("get_user_data"));
 
-    addTest(new UpdateTest("update_deformable",RTC_GEOMETRY_DEFORMABLE));
-    addTest(new UpdateTest("update_dynamic",RTC_GEOMETRY_DYNAMIC));
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_BUFFER_STRIDE)) {
+      addTest(new BufferStrideTest("buffer_stride"));
+    }    
+
+    /**************************************************************************/
+    /*                        Builder Tests                                   */
+    /**************************************************************************/
+
+    beginTestGroup("empty_scene");
+    for (auto sflags : sceneFlags) 
+      addTest(new EmptySceneTest("empty_scene_"+to_string(sflags),sflags));
+    endTestGroup();
+
+    beginTestGroup("empty_geometry");
+    for (auto sflags : sceneFlags) 
+      addTest(new EmptyGeometryTest("empty_geometry_"+to_string(sflags),sflags,RTC_GEOMETRY_STATIC));
+    endTestGroup();
+
+    beginTestGroup("build");
+    for (auto sflags : sceneFlags) 
+      for (auto imode : intersectModes) 
+        addTest(new BuildTest("build_"+to_string(sflags)+"_"+to_string(imode),sflags,RTC_GEOMETRY_STATIC,imode));
+    endTestGroup();
+
     addTest(new OverlappingTrianglesTest("overlapping_triangles",100000));
     addTest(new OverlappingHairTest("overlapping_hair",100000));
-    addTest(new NewDeleteGeometryTest("new_delete_geometry"));
 
-    addTest(new InterpolateSubdivTest("interpolate_subdiv4",4));
-    addTest(new InterpolateSubdivTest("interpolate_subdiv5",5));
-    addTest(new InterpolateSubdivTest("interpolate_subdiv8",8));
-    addTest(new InterpolateSubdivTest("interpolate_subdiv11",11));
-    addTest(new InterpolateSubdivTest("interpolate_subdiv12",12));
-    addTest(new InterpolateSubdivTest("interpolate_subdiv15",15));
+    beginTestGroup("new_delete_geometry");
+    for (auto sflags : sceneFlagsDynamic) 
+      addTest(new NewDeleteGeometryTest("new_delete_geometry_"+to_string(sflags),sflags));
+    endTestGroup();
 
-    addTest(new InterpolateTrianglesTest("interpolate_triangles4",4));
-    addTest(new InterpolateTrianglesTest("interpolate_triangles5",5));
-    addTest(new InterpolateTrianglesTest("interpolate_triangles8",8));
-    addTest(new InterpolateTrianglesTest("interpolate_triangles11",11));
-    addTest(new InterpolateTrianglesTest("interpolate_triangles12",12));
-    addTest(new InterpolateTrianglesTest("interpolate_triangles15",15));
+    beginTestGroup("enable_disable_geometry");
+    for (auto sflags : sceneFlagsDynamic) 
+      addTest(new EnableDisableGeometryTest("enable_disable_geometry_"+to_string(sflags),sflags));
+    endTestGroup();
 
-    addTest(new InterpolateHairTest("interpolate_hair4",4));
-    addTest(new InterpolateHairTest("interpolate_hair5",5));
-    addTest(new InterpolateHairTest("interpolate_hair8",8));
-    addTest(new InterpolateHairTest("interpolate_hair11",11));
-    addTest(new InterpolateHairTest("interpolate_hair12",12));
-    addTest(new InterpolateHairTest("interpolate_hair15",15));
+    beginTestGroup("update");
+    for (auto sflags : sceneFlagsDynamic) {
+      for (auto imode : intersectModes) {
+        addTest(new UpdateTest("update_deformable_"+to_string(sflags)+"_"+to_string(imode),sflags,RTC_GEOMETRY_DEFORMABLE,imode));
+        addTest(new UpdateTest("update_dynamic_"+to_string(sflags)+"_"+to_string(imode),sflags,RTC_GEOMETRY_DYNAMIC,imode));
+      }
+    }
+    endTestGroup();
 
-    addTest(new BuildTest("build"));
+    /**************************************************************************/
+    /*                     Interpolation Tests                                */
+    /**************************************************************************/
 
-#if defined(RTCORE_RAY_MASK)
-    addTest(new RayMasksTest("ray_masks"));
-#endif
+    beginTestGroup("interpolate_subdiv");
+    for (auto s : { 4,5,8,11,12,15 })
+      addTest(new InterpolateSubdivTest("interpolate_subdiv_"+std::to_string(long(s)),s));
+    endTestGroup();
 
-#if defined(RTCORE_INTERSECTION_FILTER)
-    addTest(new IntersectionFilterTest("intersection_filter_tris",false));
-#endif
+    beginTestGroup("interpolate_triangles");
+    for (auto s : { 4,5,8,11,12,15 }) 
+      addTest(new InterpolateTrianglesTest("interpolate_triangles_"+std::to_string(long(s)),s));
+    endTestGroup();
 
-#if defined(RTCORE_INTERSECTION_FILTER)
-    addTest(new IntersectionFilterTest("intersection_filter_subdiv",true));
-#endif
+    beginTestGroup("interpolate_hair");
+    for (auto s : { 4,5,8,11,12,15 }) 
+      addTest(new InterpolateHairTest("interpolate_hair_"+std::to_string(long(s)),s));
+    endTestGroup();
 
-#if defined(RTCORE_BACKFACE_CULLING)
-    addTest(new BackfaceCullingTest("backface_culling"));
-#endif
+    addTest(new BaryDistanceTest("bary_distance_robust"));
 
-    addTest(new PacketWriteTest("packet_write_test"));
-    
+    /**************************************************************************/
+    /*                      Intersection Tests                                */
+    /**************************************************************************/
+
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_RAY_MASK)) 
+    {
+      beginTestGroup("ray_masks");
+      for (auto sflags : sceneFlags) 
+        for (auto imode : intersectModes) 
+          addTest(new RayMasksTest("ray_masks_"+to_string(sflags)+"_"+to_string(imode),sflags,RTC_GEOMETRY_STATIC,imode));
+      endTestGroup();
+    }
+
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_BACKFACE_CULLING)) 
+    {
+      beginTestGroup("backface_culling");
+      for (auto sflags : sceneFlags) 
+        for (auto imode : intersectModes) 
+          addTest(new BackfaceCullingTest("backface_culling_"+to_string(sflags)+"_"+to_string(imode),sflags,RTC_GEOMETRY_STATIC,imode));
+      endTestGroup();
+    }
+
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECTION_FILTER)) {
+      addTest(new IntersectionFilterTest("intersection_filter_tris",false));
+      addTest(new IntersectionFilterTest("intersection_filter_subdiv",true));
+    }
+
+    beginTestGroup("inactive_rays");
+    for (auto sflags : sceneFlags) 
+        for (auto imode : intersectModes) 
+          addTest(new InactiveRaysTest("inactive_rays_"+to_string(sflags)+"_"+to_string(imode),sflags,RTC_GEOMETRY_STATIC,imode));
+    endTestGroup();
+
+    beginTestGroup("watertight");
     const Vec3fa watertight_pos = Vec3fa(148376.0f,1234.0f,-223423.0f);
     for (auto sflags : sceneFlagsRobust) 
       for (auto imode : intersectModes) 
         for (std::string model : {"sphere", "plane"}) 
           addTest(new WatertightTest("watertight_"+to_string(sflags)+"_"+model+"_"+to_string(imode),sflags,imode,model,watertight_pos));
-    
+    endTestGroup();
+
     if (rtcDeviceGetParameter1i(device,RTC_CONFIG_IGNORE_INVALID_RAYS))
     {
+      beginTestGroup("nan_test");
       for (auto sflags : sceneFlags) 
         for (auto imode : intersectModes) 
           addTest(new NaNTest("nan_test_"+to_string(sflags)+"_"+to_string(imode),sflags,RTC_GEOMETRY_STATIC,imode));
+      endTestGroup();
 
+      beginTestGroup("inf_test");
       for (auto sflags : sceneFlags) 
         for (auto imode : intersectModes) 
           addTest(new InfTest("inf_test_"+to_string(sflags)+"_"+to_string(imode),sflags,RTC_GEOMETRY_STATIC,imode));
+      endTestGroup();
     }
     
+    /**************************************************************************/
+    /*                  Randomized Stress Testing                             */
+    /**************************************************************************/
+
     addTest(new IntensiveRegressionTest("regression_static",rtcore_regression_static_thread,0));
     addTest(new IntensiveRegressionTest("regression_dynamic",rtcore_regression_dynamic_thread,0));
 
@@ -3254,19 +2928,44 @@ namespace embree
     std::string run_docu = "--run <regexpr>: Runs all tests whose name match the regular expression. Supported tests are:";
     for (auto test : tests) run_docu += "\n  " + test->name;
     registerOption("run", [this] (Ref<ParseStream> cin, const FileName& path) {
-        use_tests_to_run = true;
+
+        if (!user_specified_tests) 
+          for (auto test : tests) 
+            test->enabled = false;
+
+        user_specified_tests = true;
         std::smatch match;
         std::regex regexpr(cin->getString());
         for (auto test : tests) {
           if (std::regex_match(test->name, match, regexpr)) {
-            tests_to_run.push_back(test);
+            test->enabled = true;
           }
         }
       }, run_docu);
+
+    registerOption("skip", [this] (Ref<ParseStream> cin, const FileName& path) {
+
+        if (!user_specified_tests) 
+          for (auto test : tests) 
+            test->enabled = true;
+
+        user_specified_tests = true;
+        std::smatch match;
+        std::regex regexpr(cin->getString());
+        for (auto test : tests) {
+          if (std::regex_match(test->name, match, regexpr)) {
+            test->enabled = false;
+          }
+        }
+      }, "--skip <regexpr>: Skips all tests whose name matches the regular expression.");
     
-    registerOption("regressions", [this] (Ref<ParseStream> cin, const FileName& path) {
-        regressionN = cin->getInt();
-      }, "--regressions <int>: number of regressions to perform");
+    registerOption("no-groups", [this] (Ref<ParseStream> cin, const FileName& path) {
+        use_groups = false;
+      }, "--no-groups: ignore test groups");
+
+    registerOption("intensity", [this] (Ref<ParseStream> cin, const FileName& path) {
+        intensity = cin->getFloat();
+      }, "--intensity <float>: intensity of testing to perform");
   }
 
   int VerifyApplication::main(int argc, char** argv) try
@@ -3280,25 +2979,24 @@ namespace embree
     
     /* perform tests */
     device = rtcNewDevice(rtcore.c_str());
-    //error_handler(rtcDeviceGetError(device));
+    error_handler(rtcDeviceGetError(device));
 
-    /* execute specific user tests */
-    if (use_tests_to_run) 
-    {
-      for (auto test : tests_to_run) 
-        runTest(test);
-    } 
-    /* run all tests by default */
-    else 
-    {
-      /* print Embree version */
-      rtcInit("verbose=1");
-      error_handler(rtcGetError());
-      rtcExit();
-
-      /* run all available tests */
+    /* enable all tests if user did not specify any tests */
+    if (!user_specified_tests) 
       for (auto test : tests) 
-        runTest(test);
+        test->enabled = true;
+
+    /* run all enabled tests */
+    for (size_t i=0; i<tests.size(); i++) 
+    {
+      if (use_groups && tests[i]->ty == GROUP_BEGIN) {
+        if (tests[i]->enabled)
+          runTestGroup(i);
+      }
+      else {
+        if (tests[i]->enabled && tests[i]->ty != GROUP_BEGIN && tests[i]->ty != GROUP_END)
+          runTest(tests[i],false);
+      }
     }
 
     rtcDeleteDevice(device);
@@ -3319,22 +3017,43 @@ namespace embree
     name2test[test->name] = test;
   }
   
-  void VerifyApplication::runTest(Ref<Test> test)
+  bool VerifyApplication::runTest(Ref<Test> test, bool silent)
   {
     bool ok = true;
-    std::cout << std::setw(50) << test->name << " ..." << std::flush;
+    if (!silent)
+      std::cout << std::setw(50) << test->name << " ..." << std::flush;
+    
     try {
       ok &= test->run(this);
       AssertNoError(device);
     } catch (...) {
       ok = false;
     }
-    if ((test->ty == PASS) == ok) 
-      std::cout << GREEN(" [PASSED]") << std::endl << std::flush;
-    else {
-      std::cout << RED(" [FAILED]") << std::endl << std::flush;
-      numFailedTests++;
+    bool passed = (test->ty == PASS) == ok;
+
+    if (silent) {
+      if (passed) std::cout << GREEN("+") << std::flush;
+      else        std::cout << RED  ("-") << std::flush;
+    } else {
+      if (passed) std::cout << GREEN(" [PASSED]") << std::endl << std::flush;
+      else        std::cout << RED  (" [FAILED]") << std::endl << std::flush;
     }
+    numFailedTests += !passed;
+    return passed;
+  }
+
+  void VerifyApplication::runTestGroup(size_t& id)
+  {
+    bool ok = true;
+    Ref<Test> test = tests[id];
+    std::cout << std::setw(50) << test->name << " " << std::flush;
+
+    id++;
+    for (; id<tests.size() && tests[id]->ty != GROUP_END; id++)
+      ok &= runTest(tests[id],true);
+
+    if (ok) std::cout << GREEN(" [PASSED]") << std::endl << std::flush;
+    else    std::cout << RED  (" [FAILED]") << std::endl << std::flush;
   }
 }
 
