@@ -100,7 +100,7 @@ unsigned int convertCurveGeometry(ISPCHairSet* hair, RTCScene scene_out)
 RTCScene convertScene(ISPCScene* scene_in)
 {
   size_t numGeometries = scene_in->numGeometries;
-  int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT  /* | RTC_SCENE_ROBUST  */; 
+  int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
   int scene_aflags = RTC_INTERSECT1 | RTC_INTERSECT_STREAM | RTC_INTERPOLATE;
   RTCScene scene_out = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
 
@@ -321,10 +321,7 @@ extern "C" void device_render (int* pixels,
   /* render image */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
-    for (size_t i=range.begin(); i<range.end(); i++)
-      renderTileTask(i,pixels,width,height,time,camera,numTilesX,numTilesY);
-  }); 
+  parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {    for (size_t i=range.begin(); i<range.end(); i++)      renderTileTask(i,pixels,width,height,time,camera,numTilesX,numTilesY);  }); 
 }
 
 /* called by the C++ code for cleanup */

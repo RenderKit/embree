@@ -103,6 +103,10 @@ void instanceIntersectFuncN(const int* valid,
                                      size_t N,
                                      size_t item)
 {
+  /* avoid crashing when debug visualizations are used */
+  if (context == nullptr)
+    return; 
+  
   const Instance* instance = (const Instance*) ptr;
 
   /* iterate over all rays in ray packet */
@@ -155,6 +159,10 @@ void instanceOccludedFuncN(const int* valid,
                                     size_t N,
                                     size_t item)
 {
+  /* avoid crashing when debug visualizations are used */
+  if (context == nullptr)
+    return; 
+
   const Instance* instance = (const Instance*) ptr;
 
   /* iterate over all rays in ray packet */
@@ -896,10 +904,7 @@ extern "C" void device_render (int* pixels,
   /* render all pixels */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
-    for (size_t i=range.begin(); i<range.end(); i++)
-      renderTileTask(i,pixels,width,height,time,camera,numTilesX,numTilesY);
-  }); 
+  parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {    for (size_t i=range.begin(); i<range.end(); i++)      renderTileTask(i,pixels,width,height,time,camera,numTilesX,numTilesY);  }); 
 }
 
 /* called by the C++ code for cleanup */

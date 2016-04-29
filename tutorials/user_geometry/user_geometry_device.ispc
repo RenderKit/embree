@@ -103,6 +103,10 @@ unmasked void instanceIntersectFuncN(const uniform int* uniform valid,
                                      uniform size_t N,
                                      uniform size_t item)
 {
+  /* avoid crashing when debug visualizations are used */
+  if (context == NULL)
+    return; 
+  
   const uniform Instance* uniform instance = (const uniform Instance* uniform) ptr;
 
   /* iterate over all rays in ray packet */
@@ -155,6 +159,10 @@ unmasked void instanceOccludedFuncN(const uniform int* uniform valid,
                                     uniform size_t N,
                                     uniform size_t item)
 {
+  /* avoid crashing when debug visualizations are used */
+  if (context == NULL)
+    return; 
+
   const uniform Instance* uniform instance = (const uniform Instance* uniform) ptr;
 
   /* iterate over all rays in ray packet */
