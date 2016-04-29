@@ -1416,6 +1416,37 @@ namespace embree
     }
   };
 
+  struct EmptyGeometryTest : public VerifyApplication::Test
+  {
+    RTCSceneFlags sflags;
+    RTCGeometryFlags gflags;
+
+    EmptyGeometryTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags)
+      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), gflags(gflags) {}
+    
+    bool run(VerifyApplication* state)
+    {
+      RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,aflags);
+      rtcNewTriangleMesh (scene,gflags,0,0,1);
+      rtcNewTriangleMesh (scene,gflags,0,0,2);
+      rtcNewQuadMesh (scene,gflags,0,0,1);
+      rtcNewQuadMesh (scene,gflags,0,0,2);
+      rtcNewSubdivisionMesh (scene,gflags,0,0,0,0,0,0,1);
+      rtcNewSubdivisionMesh (scene,gflags,0,0,0,0,0,0,2);
+      rtcNewHairGeometry (scene,gflags,0,0,1);
+      rtcNewHairGeometry (scene,gflags,0,0,2);
+      rtcNewCurveGeometry (scene,gflags,0,0,1);
+      rtcNewCurveGeometry (scene,gflags,0,0,2);
+      rtcNewUserGeometry2 (scene,0,1);
+      rtcNewUserGeometry2 (scene,0,2);
+      rtcCommit (scene);
+      AssertNoError(state->device);
+      scene = nullptr;
+      AssertNoError(state->device);
+      return true;
+    }
+  };
+
   struct IntersectionFilterTest : public VerifyApplication::Test
   {
     bool subdiv;
@@ -3092,6 +3123,11 @@ namespace embree
     endTestGroup();
 
     addTest(new BuildTest("build"));
+
+    beginTestGroup("empty_geometry");
+    for (auto sflags : sceneFlags) 
+      addTest(new EmptyGeometryTest("empty_geometry_"+to_string(sflags),sflags,RTC_GEOMETRY_STATIC));
+    endTestGroup();
 
     if (rtcDeviceGetParameter1i(device,RTC_CONFIG_BUFFER_STRIDE)) {
       addTest(new BufferStrideTest("buffer_stride"));
