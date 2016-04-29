@@ -3142,26 +3142,14 @@ namespace embree
     addTest(new OverlappingHairTest("overlapping_hair",100000));
     addTest(new NewDeleteGeometryTest("new_delete_geometry"));
 
-    addTest(new InterpolateSubdivTest("interpolate_subdiv4",4));
-    addTest(new InterpolateSubdivTest("interpolate_subdiv5",5));
-    addTest(new InterpolateSubdivTest("interpolate_subdiv8",8));
-    addTest(new InterpolateSubdivTest("interpolate_subdiv11",11));
-    addTest(new InterpolateSubdivTest("interpolate_subdiv12",12));
-    addTest(new InterpolateSubdivTest("interpolate_subdiv15",15));
+    for (auto s : { 4,5,8,11,12,15 }) 
+      addTest(new InterpolateSubdivTest("interpolate_subdiv_"+std::to_string(long(s)),s));
 
-    addTest(new InterpolateTrianglesTest("interpolate_triangles4",4));
-    addTest(new InterpolateTrianglesTest("interpolate_triangles5",5));
-    addTest(new InterpolateTrianglesTest("interpolate_triangles8",8));
-    addTest(new InterpolateTrianglesTest("interpolate_triangles11",11));
-    addTest(new InterpolateTrianglesTest("interpolate_triangles12",12));
-    addTest(new InterpolateTrianglesTest("interpolate_triangles15",15));
+    for (auto s : { 4,5,8,11,12,15 }) 
+      addTest(new InterpolateTrianglesTest("interpolate_triangles_"+std::to_string(long(s)),s));
 
-    addTest(new InterpolateHairTest("interpolate_hair4",4));
-    addTest(new InterpolateHairTest("interpolate_hair5",5));
-    addTest(new InterpolateHairTest("interpolate_hair8",8));
-    addTest(new InterpolateHairTest("interpolate_hair11",11));
-    addTest(new InterpolateHairTest("interpolate_hair12",12));
-    addTest(new InterpolateHairTest("interpolate_hair15",15));
+    for (auto s : { 4,5,8,11,12,15 }) 
+      addTest(new InterpolateHairTest("interpolate_hair_"+std::to_string(long(s)),s));
 
     addTest(new BuildTest("build"));
 
@@ -3249,7 +3237,7 @@ namespace embree
     
     /* perform tests */
     device = rtcNewDevice(rtcore.c_str());
-    //error_handler(rtcDeviceGetError(device));
+    error_handler(rtcDeviceGetError(device));
 
     /* execute specific user tests */
     if (use_tests_to_run) 
