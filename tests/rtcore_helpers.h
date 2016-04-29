@@ -367,6 +367,15 @@ namespace embree
     }
   }
 
+  inline std::string to_string(RTCSceneFlags sflags)
+  {
+    std::string str = "";
+    if (sflags & RTC_SCENE_DYNAMIC) str += "Dynamic"; else str += "Static";
+    if (sflags & RTC_SCENE_COMPACT) str += "Compact";
+    if (sflags & RTC_SCENE_ROBUST ) str += "Robust";
+    return str;
+  }
+
   template<int N>
     inline void IntersectWithNMMode(IntersectVariant ivariant, RTCScene scene, RTCRay* rays, size_t Nrays)
   {

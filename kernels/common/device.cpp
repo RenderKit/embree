@@ -464,31 +464,31 @@ namespace embree
     case RTC_CONFIG_RAY_MASK: return 0;
 #endif
 
-#if defined(RTC_BACKFACE_CULLING)
+#if defined(RTCORE_BACKFACE_CULLING)
     case RTC_CONFIG_BACKFACE_CULLING: return 1;
 #else
     case RTC_CONFIG_BACKFACE_CULLING: return 0;
 #endif
 
-#if defined(RTC_INTERSECTION_FILTER)
+#if defined(RTCORE_INTERSECTION_FILTER)
     case RTC_CONFIG_INTERSECTION_FILTER: return 1;
 #else
     case RTC_CONFIG_INTERSECTION_FILTER: return 0;
 #endif
 
-#if defined(RTC_INTERSECTION_FILTER_RESTORE)
+#if defined(RTCORE_INTERSECTION_FILTER_RESTORE)
     case RTC_CONFIG_INTERSECTION_FILTER_RESTORE: return 1;
 #else
     case RTC_CONFIG_INTERSECTION_FILTER_RESTORE: return 0;
 #endif
 
-#if defined(RTC_BUFFER_STRIDE)
+#if defined(RTCORE_BUFFER_STRIDE)
     case RTC_CONFIG_BUFFER_STRIDE: return 1;
 #else
     case RTC_CONFIG_BUFFER_STRIDE: return 0;
 #endif
       
-#if defined(RTC_IGNORE_INVALID_RAYS)
+#if defined(RTCORE_IGNORE_INVALID_RAYS)
     case RTC_CONFIG_IGNORE_INVALID_RAYS: return 1;
 #else
     case RTC_CONFIG_IGNORE_INVALID_RAYS: return 0;
@@ -530,7 +530,7 @@ namespace embree
     case RTC_CONFIG_HAIR_GEOMETRY: return 0;
 #endif
 
-#if defined( RTCORE_GEOMETRY_SUBDIV)
+#if defined(RTCORE_GEOMETRY_SUBDIV)
     case RTC_CONFIG_SUBDIV_GEOMETRY: return 1;
 #else
     case RTC_CONFIG_SUBDIV_GEOMETRY: return 0;
