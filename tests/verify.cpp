@@ -1666,7 +1666,7 @@ namespace embree
       Vec3fa pos = zero;
       ClearBuffers clear_before_return;
       RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,to_aflags(imode));
-      addSphere(state->device,scene,RTC_GEOMETRY_STATIC,pos,2.0f,500); // FIXME: use different geometries too
+      addSphere(state->device,scene,RTC_GEOMETRY_STATIC,pos,2.0f,50); // FIXME: use different geometries too
       rtcCommit (scene);
       AssertNoError(state->device);
 
@@ -1699,9 +1699,7 @@ namespace embree
           IntersectWithMode(imode,ivariant,scene,rays,M);
           for (size_t j=0; j<M; j++) {
             if (valid[j]) continue;
-            for (int k=0; k<sizeof(RTCRay)/4-3; k++) { // we do not test the 3 alignment words at end of ray
-              numFailures += ((int*)&rays[j])[k] != ((int*)&invalid_ray)[k];
-            }
+            numFailures += neq_ray_special(rays[j],invalid_ray);
           }
         }
       }

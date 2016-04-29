@@ -95,7 +95,30 @@ namespace embree
     return ray;
   }
 
-   /* Outputs ray to stream */
+  inline bool neq_ray_special (const RTCRay& ray0, const RTCRay& ray1)
+  {
+    if (*(int*)&ray0.org[0] != *(int*)&ray1.org[0]) return true;
+    if (*(int*)&ray0.org[1] != *(int*)&ray1.org[1]) return true;
+    if (*(int*)&ray0.org[2] != *(int*)&ray1.org[2]) return true;
+    if (*(int*)&ray0.dir[0] != *(int*)&ray1.dir[0]) return true;
+    if (*(int*)&ray0.dir[1] != *(int*)&ray1.dir[1]) return true;
+    if (*(int*)&ray0.dir[2] != *(int*)&ray1.dir[2]) return true;
+    if (*(int*)&ray0.tnear  != *(int*)&ray1.tnear ) return true;
+    if (*(int*)&ray0.tfar   != *(int*)&ray1.tfar  ) return true;
+    if (*(int*)&ray0.time   != *(int*)&ray1.time  ) return true;
+    if (*(int*)&ray0.mask   != *(int*)&ray1.mask  ) return true;
+    if (*(int*)&ray0.u      != *(int*)&ray1.u     ) return true;
+    if (*(int*)&ray0.v      != *(int*)&ray1.v     ) return true;
+    if (*(int*)&ray0.instID != *(int*)&ray1.instID) return true;
+    if (*(int*)&ray0.geomID != *(int*)&ray1.geomID) return true;
+    if (*(int*)&ray0.primID != *(int*)&ray1.primID) return true;
+    if (*(int*)&ray0.Ng[0]  != *(int*)&ray1.Ng[0] ) return true;
+    if (*(int*)&ray0.Ng[1]  != *(int*)&ray1.Ng[1] ) return true;
+    if (*(int*)&ray0.Ng[2]  != *(int*)&ray1.Ng[2] ) return true;
+    return false;
+  }
+
+  /* Outputs ray to stream */
   inline std::ostream& operator<<(std::ostream& cout, const RTCRay& ray)
   {
     return cout << "Ray { " << std::endl
