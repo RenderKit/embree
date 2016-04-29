@@ -1821,6 +1821,7 @@ namespace embree
       size_t numFailures = 0;
       for (size_t i=0; i<N; i++) 
       {
+        IntersectVariant ivariant = (IntersectVariant) (i%2);
         for (size_t M=1; M<maxStreamSize; M++)
         {
           __aligned(16) RTCRay rays[maxStreamSize];
@@ -1836,10 +1837,10 @@ namespace embree
               rays[j] = makeRay(pos+org,dir); 
             }
           }
-          IntersectWithMode(imode,scene,rays,M);
+          IntersectWithMode(imode,ivariant,scene,rays,M);
           for (size_t j=0; j<M; j++) {
             numTests++;
-            numFailures += rays[j].primID == -1;
+            numFailures += rays[j].geomID == -1;
           }
         }
       }
