@@ -1094,10 +1094,14 @@ namespace embree
 
   struct BuildTest : public VerifyApplication::Test
   {
-    BuildTest (std::string name)
-      : VerifyApplication::Test(name,VerifyApplication::PASS) {}
+    RTCSceneFlags sflags;
+    RTCGeometryFlags gflags; 
+    IntersectMode imode;
+
+    BuildTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode)
+      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), gflags(gflags), imode(imode) {}
     
-    bool rtcore_build(VerifyApplication* state, RTCSceneFlags sflags, RTCGeometryFlags gflags)
+    bool run (VerifyApplication* state)
     {
       ClearBuffers clear_before_return;
       RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,aflags);
@@ -1108,21 +1112,6 @@ namespace embree
       rtcCommit (scene);
       scene = nullptr;
       return true;
-    }
-  
-    bool run(VerifyApplication* state)
-    {
-      bool passed = true;
-      for (int i=0; i<numSceneGeomFlags; i++) 
-      {
-        RTCSceneFlags sflags; RTCGeometryFlags gflags;
-        getSceneGeomFlag(i,sflags,gflags);
-        bool ok = rtcore_build(state,sflags,gflags);
-        if (ok) printf(GREEN("+")); else printf(RED("-"));
-        passed &= ok;
-        fflush(stdout);
-      }
-      return passed;
     }
   };
 
@@ -2776,6 +2765,12 @@ namespace embree
       addTest(new EmptyGeometryTest("empty_geometry_"+to_string(sflags),sflags,RTC_GEOMETRY_STATIC));
     endTestGroup();
 
+    beginTestGroup("build");
+    for (auto sflags : sceneFlags) 
+      for (auto imode : intersectModes) 
+        addTest(new BuildTest("build_"+to_string(sflags)+"_"+to_string(imode),sflags,RTC_GEOMETRY_STATIC,imode));
+    endTestGroup();
+
     addTest(new BaryDistanceTest("bary_distance_robust"));
 
     addTest(new FlagsTest("flags_static_static"     ,VerifyApplication::PASS, RTC_SCENE_STATIC, RTC_GEOMETRY_STATIC));
@@ -2819,8 +2814,6 @@ namespace embree
     for (auto s : { 4,5,8,11,12,15 }) 
       addTest(new InterpolateHairTest("interpolate_hair_"+std::to_string(long(s)),s));
     endTestGroup();
-
-    addTest(new BuildTest("build"));
 
     if (rtcDeviceGetParameter1i(device,RTC_CONFIG_BUFFER_STRIDE)) {
       addTest(new BufferStrideTest("buffer_stride"));
