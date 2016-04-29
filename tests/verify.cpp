@@ -615,6 +615,164 @@ namespace embree
     }
   };
 
+   struct FlagsTest : public VerifyApplication::Test
+  {
+    RTCSceneFlags sceneFlags;
+    RTCGeometryFlags geomFlags;
+
+    FlagsTest (std::string name, VerifyApplication::TestType type, RTCSceneFlags sceneFlags, RTCGeometryFlags geomFlags)
+      : VerifyApplication::Test(name,type), sceneFlags(sceneFlags), geomFlags(geomFlags) {}
+
+    bool run(VerifyApplication* state)
+    {
+      RTCSceneRef scene = rtcDeviceNewScene(state->device,sceneFlags,aflags);
+      AssertNoError(state->device);
+      rtcNewTriangleMesh (scene, geomFlags, 0, 0);
+      AssertNoError(state->device);
+      rtcNewHairGeometry (scene, geomFlags, 0, 0);
+      AssertNoError(state->device);
+      rtcCommit (scene);
+      AssertNoError(state->device);
+      scene = nullptr;
+      return true;
+    }
+  };
+  
+  struct UnmappedBeforeCommitTest : public VerifyApplication::Test
+  {
+    UnmappedBeforeCommitTest (std::string name)
+      : VerifyApplication::Test(name,VerifyApplication::PASS) {}
+
+    bool run(VerifyApplication* state)
+    {
+      ClearBuffers clear_before_return;
+      RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_STATIC,aflags);
+      AssertNoError(state->device);
+      unsigned geom0 = addSphere(state->device,scene,RTC_GEOMETRY_STATIC,zero,1.0f,50);
+      unsigned geom1 = addSphere(state->device,scene,RTC_GEOMETRY_STATIC,zero,1.0f,50);
+      AssertNoError(state->device);
+      rtcMapBuffer(scene,geom0,RTC_INDEX_BUFFER);
+      rtcMapBuffer(scene,geom0,RTC_VERTEX_BUFFER);
+      AssertNoError(state->device);
+      rtcCommit (scene);
+      AssertError(state->device,RTC_INVALID_OPERATION); // error, buffers still mapped
+      scene = nullptr;
+      return true;
+    }
+  };
+
+  struct GetBoundsTest : public VerifyApplication::Test
+  {
+    GetBoundsTest (std::string name)
+      : VerifyApplication::Test(name,VerifyApplication::PASS) {}
+
+    bool run(VerifyApplication* state)
+    {
+      ClearBuffers clear_before_return;
+      RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_STATIC,RTC_INTERSECT1);
+      AssertNoError(state->device);
+      BBox3fa bounds0;
+      unsigned geom0 = addSphere(state->device,scene,RTC_GEOMETRY_STATIC,zero,1.0f,50,-1,0,&bounds0);
+      AssertNoError(state->device);
+      rtcCommit (scene);
+      AssertNoError(state->device);
+      BBox3fa bounds1;
+      rtcGetBounds(scene,(RTCBounds&)bounds1);
+      scene = nullptr;
+      return bounds0 == bounds1;
+    }
+  };
+
+  struct GetUserDataTest : public VerifyApplication::Test
+  {
+    GetUserDataTest (std::string name)
+      : VerifyApplication::Test(name,VerifyApplication::PASS) {}
+    
+    bool run(VerifyApplication* state)
+    {
+      RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_STATIC,RTC_INTERSECT1);
+      AssertNoError(state->device);
+      unsigned geom0 = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 0, 0, 1);
+      AssertNoError(state->device);
+      rtcSetUserData(scene,geom0,(void*)1);
+      
+      unsigned geom1 = rtcNewSubdivisionMesh(scene, RTC_GEOMETRY_STATIC, 0, 0, 0, 0, 0, 0, 1);
+      AssertNoError(state->device);
+      rtcSetUserData(scene,geom1,(void*)2);
+      
+      unsigned geom2 = rtcNewHairGeometry (scene, RTC_GEOMETRY_STATIC, 0, 0, 1);
+      AssertNoError(state->device);
+      rtcSetUserData(scene,geom2,(void*)3);
+      
+      unsigned geom3 = rtcNewUserGeometry (scene,0);
+      AssertNoError(state->device);
+      rtcSetUserData(scene,geom3,(void*)4);
+      
+      rtcCommit (scene);
+      AssertNoError(state->device);
+      
+      if ((size_t)rtcGetUserData(scene,geom0) != 1) return false;
+      if ((size_t)rtcGetUserData(scene,geom1) != 2) return false;
+      if ((size_t)rtcGetUserData(scene,geom2) != 3) return false;
+      if ((size_t)rtcGetUserData(scene,geom3) != 4) return false;
+      
+      scene = nullptr;
+      AssertNoError(state->device);
+      return true;
+    }
+  };
+
+  struct BufferStrideTest : public VerifyApplication::Test
+  {
+    BufferStrideTest (std::string name)
+      : VerifyApplication::Test(name,VerifyApplication::PASS) {}
+    
+    bool run(VerifyApplication* state)
+    {
+      ClearBuffers clear_before_return;
+      RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_STATIC,aflags);
+      AssertNoError(state->device);
+      unsigned geom = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 16, 16);
+      AssertNoError(state->device);
+      avector<char> indexBuffer(8+16*6*sizeof(int));
+      avector<char> vertexBuffer(12+16*9*sizeof(float)+4);
+      
+      rtcSetBuffer(scene,geom,RTC_INDEX_BUFFER,indexBuffer.data(),1,3*sizeof(int));
+      AssertError(state->device,RTC_INVALID_OPERATION);
+      rtcSetBuffer(scene,geom,RTC_VERTEX_BUFFER,vertexBuffer.data(),1,3*sizeof(float));
+      AssertError(state->device,RTC_INVALID_OPERATION);
+
+      rtcSetBuffer(scene,geom,RTC_INDEX_BUFFER,indexBuffer.data(),0,3*sizeof(int)+3);
+      AssertError(state->device,RTC_INVALID_OPERATION);
+      rtcSetBuffer(scene,geom,RTC_VERTEX_BUFFER,vertexBuffer.data(),0,3*sizeof(float)+3);
+      AssertError(state->device,RTC_INVALID_OPERATION);
+      
+      rtcSetBuffer(scene,geom,RTC_INDEX_BUFFER,indexBuffer.data(),0,3*sizeof(int));
+      AssertNoError(state->device);
+      rtcSetBuffer(scene,geom,RTC_VERTEX_BUFFER,vertexBuffer.data(),0,3*sizeof(float));
+      AssertNoError(state->device);
+      
+      rtcSetBuffer(scene,geom,RTC_INDEX_BUFFER,indexBuffer.data(),8,6*sizeof(int));
+      AssertNoError(state->device);
+      rtcSetBuffer(scene,geom,RTC_VERTEX_BUFFER,vertexBuffer.data(),12,9*sizeof(float));
+      AssertNoError(state->device);
+      
+      rtcSetBuffer(scene,geom,RTC_INDEX_BUFFER,indexBuffer.data(),0,3*sizeof(int));
+      AssertNoError(state->device);
+      
+      rtcSetBuffer(scene,geom,RTC_VERTEX_BUFFER,vertexBuffer.data(),0,4*sizeof(float));
+      AssertNoError(state->device);
+      
+      scene = nullptr;
+      return true;
+    }
+  };
+
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
+
   struct EmptySceneTest : public VerifyApplication::Test
   {
     EmptySceneTest (std::string name, RTCSceneFlags sflags)
@@ -695,6 +853,79 @@ namespace embree
       }
       scene = nullptr;
       AssertNoError(state->device);
+      return true;
+    }
+  };
+
+  struct OverlappingTrianglesTest : public VerifyApplication::Test
+  {
+    int N;
+    
+    OverlappingTrianglesTest (std::string name, int N)
+      : VerifyApplication::Test(name,VerifyApplication::PASS), N(N) {}
+    
+    bool run(VerifyApplication* state)
+    {
+      RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_STATIC,aflags);
+      AssertNoError(state->device);
+      rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, N, 3);
+      AssertNoError(state->device);
+      
+      Vertex3fa* vertices = (Vertex3fa*) rtcMapBuffer(scene,0,RTC_VERTEX_BUFFER);
+      vertices[0].x = 0.0f; vertices[0].y = 0.0f; vertices[0].z = 0.0f;
+      vertices[1].x = 1.0f; vertices[1].y = 0.0f; vertices[1].z = 0.0f;
+      vertices[2].x = 0.0f; vertices[2].y = 1.0f; vertices[2].z = 0.0f;
+      rtcUnmapBuffer(scene,0,RTC_VERTEX_BUFFER);
+      AssertNoError(state->device);
+      
+      Triangle* triangles = (Triangle*) rtcMapBuffer(scene,0,RTC_INDEX_BUFFER);
+      for (size_t i=0; i<N; i++) {
+        triangles[i].v0 = 0;
+        triangles[i].v1 = 1;
+        triangles[i].v2 = 2;
+      }
+      rtcUnmapBuffer(scene,0,RTC_INDEX_BUFFER);
+      AssertNoError(state->device);
+      
+      rtcCommit (scene);
+      AssertNoError(state->device);
+      
+      return true;
+    }
+  };
+    
+  struct OverlappingHairTest : public VerifyApplication::Test
+  {
+    int N;
+    
+    OverlappingHairTest (std::string name, int N)
+      : VerifyApplication::Test(name,VerifyApplication::PASS), N(N) {}
+    
+    bool run(VerifyApplication* state)
+    {
+      RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_STATIC,aflags);
+      AssertNoError(state->device);
+      rtcNewHairGeometry (scene, RTC_GEOMETRY_STATIC, N, 4);
+      AssertNoError(state->device);
+      
+      Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene,0,RTC_VERTEX_BUFFER);
+      vertices[0].x = 0.0f; vertices[0].y = 0.0f; vertices[0].z = 0.0f; vertices[0].w = 0.1f;
+      vertices[1].x = 0.0f; vertices[1].y = 0.0f; vertices[1].z = 1.0f; vertices[1].w = 0.1f;
+      vertices[2].x = 0.0f; vertices[2].y = 1.0f; vertices[2].z = 1.0f; vertices[2].w = 0.1f;
+      vertices[3].x = 0.0f; vertices[3].y = 1.0f; vertices[3].z = 0.0f; vertices[3].w = 0.1f;
+      rtcUnmapBuffer(scene,0,RTC_VERTEX_BUFFER);
+      AssertNoError(state->device);
+      
+      int* indices = (int*) rtcMapBuffer(scene,0,RTC_INDEX_BUFFER);
+      for (size_t i=0; i<N; i++) {
+        indices[i] = 0;
+      }
+      rtcUnmapBuffer(scene,0,RTC_INDEX_BUFFER);
+      AssertNoError(state->device);
+      
+      rtcCommit (scene);
+      AssertNoError(state->device);
+      
       return true;
     }
   };
@@ -880,6 +1111,419 @@ namespace embree
     }
   };
 
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
+
+  const size_t num_interpolation_vertices = 16;
+  const size_t num_interpolation_quad_faces = 9;
+  const size_t num_interpolation_triangle_faces = 18;
+
+  __aligned(16) float interpolation_vertices[num_interpolation_vertices*3] = {
+    -1.0f, -1.0f, 0.0f,
+    0.0f, -1.0f, 0.0f, 
+    +1.0f, -1.0f, 0.0f,
+    +2.0f, -1.0f, 0.0f,
+    
+    -1.0f,  0.0f, 0.0f,
+    0.0f,  0.0f, 0.0f,
+    +1.0f,  0.0f, 0.0f,
+    +2.0f,  0.0f, 0.0f,
+
+    -1.0f, +1.0f, 0.0f,
+    0.0f, +1.0f, 0.0f,
+    +1.0f, +1.0f, 0.0f,
+    +2.0f, +1.0f, 0.0f,
+
+    -1.0f, +2.0f, 0.0f,
+    0.0f, +2.0f, 0.0f,
+    +1.0f, +2.0f, 0.0f,
+    +2.0f, +2.0f, 0.0f,
+  };
+
+  __aligned(16) int interpolation_quad_indices[num_interpolation_quad_faces*4] = {
+    0, 1, 5, 4,
+    1, 2, 6, 5,
+    2, 3, 7, 6,
+    4, 5, 9, 8, 
+    5, 6, 10, 9,
+    6, 7, 11, 10,
+    8, 9, 13, 12,
+    9, 10, 14, 13,
+    10, 11, 15, 14
+  };
+
+  __aligned(16) int interpolation_triangle_indices[num_interpolation_triangle_faces*3] = {
+    0, 1, 5,  0, 5, 4,
+    1, 2, 6,  1, 6, 5,
+    2, 3, 7,  2, 7, 6,
+    4, 5, 9,  4, 9, 8, 
+    5, 6, 10,  5, 10, 9,
+    6, 7, 11,  6, 11, 10,
+    8, 9, 13,   8, 13, 12,
+    9, 10, 14,   9, 14, 13,
+    10, 11, 15,  10, 15, 14
+  };
+
+  __aligned(16) int interpolation_quad_faces[num_interpolation_quad_faces] = {
+    4, 4, 4, 4, 4, 4, 4, 4, 4
+  };
+
+  __aligned(16) float interpolation_vertex_crease_weights[2] = {
+    inf, inf
+  };
+
+  __aligned(16) unsigned int interpolation_vertex_crease_indices[2] = {
+    12, 15
+  };
+
+  __aligned(16) float interpolation_edge_crease_weights[3] = {
+    inf, inf, inf
+  };
+
+  __aligned(16) unsigned int interpolation_edge_crease_indices[6] = 
+  {
+    8,9, 9,10, 10,11
+  };
+
+  struct InterpolateSubdivTest : public VerifyApplication::Test
+  {
+    size_t N;
+    
+    InterpolateSubdivTest (std::string name, size_t N)
+      : VerifyApplication::Test(name,VerifyApplication::PASS), N(N) {}
+
+    bool checkInterpolation2D(const RTCSceneRef& scene, int geomID, int primID, float u, float v, int v0, RTCBufferType buffer, float* data, size_t N, size_t N_total)
+    {
+      bool passed = true;
+      float P[256], dPdu[256], dPdv[256];
+      rtcInterpolate(scene,geomID,primID,u,v,buffer,P,dPdu,dPdv,N);
+      
+      for (size_t i=0; i<N; i++) {
+        float p0 = (1.0f/6.0f)*(1.0f*data[(v0-4-1)*N_total+i] + 4.0f*data[(v0-4+0)*N_total+i] + 1.0f*data[(v0-4+1)*N_total+i]);
+        float p1 = (1.0f/6.0f)*(1.0f*data[(v0+0-1)*N_total+i] + 4.0f*data[(v0+0+0)*N_total+i] + 1.0f*data[(v0+0+1)*N_total+i]);
+        float p2 = (1.0f/6.0f)*(1.0f*data[(v0+4-1)*N_total+i] + 4.0f*data[(v0+4+0)*N_total+i] + 1.0f*data[(v0+4+1)*N_total+i]);
+        float p = (1.0f/6.0f)*(1.0f*p0+4.0f*p1+1.0f*p2);
+        passed &= fabsf(p-P[i]) < 1E-4f;
+      }
+      return passed;
+    }
+    
+    bool checkInterpolation1D(const RTCSceneRef& scene, int geomID, int primID, float u, float v, int v0, int v1, int v2, RTCBufferType buffer, float* data, size_t N, size_t N_total)
+    {
+      bool passed = true;
+      float P[256], dPdu[256], dPdv[256];
+      rtcInterpolate(scene,geomID,primID,u,v,buffer,P,dPdu,dPdv,N);
+      
+      for (size_t i=0; i<N; i++) {
+        float v = (1.0f/6.0f)*(1.0f*data[v0*N_total+i] + 4.0f*data[v1*N_total+i] + 1.0f*data[v2*N_total+i]);
+        passed &= fabsf(v-P[i]) < 0.001f;
+      }
+      return passed;
+    }
+    
+    bool checkInterpolationSharpVertex(const RTCSceneRef& scene, int geomID, int primID, float u, float v, int v0, RTCBufferType buffer, float* data, size_t N, size_t N_total)
+    {
+      bool passed = true;
+      float P[256], dPdu[256], dPdv[256];
+      rtcInterpolate(scene,geomID,primID,u,v,buffer,P,dPdu,dPdv,N);
+      
+      for (size_t i=0; i<N; i++) {
+        float v = data[v0*N_total+i];
+        passed &= fabs(v-P[i]) < 1E-3f;
+      }
+      return passed;
+    }
+    
+    bool checkSubdivInterpolation(VerifyApplication* state, const RTCSceneRef& scene, int geomID, RTCBufferType buffer, float* vertices0, size_t N, size_t N_total)
+    {
+      rtcSetBoundaryMode(scene,geomID,RTC_BOUNDARY_EDGE_ONLY);
+      AssertNoError(state->device);
+      rtcDisable(scene,geomID);
+      AssertNoError(state->device);
+      rtcCommit(scene);
+      AssertNoError(state->device);
+      bool passed = true;
+      passed &= checkInterpolation1D(scene,geomID,0,0.0f,0.0f,4,0,1,buffer,vertices0,N,N_total);
+      passed &= checkInterpolation1D(scene,geomID,2,1.0f,0.0f,2,3,7,buffer,vertices0,N,N_total);
+      
+      passed &= checkInterpolation2D(scene,geomID,3,1.0f,0.0f,5,buffer,vertices0,N,N_total);
+      passed &= checkInterpolation2D(scene,geomID,1,1.0f,1.0f,6,buffer,vertices0,N,N_total);
+      
+      //passed &= checkInterpolation1D(scene,geomID,3,1.0f,1.0f,8,9,10,buffer,vertices0,N,N_total);
+      //passed &= checkInterpolation1D(scene,geomID,7,1.0f,0.0f,9,10,11,buffer,vertices0,N,N_total);
+      
+      passed &= checkInterpolationSharpVertex(scene,geomID,6,0.0f,1.0f,12,buffer,vertices0,N,N_total);
+      passed &= checkInterpolationSharpVertex(scene,geomID,8,1.0f,1.0f,15,buffer,vertices0,N,N_total);
+      
+      rtcSetBoundaryMode(scene,geomID,RTC_BOUNDARY_EDGE_AND_CORNER);
+      AssertNoError(state->device);
+      rtcCommit(scene);
+      AssertNoError(state->device);
+      
+      passed &= checkInterpolationSharpVertex(scene,geomID,0,0.0f,0.0f,0,buffer,vertices0,N,N_total);
+      passed &= checkInterpolationSharpVertex(scene,geomID,2,1.0f,0.0f,3,buffer,vertices0,N,N_total);
+      return passed;
+    }
+    
+    bool run(VerifyApplication* state)
+    {
+      size_t M = num_interpolation_vertices*N+16; // padds the arrays with some valid data
+      
+      RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_DYNAMIC,RTC_INTERPOLATE);
+      AssertNoError(state->device);
+      unsigned int geomID = rtcNewSubdivisionMesh(scene, RTC_GEOMETRY_STATIC, num_interpolation_quad_faces, num_interpolation_quad_faces*4, num_interpolation_vertices, 3, 2, 0, 1);
+      AssertNoError(state->device);
+      
+      rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  interpolation_quad_indices , 0, sizeof(unsigned int));
+      rtcSetBuffer(scene, geomID, RTC_FACE_BUFFER,   interpolation_quad_faces,    0, sizeof(unsigned int));
+      rtcSetBuffer(scene, geomID, RTC_EDGE_CREASE_INDEX_BUFFER,   interpolation_edge_crease_indices,  0, 2*sizeof(unsigned int));
+      rtcSetBuffer(scene, geomID, RTC_EDGE_CREASE_WEIGHT_BUFFER,  interpolation_edge_crease_weights,  0, sizeof(float));
+      rtcSetBuffer(scene, geomID, RTC_VERTEX_CREASE_INDEX_BUFFER, interpolation_vertex_crease_indices,0, sizeof(unsigned int));
+      rtcSetBuffer(scene, geomID, RTC_VERTEX_CREASE_WEIGHT_BUFFER,interpolation_vertex_crease_weights,0, sizeof(float));
+      AssertNoError(state->device);
+      
+      float* vertices0 = new float[M];
+      for (size_t i=0; i<M; i++) vertices0[i] = drand48();
+      rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER0, vertices0, 0, N*sizeof(float));
+      AssertNoError(state->device);
+      
+      /*float* vertices1 = new float[M];
+        for (size_t i=0; i<M; i++) vertices1[i] = drand48();
+        rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER1, vertices1, 0, N*sizeof(float));
+        AssertNoError(state->device);*/
+      
+      float* user_vertices0 = new float[M];
+      for (size_t i=0; i<M; i++) user_vertices0[i] = drand48();
+      rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER0, user_vertices0, 0, N*sizeof(float));
+      AssertNoError(state->device);
+      
+      float* user_vertices1 = new float[M];
+      for (size_t i=0; i<M; i++) user_vertices1[i] = drand48();
+      rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER1, user_vertices1, 0, N*sizeof(float));
+      AssertNoError(state->device);
+      
+      bool passed = true;
+      passed &= checkSubdivInterpolation(state,scene,geomID,RTC_VERTEX_BUFFER0,vertices0,N,N);
+      //passed &= checkSubdivInterpolation(state,scene,geomID,RTC_VERTEX_BUFFER1,vertices1,N,N);
+      passed &= checkSubdivInterpolation(state,scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0,N,N);
+      passed &= checkSubdivInterpolation(state,scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1,N,N);
+      
+      passed &= checkSubdivInterpolation(state,scene,geomID,RTC_VERTEX_BUFFER0,vertices0,1,N);
+      //passed &= checkSubdivInterpolation(state,scene,geomID,RTC_VERTEX_BUFFER1,vertices1,1,N);
+      passed &= checkSubdivInterpolation(state,scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0,1,N);
+      passed &= checkSubdivInterpolation(state,scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1,1,N);
+      
+      delete[] vertices0;
+      //delete[] vertices1;
+      delete[] user_vertices0;
+      delete[] user_vertices1;
+      
+      return passed;
+    }
+  };
+
+  struct InterpolateTrianglesTest : public VerifyApplication::Test
+  {
+    size_t N;
+    
+    InterpolateTrianglesTest (std::string name, size_t N)
+      : VerifyApplication::Test(name,VerifyApplication::PASS), N(N) {}
+    
+    bool checkTriangleInterpolation(const RTCSceneRef& scene, int geomID, int primID, float u, float v, int v0, int v1, int v2, RTCBufferType buffer, float* data, size_t N, size_t N_total)
+    {
+      bool passed = true;
+      float P[256], dPdu[256], dPdv[256];
+      rtcInterpolate(scene,geomID,primID,u,v,buffer,P,dPdu,dPdv,N);
+      
+      for (size_t i=0; i<N; i++) {
+        float p0 = data[v0*N_total+i];
+        float p1 = data[v1*N_total+i];
+        float p2 = data[v2*N_total+i];
+        float p = (1.0f-u-v)*p0 + u*p1 + v*p2;
+        passed &= fabs(p-P[i]) < 1E-4f;
+      }
+      return passed;
+    }
+    
+    bool checkTriangleInterpolation(const RTCSceneRef& scene, int geomID, RTCBufferType buffer, float* vertices0, size_t N, size_t N_total)
+    {
+      bool passed = true;
+      passed &= checkTriangleInterpolation(scene,geomID,0,0.0f,0.0f,0,1,5,buffer,vertices0,N,N_total);
+      passed &= checkTriangleInterpolation(scene,geomID,0,0.5f,0.5f,0,1,5,buffer,vertices0,N,N_total);
+      passed &= checkTriangleInterpolation(scene,geomID,17,0.0f,0.0f,10,15,14,buffer,vertices0,N,N_total);
+      passed &= checkTriangleInterpolation(scene,geomID,17,0.5f,0.5f,10,15,14,buffer,vertices0,N,N_total);
+      return passed;
+    }
+
+    bool run(VerifyApplication* state)
+    {
+      size_t M = num_interpolation_vertices*N+16; // padds the arrays with some valid data
+      
+      RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_DYNAMIC,RTC_INTERPOLATE);
+      AssertNoError(state->device);
+      unsigned int geomID = rtcNewTriangleMesh(scene, RTC_GEOMETRY_STATIC, num_interpolation_triangle_faces, num_interpolation_vertices, 1);
+      AssertNoError(state->device);
+      
+      rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  interpolation_triangle_indices , 0, 3*sizeof(unsigned int));
+      AssertNoError(state->device);
+      
+      float* vertices0 = new float[M];
+      for (size_t i=0; i<M; i++) vertices0[i] = drand48();
+      rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER0, vertices0, 0, N*sizeof(float));
+      AssertNoError(state->device);
+      
+      /*float* vertices1 = new float[M];
+        for (size_t i=0; i<M; i++) vertices1[i] = drand48();
+        rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER1, vertices1, 0, N*sizeof(float));
+        AssertNoError(state->device);*/
+      
+      float* user_vertices0 = new float[M];
+      for (size_t i=0; i<M; i++) user_vertices0[i] = drand48();
+      rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER0, user_vertices0, 0, N*sizeof(float));
+      AssertNoError(state->device);
+      
+      float* user_vertices1 = new float[M];
+      for (size_t i=0; i<M; i++) user_vertices1[i] = drand48();
+      rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER1, user_vertices1, 0, N*sizeof(float));
+      AssertNoError(state->device);
+      
+      rtcDisable(scene,geomID);
+      AssertNoError(state->device);
+      rtcCommit(scene);
+      AssertNoError(state->device);
+      
+      bool passed = true;
+      passed &= checkTriangleInterpolation(scene,geomID,RTC_VERTEX_BUFFER0,vertices0,N,N);
+      //passed &= checkTriangleInterpolation(scene,geomID,RTC_VERTEX_BUFFER1,vertices1,N,N);
+      passed &= checkTriangleInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0,N,N);
+      passed &= checkTriangleInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1,N,N);
+      
+      passed &= checkTriangleInterpolation(scene,geomID,RTC_VERTEX_BUFFER0,vertices0,1,N);
+      //passed &= checkTriangleInterpolation(scene,geomID,RTC_VERTEX_BUFFER1,vertices1,1,N);
+      passed &= checkTriangleInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0,1,N);
+      passed &= checkTriangleInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1,1,N);
+      
+      delete[] vertices0;
+      //delete[] vertices1;
+      delete[] user_vertices0;
+      delete[] user_vertices1;
+      
+      return passed;
+    }
+  };
+  
+  const size_t num_interpolation_hair_vertices = 13;
+  const size_t num_interpolation_hairs = 4;
+
+  __aligned(16) int interpolation_hair_indices[num_interpolation_hairs] = {
+    0, 3, 6, 9
+  };
+
+  struct InterpolateHairTest : public VerifyApplication::Test
+  {
+    size_t N;
+    
+    InterpolateHairTest (std::string name, size_t N)
+      : VerifyApplication::Test(name,VerifyApplication::PASS), N(N) {}
+    
+    bool checkHairInterpolation(const RTCSceneRef& scene, int geomID, int primID, float u, float v, int v0, RTCBufferType buffer, float* data, size_t N, size_t N_total)
+    {
+      bool passed = true;
+      float P[256], dPdu[256], dPdv[256];
+      rtcInterpolate(scene,geomID,primID,u,v,buffer,P,dPdu,dPdv,N);
+      
+      for (size_t i=0; i<N; i++) {
+        const float p00 = data[(v0+0)*N_total+i];
+        const float p01 = data[(v0+1)*N_total+i];
+        const float p02 = data[(v0+2)*N_total+i];
+        const float p03 = data[(v0+3)*N_total+i];
+        const float t0 = 1.0f - u, t1 = u;
+        const float p10 = p00 * t0 + p01 * t1;
+        const float p11 = p01 * t0 + p02 * t1;
+        const float p12 = p02 * t0 + p03 * t1;
+        const float p20 = p10 * t0 + p11 * t1;
+        const float p21 = p11 * t0 + p12 * t1;
+        const float p30 = p20 * t0 + p21 * t1;
+        passed &= fabs(p30-P[i]) < 1E-4f;
+      }
+      return passed;
+    }
+    
+    bool checkHairInterpolation(const RTCSceneRef& scene, int geomID, RTCBufferType buffer, float* vertices0, size_t N, size_t N_total)
+    {
+      bool passed = true;
+      passed &= checkHairInterpolation(scene,geomID,0,0.0f,0.0f,0,buffer,vertices0,N,N_total);
+      passed &= checkHairInterpolation(scene,geomID,1,0.5f,0.0f,3,buffer,vertices0,N,N_total);
+      passed &= checkHairInterpolation(scene,geomID,2,0.0f,0.0f,6,buffer,vertices0,N,N_total);
+      passed &= checkHairInterpolation(scene,geomID,3,0.2f,0.0f,9,buffer,vertices0,N,N_total);
+      return passed;
+    }
+    
+    bool run(VerifyApplication* state)
+    {
+      size_t M = num_interpolation_vertices*N+16; // padds the arrays with some valid data
+      
+      RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_DYNAMIC,RTC_INTERPOLATE);
+      AssertNoError(state->device);
+      unsigned int geomID = rtcNewHairGeometry(scene, RTC_GEOMETRY_STATIC, num_interpolation_hairs, num_interpolation_hair_vertices, 1);
+      AssertNoError(state->device);
+      
+      rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  interpolation_hair_indices , 0, sizeof(unsigned int));
+      AssertNoError(state->device);
+      
+      float* vertices0 = new float[M];
+      for (size_t i=0; i<M; i++) vertices0[i] = drand48();
+      rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER0, vertices0, 0, N*sizeof(float));
+      AssertNoError(state->device);
+      
+      /*float* vertices1 = new float[M];
+        for (size_t i=0; i<M; i++) vertices1[i] = drand48();
+        rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER1, vertices1, 0, N*sizeof(float));
+        AssertNoError(state->device);*/
+      
+      float* user_vertices0 = new float[M];
+      for (size_t i=0; i<M; i++) user_vertices0[i] = drand48();
+      rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER0, user_vertices0, 0, N*sizeof(float));
+      AssertNoError(state->device);
+      
+      float* user_vertices1 = new float[M];
+      for (size_t i=0; i<M; i++) user_vertices1[i] = drand48();
+      rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER1, user_vertices1, 0, N*sizeof(float));
+      AssertNoError(state->device);
+      
+      rtcDisable(scene,geomID);
+      AssertNoError(state->device);
+      rtcCommit(scene);
+      AssertNoError(state->device);
+      
+      bool passed = true;
+      passed &= checkHairInterpolation(scene,geomID,RTC_VERTEX_BUFFER0,vertices0,N,N);
+      //passed &= checkHairInterpolation(scene,geomID,RTC_VERTEX_BUFFER1,vertices1,N,N);
+      passed &= checkHairInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0,N,N);
+      passed &= checkHairInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1,N,N);
+      
+      passed &= checkHairInterpolation(scene,geomID,RTC_VERTEX_BUFFER0,vertices0,1,N);
+      //passed &= checkHairInterpolation(scene,geomID,RTC_VERTEX_BUFFER1,vertices1,1,N);
+      passed &= checkHairInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0,1,N);
+      passed &= checkHairInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1,1,N);
+      
+      delete[] vertices0;
+      //delete[] vertices1;
+      delete[] user_vertices0;
+      delete[] user_vertices1;
+      
+      return passed;
+    }
+  };
+
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
+
+
   struct BaryDistanceTest : public VerifyApplication::Test
   {
     BaryDistanceTest (std::string name)
@@ -956,159 +1600,6 @@ namespace embree
       return distance < 0.0002f;
     }
   };
-
-  struct FlagsTest : public VerifyApplication::Test
-  {
-    RTCSceneFlags sceneFlags;
-    RTCGeometryFlags geomFlags;
-
-    FlagsTest (std::string name, VerifyApplication::TestType type, RTCSceneFlags sceneFlags, RTCGeometryFlags geomFlags)
-      : VerifyApplication::Test(name,type), sceneFlags(sceneFlags), geomFlags(geomFlags) {}
-
-    bool run(VerifyApplication* state)
-    {
-      RTCSceneRef scene = rtcDeviceNewScene(state->device,sceneFlags,aflags);
-      AssertNoError(state->device);
-      rtcNewTriangleMesh (scene, geomFlags, 0, 0);
-      AssertNoError(state->device);
-      rtcNewHairGeometry (scene, geomFlags, 0, 0);
-      AssertNoError(state->device);
-      rtcCommit (scene);
-      AssertNoError(state->device);
-      scene = nullptr;
-      return true;
-    }
-  };
-  
-  struct UnmappedBeforeCommitTest : public VerifyApplication::Test
-  {
-    UnmappedBeforeCommitTest (std::string name)
-      : VerifyApplication::Test(name,VerifyApplication::PASS) {}
-
-    bool run(VerifyApplication* state)
-    {
-      ClearBuffers clear_before_return;
-      RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_STATIC,aflags);
-      AssertNoError(state->device);
-      unsigned geom0 = addSphere(state->device,scene,RTC_GEOMETRY_STATIC,zero,1.0f,50);
-      unsigned geom1 = addSphere(state->device,scene,RTC_GEOMETRY_STATIC,zero,1.0f,50);
-      AssertNoError(state->device);
-      rtcMapBuffer(scene,geom0,RTC_INDEX_BUFFER);
-      rtcMapBuffer(scene,geom0,RTC_VERTEX_BUFFER);
-      AssertNoError(state->device);
-      rtcCommit (scene);
-      AssertError(state->device,RTC_INVALID_OPERATION); // error, buffers still mapped
-      scene = nullptr;
-      return true;
-    }
-  };
-
-  struct GetBoundsTest : public VerifyApplication::Test
-  {
-    GetBoundsTest (std::string name)
-      : VerifyApplication::Test(name,VerifyApplication::PASS) {}
-
-    bool run(VerifyApplication* state)
-    {
-      ClearBuffers clear_before_return;
-      RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_STATIC,RTC_INTERSECT1);
-      AssertNoError(state->device);
-      BBox3fa bounds0;
-      unsigned geom0 = addSphere(state->device,scene,RTC_GEOMETRY_STATIC,zero,1.0f,50,-1,0,&bounds0);
-      AssertNoError(state->device);
-      rtcCommit (scene);
-      AssertNoError(state->device);
-      BBox3fa bounds1;
-      rtcGetBounds(scene,(RTCBounds&)bounds1);
-      scene = nullptr;
-      return bounds0 == bounds1;
-    }
-  };
-
-  struct BufferStrideTest : public VerifyApplication::Test
-  {
-    BufferStrideTest (std::string name)
-      : VerifyApplication::Test(name,VerifyApplication::PASS) {}
-    
-    bool run(VerifyApplication* state)
-    {
-      ClearBuffers clear_before_return;
-      RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_STATIC,aflags);
-      AssertNoError(state->device);
-      unsigned geom = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 16, 16);
-      AssertNoError(state->device);
-      avector<char> indexBuffer(8+16*6*sizeof(int));
-      avector<char> vertexBuffer(12+16*9*sizeof(float)+4);
-      
-      rtcSetBuffer(scene,geom,RTC_INDEX_BUFFER,indexBuffer.data(),1,3*sizeof(int));
-      AssertError(state->device,RTC_INVALID_OPERATION);
-      rtcSetBuffer(scene,geom,RTC_VERTEX_BUFFER,vertexBuffer.data(),1,3*sizeof(float));
-      AssertError(state->device,RTC_INVALID_OPERATION);
-
-      rtcSetBuffer(scene,geom,RTC_INDEX_BUFFER,indexBuffer.data(),0,3*sizeof(int)+3);
-      AssertError(state->device,RTC_INVALID_OPERATION);
-      rtcSetBuffer(scene,geom,RTC_VERTEX_BUFFER,vertexBuffer.data(),0,3*sizeof(float)+3);
-      AssertError(state->device,RTC_INVALID_OPERATION);
-      
-      rtcSetBuffer(scene,geom,RTC_INDEX_BUFFER,indexBuffer.data(),0,3*sizeof(int));
-      AssertNoError(state->device);
-      rtcSetBuffer(scene,geom,RTC_VERTEX_BUFFER,vertexBuffer.data(),0,3*sizeof(float));
-      AssertNoError(state->device);
-      
-      rtcSetBuffer(scene,geom,RTC_INDEX_BUFFER,indexBuffer.data(),8,6*sizeof(int));
-      AssertNoError(state->device);
-      rtcSetBuffer(scene,geom,RTC_VERTEX_BUFFER,vertexBuffer.data(),12,9*sizeof(float));
-      AssertNoError(state->device);
-      
-      rtcSetBuffer(scene,geom,RTC_INDEX_BUFFER,indexBuffer.data(),0,3*sizeof(int));
-      AssertNoError(state->device);
-      
-      rtcSetBuffer(scene,geom,RTC_VERTEX_BUFFER,vertexBuffer.data(),0,4*sizeof(float));
-      AssertNoError(state->device);
-      
-      scene = nullptr;
-      return true;
-    }
-  };
-  
-  struct GetUserDataTest : public VerifyApplication::Test
-  {
-    GetUserDataTest (std::string name)
-      : VerifyApplication::Test(name,VerifyApplication::PASS) {}
-    
-    bool run(VerifyApplication* state)
-    {
-      RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_STATIC,RTC_INTERSECT1);
-      AssertNoError(state->device);
-      unsigned geom0 = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 0, 0, 1);
-      AssertNoError(state->device);
-      rtcSetUserData(scene,geom0,(void*)1);
-      
-      unsigned geom1 = rtcNewSubdivisionMesh(scene, RTC_GEOMETRY_STATIC, 0, 0, 0, 0, 0, 0, 1);
-      AssertNoError(state->device);
-      rtcSetUserData(scene,geom1,(void*)2);
-      
-      unsigned geom2 = rtcNewHairGeometry (scene, RTC_GEOMETRY_STATIC, 0, 0, 1);
-      AssertNoError(state->device);
-      rtcSetUserData(scene,geom2,(void*)3);
-      
-      unsigned geom3 = rtcNewUserGeometry (scene,0);
-      AssertNoError(state->device);
-      rtcSetUserData(scene,geom3,(void*)4);
-      
-      rtcCommit (scene);
-      AssertNoError(state->device);
-      
-      if ((size_t)rtcGetUserData(scene,geom0) != 1) return false;
-      if ((size_t)rtcGetUserData(scene,geom1) != 2) return false;
-      if ((size_t)rtcGetUserData(scene,geom2) != 3) return false;
-      if ((size_t)rtcGetUserData(scene,geom3) != 4) return false;
-      
-      scene = nullptr;
-      AssertNoError(state->device);
-      return true;
-    }
-  };
   
   struct RayMasksTest : public VerifyApplication::Test
   {
@@ -1159,6 +1650,57 @@ namespace embree
           passed &= masks[i] & (1<<i) ? rays[i].geomID == i : rays[i].geomID == -1;
       }
       scene = nullptr;
+      return passed;
+    }
+  };
+
+  struct BackfaceCullingTest : public VerifyApplication::Test
+  {
+    RTCSceneFlags sflags;
+    RTCGeometryFlags gflags;
+    IntersectMode imode;
+
+    BackfaceCullingTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode)
+      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), gflags(gflags), imode(imode) {}
+    
+    bool run(VerifyApplication* state)
+    {
+      /* create triangle that is front facing for a right handed 
+         coordinate system if looking along the z direction */
+      RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,to_aflags(imode));
+      unsigned mesh = rtcNewTriangleMesh (scene, gflags, 1, 3);
+      Vertex3fa*   vertices  = (Vertex3fa*  ) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
+      Triangle* triangles = (Triangle*) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
+      vertices[0].x = 0; vertices[0].y = 0; vertices[0].z = 0;
+      vertices[1].x = 0; vertices[1].y = 1; vertices[1].z = 0;
+      vertices[2].x = 1; vertices[2].y = 0; vertices[2].z = 0;
+      triangles[0].v0 = 0; triangles[0].v1 = 1; triangles[0].v2 = 2;
+      rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
+      rtcUnmapBuffer(scene,mesh,RTC_INDEX_BUFFER);
+      rtcCommit (scene);
+      AssertNoError(state->device);
+
+      const size_t numRays = 1000;
+      RTCRay rays[numRays];
+      RTCRay backfacing = makeRay(Vec3fa(0.25f,0.25f,1),Vec3fa(0,0,-1)); 
+      RTCRay frontfacing = makeRay(Vec3fa(0.25f,0.25f,-1),Vec3fa(0,0,1)); 
+
+      bool passed = true;
+      for (auto ivariant : { VARIANT_INTERSECT, VARIANT_OCCLUDED })
+      {
+        for (size_t i=0; i<numRays; i++) {
+          if (i%2) rays[i] = backfacing;
+          else     rays[i] = frontfacing;
+        }
+
+        IntersectWithMode(imode,ivariant,scene,rays,numRays);
+        
+        for (size_t i=0; i<numRays; i++) 
+        {
+          if (i%2) passed &= rays[i].geomID == -1;
+          else     passed &= rays[i].geomID == 0;
+        }
+      }
       return passed;
     }
   };
@@ -1657,535 +2199,10 @@ namespace embree
     }
   };
 
-  struct OverlappingTrianglesTest : public VerifyApplication::Test
-  {
-    int N;
-    
-    OverlappingTrianglesTest (std::string name, int N)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), N(N) {}
-    
-    bool run(VerifyApplication* state)
-    {
-      RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_STATIC,aflags);
-      AssertNoError(state->device);
-      rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, N, 3);
-      AssertNoError(state->device);
-      
-      Vertex3fa* vertices = (Vertex3fa*) rtcMapBuffer(scene,0,RTC_VERTEX_BUFFER);
-      vertices[0].x = 0.0f; vertices[0].y = 0.0f; vertices[0].z = 0.0f;
-      vertices[1].x = 1.0f; vertices[1].y = 0.0f; vertices[1].z = 0.0f;
-      vertices[2].x = 0.0f; vertices[2].y = 1.0f; vertices[2].z = 0.0f;
-      rtcUnmapBuffer(scene,0,RTC_VERTEX_BUFFER);
-      AssertNoError(state->device);
-      
-      Triangle* triangles = (Triangle*) rtcMapBuffer(scene,0,RTC_INDEX_BUFFER);
-      for (size_t i=0; i<N; i++) {
-        triangles[i].v0 = 0;
-        triangles[i].v1 = 1;
-        triangles[i].v2 = 2;
-      }
-      rtcUnmapBuffer(scene,0,RTC_INDEX_BUFFER);
-      AssertNoError(state->device);
-      
-      rtcCommit (scene);
-      AssertNoError(state->device);
-      
-      return true;
-    }
-  };
-    
-  struct OverlappingHairTest : public VerifyApplication::Test
-  {
-    int N;
-    
-    OverlappingHairTest (std::string name, int N)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), N(N) {}
-    
-    bool run(VerifyApplication* state)
-    {
-      RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_STATIC,aflags);
-      AssertNoError(state->device);
-      rtcNewHairGeometry (scene, RTC_GEOMETRY_STATIC, N, 4);
-      AssertNoError(state->device);
-      
-      Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene,0,RTC_VERTEX_BUFFER);
-      vertices[0].x = 0.0f; vertices[0].y = 0.0f; vertices[0].z = 0.0f; vertices[0].w = 0.1f;
-      vertices[1].x = 0.0f; vertices[1].y = 0.0f; vertices[1].z = 1.0f; vertices[1].w = 0.1f;
-      vertices[2].x = 0.0f; vertices[2].y = 1.0f; vertices[2].z = 1.0f; vertices[2].w = 0.1f;
-      vertices[3].x = 0.0f; vertices[3].y = 1.0f; vertices[3].z = 0.0f; vertices[3].w = 0.1f;
-      rtcUnmapBuffer(scene,0,RTC_VERTEX_BUFFER);
-      AssertNoError(state->device);
-      
-      int* indices = (int*) rtcMapBuffer(scene,0,RTC_INDEX_BUFFER);
-      for (size_t i=0; i<N; i++) {
-        indices[i] = 0;
-      }
-      rtcUnmapBuffer(scene,0,RTC_INDEX_BUFFER);
-      AssertNoError(state->device);
-      
-      rtcCommit (scene);
-      AssertNoError(state->device);
-      
-      return true;
-    }
-  };
-
-  struct BackfaceCullingTest : public VerifyApplication::Test
-  {
-    RTCSceneFlags sflags;
-    RTCGeometryFlags gflags;
-    IntersectMode imode;
-
-    BackfaceCullingTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), gflags(gflags), imode(imode) {}
-    
-    bool run(VerifyApplication* state)
-    {
-      /* create triangle that is front facing for a right handed 
-         coordinate system if looking along the z direction */
-      RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,to_aflags(imode));
-      unsigned mesh = rtcNewTriangleMesh (scene, gflags, 1, 3);
-      Vertex3fa*   vertices  = (Vertex3fa*  ) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
-      Triangle* triangles = (Triangle*) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
-      vertices[0].x = 0; vertices[0].y = 0; vertices[0].z = 0;
-      vertices[1].x = 0; vertices[1].y = 1; vertices[1].z = 0;
-      vertices[2].x = 1; vertices[2].y = 0; vertices[2].z = 0;
-      triangles[0].v0 = 0; triangles[0].v1 = 1; triangles[0].v2 = 2;
-      rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
-      rtcUnmapBuffer(scene,mesh,RTC_INDEX_BUFFER);
-      rtcCommit (scene);
-      AssertNoError(state->device);
-
-      const size_t numRays = 1000;
-      RTCRay rays[numRays];
-      RTCRay backfacing = makeRay(Vec3fa(0.25f,0.25f,1),Vec3fa(0,0,-1)); 
-      RTCRay frontfacing = makeRay(Vec3fa(0.25f,0.25f,-1),Vec3fa(0,0,1)); 
-
-      bool passed = true;
-      for (auto ivariant : { VARIANT_INTERSECT, VARIANT_OCCLUDED })
-      {
-        for (size_t i=0; i<numRays; i++) {
-          if (i%2) rays[i] = backfacing;
-          else     rays[i] = frontfacing;
-        }
-
-        IntersectWithMode(imode,ivariant,scene,rays,numRays);
-        
-        for (size_t i=0; i<numRays; i++) 
-        {
-          if (i%2) passed &= rays[i].geomID == -1;
-          else     passed &= rays[i].geomID == 0;
-        }
-      }
-      return passed;
-    }
-  };
-
-   /*********************************************************************************/
-  /*                        rtcInterpolate                                         */
-  /*********************************************************************************/
-
-  const size_t num_interpolation_vertices = 16;
-  const size_t num_interpolation_quad_faces = 9;
-  const size_t num_interpolation_triangle_faces = 18;
-
-  __aligned(16) float interpolation_vertices[num_interpolation_vertices*3] = {
-    -1.0f, -1.0f, 0.0f,
-    0.0f, -1.0f, 0.0f, 
-    +1.0f, -1.0f, 0.0f,
-    +2.0f, -1.0f, 0.0f,
-    
-    -1.0f,  0.0f, 0.0f,
-    0.0f,  0.0f, 0.0f,
-    +1.0f,  0.0f, 0.0f,
-    +2.0f,  0.0f, 0.0f,
-
-    -1.0f, +1.0f, 0.0f,
-    0.0f, +1.0f, 0.0f,
-    +1.0f, +1.0f, 0.0f,
-    +2.0f, +1.0f, 0.0f,
-
-    -1.0f, +2.0f, 0.0f,
-    0.0f, +2.0f, 0.0f,
-    +1.0f, +2.0f, 0.0f,
-    +2.0f, +2.0f, 0.0f,
-  };
-
-  __aligned(16) int interpolation_quad_indices[num_interpolation_quad_faces*4] = {
-    0, 1, 5, 4,
-    1, 2, 6, 5,
-    2, 3, 7, 6,
-    4, 5, 9, 8, 
-    5, 6, 10, 9,
-    6, 7, 11, 10,
-    8, 9, 13, 12,
-    9, 10, 14, 13,
-    10, 11, 15, 14
-  };
-
-  __aligned(16) int interpolation_triangle_indices[num_interpolation_triangle_faces*3] = {
-    0, 1, 5,  0, 5, 4,
-    1, 2, 6,  1, 6, 5,
-    2, 3, 7,  2, 7, 6,
-    4, 5, 9,  4, 9, 8, 
-    5, 6, 10,  5, 10, 9,
-    6, 7, 11,  6, 11, 10,
-    8, 9, 13,   8, 13, 12,
-    9, 10, 14,   9, 14, 13,
-    10, 11, 15,  10, 15, 14
-  };
-
-  __aligned(16) int interpolation_quad_faces[num_interpolation_quad_faces] = {
-    4, 4, 4, 4, 4, 4, 4, 4, 4
-  };
-
-  __aligned(16) float interpolation_vertex_crease_weights[2] = {
-    inf, inf
-  };
-
-  __aligned(16) unsigned int interpolation_vertex_crease_indices[2] = {
-    12, 15
-  };
-
-  __aligned(16) float interpolation_edge_crease_weights[3] = {
-    inf, inf, inf
-  };
-
-  __aligned(16) unsigned int interpolation_edge_crease_indices[6] = 
-  {
-    8,9, 9,10, 10,11
-  };
-
-  struct InterpolateSubdivTest : public VerifyApplication::Test
-  {
-    size_t N;
-    
-    InterpolateSubdivTest (std::string name, size_t N)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), N(N) {}
-
-    bool checkInterpolation2D(const RTCSceneRef& scene, int geomID, int primID, float u, float v, int v0, RTCBufferType buffer, float* data, size_t N, size_t N_total)
-    {
-      bool passed = true;
-      float P[256], dPdu[256], dPdv[256];
-      rtcInterpolate(scene,geomID,primID,u,v,buffer,P,dPdu,dPdv,N);
-      
-      for (size_t i=0; i<N; i++) {
-        float p0 = (1.0f/6.0f)*(1.0f*data[(v0-4-1)*N_total+i] + 4.0f*data[(v0-4+0)*N_total+i] + 1.0f*data[(v0-4+1)*N_total+i]);
-        float p1 = (1.0f/6.0f)*(1.0f*data[(v0+0-1)*N_total+i] + 4.0f*data[(v0+0+0)*N_total+i] + 1.0f*data[(v0+0+1)*N_total+i]);
-        float p2 = (1.0f/6.0f)*(1.0f*data[(v0+4-1)*N_total+i] + 4.0f*data[(v0+4+0)*N_total+i] + 1.0f*data[(v0+4+1)*N_total+i]);
-        float p = (1.0f/6.0f)*(1.0f*p0+4.0f*p1+1.0f*p2);
-        passed &= fabsf(p-P[i]) < 1E-4f;
-      }
-      return passed;
-    }
-    
-    bool checkInterpolation1D(const RTCSceneRef& scene, int geomID, int primID, float u, float v, int v0, int v1, int v2, RTCBufferType buffer, float* data, size_t N, size_t N_total)
-    {
-      bool passed = true;
-      float P[256], dPdu[256], dPdv[256];
-      rtcInterpolate(scene,geomID,primID,u,v,buffer,P,dPdu,dPdv,N);
-      
-      for (size_t i=0; i<N; i++) {
-        float v = (1.0f/6.0f)*(1.0f*data[v0*N_total+i] + 4.0f*data[v1*N_total+i] + 1.0f*data[v2*N_total+i]);
-        passed &= fabsf(v-P[i]) < 0.001f;
-      }
-      return passed;
-    }
-    
-    bool checkInterpolationSharpVertex(const RTCSceneRef& scene, int geomID, int primID, float u, float v, int v0, RTCBufferType buffer, float* data, size_t N, size_t N_total)
-    {
-      bool passed = true;
-      float P[256], dPdu[256], dPdv[256];
-      rtcInterpolate(scene,geomID,primID,u,v,buffer,P,dPdu,dPdv,N);
-      
-      for (size_t i=0; i<N; i++) {
-        float v = data[v0*N_total+i];
-        passed &= fabs(v-P[i]) < 1E-3f;
-      }
-      return passed;
-    }
-    
-    bool checkSubdivInterpolation(VerifyApplication* state, const RTCSceneRef& scene, int geomID, RTCBufferType buffer, float* vertices0, size_t N, size_t N_total)
-    {
-      rtcSetBoundaryMode(scene,geomID,RTC_BOUNDARY_EDGE_ONLY);
-      AssertNoError(state->device);
-      rtcDisable(scene,geomID);
-      AssertNoError(state->device);
-      rtcCommit(scene);
-      AssertNoError(state->device);
-      bool passed = true;
-      passed &= checkInterpolation1D(scene,geomID,0,0.0f,0.0f,4,0,1,buffer,vertices0,N,N_total);
-      passed &= checkInterpolation1D(scene,geomID,2,1.0f,0.0f,2,3,7,buffer,vertices0,N,N_total);
-      
-      passed &= checkInterpolation2D(scene,geomID,3,1.0f,0.0f,5,buffer,vertices0,N,N_total);
-      passed &= checkInterpolation2D(scene,geomID,1,1.0f,1.0f,6,buffer,vertices0,N,N_total);
-      
-      //passed &= checkInterpolation1D(scene,geomID,3,1.0f,1.0f,8,9,10,buffer,vertices0,N,N_total);
-      //passed &= checkInterpolation1D(scene,geomID,7,1.0f,0.0f,9,10,11,buffer,vertices0,N,N_total);
-      
-      passed &= checkInterpolationSharpVertex(scene,geomID,6,0.0f,1.0f,12,buffer,vertices0,N,N_total);
-      passed &= checkInterpolationSharpVertex(scene,geomID,8,1.0f,1.0f,15,buffer,vertices0,N,N_total);
-      
-      rtcSetBoundaryMode(scene,geomID,RTC_BOUNDARY_EDGE_AND_CORNER);
-      AssertNoError(state->device);
-      rtcCommit(scene);
-      AssertNoError(state->device);
-      
-      passed &= checkInterpolationSharpVertex(scene,geomID,0,0.0f,0.0f,0,buffer,vertices0,N,N_total);
-      passed &= checkInterpolationSharpVertex(scene,geomID,2,1.0f,0.0f,3,buffer,vertices0,N,N_total);
-      return passed;
-    }
-    
-    bool run(VerifyApplication* state)
-    {
-      size_t M = num_interpolation_vertices*N+16; // padds the arrays with some valid data
-      
-      RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_DYNAMIC,RTC_INTERPOLATE);
-      AssertNoError(state->device);
-      unsigned int geomID = rtcNewSubdivisionMesh(scene, RTC_GEOMETRY_STATIC, num_interpolation_quad_faces, num_interpolation_quad_faces*4, num_interpolation_vertices, 3, 2, 0, 1);
-      AssertNoError(state->device);
-      
-      rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  interpolation_quad_indices , 0, sizeof(unsigned int));
-      rtcSetBuffer(scene, geomID, RTC_FACE_BUFFER,   interpolation_quad_faces,    0, sizeof(unsigned int));
-      rtcSetBuffer(scene, geomID, RTC_EDGE_CREASE_INDEX_BUFFER,   interpolation_edge_crease_indices,  0, 2*sizeof(unsigned int));
-      rtcSetBuffer(scene, geomID, RTC_EDGE_CREASE_WEIGHT_BUFFER,  interpolation_edge_crease_weights,  0, sizeof(float));
-      rtcSetBuffer(scene, geomID, RTC_VERTEX_CREASE_INDEX_BUFFER, interpolation_vertex_crease_indices,0, sizeof(unsigned int));
-      rtcSetBuffer(scene, geomID, RTC_VERTEX_CREASE_WEIGHT_BUFFER,interpolation_vertex_crease_weights,0, sizeof(float));
-      AssertNoError(state->device);
-      
-      float* vertices0 = new float[M];
-      for (size_t i=0; i<M; i++) vertices0[i] = drand48();
-      rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER0, vertices0, 0, N*sizeof(float));
-      AssertNoError(state->device);
-      
-      /*float* vertices1 = new float[M];
-        for (size_t i=0; i<M; i++) vertices1[i] = drand48();
-        rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER1, vertices1, 0, N*sizeof(float));
-        AssertNoError(state->device);*/
-      
-      float* user_vertices0 = new float[M];
-      for (size_t i=0; i<M; i++) user_vertices0[i] = drand48();
-      rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER0, user_vertices0, 0, N*sizeof(float));
-      AssertNoError(state->device);
-      
-      float* user_vertices1 = new float[M];
-      for (size_t i=0; i<M; i++) user_vertices1[i] = drand48();
-      rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER1, user_vertices1, 0, N*sizeof(float));
-      AssertNoError(state->device);
-      
-      bool passed = true;
-      passed &= checkSubdivInterpolation(state,scene,geomID,RTC_VERTEX_BUFFER0,vertices0,N,N);
-      //passed &= checkSubdivInterpolation(state,scene,geomID,RTC_VERTEX_BUFFER1,vertices1,N,N);
-      passed &= checkSubdivInterpolation(state,scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0,N,N);
-      passed &= checkSubdivInterpolation(state,scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1,N,N);
-      
-      passed &= checkSubdivInterpolation(state,scene,geomID,RTC_VERTEX_BUFFER0,vertices0,1,N);
-      //passed &= checkSubdivInterpolation(state,scene,geomID,RTC_VERTEX_BUFFER1,vertices1,1,N);
-      passed &= checkSubdivInterpolation(state,scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0,1,N);
-      passed &= checkSubdivInterpolation(state,scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1,1,N);
-      
-      delete[] vertices0;
-      //delete[] vertices1;
-      delete[] user_vertices0;
-      delete[] user_vertices1;
-      
-      return passed;
-    }
-  };
-
-  struct InterpolateTrianglesTest : public VerifyApplication::Test
-  {
-    size_t N;
-    
-    InterpolateTrianglesTest (std::string name, size_t N)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), N(N) {}
-    
-    bool checkTriangleInterpolation(const RTCSceneRef& scene, int geomID, int primID, float u, float v, int v0, int v1, int v2, RTCBufferType buffer, float* data, size_t N, size_t N_total)
-    {
-      bool passed = true;
-      float P[256], dPdu[256], dPdv[256];
-      rtcInterpolate(scene,geomID,primID,u,v,buffer,P,dPdu,dPdv,N);
-      
-      for (size_t i=0; i<N; i++) {
-        float p0 = data[v0*N_total+i];
-        float p1 = data[v1*N_total+i];
-        float p2 = data[v2*N_total+i];
-        float p = (1.0f-u-v)*p0 + u*p1 + v*p2;
-        passed &= fabs(p-P[i]) < 1E-4f;
-      }
-      return passed;
-    }
-    
-    bool checkTriangleInterpolation(const RTCSceneRef& scene, int geomID, RTCBufferType buffer, float* vertices0, size_t N, size_t N_total)
-    {
-      bool passed = true;
-      passed &= checkTriangleInterpolation(scene,geomID,0,0.0f,0.0f,0,1,5,buffer,vertices0,N,N_total);
-      passed &= checkTriangleInterpolation(scene,geomID,0,0.5f,0.5f,0,1,5,buffer,vertices0,N,N_total);
-      passed &= checkTriangleInterpolation(scene,geomID,17,0.0f,0.0f,10,15,14,buffer,vertices0,N,N_total);
-      passed &= checkTriangleInterpolation(scene,geomID,17,0.5f,0.5f,10,15,14,buffer,vertices0,N,N_total);
-      return passed;
-    }
-
-    bool run(VerifyApplication* state)
-    {
-      size_t M = num_interpolation_vertices*N+16; // padds the arrays with some valid data
-      
-      RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_DYNAMIC,RTC_INTERPOLATE);
-      AssertNoError(state->device);
-      unsigned int geomID = rtcNewTriangleMesh(scene, RTC_GEOMETRY_STATIC, num_interpolation_triangle_faces, num_interpolation_vertices, 1);
-      AssertNoError(state->device);
-      
-      rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  interpolation_triangle_indices , 0, 3*sizeof(unsigned int));
-      AssertNoError(state->device);
-      
-      float* vertices0 = new float[M];
-      for (size_t i=0; i<M; i++) vertices0[i] = drand48();
-      rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER0, vertices0, 0, N*sizeof(float));
-      AssertNoError(state->device);
-      
-      /*float* vertices1 = new float[M];
-        for (size_t i=0; i<M; i++) vertices1[i] = drand48();
-        rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER1, vertices1, 0, N*sizeof(float));
-        AssertNoError(state->device);*/
-      
-      float* user_vertices0 = new float[M];
-      for (size_t i=0; i<M; i++) user_vertices0[i] = drand48();
-      rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER0, user_vertices0, 0, N*sizeof(float));
-      AssertNoError(state->device);
-      
-      float* user_vertices1 = new float[M];
-      for (size_t i=0; i<M; i++) user_vertices1[i] = drand48();
-      rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER1, user_vertices1, 0, N*sizeof(float));
-      AssertNoError(state->device);
-      
-      rtcDisable(scene,geomID);
-      AssertNoError(state->device);
-      rtcCommit(scene);
-      AssertNoError(state->device);
-      
-      bool passed = true;
-      passed &= checkTriangleInterpolation(scene,geomID,RTC_VERTEX_BUFFER0,vertices0,N,N);
-      //passed &= checkTriangleInterpolation(scene,geomID,RTC_VERTEX_BUFFER1,vertices1,N,N);
-      passed &= checkTriangleInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0,N,N);
-      passed &= checkTriangleInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1,N,N);
-      
-      passed &= checkTriangleInterpolation(scene,geomID,RTC_VERTEX_BUFFER0,vertices0,1,N);
-      //passed &= checkTriangleInterpolation(scene,geomID,RTC_VERTEX_BUFFER1,vertices1,1,N);
-      passed &= checkTriangleInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0,1,N);
-      passed &= checkTriangleInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1,1,N);
-      
-      delete[] vertices0;
-      //delete[] vertices1;
-      delete[] user_vertices0;
-      delete[] user_vertices1;
-      
-      return passed;
-    }
-  };
-  
-  const size_t num_interpolation_hair_vertices = 13;
-  const size_t num_interpolation_hairs = 4;
-
-  __aligned(16) int interpolation_hair_indices[num_interpolation_hairs] = {
-    0, 3, 6, 9
-  };
-
-  struct InterpolateHairTest : public VerifyApplication::Test
-  {
-    size_t N;
-    
-    InterpolateHairTest (std::string name, size_t N)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), N(N) {}
-    
-    bool checkHairInterpolation(const RTCSceneRef& scene, int geomID, int primID, float u, float v, int v0, RTCBufferType buffer, float* data, size_t N, size_t N_total)
-    {
-      bool passed = true;
-      float P[256], dPdu[256], dPdv[256];
-      rtcInterpolate(scene,geomID,primID,u,v,buffer,P,dPdu,dPdv,N);
-      
-      for (size_t i=0; i<N; i++) {
-        const float p00 = data[(v0+0)*N_total+i];
-        const float p01 = data[(v0+1)*N_total+i];
-        const float p02 = data[(v0+2)*N_total+i];
-        const float p03 = data[(v0+3)*N_total+i];
-        const float t0 = 1.0f - u, t1 = u;
-        const float p10 = p00 * t0 + p01 * t1;
-        const float p11 = p01 * t0 + p02 * t1;
-        const float p12 = p02 * t0 + p03 * t1;
-        const float p20 = p10 * t0 + p11 * t1;
-        const float p21 = p11 * t0 + p12 * t1;
-        const float p30 = p20 * t0 + p21 * t1;
-        passed &= fabs(p30-P[i]) < 1E-4f;
-      }
-      return passed;
-    }
-    
-    bool checkHairInterpolation(const RTCSceneRef& scene, int geomID, RTCBufferType buffer, float* vertices0, size_t N, size_t N_total)
-    {
-      bool passed = true;
-      passed &= checkHairInterpolation(scene,geomID,0,0.0f,0.0f,0,buffer,vertices0,N,N_total);
-      passed &= checkHairInterpolation(scene,geomID,1,0.5f,0.0f,3,buffer,vertices0,N,N_total);
-      passed &= checkHairInterpolation(scene,geomID,2,0.0f,0.0f,6,buffer,vertices0,N,N_total);
-      passed &= checkHairInterpolation(scene,geomID,3,0.2f,0.0f,9,buffer,vertices0,N,N_total);
-      return passed;
-    }
-    
-    bool run(VerifyApplication* state)
-    {
-      size_t M = num_interpolation_vertices*N+16; // padds the arrays with some valid data
-      
-      RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_DYNAMIC,RTC_INTERPOLATE);
-      AssertNoError(state->device);
-      unsigned int geomID = rtcNewHairGeometry(scene, RTC_GEOMETRY_STATIC, num_interpolation_hairs, num_interpolation_hair_vertices, 1);
-      AssertNoError(state->device);
-      
-      rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  interpolation_hair_indices , 0, sizeof(unsigned int));
-      AssertNoError(state->device);
-      
-      float* vertices0 = new float[M];
-      for (size_t i=0; i<M; i++) vertices0[i] = drand48();
-      rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER0, vertices0, 0, N*sizeof(float));
-      AssertNoError(state->device);
-      
-      /*float* vertices1 = new float[M];
-        for (size_t i=0; i<M; i++) vertices1[i] = drand48();
-        rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER1, vertices1, 0, N*sizeof(float));
-        AssertNoError(state->device);*/
-      
-      float* user_vertices0 = new float[M];
-      for (size_t i=0; i<M; i++) user_vertices0[i] = drand48();
-      rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER0, user_vertices0, 0, N*sizeof(float));
-      AssertNoError(state->device);
-      
-      float* user_vertices1 = new float[M];
-      for (size_t i=0; i<M; i++) user_vertices1[i] = drand48();
-      rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER1, user_vertices1, 0, N*sizeof(float));
-      AssertNoError(state->device);
-      
-      rtcDisable(scene,geomID);
-      AssertNoError(state->device);
-      rtcCommit(scene);
-      AssertNoError(state->device);
-      
-      bool passed = true;
-      passed &= checkHairInterpolation(scene,geomID,RTC_VERTEX_BUFFER0,vertices0,N,N);
-      //passed &= checkHairInterpolation(scene,geomID,RTC_VERTEX_BUFFER1,vertices1,N,N);
-      passed &= checkHairInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0,N,N);
-      passed &= checkHairInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1,N,N);
-      
-      passed &= checkHairInterpolation(scene,geomID,RTC_VERTEX_BUFFER0,vertices0,1,N);
-      //passed &= checkHairInterpolation(scene,geomID,RTC_VERTEX_BUFFER1,vertices1,1,N);
-      passed &= checkHairInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0,1,N);
-      passed &= checkHairInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1,1,N);
-      
-      delete[] vertices0;
-      //delete[] vertices1;
-      delete[] user_vertices0;
-      delete[] user_vertices1;
-      
-      return passed;
-    }
-  };
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
 
   void shootRandomRays (VerifyApplication* state, const RTCSceneRef& scene)
   {
@@ -2701,6 +2718,11 @@ namespace embree
     }
   };
 
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
+
   VerifyApplication::VerifyApplication ()
     : Application(Application::FEATURE_RTCORE), device(nullptr), intensity(1.0f), numFailedTests(0), user_specified_tests(false), use_groups(true)
   {
@@ -2742,9 +2764,30 @@ namespace embree
     sceneFlagsDynamic.push_back(RTC_SCENE_DYNAMIC | RTC_SCENE_ROBUST);
     sceneFlagsDynamic.push_back(RTC_SCENE_DYNAMIC | RTC_SCENE_COMPACT);
 
-    /* add all tests */
+    /**************************************************************************/
+    /*                      Smaller API Tests                                 */
+    /**************************************************************************/
+
     addTest(new InitExitTest("init_exit"));
     addTest(new MultipleDevicesTest("multiple_devices"));
+
+    addTest(new FlagsTest("flags_static_static"     ,VerifyApplication::PASS, RTC_SCENE_STATIC, RTC_GEOMETRY_STATIC));
+    addTest(new FlagsTest("flags_static_deformable" ,VerifyApplication::FAIL, RTC_SCENE_STATIC, RTC_GEOMETRY_DEFORMABLE));
+    addTest(new FlagsTest("flags_static_dynamic"    ,VerifyApplication::FAIL, RTC_SCENE_STATIC, RTC_GEOMETRY_DYNAMIC));
+    addTest(new FlagsTest("flags_dynamic_static"    ,VerifyApplication::PASS, RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC));
+    addTest(new FlagsTest("flags_dynamic_deformable",VerifyApplication::PASS, RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DEFORMABLE));
+    addTest(new FlagsTest("flags_dynamic_dynamic"   ,VerifyApplication::PASS, RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DYNAMIC));    
+    addTest(new UnmappedBeforeCommitTest("unmapped_before_commit"));
+    addTest(new GetBoundsTest("get_bounds"));
+    addTest(new GetUserDataTest("get_user_data"));
+
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_BUFFER_STRIDE)) {
+      addTest(new BufferStrideTest("buffer_stride"));
+    }    
+
+    /**************************************************************************/
+    /*                        Builder Tests                                   */
+    /**************************************************************************/
 
     beginTestGroup("empty_scene");
     for (auto sflags : sceneFlags) 
@@ -2761,6 +2804,9 @@ namespace embree
       for (auto imode : intersectModes) 
         addTest(new BuildTest("build_"+to_string(sflags)+"_"+to_string(imode),sflags,RTC_GEOMETRY_STATIC,imode));
     endTestGroup();
+
+    addTest(new OverlappingTrianglesTest("overlapping_triangles",100000));
+    addTest(new OverlappingHairTest("overlapping_hair",100000));
 
     beginTestGroup("new_delete_geometry");
     for (auto sflags : sceneFlagsDynamic) 
@@ -2781,21 +2827,9 @@ namespace embree
     }
     endTestGroup();
 
-    addTest(new BaryDistanceTest("bary_distance_robust"));
-
-    addTest(new FlagsTest("flags_static_static"     ,VerifyApplication::PASS, RTC_SCENE_STATIC, RTC_GEOMETRY_STATIC));
-    addTest(new FlagsTest("flags_static_deformable" ,VerifyApplication::FAIL, RTC_SCENE_STATIC, RTC_GEOMETRY_DEFORMABLE));
-    addTest(new FlagsTest("flags_static_dynamic"    ,VerifyApplication::FAIL, RTC_SCENE_STATIC, RTC_GEOMETRY_DYNAMIC));
-    addTest(new FlagsTest("flags_dynamic_static"    ,VerifyApplication::PASS, RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC));
-    addTest(new FlagsTest("flags_dynamic_deformable",VerifyApplication::PASS, RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DEFORMABLE));
-    addTest(new FlagsTest("flags_dynamic_dynamic"   ,VerifyApplication::PASS, RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DYNAMIC));
-    
-    addTest(new UnmappedBeforeCommitTest("unmapped_before_commit"));
-    addTest(new GetBoundsTest("get_bounds"));
-    addTest(new GetUserDataTest("get_user_data"));
-    
-    addTest(new OverlappingTrianglesTest("overlapping_triangles",100000));
-    addTest(new OverlappingHairTest("overlapping_hair",100000));
+    /**************************************************************************/
+    /*                     Interpolation Tests                                */
+    /**************************************************************************/
 
     beginTestGroup("interpolate_subdiv");
     for (auto s : { 4,5,8,11,12,15 })
@@ -2812,9 +2846,11 @@ namespace embree
       addTest(new InterpolateHairTest("interpolate_hair_"+std::to_string(long(s)),s));
     endTestGroup();
 
-    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_BUFFER_STRIDE)) {
-      addTest(new BufferStrideTest("buffer_stride"));
-    }
+    addTest(new BaryDistanceTest("bary_distance_robust"));
+
+    /**************************************************************************/
+    /*                      Intersection Tests                                */
+    /**************************************************************************/
 
     if (rtcDeviceGetParameter1i(device,RTC_CONFIG_RAY_MASK)) 
     {
@@ -2825,11 +2861,6 @@ namespace embree
       endTestGroup();
     }
 
-    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECTION_FILTER)) {
-      addTest(new IntersectionFilterTest("intersection_filter_tris",false));
-      addTest(new IntersectionFilterTest("intersection_filter_subdiv",true));
-    }
-
     if (rtcDeviceGetParameter1i(device,RTC_CONFIG_BACKFACE_CULLING)) 
     {
       beginTestGroup("backface_culling");
@@ -2837,6 +2868,11 @@ namespace embree
         for (auto imode : intersectModes) 
           addTest(new BackfaceCullingTest("backface_culling_"+to_string(sflags)+"_"+to_string(imode),sflags,RTC_GEOMETRY_STATIC,imode));
       endTestGroup();
+    }
+
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECTION_FILTER)) {
+      addTest(new IntersectionFilterTest("intersection_filter_tris",false));
+      addTest(new IntersectionFilterTest("intersection_filter_subdiv",true));
     }
 
     beginTestGroup("inactive_rays");
@@ -2868,6 +2904,10 @@ namespace embree
       endTestGroup();
     }
     
+    /**************************************************************************/
+    /*                  Randomized Stress Testing                             */
+    /**************************************************************************/
+
     addTest(new IntensiveRegressionTest("regression_static",rtcore_regression_static_thread,0));
     addTest(new IntensiveRegressionTest("regression_dynamic",rtcore_regression_dynamic_thread,0));
 
