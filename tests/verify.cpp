@@ -1932,25 +1932,25 @@ namespace embree
       IntersectWithMode(imode, VARIANT_INTERSECT,scene,rays,numRays);
 
       double c4 = getSeconds();
-      /*for (size_t i=0; i<numRays; i++) {
+      for (size_t i=0; i<numRays; i++) {
         Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
         Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
         rays[i] = makeRay(org,dir,-0.0f,inf); 
       }
       IntersectWithMode(imode, VARIANT_OCCLUDED ,scene,rays,numRays);
-      IntersectWithMode(imode, VARIANT_INTERSECT,scene,rays,numRays);*/
+      IntersectWithMode(imode, VARIANT_INTERSECT,scene,rays,numRays);
 
       double c5 = getSeconds();      
       double d1 = c1-c0;
       double d2 = c2-c1;
       double d3 = c3-c2;
       double d4 = c4-c3;
-      //double d5 = c5-c4;
+      double d5 = c5-c4;
       scene = nullptr;
       AssertNoError(state->device);
       
-      bool ok = (d2 < 2.5*d1) && (d3 < 2.5*d1) && (d4 < 2.5*d1);// && (d5 < 2.5*d1);
-      float f = max(d2/d1,d3/d1,d4/d1);//,d5/d1);
+      bool ok = (d2 < 2.5*d1) && (d3 < 2.5*d1) && (d4 < 2.5*d1) && (d5 < 2.5*d1);
+      float f = max(d2/d1,d3/d1,d4/d1,d5/d1);
       printf(" (%3.2fx)",f);
       fflush(stdout);
       return ok;
