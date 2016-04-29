@@ -41,7 +41,11 @@ namespace embree
           Ray &ray = *(Ray*)((char*)rayN + inputRayID * stride);
           /* skip invalid rays */
           if (unlikely(ray.tnear > ray.tfar)) { inputRayID++; continue; }
-          if (!intersect && ray.geomID == 0) { inputRayID++; continue; } // ignore already occluded rays
+          if (unlikely(!intersect && ray.geomID == 0)) { inputRayID++; continue; } // ignore already occluded rays
+
+#if defined(RTCORE_IGNORE_INVALID_RAYS)
+          if (unlikely(!ray.valid())) {  inputRayID++; continue; }
+#endif
 
           const unsigned int octantID = movemask(vfloat4(ray.dir) < 0.0f) & 0x7;
           assert(octantID < 8);
@@ -83,7 +87,7 @@ namespace embree
         }
         rays_in_octant[cur_octant] = 0;
 
-      }
+        }
     }
 
     __forceinline void RayStream::filterSOA(Scene *scene, char* rayData, const size_t N, const size_t streams, const size_t stream_offset, const RTCIntersectContext* context, const bool intersect)
@@ -133,6 +137,11 @@ namespace embree
           const size_t offset = soffset + sizeof(float) * i;
 
           if (unlikely(!rayN.isValid(offset))) continue;
+
+#if defined(RTCORE_IGNORE_INVALID_RAYS)
+          __aligned(64) Ray ray = rayN.gather(offset);
+          if (unlikely(!ray.valid())) continue; 
+#endif
 
           const size_t octantID = rayN.getOctant(offset);
 

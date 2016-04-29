@@ -200,7 +200,7 @@ namespace embree
 #if defined(__AVX512F__)
         vfloat<K> org(vfloat4(ray->org));
         vfloat<K> dir(vfloat4(ray->dir));
-        vfloat<K> rdir       = select(0x7777,rcp_safe(dir),ray->tnear);
+        vfloat<K> rdir       = select(0x7777,rcp_safe(dir),max(ray->tnear,0.0f));
         vfloat<K> org_rdir   = robust ? select(0x7777,org,ray->tfar) : select(0x7777,org * rdir,ray->tfar);
         vfloat<K> res = select(0xf,rdir,org_rdir);
         vfloat8 r = extractf256bit(res);
@@ -210,7 +210,7 @@ namespace embree
         Vec3fa& dir = ray->dir;
         rdir       = rcp_safe(dir);
         org_rdir   = robust ? org : org * rdir;
-        rdir.w     = ray->tnear;
+        rdir.w     = max(0.0f,ray->tnear);
         org_rdir.w = ray->tfar;
 #endif
       }
