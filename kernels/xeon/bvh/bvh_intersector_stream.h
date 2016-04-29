@@ -185,7 +185,11 @@ namespace embree
     {
     public:
       Vec3fa rdir;      //     rdir.w = tnear;
-      Vec3fa org_rdir;  // org_rdir.w = tfar;        
+      union {
+        Vec3fa org_rdir;  // org_rdir.w = tfar;        
+        Vec3fa org;       // org.w      = tfar; needed for robust mode
+      };
+
 
     public:
 
@@ -197,7 +201,7 @@ namespace embree
         vfloat<K> org(vfloat4(ray->org));
         vfloat<K> dir(vfloat4(ray->dir));
         vfloat<K> rdir       = select(0x7777,rcp_safe(dir),ray->tnear);
-        vfloat<K> org_rdir   = select(0x7777,org * rdir,ray->tfar);
+        vfloat<K> org_rdir   = robust ? select(0x7777,org,ray->tfar) : select(0x7777,org * rdir,ray->tfar);
         vfloat<K> res = select(0xf,rdir,org_rdir);
         vfloat8 r = extractf256bit(res);
         *(vfloat8*)this = r;          
@@ -205,7 +209,7 @@ namespace embree
         Vec3fa& org = ray->org;
         Vec3fa& dir = ray->dir;
         rdir       = rcp_safe(dir);
-        org_rdir   = org * rdir;
+        org_rdir   = robust ? org : org * rdir;
         rdir.w     = ray->tnear;
         org_rdir.w = ray->tfar;
 #endif
@@ -224,6 +228,7 @@ namespace embree
       }
 
 #if defined(__AVX512F__)
+      template<bool dist_update>
       __forceinline vbool<K> intersectNode(const vfloat<K> &bminmaxX,
                                            const vfloat<K> &bminmaxY,
                                            const vfloat<K> &bminmaxZ,
@@ -235,12 +240,31 @@ namespace embree
         const vfloat<K> tNear     = max(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(rdir.w));
         const vfloat<K> tFar      = min(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(org_rdir.w));
         const vbool<K> vmask      = le(tNear,align_shift_right<8>(tFar,tFar));  
-        dist   = select(vmask,min(tNear,dist),dist);
+        if (dist_update) dist     = select(vmask,min(tNear,dist),dist);
         return vmask;       
       }
+
+      template<bool dist_update>
+      __forceinline vbool<K> intersectNodeRobust(const vfloat<K> &bminmaxX,
+                                                 const vfloat<K> &bminmaxY,
+                                                 const vfloat<K> &bminmaxZ,
+                                                 vfloat<K> &dist) const
+      {
+        const vfloat<K> tNearFarX = (bminmaxX - org.x) * rdir.x;
+        const vfloat<K> tNearFarY = (bminmaxX - org.y) * rdir.y;
+        const vfloat<K> tNearFarZ = (bminmaxX - org.z) * rdir.z;
+        const vfloat<K> tNear     = max(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(rdir.w));
+        const vfloat<K> tFar      = min(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(org_rdir.w));
+        const float round_down    = 1.0f-2.0f*float(ulp); // FIXME: use per instruction rounding for AVX512
+        const float round_up      = 1.0f+2.0f*float(ulp);
+        const vbool<K> vmask      = le(tNear*round_down,align_shift_right<8>(tFar,tFar)*round_up);  
+        if (dist_update) dist     = select(vmask,min(tNear,dist),dist);
+        return vmask;       
+      }
+
 #endif
 
-
+      template<bool dist_update>
       __forceinline vbool<K> intersectNode(const vfloat<K> &bminX,
                                            const vfloat<K> &bminY,
                                            const vfloat<K> &bminZ,
@@ -258,14 +282,42 @@ namespace embree
 #if defined(__AVX2__)
         const vfloat<K> tNear  = maxi(maxi(tNearX,tNearY),maxi(tNearZ,vfloat<K>(rdir.w)));
         const vfloat<K> tFar   = mini(mini(tFarX,tFarY),mini(tFarZ,vfloat<K>(org_rdir.w)));
-        const vbool<K> vmask   = tNear <= tFar;
-        dist   = select(vmask,min(tNear,dist),dist);
 #else
         const vfloat<K> tNear  = max(tNearX,tNearY,tNearZ,vfloat<K>(rdir.w));
         const vfloat<K> tFar   = min(tFarX ,tFarY ,tFarZ ,vfloat<K>(org_rdir.w));
-        const vbool<K> vmask   = tNear <= tFar;
-        dist   = select(vmask,min(tNear,dist),dist);
 #endif
+        const vbool<K> vmask   = tNear <= tFar;
+        if (dist_update) dist  = select(vmask,min(tNear,dist),dist);
+        return vmask;    
+      }
+
+
+      template<bool dist_update>
+      __forceinline vbool<K> intersectNodeRobust(const vfloat<K> &bminX,
+                                                 const vfloat<K> &bminY,
+                                                 const vfloat<K> &bminZ,
+                                                 const vfloat<K> &bmaxX,
+                                                 const vfloat<K> &bmaxY,
+                                                 const vfloat<K> &bmaxZ,
+                                                 vfloat<K> &dist) const
+      {
+        const vfloat<K> tNearX = (bminX - org.x) * rdir.x;
+        const vfloat<K> tNearY = (bminY - org.y) * rdir.y;
+        const vfloat<K> tNearZ = (bminZ - org.z) * rdir.z;
+        const vfloat<K> tFarX  = (bmaxX - org.x) * rdir.x;
+        const vfloat<K> tFarY  = (bmaxY - org.y) * rdir.y;
+        const vfloat<K> tFarZ  = (bmaxZ - org.z) * rdir.z;
+        const float round_down = 1.0f-2.0f*float(ulp); 
+        const float round_up   = 1.0f+2.0f*float(ulp);
+#if defined(__AVX2__)
+        const vfloat<K> tNear  = maxi(maxi(tNearX,tNearY),maxi(tNearZ,vfloat<K>(rdir.w)));
+        const vfloat<K> tFar   = mini(mini(tFarX,tFarY),mini(tFarZ,vfloat<K>(org_rdir.w)));
+#else
+        const vfloat<K> tNear  = max(tNearX,tNearY,tNearZ,vfloat<K>(rdir.w));
+        const vfloat<K> tFar   = min(tFarX ,tFarY ,tFarZ ,vfloat<K>(org_rdir.w));
+#endif
+        const vbool<K> vmask   = round_down*tNear <= round_up*tFar;
+        if (dist_update) dist  = select(vmask,min(tNear,dist),dist);
         return vmask;    
       }
 

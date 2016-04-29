@@ -218,29 +218,10 @@ namespace embree
               STAT3(normal.trav_nodes,1,1,1);                          
               const size_t i = __bscf(bits);
               const RContext &ray = cur_ray_ctx[i];
-#if 1
               const vint<K> bitmask  = vint<K>((int)1 << i);
-
-              const vbool<K> vmask = ray.intersectNode(bminX,bminY,bminZ,bmaxX,bmaxY,bmaxZ,dist);
-#else
-              const vfloat<K> tNearX = msub(bminX, ray.rdir.x, ray.org_rdir.x);
-              const vfloat<K> tNearY = msub(bminY, ray.rdir.y, ray.org_rdir.y);
-              const vfloat<K> tNearZ = msub(bminZ, ray.rdir.z, ray.org_rdir.z);
-              const vfloat<K> tFarX  = msub(bmaxX, ray.rdir.x, ray.org_rdir.x);
-              const vfloat<K> tFarY  = msub(bmaxY, ray.rdir.y, ray.org_rdir.y);
-              const vfloat<K> tFarZ  = msub(bmaxZ, ray.rdir.z, ray.org_rdir.z);
-#if defined(__AVX2__)
-              const vfloat<K> tNear  = maxi(maxi(tNearX,tNearY),maxi(tNearZ,vfloat<K>(ray.rdir.w)));
-              const vfloat<K> tFar   = mini(mini(tFarX,tFarY),mini(tFarZ,vfloat<K>(ray.org_rdir.w)));
-              const vbool<K> vmask   = tNear <= tFar;
-              dist   = select(vmask,min(tNear,dist),dist);
-#else
-              const vfloat<K> tNear  = max(tNearX,tNearY,tNearZ,vfloat<K>(ray.rdir.w));
-              const vfloat<K> tFar   = min(tFarX ,tFarY ,tFarZ ,vfloat<K>(ray.org_rdir.w));
-              const vbool<K> vmask   = tNear <= tFar;
-              dist   = select(vmask,min(tNear,dist),dist);
-#endif
-#endif
+              const vbool<K> vmask = robust ? \
+                ray.template intersectNodeRobust<true>(bminX,bminY,bminZ,bmaxX,bmaxY,bmaxZ,dist) : 
+                ray.template intersectNode<true>      (bminX,bminY,bminZ,bmaxX,bmaxY,bmaxZ,dist);
 
 #if defined(__AVX2__)
               maskK = maskK | (bitmask & vint<K>(vmask));
@@ -506,28 +487,20 @@ namespace embree
               STAT3(shadow.trav_nodes,1,1,1);                          
               const size_t i = __bscf(bits);
               const RContext &ray = cur_ray_ctx[i];
-              const vfloat<K> tNearX = msub(bminX, ray.rdir.x, ray.org_rdir.x);
-              const vfloat<K> tNearY = msub(bminY, ray.rdir.y, ray.org_rdir.y);
-              const vfloat<K> tNearZ = msub(bminZ, ray.rdir.z, ray.org_rdir.z);
-              const vfloat<K> tFarX  = msub(bmaxX, ray.rdir.x, ray.org_rdir.x);
-              const vfloat<K> tFarY  = msub(bmaxY, ray.rdir.y, ray.org_rdir.y);
-              const vfloat<K> tFarZ  = msub(bmaxZ, ray.rdir.z, ray.org_rdir.z);
               const vint<K> bitmask  = vint<K>((int)1 << i);
+
+              const vbool<K> vmask = robust ? \
+                ray.template intersectNodeRobust<true>(bminX,bminY,bminZ,bmaxX,bmaxY,bmaxZ,dist) : 
+                ray.template intersectNode<true>      (bminX,bminY,bminZ,bmaxX,bmaxY,bmaxZ,dist);
+
 #if defined(__AVX2__)
-              const vfloat<K> tNear  = maxi(maxi(tNearX,tNearY),maxi(tNearZ,vfloat<K>(ray.rdir.w)));
-              const vfloat<K> tFar   = mini(mini(tFarX,tFarY),mini(tFarZ,vfloat<K>(ray.org_rdir.w)));
-              const vbool<K> vmask   = tNear <= tFar;
-              dist   = select(vmask,min(tNear,dist),dist);
               maskK = maskK | (bitmask & vint<K>(vmask));
 #else
-              const vfloat<K> tNear  = max(tNearX,tNearY,tNearZ,vfloat<K>(ray.rdir.w));
-              const vfloat<K> tFar   = min(tFarX ,tFarY ,tFarZ ,vfloat<K>(ray.org_rdir.w));
-              const vbool<K> vmask   = tNear <= tFar;
-              dist   = select(vmask,min(tNear,dist),dist);
               maskK = select(vmask,maskK | bitmask,maskK); 
 #endif
             } while(bits);          
-            const vbool<K> vmask = dist < inf;
+            const vbool<K> vmask = maskK != vint<K>(zero); 
+
             if (unlikely(none(vmask))) 
             {
               /*! pop next node */
@@ -542,7 +515,6 @@ namespace embree
                 m_trav_active = stackPtr->mask & (m_active>>cur_fiber->getOffset());
 #endif
               } while (unlikely(cur != BVH::invalidNode && m_trav_active == 0));
-              //assert(__popcnt(m_trav_active) <= 32);
               goto pop;
             }
 
