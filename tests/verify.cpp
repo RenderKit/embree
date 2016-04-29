@@ -997,7 +997,7 @@ namespace embree
       ClearBuffers clear_before_return;
       RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,to_aflags(imode));
       AssertNoError(state->device);
-      size_t numPhi = 50;
+      size_t numPhi = 20;
       size_t numVertices = 2*numPhi*(numPhi+1);
       Vec3fa pos0 = Vec3fa(-10,0,-10);
       Vec3fa pos1 = Vec3fa(-10,0,+10);
