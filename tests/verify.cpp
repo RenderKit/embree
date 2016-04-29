@@ -3173,13 +3173,11 @@ namespace embree
     addTest(new RayMasksTest("ray_masks"));
 #endif
 
-#if defined(RTCORE_INTERSECTION_FILTER)
-    addTest(new IntersectionFilterTest("intersection_filter_tris",false));
-#endif
-
-#if defined(RTCORE_INTERSECTION_FILTER)
-    addTest(new IntersectionFilterTest("intersection_filter_subdiv",true));
-#endif
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECTION_FILTER))
+    {
+      addTest(new IntersectionFilterTest("intersection_filter_tris",false));
+      addTest(new IntersectionFilterTest("intersection_filter_subdiv",true));
+    }
 
 #if defined(RTCORE_BACKFACE_CULLING)
     addTest(new BackfaceCullingTest("backface_culling"));
