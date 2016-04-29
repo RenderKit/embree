@@ -181,7 +181,7 @@ namespace embree
     };
 
     template<int K, bool robust>
-    struct __aligned(32) RayContext 
+    class __aligned(32) RayContext 
     {
     public:
       Vec3fa rdir;      //     rdir.w = tnear;
@@ -270,6 +270,7 @@ namespace embree
       }
 
     };
+
 
 
     /*! BVH ray stream intersector. */

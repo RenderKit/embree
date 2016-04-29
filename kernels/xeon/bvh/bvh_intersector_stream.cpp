@@ -611,9 +611,7 @@ namespace embree
     IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH4Triangle4StreamIntersectorMoeller,         BVHNStreamIntersector<SIMD_MODE(4) COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<SIMD_MODE(4) COMMA true> > >));
     IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH4Triangle4StreamIntersectorMoellerNoFilter, BVHNStreamIntersector<SIMD_MODE(4) COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<SIMD_MODE(4) COMMA false> > >));
 
-#if !defined(__AVX512F__)
-    IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH4Triangle4vStreamIntersector1Pluecker,BVHNStreamIntersector<SIMD_MODE(4) COMMA BVH_AN1 COMMA true COMMA ArrayIntersector1<TriangleMvIntersector1Pluecker<SIMD_MODE(4) COMMA true> > >));
-#endif
+    IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH4Triangle4vStreamIntersectorPluecker,BVHNStreamIntersector<SIMD_MODE(4) COMMA BVH_AN1 COMMA true COMMA ArrayIntersector1<TriangleMvIntersector1Pluecker<SIMD_MODE(4) COMMA true> > >));
 
     //IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH4Triangle4iIntersector1Pluecker,BVHNStreamIntersector<4 COMMA BVH_AN1 COMMA true COMMA ArrayIntersector1<Triangle4iIntersector1Pluecker<SIMD_MODE(4) COMMA true> > >));
     //IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH4Triangle4vMBIntersector1Moeller,BVHNStreamIntersector<4 COMMA BVH_AN2 COMMA false COMMA ArrayIntersector1<TriangleMvMBIntersector1MoellerTrumbore<SIMD_MODE(4) COMMA true> > >));
