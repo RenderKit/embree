@@ -2103,6 +2103,13 @@ namespace embree
         AssertNoError(state->device);
         if (i%2 == 0) std::cout << "." << std::flush;
       }
+      
+      /* now delete all geometries */
+      for (size_t i=0; i<128; i++) 
+        if (geom[i] != -1) rtcDeleteGeometry(scene,geom[i]);
+      rtcCommit(scene);
+      AssertNoError(state->device);
+
       rtcCommit (scene);
       AssertNoError(state->device);
       scene = nullptr;
