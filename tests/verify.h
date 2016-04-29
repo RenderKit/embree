@@ -59,6 +59,8 @@ namespace embree
     std::map<std::string,Ref<Test>> name2test;
 
   public:
+    std::vector<RTCSceneFlags> sceneFlags;
+    std::vector<RTCSceneFlags> sceneFlagsRobust;
     std::vector<IntersectMode> intersectModes;
     bool use_tests_to_run;
     std::vector<Ref<Test>> tests_to_run;

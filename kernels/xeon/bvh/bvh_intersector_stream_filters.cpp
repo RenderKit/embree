@@ -144,7 +144,7 @@ namespace embree
             for (size_t j=0;j<MAX_RAYS_PER_OCTANT;j++)
             {
               rays[j] = rayN.gather(octants[octantID][j]);
-              assert(rays[j].valid());
+              //assert(rays[j].valid());
             }
 
             if (intersect)
@@ -167,7 +167,7 @@ namespace embree
           for (size_t j=0;j<rays_in_octant[i];j++)
           {
             rays[j] = rayN.gather(octants[i][j]);
-            assert(rays[j].valid());
+            //assert(rays[j].valid());
           }
 
           if (intersect)
@@ -239,7 +239,7 @@ namespace embree
             for (size_t j=0;j<MAX_RAYS_PER_OCTANT;j++)
             {
               rays[j] = rayN.gatherByOffset(octants[octantID][j]);
-              assert(rays[j].valid());
+              //assert(rays[j].valid());
             }
 
             if (intersect)
@@ -262,8 +262,7 @@ namespace embree
           for (size_t j=0;j<rays_in_octant[i];j++)
           {
             rays[j] = rayN.gatherByOffset(octants[i][j]);
-            //if (!rays[j].valid()) PRINT(rays[j]);
-            assert(rays[j].valid());
+            //assert(rays[j].valid());
           }
 
           if (intersect)

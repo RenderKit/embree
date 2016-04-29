@@ -503,58 +503,6 @@ namespace embree
     return mesh;
   }
 
-  unsigned int addCube (RTCDevice g_device, const RTCSceneRef& scene_i, RTCGeometryFlags flag, const Vec3fa& pos, const float r)
-  {
-    /* create a triangulated cube with 12 triangles and 8 vertices */
-    unsigned int mesh = rtcNewTriangleMesh (scene_i, flag, 12, 8);
-    
-    /* set vertices */
-    Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER); 
-    if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene_i,mesh); return -1; }
-    vertices[0] = pos + r*Vec3fa(-1,-1,-1); 
-    vertices[1] = pos + r*Vec3fa(-1,-1,+1); 
-    vertices[2] = pos + r*Vec3fa(-1,+1,-1); 
-    vertices[3] = pos + r*Vec3fa(-1,+1,+1); 
-    vertices[4] = pos + r*Vec3fa(+1,-1,-1); 
-    vertices[5] = pos + r*Vec3fa(+1,-1,+1); 
-    vertices[6] = pos + r*Vec3fa(+1,+1,-1); 
-    vertices[7] = pos + r*Vec3fa(+1,+1,+1); 
-    rtcUnmapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER); 
-
-    /* set triangles and colors */
-    int tri = 0;
-    Triangle* triangles = (Triangle*) rtcMapBuffer(scene_i,mesh,RTC_INDEX_BUFFER);
-    if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene_i,mesh); return -1; }
-    
-    // left side
-    triangles[tri].v0 = 0; triangles[tri].v1 = 2; triangles[tri].v2 = 1; tri++;
-    triangles[tri].v0 = 1; triangles[tri].v1 = 2; triangles[tri].v2 = 3; tri++;
-
-    // right side
-    triangles[tri].v0 = 4; triangles[tri].v1 = 5; triangles[tri].v2 = 6; tri++;
-    triangles[tri].v0 = 5; triangles[tri].v1 = 7; triangles[tri].v2 = 6; tri++;
-    
-    // bottom side
-    triangles[tri].v0 = 0; triangles[tri].v1 = 1; triangles[tri].v2 = 4; tri++;
-    triangles[tri].v0 = 1; triangles[tri].v1 = 5; triangles[tri].v2 = 4; tri++;
-    
-    // top side
-    triangles[tri].v0 = 2; triangles[tri].v1 = 6; triangles[tri].v2 = 3; tri++;
-    triangles[tri].v0 = 3; triangles[tri].v1 = 6; triangles[tri].v2 = 7; tri++;
-    
-    // front side
-    triangles[tri].v0 = 0; triangles[tri].v1 = 4; triangles[tri].v2 = 2; tri++;
-    triangles[tri].v0 = 2; triangles[tri].v1 = 4; triangles[tri].v2 = 6; tri++;
-    
-    // back side
-    triangles[tri].v0 = 1; triangles[tri].v1 = 3; triangles[tri].v2 = 5; tri++;
-    triangles[tri].v0 = 3; triangles[tri].v1 = 7; triangles[tri].v2 = 5; tri++;
-    
-    rtcUnmapBuffer(scene_i,mesh,RTC_INDEX_BUFFER);
-    
-    return mesh;
-  }
-
   unsigned addHair (RTCDevice g_device, const RTCSceneRef& scene, RTCGeometryFlags flag, const Vec3fa& pos, const float scale, const float r, size_t numHairs = 1, float motion = 0.0f)
   {
     size_t numTimeSteps = motion == 0.0f ? 1 : 2;
@@ -1811,7 +1759,6 @@ namespace embree
       ClearBuffers clear_before_return;
       RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,to_aflags(imode));
       if      (model == "sphere") addSphere(state->device,scene,RTC_GEOMETRY_STATIC,pos,2.0f,500);
-      else if (model == "cube"  ) addCube  (state->device,scene,RTC_GEOMETRY_STATIC,pos,2.0f);
       else if (model == "plane" ) addPlane(state->device,scene,RTC_GEOMETRY_STATIC,500,Vec3fa(pos.x,-6.0f,-6.0f),Vec3fa(0.0f,12.0f,0.0f),Vec3fa(0.0f,0.0f,12.0f));
       bool plane = model == "plane";
       rtcCommit (scene);
@@ -1821,6 +1768,7 @@ namespace embree
       size_t numFailures = 0;
       for (size_t i=0; i<N; i++) 
       {
+        IntersectVariant ivariant = (IntersectVariant) (i%2);
         for (size_t M=1; M<maxStreamSize; M++)
         {
           __aligned(16) RTCRay rays[maxStreamSize];
@@ -1836,10 +1784,10 @@ namespace embree
               rays[j] = makeRay(pos+org,dir); 
             }
           }
-          IntersectWithMode(imode,scene,rays,M);
+          IntersectWithMode(imode,ivariant,scene,rays,M);
           for (size_t j=0; j<M; j++) {
             numTests++;
-            numFailures += rays[j].primID == -1;
+            numFailures += rays[j].geomID == -1;
           }
         }
       }
@@ -1859,54 +1807,59 @@ namespace embree
   {
     RTCSceneFlags sflags;
     RTCGeometryFlags gflags;
-    int N;
+    IntersectMode imode;
     
-    NaNTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, int N)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), gflags(gflags), N(N) {}
+    NaNTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode)
+      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), gflags(gflags), imode(imode) {}
     
     bool run(VerifyApplication* state)
     {
       ClearBuffers clear_before_return;
-      size_t count = 1000/N;
-      RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,aflags);
+      const size_t numRays = 1000;
+      RTCRay rays[numRays];
+      RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,to_aflags(imode));
       addSphere(state->device,scene,gflags,zero,2.0f,100);
       addHair  (state->device,scene,gflags,zero,1.0f,1.0f,100);
       rtcCommit (scene);
       size_t numFailures = 0;
+
       double c0 = getSeconds();
-      for (size_t i=0; i<count; i++) {
+      for (size_t i=0; i<numRays; i++) {
         Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
         Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-        RTCRay ray = makeRay(org,dir); 
-        rtcOccludedN(scene,ray,N);
-        rtcIntersectN(scene,ray,N);
+        rays[i] = makeRay(org,dir); 
       }
+      IntersectWithMode(imode, VARIANT_OCCLUDED ,scene,rays,numRays);
+      IntersectWithMode(imode, VARIANT_INTERSECT,scene,rays,numRays);
+    
       double c1 = getSeconds();
-      for (size_t i=0; i<count; i++) {
+      for (size_t i=0; i<numRays; i++) {
         Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
         Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-        RTCRay ray = makeRay(org+Vec3fa(nan),dir); 
-        rtcOccludedN(scene,ray,N);
-        rtcIntersectN(scene,ray,N);
+        rays[i] = makeRay(org+Vec3fa(nan),dir); 
       }
+      IntersectWithMode(imode, VARIANT_OCCLUDED ,scene,rays,numRays);
+      IntersectWithMode(imode, VARIANT_INTERSECT,scene,rays,numRays);
+
       double c2 = getSeconds();
-      for (size_t i=0; i<count; i++) {
+      for (size_t i=0; i<numRays; i++) {
         Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
         Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-        RTCRay ray = makeRay(org+Vec3fa(nan),dir+Vec3fa(nan)); 
-        rtcOccludedN(scene,ray,N);
-        rtcIntersectN(scene,ray,N);
+        rays[i] = makeRay(org+Vec3fa(nan),dir+Vec3fa(nan)); 
       }
+      IntersectWithMode(imode, VARIANT_OCCLUDED ,scene,rays,numRays);
+      IntersectWithMode(imode, VARIANT_INTERSECT,scene,rays,numRays);
+
       double c3 = getSeconds();
-      for (size_t i=0; i<count; i++) {
+      for (size_t i=0; i<numRays; i++) {
         Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
         Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-        RTCRay ray = makeRay(org,dir,nan,nan); 
-        rtcOccludedN(scene,ray,N);
-        rtcIntersectN(scene,ray,N);
+        rays[i] = makeRay(org,dir,nan,nan); 
       }
+      IntersectWithMode(imode, VARIANT_OCCLUDED ,scene,rays,numRays);
+      IntersectWithMode(imode, VARIANT_INTERSECT,scene,rays,numRays);
+
       double c4 = getSeconds();
-      
       double d1 = c1-c0;
       double d2 = c2-c1;
       double d3 = c3-c2;
@@ -1925,69 +1878,76 @@ namespace embree
   {
     RTCSceneFlags sflags;
     RTCGeometryFlags gflags;
-    int N;
+    IntersectMode imode;
     
-    InfTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, int N)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), gflags(gflags), N(N) {}
-    
+    InfTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode)
+      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), gflags(gflags), imode(imode) {}
+   
     bool run(VerifyApplication* state)
     {
       ClearBuffers clear_before_return;
-      size_t count = 1000/N;
-      RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,aflags);
+      size_t numRays = 1000;
+      RTCRay rays[numRays];
+      RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,to_aflags(imode));
       addSphere(state->device,scene,gflags,zero,2.0f,100);
       addHair  (state->device,scene,gflags,zero,1.0f,1.0f,100);
       rtcCommit (scene);
+      AssertNoError(state->device);
+
       size_t numFailures = 0;
       double c0 = getSeconds();
-      for (size_t i=0; i<count; i++) {
+      for (size_t i=0; i<numRays; i++) {
         Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
         Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-        RTCRay ray = makeRay(org,dir); 
-        rtcOccludedN(scene,ray,N);
-        rtcIntersectN(scene,ray,N);
+        rays[i] = makeRay(org,dir); 
       }
+      IntersectWithMode(imode, VARIANT_OCCLUDED ,scene,rays,numRays);
+      IntersectWithMode(imode, VARIANT_INTERSECT,scene,rays,numRays);
+
       double c1 = getSeconds();
-      for (size_t i=0; i<count; i++) {
+      for (size_t i=0; i<numRays; i++) {
         Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
         Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-        RTCRay ray = makeRay(org+Vec3fa(inf),dir); 
-        rtcOccludedN(scene,ray,N);
-        rtcIntersectN(scene,ray,N);
+        rays[i] = makeRay(org+Vec3fa(inf),dir); 
       }
+      IntersectWithMode(imode, VARIANT_OCCLUDED ,scene,rays,numRays);
+      IntersectWithMode(imode, VARIANT_INTERSECT,scene,rays,numRays);
+
       double c2 = getSeconds();
-      for (size_t i=0; i<count; i++) {
+      for (size_t i=0; i<numRays; i++) {
         Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
         Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-        RTCRay ray = makeRay(org,dir+Vec3fa(inf)); 
-        rtcOccludedN(scene,ray,N);
-        rtcIntersectN(scene,ray,N);
+        rays[i] = makeRay(org,dir+Vec3fa(inf)); 
       }
+      IntersectWithMode(imode, VARIANT_OCCLUDED ,scene,rays,numRays);
+      IntersectWithMode(imode, VARIANT_INTERSECT,scene,rays,numRays);
+
       double c3 = getSeconds();
-      for (size_t i=0; i<count; i++) {
+      for (size_t i=0; i<numRays; i++) {
         Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
         Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-        RTCRay ray = makeRay(org+Vec3fa(inf),dir+Vec3fa(inf)); 
-        rtcOccludedN(scene,ray,N);
-        rtcIntersectN(scene,ray,N);
+        rays[i] = makeRay(org+Vec3fa(inf),dir+Vec3fa(inf)); 
       }
+      IntersectWithMode(imode, VARIANT_OCCLUDED ,scene,rays,numRays);
+      IntersectWithMode(imode, VARIANT_INTERSECT,scene,rays,numRays);
+
       double c4 = getSeconds();
-      for (size_t i=0; i<count; i++) {
+      for (size_t i=0; i<numRays; i++) {
         Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
         Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-        RTCRay ray = makeRay(org,dir,-0.0f,inf); 
-        rtcOccludedN(scene,ray,N);
-        rtcIntersectN(scene,ray,N);
+        rays[i] = makeRay(org,dir,-0.0f,inf); 
       }
-      double c5 = getSeconds();
-      
+      IntersectWithMode(imode, VARIANT_OCCLUDED ,scene,rays,numRays);
+      IntersectWithMode(imode, VARIANT_INTERSECT,scene,rays,numRays);
+
+      double c5 = getSeconds();      
       double d1 = c1-c0;
       double d2 = c2-c1;
       double d3 = c3-c2;
       double d4 = c4-c3;
       double d5 = c5-c4;
-      
       scene = nullptr;
+      AssertNoError(state->device);
       
       bool ok = (d2 < 2.5*d1) && (d3 < 2.5*d1) && (d4 < 2.5*d1) && (d5 < 2.5*d1);
       float f = max(d2/d1,d3/d1,d4/d1,d5/d1);
@@ -3157,7 +3117,7 @@ namespace embree
   {
     device = rtcNewDevice(rtcore.c_str());
 
-    /* create list of all supported intersect modes */
+    /* create list of all supported intersect modes to test */
     if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT1)) intersectModes.push_back(MODE_INTERSECT1);
     if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT4)) intersectModes.push_back(MODE_INTERSECT4);
     if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT8)) intersectModes.push_back(MODE_INTERSECT8);
@@ -3171,6 +3131,19 @@ namespace embree
       intersectModes.push_back(MODE_INTERSECTNM16);
       intersectModes.push_back(MODE_INTERSECTNp);
     }
+
+    /* create list of all scene flags to test */
+    sceneFlags.push_back(RTC_SCENE_STATIC);
+    sceneFlags.push_back(RTC_SCENE_STATIC | RTC_SCENE_ROBUST);
+    sceneFlags.push_back(RTC_SCENE_STATIC | RTC_SCENE_COMPACT);
+    sceneFlags.push_back(RTC_SCENE_DYNAMIC);
+    sceneFlags.push_back(RTC_SCENE_DYNAMIC | RTC_SCENE_ROBUST);
+    sceneFlags.push_back(RTC_SCENE_DYNAMIC | RTC_SCENE_COMPACT);
+
+    sceneFlagsRobust.push_back(RTC_SCENE_STATIC  | RTC_SCENE_ROBUST);
+    sceneFlagsRobust.push_back(RTC_SCENE_STATIC  | RTC_SCENE_ROBUST | RTC_SCENE_COMPACT);
+    sceneFlagsRobust.push_back(RTC_SCENE_DYNAMIC | RTC_SCENE_ROBUST);
+    sceneFlagsRobust.push_back(RTC_SCENE_DYNAMIC | RTC_SCENE_ROBUST | RTC_SCENE_COMPACT);
 
     /* add all tests */
     addTest(new MultipleDevicesTest("multiple_devices"));
@@ -3243,36 +3216,24 @@ namespace embree
 #endif
 
     addTest(new PacketWriteTest("packet_write_test"));
-
+    
     const Vec3fa watertight_pos = Vec3fa(148376.0f,1234.0f,-223423.0f);
-    for (auto imode : intersectModes) {
-      for (std::string model : {"sphere", "plane"}) {
-        addTest(new WatertightTest("watertight_static_"         +model+"_"+to_string(imode),RTC_SCENE_STATIC  | RTC_SCENE_ROBUST                    ,imode,model,watertight_pos));
-        addTest(new WatertightTest("watertight_dynamic_"        +model+"_"+to_string(imode),RTC_SCENE_DYNAMIC | RTC_SCENE_ROBUST                    ,imode,model,watertight_pos));
-        addTest(new WatertightTest("watertight_static_compact_" +model+"_"+to_string(imode),RTC_SCENE_STATIC  | RTC_SCENE_ROBUST | RTC_SCENE_COMPACT,imode,model,watertight_pos));
-        addTest(new WatertightTest("watertight_dynamic_compact_"+model+"_"+to_string(imode),RTC_SCENE_DYNAMIC | RTC_SCENE_ROBUST | RTC_SCENE_COMPACT,imode,model,watertight_pos));
-      }
-    }
+    for (auto sflags : sceneFlagsRobust) 
+      for (auto imode : intersectModes) 
+        for (std::string model : {"sphere", "plane"}) 
+          addTest(new WatertightTest("watertight_"+to_string(sflags)+"_"+model+"_"+to_string(imode),sflags,imode,model,watertight_pos));
+    
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_IGNORE_INVALID_RAYS))
+    {
+      for (auto sflags : sceneFlags) 
+        for (auto imode : intersectModes) 
+          addTest(new NaNTest("nan_test_"+to_string(sflags)+"_"+to_string(imode),sflags,RTC_GEOMETRY_STATIC,imode));
 
-#if defined(RTCORE_IGNORE_INVALID_RAYS)
-    addTest(new NaNTest("nan_test_1",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,1));
-    addTest(new InfTest("inf_test_1",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,1));
-#if defined(RTCORE_RAY_PACKETS)
-    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT4)) {
-      addTest(new NaNTest("nan_test_4",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,4));
-      addTest(new InfTest("inf_test_4",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,4));
+      for (auto sflags : sceneFlags) 
+        for (auto imode : intersectModes) 
+          addTest(new InfTest("inf_test_"+to_string(sflags)+"_"+to_string(imode),sflags,RTC_GEOMETRY_STATIC,imode));
     }
-    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT8)) {
-      addTest(new NaNTest("nan_test_8",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,8));
-      addTest(new InfTest("inf_test_8",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,8));
-    }
-    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT16)) {
-      addTest(new NaNTest("nan_test_16",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,16));
-      addTest(new InfTest("inf_test_16",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,16));
-    }
-#endif
-#endif
-
+    
     addTest(new IntensiveRegressionTest("regression_static",rtcore_regression_static_thread,0));
     addTest(new IntensiveRegressionTest("regression_dynamic",rtcore_regression_dynamic_thread,0));
 
@@ -3319,7 +3280,7 @@ namespace embree
     
     /* perform tests */
     device = rtcNewDevice(rtcore.c_str());
-    error_handler(rtcDeviceGetError(device));
+    //error_handler(rtcDeviceGetError(device));
 
     /* execute specific user tests */
     if (use_tests_to_run) 
