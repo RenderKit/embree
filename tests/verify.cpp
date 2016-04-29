@@ -743,6 +743,9 @@ namespace embree
 
   struct FlagsTest : public VerifyApplication::Test
   {
+    RTCSceneFlags sceneFlags;
+    RTCGeometryFlags geomFlags;
+
     FlagsTest (std::string name, VerifyApplication::TestType type, RTCSceneFlags sceneFlags, RTCGeometryFlags geomFlags)
       : VerifyApplication::Test(name,type), sceneFlags(sceneFlags), geomFlags(geomFlags) {}
 
@@ -759,10 +762,6 @@ namespace embree
       scene = nullptr;
       return true;
     }
-
-  public:
-    RTCSceneFlags sceneFlags;
-    RTCGeometryFlags geomFlags;
   };
   
   struct StaticSceneTest : public VerifyApplication::Test
@@ -986,13 +985,17 @@ namespace embree
   
   struct UpdateTest : public VerifyApplication::Test
   {
-    UpdateTest (std::string name, RTCGeometryFlags flags)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), flags(flags) {}
+    RTCSceneFlags sflags;
+    RTCGeometryFlags gflags;
+    IntersectMode imode;
+
+    UpdateTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode)
+      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), gflags(gflags), imode(imode) {}
     
     bool run(VerifyApplication* state)
     {
       ClearBuffers clear_before_return;
-      RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_DYNAMIC,aflags);
+      RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,to_aflags(imode));
       AssertNoError(state->device);
       size_t numPhi = 50;
       size_t numVertices = 2*numPhi*(numPhi+1);
@@ -1000,10 +1003,10 @@ namespace embree
       Vec3fa pos1 = Vec3fa(-10,0,+10);
       Vec3fa pos2 = Vec3fa(+10,0,-10);
       Vec3fa pos3 = Vec3fa(+10,0,+10);
-      unsigned geom0 = addSphere(state->device,scene,flags,pos0,1.0f,numPhi);
-      unsigned geom1 = addHair  (state->device,scene,flags,pos1,1.0f,1.0f,1);
-      unsigned geom2 = addSphere(state->device,scene,flags,pos2,1.0f,numPhi);
-      unsigned geom3 = addHair  (state->device,scene,flags,pos3,1.0f,1.0f,1);
+      unsigned geom0 = addSphere(state->device,scene,gflags,pos0,1.0f,numPhi);
+      unsigned geom1 = addHair  (state->device,scene,gflags,pos1,1.0f,1.0f,1);
+      unsigned geom2 = addSphere(state->device,scene,gflags,pos2,1.0f,numPhi);
+      unsigned geom3 = addHair  (state->device,scene,gflags,pos3,1.0f,1.0f,1);
       AssertNoError(state->device);
       
       for (size_t i=0; i<16; i++) 
@@ -1016,75 +1019,24 @@ namespace embree
         if (move3) { move_mesh_vec3fa(scene,geom3,4,ds); pos3 += ds; }
         rtcCommit (scene);
         AssertNoError(state->device);
-        {
-          RTCRay ray0 = makeRay(pos0+Vec3fa(0,10,0),Vec3fa(0,-1,0)); 
-          RTCRay ray1 = makeRay(pos1+Vec3fa(0,10,0),Vec3fa(0,-1,0)); 
-          RTCRay ray2 = makeRay(pos2+Vec3fa(0,10,0),Vec3fa(0,-1,0)); 
-          RTCRay ray3 = makeRay(pos3+Vec3fa(0,10,0),Vec3fa(0,-1,0)); 
-          rtcIntersect(scene,ray0);
-          rtcIntersect(scene,ray1);
-          rtcIntersect(scene,ray2);
-          rtcIntersect(scene,ray3);
-          if (ray0.geomID != 0 || 
-              ray1.geomID != 1 || 
-              ray2.geomID != 2 || 
-              ray3.geomID != 3) return false;
 
-#if defined(RTCORE_RAY_PACKETS)
-          if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT4))
-          {
-            RTCRay4 ray4; memset(&ray4,0,sizeof(ray4));
-            setRay(ray4,0,ray0);
-            setRay(ray4,1,ray1);
-            setRay(ray4,2,ray2);
-            setRay(ray4,3,ray3);
-            __aligned(16) int valid4[4] = { -1,-1,-1,-1 };
-            rtcIntersect4(valid4,scene,ray4);
-            if (ray4.geomID[0] != 0 || 
-                ray4.geomID[1] != 1 || 
-                ray4.geomID[2] != 2 || 
-                ray4.geomID[3] != 3) return false;
-          }
-          
-          if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT8))
-          {
-            RTCRay8 ray8; memset(&ray8,0,sizeof(ray8));
-            setRay(ray8,0,ray0);
-            setRay(ray8,1,ray1);
-            setRay(ray8,2,ray2);
-            setRay(ray8,3,ray3);
-            __aligned(32) int valid8[8] = { -1,-1,-1,-1, 0, 0, 0, 0 };
-            rtcIntersect8(valid8,scene,ray8);
-            if (ray8.geomID[0] != 0 || 
-                ray8.geomID[1] != 1 || 
-                ray8.geomID[2] != 2 || 
-                ray8.geomID[3] != 3) return false;
-          }
-          
-          if (rtcDeviceGetParameter1i(state->device,RTC_CONFIG_INTERSECT16))
-          {
-            RTCRay16 ray16; memset(&ray16,0,sizeof(ray16));
-            setRay(ray16,0,ray0);
-            setRay(ray16,1,ray1);
-            setRay(ray16,2,ray2);
-            setRay(ray16,3,ray3);
-            __aligned(64) int valid16[16] = { -1,-1,-1,-1,+0,+0,+0,+0, 
-                                              +0,+0,+0,+0,+0,+0,+0,+0 };
-            rtcIntersect16(valid16,scene,ray16);
-            if (ray16.geomID[0] != 0 || 
-                ray16.geomID[1] != 1 || 
-                ray16.geomID[2] != 2 || 
-                ray16.geomID[3] != 3) return false;
-          }
-#endif
+        RTCRay ray0 = makeRay(pos0+Vec3fa(0,10,0),Vec3fa(0,-1,0)); // hits geomID == 0
+        RTCRay ray1 = makeRay(pos1+Vec3fa(0,10,0),Vec3fa(0,-1,0)); // hits geomID == 1
+        RTCRay ray2 = makeRay(pos2+Vec3fa(0,10,0),Vec3fa(0,-1,0)); // hits geomID == 2
+        RTCRay ray3 = makeRay(pos3+Vec3fa(0,10,0),Vec3fa(0,-1,0)); // hits geomID == 3
+        RTCRay testRays[4] = { ray0, ray1, ray2, ray3 };
+
+        const size_t maxRays = 100;
+        RTCRay rays[maxRays];
+        for (size_t numRays=1; numRays<maxRays; numRays++) {
+          for (size_t i=0; i<numRays; i++) rays[i] = testRays[i%4];
+          IntersectWithMode(imode,VARIANT_INTERSECT,scene,rays,numRays); // FIXME: more variants
+          for (size_t i=0; i<numRays; i++) if (rays[i].geomID != i%4) return false;
         }
       }
       scene = nullptr;
       return true;
     }
-    
-  public:
-    RTCGeometryFlags flags;
   };
   
   struct RayMasksTest : public VerifyApplication::Test
@@ -3005,6 +2957,10 @@ namespace embree
     sceneFlagsRobust.push_back(RTC_SCENE_DYNAMIC | RTC_SCENE_ROBUST);
     sceneFlagsRobust.push_back(RTC_SCENE_DYNAMIC | RTC_SCENE_ROBUST | RTC_SCENE_COMPACT);
 
+    sceneFlagsDynamic.push_back(RTC_SCENE_DYNAMIC);
+    sceneFlagsDynamic.push_back(RTC_SCENE_DYNAMIC | RTC_SCENE_ROBUST);
+    sceneFlagsDynamic.push_back(RTC_SCENE_DYNAMIC | RTC_SCENE_COMPACT);
+
     /* add all tests */
     addTest(new InitExitTest("init_exit"));
     addTest(new MultipleDevicesTest("multiple_devices"));
@@ -3019,7 +2975,6 @@ namespace embree
       addTest(new EmptyGeometryTest("empty_geometry_"+to_string(sflags),sflags,RTC_GEOMETRY_STATIC));
     endTestGroup();
 
-    // FIXME: add test with empty meshes
     addTest(new BaryDistanceTest("bary_distance_robust"));
 
     addTest(new FlagsTest("flags_static_static"     ,VerifyApplication::PASS, RTC_SCENE_STATIC, RTC_GEOMETRY_STATIC));
@@ -3036,8 +2991,15 @@ namespace embree
     addTest(new DynamicEnableDisableTest("dynamic_enable_disable"));
     addTest(new GetUserDataTest("get_user_data"));
 
-    addTest(new UpdateTest("update_deformable",RTC_GEOMETRY_DEFORMABLE));
-    addTest(new UpdateTest("update_dynamic",RTC_GEOMETRY_DYNAMIC));
+    beginTestGroup("update");
+    for (auto sflags : sceneFlagsDynamic) {
+      for (auto imode : intersectModes) {
+        addTest(new UpdateTest("update_deformable_"+to_string(sflags)+"_"+to_string(imode),sflags,RTC_GEOMETRY_DEFORMABLE,imode));
+        addTest(new UpdateTest("update_dynamic_"+to_string(sflags)+"_"+to_string(imode),sflags,RTC_GEOMETRY_DYNAMIC,imode));
+      }
+    }
+    endTestGroup();
+
     addTest(new OverlappingTrianglesTest("overlapping_triangles",100000));
     addTest(new OverlappingHairTest("overlapping_hair",100000));
     addTest(new NewDeleteGeometryTest("new_delete_geometry"));
