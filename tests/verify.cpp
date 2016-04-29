@@ -699,6 +699,63 @@ namespace embree
     }
   };
 
+  struct NewDeleteGeometryTest : public VerifyApplication::Test
+  {
+    NewDeleteGeometryTest (std::string name)
+      : VerifyApplication::Test(name,VerifyApplication::PASS) {}
+    
+    bool run(VerifyApplication* state)
+    {
+      ClearBuffers clear_before_return;
+      RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_DYNAMIC,aflags_all);
+      AssertNoError(state->device);
+      int geom[128];
+      for (size_t i=0; i<128; i++) geom[i] = -1;
+      Sphere spheres[128];
+      memset(spheres,0,sizeof(spheres));
+      
+      for (size_t i=0; i<size_t(50*state->intensity); i++) 
+      {
+        for (size_t j=0; j<10; j++) {
+          int index = random<int>()%128;
+          Vec3fa pos = 100.0f*Vec3fa(drand48(),drand48(),drand48());
+          if (geom[index] == -1) {
+            switch (random<int>()%4) {
+            case 0: geom[index] = addSphere(state->device,scene,RTC_GEOMETRY_STATIC,pos,2.0f,10); break;
+            case 1: geom[index] = addHair  (state->device,scene,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,10); break;
+            case 2: geom[index] = addSubdivSphere(state->device,scene,RTC_GEOMETRY_STATIC,pos,2.0f,4,4); break;
+            case 3: 
+              spheres[index] = Sphere(pos,2.0f);
+              geom[index] = addUserGeometryEmpty(state->device,MODE_INTERSECT_NONE,scene,&spheres[index]); break;
+            }
+            AssertNoError(state->device);
+          }
+          else { 
+            rtcDeleteGeometry(scene,geom[index]);     
+            AssertNoError(state->device);
+            geom[index] = -1; 
+          }
+        }
+        rtcCommit(scene);
+        AssertNoError(state->device);
+        rtcCommit(scene);
+        AssertNoError(state->device);
+        if (i%2 == 0) std::cout << "." << std::flush;
+      }
+      
+      /* now delete all geometries */
+      for (size_t i=0; i<128; i++) 
+        if (geom[i] != -1) rtcDeleteGeometry(scene,geom[i]);
+      rtcCommit(scene);
+      AssertNoError(state->device);
+
+      rtcCommit (scene);
+      AssertNoError(state->device);
+      scene = nullptr;
+      return true;
+    }
+  };
+
   struct EnableDisableTest : public VerifyApplication::Test
   {
     EnableDisableTest (std::string name)
@@ -746,22 +803,6 @@ namespace embree
       return true;
     }
   };
-
-  void move_mesh_vec3f(const RTCSceneRef& scene, unsigned mesh, size_t numVertices, Vec3fa& pos) 
-  {
-    Vertex3f* vertices = (Vertex3f*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
-    for (size_t i=0; i<numVertices; i++) vertices[i] += Vertex3f(pos);
-    rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER);
-    rtcUpdate(scene,mesh);
-  }
-
-  void move_mesh_vec3fa(const RTCSceneRef& scene, unsigned mesh, size_t numVertices, Vec3fa& pos) 
-  {
-    Vertex3fa* vertices = (Vertex3fa*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
-    for (size_t i=0; i<numVertices; i++) vertices[i] += Vertex3fa(pos);
-    rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER);
-    rtcUpdate(scene,mesh);
-  }
   
   struct UpdateTest : public VerifyApplication::Test
   {
@@ -772,6 +813,22 @@ namespace embree
     UpdateTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode)
       : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), gflags(gflags), imode(imode) {}
     
+    static void move_mesh_vec3f(const RTCSceneRef& scene, unsigned mesh, size_t numVertices, Vec3fa& pos) 
+    {
+      Vertex3f* vertices = (Vertex3f*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
+      for (size_t i=0; i<numVertices; i++) vertices[i] += Vertex3f(pos);
+      rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER);
+      rtcUpdate(scene,mesh);
+    }
+    
+    static void move_mesh_vec3fa(const RTCSceneRef& scene, unsigned mesh, size_t numVertices, Vec3fa& pos) 
+    {
+      Vertex3fa* vertices = (Vertex3fa*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
+      for (size_t i=0; i<numVertices; i++) vertices[i] += Vertex3fa(pos);
+      rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER);
+      rtcUpdate(scene,mesh);
+    }
+
     bool run(VerifyApplication* state)
     {
       ClearBuffers clear_before_return;
@@ -1717,63 +1774,6 @@ namespace embree
         }
       }
       return passed;
-    }
-  };
-
-  struct NewDeleteGeometryTest : public VerifyApplication::Test
-  {
-    NewDeleteGeometryTest (std::string name)
-      : VerifyApplication::Test(name,VerifyApplication::PASS) {}
-    
-    bool run(VerifyApplication* state)
-    {
-      ClearBuffers clear_before_return;
-      RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_DYNAMIC,aflags_all);
-      AssertNoError(state->device);
-      int geom[128];
-      for (size_t i=0; i<128; i++) geom[i] = -1;
-      Sphere spheres[128];
-      memset(spheres,0,sizeof(spheres));
-      
-      for (size_t i=0; i<size_t(50*state->intensity); i++) 
-      {
-        for (size_t j=0; j<10; j++) {
-          int index = random<int>()%128;
-          Vec3fa pos = 100.0f*Vec3fa(drand48(),drand48(),drand48());
-          if (geom[index] == -1) {
-            switch (random<int>()%4) {
-            case 0: geom[index] = addSphere(state->device,scene,RTC_GEOMETRY_STATIC,pos,2.0f,10); break;
-            case 1: geom[index] = addHair  (state->device,scene,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,10); break;
-            case 2: geom[index] = addSubdivSphere(state->device,scene,RTC_GEOMETRY_STATIC,pos,2.0f,4,4); break;
-            case 3: 
-              spheres[index] = Sphere(pos,2.0f);
-              geom[index] = addUserGeometryEmpty(state->device,MODE_INTERSECT_NONE,scene,&spheres[index]); break;
-            }
-            AssertNoError(state->device);
-          }
-          else { 
-            rtcDeleteGeometry(scene,geom[index]);     
-            AssertNoError(state->device);
-            geom[index] = -1; 
-          }
-        }
-        rtcCommit(scene);
-        AssertNoError(state->device);
-        rtcCommit(scene);
-        AssertNoError(state->device);
-        if (i%2 == 0) std::cout << "." << std::flush;
-      }
-      
-      /* now delete all geometries */
-      for (size_t i=0; i<128; i++) 
-        if (geom[i] != -1) rtcDeleteGeometry(scene,geom[i]);
-      rtcCommit(scene);
-      AssertNoError(state->device);
-
-      rtcCommit (scene);
-      AssertNoError(state->device);
-      scene = nullptr;
-      return true;
     }
   };
 
@@ -2758,6 +2758,8 @@ namespace embree
         addTest(new BuildTest("build_"+to_string(sflags)+"_"+to_string(imode),sflags,RTC_GEOMETRY_STATIC,imode));
     endTestGroup();
 
+    addTest(new NewDeleteGeometryTest("new_delete_geometry"));
+
     addTest(new EnableDisableTest("enable_disable"));
 
     beginTestGroup("update");
@@ -2780,13 +2782,10 @@ namespace embree
     
     addTest(new UnmappedBeforeCommitTest("unmapped_before_commit"));
     addTest(new GetBoundsTest("get_bounds"));
-
-    
     addTest(new GetUserDataTest("get_user_data"));
     
     addTest(new OverlappingTrianglesTest("overlapping_triangles",100000));
     addTest(new OverlappingHairTest("overlapping_hair",100000));
-    addTest(new NewDeleteGeometryTest("new_delete_geometry"));
 
     beginTestGroup("interpolate_subdiv");
     for (auto s : { 4,5,8,11,12,15 })
