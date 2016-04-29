@@ -58,7 +58,7 @@ namespace embree
     template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
     void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, const RTCIntersectContext* context)
     {
-      __aligned(64) RayContext ray_ctx[MAX_RAYS_PER_OCTANT];
+      __aligned(64) RContext ray_ctx[MAX_RAYS_PER_OCTANT];
       __aligned(64) Precalculations pre[MAX_RAYS_PER_OCTANT]; 
       __aligned(64) StackItemMask  stack0[stackSizeSingle];  //!< stack of nodes 
       __aligned(64) StackItemMask  stack1[stackSizeSingle];  //!< stack of nodes 
@@ -73,7 +73,7 @@ namespace embree
         assert(m_active);
 
         for (size_t i=0; i<numOctantRays; i++) {
-          new (&ray_ctx[i]) RayContext(rays[i]);
+          new (&ray_ctx[i]) RContext(rays[i]);
           new (&pre[i]) Precalculations(*rays[i],bvh);
         }
 
@@ -161,7 +161,7 @@ namespace embree
             {            
               STAT3(normal.trav_nodes,1,1,1);                          
               const size_t i = __bscf(bits);
-              const RayContext &ray = ray_ctx[i];
+              const RContext &ray = ray_ctx[i];
               const vfloat<K> tNearFarX = msub(bminmaxX, ray.rdir.x, ray.org_rdir.x);
               const vfloat<K> tNearFarY = msub(bminmaxY, ray.rdir.y, ray.org_rdir.y);
               const vfloat<K> tNearFarZ = msub(bminmaxZ, ray.rdir.z, ray.org_rdir.z);
@@ -200,16 +200,16 @@ namespace embree
             vint<K>   maskK(zero);
 
 #if !TWO_STREAMS_FIBER_MODE
-            const RayContext *__restrict__ const cur_ray_ctx = ray_ctx;
+            const RContext *__restrict__ const cur_ray_ctx = ray_ctx;
 #else
-            const RayContext *__restrict__ const cur_ray_ctx = &ray_ctx[cur_fiber->getOffset()];
+            const RContext *__restrict__ const cur_ray_ctx = &ray_ctx[cur_fiber->getOffset()];
 #endif
             size_t bits = m_trav_active;
             do
             {            
               STAT3(normal.trav_nodes,1,1,1);                          
               const size_t i = __bscf(bits);
-              const RayContext &ray = cur_ray_ctx[i];
+              const RContext &ray = cur_ray_ctx[i];
 #if 1
               const vint<K> bitmask  = vint<K>((int)1 << i);
 
@@ -312,7 +312,7 @@ namespace embree
               size_t bits = mask & valid_isec;
               while (bits) {
                 const size_t i = __bscf(bits);
-                const RayContext &ray = ray_ctx[i];
+                const RContext &ray = ray_ctx[i];
                 const size_t mask_i = (sptr->dist > ray.tfar_ui()) ? ((size_t)1 << i) : 0;
                 mask &= ~mask_i;
               };
@@ -343,7 +343,7 @@ namespace embree
     template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
     void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::occluded(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, const RTCIntersectContext* context)
     {
-      __aligned(64) RayContext ray_ctx[MAX_RAYS_PER_OCTANT];
+      __aligned(64) RContext ray_ctx[MAX_RAYS_PER_OCTANT];
       __aligned(64) Precalculations pre[MAX_RAYS_PER_OCTANT]; 
       __aligned(64) StackItemMask  stack0[stackSizeSingle];  //!< stack of nodes 
       __aligned(64) StackItemMask  stack1[stackSizeSingle];  //!< stack of nodes 
@@ -356,7 +356,7 @@ namespace embree
         size_t m_active = numOctantRays ==  8*sizeof(size_t) ? (size_t)-1 : (((size_t)1 << numOctantRays))-1;
 
         for (size_t i=0; i<numOctantRays; i++) {
-          new (&ray_ctx[i]) RayContext(rays[i]);
+          new (&ray_ctx[i]) RContext(rays[i]);
           new (&pre[i]) Precalculations(*rays[i],bvh);
         }
 
@@ -438,7 +438,7 @@ namespace embree
               STAT3(shadow.trav_nodes,1,1,1);                          
               const size_t i = __bscf(bits);
               assert(i<MAX_RAYS_PER_OCTANT);
-              RayContext &ray = ray_ctx[i];
+              RContext &ray = ray_ctx[i];
               const vfloat<K> tNearFarX = msub(bminmaxX, ray.rdir.x, ray.org_rdir.x);
               const vfloat<K> tNearFarY = msub(bminmaxY, ray.rdir.y, ray.org_rdir.y);
               const vfloat<K> tNearFarZ = msub(bminmaxZ, ray.rdir.z, ray.org_rdir.z);
@@ -477,9 +477,9 @@ namespace embree
             vint<K>   maskK(zero);
 
 #if !TWO_STREAMS_FIBER_MODE
-            const RayContext *__restrict__ const cur_ray_ctx = ray_ctx;
+            const RContext *__restrict__ const cur_ray_ctx = ray_ctx;
 #else
-            const RayContext *__restrict__ const cur_ray_ctx = &ray_ctx[cur_fiber->getOffset()];
+            const RContext *__restrict__ const cur_ray_ctx = &ray_ctx[cur_fiber->getOffset()];
 #endif
             size_t bits = m_trav_active;
 
@@ -488,7 +488,7 @@ namespace embree
             {            
               STAT3(shadow.trav_nodes,1,1,1);                          
               const size_t i = __bscf(bits);
-              const RayContext &ray = cur_ray_ctx[i];
+              const RContext &ray = cur_ray_ctx[i];
               const vfloat<K> tNearX = msub(bminX, ray.rdir.x, ray.org_rdir.x);
               const vfloat<K> tNearY = msub(bminY, ray.rdir.y, ray.org_rdir.y);
               const vfloat<K> tNearZ = msub(bminZ, ray.rdir.z, ray.org_rdir.z);

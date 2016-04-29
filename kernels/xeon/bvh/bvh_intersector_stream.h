@@ -180,6 +180,98 @@ namespace embree
 
     };
 
+    template<int K, bool robust>
+    struct __aligned(32) RayContext 
+    {
+    public:
+      Vec3fa rdir;      //     rdir.w = tnear;
+      Vec3fa org_rdir;  // org_rdir.w = tfar;        
+
+    public:
+
+      __forceinline RayContext() {}
+
+      __forceinline RayContext(Ray* ray)
+      {
+#if defined(__AVX512F__)
+        vfloat<K> org(vfloat4(ray->org));
+        vfloat<K> dir(vfloat4(ray->dir));
+        vfloat<K> rdir       = select(0x7777,rcp_safe(dir),ray->tnear);
+        vfloat<K> org_rdir   = select(0x7777,org * rdir,ray->tfar);
+        vfloat<K> res = select(0xf,rdir,org_rdir);
+        vfloat8 r = extractf256bit(res);
+        *(vfloat8*)this = r;          
+#else
+        Vec3fa& org = ray->org;
+        Vec3fa& dir = ray->dir;
+        rdir       = rcp_safe(dir);
+        org_rdir   = org * rdir;
+        rdir.w     = ray->tnear;
+        org_rdir.w = ray->tfar;
+#endif
+      }
+
+      __forceinline void update(const Ray* ray) {
+        org_rdir.w = ray->tfar;
+      }
+
+      __forceinline unsigned int tfar_ui() const {
+        return *(unsigned int*)&org_rdir.w;
+      }
+
+      __forceinline float tfar() const {
+        return org_rdir.w;
+      }
+
+#if defined(__AVX512F__)
+      __forceinline vbool<K> intersectNode(const vfloat<K> &bminmaxX,
+                                           const vfloat<K> &bminmaxY,
+                                           const vfloat<K> &bminmaxZ,
+                                           vfloat<K> &dist) const
+      {
+        const vfloat<K> tNearFarX = msub(bminmaxX, rdir.x, org_rdir.x);
+        const vfloat<K> tNearFarY = msub(bminmaxY, rdir.y, org_rdir.y);
+        const vfloat<K> tNearFarZ = msub(bminmaxZ, rdir.z, org_rdir.z);
+        const vfloat<K> tNear     = max(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(rdir.w));
+        const vfloat<K> tFar      = min(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(org_rdir.w));
+        const vbool<K> vmask      = le(tNear,align_shift_right<8>(tFar,tFar));  
+        dist   = select(vmask,min(tNear,dist),dist);
+        return vmask;       
+      }
+#endif
+
+
+      __forceinline vbool<K> intersectNode(const vfloat<K> &bminX,
+                                           const vfloat<K> &bminY,
+                                           const vfloat<K> &bminZ,
+                                           const vfloat<K> &bmaxX,
+                                           const vfloat<K> &bmaxY,
+                                           const vfloat<K> &bmaxZ,
+                                           vfloat<K> &dist) const
+      {
+        const vfloat<K> tNearX = msub(bminX, rdir.x, org_rdir.x);
+        const vfloat<K> tNearY = msub(bminY, rdir.y, org_rdir.y);
+        const vfloat<K> tNearZ = msub(bminZ, rdir.z, org_rdir.z);
+        const vfloat<K> tFarX  = msub(bmaxX, rdir.x, org_rdir.x);
+        const vfloat<K> tFarY  = msub(bmaxY, rdir.y, org_rdir.y);
+        const vfloat<K> tFarZ  = msub(bmaxZ, rdir.z, org_rdir.z);
+#if defined(__AVX2__)
+        const vfloat<K> tNear  = maxi(maxi(tNearX,tNearY),maxi(tNearZ,vfloat<K>(rdir.w)));
+        const vfloat<K> tFar   = mini(mini(tFarX,tFarY),mini(tFarZ,vfloat<K>(org_rdir.w)));
+        const vbool<K> vmask   = tNear <= tFar;
+        dist   = select(vmask,min(tNear,dist),dist);
+#else
+        const vfloat<K> tNear  = max(tNearX,tNearY,tNearZ,vfloat<K>(rdir.w));
+        const vfloat<K> tFar   = min(tFarX ,tFarY ,tFarZ ,vfloat<K>(org_rdir.w));
+        const vbool<K> vmask   = tNear <= tFar;
+        dist   = select(vmask,min(tNear,dist),dist);
+#endif
+        return vmask;    
+      }
+
+    };
+
+
     /*! BVH ray stream intersector. */
     template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
       class BVHNStreamIntersector
@@ -188,6 +280,7 @@ namespace embree
       typedef typename PrimitiveIntersector::Precalculations Precalculations;
       typedef typename PrimitiveIntersector::Primitive Primitive;
       typedef BVHN<N> BVH;
+      typedef RayContext<K,robust> RContext;
       typedef typename BVH::NodeRef NodeRef;
       typedef typename BVH::BaseNode BaseNode;
       typedef typename BVH::Node Node;
@@ -198,95 +291,6 @@ namespace embree
         1+(N-1)*BVH::maxDepth+   // standard depth
         1+(N-1)*BVH::maxDepth;   // transform feature
 
-      struct __aligned(32) RayContext 
-      {
-      public:
-        Vec3fa rdir;      //     rdir.w = tnear;
-        Vec3fa org_rdir;  // org_rdir.w = tfar;        
-
-      public:
-
-        __forceinline RayContext() {}
-
-        __forceinline RayContext(Ray* ray)
-        {
-#if defined(__AVX512F__)
-          vfloat<K> org(vfloat4(ray->org));
-          vfloat<K> dir(vfloat4(ray->dir));
-          vfloat<K> rdir       = select(0x7777,rcp_safe(dir),ray->tnear);
-          vfloat<K> org_rdir   = select(0x7777,org * rdir,ray->tfar);
-          vfloat<K> res = select(0xf,rdir,org_rdir);
-          vfloat8 r = extractf256bit(res);
-          *(vfloat8*)this = r;          
-#else
-          Vec3fa& org = ray->org;
-          Vec3fa& dir = ray->dir;
-          rdir       = rcp_safe(dir);
-          org_rdir   = org * rdir;
-          rdir.w     = ray->tnear;
-          org_rdir.w = ray->tfar;
-#endif
-        }
-
-        __forceinline void update(const Ray* ray) {
-          org_rdir.w = ray->tfar;
-        }
-
-        __forceinline unsigned int tfar_ui() const {
-          return *(unsigned int*)&org_rdir.w;
-        }
-
-        __forceinline float tfar() const {
-          return org_rdir.w;
-        }
-
-#if defined(__AVX512F__)
-        __forceinline vbool<K> intersectNode(const vfloat<K> &bminmaxX,
-                                             const vfloat<K> &bminmaxY,
-                                             const vfloat<K> &bminmaxZ,
-                                             vfloat<K> &dist) const
-        {
-          const vfloat<K> tNearFarX = msub(bminmaxX, rdir.x, org_rdir.x);
-          const vfloat<K> tNearFarY = msub(bminmaxY, rdir.y, org_rdir.y);
-          const vfloat<K> tNearFarZ = msub(bminmaxZ, rdir.z, org_rdir.z);
-          const vfloat<K> tNear     = max(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(rdir.w));
-          const vfloat<K> tFar      = min(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(org_rdir.w));
-          const vbool<K> vmask      = le(tNear,align_shift_right<8>(tFar,tFar));  
-          dist   = select(vmask,min(tNear,dist),dist);
-          return vmask;       
-        }
-#endif
-
-
-        __forceinline vbool<K> intersectNode(const vfloat<K> &bminX,
-                                             const vfloat<K> &bminY,
-                                             const vfloat<K> &bminZ,
-                                             const vfloat<K> &bmaxX,
-                                             const vfloat<K> &bmaxY,
-                                             const vfloat<K> &bmaxZ,
-                                             vfloat<K> &dist) const
-        {
-          const vfloat<K> tNearX = msub(bminX, rdir.x, org_rdir.x);
-          const vfloat<K> tNearY = msub(bminY, rdir.y, org_rdir.y);
-          const vfloat<K> tNearZ = msub(bminZ, rdir.z, org_rdir.z);
-          const vfloat<K> tFarX  = msub(bmaxX, rdir.x, org_rdir.x);
-          const vfloat<K> tFarY  = msub(bmaxY, rdir.y, org_rdir.y);
-          const vfloat<K> tFarZ  = msub(bmaxZ, rdir.z, org_rdir.z);
-#if defined(__AVX2__)
-          const vfloat<K> tNear  = maxi(maxi(tNearX,tNearY),maxi(tNearZ,vfloat<K>(rdir.w)));
-          const vfloat<K> tFar   = mini(mini(tFarX,tFarY),mini(tFarZ,vfloat<K>(org_rdir.w)));
-          const vbool<K> vmask   = tNear <= tFar;
-          dist   = select(vmask,min(tNear,dist),dist);
-#else
-          const vfloat<K> tNear  = max(tNearX,tNearY,tNearZ,vfloat<K>(rdir.w));
-          const vfloat<K> tFar   = min(tFarX ,tFarY ,tFarZ ,vfloat<K>(org_rdir.w));
-          const vbool<K> vmask   = tNear <= tFar;
-          dist   = select(vmask,min(tNear,dist),dist);
-#endif
-          return vmask;    
-        }
-
-      };
 
       struct __aligned(32) RayFiberContext {
         NodeRef node;
@@ -373,6 +377,7 @@ namespace embree
       static void intersect(BVH* bvh, Ray **ray, size_t numRays, const RTCIntersectContext* context);
       static void occluded (BVH* bvh, Ray **ray, size_t numRays, const RTCIntersectContext* context);
     };
+
 
   }
 }
