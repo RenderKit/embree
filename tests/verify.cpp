@@ -764,31 +764,6 @@ namespace embree
     }
   };
   
-  struct StaticSceneTest : public VerifyApplication::Test
-  {
-    StaticSceneTest (std::string name)
-      : VerifyApplication::Test(name,VerifyApplication::PASS) {}
-
-    bool run(VerifyApplication* state)
-    {
-      ClearBuffers clear_before_return;
-      RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_STATIC,aflags);
-      AssertNoError(state->device);
-      unsigned geom0 = addSphere(state->device,scene,RTC_GEOMETRY_STATIC,zero,1.0f,50);
-      AssertNoError(state->device);
-      unsigned geom1 = addSubdivSphere(state->device,scene,RTC_GEOMETRY_STATIC,zero,1.0f,10,16);
-      AssertNoError(state->device);
-      unsigned geom2 = addHair(state->device,scene,RTC_GEOMETRY_STATIC,Vec3fa(0,0,0),1.0f,0.5f,100);
-      AssertNoError(state->device);
-      rtcCommit (scene);
-      AssertNoError(state->device);
-      rtcDisable(scene,geom0); // static scene cannot get modified anymore after commit
-      AssertAnyError(state->device);
-      scene = nullptr;
-      return true;
-    }
-  };
-
   struct UnmappedBeforeCommitTest : public VerifyApplication::Test
   {
     UnmappedBeforeCommitTest (std::string name)
@@ -880,9 +855,9 @@ namespace embree
     }
   };
   
-  struct DynamicEnableDisableTest : public VerifyApplication::Test
+  struct EnableDisableTest : public VerifyApplication::Test
   {
-    DynamicEnableDisableTest (std::string name)
+    EnableDisableTest (std::string name)
       : VerifyApplication::Test(name,VerifyApplication::PASS) {}
     
     bool run(VerifyApplication* state)
@@ -1110,7 +1085,19 @@ namespace embree
       addSphere(state->device,scene,gflags,zero,1E-24f,50);
       addHair(state->device,scene,gflags,zero,1E-24f,1E-26f,100,1E-26f);
       rtcCommit (scene);
+      AssertNoError(state->device);
+      if ((sflags & RTC_SCENE_DYNAMIC) == 0) {
+        rtcDisable(scene,0);
+        AssertAnyError(state->device);
+        rtcDisable(scene,1);
+        AssertAnyError(state->device);
+        rtcDisable(scene,2);
+        AssertAnyError(state->device);
+        rtcDisable(scene,3);
+        AssertAnyError(state->device);
+      }
       scene = nullptr;
+      AssertNoError(state->device);
       return true;
     }
   };
@@ -1404,7 +1391,7 @@ namespace embree
     IntersectMode imode;
     std::string model;
     Vec3fa pos;
-    static const size_t N = 10;
+    static const size_t N = 5;
     static const size_t maxStreamSize = 100;
     
     WatertightTest (std::string name, RTCSceneFlags sflags, IntersectMode imode, std::string model, const Vec3fa& pos)
@@ -2771,22 +2758,6 @@ namespace embree
         addTest(new BuildTest("build_"+to_string(sflags)+"_"+to_string(imode),sflags,RTC_GEOMETRY_STATIC,imode));
     endTestGroup();
 
-    addTest(new BaryDistanceTest("bary_distance_robust"));
-
-    addTest(new FlagsTest("flags_static_static"     ,VerifyApplication::PASS, RTC_SCENE_STATIC, RTC_GEOMETRY_STATIC));
-    addTest(new FlagsTest("flags_static_deformable" ,VerifyApplication::FAIL, RTC_SCENE_STATIC, RTC_GEOMETRY_DEFORMABLE));
-    addTest(new FlagsTest("flags_static_dynamic"    ,VerifyApplication::FAIL, RTC_SCENE_STATIC, RTC_GEOMETRY_DYNAMIC));
-    addTest(new FlagsTest("flags_dynamic_static"    ,VerifyApplication::PASS, RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC));
-    addTest(new FlagsTest("flags_dynamic_deformable",VerifyApplication::PASS, RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DEFORMABLE));
-    addTest(new FlagsTest("flags_dynamic_dynamic"   ,VerifyApplication::PASS, RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DYNAMIC));
-    
-    addTest(new StaticSceneTest("static_scene"));
-    addTest(new UnmappedBeforeCommitTest("unmapped_before_commit"));
-    addTest(new GetBoundsTest("get_bounds"));
-
-    addTest(new DynamicEnableDisableTest("dynamic_enable_disable"));
-    addTest(new GetUserDataTest("get_user_data"));
-
     beginTestGroup("update");
     for (auto sflags : sceneFlagsDynamic) {
       for (auto imode : intersectModes) {
@@ -2796,6 +2767,23 @@ namespace embree
     }
     endTestGroup();
 
+    addTest(new EnableDisableTest("enable_disable"));
+
+    addTest(new BaryDistanceTest("bary_distance_robust"));
+
+    addTest(new FlagsTest("flags_static_static"     ,VerifyApplication::PASS, RTC_SCENE_STATIC, RTC_GEOMETRY_STATIC));
+    addTest(new FlagsTest("flags_static_deformable" ,VerifyApplication::FAIL, RTC_SCENE_STATIC, RTC_GEOMETRY_DEFORMABLE));
+    addTest(new FlagsTest("flags_static_dynamic"    ,VerifyApplication::FAIL, RTC_SCENE_STATIC, RTC_GEOMETRY_DYNAMIC));
+    addTest(new FlagsTest("flags_dynamic_static"    ,VerifyApplication::PASS, RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC));
+    addTest(new FlagsTest("flags_dynamic_deformable",VerifyApplication::PASS, RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DEFORMABLE));
+    addTest(new FlagsTest("flags_dynamic_dynamic"   ,VerifyApplication::PASS, RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DYNAMIC));
+    
+    addTest(new UnmappedBeforeCommitTest("unmapped_before_commit"));
+    addTest(new GetBoundsTest("get_bounds"));
+
+    
+    addTest(new GetUserDataTest("get_user_data"));
+    
     addTest(new OverlappingTrianglesTest("overlapping_triangles",100000));
     addTest(new OverlappingHairTest("overlapping_hair",100000));
     addTest(new NewDeleteGeometryTest("new_delete_geometry"));
