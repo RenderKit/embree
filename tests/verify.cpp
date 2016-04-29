@@ -680,6 +680,19 @@ namespace embree
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
 
+  struct InitExitTest : public VerifyApplication::Test
+  {
+    InitExitTest (std::string name)
+      : VerifyApplication::Test(name,VerifyApplication::PASS) {}
+
+    bool run(VerifyApplication* state)
+    {
+      rtcInit("verbose=1");
+      error_handler(rtcGetError());
+      rtcExit();
+      return true;
+    }
+  };
 
   struct MultipleDevicesTest : public VerifyApplication::Test
   {
@@ -1766,9 +1779,7 @@ namespace embree
       AssertNoError(state->device);
       double failRate = double(numFailures) / double(numTests);
       bool failed = failRate > 0.00002;
-      
-      printf(" (%f%%)", 100.0f*failRate);
-      fflush(stdout);
+      //printf(" (%f%%)", 100.0f*failRate); fflush(stdout);
       return !failed;
     }
   };
@@ -1838,8 +1849,7 @@ namespace embree
       
       bool ok = (d2 < 2.5*d1) && (d3 < 2.5*d1) && (d4 < 2.5*d1);
       float f = max(d2/d1,d3/d1,d4/d1);
-      printf(" (%3.2fx)",f);
-      fflush(stdout);
+      //printf(" (%3.2fx)",f); fflush(stdout);
       return ok;
     }
   };
@@ -1921,8 +1931,7 @@ namespace embree
       
       bool ok = (d2 < 2.5*d1) && (d3 < 2.5*d1) && (d4 < 2.5*d1);// && (d5 < 2.5*d1);
       float f = max(d2/d1,d3/d1,d4/d1);//,d5/d1);
-      printf(" (%3.2fx)",f);
-      fflush(stdout);
+      //printf(" (%3.2fx)",f); fflush(stdout);
       return ok;
     }
   };
@@ -3083,7 +3092,7 @@ namespace embree
   };
 
   VerifyApplication::VerifyApplication ()
-    : Application(Application::FEATURE_RTCORE), device(nullptr), regressionN(200), numFailedTests(0), use_tests_to_run(false)
+    : Application(Application::FEATURE_RTCORE), device(nullptr), regressionN(200), numFailedTests(0), user_specified_tests(false), use_groups(true)
   {
     device = rtcNewDevice(rtcore.c_str());
 
@@ -3116,6 +3125,7 @@ namespace embree
     sceneFlagsRobust.push_back(RTC_SCENE_DYNAMIC | RTC_SCENE_ROBUST | RTC_SCENE_COMPACT);
 
     /* add all tests */
+    addTest(new InitExitTest("init_exit"));
     addTest(new MultipleDevicesTest("multiple_devices"));
     addTest(new EmptySceneTest("empty_static",RTC_SCENE_STATIC));
     addTest(new EmptySceneTest("empty_dynamic",RTC_SCENE_DYNAMIC));
@@ -3142,14 +3152,20 @@ namespace embree
     addTest(new OverlappingHairTest("overlapping_hair",100000));
     addTest(new NewDeleteGeometryTest("new_delete_geometry"));
 
-    for (auto s : { 4,5,8,11,12,15 }) 
+    beginTestGroup("interpolate_subdiv");
+    for (auto s : { 4,5,8,11,12,15 })
       addTest(new InterpolateSubdivTest("interpolate_subdiv_"+std::to_string(long(s)),s));
+    endTestGroup();
 
+    beginTestGroup("interpolate_triangles");
     for (auto s : { 4,5,8,11,12,15 }) 
       addTest(new InterpolateTrianglesTest("interpolate_triangles_"+std::to_string(long(s)),s));
+    endTestGroup();
 
+    beginTestGroup("interpolate_hair");
     for (auto s : { 4,5,8,11,12,15 }) 
       addTest(new InterpolateHairTest("interpolate_hair_"+std::to_string(long(s)),s));
+    endTestGroup();
 
     addTest(new BuildTest("build"));
 
@@ -3170,25 +3186,33 @@ namespace embree
       addTest(new BackfaceCullingTest("backface_culling"));
     }
 
+    beginTestGroup("inactive_rays");
     for (auto sflags : sceneFlags) 
         for (auto imode : intersectModes) 
           addTest(new InactiveRaysTest("inactive_rays_"+to_string(sflags)+"_"+to_string(imode),sflags,RTC_GEOMETRY_STATIC,imode));
-    
+    endTestGroup();
+
+    beginTestGroup("watertight");
     const Vec3fa watertight_pos = Vec3fa(148376.0f,1234.0f,-223423.0f);
     for (auto sflags : sceneFlagsRobust) 
       for (auto imode : intersectModes) 
         for (std::string model : {"sphere", "plane"}) 
           addTest(new WatertightTest("watertight_"+to_string(sflags)+"_"+model+"_"+to_string(imode),sflags,imode,model,watertight_pos));
-    
+    endTestGroup();
+
     if (rtcDeviceGetParameter1i(device,RTC_CONFIG_IGNORE_INVALID_RAYS))
     {
+      beginTestGroup("nan_test");
       for (auto sflags : sceneFlags) 
         for (auto imode : intersectModes) 
           addTest(new NaNTest("nan_test_"+to_string(sflags)+"_"+to_string(imode),sflags,RTC_GEOMETRY_STATIC,imode));
+      endTestGroup();
 
+      beginTestGroup("inf_test");
       for (auto sflags : sceneFlags) 
         for (auto imode : intersectModes) 
           addTest(new InfTest("inf_test_"+to_string(sflags)+"_"+to_string(imode),sflags,RTC_GEOMETRY_STATIC,imode));
+      endTestGroup();
     }
     
     addTest(new IntensiveRegressionTest("regression_static",rtcore_regression_static_thread,0));
@@ -3211,16 +3235,20 @@ namespace embree
     std::string run_docu = "--run <regexpr>: Runs all tests whose name match the regular expression. Supported tests are:";
     for (auto test : tests) run_docu += "\n  " + test->name;
     registerOption("run", [this] (Ref<ParseStream> cin, const FileName& path) {
-        use_tests_to_run = true;
+        user_specified_tests = true;
         std::smatch match;
         std::regex regexpr(cin->getString());
         for (auto test : tests) {
           if (std::regex_match(test->name, match, regexpr)) {
-            tests_to_run.push_back(test);
+            test->enabled = true;
           }
         }
       }, run_docu);
     
+    registerOption("no-groups", [this] (Ref<ParseStream> cin, const FileName& path) {
+        use_groups = false;
+      }, "--no-groups: ignore test groups");
+
     registerOption("regressions", [this] (Ref<ParseStream> cin, const FileName& path) {
         regressionN = cin->getInt();
       }, "--regressions <int>: number of regressions to perform");
@@ -3239,23 +3267,22 @@ namespace embree
     device = rtcNewDevice(rtcore.c_str());
     error_handler(rtcDeviceGetError(device));
 
-    /* execute specific user tests */
-    if (use_tests_to_run) 
-    {
-      for (auto test : tests_to_run) 
-        runTest(test);
-    } 
-    /* run all tests by default */
-    else 
-    {
-      /* print Embree version */
-      rtcInit("verbose=1");
-      error_handler(rtcGetError());
-      rtcExit();
-
-      /* run all available tests */
+    /* enable all tests if user did not specify any tests */
+    if (!user_specified_tests) 
       for (auto test : tests) 
-        runTest(test);
+        test->enabled = true;
+
+    /* run all enabled tests */
+    for (size_t i=0; i<tests.size(); i++) 
+    {
+      if (use_groups && tests[i]->ty == GROUP_BEGIN) {
+        if (tests[i]->enabled)
+          runTestGroup(i);
+      }
+      else {
+        if (tests[i]->enabled && tests[i]->ty != GROUP_BEGIN && tests[i]->ty != GROUP_END)
+          runTest(tests[i],false);
+      }
     }
 
     rtcDeleteDevice(device);
@@ -3276,22 +3303,43 @@ namespace embree
     name2test[test->name] = test;
   }
   
-  void VerifyApplication::runTest(Ref<Test> test)
+  bool VerifyApplication::runTest(Ref<Test> test, bool silent)
   {
     bool ok = true;
-    std::cout << std::setw(50) << test->name << " ..." << std::flush;
+    if (!silent)
+      std::cout << std::setw(50) << test->name << " ..." << std::flush;
+    
     try {
       ok &= test->run(this);
       AssertNoError(device);
     } catch (...) {
       ok = false;
     }
-    if ((test->ty == PASS) == ok) 
-      std::cout << GREEN(" [PASSED]") << std::endl << std::flush;
-    else {
-      std::cout << RED(" [FAILED]") << std::endl << std::flush;
-      numFailedTests++;
+    bool passed = (test->ty == PASS) == ok;
+
+    if (silent) {
+      if (passed) std::cout << GREEN("+") << std::flush;
+      else        std::cout << RED  ("-") << std::flush;
+    } else {
+      if (passed) std::cout << GREEN(" [PASSED]") << std::endl << std::flush;
+      else        std::cout << RED  (" [FAILED]") << std::endl << std::flush;
     }
+    numFailedTests += !passed;
+    return passed;
+  }
+
+  void VerifyApplication::runTestGroup(size_t& id)
+  {
+    bool ok = true;
+    Ref<Test> test = tests[id];
+    std::cout << std::setw(50) << test->name << " " << std::flush;
+
+    id++;
+    for (; id<tests.size() && tests[id]->ty != GROUP_END; id++)
+      ok &= runTest(tests[id],true);
+
+    if (ok) std::cout << GREEN(" [PASSED]") << std::endl << std::flush;
+    else    std::cout << RED  (" [FAILED]") << std::endl << std::flush;
   }
 }
 

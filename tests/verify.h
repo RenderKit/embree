@@ -26,18 +26,19 @@ namespace embree
   class VerifyApplication : public Application
   {
   public:
-    enum TestType { PASS, FAIL };
+    enum TestType { PASS, FAIL, GROUP_BEGIN, GROUP_END };
     
     struct Test : public RefCount
     {
       Test (std::string name, TestType ty = PASS) 
-        : name(name), ty(ty) {}
+        : name(name), ty(ty), enabled(false) {}
 
-      virtual bool run(VerifyApplication* state) = 0;
+      virtual bool run(VerifyApplication* state) { return false; };
 
     public:
       std::string name;
       TestType ty;
+      bool enabled;
     };
     
   public:
@@ -45,7 +46,10 @@ namespace embree
     VerifyApplication ();
 
     void addTest(Ref<Test> test);
-    void runTest(Ref<Test> test);
+    void beginTestGroup(std::string name) { addTest(new Test(name,GROUP_BEGIN)); }
+    void endTestGroup  () { addTest(new Test("",GROUP_END)); }
+    bool runTest(Ref<Test> test, bool silent);
+    void runTestGroup(size_t& id);
 
     int main(int argc, char** argv);
     
@@ -62,7 +66,7 @@ namespace embree
     std::vector<RTCSceneFlags> sceneFlags;
     std::vector<RTCSceneFlags> sceneFlagsRobust;
     std::vector<IntersectMode> intersectModes;
-    bool use_tests_to_run;
-    std::vector<Ref<Test>> tests_to_run;
+    bool user_specified_tests;
+    bool use_groups;
   };
 }
