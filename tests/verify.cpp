@@ -758,11 +758,11 @@ namespace embree
     }
   };
 
-  struct EnableDisableTest : public VerifyApplication::Test
+  struct EnableDisableGeometryTest : public VerifyApplication::Test
   {
     RTCSceneFlags sflags;
 
-    EnableDisableTest (std::string name, RTCSceneFlags sflags)
+    EnableDisableGeometryTest (std::string name, RTCSceneFlags sflags)
       : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags) {}
     
     bool run(VerifyApplication* state)
@@ -2767,9 +2767,9 @@ namespace embree
       addTest(new NewDeleteGeometryTest("new_delete_geometry_"+to_string(sflags),sflags));
     endTestGroup();
 
-    beginTestGroup("enable_disable");
+    beginTestGroup("enable_disable_geometry");
     for (auto sflags : sceneFlagsDynamic) 
-      addTest(new EnableDisableTest("enable_disable_"+to_string(sflags),sflags));
+      addTest(new EnableDisableGeometryTest("enable_disable_geometry_"+to_string(sflags),sflags));
     endTestGroup();
 
     beginTestGroup("update");
