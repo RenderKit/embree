@@ -2064,7 +2064,7 @@ namespace embree
     bool run(VerifyApplication* state)
     {
       ClearBuffers clear_before_return;
-      size_t numRays = 1000;
+      const size_t numRays = 1000;
       RTCRay rays[numRays];
       RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,to_aflags(imode));
       addSphere(state->device,scene,gflags,zero,2.0f,100);
