@@ -53,6 +53,118 @@ namespace embree
 #endif
     static_assert(MAX_RAYS_PER_OCTANT <= MAX_INTERNAL_STREAM_SIZE,"maximal internal stream size exceeded");
 
+    // =====================================================================================================
+    // =====================================================================================================
+    // =====================================================================================================
+
+
+#if defined(__AVX512F__)
+    template<int K, bool dist_update, bool robust>
+    __forceinline vbool<K> intersectNode(const RayContext<K,robust> &ctx,
+                                         const vfloat<K> &bminmaxX,
+                                         const vfloat<K> &bminmaxY,
+                                         const vfloat<K> &bminmaxZ,
+                                         vfloat<K> &dist)
+    {
+      if (!robust)
+      {
+        const vfloat<K> tNearFarX = msub(bminmaxX, ctx.rdir.x, ctx.org_rdir.x);
+        const vfloat<K> tNearFarY = msub(bminmaxY, ctx.rdir.y, ctx.org_rdir.y);
+        const vfloat<K> tNearFarZ = msub(bminmaxZ, ctx.rdir.z, ctx.org_rdir.z);
+        const vfloat<K> tNear     = max(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(ctx.rdir.w));
+        const vfloat<K> tFar      = min(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(ctx.org_rdir.w));
+        const vbool<K> vmask      = le(tNear,align_shift_right<8>(tFar,tFar));  
+        if (dist_update) dist     = select(vmask,min(tNear,dist),dist);
+        return vmask;       
+      }
+      else
+      {
+        const Vec3fa &org = ctx.org_rdir;
+        const vfloat<K> tNearFarX = (bminmaxX - org.x) * ctx.rdir.x; 
+        const vfloat<K> tNearFarY = (bminmaxY - org.y) * ctx.rdir.y;
+        const vfloat<K> tNearFarZ = (bminmaxZ - org.z) * ctx.rdir.z;
+        const vfloat<K> tNear     = max(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(ctx.rdir.w));
+        const vfloat<K> tFar      = min(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(org.w));
+        const float round_down    = 1.0f-2.0f*float(ulp); // FIXME: use per instruction rounding for AVX512
+        const float round_up      = 1.0f+2.0f*float(ulp);
+        const vbool<K> vmask      = le(tNear*round_down,align_shift_right<8>(tFar,tFar)*round_up);  
+        if (dist_update) dist     = select(vmask,min(tNear,dist),dist);
+        return vmask;       
+      }
+    }
+#endif
+
+    template<int K, bool dist_update, bool robust>
+    __forceinline vbool<K> intersectNode(const RayContext<K,robust> &ctx,
+                                         const vfloat<K> &bminX,
+                                         const vfloat<K> &bminY,
+                                         const vfloat<K> &bminZ,
+                                         const vfloat<K> &bmaxX,
+                                         const vfloat<K> &bmaxY,
+                                         const vfloat<K> &bmaxZ,
+                                         vfloat<K> &dist)
+    {
+      if (!robust)
+      {
+        const vfloat<K> tNearX = msub(bminX, ctx.rdir.x, ctx.org_rdir.x);
+        const vfloat<K> tNearY = msub(bminY, ctx.rdir.y, ctx.org_rdir.y);
+        const vfloat<K> tNearZ = msub(bminZ, ctx.rdir.z, ctx.org_rdir.z);
+        const vfloat<K> tFarX  = msub(bmaxX, ctx.rdir.x, ctx.org_rdir.x);
+        const vfloat<K> tFarY  = msub(bmaxY, ctx.rdir.y, ctx.org_rdir.y);
+        const vfloat<K> tFarZ  = msub(bmaxZ, ctx.rdir.z, ctx.org_rdir.z);
+
+#if defined(__AVX2__)
+        const vfloat<K> tNear  = maxi(maxi(tNearX,tNearY),maxi(tNearZ,vfloat<K>(ctx.rdir.w)));
+        const vfloat<K> tFar   = mini(mini(tFarX,tFarY),mini(tFarZ,vfloat<K>(ctx.org_rdir.w)));
+#else
+        const vfloat<K> tNear  = max(tNearX,tNearY,tNearZ,vfloat<K>(ctx.rdir.w));
+        const vfloat<K> tFar   = min(tFarX ,tFarY ,tFarZ ,vfloat<K>(ctx.org_rdir.w));
+#endif
+
+
+#if defined(__AVX512F__)
+        const unsigned int maskN = ((unsigned int)1 << N)-1;
+        const vbool<K> vmask   = le(maskN,tNear,tFar);        
+#else
+        const vbool<K> vmask   = tNear <= tFar;
+#endif
+        if (dist_update) dist  = select(vmask,min(tNear,dist),dist);
+        return vmask;    
+      }
+      else
+      {
+        const Vec3fa &org = ctx.org_rdir;
+        const vfloat<K> tNearX = (bminX - org.x) * ctx.rdir.x;
+        const vfloat<K> tNearY = (bminY - org.y) * ctx.rdir.y;
+        const vfloat<K> tNearZ = (bminZ - org.z) * ctx.rdir.z;
+        const vfloat<K> tFarX  = (bmaxX - org.x) * ctx.rdir.x;
+        const vfloat<K> tFarY  = (bmaxY - org.y) * ctx.rdir.y;
+        const vfloat<K> tFarZ  = (bmaxZ - org.z) * ctx.rdir.z;
+        const float round_down = 1.0f-2.0f*float(ulp); 
+        const float round_up   = 1.0f+2.0f*float(ulp);
+#if defined(__AVX2__)
+        const vfloat<K> tNear  = maxi(maxi(tNearX,tNearY),maxi(tNearZ,vfloat<K>(ctx.rdir.w)));
+        const vfloat<K> tFar   = mini(mini(tFarX,tFarY),mini(tFarZ,vfloat<K>(org.w)));
+#else
+        const vfloat<K> tNear  = max(tNearX,tNearY,tNearZ,vfloat<K>(ctx.rdir.w));
+        const vfloat<K> tFar   = min(tFarX ,tFarY ,tFarZ ,vfloat<K>(org.w));
+#endif
+
+#if defined(__AVX512F__)
+        const unsigned int maskN = ((unsigned int)1 << N)-1;
+        const vbool<K> vmask   = le(maskN,round_down*tNear,round_up*tFar);        
+#else
+        const vbool<K> vmask   = round_down*tNear <= round_up*tFar;
+#endif
+        if (dist_update) dist  = select(vmask,min(tNear,dist),dist);
+        return vmask;    
+      }
+    }
+
+    // =====================================================================================================
+    // =====================================================================================================
+    // =====================================================================================================
+
 
     template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
     void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, const RTCIntersectContext* context)
@@ -165,7 +277,7 @@ namespace embree
               const RContext &ray = ray_ctx[i];
               const vlong<K/2> bitmask  = one << vlong<K/2>(i);
 
-              const vbool<K> vmask = ray.template intersectNode<true,robust>(bminmaxX,bminmaxY,bminmaxZ,dist);
+              const vbool<K> vmask = intersectNode<K,true,robust>(ray,bminmaxX,bminmaxY,bminmaxZ,dist);
 
               maskK = mask_or((vboold8)vmask,maskK,maskK,bitmask);
             } while(bits);              
@@ -208,7 +320,7 @@ namespace embree
               const size_t i = __bscf(bits);
               const RContext &ray = cur_ray_ctx[i];
               const vint<K> bitmask  = vint<K>((int)1 << i);
-              const vbool<K> vmask = ray.template intersectNode<true, robust> (bminX,bminY,bminZ,bmaxX,bmaxY,bmaxZ,dist);
+              const vbool<K> vmask = intersectNode<K,true, robust> (ray,bminX,bminY,bminZ,bmaxX,bmaxY,bmaxZ,dist);
 
 #if defined(__AVX2__)
               maskK = maskK | (bitmask & vint<K>(vmask));
@@ -420,7 +532,7 @@ namespace embree
               assert(i<MAX_RAYS_PER_OCTANT);
               RContext &ray = ray_ctx[i];
               const vlong<K/2> bitmask  = one << vlong<K/2>(i);
-              const vbool<K> vmask = ray.template intersectNode<false,robust>(bminmaxX,bminmaxY,bminmaxZ,dist);
+              const vbool<K> vmask = intersectNode<K,false,robust>(ray,bminmaxX,bminmaxY,bminmaxZ,dist);
               maskK = mask_or((vboold8)vmask,maskK,maskK,bitmask);
             } while(bits);          
             const vboold8 vmask = (maskK != vlong<K/2>(zero)); 
@@ -466,7 +578,7 @@ namespace embree
               const RContext &ray = cur_ray_ctx[i];
               const vint<K> bitmask  = vint<K>((int)1 << i);
 
-              const vbool<K> vmask = ray.template intersectNode<false,robust>(bminX,bminY,bminZ,bmaxX,bmaxY,bmaxZ,dist);
+              const vbool<K> vmask = intersectNode<K,false,robust>(ray,bminX,bminY,bminZ,bmaxX,bmaxY,bmaxZ,dist);
 
 #if defined(__AVX2__)
               maskK = maskK | (bitmask & vint<K>(vmask));
