@@ -165,9 +165,7 @@ namespace embree
               const RContext &ray = ray_ctx[i];
               const vlong<K/2> bitmask  = one << vlong<K/2>(i);
 
-              const vbool<K> vmask = robust ? \
-                ray.template intersectNodeRobust<true>(bminmaxX,bminmaxY,bminmaxZ,dist) : 
-                ray.template intersectNode<true>      (bminmaxX,bminmaxY,bminmaxZ,dist);
+              const vbool<K> vmask = ray.template intersectNode<true,robust>(bminmaxX,bminmaxY,bminmaxZ,dist);
 
               maskK = mask_or((vboold8)vmask,maskK,maskK,bitmask);
             } while(bits);              
@@ -210,9 +208,7 @@ namespace embree
               const size_t i = __bscf(bits);
               const RContext &ray = cur_ray_ctx[i];
               const vint<K> bitmask  = vint<K>((int)1 << i);
-              const vbool<K> vmask = robust ? \
-                ray.template intersectNodeRobust<true>(bminX,bminY,bminZ,bmaxX,bmaxY,bmaxZ,dist) : 
-                ray.template intersectNode<true>      (bminX,bminY,bminZ,bmaxX,bmaxY,bmaxZ,dist);
+              const vbool<K> vmask = ray.template intersectNode<true, robust> (bminX,bminY,bminZ,bmaxX,bmaxY,bmaxZ,dist);
 
 #if defined(__AVX2__)
               maskK = maskK | (bitmask & vint<K>(vmask));
@@ -424,19 +420,7 @@ namespace embree
               assert(i<MAX_RAYS_PER_OCTANT);
               RContext &ray = ray_ctx[i];
               const vlong<K/2> bitmask  = one << vlong<K/2>(i);
-#if 1
-              const vbool<K> vmask = robust ? \
-                ray.template intersectNodeRobust<false>(bminmaxX,bminmaxY,bminmaxZ,dist) : 
-                ray.template intersectNode<false>      (bminmaxX,bminmaxY,bminmaxZ,dist);
-
-#else
-              const vfloat<K> tNearFarX = msub(bminmaxX, ray.rdir.x, ray.org_rdir.x);
-              const vfloat<K> tNearFarY = msub(bminmaxY, ray.rdir.y, ray.org_rdir.y);
-              const vfloat<K> tNearFarZ = msub(bminmaxZ, ray.rdir.z, ray.org_rdir.z);
-              const vfloat<K> tNear     = max(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(ray.rdir.w));
-              const vfloat<K> tFar      = min(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(ray.org_rdir.w));
-              const vbool<K> vmask      = le(tNear,align_shift_right<8>(tFar,tFar));                
-#endif
+              const vbool<K> vmask = ray.template intersectNode<false,robust>(bminmaxX,bminmaxY,bminmaxZ,dist);
               maskK = mask_or((vboold8)vmask,maskK,maskK,bitmask);
             } while(bits);          
             const vboold8 vmask = (maskK != vlong<K/2>(zero)); 
@@ -482,9 +466,7 @@ namespace embree
               const RContext &ray = cur_ray_ctx[i];
               const vint<K> bitmask  = vint<K>((int)1 << i);
 
-              const vbool<K> vmask = robust ? \
-                ray.template intersectNodeRobust<true>(bminX,bminY,bminZ,bmaxX,bmaxY,bmaxZ,dist) : 
-                ray.template intersectNode<true>      (bminX,bminY,bminZ,bmaxX,bmaxY,bmaxZ,dist);
+              const vbool<K> vmask = ray.template intersectNode<false,robust>(bminX,bminY,bminZ,bmaxX,bmaxY,bmaxZ,dist);
 
 #if defined(__AVX2__)
               maskK = maskK | (bitmask & vint<K>(vmask));
