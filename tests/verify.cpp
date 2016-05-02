@@ -1607,9 +1607,10 @@ namespace embree
     RTCSceneFlags sflags; 
     RTCGeometryFlags gflags; 
     IntersectMode imode;
+    IntersectVariant ivariant;
 
-    RayMasksTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), gflags(gflags), imode(imode) {}
+    RayMasksTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant)
+      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), gflags(gflags), imode(imode), ivariant(ivariant) {}
 
     bool run(VerifyApplication* state)
     {
@@ -1646,9 +1647,9 @@ namespace embree
         RTCRay ray2 = makeRay(pos2+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray2.mask = mask2;
         RTCRay ray3 = makeRay(pos3+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray3.mask = mask3;
         RTCRay rays[4] = { ray0, ray1, ray2, ray3 };
-        IntersectWithMode(imode,VARIANT_INTERSECT,scene,rays,4); // FIXME: test all variants
+        IntersectWithMode(imode,ivariant,scene,rays,4);
         for (size_t i=0; i<4; i++)
-          passed &= masks[i] & (1<<i) ? rays[i].geomID == i : rays[i].geomID == -1;
+          passed &= masks[i] & (1<<i) ? rays[i].geomID != -1 : rays[i].geomID == -1;
       }
       scene = nullptr;
       return passed;
@@ -2783,7 +2784,8 @@ namespace embree
       beginTestGroup("ray_masks");
       for (auto sflags : sceneFlags) 
         for (auto imode : intersectModes) 
-          addTest(new RayMasksTest("ray_masks_"+to_string(sflags)+"_"+to_string(imode),sflags,RTC_GEOMETRY_STATIC,imode));
+          for (auto ivariant : intersectVariants)
+            addTest(new RayMasksTest("ray_masks_"+to_string(sflags,imode,ivariant),sflags,RTC_GEOMETRY_STATIC,imode,ivariant));
       endTestGroup();
     }
 
