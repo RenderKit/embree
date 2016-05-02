@@ -243,6 +243,11 @@ namespace embree
 
           if (unlikely(!rayN.isValidByOffset(offset))) continue;
 
+#if defined(RTCORE_IGNORE_INVALID_RAYS)
+          __aligned(64) Ray ray = rayN.gatherByOffset(offset);
+          if (unlikely(!ray.valid())) continue; 
+#endif
+
           const size_t octantID = rayN.getOctantByOffset(offset);
 
           assert(octantID < 8);
