@@ -340,7 +340,7 @@ namespace embree
   inline std::string to_string(IntersectMode imode)
   {
     switch (imode) {
-    case MODE_INTERSECT_NONE: return "N";
+    case MODE_INTERSECT_NONE: return "None";
     case MODE_INTERSECT1: return "1";
     case MODE_INTERSECT4: return "4";
     case MODE_INTERSECT8: return "8";
@@ -365,8 +365,8 @@ namespace embree
   inline std::string to_string(IntersectVariant ivariant)
   {
     switch (ivariant) {
-    case VARIANT_INTERSECT: return "intersect";
-    case VARIANT_OCCLUDED : return "occluded";
+    case VARIANT_INTERSECT: return "Intersect";
+    case VARIANT_OCCLUDED : return "Occluded";
     }
     return "";
   }
@@ -398,6 +398,10 @@ namespace embree
     if (sflags & RTC_SCENE_COMPACT) str += "Compact";
     if (sflags & RTC_SCENE_ROBUST ) str += "Robust";
     return str;
+  }
+
+  inline std::string to_string(RTCSceneFlags sflags, IntersectMode imode, IntersectVariant ivariant) {
+    return to_string(sflags) + "_" + to_string(ivariant) + to_string(imode);
   }
 
   template<int N>

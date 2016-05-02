@@ -1044,9 +1044,10 @@ namespace embree
     RTCSceneFlags sflags;
     RTCGeometryFlags gflags;
     IntersectMode imode;
+    IntersectVariant ivariant;
 
-    UpdateTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), gflags(gflags), imode(imode) {}
+    UpdateTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant)
+      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), gflags(gflags), imode(imode), ivariant(ivariant) {}
     
     static void move_mesh_vec3f(const RTCSceneRef& scene, unsigned mesh, size_t numVertices, Vec3fa& pos) 
     {
@@ -1069,7 +1070,7 @@ namespace embree
       ClearBuffers clear_before_return;
       RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,to_aflags(imode));
       AssertNoError(state->device);
-      size_t numPhi = 20;
+      size_t numPhi = 10;
       size_t numVertices = 2*numPhi*(numPhi+1);
       Vec3fa pos0 = Vec3fa(-10,0,-10);
       Vec3fa pos1 = Vec3fa(-10,0,+10);
@@ -1102,8 +1103,8 @@ namespace embree
         RTCRay rays[maxRays];
         for (size_t numRays=1; numRays<maxRays; numRays++) {
           for (size_t i=0; i<numRays; i++) rays[i] = testRays[i%4];
-          IntersectWithMode(imode,VARIANT_INTERSECT,scene,rays,numRays); // FIXME: more variants
-          for (size_t i=0; i<numRays; i++) if (rays[i].geomID != i%4) return false;
+          IntersectWithMode(imode,ivariant,scene,rays,numRays);
+          for (size_t i=0; i<numRays; i++) if (rays[i].geomID == -1) return false;
         }
       }
       scene = nullptr;
@@ -2664,6 +2665,10 @@ namespace embree
     if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT8)) intersectModesOld.push_back(MODE_INTERSECT8);
     if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT16)) intersectModesOld.push_back(MODE_INTERSECT16);
 
+    /* create a list of all intersect variants for each intersect mode */
+    intersectVariants.push_back(VARIANT_INTERSECT);
+    intersectVariants.push_back(VARIANT_OCCLUDED);
+
     /* create list of all scene flags to test */
     sceneFlags.push_back(RTC_SCENE_STATIC);
     sceneFlags.push_back(RTC_SCENE_STATIC | RTC_SCENE_ROBUST);
@@ -2738,8 +2743,10 @@ namespace embree
     beginTestGroup("update");
     for (auto sflags : sceneFlagsDynamic) {
       for (auto imode : intersectModes) {
-        addTest(new UpdateTest("update_deformable_"+to_string(sflags)+"_"+to_string(imode),sflags,RTC_GEOMETRY_DEFORMABLE,imode));
-        addTest(new UpdateTest("update_dynamic_"+to_string(sflags)+"_"+to_string(imode),sflags,RTC_GEOMETRY_DYNAMIC,imode));
+        for (auto ivariant : intersectVariants) {
+          addTest(new UpdateTest("update_deformable_"+to_string(sflags,imode,ivariant),sflags,RTC_GEOMETRY_DEFORMABLE,imode,ivariant));
+          addTest(new UpdateTest("update_dynamic_"+to_string(sflags,imode,ivariant),sflags,RTC_GEOMETRY_DYNAMIC,imode,ivariant));
+        }
       }
     }
     endTestGroup();
