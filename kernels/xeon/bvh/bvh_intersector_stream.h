@@ -185,13 +185,7 @@ namespace embree
     {
     public:
       Vec3fa rdir;      //     rdir.w = tnear;
-      union {
-        Vec3fa org_rdir;  // org_rdir.w = tfar;        
-        Vec3fa org;       // org.w      = tfar; needed for robust mode
-      };
-
-
-    public:
+      Vec3fa org_rdir;  // org_rdir.w = tfar; org_rdir = org in robust mode        
 
       __forceinline RayContext() {}
 
@@ -250,7 +244,8 @@ namespace embree
                                                  const vfloat<K> &bminmaxZ,
                                                  vfloat<K> &dist) const
       {
-        const vfloat<K> tNearFarX = (bminmaxX - org.x) * rdir.x;
+        const Vec3fa &org = org_rdir;
+        const vfloat<K> tNearFarX = (bminmaxX - org.x) * rdir.x; 
         const vfloat<K> tNearFarY = (bminmaxY - org.y) * rdir.y;
         const vfloat<K> tNearFarZ = (bminmaxZ - org.z) * rdir.z;
         const vfloat<K> tNear     = max(tNearFarX,tNearFarY,tNearFarZ,vfloat<K>(rdir.w));
@@ -309,6 +304,7 @@ namespace embree
                                                  const vfloat<K> &bmaxZ,
                                                  vfloat<K> &dist) const
       {
+        const Vec3fa &org = org_rdir;
         const vfloat<K> tNearX = (bminX - org.x) * rdir.x;
         const vfloat<K> tNearY = (bminY - org.y) * rdir.y;
         const vfloat<K> tNearZ = (bminZ - org.z) * rdir.z;
