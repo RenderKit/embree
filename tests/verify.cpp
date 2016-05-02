@@ -376,9 +376,9 @@ namespace embree
     int*    facesBuffer = (int     *) rtcMapBuffer(scene,mesh,RTC_FACE_BUFFER);     if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene,mesh); return -1; }
     float*  levelBuffer  = (float   *) rtcMapBuffer(scene,mesh,RTC_LEVEL_BUFFER);   if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene,mesh); return -1; }
 
-    memcpy(vertexBuffer,vertices.data(),numVertices*sizeof(Vec3fa));
-    memcpy(indexBuffer ,indices.data() ,numEdges*sizeof(int));
-    memcpy(facesBuffer,faces.data() ,numFaces*sizeof(int));
+    if (numVertices) memcpy(vertexBuffer,vertices.data(),numVertices*sizeof(Vec3fa));
+    if (numEdges   ) memcpy(indexBuffer ,indices.data() ,numEdges*sizeof(int));
+    if (numFaces   ) memcpy(facesBuffer,faces.data() ,numFaces*sizeof(int));
     for (size_t i=0; i<indices.size(); i++) levelBuffer[i] = level;
     rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
     rtcUnmapBuffer(scene,mesh,RTC_INDEX_BUFFER);
