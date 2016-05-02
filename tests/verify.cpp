@@ -2666,8 +2666,10 @@ namespace embree
     if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT16)) intersectModesOld.push_back(MODE_INTERSECT16);
 
     /* create a list of all intersect variants for each intersect mode */
-    intersectVariants.push_back(VARIANT_INTERSECT);
-    intersectVariants.push_back(VARIANT_OCCLUDED);
+    intersectVariants.push_back(VARIANT_INTERSECT_COHERENT);
+    intersectVariants.push_back(VARIANT_OCCLUDED_COHERENT);
+    intersectVariants.push_back(VARIANT_INTERSECT_INCOHERENT);
+    intersectVariants.push_back(VARIANT_OCCLUDED_INCOHERENT);
 
     /* create list of all scene flags to test */
     sceneFlags.push_back(RTC_SCENE_STATIC);

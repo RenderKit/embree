@@ -355,18 +355,29 @@ namespace embree
     default                : return "U";
     }
   }
-
+  
   enum IntersectVariant
   {
     VARIANT_INTERSECT = 0,
-    VARIANT_OCCLUDED = 1
+    VARIANT_OCCLUDED = 1,
+    VARIANT_COHERENT = 0,
+    VARIANT_INCOHERENT = 2,
+    VARIANT_INTERSECT_OCCLUDED_MASK = 1,
+    VARIANT_COHERENT_INCOHERENT_MASK = 2,
+    
+    VARIANT_INTERSECT_COHERENT = 0,
+    VARIANT_OCCLUDED_COHERENT = 1,
+    VARIANT_INTERSECT_INCOHERENT = 2,
+    VARIANT_OCCLUDED_INCOHERENT = 3
   };
 
   inline std::string to_string(IntersectVariant ivariant)
   {
     switch (ivariant) {
-    case VARIANT_INTERSECT: return "Intersect";
-    case VARIANT_OCCLUDED : return "Occluded";
+    case VARIANT_INTERSECT_COHERENT: return "IntersectCoherent";
+    case VARIANT_OCCLUDED_COHERENT : return "OccludedCoherent";
+    case VARIANT_INTERSECT_INCOHERENT: return "IntersectIncoherent";
+    case VARIANT_OCCLUDED_INCOHERENT : return "OccludedIncoherent";
     }
     return "";
   }
@@ -405,7 +416,7 @@ namespace embree
   }
 
   template<int N>
-    inline void IntersectWithNMMode(IntersectVariant ivariant, RTCScene scene, RTCRay* rays, size_t Nrays)
+    inline void IntersectWithNMMode(IntersectVariant ivariant, RTCScene scene, RTCIntersectContext* context, RTCRay* rays, size_t Nrays)
   {
     assert(Nrays<1024);
     __aligned(16) char data[1024*sizeof(RTCRay)];
@@ -420,13 +431,10 @@ namespace embree
       }
     }
     
-    RTCIntersectContext context;
-    context.flags = RTC_INTERSECT_INCOHERENT;
-    context.userRayExt = nullptr;
     size_t M = (Nrays+N-1)/N;
-    switch (ivariant) {
-    case VARIANT_INTERSECT: rtcIntersectNM(scene,&context,(RTCRayN*)data,N,M,N*sizeof(RTCRay)); break;
-    case VARIANT_OCCLUDED : rtcOccludedNM(scene,&context,(RTCRayN*)data,N,M,N*sizeof(RTCRay)); break;
+    switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
+    case VARIANT_INTERSECT: rtcIntersectNM(scene,context,(RTCRayN*)data,N,M,N*sizeof(RTCRay)); break;
+    case VARIANT_OCCLUDED : rtcOccludedNM(scene,context,(RTCRayN*)data,N,M,N*sizeof(RTCRay)); break;
     }
     
     for (size_t i=0; i<Nrays; i+=N) 
@@ -439,13 +447,17 @@ namespace embree
 
   inline void IntersectWithMode(IntersectMode mode, IntersectVariant ivariant, RTCScene scene, RTCRay* rays, size_t N)
   {
+    RTCIntersectContext context;
+    context.flags = ((ivariant & VARIANT_COHERENT_INCOHERENT_MASK) == VARIANT_COHERENT) ? RTC_INTERSECT_COHERENT :  RTC_INTERSECT_INCOHERENT;
+    context.userRayExt = nullptr;
+
     switch (mode) 
     {
     case MODE_INTERSECT_NONE: 
       break;
     case MODE_INTERSECT1: 
     {
-      switch (ivariant) {
+      switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
       case VARIANT_INTERSECT: for (size_t i=0; i<N; i++) rtcIntersect(scene,rays[i]); break;
       case VARIANT_OCCLUDED : for (size_t i=0; i<N; i++) rtcOccluded (scene,rays[i]); break;
       }
@@ -460,7 +472,7 @@ namespace embree
         __aligned(16) RTCRay4 ray4;
         for (size_t j=0; j<4; j++) valid[j] = (j<M && rays[i+j].tnear <= rays[i+j].tfar) ? -1 : 0;
         for (size_t j=0; j<M; j++) setRay(ray4,j,rays[i+j]);
-        switch (ivariant) {
+        switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
         case VARIANT_INTERSECT: rtcIntersect4(valid,scene,ray4); break;
         case VARIANT_OCCLUDED : rtcOccluded4 (valid,scene,ray4); break;
         }
@@ -477,7 +489,7 @@ namespace embree
         __aligned(32) RTCRay8 ray8;
         for (size_t j=0; j<8; j++) valid[j] = (j<M && rays[i+j].tnear <= rays[i+j].tfar) ? -1 : 0;
         for (size_t j=0; j<M; j++) setRay(ray8,j,rays[i+j]);
-        switch (ivariant) {
+        switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
         case VARIANT_INTERSECT: rtcIntersect8(valid,scene,ray8); break;
         case VARIANT_OCCLUDED : rtcOccluded8 (valid,scene,ray8); break;
         }
@@ -494,7 +506,7 @@ namespace embree
         __aligned(64) RTCRay16 ray16;
         for (size_t j=0; j<16; j++) valid[j] = (j<M && rays[i+j].tnear <= rays[i+j].tfar) ? -1 : 0;
         for (size_t j=0; j<M; j++) setRay(ray16,j,rays[i+j]);
-        switch (ivariant) {
+        switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
         case VARIANT_INTERSECT: rtcIntersect16(valid,scene,ray16); break;
         case VARIANT_OCCLUDED : rtcOccluded16 (valid,scene,ray16); break;
         }
@@ -504,45 +516,38 @@ namespace embree
     }
     case MODE_INTERSECT1M: 
     {
-      RTCIntersectContext context;
-      context.flags = RTC_INTERSECT_INCOHERENT;
-      context.userRayExt = nullptr;
-      switch (ivariant) {
+      switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
         case VARIANT_INTERSECT: rtcIntersect1M(scene,&context,rays,N,sizeof(RTCRay)); break;
         case VARIANT_OCCLUDED : rtcOccluded1M (scene,&context,rays,N,sizeof(RTCRay)); break;
       }
       break;
     }
     case MODE_INTERSECTNM1: {
-      IntersectWithNMMode<1>(ivariant,scene,rays,N);
+      IntersectWithNMMode<1>(ivariant,scene,&context,rays,N);
       break;
     }
     case MODE_INTERSECTNM3: {
-      IntersectWithNMMode<3>(ivariant,scene,rays,N);
+      IntersectWithNMMode<3>(ivariant,scene,&context,rays,N);
       break;
     }
     case MODE_INTERSECTNM4: {
-      IntersectWithNMMode<4>(ivariant,scene,rays,N);
+      IntersectWithNMMode<4>(ivariant,scene,&context,rays,N);
       break;
     }
     case MODE_INTERSECTNM8: {
-      IntersectWithNMMode<8>(ivariant,scene,rays,N);
+      IntersectWithNMMode<8>(ivariant,scene,&context,rays,N);
       break;
     }
     case MODE_INTERSECTNM16: {
-      IntersectWithNMMode<16>(ivariant,scene,rays,N);
+      IntersectWithNMMode<16>(ivariant,scene,&context,rays,N);
       break;
     }
     case MODE_INTERSECTNp: 
     {
       assert(N<1024);
-      __aligned(16) char data[1024*sizeof(RTCRay)];
+      __aligned(32) char data[1024*sizeof(RTCRay)];
       RTCRayN* ray = (RTCRayN*) &data[0];
       for (size_t j=0; j<N; j++) setRay(ray,N,j,rays[j]);
-
-      RTCIntersectContext context;
-      context.flags = RTC_INTERSECT_INCOHERENT;
-      context.userRayExt = nullptr;
 
       RTCRayNp rayp;
       rayp.orgx = &RTCRayN_org_x(ray,N,0);
@@ -564,7 +569,7 @@ namespace embree
       rayp.Ngy = &RTCRayN_Ng_y(ray,N,0); 
       rayp.Ngz = &RTCRayN_Ng_z(ray,N,0); 
          
-      switch (ivariant) {
+      switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
       case VARIANT_INTERSECT: rtcIntersectNp(scene,&context,rayp,N); break;
       case VARIANT_OCCLUDED : rtcOccludedNp(scene,&context,rayp,N); break;
       }
