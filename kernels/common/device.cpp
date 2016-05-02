@@ -343,7 +343,7 @@ namespace embree
     for (std::map<Device*,size_t>::iterator i=g_cache_size_map.begin(); i!= g_cache_size_map.end(); i++)
       maxCacheSize = max(maxCacheSize, (*i).second);
     
-    resizeTessellationCache(max(size_t(1024*1024),maxCacheSize));
+    resizeTessellationCache(maxCacheSize);
   }
 
   void Device::initTaskingSystem(size_t numThreads) 
