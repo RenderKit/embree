@@ -269,7 +269,7 @@ namespace embree
       __forceinline void intersect16 (const vbool16& valid, RTCRay16& ray, size_t item, const RTCIntersectContext* context) 
       {
         assert(item < size());
-        if (likely(intersectors.intersector16.occluded)) { // old code for compatibility
+        if (likely(intersectors.intersector16.intersect)) { // old code for compatibility
           if (intersectors.intersector16.ispc) {
             ((ISPCIntersectFunc16)intersectors.intersector16.intersect)(intersectors.ptr,ray,item,valid.mask8());
           }
@@ -290,7 +290,7 @@ namespace embree
       __forceinline void intersect16 (const vbool16& valid, RTCRay16& ray, size_t item) 
       {
         assert(item < size());
-        assert(intersectors.intersector16.occluded);
+        assert(intersectors.intersector16.intersect);
 	if (intersectors.intersector16.ispc) {
          ((ISPCIntersectFunc16)intersectors.intersector16.intersect)(intersectors.ptr,ray,item,valid);
 	}
