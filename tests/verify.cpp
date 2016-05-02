@@ -564,7 +564,7 @@ namespace embree
   }
   
   
-  unsigned addUserGeometryEmpty (RTCDevice g_device, IntersectMode imode, const RTCSceneRef& scene, Sphere* sphere)
+  unsigned addUserGeometryEmpty (RTCDevice g_device, const RTCSceneRef& scene, Sphere* sphere)
   {
     BBox3fa bounds = sphere->bounds(); 
     unsigned geom = rtcNewUserGeometry (scene,1);
@@ -959,7 +959,7 @@ namespace embree
             case 2: geom[index] = addSubdivSphere(state->device,scene,RTC_GEOMETRY_STATIC,pos,2.0f,4,4); break;
             case 3: 
               spheres[index] = Sphere(pos,2.0f);
-              geom[index] = addUserGeometryEmpty(state->device,MODE_INTERSECT_NONE,scene,&spheres[index]); break;
+              geom[index] = addUserGeometryEmpty(state->device,scene,&spheres[index]); break;
             }
             AssertNoError(state->device);
           }
@@ -2142,7 +2142,7 @@ namespace embree
   void shootRandomRays (VerifyApplication* state, const RTCSceneRef& scene)
   {
     const size_t numRays = 100;
-    for (auto imode : state->intersectModes) // FIXME: use all intersect modes
+    for (auto imode : state->intersectModes)
     {
       for (auto ivariant : { VARIANT_INTERSECT, VARIANT_OCCLUDED })
       {
@@ -2270,7 +2270,7 @@ namespace embree
 
         case 5: {
 	  Sphere* sphere = new Sphere(pos,2.0f); spheres.push_back(sphere); 
-	  addUserGeometryEmpty(thread->state->device,MODE_INTERSECT1,task->scene,sphere); break; // FIXME: imode
+	  addUserGeometryEmpty(thread->state->device,task->scene,sphere); break;
         }
 	}
         //CountErrors(thread->state->device);
@@ -2401,7 +2401,7 @@ namespace embree
           case 6: geom[index] = addSphere(thread->state->device,task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
           case 7: geom[index] = addSphere(thread->state->device,task->scene,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles,1.0f); break;
           case 8: geom[index] = addSphere(thread->state->device,task->scene,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
-          case 9: spheres[index] = Sphere(pos,2.0f); geom[index] = addUserGeometryEmpty(thread->state->device,MODE_INTERSECT1,task->scene,&spheres[index]); break; // FIXME: imode
+          case 9: spheres[index] = Sphere(pos,2.0f); geom[index] = addUserGeometryEmpty(thread->state->device,task->scene,&spheres[index]); break;
           }; 
 	  //CountErrors(thread->state->device);
           if (rtcDeviceGetError(thread->state->device) != RTC_NO_ERROR) {
