@@ -1937,7 +1937,7 @@ namespace embree
     InactiveRaysTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode)
       : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), gflags(gflags), imode(imode) {}
    
-     bool run(VerifyApplication* state)
+    bool run(VerifyApplication* state)
     {
       Vec3fa pos = zero;
       ClearBuffers clear_before_return;
@@ -2878,7 +2878,8 @@ namespace embree
     beginTestGroup("inactive_rays");
     for (auto sflags : sceneFlags) 
         for (auto imode : intersectModes) 
-          addTest(new InactiveRaysTest("inactive_rays_"+to_string(sflags)+"_"+to_string(imode),sflags,RTC_GEOMETRY_STATIC,imode));
+          if (imode != MODE_INTERSECT1) // INTERSECT1 does not support disabled rays
+            addTest(new InactiveRaysTest("inactive_rays_"+to_string(sflags)+"_"+to_string(imode),sflags,RTC_GEOMETRY_STATIC,imode));
     endTestGroup();
 
     beginTestGroup("watertight");
