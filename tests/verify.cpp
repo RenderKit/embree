@@ -1713,9 +1713,10 @@ namespace embree
     RTCGeometryFlags gflags;
     bool subdiv;
     IntersectMode imode;
+    IntersectVariant ivariant;
 
-    IntersectionFilterTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, bool subdiv, IntersectMode imode)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), gflags(gflags), subdiv(subdiv), imode(imode) {}
+    IntersectionFilterTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, bool subdiv, IntersectMode imode, IntersectVariant ivariant)
+      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), gflags(gflags), subdiv(subdiv), imode(imode), ivariant(ivariant) {}
     
     static void intersectionFilter1(void* userGeomPtr, RTCRay& ray) 
     {
@@ -1808,11 +1809,26 @@ namespace embree
       else        geom0 = addPlane (state->device,scene, gflags, 4, p0, dx, dy);
       rtcSetUserData(scene,geom0,(void*)123);
       
-      if      (imode == MODE_INTERSECT1 ) rtcSetIntersectionFilterFunction  (scene,geom0,intersectionFilter1);
-      else if (imode == MODE_INTERSECT4 ) rtcSetIntersectionFilterFunction4 (scene,geom0,intersectionFilter4);
-      else if (imode == MODE_INTERSECT8 ) rtcSetIntersectionFilterFunction8 (scene,geom0,intersectionFilter8);
-      else if (imode == MODE_INTERSECT16) rtcSetIntersectionFilterFunction16(scene,geom0,intersectionFilter16);
-      else                                rtcSetIntersectionFilterFunctionN (scene,geom0,intersectionFilterN);
+      if (imode == MODE_INTERSECT1 ) {
+        rtcSetIntersectionFilterFunction(scene,geom0,intersectionFilter1);
+        rtcSetOcclusionFilterFunction   (scene,geom0,intersectionFilter1);
+      }
+      else if (imode == MODE_INTERSECT4 ) {
+        rtcSetIntersectionFilterFunction4(scene,geom0,intersectionFilter4);
+        rtcSetOcclusionFilterFunction4   (scene,geom0,intersectionFilter4);
+      }
+      else if (imode == MODE_INTERSECT8 ) {
+        rtcSetIntersectionFilterFunction8(scene,geom0,intersectionFilter8);
+        rtcSetOcclusionFilterFunction8   (scene,geom0,intersectionFilter8);
+      }
+      else if (imode == MODE_INTERSECT16) {
+        rtcSetIntersectionFilterFunction16(scene,geom0,intersectionFilter16);
+        rtcSetOcclusionFilterFunction16   (scene,geom0,intersectionFilter16);
+      }
+      else {
+        rtcSetIntersectionFilterFunctionN (scene,geom0,intersectionFilterN);
+        rtcSetOcclusionFilterFunctionN (scene,geom0,intersectionFilterN);
+      }
       rtcCommit (scene);
       AssertNoError(state->device);
       
@@ -1826,7 +1842,7 @@ namespace embree
           rays[iy*4+ix] = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
         }
       }
-      IntersectWithMode(imode,VARIANT_INTERSECT,scene,rays,16); // FIXME: also test occluded
+      IntersectWithMode(imode,ivariant,scene,rays,16);
       
       bool passed = true;
       for (size_t iy=0; iy<4; iy++) 
@@ -2803,11 +2819,13 @@ namespace embree
     {
       for (auto sflags : sceneFlags) 
         for (auto imode : intersectModes) 
-          addTest(new IntersectionFilterTest("intersection_filter_tris_"+to_string(sflags)+"_"+to_string(imode),sflags,RTC_GEOMETRY_STATIC,false,imode));
+          for (auto ivariant : intersectVariants)
+            addTest(new IntersectionFilterTest("intersection_filter_tris_"+to_string(sflags)+"_"+to_string(imode),sflags,RTC_GEOMETRY_STATIC,false,imode,ivariant));
 
       for (auto sflags : sceneFlags) 
         for (auto imode : intersectModes) 
-          addTest(new IntersectionFilterTest("intersection_filter_subdiv_"+to_string(sflags)+"_"+to_string(imode),sflags,RTC_GEOMETRY_STATIC,true,imode));
+          for (auto ivariant : intersectVariants)
+            addTest(new IntersectionFilterTest("intersection_filter_subdiv_"+to_string(sflags)+"_"+to_string(imode),sflags,RTC_GEOMETRY_STATIC,true,imode,ivariant));
     }
     endTestGroup();
 
