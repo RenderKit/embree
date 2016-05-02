@@ -16,108 +16,126 @@
 
 #pragma once
 
-/*! \file sampling.isph Implements sampling functions for different
- *  geometric shapes. */
+/*! \brief utility library containing sampling functions */
 
-//inline float cos2sin(const float f) { return sqrt(max(0.f,1.f-f*f)); }
-//inline float sin2cos(const float f) { return sqrt(max(0.f,1.f-f*f)); }
+// convention is to return the sample (Vec3fa) generated from given Vec2f 's'ample as last parameter
+// sampling functions often come in pairs: sample and pdf (needed later for MIS)
+// good reference is "Total Compendium" by Philip Dutre http://people.cs.kuleuven.be/~philip.dutre/GI/
 
-/*! Cosine weighted hemisphere sampling. Up direction is the z direction. */
-inline Sample3f cosineSampleHemisphere(const float u, const float v) {
-  const float phi = 2.0f * (float(pi)) * u;
-  const float cosTheta = sqrt(v);
-  const float sinTheta = sqrt(1.0f - v);
-  return Sample3f(Vec3fa(cos(phi) * sinTheta,
-                                  sin(phi) * sinTheta,
-                                  cosTheta),
-                       cosTheta*(1.f/(float(pi))));
-}
+#include "../../../common/math/vec3.h"
 
-/*! Cosine weighted hemisphere sampling. Up direction is provided as argument. */
-inline Sample3f cosineSampleHemisphere(const float  u, const float  v, const Vec3fa& N)
+
+inline Vec3fa cartesian(const float phi, const float sinTheta, const float cosTheta)
 {
-  Sample3f s = cosineSampleHemisphere(u,v);
-  return Sample3f(frame(N)*s.v,s.pdf);
+  float sinPhi, cosPhi;
+  sincosf(phi, &sinPhi, &cosPhi);
+  return Vec3fa(cosPhi * sinTheta,
+                    sinPhi * sinTheta,
+                    cosTheta);
 }
 
-  /*! Samples hemisphere with power cosine distribution. Up direction
-   *  is the z direction. */
-inline Sample3f powerCosineSampleHemisphere(const float u, const float v, const float _exp)
+inline Vec3fa cartesian(const float phi, const float cosTheta)
 {
-  const float phi = 2.0f * (float(pi)) * u;
-  const float cosTheta = pow(v,1.0f/(_exp+1.0f));
-  const float sinTheta = cos2sin(cosTheta);
-  return Sample3f(Vec3fa(cos(phi) * sinTheta,
-				   sin(phi) * sinTheta,
-				   cosTheta),
-                       (_exp+1.0f)*pow(cosTheta,_exp)*0.5f/(float(pi)));
+  return cartesian(phi, cos2sin(cosTheta), cosTheta);
 }
 
-/*! Computes the probability density for the power cosine sampling of the hemisphere. */
-inline float powerCosineSampleHemispherePDF(const Vec3fa& s, const float _exp) {
-  if (s.z < 0.f) return 0.f;
-  return (_exp+1.0f)*pow(s.z,_exp)*0.5f/float(pi);
-}
 
-/*! Samples hemisphere with power cosine distribution. Up direction
- *  is provided as argument. */
-inline Sample3f powerCosineSampleHemisphere(const float u, const float v, const Vec3fa& N, const float _exp) {
-  Sample3f s = powerCosineSampleHemisphere(u,v,_exp);
-  return Sample3f(frame(N)*s.v,s.pdf);
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/// Sampling of Spherical Cone
+/// cosine-weighted sampling of hemisphere oriented along the +z-axis
 ////////////////////////////////////////////////////////////////////////////////
 
-
-/*! Uniform sampling of spherical cone. Cone direction is the z
- *  direction. */
-inline Sample3f UniformSampleCone(const float u, const float v, const float angle) {
-  const float phi = (float)(2.0f * float(pi)) * u;
-  const float cosTheta = 1.0f - v*(1.0f - cos(angle));
-  const float sinTheta = cos2sin(cosTheta);
-  return Sample3f(Vec3fa(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta), 1.0f/((float)(4.0f*float(pi))*sqr(sin(0.5f*angle))));
-}
-
-/*! Computes the probability density of spherical cone sampling. */
-inline float UniformSampleConePDF(const Vec3fa &s, const float angle) {
-  return select(s.z < cos(angle), 0.0f, 1.0f/((float)(4.0f*float(pi))*sqr(sin(0.5f*angle))));
-}
-
-/*! Uniform sampling of spherical cone. Cone direction is provided as argument. */
-inline Sample3f UniformSampleCone(const float u, const float v, const float angle, const Vec3fa& N) {
-  Sample3f s = UniformSampleCone(u,v,angle);
-  return Sample3f(frame(N)*s.v,s.pdf);
-}
-
-/*! Computes the probability density of spherical cone sampling. */
-inline float UniformSampleConePDF(const Vec3fa &s, const float angle, const Vec3fa &N) {
-  // return make_select(dot(s,N) < cos(angle), 0.0f, 1.0f/((float)(4.0f*float(pi))*sqr(sin(0.5f*angle))));
-  if (dot(s,N) < cos(angle))
-    return 0.f;
-  else
-    return 1.0f/((float)(4.0f*float(pi))*sqr(sin(0.5f*angle)));
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/// Sampling of Triangle
-////////////////////////////////////////////////////////////////////////////////
-
-/*! Uniform sampling of triangle. */
-inline Vec3fa UniformSampleTriangle(const float u, const float v, const Vec3fa& A, const Vec3fa& B, const Vec3fa& C) {
-  const float su = sqrt(u);
-  return C + (1.0f-su)*(A-C) + (v*su)*(B-C);
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/// Sampling of Disk
-////////////////////////////////////////////////////////////////////////////////
-
-/*! Uniform sampling of disk. */
-inline Vec2f UniformSampleDisk(const Vec2f &sample, const float radius)
+inline Vec3fa cosineSampleHemisphere(const Vec2f s)
 {
-  const float r = sqrt(sample.x);
-  const float theta = (2.f*float(pi)) * sample.y;
-  return Vec2f(radius*r*cos(theta), radius*r*sin(theta));
+  const float phi =float(float(two_pi)) * s.x;
+  const float cosTheta = sqrt(s.y);
+  const float sinTheta = sqrt(1.0f - s.y);
+  return cartesian(phi, sinTheta, cosTheta);
+}
+
+inline float cosineSampleHemispherePDF(const Vec3fa &dir)
+{
+  return dir.z / float(pi);
+}
+
+inline float cosineSampleHemispherePDF(float cosTheta)
+{
+  return cosTheta / float(pi);
+}
+
+
+/// power cosine-weighted sampling of hemisphere oriented along the +z-axis
+////////////////////////////////////////////////////////////////////////////////
+
+inline Vec3fa powerCosineSampleHemisphere(const float n, const Vec2f &s)
+{
+  const float phi =float(float(two_pi)) * s.x;
+  const float cosTheta = pow(s.y, 1.0f / (n + 1.0f));
+  return cartesian(phi, cosTheta);
+}
+
+inline float powerCosineSampleHemispherePDF(const float cosTheta, const float n) // TODO: order of arguments
+{
+  return (n + 1.0f) * (0.5f / float(pi)) * pow(cosTheta, n);
+}
+
+inline float powerCosineSampleHemispherePDF(const Vec3fa dir, const float n) // TODO: order of arguments
+{
+  return (n + 1.0f) * (0.5f / float(pi)) * pow(dir.z, n);
+}
+
+/// sampling of cone of directions oriented along the +z-axis
+////////////////////////////////////////////////////////////////////////////////
+
+inline Vec3fa uniformSampleCone(const float cosAngle, const Vec2f &s)
+{
+  const float phi =float(float(two_pi)) * s.x;
+  const float cosTheta = 1.0f - s.y * (1.0f - cosAngle);
+  return cartesian(phi, cosTheta);
+}
+
+inline float uniformSampleConePDF(const float cosAngle)
+{
+    return rcp(float(two_pi)*(1.0f - cosAngle));
+}
+
+inline float _uniformSampleConePDF(const float cosAngle)
+{
+    return rcp(float(two_pi)*(1.0f - cosAngle));
+}
+
+
+/// sampling of disk
+////////////////////////////////////////////////////////////////////////////////
+
+inline Vec3fa uniformSampleDisk(const float radius, const Vec2f &s)
+{
+  const float r = sqrtf(s.x) * radius;
+  const float phi =float(float(two_pi)) * s.y;
+  float sinPhi, cosPhi;
+  sincosf(phi, &sinPhi, &cosPhi);
+  return Vec3fa(r * cosPhi, r * sinPhi, 0.f);
+}
+
+inline float uniformSampleDiskPDF(const float radius)
+{
+  return rcp(float(pi) * sqr(radius));
+}
+
+inline float _uniformSampleDiskPDF(const float radius)
+{
+  return rcp(float(pi) * sqr(radius));
+}
+
+
+/// sampling of triangle abc
+////////////////////////////////////////////////////////////////////////////////
+
+inline Vec3fa uniformSampleTriangle(const Vec3fa &a, const Vec3fa &b, const Vec3fa &c, const Vec2f &s)
+{
+  const float su = sqrtf(s.x);
+  return c + (1.0f - su) * (a-c) + (s.y*su) * (b-c);
+}
+
+inline float uniformSampleTrianglePDF(const Vec3fa &a, const Vec3fa &b, const Vec3fa &c)
+{
+  return 2.0f * rcp(abs(length(cross(a-c, b-c))));
 }

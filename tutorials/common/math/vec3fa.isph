@@ -16,7 +16,9 @@
 
 #pragma once
 
-struct Vec3fa 
+#include "math.isph"
+
+struct Vec3fa
 {
   float x;
   float y;
@@ -29,13 +31,13 @@ struct Vec3fa
 ////////////////////////////////////////////////////////////////////////////////
 
 inline uniform Vec3fa make_Vec3fa(const uniform float a) { uniform Vec3fa r; r.x = a; r.y = a; r.z = a; r.w = 0.0f; return r; }
-inline varying Vec3fa make_Vec3fa(const varying float a) { varying Vec3fa r; r.x = a; r.y = a; r.z = a; r.w = 0.0f; return r; }  
+inline varying Vec3fa make_Vec3fa(const varying float a) { varying Vec3fa r; r.x = a; r.y = a; r.z = a; r.w = 0.0f; return r; }
 
 inline uniform Vec3fa make_Vec3fa(const uniform float x, const uniform float y, const uniform float z) { uniform Vec3fa r; r.x = x; r.y = y; r.z = z; r.w = 0.0f; return r; }
-inline varying Vec3fa make_Vec3fa(const varying float x, const varying float y, const varying float z) { varying Vec3fa r; r.x = x; r.y = y; r.z = z; r.w = 0.0f; return r; }  
+inline varying Vec3fa make_Vec3fa(const varying float x, const varying float y, const varying float z) { varying Vec3fa r; r.x = x; r.y = y; r.z = z; r.w = 0.0f; return r; }
 
 inline uniform Vec3fa make_Vec3fa(const uniform float x, const uniform float y, const uniform float z, const uniform float a) { uniform Vec3fa r; r.x = x; r.y = y; r.z = z; r.w = a; return r; }
-inline varying Vec3fa make_Vec3fa(const varying float x, const varying float y, const varying float z, const varying float a) { varying Vec3fa r; r.x = x; r.y = y; r.z = z; r.w = a; return r; }  
+inline varying Vec3fa make_Vec3fa(const varying float x, const varying float y, const varying float z, const varying float a) { varying Vec3fa r; r.x = x; r.y = y; r.z = z; r.w = a; return r; }
 
 inline uniform Vec3fa make_Vec3fa(uniform Vec3f a) { return make_Vec3fa(a.x,a.y,a.z); }
 inline varying Vec3fa make_Vec3fa(varying Vec3f a) { return make_Vec3fa(a.x,a.y,a.z); }
@@ -168,9 +170,9 @@ inline varying Vec3fa dnormalize(const varying Vec3fa& p, const varying Vec3fa& 
 inline uniform float distance(const uniform Vec3fa a, const uniform Vec3fa b) { return length(a-b); }
 inline varying float distance(const varying Vec3fa a, const uniform Vec3fa b) { return length(a-b); }
 
-inline uniform Vec3fa cross(const uniform Vec3fa a, const uniform Vec3fa b) { 
+inline uniform Vec3fa cross(const uniform Vec3fa a, const uniform Vec3fa b) {
   return make_Vec3fa(a.y*b.z-a.z*b.y,a.z*b.x-a.x*b.z,a.x*b.y-a.y*b.x);
 }
-inline varying Vec3fa cross(const varying Vec3fa a, const varying Vec3fa b) { 
+inline varying Vec3fa cross(const varying Vec3fa a, const varying Vec3fa b) {
   return make_Vec3fa(a.y*b.z-a.z*b.y,a.z*b.x-a.x*b.z,a.x*b.y-a.y*b.x);
 }

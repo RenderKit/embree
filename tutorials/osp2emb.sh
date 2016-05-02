@@ -1,0 +1,13 @@
+#!/bin/bash
+
+cp $1 $2
+
+sed -i 's/ospray\/math\/vec.ih/..\/math\/vec.isph/g' $2
+sed -i 's/Light.ih/light.isph/g' $2
+sed -i 's/ospray\/math\/sampling.ih/..\/sampling.isph/g' $2
+sed -i 's/ospray\/math\/LinearSpace.ih/..\/..\/math\/linearspace.isph/g' $2
+sed -i 's/ospray\/common\/DifferentialGeometry.ih/..\/differential_geometry.isph/g' $2
+
+sed -i 's/vec2f/Vec2f/g' $2
+sed -i 's/vec3f/Vec3f/g' $2
+sed -i 's/vec4f/Vec4f/g' $2

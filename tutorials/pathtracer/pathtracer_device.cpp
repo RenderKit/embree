@@ -103,6 +103,16 @@ inline Vec3fa sample_component2(const Vec3fa& c0, const Sample3f& wi0, const Med
   }
 }
 
+/*! Cosine weighted hemisphere sampling. Up direction is provided as argument. */
+inline Sample3f cosineSampleHemisphere(const float  u, const float  v, const Vec3fa& N)
+{
+  Vec3fa localDir = cosineSampleHemisphere(Vec2f(u,v));
+  Sample3f s;
+  s.v = frame(N) * localDir;
+  s.pdf = cosineSampleHemispherePDF(localDir);
+  return s;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 //                             Ambient Light                                  //
 ////////////////////////////////////////////////////////////////////////////////
@@ -166,7 +176,9 @@ inline Vec3fa DistantLight__sample(const ISPCDistantLight& light,
                                    float& tMax,
                                    const Vec2f& s)
 {
-  wi = UniformSampleCone(s.x,s.y,light.radHalfAngle,Vec3fa((Vec3fa)neg(light.D)));
+  wi.v = frame(Vec3fa((Vec3fa)neg(light.D))) * uniformSampleCone(light.cosHalfAngle, s);
+  wi.pdf = uniformSampleConePDF(light.cosHalfAngle);
+
   tMax = 1e20f;
 
   return Vec3fa(light.L);
@@ -600,7 +612,9 @@ Vec3fa OBJMaterial__sample(OBJMaterial* material, const BRDF& brdf, const Vec3fa
   if (max(max(brdf.Ks.x,brdf.Ks.y),brdf.Ks.z) > 0.0f)
   {
     const Sample3f refl = reflect_(wo,dg.Ns);
-    wis = powerCosineSampleHemisphere(s.x,s.y,refl.v,brdf.Ns);
+    wis.v = powerCosineSampleHemisphere(brdf.Ns,s);
+    wis.pdf = powerCosineSampleHemispherePDF(wis.v,brdf.Ns);
+    wis.v = frame(refl.v) * wis.v;
     cs = (brdf.Ns+2) * float(one_over_two_pi) * powf(max(dot(refl.v,wis.v),1e-10f),brdf.Ns) * clamp(dot(wis.v,dg.Ns)) * brdf.Ks;
   }
 
@@ -971,7 +985,7 @@ bool g_use_smooth_normals = false;
 void device_key_pressed(int key)
 {
   if (key == 32  /* */) g_animation = !g_animation;
-  if (key == 115 /*c*/) { g_use_smooth_normals = !g_use_smooth_normals; g_changed = true; }
+  if (key == 115 /*s*/) { g_use_smooth_normals = !g_use_smooth_normals; g_changed = true; }
   else device_key_pressed_default(key);
 }
 
@@ -1342,6 +1356,12 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
       const Vec2f st = w*st0 + u*st1 + v*st2;
       dg.u = st.x;
       dg.v = st.y;
+      /*
+      const Vec3fa n0 = Vec3fa(mesh->normals[tri->v0]);
+      const Vec3fa n1 = Vec3fa(mesh->normals[tri->v1]);
+      const Vec3fa n2 = Vec3fa(mesh->normals[tri->v2]);
+      dg.Ns = w*n0 + u*n1 + v*n2;
+      */
     }
   }
   else if (geometry->type == QUAD_MESH)
@@ -1878,7 +1898,7 @@ void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
       parallel_for(size_t(0),size_t( getNumHWThreads() ),[&](const range<size_t>& range) {
     for (size_t i=range.begin(); i<range.end(); i++)
       updateEdgeLevelBufferTask(i,mesh,cam_pos);
-  });
+  }); 
 #else
       updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
 #endif
@@ -1969,7 +1989,7 @@ extern "C" void device_render (int* pixels,
   parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
     for (size_t i=range.begin(); i<range.end(); i++)
       renderTileTask(i,pixels,width,height,time,camera,numTilesX,numTilesY);
-  });
+  }); 
   //rtcDebug();
 } // device_render
 

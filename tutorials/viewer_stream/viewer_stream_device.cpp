@@ -182,9 +182,11 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
   for (int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
   {
     /* sample random direction */
-    float sx = RandomSampler_get1D(sampler);
-    float sy = RandomSampler_get1D(sampler);
-    Sample3f dir = cosineSampleHemisphere(sx,sy,Ng);
+    Vec2f s = RandomSampler_get2D(sampler);
+    Sample3f dir;
+    dir.v = cosineSampleHemisphere(s);
+    dir.pdf = cosineSampleHemispherePDF(dir.v);
+    dir.v = frame(Ng) * dir.v;
 
     /* initialize shadow ray */
     RTCRay& shadow = rays[i];
@@ -346,7 +348,7 @@ extern "C" void device_render (int* pixels,
   parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
     for (size_t i=range.begin(); i<range.end(); i++)
       renderTileTask(i,pixels,width,height,time,camera,numTilesX,numTilesY);
-  });
+  }); 
 }
 
 /* called by the C++ code for cleanup */

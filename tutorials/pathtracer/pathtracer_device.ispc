@@ -103,6 +103,16 @@ inline Vec3f sample_component2(const Vec3f& c0, const Sample3f& wi0, const Mediu
   }
 }
 
+/*! Cosine weighted hemisphere sampling. Up direction is provided as argument. */
+inline Sample3f cosineSampleHemisphere(const float  u, const float  v, const Vec3f& N)
+{
+  Vec3f localDir = cosineSampleHemisphere(make_Vec2f(u,v));
+  Sample3f s;
+  s.v = frame(N) * localDir;
+  s.pdf = cosineSampleHemispherePDF(localDir);
+  return s;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 //                             Ambient Light                                  //
 ////////////////////////////////////////////////////////////////////////////////
@@ -166,7 +176,9 @@ inline varying Vec3f DistantLight__sample(const uniform ISPCDistantLight& light,
                                    varying float& tMax,
                                    varying const Vec2f& s)
 {
-  wi = UniformSampleCone(s.x,s.y,light.radHalfAngle,make_Vec3f((varying Vec3fa)neg(light.D)));
+  wi.v = frame(make_Vec3f((varying Vec3fa)neg(light.D))) * uniformSampleCone(light.cosHalfAngle, s);
+  wi.pdf = uniformSampleConePDF(light.cosHalfAngle);
+
   tMax = 1e20f;
 
   return make_Vec3f(light.L);
@@ -600,7 +612,9 @@ Vec3f OBJMaterial__sample(OBJMaterial* uniform material, const BRDF& brdf, const
   if (max(max(brdf.Ks.x,brdf.Ks.y),brdf.Ks.z) > 0.0f)
   {
     const Sample3f refl = reflect_(wo,dg.Ns);
-    wis = powerCosineSampleHemisphere(s.x,s.y,refl.v,brdf.Ns);
+    wis.v = powerCosineSampleHemisphere(brdf.Ns,s);
+    wis.pdf = powerCosineSampleHemispherePDF(wis.v,brdf.Ns);
+    wis.v = frame(refl.v) * wis.v;
     cs = (brdf.Ns+2) * one_over_two_pi * powf(max(dot(refl.v,wis.v),1e-10f),brdf.Ns) * clamp(dot(wis.v,dg.Ns)) * brdf.Ks;
   }
 
