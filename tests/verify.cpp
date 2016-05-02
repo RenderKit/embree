@@ -1712,18 +1712,18 @@ namespace embree
     IntersectionFilterTest (std::string name, bool subdiv)
       : VerifyApplication::Test(name,VerifyApplication::PASS), subdiv(subdiv) {}
     
-    static void intersectionFilter1(void* ptr, RTCRay& ray) 
+    static void intersectionFilter1(void* userGeomPtr, RTCRay& ray) 
     {
-      if ((size_t)ptr != 123) 
+      if ((size_t)userGeomPtr != 123) 
         return;
       
       if (ray.primID & 2)
         ray.geomID = -1;
     }
     
-    static void intersectionFilter4(const void* valid_i, void* ptr, RTCRay4& ray) 
+    static void intersectionFilter4(const void* valid_i, void* userGeomPtr, RTCRay4& ray) 
     {
-      if ((size_t)ptr != 123) 
+      if ((size_t)userGeomPtr != 123) 
         return;
       
       int* valid = (int*)valid_i;
@@ -1733,9 +1733,9 @@ namespace embree
             ray.geomID[i] = -1;
     }
     
-    static void intersectionFilter8(const void* valid_i, void* ptr, RTCRay8& ray) 
+    static void intersectionFilter8(const void* valid_i, void* userGeomPtr, RTCRay8& ray) 
     {
-      if ((size_t)ptr != 123) 
+      if ((size_t)userGeomPtr != 123) 
         return;
       
       int* valid = (int*)valid_i;
@@ -1745,9 +1745,26 @@ namespace embree
             ray.geomID[i] = -1;
     }
     
-    static void intersectionFilter16(const void* valid_i, void* ptr, RTCRay16& ray) 
+    static void intersectionFilter16(const void* valid_i, void* userGeomPtr, RTCRay16& ray) 
     {
-      if ((size_t)ptr != 123) 
+      if ((size_t)userGeomPtr != 123) 
+        return;
+      
+      int* valid = (int*)valid_i;
+      for (size_t i=0; i<16; i++)
+	if (valid[i] == -1)
+	  if (ray.primID[i] & 2) 
+	    ray.geomID[i] = -1;
+    }
+    
+    /*static void intersectionFilterN(int* valid,
+                                    void* userGeomPtr,
+                                    const RTCIntersectContext* context,
+                                    RTCRayN* ray,
+                                    const RTCHitN* potentialHit,
+                                    const size_t N)
+    {
+      if ((size_t)userGeomPtr != 123) 
         return;
       
       unsigned int valid = *(unsigned int*)valid_i;
@@ -1755,7 +1772,7 @@ namespace embree
 	if (valid & ((unsigned int)1 << i))
 	  if (ray.primID[i] & 2) 
 	    ray.geomID[i] = -1;
-    }
+            }*/
     
     bool rtcore_filter_intersect(VerifyApplication* state, RTCSceneFlags sflags, RTCGeometryFlags gflags, bool subdiv)
     {
