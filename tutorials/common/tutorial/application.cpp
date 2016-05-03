@@ -45,7 +45,7 @@ namespace embree
         }, "--verbose <int>: sets verbosity level");
       
       registerOption("isa", [this] (Ref<ParseStream> cin, const FileName& path) {
-          rtcore += ",isa=" + toString(cin->getInt());
+          rtcore += ",isa=" + cin->getString();
         }, "--isa <string>: selects instruction set to use:\n"
         "  sse: select SSE codepath\n"
         "  sse2: select SSE2 codepath\n"
