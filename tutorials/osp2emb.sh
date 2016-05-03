@@ -1,5 +1,6 @@
 #!/bin/bash
 
+echo Converting OSPRay code $1 to Embree code $2
 cp $1 $2
 
 sed -i 's/ospray\/math\/vec.ih/..\/math\/vec.isph/g' $2

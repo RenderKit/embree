@@ -209,7 +209,7 @@ inline Vec3fa AnisotropicBlinn__sample(const AnisotropicBlinn* This, const Vec3f
   }
 }
 
-typedef Vec3fa*_Vec3fa_ptr;
+typedef Vec3fa* uniform_Vec3fa_ptr;
 
 inline Vec3fa evalBezier(const int geomID, const int primID, const float t)
 {
@@ -576,7 +576,10 @@ extern "C" void device_render (int* pixels,
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   enableFilterDispatch = renderTile == renderTileStandard; 
-  parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {    for (size_t i=range.begin(); i<range.end(); i++)      renderTileTask(i,pixels,width,height,time,camera,numTilesX,numTilesY);  }); 
+  parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
+    for (size_t i=range.begin(); i<range.end(); i++)
+      renderTileTask(i,pixels,width,height,time,camera,numTilesX,numTilesY);
+  }); 
   enableFilterDispatch = false;
 }
 
