@@ -19,6 +19,64 @@
 
 namespace embree
 {
+  inline std::string string_of(RTCError code)
+  {
+    switch (code) {
+    case RTC_UNKNOWN_ERROR    : return "RTC_UNKNOWN_ERROR";
+    case RTC_INVALID_ARGUMENT : return "RTC_INVALID_ARGUMENT";
+    case RTC_INVALID_OPERATION: return "RTC_INVALID_OPERATION";
+    case RTC_OUT_OF_MEMORY    : return "RTC_OUT_OF_MEMORY";
+    case RTC_UNSUPPORTED_CPU  : return "RTC_UNSUPPORTED_CPU";
+    case RTC_CANCELLED        : return "RTC_CANCELLED";
+    default                   : return "invalid error code";
+    }
+  }
+
+  struct RTCDeviceRef
+  {
+  public:
+    RTCDevice device;
+    
+    RTCDeviceRef (std::nullptr_t) 
+      : device(nullptr) {}
+    
+    RTCDeviceRef (RTCDevice device) 
+    : device(device) {}
+    
+    ~RTCDeviceRef ()
+    {
+      RTCError error = rtcDeviceGetError(device);
+      rtcDeleteDevice(device);
+      if (error != RTC_NO_ERROR) 
+        throw std::runtime_error("Error occured: "+string_of(error));
+    }
+    
+    __forceinline operator RTCDevice () const { return device; }
+    
+    __forceinline RTCDeviceRef& operator= (RTCDeviceRef& in) 
+    {
+      RTCDevice tmp = in.device;
+      in.device = nullptr;
+      if (device) rtcDeleteDevice(device);
+      device = tmp;
+      return *this;
+    }
+      
+    __forceinline RTCDeviceRef& operator= (RTCDevice in) 
+    {
+      if (device) rtcDeleteDevice(device);
+      device = in;
+      return *this;
+    }
+        
+    __forceinline RTCDeviceRef& operator= (std::nullptr_t) 
+    {
+      if (device) rtcDeleteDevice(device);
+      device = nullptr;
+      return *this;
+    }
+  };
+
   struct RTCSceneRef
   {
   public:
@@ -59,19 +117,6 @@ namespace embree
       return *this;
     }
   };
-
-  inline std::string string_of(RTCError code)
-  {
-    switch (code) {
-    case RTC_UNKNOWN_ERROR    : return "RTC_UNKNOWN_ERROR";
-    case RTC_INVALID_ARGUMENT : return "RTC_INVALID_ARGUMENT";
-    case RTC_INVALID_OPERATION: return "RTC_INVALID_OPERATION";
-    case RTC_OUT_OF_MEMORY    : return "RTC_OUT_OF_MEMORY";
-    case RTC_UNSUPPORTED_CPU  : return "RTC_UNSUPPORTED_CPU";
-    case RTC_CANCELLED        : return "RTC_CANCELLED";
-    default                   : return "invalid error code";
-    }
-  }
 
   inline RTCRay makeRay(const Vec3fa& org, const Vec3fa& dir) 
   {

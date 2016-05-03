@@ -85,7 +85,6 @@ namespace embree
     int main(int argc, char** argv);
     
   public:
-    RTCDevice device;
     float intensity;
     size_t numFailedTests;
 
