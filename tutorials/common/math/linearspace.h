@@ -16,17 +16,6 @@
 
 #pragma once
 
-#include "../math/vec.h"
+#include "../../../common/math/linearspace3.h"
 
-struct DifferentialGeometry
-{
-  int geomID;
-  int primID;
-  float u,v;
-  Vec3fa P;
-  Vec3fa Ng;
-  Vec3fa Ns;
-  Vec3fa Tx; //direction along hair
-  Vec3fa Ty;
-  float tnear_eps;
-};
+using namespace embree;
