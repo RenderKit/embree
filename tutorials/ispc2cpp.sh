@@ -3,10 +3,6 @@
 echo Converting ISPC tutorial $1 to CPP tutorial $2
 cp $1 $2
 
-# includes
-sed -i.backup 's/\"..\/math\/vec.isph\"/\"..\/..\/..\/common\/math\/vec3.h\"/g' $2
-sed -i.backup 's/\"..\/..\/math\/linearspace.isph\"/\"..\/..\/..\/..\/common\/math\/linearspace3.h\"/g' $2
-
 # uniform functions
 sed -i.backup 's/uniform float uniformSampleConePDF/uniform float _uniformSampleConePDF/g' $2
 sed -i.backup 's/uniform float uniformSampleDiskPDF/uniform float _uniformSampleDiskPDF/g' $2

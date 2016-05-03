@@ -12,3 +12,4 @@ sed -i 's/ospray\/common\/DifferentialGeometry.ih/..\/differential_geometry.isph
 sed -i 's/vec2f/Vec2f/g' $2
 sed -i 's/vec3f/Vec3f/g' $2
 sed -i 's/vec4f/Vec4f/g' $2
+sed -i 's/linear3f/LinearSpace3f/g' $2

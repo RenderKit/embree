@@ -22,7 +22,7 @@
 // sampling functions often come in pairs: sample and pdf (needed later for MIS)
 // good reference is "Total Compendium" by Philip Dutre http://people.cs.kuleuven.be/~philip.dutre/GI/
 
-#include "../../../common/math/vec3.h"
+#include "../math/vec.h"
 
 
 inline Vec3fa cartesian(const float phi, const float sinTheta, const float cosTheta)
