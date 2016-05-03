@@ -181,6 +181,12 @@ namespace embree
   __forceinline ssize_t max(ssize_t a, ssize_t b) { return a<b ? b:a; }
 #endif
 
+#if defined(__MACOSX__)
+  __forceinline void sincosf(float x, float *sin, float *cos) {
+    __sincosf(x,sin,cos);
+  }
+#endif
+  
   template<typename T> __forceinline T clamp(const T& x, const T& lower = T(zero), const T& upper = T(one)) { return max(min(x,upper),lower); }
   template<typename T> __forceinline T clampz(const T& x, const T& upper) { return max(T(zero), min(x,upper)); }
 
