@@ -1920,8 +1920,8 @@ namespace embree
     static const size_t N = 10;
     static const size_t maxStreamSize = 100;
     
-    WatertightTest (std::string name, RTCSceneFlags sflags, IntersectMode imode, IntersectVariant ivariant, std::string model, const Vec3fa& pos)
-      : VerifyApplication::IntersectTest(name,imode,ivariant,VerifyApplication::PASS), sflags(sflags), model(model), pos(pos) {}
+    WatertightTest (std::string name, RTCSceneFlags sflags, IntersectMode imode, std::string model, const Vec3fa& pos)
+      : VerifyApplication::IntersectTest(name,imode,VARIANT_INTERSECT,VerifyApplication::PASS), sflags(sflags), model(model), pos(pos) {}
     
     bool run(VerifyApplication* state)
     {
@@ -1935,6 +1935,7 @@ namespace embree
       
       size_t numTests = 0;
       size_t numFailures = 0;
+      for (auto ivariant : state->intersectVariants)
       for (size_t i=0; i<size_t(N*state->intensity); i++) 
       {
         for (size_t M=1; M<maxStreamSize; M++)
@@ -2809,9 +2810,8 @@ namespace embree
     const Vec3fa watertight_pos = Vec3fa(148376.0f,1234.0f,-223423.0f);
     for (auto sflags : sceneFlagsRobust) 
       for (auto imode : intersectModes) 
-        for (auto ivariant : intersectVariants)
-          for (std::string model : {"sphere", "plane"}) 
-            addTest(new WatertightTest("watertight_"+to_string(sflags)+"_"+model+"_"+to_string(imode),sflags,imode,ivariant,model,watertight_pos));
+        for (std::string model : {"sphere", "plane"}) 
+          addTest(new WatertightTest("watertight_"+to_string(sflags)+"_"+model+"_"+to_string(imode),sflags,imode,model,watertight_pos));
     endTestGroup();
 
     if (rtcDeviceGetParameter1i(device,RTC_CONFIG_IGNORE_INVALID_RAYS))
