@@ -123,7 +123,8 @@ IF (RTCORE_RAY_PACKETS)
     SET(EMBREE_LIBRARY_FILES_SSE42 ${EMBREE_LIBRARY_FILES_SSE42}
     bvh/bvh_intersector_single.cpp
     bvh/bvh_intersector_hybrid.cpp
-    bvh/bvh_intersector_stream.cpp)
+    bvh/bvh_intersector_stream.cpp
+    bvh/bvh_intersector_stream_filters.cpp)
 ENDIF()
 
 IF (TARGET_SSE42 AND EMBREE_LIBRARY_FILES_SSE42)

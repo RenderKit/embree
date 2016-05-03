@@ -140,7 +140,7 @@ namespace embree
 
     /* ray stream SOA to AOS conversion */
 #if defined(RTCORE_RAY_PACKETS) && !defined(__MIC__)
-    SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL(enabled_cpu_features,rayStreamFilters);
+    SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL(enabled_cpu_features,rayStreamFilters);
 #endif
   }
 
