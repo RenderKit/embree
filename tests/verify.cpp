@@ -2911,6 +2911,27 @@ namespace embree
     device = rtcNewDevice(rtcore.c_str());
     error_handler(rtcDeviceGetError(device));
 
+    /* only test supported intersect modes */
+    intersectModes.clear();
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT1)) intersectModes.push_back(MODE_INTERSECT1);
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT4)) intersectModes.push_back(MODE_INTERSECT4);
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT8)) intersectModes.push_back(MODE_INTERSECT8);
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT16)) intersectModes.push_back(MODE_INTERSECT16);
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM)) {
+      intersectModes.push_back(MODE_INTERSECT1M);
+      intersectModes.push_back(MODE_INTERSECTNM1);
+      intersectModes.push_back(MODE_INTERSECTNM3);
+      intersectModes.push_back(MODE_INTERSECTNM4);
+      intersectModes.push_back(MODE_INTERSECTNM8);
+      intersectModes.push_back(MODE_INTERSECTNM16);
+      intersectModes.push_back(MODE_INTERSECTNp);
+    }
+    intersectModesOld.clear();
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT1)) intersectModesOld.push_back(MODE_INTERSECT1);
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT4)) intersectModesOld.push_back(MODE_INTERSECT4);
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT8)) intersectModesOld.push_back(MODE_INTERSECT8);
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT16)) intersectModesOld.push_back(MODE_INTERSECT16);
+
     /* enable all tests if user did not specify any tests */
     if (!user_specified_tests) 
       for (auto test : tests) 
