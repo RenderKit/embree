@@ -5,6 +5,7 @@ cp $1 $2
 
 # includes
 sed -i.backup 's/\"..\/math\/vec.isph\"/\"..\/..\/..\/common\/math\/vec3.h\"/g' $2
+sed -i.backup 's/\"..\/..\/math\/linearspace.isph\"/\"..\/..\/..\/..\/common\/math\/linearspace3.h\"/g' $2
 
 # uniform functions
 sed -i.backup 's/uniform float uniformSampleConePDF/uniform float _uniformSampleConePDF/g' $2
@@ -66,8 +67,8 @@ sed -i.backup  's/\*pi\//\*float(pi)\//g' $2
 sed -i.backup  's/one_over_pi/float(one_over_pi)/g' $2
 sed -i.backup  's/one_over_two_pi/float(one_over_two_pi)/g' $2
 sed -i.backup  's/one_over_four_pi/float(one_over_four_pi)/g' $2
-sed -i.backup  's/[^_(]two_pi/float(two_pi)/g' $2
 sed -i.backup  's/(two_pi/(float(two_pi)/g' $2
+sed -i.backup  's/[^_(]two_pi/float(two_pi)/g' $2
 sed -i.backup  's/make_Vec2f/Vec2f/g' $2
 sed -i.backup  's/make_Vec3f/Vec3f/g' $2
 sed -i.backup  's/make_Vec3fa/Vec3fa/g' $2

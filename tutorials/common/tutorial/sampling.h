@@ -45,7 +45,7 @@ inline Vec3fa cartesian(const float phi, const float cosTheta)
 
 inline Vec3fa cosineSampleHemisphere(const Vec2f s)
 {
-  const float phi =float(float(two_pi)) * s.x;
+  const float phi =float(two_pi) * s.x;
   const float cosTheta = sqrt(s.y);
   const float sinTheta = sqrt(1.0f - s.y);
   return cartesian(phi, sinTheta, cosTheta);
@@ -67,7 +67,7 @@ inline float cosineSampleHemispherePDF(float cosTheta)
 
 inline Vec3fa powerCosineSampleHemisphere(const float n, const Vec2f &s)
 {
-  const float phi =float(float(two_pi)) * s.x;
+  const float phi =float(two_pi) * s.x;
   const float cosTheta = pow(s.y, 1.0f / (n + 1.0f));
   return cartesian(phi, cosTheta);
 }
@@ -87,7 +87,7 @@ inline float powerCosineSampleHemispherePDF(const Vec3fa dir, const float n) // 
 
 inline Vec3fa uniformSampleCone(const float cosAngle, const Vec2f &s)
 {
-  const float phi =float(float(two_pi)) * s.x;
+  const float phi =float(two_pi) * s.x;
   const float cosTheta = 1.0f - s.y * (1.0f - cosAngle);
   return cartesian(phi, cosTheta);
 }
@@ -109,7 +109,7 @@ inline float _uniformSampleConePDF(const float cosAngle)
 inline Vec3fa uniformSampleDisk(const float radius, const Vec2f &s)
 {
   const float r = sqrtf(s.x) * radius;
-  const float phi =float(float(two_pi)) * s.y;
+  const float phi =float(two_pi) * s.y;
   float sinPhi, cosPhi;
   sincosf(phi, &sinPhi, &cosPhi);
   return Vec3fa(r * cosPhi, r * sinPhi, 0.f);
