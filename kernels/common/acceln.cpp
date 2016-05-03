@@ -132,7 +132,7 @@ namespace embree
     {
       This->validAccels[i]->occludedN(ray,M,context);
       //Ray::filterOutOccluded((Ray**)ray,M);
-      if (M == 0) break;
+      //if (M == 0) break;
     }
   }
 

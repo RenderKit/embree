@@ -180,18 +180,12 @@ namespace embree
     /* filter out all occluded rays from a stream of rays */
     __forceinline static void filterOutOccluded(RayK<1>** ray, size_t& N)
     {
-      //PING;
-      //for (size_t i=0; i<N; i++) PRINT2(i,*ray[i]);
       size_t l=0, r=N;
-      while (l<r)
-      {
+      while (l<r) {
         if (ray[l]->geomID != 0) l++;
         else std::swap(ray[l],ray[--r]); 
       }
       N = l;
-      //N = r;
-      //PRINT("filtered");
-      //for (size_t i=0; i<N; i++) PRINT2(i,*ray[i]);
     }
     
     /* Ray data */
