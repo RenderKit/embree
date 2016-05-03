@@ -184,6 +184,9 @@ namespace embree
   
   void Geometry::setIntersectionFilterFunctionN (RTCFilterFuncN filter) 
   { 
+    if (!parent->isStreamMode())
+      throw_RTCError(RTC_INVALID_OPERATION,"you can use rtcSetIntersectionFilterFunctionN only in stream mode");
+
     if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
@@ -269,6 +272,9 @@ namespace embree
 
   void Geometry::setOcclusionFilterFunctionN (RTCFilterFuncN filter) 
   { 
+    if (!parent->isStreamMode())
+      throw_RTCError(RTC_INVALID_OPERATION,"you can use rtcSetOcclusionFilterFunctionN only in stream mode");
+
     if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 

@@ -20,7 +20,9 @@ namespace embree
 {
   struct Tutorial : public TutorialApplication
   {
-    Tutorial() : TutorialApplication("bvh_builder") {
+    Tutorial()
+      : TutorialApplication("bvh_builder",FEATURE_RTCORE)
+    {
       interactive = false;
     }
   };

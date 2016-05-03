@@ -52,7 +52,7 @@ typedef unmasked void (*RTCIntersectFunc1Mp)(void* uniform ptr,              /*!
 typedef unmasked void (*RTCIntersectFuncN)(const uniform int* uniform valid, /*! pointer to valid mask */
                                            void* uniform ptr,                /*!< pointer to geometry user data */
                                            const uniform RTCIntersectContext* uniform context,  /*!< intersection context as passed to rtcIntersect/rtcOccluded */
-                                           void* uniform rays,               /*!< ray packet of size N */
+                                           RTCRayN* uniform rays,               /*!< ray packet of size N */
                                            uniform size_t N,                 /*< number of rays in ray packet */
                                            uniform size_t item              /*< item to intersect */);
 
@@ -77,7 +77,7 @@ typedef unmasked void (*RTCOccludedFunc1Mp) (void* uniform ptr,             /*!<
 typedef unmasked void (*RTCOccludedFuncN) (const uniform int* uniform valid,  /*! pointer to valid mask */
                                            void* uniform ptr,                 /*!< pointer to geometry user data */ 
                                            const uniform RTCIntersectContext* uniform context,  /*!< intersection context as passed to rtcIntersect/rtcOccluded */
-                                           void* uniform ray,                 /*!< ray packet of size N */
+                                           RTCRayN* uniform ray,                 /*!< ray packet of size N */
                                            uniform size_t N,                  /*< number of rays in ray packet*/
                                            uniform size_t item                /*< item to test for occlusion */);
 

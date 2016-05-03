@@ -167,6 +167,12 @@ namespace embree
   INIT_SYMBOL(features,intersector);                                        \
   SELECT_SYMBOL_AVX(features,intersector);                         \
   SELECT_SYMBOL_AVX2(features,intersector);
+
+#define SELECT_SYMBOL_INIT_SSE42_AVX_AVX2(features,intersector)          \
+  INIT_SYMBOL(features,intersector);                                        \
+  SELECT_SYMBOL_SSE42(features,intersector);                       \
+  SELECT_SYMBOL_AVX(features,intersector);                         \
+  SELECT_SYMBOL_AVX2(features,intersector);
   
 #define SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,intersector)        \
   INIT_SYMBOL(features,intersector);                                        \

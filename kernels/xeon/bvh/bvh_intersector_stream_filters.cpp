@@ -41,15 +41,15 @@ namespace embree
           Ray &ray = *(Ray*)((char*)rayN + inputRayID * stride);
           /* skip invalid rays */
           if (unlikely(ray.tnear > ray.tfar)) { inputRayID++; continue; }
-          if (!intersect && ray.geomID == 0) { inputRayID++; continue; } // ignore already occluded rays
-#if defined(__MIC__)
-          const unsigned int octantID = \
-            (ray.dir.x < 0.0f ? 1 : 0) |
-            (ray.dir.y < 0.0f ? 2 : 0) |
-            (ray.dir.z < 0.0f ? 4 : 0);
-#else
-          const unsigned int octantID = movemask(vfloat4(ray.dir) < 0.0f) & 0x7;
+          if (unlikely(!intersect && ray.geomID == 0)) { inputRayID++; continue; } // ignore already occluded rays
+
+#if defined(RTCORE_IGNORE_INVALID_RAYS)
+          if (unlikely(!ray.valid())) {  inputRayID++; continue; }
 #endif
+
+
+          const unsigned int octantID = movemask(vfloat4(ray.dir) < 0.0f) & 0x7;
+
           assert(octantID < 8);
           octants[octantID][rays_in_octant[octantID]++] = &ray;
           inputRayID++;
@@ -72,6 +72,7 @@ namespace embree
         if (unlikely(cur_octant == -1))
           break;
 
+        
         Ray** rays = &octants[cur_octant][0];
         const size_t numOctantRays = rays_in_octant[cur_octant];
 
@@ -90,7 +91,7 @@ namespace embree
         }
         rays_in_octant[cur_octant] = 0;
 
-      }
+        }
     }
 
     __forceinline void RayStream::filterSOA(Scene *scene, char* rayData, const size_t N, const size_t streams, const size_t stream_offset, const RTCIntersectContext* context, const bool intersect)
@@ -105,13 +106,12 @@ namespace embree
           for (size_t i=0; i<N; i+=VSIZEX)
           {
             const vintx vi = vintx(i)+vintx(step);
-            const vboolx valid = vi < vintx(N);
+            vboolx valid = vi < vintx(N);
             const size_t offset = s*stream_offset + sizeof(float) * i;
             RayK<VSIZEX> ray = rayN.gather<VSIZEX>(offset);
-#if !defined(__MIC)
+            valid &= ray.tnear <= ray.tfar;
             if (intersect) scene->intersect(valid,ray,context);
             else           scene->occluded (valid,ray,context);
-#endif
             rayN.scatter<VSIZEX>(valid,offset,ray,intersect);
           }
         }
@@ -142,6 +142,11 @@ namespace embree
 
           if (unlikely(!rayN.isValid(offset))) continue;
 
+#if defined(RTCORE_IGNORE_INVALID_RAYS)
+          __aligned(64) Ray ray = rayN.gather(offset);
+          if (unlikely(!ray.valid())) continue; 
+#endif
+
           const size_t octantID = rayN.getOctant(offset);
 
           assert(octantID < 8);
@@ -152,7 +157,7 @@ namespace embree
             for (size_t j=0;j<MAX_RAYS_PER_OCTANT;j++)
             {
               rays[j] = rayN.gather(octants[octantID][j]);
-              assert(rays[j].valid());
+              //assert(rays[j].valid());
             }
 
             if (intersect)
@@ -175,7 +180,7 @@ namespace embree
           for (size_t j=0;j<rays_in_octant[i];j++)
           {
             rays[j] = rayN.gather(octants[i][j]);
-            assert(rays[j].valid());
+            //assert(rays[j].valid());
           }
 
           if (intersect)
@@ -202,13 +207,12 @@ namespace embree
           for (size_t i=0; i<N; i+=VSIZEX)
           {
             const vintx vi = vintx(i)+vintx(step);
-            const vboolx valid = vi < vintx(N);
+            vboolx valid = vi < vintx(N);
             const size_t offset = s*stream_offset + sizeof(float) * i;
             RayK<VSIZEX> ray = rayN.gather<VSIZEX>(offset);
-#if !defined(__MIC)
+             valid &= ray.tnear <= ray.tfar;
             if (intersect) scene->intersect(valid,ray,context);
             else           scene->occluded (valid,ray,context);
-#endif
             rayN.scatter<VSIZEX>(valid,offset,ray,intersect);
           }
         }
@@ -239,6 +243,11 @@ namespace embree
 
           if (unlikely(!rayN.isValidByOffset(offset))) continue;
 
+#if defined(RTCORE_IGNORE_INVALID_RAYS)
+          __aligned(64) Ray ray = rayN.gatherByOffset(offset);
+          if (unlikely(!ray.valid())) continue; 
+#endif
+
           const size_t octantID = rayN.getOctantByOffset(offset);
 
           assert(octantID < 8);
@@ -249,7 +258,7 @@ namespace embree
             for (size_t j=0;j<MAX_RAYS_PER_OCTANT;j++)
             {
               rays[j] = rayN.gatherByOffset(octants[octantID][j]);
-              assert(rays[j].valid());
+              //assert(rays[j].valid());
             }
 
             if (intersect)
@@ -272,8 +281,7 @@ namespace embree
           for (size_t j=0;j<rays_in_octant[i];j++)
           {
             rays[j] = rayN.gatherByOffset(octants[i][j]);
-            //if (!rays[j].valid()) PRINT(rays[j]);
-            assert(rays[j].valid());
+            //assert(rays[j].valid());
           }
 
           if (intersect)

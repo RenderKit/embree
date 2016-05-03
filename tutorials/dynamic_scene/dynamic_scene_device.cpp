@@ -22,7 +22,7 @@ const int numPhi = 5;
 #else
 const int numSpheres = 20;
 //const int numPhi = 120; 
-const int numPhi = 256; /* otherwise big xeons are heavily under-utilized */ 
+const int numPhi = 256; 
 #endif
 const int numTheta = 2*numPhi;
 
@@ -33,30 +33,6 @@ Vec3fa position[numSpheres];
 Vec3fa colors[numSpheres+1];
 float radius[numSpheres];
 int disabledID = -1;
-
-/* error reporting function */
-void error_handler(const RTCError code, const char* str = nullptr)
-{
-  if (code == RTC_NO_ERROR) 
-    return;
-
-  printf("Embree: ");
-  switch (code) {
-  case RTC_UNKNOWN_ERROR    : printf("RTC_UNKNOWN_ERROR"); break;
-  case RTC_INVALID_ARGUMENT : printf("RTC_INVALID_ARGUMENT"); break;
-  case RTC_INVALID_OPERATION: printf("RTC_INVALID_OPERATION"); break;
-  case RTC_OUT_OF_MEMORY    : printf("RTC_OUT_OF_MEMORY"); break;
-  case RTC_UNSUPPORTED_CPU  : printf("RTC_UNSUPPORTED_CPU"); break;
-  case RTC_CANCELLED        : printf("RTC_CANCELLED"); break;
-  default                   : printf("invalid error code"); break;
-  }
-  if (str) { 
-    printf(" ("); 
-    while (*str) putchar(*str++); 
-    printf(")\n"); 
-  }
-  exit(1);
-}
 
 /* adds a sphere to the scene */
 unsigned int createSphere (RTCGeometryFlags flags, const Vec3fa& pos, const float r)
@@ -158,8 +134,6 @@ extern "C" void device_init (char* cfg)
     //RTCGeometryFlags flags = i%3 == 0 ? RTC_GEOMETRY_STATIC : i%3 == 1 ? RTC_GEOMETRY_DEFORMABLE : RTC_GEOMETRY_DYNAMIC;
     RTCGeometryFlags flags = i%2 ? RTC_GEOMETRY_DEFORMABLE : RTC_GEOMETRY_DYNAMIC;
     //RTCGeometryFlags flags = RTC_GEOMETRY_DEFORMABLE;
-    //RTCGeometryFlags flags = RTC_GEOMETRY_DYNAMIC;
-
     int id = createSphere(flags,p,r);
     position[id] = p;
     radius[id] = r;
@@ -301,10 +275,7 @@ void animateSphere (int id, float time)
 
   /* loop over all vertices */
 #if 1 // enables parallel execution
-  parallel_for(size_t(0),size_t(numPhi+1),[&](const range<size_t>& range) {
-    for (size_t i=range.begin(); i<range.end(); i++)
-      animateSphere(i,vertices,rcpNumTheta,rcpNumPhi,pos,r,f);
-  }); 
+  parallel_for(size_t(0),size_t(numPhi+1),[&](const range<size_t>& range) {    for (size_t i=range.begin(); i<range.end(); i++)      animateSphere(i,vertices,rcpNumTheta,rcpNumPhi,pos,r,f);  }); 
 #else
   for (int phi=0; phi<numPhi+1; phi++) for (int theta=0; theta<numTheta; theta++)
   {
@@ -337,16 +308,10 @@ extern "C" void device_render (int* pixels,
   /* commit changes to scene */
   rtcCommit (g_scene);
  
-#if 1
   /* render all pixels */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
-    for (size_t i=range.begin(); i<range.end(); i++)
-      renderTileTask(i,pixels,width,height,time,camera,numTilesX,numTilesY);
-  }); 
-#endif
-
+  parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {    for (size_t i=range.begin(); i<range.end(); i++)      renderTileTask(i,pixels,width,height,time,camera,numTilesX,numTilesY);  }); 
 }
 
 /* called by the C++ code for cleanup */

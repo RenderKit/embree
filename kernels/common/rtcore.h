@@ -31,6 +31,10 @@ namespace embree
   /*! decoding of algorithm flags */
   __forceinline bool isInterpolatable(RTCAlgorithmFlags flags) { return flags & RTC_INTERPOLATE; }
   __forceinline bool isStreamMode(RTCAlgorithmFlags flags) { return flags & RTC_INTERSECT_STREAM; }
+  __forceinline bool isIntersect1Mode(RTCAlgorithmFlags flags) { return flags & RTC_INTERSECT1; }
+  __forceinline bool isIntersect4Mode(RTCAlgorithmFlags flags) { return flags & RTC_INTERSECT4; }
+  __forceinline bool isIntersect8Mode(RTCAlgorithmFlags flags) { return flags & RTC_INTERSECT8; }
+  __forceinline bool isIntersect16Mode(RTCAlgorithmFlags flags) { return flags & RTC_INTERSECT16; }
 
    /*! decoding of intersection flags */
   __forceinline bool isCoherent  (RTCIntersectFlags flags) { return !(flags & RTC_INTERSECT_INCOHERENT); }

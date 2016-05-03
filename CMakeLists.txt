@@ -30,7 +30,6 @@ CONFIGURE_FILE(
   "${PROJECT_SOURCE_DIR}/kernels/version.h.in"
   "${PROJECT_BINARY_DIR}/version.h"
 )
-INCLUDE_DIRECTORIES("${PROJECT_BINARY_DIR}")
 
 IF(COMMAND cmake_policy)
   if (POLICY CMP0003)
@@ -103,7 +102,6 @@ OPTION(RTCORE_RAY_PACKETS "Enabled support for ray packets." ON)
 
 OPTION(RTCORE_EXPORT_ALL_SYMBOLS "Lets Embree library export all symbols.")
 OPTION(RTCORE_ENABLE_RAYSTREAM_LOGGER "Enables ray stream logger.")
-OPTION(RTCORE_MEMKIND_ALLOCATOR "Enables memory allocation through the memkind library." OFF)
 
 SET(RTCORE_TASKING_SYSTEM "TBB" CACHE STRING "Selects tasking system")
 SET_PROPERTY(CACHE RTCORE_TASKING_SYSTEM PROPERTY STRINGS TBB INTERNAL)
@@ -273,6 +271,8 @@ INCLUDE (ispc)
 # Search paths
 ##############################################################
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/include)
+INCLUDE_DIRECTORIES("${PROJECT_BINARY_DIR}")
+INCLUDE_DIRECTORIES_ISPC("${PROJECT_BINARY_DIR}")
 
 ##############################################################
 # Output paths

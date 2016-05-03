@@ -343,7 +343,7 @@ namespace embree
     for (std::map<Device*,size_t>::iterator i=g_cache_size_map.begin(); i!= g_cache_size_map.end(); i++)
       maxCacheSize = max(maxCacheSize, (*i).second);
     
-    resizeTessellationCache(max(size_t(1024*1024),maxCacheSize));
+    resizeTessellationCache(maxCacheSize);
   }
 
   void Device::initTaskingSystem(size_t numThreads) 
@@ -433,16 +433,29 @@ namespace embree
     case RTC_CONFIG_VERSION      : return __EMBREE_VERSION_NUMBER__;
 
     case RTC_CONFIG_INTERSECT1: return 1;
-#if defined(RTCORE_RAY_PACKETS)
+
+#if defined(__TARGET_SIMD4__) && defined(RTCORE_RAY_PACKETS)
     case RTC_CONFIG_INTERSECT4:  return hasISA(SSE2);
-    case RTC_CONFIG_INTERSECT8:  return hasISA(AVX);
-    case RTC_CONFIG_INTERSECT16: return hasISA(AVX512KNL) | hasISA(KNC);
-    case RTC_CONFIG_INTERSECTN:  return 1;
 #else
     case RTC_CONFIG_INTERSECT4:  return 0;
+#endif
+
+#if defined(__TARGET_SIMD8__) && defined(RTCORE_RAY_PACKETS)
+    case RTC_CONFIG_INTERSECT8:  return hasISA(AVX);
+#else
     case RTC_CONFIG_INTERSECT8:  return 0;
+#endif
+
+#if defined(__TARGET_SIMD16__) && defined(RTCORE_RAY_PACKETS)
+    case RTC_CONFIG_INTERSECT16: return hasISA(AVX512KNL) | hasISA(KNC);
+#else
     case RTC_CONFIG_INTERSECT16: return 0;
-    case RTC_CONFIG_INTERSECTN:  return 0;
+#endif
+
+#if defined(RTCORE_RAY_PACKETS)
+    case RTC_CONFIG_INTERSECT_STREAM:  return 1;
+#else
+    case RTC_CONFIG_INTERSECT_STREAM:  return 0;
 #endif
     
 #if defined(RTCORE_RAY_MASK)
@@ -451,31 +464,31 @@ namespace embree
     case RTC_CONFIG_RAY_MASK: return 0;
 #endif
 
-#if defined(RTC_BACKFACE_CULLING)
+#if defined(RTCORE_BACKFACE_CULLING)
     case RTC_CONFIG_BACKFACE_CULLING: return 1;
 #else
     case RTC_CONFIG_BACKFACE_CULLING: return 0;
 #endif
 
-#if defined(RTC_INTERSECTION_FILTER)
+#if defined(RTCORE_INTERSECTION_FILTER)
     case RTC_CONFIG_INTERSECTION_FILTER: return 1;
 #else
     case RTC_CONFIG_INTERSECTION_FILTER: return 0;
 #endif
 
-#if defined(RTC_INTERSECTION_FILTER_RESTORE)
+#if defined(RTCORE_INTERSECTION_FILTER_RESTORE)
     case RTC_CONFIG_INTERSECTION_FILTER_RESTORE: return 1;
 #else
     case RTC_CONFIG_INTERSECTION_FILTER_RESTORE: return 0;
 #endif
 
-#if defined(RTC_BUFFER_STRIDE)
+#if defined(RTCORE_BUFFER_STRIDE)
     case RTC_CONFIG_BUFFER_STRIDE: return 1;
 #else
     case RTC_CONFIG_BUFFER_STRIDE: return 0;
 #endif
       
-#if defined(RTC_IGNORE_INVALID_RAYS)
+#if defined(RTCORE_IGNORE_INVALID_RAYS)
     case RTC_CONFIG_IGNORE_INVALID_RAYS: return 1;
 #else
     case RTC_CONFIG_IGNORE_INVALID_RAYS: return 0;
@@ -517,7 +530,7 @@ namespace embree
     case RTC_CONFIG_HAIR_GEOMETRY: return 0;
 #endif
 
-#if defined( RTCORE_GEOMETRY_SUBDIV)
+#if defined(RTCORE_GEOMETRY_SUBDIV)
     case RTC_CONFIG_SUBDIV_GEOMETRY: return 1;
 #else
     case RTC_CONFIG_SUBDIV_GEOMETRY: return 0;

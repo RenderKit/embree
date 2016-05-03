@@ -201,7 +201,7 @@ namespace embree
         int mode =  2*(int)isCompact() + 1*(int)isRobust();
         switch (mode) {
         case /*0b00*/ 0: accels.add(device->bvh4_factory->BVH4Triangle4Twolevel(this)); break;
-        case /*0b01*/ 1: accels.add(device->bvh4_factory->BVH4Triangle4Twolevel(this)); break;
+        case /*0b01*/ 1: accels.add(device->bvh4_factory->BVH4Triangle4vTwolevel(this)); break;
         case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4Triangle4iTwolevel(this)); break;
         case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4Triangle4iTwolevel(this)); break;
         }
@@ -213,7 +213,7 @@ namespace embree
 
 #if defined (__TARGET_AVX__)
     else if (device->tri_accel == "bvh8.triangle4")       accels.add(device->bvh8_factory->BVH8Triangle4(this));
-    else if (device->tri_accel == "qbvh8.triangle4")      accels.add(device->bvh8_factory->BVH8QuantizedTriangle4(this));
+    else if (device->tri_accel == "qbvh8.triangle4i")      accels.add(device->bvh8_factory->BVH8QuantizedTriangle4i(this));
 #endif
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown triangle acceleration structure "+device->tri_accel);
 #endif
@@ -236,15 +236,35 @@ namespace embree
           accels.add(device->bvh4_factory->BVH4Quad4v(this));
         break;
 
-      case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4Quad4i(this)); break;
+      case /*0b10*/ 2: 
+#if defined (__TARGET_AVX__)
+        if (device->hasISA(AVX))
+        {
+          // todo: reduce performance overhead of 10% compared to uncompressed bvh8
+          // if (isExclusiveIntersect1Mode())
+          //   accels.add(device->bvh8_factory->BVH8QuantizedQuad4i(this)); 
+          // else
+          accels.add(device->bvh8_factory->BVH8Quad4i(this)); 
+        }
+        else
+#endif
+        {
+          accels.add(device->bvh4_factory->BVH4Quad4i(this));
+        }
+        break;
+
       case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4Quad4i(this)); break;
+
       }
     }
     else if (device->quad_accel == "bvh4.quad4v")       accels.add(device->bvh4_factory->BVH4Quad4v(this));
     else if (device->quad_accel == "bvh4.quad4i")       accels.add(device->bvh4_factory->BVH4Quad4i(this));
+    else if (device->quad_accel == "qbvh4.quad4i")      accels.add(device->bvh4_factory->BVH4QuantizedQuad4i(this));
+
 #if defined (__TARGET_AVX__)
     else if (device->quad_accel == "bvh8.quad4v")       accels.add(device->bvh8_factory->BVH8Quad4v(this));
     else if (device->quad_accel == "bvh8.quad4i")       accels.add(device->bvh8_factory->BVH8Quad4i(this));
+    else if (device->quad_accel == "qbvh8.quad4i")      accels.add(device->bvh8_factory->BVH8QuantizedQuad4i(this));
 #endif
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown quad acceleration structure "+device->quad_accel);
 #endif
@@ -613,11 +633,14 @@ namespace embree
     intersectors = accels.intersectors;
 
     /* enable only algorithms choosen by application */
-    if ((aflags & RTC_INTERSECT1) == 0) intersectors.intersector1 = Accel::Intersector1(&invalid_rtcIntersect1);
-    if ((aflags & RTC_INTERSECT4) == 0) intersectors.intersector4 = Accel::Intersector4(&invalid_rtcIntersect4);
-    if ((aflags & RTC_INTERSECT8) == 0) intersectors.intersector8 = Accel::Intersector8(&invalid_rtcIntersect8);
-    if ((aflags & RTC_INTERSECT16) == 0) intersectors.intersector16 = Accel::Intersector16(&invalid_rtcIntersect16);
-    if ((aflags & RTC_INTERSECT_STREAM) == 0) intersectors.intersectorN = Accel::IntersectorN(&invalid_rtcIntersectN);
+    if ((aflags & RTC_INTERSECT_STREAM) == 0) 
+    {
+      intersectors.intersectorN = Accel::IntersectorN(&invalid_rtcIntersectN);
+      if ((aflags & RTC_INTERSECT1) == 0) intersectors.intersector1 = Accel::Intersector1(&invalid_rtcIntersect1);
+      if ((aflags & RTC_INTERSECT4) == 0) intersectors.intersector4 = Accel::Intersector4(&invalid_rtcIntersect4);
+      if ((aflags & RTC_INTERSECT8) == 0) intersectors.intersector8 = Accel::Intersector8(&invalid_rtcIntersect8);
+      if ((aflags & RTC_INTERSECT16) == 0) intersectors.intersector16 = Accel::Intersector16(&invalid_rtcIntersect16);
+    }
 
     /* update commit counter */
     commitCounter++;

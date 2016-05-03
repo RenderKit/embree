@@ -25,6 +25,8 @@
 #include "../geometry/primitive.h"
 #include "../../common/ray.h"
 
+#define ENABLE_32BIT_OFFSETS_FOR_QUANTIZED_NODES 0
+
 namespace embree
 {
   /*! flags used to enable specific node types in intersectors */
@@ -163,14 +165,22 @@ namespace embree
         qnode->init(node);
 
         for (size_t i=0; i<n; i++) {
+#if ENABLE_32BIT_OFFSETS_FOR_QUANTIZED_NODES == 1
           children[i].parent = (size_t*)((size_t)qnode | i);
+#else
+          children[i].parent = (size_t*)&qnode->child(i);
+#endif
         };
 
         /* encode 64bit pointer as relative 32bit offset to parent node address */
+#if ENABLE_32BIT_OFFSETS_FOR_QUANTIZED_NODES == 1
         QuantizedNode *parent = (QuantizedNode *)((size_t)current.parent & (~0x7));
         const size_t index = (size_t)current.parent & 0x7;
         assert(index < N);
         parent->childOffset(index) = bvh->encodeQuantizedNode((size_t)parent,(size_t)qnode);
+#else
+        *current.parent = (size_t)qnode | tyQuantizedNode;
+#endif
         return NULL;
       }
 
@@ -199,9 +209,9 @@ namespace embree
       /*! Prefetches the node this reference points to */
       __forceinline void prefetch(int types=0) const {
 #if defined(__AVX512F__)
-          prefetchL2(((char*)ptr)+0*64);
-          prefetchL2(((char*)ptr)+1*64);
           if (types != BVH_FLAG_QUANTIZED_NODE) {
+            prefetchL2(((char*)ptr)+0*64);
+            prefetchL2(((char*)ptr)+1*64);
             if ((N >= 8) || (types > BVH_FLAG_ALIGNED_NODE)) {
               prefetchL2(((char*)ptr)+2*64);
               prefetchL2(((char*)ptr)+3*64);
@@ -213,10 +223,17 @@ namespace embree
               prefetchL2(((char*)ptr)+7*64);
             }
           }
+          else
+          {
+            /* todo: reduce if 32bit offsets are enabled */
+            prefetchL2(((char*)ptr)+0*64);
+            prefetchL2(((char*)ptr)+1*64);
+            prefetchL2(((char*)ptr)+2*64);
+          }
 #else
-          prefetchL1(((char*)ptr)+0*64);
-          prefetchL1(((char*)ptr)+1*64);
           if (types != BVH_FLAG_QUANTIZED_NODE) {
+            prefetchL1(((char*)ptr)+0*64);
+            prefetchL1(((char*)ptr)+1*64);
             if ((N >= 8) || (types > BVH_FLAG_ALIGNED_NODE)) {
               prefetchL1(((char*)ptr)+2*64);
               prefetchL1(((char*)ptr)+3*64);
@@ -227,6 +244,13 @@ namespace embree
               prefetchL1(((char*)ptr)+6*64);
               prefetchL1(((char*)ptr)+7*64);
             }
+          }
+          else
+          {
+            /* todo: reduce if 32bit offsets are enabled */
+            prefetchL1(((char*)ptr)+0*64);
+            prefetchL1(((char*)ptr)+1*64);
+            prefetchL1(((char*)ptr)+2*64);
           }
 #endif
       }
@@ -781,7 +805,7 @@ namespace embree
 
 
     /*! BVHN Quantized Node */
-    struct __aligned(32) QuantizedNode
+    struct __aligned(16) QuantizedNode
     {
       static const unsigned char MIN_QUAN_8BIT = 0;
       static const unsigned char MAX_QUAN_8BIT = 255;
@@ -793,6 +817,7 @@ namespace embree
         for (size_t i=0; i<N; i++) upper_x[i] = upper_y[i] = upper_z[i] = MIN_QUAN_8BIT;
       }
 
+#if ENABLE_32BIT_OFFSETS_FOR_QUANTIZED_NODES == 1
         /*! Returns NodeRef to specified child which is combined from 64bit this pointer + 32bit offset*/
       __forceinline       NodeRef child(size_t i)       { assert(i<N); assert(children[i] != emptyNode); return ((ssize_t)this + children[i]); }
       __forceinline const NodeRef child(size_t i) const { assert(i<N); assert(children[i] != emptyNode); return ((ssize_t)this + children[i]); }
@@ -814,6 +839,26 @@ namespace embree
         }
         return true;
       }
+#else
+        /*! Returns reference to specified child */
+      __forceinline       NodeRef& child(size_t i)       { assert(i<N); return children[i]; }
+      __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
+
+      /*! verifies the node */
+      __forceinline bool verify() const
+      {
+        for (size_t i=0; i<N; i++) {
+          if (child(i) == BVHN::emptyNode) {
+            for (; i<N; i++) {
+              if (child(i) != BVHN::emptyNode)
+                return false;
+            }
+            break;
+          }
+        }
+        return true;
+      }
+#endif
 
       /*! Returns bounds of specified child. */
       __forceinline BBox3fa bounds(size_t i) const
@@ -943,7 +988,12 @@ namespace embree
       unsigned char upper_y[N]; //!< 8bit discretized Y dimension of upper bounds of all N children
       unsigned char lower_z[N]; //!< 8bit discretized Z dimension of lower bounds of all N children
       unsigned char upper_z[N]; //!< 8bit discretized Z dimension of upper bounds of all N children
+
+#if ENABLE_32BIT_OFFSETS_FOR_QUANTIZED_NODES == 1 
       int children[N]; //!< signed 32bit offset to the N children (can be a node or leaf)
+#else
+      NodeRef children[N];    //!< Pointer to the N children (can be a node or leaf)
+#endif
       Vec3f start;
       Vec3f scale;
     };
@@ -1059,11 +1109,13 @@ namespace embree
       assert(!((size_t)node & align_mask));
       ssize_t node_offset = (ssize_t)node-(ssize_t)base;
       assert(node_offset != 0);
+      assert(labs(node_offset) < 0x7fffffff);
       return (unsigned int)node_offset | tyQuantizedNode;
     }
 
     static __forceinline int encodeQuantizedLeaf(size_t base, size_t node) {
       ssize_t leaf_offset = (ssize_t)node-(ssize_t)base;
+      assert(labs(leaf_offset) < 0x7fffffff);
       return (int)leaf_offset;
     }
 

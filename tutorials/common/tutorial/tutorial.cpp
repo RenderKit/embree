@@ -42,14 +42,14 @@ extern "C" {
 namespace embree
 {
   std::string g_tutorialName;
+  extern "C" Mode g_mode = MODE_NORMAL;
 
   TutorialApplication* TutorialApplication::instance = nullptr; 
 
-  TutorialApplication::TutorialApplication (const std::string& tutorialName)
+  TutorialApplication::TutorialApplication (const std::string& tutorialName, int features)
 
-    : tutorialName(tutorialName),
-
-      rtcore(""),
+    : Application(features),
+      tutorialName(tutorialName),
 
       shader(SHADER_DEFAULT),
 
@@ -87,11 +87,6 @@ namespace embree
     _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
     _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
     
-    registerOption("help", [this] (Ref<ParseStream> cin, const FileName& path) {
-        printCommandLineHelp();
-        exit(1);
-      }, "--help: prints help for all supported command line options");
-    
     registerOption("c", [this] (Ref<ParseStream> cin, const FileName& path) {
         FileName file = path + cin->getFileName();
         parseCommandLine(new ParseStream(new LineCommentFilter(file, "#")), file.path());
@@ -100,7 +95,7 @@ namespace embree
     registerOption("o", [this] (Ref<ParseStream> cin, const FileName& path) {
         outputImageFilename = cin->getFileName();
         interactive = false;
-      }, "-o: output image filename");
+      }, "-o <filename>: output image filename");
     
     /* camera settings */
     registerOption("vp", [this] (Ref<ParseStream> cin, const FileName& path) {
@@ -127,34 +122,17 @@ namespace embree
     registerOption("size", [this] (Ref<ParseStream> cin, const FileName& path) {
         width = cin->getInt();
         height = cin->getInt();
-      }, "--size <width> <height>: image size");
+      }, "--size <width> <height>: sets image size");
     
     registerOption("fullscreen", [this] (Ref<ParseStream> cin, const FileName& path) {
         fullscreen = true;
       }, "--fullscreen: starts in fullscreen mode");
-    
-    registerOption("rtcore", [this] (Ref<ParseStream> cin, const FileName& path) {
-        rtcore += "," + cin->getString();
-      }, "--rtcore <string>: uses <string> to configure Embree device");
-    
-    registerOption("threads", [this] (Ref<ParseStream> cin, const FileName& path) {
-        rtcore += ",threads=" + toString(cin->getInt());
-      }, "--threads <int>: number of threads to use");
-    
-    registerOption("affinity", [this] (Ref<ParseStream> cin, const FileName& path) {
-        rtcore += ",set_affinity=1";
-      }, "--affinity: affinitize threads");
-    
-    registerOption("verbose", [this] (Ref<ParseStream> cin, const FileName& path) {
-        rtcore += ",verbose=" + toString(cin->getInt());
-      }, "--verbose <int>: sets verbosity level");
-    
+        
     registerOption("benchmark", [this] (Ref<ParseStream> cin, const FileName& path) {
         skipBenchmarkFrames = cin->getInt();
         numBenchmarkFrames  = cin->getInt();
         if (cin->peek() != "" && cin->peek()[0] != '-')
-          numBenchmarkRepetitions = cin->getInt();
-          
+          numBenchmarkRepetitions = cin->getInt();          
         interactive = false;
         rtcore += ",benchmark=1";
       }, "--benchmark <N> <M> <R>: enabled benchmark mode, builds scene, skips N frames, renders M frames, and repeats this R times");
@@ -185,11 +163,27 @@ namespace embree
       "  geomID: visualization of geometry ID\n"
       "  primID: visualization of geometry and primitive ID\n"
       "  ao: ambient occlusion shader");
+
+    if (features & FEATURE_STREAM)
+    {
+      /* register parsing of stream mode */
+      registerOption("mode", [this] (Ref<ParseStream> cin, const FileName& path) {
+          std::string mode = cin->getString();
+          if      (mode == "normal"           ) g_mode = MODE_NORMAL;
+          else if (mode == "stream-coherent"  ) g_mode = MODE_STREAM_COHERENT;
+          else if (mode == "stream-incoherent") g_mode = MODE_STREAM_INCOHERENT;
+          else throw std::runtime_error("invalid mode:" +mode);
+        }, 
+        "--mode: sets rendering mode\n"
+        "  normal           : normal mode\n"
+        "  stream-coherent  : coherent stream mode\n"
+        "  stream-incoherent: incoherent stream mode\n");
+    }
   }
 
-  SceneLoadingTutorialApplication::SceneLoadingTutorialApplication (const std::string& tutorialName)
+  SceneLoadingTutorialApplication::SceneLoadingTutorialApplication (const std::string& tutorialName, int features)
 
-    : TutorialApplication(tutorialName),
+    : TutorialApplication(tutorialName, features),
       scene(new SceneGraph::GroupNode),
       convert_tris_to_quads(false),
       convert_bezier_to_lines(false),
@@ -262,58 +256,6 @@ namespace embree
         subdiv_mode = ",subdiv_accel=bvh4.grid.eager";
         rtcore += subdiv_mode;
       }, "--pregenerate: enabled pregenerate subdiv mode");    
-  }
-  
-  void TutorialApplication::registerOptionAlias(const std::string& name, const std::string& alternativeName) {
-    commandLineOptionMap[alternativeName] = commandLineOptionMap[name];
-  }
-  
-  void TutorialApplication::parseCommandLine(int argc, char** argv)
-  {
-    /* create stream for parsing */
-    Ref<ParseStream> stream = new ParseStream(new CommandLineStream(argc, argv));
-    
-    /* parse command line */  
-    parseCommandLine(stream, FileName());
-    
-    /* callback */
-    postParseCommandLine();
-  }
-  
-  void TutorialApplication::parseCommandLine(Ref<ParseStream> cin, const FileName& path)
-  {
-    while (true)
-    {
-      std::string tag = cin->getString();
-      if (tag == "") return;
-      std::string tag0 = tag;
-      
-      /* remove - or -- and lookup command line option */
-      if (tag.find("-") == 0) 
-      {
-        tag = tag.substr(1);
-        if (tag.find("-") == 0) tag = tag.substr(1);
-        auto option = commandLineOptionMap.find(tag);
-      
-        /* process command line option */
-        if (option != commandLineOptionMap.end()) {
-          option->second->parse(cin,path);
-          continue;
-        }
-      }
-      
-      /* handle unknown command line options */
-      std::cerr << "unknown command line parameter: " << tag0 << " ";
-      while (cin->peek() != "" && cin->peek()[0] != '-') std::cerr << cin->getString() << " ";
-      std::cerr << std::endl;
-    }
-  }
-
-  void TutorialApplication::printCommandLineHelp()
-  {
-    for (auto c : commandLineOptionList) {
-      std::cout << c->description << std::endl;
-    }
   }
 
   /* calculates min/avg/max and sigma */
@@ -722,6 +664,9 @@ namespace embree
     /* parse command line options */
     parseCommandLine(argc,argv);
 
+    /* callback */
+    postParseCommandLine();
+
     /* start tutorial */
     run(argc,argv);
 
@@ -740,6 +685,9 @@ namespace embree
   {
     /* parse command line options */
     parseCommandLine(argc,argv);
+
+    /* callback */
+    postParseCommandLine();
 
     /* load scene */
     if (toLowerCase(sceneFilename.ext()) == std::string("obj"))

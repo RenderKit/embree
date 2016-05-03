@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include "config.h"
+
 /* size of screen tiles */
 #define TILE_SIZE_X 8
 #define TILE_SIZE_Y 8
@@ -33,7 +35,21 @@ struct Triangle { int v0, v1, v2; };
 #include "scene_device.isph"
 
 /* include embree API */
+#define __RTCRay1__
+#define __RTCRay__
 #include "../../../include/embree2/rtcore.isph"
+#include "../../../include/embree2/rtcore_ray.isph"
+
+enum Mode {
+  MODE_NORMAL = 0,
+  MODE_STREAM_COHERENT = 1,
+  MODE_STREAM_INCOHERENT = 2
+};
+
+extern uniform Mode g_mode;
+
+/* error reporting function */
+unmasked void error_handler(const uniform RTCError code, const uniform int8* uniform str = NULL);
 
 /* returns time stamp counter */
 extern "C" uniform int64 get_tsc();

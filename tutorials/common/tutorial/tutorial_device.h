@@ -18,6 +18,7 @@
 
 #include "../../../common/sys/platform.h"
 #include "../../../kernels/algorithms/parallel_for.h"
+#include "config.h"
 
 /* size of screen tiles */
 #define TILE_SIZE_X 8
@@ -30,7 +31,24 @@ struct Vertex   { float x,y,z,r; };
 struct Triangle { int v0, v1, v2; };
 struct Quad     { int v0, v1, v2, v3; };
 
+#define __RTCRay__
+#define __RTCRay4__
+#define __RTCRay8__
+#define __RTCRay16__
 #include "../../../include/embree2/rtcore.h"
+#include "../../../include/embree2/rtcore_ray.h"
+
+enum Mode {
+  MODE_NORMAL = 0,
+  MODE_STREAM_COHERENT = 1,
+  MODE_STREAM_INCOHERENT = 2
+};
+
+/* error reporting function */
+void error_handler(const RTCError code, const char* str = nullptr);
+
+extern "C" Mode g_mode;
+
 #include "ray.h"
 #include "camera.h"
 #include "scene.h"

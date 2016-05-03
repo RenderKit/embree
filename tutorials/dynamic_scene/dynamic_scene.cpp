@@ -20,7 +20,8 @@ namespace embree
 {
   struct Tutorial : public TutorialApplication 
   {
-    Tutorial() : TutorialApplication("dynamic_scene") 
+    Tutorial()
+      : TutorialApplication("dynamic_scene",FEATURE_RTCORE) 
     {
       /* set start camera */
       camera.from = Vec3f(2,2,2);

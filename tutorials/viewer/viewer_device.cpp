@@ -91,10 +91,7 @@ void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
 {
   /* first update small meshes */
 #if defined(ISPC)
-  parallel_for(size_t(0),size_t( scene_in->numGeometries ),[&](const range<size_t>& range) {
-    for (size_t i=range.begin(); i<range.end(); i++)
-      updateMeshEdgeLevelBufferTask(i,scene_in,cam_pos);
-  });
+  parallel_for(size_t(0),size_t( scene_in->numGeometries ),[&](const range<size_t>& range) {    for (size_t i=range.begin(); i<range.end(); i++)      updateMeshEdgeLevelBufferTask(i,scene_in,cam_pos);  }); 
 #endif
 
   /* now update large meshes */
@@ -105,39 +102,12 @@ void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
     ISPCSubdivMesh* mesh = (ISPCSubdivMesh*) geometry;
 #if defined(ISPC)
     if (mesh->numFaces < 10000) continue;
-    parallel_for(size_t(0),size_t( getNumHWThreads() ),[&](const range<size_t>& range) {
-    for (size_t i=range.begin(); i<range.end(); i++)
-      updateSubMeshEdgeLevelBufferTask(i,mesh,cam_pos);
-  });
+    parallel_for(size_t(0),size_t( getNumHWThreads() ),[&](const range<size_t>& range) {    for (size_t i=range.begin(); i<range.end(); i++)      updateSubMeshEdgeLevelBufferTask(i,mesh,cam_pos);  }); 
 #else
     updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
 #endif
     rtcUpdateBuffer(g_scene,mesh->geomID,RTC_LEVEL_BUFFER);
   }
-}
-
-/* error reporting function */
-void error_handler(const RTCError code, const char* str = nullptr)
-{
-  if (code == RTC_NO_ERROR)
-    return;
-
-  printf("Embree: ");
-  switch (code) {
-  case RTC_UNKNOWN_ERROR    : printf("RTC_UNKNOWN_ERROR"); break;
-  case RTC_INVALID_ARGUMENT : printf("RTC_INVALID_ARGUMENT"); break;
-  case RTC_INVALID_OPERATION: printf("RTC_INVALID_OPERATION"); break;
-  case RTC_OUT_OF_MEMORY    : printf("RTC_OUT_OF_MEMORY"); break;
-  case RTC_UNSUPPORTED_CPU  : printf("RTC_UNSUPPORTED_CPU"); break;
-  case RTC_CANCELLED        : printf("RTC_CANCELLED"); break;
-  default                   : printf("invalid error code"); break;
-  }
-  if (str) {
-    printf(" (");
-    while (*str) putchar(*str++);
-    printf(")\n");
-  }
-  exit(1);
 }
 
 bool g_use_smooth_normals = false;
@@ -424,6 +394,7 @@ RTCScene convertScene(ISPCScene* scene_in)
   return scene_out;
 }
 
+
 void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeometry* geometry, int& materialID)
 {
   if (geometry->type == TRIANGLE_MESH)
@@ -657,10 +628,7 @@ extern "C" void device_render (int* pixels,
   /* render image */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
-    for (size_t i=range.begin(); i<range.end(); i++)
-      renderTileTask(i,pixels,width,height,time,camera,numTilesX,numTilesY);
-  });
+  parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {    for (size_t i=range.begin(); i<range.end(); i++)      renderTileTask(i,pixels,width,height,time,camera,numTilesX,numTilesY);  }); 
   //rtcDebug();
 }
 

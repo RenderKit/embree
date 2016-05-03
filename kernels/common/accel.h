@@ -313,9 +313,11 @@ namespace embree
       if (likely(intersectors.intersectorN.intersect))  // FIXME: not working properly, will be set to error function sometimes
         intersectors.intersectorN.intersect(intersectors.ptr,rayN,N,context);
       else
+      {
         /* fallback path */
         for (size_t i=0;i<N;i++)
           intersect(*rayN[i],context);
+      }
     }
 
 #if defined(__SSE__)
