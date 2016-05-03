@@ -826,10 +826,9 @@ namespace embree
   {
     RTCSceneFlags sflags;
     RTCGeometryFlags gflags; 
-    IntersectMode imode;
 
-    BuildTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), gflags(gflags), imode(imode) {}
+    BuildTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags)
+      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), gflags(gflags) {}
     
     bool run (VerifyApplication* state)
     {
@@ -1039,15 +1038,13 @@ namespace embree
     }
   };
   
-  struct UpdateTest : public VerifyApplication::Test
+  struct UpdateTest : public VerifyApplication::IntersectTest
   {
     RTCSceneFlags sflags;
     RTCGeometryFlags gflags;
-    IntersectMode imode;
-    IntersectVariant ivariant;
 
     UpdateTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), gflags(gflags), imode(imode), ivariant(ivariant) {}
+      : VerifyApplication::IntersectTest(name,imode,ivariant,VerifyApplication::PASS), sflags(sflags), gflags(gflags) {}
     
     static void move_mesh_vec3f(const RTCSceneRef& scene, unsigned mesh, size_t numVertices, Vec3fa& pos) 
     {
@@ -1602,15 +1599,13 @@ namespace embree
     }
   };
   
-  struct RayMasksTest : public VerifyApplication::Test
+  struct RayMasksTest : public VerifyApplication::IntersectTest
   {
     RTCSceneFlags sflags; 
     RTCGeometryFlags gflags; 
-    IntersectMode imode;
-    IntersectVariant ivariant;
 
     RayMasksTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), gflags(gflags), imode(imode), ivariant(ivariant) {}
+      : VerifyApplication::IntersectTest(name,imode,ivariant,VerifyApplication::PASS), sflags(sflags), gflags(gflags) {}
 
     bool run(VerifyApplication* state)
     {
@@ -1656,14 +1651,13 @@ namespace embree
     }
   };
 
-  struct BackfaceCullingTest : public VerifyApplication::Test
+  struct BackfaceCullingTest : public VerifyApplication::IntersectTest
   {
     RTCSceneFlags sflags;
     RTCGeometryFlags gflags;
-    IntersectMode imode;
 
-    BackfaceCullingTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), gflags(gflags), imode(imode) {}
+    BackfaceCullingTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant)
+      : VerifyApplication::IntersectTest(name,imode,ivariant,VerifyApplication::PASS), sflags(sflags), gflags(gflags) {}
     
     bool run(VerifyApplication* state)
     {
@@ -1688,35 +1682,31 @@ namespace embree
       RTCRay frontfacing = makeRay(Vec3fa(0.25f,0.25f,-1),Vec3fa(0,0,1)); 
 
       bool passed = true;
-      for (auto ivariant : { VARIANT_INTERSECT, VARIANT_OCCLUDED })
-      {
-        for (size_t i=0; i<numRays; i++) {
-          if (i%2) rays[i] = backfacing;
-          else     rays[i] = frontfacing;
-        }
 
-        IntersectWithMode(imode,ivariant,scene,rays,numRays);
-        
-        for (size_t i=0; i<numRays; i++) 
-        {
-          if (i%2) passed &= rays[i].geomID == -1;
-          else     passed &= rays[i].geomID == 0;
-        }
+      for (size_t i=0; i<numRays; i++) {
+        if (i%2) rays[i] = backfacing;
+        else     rays[i] = frontfacing;
+      }
+      
+      IntersectWithMode(imode,ivariant,scene,rays,numRays);
+      
+      for (size_t i=0; i<numRays; i++) 
+      {
+        if (i%2) passed &= rays[i].geomID == -1;
+        else     passed &= rays[i].geomID == 0;
       }
       return passed;
     }
   };
 
-  struct IntersectionFilterTest : public VerifyApplication::Test
+  struct IntersectionFilterTest : public VerifyApplication::IntersectTest
   {
     RTCSceneFlags sflags;
     RTCGeometryFlags gflags;
     bool subdiv;
-    IntersectMode imode;
-    IntersectVariant ivariant;
 
     IntersectionFilterTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, bool subdiv, IntersectMode imode, IntersectVariant ivariant)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), gflags(gflags), subdiv(subdiv), imode(imode), ivariant(ivariant) {}
+      : VerifyApplication::IntersectTest(name,imode,ivariant,VerifyApplication::PASS), sflags(sflags), gflags(gflags), subdiv(subdiv) {}
     
     static void intersectionFilter1(void* userGeomPtr, RTCRay& ray) 
     {
@@ -1861,16 +1851,16 @@ namespace embree
     }
   };
     
-  struct InactiveRaysTest : public VerifyApplication::Test
+  struct InactiveRaysTest : public VerifyApplication::IntersectTest
   {
     RTCSceneFlags sflags;
     RTCGeometryFlags gflags;
-    IntersectMode imode;
+
     static const size_t N = 10;
     static const size_t maxStreamSize = 100;
     
-    InactiveRaysTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), gflags(gflags), imode(imode) {}
+    InactiveRaysTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant)
+      : VerifyApplication::IntersectTest(name,imode,ivariant,VerifyApplication::PASS), sflags(sflags), gflags(gflags) {}
    
     bool run(VerifyApplication* state)
     {
@@ -1890,7 +1880,6 @@ namespace embree
       size_t numFailures = 0;
       for (size_t i=0; i<size_t(N*state->intensity); i++) 
       {
-        IntersectVariant ivariant = (IntersectVariant) (i%2);
         for (size_t M=1; M<maxStreamSize; M++)
         {
           bool valid[maxStreamSize];
@@ -1922,18 +1911,17 @@ namespace embree
     }
   };
 
-  struct WatertightTest : public VerifyApplication::Test
+  struct WatertightTest : public VerifyApplication::IntersectTest
   {
     ALIGNED_STRUCT;
     RTCSceneFlags sflags;
-    IntersectMode imode;
     std::string model;
     Vec3fa pos;
     static const size_t N = 10;
     static const size_t maxStreamSize = 100;
     
-    WatertightTest (std::string name, RTCSceneFlags sflags, IntersectMode imode, std::string model, const Vec3fa& pos)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), imode(imode), model(model), pos(pos) {}
+    WatertightTest (std::string name, RTCSceneFlags sflags, IntersectMode imode, IntersectVariant ivariant, std::string model, const Vec3fa& pos)
+      : VerifyApplication::IntersectTest(name,imode,ivariant,VerifyApplication::PASS), sflags(sflags), model(model), pos(pos) {}
     
     bool run(VerifyApplication* state)
     {
@@ -1949,7 +1937,6 @@ namespace embree
       size_t numFailures = 0;
       for (size_t i=0; i<size_t(N*state->intensity); i++) 
       {
-        IntersectVariant ivariant = (IntersectVariant) (i%2);
         for (size_t M=1; M<maxStreamSize; M++)
         {
           __aligned(16) RTCRay rays[maxStreamSize];
@@ -1982,14 +1969,13 @@ namespace embree
     }
   };
 
-  struct NaNTest : public VerifyApplication::Test
+  struct NaNTest : public VerifyApplication::IntersectTest
   {
     RTCSceneFlags sflags;
     RTCGeometryFlags gflags;
-    IntersectMode imode;
     
-    NaNTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), gflags(gflags), imode(imode) {}
+    NaNTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant)
+      : VerifyApplication::IntersectTest(name,imode,ivariant,VerifyApplication::PASS), sflags(sflags), gflags(gflags)  {}
     
     bool run(VerifyApplication* state)
     {
@@ -2008,8 +1994,7 @@ namespace embree
         Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
         rays[i] = makeRay(org,dir); 
       }
-      IntersectWithMode(imode, VARIANT_OCCLUDED ,scene,rays,numRays);
-      IntersectWithMode(imode, VARIANT_INTERSECT,scene,rays,numRays);
+      IntersectWithMode(imode,ivariant,scene,rays,numRays);
     
       double c1 = getSeconds();
       for (size_t i=0; i<numRays; i++) {
@@ -2017,8 +2002,7 @@ namespace embree
         Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
         rays[i] = makeRay(org+Vec3fa(nan),dir); 
       }
-      IntersectWithMode(imode, VARIANT_OCCLUDED ,scene,rays,numRays);
-      IntersectWithMode(imode, VARIANT_INTERSECT,scene,rays,numRays);
+      IntersectWithMode(imode,ivariant,scene,rays,numRays);
 
       double c2 = getSeconds();
       for (size_t i=0; i<numRays; i++) {
@@ -2026,8 +2010,7 @@ namespace embree
         Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
         rays[i] = makeRay(org+Vec3fa(nan),dir+Vec3fa(nan)); 
       }
-      IntersectWithMode(imode, VARIANT_OCCLUDED ,scene,rays,numRays);
-      IntersectWithMode(imode, VARIANT_INTERSECT,scene,rays,numRays);
+      IntersectWithMode(imode,ivariant,scene,rays,numRays);
 
       double c3 = getSeconds();
       for (size_t i=0; i<numRays; i++) {
@@ -2035,8 +2018,7 @@ namespace embree
         Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
         rays[i] = makeRay(org,dir,nan,nan); 
       }
-      IntersectWithMode(imode, VARIANT_OCCLUDED ,scene,rays,numRays);
-      IntersectWithMode(imode, VARIANT_INTERSECT,scene,rays,numRays);
+      IntersectWithMode(imode,ivariant,scene,rays,numRays);
 
       double c4 = getSeconds();
       double d1 = c1-c0;
@@ -2052,14 +2034,13 @@ namespace embree
     }
   };
     
-  struct InfTest : public VerifyApplication::Test
+  struct InfTest : public VerifyApplication::IntersectTest
   {
     RTCSceneFlags sflags;
     RTCGeometryFlags gflags;
-    IntersectMode imode;
     
-    InfTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), gflags(gflags), imode(imode) {}
+    InfTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant)
+      : VerifyApplication::IntersectTest(name,imode,ivariant,VerifyApplication::PASS), sflags(sflags), gflags(gflags) {}
    
     bool run(VerifyApplication* state)
     {
@@ -2079,8 +2060,7 @@ namespace embree
         Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
         rays[i] = makeRay(org,dir); 
       }
-      IntersectWithMode(imode, VARIANT_OCCLUDED ,scene,rays,numRays);
-      IntersectWithMode(imode, VARIANT_INTERSECT,scene,rays,numRays);
+      IntersectWithMode(imode,ivariant,scene,rays,numRays);
 
       double c1 = getSeconds();
       for (size_t i=0; i<numRays; i++) {
@@ -2088,8 +2068,7 @@ namespace embree
         Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
         rays[i] = makeRay(org+Vec3fa(inf),dir); 
       }
-      IntersectWithMode(imode, VARIANT_OCCLUDED ,scene,rays,numRays);
-      IntersectWithMode(imode, VARIANT_INTERSECT,scene,rays,numRays);
+      IntersectWithMode(imode,ivariant,scene,rays,numRays);
 
       double c2 = getSeconds();
       for (size_t i=0; i<numRays; i++) {
@@ -2097,8 +2076,7 @@ namespace embree
         Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
         rays[i] = makeRay(org,dir+Vec3fa(inf)); 
       }
-      IntersectWithMode(imode, VARIANT_OCCLUDED ,scene,rays,numRays);
-      IntersectWithMode(imode, VARIANT_INTERSECT,scene,rays,numRays);
+      IntersectWithMode(imode,ivariant,scene,rays,numRays);
 
       double c3 = getSeconds();
       for (size_t i=0; i<numRays; i++) {
@@ -2106,8 +2084,7 @@ namespace embree
         Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
         rays[i] = makeRay(org+Vec3fa(inf),dir+Vec3fa(inf)); 
       }
-      IntersectWithMode(imode, VARIANT_OCCLUDED ,scene,rays,numRays);
-      IntersectWithMode(imode, VARIANT_INTERSECT,scene,rays,numRays);
+      IntersectWithMode(imode,ivariant,scene,rays,numRays);
 
       double c4 = getSeconds();
       for (size_t i=0; i<numRays; i++) {
@@ -2115,8 +2092,7 @@ namespace embree
         Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
         rays[i] = makeRay(org,dir,-0.0f,inf); 
       }
-      IntersectWithMode(imode, VARIANT_OCCLUDED ,scene,rays,numRays);
-      IntersectWithMode(imode, VARIANT_INTERSECT,scene,rays,numRays);
+      IntersectWithMode(imode,ivariant,scene,rays,numRays);
 
       double c5 = getSeconds();      
       double d1 = c1-c0;
@@ -2661,27 +2637,19 @@ namespace embree
   VerifyApplication::VerifyApplication ()
     : Application(Application::FEATURE_RTCORE), device(nullptr), intensity(1.0f), numFailedTests(0), user_specified_tests(false), use_groups(true)
   {
-    device = rtcNewDevice(rtcore.c_str());
-
     /* create list of all supported intersect modes to test */
-    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT1)) intersectModes.push_back(MODE_INTERSECT1);
-    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT4)) intersectModes.push_back(MODE_INTERSECT4);
-    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT8)) intersectModes.push_back(MODE_INTERSECT8);
-    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT16)) intersectModes.push_back(MODE_INTERSECT16);
-    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM)) {
-      intersectModes.push_back(MODE_INTERSECT1M);
-      intersectModes.push_back(MODE_INTERSECTNM1);
-      intersectModes.push_back(MODE_INTERSECTNM3);
-      intersectModes.push_back(MODE_INTERSECTNM4);
-      intersectModes.push_back(MODE_INTERSECTNM8);
-      intersectModes.push_back(MODE_INTERSECTNM16);
-      intersectModes.push_back(MODE_INTERSECTNp);
-    }
-    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT1)) intersectModesOld.push_back(MODE_INTERSECT1);
-    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT4)) intersectModesOld.push_back(MODE_INTERSECT4);
-    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT8)) intersectModesOld.push_back(MODE_INTERSECT8);
-    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT16)) intersectModesOld.push_back(MODE_INTERSECT16);
-
+    intersectModes.push_back(MODE_INTERSECT1);
+    intersectModes.push_back(MODE_INTERSECT4);
+    intersectModes.push_back(MODE_INTERSECT8);
+    intersectModes.push_back(MODE_INTERSECT16);
+    intersectModes.push_back(MODE_INTERSECT1M);
+    intersectModes.push_back(MODE_INTERSECTNM1);
+    intersectModes.push_back(MODE_INTERSECTNM3);
+    intersectModes.push_back(MODE_INTERSECTNM4);
+    intersectModes.push_back(MODE_INTERSECTNM8);
+    intersectModes.push_back(MODE_INTERSECTNM16);
+    intersectModes.push_back(MODE_INTERSECTNp);
+    
     /* create a list of all intersect variants for each intersect mode */
     intersectVariants.push_back(VARIANT_INTERSECT_COHERENT);
     intersectVariants.push_back(VARIANT_OCCLUDED_COHERENT);
@@ -2742,8 +2710,7 @@ namespace embree
 
     beginTestGroup("build");
     for (auto sflags : sceneFlags) 
-      for (auto imode : intersectModes) 
-        addTest(new BuildTest("build_"+to_string(sflags)+"_"+to_string(imode),sflags,RTC_GEOMETRY_STATIC,imode));
+      addTest(new BuildTest("build_"+to_string(sflags),sflags,RTC_GEOMETRY_STATIC));
     endTestGroup();
 
     addTest(new OverlappingTrianglesTest("overlapping_triangles",100000));
@@ -2810,7 +2777,8 @@ namespace embree
       beginTestGroup("backface_culling");
       for (auto sflags : sceneFlags) 
         for (auto imode : intersectModes) 
-          addTest(new BackfaceCullingTest("backface_culling_"+to_string(sflags)+"_"+to_string(imode),sflags,RTC_GEOMETRY_STATIC,imode));
+          for (auto ivariant : intersectVariants)
+            addTest(new BackfaceCullingTest("backface_culling_"+to_string(sflags,imode,ivariant),sflags,RTC_GEOMETRY_STATIC,imode,ivariant));
       endTestGroup();
     }
 
@@ -2832,16 +2800,18 @@ namespace embree
     beginTestGroup("inactive_rays");
     for (auto sflags : sceneFlags) 
         for (auto imode : intersectModes) 
-          if (imode != MODE_INTERSECT1) // INTERSECT1 does not support disabled rays
-            addTest(new InactiveRaysTest("inactive_rays_"+to_string(sflags)+"_"+to_string(imode),sflags,RTC_GEOMETRY_STATIC,imode));
+          for (auto ivariant : intersectVariants)
+            if (imode != MODE_INTERSECT1) // INTERSECT1 does not support disabled rays
+              addTest(new InactiveRaysTest("inactive_rays_"+to_string(sflags,imode,ivariant),sflags,RTC_GEOMETRY_STATIC,imode,ivariant));
     endTestGroup();
 
     beginTestGroup("watertight");
     const Vec3fa watertight_pos = Vec3fa(148376.0f,1234.0f,-223423.0f);
     for (auto sflags : sceneFlagsRobust) 
       for (auto imode : intersectModes) 
-        for (std::string model : {"sphere", "plane"}) 
-          addTest(new WatertightTest("watertight_"+to_string(sflags)+"_"+model+"_"+to_string(imode),sflags,imode,model,watertight_pos));
+        for (auto ivariant : intersectVariants)
+          for (std::string model : {"sphere", "plane"}) 
+            addTest(new WatertightTest("watertight_"+to_string(sflags)+"_"+model+"_"+to_string(imode),sflags,imode,ivariant,model,watertight_pos));
     endTestGroup();
 
     if (rtcDeviceGetParameter1i(device,RTC_CONFIG_IGNORE_INVALID_RAYS))
@@ -2849,13 +2819,15 @@ namespace embree
       beginTestGroup("nan_test");
       for (auto sflags : sceneFlags) 
         for (auto imode : intersectModes) 
-          addTest(new NaNTest("nan_test_"+to_string(sflags)+"_"+to_string(imode),sflags,RTC_GEOMETRY_STATIC,imode));
+          for (auto ivariant : intersectVariants)
+            addTest(new NaNTest("nan_test_"+to_string(sflags)+"_"+to_string(imode),sflags,RTC_GEOMETRY_STATIC,imode,ivariant));
       endTestGroup();
 
       beginTestGroup("inf_test");
       for (auto sflags : sceneFlags) 
         for (auto imode : intersectModes) 
-          addTest(new InfTest("inf_test_"+to_string(sflags)+"_"+to_string(imode),sflags,RTC_GEOMETRY_STATIC,imode));
+          for (auto ivariant : intersectVariants)
+            addTest(new InfTest("inf_test_"+to_string(sflags)+"_"+to_string(imode),sflags,RTC_GEOMETRY_STATIC,imode,ivariant));
       endTestGroup();
     }
     
@@ -2876,8 +2848,6 @@ namespace embree
     addTest(new MemoryMonitorTest("regression_dynamic_memory_monitor",rtcore_regression_dynamic_thread));
     
     addTest(new GarbageGeometryTest("regression_garbage_geom"));
-
-    rtcDeleteDevice(device);
 
     /* register all command line options*/
     std::string run_docu = "--run <regexpr>: Runs all tests whose name match the regular expression. Supported tests are:";
@@ -2936,6 +2906,22 @@ namespace embree
     device = rtcNewDevice(rtcore.c_str());
     error_handler(rtcDeviceGetError(device));
 
+    /* only test supported intersect modes */
+    intersectModes.clear();
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT1)) intersectModes.push_back(MODE_INTERSECT1);
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT4)) intersectModes.push_back(MODE_INTERSECT4);
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT8)) intersectModes.push_back(MODE_INTERSECT8);
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT16)) intersectModes.push_back(MODE_INTERSECT16);
+    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM)) {
+      intersectModes.push_back(MODE_INTERSECT1M);
+      intersectModes.push_back(MODE_INTERSECTNM1);
+      intersectModes.push_back(MODE_INTERSECTNM3);
+      intersectModes.push_back(MODE_INTERSECTNM4);
+      intersectModes.push_back(MODE_INTERSECTNM8);
+      intersectModes.push_back(MODE_INTERSECTNM16);
+      intersectModes.push_back(MODE_INTERSECTNp);
+    }
+
     /* enable all tests if user did not specify any tests */
     if (!user_specified_tests) 
       for (auto test : tests) 
@@ -2945,11 +2931,11 @@ namespace embree
     for (size_t i=0; i<tests.size(); i++) 
     {
       if (use_groups && tests[i]->ty == GROUP_BEGIN) {
-        if (tests[i]->enabled)
+        if (tests[i]->isEnabled(device))
           runTestGroup(i);
       }
       else {
-        if (tests[i]->enabled && tests[i]->ty != GROUP_BEGIN && tests[i]->ty != GROUP_END)
+        if (tests[i]->isEnabled(device) && tests[i]->ty != GROUP_BEGIN && tests[i]->ty != GROUP_END)
           runTest(tests[i],false);
       }
     }
@@ -2974,11 +2960,15 @@ namespace embree
   
   bool VerifyApplication::runTest(Ref<Test> test, bool silent)
   {
+    if (!test->isEnabled(device))
+      return true;
+
     bool ok = true;
     if (!silent)
-      std::cout << std::setw(50) << test->name << " ..." << std::flush;
+      std::cout << std::setw(60) << test->name << " ..." << std::flush;
     
-    try {
+    try 
+    {
       ok &= test->run(this);
       AssertNoError(device);
     } catch (...) {

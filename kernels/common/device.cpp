@@ -269,35 +269,44 @@ namespace embree
     std::cout << std::endl;
   }
 
-  RTCError* Device::getError()
+  void Device::setDeviceErrorCode(RTCError error)
   {
-    if (this) return errorHandler.error();
-    else      return g_errorHandler.error();
-  }
-
-  void Device::setErrorCode(RTCError error)
-  {
-    RTCError* stored_error = getError();
+    RTCError* stored_error = errorHandler.error();
     if (*stored_error == RTC_NO_ERROR)
       *stored_error = error;
   }
 
-  RTCError Device::getErrorCode()
+  RTCError Device::getDeviceErrorCode()
   {
-    RTCError* stored_error = getError();
+    RTCError* stored_error = errorHandler.error();
     RTCError error = *stored_error;
     *stored_error = RTC_NO_ERROR;
     return error;
   }
 
-  void Device::process_error(RTCError error, const char* str)
+  void Device::setThreadErrorCode(RTCError error)
+  {
+    RTCError* stored_error = g_errorHandler.error();
+    if (*stored_error == RTC_NO_ERROR)
+      *stored_error = error;
+  }
+
+  RTCError Device::getThreadErrorCode()
+  {
+    RTCError* stored_error = g_errorHandler.error();
+    RTCError error = *stored_error;
+    *stored_error = RTC_NO_ERROR;
+    return error;
+  }
+
+  void Device::process_error(Device* device, RTCError error, const char* str)
   { 
     /* store global error code when device construction failed */
-    if (this == nullptr)
-      return setErrorCode(error);
+    if (device == nullptr)
+      return setThreadErrorCode(error);
 
     /* print error when in verbose mode */
-    if (State::verbosity(1)) 
+    if (device->verbosity(1)) 
     {
       switch (error) {
       case RTC_NO_ERROR         : std::cerr << "Embree: No error"; break;
@@ -313,11 +322,11 @@ namespace embree
     }
 
     /* call user specified error callback */
-    if (State::error_function) 
-      State::error_function(error,str); 
+    if (device->error_function) 
+      device->error_function(error,str); 
 
     /* record error code */
-    setErrorCode(error);
+    device->setDeviceErrorCode(error);
   }
 
   void Device::memoryMonitor(ssize_t bytes, bool post)
