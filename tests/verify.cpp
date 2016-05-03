@@ -1866,11 +1866,12 @@ namespace embree
     RTCSceneFlags sflags;
     RTCGeometryFlags gflags;
     IntersectMode imode;
+    IntersectVariant ivariant;
     static const size_t N = 10;
     static const size_t maxStreamSize = 100;
     
-    InactiveRaysTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), gflags(gflags), imode(imode) {}
+    InactiveRaysTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant)
+      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), gflags(gflags), imode(imode), ivariant(ivariant) {}
    
     bool run(VerifyApplication* state)
     {
@@ -1890,7 +1891,6 @@ namespace embree
       size_t numFailures = 0;
       for (size_t i=0; i<size_t(N*state->intensity); i++) 
       {
-        IntersectVariant ivariant = (IntersectVariant) (i%2);
         for (size_t M=1; M<maxStreamSize; M++)
         {
           bool valid[maxStreamSize];
@@ -2832,8 +2832,9 @@ namespace embree
     beginTestGroup("inactive_rays");
     for (auto sflags : sceneFlags) 
         for (auto imode : intersectModes) 
-          if (imode != MODE_INTERSECT1) // INTERSECT1 does not support disabled rays
-            addTest(new InactiveRaysTest("inactive_rays_"+to_string(sflags)+"_"+to_string(imode),sflags,RTC_GEOMETRY_STATIC,imode));
+          for (auto ivariant : intersectVariants)
+            if (imode != MODE_INTERSECT1) // INTERSECT1 does not support disabled rays
+              addTest(new InactiveRaysTest("inactive_rays_"+to_string(sflags,imode,ivariant),sflags,RTC_GEOMETRY_STATIC,imode,ivariant));
     endTestGroup();
 
     beginTestGroup("watertight");
