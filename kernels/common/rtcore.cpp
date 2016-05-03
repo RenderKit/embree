@@ -35,7 +35,7 @@ namespace embree
     RTCORE_TRACE(rtcNewDevice);
     Lock<MutexSys> lock(g_mutex);
     return (RTCDevice) new Device(cfg,false);
-    RTCORE_CATCH_END_NOREPORT;
+    RTCORE_CATCH_END(nullptr);
     return (RTCDevice) nullptr;
   }
 
@@ -46,7 +46,7 @@ namespace embree
     RTCORE_VERIFY_HANDLE(device);
     Lock<MutexSys> lock(g_mutex);
     delete (Device*) device;
-    RTCORE_CATCH_END_NOREPORT;
+    RTCORE_CATCH_END(nullptr);
   }
 
   /* global device for compatibility with old rtcInit / rtcExit scheme */
@@ -120,7 +120,8 @@ namespace embree
   {
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcGetError);
-    return g_device->getErrorCode(); // g_device == nullptr is supported
+    if (g_device == nullptr) return Device::getThreadErrorCode();
+    else                     return g_device->getDeviceErrorCode();
     RTCORE_CATCH_END(g_device);
     return RTC_UNKNOWN_ERROR;
   }
@@ -130,7 +131,8 @@ namespace embree
     Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcDeviceGetError);
-    return device->getErrorCode(); // device == nullptr is supported
+    if (device == nullptr) return Device::getThreadErrorCode();
+    else                   return device->getDeviceErrorCode();
     RTCORE_CATCH_END(device);
     return RTC_UNKNOWN_ERROR;
   }
