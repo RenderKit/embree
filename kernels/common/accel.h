@@ -311,12 +311,15 @@ namespace embree
     __forceinline void intersectN (RTCRay **rayN, const size_t N, const RTCIntersectContext* context) 
     {
 #if defined(__SSE4_2__)
-      assert(intersectors.intersectorN.intersect);
-      intersectors.intersectorN.intersect(intersectors.ptr,rayN,N,context);
-#else
-      for (size_t i=0; i<N; i++)
-        intersect(*rayN[i],context);
+      //assert(intersectors.intersectorN.intersect);      
+      if (intersectors.intersectorN.intersect)
+        intersectors.intersectorN.intersect(intersectors.ptr,rayN,N,context);
+      else
 #endif
+      {
+        for (size_t i=0; i<N; i++)
+          intersect(*rayN[i],context);
+      }
     }
 
 #if defined(__SSE__)
@@ -367,12 +370,15 @@ namespace embree
     __forceinline void occludedN (RTCRay** rayN, const size_t N, const RTCIntersectContext* context) 
     {
 #if defined(__SSE4_2__)
-      assert(intersectors.intersectorN.occluded);
-      intersectors.intersectorN.occluded(intersectors.ptr,rayN,N,context);
-#else
-      for (size_t i=0;i<N;i++)
-        occluded(*rayN[i],context);
+      //assert(intersectors.intersectorN.occluded);
+      if (intersectors.intersectorN.occluded)
+        intersectors.intersectorN.occluded(intersectors.ptr,rayN,N,context);
+      else
 #endif
+      {
+        for (size_t i=0;i<N;i++)
+          occluded(*rayN[i],context);
+      }
     }
 
 #if defined(__SSE__)
