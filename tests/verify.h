@@ -31,22 +31,23 @@ namespace embree
     
     struct Test : public RefCount
     {
-      Test (std::string name, TestType ty = PASS) 
-        : name(name), ty(ty), enabled(false) {}
+      Test (std::string name, int isa, TestType ty) 
+        : name(name), isa(isa), ty(ty), enabled(false) {}
 
       bool isEnabled() { return enabled; }
       virtual TestReturnValue run(VerifyApplication* state) { return SKIPPED; };
 
     public:
       std::string name;
+      int isa;
       TestType ty;
       bool enabled;
     };
 
     struct IntersectTest : public Test
     {
-      IntersectTest (std::string name, IntersectMode imode, IntersectVariant ivariant, TestType ty = PASS)
-        : Test(name,ty), imode(imode), ivariant(ivariant) {}
+      IntersectTest (std::string name, int isa, IntersectMode imode, IntersectVariant ivariant, TestType ty = PASS)
+        : Test(name,isa,ty), imode(imode), ivariant(ivariant) {}
 
       bool supportsIntersectMode(RTCDevice device)
       { 
@@ -77,8 +78,8 @@ namespace embree
     VerifyApplication ();
 
     void addTest(Ref<Test> test);
-    void beginTestGroup(std::string name) { addTest(new Test(name,GROUP_BEGIN)); }
-    void endTestGroup  () { addTest(new Test("",GROUP_END)); }
+    void beginTestGroup(std::string name) { addTest(new Test(name,0,GROUP_BEGIN)); }
+    void endTestGroup  () { addTest(new Test("",0,GROUP_END)); }
     bool runTest(Ref<Test> test, bool silent);
     void runTestGroup(size_t& id);
 
@@ -89,6 +90,7 @@ namespace embree
     size_t numFailedTests;
 
   public:
+    std::vector<int> isas;
     std::vector<Ref<Test>> tests;
     std::map<std::string,Ref<Test>> name2test;
 

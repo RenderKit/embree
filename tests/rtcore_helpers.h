@@ -456,8 +456,16 @@ namespace embree
     return str;
   }
 
-  inline std::string to_string(RTCSceneFlags sflags, IntersectMode imode, IntersectVariant ivariant) {
-    return to_string(sflags) + "_" + to_string(ivariant) + to_string(imode);
+  inline std::string to_string(int isa, RTCSceneFlags sflags) {
+    return stringOfISA(isa) + "_" + to_string(sflags);
+  }
+
+  inline std::string to_string(int isa, RTCSceneFlags sflags, IntersectMode imode) {
+    return stringOfISA(isa) + "_" + to_string(sflags) + "_" + to_string(imode);
+  }
+
+  inline std::string to_string(int isa, RTCSceneFlags sflags, IntersectMode imode, IntersectVariant ivariant) {
+    return stringOfISA(isa) + "_" + to_string(sflags) + "_" + to_string(ivariant) + to_string(imode);
   }
 
   template<int N>

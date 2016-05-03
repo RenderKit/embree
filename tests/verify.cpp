@@ -583,7 +583,7 @@ namespace embree
   struct InitExitTest : public VerifyApplication::Test
   {
     InitExitTest (std::string name)
-      : VerifyApplication::Test(name,VerifyApplication::PASS) {}
+      : VerifyApplication::Test(name,0,VerifyApplication::PASS) {}
 
     VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
@@ -596,17 +596,17 @@ namespace embree
 
   struct MultipleDevicesTest : public VerifyApplication::Test
   {
-    MultipleDevicesTest (std::string name)
-      : VerifyApplication::Test(name,VerifyApplication::PASS) {}
+    MultipleDevicesTest (std::string name, int isa)
+      : VerifyApplication::Test(name,isa,VerifyApplication::PASS) {}
 
     VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
-      /* test creation of multiple devices */
-      RTCDevice device1 = rtcNewDevice("threads=4");
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDevice device1 = rtcNewDevice(cfg.c_str());
       AssertNoError(device1);
-      RTCDevice device2 = rtcNewDevice("threads=8");
+      RTCDevice device2 = rtcNewDevice(cfg.c_str());
       AssertNoError(device2);
-      RTCDevice device3 = rtcNewDevice("threads=12");
+      RTCDevice device3 = rtcNewDevice(cfg.c_str());
       AssertNoError(device3);
       rtcDeleteDevice(device1);
       rtcDeleteDevice(device3);
@@ -615,17 +615,18 @@ namespace embree
     }
   };
 
-   struct FlagsTest : public VerifyApplication::Test
+  struct FlagsTest : public VerifyApplication::Test
   {
     RTCSceneFlags sceneFlags;
     RTCGeometryFlags geomFlags;
 
-    FlagsTest (std::string name, VerifyApplication::TestType type, RTCSceneFlags sceneFlags, RTCGeometryFlags geomFlags)
-      : VerifyApplication::Test(name,type), sceneFlags(sceneFlags), geomFlags(geomFlags) {}
+    FlagsTest (std::string name, int isa, VerifyApplication::TestType type, RTCSceneFlags sceneFlags, RTCGeometryFlags geomFlags)
+      : VerifyApplication::Test(name,isa,type), sceneFlags(sceneFlags), geomFlags(geomFlags) {}
 
     VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
-      RTCDeviceRef device = rtcNewDevice(state->rtcore.c_str());
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
       RTCSceneRef scene = rtcDeviceNewScene(device,sceneFlags,aflags);
       AssertNoError(device);
@@ -641,12 +642,13 @@ namespace embree
   
   struct UnmappedBeforeCommitTest : public VerifyApplication::Test
   {
-    UnmappedBeforeCommitTest (std::string name)
-      : VerifyApplication::Test(name,VerifyApplication::PASS) {}
+    UnmappedBeforeCommitTest (std::string name, int isa)
+      : VerifyApplication::Test(name,isa,VerifyApplication::PASS) {}
 
     VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
-      RTCDeviceRef device = rtcNewDevice(state->rtcore.c_str());
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
       ClearBuffers clear_before_return;
       RTCSceneRef scene = rtcDeviceNewScene(device,RTC_SCENE_STATIC,aflags);
@@ -665,12 +667,13 @@ namespace embree
 
   struct GetBoundsTest : public VerifyApplication::Test
   {
-    GetBoundsTest (std::string name)
-      : VerifyApplication::Test(name,VerifyApplication::PASS) {}
+    GetBoundsTest (std::string name, int isa)
+      : VerifyApplication::Test(name,isa,VerifyApplication::PASS) {}
 
     VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
-      RTCDeviceRef device = rtcNewDevice(state->rtcore.c_str());
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
       ClearBuffers clear_before_return;
       RTCSceneRef scene = rtcDeviceNewScene(device,RTC_SCENE_STATIC,RTC_INTERSECT1);
@@ -688,12 +691,13 @@ namespace embree
 
   struct GetUserDataTest : public VerifyApplication::Test
   {
-    GetUserDataTest (std::string name)
-      : VerifyApplication::Test(name,VerifyApplication::PASS) {}
+    GetUserDataTest (std::string name, int isa)
+      : VerifyApplication::Test(name,isa,VerifyApplication::PASS) {}
     
     VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
-      RTCDeviceRef device = rtcNewDevice(state->rtcore.c_str());
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
       RTCSceneRef scene = rtcDeviceNewScene(device,RTC_SCENE_STATIC,RTC_INTERSECT1);
       AssertNoError(device);
@@ -727,12 +731,13 @@ namespace embree
 
   struct BufferStrideTest : public VerifyApplication::Test
   {
-    BufferStrideTest (std::string name)
-      : VerifyApplication::Test(name,VerifyApplication::PASS) {}
+    BufferStrideTest (std::string name, int isa)
+      : VerifyApplication::Test(name,isa,VerifyApplication::PASS) {}
     
     VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
-      RTCDeviceRef device = rtcNewDevice(state->rtcore.c_str());
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
       ClearBuffers clear_before_return;
       RTCSceneRef scene = rtcDeviceNewScene(device,RTC_SCENE_STATIC,aflags);
@@ -779,12 +784,13 @@ namespace embree
 
   struct EmptySceneTest : public VerifyApplication::Test
   {
-    EmptySceneTest (std::string name, RTCSceneFlags sflags)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags) {}
+    EmptySceneTest (std::string name, int isa, RTCSceneFlags sflags)
+      : VerifyApplication::Test(name,isa,VerifyApplication::PASS), sflags(sflags) {}
 
     VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
-      RTCDeviceRef device = rtcNewDevice(state->rtcore.c_str());
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
       RTCSceneRef scene = rtcDeviceNewScene(device,sflags,aflags);
       AssertNoError(device);
@@ -802,12 +808,13 @@ namespace embree
     RTCSceneFlags sflags;
     RTCGeometryFlags gflags;
 
-    EmptyGeometryTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), gflags(gflags) {}
+    EmptyGeometryTest (std::string name, int isa, RTCSceneFlags sflags, RTCGeometryFlags gflags)
+      : VerifyApplication::Test(name,isa,VerifyApplication::PASS), sflags(sflags), gflags(gflags) {}
     
     VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
-      RTCDeviceRef device = rtcNewDevice(state->rtcore.c_str());
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
       RTCSceneRef scene = rtcDeviceNewScene(device,sflags,aflags);
       rtcNewTriangleMesh (scene,gflags,0,0,1);
@@ -833,12 +840,13 @@ namespace embree
     RTCSceneFlags sflags;
     RTCGeometryFlags gflags; 
 
-    BuildTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), gflags(gflags) {}
+    BuildTest (std::string name, int isa, RTCSceneFlags sflags, RTCGeometryFlags gflags)
+      : VerifyApplication::Test(name,isa,VerifyApplication::PASS), sflags(sflags), gflags(gflags) {}
     
     VerifyApplication::TestReturnValue run (VerifyApplication* state)
     {
-      RTCDeviceRef device = rtcNewDevice(state->rtcore.c_str());
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
       ClearBuffers clear_before_return;
       RTCSceneRef scene = rtcDeviceNewScene(device,sflags,aflags);
@@ -866,12 +874,13 @@ namespace embree
   {
     int N;
     
-    OverlappingTrianglesTest (std::string name, int N)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), N(N) {}
+    OverlappingTrianglesTest (std::string name, int isa, int N)
+      : VerifyApplication::Test(name,isa,VerifyApplication::PASS), N(N) {}
     
     VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
-      RTCDeviceRef device = rtcNewDevice(state->rtcore.c_str());
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
       RTCSceneRef scene = rtcDeviceNewScene(device,RTC_SCENE_STATIC,aflags);
       AssertNoError(device);
@@ -905,12 +914,13 @@ namespace embree
   {
     int N;
     
-    OverlappingHairTest (std::string name, int N)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), N(N) {}
+    OverlappingHairTest (std::string name, int isa, int N)
+      : VerifyApplication::Test(name,isa,VerifyApplication::PASS), N(N) {}
     
     VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
-      RTCDeviceRef device = rtcNewDevice(state->rtcore.c_str());
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
       RTCSceneRef scene = rtcDeviceNewScene(device,RTC_SCENE_STATIC,aflags);
       AssertNoError(device);
@@ -943,12 +953,13 @@ namespace embree
   {
     RTCSceneFlags sflags;
 
-    NewDeleteGeometryTest (std::string name,  RTCSceneFlags sflags)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags) {}
+    NewDeleteGeometryTest (std::string name, int isa, RTCSceneFlags sflags)
+      : VerifyApplication::Test(name,isa,VerifyApplication::PASS), sflags(sflags) {}
     
     VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
-      RTCDeviceRef device = rtcNewDevice(state->rtcore.c_str());
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
       ClearBuffers clear_before_return;
       RTCSceneRef scene = rtcDeviceNewScene(device,sflags,aflags_all);
@@ -1004,12 +1015,13 @@ namespace embree
   {
     RTCSceneFlags sflags;
 
-    EnableDisableGeometryTest (std::string name, RTCSceneFlags sflags)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags) {}
+    EnableDisableGeometryTest (std::string name, int isa, RTCSceneFlags sflags)
+      : VerifyApplication::Test(name,isa,VerifyApplication::PASS), sflags(sflags) {}
     
     VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
-      RTCDeviceRef device = rtcNewDevice(state->rtcore.c_str());
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
       ClearBuffers clear_before_return;
       RTCSceneRef scene = rtcDeviceNewScene(device,sflags,aflags);
@@ -1056,8 +1068,8 @@ namespace embree
     RTCSceneFlags sflags;
     RTCGeometryFlags gflags;
 
-    UpdateTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant)
-      : VerifyApplication::IntersectTest(name,imode,ivariant,VerifyApplication::PASS), sflags(sflags), gflags(gflags) {}
+    UpdateTest (std::string name, int isa, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant)
+      : VerifyApplication::IntersectTest(name,isa,imode,ivariant,VerifyApplication::PASS), sflags(sflags), gflags(gflags) {}
     
     static void move_mesh_vec3f(const RTCSceneRef& scene, unsigned mesh, size_t numVertices, Vec3fa& pos) 
     {
@@ -1077,7 +1089,8 @@ namespace embree
 
     VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
-      RTCDeviceRef device = rtcNewDevice(state->rtcore.c_str());
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
       if (!supportsIntersectMode(device))
         return VerifyApplication::SKIPPED;
@@ -1206,8 +1219,8 @@ namespace embree
   {
     size_t N;
     
-    InterpolateSubdivTest (std::string name, size_t N)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), N(N) {}
+    InterpolateSubdivTest (std::string name, int isa, size_t N)
+      : VerifyApplication::Test(name,isa,VerifyApplication::PASS), N(N) {}
 
     bool checkInterpolation2D(const RTCSceneRef& scene, int geomID, int primID, float u, float v, int v0, RTCBufferType buffer, float* data, size_t N, size_t N_total)
     {
@@ -1284,7 +1297,8 @@ namespace embree
     
     VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
-      RTCDeviceRef device = rtcNewDevice(state->rtcore.c_str());
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
       size_t M = num_interpolation_vertices*N+16; // padds the arrays with some valid data
       
@@ -1345,8 +1359,8 @@ namespace embree
   {
     size_t N;
     
-    InterpolateTrianglesTest (std::string name, size_t N)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), N(N) {}
+    InterpolateTrianglesTest (std::string name, int isa, size_t N)
+      : VerifyApplication::Test(name,isa,VerifyApplication::PASS), N(N) {}
     
     bool checkTriangleInterpolation(const RTCSceneRef& scene, int geomID, int primID, float u, float v, int v0, int v1, int v2, RTCBufferType buffer, float* data, size_t N, size_t N_total)
     {
@@ -1376,7 +1390,8 @@ namespace embree
 
     VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
-      RTCDeviceRef device = rtcNewDevice(state->rtcore.c_str());
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
 
       size_t M = num_interpolation_vertices*N+16; // padds the arrays with some valid data
@@ -1445,8 +1460,8 @@ namespace embree
   {
     size_t N;
     
-    InterpolateHairTest (std::string name, size_t N)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), N(N) {}
+    InterpolateHairTest (std::string name, int isa, size_t N)
+      : VerifyApplication::Test(name,isa,VerifyApplication::PASS), N(N) {}
     
     bool checkHairInterpolation(const RTCSceneRef& scene, int geomID, int primID, float u, float v, int v0, RTCBufferType buffer, float* data, size_t N, size_t N_total)
     {
@@ -1483,7 +1498,8 @@ namespace embree
     
     VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
-      RTCDeviceRef device = rtcNewDevice(state->rtcore.c_str());
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
 
       size_t M = num_interpolation_vertices*N+16; // padds the arrays with some valid data
@@ -1549,12 +1565,13 @@ namespace embree
 
   struct BaryDistanceTest : public VerifyApplication::Test
   {
-    BaryDistanceTest (std::string name)
-      : VerifyApplication::Test(name,VerifyApplication::PASS) {}
+    BaryDistanceTest (std::string name, int isa)
+      : VerifyApplication::Test(name,isa,VerifyApplication::PASS) {}
 
     VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
-      RTCDeviceRef device = rtcNewDevice(state->rtcore.c_str());
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
 
       std::vector<Vertex> m_vertices;
@@ -1632,12 +1649,13 @@ namespace embree
     RTCSceneFlags sflags; 
     RTCGeometryFlags gflags; 
 
-    RayMasksTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant)
-      : VerifyApplication::IntersectTest(name,imode,ivariant,VerifyApplication::PASS), sflags(sflags), gflags(gflags) {}
+    RayMasksTest (std::string name, int isa, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant)
+      : VerifyApplication::IntersectTest(name,isa,imode,ivariant,VerifyApplication::PASS), sflags(sflags), gflags(gflags) {}
 
     VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
-      RTCDeviceRef device = rtcNewDevice(state->rtcore.c_str());
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
       if (!supportsIntersectMode(device))
         return VerifyApplication::SKIPPED;
@@ -1688,12 +1706,13 @@ namespace embree
     RTCSceneFlags sflags;
     RTCGeometryFlags gflags;
 
-    BackfaceCullingTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant)
-      : VerifyApplication::IntersectTest(name,imode,ivariant,VerifyApplication::PASS), sflags(sflags), gflags(gflags) {}
+    BackfaceCullingTest (std::string name, int isa, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant)
+      : VerifyApplication::IntersectTest(name,isa,imode,ivariant,VerifyApplication::PASS), sflags(sflags), gflags(gflags) {}
     
     VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
-      RTCDeviceRef device = rtcNewDevice(state->rtcore.c_str());
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
       if (!supportsIntersectMode(device))
         return VerifyApplication::SKIPPED;
@@ -1742,8 +1761,8 @@ namespace embree
     RTCGeometryFlags gflags;
     bool subdiv;
 
-    IntersectionFilterTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, bool subdiv, IntersectMode imode, IntersectVariant ivariant)
-      : VerifyApplication::IntersectTest(name,imode,ivariant,VerifyApplication::PASS), sflags(sflags), gflags(gflags), subdiv(subdiv) {}
+    IntersectionFilterTest (std::string name, int isa, RTCSceneFlags sflags, RTCGeometryFlags gflags, bool subdiv, IntersectMode imode, IntersectVariant ivariant)
+      : VerifyApplication::IntersectTest(name,isa,imode,ivariant,VerifyApplication::PASS), sflags(sflags), gflags(gflags), subdiv(subdiv) {}
     
     static void intersectionFilter1(void* userGeomPtr, RTCRay& ray) 
     {
@@ -1828,7 +1847,8 @@ namespace embree
 
     VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
-      RTCDeviceRef device = rtcNewDevice(state->rtcore.c_str());
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
       if (!supportsIntersectMode(device))
         return VerifyApplication::SKIPPED;
@@ -1900,12 +1920,13 @@ namespace embree
     static const size_t N = 10;
     static const size_t maxStreamSize = 100;
     
-    InactiveRaysTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant)
-      : VerifyApplication::IntersectTest(name,imode,ivariant,VerifyApplication::PASS), sflags(sflags), gflags(gflags) {}
+    InactiveRaysTest (std::string name, int isa, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant)
+      : VerifyApplication::IntersectTest(name,isa,imode,ivariant,VerifyApplication::PASS), sflags(sflags), gflags(gflags) {}
    
     VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
-      RTCDeviceRef device = rtcNewDevice(state->rtcore.c_str());
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
       if (!supportsIntersectMode(device))
         return VerifyApplication::SKIPPED;
@@ -1962,12 +1983,13 @@ namespace embree
     static const size_t N = 10;
     static const size_t maxStreamSize = 100;
     
-    WatertightTest (std::string name, RTCSceneFlags sflags, IntersectMode imode, std::string model, const Vec3fa& pos)
-      : VerifyApplication::IntersectTest(name,imode,VARIANT_INTERSECT,VerifyApplication::PASS), sflags(sflags), model(model), pos(pos) {}
+    WatertightTest (std::string name, int isa, RTCSceneFlags sflags, IntersectMode imode, std::string model, const Vec3fa& pos)
+      : VerifyApplication::IntersectTest(name,isa,imode,VARIANT_INTERSECT,VerifyApplication::PASS), sflags(sflags), model(model), pos(pos) {}
     
     VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
-      RTCDeviceRef device = rtcNewDevice(state->rtcore.c_str());
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
       if (!supportsIntersectMode(device))
         return VerifyApplication::SKIPPED;
@@ -2021,12 +2043,13 @@ namespace embree
     RTCSceneFlags sflags;
     RTCGeometryFlags gflags;
     
-    NaNTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant)
-      : VerifyApplication::IntersectTest(name,imode,ivariant,VerifyApplication::PASS), sflags(sflags), gflags(gflags)  {}
+    NaNTest (std::string name, int isa, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant)
+      : VerifyApplication::IntersectTest(name,isa,imode,ivariant,VerifyApplication::PASS), sflags(sflags), gflags(gflags)  {}
     
     VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
-      RTCDeviceRef device = rtcNewDevice(state->rtcore.c_str());
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
       if (!supportsIntersectMode(device))
         return VerifyApplication::SKIPPED;
@@ -2090,12 +2113,13 @@ namespace embree
     RTCSceneFlags sflags;
     RTCGeometryFlags gflags;
     
-    InfTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant)
-      : VerifyApplication::IntersectTest(name,imode,ivariant,VerifyApplication::PASS), sflags(sflags), gflags(gflags) {}
+    InfTest (std::string name, int isa, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant)
+      : VerifyApplication::IntersectTest(name,isa,imode,ivariant,VerifyApplication::PASS), sflags(sflags), gflags(gflags) {}
    
     VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
-      RTCDeviceRef device = rtcNewDevice(state->rtcore.c_str());
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
       if (!supportsIntersectMode(device))
         return VerifyApplication::SKIPPED;
@@ -2537,12 +2561,13 @@ namespace embree
     int mode;
     std::vector<IntersectMode> intersectModes;
     
-    IntensiveRegressionTest (std::string name, thread_func func, int mode)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), func(func), mode(mode) {}
+    IntensiveRegressionTest (std::string name, int isa, thread_func func, int mode)
+      : VerifyApplication::Test(name,isa,VerifyApplication::PASS), func(func), mode(mode) {}
     
     VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
-      RTCDeviceRef device = rtcNewDevice(state->rtcore.c_str());
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
 
       /* only test supported intersect modes */
@@ -2624,12 +2649,13 @@ namespace embree
     thread_func func;
     std::vector<IntersectMode> intersectModes;
     
-    MemoryMonitorTest (std::string name, thread_func func)
-      : VerifyApplication::Test(name,VerifyApplication::PASS), func(func) {}
+    MemoryMonitorTest (std::string name, int isa, thread_func func)
+      : VerifyApplication::Test(name,isa,VerifyApplication::PASS), func(func) {}
     
     VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
-      RTCDeviceRef device = rtcNewDevice(state->rtcore.c_str());
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
       
       /* only test supported intersect modes */
@@ -2689,12 +2715,13 @@ namespace embree
 
   struct GarbageGeometryTest : public VerifyApplication::Test // FIXME: move test to front, this is a build test
   {
-    GarbageGeometryTest (std::string name)
-      : VerifyApplication::Test(name,VerifyApplication::PASS) {}
+    GarbageGeometryTest (std::string name, int isa)
+      : VerifyApplication::Test(name,isa,VerifyApplication::PASS) {}
     
     VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
-      RTCDeviceRef device = rtcNewDevice(state->rtcore.c_str());
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
 
       for (size_t i=0; i<size_t(1000*state->intensity); i++) 
@@ -2730,11 +2757,18 @@ namespace embree
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
-
+  
   VerifyApplication::VerifyApplication ()
     : Application(Application::FEATURE_RTCORE), intensity(1.0f), numFailedTests(0), user_specified_tests(false), use_groups(true)
   {
-    /* create list of all supported intersect modes to test */
+    /* create list of all ISAs to test */
+    if (hasISA(SSE2)) isas.push_back(SSE2);
+    if (hasISA(SSE42)) isas.push_back(SSE42);
+    if (hasISA(AVX)) isas.push_back(AVX);
+    if (hasISA(AVX2)) isas.push_back(AVX2);
+    if (hasISA(AVX512KNL)) isas.push_back(AVX512KNL);
+    
+    /* create list of all intersect modes to test */
     intersectModes.push_back(MODE_INTERSECT1);
     intersectModes.push_back(MODE_INTERSECT4);
     intersectModes.push_back(MODE_INTERSECT8);
@@ -2778,176 +2812,183 @@ namespace embree
     error_handler(rtcDeviceGetError(device));
 
     addTest(new InitExitTest("init_exit"));
-    addTest(new MultipleDevicesTest("multiple_devices"));
 
-    addTest(new FlagsTest("flags_static_static"     ,VerifyApplication::PASS, RTC_SCENE_STATIC, RTC_GEOMETRY_STATIC));
-    addTest(new FlagsTest("flags_static_deformable" ,VerifyApplication::FAIL, RTC_SCENE_STATIC, RTC_GEOMETRY_DEFORMABLE));
-    addTest(new FlagsTest("flags_static_dynamic"    ,VerifyApplication::FAIL, RTC_SCENE_STATIC, RTC_GEOMETRY_DYNAMIC));
-    addTest(new FlagsTest("flags_dynamic_static"    ,VerifyApplication::PASS, RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC));
-    addTest(new FlagsTest("flags_dynamic_deformable",VerifyApplication::PASS, RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DEFORMABLE));
-    addTest(new FlagsTest("flags_dynamic_dynamic"   ,VerifyApplication::PASS, RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DYNAMIC));    
-    addTest(new UnmappedBeforeCommitTest("unmapped_before_commit"));
-    addTest(new GetBoundsTest("get_bounds"));
-    addTest(new GetUserDataTest("get_user_data"));
+    for (auto isa : isas)
+    {
+      addTest(new MultipleDevicesTest("multiple_devices",isa));
 
-    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_BUFFER_STRIDE)) {
-      addTest(new BufferStrideTest("buffer_stride"));
-    }    
+      beginTestGroup("flags_"+stringOfISA(isa));
+      addTest(new FlagsTest("flags_"+stringOfISA(isa)+"_static_static"     ,isa,VerifyApplication::PASS, RTC_SCENE_STATIC, RTC_GEOMETRY_STATIC));
+      addTest(new FlagsTest("flags_"+stringOfISA(isa)+"_static_deformable" ,isa,VerifyApplication::FAIL, RTC_SCENE_STATIC, RTC_GEOMETRY_DEFORMABLE));
+      addTest(new FlagsTest("flags_"+stringOfISA(isa)+"_static_dynamic"    ,isa,VerifyApplication::FAIL, RTC_SCENE_STATIC, RTC_GEOMETRY_DYNAMIC));
+      addTest(new FlagsTest("flags_"+stringOfISA(isa)+"_dynamic_static"    ,isa,VerifyApplication::PASS, RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC));
+      addTest(new FlagsTest("flags_"+stringOfISA(isa)+"_dynamic_deformable",isa,VerifyApplication::PASS, RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DEFORMABLE));
+      addTest(new FlagsTest("flags_"+stringOfISA(isa)+"_dynamic_dynamic"   ,isa,VerifyApplication::PASS, RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DYNAMIC));    
+      endTestGroup();
 
-    /**************************************************************************/
-    /*                        Builder Tests                                   */
-    /**************************************************************************/
+      addTest(new UnmappedBeforeCommitTest("unmapped_before_commit_"+stringOfISA(isa),isa));
+      addTest(new GetBoundsTest("get_bounds_"+stringOfISA(isa),isa));
+      addTest(new GetUserDataTest("get_user_data_"+stringOfISA(isa),isa));
 
-    beginTestGroup("empty_scene");
-    for (auto sflags : sceneFlags) 
-      addTest(new EmptySceneTest("empty_scene_"+to_string(sflags),sflags));
-    endTestGroup();
+      if (rtcDeviceGetParameter1i(device,RTC_CONFIG_BUFFER_STRIDE)) {
+        addTest(new BufferStrideTest("buffer_stride_"+stringOfISA(isa),isa));
+      }    
+      
+      /**************************************************************************/
+      /*                        Builder Tests                                   */
+      /**************************************************************************/
+      
+      beginTestGroup("empty_scene_"+stringOfISA(isa));
+      for (auto sflags : sceneFlags) 
+        addTest(new EmptySceneTest("empty_scene_"+to_string(isa,sflags),isa,sflags));
+      endTestGroup();
+      
+      beginTestGroup("empty_geometry_"+stringOfISA(isa));
+      for (auto sflags : sceneFlags) 
+        addTest(new EmptyGeometryTest("empty_geometry_"+to_string(isa,sflags),isa,sflags,RTC_GEOMETRY_STATIC));
+      endTestGroup();
+      
+      beginTestGroup("build_"+stringOfISA(isa));
+      for (auto sflags : sceneFlags) 
+        addTest(new BuildTest("build_"+to_string(isa,sflags),isa,sflags,RTC_GEOMETRY_STATIC));
+      endTestGroup();
+      
+      addTest(new OverlappingTrianglesTest("overlapping_triangles_"+stringOfISA(isa),isa,100000));
+      addTest(new OverlappingHairTest("overlapping_hair_"+stringOfISA(isa),isa,100000));
 
-    beginTestGroup("empty_geometry");
-    for (auto sflags : sceneFlags) 
-      addTest(new EmptyGeometryTest("empty_geometry_"+to_string(sflags),sflags,RTC_GEOMETRY_STATIC));
-    endTestGroup();
-
-    beginTestGroup("build");
-    for (auto sflags : sceneFlags) 
-      addTest(new BuildTest("build_"+to_string(sflags),sflags,RTC_GEOMETRY_STATIC));
-    endTestGroup();
-
-    addTest(new OverlappingTrianglesTest("overlapping_triangles",100000));
-    addTest(new OverlappingHairTest("overlapping_hair",100000));
-
-    beginTestGroup("new_delete_geometry");
-    for (auto sflags : sceneFlagsDynamic) 
-      addTest(new NewDeleteGeometryTest("new_delete_geometry_"+to_string(sflags),sflags));
-    endTestGroup();
-
-    beginTestGroup("enable_disable_geometry");
-    for (auto sflags : sceneFlagsDynamic) 
-      addTest(new EnableDisableGeometryTest("enable_disable_geometry_"+to_string(sflags),sflags));
-    endTestGroup();
-
-    beginTestGroup("update");
-    for (auto sflags : sceneFlagsDynamic) {
-      for (auto imode : intersectModes) {
-        for (auto ivariant : intersectVariants) {
-          addTest(new UpdateTest("update_deformable_"+to_string(sflags,imode,ivariant),sflags,RTC_GEOMETRY_DEFORMABLE,imode,ivariant));
-          addTest(new UpdateTest("update_dynamic_"+to_string(sflags,imode,ivariant),sflags,RTC_GEOMETRY_DYNAMIC,imode,ivariant));
+      beginTestGroup("new_delete_geometry_"+stringOfISA(isa));
+      for (auto sflags : sceneFlagsDynamic) 
+        addTest(new NewDeleteGeometryTest("new_delete_geometry_"+to_string(isa,sflags),isa,sflags));
+      endTestGroup();
+      
+      beginTestGroup("enable_disable_geometry_"+stringOfISA(isa));
+      for (auto sflags : sceneFlagsDynamic) 
+        addTest(new EnableDisableGeometryTest("enable_disable_geometry_"+to_string(isa,sflags),isa,sflags));
+      endTestGroup();
+      
+      beginTestGroup("update_"+stringOfISA(isa));
+      for (auto sflags : sceneFlagsDynamic) {
+        for (auto imode : intersectModes) {
+          for (auto ivariant : intersectVariants) {
+            addTest(new UpdateTest("update_deformable_"+to_string(isa,sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_DEFORMABLE,imode,ivariant));
+            addTest(new UpdateTest("update_dynamic_"+to_string(isa,sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_DYNAMIC,imode,ivariant));
+          }
         }
       }
-    }
-    endTestGroup();
-
-    /**************************************************************************/
-    /*                     Interpolation Tests                                */
-    /**************************************************************************/
-
-    beginTestGroup("interpolate_subdiv");
-    for (auto s : { 4,5,8,11,12,15 })
-      addTest(new InterpolateSubdivTest("interpolate_subdiv_"+std::to_string(long(s)),s));
-    endTestGroup();
-
-    beginTestGroup("interpolate_triangles");
-    for (auto s : { 4,5,8,11,12,15 }) 
-      addTest(new InterpolateTrianglesTest("interpolate_triangles_"+std::to_string(long(s)),s));
-    endTestGroup();
-
-    beginTestGroup("interpolate_hair");
-    for (auto s : { 4,5,8,11,12,15 }) 
-      addTest(new InterpolateHairTest("interpolate_hair_"+std::to_string(long(s)),s));
-    endTestGroup();
-
-    addTest(new BaryDistanceTest("bary_distance_robust"));
-
-    /**************************************************************************/
-    /*                      Intersection Tests                                */
-    /**************************************************************************/
-
-    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_RAY_MASK)) 
-    {
-      beginTestGroup("ray_masks");
-      for (auto sflags : sceneFlags) 
-        for (auto imode : intersectModes) 
-          for (auto ivariant : intersectVariants)
-            addTest(new RayMasksTest("ray_masks_"+to_string(sflags,imode,ivariant),sflags,RTC_GEOMETRY_STATIC,imode,ivariant));
       endTestGroup();
-    }
-
-    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_BACKFACE_CULLING)) 
-    {
-      beginTestGroup("backface_culling");
-      for (auto sflags : sceneFlags) 
-        for (auto imode : intersectModes) 
-          for (auto ivariant : intersectVariants)
-            addTest(new BackfaceCullingTest("backface_culling_"+to_string(sflags,imode,ivariant),sflags,RTC_GEOMETRY_STATIC,imode,ivariant));
+      
+      /**************************************************************************/
+      /*                     Interpolation Tests                                */
+      /**************************************************************************/
+      
+      beginTestGroup("interpolate_subdiv_"+stringOfISA(isa));
+      for (auto s : { 4,5,8,11,12,15 })
+        addTest(new InterpolateSubdivTest("interpolate_subdiv_"+stringOfISA(isa)+"_"+std::to_string(long(s)),isa,s));
       endTestGroup();
-    }
+      
+      beginTestGroup("interpolate_triangles_"+stringOfISA(isa));
+      for (auto s : { 4,5,8,11,12,15 }) 
+        addTest(new InterpolateTrianglesTest("interpolate_triangles_"+stringOfISA(isa)+"_"+std::to_string(long(s)),isa,s));
+      endTestGroup();
 
-    beginTestGroup("intersection_filter");
-    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECTION_FILTER)) 
-    {
+      beginTestGroup("interpolate_hair_"+stringOfISA(isa));
+      for (auto s : { 4,5,8,11,12,15 }) 
+        addTest(new InterpolateHairTest("interpolate_hair_"+stringOfISA(isa)+"_"+std::to_string(long(s)),isa,s));
+      endTestGroup();
+      
+      addTest(new BaryDistanceTest("bary_distance_robust_"+stringOfISA(isa),isa));
+      
+      /**************************************************************************/
+      /*                      Intersection Tests                                */
+      /**************************************************************************/
+      
+      if (rtcDeviceGetParameter1i(device,RTC_CONFIG_RAY_MASK)) 
+      {
+        beginTestGroup("ray_masks_"+stringOfISA(isa));
+        for (auto sflags : sceneFlags) 
+          for (auto imode : intersectModes) 
+            for (auto ivariant : intersectVariants)
+              addTest(new RayMasksTest("ray_masks_"+to_string(isa,sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,imode,ivariant));
+        endTestGroup();
+      }
+      
+      if (rtcDeviceGetParameter1i(device,RTC_CONFIG_BACKFACE_CULLING)) 
+      {
+        beginTestGroup("backface_culling_"+stringOfISA(isa));
+        for (auto sflags : sceneFlags) 
+          for (auto imode : intersectModes) 
+            for (auto ivariant : intersectVariants)
+              addTest(new BackfaceCullingTest("backface_culling_"+to_string(isa,sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,imode,ivariant));
+        endTestGroup();
+      }
+      
+      beginTestGroup("intersection_filter_"+stringOfISA(isa));
+      if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECTION_FILTER)) 
+      {
+        for (auto sflags : sceneFlags) 
+          for (auto imode : intersectModes) 
+            for (auto ivariant : intersectVariants)
+              addTest(new IntersectionFilterTest("intersection_filter_tris_"+to_string(isa,sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,false,imode,ivariant));
+        
+        for (auto sflags : sceneFlags) 
+          for (auto imode : intersectModes) 
+            for (auto ivariant : intersectVariants)
+              addTest(new IntersectionFilterTest("intersection_filter_subdiv_"+to_string(isa,sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,true,imode,ivariant));
+      }
+      endTestGroup();
+      
+      beginTestGroup("inactive_rays_"+stringOfISA(isa));
       for (auto sflags : sceneFlags) 
-        for (auto imode : intersectModes) 
-          for (auto ivariant : intersectVariants)
-            addTest(new IntersectionFilterTest("intersection_filter_tris_"+to_string(sflags)+"_"+to_string(imode),sflags,RTC_GEOMETRY_STATIC,false,imode,ivariant));
-
-      for (auto sflags : sceneFlags) 
-        for (auto imode : intersectModes) 
-          for (auto ivariant : intersectVariants)
-            addTest(new IntersectionFilterTest("intersection_filter_subdiv_"+to_string(sflags)+"_"+to_string(imode),sflags,RTC_GEOMETRY_STATIC,true,imode,ivariant));
-    }
-    endTestGroup();
-
-    beginTestGroup("inactive_rays");
-    for (auto sflags : sceneFlags) 
         for (auto imode : intersectModes) 
           for (auto ivariant : intersectVariants)
             if (imode != MODE_INTERSECT1) // INTERSECT1 does not support disabled rays
-              addTest(new InactiveRaysTest("inactive_rays_"+to_string(sflags,imode,ivariant),sflags,RTC_GEOMETRY_STATIC,imode,ivariant));
-    endTestGroup();
-
-    beginTestGroup("watertight");
-    const Vec3fa watertight_pos = Vec3fa(148376.0f,1234.0f,-223423.0f);
-    for (auto sflags : sceneFlagsRobust) 
-      for (auto imode : intersectModes) 
-        for (std::string model : {"sphere", "plane"}) 
-          addTest(new WatertightTest("watertight_"+to_string(sflags)+"_"+model+"_"+to_string(imode),sflags,imode,model,watertight_pos));
-    endTestGroup();
-
-    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_IGNORE_INVALID_RAYS))
-    {
-      beginTestGroup("nan_test");
-      for (auto sflags : sceneFlags) 
-        for (auto imode : intersectModes) 
-          for (auto ivariant : intersectVariants)
-            addTest(new NaNTest("nan_test_"+to_string(sflags)+"_"+to_string(imode),sflags,RTC_GEOMETRY_STATIC,imode,ivariant));
+              addTest(new InactiveRaysTest("inactive_rays_"+to_string(isa,sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,imode,ivariant));
       endTestGroup();
-
-      beginTestGroup("inf_test");
-      for (auto sflags : sceneFlags) 
+      
+      beginTestGroup("watertight_"+stringOfISA(isa));
+      const Vec3fa watertight_pos = Vec3fa(148376.0f,1234.0f,-223423.0f);
+      for (auto sflags : sceneFlagsRobust) 
         for (auto imode : intersectModes) 
-          for (auto ivariant : intersectVariants)
-            addTest(new InfTest("inf_test_"+to_string(sflags)+"_"+to_string(imode),sflags,RTC_GEOMETRY_STATIC,imode,ivariant));
+          for (std::string model : {"sphere", "plane"}) 
+            addTest(new WatertightTest("watertight_"+to_string(isa,sflags,imode)+"_"+model,isa,sflags,imode,model,watertight_pos));
       endTestGroup();
+      
+      if (rtcDeviceGetParameter1i(device,RTC_CONFIG_IGNORE_INVALID_RAYS))
+      {
+        beginTestGroup("nan_test_"+stringOfISA(isa));
+        for (auto sflags : sceneFlags) 
+          for (auto imode : intersectModes) 
+            for (auto ivariant : intersectVariants)
+              addTest(new NaNTest("nan_test_"+to_string(isa,sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,imode,ivariant));
+        endTestGroup();
+        
+        beginTestGroup("inf_test_"+stringOfISA(isa));
+        for (auto sflags : sceneFlags) 
+          for (auto imode : intersectModes) 
+            for (auto ivariant : intersectVariants)
+              addTest(new InfTest("inf_test_"+to_string(isa,sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,imode,ivariant));
+        endTestGroup();
+      }
+    
+      /**************************************************************************/
+      /*                  Randomized Stress Testing                             */
+      /**************************************************************************/
+      
+      addTest(new IntensiveRegressionTest("regression_static_"+stringOfISA(isa),isa,rtcore_regression_static_thread,0));
+      addTest(new IntensiveRegressionTest("regression_dynamic_"+stringOfISA(isa),isa,rtcore_regression_dynamic_thread,0));
+      
+      addTest(new IntensiveRegressionTest("regression_static_user_threads_"+stringOfISA(isa), isa,rtcore_regression_static_thread,1));
+      addTest(new IntensiveRegressionTest("regression_dynamic_user_threads_"+stringOfISA(isa),isa,rtcore_regression_dynamic_thread,1));
+      
+      addTest(new IntensiveRegressionTest("regression_static_build_join_"+stringOfISA(isa), isa,rtcore_regression_static_thread,2));
+      addTest(new IntensiveRegressionTest("regression_dynamic_build_join_"+stringOfISA(isa),isa,rtcore_regression_dynamic_thread,2));
+      
+      addTest(new MemoryMonitorTest("regression_static_memory_monitor_"+stringOfISA(isa), isa,rtcore_regression_static_thread));
+      addTest(new MemoryMonitorTest("regression_dynamic_memory_monitor_"+stringOfISA(isa),isa,rtcore_regression_dynamic_thread));
+      
+      addTest(new GarbageGeometryTest("regression_garbage_geom_"+stringOfISA(isa),isa));
     }
     
-    /**************************************************************************/
-    /*                  Randomized Stress Testing                             */
-    /**************************************************************************/
-
-    addTest(new IntensiveRegressionTest("regression_static",rtcore_regression_static_thread,0));
-    addTest(new IntensiveRegressionTest("regression_dynamic",rtcore_regression_dynamic_thread,0));
-
-    addTest(new IntensiveRegressionTest("regression_static_user_threads", rtcore_regression_static_thread,1));
-    addTest(new IntensiveRegressionTest("regression_dynamic_user_threads",rtcore_regression_dynamic_thread,1));
-
-    addTest(new IntensiveRegressionTest("regression_static_build_join", rtcore_regression_static_thread,2));
-    addTest(new IntensiveRegressionTest("regression_dynamic_build_join",rtcore_regression_dynamic_thread,2));
-    
-    addTest(new MemoryMonitorTest("regression_static_memory_monitor", rtcore_regression_static_thread));
-    addTest(new MemoryMonitorTest("regression_dynamic_memory_monitor",rtcore_regression_dynamic_thread));
-    
-    addTest(new GarbageGeometryTest("regression_garbage_geom"));
-
     /* register all command line options*/
     std::string run_docu = "--run <regexpr>: Runs all tests whose name match the regular expression. Supported tests are:";
     for (auto test : tests) run_docu += "\n  " + test->name;
