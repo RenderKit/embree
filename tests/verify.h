@@ -27,14 +27,15 @@ namespace embree
   {
   public:
     enum TestType { PASS, FAIL, GROUP_BEGIN, GROUP_END };
+    enum TestReturnValue { FAILED, PASSED, SKIPPED };
     
     struct Test : public RefCount
     {
       Test (std::string name, TestType ty = PASS) 
         : name(name), ty(ty), enabled(false) {}
 
-      virtual bool isEnabled(RTCDevice device) { return enabled; }
-      virtual bool run(VerifyApplication* state) { return false; };
+      bool isEnabled() { return enabled; }
+      virtual TestReturnValue run(VerifyApplication* state) { return SKIPPED; };
 
     public:
       std::string name;
@@ -47,21 +48,21 @@ namespace embree
       IntersectTest (std::string name, IntersectMode imode, IntersectVariant ivariant, TestType ty = PASS)
         : Test(name,ty), imode(imode), ivariant(ivariant) {}
 
-      virtual bool isEnabled(RTCDevice device)
+      bool supportsIntersectMode(RTCDevice device)
       { 
         switch (imode) {
-        case MODE_INTERSECT_NONE: return Test::isEnabled(device);
-        case MODE_INTERSECT1:   return Test::isEnabled(device) && rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT1);
-        case MODE_INTERSECT4:   return Test::isEnabled(device) && rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT4);
-        case MODE_INTERSECT8:   return Test::isEnabled(device) && rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT8);
-        case MODE_INTERSECT16:  return Test::isEnabled(device) && rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT16);
-        case MODE_INTERSECT1M:  return Test::isEnabled(device) && rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
-        case MODE_INTERSECTNM1: return Test::isEnabled(device) && rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
-        case MODE_INTERSECTNM3: return Test::isEnabled(device) && rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
-        case MODE_INTERSECTNM4: return Test::isEnabled(device) && rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
-        case MODE_INTERSECTNM8: return Test::isEnabled(device) && rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
-        case MODE_INTERSECTNM16:return Test::isEnabled(device) && rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
-        case MODE_INTERSECTNp:  return Test::isEnabled(device) && rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
+        case MODE_INTERSECT_NONE: return true;
+        case MODE_INTERSECT1:   return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT1);
+        case MODE_INTERSECT4:   return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT4);
+        case MODE_INTERSECT8:   return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT8);
+        case MODE_INTERSECT16:  return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT16);
+        case MODE_INTERSECT1M:  return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
+        case MODE_INTERSECTNM1: return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
+        case MODE_INTERSECTNM3: return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
+        case MODE_INTERSECTNM4: return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
+        case MODE_INTERSECTNM8: return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
+        case MODE_INTERSECTNM16:return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
+        case MODE_INTERSECTNp:  return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
         }
         assert(false);
       }

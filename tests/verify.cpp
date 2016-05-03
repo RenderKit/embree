@@ -585,12 +585,12 @@ namespace embree
     InitExitTest (std::string name)
       : VerifyApplication::Test(name,VerifyApplication::PASS) {}
 
-    bool run(VerifyApplication* state)
+    VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
       rtcInit("verbose=1");
       error_handler(rtcGetError());
       rtcExit();
-      return true;
+      return VerifyApplication::PASSED;
     }
   };
 
@@ -599,7 +599,7 @@ namespace embree
     MultipleDevicesTest (std::string name)
       : VerifyApplication::Test(name,VerifyApplication::PASS) {}
 
-    bool run(VerifyApplication* state)
+    VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
       /* test creation of multiple devices */
       RTCDevice device1 = rtcNewDevice("threads=4");
@@ -611,7 +611,7 @@ namespace embree
       rtcDeleteDevice(device1);
       rtcDeleteDevice(device3);
       rtcDeleteDevice(device2);
-      return true;
+      return VerifyApplication::PASSED;
     }
   };
 
@@ -623,7 +623,7 @@ namespace embree
     FlagsTest (std::string name, VerifyApplication::TestType type, RTCSceneFlags sceneFlags, RTCGeometryFlags geomFlags)
       : VerifyApplication::Test(name,type), sceneFlags(sceneFlags), geomFlags(geomFlags) {}
 
-    bool run(VerifyApplication* state)
+    VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
       RTCSceneRef scene = rtcDeviceNewScene(state->device,sceneFlags,aflags);
       AssertNoError(state->device);
@@ -634,7 +634,7 @@ namespace embree
       rtcCommit (scene);
       AssertNoError(state->device);
       scene = nullptr;
-      return true;
+      return VerifyApplication::PASSED;
     }
   };
   
@@ -643,7 +643,7 @@ namespace embree
     UnmappedBeforeCommitTest (std::string name)
       : VerifyApplication::Test(name,VerifyApplication::PASS) {}
 
-    bool run(VerifyApplication* state)
+    VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
       ClearBuffers clear_before_return;
       RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_STATIC,aflags);
@@ -657,7 +657,7 @@ namespace embree
       rtcCommit (scene);
       AssertError(state->device,RTC_INVALID_OPERATION); // error, buffers still mapped
       scene = nullptr;
-      return true;
+      return VerifyApplication::PASSED;
     }
   };
 
@@ -666,7 +666,7 @@ namespace embree
     GetBoundsTest (std::string name)
       : VerifyApplication::Test(name,VerifyApplication::PASS) {}
 
-    bool run(VerifyApplication* state)
+    VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
       ClearBuffers clear_before_return;
       RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_STATIC,RTC_INTERSECT1);
@@ -679,7 +679,7 @@ namespace embree
       BBox3fa bounds1;
       rtcGetBounds(scene,(RTCBounds&)bounds1);
       scene = nullptr;
-      return bounds0 == bounds1;
+      return (VerifyApplication::TestReturnValue)(bounds0 == bounds1);
     }
   };
 
@@ -688,7 +688,7 @@ namespace embree
     GetUserDataTest (std::string name)
       : VerifyApplication::Test(name,VerifyApplication::PASS) {}
     
-    bool run(VerifyApplication* state)
+    VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
       RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_STATIC,RTC_INTERSECT1);
       AssertNoError(state->device);
@@ -711,14 +711,14 @@ namespace embree
       rtcCommit (scene);
       AssertNoError(state->device);
       
-      if ((size_t)rtcGetUserData(scene,geom0) != 1) return false;
-      if ((size_t)rtcGetUserData(scene,geom1) != 2) return false;
-      if ((size_t)rtcGetUserData(scene,geom2) != 3) return false;
-      if ((size_t)rtcGetUserData(scene,geom3) != 4) return false;
+      if ((size_t)rtcGetUserData(scene,geom0) != 1) return VerifyApplication::FAILED;
+      if ((size_t)rtcGetUserData(scene,geom1) != 2) return VerifyApplication::FAILED;
+      if ((size_t)rtcGetUserData(scene,geom2) != 3) return VerifyApplication::FAILED;
+      if ((size_t)rtcGetUserData(scene,geom3) != 4) return VerifyApplication::FAILED;
       
       scene = nullptr;
       AssertNoError(state->device);
-      return true;
+      return VerifyApplication::PASSED;
     }
   };
 
@@ -727,7 +727,7 @@ namespace embree
     BufferStrideTest (std::string name)
       : VerifyApplication::Test(name,VerifyApplication::PASS) {}
     
-    bool run(VerifyApplication* state)
+    VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
       ClearBuffers clear_before_return;
       RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_STATIC,aflags);
@@ -764,7 +764,7 @@ namespace embree
       AssertNoError(state->device);
       
       scene = nullptr;
-      return true;
+      return VerifyApplication::PASSED;
     }
   };
 
@@ -778,13 +778,13 @@ namespace embree
     EmptySceneTest (std::string name, RTCSceneFlags sflags)
       : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags) {}
 
-    bool run(VerifyApplication* state)
+    VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
       RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,aflags);
       AssertNoError(state->device);
       rtcCommit (scene);
       AssertNoError(state->device);
-      return true;
+      return VerifyApplication::PASSED;
     }
 
   public:
@@ -799,7 +799,7 @@ namespace embree
     EmptyGeometryTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags)
       : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), gflags(gflags) {}
     
-    bool run(VerifyApplication* state)
+    VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
       RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,aflags);
       rtcNewTriangleMesh (scene,gflags,0,0,1);
@@ -818,7 +818,7 @@ namespace embree
       AssertNoError(state->device);
       scene = nullptr;
       AssertNoError(state->device);
-      return true;
+      return VerifyApplication::PASSED;
     }
   };
 
@@ -830,7 +830,7 @@ namespace embree
     BuildTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags)
       : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags), gflags(gflags) {}
     
-    bool run (VerifyApplication* state)
+    VerifyApplication::TestReturnValue run (VerifyApplication* state)
     {
       ClearBuffers clear_before_return;
       RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,aflags);
@@ -852,7 +852,7 @@ namespace embree
       }
       scene = nullptr;
       AssertNoError(state->device);
-      return true;
+      return VerifyApplication::PASSED;
     }
   };
 
@@ -863,7 +863,7 @@ namespace embree
     OverlappingTrianglesTest (std::string name, int N)
       : VerifyApplication::Test(name,VerifyApplication::PASS), N(N) {}
     
-    bool run(VerifyApplication* state)
+    VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
       RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_STATIC,aflags);
       AssertNoError(state->device);
@@ -889,7 +889,7 @@ namespace embree
       rtcCommit (scene);
       AssertNoError(state->device);
       
-      return true;
+      return VerifyApplication::PASSED;
     }
   };
     
@@ -900,7 +900,7 @@ namespace embree
     OverlappingHairTest (std::string name, int N)
       : VerifyApplication::Test(name,VerifyApplication::PASS), N(N) {}
     
-    bool run(VerifyApplication* state)
+    VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
       RTCSceneRef scene = rtcDeviceNewScene(state->device,RTC_SCENE_STATIC,aflags);
       AssertNoError(state->device);
@@ -925,7 +925,7 @@ namespace embree
       rtcCommit (scene);
       AssertNoError(state->device);
       
-      return true;
+      return VerifyApplication::PASSED;
     }
   };
 
@@ -936,7 +936,7 @@ namespace embree
     NewDeleteGeometryTest (std::string name,  RTCSceneFlags sflags)
       : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags) {}
     
-    bool run(VerifyApplication* state)
+    VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
       ClearBuffers clear_before_return;
       RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,aflags_all);
@@ -984,7 +984,7 @@ namespace embree
       rtcCommit (scene);
       AssertNoError(state->device);
       scene = nullptr;
-      return true;
+      return VerifyApplication::PASSED;
     }
   };
 
@@ -995,7 +995,7 @@ namespace embree
     EnableDisableGeometryTest (std::string name, RTCSceneFlags sflags)
       : VerifyApplication::Test(name,VerifyApplication::PASS), sflags(sflags) {}
     
-    bool run(VerifyApplication* state)
+    VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
       ClearBuffers clear_before_return;
       RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,aflags);
@@ -1030,11 +1030,11 @@ namespace embree
           bool ok1 = enabled1 ? ray1.geomID == 1 : ray1.geomID == -1;
           bool ok2 = enabled2 ? ray2.geomID == 2 : ray2.geomID == -1;
           bool ok3 = enabled3 ? ray3.geomID == 3 : ray3.geomID == -1;
-          if (!ok0 || !ok1 || !ok2 || !ok3) return false;
+          if (!ok0 || !ok1 || !ok2 || !ok3) return VerifyApplication::FAILED;
         }
       }
       scene = nullptr;
-      return true;
+      return VerifyApplication::PASSED;
     }
   };
   
@@ -1062,8 +1062,11 @@ namespace embree
       rtcUpdate(scene,mesh);
     }
 
-    bool run(VerifyApplication* state)
+    VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
+      if (!supportsIntersectMode(state->device))
+        return VerifyApplication::SKIPPED;
+      
       ClearBuffers clear_before_return;
       RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,to_aflags(imode));
       AssertNoError(state->device);
@@ -1101,11 +1104,11 @@ namespace embree
         for (size_t numRays=1; numRays<maxRays; numRays++) {
           for (size_t i=0; i<numRays; i++) rays[i] = testRays[i%4];
           IntersectWithMode(imode,ivariant,scene,rays,numRays);
-          for (size_t i=0; i<numRays; i++) if (rays[i].geomID == -1) return false;
+          for (size_t i=0; i<numRays; i++) if (rays[i].geomID == -1) return VerifyApplication::FAILED;
         }
       }
       scene = nullptr;
-      return true;
+      return VerifyApplication::PASSED;
     }
   };
 
@@ -1265,7 +1268,7 @@ namespace embree
       return passed;
     }
     
-    bool run(VerifyApplication* state)
+    VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
       size_t M = num_interpolation_vertices*N+16; // padds the arrays with some valid data
       
@@ -1318,7 +1321,7 @@ namespace embree
       delete[] user_vertices0;
       delete[] user_vertices1;
       
-      return passed;
+      return (VerifyApplication::TestReturnValue) passed;
     }
   };
 
@@ -1355,7 +1358,7 @@ namespace embree
       return passed;
     }
 
-    bool run(VerifyApplication* state)
+    VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
       size_t M = num_interpolation_vertices*N+16; // padds the arrays with some valid data
       
@@ -1408,7 +1411,7 @@ namespace embree
       delete[] user_vertices0;
       delete[] user_vertices1;
       
-      return passed;
+      return (VerifyApplication::TestReturnValue) passed;
     }
   };
   
@@ -1459,7 +1462,7 @@ namespace embree
       return passed;
     }
     
-    bool run(VerifyApplication* state)
+    VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
       size_t M = num_interpolation_vertices*N+16; // padds the arrays with some valid data
       
@@ -1512,7 +1515,7 @@ namespace embree
       delete[] user_vertices0;
       delete[] user_vertices1;
       
-      return passed;
+      return (VerifyApplication::TestReturnValue) passed;
     }
   };
 
@@ -1527,7 +1530,7 @@ namespace embree
     BaryDistanceTest (std::string name)
       : VerifyApplication::Test(name,VerifyApplication::PASS) {}
 
-    bool run(VerifyApplication* state)
+    VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
       std::vector<Vertex> m_vertices;
       std::vector<Triangle> m_triangles;
@@ -1595,7 +1598,7 @@ namespace embree
       const Vec3fa delta = hit_tri - hit_tfar;
       const float distance = embree::length(delta);
       
-      return distance < 0.0002f;
+      return (VerifyApplication::TestReturnValue) (distance < 0.0002f);
     }
   };
   
@@ -1607,8 +1610,11 @@ namespace embree
     RayMasksTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant)
       : VerifyApplication::IntersectTest(name,imode,ivariant,VerifyApplication::PASS), sflags(sflags), gflags(gflags) {}
 
-    bool run(VerifyApplication* state)
+    VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
+      if (!supportsIntersectMode(state->device))
+        return VerifyApplication::SKIPPED;
+
       ClearBuffers clear_before_return;
       bool passed = true;
       Vec3fa pos0 = Vec3fa(-10,0,-10);
@@ -1647,7 +1653,7 @@ namespace embree
           passed &= masks[i] & (1<<i) ? rays[i].geomID != -1 : rays[i].geomID == -1;
       }
       scene = nullptr;
-      return passed;
+      return (VerifyApplication::TestReturnValue) passed;
     }
   };
 
@@ -1659,8 +1665,11 @@ namespace embree
     BackfaceCullingTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant)
       : VerifyApplication::IntersectTest(name,imode,ivariant,VerifyApplication::PASS), sflags(sflags), gflags(gflags) {}
     
-    bool run(VerifyApplication* state)
+    VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
+      if (!supportsIntersectMode(state->device))
+        return VerifyApplication::SKIPPED;
+       
       /* create triangle that is front facing for a right handed 
          coordinate system if looking along the z direction */
       RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,to_aflags(imode));
@@ -1695,7 +1704,7 @@ namespace embree
         if (i%2) passed &= rays[i].geomID == -1;
         else     passed &= rays[i].geomID == 0;
       }
-      return passed;
+      return (VerifyApplication::TestReturnValue) passed;
     }
   };
 
@@ -1789,8 +1798,11 @@ namespace embree
       }
     }
 
-    bool run(VerifyApplication* state)
+    VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
+      if (!supportsIntersectMode(state->device))
+        return VerifyApplication::SKIPPED;
+
       ClearBuffers clear_before_return;
       RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,to_aflags(imode));
       Vec3fa p0(-0.75f,-0.25f,-10.0f), dx(4,0,0), dy(0,4,0);
@@ -1847,7 +1859,7 @@ namespace embree
         }
       }
       scene = nullptr;
-      return passed;
+      return (VerifyApplication::TestReturnValue) passed;
     }
   };
     
@@ -1862,8 +1874,11 @@ namespace embree
     InactiveRaysTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant)
       : VerifyApplication::IntersectTest(name,imode,ivariant,VerifyApplication::PASS), sflags(sflags), gflags(gflags) {}
    
-    bool run(VerifyApplication* state)
+    VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
+      if (!supportsIntersectMode(state->device))
+        return VerifyApplication::SKIPPED;
+
       Vec3fa pos = zero;
       ClearBuffers clear_before_return;
       RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,to_aflags(imode));
@@ -1907,7 +1922,7 @@ namespace embree
       scene = nullptr;
       AssertNoError(state->device);
       fflush(stdout);
-      return numFailures == 0;
+      return (VerifyApplication::TestReturnValue) (numFailures == 0);
     }
   };
 
@@ -1923,8 +1938,11 @@ namespace embree
     WatertightTest (std::string name, RTCSceneFlags sflags, IntersectMode imode, std::string model, const Vec3fa& pos)
       : VerifyApplication::IntersectTest(name,imode,VARIANT_INTERSECT,VerifyApplication::PASS), sflags(sflags), model(model), pos(pos) {}
     
-    bool run(VerifyApplication* state)
+    VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
+      if (!supportsIntersectMode(state->device))
+        return VerifyApplication::SKIPPED;
+
       ClearBuffers clear_before_return;
       RTCSceneRef scene = rtcDeviceNewScene(state->device,sflags,to_aflags(imode));
       if      (model == "sphere") addSphere(state->device,scene,RTC_GEOMETRY_STATIC,pos,2.0f,500);
@@ -1966,7 +1984,7 @@ namespace embree
       double failRate = double(numFailures) / double(numTests);
       bool failed = failRate > 0.00002;
       //printf(" (%f%%)", 100.0f*failRate); fflush(stdout);
-      return !failed;
+      return (VerifyApplication::TestReturnValue)(!failed);
     }
   };
 
@@ -1978,8 +1996,11 @@ namespace embree
     NaNTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant)
       : VerifyApplication::IntersectTest(name,imode,ivariant,VerifyApplication::PASS), sflags(sflags), gflags(gflags)  {}
     
-    bool run(VerifyApplication* state)
+    VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
+      if (!supportsIntersectMode(state->device))
+        return VerifyApplication::SKIPPED;
+
       ClearBuffers clear_before_return;
       const size_t numRays = 1000;
       RTCRay rays[numRays];
@@ -2031,7 +2052,7 @@ namespace embree
       bool ok = (d2 < 2.5*d1) && (d3 < 2.5*d1) && (d4 < 2.5*d1);
       float f = max(d2/d1,d3/d1,d4/d1);
       //printf(" (%3.2fx)",f); fflush(stdout);
-      return ok;
+      return (VerifyApplication::TestReturnValue) ok;
     }
   };
     
@@ -2043,8 +2064,11 @@ namespace embree
     InfTest (std::string name, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant)
       : VerifyApplication::IntersectTest(name,imode,ivariant,VerifyApplication::PASS), sflags(sflags), gflags(gflags) {}
    
-    bool run(VerifyApplication* state)
+    VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
+      if (!supportsIntersectMode(state->device))
+        return VerifyApplication::SKIPPED;
+
       ClearBuffers clear_before_return;
       const size_t numRays = 1000;
       RTCRay rays[numRays];
@@ -2107,7 +2131,7 @@ namespace embree
       bool ok = (d2 < 2.5*d1) && (d3 < 2.5*d1) && (d4 < 2.5*d1) && (d5 < 2.5*d1);
       float f = max(d2/d1,d3/d1,d4/d1,d5/d1);
       //printf(" (%3.2fx)",f); fflush(stdout);
-      return ok;
+      return (VerifyApplication::TestReturnValue) ok;
     }
   };
 
@@ -2483,7 +2507,7 @@ namespace embree
     IntensiveRegressionTest (std::string name, thread_func func, int mode)
       : VerifyApplication::Test(name,VerifyApplication::PASS), func(func), mode(mode) {}
     
-    bool run(VerifyApplication* state)
+    VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
       errorCounter = 0;
       size_t sceneIndex = 0;
@@ -2524,7 +2548,7 @@ namespace embree
           func(new ThreadRegressionTask(0,0,state,&task));
         }	
       }
-      return errorCounter == 0;
+      return (VerifyApplication::TestReturnValue) (errorCounter == 0);
     }
   };
 
@@ -2551,7 +2575,7 @@ namespace embree
     MemoryMonitorTest (std::string name, thread_func func)
       : VerifyApplication::Test(name,VerifyApplication::PASS), func(func) {}
     
-    bool run(VerifyApplication* state)
+    VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
       g_enable_build_cancel = true;
       rtcDeviceSetMemoryMonitorFunction(state->device,monitorMemoryFunction);
@@ -2571,7 +2595,7 @@ namespace embree
         if (monitorMemoryBytesUsed) {
           rtcDeviceSetMemoryMonitorFunction(state->device,nullptr);
           //rtcDeviceSetProgressMonitorFunction(state->device,nullptr);
-          return false;
+          return VerifyApplication::FAILED;
         }
         monitorMemoryBreak = monitorMemoryInvokations * drand48();
         monitorMemoryBytesUsed = 0;
@@ -2583,13 +2607,13 @@ namespace embree
         if (monitorMemoryBytesUsed) { // || (monitorMemoryInvokations != 0 && errorCounter != 1)) { // FIXME: test that rtcCommit has returned with error code
           rtcDeviceSetMemoryMonitorFunction(state->device,nullptr);
           //rtcDeviceSetProgressMonitorFunction(state->device,nullptr);
-          return false;
+          return VerifyApplication::FAILED;
         }
         sceneIndex++;
       }
       g_enable_build_cancel = false;
       rtcDeviceSetMemoryMonitorFunction(state->device,nullptr);
-      return true;
+      return VerifyApplication::PASSED;
     }
   };
 
@@ -2598,7 +2622,7 @@ namespace embree
     GarbageGeometryTest (std::string name)
       : VerifyApplication::Test(name,VerifyApplication::PASS) {}
     
-    bool run(VerifyApplication* state)
+    VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
       for (size_t i=0; i<size_t(1000*state->intensity); i++) 
       {
@@ -2626,7 +2650,7 @@ namespace embree
         AssertNoError(state->device);
         scene = nullptr;
       }
-      return true;
+      return VerifyApplication::PASSED;
     }
   };
 
@@ -2931,11 +2955,11 @@ namespace embree
     for (size_t i=0; i<tests.size(); i++) 
     {
       if (use_groups && tests[i]->ty == GROUP_BEGIN) {
-        if (tests[i]->isEnabled(device))
+        if (tests[i]->isEnabled())
           runTestGroup(i);
       }
       else {
-        if (tests[i]->isEnabled(device) && tests[i]->ty != GROUP_BEGIN && tests[i]->ty != GROUP_END)
+        if (tests[i]->isEnabled() && tests[i]->ty != GROUP_BEGIN && tests[i]->ty != GROUP_END)
           runTest(tests[i],false);
       }
     }
@@ -2960,28 +2984,31 @@ namespace embree
   
   bool VerifyApplication::runTest(Ref<Test> test, bool silent)
   {
-    if (!test->isEnabled(device))
+    if (!test->isEnabled())
       return true;
 
-    bool ok = true;
     if (!silent)
       std::cout << std::setw(60) << test->name << " ..." << std::flush;
     
-    try 
-    {
-      ok &= test->run(this);
+    TestReturnValue v = SKIPPED;
+    try {
+      v = test->run(this);
       AssertNoError(device);
     } catch (...) {
-      ok = false;
+      v = FAILED;
     }
-    bool passed = (test->ty == PASS) == ok;
+    TestReturnValue ev = test->ty == PASS ? PASSED : FAILED;
+    bool passed = v == ev || v == SKIPPED;
 
     if (silent) {
-      if (passed) std::cout << GREEN("+") << std::flush;
-      else        std::cout << RED  ("-") << std::flush;
+      if (v != SKIPPED) {
+        if (passed) std::cout << GREEN("+") << std::flush;
+        else        std::cout << RED  ("-") << std::flush;
+      }
     } else {
-      if (passed) std::cout << GREEN(" [PASSED]") << std::endl << std::flush;
-      else        std::cout << RED  (" [FAILED]") << std::endl << std::flush;
+      if      (v == SKIPPED) std::cout << GREEN(" [SKIPPED]") << std::endl << std::flush;
+      else if (passed      ) std::cout << GREEN(" [PASSED]" ) << std::endl << std::flush;
+      else                   std::cout << RED  (" [FAILED]" ) << std::endl << std::flush;
     }
     numFailedTests += !passed;
     return passed;
