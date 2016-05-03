@@ -97,7 +97,6 @@ namespace embree
     std::vector<RTCSceneFlags> sceneFlagsRobust;
     std::vector<RTCSceneFlags> sceneFlagsDynamic;
     std::vector<IntersectMode> intersectModes;
-    std::vector<IntersectMode> intersectModesOld;
     std::vector<IntersectVariant> intersectVariants;
     bool user_specified_tests;
     bool use_groups;

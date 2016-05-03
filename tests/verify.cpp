@@ -2650,11 +2650,6 @@ namespace embree
     intersectModes.push_back(MODE_INTERSECTNM16);
     intersectModes.push_back(MODE_INTERSECTNp);
     
-    intersectModesOld.push_back(MODE_INTERSECT1);
-    intersectModesOld.push_back(MODE_INTERSECT4);
-    intersectModesOld.push_back(MODE_INTERSECT8);
-    intersectModesOld.push_back(MODE_INTERSECT16);
-
     /* create a list of all intersect variants for each intersect mode */
     intersectVariants.push_back(VARIANT_INTERSECT_COHERENT);
     intersectVariants.push_back(VARIANT_OCCLUDED_COHERENT);
@@ -2926,11 +2921,6 @@ namespace embree
       intersectModes.push_back(MODE_INTERSECTNM16);
       intersectModes.push_back(MODE_INTERSECTNp);
     }
-    intersectModesOld.clear();
-    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT1)) intersectModesOld.push_back(MODE_INTERSECT1);
-    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT4)) intersectModesOld.push_back(MODE_INTERSECT4);
-    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT8)) intersectModesOld.push_back(MODE_INTERSECT8);
-    if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT16)) intersectModesOld.push_back(MODE_INTERSECT16);
 
     /* enable all tests if user did not specify any tests */
     if (!user_specified_tests) 
