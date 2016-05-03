@@ -16,7 +16,10 @@
 
 #pragma once
 
+#include "../../../common/math/vec2.h"
 #include "../../../common/math/vec3.h"
+#include "../../../common/math/vec4.h"
+using namespace embree;
 
 struct DifferentialGeometry
 {
