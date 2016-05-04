@@ -86,16 +86,12 @@ namespace embree
 							  const unsigned int users)
    {
      while( !(t_state->counter <= users) )
-       {
-#if defined(__MIC__)
-	 _mm_delay_32(128);
-#else
-	 _mm_pause();
-	 _mm_pause();
-	 _mm_pause();
-	 _mm_pause();
-#endif
-       }
+     {
+       _mm_pause();
+       _mm_pause();
+       _mm_pause();
+       _mm_pause();
+     }
    }
 
   void SharedLazyTessellationCache::allocNextSegment() 
@@ -199,7 +195,8 @@ namespace embree
     /* reallocate data */
     if (data) os_free(data,size);
     size      = new_size;
-    data      = (float*)os_malloc(size); // FIXME: do os_reserve under linux
+    data      = nullptr;
+    if (size) data = (float*)os_malloc(size); // FIXME: do os_reserve under linux
     maxBlocks = size/64;    
 
     /* invalidate entire cache */

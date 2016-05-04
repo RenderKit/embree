@@ -22,11 +22,7 @@
 namespace embree
 {
 
-#if defined(__MIC__)
- #define DEFAULT_PATH_BINARY_FILES      "/home/micuser/"
-#else
- #define DEFAULT_PATH_BINARY_FILES      "./"
-#endif
+#define DEFAULT_PATH_BINARY_FILES      "./"
 
 #define DEFAULT_FILENAME_GEOMETRY      "geometry.bin"
 

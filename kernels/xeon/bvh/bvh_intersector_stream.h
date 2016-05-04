@@ -180,6 +180,51 @@ namespace embree
 
     };
 
+    template<int K, bool robust>
+    class __aligned(32) RayContext 
+    {
+    public:
+      Vec3fa rdir;      //     rdir.w = tnear;
+      Vec3fa org_rdir;  // org_rdir.w = tfar; org_rdir = org in robust mode        
+
+      __forceinline RayContext() {}
+
+      __forceinline RayContext(Ray* ray)
+      {
+#if defined(__AVX512F__)
+        vfloat<K> org(vfloat4(ray->org));
+        vfloat<K> dir(vfloat4(ray->dir));
+        vfloat<K> rdir       = select(0x7777,rcp_safe(dir),max(vfloat<K>(ray->tnear),vfloat<K>(zero)));
+        vfloat<K> org_rdir   = robust ? select(0x7777,org,ray->tfar) : select(0x7777,org * rdir,ray->tfar);
+        vfloat<K> res = select(0xf,rdir,org_rdir);
+        vfloat8 r = extractf256bit(res);
+        *(vfloat8*)this = r;          
+#else
+        Vec3fa& org = ray->org;
+        Vec3fa& dir = ray->dir;
+        rdir       = rcp_safe(dir);
+        org_rdir   = robust ? org : org * rdir;
+        rdir.w     = max(0.0f,ray->tnear);
+        org_rdir.w = ray->tfar;
+#endif
+      }
+
+      __forceinline void update(const Ray* ray) {
+        org_rdir.w = ray->tfar;
+      }
+
+      __forceinline unsigned int tfar_ui() const {
+        return *(unsigned int*)&org_rdir.w;
+      }
+
+      __forceinline float tfar() const {
+        return org_rdir.w;
+      }
+
+    };
+
+
+
     /*! BVH ray stream intersector. */
     template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
       class BVHNStreamIntersector
@@ -188,6 +233,7 @@ namespace embree
       typedef typename PrimitiveIntersector::Precalculations Precalculations;
       typedef typename PrimitiveIntersector::Primitive Primitive;
       typedef BVHN<N> BVH;
+      typedef RayContext<K,robust> RContext;
       typedef typename BVH::NodeRef NodeRef;
       typedef typename BVH::BaseNode BaseNode;
       typedef typename BVH::Node Node;
@@ -198,93 +244,6 @@ namespace embree
         1+(N-1)*BVH::maxDepth+   // standard depth
         1+(N-1)*BVH::maxDepth;   // transform feature
 
-      struct TraversalContext 
-      {
-      public:
-
-        __forceinline TraversalContext() 
-          : pray(nullptr), suspended(false) {}
-
-        __forceinline void init(Ray& ray, BVH* __restrict__ bvh, StackItemT<NodeRef>* stack)
-        {
-          pray = &ray;
-          stackBegin = stack;
-
-          /*! perform per ray precalculations required by the primitive intersector */
-          new (&pre) Precalculations(ray,bvh);
-        
-          /*! stack state */
-          stackPtr = stack+1;
-          stackEnd = stack+stackSize;
-          stack[0].ptr  = bvh->root;
-          stack[0].dist = neg_inf;
-          
-          /*! expand ray */
-          new (&vray) TravRay<N,N>(ray.org,ray.dir);
-          ray_near = max(ray.tnear,0.0f);
-          ray_far  = max(ray.tfar ,0.0f);
-        
-          /*! initialize the node traverser */
-          //new (&nodeTraverser) BVHNNodeTraverser1<N,N,types>(vray);
-        }
-
-      public:
-        bool suspended;
-        Precalculations pre;
-        //StackItemT<NodeRef> stack[stackSize];
-         StackItemT<NodeRef>* stackBegin;
-        StackItemT<NodeRef>* stackPtr;
-        StackItemT<NodeRef>* stackEnd;
-        Ray* pray;
-        TravRay<N,N> vray;
-        vfloat<N> ray_near;
-        vfloat<N> ray_far;
-        //BVHNNodeTraverser1<N,N,types> nodeTraverser;
-      };
-
-      struct __aligned(32) RayContext 
-      {
-      public:
-        Vec3fa rdir;      //     rdir.w = tnear;
-        Vec3fa org_rdir;  // org_rdir.w = tfar;        
-
-      public:
-
-        __forceinline RayContext() {}
-
-        __forceinline RayContext(Ray* ray)
-        {
-#if defined(__AVX512F__)
-          vfloat<K> org(vfloat4(ray->org));
-          vfloat<K> dir(vfloat4(ray->dir));
-          vfloat<K> rdir       = select(0x7777,rcp_safe(dir),ray->tnear);
-          vfloat<K> org_rdir   = select(0x7777,org * rdir,ray->tfar);
-          vfloat<K> res = select(0xf,rdir,org_rdir);
-          vfloat8 r = extractf256bit(res);
-          *(vfloat8*)this = r;          
-#else
-          Vec3fa& org = ray->org;
-          Vec3fa& dir = ray->dir;
-          rdir       = rcp_safe(dir);
-          org_rdir   = org * rdir;
-          rdir.w     = ray->tnear;
-          org_rdir.w = ray->tfar;
-#endif
-        }
-
-        __forceinline void update(const Ray* ray) {
-          org_rdir.w = ray->tfar;
-        }
-
-        __forceinline unsigned int tfar_ui() const {
-          return *(unsigned int*)&org_rdir.w;
-        }
-
-        __forceinline float tfar() const {
-          return org_rdir.w;
-        }
-
-      };
 
       struct __aligned(32) RayFiberContext {
         NodeRef node;
@@ -371,6 +330,7 @@ namespace embree
       static void intersect(BVH* bvh, Ray **ray, size_t numRays, const RTCIntersectContext* context);
       static void occluded (BVH* bvh, Ray **ray, size_t numRays, const RTCIntersectContext* context);
     };
+
 
   }
 }

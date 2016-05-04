@@ -14,67 +14,45 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-IF (__XEON__)
-
-  IF (TASKING_INTERNAL)
-    ADD_DEFINITIONS(-DTASKING_INTERNAL)
-  ELSE()
-    ADD_DEFINITIONS(-DTASKING_TBB)
-  ENDIF()
-
-  IF (TARGET_SSE41)
-    ADD_DEFINITIONS(-D__TARGET_SSE41__)
-  ENDIF()
-
-  IF (TARGET_AVX)
-    ADD_DEFINITIONS(-D__TARGET_AVX__)
-  ENDIF()
-
-  IF (TARGET_AVX2)
-    ADD_DEFINITIONS(-D__TARGET_AVX2__)
-  ENDIF()
-
-  IF (TARGET_AVX512KNL)
-    ADD_DEFINITIONS(-D__TARGET_AVX512KNL__)
-  ENDIF()
-
-  ADD_EXECUTABLE(verify verify.cpp ../tutorials/common/tutorial/application.cpp)
-  TARGET_LINK_LIBRARIES(verify sys embree)
-  SET_PROPERTY(TARGET verify PROPERTY FOLDER tests)
-  ADD_TEST(NAME verify COMMAND verify)
-
-  ADD_EXECUTABLE(benchmark benchmark.cpp)
-  TARGET_LINK_LIBRARIES(benchmark sys embree)
-  SET_PROPERTY(TARGET benchmark PROPERTY FOLDER tests)
-  ADD_TEST(NAME benchmark COMMAND benchmark)
-
-  ADD_EXECUTABLE(retrace retrace.cpp)
-  TARGET_LINK_LIBRARIES(retrace sys simd embree)
-  SET_PROPERTY(TARGET retrace PROPERTY FOLDER tests)
-
-  INSTALL(TARGETS verify benchmark retrace DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT examples)
-
-  SET(CPACK_NSIS_MENU_LINKS ${CPACK_NSIS_MENU_LINKS} "${CMAKE_INSTALL_BINDIR}/verify" "verify")
-  SET(CPACK_NSIS_MENU_LINKS ${CPACK_NSIS_MENU_LINKS} "${CMAKE_INSTALL_BINDIR}/benchmark" "benchmark")
-  SET(CPACK_NSIS_MENU_LINKS ${CPACK_NSIS_MENU_LINKS} "${CMAKE_INSTALL_BINDIR}/retrace" "retrace")
-  SET(CPACK_NSIS_MENU_LINKS ${CPACK_NSIS_MENU_LINKS} PARENT_SCOPE)
-
-ELSEIF (RTCORE_RAY_PACKETS)
-
-  INCLUDE (icc_xeonphi)
-
-  ADD_EXECUTABLE(verify_xeonphi verify.cpp)
-  TARGET_LINK_LIBRARIES(verify_xeonphi sys_xeonphi embree_xeonphi)
-  SET_PROPERTY(TARGET verify_xeonphi PROPERTY FOLDER tests)
-
-  ADD_EXECUTABLE(benchmark_xeonphi benchmark.cpp)
-  TARGET_LINK_LIBRARIES(benchmark_xeonphi sys_xeonphi embree_xeonphi)
-  SET_PROPERTY(TARGET benchmark_xeonphi PROPERTY FOLDER tests)
-
-  ADD_EXECUTABLE(retrace_xeonphi retrace.cpp)
-  TARGET_LINK_LIBRARIES(retrace_xeonphi sys_xeonphi embree_xeonphi)
-  SET_PROPERTY(TARGET retrace_xeonphi PROPERTY FOLDER tests)
-
-  INSTALL(TARGETS verify_xeonphi benchmark_xeonphi retrace_xeonphi DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT examples_xeonphi)
-
+IF (TASKING_INTERNAL)
+  ADD_DEFINITIONS(-DTASKING_INTERNAL)
+ELSE()
+  ADD_DEFINITIONS(-DTASKING_TBB)
 ENDIF()
+
+IF (TARGET_SSE41)
+  ADD_DEFINITIONS(-D__TARGET_SSE41__)
+ENDIF()
+
+IF (TARGET_AVX)
+  ADD_DEFINITIONS(-D__TARGET_AVX__)
+ENDIF()
+
+IF (TARGET_AVX2)
+  ADD_DEFINITIONS(-D__TARGET_AVX2__)
+ENDIF()
+
+IF (TARGET_AVX512KNL)
+  ADD_DEFINITIONS(-D__TARGET_AVX512KNL__)
+ENDIF()
+
+ADD_EXECUTABLE(verify verify.cpp ../tutorials/common/tutorial/application.cpp)
+TARGET_LINK_LIBRARIES(verify sys embree)
+SET_PROPERTY(TARGET verify PROPERTY FOLDER tests)
+ADD_TEST(NAME verify COMMAND verify)
+
+ADD_EXECUTABLE(benchmark benchmark.cpp)
+TARGET_LINK_LIBRARIES(benchmark sys embree)
+SET_PROPERTY(TARGET benchmark PROPERTY FOLDER tests)
+ADD_TEST(NAME benchmark COMMAND benchmark)
+
+ADD_EXECUTABLE(retrace retrace.cpp)
+TARGET_LINK_LIBRARIES(retrace sys simd embree)
+SET_PROPERTY(TARGET retrace PROPERTY FOLDER tests)
+
+INSTALL(TARGETS verify benchmark retrace DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT examples)
+
+SET(CPACK_NSIS_MENU_LINKS ${CPACK_NSIS_MENU_LINKS} "${CMAKE_INSTALL_BINDIR}/verify" "verify")
+SET(CPACK_NSIS_MENU_LINKS ${CPACK_NSIS_MENU_LINKS} "${CMAKE_INSTALL_BINDIR}/benchmark" "benchmark")
+SET(CPACK_NSIS_MENU_LINKS ${CPACK_NSIS_MENU_LINKS} "${CMAKE_INSTALL_BINDIR}/retrace" "retrace")
+SET(CPACK_NSIS_MENU_LINKS ${CPACK_NSIS_MENU_LINKS} PARENT_SCOPE)

@@ -17,7 +17,6 @@
 #pragma once
 
 #include "../../common/ray.h"
-#include "../../common/globals.h"
 #include "filter.h"
 #include "cylinder.h"
 #include "cone.h"

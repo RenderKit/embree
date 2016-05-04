@@ -21,9 +21,7 @@
 #include "../math/vec2.h"
 #include "../math/vec3.h"
 #include "../math/col3.h"
-#if !defined(__MIC__)
 #include "../math/color.h"
-#endif
 
 namespace embree
 {
@@ -103,14 +101,12 @@ namespace embree
       return Col3f(x,y,z);
     }
 
-#if !defined(__MIC__)
     Color getColor() {
       float r = (float)atof(get().c_str());
       float g = (float)atof(get().c_str());
       float b = (float)atof(get().c_str());
       return Color(r,g,b);
     }
-#endif
 
   private:
     Ref<Stream<std::string> > cin;

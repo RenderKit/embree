@@ -42,16 +42,19 @@ namespace embree
     void print();
 
     /*! sets the error code */
-    void setErrorCode(RTCError error);
+    void setDeviceErrorCode(RTCError error);
 
     /*! returns and clears the error code */
-    RTCError getErrorCode();
+    RTCError getDeviceErrorCode();
 
-    /*! returns thread local error code storage location */
-    RTCError* getError();
+    /*! sets the error code */
+    static void setThreadErrorCode(RTCError error);
+
+    /*! returns and clears the error code */
+    static RTCError getThreadErrorCode();
 
     /*! processes error codes, do not call directly */
-    void process_error(RTCError error, const char* str);
+    static void process_error(Device* device, RTCError error, const char* str);
 
     /*! invokes the memory monitor callback */
     void memoryMonitor(ssize_t bytes, bool post);
@@ -86,12 +89,8 @@ namespace embree
   public:
     bool singledevice;      //!< true if this is the device created implicitely through rtcInit
 
-    InstanceFactory* instance_factory;
-
-#if !defined(__MIC__)
+    InstanceFactory* instance_factory; // FIXME: use managed pointers here
     BVH4Factory* bvh4_factory;
-#endif
-    
 #if defined(__TARGET_AVX__)
     BVH8Factory* bvh8_factory;
 #endif

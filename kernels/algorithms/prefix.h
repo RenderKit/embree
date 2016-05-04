@@ -27,13 +27,8 @@ namespace embree
   template<typename SrcArray, typename DstArray, typename Ty, typename Op>
   class ParallelPrefixOp
   {
-#if defined(__MIC__)
-    static const size_t MAX_TASKS = MAX_THREADS;
-    static const size_t SINGLE_THREAD_THRESHOLD = 50000;
-#else
     static const size_t MAX_TASKS = MAX_THREADS;
     static const size_t SINGLE_THREAD_THRESHOLD = 3000000;
-#endif
 
   public:
     ParallelPrefixOp () {}

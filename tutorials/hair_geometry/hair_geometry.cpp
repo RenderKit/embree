@@ -278,7 +278,8 @@ float noise(float x, float y, float z)
 
   struct Tutorial : public TutorialApplication 
   {
-    Tutorial() : TutorialApplication("hair_geometry") 
+    Tutorial()
+      : TutorialApplication("hair_geometry",FEATURE_RTCORE) 
     {
       registerOption("ambientlight", [this] (Ref<ParseStream> cin, const FileName& path) {
           g_ambient_intensity = cin->getVec3fa();

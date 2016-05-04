@@ -38,7 +38,7 @@ namespace embree
       /* *l < pivot */
       while (likely(l <= r && cmp(*l) )) 
       {
-#if defined(__MIC__) || defined(__AVX512F__)
+#if defined(__AVX512F__)
         prefetch<PFHINT_L1EX>(l+4);	  
 #endif
         reduction_t(leftReduction,*l);
@@ -47,7 +47,7 @@ namespace embree
       /* *r >= pivot) */
       while (likely(l <= r && !cmp(*r)))
       {
-#if defined(__MIC__) || defined(__AVX512F__)
+#if defined(__AVX512F__)
         prefetch<PFHINT_L1EX>(r-4);	  
 #endif
         reduction_t(rightReduction,*r);
@@ -197,7 +197,7 @@ namespace embree
         /* *l < pivot */
         while (likely(l <= r && cmp(*l) )) 
         {
-#if defined(__MIC__) || defined(__AVX512F__)
+#if defined(__AVX512F__)
           prefetch<PFHINT_L1EX>(l+4);	  
 #endif
           //if (!cmp(*l)) break;
@@ -207,7 +207,7 @@ namespace embree
         /* *r >= pivot) */
         while (likely(l <= r && !cmp(*r)))
         {
-#if defined(__MIC__) || defined(__AVX512F__)
+#if defined(__AVX512F__)
           prefetch<PFHINT_L1EX>(r-4);	  
 #endif
           //if (cmp(*r)) break;
@@ -238,7 +238,7 @@ namespace embree
       {
         while(cmp(array[left_begin]) /* array[left_begin] < pivot */)
         {
-#if defined(__MIC__) || defined(__AVX512F__)
+#if defined(__AVX512F__)
           prefetch<PFHINT_L1EX>(&array[left_begin] + 2);	  
 #endif
 
@@ -249,7 +249,7 @@ namespace embree
 
         while(!cmp(array[right_begin]) /* array[right_begin] >= pivot */)
         {
-#if defined(__MIC__) || defined(__AVX512F__)
+#if defined(__AVX512F__)
           prefetch<PFHINT_L1EX>(&array[right_begin] - 2);	  
 #endif
 
@@ -496,421 +496,6 @@ namespace embree
 #endif
   }
 
-
-
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-  //////////////////////////////////////////////////////
-  // only used by  KNC with the lockstep taskscheduler
-  //////////////////////////////////////////////////////
-
-#if defined(__MIC__)
-
-  template<typename T, typename ThreadLocalPartition, typename Scheduler>
-    class __aligned(64) parallel_partition_static
-  {
-  private:
-
-    struct Range {
-      int start;
-      int end;
-      Range() {}
-
-    Range(int start, int end) : start(start), end(end) {}
-
-      __forceinline void reset() { start = 0; end = -1; } 
-	
-      __forceinline Range intersect(const Range& r) const
-      {
-        return Range (max(start,r.start),min(end,r.end)); // carefull with ssize_t here
-      }
-
-      __forceinline bool empty() const { return end < start; } 
-	
-      __forceinline size_t size() const { 
-        assert(!empty());
-        return end-start+1; 
-      }
-    };
-
-    const ThreadLocalPartition& threadLocalPartition;
-      
-    size_t N;
-    size_t blocks;
-    size_t schedulerNumThreads;
-    T* array;
-
-    size_t numMisplacedRangesLeft;
-    size_t numMisplacedRangesRight;
-    size_t numMisplacedItems;
-
-    __aligned(64) unsigned int counter_start[MAX_THREADS]; 
-    __aligned(64) unsigned int counter_left[MAX_THREADS];  
-    __aligned(64) Range leftMisplacedRanges[MAX_THREADS];  
-    __aligned(64) Range rightMisplacedRanges[MAX_THREADS]; 
-
-
-      
-    size_t partition_serial(T* const t_array,
-                            const size_t size)
-    {
-      const size_t mid = threadLocalPartition(t_array,size); 
-      return mid;
-    }
-
-
-    static void task_thread_partition(void* data, const size_t threadID, const size_t old_numThreads) {
-
-      parallel_partition_static<T,ThreadLocalPartition,Scheduler>* p = (parallel_partition_static<T,ThreadLocalPartition,Scheduler>*)data;
-
-      const size_t numThreads = p->schedulerNumThreads /*workaround*/;
-
-      const size_t startID = (threadID+0)*p->N/numThreads;
-      const size_t endID   = (threadID+1)*p->N/numThreads;
-      const size_t size    = endID-startID;
-	
-      const size_t mid = p->partition_serial(&p->array[startID],size);
-      p->counter_start[threadID] = startID;
-      p->counter_left[threadID]  = mid;
-    } 
-
-
-    void move_misplaced(const size_t threadID, const size_t numThreads) 
-    {
-
-#if defined(__MIC__)
-      for (size_t i=0;i<(numMisplacedRangesLeft+7)/8;i++)
-        prefetch<PFHINT_L2>(&leftMisplacedRanges[i*8]);
-      for (size_t i=0;i<(numMisplacedRangesRight+7)/8;i++)
-        prefetch<PFHINT_L2>(&rightMisplacedRanges[i*8]);
-#endif
-
-      const size_t numTotalThreads = numThreads;
-      const size_t startID = (threadID+0)*numMisplacedItems/numTotalThreads;
-      const size_t endID   = (threadID+1)*numMisplacedItems/numTotalThreads;
-      swapItemsInMisplacedRanges2(leftMisplacedRanges,
-                                  numMisplacedRangesLeft,
-                                  rightMisplacedRanges,
-                                  numMisplacedRangesRight,
-                                  startID,
-                                  endID);	    
-    }
-
-    static void task_thread_move_misplaced(void* data, const size_t threadID, const size_t numThreads) {
-
-      parallel_partition_static<T,ThreadLocalPartition,Scheduler>* p = (parallel_partition_static<T,ThreadLocalPartition,Scheduler>*)data;
-
-      p->move_misplaced(threadID,p->schedulerNumThreads/*numThreads*/);
-    } 
-
-    __forceinline const Range *findStartRange(size_t &index,const Range *const r,const size_t numRanges)
-    {
-      size_t i = 0;
-      while(index >= r[i].size())
-      {
-        assert(i < numRanges);
-        index -= r[i].size();
-        i++;
-      }	    
-      return &r[i];
-    }
-
-
-    __forceinline void swapItemsInMisplacedRanges(const Range * const leftMisplacedRanges,
-                                                  const size_t numLeftMisplacedRanges,
-                                                  const Range * const rightMisplacedRanges,
-                                                  const size_t numRightMisplacedRanges,
-                                                  const size_t startID,
-                                                  const size_t endID)
-    {
-      const size_t size = endID - startID;
-
-      size_t leftLocalIndex  = startID;
-      size_t rightLocalIndex = startID;
-
-      const Range* l_range = findStartRange(leftLocalIndex,leftMisplacedRanges,numLeftMisplacedRanges);
-      const Range* r_range = findStartRange(rightLocalIndex,rightMisplacedRanges,numRightMisplacedRanges);
-
-      for (size_t i=0;i<size;)
-      {
-        if (unlikely(leftLocalIndex) >= l_range->size())
-        {
-          leftLocalIndex = 0;
-          l_range++;
-        }
-
-        if (unlikely(rightLocalIndex) >= r_range->size())
-        {
-          rightLocalIndex = 0;
-          r_range++;		
-        }
-
-        const size_t l_size = l_range->size()-leftLocalIndex;
-        const size_t r_size = r_range->size()-rightLocalIndex;
-        const size_t lr_size = min(l_size,r_size);
-	    
-        const size_t leftGlobalIndex  = l_range->start + leftLocalIndex;
-        const size_t rightGlobalIndex = r_range->start + rightLocalIndex;
-
-        const size_t items = min(lr_size,size-i);
-        T *__restrict__ const l = &array[leftGlobalIndex];
-        T *__restrict__ const r = &array[rightGlobalIndex];
-
-#pragma nounroll
-        for (size_t j=0;j<items;j++)
-        {
-#if defined(__MIC__) || defined(__AVX512F__)
-          prefetch<PFHINT_L1EX>(((char*)&l[j]) + 4*64);
-          prefetch<PFHINT_L1EX>(((char*)&r[j]) + 4*64);	  
-#endif
-          xchg(l[j],r[j]);
-        }
-        leftLocalIndex += items;
-        rightLocalIndex += items;
-        i += items;
-      }
-    }
-						    
-    __forceinline void swapItemsInMisplacedRanges2(const Range * const leftMisplacedRanges,
-                                                   const size_t numLeftMisplacedRanges,
-                                                   const Range * const rightMisplacedRanges,
-                                                   const size_t numRightMisplacedRanges,
-                                                   const size_t startID,
-                                                   const size_t endID)
-    {
-
-      size_t leftLocalIndex  = startID;
-      size_t rightLocalIndex = startID;
-
-      const Range* l_range = findStartRange(leftLocalIndex,leftMisplacedRanges,numLeftMisplacedRanges);
-      const Range* r_range = findStartRange(rightLocalIndex,rightMisplacedRanges,numRightMisplacedRanges);
-
-      size_t l_left = l_range->size() - leftLocalIndex;
-      size_t r_left = r_range->size() - rightLocalIndex;
-
-      size_t size = endID - startID;
-
-      T *__restrict__ l = &array[l_range->start + leftLocalIndex];
-      T *__restrict__ r = &array[r_range->start + rightLocalIndex];
-
-      size_t items = min(size,min(l_left,r_left)); 
-
-      while(size)
-      {
-        if (unlikely(l_left == 0))
-        {
-          l_range++;
-          l_left = l_range->size();
-          l = &array[l_range->start];
-          items = min(size,min(l_left,r_left));
-
-        }
-
-        if (unlikely(r_left == 0))
-        {		
-          r_range++;
-          r_left = r_range->size();
-          r = &array[r_range->start];          
-          items = min(size,min(l_left,r_left));
-        }
-
-        size   -= items;
-        l_left -= items;
-        r_left -= items;
-#pragma nounroll
-        while(items)
-        {
-#if defined(__MIC__) || defined(__AVX512F__)
-          prefetch<PFHINT_L2EX>(((char*)l) + 4*64);
-          prefetch<PFHINT_L2EX>(((char*)r) + 4*64);	  
-
-          prefetch<PFHINT_L1EX>(((char*)l) + 1*64);
-          prefetch<PFHINT_L1EX>(((char*)r) + 1*64);	  
-#endif
-          items--;
-          xchg(*l++,*r++);
-        }
-      }
-    }
-
-  public:
-
-    /* initialize atomic counters */
-    __forceinline parallel_partition_static(T *array, 
-                                            size_t N, 
-                                            const ThreadLocalPartition& threadLocalPartition) : 
-    array(array), N(N), threadLocalPartition(threadLocalPartition) 
-    {
-      numMisplacedRangesLeft  = 0;
-      numMisplacedRangesRight = 0;
-      numMisplacedItems  = 0;
-      schedulerNumThreads = 0;
-    }
-
-    /* main function for parallel in-place partitioning */
-    size_t partition_parallel(Scheduler &scheduler)
-    {    
-      const size_t numThreads = scheduler.getNumThreads();
-      schedulerNumThreads = numThreads;
-
-      if (N <= 4 * numThreads)
-      {
-        size_t mid = partition_serial(array,N);
-        return mid;
-      }
-
-#define TIME_PHASES 0
-
-      ////////////////////////////////////////////////////////////////////////////
-      ////////////////////////////////////////////////////////////////////////////
-      ////////////////////////////////////////////////////////////////////////////
-
-#if TIME_PHASES == 1
-      double t0 = getSeconds();
-#endif
-
-      scheduler.dispatchTask(task_thread_partition,this,0,numThreads);
-
-#if TIME_PHASES == 1
-      t0 = getSeconds() - t0;
-      std::cout << std::endl << " phase0 = " << 1000.0f*t0 << "ms, perf = " << 1E-6*double(N)/t0 << " Mprim/s" << std::endl;
-#endif
-
-      ////////////////////////////////////////////////////////////////////////////
-      ////////////////////////////////////////////////////////////////////////////
-      ////////////////////////////////////////////////////////////////////////////
-
-#if  TIME_PHASES == 1
-      double t1 = getSeconds();
-#endif
-                
-#if defined(__MIC__)
-      for (size_t i=0;i<(numThreads+15)/16;i++)
-        prefetch<PFHINT_L2>(&counter_left[i*16]);
-#endif
-
-      numMisplacedRangesLeft  = 0;
-      numMisplacedRangesRight = 0;
-      size_t numMisplacedItemsLeft   = 0;
-      size_t numMisplacedItemsRight  = 0;
-	
-      counter_start[numThreads] = N;
-      counter_left[numThreads]  = 0;
-
-      unsigned int mid = counter_left[0];
-      for (unsigned int i=1;i<numThreads;i++)
-      {
-#if defined(__MIC__)
-        prefetch<PFHINT_L1>(&counter_left[i+16]);
-#endif
-        mid += counter_left[i];
-      }
-
-#if defined(__MIC__)
-      for (size_t i=0;i<(numThreads+15)/16;i++)
-        prefetch<PFHINT_L2>(&counter_start[i*16]);
-#endif
-
-      const Range globalLeft (0,mid-1);
-      const Range globalRight(mid,N-1);
-
-      // without pragma the compiler makes a mess out of this loop
-#pragma novector
-      for (size_t i=0;i<numThreads;i++)
-      {	    
-#if defined(__MIC__)
-        prefetch<PFHINT_L1>(&counter_start[i+16]);
-#endif
-
-        const unsigned int left_start  = counter_start[i];
-        const unsigned int left_end    = counter_start[i] + counter_left[i]-1;
-        const unsigned int right_start = counter_start[i] + counter_left[i];
-        const unsigned int right_end   = counter_start[i+1]-1;
-
-        Range left_range (left_start,left_end); // counter[i].start,counter[i].start+counter[i].left-1);
-        Range right_range(right_start,right_end); // counter[i].start+counter[i].left,counter[i].start+counter[i].size-1);
-
-        Range left_misplaced = globalLeft.intersect(right_range);
-        Range right_misplaced = globalRight.intersect(left_range);
-
-        if (!left_misplaced.empty())  
-        {
-          numMisplacedItemsLeft  += left_misplaced.size();
-          leftMisplacedRanges[numMisplacedRangesLeft++] = left_misplaced;
-#if defined(__MIC__)
-          prefetch<PFHINT_L1EX>(&leftMisplacedRanges[numMisplacedRangesLeft+8]);
-#endif
-
-        }
-
-        if (!right_misplaced.empty()) 
-        {
-          numMisplacedItemsRight += right_misplaced.size();
-          rightMisplacedRanges[numMisplacedRangesRight++] = right_misplaced;
-#if defined(__MIC__)
-          prefetch<PFHINT_L1EX>(&rightMisplacedRanges[numMisplacedRangesRight+8]);
-#endif
-        }
-      }
-
-      assert( numMisplacedItemsLeft == numMisplacedItemsRight );
-	
-      numMisplacedItems = numMisplacedItemsLeft;
-
-      const size_t global_mid = mid;
-
-#if  TIME_PHASES == 1
-      t1 = getSeconds() - t1;
-      std::cout << " phase1 = " << 1000.0f*t1 << "ms, perf = " << 1E-6*double(N)/t1 << " Mprim/s" <<  " misplaced : " << numMisplacedItems << std::endl;
-#endif
-
-      ////////////////////////////////////////////////////////////////////////////
-      ////////////////////////////////////////////////////////////////////////////
-      ////////////////////////////////////////////////////////////////////////////
-
-
-#if  TIME_PHASES == 1
-      double t2 = getSeconds();
-#endif
-      if (numMisplacedItems)
-        scheduler.dispatchTask(task_thread_move_misplaced,this,0,numThreads);
-
-#if  TIME_PHASES == 1
-      t2 = getSeconds() - t2;
-      std::cout << " phase2 = " << 1000.0f*t2 << "ms, perf = " << 1E-6*double(N)/t2 << " Mprim/s" << std::endl;
-#endif
-
-      ////////////////////////////////////////////////////////////////////////////
-      ////////////////////////////////////////////////////////////////////////////
-      ////////////////////////////////////////////////////////////////////////////
-        
-      return global_mid;
-    }
-
-
-  };
-
-  template<typename T,  typename ThreadLocalPartition, typename Scheduler>
-    __forceinline size_t parallel_in_place_partitioning_static(T *array, 
-							       size_t N, 
-							       const ThreadLocalPartition& threadLocalPartition,
-							       Scheduler &scheduler)
-  {
-    parallel_partition_static<T,ThreadLocalPartition,Scheduler> p(array,N,threadLocalPartition);
-    return p.partition_parallel(scheduler);    
-  }
-
-  template<typename T, typename Compare>
-    __forceinline bool parallel_in_place_partitioning_static_verify(T *array, 
-								    size_t N, 
-								    size_t mid,
-								    const Compare& cmp)
-  {
-  
-    return true;
-  }
-#endif
-
   /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   template<size_t BLOCK_SIZE, typename T, typename V, typename Compare, typename Reduction_T, typename Reduction_V>
@@ -1044,7 +629,7 @@ namespace embree
 #pragma nounroll
         while(items)
         {
-#if 0 // defined(__MIC__) || defined(__AVX512F__)
+#if 0 // defined(__AVX512F__)
           prefetch<PFHINT_L2EX>(((char*)l) + 4*64);
           prefetch<PFHINT_L2EX>(((char*)r) + 4*64);	  
           prefetch<PFHINT_L1EX>(((char*)l) + 1*64);

@@ -97,14 +97,6 @@ namespace embree
     if (((size_t(ptr) + offset) & 0x3) || (stride & 0x3)) 
       throw_RTCError(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
 
-    /* verify that all vertex accesses are 16 bytes aligned */
-#if defined(__MIC__) && 0
-    if (type == RTC_VERTEX_BUFFER0 || type == RTC_VERTEX_BUFFER1) {
-      if (((size_t(ptr) + offset) & 0xF) || (stride & 0xF))
-        throw_RTCError(RTC_INVALID_OPERATION,"data must be 16 bytes aligned");
-    }
-#endif
-
     if (type != RTC_LEVEL_BUFFER)
       atomic_add(&parent->commitCounterSubdiv,1);
 
@@ -263,11 +255,7 @@ namespace embree
 
   void SubdivMesh::calculateHalfEdges()
   {
-#if defined(__MIC__)
-    size_t blockSize = 1;
-#else
     size_t blockSize = 4096;
-#endif
 
     /* allocate temporary array */
     invalidFace.resize(numFaces);
@@ -279,24 +267,12 @@ namespace embree
     {
       for (size_t f=r.begin(); f<r.end(); f++) 
       {
-	// FIXME: use 'stride' to reduce imuls on MIC !!!
-
-#if defined(__MIC__)
-	prefetch<PFHINT_L2>((char*)&faceVertices[f]  + 4*64);
-	prefetch<PFHINT_L2>((char*)&faceStartEdge[f] + 4*64);
-#endif
-
 	const size_t N = faceVertices[f];
 	const size_t e = faceStartEdge[f];
 
 	for (size_t de=0; de<N; de++)
 	{
 	  HalfEdge* edge = &halfEdges[e+de];
-
-#if defined(__MIC__)
-	  prefetch<PFHINT_L1>(edge + 2);
-	  prefetch<PFHINT_L1EX>(&halfEdges1[e+de+2]);
-#endif
 
 	  const unsigned int startVertex = vertexIndices[e+de];
 	  unsigned int nextIndex = de + 1;
@@ -607,24 +583,18 @@ namespace embree
       stride = vertices[bufID].getStride();
       baseEntry = &vertex_buffer_tags[bufID];
     }
-#if defined (__MIC__)
-#define vfloat4 Vec3fa
-#define vfloat4_t Vec3fa_t
-#else
-#define vfloat4_t vfloat4
-#endif
 
     for (size_t i=0; i<numFloats; i+=4)
     {
       vfloat4 Pt, dPdut, dPdvt, ddPdudut, ddPdvdvt, ddPdudvt;
-      isa::PatchEval<vfloat4,vfloat4_t>(baseEntry->at(interpolationSlot(primID,i/4,stride)),parent->commitCounterSubdiv,
-                                        getHalfEdge(primID),src+i*sizeof(float),stride,u,v,
-                                        P ? &Pt : nullptr, 
-                                        dPdu ? &dPdut : nullptr, 
-                                        dPdv ? &dPdvt : nullptr,
-                                        ddPdudu ? &ddPdudut : nullptr, 
-                                        ddPdvdv ? &ddPdvdvt : nullptr, 
-                                        ddPdudv ? &ddPdudvt : nullptr);
+      isa::PatchEval<vfloat4,vfloat4>(baseEntry->at(interpolationSlot(primID,i/4,stride)),parent->commitCounterSubdiv,
+                                      getHalfEdge(primID),src+i*sizeof(float),stride,u,v,
+                                      P ? &Pt : nullptr, 
+                                      dPdu ? &dPdut : nullptr, 
+                                      dPdv ? &dPdvt : nullptr,
+                                      ddPdudu ? &ddPdudut : nullptr, 
+                                      ddPdvdv ? &ddPdvdvt : nullptr, 
+                                      ddPdudv ? &ddPdudvt : nullptr);
 
       if (P) {
         for (size_t j=i; j<min(i+4,numFloats); j++) 
@@ -676,35 +646,6 @@ namespace embree
 
     const int* valid = (const int*) valid_i;
     
-#if defined (__MIC__)
-    for (size_t i=0; i<numUVs; i+=16) 
-    {
-      vbool16 valid1 = vint16(i)+vint16(step) < vint16(numUVs);
-      if (valid) valid1 &= vint16::loadu(&valid[i]) == vint16(-1);
-      if (none(valid1)) continue;
-      
-      const vint16 primID = vint16::loadu(&primIDs[i]);
-      const vfloat16 uu = vfloat16::loadu(&u[i]);
-      const vfloat16 vv = vfloat16::loadu(&v[i]);
-
-      foreach_unique(valid1,primID,[&](const vbool16& valid1, const int primID)
-      {
-        for (size_t j=0; j<numFloats; j+=4) 
-        {
-          const size_t M = min(size_t(4),numFloats-j);
-          isa::PatchEvalSimd<vbool16,vint16,vfloat16,Vec3fa,Vec3fa_t>(baseEntry->at(interpolationSlot(primID,j/4,stride)),parent->commitCounterSubdiv,
-                                                                      getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
-                                                                      P ? P+j*numUVs+i : nullptr,
-                                                                      dPdu ? dPdu+j*numUVs+i : nullptr,
-                                                                      dPdv ? dPdv+j*numUVs+i : nullptr,
-                                                                      ddPdudu ? ddPdudu+j*numUVs+i : nullptr,
-                                                                      ddPdvdv ? ddPdvdv+j*numUVs+i : nullptr,
-                                                                      ddPdudv ? ddPdudv+j*numUVs+i : nullptr,
-                                                                      numUVs,M);
-        }
-      });
-    }
-#else
     for (size_t i=0; i<numUVs; i+=4) 
     {
       vbool4 valid1 = vint4(i)+vint4(step) < vint4(numUVs);
@@ -732,6 +673,5 @@ namespace embree
         }
       });
     }
-#endif
   }
 }

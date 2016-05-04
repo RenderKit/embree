@@ -18,20 +18,24 @@
 
 namespace embree
 {
-  static std::vector<RegressionTest*>* regression_tests;
+  static std::unique_ptr<std::vector<RegressionTest*>> regression_tests;
 
   void registerRegressionTest(RegressionTest* test) 
   {
-    if (regression_tests == nullptr) regression_tests = new std::vector<RegressionTest*>;
+    if (!regression_tests) 
+      regression_tests = std::unique_ptr<std::vector<RegressionTest*>>(new std::vector<RegressionTest*>);
+
     regression_tests->push_back(test);
   }
 
-  void runRegressionTests()
+  RegressionTest* getRegressionTest(size_t index)
   {
-    if (regression_tests == nullptr) 
-      return;
+    if (!regression_tests) 
+      return nullptr;
 
-    for (size_t i=0; i<regression_tests->size(); i++) 
-      (*(*regression_tests)[i])();
+    if (index >= regression_tests->size())
+      return nullptr;
+    
+    return (*regression_tests)[index];
   }
 }

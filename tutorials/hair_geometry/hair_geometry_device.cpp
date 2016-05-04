@@ -209,7 +209,7 @@ inline Vec3fa AnisotropicBlinn__sample(const AnisotropicBlinn* This, const Vec3f
   }
 }
 
-typedef Vec3fa*_Vec3fa_ptr;
+typedef Vec3fa* uniform_Vec3fa_ptr;
 
 inline Vec3fa evalBezier(const int geomID, const int primID, const float t)
 {

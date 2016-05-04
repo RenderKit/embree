@@ -21,17 +21,15 @@ namespace embree
   template<typename Key>
   struct RadixSortRegressionTest : public RegressionTest
   {
-    RadixSortRegressionTest(const char* name) : name(name) {
+    RadixSortRegressionTest(const char* name) : RegressionTest(name) {
       registerRegressionTest(this);
     }
     
-    bool operator() ()
+    bool run ()
     {
       bool passed = true;
-      printf("%s::%s ... ",TOSTRING(isa),name);
-      fflush(stdout);
-
       const size_t M = 10;
+
       for (size_t N=10; N<10000000; N*=2.1f)
       {
 	std::vector<Key> src(N); memset(src.data(),0,N*sizeof(Key));
@@ -47,7 +45,7 @@ namespace embree
           radix_sort<Key>(src.data(),tmp.data(),N);
         }
 	double t1 = getSeconds();
-	printf("%zu/%3.2fM ",N,1E-6*double(N*M)/(t1-t0));
+	//printf("%zu/%3.2fM ",N,1E-6*double(N*M)/(t1-t0));
 	
 	/* calculate checksum */
 	Key sum1 = 0; for (size_t i=0; i<N; i++) sum1 += src[i];
@@ -58,14 +56,8 @@ namespace embree
 	  passed &= src[i-1] <= src[i];
       }
       
-      /* output if test passed or not */
-      if (passed) printf("[passed]\n");
-      else        printf("[failed]\n");
-
       return passed;
     }
-
-    const char* name;
   };
 
   RadixSortRegressionTest<uint32_t> test_u32("RadixSortRegressionTestU32");

@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "../../../common/math/vec3.h"
+#include "../math/vec.h"
 
 struct DifferentialGeometry
 {

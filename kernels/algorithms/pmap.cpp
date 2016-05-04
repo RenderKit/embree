@@ -20,15 +20,13 @@ namespace embree
 {
   struct pmap_regression_test : public RegressionTest
   {
-    pmap_regression_test(const char* name) : name(name) {
+    pmap_regression_test(const char* name) : RegressionTest(name) {
       registerRegressionTest(this);
     }
     
-    bool operator() ()
+    bool run ()
     {
       bool passed = true;
-      printf("%s::%s ... ",TOSTRING(isa),name);
-      fflush(stdout);
 
       /* create key/value vectors with random numbers */
       const size_t N = 10000;
@@ -54,14 +52,8 @@ namespace embree
 	passed &= !map.lookup(keys[i]+1);
       }
 
-      /* output if test passed or not */
-      if (passed) printf("[passed]\n");
-      else        printf("[failed]\n");
-      
       return passed;
     }
-
-    const char* name;
   };
 
   pmap_regression_test pmap_regression("pmap_regression_test");

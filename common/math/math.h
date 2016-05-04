@@ -55,7 +55,6 @@ namespace embree
   __forceinline float sign ( const float x ) { return x<0?-1.0f:1.0f; }
   __forceinline float sqr  ( const float x ) { return x*x; }
 
-#ifndef __MIC__
   __forceinline float rcp  ( const float x ) 
   {
     const __m128 a = _mm_set_ss(x);
@@ -83,13 +82,6 @@ namespace embree
                                 _mm_mul_ps(_mm_mul_ps(_mm_mul_ps(a, _mm_set_ps(-0.5f, -0.5f, -0.5f, -0.5f)), r), _mm_mul_ps(r, r)));
     return _mm_cvtss_f32(c);
   }
-#else
-  __forceinline float rcp  ( const float x ) { return 1.0f/x; }
-  __forceinline float signmsk ( const float x ) { return cast_i2f(cast_f2i(x)&0x80000000); }
-  __forceinline float xorf( const float x, const float y ) { return cast_i2f(cast_f2i(x) ^ cast_f2i(y)); }
-  __forceinline float andf( const float x, const float y ) { return cast_i2f(cast_f2i(x) & cast_f2i(y)); }
-  __forceinline float rsqrt( const float x ) { return 1.0f/sqrtf(x); }
-#endif
 
 #if !defined(__WIN32__)
   __forceinline float abs  ( const float x ) { return ::fabsf(x); }
@@ -179,6 +171,18 @@ namespace embree
 #if defined(__MACOSX__)
   __forceinline ssize_t min(ssize_t a, ssize_t b) { return a<b ? a:b; }
   __forceinline ssize_t max(ssize_t a, ssize_t b) { return a<b ? b:a; }
+#endif
+
+#if defined(__MACOSX__) && !defined(__INTEL_COMPILER)
+  __forceinline void sincosf(float x, float *sin, float *cos) {
+    __sincosf(x,sin,cos);
+  }
+#endif
+
+#if defined(__WIN32__) && !defined(__INTEL_COMPILER)
+  __forceinline void sincosf(float x, float *s, float *c) {
+    *s = sinf(x); *c = cosf(x);
+  }
 #endif
 
   template<typename T> __forceinline T clamp(const T& x, const T& lower = T(zero), const T& upper = T(one)) { return max(min(x,upper),lower); }

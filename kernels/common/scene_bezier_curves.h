@@ -141,38 +141,6 @@ namespace embree
       return enlarge(b,Vec3fa(max(r0,r1,r2,r3)));
     }
 
-#if defined(__MIC__)
-    
-    __forceinline const Vec3fa* fristVertexPtr(size_t i) const { // FIXME: remove, use buffer to access vertices instead!
-      return (const Vec3fa*) vertices[0].getPtr(curve(i));
-    }
-    
-    /*! calculates bounding box of i'th bezier curve */
-    __forceinline Vec2vf16 bounds_Vec2f16(size_t i) const 
-    {
-      const int index = curve(i);
-      const float* cp0 = (float*) vertices[0].getPtr(index+0);
-      const float* cp1 = (float*) vertices[0].getPtr(index+1);
-      const float* cp2 = (float*) vertices[0].getPtr(index+2);
-      const float* cp3 = (float*) vertices[0].getPtr(index+3);
-      
-      const vbool16 m_4f = 0xf;
-      const vfloat16 v0 = shuffle4<0,0,0,0>(vfloat16::loadu(m_4f,cp0));
-      const vfloat16 v1 = shuffle4<0,0,0,0>(vfloat16::loadu(m_4f,cp1));
-      const vfloat16 v2 = shuffle4<0,0,0,0>(vfloat16::loadu(m_4f,cp2));
-      const vfloat16 v3 = shuffle4<0,0,0,0>(vfloat16::loadu(m_4f,cp3));
-      
-      const vfloat16 b_min = min(min(v0,v1),min(v2,v3));
-      const vfloat16 b_max = max(max(v0,v1),max(v2,v3));
-      
-      const vfloat16 b_min_r = b_min - swDDDD(b_max);
-      const vfloat16 b_max_r = b_max + swDDDD(b_max);
-      
-      return Vec2vf16(b_min_r,b_max_r);
-    }
-    
-#endif
-    
   public:
     int tessellationRate;                           //!< tessellation rate for bezier curve
     SubType subtype;                                //!< hair or surface geometry

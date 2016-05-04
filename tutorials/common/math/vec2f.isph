@@ -16,8 +16,10 @@
 
 #pragma once
 
+#include "math.isph"
+
 /*! \brief ISPC Two-float vector class */
-struct Vec2f 
+struct Vec2f
 {
   float x;
   float y;

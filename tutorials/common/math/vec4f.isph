@@ -16,7 +16,9 @@
 
 #pragma once
 
-struct Vec4f 
+#include "math.isph"
+
+struct Vec4f
 {
   float x;
   float y;
@@ -31,11 +33,11 @@ struct Vec4f
 inline uniform Vec4f make_Vec4f(const uniform float a) { uniform Vec4f v; v.x = a; v.y = a; v.z = a; v.w = a; return v; }
 inline varying Vec4f make_Vec4f(const varying float a) { varying Vec4f v; v.x = a; v.y = a; v.z = a; v.w = a; return v; }
 
-inline uniform Vec4f make_Vec4f(const uniform float x, const uniform float y, const uniform float z, const uniform float w) { 
+inline uniform Vec4f make_Vec4f(const uniform float x, const uniform float y, const uniform float z, const uniform float w) {
   uniform Vec4f v; v.x = x; v.y = y; v.z = z; v.w = w; return v;
 }
 
-inline varying Vec4f make_Vec4f(const varying float x, const varying float y, const varying float z, const varying float w) { 
+inline varying Vec4f make_Vec4f(const varying float x, const varying float y, const varying float z, const varying float w) {
   varying Vec4f v; v.x = x; v.y = y; v.z = z; v.w = w; return v;
 }
 

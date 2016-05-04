@@ -20,7 +20,8 @@ namespace embree
 {
   struct Tutorial : public TutorialApplication 
   {
-    Tutorial() : TutorialApplication("motion_blur_geometry") 
+    Tutorial()
+      : TutorialApplication("motion_blur_geometry",FEATURE_RTCORE) 
     {
       /* set default camera */
       camera.from = Vec3fa(2.863559246f,2.610507727f,-2.664560795f);

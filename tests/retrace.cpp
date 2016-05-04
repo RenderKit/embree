@@ -22,7 +22,7 @@
 #include <iostream>
 #include <fstream>
 
-#if defined(RTCORE_RAY_PACKETS) && !defined(__MIC__)
+#if defined(RTCORE_RAY_PACKETS)
 #  define HAS_INTERSECT4 1
 #else
 #  define HAS_INTERSECT4 0
@@ -34,11 +34,7 @@
 #  define HAS_INTERSECT8 0
 #endif
 
-#if defined(RTCORE_RAY_PACKETS) && defined(__MIC__) //|| defined(__TARGET_AVX512KNL__)
-#  define HAS_INTERSECT16 1
-#else
-#  define HAS_INTERSECT16 0
-#endif
+#define HAS_INTERSECT16 0
 
 #define DBG(x) 
 
@@ -180,13 +176,8 @@ namespace embree
 
   /* configuration */
 
-#if !defined(__MIC__)
   RTCAlgorithmFlags aflags = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT4 | RTC_INTERSECT8);
   static std::string g_rtcore = "verbose=2";
-#else
-  RTCAlgorithmFlags aflags = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT16);
-  static std::string g_rtcore = "verbose=2,threads=1";
-#endif
 
   /* vertex and triangle layout */
   struct Vertex   { float x,y,z,a; };
@@ -219,11 +210,7 @@ namespace embree
   static MutexSys g_mutex;
 
     
-#if defined(__MIC__)
-  static std::string g_binaries_path = "/home/micuser/";
-#else
   static std::string g_binaries_path = "./";
-#endif
 
 
 #define AssertNoError()                                 \
@@ -620,9 +607,6 @@ namespace embree
   int main(int argc, char** argv) 
   {
     g_threadCount = getNumberOfLogicalThreads(); 
-#if defined (__MIC__)
-    g_threadCount -= 4;
-#endif
 
     setAffinity(0);
     /* parse command line */  

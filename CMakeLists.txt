@@ -30,7 +30,6 @@ CONFIGURE_FILE(
   "${PROJECT_SOURCE_DIR}/kernels/version.h.in"
   "${PROJECT_BINARY_DIR}/version.h"
 )
-INCLUDE_DIRECTORIES("${PROJECT_BINARY_DIR}")
 
 IF(COMMAND cmake_policy)
   if (POLICY CMP0003)
@@ -70,17 +69,6 @@ ENDIF()
 OPTION(ENABLE_ISPC_SUPPORT "Build Embree with support for ISPC applications." ON)
 OPTION(ENABLE_TUTORIALS    "Enable to build Embree tutorials" ON)
 
-# only support Xeon Phi on Linux
-IF (NOT WIN32 AND NOT APPLE)
-  OPTION(ENABLE_XEON_PHI_SUPPORT "Generates code path for Xeon Phi.")
-ELSE()
-  SET(ENABLE_XEON_PHI_SUPPORT OFF CACHE INTERNAL "Xeon Phi only supported on Linux.")
-ENDIF()
-
-IF (ENABLE_XEON_PHI_SUPPORT)
-  SET(ENABLE_ISPC_SUPPORT ON CACHE BOOL "Build Embree with support for ISPC applications." FORCE)
-ENDIF ()
-
 ##############################################################################
 # Configurations (add configurations also to common/cmake/embree-config-default.cmake)
 
@@ -90,7 +78,6 @@ OPTION(RTCORE_RAY_MASK "Enables ray mask support.")
 OPTION(RTCORE_BACKFACE_CULLING "Enables backface culling.")
 OPTION(RTCORE_INTERSECTION_FILTER "Enables intersection filter callback." ON)
 OPTION(RTCORE_INTERSECTION_FILTER_RESTORE "Restores previous hit when hit is filtered out." ON)
-OPTION(RTCORE_BUFFER_STRIDE "Enables buffer strides." ON)
 OPTION(RTCORE_IGNORE_INVALID_RAYS "Ignores invalid rays." OFF) # FIXME: enable by default?
 
 OPTION(RTCORE_GEOMETRY_TRIANGLES "Enables support for triangle geometries." ON)
@@ -272,6 +259,8 @@ INCLUDE (ispc)
 # Search paths
 ##############################################################
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/include)
+INCLUDE_DIRECTORIES("${PROJECT_BINARY_DIR}")
+INCLUDE_DIRECTORIES_ISPC("${PROJECT_BINARY_DIR}")
 
 ##############################################################
 # Output paths
@@ -291,13 +280,7 @@ IF (ENABLE_TUTORIALS)
   ADD_SUBDIRECTORY(tutorials)
 ENDIF()
 
-SET (__XEON__ 1)
 ADD_SUBDIRECTORY(tests)
-
-IF (ENABLE_XEON_PHI_SUPPORT)
-  SET (__XEON__ 0)
-  ADD_SUBDIRECTORY(tests tests_xeonphi)
-ENDIF ()
 
 ##############################################################
 # Uninstall

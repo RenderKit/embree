@@ -3,10 +3,15 @@
 echo Converting ISPC tutorial $1 to CPP tutorial $2
 cp $1 $2
 
+# uniform functions
+sed -i.backup 's/uniform float uniformSampleConePDF/uniform float _uniformSampleConePDF/g' $2
+sed -i.backup 's/uniform float uniformSampleDiskPDF/uniform float _uniformSampleDiskPDF/g' $2
+
 # ISPC language
 sed -i.backup  's/.isph\"/.h\"/g' $2
 sed -i.backup  's/uniform //g' $2
-sed -i.backup  's/ uniform//g' $2
+sed -i.backup  's/ uniform\*/\*/g' $2
+sed -i.backup  's/ uniform)/)/g' $2
 sed -i.backup  's/varying //g' $2
 sed -i.backup  's/ varying//g' $2
 sed -i.backup  's/unmasked //g' $2
@@ -40,8 +45,8 @@ sed -i.backup  's/delete[ ]*\[[ ]*\][ ]*\([a-zA-Z0-9_]*\)/alignedFree(\1)/g' $2
 sed -i.backup  's/sync;//g' $2
 sed -i.backup  's/print(/printf(/g' $2
 sed -i.backup  's/abort()/exit(1)/g' $2
-sed -i.backup 's/atomic_compare_exchange_global/atomic_cmpxchg/g' $2 
-sed -i.backup 's/memory_barrier/__memory_barrier/g' $2 
+sed -i.backup 's/atomic_compare_exchange_global/atomic_cmpxchg/g' $2
+sed -i.backup 's/memory_barrier/__memory_barrier/g' $2
 
 # math library
 sed -i.backup  's/Vec3f\([^a]\)/Vec3fa\1/g' $2
@@ -58,12 +63,15 @@ sed -i.backup  's/\*pi\//\*float(pi)\//g' $2
 sed -i.backup  's/one_over_pi/float(one_over_pi)/g' $2
 sed -i.backup  's/one_over_two_pi/float(one_over_two_pi)/g' $2
 sed -i.backup  's/one_over_four_pi/float(one_over_four_pi)/g' $2
-sed -i.backup  's/[^_]two_pi/float(two_pi)/g' $2
+sed -i.backup  's/(two_pi/(float(two_pi)/g' $2
+sed -i.backup  's/[^_(]two_pi/float(two_pi)/g' $2
 sed -i.backup  's/make_Vec2f/Vec2f/g' $2
 sed -i.backup  's/make_Vec3f/Vec3f/g' $2
 sed -i.backup  's/make_Vec3fa/Vec3fa/g' $2
 sed -i.backup  's/make_Sample3f/Sample3f/g' $2
 sed -i.backup  's/make_AffineSpace3f/AffineSpace3f/g' $2
+
+sed -i.backup 's/sincos/sincosf/g' $2
 
 # Embree specific
 sed -i.backup  's/RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING/RTC_INTERSECT1/g' $2
@@ -78,7 +86,3 @@ sed -i.backup  's/RTCFilterFuncVarying/RTCFilterFunc/g' $2
 
 sed -i.backup  's/rtcIntersectVM/rtcIntersect1M/g' $2
 sed -i.backup  's/rtcOccludedVM/rtcOccluded1M/g' $2
-
-
-
-

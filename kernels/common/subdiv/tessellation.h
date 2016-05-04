@@ -121,35 +121,6 @@ namespace embree
     assert( edge_levels[2] >= 1.0f );
     assert( edge_levels[3] >= 1.0f );
     
-#if defined(__MIC__)
-
-    const vint16 grid_u_segments = vint16(swidth)-1;
-    const vint16 grid_v_segments = vint16(sheight)-1;
-    
-    const vfloat16 inv_grid_u_segments = rcp(vfloat16(grid_u_segments));
-    const vfloat16 inv_grid_v_segments = rcp(vfloat16(grid_v_segments));
-    
-    unsigned int index = 0;
-    vint16 v_i( zero );
-    for (unsigned int y=0;y<grid_v_res;y++,index+=grid_u_res,v_i += 1)
-    {
-      vint16 u_i ( step );
-      
-      const vbool16 m_v = v_i < grid_v_segments;
-      
-      for (unsigned int x=0;x<grid_u_res;x+=16, u_i += 16)
-      {
-        const vbool16 m_u = u_i < grid_u_segments;
-
-	const vfloat16 u = select(m_u, vfloat16(x0+u_i) * inv_grid_u_segments, 1.0f);
-	const vfloat16 v = select(m_v, vfloat16(y0+v_i) * inv_grid_v_segments, 1.0f);
-	vfloat16::storeu(&u_array[index + x],u);
-	vfloat16::storeu(&v_array[index + x],v);	   
-      }
-    }       
-
-#else
- 
 #if defined(__AVX__)
     const vint8 grid_u_segments = vint8(swidth)-1;
     const vint8 grid_v_segments = vint8(sheight)-1;
@@ -198,11 +169,6 @@ namespace embree
 	vfloat4::storeu(&v_array[index + x],v);	   
       }
     }       
- #endif
-
-#endif       
-  }
- 
-
+#endif
+  } 
 }
-

@@ -55,20 +55,11 @@ namespace embree
       while(1) {
         __memory_barrier();
 	while (flag == 1) { // read without atomic op first
-#if !defined(__MIC__)
 	  _mm_pause(); 
 	  _mm_pause();
-#else
-	  _mm_delay_32(wait); 
-	  wait += wait;  
-	  if (wait > MAX_MIC_WAIT_CYCLES) wait = MAX_MIC_WAIT_CYCLES;  
-#endif
 	}
         __memory_barrier();
 	if (atomic_cmpxchg(&flag,0,1) == 0) break;
-#if defined(__MIC__)
-	_mm_delay_32(wait); 
-#endif
       }
     }
 
@@ -91,14 +82,10 @@ namespace embree
       unsigned int wait = 128;
       __memory_barrier();
       while(flag == 1)
-	{
-#if !defined(__MIC__)
-	  _mm_pause(); 
-	  _mm_pause();
-#else
-	  _mm_delay_32(wait); 
-#endif	
-	}
+      {
+        _mm_pause(); 
+        _mm_pause();
+      }
       __memory_barrier();
     }
 
@@ -194,16 +181,10 @@ namespace embree
 
       unsigned int wait = 128;	
       while (tickets != i) 
-	{
-#if !defined(__MIC__)
-	  _mm_pause(); 
-	  _mm_pause();
-#else
-	  _mm_delay_32(wait); 
-	  wait += wait;  
-	  if (wait > MAX_MIC_WAIT_CYCLES) wait = MAX_MIC_WAIT_CYCLES;  
-#endif	  
-	}
+      {
+        _mm_pause(); 
+        _mm_pause();
+      }
     }
 
     __forceinline void unlock() 
@@ -252,12 +233,8 @@ namespace embree
    }
    __forceinline void pause()
    {
-#if !defined(__MIC__)
      _mm_pause(); 
      _mm_pause();
-#else
-     _mm_delay_32(DELAY_CYCLES); 
-#endif      
    }
     
    __forceinline void read_lock()

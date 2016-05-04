@@ -189,6 +189,10 @@ unmasked void intersectionFilterN(uniform int* uniform valid,
                                   const struct RTCHitN* uniform potentialHit,
                                   uniform const size_t N)
 {
+  /* avoid crashing when debug visualizations are used */
+  if (context == NULL)
+    return; 
+
   /* iterate over all rays in ray packet */
   for (uniform int ui=0; ui<N; ui+=programCount)
   {
@@ -206,8 +210,8 @@ unmasked void intersectionFilterN(uniform int* uniform valid,
     float hit_t   = RTCHitN_t(potentialHit,N,ui);
 
     /* decode ray IDs */
-    int pid = ray_mask / programCount;
-    int rid = ray_mask % programCount;
+    int pid = (ray_mask & 0xFFFF) / programCount;
+    int rid = (ray_mask & 0xFFFF) % programCount;
 
     /* calculate transparency */
     Vec3f h = ray_org + ray_dir*hit_t;
@@ -247,6 +251,10 @@ unmasked void occlusionFilterN(uniform int* uniform valid,
                                const struct RTCHitN* uniform potentialHit,
                                uniform const size_t N)
 {
+  /* avoid crashing when debug visualizations are used */
+  if (context == NULL)
+    return; 
+
   /* iterate over all rays in ray packet */
   for (uniform int ui=0; ui<N; ui+=programCount)
   {
@@ -264,8 +272,8 @@ unmasked void occlusionFilterN(uniform int* uniform valid,
     float hit_t   = RTCHitN_t(potentialHit,N,ui);
 
     /* decode ray IDs */
-    int pid = ray_mask / programCount;
-    int rid = ray_mask % programCount;
+    int pid = (ray_mask & 0xFFFF) / programCount;
+    int rid = (ray_mask & 0xFFFF) % programCount;
     varying RTCRay2* uniform eray = (varying RTCRay2* uniform) context->userRayExt;
     
     /* calculate transparency */
@@ -334,7 +342,7 @@ void renderTileStandardStream(uniform int taskIndex,
     } 
     primary.geomID = RTC_INVALID_GEOMETRY_ID;
     primary.primID = RTC_INVALID_GEOMETRY_ID;
-    primary.mask = N*programCount + programIndex;
+    primary.mask = 0xFFFF0000 + N*programCount + programIndex;
     primary.time = 0.0f;
     primary.transparency = 0.0f;
     N++;
@@ -390,7 +398,7 @@ void renderTileStandardStream(uniform int taskIndex,
       }
       shadow.geomID = RTC_INVALID_GEOMETRY_ID;
       shadow.primID = RTC_INVALID_GEOMETRY_ID;
-      shadow.mask = N*programCount + programIndex;
+      shadow.mask = 0xFFFF0000 + N*programCount + programIndex;
       shadow.time = 0;
       shadow.transparency = 1.0f;
     }

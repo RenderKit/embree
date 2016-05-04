@@ -107,16 +107,6 @@ namespace embree
 #define SELECT_SYMBOL_AVX512KNL(features,intersector)
 #endif
 
-#if defined(__MIC__)
-#if !defined(__TARGET_SIMD4__)
-#define __TARGET_SIMD16__
-#endif
-#define SELECT_SYMBOL_KNC(features,intersector) \
-  intersector = knc::intersector;
-#else
-#define SELECT_SYMBOL_KNC(features,intersector)
-#endif
-
 #define SELECT_SYMBOL_DEFAULT_SSE42(features,intersector)               \
   SELECT_SYMBOL_DEFAULT(features,intersector);                          \
   SELECT_SYMBOL_SSE42(features,intersector);                                  
@@ -167,6 +157,12 @@ namespace embree
   INIT_SYMBOL(features,intersector);                                        \
   SELECT_SYMBOL_AVX(features,intersector);                         \
   SELECT_SYMBOL_AVX2(features,intersector);
+
+#define SELECT_SYMBOL_INIT_SSE42_AVX_AVX2(features,intersector)          \
+  INIT_SYMBOL(features,intersector);                                        \
+  SELECT_SYMBOL_SSE42(features,intersector);                       \
+  SELECT_SYMBOL_AVX(features,intersector);                         \
+  SELECT_SYMBOL_AVX2(features,intersector);
   
 #define SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,intersector)        \
   INIT_SYMBOL(features,intersector);                                        \
@@ -196,6 +192,11 @@ namespace embree
   INIT_SYMBOL(features,intersector);                                        \
   SELECT_SYMBOL_AVX512KNL(features,intersector);
   
+#define SELECT_SYMBOL_SSE42_AVX_AVX2(features,intersector)          \
+  SELECT_SYMBOL_SSE42(features,intersector);                       \
+  SELECT_SYMBOL_AVX(features,intersector);                         \
+  SELECT_SYMBOL_AVX2(features,intersector);
+
   struct VerifyMultiTargetLinking {
     static __noinline int getISA(int depth = 5) { 
       if (depth == 0) return ISA; 

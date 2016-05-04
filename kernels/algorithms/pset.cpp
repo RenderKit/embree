@@ -20,15 +20,13 @@ namespace embree
 {
   struct pset_regression_test : public RegressionTest
   {
-    pset_regression_test(const char* name) : name(name) {
+    pset_regression_test(const char* name) : RegressionTest(name) {
       registerRegressionTest(this);
     }
     
-    bool operator() ()
+    bool run ()
     {
       bool passed = true;
-      printf("%s::%s ... ",TOSTRING(isa),name);
-      fflush(stdout);
 
       /* create vector with random numbers */
       const size_t N = 10000;
@@ -49,14 +47,8 @@ namespace embree
 	passed &= !sorted.lookup(unsorted[i]+1);
       }
 
-      /* output if test passed or not */
-      if (passed) printf("[passed]\n");
-      else        printf("[failed]\n");
-      
       return passed;
     }
-
-    const char* name;
   };
 
   pset_regression_test pset_regression("pset_regression_test");

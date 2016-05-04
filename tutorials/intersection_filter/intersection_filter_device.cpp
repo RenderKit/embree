@@ -189,6 +189,10 @@ void intersectionFilterN(int* valid,
                                   const struct RTCHitN* potentialHit,
                                   const size_t N)
 {
+  /* avoid crashing when debug visualizations are used */
+  if (context == nullptr)
+    return; 
+
   /* iterate over all rays in ray packet */
   for (int ui=0; ui<N; ui+=1)
   {
@@ -206,8 +210,8 @@ void intersectionFilterN(int* valid,
     float hit_t   = RTCHitN_t(potentialHit,N,ui);
 
     /* decode ray IDs */
-    int pid = ray_mask / 1;
-    int rid = ray_mask % 1;
+    int pid = (ray_mask & 0xFFFF) / 1;
+    int rid = (ray_mask & 0xFFFF) % 1;
 
     /* calculate transparency */
     Vec3fa h = ray_org + ray_dir*hit_t;
@@ -247,6 +251,10 @@ void occlusionFilterN(int* valid,
                                const struct RTCHitN* potentialHit,
                                const size_t N)
 {
+  /* avoid crashing when debug visualizations are used */
+  if (context == nullptr)
+    return; 
+
   /* iterate over all rays in ray packet */
   for (int ui=0; ui<N; ui+=1)
   {
@@ -264,8 +272,8 @@ void occlusionFilterN(int* valid,
     float hit_t   = RTCHitN_t(potentialHit,N,ui);
 
     /* decode ray IDs */
-    int pid = ray_mask / 1;
-    int rid = ray_mask % 1;
+    int pid = (ray_mask & 0xFFFF) / 1;
+    int rid = (ray_mask & 0xFFFF) % 1;
     RTCRay2* eray = (RTCRay2*) context->userRayExt;
     
     /* calculate transparency */
@@ -334,7 +342,7 @@ void renderTileStandardStream(int taskIndex,
     } 
     primary.geomID = RTC_INVALID_GEOMETRY_ID;
     primary.primID = RTC_INVALID_GEOMETRY_ID;
-    primary.mask = N*1 + 0;
+    primary.mask = 0xFFFF0000 + N*1 + 0;
     primary.time = 0.0f;
     primary.transparency = 0.0f;
     N++;
@@ -390,7 +398,7 @@ void renderTileStandardStream(int taskIndex,
       }
       shadow.geomID = RTC_INVALID_GEOMETRY_ID;
       shadow.primID = RTC_INVALID_GEOMETRY_ID;
-      shadow.mask = N*1 + 0;
+      shadow.mask = 0xFFFF0000 + N*1 + 0;
       shadow.time = 0;
       shadow.transparency = 1.0f;
     }

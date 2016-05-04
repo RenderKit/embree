@@ -16,14 +16,8 @@
 
 #include "scene.h"
 
-#if !defined(__MIC__)
 #include "../xeon/bvh/bvh4_factory.h"
 #include "../xeon/bvh/bvh8_factory.h"
-#else
-#include "../xeonphi/bvh4i/bvh4i_factory.h"
-#include "../xeonphi/bvh4mb/bvh4mb_factory.h"
-#include "../xeonphi/bvh4hair/bvh4hair_factory.h"
-#endif
  
 namespace embree
 {
@@ -34,10 +28,6 @@ namespace embree
   void invalid_rtcIntersect8()  { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect8 and rtcOccluded8 not enabled"); }
   void invalid_rtcIntersect16() { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect16 and rtcOccluded16 not enabled"); }
   void invalid_rtcIntersectN()  { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersectN and rtcOccludedN not enabled"); }
-
- 
-  /* number of created scene */
-  AtomicCounter Scene::numScenes = 0;
 
   Scene::Scene (Device* device, RTCSceneFlags sflags, RTCAlgorithmFlags aflags)
     : device(device), 
@@ -53,9 +43,7 @@ namespace embree
       progress_monitor_function(nullptr), progress_monitor_ptr(nullptr), progress_monitor_counter(0),
       progressInterface(this)
   {
-#if defined(TASKING_LOCKSTEP) 
-    lockstep_scheduler.taskBarrier.init(MAX_THREADS);
-#elif defined(TASKING_INTERNAL)
+#if defined(TASKING_INTERNAL)
     scheduler = nullptr;
 #else
     group = new tbb::task_group;
@@ -79,68 +67,6 @@ namespace embree
       needSubdivVertices = true;
     }
 
-#if defined(__MIC__)
-    needBezierVertices = true;
-    needSubdivVertices = true;
-
-    accels.add( BVH4mbFactory::BVH4mbTriangle1ObjectSplitBinnedSAH(this) );
-    accels.add( BVH4iFactory::BVH4iVirtualGeometryBinnedSAH(this, isRobust()));
-    accels.add( BVH4HairFactory::BVH4HairBinnedSAH(this));
-    accels.add( BVH4iFactory::BVH4iSubdivMeshBinnedSAH(this, isRobust() ));
-
-    if (device->verbosity(1))
-    {
-      std::cout << "scene flags: static " << isStatic() << " compact = " << isCompact() << " high quality = " << isHighQuality() << " robust = " << isRobust() << std::endl;
-    }
-    
-    if (device->tri_accel == "default" || device->tri_accel == "bvh4i")   
-    {
-      if (device->tri_builder == "default") 
-      {
-        if (isStatic())
-        {
-          if (device->verbosity(1)) std::cout << "STATIC BUILDER MODE" << std::endl;
-          if ( isCompact() )
-            accels.add(BVH4iFactory::BVH4iTriangle1MemoryConservativeBinnedSAH(this,isRobust()));
-          else if ( isHighQuality() )
-            accels.add(BVH4iFactory::BVH4iTriangle1ObjectSplitBinnedSAH(this,isRobust()));
-          else
-            accels.add(BVH4iFactory::BVH4iTriangle1ObjectSplitBinnedSAH(this,isRobust()));
-        }
-        else
-        {
-          if (device->verbosity(1)) std::cout << "DYNAMIC BUILDER MODE" << std::endl;
-          accels.add(BVH4iFactory::BVH4iTriangle1ObjectSplitMorton(this,isRobust()));
-        }
-      }
-      else
-      {
-        if (device->tri_builder == "sah" || device->tri_builder == "bvh4i" || device->tri_builder == "bvh4i.sah") {
-          accels.add(BVH4iFactory::BVH4iTriangle1ObjectSplitBinnedSAH(this,isRobust()));
-        }
-        else if (device->tri_builder == "fast" || device->tri_builder == "morton") {
-          accels.add(BVH4iFactory::BVH4iTriangle1ObjectSplitMorton(this,isRobust()));
-        }
-        else if (device->tri_builder == "fast_enhanced" || device->tri_builder == "morton.enhanced") {
-          accels.add(BVH4iFactory::BVH4iTriangle1ObjectSplitEnhancedMorton(this,isRobust()));
-        }
-        else if (device->tri_builder == "high_quality" || device->tri_builder == "presplits") {
-          accels.add(BVH4iFactory::BVH4iTriangle1PreSplitsBinnedSAH(this,isRobust()));
-        }
-        else if (device->tri_builder == "compact" ||
-                 device->tri_builder == "memory_conservative") {
-          accels.add(BVH4iFactory::BVH4iTriangle1MemoryConservativeBinnedSAH(this,isRobust()));
-        }
-        else if (device->tri_builder == "morton64") {
-          accels.add(BVH4iFactory::BVH4iTriangle1ObjectSplitMorton64Bit(this,isRobust()));
-        }
-        
-        else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+device->tri_builder+" for BVH4i<Triangle1>");
-      }
-    }
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown accel "+device->tri_accel);
-    
-#else
     createTriangleAccel();
     createTriangleMBAccel();
     createQuadAccel();
@@ -159,14 +85,7 @@ namespace embree
     accels.add(device->bvh4_factory->BVH4UserGeometry(this)); // has to be the last as the instID field of a hit instance is not invalidated by other hit geometry
     accels.add(device->bvh4_factory->BVH4UserGeometryMB(this)); // has to be the last as the instID field of a hit instance is not invalidated by other hit geometry
 #endif
-
-#endif
-
-    /* increment number of scenes */
-    numScenes++;
   }
-
-#if !defined(__MIC__)
 
   void Scene::createTriangleAccel()
   {
@@ -201,7 +120,7 @@ namespace embree
         int mode =  2*(int)isCompact() + 1*(int)isRobust();
         switch (mode) {
         case /*0b00*/ 0: accels.add(device->bvh4_factory->BVH4Triangle4Twolevel(this)); break;
-        case /*0b01*/ 1: accels.add(device->bvh4_factory->BVH4Triangle4Twolevel(this)); break;
+        case /*0b01*/ 1: accels.add(device->bvh4_factory->BVH4Triangle4vTwolevel(this)); break;
         case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4Triangle4iTwolevel(this)); break;
         case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4Triangle4iTwolevel(this)); break;
         }
@@ -240,7 +159,7 @@ namespace embree
 #if defined (__TARGET_AVX__)
         if (device->hasISA(AVX))
         {
-          // todo: reduce performance overhead of 10% compared to uncompressed bvh8
+          // FIXME: reduce performance overhead of 10% compared to uncompressed bvh8
           // if (isExclusiveIntersect1Mode())
           //   accels.add(device->bvh8_factory->BVH8QuantizedQuad4i(this)); 
           // else
@@ -294,7 +213,6 @@ namespace embree
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown quad acceleration structure "+device->quad_accel);
 #endif
   }
-
 
   void Scene::createTriangleMBAccel()
   {
@@ -468,8 +386,6 @@ namespace embree
 #endif
   }
 
-#endif
-
   Scene::~Scene () 
   {
     for (size_t i=0; i<geometries.size(); i++)
@@ -478,9 +394,6 @@ namespace embree
 #if TASKING_TBB
     delete group; group = nullptr;
 #endif
-
-    /* decrement number of scenes */
-    numScenes--;
   }
 
   void Scene::clear() {
@@ -644,12 +557,6 @@ namespace embree
 
     /* update commit counter */
     commitCounter++;
-
-    /* do only reset tessellation cache on MIC */
-#if defined(__MIC__)
-    if (numScenes == 1)
-      resetTessellationCache();
-#endif
   }
 
   void Scene::build_task ()
@@ -692,77 +599,6 @@ namespace embree
     
     setModified(false);
   }
-
-#if defined(TASKING_LOCKSTEP)
-
-  void Scene::task_build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
-  {
-    LockStepTaskScheduler::Init init(threadIndex,threadCount,&lockstep_scheduler);
-    if (threadIndex == 0) accels.build(threadIndex,threadCount);
-  }
-
-  void Scene::build (size_t threadIndex, size_t threadCount) 
-  {
-    LockStepTaskScheduler::Init init(threadIndex,threadCount,&lockstep_scheduler);
-    if (threadIndex != 0) return;
-
-    /* allow only one build at a time */
-    Lock<MutexSys> lock(buildMutex);
-
-    progress_monitor_counter = 0;
-
-    if (!ready()) {
-      throw_RTCError(RTC_INVALID_OPERATION,"not all buffers are unmapped");
-      return;
-    }
-
-    /* select fast code path if no intersection filter is present */
-    accels.select(numIntersectionFiltersN+numIntersectionFilters4,
-                  numIntersectionFiltersN+numIntersectionFilters8,
-                  numIntersectionFiltersN+numIntersectionFilters16,
-                  numIntersectionFiltersN);
-
-    /* if user provided threads use them */
-    if (threadCount)
-      accels.build(threadIndex,threadCount);
-
-    /* otherwise use our own threads */
-    else
-    {
-      TaskScheduler::EventSync event;
-      new (&task) TaskScheduler::Task(&event,_task_build_parallel,this,TaskScheduler::getNumThreads(),nullptr,nullptr,"scene_build");
-      TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_FRONT,&task);
-      event.sync();
-    }
-
-    /* make static geometry immutable */
-    if (isStatic()) 
-    {
-      accels.immutable();
-      for (size_t i=0; i<geometries.size(); i++)
-        if (geometries[i]) geometries[i]->immutable();
-    }
-
-    /* delete geometry that is scheduled for delete */
-    for (size_t i=0; i<geometries.size(); i++) // FIXME: this late deletion is inefficient in case of many geometries
-    {
-      Geometry* geom = geometries[i];
-      if (!geom) continue;
-      if (geom->isEnabled()) geom->clearModified(); // FIXME: should builders to this?
-    }
-
-    updateInterface();
-    setModified(false);
-
-    if (device->verbosity(2)) {
-      std::cout << "created scene intersector" << std::endl;
-      accels.print(2);
-      std::cout << "selected scene intersector" << std::endl;
-      intersectors.print(2);
-    }
-  }
-
-#endif
 
 #if defined(TASKING_INTERNAL)
 
@@ -864,10 +700,8 @@ namespace embree
     }
 
     /* for best performance set FTZ and DAZ flags in the MXCSR control and status register */
-#if !defined(__MIC__)
     unsigned int mxcsr = _mm_getcsr();
     _mm_setcsr(mxcsr | /* FTZ */ (1<<15) | /* DAZ */ (1<<6));
-#endif
     
     try {
 
@@ -891,17 +725,13 @@ namespace embree
 #endif
      
       /* reset MXCSR register again */
-#if !defined(__MIC__)
       _mm_setcsr(mxcsr);
-#endif
     } 
     catch (...) {
 
-       /* reset MXCSR register again */
-#if !defined(__MIC__)
-    _mm_setcsr(mxcsr);
-#endif
-
+      /* reset MXCSR register again */
+      _mm_setcsr(mxcsr);
+      
       accels.clear();
       updateInterface();
       throw;
@@ -935,9 +765,7 @@ namespace embree
     if (progress_monitor_function) {
       size_t n = atomic_t(dn) + atomic_add(&progress_monitor_counter, atomic_t(dn));
       if (!progress_monitor_function(progress_monitor_ptr, n / (double(numPrimitives())))) {
-#if !defined(TASKING_LOCKSTEP)
         throw_RTCError(RTC_CANCELLED,"progress monitor forced termination");
-#endif
       }
     }
   }

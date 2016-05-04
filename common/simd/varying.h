@@ -79,7 +79,7 @@ namespace embree
 #endif
 
   /* Maximum supported varying size */
-#if defined(__AVX512F__) || defined(__MIC__)
+#if defined(__AVX512F__)
   const int VSIZEX = 16;
 #elif defined(__AVX__)
   const int VSIZEX = 8;

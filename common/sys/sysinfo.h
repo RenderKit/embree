@@ -28,11 +28,7 @@
 #include "platform.h"
 
 /* define isa namespace and ISA bitvector */
-#if defined(__MIC__)
-#  define isa knc
-#  define ISA KNC
-#  define ISA_STR "KNC"
-#elif defined (__AVX512F__)
+#if defined (__AVX512F__)
 #  define isa avx512
 #  define ISA AVX512KNL
 #  define ISA_STR "AVX512KNL"

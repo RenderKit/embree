@@ -18,6 +18,7 @@
 
 #include "../../../common/sys/platform.h"
 #include "../../../kernels/algorithms/parallel_for.h"
+#include "config.h"
 
 /* size of screen tiles */
 #define TILE_SIZE_X 8

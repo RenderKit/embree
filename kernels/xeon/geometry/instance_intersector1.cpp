@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "instance_intersector1.h"
+#include "../../common/scene.h"
 
 namespace embree
 {
@@ -70,10 +71,7 @@ namespace embree
     void FastInstanceIntersector1M::intersect(const Instance* instance, const RTCIntersectContext* context, Ray** rays, size_t M, size_t item)
     {
       assert(M<MAX_INTERNAL_STREAM_SIZE);
-      Vec3fa ray_org[MAX_INTERNAL_STREAM_SIZE];
-      Vec3fa ray_dir[MAX_INTERNAL_STREAM_SIZE];
-      int ray_geomID[MAX_INTERNAL_STREAM_SIZE];
-      int ray_instID[MAX_INTERNAL_STREAM_SIZE];
+      Ray lrays[MAX_INTERNAL_STREAM_SIZE];
       AffineSpace3fa world2local = instance->getWorld2Local();
 
       for (size_t i=0; i<M; i++)
@@ -81,36 +79,35 @@ namespace embree
         if (unlikely(instance->numTimeSteps != 1)) 
           world2local = instance->getWorld2Local(rays[i]->time);
 
-        const Vec3fa org = rays[i]->org;
-        const Vec3fa dir = rays[i]->dir;
-        ray_org[i] = org;
-        ray_dir[i] = dir;
-        ray_geomID[i] = rays[i]->geomID;
-        ray_instID[i] = rays[i]->instID;
-        rays[i]->org = xfmPoint (world2local,org);
-        rays[i]->dir = xfmVector(world2local,dir);
-        rays[i]->geomID = -1;
-        rays[i]->instID = instance->id;
+        lrays[i].org = xfmPoint (world2local,rays[i]->org);
+        lrays[i].dir = xfmVector(world2local,rays[i]->dir);
+        lrays[i].tnear = rays[i]->tnear;
+        lrays[i].tfar = rays[i]->tfar;
+        lrays[i].time = rays[i]->time;
+        lrays[i].mask = rays[i]->mask;
+        lrays[i].geomID = -1;
+        lrays[i].instID = instance->id;
       }
 
-      instance->object->intersectN((RTCRay**)rays,M,context);
+      rtcIntersect1M((RTCScene)instance->object,context,(RTCRay*)lrays,M,sizeof(Ray));
         
       for (size_t i=0; i<M; i++)
       {
-        rays[i]->org = ray_org[i];
-        rays[i]->dir = ray_dir[i];
-        if (rays[i]->geomID == -1) {
-          rays[i]->geomID = ray_geomID[i];
-          rays[i]->instID = ray_instID[i];
-        }
+        if (lrays[i].geomID == -1) continue;
+        rays[i]->instID = lrays[i].instID;
+        rays[i]->geomID = lrays[i].geomID;
+        rays[i]->primID = lrays[i].primID;
+        rays[i]->u = lrays[i].u;
+        rays[i]->v = lrays[i].v;
+        rays[i]->tfar = lrays[i].tfar;
+        rays[i]->Ng = lrays[i].Ng;
       }
     }
     
     void FastInstanceIntersector1M::occluded (const Instance* instance, const RTCIntersectContext* context, Ray** rays, size_t M, size_t item)
     {
       assert(M<MAX_INTERNAL_STREAM_SIZE);
-      Vec3fa ray_org[MAX_INTERNAL_STREAM_SIZE];
-      Vec3fa ray_dir[MAX_INTERNAL_STREAM_SIZE];
+      Ray lrays[MAX_INTERNAL_STREAM_SIZE];
       AffineSpace3fa world2local = instance->getWorld2Local();
       
       for (size_t i=0; i<M; i++)
@@ -118,21 +115,22 @@ namespace embree
         if (unlikely(instance->numTimeSteps != 1)) 
           world2local = instance->getWorld2Local(rays[i]->time);
 
-        const Vec3fa org = rays[i]->org;
-        const Vec3fa dir = rays[i]->dir;
-        ray_org[i] = org;
-        ray_dir[i] = dir;
-        rays[i]->org = xfmPoint (world2local,org);
-        rays[i]->dir = xfmVector(world2local,dir);
-        rays[i]->instID = instance->id;
+        lrays[i].org = xfmPoint (world2local,rays[i]->org);
+        lrays[i].dir = xfmVector(world2local,rays[i]->dir);
+        lrays[i].tnear = rays[i]->tnear;
+        lrays[i].tfar = rays[i]->tfar;
+        lrays[i].time = rays[i]->time;
+        lrays[i].mask = rays[i]->mask;
+        lrays[i].geomID = -1;
+        lrays[i].instID = instance->id;
       }
 
-      instance->object->occludedN((RTCRay**)rays,M,context);
+      rtcOccluded1M((RTCScene)instance->object,context,(RTCRay*)lrays,M,sizeof(Ray));
         
       for (size_t i=0; i<M; i++)
       {
-        rays[i]->org = ray_org[i];
-        rays[i]->dir = ray_dir[i];
+        if (lrays[i].geomID == -1) continue;
+        rays[i]->geomID = 0;
       }
     }
 

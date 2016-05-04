@@ -16,7 +16,9 @@
 
 #pragma once
 
-struct Vec3f 
+#include "math.isph"
+
+struct Vec3f
 {
   float x;
   float y;
@@ -155,10 +157,10 @@ inline varying Vec3f dnormalize(const varying Vec3f& p, const varying Vec3f& dp)
 inline uniform float distance(const uniform Vec3f a, const uniform Vec3f b) { return length(a-b); }
 inline varying float distance(const varying Vec3f a, const uniform Vec3f b) { return length(a-b); }
 
-inline uniform Vec3f cross(const uniform Vec3f a, const uniform Vec3f b) { 
+inline uniform Vec3f cross(const uniform Vec3f a, const uniform Vec3f b) {
   return make_Vec3f(a.y*b.z-a.z*b.y,a.z*b.x-a.x*b.z,a.x*b.y-a.y*b.x);
 }
-inline varying Vec3f cross(const varying Vec3f a, const varying Vec3f b) { 
+inline varying Vec3f cross(const varying Vec3f a, const varying Vec3f b) {
   return make_Vec3f(a.y*b.z-a.z*b.y,a.z*b.x-a.x*b.z,a.x*b.y-a.y*b.x);
 }
 

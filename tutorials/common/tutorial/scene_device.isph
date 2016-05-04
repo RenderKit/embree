@@ -16,7 +16,9 @@
 
 #pragma once
 
-struct ISPCTriangle 
+#include "lights/light.isph"
+
+struct ISPCTriangle
 {
   int v0;                /*< first triangle vertex */
   int v1;                /*< second triangle vertex */
@@ -140,44 +142,18 @@ struct ISPCGroup
   size_t numGeometries;
 };
 
-struct ISPCAmbientLight
+enum MaterialTy
 {
-  Vec3fa L;                  //!< radiance of ambient light
-};
-
-struct ISPCPointLight
-{
-  Vec3fa P;                  //!< position of point light
-  Vec3fa I;                  //!< radiant intensity of point light
-};
-
-struct ISPCDirectionalLight
-{
-  Vec3fa D;                  //!< Light direction
-  Vec3fa E;                  //!< Irradiance (W/m^2)
-};
-
-struct ISPCDistantLight
-{
-  Vec3fa D;             //!< Light direction
-  Vec3fa L;             //!< Radiance (W/(m^2*sr))
-  float halfAngle;     //!< Half illumination angle
-  float radHalfAngle;  //!< Half illumination angle in radians
-  float cosHalfAngle;  //!< Cosine of half illumination angle
-};
-
-enum MaterialTy 
-{ 
-  MATERIAL_OBJ, 
-  MATERIAL_THIN_DIELECTRIC, 
-  MATERIAL_METAL, 
-  MATERIAL_VELVET, 
-  MATERIAL_DIELECTRIC, 
-  MATERIAL_METALLIC_PAINT, 
-  MATERIAL_MATTE, 
-  MATERIAL_MIRROR, 
-  MATERIAL_REFLECTIVE_METAL, 
-  MATERIAL_HAIR 
+  MATERIAL_OBJ,
+  MATERIAL_THIN_DIELECTRIC,
+  MATERIAL_METAL,
+  MATERIAL_VELVET,
+  MATERIAL_DIELECTRIC,
+  MATERIAL_METALLIC_PAINT,
+  MATERIAL_MATTE,
+  MATERIAL_MIRROR,
+  MATERIAL_REFLECTIVE_METAL,
+  MATERIAL_HAIR
 };
 
 struct ISPCMaterial
@@ -208,9 +184,9 @@ enum TEXTURE_FORMAT {
   FLOAT32      = 3,
 };
 
-struct Texture {      
+struct Texture {
   uniform int width;
-  uniform int height;    
+  uniform int height;
   uniform int format;
   uniform int bytesPerTexel;
   uniform int width_mask;
@@ -227,7 +203,7 @@ struct OBJMaterial
   float d;               /*< dissolve factor, 1=opaque, 0=transparent */
   float Ns;              /*< specular exponent */
   float Ni;              /*< optical density for the surface (index of refraction) */
-  
+
   Vec3fa Ka;              /*< ambient reflectivity */
   Vec3fa Kd;              /*< diffuse reflectivity */
   Vec3fa Ks;              /*< specular reflectivity */
@@ -316,24 +292,15 @@ struct ISPCSubdivMeshKeyFrame {
   int numSubdivMeshes;                       //!< number of subdiv meshes
 };
 
-struct ISPCScene 
+struct ISPCScene
 {
   uniform ISPCGeometry* uniform* geometries;   //!< list of geometries
   uniform ISPCMaterial* materials;             //!< material list
   int numGeometries;                           //!< number of geometries
   int numMaterials;                            //!< number of materials
 
-  uniform ISPCAmbientLight* ambientLights; //!< list of ambient lights
-  int numAmbientLights;                    //!< number of ambient lights
-  
-  uniform ISPCPointLight* pointLights;     //!< list of point lights
-  int numPointLights;                      //!< number of point lights
-  
-  uniform ISPCDirectionalLight* dirLights; //!< list of directional lights
-  int numDirectionalLights;                //!< number of directional lights
-
-  uniform ISPCDistantLight* distantLights; //!< list of distant lights
-  int numDistantLights;                    //!< number of distant lights
+  uniform Light* uniform* lights;              //!< list of lights
+  int numLights;                               //!< number of lights
 
   ISPCSubdivMeshKeyFrame** subdivMeshKeyFrames;
   int numSubdivMeshKeyFrames;

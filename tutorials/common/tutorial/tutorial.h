@@ -26,9 +26,7 @@ namespace embree
   class TutorialApplication : public Application
   {
   public:
-    enum Features { FEATURE_STREAM = 1 };
-
-    TutorialApplication (const std::string& tutorialName, const int features = 0);
+    TutorialApplication (const std::string& tutorialName, const int features);
     
   public:
     /* starts tutorial */
@@ -58,10 +56,6 @@ namespace embree
     
   public:
     std::string tutorialName;
-    int features;
-    
-    /* embree configuration */
-    std::string rtcore;
           
     /* render settings */
     Camera camera;
@@ -102,7 +96,7 @@ namespace embree
   class SceneLoadingTutorialApplication : public TutorialApplication
   {
   public:
-    SceneLoadingTutorialApplication (const std::string& tutorialName);
+    SceneLoadingTutorialApplication (const std::string& tutorialName, int features);
 
     virtual int main(int argc, char** argv);
 

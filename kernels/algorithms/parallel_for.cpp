@@ -20,15 +20,13 @@ namespace embree
 {
   struct parallel_for_regression_test : public RegressionTest
   {
-    parallel_for_regression_test(const char* name) : name(name) {
+    parallel_for_regression_test(const char* name) : RegressionTest(name) {
       registerRegressionTest(this);
     }
     
-    bool operator() ()
+    bool run ()
     {
       bool passed = true;
-      printf("%s::%s ... ",TOSTRING(isa),name);
-      fflush(stdout);
 
       const size_t M = 10;
       for (size_t N=10; N<10000000; N*=2.1f)
@@ -54,17 +52,11 @@ namespace embree
           passed = sum0 == sum1;
         }
 	double t1 = getSeconds();
-	printf("%zu/%3.2fM ",N,1E-6*double(N*M)/(t1-t0));
+	//printf("%zu/%3.2fM ",N,1E-6*double(N*M)/(t1-t0));
       }
-      
-      /* output if test passed or not */
-      if (passed) printf("[passed]\n");
-      else        printf("[failed]\n");
       
       return passed;
     }
-
-    const char* name;
   };
 
   parallel_for_regression_test parallel_for_regression("parallel_for_regression_test");

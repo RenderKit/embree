@@ -177,7 +177,6 @@ namespace embree
   /* changes thread ID mapping such that we first fill up all thread on one core */
   ssize_t mapThreadID(ssize_t threadID)
   {
-#if !defined(__MIC__)
     static MutexSys mutex;
     Lock<MutexSys> lock(mutex);
     static std::vector<int> threadIDs;
@@ -223,9 +222,6 @@ namespace embree
     if (threadID < threadIDs.size())
       ID = threadIDs[threadID];
 
-#else
-    ssize_t ID = threadID;
-#endif
     return ID;
   }
 
@@ -308,10 +304,6 @@ namespace embree
   /*! creates a hardware thread running on specific core */
   thread_t createThread(thread_func f, void* arg, size_t stack_size, ssize_t threadID)
   {
-#ifdef __MIC__
-    threadID++; // start counting at 1 on MIC
-#endif
-
     /* set stack size */
     pthread_attr_t attr;
     pthread_attr_init(&attr);

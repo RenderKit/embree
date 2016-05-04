@@ -83,10 +83,6 @@ namespace embree
     LogRay16 logRay16;
 
     logRay16.type    = RAY_INTERSECT;
-#if defined(__MIC__)
-    logRay16.m_valid = *(vint16*)valid_i != vint16(0);
-    logRay16.numRays = countbits(logRay16.m_valid);
-#endif
     /* ray16 before intersect */
     logRay16.ray16 = start;
     ray16->write((char*)&logRay16 ,sizeof(logRay16));
@@ -105,10 +101,6 @@ namespace embree
     LogRay16 logRay16;
 
     logRay16.type    = RAY_OCCLUDED;
-#if defined(__MIC__)
-    logRay16.m_valid = *(vint16*)valid_i != vint16(0);
-    logRay16.numRays = countbits(logRay16.m_valid);
-#endif
     /* ray16 before intersect */
     logRay16.ray16 = start;
     ray16->write((char*)&logRay16 ,sizeof(logRay16));

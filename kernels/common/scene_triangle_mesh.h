@@ -152,18 +152,6 @@ namespace embree
       return vertices[j].getPtr(i);
     }
 
-#if defined(__MIC__)    
-    /*! returns the stride in bytes of the triangle buffer */
-    __forceinline size_t getTriangleBufferStride() const {
-      return triangles.getBufferStride();
-    }
-
-    /*! returns the stride in butes of the vertex buffer */
-    __forceinline size_t getVertexBufferStride() const {
-      return vertices[0].getBufferStride();
-    }
-#endif
-
     /*! calculates the bounds of the i'th triangle */
     __forceinline BBox3fa bounds(size_t i) const 
     {
@@ -197,63 +185,6 @@ namespace embree
       return true;
     }
 
-#if defined(__MIC__)
-
-
-    template<unsigned int HINT=0>
-      __forceinline Vec3vf16 getTriangleVertices(const Triangle &tri,const size_t dim=0) const 
-      {
-	assert( tri.v[0] < numVertices() );
-	assert( tri.v[1] < numVertices() );
-	assert( tri.v[2] < numVertices() );
-
-#if !defined(RTCORE_BUFFER_STRIDE)
-	
-	const float *__restrict__ const vptr0 = (float*) vertices[dim].getPtr(tri.v[0]);
-	const float *__restrict__ const vptr1 = (float*) vertices[dim].getPtr(tri.v[1]);
-	const float *__restrict__ const vptr2 = (float*) vertices[dim].getPtr(tri.v[2]);
-
-	const vfloat16 v0 = broadcast4to16f(vptr0); 
-	const vfloat16 v1 = broadcast4to16f(vptr1); 
- 	const vfloat16 v2 = broadcast4to16f(vptr2); 
-	return Vec3vf16(v0,v1,v2);
-#else
-	const vint16 stride = vertices[dim].getBufferStride();
-
-	const vint16 offset0_64 = mul_uint64_t(stride,vint16(tri.v[0]));
-	const vint16 offset1_64 = mul_uint64_t(stride,vint16(tri.v[1]));
-	const vint16 offset2_64 = mul_uint64_t(stride,vint16(tri.v[2]));
-
-	const char  *__restrict__ const base  = vertices[dim].getPtr();
-	const size_t off0 = offset0_64.uint64_t(0);
-	const size_t off1 = offset1_64.uint64_t(0);
-	const size_t off2 = offset2_64.uint64_t(0);
-
-	const float *__restrict__ const vptr0_64 = (float*)(base + off0);
-	const float *__restrict__ const vptr1_64 = (float*)(base + off1);
-	const float *__restrict__ const vptr2_64 = (float*)(base + off2);
-
-	if (HINT)
-	{
-	  prefetch<HINT>(vptr1_64);
-	  prefetch<HINT>(vptr2_64);
-	}
-
-	assert( vptr0_64 == (float*)vertexPtr(tri.v[0],dim) );
-	assert( vptr1_64 == (float*)vertexPtr(tri.v[1],dim) );
-	assert( vptr2_64 == (float*)vertexPtr(tri.v[2],dim) );
-	
-	const vbool16 m_3f = 0x7;
-	const vfloat16 v0 = shuffle4<0,0,0,0>(vfloat16::loadu(m_3f,vptr0_64));
-	const vfloat16 v1 = shuffle4<0,0,0,0>(vfloat16::loadu(m_3f,vptr1_64));
-	const vfloat16 v2 = shuffle4<0,0,0,0>(vfloat16::loadu(m_3f,vptr2_64));
-
-	return Vec3vf16(select(0x7777,v0,vfloat16::zero()),select(0x7777,v1,vfloat16::zero()),select(0x7777,v2,vfloat16::zero()));
-#endif	
-      }
-    
-#endif
-    
   public:
     BufferT<Triangle> triangles;                    //!< array of triangles
     array_t<BufferT<Vec3fa>,2> vertices;            //!< vertex array

@@ -27,19 +27,11 @@
 #include "acceln.h"
 #include "geometry.h"
 
-#if !defined(__MIC__)
 #include "../xeon/geometry/cylinder.h"
 #include "../xeon/geometry/cone.h"
-#endif
 
-#if !defined(__MIC__)
 #include "../xeon/bvh/bvh4_factory.h"
 #include "../xeon/bvh/bvh8_factory.h"
-#endif
-
-#if defined(TASKING_LOCKSTEP)
-#  include "../../common/tasking/taskscheduler_mic.h"
-#endif
 
 #if defined(TASKING_INTERNAL)
 #  include "../../common/tasking/taskschedulerinternal.h"
@@ -57,16 +49,7 @@ namespace embree
   ssize_t Device::debug_int2 = 0;
   ssize_t Device::debug_int3 = 0;
 
-  /* functions to initialize global constants */
-  void init_globals();
-
   DECLARE_SYMBOL2(RayStreamFilterFuncs,rayStreamFilters);
-
-#if defined(__MIC__)
-  void BVH4iRegister();
-  void BVH4MBRegister();
-  void BVH4HairRegister();
-#endif
 
   static MutexSys g_mutex;
   static std::map<Device*,size_t> g_cache_size_map;
@@ -76,19 +59,16 @@ namespace embree
     : State(singledevice)
   {
     /* initialize global state */
-    init_globals();
     State::parseString(cfg);
     if (FileName::executableFolder() != FileName(""))
       State::parseFile(FileName::executableFolder()+FileName(".embree" TOSTRING(__EMBREE_VERSION_MAJOR__)));
-    if (FileName::homeFolder() != FileName("")) // home folder is not available on KNC
+    if (FileName::homeFolder() != FileName(""))
       State::parseFile(FileName::homeFolder()+FileName(".embree" TOSTRING(__EMBREE_VERSION_MAJOR__)));
     State::verify();
 
     /*! do some internal tests */
-#if !defined(__MIC__)
     assert(isa::Cylinder::verify());
     assert(isa::Cone::verify());
-#endif
     
     /*! set tessellation cache size */
     setCacheSize( State::tessellation_cache_size );
@@ -115,43 +95,27 @@ namespace embree
     /* register all algorithms */
     instance_factory = new InstanceFactory(enabled_cpu_features);
 
-#if !defined(__MIC__)
     bvh4_factory = new BVH4Factory(enabled_cpu_features);
-#endif
 
 #if defined(__TARGET_AVX__)
     bvh8_factory = new BVH8Factory(enabled_cpu_features);
 #endif
 
-#if defined(__MIC__)
-    BVH4iRegister();
-    BVH4MBRegister();
-    BVH4HairRegister();
-#endif 
-
     /* setup tasking system */
     initTaskingSystem(numThreads);
 
-    /* execute regression tests */
-#if !defined(__MIC__)
-    if (State::regression_testing) 
-      runRegressionTests();
-#endif
-
     /* ray stream SOA to AOS conversion */
-#if defined(RTCORE_RAY_PACKETS) && !defined(__MIC__)
-    SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL(enabled_cpu_features,rayStreamFilters);
+#if defined(RTCORE_RAY_PACKETS)
+    SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL(enabled_cpu_features,rayStreamFilters);
 #endif
   }
 
   Device::~Device ()
   {
     delete instance_factory;
-#if !defined(__MIC__)
     delete bvh4_factory;
 #if defined(__TARGET_AVX__)
     delete bvh8_factory;
-#endif
 #endif
     setCacheSize(0);
     exitTaskingSystem();
@@ -190,9 +154,6 @@ namespace embree
 #if defined(RTCORE_INTERSECTION_FILTER)
     v += "intersection_filter ";
 #endif
-#if defined(RTCORE_BUFFER_STRIDE)
-    v += "bufferstride ";
-#endif
     return v;
   }
 
@@ -212,11 +173,9 @@ namespace embree
     std::cout << "   Threads  : " << getNumberOfLogicalThreads() << std::endl;
     std::cout << "   ISA      : " << stringOfCPUFeatures(cpu_features) << std::endl;
     std::cout << "   Targets  : " << supportedTargetList(cpu_features) << std::endl;
-#if !defined(__MIC__)
     const bool hasFTZ = _mm_getcsr() & _MM_FLUSH_ZERO_ON;
     const bool hasDAZ = _mm_getcsr() & _MM_DENORMALS_ZERO_ON;
     std::cout << "   MXCSR    : " << "FTZ=" << hasFTZ << ", DAZ=" << hasDAZ << std::endl;
-#endif
     std::cout << "  Config" << std::endl;
     std::cout << "    Threads : " << (numThreads ? toString(numThreads) : std::string("default")) << std::endl;
     std::cout << "    ISA     : " << stringOfCPUFeatures(enabled_cpu_features) << std::endl;
@@ -231,14 +190,11 @@ namespace embree
 #if defined(TASKING_INTERNAL)
       std::cout << "internal_tasking_system ";
 #endif
-#if defined(TASKING_LOCKSTEP)
-    std::cout << "internal_tasking_system ";
-#endif
     std::cout << std::endl;
 
     /* check of FTZ and DAZ flags are set in CSR */
-#if !defined(__MIC__)
-    if (!hasFTZ || !hasDAZ) {
+    if (!hasFTZ || !hasDAZ) 
+    {
 #if !defined(_DEBUG)
       if (State::verbosity(1)) 
 #endif
@@ -259,45 +215,47 @@ namespace embree
         std::cout << std::endl;
       }
     }
-#endif
-
-#if defined (__MIC__) && defined(RTCORE_BUFFER_STRIDE)
-    if (State::verbosity(1))
-      std::cout << "  WARNING: enabled 'bufferstride' support will lower BVH build performance" << std::endl;
-#endif
-
     std::cout << std::endl;
   }
 
-  RTCError* Device::getError()
+  void Device::setDeviceErrorCode(RTCError error)
   {
-    if (this) return errorHandler.error();
-    else      return g_errorHandler.error();
-  }
-
-  void Device::setErrorCode(RTCError error)
-  {
-    RTCError* stored_error = getError();
+    RTCError* stored_error = errorHandler.error();
     if (*stored_error == RTC_NO_ERROR)
       *stored_error = error;
   }
 
-  RTCError Device::getErrorCode()
+  RTCError Device::getDeviceErrorCode()
   {
-    RTCError* stored_error = getError();
+    RTCError* stored_error = errorHandler.error();
     RTCError error = *stored_error;
     *stored_error = RTC_NO_ERROR;
     return error;
   }
 
-  void Device::process_error(RTCError error, const char* str)
+  void Device::setThreadErrorCode(RTCError error)
+  {
+    RTCError* stored_error = g_errorHandler.error();
+    if (*stored_error == RTC_NO_ERROR)
+      *stored_error = error;
+  }
+
+  RTCError Device::getThreadErrorCode()
+  {
+    RTCError* stored_error = g_errorHandler.error();
+    RTCError error = *stored_error;
+    *stored_error = RTC_NO_ERROR;
+    return error;
+  }
+
+  void Device::process_error(Device* device, RTCError error, const char* str)
   { 
     /* store global error code when device construction failed */
-    if (this == nullptr)
-      return setErrorCode(error);
+    if (device == nullptr)
+      return setThreadErrorCode(error);
 
     /* print error when in verbose mode */
-    if (State::verbosity(1)) 
+    if (device->verbosity(1)) 
     {
       switch (error) {
       case RTC_NO_ERROR         : std::cerr << "Embree: No error"; break;
@@ -313,22 +271,20 @@ namespace embree
     }
 
     /* call user specified error callback */
-    if (State::error_function) 
-      State::error_function(error,str); 
+    if (device->error_function) 
+      device->error_function(error,str); 
 
     /* record error code */
-    setErrorCode(error);
+    device->setDeviceErrorCode(error);
   }
 
   void Device::memoryMonitor(ssize_t bytes, bool post)
   {
     if (State::memory_monitor_function && bytes != 0) {
       if (!State::memory_monitor_function(bytes,post)) {
-#if !defined(TASKING_LOCKSTEP)
         if (bytes > 0) { // only throw exception when we allocate memory to never throw inside a destructor
           throw_RTCError(RTC_OUT_OF_MEMORY,"memory monitor forced termination");
         }
-#endif
       }
     }
   }
@@ -343,7 +299,7 @@ namespace embree
     for (std::map<Device*,size_t>::iterator i=g_cache_size_map.begin(); i!= g_cache_size_map.end(); i++)
       maxCacheSize = max(maxCacheSize, (*i).second);
     
-    resizeTessellationCache(max(size_t(1024*1024),maxCacheSize));
+    resizeTessellationCache(maxCacheSize);
   }
 
   void Device::initTaskingSystem(size_t numThreads) 
@@ -359,10 +315,6 @@ namespace embree
     /* terminate tasking system */
     if (g_num_threads_map.size() == 0)
     {
-#if defined(TASKING_LOCKSTEP)
-      TaskScheduler::destroy();
-#endif
-      
 #if defined(TASKING_INTERNAL)
       TaskScheduler::destroy();
 #endif
@@ -379,10 +331,6 @@ namespace embree
       maxNumThreads = max(maxNumThreads, (*i).second);
     if (maxNumThreads == -1) 
       maxNumThreads = 0;
-
-#if defined(TASKING_LOCKSTEP)
-    TaskScheduler::create(maxNumThreads,State::set_affinity);
-#endif
 
 #if defined(TASKING_INTERNAL)
     TaskScheduler::create(maxNumThreads,State::set_affinity);
@@ -425,6 +373,25 @@ namespace embree
 
   ssize_t Device::getParameter1i(const RTCParameter parm)
   {
+    size_t iparm = (size_t)parm;
+
+    /* get name of internal regression test */
+    if (iparm >= 2000000 && iparm < 3000000)
+    {
+      RegressionTest* test = getRegressionTest(iparm-2000000);
+      if (test) return (ssize_t) test->name.c_str();
+      else      return 0;
+    }
+
+    /* run internal regression test */
+    if (iparm >= 3000000 && iparm < 4000000)
+    {
+      RegressionTest* test = getRegressionTest(iparm-3000000);
+      if (test) return test->run();
+      else      return 0;
+    }
+
+    /* documented parameters */
     switch (parm) 
     {
     case RTC_CONFIG_VERSION_MAJOR: return __EMBREE_VERSION_MAJOR__;
@@ -433,16 +400,29 @@ namespace embree
     case RTC_CONFIG_VERSION      : return __EMBREE_VERSION_NUMBER__;
 
     case RTC_CONFIG_INTERSECT1: return 1;
-#if defined(RTCORE_RAY_PACKETS)
+
+#if defined(__TARGET_SIMD4__) && defined(RTCORE_RAY_PACKETS)
     case RTC_CONFIG_INTERSECT4:  return hasISA(SSE2);
-    case RTC_CONFIG_INTERSECT8:  return hasISA(AVX);
-    case RTC_CONFIG_INTERSECT16: return hasISA(AVX512KNL) | hasISA(KNC);
-    case RTC_CONFIG_INTERSECTN:  return 1;
 #else
     case RTC_CONFIG_INTERSECT4:  return 0;
+#endif
+
+#if defined(__TARGET_SIMD8__) && defined(RTCORE_RAY_PACKETS)
+    case RTC_CONFIG_INTERSECT8:  return hasISA(AVX);
+#else
     case RTC_CONFIG_INTERSECT8:  return 0;
+#endif
+
+#if defined(__TARGET_SIMD16__) && defined(RTCORE_RAY_PACKETS)
+    case RTC_CONFIG_INTERSECT16: return hasISA(AVX512KNL) | hasISA(KNC);
+#else
     case RTC_CONFIG_INTERSECT16: return 0;
-    case RTC_CONFIG_INTERSECTN:  return 0;
+#endif
+
+#if defined(RTCORE_RAY_PACKETS)
+    case RTC_CONFIG_INTERSECT_STREAM:  return 1;
+#else
+    case RTC_CONFIG_INTERSECT_STREAM:  return 0;
 #endif
     
 #if defined(RTCORE_RAY_MASK)
@@ -451,41 +431,31 @@ namespace embree
     case RTC_CONFIG_RAY_MASK: return 0;
 #endif
 
-#if defined(RTC_BACKFACE_CULLING)
+#if defined(RTCORE_BACKFACE_CULLING)
     case RTC_CONFIG_BACKFACE_CULLING: return 1;
 #else
     case RTC_CONFIG_BACKFACE_CULLING: return 0;
 #endif
 
-#if defined(RTC_INTERSECTION_FILTER)
+#if defined(RTCORE_INTERSECTION_FILTER)
     case RTC_CONFIG_INTERSECTION_FILTER: return 1;
 #else
     case RTC_CONFIG_INTERSECTION_FILTER: return 0;
 #endif
 
-#if defined(RTC_INTERSECTION_FILTER_RESTORE)
+#if defined(RTCORE_INTERSECTION_FILTER_RESTORE)
     case RTC_CONFIG_INTERSECTION_FILTER_RESTORE: return 1;
 #else
     case RTC_CONFIG_INTERSECTION_FILTER_RESTORE: return 0;
 #endif
 
-#if defined(RTC_BUFFER_STRIDE)
-    case RTC_CONFIG_BUFFER_STRIDE: return 1;
-#else
-    case RTC_CONFIG_BUFFER_STRIDE: return 0;
-#endif
-      
-#if defined(RTC_IGNORE_INVALID_RAYS)
+#if defined(RTCORE_IGNORE_INVALID_RAYS)
     case RTC_CONFIG_IGNORE_INVALID_RAYS: return 1;
 #else
     case RTC_CONFIG_IGNORE_INVALID_RAYS: return 0;
 #endif
 
 #if defined(TASKING_INTERNAL)
-    case RTC_CONFIG_TASKING_SYSTEM: return 0;
-#endif
-
-#if defined(TASKING_LOCKSTEP)
     case RTC_CONFIG_TASKING_SYSTEM: return 0;
 #endif
 
@@ -517,7 +487,7 @@ namespace embree
     case RTC_CONFIG_HAIR_GEOMETRY: return 0;
 #endif
 
-#if defined( RTCORE_GEOMETRY_SUBDIV)
+#if defined(RTCORE_GEOMETRY_SUBDIV)
     case RTC_CONFIG_SUBDIV_GEOMETRY: return 1;
 #else
     case RTC_CONFIG_SUBDIV_GEOMETRY: return 0;

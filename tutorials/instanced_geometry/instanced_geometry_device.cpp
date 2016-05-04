@@ -314,7 +314,7 @@ void renderTileStandardStream(int taskIndex,
     primary.instID = -1;
     primary.geomID = RTC_INVALID_GEOMETRY_ID;
     primary.primID = RTC_INVALID_GEOMETRY_ID;
-    primary.mask = N*1 + 0;
+    primary.mask = -1;
     primary.time = 0.0f;
     N++;
   }
@@ -373,7 +373,7 @@ void renderTileStandardStream(int taskIndex,
     }
     shadow.geomID = RTC_INVALID_GEOMETRY_ID;
     shadow.primID = RTC_INVALID_GEOMETRY_ID;
-    shadow.mask = N*1 + 0;
+    shadow.mask = -1;
     shadow.time = 0;
   }
   N++;

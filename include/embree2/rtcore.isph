@@ -117,17 +117,15 @@ enum RTCParameter {
   RTC_CONFIG_INTERSECT4 = 2,                  //!< checks if rtcIntersect4 is supported (read only)
   RTC_CONFIG_INTERSECT8 = 3,                  //!< checks if rtcIntersect8 is supported (read only)
   RTC_CONFIG_INTERSECT16 = 4,                 //!< checks if rtcIntersect16 is supported (read only)
-  RTC_CONFIG_INTERSECTN = 5,                  //!< checks if rtcIntersectN is supported (read only)
+  RTC_CONFIG_INTERSECT_STREAM = 5,            //!< checks if rtcIntersect1M, rtcIntersectVM, rtcIntersectNM and rtcIntersectNp are supported (read only)
 
   RTC_CONFIG_RAY_MASK = 6,                    //!< checks if ray masks are supported (read only)
   RTC_CONFIG_BACKFACE_CULLING = 7,            //!< checks if backface culling is supported (read only)
   RTC_CONFIG_INTERSECTION_FILTER = 8,         //!< checks if intersection filters are enabled (read only)
   RTC_CONFIG_INTERSECTION_FILTER_RESTORE = 9, //!< checks if intersection filters restores previous hit (read only)
-  RTC_CONFIG_BUFFER_STRIDE = 10,               //!< checks if buffer strides are supported (read only)
   RTC_CONFIG_IGNORE_INVALID_RAYS = 11,        //!< checks if invalid rays are ignored (read only)
   RTC_CONFIG_TASKING_SYSTEM = 12,             //!< return used tasking system (0 = INTERNAL, 1 = TBB) (read only)
-
-
+  
   RTC_CONFIG_VERSION_MAJOR = 13,           //!< returns Embree major version (read only)
   RTC_CONFIG_VERSION_MINOR = 14,           //!< returns Embree minor version (read only)
   RTC_CONFIG_VERSION_PATCH = 15,           //!< returns Embree patch version (read only)

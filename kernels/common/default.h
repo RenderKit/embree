@@ -41,11 +41,7 @@
 #include "../../common/math/affinespace.h"
 #include "../../common/lexers/tokenstream.h"
 
-#if defined(__MIC__)
-#include "../../common/tasking/taskscheduler_mic.h"
-#else
 #include "../../common/tasking/taskscheduler.h"
-#endif
 
 #define COMMA ,
 

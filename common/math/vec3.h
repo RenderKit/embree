@@ -237,15 +237,9 @@ namespace embree
   typedef Vec3<float> Vec3f;
 }
 
-#if defined(__MIC__)
-#include "vec3ba_mic.h"
-#include "vec3ia_mic.h"
-#include "vec3fa_mic.h"
-#else
 #include "vec3ba.h"
 #include "vec3ia.h"
 #include "vec3fa.h"
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 /// SSE / AVX / MIC specializations
@@ -259,7 +253,7 @@ namespace embree
 #include "../simd/avx.h"
 #endif
 
-#if defined (__MIC__) || defined(__AVX512F__)
+#if defined(__AVX512F__)
 #include "../simd/avx512.h"
 #endif
 
@@ -320,7 +314,7 @@ namespace embree
 
 #endif
 
-#if defined (__MIC__) || defined(__AVX512F__)
+#if defined(__AVX512F__)
   template<> __forceinline Vec3<vfloat16>::Vec3( const Vec3fa& a ) : x(a.x), y(a.y), z(a.z) {}
 #endif
 }

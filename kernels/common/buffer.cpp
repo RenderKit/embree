@@ -51,13 +51,6 @@ namespace embree
     if (!device)
       throw_RTCError(RTC_INVALID_ARGUMENT,"invalid buffer specified");
 
-#if !defined(RTCORE_BUFFER_STRIDE)
-    if (stride_in != stride) {
-      throw_RTCError(RTC_INVALID_OPERATION,"buffer stride feature disabled at compile time and specified stride does not match default stride");
-      return;
-    }
-#endif
-
     ptr = (char*) ptr_in;
     bytes = 0;
     ptr_ofs = (char*) ptr_in + ofs_in;

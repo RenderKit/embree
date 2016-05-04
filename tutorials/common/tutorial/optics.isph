@@ -38,7 +38,7 @@ inline Sample3f reflect_(const Vec3f &V, const Vec3f &N, const float cosi) {
  *  medium. The vectors V and N have to point towards the same side
  *  of the surface. The cosine between V and N is given as input and
  *  the cosine of -N and transmission ray is computed as output. */
-inline Sample3f refract(const Vec3f& V, const Vec3f& N, const float eta, 
+inline Sample3f refract(const Vec3f& V, const Vec3f& N, const float eta,
                         const float cosi, float &cost)
 {
   const float k = 1.0f-eta*eta*(1.0f-cosi*cosi);
@@ -103,11 +103,11 @@ inline varying FresnelConductor make_FresnelConductor(const varying Vec3f& eta, 
 #endif
 
 // =======================================================
-struct FresnelDielectric 
+struct FresnelDielectric
 {
   /*! refraction index of the medium the incident ray travels in */
   float etai;
-  
+
   /*! refraction index of the medium the outgoing transmission rays
    *  travels in */
   float etat;
@@ -144,29 +144,35 @@ inline float eval(const varying PowerCosineDistribution &This, const float cosTh
 #endif
 
 /*! Samples the power cosine distribution. */
-inline void sample(const uniform PowerCosineDistribution& This, const Vec3f& wo, const Vec3f& N, Sample3f &wi, const Vec2f s)  
+inline void sample(const uniform PowerCosineDistribution& This, const Vec3f& wo, const Vec3f& N, Sample3f &wi, const Vec2f s)
 {
-  Sample3f wh = powerCosineSampleHemisphere(s.x,s.y,N,This.exp);
+  Vec3f dir = powerCosineSampleHemisphere(This.exp,s);
+  Sample3f wh;
+  wh.v = frame(N) * dir;
+  wh.pdf = powerCosineSampleHemispherePDF(dir,This.exp);
   Sample3f r = reflect_(wo,wh.v);
   wi = make_Sample3f(r.v,wh.pdf/(4.0f*abs(dot(wo,wh.v))));
 }
 
 /*! Samples the power cosine distribution. */
 #if defined(ISPC)
-inline void sample(const varying PowerCosineDistribution& This, const Vec3f& wo, const Vec3f& N, Sample3f &wi, const Vec2f s)  
+inline void sample(const varying PowerCosineDistribution& This, const Vec3f& wo, const Vec3f& N, Sample3f &wi, const Vec2f s)
 {
-  Sample3f wh = powerCosineSampleHemisphere(s.x,s.y,N,This.exp);
+  Vec3f dir = powerCosineSampleHemisphere(This.exp,s);
+  Sample3f wh;
+  wh.v = frame(N) * dir;
+  wh.pdf = powerCosineSampleHemispherePDF(dir,This.exp);
   Sample3f r = reflect_(wo,wh.v);
   wi = make_Sample3f(r.v,wh.pdf/(4.0f*abs(dot(wo,wh.v))));
 }
 #endif
 
-inline uniform PowerCosineDistribution make_PowerCosineDistribution(const uniform float _exp) { 
+inline uniform PowerCosineDistribution make_PowerCosineDistribution(const uniform float _exp) {
   uniform PowerCosineDistribution m; m.exp = _exp; return m;
 }
 
 #if defined(ISPC)
-inline varying PowerCosineDistribution make_PowerCosineDistribution(const varying float _exp) { 
+inline varying PowerCosineDistribution make_PowerCosineDistribution(const varying float _exp) {
   varying PowerCosineDistribution m; m.exp = _exp; return m;
 }
 #endif

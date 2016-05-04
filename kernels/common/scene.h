@@ -144,12 +144,6 @@ namespace embree
 
     void updateInterface();
 
-    /*! build task */
-#if defined(TASKING_LOCKSTEP)
-    TASK_RUN_FUNCTION(Scene,task_build_parallel);
-    TaskScheduler::Task task;
-#endif
-
     /* return number of geometries */
     __forceinline size_t size() const { return geometries.size(); }
     
@@ -289,8 +283,6 @@ namespace embree
   public:
     std::vector<int> usedIDs; // FIXME: encapsulate this functionality into own class
     std::vector<Geometry*> geometries; //!< list of all user geometries
-
-    static AtomicCounter numScenes;
     
   public:
     Device* device;
@@ -316,9 +308,7 @@ namespace embree
     bool modified;                   //!< true if scene got modified
     
     /*! global lock step task scheduler */
-#if defined(TASKING_LOCKSTEP)
-    __aligned(64) LockStepTaskScheduler lockstep_scheduler;
-#elif defined(TASKING_INTERNAL)
+#if defined(TASKING_INTERNAL)
     MutexSys schedulerMutex;
     Ref<TaskScheduler> scheduler;
 #else
