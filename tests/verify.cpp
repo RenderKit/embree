@@ -594,6 +594,21 @@ namespace embree
     }
   };
 
+  struct EmbreeInternalTest : public VerifyApplication::Test
+  {
+    EmbreeInternalTest (std::string name, size_t testID)
+      : VerifyApplication::Test(name,0,VerifyApplication::PASS), testID(testID) {}
+  
+    VerifyApplication::TestReturnValue run(VerifyApplication* state)
+    {
+      RTCDeviceRef device = rtcNewDevice(state->rtcore.c_str());
+      AssertNoError(device);
+      return (VerifyApplication::TestReturnValue)rtcDeviceGetParameter1i(device,(RTCParameter)(3000000+testID));
+    }
+
+    size_t testID;
+  };
+
   struct MultipleDevicesTest : public VerifyApplication::Test
   {
     MultipleDevicesTest (std::string name, int isa)
@@ -2804,6 +2819,13 @@ namespace embree
     error_handler(rtcDeviceGetError(device));
 
     addTest(new InitExitTest("init_exit"));
+
+    /* add Embree internal tests */
+    for (size_t i=2000000; i<3000000; i++) {
+      const char* testName = (const char*) rtcDeviceGetParameter1i(device,(RTCParameter)i);
+      if (testName == nullptr) break;
+      addTest(new EmbreeInternalTest(testName,i-2000000));
+    }
 
     for (auto isa : isas)
     {

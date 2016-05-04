@@ -104,10 +104,6 @@ namespace embree
     /* setup tasking system */
     initTaskingSystem(numThreads);
 
-    /* execute regression tests */
-    if (State::regression_testing) 
-      runRegressionTests();
-
     /* ray stream SOA to AOS conversion */
 #if defined(RTCORE_RAY_PACKETS)
     SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL(enabled_cpu_features,rayStreamFilters);
@@ -377,6 +373,25 @@ namespace embree
 
   ssize_t Device::getParameter1i(const RTCParameter parm)
   {
+    size_t iparm = (size_t)parm;
+
+    /* get name of internal regression test */
+    if (iparm >= 2000000 && iparm < 3000000)
+    {
+      RegressionTest* test = getRegressionTest(iparm-2000000);
+      if (test) return (ssize_t) test->name.c_str();
+      else      return 0;
+    }
+
+    /* run internal regression test */
+    if (iparm >= 3000000 && iparm < 4000000)
+    {
+      RegressionTest* test = getRegressionTest(iparm-3000000);
+      if (test) return test->run();
+      else      return 0;
+    }
+
+    /* documented parameters */
     switch (parm) 
     {
     case RTC_CONFIG_VERSION_MAJOR: return __EMBREE_VERSION_MAJOR__;

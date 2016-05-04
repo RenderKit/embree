@@ -20,15 +20,13 @@ namespace embree
 {
   struct parallel_for_for_regression_test : public RegressionTest
   {
-    parallel_for_for_regression_test(const char* name) : name(name) {
+    parallel_for_for_regression_test(const char* name) : RegressionTest(name) {
       registerRegressionTest(this);
     }
     
-    bool operator() ()
+    bool run ()
     {
       bool passed = true;
-      printf("%s::%s ... ",TOSTRING(isa),name);
-      fflush(stdout);
 
       /* create vector with random numbers */
       size_t sum0 = 0;
@@ -69,14 +67,8 @@ namespace embree
       for (size_t i=0; i<array2.size(); i++)
 	delete array2[i];
       
-      /* output if test passed or not */
-      if (passed) printf("[passed]\n");
-      else        printf("[failed]\n");
-      
       return passed;
     }
-
-    const char* name;
   };
 
   parallel_for_for_regression_test parallel_for_for_regression("parallel_for_for_regression_test");

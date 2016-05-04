@@ -28,12 +28,14 @@ namespace embree
     regression_tests->push_back(test);
   }
 
-  void runRegressionTests()
+  RegressionTest* getRegressionTest(size_t index)
   {
     if (!regression_tests) 
-      return;
+      return nullptr;
 
-    for (size_t i=0; i<regression_tests->size(); i++) 
-      (*(*regression_tests)[i])();
+    if (index >= regression_tests->size())
+      return nullptr;
+    
+    return (*regression_tests)[index];
   }
 }

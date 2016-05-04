@@ -101,7 +101,6 @@ namespace embree
     scene_flags = -1;
     verbose = 0;
     benchmark = 0;
-    regression_testing = 0;
 
     numThreads = 0;
 #if TASKING_INTERNAL
@@ -322,9 +321,6 @@ namespace embree
         }
       }
 
-      else if (tok == Token::Id("regression") && cin->trySymbol("=")) 
-        regression_testing = cin->get().Int();
-      
       else if (tok == Token::Id("tessellation_cache_size") && cin->trySymbol("="))
         tessellation_cache_size = cin->get().Float() * 1024 * 1024;
 

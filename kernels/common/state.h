@@ -107,7 +107,6 @@ namespace embree
     int scene_flags;                       //!< scene flags to use
     size_t verbose;                        //!< verbosity of output
     size_t benchmark;                      //!< true
-    size_t regression_testing;             //!< enables regression tests at startup
 
   public:
     size_t numThreads;                     //!< number of threads to use in builders
