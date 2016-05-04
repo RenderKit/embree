@@ -89,7 +89,6 @@ OPTION(RTCORE_RAY_MASK "Enables ray mask support.")
 OPTION(RTCORE_BACKFACE_CULLING "Enables backface culling.")
 OPTION(RTCORE_INTERSECTION_FILTER "Enables intersection filter callback." ON)
 OPTION(RTCORE_INTERSECTION_FILTER_RESTORE "Restores previous hit when hit is filtered out." ON)
-OPTION(RTCORE_BUFFER_STRIDE "Enables buffer strides." ON)
 OPTION(RTCORE_IGNORE_INVALID_RAYS "Ignores invalid rays." OFF) # FIXME: enable by default?
 
 OPTION(RTCORE_GEOMETRY_TRIANGLES "Enables support for triangle geometries." ON)

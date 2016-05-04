@@ -2830,9 +2830,7 @@ namespace embree
       addTest(new GetBoundsTest("get_bounds_"+stringOfISA(isa),isa));
       addTest(new GetUserDataTest("get_user_data_"+stringOfISA(isa),isa));
 
-      if (rtcDeviceGetParameter1i(device,RTC_CONFIG_BUFFER_STRIDE)) {
-        addTest(new BufferStrideTest("buffer_stride_"+stringOfISA(isa),isa));
-      }    
+      addTest(new BufferStrideTest("buffer_stride_"+stringOfISA(isa),isa));
       
       /**************************************************************************/
       /*                        Builder Tests                                   */

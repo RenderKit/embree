@@ -207,17 +207,6 @@ namespace embree
 	assert( tri.v[1] < numVertices() );
 	assert( tri.v[2] < numVertices() );
 
-#if !defined(RTCORE_BUFFER_STRIDE)
-	
-	const float *__restrict__ const vptr0 = (float*) vertices[dim].getPtr(tri.v[0]);
-	const float *__restrict__ const vptr1 = (float*) vertices[dim].getPtr(tri.v[1]);
-	const float *__restrict__ const vptr2 = (float*) vertices[dim].getPtr(tri.v[2]);
-
-	const vfloat16 v0 = broadcast4to16f(vptr0); 
-	const vfloat16 v1 = broadcast4to16f(vptr1); 
- 	const vfloat16 v2 = broadcast4to16f(vptr2); 
-	return Vec3vf16(v0,v1,v2);
-#else
 	const vint16 stride = vertices[dim].getBufferStride();
 
 	const vint16 offset0_64 = mul_uint64_t(stride,vint16(tri.v[0]));
@@ -249,7 +238,6 @@ namespace embree
 	const vfloat16 v2 = shuffle4<0,0,0,0>(vfloat16::loadu(m_3f,vptr2_64));
 
 	return Vec3vf16(select(0x7777,v0,vfloat16::zero()),select(0x7777,v1,vfloat16::zero()),select(0x7777,v2,vfloat16::zero()));
-#endif	
       }
     
 #endif

@@ -190,9 +190,6 @@ namespace embree
 #if defined(RTCORE_INTERSECTION_FILTER)
     v += "intersection_filter ";
 #endif
-#if defined(RTCORE_BUFFER_STRIDE)
-    v += "bufferstride ";
-#endif
     return v;
   }
 
@@ -260,12 +257,6 @@ namespace embree
       }
     }
 #endif
-
-#if defined (__MIC__) && defined(RTCORE_BUFFER_STRIDE)
-    if (State::verbosity(1))
-      std::cout << "  WARNING: enabled 'bufferstride' support will lower BVH build performance" << std::endl;
-#endif
-
     std::cout << std::endl;
   }
 
@@ -491,12 +482,6 @@ namespace embree
     case RTC_CONFIG_INTERSECTION_FILTER_RESTORE: return 0;
 #endif
 
-#if defined(RTCORE_BUFFER_STRIDE)
-    case RTC_CONFIG_BUFFER_STRIDE: return 1;
-#else
-    case RTC_CONFIG_BUFFER_STRIDE: return 0;
-#endif
-      
 #if defined(RTCORE_IGNORE_INVALID_RAYS)
     case RTC_CONFIG_IGNORE_INVALID_RAYS: return 1;
 #else
