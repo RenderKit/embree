@@ -306,36 +306,6 @@ namespace embree
       size_t numGeometries;
     };
 
-    ISPCScene (int numGeometries,
-               void* materials_in, int numMaterials,
-               void* lights_in, int numLights)
-
-    : geometries(nullptr), numGeometries(numGeometries),
-      materials(nullptr), numMaterials(numMaterials),
-      lights(nullptr), numLights(numLights),
-      subdivMeshKeyFrames(nullptr), numSubdivMeshKeyFrames(0)
-    {
-      geometries = new ISPCGeometry*[numGeometries];
-      for (size_t i=0; i<numGeometries; i++)
-        geometries[i] = nullptr;
-
-      materials = new ISPCMaterial[numMaterials];
-      memcpy(materials,materials_in,numMaterials*sizeof(Material));
-
-      /* no texture support for Xeon Phi */
-      for (size_t i=0;i<numMaterials;i++)
-        if (materials[i].ty == MATERIAL_OBJ)
-        {
-          OBJMaterial *objm = ( OBJMaterial*)&materials[i];
-          objm->map_d     = NULL;
-          objm->map_Kd    = NULL;
-          objm->map_Displ = NULL;
-        }
-
-      lights = new Light*[numLights];
-      memcpy(lights,lights_in,numLights*sizeof(Light));
-    }
-
     ISPCScene(TutorialScene* in)
     {
       geometries = new ISPCGeometry*[in->geometries.size()];
