@@ -14,8 +14,6 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-IF (__XEON__)
-
 IF (TASKING_INTERNAL)
   ADD_DEFINITIONS(-DTASKING_INTERNAL)
 ELSE()
@@ -79,12 +77,3 @@ IF (ENABLE_ISPC_SUPPORT)
   SET_TARGET_PROPERTIES(tutorial_device_ispc PROPERTIES LINKER_LANGUAGE C)
   SET_PROPERTY(TARGET tutorial_device_ispc PROPERTY FOLDER tutorials/common)
 ENDIF()
-
-ELSE (__XEON__)
-
-  INCLUDE (icc_xeonphi)
-  ADD_ISPC_LIBRARY(tutorial_xeonphi_device_ispc STATIC tutorial_device.ispc)
-  SET_TARGET_PROPERTIES(tutorial_xeonphi_device_ispc PROPERTIES LINKER_LANGUAGE C)
-  SET_PROPERTY(TARGET tutorial_xeonphi_device_ispc PROPERTY FOLDER tutorials/common)
-
-ENDIF (__XEON__)

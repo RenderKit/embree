@@ -17,8 +17,6 @@
 SET(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 FIND_PACKAGE(Threads REQUIRED)
 
-IF (__XEON__)
-
 IF (TARGET_AVX)
   ADD_DEFINITIONS(-D__TARGET_AVX__)
 ENDIF()
@@ -53,24 +51,3 @@ ADD_LIBRARY(sys STATIC
 TARGET_LINK_LIBRARIES(sys ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS} ${ADDITIONAL_LIBRARIES})
 SET_PROPERTY(TARGET sys PROPERTY FOLDER common)
 
-ELSE ()
- 
-INCLUDE(icc_xeonphi)
-
-ADD_LIBRARY(sys_xeonphi STATIC
-  sysinfo.cpp
-  alloc.cpp
-  filename.cpp
-  library.cpp
-  thread.cpp
-  network.cpp
-  string.cpp
-  regression.cpp
-  mutex.cpp
-  condition.cpp
-  barrier.cpp
-)
-
-TARGET_LINK_LIBRARIES(sys_xeonphi ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
-
-ENDIF ()

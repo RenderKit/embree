@@ -73,8 +73,6 @@ namespace embree
     __forceinline bool operator []( const size_t index ) const { 
       assert(index < 16); return (_mm512_mask2int(v) >> index) & 1; 
     }
-  
-    static unsigned int shift1[32];
   };
 
   ////////////////////////////////////////////////////////////////////////////////

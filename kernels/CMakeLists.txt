@@ -14,10 +14,4 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-SET(__XEON__ 1)
 ADD_SUBDIRECTORY(xeon)
-
-IF (ENABLE_XEON_PHI_SUPPORT AND RTCORE_RAY_PACKETS)
-  SET(__XEON__ 0)
-  ADD_SUBDIRECTORY(xeonphi)
-ENDIF()

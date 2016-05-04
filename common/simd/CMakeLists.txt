@@ -14,11 +14,6 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-IF (__XEON__)
-  ADD_LIBRARY(simd STATIC sse.cpp)
-  SET_PROPERTY(TARGET simd PROPERTY FOLDER common)
-ELSE ()
-  INCLUDE(icc_xeonphi)
-  ADD_LIBRARY(simd_xeonphi STATIC vboolf16_avx512.cpp)
-ENDIF ()
+ADD_LIBRARY(simd STATIC sse.cpp)
+SET_PROPERTY(TARGET simd PROPERTY FOLDER common)
 

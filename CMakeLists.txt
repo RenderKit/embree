@@ -69,17 +69,6 @@ ENDIF()
 OPTION(ENABLE_ISPC_SUPPORT "Build Embree with support for ISPC applications." ON)
 OPTION(ENABLE_TUTORIALS    "Enable to build Embree tutorials" ON)
 
-# only support Xeon Phi on Linux
-IF (NOT WIN32 AND NOT APPLE)
-  OPTION(ENABLE_XEON_PHI_SUPPORT "Generates code path for Xeon Phi.")
-ELSE()
-  SET(ENABLE_XEON_PHI_SUPPORT OFF CACHE INTERNAL "Xeon Phi only supported on Linux.")
-ENDIF()
-
-IF (ENABLE_XEON_PHI_SUPPORT)
-  SET(ENABLE_ISPC_SUPPORT ON CACHE BOOL "Build Embree with support for ISPC applications." FORCE)
-ENDIF ()
-
 ##############################################################################
 # Configurations (add configurations also to common/cmake/embree-config-default.cmake)
 
@@ -291,13 +280,7 @@ IF (ENABLE_TUTORIALS)
   ADD_SUBDIRECTORY(tutorials)
 ENDIF()
 
-SET (__XEON__ 1)
 ADD_SUBDIRECTORY(tests)
-
-IF (ENABLE_XEON_PHI_SUPPORT)
-  SET (__XEON__ 0)
-  ADD_SUBDIRECTORY(tests tests_xeonphi)
-ENDIF ()
 
 ##############################################################
 # Uninstall

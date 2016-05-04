@@ -27,7 +27,6 @@ OPTION(ENABLE_ISPC_SUPPORT "Build Embree with support for ISPC applications." OF
 
 # this configures the ADD_ISPC_EXECUTABLE from Embree
 IF (ENABLE_ISPC_SUPPORT)
-  SET(__XEON__ ON)
   SET(ISPC_TARGETS "sse2;sse4;avx;avx2")
   SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../common/cmake ${CMAKE_MODULE_PATH})
   INCLUDE(ispc)
