@@ -186,7 +186,13 @@ namespace embree
     __sincosf(x,sin,cos);
   }
 #endif
-  
+
+#if defined(__WIN32__) && !defined(__INTEL_COMPILER)
+  __forceinline void sincosf(float x, float *s, float *c) {
+    *s = sinf(x); *c = cosf(x);
+  }
+#endif
+
   template<typename T> __forceinline T clamp(const T& x, const T& lower = T(zero), const T& upper = T(one)) { return max(min(x,upper),lower); }
   template<typename T> __forceinline T clampz(const T& x, const T& upper) { return max(T(zero), min(x,upper)); }
 
