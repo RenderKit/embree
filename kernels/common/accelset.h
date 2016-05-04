@@ -296,10 +296,10 @@ namespace embree
         {
           int mask[MAX_INTERNAL_STREAM_SIZE];
           StackRayPacket<MAX_INTERNAL_STREAM_SIZE> packet(N);
-          for (size_t i=0; i<N; i++) packet.writeRay(i,mask,(Ray&)rays[i]);
+          for (size_t i=0; i<N; i++) packet.writeRay(i,mask,(Ray&)*rays[i]);
           assert(intersectors.intersectorN.intersect);
           intersectors.intersectorN.intersect(mask,intersectors.ptr,context,(RTCRayN*)packet.data,N,item);
-          for (size_t i=0; i<N; i++) packet.readHit(i,(Ray&)rays[i]);
+          for (size_t i=0; i<N; i++) packet.readHit(i,(Ray&)*rays[i]);
         }
       }
       
@@ -386,10 +386,10 @@ namespace embree
         {
           int mask[MAX_INTERNAL_STREAM_SIZE];
           StackRayPacket<MAX_INTERNAL_STREAM_SIZE> packet(N);
-          for (size_t i=0; i<N; i++) packet.writeRay(i,mask,(Ray&)rays[i]);
+          for (size_t i=0; i<N; i++) packet.writeRay(i,mask,(Ray&)*rays[i]);
           assert(intersectors.intersectorN.occluded);
           intersectors.intersectorN.occluded(mask,intersectors.ptr,context,(RTCRayN*)packet.data,N,item);
-          for (size_t i=0; i<N; i++) packet.readOcclusion(i,(Ray&)rays[i]);
+          for (size_t i=0; i<N; i++) packet.readOcclusion(i,(Ray&)*rays[i]);
         }
       }
 

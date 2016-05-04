@@ -36,7 +36,7 @@ namespace embree
   struct Instance : public AccelSet
   {
   public:
-    Instance (Scene* parent, Accel* object, size_t numTimeSteps); 
+    Instance (Scene* parent, Scene* object, size_t numTimeSteps); 
     virtual void setTransform(const AffineSpace3fa& local2world, size_t timeStep);
     virtual void setMask (unsigned mask);
     virtual void build(size_t threadIndex, size_t threadCount) {}
@@ -64,6 +64,6 @@ namespace embree
   public:
     AffineSpace3fa local2world[2]; //!< transforms from local space to world space
     AffineSpace3fa world2local[2]; //!< transforms from world space to local space
-    Accel* object;                 //!< pointer to instanced acceleration structure
+    Scene* object;                 //!< pointer to instanced acceleration structure
   };
 }

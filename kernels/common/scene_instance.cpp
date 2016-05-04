@@ -38,7 +38,7 @@ namespace embree
 #endif
   }
 
-  Instance::Instance (Scene* parent, Accel* object, size_t numTimeSteps) 
+  Instance::Instance (Scene* parent, Scene* object, size_t numTimeSteps) 
     : AccelSet(parent,1,numTimeSteps), object(object)
   {
     local2world[0] = local2world[1] = one;
