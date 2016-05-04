@@ -1053,7 +1053,7 @@ namespace embree
 
 
   __forceinline vfloat16 rcp_safe( const vfloat16& a ) { 
-    return select(a != vfloat16::zero(),rcp(a),vfloat16(1E-10f)); 
+    return rcp(select(a != vfloat16::zero(),a,vfloat16(min_rcp_input))); 
   }
 
   ////////////////////////////////////////////////////////////////////////////////
