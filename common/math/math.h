@@ -181,7 +181,7 @@ namespace embree
   __forceinline ssize_t max(ssize_t a, ssize_t b) { return a<b ? b:a; }
 #endif
 
-#if defined(__MACOSX__)
+#if defined(__MACOSX__) && !defined(__INTEL_COMPILER)
   __forceinline void sincosf(float x, float *sin, float *cos) {
     __sincosf(x,sin,cos);
   }
