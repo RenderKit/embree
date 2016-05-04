@@ -89,12 +89,8 @@ namespace embree
   public:
     bool singledevice;      //!< true if this is the device created implicitely through rtcInit
 
-    InstanceFactory* instance_factory;
-
-#if !defined(__MIC__)
+    InstanceFactory* instance_factory; // FIXME: use managed pointers here
     BVH4Factory* bvh4_factory;
-#endif
-    
 #if defined(__TARGET_AVX__)
     BVH8Factory* bvh8_factory;
 #endif

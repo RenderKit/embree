@@ -27,19 +27,11 @@
 #include "acceln.h"
 #include "geometry.h"
 
-#if !defined(__MIC__)
 #include "../xeon/geometry/cylinder.h"
 #include "../xeon/geometry/cone.h"
-#endif
 
-#if !defined(__MIC__)
 #include "../xeon/bvh/bvh4_factory.h"
 #include "../xeon/bvh/bvh8_factory.h"
-#endif
-
-#if defined(TASKING_LOCKSTEP)
-#  include "../../common/tasking/taskscheduler_mic.h"
-#endif
 
 #if defined(TASKING_INTERNAL)
 #  include "../../common/tasking/taskschedulerinternal.h"
@@ -57,16 +49,7 @@ namespace embree
   ssize_t Device::debug_int2 = 0;
   ssize_t Device::debug_int3 = 0;
 
-  /* functions to initialize global constants */
-  void init_globals();
-
   DECLARE_SYMBOL2(RayStreamFilterFuncs,rayStreamFilters);
-
-#if defined(__MIC__)
-  void BVH4iRegister();
-  void BVH4MBRegister();
-  void BVH4HairRegister();
-#endif
 
   static MutexSys g_mutex;
   static std::map<Device*,size_t> g_cache_size_map;
@@ -76,19 +59,16 @@ namespace embree
     : State(singledevice)
   {
     /* initialize global state */
-    init_globals();
     State::parseString(cfg);
     if (FileName::executableFolder() != FileName(""))
       State::parseFile(FileName::executableFolder()+FileName(".embree" TOSTRING(__EMBREE_VERSION_MAJOR__)));
-    if (FileName::homeFolder() != FileName("")) // home folder is not available on KNC
+    if (FileName::homeFolder() != FileName(""))
       State::parseFile(FileName::homeFolder()+FileName(".embree" TOSTRING(__EMBREE_VERSION_MAJOR__)));
     State::verify();
 
     /*! do some internal tests */
-#if !defined(__MIC__)
     assert(isa::Cylinder::verify());
     assert(isa::Cone::verify());
-#endif
     
     /*! set tessellation cache size */
     setCacheSize( State::tessellation_cache_size );
@@ -115,31 +95,21 @@ namespace embree
     /* register all algorithms */
     instance_factory = new InstanceFactory(enabled_cpu_features);
 
-#if !defined(__MIC__)
     bvh4_factory = new BVH4Factory(enabled_cpu_features);
-#endif
 
 #if defined(__TARGET_AVX__)
     bvh8_factory = new BVH8Factory(enabled_cpu_features);
 #endif
 
-#if defined(__MIC__)
-    BVH4iRegister();
-    BVH4MBRegister();
-    BVH4HairRegister();
-#endif 
-
     /* setup tasking system */
     initTaskingSystem(numThreads);
 
     /* execute regression tests */
-#if !defined(__MIC__)
     if (State::regression_testing) 
       runRegressionTests();
-#endif
 
     /* ray stream SOA to AOS conversion */
-#if defined(RTCORE_RAY_PACKETS) && !defined(__MIC__)
+#if defined(RTCORE_RAY_PACKETS)
     SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL(enabled_cpu_features,rayStreamFilters);
 #endif
   }
@@ -147,11 +117,9 @@ namespace embree
   Device::~Device ()
   {
     delete instance_factory;
-#if !defined(__MIC__)
     delete bvh4_factory;
 #if defined(__TARGET_AVX__)
     delete bvh8_factory;
-#endif
 #endif
     setCacheSize(0);
     exitTaskingSystem();
@@ -209,11 +177,9 @@ namespace embree
     std::cout << "   Threads  : " << getNumberOfLogicalThreads() << std::endl;
     std::cout << "   ISA      : " << stringOfCPUFeatures(cpu_features) << std::endl;
     std::cout << "   Targets  : " << supportedTargetList(cpu_features) << std::endl;
-#if !defined(__MIC__)
     const bool hasFTZ = _mm_getcsr() & _MM_FLUSH_ZERO_ON;
     const bool hasDAZ = _mm_getcsr() & _MM_DENORMALS_ZERO_ON;
     std::cout << "   MXCSR    : " << "FTZ=" << hasFTZ << ", DAZ=" << hasDAZ << std::endl;
-#endif
     std::cout << "  Config" << std::endl;
     std::cout << "    Threads : " << (numThreads ? toString(numThreads) : std::string("default")) << std::endl;
     std::cout << "    ISA     : " << stringOfCPUFeatures(enabled_cpu_features) << std::endl;
@@ -228,14 +194,11 @@ namespace embree
 #if defined(TASKING_INTERNAL)
       std::cout << "internal_tasking_system ";
 #endif
-#if defined(TASKING_LOCKSTEP)
-    std::cout << "internal_tasking_system ";
-#endif
     std::cout << std::endl;
 
     /* check of FTZ and DAZ flags are set in CSR */
-#if !defined(__MIC__)
-    if (!hasFTZ || !hasDAZ) {
+    if (!hasFTZ || !hasDAZ) 
+    {
 #if !defined(_DEBUG)
       if (State::verbosity(1)) 
 #endif
@@ -256,7 +219,6 @@ namespace embree
         std::cout << std::endl;
       }
     }
-#endif
     std::cout << std::endl;
   }
 
@@ -324,11 +286,9 @@ namespace embree
   {
     if (State::memory_monitor_function && bytes != 0) {
       if (!State::memory_monitor_function(bytes,post)) {
-#if !defined(TASKING_LOCKSTEP)
         if (bytes > 0) { // only throw exception when we allocate memory to never throw inside a destructor
           throw_RTCError(RTC_OUT_OF_MEMORY,"memory monitor forced termination");
         }
-#endif
       }
     }
   }
@@ -359,10 +319,6 @@ namespace embree
     /* terminate tasking system */
     if (g_num_threads_map.size() == 0)
     {
-#if defined(TASKING_LOCKSTEP)
-      TaskScheduler::destroy();
-#endif
-      
 #if defined(TASKING_INTERNAL)
       TaskScheduler::destroy();
 #endif
@@ -379,10 +335,6 @@ namespace embree
       maxNumThreads = max(maxNumThreads, (*i).second);
     if (maxNumThreads == -1) 
       maxNumThreads = 0;
-
-#if defined(TASKING_LOCKSTEP)
-    TaskScheduler::create(maxNumThreads,State::set_affinity);
-#endif
 
 #if defined(TASKING_INTERNAL)
     TaskScheduler::create(maxNumThreads,State::set_affinity);
@@ -489,10 +441,6 @@ namespace embree
 #endif
 
 #if defined(TASKING_INTERNAL)
-    case RTC_CONFIG_TASKING_SYSTEM: return 0;
-#endif
-
-#if defined(TASKING_LOCKSTEP)
     case RTC_CONFIG_TASKING_SYSTEM: return 0;
 #endif
 

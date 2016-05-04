@@ -34,16 +34,6 @@ namespace embree
     }
 #endif
 
-#if defined(__MIC__)
-    __forceinline PrimRef(const PrimRef& v) { 
-      compactustore16f_low(0xff,(float*)this,uload16f_low((float*)&v.lower));
-    }
-    
-    __forceinline void operator=(const PrimRef& v) { 
-      compactustore16f_low(0xff,(float*)this,uload16f_low((float*)&v.lower));
-    }
-#endif
-
     __forceinline PrimRef (const BBox3fa& bounds, unsigned int geomID, unsigned int primID) 
     {
       lower = bounds.lower; lower.a = geomID;
@@ -70,12 +60,6 @@ namespace embree
     __forceinline const BBox3fa bounds() const {
       return BBox3fa(lower,upper);
     }
-
-#if defined(__MIC__)
-    __forceinline Vec2vf16 getBounds() const { 
-      return Vec2vf16(broadcast4to16f((float*)&lower),broadcast4to16f((float*)&upper)); 
-    }
-#endif
 
     /*! returns the geometry ID */
     __forceinline unsigned geomID() const { 
@@ -124,11 +108,6 @@ namespace embree
     const vfloat8 bb = vfloat8::load((float*)&b);
     vfloat8::store((float*)&a,bb);
     vfloat8::store((float*)&b,aa);
-#elif defined(__MIC__)
-    const vfloat16 aa = uload16f_low((float*)&a.lower);
-    const vfloat16 bb = uload16f_low((float*)&b.lower);
-    compactustore16f_low(0xff,(float*)&b.lower,aa);
-    compactustore16f_low(0xff,(float*)&a.lower,bb);
 #else
     std::swap(a,b);
 #endif

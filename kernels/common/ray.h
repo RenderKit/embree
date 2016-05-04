@@ -56,21 +56,6 @@ namespace embree
     __forceinline void get(RayK<1>* ray) const;
     __forceinline void set(const RayK<1>* ray);
 
-#if defined(__MIC__)
-    template<int PFHINT>
-    __forceinline void prefetchHitData() const
-    {
-      prefetch<PFHINT>(&geomID);
-      prefetch<PFHINT>(&primID);
-      prefetch<PFHINT>(&tfar);
-      prefetch<PFHINT>(&u);
-      prefetch<PFHINT>(&v);
-      prefetch<PFHINT>(&Ng.x);
-      prefetch<PFHINT>(&Ng.y);
-      prefetch<PFHINT>(&Ng.z);
-    }
-#endif
-
     __forceinline void update(const vbool<K>& m_mask,
                               const vfloat<K>& new_t,
                               const vfloat<K>& new_u,
@@ -131,7 +116,7 @@ namespace embree
     vint<K> instID;      // instance ID
   };
 
-#if defined(__AVX512F__) || defined(__MIC__)
+#if defined(__AVX512F__)
     template<>
       __forceinline void RayK<16>::updateK<16>(const size_t i,
                                              const size_t rayIndex,
@@ -204,7 +189,7 @@ namespace embree
     int primID;  // primitive ID
     int instID;  // instance ID
 
-#if defined(__AVX512F__) || defined(__MIC__)
+#if defined(__AVX512F__)
     __forceinline void update(const vbool16& m_mask,
                               const vfloat16& new_t,
                               const vfloat16& new_u,

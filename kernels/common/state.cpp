@@ -86,8 +86,6 @@ namespace embree
     object_accel_mb_min_leaf_size = 1;
     object_accel_mb_max_leaf_size = 1;
 
-    memory_preallocation_factor     = 1.0f; 
-
     tessellation_cache_size = 128*1024*1024;
 
     /* large default cache size only for old mode single device mode */
@@ -106,7 +104,7 @@ namespace embree
     regression_testing = 0;
 
     numThreads = 0;
-#if TASKING_INTERNAL || defined(__MIC__)
+#if TASKING_INTERNAL
     set_affinity = true;
 #else
     set_affinity = false;
@@ -126,15 +124,8 @@ namespace embree
   void State::verify()
   {
     /* CPU has to support at least SSE2 */
-#if !defined (__MIC__)
     if (!hasISA(SSE2)) 
       throw_RTCError(RTC_UNSUPPORTED_CPU,"CPU does not support SSE2");
-#endif
-
-#if defined(__MIC__)
-    if (!(numThreads == 1 || (numThreads % 4) == 0))
-      throw_RTCError(RTC_INVALID_OPERATION,"Xeon Phi supports only number of threads % 4 == 0, or threads == 1");
-#endif
 
     /* verify that calculations stay in range */
     assert(rcp(min_rcp_input)*FLT_LARGE+FLT_LARGE < 0.01f*FLT_MAX);
@@ -142,7 +133,7 @@ namespace embree
     /* here we verify that CPP files compiled for a specific ISA only
      * call that same or lower ISA version of non-inlined class member
      * functions */
-#if !defined (__MIC__) && defined(DEBUG)
+#if defined(DEBUG)
     assert(isa::getISA() == ISA);
 #if defined(__TARGET_SSE41__)
     assert(sse41::getISA() <= SSE41);
@@ -330,9 +321,7 @@ namespace embree
           } while (cin->trySymbol("|"));
         }
       }
-      else if (tok == Token::Id("memory_preallocation_factor") && cin->trySymbol("=")) 
-        memory_preallocation_factor = cin->get().Float();
-      
+
       else if (tok == Token::Id("regression") && cin->trySymbol("=")) 
         regression_testing = cin->get().Int();
       
@@ -403,10 +392,5 @@ namespace embree
     std::cout << "object_accel_mb:" << std::endl;
     std::cout << "  min_leaf_size = " << object_accel_mb_min_leaf_size << std::endl;
     std::cout << "  max_leaf_size = " << object_accel_mb_max_leaf_size << std::endl;
-    
-#if defined(__MIC__)
-    std::cout << "memory allocation:" << std::endl;
-    std::cout << "  preallocation_factor  = " << memory_preallocation_factor << std::endl;
-#endif
   }
 }

@@ -118,8 +118,4 @@ namespace embree
   public:
     mutable std::vector<Type*> threads;
   };
-
-#if defined(__MIC__)
-  void printThreadInfo();
-#endif
 }

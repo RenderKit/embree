@@ -17,7 +17,6 @@
 #pragma once
 
 #include "../default.h"
-#include "../globals.h"
 
 namespace embree
 {

@@ -214,13 +214,8 @@
     throw std::runtime_error(str);
 #endif
 
-#if defined(__MIC__)
-  #define FATAL(x)   { std::cerr << "Error: "   << x << std::endl << std::flush; exit(1); }
-  #define WARNING(x) { std::cerr << "Warning: " << x << std::endl << std::flush; }
-#else
-  #define FATAL(x)   THROW_RUNTIME_ERROR(x)
-  #define WARNING(x) { std::cerr << "Warning: " << x << std::endl << std::flush; }
-#endif
+#define FATAL(x)   THROW_RUNTIME_ERROR(x)
+#define WARNING(x) { std::cerr << "Warning: " << x << std::endl << std::flush; }
 
 #define NOT_IMPLEMENTED FATAL(std::string(__FUNCTION__) + " not implemented")
 

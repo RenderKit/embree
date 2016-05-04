@@ -148,13 +148,6 @@ namespace embree
 #endif
     }
 
-/* only available on KNC */
-#if defined(__MIC__)  
-    static __forceinline void store_ngo(void *__restrict__ ptr, const vint16& a) {
-      _mm512_storenrngo_ps(ptr,_mm512_castsi512_ps(a));
-    }
-#endif
-
     /* pass by value to avoid compiler generating inefficient code */
     static __forceinline void storeu_compact(const vboolf16 mask,void * addr, const vint16 reg) {
 #if defined(__AVX512F__)
@@ -472,45 +465,6 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
   /// Memory load and store operations
   ////////////////////////////////////////////////////////////////////////////////
-
-
-/* only available on KNC */
-#if defined(__MIC__)  
-  __forceinline vint16 load1i_uint8(const unsigned char *const ptr) {
-    return _mm512_extload_epi32(ptr,_MM_UPCONV_EPI32_UINT8,_MM_BROADCAST_1X16,_MM_HINT_NONE);
-  }
-
-  __forceinline vint16 load16i_uint8(const unsigned char *const ptr) {
-    return _mm512_extload_epi32(ptr,_MM_UPCONV_EPI32_UINT8,_MM_BROADCAST32_NONE,_MM_HINT_NONE);
-  }  
-
-  __forceinline vint16 broadcast1to16i(const int *const ptr) {
-    return _mm512_extload_epi32(ptr,_MM_UPCONV_EPI32_NONE,_MM_BROADCAST_1X16,_MM_HINT_NONE);
-  }  
-    
-  __forceinline vint16 uload16i_low(const vboolf16& mask, const void* addr) {
-    vint16 v = _mm512_undefined_epi32();
-    return _mm512_mask_extloadunpacklo_epi32(v, mask, addr, _MM_UPCONV_EPI32_NONE, _MM_HINT_NONE);
-  }
-
-  __forceinline void store1i(void *addr, const vint16& reg) {
-    _mm512_mask_extpackstorelo_epi32((int*)addr+0  ,(vboolf16)1, reg, _MM_DOWNCONV_EPI32_NONE, _MM_HINT_NONE);
-  }
-  
-  __forceinline void ustore16i_low(void *addr, const vint16& reg) {
-    _mm512_extpackstorelo_epi32((int*)addr+0  ,reg, _MM_DOWNCONV_EPI32_NONE, _MM_HINT_NONE);
-  }
-  
-  __forceinline void compactustore16i_high(const vboolf16 mask, int *addr, const vint16& reg) {
-    _mm512_mask_extpackstorehi_epi32((int*)addr+16  ,mask, reg, _MM_DOWNCONV_EPI32_NONE, _MM_HINT_NONE);
-  }
-
-  __forceinline void store16i_uint8(const vboolf16& mask, void* __restrict__ addr, const vint16& v2) {
-    _mm512_mask_extstore_epi32(addr,mask,v2,_MM_DOWNCONV_EPI32_UINT8,_MM_HINT_NONE);
-  }
-
-#endif
-  
 
   __forceinline vint16 broadcast4to16i(const int *const ptr) {
     return _mm512_extload_epi32(ptr,_MM_UPCONV_EPI32_NONE,_MM_BROADCAST_4X16,_MM_HINT_NONE);

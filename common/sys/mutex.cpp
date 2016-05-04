@@ -56,7 +56,7 @@ namespace embree
     if (pthread_mutex_lock((pthread_mutex_t*)mutex) != 0) 
       THROW_RUNTIME_ERROR("pthread_mutex_lock failed");
   }
-
+  
   bool MutexSys::try_lock( void ) { 
     return pthread_mutex_trylock((pthread_mutex_t*)mutex) == 0;
   }
@@ -75,55 +75,42 @@ namespace embree
   void RWMutex::read_lock()
   {
     while(1)
+    {
+      unsigned int d = getData();
+      if (!busy_w(d))
       {
-#if defined(__MIC__)
-	prefetchL1EX((void*)&data);
-#endif
-
-        unsigned int d = getData();
-        if (!busy_w(d))
-          {
-            unsigned int r = update_atomic_add(SINGLE_READER);
-            if (!busy_w(r)) break; // -request
-            update_atomic_add(-SINGLE_READER);
-          }
-        pause();
+        unsigned int r = update_atomic_add(SINGLE_READER);
+        if (!busy_w(r)) break; // -request
+        update_atomic_add(-SINGLE_READER);
       }
+      pause();
+    }
   }
-
+  
   void RWMutex::read_unlock()
   {
-#if defined(__MIC__)
-    prefetchL1EX((void*)&data);
-#endif
     update_atomic_add(-SINGLE_READER);            
   }
   
   void RWMutex::write_lock()
   {
     while(1)
+    {
+      unsigned int d = getData();
+      if (!busy_rw(d))
       {
-#if defined(__MIC__)
-	prefetchL1EX((void*)&data);
-#endif
-        unsigned int d = getData();
-        if (!busy_rw(d))
-          {
-            if (update_atomic_cmpxchg(d,WRITER)==d) break;           
-          }
-        else if ( !(d & WRITER_REQUEST) )
-          {
-            update_atomic_or(WRITER_REQUEST);
-          }
-        pause();
+        if (update_atomic_cmpxchg(d,WRITER)==d) break;           
       }
+      else if ( !(d & WRITER_REQUEST) )
+      {
+        update_atomic_or(WRITER_REQUEST);
+      }
+      pause();
+    }
   }
   
   void RWMutex::write_unlock()
   {
-#if defined(__MIC__)
-    prefetchL1EX((void*)&data);
-#endif
     update_atomic_and(READERS);
   }
   
@@ -132,24 +119,18 @@ namespace embree
     read_unlock();
     write_lock();
   }
-
+  
   void RWMutex::upgrade_write_to_read_lock()
   {
     update_atomic_add(SINGLE_READER-WRITER);            
   }
-
+  
   void RWMutex::pause()
-   {
-     unsigned int DELAY_CYCLES = 64;
-
-#if !defined(__MIC__)
-     _mm_pause(); 
-     _mm_pause();
-#else
-     _mm_delay_32(DELAY_CYCLES); 
-#endif      
-   }
- 
+  {
+    _mm_pause(); 
+    _mm_pause();
+  }
+  
   bool RWMutex::try_write_lock()
   {
     unsigned int d = getData();
@@ -157,12 +138,12 @@ namespace embree
     if (update_atomic_cmpxchg(d,WRITER)==d) return true;
     return false;
   }
-
+  
   bool RWMutex::try_read_lock()
   {
     unsigned int d = getData();
     if (busy_w(d)) return false;
-
+    
     unsigned int r = update_atomic_add(SINGLE_READER);
     if (!busy_w(r)) return true; // -request
     update_atomic_add(-SINGLE_READER);

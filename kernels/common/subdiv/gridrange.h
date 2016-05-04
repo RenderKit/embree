@@ -29,12 +29,6 @@ namespace embree
 
     __forceinline GridRange() {}
 
-#if defined(__MIC__)    
-    __forceinline void operator=(const GridRange& v) {
-      store4f((float*)this,broadcast4to16f((float*)&v));
-    };
-#endif
-
     __forceinline GridRange(unsigned int u_start, unsigned int u_end, unsigned int v_start, unsigned int v_end) 
       : u_start(u_start), u_end(u_end), v_start(v_start), v_end(v_end) {}
 
@@ -48,26 +42,18 @@ namespace embree
 
     __forceinline bool hasLeafSize() const
     {
-#if defined(__MIC__)
-      return u_end-u_start <= 1 && v_end-v_start <= 1;
-#else
       const unsigned int u_size = u_end-u_start+1;
       const unsigned int v_size = v_end-v_start+1;
       assert(u_size >= 1);
       assert(v_size >= 1);
       return u_size <= 3 && v_size <= 3;
-#endif
     }
 
     static __forceinline unsigned int split(unsigned int start,unsigned int end)
     {
       const unsigned int center = (start+end)/2;
-#if defined(__MIC__)
-      assert(center<end);
-#else
       assert (center > start);
       assert (center < end);
-#endif
       return center;
     }
 

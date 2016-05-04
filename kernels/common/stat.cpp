@@ -43,7 +43,6 @@ namespace embree
     cout << "    #prims        = " << float(cntrs.code.normal.trav_prims       )*1E-6 << "M" << std::endl;
     cout << "    #prim_hits    = " << float(cntrs.code.normal.trav_prim_hits   )*1E-6 << "M" << std::endl;
 
-#if 1 // defined(__MIC__)
     cout << "    #stack nodes  = " << float(cntrs.code.normal.trav_stack_nodes )*1E-6 << "M" << std::endl;
     cout << "    #stack pop    = " << float(cntrs.code.normal.trav_stack_pop )*1E-6 << "M" << std::endl;
 
@@ -59,7 +58,6 @@ namespace embree
     for (size_t i=0;i<SIZE_HISTOGRAM;i++) cout << "[" << i << "] " << 100.0f * cntrs.code.normal.trav_hit_boxes[i]*i / weighted_box_hits << " ";
     cout << std::endl;
 
-#endif
     if (cntrs.code.shadow.travs) {
       cout << "  #shadow_travs = " << float(cntrs.code.shadow.travs         )*1E-6 << "M" << std::endl;
       cout << "    #nodes      = " << float(cntrs.code.shadow.trav_nodes    )*1E-6 << "M" << std::endl;
@@ -68,7 +66,6 @@ namespace embree
       cout << "    #prims      = " << float(cntrs.code.shadow.trav_prims    )*1E-6 << "M" << std::endl;
       cout << "    #prim_hits  = " << float(cntrs.code.shadow.trav_prim_hits)*1E-6 << "M" << std::endl;
 
-#if 1 // defined(__MIC__)
       cout << "    #stack nodes = " << float(cntrs.code.shadow.trav_stack_nodes )*1E-6 << "M" << std::endl;
       cout << "    #stack pop   = " << float(cntrs.code.shadow.trav_stack_pop )*1E-6 << "M" << std::endl;
 
@@ -84,9 +81,6 @@ namespace embree
       cout << std::endl;
       for (size_t i=0;i<SIZE_HISTOGRAM;i++) cout << "[" << i << "] " << 100.0f * cntrs.code.shadow.trav_hit_boxes[i]*i / weighted_shadow_box_hits << " ";
       cout << std::endl;
-
-#endif
-
     }
     cout << std::endl;
 

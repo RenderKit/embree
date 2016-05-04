@@ -2306,14 +2306,12 @@ namespace embree
       {
         Vec3fa pos = 100.0f*Vec3fa(drand48(),drand48(),drand48());
 	int type = random<int>()%6;
-#if !defined(__MIC__) 
         switch (random<int>()%16) {
         case 0: pos = Vec3fa(nan); break;
         case 1: pos = Vec3fa(inf); break;
         case 2: pos = Vec3fa(1E30f); break;
         default: break;
         };
-#endif
 	size_t numPhi = random<int>()%100;
 	if (type == 2) numPhi = random<int>()%10;
         size_t numTriangles = 2*2*numPhi*(numPhi-1);
@@ -2430,14 +2428,12 @@ namespace embree
         {
           int type = random<int>()%10;
           Vec3fa pos = 100.0f*Vec3fa(drand48(),drand48(),drand48());
-#if !defined(__MIC__)
           switch (random<int>()%16) {
           case 0: pos = Vec3fa(nan); break;
           case 1: pos = Vec3fa(inf); break;
           case 2: pos = Vec3fa(1E30f); break;
           default: break;
           };
-#endif
           size_t numPhi = random<int>()%100;
 	  if (type >= 3 || type <= 5) numPhi = random<int>()%10;
 #if defined(__WIN32__)          
@@ -2594,12 +2590,8 @@ namespace embree
           ClearBuffers clear_before_return;
           build_join_test = (mode == 2);
           size_t numThreads = getNumberOfLogicalThreads();
-#if defined (__MIC__)
-          numThreads -= 4;
-#endif
           
           std::vector<RegressionTask*> tasks;
-          
           while (numThreads) 
           {
             size_t N = max(size_t(1),random<int>()%numThreads); numThreads -= N;

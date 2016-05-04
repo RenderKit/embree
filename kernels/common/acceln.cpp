@@ -116,7 +116,7 @@ namespace embree
     AccelN* This = (AccelN*)ptr;
     for (size_t i=0; i<This->validAccels.size(); i++) {
       This->validAccels[i]->occluded16(valid,ray,context);
-#if defined(__MIC__) || defined(__AVX512F__) // FIXME: this code gets never compiler with __AVX512F__ enabled
+#if defined(__AVX512F__) // FIXME: this code gets never compiler with __AVX512F__ enabled
       vbool16 valid0 = ((vbool16*)valid)[0];
       vbool16 hit0   = ((vint16*)ray.geomID)[0] == vint16(0);
       if (all(valid0,hit0)) break;
@@ -155,14 +155,9 @@ namespace embree
   void AccelN::build (size_t threadIndex, size_t threadCount) 
   {
     /* build all acceleration structures in parallel */
-#if defined(__MIC__)
-    for (size_t i=0; i<accels.size(); i++) 
-        accels[i]->build(threadIndex,threadCount);
-#else
     parallel_for (accels.size(), [&] (size_t i) { 
         accels[i]->build(threadIndex,threadCount);
       });
-#endif
 
     /* create list of non-empty acceleration structures */
     validAccels.clear();

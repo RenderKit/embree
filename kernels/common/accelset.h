@@ -60,11 +60,6 @@ namespace embree
     typedef void (*ISPCOccludedFunc16 )(void* ptr, RTCRay16& ray, size_t item, __m128i valid); // mask gets passed as 16 bytes
 #endif
 
-#if defined(__MIC__)
-    typedef void (*ISPCIntersectFunc16)(void* ptr, RTCRay16& ray, size_t item, __mmask16 valid);
-    typedef void (*ISPCOccludedFunc16 )(void* ptr, RTCRay16& ray, size_t item, __mmask16 valid);
-#endif
-
     typedef void (*ErrorFunc) ();
 
     struct Intersector1
@@ -285,22 +280,6 @@ namespace embree
       }
 #endif
 
-      /*! Intersects a packet of 16 rays with the scene. */
-#if defined(__MIC__) 
-      __forceinline void intersect16 (const vbool16& valid, RTCRay16& ray, size_t item) 
-      {
-        assert(item < size());
-        assert(intersectors.intersector16.intersect);
-	if (intersectors.intersector16.ispc) {
-         ((ISPCIntersectFunc16)intersectors.intersector16.intersect)(intersectors.ptr,ray,item,valid);
-	}
-        else {
-          vint16 mask = valid.mask32();
-	  ((IntersectFunc16)intersectors.intersector16.intersect)(&mask,intersectors.ptr,ray,item);
-        }
-      }
-#endif
-
       /*! Intersects a stream of rays with the scene. */
       __forceinline void intersect1M (RTCRay** rays, size_t N, size_t item, const RTCIntersectContext* context) 
       {
@@ -388,22 +367,6 @@ namespace embree
           vint16 mask = valid.mask32();
           assert(intersectors.intersectorN.occluded);          
           intersectors.intersectorN.occluded((int*)&mask,intersectors.ptr,context,(RTCRayN*)&ray,16,item);
-        }
-      }
-#endif
-
-      /*! Tests if a packet of 16 rays is occluded by the scene. */
-#if defined(__MIC__)
-      __forceinline void occluded16 (const vbool16& valid, RTCRay16& ray, size_t item) 
-      {
-        assert(item < size());
-        assert(intersectors.intersector16.occluded);
-	if (intersectors.intersector16.ispc) {
-	  ((ISPCOccludedFunc16)intersectors.intersector16.occluded)(intersectors.ptr,ray,item,valid);
-	}
-	else {
-          vint16 mask = valid.mask32();
-	  ((OccludedFunc16)intersectors.intersector16.occluded)(&mask,intersectors.ptr,ray,item);
         }
       }
 #endif

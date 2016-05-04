@@ -328,8 +328,6 @@ namespace embree
     return (((uint64_t)high) << 32) + (uint64_t)low;
   }
   
-#if !defined(__MIC__)
-  
 #if defined(__SSE4_2__)
   __forceinline unsigned int __popcnt(unsigned int in) {
     int r = 0; asm ("popcnt %1,%0" : "=r"(r) : "r"(in)); return r;
@@ -473,81 +471,6 @@ namespace embree
   __forceinline size_t __btr(size_t v, size_t i) {
     size_t r = 0; asm ("btr %1,%0" : "=r"(r) : "r"(i), "0"(v) : "flags"); return r;
   }
-  
-#else
-  
-  static const unsigned int BITSCAN_NO_BIT_SET_32 = 32;
-  static const size_t       BITSCAN_NO_BIT_SET_64 = 64;
-  
-  __forceinline unsigned int clz(const unsigned int x) {
-    return _lzcnt_u32(x); 
-  }
-  
-  __forceinline size_t clz(const size_t x) {
-    return _lzcnt_u64(x); 
-  }
-  
-  __forceinline unsigned int bitscan(unsigned int v) {
-    return _mm_tzcnt_32(v); 
-  }
-  
-  __forceinline size_t bitscan64(size_t v) {
-    return _mm_tzcnt_64(v); 
-  }
-  
-  __forceinline unsigned int bitscan(const int index, const unsigned int v) { 
-    return _mm_tzcnti_32(index,v); 
-  };
-  
-  __forceinline size_t bitscan64(const ssize_t index, const size_t v) { 
-    return _mm_tzcnti_64(index,v); 
-  };
-  
-  __forceinline int __popcnt(int v) {
-    return _mm_countbits_32(v); 
-  }
-  
-  __forceinline unsigned int __popcnt(unsigned int v) {
-    return _mm_countbits_32(v); 
-  }
-  
-  __forceinline unsigned int countbits(unsigned int v) {
-    return _mm_countbits_32(v); 
-  };
-  
-  __forceinline size_t __popcnt(size_t v) {
-    return _mm_countbits_64(v); 
-  }
-  
-  __forceinline size_t countbits64(size_t v) { 
-    return _mm_countbits_64(v); 
-  };
-  
-  __forceinline int __bsf(int v) {
-    return bitscan(v); 
-  }
-  
-  __forceinline unsigned int __bsf(unsigned int v) {
-    return bitscan(v); 
-  }
-  
-  __forceinline size_t __bsf(size_t v) {
-    return bitscan(v); 
-  }
-  
-  __forceinline size_t __btc(size_t v, size_t i) {
-    return v ^ (size_t(1) << i); 
-  }
-  
-  __forceinline unsigned int __bsr(unsigned int v) {
-    return 31 - _lzcnt_u32(v); 
-  }
-  
-  __forceinline size_t __bsr(size_t v) {
-    return 63 - _lzcnt_u64(v); 
-  }
-  
-#endif
   
   typedef int8_t atomic8_t;
   
@@ -764,27 +687,17 @@ namespace embree
   
   __forceinline uint64_t rdtsc()
   {
-#if !defined(__MIC__)
     int dummy[4]; 
     __cpuid(dummy,0); 
     uint64_t clock = read_tsc(); 
     __cpuid(dummy,0); 
     return clock;
-#else
-    return read_tsc(); 
-#endif
   }
   
-#if defined(__MIC__)
-  __forceinline void __pause_cpu (const unsigned int cycles = 1024) { 
-    _mm_delay_32(cycles); 
-  }
-#else
   __forceinline void __pause_cpu (const int cycles = 0) {
     for (size_t i=0; i<8; i++)
       _mm_pause();    
   }
-#endif
   
   __forceinline void __pause_cpu_expfalloff(unsigned int &cycles, const unsigned int max_cycles) 
   { 
@@ -808,35 +721,15 @@ namespace embree
   }
 
   __forceinline void prefetchL1EX(const void* ptr) { 
-#if defined(__MIC__)
-    _mm_prefetch((const char*)ptr,_MM_HINT_ET0); 
-#else
     prefetchEX(ptr); 
-#endif
   }
   
   __forceinline void prefetchL2EX(const void* ptr) { 
-#if defined(__MIC__)
-    _mm_prefetch((const char*)ptr,_MM_HINT_ET2); 
-#else
     prefetchEX(ptr); 
-#endif
   }
-  
-#if defined(__MIC__)
-  __forceinline void evictL1(const void * __restrict__  m) { 
-    _mm_clevict(m,_MM_HINT_T0); 
-  }
-  
-  __forceinline void evictL2(const void * __restrict__  m) { 
-    _mm_clevict(m,_MM_HINT_T1); 
-  }
-#endif
   
 /* compiler memory barriers */
-#if defined(__MIC__)
-#define __memory_barrier()
-#elif defined(__INTEL_COMPILER)
+#if defined(__INTEL_COMPILER)
 //#define __memory_barrier() __memory_barrier()
 #elif defined(__GNUC__) || defined(__clang__)
 #  define __memory_barrier() asm volatile("" ::: "memory")

@@ -64,19 +64,11 @@ namespace embree
   void resetTessellationCache();
 
 
-#if defined(__MIC__)
- typedef unsigned int InputTagType;
-#else
  typedef size_t InputTagType;
-#endif
 
  static __forceinline unsigned int toTag(InputTagType prim)
  {
-#if defined(__MIC__)
-   return prim;
-#else
    return prim / 320;
-#endif
  }
  ////////////////////////////////////////////////////////////////////////////////
  ////////////////////////////////////////////////////////////////////////////////
@@ -103,11 +95,7 @@ namespace embree
  public:
    
    //static const size_t DEFAULT_TESSELLATION_CACHE_SIZE = MAX_TESSELLATION_CACHE_SIZE; 
-#if defined(__MIC__)
-   static const size_t NUM_CACHE_SEGMENTS              = 4;
-#else
    static const size_t NUM_CACHE_SEGMENTS              = 8;
-#endif
    static const size_t NUM_PREALLOC_THREAD_WORK_STATES = MAX_THREADS;
    static const size_t COMMIT_INDEX_SHIFT              = 32+8;
 #if defined(__X86_64__)
@@ -297,10 +285,7 @@ namespace embree
      return -1;
    }
 
-   __forceinline void prefetchThread(ThreadWorkState *const t_state) { 
-#if defined(__MIC__)
-     prefetch<PFHINT_L1EX>(&t_state->counter);  
-#endif
+   __forceinline void prefetchThread(ThreadWorkState *const t_state) {  // FIXME: remove
    }
 
    __forceinline bool validCacheIndex(const size_t i, const unsigned globalTime)

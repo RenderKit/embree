@@ -276,9 +276,6 @@ namespace embree
     if (zmm_enabled && cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512VL  ) cpu_features |= CPU_FEATURE_AVX512VL;
     if (zmm_enabled && cpuid_leaf_7[ECX] & CPU_FEATURE_BIT_AVX512VBMI) cpu_features |= CPU_FEATURE_AVX512VBMI;
 
-#if defined(__MIC__)
-    cpu_features |= CPU_FEATURE_KNC;
-#endif
     return cpu_features;
   }
 
@@ -487,39 +484,9 @@ namespace embree
     return info.ws_col;
   }
 
-#if defined(__MIC__)
-
-  static double getFrequencyInMHz()
-  {
-    struct timeval tvstart, tvstop;
-    unsigned long long int cycles[2];
-    
-    gettimeofday(&tvstart, nullptr);
-    cycles[0] = rdtsc();
-    gettimeofday(&tvstart, nullptr);
-    usleep(250000);
-    gettimeofday(&tvstop, nullptr);
-    cycles[1] = rdtsc();
-    gettimeofday(&tvstop, nullptr);
-  
-    const unsigned long microseconds = ((tvstop.tv_sec-tvstart.tv_sec)*1000000) + (tvstop.tv_usec-tvstart.tv_usec);
-    unsigned long mhz = (unsigned long) (cycles[1]-cycles[0]) / microseconds;
-
-    //std::cout << "MIC frequency is " << mhz << " MHz" << std::endl;
-    return (double)mhz;
-  }
-
-  static double micFrequency = getFrequencyInMHz();
-
-#endif
-
   double getSeconds() {
-#if !defined(__MIC__)
     struct timeval tp; gettimeofday(&tp,nullptr);
     return double(tp.tv_sec) + double(tp.tv_usec)/1E6;
-#else
-    return double(rdtsc()) / double(micFrequency*1E6);
-#endif
   }
 
   void sleepSeconds(double t) {

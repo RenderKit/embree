@@ -107,16 +107,6 @@ namespace embree
 #define SELECT_SYMBOL_AVX512KNL(features,intersector)
 #endif
 
-#if defined(__MIC__)
-#if !defined(__TARGET_SIMD4__)
-#define __TARGET_SIMD16__
-#endif
-#define SELECT_SYMBOL_KNC(features,intersector) \
-  intersector = knc::intersector;
-#else
-#define SELECT_SYMBOL_KNC(features,intersector)
-#endif
-
 #define SELECT_SYMBOL_DEFAULT_SSE42(features,intersector)               \
   SELECT_SYMBOL_DEFAULT(features,intersector);                          \
   SELECT_SYMBOL_SSE42(features,intersector);                                  

@@ -25,11 +25,11 @@
 
 /* include AVX wrapper classes */
 #if defined(__AVX__)
-#include "avx.h"
+#  include "avx.h"
 #endif
 
 /* include AVX512 wrapper classes */
-#if defined (__MIC__)
+#if defined (__AVX512F__)
 #  include "avx512.h"
 #endif
 

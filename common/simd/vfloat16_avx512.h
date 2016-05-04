@@ -222,13 +222,6 @@ namespace embree
     }
 
 
-/* only available on KNC */
-#if defined(__MIC__)  
-    static __forceinline void store_ngo(void *__restrict__ ptr, const vfloat16& a) {
-      _mm512_storenrngo_ps(ptr,a);
-    }
-#endif
-
     ////////////////////////////////////////////////////////////////////////////////
     /// Constants
     ////////////////////////////////////////////////////////////////////////////////
@@ -916,86 +909,6 @@ namespace embree
 #endif
   }
 
-/* only available on KNC */
-#if defined(__MIC__)
-
-  __forceinline vfloat16 load16f_uint8(const unsigned char *const ptr) {
-    return _mm512_mul_ps(_mm512_extload_ps(ptr,_MM_UPCONV_PS_UINT8,_MM_BROADCAST_16X16,_MM_HINT_NONE),vfloat16(1.0f/255.0f));
-  }
-
-  __forceinline vfloat16 load16f_uint16(const unsigned short *const ptr) {
-    return _mm512_mul_ps(_mm512_extload_ps(ptr,_MM_UPCONV_PS_UINT16,_MM_BROADCAST_16X16,_MM_HINT_NONE),vfloat16(1.0f/65535.0f));
-  }
-
-  __forceinline vfloat16 uload16f_low_uint8(const vboolf16& mask, const void* addr, const vfloat16& v1) {
-    return _mm512_mask_extloadunpacklo_ps(v1, mask, addr, _MM_UPCONV_PS_UINT8, _MM_HINT_NONE);
-  }
-
-  __forceinline vfloat16 load16f_int8(const char *const ptr) {
-    return _mm512_mul_ps(_mm512_extload_ps(ptr,_MM_UPCONV_PS_SINT8,_MM_BROADCAST_16X16,_MM_HINT_NONE),vfloat16(1.0f/127.0f));
-  }
-
-  __forceinline vfloat16 uload16f_low(const float *const addr) {
-    vfloat16 r = vfloat16::undefined();
-    return _mm512_extloadunpacklo_ps(r, addr, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);
-  }
-  
-  __forceinline vfloat16 uload16f_low(const vboolf16& mask, const void* addr, const vfloat16& v1) {
-    return _mm512_mask_extloadunpacklo_ps(v1, mask, addr, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);
-  }
-
-  __forceinline vfloat16 uload16f_low(const vboolf16& mask, const void* addr) {
-    vfloat16 v1 = vfloat16::undefined();
-    return _mm512_mask_extloadunpacklo_ps(v1, mask, addr, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);
-  }
-      
-  __forceinline void compactustore16f_low_uint8(const vboolf16& mask, void * addr, const vfloat16 &reg) {
-    _mm512_mask_extpackstorelo_ps(addr+0 ,mask, reg, _MM_DOWNCONV_PS_UINT8 , 0);
-  }
-  
-  __forceinline void ustore16f_low(float * addr, const vfloat16& reg) {
-    _mm512_extpackstorelo_ps(addr+0 ,reg, _MM_DOWNCONV_PS_NONE , 0);
-  }
-  
-  __forceinline void compactustore16f_high(const vboolf16& mask, float *addr, const vfloat16& reg) {
-    _mm512_extpackstorehi_ps(addr+0 ,reg, _MM_DOWNCONV_PS_NONE , 0);
-  }
-  
-  __forceinline void store16f_int8(void* addr, const vfloat16& v2) {
-    _mm512_extstore_ps(addr,v2,_MM_DOWNCONV_PS_SINT8,0);
-  }
-
-  __forceinline void store16f_uint16(void* addr, const vfloat16& v2) {
-    _mm512_extstore_ps(addr,v2,_MM_DOWNCONV_PS_UINT16,0);
-  }
-
-  __forceinline void store4f_int8(void* addr, const vfloat16& v1) {
-    assert((unsigned long)addr % 4 == 0);
-    _mm512_mask_extpackstorelo_ps(addr,0xf, v1, _MM_DOWNCONV_PS_SINT8 , 0);
-  }
-  
-  __forceinline void store4f(void* addr, const vfloat16& v1) {
-    assert((unsigned long)addr % 16 == 0);
-    _mm512_mask_extpackstorelo_ps(addr,0xf, v1, _MM_DOWNCONV_PS_NONE , 0);
-  }
-
-  __forceinline void store3f(void* addr, const vfloat16& v1) {
-    assert((unsigned long)addr % 16 == 0);
-    _mm512_mask_extpackstorelo_ps(addr,0x7, v1, _MM_DOWNCONV_PS_NONE , 0);
-  }
-
-  __forceinline void store4f_nt(void* addr, const vfloat16& v1) {
-    assert((unsigned long)addr % 16 == 0);
-    _mm512_mask_extpackstorelo_ps(addr,0xf, v1, _MM_DOWNCONV_PS_NONE , _MM_HINT_NT);
-  }
-  
-  __forceinline void store1f(void *addr, const vfloat16& reg) {
-    _mm512_mask_extpackstorelo_ps((float*)addr+0  ,(vboolf16)1, reg, _MM_DOWNCONV_PS_NONE, _MM_HINT_NONE);
-  }
-#endif
-
-
-  
   __forceinline vfloat16 gather16f(const vboolf16& mask, const float *const ptr, __m512i index, const _MM_INDEX_SCALE_ENUM scale) {
     vfloat16 r = vfloat16::undefined();
     return _mm512_mask_i32extgather_ps(r,mask,index,ptr,_MM_UPCONV_PS_NONE,scale,0);

@@ -125,18 +125,6 @@ namespace embree
       assert(i<num);
       return *(T*)(ptr_ofs + i*stride);
     }
-
-#if defined(__MIC__)
-    __forceinline char* getPtr( size_t i = 0 ) const 
-    {
-      assert(i<num);
-      return ptr_ofs + i*stride;
-    }
-
-    __forceinline unsigned int getBufferStride() const {
-      return stride;
-    }
-#endif
   };
 
   /*! Implements a data stream inside a data buffer. */
@@ -151,11 +139,7 @@ namespace embree
     __forceinline const Vec3fa operator[](size_t i) const
     {
       assert(i<num);
-#if defined(__MIC__)
-      return *(Vec3fa*)(ptr_ofs + i*stride);
-#else
       return Vec3fa(vfloat4::loadu((float*)(ptr_ofs + i*stride)));
-#endif
     }
 
     __forceinline char* getPtr( size_t i = 0 ) const 
@@ -163,11 +147,5 @@ namespace embree
       assert(i<num);
       return ptr_ofs + i*stride;
     }
-
-#if defined(__MIC__)
-    __forceinline unsigned int getBufferStride() const {
-      return stride;
-    }
-#endif
   };
 }

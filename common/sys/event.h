@@ -84,9 +84,5 @@ namespace embree
     volatile bool event;
   };
 
-#if defined(__MIC__)
-  typedef EventActive Event;
-#else
   typedef EventSys Event;
-#endif
 }

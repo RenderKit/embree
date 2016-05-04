@@ -20,7 +20,7 @@
 #include "../kernels/algorithms/parallel_for.h"
 #include <vector>
 
-#if defined(RTCORE_RAY_PACKETS) && !defined(__MIC__)
+#if defined(RTCORE_RAY_PACKETS)
 #  define HAS_INTERSECT4 1
 #else
 #  define HAS_INTERSECT4 0
@@ -32,7 +32,7 @@
 #  define HAS_INTERSECT8 0
 #endif
 
-#if defined(RTCORE_RAY_PACKETS) && (defined(__MIC__) || defined(__TARGET_AVX512KNL__))
+#if defined(RTCORE_RAY_PACKETS) && defined(__TARGET_AVX512KNL__)
 #  define HAS_INTERSECT16 1
 #else
 #  define HAS_INTERSECT16 0
@@ -917,18 +917,10 @@ namespace embree
       }
             
       double t0 = getSeconds();
-#if defined(__MIC__)
-      for (size_t i=0; i<scenes.size(); i++) {
-        rtcUpdate(scenes[i],0);
-        rtcCommit (scenes[i]);
-      }
-#else
       parallel_for( scenes.size(), [&](size_t i) { 
           rtcUpdate(scenes[i],0); 
           rtcCommit (scenes[i]);
         });
-#endif
-      
       double t1 = getSeconds();
       for (size_t i=0; i<scenes.size(); i++)
         rtcDeleteScene(scenes[i]);
@@ -1742,7 +1734,7 @@ namespace embree
     benchmarks.push_back(new create_geometry ("create_static_geometry_100k_10",  RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,159,10));
     benchmarks.push_back(new create_geometry ("create_static_geometry_10k_100",  RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,51,100));
     benchmarks.push_back(new create_geometry ("create_static_geometry_1k_1000" , RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,17,1000));
-#if defined(__X86_64__) && !(__MIC__)
+#if defined(__X86_64__)
     benchmarks.push_back(new create_geometry ("create_static_geometry_120_10000",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,6,8334));
 #endif
 
@@ -1798,13 +1790,10 @@ namespace embree
     benchmarks.push_back(new update_scenes ("refit_scenes_8000k_1",  RTC_GEOMETRY_DEFORMABLE,1420,1));
 #endif
     benchmarks.push_back(new update_scenes ("refit_scenes_100k_10",  RTC_GEOMETRY_DEFORMABLE,159,10));
-#if !defined(__MIC__)
     benchmarks.push_back(new update_scenes ("refit_scenes_10k_100",  RTC_GEOMETRY_DEFORMABLE,51,100));
     benchmarks.push_back(new update_scenes ("refit_scenes_1k_1000" , RTC_GEOMETRY_DEFORMABLE,17,1000));
 #if defined(__X86_64__)
     benchmarks.push_back(new update_scenes ("refit_scenes_120_10000",RTC_GEOMETRY_DEFORMABLE,6,8334));
-#endif
-
 #endif
 
 #if defined(__X86_64__)
@@ -1821,7 +1810,6 @@ namespace embree
     benchmarks.push_back(new update_scenes ("update_scenes_8000k_1",  RTC_GEOMETRY_DYNAMIC,1420,1));
 #endif
     benchmarks.push_back(new update_scenes ("update_scenes_100k_10",  RTC_GEOMETRY_DYNAMIC,159,10));
-#if !defined(__MIC__)
     benchmarks.push_back(new update_scenes ("update_scenes_10k_100",  RTC_GEOMETRY_DYNAMIC,51,100));
     benchmarks.push_back(new update_scenes ("update_scenes_1k_1000" , RTC_GEOMETRY_DYNAMIC,17,1000));
 #if defined(__X86_64__)
@@ -1832,8 +1820,6 @@ namespace embree
     benchmarks.push_back(new update_keyframe_scenes ("update_keyframe_scenes_1000k_1",  RTC_GEOMETRY_DYNAMIC,501,1));
     benchmarks.push_back(new update_keyframe_scenes ("update_keyframe_scenes_8000k_1",  RTC_GEOMETRY_DYNAMIC,1420,1));
 #endif    
-
-#endif
 
 #endif
 
@@ -1977,9 +1963,6 @@ namespace embree
       size_t numThreads = getNumberOfLogicalThreads();
       printf("%40s ... %d \n","#HW threads ",(int)getNumberOfLogicalThreads());
       
-#if defined (__MIC__)
-      numThreads -= 4;
-#endif
       if (g_num_threads_init != -1)
       {
         numThreads = g_num_threads_init;

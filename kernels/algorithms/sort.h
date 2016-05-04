@@ -23,13 +23,8 @@
 #include "parallel_for.h"
 #include <algorithm>
 
-#if defined(__MIC__)
- #include "../../common/simd/avx512.h"
-#endif
-
 /* the higher the less core-2-core synchronization required */
 #define RADIX_SORT_MIN_BLOCK_SIZE 8096
-
 
 namespace embree
 {
@@ -200,169 +195,6 @@ namespace embree
     }
   }
   
-#if defined(__MIC__)
-  
-  class __aligned(64) ParallelRadixSort
-  {
-  public:
-    static const size_t MAX_TASKS = MAX_THREADS;
-    static const size_t BITS = 8;
-    static const size_t BUCKETS = (1 << BITS);
-    typedef unsigned int TyRadixCount[MAX_TASKS][BUCKETS];
-    
-    template<typename Ty, typename Key>
-      class Task
-    {
-      template<typename T>
-	static bool compare(const T& v0, const T& v1) {
-	return (Key)v0 < (Key)v1;
-      }
-      
-    public:
-      Task (ParallelRadixSort* parent, Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize)
-	: parent(parent), src(src), tmp(tmp), N(N) 
-      {
-        assert(blockSize > 0);
-        
-	/* perform single threaded sort for small N */
-	if (N<=blockSize) // handles also special case of 0!
-	{	  
-	  /* do inplace sort inside destination array */
-	  std::sort(src,src+N,compare<Ty>);
-	}
-	
-	/* perform parallel sort for large N */
-	else 
-	{
-	  LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
-	  const size_t numThreads = scheduler->getNumThreads(); 
-	  parent->barrier.init(numThreads);
-	  scheduler->dispatchTask(task_radixsort,this,0,numThreads);
-	}
-      }
-      
-    private:
-      
-      void radixIteration(Ty* __restrict const src, 
-			  Ty* __restrict const dst, 
-			  const size_t startID, 
-			  const size_t endID, 
-			  const size_t threadIndex, 
-			  const size_t threadCount,
-			  const size_t byte_iteration)
-      {
-	const size_t L1_PREFETCH_ITEMS = 4;
-        
-	for (size_t b=0; b<byte_iteration; b++)
-        {
-#pragma unroll(16)
-          for (size_t i=0; i<16; i++)
-            vint16::store(&parent->radixCount[threadIndex][i*16],vint16::zero());
-          
-          __assume_aligned(&parent->radixCount[threadIndex][0],64);
-          
-          for (size_t i=startID; i<endID; i++) {
-            const Key &key = src[i];
-            const unsigned char *__restrict const byte = (const unsigned char*)&key;
-            prefetch<PFHINT_NT>(byte + 64*4);
-            parent->radixCount[threadIndex][(unsigned int)byte[b]]++;
-          }
-          
-          parent->barrier.wait(threadIndex,threadCount);
-          
-          vint16 count[16];
-#pragma unroll(16)
-          for (size_t i=0; i<16; i++)
-            count[i] = vint16::zero();
-          
-          
-          for (size_t i=0; i<threadIndex; i++)
-#pragma unroll(16)
-            for (size_t j=0; j<16; j++)
-              count[j] += vint16::load((int*)&parent->radixCount[i][j*16]);
-          
-          __aligned(64) unsigned int inner_offset[BUCKETS];
-          
-#pragma unroll(16)
-          for (size_t i=0; i<16; i++)
-            vint16::store(&inner_offset[i*16],count[i]);
-          
-#pragma unroll(16)
-          for (size_t i=0; i<16; i++)
-            count[i] = vint16::load((int*)&inner_offset[i*16]);
-          
-          for (size_t i=threadIndex; i<threadCount; i++)
-#pragma unroll(16)
-            for (size_t j=0; j<16; j++)
-              count[j] += vint16::load((int*)&parent->radixCount[i][j*16]);	  
-          
-          __aligned(64) unsigned int total[BUCKETS];
-          
-#pragma unroll(16)
-          for (size_t i=0; i<16; i++)
-            vint16::store(&total[i*16],count[i]);
-          
-          __aligned(64) unsigned int offset[BUCKETS];
-          
-          /* calculate start offset of each bucket */
-          offset[0] = 0;
-          for (size_t i=1; i<BUCKETS; i++)    
-            offset[i] = offset[i-1] + total[i-1];
-          
-          /* calculate start offset of each bucket for this thread */
-          
-#pragma unroll(BUCKETS)
-          for (size_t j=0; j<BUCKETS; j++)
-            offset[j] += inner_offset[j];
-	  
-          for (size_t i=startID; i<endID; i++) {
-            const Key &key = src[i];
-            
-            const unsigned char *__restrict const byte = (const unsigned char*)&key;
-            prefetch<PFHINT_NT>((char*)byte + 2*64);
-            
-            const unsigned int index = byte[b];
-            
-            assert(index < BUCKETS);
-            dst[offset[index]] = src[i];
-            prefetch<PFHINT_L2EX>(&dst[offset[index]+L1_PREFETCH_ITEMS]);
-            offset[index]++;
-          }
-          
-          if (b<byte_iteration-1) parent->barrier.wait(threadIndex,threadCount);
-          std::swap(src,dst);
-        }
-      }
-      
-      void radixsort(const size_t threadIndex, const size_t numThreads)
-      {
-	const size_t startID = (threadIndex+0)*N/numThreads;
-	const size_t endID   = (threadIndex+1)*N/numThreads;
-        
-	if (sizeof(Key) == sizeof(uint32_t)) 
-	  radixIteration(src,tmp,startID,endID,threadIndex,numThreads,4);
-	else if (sizeof(Key) == sizeof(uint64_t)) 
-	  radixIteration(src,tmp,startID,endID,threadIndex,numThreads,8);
-      }
-      
-      static void task_radixsort (void* data, const size_t threadIndex, const size_t threadCount) { 
-	((Task*)data)->radixsort(threadIndex,threadCount);                          
-      }
-      
-    private:
-      ParallelRadixSort* const parent;
-      Ty* const src;
-      Ty* const tmp;
-      const size_t N;
-    };
-    
-  private:
-    __aligned(64) TyRadixCount radixCount;
-    __aligned(64) QuadTreeBarrier barrier; 
-  };
-  
-#else
-  
   class __aligned(64) ParallelRadixSort
   {
   public:
@@ -511,8 +343,6 @@ namespace embree
   private:
     TyRadixCount* radixCount;
   };
-  
-#endif
   
   /*! parallel radix sort */
   template<typename Key>

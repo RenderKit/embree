@@ -337,7 +337,7 @@ namespace embree
   template<> __forceinline bool Geometry::hasISPCOcclusionFilter   <vfloat8>() const { return (ispcOcclusionFilterMask    & HAS_FILTER8) != 0; }
 #endif
 
-#if defined(__MIC__) || defined(__AVX512F__)
+#if defined(__AVX512F__)
   template<> __forceinline bool Geometry::hasIntersectionFilter<vfloat16>() const { return (hasIntersectionFilterMask & (HAS_FILTER16 | HAS_FILTERN)) != 0; }
   template<> __forceinline bool Geometry::hasOcclusionFilter   <vfloat16>() const { return (hasOcclusionFilterMask    & (HAS_FILTER16 | HAS_FILTERN)) != 0; }
   template<> __forceinline bool Geometry::hasISPCIntersectionFilter<vfloat16>() const { return (ispcIntersectionFilterMask & HAS_FILTER16) != 0; }
