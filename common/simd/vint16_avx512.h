@@ -42,9 +42,7 @@ namespace embree
 
     __forceinline vint(const __m512i& t) { v = t; }
     __forceinline operator __m512i () const { return v; }
-#if defined(__AVX512F__)
     __forceinline operator __m256i () const { return _mm512_castsi512_si256(v); }
-#endif
 
     __forceinline vint(const int i) {
       v = _mm512_set_1to16_epi32(i);
@@ -62,7 +60,6 @@ namespace embree
       v = _mm512_set_16to16_epi32(a15,a14,a13,a12,a11,a10,a9,a8,a7,a6,a5,a4,a3,a2,a1,a0);
     }
 
-#if defined(__AVX512F__)
     __forceinline vint(const vint4 i) {
       v = _mm512_broadcast_i32x4(i);
     }
@@ -70,16 +67,10 @@ namespace embree
     __forceinline vint(const vint8 i) {
       v = _mm512_castps_si512(_mm512_castpd_ps(_mm512_broadcast_f64x4(_mm256_castsi256_pd(i))));
     }
-
-#endif
    
     __forceinline explicit vint(const __m512 f) {
-#if defined(__AVX512F__)
       // round to nearest is standard
       v = _mm512_cvt_roundps_epi32(f,_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC); 
-#else
-      v = _mm512_cvtfxpnt_round_adjustps_epi32(f,_MM_FROUND_FLOOR,_MM_EXPADJ_NONE);
-#endif
     }
     
     ////////////////////////////////////////////////////////////////////////////////
@@ -105,70 +96,35 @@ namespace embree
     static __forceinline vint16 load(const void* addr) { return _mm512_load_si512((int*)addr); }
     static __forceinline vint16 loadu(const void* addr)
     {
-#if defined(__AVX512F__)
       return _mm512_loadu_si512(addr);
-#else
-      vint16 r = _mm512_undefined_epi32();
-      r =_mm512_extloadunpacklo_epi32(r, addr, _MM_UPCONV_EPI32_NONE, _MM_HINT_NONE);
-      return _mm512_extloadunpackhi_epi32(r, (int*)addr+16, _MM_UPCONV_EPI32_NONE, _MM_HINT_NONE);  
-#endif
     }
 
     static __forceinline void store (void* ptr, const vint16& v) { _mm512_store_si512(ptr,v); }
     static __forceinline void storeu(void* ptr, const vint16& v ) 
     {
-#if defined(__AVX512F__)
       _mm512_storeu_si512(ptr,v);
-#else
-      _mm512_extpackstorelo_ps((int*)ptr+0  ,_mm512_castsi512_ps(v), _MM_DOWNCONV_PS_NONE , 0);
-      _mm512_extpackstorehi_ps((int*)ptr+16 ,_mm512_castsi512_ps(v), _MM_DOWNCONV_PS_NONE , 0);
-#endif
     }
  
     static __forceinline void store (const vboolf16& mask, void* addr, const vint16& v2) { _mm512_mask_store_epi32(addr,mask,v2); }
     static __forceinline void storeu(const vboolf16& mask, void* ptr, const vint16& f ) {
-#if defined(__AVX512F__)
       _mm512_mask_storeu_epi32((int*)ptr,mask,f);
-#else
-      int* iptr = (int*)ptr;
-      __m512 r = _mm512_undefined();
-      r = _mm512_extloadunpacklo_ps(r, iptr,    _MM_UPCONV_PS_NONE, _MM_HINT_NONE);
-      r = _mm512_extloadunpackhi_ps(r, iptr+16, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);  
-      r = _mm512_mask_blend_ps(mask,r,_mm512_castsi512_ps(f));
-      _mm512_extpackstorelo_ps(iptr,    r, _MM_DOWNCONV_PS_NONE , 0);
-      _mm512_extpackstorehi_ps(iptr+16 ,r, _MM_DOWNCONV_PS_NONE , 0);
-#endif
     }
 
     static __forceinline void store_nt(void *__restrict__ ptr, const vint16& a) {
-#if defined(__AVX512F__)
       _mm512_stream_si512(ptr,a);
-#else
-      _mm512_storenr_ps(ptr,_mm512_castsi512_ps(a));
-#endif
     }
 
     /* pass by value to avoid compiler generating inefficient code */
     static __forceinline void storeu_compact(const vboolf16 mask,void * addr, const vint16 reg) {
-#if defined(__AVX512F__)
       _mm512_mask_compressstoreu_epi32(addr,mask,reg);
-#else
-      _mm512_mask_extpackstorelo_epi32((int*)addr+0  ,mask, reg, _MM_DOWNCONV_EPI32_NONE, _MM_HINT_NONE);
-      _mm512_mask_extpackstorehi_epi32((int*)addr+16 ,mask, reg, _MM_DOWNCONV_EPI32_NONE, _MM_HINT_NONE);
-#endif
     }
 
     static __forceinline void storeu_compact_single(const vboolf16 mask,void * addr, const vint16 reg) {
-#if defined(__AVX512F__)
       //_mm512_mask_compressstoreu_epi32(addr,mask,reg);
       *(float*)addr = _mm512_cvtss_f32(_mm512_mask_compress_ps(_mm512_castsi512_ps(reg),mask,_mm512_castsi512_ps(reg)));
-#else
-      _mm512_mask_extpackstorelo_epi32((int*)addr+0  ,mask, reg, _MM_DOWNCONV_EPI32_NONE, _MM_HINT_NONE);
-#endif
     }
 
 
-#if defined(__AVX512F__)
     static __forceinline vint16 compact64bit(const vboolf16& mask, vint16 &v) {
       return _mm512_mask_compress_epi64(v,mask,v);
     }
@@ -199,8 +155,6 @@ namespace embree
     {
       return _mm512_castsi512_si256(v);
     }
-
-#endif
 
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -416,16 +370,10 @@ namespace embree
 
   __forceinline int toScalar(const vint16& a)
   {
-#if defined(__AVX512F__)
     return _mm_cvtsi128_si32(_mm512_castsi512_si128(a));
-#else
-    return a[0];
-#endif
   }
 
-#if defined(__AVX512F__)  
   template<size_t i> __forceinline const vint16 insert4(const vint16& a, const vint4& b) { return _mm512_inserti32x4(a, b, i); }
-#endif
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Reductions
@@ -522,20 +470,12 @@ namespace embree
     
 
   __forceinline void compactustore16i_low(const vboolf16 mask, void *addr, const vint16& reg) {
-#if defined(__AVX512F__)
     _mm512_mask_compressstoreu_epi32(addr,mask,reg);
-#else
-    _mm512_mask_extpackstorelo_epi32((int*)addr+0  ,mask, reg, _MM_DOWNCONV_EPI32_NONE, _MM_HINT_NONE);
-#endif
   }
   
 
   __forceinline vint16 convert_uint32_t(const __m512 f) {
-#if defined(__AVX512F__)
     return _mm512_cvt_roundps_epu32(f,_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC); 
-#else
-    return _mm512_cvtfxpnt_round_adjustps_epu32(f,_MM_FROUND_TO_ZERO,_MM_EXPADJ_NONE);
-#endif
   }
 
   __forceinline vint16 permute(vint16 v,vint16 index)
@@ -573,13 +513,11 @@ namespace embree
     return v;  
   }
 
-#if defined(__AVX512F__)
   /* this should use a vbool8 and a vint8_64...*/
   __forceinline void gather_prefetch64(void const* base_addr,const vbool16 &mask, const vint16& offset, const int scale = 1, const int hint = _MM_HINT_T0)
   {
     _mm512_mask_prefetch_i64gather_pd(offset,mask,base_addr,scale,hint);
   }
-#endif
 
 
   __forceinline vint16 sortNetwork(const vint16& v)
