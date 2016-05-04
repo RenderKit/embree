@@ -20,6 +20,7 @@
 #include "../common/tutorial/differential_geometry.isph"
 #include "../common/tutorial/sampling.isph"
 #include "../common/tutorial/optics.isph"
+#include "../common/tutorial/lights/light.isph"
 
 #undef TILE_SIZE_X
 #undef TILE_SIZE_Y
@@ -111,77 +112,6 @@ inline Sample3f cosineSampleHemisphere(const float  u, const float  v, const Vec
   s.v = frame(N) * localDir;
   s.pdf = cosineSampleHemispherePDF(localDir);
   return s;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-//                             Ambient Light                                  //
-////////////////////////////////////////////////////////////////////////////////
-
-inline Vec3f AmbientLight__eval(const uniform ISPCAmbientLight& light, const Vec3f& wo) {
-  return make_Vec3f(light.L);
-}
-
-inline Vec3f AmbientLight__sample(const uniform ISPCAmbientLight& light, const DifferentialGeometry& dg, varying Sample3f& wi, varying float& tMax, varying const Vec2f& s)
-{
-  wi = cosineSampleHemisphere(s.x,s.y,dg.Ns);
-  tMax = 1e20f;
-  return make_Vec3f(light.L);
-}
-
-////////////////////////////////////////////////////////////////////////////////
-//                             Point Light                                    //
-////////////////////////////////////////////////////////////////////////////////
-
-inline varying Vec3f PointLight__sample(const uniform ISPCPointLight& light,
-					varying const DifferentialGeometry& dg,
-					varying Sample3f& wi,
-					varying float& tMax,
-					varying const Vec2f& s)
-{
-  Vec3f d = make_Vec3f(light.P) - dg.P;
-  float distance = length(d);
-  wi = make_Sample3f(d*rcp(distance), distance*distance);
-  tMax = distance;
-  return make_Vec3f(light.I);
-}
-
-////////////////////////////////////////////////////////////////////////////////
-//                        Directional Light                                   //
-////////////////////////////////////////////////////////////////////////////////
-
-inline varying Vec3f DirectionalLight__sample(const uniform ISPCDirectionalLight& light,
-					      varying const DifferentialGeometry& dg,
-					      varying Sample3f& wi,
-					      varying float& tMax,
-					      varying const Vec2f& s)
-{
-  wi = make_Sample3f(neg(normalize(make_Vec3f(light.D))),1.0f);
-  tMax = inf;
-  return make_Vec3f(light.E);
-}
-
-////////////////////////////////////////////////////////////////////////////////
-//                          Distant Light                                     //
-////////////////////////////////////////////////////////////////////////////////
-
-inline varying Vec3f DistantLight__eval(const uniform ISPCDistantLight& light, varying const Vec3f& wo)
-{
-  if (-dot(wo,make_Vec3f(light.D)) >= light.cosHalfAngle) return make_Vec3f(light.L);
-  return make_Vec3f(0.0f);
-}
-
-inline varying Vec3f DistantLight__sample(const uniform ISPCDistantLight& light,
-                                   varying const DifferentialGeometry& dg,
-                                   varying Sample3f& wi,
-                                   varying float& tMax,
-                                   varying const Vec2f& s)
-{
-  wi.v = frame(make_Vec3f((varying Vec3fa)neg(light.D))) * uniformSampleCone(light.cosHalfAngle, s);
-  wi.pdf = uniformSampleConePDF(light.cosHalfAngle);
-
-  tMax = 1e20f;
-
-  return make_Vec3f(light.L);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1580,6 +1510,8 @@ Vec3f renderPixelFunction(float x, float y, RandomSampler& sampler, const unifor
   RTCRay ray = make_Ray(make_Vec3f(camera.xfm.p),
                         make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)),0.0f,inf,time);
 
+  DifferentialGeometry dg;
+
   /* iterative path tracer loop */
   for (uniform int i=0; i<MAX_PATH_LENGTH; i++)
   {
@@ -1595,17 +1527,15 @@ Vec3f renderPixelFunction(float x, float y, RandomSampler& sampler, const unifor
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID)
     {
       //L = L + Lw*make_Vec3f(1.0f);
-#if 1
-      /* iterate over all ambient lights */
-      for (uniform size_t i=0; i<g_ispc_scene->numAmbientLights; i++)
-        L = L + Lw*AmbientLight__eval(g_ispc_scene->ambientLights[i],ray.dir);
-#endif
 
-#if 0
-      /* iterate over all distant lights */
-      for (uniform size_t i=0; i<g_ispc_scene->numDistantLights; i++)
-        L = L + Lw*DistantLight__eval(g_ispc_scene->distantLights[i],ray.dir);
-#endif
+      /* iterate over all lights */
+      for (uniform size_t i=0; i<g_ispc_scene->numLights; i++)
+      {
+        const uniform Light* uniform l = g_ispc_scene->lights[i];
+        Light_EvalRes le = l->eval(l,dg,ray.dir);
+        L = L + Lw*le.value;
+      }
+
       break;
     }
     Vec3f Ns = normalize(ray.Ng);
@@ -1621,7 +1551,6 @@ Vec3f renderPixelFunction(float x, float y, RandomSampler& sampler, const unifor
     }
 
     /* compute differential geometry */
-    DifferentialGeometry dg;
     dg.geomID = ray.geomID;
     dg.primID = ray.primID;
     dg.u = ray.u;
@@ -1649,80 +1578,18 @@ Vec3f renderPixelFunction(float x, float y, RandomSampler& sampler, const unifor
     Sample3f wi1;
     c = c * Material__sample(material_array,materialID,numMaterials,brdf,Lw, wo, dg, wi1, medium, RandomSampler_get2D(sampler));
 
-#if 1
-    /* iterate over ambient lights */
-    for (uniform size_t i=0; i<g_ispc_scene->numAmbientLights; i++)
+    /* iterate over lights */
+    for (uniform size_t i=0; i<g_ispc_scene->numLights; i++)
     {
-#if 1
-      Vec3f L0 = make_Vec3f(0.0f);
-      Sample3f wi0; float tMax0;
-      Vec3f Ll0 = AmbientLight__sample(g_ispc_scene->ambientLights[i],dg,wi0,tMax0,RandomSampler_get2D(sampler));
-
-      if (wi0.pdf > 0.0f) {
-        RTCRay shadow = make_Ray(dg.P,wi0.v,dg.tnear_eps,tMax0,time); shadow.transparency = make_Vec3f(1.0f);
-        rtcOccluded(g_scene,shadow);
-        //if (shadow.geomID == RTC_INVALID_GEOMETRY_ID) {
-        if (max(max(shadow.transparency.x,shadow.transparency.y),shadow.transparency.z) > 0.0f) {
-          L0 = Ll0/wi0.pdf*shadow.transparency*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,wi0.v);
-        }
-
-        L = L + Lw*L0;
-      }
-#endif
-
-#if 0
-      Vec3f L1 = make_Vec3f(0.0f);
-      Vec3f Ll1 = AmbientLight__eval(g_ispc_scene->ambientLights[i],wi1.v);
-      if (wi1.pdf > 0.0f) {
-        RTCRay shadow = make_Ray(dg.P,wi1.v,dg.tnear_eps,inf,time); shadow.transparency = make_Vec3f(1.0f);
-        rtcOccluded(g_scene,shadow);
-        //if (shadow.geomID == RTC_INVALID_GEOMETRY_ID) {
-        if (max(max(shadow.transparency.x,shadow.transparency.y),shadow.transparency.z) > 0.0f) {
-          L1 = Ll1/wi1.pdf*c;
-        }
-        L = L + Lw*L1;
-      }
-#endif
-    }
-    Sample3f wi; float tMax;
-
-    /* iterate over point lights */
-    for (uniform size_t i=0; i<g_ispc_scene->numPointLights; i++)
-    {
-      Vec3f Ll = PointLight__sample(g_ispc_scene->pointLights[i],dg,wi,tMax,RandomSampler_get2D(sampler));
-      if (wi.pdf <= 0.0f) continue;
-      RTCRay shadow = make_Ray(dg.P,wi.v,dg.tnear_eps,tMax,time); shadow.transparency = make_Vec3f(1.0f);
+      const uniform Light* uniform l = g_ispc_scene->lights[i];
+      Light_SampleRes ls = l->sample(l,dg,RandomSampler_get2D(sampler));
+      if (ls.pdf <= 0.0f) continue;
+      RTCRay shadow = make_Ray(dg.P,ls.dir,dg.tnear_eps,ls.dist,time); shadow.transparency = make_Vec3f(1.0f);
       rtcOccluded(g_scene,shadow);
       //if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
       if (max(max(shadow.transparency.x,shadow.transparency.y),shadow.transparency.z) > 0.0f)
-        L = L + Lw*Ll/wi.pdf*shadow.transparency*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,wi.v);
+        L = L + Lw*ls.weight*shadow.transparency*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,ls.dir);
     }
-
-    /* iterate over directional lights */
-    for (uniform size_t i=0; i<g_ispc_scene->numDirectionalLights; i++)
-    {
-      Vec3f Ll = DirectionalLight__sample(g_ispc_scene->dirLights[i],dg,wi,tMax,RandomSampler_get2D(sampler));
-      if (wi.pdf <= 0.0f) continue;
-      RTCRay shadow = make_Ray(dg.P,wi.v,dg.tnear_eps,tMax,time); shadow.transparency = make_Vec3f(1.0f);
-      rtcOccluded(g_scene,shadow);
-      //if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
-      if (max(max(shadow.transparency.x,shadow.transparency.y),shadow.transparency.z) > 0.0f)
-        L = L + Lw*Ll/wi.pdf*shadow.transparency*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,wi.v);
-    }
-
-    /* iterate over distant lights */
-    for (uniform size_t i=0; i<g_ispc_scene->numDistantLights; i++)
-    {
-      Vec3f Ll = DistantLight__sample(g_ispc_scene->distantLights[i],dg,wi,tMax,RandomSampler_get2D(sampler));
-
-      if (wi.pdf <= 0.0f) continue;
-      RTCRay shadow = make_Ray(dg.P,wi.v,dg.tnear_eps,tMax,time); shadow.transparency = make_Vec3f(1.0f);
-      rtcOccluded(g_scene,shadow);
-      //if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
-      if (max(max(shadow.transparency.x,shadow.transparency.y),shadow.transparency.z) > 0.0f)
-        L = L + Lw*Ll/wi.pdf*shadow.transparency*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,wi.v);
-    }
-#endif
 
     if (wi1.pdf <= 1E-4f /* 0.0f */) break;
     Lw = Lw*c/wi1.pdf;

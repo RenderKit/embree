@@ -1,7 +1,13 @@
 
 all:
+	@./ispc2cpp.sh common/tutorial/differential_geometry.isph common/tutorial/differential_geometry.h
 	@./ispc2cpp.sh common/tutorial/sampling.isph common/tutorial/sampling.h
 	@./ispc2cpp.sh common/tutorial/optics.isph common/tutorial/optics.h
+	@./ispc2cpp.sh common/tutorial/lights/light.isph common/tutorial/lights/light.h
+	@./ispc2cpp.sh common/tutorial/lights/light.ispc common/tutorial/lights/light.cpp
+	@./ispc2cpp.sh common/tutorial/lights/ambient_light.ispc common/tutorial/lights/ambient_light.cpp
+	@./ispc2cpp.sh common/tutorial/lights/directional_light.ispc common/tutorial/lights/directional_light.cpp
+	@./ispc2cpp.sh common/tutorial/lights/point_light.ispc common/tutorial/lights/point_light.cpp
 	@./ispc2cpp.sh triangle_geometry/triangle_geometry_device.ispc triangle_geometry/triangle_geometry_device.cpp
 	@./ispc2cpp.sh dynamic_scene/dynamic_scene_device.ispc dynamic_scene/dynamic_scene_device.cpp
 	@./ispc2cpp.sh user_geometry/user_geometry_device.ispc user_geometry/user_geometry_device.cpp
@@ -20,3 +26,8 @@ all:
 
 ospray:
 	@./osp2emb.sh ../../ospray/ospray/math/sampling.ih common/tutorial/sampling.isph
+	@./osp2emb.sh ../../ospray/ospray/lights/Light.ih common/tutorial/lights/light.isph
+	@./osp2emb.sh ../../ospray/ospray/lights/Light.ispc common/tutorial/lights/light.ispc
+	@./osp2emb.sh ../../ospray/ospray/lights/AmbientLight.ispc common/tutorial/lights/ambient_light.ispc
+	@./osp2emb.sh ../../ospray/ospray/lights/DirectionalLight.ispc common/tutorial/lights/directional_light.ispc
+	@./osp2emb.sh ../../ospray/ospray/lights/PointLight.ispc common/tutorial/lights/point_light.ispc
