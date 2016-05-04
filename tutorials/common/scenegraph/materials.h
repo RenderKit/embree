@@ -34,65 +34,56 @@ namespace embree
     MATERIAL_REFLECTIVE_METAL,
     MATERIAL_HAIR
   };
-  
-  struct MatteMaterial
+
+  struct MaterialBase
   {
-  public:
+    MaterialBase() {}
+    MaterialBase(MaterialTy ty) : ty(ty) {}
+
+    int ty;
+    int align[3];
+  };
+  
+  struct MatteMaterial : MaterialBase
+  {
     MatteMaterial (const Vec3fa& reflectance)
-    : ty(MATERIAL_MATTE), reflectance(reflectance) {}
+      : MaterialBase(MATERIAL_MATTE), reflectance(reflectance) {}
     
-  public:
-    int ty;
-    int align[3];
     Vec3fa reflectance;
   };
   
-  struct MirrorMaterial
+  struct MirrorMaterial : MaterialBase
   {
-  public:
     MirrorMaterial (const Vec3fa& reflectance)
-    : ty(MATERIAL_MIRROR), reflectance(reflectance) {}
+      : MaterialBase(MATERIAL_MIRROR), reflectance(reflectance) {}
     
-  public:
-    int ty;
-    int align[3];
     Vec3fa reflectance;
   };
   
-  struct ThinDielectricMaterial
+  struct ThinDielectricMaterial : MaterialBase
   {
-  public:
     ThinDielectricMaterial (const Vec3fa& transmission, const float eta, const float thickness)
-    : ty(MATERIAL_THIN_DIELECTRIC), transmission(transmission), eta(eta), thickness(thickness), transmissionFactor(log(transmission)*thickness) {}
+      : MaterialBase(MATERIAL_THIN_DIELECTRIC), transmission(transmission), eta(eta), thickness(thickness), transmissionFactor(log(transmission)*thickness) {}
     
-  public:
-    int ty;
-    int align[3];
     Vec3fa transmission;
     Vec3fa transmissionFactor;
     float eta;
     float thickness;
   };
   
-  /*! OBJ material */
-  struct OBJMaterial
+  struct OBJMaterial : MaterialBase
   {
-  public:
     OBJMaterial ()
-    : ty(MATERIAL_OBJ), illum(0), d(1.f), Ns(1.f), Ni(1.f), Ka(0.f), Kd(1.f), Ks(0.f), Kt(1.0f), map_d(nullptr), map_Kd(nullptr), map_Displ(nullptr) {}
+      : MaterialBase(MATERIAL_OBJ), illum(0), d(1.f), Ns(1.f), Ni(1.f), Ka(0.f), Kd(1.f), Ks(0.f), Kt(1.0f), map_d(nullptr), map_Kd(nullptr), map_Displ(nullptr) {}
     
     OBJMaterial (float d, const Vec3fa& Kd, const Vec3fa& Ks, const float Ns)
-    : ty(MATERIAL_OBJ), illum(0), d(d), Ns(Ns), Ni(1.f), Ka(0.f), Kd(Kd), Ks(Ks), Kt(1.0f), map_d(nullptr), map_Kd(nullptr), map_Displ(nullptr) {}
+      : MaterialBase(MATERIAL_OBJ), illum(0), d(d), Ns(Ns), Ni(1.f), Ka(0.f), Kd(Kd), Ks(Ks), Kt(1.0f), map_d(nullptr), map_Kd(nullptr), map_Displ(nullptr) {}
     
     OBJMaterial (float d, const Texture* map_d, const Vec3fa& Kd, const Texture* map_Kd, const Vec3fa& Ks, const Texture* map_Ks, const float Ns, const Texture* map_Ns, const Texture* map_Bump)
-    : ty(MATERIAL_OBJ), illum(0), d(d), Ns(Ns), Ni(1.f), Ka(0.f), Kd(Kd), Ks(Ks), Kt(1.0f), map_d(map_d), map_Kd(map_Kd), map_Displ(nullptr) {}
+      : MaterialBase(MATERIAL_OBJ), illum(0), d(d), Ns(Ns), Ni(1.f), Ka(0.f), Kd(Kd), Ks(Ks), Kt(1.0f), map_d(map_d), map_Kd(map_Kd), map_Displ(nullptr) {}
     
     ~OBJMaterial() { // FIXME: destructor never called!
     }
-    
-  public:
-    int ty;
-    int align[3];
     
     int illum;             /*< illumination model */
     float d;               /*< dissolve factor, 1=opaque, 0=transparent */
@@ -109,18 +100,13 @@ namespace embree
     const Texture* map_Displ;        /*< Displ texture */
   };
   
-  struct MetalMaterial
+  struct MetalMaterial : MaterialBase
   {
-  public:
     MetalMaterial (const Vec3fa& reflectance, const Vec3fa& eta, const Vec3fa& k)
-    : ty(MATERIAL_REFLECTIVE_METAL), reflectance(reflectance), eta(eta), k(k), roughness(0.0f) {}
+      : MaterialBase(MATERIAL_REFLECTIVE_METAL), reflectance(reflectance), eta(eta), k(k), roughness(0.0f) {}
     
     MetalMaterial (const Vec3fa& reflectance, const Vec3fa& eta, const Vec3fa& k, const float roughness)
-    : ty(MATERIAL_METAL), reflectance(reflectance), eta(eta), k(k), roughness(roughness) {}
-    
-  public:
-    int ty;
-    int align[3];
+      : MaterialBase(MATERIAL_METAL), reflectance(reflectance), eta(eta), k(k), roughness(roughness) {}
     
     Vec3fa reflectance;
     Vec3fa eta;
@@ -130,14 +116,10 @@ namespace embree
 
   typedef MetalMaterial ReflectiveMetalMaterial;
   
-  struct VelvetMaterial
+  struct VelvetMaterial : MaterialBase
   {
     VelvetMaterial (const Vec3fa& reflectance, const float backScattering, const Vec3fa& horizonScatteringColor, const float horizonScatteringFallOff)
-    : ty(MATERIAL_VELVET), reflectance(reflectance), backScattering(backScattering), horizonScatteringColor(horizonScatteringColor), horizonScatteringFallOff(horizonScatteringFallOff) {}
-    
-  public:
-    int ty;
-    int align[3];
+      : MaterialBase(MATERIAL_VELVET), reflectance(reflectance), backScattering(backScattering), horizonScatteringColor(horizonScatteringColor), horizonScatteringFallOff(horizonScatteringFallOff) {}
     
     Vec3fa reflectance;
     Vec3fa horizonScatteringColor;
@@ -145,59 +127,45 @@ namespace embree
     float horizonScatteringFallOff;
   };
   
-  struct DielectricMaterial
+  struct DielectricMaterial : MaterialBase
   {
     DielectricMaterial (const Vec3fa& transmissionOutside, const Vec3fa& transmissionInside, const float etaOutside, const float etaInside)
-    : ty(MATERIAL_DIELECTRIC), transmissionOutside(transmissionOutside), transmissionInside(transmissionInside), etaOutside(etaOutside), etaInside(etaInside) {}
+      : MaterialBase(MATERIAL_DIELECTRIC), transmissionOutside(transmissionOutside), transmissionInside(transmissionInside), etaOutside(etaOutside), etaInside(etaInside) {}
     
-  public:
-    int ty;
-    int align[3];
     Vec3fa transmissionOutside;
     Vec3fa transmissionInside;
     float etaOutside;
     float etaInside;
   };
   
-  struct MetallicPaintMaterial
+  struct MetallicPaintMaterial : MaterialBase
   {
     MetallicPaintMaterial (const Vec3fa& shadeColor, const Vec3fa& glitterColor, float glitterSpread, float eta)
-    : ty(MATERIAL_METALLIC_PAINT), shadeColor(shadeColor), glitterColor(glitterColor), glitterSpread(glitterSpread), eta(eta) {}
+      : MaterialBase(MATERIAL_METALLIC_PAINT), shadeColor(shadeColor), glitterColor(glitterColor), glitterSpread(glitterSpread), eta(eta) {}
     
-  public:
-    int ty;
-    int align[3];
     Vec3fa shadeColor;
     Vec3fa glitterColor;
     float glitterSpread;
     float eta;
   };
 
-  struct HairMaterial
+  struct HairMaterial : MaterialBase
   {
     HairMaterial (const Vec3fa& Kr, const Vec3fa& Kt, float nx, float ny)
-    : ty(MATERIAL_HAIR), Kr(Kr), Kt(Kt), nx(nx), ny(ny) {}
+      : MaterialBase(MATERIAL_HAIR), Kr(Kr), Kt(Kt), nx(nx), ny(ny) {}
     
-  public:
-    int ty;
-    int align[3];
     Vec3fa Kr;
     Vec3fa Kt;
     float nx;
     float ny;
   };
   
-  /*! Material */
-  struct Material
+  struct Material : MaterialBase
   {
-  public:
     Material () { memset(this,0,sizeof(Material)); }
     Material (const OBJMaterial& in) { *((OBJMaterial*)this) = in; }
     OBJMaterial& obj() { return *(OBJMaterial*)this; }
     
-  public:
-    int ty;
-    int align[3];
     Vec3fa v[7];
   };
 }
