@@ -129,7 +129,6 @@ unmasked void instanceIntersectFuncN(const uniform int* uniform valid,
       ray.tnear = mask ? RTCRayN_tnear(rays,N,ui) : (float)(pos_inf);
       ray.tfar  = mask ? RTCRayN_tfar(rays,N,ui ) : (float)(neg_inf);
     }
-    //print("ray.tnear/tfar = % %\n",ray.tnear,ray.tfar);
     ray.time  = RTCRayN_time(rays,N,ui);
     ray.mask  = RTCRayN_mask(rays,N,ui);
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -755,7 +754,7 @@ void renderTileStandardStream(uniform int taskIndex,
     primary.instID = 4; // set default instance ID
     primary.geomID = RTC_INVALID_GEOMETRY_ID;
     primary.primID = RTC_INVALID_GEOMETRY_ID;
-    primary.mask = N*programCount + programIndex;
+    primary.mask = -1;
     primary.time = 0.0f;
     N++;
   }
