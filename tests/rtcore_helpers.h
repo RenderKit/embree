@@ -35,41 +35,41 @@ namespace embree
   struct RTCDeviceRef
   {
   public:
-    RTCDevice device;
+    mutable RTCDevice device;
     
     RTCDeviceRef (std::nullptr_t) 
       : device(nullptr) {}
     
     RTCDeviceRef (RTCDevice device) 
     : device(device) {}
+
+    RTCDeviceRef (const RTCDeviceRef& in) 
+    {
+      device = in.device;
+      in.device = nullptr;
+    }
     
     ~RTCDeviceRef ()
     {
+      if (device == nullptr) return;
       RTCError error = rtcDeviceGetError(device);
       rtcDeleteDevice(device);
       if (error != RTC_NO_ERROR) 
         throw std::runtime_error("Error occured: "+string_of(error));
     }
     
-    __forceinline operator RTCDevice () const { return device; }
+    operator RTCDevice () const { return device; }
     
-    __forceinline RTCDeviceRef& operator= (RTCDeviceRef& in) 
+    RTCDeviceRef& operator= (RTCDeviceRef& in) 
     {
-      RTCDevice tmp = in.device;
+      if (in.device != device && device) 
+        rtcDeleteDevice(device);
+      device = in.device;
       in.device = nullptr;
-      if (device) rtcDeleteDevice(device);
-      device = tmp;
       return *this;
     }
       
-    __forceinline RTCDeviceRef& operator= (RTCDevice in) 
-    {
-      if (device) rtcDeleteDevice(device);
-      device = in;
-      return *this;
-    }
-        
-    __forceinline RTCDeviceRef& operator= (std::nullptr_t) 
+    RTCDeviceRef& operator= (std::nullptr_t) 
     {
       if (device) rtcDeleteDevice(device);
       device = nullptr;

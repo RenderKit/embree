@@ -1658,6 +1658,141 @@ namespace embree
       return (VerifyApplication::TestReturnValue) (distance < 0.0002f);
     }
   };
+
+  struct TriangleHitTest : public VerifyApplication::IntersectTest
+  {
+    RTCSceneFlags sflags; 
+    RTCGeometryFlags gflags; 
+
+    TriangleHitTest (std::string name, int isa, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant)
+      : VerifyApplication::IntersectTest(name,isa,imode,ivariant,VerifyApplication::PASS), sflags(sflags), gflags(gflags) {}
+
+    inline Vec3fa uniformSampleTriangle(const Vec3fa &a, const Vec3fa &b, const Vec3fa &c, float &u, float& v)
+    {
+      const float su = sqrtf(u);
+      v *= su;
+      u = 1.0f-su;
+      return c + u * (a-c) + v * (b-c);
+    }
+
+    VerifyApplication::TestReturnValue run(VerifyApplication* state)
+    {
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
+      error_handler(rtcDeviceGetError(device));
+      if (!supportsIntersectMode(device))
+        return VerifyApplication::SKIPPED;
+     
+       std::vector<Vec3f> vertices = {
+        Vec3f(0.0f,0.0f,0.0f),
+        Vec3f(1.0f,0.0f,0.0f),
+        Vec3f(0.0f,1.0f,0.0f)
+      };
+      std::vector<Triangle> triangles = {
+        Triangle(0,1,2)
+      };
+      RTCSceneRef scene = rtcDeviceNewScene(device,sflags,to_aflags(imode));
+      int geomID = rtcNewTriangleMesh (scene, gflags, 1, 3);
+      rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER, vertices.data() , 0, sizeof(Vec3f));
+      rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER , triangles.data(), 0, sizeof(Triangle));
+      rtcCommit (scene);
+      AssertNoError(device);
+
+      float u[256], v[256];
+      RTCRay rays[256];
+      for (size_t i=0; i<256; i++)
+      {
+        u[i] = drand48(); 
+        v[i] = drand48();
+        Vec3fa from(0.0f,0.0f,-1.0f);
+        Vec3fa to = uniformSampleTriangle(vertices[1],vertices[2],vertices[0],u[i],v[i]);
+        rays[i] = makeRay(from,to-from);
+      }
+      IntersectWithMode(imode,ivariant,scene,rays,256);
+
+      for (size_t i=0; i<256; i++)
+      {
+        if (rays[i].geomID != 0) return VerifyApplication::FAILED;
+        if (ivariant & VARIANT_OCCLUDED) continue;
+        if (rays[i].primID != 0) return VerifyApplication::FAILED;
+        if (abs(rays[i].u - u[i]) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
+        if (abs(rays[i].v - v[i]) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
+        if (abs(rays[i].tfar - 1.0f) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
+        const Vec3fa org(rays[i].org[0],rays[i].org[1],rays[i].org[2]);
+        const Vec3fa dir(rays[i].dir[0],rays[i].dir[1],rays[i].dir[2]);
+        const Vec3fa ht  = org + rays[i].tfar*dir;
+        const Vec3fa huv = vertices[0] + rays[i].u*(vertices[1]-vertices[0]) + rays[i].v*(vertices[2]-vertices[0]);
+        if (reduce_max(abs(ht-huv)) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
+        const Vec3fa Ng = normalize(Vec3fa(rays[i].Ng[0],rays[i].Ng[1],rays[i].Ng[2])); // FIXME: some geom normals are scaled!!!??
+        if (reduce_max(abs(Ng - Vec3fa(0.0f,0.0f,-1.0f))) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
+      }
+      return VerifyApplication::PASSED;
+    }
+  };
+
+  struct QuadHitTest : public VerifyApplication::IntersectTest
+  {
+    RTCSceneFlags sflags; 
+    RTCGeometryFlags gflags; 
+
+    QuadHitTest (std::string name, int isa, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant)
+      : VerifyApplication::IntersectTest(name,isa,imode,ivariant,VerifyApplication::PASS), sflags(sflags), gflags(gflags) {}
+
+    VerifyApplication::TestReturnValue run(VerifyApplication* state)
+    {
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
+      error_handler(rtcDeviceGetError(device));
+      if (!supportsIntersectMode(device))
+        return VerifyApplication::SKIPPED;
+     
+       std::vector<Vec3f> vertices = {
+        Vec3f(0.0f,0.0f,0.0f),
+        Vec3f(1.0f,0.0f,0.0f),
+        Vec3f(1.0f,1.0f,0.0f),
+        Vec3f(0.0f,1.0f,0.0f)
+      };
+      std::vector<int> quads = {
+        0,1,2,3
+      };
+      RTCSceneRef scene = rtcDeviceNewScene(device,sflags,to_aflags(imode));
+      int geomID = rtcNewQuadMesh (scene, gflags, 1, 4);
+      rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER, vertices.data() , 0, sizeof(Vec3f));
+      rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER , quads.data(), 0, 4*sizeof(int));
+      rtcCommit (scene);
+      AssertNoError(device);
+
+      float u[256], v[256];
+      RTCRay rays[256];
+      for (size_t i=0; i<256; i++)
+      {
+        u[i] = drand48(); 
+        v[i] = drand48();
+        Vec3fa from(0.0f,0.0f,-1.0f);
+        Vec3fa to = vertices[0] + u[i]*(vertices[1]-vertices[0]) + v[i]*(vertices[3]-vertices[0]);
+        rays[i] = makeRay(from,to-from);
+      }
+      IntersectWithMode(imode,ivariant,scene,rays,256);
+
+      for (size_t i=0; i<256; i++)
+      {
+        if (rays[i].geomID != 0) return VerifyApplication::FAILED;
+        if (ivariant & VARIANT_OCCLUDED) continue;
+        if (rays[i].primID != 0) return VerifyApplication::FAILED;
+        if (abs(rays[i].u - u[i]) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
+        if (abs(rays[i].v - v[i]) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
+        if (abs(rays[i].tfar - 1.0f) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
+        const Vec3fa org(rays[i].org[0],rays[i].org[1],rays[i].org[2]);
+        const Vec3fa dir(rays[i].dir[0],rays[i].dir[1],rays[i].dir[2]);
+        const Vec3fa ht  = org + rays[i].tfar*dir;
+        const Vec3fa huv = vertices[0] + rays[i].u*(vertices[1]-vertices[0]) + rays[i].v*(vertices[3]-vertices[0]);
+        if (reduce_max(abs(ht-huv)) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
+        const Vec3fa Ng = normalize(Vec3fa(rays[i].Ng[0],rays[i].Ng[1],rays[i].Ng[2])); // FIXME: some geom normals are scaled!!!??
+        if (reduce_max(abs(Ng - Vec3fa(0.0f,0.0f,-1.0f))) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
+      }
+      return VerifyApplication::PASSED;
+    }
+  };
   
   struct RayMasksTest : public VerifyApplication::IntersectTest
   {
@@ -2914,7 +3049,21 @@ namespace embree
       /**************************************************************************/
       /*                      Intersection Tests                                */
       /**************************************************************************/
-      
+
+      beginTestGroup("triangle_hit_"+stringOfISA(isa));
+      for (auto sflags : sceneFlags) 
+        for (auto imode : intersectModes) 
+          for (auto ivariant : intersectVariants)
+            addTest(new TriangleHitTest("triangle_hit_"+to_string(isa,sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,imode,ivariant));
+      endTestGroup();
+
+      beginTestGroup("quad_hit_"+stringOfISA(isa));
+      for (auto sflags : sceneFlags) 
+        for (auto imode : intersectModes) 
+          for (auto ivariant : intersectVariants)
+            addTest(new QuadHitTest("quad_hit_"+to_string(isa,sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,imode,ivariant));
+      endTestGroup();
+
       if (rtcDeviceGetParameter1i(device,RTC_CONFIG_RAY_MASK)) 
       {
         beginTestGroup("ray_masks_"+stringOfISA(isa));
