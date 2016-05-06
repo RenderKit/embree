@@ -20,7 +20,6 @@
 
 struct PointLight
 {
-  ALIGNED_STRUCT
   Light super;    //!< inherited light fields
 
   Vec3fa position; //!< light position
@@ -54,7 +53,7 @@ Light_SampleRes PointLight_sample(const Light* super,
   res.weight = self->power * sqr(invdist);
   const float sinTheta = self->radius * invdist;
 
-  if ((self->radius > 0.f) & (sinTheta > 0.005f)) {
+  if (self->radius > 0.f & sinTheta > 0.005f) {
     // res surface of sphere as seen by hit point -> cone of directions
     // for very small cones treat as point light, because float precision is not good enough
     if (sinTheta < 1.f) {
@@ -133,7 +132,7 @@ extern "C" void PointLight_set(void* super,
 //! Create an ispc-side PointLight object
 extern "C" void* PointLight_create()
 {
-  PointLight* self = new PointLight;
+  PointLight* self = (PointLight*) alignedMalloc(sizeof(PointLight));
   Light_Constructor(&self->super);
   self->super.sample = PointLight_sample;
   self->super.eval = PointLight_eval;

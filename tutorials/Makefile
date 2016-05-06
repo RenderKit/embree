@@ -24,7 +24,7 @@ ispc2cpp:
 	@./ispc2cpp.sh interpolation/interpolation_device.ispc interpolation/interpolation_device.cpp
 	@./ispc2cpp.sh curve_geometry/curve_geometry_device.ispc curve_geometry/curve_geometry_device.cpp
 
-ospray:
+osp2emb:
 	@./osp2emb.sh ../../ospray/ospray/math/sampling.ih common/tutorial/sampling.isph
 	@./osp2emb.sh ../../ospray/ospray/lights/Light.ih common/tutorial/lights/light.isph
 	@./osp2emb.sh ../../ospray/ospray/lights/Light.ispc common/tutorial/lights/light.ispc
@@ -32,5 +32,4 @@ ospray:
 	@./osp2emb.sh ../../ospray/ospray/lights/DirectionalLight.ispc common/tutorial/lights/directional_light.ispc
 	@./osp2emb.sh ../../ospray/ospray/lights/PointLight.ispc common/tutorial/lights/point_light.ispc
 
-all: ospray ispc2cpp
-
+all: osp2emb ispc2cpp

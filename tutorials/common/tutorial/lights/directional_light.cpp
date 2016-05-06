@@ -20,7 +20,6 @@
 
 struct DirectionalLight
 {
-  ALIGNED_STRUCT
   Light super;      //!< inherited light fields
 
   LinearSpace3fa frame;   //!< coordinate frame, with vz == direction *towards* the light source
@@ -94,7 +93,7 @@ extern "C" void DirectionalLight_set(void* super,
 //! Create an ispc-side DirectionalLight object
 extern "C" void* DirectionalLight_create()
 {
-  DirectionalLight* self = new DirectionalLight;
+  DirectionalLight* self = (DirectionalLight*) alignedMalloc(sizeof(DirectionalLight));
   Light_Constructor(&self->super);
   self->super.sample = DirectionalLight_sample;
   self->super.eval = DirectionalLight_eval;

@@ -20,7 +20,6 @@
 
 struct AmbientLight
 {
-  ALIGNED_STRUCT
   Light super;      //!< inherited light fields
 
   Vec3fa radiance;   //!< RGB color and intensity of light
@@ -79,7 +78,7 @@ void AmbientLight_Constructor(AmbientLight* self,
 //! Create an ispc-side AmbientLight object
 extern "C" void *AmbientLight_create()
 {
-  AmbientLight* self = new AmbientLight;
+  AmbientLight* self = (AmbientLight*) alignedMalloc(sizeof(AmbientLight));
   AmbientLight_Constructor(self, Vec3fa(1.f));
   return self;
 }
