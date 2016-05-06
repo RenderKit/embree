@@ -2208,12 +2208,12 @@ namespace embree
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
 
-  void shootRandomRays (std::vector<IntersectMode>& intersectModes, const RTCSceneRef& scene)
+  void shootRandomRays (std::vector<IntersectMode>& intersectModes, std::vector<IntersectVariant>& intersectVariants, const RTCSceneRef& scene)
   {
     const size_t numRays = 100;
     for (auto imode : intersectModes)
     {
-      for (auto ivariant : { VARIANT_INTERSECT, VARIANT_OCCLUDED })
+      for (auto ivariant : intersectVariants)
       {
         RTCRay rays[numRays];
         for (size_t i=0; i<numRays; i++) {
@@ -2285,7 +2285,7 @@ namespace embree
             atomic_add(&errorCounter,1);
           }
           else {
-            shootRandomRays(thread->intersectModes,task->scene);
+            shootRandomRays(thread->intersectModes,thread->state->intersectVariants,task->scene);
           }
 	}
         task->barrier.wait();
@@ -2372,7 +2372,7 @@ namespace embree
       }
       else {
         if (!hasError) {
-          shootRandomRays(thread->intersectModes,task->scene);
+          shootRandomRays(thread->intersectModes,thread->state->intersectVariants,task->scene);
         }
       }
 
@@ -2408,7 +2408,7 @@ namespace embree
             atomic_add(&errorCounter,1);
           }
           else {
-            shootRandomRays(thread->intersectModes,task->scene);
+            shootRandomRays(thread->intersectModes,thread->state->intersectVariants,task->scene);
           }
 	}
 	task->barrier.wait();
@@ -2553,7 +2553,7 @@ namespace embree
         atomic_add(&errorCounter,1);
       else
         if (!hasError)
-          shootRandomRays(thread->intersectModes,task->scene);
+          shootRandomRays(thread->intersectModes,thread->state->intersectVariants,task->scene);
 
       if (thread->threadCount) 
 	task->barrier.wait();
