@@ -327,6 +327,9 @@ namespace embree
   // Movement/Shifting/Shuffling Functions
   ////////////////////////////////////////////////////////////////////////////////
 
+  __forceinline vint16 unpacklo( const vint16& a, const vint16& b ) { return _mm512_unpacklo_epi32(a.v, b.v); }
+  __forceinline vint16 unpackhi( const vint16& a, const vint16& b ) { return _mm512_unpackhi_epi32(a.v, b.v); }
+
   __forceinline vint16 shuffle(const vint16& x,_MM_SWIZZLE_ENUM perm32 ) { return _mm512_swizzle_epi32(x,perm32); }
   __forceinline vint16 shuffle4(const vint16& x,_MM_PERM_ENUM    perm128) { return _mm512_permute4f128_epi32(x,perm128); }
   

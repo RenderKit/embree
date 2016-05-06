@@ -126,7 +126,7 @@ void device_key_pressed(int key)
 
 unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
 {
-  unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices, mesh->positions2 ? 2 : 1);
+  unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_DYNAMIC, mesh->numTriangles, mesh->numVertices, mesh->positions2 ? 2 : 1);
   rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa      ));
   if (mesh->positions2) rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER1, mesh->positions2, 0, sizeof(Vec3fa      ));
   rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(ISPCTriangle));
@@ -136,7 +136,7 @@ unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
 
 unsigned int convertQuadMesh(ISPCQuadMesh* mesh, RTCScene scene_out)
 {
-  unsigned int geomID = rtcNewQuadMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numQuads, mesh->numVertices, mesh->positions2 ? 2 : 1);
+  unsigned int geomID = rtcNewQuadMesh (scene_out, RTC_GEOMETRY_DYNAMIC, mesh->numQuads, mesh->numVertices, mesh->positions2 ? 2 : 1);
   rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa      ));
   if (mesh->positions2) rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER1, mesh->positions2, 0, sizeof(Vec3fa      ));
   rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->quads, 0, sizeof(ISPCQuad));
@@ -252,7 +252,8 @@ RTCScene convertScene(ISPCScene* scene_in)
   geomID_to_scene = (RTCScene*) alignedMalloc(numGeometries*sizeof(RTCScene));
   geomID_to_inst  = (ISPCInstance_ptr*) alignedMalloc(numGeometries*sizeof(ISPCInstance_ptr));
 
-  int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
+  PRINT("DYNAMIC MODE");
+  int scene_flags = RTC_SCENE_DYNAMIC | RTC_SCENE_INCOHERENT;
   int scene_aflags = RTC_INTERSECT1 | RTC_INTERPOLATE;
   if (g_subdiv_mode)
     scene_flags = RTC_SCENE_DYNAMIC | RTC_SCENE_INCOHERENT | RTC_SCENE_ROBUST;

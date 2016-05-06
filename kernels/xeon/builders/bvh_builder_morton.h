@@ -99,7 +99,11 @@ namespace embree
       {
         if (slots != 0)
         {
+#if defined(__AVX512F__)
+          const vint16 code = bitInterleave(ax,ay,az);
+#else
           const vint4 code = bitInterleave(ax,ay,az);
+#endif
           for (size_t i=0; i<slots; i++) {
             dest[currentID-slots+i].index = ai[i];
             dest[currentID-slots+i].code = code[i];
@@ -120,7 +124,17 @@ namespace embree
         ai[slots] = index;
         slots++;
         currentID++;
-        
+
+#if defined(__AVX512F__)
+        if (unlikely(slots == 16))
+        {
+          const vint16 code = bitInterleave(ax,ay,az);
+          vint16::storeu(&dest[currentID-16],unpacklo(code,ai));
+          vint16::storeu(&dest[currentID-8],unpackhi(code,ai));
+          slots = 0;
+        }
+
+#else        
         if (slots == 4)
         {
           const vint4 code = bitInterleave(ax,ay,az);
@@ -128,6 +142,7 @@ namespace embree
           vint4::storeu(&dest[currentID-2],unpackhi(code,ai));
           slots = 0;
         }
+#endif
       }
       
     public:
@@ -137,7 +152,11 @@ namespace embree
       const vfloat4 scale;
       size_t currentID;
       size_t slots;
+#if defined(__AVX512F__)
+      vint16 ax, ay, az, ai;
+#else
       vint4 ax, ay, az, ai;
+#endif
     };
     
     template<
@@ -158,7 +177,7 @@ namespace embree
     protected:
       static const size_t MAX_BRANCHING_FACTOR = 16;         //!< maximal supported BVH branching factor
       static const size_t MIN_LARGE_LEAF_LEVELS = 8;         //!< create balanced tree of we are that many levels before the maximal tree depth
-      static const size_t SINGLE_THREADED_THRESHOLD = 4096;  //!< threshold to switch to single threaded build
+      static const size_t SINGLE_THREADED_THRESHOLD = 4*1024;  //!< threshold to switch to single threaded build
 
 
     public:
@@ -243,7 +262,7 @@ namespace embree
         
         /* create node */
         auto node = allocNode(current,children,numChildren,alloc);
-        
+
         /* recurse into each child */
         BBox3fa bounds[MAX_BRANCHING_FACTOR];
         for (size_t i=0; i<numChildren; i++) {
@@ -382,7 +401,7 @@ namespace embree
         
         /* allocate node */
         auto node = allocNode(current,children,numChildren,alloc);
-        
+
         /* process top parts of tree parallel */
         BBox3fa bounds[MAX_BRANCHING_FACTOR];
         if (current.size() > SINGLE_THREADED_THRESHOLD)
@@ -411,8 +430,13 @@ namespace embree
       std::pair<NodeRef,BBox3fa> build(MortonID32Bit* src, MortonID32Bit* tmp, size_t numPrimitives) 
       {
         /* using 4 phases radix sort */
+        //double i0 = getSeconds();
         morton = src;
         radix_sort_u32(src,tmp,numPrimitives);
+        //i0 = getSeconds() - i0;
+        //PRINT(i0);
+
+        //double i1 = getSeconds();
 
         /* build BVH */
         NodeRef root;
@@ -420,6 +444,9 @@ namespace embree
         
         const BBox3fa bounds = recurse(br, nullptr, true);
         _mm_mfence(); // to allow non-temporal stores during build
+
+        //i1 = getSeconds() - i1;
+        //PRINT(i1);
 
         return std::make_pair(root,bounds);
       }

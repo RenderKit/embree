@@ -32,6 +32,9 @@
 
 #define BLOCK_SIZE 1024
 
+#define DBG_PRINT(x) 
+//#define DBG_PRINT(x)  PRINT(x)
+
 namespace embree 
 {
   namespace isa
@@ -45,8 +48,9 @@ namespace embree
 
       __forceinline Node* operator() (MortonBuildRecord<NodeRef>& current, MortonBuildRecord<NodeRef>* children, size_t numChildren, FastAllocator::ThreadLocal2* alloc)
       {
-        Node* node = (Node*) alloc->alloc0.malloc(sizeof(Node),BVH::byteNodeAlignment); node->clear();
+        Node* node = (Node*) alloc->alloc0.malloc(sizeof(Node),BVH::byteNodeAlignment); 
         *current.parent = BVH::encodeNode(node);
+        node->clear();
         for (size_t i=0; i<numChildren; i++)
           children[i].parent = &node->child(i);
         return node;
@@ -118,10 +122,9 @@ namespace embree
         /* allocate leaf node */
         Triangle4* accel = (Triangle4*) alloc->alloc1.malloc(sizeof(Triangle4));
         *current.parent = BVH::encodeLeaf((char*)accel,1);
-        
         vint4 vgeomID = -1, vprimID = -1;
         Vec3vf4 v0 = zero, v1 = zero, v2 = zero;
-        
+
         for (size_t i=0; i<items; i++)
         {
           const size_t index = morton[start+i].index;
@@ -140,6 +143,7 @@ namespace embree
           v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
           v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
         }
+
         Triangle4::store_nt(accel,Triangle4(v0,v1,v2,vgeomID,vprimID));
         box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
 #if ROTATE_TREE
@@ -310,6 +314,8 @@ namespace embree
          * temporarily use the first allocation block for sorting the
          * morton codes. */
 
+        double d0 = getSeconds();
+
         const size_t numNewPrimitives = mesh->size();
         if (numNewPrimitives != numPrimitives) bvh->alloc.clear();
         numPrimitives = numNewPrimitives;
@@ -329,6 +335,11 @@ namespace embree
         bytesAllocated = max(bytesAllocated,bytesMortonCodes); // the first allocation block is reused to sort the morton codes
         bvh->alloc.init(bytesAllocated,2*bytesAllocated);
 
+        d0 = getSeconds() - d0;
+        DBG_PRINT(d0);
+
+        double d1 = getSeconds();
+
         /* compute scene bounds */
         ParallelPrefixSumState<size_t> pstate;
         const BBox3fa centBounds = parallel_reduce 
@@ -339,6 +350,12 @@ namespace embree
               return bounds;
             }, [] (const BBox3fa& a, const BBox3fa& b) { return merge(a,b); });
 
+        d1 = getSeconds() - d1;
+        DBG_PRINT(d1);
+
+
+        double d2 = getSeconds();
+
         /* compute morton codes */
         MortonID32Bit* dest = (MortonID32Bit*) bvh->alloc.specialAlloc(bytesMortonCodes);
         MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
@@ -348,12 +365,15 @@ namespace embree
             for (ssize_t j=r.begin(); j<r.end(); j++)
             {
               BBox3fa bounds = empty;
-              if (!mesh->valid(j,&bounds)) continue;
+              if (unlikely(!mesh->valid(j,&bounds))) continue;
               generator(bounds,j);
               num++;
             }
             return num;
           }, std::plus<size_t>());
+
+        d2 = getSeconds() - d2;
+        DBG_PRINT(d2);
 
         /* fallback in case some primitives were invalid */
         if (numPrimitivesGen != numPrimitives)
@@ -372,6 +392,8 @@ namespace embree
             }, std::plus<size_t>());
         }
 
+        double d3 = getSeconds();
+
         /* create BVH */
         AllocBVHNNode<N> allocNode;
         SetBVHNBounds<N> setBounds(bvh);
@@ -383,6 +405,11 @@ namespace embree
           morton.data(),dest,numPrimitivesGen,N,BVH::maxBuildDepth,minLeafSize,maxLeafSize);
         
         bvh->set(node_bounds.first,node_bounds.second,numPrimitives);
+
+        d3 = getSeconds() - d3;
+        DBG_PRINT(d3);
+
+        double d4 = getSeconds();
         
 #if ROTATE_TREE
         if (N == 4)
@@ -392,6 +419,9 @@ namespace embree
           bvh->clearBarrier(bvh->root);
         }
 #endif
+        d4 = getSeconds() - d4;
+        DBG_PRINT(d4);
+
 
         /* clear temporary data for static geometry */
         if (mesh->isStatic()) 

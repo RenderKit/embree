@@ -20,8 +20,9 @@
 #include "../../common/scene_line_segments.h"
 #include "../../common/scene_triangle_mesh.h"
 
-#define PROFILE 0
+#define PROFILE 1
 #define MAX_OPEN_SIZE 10000
+#define PROFILE_ITERATIONS 2000
 
 namespace embree
 {
@@ -66,7 +67,7 @@ namespace embree
       double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "BuilderTwoLevel");
 
 #if PROFILE
-	profile(2,20,numPrimitives,[&] (ProfileTimer& timer)
+	profile(2,PROFILE_ITERATIONS,numPrimitives,[&] (ProfileTimer& timer)
         {
 #endif
 
@@ -76,6 +77,8 @@ namespace embree
       if (refs.size()     < num) refs.resize(num);
       nextRef = 0;
       
+      PRINT(num);
+      double time0 = getSeconds();
       /* create of acceleration structures */
       parallel_for(size_t(0), num, [&] (const range<size_t>& r)
       {
@@ -95,6 +98,11 @@ namespace embree
             createMeshAccel(mesh,(AccelData*&)objects[objectID],builders[objectID]);
         }
       });
+
+      time0 = getSeconds() - time0;
+      PRINT(time0);
+
+      double time1 = getSeconds();
 
       /* parallel build of acceleration structures */
       parallel_for(size_t(0), num, [&] (const range<size_t>& r)
@@ -121,12 +129,16 @@ namespace embree
         }
       });
 
+      time1 = getSeconds() - time1;
+      PRINT(time1);
       
       /* fast path for single geometry scenes */
       if (nextRef == 1) { 
         bvh->set(refs[0].node,refs[0].bounds(),numPrimitives);
         return;
       }
+
+      double time2 = getSeconds();
 
       /* open all large nodes */
       refs.resize(nextRef);
@@ -137,6 +149,11 @@ namespace embree
         bvh->set(refs[0].node,refs[0].bounds(),numPrimitives);
         return;
       }
+
+      time2 = getSeconds() - time2;
+      PRINT(time2);
+
+      double time3 = getSeconds();
 
       /* compute PrimRefs */
       prims.resize(refs.size());
@@ -149,6 +166,11 @@ namespace embree
         }
         return pinfo;
       }, [] (const PrimInfo& a, const PrimInfo& b) { return PrimInfo::merge(a,b); });
+
+      time3 = getSeconds() - time3;
+      PRINT(time3);
+
+      double time4 = getSeconds();
 
       /* skip if all objects where empty */
       if (pinfo.size() == 0)
@@ -182,6 +204,9 @@ namespace embree
         
         bvh->set(root,pinfo.geomBounds,numPrimitives);
       }
+
+      time4 = getSeconds() - time4;
+      PRINT(time4);
 
 #if PROFILE
       }); 

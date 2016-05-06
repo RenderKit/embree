@@ -204,8 +204,10 @@ SET(EMBREE_LIBRARY_FILES_AVX512KNL
     bvh/bvh_builder_sah.avx512.cpp
     bvh/bvh_builder_twolevel.avx512.cpp
     bvh/bvh_builder_instancing.avx512.cpp
+    bvh/bvh_builder_morton.avx512.cpp
 
     bvh/bvh_refit.cpp
+    bvh/bvh_rotate.cpp
     bvh/bvh_builder_subdiv.avx512.cpp
     bvh/bvh_intersector1.cpp)
 
