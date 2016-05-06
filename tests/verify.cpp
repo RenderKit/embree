@@ -2894,17 +2894,18 @@ namespace embree
       /**************************************************************************/
       
       beginTestGroup("interpolate_subdiv_"+stringOfISA(isa));
-      for (auto s : { 4,5,8,11,12,15 })
+      int subdivTests[] = { 4,5,8,11,12,15 };
+      for (auto s : subdivTests)
         addTest(new InterpolateSubdivTest("interpolate_subdiv_"+stringOfISA(isa)+"_"+std::to_string(long(s)),isa,s));
       endTestGroup();
       
       beginTestGroup("interpolate_triangles_"+stringOfISA(isa));
-      for (auto s : { 4,5,8,11,12,15 }) 
+      for (auto s : subdivTests) 
         addTest(new InterpolateTrianglesTest("interpolate_triangles_"+stringOfISA(isa)+"_"+std::to_string(long(s)),isa,s));
       endTestGroup();
 
       beginTestGroup("interpolate_hair_"+stringOfISA(isa));
-      for (auto s : { 4,5,8,11,12,15 }) 
+      for (auto s : subdivTests) 
         addTest(new InterpolateHairTest("interpolate_hair_"+stringOfISA(isa)+"_"+std::to_string(long(s)),isa,s));
       endTestGroup();
       
@@ -2958,10 +2959,11 @@ namespace embree
       endTestGroup();
       
       beginTestGroup("watertight_"+stringOfISA(isa));
+      std::string watertightModels [] = {"sphere", "plane"};
       const Vec3fa watertight_pos = Vec3fa(148376.0f,1234.0f,-223423.0f);
       for (auto sflags : sceneFlagsRobust) 
         for (auto imode : intersectModes) 
-          for (std::string model : {"sphere", "plane"}) 
+          for (std::string model : watertightModels) 
             addTest(new WatertightTest("watertight_"+to_string(isa,sflags,imode)+"_"+model,isa,sflags,imode,model,watertight_pos));
       endTestGroup();
       
