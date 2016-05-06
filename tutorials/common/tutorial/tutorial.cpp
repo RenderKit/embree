@@ -16,11 +16,6 @@
 
 #include "tutorial.h"
 #include "scene.h"
-#include "tutorial_device.h"
-#include "../scenegraph/obj_loader.h"
-#include "../scenegraph/xml_loader.h"
-#include "../image/image.h"
-#include "../transport/transport_host.h"
 
 /* include GLUT for display */
 #if defined(__MACOSX__)
@@ -34,6 +29,12 @@
 #  include <GL/gl.h>   
 #  include <GL/glut.h>
 #endif
+
+#include "tutorial_device.h"
+#include "../scenegraph/obj_loader.h"
+#include "../scenegraph/xml_loader.h"
+#include "../image/image.h"
+#include "../transport/transport_host.h"
 
 extern "C" {
   float g_debug = 0.0f;
