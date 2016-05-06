@@ -41,7 +41,7 @@ namespace embree
 	double t0 = getSeconds();
         for (size_t m=0; m<M; m++)
         {
-          AtomicCounter sum1 = 0;
+          std::atomic_size_t sum1(0);
           parallel_for( size_t(0), size_t(N), size_t(1024), [&](const range<size_t>& r) 
           {
             size_t s = 0;

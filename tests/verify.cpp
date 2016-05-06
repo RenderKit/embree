@@ -39,7 +39,7 @@
 
 namespace embree
 {
-  atomic_t errorCounter = 0;
+  std::atomic_size_t errorCounter(0);
   std::vector<thread_t> g_threads;
 
   bool hasISA(const int isa) 
@@ -113,7 +113,7 @@ namespace embree
   }
 
   #define CountErrors(device) \
-    if (rtcDeviceGetError(device) != RTC_NO_ERROR) atomic_add(&errorCounter,1);
+    if (rtcDeviceGetError(device) != RTC_NO_ERROR) errorCounter++;
 
   void AssertNoError(RTCDevice device) 
   {
@@ -2256,10 +2256,10 @@ namespace embree
   };
 
   ssize_t monitorProgressBreak = -1;
-  atomic_t monitorProgressInvokations = 0;
+  std::atomic_size_t monitorProgressInvokations(0);
   bool monitorProgressFunction(void* ptr, double dn) 
   {
-    size_t n = atomic_add(&monitorProgressInvokations,1);
+    size_t n = monitorProgressInvokations++;
     if (n == monitorProgressBreak) return false;
     return true;
   }
@@ -2282,7 +2282,7 @@ namespace embree
           }
 	  //CountErrors(thread->device);
           if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) {
-            atomic_add(&errorCounter,1);
+            errorCounter++;
           }
           else {
             shootRandomRays(thread->intersectModes,task->scene);
@@ -2345,8 +2345,7 @@ namespace embree
 	}
         //CountErrors(thread->device);
         if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) {
-          atomic_add(&errorCounter,1);
-
+          errorCounter++;
           hasError = true;
           break;
         }
@@ -2368,7 +2367,7 @@ namespace embree
       //CountErrors(thread->device);
 
       if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) {
-        atomic_add(&errorCounter,1);
+        errorCounter++;
       }
       else {
         if (!hasError) {
@@ -2405,7 +2404,7 @@ namespace embree
           else	               rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);
 	  //CountErrors(thread->device);
           if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) {
-            atomic_add(&errorCounter,1);
+            errorCounter++;
           }
           else {
             shootRandomRays(thread->intersectModes,task->scene);
@@ -2473,7 +2472,7 @@ namespace embree
           }; 
 	  //CountErrors(thread->device);
           if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) {
-            atomic_add(&errorCounter,1);
+            errorCounter++;
             hasError = true;
             break;
           }
@@ -2550,7 +2549,7 @@ namespace embree
       //CountErrors(thread->device);
 
       if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR)
-        atomic_add(&errorCounter,1);
+        errorCounter++;
       else
         if (!hasError)
           shootRandomRays(thread->intersectModes,task->scene);
@@ -2636,15 +2635,15 @@ namespace embree
   };
 
   ssize_t monitorMemoryBreak = -1;
-  atomic_t monitorMemoryBytesUsed = 0;
-  atomic_t monitorMemoryInvokations = 0;
+  std::atomic_size_t monitorMemoryBytesUsed(0);
+  std::atomic_size_t monitorMemoryInvokations(0);
   bool monitorMemoryFunction(ssize_t bytes, bool post) 
   {
-    atomic_add(&monitorMemoryBytesUsed,bytes);
+    monitorMemoryBytesUsed += bytes;
     if (bytes > 0) {
-      size_t n = atomic_add(&monitorMemoryInvokations,1);
+      size_t n = monitorMemoryInvokations++;
       if (n == monitorMemoryBreak) {
-        if (!post) atomic_add(&monitorMemoryBytesUsed,-bytes);
+        if (!post) monitorMemoryBytesUsed -= bytes;
         return false;
       }
     }

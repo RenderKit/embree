@@ -43,11 +43,11 @@ namespace embree
  {
  public:
     /* stats */
-   static AtomicCounter cache_accesses;
-   static AtomicCounter cache_hits;
-   static AtomicCounter cache_misses;
-   static AtomicCounter cache_flushes;                
-   static AtomicCounter *cache_patch_builds;                
+   static std::atomic_size_t cache_accesses;
+   static std::atomic_size_t cache_hits;
+   static std::atomic_size_t cache_misses;
+   static std::atomic_size_t cache_flushes;                
+   static std::atomic_size_t *cache_patch_builds;                
    static size_t        cache_num_patches;
    static float **      cache_new_delete_ptr;  
    __aligned(64) static AtomicMutex mtx;
@@ -78,7 +78,7 @@ namespace embree
  {
    ALIGNED_STRUCT;
 
-   AtomicCounter counter;
+   std::atomic_size_t counter;
    ThreadWorkState* next;
    bool allocated;
 
@@ -151,7 +151,7 @@ namespace embree
    struct CacheEntry
    {
      Tag tag;
-     RWMutex mutex;
+     AtomicMutex mutex;
    };
 
  private:
@@ -161,12 +161,12 @@ namespace embree
    size_t maxBlocks;
    ThreadWorkState *threadWorkState;
       
-   __aligned(64) AtomicCounter localTime;
-   __aligned(64) AtomicCounter next_block;
+   __aligned(64) std::atomic_size_t localTime;
+   __aligned(64) std::atomic_size_t next_block;
    __aligned(64) AtomicMutex   reset_state;
    __aligned(64) AtomicMutex   linkedlist_mtx;
-   __aligned(64) AtomicCounter switch_block_threshold;
-   __aligned(64) AtomicCounter numRenderThreads;
+   __aligned(64) std::atomic_size_t switch_block_threshold;
+   __aligned(64) std::atomic_size_t numRenderThreads;
 
 
  public:
@@ -178,14 +178,14 @@ namespace embree
    void getNextRenderThreadWorkState();
 
    //__forceinline size_t getCurrentIndex() { return localTime; }
-   __forceinline void   addCurrentIndex(const size_t i=1) { localTime.add(i); }
+   __forceinline void   addCurrentIndex(const size_t i=1) { localTime.fetch_add(i); }
 
    __forceinline size_t getTime(const unsigned globalTime) {
      return localTime+NUM_CACHE_SEGMENTS*globalTime;
    }
 
-   __forceinline unsigned int lockThread  (ThreadWorkState *const t_state) { return t_state->counter.add(1);  }
-   __forceinline unsigned int unlockThread(ThreadWorkState *const t_state) { assert(isLocked(t_state)); return t_state->counter.add(-1); }
+   __forceinline unsigned int lockThread  (ThreadWorkState *const t_state) { return t_state->counter.fetch_add(1);  }
+   __forceinline unsigned int unlockThread(ThreadWorkState *const t_state) { assert(isLocked(t_state)); return t_state->counter.fetch_add(-1); }
    __forceinline bool isLocked(ThreadWorkState *const t_state) { return t_state->counter != 0; }
 
    static __forceinline void lock  () { sharedLazyTessellationCache.lockThread(threadState()); }
@@ -245,7 +245,7 @@ namespace embree
        void* patch = SharedLazyTessellationCache::lookup(entry,globalTime);
        if (patch) return (decltype(constructor())) patch;
        
-       if (entry.mutex.try_write_lock())
+       if (entry.mutex.try_lock())
        {
          if (!validTag(entry.tag,globalTime)) 
          {
@@ -255,11 +255,11 @@ namespace embree
            //const size_t commitIndex = SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex();
            entry.tag = SharedLazyTessellationCache::Tag(ret,time);
            __memory_barrier();
-           entry.mutex.write_unlock();
+           entry.mutex.unlock();
            if (!validTag(entry.tag,globalTime)) return nullptr;
            else return ret;
          }
-         entry.mutex.write_unlock();
+         entry.mutex.unlock();
        }
        SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(t_state);
      }
@@ -315,7 +315,7 @@ namespace embree
        throw_RTCError(RTC_INVALID_OPERATION,"allocation exceeds size of tessellation cache segment");
      }
      assert(blocks < switch_block_threshold);
-     size_t index = next_block.add(blocks);
+     size_t index = next_block.fetch_add(blocks);
      if (unlikely(index + blocks >= switch_block_threshold)) return (size_t)-1;
      return index;
    }

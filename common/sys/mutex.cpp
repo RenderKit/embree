@@ -69,6 +69,7 @@ namespace embree
 };
 #endif
 
+#if 0
 namespace embree
 {
   // ========== RW MUTEX =============
@@ -150,3 +151,4 @@ namespace embree
     return false;
   }
 }
+#endif

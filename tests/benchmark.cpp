@@ -102,7 +102,7 @@ namespace embree
   size_t g_num_mutex_locks = 100000;
   size_t g_num_threads = 0;
   ssize_t g_num_threads_init = -1;
-  atomic_t g_atomic_cntr = 0;
+  std::atomic_int g_atomic_cntr(0);
 
   class Benchmark
   {
@@ -140,7 +140,7 @@ namespace embree
       g_barrier.wait();      
       while (true)
 	{
-	  if (atomic_add(&g_atomic_cntr,-1) < 0) break;
+	  if (g_atomic_cntr.fetch_add(-1) < 0) break;
 	  g_mutex.lock();
 	  g_mutex.unlock();
 	}
@@ -149,7 +149,7 @@ namespace embree
     double run (size_t numThreads)
     {
       g_barrier.init(numThreads);
-      g_atomic_cntr = g_num_mutex_locks;
+      g_atomic_cntr.store(g_num_mutex_locks);
       for (size_t i=1; i<numThreads; i++)
 	g_threads.push_back(createThread(benchmark_mutex_sys_thread,nullptr,1000000,i));
       //setAffinity(0);
@@ -259,7 +259,7 @@ namespace embree
       size_t threadCount = g_num_threads;
       if (threadIndex != 0) g_barrier_active.wait(threadIndex);
       __memory_barrier();
-      while (atomic_add(&g_atomic_cntr,-1) > 0);
+      while (g_atomic_cntr.fetch_add(-1) > 0);
       __memory_barrier();
       if (threadIndex != 0) g_barrier_active.wait(threadIndex);
       
@@ -267,7 +267,7 @@ namespace embree
     
     double run (size_t numThreads)
     {
-      g_atomic_cntr = N;
+      g_atomic_cntr.store(N);
 
       g_num_threads = numThreads;
       g_barrier_active.init(numThreads);

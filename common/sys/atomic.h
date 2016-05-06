@@ -21,6 +21,30 @@
 
 namespace embree
 {
+  template <typename T>
+    struct catomic : public std::atomic<T>
+  {
+    catomic () {}
+      
+    catomic (const T& a)
+      : std::atomic<T>(a) {}
+
+    catomic (const std::atomic<T>& a) {
+      this->store(a.load());
+    }
+
+    catomic (const catomic<T>& a) {
+      this->store(a.load());
+    }
+
+    catomic& operator=(const std::atomic<T>& other) {
+      this->store(other.load());
+      return *this;
+    }
+  };
+
+
+#if 0
   struct AtomicCounter {
   public:
     __forceinline AtomicCounter( void ) : data(0) {}
@@ -71,7 +95,6 @@ namespace embree
 
     __forceinline void max(const unsigned int i) { return atomic_max_ui32((volatile unsigned int*)&data, i); }
 
-
   private:
     volatile atomic32_t data;
     char align[64-sizeof(atomic32_t)]; // one counter per cache line
@@ -116,4 +139,6 @@ namespace embree
     AtomicMutex mutex;
     char align[64-sizeof(atomic64_t)-sizeof(AtomicMutex)]; // one counter per cache line
   };
+#endif
 }
+

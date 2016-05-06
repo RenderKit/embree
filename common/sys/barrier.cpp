@@ -43,15 +43,15 @@ namespace embree
     __forceinline void init(size_t N) 
     {
       barrierSize = N;
-      enterCount = N;
-      exitCount = N;
+      enterCount.store(N);
+      exitCount.store(N);
     }
 
     __forceinline void wait()
     {
       /* every thread entering the barrier decrements this count */
       size_t i0 = i;
-      ssize_t cnt0 = atomic_add(&enterCount,-1);
+      int cnt0 = enterCount--;
 
       /* all threads except the last one are wait in the barrier */
       if (cnt0 > 1) 
@@ -64,18 +64,18 @@ namespace embree
       else 
       {
         i = 1-i;
-        enterCount = barrierSize;
+        enterCount.store(barrierSize);
         if (SetEvent(events[i0]) == 0)
           THROW_RUNTIME_ERROR("SetEvent failed");
       }
 
       /* every thread leaving the barrier decrements this count */
-      ssize_t cnt1 = atomic_add(&exitCount,-1);
+      int cnt1 = exitCount--;
 
       /* the last thread that left the barrier resets the event again */
       if (cnt1 == 1) 
       {
-        exitCount = barrierSize;
+        exitCount.store(barrierSize);
         if (ResetEvent(events[i0]) == 0)
           THROW_RUNTIME_ERROR("ResetEvent failed");
       }
@@ -84,9 +84,9 @@ namespace embree
   public:
     HANDLE events[2];
     volatile size_t i;
-    volatile atomic_t enterCount;
-    volatile atomic_t exitCount;
-	size_t barrierSize;
+    std::atomic_int enterCount;
+    std::atomic_int exitCount;
+    size_t barrierSize;
   };
 }
 
@@ -249,4 +249,5 @@ namespace embree
     }					
   }
 }
+
 

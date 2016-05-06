@@ -80,13 +80,13 @@ namespace embree
       return 64*((grid_size_xyzuv+15) / 16);
     }
 
-    __forceinline void write_lock()     { mtx.write_lock();   }
-    __forceinline void write_unlock()   { mtx.write_unlock(); }
-    __forceinline bool try_write_lock() { return mtx.try_write_lock(); }
-    __forceinline bool try_read_lock()  { return mtx.try_read_lock(); }
+    __forceinline void write_lock()     { mtx.lock();   }
+    __forceinline void write_unlock()   { mtx.unlock(); }
+    __forceinline bool try_write_lock() { return mtx.try_lock(); }
+    //__forceinline bool try_read_lock()  { return mtx.try_read_lock(); }
 
     __forceinline void resetRootRef() {
-      assert( mtx.hasInitialState() );
+      //assert( mtx.hasInitialState() );
       root_ref = SharedLazyTessellationCache::Tag();
     }
 
@@ -96,7 +96,7 @@ namespace embree
 
   public:    
     SharedLazyTessellationCache::Tag root_ref;
-    RWMutex mtx;
+    AtomicMutex mtx;
 
     unsigned short u[4];                        //!< 16bit discretized u,v coordinates
     unsigned short v[4];

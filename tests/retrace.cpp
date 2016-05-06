@@ -195,14 +195,14 @@ namespace embree
     return o;
   } 
 
-  static AlignedAtomicCounter32 g_counter = 0;
+  static std::atomic_int g_counter(0);
   static bool g_check = false;
   static bool g_sde = false;
   static size_t g_threadCount = 1;
   static size_t g_frames = 1;
   static size_t g_simd_width = 0;
-  static AlignedAtomicCounter32 g_rays_traced = 0;
-  static AlignedAtomicCounter32 g_rays_traced_diff = 0;
+  static std::atomic_int g_rays_traced(0);
+  static std::atomic_int g_rays_traced_diff(0);
   static std::vector<thread_t> g_threads;
   static LinearBarrierActive g_barrier;
   static bool g_exitThreads = false;
@@ -460,7 +460,7 @@ namespace embree
     
     while(1)
       {
-	size_t global_index = g_counter.add(RAY_BLOCK_SIZE);
+	size_t global_index = g_counter.fetch_add(RAY_BLOCK_SIZE);
 	if (global_index >= g_retraceTask.numLogRayStreamElements) break;
 	size_t startID = global_index;
 	size_t endID   = min(g_retraceTask.numLogRayStreamElements,startID+RAY_BLOCK_SIZE);
@@ -549,8 +549,8 @@ namespace embree
 	  }
       }
     if (unlikely(g_check && diff))
-      g_rays_traced_diff.add(diff);
-    g_rays_traced.add(rays);
+      g_rays_traced_diff.fetch_add(diff);
+    g_rays_traced.fetch_add(rays);
   }
 
 

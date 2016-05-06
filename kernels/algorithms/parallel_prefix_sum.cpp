@@ -31,7 +31,7 @@ namespace embree
       /* create vector with random numbers */
       const size_t N = 100;
       std::vector<size_t> array(N);
-      std::vector<atomic_t> prefix_sum(N);
+      std::vector<catomic<size_t>> prefix_sum(N);
       for (size_t j=0; j<N; j++)
 	array[j] = rand() % 10;
   
@@ -51,7 +51,7 @@ namespace embree
       {
         size_t s = 0;
 	for (size_t i=r.begin(); i<r.end(); i++) {
-	  prefix_sum[i] = sum+s;
+	  prefix_sum[i].store(sum+s);
           s += array[i];
         }
         return s;

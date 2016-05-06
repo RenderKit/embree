@@ -50,17 +50,17 @@ namespace embree
     const size_t numN  = (intersectionFilterN  != nullptr) + (occlusionFilterN  != nullptr);
 
     if (enable) {
-      atomic_add(&parent->numIntersectionFilters1,num1);
-      atomic_add(&parent->numIntersectionFilters4,num4);
-      atomic_add(&parent->numIntersectionFilters8,num8);
-      atomic_add(&parent->numIntersectionFilters16,num16);
-      atomic_add(&parent->numIntersectionFiltersN,numN);
+      parent->numIntersectionFilters1 += num1;
+      parent->numIntersectionFilters4 += num4;
+      parent->numIntersectionFilters8 += num8;
+      parent->numIntersectionFilters16 += num16;
+      parent->numIntersectionFiltersN += numN;
     } else {
-      atomic_sub(&parent->numIntersectionFilters1,num1);
-      atomic_sub(&parent->numIntersectionFilters4,num4);
-      atomic_sub(&parent->numIntersectionFilters8,num8);
-      atomic_sub(&parent->numIntersectionFilters16,num16);
-      atomic_sub(&parent->numIntersectionFiltersN,numN);
+      parent->numIntersectionFilters1 -= num1;
+      parent->numIntersectionFilters4 -= num4;
+      parent->numIntersectionFilters8 -= num8;
+      parent->numIntersectionFilters16 -= num16;
+      parent->numIntersectionFiltersN -= numN;
     }
   }
 
@@ -74,7 +74,7 @@ namespace embree
 
     updateIntersectionFilters(true);
     parent->setModified();
-    atomic_add(&used,+1);
+    used++;
     enabled = true;
     enabling();
   }
@@ -98,7 +98,7 @@ namespace embree
 
     updateIntersectionFilters(false);
     parent->setModified();
-    atomic_add(&used,-1);
+    used--;
     enabled = false;
     disabling();
   }
@@ -122,8 +122,8 @@ namespace embree
     if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH)
       throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
     
-    atomic_sub(&parent->numIntersectionFilters1,intersectionFilter1 != nullptr);
-    atomic_add(&parent->numIntersectionFilters1,filter != nullptr);
+    parent->numIntersectionFilters1 -= intersectionFilter1 != nullptr;
+    parent->numIntersectionFilters1 += filter != nullptr;
     intersectionFilter1 = filter;
     if (filter) hasIntersectionFilterMask  |= HAS_FILTER1; else hasIntersectionFilterMask  &= ~HAS_FILTER1;
   }
@@ -139,8 +139,8 @@ namespace embree
     if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH)
       throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
-    atomic_sub(&parent->numIntersectionFilters4,intersectionFilter4 != nullptr);
-    atomic_add(&parent->numIntersectionFilters4,filter != nullptr);
+    parent->numIntersectionFilters4 -= intersectionFilter4 != nullptr;
+    parent->numIntersectionFilters4 += filter != nullptr;
     intersectionFilter4 = filter;
     if (filter) hasIntersectionFilterMask  |= HAS_FILTER4; else hasIntersectionFilterMask  &= ~HAS_FILTER4;
     if (ispc  ) ispcIntersectionFilterMask |= HAS_FILTER4; else ispcIntersectionFilterMask &= ~HAS_FILTER4;
@@ -157,8 +157,8 @@ namespace embree
     if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH)
       throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
-    atomic_sub(&parent->numIntersectionFilters8,intersectionFilter8 != nullptr);
-    atomic_add(&parent->numIntersectionFilters8,filter != nullptr);
+    parent->numIntersectionFilters8 -= intersectionFilter8 != nullptr;
+    parent->numIntersectionFilters8 += filter != nullptr;
     intersectionFilter8 = filter;
     if (filter) hasIntersectionFilterMask  |= HAS_FILTER8; else hasIntersectionFilterMask  &= ~HAS_FILTER8;
     if (ispc  ) ispcIntersectionFilterMask |= HAS_FILTER8; else ispcIntersectionFilterMask &= ~HAS_FILTER8;
@@ -175,8 +175,8 @@ namespace embree
     if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH)
       throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
-    atomic_sub(&parent->numIntersectionFilters16,intersectionFilter16 != nullptr);
-    atomic_add(&parent->numIntersectionFilters16,filter != nullptr);
+    parent->numIntersectionFilters16 -= intersectionFilter16 != nullptr;
+    parent->numIntersectionFilters16 += filter != nullptr;
     intersectionFilter16 = filter;
     if (filter) hasIntersectionFilterMask  |= HAS_FILTER16; else hasIntersectionFilterMask  &= ~HAS_FILTER16;
     if (ispc  ) ispcIntersectionFilterMask |= HAS_FILTER16; else ispcIntersectionFilterMask &= ~HAS_FILTER16;
@@ -193,8 +193,8 @@ namespace embree
     if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH)
       throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
-    atomic_sub(&parent->numIntersectionFiltersN,intersectionFilterN != nullptr);
-    atomic_add(&parent->numIntersectionFiltersN,filter != nullptr);
+    parent->numIntersectionFiltersN -= intersectionFilterN != nullptr;
+    parent->numIntersectionFiltersN += filter != nullptr;
     intersectionFilterN = filter;
     if (filter) hasIntersectionFilterMask  |= HAS_FILTERN; else hasIntersectionFilterMask  &= ~HAS_FILTERN;
   }
@@ -210,8 +210,8 @@ namespace embree
     if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH)
       throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
-    atomic_sub(&parent->numIntersectionFilters1,occlusionFilter1 != nullptr);
-    atomic_add(&parent->numIntersectionFilters1,filter != nullptr);
+    parent->numIntersectionFilters1 -= occlusionFilter1 != nullptr;
+    parent->numIntersectionFilters1 += filter != nullptr;
     occlusionFilter1 = filter;
     if (filter) hasOcclusionFilterMask  |= HAS_FILTER1; else hasOcclusionFilterMask  &= ~HAS_FILTER1;
   }
@@ -227,8 +227,8 @@ namespace embree
     if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH)
       throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
-    atomic_sub(&parent->numIntersectionFilters4,occlusionFilter4 != nullptr);
-    atomic_add(&parent->numIntersectionFilters4,filter != nullptr);
+    parent->numIntersectionFilters4 -= occlusionFilter4 != nullptr;
+    parent->numIntersectionFilters4 += filter != nullptr;
     occlusionFilter4 = filter;
     if (filter) hasOcclusionFilterMask  |= HAS_FILTER4; else hasOcclusionFilterMask  &= ~HAS_FILTER4;
     if (ispc  ) ispcOcclusionFilterMask |= HAS_FILTER4; else ispcOcclusionFilterMask &= ~HAS_FILTER4;
@@ -245,8 +245,8 @@ namespace embree
     if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH)
       throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
-    atomic_sub(&parent->numIntersectionFilters8,occlusionFilter8 != nullptr);
-    atomic_add(&parent->numIntersectionFilters8,filter != nullptr);
+    parent->numIntersectionFilters8 -= occlusionFilter8 != nullptr;
+    parent->numIntersectionFilters8 += filter != nullptr;
     occlusionFilter8 = filter;
     if (filter) hasOcclusionFilterMask  |= HAS_FILTER8; else hasOcclusionFilterMask  &= ~HAS_FILTER8;
     if (ispc  ) ispcOcclusionFilterMask |= HAS_FILTER8; else ispcOcclusionFilterMask &= ~HAS_FILTER8;
@@ -263,8 +263,8 @@ namespace embree
     if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH) 
       throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
-    atomic_sub(&parent->numIntersectionFilters16,occlusionFilter16 != nullptr);
-    atomic_add(&parent->numIntersectionFilters16,filter != nullptr);
+    parent->numIntersectionFilters16 -= occlusionFilter16 != nullptr;
+    parent->numIntersectionFilters16 += filter != nullptr;
     occlusionFilter16 = filter;
     if (filter) hasOcclusionFilterMask  |= HAS_FILTER16; else hasOcclusionFilterMask  &= ~HAS_FILTER16;
     if (ispc  ) ispcOcclusionFilterMask |= HAS_FILTER16; else ispcOcclusionFilterMask &= ~HAS_FILTER16;
@@ -281,8 +281,8 @@ namespace embree
     if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH) 
       throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
-    atomic_sub(&parent->numIntersectionFiltersN,occlusionFilterN != nullptr);
-    atomic_add(&parent->numIntersectionFiltersN,filter != nullptr);
+    parent->numIntersectionFiltersN -= occlusionFilterN != nullptr;
+    parent->numIntersectionFiltersN += filter != nullptr;
     occlusionFilterN = filter;
     if (filter) hasOcclusionFilterMask  |= HAS_FILTERN; else hasOcclusionFilterMask  &= ~HAS_FILTERN;
   }

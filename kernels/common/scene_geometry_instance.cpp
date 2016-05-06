@@ -30,20 +30,20 @@ namespace embree
     if (geom->numTimeSteps == 1)
     {
       switch (geom->type) {
-      case TRIANGLE_MESH: atomic_add(&parent->instanced1.numTriangles     ,f*ssize_t(geom->size())); break;
-      case USER_GEOMETRY: atomic_add(&parent->instanced1.numUserGeometries,f*ssize_t(geom->size())); break;
-      case BEZIER_CURVES: atomic_add(&parent->instanced1.numBezierCurves  ,f*ssize_t(geom->size())); break;
-      case SUBDIV_MESH  : atomic_add(&parent->instanced1.numSubdivPatches ,f*ssize_t(geom->size())); break;
+      case TRIANGLE_MESH: parent->instanced1.numTriangles      += f*ssize_t(geom->size()); break;
+      case USER_GEOMETRY: parent->instanced1.numUserGeometries += f*ssize_t(geom->size()); break;
+      case BEZIER_CURVES: parent->instanced1.numBezierCurves   += f*ssize_t(geom->size()); break;
+      case SUBDIV_MESH  : parent->instanced1.numSubdivPatches  += f*ssize_t(geom->size()); break;
       default           : throw_RTCError(RTC_INVALID_OPERATION,"cannot instantiate this geometry ");
       };
     }
     else
     {
       switch (geom->type) {
-      case TRIANGLE_MESH: atomic_add(&parent->instanced2.numTriangles     ,f*ssize_t(geom->size())); break;
-      case USER_GEOMETRY: atomic_add(&parent->instanced2.numUserGeometries,f*ssize_t(geom->size())); break;
-      case BEZIER_CURVES: atomic_add(&parent->instanced2.numBezierCurves  ,f*ssize_t(geom->size())); break;
-      case SUBDIV_MESH  : atomic_add(&parent->instanced2.numSubdivPatches ,f*ssize_t(geom->size())); break;
+      case TRIANGLE_MESH: parent->instanced2.numTriangles      += f*ssize_t(geom->size()); break;
+      case USER_GEOMETRY: parent->instanced2.numUserGeometries += f*ssize_t(geom->size()); break;
+      case BEZIER_CURVES: parent->instanced2.numBezierCurves   += f*ssize_t(geom->size()); break;
+      case SUBDIV_MESH  : parent->instanced2.numSubdivPatches  += f*ssize_t(geom->size()); break;
       default           : throw_RTCError(RTC_INVALID_OPERATION,"cannot instantiate this geometry");
       };
     }
@@ -51,13 +51,13 @@ namespace embree
 
   void GeometryInstance::enabling () 
   {
-    atomic_add(&geom->used,+1);
+    geom->used++;
     count(+1);
   }
 
   void GeometryInstance::disabling() 
   {
-    atomic_add(&geom->used,-1);
+    geom->used++;
     count(-1);
   }
   

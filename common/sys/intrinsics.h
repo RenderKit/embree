@@ -202,6 +202,7 @@ namespace embree
   
 #endif
   
+#if 0
   typedef int16_t atomic16_t;
   
   __forceinline int16_t atomic_add(volatile int16_t* p, const int16_t v) {
@@ -241,11 +242,13 @@ namespace embree
   __forceinline int32_t atomic_xchg(volatile int32_t *p, int32_t v) {
     return _InterlockedExchange((volatile long*)p, v);
   }
+#endif
   
   __forceinline int32_t atomic_cmpxchg(volatile int32_t* p, const int32_t c, const int32_t v) {
     return _InterlockedCompareExchange((volatile long*)p,v,c);
   }
-  
+
+#if 0  
   __forceinline int32_t atomic_and(volatile int32_t* p, const int32_t v) {
     return _InterlockedAnd((volatile long*)p,v);
   }
@@ -282,6 +285,7 @@ namespace embree
     return _InterlockedOr64((volatile int64_t*)p,v);
   }
   
+#endif
 #endif
   
 ////////////////////////////////////////////////////////////////////////////////
@@ -471,7 +475,8 @@ namespace embree
   __forceinline size_t __btr(size_t v, size_t i) {
     size_t r = 0; asm ("btr %1,%0" : "=r"(r) : "r"(i), "0"(v) : "flags"); return r;
   }
-  
+
+#if 0  
   typedef int8_t atomic8_t;
   
   __forceinline int8_t atomic_add( int8_t volatile* value, int8_t input ) {
@@ -521,11 +526,13 @@ namespace embree
   __forceinline int32_t atomic_xchg( int32_t volatile* value, int32_t input ) {
     return __sync_lock_test_and_set(value, input);
   }
-  
+#endif
+
   __forceinline int32_t atomic_cmpxchg( int32_t volatile* value, int32_t comparand, const int32_t input ) {
     return __sync_val_compare_and_swap(value, comparand, input);
   }
-  
+
+#if 0  
   __forceinline int32_t atomic_or(int32_t volatile* value, int32_t input) {
     return __sync_fetch_and_or(value, input);
   }
@@ -563,6 +570,7 @@ namespace embree
   }
   
 #endif
+#endif
   
 #endif
   
@@ -570,6 +578,29 @@ namespace embree
 /// All Platforms
 ////////////////////////////////////////////////////////////////////////////////
   
+  template<typename T>
+    __forceinline void atomic_min(std::atomic<T>& aref, const T& bref)
+  {
+    const T b = bref;
+    while (true) {
+      T a = aref;
+      if (a <= b || aref.compare_exchange(a,b)) 
+        break;
+    }
+  }
+
+  template<typename T>
+    __forceinline void atomic_max(std::atomic<T>& aref, const T& bref)
+  {
+    const T b = bref;
+    while (true) {
+      T a = aref;
+      if (a >= b || aref.compare_exchange(a,b)) 
+        break;
+    }
+  }
+
+#if 0  
 #if defined(__X86_64__)
   typedef atomic64_t atomic_t;
 #else
@@ -684,7 +715,8 @@ namespace embree
       if (result == int_a) break;
     }
   }
-  
+#endif
+
   __forceinline uint64_t rdtsc()
   {
     int dummy[4]; 

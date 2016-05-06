@@ -18,6 +18,7 @@
 
 #include "platform.h"
 #include "intrinsics.h"
+#include "atomic.h"
 
 namespace embree
 {
@@ -41,47 +42,38 @@ namespace embree
   {
   public:
  
-    static const size_t MAX_MIC_WAIT_CYCLES = 256;
     AtomicMutex ()
-      : flag(0) {}
+      : flag(false) {}
 
     __forceinline bool isLocked() {
-      return flag == 1;
+      return flag.load();
     }
 
     __forceinline void lock()
     {
-      unsigned int wait = 128;
-      while(1) {
-        __memory_barrier();
-	while (flag == 1) { // read without atomic op first
-	  _mm_pause(); 
-	  _mm_pause();
-	}
-        __memory_barrier();
-	if (atomic_cmpxchg(&flag,0,1) == 0) break;
+      bool expected = false;
+      while (!flag.compare_exchange_strong(expected,true))
+      {
+        _mm_pause(); 
+        _mm_pause();
       }
     }
-
+    
     __forceinline bool try_lock()
     {
-      if (flag == 1) return false;
-      return atomic_cmpxchg(&flag,0,1) == 0;
+      bool expected = false;
+      if (flag.load() != expected) return false;
+      return flag.compare_exchange_strong(expected,true);
     }
 
-    __forceinline void unlock() 
-    {
-      __memory_barrier();
-      flag = 0;
-      __memory_barrier();
+    __forceinline void unlock() {
+      flag.store(false);
     }
-
-
+    
     __forceinline void wait_until_unlocked() 
     {
-      unsigned int wait = 128;
       __memory_barrier();
-      while(flag == 1)
+      while(flag.load())
       {
         _mm_pause(); 
         _mm_pause();
@@ -92,13 +84,15 @@ namespace embree
     __forceinline void reset(int i = 0) 
     {
       __memory_barrier();
-      flag = i;
+      flag.store(i);
       __memory_barrier();
     }
 
   public:
-    volatile int flag;
+    catomic<bool> flag;
   };
+
+#if 0
 
   class __aligned(64) AlignedAtomicMutex : public AtomicMutex
   {
@@ -131,6 +125,7 @@ namespace embree
       return m_counter;
     };
   };
+#endif
 
   /*! safe mutex lock and unlock helper */
   template<typename Mutex> class Lock {
@@ -164,6 +159,7 @@ namespace embree
     bool locked;
   };
 
+#if 0
   class TicketMutex
   {
   public:
@@ -337,5 +333,6 @@ namespace embree
    }
 
  };
+#endif
 
 }

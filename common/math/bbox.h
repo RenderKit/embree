@@ -44,15 +44,6 @@ namespace embree
     __forceinline const BBox& extend(const BBox& other) { lower = min(lower,other.lower); upper = max(upper,other.upper); return *this; }
     __forceinline const BBox& extend(const T   & other) { lower = min(lower,other      ); upper = max(upper,other      ); return *this; }
 
-    __forceinline void extend_atomic(const BBox& other) { 
-      atomic_min_f32(&lower.x,other.lower.x);
-      atomic_min_f32(&lower.y,other.lower.y);
-      atomic_min_f32(&lower.z,other.lower.z);
-      atomic_max_f32(&upper.x,other.upper.x);
-      atomic_max_f32(&upper.y,other.upper.y);
-      atomic_max_f32(&upper.z,other.upper.z);
-    }
-
     /*! tests if box is empty */
     __forceinline bool empty() const { for (int i=0; i<T::N; i++) if (lower[i] > upper[i]) return true; return false; }
 
