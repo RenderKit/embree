@@ -3006,34 +3006,42 @@ namespace embree
     for (auto test : tests) run_docu += "\n  " + test->name;
     registerOption("run", [this] (Ref<ParseStream> cin, const FileName& path) {
 
+        std::string r = cin->getString();
+
         if (!user_specified_tests) 
           for (auto test : tests) 
             test->enabled = false;
 
         user_specified_tests = true;
+#if defined(__MACOSX__) && defined(__INTEL_COMPILER) && (__INTEL_COMPILER < 1600) // works around __ZTVNSt3__123__match_any_but_newlineIcEE link error
+        for (auto test : tests) 
+          if (test->name == r) test->enabled = true;
+#else
         std::smatch match;
-        std::regex regexpr(cin->getString());
-        for (auto test : tests) {
-          if (std::regex_match(test->name, match, regexpr)) {
-            test->enabled = true;
-          }
-        }
+        std::regex regexpr(r);
+        for (auto test : tests) 
+          if (std::regex_match(test->name, match, regexpr)) test->enabled = true;
+#endif
       }, run_docu);
 
     registerOption("skip", [this] (Ref<ParseStream> cin, const FileName& path) {
 
+        std::string r = cin->getString();
+        
         if (!user_specified_tests) 
           for (auto test : tests) 
             test->enabled = true;
 
         user_specified_tests = true;
+#if defined(__MACOSX__) && defined(__INTEL_COMPILER) && (__INTEL_COMPILER < 1600) // works around __ZTVNSt3__123__match_any_but_newlineIcEE link error
+        for (auto test : tests)
+          if (test->name == r) test->enabled = false;
+#else
         std::smatch match;
-        std::regex regexpr(cin->getString());
-        for (auto test : tests) {
-          if (std::regex_match(test->name, match, regexpr)) {
-            test->enabled = false;
-          }
-        }
+        std::regex regexpr(r);
+        for (auto test : tests)
+          if (std::regex_match(test->name, match, regexpr)) test->enabled = false;
+#endif
       }, "--skip <regexpr>: Skips all tests whose name matches the regular expression.");
     
     registerOption("no-groups", [this] (Ref<ParseStream> cin, const FileName& path) {
