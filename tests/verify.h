@@ -66,6 +66,7 @@ namespace embree
         case MODE_INTERSECTNp:  return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
         }
         assert(false);
+        return false;
       }
 
     public:
