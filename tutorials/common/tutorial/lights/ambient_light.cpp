@@ -20,6 +20,7 @@
 
 struct AmbientLight
 {
+  ALIGNED_STRUCT;
   Light super;      //!< inherited light fields
 
   Vec3fa radiance;   //!< RGB color and intensity of light
