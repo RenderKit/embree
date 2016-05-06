@@ -1,5 +1,5 @@
 
-all:
+ispc2cpp:
 	@./ispc2cpp.sh common/tutorial/differential_geometry.isph common/tutorial/differential_geometry.h
 	@./ispc2cpp.sh common/tutorial/sampling.isph common/tutorial/sampling.h
 	@./ispc2cpp.sh common/tutorial/optics.isph common/tutorial/optics.h
@@ -31,3 +31,6 @@ ospray:
 	@./osp2emb.sh ../../ospray/ospray/lights/AmbientLight.ispc common/tutorial/lights/ambient_light.ispc
 	@./osp2emb.sh ../../ospray/ospray/lights/DirectionalLight.ispc common/tutorial/lights/directional_light.ispc
 	@./osp2emb.sh ../../ospray/ospray/lights/PointLight.ispc common/tutorial/lights/point_light.ispc
+
+all: ospray ispc2cpp
+

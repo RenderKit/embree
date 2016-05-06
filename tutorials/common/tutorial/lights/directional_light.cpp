@@ -20,7 +20,7 @@
 
 struct DirectionalLight
 {
-  ALIGNED_STRUCT;
+  ALIGNED_STRUCT
   Light super;      //!< inherited light fields
 
   LinearSpace3fa frame;   //!< coordinate frame, with vz == direction *towards* the light source

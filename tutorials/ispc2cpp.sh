@@ -72,6 +72,7 @@ sed -i.backup  's/make_Sample3f/Sample3f/g' $2
 sed -i.backup  's/make_AffineSpace3f/AffineSpace3f/g' $2
 
 sed -i.backup 's/sincos/sincosf/g' $2
+sed -i 's/\/\/ALIGNED_STRUCT/ALIGNED_STRUCT/g' $2
 
 # Embree specific
 sed -i.backup  's/RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING/RTC_INTERSECT1/g' $2

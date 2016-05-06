@@ -77,7 +77,7 @@ inline float powerCosineSampleHemispherePDF(const float cosTheta, const float n)
   return (n + 1.0f) * (0.5f / M_PI) * pow(cosTheta, n);
 }
 
-inline float powerCosineSampleHemispherePDF(const Vec3f dir, const float n) // TODO: order of arguments
+inline float powerCosineSampleHemispherePDF(const Vec3f& dir, const float n) // TODO: order of arguments
 {
   return (n + 1.0f) * (0.5f / M_PI) * pow(dir.z, n);
 }
