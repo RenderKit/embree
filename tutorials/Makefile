@@ -1,7 +1,8 @@
 
 ispc2cpp:
+	@./ispc2cpp.sh common/math/random_sampler.isph common/math/random_sampler.h
+	@./ispc2cpp.sh common/math/sampling.isph common/math/sampling.h
 	@./ispc2cpp.sh common/tutorial/differential_geometry.isph common/tutorial/differential_geometry.h
-	@./ispc2cpp.sh common/tutorial/sampling.isph common/tutorial/sampling.h
 	@./ispc2cpp.sh common/tutorial/optics.isph common/tutorial/optics.h
 	@./ispc2cpp.sh common/tutorial/lights/light.isph common/tutorial/lights/light.h
 	@./ispc2cpp.sh common/tutorial/lights/light.ispc common/tutorial/lights/light.cpp
@@ -25,7 +26,7 @@ ispc2cpp:
 	@./ispc2cpp.sh curve_geometry/curve_geometry_device.ispc curve_geometry/curve_geometry_device.cpp
 
 osp2emb:
-	@./osp2emb.sh ../../ospray/ospray/math/sampling.ih common/tutorial/sampling.isph
+	@./osp2emb.sh ../../ospray/ospray/math/sampling.ih common/math/sampling.isph
 	@./osp2emb.sh ../../ospray/ospray/lights/Light.ih common/tutorial/lights/light.isph
 	@./osp2emb.sh ../../ospray/ospray/lights/Light.ispc common/tutorial/lights/light.ispc
 	@./osp2emb.sh ../../ospray/ospray/lights/AmbientLight.ispc common/tutorial/lights/ambient_light.ispc

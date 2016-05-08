@@ -14,9 +14,9 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#include "../common/math/random_sampler.isph"
 #include "../common/tutorial/tutorial_device.isph"
 #include "../common/tutorial/scene_device.isph"
-#include "../common/tutorial/random_sampler.isph"
 #include "../common/tutorial/differential_geometry.isph"
 
 extern uniform ISPCScene* uniform g_ispc_scene;

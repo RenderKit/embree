@@ -14,9 +14,9 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#include "../common/math/random_sampler.h"
 #include "../common/tutorial/tutorial_device.h"
 #include "../common/tutorial/scene_device.h"
-#include "../common/tutorial/random_sampler.h"
 #include "../common/tutorial/differential_geometry.h"
 
 extern "C" ISPCScene* g_ispc_scene;

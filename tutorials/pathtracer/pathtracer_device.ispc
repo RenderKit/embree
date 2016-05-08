@@ -14,11 +14,11 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#include "../common/math/random_sampler.isph"
+#include "../common/math/sampling.isph"
 #include "../common/tutorial/tutorial_device.isph"
 #include "../common/tutorial/scene_device.isph"
-#include "../common/tutorial/random_sampler.isph"
 #include "../common/tutorial/differential_geometry.isph"
-#include "../common/tutorial/sampling.isph"
 #include "../common/tutorial/optics.isph"
 #include "../common/tutorial/lights/light.isph"
 

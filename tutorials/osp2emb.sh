@@ -5,7 +5,7 @@ cp $1 $2
 
 sed -i 's/ospray\/math\/vec.ih/..\/math\/vec.isph/g' $2
 sed -i 's/Light.ih/light.isph/g' $2
-sed -i 's/ospray\/math\/sampling.ih/..\/sampling.isph/g' $2
+sed -i 's/ospray\/math\/sampling.ih/..\/..\/math\/sampling.isph/g' $2
 sed -i 's/ospray\/math\/LinearSpace.ih/..\/..\/math\/linearspace.isph/g' $2
 sed -i 's/ospray\/common\/DifferentialGeometry.ih/..\/differential_geometry.isph/g' $2
 

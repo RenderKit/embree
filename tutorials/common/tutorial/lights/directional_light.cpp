@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "light.h"
-#include "../sampling.h"
+#include "../../math/sampling.h"
 #include "../../math/linearspace.h"
 
 struct DirectionalLight

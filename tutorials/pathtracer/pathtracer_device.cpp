@@ -14,11 +14,11 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#include "../common/math/random_sampler.h"
+#include "../common/math/sampling.h"
 #include "../common/tutorial/tutorial_device.h"
 #include "../common/tutorial/scene_device.h"
-#include "../common/tutorial/random_sampler.h"
 #include "../common/tutorial/differential_geometry.h"
-#include "../common/tutorial/sampling.h"
 #include "../common/tutorial/optics.h"
 #include "../common/tutorial/lights/light.h"
 

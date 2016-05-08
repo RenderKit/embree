@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "light.h"
-#include "../sampling.h"
+#include "../../math/sampling.h"
 #include "../../math/linearspace.h"
 
 struct PointLight
@@ -53,7 +53,7 @@ Light_SampleRes PointLight_sample(const Light* super,
   res.weight = self->power * sqr(invdist);
   const float sinTheta = self->radius * invdist;
 
-  if (self->radius > 0.f & sinTheta > 0.005f) {
+  if ((self->radius > 0.f) & (sinTheta > 0.005f)) {
     // res surface of sphere as seen by hit point -> cone of directions
     // for very small cones treat as point light, because float precision is not good enough
     if (sinTheta < 1.f) {
