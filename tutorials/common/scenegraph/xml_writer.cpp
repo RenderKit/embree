@@ -518,7 +518,7 @@ namespace embree
     if (bin) fclose(bin);
   }
 
-  void storeXML(Ref<SceneGraph::Node> root, const FileName& fileName, bool embedTextures) {
+  void SceneGraph::storeXML(Ref<SceneGraph::Node> root, const FileName& fileName, bool embedTextures) {
     XMLWriter(root,fileName,embedTextures);
   }
 }
