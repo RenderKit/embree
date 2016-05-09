@@ -115,7 +115,7 @@ namespace embree
     gflags = (RTCGeometryFlags) gflag;
   }
 
-  #define CountErrors(device) \
+#define CountErrors(device) \
     if (rtcDeviceGetError(device) != RTC_NO_ERROR) atomic_add(&errorCounter,1);
 
   void AssertNoError(RTCDevice device) 
@@ -138,40 +138,30 @@ namespace embree
     if (error != expectedError) 
       throw std::runtime_error("Error "+string_of(expectedError)+" expected");
   }
-
+  
   RTCAlgorithmFlags aflags = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT4 | RTC_INTERSECT8 | RTC_INTERSECT16);
   RTCAlgorithmFlags aflags_all = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT4 | RTC_INTERSECT8 | RTC_INTERSECT16 | RTC_INTERSECT_STREAM);
   
   bool g_enable_build_cancel = false;
 
-  unsigned addPlane (RTCDevice g_device, const RTCSceneRef& scene, RTCGeometryFlags flag, size_t num, const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy)
+  unsigned addGeometry(const RTCDeviceRef& device, const RTCSceneRef& scene, const RTCGeometryFlags gflag, const Ref<SceneGraph::Node>& node)
   {
-    unsigned mesh = rtcNewTriangleMesh (scene, flag, 2*num*num, (num+1)*(num+1));
-    Vertex3fa*   vertices  = (Vertex3fa*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
-    Triangle* triangles = (Triangle*) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
-    for (size_t y=0; y<=num; y++) {
-      for (size_t x=0; x<=num; x++) {
-        Vec3fa p = p0+float(x)/float(num)*dx+float(y)/float(num)*dy;
-        size_t i = y*(num+1)+x;
-        vertices[i].x = p.x;
-        vertices[i].y = p.y;
-        vertices[i].z = p.z;
-      }
+    nodes.push_back(node);
+    if (Ref<SceneGraph::TriangleMeshNode> mesh = node.dynamicCast<SceneGraph::TriangleMeshNode>()) 
+    {
+      unsigned geomID = rtcNewTriangleMesh (scene, gflag, mesh->triangles.size(), mesh->v.size());
+      rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER ,mesh->triangles.data(),0,sizeof(SceneGraph::TriangleMeshNode::Triangle));
+      rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER,mesh->v        .data(),0,sizeof(SceneGraph::TriangleMeshNode::Vertex  ));
+      return geomID;
     }
-    for (size_t y=0; y<num; y++) {
-      for (size_t x=0; x<num; x++) {
-        size_t i = 2*y*num+2*x;
-        size_t p00 = (y+0)*(num+1)+(x+0);
-        size_t p01 = (y+0)*(num+1)+(x+1);
-        size_t p10 = (y+1)*(num+1)+(x+0);
-        size_t p11 = (y+1)*(num+1)+(x+1);
-        triangles[i+0].v0 = p00; triangles[i+0].v1 = p01; triangles[i+0].v2 = p11;
-        triangles[i+1].v0 = p00; triangles[i+1].v1 = p11; triangles[i+1].v2 = p10;
-      }
+    else {
+      THROW_RUNTIME_ERROR("unknown node type");
     }
-    rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
-    rtcUnmapBuffer(scene,mesh,RTC_INDEX_BUFFER);
-    return mesh;
+    return 0;
+  }
+  
+  unsigned addPlane (const RTCDeviceRef& device, const RTCSceneRef& scene, const RTCGeometryFlags gflag, size_t num, const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy) {
+    return addGeometry(device,scene,gflag,SceneGraph::createTrianglePlane(p0,dx,dy,num,num));
   }
 
   unsigned addSubdivPlane (RTCDevice g_device, const RTCSceneRef& scene, RTCGeometryFlags flag, size_t num, const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy)

@@ -159,6 +159,8 @@ namespace embree
     /*! Mesh. */
     struct TriangleMeshNode : public Node
     {
+      typedef Vec3fa Vertex;
+
       struct Triangle 
       {
       public:
@@ -180,9 +182,9 @@ namespace embree
       void verify() const;
 
     public:
-      avector<Vec3fa> v;
-      avector<Vec3fa> v2;
-      avector<Vec3fa> vn;
+      avector<Vertex> v;
+      avector<Vertex> v2;
+      avector<Vertex> vn;
       std::vector<Vec2f> vt;
       std::vector<Triangle> triangles;
       Ref<MaterialNode> material;
@@ -191,6 +193,8 @@ namespace embree
     /*! Mesh. */
     struct QuadMeshNode : public Node
     {
+      typedef Vec3fa Vertex;
+
       struct Quad
       {
       public:
@@ -212,9 +216,9 @@ namespace embree
       void verify() const;
 
     public:
-      avector<Vec3fa> v;
-      avector<Vec3fa> v2;
-      avector<Vec3fa> vn;
+      avector<Vertex> v;
+      avector<Vertex> v2;
+      avector<Vertex> vn;
       std::vector<Vec2f> vt;
       std::vector<Quad> quads;
       Ref<MaterialNode> material;
@@ -223,6 +227,8 @@ namespace embree
     /*! Subdivision Mesh. */
     struct SubdivMeshNode : public Node
     {
+      typedef Vec3fa Vertex;
+
       SubdivMeshNode (Ref<MaterialNode> material) 
         : Node(true), material(material) {}
 
@@ -233,9 +239,9 @@ namespace embree
       void verify() const;
 
     public:
-      avector<Vec3fa> positions;            //!< vertex positions
-      avector<Vec3fa> positions2;           //!< vertex positions for 2nd timestep
-      avector<Vec3fa> normals;              //!< face vertex normals
+      avector<Vertex> positions;            //!< vertex positions
+      avector<Vertex> positions2;           //!< vertex positions for 2nd timestep
+      avector<Vertex> normals;              //!< face vertex normals
       std::vector<Vec2f> texcoords;             //!< face texture coordinates
       std::vector<int> position_indices;        //!< position indices for all faces
       std::vector<int> normal_indices;          //!< normal indices for all faces
@@ -252,6 +258,8 @@ namespace embree
     /*! Line Segments */
     struct LineSegmentsNode : public Node
     {
+      typedef Vec3fa Vertex;
+
     public:
       LineSegmentsNode (Ref<MaterialNode> material)
         : Node(true), material(material) {}
@@ -263,8 +271,8 @@ namespace embree
       void verify() const;
 
     public:
-      avector<Vec3fa> v;        //!< control points (x,y,z,r)
-      avector<Vec3fa> v2;       //!< control points (x,y,z,r)
+      avector<Vertex> v;        //!< control points (x,y,z,r)
+      avector<Vertex> v2;       //!< control points (x,y,z,r)
       std::vector<int> indices; //!< list of line segments
       Ref<MaterialNode> material;
     };
@@ -272,6 +280,8 @@ namespace embree
     /*! Hair Set. */
     struct HairSetNode : public Node
     {
+      typedef Vec3fa Vertex;
+
       struct Hair
       {
       public:
@@ -295,8 +305,8 @@ namespace embree
 
     public:
       bool hair;                //!< true is this is hair geometry, false if this are curves
-      avector<Vec3fa> v;        //!< hair control points (x,y,z,r)
-      avector<Vec3fa> v2;       //!< hair control points (x,y,z,r)
+      avector<Vertex> v;        //!< hair control points (x,y,z,r)
+      avector<Vertex> v2;       //!< hair control points (x,y,z,r)
       std::vector<Hair> hairs;  //!< list of hairs
       Ref<MaterialNode> material;
     };
