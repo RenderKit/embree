@@ -30,8 +30,8 @@ struct Triangle { int v0, v1, v2; };
 #include "../math/math.isph"
 #include "../math/vec.isph"
 #include "../math/affinespace.isph"
+#include "../core/ray.isph"
 #include "camera.isph"
-#include "ray.isph"
 #include "scene_device.isph"
 
 /* include embree API */
@@ -80,32 +80,32 @@ inline Vec3f faceforward( Vec3f N, Vec3f I, Vec3f Ng ) {
 #define GLUT_KEY_F12 12
 
 /* standard shading function */
-typedef void (* uniform renderTileFunc)(uniform int taskIndex, 
+typedef void (* uniform renderTileFunc)(uniform int taskIndex,
                                         uniform int* uniform pixels,
                                         const uniform int width,
-                                        const uniform int height, 
+                                        const uniform int height,
                                         const uniform float time,
-                                        const uniform ISPCCamera& camera, 
-                                        const uniform int numTilesX, 
+                                        const uniform ISPCCamera& camera,
+                                        const uniform int numTilesX,
                                         const uniform int numTilesY);
 extern renderTileFunc renderTile;
 
 extern void device_key_pressed_default(uniform int key);
 extern void (* uniform key_pressed_handler)(uniform int key);
 
-void renderTileStandard(uniform int taskIndex, 
+void renderTileStandard(uniform int taskIndex,
                         uniform int* uniform pixels,
                         const uniform int width,
-                        const uniform int height, 
+                        const uniform int height,
                         const uniform float time,
                         const uniform ISPCCamera& camera,
-                        const uniform int numTilesX, 
+                        const uniform int numTilesX,
                         const uniform int numTilesY);
 
 uniform unsigned int getNumHWThreads();
 
 #define ALIGNED_STRUCT
-#define __aligned(x) 
+#define __aligned(x)
 
 struct Sample3f
 {
@@ -130,4 +130,3 @@ Vec2f  getTextureCoordinatesSubdivMesh(void* uniform mesh, const unsigned int pr
 
 float  getTextureTexel1f(void * uniform texture, float u, float v);
 Vec3f  getTextureTexel3f(void * uniform texture, float u, float v);
-

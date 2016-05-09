@@ -16,9 +16,9 @@
 
 #include "../common/math/random_sampler.h"
 #include "../common/math/sampling.h"
+#include "../common/core/differential_geometry.h"
 #include "../common/tutorial/tutorial_device.h"
 #include "../common/tutorial/scene_device.h"
-#include "../common/tutorial/differential_geometry.h"
 #include "../common/tutorial/optics.h"
 #include "../common/tutorial/lights/light.h"
 
