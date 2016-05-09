@@ -309,6 +309,6 @@ namespace embree
     static Ref<SceneGraph::Node> convert_quads_to_subdivs(Ref<SceneGraph::Node> node);
     static Ref<SceneGraph::Node> convert_bezier_to_lines(Ref<SceneGraph::Node> node);
     static Ref<SceneGraph::Node> convert_hair_to_curves(Ref<SceneGraph::Node> node);
-    static Ref<SceneGraph::TriangleMeshNode> createTrianglePlane (const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy, size_t width, size_t height, Ref<MaterialNode> material = nullptr);
+    static Ref<SceneGraph::Node> createTrianglePlane (const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy, size_t width, size_t height, Ref<MaterialNode> material = nullptr);
   };
 }

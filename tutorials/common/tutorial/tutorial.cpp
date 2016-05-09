@@ -255,7 +255,7 @@ namespace embree
         const size_t width = cin->getInt();
         const size_t height = cin->getInt();
         Material obj; new (&obj) OBJMaterial();
-        scene->add(SceneGraph::createTrianglePlane(p0,dx,dy,width,height,new SceneGraph::MaterialNode(obj)).cast<SceneGraph::Node>());
+        scene->add(SceneGraph::createTrianglePlane(p0,dx,dy,width,height,new SceneGraph::MaterialNode(obj)));
       }, "--triangle-plane p.x p.y p.z dx.x dx.y dx.z dy.x dy.y dy.z width height: adds a plane originated at p0 and spanned by the vectors dx and dy with a tesselation width/height");
     
     registerOption("cache", [this] (Ref<ParseStream> cin, const FileName& path) {

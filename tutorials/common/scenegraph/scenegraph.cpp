@@ -425,7 +425,7 @@ namespace embree
     return node;
   }
 
-  Ref<SceneGraph::TriangleMeshNode> SceneGraph::createTrianglePlane (const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy, size_t width, size_t height, Ref<MaterialNode> material)
+  Ref<SceneGraph::Node> SceneGraph::createTrianglePlane (const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy, size_t width, size_t height, Ref<MaterialNode> material)
   {
     SceneGraph::TriangleMeshNode* mesh = new SceneGraph::TriangleMeshNode(material);
     mesh->v.resize((width+1)*(height+1));
