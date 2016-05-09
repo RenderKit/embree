@@ -121,63 +121,6 @@ namespace embree
     /* -- single ray intersectors -- */
     /* ----------------------------- */
 
-      struct MoellerTrumboreIntersectorTriangle1
-      {
-        template<int M, typename Epilog>
-          static __forceinline bool intersect(Ray& ray, 
-                                              const Vec3<vfloat<M>>& tri_v0, 
-                                              const Vec3<vfloat<M>>& tri_e1, 
-                                              const Vec3<vfloat<M>>& tri_e2, 
-                                              const Vec3<vfloat<M>>& tri_Ng,
-                                              const vbool<M>& flags,
-                                              const Epilog& epilog)
-        {
-          /* calculate denominator */
-          typedef Vec3<vfloat<M>> Vec3vfM;
-          const Vec3vfM O = Vec3vfM(ray.org);
-          const Vec3vfM D = Vec3vfM(ray.dir);
-          const Vec3vfM C = Vec3vfM(tri_v0) - O;
-          const Vec3vfM R = cross(D,C);
-          const vfloat<M> den = dot(Vec3vfM(tri_Ng),D);
-          const vfloat<M> absDen = abs(den);
-          const vfloat<M> sgnDen = signmsk(den);
-          
-          /* perform edge tests */
-          const vfloat<M> U = dot(R,Vec3vfM(tri_e2)) ^ sgnDen;
-          const vfloat<M> V = dot(R,Vec3vfM(tri_e1)) ^ sgnDen;
-          
-          /* perform backface culling */
-#if defined(RTCORE_BACKFACE_CULLING)
-          vbool<M> valid = (den > vfloat<M>(zero)) & (U >= 0.0f) & (V >= 0.0f) & (U+V<=absDen);
-#else
-          vbool<M> valid = (den != vfloat<M>(zero)) & (U >= 0.0f) & (V >= 0.0f) & (U+V<=absDen);
-#endif
-          if (likely(none(valid))) return false;
-          
-          /* perform depth test */
-          const vfloat<M> T = dot(Vec3vfM(tri_Ng),C) ^ sgnDen;
-          valid &= (T > absDen*vfloat<M>(ray.tnear)) & (T < absDen*vfloat<M>(ray.tfar));
-          if (likely(none(valid))) return false;
-          
-          /* update hit information */
-          QuadHitM<M> hit(valid,U,V,T,absDen,tri_Ng, flags);
-          return epilog(valid,hit);
-        }
-        
-        template<int M, typename Epilog>
-          static __forceinline bool intersect(Ray& ray, 
-                                       const Vec3<vfloat<M>>& v0, 
-                                       const Vec3<vfloat<M>>& v1, 
-                                       const Vec3<vfloat<M>>& v2, 
-                                       const vbool<M>& flags,
-                                       const Epilog& epilog)
-        {
-          const Vec3<vfloat<M>> e1 = v0-v1;
-          const Vec3<vfloat<M>> e2 = v2-v0;
-          const Vec3<vfloat<M>> Ng = cross(e1,e2);
-          return intersect(ray,v0,e1,e2,Ng,flags,epilog);
-        }
-      };
 
     template<int M, bool filter>
       struct QuadMIntersector1MoellerTrumbore;
@@ -194,10 +137,6 @@ namespace embree
                                    const Vec3<vfloat<M>>& v0, const Vec3<vfloat<M>>& v1, const Vec3<vfloat<M>>& v2, const Vec3<vfloat<M>>& v3, 
                                    const vint<M>& geomID, const vint<M>& primID, Scene* scene, const unsigned* geomID_to_instID) const
       {
-        //Intersect1EpilogM<M,M,filter> epilog(ray,geomID,primID,scene,geomID_to_instID);
-        //MoellerTrumboreIntersectorTriangle1::intersect(ray,v0,v1,v3,vbool<M>(false),epilog);
-        //MoellerTrumboreIntersectorTriangle1::intersect(ray,v2,v3,v1,vbool<M>(true ),epilog);
-
         MoellerTrumboreHitM<M> hit;
         MoellerTrumboreIntersector1<M> intersector(ray,nullptr);
         Intersect1EpilogM<M,M,filter> epilog(ray,context,geomID,primID,scene,geomID_to_instID);
