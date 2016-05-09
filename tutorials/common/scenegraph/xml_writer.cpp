@@ -368,7 +368,7 @@ namespace embree
     }
     const ssize_t id = nodeMap[node] = currentNodeID++;
 
-    switch (mnode->material.ty)
+    switch (mnode->material.type)
     {
     case MATERIAL_OBJ             : store((OBJMaterial&)mnode->material,id); break;
     case MATERIAL_THIN_DIELECTRIC : store((ThinDielectricMaterial&)mnode->material,id); break;

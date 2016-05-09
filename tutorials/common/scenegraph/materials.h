@@ -21,7 +21,7 @@
 
 namespace embree
 {
-  enum MaterialTy 
+  enum MaterialType
   {
     MATERIAL_OBJ, 
     MATERIAL_THIN_DIELECTRIC, 
@@ -38,9 +38,9 @@ namespace embree
   struct MaterialBase
   {
     MaterialBase() {}
-    MaterialBase(MaterialTy ty) : ty(ty) {}
+    MaterialBase(MaterialType type) : type(type) {}
 
-    int ty;
+    int type;
     int align[3];
   };
   
