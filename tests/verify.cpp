@@ -190,9 +190,15 @@ namespace embree
     return addGeometry(device,scene,gflag,SceneGraph::createSubdivPlane(p0,dx,dy,num,num));
   }
 
-  unsigned addSphere (RTCDevice g_device, const RTCSceneRef& scene, RTCGeometryFlags flag, const Vec3fa& pos, const float r, size_t numPhi, size_t maxTriangles = -1, float motion = 0.0f, BBox3fa* bounds_o = nullptr)
+  unsigned addSphere (const RTCDeviceRef& device, const RTCSceneRef& scene, RTCGeometryFlags gflag, const Vec3fa& pos, const float r, size_t numPhi, size_t maxTriangles = -1, float motion = 0.0f)
   {
-    
+#if 0
+    Ref<SceneGraph::Node> node = SceneGraph::createTriangleSphere(pos,r,numPhi);
+    if (motion       != 0.0f) SceneGraph::set_motion_vector(node,Vec3fa(motion));
+    if (maxTriangles !=   -1) SceneGraph::resize_randomly(node,maxTriangles);
+    return addGeometry(device,scene,gflag,node);
+
+#else
 
     /* create a triangulated sphere */
     size_t numTheta = 2*numPhi;
@@ -200,7 +206,7 @@ namespace embree
     size_t numTimeSteps = motion == 0.0f ? 1 : 2;
     size_t numVertices = numTheta*(numPhi+1);
     
-    unsigned mesh = rtcNewTriangleMesh (scene, flag, numTriangles, numVertices,numTimeSteps);
+    unsigned mesh = rtcNewTriangleMesh (scene, gflag, numTriangles, numVertices,numTimeSteps);
     
     /* map triangle and vertex buffer */
     Vertex3f* vertices0 = nullptr;
@@ -208,7 +214,7 @@ namespace embree
     if (numTimeSteps >= 1) rtcSetBuffer(scene,mesh,RTC_VERTEX_BUFFER0,vertices0 = (Vertex3f*) allocBuffer(numVertices*sizeof(Vertex3f)+sizeof(float)), 0, sizeof(Vertex3f)); 
     if (numTimeSteps >= 2) rtcSetBuffer(scene,mesh,RTC_VERTEX_BUFFER1,vertices1 = (Vertex3f*) allocBuffer(numVertices*sizeof(Vertex3f)+sizeof(float)), 0, sizeof(Vertex3f)); 
     Triangle* triangles = (Triangle*) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
-    if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene,mesh); return -1; }
+    if (rtcDeviceGetError(device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene,mesh); return -1; }
 
     /* create sphere geometry */
     BBox3fa bounds = empty;
@@ -270,8 +276,9 @@ namespace embree
     //if (numTimeSteps >= 2) rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER1); 
     rtcUnmapBuffer(scene,mesh,RTC_INDEX_BUFFER);
 
-    if (bounds_o) *bounds_o = bounds;
+    //if (bounds_o) *bounds_o = bounds;
     return mesh;
+#endif
   }
 
   /* adds a subdiv sphere to the scene */
@@ -678,8 +685,9 @@ namespace embree
       ClearBuffers clear_before_return;
       RTCSceneRef scene = rtcDeviceNewScene(device,RTC_SCENE_STATIC,RTC_INTERSECT1);
       AssertNoError(device);
-      BBox3fa bounds0;
-      unsigned geom0 = addSphere(device,scene,RTC_GEOMETRY_STATIC,zero,1.0f,50,-1,0,&bounds0);
+      Ref<SceneGraph::Node> node = SceneGraph::createTriangleSphere(zero,1.0f,50);
+      BBox3fa bounds0 = node->bounds();
+      unsigned geom0 = addGeometry(device,scene,RTC_GEOMETRY_STATIC,node);
       AssertNoError(device);
       rtcCommit (scene);
       AssertNoError(device);
@@ -2661,6 +2669,7 @@ namespace embree
             delete tasks[i];
           
           g_threads.clear();
+          clearBuffers();
         }
         else
         {
