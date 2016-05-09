@@ -479,8 +479,7 @@ namespace embree
       RTCRayN* ray = (RTCRayN*) &data[i*sizeof(RTCRay)];
       for (size_t j=0; j<L; j++) setRay(ray,N,j,rays[i+j]);
       for (size_t j=L; j<N; j++) {
-        RTCRayN_tnear(ray,N,j) = pos_inf;
-        RTCRayN_tfar (ray,N,j) = neg_inf;
+        setRay(ray,N,j,makeRay(zero,zero,pos_inf,neg_inf));
       }
     }
     
