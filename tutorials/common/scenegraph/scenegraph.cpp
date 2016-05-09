@@ -272,6 +272,82 @@ namespace embree
     }
   }
 
+  void SceneGraph::set_motion_vector(Ref<SceneGraph::Node> node, const Vec3fa& dP)
+  {
+    if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
+      set_motion_vector(xfmNode->child, dP);
+    }
+    else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) 
+    {
+      for (size_t i=0; i<groupNode->children.size(); i++) 
+        set_motion_vector(groupNode->children[i],dP);
+    }
+    else if (Ref<SceneGraph::TriangleMeshNode> mesh = node.dynamicCast<SceneGraph::TriangleMeshNode>()) 
+    {
+      for (auto P : mesh->v) 
+        mesh->v2.push_back(P+dP);
+    }
+    else if (Ref<SceneGraph::QuadMeshNode> mesh = node.dynamicCast<SceneGraph::QuadMeshNode>()) 
+    {
+      for (auto P : mesh->v) 
+        mesh->v2.push_back(P+dP);
+    }
+    else if (Ref<SceneGraph::HairSetNode> mesh = node.dynamicCast<SceneGraph::HairSetNode>()) 
+    {
+      for (auto P : mesh->v) 
+        mesh->v2.push_back(P+dP);
+    }
+    else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>()) 
+    {
+      for (auto P : mesh->positions) 
+        mesh->positions2.push_back(P+dP);
+    }
+  }
+
+  void SceneGraph::resize_randomly(Ref<Node> node, const size_t N)
+  {
+     if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
+      resize_randomly(xfmNode->child, N);
+    }
+    else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) 
+    {
+      for (size_t i=0; i<groupNode->children.size(); i++) 
+        resize_randomly(groupNode->children[i],N);
+    }
+    else if (Ref<SceneGraph::TriangleMeshNode> mesh = node.dynamicCast<SceneGraph::TriangleMeshNode>()) 
+    {
+      if (!mesh->triangles.size()) return;
+      for (size_t i=0; i<N; i++) {
+        size_t j = random<int>()%(min(mesh->triangles.size(),N));
+        if (i < mesh->triangles.size()) std::swap(mesh->triangles[i],mesh->triangles[j]);
+        else                            mesh->triangles.push_back(mesh->triangles[j]);
+      }
+    }
+    else if (Ref<SceneGraph::QuadMeshNode> mesh = node.dynamicCast<SceneGraph::QuadMeshNode>()) 
+    {
+      if (!mesh->quads.size()) return;
+      for (size_t i=0; i<N; i++) {
+        size_t j = random<int>()%(min(mesh->quads.size(),N));
+        if (i < mesh->quads.size()) std::swap(mesh->quads[i],mesh->quads[j]);
+        else                        mesh->quads.push_back(mesh->quads[j]);
+      }
+    }
+    else if (Ref<SceneGraph::HairSetNode> mesh = node.dynamicCast<SceneGraph::HairSetNode>()) 
+    {
+      if (!mesh->hairs.size()) return;
+      for (size_t i=0; i<N; i++) {
+        size_t j = random<int>()%(min(mesh->hairs.size(),N));
+        if (i < mesh->hairs.size()) std::swap(mesh->hairs[i],mesh->hairs[j]);
+        else                        mesh->hairs.push_back(mesh->hairs[j]);
+      }
+    }
+    else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>()) 
+    {
+      if (mesh->verticesPerFace.size() > N) return;
+      mesh->verticesPerFace.resize(N);
+    }
+  }
+
   std::pair<int,int> quad_index2(int p, int a0, int a1, int b0, int b1)
   {
     if      (b0 == a0) return std::make_pair(p-1,b1);

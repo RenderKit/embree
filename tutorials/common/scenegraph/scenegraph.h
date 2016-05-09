@@ -317,6 +317,8 @@ namespace embree
     static Ref<Node> load(const FileName& fname);
     static void store(Ref<SceneGraph::Node> root, const FileName& fname, bool embedTextures);
     static void set_motion_blur(Ref<Node> node0, Ref<Node> node1);
+    static void set_motion_vector(Ref<Node> node, const Vec3fa& dP);
+    static void resize_randomly(Ref<Node> node, const size_t N);
     static Ref<SceneGraph::Node> convert_triangles_to_quads(Ref<SceneGraph::Node> node);
     static Ref<SceneGraph::Node> convert_quads_to_subdivs(Ref<SceneGraph::Node> node);
     static Ref<SceneGraph::Node> convert_bezier_to_lines(Ref<SceneGraph::Node> node);
