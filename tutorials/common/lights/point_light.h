@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "../../math/vec.h"
+#include "../math/vec.h"
 
 extern "C" void* PointLight_create();
 

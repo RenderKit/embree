@@ -14,15 +14,15 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "light.h"
-#include "../../math/sampling.h"
-#include "../../math/linearspace.h"
+#include "light.isph"
+#include "../math/sampling.isph"
+#include "../math/linearspace.isph"
 
 struct AmbientLight
 {
   Light super;      //!< inherited light fields
 
-  Vec3fa radiance;   //!< RGB color and intensity of light
+  Vec3f radiance;   //!< RGB color and intensity of light
 };
 
 
@@ -31,14 +31,14 @@ struct AmbientLight
 
 // XXX importance sampling is only done into the positive hemisphere
 // ==> poor support for translucent materials
-Light_SampleRes AmbientLight_sample(const Light* super,
+Light_SampleRes AmbientLight_sample(const uniform Light* uniform super,
                                     const DifferentialGeometry& dg,
                                     const Vec2f& s)
 {
-  AmbientLight* self = (AmbientLight*)super;
+  uniform AmbientLight* uniform self = (uniform AmbientLight* uniform)super;
   Light_SampleRes res;
 
-  const Vec3fa localDir = cosineSampleHemisphere(s);
+  const Vec3f localDir = cosineSampleHemisphere(s);
   res.dir = frame(dg.Ns) * localDir;
   res.pdf = cosineSampleHemispherePDF(localDir);
   res.dist = inf;
@@ -47,11 +47,11 @@ Light_SampleRes AmbientLight_sample(const Light* super,
   return res;
 }
 
-Light_EvalRes AmbientLight_eval(const Light* super,
+Light_EvalRes AmbientLight_eval(const uniform Light* uniform super,
                                 const DifferentialGeometry& dg,
-                                const Vec3fa& dir)
+                                const Vec3f& dir)
 {
-  AmbientLight* self = (AmbientLight*)super;
+  uniform AmbientLight* uniform self = (uniform AmbientLight* uniform)super;
   Light_EvalRes res;
 
   res.value = self->radiance;
@@ -62,8 +62,8 @@ Light_EvalRes AmbientLight_eval(const Light* super,
 }
 
 
-void AmbientLight_Constructor(AmbientLight* self,
-                              const Vec3fa& radiance)
+void AmbientLight_Constructor(uniform AmbientLight* uniform self,
+                              const uniform Vec3f& radiance)
 {
   Light_Constructor(&self->super);
   self->radiance = radiance;
@@ -76,17 +76,17 @@ void AmbientLight_Constructor(AmbientLight* self,
 //////////////////////////////////////////////////////////////////////////////
 
 //! Create an ispc-side AmbientLight object
-extern "C" void *AmbientLight_create()
+export void *uniform AmbientLight_create()
 {
-  AmbientLight* self = (AmbientLight*) alignedMalloc(sizeof(AmbientLight));
-  AmbientLight_Constructor(self, Vec3fa(1.f));
+  uniform AmbientLight* uniform self = uniform new uniform AmbientLight;
+  AmbientLight_Constructor(self, make_Vec3f(1.f));
   return self;
 }
 
 //! Set the parameters of an ispc-side AmbientLight object
-extern "C" void AmbientLight_set(void* super,
-                             const Vec3fa& radiance)
+export void AmbientLight_set(void* uniform super,
+                             const uniform Vec3f& radiance)
 {
-  AmbientLight* self = (AmbientLight*)super;
+  uniform AmbientLight* uniform self = (uniform AmbientLight* uniform)super;
   self->radiance = radiance;
 }

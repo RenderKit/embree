@@ -17,10 +17,10 @@
 #pragma once
 
 #include "../math/sampling.h"
-#include "lights/light.h"
-#include "lights/ambient_light.h"
-#include "lights/directional_light.h"
-#include "lights/point_light.h"
+#include "../lights/light.h"
+#include "../lights/ambient_light.h"
+#include "../lights/directional_light.h"
+#include "../lights/point_light.h"
 
 namespace embree
 {

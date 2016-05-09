@@ -20,7 +20,6 @@
 #include "../common/tutorial/tutorial_device.h"
 #include "../common/tutorial/scene_device.h"
 #include "../common/tutorial/optics.h"
-#include "../common/tutorial/lights/light.h"
 
 #undef TILE_SIZE_X
 #undef TILE_SIZE_Y

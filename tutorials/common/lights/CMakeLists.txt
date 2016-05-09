@@ -14,8 +14,23 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-ADD_SUBDIRECTORY(image)
-ADD_SUBDIRECTORY(transport)
-ADD_SUBDIRECTORY(tutorial)
-ADD_SUBDIRECTORY(scenegraph)
-ADD_SUBDIRECTORY(lights)
+ADD_LIBRARY(lights STATIC
+  light.cpp
+  ambient_light.cpp
+  directional_light.cpp
+  point_light.cpp
+)
+TARGET_LINK_LIBRARIES(lights sys)
+SET_PROPERTY(TARGET lights PROPERTY FOLDER tutorials/common)
+
+IF (ENABLE_ISPC_SUPPORT)
+  ADD_ISPC_LIBRARY(lights_ispc STATIC
+    light.ispc
+    ambient_light.ispc
+    directional_light.ispc
+    point_light.ispc
+  )
+  TARGET_LINK_LIBRARIES(lights_ispc sys)
+  SET_TARGET_PROPERTIES(lights_ispc PROPERTIES LINKER_LANGUAGE C)
+  SET_PROPERTY(TARGET lights_ispc PROPERTY FOLDER tutorials/common)
+ENDIF()

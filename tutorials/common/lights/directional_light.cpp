@@ -14,16 +14,16 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "light.isph"
-#include "../../math/sampling.isph"
-#include "../../math/linearspace.isph"
+#include "light.h"
+#include "../math/sampling.h"
+#include "../math/linearspace.h"
 
 struct DirectionalLight
 {
   Light super;      //!< inherited light fields
 
-  LinearSpace3f frame;   //!< coordinate frame, with vz == direction *towards* the light source
-  Vec3f radiance;   //!< RGB color and intensity of light
+  LinearSpace3fa frame;   //!< coordinate frame, with vz == direction *towards* the light source
+  Vec3fa radiance;   //!< RGB color and intensity of light
   float cosAngle;   //!< Angular limit of the cone light in an easier to use form: cosine of the half angle in radians
   float pdf;        //!< Probability to sample a direction to the light
 };
@@ -35,11 +35,11 @@ struct DirectionalLight
 // Implementation
 //////////////////////////////////////////////////////////////////////////////
 
-Light_SampleRes DirectionalLight_sample(const uniform Light* uniform super,
+Light_SampleRes DirectionalLight_sample(const Light* super,
                                         const DifferentialGeometry& dg,
                                         const Vec2f& s)
 {
-  const DirectionalLight* uniform self = (DirectionalLight* uniform)super;
+  const DirectionalLight* self = (DirectionalLight*)super;
   Light_SampleRes res;
 
   res.dir = self->frame.vz;
@@ -54,11 +54,11 @@ Light_SampleRes DirectionalLight_sample(const uniform Light* uniform super,
   return res;
 }
 
-Light_EvalRes DirectionalLight_eval(const uniform Light* uniform super,
+Light_EvalRes DirectionalLight_eval(const Light* super,
                                     const DifferentialGeometry&,
-                                    const Vec3f& dir)
+                                    const Vec3fa& dir)
 {
-  uniform DirectionalLight* uniform self = (uniform DirectionalLight* uniform)super;
+  DirectionalLight* self = (DirectionalLight*)super;
   Light_EvalRes res;
   res.dist = inf;
 
@@ -66,7 +66,7 @@ Light_EvalRes DirectionalLight_eval(const uniform Light* uniform super,
     res.value = self->radiance * self->pdf;
     res.pdf = self->pdf;
   } else {
-    res.value = make_Vec3f(0.f);
+    res.value = Vec3fa(0.f);
     res.pdf = 0.f;
   }
 
@@ -78,12 +78,12 @@ Light_EvalRes DirectionalLight_eval(const uniform Light* uniform super,
 //////////////////////////////////////////////////////////////////////////////
 
 //! Set the parameters of an ispc-side DirectionalLight object
-export void DirectionalLight_set(void* uniform super,
-                                 const uniform Vec3f& direction,
-                                 const uniform Vec3f& radiance,
-                                 uniform float cosAngle)
+extern "C" void DirectionalLight_set(void* super,
+                                 const Vec3fa& direction,
+                                 const Vec3fa& radiance,
+                                 float cosAngle)
 {
-  uniform DirectionalLight* uniform self = (uniform DirectionalLight* uniform)super;
+  DirectionalLight* self = (DirectionalLight*)super;
   self->frame = frame(direction);
   self->radiance = radiance;
   self->cosAngle = cosAngle;
@@ -91,13 +91,13 @@ export void DirectionalLight_set(void* uniform super,
 }
 
 //! Create an ispc-side DirectionalLight object
-export void* uniform DirectionalLight_create()
+extern "C" void* DirectionalLight_create()
 {
-  uniform DirectionalLight* uniform self = uniform new uniform DirectionalLight;
+  DirectionalLight* self = (DirectionalLight*) alignedMalloc(sizeof(DirectionalLight));
   Light_Constructor(&self->super);
   self->super.sample = DirectionalLight_sample;
   self->super.eval = DirectionalLight_eval;
 
-  DirectionalLight_set(self, make_Vec3f(0.f, 0.f, 1.f), make_Vec3f(1.f), 1.f);
+  DirectionalLight_set(self, Vec3fa(0.f, 0.f, 1.f), Vec3fa(1.f), 1.f);
   return self;
 }

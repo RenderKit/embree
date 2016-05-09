@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "lights/light.isph"
+#include "../lights/light.isph"
 
 struct ISPCTriangle
 {

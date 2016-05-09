@@ -57,23 +57,15 @@ ENDIF (WIN32)
 
 ADD_LIBRARY(tutorial_device STATIC
   tutorial_device.cpp
-  lights/light.cpp
-  lights/ambient_light.cpp
-  lights/directional_light.cpp
-  lights/point_light.cpp
 )
-TARGET_LINK_LIBRARIES(tutorial_device tutorial)
+TARGET_LINK_LIBRARIES(tutorial_device tutorial lights)
 SET_PROPERTY(TARGET tutorial_device PROPERTY FOLDER tutorials/common)
 
 IF (ENABLE_ISPC_SUPPORT)
   ADD_ISPC_LIBRARY(tutorial_device_ispc STATIC
     tutorial_device.ispc
-    lights/light.ispc
-    lights/ambient_light.ispc
-    lights/directional_light.ispc
-    lights/point_light.ispc
   )
-  TARGET_LINK_LIBRARIES(tutorial_device_ispc tutorial)
+  TARGET_LINK_LIBRARIES(tutorial_device_ispc tutorial lights_ispc)
   SET_TARGET_PROPERTIES(tutorial_device_ispc PROPERTIES LINKER_LANGUAGE C)
   SET_PROPERTY(TARGET tutorial_device_ispc PROPERTY FOLDER tutorials/common)
 ENDIF()
