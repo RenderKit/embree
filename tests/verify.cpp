@@ -149,24 +149,30 @@ namespace embree
     nodes.push_back(node);
     if (Ref<SceneGraph::TriangleMeshNode> mesh = node.dynamicCast<SceneGraph::TriangleMeshNode>()) 
     {
-      unsigned geomID = rtcNewTriangleMesh (scene, gflag, mesh->triangles.size(), mesh->v.size());
+      int numTimeSteps = mesh->v2.size() ? 2 : 1;
+      unsigned geomID = rtcNewTriangleMesh (scene, gflag, mesh->triangles.size(), mesh->v.size(), numTimeSteps);
       rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER ,mesh->triangles.data(),0,sizeof(SceneGraph::TriangleMeshNode::Triangle));
-      rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER,mesh->v        .data(),0,sizeof(SceneGraph::TriangleMeshNode::Vertex  ));
+      if (mesh->v .size()) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER0,mesh->v .data(),0,sizeof(SceneGraph::TriangleMeshNode::Vertex));
+      if (mesh->v2.size()) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER1,mesh->v2.data(),0,sizeof(SceneGraph::TriangleMeshNode::Vertex));
       return geomID;
     }
     else if (Ref<SceneGraph::QuadMeshNode> mesh = node.dynamicCast<SceneGraph::QuadMeshNode>())
     {
-      unsigned geomID = rtcNewQuadMesh (scene, gflag, mesh->quads.size(), mesh->v.size());
+      int numTimeSteps = mesh->v2.size() ? 2 : 1;
+      unsigned geomID = rtcNewQuadMesh (scene, gflag, mesh->quads.size(), mesh->v.size(), numTimeSteps);
       rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER ,mesh->quads.data(),0,sizeof(SceneGraph::QuadMeshNode::Quad  ));
-      rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER,mesh->v    .data(),0,sizeof(SceneGraph::QuadMeshNode::Vertex));
+      if (mesh->v .size()) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER0,mesh->v .data(),0,sizeof(SceneGraph::QuadMeshNode::Vertex));
+      if (mesh->v2.size()) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER1,mesh->v2.data(),0,sizeof(SceneGraph::QuadMeshNode::Vertex));
       return geomID;
     } 
     else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>())
     {
-      unsigned geomID = rtcNewSubdivisionMesh (scene, gflag, mesh->verticesPerFace.size(), mesh->position_indices.size(), mesh->positions.size(), 0,0,0);
+      int numTimeSteps = mesh->positions2.size() ? 2 : 1;
+      unsigned geomID = rtcNewSubdivisionMesh (scene, gflag, mesh->verticesPerFace.size(), mesh->position_indices.size(), mesh->positions.size(), 0,0,0, numTimeSteps);
       rtcSetBuffer(scene,geomID,RTC_FACE_BUFFER  ,mesh->verticesPerFace.data(),  0,sizeof(int));
       rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER ,mesh->position_indices.data(),0,sizeof(int));
-      rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER,mesh->positions.data(),       0,sizeof(SceneGraph::SubdivMeshNode::Vertex));
+      if (mesh->positions .size()) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER0,mesh->positions .data(),0,sizeof(SceneGraph::SubdivMeshNode::Vertex));
+      if (mesh->positions2.size()) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER1,mesh->positions2.data(),0,sizeof(SceneGraph::SubdivMeshNode::Vertex));
       rtcSetBoundaryMode(scene,geomID,mesh->boundaryMode);
       return geomID;
     }
@@ -186,6 +192,8 @@ namespace embree
 
   unsigned addSphere (RTCDevice g_device, const RTCSceneRef& scene, RTCGeometryFlags flag, const Vec3fa& pos, const float r, size_t numPhi, size_t maxTriangles = -1, float motion = 0.0f, BBox3fa* bounds_o = nullptr)
   {
+    
+
     /* create a triangulated sphere */
     size_t numTheta = 2*numPhi;
     size_t numTriangles = min(maxTriangles,2*numTheta*(numPhi-1));
