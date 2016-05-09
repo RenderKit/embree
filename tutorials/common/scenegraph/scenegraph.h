@@ -18,6 +18,7 @@
 
 #include "materials.h"
 #include "lights.h"
+#include "../../../include/embree2/rtcore.h"
 
 namespace embree
 {  
@@ -230,7 +231,7 @@ namespace embree
       typedef Vec3fa Vertex;
 
       SubdivMeshNode (Ref<MaterialNode> material) 
-        : Node(true), material(material) {}
+        : Node(true), material(material), boundaryMode(RTC_BOUNDARY_EDGE_ONLY) {}
 
       virtual void setMaterial(Ref<MaterialNode> material) {
         this->material = material;
@@ -253,6 +254,7 @@ namespace embree
       std::vector<int> vertex_creases;          //!< indices of vertex creases
       std::vector<float> vertex_crease_weights; //!< weight for each vertex crease
       Ref<MaterialNode> material;
+      RTCBoundaryMode boundaryMode;
     };
 
     /*! Line Segments */
@@ -319,6 +321,10 @@ namespace embree
     static Ref<SceneGraph::Node> convert_quads_to_subdivs(Ref<SceneGraph::Node> node);
     static Ref<SceneGraph::Node> convert_bezier_to_lines(Ref<SceneGraph::Node> node);
     static Ref<SceneGraph::Node> convert_hair_to_curves(Ref<SceneGraph::Node> node);
+
+  public:
     static Ref<SceneGraph::Node> createTrianglePlane (const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy, size_t width, size_t height, Ref<MaterialNode> material = nullptr);
+    static Ref<SceneGraph::Node> createQuadPlane     (const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy, size_t width, size_t height, Ref<MaterialNode> material = nullptr);
+    static Ref<SceneGraph::Node> createSubdivPlane   (const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy, size_t width, size_t height, Ref<MaterialNode> material = nullptr);
   };
 }

@@ -256,8 +256,29 @@ namespace embree
         const size_t height = cin->getInt();
         Material obj; new (&obj) OBJMaterial();
         scene->add(SceneGraph::createTrianglePlane(p0,dx,dy,width,height,new SceneGraph::MaterialNode(obj)));
-      }, "--triangle-plane p.x p.y p.z dx.x dx.y dx.z dy.x dy.y dy.z width height: adds a plane originated at p0 and spanned by the vectors dx and dy with a tesselation width/height");
+      }, "--triangle-plane p.x p.y p.z dx.x dx.y dx.z dy.x dy.y dy.z width height: adds a plane build of triangles originated at p0 and spanned by the vectors dx and dy with a tesselation width/height.");
     
+    registerOption("quad-plane", [this] (Ref<ParseStream> cin, const FileName& path) {
+        const Vec3fa p0 = cin->getVec3fa();
+        const Vec3fa dx = cin->getVec3fa();
+        const Vec3fa dy = cin->getVec3fa();
+        const size_t width = cin->getInt();
+        const size_t height = cin->getInt();
+        Material obj; new (&obj) OBJMaterial();
+        scene->add(SceneGraph::createQuadPlane(p0,dx,dy,width,height,new SceneGraph::MaterialNode(obj)));
+      }, "--triangle-plane p.x p.y p.z dx.x dx.y dx.z dy.x dy.y dy.z width height: adds a plane build of quadrilaterals originated at p0 and spanned by the vectors dx and dy with a tesselation width/height.");
+    
+    registerOption("subdiv-plane", [this] (Ref<ParseStream> cin, const FileName& path) {
+        const Vec3fa p0 = cin->getVec3fa();
+        const Vec3fa dx = cin->getVec3fa();
+        const Vec3fa dy = cin->getVec3fa();
+        const size_t width = cin->getInt();
+        const size_t height = cin->getInt();
+        Material obj; new (&obj) OBJMaterial();
+        scene->add(SceneGraph::createSubdivPlane(p0,dx,dy,width,height,new SceneGraph::MaterialNode(obj)));
+      }, "--subdiv-plane p.x p.y p.z dx.x dx.y dx.z dy.x dy.y dy.z width height: adds a plane build as a Catmull Clark subdivision surface originated at p0 and spanned by the vectors dx and dy with a tesselation width/height.");
+    
+
     registerOption("cache", [this] (Ref<ParseStream> cin, const FileName& path) {
         subdiv_mode = ",subdiv_accel=bvh4.subdivpatch1cached";
         rtcore += subdiv_mode;

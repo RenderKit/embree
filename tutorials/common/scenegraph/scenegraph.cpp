@@ -453,4 +453,69 @@ namespace embree
     }
     return mesh;
   }
+
+  Ref<SceneGraph::Node> SceneGraph::createQuadPlane (const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy, size_t width, size_t height, Ref<MaterialNode> material)
+  {
+    SceneGraph::QuadMeshNode* mesh = new SceneGraph::QuadMeshNode(material);
+    mesh->v.resize((width+1)*(height+1));
+    mesh->quads.resize(width*height);
+
+    for (size_t y=0; y<=height; y++) {
+      for (size_t x=0; x<=width; x++) {
+        Vec3fa p = p0+float(x)/float(width)*dx+float(y)/float(height)*dy;
+        size_t i = y*(width+1)+x;
+        mesh->v[i].x = p.x;
+        mesh->v[i].y = p.y;
+        mesh->v[i].z = p.z;
+      }
+    }
+    for (size_t y=0; y<height; y++) {
+      for (size_t x=0; x<width; x++) {
+        size_t i = y*width+x;
+        size_t p00 = (y+0)*(width+1)+(x+0);
+        size_t p01 = (y+0)*(width+1)+(x+1);
+        size_t p10 = (y+1)*(width+1)+(x+0);
+        size_t p11 = (y+1)*(width+1)+(x+1);
+        mesh->quads[i].v0 = p00; 
+        mesh->quads[i].v1 = p01; 
+        mesh->quads[i].v2 = p11; 
+        mesh->quads[i].v3 = p10;
+      }
+    }
+    return mesh;
+  }
+
+  Ref<SceneGraph::Node> SceneGraph::createSubdivPlane (const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy, size_t width, size_t height, Ref<MaterialNode> material)
+  {
+    SceneGraph::SubdivMeshNode* mesh = new SceneGraph::SubdivMeshNode(material);
+    mesh->positions.resize((width+1)*(height+1));
+    mesh->position_indices.resize(4*width*height);
+    mesh->verticesPerFace.resize(width*height);
+
+    for (size_t y=0; y<=height; y++) {
+      for (size_t x=0; x<=width; x++) {
+        Vec3fa p = p0+float(x)/float(width)*dx+float(y)/float(height)*dy;
+        size_t i = y*(width+1)+x;
+        mesh->positions[i].x = p.x;
+        mesh->positions[i].y = p.y;
+        mesh->positions[i].z = p.z;
+      }
+    }
+    for (size_t y=0; y<height; y++) {
+      for (size_t x=0; x<width; x++) {
+        size_t i = y*width+x;
+        size_t p00 = (y+0)*(width+1)+(x+0);
+        size_t p01 = (y+0)*(width+1)+(x+1);
+        size_t p10 = (y+1)*(width+1)+(x+0);
+        size_t p11 = (y+1)*(width+1)+(x+1);
+        mesh->position_indices[4*i+0] = p00; 
+        mesh->position_indices[4*i+1] = p01; 
+        mesh->position_indices[4*i+2] = p11; 
+        mesh->position_indices[4*i+3] = p10;
+        mesh->verticesPerFace[i] = 4;
+      }
+    }
+    mesh->boundaryMode = RTC_BOUNDARY_EDGE_AND_CORNER;
+    return mesh;
+  }
 }

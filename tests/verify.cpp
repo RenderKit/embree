@@ -154,6 +154,22 @@ namespace embree
       rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER,mesh->v        .data(),0,sizeof(SceneGraph::TriangleMeshNode::Vertex  ));
       return geomID;
     }
+    else if (Ref<SceneGraph::QuadMeshNode> mesh = node.dynamicCast<SceneGraph::QuadMeshNode>())
+    {
+      unsigned geomID = rtcNewQuadMesh (scene, gflag, mesh->quads.size(), mesh->v.size());
+      rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER ,mesh->quads.data(),0,sizeof(SceneGraph::QuadMeshNode::Quad  ));
+      rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER,mesh->v    .data(),0,sizeof(SceneGraph::QuadMeshNode::Vertex));
+      return geomID;
+    } 
+    else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>())
+    {
+      unsigned geomID = rtcNewSubdivisionMesh (scene, gflag, mesh->verticesPerFace.size(), mesh->position_indices.size(), mesh->positions.size(), 0,0,0);
+      rtcSetBuffer(scene,geomID,RTC_FACE_BUFFER  ,mesh->verticesPerFace.data(),  0,sizeof(int));
+      rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER ,mesh->position_indices.data(),0,sizeof(int));
+      rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER,mesh->positions.data(),       0,sizeof(SceneGraph::SubdivMeshNode::Vertex));
+      rtcSetBoundaryMode(scene,geomID,mesh->boundaryMode);
+      return geomID;
+    }
     else {
       THROW_RUNTIME_ERROR("unknown node type");
     }
@@ -164,40 +180,8 @@ namespace embree
     return addGeometry(device,scene,gflag,SceneGraph::createTrianglePlane(p0,dx,dy,num,num));
   }
 
-  unsigned addSubdivPlane (RTCDevice g_device, const RTCSceneRef& scene, RTCGeometryFlags flag, size_t num, const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy)
-  {
-    unsigned mesh = rtcNewSubdivisionMesh (scene, flag, num*num, 4*num*num, (num+1)*(num+1), 0,0,0);
-    Vertex3fa*   vertices  = (Vertex3fa*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
-    int* indices = (int*) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
-    int* faces = (int*) rtcMapBuffer(scene,mesh,RTC_FACE_BUFFER);
-    for (size_t y=0; y<=num; y++) {
-      for (size_t x=0; x<=num; x++) {
-        Vec3fa p = p0+float(x)/float(num)*dx+float(y)/float(num)*dy;
-        size_t i = y*(num+1)+x;
-        vertices[i].x = p.x;
-        vertices[i].y = p.y;
-        vertices[i].z = p.z;
-      }
-    }
-    for (size_t y=0; y<num; y++) {
-      for (size_t x=0; x<num; x++) {
-        size_t i = y*num+x;
-        size_t p00 = (y+0)*(num+1)+(x+0);
-        size_t p01 = (y+0)*(num+1)+(x+1);
-        size_t p10 = (y+1)*(num+1)+(x+0);
-        size_t p11 = (y+1)*(num+1)+(x+1);
-        indices[4*i+0] = p00; 
-        indices[4*i+1] = p01; 
-        indices[4*i+2] = p11; 
-        indices[4*i+3] = p10; 
-        faces[i] = 4;
-      }
-    }
-    rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
-    rtcUnmapBuffer(scene,mesh,RTC_INDEX_BUFFER);
-    rtcUnmapBuffer(scene,mesh,RTC_FACE_BUFFER);
-    rtcSetBoundaryMode(scene,mesh,RTC_BOUNDARY_EDGE_AND_CORNER);
-    return mesh;
+  unsigned addSubdivPlane (const RTCDeviceRef& device, const RTCSceneRef& scene, RTCGeometryFlags gflag, size_t num, const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy) {
+    return addGeometry(device,scene,gflag,SceneGraph::createSubdivPlane(p0,dx,dy,num,num));
   }
 
   unsigned addSphere (RTCDevice g_device, const RTCSceneRef& scene, RTCGeometryFlags flag, const Vec3fa& pos, const float r, size_t numPhi, size_t maxTriangles = -1, float motion = 0.0f, BBox3fa* bounds_o = nullptr)
