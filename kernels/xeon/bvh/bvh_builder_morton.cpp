@@ -20,6 +20,7 @@
 #include "../../common/profile.h"
 #include "../../algorithms/parallel_prefix_sum.h"
 #include "../../algorithms/parallel_for_for_prefix_sum.h"
+#include "../../algorithms/sort.h"
 
 #include "../builders/primrefgen.h"
 #include "../builders/bvh_builder_morton.h"
@@ -338,12 +339,19 @@ namespace embree
         d0 = getSeconds() - d0;
         DBG_PRINT(d0);
 
+
+        const size_t block_size = max(size_t(BLOCK_SIZE),(numPrimitives+TaskScheduler::threadCount()-1)/TaskScheduler::threadCount());
+
+        //size_t block_size = size_t(BLOCK_SIZE);
+
+        //PRINT(block_size);
+
         double d1 = getSeconds();
 
         /* compute scene bounds */
         ParallelPrefixSumState<size_t> pstate;
         const BBox3fa centBounds = parallel_reduce 
-          ( size_t(0), numPrimitives, size_t(BLOCK_SIZE), BBox3fa(empty), [&](const range<size_t>& r) -> BBox3fa
+          ( size_t(0), numPrimitives, block_size, BBox3fa(empty), [&](const range<size_t>& r) -> BBox3fa
             {
               BBox3fa bounds(empty);
               for (size_t i=r.begin(); i<r.end(); i++) bounds.extend(center2(mesh->bounds(i)));
@@ -356,10 +364,12 @@ namespace embree
 
         double d2 = getSeconds();
 
+
         /* compute morton codes */
         MortonID32Bit* dest = (MortonID32Bit*) bvh->alloc.specialAlloc(bytesMortonCodes);
         MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
-        size_t numPrimitivesGen = parallel_prefix_sum( pstate, size_t(0), numPrimitives, size_t(BLOCK_SIZE), size_t(0), [&](const range<size_t>& r, const size_t base) -> size_t {
+
+        size_t numPrimitivesGen = parallel_prefix_sum( pstate, size_t(0), numPrimitives, block_size, size_t(0), [&](const range<size_t>& r, const size_t base) -> size_t {
             size_t num = 0;
             MortonCodeGenerator generator(mapping,&morton.data()[r.begin()]);
             for (ssize_t j=r.begin(); j<r.end(); j++)
@@ -378,7 +388,7 @@ namespace embree
         /* fallback in case some primitives were invalid */
         if (numPrimitivesGen != numPrimitives)
         {
-          numPrimitivesGen = parallel_prefix_sum( pstate, size_t(0), numPrimitives, size_t(BLOCK_SIZE), size_t(0), [&](const range<size_t>& r, const size_t base) -> size_t {
+          numPrimitivesGen = parallel_prefix_sum( pstate, size_t(0), numPrimitives, block_size, size_t(0), [&](const range<size_t>& r, const size_t base) -> size_t {
               size_t num = 0;
               MortonCodeGenerator generator(mapping,&morton.data()[base]);
               for (ssize_t j=r.begin(); j<r.end(); j++)
