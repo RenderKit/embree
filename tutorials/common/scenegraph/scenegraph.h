@@ -53,6 +53,11 @@ namespace embree
       /* checks if the node is closed */
       __forceinline bool isClosed() const { return closed; }
 
+      /* calculates bounding box of node */
+      virtual BBox3fa bounds() const {
+        return empty;
+      }
+
     protected:
       size_t indegree;   // number of nodes pointing to us
       bool closed;       // determines if the subtree may represent an instance
@@ -75,6 +80,14 @@ namespace embree
       virtual void resetNode(std::set<Ref<Node>>& done);
       virtual void calculateInDegree();
       virtual bool calculateClosed();
+      
+      virtual BBox3fa bounds() 
+      {
+        const BBox3fa cbounds = child->bounds();
+        const BBox3fa b0 = xfmBounds(xfm0,cbounds);
+        const BBox3fa b1 = xfmBounds(xfm1,cbounds);
+        return merge(b0,b1);
+      }
 
     public:
       AffineSpace3fa xfm0;
@@ -98,6 +111,14 @@ namespace embree
       
       void set(const size_t i, const Ref<Node>& node) {
         children[i] = node;
+      }
+
+      virtual BBox3fa bounds() const
+      {
+        BBox3fa b = empty;
+        for (auto c : children)
+          b.extend(c->bounds());
+        return b;
       }
 
       void triangles_to_quads()
@@ -140,9 +161,9 @@ namespace embree
       struct LightNode : public Node
     {
       ALIGNED_STRUCT;
-
-    LightNode(const Light& light)
-      : light(light) {}
+      
+      LightNode (const Light& light)
+        : light(light) {}
       
       Light light;
     };
@@ -180,6 +201,14 @@ namespace embree
         this->material = material;
       }
 
+      virtual BBox3fa bounds() const
+      {
+        BBox3fa b = empty;
+        for (auto x : v ) b.extend(x);
+        for (auto x : v2) b.extend(x);
+        return b;
+      }
+
       void verify() const;
 
     public:
@@ -214,6 +243,14 @@ namespace embree
         this->material = material;
       }
 
+      virtual BBox3fa bounds() const
+      {
+        BBox3fa b = empty;
+        for (auto x : v ) b.extend(x);
+        for (auto x : v2) b.extend(x);
+        return b;
+      }
+
       void verify() const;
 
     public:
@@ -235,6 +272,14 @@ namespace embree
 
       virtual void setMaterial(Ref<MaterialNode> material) {
         this->material = material;
+      }
+
+      virtual BBox3fa bounds() const
+      {
+        BBox3fa b = empty;
+        for (auto x : positions ) b.extend(x);
+        for (auto x : positions2) b.extend(x);
+        return b;
       }
 
       void verify() const;
@@ -270,6 +315,14 @@ namespace embree
         this->material = material;
       }
 
+      virtual BBox3fa bounds() const
+      {
+        BBox3fa b = empty;
+        for (auto x : v ) b.extend(x);
+        for (auto x : v2) b.extend(x);
+        return b;
+      }
+
       void verify() const;
 
     public:
@@ -301,6 +354,14 @@ namespace embree
 
       virtual void setMaterial(Ref<MaterialNode> material) {
         this->material = material;
+      }
+
+      virtual BBox3fa bounds() const
+      {
+        BBox3fa b = empty;
+        for (auto x : v ) b.extend(x);
+        for (auto x : v2) b.extend(x);
+        return b;
       }
 
       void verify() const;
