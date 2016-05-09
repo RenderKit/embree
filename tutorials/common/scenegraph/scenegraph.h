@@ -86,6 +86,10 @@ namespace embree
       GroupNode (const size_t N = 0) { 
         children.resize(N); 
       }
+
+      size_t size() const {
+        return children.size();
+      }
       
       void add(const Ref<Node>& node) {
         if (node) children.push_back(node);
@@ -305,5 +309,6 @@ namespace embree
     static Ref<SceneGraph::Node> convert_quads_to_subdivs(Ref<SceneGraph::Node> node);
     static Ref<SceneGraph::Node> convert_bezier_to_lines(Ref<SceneGraph::Node> node);
     static Ref<SceneGraph::Node> convert_hair_to_curves(Ref<SceneGraph::Node> node);
+    static Ref<SceneGraph::TriangleMeshNode> createTrianglePlane (const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy, size_t width, size_t height, Ref<MaterialNode> material = nullptr);
   };
 }

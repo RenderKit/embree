@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "verify.h"
+#include "../tutorials/common/scenegraph/scenegraph.h"
 #include <regex>
 
 #define DEFAULT_STACK_SIZE 4*1024*1024
@@ -65,6 +66,7 @@ namespace embree
   };
 
   std::vector<void*> buffers;
+  std::vector<Ref<SceneGraph::Node>> nodes;
   MutexSys g_mutex2;
   void* allocBuffer(size_t size) { 
     g_mutex2.lock();
@@ -78,6 +80,7 @@ namespace embree
       alignedFree(buffers[i]);
     }
     buffers.clear();
+    nodes.clear();
   }
   struct ClearBuffers {
     ~ClearBuffers() { clearBuffers(); }

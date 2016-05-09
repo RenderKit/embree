@@ -248,6 +248,16 @@ namespace embree
         scene->add(new SceneGraph::LightNode<DistantLight>(DistantLight(D,L,halfAngle)));
       }, "--distantlight x y z r g b a: adds a distant light with direction xyz, intensity rgb, and opening angle a");
 
+    registerOption("triangle-plane", [this] (Ref<ParseStream> cin, const FileName& path) {
+        const Vec3fa p0 = cin->getVec3fa();
+        const Vec3fa dx = cin->getVec3fa();
+        const Vec3fa dy = cin->getVec3fa();
+        const size_t width = cin->getInt();
+        const size_t height = cin->getInt();
+        Material obj; new (&obj) OBJMaterial();
+        scene->add(SceneGraph::createTrianglePlane(p0,dx,dy,width,height,new SceneGraph::MaterialNode(obj)).cast<SceneGraph::Node>());
+      }, "--triangle-plane p.x p.y p.z dx.x dx.y dx.z dy.x dy.y dy.z width height: adds a plane originated at p0 and spanned by the vectors dx and dy with a tesselation width/height");
+    
     registerOption("cache", [this] (Ref<ParseStream> cin, const FileName& path) {
         subdiv_mode = ",subdiv_accel=bvh4.subdivpatch1cached";
         rtcore += subdiv_mode;
