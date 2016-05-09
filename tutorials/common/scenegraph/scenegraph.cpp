@@ -447,8 +447,8 @@ namespace embree
         size_t p01 = (y+0)*(width+1)+(x+1);
         size_t p10 = (y+1)*(width+1)+(x+0);
         size_t p11 = (y+1)*(width+1)+(x+1);
-        mesh->triangles[i+0].v0 = p00; mesh->triangles[i+0].v1 = p01; mesh->triangles[i+0].v2 = p11;
-        mesh->triangles[i+1].v0 = p00; mesh->triangles[i+1].v1 = p11; mesh->triangles[i+1].v2 = p10;
+        mesh->triangles[i+0].v0 = p00; mesh->triangles[i+0].v1 = p01; mesh->triangles[i+0].v2 = p10;
+        mesh->triangles[i+1].v0 = p11; mesh->triangles[i+1].v1 = p10; mesh->triangles[i+1].v2 = p01;
       }
     }
     return mesh;
