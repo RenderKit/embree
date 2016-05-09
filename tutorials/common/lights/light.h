@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "../differential_geometry.h"
+#include "../core/differential_geometry.h"
 
 struct Light;
 

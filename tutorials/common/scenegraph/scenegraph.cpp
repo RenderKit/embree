@@ -272,6 +272,82 @@ namespace embree
     }
   }
 
+  void SceneGraph::set_motion_vector(Ref<SceneGraph::Node> node, const Vec3fa& dP)
+  {
+    if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
+      set_motion_vector(xfmNode->child, dP);
+    }
+    else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) 
+    {
+      for (size_t i=0; i<groupNode->children.size(); i++) 
+        set_motion_vector(groupNode->children[i],dP);
+    }
+    else if (Ref<SceneGraph::TriangleMeshNode> mesh = node.dynamicCast<SceneGraph::TriangleMeshNode>()) 
+    {
+      for (auto P : mesh->v) 
+        mesh->v2.push_back(P+dP);
+    }
+    else if (Ref<SceneGraph::QuadMeshNode> mesh = node.dynamicCast<SceneGraph::QuadMeshNode>()) 
+    {
+      for (auto P : mesh->v) 
+        mesh->v2.push_back(P+dP);
+    }
+    else if (Ref<SceneGraph::HairSetNode> mesh = node.dynamicCast<SceneGraph::HairSetNode>()) 
+    {
+      for (auto P : mesh->v) 
+        mesh->v2.push_back(P+dP);
+    }
+    else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>()) 
+    {
+      for (auto P : mesh->positions) 
+        mesh->positions2.push_back(P+dP);
+    }
+  }
+
+  void SceneGraph::resize_randomly(Ref<Node> node, const size_t N)
+  {
+     if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
+      resize_randomly(xfmNode->child, N);
+    }
+    else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) 
+    {
+      for (size_t i=0; i<groupNode->children.size(); i++) 
+        resize_randomly(groupNode->children[i],N);
+    }
+    else if (Ref<SceneGraph::TriangleMeshNode> mesh = node.dynamicCast<SceneGraph::TriangleMeshNode>()) 
+    {
+      if (!mesh->triangles.size()) return;
+      for (size_t i=0; i<N; i++) {
+        size_t j = random<int>()%(min(mesh->triangles.size(),N));
+        if (i < mesh->triangles.size()) std::swap(mesh->triangles[i],mesh->triangles[j]);
+        else                            mesh->triangles.push_back(mesh->triangles[j]);
+      }
+    }
+    else if (Ref<SceneGraph::QuadMeshNode> mesh = node.dynamicCast<SceneGraph::QuadMeshNode>()) 
+    {
+      if (!mesh->quads.size()) return;
+      for (size_t i=0; i<N; i++) {
+        size_t j = random<int>()%(min(mesh->quads.size(),N));
+        if (i < mesh->quads.size()) std::swap(mesh->quads[i],mesh->quads[j]);
+        else                        mesh->quads.push_back(mesh->quads[j]);
+      }
+    }
+    else if (Ref<SceneGraph::HairSetNode> mesh = node.dynamicCast<SceneGraph::HairSetNode>()) 
+    {
+      if (!mesh->hairs.size()) return;
+      for (size_t i=0; i<N; i++) {
+        size_t j = random<int>()%(min(mesh->hairs.size(),N));
+        if (i < mesh->hairs.size()) std::swap(mesh->hairs[i],mesh->hairs[j]);
+        else                        mesh->hairs.push_back(mesh->hairs[j]);
+      }
+    }
+    else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>()) 
+    {
+      if (mesh->verticesPerFace.size() > N) return;
+      mesh->verticesPerFace.resize(N);
+    }
+  }
+
   std::pair<int,int> quad_index2(int p, int a0, int a1, int b0, int b1)
   {
     if      (b0 == a0) return std::make_pair(p-1,b1);
@@ -423,5 +499,281 @@ namespace embree
       return hmesh.dynamicCast<SceneGraph::Node>();
     }
     return node;
+  }
+
+  Ref<SceneGraph::Node> SceneGraph::createTrianglePlane (const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy, size_t width, size_t height, Ref<MaterialNode> material)
+  {
+    SceneGraph::TriangleMeshNode* mesh = new SceneGraph::TriangleMeshNode(material);
+    mesh->v.resize((width+1)*(height+1));
+    mesh->triangles.resize(2*width*height);
+
+    for (size_t y=0; y<=height; y++) {
+      for (size_t x=0; x<=width; x++) {
+        Vec3fa p = p0+float(x)/float(width)*dx+float(y)/float(height)*dy;
+        size_t i = y*(width+1)+x;
+        mesh->v[i].x = p.x;
+        mesh->v[i].y = p.y;
+        mesh->v[i].z = p.z;
+      }
+    }
+    for (size_t y=0; y<height; y++) {
+      for (size_t x=0; x<width; x++) {
+        size_t i = 2*y*width+2*x;
+        size_t p00 = (y+0)*(width+1)+(x+0);
+        size_t p01 = (y+0)*(width+1)+(x+1);
+        size_t p10 = (y+1)*(width+1)+(x+0);
+        size_t p11 = (y+1)*(width+1)+(x+1);
+        mesh->triangles[i+0].v0 = p00; mesh->triangles[i+0].v1 = p01; mesh->triangles[i+0].v2 = p10;
+        mesh->triangles[i+1].v0 = p11; mesh->triangles[i+1].v1 = p10; mesh->triangles[i+1].v2 = p01;
+      }
+    }
+    return mesh;
+  }
+
+  Ref<SceneGraph::Node> SceneGraph::createQuadPlane (const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy, size_t width, size_t height, Ref<MaterialNode> material)
+  {
+    SceneGraph::QuadMeshNode* mesh = new SceneGraph::QuadMeshNode(material);
+    mesh->v.resize((width+1)*(height+1));
+    mesh->quads.resize(width*height);
+
+    for (size_t y=0; y<=height; y++) {
+      for (size_t x=0; x<=width; x++) {
+        Vec3fa p = p0+float(x)/float(width)*dx+float(y)/float(height)*dy;
+        size_t i = y*(width+1)+x;
+        mesh->v[i].x = p.x;
+        mesh->v[i].y = p.y;
+        mesh->v[i].z = p.z;
+      }
+    }
+    for (size_t y=0; y<height; y++) {
+      for (size_t x=0; x<width; x++) {
+        size_t i = y*width+x;
+        size_t p00 = (y+0)*(width+1)+(x+0);
+        size_t p01 = (y+0)*(width+1)+(x+1);
+        size_t p10 = (y+1)*(width+1)+(x+0);
+        size_t p11 = (y+1)*(width+1)+(x+1);
+        mesh->quads[i].v0 = p00; 
+        mesh->quads[i].v1 = p01; 
+        mesh->quads[i].v2 = p11; 
+        mesh->quads[i].v3 = p10;
+      }
+    }
+    return mesh;
+  }
+
+  Ref<SceneGraph::Node> SceneGraph::createSubdivPlane (const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy, size_t width, size_t height, Ref<MaterialNode> material)
+  {
+    SceneGraph::SubdivMeshNode* mesh = new SceneGraph::SubdivMeshNode(material);
+    mesh->positions.resize((width+1)*(height+1));
+    mesh->position_indices.resize(4*width*height);
+    mesh->verticesPerFace.resize(width*height);
+
+    for (size_t y=0; y<=height; y++) {
+      for (size_t x=0; x<=width; x++) {
+        Vec3fa p = p0+float(x)/float(width)*dx+float(y)/float(height)*dy;
+        size_t i = y*(width+1)+x;
+        mesh->positions[i].x = p.x;
+        mesh->positions[i].y = p.y;
+        mesh->positions[i].z = p.z;
+      }
+    }
+    for (size_t y=0; y<height; y++) {
+      for (size_t x=0; x<width; x++) {
+        size_t i = y*width+x;
+        size_t p00 = (y+0)*(width+1)+(x+0);
+        size_t p01 = (y+0)*(width+1)+(x+1);
+        size_t p10 = (y+1)*(width+1)+(x+0);
+        size_t p11 = (y+1)*(width+1)+(x+1);
+        mesh->position_indices[4*i+0] = p00; 
+        mesh->position_indices[4*i+1] = p01; 
+        mesh->position_indices[4*i+2] = p11; 
+        mesh->position_indices[4*i+3] = p10;
+        mesh->verticesPerFace[i] = 4;
+      }
+    }
+    mesh->boundaryMode = RTC_BOUNDARY_EDGE_AND_CORNER;
+    return mesh;
+  }
+
+  Ref<SceneGraph::Node> SceneGraph::createTriangleSphere (const Vec3fa& center, const float radius, size_t numPhi, Ref<MaterialNode> material)
+  {
+    size_t numTheta = 2*numPhi;
+    size_t numVertices = numTheta*(numPhi+1);
+    SceneGraph::TriangleMeshNode* mesh = new SceneGraph::TriangleMeshNode(material);
+    mesh->v.resize(numVertices);
+
+    /* create sphere geometry */
+    const float rcpNumTheta = rcp((float)numTheta);
+    const float rcpNumPhi   = rcp((float)numPhi);
+    for (int phi=0; phi<=numPhi; phi++)
+    {
+      for (int theta=0; theta<numTheta; theta++)
+      {
+	const float phif   = phi*float(pi)*rcpNumPhi;
+	const float thetaf = theta*2.0f*float(pi)*rcpNumTheta;
+	mesh->v[phi*numTheta+theta].x = center.x + radius*sin(phif)*sin(thetaf);
+        mesh->v[phi*numTheta+theta].y = center.y + radius*cos(phif);
+	mesh->v[phi*numTheta+theta].z = center.z + radius*sin(phif)*cos(thetaf);
+      }
+      if (phi == 0) continue;
+      
+      if (phi == 1)
+      {
+	for (int theta=1; theta<=numTheta; theta++) 
+	{
+	  int p00 = numTheta-1;
+	  int p10 = phi*numTheta+theta-1;
+	  int p11 = phi*numTheta+theta%numTheta;
+          mesh->triangles.push_back(TriangleMeshNode::Triangle(p10,p00,p11));
+	}
+      }
+      else if (phi == numPhi)
+      {
+	for (int theta=1; theta<=numTheta; theta++) 
+	{
+	  int p00 = (phi-1)*numTheta+theta-1;
+	  int p01 = (phi-1)*numTheta+theta%numTheta;
+	  int p10 = numPhi*numTheta;
+          mesh->triangles.push_back(TriangleMeshNode::Triangle(p10,p00,p01));
+	}
+      }
+      else
+      {
+	for (int theta=1; theta<=numTheta; theta++) 
+	{
+	  int p00 = (phi-1)*numTheta+theta-1;
+	  int p01 = (phi-1)*numTheta+theta%numTheta;
+	  int p10 = phi*numTheta+theta-1;
+	  int p11 = phi*numTheta+theta%numTheta;
+          mesh->triangles.push_back(TriangleMeshNode::Triangle(p10,p00,p11));
+          mesh->triangles.push_back(TriangleMeshNode::Triangle(p01,p11,p00));
+	}
+      }
+    }
+    return mesh;
+  }
+
+  Ref<SceneGraph::Node> SceneGraph::createQuadSphere (const Vec3fa& center, const float radius, size_t numPhi, Ref<MaterialNode> material)
+  {
+    size_t numTheta = 2*numPhi;
+    size_t numVertices = numTheta*(numPhi+1);
+    SceneGraph::QuadMeshNode* mesh = new SceneGraph::QuadMeshNode(material);
+    mesh->v.resize(numVertices);
+
+    /* create sphere geometry */
+    const float rcpNumTheta = rcp((float)numTheta);
+    const float rcpNumPhi   = rcp((float)numPhi);
+    for (int phi=0; phi<=numPhi; phi++)
+    {
+      for (int theta=0; theta<numTheta; theta++)
+      {
+	const float phif   = phi*float(pi)*rcpNumPhi;
+	const float thetaf = theta*2.0f*float(pi)*rcpNumTheta;
+	mesh->v[phi*numTheta+theta].x = center.x + radius*sin(phif)*sin(thetaf);
+        mesh->v[phi*numTheta+theta].y = center.y + radius*cos(phif);
+	mesh->v[phi*numTheta+theta].z = center.z + radius*sin(phif)*cos(thetaf);
+      }
+      if (phi == 0) continue;
+      
+      if (phi == 1)
+      {
+	for (int theta=1; theta<=numTheta; theta++) 
+	{
+	  int p00 = numTheta-1;
+	  int p10 = phi*numTheta+theta-1;
+	  int p11 = phi*numTheta+theta%numTheta;
+          mesh->quads.push_back(QuadMeshNode::Quad(p10,p00,p11,p11));
+	}
+      }
+      else if (phi == numPhi)
+      {
+	for (int theta=1; theta<=numTheta; theta++) 
+	{
+	  int p00 = (phi-1)*numTheta+theta-1;
+	  int p01 = (phi-1)*numTheta+theta%numTheta;
+	  int p10 = numPhi*numTheta;
+          mesh->quads.push_back(QuadMeshNode::Quad(p10,p00,p01,p01));
+	}
+      }
+      else
+      {
+	for (int theta=1; theta<=numTheta; theta++) 
+	{
+	  int p00 = (phi-1)*numTheta+theta-1;
+	  int p01 = (phi-1)*numTheta+theta%numTheta;
+	  int p10 = phi*numTheta+theta-1;
+	  int p11 = phi*numTheta+theta%numTheta;
+          mesh->quads.push_back(QuadMeshNode::Quad(p10,p00,p01,p11));
+	}
+      }
+    }
+    return mesh;
+  }
+
+  Ref<SceneGraph::Node> SceneGraph::createSubdivSphere (const Vec3fa& center, const float radius, size_t numPhi, Ref<MaterialNode> material)
+  {
+    size_t numTheta = 2*numPhi;
+    size_t numVertices = numTheta*(numPhi+1);
+    SceneGraph::SubdivMeshNode* mesh = new SceneGraph::SubdivMeshNode(material);
+    mesh->positions.resize(numVertices);
+
+    /* create sphere geometry */
+    const float rcpNumTheta = rcp((float)numTheta);
+    const float rcpNumPhi   = rcp((float)numPhi);
+    for (int phi=0; phi<=numPhi; phi++)
+    {
+      for (int theta=0; theta<numTheta; theta++)
+      {
+	const float phif   = phi*float(pi)*rcpNumPhi;
+	const float thetaf = theta*2.0f*float(pi)*rcpNumTheta;
+	mesh->positions[phi*numTheta+theta].x = center.x + radius*sin(phif)*sin(thetaf);
+        mesh->positions[phi*numTheta+theta].y = center.y + radius*cos(phif);
+	mesh->positions[phi*numTheta+theta].z = center.z + radius*sin(phif)*cos(thetaf);
+      }
+      if (phi == 0) continue;
+      
+      if (phi == 1)
+      {
+	for (int theta=1; theta<=numTheta; theta++) 
+	{
+	  int p00 = numTheta-1;
+	  int p10 = phi*numTheta+theta-1;
+	  int p11 = phi*numTheta+theta%numTheta;
+          mesh->verticesPerFace.push_back(3);
+          mesh->position_indices.push_back(p10);
+          mesh->position_indices.push_back(p00);
+          mesh->position_indices.push_back(p11);
+	}
+      }
+      else if (phi == numPhi)
+      {
+	for (int theta=1; theta<=numTheta; theta++) 
+	{
+	  int p00 = (phi-1)*numTheta+theta-1;
+	  int p01 = (phi-1)*numTheta+theta%numTheta;
+	  int p10 = numPhi*numTheta;
+          mesh->verticesPerFace.push_back(3);
+          mesh->position_indices.push_back(p10);
+          mesh->position_indices.push_back(p00);
+          mesh->position_indices.push_back(p01);
+	}
+      }
+      else
+      {
+	for (int theta=1; theta<=numTheta; theta++) 
+	{
+	  int p00 = (phi-1)*numTheta+theta-1;
+	  int p01 = (phi-1)*numTheta+theta%numTheta;
+	  int p10 = phi*numTheta+theta-1;
+	  int p11 = phi*numTheta+theta%numTheta;
+          mesh->verticesPerFace.push_back(4);
+          mesh->position_indices.push_back(p10);
+          mesh->position_indices.push_back(p00);
+          mesh->position_indices.push_back(p01);
+          mesh->position_indices.push_back(p11);
+	}
+      }
+    }
+    return mesh;
   }
 }

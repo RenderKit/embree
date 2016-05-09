@@ -18,6 +18,7 @@
 
 #include "materials.h"
 #include "lights.h"
+#include "../../../include/embree2/rtcore.h"
 
 namespace embree
 {  
@@ -52,6 +53,11 @@ namespace embree
       /* checks if the node is closed */
       __forceinline bool isClosed() const { return closed; }
 
+      /* calculates bounding box of node */
+      virtual BBox3fa bounds() const {
+        return empty;
+      }
+
     protected:
       size_t indegree;   // number of nodes pointing to us
       bool closed;       // determines if the subtree may represent an instance
@@ -74,6 +80,14 @@ namespace embree
       virtual void resetNode(std::set<Ref<Node>>& done);
       virtual void calculateInDegree();
       virtual bool calculateClosed();
+      
+      virtual BBox3fa bounds() 
+      {
+        const BBox3fa cbounds = child->bounds();
+        const BBox3fa b0 = xfmBounds(xfm0,cbounds);
+        const BBox3fa b1 = xfmBounds(xfm1,cbounds);
+        return merge(b0,b1);
+      }
 
     public:
       AffineSpace3fa xfm0;
@@ -86,6 +100,10 @@ namespace embree
       GroupNode (const size_t N = 0) { 
         children.resize(N); 
       }
+
+      size_t size() const {
+        return children.size();
+      }
       
       void add(const Ref<Node>& node) {
         if (node) children.push_back(node);
@@ -93,6 +111,14 @@ namespace embree
       
       void set(const size_t i, const Ref<Node>& node) {
         children[i] = node;
+      }
+
+      virtual BBox3fa bounds() const
+      {
+        BBox3fa b = empty;
+        for (auto c : children)
+          b.extend(c->bounds());
+        return b;
       }
 
       void triangles_to_quads()
@@ -135,9 +161,9 @@ namespace embree
       struct LightNode : public Node
     {
       ALIGNED_STRUCT;
-
-    LightNode(const Light& light)
-      : light(light) {}
+      
+      LightNode (const Light& light)
+        : light(light) {}
       
       Light light;
     };
@@ -155,6 +181,8 @@ namespace embree
     /*! Mesh. */
     struct TriangleMeshNode : public Node
     {
+      typedef Vec3fa Vertex;
+
       struct Triangle 
       {
       public:
@@ -173,12 +201,20 @@ namespace embree
         this->material = material;
       }
 
+      virtual BBox3fa bounds() const
+      {
+        BBox3fa b = empty;
+        for (auto x : v ) b.extend(x);
+        for (auto x : v2) b.extend(x);
+        return b;
+      }
+
       void verify() const;
 
     public:
-      avector<Vec3fa> v;
-      avector<Vec3fa> v2;
-      avector<Vec3fa> vn;
+      avector<Vertex> v;
+      avector<Vertex> v2;
+      avector<Vertex> vn;
       std::vector<Vec2f> vt;
       std::vector<Triangle> triangles;
       Ref<MaterialNode> material;
@@ -187,6 +223,8 @@ namespace embree
     /*! Mesh. */
     struct QuadMeshNode : public Node
     {
+      typedef Vec3fa Vertex;
+
       struct Quad
       {
       public:
@@ -205,12 +243,20 @@ namespace embree
         this->material = material;
       }
 
+      virtual BBox3fa bounds() const
+      {
+        BBox3fa b = empty;
+        for (auto x : v ) b.extend(x);
+        for (auto x : v2) b.extend(x);
+        return b;
+      }
+
       void verify() const;
 
     public:
-      avector<Vec3fa> v;
-      avector<Vec3fa> v2;
-      avector<Vec3fa> vn;
+      avector<Vertex> v;
+      avector<Vertex> v2;
+      avector<Vertex> vn;
       std::vector<Vec2f> vt;
       std::vector<Quad> quads;
       Ref<MaterialNode> material;
@@ -219,19 +265,29 @@ namespace embree
     /*! Subdivision Mesh. */
     struct SubdivMeshNode : public Node
     {
+      typedef Vec3fa Vertex;
+
       SubdivMeshNode (Ref<MaterialNode> material) 
-        : Node(true), material(material) {}
+        : Node(true), material(material), boundaryMode(RTC_BOUNDARY_EDGE_ONLY) {}
 
       virtual void setMaterial(Ref<MaterialNode> material) {
         this->material = material;
       }
 
+      virtual BBox3fa bounds() const
+      {
+        BBox3fa b = empty;
+        for (auto x : positions ) b.extend(x);
+        for (auto x : positions2) b.extend(x);
+        return b;
+      }
+
       void verify() const;
 
     public:
-      avector<Vec3fa> positions;            //!< vertex positions
-      avector<Vec3fa> positions2;           //!< vertex positions for 2nd timestep
-      avector<Vec3fa> normals;              //!< face vertex normals
+      avector<Vertex> positions;            //!< vertex positions
+      avector<Vertex> positions2;           //!< vertex positions for 2nd timestep
+      avector<Vertex> normals;              //!< face vertex normals
       std::vector<Vec2f> texcoords;             //!< face texture coordinates
       std::vector<int> position_indices;        //!< position indices for all faces
       std::vector<int> normal_indices;          //!< normal indices for all faces
@@ -243,11 +299,14 @@ namespace embree
       std::vector<int> vertex_creases;          //!< indices of vertex creases
       std::vector<float> vertex_crease_weights; //!< weight for each vertex crease
       Ref<MaterialNode> material;
+      RTCBoundaryMode boundaryMode;
     };
 
     /*! Line Segments */
     struct LineSegmentsNode : public Node
     {
+      typedef Vec3fa Vertex;
+
     public:
       LineSegmentsNode (Ref<MaterialNode> material)
         : Node(true), material(material) {}
@@ -256,11 +315,19 @@ namespace embree
         this->material = material;
       }
 
+      virtual BBox3fa bounds() const
+      {
+        BBox3fa b = empty;
+        for (auto x : v ) b.extend(x);
+        for (auto x : v2) b.extend(x);
+        return b;
+      }
+
       void verify() const;
 
     public:
-      avector<Vec3fa> v;        //!< control points (x,y,z,r)
-      avector<Vec3fa> v2;       //!< control points (x,y,z,r)
+      avector<Vertex> v;        //!< control points (x,y,z,r)
+      avector<Vertex> v2;       //!< control points (x,y,z,r)
       std::vector<int> indices; //!< list of line segments
       Ref<MaterialNode> material;
     };
@@ -268,6 +335,8 @@ namespace embree
     /*! Hair Set. */
     struct HairSetNode : public Node
     {
+      typedef Vec3fa Vertex;
+
       struct Hair
       {
       public:
@@ -287,12 +356,20 @@ namespace embree
         this->material = material;
       }
 
+      virtual BBox3fa bounds() const
+      {
+        BBox3fa b = empty;
+        for (auto x : v ) b.extend(x);
+        for (auto x : v2) b.extend(x);
+        return b;
+      }
+
       void verify() const;
 
     public:
       bool hair;                //!< true is this is hair geometry, false if this are curves
-      avector<Vec3fa> v;        //!< hair control points (x,y,z,r)
-      avector<Vec3fa> v2;       //!< hair control points (x,y,z,r)
+      avector<Vertex> v;        //!< hair control points (x,y,z,r)
+      avector<Vertex> v2;       //!< hair control points (x,y,z,r)
       std::vector<Hair> hairs;  //!< list of hairs
       Ref<MaterialNode> material;
     };
@@ -301,9 +378,19 @@ namespace embree
     static Ref<Node> load(const FileName& fname);
     static void store(Ref<SceneGraph::Node> root, const FileName& fname, bool embedTextures);
     static void set_motion_blur(Ref<Node> node0, Ref<Node> node1);
+    static void set_motion_vector(Ref<Node> node, const Vec3fa& dP);
+    static void resize_randomly(Ref<Node> node, const size_t N);
     static Ref<SceneGraph::Node> convert_triangles_to_quads(Ref<SceneGraph::Node> node);
     static Ref<SceneGraph::Node> convert_quads_to_subdivs(Ref<SceneGraph::Node> node);
     static Ref<SceneGraph::Node> convert_bezier_to_lines(Ref<SceneGraph::Node> node);
     static Ref<SceneGraph::Node> convert_hair_to_curves(Ref<SceneGraph::Node> node);
+
+  public:
+    static Ref<SceneGraph::Node> createTrianglePlane (const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy, size_t width, size_t height, Ref<MaterialNode> material = nullptr);
+    static Ref<SceneGraph::Node> createQuadPlane     (const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy, size_t width, size_t height, Ref<MaterialNode> material = nullptr);
+    static Ref<SceneGraph::Node> createSubdivPlane   (const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy, size_t width, size_t height, Ref<MaterialNode> material = nullptr);
+    static Ref<SceneGraph::Node> createTriangleSphere(const Vec3fa& center, const float radius, size_t numPhi, Ref<MaterialNode> material = nullptr);
+    static Ref<SceneGraph::Node> createQuadSphere    (const Vec3fa& center, const float radius, size_t numPhi, Ref<MaterialNode> material = nullptr);
+    static Ref<SceneGraph::Node> createSubdivSphere  (const Vec3fa& center, const float radius, size_t numPhi, Ref<MaterialNode> material = nullptr);
   };
 }

@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "../../../common/math/vec2.h"
+#include "../math/vec.h"
 
 struct RandomSampler
 {

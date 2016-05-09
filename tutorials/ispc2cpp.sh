@@ -41,6 +41,9 @@ sed -i.backup  's/foreach_unique[ ]*([ ]*\([[:alnum:]_]*\)[ ]*in[ ]*\([[:alnum:]
 sed -i.backup  's/new[ ]*\([a-zA-Z0-9_]*\)[ ]*\[\([^]]*\)\]/(\1\*) alignedMalloc(\2\*sizeof(\1))/g' $2
 sed -i.backup  's/delete[ ]*\[[ ]*\][ ]*\([a-zA-Z0-9_]*\)/alignedFree(\1)/g' $2
 
+sed -i.backup  's/new[ ]*\([a-zA-Z0-9_]*\)[ ]*;/(\1\*) alignedMalloc(sizeof(\1));/g' $2
+sed -i.backup  's/delete[ ]*\([a-zA-Z0-9_]*\)[ ]*;/alignedFree(\1);/g' $2
+
 # system library
 sed -i.backup  's/sync;//g' $2
 sed -i.backup  's/print(/printf(/g' $2
@@ -72,6 +75,7 @@ sed -i.backup  's/make_Sample3f/Sample3f/g' $2
 sed -i.backup  's/make_AffineSpace3f/AffineSpace3f/g' $2
 
 sed -i.backup 's/sincos/sincosf/g' $2
+sed -i 's/\/\/ALIGNED_STRUCT/ALIGNED_STRUCT/g' $2
 
 # Embree specific
 sed -i.backup  's/RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING/RTC_INTERSECT1/g' $2

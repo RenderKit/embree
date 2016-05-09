@@ -49,7 +49,7 @@ void error_handler(const RTCError code, const char* str = nullptr);
 
 extern "C" Mode g_mode;
 
-#include "ray.h"
+#include "../core/ray.h"
 #include "camera.h"
 #include "scene.h"
 using namespace embree;
@@ -79,7 +79,7 @@ __forceinline Vec3f faceforward( const Vec3f& N, const Vec3f& I, const Vec3f& Ng
 #endif
 
 /* standard shading function */
-typedef void (* renderTileFunc)(int taskIndex, int* pixels, const int width, const int height, 
+typedef void (* renderTileFunc)(int taskIndex, int* pixels, const int width, const int height,
                                 const float time, const ISPCCamera& camera,
                                 const int numTilesX, const int numTilesY);
 extern renderTileFunc renderTile;
@@ -87,7 +87,7 @@ extern renderTileFunc renderTile;
 extern "C" void device_key_pressed_default(int key);
 extern "C" void (*key_pressed_handler)(int key);
 
-void renderTileStandard(int taskIndex, int* pixels, const int width, const int height, 
+void renderTileStandard(int taskIndex, int* pixels, const int width, const int height,
                         const float time, const ISPCCamera& camera,
                         const int numTilesX, const int numTilesY);
 
@@ -101,7 +101,7 @@ struct Sample3f
 {
   Sample3f () {}
 
-  Sample3f (const Vec3fa& v, const float pdf) 
+  Sample3f (const Vec3fa& v, const float pdf)
     : v(v), pdf(pdf) {}
 
   Vec3fa v;

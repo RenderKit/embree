@@ -25,5 +25,5 @@ ADD_LIBRARY(scenegraph STATIC
     texture.cpp
     scenegraph.cpp)
 
-TARGET_LINK_LIBRARIES(scenegraph sys lexers)
+TARGET_LINK_LIBRARIES(scenegraph sys lexers image)
 SET_PROPERTY(TARGET scenegraph PROPERTY FOLDER tutorials/common)

@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "verify.h"
+#include "../tutorials/common/scenegraph/scenegraph.h"
 #include <regex>
 
 #define DEFAULT_STACK_SIZE 4*1024*1024
@@ -65,6 +66,7 @@ namespace embree
   };
 
   std::vector<void*> buffers;
+  std::vector<Ref<SceneGraph::Node>> nodes;
   MutexSys g_mutex2;
   void* allocBuffer(size_t size) { 
     g_mutex2.lock();
@@ -78,6 +80,7 @@ namespace embree
       alignedFree(buffers[i]);
     }
     buffers.clear();
+    nodes.clear();
   }
   struct ClearBuffers {
     ~ClearBuffers() { clearBuffers(); }
@@ -112,7 +115,7 @@ namespace embree
     gflags = (RTCGeometryFlags) gflag;
   }
 
-  #define CountErrors(device) \
+#define CountErrors(device) \
     if (rtcDeviceGetError(device) != RTC_NO_ERROR) atomic_add(&errorCounter,1);
 
   void AssertNoError(RTCDevice device) 
@@ -135,87 +138,75 @@ namespace embree
     if (error != expectedError) 
       throw std::runtime_error("Error "+string_of(expectedError)+" expected");
   }
-
+  
   RTCAlgorithmFlags aflags = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT4 | RTC_INTERSECT8 | RTC_INTERSECT16);
   RTCAlgorithmFlags aflags_all = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT4 | RTC_INTERSECT8 | RTC_INTERSECT16 | RTC_INTERSECT_STREAM);
   
   bool g_enable_build_cancel = false;
 
-  unsigned addPlane (RTCDevice g_device, const RTCSceneRef& scene, RTCGeometryFlags flag, size_t num, const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy)
+  unsigned addGeometry(const RTCDeviceRef& device, const RTCSceneRef& scene, const RTCGeometryFlags gflag, const Ref<SceneGraph::Node>& node)
   {
-    unsigned mesh = rtcNewTriangleMesh (scene, flag, 2*num*num, (num+1)*(num+1));
-    Vertex3fa*   vertices  = (Vertex3fa*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
-    Triangle* triangles = (Triangle*) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
-    for (size_t y=0; y<=num; y++) {
-      for (size_t x=0; x<=num; x++) {
-        Vec3fa p = p0+float(x)/float(num)*dx+float(y)/float(num)*dy;
-        size_t i = y*(num+1)+x;
-        vertices[i].x = p.x;
-        vertices[i].y = p.y;
-        vertices[i].z = p.z;
-      }
+    nodes.push_back(node);
+    if (Ref<SceneGraph::TriangleMeshNode> mesh = node.dynamicCast<SceneGraph::TriangleMeshNode>()) 
+    {
+      int numTimeSteps = mesh->v2.size() ? 2 : 1;
+      unsigned geomID = rtcNewTriangleMesh (scene, gflag, mesh->triangles.size(), mesh->v.size(), numTimeSteps);
+      rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER ,mesh->triangles.data(),0,sizeof(SceneGraph::TriangleMeshNode::Triangle));
+      if (mesh->v .size()) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER0,mesh->v .data(),0,sizeof(SceneGraph::TriangleMeshNode::Vertex));
+      if (mesh->v2.size()) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER1,mesh->v2.data(),0,sizeof(SceneGraph::TriangleMeshNode::Vertex));
+      return geomID;
     }
-    for (size_t y=0; y<num; y++) {
-      for (size_t x=0; x<num; x++) {
-        size_t i = 2*y*num+2*x;
-        size_t p00 = (y+0)*(num+1)+(x+0);
-        size_t p01 = (y+0)*(num+1)+(x+1);
-        size_t p10 = (y+1)*(num+1)+(x+0);
-        size_t p11 = (y+1)*(num+1)+(x+1);
-        triangles[i+0].v0 = p00; triangles[i+0].v1 = p01; triangles[i+0].v2 = p11;
-        triangles[i+1].v0 = p00; triangles[i+1].v1 = p11; triangles[i+1].v2 = p10;
-      }
+    else if (Ref<SceneGraph::QuadMeshNode> mesh = node.dynamicCast<SceneGraph::QuadMeshNode>())
+    {
+      int numTimeSteps = mesh->v2.size() ? 2 : 1;
+      unsigned geomID = rtcNewQuadMesh (scene, gflag, mesh->quads.size(), mesh->v.size(), numTimeSteps);
+      rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER ,mesh->quads.data(),0,sizeof(SceneGraph::QuadMeshNode::Quad  ));
+      if (mesh->v .size()) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER0,mesh->v .data(),0,sizeof(SceneGraph::QuadMeshNode::Vertex));
+      if (mesh->v2.size()) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER1,mesh->v2.data(),0,sizeof(SceneGraph::QuadMeshNode::Vertex));
+      return geomID;
+    } 
+    else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>())
+    {
+      int numTimeSteps = mesh->positions2.size() ? 2 : 1;
+      unsigned geomID = rtcNewSubdivisionMesh (scene, gflag, mesh->verticesPerFace.size(), mesh->position_indices.size(), mesh->positions.size(), 0,0,0, numTimeSteps);
+      rtcSetBuffer(scene,geomID,RTC_FACE_BUFFER  ,mesh->verticesPerFace.data(),  0,sizeof(int));
+      rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER ,mesh->position_indices.data(),0,sizeof(int));
+      if (mesh->positions .size()) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER0,mesh->positions .data(),0,sizeof(SceneGraph::SubdivMeshNode::Vertex));
+      if (mesh->positions2.size()) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER1,mesh->positions2.data(),0,sizeof(SceneGraph::SubdivMeshNode::Vertex));
+      rtcSetBoundaryMode(scene,geomID,mesh->boundaryMode);
+      return geomID;
     }
-    rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
-    rtcUnmapBuffer(scene,mesh,RTC_INDEX_BUFFER);
-    return mesh;
+    else {
+      THROW_RUNTIME_ERROR("unknown node type");
+    }
+    return 0;
+  }
+  
+  unsigned addPlane (const RTCDeviceRef& device, const RTCSceneRef& scene, const RTCGeometryFlags gflag, size_t num, const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy) {
+    return addGeometry(device,scene,gflag,SceneGraph::createTrianglePlane(p0,dx,dy,num,num));
   }
 
-  unsigned addSubdivPlane (RTCDevice g_device, const RTCSceneRef& scene, RTCGeometryFlags flag, size_t num, const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy)
-  {
-    unsigned mesh = rtcNewSubdivisionMesh (scene, flag, num*num, 4*num*num, (num+1)*(num+1), 0,0,0);
-    Vertex3fa*   vertices  = (Vertex3fa*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
-    int* indices = (int*) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
-    int* faces = (int*) rtcMapBuffer(scene,mesh,RTC_FACE_BUFFER);
-    for (size_t y=0; y<=num; y++) {
-      for (size_t x=0; x<=num; x++) {
-        Vec3fa p = p0+float(x)/float(num)*dx+float(y)/float(num)*dy;
-        size_t i = y*(num+1)+x;
-        vertices[i].x = p.x;
-        vertices[i].y = p.y;
-        vertices[i].z = p.z;
-      }
-    }
-    for (size_t y=0; y<num; y++) {
-      for (size_t x=0; x<num; x++) {
-        size_t i = y*num+x;
-        size_t p00 = (y+0)*(num+1)+(x+0);
-        size_t p01 = (y+0)*(num+1)+(x+1);
-        size_t p10 = (y+1)*(num+1)+(x+0);
-        size_t p11 = (y+1)*(num+1)+(x+1);
-        indices[4*i+0] = p00; 
-        indices[4*i+1] = p01; 
-        indices[4*i+2] = p11; 
-        indices[4*i+3] = p10; 
-        faces[i] = 4;
-      }
-    }
-    rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
-    rtcUnmapBuffer(scene,mesh,RTC_INDEX_BUFFER);
-    rtcUnmapBuffer(scene,mesh,RTC_FACE_BUFFER);
-    rtcSetBoundaryMode(scene,mesh,RTC_BOUNDARY_EDGE_AND_CORNER);
-    return mesh;
+  unsigned addSubdivPlane (const RTCDeviceRef& device, const RTCSceneRef& scene, RTCGeometryFlags gflag, size_t num, const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy) {
+    return addGeometry(device,scene,gflag,SceneGraph::createSubdivPlane(p0,dx,dy,num,num));
   }
 
-  unsigned addSphere (RTCDevice g_device, const RTCSceneRef& scene, RTCGeometryFlags flag, const Vec3fa& pos, const float r, size_t numPhi, size_t maxTriangles = -1, float motion = 0.0f, BBox3fa* bounds_o = nullptr)
+  unsigned addSphere (const RTCDeviceRef& device, const RTCSceneRef& scene, RTCGeometryFlags gflag, const Vec3fa& pos, const float r, size_t numPhi, size_t maxTriangles = -1, float motion = 0.0f)
   {
+#if 0
+    Ref<SceneGraph::Node> node = SceneGraph::createTriangleSphere(pos,r,numPhi);
+    if (motion       != 0.0f) SceneGraph::set_motion_vector(node,Vec3fa(motion));
+    if (maxTriangles !=   -1) SceneGraph::resize_randomly(node,maxTriangles);
+    return addGeometry(device,scene,gflag,node);
+
+#else
+
     /* create a triangulated sphere */
     size_t numTheta = 2*numPhi;
     size_t numTriangles = min(maxTriangles,2*numTheta*(numPhi-1));
     size_t numTimeSteps = motion == 0.0f ? 1 : 2;
     size_t numVertices = numTheta*(numPhi+1);
     
-    unsigned mesh = rtcNewTriangleMesh (scene, flag, numTriangles, numVertices,numTimeSteps);
+    unsigned mesh = rtcNewTriangleMesh (scene, gflag, numTriangles, numVertices,numTimeSteps);
     
     /* map triangle and vertex buffer */
     Vertex3f* vertices0 = nullptr;
@@ -223,7 +214,7 @@ namespace embree
     if (numTimeSteps >= 1) rtcSetBuffer(scene,mesh,RTC_VERTEX_BUFFER0,vertices0 = (Vertex3f*) allocBuffer(numVertices*sizeof(Vertex3f)+sizeof(float)), 0, sizeof(Vertex3f)); 
     if (numTimeSteps >= 2) rtcSetBuffer(scene,mesh,RTC_VERTEX_BUFFER1,vertices1 = (Vertex3f*) allocBuffer(numVertices*sizeof(Vertex3f)+sizeof(float)), 0, sizeof(Vertex3f)); 
     Triangle* triangles = (Triangle*) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
-    if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene,mesh); return -1; }
+    if (rtcDeviceGetError(device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene,mesh); return -1; }
 
     /* create sphere geometry */
     BBox3fa bounds = empty;
@@ -285,8 +276,9 @@ namespace embree
     //if (numTimeSteps >= 2) rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER1); 
     rtcUnmapBuffer(scene,mesh,RTC_INDEX_BUFFER);
 
-    if (bounds_o) *bounds_o = bounds;
+    //if (bounds_o) *bounds_o = bounds;
     return mesh;
+#endif
   }
 
   /* adds a subdiv sphere to the scene */
@@ -693,8 +685,9 @@ namespace embree
       ClearBuffers clear_before_return;
       RTCSceneRef scene = rtcDeviceNewScene(device,RTC_SCENE_STATIC,RTC_INTERSECT1);
       AssertNoError(device);
-      BBox3fa bounds0;
-      unsigned geom0 = addSphere(device,scene,RTC_GEOMETRY_STATIC,zero,1.0f,50,-1,0,&bounds0);
+      Ref<SceneGraph::Node> node = SceneGraph::createTriangleSphere(zero,1.0f,50);
+      BBox3fa bounds0 = node->bounds();
+      unsigned geom0 = addGeometry(device,scene,RTC_GEOMETRY_STATIC,node);
       AssertNoError(device);
       rtcCommit (scene);
       AssertNoError(device);
@@ -1577,85 +1570,138 @@ namespace embree
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
 
-
-  struct BaryDistanceTest : public VerifyApplication::Test
+  struct TriangleHitTest : public VerifyApplication::IntersectTest
   {
-    BaryDistanceTest (std::string name, int isa)
-      : VerifyApplication::Test(name,isa,VerifyApplication::PASS) {}
+    RTCSceneFlags sflags; 
+    RTCGeometryFlags gflags; 
+
+    TriangleHitTest (std::string name, int isa, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant)
+      : VerifyApplication::IntersectTest(name,isa,imode,ivariant,VerifyApplication::PASS), sflags(sflags), gflags(gflags) {}
+
+    inline Vec3fa uniformSampleTriangle(const Vec3fa &a, const Vec3fa &b, const Vec3fa &c, float &u, float& v)
+    {
+      const float su = sqrtf(u);
+      v *= su;
+      u = 1.0f-su;
+      return c + u * (a-c) + v * (b-c);
+    }
 
     VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
+      if (!supportsIntersectMode(device))
+        return VerifyApplication::SKIPPED;
+     
+       std::vector<Vec3f> vertices = {
+        Vec3f(0.0f,0.0f,0.0f),
+        Vec3f(1.0f,0.0f,0.0f),
+        Vec3f(0.0f,1.0f,0.0f)
+      };
+      std::vector<Triangle> triangles = {
+        Triangle(0,1,2)
+      };
+      RTCSceneRef scene = rtcDeviceNewScene(device,sflags,to_aflags(imode));
+      int geomID = rtcNewTriangleMesh (scene, gflags, 1, 3);
+      rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER, vertices.data() , 0, sizeof(Vec3f));
+      rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER , triangles.data(), 0, sizeof(Triangle));
+      rtcCommit (scene);
+      AssertNoError(device);
 
-      std::vector<Vertex> m_vertices;
-      std::vector<Triangle> m_triangles;
-      
-      const float length = 1000.0f;
-      const float width = 1000.0f;
-      
-      m_vertices.resize(4);
-      m_vertices[0] = Vertex(-length / 2.0f, -width / 2.0f, 0);
-      m_vertices[1] = Vertex( length / 2.0f, -width / 2.0f, 0);
-      m_vertices[2] = Vertex( length / 2.0f,  width / 2.0f, 0);
-      m_vertices[3] = Vertex(-length / 2.0f,  width / 2.0f, 0);
-      
-      m_triangles.resize(2);
-      m_triangles[0] = Triangle(0, 1, 2);
-      m_triangles[1] = Triangle(2, 3, 0);
-      
-      //const RTCSceneFlags flags = RTCSceneFlags(0); 
-      const RTCSceneFlags flags = RTC_SCENE_ROBUST;
-      const RTCSceneRef mainSceneId = rtcDeviceNewScene(device,RTC_SCENE_STATIC | flags , RTC_INTERSECT1);
-      
-      const unsigned int id = rtcNewTriangleMesh(mainSceneId, RTC_GEOMETRY_STATIC, m_triangles.size(), m_vertices.size());
-      
-      rtcSetBuffer(mainSceneId, id, RTC_VERTEX_BUFFER, m_vertices.data(), 0, sizeof(Vertex));
-      rtcSetBuffer(mainSceneId, id, RTC_INDEX_BUFFER, m_triangles.data(), 0, sizeof(Triangle));
-      
-      rtcCommit(mainSceneId);
-      
-      RTCRay ray;
-      ray.org[0] = 0.1f;
-      ray.org[1] = 1.09482f;
-      ray.org[2] = 29.8984f;
-      ray.dir[0] = 0.f;
-      ray.dir[1] = 0.99482f;
-      ray.dir[2] = -0.101655f;
-      ray.tnear = 0.05f;
-      ray.tfar  = inf;
-      ray.mask  = -1;
-      
-      ray.geomID = RTC_INVALID_GEOMETRY_ID;
-      ray.primID = RTC_INVALID_GEOMETRY_ID;
-      ray.instID = RTC_INVALID_GEOMETRY_ID;
-      
-      rtcIntersect(mainSceneId, ray);
-      
-      if (ray.geomID == RTC_INVALID_GEOMETRY_ID) 
-        throw std::runtime_error("no triangle hit");
-      
-      const Triangle &triangle = m_triangles[ray.primID];
-      
-      const Vertex &v0_ = m_vertices[triangle.v0];
-      const Vertex &v1_ = m_vertices[triangle.v1];
-      const Vertex &v2_ = m_vertices[triangle.v2];
-      
-      const Vec3fa v0(v0_.x, v0_.y, v0_.z);
-      const Vec3fa v1(v1_.x, v1_.y, v1_.z);
-      const Vec3fa v2(v2_.x, v2_.y, v2_.z);
-      
-      const Vec3fa hit_tri = v0 + ray.u * (v1 - v0) + ray.v * (v2 - v0);
-      
-      const Vec3fa ray_org = Vec3fa(ray.org[0], ray.org[1], ray.org[2]);
-      const Vec3fa ray_dir = Vec3fa(ray.dir[0], ray.dir[1], ray.dir[2]);
-      
-      const Vec3fa hit_tfar = ray_org + ray.tfar * ray_dir;
-      const Vec3fa delta = hit_tri - hit_tfar;
-      const float distance = embree::length(delta);
+      float u[256], v[256];
+      RTCRay rays[256];
+      for (size_t i=0; i<256; i++)
+      {
+        u[i] = drand48(); 
+        v[i] = drand48();
+        Vec3fa from(0.0f,0.0f,-1.0f);
+        Vec3fa to = uniformSampleTriangle(vertices[1],vertices[2],vertices[0],u[i],v[i]);
+        rays[i] = makeRay(from,to-from);
+      }
+      IntersectWithMode(imode,ivariant,scene,rays,256);
 
-      return (VerifyApplication::TestReturnValue) (distance < 0.0002f);
+      for (size_t i=0; i<256; i++)
+      {
+        if (rays[i].geomID != 0) return VerifyApplication::FAILED;
+        if (ivariant & VARIANT_OCCLUDED) continue;
+        if (rays[i].primID != 0) return VerifyApplication::FAILED;
+        if (abs(rays[i].u - u[i]) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
+        if (abs(rays[i].v - v[i]) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
+        if (abs(rays[i].tfar - 1.0f) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
+        const Vec3fa org(rays[i].org[0],rays[i].org[1],rays[i].org[2]);
+        const Vec3fa dir(rays[i].dir[0],rays[i].dir[1],rays[i].dir[2]);
+        const Vec3fa ht  = org + rays[i].tfar*dir;
+        const Vec3fa huv = vertices[0] + rays[i].u*(vertices[1]-vertices[0]) + rays[i].v*(vertices[2]-vertices[0]);
+        if (reduce_max(abs(ht-huv)) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
+        const Vec3fa Ng = normalize(Vec3fa(rays[i].Ng[0],rays[i].Ng[1],rays[i].Ng[2])); // FIXME: some geom normals are scaled!!!??
+        if (reduce_max(abs(Ng - Vec3fa(0.0f,0.0f,-1.0f))) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
+      }
+      return VerifyApplication::PASSED;
+    }
+  };
+
+  struct QuadHitTest : public VerifyApplication::IntersectTest
+  {
+    RTCSceneFlags sflags; 
+    RTCGeometryFlags gflags; 
+
+    QuadHitTest (std::string name, int isa, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant)
+      : VerifyApplication::IntersectTest(name,isa,imode,ivariant,VerifyApplication::PASS), sflags(sflags), gflags(gflags) {}
+
+    VerifyApplication::TestReturnValue run(VerifyApplication* state)
+    {
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
+      error_handler(rtcDeviceGetError(device));
+      if (!supportsIntersectMode(device))
+        return VerifyApplication::SKIPPED;
+     
+       std::vector<Vec3f> vertices = {
+        Vec3f(0.0f,0.0f,0.0f),
+        Vec3f(1.0f,0.0f,0.0f),
+        Vec3f(1.0f,1.0f,0.0f),
+        Vec3f(0.0f,1.0f,0.0f)
+      };
+      std::vector<int> quads = {
+        0,1,2,3
+      };
+      RTCSceneRef scene = rtcDeviceNewScene(device,sflags,to_aflags(imode));
+      int geomID = rtcNewQuadMesh (scene, gflags, 1, 4);
+      rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER, vertices.data() , 0, sizeof(Vec3f));
+      rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER , quads.data(), 0, 4*sizeof(int));
+      rtcCommit (scene);
+      AssertNoError(device);
+
+      float u[256], v[256];
+      RTCRay rays[256];
+      for (size_t i=0; i<256; i++)
+      {
+        u[i] = drand48(); 
+        v[i] = drand48();
+        Vec3fa from(0.0f,0.0f,-1.0f);
+        Vec3fa to = vertices[0] + u[i]*(vertices[1]-vertices[0]) + v[i]*(vertices[3]-vertices[0]);
+        rays[i] = makeRay(from,to-from);
+      }
+      IntersectWithMode(imode,ivariant,scene,rays,256);
+
+      for (size_t i=0; i<256; i++)
+      {
+        if (rays[i].geomID != 0) return VerifyApplication::FAILED;
+        if (ivariant & VARIANT_OCCLUDED) continue;
+        if (rays[i].primID != 0) return VerifyApplication::FAILED;
+        if (abs(rays[i].u - u[i]) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
+        if (abs(rays[i].v - v[i]) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
+        if (abs(rays[i].tfar - 1.0f) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
+        const Vec3fa org(rays[i].org[0],rays[i].org[1],rays[i].org[2]);
+        const Vec3fa dir(rays[i].dir[0],rays[i].dir[1],rays[i].dir[2]);
+        const Vec3fa ht  = org + rays[i].tfar*dir;
+        const Vec3fa huv = vertices[0] + rays[i].u*(vertices[1]-vertices[0]) + rays[i].v*(vertices[3]-vertices[0]);
+        if (reduce_max(abs(ht-huv)) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
+        const Vec3fa Ng = normalize(Vec3fa(rays[i].Ng[0],rays[i].Ng[1],rays[i].Ng[2])); // FIXME: some geom normals are scaled!!!??
+        if (reduce_max(abs(Ng - Vec3fa(0.0f,0.0f,-1.0f))) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
+      }
+      return VerifyApplication::PASSED;
     }
   };
   
@@ -2208,12 +2254,12 @@ namespace embree
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
 
-  void shootRandomRays (std::vector<IntersectMode>& intersectModes, const RTCSceneRef& scene)
+  void shootRandomRays (std::vector<IntersectMode>& intersectModes, std::vector<IntersectVariant>& intersectVariants, const RTCSceneRef& scene)
   {
     const size_t numRays = 100;
     for (auto imode : intersectModes)
     {
-      for (auto ivariant : { VARIANT_INTERSECT, VARIANT_OCCLUDED })
+      for (auto ivariant : intersectVariants)
       {
         RTCRay rays[numRays];
         for (size_t i=0; i<numRays; i++) {
@@ -2285,7 +2331,7 @@ namespace embree
             atomic_add(&errorCounter,1);
           }
           else {
-            shootRandomRays(thread->intersectModes,task->scene);
+            shootRandomRays(thread->intersectModes,thread->state->intersectVariants,task->scene);
           }
 	}
         task->barrier.wait();
@@ -2372,7 +2418,7 @@ namespace embree
       }
       else {
         if (!hasError) {
-          shootRandomRays(thread->intersectModes,task->scene);
+          shootRandomRays(thread->intersectModes,thread->state->intersectVariants,task->scene);
         }
       }
 
@@ -2408,7 +2454,7 @@ namespace embree
             atomic_add(&errorCounter,1);
           }
           else {
-            shootRandomRays(thread->intersectModes,task->scene);
+            shootRandomRays(thread->intersectModes,thread->state->intersectVariants,task->scene);
           }
 	}
 	task->barrier.wait();
@@ -2553,7 +2599,7 @@ namespace embree
         atomic_add(&errorCounter,1);
       else
         if (!hasError)
-          shootRandomRays(thread->intersectModes,task->scene);
+          shootRandomRays(thread->intersectModes,thread->state->intersectVariants,task->scene);
 
       if (thread->threadCount) 
 	task->barrier.wait();
@@ -2623,6 +2669,7 @@ namespace embree
             delete tasks[i];
           
           g_threads.clear();
+          clearBuffers();
         }
         else
         {
@@ -2894,26 +2941,39 @@ namespace embree
       /**************************************************************************/
       
       beginTestGroup("interpolate_subdiv_"+stringOfISA(isa));
-      for (auto s : { 4,5,8,11,12,15 })
+      int subdivTests[] = { 4,5,8,11,12,15 };
+      for (auto s : subdivTests)
         addTest(new InterpolateSubdivTest("interpolate_subdiv_"+stringOfISA(isa)+"_"+std::to_string(long(s)),isa,s));
       endTestGroup();
       
       beginTestGroup("interpolate_triangles_"+stringOfISA(isa));
-      for (auto s : { 4,5,8,11,12,15 }) 
+      for (auto s : subdivTests) 
         addTest(new InterpolateTrianglesTest("interpolate_triangles_"+stringOfISA(isa)+"_"+std::to_string(long(s)),isa,s));
       endTestGroup();
 
       beginTestGroup("interpolate_hair_"+stringOfISA(isa));
-      for (auto s : { 4,5,8,11,12,15 }) 
+      for (auto s : subdivTests) 
         addTest(new InterpolateHairTest("interpolate_hair_"+stringOfISA(isa)+"_"+std::to_string(long(s)),isa,s));
       endTestGroup();
-      
-      addTest(new BaryDistanceTest("bary_distance_robust_"+stringOfISA(isa),isa));
       
       /**************************************************************************/
       /*                      Intersection Tests                                */
       /**************************************************************************/
-      
+
+      beginTestGroup("triangle_hit_"+stringOfISA(isa));
+      for (auto sflags : sceneFlags) 
+        for (auto imode : intersectModes) 
+          for (auto ivariant : intersectVariants)
+            addTest(new TriangleHitTest("triangle_hit_"+to_string(isa,sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,imode,ivariant));
+      endTestGroup();
+
+      beginTestGroup("quad_hit_"+stringOfISA(isa));
+      for (auto sflags : sceneFlags) 
+        for (auto imode : intersectModes) 
+          for (auto ivariant : intersectVariants)
+            addTest(new QuadHitTest("quad_hit_"+to_string(isa,sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,imode,ivariant));
+      endTestGroup();
+
       if (rtcDeviceGetParameter1i(device,RTC_CONFIG_RAY_MASK)) 
       {
         beginTestGroup("ray_masks_"+stringOfISA(isa));
@@ -2958,10 +3018,11 @@ namespace embree
       endTestGroup();
       
       beginTestGroup("watertight_"+stringOfISA(isa));
+      std::string watertightModels [] = {"sphere", "plane"};
       const Vec3fa watertight_pos = Vec3fa(148376.0f,1234.0f,-223423.0f);
       for (auto sflags : sceneFlagsRobust) 
         for (auto imode : intersectModes) 
-          for (std::string model : {"sphere", "plane"}) 
+          for (std::string model : watertightModels) 
             addTest(new WatertightTest("watertight_"+to_string(isa,sflags,imode)+"_"+model,isa,sflags,imode,model,watertight_pos));
       endTestGroup();
       
@@ -3006,34 +3067,42 @@ namespace embree
     for (auto test : tests) run_docu += "\n  " + test->name;
     registerOption("run", [this] (Ref<ParseStream> cin, const FileName& path) {
 
+        std::string r = cin->getString();
+
         if (!user_specified_tests) 
           for (auto test : tests) 
             test->enabled = false;
 
         user_specified_tests = true;
+#if defined(__MACOSX__) && defined(__INTEL_COMPILER) && (__INTEL_COMPILER < 1600) // works around __ZTVNSt3__123__match_any_but_newlineIcEE link error
+        for (auto test : tests) 
+          if (test->name == r) test->enabled = true;
+#else
         std::smatch match;
-        std::regex regexpr(cin->getString());
-        for (auto test : tests) {
-          if (std::regex_match(test->name, match, regexpr)) {
-            test->enabled = true;
-          }
-        }
+        std::regex regexpr(r);
+        for (auto test : tests) 
+          if (std::regex_match(test->name, match, regexpr)) test->enabled = true;
+#endif
       }, run_docu);
 
     registerOption("skip", [this] (Ref<ParseStream> cin, const FileName& path) {
 
+        std::string r = cin->getString();
+        
         if (!user_specified_tests) 
           for (auto test : tests) 
             test->enabled = true;
 
         user_specified_tests = true;
+#if defined(__MACOSX__) && defined(__INTEL_COMPILER) && (__INTEL_COMPILER < 1600) // works around __ZTVNSt3__123__match_any_but_newlineIcEE link error
+        for (auto test : tests)
+          if (test->name == r) test->enabled = false;
+#else
         std::smatch match;
-        std::regex regexpr(cin->getString());
-        for (auto test : tests) {
-          if (std::regex_match(test->name, match, regexpr)) {
-            test->enabled = false;
-          }
-        }
+        std::regex regexpr(r);
+        for (auto test : tests)
+          if (std::regex_match(test->name, match, regexpr)) test->enabled = false;
+#endif
       }, "--skip <regexpr>: Skips all tests whose name matches the regular expression.");
     
     registerOption("no-groups", [this] (Ref<ParseStream> cin, const FileName& path) {

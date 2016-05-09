@@ -14,9 +14,9 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#include "../common/math/random_sampler.isph"
 #include "../common/tutorial/tutorial_device.isph"
 #include "../common/tutorial/scene_device.isph"
-#include "../common/tutorial/random_sampler.isph"
 
 #if defined(__XEON_PHI__) // FIXME: gather of pointers not working in ISPC for Xeon Phi
 #define renderPixelTestEyeLight renderPixelStandard
@@ -55,7 +55,7 @@ RTCDevice g_device = NULL;
 RTCScene g_scene = NULL;
 
 /*! Uniform hemisphere sampling. Up direction is the z direction. */
-Vec3fa sampleSphere(const float u, const float v) 
+Vec3fa sampleSphere(const float u, const float v)
 {
   const float phi = 2.0f*(float)pi * u;
   const float cosTheta = 1.0f - 2.0f * v, sinTheta = 2.0f * sqrt(v * (1.0f - v));
@@ -88,7 +88,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   for (uniform size_t i=0; i<scene_in->numGeometries; i++)
   {
     uniform ISPCGeometry* uniform geometry = scene_in->geometries[i];
-    if (geometry->type == TRIANGLE_MESH) 
+    if (geometry->type == TRIANGLE_MESH)
       convertTriangleMesh((uniform ISPCTriangleMesh* uniform) geometry, scene_out);
     else if (geometry->type == HAIR_SET)
       convertHairSet((uniform ISPCHairSet* uniform) geometry, scene_out);
@@ -118,13 +118,13 @@ struct AnisotropicBlinn {
   Vec3f dz;       //!< z-direction of the distribution.
   float norm1;     //!< Normalization constant for calculating the pdf for sampling.
   float norm2;     //!< Normalization constant for calculating the distribution.
-  Vec3f Kr,Kt; 
+  Vec3f Kr,Kt;
   float side;
 };
 
   /*! Anisotropic power cosine distribution constructor. */
-inline void AnisotropicBlinn__Constructor(varying AnisotropicBlinn* uniform This, const uniform Vec3f& Kr, const uniform Vec3f& Kt, 
-                                          const Vec3f& dx, float nx, const Vec3f& dy, float ny, const Vec3f& dz) 
+inline void AnisotropicBlinn__Constructor(varying AnisotropicBlinn* uniform This, const uniform Vec3f& Kr, const uniform Vec3f& Kt,
+                                          const Vec3f& dx, float nx, const Vec3f& dy, float ny, const Vec3f& dz)
 {
   This->Kr = Kr;
   This->Kt = Kt;
@@ -140,7 +140,7 @@ inline void AnisotropicBlinn__Constructor(varying AnisotropicBlinn* uniform This
 
 /*! Evaluates the power cosine distribution. \param wh is the half
  *  vector */
-inline float AnisotropicBlinn__eval(const varying AnisotropicBlinn* uniform This, const Vec3f& wh)  
+inline float AnisotropicBlinn__eval(const varying AnisotropicBlinn* uniform This, const Vec3f& wh)
 {
   const float cosPhiH   = dot(wh, This->dx);
   const float sinPhiH   = dot(wh, This->dy);
@@ -170,16 +170,16 @@ inline Vec3fa AnisotropicBlinn__sample(const varying AnisotropicBlinn* uniform T
   return make_Vec3fa(wh,pdf);
 }
 
-inline Vec3f AnisotropicBlinn__eval(const varying AnisotropicBlinn* uniform This, const Vec3f& wo, const uniform Vec3f& wi) 
+inline Vec3f AnisotropicBlinn__eval(const varying AnisotropicBlinn* uniform This, const Vec3f& wo, const uniform Vec3f& wi)
 {
   const float cosThetaI = dot(wi,This->dz);
-  
+
   /* reflection */
   if (cosThetaI > 0.0f) {
     const Vec3f wh = normalize(wi + wo);
     return This->Kr * AnisotropicBlinn__eval(This,wh) * abs(cosThetaI);
-  } 
-  
+  }
+
   /* transmission */
   else {
     const Vec3f wh = normalize(reflect(wi,This->dz) + wo);
@@ -187,20 +187,20 @@ inline Vec3f AnisotropicBlinn__eval(const varying AnisotropicBlinn* uniform This
   }
 }
 
-inline Vec3f AnisotropicBlinn__sample(const varying AnisotropicBlinn* uniform This, const Vec3f& wo, Vec3fa& wi, const float sx, const float sy, const float sz) 
+inline Vec3f AnisotropicBlinn__sample(const varying AnisotropicBlinn* uniform This, const Vec3f& wo, Vec3fa& wi, const float sx, const float sy, const float sz)
 {
   //wi = Vec3f(reflect(normalize(wo),normalize(dz)),1.0f); return Kr;
   //wi = Vec3f(neg(wo),1.0f); return Kt;
   const Vec3fa wh = AnisotropicBlinn__sample(This,sx,sy);
   //if (dot(wo,wh) < 0.0f) return Vec3f(0.0f,0.0f);
-  
+
   /* reflection */
   if (sz < This->side) {
     wi = make_Vec3fa(reflect(wo,make_Vec3f(wh)),wh.w*This->side);
     const float cosThetaI = dot(make_Vec3f(wi),This->dz);
     return This->Kr * AnisotropicBlinn__eval(This,make_Vec3f(wh)) * abs(cosThetaI);
   }
-  
+
   /* transmission */
   else {
     wi = make_Vec3fa(reflect(reflect(wo,make_Vec3f(wh)),This->dz),wh.w*(1-This->side));
@@ -217,25 +217,25 @@ inline Vec3fa evalBezier(const int geomID, const int primID, const float t)
   const ISPCHairSet* hair = (const ISPCHairSet*) g_ispc_scene->geometries[geomID];
   const Vec3fa* vertices = hair->v;
   const ISPCHair* hairs = hair->hairs;
-  
+
   const int i = hairs[primID].vertex;
   const Vec3fa p00 = vertices[i+0];
   const Vec3fa p01 = vertices[i+1];
   const Vec3fa p02 = vertices[i+2];
   const Vec3fa p03 = vertices[i+3];
-  
+
   const Vec3fa p10 = p00 * t0 + p01 * t1;
   const Vec3fa p11 = p01 * t0 + p02 * t1;
   const Vec3fa p12 = p02 * t0 + p03 * t1;
   const Vec3fa p20 = p10 * t0 + p11 * t1;
   const Vec3fa p21 = p11 * t0 + p12 * t1;
   const Vec3fa p30 = p20 * t0 + p21 * t1;
-  
+
   return p30;
   //tangent = p21-p20;
 }
 
-#endif 
+#endif
 
 /* extended ray structure that includes total transparency along the ray */
 struct RTCRay2
@@ -314,8 +314,8 @@ Vec3f renderPixelPathTrace(float x, float y, const uniform ISPCCamera& camera)
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time = time;
-  ray.filter = NULL; 
-  
+  ray.filter = NULL;
+
   Vec3f color = make_Vec3f(0.0f);
   Vec3f weight = make_Vec3f(1.0f);
   size_t depth = 0;
@@ -323,14 +323,14 @@ Vec3f renderPixelPathTrace(float x, float y, const uniform ISPCCamera& camera)
   while (true)
   {
     /* terminate ray path */
-    if (reduce_max(weight) < 0.01 || depth > 20) 
+    if (reduce_max(weight) < 0.01 || depth > 20)
       return color;
 
     /* intersect ray with scene and gather all hits */
     rtcIntersect(g_scene,*((varying RTCRay*)&ray));
-    
+
     /* exit if we hit environment */
-    if (ray.geomID == RTC_INVALID_GEOMETRY_ID) 
+    if (ray.geomID == RTC_INVALID_GEOMETRY_ID)
       return color + weight*make_Vec3f(g_ambient_intensity);
 
     /* calculate transmissivity of hair */
@@ -338,7 +338,7 @@ Vec3f renderPixelPathTrace(float x, float y, const uniform ISPCCamera& camera)
     float tnear_eps = 0.0001f;
 
     uniform ISPCGeometry* geometry = g_ispc_scene->geometries[ray.geomID];
-    if (geometry->type == HAIR_SET) 
+    if (geometry->type == HAIR_SET)
     {
       /* calculate tangent space */
       const Vec3f dx = normalize(ray.Ng);
@@ -358,16 +358,16 @@ Vec3f renderPixelPathTrace(float x, float y, const uniform ISPCCamera& camera)
       OBJMaterial* material = (OBJMaterial*) &g_ispc_scene->materials[triangle->materialID];
 
       if (dot(ray.dir,ray.Ng) > 0) ray.Ng = neg(ray.Ng);
-      
+
       /* calculate tangent space */
       const Vec3f dz = normalize(ray.Ng);
       const Vec3f dx = normalize(cross(dz,ray.dir));
       const Vec3f dy = normalize(cross(dz,dx));
-      
+
       /* generate isotropic BRDF */
       AnisotropicBlinn__Constructor(&brdf,make_Vec3f(1.0f),make_Vec3f(0.0f),dx,1.0f,dy,1.0f,dz);
     }
-    
+
     /* sample directional light */
     RTCRay2 shadow;
     shadow.org = ray.org + ray.tfar*ray.dir;
@@ -401,14 +401,14 @@ Vec3f renderPixelPathTrace(float x, float y, const uniform ISPCCamera& camera)
     ray.filter = NULL;
     weight = weight * c/wi.w;
 
-#else    
+#else
 
     /* continue with transparency ray */
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
     ray.tnear = 1.001f*ray.tfar;
     ray.tfar = inf;
     weight *= brdf.Kt;
-    
+
 #endif
 
     depth++;
@@ -440,21 +440,21 @@ Vec3f renderPixelTestEyeLight(float x, float y, const uniform ISPCCamera& camera
   float weight = 1.0f;
 
   rtcIntersect(g_scene,*((varying RTCRay*)&ray));
-  ray.filter = NULL; 
+  ray.filter = NULL;
 
   if (ray.primID == -1)
     return make_Vec3f(0.0f);
-  
+
   Vec3f Ng;
   uniform ISPCGeometry* geometry = g_ispc_scene->geometries[ray.geomID];
-  if (geometry->type == HAIR_SET) 
+  if (geometry->type == HAIR_SET)
   {
     const Vec3f dx = normalize(ray.Ng);
     const Vec3f dy = normalize(cross(ray.dir,dx));
     const Vec3f dz = normalize(cross(dy,dx));
     Ng = dz;
   }
-  else 
+  else
   {
     if (dot(ray.dir,ray.Ng) > 0) ray.Ng = neg(ray.Ng);
     const Vec3f dz = normalize(ray.Ng);
@@ -468,13 +468,13 @@ Vec3f renderPixelTestEyeLight(float x, float y, const uniform ISPCCamera& camera
 }
 
 /* renders a single screen tile */
-void renderTileStandard(uniform int taskIndex, 
+void renderTileStandard(uniform int taskIndex,
                         uniform int* uniform pixels,
                         const uniform int width,
-                        const uniform int height, 
+                        const uniform int height,
                         const uniform float time,
                         const uniform ISPCCamera& camera,
-                        const uniform int numTilesX, 
+                        const uniform int numTilesX,
                         const uniform int numTilesY)
 {
   const uniform int tileY = taskIndex / numTilesX;
@@ -505,10 +505,10 @@ void renderTileStandard(uniform int taskIndex,
 /* task that renders a single screen tile */
 task void renderTileTask(uniform int* uniform pixels,
                          const uniform int width,
-                         const uniform int height, 
+                         const uniform int height,
                          const uniform float time,
                          const uniform ISPCCamera& camera,
-                         const uniform int numTilesX, 
+                         const uniform int numTilesX,
                          const uniform int numTilesY)
 {
   renderTile(taskIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
@@ -565,7 +565,7 @@ export void device_render (uniform int* uniform pixels,
   camera_changed |= ne(g_accu_vx,camera.xfm.l.vx); g_accu_vx = camera.xfm.l.vx;
   camera_changed |= ne(g_accu_vy,camera.xfm.l.vy); g_accu_vy = camera.xfm.l.vy;
   camera_changed |= ne(g_accu_vz,camera.xfm.l.vz); g_accu_vz = camera.xfm.l.vz;
-  camera_changed |= ne(g_accu_p, camera.xfm.p   ); g_accu_p  = camera.xfm.p; 
+  camera_changed |= ne(g_accu_p, camera.xfm.p   ); g_accu_p  = camera.xfm.p;
   g_accu_count++;
   if (camera_changed) {
     g_accu_count=0;
@@ -575,7 +575,7 @@ export void device_render (uniform int* uniform pixels,
   /* render frame */
   uniform const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   uniform const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  enableFilterDispatch = renderTile == renderTileStandard; 
+  enableFilterDispatch = renderTile == renderTileStandard;
   launch[numTilesX*numTilesY] renderTileTask(pixels,width,height,time,camera,numTilesX,numTilesY); sync;
   enableFilterDispatch = false;
 }
