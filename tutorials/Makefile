@@ -1,8 +1,8 @@
 
 ispc2cpp:
+	@./ispc2cpp.sh common/core/differential_geometry.isph common/core/differential_geometry.h
 	@./ispc2cpp.sh common/math/random_sampler.isph common/math/random_sampler.h
 	@./ispc2cpp.sh common/math/sampling.isph common/math/sampling.h
-	@./ispc2cpp.sh common/tutorial/differential_geometry.isph common/tutorial/differential_geometry.h
 	@./ispc2cpp.sh common/tutorial/optics.isph common/tutorial/optics.h
 	@./ispc2cpp.sh common/tutorial/lights/light.isph common/tutorial/lights/light.h
 	@./ispc2cpp.sh common/tutorial/lights/light.ispc common/tutorial/lights/light.cpp

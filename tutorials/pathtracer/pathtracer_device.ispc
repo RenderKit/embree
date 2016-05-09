@@ -16,9 +16,9 @@
 
 #include "../common/math/random_sampler.isph"
 #include "../common/math/sampling.isph"
+#include "../common/core/differential_geometry.isph"
 #include "../common/tutorial/tutorial_device.isph"
 #include "../common/tutorial/scene_device.isph"
-#include "../common/tutorial/differential_geometry.isph"
 #include "../common/tutorial/optics.isph"
 #include "../common/tutorial/lights/light.isph"
 
