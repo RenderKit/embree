@@ -326,5 +326,8 @@ namespace embree
     static Ref<SceneGraph::Node> createTrianglePlane (const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy, size_t width, size_t height, Ref<MaterialNode> material = nullptr);
     static Ref<SceneGraph::Node> createQuadPlane     (const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy, size_t width, size_t height, Ref<MaterialNode> material = nullptr);
     static Ref<SceneGraph::Node> createSubdivPlane   (const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy, size_t width, size_t height, Ref<MaterialNode> material = nullptr);
+    static Ref<SceneGraph::Node> createTriangleSphere(const Vec3fa& center, const float radius, size_t numPhi, Ref<MaterialNode> material = nullptr);
+    static Ref<SceneGraph::Node> createQuadSphere    (const Vec3fa& center, const float radius, size_t numPhi, Ref<MaterialNode> material = nullptr);
+    static Ref<SceneGraph::Node> createSubdivSphere  (const Vec3fa& center, const float radius, size_t numPhi, Ref<MaterialNode> material = nullptr);
   };
 }

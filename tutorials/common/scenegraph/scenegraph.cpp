@@ -518,4 +518,186 @@ namespace embree
     mesh->boundaryMode = RTC_BOUNDARY_EDGE_AND_CORNER;
     return mesh;
   }
+
+  Ref<SceneGraph::Node> SceneGraph::createTriangleSphere (const Vec3fa& center, const float radius, size_t numPhi, Ref<MaterialNode> material)
+  {
+    size_t numTheta = 2*numPhi;
+    size_t numVertices = numTheta*(numPhi+1);
+    SceneGraph::TriangleMeshNode* mesh = new SceneGraph::TriangleMeshNode(material);
+    mesh->v.resize(numVertices);
+
+    /* create sphere geometry */
+    const float rcpNumTheta = rcp((float)numTheta);
+    const float rcpNumPhi   = rcp((float)numPhi);
+    for (int phi=0; phi<=numPhi; phi++)
+    {
+      for (int theta=0; theta<numTheta; theta++)
+      {
+	const float phif   = phi*float(pi)*rcpNumPhi;
+	const float thetaf = theta*2.0f*float(pi)*rcpNumTheta;
+	mesh->v[phi*numTheta+theta].x = center.x + radius*sin(phif)*sin(thetaf);
+        mesh->v[phi*numTheta+theta].y = center.y + radius*cos(phif);
+	mesh->v[phi*numTheta+theta].z = center.z + radius*sin(phif)*cos(thetaf);
+      }
+      if (phi == 0) continue;
+      
+      if (phi == 1)
+      {
+	for (int theta=1; theta<=numTheta; theta++) 
+	{
+	  int p00 = numTheta-1;
+	  int p10 = phi*numTheta+theta-1;
+	  int p11 = phi*numTheta+theta%numTheta;
+          mesh->triangles.push_back(TriangleMeshNode::Triangle(p10,p00,p11));
+	}
+      }
+      else if (phi == numPhi)
+      {
+	for (int theta=1; theta<=numTheta; theta++) 
+	{
+	  int p00 = (phi-1)*numTheta+theta-1;
+	  int p01 = (phi-1)*numTheta+theta%numTheta;
+	  int p10 = numPhi*numTheta;
+          mesh->triangles.push_back(TriangleMeshNode::Triangle(p10,p00,p01));
+	}
+      }
+      else
+      {
+	for (int theta=1; theta<=numTheta; theta++) 
+	{
+	  int p00 = (phi-1)*numTheta+theta-1;
+	  int p01 = (phi-1)*numTheta+theta%numTheta;
+	  int p10 = phi*numTheta+theta-1;
+	  int p11 = phi*numTheta+theta%numTheta;
+          mesh->triangles.push_back(TriangleMeshNode::Triangle(p10,p00,p11));
+          mesh->triangles.push_back(TriangleMeshNode::Triangle(p01,p11,p00));
+	}
+      }
+    }
+    return mesh;
+  }
+
+  Ref<SceneGraph::Node> SceneGraph::createQuadSphere (const Vec3fa& center, const float radius, size_t numPhi, Ref<MaterialNode> material)
+  {
+    size_t numTheta = 2*numPhi;
+    size_t numVertices = numTheta*(numPhi+1);
+    SceneGraph::QuadMeshNode* mesh = new SceneGraph::QuadMeshNode(material);
+    mesh->v.resize(numVertices);
+
+    /* create sphere geometry */
+    const float rcpNumTheta = rcp((float)numTheta);
+    const float rcpNumPhi   = rcp((float)numPhi);
+    for (int phi=0; phi<=numPhi; phi++)
+    {
+      for (int theta=0; theta<numTheta; theta++)
+      {
+	const float phif   = phi*float(pi)*rcpNumPhi;
+	const float thetaf = theta*2.0f*float(pi)*rcpNumTheta;
+	mesh->v[phi*numTheta+theta].x = center.x + radius*sin(phif)*sin(thetaf);
+        mesh->v[phi*numTheta+theta].y = center.y + radius*cos(phif);
+	mesh->v[phi*numTheta+theta].z = center.z + radius*sin(phif)*cos(thetaf);
+      }
+      if (phi == 0) continue;
+      
+      if (phi == 1)
+      {
+	for (int theta=1; theta<=numTheta; theta++) 
+	{
+	  int p00 = numTheta-1;
+	  int p10 = phi*numTheta+theta-1;
+	  int p11 = phi*numTheta+theta%numTheta;
+          mesh->quads.push_back(QuadMeshNode::Quad(p10,p00,p11,p11));
+	}
+      }
+      else if (phi == numPhi)
+      {
+	for (int theta=1; theta<=numTheta; theta++) 
+	{
+	  int p00 = (phi-1)*numTheta+theta-1;
+	  int p01 = (phi-1)*numTheta+theta%numTheta;
+	  int p10 = numPhi*numTheta;
+          mesh->quads.push_back(QuadMeshNode::Quad(p10,p00,p01,p01));
+	}
+      }
+      else
+      {
+	for (int theta=1; theta<=numTheta; theta++) 
+	{
+	  int p00 = (phi-1)*numTheta+theta-1;
+	  int p01 = (phi-1)*numTheta+theta%numTheta;
+	  int p10 = phi*numTheta+theta-1;
+	  int p11 = phi*numTheta+theta%numTheta;
+          mesh->quads.push_back(QuadMeshNode::Quad(p10,p00,p01,p11));
+	}
+      }
+    }
+    return mesh;
+  }
+
+  Ref<SceneGraph::Node> SceneGraph::createSubdivSphere (const Vec3fa& center, const float radius, size_t numPhi, Ref<MaterialNode> material)
+  {
+    size_t numTheta = 2*numPhi;
+    size_t numVertices = numTheta*(numPhi+1);
+    SceneGraph::SubdivMeshNode* mesh = new SceneGraph::SubdivMeshNode(material);
+    mesh->positions.resize(numVertices);
+
+    /* create sphere geometry */
+    const float rcpNumTheta = rcp((float)numTheta);
+    const float rcpNumPhi   = rcp((float)numPhi);
+    for (int phi=0; phi<=numPhi; phi++)
+    {
+      for (int theta=0; theta<numTheta; theta++)
+      {
+	const float phif   = phi*float(pi)*rcpNumPhi;
+	const float thetaf = theta*2.0f*float(pi)*rcpNumTheta;
+	mesh->positions[phi*numTheta+theta].x = center.x + radius*sin(phif)*sin(thetaf);
+        mesh->positions[phi*numTheta+theta].y = center.y + radius*cos(phif);
+	mesh->positions[phi*numTheta+theta].z = center.z + radius*sin(phif)*cos(thetaf);
+      }
+      if (phi == 0) continue;
+      
+      if (phi == 1)
+      {
+	for (int theta=1; theta<=numTheta; theta++) 
+	{
+	  int p00 = numTheta-1;
+	  int p10 = phi*numTheta+theta-1;
+	  int p11 = phi*numTheta+theta%numTheta;
+          mesh->verticesPerFace.push_back(3);
+          mesh->position_indices.push_back(p10);
+          mesh->position_indices.push_back(p00);
+          mesh->position_indices.push_back(p11);
+	}
+      }
+      else if (phi == numPhi)
+      {
+	for (int theta=1; theta<=numTheta; theta++) 
+	{
+	  int p00 = (phi-1)*numTheta+theta-1;
+	  int p01 = (phi-1)*numTheta+theta%numTheta;
+	  int p10 = numPhi*numTheta;
+          mesh->verticesPerFace.push_back(3);
+          mesh->position_indices.push_back(p10);
+          mesh->position_indices.push_back(p00);
+          mesh->position_indices.push_back(p01);
+	}
+      }
+      else
+      {
+	for (int theta=1; theta<=numTheta; theta++) 
+	{
+	  int p00 = (phi-1)*numTheta+theta-1;
+	  int p01 = (phi-1)*numTheta+theta%numTheta;
+	  int p10 = phi*numTheta+theta-1;
+	  int p11 = phi*numTheta+theta%numTheta;
+          mesh->verticesPerFace.push_back(4);
+          mesh->position_indices.push_back(p10);
+          mesh->position_indices.push_back(p00);
+          mesh->position_indices.push_back(p01);
+          mesh->position_indices.push_back(p11);
+	}
+      }
+    }
+    return mesh;
+  }
 }

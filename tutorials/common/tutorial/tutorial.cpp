@@ -278,7 +278,30 @@ namespace embree
         scene->add(SceneGraph::createSubdivPlane(p0,dx,dy,width,height,new SceneGraph::MaterialNode(obj)));
       }, "--subdiv-plane p.x p.y p.z dx.x dx.y dx.z dy.x dy.y dy.z width height: adds a plane build as a Catmull Clark subdivision surface originated at p0 and spanned by the vectors dx and dy with a tesselation width/height.");
     
-
+    registerOption("triangle-sphere", [this] (Ref<ParseStream> cin, const FileName& path) {
+        const Vec3fa p = cin->getVec3fa();
+        const float  r = cin->getFloat();
+        const size_t numPhi = cin->getInt();
+        Material obj; new (&obj) OBJMaterial();
+        scene->add(SceneGraph::createTriangleSphere(p,r,numPhi,new SceneGraph::MaterialNode(obj)));
+      }, "--triangle-sphere p.x p.y p.z r numPhi: adds a sphere at position p with radius r and tesselation numPhi build of triangles.");
+   
+    registerOption("quad-sphere", [this] (Ref<ParseStream> cin, const FileName& path) {
+        const Vec3fa p = cin->getVec3fa();
+        const float  r = cin->getFloat();
+        const size_t numPhi = cin->getInt();
+        Material obj; new (&obj) OBJMaterial();
+        scene->add(SceneGraph::createQuadSphere(p,r,numPhi,new SceneGraph::MaterialNode(obj)));
+      }, "--quad-sphere p.x p.y p.z r numPhi: adds a sphere at position p with radius r and tesselation numPhi build of quadrilaterals.");
+   
+    registerOption("subdiv-sphere", [this] (Ref<ParseStream> cin, const FileName& path) {
+        const Vec3fa p = cin->getVec3fa();
+        const float  r = cin->getFloat();
+        const size_t numPhi = cin->getInt();
+        Material obj; new (&obj) OBJMaterial();
+        scene->add(SceneGraph::createSubdivSphere(p,r,numPhi,new SceneGraph::MaterialNode(obj)));
+      }, "--subdiv-sphere p.x p.y p.z r numPhi: adds a sphere at position p with radius r and tesselation numPhi build of Catmull Clark subdivision surfaces.");
+   
     registerOption("cache", [this] (Ref<ParseStream> cin, const FileName& path) {
         subdiv_mode = ",subdiv_accel=bvh4.subdivpatch1cached";
         rtcore += subdiv_mode;
