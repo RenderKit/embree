@@ -49,15 +49,6 @@ namespace embree
     return (cpu_features & isa) == isa;
   }
 
-  /* vertex and triangle layout */
-  struct Vertex  {
-    Vertex() {}
-    Vertex(float x, float y, float z, float a = 0.0f) 
-      : x(x), y(y), z(z), a(a) {}
-    float x,y,z,a; 
-  };
-  typedef Vec3f  Vertex3f;
-  typedef Vec3fa Vertex3fa;
   typedef SceneGraph::TriangleMeshNode::Triangle Triangle;
 
   MutexSys g_mutex2;
@@ -640,7 +631,7 @@ namespace embree
       rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, N, 3);
       AssertNoError(device);
       
-      Vertex3fa* vertices = (Vertex3fa*) rtcMapBuffer(scene,0,RTC_VERTEX_BUFFER);
+      Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene,0,RTC_VERTEX_BUFFER);
       vertices[0].x = 0.0f; vertices[0].y = 0.0f; vertices[0].z = 0.0f;
       vertices[1].x = 1.0f; vertices[1].y = 0.0f; vertices[1].z = 0.0f;
       vertices[2].x = 0.0f; vertices[2].y = 1.0f; vertices[2].z = 0.0f;
@@ -826,8 +817,8 @@ namespace embree
     
     static void move_mesh(const RTCSceneRef& scene, unsigned mesh, size_t numVertices, Vec3fa& pos) 
     {
-      Vertex3fa* vertices = (Vertex3fa*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
-      for (size_t i=0; i<numVertices; i++) vertices[i] += Vertex3fa(pos);
+      Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
+      for (size_t i=0; i<numVertices; i++) vertices[i] += Vec3fa(pos);
       rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER);
       rtcUpdate(scene,mesh);
     }
@@ -1565,7 +1556,7 @@ namespace embree
          coordinate system if looking along the z direction */
       RTCSceneRef scene = rtcDeviceNewScene(device,sflags,to_aflags(imode));
       unsigned mesh = rtcNewTriangleMesh (scene, gflags, 1, 3);
-      Vertex3fa*   vertices  = (Vertex3fa*  ) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
+      Vec3fa*   vertices  = (Vec3fa*  ) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
       Triangle* triangles = (Triangle*) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
       vertices[0].x = 0; vertices[0].y = 0; vertices[0].z = 0;
       vertices[1].x = 0; vertices[1].y = 1; vertices[1].z = 0;
@@ -2334,16 +2325,16 @@ namespace embree
               break;
             }
             case 1: {
-              Vertex3fa* vertices = (Vertex3fa*) rtcMapBuffer(task->scene,geom[index],RTC_VERTEX_BUFFER);
+              Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(task->scene,geom[index],RTC_VERTEX_BUFFER);
               if (vertices) { 
-                for (size_t i=0; i<numVertices[index]; i++) vertices[i] += Vertex3fa(0.1f);
+                for (size_t i=0; i<numVertices[index]; i++) vertices[i] += Vec3fa(0.1f);
               }
               rtcUnmapBuffer(task->scene,geom[index],RTC_VERTEX_BUFFER);
               
               if (types[index] == 7 || types[index] == 8) {
-                Vertex3fa* vertices = (Vertex3fa*) rtcMapBuffer(task->scene,geom[index],RTC_VERTEX_BUFFER1);
+                Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(task->scene,geom[index],RTC_VERTEX_BUFFER1);
                 if (vertices) {
-                  for (size_t i=0; i<numVertices[index]; i++) vertices[i] += Vertex3fa(0.1f);
+                  for (size_t i=0; i<numVertices[index]; i++) vertices[i] += Vec3fa(0.1f);
                 }
                 rtcUnmapBuffer(task->scene,geom[index],RTC_VERTEX_BUFFER1);
               }
