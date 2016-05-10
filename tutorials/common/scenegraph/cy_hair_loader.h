@@ -20,5 +20,8 @@
 
 namespace embree
 {
-  Ref<SceneGraph::Node> loadCYHair(const FileName& fileName);
+  namespace SceneGraph
+  {
+    Ref<SceneGraph::Node> loadCYHair(const FileName& fileName);
+  }
 }

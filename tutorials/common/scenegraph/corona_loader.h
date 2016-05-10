@@ -20,5 +20,8 @@
 
 namespace embree
 {
-  Ref<SceneGraph::Node> loadCorona(const FileName& fileName, const AffineSpace3fa& space = one);
+  namespace SceneGraph
+  {
+    Ref<SceneGraph::Node> loadCorona(const FileName& fileName, const AffineSpace3fa& space = one);
+  }
 }

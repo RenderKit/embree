@@ -312,7 +312,7 @@ namespace embree
   }
 
   /*! read from disk */
-  Ref<SceneGraph::Node> loadCorona(const FileName& fileName, const AffineSpace3fa& space) {
+  Ref<SceneGraph::Node> SceneGraph::loadCorona(const FileName& fileName, const AffineSpace3fa& space) {
     return CoronaLoader::load(fileName,space);
   }
 }

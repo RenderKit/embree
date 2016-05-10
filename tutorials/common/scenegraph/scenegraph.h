@@ -22,9 +22,27 @@
 
 namespace embree
 {  
-  struct SceneGraph
+  namespace SceneGraph
   {
+    struct Node;
     struct MaterialNode;
+
+    Ref<Node> load(const FileName& fname);
+    void store(Ref<Node> root, const FileName& fname, bool embedTextures);
+    void set_motion_blur(Ref<Node> node0, Ref<Node> node1);
+    void set_motion_vector(Ref<Node> node, const Vec3fa& dP);
+    void resize_randomly(Ref<Node> node, const size_t N);
+    Ref<Node> convert_triangles_to_quads(Ref<Node> node);
+    Ref<Node> convert_quads_to_subdivs(Ref<Node> node);
+    Ref<Node> convert_bezier_to_lines(Ref<Node> node);
+    Ref<Node> convert_hair_to_curves(Ref<Node> node);
+
+    Ref<Node> createTrianglePlane (const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy, size_t width, size_t height, Ref<MaterialNode> material = nullptr);
+    Ref<Node> createQuadPlane     (const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy, size_t width, size_t height, Ref<MaterialNode> material = nullptr);
+    Ref<Node> createSubdivPlane   (const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy, size_t width, size_t height, float tessellationRate, Ref<MaterialNode> material = nullptr);
+    Ref<Node> createTriangleSphere(const Vec3fa& center, const float radius, size_t numPhi, Ref<MaterialNode> material = nullptr);
+    Ref<Node> createQuadSphere    (const Vec3fa& center, const float radius, size_t numPhi, Ref<MaterialNode> material = nullptr);
+    Ref<Node> createSubdivSphere  (const Vec3fa& center, const float radius, size_t numPhi, float tessellationRate, Ref<MaterialNode> material = nullptr);
 
     struct Node : public RefCount
     {
@@ -268,7 +286,7 @@ namespace embree
       typedef Vec3fa Vertex;
 
       SubdivMeshNode (Ref<MaterialNode> material) 
-        : Node(true), material(material), boundaryMode(RTC_BOUNDARY_EDGE_ONLY) {}
+        : Node(true), material(material), boundaryMode(RTC_BOUNDARY_EDGE_ONLY), tessellationRate(2.0f) {}
 
       virtual void setMaterial(Ref<MaterialNode> material) {
         this->material = material;
@@ -300,6 +318,7 @@ namespace embree
       std::vector<float> vertex_crease_weights; //!< weight for each vertex crease
       Ref<MaterialNode> material;
       RTCBoundaryMode boundaryMode;
+      float tessellationRate;
     };
 
     /*! Line Segments */
@@ -373,24 +392,5 @@ namespace embree
       std::vector<Hair> hairs;  //!< list of hairs
       Ref<MaterialNode> material;
     };
-
-  public:
-    static Ref<Node> load(const FileName& fname);
-    static void store(Ref<SceneGraph::Node> root, const FileName& fname, bool embedTextures);
-    static void set_motion_blur(Ref<Node> node0, Ref<Node> node1);
-    static void set_motion_vector(Ref<Node> node, const Vec3fa& dP);
-    static void resize_randomly(Ref<Node> node, const size_t N);
-    static Ref<SceneGraph::Node> convert_triangles_to_quads(Ref<SceneGraph::Node> node);
-    static Ref<SceneGraph::Node> convert_quads_to_subdivs(Ref<SceneGraph::Node> node);
-    static Ref<SceneGraph::Node> convert_bezier_to_lines(Ref<SceneGraph::Node> node);
-    static Ref<SceneGraph::Node> convert_hair_to_curves(Ref<SceneGraph::Node> node);
-
-  public:
-    static Ref<SceneGraph::Node> createTrianglePlane (const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy, size_t width, size_t height, Ref<MaterialNode> material = nullptr);
-    static Ref<SceneGraph::Node> createQuadPlane     (const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy, size_t width, size_t height, Ref<MaterialNode> material = nullptr);
-    static Ref<SceneGraph::Node> createSubdivPlane   (const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy, size_t width, size_t height, Ref<MaterialNode> material = nullptr);
-    static Ref<SceneGraph::Node> createTriangleSphere(const Vec3fa& center, const float radius, size_t numPhi, Ref<MaterialNode> material = nullptr);
-    static Ref<SceneGraph::Node> createQuadSphere    (const Vec3fa& center, const float radius, size_t numPhi, Ref<MaterialNode> material = nullptr);
-    static Ref<SceneGraph::Node> createSubdivSphere  (const Vec3fa& center, const float radius, size_t numPhi, Ref<MaterialNode> material = nullptr);
   };
 }

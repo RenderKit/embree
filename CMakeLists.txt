@@ -278,9 +278,8 @@ ADD_SUBDIRECTORY(kernels)
 
 IF (ENABLE_TUTORIALS)
   ADD_SUBDIRECTORY(tutorials)
+  ADD_SUBDIRECTORY(tests)
 ENDIF()
-
-ADD_SUBDIRECTORY(tests)
 
 ##############################################################
 # Uninstall

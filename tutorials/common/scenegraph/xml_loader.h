@@ -20,6 +20,9 @@
 
 namespace embree
 {
-  Ref<SceneGraph::Node> loadXML(const FileName& fileName, const AffineSpace3fa& space = one);
+  namespace SceneGraph
+  {
+    Ref<Node> loadXML(const FileName& fileName, const AffineSpace3fa& space = one);
+  }
 }
 

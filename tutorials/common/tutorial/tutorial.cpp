@@ -274,9 +274,10 @@ namespace embree
         const Vec3fa dy = cin->getVec3fa();
         const size_t width = cin->getInt();
         const size_t height = cin->getInt();
+        const float tessellationRate = cin->getFloat();
         Material obj; new (&obj) OBJMaterial();
-        scene->add(SceneGraph::createSubdivPlane(p0,dx,dy,width,height,new SceneGraph::MaterialNode(obj)));
-      }, "--subdiv-plane p.x p.y p.z dx.x dx.y dx.z dy.x dy.y dy.z width height: adds a plane build as a Catmull Clark subdivision surface originated at p0 and spanned by the vectors dx and dy with a tesselation width/height.");
+        scene->add(SceneGraph::createSubdivPlane(p0,dx,dy,width,height,tessellationRate,new SceneGraph::MaterialNode(obj)));
+      }, "--subdiv-plane p.x p.y p.z dx.x dx.y dx.z dy.x dy.y dy.z width height tessellationRate: adds a plane build as a Catmull Clark subdivision surface originated at p0 and spanned by the vectors dx and dy. The plane consists of widt x height many patches, and each patch has the specified tesselation rate.");
     
     registerOption("triangle-sphere", [this] (Ref<ParseStream> cin, const FileName& path) {
         const Vec3fa p = cin->getVec3fa();
@@ -298,9 +299,10 @@ namespace embree
         const Vec3fa p = cin->getVec3fa();
         const float  r = cin->getFloat();
         const size_t numPhi = cin->getInt();
+        const float tessellationRate = cin->getFloat();
         Material obj; new (&obj) OBJMaterial();
-        scene->add(SceneGraph::createSubdivSphere(p,r,numPhi,new SceneGraph::MaterialNode(obj)));
-      }, "--subdiv-sphere p.x p.y p.z r numPhi: adds a sphere at position p with radius r and tesselation numPhi build of Catmull Clark subdivision surfaces.");
+        scene->add(SceneGraph::createSubdivSphere(p,r,numPhi,tessellationRate,new SceneGraph::MaterialNode(obj)));
+      }, "--subdiv-sphere p.x p.y p.z r numPhi: adds a sphere at position p with radius r build of Catmull Clark subdivision surfaces. The sphere consists of numPhi x numPhi many patches and each path has the specified tessellation rate.");
    
     registerOption("cache", [this] (Ref<ParseStream> cin, const FileName& path) {
         subdiv_mode = ",subdiv_accel=bvh4.subdivpatch1cached";

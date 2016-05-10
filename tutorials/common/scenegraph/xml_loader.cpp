@@ -1226,7 +1226,7 @@ namespace embree
   }
 
   /*! read from disk */
-  Ref<SceneGraph::Node> loadXML(const FileName& fileName, const AffineSpace3fa& space) {
+  Ref<SceneGraph::Node> SceneGraph::loadXML(const FileName& fileName, const AffineSpace3fa& space) {
     return XMLLoader::load(fileName,space);
   }
 }
