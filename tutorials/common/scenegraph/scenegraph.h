@@ -39,10 +39,10 @@ namespace embree
 
     Ref<Node> createTrianglePlane (const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy, size_t width, size_t height, Ref<MaterialNode> material = nullptr);
     Ref<Node> createQuadPlane     (const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy, size_t width, size_t height, Ref<MaterialNode> material = nullptr);
-    Ref<Node> createSubdivPlane   (const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy, size_t width, size_t height, Ref<MaterialNode> material = nullptr);
+    Ref<Node> createSubdivPlane   (const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy, size_t width, size_t height, float tessellationRate, Ref<MaterialNode> material = nullptr);
     Ref<Node> createTriangleSphere(const Vec3fa& center, const float radius, size_t numPhi, Ref<MaterialNode> material = nullptr);
     Ref<Node> createQuadSphere    (const Vec3fa& center, const float radius, size_t numPhi, Ref<MaterialNode> material = nullptr);
-    Ref<Node> createSubdivSphere  (const Vec3fa& center, const float radius, size_t numPhi, Ref<MaterialNode> material = nullptr);
+    Ref<Node> createSubdivSphere  (const Vec3fa& center, const float radius, size_t numPhi, float tessellationRate, Ref<MaterialNode> material = nullptr);
 
     struct Node : public RefCount
     {
@@ -286,7 +286,7 @@ namespace embree
       typedef Vec3fa Vertex;
 
       SubdivMeshNode (Ref<MaterialNode> material) 
-        : Node(true), material(material), boundaryMode(RTC_BOUNDARY_EDGE_ONLY) {}
+        : Node(true), material(material), boundaryMode(RTC_BOUNDARY_EDGE_ONLY), tessellationRate(2.0f) {}
 
       virtual void setMaterial(Ref<MaterialNode> material) {
         this->material = material;
@@ -318,6 +318,7 @@ namespace embree
       std::vector<float> vertex_crease_weights; //!< weight for each vertex crease
       Ref<MaterialNode> material;
       RTCBoundaryMode boundaryMode;
+      float tessellationRate;
     };
 
     /*! Line Segments */

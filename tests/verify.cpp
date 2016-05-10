@@ -171,11 +171,19 @@ namespace embree
     else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>())
     {
       int numTimeSteps = mblur ? 2 : 1;
-      unsigned geomID = rtcNewSubdivisionMesh (scene, gflag, mesh->verticesPerFace.size(), mesh->position_indices.size(), mesh->positions.size(), 0,0,0, numTimeSteps);
-      rtcSetBuffer(scene,geomID,RTC_FACE_BUFFER  ,mesh->verticesPerFace.data(),  0,sizeof(int));
+      unsigned geomID = rtcNewSubdivisionMesh (scene, gflag, 
+                                               mesh->verticesPerFace.size(), mesh->position_indices.size(), mesh->positions.size(), 
+                                               mesh->edge_creases.size(), mesh->vertex_creases.size(), mesh->holes.size(), numTimeSteps);
+      rtcSetBuffer(scene,geomID,RTC_FACE_BUFFER  ,mesh->verticesPerFace.data(), 0,sizeof(int));
       rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER ,mesh->position_indices.data(),0,sizeof(int));
       if (mesh->positions .size()) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER0,mesh->positions .data(),0,sizeof(SceneGraph::SubdivMeshNode::Vertex));
       if (mesh->positions2.size()) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER1,mesh->positions2.data(),0,sizeof(SceneGraph::SubdivMeshNode::Vertex));
+      if (mesh->edge_creases.size()) rtcSetBuffer(scene,geomID,RTC_EDGE_CREASE_INDEX_BUFFER,mesh->edge_creases.data(),0,2*sizeof(int));
+      if (mesh->edge_crease_weights.size()) rtcSetBuffer(scene,geomID,RTC_EDGE_CREASE_WEIGHT_BUFFER,mesh->edge_crease_weights.data(),0,sizeof(float));
+      if (mesh->vertex_creases.size()) rtcSetBuffer(scene,geomID,RTC_VERTEX_CREASE_INDEX_BUFFER,mesh->vertex_creases.data(),0,sizeof(int));
+      if (mesh->vertex_crease_weights.size()) rtcSetBuffer(scene,geomID,RTC_VERTEX_CREASE_WEIGHT_BUFFER,mesh->vertex_crease_weights.data(),0,sizeof(float));
+      if (mesh->holes.size()) rtcSetBuffer(scene,geomID,RTC_HOLE_BUFFER,mesh->holes.data(),0,sizeof(int));
+      rtcSetTessellationRate(scene,geomID,mesh->tessellationRate);
       rtcSetBoundaryMode(scene,geomID,mesh->boundaryMode);
       return geomID;
     }
@@ -190,7 +198,7 @@ namespace embree
   }
 
   unsigned addSubdivPlane (const RTCDeviceRef& device, const RTCSceneRef& scene, RTCGeometryFlags gflag, size_t num, const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy) {
-    return addGeometry(device,scene,gflag,SceneGraph::createSubdivPlane(p0,dx,dy,num,num));
+    return addGeometry(device,scene,gflag,SceneGraph::createSubdivPlane(p0,dx,dy,num,num,2.0f));
   }
 
   unsigned addSphere (const RTCDeviceRef& device, const RTCSceneRef& scene, RTCGeometryFlags gflag, const Vec3fa& pos, const float r, size_t numPhi, size_t maxTriangles = -1, float motion = 0.0f)
@@ -202,106 +210,14 @@ namespace embree
     return addGeometry(device,scene,gflag,node,mblur);
   }
 
-  /* adds a subdiv sphere to the scene */
-  unsigned int addSubdivSphere (RTCDevice g_device, const RTCSceneRef& scene, RTCGeometryFlags flags, const Vec3fa& pos, const float r, size_t numPhi, float level, size_t maxFaces = -1, float motion = 0.0f)
+  void addRandomSubdivFeatures(Ref<SceneGraph::SubdivMeshNode> mesh, size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles)
   {
-    size_t numTheta = 2*numPhi;
-    avector<Vec3fa> vertices(numTheta*(numPhi+1));
-    std::vector<int> indices;
-    std::vector<int> faces;
     std::vector<int> offsets;
-    
-    /* create sphere geometry */
-    const float rcpNumTheta = rcp((float)numTheta);
-    const float rcpNumPhi   = rcp((float)numPhi);
-    for (int phi=0; phi<=numPhi; phi++)
-    {
-      for (int theta=0; theta<numTheta; theta++)
-      {
-	const float phif   = phi*float(pi)*rcpNumPhi;
-	const float thetaf = theta*2.0f*float(pi)*rcpNumTheta;
-	Vec3fa& v = vertices[phi*numTheta+theta];
-	Vec3fa P(pos.x + r*sin(phif)*sin(thetaf),
-		 pos.y + r*cos(phif),
-		 pos.z + r*sin(phif)*cos(thetaf));
-	v.x = P.x;
-	v.y = P.y;
-	v.z = P.z;
-      }
-      if (phi == 0) continue;
-      
-      if (phi == 1)
-      {
-	for (int theta=1; theta<=numTheta; theta++) 
-	{
-	  int p00 = numTheta-1;
-	  int p10 = phi*numTheta+theta-1;
-	  int p11 = phi*numTheta+theta%numTheta;
-	  offsets.push_back(indices.size());
-	  indices.push_back(p10); 
-	  indices.push_back(p00);
-	  indices.push_back(p11);
-	  faces.push_back(3);
-	}
-      }
-      else if (phi == numPhi)
-      {
-	for (int theta=1; theta<=numTheta; theta++) 
-	{
-	  int p00 = (phi-1)*numTheta+theta-1;
-	  int p01 = (phi-1)*numTheta+theta%numTheta;
-	  int p10 = numPhi*numTheta;
-	  offsets.push_back(indices.size());
-	  indices.push_back(p10);
-	  indices.push_back(p00);
-	  indices.push_back(p01);
-	  faces.push_back(3);
-	}
-      }
-      else
-      {
-	for (int theta=1; theta<=numTheta; theta++) 
-	{
-	  int p00 = (phi-1)*numTheta+theta-1;
-	  int p01 = (phi-1)*numTheta+theta%numTheta;
-	  int p10 = phi*numTheta+theta-1;
-	  int p11 = phi*numTheta+theta%numTheta;
-	  offsets.push_back(indices.size());
-	  indices.push_back(p10);
-	  indices.push_back(p00);
-	  indices.push_back(p01);
-	  indices.push_back(p11);
-	  faces.push_back(4);
-	}
-      }
-    }
-    
-    /* create subdiv geometry */
-    size_t numFaces = min(faces.size(),maxFaces);
-    size_t numEdges = indices.size();
-    size_t numVertices = vertices.size();
-    size_t numEdgeCreases = 10;
-    size_t numVertexCreases = 10;
-    size_t numHoles = 0; // do not test holes as this causes some tests that assume a closed sphere to fail
-    unsigned int mesh = rtcNewSubdivisionMesh(scene, flags, numFaces, numEdges, numVertices, numEdgeCreases, numVertexCreases, numHoles);
-    Vec3fa* vertexBuffer = (Vec3fa*  ) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER);  if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene,mesh); return -1; }
-    int*    indexBuffer  = (int     *) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);   if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene,mesh); return -1; }
-    int*    facesBuffer = (int     *) rtcMapBuffer(scene,mesh,RTC_FACE_BUFFER);     if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene,mesh); return -1; }
-    float*  levelBuffer  = (float   *) rtcMapBuffer(scene,mesh,RTC_LEVEL_BUFFER);   if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene,mesh); return -1; }
-
-    if (numVertices) memcpy(vertexBuffer,vertices.data(),numVertices*sizeof(Vec3fa));
-    if (numEdges   ) memcpy(indexBuffer ,indices.data() ,numEdges*sizeof(int));
-    if (numFaces   ) memcpy(facesBuffer,faces.data() ,numFaces*sizeof(int));
-    for (size_t i=0; i<indices.size(); i++) levelBuffer[i] = level;
-    rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
-    rtcUnmapBuffer(scene,mesh,RTC_INDEX_BUFFER);
-    rtcUnmapBuffer(scene,mesh,RTC_FACE_BUFFER);
-    rtcUnmapBuffer(scene,mesh,RTC_LEVEL_BUFFER);
-    
-    int* edgeCreaseIndices  = (int*) rtcMapBuffer(scene,mesh,RTC_EDGE_CREASE_INDEX_BUFFER);
-    if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene,mesh); return -1; }
-    float* edgeCreaseWeights = (float*) rtcMapBuffer(scene,mesh,RTC_EDGE_CREASE_WEIGHT_BUFFER);
-    if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene,mesh); return -1; }
+    std::vector<int>& faces = mesh->verticesPerFace;
+    std::vector<int>& indices = mesh->position_indices;
+    for (size_t i=0,j=0; i<mesh->verticesPerFace.size(); i++) {
+      offsets.push_back(j); j+=mesh->verticesPerFace[i];
+    } 
 
     for (size_t i=0; i<numEdgeCreases; i++) 
     {
@@ -309,38 +225,37 @@ namespace embree
 	int f = random<int>() % faces.size();
 	int n = faces[f];
 	int e = random<int>() % n;
-	edgeCreaseIndices[2*i+0] = indices[offsets[f]+(e+0)%n];
-	edgeCreaseIndices[2*i+1] = indices[offsets[f]+(e+1)%n];
+	mesh->edge_creases.push_back(Vec2i(indices[offsets[f]+(e+0)%n],indices[offsets[f]+(e+1)%n]));
       } else {
-	edgeCreaseIndices[2*i+0] = 0;
-	edgeCreaseIndices[2*i+1] = 0;
+        mesh->edge_creases.push_back(Vec2i(0,0));
       }
-      edgeCreaseWeights[i] = 10.0f*drand48();
+      mesh->edge_crease_weights.push_back(10.0f*drand48());
     }
-    rtcUnmapBuffer(scene,mesh,RTC_EDGE_CREASE_INDEX_BUFFER); 
-    rtcUnmapBuffer(scene,mesh,RTC_EDGE_CREASE_WEIGHT_BUFFER); 
     
-    int* vertexCreaseIndices  = (int*) rtcMapBuffer(scene,mesh,RTC_VERTEX_CREASE_INDEX_BUFFER);
-    if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene,mesh); return -1; }
-    float* vertexCreaseWeights = (float*) rtcMapBuffer(scene,mesh,RTC_VERTEX_CREASE_WEIGHT_BUFFER);
-    if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene,mesh); return -1; }
-
     for (size_t i=0; i<numVertexCreases; i++) 
     {
-      int v = numTheta-1 + random<int>() % (vertices.size()+2-2*numTheta);
-      vertexCreaseIndices[i] = v;
-      vertexCreaseWeights[i] = 10.0f*drand48();
+      if (faces.size()) {
+        size_t f = random<int>() % faces.size();
+        size_t e = random<int>()% faces[f];
+        mesh->vertex_creases.push_back(indices[offsets[f] + e]);
+        mesh->vertex_crease_weights.push_back(10.0f*drand48());
+      }
     }
-    rtcUnmapBuffer(scene,mesh,RTC_VERTEX_CREASE_INDEX_BUFFER); 
-    rtcUnmapBuffer(scene,mesh,RTC_VERTEX_CREASE_WEIGHT_BUFFER); 
     
-    int* holeBuffer  = (int*) rtcMapBuffer(scene,mesh,RTC_HOLE_BUFFER);
     for (size_t i=0; i<numHoles; i++) {
-      holeBuffer[i] = random<int>() % faces.size();
+      mesh->holes.push_back(random<int>() % faces.size());
     }
-    rtcUnmapBuffer(scene,mesh,RTC_HOLE_BUFFER); 
-    
-    return mesh;
+  }    
+
+  /* adds a subdiv sphere to the scene */
+  unsigned int addSubdivSphere (const RTCDeviceRef& device, const RTCSceneRef& scene, RTCGeometryFlags gflag, const Vec3fa& pos, const float r, size_t numPhi, float level, size_t maxFaces = -1, float motion = 0.0f)
+  {
+    bool mblur = motion != 0.0f;
+    Ref<SceneGraph::Node> node = SceneGraph::createSubdivSphere(pos,r,numPhi,level);
+    if (mblur) SceneGraph::set_motion_vector(node,Vec3fa(motion));
+    if (maxFaces != -1) SceneGraph::resize_randomly(node,maxFaces);
+    addRandomSubdivFeatures(node.dynamicCast<SceneGraph::SubdivMeshNode>(),10,10,0);
+    return addGeometry(device,scene,gflag,node,mblur);
   }
 
   unsigned addHair (RTCDevice g_device, const RTCSceneRef& scene, RTCGeometryFlags flag, const Vec3fa& pos, const float scale, const float r, size_t numHairs = 1, float motion = 0.0f)

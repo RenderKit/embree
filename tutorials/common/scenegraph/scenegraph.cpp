@@ -343,7 +343,7 @@ namespace embree
     }
     else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>()) 
     {
-      if (mesh->verticesPerFace.size() > N) return;
+      if (mesh->verticesPerFace.size() <= N) return;
       mesh->verticesPerFace.resize(N);
     }
   }
@@ -561,9 +561,10 @@ namespace embree
     return mesh;
   }
 
-  Ref<SceneGraph::Node> SceneGraph::createSubdivPlane (const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy, size_t width, size_t height, Ref<MaterialNode> material)
+  Ref<SceneGraph::Node> SceneGraph::createSubdivPlane (const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy, size_t width, size_t height, float tessellationRate, Ref<MaterialNode> material)
   {
     SceneGraph::SubdivMeshNode* mesh = new SceneGraph::SubdivMeshNode(material);
+    mesh->tessellationRate = tessellationRate;
     mesh->positions.resize((width+1)*(height+1));
     mesh->position_indices.resize(4*width*height);
     mesh->verticesPerFace.resize(width*height);
@@ -710,11 +711,12 @@ namespace embree
     return mesh;
   }
 
-  Ref<SceneGraph::Node> SceneGraph::createSubdivSphere (const Vec3fa& center, const float radius, size_t numPhi, Ref<MaterialNode> material)
+  Ref<SceneGraph::Node> SceneGraph::createSubdivSphere (const Vec3fa& center, const float radius, size_t numPhi, float tessellationRate, Ref<MaterialNode> material)
   {
     size_t numTheta = 2*numPhi;
     size_t numVertices = numTheta*(numPhi+1);
     SceneGraph::SubdivMeshNode* mesh = new SceneGraph::SubdivMeshNode(material);
+    mesh->tessellationRate = tessellationRate;
     mesh->positions.resize(numVertices);
 
     /* create sphere geometry */
