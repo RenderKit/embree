@@ -144,12 +144,15 @@ namespace embree
   
   bool g_enable_build_cancel = false;
 
-  unsigned addGeometry(const RTCDeviceRef& device, const RTCSceneRef& scene, const RTCGeometryFlags gflag, const Ref<SceneGraph::Node>& node)
+  unsigned addGeometry(const RTCDeviceRef& device, const RTCSceneRef& scene, const RTCGeometryFlags gflag, const Ref<SceneGraph::Node>& node, bool mblur = false)
   {
+    g_mutex2.lock();
     nodes.push_back(node);
+    g_mutex2.unlock();
+
     if (Ref<SceneGraph::TriangleMeshNode> mesh = node.dynamicCast<SceneGraph::TriangleMeshNode>()) 
     {
-      int numTimeSteps = mesh->v2.size() ? 2 : 1;
+      int numTimeSteps = mblur ? 2 : 1;
       unsigned geomID = rtcNewTriangleMesh (scene, gflag, mesh->triangles.size(), mesh->v.size(), numTimeSteps);
       rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER ,mesh->triangles.data(),0,sizeof(SceneGraph::TriangleMeshNode::Triangle));
       if (mesh->v .size()) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER0,mesh->v .data(),0,sizeof(SceneGraph::TriangleMeshNode::Vertex));
@@ -158,7 +161,7 @@ namespace embree
     }
     else if (Ref<SceneGraph::QuadMeshNode> mesh = node.dynamicCast<SceneGraph::QuadMeshNode>())
     {
-      int numTimeSteps = mesh->v2.size() ? 2 : 1;
+      int numTimeSteps = mblur ? 2 : 1;
       unsigned geomID = rtcNewQuadMesh (scene, gflag, mesh->quads.size(), mesh->v.size(), numTimeSteps);
       rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER ,mesh->quads.data(),0,sizeof(SceneGraph::QuadMeshNode::Quad  ));
       if (mesh->v .size()) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER0,mesh->v .data(),0,sizeof(SceneGraph::QuadMeshNode::Vertex));
@@ -167,7 +170,7 @@ namespace embree
     } 
     else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>())
     {
-      int numTimeSteps = mesh->positions2.size() ? 2 : 1;
+      int numTimeSteps = mblur ? 2 : 1;
       unsigned geomID = rtcNewSubdivisionMesh (scene, gflag, mesh->verticesPerFace.size(), mesh->position_indices.size(), mesh->positions.size(), 0,0,0, numTimeSteps);
       rtcSetBuffer(scene,geomID,RTC_FACE_BUFFER  ,mesh->verticesPerFace.data(),  0,sizeof(int));
       rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER ,mesh->position_indices.data(),0,sizeof(int));
@@ -192,93 +195,11 @@ namespace embree
 
   unsigned addSphere (const RTCDeviceRef& device, const RTCSceneRef& scene, RTCGeometryFlags gflag, const Vec3fa& pos, const float r, size_t numPhi, size_t maxTriangles = -1, float motion = 0.0f)
   {
-#if 0
+    bool mblur = motion != 0.0f;
     Ref<SceneGraph::Node> node = SceneGraph::createTriangleSphere(pos,r,numPhi);
-    if (motion       != 0.0f) SceneGraph::set_motion_vector(node,Vec3fa(motion));
+    if (mblur) SceneGraph::set_motion_vector(node,Vec3fa(motion));
     if (maxTriangles !=   -1) SceneGraph::resize_randomly(node,maxTriangles);
-    return addGeometry(device,scene,gflag,node);
-
-#else
-
-    /* create a triangulated sphere */
-    size_t numTheta = 2*numPhi;
-    size_t numTriangles = min(maxTriangles,2*numTheta*(numPhi-1));
-    size_t numTimeSteps = motion == 0.0f ? 1 : 2;
-    size_t numVertices = numTheta*(numPhi+1);
-    
-    unsigned mesh = rtcNewTriangleMesh (scene, gflag, numTriangles, numVertices,numTimeSteps);
-    
-    /* map triangle and vertex buffer */
-    Vertex3f* vertices0 = nullptr;
-    Vertex3f* vertices1 = nullptr;
-    if (numTimeSteps >= 1) rtcSetBuffer(scene,mesh,RTC_VERTEX_BUFFER0,vertices0 = (Vertex3f*) allocBuffer(numVertices*sizeof(Vertex3f)+sizeof(float)), 0, sizeof(Vertex3f)); 
-    if (numTimeSteps >= 2) rtcSetBuffer(scene,mesh,RTC_VERTEX_BUFFER1,vertices1 = (Vertex3f*) allocBuffer(numVertices*sizeof(Vertex3f)+sizeof(float)), 0, sizeof(Vertex3f)); 
-    Triangle* triangles = (Triangle*) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
-    if (rtcDeviceGetError(device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene,mesh); return -1; }
-
-    /* create sphere geometry */
-    BBox3fa bounds = empty;
-    size_t tri = 0;
-    const float rcpNumTheta = 1.0f/float(numTheta);
-    const float rcpNumPhi   = 1.0f/float(numPhi);
-    for (size_t phi=0; phi<=numPhi; phi++)
-    {
-      for (size_t theta=0; theta<numTheta; theta++)
-      {
-        const float phif   = phi*float(pi)*rcpNumPhi;
-        const float thetaf = theta*2.0f*float(pi)*rcpNumTheta;
-        Vertex3f* v = &vertices0[phi*numTheta+theta];
-        const float cosThetaf = cos(thetaf);
-        v->x = pos.x + r*sin(phif)*sin(thetaf);
-        v->y = pos.y + r*cos(phif);
-        v->z = pos.z + r*sin(phif)*cosThetaf;
-        bounds.extend(Vec3fa(v->x,v->y,v->z));
-
-        if (vertices1) {
-          Vertex3f* v1 = &vertices1[phi*numTheta+theta];
-          const float cosThetaf = cos(thetaf);
-          v1->x = motion + pos.x + r*sin(phif)*sin(thetaf);
-          v1->y = motion + pos.y + r*cos(phif);
-          v1->z = motion + pos.z + r*sin(phif)*cosThetaf;
-          bounds.extend(Vec3fa(v1->x,v1->y,v1->z));
-        }
-      }
-      if (phi == 0) continue;
-
-      for (size_t theta=1; theta<=numTheta; theta++) 
-      {
-        int p00 = (phi-1)*numTheta+theta-1;
-        int p01 = (phi-1)*numTheta+theta%numTheta;
-        int p10 = phi*numTheta+theta-1;
-        int p11 = phi*numTheta+theta%numTheta;
-        
-        if (phi > 1) {
-          if (tri < numTriangles) {
-            triangles[tri].v0 = p10; 
-            triangles[tri].v1 = p00; 
-            triangles[tri].v2 = p01; 
-            tri++;
-          }
-        }
-        
-        if (phi < numPhi) {
-          if (tri < numTriangles) {
-            triangles[tri].v0 = p11; 
-            triangles[tri].v1 = p10;
-            triangles[tri].v2 = p01; 
-            tri++;
-          }
-        }
-      }
-    }
-
-    //if (numTimeSteps >= 1) rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER0); 
-    //if (numTimeSteps >= 2) rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER1); 
-    rtcUnmapBuffer(scene,mesh,RTC_INDEX_BUFFER);
-
-    //if (bounds_o) *bounds_o = bounds;
-    return mesh;
-#endif
+    return addGeometry(device,scene,gflag,node,mblur);
   }
 
   /* adds a subdiv sphere to the scene */
