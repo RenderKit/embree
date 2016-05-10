@@ -1657,19 +1657,19 @@ namespace embree
       if (!supportsIntersectMode(device))
         return VerifyApplication::SKIPPED;
      
-       std::vector<Vec3f> vertices = {
+      Vec3f vertices[4] = {
         Vec3f(0.0f,0.0f,0.0f),
         Vec3f(1.0f,0.0f,0.0f),
         Vec3f(1.0f,1.0f,0.0f),
         Vec3f(0.0f,1.0f,0.0f)
       };
-      std::vector<int> quads = {
+      int quads[4] = {
         0,1,2,3
       };
       RTCSceneRef scene = rtcDeviceNewScene(device,sflags,to_aflags(imode));
       int geomID = rtcNewQuadMesh (scene, gflags, 1, 4);
-      rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER, vertices.data() , 0, sizeof(Vec3f));
-      rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER , quads.data(), 0, 4*sizeof(int));
+      rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER, vertices , 0, sizeof(Vec3f));
+      rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER , quads, 0, 4*sizeof(int));
       rtcCommit (scene);
       AssertNoError(device);
 
