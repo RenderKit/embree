@@ -47,6 +47,12 @@ namespace embree
   
     Ref<Node> createHairyPlane    (const Vec3fa& pos, const Vec3fa& dx, const Vec3fa& dy, const float len, const float r, size_t numHairs, bool hair, Ref<MaterialNode> material = nullptr);
 
+    Ref<Node> createGarbageTriangleMesh (size_t numTriangles, bool mblur, Ref<MaterialNode> material = nullptr);
+    Ref<Node> createGarbageQuadMesh (size_t numQuads, bool mblur, Ref<MaterialNode> material = nullptr);
+    Ref<Node> createGarbageHair (size_t numHairs, bool mblur, Ref<MaterialNode> material = nullptr);
+    Ref<Node> createGarbageLineSegments (size_t numLineSegments, bool mblur, Ref<MaterialNode> material = nullptr);
+    Ref<Node> createGarbageSubdivMesh (size_t numFaces, bool mblur, Ref<MaterialNode> material = nullptr);
+
     struct Node : public RefCount
     {
       Node (bool closed = false)
@@ -178,23 +184,20 @@ namespace embree
       std::vector<Ref<Node> > children;
     };
     
-    template<typename Light>
-      struct LightNode : public Node
+    struct LightNode : public Node
     {
-      ALIGNED_STRUCT;
-      
-      LightNode (const Light& light)
+      LightNode (Ref<Light> light)
         : light(light) {}
       
-      Light light;
+      Ref<Light> light;
     };
     
     struct MaterialNode : public Node
     {
       ALIGNED_STRUCT;
 
-    MaterialNode(const Material& material)
-      : material(material) {}
+      MaterialNode(const Material& material)
+        : material(material) {}
       
       Material material;
     };

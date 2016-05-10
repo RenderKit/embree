@@ -180,11 +180,8 @@ namespace embree
     }
 
   public:
-    avector<Material> materials;                   //!< material list
-    std::vector<Ref<Geometry> > geometries;        //!< list of geometries
-    avector<AmbientLight> ambientLights;           //!< list of ambient lights
-    avector<PointLight> pointLights;               //!< list of point lights
-    avector<DirectionalLight> directionalLights;   //!< list of directional lights
-    avector<DistantLight> distantLights;           //!< list of distant lights
+    avector<Material> materials;                 //!< material list
+    std::vector<Ref<Geometry> > geometries;      //!< list of geometries
+    std::vector<Ref<SceneGraph::Light>> lights;  //!< list of lights
   };
 }
