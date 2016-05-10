@@ -19,6 +19,8 @@ ADD_LIBRARY(lights STATIC
   ambient_light.cpp
   directional_light.cpp
   point_light.cpp
+  quad_light.cpp
+  spot_light.cpp
 )
 TARGET_LINK_LIBRARIES(lights sys)
 SET_PROPERTY(TARGET lights PROPERTY FOLDER tutorials/common)
@@ -29,6 +31,8 @@ IF (ENABLE_ISPC_SUPPORT)
     ambient_light.ispc
     directional_light.ispc
     point_light.ispc
+    quad_light.ispc
+    spot_light.ispc
   )
   TARGET_LINK_LIBRARIES(lights_ispc sys)
   SET_TARGET_PROPERTIES(lights_ispc PROPERTIES LINKER_LANGUAGE C)
