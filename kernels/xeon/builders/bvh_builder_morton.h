@@ -505,14 +505,24 @@ namespace embree
         //radix_sort_u32(src,tmp,numPrimitives);
         //std::sort(src,src+ numPrimitives);
 
-
         InPlace32BitRadixSort(src,numPrimitives);
 
         i0 = getSeconds() - i0;
         if (numPrimitives > 1000000) PRINT(i0);
 
+        if (numPrimitives)
         for (size_t i=0;i<numPrimitives-1;i++)
+        {
+          if (src[i] > src[i+1])
+          {
+            PRINT(i);
+            PRINT(i+1);
+            PRINT(src[i]);
+            PRINT(src[i+1]);
+
+          }
           assert(src[i] <= src[i+1]);
+        }
 
         //double i1 = getSeconds();
 
