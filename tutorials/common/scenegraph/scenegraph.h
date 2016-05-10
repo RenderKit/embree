@@ -184,23 +184,20 @@ namespace embree
       std::vector<Ref<Node> > children;
     };
     
-    template<typename Light>
-      struct LightNode : public Node
+    struct LightNode : public Node
     {
-      ALIGNED_STRUCT;
-      
-      LightNode (const Light& light)
+      LightNode (Ref<Light> light)
         : light(light) {}
       
-      Light light;
+      Ref<Light> light;
     };
     
     struct MaterialNode : public Node
     {
       ALIGNED_STRUCT;
 
-    MaterialNode(const Material& material)
-      : material(material) {}
+      MaterialNode(const Material& material)
+        : material(material) {}
       
       Material material;
     };

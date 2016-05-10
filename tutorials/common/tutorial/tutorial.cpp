@@ -224,20 +224,20 @@ namespace embree
     
     registerOption("ambientlight", [this] (Ref<ParseStream> cin, const FileName& path) {
         const Vec3fa L = cin->getVec3fa();
-        scene->add(new SceneGraph::LightNode<AmbientLight>(AmbientLight(L)));
+        scene->add(new SceneGraph::LightNode(new SceneGraph::AmbientLight(L)));
       }, "--ambientlight r g b: adds an ambient light with intensity rgb");
     registerOptionAlias("ambientlight","ambient");
 
     registerOption("pointlight", [this] (Ref<ParseStream> cin, const FileName& path) {
         const Vec3fa P = cin->getVec3fa();
         const Vec3fa I = cin->getVec3fa();
-        scene->add(new SceneGraph::LightNode<PointLight>(PointLight(P,I)));
+        scene->add(new SceneGraph::LightNode(new SceneGraph::PointLight(P,I)));
       }, "--pointlight x y z r g b: adds a point light at position xyz with intensity rgb");
     
     registerOption("directionallight", [this] (Ref<ParseStream> cin, const FileName& path) {
         const Vec3fa D = cin->getVec3fa();
         const Vec3fa E = cin->getVec3fa();
-        scene->add(new SceneGraph::LightNode<DirectionalLight>(DirectionalLight(D,E)));
+        scene->add(new SceneGraph::LightNode(new SceneGraph::DirectionalLight(D,E)));
       }, "--directionallight x y z r g b: adds a directional light with direction xyz and intensity rgb");
     registerOptionAlias("directionallight","dirlight");
     
@@ -245,7 +245,7 @@ namespace embree
         const Vec3fa D = cin->getVec3fa();
         const Vec3fa L = cin->getVec3fa();
         const float halfAngle = cin->getFloat();
-        scene->add(new SceneGraph::LightNode<DistantLight>(DistantLight(D,L,halfAngle)));
+        scene->add(new SceneGraph::LightNode(new SceneGraph::DistantLight(D,L,halfAngle)));
       }, "--distantlight x y z r g b a: adds a distant light with direction xyz, intensity rgb, and opening angle a");
 
     registerOption("triangle-plane", [this] (Ref<ParseStream> cin, const FileName& path) {
