@@ -778,4 +778,48 @@ namespace embree
     }
     return mesh;
   }
+
+  Ref<SceneGraph::Node> SceneGraph::createSphereShapedHair(const Vec3fa& center, const float radius, Ref<MaterialNode> material)
+  {
+    SceneGraph::HairSetNode* mesh = new SceneGraph::HairSetNode(true,material);
+    mesh->hairs.push_back(SceneGraph::HairSetNode::Hair(0,0));
+    mesh->v.push_back(Vec3fa(center,radius));
+    mesh->v.push_back(Vec3fa(center,radius));
+    mesh->v.push_back(Vec3fa(center,radius));
+    mesh->v.push_back(Vec3fa(center,radius));
+    return mesh;
+  }
+
+  Ref<SceneGraph::Node> SceneGraph::createHairyPlane (const Vec3fa& pos, const Vec3fa& dx, const Vec3fa& dy, const float len, const float r, size_t numHairs, bool hair, Ref<MaterialNode> material)
+  {
+    SceneGraph::HairSetNode* mesh = new SceneGraph::HairSetNode(hair,material);
+
+    if (numHairs == 1) {
+      const Vec3fa p0 = pos;
+      const Vec3fa p1 = p0 + len*Vec3fa(1,0,0);
+      const Vec3fa p2 = p0 + len*Vec3fa(0,1,1);
+      const Vec3fa p3 = p0 + len*Vec3fa(0,1,0);
+      mesh->hairs.push_back(HairSetNode::Hair(0,0));
+      mesh->v.push_back(Vec3fa(p0,r));
+      mesh->v.push_back(Vec3fa(p1,r));
+      mesh->v.push_back(Vec3fa(p2,r));
+      mesh->v.push_back(Vec3fa(p3,r));
+      return mesh;
+    }
+
+    Vec3fa dz = cross(dx,dy);
+    for (size_t i=0; i<numHairs; i++) 
+    {
+      const Vec3fa p0 = pos + random<float>()*dx + random<float>()*dy;
+      const Vec3fa p1 = p0 + len*normalize(dx);
+      const Vec3fa p2 = p0 + len*(normalize(dz)+normalize(dy));
+      const Vec3fa p3 = p0 + len*normalize(dz);
+      mesh->hairs.push_back(HairSetNode::Hair(4*i,i));
+      mesh->v.push_back(Vec3fa(p0,r));
+      mesh->v.push_back(Vec3fa(p1,r));
+      mesh->v.push_back(Vec3fa(p2,r));
+      mesh->v.push_back(Vec3fa(p3,r));
+    }
+    return mesh;
+  }
 }

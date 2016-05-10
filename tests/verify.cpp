@@ -187,6 +187,14 @@ namespace embree
       rtcSetBoundaryMode(scene,geomID,mesh->boundaryMode);
       return geomID;
     }
+    else if (Ref<SceneGraph::HairSetNode> mesh = node.dynamicCast<SceneGraph::HairSetNode>())
+    {
+      unsigned int geomID = rtcNewHairGeometry (scene, gflag, mesh->hairs.size(), mesh->v.size(), mblur ? 2 : 1);
+      rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER,mesh->v.data(),0,sizeof(SceneGraph::HairSetNode::Vertex));
+      if (mblur) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER1,mesh->v2.data(),0,sizeof(SceneGraph::HairSetNode::Vertex));
+      rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER,mesh->hairs.data(),0,sizeof(SceneGraph::HairSetNode::Hair));
+      return geomID;
+    } 
     else {
       THROW_RUNTIME_ERROR("unknown node type");
     }
@@ -247,7 +255,6 @@ namespace embree
     }
   }    
 
-  /* adds a subdiv sphere to the scene */
   unsigned int addSubdivSphere (const RTCDeviceRef& device, const RTCSceneRef& scene, RTCGeometryFlags gflag, const Vec3fa& pos, const float r, size_t numPhi, float level, size_t maxFaces = -1, float motion = 0.0f)
   {
     bool mblur = motion != 0.0f;
@@ -258,51 +265,20 @@ namespace embree
     return addGeometry(device,scene,gflag,node,mblur);
   }
 
-  unsigned addHair (RTCDevice g_device, const RTCSceneRef& scene, RTCGeometryFlags flag, const Vec3fa& pos, const float scale, const float r, size_t numHairs = 1, float motion = 0.0f)
+  unsigned addSphereHair (const RTCDeviceRef& device, const RTCSceneRef& scene, RTCGeometryFlags gflag, const Vec3fa& center, const float radius, float motion = 0.0f)
   {
-    size_t numTimeSteps = motion == 0.0f ? 1 : 2;
-    unsigned geomID = rtcNewHairGeometry (scene, flag, numHairs, numHairs*4, numTimeSteps);
-    
-    /* map triangle and vertex buffer */
-    Vec3fa* vertices0 = nullptr;
-    Vec3fa* vertices1 = nullptr;
-    if (numTimeSteps >= 1) {
-      vertices0 = (Vec3fa*) rtcMapBuffer(scene,geomID,RTC_VERTEX_BUFFER0); 
-      if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene,geomID); return -1; }
-    }
-    if (numTimeSteps >= 2) {
-      vertices1 = (Vec3fa*) rtcMapBuffer(scene,geomID,RTC_VERTEX_BUFFER1); 
-      if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene,geomID); return -1; }
-    }
-    int* indices = (int*) rtcMapBuffer(scene,geomID,RTC_INDEX_BUFFER);
-    if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene,geomID); return -1; }
+    bool mblur = motion != 0.0f;
+    Ref<SceneGraph::Node> node = SceneGraph::createSphereShapedHair(center,radius);
+    if (mblur) SceneGraph::set_motion_vector(node,Vec3fa(motion));
+    return addGeometry(device,scene,gflag,node,mblur);
+  }
 
-    for (size_t i=0; i<numHairs; i++) 
-    {
-      indices[i] = 4*i;
-      const Vec3fa p0 = pos + scale*Vec3fa(i%7,i%13,i%31);
-      const Vec3fa p1 = p0 + scale*Vec3fa(1,0,0);
-      const Vec3fa p2 = p0 + scale*Vec3fa(0,1,1);
-      const Vec3fa p3 = p0 + scale*Vec3fa(0,1,0);
-      
-      if (vertices0) {
-        vertices0[4*i+0] = Vec3fa(p0,r);
-        vertices0[4*i+1] = Vec3fa(p1,r);
-        vertices0[4*i+2] = Vec3fa(p2,r);
-        vertices0[4*i+3] = Vec3fa(p3,r);
-      }
-      if (vertices1) {
-        vertices1[4*i+0] = Vec3fa(p0+Vec3fa(motion),r);
-        vertices1[4*i+1] = Vec3fa(p1+Vec3fa(motion),r);
-        vertices1[4*i+2] = Vec3fa(p2+Vec3fa(motion),r);
-        vertices1[4*i+3] = Vec3fa(p3+Vec3fa(motion),r);
-      }
-    }
-
-    if (numTimeSteps >= 1) rtcUnmapBuffer(scene,geomID,RTC_VERTEX_BUFFER0); 
-    if (numTimeSteps >= 2) rtcUnmapBuffer(scene,geomID,RTC_VERTEX_BUFFER1); 
-    rtcUnmapBuffer(scene,geomID,RTC_INDEX_BUFFER);
-    return geomID;
+  unsigned addHair (const RTCDeviceRef& device, const RTCSceneRef& scene, RTCGeometryFlags gflag, const Vec3fa& pos, const float scale, const float r, size_t numHairs = 1, float motion = 0.0f)
+  {
+    bool mblur = motion != 0.0f;
+    Ref<SceneGraph::Node> node = SceneGraph::createHairyPlane(pos,Vec3fa(1,0,0),Vec3fa(0,0,1),scale,r,numHairs,true);
+    if (mblur) SceneGraph::set_motion_vector(node,Vec3fa(motion));
+    return addGeometry(device,scene,gflag,node,mblur);
   }
 
   unsigned addGarbageTriangles (RTCDevice g_device, const RTCSceneRef& scene, RTCGeometryFlags flag, size_t numTriangles, bool motion)
@@ -949,9 +925,9 @@ namespace embree
       Vec3fa pos2 = Vec3fa(+10,0,-10);
       Vec3fa pos3 = Vec3fa(+10,0,+10);
       unsigned geom0 = addSphere(device,scene,gflags,pos0,1.0f,numPhi);
-      unsigned geom1 = addHair  (device,scene,gflags,pos1,1.0f,1.0f,1);
+      unsigned geom1 = addSphereHair(device,scene,gflags,pos1,1.0f);
       unsigned geom2 = addSphere(device,scene,gflags,pos2,1.0f,numPhi);
-      unsigned geom3 = addHair  (device,scene,gflags,pos3,1.0f,1.0f,1);
+      unsigned geom3 = addSphereHair(device,scene,gflags,pos3,1.0f);
       AssertNoError(device);
       
       for (size_t i=0; i<16; i++) 
