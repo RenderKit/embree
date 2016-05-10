@@ -59,7 +59,7 @@ namespace embree
     public:   
       __forceinline operator unsigned() const { return code; }
       
-      __forceinline unsigned int get(const unsigned int shift, const unsigned and_mask) const {
+      __forceinline unsigned int get(const unsigned int shift, const unsigned int and_mask) const {
         return (code >> shift) & and_mask;
       }
       
@@ -116,7 +116,7 @@ namespace embree
         const vfloat4 lower = (vfloat4)b.lower;
         const vfloat4 upper = (vfloat4)b.upper;
         const vfloat4 centroid = lower+upper;
-        const vint4 binID = vint4((centroid-mapping.base)*mapping.scale);
+        const vint4 binID = vint4((centroid-mapping.base)*mapping.scale); // FIXME: transform into fma
         
         ax[slots] = extract<0>(binID);
         ay[slots] = extract<1>(binID);
@@ -158,6 +158,76 @@ namespace embree
       vint4 ax, ay, az, ai;
 #endif
     };
+
+
+    void InPlace32BitRadixSort(MortonID32Bit* const morton, const size_t num, const size_t shift = 3*8)
+    {
+      static const size_t BITS = 8;
+      static const size_t BUCKETS = (1 << BITS);
+      __aligned(64) unsigned int count[BUCKETS];
+
+      /* clear buckets */
+      for (size_t i=0;i<BUCKETS;i++) count[i] = 0;
+
+      /* count buckets */
+      for (size_t i=0;i<num;i++) count[ morton[i].get(shift,BUCKETS-1) ]++;
+
+      /* prefix sums */
+      __aligned(64) unsigned int head[BUCKETS];
+      __aligned(64) unsigned int tail[BUCKETS];
+
+      head[0] = 0;
+      for (size_t i=1; i<BUCKETS; i++)    
+        head[i] = head[i-1] + count[i-1];
+
+      for (size_t i=0; i<BUCKETS-1; i++)    
+        tail[i] = head[i+1];
+
+      tail[BUCKETS-1] = head[BUCKETS-1] + count[BUCKETS-1];
+
+      assert(tail[BUCKETS-1] == head[BUCKETS-1] + count[BUCKETS-1]);      
+      assert(tail[BUCKETS-1] == num);      
+
+      for (size_t i=0; i<BUCKETS; i++)    
+      {
+        //std::cout << i << " head " << head[i] << " tail " << tail[i] << " count " << count[i] << std::endl;
+      }
+
+      /* in-place swap */      
+      for (size_t i=0;i<BUCKETS;i++)
+      {
+        /* process bucket */
+        while(head[i] < tail[i])
+        {
+          MortonID32Bit v = morton[head[i]];
+          while(1)
+          {
+            const size_t b = v.get(shift,BUCKETS-1);
+            if (b == i) break;
+            std::swap(v,morton[head[b]++]);
+          }
+          assert(v.get(shift,BUCKETS-1) == i);
+          morton[head[i]++] = v;
+        }
+      }
+      if (shift == 0) return;
+
+      size_t offset = 0;
+      for (size_t i=0;i<BUCKETS;i++)
+        if (count[i])
+        {
+
+          for (size_t j=offset;j<offset+count[i]-1;j++)
+            assert(morton[j].get(shift,BUCKETS-1) == i);
+
+          InPlace32BitRadixSort(morton + offset, count[i], shift-BITS);
+          for (size_t j=offset;j<offset+count[i]-1;j++)
+            assert(morton[j] <= morton[j+1]);
+
+          offset += count[i];
+        }      
+    }
+
     
     template<
       typename NodeRef, 
@@ -430,11 +500,19 @@ namespace embree
       std::pair<NodeRef,BBox3fa> build(MortonID32Bit* src, MortonID32Bit* tmp, size_t numPrimitives) 
       {
         /* using 4 phases radix sort */
-        //double i0 = getSeconds();
+        double i0 = getSeconds();
         morton = src;
-        radix_sort_u32(src,tmp,numPrimitives);
-        //i0 = getSeconds() - i0;
-        //PRINT(i0);
+        //radix_sort_u32(src,tmp,numPrimitives);
+        //std::sort(src,src+ numPrimitives);
+
+
+        InPlace32BitRadixSort(src,numPrimitives);
+
+        i0 = getSeconds() - i0;
+        if (numPrimitives > 1000000) PRINT(i0);
+
+        for (size_t i=0;i<numPrimitives-1;i++)
+          assert(src[i] <= src[i+1]);
 
         //double i1 = getSeconds();
 
