@@ -390,8 +390,16 @@ namespace embree
         PointLight_set(out, inPoint->P, inPoint->I, 0.f);
         break;
       }
-      //default:
-        //THROW_RUNTIME_ERROR("unknown light type");
+      case SceneGraph::LIGHT_SPOT:
+      case SceneGraph::LIGHT_TRIANGLE:
+      case SceneGraph::LIGHT_QUAD:
+      {
+        // FIXME: not implemented yet
+        break;
+      }
+
+      default:
+        THROW_RUNTIME_ERROR("unknown light type");
       }
 
       return (Light*)out;
