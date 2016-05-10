@@ -778,4 +778,24 @@ namespace embree
     }
     return mesh;
   }
+
+  Ref<SceneGraph::Node> SceneGraph::createHairyPlane (const Vec3fa& pos, const Vec3fa& dx, const Vec3fa& dy, const float len, const float r, size_t numHairs, bool hair, Ref<MaterialNode> material)
+  {
+    SceneGraph::HairSetNode* mesh = new SceneGraph::HairSetNode(hair,material);
+    Vec3fa dz = cross(dx,dy);
+
+    for (size_t i=0; i<numHairs; i++) 
+    {
+      const Vec3fa p0 = pos + random<float>()*dx + random<float>()*dy;
+      const Vec3fa p1 = p0 + len*normalize(dx);
+      const Vec3fa p2 = p0 + len*(normalize(dz)+normalize(dy));
+      const Vec3fa p3 = p0 + len*normalize(dz);
+      mesh->hairs.push_back(HairSetNode::Hair(4*i,i));
+      mesh->v.push_back(Vec3fa(p0,r));
+      mesh->v.push_back(Vec3fa(p1,r));
+      mesh->v.push_back(Vec3fa(p2,r));
+      mesh->v.push_back(Vec3fa(p3,r));
+    }
+    return mesh;
+  }
 }
