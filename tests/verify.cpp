@@ -65,25 +65,10 @@ namespace embree
     int v0, v1, v2; 
   };
 
-  std::vector<void*> buffers;
-  std::vector<Ref<SceneGraph::Node>> nodes;
   MutexSys g_mutex2;
-  void* allocBuffer(size_t size) { 
-    g_mutex2.lock();
-    void* ptr = alignedMalloc(size);
-    buffers.push_back(ptr); 
-    g_mutex2.unlock();
-    return ptr; 
-  }
-  void clearBuffers() {
-    for (size_t i=0; i<buffers.size(); i++) {
-      alignedFree(buffers[i]);
-    }
-    buffers.clear();
-    nodes.clear();
-  }
+  std::vector<Ref<SceneGraph::Node>> nodes;
   struct ClearBuffers {
-    ~ClearBuffers() { clearBuffers(); }
+    ~ClearBuffers() { nodes.clear(); }
   };
 
   const size_t numSceneFlags = 64;
@@ -2480,7 +2465,6 @@ namespace embree
             delete tasks[i];
           
           g_threads.clear();
-          clearBuffers();
         }
         else
         {
