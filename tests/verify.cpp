@@ -1829,9 +1829,13 @@ namespace embree
 
       ClearBuffers clear_before_return;
       RTCSceneRef scene = rtcDeviceNewScene(device,sflags,to_aflags(imode));
-      if      (model == "sphere") addSphere(device,scene,RTC_GEOMETRY_STATIC,pos,2.0f,500);
-      else if (model == "plane" ) addPlane(device,scene,RTC_GEOMETRY_STATIC,500,Vec3fa(pos.x,-6.0f,-6.0f),Vec3fa(0.0f,0.0f,12.0f),Vec3fa(0.0f,12.0f,0.0f));
-      bool plane = model == "plane";
+      if      (model == "sphere.triangles") addGeometry(device,scene,RTC_GEOMETRY_STATIC,SceneGraph::createTriangleSphere(pos,2.0f,500),false);
+      else if (model == "sphere.quads"    ) addGeometry(device,scene,RTC_GEOMETRY_STATIC,SceneGraph::createQuadSphere    (pos,2.0f,500),false);
+      else if (model == "sphere.subdiv"   ) addGeometry(device,scene,RTC_GEOMETRY_STATIC,SceneGraph::createSubdivSphere  (pos,2.0f,4,64),false);
+      else if (model == "plane.triangles" ) addGeometry(device,scene,RTC_GEOMETRY_STATIC,SceneGraph::createTrianglePlane (Vec3fa(pos.x,-6.0f,-6.0f),Vec3fa(0.0f,0.0f,12.0f),Vec3fa(0.0f,12.0f,0.0f),500,500),false);
+      else if (model == "plane.quads"     ) addGeometry(device,scene,RTC_GEOMETRY_STATIC,SceneGraph::createQuadPlane     (Vec3fa(pos.x,-6.0f,-6.0f),Vec3fa(0.0f,0.0f,12.0f),Vec3fa(0.0f,12.0f,0.0f),500,500),false);
+      else if (model == "plane.subdiv"    ) addGeometry(device,scene,RTC_GEOMETRY_STATIC,SceneGraph::createSubdivPlane   (Vec3fa(pos.x,-6.0f,-6.0f),Vec3fa(0.0f,0.0f,12.0f),Vec3fa(0.0f,12.0f,0.0f),500,500,2),false);
+      bool plane = model.compare(0,5,"plane") == 0;
       rtcCommit (scene);
       AssertNoError(device);
       
@@ -2747,14 +2751,35 @@ namespace embree
               addTest(new InactiveRaysTest("inactive_rays_"+to_string(isa,sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,imode,ivariant));
       endTestGroup();
       
-      beginTestGroup("watertight_"+stringOfISA(isa));
-      std::string watertightModels [] = {"sphere", "plane"};
-      const Vec3fa watertight_pos = Vec3fa(148376.0f,1234.0f,-223423.0f);
-      for (auto sflags : sceneFlagsRobust) 
-        for (auto imode : intersectModes) 
-          for (std::string model : watertightModels) 
-            addTest(new WatertightTest("watertight_"+to_string(isa,sflags,imode)+"_"+model,isa,sflags,imode,model,watertight_pos));
-      endTestGroup();
+      beginTestGroup("watertight_triangles_"+stringOfISA(isa)); {
+        std::string watertightModels [] = {"sphere.triangles", "plane.triangles"};
+        const Vec3fa watertight_pos = Vec3fa(148376.0f,1234.0f,-223423.0f);
+        for (auto sflags : sceneFlagsRobust) 
+          for (auto imode : intersectModes) 
+            for (std::string model : watertightModels) 
+              addTest(new WatertightTest("watertight_triangles_"+to_string(isa,sflags,imode)+"_"+model,isa,sflags,imode,model,watertight_pos));
+        endTestGroup();
+      }
+
+      beginTestGroup("watertight_quads_"+stringOfISA(isa)); {
+        std::string watertightModels [] = {"sphere.quads", "plane.quads"};
+        const Vec3fa watertight_pos = Vec3fa(148376.0f,1234.0f,-223423.0f);
+        for (auto sflags : sceneFlagsRobust) 
+          for (auto imode : intersectModes) 
+            for (std::string model : watertightModels) 
+              addTest(new WatertightTest("watertight_quads_"+to_string(isa,sflags,imode)+"_"+model,isa,sflags,imode,model,watertight_pos));
+        endTestGroup();
+      }
+
+      beginTestGroup("watertight_subdiv_"+stringOfISA(isa)); {
+        std::string watertightModels [] = {"sphere.subdiv", "plane.subdiv"};
+        const Vec3fa watertight_pos = Vec3fa(148376.0f,1234.0f,-223423.0f);
+        for (auto sflags : sceneFlagsRobust) 
+          for (auto imode : intersectModes) 
+            for (std::string model : watertightModels) 
+              addTest(new WatertightTest("watertight_subdiv_"+to_string(isa,sflags,imode)+"_"+model,isa,sflags,imode,model,watertight_pos));
+        endTestGroup();
+      }
       
       if (rtcDeviceGetParameter1i(device,RTC_CONFIG_IGNORE_INVALID_RAYS))
       {
