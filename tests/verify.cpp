@@ -1594,18 +1594,18 @@ namespace embree
       if (!supportsIntersectMode(device))
         return VerifyApplication::SKIPPED;
      
-       std::vector<Vec3f> vertices = {
+      Vec3f vertices[3] = {
         Vec3f(0.0f,0.0f,0.0f),
         Vec3f(1.0f,0.0f,0.0f),
         Vec3f(0.0f,1.0f,0.0f)
       };
-      std::vector<Triangle> triangles = {
+      Triangle triangles[1] = {
         Triangle(0,1,2)
       };
       RTCSceneRef scene = rtcDeviceNewScene(device,sflags,to_aflags(imode));
       int geomID = rtcNewTriangleMesh (scene, gflags, 1, 3);
-      rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER, vertices.data() , 0, sizeof(Vec3f));
-      rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER , triangles.data(), 0, sizeof(Triangle));
+      rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER, vertices , 0, sizeof(Vec3f));
+      rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER , triangles, 0, sizeof(Triangle));
       rtcCommit (scene);
       AssertNoError(device);
 
