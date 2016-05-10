@@ -41,13 +41,15 @@ namespace embree
     void store_parm(const char* name, const Vec3fa& v);
     void store_parm(const char* name, const Texture* tex);
     void store(const char* name, const AffineSpace3fa& space);
-    void store(Ref<SceneGraph::LightNode<PointLight>> light, ssize_t id);
-    void store(Ref<SceneGraph::LightNode<SpotLight>> light, ssize_t id);
-    void store(Ref<SceneGraph::LightNode<DirectionalLight>> light, ssize_t id);
-    void store(Ref<SceneGraph::LightNode<DistantLight>> light, ssize_t id);
-    void store(Ref<SceneGraph::LightNode<AmbientLight>> light, ssize_t id);
-    void store(Ref<SceneGraph::LightNode<TriangleLight>> light, ssize_t id);
-    void store(Ref<SceneGraph::LightNode<QuadLight>> light, ssize_t id);
+
+    void store(const SceneGraph::PointLight& light, ssize_t id);
+    void store(const SceneGraph::SpotLight& light, ssize_t id);
+    void store(const SceneGraph::DirectionalLight& light, ssize_t id);
+    void store(const SceneGraph::DistantLight& light, ssize_t id);
+    void store(const SceneGraph::AmbientLight& light, ssize_t id);
+    void store(const SceneGraph::TriangleLight& light, ssize_t id);
+    void store(const SceneGraph::QuadLight& light, ssize_t id);
+    void store(Ref<SceneGraph::LightNode> light, ssize_t id);
     
     void store(const MatteMaterial& material, ssize_t id);
     void store(const MirrorMaterial& material, ssize_t id);
@@ -181,70 +183,86 @@ namespace embree
     tab(); fprintf(xml,"</%s>\n",name);
   }
                   
-  void XMLWriter::store(Ref<SceneGraph::LightNode<PointLight>> node, ssize_t id) 
+  void XMLWriter::store(const SceneGraph::PointLight& light, ssize_t id)
   {
     open("PointLight",id);
-    store("AffineSpace",AffineSpace3fa::translate(node->light.P));
-    store("I",node->light.I);
+    store("AffineSpace",AffineSpace3fa::translate(light.P));
+    store("I",light.I);
     close("PointLight");
   }
 
-  void XMLWriter::store(Ref<SceneGraph::LightNode<SpotLight>> node, ssize_t id) 
+  void XMLWriter::store(const SceneGraph::SpotLight& light, ssize_t id)
   {
     open("SpotLight",id);
-    store("AffineSpace",AffineSpace3fa(frame(node->light.D),node->light.P));
-    store("I",node->light.I);
-    store("angleMin",node->light.angleMin);
-    store("angleMax",node->light.angleMax);
+    store("AffineSpace",AffineSpace3fa(frame(light.D),light.P));
+    store("I",light.I);
+    store("angleMin",light.angleMin);
+    store("angleMax",light.angleMax);
     close("SpotLight");
   }
 
-  void XMLWriter::store(Ref<SceneGraph::LightNode<DirectionalLight>> node, ssize_t id) 
+  void XMLWriter::store(const SceneGraph::DirectionalLight& light, ssize_t id)
   {
     open("DirectionalLight",id);
-    store("AffineSpace",frame(node->light.D));
-    store("E",node->light.E);
+    store("AffineSpace",frame(light.D));
+    store("E",light.E);
     close("DirectionalLight");
   }
 
-  void XMLWriter::store(Ref<SceneGraph::LightNode<DistantLight>> node, ssize_t id) 
+  void XMLWriter::store(const SceneGraph::DistantLight& light, ssize_t id)
   {
     open("DistantLight",id);
-    store("AffineSpace",frame(node->light.D));
-    store("L",node->light.L);
-    store("halfAngle",node->light.halfAngle);
+    store("AffineSpace",frame(light.D));
+    store("L",light.L);
+    store("halfAngle",light.halfAngle);
     close("DistantLight");
   }
 
-  void XMLWriter::store(Ref<SceneGraph::LightNode<AmbientLight>> node, ssize_t id) 
+  void XMLWriter::store(const SceneGraph::AmbientLight& light, ssize_t id)
   {
     open("AmbientLight");
-    store("L",node->light.L);
+    store("L",light.L);
     close("AmbientLight");
   }
 
-  void XMLWriter::store(Ref<SceneGraph::LightNode<TriangleLight>> node, ssize_t id) 
+  void XMLWriter::store(const SceneGraph::TriangleLight& light, ssize_t id)
   {
     open("TriangleLight",id);
-    const Vec3fa dx = node->light.v0-node->light.v2;
-    const Vec3fa dy = node->light.v1-node->light.v2;
+    const Vec3fa dx = light.v0-light.v2;
+    const Vec3fa dy = light.v1-light.v2;
     const Vec3fa dz = cross(dx,dy);
-    const Vec3fa p = node->light.v2;
+    const Vec3fa p = light.v2;
     store("AffineSpace",AffineSpace3fa(dx,dy,dy,p));
-    store("L",node->light.L);
+    store("L",light.L);
     close("TriangleLight");
   }
 
-  void XMLWriter::store(Ref<SceneGraph::LightNode<QuadLight>> node, ssize_t id) 
+  void XMLWriter::store(const SceneGraph::QuadLight& light, ssize_t id)
   {
     open("QuadLight",id);
-    const Vec3fa dx = node->light.v3-node->light.v0;
-    const Vec3fa dy = node->light.v1-node->light.v0;
+    const Vec3fa dx = light.v3-light.v0;
+    const Vec3fa dy = light.v1-light.v0;
     const Vec3fa dz = cross(dx,dy);
-    const Vec3fa p = node->light.v2;
+    const Vec3fa p = light.v2;
     store("AffineSpace",AffineSpace3fa(dx,dy,dy,p));
-    store("L",node->light.L);
+    store("L",light.L);
     close("QuadLight");
+  }
+
+  void XMLWriter::store(Ref<SceneGraph::LightNode> node, ssize_t id)
+  {
+    switch (node->light->getType())
+    {
+    case SceneGraph::LIGHT_AMBIENT     : store(*node->light.dynamicCast<SceneGraph::AmbientLight>(),id); break;
+    case SceneGraph::LIGHT_POINT       : store(*node->light.dynamicCast<SceneGraph::PointLight>(),id); break;
+    case SceneGraph::LIGHT_DIRECTIONAL : store(*node->light.dynamicCast<SceneGraph::DirectionalLight>(),id); break;
+    case SceneGraph::LIGHT_SPOT        : store(*node->light.dynamicCast<SceneGraph::SpotLight>(),id); break;
+    case SceneGraph::LIGHT_DISTANT     : store(*node->light.dynamicCast<SceneGraph::DistantLight>(),id); break;
+    case SceneGraph::LIGHT_TRIANGLE    : store(*node->light.dynamicCast<SceneGraph::TriangleLight>(),id); break;
+    case SceneGraph::LIGHT_QUAD        : store(*node->light.dynamicCast<SceneGraph::QuadLight>(),id); break;
+
+    default: throw std::runtime_error("unsupported light");
+    }
   }
 
   void XMLWriter::store(const MatteMaterial& material, ssize_t id)
@@ -482,13 +500,7 @@ namespace embree
     }
     const ssize_t id = nodeMap[node] = currentNodeID++;
 
-    if      (Ref<SceneGraph::LightNode<PointLight>> cnode = node.dynamicCast<SceneGraph::LightNode<PointLight>>()) store(cnode,id);
-    else if (Ref<SceneGraph::LightNode<SpotLight>> cnode = node.dynamicCast<SceneGraph::LightNode<SpotLight>>()) store(cnode,id);
-    else if (Ref<SceneGraph::LightNode<DirectionalLight>> cnode = node.dynamicCast<SceneGraph::LightNode<DirectionalLight>>()) store(cnode,id);
-    else if (Ref<SceneGraph::LightNode<DistantLight>> cnode = node.dynamicCast<SceneGraph::LightNode<DistantLight>>()) store(cnode,id);
-    else if (Ref<SceneGraph::LightNode<AmbientLight>> cnode = node.dynamicCast<SceneGraph::LightNode<AmbientLight>>()) store(cnode,id);
-    else if (Ref<SceneGraph::LightNode<TriangleLight>> cnode = node.dynamicCast<SceneGraph::LightNode<TriangleLight>>()) store(cnode,id);
-    else if (Ref<SceneGraph::LightNode<QuadLight>> cnode = node.dynamicCast<SceneGraph::LightNode<QuadLight>>()) store(cnode,id);
+    if      (Ref<SceneGraph::LightNode> cnode = node.dynamicCast<SceneGraph::LightNode>()) store(cnode,id);
     //else if (Ref<SceneGraph::MaterialNode> cnode = node.dynamicCast<SceneGraph::MaterialNode>()) store(cnode,id);
     else if (Ref<SceneGraph::TriangleMeshNode> cnode = node.dynamicCast<SceneGraph::TriangleMeshNode>()) store(cnode,id);
     else if (Ref<SceneGraph::QuadMeshNode> cnode = node.dynamicCast<SceneGraph::QuadMeshNode>()) store(cnode,id);

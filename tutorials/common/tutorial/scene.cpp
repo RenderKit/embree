@@ -181,20 +181,8 @@ namespace embree
       else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) {
         for (auto child : groupNode->children) convertLights(child,space0,space1);
       }
-      else if (Ref<SceneGraph::LightNode<AmbientLight> > ambientLight = node.dynamicCast<SceneGraph::LightNode<AmbientLight> >()) {
-        scene->ambientLights.push_back(ambientLight->light.transform(space0));
-      }
-      else if (Ref<SceneGraph::LightNode<PointLight> > pointLight = node.dynamicCast<SceneGraph::LightNode<PointLight> >()) {
-        scene->pointLights.push_back(pointLight->light.transform(space0));
-      }
-      else if (Ref<SceneGraph::LightNode<DirectionalLight> > directionalLight = node.dynamicCast<SceneGraph::LightNode<DirectionalLight> >()) {
-        scene->directionalLights.push_back(directionalLight->light.transform(space0));
-      }
-      else if (Ref<SceneGraph::LightNode<SpotLight> > spotLight = node.dynamicCast<SceneGraph::LightNode<SpotLight> >()) {
-        //scene->spotLights.push_back(spotLight->light.transform(space0));
-      }
-      else if (Ref<SceneGraph::LightNode<DistantLight> > distantLight = node.dynamicCast<SceneGraph::LightNode<DistantLight> >()) {
-        scene->distantLights.push_back(distantLight->light.transform(space0));
+      else if (Ref<SceneGraph::LightNode> lightNode = node.dynamicCast<SceneGraph::LightNode>()) {
+        scene->lights.push_back(lightNode->light->transform(space0));
       }
     }
 

@@ -20,139 +20,143 @@
 
 namespace embree
 {
-  enum LightType
+  namespace SceneGraph
   {
-    LIGHT_AMBIENT,
-    LIGHT_POINT,
-    LIGHT_DIRECTIONAL,
-    LIGHT_SPOT,
-    LIGHT_DISTANT,
-    LIGHT_TRIANGLE,
-    LIGHT_QUAD,
-  };
+    enum LightType
+    {
+      LIGHT_AMBIENT,
+      LIGHT_POINT,
+      LIGHT_DIRECTIONAL,
+      LIGHT_SPOT,
+      LIGHT_DISTANT,
+      LIGHT_TRIANGLE,
+      LIGHT_QUAD,
+    };
 
-  class LightBase
-  {
-  public:
-    LightBase(LightType type) : type(type) {}
+    class Light : public RefCount
+    {
+    public:
+      Light(LightType type) : type(type) {}
 
-  public:
-    int type;
-  private:
-    int align[3];
-  };
+      LightType getType() const { return type; }
+      virtual Ref<Light> transform(const AffineSpace3fa& space) const = 0;
 
-  class AmbientLight : public LightBase
-  {
-  public:
-    AmbientLight (const Vec3fa& L)
-      : LightBase(LIGHT_AMBIENT), L(L) {}
+    private:
+      LightType type;
+    };
 
-    const AmbientLight transform(const AffineSpace3fa& space) const {
-      return AmbientLight(L);
-    }
+    class AmbientLight : public Light
+    {
+    public:
+      AmbientLight (const Vec3fa& L)
+        : Light(LIGHT_AMBIENT), L(L) {}
 
-  public:
-    Vec3fa L;                  //!< radiance of ambient light
-  };
+      Ref<Light> transform(const AffineSpace3fa& space) const {
+        return new AmbientLight(L);
+      }
 
-  class PointLight : public LightBase
-  {
-  public:
-    PointLight (const Vec3fa& P, const Vec3fa& I)
-      : LightBase(LIGHT_POINT), P(P), I(I) {}
+    public:
+      Vec3fa L;                  //!< radiance of ambient light
+    };
 
-    const PointLight transform(const AffineSpace3fa& space) const {
-      return PointLight(xfmPoint(space,P),I);
-    }
+    class PointLight : public Light
+    {
+    public:
+      PointLight (const Vec3fa& P, const Vec3fa& I)
+        : Light(LIGHT_POINT), P(P), I(I) {}
 
-  public:
-    Vec3fa P;                  //!< position of point light
-    Vec3fa I;                  //!< radiant intensity of point light
-  };
+      Ref<Light> transform(const AffineSpace3fa& space) const {
+        return new PointLight(xfmPoint(space,P),I);
+      }
 
-  class DirectionalLight : public LightBase
-  {
-  public:
-    DirectionalLight (const Vec3fa& D, const Vec3fa& E)
-      : LightBase(LIGHT_DIRECTIONAL), D(D), E(E) {}
+    public:
+      Vec3fa P;                  //!< position of point light
+      Vec3fa I;                  //!< radiant intensity of point light
+    };
 
-    const DirectionalLight transform(const AffineSpace3fa& space) const {
-      return DirectionalLight(xfmVector(space,D),E);
-    }
+    class DirectionalLight : public Light
+    {
+    public:
+      DirectionalLight (const Vec3fa& D, const Vec3fa& E)
+        : Light(LIGHT_DIRECTIONAL), D(D), E(E) {}
 
-  public:
-    Vec3fa D;                  //!< Light direction
-    Vec3fa E;                  //!< Irradiance (W/m^2)
-  };
+      Ref<Light> transform(const AffineSpace3fa& space) const {
+        return new DirectionalLight(xfmVector(space,D),E);
+      }
 
-  class SpotLight : public LightBase
-  {
-  public:
-    SpotLight (const Vec3fa& P, const Vec3fa& D, const Vec3fa& I, float angleMin, float angleMax)
-      : LightBase(LIGHT_SPOT), P(P), D(D), I(I), angleMin(angleMin), angleMax(angleMax) {}
+    public:
+      Vec3fa D;                  //!< Light direction
+      Vec3fa E;                  //!< Irradiance (W/m^2)
+    };
 
-    const SpotLight transform(const AffineSpace3fa& space) const {
-      return SpotLight(xfmPoint(space,P),xfmVector(space,D),I,angleMin,angleMax);
-    }
+    class SpotLight : public Light
+    {
+    public:
+      SpotLight (const Vec3fa& P, const Vec3fa& D, const Vec3fa& I, float angleMin, float angleMax)
+        : Light(LIGHT_SPOT), P(P), D(D), I(I), angleMin(angleMin), angleMax(angleMax) {}
 
-  public:
-    Vec3fa P;                 //!< Position of the spot light
-    Vec3fa D;                 //!< Light direction of the spot light
-    Vec3fa I;                 //!< Radiant intensity (W/sr)
-    float angleMin, angleMax; //!< Linear falloff region
-  };
+      Ref<Light> transform(const AffineSpace3fa& space) const {
+        return new SpotLight(xfmPoint(space,P),xfmVector(space,D),I,angleMin,angleMax);
+      }
 
-  class DistantLight : public LightBase
-  {
-  public:
-    DistantLight (const Vec3fa& D, const Vec3fa& L, const float halfAngle)
-      : LightBase(LIGHT_DISTANT), D(D), L(L), halfAngle(halfAngle), radHalfAngle(deg2rad(halfAngle)), cosHalfAngle(cos(deg2rad(halfAngle))) {}
+    public:
+      Vec3fa P;                 //!< Position of the spot light
+      Vec3fa D;                 //!< Light direction of the spot light
+      Vec3fa I;                 //!< Radiant intensity (W/sr)
+      float angleMin, angleMax; //!< Linear falloff region
+    };
 
-    const DistantLight transform(const AffineSpace3fa& space) const {
-      return DistantLight(xfmVector(space,D),L,halfAngle);
-    }
+    class DistantLight : public Light
+    {
+    public:
+      DistantLight (const Vec3fa& D, const Vec3fa& L, const float halfAngle)
+        : Light(LIGHT_DISTANT), D(D), L(L), halfAngle(halfAngle), radHalfAngle(deg2rad(halfAngle)), cosHalfAngle(cos(deg2rad(halfAngle))) {}
 
-  public:
-    Vec3fa D;            //!< Light direction
-    Vec3fa L;            //!< Radiance (W/(m^2*sr))
-    float halfAngle;     //!< Half illumination angle
-    float radHalfAngle;  //!< Half illumination angle in radians
-    float cosHalfAngle;  //!< Cosine of half illumination angle
-  };
+      Ref<Light> transform(const AffineSpace3fa& space) const {
+        return new DistantLight(xfmVector(space,D),L,halfAngle);
+      }
 
-  class TriangleLight : public LightBase
-  {
-  public:
-    TriangleLight (const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& L)
-      : LightBase(LIGHT_TRIANGLE), v0(v0), v1(v1), v2(v2), L(L) {}
+    public:
+      Vec3fa D;            //!< Light direction
+      Vec3fa L;            //!< Radiance (W/(m^2*sr))
+      float halfAngle;     //!< Half illumination angle
+      float radHalfAngle;  //!< Half illumination angle in radians
+      float cosHalfAngle;  //!< Cosine of half illumination angle
+    };
 
-    const TriangleLight transform(const AffineSpace3fa& space) const {
-      return TriangleLight(xfmPoint(space,v0),xfmPoint(space,v1),xfmPoint(space,v2),L);
-    }
+    class TriangleLight : public Light
+    {
+    public:
+      TriangleLight (const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& L)
+        : Light(LIGHT_TRIANGLE), v0(v0), v1(v1), v2(v2), L(L) {}
 
-  public:
-    Vec3fa v0;
-    Vec3fa v1;
-    Vec3fa v2;
-    Vec3fa L;
-  };
+      Ref<Light> transform(const AffineSpace3fa& space) const {
+        return new TriangleLight(xfmPoint(space,v0),xfmPoint(space,v1),xfmPoint(space,v2),L);
+      }
 
-  class QuadLight : public LightBase
-  {
-  public:
-    QuadLight (const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const Vec3fa& L)
-      : LightBase(LIGHT_QUAD), v0(v0), v1(v1), v2(v2), v3(v3), L(L) {}
+    public:
+      Vec3fa v0;
+      Vec3fa v1;
+      Vec3fa v2;
+      Vec3fa L;
+    };
 
-    const QuadLight transform(const AffineSpace3fa& space) const {
-      return QuadLight(xfmPoint(space,v0),xfmPoint(space,v1),xfmPoint(space,v2),xfmPoint(space,v3),L);
-    }
+    class QuadLight : public Light
+    {
+    public:
+      QuadLight (const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const Vec3fa& L)
+        : Light(LIGHT_QUAD), v0(v0), v1(v1), v2(v2), v3(v3), L(L) {}
 
-  public:
-    Vec3fa v0;
-    Vec3fa v1;
-    Vec3fa v2;
-    Vec3fa v3;
-    Vec3fa L;
-  };
+      Ref<Light> transform(const AffineSpace3fa& space) const {
+        return new QuadLight(xfmPoint(space,v0),xfmPoint(space,v1),xfmPoint(space,v2),xfmPoint(space,v3),L);
+      }
+
+    public:
+      Vec3fa v0;
+      Vec3fa v1;
+      Vec3fa v2;
+      Vec3fa v3;
+      Vec3fa L;
+    };
+  }
 }

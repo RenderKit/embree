@@ -21,6 +21,7 @@
 #include "../lights/ambient_light.h"
 #include "../lights/directional_light.h"
 #include "../lights/point_light.h"
+#include "scene.h"
 
 namespace embree
 {
@@ -309,48 +310,19 @@ namespace embree
     ISPCScene(TutorialScene* in)
     {
       geometries = new ISPCGeometry*[in->geometries.size()];
-      for (size_t i=0; i<in->geometries.size(); i++) geometries[i] = convertGeometry(in->geometries[i]);
+      for (size_t i=0; i<in->geometries.size(); i++)
+        geometries[i] = convertGeometry(in->geometries[i]);
       numGeometries = in->geometries.size();
 
       materials = (ISPCMaterial*) (in->materials.size() ? &in->materials[0] : nullptr);
       numMaterials = in->materials.size();
 
-      lights = new Light*[in->ambientLights.size() +
-                          in->directionalLights.size() +
-                          in->distantLights.size() +
-                          in->pointLights.size()];
-
+      lights = new Light*[in->lights.size()];
       numLights = 0;
-
-      for (size_t i = 0; i < in->ambientLights.size(); i++)
+      for (size_t i = 0; i < in->lights.size(); i++)
       {
-        lights[numLights] = (Light*)AmbientLight_create();
-        AmbientLight_set(lights[numLights], in->ambientLights[i].L);
-        numLights++;
-      }
-
-      for (size_t i = 0; i < in->directionalLights.size(); i++)
-      {
-        lights[numLights] = (Light*)DirectionalLight_create();
-        DirectionalLight_set(lights[numLights], -normalize(in->directionalLights[i].D), in->directionalLights[i].E, 1.0f);
-        numLights++;
-      }
-
-      for (size_t i = 0; i < in->distantLights.size(); i++)
-      {
-        lights[numLights] = (Light*)DirectionalLight_create();
-        DirectionalLight_set(lights[numLights],
-                             -normalize(in->distantLights[i].D),
-                             in->distantLights[i].L * rcp(uniformSampleConePDF(in->distantLights[i].cosHalfAngle)),
-                             in->distantLights[i].cosHalfAngle);
-        numLights++;
-      }
-
-      for (size_t i = 0; i < in->pointLights.size(); i++)
-      {
-        lights[numLights] = (Light*)PointLight_create();
-        PointLight_set(lights[numLights], in->pointLights[i].P, in->pointLights[i].I, 0.f);
-        numLights++;
+        Light* light = convertLight(in->lights[i]);
+        if (light) lights[numLights++] = light;
       }
 
       subdivMeshKeyFrames = nullptr;
@@ -377,6 +349,50 @@ namespace embree
         return (ISPCGeometry*) new ISPCGroup(in.dynamicCast<TutorialScene::Group>());
       else
         THROW_RUNTIME_ERROR("unknown geometry type");
+    }
+
+    static Light* convertLight(Ref<SceneGraph::Light> in)
+    {
+      void* out = 0;
+
+      switch (in->getType())
+      {
+      case SceneGraph::LIGHT_AMBIENT:
+      {
+        Ref<SceneGraph::AmbientLight> inAmbient = in.dynamicCast<SceneGraph::AmbientLight>();
+        out = AmbientLight_create();
+        AmbientLight_set(out, inAmbient->L);
+        break;
+      }
+      case SceneGraph::LIGHT_DIRECTIONAL:
+      {
+        Ref<SceneGraph::DirectionalLight> inDirectional = in.dynamicCast<SceneGraph::DirectionalLight>();
+        out = DirectionalLight_create();
+        DirectionalLight_set(out, -normalize(inDirectional->D), inDirectional->E, 1.0f);
+        break;
+      }
+      case SceneGraph::LIGHT_DISTANT:
+      {
+        Ref<SceneGraph::DistantLight> inDistant = in.dynamicCast<SceneGraph::DistantLight>();
+        out = DirectionalLight_create();
+        DirectionalLight_set(out,
+                             -normalize(inDistant->D),
+                             inDistant->L * rcp(uniformSampleConePDF(inDistant->cosHalfAngle)),
+                             inDistant->cosHalfAngle);
+        break;
+      }
+      case SceneGraph::LIGHT_POINT:
+      {
+        Ref<SceneGraph::PointLight> inPoint = in.dynamicCast<SceneGraph::PointLight>();
+        out = PointLight_create();
+        PointLight_set(out, inPoint->P, inPoint->I, 0.f);
+        break;
+      }
+      //default:
+        //THROW_RUNTIME_ERROR("unknown light type");
+      }
+
+      return (Light*)out;
     }
 
   public:

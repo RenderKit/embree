@@ -608,7 +608,7 @@ namespace embree
     const AffineSpace3fa space = load<AffineSpace3fa>(xml->child("AffineSpace"));
     const Vec3fa I = load<Vec3f>(xml->child("I"));
     const Vec3fa P = Vec3fa(zero);
-    return new SceneGraph::TransformNode(space, new SceneGraph::LightNode<PointLight>(PointLight(P,I)));
+    return new SceneGraph::TransformNode(space, new SceneGraph::LightNode(new SceneGraph::PointLight(P,I)));
   }
 
   Ref<SceneGraph::Node> XMLLoader::loadSpotLight(const Ref<XML>& xml) 
@@ -619,7 +619,7 @@ namespace embree
     const Vec3fa D = Vec3fa(0,0,1);
     const float angleMin = load<float>(xml->child("angleMin"));
     const float angleMax = load<float>(xml->child("angleMax"));
-    return new SceneGraph::TransformNode(space, new SceneGraph::LightNode<SpotLight>(SpotLight(P,D,I,angleMin,angleMax)));
+    return new SceneGraph::TransformNode(space, new SceneGraph::LightNode(new SceneGraph::SpotLight(P,D,I,angleMin,angleMax)));
   }
 
   Ref<SceneGraph::Node> XMLLoader::loadDirectionalLight(const Ref<XML>& xml) 
@@ -627,7 +627,7 @@ namespace embree
     const AffineSpace3fa space = load<AffineSpace3fa>(xml->child("AffineSpace"));
     const Vec3fa E = load<Vec3fa>(xml->child("E"));
     const Vec3fa D = Vec3fa(0,0,1);
-    return new SceneGraph::TransformNode(space, new SceneGraph::LightNode<DirectionalLight>(DirectionalLight(D,E)));
+    return new SceneGraph::TransformNode(space, new SceneGraph::LightNode(new SceneGraph::DirectionalLight(D,E)));
   }
 
   Ref<SceneGraph::Node> XMLLoader::loadDistantLight(const Ref<XML>& xml) 
@@ -636,13 +636,13 @@ namespace embree
     const Vec3fa L = load<Vec3fa>(xml->child("L"));
     const Vec3fa D = Vec3fa(0,0,1);
     const float halfAngle = load<float>(xml->child("halfAngle"));
-    return new SceneGraph::TransformNode(space, new SceneGraph::LightNode<DistantLight>(DistantLight(D,L,halfAngle)));
+    return new SceneGraph::TransformNode(space, new SceneGraph::LightNode(new SceneGraph::DistantLight(D,L,halfAngle)));
   }
 
   Ref<SceneGraph::Node> XMLLoader::loadAmbientLight(const Ref<XML>& xml) 
   {
     const Vec3fa L = load<Vec3fa>(xml->child("L"));
-    return new SceneGraph::LightNode<AmbientLight>(AmbientLight(L));
+    return new SceneGraph::LightNode(new SceneGraph::AmbientLight(L));
   }
 
   Ref<SceneGraph::Node> XMLLoader::loadTriangleLight(const Ref<XML>& xml) 
@@ -652,7 +652,7 @@ namespace embree
     const Vec3fa v0 = xfmPoint(space, Vec3fa(1, 0, 0));
     const Vec3fa v1 = xfmPoint(space, Vec3fa(0, 1, 0));
     const Vec3fa v2 = xfmPoint(space, Vec3fa(0, 0, 0));
-    return new SceneGraph::LightNode<TriangleLight>(TriangleLight(v0,v1,v2,L));
+    return new SceneGraph::LightNode(new SceneGraph::TriangleLight(v0,v1,v2,L));
   }
 
   Ref<SceneGraph::Node> XMLLoader::loadQuadLight(const Ref<XML>& xml) 
@@ -663,7 +663,7 @@ namespace embree
     const Vec3fa v1 = xfmPoint(space, Vec3fa(0, 1, 0));
     const Vec3fa v2 = xfmPoint(space, Vec3fa(1, 1, 0));
     const Vec3fa v3 = xfmPoint(space, Vec3fa(1, 0, 0));
-    return new SceneGraph::LightNode<QuadLight>(QuadLight(v0,v1,v2,v3,L));
+    return new SceneGraph::LightNode(new SceneGraph::QuadLight(v0,v1,v2,v3,L));
   }
 
   Texture* XMLLoader::loadTextureParm(const Ref<XML>& xml)
