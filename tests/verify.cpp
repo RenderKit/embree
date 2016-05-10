@@ -2525,7 +2525,7 @@ namespace embree
         monitorProgressInvokations = 0;
         RegressionTask task2(sceneIndex,1,0,true);
         func(new ThreadRegressionTask(0,0,state,device,intersectModes,&task2));
-        if (monitorMemoryBytesUsed) { // || (monitorMemoryInvokations != 0 && errorCounter != 1)) { // FIXME: test that rtcCommit has returned with error code
+        if (monitorMemoryBytesUsed || (monitorMemoryInvokations != 0 && errorCounter != 1)) {
           rtcDeviceSetMemoryMonitorFunction(device,nullptr);
           //rtcDeviceSetProgressMonitorFunction(device,nullptr);
           return VerifyApplication::FAILED;
