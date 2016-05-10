@@ -2334,16 +2334,16 @@ namespace embree
               break;
             }
             case 1: {
-              Vertex3f* vertices = (Vertex3f*) rtcMapBuffer(task->scene,geom[index],RTC_VERTEX_BUFFER);
+              Vertex3fa* vertices = (Vertex3fa*) rtcMapBuffer(task->scene,geom[index],RTC_VERTEX_BUFFER);
               if (vertices) { 
-                for (size_t i=0; i<numVertices[index]; i++) vertices[i] += Vertex3f(0.1f);
+                for (size_t i=0; i<numVertices[index]; i++) vertices[i] += Vertex3fa(0.1f);
               }
               rtcUnmapBuffer(task->scene,geom[index],RTC_VERTEX_BUFFER);
               
               if (types[index] == 7 || types[index] == 8) {
-                Vertex3f* vertices = (Vertex3f*) rtcMapBuffer(task->scene,geom[index],RTC_VERTEX_BUFFER1);
+                Vertex3fa* vertices = (Vertex3fa*) rtcMapBuffer(task->scene,geom[index],RTC_VERTEX_BUFFER1);
                 if (vertices) {
-                  for (size_t i=0; i<numVertices[index]; i++) vertices[i] += Vertex3f(0.1f);
+                  for (size_t i=0; i<numVertices[index]; i++) vertices[i] += Vertex3fa(0.1f);
                 }
                 rtcUnmapBuffer(task->scene,geom[index],RTC_VERTEX_BUFFER1);
               }
