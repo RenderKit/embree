@@ -195,6 +195,14 @@ namespace embree
       rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER,mesh->hairs.data(),0,sizeof(SceneGraph::HairSetNode::Hair));
       return geomID;
     } 
+    else if (Ref<SceneGraph::LineSegmentsNode> mesh = node.dynamicCast<SceneGraph::LineSegmentsNode>())
+    {
+      unsigned int geomID = rtcNewLineSegments (scene, gflag, mesh->indices.size(), mesh->v.size(), mblur ? 2 : 1);
+      rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER,mesh->v.data(),0,sizeof(SceneGraph::LineSegmentsNode::Vertex));
+      if (mblur) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER1,mesh->v2.data(),0,sizeof(SceneGraph::LineSegmentsNode::Vertex));
+      rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER,mesh->indices.data(),0,sizeof(int));
+      return geomID;
+    }
     else {
       THROW_RUNTIME_ERROR("unknown node type");
     }
@@ -279,61 +287,6 @@ namespace embree
     Ref<SceneGraph::Node> node = SceneGraph::createHairyPlane(pos,Vec3fa(1,0,0),Vec3fa(0,0,1),scale,r,numHairs,true);
     if (mblur) SceneGraph::set_motion_vector(node,Vec3fa(motion));
     return addGeometry(device,scene,gflag,node,mblur);
-  }
-
-  unsigned addGarbageTriangles (RTCDevice g_device, const RTCSceneRef& scene, RTCGeometryFlags flag, size_t numTriangles, bool motion)
-  {
-    /* create a triangulated sphere */
-    size_t numTimeSteps = motion ? 2 : 1;
-    unsigned mesh = rtcNewTriangleMesh (scene, flag, numTriangles, 3*numTriangles,numTimeSteps);
-    
-    /* map triangle and vertex buffer */
-    if (numTimeSteps >= 1) {
-      int* v = (int*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER0); 
-      for (size_t i=0; i<4*3*numTriangles; i++) v[i] = random<uint32_t>();
-      rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER0); 
-    }
-    if (numTimeSteps >= 2) {
-      int* v = (int*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER1); 
-      for (size_t i=0; i<4*3*numTriangles; i++) v[i] = random<uint32_t>();
-      rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER1); 
-    }
-    
-    Triangle* triangles = (Triangle*) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
-    for (size_t i=0; i<numTriangles; i++) {
-      triangles[i].v0 = (random<int>() % 32 == 0) ? random<uint32_t>() : 3*i+0;
-      triangles[i].v1 = (random<int>() % 32 == 0) ? random<uint32_t>() : 3*i+1;
-      triangles[i].v2 = (random<int>() % 32 == 0) ? random<uint32_t>() : 3*i+2;
-    }
-    rtcUnmapBuffer(scene,mesh,RTC_INDEX_BUFFER);
-
-    return mesh;
-  }
-
-  unsigned addGarbageHair (RTCDevice g_device, const RTCSceneRef& scene, RTCGeometryFlags flag, size_t numCurves, bool motion)
-  {
-    /* create a triangulated sphere */
-    size_t numTimeSteps = motion ? 2 : 1;
-    unsigned mesh = rtcNewHairGeometry (scene, flag, numCurves, 4*numCurves,numTimeSteps);
-    
-    /* map triangle and vertex buffer */
-    if (numTimeSteps >= 1) {
-      int* v = (int*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER0); 
-      for (size_t i=0; i<4*4*numCurves; i++) v[i] = random<uint32_t>();
-      rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER0); 
-    }
-    if (numTimeSteps >= 2) {
-      int* v = (int*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER1); 
-      for (size_t i=0; i<4*4*numCurves; i++) v[i] = random<uint32_t>();
-      rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER1); 
-    }
-    
-    int* curves = (int*) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
-    for (size_t i=0; i<numCurves; i++) 
-      curves[i] = (random<int>() % 32 == 0) ? random<uint32_t>() : 4*i;
-    rtcUnmapBuffer(scene,mesh,RTC_INDEX_BUFFER);
-
-    return mesh;
   }
 
   struct Sphere
@@ -954,6 +907,52 @@ namespace embree
           IntersectWithMode(imode,ivariant,scene,rays,numRays);
           for (size_t i=0; i<numRays; i++) if (rays[i].geomID == -1) return VerifyApplication::FAILED;
         }
+      }
+      return VerifyApplication::PASSED;
+    }
+  };
+
+  struct GarbageGeometryTest : public VerifyApplication::Test
+  {
+    GarbageGeometryTest (std::string name, int isa)
+      : VerifyApplication::Test(name,isa,VerifyApplication::PASS) {}
+    
+    VerifyApplication::TestReturnValue run(VerifyApplication* state)
+    {
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
+      error_handler(rtcDeviceGetError(device));
+
+      for (size_t i=0; i<size_t(1000*state->intensity); i++) 
+      {
+        ClearBuffers clear_before_return;
+        srand(i*23565);
+        if (i%20 == 0) std::cout << "." << std::flush;
+        
+        RTCSceneFlags sflag = getSceneFlag(i); 
+        RTCSceneRef scene = rtcDeviceNewScene(device,sflag,aflags);
+        AssertNoError(device);
+        
+        for (size_t j=0; j<20; j++) 
+        {
+          size_t numPrimitives = random<int>()%256;
+          switch (random<int>()%8) {
+          case 0: addGeometry(device,scene,RTC_GEOMETRY_STATIC,SceneGraph::createGarbageTriangleMesh(numPrimitives,false),false); break;
+          case 1: addGeometry(device,scene,RTC_GEOMETRY_STATIC,SceneGraph::createGarbageTriangleMesh(numPrimitives,true ),true); break;
+          case 2: addGeometry(device,scene,RTC_GEOMETRY_STATIC,SceneGraph::createGarbageQuadMesh(numPrimitives,false),false); break;
+          case 3: addGeometry(device,scene,RTC_GEOMETRY_STATIC,SceneGraph::createGarbageQuadMesh(numPrimitives,true ),true); break;
+          case 4: addGeometry(device,scene,RTC_GEOMETRY_STATIC,SceneGraph::createGarbageHair(numPrimitives,false),false); break;
+          case 5: addGeometry(device,scene,RTC_GEOMETRY_STATIC,SceneGraph::createGarbageHair(numPrimitives,true ),true); break;
+          case 6: addGeometry(device,scene,RTC_GEOMETRY_STATIC,SceneGraph::createGarbageLineSegments(numPrimitives,false),false); break;
+          case 7: addGeometry(device,scene,RTC_GEOMETRY_STATIC,SceneGraph::createGarbageLineSegments(numPrimitives,true ),true); break;
+            //case 8: addGeometry(device,scene,RTC_GEOMETRY_STATIC,SceneGraph::createGarbageSubdivMesh(numPrimitives,false),false); break; // FIXME: not working yet
+            //case 9: addGeometry(device,scene,RTC_GEOMETRY_STATIC,SceneGraph::createGarbageSubdivMesh(numPrimitives,true ),true); break;
+          }
+          AssertNoError(device);
+        }
+        
+        rtcCommit(scene);
+        AssertNoError(device);
       }
       return VerifyApplication::PASSED;
     }
@@ -2579,46 +2578,6 @@ namespace embree
     }
   };
 
-  struct GarbageGeometryTest : public VerifyApplication::Test // FIXME: move test to front, this is a build test
-  {
-    GarbageGeometryTest (std::string name, int isa)
-      : VerifyApplication::Test(name,isa,VerifyApplication::PASS) {}
-    
-    VerifyApplication::TestReturnValue run(VerifyApplication* state)
-    {
-      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
-      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      error_handler(rtcDeviceGetError(device));
-
-      for (size_t i=0; i<size_t(1000*state->intensity); i++) 
-      {
-        ClearBuffers clear_before_return;
-        srand(i*23565);
-        if (i%20 == 0) std::cout << "." << std::flush;
-        
-        RTCSceneFlags sflag = getSceneFlag(i); 
-        RTCSceneRef scene = rtcDeviceNewScene(device,sflag,aflags);
-        AssertNoError(device);
-        
-        for (size_t j=0; j<20; j++) 
-        {
-          size_t numTriangles = random<int>()%256;
-          switch (random<int>()%4) {
-          case 0: addGarbageTriangles(device,scene,RTC_GEOMETRY_STATIC,numTriangles,false); break;
-          case 1: addGarbageTriangles(device,scene,RTC_GEOMETRY_STATIC,numTriangles,true); break;
-          case 2: addGarbageHair     (device,scene,RTC_GEOMETRY_STATIC,numTriangles,false); break;
-          case 3: addGarbageHair     (device,scene,RTC_GEOMETRY_STATIC,numTriangles,true); break;
-          }
-          AssertNoError(device);
-        }
-        
-        rtcCommit(scene);
-        AssertNoError(device);
-      }
-      return VerifyApplication::PASSED;
-    }
-  };
-
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
@@ -2747,7 +2706,9 @@ namespace embree
         }
       }
       endTestGroup();
-      
+
+      addTest(new GarbageGeometryTest("build_garbage_geom_"+stringOfISA(isa),isa));
+
       /**************************************************************************/
       /*                     Interpolation Tests                                */
       /**************************************************************************/
@@ -2870,8 +2831,6 @@ namespace embree
       
       addTest(new MemoryMonitorTest("regression_static_memory_monitor_"+stringOfISA(isa), isa,rtcore_regression_static_thread));
       addTest(new MemoryMonitorTest("regression_dynamic_memory_monitor_"+stringOfISA(isa),isa,rtcore_regression_dynamic_thread));
-      
-      addTest(new GarbageGeometryTest("regression_garbage_geom_"+stringOfISA(isa),isa));
     }
     
     /* register all command line options*/

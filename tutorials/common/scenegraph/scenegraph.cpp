@@ -859,6 +859,76 @@ namespace embree
     return mesh;
   }
 
+  Ref<SceneGraph::Node> SceneGraph::createGarbageQuadMesh (size_t numQuads, bool mblur, Ref<MaterialNode> material)
+  {
+    SceneGraph::QuadMeshNode* mesh = new SceneGraph::QuadMeshNode(material);
+
+    mesh->quads.resize(numQuads);
+    for (size_t i=0; i<numQuads; i++) {
+      const int v0 = (random<int>() % 32 == 0) ? random<uint32_t>() : 4*i+0;
+      const int v1 = (random<int>() % 32 == 0) ? random<uint32_t>() : 4*i+1;
+      const int v2 = (random<int>() % 32 == 0) ? random<uint32_t>() : 4*i+2;
+      const int v3 = (random<int>() % 32 == 0) ? random<uint32_t>() : 4*i+3;
+      mesh->quads[i] = QuadMeshNode::Quad(v0,v1,v2,v3);
+    }
+
+    mesh->v.resize(4*numQuads);
+    for (size_t i=0; i<4*numQuads; i++) {
+      const float x = cast_i2f(random<uint32_t>());
+      const float y = cast_i2f(random<uint32_t>());
+      const float z = cast_i2f(random<uint32_t>());
+      const float w = cast_i2f(random<uint32_t>());
+      mesh->v[i] = Vec3fa(x,y,z,w);
+    }
+
+    if (mblur) 
+    {
+      mesh->v2.resize(4*numQuads);
+      for (size_t i=0; i<4*numQuads; i++) {
+        const float x = cast_i2f(random<uint32_t>());
+        const float y = cast_i2f(random<uint32_t>());
+        const float z = cast_i2f(random<uint32_t>());
+        const float w = cast_i2f(random<uint32_t>());
+        mesh->v2[i] = Vec3fa(x,y,z,w);
+      }
+    }
+
+    return mesh;
+  }
+
+  Ref<SceneGraph::Node> SceneGraph::createGarbageLineSegments (size_t numLineSegments, bool mblur, Ref<MaterialNode> material)
+  {
+    SceneGraph::LineSegmentsNode* mesh = new SceneGraph::LineSegmentsNode(material);
+
+    mesh->indices.resize(numLineSegments);
+    for (size_t i=0; i<numLineSegments; i++) {
+      mesh->indices[i] = (random<int>() % 32 == 0) ? random<uint32_t>() : 2*i;
+    }
+
+    mesh->v.resize(2*numLineSegments);
+    for (size_t i=0; i<2*numLineSegments; i++) {
+      const float x = cast_i2f(random<uint32_t>());
+      const float y = cast_i2f(random<uint32_t>());
+      const float z = cast_i2f(random<uint32_t>());
+      const float r = cast_i2f(random<uint32_t>());
+      mesh->v[i] = Vec3fa(x,y,z,r);
+    }
+
+    if (mblur) 
+    {
+      mesh->v2.resize(2*numLineSegments);
+      for (size_t i=0; i<2*numLineSegments; i++) {
+        const float x = cast_i2f(random<uint32_t>());
+        const float y = cast_i2f(random<uint32_t>());
+        const float z = cast_i2f(random<uint32_t>());
+        const float r = cast_i2f(random<uint32_t>());
+        mesh->v2[i] = Vec3fa(x,y,z,r);
+      }
+    }
+
+    return mesh;
+  }
+
   Ref<SceneGraph::Node> SceneGraph::createGarbageHair (size_t numHairs, bool mblur, Ref<MaterialNode> material)
   {
     SceneGraph::HairSetNode* mesh = new SceneGraph::HairSetNode(true,material);
@@ -887,6 +957,38 @@ namespace embree
         const float z = cast_i2f(random<uint32_t>());
         const float r = cast_i2f(random<uint32_t>());
         mesh->v2[i] = Vec3fa(x,y,z,r);
+      }
+    }
+
+    return mesh;
+  }
+
+  Ref<SceneGraph::Node> SceneGraph::createGarbageSubdivMesh (size_t numFaces, bool mblur, Ref<MaterialNode> material)
+  {
+    SceneGraph::SubdivMeshNode* mesh = new SceneGraph::SubdivMeshNode(material);
+
+    for (size_t i=0; i<numFaces; i++) 
+    {
+      const size_t f = random<int>() % 20;
+      mesh->verticesPerFace.push_back(f);
+      for (size_t j=0; j<f; j++) 
+      {
+        mesh->position_indices.push_back((random<int>() % 32 == 0) ? random<uint32_t>() : mesh->positions.size());
+
+        const float x = cast_i2f(random<uint32_t>());
+        const float y = cast_i2f(random<uint32_t>());
+        const float z = cast_i2f(random<uint32_t>());
+        const float w = cast_i2f(random<uint32_t>());
+        mesh->positions.push_back(Vec3fa(x,y,z,w));
+
+        if (mblur) 
+        {
+          const float x = cast_i2f(random<uint32_t>());
+          const float y = cast_i2f(random<uint32_t>());
+          const float z = cast_i2f(random<uint32_t>());
+          const float w = cast_i2f(random<uint32_t>());
+          mesh->positions2.push_back(Vec3fa(x,y,z,w));
+        }
       }
     }
 
