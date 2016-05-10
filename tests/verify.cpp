@@ -1862,7 +1862,7 @@ namespace embree
           IntersectWithMode(imode,ivariant,scene,rays,M);
           for (size_t j=0; j<M; j++) {
             numTests++;
-            numFailures += rays[j].geomID == -1;
+            numFailures += rays[j].geomID == -1;            
           }
         }
       }
