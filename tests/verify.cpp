@@ -2515,7 +2515,6 @@ namespace embree
         func(new ThreadRegressionTask(0,0,state,device,intersectModes,&task1));
         if (monitorMemoryBytesUsed) {
           rtcDeviceSetMemoryMonitorFunction(device,nullptr);
-          //rtcDeviceSetProgressMonitorFunction(device,nullptr);
           return VerifyApplication::FAILED;
         }
         monitorMemoryBreak = monitorMemoryInvokations * drand48();
@@ -2527,7 +2526,6 @@ namespace embree
         func(new ThreadRegressionTask(0,0,state,device,intersectModes,&task2));
         if (monitorMemoryBytesUsed || (monitorMemoryInvokations != 0 && errorCounter != 1)) {
           rtcDeviceSetMemoryMonitorFunction(device,nullptr);
-          //rtcDeviceSetProgressMonitorFunction(device,nullptr);
           return VerifyApplication::FAILED;
         }
         sceneIndex++;
