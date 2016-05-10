@@ -47,6 +47,9 @@ namespace embree
   
     Ref<Node> createHairyPlane    (const Vec3fa& pos, const Vec3fa& dx, const Vec3fa& dy, const float len, const float r, size_t numHairs, bool hair, Ref<MaterialNode> material = nullptr);
 
+    Ref<Node> createGarbageTriangleMesh (size_t numTriangles, bool mblur, Ref<MaterialNode> material = nullptr);
+    Ref<Node> createGarbageHair (size_t numHairs, bool mblur, Ref<MaterialNode> material = nullptr);
+
     struct Node : public RefCount
     {
       Node (bool closed = false)

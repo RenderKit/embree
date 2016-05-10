@@ -822,4 +822,74 @@ namespace embree
     }
     return mesh;
   }
+
+  Ref<SceneGraph::Node> SceneGraph::createGarbageTriangleMesh (size_t numTriangles, bool mblur, Ref<MaterialNode> material)
+  {
+    SceneGraph::TriangleMeshNode* mesh = new SceneGraph::TriangleMeshNode(material);
+
+    mesh->triangles.resize(numTriangles);
+    for (size_t i=0; i<numTriangles; i++) {
+      const int v0 = (random<int>() % 32 == 0) ? random<uint32_t>() : 3*i+0;
+      const int v1 = (random<int>() % 32 == 0) ? random<uint32_t>() : 3*i+1;
+      const int v2 = (random<int>() % 32 == 0) ? random<uint32_t>() : 3*i+2;
+      mesh->triangles[i] = TriangleMeshNode::Triangle(v0,v1,v2);
+    }
+
+    mesh->v.resize(3*numTriangles);
+    for (size_t i=0; i<3*numTriangles; i++) {
+      const float x = cast_i2f(random<uint32_t>());
+      const float y = cast_i2f(random<uint32_t>());
+      const float z = cast_i2f(random<uint32_t>());
+      const float w = cast_i2f(random<uint32_t>());
+      mesh->v[i] = Vec3fa(x,y,z,w);
+    }
+
+    if (mblur) 
+    {
+      mesh->v2.resize(3*numTriangles);
+      for (size_t i=0; i<3*numTriangles; i++) {
+        const float x = cast_i2f(random<uint32_t>());
+        const float y = cast_i2f(random<uint32_t>());
+        const float z = cast_i2f(random<uint32_t>());
+        const float w = cast_i2f(random<uint32_t>());
+        mesh->v2[i] = Vec3fa(x,y,z,w);
+      }
+    }
+
+    return mesh;
+  }
+
+  Ref<SceneGraph::Node> SceneGraph::createGarbageHair (size_t numHairs, bool mblur, Ref<MaterialNode> material)
+  {
+    SceneGraph::HairSetNode* mesh = new SceneGraph::HairSetNode(true,material);
+
+    mesh->hairs.resize(numHairs);
+    for (size_t i=0; i<numHairs; i++) {
+      const int v0 = (random<int>() % 32 == 0) ? random<uint32_t>() : 4*i;
+      mesh->hairs[i] = HairSetNode::Hair(v0,0);
+    }
+
+    mesh->v.resize(4*numHairs);
+    for (size_t i=0; i<4*numHairs; i++) {
+      const float x = cast_i2f(random<uint32_t>());
+      const float y = cast_i2f(random<uint32_t>());
+      const float z = cast_i2f(random<uint32_t>());
+      const float r = cast_i2f(random<uint32_t>());
+      mesh->v[i] = Vec3fa(x,y,z,r);
+    }
+
+    if (mblur) 
+    {
+      mesh->v2.resize(4*numHairs);
+      for (size_t i=0; i<4*numHairs; i++) {
+        const float x = cast_i2f(random<uint32_t>());
+        const float y = cast_i2f(random<uint32_t>());
+        const float z = cast_i2f(random<uint32_t>());
+        const float r = cast_i2f(random<uint32_t>());
+        mesh->v2[i] = Vec3fa(x,y,z,r);
+      }
+    }
+
+    return mesh;
+  }
 }
