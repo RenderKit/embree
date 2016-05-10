@@ -58,12 +58,7 @@ namespace embree
   };
   typedef Vec3f  Vertex3f;
   typedef Vec3fa Vertex3fa;
-  
-  struct Triangle {
-    Triangle () {}
-    Triangle(int v0, int v1, int v2) : v0(v0), v1(v1), v2(v2) {}
-    int v0, v1, v2; 
-  };
+  typedef SceneGraph::TriangleMeshNode::Triangle Triangle;
 
   MutexSys g_mutex2;
   std::vector<Ref<SceneGraph::Node>> nodes;
@@ -829,15 +824,7 @@ namespace embree
     UpdateTest (std::string name, int isa, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant)
       : VerifyApplication::IntersectTest(name,isa,imode,ivariant,VerifyApplication::PASS), sflags(sflags), gflags(gflags) {}
     
-    static void move_mesh_vec3f(const RTCSceneRef& scene, unsigned mesh, size_t numVertices, Vec3fa& pos) 
-    {
-      Vertex3f* vertices = (Vertex3f*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
-      for (size_t i=0; i<numVertices; i++) vertices[i] += Vertex3f(pos);
-      rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER);
-      rtcUpdate(scene,mesh);
-    }
-    
-    static void move_mesh_vec3fa(const RTCSceneRef& scene, unsigned mesh, size_t numVertices, Vec3fa& pos) 
+    static void move_mesh(const RTCSceneRef& scene, unsigned mesh, size_t numVertices, Vec3fa& pos) 
     {
       Vertex3fa* vertices = (Vertex3fa*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
       for (size_t i=0; i<numVertices; i++) vertices[i] += Vertex3fa(pos);
@@ -872,10 +859,10 @@ namespace embree
       {
         bool move0 = i & 1, move1 = i & 2, move2 = i & 4, move3 = i & 8;
         Vec3fa ds(2,0.1f,2);
-        if (move0) { move_mesh_vec3f (scene,geom0,numVertices,ds); pos0 += ds; }
-        if (move1) { move_mesh_vec3fa(scene,geom1,4,ds); pos1 += ds; }
-        if (move2) { move_mesh_vec3f (scene,geom2,numVertices,ds); pos2 += ds; }
-        if (move3) { move_mesh_vec3fa(scene,geom3,4,ds); pos3 += ds; }
+        if (move0) { move_mesh(scene,geom0,numVertices,ds); pos0 += ds; }
+        if (move1) { move_mesh(scene,geom1,4,ds); pos1 += ds; }
+        if (move2) { move_mesh(scene,geom2,numVertices,ds); pos2 += ds; }
+        if (move3) { move_mesh(scene,geom3,4,ds); pos3 += ds; }
         rtcCommit (scene);
         AssertNoError(device);
 
