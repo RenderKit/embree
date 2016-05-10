@@ -166,20 +166,20 @@ namespace embree
     __forceinline bool valid(size_t i, BBox3fa* bbox = nullptr) const 
     {
       const Triangle& tri = triangle(i);
-      if (tri.v[0] >= numVertices()) return false;
-      if (tri.v[1] >= numVertices()) return false;
-      if (tri.v[2] >= numVertices()) return false;
+      if (unlikely(tri.v[0] >= numVertices())) return false;
+      if (unlikely(tri.v[1] >= numVertices())) return false;
+      if (unlikely(tri.v[2] >= numVertices())) return false;
 
       for (size_t j=0; j<numTimeSteps; j++) 
       {
         const Vec3fa v0 = vertex(tri.v[0],j);
         const Vec3fa v1 = vertex(tri.v[1],j);
         const Vec3fa v2 = vertex(tri.v[2],j);
-        if (!isvalid(v0) || !isvalid(v1) || !isvalid(v2))
+        if (unlikely(!isvalid(v0) || !isvalid(v1) || !isvalid(v2)))
           return false;
       }
 
-      if (bbox) 
+      if (likely(bbox)) 
         *bbox = bounds(i);
 
       return true;

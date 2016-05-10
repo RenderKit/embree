@@ -19,7 +19,6 @@
 #include "bvh_rotate.h"
 #include "../../common/profile.h"
 #include "../../algorithms/parallel_prefix_sum.h"
-#include "../../algorithms/parallel_for_for_prefix_sum.h"
 #include "../../algorithms/sort.h"
 
 #include "../builders/primrefgen.h"
@@ -34,7 +33,7 @@
 #define BLOCK_SIZE 1024
 
 #define DBG_PRINT(x) 
-//#define DBG_PRINT(x)  PRINT(x)
+//#define DBG_PRINT(x)  if (numPrimitives > 1024*1000) PRINT(x)
 
 namespace embree 
 {
@@ -340,55 +339,80 @@ namespace embree
         DBG_PRINT(d0);
 
 
-        const size_t block_size = max(size_t(BLOCK_SIZE),(numPrimitives+TaskScheduler::threadCount()-1)/TaskScheduler::threadCount());
+        //const size_t block_size = max(size_t(BLOCK_SIZE),(numPrimitives+TaskScheduler::threadCount()-1)/TaskScheduler::threadCount());
 
-        //size_t block_size = size_t(BLOCK_SIZE);
+        size_t block_size = size_t(BLOCK_SIZE);
 
         //PRINT(block_size);
 
         double d1 = getSeconds();
 
         /* compute scene bounds */
-        ParallelPrefixSumState<size_t> pstate;
+        BBox3fa cb_empty(empty); cb_empty.lower.a = 0;
         const BBox3fa centBounds = parallel_reduce 
-          ( size_t(0), numPrimitives, block_size, BBox3fa(empty), [&](const range<size_t>& r) -> BBox3fa
+          ( size_t(0), numPrimitives, block_size, cb_empty, [&](const range<size_t>& r) -> BBox3fa
             {
-              BBox3fa bounds(empty);
+              BBox3fa bounds = empty;
+#if 1
+              size_t num = 0;
+              for (ssize_t j=r.begin(); j<r.end(); j++)
+              {
+                BBox3fa prim_bounds = empty;
+                if (unlikely(!mesh->valid(j,&prim_bounds))) continue;
+                bounds.extend(center2(prim_bounds));
+                num++;
+              }
+              bounds.lower.a = num;
+#else
               for (size_t i=r.begin(); i<r.end(); i++) bounds.extend(center2(mesh->bounds(i)));
+#endif
               return bounds;
-            }, [] (const BBox3fa& a, const BBox3fa& b) { return merge(a,b); });
+            }, [] (const BBox3fa& a, const BBox3fa& b) { BBox3fa c = merge(a,b); c.lower.a = a.lower.a + b.lower.a; return c; });
 
         d1 = getSeconds() - d1;
         DBG_PRINT(d1);
 
-
         double d2 = getSeconds();
 
+        size_t numPrimitivesGen = centBounds.lower.a;
 
         /* compute morton codes */
+
         MortonID32Bit* dest = (MortonID32Bit*) bvh->alloc.specialAlloc(bytesMortonCodes);
-        MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
 
-        size_t numPrimitivesGen = parallel_prefix_sum( pstate, size_t(0), numPrimitives, block_size, size_t(0), [&](const range<size_t>& r, const size_t base) -> size_t {
-            size_t num = 0;
-            MortonCodeGenerator generator(mapping,&morton.data()[r.begin()]);
-            for (ssize_t j=r.begin(); j<r.end(); j++)
-            {
-              BBox3fa bounds = empty;
-              if (unlikely(!mesh->valid(j,&bounds))) continue;
-              generator(bounds,j);
-              num++;
-            }
-            return num;
-          }, std::plus<size_t>());
 
-        d2 = getSeconds() - d2;
-        DBG_PRINT(d2);
-
-        /* fallback in case some primitives were invalid */
-        if (numPrimitivesGen != numPrimitives)
+        if (likely(numPrimitivesGen == numPrimitives))
         {
-          numPrimitivesGen = parallel_prefix_sum( pstate, size_t(0), numPrimitives, block_size, size_t(0), [&](const range<size_t>& r, const size_t base) -> size_t {
+          /* fast path */
+          MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
+
+          parallel_for( size_t(0), numPrimitives, block_size, [&](const range<size_t>& r) -> void {
+              MortonCodeGenerator generator(mapping,&morton.data()[r.begin()]);
+              for (ssize_t j=r.begin(); j<r.end(); j++)
+                generator(mesh->bounds(j),j);
+            });
+          
+        }
+        else
+        {
+          /* slow path, fallback in case some primitives were invalid */
+
+          ParallelPrefixSumState<size_t> pstate;
+          MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
+          size_t numPrimitivesGen2 = parallel_prefix_sum( pstate, size_t(0), numPrimitives, block_size, size_t(0), [&](const range<size_t>& r, const size_t base) -> size_t {
+              size_t num = 0;
+              MortonCodeGenerator generator(mapping,&morton.data()[r.begin()]);
+              for (ssize_t j=r.begin(); j<r.end(); j++)
+              {
+                BBox3fa bounds = empty;
+                if (unlikely(!mesh->valid(j,&bounds))) continue;
+                generator(bounds,j);
+                num++;
+              }
+              return num;
+            }, std::plus<size_t>());
+
+          numPrimitivesGen2 = parallel_prefix_sum( pstate, size_t(0), numPrimitives, block_size, size_t(0), [&](const range<size_t>& r, const size_t base) -> size_t {
               size_t num = 0;
               MortonCodeGenerator generator(mapping,&morton.data()[base]);
               for (ssize_t j=r.begin(); j<r.end(); j++)
@@ -399,8 +423,12 @@ namespace embree
                 num++;
               }
               return num;
-            }, std::plus<size_t>());
+            }, std::plus<size_t>());          
         }
+
+        d2 = getSeconds() - d2;
+        DBG_PRINT(d2);
+
 
         double d3 = getSeconds();
 
