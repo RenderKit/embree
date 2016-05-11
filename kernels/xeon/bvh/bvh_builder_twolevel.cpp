@@ -77,7 +77,7 @@ namespace embree
       if (objects.size()  < num) objects.resize(num);
       if (builders.size() < num) builders.resize(num);
       if (refs.size()     < num) refs.resize(num);
-      nextRef = 0;
+      nextRef.store(0);
       
       double time0 = getSeconds();
       /* create of acceleration structures */

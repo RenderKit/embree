@@ -51,10 +51,20 @@ namespace embree
      __forceinline  iterator () 
         : root(nullptr) {}
 
-      /*! initialize the iterator from a set */
-      __forceinline iterator (atomic_set& other) 
-        : root(other.root) {}
+      /*! copy constructor */
+      __forceinline iterator (const iterator& other) {
+        root.store(other.root);
+      }
 
+       /*! assignment operator */
+      __forceinline iterator& operator= (const iterator& other) {
+        root.store(other.root); return *this;
+      }
+
+      /*! initialize the iterator from a set */
+      __forceinline iterator (atomic_set& other) {
+        root.store(other.root);
+      }
 
       /*! return next element */
       __forceinline item* next()
@@ -69,11 +79,11 @@ namespace embree
       {
         ptr = root;
         if (ptr == nullptr) return true;
-        return atomic_cmpxchg_ptr(&root,ptr,ptr->next) == ptr;
+        return root.compare_exchange_strong(ptr,ptr->next);
       }
   
     private:
-      item* root;
+      std::atomic<item*> root;
     };
 
     /*! Not thread safe iterator for iterating over elements of a list of blocks. */
@@ -131,12 +141,15 @@ namespace embree
 
     /*! copy constructor */
     __forceinline atomic_set (const atomic_set& other) {
-      this->root = other.root; other.root = nullptr;
+      this->root.store(other.root); 
+      other.root.store(nullptr);
     }
-
+    
     /*! assignment operator */
-    __forceinline atomic_set& operator=(const atomic_set& other) {
-      this->root = other.root; other.root = nullptr;
+    __forceinline atomic_set& operator=(const atomic_set& other) 
+    {
+      this->root.store(other.root);
+      other.root.store(nullptr);
       return *this;
     }
  
@@ -194,17 +207,17 @@ namespace embree
       if (ptr == nullptr) return true;
       item* cur = root;
       ptr->next = cur;
-      return atomic_cmpxchg_ptr(&root,cur,ptr) == cur;
+      return root.compare_exchange_strong(cur,ptr);
     }
 
     __forceinline bool try_take(item*& ptr) 
     {
       ptr = root;
       if (ptr == nullptr) return true;
-      return atomic_cmpxchg_ptr(&root,ptr,ptr->next) == ptr;
+      return root.compare_exchange_strong(ptr,ptr->next);
     }
 
   private:
-    mutable item* root;
+    mutable std::atomic<item*> root;
   };
 }

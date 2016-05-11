@@ -297,7 +297,7 @@ namespace embree
     bool modified;             //!< true if geometry is modified
     void* userPtr;             //!< user pointer
     unsigned mask;             //!< for masking out geometry
-    atomic_t used;             //!< counts by how many enabled instances this geometry is used
+    std::atomic_size_t used;   //!< counts by how many enabled instances this geometry is used
     
   public:
     RTCFilterFunc intersectionFilter1;

@@ -460,14 +460,6 @@ namespace embree
     return stringOfISA(isa) + "_" + to_string(sflags);
   }
 
-  inline std::string to_string(int isa, RTCSceneFlags sflags, IntersectMode imode) {
-    return stringOfISA(isa) + "_" + to_string(sflags) + "_" + to_string(imode);
-  }
-
-  inline std::string to_string(int isa, RTCSceneFlags sflags, IntersectMode imode, IntersectVariant ivariant) {
-    return stringOfISA(isa) + "_" + to_string(sflags) + "_" + to_string(ivariant) + to_string(imode);
-  }
-
   template<int N>
     inline void IntersectWithNMMode(IntersectVariant ivariant, RTCScene scene, RTCIntersectContext* context, RTCRay* rays, size_t Nrays)
   {
@@ -631,6 +623,49 @@ namespace embree
       break;
     }
     }
+  }
+
+  enum GeometryType
+  {
+    TRIANGLE_MESH,
+    TRIANGLE_MESH_MB,
+    QUAD_MESH,
+    QUAD_MESH_MB,
+    SUBDIV_MESH,
+    SUBDIV_MESH_MB,
+    HAIR_GEOMETRY,
+    HAIR_GEOMETRY_MB,
+    CURVE_GEOMETRY,
+    CURVE_GEOMETRY_MB
+  };
+
+  inline std::string to_string(GeometryType gtype)
+  {
+    switch (gtype) {
+    case TRIANGLE_MESH    : return "triangles";
+    case TRIANGLE_MESH_MB : return "triangles_mb";
+    case QUAD_MESH        : return "quads";
+    case QUAD_MESH_MB     : return "quads_mb";
+    case SUBDIV_MESH      : return "subdiv";
+    case SUBDIV_MESH_MB   : return "subdiv_mb";
+    case HAIR_GEOMETRY    : return "hair";
+    case HAIR_GEOMETRY_MB : return "hair_mb";
+    case CURVE_GEOMETRY   : return "curve";
+    case CURVE_GEOMETRY_MB: return "curve_mb";
+    }
+    return "";
+  }
+
+   inline std::string to_string(int isa, RTCSceneFlags sflags, IntersectMode imode) {
+    return stringOfISA(isa) + "_" + to_string(sflags) + "_" + to_string(imode);
+  }
+
+  inline std::string to_string(int isa, RTCSceneFlags sflags, IntersectMode imode, IntersectVariant ivariant) {
+    return stringOfISA(isa) + "_" + to_string(sflags) + "_" + to_string(ivariant) + to_string(imode);
+  }
+
+  inline std::string to_string(int isa, GeometryType gtype, RTCSceneFlags sflags, IntersectMode imode, IntersectVariant ivariant) {
+    return stringOfISA(isa) + "_" + to_string(gtype) + "_" + to_string(sflags) + "_" + to_string(ivariant) + to_string(imode);
   }
 
   /* error reporting function */

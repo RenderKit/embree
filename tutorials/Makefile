@@ -9,6 +9,8 @@ ispc2cpp:
 	@./ispc2cpp.sh common/lights/ambient_light.ispc common/lights/ambient_light.cpp
 	@./ispc2cpp.sh common/lights/directional_light.ispc common/lights/directional_light.cpp
 	@./ispc2cpp.sh common/lights/point_light.ispc common/lights/point_light.cpp
+	@./ispc2cpp.sh common/lights/quad_light.ispc common/lights/quad_light.cpp
+	@./ispc2cpp.sh common/lights/spot_light.ispc common/lights/spot_light.cpp
 	@./ispc2cpp.sh triangle_geometry/triangle_geometry_device.ispc triangle_geometry/triangle_geometry_device.cpp
 	@./ispc2cpp.sh dynamic_scene/dynamic_scene_device.ispc dynamic_scene/dynamic_scene_device.cpp
 	@./ispc2cpp.sh user_geometry/user_geometry_device.ispc user_geometry/user_geometry_device.cpp
@@ -32,5 +34,7 @@ osp2emb:
 	@./osp2emb.sh ../../ospray/ospray/lights/AmbientLight.ispc common/lights/ambient_light.ispc
 	@./osp2emb.sh ../../ospray/ospray/lights/DirectionalLight.ispc common/lights/directional_light.ispc
 	@./osp2emb.sh ../../ospray/ospray/lights/PointLight.ispc common/lights/point_light.ispc
+	@./osp2emb.sh ../../ospray/ospray/lights/QuadLight.ispc common/lights/quad_light.ispc
+	@./osp2emb.sh ../../ospray/ospray/lights/SpotLight.ispc common/lights/spot_light.ispc
 
 all: osp2emb ispc2cpp

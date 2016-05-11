@@ -85,6 +85,10 @@ namespace embree
         return empty;
       }
 
+      Ref<Node> set_motion_vector(const Vec3fa& dP) {
+        SceneGraph::set_motion_vector(this,dP); return this;
+      }
+
     protected:
       size_t indegree;   // number of nodes pointing to us
       bool closed;       // determines if the subtree may represent an instance

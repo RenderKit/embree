@@ -31,14 +31,14 @@ namespace embree
 
   void LineSegments::enabling()
   {
-    if (numTimeSteps == 1) atomic_add(&parent->world1.numLineSegments,numPrimitives);
-    else                   atomic_add(&parent->world2.numLineSegments,numPrimitives);
+    if (numTimeSteps == 1) parent->world1.numLineSegments += numPrimitives;
+    else                   parent->world2.numLineSegments += numPrimitives;
   }
 
   void LineSegments::disabling()
   {
-    if (numTimeSteps == 1) atomic_add(&parent->world1.numLineSegments,-(ssize_t)numPrimitives);
-    else                   atomic_add(&parent->world2.numLineSegments,-(ssize_t)numPrimitives);
+    if (numTimeSteps == 1) parent->world1.numLineSegments -= numPrimitives;
+    else                   parent->world2.numLineSegments -= numPrimitives;
   }
 
   void LineSegments::setMask (unsigned mask)

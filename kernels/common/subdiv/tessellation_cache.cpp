@@ -71,7 +71,7 @@ namespace embree
 
   void SharedLazyTessellationCache::getNextRenderThreadWorkState() 
   {
-    const size_t id = numRenderThreads.add(1); 
+    const size_t id = numRenderThreads.fetch_add(1); 
     if (id >= NUM_PREALLOC_THREAD_WORK_STATES) init_t_state = new ThreadWorkState(true);
     else                                       init_t_state = &threadWorkState[id];
     
@@ -229,14 +229,14 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  AtomicCounter SharedTessellationCacheStats::cache_accesses           = 0;
-  AtomicCounter SharedTessellationCacheStats::cache_hits               = 0;
-  AtomicCounter SharedTessellationCacheStats::cache_misses             = 0;
-  AtomicCounter SharedTessellationCacheStats::cache_flushes            = 0;  
+  std::atomic_size_t SharedTessellationCacheStats::cache_accesses(0);
+  std::atomic_size_t SharedTessellationCacheStats::cache_hits(0);
+  std::atomic_size_t SharedTessellationCacheStats::cache_misses(0);
+  std::atomic_size_t SharedTessellationCacheStats::cache_flushes(0);  
   AtomicMutex   SharedTessellationCacheStats::mtx;  
-  AtomicCounter *SharedTessellationCacheStats::cache_patch_builds      = NULL;                
-  size_t SharedTessellationCacheStats::cache_num_patches               = 0;
-  float **SharedTessellationCacheStats::cache_new_delete_ptr           = NULL;
+  std::atomic_size_t *SharedTessellationCacheStats::cache_patch_builds(nullptr);
+  size_t SharedTessellationCacheStats::cache_num_patches(0);
+  float **SharedTessellationCacheStats::cache_new_delete_ptr = nullptr;
 
   void SharedTessellationCacheStats::printStats()
   {
@@ -279,13 +279,13 @@ namespace embree
 	  {
 	    PRINT(numPatches);
 	    cache_num_patches = numPatches;
-	    cache_patch_builds = (AtomicCounter*)os_malloc(numPatches*sizeof(AtomicCounter));
-	    memset(cache_patch_builds,0,numPatches*sizeof(AtomicCounter));
+	    cache_patch_builds = (std::atomic_size_t*)os_malloc(numPatches*sizeof(std::atomic_size_t));
+	    memset(cache_patch_builds,0,numPatches*sizeof(std::atomic_size_t));
 	  }
 	mtx.unlock();
       }
     assert(ID < cache_num_patches);
-    cache_patch_builds[ID].add(1);
+    cache_patch_builds[ID]++;
   }
 
   void SharedTessellationCacheStats::newDeletePatchPtr(const size_t ID, const size_t numPatches, const size_t size)

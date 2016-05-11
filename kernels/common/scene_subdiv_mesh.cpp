@@ -57,16 +57,16 @@ namespace embree
 
   void SubdivMesh::enabling() 
   { 
-    atomic_add(&parent->numSubdivEnableDisableEvents,1);
-    if (numTimeSteps == 1) atomic_add(&parent->world1.numSubdivPatches,numFaces); 
-    else                   atomic_add(&parent->world2.numSubdivPatches,numFaces); 
+    parent->numSubdivEnableDisableEvents++;
+    if (numTimeSteps == 1) parent->world1.numSubdivPatches += numFaces; 
+    else                   parent->world2.numSubdivPatches += numFaces; 
   }
   
   void SubdivMesh::disabling() 
   { 
-    atomic_add(&parent->numSubdivEnableDisableEvents,1);
-    if (numTimeSteps == 1) atomic_add(&parent->world1.numSubdivPatches,-(ssize_t)numFaces); 
-    else                   atomic_add(&parent->world2.numSubdivPatches,-(ssize_t)numFaces);
+    parent->numSubdivEnableDisableEvents++;
+    if (numTimeSteps == 1) parent->world1.numSubdivPatches -= numFaces; 
+    else                   parent->world2.numSubdivPatches -= numFaces;
   }
 
   void SubdivMesh::setMask (unsigned mask) 
@@ -98,7 +98,7 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
 
     if (type != RTC_LEVEL_BUFFER)
-      atomic_add(&parent->commitCounterSubdiv,1);
+      parent->commitCounterSubdiv++;
 
     switch (type) {
     case RTC_INDEX_BUFFER               : vertexIndices.set(ptr,offset,stride); break;
@@ -194,7 +194,7 @@ namespace embree
   void SubdivMesh::updateBuffer (RTCBufferType type)
   {
     if (type != RTC_LEVEL_BUFFER)
-      atomic_add(&parent->commitCounterSubdiv,1);
+      parent->commitCounterSubdiv++;
 
     switch (type) {
     case RTC_INDEX_BUFFER               : vertexIndices.setModified(true); break;

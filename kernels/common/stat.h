@@ -65,19 +65,19 @@ namespace embree
         {
 	  /* normal and shadow ray statistics */
 	  struct {
-	    AtomicCounter travs;
-	    AtomicCounter trav_nodes;
-	    AtomicCounter trav_leaves;
-	    AtomicCounter trav_prims;
-	    AtomicCounter trav_prim_hits;
-	    AtomicCounter trav_hit_boxes[SIZE_HISTOGRAM+1];
-	    AtomicCounter trav_stack_pop;
-	    AtomicCounter trav_stack_nodes; 
-            AtomicCounter trav_xfm_nodes; 
+	    std::atomic_size_t travs;
+	    std::atomic_size_t trav_nodes;
+	    std::atomic_size_t trav_leaves;
+	    std::atomic_size_t trav_prims;
+	    std::atomic_size_t trav_prim_hits;
+	    std::atomic_size_t trav_hit_boxes[SIZE_HISTOGRAM+1];
+	    std::atomic_size_t trav_stack_pop;
+	    std::atomic_size_t trav_stack_nodes; 
+            std::atomic_size_t trav_xfm_nodes; 
 	  } normal, shadow;
 	} all, active, code; 
 
-        AtomicCounter user[10];
+        std::atomic_size_t user[10];
     };
 
   public:

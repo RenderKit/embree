@@ -71,7 +71,7 @@ namespace embree
     ptr = nullptr; ptr_ofs = nullptr; bytes = 0;
   }
 
-  void* Buffer::map(atomic_t& cntr)
+  void* Buffer::map(std::atomic_size_t& cntr)
   {
     /* report error if buffer is not existing */
     if (!device)
@@ -86,19 +86,19 @@ namespace embree
       alloc();
 
     /* return mapped buffer */
-    atomic_add(&cntr,+1); 
+    cntr++;
     mapped = true;
     return ptr;
   }
 
-  void Buffer::unmap(atomic_t& cntr)
+  void Buffer::unmap(std::atomic_size_t& cntr)
   {
     /* report error if buffer not mapped */
     if (!mapped)
       throw_RTCError(RTC_INVALID_OPERATION,"buffer is not mapped");
 
     /* unmap buffer */
-    atomic_add(&cntr,-1); 
+    cntr--;
     mapped = false;
   }
 }

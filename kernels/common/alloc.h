@@ -412,7 +412,7 @@ namespace embree
         assert(align <= maxAlignment);
         bytes = (bytes+(align-1)) & ~(align-1);
 	if (unlikely(cur+bytes > reserveEnd)) return nullptr;
-	const size_t i = atomic_add(&cur,bytes);
+	const size_t i = cur.fetch_add(bytes);
 	if (unlikely(i+bytes > reserveEnd)) return nullptr;
 	if (i+bytes > allocEnd) {
           if (device) device->memoryMonitor(i+bytes-max(i,allocEnd),true);
@@ -467,7 +467,7 @@ namespace embree
       }
 
     public:
-      atomic_t cur;              //!< current location of the allocator
+      std::atomic_size_t cur;    //!< current location of the allocator
       size_t allocEnd;           //!< end of the allocated memory region
       size_t reserveEnd;         //!< end of the reserved memory region
       Block* next;               //!< pointer to next block in list

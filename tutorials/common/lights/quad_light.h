@@ -14,50 +14,14 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "parallel_for.h"
+#pragma once
 
-namespace embree
-{
-  struct parallel_for_regression_test : public RegressionTest
-  {
-    parallel_for_regression_test(const char* name) : RegressionTest(name) {
-      registerRegressionTest(this);
-    }
-    
-    bool run ()
-    {
-      bool passed = true;
+#include "../math/vec.h"
 
-      const size_t M = 10;
-      for (size_t N=10; N<10000000; N*=2.1f)
-      {
-        /* sequentially calculate sum of squares */
-        size_t sum0 = 0;
-        for (size_t i=0; i<N; i++) {
-          sum0 += i*i;
-        }
+extern "C" void* QuadLight_create();
 
-        /* parallel calculation of sum of squares */
-	double t0 = getSeconds();
-        for (size_t m=0; m<M; m++)
-        {
-          std::atomic_size_t sum1(0);
-          parallel_for( size_t(0), size_t(N), size_t(1024), [&](const range<size_t>& r) 
-          {
-            size_t s = 0;
-            for (size_t i=r.begin(); i<r.end(); i++) 
-              s += i*i;
-            sum1 += s;
-          });
-          passed = sum0 == sum1;
-        }
-	double t1 = getSeconds();
-	//printf("%zu/%3.2fM ",N,1E-6*double(N*M)/(t1-t0));
-      }
-      
-      return passed;
-    }
-  };
-
-  parallel_for_regression_test parallel_for_regression("parallel_for_regression_test");
-}
+extern "C" void QuadLight_set(void* super,
+                              const Vec3fa& position,
+                              const Vec3fa& edge2,
+                              const Vec3fa& edge1,
+                              const Vec3fa& radiance);

@@ -48,16 +48,18 @@ namespace embree
       : cntr(0) {}
     
     void reset() {
-      cntr = 0;
+      cntr.store(0);
     }
 
-    void wait (size_t numThreads) {
-      atomic_add((atomic_t*)&cntr,1);
-      while (cntr != numThreads) __pause_cpu();
+    void wait (size_t numThreads) 
+    {
+      cntr++;
+      while (cntr.load() != numThreads) 
+        __pause_cpu();
     }
 
   private:
-    volatile atomic_t cntr;
+    std::atomic_size_t cntr;
   };
 
   /*! fast active barrier that does not require initialization to some number of threads */
@@ -69,19 +71,19 @@ namespace embree
 
     void wait (size_t threadCount) 
     {
-      atomic_add((atomic_t*)&cntr0,1);
+      cntr0.fetch_add(1);
       while (cntr0 != threadCount) __pause_cpu();
-      atomic_add((atomic_t*)&cntr1,1);
+      cntr1.fetch_add(1);
       while (cntr1 != threadCount) __pause_cpu();
-      atomic_add((atomic_t*)&cntr0,-1);
+      cntr0.fetch_add(-1);
       while (cntr0 != 0) __pause_cpu();
-      atomic_add((atomic_t*)&cntr1,-1);
+      cntr1.fetch_add(-1);
       while (cntr1 != 0) __pause_cpu();
     }
 
   private:
-    volatile atomic_t cntr0;
-    volatile atomic_t cntr1;
+    std::atomic_size_t cntr0;
+    std::atomic_size_t cntr1;
   };
 
   class __aligned(64) LinearBarrierActive
@@ -107,3 +109,4 @@ namespace embree
     volatile unsigned int threadCount;
   };
 }
+
