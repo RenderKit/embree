@@ -146,13 +146,21 @@ namespace embree
       int mode =  2*(int)isCompact() + 1*(int)isRobust(); 
       switch (mode) {
       case /*0b00*/ 0:
-      case /*0b01*/ 1:
 #if defined (__TARGET_AVX__)
         if (device->hasISA(AVX))
           accels.add(device->bvh8_factory->BVH8Quad4v(this));
         else
 #endif
           accels.add(device->bvh4_factory->BVH4Quad4v(this));
+        break;
+
+      case /*0b01*/ 1:
+#if defined (__TARGET_AVX__) && 1
+        if (device->hasISA(AVX))
+          accels.add(device->bvh8_factory->BVH8Quad4i(this));
+        else
+#endif
+          accels.add(device->bvh4_factory->BVH4Quad4i(this));
         break;
 
       case /*0b10*/ 2: 

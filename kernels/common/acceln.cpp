@@ -131,8 +131,8 @@ namespace embree
     for (size_t i=0; i<This->validAccels.size(); i++)
     {
       This->validAccels[i]->occludedN(ray,M,context);
-      //Ray::filterOutOccluded((Ray**)ray,M);
-      //if (M == 0) break;
+      Ray::filterOutOccluded((Ray**)ray,M);
+      if (M == 0) break;
     }
   }
 

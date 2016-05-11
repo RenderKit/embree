@@ -15,8 +15,8 @@
 // ======================================================================== //
 
 #include "light.isph"
-#include "../sampling.isph"
-#include "../../math/linearspace.isph"
+#include "../math/sampling.isph"
+#include "../math/linearspace.isph"
 
 struct AmbientLight
 {

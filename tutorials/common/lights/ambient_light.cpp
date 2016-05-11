@@ -15,8 +15,8 @@
 // ======================================================================== //
 
 #include "light.h"
-#include "../sampling.h"
-#include "../../math/linearspace.h"
+#include "../math/sampling.h"
+#include "../math/linearspace.h"
 
 struct AmbientLight
 {
@@ -78,7 +78,7 @@ void AmbientLight_Constructor(AmbientLight* self,
 //! Create an ispc-side AmbientLight object
 extern "C" void *AmbientLight_create()
 {
-  AmbientLight* self = new AmbientLight;
+  AmbientLight* self = (AmbientLight*) alignedMalloc(sizeof(AmbientLight));
   AmbientLight_Constructor(self, Vec3fa(1.f));
   return self;
 }

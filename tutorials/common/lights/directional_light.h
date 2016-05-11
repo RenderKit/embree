@@ -16,9 +16,11 @@
 
 #pragma once
 
-#include "../../math/vec.h"
+#include "../math/vec.h"
 
-extern "C" void* AmbientLight_create();
+extern "C" void* DirectionalLight_create();
 
-extern "C" void AmbientLight_set(void* super,
-                                 const Vec3fa& radiance);
+extern "C" void DirectionalLight_set(void* super,
+                                     const Vec3fa& direction,
+                                     const Vec3fa& radiance,
+                                     float cosAngle);

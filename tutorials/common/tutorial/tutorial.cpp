@@ -16,11 +16,6 @@
 
 #include "tutorial.h"
 #include "scene.h"
-#include "tutorial_device.h"
-#include "../scenegraph/obj_loader.h"
-#include "../scenegraph/xml_loader.h"
-#include "../image/image.h"
-#include "../transport/transport_host.h"
 
 /* include GLUT for display */
 #if defined(__MACOSX__)
@@ -34,6 +29,12 @@
 #  include <GL/gl.h>   
 #  include <GL/glut.h>
 #endif
+
+#include "tutorial_device.h"
+#include "../scenegraph/obj_loader.h"
+#include "../scenegraph/xml_loader.h"
+#include "../image/image.h"
+#include "../transport/transport_host.h"
 
 extern "C" {
   float g_debug = 0.0f;
@@ -219,24 +220,24 @@ namespace embree
       "  none: no instancing\n"
       "  geometry: instance individual geometries\n"
       "  scene_geometry: instance individual geometries as scenes\n"
-      "  scene_group: instance geometry groups as scenes\n");
+      "  scene_group: instance geometry groups as scenes");
     
     registerOption("ambientlight", [this] (Ref<ParseStream> cin, const FileName& path) {
         const Vec3fa L = cin->getVec3fa();
-        scene->add(new SceneGraph::LightNode<AmbientLight>(AmbientLight(L)));
+        scene->add(new SceneGraph::LightNode(new SceneGraph::AmbientLight(L)));
       }, "--ambientlight r g b: adds an ambient light with intensity rgb");
     registerOptionAlias("ambientlight","ambient");
 
     registerOption("pointlight", [this] (Ref<ParseStream> cin, const FileName& path) {
         const Vec3fa P = cin->getVec3fa();
         const Vec3fa I = cin->getVec3fa();
-        scene->add(new SceneGraph::LightNode<PointLight>(PointLight(P,I)));
+        scene->add(new SceneGraph::LightNode(new SceneGraph::PointLight(P,I)));
       }, "--pointlight x y z r g b: adds a point light at position xyz with intensity rgb");
     
     registerOption("directionallight", [this] (Ref<ParseStream> cin, const FileName& path) {
         const Vec3fa D = cin->getVec3fa();
         const Vec3fa E = cin->getVec3fa();
-        scene->add(new SceneGraph::LightNode<DirectionalLight>(DirectionalLight(D,E)));
+        scene->add(new SceneGraph::LightNode(new SceneGraph::DirectionalLight(D,E)));
       }, "--directionallight x y z r g b: adds a directional light with direction xyz and intensity rgb");
     registerOptionAlias("directionallight","dirlight");
     
@@ -244,9 +245,87 @@ namespace embree
         const Vec3fa D = cin->getVec3fa();
         const Vec3fa L = cin->getVec3fa();
         const float halfAngle = cin->getFloat();
-        scene->add(new SceneGraph::LightNode<DistantLight>(DistantLight(D,L,halfAngle)));
+        scene->add(new SceneGraph::LightNode(new SceneGraph::DistantLight(D,L,halfAngle)));
       }, "--distantlight x y z r g b a: adds a distant light with direction xyz, intensity rgb, and opening angle a");
 
+    registerOption("triangle-plane", [this] (Ref<ParseStream> cin, const FileName& path) {
+        const Vec3fa p0 = cin->getVec3fa();
+        const Vec3fa dx = cin->getVec3fa();
+        const Vec3fa dy = cin->getVec3fa();
+        const size_t width = cin->getInt();
+        const size_t height = cin->getInt();
+        Material obj; new (&obj) OBJMaterial();
+        scene->add(SceneGraph::createTrianglePlane(p0,dx,dy,width,height,new SceneGraph::MaterialNode(obj)));
+      }, "--triangle-plane p.x p.y p.z dx.x dx.y dx.z dy.x dy.y dy.z width height: adds a plane build of triangles originated at p0 and spanned by the vectors dx and dy with a tesselation width/height.");
+    
+    registerOption("quad-plane", [this] (Ref<ParseStream> cin, const FileName& path) {
+        const Vec3fa p0 = cin->getVec3fa();
+        const Vec3fa dx = cin->getVec3fa();
+        const Vec3fa dy = cin->getVec3fa();
+        const size_t width = cin->getInt();
+        const size_t height = cin->getInt();
+        Material obj; new (&obj) OBJMaterial();
+        scene->add(SceneGraph::createQuadPlane(p0,dx,dy,width,height,new SceneGraph::MaterialNode(obj)));
+      }, "--quad-plane p.x p.y p.z dx.x dx.y dx.z dy.x dy.y dy.z width height: adds a plane build of quadrilaterals originated at p0 and spanned by the vectors dx and dy with a tesselation width/height.");
+    
+    registerOption("subdiv-plane", [this] (Ref<ParseStream> cin, const FileName& path) {
+        const Vec3fa p0 = cin->getVec3fa();
+        const Vec3fa dx = cin->getVec3fa();
+        const Vec3fa dy = cin->getVec3fa();
+        const size_t width = cin->getInt();
+        const size_t height = cin->getInt();
+        const float tessellationRate = cin->getFloat();
+        Material obj; new (&obj) OBJMaterial();
+        scene->add(SceneGraph::createSubdivPlane(p0,dx,dy,width,height,tessellationRate,new SceneGraph::MaterialNode(obj)));
+      }, "--subdiv-plane p.x p.y p.z dx.x dx.y dx.z dy.x dy.y dy.z width height tessellationRate: adds a plane build as a Catmull Clark subdivision surface originated at p0 and spanned by the vectors dx and dy. The plane consists of widt x height many patches, and each patch has the specified tesselation rate.");
+   
+    registerOption("hair-plane", [this] (Ref<ParseStream> cin, const FileName& path) {
+        const Vec3fa p0 = cin->getVec3fa();
+        const Vec3fa dx = cin->getVec3fa();
+        const Vec3fa dy = cin->getVec3fa();
+        const float len = cin->getFloat();
+        const float r = cin->getFloat();
+        const size_t N = cin->getInt();
+        Material obj; new (&obj) OBJMaterial();
+        scene->add(SceneGraph::createHairyPlane(p0,dx,dy,len,r,N,true,new SceneGraph::MaterialNode(obj)));
+      }, "--hair-plane p.x p.y p.z dx.x dx.y dx.z dy.x dy.y dy.z length radius num: adds a hair plane originated at p0 and spanned by the vectors dx and dy. num hairs are generated with speficied length and radius.");    
+    
+    registerOption("curve-plane", [this] (Ref<ParseStream> cin, const FileName& path) {
+        const Vec3fa p0 = cin->getVec3fa();
+        const Vec3fa dx = cin->getVec3fa();
+        const Vec3fa dy = cin->getVec3fa();
+        const float len = cin->getFloat();
+        const float r = cin->getFloat();
+        const size_t N = cin->getInt();
+        Material obj; new (&obj) OBJMaterial();
+        scene->add(SceneGraph::createHairyPlane(p0,dx,dy,len,r,N,false,new SceneGraph::MaterialNode(obj)));
+      }, "--curve-plane p.x p.y p.z dx.x dx.y dx.z dy.x dy.y dy.z length radius: adds a plane build of bezier curves originated at p0 and spanned by the vectors dx and dy. num curves are generated with speficied length and radius.");    
+
+    registerOption("triangle-sphere", [this] (Ref<ParseStream> cin, const FileName& path) {
+        const Vec3fa p = cin->getVec3fa();
+        const float  r = cin->getFloat();
+        const size_t numPhi = cin->getInt();
+        Material obj; new (&obj) OBJMaterial();
+        scene->add(SceneGraph::createTriangleSphere(p,r,numPhi,new SceneGraph::MaterialNode(obj)));
+      }, "--triangle-sphere p.x p.y p.z r numPhi: adds a sphere at position p with radius r and tesselation numPhi build of triangles.");
+   
+    registerOption("quad-sphere", [this] (Ref<ParseStream> cin, const FileName& path) {
+        const Vec3fa p = cin->getVec3fa();
+        const float  r = cin->getFloat();
+        const size_t numPhi = cin->getInt();
+        Material obj; new (&obj) OBJMaterial();
+        scene->add(SceneGraph::createQuadSphere(p,r,numPhi,new SceneGraph::MaterialNode(obj)));
+      }, "--quad-sphere p.x p.y p.z r numPhi: adds a sphere at position p with radius r and tesselation numPhi build of quadrilaterals.");
+   
+    registerOption("subdiv-sphere", [this] (Ref<ParseStream> cin, const FileName& path) {
+        const Vec3fa p = cin->getVec3fa();
+        const float  r = cin->getFloat();
+        const size_t numPhi = cin->getInt();
+        const float tessellationRate = cin->getFloat();
+        Material obj; new (&obj) OBJMaterial();
+        scene->add(SceneGraph::createSubdivSphere(p,r,numPhi,tessellationRate,new SceneGraph::MaterialNode(obj)));
+      }, "--subdiv-sphere p.x p.y p.z r numPhi: adds a sphere at position p with radius r build of Catmull Clark subdivision surfaces. The sphere consists of numPhi x numPhi many patches and each path has the specified tessellation rate.");
+   
     registerOption("cache", [this] (Ref<ParseStream> cin, const FileName& path) {
         subdiv_mode = ",subdiv_accel=bvh4.subdivpatch1cached";
         rtcore += subdiv_mode;

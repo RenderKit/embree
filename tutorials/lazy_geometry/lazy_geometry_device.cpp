@@ -165,7 +165,7 @@ void instanceOccludedFunc(LazyGeometry* instance, RTCRay& ray, size_t item)
 
 LazyGeometry* createLazyObject (RTCScene scene, int userID, const Vec3fa& center, const float radius)
 {
-  LazyGeometry* instance = new LazyGeometry;
+  LazyGeometry* instance = (LazyGeometry*) alignedMalloc(sizeof(LazyGeometry));
   instance->state = LAZY_INVALID;
   instance->object = nullptr;
   instance->userID = userID;

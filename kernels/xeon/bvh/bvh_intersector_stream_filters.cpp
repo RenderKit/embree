@@ -122,9 +122,6 @@ namespace embree
       __aligned(64) Ray rays[MAX_RAYS_PER_OCTANT];
       __aligned(64) Ray *rays_ptr[MAX_RAYS_PER_OCTANT];
       
-      for (size_t i=0;i<MAX_RAYS_PER_OCTANT;i++)
-        rays_ptr[i] = &rays[i];
-
       size_t octants[8][MAX_RAYS_PER_OCTANT];
       unsigned int rays_in_octant[8];
 
@@ -156,8 +153,8 @@ namespace embree
           {
             for (size_t j=0;j<MAX_RAYS_PER_OCTANT;j++)
             {
+              rays_ptr[j] = &rays[j]; // rays_ptr might get reordered for occludedN
               rays[j] = rayN.gather(octants[octantID][j]);
-              //assert(rays[j].valid());
             }
 
             if (intersect)
@@ -179,8 +176,8 @@ namespace embree
         {
           for (size_t j=0;j<rays_in_octant[i];j++)
           {
+            rays_ptr[j] = &rays[j]; // rays_ptr might get reordered for occludedN
             rays[j] = rayN.gather(octants[i][j]);
-            //assert(rays[j].valid());
           }
 
           if (intersect)
@@ -223,9 +220,6 @@ namespace embree
       __aligned(64) Ray rays[MAX_RAYS_PER_OCTANT];
       __aligned(64) Ray *rays_ptr[MAX_RAYS_PER_OCTANT];
 
-      for (size_t i=0;i<MAX_RAYS_PER_OCTANT;i++)
-        rays_ptr[i] = &rays[i];
-
       size_t octants[8][MAX_RAYS_PER_OCTANT];
       unsigned int rays_in_octant[8];
 
@@ -257,8 +251,8 @@ namespace embree
           {
             for (size_t j=0;j<MAX_RAYS_PER_OCTANT;j++)
             {
+              rays_ptr[j] = &rays[j]; // rays_ptr might get reordered for occludedN
               rays[j] = rayN.gatherByOffset(octants[octantID][j]);
-              //assert(rays[j].valid());
             }
 
             if (intersect)
@@ -280,8 +274,8 @@ namespace embree
         {
           for (size_t j=0;j<rays_in_octant[i];j++)
           {
+            rays_ptr[j] = &rays[j]; // rays_ptr might get reordered for occludedN
             rays[j] = rayN.gatherByOffset(octants[i][j]);
-            //assert(rays[j].valid());
           }
 
           if (intersect)

@@ -125,7 +125,7 @@ namespace embree
     }
   }
 
-  Ref<SceneGraph::Node> loadBinHair(const FileName& fileName)
+  Ref<SceneGraph::Node> SceneGraph::loadBinHair(const FileName& fileName)
   {
     Material objmtl; new (&objmtl) OBJMaterial;
     Ref<SceneGraph::MaterialNode> material = new SceneGraph::MaterialNode(objmtl);
@@ -135,7 +135,7 @@ namespace embree
     return hairset.cast<SceneGraph::Node>();
   }
 
-  Ref<SceneGraph::Node> loadTxtHair(const FileName& fileName)
+  Ref<SceneGraph::Node> SceneGraph::loadTxtHair(const FileName& fileName)
   {
     Material objmtl; new (&objmtl) OBJMaterial;
     Ref<SceneGraph::MaterialNode> material = new SceneGraph::MaterialNode(objmtl);

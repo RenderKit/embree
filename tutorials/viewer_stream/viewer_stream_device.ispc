@@ -14,10 +14,10 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#include "../common/math/random_sampler.isph"
+#include "../common/math/sampling.isph"
 #include "../common/tutorial/tutorial_device.isph"
 #include "../common/tutorial/scene_device.isph"
-#include "../common/tutorial/random_sampler.isph"
-#include "../common/tutorial/sampling.isph"
 
 #define USE_INTERFACE 0 // 0 = stream, 1 = single rays/packets, 2 = single rays/packets using stream interface
 #define AMBIENT_OCCLUSION_SAMPLES 64
@@ -169,9 +169,9 @@ Vec3f ambientOcclusionShading(int x, int y, RTCRay& ray)
     shadow.org = hitPos;
     shadow.dir = dir.v;
     bool mask = __mask; unmasked { // invalidate inactive rays
-      shadow.tnear = mask ? 0.001f       : (float)(pos_inf); 
-      shadow.tfar  = mask ? (float)(inf) : (float)(neg_inf); 
-    } 
+      shadow.tnear = mask ? 0.001f       : (float)(pos_inf);
+      shadow.tfar  = mask ? (float)(inf) : (float)(neg_inf);
+    }
     shadow.geomID = RTC_INVALID_GEOMETRY_ID;
     shadow.primID = RTC_INVALID_GEOMETRY_ID;
     shadow.mask = -1;
@@ -237,9 +237,9 @@ void renderTileStandard(uniform int taskIndex,
     ray.org = make_Vec3f(camera.xfm.p);
     ray.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
     bool mask = __mask; unmasked { // invalidates inactive rays
-      ray.tnear = mask ? 0.0f         : (float)(pos_inf); 
-      ray.tfar  = mask ? (float)(inf) : (float)(neg_inf); 
-    } 
+      ray.tnear = mask ? 0.0f         : (float)(pos_inf);
+      ray.tfar  = mask ? (float)(inf) : (float)(neg_inf);
+    }
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
     ray.primID = RTC_INVALID_GEOMETRY_ID;
     ray.mask = -1;

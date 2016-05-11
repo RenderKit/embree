@@ -143,7 +143,7 @@ namespace embree
     float		*colors;    
   };
   
-  Ref<SceneGraph::Node> loadCYHair(const FileName& fileName)
+  Ref<SceneGraph::Node> SceneGraph::loadCYHair(const FileName& fileName)
   {
     cyHairFile cyFile;
     int numHairs = cyFile.load(fileName.c_str());

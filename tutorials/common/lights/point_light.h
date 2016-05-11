@@ -16,12 +16,11 @@
 
 #pragma once
 
-#include "scenegraph.h"
+#include "../math/vec.h"
 
-namespace embree
-{
-  namespace SceneGraph
-  {
-    Ref<SceneGraph::Node> loadCorona(const FileName& fileName, const AffineSpace3fa& space = one);
-  }
-}
+extern "C" void* PointLight_create();
+
+extern "C" void PointLight_set(void* super,
+                               const Vec3fa& position,
+                               const Vec3fa& power,
+                               float radius);

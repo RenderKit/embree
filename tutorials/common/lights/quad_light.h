@@ -16,11 +16,12 @@
 
 #pragma once
 
-#include "../../math/vec.h"
+#include "../math/vec.h"
 
-extern "C" void* PointLight_create();
+extern "C" void* QuadLight_create();
 
-extern "C" void PointLight_set(void* super,
-                               const Vec3fa& position,
-                               const Vec3fa& power,
-                               float radius);
+extern "C" void QuadLight_set(void* super,
+                              const Vec3fa& position,
+                              const Vec3fa& edge2,
+                              const Vec3fa& edge1,
+                              const Vec3fa& radiance);

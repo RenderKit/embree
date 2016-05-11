@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "../differential_geometry.isph"
+#include "../core/differential_geometry.isph"
 
 struct Light;
 

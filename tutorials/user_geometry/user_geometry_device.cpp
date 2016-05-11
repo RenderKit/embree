@@ -199,7 +199,7 @@ void instanceOccludedFuncN(const int* valid,
 
 Instance* createInstance (RTCScene scene, RTCScene object, int userID, const Vec3fa& lower, const Vec3fa& upper)
 {
-  Instance* instance = new Instance;
+  Instance* instance = (Instance*) alignedMalloc(sizeof(Instance));
   instance->object = object;
   instance->userID = userID;
   instance->lower = lower;
@@ -414,7 +414,7 @@ void sphereOccludedFuncN(const int* valid,
 Sphere* createAnalyticalSphere (RTCScene scene, const Vec3fa& p, float r)
 {
   unsigned int geomID = rtcNewUserGeometry(scene,1);
-  Sphere* sphere = new Sphere;
+  Sphere* sphere = (Sphere*) alignedMalloc(sizeof(Sphere));
   sphere->p = p;
   sphere->r = r;
   sphere->geomID = geomID;
