@@ -42,7 +42,7 @@ namespace embree
       }
 
       /* array to test global index */
-      std::vector<catomic<size_t>> verify_k(K);
+      std::vector<std__atomic<size_t>> verify_k(K);
       for (size_t i=0; i<K; i++) verify_k[i].store(0);
 
       /* add all numbers using parallel_for_for */

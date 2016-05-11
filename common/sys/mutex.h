@@ -90,7 +90,7 @@ namespace embree
     }
 
   public:
-    catomic<bool> flag;
+    std__atomic<bool> flag;
   };
 
   /*! safe mutex lock and unlock helper */
