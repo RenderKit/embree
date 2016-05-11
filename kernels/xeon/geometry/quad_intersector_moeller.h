@@ -43,7 +43,7 @@ namespace embree
           const vfloat<M> v = V * rcpAbsDen;
           const vfloat<M> u1 = vfloat<M>(1.0f) - u;
           const vfloat<M> v1 = vfloat<M>(1.0f) - v;
-#if !defined(__AVX__) // FIXME: incorrect for default template instantiation for QuadMIntersector1MoellerTrumbore
+#if !defined(__AVX__) || defined(RTCORE_BACKFACE_CULLING) // FIXME: incorrect for default template instantiation for QuadMIntersector1MoellerTrumbore
           vu = select(flags,u1,u); 
           vv = select(flags,v1,v);
           vNg = Vec3<vfloat<M>>(tri_Ng.x,tri_Ng.y,tri_Ng.z);

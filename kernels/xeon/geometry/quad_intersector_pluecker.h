@@ -102,7 +102,7 @@ namespace embree
       {
         Intersect1EpilogM<M,M,filter> epilog(ray,context,geomID,primID,scene,geomID_to_instID);
         PlueckerIntersectorTriangle1::intersect(ray,v0,v1,v3,vbool<M>(false),epilog);
-        PlueckerIntersectorTriangle1::intersect(ray,v2,v3,v1,vbool<M>(true ),epilog);
+        PlueckerIntersectorTriangle1::intersect(ray,v2,v3,v1,vbool<M>(true),epilog);
       }
       
       __forceinline bool occluded(Ray& ray, const RTCIntersectContext* context,
@@ -437,6 +437,7 @@ namespace embree
         __forceinline bool intersect1(RayK<K>& ray, size_t k, const Vec3vf4& v0, const Vec3vf4& v1, const Vec3vf4& v2, const Vec3vf4& v3, const Epilog& epilog) const
       {
         const Vec3vf8 vtx0(vfloat8(v0.x,v2.x),vfloat8(v0.y,v2.y),vfloat8(v0.z,v2.z));
+        const vbool8 flags(0,0,0,0,1,1,1,1);
 #if !defined(RTCORE_BACKFACE_CULLING)
         const Vec3vf8 vtx1(vfloat8(v1.x),vfloat8(v1.y),vfloat8(v1.z));
         const Vec3vf8 vtx2(vfloat8(v3.x),vfloat8(v3.y),vfloat8(v3.z));
@@ -444,7 +445,6 @@ namespace embree
         const Vec3vf8 vtx1(vfloat8(v1.x,v3.x),vfloat8(v1.y,v3.y),vfloat8(v1.z,v3.z));
         const Vec3vf8 vtx2(vfloat8(v3.x,v1.x),vfloat8(v3.y,v1.y),vfloat8(v3.z,v1.z));
 #endif
-        const vbool8 flags(0,0,0,0,1,1,1,1);
         return PlueckerIntersector1KTriangleM::intersect1(ray,k,vtx0,vtx1,vtx2,flags,epilog); 
       }
       
