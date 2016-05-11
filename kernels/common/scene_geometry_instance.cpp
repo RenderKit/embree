@@ -57,7 +57,7 @@ namespace embree
 
   void GeometryInstance::disabling() 
   {
-    geom->used++;
+    geom->used--;
     count(-1);
   }
   
