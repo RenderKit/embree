@@ -460,6 +460,35 @@ namespace embree
     return stringOfISA(isa) + "_" + to_string(sflags);
   }
 
+  static const size_t numSceneFlags = 64;
+
+  RTCSceneFlags getSceneFlag(size_t i) 
+  {
+    int flag = 0;                               
+    if (i & 1) flag |= RTC_SCENE_DYNAMIC;
+    if (i & 2) flag |= RTC_SCENE_COMPACT;
+    if (i & 4) flag |= RTC_SCENE_COHERENT;
+    if (i & 8) flag |= RTC_SCENE_INCOHERENT;
+    if (i & 16) flag |= RTC_SCENE_HIGH_QUALITY;
+    if (i & 32) flag |= RTC_SCENE_ROBUST;
+    return (RTCSceneFlags) flag;
+  }
+
+  static const size_t numSceneGeomFlags = 32;
+
+  void getSceneGeomFlag(size_t i, RTCSceneFlags& sflags, RTCGeometryFlags& gflags) 
+  {
+    int sflag = 0, gflag = 0;
+    if (i & 4) {
+      sflag |= RTC_SCENE_DYNAMIC;
+      gflag = min(i&3,size_t(2));
+    }
+    if (i & 8) sflag |= RTC_SCENE_HIGH_QUALITY;
+    if (i & 16) sflag |= RTC_SCENE_ROBUST;
+    sflags = (RTCSceneFlags) sflag;
+    gflags = (RTCGeometryFlags) gflag;
+  }
+
   template<int N>
     inline void IntersectWithNMMode(IntersectVariant ivariant, RTCScene scene, RTCIntersectContext* context, RTCRay* rays, size_t Nrays)
   {

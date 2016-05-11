@@ -30,7 +30,7 @@ namespace embree
 
       /* create vector with random numbers */
       const size_t M = 10;
-      std::vector<std__atomic<size_t>> flattened;
+      std::vector<atomic<size_t>> flattened;
       typedef std::vector<std::vector<size_t>* > ArrayArray;
       ArrayArray array2(M);
       size_t K = 0;
@@ -43,7 +43,7 @@ namespace embree
       }
   
       /* array to test global index */
-      std::vector<std__atomic<size_t>> verify_k(K);
+      std::vector<atomic<size_t>> verify_k(K);
       for (size_t i=0; i<K; i++) verify_k[i].store(0);
 
       ParallelForForPrefixSumState<size_t> state(array2,size_t(1));
@@ -61,7 +61,7 @@ namespace embree
       
       /* create properly sized output array */
       flattened.resize(S);
-      memset(flattened.data(),0,sizeof(std__atomic<size_t>)*S);
+      memset(flattened.data(),0,sizeof(atomic<size_t>)*S);
 
       /* now we actually fill the flattened array */
       parallel_for_for_prefix_sum( state, array2, size_t(0), [&](std::vector<size_t>* v, const range<size_t>& r, size_t k, const size_t base) -> size_t

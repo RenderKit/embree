@@ -102,7 +102,7 @@ namespace embree
   size_t g_num_mutex_locks = 100000;
   size_t g_num_threads = 0;
   ssize_t g_num_threads_init = -1;
-  std__atomic<int> g_atomic_cntr(0);
+  atomic<int> g_atomic_cntr(0);
 
   class Benchmark
   {
