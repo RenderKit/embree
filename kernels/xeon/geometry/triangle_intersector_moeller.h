@@ -96,7 +96,7 @@ namespace embree
         
         /* perform backface culling */        
 #if defined(RTCORE_BACKFACE_CULLING)
-        vbool<M> valid = (den > vfloat<M>(zero)) & (U >= 0.0f) & (V >= 0.0f) & (U+V<=absDen);
+        vbool<M> valid = (den < vfloat<M>(zero)) & (U >= 0.0f) & (V >= 0.0f) & (U+V<=absDen);
 #else
         vbool<M> valid = (den != vfloat<M>(zero)) & (U >= 0.0f) & (V >= 0.0f) & (U+V<=absDen);
 #endif
@@ -221,7 +221,7 @@ namespace embree
         
         /* perform backface culling */
 #if defined(RTCORE_BACKFACE_CULLING)
-        valid &= den > vfloat<K>(zero);
+        valid &= den < vfloat<K>(zero);
         if (unlikely(none(valid))) return false;
 #else
         valid &= den != vfloat<K>(zero);
@@ -275,7 +275,7 @@ namespace embree
         
         /* perform backface culling */
 #if defined(RTCORE_BACKFACE_CULLING)
-        vbool<M> valid = (den > vfloat<M>(zero)) & (U >= 0.0f) & (V >= 0.0f) & (U+V<=absDen);
+        vbool<M> valid = (den < vfloat<M>(zero)) & (U >= 0.0f) & (V >= 0.0f) & (U+V<=absDen);
 #else
         vbool<M> valid = (den != vfloat<M>(zero)) & (U >= 0.0f) & (V >= 0.0f) & (U+V<=absDen);
 #endif

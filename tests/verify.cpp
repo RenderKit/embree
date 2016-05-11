@@ -1578,8 +1578,8 @@ namespace embree
       RTCSceneRef scene = rtcDeviceNewScene(device,sflags,to_aflags(imode));
       AssertNoError(device);
       const Vec3fa p0 = Vec3fa(0.0f);
-      const Vec3fa dx = Vec3fa(1.0f, 0.0f,0.0f);
-      const Vec3fa dy = Vec3fa(0.0f,10.0f,0.0f);
+      const Vec3fa dx = Vec3fa(1.0f,0.0f,0.0f);
+      const Vec3fa dy = Vec3fa(0.0f,1.0f,0.0f);
       switch (gtype) {
       case TRIANGLE_MESH:    addGeometry(device,scene,RTC_GEOMETRY_STATIC,SceneGraph::createTrianglePlane(p0,dx,dy,1,1),false); break;
       case TRIANGLE_MESH_MB: addGeometry(device,scene,RTC_GEOMETRY_STATIC,SceneGraph::createTrianglePlane(p0,dx,dy,1,1)->set_motion_vector(Vec3fa(1)),true); break;
@@ -1596,22 +1596,25 @@ namespace embree
 
       const size_t numRays = 1000;
       RTCRay rays[numRays];
-      RTCRay frontfacing  = makeRay(Vec3fa(0.25f,0.25f,1),Vec3fa(0,0,-1)); 
-      RTCRay backfacing = makeRay(Vec3fa(0.25f,0.25f,-1),Vec3fa(0,0,1)); 
-
       bool passed = true;
 
       for (size_t i=0; i<numRays; i++) {
-        if (i%2) rays[i] = makeRay(Vec3fa(random<float>(),random<float>(),-1),Vec3fa(0,0,+1)); 
-        else     rays[i] = makeRay(Vec3fa(random<float>(),random<float>(),+1),Vec3fa(0,0,-1)); 
+        if (i%2) rays[i] = makeRay(Vec3fa(random<float>(),random<float>(),+1),Vec3fa(0,0,-1)); 
+        else     rays[i] = makeRay(Vec3fa(random<float>(),random<float>(),-1),Vec3fa(0,0,+1)); 
       }
       
       IntersectWithMode(imode,ivariant,scene,rays,numRays);
       
       for (size_t i=0; i<numRays; i++) 
       {
+        Vec3fa dir(rays[i].dir[0],rays[i].dir[1],rays[i].dir[2]);
+        Vec3fa Ng (rays[i].Ng[0], rays[i].Ng[1], rays[i].Ng[2]);
         if (i%2) passed &= rays[i].geomID == -1;
-        else     passed &= rays[i].geomID == 0;
+        else {
+          passed &= rays[i].geomID == 0;
+          if (ivariant & VARIANT_INTERSECT)
+            passed &= dot(dir,Ng) < 0.0f;
+        }
       }
       return (VerifyApplication::TestReturnValue) passed;
     }
