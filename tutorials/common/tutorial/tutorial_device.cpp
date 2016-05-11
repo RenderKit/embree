@@ -924,8 +924,8 @@ Vec3fa noise3D(const Vec3fa& p)
 }
 
 /* draws progress bar */
-static int      progressWidth = 0;
-static atomic_t progressDots = 0;
+static int progressWidth = 0;
+static std::atomic_size_t progressDots(0);
 
 void progressStart() 
 {
@@ -939,7 +939,7 @@ bool progressMonitor(void* ptr, const double n)
   size_t olddots = progressDots;
   size_t maxdots = progressWidth-2;
   size_t newdots = max(olddots,min(size_t(maxdots),size_t(n*double(maxdots))));
-  if (atomic_cmpxchg(&progressDots,olddots,newdots) == olddots)
+  if (progressDots.compare_exchange_strong(olddots,newdots))
     for (size_t i=olddots; i<newdots; i++) std::cout << "." << std::flush;
   return true;
 }

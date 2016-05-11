@@ -74,7 +74,7 @@ namespace embree
       if (objects.size()  < num) objects.resize(num);
       if (builders.size() < num) builders.resize(num);
       if (refs.size()     < num) refs.resize(num);
-      nextRef = 0;
+      nextRef.store(0);
       
       /* create of acceleration structures */
       parallel_for(size_t(0), num, [&] (const range<size_t>& r)

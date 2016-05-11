@@ -99,7 +99,7 @@ namespace embree
       
       mvector<BuildRef> refs;
       mvector<PrimRef> prims;
-      AtomicCounter nextRef;
+      std::atomic_size_t nextRef;
     };
   }
 }

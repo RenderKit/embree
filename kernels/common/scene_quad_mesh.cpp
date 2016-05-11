@@ -32,14 +32,14 @@ namespace embree
   
   void QuadMesh::enabling() 
   { 
-    if (numTimeSteps == 1) atomic_add(&parent->world1.numQuads,quads.size());
-    else                   atomic_add(&parent->world2.numQuads,quads.size());
+    if (numTimeSteps == 1) parent->world1.numQuads += quads.size();
+    else                   parent->world2.numQuads += quads.size();
   }
   
   void QuadMesh::disabling() 
   { 
-    if (numTimeSteps == 1) atomic_add(&parent->world1.numQuads,-(ssize_t)quads.size());
-    else                   atomic_add(&parent->world2.numQuads,-(ssize_t)quads.size());
+    if (numTimeSteps == 1) parent->world1.numQuads -= quads.size();
+    else                   parent->world2.numQuads -= quads.size();
   }
 
   void QuadMesh::setMask (unsigned mask) 

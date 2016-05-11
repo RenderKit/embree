@@ -202,88 +202,10 @@ namespace embree
   
 #endif
   
-  typedef int16_t atomic16_t;
-  
-  __forceinline int16_t atomic_add(volatile int16_t* p, const int16_t v) {
-    return _InterlockedExchangeAdd16((volatile short*)p,v);
-  }
-  
-  __forceinline int16_t atomic_sub(volatile int16_t* p, const int16_t v) {
-    return _InterlockedExchangeAdd16((volatile short*)p,-v);
-  }
-  
-  __forceinline int16_t atomic_xchg(volatile int16_t *p, int16_t v) {
-    return _InterlockedExchange16((volatile short*)p, v);
-  }
-  
-  __forceinline int16_t atomic_cmpxchg(volatile int16_t* p, const int16_t c, const int16_t v) {
-    return _InterlockedCompareExchange16((volatile short*)p,v,c);
-  }
-  
-  __forceinline int16_t atomic_and(volatile int16_t* p, const int16_t v) {
-    return _InterlockedAnd16((volatile short*)p,v);
-  }
-  
-  __forceinline int16_t atomic_or(volatile int16_t* p, const int16_t v) {
-    return _InterlockedOr16((volatile short*)p,v);
-  }
-  
-  typedef int32_t atomic32_t;
-  
-  __forceinline int32_t atomic_add(volatile int32_t* p, const int32_t v) {
-    return _InterlockedExchangeAdd((volatile long*)p,v);
-  }
-  
-  __forceinline int32_t atomic_sub(volatile int32_t* p, const int32_t v) {
-    return _InterlockedExchangeAdd((volatile long*)p,-v);
-  }
-  
-  __forceinline int32_t atomic_xchg(volatile int32_t *p, int32_t v) {
-    return _InterlockedExchange((volatile long*)p, v);
-  }
-  
   __forceinline int32_t atomic_cmpxchg(volatile int32_t* p, const int32_t c, const int32_t v) {
     return _InterlockedCompareExchange((volatile long*)p,v,c);
   }
-  
-  __forceinline int32_t atomic_and(volatile int32_t* p, const int32_t v) {
-    return _InterlockedAnd((volatile long*)p,v);
-  }
-  
-  __forceinline int32_t atomic_or(volatile int32_t* p, const int32_t v) {
-    return _InterlockedOr((volatile long*)p,v);
-  }
-  
-#if defined(__X86_64__)
-  
-  typedef int64_t atomic64_t;
-  
-  __forceinline int64_t atomic_add(volatile int64_t* m, const int64_t v) {
-    return _InterlockedExchangeAdd64(m,v);
-  }
-  
-  __forceinline int64_t atomic_sub(volatile int64_t* m, const int64_t v) {
-    return _InterlockedExchangeAdd64(m,-v);
-  }
-  
-  __forceinline int64_t atomic_xchg(volatile int64_t *p, int64_t v) {
-    return _InterlockedExchange64((volatile long long *)p, v);
-  }
-  
-  __forceinline int64_t atomic_cmpxchg(volatile int64_t* m, const int64_t c, const int64_t v) {
-    return _InterlockedCompareExchange64(m,v,c);
-  }
-  
-  __forceinline int64_t atomic_and(volatile int64_t* p, const int64_t v) {
-    return _InterlockedAnd64((volatile int64_t*)p,v);
-  }
-  
-  __forceinline int64_t atomic_or(volatile int64_t* p, const int64_t v) {
-    return _InterlockedOr64((volatile int64_t*)p,v);
-  }
-  
-#endif
-  
+
 ////////////////////////////////////////////////////////////////////////////////
 /// Unix Platform
 ////////////////////////////////////////////////////////////////////////////////
@@ -471,219 +393,16 @@ namespace embree
   __forceinline size_t __btr(size_t v, size_t i) {
     size_t r = 0; asm ("btr %1,%0" : "=r"(r) : "r"(i), "0"(v) : "flags"); return r;
   }
-  
-  typedef int8_t atomic8_t;
-  
-  __forceinline int8_t atomic_add( int8_t volatile* value, int8_t input ) {
-    return __sync_fetch_and_add(value, input);
-  }
-  
-  __forceinline int8_t atomic_sub( int8_t volatile* value, int8_t input ) {
-    return __sync_fetch_and_add(value, -input);
-  }
-  
-  __forceinline int8_t atomic_xchg( int8_t volatile* value, int8_t input ) {
-    return __sync_lock_test_and_set(value, input);
-  }
-  
-  __forceinline int8_t atomic_cmpxchg( int8_t volatile* value, int8_t comparand, const int8_t input ) {
-    return __sync_val_compare_and_swap(value, comparand, input);
-  }
-  
-  typedef int16_t atomic16_t;
-  
-  __forceinline int16_t atomic_add( int16_t volatile* value, int16_t input ) {
-    return __sync_fetch_and_add(value, input);
-  }
-  
-  __forceinline int16_t atomic_sub( int16_t volatile* value, int16_t input ) {
-    return __sync_fetch_and_add(value, -input);
-  }
-  
-  __forceinline int16_t atomic_xchg( int16_t volatile* value, int16_t input ) {
-    return __sync_lock_test_and_set(value, input);
-  }
-  
-  __forceinline int16_t atomic_cmpxchg( int16_t volatile* value, int16_t comparand, const int16_t input ) {
-    return __sync_val_compare_and_swap(value, comparand, input);
-  }
-  
-  typedef int32_t atomic32_t;
-  
-  __forceinline int32_t atomic_add( int32_t volatile* value, int32_t input ) {
-    return __sync_fetch_and_add(value, input);
-  }
-  
-  __forceinline int32_t atomic_sub( int32_t volatile* value, int32_t input ) {
-    return __sync_fetch_and_add(value, -input);
-  }
-  
-  __forceinline int32_t atomic_xchg( int32_t volatile* value, int32_t input ) {
-    return __sync_lock_test_and_set(value, input);
-  }
-  
+
   __forceinline int32_t atomic_cmpxchg( int32_t volatile* value, int32_t comparand, const int32_t input ) {
     return __sync_val_compare_and_swap(value, comparand, input);
   }
-  
-  __forceinline int32_t atomic_or(int32_t volatile* value, int32_t input) {
-    return __sync_fetch_and_or(value, input);
-  }
-  
-  __forceinline int32_t atomic_and(int32_t volatile* value, int32_t input) {
-    return __sync_fetch_and_and(value, input);
-  }
-  
-#if defined(__X86_64__)
-  
-  typedef int64_t atomic64_t;
-  
-  __forceinline int64_t atomic_add( int64_t volatile* value, int64_t input ) {
-    return __sync_fetch_and_add(value, input);
-  }
-  
-  __forceinline int64_t atomic_sub( int64_t volatile* value, int64_t input ) {
-    return __sync_fetch_and_add(value, -input);
-  }
-  
-  __forceinline int64_t atomic_xchg( int64_t volatile* value, int64_t input ) {
-    return __sync_lock_test_and_set(value, input);
-  }
-  
-  __forceinline int64_t atomic_cmpxchg( int64_t volatile* value, int64_t comparand, const int64_t input) {
-    return __sync_val_compare_and_swap(value, comparand, input);
-  }
-  
-  __forceinline int64_t atomic_or(int64_t volatile* value, int64_t input) {
-    return __sync_fetch_and_or(value, input);
-  }
-  
-  __forceinline int64_t atomic_and(int64_t volatile* value, int64_t input) {
-    return __sync_fetch_and_and(value, input);
-  }
-  
-#endif
   
 #endif
   
 ////////////////////////////////////////////////////////////////////////////////
 /// All Platforms
 ////////////////////////////////////////////////////////////////////////////////
-  
-#if defined(__X86_64__)
-  typedef atomic64_t atomic_t;
-#else
-  typedef atomic32_t atomic_t;
-#endif
-  
-#if defined(__X86_64__)
-  
-  template<typename T>
-    __forceinline T* atomic_xchg_ptr( T* volatile* value, const T* input)
-  {  return (T*)atomic_xchg((int64_t*)value,(int64_t)input); }
-  
-  template<typename T>
-    __forceinline T* atomic_cmpxchg_ptr( T* volatile* value, T* comparand, const T* input )
-  {  return (T*)atomic_cmpxchg((int64_t*)value,(int64_t)comparand,(int64_t)input); }
-  
-#else
-  
-  template<typename T>
-    __forceinline T* atomic_xchg_ptr( T* volatile* value, const T* input)
-  {  return (T*)atomic_xchg((int32_t*)value,(int32_t)input); }
-  
-  template<typename T>
-    __forceinline T* atomic_cmpxchg_ptr( T* volatile* value,  T* comparand, const T* input )
-  {  return (T*)atomic_cmpxchg((int32_t*)value,(int32_t)comparand,(int32_t)input); }
-  
-#endif
-  
-  __forceinline void atomic_min_f32(volatile float *__restrict__ ptr, const float b)
-  {
-    const int int_b = *(int*)&b;
-    while (1)
-    {
-      float a = *ptr;
-      if (a <= b) break;
-      const int int_a = *(int*)&a;
-      const int result = atomic_cmpxchg((int*)ptr,int_a,int_b);
-      if (result == int_a) break;
-    }
-  }
-  
-  __forceinline void atomic_max_f32(volatile float *__restrict__ ptr, const float b)
-  {
-    const int int_b = *(int*)&b;
-    while (1)
-    {
-      float a = *ptr;
-      if (a >= b) break;
-      const int int_a = *(int*)&a;
-      const int result = atomic_cmpxchg((int*)ptr,int_a,int_b);
-      if (result == int_a) break;
-    }
-  }
-  
-  __forceinline void atomic_min_i32(volatile int *__restrict__ ptr, const int b)
-  {
-    while (1)
-    {
-      int a = *ptr;
-      if (a <= b) break;
-      const int int_a = *(int*)&a;
-      const int result = atomic_cmpxchg((int*)ptr,int_a,b);
-      if (result == int_a) break;
-    }
-  }
-  
-  __forceinline void atomic_max_i32(volatile int *__restrict__ ptr, const int b)
-  {
-    while (1)
-    {
-      int a = *ptr;
-      if (a >= b) break;
-      const int int_a = *(int*)&a;
-      const int result = atomic_cmpxchg((int*)ptr,int_a,b);
-      if (result == int_a) break;
-    }
-  }
-  
-  __forceinline void atomic_min_ui32(volatile unsigned int *__restrict__ ptr, const unsigned int b)
-  {
-    while (1)
-    {
-      unsigned int a = *ptr;
-      if (a <= b) break;
-      const unsigned int int_a = *(unsigned int*)&a;
-      const unsigned int result = atomic_cmpxchg((int*)ptr,int_a,b);
-      if (result == int_a) break;
-    }
-  }
-  
-  __forceinline void atomic_max_ui32(volatile unsigned int *__restrict__ ptr, const unsigned int b)
-  {
-    while (1)
-    {
-      unsigned int a = *ptr;
-      if (a >= b) break;
-      const unsigned int int_a = *(unsigned int*)&a;
-      const unsigned int result = atomic_cmpxchg((int*)ptr,int_a,b);
-      if (result == int_a) break;
-    }
-  }
-  
-  __forceinline void atomic_add_f32(volatile float *__restrict__ ptr, const float b)
-  {
-    while (1)
-    {
-      float a = *ptr;
-      float ab = a + b;
-      const int int_a = *(int*)&a;
-      const int int_ab = *(int*)&ab;
-      const int result = atomic_cmpxchg((int*)ptr,int_a,int_ab);
-      if (result == int_a) break;
-    }
-  }
   
   __forceinline uint64_t rdtsc()
   {
@@ -727,13 +446,4 @@ namespace embree
   __forceinline void prefetchL2EX(const void* ptr) { 
     prefetchEX(ptr); 
   }
-  
-/* compiler memory barriers */
-#if defined(__INTEL_COMPILER)
-//#define __memory_barrier() __memory_barrier()
-#elif defined(__GNUC__) || defined(__clang__)
-#  define __memory_barrier() asm volatile("" ::: "memory")
-#elif  defined(_MSC_VER)
-#  define __memory_barrier() _ReadWriteBarrier()
-#endif
 }

@@ -29,10 +29,10 @@ namespace embree
     RefCount(int val = 0) : refCounter(val) {}
     virtual ~RefCount() {};
   
-    virtual void refInc() { atomic_add(&refCounter,1); }
-    virtual void refDec() { if (atomic_add(&refCounter,-1) == 1) delete this; }
+    virtual void refInc() { refCounter.fetch_add(1); }
+    virtual void refDec() { if (refCounter.fetch_add(-1) == 1) delete this; }
   private:
-    atomic_t refCounter;
+    std::atomic_size_t refCounter;
   };
   
   ////////////////////////////////////////////////////////////////////////////////

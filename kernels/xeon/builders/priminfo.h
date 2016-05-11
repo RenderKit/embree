@@ -48,23 +48,6 @@ namespace embree
 	centBounds.extend(center2(geomBounds_));
       }
 
-      __forceinline void extend_atomic(const CentGeomBBox3fa& bounds) 
-      {
-	atomic_min_f32(&geomBounds.lower.x ,bounds.geomBounds.lower.x);
-	atomic_min_f32(&geomBounds.lower.y ,bounds.geomBounds.lower.y);
-	atomic_min_f32(&geomBounds.lower.z ,bounds.geomBounds.lower.z);
-	atomic_max_f32(&geomBounds.upper.x ,bounds.geomBounds.upper.x);
-	atomic_max_f32(&geomBounds.upper.y ,bounds.geomBounds.upper.y);
-	atomic_max_f32(&geomBounds.upper.z ,bounds.geomBounds.upper.z);
-
-	atomic_min_f32(&centBounds.lower.x ,bounds.centBounds.lower.x);
-	atomic_min_f32(&centBounds.lower.y ,bounds.centBounds.lower.y);
-	atomic_min_f32(&centBounds.lower.z ,bounds.centBounds.lower.z);
-	atomic_max_f32(&centBounds.upper.x ,bounds.centBounds.upper.x);
-	atomic_max_f32(&centBounds.upper.y ,bounds.centBounds.upper.y);
-	atomic_max_f32(&centBounds.upper.z ,bounds.centBounds.upper.z);
-      }
-
       __forceinline void merge(const CentGeomBBox3fa& other) 
       {
 	geomBounds.extend(other.geomBounds);
@@ -110,13 +93,6 @@ namespace embree
 	end += num_;
       }
 
-      __forceinline void atomic_extend(const PrimInfo& pinfo) 
-      {
-	CentGeomBBox3fa::extend_atomic(pinfo);
-	atomic_add(&begin,pinfo.begin);
-	atomic_add(&end  ,pinfo.end  );
-      }
-      
       __forceinline void merge(const PrimInfo& other) 
       {
 	CentGeomBBox3fa::merge(other);
@@ -151,25 +127,25 @@ namespace embree
       }
       
     public:
-      atomic_t begin,end;          //!< number of primitives
+      size_t begin,end;          //!< number of primitives
     };
 
-	struct PrimInfo2 
-          {
-            __forceinline PrimInfo2() {}
-
-            __forceinline PrimInfo2(EmptyTy) 
-              : left(empty), right(empty) {}
-            
-            __forceinline PrimInfo2(const PrimInfo& left, const PrimInfo& right)
-              : left(left), right(right) {}
-
-            static __forceinline const PrimInfo2 merge (const PrimInfo2& a, const PrimInfo2& b) {
-              return PrimInfo2(PrimInfo::merge(a.left,b.left),PrimInfo::merge(a.right,b.right));
-            }
-
-          public:
-            PrimInfo left,right;
-          };
+    struct PrimInfo2 
+    {
+      __forceinline PrimInfo2() {}
+      
+      __forceinline PrimInfo2(EmptyTy) 
+        : left(empty), right(empty) {}
+      
+      __forceinline PrimInfo2(const PrimInfo& left, const PrimInfo& right)
+        : left(left), right(right) {}
+      
+      static __forceinline const PrimInfo2 merge (const PrimInfo2& a, const PrimInfo2& b) {
+        return PrimInfo2(PrimInfo::merge(a.left,b.left),PrimInfo::merge(a.right,b.right));
+      }
+      
+    public:
+      PrimInfo left,right;
+    };
   }
 }

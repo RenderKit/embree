@@ -83,12 +83,11 @@ namespace embree
     T* array;
      
 
-    AlignedAtomicCounter64 blockID;
-
-    AlignedAtomicCounter64 numLeftRemainderBlocks; 
-    AlignedAtomicCounter64 numRightRemainderBlocks; 
-    AlignedAtomicCounter32 maxLeftBlockID;
-    AlignedAtomicCounter32 maxRightBlockID;
+    __aligned(64) std::atomic<uint64_t> blockID;
+    __aligned(64) std::atomic<uint64_t> numLeftRemainderBlocks; 
+    __aligned(64) std::atomic<uint64_t> numRightRemainderBlocks; 
+    __aligned(64) std::atomic<uint32_t> maxLeftBlockID;
+    __aligned(64) std::atomic<uint32_t> maxRightBlockID;
       
     unsigned int  leftRemainderBlockIDs[MAX_TASKS]; 
     unsigned int rightRemainderBlockIDs[MAX_TASKS];
@@ -117,7 +116,7 @@ namespace embree
       int64_t v = 0;
       if (needLeftBlock(mode))  v |= 1;
       if (needRightBlock(mode)) v |= (int64_t)1 << 32;
-      int64_t val = blockID.add(v);
+      int64_t val = blockID.fetch_add(v);
       return val;
     }
 
@@ -288,7 +287,7 @@ namespace embree
     /* initialize atomic counters */
     __forceinline parallel_partition(T *array, size_t N, const V& init, const Compare& cmp, const Reduction_T& reduction_t, const Reduction_V& reduction_v) : array(array), N(N), init(init), cmp(cmp), reduction_t(reduction_t) , reduction_v(reduction_v)
     {
-      blockID.reset();
+      blockID.store(0);
       numLeftRemainderBlocks  = 0;
       numRightRemainderBlocks = 0;
       maxLeftBlockID          = 0;
@@ -347,21 +346,21 @@ namespace embree
 
       if (left_begin != left_end)
       {
-        const size_t index = numLeftRemainderBlocks.inc();
+        const size_t index = numLeftRemainderBlocks++;
         leftRemainderBlockIDs[index] = currentLeftBlock;
       }
 
       if (currentLeftBlock != (size_t)-1)
-        maxLeftBlockID.max(currentLeftBlock);
+        atomic_max(maxLeftBlockID,currentLeftBlock);
 
       if (right_begin != right_end)
       {
-        const size_t index = numRightRemainderBlocks.inc();
+        const size_t index = numRightRemainderBlocks++;
         rightRemainderBlockIDs[index] = currentRightBlock;
       }
 
       if (currentRightBlock != (size_t)-1)
-        maxRightBlockID.max(currentRightBlock);       
+        atomic_max(maxRightBlockID,currentRightBlock);
 
     }
 

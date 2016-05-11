@@ -42,17 +42,17 @@ namespace embree
       }
 
       /* array to test global index */
-      std::vector<atomic_t> verify_k(K);
-      for (size_t i=0; i<K; i++) verify_k[i] = 0;
+      std::vector<std__atomic<size_t>> verify_k(K);
+      for (size_t i=0; i<K; i++) verify_k[i].store(0);
 
       /* add all numbers using parallel_for_for */
-      AtomicCounter sum1 = 0;
+      std::atomic_size_t sum1(0);
       parallel_for_for( array2, size_t(1), [&](std::vector<size_t>* v, const range<size_t>& r, size_t k) -> size_t
       {
         size_t s = 0;
 	for (size_t i=r.begin(); i<r.end(); i++) {
 	  s += (*v)[i];
-          atomic_add(&verify_k[k++],1);
+          verify_k[k++]++;
         }
         sum1 += s;
 	return sum1;

@@ -771,7 +771,7 @@ namespace embree
   void Scene::progressMonitor(double dn)
   {
     if (progress_monitor_function) {
-      size_t n = atomic_t(dn) + atomic_add(&progress_monitor_counter, atomic_t(dn));
+      size_t n = size_t(dn) + progress_monitor_counter.fetch_add(size_t(dn));
       if (!progress_monitor_function(progress_monitor_ptr, n / (double(numPrimitives())))) {
         throw_RTCError(RTC_CANCELLED,"progress monitor forced termination");
       }
