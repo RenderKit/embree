@@ -1586,6 +1586,14 @@ namespace embree
       {
         if (i%2) passed &= rays[i].geomID == -1;
         else     passed &= rays[i].geomID == 0;
+
+        if (passed == false) 
+        {
+          PRINT(imode);
+          PRINT(gtype);
+          PRINT(i);
+          exit(0);
+        }
       }
       return (VerifyApplication::TestReturnValue) passed;
     }
