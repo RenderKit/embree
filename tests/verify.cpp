@@ -1578,8 +1578,8 @@ namespace embree
       RTCSceneRef scene = rtcDeviceNewScene(device,sflags,to_aflags(imode));
       AssertNoError(device);
       const Vec3fa p0 = Vec3fa(0.0f);
-      const Vec3fa dx = Vec3fa(1.0f, 0.0f,0.0f);
-      const Vec3fa dy = Vec3fa(0.0f,10.0f,0.0f);
+      const Vec3fa dx = Vec3fa(1.0f,0.0f,0.0f);
+      const Vec3fa dy = Vec3fa(0.0f,1.0f,0.0f);
       switch (gtype) {
       case TRIANGLE_MESH:    addGeometry(device,scene,RTC_GEOMETRY_STATIC,SceneGraph::createTrianglePlane(p0,dx,dy,1,1),false); break;
       case TRIANGLE_MESH_MB: addGeometry(device,scene,RTC_GEOMETRY_STATIC,SceneGraph::createTrianglePlane(p0,dx,dy,1,1)->set_motion_vector(Vec3fa(1)),true); break;
