@@ -100,6 +100,7 @@ namespace embree
           const vfloat<M> minUVW = min(U,V,W);
           const vfloat<M> maxUVW = max(U,V,W);
           vbool<M> valid = minUVW >= 0.0f;
+
 #if !defined(RTCORE_BACKFACE_CULLING)
           valid |= maxUVW <= 0.0f;
 #endif
