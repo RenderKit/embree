@@ -122,6 +122,7 @@ namespace embree
       rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER ,mesh->triangles.data(),0,sizeof(SceneGraph::TriangleMeshNode::Triangle));
       if (mesh->v .size()) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER0,mesh->v .data(),0,sizeof(SceneGraph::TriangleMeshNode::Vertex));
       if (mesh->v2.size()) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER1,mesh->v2.data(),0,sizeof(SceneGraph::TriangleMeshNode::Vertex));
+      AssertNoError(device);
       return geomID;
     }
     else if (Ref<SceneGraph::QuadMeshNode> mesh = node.dynamicCast<SceneGraph::QuadMeshNode>())
@@ -131,6 +132,7 @@ namespace embree
       rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER ,mesh->quads.data(),0,sizeof(SceneGraph::QuadMeshNode::Quad  ));
       if (mesh->v .size()) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER0,mesh->v .data(),0,sizeof(SceneGraph::QuadMeshNode::Vertex));
       if (mesh->v2.size()) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER1,mesh->v2.data(),0,sizeof(SceneGraph::QuadMeshNode::Vertex));
+      AssertNoError(device);
       return geomID;
     } 
     else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>())
@@ -150,6 +152,7 @@ namespace embree
       if (mesh->holes.size()) rtcSetBuffer(scene,geomID,RTC_HOLE_BUFFER,mesh->holes.data(),0,sizeof(int));
       rtcSetTessellationRate(scene,geomID,mesh->tessellationRate);
       rtcSetBoundaryMode(scene,geomID,mesh->boundaryMode);
+      AssertNoError(device);
       return geomID;
     }
     else if (Ref<SceneGraph::HairSetNode> mesh = node.dynamicCast<SceneGraph::HairSetNode>())
@@ -158,6 +161,7 @@ namespace embree
       rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER,mesh->v.data(),0,sizeof(SceneGraph::HairSetNode::Vertex));
       if (mblur) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER1,mesh->v2.data(),0,sizeof(SceneGraph::HairSetNode::Vertex));
       rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER,mesh->hairs.data(),0,sizeof(SceneGraph::HairSetNode::Hair));
+      AssertNoError(device);
       return geomID;
     } 
     else if (Ref<SceneGraph::LineSegmentsNode> mesh = node.dynamicCast<SceneGraph::LineSegmentsNode>())
@@ -166,6 +170,7 @@ namespace embree
       rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER,mesh->v.data(),0,sizeof(SceneGraph::LineSegmentsNode::Vertex));
       if (mblur) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER1,mesh->v2.data(),0,sizeof(SceneGraph::LineSegmentsNode::Vertex));
       rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER,mesh->indices.data(),0,sizeof(int));
+      AssertNoError(device);
       return geomID;
     }
     else {
@@ -656,85 +661,88 @@ namespace embree
     }
   };
 
-  struct OverlappingTrianglesTest : public VerifyApplication::Test
+  struct OverlappingGeometryTest : public VerifyApplication::Test
   {
+    RTCSceneFlags sflags;
+    RTCGeometryFlags gflags; 
     int N;
     
-    OverlappingTrianglesTest (std::string name, int isa, int N)
-      : VerifyApplication::Test(name,isa,VerifyApplication::PASS), N(N) {}
+    OverlappingGeometryTest (std::string name, int isa, RTCSceneFlags sflags, RTCGeometryFlags gflags, int N)
+      : VerifyApplication::Test(name,isa,VerifyApplication::PASS), sflags(sflags), gflags(gflags), N(N) {}
     
     VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
+      ClearBuffers clear_before_return;
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
-      RTCSceneRef scene = rtcDeviceNewScene(device,RTC_SCENE_STATIC,aflags);
+      RTCSceneRef scene = rtcDeviceNewScene(device,sflags,aflags);
       AssertNoError(device);
-      rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, N, 3);
-      AssertNoError(device);
+
+      const Vec3fa p (0,0,0);
+      const Vec3fa dx(1,0,0);
+      const Vec3fa dy(0,1,0);
       
-      Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene,0,RTC_VERTEX_BUFFER);
-      vertices[0].x = 0.0f; vertices[0].y = 0.0f; vertices[0].z = 0.0f;
-      vertices[1].x = 1.0f; vertices[1].y = 0.0f; vertices[1].z = 0.0f;
-      vertices[2].x = 0.0f; vertices[2].y = 1.0f; vertices[2].z = 0.0f;
-      rtcUnmapBuffer(scene,0,RTC_VERTEX_BUFFER);
-      AssertNoError(device);
-      
-      Triangle* triangles = (Triangle*) rtcMapBuffer(scene,0,RTC_INDEX_BUFFER);
+      Ref<SceneGraph::TriangleMeshNode> trimesh = SceneGraph::createTrianglePlane(p,dx,dy,1,1).dynamicCast<SceneGraph::TriangleMeshNode>();
+      for (size_t i=0; i<N; i++) trimesh->triangles.push_back(trimesh->triangles.back());
+      addGeometry(device,scene,gflags,trimesh.dynamicCast<SceneGraph::Node>(),false);
+
+      Ref<SceneGraph::TriangleMeshNode> trimesh2 = SceneGraph::createTrianglePlane(p,dx,dy,1,1)->set_motion_vector(Vec3fa(1)).dynamicCast<SceneGraph::TriangleMeshNode>();
+      for (size_t i=0; i<N; i++) trimesh2->triangles.push_back(trimesh2->triangles.back());
+      addGeometry(device,scene,gflags,trimesh2.dynamicCast<SceneGraph::Node>(),true);
+
+      Ref<SceneGraph::QuadMeshNode> quadmesh = SceneGraph::createQuadPlane(p,dx,dy,1,1).dynamicCast<SceneGraph::QuadMeshNode>();
+      for (size_t i=0; i<N; i++) quadmesh->quads.push_back(quadmesh->quads.back());
+      addGeometry(device,scene,gflags,quadmesh.dynamicCast<SceneGraph::Node>(),false);
+
+      Ref<SceneGraph::QuadMeshNode> quadmesh2 = SceneGraph::createQuadPlane(p,dx,dy,1,1)->set_motion_vector(Vec3fa(1)).dynamicCast<SceneGraph::QuadMeshNode>();
+      for (size_t i=0; i<N; i++) quadmesh2->quads.push_back(quadmesh2->quads.back());
+      addGeometry(device,scene,gflags,quadmesh2.dynamicCast<SceneGraph::Node>(),true);
+
+      Ref<SceneGraph::SubdivMeshNode> subdivmesh = new SceneGraph::SubdivMeshNode(nullptr);
       for (size_t i=0; i<N; i++) {
-        triangles[i].v0 = 0;
-        triangles[i].v1 = 1;
-        triangles[i].v2 = 2;
+        subdivmesh->verticesPerFace.push_back(4);
+        subdivmesh->position_indices.push_back(4*i+0);
+        subdivmesh->position_indices.push_back(4*i+1);
+        subdivmesh->position_indices.push_back(4*i+2);
+        subdivmesh->position_indices.push_back(4*i+3);
+        subdivmesh->positions.push_back(Vec3fa(0,0,0));
+        subdivmesh->positions.push_back(Vec3fa(0,1,0));
+        subdivmesh->positions.push_back(Vec3fa(1,1,0));
+        /*subdivmesh->positions2.push_back(Vec3fa(0,0,0));
+        subdivmesh->positions2.push_back(Vec3fa(0,1,0));
+        subdivmesh->positions2.push_back(Vec3fa(1,1,0));
+        subdivmesh->positions2.push_back(Vec3fa(1,0,0));*/
       }
-      rtcUnmapBuffer(scene,0,RTC_INDEX_BUFFER);
-      AssertNoError(device);
+      addGeometry(device,scene,gflags,subdivmesh.dynamicCast<SceneGraph::Node>(),false);
+      //addGeometry(device,scene,gflags,subdivmesh.dynamicCast<SceneGraph::Node>(),true); // FIXME: enable mblur subdiv test when supported
+      
+      Ref<SceneGraph::HairSetNode> hairgeom = SceneGraph::createHairyPlane(p,dx,dy,0.2f,0.01f,1,true).dynamicCast<SceneGraph::HairSetNode>();
+      for (size_t i=0; i<N; i++) hairgeom->hairs.push_back(hairgeom->hairs.back());
+      addGeometry(device,scene,gflags,hairgeom.dynamicCast<SceneGraph::Node>(),false);
+
+      Ref<SceneGraph::HairSetNode> hairgeom2 = SceneGraph::createHairyPlane(p,dx,dy,0.2f,0.01f,1,true)->set_motion_vector(Vec3fa(1)).dynamicCast<SceneGraph::HairSetNode>();
+      for (size_t i=0; i<N; i++) hairgeom2->hairs.push_back(hairgeom2->hairs.back());
+      addGeometry(device,scene,gflags,hairgeom2.dynamicCast<SceneGraph::Node>(),true);
+
+      Ref<SceneGraph::Node> curvegeom = SceneGraph::convert_hair_to_curves(hairgeom.dynamicCast<SceneGraph::Node>());
+      addGeometry(device,scene,gflags,curvegeom,false);
+
+      Ref<SceneGraph::Node> curvegeom2 = SceneGraph::convert_hair_to_curves(hairgeom2.dynamicCast<SceneGraph::Node>());
+      addGeometry(device,scene,gflags,curvegeom2,true);
+
+      Ref<SceneGraph::Node> linegeom = SceneGraph::convert_bezier_to_lines(hairgeom.dynamicCast<SceneGraph::Node>());
+      addGeometry(device,scene,gflags,linegeom,false);
+
+      Ref<SceneGraph::Node> linegeom2 = SceneGraph::convert_bezier_to_lines(hairgeom2.dynamicCast<SceneGraph::Node>());
+      addGeometry(device,scene,gflags,linegeom2,true);
       
       rtcCommit (scene);
       AssertNoError(device);
-      
       return VerifyApplication::PASSED;
     }
   };
     
-  struct OverlappingHairTest : public VerifyApplication::Test
-  {
-    int N;
-    
-    OverlappingHairTest (std::string name, int isa, int N)
-      : VerifyApplication::Test(name,isa,VerifyApplication::PASS), N(N) {}
-    
-    VerifyApplication::TestReturnValue run(VerifyApplication* state)
-    {
-      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
-      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      error_handler(rtcDeviceGetError(device));
-      RTCSceneRef scene = rtcDeviceNewScene(device,RTC_SCENE_STATIC,aflags);
-      AssertNoError(device);
-      rtcNewHairGeometry (scene, RTC_GEOMETRY_STATIC, N, 4);
-      AssertNoError(device);
-      
-      Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene,0,RTC_VERTEX_BUFFER);
-      vertices[0].x = 0.0f; vertices[0].y = 0.0f; vertices[0].z = 0.0f; vertices[0].w = 0.1f;
-      vertices[1].x = 0.0f; vertices[1].y = 0.0f; vertices[1].z = 1.0f; vertices[1].w = 0.1f;
-      vertices[2].x = 0.0f; vertices[2].y = 1.0f; vertices[2].z = 1.0f; vertices[2].w = 0.1f;
-      vertices[3].x = 0.0f; vertices[3].y = 1.0f; vertices[3].z = 0.0f; vertices[3].w = 0.1f;
-      rtcUnmapBuffer(scene,0,RTC_VERTEX_BUFFER);
-      AssertNoError(device);
-      
-      int* indices = (int*) rtcMapBuffer(scene,0,RTC_INDEX_BUFFER);
-      for (size_t i=0; i<N; i++) {
-        indices[i] = 0;
-      }
-      rtcUnmapBuffer(scene,0,RTC_INDEX_BUFFER);
-      AssertNoError(device);
-      
-      rtcCommit (scene);
-      AssertNoError(device);
-
-      return VerifyApplication::PASSED;
-    }
-  };
-
   struct NewDeleteGeometryTest : public VerifyApplication::Test
   {
     RTCSceneFlags sflags;
@@ -2707,8 +2715,10 @@ namespace embree
         addTest(new BuildTest("build_"+to_string(isa,sflags),isa,sflags,RTC_GEOMETRY_STATIC));
       endTestGroup();
       
-      addTest(new OverlappingTrianglesTest("overlapping_triangles_"+stringOfISA(isa),isa,100000));
-      addTest(new OverlappingHairTest("overlapping_hair_"+stringOfISA(isa),isa,100000));
+      beginTestGroup("overlapping_primitives_"+stringOfISA(isa));
+      for (auto sflags : sceneFlags)
+        addTest(new OverlappingGeometryTest("overlapping_primitives_"+to_string(isa,sflags),isa,sflags,RTC_GEOMETRY_STATIC,100000));
+      endTestGroup();
 
       beginTestGroup("new_delete_geometry_"+stringOfISA(isa));
       for (auto sflags : sceneFlagsDynamic) 
