@@ -94,7 +94,7 @@ namespace embree
         const vfloat<M> U = dot(R,Vec3vfM(tri_e2)) ^ sgnDen;
         const vfloat<M> V = dot(R,Vec3vfM(tri_e1)) ^ sgnDen;
         
-        /* perform backface culling */
+        /* perform backface culling */        
 #if defined(RTCORE_BACKFACE_CULLING)
         vbool<M> valid = (den > vfloat<M>(zero)) & (U >= 0.0f) & (V >= 0.0f) & (U+V<=absDen);
 #else

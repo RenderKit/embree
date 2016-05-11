@@ -197,8 +197,17 @@ namespace embree
         const Vec3vf16 vtx0(select(0x0f0f,vfloat16(v0.x),vfloat16(v2.x)),
                             select(0x0f0f,vfloat16(v0.y),vfloat16(v2.y)),
                             select(0x0f0f,vfloat16(v0.z),vfloat16(v2.z)));
+#if !defined(RTCORE_BACKFACE_CULLING)
         const Vec3vf16 vtx1(vfloat16(v1.x),vfloat16(v1.y),vfloat16(v1.z));
         const Vec3vf16 vtx2(vfloat16(v3.x),vfloat16(v3.y),vfloat16(v3.z));
+#else
+        const Vec3vf16 vtx1(select(0x0f0f,vfloat16(v1.x),vfloat16(v3.x)),
+                            select(0x0f0f,vfloat16(v1.y),vfloat16(v3.y)),
+                            select(0x0f0f,vfloat16(v1.z),vfloat16(v3.z)));
+        const Vec3vf16 vtx2(select(0x0f0f,vfloat16(v3.x),vfloat16(v1.x)),
+                            select(0x0f0f,vfloat16(v3.y),vfloat16(v1.y)),
+                            select(0x0f0f,vfloat16(v3.z),vfloat16(v1.z)));
+#endif
         const vbool16 flags(0xf0f0);
 
         MoellerTrumboreHitM<16> hit;
@@ -208,7 +217,9 @@ namespace embree
           vfloat16 U = hit.U, V = hit.V, absDen = hit.absDen;
           hit.U = select(flags,absDen-V,U);
           hit.V = select(flags,absDen-U,V);
+#if !defined(RTCORE_BACKFACE_CULLING)
           hit.vNg *= select(flags,vfloat16(-1.0f),vfloat16(1.0f)); // FIXME: use XOR
+#endif
           if (likely(epilog(hit.valid,hit)))
             return true;
         }
@@ -244,8 +255,13 @@ namespace embree
         __forceinline bool intersect(Ray& ray, const Vec3vf4& v0, const Vec3vf4& v1, const Vec3vf4& v2, const Vec3vf4& v3, const Epilog& epilog) const
       {
         const Vec3vf8 vtx0(vfloat8(v0.x,v2.x),vfloat8(v0.y,v2.y),vfloat8(v0.z,v2.z));
+#if !defined(RTCORE_BACKFACE_CULLING)
         const Vec3vf8 vtx1(vfloat8(v1.x),vfloat8(v1.y),vfloat8(v1.z));
         const Vec3vf8 vtx2(vfloat8(v3.x),vfloat8(v3.y),vfloat8(v3.z));        
+#else
+        const Vec3vf8 vtx1(vfloat8(v1.x,v3.x),vfloat8(v1.y,v3.y),vfloat8(v1.z,v3.z));
+        const Vec3vf8 vtx2(vfloat8(v3.x,v1.x),vfloat8(v3.y,v1.y),vfloat8(v3.z,v1.z));
+#endif
         MoellerTrumboreHitM<8> hit;
         MoellerTrumboreIntersector1<8> intersector(ray,nullptr);
         const vbool8 flags(0,0,0,0,1,1,1,1);
@@ -254,7 +270,9 @@ namespace embree
           vfloat8 U = hit.U, V = hit.V, absDen = hit.absDen;
           hit.U = select(flags,absDen-V,U);
           hit.V = select(flags,absDen-U,V);
+#if !defined(RTCORE_BACKFACE_CULLING)
           hit.vNg *= select(flags,vfloat8(-1.0f),vfloat8(1.0f)); // FIXME: use XOR
+#endif
           if (unlikely(epilog(hit.valid,hit)))
             return true;
         }
@@ -482,8 +500,17 @@ namespace embree
         const Vec3vf16 vtx0(select(0x0f0f,vfloat16(v0.x),vfloat16(v2.x)),
                             select(0x0f0f,vfloat16(v0.y),vfloat16(v2.y)),
                             select(0x0f0f,vfloat16(v0.z),vfloat16(v2.z)));
+#if !defined(RTCORE_BACKFACE_CULLING)
         const Vec3vf16 vtx1(vfloat16(v1.x),vfloat16(v1.y),vfloat16(v1.z));
         const Vec3vf16 vtx2(vfloat16(v3.x),vfloat16(v3.y),vfloat16(v3.z));
+#else
+        const Vec3vf16 vtx1(select(0x0f0f,vfloat16(v1.x),vfloat16(v3.x)),
+                            select(0x0f0f,vfloat16(v1.y),vfloat16(v3.y)),
+                            select(0x0f0f,vfloat16(v1.z),vfloat16(v3.z)));
+        const Vec3vf16 vtx2(select(0x0f0f,vfloat16(v3.x),vfloat16(v1.x)),
+                            select(0x0f0f,vfloat16(v3.y),vfloat16(v1.y)),
+                            select(0x0f0f,vfloat16(v3.z),vfloat16(v1.z)));
+#endif
         const vbool16 flags(0xf0f0);
         return MoellerTrumboreIntersector1KTriangleM::intersect1(ray,k,vtx0,vtx1,vtx2,flags,epilog);
       }
@@ -517,8 +544,13 @@ namespace embree
                                       const Vec3vf4& v0, const Vec3vf4& v1, const Vec3vf4& v2, const Vec3vf4& v3, const Epilog& epilog) const
       {
         const Vec3vf8 vtx0(vfloat8(v0.x,v2.x),vfloat8(v0.y,v2.y),vfloat8(v0.z,v2.z));
+#if !defined(RTCORE_BACKFACE_CULLING)
         const Vec3vf8 vtx1(vfloat8(v1.x),vfloat8(v1.y),vfloat8(v1.z));
         const Vec3vf8 vtx2(vfloat8(v3.x),vfloat8(v3.y),vfloat8(v3.z));
+#else
+        const Vec3vf8 vtx1(vfloat8(v1.x,v3.x),vfloat8(v1.y,v3.y),vfloat8(v1.z,v3.z));
+        const Vec3vf8 vtx2(vfloat8(v3.x,v1.x),vfloat8(v3.y,v1.y),vfloat8(v3.z,v1.z));
+#endif
         const vbool8 flags(0,0,0,0,1,1,1,1);
         return MoellerTrumboreIntersector1KTriangleM::intersect1(ray,k,vtx0,vtx1,vtx2,flags,epilog); 
       }
