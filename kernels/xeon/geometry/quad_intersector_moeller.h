@@ -43,7 +43,7 @@ namespace embree
           const vfloat<M> v = V * rcpAbsDen;
           const vfloat<M> u1 = vfloat<M>(1.0f) - u;
           const vfloat<M> v1 = vfloat<M>(1.0f) - v;
-#if !defined(__AVX__) // FIXME: incorrect for default template instantiation for QuadMIntersector1MoellerTrumbore
+#if !defined(__AVX__) || defined(RTCORE_BACKFACE_CULLING) // FIXME: incorrect for default template instantiation for QuadMIntersector1MoellerTrumbore
           vu = select(flags,u1,u); 
           vv = select(flags,v1,v);
           vNg = Vec3<vfloat<M>>(tri_Ng.x,tri_Ng.y,tri_Ng.z);
@@ -215,10 +215,13 @@ namespace embree
         if (unlikely(intersector.intersect(ray,vtx0,vtx1,vtx2,hit))) 
         {
           vfloat16 U = hit.U, V = hit.V, absDen = hit.absDen;
+#if !defined(RTCORE_BACKFACE_CULLING)
           hit.U = select(flags,absDen-V,U);
           hit.V = select(flags,absDen-U,V);
-#if !defined(RTCORE_BACKFACE_CULLING)
           hit.vNg *= select(flags,vfloat16(-1.0f),vfloat16(1.0f)); // FIXME: use XOR
+#else
+          hit.U = select(flags,absDen-U,U);
+          hit.V = select(flags,absDen-V,V);
 #endif
           if (likely(epilog(hit.valid,hit)))
             return true;
@@ -268,10 +271,14 @@ namespace embree
         if (unlikely(intersector.intersect(ray,vtx0,vtx1,vtx2,hit)))
         {
           vfloat8 U = hit.U, V = hit.V, absDen = hit.absDen;
+
+#if !defined(RTCORE_BACKFACE_CULLING)
           hit.U = select(flags,absDen-V,U);
           hit.V = select(flags,absDen-U,V);
-#if !defined(RTCORE_BACKFACE_CULLING)
           hit.vNg *= select(flags,vfloat8(-1.0f),vfloat8(1.0f)); // FIXME: use XOR
+#else
+          hit.U = select(flags,absDen-U,U);
+          hit.V = select(flags,absDen-V,V);
 #endif
           if (unlikely(epilog(hit.valid,hit)))
             return true;

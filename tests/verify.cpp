@@ -1487,6 +1487,7 @@ namespace embree
         if (abs(rays[i].u - u[i]) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
         if (abs(rays[i].v - v[i]) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
         if (abs(rays[i].tfar - 1.0f) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
+
         const Vec3fa org(rays[i].org[0],rays[i].org[1],rays[i].org[2]);
         const Vec3fa dir(rays[i].dir[0],rays[i].dir[1],rays[i].dir[2]);
         const Vec3fa ht  = org + rays[i].tfar*dir;
@@ -1495,6 +1496,7 @@ namespace embree
         const Vec3fa Ng = normalize(Vec3fa(rays[i].Ng[0],rays[i].Ng[1],rays[i].Ng[2])); // FIXME: some geom normals are scaled!!!??
         if (reduce_max(abs(Ng - Vec3fa(0.0f,0.0f,-1.0f))) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
       }
+      
       return VerifyApplication::PASSED;
     }
   };
