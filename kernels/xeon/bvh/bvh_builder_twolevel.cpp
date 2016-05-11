@@ -20,7 +20,7 @@
 #include "../../common/scene_line_segments.h"
 #include "../../common/scene_triangle_mesh.h"
 
-#define PROFILE 0
+#define PROFILE 1
 #define MAX_OPEN_SIZE 10000
 #define PROFILE_ITERATIONS 2000
 

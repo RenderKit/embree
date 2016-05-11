@@ -53,6 +53,7 @@ namespace embree
     struct __aligned(8) MortonID32Bit
     {
     public:
+      
       unsigned int code;
       unsigned int index;
       
@@ -61,6 +62,10 @@ namespace embree
       
       __forceinline unsigned int get(const unsigned int shift, const unsigned int and_mask) const {
         return (code >> shift) & and_mask;
+      }
+
+      __forceinline unsigned int getByte(const size_t index) const {
+        return ((unsigned char*)&code)[index];
       }
       
       __forceinline bool operator<(const MortonID32Bit &m) const { return code < m.code; } 
@@ -159,17 +164,21 @@ namespace embree
 #endif
     };
 
-
     void InPlace32BitRadixSort(MortonID32Bit* const morton, const size_t num, const size_t shift = 3*8)
     {
       static const size_t BITS = 8;
       static const size_t BUCKETS = (1 << BITS);
+      static const size_t CMP_SORT_THRESHOLD = 16;
+
+      __assume_aligned(morton, 8);
+
       __aligned(64) unsigned int count[BUCKETS];
 
       /* clear buckets */
       for (size_t i=0;i<BUCKETS;i++) count[i] = 0;
 
       /* count buckets */
+#pragma nounroll
       for (size_t i=0;i<num;i++) count[ morton[i].get(shift,BUCKETS-1) ]++;
 
       /* prefix sums */
@@ -187,11 +196,6 @@ namespace embree
 
       assert(tail[BUCKETS-1] == head[BUCKETS-1] + count[BUCKETS-1]);      
       assert(tail[BUCKETS-1] == num);      
-
-      for (size_t i=0; i<BUCKETS; i++)    
-      {
-        //std::cout << i << " head " << head[i] << " tail " << tail[i] << " count " << count[i] << std::endl;
-      }
 
       /* in-place swap */      
       for (size_t i=0;i<BUCKETS;i++)
@@ -220,14 +224,17 @@ namespace embree
           for (size_t j=offset;j<offset+count[i]-1;j++)
             assert(morton[j].get(shift,BUCKETS-1) == i);
 
-          InPlace32BitRadixSort(morton + offset, count[i], shift-BITS);
+          if (unlikely(count[i] < CMP_SORT_THRESHOLD))
+            insertionsort_ascending(morton + offset, count[i]);
+          else
+            InPlace32BitRadixSort(morton + offset, count[i], shift-BITS);
+
           for (size_t j=offset;j<offset+count[i]-1;j++)
             assert(morton[j] <= morton[j+1]);
 
           offset += count[i];
         }      
     }
-
     
     template<
       typename NodeRef, 
@@ -500,16 +507,32 @@ namespace embree
       std::pair<NodeRef,BBox3fa> build(MortonID32Bit* src, MortonID32Bit* tmp, size_t numPrimitives) 
       {
         /* using 4 phases radix sort */
+
         double i0 = getSeconds();
         morton = src;
-        //radix_sort_u32(src,tmp,numPrimitives);
         //std::sort(src,src+ numPrimitives);
 
-        InPlace32BitRadixSort(src,numPrimitives);
+#if 0
+        const size_t numTasks = TaskScheduler::threadCount();
+
+        parallel_for(numTasks,[&] (size_t taskIndex) {
+                       const size_t startID = (taskIndex+0)*numPrimitives/numTasks;
+                       const size_t endID   = (taskIndex+1)*numPrimitives/numTasks;
+                       //std::sort(src + startID,src + endID);                     
+                       //quicksort_ascending(src,startID,endID);
+                       InPlace32BitRadixSort(src + startID,endID-startID);
+                     });
+
+        //InPlace32BitRadixSort(src,numPrimitives);
+#endif
+
+        radix_sort_u32(src,tmp,numPrimitives);
 
         i0 = getSeconds() - i0;
         if (numPrimitives > 1000000) PRINT(i0);
 
+
+#if DEBUG
         if (numPrimitives)
         for (size_t i=0;i<numPrimitives-1;i++)
         {
@@ -523,7 +546,7 @@ namespace embree
           }
           assert(src[i] <= src[i+1]);
         }
-
+#endif
         //double i1 = getSeconds();
 
         /* build BVH */
