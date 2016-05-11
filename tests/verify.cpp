@@ -612,7 +612,7 @@ namespace embree
     }
   };
 
-   struct BuildTest : public VerifyApplication::Test
+  struct BuildTest : public VerifyApplication::Test
   {
     RTCSceneFlags sflags;
     RTCGeometryFlags gflags; 
@@ -627,21 +627,30 @@ namespace embree
       error_handler(rtcDeviceGetError(device));
       ClearBuffers clear_before_return;
       RTCSceneRef scene = rtcDeviceNewScene(device,sflags,aflags);
-      addSphere(device,scene,gflags,zero,1E-24f,50);
-      addHair(device,scene,gflags,zero,1E-24f,1E-26f,100,1E-26f);
-      addSphere(device,scene,gflags,zero,1E-24f,50);
-      addHair(device,scene,gflags,zero,1E-24f,1E-26f,100,1E-26f);
+
+      const Vec3fa center = zero;
+      const float radius = 1.0f;
+      const Vec3fa dx(1,0,0);
+      const Vec3fa dy(0,1,0);
+      addGeometry(device,scene,gflags,SceneGraph::createTriangleSphere(center,radius,50),false);
+      addGeometry(device,scene,gflags,SceneGraph::createTriangleSphere(center,radius,50)->set_motion_vector(Vec3fa(1)),true);
+      addGeometry(device,scene,gflags,SceneGraph::createQuadSphere(center,radius,50),false);
+      addGeometry(device,scene,gflags,SceneGraph::createQuadSphere(center,radius,50)->set_motion_vector(Vec3fa(1)),true);
+      addGeometry(device,scene,gflags,SceneGraph::createSubdivSphere(center,radius,8,20),false);
+      addGeometry(device,scene,gflags,SceneGraph::createSubdivSphere(center,radius,8,20)->set_motion_vector(Vec3fa(1)),true);
+      addGeometry(device,scene,gflags,SceneGraph::createHairyPlane(center,dx,dy,0.1f,0.01f,100,true),false);
+      addGeometry(device,scene,gflags,SceneGraph::createHairyPlane(center,dx,dy,0.1f,0.01f,100,true)->set_motion_vector(Vec3fa(1)),true);
+      addGeometry(device,scene,gflags,SceneGraph::createHairyPlane(center,dx,dy,0.1f,0.01f,100,false),false);
+      addGeometry(device,scene,gflags,SceneGraph::createHairyPlane(center,dx,dy,0.1f,0.01f,100,false)->set_motion_vector(Vec3fa(1)),true);
       rtcCommit (scene);
       AssertNoError(device);
-      if ((sflags & RTC_SCENE_DYNAMIC) == 0) {
-        rtcDisable(scene,0);
-        AssertAnyError(device);
-        rtcDisable(scene,1);
-        AssertAnyError(device);
-        rtcDisable(scene,2);
-        AssertAnyError(device);
-        rtcDisable(scene,3);
-        AssertAnyError(device);
+
+      if ((sflags & RTC_SCENE_DYNAMIC) == 0) 
+      {
+        for (size_t i=0; i<10; i++) {
+          rtcDisable(scene,i);
+          AssertAnyError(device);
+        }
       }
       return VerifyApplication::PASSED;
     }
