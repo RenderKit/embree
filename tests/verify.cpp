@@ -40,7 +40,6 @@
 
 namespace embree
 {
-  atomic_t errorCounter = 0;
   std::vector<thread_t> g_threads;
 
   bool hasISA(const int isa) 
@@ -85,9 +84,6 @@ namespace embree
     sflags = (RTCSceneFlags) sflag;
     gflags = (RTCGeometryFlags) gflag;
   }
-
-#define CountErrors(device) \
-    if (rtcDeviceGetError(device) != RTC_NO_ERROR) atomic_add(&errorCounter,1);
 
   void AssertNoError(RTCDevice device) 
   {
@@ -2053,7 +2049,10 @@ namespace embree
   struct RegressionTask
   {
     RegressionTask (size_t sceneIndex, size_t sceneCount, size_t threadCount, bool cancelBuild)
-      : sceneIndex(sceneIndex), sceneCount(sceneCount), scene(nullptr), numActiveThreads(0), cancelBuild(cancelBuild) { barrier.init(threadCount); }
+      : sceneIndex(sceneIndex), sceneCount(sceneCount), scene(nullptr), numActiveThreads(0), cancelBuild(cancelBuild), errorCounter(0) 
+    { 
+      barrier.init(threadCount); 
+    }
 
     size_t sceneIndex;
     size_t sceneCount;
@@ -2062,6 +2061,7 @@ namespace embree
     BarrierSys barrier;
     volatile size_t numActiveThreads;
     bool cancelBuild;
+    AtomicCounter errorCounter;
   };
 
   struct ThreadRegressionTask
@@ -2079,10 +2079,10 @@ namespace embree
   };
 
   ssize_t monitorProgressBreak = -1;
-  atomic_t monitorProgressInvokations = 0;
+  AtomicCounter monitorProgressInvokations(0);
   bool monitorProgressFunction(void* ptr, double dn) 
   {
-    size_t n = atomic_add(&monitorProgressInvokations,1);
+    size_t n = monitorProgressInvokations++;
     if (n == monitorProgressBreak) return false;
     return true;
   }
@@ -2103,9 +2103,9 @@ namespace embree
             rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);
             rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);
           }
-	  //CountErrors(thread->device);
+	  //if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
           if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) {
-            atomic_add(&errorCounter,1);
+            task->errorCounter++;
           }
           else {
             shootRandomRays(thread->intersectModes,thread->state->intersectVariants,task->scene);
@@ -2117,7 +2117,7 @@ namespace embree
       return;
     }
 
-    CountErrors(thread->device);
+    if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
     int geom[1024];
     int types[1024];
     Sphere spheres[1024];
@@ -2136,7 +2136,7 @@ namespace embree
 
       RTCSceneFlags sflag = getSceneFlag(i); 
       task->scene = rtcDeviceNewScene(thread->device,sflag,aflags_all);
-      CountErrors(thread->device);
+      if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
       if (task->cancelBuild) rtcSetProgressMonitorFunction(task->scene,monitorProgressFunction,nullptr);
       avector<Sphere*> spheres;
       
@@ -2166,10 +2166,9 @@ namespace embree
 	  addUserGeometryEmpty(thread->device,task->scene,sphere); break;
         }
 	}
-        //CountErrors(thread->device);
+        //if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
         if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) {
-          atomic_add(&errorCounter,1);
-
+          task->errorCounter++;
           hasError = true;
           break;
         }
@@ -2188,10 +2187,10 @@ namespace embree
           rtcCommit(task->scene);
         }
       }
-      //CountErrors(thread->device);
+      //if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
 
       if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) {
-        atomic_add(&errorCounter,1);
+        task->errorCounter++;
       }
       else {
         if (!hasError) {
@@ -2203,7 +2202,7 @@ namespace embree
 	task->barrier.wait();
 
       task->scene = nullptr;
-      CountErrors(thread->device);
+      if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
 
       for (size_t i=0; i<spheres.size(); i++)
 	delete spheres[i];
@@ -2226,9 +2225,9 @@ namespace embree
 	{
           if (build_join_test) rtcCommit(task->scene);
           else	               rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);
-	  //CountErrors(thread->device);
+	  //if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
           if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) {
-            atomic_add(&errorCounter,1);
+            task->errorCounter++;
           }
           else {
             shootRandomRays(thread->intersectModes,thread->state->intersectVariants,task->scene);
@@ -2240,7 +2239,7 @@ namespace embree
       return;
     }
     task->scene = rtcDeviceNewScene(thread->device,RTC_SCENE_DYNAMIC,aflags_all);
-    CountErrors(thread->device);
+    if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
     if (task->cancelBuild) rtcSetProgressMonitorFunction(task->scene,monitorProgressFunction,nullptr);
     int geom[1024];
     int types[1024];
@@ -2294,9 +2293,9 @@ namespace embree
           case 8: geom[index] = addSphere(thread->device,task->scene,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
           case 9: spheres[index] = Sphere(pos,2.0f); geom[index] = addUserGeometryEmpty(thread->device,task->scene,&spheres[index]); break;
           }; 
-	  //CountErrors(thread->device);
+	  //if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
           if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) {
-            atomic_add(&errorCounter,1);
+            task->errorCounter++;
             hasError = true;
             break;
           }
@@ -2309,7 +2308,7 @@ namespace embree
           case 6:
 	  case 9: {
             rtcDeleteGeometry(task->scene,geom[index]);     
-	    CountErrors(thread->device);
+	    if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
             geom[index] = -1; 
             break;
           }
@@ -2323,7 +2322,7 @@ namespace embree
             switch (op) {
             case 0: {
               rtcDeleteGeometry(task->scene,geom[index]);     
-	      CountErrors(thread->device);
+	      if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
               geom[index] = -1; 
               break;
             }
@@ -2354,7 +2353,7 @@ namespace embree
           for (size_t i=0; i<1024; i++) {
             if (geom[i] != -1) {
               rtcDeleteGeometry(task->scene,geom[i]);
-              CountErrors(thread->device);
+              if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
               geom[i] = -1;
             }
           }
@@ -2370,10 +2369,10 @@ namespace embree
         if (!hasError) 
           rtcCommit(task->scene);
       }
-      //CountErrors(thread->device);
+      //if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
 
       if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR)
-        atomic_add(&errorCounter,1);
+        task->errorCounter++;
       else
         if (!hasError)
           shootRandomRays(thread->intersectModes,thread->state->intersectVariants,task->scene);
@@ -2383,7 +2382,7 @@ namespace embree
     }
 
     task->scene = nullptr;
-    CountErrors(thread->device);
+    if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
 
     delete thread; thread = nullptr;
     return;
@@ -2419,7 +2418,7 @@ namespace embree
         intersectModes.push_back(MODE_INTERSECTNp);
       }
 
-      errorCounter = 0;
+      size_t errorCounter = 0;
       size_t sceneIndex = 0;
       while (sceneIndex < size_t(30*state->intensity)) 
       {
@@ -2442,8 +2441,10 @@ namespace embree
           
           for (size_t i=0; i<g_threads.size(); i++)
             join(g_threads[i]);
-          for (size_t i=0; i<tasks.size(); i++)
+          for (size_t i=0; i<tasks.size(); i++) {
+            errorCounter += tasks[i]->errorCounter;
             delete tasks[i];
+          }
           
           g_threads.clear();
         }
@@ -2459,15 +2460,15 @@ namespace embree
   };
 
   ssize_t monitorMemoryBreak = -1;
-  atomic_t monitorMemoryBytesUsed = 0;
-  atomic_t monitorMemoryInvokations = 0;
+  AtomicCounter monitorMemoryBytesUsed(0);
+  AtomicCounter monitorMemoryInvokations(0);
   bool monitorMemoryFunction(ssize_t bytes, bool post) 
   {
-    atomic_add(&monitorMemoryBytesUsed,bytes);
+    monitorMemoryBytesUsed += bytes;
     if (bytes > 0) {
-      size_t n = atomic_add(&monitorMemoryInvokations,1);
+      size_t n = monitorMemoryInvokations++;
       if (n == monitorMemoryBreak) {
-        if (!post) atomic_add(&monitorMemoryBytesUsed,-bytes);
+        if (!post) monitorMemoryBytesUsed -= bytes;
         return false;
       }
     }
@@ -2509,7 +2510,6 @@ namespace embree
       while (sceneIndex < size_t(30*state->intensity)) 
       {
         ClearBuffers clear_before_return;
-        errorCounter = 0;
         monitorMemoryBreak = -1;
         monitorMemoryBytesUsed = 0;
         monitorMemoryInvokations = 0;
@@ -2528,7 +2528,7 @@ namespace embree
         monitorProgressInvokations = 0;
         RegressionTask task2(sceneIndex,1,0,true);
         func(new ThreadRegressionTask(0,0,state,device,intersectModes,&task2));
-        if (monitorMemoryBytesUsed || (monitorMemoryInvokations != 0 && errorCounter != 1)) {
+        if (monitorMemoryBytesUsed || (monitorMemoryInvokations != 0 && task2.errorCounter != 1)) {
           rtcDeviceSetMemoryMonitorFunction(device,nullptr);
           return VerifyApplication::FAILED;
         }
