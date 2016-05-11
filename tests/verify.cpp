@@ -491,8 +491,10 @@ namespace embree
 
   struct BufferStrideTest : public VerifyApplication::Test
   {
-    BufferStrideTest (std::string name, int isa)
-      : VerifyApplication::Test(name,isa,VerifyApplication::PASS) {}
+    GeometryType gtype;
+
+    BufferStrideTest (std::string name, int isa, GeometryType gtype)
+      : VerifyApplication::Test(name,isa,VerifyApplication::PASS), gtype(gtype) {}
     
     VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
@@ -502,35 +504,50 @@ namespace embree
       ClearBuffers clear_before_return;
       RTCSceneRef scene = rtcDeviceNewScene(device,RTC_SCENE_STATIC,aflags);
       AssertNoError(device);
-      unsigned geom = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 16, 16);
+
+      unsigned geomID = -1;
+      switch (gtype) {
+      case TRIANGLE_MESH    : geomID = rtcNewTriangleMesh   (scene, RTC_GEOMETRY_STATIC, 16, 16, 1); break;
+      case TRIANGLE_MESH_MB : geomID = rtcNewTriangleMesh   (scene, RTC_GEOMETRY_STATIC, 16, 16, 2); break;
+      case QUAD_MESH        : geomID = rtcNewQuadMesh       (scene, RTC_GEOMETRY_STATIC, 16, 16, 1); break;
+      case QUAD_MESH_MB     : geomID = rtcNewQuadMesh       (scene, RTC_GEOMETRY_STATIC, 16, 16, 2); break;
+      case SUBDIV_MESH      : geomID = rtcNewSubdivisionMesh(scene, RTC_GEOMETRY_STATIC,  0, 16, 16, 0,0,0, 1); break;
+      case SUBDIV_MESH_MB   : geomID = rtcNewSubdivisionMesh(scene, RTC_GEOMETRY_STATIC,  0, 16, 16, 0,0,0, 2); break;
+      case HAIR_GEOMETRY    : geomID = rtcNewHairGeometry   (scene, RTC_GEOMETRY_STATIC, 16, 16, 1); break;
+      case HAIR_GEOMETRY_MB : geomID = rtcNewHairGeometry   (scene, RTC_GEOMETRY_STATIC, 16, 16, 2); break;
+      case CURVE_GEOMETRY   : geomID = rtcNewCurveGeometry   (scene, RTC_GEOMETRY_STATIC, 16, 16, 1); break;
+      case CURVE_GEOMETRY_MB: geomID = rtcNewCurveGeometry   (scene, RTC_GEOMETRY_STATIC, 16, 16, 2); break;
+      default               : throw std::runtime_error("unknown geometry type: "+to_string(gtype));
+      }
       AssertNoError(device);
+
       avector<char> indexBuffer(8+16*6*sizeof(int));
       avector<char> vertexBuffer(12+16*9*sizeof(float)+4);
       
-      rtcSetBuffer(scene,geom,RTC_INDEX_BUFFER,indexBuffer.data(),1,3*sizeof(int));
+      rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER,indexBuffer.data(),1,3*sizeof(int));
       AssertError(device,RTC_INVALID_OPERATION);
-      rtcSetBuffer(scene,geom,RTC_VERTEX_BUFFER,vertexBuffer.data(),1,3*sizeof(float));
+      rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER,vertexBuffer.data(),1,3*sizeof(float));
       AssertError(device,RTC_INVALID_OPERATION);
 
-      rtcSetBuffer(scene,geom,RTC_INDEX_BUFFER,indexBuffer.data(),0,3*sizeof(int)+3);
+      rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER,indexBuffer.data(),0,3*sizeof(int)+3);
       AssertError(device,RTC_INVALID_OPERATION);
-      rtcSetBuffer(scene,geom,RTC_VERTEX_BUFFER,vertexBuffer.data(),0,3*sizeof(float)+3);
+      rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER,vertexBuffer.data(),0,3*sizeof(float)+3);
       AssertError(device,RTC_INVALID_OPERATION);
       
-      rtcSetBuffer(scene,geom,RTC_INDEX_BUFFER,indexBuffer.data(),0,3*sizeof(int));
+      rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER,indexBuffer.data(),0,3*sizeof(int));
       AssertNoError(device);
-      rtcSetBuffer(scene,geom,RTC_VERTEX_BUFFER,vertexBuffer.data(),0,3*sizeof(float));
-      AssertNoError(device);
-      
-      rtcSetBuffer(scene,geom,RTC_INDEX_BUFFER,indexBuffer.data(),8,6*sizeof(int));
-      AssertNoError(device);
-      rtcSetBuffer(scene,geom,RTC_VERTEX_BUFFER,vertexBuffer.data(),12,9*sizeof(float));
+      rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER,vertexBuffer.data(),0,3*sizeof(float));
       AssertNoError(device);
       
-      rtcSetBuffer(scene,geom,RTC_INDEX_BUFFER,indexBuffer.data(),0,3*sizeof(int));
+      rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER,indexBuffer.data(),8,6*sizeof(int));
+      AssertNoError(device);
+      rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER,vertexBuffer.data(),12,9*sizeof(float));
       AssertNoError(device);
       
-      rtcSetBuffer(scene,geom,RTC_VERTEX_BUFFER,vertexBuffer.data(),0,4*sizeof(float));
+      rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER,indexBuffer.data(),0,3*sizeof(int));
+      AssertNoError(device);
+      
+      rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER,vertexBuffer.data(),0,4*sizeof(float));
       AssertNoError(device);
       
       return VerifyApplication::PASSED;
@@ -2579,6 +2596,8 @@ namespace embree
   VerifyApplication::VerifyApplication ()
     : Application(Application::FEATURE_RTCORE), intensity(1.0f), numFailedTests(0), user_specified_tests(false), use_groups(true)
   {
+    GeometryType gtypes[] = { TRIANGLE_MESH, TRIANGLE_MESH_MB, QUAD_MESH, QUAD_MESH_MB, SUBDIV_MESH, SUBDIV_MESH_MB };
+
     /* create list of all ISAs to test */
     if (hasISA(SSE2)) isas.push_back(SSE2);
     if (hasISA(SSE42)) isas.push_back(SSE42);
@@ -2655,7 +2674,10 @@ namespace embree
       addTest(new GetBoundsTest("get_bounds_"+stringOfISA(isa),isa));
       addTest(new GetUserDataTest("get_user_data_"+stringOfISA(isa),isa));
 
-      addTest(new BufferStrideTest("buffer_stride_"+stringOfISA(isa),isa));
+      beginTestGroup("buffer_stride_"+stringOfISA(isa));
+      for (auto gtype : gtypes)
+        addTest(new BufferStrideTest("buffer_stride_"+stringOfISA(isa)+"_"+to_string(gtype),isa,gtype));
+      endTestGroup();
       
       /**************************************************************************/
       /*                        Builder Tests                                   */
@@ -2753,7 +2775,6 @@ namespace embree
       if (rtcDeviceGetParameter1i(device,RTC_CONFIG_BACKFACE_CULLING)) 
       {
         beginTestGroup("backface_culling_"+stringOfISA(isa));
-        GeometryType gtypes[] = { TRIANGLE_MESH, TRIANGLE_MESH_MB, QUAD_MESH, QUAD_MESH_MB, SUBDIV_MESH, SUBDIV_MESH_MB };
         for (auto gtype : gtypes)
           for (auto sflags : sceneFlags) 
             for (auto imode : intersectModes) 
