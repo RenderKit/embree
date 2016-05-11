@@ -351,7 +351,7 @@ namespace embree
       }
 
       if (currentLeftBlock != (size_t)-1)
-        atomic_max(maxLeftBlockID,currentLeftBlock);
+        atomic_max(maxLeftBlockID,(uint32_t)currentLeftBlock);
 
       if (right_begin != right_end)
       {
@@ -360,7 +360,7 @@ namespace embree
       }
 
       if (currentRightBlock != (size_t)-1)
-        atomic_max(maxRightBlockID,currentRightBlock);
+        atomic_max(maxRightBlockID,(uint32_t)currentRightBlock);
 
     }
 
