@@ -709,6 +709,7 @@ namespace embree
         subdivmesh->positions.push_back(Vec3fa(0,0,0));
         subdivmesh->positions.push_back(Vec3fa(0,1,0));
         subdivmesh->positions.push_back(Vec3fa(1,1,0));
+        subdivmesh->positions.push_back(Vec3fa(1,0,0));
         /*subdivmesh->positions2.push_back(Vec3fa(0,0,0));
         subdivmesh->positions2.push_back(Vec3fa(0,1,0));
         subdivmesh->positions2.push_back(Vec3fa(1,1,0));
