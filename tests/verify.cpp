@@ -1873,7 +1873,7 @@ namespace embree
 
       double failRate = double(numFailures) / double(numTests);
       bool failed = failRate > 0.00002;
-      if (failed) { PRINT(numFailures); PRINT(failRate); PRINT(imode); exit(0); }
+      //if (failed) { PRINT(numFailures); PRINT(failRate); PRINT(imode); exit(0); }
       //printf(" (%f%%)", 100.0f*failRate); fflush(stdout);
       return (VerifyApplication::TestReturnValue)(!failed);
     }
