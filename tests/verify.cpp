@@ -1534,9 +1534,10 @@ namespace embree
   {
     RTCSceneFlags sflags;
     RTCGeometryFlags gflags;
+    GeometryType gtype;
 
-    BackfaceCullingTest (std::string name, int isa, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant)
-      : VerifyApplication::IntersectTest(name,isa,imode,ivariant,VerifyApplication::PASS), sflags(sflags), gflags(gflags) {}
+    BackfaceCullingTest (std::string name, int isa, RTCSceneFlags sflags, RTCGeometryFlags gflags, GeometryType gtype, IntersectMode imode, IntersectVariant ivariant)
+      : VerifyApplication::IntersectTest(name,isa,imode,ivariant,VerifyApplication::PASS), sflags(sflags), gflags(gflags), gtype(gtype) {}
     
     VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
@@ -1549,28 +1550,34 @@ namespace embree
       /* create triangle that is front facing for a right handed 
          coordinate system if looking along the z direction */
       RTCSceneRef scene = rtcDeviceNewScene(device,sflags,to_aflags(imode));
-      unsigned mesh = rtcNewTriangleMesh (scene, gflags, 1, 3);
-      Vec3fa*   vertices  = (Vec3fa*  ) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
-      Triangle* triangles = (Triangle*) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
-      vertices[0].x = 0; vertices[0].y = 0; vertices[0].z = 0;
-      vertices[1].x = 0; vertices[1].y = 1; vertices[1].z = 0;
-      vertices[2].x = 1; vertices[2].y = 0; vertices[2].z = 0;
-      triangles[0].v0 = 0; triangles[0].v1 = 1; triangles[0].v2 = 2;
-      rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
-      rtcUnmapBuffer(scene,mesh,RTC_INDEX_BUFFER);
+      AssertNoError(device);
+      const Vec3fa p0 = Vec3fa(0.0f);
+      const Vec3fa dx = Vec3fa(1.0f, 0.0f,0.0f);
+      const Vec3fa dy = Vec3fa(0.0f,10.0f,0.0f);
+      switch (gtype) {
+      case TRIANGLE_MESH:    addGeometry(device,scene,RTC_GEOMETRY_STATIC,SceneGraph::createTrianglePlane(p0,dx,dy,1,1),false); break;
+      case TRIANGLE_MESH_MB: addGeometry(device,scene,RTC_GEOMETRY_STATIC,SceneGraph::createTrianglePlane(p0,dx,dy,1,1)->set_motion_vector(Vec3fa(1)),true); break;
+      case QUAD_MESH:        addGeometry(device,scene,RTC_GEOMETRY_STATIC,SceneGraph::createQuadPlane(p0,dx,dy,1,1),false); break;
+      case QUAD_MESH_MB:     addGeometry(device,scene,RTC_GEOMETRY_STATIC,SceneGraph::createQuadPlane(p0,dx,dy,1,1)->set_motion_vector(Vec3fa(1)),true); break;
+      case SUBDIV_MESH:      addGeometry(device,scene,RTC_GEOMETRY_STATIC,SceneGraph::createSubdivPlane(p0,dx,dy,1,1,4.0f),false); break;
+      case SUBDIV_MESH_MB:   addGeometry(device,scene,RTC_GEOMETRY_STATIC,SceneGraph::createSubdivPlane(p0,dx,dy,1,1,4.0f)->set_motion_vector(Vec3fa(1)),true); break;
+      default:               throw std::runtime_error("unsupported geometry type: "+to_string(gtype)); 
+      }
+      
+      AssertNoError(device);
       rtcCommit (scene);
       AssertNoError(device);
 
       const size_t numRays = 1000;
       RTCRay rays[numRays];
-      RTCRay backfacing = makeRay(Vec3fa(0.25f,0.25f,1),Vec3fa(0,0,-1)); 
-      RTCRay frontfacing = makeRay(Vec3fa(0.25f,0.25f,-1),Vec3fa(0,0,1)); 
+      RTCRay frontfacing  = makeRay(Vec3fa(0.25f,0.25f,1),Vec3fa(0,0,-1)); 
+      RTCRay backfacing = makeRay(Vec3fa(0.25f,0.25f,-1),Vec3fa(0,0,1)); 
 
       bool passed = true;
 
       for (size_t i=0; i<numRays; i++) {
-        if (i%2) rays[i] = backfacing;
-        else     rays[i] = frontfacing;
+        if (i%2) rays[i] = makeRay(Vec3fa(random<float>(),random<float>(),-1),Vec3fa(0,0,+1)); 
+        else     rays[i] = makeRay(Vec3fa(random<float>(),random<float>(),+1),Vec3fa(0,0,-1)); 
       }
       
       IntersectWithMode(imode,ivariant,scene,rays,numRays);
@@ -2721,10 +2728,12 @@ namespace embree
       if (rtcDeviceGetParameter1i(device,RTC_CONFIG_BACKFACE_CULLING)) 
       {
         beginTestGroup("backface_culling_"+stringOfISA(isa));
-        for (auto sflags : sceneFlags) 
-          for (auto imode : intersectModes) 
-            for (auto ivariant : intersectVariants)
-              addTest(new BackfaceCullingTest("backface_culling_"+to_string(isa,sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,imode,ivariant));
+        GeometryType gtypes[] = { TRIANGLE_MESH, TRIANGLE_MESH_MB, QUAD_MESH, QUAD_MESH_MB, SUBDIV_MESH, SUBDIV_MESH_MB };
+        for (auto gtype : gtypes)
+          for (auto sflags : sceneFlags) 
+            for (auto imode : intersectModes) 
+              for (auto ivariant : intersectVariants)
+                addTest(new BackfaceCullingTest("backface_culling_"+to_string(isa,gtype,sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,gtype,imode,ivariant));
         endTestGroup();
       }
       
