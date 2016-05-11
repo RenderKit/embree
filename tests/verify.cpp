@@ -439,30 +439,52 @@ namespace embree
       error_handler(rtcDeviceGetError(device));
       RTCSceneRef scene = rtcDeviceNewScene(device,RTC_SCENE_STATIC,RTC_INTERSECT1);
       AssertNoError(device);
+
       unsigned geom0 = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 0, 0, 1);
-      AssertNoError(device);
       rtcSetUserData(scene,geom0,(void*)1);
-      
-      unsigned geom1 = rtcNewSubdivisionMesh(scene, RTC_GEOMETRY_STATIC, 0, 0, 0, 0, 0, 0, 1);
-      AssertNoError(device);
+      unsigned geom1 = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 0, 0, 2);
       rtcSetUserData(scene,geom1,(void*)2);
-      
-      unsigned geom2 = rtcNewHairGeometry (scene, RTC_GEOMETRY_STATIC, 0, 0, 1);
-      AssertNoError(device);
+      unsigned geom2 = rtcNewQuadMesh (scene, RTC_GEOMETRY_STATIC, 0, 0, 1);
       rtcSetUserData(scene,geom2,(void*)3);
-      
-      unsigned geom3 = rtcNewUserGeometry (scene,0);
-      AssertNoError(device);
+      unsigned geom3 = rtcNewQuadMesh (scene, RTC_GEOMETRY_STATIC, 0, 0, 2);
       rtcSetUserData(scene,geom3,(void*)4);
-      
+      unsigned geom4 = rtcNewSubdivisionMesh(scene, RTC_GEOMETRY_STATIC, 0, 0, 0, 0, 0, 0, 1);
+      rtcSetUserData(scene,geom4,(void*)5);
+      unsigned geom5 = rtcNewSubdivisionMesh(scene, RTC_GEOMETRY_STATIC, 0, 0, 0, 0, 0, 0, 2);
+      rtcSetUserData(scene,geom5,(void*)6);
+      unsigned geom6 = rtcNewHairGeometry (scene, RTC_GEOMETRY_STATIC, 0, 0, 1);
+      rtcSetUserData(scene,geom6,(void*)7);
+      unsigned geom7 = rtcNewHairGeometry (scene, RTC_GEOMETRY_STATIC, 0, 0, 2);
+      rtcSetUserData(scene,geom7,(void*)8);
+      unsigned geom8 = rtcNewCurveGeometry (scene, RTC_GEOMETRY_STATIC, 0, 0, 1);
+      rtcSetUserData(scene,geom8,(void*)9);
+      unsigned geom9 = rtcNewCurveGeometry (scene, RTC_GEOMETRY_STATIC, 0, 0, 2);
+      rtcSetUserData(scene,geom9,(void*)10);
+       unsigned geom10 = rtcNewLineSegments (scene, RTC_GEOMETRY_STATIC, 0, 0, 1);
+      rtcSetUserData(scene,geom10,(void*)11);
+      unsigned geom11 = rtcNewLineSegments (scene, RTC_GEOMETRY_STATIC, 0, 0, 2);
+      rtcSetUserData(scene,geom11,(void*)12);
+      unsigned geom12 = rtcNewUserGeometry2(scene,0,1);
+      rtcSetUserData(scene,geom12,(void*)13);
+      unsigned geom13 = rtcNewUserGeometry2(scene,0,2);
+      rtcSetUserData(scene,geom13,(void*)14);
       rtcCommit (scene);
       AssertNoError(device);
       
-      if ((size_t)rtcGetUserData(scene,geom0) != 1) return VerifyApplication::FAILED;
-      if ((size_t)rtcGetUserData(scene,geom1) != 2) return VerifyApplication::FAILED;
-      if ((size_t)rtcGetUserData(scene,geom2) != 3) return VerifyApplication::FAILED;
-      if ((size_t)rtcGetUserData(scene,geom3) != 4) return VerifyApplication::FAILED;
-      
+      if ((size_t)rtcGetUserData(scene,geom0 ) !=  1) return VerifyApplication::FAILED;
+      if ((size_t)rtcGetUserData(scene,geom1 ) !=  2) return VerifyApplication::FAILED;
+      if ((size_t)rtcGetUserData(scene,geom2 ) !=  3) return VerifyApplication::FAILED;
+      if ((size_t)rtcGetUserData(scene,geom3 ) !=  4) return VerifyApplication::FAILED;
+      if ((size_t)rtcGetUserData(scene,geom4 ) !=  5) return VerifyApplication::FAILED;
+      if ((size_t)rtcGetUserData(scene,geom5 ) !=  6) return VerifyApplication::FAILED;
+      if ((size_t)rtcGetUserData(scene,geom6 ) !=  7) return VerifyApplication::FAILED;
+      if ((size_t)rtcGetUserData(scene,geom7 ) !=  8) return VerifyApplication::FAILED;
+      if ((size_t)rtcGetUserData(scene,geom8 ) !=  9) return VerifyApplication::FAILED;
+      if ((size_t)rtcGetUserData(scene,geom9 ) != 10) return VerifyApplication::FAILED;
+      if ((size_t)rtcGetUserData(scene,geom10) != 11) return VerifyApplication::FAILED;
+      if ((size_t)rtcGetUserData(scene,geom11) != 12) return VerifyApplication::FAILED;
+      if ((size_t)rtcGetUserData(scene,geom12) != 13) return VerifyApplication::FAILED;
+      if ((size_t)rtcGetUserData(scene,geom13) != 14) return VerifyApplication::FAILED;
       return VerifyApplication::PASSED;
     }
   };
