@@ -40,7 +40,6 @@
 
 namespace embree
 {
-  atomic_t errorCounter = 0;
   std::vector<thread_t> g_threads;
 
   bool hasISA(const int isa) 
@@ -85,9 +84,6 @@ namespace embree
     sflags = (RTCSceneFlags) sflag;
     gflags = (RTCGeometryFlags) gflag;
   }
-
-#define CountErrors(device) \
-    if (rtcDeviceGetError(device) != RTC_NO_ERROR) atomic_add(&errorCounter,1);
 
   void AssertNoError(RTCDevice device) 
   {
@@ -1538,9 +1534,10 @@ namespace embree
   {
     RTCSceneFlags sflags;
     RTCGeometryFlags gflags;
+    GeometryType gtype;
 
-    BackfaceCullingTest (std::string name, int isa, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant)
-      : VerifyApplication::IntersectTest(name,isa,imode,ivariant,VerifyApplication::PASS), sflags(sflags), gflags(gflags) {}
+    BackfaceCullingTest (std::string name, int isa, RTCSceneFlags sflags, RTCGeometryFlags gflags, GeometryType gtype, IntersectMode imode, IntersectVariant ivariant)
+      : VerifyApplication::IntersectTest(name,isa,imode,ivariant,VerifyApplication::PASS), sflags(sflags), gflags(gflags), gtype(gtype) {}
     
     VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
@@ -1553,28 +1550,34 @@ namespace embree
       /* create triangle that is front facing for a right handed 
          coordinate system if looking along the z direction */
       RTCSceneRef scene = rtcDeviceNewScene(device,sflags,to_aflags(imode));
-      unsigned mesh = rtcNewTriangleMesh (scene, gflags, 1, 3);
-      Vec3fa*   vertices  = (Vec3fa*  ) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
-      Triangle* triangles = (Triangle*) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
-      vertices[0].x = 0; vertices[0].y = 0; vertices[0].z = 0;
-      vertices[1].x = 0; vertices[1].y = 1; vertices[1].z = 0;
-      vertices[2].x = 1; vertices[2].y = 0; vertices[2].z = 0;
-      triangles[0].v0 = 0; triangles[0].v1 = 1; triangles[0].v2 = 2;
-      rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
-      rtcUnmapBuffer(scene,mesh,RTC_INDEX_BUFFER);
+      AssertNoError(device);
+      const Vec3fa p0 = Vec3fa(0.0f);
+      const Vec3fa dx = Vec3fa(1.0f, 0.0f,0.0f);
+      const Vec3fa dy = Vec3fa(0.0f,10.0f,0.0f);
+      switch (gtype) {
+      case TRIANGLE_MESH:    addGeometry(device,scene,RTC_GEOMETRY_STATIC,SceneGraph::createTrianglePlane(p0,dx,dy,1,1),false); break;
+      case TRIANGLE_MESH_MB: addGeometry(device,scene,RTC_GEOMETRY_STATIC,SceneGraph::createTrianglePlane(p0,dx,dy,1,1)->set_motion_vector(Vec3fa(1)),true); break;
+      case QUAD_MESH:        addGeometry(device,scene,RTC_GEOMETRY_STATIC,SceneGraph::createQuadPlane(p0,dx,dy,1,1),false); break;
+      case QUAD_MESH_MB:     addGeometry(device,scene,RTC_GEOMETRY_STATIC,SceneGraph::createQuadPlane(p0,dx,dy,1,1)->set_motion_vector(Vec3fa(1)),true); break;
+      case SUBDIV_MESH:      addGeometry(device,scene,RTC_GEOMETRY_STATIC,SceneGraph::createSubdivPlane(p0,dx,dy,1,1,4.0f),false); break;
+      case SUBDIV_MESH_MB:   addGeometry(device,scene,RTC_GEOMETRY_STATIC,SceneGraph::createSubdivPlane(p0,dx,dy,1,1,4.0f)->set_motion_vector(Vec3fa(1)),true); break;
+      default:               throw std::runtime_error("unsupported geometry type: "+to_string(gtype)); 
+      }
+      
+      AssertNoError(device);
       rtcCommit (scene);
       AssertNoError(device);
 
       const size_t numRays = 1000;
       RTCRay rays[numRays];
-      RTCRay backfacing = makeRay(Vec3fa(0.25f,0.25f,1),Vec3fa(0,0,-1)); 
-      RTCRay frontfacing = makeRay(Vec3fa(0.25f,0.25f,-1),Vec3fa(0,0,1)); 
+      RTCRay frontfacing  = makeRay(Vec3fa(0.25f,0.25f,1),Vec3fa(0,0,-1)); 
+      RTCRay backfacing = makeRay(Vec3fa(0.25f,0.25f,-1),Vec3fa(0,0,1)); 
 
       bool passed = true;
 
       for (size_t i=0; i<numRays; i++) {
-        if (i%2) rays[i] = backfacing;
-        else     rays[i] = frontfacing;
+        if (i%2) rays[i] = makeRay(Vec3fa(random<float>(),random<float>(),-1),Vec3fa(0,0,+1)); 
+        else     rays[i] = makeRay(Vec3fa(random<float>(),random<float>(),+1),Vec3fa(0,0,-1)); 
       }
       
       IntersectWithMode(imode,ivariant,scene,rays,numRays);
@@ -2054,7 +2057,10 @@ namespace embree
   struct RegressionTask
   {
     RegressionTask (size_t sceneIndex, size_t sceneCount, size_t threadCount, bool cancelBuild)
-      : sceneIndex(sceneIndex), sceneCount(sceneCount), scene(nullptr), numActiveThreads(0), cancelBuild(cancelBuild) { barrier.init(threadCount); }
+      : sceneIndex(sceneIndex), sceneCount(sceneCount), scene(nullptr), numActiveThreads(0), cancelBuild(cancelBuild), errorCounter(0) 
+    { 
+      barrier.init(threadCount); 
+    }
 
     size_t sceneIndex;
     size_t sceneCount;
@@ -2063,6 +2069,7 @@ namespace embree
     BarrierSys barrier;
     volatile size_t numActiveThreads;
     bool cancelBuild;
+    AtomicCounter errorCounter;
   };
 
   struct ThreadRegressionTask
@@ -2080,10 +2087,10 @@ namespace embree
   };
 
   ssize_t monitorProgressBreak = -1;
-  atomic_t monitorProgressInvokations = 0;
+  AtomicCounter monitorProgressInvokations(0);
   bool monitorProgressFunction(void* ptr, double dn) 
   {
-    size_t n = atomic_add(&monitorProgressInvokations,1);
+    size_t n = monitorProgressInvokations++;
     if (n == monitorProgressBreak) return false;
     return true;
   }
@@ -2104,9 +2111,9 @@ namespace embree
             rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);
             rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);
           }
-	  //CountErrors(thread->device);
+	  //if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
           if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) {
-            atomic_add(&errorCounter,1);
+            task->errorCounter++;
           }
           else {
             shootRandomRays(thread->intersectModes,thread->state->intersectVariants,task->scene);
@@ -2118,7 +2125,7 @@ namespace embree
       return;
     }
 
-    CountErrors(thread->device);
+    if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
     int geom[1024];
     int types[1024];
     Sphere spheres[1024];
@@ -2137,7 +2144,7 @@ namespace embree
 
       RTCSceneFlags sflag = getSceneFlag(i); 
       task->scene = rtcDeviceNewScene(thread->device,sflag,aflags_all);
-      CountErrors(thread->device);
+      if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
       if (task->cancelBuild) rtcSetProgressMonitorFunction(task->scene,monitorProgressFunction,nullptr);
       avector<Sphere*> spheres;
       
@@ -2167,10 +2174,9 @@ namespace embree
 	  addUserGeometryEmpty(thread->device,task->scene,sphere); break;
         }
 	}
-        //CountErrors(thread->device);
+        //if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
         if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) {
-          atomic_add(&errorCounter,1);
-
+          task->errorCounter++;
           hasError = true;
           break;
         }
@@ -2189,10 +2195,10 @@ namespace embree
           rtcCommit(task->scene);
         }
       }
-      //CountErrors(thread->device);
+      //if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
 
       if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) {
-        atomic_add(&errorCounter,1);
+        task->errorCounter++;
       }
       else {
         if (!hasError) {
@@ -2204,7 +2210,7 @@ namespace embree
 	task->barrier.wait();
 
       task->scene = nullptr;
-      CountErrors(thread->device);
+      if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
 
       for (size_t i=0; i<spheres.size(); i++)
 	delete spheres[i];
@@ -2227,9 +2233,9 @@ namespace embree
 	{
           if (build_join_test) rtcCommit(task->scene);
           else	               rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);
-	  //CountErrors(thread->device);
+	  //if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
           if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) {
-            atomic_add(&errorCounter,1);
+            task->errorCounter++;
           }
           else {
             shootRandomRays(thread->intersectModes,thread->state->intersectVariants,task->scene);
@@ -2241,7 +2247,7 @@ namespace embree
       return;
     }
     task->scene = rtcDeviceNewScene(thread->device,RTC_SCENE_DYNAMIC,aflags_all);
-    CountErrors(thread->device);
+    if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
     if (task->cancelBuild) rtcSetProgressMonitorFunction(task->scene,monitorProgressFunction,nullptr);
     int geom[1024];
     int types[1024];
@@ -2295,9 +2301,9 @@ namespace embree
           case 8: geom[index] = addSphere(thread->device,task->scene,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
           case 9: spheres[index] = Sphere(pos,2.0f); geom[index] = addUserGeometryEmpty(thread->device,task->scene,&spheres[index]); break;
           }; 
-	  //CountErrors(thread->device);
+	  //if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
           if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) {
-            atomic_add(&errorCounter,1);
+            task->errorCounter++;
             hasError = true;
             break;
           }
@@ -2310,7 +2316,7 @@ namespace embree
           case 6:
 	  case 9: {
             rtcDeleteGeometry(task->scene,geom[index]);     
-	    CountErrors(thread->device);
+	    if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
             geom[index] = -1; 
             break;
           }
@@ -2324,7 +2330,7 @@ namespace embree
             switch (op) {
             case 0: {
               rtcDeleteGeometry(task->scene,geom[index]);     
-	      CountErrors(thread->device);
+	      if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
               geom[index] = -1; 
               break;
             }
@@ -2355,7 +2361,7 @@ namespace embree
           for (size_t i=0; i<1024; i++) {
             if (geom[i] != -1) {
               rtcDeleteGeometry(task->scene,geom[i]);
-              CountErrors(thread->device);
+              if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
               geom[i] = -1;
             }
           }
@@ -2371,10 +2377,10 @@ namespace embree
         if (!hasError) 
           rtcCommit(task->scene);
       }
-      //CountErrors(thread->device);
+      //if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
 
       if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR)
-        atomic_add(&errorCounter,1);
+        task->errorCounter++;
       else
         if (!hasError)
           shootRandomRays(thread->intersectModes,thread->state->intersectVariants,task->scene);
@@ -2384,7 +2390,7 @@ namespace embree
     }
 
     task->scene = nullptr;
-    CountErrors(thread->device);
+    if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
 
     delete thread; thread = nullptr;
     return;
@@ -2420,7 +2426,7 @@ namespace embree
         intersectModes.push_back(MODE_INTERSECTNp);
       }
 
-      errorCounter = 0;
+      size_t errorCounter = 0;
       size_t sceneIndex = 0;
       while (sceneIndex < size_t(30*state->intensity)) 
       {
@@ -2443,8 +2449,10 @@ namespace embree
           
           for (size_t i=0; i<g_threads.size(); i++)
             join(g_threads[i]);
-          for (size_t i=0; i<tasks.size(); i++)
+          for (size_t i=0; i<tasks.size(); i++) {
+            errorCounter += tasks[i]->errorCounter;
             delete tasks[i];
+          }
           
           g_threads.clear();
         }
@@ -2460,15 +2468,15 @@ namespace embree
   };
 
   ssize_t monitorMemoryBreak = -1;
-  atomic_t monitorMemoryBytesUsed = 0;
-  atomic_t monitorMemoryInvokations = 0;
+  AtomicCounter monitorMemoryBytesUsed(0);
+  AtomicCounter monitorMemoryInvokations(0);
   bool monitorMemoryFunction(ssize_t bytes, bool post) 
   {
-    atomic_add(&monitorMemoryBytesUsed,bytes);
+    monitorMemoryBytesUsed += bytes;
     if (bytes > 0) {
-      size_t n = atomic_add(&monitorMemoryInvokations,1);
+      size_t n = monitorMemoryInvokations++;
       if (n == monitorMemoryBreak) {
-        if (!post) atomic_add(&monitorMemoryBytesUsed,-bytes);
+        if (!post) monitorMemoryBytesUsed -= bytes;
         return false;
       }
     }
@@ -2510,7 +2518,6 @@ namespace embree
       while (sceneIndex < size_t(30*state->intensity)) 
       {
         ClearBuffers clear_before_return;
-        errorCounter = 0;
         monitorMemoryBreak = -1;
         monitorMemoryBytesUsed = 0;
         monitorMemoryInvokations = 0;
@@ -2529,7 +2536,7 @@ namespace embree
         monitorProgressInvokations = 0;
         RegressionTask task2(sceneIndex,1,0,true);
         func(new ThreadRegressionTask(0,0,state,device,intersectModes,&task2));
-        if (monitorMemoryBytesUsed || (monitorMemoryInvokations != 0 && errorCounter != 1)) {
+        if (monitorMemoryBytesUsed || (monitorMemoryInvokations != 0 && task2.errorCounter != 1)) {
           rtcDeviceSetMemoryMonitorFunction(device,nullptr);
           return VerifyApplication::FAILED;
         }
@@ -2722,10 +2729,12 @@ namespace embree
       if (rtcDeviceGetParameter1i(device,RTC_CONFIG_BACKFACE_CULLING)) 
       {
         beginTestGroup("backface_culling_"+stringOfISA(isa));
-        for (auto sflags : sceneFlags) 
-          for (auto imode : intersectModes) 
-            for (auto ivariant : intersectVariants)
-              addTest(new BackfaceCullingTest("backface_culling_"+to_string(isa,sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,imode,ivariant));
+        GeometryType gtypes[] = { TRIANGLE_MESH, TRIANGLE_MESH_MB, QUAD_MESH, QUAD_MESH_MB, SUBDIV_MESH, SUBDIV_MESH_MB };
+        for (auto gtype : gtypes)
+          for (auto sflags : sceneFlags) 
+            for (auto imode : intersectModes) 
+              for (auto ivariant : intersectVariants)
+                addTest(new BackfaceCullingTest("backface_culling_"+to_string(isa,gtype,sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,gtype,imode,ivariant));
         endTestGroup();
       }
       
