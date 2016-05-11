@@ -40,8 +40,6 @@
 
 namespace embree
 {
-  std::vector<thread_t> g_threads;
-
   bool hasISA(const int isa) 
   {
     int cpu_features = getCPUFeatures();
@@ -55,35 +53,6 @@ namespace embree
   struct ClearBuffers {
     ~ClearBuffers() { nodes.clear(); }
   };
-
-  const size_t numSceneFlags = 64;
-
-  RTCSceneFlags getSceneFlag(size_t i) 
-  {
-    int flag = 0;                               
-    if (i & 1) flag |= RTC_SCENE_DYNAMIC;
-    if (i & 2) flag |= RTC_SCENE_COMPACT;
-    if (i & 4) flag |= RTC_SCENE_COHERENT;
-    if (i & 8) flag |= RTC_SCENE_INCOHERENT;
-    if (i & 16) flag |= RTC_SCENE_HIGH_QUALITY;
-    if (i & 32) flag |= RTC_SCENE_ROBUST;
-    return (RTCSceneFlags) flag;
-  }
-
-  const size_t numSceneGeomFlags = 32;
-
-  void getSceneGeomFlag(size_t i, RTCSceneFlags& sflags, RTCGeometryFlags& gflags) 
-  {
-    int sflag = 0, gflag = 0;
-    if (i & 4) {
-      sflag |= RTC_SCENE_DYNAMIC;
-      gflag = min(i&3,size_t(2));
-    }
-    if (i & 8) sflag |= RTC_SCENE_HIGH_QUALITY;
-    if (i & 16) sflag |= RTC_SCENE_ROBUST;
-    sflags = (RTCSceneFlags) sflag;
-    gflags = (RTCGeometryFlags) gflag;
-  }
 
   void AssertNoError(RTCDevice device) 
   {
@@ -2459,6 +2428,7 @@ namespace embree
     thread_func func;
     int mode;
     std::vector<IntersectMode> intersectModes;
+    std::vector<thread_t> threads;
     
     IntensiveRegressionTest (std::string name, int isa, thread_func func, int mode)
       : VerifyApplication::Test(name,isa,VerifyApplication::PASS), func(func), mode(mode) {}
@@ -2502,17 +2472,17 @@ namespace embree
             tasks.push_back(task);
             
             for (size_t i=0; i<N; i++) 
-              g_threads.push_back(createThread(func,new ThreadRegressionTask(i,N,state,device,intersectModes,task),DEFAULT_STACK_SIZE,numThreads+i));
+              threads.push_back(createThread(func,new ThreadRegressionTask(i,N,state,device,intersectModes,task),DEFAULT_STACK_SIZE,numThreads+i));
           }
           
-          for (size_t i=0; i<g_threads.size(); i++)
-            join(g_threads[i]);
+          for (size_t i=0; i<threads.size(); i++)
+            join(threads[i]);
           for (size_t i=0; i<tasks.size(); i++) {
             errorCounter += tasks[i]->errorCounter;
             delete tasks[i];
           }
           
-          g_threads.clear();
+          threads.clear();
         }
         else
         {
