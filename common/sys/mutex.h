@@ -54,6 +54,7 @@ namespace embree
       bool expected = false;
       while (!flag.compare_exchange_strong(expected,true))
       {
+        expected = false;
         _mm_pause(); 
         _mm_pause();
       }

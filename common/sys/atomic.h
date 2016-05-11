@@ -29,15 +29,11 @@ namespace embree
     catomic (const T& a)
       : std::atomic<T>(a) {}
 
-    catomic (const std::atomic<T>& a) {
-      this->store(a.load());
-    }
-
     catomic (const catomic<T>& a) {
       this->store(a.load());
     }
 
-    catomic& operator=(const std::atomic<T>& other) {
+    catomic& operator=(const catomic<T>& other) {
       this->store(other.load());
       return *this;
     }
