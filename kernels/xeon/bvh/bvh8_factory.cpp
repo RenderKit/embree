@@ -354,7 +354,7 @@ namespace embree
     intersectors.intersector8_nofilter  = BVH8Quad4iIntersector8HybridPlueckerNoFilter;
     intersectors.intersector16_filter   = BVH8Quad4iIntersector16HybridPluecker;
     intersectors.intersector16_nofilter = BVH8Quad4iIntersector16HybridPlueckerNoFilter;
-    //intersectors.intersectorN           = BVH8Quad4iStreamIntersectorPluecker; // FIXME: not valid in robust mode
+    intersectors.intersectorN           = BVH8Quad4iStreamIntersectorPluecker; 
     return intersectors;
   }
 
