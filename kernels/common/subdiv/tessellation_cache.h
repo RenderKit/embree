@@ -213,9 +213,9 @@ namespace embree
 #if defined(__X86_64__)
      const int64_t subdiv_patch_root_ref = entry.tag.data; 
 #else
-     entry.mutex.read_lock();
+     entry.mutex.lock();
      const int64_t subdiv_patch_root_ref = entry.tag.data; 
-     entry.mutex.read_unlock();
+     entry.mutex.unlock();
 #endif
      CACHE_STATS(SharedTessellationCacheStats::cache_accesses++);
      
