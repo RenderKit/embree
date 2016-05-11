@@ -51,12 +51,17 @@ namespace embree
 
     __forceinline void lock()
     {
-      bool expected = false;
-      while (!flag.compare_exchange_strong(expected,true))
+      while (true) 
       {
-        expected = false;
-        _mm_pause(); 
-        _mm_pause();
+        while (flag.load()) 
+        {
+          _mm_pause(); 
+          _mm_pause();
+        }
+        
+        bool expected = false;
+        if (flag.compare_exchange_strong(expected,true))
+          break;
       }
     }
     
