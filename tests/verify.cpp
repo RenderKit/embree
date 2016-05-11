@@ -40,8 +40,6 @@
 
 namespace embree
 {
-  std::vector<thread_t> g_threads;
-
   bool hasISA(const int isa) 
   {
     int cpu_features = getCPUFeatures();
@@ -55,35 +53,6 @@ namespace embree
   struct ClearBuffers {
     ~ClearBuffers() { nodes.clear(); }
   };
-
-  const size_t numSceneFlags = 64;
-
-  RTCSceneFlags getSceneFlag(size_t i) 
-  {
-    int flag = 0;                               
-    if (i & 1) flag |= RTC_SCENE_DYNAMIC;
-    if (i & 2) flag |= RTC_SCENE_COMPACT;
-    if (i & 4) flag |= RTC_SCENE_COHERENT;
-    if (i & 8) flag |= RTC_SCENE_INCOHERENT;
-    if (i & 16) flag |= RTC_SCENE_HIGH_QUALITY;
-    if (i & 32) flag |= RTC_SCENE_ROBUST;
-    return (RTCSceneFlags) flag;
-  }
-
-  const size_t numSceneGeomFlags = 32;
-
-  void getSceneGeomFlag(size_t i, RTCSceneFlags& sflags, RTCGeometryFlags& gflags) 
-  {
-    int sflag = 0, gflag = 0;
-    if (i & 4) {
-      sflag |= RTC_SCENE_DYNAMIC;
-      gflag = min(i&3,size_t(2));
-    }
-    if (i & 8) sflag |= RTC_SCENE_HIGH_QUALITY;
-    if (i & 16) sflag |= RTC_SCENE_ROBUST;
-    sflags = (RTCSceneFlags) sflag;
-    gflags = (RTCGeometryFlags) gflag;
-  }
 
   void AssertNoError(RTCDevice device) 
   {
@@ -122,6 +91,7 @@ namespace embree
       rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER ,mesh->triangles.data(),0,sizeof(SceneGraph::TriangleMeshNode::Triangle));
       if (mesh->v .size()) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER0,mesh->v .data(),0,sizeof(SceneGraph::TriangleMeshNode::Vertex));
       if (mesh->v2.size()) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER1,mesh->v2.data(),0,sizeof(SceneGraph::TriangleMeshNode::Vertex));
+      AssertNoError(device);
       return geomID;
     }
     else if (Ref<SceneGraph::QuadMeshNode> mesh = node.dynamicCast<SceneGraph::QuadMeshNode>())
@@ -131,6 +101,7 @@ namespace embree
       rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER ,mesh->quads.data(),0,sizeof(SceneGraph::QuadMeshNode::Quad  ));
       if (mesh->v .size()) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER0,mesh->v .data(),0,sizeof(SceneGraph::QuadMeshNode::Vertex));
       if (mesh->v2.size()) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER1,mesh->v2.data(),0,sizeof(SceneGraph::QuadMeshNode::Vertex));
+      AssertNoError(device);
       return geomID;
     } 
     else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>())
@@ -150,6 +121,7 @@ namespace embree
       if (mesh->holes.size()) rtcSetBuffer(scene,geomID,RTC_HOLE_BUFFER,mesh->holes.data(),0,sizeof(int));
       rtcSetTessellationRate(scene,geomID,mesh->tessellationRate);
       rtcSetBoundaryMode(scene,geomID,mesh->boundaryMode);
+      AssertNoError(device);
       return geomID;
     }
     else if (Ref<SceneGraph::HairSetNode> mesh = node.dynamicCast<SceneGraph::HairSetNode>())
@@ -158,6 +130,7 @@ namespace embree
       rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER,mesh->v.data(),0,sizeof(SceneGraph::HairSetNode::Vertex));
       if (mblur) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER1,mesh->v2.data(),0,sizeof(SceneGraph::HairSetNode::Vertex));
       rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER,mesh->hairs.data(),0,sizeof(SceneGraph::HairSetNode::Hair));
+      AssertNoError(device);
       return geomID;
     } 
     else if (Ref<SceneGraph::LineSegmentsNode> mesh = node.dynamicCast<SceneGraph::LineSegmentsNode>())
@@ -166,6 +139,7 @@ namespace embree
       rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER,mesh->v.data(),0,sizeof(SceneGraph::LineSegmentsNode::Vertex));
       if (mblur) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER1,mesh->v2.data(),0,sizeof(SceneGraph::LineSegmentsNode::Vertex));
       rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER,mesh->indices.data(),0,sizeof(int));
+      AssertNoError(device);
       return geomID;
     }
     else {
@@ -612,7 +586,7 @@ namespace embree
     }
   };
 
-   struct BuildTest : public VerifyApplication::Test
+  struct BuildTest : public VerifyApplication::Test
   {
     RTCSceneFlags sflags;
     RTCGeometryFlags gflags; 
@@ -627,105 +601,118 @@ namespace embree
       error_handler(rtcDeviceGetError(device));
       ClearBuffers clear_before_return;
       RTCSceneRef scene = rtcDeviceNewScene(device,sflags,aflags);
-      addSphere(device,scene,gflags,zero,1E-24f,50);
-      addHair(device,scene,gflags,zero,1E-24f,1E-26f,100,1E-26f);
-      addSphere(device,scene,gflags,zero,1E-24f,50);
-      addHair(device,scene,gflags,zero,1E-24f,1E-26f,100,1E-26f);
+
+      const Vec3fa center = zero;
+      const float radius = 1.0f;
+      const Vec3fa dx(1,0,0);
+      const Vec3fa dy(0,1,0);
+      addGeometry(device,scene,gflags,SceneGraph::createTriangleSphere(center,radius,50),false);
+      addGeometry(device,scene,gflags,SceneGraph::createTriangleSphere(center,radius,50)->set_motion_vector(Vec3fa(1)),true);
+      addGeometry(device,scene,gflags,SceneGraph::createQuadSphere(center,radius,50),false);
+      addGeometry(device,scene,gflags,SceneGraph::createQuadSphere(center,radius,50)->set_motion_vector(Vec3fa(1)),true);
+      addGeometry(device,scene,gflags,SceneGraph::createSubdivSphere(center,radius,8,20),false);
+      addGeometry(device,scene,gflags,SceneGraph::createSubdivSphere(center,radius,8,20)->set_motion_vector(Vec3fa(1)),true);
+      addGeometry(device,scene,gflags,SceneGraph::createHairyPlane(center,dx,dy,0.1f,0.01f,100,true),false);
+      addGeometry(device,scene,gflags,SceneGraph::createHairyPlane(center,dx,dy,0.1f,0.01f,100,true)->set_motion_vector(Vec3fa(1)),true);
+      addGeometry(device,scene,gflags,SceneGraph::createHairyPlane(center,dx,dy,0.1f,0.01f,100,false),false);
+      addGeometry(device,scene,gflags,SceneGraph::createHairyPlane(center,dx,dy,0.1f,0.01f,100,false)->set_motion_vector(Vec3fa(1)),true);
       rtcCommit (scene);
       AssertNoError(device);
-      if ((sflags & RTC_SCENE_DYNAMIC) == 0) {
-        rtcDisable(scene,0);
-        AssertAnyError(device);
-        rtcDisable(scene,1);
-        AssertAnyError(device);
-        rtcDisable(scene,2);
-        AssertAnyError(device);
-        rtcDisable(scene,3);
-        AssertAnyError(device);
+
+      if ((sflags & RTC_SCENE_DYNAMIC) == 0) 
+      {
+        for (size_t i=0; i<10; i++) {
+          rtcDisable(scene,i);
+          AssertAnyError(device);
+        }
       }
       return VerifyApplication::PASSED;
     }
   };
 
-  struct OverlappingTrianglesTest : public VerifyApplication::Test
+  struct OverlappingGeometryTest : public VerifyApplication::Test
   {
+    RTCSceneFlags sflags;
+    RTCGeometryFlags gflags; 
     int N;
     
-    OverlappingTrianglesTest (std::string name, int isa, int N)
-      : VerifyApplication::Test(name,isa,VerifyApplication::PASS), N(N) {}
+    OverlappingGeometryTest (std::string name, int isa, RTCSceneFlags sflags, RTCGeometryFlags gflags, int N)
+      : VerifyApplication::Test(name,isa,VerifyApplication::PASS), sflags(sflags), gflags(gflags), N(N) {}
     
     VerifyApplication::TestReturnValue run(VerifyApplication* state)
     {
+      ClearBuffers clear_before_return;
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
-      RTCSceneRef scene = rtcDeviceNewScene(device,RTC_SCENE_STATIC,aflags);
+      RTCSceneRef scene = rtcDeviceNewScene(device,sflags,aflags);
       AssertNoError(device);
-      rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, N, 3);
-      AssertNoError(device);
+
+      const Vec3fa p (0,0,0);
+      const Vec3fa dx(1,0,0);
+      const Vec3fa dy(0,1,0);
       
-      Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene,0,RTC_VERTEX_BUFFER);
-      vertices[0].x = 0.0f; vertices[0].y = 0.0f; vertices[0].z = 0.0f;
-      vertices[1].x = 1.0f; vertices[1].y = 0.0f; vertices[1].z = 0.0f;
-      vertices[2].x = 0.0f; vertices[2].y = 1.0f; vertices[2].z = 0.0f;
-      rtcUnmapBuffer(scene,0,RTC_VERTEX_BUFFER);
-      AssertNoError(device);
-      
-      Triangle* triangles = (Triangle*) rtcMapBuffer(scene,0,RTC_INDEX_BUFFER);
+      Ref<SceneGraph::TriangleMeshNode> trimesh = SceneGraph::createTrianglePlane(p,dx,dy,1,1).dynamicCast<SceneGraph::TriangleMeshNode>();
+      for (size_t i=0; i<N; i++) trimesh->triangles.push_back(trimesh->triangles.back());
+      addGeometry(device,scene,gflags,trimesh.dynamicCast<SceneGraph::Node>(),false);
+
+      Ref<SceneGraph::TriangleMeshNode> trimesh2 = SceneGraph::createTrianglePlane(p,dx,dy,1,1)->set_motion_vector(Vec3fa(1)).dynamicCast<SceneGraph::TriangleMeshNode>();
+      for (size_t i=0; i<N; i++) trimesh2->triangles.push_back(trimesh2->triangles.back());
+      addGeometry(device,scene,gflags,trimesh2.dynamicCast<SceneGraph::Node>(),true);
+
+      Ref<SceneGraph::QuadMeshNode> quadmesh = SceneGraph::createQuadPlane(p,dx,dy,1,1).dynamicCast<SceneGraph::QuadMeshNode>();
+      for (size_t i=0; i<N; i++) quadmesh->quads.push_back(quadmesh->quads.back());
+      addGeometry(device,scene,gflags,quadmesh.dynamicCast<SceneGraph::Node>(),false);
+
+      Ref<SceneGraph::QuadMeshNode> quadmesh2 = SceneGraph::createQuadPlane(p,dx,dy,1,1)->set_motion_vector(Vec3fa(1)).dynamicCast<SceneGraph::QuadMeshNode>();
+      for (size_t i=0; i<N; i++) quadmesh2->quads.push_back(quadmesh2->quads.back());
+      addGeometry(device,scene,gflags,quadmesh2.dynamicCast<SceneGraph::Node>(),true);
+
+      Ref<SceneGraph::SubdivMeshNode> subdivmesh = new SceneGraph::SubdivMeshNode(nullptr);
       for (size_t i=0; i<N; i++) {
-        triangles[i].v0 = 0;
-        triangles[i].v1 = 1;
-        triangles[i].v2 = 2;
+        subdivmesh->verticesPerFace.push_back(4);
+        subdivmesh->position_indices.push_back(4*i+0);
+        subdivmesh->position_indices.push_back(4*i+1);
+        subdivmesh->position_indices.push_back(4*i+2);
+        subdivmesh->position_indices.push_back(4*i+3);
+        subdivmesh->positions.push_back(Vec3fa(0,0,0));
+        subdivmesh->positions.push_back(Vec3fa(0,1,0));
+        subdivmesh->positions.push_back(Vec3fa(1,1,0));
+        subdivmesh->positions.push_back(Vec3fa(1,0,0));
+        /*subdivmesh->positions2.push_back(Vec3fa(0,0,0));
+        subdivmesh->positions2.push_back(Vec3fa(0,1,0));
+        subdivmesh->positions2.push_back(Vec3fa(1,1,0));
+        subdivmesh->positions2.push_back(Vec3fa(1,0,0));*/
       }
-      rtcUnmapBuffer(scene,0,RTC_INDEX_BUFFER);
-      AssertNoError(device);
+      addGeometry(device,scene,gflags,subdivmesh.dynamicCast<SceneGraph::Node>(),false);
+      //addGeometry(device,scene,gflags,subdivmesh.dynamicCast<SceneGraph::Node>(),true); // FIXME: enable mblur subdiv test when supported
+      
+      Ref<SceneGraph::HairSetNode> hairgeom = SceneGraph::createHairyPlane(p,dx,dy,0.2f,0.01f,1,true).dynamicCast<SceneGraph::HairSetNode>();
+      for (size_t i=0; i<N; i++) hairgeom->hairs.push_back(hairgeom->hairs.back());
+      addGeometry(device,scene,gflags,hairgeom.dynamicCast<SceneGraph::Node>(),false);
+
+      Ref<SceneGraph::HairSetNode> hairgeom2 = SceneGraph::createHairyPlane(p,dx,dy,0.2f,0.01f,1,true)->set_motion_vector(Vec3fa(1)).dynamicCast<SceneGraph::HairSetNode>();
+      for (size_t i=0; i<N; i++) hairgeom2->hairs.push_back(hairgeom2->hairs.back());
+      addGeometry(device,scene,gflags,hairgeom2.dynamicCast<SceneGraph::Node>(),true);
+
+      Ref<SceneGraph::Node> curvegeom = SceneGraph::convert_hair_to_curves(hairgeom.dynamicCast<SceneGraph::Node>());
+      addGeometry(device,scene,gflags,curvegeom,false);
+
+      Ref<SceneGraph::Node> curvegeom2 = SceneGraph::convert_hair_to_curves(hairgeom2.dynamicCast<SceneGraph::Node>());
+      addGeometry(device,scene,gflags,curvegeom2,true);
+
+      Ref<SceneGraph::Node> linegeom = SceneGraph::convert_bezier_to_lines(hairgeom.dynamicCast<SceneGraph::Node>());
+      addGeometry(device,scene,gflags,linegeom,false);
+
+      Ref<SceneGraph::Node> linegeom2 = SceneGraph::convert_bezier_to_lines(hairgeom2.dynamicCast<SceneGraph::Node>());
+      addGeometry(device,scene,gflags,linegeom2,true);
       
       rtcCommit (scene);
       AssertNoError(device);
-      
       return VerifyApplication::PASSED;
     }
   };
     
-  struct OverlappingHairTest : public VerifyApplication::Test
-  {
-    int N;
-    
-    OverlappingHairTest (std::string name, int isa, int N)
-      : VerifyApplication::Test(name,isa,VerifyApplication::PASS), N(N) {}
-    
-    VerifyApplication::TestReturnValue run(VerifyApplication* state)
-    {
-      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
-      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      error_handler(rtcDeviceGetError(device));
-      RTCSceneRef scene = rtcDeviceNewScene(device,RTC_SCENE_STATIC,aflags);
-      AssertNoError(device);
-      rtcNewHairGeometry (scene, RTC_GEOMETRY_STATIC, N, 4);
-      AssertNoError(device);
-      
-      Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene,0,RTC_VERTEX_BUFFER);
-      vertices[0].x = 0.0f; vertices[0].y = 0.0f; vertices[0].z = 0.0f; vertices[0].w = 0.1f;
-      vertices[1].x = 0.0f; vertices[1].y = 0.0f; vertices[1].z = 1.0f; vertices[1].w = 0.1f;
-      vertices[2].x = 0.0f; vertices[2].y = 1.0f; vertices[2].z = 1.0f; vertices[2].w = 0.1f;
-      vertices[3].x = 0.0f; vertices[3].y = 1.0f; vertices[3].z = 0.0f; vertices[3].w = 0.1f;
-      rtcUnmapBuffer(scene,0,RTC_VERTEX_BUFFER);
-      AssertNoError(device);
-      
-      int* indices = (int*) rtcMapBuffer(scene,0,RTC_INDEX_BUFFER);
-      for (size_t i=0; i<N; i++) {
-        indices[i] = 0;
-      }
-      rtcUnmapBuffer(scene,0,RTC_INDEX_BUFFER);
-      AssertNoError(device);
-      
-      rtcCommit (scene);
-      AssertNoError(device);
-
-      return VerifyApplication::PASSED;
-    }
-  };
-
   struct NewDeleteGeometryTest : public VerifyApplication::Test
   {
     RTCSceneFlags sflags;
@@ -1591,8 +1578,8 @@ namespace embree
       RTCSceneRef scene = rtcDeviceNewScene(device,sflags,to_aflags(imode));
       AssertNoError(device);
       const Vec3fa p0 = Vec3fa(0.0f);
-      const Vec3fa dx = Vec3fa(1.0f, 0.0f,0.0f);
-      const Vec3fa dy = Vec3fa(0.0f,10.0f,0.0f);
+      const Vec3fa dx = Vec3fa(1.0f,0.0f,0.0f);
+      const Vec3fa dy = Vec3fa(0.0f,1.0f,0.0f);
       switch (gtype) {
       case TRIANGLE_MESH:    addGeometry(device,scene,RTC_GEOMETRY_STATIC,SceneGraph::createTrianglePlane(p0,dx,dy,1,1),false); break;
       case TRIANGLE_MESH_MB: addGeometry(device,scene,RTC_GEOMETRY_STATIC,SceneGraph::createTrianglePlane(p0,dx,dy,1,1)->set_motion_vector(Vec3fa(1)),true); break;
@@ -1609,22 +1596,25 @@ namespace embree
 
       const size_t numRays = 1000;
       RTCRay rays[numRays];
-      RTCRay frontfacing  = makeRay(Vec3fa(0.25f,0.25f,1),Vec3fa(0,0,-1)); 
-      RTCRay backfacing = makeRay(Vec3fa(0.25f,0.25f,-1),Vec3fa(0,0,1)); 
-
       bool passed = true;
 
       for (size_t i=0; i<numRays; i++) {
-        if (i%2) rays[i] = makeRay(Vec3fa(random<float>(),random<float>(),-1),Vec3fa(0,0,+1)); 
-        else     rays[i] = makeRay(Vec3fa(random<float>(),random<float>(),+1),Vec3fa(0,0,-1)); 
+        if (i%2) rays[i] = makeRay(Vec3fa(random<float>(),random<float>(),+1),Vec3fa(0,0,-1)); 
+        else     rays[i] = makeRay(Vec3fa(random<float>(),random<float>(),-1),Vec3fa(0,0,+1)); 
       }
       
       IntersectWithMode(imode,ivariant,scene,rays,numRays);
       
       for (size_t i=0; i<numRays; i++) 
       {
+        Vec3fa dir(rays[i].dir[0],rays[i].dir[1],rays[i].dir[2]);
+        Vec3fa Ng (rays[i].Ng[0], rays[i].Ng[1], rays[i].Ng[2]);
         if (i%2) passed &= rays[i].geomID == -1;
-        else     passed &= rays[i].geomID == 0;
+        else {
+          passed &= rays[i].geomID == 0;
+          if (ivariant & VARIANT_INTERSECT)
+            passed &= dot(dir,Ng) < 0.0f;
+        }
       }
       return (VerifyApplication::TestReturnValue) passed;
     }
@@ -2441,6 +2431,7 @@ namespace embree
     thread_func func;
     int mode;
     std::vector<IntersectMode> intersectModes;
+    std::vector<thread_t> threads;
     
     IntensiveRegressionTest (std::string name, int isa, thread_func func, int mode)
       : VerifyApplication::Test(name,isa,VerifyApplication::PASS), func(func), mode(mode) {}
@@ -2484,17 +2475,17 @@ namespace embree
             tasks.push_back(task);
             
             for (size_t i=0; i<N; i++) 
-              g_threads.push_back(createThread(func,new ThreadRegressionTask(i,N,state,device,intersectModes,task),DEFAULT_STACK_SIZE,numThreads+i));
+              threads.push_back(createThread(func,new ThreadRegressionTask(i,N,state,device,intersectModes,task),DEFAULT_STACK_SIZE,numThreads+i));
           }
           
-          for (size_t i=0; i<g_threads.size(); i++)
-            join(g_threads[i]);
+          for (size_t i=0; i<threads.size(); i++)
+            join(threads[i]);
           for (size_t i=0; i<tasks.size(); i++) {
             errorCounter += tasks[i]->errorCounter;
             delete tasks[i];
           }
           
-          g_threads.clear();
+          threads.clear();
         }
         else
         {
@@ -2698,8 +2689,10 @@ namespace embree
         addTest(new BuildTest("build_"+to_string(isa,sflags),isa,sflags,RTC_GEOMETRY_STATIC));
       endTestGroup();
       
-      addTest(new OverlappingTrianglesTest("overlapping_triangles_"+stringOfISA(isa),isa,100000));
-      addTest(new OverlappingHairTest("overlapping_hair_"+stringOfISA(isa),isa,100000));
+      beginTestGroup("overlapping_primitives_"+stringOfISA(isa));
+      for (auto sflags : sceneFlags)
+        addTest(new OverlappingGeometryTest("overlapping_primitives_"+to_string(isa,sflags),isa,sflags,RTC_GEOMETRY_STATIC,100000));
+      endTestGroup();
 
       beginTestGroup("new_delete_geometry_"+stringOfISA(isa));
       for (auto sflags : sceneFlagsDynamic) 

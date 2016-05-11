@@ -31,18 +31,18 @@ namespace embree
 #endif
 
   template <typename T>
-    struct std__atomic : public std::atomic<T>
+    struct atomic : public std::atomic<T>
   {
-    std__atomic () {}
+    atomic () {}
       
-    std__atomic (const T& a)
+    atomic (const T& a)
       : std::atomic<T>(a) {}
 
-    std__atomic (const std__atomic<T>& a) {
+    atomic (const atomic<T>& a) {
       this->store(a.load());
     }
 
-    std__atomic& operator=(const std__atomic<T>& other) {
+    atomic& operator=(const atomic<T>& other) {
       this->store(other.load());
       return *this;
     }
