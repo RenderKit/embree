@@ -236,7 +236,7 @@ namespace embree
   AtomicMutex   SharedTessellationCacheStats::mtx;  
   std::atomic_size_t *SharedTessellationCacheStats::cache_patch_builds(nullptr);
   size_t SharedTessellationCacheStats::cache_num_patches(0);
-  float **SharedTessellationCacheStats::cache_new_delete_ptr(nullptr);
+  float **SharedTessellationCacheStats::cache_new_delete_ptr = nullptr;
 
   void SharedTessellationCacheStats::printStats()
   {
