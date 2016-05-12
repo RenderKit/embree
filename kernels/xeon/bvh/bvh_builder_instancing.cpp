@@ -19,6 +19,9 @@
 #include "../builders/bvh_builder_sah.h"
 #include "../geometry/triangle.h"
 #include "../geometry/trianglev_mb.h"
+#include "../geometry/quadv.h"
+#include "../geometry/quadi.h"
+#include "../geometry/quadi_mb.h"
 
 namespace embree
 {
@@ -27,6 +30,9 @@ namespace embree
     //Builder* BVH4Triangle4SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode = 0);
     Builder* BVH4Triangle4MeshBuilderSAH    (void* bvh, TriangleMesh* mesh, size_t mode = 0);
     Builder* BVH4Triangle4vMBMeshBuilderSAH (void* bvh, TriangleMesh* mesh, size_t mode = 0);
+
+    Builder* BVH4Quad4vMeshBuilderSAH        (void* bvh, QuadMesh* mesh,     size_t mode = 0);
+    Builder* BVH4Quad4iMBMeshBuilderSAH     (void* bvh, QuadMesh* mesh,     size_t mode = 0);
 
     template<int N>
     BVHNBuilderInstancing<N>::BVHNBuilderInstancing (BVH* bvh, Scene* scene)
@@ -143,6 +149,13 @@ namespace embree
                   builders[objectID] = BVH4Triangle4MeshBuilderSAH((BVH4*)objects[objectID],(TriangleMesh*)geom);
                   break;
 #endif
+#if defined(RTCORE_GEOMETRY_QUADS)
+                case Geometry::QUAD_MESH:
+                  objects[objectID] = new BVH4(Quad4v::type,geom->parent);
+                  builders[objectID] = BVH4Quad4vMeshBuilderSAH((BVH4*)objects[objectID],(QuadMesh*)geom);
+                  break;
+#endif
+
                 case Geometry::USER_GEOMETRY: break;
                 case Geometry::BEZIER_CURVES: break;
                 case Geometry::SUBDIV_MESH  : break;
@@ -154,6 +167,13 @@ namespace embree
                  case Geometry::TRIANGLE_MESH:
                    objects[objectID] = new BVH4(Triangle4vMB::type,geom->parent);
                    builders[objectID] = BVH4Triangle4vMBMeshBuilderSAH((BVH4*)objects[objectID],(TriangleMesh*)geom);
+                   break;
+#endif
+
+#if defined(RTCORE_GEOMETRY_QUADS)
+                 case Geometry::QUAD_MESH:
+                   objects[objectID] = new BVH4(Quad4iMB::type,geom->parent);
+                   builders[objectID] = BVH4Quad4iMBMeshBuilderSAH((BVH4*)objects[objectID],(QuadMesh*)geom);
                    break;
 #endif
                  case Geometry::USER_GEOMETRY: break;
@@ -313,5 +333,10 @@ namespace embree
     Builder* BVH4BuilderInstancingTriangleMeshSAH (void* bvh, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel) {
       return new BVHNBuilderInstancing<4>((BVH4*)bvh,scene);
     }
+
+    Builder* BVH4BuilderInstancingQuadMeshSAH (void* bvh, Scene* scene, const createQuadMeshAccelTy createQuadMeshAccel) {
+      return new BVHNBuilderInstancing<4>((BVH4*)bvh,scene);
+    }
+
   }
 }

@@ -149,7 +149,7 @@ namespace embree
         }
 #endif
       }
-      
+    
     public:
       const MortonCodeMapping mapping;
       MortonID32Bit* dest;
@@ -162,7 +162,9 @@ namespace embree
 #else
       vint4 ax, ay, az, ai;
 #endif
+
     };
+            
 
     void InPlace32BitRadixSort(MortonID32Bit* const morton, const size_t num, const size_t shift = 3*8)
     {
@@ -234,6 +236,140 @@ namespace embree
 
           offset += count[i];
         }      
+    }
+
+    static const size_t MSB_RADIX_SORT_BITS    = 8;
+    static const size_t MSB_RADIX_SORT_BUCKETS = 1 << MSB_RADIX_SORT_BITS;
+
+    struct __aligned(64) MSBRadixOffsetTable 
+    { 
+      unsigned int count[MSB_RADIX_SORT_BUCKETS]; 
+      
+      __forceinline void clear() 
+      { 
+        for (size_t i=0;i<MSB_RADIX_SORT_BUCKETS;i++) 
+          count[i] = 0; 
+      } 
+
+      __forceinline void add(const unsigned int code) 
+      {
+        const size_t index = (code >> (32-MSB_RADIX_SORT_BITS)) & MSB_RADIX_SORT_BUCKETS;
+        count[index]++;
+      }
+      
+    }; 
+
+    void MSB32BitRadixSort(MortonID32Bit* const src, 
+                           MortonID32Bit* const dst, 
+                           const size_t num)
+    {
+      static const size_t MIN_BLOCK_SIZE = 1024;
+
+      MSBRadixOffsetTable offsetTable[MAX_THREADS];
+
+      struct {
+        unsigned int startID;
+        unsigned int endID;
+      } ranges[MSB_RADIX_SORT_BUCKETS];
+
+      unsigned int numRanges = 0;
+
+      const size_t numTasks = min((num+MIN_BLOCK_SIZE-1)/MIN_BLOCK_SIZE,TaskScheduler::threadCount(),size_t(MAX_THREADS));
+
+      unsigned int code = 0;
+      for (size_t i=0;i<num;i++)
+      {
+        code |= src[i].code;
+      }
+      PRINT(code);
+      PRINT(lzcnt(code));
+#if defined(__AVX__)
+      PRINT(__popcnt(code));
+#endif
+      exit(0);
+
+      PRINT(num);
+      PRINT(TaskScheduler::threadCount());
+      /* init offset table */
+      parallel_for(numTasks,[&] (size_t taskIndex) { 
+          const size_t startID = (taskIndex+0)*num/TaskScheduler::threadCount();
+          const size_t endID   = (taskIndex+1)*num/TaskScheduler::threadCount();
+          MSBRadixOffsetTable &table = offsetTable[taskIndex];
+          table.clear();
+          for (size_t i=startID;i<endID;i++)
+          {
+            PRINT(src[i].code >> 24);
+            table.add(src[i].code);
+          }
+
+          PRINT(startID);
+          PRINT(endID);
+
+          for (size_t i=0; i<MSB_RADIX_SORT_BUCKETS; i++)
+            if (table.count[i])
+            {
+              PRINT(i);
+              PRINT(table.count[i]);
+            }
+        });
+
+      exit(0);
+
+      /* scatter elements to dest */
+
+      parallel_for(numTasks,[&] (size_t taskIndex) { 
+
+          /* calculate total number of items for each bucket */
+          __aligned(64) unsigned int total[MSB_RADIX_SORT_BUCKETS];
+          for (size_t i=0; i<MSB_RADIX_SORT_BUCKETS; i++)
+            total[i] = 0;
+        
+          for (size_t i=0; i<numTasks; i++)
+            for (size_t j=0; j<MSB_RADIX_SORT_BUCKETS; j++)
+              total[j] += offsetTable[i].count[j];
+
+          /* store non empty ranges */
+          if (taskIndex == 0)
+          {
+            unsigned int offset = 0;
+            for (size_t j=0; j<MSB_RADIX_SORT_BUCKETS; j++)
+            {
+              PRINT(j);
+              PRINT(total[j]);
+              if (likely(total[j]))
+              {
+                ranges[numRanges].startID = offset;
+                ranges[numRanges].endID   = offset + total[j];
+                PRINT(ranges[numRanges].startID);
+                PRINT(ranges[numRanges].endID);
+                numRanges++;
+              }
+              PRINT(numRanges);
+              offset += total[j];
+            }
+          }
+          /* calculate start offset of each bucket */
+          __aligned(64) unsigned int offset[MSB_RADIX_SORT_BUCKETS];
+          offset[0] = 0;
+          for (size_t i=1; i<MSB_RADIX_SORT_BUCKETS; i++)    
+            offset[i] = offset[i-1] + total[i-1];
+        
+          /* calculate start offset of each bucket for this thread */
+          for (size_t i=0; i<taskIndex; i++)
+            for (size_t j=0; j<MSB_RADIX_SORT_BUCKETS; j++)
+              offset[j] += offsetTable[i].count[j];
+
+          const size_t startID = (taskIndex+0)*num/TaskScheduler::threadCount();
+          const size_t endID   = (taskIndex+1)*num/TaskScheduler::threadCount();
+        
+          /* copy items into their buckets */
+          for (size_t i=startID; i<endID; i++) {
+            const size_t index = (src[i].code >> (32-MSB_RADIX_SORT_BITS)) & MSB_RADIX_SORT_BUCKETS;
+            dst[offset[index]++] = src[i];
+          }
+          
+        });
+
     }
     
     template<
@@ -508,46 +644,13 @@ namespace embree
       {
         /* using 4 phases radix sort */
 
-        double i0 = getSeconds();
+        //double i0 = getSeconds();
         morton = src;
-        //std::sort(src,src+ numPrimitives);
-
-#if 0
-        const size_t numTasks = TaskScheduler::threadCount();
-
-        parallel_for(numTasks,[&] (size_t taskIndex) {
-                       const size_t startID = (taskIndex+0)*numPrimitives/numTasks;
-                       const size_t endID   = (taskIndex+1)*numPrimitives/numTasks;
-                       //std::sort(src + startID,src + endID);                     
-                       //quicksort_ascending(src,startID,endID);
-                       InPlace32BitRadixSort(src + startID,endID-startID);
-                     });
-
-        //InPlace32BitRadixSort(src,numPrimitives);
-#endif
 
         radix_sort_u32(src,tmp,numPrimitives);
 
-        i0 = getSeconds() - i0;
-        if (numPrimitives > 1000000) PRINT(i0);
-
-
-#if DEBUG
-        if (numPrimitives)
-        for (size_t i=0;i<numPrimitives-1;i++)
-        {
-          if (src[i] > src[i+1])
-          {
-            PRINT(i);
-            PRINT(i+1);
-            PRINT(src[i]);
-            PRINT(src[i+1]);
-
-          }
-          assert(src[i] <= src[i+1]);
-        }
-#endif
-        //double i1 = getSeconds();
+        //i0 = getSeconds() - i0;
+        //if (numPrimitives > 1000000) PRINT(i0);
 
         /* build BVH */
         NodeRef root;
@@ -555,9 +658,6 @@ namespace embree
         
         const BBox3fa bounds = recurse(br, nullptr, true);
         _mm_mfence(); // to allow non-temporal stores during build
-
-        //i1 = getSeconds() - i1;
-        //PRINT(i1);
 
         return std::make_pair(root,bounds);
       }

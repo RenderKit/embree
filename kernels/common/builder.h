@@ -57,8 +57,12 @@ namespace embree
 
   struct LineSegments;
   struct TriangleMesh;
+  struct QuadMesh;
+
   class Scene;
 
   typedef void (*createLineSegmentsAccelTy)(LineSegments* mesh, AccelData*& accel, Builder*& builder);
   typedef void (*createTriangleMeshAccelTy)(TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
+  typedef void (*createQuadMeshAccelTy)(QuadMesh* mesh, AccelData*& accel, Builder*& builder);
+
 }

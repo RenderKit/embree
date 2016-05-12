@@ -19,12 +19,11 @@
 #include "../builders/bvh_builder_sah.h"
 #include "../../common/scene_line_segments.h"
 #include "../../common/scene_triangle_mesh.h"
+#include "../../common/scene_quad_mesh.h"
 
-#define PROFILE 1
+#define PROFILE 0
 #define MAX_OPEN_SIZE 10000
 #define PROFILE_ITERATIONS 2000
-
-#define DBG_PRINT(x) 
 
 namespace embree
 {
@@ -79,7 +78,6 @@ namespace embree
       if (refs.size()     < num) refs.resize(num);
       nextRef.store(0);
       
-      double time0 = getSeconds();
       /* create of acceleration structures */
       parallel_for(size_t(0), num, [&] (const range<size_t>& r)
       {
@@ -99,11 +97,6 @@ namespace embree
             createMeshAccel(mesh,(AccelData*&)objects[objectID],builders[objectID]);
         }
       });
-
-      time0 = getSeconds() - time0;
-      DBG_PRINT(time0);
-
-      double time1 = getSeconds();
 
       /* parallel build of acceleration structures */
       parallel_for(size_t(0), num, [&] (const range<size_t>& r)
@@ -129,17 +122,12 @@ namespace embree
             refs[nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->bounds,object->root);
         }
       });
-
-      time1 = getSeconds() - time1;
-      DBG_PRINT(time1);
       
       /* fast path for single geometry scenes */
       if (nextRef == 1) { 
         bvh->set(refs[0].node,refs[0].bounds(),numPrimitives);
         return;
       }
-
-      double time2 = getSeconds();
 
       /* open all large nodes */
       refs.resize(nextRef);
@@ -150,11 +138,6 @@ namespace embree
         bvh->set(refs[0].node,refs[0].bounds(),numPrimitives);
         return;
       }
-
-      time2 = getSeconds() - time2;
-      DBG_PRINT(time2);
-
-      double time3 = getSeconds();
 
       /* compute PrimRefs */
       prims.resize(refs.size());
@@ -167,11 +150,6 @@ namespace embree
         }
         return pinfo;
       }, [] (const PrimInfo& a, const PrimInfo& b) { return PrimInfo::merge(a,b); });
-
-      time3 = getSeconds() - time3;
-      DBG_PRINT(time3);
-
-      double time4 = getSeconds();
 
       /* skip if all objects where empty */
       if (pinfo.size() == 0)
@@ -206,9 +184,6 @@ namespace embree
         bvh->set(root,pinfo.geomBounds,numPrimitives);
       }
 
-      time4 = getSeconds() - time4;
-      DBG_PRINT(time4);
-
 #if PROFILE
       }); 
 #endif
@@ -242,8 +217,6 @@ namespace embree
     {
       if (refs.size() == 0)
 	return;
-
-      double d0 = getSeconds();
 
       size_t num = min(numPrimitives/400,size_t(MAX_OPEN_SIZE));
       refs.reserve(num);
@@ -292,10 +265,23 @@ namespace embree
     }
 #endif
 
+#if defined(RTCORE_GEOMETRY_QUADS)
+    Builder* BVH4BuilderTwoLevelQuadMeshSAH (void* bvh, Scene* scene, const createQuadMeshAccelTy createMeshAccel) {
+    return new BVHNBuilderTwoLevel<4,QuadMesh>((BVH4*)bvh,scene,createMeshAccel);
+    }
+#endif
+
+
 #if defined(__AVX__)
 #if defined(RTCORE_GEOMETRY_TRIANGLES)
     Builder* BVH8BuilderTwoLevelTriangleMeshSAH (void* bvh, Scene* scene, const createTriangleMeshAccelTy createMeshAccel) {
       return new BVHNBuilderTwoLevel<8,TriangleMesh>((BVH8*)bvh,scene,createMeshAccel);
+    }
+#endif
+
+#if defined(RTCORE_GEOMETRY_QUADS)
+    Builder* BVH8BuilderTwoLevelQuadMeshSAH (void* bvh, Scene* scene, const createQuadMeshAccelTy createMeshAccel) {
+      return new BVHNBuilderTwoLevel<8,QuadMesh>((BVH8*)bvh,scene,createMeshAccel);
     }
 #endif
 #endif

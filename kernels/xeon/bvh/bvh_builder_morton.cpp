@@ -32,9 +32,6 @@
 
 #define BLOCK_SIZE 1024
 
-#define DBG_PRINT(x) 
-//#define DBG_PRINT(x)  if (numPrimitives > 1024*1000) PRINT(x)
-
 namespace embree 
 {
   namespace isa
@@ -314,8 +311,6 @@ namespace embree
          * temporarily use the first allocation block for sorting the
          * morton codes. */
 
-        double d0 = getSeconds();
-
         const size_t numNewPrimitives = mesh->size();
         if (numNewPrimitives != numPrimitives) bvh->alloc.clear();
         numPrimitives = numNewPrimitives;
@@ -335,17 +330,7 @@ namespace embree
         bytesAllocated = max(bytesAllocated,bytesMortonCodes); // the first allocation block is reused to sort the morton codes
         bvh->alloc.init(bytesAllocated,2*bytesAllocated);
 
-        d0 = getSeconds() - d0;
-        DBG_PRINT(d0);
-
-
-        //const size_t block_size = max(size_t(BLOCK_SIZE),(numPrimitives+TaskScheduler::threadCount()-1)/TaskScheduler::threadCount());
-
         size_t block_size = size_t(BLOCK_SIZE);
-
-        //PRINT(block_size);
-
-        double d1 = getSeconds();
 
         /* compute scene bounds */
         BBox3fa cb_empty(empty); cb_empty.lower.a = 0;
@@ -353,7 +338,7 @@ namespace embree
           ( size_t(0), numPrimitives, block_size, cb_empty, [&](const range<size_t>& r) -> BBox3fa
             {
               BBox3fa bounds = empty;
-#if 1
+
               size_t num = 0;
               for (ssize_t j=r.begin(); j<r.end(); j++)
               {
@@ -363,16 +348,9 @@ namespace embree
                 num++;
               }
               bounds.lower.a = num;
-#else
-              for (size_t i=r.begin(); i<r.end(); i++) bounds.extend(center2(mesh->bounds(i)));
-#endif
+              //for (size_t i=r.begin(); i<r.end(); i++) bounds.extend(center2(mesh->bounds(i)));
               return bounds;
             }, [] (const BBox3fa& a, const BBox3fa& b) { BBox3fa c = merge(a,b); c.lower.a = a.lower.a + b.lower.a; return c; });
-
-        d1 = getSeconds() - d1;
-        DBG_PRINT(d1);
-
-        double d2 = getSeconds();
 
         size_t numPrimitivesGen = centBounds.lower.a;
 
@@ -385,7 +363,6 @@ namespace embree
         {
           /* fast path */
           MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
-
           parallel_for( size_t(0), numPrimitives, block_size, [&](const range<size_t>& r) -> void {
               MortonCodeGenerator generator(mapping,&morton.data()[r.begin()]);
               for (ssize_t j=r.begin(); j<r.end(); j++)
@@ -426,12 +403,6 @@ namespace embree
             }, std::plus<size_t>());          
         }
 
-        d2 = getSeconds() - d2;
-        DBG_PRINT(d2);
-
-
-        double d3 = getSeconds();
-
         /* create BVH */
         AllocBVHNNode<N> allocNode;
         SetBVHNBounds<N> setBounds(bvh);
@@ -443,11 +414,6 @@ namespace embree
           morton.data(),dest,numPrimitivesGen,N,BVH::maxBuildDepth,minLeafSize,maxLeafSize);
         
         bvh->set(node_bounds.first,node_bounds.second,numPrimitives);
-
-        d3 = getSeconds() - d3;
-        DBG_PRINT(d3);
-
-        double d4 = getSeconds();
         
 #if ROTATE_TREE
         if (N == 4)
@@ -457,9 +423,6 @@ namespace embree
           bvh->clearBarrier(bvh->root);
         }
 #endif
-        d4 = getSeconds() - d4;
-        DBG_PRINT(d4);
-
 
         /* clear temporary data for static geometry */
         if (mesh->isStatic()) 
