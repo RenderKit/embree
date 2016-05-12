@@ -121,6 +121,6 @@ namespace embree
     std::vector<IntersectMode> intersectModes;
     std::vector<IntersectVariant> intersectVariants;
     bool user_specified_tests;
-    bool use_groups;
+    bool flatten;
   };
 }

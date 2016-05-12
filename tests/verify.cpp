@@ -111,14 +111,14 @@ namespace embree
 
   VerifyApplication::TestReturnValue VerifyApplication::TestGroup::execute(VerifyApplication* state, bool silent_in)
   {
-    if (state->use_groups && !silent_in && silent) 
+    if (state->flatten && !silent_in && silent) 
       std::cout << std::setw(60) << name << " ..." << std::flush;
 
     bool passed = true;
     for (auto test : tests)
-      passed &= test->execute(state,silent_in || (state->use_groups && silent)) != FAILED;
+      passed &= test->execute(state,silent_in || (state->flatten && silent)) != FAILED;
 
-    if (state->use_groups && !silent_in && silent) {
+    if (state->flatten && !silent_in && silent) {
       if (passed) std::cout << GREEN(" [PASSED]" ) << std::endl << std::flush;
       else        std::cout << RED  (" [FAILED]" ) << std::endl << std::flush;
     }
@@ -2637,7 +2637,7 @@ namespace embree
   /////////////////////////////////////////////////////////////////////////////////
 
   VerifyApplication::VerifyApplication ()
-    : Application(Application::FEATURE_RTCORE), intensity(1.0f), numFailedTests(0), user_specified_tests(false), use_groups(true), tests(new TestGroup(""))
+    : Application(Application::FEATURE_RTCORE), intensity(1.0f), numFailedTests(0), user_specified_tests(false), flatten(true), tests(new TestGroup(""))
   {
     GeometryType gtypes[] = { TRIANGLE_MESH, TRIANGLE_MESH_MB, QUAD_MESH, QUAD_MESH_MB, SUBDIV_MESH, SUBDIV_MESH_MB };
 
@@ -2946,9 +2946,9 @@ namespace embree
         enable_disable_some_tests(tests.dynamicCast<Test>(),regex,false);
       }, "--skip <regexpr>: Skips all tests whose name matches the regular expression.");
     
-    registerOption("no-groups", [this] (Ref<ParseStream> cin, const FileName& path) {
-        use_groups = false;
-      }, "--no-groups: ignore test groups");
+    registerOption("flatten", [this] (Ref<ParseStream> cin, const FileName& path) {
+        flatten = false;
+      }, "--flatten: shows all leaf test names when executing tests");
 
     registerOption("print-tests", [this] (Ref<ParseStream> cin, const FileName& path) {
         print_tests(tests.dynamicCast<Test>(),0);
