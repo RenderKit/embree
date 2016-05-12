@@ -93,26 +93,19 @@ namespace embree
     /// Loads and Stores
     ////////////////////////////////////////////////////////////////////////////////
 
-    static __forceinline vint16 load(const void* addr) { return _mm512_load_si512((int*)addr); }
-    static __forceinline vint16 loadu(const void* addr)
-    {
-      return _mm512_loadu_si512(addr);
-    }
+    static __forceinline vint16 load (const void* addr) { return _mm512_load_si512((int*)addr); }
+    static __forceinline vint16 loadu(const void* addr) { return _mm512_loadu_si512(addr); }
 
-    static __forceinline void store (void* ptr, const vint16& v) { _mm512_store_si512(ptr,v); }
-    static __forceinline void storeu(void* ptr, const vint16& v ) 
-    {
-      _mm512_storeu_si512(ptr,v);
-    }
+    static __forceinline vint16 load (const vboolf16& mask, const void* addr) { return _mm512_mask_load_epi32 (_mm512_setzero_epi32(),mask,addr); }
+    static __forceinline vint16 loadu(const vboolf16& mask, const void* addr) { return _mm512_mask_loadu_epi32(_mm512_setzero_epi32(),mask,addr); }
+
+    static __forceinline void store (void* ptr, const vint16& v) { _mm512_store_si512 (ptr,v); }
+    static __forceinline void storeu(void* ptr, const vint16& v) { _mm512_storeu_si512(ptr,v); }
  
     static __forceinline void store (const vboolf16& mask, void* addr, const vint16& v2) { _mm512_mask_store_epi32(addr,mask,v2); }
-    static __forceinline void storeu(const vboolf16& mask, void* ptr, const vint16& f ) {
-      _mm512_mask_storeu_epi32((int*)ptr,mask,f);
-    }
+    static __forceinline void storeu(const vboolf16& mask, void* ptr,  const vint16& f ) { _mm512_mask_storeu_epi32((int*)ptr,mask,f); }
 
-    static __forceinline void store_nt(void *__restrict__ ptr, const vint16& a) {
-      _mm512_stream_si512(ptr,a);
-    }
+    static __forceinline void store_nt(void *__restrict__ ptr, const vint16& a) { _mm512_stream_si512(ptr,a); }
 
     /* pass by value to avoid compiler generating inefficient code */
     static __forceinline void storeu_compact(const vboolf16 mask,void * addr, const vint16 reg) {
@@ -141,18 +134,15 @@ namespace embree
       return _mm512_set1_epi64(v);
     }
 
-    static __forceinline size_t extracti64bit(const vint16& v)
-    {
+    static __forceinline size_t extracti64bit(const vint16& v) {
       return _mm_cvtsi128_si64(_mm512_castsi512_si128(v));
     }
 
-    static __forceinline vint4 extracti128bit(const vint16& v)
-    {
+    static __forceinline vint4 extracti128bit(const vint16& v) {
       return _mm512_castsi512_si128(v);
     }
 
-    static __forceinline vint8 extracti256bit(const vint16& v)
-    {
+    static __forceinline vint8 extracti256bit(const vint16& v) {
       return _mm512_castsi512_si256(v);
     }
 

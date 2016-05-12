@@ -206,7 +206,7 @@ namespace embree
             const vintx vi = vintx(i)+vintx(step);
             vboolx valid = vi < vintx(N);
             const size_t offset = s*stream_offset + sizeof(float) * i;
-            RayK<VSIZEX> ray = rayN.gather<VSIZEX>(offset);
+            RayK<VSIZEX> ray = rayN.gather<VSIZEX>(valid,offset);
              valid &= ray.tnear <= ray.tfar;
             if (intersect) scene->intersect(valid,ray,context);
             else           scene->occluded (valid,ray,context);

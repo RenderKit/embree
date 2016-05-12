@@ -70,24 +70,27 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
     /// Loads and Stores
     ////////////////////////////////////////////////////////////////////////////////
-    
-    static __forceinline vint8 load( const unsigned char* const ptr ) {
-      vint4 il = vint4::load(ptr+0);
-      vint4 ih = vint4::load(ptr+4);
-      return vint8(il,ih);
-    }
 
-    static __forceinline vint8 load( const void* const a) { return _mm256_castps_si256(_mm256_load_ps((float*)a)); }
+    static __forceinline vint8 load ( const void* const a) { return _mm256_castps_si256(_mm256_load_ps((float*)a)); }
     static __forceinline vint8 loadu( const void* const a) { return _mm256_castps_si256(_mm256_loadu_ps((float*)a)); }
-    
-    static __forceinline void store(void* ptr, const vint8& f ) { _mm256_store_ps((float*)ptr,_mm256_castsi256_ps(f)); }
-    static __forceinline void storeu(void* ptr, const vint8& f ) { _mm256_storeu_ps((float*)ptr,_mm256_castsi256_ps(f)); }
+
+    static __forceinline vint8 load ( const vboolf8& mask, const void* const a ) { return _mm256_castps_si256(_mm256_maskload_ps((float*)a,mask)); }
+    static __forceinline vint8 loadu( const vboolf8& mask, const void* const a ) { return _mm256_castps_si256(_mm256_maskload_ps((float*)a,mask)); }
+
+    static __forceinline void store ( void* ptr, const vint8& f ) { _mm256_store_ps((float*)ptr,_mm256_castsi256_ps(f)); }
+    static __forceinline void storeu( void* ptr, const vint8& f ) { _mm256_storeu_ps((float*)ptr,_mm256_castsi256_ps(f)); }
     
     static __forceinline void store ( const vboolf8& mask, void* ptr, const vint8& f ) { _mm256_maskstore_ps((float*)ptr,(__m256i)mask,_mm256_castsi256_ps(f)); }
     static __forceinline void storeu( const vboolf8& mask, void* ptr, const vint8& f ) { _mm256_maskstore_ps((float*)ptr,(__m256i)mask,_mm256_castsi256_ps(f)); }
 
     static __forceinline void store_nt(void* ptr, const vint8& v) {
       _mm256_stream_ps((float*)ptr,_mm256_castsi256_ps(v));
+    }
+
+    static __forceinline vint8 load( const unsigned char* const ptr ) {
+      vint4 il = vint4::load(ptr+0);
+      vint4 ih = vint4::load(ptr+4);
+      return vint8(il,ih);
     }
 
     static __forceinline void store_uchar( unsigned char* const ptr, const vint8& i ) {

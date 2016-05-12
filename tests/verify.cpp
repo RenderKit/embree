@@ -50,6 +50,16 @@ namespace embree
     return (cpu_features & isa) == isa;
   }
 
+  bool regex_match(std::string str, std::string regex)
+  {
+#if defined(__MACOSX__) && defined(__INTEL_COMPILER) && (__INTEL_COMPILER < 1600) // works around __ZTVNSt3__123__match_any_but_newlineIcEE link error
+    return str == regex; 
+#else
+    std::smatch match; std::regex regexpr(regex);
+    return std::regex_match(str, match, regexpr);
+#endif
+  }
+
   void AssertNoError(RTCDevice device) 
   {
     RTCError error = rtcDeviceGetError(device);
@@ -2950,28 +2960,45 @@ namespace embree
         if (test->name.find("watertight_subdiv") != std::string::npos) test->ignoreFailure = true;
       });
     
-    /* register all command line options*/
+    /**************************************************************************/
+    /*                     Command Line Parsing                               */
+    /**************************************************************************/
+  
     registerOption("run", [this] (Ref<ParseStream> cin, const FileName& path) {
-        std::string regex = cin->getString();
         if (!user_specified_tests) enable_disable_all_tests(tests,false);
         user_specified_tests = true;
+        std::string regex = cin->getString();
         enable_disable_some_tests(tests,regex,true);
       }, "--run <regexpr>: Runs all tests whose name match the regular expression.");
+    registerOptionAlias("run","enable");
 
     registerOption("skip", [this] (Ref<ParseStream> cin, const FileName& path) {
-        std::string regex = cin->getString();
         if (!user_specified_tests) enable_disable_all_tests(tests,true);
         user_specified_tests = true;
+        std::string regex = cin->getString();
         enable_disable_some_tests(tests,regex,false);
       }, "--skip <regexpr>: Skips all tests whose name matches the regular expression.");
-    
+    registerOptionAlias("skip","disable");
+
+    registerOption("skip-before", [this] (Ref<ParseStream> cin, const FileName& path) {
+        if (!user_specified_tests) enable_disable_all_tests(tests,true);
+        user_specified_tests = true;
+        bool found = false;
+        std::string regex = cin->getString();
+        map_tests(tests, [&] (Ref<Test> test) {
+            if (regex_match(test->name,regex)) found = true;
+            test->enabled &= found;
+          });
+      }, "--skip-before <regexpr>: Skips all tests before the first test matching the regular expression.");
+    registerOptionAlias("skip-before","disable-before");
+
     registerOption("flatten", [this] (Ref<ParseStream> cin, const FileName& path) {
         flatten = false;
       }, "--flatten: shows all leaf test names when executing tests");
     
     registerOption("sequential", [this] (Ref<ParseStream> cin, const FileName& path) {
         parallel = false;
-      }, "--sequential: executed all tests sequential");
+      }, "--sequential: execute all tests sequential");
 
     registerOption("parallel", [this] (Ref<ParseStream> cin, const FileName& path) {
         parallel = true;
@@ -2980,7 +3007,7 @@ namespace embree
     registerOption("print-tests", [this] (Ref<ParseStream> cin, const FileName& path) {
         print_tests(tests,0);
         exit(1);
-      }, "--print-tests: prints all supported tests");
+      }, "--print-tests: prints all enabled tests");
     
     registerOption("intensity", [this] (Ref<ParseStream> cin, const FileName& path) {
         intensity = cin->getFloat();
@@ -3041,12 +3068,8 @@ namespace embree
   void VerifyApplication::enable_disable_some_tests(Ref<Test> test, std::string regex, bool enabled)
   {
     map_tests(test, [&] (Ref<Test> test) { 
-#if defined(__MACOSX__) && defined(__INTEL_COMPILER) && (__INTEL_COMPILER < 1600) // works around __ZTVNSt3__123__match_any_but_newlineIcEE link error
-        if (test->name == regex) test->enabled = enabled;
-#else
-        std::smatch match; std::regex regexpr(regex);
-        if (std::regex_match(test->name, match, regexpr)) test->enabled = enabled;
-#endif
+        if (regex_match(test->name,regex)) 
+          test->enabled = enabled;
       });
    update_tests(test);
   }
