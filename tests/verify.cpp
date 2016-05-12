@@ -18,6 +18,7 @@
 #include "../tutorials/common/scenegraph/scenegraph.h"
 #include "../kernels/algorithms/parallel_for.h"
 #include <regex>
+#include <stack>
 
 #define DEFAULT_STACK_SIZE 4*1024*1024
 
