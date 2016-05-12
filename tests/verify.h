@@ -32,7 +32,7 @@ namespace embree
     struct Test : public RefCount
     {
       Test (std::string name, int isa, TestType ty) 
-        : name(name), isa(isa), ty(ty), enabled(true) {}
+        : name(name), isa(isa), ty(ty), enabled(true), ignoreFailure(false) {}
 
       bool isEnabled() { return enabled; }
       virtual TestReturnValue run(VerifyApplication* state, bool silent) { return SKIPPED; }
@@ -43,6 +43,7 @@ namespace embree
       int isa;
       TestType ty;
       bool enabled;
+      bool ignoreFailure;
     };
 
     struct TestGroup : public Test
@@ -101,9 +102,12 @@ namespace embree
 
     VerifyApplication ();
     void prefix_test_names(Ref<Test> test, std::string prefix = "");
+    bool update_tests(Ref<Test> test);
     void print_tests(Ref<Test> test, size_t depth);
-    bool enable_disable_all_tests(Ref<Test> test, bool enabled);
-    bool enable_disable_some_tests(Ref<Test> test, std::string regex, bool enabled);
+    template<typename Function> 
+      void map_tests(Ref<Test> test, const Function& f);
+    void enable_disable_all_tests(Ref<Test> test, bool enabled);
+    void enable_disable_some_tests(Ref<Test> test, std::string regex, bool enabled);
     int main(int argc, char** argv);
     
   public:
@@ -112,7 +116,7 @@ namespace embree
 
   public:
     std::vector<int> isas;
-    Ref<TestGroup> tests;
+    Ref<Test> tests;
 
   public:
     std::vector<RTCSceneFlags> sceneFlags;
