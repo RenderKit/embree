@@ -172,8 +172,6 @@ namespace embree
       static const size_t BUCKETS = (1 << BITS);
       static const size_t CMP_SORT_THRESHOLD = 16;
 
-      __assume_aligned(morton, 8);
-
       __aligned(64) unsigned int count[BUCKETS];
 
       /* clear buckets */
