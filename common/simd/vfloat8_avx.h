@@ -86,9 +86,9 @@ namespace embree
     static __forceinline vfloat8 load ( const void* const a) { return _mm256_load_ps((float*)a); }
     static __forceinline vfloat8 loadu( const void* const a) { return _mm256_loadu_ps((float*)a); }
     
-    static __forceinline vfloat8 load ( const vbool8& mask, const void* const a) { return _mm256_load_ps((float*)a); } // FIXME: use mask on AVX512VL
-    static __forceinline vfloat8 loadu( const vbool8& mask, const void* const a) { return _mm256_loadu_ps((float*)a); } // FIXME: use mask on AVX512VL
-    
+    static __forceinline vfloat8 load ( const vboolf8& mask, const void* const a ) { return _mm256_maskload_ps((float*)a,(__m256i)mask); }
+    static __forceinline vfloat8 loadu( const vboolf8& mask, const void* const a ) { return _mm256_maskload_ps((float*)a,(__m256i)mask); }
+
     static __forceinline void store ( void* ptr, const vfloat8& f ) { return _mm256_store_ps((float*)ptr,f); }
     static __forceinline void storeu( void* ptr, const vfloat8& f ) { return _mm256_storeu_ps((float*)ptr,f); }
 

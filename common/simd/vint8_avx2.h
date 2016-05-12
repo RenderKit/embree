@@ -66,7 +66,6 @@ namespace embree
     __forceinline vint( PosInfTy ) : v(_mm256_set1_epi32(pos_inf)) {}
     __forceinline vint( NegInfTy ) : v(_mm256_set1_epi32(neg_inf)) {}
     __forceinline vint( StepTy   ) : v(_mm256_set_epi32(7, 6, 5, 4, 3, 2, 1, 0)) {}
-    __forceinline vint( TrueTy   ) { /* v = _mm256_undefined_si256(); */ v = _mm256_cmpeq_epi32(v,v); }
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Loads and Stores
@@ -76,7 +75,10 @@ namespace embree
 
     static __forceinline const vint8 load( const void* const ptr ) { return _mm256_load_si256((__m256i*)ptr); }
     static __forceinline const vint8 loadu(const void* const ptr ) { return _mm256_loadu_si256((__m256i*)ptr); }
-    
+
+    static __forceinline vint8 load ( const vboolf8& mask, const void* const a ) { return _mm256_castps_si256(_mm256_maskload_ps((float*)a,mask)); }
+    static __forceinline vint8 loadu( const vboolf8& mask, const void* const a ) { return _mm256_castps_si256(_mm256_maskload_ps((float*)a,mask)); }
+
     static __forceinline void store ( void* ptr, const vint8& i ) { _mm256_store_si256((__m256i*)ptr,i); }
     static __forceinline void storeu( void* ptr, const vint8& i ) { _mm256_storeu_ps((float*)ptr,_mm256_castsi256_ps(i)); }
 

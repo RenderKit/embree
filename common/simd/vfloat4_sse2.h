@@ -61,18 +61,16 @@ namespace embree
     /// Loads and Stores
     ////////////////////////////////////////////////////////////////////////////////
 
-#if defined(__AVX__)
-    static __forceinline vfloat4 broadcast( const void* const a ) { return _mm_broadcast_ss((float*)a); }
-
-#else
-    static __forceinline vfloat4 broadcast( const void* const a ) { return _mm_set1_ps(*(float*)a); }
-#endif
-
     static __forceinline vfloat4 load ( const void* const a ) { return _mm_load_ps((float*)a); }
     static __forceinline vfloat4 loadu( const void* const a ) { return _mm_loadu_ps((float*)a); }
 
-    static __forceinline vfloat4 load ( const vbool4& mask, const void* const a ) { return _mm_load_ps((float*)a); } // FIXME: use mask for AVX512VL
-    static __forceinline vfloat4 loadu( const vbool4& mask, const void* const a ) { return _mm_loadu_ps((float*)a); } // FIXME: use mask for AVX512VL
+#if defined (__AVX__) 
+    static __forceinline vfloat4 load ( const vbool4& mask, const void* const a ) { return _mm_maskload_ps((float*)a,mask); }
+    static __forceinline vfloat4 loadu( const vbool4& mask, const void* const a ) { return _mm_maskload_ps((float*)a,mask); }
+#else
+    static __forceinline vfloat4 load ( const vbool4& mask, const void* const a ) { return _mm_and_ps(_mm_load_ps ((float*)a),mask); }
+    static __forceinline vfloat4 loadu( const vbool4& mask, const void* const a ) { return _mm_and_ps(_mm_loadu_ps((float*)a),mask); }
+#endif
 
     static __forceinline void store ( void* ptr, const vfloat4& v ) { _mm_store_ps((float*)ptr,v); }
     static __forceinline void storeu( void* ptr, const vfloat4& v ) { _mm_storeu_ps((float*)ptr,v); }
@@ -83,6 +81,12 @@ namespace embree
 #else
     static __forceinline void store ( const vboolf4& mask, void* ptr, const vfloat4& f ) { store (ptr,select(mask,f,load (ptr))); }
     static __forceinline void storeu( const vboolf4& mask, void* ptr, const vfloat4& f ) { storeu(ptr,select(mask,f,loadu(ptr))); }
+#endif
+
+#if defined(__AVX__)
+    static __forceinline vfloat4 broadcast( const void* const a ) { return _mm_broadcast_ss((float*)a); }
+#else
+    static __forceinline vfloat4 broadcast( const void* const a ) { return _mm_set1_ps(*(float*)a); }
 #endif
 
     static __forceinline vfloat4 load_nt ( const float* ptr ) {

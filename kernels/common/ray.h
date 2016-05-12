@@ -548,20 +548,20 @@ namespace embree
     }
 
     template<int K>
-    __forceinline RayK<K> gather(const size_t offset)
+    __forceinline RayK<K> gather(const vbool<K>& valid, const size_t offset)
     {
       RayK<K> ray;
-      ray.org.x = vfloat<K>::loadu((float* __restrict__ )((char*)orgx + offset));
-      ray.org.y = vfloat<K>::loadu((float* __restrict__ )((char*)orgy + offset));
-      ray.org.z = vfloat<K>::loadu((float* __restrict__ )((char*)orgz + offset));
-      ray.dir.x = vfloat<K>::loadu((float* __restrict__ )((char*)dirx + offset));
-      ray.dir.y = vfloat<K>::loadu((float* __restrict__ )((char*)diry + offset));
-      ray.dir.z = vfloat<K>::loadu((float* __restrict__ )((char*)dirz + offset));
-      ray.tfar  = vfloat<K>::loadu((float* __restrict__ )((char*)tfar + offset));
-      ray.tnear = tnear ? vfloat<K>::loadu((float* __restrict__ )((char*)tnear + offset)) : 0.0f;
-      ray.time  = time  ? vfloat<K>::loadu((float* __restrict__ )((char*)time  + offset)) : 0.0f;
-      ray.mask  = mask  ? vint<K>::loadu((int * __restrict__ )((char*)mask  + offset)) : -1;
-      ray.instID = instID  ? vint<K>::loadu((int * __restrict__ )((char*)instID  + offset)) : -1;
+      ray.org.x = vfloat<K>::loadu(valid,(float* __restrict__ )((char*)orgx + offset));
+      ray.org.y = vfloat<K>::loadu(valid,(float* __restrict__ )((char*)orgy + offset));
+      ray.org.z = vfloat<K>::loadu(valid,(float* __restrict__ )((char*)orgz + offset));
+      ray.dir.x = vfloat<K>::loadu(valid,(float* __restrict__ )((char*)dirx + offset));
+      ray.dir.y = vfloat<K>::loadu(valid,(float* __restrict__ )((char*)diry + offset));
+      ray.dir.z = vfloat<K>::loadu(valid,(float* __restrict__ )((char*)dirz + offset));
+      ray.tfar  = vfloat<K>::loadu(valid,(float* __restrict__ )((char*)tfar + offset));
+      ray.tnear = tnear ? vfloat<K>::loadu(valid,(float* __restrict__ )((char*)tnear + offset)) : 0.0f;
+      ray.time  = time  ? vfloat<K>::loadu(valid,(float* __restrict__ )((char*)time  + offset)) : 0.0f;
+      ray.mask  = mask  ? vint<K>::loadu(valid,(const void * __restrict__ )((char*)mask  + offset)) : -1;
+      ray.instID = instID  ? vint<K>::loadu(valid,(const void * __restrict__ )((char*)instID  + offset)) : -1;
       ray.geomID = RTC_INVALID_GEOMETRY_ID;
       return ray;
     }
