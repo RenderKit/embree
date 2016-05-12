@@ -502,7 +502,8 @@ namespace embree
           const unsigned int bz = extract<2>(binID);
           morton[i].code = bitInterleave(bx,by,bz);
         }
-        std::sort(morton+current.begin,morton+current.end); // FIXME: use radix sort
+        //std::sort(morton+current.begin,morton+current.end); // FIXME: use radix sort
+        InPlace32BitRadixSort(morton+current.begin,current.end-current.begin);
       }
       
       __forceinline void split(MortonBuildRecord<NodeRef>& current,
