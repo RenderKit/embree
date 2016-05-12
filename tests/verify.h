@@ -122,5 +122,6 @@ namespace embree
     std::vector<IntersectVariant> intersectVariants;
     bool user_specified_tests;
     bool flatten;
+    bool parallel;
   };
 }

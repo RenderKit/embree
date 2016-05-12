@@ -16,6 +16,7 @@
 
 #include "verify.h"
 #include "../tutorials/common/scenegraph/scenegraph.h"
+#include "../kernels/algorithms/parallel_for.h"
 #include <regex>
 
 #define DEFAULT_STACK_SIZE 4*1024*1024
@@ -114,14 +115,24 @@ namespace embree
     if (!isEnabled())
       return SKIPPED;
 
-    if (state->flatten && !silent_in && silent) 
+    bool leaftest = state->flatten && !silent_in && silent;
+    bool nextsilent = silent_in || (state->flatten && silent);
+    if (leaftest) 
       std::cout << std::setw(60) << name << " ..." << std::flush;
+    
+    std::atomic<int> passed(true);
+    if (state->parallel && leaftest) 
+    {
+      parallel_for(tests.size(),[&] (size_t i) {
+          passed.fetch_and(tests[i]->execute(state,nextsilent) != FAILED);
+        });
+    } 
+    else {
+      for (auto test : tests)
+        passed.fetch_and(test->execute(state,nextsilent) != FAILED);
+    }
 
-    bool passed = true;
-    for (auto test : tests)
-      passed &= test->execute(state,silent_in || (state->flatten && silent)) != FAILED;
-
-    if (state->flatten && !silent_in && silent) {
+    if (leaftest) {
       if (passed) std::cout << GREEN(" [PASSED]" ) << std::endl << std::flush;
       else        std::cout << RED  (" [FAILED]" ) << std::endl << std::flush;
     }
@@ -2640,7 +2651,7 @@ namespace embree
   /////////////////////////////////////////////////////////////////////////////////
 
   VerifyApplication::VerifyApplication ()
-    : Application(Application::FEATURE_RTCORE), intensity(1.0f), numFailedTests(0), user_specified_tests(false), flatten(true), tests(new TestGroup(""))
+    : Application(Application::FEATURE_RTCORE), intensity(1.0f), tests(new TestGroup("")), numFailedTests(0), user_specified_tests(false), flatten(true), parallel(false)
   {
     GeometryType gtypes[] = { TRIANGLE_MESH, TRIANGLE_MESH_MB, QUAD_MESH, QUAD_MESH_MB, SUBDIV_MESH, SUBDIV_MESH_MB };
 
@@ -2952,6 +2963,14 @@ namespace embree
     registerOption("flatten", [this] (Ref<ParseStream> cin, const FileName& path) {
         flatten = false;
       }, "--flatten: shows all leaf test names when executing tests");
+    
+    registerOption("sequential", [this] (Ref<ParseStream> cin, const FileName& path) {
+        parallel = false;
+      }, "--sequential: executed all tests sequential");
+
+    registerOption("parallel", [this] (Ref<ParseStream> cin, const FileName& path) {
+        parallel = true;
+      }, "--parallel: parallelized test execution (default)");
 
     registerOption("print-tests", [this] (Ref<ParseStream> cin, const FileName& path) {
         print_tests(tests.dynamicCast<Test>(),0);
