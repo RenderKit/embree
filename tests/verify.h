@@ -35,8 +35,8 @@ namespace embree
         : name(name), isa(isa), ty(ty), enabled(true) {}
 
       bool isEnabled() { return enabled; }
-      virtual bool leaf() { return true; }
-      virtual TestReturnValue run(VerifyApplication* state, bool silent) = 0;
+      virtual TestReturnValue run(VerifyApplication* state, bool silent) { return SKIPPED; }
+      virtual TestReturnValue execute(VerifyApplication* state, bool silent);
 
     public:
       std::string name;
@@ -58,10 +58,9 @@ namespace embree
       std::string extend_prefix(std::string prefix) const {
         return (name != "") ? prefix + name + "." : prefix;
       }
-
+      
       bool isEnabled() { return enabled; }
-      virtual bool leaf() { return silent; }
-      TestReturnValue run(VerifyApplication* state, bool silent);
+      TestReturnValue execute(VerifyApplication* state, bool silent);
 
     public:
       bool silent;
@@ -109,7 +108,7 @@ namespace embree
     
   public:
     float intensity;
-    size_t numFailedTests;
+    std::atomic<size_t> numFailedTests;
 
   public:
     std::vector<int> isas;

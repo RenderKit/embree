@@ -75,41 +75,55 @@ namespace embree
       throw std::runtime_error("Error "+string_of(expectedError)+" expected");
   }
 
-  VerifyApplication::TestReturnValue VerifyApplication::TestGroup::run(VerifyApplication* state, bool silent_in)
+  VerifyApplication::TestReturnValue VerifyApplication::Test::execute(VerifyApplication* state, bool silent)
   {
-    bool allpassed = true;
-    bool is_silent = silent | silent_in;
-    for (auto test : tests)
-    {
-      if (!test->isEnabled())
-        continue;
+    if (!isEnabled())
+      return SKIPPED;
+    
+    if (!silent) 
+      std::cout << std::setw(60) << name << " ..." << std::flush;
       
-      if (!is_silent && test->leaf())
-        std::cout << std::setw(60) << test->name << " ..." << std::flush;
-      
-      TestReturnValue v = SKIPPED;
-      try {
-        v = test->run(state,is_silent);
-      } catch (...) {
-        v = FAILED;
-      }
-      TestReturnValue ev = test->ty != TEST_SHOULD_FAIL ? PASSED : FAILED;
-      bool passed = v == ev || v == SKIPPED;
-      
-      if (is_silent) {
-        if (v != SKIPPED) {
-          if (passed) std::cout << GREEN("+") << std::flush;
-          else        std::cout << RED  ("-") << std::flush;
-        }
-      } else if (test->leaf()) {
-        if      (v == SKIPPED) std::cout << GREEN(" [SKIPPED]") << std::endl << std::flush;
-        else if (passed      ) std::cout << GREEN(" [PASSED]" ) << std::endl << std::flush;
-        else                   std::cout << RED  (" [FAILED]" ) << std::endl << std::flush;
-      }
-      state->numFailedTests += !passed;
-      allpassed &= passed;
+    TestReturnValue v = SKIPPED;
+    try {
+      v = run(state,silent);
+    } catch (...) {
+      v = FAILED;
     }
-    return allpassed ? PASSED : FAILED;
+    TestReturnValue ev = ty != TEST_SHOULD_FAIL ? PASSED : FAILED;
+    bool passed = v == ev || v == SKIPPED;
+      
+    if (silent) {
+      if (v != SKIPPED) {
+        if (passed) std::cout << GREEN("+") << std::flush;
+        else        std::cout << RED  ("-") << std::flush;
+      }
+    } 
+    else
+    {
+      if      (v == SKIPPED) std::cout << GREEN(" [SKIPPED]") << std::endl << std::flush;
+      else if (passed      ) std::cout << GREEN(" [PASSED]" ) << std::endl << std::flush;
+      else                   std::cout << RED  (" [FAILED]" ) << std::endl << std::flush;
+    }
+    state->numFailedTests += !passed;
+
+    return passed ? PASSED : FAILED;
+  }
+
+  VerifyApplication::TestReturnValue VerifyApplication::TestGroup::execute(VerifyApplication* state, bool silent_in)
+  {
+    if (state->use_groups && !silent_in && silent) 
+      std::cout << std::setw(60) << name << " ..." << std::flush;
+
+    bool passed = true;
+    for (auto test : tests)
+      passed &= test->execute(state,silent_in || (state->use_groups && silent)) != FAILED;
+
+    if (state->use_groups && !silent_in && silent) {
+      if (passed) std::cout << GREEN(" [PASSED]" ) << std::endl << std::flush;
+      else        std::cout << RED  (" [FAILED]" ) << std::endl << std::flush;
+    }
+
+    return passed ? PASSED : FAILED;
   }
 
   RTCAlgorithmFlags aflags = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT4 | RTC_INTERSECT8 | RTC_INTERSECT16);
@@ -3013,7 +3027,7 @@ namespace embree
     parseCommandLine(argc,argv);
 
     /* run all enabled tests */
-    tests->run(this,false);
+    tests->execute(this,false);
 
     return numFailedTests;
   }
