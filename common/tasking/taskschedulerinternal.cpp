@@ -97,7 +97,7 @@ namespace embree
       stackPtr = tasks[right].stackPtr;
     
     /* also move left pointer */
-    if (left >= right) left = right;
+    if (left >= right) left.store(right.load());
     
     return right != 0;
   }
@@ -106,7 +106,7 @@ namespace embree
   {
     size_t l = left;
     if (l < right) 
-      l = atomic_add(&left,1);
+      l = left++;
     else 
       return false;
     
@@ -232,7 +232,7 @@ namespace embree
   {
     threadLocal.resize(2*getNumberOfLogicalThreads()); // FIXME: this has to be 2x as in the join mode the worker threads also join
     for (size_t i=0; i<threadLocal.size(); i++)
-      threadLocal[i] = nullptr;
+      threadLocal[i].store(nullptr);
   }
   
   TaskScheduler::~TaskScheduler() 
@@ -272,7 +272,7 @@ namespace embree
 
   __dllexport ssize_t TaskScheduler::allocThreadIndex()
   {
-    size_t threadIndex = atomic_add(&threadCounter,1);
+    size_t threadIndex = threadCounter++;
     assert(threadIndex < threadLocal.size());
     return threadIndex;
   }
@@ -281,7 +281,7 @@ namespace embree
   {
     mutex.lock();
     size_t threadIndex = allocThreadIndex();
-    condition.wait(mutex, [&] () { return hasRootTask; });
+    condition.wait(mutex, [&] () { return hasRootTask.load(); });
     mutex.unlock();
     std::exception_ptr except = thread_loop(threadIndex);
     if (except != nullptr) std::rethrow_exception(except);
@@ -321,7 +321,7 @@ namespace embree
     /* allocate thread structure */
     std::unique_ptr<Thread> mthread(new Thread(threadIndex,this)); // too large for stack allocation
     Thread& thread = *mthread;
-    threadLocal[threadIndex] = &thread;
+    threadLocal[threadIndex].store(&thread);
     Thread* oldThread = swapThread(&thread);
 
     /* main thread loop */
@@ -330,12 +330,12 @@ namespace embree
       steal_loop(thread,
                  [&] () { return anyTasksRunning > 0; },
                  [&] () { 
-                   atomic_add(&anyTasksRunning,+1);
+                   anyTasksRunning++;
                    while (thread.tasks.execute_local(thread,nullptr));
-                   atomic_add(&anyTasksRunning,-1);
+                   anyTasksRunning--;
                  });
     }
-    threadLocal[threadIndex] = nullptr;
+    threadLocal[threadIndex].store(nullptr);
     swapThread(oldThread);
 
     /* remember exception to throw */
@@ -343,7 +343,7 @@ namespace embree
     if (cancellingException != nullptr) except = cancellingException;
 
     /* wait for all threads to terminate */
-    atomic_add(&threadCounter,-1);
+    threadCounter--;
     while (threadCounter > 0) yield();
     return except;
   }
@@ -359,7 +359,7 @@ namespace embree
       size_t otherThreadIndex = threadIndex+i;
       if (otherThreadIndex >= threadCount) otherThreadIndex -= threadCount;
 
-      Thread* othread = threadLocal[otherThreadIndex];
+      Thread* othread = threadLocal[otherThreadIndex].load();
       if (!othread)
         continue;
 

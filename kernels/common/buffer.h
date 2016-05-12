@@ -52,10 +52,10 @@ namespace embree
     void free();
 
     /*! maps the buffer */
-    void* map(std::atomic_size_t& cntr);
+    void* map(std::atomic<size_t>& cntr);
     
     /*! unmaps the buffer */
-    void unmap(std::atomic_size_t& cntr);
+    void unmap(std::atomic<size_t>& cntr);
 
     /*! checks if the buffer is mapped */
     __forceinline bool isMapped() const {

@@ -26,16 +26,17 @@ namespace embree
   class VerifyApplication : public Application
   {
   public:
-    enum TestType { PASS, FAIL, GROUP_BEGIN, GROUP_END };
+    enum TestType { TEST_SHOULD_PASS, TEST_SHOULD_FAIL, TEST_GROUP };
     enum TestReturnValue { FAILED, PASSED, SKIPPED };
     
     struct Test : public RefCount
     {
       Test (std::string name, int isa, TestType ty) 
-        : name(name), isa(isa), ty(ty), enabled(false) {}
+        : name(name), isa(isa), ty(ty), enabled(true) {}
 
       bool isEnabled() { return enabled; }
-      virtual TestReturnValue run(VerifyApplication* state) { return SKIPPED; };
+      virtual TestReturnValue run(VerifyApplication* state, bool silent) { return SKIPPED; }
+      virtual TestReturnValue execute(VerifyApplication* state, bool silent);
 
     public:
       std::string name;
@@ -44,9 +45,31 @@ namespace embree
       bool enabled;
     };
 
+    struct TestGroup : public Test
+    {
+      TestGroup (std::string name, bool silent = false)
+        : Test(name,0,TEST_GROUP), silent(silent) {}
+
+    public:
+      void add(Ref<Test> test) {
+        tests.push_back(test);
+      }
+
+      std::string extend_prefix(std::string prefix) const {
+        return (name != "") ? prefix + name + "." : prefix;
+      }
+      
+      bool isEnabled() { return enabled; }
+      TestReturnValue execute(VerifyApplication* state, bool silent);
+
+    public:
+      bool silent;
+      std::vector<Ref<Test>> tests;
+    };
+
     struct IntersectTest : public Test
     {
-      IntersectTest (std::string name, int isa, IntersectMode imode, IntersectVariant ivariant, TestType ty = PASS)
+      IntersectTest (std::string name, int isa, IntersectMode imode, IntersectVariant ivariant, TestType ty = TEST_SHOULD_PASS)
         : Test(name,isa,ty), imode(imode), ivariant(ivariant) {}
 
       bool supportsIntersectMode(RTCDevice device)
@@ -77,23 +100,19 @@ namespace embree
   public:
 
     VerifyApplication ();
-
-    void addTest(Ref<Test> test);
-    void beginTestGroup(std::string name) { addTest(new Test(name,0,GROUP_BEGIN)); }
-    void endTestGroup  () { addTest(new Test("",0,GROUP_END)); }
-    bool runTest(Ref<Test> test, bool silent);
-    void runTestGroup(size_t& id);
-
+    void prefix_test_names(Ref<Test> test, std::string prefix = "");
+    void print_tests(Ref<Test> test, size_t depth);
+    bool enable_disable_all_tests(Ref<Test> test, bool enabled);
+    bool enable_disable_some_tests(Ref<Test> test, std::string regex, bool enabled);
     int main(int argc, char** argv);
     
   public:
     float intensity;
-    size_t numFailedTests;
+    std::atomic<size_t> numFailedTests;
 
   public:
     std::vector<int> isas;
-    std::vector<Ref<Test>> tests;
-    std::map<std::string,Ref<Test>> name2test;
+    Ref<TestGroup> tests;
 
   public:
     std::vector<RTCSceneFlags> sceneFlags;
@@ -102,6 +121,6 @@ namespace embree
     std::vector<IntersectMode> intersectModes;
     std::vector<IntersectVariant> intersectVariants;
     bool user_specified_tests;
-    bool use_groups;
+    bool flatten;
   };
 }

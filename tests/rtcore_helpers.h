@@ -456,10 +456,6 @@ namespace embree
     return str;
   }
 
-  inline std::string to_string(int isa, RTCSceneFlags sflags) {
-    return stringOfISA(isa) + "_" + to_string(sflags);
-  }
-
   static const size_t numSceneFlags = 64;
 
   RTCSceneFlags getSceneFlag(size_t i) 
@@ -685,16 +681,16 @@ namespace embree
     return "";
   }
 
-   inline std::string to_string(int isa, RTCSceneFlags sflags, IntersectMode imode) {
-    return stringOfISA(isa) + "_" + to_string(sflags) + "_" + to_string(imode);
+   inline std::string to_string(RTCSceneFlags sflags, IntersectMode imode) {
+    return to_string(sflags) + "." + to_string(imode);
   }
 
-  inline std::string to_string(int isa, RTCSceneFlags sflags, IntersectMode imode, IntersectVariant ivariant) {
-    return stringOfISA(isa) + "_" + to_string(sflags) + "_" + to_string(ivariant) + to_string(imode);
+  inline std::string to_string(RTCSceneFlags sflags, IntersectMode imode, IntersectVariant ivariant) {
+    return to_string(sflags) + "." + to_string(ivariant) + to_string(imode);
   }
 
-  inline std::string to_string(int isa, GeometryType gtype, RTCSceneFlags sflags, IntersectMode imode, IntersectVariant ivariant) {
-    return stringOfISA(isa) + "_" + to_string(gtype) + "_" + to_string(sflags) + "_" + to_string(ivariant) + to_string(imode);
+  inline std::string to_string(GeometryType gtype, RTCSceneFlags sflags, IntersectMode imode, IntersectVariant ivariant) {
+    return to_string(gtype) + "." + to_string(sflags) + "." + to_string(ivariant) + to_string(imode);
   }
 
   /* error reporting function */

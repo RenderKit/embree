@@ -59,7 +59,7 @@ namespace embree
     }
 
   private:
-    std::atomic_size_t cntr;
+    std::atomic<size_t> cntr;
   };
 
   /*! fast active barrier that does not require initialization to some number of threads */
@@ -82,8 +82,8 @@ namespace embree
     }
 
   private:
-    std::atomic_size_t cntr0;
-    std::atomic_size_t cntr1;
+    std::atomic<size_t> cntr0;
+    std::atomic<size_t> cntr1;
   };
 
   class __aligned(64) LinearBarrierActive

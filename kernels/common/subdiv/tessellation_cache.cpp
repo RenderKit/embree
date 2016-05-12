@@ -229,12 +229,12 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  std::atomic_size_t SharedTessellationCacheStats::cache_accesses(0);
-  std::atomic_size_t SharedTessellationCacheStats::cache_hits(0);
-  std::atomic_size_t SharedTessellationCacheStats::cache_misses(0);
-  std::atomic_size_t SharedTessellationCacheStats::cache_flushes(0);  
+  std::atomic<size_t> SharedTessellationCacheStats::cache_accesses(0);
+  std::atomic<size_t> SharedTessellationCacheStats::cache_hits(0);
+  std::atomic<size_t> SharedTessellationCacheStats::cache_misses(0);
+  std::atomic<size_t> SharedTessellationCacheStats::cache_flushes(0);  
   AtomicMutex   SharedTessellationCacheStats::mtx;  
-  std::atomic_size_t *SharedTessellationCacheStats::cache_patch_builds(nullptr);
+  std::atomic<size_t> *SharedTessellationCacheStats::cache_patch_builds(nullptr);
   size_t SharedTessellationCacheStats::cache_num_patches(0);
   float **SharedTessellationCacheStats::cache_new_delete_ptr = nullptr;
 
@@ -279,8 +279,8 @@ namespace embree
 	  {
 	    PRINT(numPatches);
 	    cache_num_patches = numPatches;
-	    cache_patch_builds = (std::atomic_size_t*)os_malloc(numPatches*sizeof(std::atomic_size_t));
-	    memset(cache_patch_builds,0,numPatches*sizeof(std::atomic_size_t));
+	    cache_patch_builds = (std::atomic<size_t>*)os_malloc(numPatches*sizeof(std::atomic<size_t>));
+	    memset(cache_patch_builds,0,numPatches*sizeof(std::atomic<size_t>));
 	  }
 	mtx.unlock();
       }

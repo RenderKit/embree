@@ -925,7 +925,7 @@ Vec3fa noise3D(const Vec3fa& p)
 
 /* draws progress bar */
 static int progressWidth = 0;
-static std::atomic_size_t progressDots(0);
+static std::atomic<size_t> progressDots(0);
 
 void progressStart() 
 {
