@@ -23,6 +23,7 @@
 #include "../sys/mutex.h"
 #include "../sys/condition.h"
 #include "../sys/ref.h"
+#include "../sys/atomic.h"
 #include "../../kernels/algorithms/range.h"
 
 #include <list>
@@ -99,19 +100,19 @@ namespace embree
       __forceinline void switch_state(int from, int to) 
       {
 	__memory_barrier();
-	bool success = atomic_cmpxchg(&state,from,to) == from;
+	bool success = state.compare_exchange_strong(from,to);
 	assert(success);
       }
 
       /*! try to switch from one state to another */
       __forceinline bool try_switch_state(int from, int to) {
 	__memory_barrier();
-	return atomic_cmpxchg(&state,from,to) == from;
+	return state.compare_exchange_strong(from,to);
       }
 
        /*! increment/decrement dependency counter */
       void add_dependencies(int n) { 
-	atomic_add(&dependencies,n); 
+	dependencies+=n; 
       }
 
       /*! initialize all tasks to DONE state by default */
@@ -146,9 +147,9 @@ namespace embree
       __dllexport void run(Thread& thread);
 
     public:
-      volatile atomic32_t state;         //!< state this task is in
-      volatile atomic32_t dependencies;  //!< dependencies to wait for
-      volatile bool stealable;           //!< true if task can be stolen
+      std::atomic<int> state;            //!< state this task is in
+      std::atomic<int> dependencies;     //!< dependencies to wait for
+      std::atomic<bool> stealable;       //!< true if task can be stolen
       TaskFunction* closure;             //!< the closure to execute
       Task* parent;                      //!< parent task to signal when we are finished
       size_t stackPtr;                   //!< stack location where closure is stored
@@ -190,8 +191,8 @@ namespace embree
 
       /* task stack */
       Task tasks[TASK_STACK_SIZE];
-      __aligned(64) volatile atomic_t left;   //!< threads steal from left
-      __aligned(64) volatile atomic_t right;           //!< new tasks are added to the right
+      __aligned(64) std::atomic_size_t left;   //!< threads steal from left
+      __aligned(64) std::atomic_size_t right;  //!< new tasks are added to the right
       
       /* closure stack */
       __aligned(64) char stack[CLOSURE_STACK_SIZE];
@@ -297,7 +298,7 @@ namespace embree
       thread.tasks.push_right(thread,size,closure);
       {
         Lock<MutexSys> lock(mutex);
-	atomic_add(&anyTasksRunning,+1);
+	anyTasksRunning++;
         hasRootTask = true;
         condition.notify_all();
       }
@@ -305,7 +306,7 @@ namespace embree
       if (useThreadPool) addScheduler(this);
 
       while (thread.tasks.execute_local(thread,nullptr));
-      atomic_add(&anyTasksRunning,-1);
+      anyTasksRunning--;
       if (useThreadPool) removeScheduler(this);
       
       threadLocal[threadIndex] = nullptr;
@@ -316,7 +317,7 @@ namespace embree
       if (cancellingException != nullptr) except = cancellingException;
 
       /* wait for all threads to terminate */
-      atomic_add(&threadCounter,-1);
+      threadCounter--;
       while (threadCounter > 0) yield();
       cancellingException = nullptr;
 
@@ -386,10 +387,10 @@ namespace embree
     __dllexport static void removeScheduler(const Ref<TaskScheduler>& scheduler);
 
   private:
-    std::vector<Thread*> threadLocal;
-    volatile atomic_t threadCounter;
-    volatile atomic_t anyTasksRunning;
-    volatile bool hasRootTask;
+    std::vector<atomic<Thread*>> threadLocal;
+    std::atomic_size_t threadCounter;
+    std::atomic_size_t anyTasksRunning;
+    std::atomic_bool hasRootTask;
     std::exception_ptr cancellingException;
     MutexSys mutex;
     ConditionSys condition;
