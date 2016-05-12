@@ -111,6 +111,9 @@ namespace embree
 
   VerifyApplication::TestReturnValue VerifyApplication::TestGroup::execute(VerifyApplication* state, bool silent_in)
   {
+    if (!isEnabled())
+      return SKIPPED;
+
     if (state->flatten && !silent_in && silent) 
       std::cout << std::setw(60) << name << " ..." << std::flush;
 
