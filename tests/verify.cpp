@@ -2642,7 +2642,7 @@ namespace embree
   /////////////////////////////////////////////////////////////////////////////////
 
   VerifyApplication::VerifyApplication ()
-    : Application(Application::FEATURE_RTCORE), intensity(1.0f), tests(new TestGroup("")), numFailedTests(0), user_specified_tests(false), flatten(true), parallel(false)
+    : Application(Application::FEATURE_RTCORE), intensity(1.0f), tests(new TestGroup("")), numFailedTests(0), user_specified_tests(false), flatten(true), parallel(true)
   {
     GeometryType gtypes[] = { TRIANGLE_MESH, TRIANGLE_MESH_MB, QUAD_MESH, QUAD_MESH_MB, SUBDIV_MESH, SUBDIV_MESH_MB };
 
