@@ -191,8 +191,8 @@ namespace embree
 
       /* task stack */
       Task tasks[TASK_STACK_SIZE];
-      __aligned(64) std::atomic_size_t left;   //!< threads steal from left
-      __aligned(64) std::atomic_size_t right;  //!< new tasks are added to the right
+      __aligned(64) std::atomic<size_t> left;   //!< threads steal from left
+      __aligned(64) std::atomic<size_t> right;  //!< new tasks are added to the right
       
       /* closure stack */
       __aligned(64) char stack[CLOSURE_STACK_SIZE];
@@ -388,9 +388,9 @@ namespace embree
 
   private:
     std::vector<atomic<Thread*>> threadLocal;
-    std::atomic_size_t threadCounter;
-    std::atomic_size_t anyTasksRunning;
-    std::atomic_bool hasRootTask;
+    std::atomic<size_t> threadCounter;
+    std::atomic<size_t> anyTasksRunning;
+    std::atomic<bool> hasRootTask;
     std::exception_ptr cancellingException;
     MutexSys mutex;
     ConditionSys condition;

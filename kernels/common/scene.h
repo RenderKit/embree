@@ -288,8 +288,8 @@ namespace embree
     Device* device;
     AccelN accels;
     unsigned int commitCounter;
-    std::atomic_size_t commitCounterSubdiv;
-    std::atomic_size_t numMappedBuffers;         //!< number of mapped buffers
+    std::atomic<size_t> commitCounterSubdiv;
+    std::atomic<size_t> numMappedBuffers;         //!< number of mapped buffers
     RTCSceneFlags flags;
     RTCAlgorithmFlags aflags;
     bool needTriangleIndices; 
@@ -327,7 +327,7 @@ namespace embree
     BuildProgressMonitorInterface progressInterface;
     RTCProgressMonitorFunc progress_monitor_function;
     void* progress_monitor_ptr;
-    std::atomic_size_t progress_monitor_counter;
+    std::atomic<size_t> progress_monitor_counter;
     void progressMonitor(double nprims);
     void setProgressMonitorFunction(RTCProgressMonitorFunc func, void* ptr);
 
@@ -341,12 +341,12 @@ namespace embree
         return numTriangles + numQuads + numBezierCurves + numLineSegments + numSubdivPatches + numUserGeometries;
       }
 
-      std::atomic_size_t numTriangles;             //!< number of enabled triangles
-      std::atomic_size_t numQuads;                 //!< number of enabled quads
-      std::atomic_size_t numBezierCurves;          //!< number of enabled curves
-      std::atomic_size_t numLineSegments;          //!< number of enabled line segments
-      std::atomic_size_t numSubdivPatches;         //!< number of enabled subdivision patches
-      std::atomic_size_t numUserGeometries;        //!< number of enabled user geometries
+      std::atomic<size_t> numTriangles;             //!< number of enabled triangles
+      std::atomic<size_t> numQuads;                 //!< number of enabled quads
+      std::atomic<size_t> numBezierCurves;          //!< number of enabled curves
+      std::atomic<size_t> numLineSegments;          //!< number of enabled line segments
+      std::atomic<size_t> numSubdivPatches;         //!< number of enabled subdivision patches
+      std::atomic<size_t> numUserGeometries;        //!< number of enabled user geometries
     };
     
     GeometryCounts world1;               //!< counts for non-motion blurred geometry
@@ -354,7 +354,7 @@ namespace embree
     GeometryCounts instanced1;           //!< instance counts for non-motion blurred geometry
     GeometryCounts instanced2;           //!< instance counts for motion blurred geometry
 
-    std::atomic_size_t numSubdivEnableDisableEvents; //!< number of enable/disable calls for any subdiv geometry
+    std::atomic<size_t> numSubdivEnableDisableEvents; //!< number of enable/disable calls for any subdiv geometry
 
     __forceinline size_t numPrimitives() const {
       return world1.size() + world2.size();
@@ -362,11 +362,11 @@ namespace embree
 
     template<typename Mesh, int timeSteps> __forceinline size_t getNumPrimitives() const;
    
-    std::atomic_size_t numIntersectionFilters1;   //!< number of enabled intersection/occlusion filters for single rays
-    std::atomic_size_t numIntersectionFilters4;   //!< number of enabled intersection/occlusion filters for 4-wide ray packets
-    std::atomic_size_t numIntersectionFilters8;   //!< number of enabled intersection/occlusion filters for 8-wide ray packets
-    std::atomic_size_t numIntersectionFilters16;  //!< number of enabled intersection/occlusion filters for 16-wide ray packets
-    std::atomic_size_t numIntersectionFiltersN;   //!< number of enabled intersection/occlusion filters for N-wide ray packets
+    std::atomic<size_t> numIntersectionFilters1;   //!< number of enabled intersection/occlusion filters for single rays
+    std::atomic<size_t> numIntersectionFilters4;   //!< number of enabled intersection/occlusion filters for 4-wide ray packets
+    std::atomic<size_t> numIntersectionFilters8;   //!< number of enabled intersection/occlusion filters for 8-wide ray packets
+    std::atomic<size_t> numIntersectionFilters16;  //!< number of enabled intersection/occlusion filters for 16-wide ray packets
+    std::atomic<size_t> numIntersectionFiltersN;   //!< number of enabled intersection/occlusion filters for N-wide ray packets
   };
 
   template<> __forceinline size_t Scene::getNumPrimitives<TriangleMesh,1>() const { return world1.numTriangles; } 

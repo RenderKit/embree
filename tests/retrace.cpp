@@ -195,14 +195,14 @@ namespace embree
     return o;
   } 
 
-  static std::atomic_size_t g_counter(0);
+  static std::atomic<size_t> g_counter(0);
   static bool g_check = false;
   static bool g_sde = false;
   static size_t g_threadCount = 1;
   static size_t g_frames = 1;
   static size_t g_simd_width = 0;
-  static std::atomic_size_t g_rays_traced(0);
-  static std::atomic_size_t g_rays_traced_diff(0);
+  static std::atomic<size_t> g_rays_traced(0);
+  static std::atomic<size_t> g_rays_traced_diff(0);
   static std::vector<thread_t> g_threads;
   static LinearBarrierActive g_barrier;
   static bool g_exitThreads = false;

@@ -467,7 +467,7 @@ namespace embree
       }
 
     public:
-      std::atomic_size_t cur;    //!< current location of the allocator
+      std::atomic<size_t> cur;    //!< current location of the allocator
       size_t allocEnd;           //!< end of the allocated memory region
       size_t reserveEnd;         //!< end of the reserved memory region
       Block* next;               //!< pointer to next block in list

@@ -87,7 +87,7 @@ namespace embree
       
       mvector<BuildRef> refs;
       mvector<PrimRef> prims;
-      std::atomic_int nextRef;
+      std::atomic<int> nextRef;
     };
   }
 }

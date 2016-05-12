@@ -71,7 +71,7 @@ namespace embree
     ptr = nullptr; ptr_ofs = nullptr; bytes = 0;
   }
 
-  void* Buffer::map(std::atomic_size_t& cntr)
+  void* Buffer::map(std::atomic<size_t>& cntr)
   {
     /* report error if buffer is not existing */
     if (!device)
@@ -91,7 +91,7 @@ namespace embree
     return ptr;
   }
 
-  void Buffer::unmap(std::atomic_size_t& cntr)
+  void Buffer::unmap(std::atomic<size_t>& cntr)
   {
     /* report error if buffer not mapped */
     if (!mapped)

@@ -43,11 +43,11 @@ namespace embree
  {
  public:
     /* stats */
-   static std::atomic_size_t cache_accesses;
-   static std::atomic_size_t cache_hits;
-   static std::atomic_size_t cache_misses;
-   static std::atomic_size_t cache_flushes;                
-   static std::atomic_size_t *cache_patch_builds;                
+   static std::atomic<size_t> cache_accesses;
+   static std::atomic<size_t> cache_hits;
+   static std::atomic<size_t> cache_misses;
+   static std::atomic<size_t> cache_flushes;                
+   static std::atomic<size_t> *cache_patch_builds;                
    static size_t        cache_num_patches;
    static float **      cache_new_delete_ptr;  
    __aligned(64) static AtomicMutex mtx;
@@ -78,7 +78,7 @@ namespace embree
  {
    ALIGNED_STRUCT;
 
-   std::atomic_size_t counter;
+   std::atomic<size_t> counter;
    ThreadWorkState* next;
    bool allocated;
 
@@ -161,12 +161,12 @@ namespace embree
    size_t maxBlocks;
    ThreadWorkState *threadWorkState;
       
-   __aligned(64) std::atomic_size_t localTime;
-   __aligned(64) std::atomic_size_t next_block;
+   __aligned(64) std::atomic<size_t> localTime;
+   __aligned(64) std::atomic<size_t> next_block;
    __aligned(64) AtomicMutex   reset_state;
    __aligned(64) AtomicMutex   linkedlist_mtx;
-   __aligned(64) std::atomic_size_t switch_block_threshold;
-   __aligned(64) std::atomic_size_t numRenderThreads;
+   __aligned(64) std::atomic<size_t> switch_block_threshold;
+   __aligned(64) std::atomic<size_t> numRenderThreads;
 
 
  public:

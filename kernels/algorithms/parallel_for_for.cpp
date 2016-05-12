@@ -46,7 +46,7 @@ namespace embree
       for (size_t i=0; i<K; i++) verify_k[i].store(0);
 
       /* add all numbers using parallel_for_for */
-      std::atomic_size_t sum1(0);
+      std::atomic<size_t> sum1(0);
       parallel_for_for( array2, size_t(1), [&](std::vector<size_t>* v, const range<size_t>& r, size_t k) -> size_t
       {
         size_t s = 0;

@@ -2100,7 +2100,7 @@ namespace embree
     BarrierSys barrier;
     volatile size_t numActiveThreads;
     bool cancelBuild;
-    std::atomic_size_t errorCounter;
+    std::atomic<size_t> errorCounter;
   };
 
   struct ThreadRegressionTask
@@ -2118,7 +2118,7 @@ namespace embree
   };
 
   ssize_t monitorProgressBreak = -1;
-  std::atomic_size_t monitorProgressInvokations(0);
+  std::atomic<size_t> monitorProgressInvokations(0);
 
   bool monitorProgressFunction(void* ptr, double dn) 
   {
@@ -2501,8 +2501,8 @@ namespace embree
   };
 
   ssize_t monitorMemoryBreak = -1;
-  std::atomic_size_t monitorMemoryBytesUsed(0);
-  std::atomic_size_t monitorMemoryInvokations(0);
+  std::atomic<size_t> monitorMemoryBytesUsed(0);
+  std::atomic<size_t> monitorMemoryInvokations(0);
 
   bool monitorMemoryFunction(ssize_t bytes, bool post) 
   {

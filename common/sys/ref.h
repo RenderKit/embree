@@ -32,7 +32,7 @@ namespace embree
     virtual void refInc() { refCounter.fetch_add(1); }
     virtual void refDec() { if (refCounter.fetch_add(-1) == 1) delete this; }
   private:
-    std::atomic_size_t refCounter;
+    std::atomic<size_t> refCounter;
   };
   
   ////////////////////////////////////////////////////////////////////////////////
