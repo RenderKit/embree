@@ -308,7 +308,9 @@ namespace embree
     TestReturnValue ev = ty != TEST_SHOULD_FAIL ? PASSED : FAILED;
     bool passed = v == ev || v == SKIPPED;
 
-    if (silent) {
+    if (silent) 
+    {
+      Lock<MutexSys> lock(state->mutex);
       if (v != SKIPPED) {
         if      (passed       ) std::cout << GREEN ("+") << std::flush;
         else if (ignoreFailure) std::cout << YELLOW("-") << std::flush;

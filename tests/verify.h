@@ -115,6 +115,7 @@ namespace embree
     std::atomic<size_t> numFailedTests;
 
   public:
+    MutexSys mutex;
     std::vector<int> isas;
     Ref<Test> tests;
 
