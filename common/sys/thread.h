@@ -94,12 +94,14 @@ namespace embree
     {
       if (ptr == nullptr) {
 	Lock<AtomicMutex> lock(mutex);
+        //Lock<MutexSys> lock(mutex);
 	if (ptr == nullptr) ptr = createTls();
       }
       Type* lptr = (Type*) getTls(ptr);
       if (unlikely(lptr == nullptr)) {
 	setTls(ptr,lptr = new Type(init));
 	Lock<AtomicMutex> lock(mutex);
+        //Lock<MutexSys> lock(mutex);
 	threads.push_back(lptr);
       }
       return lptr;
@@ -115,6 +117,7 @@ namespace embree
     mutable tls_t ptr;
     void* init;
     mutable AtomicMutex mutex;
+    //mutable MutexSys mutex;
   public:
     mutable std::vector<Type*> threads;
   };

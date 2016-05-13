@@ -389,7 +389,9 @@ namespace embree
         if (device) device->memoryMonitor(bytesAllocate,false);
         void* ptr = os_reserve(bytesReserve);
         os_commit(ptr,bytesAllocate);
-        return new (ptr) Block(bytesAllocate-sizeof_Header,bytesReserve-sizeof_Header,next);
+        new (ptr) Block(bytesAllocate-sizeof_Header,bytesReserve-sizeof_Header,next);
+        std::atomic_thread_fence(std::memory_order_release);
+        return (Block*) ptr;
       }
 
       Block (size_t bytesAllocate, size_t bytesReserve, Block* next) 
