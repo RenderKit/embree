@@ -151,9 +151,9 @@ namespace embree
   {
   }
 
-  struct Scene : public RefCount
+  struct VerifyScene : public RefCount
   {
-    Scene (const RTCDeviceRef& device, RTCSceneFlags sflags, RTCAlgorithmFlags aflags)
+    VerifyScene (const RTCDeviceRef& device, RTCSceneFlags sflags, RTCAlgorithmFlags aflags)
       : device(device), scene(rtcDeviceNewScene(device,sflags,aflags)) {}
 
     operator RTCScene() const {
@@ -454,7 +454,7 @@ namespace embree
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
-      Scene scene(device,RTC_SCENE_STATIC,aflags);
+      VerifyScene scene(device,RTC_SCENE_STATIC,aflags);
       AssertNoError(device);
       unsigned geom0 = scene.addSphere(RTC_GEOMETRY_STATIC,zero,1.0f,50);
       unsigned geom1 = scene.addSphere(RTC_GEOMETRY_STATIC,zero,1.0f,50);
@@ -478,7 +478,7 @@ namespace embree
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
-      Scene scene(device,RTC_SCENE_STATIC,RTC_INTERSECT1);
+      VerifyScene scene(device,RTC_SCENE_STATIC,RTC_INTERSECT1);
       AssertNoError(device);
       Ref<SceneGraph::Node> node = SceneGraph::createTriangleSphere(zero,1.0f,50);
       BBox3fa bounds0 = node->bounds();
@@ -689,7 +689,7 @@ namespace embree
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
-      Scene scene(device,sflags,aflags);
+      VerifyScene scene(device,sflags,aflags);
 
       const Vec3fa center = zero;
       const float radius = 1.0f;
@@ -733,7 +733,7 @@ namespace embree
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
-      Scene scene(device,sflags,aflags);
+      VerifyScene scene(device,sflags,aflags);
       AssertNoError(device);
 
       const Vec3fa p (0,0,0);
@@ -813,7 +813,7 @@ namespace embree
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
-      Scene scene(device,sflags,aflags_all);
+      VerifyScene scene(device,sflags,aflags_all);
       AssertNoError(device);
       int geom[128];
       for (size_t i=0; i<128; i++) geom[i] = -1;
@@ -874,7 +874,7 @@ namespace embree
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
-      Scene scene(device,sflags,aflags);
+      VerifyScene scene(device,sflags,aflags);
       AssertNoError(device);
       unsigned geom0 = scene.addSphere(RTC_GEOMETRY_STATIC,Vec3fa(-1,0,-1),1.0f,50);
       //unsigned geom1 = scene.addSphere(RTC_GEOMETRY_STATIC,Vec3fa(-1,0,+1),1.0f,50);
@@ -921,7 +921,7 @@ namespace embree
     UpdateTest (std::string name, int isa, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant)
       : VerifyApplication::IntersectTest(name,isa,imode,ivariant,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags), gflags(gflags) {}
     
-    static void move_mesh(const Scene& scene, unsigned mesh, size_t numVertices, Vec3fa& pos) 
+    static void move_mesh(const VerifyScene& scene, unsigned mesh, size_t numVertices, Vec3fa& pos) 
     {
       Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
       for (size_t i=0; i<numVertices; i++) vertices[i] += Vec3fa(pos);
@@ -937,7 +937,7 @@ namespace embree
       if (!supportsIntersectMode(device))
         return VerifyApplication::SKIPPED;
       
-      Scene scene(device,sflags,to_aflags(imode));
+      VerifyScene scene(device,sflags,to_aflags(imode));
       AssertNoError(device);
       size_t numPhi = 10;
       size_t numVertices = 2*numPhi*(numPhi+1);
@@ -997,7 +997,7 @@ namespace embree
         if (i%20 == 0) std::cout << "." << std::flush;
         
         RTCSceneFlags sflag = getSceneFlag(i); 
-        Scene scene(device,sflag,aflags);
+        VerifyScene scene(device,sflag,aflags);
         AssertNoError(device);
         
         for (size_t j=0; j<20; j++) 
@@ -1607,7 +1607,7 @@ namespace embree
       Vec3fa pos2 = Vec3fa(+10,0,-10);
       Vec3fa pos3 = Vec3fa(+10,0,+10);
       
-      Scene scene(device,sflags,to_aflags(imode));
+      VerifyScene scene(device,sflags,to_aflags(imode));
       unsigned geom0 = scene.addSphere(gflags,pos0,1.0f,50);
       //unsigned geom1 = scene.addSphere(gflags,pos1,1.0f,50);
       unsigned geom1 = scene.addHair  (gflags,pos1,1.0f,1.0f,1);
@@ -1660,7 +1660,7 @@ namespace embree
        
       /* create triangle that is front facing for a right handed 
          coordinate system if looking along the z direction */
-      Scene scene(device,sflags,to_aflags(imode));
+      VerifyScene scene(device,sflags,to_aflags(imode));
       AssertNoError(device);
       const Vec3fa p0 = Vec3fa(0.0f);
       const Vec3fa dx = Vec3fa(1.0f,0.0f,0.0f);
@@ -1803,7 +1803,7 @@ namespace embree
       if (!supportsIntersectMode(device))
         return VerifyApplication::SKIPPED;
 
-      Scene scene(device,sflags,to_aflags(imode));
+      VerifyScene scene(device,sflags,to_aflags(imode));
       Vec3fa p0(-0.75f,-0.25f,-10.0f), dx(4,0,0), dy(0,4,0);
       int geom0 = 0;
       if (subdiv) geom0 = scene.addSubdivPlane (gflags, 4, p0, dx, dy);
@@ -1881,7 +1881,7 @@ namespace embree
         return VerifyApplication::SKIPPED;
 
       Vec3fa pos = zero;
-      Scene scene(device,sflags,to_aflags(imode));
+      VerifyScene scene(device,sflags,to_aflags(imode));
       scene.addSphere(RTC_GEOMETRY_STATIC,pos,2.0f,50); // FIXME: use different geometries too
       rtcCommit (scene);
       AssertNoError(device);
@@ -1942,7 +1942,7 @@ namespace embree
       if (!supportsIntersectMode(device))
         return VerifyApplication::SKIPPED;
 
-      Scene scene(device,sflags,to_aflags(imode));
+      VerifyScene scene(device,sflags,to_aflags(imode));
       if      (model == "sphere.triangles") scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createTriangleSphere(pos,2.0f,500),false);
       else if (model == "sphere.quads"    ) scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createQuadSphere    (pos,2.0f,500),false);
       else if (model == "sphere.subdiv"   ) scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createSubdivSphere  (pos,2.0f,4,64),false);
@@ -2007,7 +2007,7 @@ namespace embree
 
       const size_t numRays = 1000;
       RTCRay rays[numRays];
-      Scene scene(device,sflags,to_aflags(imode));
+      VerifyScene scene(device,sflags,to_aflags(imode));
       scene.addSphere(gflags,zero,2.0f,100);
       scene.addHair  (gflags,zero,1.0f,1.0f,100);
       rtcCommit (scene);
@@ -2076,7 +2076,7 @@ namespace embree
 
       const size_t numRays = 1000;
       RTCRay rays[numRays];
-      Scene scene(device,sflags,to_aflags(imode));
+      VerifyScene scene(device,sflags,to_aflags(imode));
       scene.addSphere(gflags,zero,2.0f,100);
       scene.addHair  (gflags,zero,1.0f,1.0f,100);
       rtcCommit (scene);
@@ -2142,7 +2142,7 @@ namespace embree
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
 
-  void shootRandomRays (std::vector<IntersectMode>& intersectModes, std::vector<IntersectVariant>& intersectVariants, const Scene& scene)
+  void shootRandomRays (std::vector<IntersectMode>& intersectModes, std::vector<IntersectVariant>& intersectVariants, const VerifyScene& scene)
   {
     const size_t numRays = 100;
     for (auto imode : intersectModes)
@@ -2173,7 +2173,7 @@ namespace embree
     size_t sceneIndex;
     size_t sceneCount;
     VerifyApplication* state;
-    Ref<Scene> scene;
+    Ref<VerifyScene> scene;
     BarrierSys barrier;
     volatile size_t numActiveThreads;
     bool cancelBuild;
@@ -2252,7 +2252,7 @@ namespace embree
       if (i%20 == 0) std::cout << "." << std::flush;
 
       RTCSceneFlags sflag = getSceneFlag(i); 
-      task->scene = new Scene(thread->device,sflag,aflags_all);
+      task->scene = new VerifyScene(thread->device,sflag,aflags_all);
       if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
       if (task->cancelBuild) rtcSetProgressMonitorFunction(*task->scene,monitorProgressFunction,nullptr);
       avector<Sphere*> spheres;
@@ -2355,7 +2355,7 @@ namespace embree
       delete thread; thread = nullptr;
       return;
     }
-    task->scene = new Scene(thread->device,RTC_SCENE_DYNAMIC,aflags_all);
+    task->scene = new VerifyScene(thread->device,RTC_SCENE_DYNAMIC,aflags_all);
     if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
     if (task->cancelBuild) rtcSetProgressMonitorFunction(*task->scene,monitorProgressFunction,nullptr);
     int geom[1024];
