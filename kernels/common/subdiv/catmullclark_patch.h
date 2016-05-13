@@ -302,7 +302,7 @@ namespace embree
     __forceinline GeneralCatmullClarkPatchT () 
     : N(0) {}
     
-    __forceinline GeneralCatmullClarkPatchT (const HalfEdge* h, const char* vertices, size_t stride) {
+    GeneralCatmullClarkPatchT (const HalfEdge* h, const char* vertices, size_t stride) {
       init(h,vertices,stride);
     }
 
