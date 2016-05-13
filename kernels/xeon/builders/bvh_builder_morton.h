@@ -166,7 +166,7 @@ namespace embree
     };
             
 
-    void InPlace32BitRadixSort(MortonID32Bit* const morton, const size_t num, const size_t shift = 3*8)
+    static void InPlace32BitRadixSort(MortonID32Bit* const morton, const size_t num, const size_t shift = 3*8)
     {
       static const size_t BITS = 8;
       static const size_t BUCKETS = (1 << BITS);
@@ -257,7 +257,7 @@ namespace embree
       
     }; 
 
-    void MSB32BitRadixSort(MortonID32Bit* const src, 
+    static void MSB32BitRadixSort(MortonID32Bit* const src, 
                            MortonID32Bit* const dst, 
                            const size_t num)
     {
