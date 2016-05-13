@@ -60,7 +60,7 @@ namespace embree
         }
         
         bool expected = false;
-        if (flag.compare_exchange_strong(expected,true))
+        if (flag.compare_exchange_strong(expected,true,std::memory_order_acquire))
           break;
       }
     }
@@ -69,11 +69,11 @@ namespace embree
     {
       bool expected = false;
       if (flag.load() != expected) return false;
-      return flag.compare_exchange_strong(expected,true);
+      return flag.compare_exchange_strong(expected,true,std::memory_order_acquire);
     }
 
     __forceinline void unlock() {
-      flag.store(false);
+      flag.store(false,std::memory_order_release);
     }
     
     __forceinline void wait_until_unlocked() 
@@ -87,11 +87,8 @@ namespace embree
       __memory_barrier();
     }
 
-    __forceinline void reset(int i = 0) 
-    {
-      __memory_barrier();
+    __forceinline void reset(int i = 0) {
       flag.store(i);
-      __memory_barrier();
     }
 
   public:
