@@ -292,7 +292,7 @@ namespace embree
       size_t threadIndex = allocThreadIndex();
       std::unique_ptr<Thread> mthread(new Thread(threadIndex,this)); // too large for stack allocation
       Thread& thread = *mthread;
-      assert(threadLocal[threadIndex] == nullptr);
+      assert(threadLocal[threadIndex].load() == nullptr);
       threadLocal[threadIndex] = &thread;
       Thread* oldThread = swapThread(&thread);
       thread.tasks.push_right(thread,size,closure);
