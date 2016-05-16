@@ -934,29 +934,6 @@ namespace embree
         vfloat<N> extract_upper( vint<N>::load(upper_quant) );
         vfloat<N> final_extract_lower = minF + extract_lower * scale_diff;
         vfloat<N> final_extract_upper = minF + extract_upper * scale_diff;
-#if 0        
-        PING;
-        PRINT(lower);
-        PRINT(upper);
-        PRINT(minF);
-        PRINT(maxF);        
-        PRINT(i_floor_lower);
-        PRINT(i_ceil_upper);        
-        PRINT(vint<N>::load(lower_quant));
-        PRINT(vint<N>::load(upper_quant));        
-        PRINT(final_extract_lower);
-        PRINT(final_extract_upper);
-        PRINT(final_extract_lower <= lower);
-        PRINT(final_extract_upper >= upper);
-        PRINT(m_valid);
-        PRINT(iterations);
-        PRINT(m_lower_correction);
-        PRINT(m_upper_correction);
-        vfloat<N> e_upper = minF + scale_diff * vfloat<N>(255.0f);
-        assert(all(e_upper >= maxF));
-        assert(iterations <= 4);
- 
-#endif        
         assert( (movemask(final_extract_lower <= lower ) & movemask(m_valid)) == movemask(m_valid));
         assert( (movemask(final_extract_upper >= upper ) & movemask(m_valid)) == movemask(m_valid)); 
 #endif        
@@ -973,14 +950,20 @@ namespace embree
         init_dim(node.lower_z,node.upper_z,lower_z,upper_z,start.z,scale.z);        
       }
 
-      __forceinline vfloat<N> dequantizeLowerX() const { return vfloat<N>(start.x) + vfloat<N>(vint<N>::load(lower_x)) * scale.x; }
+      __forceinline vfloat<N> dequantizeLowerX() const { return vfloat<N>(start.x) + vfloat<N>(vint<N>::load(lower_x)) * scale.x; }      
+      
       __forceinline vfloat<N> dequantizeUpperX() const { return vfloat<N>(start.x) + vfloat<N>(vint<N>::load(upper_x)) * scale.x; }
+
       __forceinline vfloat<N> dequantizeLowerY() const { return vfloat<N>(start.y) + vfloat<N>(vint<N>::load(lower_y)) * scale.y; }
+
       __forceinline vfloat<N> dequantizeUpperY() const { return vfloat<N>(start.y) + vfloat<N>(vint<N>::load(upper_y)) * scale.y; }
+
       __forceinline vfloat<N> dequantizeLowerZ() const { return vfloat<N>(start.z) + vfloat<N>(vint<N>::load(lower_z)) * scale.z; }
+
       __forceinline vfloat<N> dequantizeUpperZ() const { return vfloat<N>(start.z) + vfloat<N>(vint<N>::load(upper_z)) * scale.z; }
 
-      __forceinline vfloat<N> dequantize(const size_t offset) const { return vfloat<N>(vint<N>::load(lower_x+offset)); }
+      template <int M>
+      __forceinline vfloat<M> dequantize(const size_t offset) const { return vfloat<M>(vint<M>::load(lower_x+offset)); }
 
       unsigned char lower_x[N]; //!< 8bit discretized X dimension of lower bounds of all N children
       unsigned char upper_x[N]; //!< 8bit discretized X dimension of upper bounds of all N children
