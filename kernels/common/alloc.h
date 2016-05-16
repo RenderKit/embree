@@ -175,7 +175,7 @@ namespace embree
     {     
       /* distribute the allocation to multiple thread block slots */
       slotMask = MAX_THREAD_USED_BLOCK_SLOTS-1;      
-      if (usedBlocks || freeBlocks) { reset(); return; }
+	  if (usedBlocks.load() || freeBlocks.load()) { reset(); return; }
       if (bytesReserve == 0) bytesReserve = bytesAllocate;
       freeBlocks = Block::create(device,bytesAllocate,bytesReserve);
       growSize = max(size_t(defaultBlockSize),bytesReserve);
@@ -184,7 +184,7 @@ namespace embree
     /*! initializes the allocator */
     void init_estimate(size_t bytesAllocate) 
     {
-      if (usedBlocks || freeBlocks) { reset(); return; }
+		if (usedBlocks.load() || freeBlocks.load()) { reset(); return; }
       growSize = max(size_t(defaultBlockSize),bytesAllocate);
       if (bytesAllocate > 4*maxAllocationSize) slotMask = 0x1;
       if (bytesAllocate > 16*maxAllocationSize) slotMask = MAX_THREAD_USED_BLOCK_SLOTS-1;
@@ -205,8 +205,8 @@ namespace embree
 
     /*! shrinks all memory blocks to the actually used size */
     void shrink () {
-      if (usedBlocks) usedBlocks.load()->shrink(device);
-      if (freeBlocks) freeBlocks.load()->clear(device); freeBlocks = nullptr;
+		if (usedBlocks.load() != nullptr) usedBlocks.load()->shrink(device);
+		if (freeBlocks.load() != nullptr) freeBlocks.load()->clear(device); freeBlocks = nullptr;
     }
 
 
@@ -216,10 +216,10 @@ namespace embree
       bytesUsed = 0;
 
       /* first reset all used blocks */
-      if (usedBlocks) usedBlocks.load()->reset();
+	  if (usedBlocks.load() != nullptr) usedBlocks.load()->reset();
 
       /* move all used blocks to begin of free block list */
-      while (usedBlocks) {
+	  while (usedBlocks.load() != nullptr) {
         Block* nextUsedBlock = usedBlocks.load()->next;
         usedBlocks.load()->next = freeBlocks.load();
         freeBlocks = usedBlocks.load();
@@ -239,8 +239,8 @@ namespace embree
     {
       cleanup();
       bytesUsed = 0;
-      if (usedBlocks) usedBlocks.load()->clear(device); usedBlocks = nullptr;
-      if (freeBlocks) freeBlocks.load()->clear(device); freeBlocks = nullptr;
+	  if (usedBlocks.load() != nullptr) usedBlocks.load()->clear(device); usedBlocks = nullptr;
+	  if (freeBlocks.load() != nullptr) freeBlocks.load()->clear(device); freeBlocks = nullptr;
       for (size_t i=0; i<MAX_THREAD_USED_BLOCK_SLOTS; i++) threadUsedBlocks[i] = nullptr;
     }
 
@@ -271,7 +271,7 @@ namespace embree
           Lock<AtomicMutex> lock(mutex);
 	  if (myUsedBlocks == threadUsedBlocks[slot])
 	  {
-	    if (freeBlocks) {
+		  if (freeBlocks.load() != nullptr) {
 	      Block* nextFreeBlock = freeBlocks.load()->next;
 	      freeBlocks.load()->next = usedBlocks;
 	      __memory_barrier();
@@ -291,7 +291,7 @@ namespace embree
     void* specialAlloc(size_t bytes) 
     {
       /* create a new block if the first free block is too small */
-      if (freeBlocks == nullptr || freeBlocks.load()->getBlockAllocatedBytes() < bytes)
+		if (freeBlocks.load() == nullptr || freeBlocks.load()->getBlockAllocatedBytes() < bytes)
         freeBlocks = Block::create(device,bytes,bytes,freeBlocks);
 
       return freeBlocks.load()->ptr();
@@ -300,16 +300,16 @@ namespace embree
     size_t getAllocatedBytes() const 
     {
       size_t bytesAllocated = 0;
-      if (freeBlocks) bytesAllocated += freeBlocks.load()->getAllocatedBytes();
-      if (usedBlocks) bytesAllocated += usedBlocks.load()->getAllocatedBytes();
+	  if (freeBlocks.load()) bytesAllocated += freeBlocks.load()->getAllocatedBytes();
+	  if (usedBlocks.load()) bytesAllocated += usedBlocks.load()->getAllocatedBytes();
       return bytesAllocated;
     }
 
     size_t getReservedBytes() const 
     {
       size_t bytesReserved = 0;
-      if (freeBlocks) bytesReserved += freeBlocks.load()->getReservedBytes();
-      if (usedBlocks) bytesReserved += usedBlocks.load()->getReservedBytes();
+	  if (freeBlocks.load()) bytesReserved += freeBlocks.load()->getReservedBytes();
+	  if (usedBlocks.load()) bytesReserved += usedBlocks.load()->getReservedBytes();
       return bytesReserved;
     }
 
@@ -329,15 +329,15 @@ namespace embree
     size_t getFreeBytes() const 
     {
       size_t bytesFree = 0;
-      if (freeBlocks) bytesFree += freeBlocks.load()->getAllocatedBytes();
-      if (usedBlocks) bytesFree += usedBlocks.load()->getFreeBytes();
+	  if (freeBlocks.load()) bytesFree += freeBlocks.load()->getAllocatedBytes();
+	  if (usedBlocks.load()) bytesFree += usedBlocks.load()->getFreeBytes();
       return bytesFree;
     }
 
     size_t getWastedBytes() const 
     {
       size_t bytesWasted = 0;
-      if (usedBlocks) {
+	  if (usedBlocks.load()) {
 	Block* cur = usedBlocks;
 	while ((cur = cur->next) != nullptr)
 	  bytesWasted += cur->getFreeBytes();
@@ -368,11 +368,11 @@ namespace embree
       //if (State::instance()->verbosity(3)) 
       {
         std::cout << "  used blocks = ";
-        if (usedBlocks) usedBlocks.load()->print();
+		if (usedBlocks.load() != nullptr) usedBlocks.load()->print();
         std::cout << "[END]" << std::endl;
         
         std::cout << "  free blocks = ";
-        if (freeBlocks) freeBlocks.load()->print();
+		if (freeBlocks.load() != nullptr) freeBlocks.load()->print();
         std::cout << "[END]" << std::endl;
       }
     }
