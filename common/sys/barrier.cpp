@@ -16,6 +16,8 @@
 
 #include "barrier.h"
 #include "condition.h"
+#include "regression.h"
+#include <thread>
 
 #if defined (__WIN32__)
 
@@ -248,6 +250,63 @@ namespace embree
       }		
     }					
   }
+
+  struct barrier_sys_regression_test : public RegressionTest
+  {
+    BarrierSys barrier;
+    std::atomic<size_t> threadID;
+    std::atomic<size_t> numFailed;
+    std::vector<size_t> threadResults;
+
+    barrier_sys_regression_test() 
+      : RegressionTest("barrier_sys_regression_test"), threadID(0), numFailed(0)
+    {
+      registerRegressionTest(this);
+    }
+
+    static void thread_alloc(barrier_sys_regression_test* This)
+    {
+      size_t tid = This->threadID++;
+      for (size_t j=0; j<1000; j++)
+      {
+        This->barrier.wait();
+        This->threadResults[tid] = tid;
+        This->barrier.wait();
+      }
+    }
+    
+    bool run ()
+    {
+      threadID.store(0);
+      numFailed.store(0);
+
+      size_t numThreads = getNumberOfLogicalThreads();
+      threadResults.resize(numThreads);
+      barrier.init(numThreads+1);
+
+      /* create threads */
+      std::vector<std::thread> threads;
+      for (size_t i=0; i<numThreads; i++)
+        threads.push_back(std::thread(thread_alloc,this));
+
+      /* run test */ 
+      for (size_t i=0; i<1000; i++)
+      {
+        for (size_t i=0; i<numThreads; i++) threadResults[i] = 0;
+        barrier.wait();
+        barrier.wait();
+        for (size_t i=0; i<numThreads; i++) numFailed += threadResults[i] != i;
+      }
+
+      /* destroy threads */
+      for (size_t i=0; i<numThreads; i++)
+        threads[i].join();
+
+      return numFailed == 0;
+    }
+  };
+
+  barrier_sys_regression_test barrier_sys_regression_test;
 }
 
 
