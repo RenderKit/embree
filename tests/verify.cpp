@@ -1991,6 +1991,76 @@ namespace embree
     }
   };
 
+  struct SmallTriangleHitTest : public VerifyApplication::IntersectTest
+  {
+    ALIGNED_STRUCT;
+    RTCSceneFlags sflags;
+    std::string model;
+    Vec3fa pos;
+    float radius;
+    static const size_t N = 10000;
+    static const size_t maxStreamSize = 100;
+    
+    SmallTriangleHitTest (std::string name, int isa, RTCSceneFlags sflags, IntersectMode imode, const Vec3fa& pos, const float radius)
+      : VerifyApplication::IntersectTest(name,isa,imode,VARIANT_INTERSECT,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags), pos(pos), radius(radius) {}
+    
+    VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
+    {
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
+      error_handler(rtcDeviceGetError(device));
+      if (!supportsIntersectMode(device))
+        return VerifyApplication::SKIPPED;
+
+      VerifyScene scene(device,sflags,to_aflags(imode));
+      LinearSpace3fa space(Vec3fa(1.0f,0.0f,0.0f),Vec3fa(0.0f,1.0f,0.0f),Vec3fa(0.0f,0.0f,1.0f));
+      space *= LinearSpace3fa::rotate(Vec3fa(4.0f,7.0f,-1.0f),4.34f);
+      const Vec3fa dx = 100.0f*normalize(space.vx);
+      const Vec3fa dy = 100.0f*normalize(space.vy);
+      const Vec3fa p = pos-0.5f*(dx+dy);
+      Ref<SceneGraph::TriangleMeshNode> plane = SceneGraph::createTrianglePlane (p,dx,dy,100,100).dynamicCast<SceneGraph::TriangleMeshNode>();
+      scene.addGeometry(RTC_GEOMETRY_STATIC,plane.dynamicCast<SceneGraph::Node>(),false);
+      rtcCommit (scene);
+      AssertNoError(device);
+      
+      size_t numTests = 0;
+      size_t numFailures = 0;
+      //for (auto ivariant : state->intersectVariants)
+      IntersectVariant ivariant = VARIANT_INTERSECT_INCOHERENT;
+      size_t numRays = size_t(N*state->intensity);
+      for (size_t i=0; i<numRays; i+=maxStreamSize) 
+      {
+        size_t M = min(maxStreamSize,numRays-i);
+        int primIDs[maxStreamSize];
+        __aligned(16) RTCRay rays[maxStreamSize];
+        for (size_t j=0; j<M; j++) 
+        {
+          Vec3fa org = pos + radius*Vec3fa(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+          int primID = random<int>() % plane->triangles.size();
+          Vec3fa v0 = plane->v[plane->triangles[primID].v0];
+          Vec3fa v1 = plane->v[plane->triangles[primID].v1];
+          Vec3fa v2 = plane->v[plane->triangles[primID].v2];
+          Vec3fa c = (v0+v1+v2)/3.0f;
+          primIDs[j] = primID;
+          rays[j] = makeRay(org,c-org); 
+        }
+        IntersectWithMode(imode,ivariant,scene,rays,M);
+        for (size_t j=0; j<M; j++) {
+          Vec3fa dir(rays[j].dir[0],rays[j].dir[1],rays[j].dir[2]);
+          //if (abs(dot(normalize(dir),space.vz)) < 0.9f) continue;
+          numTests++;
+          numFailures += rays[j].primID != primIDs[j];
+        }
+      }
+      AssertNoError(device);
+
+      double failRate = double(numFailures) / double(numTests);
+      bool failed = failRate > 0.00002;
+      if (!silent) { printf(" (%f%%)", 100.0f*failRate); fflush(stdout); }
+      return (VerifyApplication::TestReturnValue)(!failed);
+    }
+  };
+
   struct NaNTest : public VerifyApplication::IntersectTest
   {
     RTCSceneFlags sflags;
@@ -2917,6 +2987,15 @@ namespace embree
               groups.top()->add(new WatertightTest(to_string(sflags,imode)+"."+model,isa,sflags,imode,model,watertight_pos));
         groups.pop();
       }
+      
+      /*push(new TestGroup("small_triangle_hit_test",true,true)); {
+        const Vec3fa pos = Vec3fa(0.0f,0.0f,0.0f);
+        const float radius = 1000000.0f;
+        for (auto sflags : sceneFlags) 
+          for (auto imode : intersectModes) 
+            groups.top()->add(new SmallTriangleHitTest(to_string(sflags,imode),isa,sflags,imode,pos,radius));
+        groups.pop();
+        }*/
       
       if (rtcDeviceGetParameter1i(device,RTC_CONFIG_IGNORE_INVALID_RAYS))
       {
