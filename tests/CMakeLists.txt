@@ -39,7 +39,7 @@ ENDIF()
 ADD_EXECUTABLE(verify verify.cpp ../tutorials/common/tutorial/application.cpp)
 TARGET_LINK_LIBRARIES(verify sys scenegraph embree)
 SET_PROPERTY(TARGET verify PROPERTY FOLDER tests)
-ADD_TEST(NAME verify COMMAND verify)
+ADD_TEST(NAME verify COMMAND verify --no-colors)
 
 ADD_EXECUTABLE(benchmark benchmark.cpp)
 TARGET_LINK_LIBRARIES(benchmark sys embree)

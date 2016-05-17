@@ -312,17 +312,17 @@ namespace embree
     {
       Lock<MutexSys> lock(state->mutex);
       if (v != SKIPPED) {
-        if      (passed       ) std::cout << GREEN ("+") << std::flush;
-        else if (ignoreFailure) std::cout << YELLOW("-") << std::flush;
-        else                    std::cout << RED   ("-") << std::flush;
+        if      (passed       ) std::cout << (state->usecolors ? GREEN ("+") : "+") << std::flush;
+        else if (ignoreFailure) std::cout << (state->usecolors ? YELLOW("!") : "!") << std::flush;
+        else                    std::cout << (state->usecolors ? RED   ("-") : "-") << std::flush;
       }
     } 
     else
     {
-      if      (v == SKIPPED ) std::cout << GREEN (" [SKIPPED]") << std::endl << std::flush;
-      else if (passed       ) std::cout << GREEN (" [PASSED]" ) << std::endl << std::flush;
-      else if (ignoreFailure) std::cout << YELLOW(" [FAILED]" ) << std::endl << std::flush;
-      else                    std::cout << RED   (" [FAILED]" ) << std::endl << std::flush;
+      if      (v == SKIPPED ) std::cout << (state->usecolors ? GREEN (" [SKIPPED]") : " [SKIPPED]") << std::endl << std::flush;
+      else if (passed       ) std::cout << (state->usecolors ? GREEN (" [PASSED]" ) : " [PASSED]" ) << std::endl << std::flush;
+      else if (ignoreFailure) std::cout << (state->usecolors ? YELLOW(" [FAILED]" ) : " [FAILED] (ignored)" ) << std::endl << std::flush;
+      else                    std::cout << (state->usecolors ? RED   (" [FAILED]" ) : " [FAILED]" ) << std::endl << std::flush;
     }
 
     /* do ignore failures for some specific tests */
@@ -2663,7 +2663,8 @@ namespace embree
   /////////////////////////////////////////////////////////////////////////////////
 
   VerifyApplication::VerifyApplication ()
-    : Application(Application::FEATURE_RTCORE), intensity(1.0f), tests(new TestGroup("")), numFailedTests(0), user_specified_tests(false), flatten(true), parallel(true)
+    : Application(Application::FEATURE_RTCORE), intensity(1.0f), tests(new TestGroup("")), numFailedTests(0), 
+      user_specified_tests(false), flatten(true), parallel(true), usecolors(true)
   {
     GeometryType gtypes[] = { TRIANGLE_MESH, TRIANGLE_MESH_MB, QUAD_MESH, QUAD_MESH_MB, SUBDIV_MESH, SUBDIV_MESH_MB };
 
@@ -3005,6 +3006,10 @@ namespace embree
     registerOption("parallel", [this] (Ref<ParseStream> cin, const FileName& path) {
         parallel = true;
       }, "--parallel: parallelized test execution (default)");
+
+    registerOption("no-colors", [this] (Ref<ParseStream> cin, const FileName& path) {
+        usecolors = false;
+      }, "--no-colors: do not use shell colors");
 
     registerOption("print-tests", [this] (Ref<ParseStream> cin, const FileName& path) {
         print_tests(tests,0);

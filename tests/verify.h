@@ -128,5 +128,6 @@ namespace embree
     bool user_specified_tests;
     bool flatten;
     bool parallel;
+    bool usecolors;
   };
 }
