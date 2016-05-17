@@ -2664,7 +2664,7 @@ namespace embree
 
   VerifyApplication::VerifyApplication ()
     : Application(Application::FEATURE_RTCORE), intensity(1.0f), tests(new TestGroup("",false,false)), numFailedTests(0), 
-      user_specified_tests(false), flatten(true), parallel(true), usecolors(true)
+      user_specified_tests(false), flatten(true), parallel(true), usecolors(true), device(rtcNewDevice(rtcore.c_str()))
   {
     GeometryType gtypes[] = { TRIANGLE_MESH, TRIANGLE_MESH_MB, QUAD_MESH, QUAD_MESH_MB, SUBDIV_MESH, SUBDIV_MESH_MB };
 
@@ -2721,9 +2721,6 @@ namespace embree
       groups.top()->add(group.dynamicCast<Test>());
       groups.push(group);
     };
-
-    RTCDeviceRef device = rtcNewDevice(rtcore.c_str());
-    error_handler(rtcDeviceGetError(device));
 
     groups.top()->add(new InitExitTest("init_exit"));
 

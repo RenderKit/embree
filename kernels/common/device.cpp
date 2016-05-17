@@ -313,15 +313,8 @@ namespace embree
   void Device::configureTaskingSystem() 
   {
     /* terminate tasking system */
-    if (g_num_threads_map.size() == 0)
-    {
-#if defined(TASKING_INTERNAL)
+    if (g_num_threads_map.size() == 0) {
       TaskScheduler::destroy();
-#endif
-      
-#if defined(TASKING_TBB)
-      TaskScheduler::destroy();
-#endif
       return;
     }
 
@@ -332,15 +325,10 @@ namespace embree
     if (maxNumThreads == -1) 
       maxNumThreads = 0;
 
-#if defined(TASKING_INTERNAL)
-    TaskScheduler::create(maxNumThreads,State::set_affinity);
-#endif
-
-#if defined(TASKING_TBB)
+    /* create task scheduler */
     TaskScheduler::create(maxNumThreads,State::set_affinity);
 #if USE_TASK_ARENA
     arena = new tbb::task_arena(maxNumThreads);
-#endif
 #endif
   }
 

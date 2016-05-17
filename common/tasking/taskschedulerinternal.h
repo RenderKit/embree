@@ -242,10 +242,10 @@ namespace embree
       void thread_loop(size_t threadIndex);
       
     private:
-      volatile size_t numThreads;
-      volatile size_t numThreadsRunning;
+      std::atomic<size_t> numThreads;
+      std::atomic<size_t> numThreadsRunning;
       bool set_affinity;
-      bool running;
+      std::atomic<bool> running;
       std::vector<thread_t> threads;
 
     private:

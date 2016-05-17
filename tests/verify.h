@@ -121,6 +121,7 @@ namespace embree
     Ref<Test> tests;
 
   public:
+    RTCDeviceRef device;
     std::vector<RTCSceneFlags> sceneFlags;
     std::vector<RTCSceneFlags> sceneFlagsRobust;
     std::vector<RTCSceneFlags> sceneFlagsDynamic;

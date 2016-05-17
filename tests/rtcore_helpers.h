@@ -60,6 +60,12 @@ namespace embree
     
     operator RTCDevice () const { return device; }
     
+    RTCDeviceRef& operator= (RTCDevice in) 
+    {
+      device = in;
+      return *this;
+    }
+
     RTCDeviceRef& operator= (RTCDeviceRef& in) 
     {
       if (in.device != device && device) 
