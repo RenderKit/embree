@@ -32,6 +32,10 @@
 #include <stdint.h>
 #include <atomic>
 
+#if defined(RTCORE_ITT)
+#include <ittnotify.h>
+#endif
+
 ////////////////////////////////////////////////////////////////////////////////
 /// detect platform
 ////////////////////////////////////////////////////////////////////////////////
@@ -293,6 +297,18 @@ __forceinline std::string toString(long long value) {
 ////////////////////////////////////////////////////////////////////////////////
 /// Some macros for static profiling
 ////////////////////////////////////////////////////////////////////////////////
+
+#if defined(RTCORE_ITT)
+#  define itt_sync_prepare(x) __itt_sync_prepare(x)
+#  define itt_sync_cancel(x) __itt_sync_cancel(x)
+#  define itt_sync_acquired(x) __itt_sync_acquired(x)
+#  define itt_sync_releasing(x) __itt_sync_releasing(x)
+#else
+#  define itt_sync_prepare(x)
+#  define itt_sync_cancel(x)
+#  define itt_sync_acquired(x)
+#  define itt_sync_releasing(x)
+#endif
 
 #if defined (__GNUC__) 
 #define IACA_SSC_MARK( MARK_ID )						\
