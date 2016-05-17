@@ -390,7 +390,6 @@ namespace embree
         void* ptr = os_reserve(bytesReserve);
         os_commit(ptr,bytesAllocate);
         new (ptr) Block(bytesAllocate-sizeof_Header,bytesReserve-sizeof_Header,next);
-        std::atomic_thread_fence(std::memory_order_release);
         return (Block*) ptr;
       }
 

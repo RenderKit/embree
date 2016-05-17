@@ -101,7 +101,6 @@ namespace embree
 	setTls(ptr,lptr = new Type(init));
 	Lock<AtomicMutex> lock(mutex);
 	threads.push_back(lptr);
-        std::atomic_thread_fence(std::memory_order_release);
       }
       return lptr;
     }
