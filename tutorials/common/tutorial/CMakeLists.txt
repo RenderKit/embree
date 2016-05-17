@@ -14,12 +14,6 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-IF (TASKING_INTERNAL)
-  ADD_DEFINITIONS(-DTASKING_INTERNAL)
-ELSE()
-  ADD_DEFINITIONS(-DTASKING_TBB)
-ENDIF()
-
 IF (WIN32)
 # FindGLUT.cmake is broken for Windows in CMake until 3.0: does not support PATH
   FIND_PATH(GLUT_INCLUDE_DIR NAMES GL/glut.h PATHS ../freeglut/include)

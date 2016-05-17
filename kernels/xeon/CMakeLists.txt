@@ -87,7 +87,6 @@ SET(EMBREE_LIBRARY_FILES
   )
 
 IF (TASKING_INTERNAL)
-  ADD_DEFINITIONS(-DTASKING_INTERNAL)
   SET(EMBREE_LIBRARY_FILES 
     ../../common/tasking/taskschedulerinternal.cpp
     ../../common/tasking/tasksys.cpp
@@ -95,7 +94,6 @@ IF (TASKING_INTERNAL)
 ENDIF()
 
 IF (TASKING_TBB)
-  ADD_DEFINITIONS(-DTASKING_TBB)
   SET(EMBREE_LIBRARY_FILES 
     ../../common/tasking/taskschedulertbb.cpp
     ../../common/tasking/tasksys.cpp

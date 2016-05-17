@@ -14,12 +14,6 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-IF (TASKING_INTERNAL)
-  ADD_DEFINITIONS(-DTASKING_INTERNAL)
-ELSE()
-  ADD_DEFINITIONS(-DTASKING_TBB) # FIXME: should not be necessary
-ENDIF()
-
 ADD_EXECUTABLE(bvh_access bvh_access.cpp)
 TARGET_LINK_LIBRARIES(bvh_access embree)
 SET_PROPERTY(TARGET bvh_access PROPERTY FOLDER tutorials/single)
