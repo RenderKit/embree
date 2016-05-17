@@ -216,10 +216,10 @@ namespace embree
       bytesUsed = 0;
 
       /* first reset all used blocks */
-	  if (usedBlocks.load() != nullptr) usedBlocks.load()->reset();
-
+      if (usedBlocks.load() != nullptr) usedBlocks.load()->reset();
+      
       /* move all used blocks to begin of free block list */
-	  while (usedBlocks.load() != nullptr) {
+      while (usedBlocks.load() != nullptr) {
         Block* nextUsedBlock = usedBlocks.load()->next;
         usedBlocks.load()->next = freeBlocks.load();
         freeBlocks = usedBlocks.load();
@@ -228,7 +228,7 @@ namespace embree
 
       for (size_t i=0; i<MAX_THREAD_USED_BLOCK_SLOTS; i++) 
         threadUsedBlocks[i] = nullptr;
-     
+      
       /* reset all thread local allocators */
       thread_local_allocators.reset();
       thread_local_allocators2.reset();
@@ -291,7 +291,7 @@ namespace embree
     void* specialAlloc(size_t bytes) 
     {
       /* create a new block if the first free block is too small */
-		if (freeBlocks.load() == nullptr || freeBlocks.load()->getBlockAllocatedBytes() < bytes)
+      if (freeBlocks.load() == nullptr || freeBlocks.load()->getBlockAllocatedBytes() < bytes)
         freeBlocks = Block::create(device,bytes,bytes,freeBlocks);
 
       return freeBlocks.load()->ptr();
@@ -337,12 +337,12 @@ namespace embree
     size_t getWastedBytes() const 
     {
       size_t bytesWasted = 0;
-	  if (usedBlocks.load()) {
+      if (usedBlocks.load()) {
 	Block* cur = usedBlocks;
 	while ((cur = cur->next) != nullptr)
 	  bytesWasted += cur->getFreeBytes();
       }
-
+      
       for (size_t t=0; t<thread_local_allocators.threads.size(); t++)
 	bytesWasted += thread_local_allocators.threads[t]->getWastedBytes();
 
