@@ -3046,14 +3046,14 @@ namespace embree
         groups.pop();
         }*/
       
-      /*push(new TestGroup("ray_alignment_test",true,true)); {
+      push(new TestGroup("ray_alignment_test",true,true)); {
         std::string watertightModels [] = {"sphere.triangles", "sphere.quads", "sphere.subdiv" };
         for (auto sflags : sceneFlagsRobust) 
           for (auto imode : intersectModes) 
             for (std::string model : watertightModels) 
               groups.top()->add(new RayAlignmentTest(to_string(sflags,imode)+"."+model,isa,sflags,imode,model));
         groups.pop();
-        }*/
+      }
 
       if (rtcDeviceGetParameter1i(device,RTC_CONFIG_IGNORE_INVALID_RAYS))
       {

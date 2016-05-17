@@ -415,13 +415,13 @@ namespace embree
     case MODE_INTERSECT4: return 16;
     case MODE_INTERSECT8: return 32;
     case MODE_INTERSECT16: return 64;
-    case MODE_INTERSECT1M: return 4;
-    case MODE_INTERSECTNM1: return 4;
-    case MODE_INTERSECTNM3: return 4;
-    case MODE_INTERSECTNM4: return 4;
-    case MODE_INTERSECTNM8: return 4;
-    case MODE_INTERSECTNM16: return 4;
-    case MODE_INTERSECTNp: return 4;
+    case MODE_INTERSECT1M: return 16;
+    case MODE_INTERSECTNM1: return 16;
+    case MODE_INTERSECTNM3: return 16;
+    case MODE_INTERSECTNM4: return 16;
+    case MODE_INTERSECTNM8: return 16;
+    case MODE_INTERSECTNM16: return 16;
+    case MODE_INTERSECTNp: return 16;
     default              : return 0;
     }
   }
