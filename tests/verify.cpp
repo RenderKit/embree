@@ -344,7 +344,7 @@ namespace embree
       std::cout << std::setw(60) << name << " ..." << std::flush;
     
     std::atomic<int> passed(true);
-    if (state->parallel && leaftest) 
+    if (state->parallel && parallel && leaftest) 
     {
       parallel_for(tests.size(),[&] (size_t i) {
           passed.fetch_and(tests[i]->execute(state,nextsilent) != FAILED);
@@ -2663,7 +2663,7 @@ namespace embree
   /////////////////////////////////////////////////////////////////////////////////
 
   VerifyApplication::VerifyApplication ()
-    : Application(Application::FEATURE_RTCORE), intensity(1.0f), tests(new TestGroup("")), numFailedTests(0), 
+    : Application(Application::FEATURE_RTCORE), intensity(1.0f), tests(new TestGroup("",false,false)), numFailedTests(0), 
       user_specified_tests(false), flatten(true), parallel(true), usecolors(true)
   {
     GeometryType gtypes[] = { TRIANGLE_MESH, TRIANGLE_MESH_MB, QUAD_MESH, QUAD_MESH_MB, SUBDIV_MESH, SUBDIV_MESH_MB };
@@ -2736,11 +2736,11 @@ namespace embree
 
     for (auto isa : isas)
     {
-      push(new TestGroup(stringOfISA(isa)));
+      push(new TestGroup(stringOfISA(isa),false,false));
       
       groups.top()->add(new MultipleDevicesTest("multiple_devices",isa));
 
-      push(new TestGroup("flags",true));
+      push(new TestGroup("flags",true,true));
       groups.top()->add(new FlagsTest("static_static"     ,isa,VerifyApplication::TEST_SHOULD_PASS, RTC_SCENE_STATIC, RTC_GEOMETRY_STATIC));
       groups.top()->add(new FlagsTest("static_deformable" ,isa,VerifyApplication::TEST_SHOULD_FAIL, RTC_SCENE_STATIC, RTC_GEOMETRY_DEFORMABLE));
       groups.top()->add(new FlagsTest("static_dynamic"    ,isa,VerifyApplication::TEST_SHOULD_FAIL, RTC_SCENE_STATIC, RTC_GEOMETRY_DYNAMIC));
@@ -2753,7 +2753,7 @@ namespace embree
       groups.top()->add(new GetBoundsTest("get_bounds",isa));
       groups.top()->add(new GetUserDataTest("get_user_data",isa));
 
-      push(new TestGroup("buffer_stride",true));
+      push(new TestGroup("buffer_stride",true,true));
       for (auto gtype : gtypes)
         groups.top()->add(new BufferStrideTest(to_string(gtype),isa,gtype));
       groups.pop();
@@ -2762,37 +2762,37 @@ namespace embree
       /*                        Builder Tests                                   */
       /**************************************************************************/
       
-      push(new TestGroup("empty_scene",true));
+      push(new TestGroup("empty_scene",true,true));
       for (auto sflags : sceneFlags) 
         groups.top()->add(new EmptySceneTest(to_string(sflags),isa,sflags));
       groups.pop();
       
-      push(new TestGroup("empty_geometry",true));
+      push(new TestGroup("empty_geometry",true,true));
       for (auto sflags : sceneFlags) 
         groups.top()->add(new EmptyGeometryTest(to_string(sflags),isa,sflags,RTC_GEOMETRY_STATIC));
       groups.pop();
       
-      push(new TestGroup("build",true));
+      push(new TestGroup("build",true,true));
       for (auto sflags : sceneFlags) 
         groups.top()->add(new BuildTest(to_string(sflags),isa,sflags,RTC_GEOMETRY_STATIC));
       groups.pop();
       
-      push(new TestGroup("overlapping_primitives",true));
+      push(new TestGroup("overlapping_primitives",true,true));
       for (auto sflags : sceneFlags)
         groups.top()->add(new OverlappingGeometryTest(to_string(sflags),isa,sflags,RTC_GEOMETRY_STATIC,100000));
       groups.pop();
 
-      push(new TestGroup("new_delete_geometry",true));
+      push(new TestGroup("new_delete_geometry",true,true));
       for (auto sflags : sceneFlagsDynamic) 
         groups.top()->add(new NewDeleteGeometryTest(to_string(sflags),isa,sflags));
       groups.pop();
       
-      push(new TestGroup("enable_disable_geometry",true));
+      push(new TestGroup("enable_disable_geometry",true,true));
       for (auto sflags : sceneFlagsDynamic) 
         groups.top()->add(new EnableDisableGeometryTest(to_string(sflags),isa,sflags));
       groups.pop();
       
-      push(new TestGroup("update",true));
+      push(new TestGroup("update",true,true));
       for (auto sflags : sceneFlagsDynamic) {
         for (auto imode : intersectModes) {
           for (auto ivariant : intersectVariants) {
@@ -2809,20 +2809,20 @@ namespace embree
       /*                     Interpolation Tests                                */
       /**************************************************************************/
       
-      push(new TestGroup("interpolate"));
+      push(new TestGroup("interpolate",false,false));
       int interpolateTests[] = { 4,5,8,11,12,15 };
 
-      push(new TestGroup("triangles",true));
+      push(new TestGroup("triangles",true,true));
       for (auto s : interpolateTests) 
         groups.top()->add(new InterpolateTrianglesTest(std::to_string(long(s)),isa,s));
       groups.pop();
 
-      push(new TestGroup("subdiv",true));
+      push(new TestGroup("subdiv",true,true));
       for (auto s : interpolateTests)
         groups.top()->add(new InterpolateSubdivTest(std::to_string(long(s)),isa,s));
       groups.pop();
         
-      push(new TestGroup("hair",true));
+      push(new TestGroup("hair",true,true));
       for (auto s : interpolateTests) 
         groups.top()->add(new InterpolateHairTest(std::to_string(long(s)),isa,s));
       groups.pop();
@@ -2833,14 +2833,14 @@ namespace embree
       /*                      Intersection Tests                                */
       /**************************************************************************/
 
-      push(new TestGroup("triangle_hit",true));
+      push(new TestGroup("triangle_hit",true,true));
       for (auto sflags : sceneFlags) 
         for (auto imode : intersectModes) 
           for (auto ivariant : intersectVariants)
             groups.top()->add(new TriangleHitTest(to_string(sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,imode,ivariant));
       groups.pop();
       
-      push(new TestGroup("quad_hit",true));
+      push(new TestGroup("quad_hit",true,true));
       for (auto sflags : sceneFlags) 
         for (auto imode : intersectModes) 
           for (auto ivariant : intersectVariants)
@@ -2849,7 +2849,7 @@ namespace embree
 
       if (rtcDeviceGetParameter1i(device,RTC_CONFIG_RAY_MASK)) 
       {
-        push(new TestGroup("ray_masks",true));
+        push(new TestGroup("ray_masks",true,true));
         for (auto sflags : sceneFlags) 
           for (auto imode : intersectModes) 
             for (auto ivariant : intersectVariants)
@@ -2859,7 +2859,7 @@ namespace embree
       
       if (rtcDeviceGetParameter1i(device,RTC_CONFIG_BACKFACE_CULLING)) 
       {
-        push(new TestGroup("backface_culling",true));
+        push(new TestGroup("backface_culling",true,true));
         for (auto gtype : gtypes)
           for (auto sflags : sceneFlags) 
             for (auto imode : intersectModes) 
@@ -2868,7 +2868,7 @@ namespace embree
         groups.pop();
       }
       
-      push(new TestGroup("intersection_filter",true));
+      push(new TestGroup("intersection_filter",true,true));
       if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECTION_FILTER)) 
       {
         for (auto sflags : sceneFlags) 
@@ -2883,7 +2883,7 @@ namespace embree
       }
       groups.pop();
       
-      push(new TestGroup("inactive_rays",true));
+      push(new TestGroup("inactive_rays",true,true));
       for (auto sflags : sceneFlags) 
         for (auto imode : intersectModes) 
           for (auto ivariant : intersectVariants)
@@ -2891,7 +2891,7 @@ namespace embree
               groups.top()->add(new InactiveRaysTest(to_string(sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,imode,ivariant));
       groups.pop();
       
-      push(new TestGroup("watertight_triangles",true)); {
+      push(new TestGroup("watertight_triangles",true,true)); {
         std::string watertightModels [] = {"sphere.triangles", "plane.triangles"};
         const Vec3fa watertight_pos = Vec3fa(148376.0f,1234.0f,-223423.0f);
         for (auto sflags : sceneFlagsRobust) 
@@ -2901,7 +2901,7 @@ namespace embree
         groups.pop();
       }
 
-      push(new TestGroup("watertight_quads",true)); {
+      push(new TestGroup("watertight_quads",true,true)); {
         std::string watertightModels [] = {"sphere.quads", "plane.quads"};
         const Vec3fa watertight_pos = Vec3fa(148376.0f,1234.0f,-223423.0f);
         for (auto sflags : sceneFlagsRobust) 
@@ -2911,7 +2911,7 @@ namespace embree
         groups.pop();
       }
 
-      push(new TestGroup("watertight_subdiv",true)); {
+      push(new TestGroup("watertight_subdiv",true,true)); {
         std::string watertightModels [] = { "sphere.subdiv", "plane.subdiv"};
         const Vec3fa watertight_pos = Vec3fa(148376.0f,1234.0f,-223423.0f);
         for (auto sflags : sceneFlagsRobust) 
@@ -2923,14 +2923,14 @@ namespace embree
       
       if (rtcDeviceGetParameter1i(device,RTC_CONFIG_IGNORE_INVALID_RAYS))
       {
-        push(new TestGroup("nan_test",true));
+        push(new TestGroup("nan_test",true,false));
         for (auto sflags : sceneFlags) 
           for (auto imode : intersectModes) 
             for (auto ivariant : intersectVariants)
               groups.top()->add(new NaNTest(to_string(sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,imode,ivariant));
         groups.pop();
         
-        push(new TestGroup("inf_test",true));
+        push(new TestGroup("inf_test",true,false));
         for (auto sflags : sceneFlags) 
           for (auto imode : intersectModes) 
             for (auto ivariant : intersectVariants)

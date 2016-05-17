@@ -48,8 +48,8 @@ namespace embree
 
     struct TestGroup : public Test
     {
-      TestGroup (std::string name, bool silent = false)
-        : Test(name,0,TEST_GROUP), silent(silent) {}
+      TestGroup (std::string name, bool silent, bool parallel)
+        : Test(name,0,TEST_GROUP), silent(silent), parallel(parallel) {}
 
     public:
       void add(Ref<Test> test) {
@@ -65,6 +65,7 @@ namespace embree
 
     public:
       bool silent;
+      bool parallel;
       std::vector<Ref<Test>> tests;
     };
 
