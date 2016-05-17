@@ -406,6 +406,25 @@ namespace embree
     default                : return "U";
     }
   }
+
+  inline size_t alignment_of(IntersectMode imode)
+  {
+    switch (imode) {
+    case MODE_INTERSECT_NONE: return 0;
+    case MODE_INTERSECT1: return 16;
+    case MODE_INTERSECT4: return 16;
+    case MODE_INTERSECT8: return 32;
+    case MODE_INTERSECT16: return 64;
+    case MODE_INTERSECT1M: return 4;
+    case MODE_INTERSECTNM1: return 4;
+    case MODE_INTERSECTNM3: return 4;
+    case MODE_INTERSECTNM4: return 4;
+    case MODE_INTERSECTNM8: return 4;
+    case MODE_INTERSECTNM16: return 4;
+    case MODE_INTERSECTNp: return 4;
+    default              : return 0;
+    }
+  }
   
   enum IntersectVariant
   {
@@ -495,25 +514,26 @@ namespace embree
     inline void IntersectWithNMMode(IntersectVariant ivariant, RTCScene scene, RTCIntersectContext* context, RTCRay* rays, size_t Nrays)
   {
     assert(Nrays<1024);
-    __aligned(16) char data[1024*sizeof(RTCRay)];
+    const size_t alignment = size_t(rays) % 64;
+    __aligned(64) char data[1024*sizeof(RTCRay)+64];
     for (size_t i=0; i<Nrays; i+=N) 
     {
       size_t L = min(size_t(N),Nrays-i);
-      RTCRayN* ray = (RTCRayN*) &data[i*sizeof(RTCRay)];
+      RTCRayN* ray = (RTCRayN*) &data[alignment+i*sizeof(RTCRay)];
       for (size_t j=0; j<L; j++) setRay(ray,N,j,rays[i+j]);
       for (size_t j=L; j<N; j++) setRay(ray,N,j,makeRay(zero,zero,pos_inf,neg_inf));
     }
     
     size_t M = (Nrays+N-1)/N;
     switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-    case VARIANT_INTERSECT: rtcIntersectNM(scene,context,(RTCRayN*)data,N,M,N*sizeof(RTCRay)); break;
-    case VARIANT_OCCLUDED : rtcOccludedNM(scene,context,(RTCRayN*)data,N,M,N*sizeof(RTCRay)); break;
+    case VARIANT_INTERSECT: rtcIntersectNM(scene,context,(RTCRayN*)&data[alignment],N,M,N*sizeof(RTCRay)); break;
+    case VARIANT_OCCLUDED : rtcOccludedNM(scene,context,(RTCRayN*)&data[alignment],N,M,N*sizeof(RTCRay)); break;
     }
     
     for (size_t i=0; i<Nrays; i+=N) 
     {
       size_t L = min(size_t(N),Nrays-i);
-      RTCRayN* ray = (RTCRayN*) &data[i*sizeof(RTCRay)];
+      RTCRayN* ray = (RTCRayN*) &data[alignment+i*sizeof(RTCRay)];
       for (size_t j=0; j<L; j++) rays[i+j] = getRay(ray,N,j);
     }
   }
@@ -621,8 +641,9 @@ namespace embree
     case MODE_INTERSECTNp: 
     {
       assert(N<1024);
-      __aligned(32) char data[1024*sizeof(RTCRay)];
-      RTCRayN* ray = (RTCRayN*) &data[0];
+      const size_t alignment = size_t(rays) % 64;
+      __aligned(64) char data[1024*sizeof(RTCRay)+64];
+      RTCRayN* ray = (RTCRayN*) &data[alignment];
       for (size_t j=0; j<N; j++) setRay(ray,N,j,rays[j]);
 
       RTCRayNp rayp;

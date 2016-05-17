@@ -1995,7 +1995,6 @@ namespace embree
   {
     ALIGNED_STRUCT;
     RTCSceneFlags sflags;
-    std::string model;
     Vec3fa pos;
     float radius;
     static const size_t N = 10000;
@@ -2061,6 +2060,56 @@ namespace embree
     }
   };
 
+  struct RayAlignmentTest : public VerifyApplication::IntersectTest
+  {
+    ALIGNED_STRUCT;
+    RTCSceneFlags sflags;
+    std::string model;
+    static const size_t N = 10;
+    static const size_t maxStreamSize = 100;
+    
+    RayAlignmentTest (std::string name, int isa, RTCSceneFlags sflags, IntersectMode imode, std::string model)
+      : VerifyApplication::IntersectTest(name,isa,imode,VARIANT_INTERSECT,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags), model(model) {}
+    
+    VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
+    {
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
+      error_handler(rtcDeviceGetError(device));
+      if (!supportsIntersectMode(device))
+        return VerifyApplication::SKIPPED;
+
+      VerifyScene scene(device,sflags,to_aflags(imode));
+      if      (model == "sphere.triangles") scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createTriangleSphere(zero,2.0f,50),false);
+      else if (model == "sphere.quads"    ) scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createQuadSphere    (zero,2.0f,50),false);
+      else if (model == "sphere.subdiv"   ) scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createSubdivSphere  (zero,2.0f,4,4),false);
+      // FIXME: test more geometry types
+      rtcCommit (scene);
+      AssertNoError(device);
+      
+      for (auto ivariant : state->intersectVariants)
+      for (size_t i=0; i<size_t(N*state->intensity); i++) 
+      {
+        for (size_t M=1; M<maxStreamSize; M++)
+        {
+          size_t alignment = alignment_of(imode);
+          __aligned(64) char data[maxStreamSize*sizeof(RTCRay)]; 
+          RTCRay* rays = (RTCRay*) &data[alignment];
+          for (size_t j=0; j<M; j++) 
+          {
+            Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+            Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+            rays[j] = makeRay(org,dir); 
+          }
+          IntersectWithMode(imode,ivariant,scene,rays,M);
+        }
+      }
+      AssertNoError(device);
+
+      return VerifyApplication::PASSED;
+    }
+  };
+  
   struct NaNTest : public VerifyApplication::IntersectTest
   {
     RTCSceneFlags sflags;
@@ -2997,6 +3046,15 @@ namespace embree
         groups.pop();
         }*/
       
+      /*push(new TestGroup("ray_alignment_test",true,true)); {
+        std::string watertightModels [] = {"sphere.triangles", "sphere.quads", "sphere.subdiv" };
+        for (auto sflags : sceneFlagsRobust) 
+          for (auto imode : intersectModes) 
+            for (std::string model : watertightModels) 
+              groups.top()->add(new RayAlignmentTest(to_string(sflags,imode)+"."+model,isa,sflags,imode,model));
+        groups.pop();
+        }*/
+
       if (rtcDeviceGetParameter1i(device,RTC_CONFIG_IGNORE_INVALID_RAYS))
       {
         push(new TestGroup("nan_test",true,false));
