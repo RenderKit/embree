@@ -242,10 +242,10 @@ namespace embree
       void thread_loop(size_t threadIndex);
       
     private:
-      volatile size_t numThreads;
-      volatile size_t numThreadsRunning;
+      std::atomic<size_t> numThreads;
+      std::atomic<size_t> numThreadsRunning;
       bool set_affinity;
-      bool running;
+      std::atomic<bool> running;
       std::vector<thread_t> threads;
 
     private:
@@ -292,7 +292,7 @@ namespace embree
       size_t threadIndex = allocThreadIndex();
       std::unique_ptr<Thread> mthread(new Thread(threadIndex,this)); // too large for stack allocation
       Thread& thread = *mthread;
-      assert(threadLocal[threadIndex] == nullptr);
+      assert(threadLocal[threadIndex].load() == nullptr);
       threadLocal[threadIndex] = &thread;
       Thread* oldThread = swapThread(&thread);
       thread.tasks.push_right(thread,size,closure);

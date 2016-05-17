@@ -82,7 +82,6 @@ namespace embree
         vbool eval(const vbool& valid, Ref This, const vfloat& u, const vfloat& v, const float dscale, const size_t depth) 
         {
           if (!This) return false;
-          
           switch (This.type()) 
           {
           case Patch::BILINEAR_PATCH: {

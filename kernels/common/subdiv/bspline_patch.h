@@ -172,7 +172,7 @@ namespace embree
         init_corner(patch.ring[3],v[3][0],v[2][0],v[1][0],v[3][1],v21,v11,v[3][2],v22,v12);
       }
       
-      __forceinline void init_border(const HalfEdge* edge0, const char* vertices, size_t stride,
+      void init_border(const HalfEdge* edge0, const char* vertices, size_t stride,
                                      Vertex& v01, Vertex& v02,
                                      const Vertex& v11, const Vertex& v12,
                                      const Vertex& v21, const Vertex& v22)
@@ -188,10 +188,10 @@ namespace embree
         }
       }
       
-      __forceinline void init_corner(const HalfEdge* edge0, const char* vertices, size_t stride,
-                                     Vertex& v00, const Vertex& v01, const Vertex& v02, 
-                                     const Vertex& v10, const Vertex& v11, const Vertex& v12, 
-                                     const Vertex& v20, const Vertex& v21, const Vertex& v22)
+      void init_corner(const HalfEdge* edge0, const char* vertices, size_t stride,
+                       Vertex& v00, const Vertex& v01, const Vertex& v02, 
+                       const Vertex& v10, const Vertex& v11, const Vertex& v12, 
+                       const Vertex& v20, const Vertex& v21, const Vertex& v22)
       {
         const bool has_back0 = edge0->hasOpposite();
         const bool has_front1 = edge0->prev()->hasOpposite();
@@ -411,9 +411,9 @@ namespace embree
         return cross(eval_dv(uu,vv),eval_du(uu,vv));
       }
 
-      __forceinline void eval(const float u, const float v, 
-                              Vertex* P, Vertex* dPdu, Vertex* dPdv, Vertex* ddPdudu, Vertex* ddPdvdv, Vertex* ddPdudv, 
-                              const float dscale = 1.0f) const
+      void eval(const float u, const float v, 
+                Vertex* P, Vertex* dPdu, Vertex* dPdv, Vertex* ddPdudu, Vertex* ddPdvdv, Vertex* ddPdudv, 
+                const float dscale = 1.0f) const
       {
         if (P) {
           *P = eval(u,v); 
@@ -440,9 +440,9 @@ namespace embree
       }
         
       template<typename vbool, typename vfloat>
-      __forceinline void eval(const vbool& valid, const vfloat& uu, const vfloat& vv, 
-                              float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, 
-                              const float dscale, const size_t dstride, const size_t N) const
+      void eval(const vbool& valid, const vfloat& uu, const vfloat& vv, 
+                float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, 
+                const float dscale, const size_t dstride, const size_t N) const
       {
         if (P) {
           const Vec4<vfloat> u_n = BSplineBasis::eval(uu); 

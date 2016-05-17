@@ -151,9 +151,9 @@ namespace embree
   {
   }
 
-  struct Scene : public RefCount
+  struct VerifyScene : public RefCount
   {
-    Scene (const RTCDeviceRef& device, RTCSceneFlags sflags, RTCAlgorithmFlags aflags)
+    VerifyScene (const RTCDeviceRef& device, RTCSceneFlags sflags, RTCAlgorithmFlags aflags)
       : device(device), scene(rtcDeviceNewScene(device,sflags,aflags)) {}
 
     operator RTCScene() const {
@@ -308,19 +308,21 @@ namespace embree
     TestReturnValue ev = ty != TEST_SHOULD_FAIL ? PASSED : FAILED;
     bool passed = v == ev || v == SKIPPED;
 
-    if (silent) {
+    if (silent) 
+    {
+      Lock<MutexSys> lock(state->mutex);
       if (v != SKIPPED) {
-        if      (passed       ) std::cout << GREEN ("+") << std::flush;
-        else if (ignoreFailure) std::cout << YELLOW("-") << std::flush;
-        else                    std::cout << RED   ("-") << std::flush;
+        if      (passed       ) std::cout << (state->usecolors ? GREEN ("+") : "+") << std::flush;
+        else if (ignoreFailure) std::cout << (state->usecolors ? YELLOW("!") : "!") << std::flush;
+        else                    std::cout << (state->usecolors ? RED   ("-") : "-") << std::flush;
       }
     } 
     else
     {
-      if      (v == SKIPPED ) std::cout << GREEN (" [SKIPPED]") << std::endl << std::flush;
-      else if (passed       ) std::cout << GREEN (" [PASSED]" ) << std::endl << std::flush;
-      else if (ignoreFailure) std::cout << YELLOW(" [FAILED]" ) << std::endl << std::flush;
-      else                    std::cout << RED   (" [FAILED]" ) << std::endl << std::flush;
+      if      (v == SKIPPED ) std::cout << (state->usecolors ? GREEN (" [SKIPPED]") : " [SKIPPED]") << std::endl << std::flush;
+      else if (passed       ) std::cout << (state->usecolors ? GREEN (" [PASSED]" ) : " [PASSED]" ) << std::endl << std::flush;
+      else if (ignoreFailure) std::cout << (state->usecolors ? YELLOW(" [FAILED]" ) : " [FAILED] (ignored)" ) << std::endl << std::flush;
+      else                    std::cout << (state->usecolors ? RED   (" [FAILED]" ) : " [FAILED]" ) << std::endl << std::flush;
     }
 
     /* do ignore failures for some specific tests */
@@ -342,7 +344,7 @@ namespace embree
       std::cout << std::setw(60) << name << " ..." << std::flush;
     
     std::atomic<int> passed(true);
-    if (state->parallel && leaftest) 
+    if (state->parallel && parallel && leaftest) 
     {
       parallel_for(tests.size(),[&] (size_t i) {
           passed.fetch_and(tests[i]->execute(state,nextsilent) != FAILED);
@@ -454,7 +456,7 @@ namespace embree
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
-      Scene scene(device,RTC_SCENE_STATIC,aflags);
+      VerifyScene scene(device,RTC_SCENE_STATIC,aflags);
       AssertNoError(device);
       unsigned geom0 = scene.addSphere(RTC_GEOMETRY_STATIC,zero,1.0f,50);
       unsigned geom1 = scene.addSphere(RTC_GEOMETRY_STATIC,zero,1.0f,50);
@@ -478,7 +480,7 @@ namespace embree
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
-      Scene scene(device,RTC_SCENE_STATIC,RTC_INTERSECT1);
+      VerifyScene scene(device,RTC_SCENE_STATIC,RTC_INTERSECT1);
       AssertNoError(device);
       Ref<SceneGraph::Node> node = SceneGraph::createTriangleSphere(zero,1.0f,50);
       BBox3fa bounds0 = node->bounds();
@@ -689,7 +691,7 @@ namespace embree
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
-      Scene scene(device,sflags,aflags);
+      VerifyScene scene(device,sflags,aflags);
 
       const Vec3fa center = zero;
       const float radius = 1.0f;
@@ -733,7 +735,7 @@ namespace embree
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
-      Scene scene(device,sflags,aflags);
+      VerifyScene scene(device,sflags,aflags);
       AssertNoError(device);
 
       const Vec3fa p (0,0,0);
@@ -813,7 +815,7 @@ namespace embree
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
-      Scene scene(device,sflags,aflags_all);
+      VerifyScene scene(device,sflags,aflags_all);
       AssertNoError(device);
       int geom[128];
       for (size_t i=0; i<128; i++) geom[i] = -1;
@@ -874,7 +876,7 @@ namespace embree
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
-      Scene scene(device,sflags,aflags);
+      VerifyScene scene(device,sflags,aflags);
       AssertNoError(device);
       unsigned geom0 = scene.addSphere(RTC_GEOMETRY_STATIC,Vec3fa(-1,0,-1),1.0f,50);
       //unsigned geom1 = scene.addSphere(RTC_GEOMETRY_STATIC,Vec3fa(-1,0,+1),1.0f,50);
@@ -921,7 +923,7 @@ namespace embree
     UpdateTest (std::string name, int isa, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant)
       : VerifyApplication::IntersectTest(name,isa,imode,ivariant,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags), gflags(gflags) {}
     
-    static void move_mesh(const Scene& scene, unsigned mesh, size_t numVertices, Vec3fa& pos) 
+    static void move_mesh(const VerifyScene& scene, unsigned mesh, size_t numVertices, Vec3fa& pos) 
     {
       Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
       for (size_t i=0; i<numVertices; i++) vertices[i] += Vec3fa(pos);
@@ -937,7 +939,7 @@ namespace embree
       if (!supportsIntersectMode(device))
         return VerifyApplication::SKIPPED;
       
-      Scene scene(device,sflags,to_aflags(imode));
+      VerifyScene scene(device,sflags,to_aflags(imode));
       AssertNoError(device);
       size_t numPhi = 10;
       size_t numVertices = 2*numPhi*(numPhi+1);
@@ -997,7 +999,7 @@ namespace embree
         if (i%20 == 0) std::cout << "." << std::flush;
         
         RTCSceneFlags sflag = getSceneFlag(i); 
-        Scene scene(device,sflag,aflags);
+        VerifyScene scene(device,sflag,aflags);
         AssertNoError(device);
         
         for (size_t j=0; j<20; j++) 
@@ -1607,7 +1609,7 @@ namespace embree
       Vec3fa pos2 = Vec3fa(+10,0,-10);
       Vec3fa pos3 = Vec3fa(+10,0,+10);
       
-      Scene scene(device,sflags,to_aflags(imode));
+      VerifyScene scene(device,sflags,to_aflags(imode));
       unsigned geom0 = scene.addSphere(gflags,pos0,1.0f,50);
       //unsigned geom1 = scene.addSphere(gflags,pos1,1.0f,50);
       unsigned geom1 = scene.addHair  (gflags,pos1,1.0f,1.0f,1);
@@ -1660,7 +1662,7 @@ namespace embree
        
       /* create triangle that is front facing for a right handed 
          coordinate system if looking along the z direction */
-      Scene scene(device,sflags,to_aflags(imode));
+      VerifyScene scene(device,sflags,to_aflags(imode));
       AssertNoError(device);
       const Vec3fa p0 = Vec3fa(0.0f);
       const Vec3fa dx = Vec3fa(1.0f,0.0f,0.0f);
@@ -1803,7 +1805,7 @@ namespace embree
       if (!supportsIntersectMode(device))
         return VerifyApplication::SKIPPED;
 
-      Scene scene(device,sflags,to_aflags(imode));
+      VerifyScene scene(device,sflags,to_aflags(imode));
       Vec3fa p0(-0.75f,-0.25f,-10.0f), dx(4,0,0), dy(0,4,0);
       int geom0 = 0;
       if (subdiv) geom0 = scene.addSubdivPlane (gflags, 4, p0, dx, dy);
@@ -1881,7 +1883,7 @@ namespace embree
         return VerifyApplication::SKIPPED;
 
       Vec3fa pos = zero;
-      Scene scene(device,sflags,to_aflags(imode));
+      VerifyScene scene(device,sflags,to_aflags(imode));
       scene.addSphere(RTC_GEOMETRY_STATIC,pos,2.0f,50); // FIXME: use different geometries too
       rtcCommit (scene);
       AssertNoError(device);
@@ -1942,7 +1944,7 @@ namespace embree
       if (!supportsIntersectMode(device))
         return VerifyApplication::SKIPPED;
 
-      Scene scene(device,sflags,to_aflags(imode));
+      VerifyScene scene(device,sflags,to_aflags(imode));
       if      (model == "sphere.triangles") scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createTriangleSphere(pos,2.0f,500),false);
       else if (model == "sphere.quads"    ) scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createQuadSphere    (pos,2.0f,500),false);
       else if (model == "sphere.subdiv"   ) scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createSubdivSphere  (pos,2.0f,4,64),false);
@@ -2007,7 +2009,7 @@ namespace embree
 
       const size_t numRays = 1000;
       RTCRay rays[numRays];
-      Scene scene(device,sflags,to_aflags(imode));
+      VerifyScene scene(device,sflags,to_aflags(imode));
       scene.addSphere(gflags,zero,2.0f,100);
       scene.addHair  (gflags,zero,1.0f,1.0f,100);
       rtcCommit (scene);
@@ -2076,7 +2078,7 @@ namespace embree
 
       const size_t numRays = 1000;
       RTCRay rays[numRays];
-      Scene scene(device,sflags,to_aflags(imode));
+      VerifyScene scene(device,sflags,to_aflags(imode));
       scene.addSphere(gflags,zero,2.0f,100);
       scene.addHair  (gflags,zero,1.0f,1.0f,100);
       rtcCommit (scene);
@@ -2142,7 +2144,7 @@ namespace embree
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
 
-  void shootRandomRays (std::vector<IntersectMode>& intersectModes, std::vector<IntersectVariant>& intersectVariants, const Scene& scene)
+  void shootRandomRays (std::vector<IntersectMode>& intersectModes, std::vector<IntersectVariant>& intersectVariants, const VerifyScene& scene)
   {
     const size_t numRays = 100;
     for (auto imode : intersectModes)
@@ -2173,7 +2175,7 @@ namespace embree
     size_t sceneIndex;
     size_t sceneCount;
     VerifyApplication* state;
-    Ref<Scene> scene;
+    Ref<VerifyScene> scene;
     BarrierSys barrier;
     volatile size_t numActiveThreads;
     bool cancelBuild;
@@ -2252,7 +2254,7 @@ namespace embree
       if (i%20 == 0) std::cout << "." << std::flush;
 
       RTCSceneFlags sflag = getSceneFlag(i); 
-      task->scene = new Scene(thread->device,sflag,aflags_all);
+      task->scene = new VerifyScene(thread->device,sflag,aflags_all);
       if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
       if (task->cancelBuild) rtcSetProgressMonitorFunction(*task->scene,monitorProgressFunction,nullptr);
       avector<Sphere*> spheres;
@@ -2355,7 +2357,7 @@ namespace embree
       delete thread; thread = nullptr;
       return;
     }
-    task->scene = new Scene(thread->device,RTC_SCENE_DYNAMIC,aflags_all);
+    task->scene = new VerifyScene(thread->device,RTC_SCENE_DYNAMIC,aflags_all);
     if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
     if (task->cancelBuild) rtcSetProgressMonitorFunction(*task->scene,monitorProgressFunction,nullptr);
     int geom[1024];
@@ -2661,7 +2663,8 @@ namespace embree
   /////////////////////////////////////////////////////////////////////////////////
 
   VerifyApplication::VerifyApplication ()
-    : Application(Application::FEATURE_RTCORE), intensity(1.0f), tests(new TestGroup("")), numFailedTests(0), user_specified_tests(false), flatten(true), parallel(true)
+    : Application(Application::FEATURE_RTCORE), intensity(1.0f), tests(new TestGroup("",false,false)), numFailedTests(0), 
+      user_specified_tests(false), flatten(true), parallel(true), usecolors(true), device(rtcNewDevice(rtcore.c_str()))
   {
     GeometryType gtypes[] = { TRIANGLE_MESH, TRIANGLE_MESH_MB, QUAD_MESH, QUAD_MESH_MB, SUBDIV_MESH, SUBDIV_MESH_MB };
 
@@ -2719,9 +2722,6 @@ namespace embree
       groups.push(group);
     };
 
-    RTCDeviceRef device = rtcNewDevice(rtcore.c_str());
-    error_handler(rtcDeviceGetError(device));
-
     groups.top()->add(new InitExitTest("init_exit"));
 
     /* add Embree internal tests */
@@ -2733,11 +2733,11 @@ namespace embree
 
     for (auto isa : isas)
     {
-      push(new TestGroup(stringOfISA(isa)));
+      push(new TestGroup(stringOfISA(isa),false,false));
       
       groups.top()->add(new MultipleDevicesTest("multiple_devices",isa));
 
-      push(new TestGroup("flags",true));
+      push(new TestGroup("flags",true,true));
       groups.top()->add(new FlagsTest("static_static"     ,isa,VerifyApplication::TEST_SHOULD_PASS, RTC_SCENE_STATIC, RTC_GEOMETRY_STATIC));
       groups.top()->add(new FlagsTest("static_deformable" ,isa,VerifyApplication::TEST_SHOULD_FAIL, RTC_SCENE_STATIC, RTC_GEOMETRY_DEFORMABLE));
       groups.top()->add(new FlagsTest("static_dynamic"    ,isa,VerifyApplication::TEST_SHOULD_FAIL, RTC_SCENE_STATIC, RTC_GEOMETRY_DYNAMIC));
@@ -2750,7 +2750,7 @@ namespace embree
       groups.top()->add(new GetBoundsTest("get_bounds",isa));
       groups.top()->add(new GetUserDataTest("get_user_data",isa));
 
-      push(new TestGroup("buffer_stride",true));
+      push(new TestGroup("buffer_stride",true,true));
       for (auto gtype : gtypes)
         groups.top()->add(new BufferStrideTest(to_string(gtype),isa,gtype));
       groups.pop();
@@ -2759,37 +2759,37 @@ namespace embree
       /*                        Builder Tests                                   */
       /**************************************************************************/
       
-      push(new TestGroup("empty_scene",true));
+      push(new TestGroup("empty_scene",true,true));
       for (auto sflags : sceneFlags) 
         groups.top()->add(new EmptySceneTest(to_string(sflags),isa,sflags));
       groups.pop();
       
-      push(new TestGroup("empty_geometry",true));
+      push(new TestGroup("empty_geometry",true,true));
       for (auto sflags : sceneFlags) 
         groups.top()->add(new EmptyGeometryTest(to_string(sflags),isa,sflags,RTC_GEOMETRY_STATIC));
       groups.pop();
       
-      push(new TestGroup("build",true));
+      push(new TestGroup("build",true,true));
       for (auto sflags : sceneFlags) 
         groups.top()->add(new BuildTest(to_string(sflags),isa,sflags,RTC_GEOMETRY_STATIC));
       groups.pop();
       
-      push(new TestGroup("overlapping_primitives",true));
+      push(new TestGroup("overlapping_primitives",true,true));
       for (auto sflags : sceneFlags)
         groups.top()->add(new OverlappingGeometryTest(to_string(sflags),isa,sflags,RTC_GEOMETRY_STATIC,100000));
       groups.pop();
 
-      push(new TestGroup("new_delete_geometry",true));
+      push(new TestGroup("new_delete_geometry",true,true));
       for (auto sflags : sceneFlagsDynamic) 
         groups.top()->add(new NewDeleteGeometryTest(to_string(sflags),isa,sflags));
       groups.pop();
       
-      push(new TestGroup("enable_disable_geometry",true));
+      push(new TestGroup("enable_disable_geometry",true,true));
       for (auto sflags : sceneFlagsDynamic) 
         groups.top()->add(new EnableDisableGeometryTest(to_string(sflags),isa,sflags));
       groups.pop();
       
-      push(new TestGroup("update",true));
+      push(new TestGroup("update",true,true));
       for (auto sflags : sceneFlagsDynamic) {
         for (auto imode : intersectModes) {
           for (auto ivariant : intersectVariants) {
@@ -2806,20 +2806,20 @@ namespace embree
       /*                     Interpolation Tests                                */
       /**************************************************************************/
       
-      push(new TestGroup("interpolate"));
+      push(new TestGroup("interpolate",false,false));
       int interpolateTests[] = { 4,5,8,11,12,15 };
 
-      push(new TestGroup("triangles",true));
+      push(new TestGroup("triangles",true,true));
       for (auto s : interpolateTests) 
         groups.top()->add(new InterpolateTrianglesTest(std::to_string(long(s)),isa,s));
       groups.pop();
 
-      push(new TestGroup("subdiv",true));
+      push(new TestGroup("subdiv",true,true));
       for (auto s : interpolateTests)
         groups.top()->add(new InterpolateSubdivTest(std::to_string(long(s)),isa,s));
       groups.pop();
         
-      push(new TestGroup("hair",true));
+      push(new TestGroup("hair",true,true));
       for (auto s : interpolateTests) 
         groups.top()->add(new InterpolateHairTest(std::to_string(long(s)),isa,s));
       groups.pop();
@@ -2830,14 +2830,14 @@ namespace embree
       /*                      Intersection Tests                                */
       /**************************************************************************/
 
-      push(new TestGroup("triangle_hit",true));
+      push(new TestGroup("triangle_hit",true,true));
       for (auto sflags : sceneFlags) 
         for (auto imode : intersectModes) 
           for (auto ivariant : intersectVariants)
             groups.top()->add(new TriangleHitTest(to_string(sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,imode,ivariant));
       groups.pop();
       
-      push(new TestGroup("quad_hit",true));
+      push(new TestGroup("quad_hit",true,true));
       for (auto sflags : sceneFlags) 
         for (auto imode : intersectModes) 
           for (auto ivariant : intersectVariants)
@@ -2846,7 +2846,7 @@ namespace embree
 
       if (rtcDeviceGetParameter1i(device,RTC_CONFIG_RAY_MASK)) 
       {
-        push(new TestGroup("ray_masks",true));
+        push(new TestGroup("ray_masks",true,true));
         for (auto sflags : sceneFlags) 
           for (auto imode : intersectModes) 
             for (auto ivariant : intersectVariants)
@@ -2856,7 +2856,7 @@ namespace embree
       
       if (rtcDeviceGetParameter1i(device,RTC_CONFIG_BACKFACE_CULLING)) 
       {
-        push(new TestGroup("backface_culling",true));
+        push(new TestGroup("backface_culling",true,true));
         for (auto gtype : gtypes)
           for (auto sflags : sceneFlags) 
             for (auto imode : intersectModes) 
@@ -2865,7 +2865,7 @@ namespace embree
         groups.pop();
       }
       
-      push(new TestGroup("intersection_filter",true));
+      push(new TestGroup("intersection_filter",true,true));
       if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECTION_FILTER)) 
       {
         for (auto sflags : sceneFlags) 
@@ -2880,7 +2880,7 @@ namespace embree
       }
       groups.pop();
       
-      push(new TestGroup("inactive_rays",true));
+      push(new TestGroup("inactive_rays",true,true));
       for (auto sflags : sceneFlags) 
         for (auto imode : intersectModes) 
           for (auto ivariant : intersectVariants)
@@ -2888,7 +2888,7 @@ namespace embree
               groups.top()->add(new InactiveRaysTest(to_string(sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,imode,ivariant));
       groups.pop();
       
-      push(new TestGroup("watertight_triangles",true)); {
+      push(new TestGroup("watertight_triangles",true,true)); {
         std::string watertightModels [] = {"sphere.triangles", "plane.triangles"};
         const Vec3fa watertight_pos = Vec3fa(148376.0f,1234.0f,-223423.0f);
         for (auto sflags : sceneFlagsRobust) 
@@ -2898,7 +2898,7 @@ namespace embree
         groups.pop();
       }
 
-      push(new TestGroup("watertight_quads",true)); {
+      push(new TestGroup("watertight_quads",true,true)); {
         std::string watertightModels [] = {"sphere.quads", "plane.quads"};
         const Vec3fa watertight_pos = Vec3fa(148376.0f,1234.0f,-223423.0f);
         for (auto sflags : sceneFlagsRobust) 
@@ -2908,7 +2908,7 @@ namespace embree
         groups.pop();
       }
 
-      push(new TestGroup("watertight_subdiv",true)); {
+      push(new TestGroup("watertight_subdiv",true,true)); {
         std::string watertightModels [] = { "sphere.subdiv", "plane.subdiv"};
         const Vec3fa watertight_pos = Vec3fa(148376.0f,1234.0f,-223423.0f);
         for (auto sflags : sceneFlagsRobust) 
@@ -2920,14 +2920,14 @@ namespace embree
       
       if (rtcDeviceGetParameter1i(device,RTC_CONFIG_IGNORE_INVALID_RAYS))
       {
-        push(new TestGroup("nan_test",true));
+        push(new TestGroup("nan_test",true,false));
         for (auto sflags : sceneFlags) 
           for (auto imode : intersectModes) 
             for (auto ivariant : intersectVariants)
               groups.top()->add(new NaNTest(to_string(sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,imode,ivariant));
         groups.pop();
         
-        push(new TestGroup("inf_test",true));
+        push(new TestGroup("inf_test",true,false));
         for (auto sflags : sceneFlags) 
           for (auto imode : intersectModes) 
             for (auto ivariant : intersectVariants)
@@ -3003,6 +3003,10 @@ namespace embree
     registerOption("parallel", [this] (Ref<ParseStream> cin, const FileName& path) {
         parallel = true;
       }, "--parallel: parallelized test execution (default)");
+
+    registerOption("no-colors", [this] (Ref<ParseStream> cin, const FileName& path) {
+        usecolors = false;
+      }, "--no-colors: do not use shell colors");
 
     registerOption("print-tests", [this] (Ref<ParseStream> cin, const FileName& path) {
         print_tests(tests,0);
