@@ -339,10 +339,12 @@ namespace embree
     if (!isEnabled())
       return SKIPPED;
 
-     if (!silent) 
-       std::cout << std::setw(60) << name << " " << std::flush;
-     //sleepSeconds(0.1);
-
+    if (!silent) 
+      std::cout << std::setw(60) << name << " " << std::flush;
+    //sleepSeconds(0.1);
+    
+    setup(state);
+     
     const size_t skipBenchmarkFrames = 4;
     const size_t numBenchmarkFrames = 16;
     FilteredStatistics stat(0.5f,0.0f);
@@ -366,6 +368,7 @@ namespace embree
                 << "sigma = " << std::setw(6) << stat.getSigma() << " (" << 100.0f*stat.getSigma()/stat.getAvg() << "%)" << std::endl << std::flush;*/
       //sleepSeconds(0.1);
     }
+    cleanup(state);
     
     if (!silent)
       std::cout << "avg = " << std::setw(8) << stat.getAvg() << unit << ", " << "sigma = " << std::setw(6) << stat.getAvgSigma() << " (" << 100.0f*stat.getAvgSigma()/stat.getAvg() << "%)" << std::endl;
@@ -2834,7 +2837,7 @@ namespace embree
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
 
-   struct SimpleBenchmark : public VerifyApplication::Benchmark
+  struct SimpleBenchmark : public VerifyApplication::Benchmark
   {
     SimpleBenchmark (std::string name, int isa)
       : VerifyApplication::Benchmark(name,isa,"ms") {}
@@ -2845,6 +2848,52 @@ namespace embree
       for (volatile size_t i=0; i<100000000; i++);
       double t1 = getSeconds();
       return 1000.0f*(t1-t0);
+    }
+  };
+  
+  struct CoherentIntersect1Benchmark : public VerifyApplication::Benchmark
+  {
+    RTCSceneFlags sflags;
+    RTCGeometryFlags gflags;
+    size_t numPhi;
+    RTCDeviceRef device;
+    Ref<VerifyScene> scene;
+    
+    CoherentIntersect1Benchmark (std::string name, int isa, RTCSceneFlags sflags, RTCGeometryFlags gflags, size_t numPhi)
+      : VerifyApplication::Benchmark(name,isa,"Mrps"), sflags(sflags), gflags(gflags), numPhi(numPhi) {}
+    
+    void setup(VerifyApplication* state) 
+    {
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      device = rtcNewDevice(cfg.c_str());
+      error_handler(rtcDeviceGetError(device));
+
+      scene = new VerifyScene(device,sflags,aflags_all);
+      scene->addSphere (sampler,gflags,zero,1,numPhi);
+      rtcCommit (*scene);
+    }
+
+    double benchmark(VerifyApplication* state)
+    {
+      size_t width = 1024;
+      size_t height = 1024;
+      float rcpWidth = 1.0f/1024.0f;
+      float rcpHeight = 1.0f/1024.0f;
+      double t0 = getSeconds();
+      for (size_t y=0; y<height; y++) {
+        for (size_t x=0; x<width; x++) {
+          RTCRay ray = makeRay(zero,Vec3f(float(x)*rcpWidth,1,float(y)*rcpHeight));
+          rtcIntersect(*scene,ray);
+        }
+      }
+      double t1 = getSeconds();
+      return 1E-6*(double)(width*height)/(t1-t0);
+    }
+
+    virtual void cleanup(VerifyApplication* state) 
+    {
+      scene = nullptr;
+      device = nullptr;
     }
   };
 
@@ -3171,6 +3220,8 @@ namespace embree
       
       push(new TestGroup("benchmarks",false,false));
       groups.top()->add(new SimpleBenchmark("simple",isa));
+      for (auto sflags : sceneFlags) 
+        groups.top()->add(new CoherentIntersect1Benchmark("coherent_intersect1."+to_string(sflags),isa,sflags,RTC_GEOMETRY_STATIC,501));
       groups.pop();
       
       groups.pop();

@@ -37,6 +37,9 @@ namespace embree
   public:
     mutable RTCDevice device;
     
+    RTCDeviceRef () 
+      : device(nullptr) {}
+
     RTCDeviceRef (std::nullptr_t) 
       : device(nullptr) {}
     

@@ -61,7 +61,9 @@ namespace embree
       Benchmark (const std::string& name, int isa, const std::string& unit)
         : Test(name,isa,BENCHMARK), unit(unit) {}
       
+      virtual void setup(VerifyApplication* state) {}
       virtual double benchmark(VerifyApplication* state) = 0;
+      virtual void cleanup(VerifyApplication* state) {}
       virtual TestReturnValue execute(VerifyApplication* state, bool silent);
     };
 
