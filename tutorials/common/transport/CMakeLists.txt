@@ -14,12 +14,6 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-IF (TASKING_INTERNAL)
-  ADD_DEFINITIONS(-DTASKING_INTERNAL)
-ELSE()
-  ADD_DEFINITIONS(-DTASKING_TBB)
-ENDIF()
-
 ADD_LIBRARY(transport STATIC transport.cpp)
 TARGET_LINK_LIBRARIES(transport sys)
 SET_PROPERTY(TARGET transport PROPERTY FOLDER tutorials/common)

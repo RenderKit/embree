@@ -14,8 +14,13 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-ADD_EXECUTABLE(bvh_access bvh_access.cpp)
-TARGET_LINK_LIBRARIES(bvh_access embree)
-SET_PROPERTY(TARGET bvh_access PROPERTY FOLDER tutorials/single)
-INSTALL(TARGETS bvh_access DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT examples)
-ADD_TEST(NAME bvh_access COMMAND bvh_access)
+FIND_PATH   (ITT_INCLUDE_DIR ittnotify.h /opt/intel/inspector_xe/include)
+FIND_LIBRARY(ITT_LIBRARY NAMES ittnotify PATHS /opt/intel/inspector_xe/lib)
+
+INCLUDE(FindPackageHandleStandardArgs)
+FIND_PACKAGE_HANDLE_STANDARD_ARGS(ITT DEFAULT_MSG ITT_INCLUDE_DIR ITT_LIBRARY)
+
+MARK_AS_ADVANCED(
+  ITT_INCLUDE_DIR
+  ITT_LIBRARY
+)

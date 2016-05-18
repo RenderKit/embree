@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "alloc.h"
-#include <thread>
+#include "../../common/sys/thread.h"
 
 namespace embree
 {
@@ -59,9 +59,9 @@ namespace embree
       barrier.init(numThreads+1);
 
       /* create threads */
-      std::vector<std::thread> threads;
+      std::vector<thread_t> threads;
       for (size_t i=0; i<numThreads; i++)
-        threads.push_back(std::thread(thread_alloc,this));
+        threads.push_back(createThread((thread_func)thread_alloc,this));
 
       /* run test */ 
       for (size_t i=0; i<1000; i++)
@@ -73,7 +73,7 @@ namespace embree
 
       /* destroy threads */
       for (size_t i=0; i<numThreads; i++)
-        threads[i].join();
+        join(threads[i]);
 
       return numFailed == 0;
     }

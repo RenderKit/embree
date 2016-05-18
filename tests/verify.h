@@ -130,6 +130,21 @@ namespace embree
     bool user_specified_tests;
     bool flatten;
     bool parallel;
+
+    /* sets terminal colors */
+  public:
+    std::string green(std::string str) {
+      if (usecolors) return "\033[32m" + str + "\033[0m";
+      else           return str;
+    }
+    std::string yellow(std::string str) {
+      if (usecolors) return "\033[33m" + str + "\033[0m";
+      else           return str;
+    }
+    std::string red(std::string str) {
+      if (usecolors) return "\033[31m" + str + "\033[0m";
+      else           return str;
+    }
     bool usecolors;
   };
 }

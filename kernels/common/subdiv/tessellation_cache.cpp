@@ -53,8 +53,8 @@ namespace embree
 #endif
     threadWorkState     = new ThreadWorkState[NUM_PREALLOC_THREAD_WORK_STATES];
 
-    reset_state.reset();
-    linkedlist_mtx.reset();
+    //reset_state.reset();
+    //linkedlist_mtx.reset();
   }
 
   SharedLazyTessellationCache::~SharedLazyTessellationCache() 

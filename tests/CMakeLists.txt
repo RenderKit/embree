@@ -14,12 +14,6 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-IF (TASKING_INTERNAL)
-  ADD_DEFINITIONS(-DTASKING_INTERNAL)
-ELSE()
-  ADD_DEFINITIONS(-DTASKING_TBB)
-ENDIF()
-
 IF (TARGET_SSE41)
   ADD_DEFINITIONS(-D__TARGET_SSE41__)
 ENDIF()

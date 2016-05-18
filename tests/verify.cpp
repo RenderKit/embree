@@ -22,16 +22,6 @@
 
 #define DEFAULT_STACK_SIZE 4*1024*1024
 
-#if defined(__WIN32__)
-#  define GREEN(x) x
-#  define YELLOW(x) x
-#  define RED(x) x
-#else
-#  define GREEN(x) "\033[32m" x "\033[0m"
-#  define YELLOW(x) "\033[33m" x "\033[0m"
-#  define RED(x) "\033[31m" x "\033[0m"
-#endif
-
 #if defined(__INTEL_COMPILER)
 #pragma warning (disable: 1478) // warning: function was declared deprecated
 #elif defined(_MSC_VER)
@@ -312,17 +302,17 @@ namespace embree
     {
       Lock<MutexSys> lock(state->mutex);
       if (v != SKIPPED) {
-        if      (passed       ) std::cout << (state->usecolors ? GREEN ("+") : "+") << std::flush;
-        else if (ignoreFailure) std::cout << (state->usecolors ? YELLOW("!") : "!") << std::flush;
-        else                    std::cout << (state->usecolors ? RED   ("-") : "-") << std::flush;
+        if      (passed       ) std::cout << state->green ("+") << std::flush;
+        else if (ignoreFailure) std::cout << state->yellow("!") << std::flush;
+        else                    std::cout << state->red   ("-") << std::flush;
       }
     } 
     else
     {
-      if      (v == SKIPPED ) std::cout << (state->usecolors ? GREEN (" [SKIPPED]") : " [SKIPPED]") << std::endl << std::flush;
-      else if (passed       ) std::cout << (state->usecolors ? GREEN (" [PASSED]" ) : " [PASSED]" ) << std::endl << std::flush;
-      else if (ignoreFailure) std::cout << (state->usecolors ? YELLOW(" [FAILED]" ) : " [FAILED] (ignored)" ) << std::endl << std::flush;
-      else                    std::cout << (state->usecolors ? RED   (" [FAILED]" ) : " [FAILED]" ) << std::endl << std::flush;
+      if      (v == SKIPPED ) std::cout << state->green (" [SKIPPED]") << std::endl << std::flush;
+      else if (passed       ) std::cout << state->green (" [PASSED]" ) << std::endl << std::flush;
+      else if (ignoreFailure) std::cout << state->yellow(" [FAILED] (ignored)") << std::endl << std::flush;
+      else                    std::cout << state->red   (" [FAILED]" ) << std::endl << std::flush;
     }
 
     /* do ignore failures for some specific tests */
@@ -356,8 +346,8 @@ namespace embree
     }
 
     if (leaftest) {
-      if (passed) std::cout << GREEN(" [PASSED]" ) << std::endl << std::flush;
-      else        std::cout << RED  (" [FAILED]" ) << std::endl << std::flush;
+      if (passed) std::cout << state->green(" [PASSED]") << std::endl << std::flush;
+      else        std::cout << state->red  (" [FAILED]") << std::endl << std::flush;
     }
 
     return passed ? PASSED : FAILED;
@@ -1463,6 +1453,7 @@ namespace embree
       const float su = sqrtf(u);
       v *= su;
       u = 1.0f-su;
+      if (u < 0.001f || v < 0.001f || (u+v) > 0.999f) { u = 0.333f; v = 0.333f; } // avoid hitting edges
       return c + u * (a-c) + v * (b-c);
     }
 
@@ -1559,6 +1550,7 @@ namespace embree
       {
         u[i] = drand48(); 
         v[i] = drand48();
+        if (u[i] < 0.001f || v[i] < 0.001f || u[i] > 0.999f || v[i] > 0.999f) { u[i] = 0.333f; v[i] = 0.333f; } // avoid hitting edges
         Vec3fa from(0.0f,0.0f,-1.0f);
         Vec3fa to = vertices[0] + u[i]*(vertices[1]-vertices[0]) + v[i]*(vertices[3]-vertices[0]);
         rays[i] = makeRay(from,to-from);
@@ -1991,6 +1983,125 @@ namespace embree
     }
   };
 
+  struct SmallTriangleHitTest : public VerifyApplication::IntersectTest
+  {
+    ALIGNED_STRUCT;
+    RTCSceneFlags sflags;
+    Vec3fa pos;
+    float radius;
+    static const size_t N = 10000;
+    static const size_t maxStreamSize = 100;
+    
+    SmallTriangleHitTest (std::string name, int isa, RTCSceneFlags sflags, IntersectMode imode, const Vec3fa& pos, const float radius)
+      : VerifyApplication::IntersectTest(name,isa,imode,VARIANT_INTERSECT,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags), pos(pos), radius(radius) {}
+    
+    VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
+    {
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
+      error_handler(rtcDeviceGetError(device));
+      if (!supportsIntersectMode(device))
+        return VerifyApplication::SKIPPED;
+
+      VerifyScene scene(device,sflags,to_aflags(imode));
+      LinearSpace3fa space(Vec3fa(1.0f,0.0f,0.0f),Vec3fa(0.0f,1.0f,0.0f),Vec3fa(0.0f,0.0f,1.0f));
+      space *= LinearSpace3fa::rotate(Vec3fa(4.0f,7.0f,-1.0f),4.34f);
+      const Vec3fa dx = 100.0f*normalize(space.vx);
+      const Vec3fa dy = 100.0f*normalize(space.vy);
+      const Vec3fa p = pos-0.5f*(dx+dy);
+      Ref<SceneGraph::TriangleMeshNode> plane = SceneGraph::createTrianglePlane (p,dx,dy,100,100).dynamicCast<SceneGraph::TriangleMeshNode>();
+      scene.addGeometry(RTC_GEOMETRY_STATIC,plane.dynamicCast<SceneGraph::Node>(),false);
+      rtcCommit (scene);
+      AssertNoError(device);
+      
+      size_t numTests = 0;
+      size_t numFailures = 0;
+      //for (auto ivariant : state->intersectVariants)
+      IntersectVariant ivariant = VARIANT_INTERSECT_INCOHERENT;
+      size_t numRays = size_t(N*state->intensity);
+      for (size_t i=0; i<numRays; i+=maxStreamSize) 
+      {
+        size_t M = min(maxStreamSize,numRays-i);
+        int primIDs[maxStreamSize];
+        __aligned(16) RTCRay rays[maxStreamSize];
+        for (size_t j=0; j<M; j++) 
+        {
+          Vec3fa org = pos + radius*Vec3fa(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+          int primID = random<int>() % plane->triangles.size();
+          Vec3fa v0 = plane->v[plane->triangles[primID].v0];
+          Vec3fa v1 = plane->v[plane->triangles[primID].v1];
+          Vec3fa v2 = plane->v[plane->triangles[primID].v2];
+          Vec3fa c = (v0+v1+v2)/3.0f;
+          primIDs[j] = primID;
+          rays[j] = makeRay(org,c-org); 
+        }
+        IntersectWithMode(imode,ivariant,scene,rays,M);
+        for (size_t j=0; j<M; j++) {
+          Vec3fa dir(rays[j].dir[0],rays[j].dir[1],rays[j].dir[2]);
+          //if (abs(dot(normalize(dir),space.vz)) < 0.9f) continue;
+          numTests++;
+          numFailures += rays[j].primID != primIDs[j];
+        }
+      }
+      AssertNoError(device);
+
+      double failRate = double(numFailures) / double(numTests);
+      bool failed = failRate > 0.00002;
+      if (!silent) { printf(" (%f%%)", 100.0f*failRate); fflush(stdout); }
+      return (VerifyApplication::TestReturnValue)(!failed);
+    }
+  };
+
+  struct RayAlignmentTest : public VerifyApplication::IntersectTest
+  {
+    ALIGNED_STRUCT;
+    RTCSceneFlags sflags;
+    std::string model;
+    static const size_t N = 10;
+    static const size_t maxStreamSize = 100;
+    
+    RayAlignmentTest (std::string name, int isa, RTCSceneFlags sflags, IntersectMode imode, std::string model)
+      : VerifyApplication::IntersectTest(name,isa,imode,VARIANT_INTERSECT,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags), model(model) {}
+    
+    VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
+    {
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
+      error_handler(rtcDeviceGetError(device));
+      if (!supportsIntersectMode(device))
+        return VerifyApplication::SKIPPED;
+
+      VerifyScene scene(device,sflags,to_aflags(imode));
+      if      (model == "sphere.triangles") scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createTriangleSphere(zero,2.0f,50),false);
+      else if (model == "sphere.quads"    ) scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createQuadSphere    (zero,2.0f,50),false);
+      else if (model == "sphere.subdiv"   ) scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createSubdivSphere  (zero,2.0f,4,4),false);
+      // FIXME: test more geometry types
+      rtcCommit (scene);
+      AssertNoError(device);
+      
+      for (auto ivariant : state->intersectVariants)
+      for (size_t i=0; i<size_t(N*state->intensity); i++) 
+      {
+        for (size_t M=1; M<maxStreamSize; M++)
+        {
+          size_t alignment = alignment_of(imode);
+          __aligned(64) char data[maxStreamSize*sizeof(RTCRay)]; 
+          RTCRay* rays = (RTCRay*) &data[alignment];
+          for (size_t j=0; j<M; j++) 
+          {
+            Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+            Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
+            rays[j] = makeRay(org,dir); 
+          }
+          IntersectWithMode(imode,ivariant,scene,rays,M);
+        }
+      }
+      AssertNoError(device);
+
+      return VerifyApplication::PASSED;
+    }
+  };
+  
   struct NaNTest : public VerifyApplication::IntersectTest
   {
     RTCSceneFlags sflags;
@@ -2666,6 +2777,10 @@ namespace embree
     : Application(Application::FEATURE_RTCORE), intensity(1.0f), tests(new TestGroup("",false,false)), numFailedTests(0), 
       user_specified_tests(false), flatten(true), parallel(true), usecolors(true), device(rtcNewDevice(rtcore.c_str()))
   {
+#if defined(__WIN32__)
+    usecolors = false;
+#endif
+
     GeometryType gtypes[] = { TRIANGLE_MESH, TRIANGLE_MESH_MB, QUAD_MESH, QUAD_MESH_MB, SUBDIV_MESH, SUBDIV_MESH_MB };
 
     /* create list of all ISAs to test */
@@ -2918,6 +3033,24 @@ namespace embree
         groups.pop();
       }
       
+      /*push(new TestGroup("small_triangle_hit_test",true,true)); {
+        const Vec3fa pos = Vec3fa(0.0f,0.0f,0.0f);
+        const float radius = 1000000.0f;
+        for (auto sflags : sceneFlags) 
+          for (auto imode : intersectModes) 
+            groups.top()->add(new SmallTriangleHitTest(to_string(sflags,imode),isa,sflags,imode,pos,radius));
+        groups.pop();
+        }*/
+      
+      push(new TestGroup("ray_alignment_test",true,true)); {
+        std::string watertightModels [] = {"sphere.triangles", "sphere.quads", "sphere.subdiv" };
+        for (auto sflags : sceneFlagsRobust) 
+          for (auto imode : intersectModes) 
+            for (std::string model : watertightModels) 
+              groups.top()->add(new RayAlignmentTest(to_string(sflags,imode)+"."+model,isa,sflags,imode,model));
+        groups.pop();
+      }
+
       if (rtcDeviceGetParameter1i(device,RTC_CONFIG_IGNORE_INVALID_RAYS))
       {
         push(new TestGroup("nan_test",true,false));
@@ -3004,6 +3137,10 @@ namespace embree
         parallel = true;
       }, "--parallel: parallelized test execution (default)");
 
+    registerOption("colors", [this] (Ref<ParseStream> cin, const FileName& path) {
+        usecolors = true;
+      }, "--colors: do use shell colors");
+
     registerOption("no-colors", [this] (Ref<ParseStream> cin, const FileName& path) {
         usecolors = false;
       }, "--no-colors: do not use shell colors");
@@ -3011,7 +3148,7 @@ namespace embree
     registerOption("print-tests", [this] (Ref<ParseStream> cin, const FileName& path) {
         print_tests(tests,0);
         exit(1);
-      }, "--print-tests: prints all enabled tests");
+      }, "--print-tests: prints all enabled test names");
     
     registerOption("intensity", [this] (Ref<ParseStream> cin, const FileName& path) {
         intensity = cin->getFloat();

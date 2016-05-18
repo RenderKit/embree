@@ -29,7 +29,7 @@ namespace embree
     : geom(gID),prim(pID),flags(0),type(INVALID_PATCH)
   {
     static_assert(sizeof(SubdivPatch1Base) == 5 * 64, "SubdivPatch1Base has wrong size");
-    mtx.reset();
+    //mtx.reset();
 
     const HalfEdge* edge = mesh->getHalfEdge(pID);
 
