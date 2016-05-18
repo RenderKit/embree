@@ -20,6 +20,7 @@
 #include "../include/embree2/rtcore_ray.h"
 #include "rtcore_helpers.h"
 #include "../tutorials/common/tutorial/application.h"
+#include "../tutorials/common/math/random_sampler.h"
 
 namespace embree
 {
@@ -32,8 +33,14 @@ namespace embree
     struct Test : public RefCount
     {
       Test (std::string name, int isa, TestType ty) 
-        : name(name), isa(isa), ty(ty), enabled(true), ignoreFailure(false) {}
+        : name(name), isa(isa), ty(ty), enabled(true), ignoreFailure(false) 
+      {
+        RandomSampler_init(sampler,0x23F67E21);
+      }
 
+      float  random_float () { return RandomSampler_getFloat(sampler); }
+      int    random_int   () { return RandomSampler_getInt  (sampler); }
+      Vec3fa random_Vec3fa() { return RandomSampler_get3D   (sampler); }
       bool isEnabled() { return enabled; }
       virtual TestReturnValue run(VerifyApplication* state, bool silent) { return SKIPPED; }
       virtual TestReturnValue execute(VerifyApplication* state, bool silent);
@@ -44,6 +51,7 @@ namespace embree
       TestType ty;
       bool enabled;
       bool ignoreFailure;
+      RandomSampler sampler;
     };
 
     struct TestGroup : public Test
