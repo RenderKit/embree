@@ -1463,6 +1463,7 @@ namespace embree
       const float su = sqrtf(u);
       v *= su;
       u = 1.0f-su;
+      if (u < 0.001f || v < 0.001f || (u+v) > 0.999f) { u = 0.333f; v = 0.333f; } // avoid hitting edges
       return c + u * (a-c) + v * (b-c);
     }
 
@@ -1559,6 +1560,7 @@ namespace embree
       {
         u[i] = drand48(); 
         v[i] = drand48();
+        if (u[i] < 0.001f || v[i] < 0.001f || u[i] > 0.999f || v[i] > 0.999f) { u[i] = 0.333f; v[i] = 0.333f; } // avoid hitting edges
         Vec3fa from(0.0f,0.0f,-1.0f);
         Vec3fa to = vertices[0] + u[i]*(vertices[1]-vertices[0]) + v[i]*(vertices[3]-vertices[0]);
         rays[i] = makeRay(from,to-from);
