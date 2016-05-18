@@ -19,6 +19,7 @@
 #include "materials.h"
 #include "lights.h"
 #include "../../../include/embree2/rtcore.h"
+#include "../math/random_sampler.h"
 
 namespace embree
 {  
@@ -31,7 +32,7 @@ namespace embree
     void store(Ref<Node> root, const FileName& fname, bool embedTextures);
     void set_motion_blur(Ref<Node> node0, Ref<Node> node1);
     void set_motion_vector(Ref<Node> node, const Vec3fa& dP);
-    void resize_randomly(Ref<Node> node, const size_t N);
+    void resize_randomly(RandomSampler& sampler, Ref<Node> node, const size_t N);
     Ref<Node> convert_triangles_to_quads(Ref<Node> node);
     Ref<Node> convert_quads_to_subdivs(Ref<Node> node);
     Ref<Node> convert_bezier_to_lines(Ref<Node> node);
@@ -45,13 +46,13 @@ namespace embree
     Ref<Node> createSubdivSphere  (const Vec3fa& center, const float radius, size_t numPhi, float tessellationRate, Ref<MaterialNode> material = nullptr);
     Ref<Node> createSphereShapedHair(const Vec3fa& center, const float radius, Ref<MaterialNode> material = nullptr);
   
-    Ref<Node> createHairyPlane    (const Vec3fa& pos, const Vec3fa& dx, const Vec3fa& dy, const float len, const float r, size_t numHairs, bool hair, Ref<MaterialNode> material = nullptr);
+    Ref<Node> createHairyPlane    (int hash, const Vec3fa& pos, const Vec3fa& dx, const Vec3fa& dy, const float len, const float r, size_t numHairs, bool hair, Ref<MaterialNode> material = nullptr);
 
-    Ref<Node> createGarbageTriangleMesh (size_t numTriangles, bool mblur, Ref<MaterialNode> material = nullptr);
-    Ref<Node> createGarbageQuadMesh (size_t numQuads, bool mblur, Ref<MaterialNode> material = nullptr);
-    Ref<Node> createGarbageHair (size_t numHairs, bool mblur, Ref<MaterialNode> material = nullptr);
-    Ref<Node> createGarbageLineSegments (size_t numLineSegments, bool mblur, Ref<MaterialNode> material = nullptr);
-    Ref<Node> createGarbageSubdivMesh (size_t numFaces, bool mblur, Ref<MaterialNode> material = nullptr);
+    Ref<Node> createGarbageTriangleMesh (int hash, size_t numTriangles, bool mblur, Ref<MaterialNode> material = nullptr);
+    Ref<Node> createGarbageQuadMesh (int hash, size_t numQuads, bool mblur, Ref<MaterialNode> material = nullptr);
+    Ref<Node> createGarbageHair (int hash, size_t numHairs, bool mblur, Ref<MaterialNode> material = nullptr);
+    Ref<Node> createGarbageLineSegments (int hash, size_t numLineSegments, bool mblur, Ref<MaterialNode> material = nullptr);
+    Ref<Node> createGarbageSubdivMesh (int hash, size_t numFaces, bool mblur, Ref<MaterialNode> material = nullptr);
 
     struct Node : public RefCount
     {
