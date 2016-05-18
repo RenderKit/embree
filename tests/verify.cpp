@@ -338,12 +338,12 @@ namespace embree
 
     if (!isEnabled())
       return SKIPPED;
+    if (!setup(state))
+      return SKIPPED;
 
     if (!silent) 
       std::cout << std::setw(60) << name << " " << std::flush;
     //sleepSeconds(0.1);
-    
-    setup(state);
      
     const size_t skipBenchmarkFrames = 4;
     const size_t numBenchmarkFrames = 16;
@@ -987,7 +987,7 @@ namespace embree
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
-      if (!supportsIntersectMode(device))
+      if (!supportsIntersectMode(device,imode))
         return VerifyApplication::SKIPPED;
       
       VerifyScene scene(device,sflags,to_aflags(imode));
@@ -1523,7 +1523,7 @@ namespace embree
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
-      if (!supportsIntersectMode(device))
+      if (!supportsIntersectMode(device,imode))
         return VerifyApplication::SKIPPED;
      
       Vec3f vertices[3] = {
@@ -1586,7 +1586,7 @@ namespace embree
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
-      if (!supportsIntersectMode(device))
+      if (!supportsIntersectMode(device,imode))
         return VerifyApplication::SKIPPED;
      
       Vec3f vertices[4] = {
@@ -1653,7 +1653,7 @@ namespace embree
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
-      if (!supportsIntersectMode(device))
+      if (!supportsIntersectMode(device,imode))
         return VerifyApplication::SKIPPED;
 
       bool passed = true;
@@ -1708,7 +1708,7 @@ namespace embree
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
-      if (!supportsIntersectMode(device))
+      if (!supportsIntersectMode(device,imode))
         return VerifyApplication::SKIPPED;
        
       /* create triangle that is front facing for a right handed 
@@ -1853,7 +1853,7 @@ namespace embree
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
-      if (!supportsIntersectMode(device))
+      if (!supportsIntersectMode(device,imode))
         return VerifyApplication::SKIPPED;
 
       VerifyScene scene(device,sflags,to_aflags(imode));
@@ -1930,7 +1930,7 @@ namespace embree
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
-      if (!supportsIntersectMode(device))
+      if (!supportsIntersectMode(device,imode))
         return VerifyApplication::SKIPPED;
 
       Vec3fa pos = zero;
@@ -1992,7 +1992,7 @@ namespace embree
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
-      if (!supportsIntersectMode(device))
+      if (!supportsIntersectMode(device,imode))
         return VerifyApplication::SKIPPED;
 
       VerifyScene scene(device,sflags,to_aflags(imode));
@@ -2059,7 +2059,7 @@ namespace embree
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
-      if (!supportsIntersectMode(device))
+      if (!supportsIntersectMode(device,imode))
         return VerifyApplication::SKIPPED;
 
       VerifyScene scene(device,sflags,to_aflags(imode));
@@ -2127,7 +2127,7 @@ namespace embree
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
-      if (!supportsIntersectMode(device))
+      if (!supportsIntersectMode(device,imode))
         return VerifyApplication::SKIPPED;
 
       VerifyScene scene(device,sflags,to_aflags(imode));
@@ -2174,7 +2174,7 @@ namespace embree
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
-      if (!supportsIntersectMode(device))
+      if (!supportsIntersectMode(device,imode))
         return VerifyApplication::SKIPPED;
 
       const size_t numRays = 1000;
@@ -2243,7 +2243,7 @@ namespace embree
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
-      if (!supportsIntersectMode(device))
+      if (!supportsIntersectMode(device,imode))
         return VerifyApplication::SKIPPED;
 
       const size_t numRays = 1000;
@@ -2855,22 +2855,27 @@ namespace embree
   {
     RTCSceneFlags sflags;
     RTCGeometryFlags gflags;
+    IntersectMode imode;
+    IntersectVariant ivariant;
     size_t numPhi;
     RTCDeviceRef device;
     Ref<VerifyScene> scene;
     
-    CoherentIntersect1Benchmark (std::string name, int isa, RTCSceneFlags sflags, RTCGeometryFlags gflags, size_t numPhi)
-      : VerifyApplication::Benchmark(name,isa,"Mrps"), sflags(sflags), gflags(gflags), numPhi(numPhi) {}
+    CoherentIntersect1Benchmark (std::string name, int isa, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant, size_t numPhi)
+      : VerifyApplication::Benchmark(name,isa,"Mrps"), sflags(sflags), gflags(gflags), imode(imode), ivariant(ivariant), numPhi(numPhi) {}
     
-    void setup(VerifyApplication* state) 
+    bool setup(VerifyApplication* state) 
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
+      if (!supportsIntersectMode(device,imode))
+        return false;
 
       scene = new VerifyScene(device,sflags,aflags_all);
       scene->addSphere (sampler,gflags,zero,1,numPhi);
       rtcCommit (*scene);
+      return true;
     }
 
     double benchmark(VerifyApplication* state)
@@ -2879,18 +2884,123 @@ namespace embree
       size_t height = 1024;
       float rcpWidth = 1.0f/1024.0f;
       float rcpHeight = 1.0f/1024.0f;
+
+      RTCIntersectContext context;
+      context.flags = ((ivariant & VARIANT_COHERENT_INCOHERENT_MASK) == VARIANT_COHERENT) ? RTC_INTERSECT_COHERENT :  RTC_INTERSECT_INCOHERENT;
+      context.userRayExt = nullptr;
+
       double t0 = getSeconds();
-      for (size_t y0=0; y0<height; y0+=16) {
-        for (size_t x0=0; x0<width; x0+=16) {
-          for (size_t dy=0; dy<16; dy++) {
-            for (size_t dx=0; dx<16; dx++) {
-              const size_t y = y0+dy;
-              const size_t x = x0+dx;
-              RTCRay ray = fastMakeRay(zero,Vec3f(float(x)*rcpWidth,1,float(y)*rcpHeight));
-              rtcIntersect(*scene,ray);
+      switch (imode) 
+      {
+      case MODE_INTERSECT1: 
+      {
+        for (size_t y0=0; y0<height; y0+=16) {
+          for (size_t x0=0; x0<width; x0+=16) {
+            for (size_t dy=0; dy<16; dy++) {
+              for (size_t dx=0; dx<16; dx++) {
+                const size_t y = y0+dy;
+                const size_t x = x0+dx;
+                RTCRay ray = fastMakeRay(zero,Vec3f(float(x)*rcpWidth,1,float(y)*rcpHeight));
+                switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
+                case VARIANT_INTERSECT: rtcIntersect(*scene,ray); break;
+                case VARIANT_OCCLUDED : rtcOccluded (*scene,ray); break;
+                }
+              }
             }
           }
         }
+        break;
+      }
+      case MODE_INTERSECT4: 
+      {
+        for (size_t y0=0; y0<height; y0+=16) {
+          for (size_t x0=0; x0<width; x0+=16) {
+            for (size_t dy=0; dy<16; dy+=2) {
+              for (size_t dx=0; dx<16; dx+=2) {
+                RTCRay4 ray4; 
+                for (size_t ddy=0; ddy<2; ddy++) {
+                  for (size_t ddx=0; ddx<2; ddx++) {
+                    setRay(ray4,2*ddy+ddx,fastMakeRay(zero,Vec3f(float(x0+dx+ddx)*rcpWidth,1,float(y0+dy+ddy)*rcpHeight)));
+                  }
+                }
+                __aligned(16) int valid4[4] = { -1,-1,-1,-1 };
+                switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
+                case VARIANT_INTERSECT: rtcIntersect4(valid4,*scene,ray4); break;
+                case VARIANT_OCCLUDED : rtcOccluded4 (valid4,*scene,ray4); break;
+                }
+              }
+            }
+          }
+        }
+        break;
+      }
+      case MODE_INTERSECT8: 
+      {
+        for (size_t y0=0; y0<height; y0+=16) {
+          for (size_t x0=0; x0<width; x0+=16) {
+            for (size_t dy=0; dy<16; dy+=4) {
+              for (size_t dx=0; dx<16; dx+=2) {
+                RTCRay8 ray8; 
+                for (size_t ddy=0; ddy<4; ddy++) {
+                  for (size_t ddx=0; ddx<2; ddx++) {
+                    setRay(ray8,2*ddy+ddx,fastMakeRay(zero,Vec3f(float(x0+dx+ddx)*rcpWidth,1,float(y0+dy+ddy)*rcpHeight)));
+                  }
+                }
+                __aligned(32) int valid8[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
+                switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
+                case VARIANT_INTERSECT: rtcIntersect8(valid8,*scene,ray8); break;
+                case VARIANT_OCCLUDED : rtcOccluded8 (valid8,*scene,ray8); break;
+                }
+              }
+            }
+          }
+        }
+        break;
+      }
+      case MODE_INTERSECT16: 
+      {
+        for (size_t y0=0; y0<height; y0+=16) {
+          for (size_t x0=0; x0<width; x0+=16) {
+            for (size_t dy=0; dy<16; dy+=4) {
+              for (size_t dx=0; dx<16; dx+=4) {
+                RTCRay16 ray16; 
+                for (size_t ddy=0; ddy<4; ddy++) {
+                  for (size_t ddx=0; ddx<4; ddx++) {
+                    setRay(ray16,4*ddy+ddx,fastMakeRay(zero,Vec3f(float(x0+dx+ddx)*rcpWidth,1,float(y0+dy+ddy)*rcpHeight)));
+                  }
+                }
+                __aligned(64) int valid16[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
+                switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
+                case VARIANT_INTERSECT: rtcIntersect16(valid16,*scene,ray16); break;
+                case VARIANT_OCCLUDED : rtcOccluded16 (valid16,*scene,ray16); break;
+                }
+              }
+            }
+          }
+        }
+        break;
+      }
+      case MODE_INTERSECT1M: 
+      {
+        for (size_t y0=0; y0<height; y0+=16) {
+          for (size_t x0=0; x0<width; x0+=16) {
+            RTCRay rays[256];
+            for (size_t dy=0; dy<16; dy++) {
+              for (size_t dx=0; dx<16; dx++) {
+                const size_t y = y0+dy;
+                const size_t x = x0+dx;
+                rays[dy*16+dx] = fastMakeRay(zero,Vec3f(float(x)*rcpWidth,1,float(y)*rcpHeight));
+              }
+            }
+            switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
+            case VARIANT_INTERSECT: rtcIntersect1M(*scene,&context,rays,256,sizeof(RTCRay)); break;
+            case VARIANT_OCCLUDED : rtcOccluded1M (*scene,&context,rays,256,sizeof(RTCRay)); break;
+            }
+          }
+        }
+        break;
+      }
+      default: break;
       }
       double t1 = getSeconds();
       return 1E-6*(double)(width*height)/(t1-t0);
@@ -3224,11 +3334,13 @@ namespace embree
       /*                           Benchmarks                                   */
       /**************************************************************************/
       
-      push(new TestGroup("benchmarks",false,false));
+      /*push(new TestGroup("benchmarks",false,false));
       groups.top()->add(new SimpleBenchmark("simple",isa));
       for (auto sflags : sceneFlags) 
-        groups.top()->add(new CoherentIntersect1Benchmark("coherent_intersect1."+to_string(sflags),isa,sflags,RTC_GEOMETRY_STATIC,501));
-      groups.pop();
+        for (auto imode : intersectModes) 
+            for (auto ivariant : intersectVariants)
+              groups.top()->add(new CoherentIntersect1Benchmark("coherent."+to_string(sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,imode,ivariant,501));
+      groups.pop();*/
       
       groups.pop();
     }

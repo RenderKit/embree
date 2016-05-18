@@ -184,7 +184,7 @@ namespace embree
     return ray;
   }
 
-  inline bool neq_ray_special (const RTCRay& ray0, const RTCRay& ray1)
+  __forceinline bool neq_ray_special (const RTCRay& ray0, const RTCRay& ray1)
   {
     if (*(int*)&ray0.org[0] != *(int*)&ray1.org[0]) return true;
     if (*(int*)&ray0.org[1] != *(int*)&ray1.org[1]) return true;
@@ -208,7 +208,7 @@ namespace embree
   }
 
   /* Outputs ray to stream */
-  inline std::ostream& operator<<(std::ostream& cout, const RTCRay& ray)
+  __forceinline std::ostream& operator<<(std::ostream& cout, const RTCRay& ray)
   {
     return cout << "Ray { " << std::endl
                 << "  org = " << ray.org[0] << " " << ray.org[1] << " " << ray.org[2] << std::endl
@@ -226,7 +226,7 @@ namespace embree
                 << "}";
   }
 
-  inline void setRay(RTCRay4& ray_o, int i, const RTCRay& ray_i)
+  __forceinline void setRay(RTCRay4& ray_o, int i, const RTCRay& ray_i)
   {
     ray_o.orgx[i] = ray_i.org[0];
     ray_o.orgy[i] = ray_i.org[1];
@@ -248,7 +248,7 @@ namespace embree
     ray_o.Ngz[i] = ray_i.Ng[2];
   }
 
-  inline void setRay(RTCRay8& ray_o, int i, const RTCRay& ray_i)
+  __forceinline void setRay(RTCRay8& ray_o, int i, const RTCRay& ray_i)
   {
     ray_o.orgx[i] = ray_i.org[0];
     ray_o.orgy[i] = ray_i.org[1];
@@ -270,7 +270,7 @@ namespace embree
     ray_o.Ngz[i] = ray_i.Ng[2];
   }
 
-  inline void setRay(RTCRay16& ray_o, int i, const RTCRay& ray_i)
+  __forceinline void setRay(RTCRay16& ray_o, int i, const RTCRay& ray_i)
   {
     ray_o.orgx[i] = ray_i.org[0];
     ray_o.orgy[i] = ray_i.org[1];
@@ -292,7 +292,7 @@ namespace embree
     ray_o.Ngz[i] = ray_i.Ng[2];
   }
 
-  inline void setRay(RTCRayN* ray_o, size_t N, int i, const RTCRay& ray_i)
+  __forceinline void setRay(RTCRayN* ray_o, size_t N, int i, const RTCRay& ray_i)
   {
     RTCRayN_org_x(ray_o,N,i) = ray_i.org[0];
     RTCRayN_org_y(ray_o,N,i) = ray_i.org[1];
@@ -314,7 +314,7 @@ namespace embree
     RTCRayN_Ng_z(ray_o,N,i) = ray_i.Ng[2];
   }
 
-  inline RTCRay getRay(RTCRay4& ray_i, int i)
+  __forceinline RTCRay getRay(RTCRay4& ray_i, int i)
   {
     RTCRay ray_o;
     ray_o.org[0] = ray_i.orgx[i];
@@ -338,7 +338,7 @@ namespace embree
     return ray_o;
   }
 
-  inline RTCRay getRay(RTCRay8& ray_i, int i)
+  __forceinline RTCRay getRay(RTCRay8& ray_i, int i)
   {
     RTCRay ray_o;
     ray_o.org[0] = ray_i.orgx[i];
@@ -362,7 +362,7 @@ namespace embree
     return ray_o;
   }
 
-  inline RTCRay getRay(RTCRay16& ray_i, int i)
+  __forceinline RTCRay getRay(RTCRay16& ray_i, int i)
   {
     RTCRay ray_o;
     ray_o.org[0] = ray_i.orgx[i];
@@ -386,7 +386,7 @@ namespace embree
     return ray_o;
   }
 
-  inline RTCRay getRay(RTCRayN* ray_i, size_t N, int i)
+  __forceinline RTCRay getRay(RTCRayN* ray_i, size_t N, int i)
   {
     RTCRay ray_o;
     ray_o.org[0] = RTCRayN_org_x(ray_i,N,i);
@@ -546,6 +546,26 @@ namespace embree
     if (i & 16) sflag |= RTC_SCENE_ROBUST;
     sflags = (RTCSceneFlags) sflag;
     gflags = (RTCGeometryFlags) gflag;
+  }
+
+  inline bool supportsIntersectMode(RTCDevice device, IntersectMode imode)
+  { 
+    switch (imode) {
+    case MODE_INTERSECT_NONE: return true;
+    case MODE_INTERSECT1:   return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT1);
+    case MODE_INTERSECT4:   return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT4);
+    case MODE_INTERSECT8:   return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT8);
+    case MODE_INTERSECT16:  return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT16);
+    case MODE_INTERSECT1M:  return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
+    case MODE_INTERSECTNM1: return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
+    case MODE_INTERSECTNM3: return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
+    case MODE_INTERSECTNM4: return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
+    case MODE_INTERSECTNM8: return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
+    case MODE_INTERSECTNM16:return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
+    case MODE_INTERSECTNp:  return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
+    }
+    assert(false);
+    return false;
   }
 
   template<int N>

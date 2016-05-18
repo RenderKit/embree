@@ -61,7 +61,7 @@ namespace embree
       Benchmark (const std::string& name, int isa, const std::string& unit)
         : Test(name,isa,BENCHMARK), unit(unit) {}
       
-      virtual void setup(VerifyApplication* state) {}
+      virtual bool setup(VerifyApplication* state) { return true; }
       virtual double benchmark(VerifyApplication* state) = 0;
       virtual void cleanup(VerifyApplication* state) {}
       virtual TestReturnValue execute(VerifyApplication* state, bool silent);
@@ -94,26 +94,6 @@ namespace embree
     {
       IntersectTest (std::string name, int isa, IntersectMode imode, IntersectVariant ivariant, TestType ty = TEST_SHOULD_PASS)
         : Test(name,isa,ty), imode(imode), ivariant(ivariant) {}
-
-      bool supportsIntersectMode(RTCDevice device)
-      { 
-        switch (imode) {
-        case MODE_INTERSECT_NONE: return true;
-        case MODE_INTERSECT1:   return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT1);
-        case MODE_INTERSECT4:   return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT4);
-        case MODE_INTERSECT8:   return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT8);
-        case MODE_INTERSECT16:  return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT16);
-        case MODE_INTERSECT1M:  return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
-        case MODE_INTERSECTNM1: return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
-        case MODE_INTERSECTNM3: return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
-        case MODE_INTERSECTNM4: return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
-        case MODE_INTERSECTNM8: return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
-        case MODE_INTERSECTNM16:return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
-        case MODE_INTERSECTNp:  return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
-        }
-        assert(false);
-        return false;
-      }
 
     public:
       IntersectMode imode;
