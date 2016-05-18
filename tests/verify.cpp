@@ -16,6 +16,7 @@
 
 #include "verify.h"
 #include "../tutorials/common/scenegraph/scenegraph.h"
+#include "../tutorials/common/tutorial/statistics.h"
 #include "../kernels/algorithms/parallel_for.h"
 #include <regex>
 #include <stack>
@@ -330,22 +331,54 @@ namespace embree
     return passed ? PASSED : FAILED;
   }
 
-  VerifyApplication::TestReturnValue VerifyApplication::Benchmark::execute(VerifyApplication* state, bool silent_in)
+  VerifyApplication::TestReturnValue VerifyApplication::Benchmark::execute(VerifyApplication* state, bool silent)
   {
+    //setAffinity(0);
+    //sleepSeconds(0.1);
+
     if (!isEnabled())
       return SKIPPED;
 
-    const size_t N = 10;
-    double pmin = inf, pmax = -float(inf), pavg = 0.0f;
-    for (size_t j=0; j<N; j++) {
-      double p = benchmark(state,silent_in);
-      pmin = min(pmin,p);
-      pmax = max(pmax,p);
-      pavg = pavg + p/double(N);
+     if (!silent) 
+       std::cout << std::setw(60) << name << " " << std::flush;
+     //sleepSeconds(0.1);
+
+    const size_t skipBenchmarkFrames = 4;
+    const size_t numBenchmarkFrames = 16;
+    FilteredStatistics stat(0.5f,0.0f);
+    size_t numTotalFrames = skipBenchmarkFrames + numBenchmarkFrames;
+    for (size_t i=0; i<skipBenchmarkFrames; i++) 
+    {
+      double dt = benchmark(state);
+      //std::cout << "benchmark [" << std::setw(3) << i << " / " << std::setw(3) << numTotalFrames << "]: " <<  std::setw(8) << dt << unit << " (skipped)" << std::endl << std::flush;
+      //sleepSeconds(0.1);
+    }
+      
+    for (size_t i=skipBenchmarkFrames; i<numTotalFrames; i++) 
+    {
+      double dt = benchmark(state);
+      stat.add(dt);
+      /*std::cout << "benchmark [" << std::setw(3) << i << " / " << std::setw(3) << numTotalFrames << "]: " 
+                << std::setw(8) << dt << unit << ", " 
+                << "min = " << std::setw(8) << stat.getMin() << unit << ", " 
+                << "avg = " << std::setw(8) << stat.getAvg() << unit << ", "
+                << "max = " << std::setw(8) << stat.getMax() << unit << ", "
+                << "sigma = " << std::setw(6) << stat.getSigma() << " (" << 100.0f*stat.getSigma()/stat.getAvg() << "%)" << std::endl << std::flush;*/
+      //sleepSeconds(0.1);
     }
     
-    printf("%40s ... [%f / %f / %f] %s\n",name.c_str(),pmin,pavg,pmax,unit.c_str());
-    fflush(stdout);
+    if (!silent)
+      std::cout << "avg = " << std::setw(8) << stat.getAvg() << unit << ", " << "sigma = " << std::setw(6) << stat.getAvgSigma() << " (" << 100.0f*stat.getAvgSigma()/stat.getAvg() << "%)" << std::endl;
+
+    /*std::cout << "benchmark [" << std::setw(3) << skipBenchmarkFrames << " - " << std::setw(3) << numTotalFrames << "]: " 
+              << "              " 
+              << "min = " << std::setw(8) << stat.getMin() << unit << ", " 
+              << "avg = " << std::setw(8) << stat.getAvg() << unit << ", "
+              << "max = " << std::setw(8) << stat.getMax() << unit << ", "
+              << "sigma = " << std::setw(6) << stat.getAvgSigma() << " (" << 100.0f*stat.getAvgSigma()/stat.getAvg() << "%)" << std::endl;*/
+    sleepSeconds(0.1); // FIXME: turning this on or off changes performance!??
+
+    state->numPassedTests++;
     return VerifyApplication::PASSED;
   }
 
@@ -2801,6 +2834,25 @@ namespace embree
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
 
+   struct SimpleBenchmark : public VerifyApplication::Benchmark
+  {
+    SimpleBenchmark (std::string name, int isa)
+      : VerifyApplication::Benchmark(name,isa,"ms") {}
+    
+    double benchmark(VerifyApplication* state)
+    {
+      double t0 = getSeconds();
+      for (volatile size_t i=0; i<100000000; i++);
+      double t1 = getSeconds();
+      return 1000.0f*(t1-t0);
+    }
+  };
+
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
+
   VerifyApplication::VerifyApplication ()
     : Application(Application::FEATURE_RTCORE), intensity(1.0f), tests(new TestGroup("",false,false)), 
       numPassedTests(0), numFailedTests(0), numFailedAndIgnoredTests(0),
@@ -3113,8 +3165,17 @@ namespace embree
       groups.top()->add(new MemoryMonitorTest("regression_static_memory_monitor", isa,rtcore_regression_static_thread));
       groups.top()->add(new MemoryMonitorTest("regression_dynamic_memory_monitor",isa,rtcore_regression_dynamic_thread));
 
+      /**************************************************************************/
+      /*                           Benchmarks                                   */
+      /**************************************************************************/
+      
+      push(new TestGroup("benchmarks",false,false));
+      groups.top()->add(new SimpleBenchmark("simple",isa));
+      groups.pop();
+      
       groups.pop();
     }
+
     prefix_test_names(tests);
 
     /* ignore failure of some tests that are known to fail */
