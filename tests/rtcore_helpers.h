@@ -127,7 +127,7 @@ namespace embree
     }
   };
 
-  inline RTCRay makeRay(const Vec3fa& org, const Vec3fa& dir) 
+  __forceinline RTCRay makeRay(const Vec3fa& org, const Vec3fa& dir) 
   {
     RTCRay ray; memset(&ray,0,sizeof(RTCRay));
     ray.org[0] = org.x; ray.org[1] = org.y; ray.org[2] = org.z;
@@ -138,10 +138,45 @@ namespace embree
     return ray;
   }
 
-  inline RTCRay makeRay(const Vec3fa& org, const Vec3fa& dir, float tnear, float tfar) 
+  __forceinline RTCRay makeRay(const Vec3fa& org, const Vec3fa& dir, float tnear, float tfar) 
   {
     RTCRay ray; memset(&ray,0,sizeof(RTCRay));
     ray.org[0] = org.x; ray.org[1] = org.y; ray.org[2] = org.z;
+    ray.dir[0] = dir.x; ray.dir[1] = dir.y; ray.dir[2] = dir.z;
+    ray.tnear = tnear; ray.tfar = tfar;
+    ray.time = 0; ray.mask = -1;
+    ray.geomID = ray.primID = ray.instID = -1;
+    return ray;
+  }
+
+  __forceinline RTCRay fastMakeRay(const Vec3fa &org, const Vec3fa &dir) 
+  {
+    RTCRay ray;
+    *(Vec3fa*)ray.org = org;
+    *(Vec3fa*)ray.dir = dir;
+    ray.tnear = 0.0f; 
+    ray.tfar = inf;
+    ray.time = 0; 
+    ray.mask = -1;
+    ray.geomID = ray.primID = ray.instID = -1;
+    return ray;
+  }
+
+  __forceinline void fastSetRay(RTCRay &ray, const Vec3fa &org, const Vec3fa &dir) 
+  {
+    *(Vec3fa*)ray.org = org;
+    *(Vec3fa*)ray.dir = dir;
+    ray.tnear = 0.0f; 
+    ray.tfar = inf;
+    ray.time = 0; 
+    ray.mask = -1;
+    ray.geomID = ray.primID = ray.instID = -1;
+  }
+
+  __forceinline RTCRay fastMakeRay(Vec3f org, Vec3f dir, float tnear, float tfar) 
+  {
+    RTCRay ray;
+    ray.org[0] = org.x; ray.org[1] = org.y; ray.org[2] = org.z; // FIXME: optimize
     ray.dir[0] = dir.x; ray.dir[1] = dir.y; ray.dir[2] = dir.z;
     ray.tnear = tnear; ray.tfar = tfar;
     ray.time = 0; ray.mask = -1;

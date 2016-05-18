@@ -22,7 +22,7 @@
 #include <stack>
 
 #define random use_random_function_of_test // do use random_int() and random_float() from Test class
-#define drand48 use_random_function_of_test // do use random_int() and random_float() from Test class
+//#define drand48 use_random_function_of_test // do use random_int() and random_float() from Test class // FIXME: enable
 
 #define DEFAULT_STACK_SIZE 4*1024*1024
 
@@ -2882,7 +2882,7 @@ namespace embree
       double t0 = getSeconds();
       for (size_t y=0; y<height; y++) {
         for (size_t x=0; x<width; x++) {
-          RTCRay ray = makeRay(zero,Vec3f(float(x)*rcpWidth,1,float(y)*rcpHeight));
+          RTCRay ray = fastMakeRay(zero,Vec3f(float(x)*rcpWidth,1,float(y)*rcpHeight));
           rtcIntersect(*scene,ray);
         }
       }
@@ -3361,7 +3361,7 @@ namespace embree
     /* for best performance set FTZ and DAZ flags in MXCSR control and status register */
     _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
     _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
-    
+
     /* parse command line options */
     parseCommandLine(argc,argv);
 
