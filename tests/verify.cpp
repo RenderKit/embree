@@ -22,16 +22,6 @@
 
 #define DEFAULT_STACK_SIZE 4*1024*1024
 
-#if defined(__WIN32__)
-#  define GREEN(x) x
-#  define YELLOW(x) x
-#  define RED(x) x
-#else
-#  define GREEN(x) "\033[32m" x "\033[0m"
-#  define YELLOW(x) "\033[33m" x "\033[0m"
-#  define RED(x) "\033[31m" x "\033[0m"
-#endif
-
 #if defined(__INTEL_COMPILER)
 #pragma warning (disable: 1478) // warning: function was declared deprecated
 #elif defined(_MSC_VER)
@@ -312,17 +302,17 @@ namespace embree
     {
       Lock<MutexSys> lock(state->mutex);
       if (v != SKIPPED) {
-        if      (passed       ) std::cout << (state->usecolors ? GREEN ("+") : "+") << std::flush;
-        else if (ignoreFailure) std::cout << (state->usecolors ? YELLOW("!") : "!") << std::flush;
-        else                    std::cout << (state->usecolors ? RED   ("-") : "-") << std::flush;
+        if      (passed       ) std::cout << state->green ("+") << std::flush;
+        else if (ignoreFailure) std::cout << state->yellow("!") << std::flush;
+        else                    std::cout << state->red   ("-") << std::flush;
       }
     } 
     else
     {
-      if      (v == SKIPPED ) std::cout << (state->usecolors ? GREEN (" [SKIPPED]") : " [SKIPPED]") << std::endl << std::flush;
-      else if (passed       ) std::cout << (state->usecolors ? GREEN (" [PASSED]" ) : " [PASSED]" ) << std::endl << std::flush;
-      else if (ignoreFailure) std::cout << (state->usecolors ? YELLOW(" [FAILED]" ) : " [FAILED] (ignored)" ) << std::endl << std::flush;
-      else                    std::cout << (state->usecolors ? RED   (" [FAILED]" ) : " [FAILED]" ) << std::endl << std::flush;
+      if      (v == SKIPPED ) std::cout << state->green (" [SKIPPED]") << std::endl << std::flush;
+      else if (passed       ) std::cout << state->green (" [PASSED]" ) << std::endl << std::flush;
+      else if (ignoreFailure) std::cout << state->yellow(" [FAILED] (ignored)") << std::endl << std::flush;
+      else                    std::cout << state->red   (" [FAILED]" ) << std::endl << std::flush;
     }
 
     /* do ignore failures for some specific tests */
@@ -356,8 +346,8 @@ namespace embree
     }
 
     if (leaftest) {
-      if (passed) std::cout << GREEN(" [PASSED]" ) << std::endl << std::flush;
-      else        std::cout << RED  (" [FAILED]" ) << std::endl << std::flush;
+      if (passed) std::cout << state->green(" [PASSED]") << std::endl << std::flush;
+      else        std::cout << state->red  (" [FAILED]") << std::endl << std::flush;
     }
 
     return passed ? PASSED : FAILED;
@@ -2785,6 +2775,10 @@ namespace embree
     : Application(Application::FEATURE_RTCORE), intensity(1.0f), tests(new TestGroup("",false,false)), numFailedTests(0), 
       user_specified_tests(false), flatten(true), parallel(true), usecolors(true), device(rtcNewDevice(rtcore.c_str()))
   {
+#if defined(__WIN32__)
+    usecolors = false;
+#endif
+
     GeometryType gtypes[] = { TRIANGLE_MESH, TRIANGLE_MESH_MB, QUAD_MESH, QUAD_MESH_MB, SUBDIV_MESH, SUBDIV_MESH_MB };
 
     /* create list of all ISAs to test */
@@ -3141,6 +3135,10 @@ namespace embree
         parallel = true;
       }, "--parallel: parallelized test execution (default)");
 
+    registerOption("colors", [this] (Ref<ParseStream> cin, const FileName& path) {
+        usecolors = true;
+      }, "--colors: do use shell colors");
+
     registerOption("no-colors", [this] (Ref<ParseStream> cin, const FileName& path) {
         usecolors = false;
       }, "--no-colors: do not use shell colors");
@@ -3148,7 +3146,7 @@ namespace embree
     registerOption("print-tests", [this] (Ref<ParseStream> cin, const FileName& path) {
         print_tests(tests,0);
         exit(1);
-      }, "--print-tests: prints all enabled tests");
+      }, "--print-tests: prints all enabled test names");
     
     registerOption("intensity", [this] (Ref<ParseStream> cin, const FileName& path) {
         intensity = cin->getFloat();
