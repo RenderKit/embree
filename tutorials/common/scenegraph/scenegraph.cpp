@@ -834,18 +834,18 @@ namespace embree
 
     mesh->triangles.resize(numTriangles);
     for (size_t i=0; i<numTriangles; i++) {
-      const int v0 = (RandomSampler_getInt(sampler) % 32 == 0) ? RandomSampler_getInt(sampler) : 3*i+0;
-      const int v1 = (RandomSampler_getInt(sampler) % 32 == 0) ? RandomSampler_getInt(sampler) : 3*i+1;
-      const int v2 = (RandomSampler_getInt(sampler) % 32 == 0) ? RandomSampler_getInt(sampler) : 3*i+2;
+      const int v0 = (RandomSampler_getInt(sampler) % 32 == 0) ? RandomSampler_getUInt(sampler) : 3*i+0;
+      const int v1 = (RandomSampler_getInt(sampler) % 32 == 0) ? RandomSampler_getUInt(sampler) : 3*i+1;
+      const int v2 = (RandomSampler_getInt(sampler) % 32 == 0) ? RandomSampler_getUInt(sampler) : 3*i+2;
       mesh->triangles[i] = TriangleMeshNode::Triangle(v0,v1,v2);
     }
 
     mesh->v.resize(3*numTriangles);
     for (size_t i=0; i<3*numTriangles; i++) {
-      const float x = cast_i2f(RandomSampler_getInt(sampler));
-      const float y = cast_i2f(RandomSampler_getInt(sampler));
-      const float z = cast_i2f(RandomSampler_getInt(sampler));
-      const float w = cast_i2f(RandomSampler_getInt(sampler));
+      const float x = cast_i2f(RandomSampler_getUInt(sampler));
+      const float y = cast_i2f(RandomSampler_getUInt(sampler));
+      const float z = cast_i2f(RandomSampler_getUInt(sampler));
+      const float w = cast_i2f(RandomSampler_getUInt(sampler));
       mesh->v[i] = Vec3fa(x,y,z,w);
     }
 
@@ -853,10 +853,10 @@ namespace embree
     {
       mesh->v2.resize(3*numTriangles);
       for (size_t i=0; i<3*numTriangles; i++) {
-        const float x = cast_i2f(RandomSampler_getInt(sampler));
-        const float y = cast_i2f(RandomSampler_getInt(sampler));
-        const float z = cast_i2f(RandomSampler_getInt(sampler));
-        const float w = cast_i2f(RandomSampler_getInt(sampler));
+        const float x = cast_i2f(RandomSampler_getUInt(sampler));
+        const float y = cast_i2f(RandomSampler_getUInt(sampler));
+        const float z = cast_i2f(RandomSampler_getUInt(sampler));
+        const float w = cast_i2f(RandomSampler_getUInt(sampler));
         mesh->v2[i] = Vec3fa(x,y,z,w);
       }
     }
@@ -872,19 +872,19 @@ namespace embree
 
     mesh->quads.resize(numQuads);
     for (size_t i=0; i<numQuads; i++) {
-      const int v0 = (RandomSampler_getInt(sampler) % 32 == 0) ? RandomSampler_getInt(sampler) : 4*i+0;
-      const int v1 = (RandomSampler_getInt(sampler) % 32 == 0) ? RandomSampler_getInt(sampler) : 4*i+1;
-      const int v2 = (RandomSampler_getInt(sampler) % 32 == 0) ? RandomSampler_getInt(sampler) : 4*i+2;
-      const int v3 = (RandomSampler_getInt(sampler) % 32 == 0) ? RandomSampler_getInt(sampler) : 4*i+3;
+      const int v0 = (RandomSampler_getInt(sampler) % 32 == 0) ? RandomSampler_getUInt(sampler) : 4*i+0;
+      const int v1 = (RandomSampler_getInt(sampler) % 32 == 0) ? RandomSampler_getUInt(sampler) : 4*i+1;
+      const int v2 = (RandomSampler_getInt(sampler) % 32 == 0) ? RandomSampler_getUInt(sampler) : 4*i+2;
+      const int v3 = (RandomSampler_getInt(sampler) % 32 == 0) ? RandomSampler_getUInt(sampler) : 4*i+3;
       mesh->quads[i] = QuadMeshNode::Quad(v0,v1,v2,v3);
     }
 
     mesh->v.resize(4*numQuads);
     for (size_t i=0; i<4*numQuads; i++) {
-      const float x = cast_i2f(RandomSampler_getInt(sampler));
-      const float y = cast_i2f(RandomSampler_getInt(sampler));
-      const float z = cast_i2f(RandomSampler_getInt(sampler));
-      const float w = cast_i2f(RandomSampler_getInt(sampler));
+      const float x = cast_i2f(RandomSampler_getUInt(sampler));
+      const float y = cast_i2f(RandomSampler_getUInt(sampler));
+      const float z = cast_i2f(RandomSampler_getUInt(sampler));
+      const float w = cast_i2f(RandomSampler_getUInt(sampler));
       mesh->v[i] = Vec3fa(x,y,z,w);
     }
 
@@ -892,10 +892,10 @@ namespace embree
     {
       mesh->v2.resize(4*numQuads);
       for (size_t i=0; i<4*numQuads; i++) {
-        const float x = cast_i2f(RandomSampler_getInt(sampler));
-        const float y = cast_i2f(RandomSampler_getInt(sampler));
-        const float z = cast_i2f(RandomSampler_getInt(sampler));
-        const float w = cast_i2f(RandomSampler_getInt(sampler));
+        const float x = cast_i2f(RandomSampler_getUInt(sampler));
+        const float y = cast_i2f(RandomSampler_getUInt(sampler));
+        const float z = cast_i2f(RandomSampler_getUInt(sampler));
+        const float w = cast_i2f(RandomSampler_getUInt(sampler));
         mesh->v2[i] = Vec3fa(x,y,z,w);
       }
     }
@@ -911,15 +911,15 @@ namespace embree
 
     mesh->indices.resize(numLineSegments);
     for (size_t i=0; i<numLineSegments; i++) {
-      mesh->indices[i] = (RandomSampler_getInt(sampler) % 32 == 0) ? RandomSampler_getInt(sampler) : 2*i;
+      mesh->indices[i] = (RandomSampler_getInt(sampler) % 32 == 0) ? RandomSampler_getUInt(sampler) : 2*i;
     }
 
     mesh->v.resize(2*numLineSegments);
     for (size_t i=0; i<2*numLineSegments; i++) {
-      const float x = cast_i2f(RandomSampler_getInt(sampler));
-      const float y = cast_i2f(RandomSampler_getInt(sampler));
-      const float z = cast_i2f(RandomSampler_getInt(sampler));
-      const float r = cast_i2f(RandomSampler_getInt(sampler));
+      const float x = cast_i2f(RandomSampler_getUInt(sampler));
+      const float y = cast_i2f(RandomSampler_getUInt(sampler));
+      const float z = cast_i2f(RandomSampler_getUInt(sampler));
+      const float r = cast_i2f(RandomSampler_getUInt(sampler));
       mesh->v[i] = Vec3fa(x,y,z,r);
     }
 
@@ -927,10 +927,10 @@ namespace embree
     {
       mesh->v2.resize(2*numLineSegments);
       for (size_t i=0; i<2*numLineSegments; i++) {
-        const float x = cast_i2f(RandomSampler_getInt(sampler));
-        const float y = cast_i2f(RandomSampler_getInt(sampler));
-        const float z = cast_i2f(RandomSampler_getInt(sampler));
-        const float r = cast_i2f(RandomSampler_getInt(sampler));
+        const float x = cast_i2f(RandomSampler_getUInt(sampler));
+        const float y = cast_i2f(RandomSampler_getUInt(sampler));
+        const float z = cast_i2f(RandomSampler_getUInt(sampler));
+        const float r = cast_i2f(RandomSampler_getUInt(sampler));
         mesh->v2[i] = Vec3fa(x,y,z,r);
       }
     }
@@ -946,16 +946,16 @@ namespace embree
 
     mesh->hairs.resize(numHairs);
     for (size_t i=0; i<numHairs; i++) {
-      const int v0 = (RandomSampler_getInt(sampler) % 32 == 0) ? RandomSampler_getInt(sampler) : 4*i;
+      const int v0 = (RandomSampler_getInt(sampler) % 32 == 0) ? RandomSampler_getUInt(sampler) : 4*i;
       mesh->hairs[i] = HairSetNode::Hair(v0,0);
     }
 
     mesh->v.resize(4*numHairs);
     for (size_t i=0; i<4*numHairs; i++) {
-      const float x = cast_i2f(RandomSampler_getInt(sampler));
-      const float y = cast_i2f(RandomSampler_getInt(sampler));
-      const float z = cast_i2f(RandomSampler_getInt(sampler));
-      const float r = cast_i2f(RandomSampler_getInt(sampler));
+      const float x = cast_i2f(RandomSampler_getUInt(sampler));
+      const float y = cast_i2f(RandomSampler_getUInt(sampler));
+      const float z = cast_i2f(RandomSampler_getUInt(sampler));
+      const float r = cast_i2f(RandomSampler_getUInt(sampler));
       mesh->v[i] = Vec3fa(x,y,z,r);
     }
 
@@ -963,10 +963,10 @@ namespace embree
     {
       mesh->v2.resize(4*numHairs);
       for (size_t i=0; i<4*numHairs; i++) {
-        const float x = cast_i2f(RandomSampler_getInt(sampler));
-        const float y = cast_i2f(RandomSampler_getInt(sampler));
-        const float z = cast_i2f(RandomSampler_getInt(sampler));
-        const float r = cast_i2f(RandomSampler_getInt(sampler));
+        const float x = cast_i2f(RandomSampler_getUInt(sampler));
+        const float y = cast_i2f(RandomSampler_getUInt(sampler));
+        const float z = cast_i2f(RandomSampler_getUInt(sampler));
+        const float r = cast_i2f(RandomSampler_getUInt(sampler));
         mesh->v2[i] = Vec3fa(x,y,z,r);
       }
     }
@@ -986,20 +986,20 @@ namespace embree
       mesh->verticesPerFace.push_back(f);
       for (size_t j=0; j<f; j++) 
       {
-        mesh->position_indices.push_back((RandomSampler_getInt(sampler) % 32 == 0) ? RandomSampler_getInt(sampler) : mesh->positions.size());
+        mesh->position_indices.push_back((RandomSampler_getInt(sampler) % 32 == 0) ? RandomSampler_getUInt(sampler) : mesh->positions.size());
 
-        const float x = cast_i2f(RandomSampler_getInt(sampler));
-        const float y = cast_i2f(RandomSampler_getInt(sampler));
-        const float z = cast_i2f(RandomSampler_getInt(sampler));
-        const float w = cast_i2f(RandomSampler_getInt(sampler));
+        const float x = cast_i2f(RandomSampler_getUInt(sampler));
+        const float y = cast_i2f(RandomSampler_getUInt(sampler));
+        const float z = cast_i2f(RandomSampler_getUInt(sampler));
+        const float w = cast_i2f(RandomSampler_getUInt(sampler));
         mesh->positions.push_back(Vec3fa(x,y,z,w));
 
         if (mblur) 
         {
-          const float x = cast_i2f(RandomSampler_getInt(sampler));
-          const float y = cast_i2f(RandomSampler_getInt(sampler));
-          const float z = cast_i2f(RandomSampler_getInt(sampler));
-          const float w = cast_i2f(RandomSampler_getInt(sampler));
+          const float x = cast_i2f(RandomSampler_getUInt(sampler));
+          const float y = cast_i2f(RandomSampler_getUInt(sampler));
+          const float z = cast_i2f(RandomSampler_getUInt(sampler));
+          const float w = cast_i2f(RandomSampler_getUInt(sampler));
           mesh->positions2.push_back(Vec3fa(x,y,z,w));
         }
       }

@@ -86,13 +86,16 @@ inline void RandomSampler_init(RandomSampler& self, int x, int y, int sampleId)
 }
 
 inline int RandomSampler_getInt(RandomSampler& self) {
-  self.s = LCG_next(self.s);  return self.s;
+  self.s = LCG_next(self.s); return self.s >> 1;
+}
+
+inline unsigned int RandomSampler_getUInt(RandomSampler& self) {
+  self.s = LCG_next(self.s); return self.s;
 }
 
 inline float RandomSampler_getFloat(RandomSampler& self) {
-  return (float)(int)((unsigned int)RandomSampler_getInt(self) >> 1) * 4.656612873077392578125e-10f;
+  return (float)RandomSampler_getInt(self) * 4.656612873077392578125e-10f;
 }
-
 
 inline float RandomSampler_get1D(RandomSampler& self) {
   return RandomSampler_getFloat(self);
