@@ -121,7 +121,9 @@ namespace embree
     
   public:
     float intensity;
+    std::atomic<size_t> numPassedTests;
     std::atomic<size_t> numFailedTests;
+    std::atomic<size_t> numFailedAndIgnoredTests;
 
   public:
     MutexSys mutex;

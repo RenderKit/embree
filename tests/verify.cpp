@@ -318,11 +318,15 @@ namespace embree
       else                    std::cout << state->red   (" [FAILED]" ) << std::endl << std::flush;
     }
 
+    /* update passed/failed counters */
+    state->numPassedTests += passed;
+    if (ignoreFailure) state->numFailedAndIgnoredTests += !passed;
+    else               state->numFailedTests           += !passed;
+    
     /* do ignore failures for some specific tests */
     if (ignoreFailure) 
       passed = true;
 
-    state->numFailedTests += !passed;
     return passed ? PASSED : FAILED;
   }
 
@@ -2779,7 +2783,8 @@ namespace embree
   /////////////////////////////////////////////////////////////////////////////////
 
   VerifyApplication::VerifyApplication ()
-    : Application(Application::FEATURE_RTCORE), intensity(1.0f), tests(new TestGroup("",false,false)), numFailedTests(0), 
+    : Application(Application::FEATURE_RTCORE), intensity(1.0f), tests(new TestGroup("",false,false)), 
+      numPassedTests(0), numFailedTests(0), numFailedAndIgnoredTests(0),
       user_specified_tests(false), flatten(true), parallel(true), usecolors(true), device(rtcNewDevice(rtcore.c_str()))
   {
 #if defined(__WIN32__)
@@ -3231,6 +3236,13 @@ namespace embree
 
     /* run all enabled tests */
     tests->execute(this,false);
+
+    /* print result */
+    std::cout << std::endl;
+    std::cout << std::setw(60) << "Tests passed" << ": " << numPassedTests << std::endl; 
+    std::cout << std::setw(60) << "Tests failed" << ": " << numFailedTests << std::endl; 
+    std::cout << std::setw(60) << "Tests failed and ignored" << ": " << numFailedAndIgnoredTests << std::endl; 
+    std::cout << std::endl;
 
     return numFailedTests;
   }
