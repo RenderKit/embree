@@ -330,6 +330,25 @@ namespace embree
     return passed ? PASSED : FAILED;
   }
 
+  VerifyApplication::TestReturnValue VerifyApplication::Benchmark::execute(VerifyApplication* state, bool silent_in)
+  {
+    if (!isEnabled())
+      return SKIPPED;
+
+    const size_t N = 10;
+    double pmin = inf, pmax = -float(inf), pavg = 0.0f;
+    for (size_t j=0; j<N; j++) {
+      double p = benchmark(state,silent_in);
+      pmin = min(pmin,p);
+      pmax = max(pmax,p);
+      pavg = pavg + p/double(N);
+    }
+    
+    printf("%40s ... [%f / %f / %f] %s\n",name.c_str(),pmin,pavg,pmax,unit.c_str());
+    fflush(stdout);
+    return VerifyApplication::PASSED;
+  }
+
   VerifyApplication::TestReturnValue VerifyApplication::TestGroup::execute(VerifyApplication* state, bool silent_in)
   {
     if (!isEnabled())

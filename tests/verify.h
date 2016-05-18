@@ -27,7 +27,7 @@ namespace embree
   class VerifyApplication : public Application
   {
   public:
-    enum TestType { TEST_SHOULD_PASS, TEST_SHOULD_FAIL, TEST_GROUP };
+    enum TestType { TEST_SHOULD_PASS, TEST_SHOULD_FAIL, TEST_GROUP, BENCHMARK };
     enum TestReturnValue { FAILED, PASSED, SKIPPED };
     
     struct Test : public RefCount
@@ -52,6 +52,17 @@ namespace embree
       bool enabled;
       bool ignoreFailure;
       RandomSampler sampler;
+    };
+
+    class Benchmark : public Test
+    {
+    public:
+      const std::string unit;
+      Benchmark (const std::string& name, int isa, const std::string& unit)
+        : Test(name,isa,BENCHMARK), unit(unit) {}
+      
+      virtual double benchmark(VerifyApplication* state, bool silent) = 0;
+      virtual TestReturnValue execute(VerifyApplication* state, bool silent);
     };
 
     struct TestGroup : public Test
