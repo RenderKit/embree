@@ -76,6 +76,7 @@ namespace embree
     /* window settings */
     bool interactive;
     bool fullscreen;
+    bool benchmarkSleep;
     size_t window_width;
     size_t window_height;
     int windowID;
