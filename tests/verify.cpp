@@ -2880,10 +2880,16 @@ namespace embree
       float rcpWidth = 1.0f/1024.0f;
       float rcpHeight = 1.0f/1024.0f;
       double t0 = getSeconds();
-      for (size_t y=0; y<height; y++) {
-        for (size_t x=0; x<width; x++) {
-          RTCRay ray = fastMakeRay(zero,Vec3f(float(x)*rcpWidth,1,float(y)*rcpHeight));
-          rtcIntersect(*scene,ray);
+      for (size_t y0=0; y0<height; y0+=16) {
+        for (size_t x0=0; x0<width; x0+=16) {
+          for (size_t dy=0; dy<16; dy++) {
+            for (size_t dx=0; dx<16; dx++) {
+              const size_t y = y0+dy;
+              const size_t x = x0+dx;
+              RTCRay ray = fastMakeRay(zero,Vec3f(float(x)*rcpWidth,1,float(y)*rcpHeight));
+              rtcIntersect(*scene,ray);
+            }
+          }
         }
       }
       double t1 = getSeconds();
