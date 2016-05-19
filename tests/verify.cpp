@@ -3321,10 +3321,10 @@ namespace embree
         case QUAD_MESH_MB:     geometries.push_back(SceneGraph::createQuadSphere(zero,i+1,numPhi)); break;
         case SUBDIV_MESH:      
         case SUBDIV_MESH_MB:   geometries.push_back(SceneGraph::createSubdivSphere(zero,i+1,8,numPhi/8)); break;
-        case LINE_GEOMETRY: 
-        case LINE_GEOMETRY_MB:
         case HAIR_GEOMETRY:    
         case HAIR_GEOMETRY_MB: geometries.push_back(SceneGraph::createHairyPlane(i,Vec3fa(i),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4.0f*numPhi*numPhi,true)); break;
+        case LINE_GEOMETRY: 
+        case LINE_GEOMETRY_MB: geometries.push_back(SceneGraph::createHairyPlane(i,Vec3fa(i),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4.0f*numPhi*numPhi/3.0f,true)); break;
         default:               throw std::runtime_error("invalid geometry for benchmark");
         }
 
