@@ -21,11 +21,12 @@
 #include <regex>
 #include <stack>
 
-#define random use_random_function_of_test // do use random_int() and random_float() from Test class
+#define random  use_random_function_of_test // do use random_int() and random_float() from Test class
 #define drand48 use_random_function_of_test // do use random_int() and random_float() from Test class
 
 #define DEFAULT_STACK_SIZE 4*1024*1024
-
+#define TEXT_ALIGN 85
+ 
 #if defined(__INTEL_COMPILER)
 #pragma warning (disable: 1478) // warning: function was declared deprecated
 #elif defined(_MSC_VER)
@@ -291,7 +292,7 @@ namespace embree
       return SKIPPED;
     
     if (!silent) 
-      std::cout << std::setw(60) << name << " ..." << std::flush;
+      std::cout << std::setw(TEXT_ALIGN) << name << " ..." << std::flush;
       
     TestReturnValue v = SKIPPED;
     try {
@@ -344,7 +345,7 @@ namespace embree
     }
 
     if (!silent) 
-      std::cout << std::setw(60) << name << " " << std::flush;
+      std::cout << std::setw(TEXT_ALIGN) << name << ": " << std::flush;
     //sleepSeconds(0.1);
      
     const size_t skipBenchmarkFrames = 4;
@@ -354,7 +355,6 @@ namespace embree
     for (size_t i=0; i<skipBenchmarkFrames; i++) 
     {
       double dt = benchmark(state);
-      //std::cout << "benchmark [" << std::setw(3) << i << " / " << std::setw(3) << numTotalFrames << "]: " <<  std::setw(8) << dt << unit << " (skipped)" << std::endl << std::flush;
       //sleepSeconds(0.1);
     }
       
@@ -362,26 +362,14 @@ namespace embree
     {
       double dt = benchmark(state);
       stat.add(dt);
-      /*std::cout << "benchmark [" << std::setw(3) << i << " / " << std::setw(3) << numTotalFrames << "]: " 
-                << std::setw(8) << dt << unit << ", " 
-                << "min = " << std::setw(8) << stat.getMin() << unit << ", " 
-                << "avg = " << std::setw(8) << stat.getAvg() << unit << ", "
-                << "max = " << std::setw(8) << stat.getMax() << unit << ", "
-                << "sigma = " << std::setw(6) << stat.getSigma() << " (" << 100.0f*stat.getSigma()/stat.getAvg() << "%)" << std::endl << std::flush;*/
       //sleepSeconds(0.1);
     }
     cleanup(state);
     
     if (!silent)
-      std::cout << "avg = " << std::setw(8) << stat.getAvg() << unit << ", " << "sigma = " << std::setw(6) << stat.getAvgSigma() << " (" << 100.0f*stat.getAvgSigma()/stat.getAvg() << "%)" << std::endl;
+      std::cout << std::setw(8) << std::setprecision(3) << std::fixed << stat.getAvg() << " " << unit << " (+/-" << 100.0f*stat.getAvgSigma()/stat.getAvg() << "%)" << std::endl;
 
-    /*std::cout << "benchmark [" << std::setw(3) << skipBenchmarkFrames << " - " << std::setw(3) << numTotalFrames << "]: " 
-              << "              " 
-              << "min = " << std::setw(8) << stat.getMin() << unit << ", " 
-              << "avg = " << std::setw(8) << stat.getAvg() << unit << ", "
-              << "max = " << std::setw(8) << stat.getMax() << unit << ", "
-              << "sigma = " << std::setw(6) << stat.getAvgSigma() << " (" << 100.0f*stat.getAvgSigma()/stat.getAvg() << "%)" << std::endl;*/
-    sleepSeconds(0.1); // FIXME: turning this on or off changes performance!??
+    sleepSeconds(0.1);
 
     state->numPassedTests++;
     return VerifyApplication::PASSED;
@@ -395,7 +383,7 @@ namespace embree
     bool leaftest = state->flatten && !silent_in && silent;
     bool nextsilent = silent_in || (state->flatten && silent);
     if (leaftest) 
-      std::cout << std::setw(60) << name << " ..." << std::flush;
+      std::cout << std::setw(TEXT_ALIGN) << name << " ..." << std::flush;
     
     std::atomic<int> passed(true);
     if (state->parallel && parallel && leaftest) 
@@ -2847,7 +2835,7 @@ namespace embree
     double benchmark(VerifyApplication* state)
     {
       double t0 = getSeconds();
-      for (volatile size_t i=0; i<100000000; i++);
+      for (volatile size_t i=0; i<10000000; i++);
       double t1 = getSeconds();
       return 1000.0f*(t1-t0);
     }
@@ -2880,7 +2868,7 @@ namespace embree
       size_t numThreads = getNumberOfLogicalThreads();
       barrier.init(numThreads);
       for (size_t i=1; i<numThreads; i++)
-	threads.push_back(createThread((thread_func)static_thread_function,this,1000000,i));
+	threads.push_back(createThread((thread_func)static_thread_function,this,DEFAULT_STACK_SIZE,i));
       setAffinity(0);
 
       return true;
@@ -3086,6 +3074,7 @@ namespace embree
     {
       scene = nullptr;
       device = nullptr;
+      ParallelIntersectBenchmark::cleanup(state);
     }
   };
 
@@ -3372,8 +3361,10 @@ namespace embree
       for (auto sflags : sceneFlagsDynamic) {
         for (auto imode : intersectModes) {
           for (auto ivariant : intersectVariants) {
-            groups.top()->add(new UpdateTest("deformable."+to_string(sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_DEFORMABLE,imode,ivariant));
-            groups.top()->add(new UpdateTest("dynamic."+to_string(sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_DYNAMIC,imode,ivariant));
+            if (has_variant(imode,ivariant)) {
+              groups.top()->add(new UpdateTest("deformable."+to_string(sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_DEFORMABLE,imode,ivariant));
+              groups.top()->add(new UpdateTest("dynamic."+to_string(sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_DYNAMIC,imode,ivariant));
+            }
           }
         }
       }
@@ -3413,14 +3404,16 @@ namespace embree
       for (auto sflags : sceneFlags) 
         for (auto imode : intersectModes) 
           for (auto ivariant : intersectVariants)
-            groups.top()->add(new TriangleHitTest(to_string(sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,imode,ivariant));
+            if (has_variant(imode,ivariant))
+                groups.top()->add(new TriangleHitTest(to_string(sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,imode,ivariant));
       groups.pop();
       
       push(new TestGroup("quad_hit",true,true));
       for (auto sflags : sceneFlags) 
         for (auto imode : intersectModes) 
           for (auto ivariant : intersectVariants)
-            groups.top()->add(new QuadHitTest(to_string(sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,imode,ivariant));
+            if (has_variant(imode,ivariant))
+                groups.top()->add(new QuadHitTest(to_string(sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,imode,ivariant));
       groups.pop();
 
       if (rtcDeviceGetParameter1i(device,RTC_CONFIG_RAY_MASK)) 
@@ -3429,7 +3422,8 @@ namespace embree
         for (auto sflags : sceneFlags) 
           for (auto imode : intersectModes) 
             for (auto ivariant : intersectVariants)
-              groups.top()->add(new RayMasksTest(to_string(sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,imode,ivariant));
+              if (has_variant(imode,ivariant))
+                  groups.top()->add(new RayMasksTest(to_string(sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,imode,ivariant));
         groups.pop();
       }
       
@@ -3440,7 +3434,8 @@ namespace embree
           for (auto sflags : sceneFlags) 
             for (auto imode : intersectModes) 
               for (auto ivariant : intersectVariants)
-                groups.top()->add(new BackfaceCullingTest(to_string(gtype,sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,gtype,imode,ivariant));
+                if (has_variant(imode,ivariant))
+                    groups.top()->add(new BackfaceCullingTest(to_string(gtype,sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,gtype,imode,ivariant));
         groups.pop();
       }
       
@@ -3450,12 +3445,14 @@ namespace embree
         for (auto sflags : sceneFlags) 
           for (auto imode : intersectModes) 
             for (auto ivariant : intersectVariants)
-              groups.top()->add(new IntersectionFilterTest("triangles."+to_string(sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,false,imode,ivariant));
+              if (has_variant(imode,ivariant))
+                  groups.top()->add(new IntersectionFilterTest("triangles."+to_string(sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,false,imode,ivariant));
         
         for (auto sflags : sceneFlags) 
           for (auto imode : intersectModes) 
             for (auto ivariant : intersectVariants)
-              groups.top()->add(new IntersectionFilterTest("subdiv."+to_string(sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,true,imode,ivariant));
+              if (has_variant(imode,ivariant))
+                  groups.top()->add(new IntersectionFilterTest("subdiv."+to_string(sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,true,imode,ivariant));
       }
       groups.pop();
       
@@ -3463,8 +3460,9 @@ namespace embree
       for (auto sflags : sceneFlags) 
         for (auto imode : intersectModes) 
           for (auto ivariant : intersectVariants)
-            if (imode != MODE_INTERSECT1) // INTERSECT1 does not support disabled rays
-              groups.top()->add(new InactiveRaysTest(to_string(sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,imode,ivariant));
+            if (has_variant(imode,ivariant))
+                if (imode != MODE_INTERSECT1) // INTERSECT1 does not support disabled rays
+                  groups.top()->add(new InactiveRaysTest(to_string(sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,imode,ivariant));
       groups.pop();
       
       push(new TestGroup("watertight_triangles",true,true)); {
@@ -3521,14 +3519,16 @@ namespace embree
         for (auto sflags : sceneFlags) 
           for (auto imode : intersectModes) 
             for (auto ivariant : intersectVariants)
-              groups.top()->add(new NaNTest(to_string(sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,imode,ivariant));
+              if (has_variant(imode,ivariant))
+                  groups.top()->add(new NaNTest(to_string(sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,imode,ivariant));
         groups.pop();
         
         push(new TestGroup("inf_test",true,false));
         for (auto sflags : sceneFlags) 
           for (auto imode : intersectModes) 
             for (auto ivariant : intersectVariants)
-              groups.top()->add(new InfTest(to_string(sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,imode,ivariant));
+              if (has_variant(imode,ivariant))
+                  groups.top()->add(new InfTest(to_string(sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,imode,ivariant));
         groups.pop();
       }
     
@@ -3554,19 +3554,42 @@ namespace embree
       
       push(new TestGroup("benchmarks",false,false));
 
+      std::vector<std::pair<RTCSceneFlags,RTCGeometryFlags>> benchmark_sflags_gflags;
+      benchmark_sflags_gflags.push_back(std::make_pair(RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC));
+      benchmark_sflags_gflags.push_back(std::make_pair(RTC_SCENE_STATIC | RTC_SCENE_ROBUST,RTC_GEOMETRY_STATIC));
+      benchmark_sflags_gflags.push_back(std::make_pair(RTC_SCENE_STATIC | RTC_SCENE_COMPACT,RTC_GEOMETRY_STATIC));
+      benchmark_sflags_gflags.push_back(std::make_pair(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DYNAMIC));
+
+      std::vector<std::pair<IntersectMode,IntersectVariant>> benchmark_imodes_ivariants;
+      benchmark_imodes_ivariants.push_back(std::make_pair(MODE_INTERSECT1,VARIANT_INTERSECT));
+      benchmark_imodes_ivariants.push_back(std::make_pair(MODE_INTERSECT1,VARIANT_OCCLUDED));
+      benchmark_imodes_ivariants.push_back(std::make_pair(MODE_INTERSECT4,VARIANT_INTERSECT));
+      benchmark_imodes_ivariants.push_back(std::make_pair(MODE_INTERSECT4,VARIANT_OCCLUDED));
+      benchmark_imodes_ivariants.push_back(std::make_pair(MODE_INTERSECT8,VARIANT_INTERSECT));
+      benchmark_imodes_ivariants.push_back(std::make_pair(MODE_INTERSECT8,VARIANT_OCCLUDED));
+      benchmark_imodes_ivariants.push_back(std::make_pair(MODE_INTERSECT1M,VARIANT_INTERSECT_INCOHERENT));
+      benchmark_imodes_ivariants.push_back(std::make_pair(MODE_INTERSECT1M,VARIANT_OCCLUDED_INCOHERENT));
+
+      GeometryType benchmark_gtypes[] = { 
+        TRIANGLE_MESH, 
+        TRIANGLE_MESH_MB, 
+        QUAD_MESH, 
+        QUAD_MESH_MB, 
+        SUBDIV_MESH, 
+        //SUBDIV_MESH_MB  // FIXME: not supported yet
+      };
+
       groups.top()->add(new SimpleBenchmark("simple",isa));
+      
+      for (auto gtype : benchmark_gtypes)
+        for (auto sflags : benchmark_sflags_gflags) 
+          for (auto imode : benchmark_imodes_ivariants)
+            groups.top()->add(new CoherentRaysBenchmark("coherent."+to_string(gtype)+"_1000k."+to_string(sflags.first,imode.first,imode.second),isa,gtype,sflags.first,sflags.second,imode.first,imode.second,501));
 
-      for (auto gtype : gtypes)
-        for (auto sflags : sceneFlags) 
-          for (auto imode : intersectModes) 
-            for (auto ivariant : intersectVariants)
-              groups.top()->add(new CoherentRaysBenchmark("coherent1000k."+to_string(gtype)+"."+to_string(sflags,imode,ivariant),isa,gtype,sflags,RTC_GEOMETRY_STATIC,imode,ivariant,501));
-
-      for (auto gtype : gtypes)
-        for (auto sflags : sceneFlags) 
-          for (auto imode : intersectModes) 
-            for (auto ivariant : intersectVariants)
-              groups.top()->add(new IncoherentRaysBenchmark("incoherent1000k."+to_string(gtype)+"."+to_string(sflags,imode,ivariant),isa,gtype,sflags,RTC_GEOMETRY_STATIC,imode,ivariant,501));
+      for (auto gtype : benchmark_gtypes)
+        for (auto sflags : benchmark_sflags_gflags) 
+          for (auto imode : benchmark_imodes_ivariants)
+            groups.top()->add(new IncoherentRaysBenchmark("incoherent."+to_string(gtype)+"_1000k."+to_string(sflags.first,imode.first,imode.second),isa,gtype,sflags.first,sflags.second,imode.first,imode.second,501));
 
       groups.pop();
 
@@ -3714,9 +3737,9 @@ namespace embree
 
     /* print result */
     std::cout << std::endl;
-    std::cout << std::setw(60) << "Tests passed" << ": " << numPassedTests << std::endl; 
-    std::cout << std::setw(60) << "Tests failed" << ": " << numFailedTests << std::endl; 
-    std::cout << std::setw(60) << "Tests failed and ignored" << ": " << numFailedAndIgnoredTests << std::endl; 
+    std::cout << std::setw(TEXT_ALIGN) << "Tests passed" << ": " << numPassedTests << std::endl; 
+    std::cout << std::setw(TEXT_ALIGN) << "Tests failed" << ": " << numFailedTests << std::endl; 
+    std::cout << std::setw(TEXT_ALIGN) << "Tests failed and ignored" << ": " << numFailedAndIgnoredTests << std::endl; 
     std::cout << std::endl;
 
     return numFailedTests;

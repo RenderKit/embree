@@ -490,6 +490,40 @@ namespace embree
     return "";
   }
 
+  inline bool has_variant(IntersectMode imode, IntersectVariant ivariant)
+  {
+    switch (imode) {
+    case MODE_INTERSECT1:
+    case MODE_INTERSECT4:
+    case MODE_INTERSECT8:
+    case MODE_INTERSECT16:
+      switch (ivariant) {
+      case VARIANT_INTERSECT: return true;
+      case VARIANT_OCCLUDED : return true;
+      default: return false;
+      }
+    default:
+      return true;
+    }
+  }
+
+  inline std::string to_string(IntersectMode imode, IntersectVariant ivariant)
+  {
+    switch (imode) {
+    case MODE_INTERSECT1:
+    case MODE_INTERSECT4:
+    case MODE_INTERSECT8:
+    case MODE_INTERSECT16:
+      switch (ivariant) {
+      case VARIANT_INTERSECT: return "Intersect" + to_string(imode);
+      case VARIANT_OCCLUDED : return "Occluded" + to_string(imode);
+      default: assert(false);
+      }
+    default:
+      return to_string(ivariant) + to_string(imode);
+    }
+  }
+
   inline RTCAlgorithmFlags to_aflags(IntersectMode imode)
   {
     RTCAlgorithmFlags aflags_stream = (RTCAlgorithmFlags) (RTC_INTERSECT_STREAM);
@@ -772,11 +806,11 @@ namespace embree
   }
 
   inline std::string to_string(RTCSceneFlags sflags, IntersectMode imode, IntersectVariant ivariant) {
-    return to_string(sflags) + "." + to_string(ivariant) + to_string(imode);
+    return to_string(sflags) + "." + to_string(imode,ivariant);
   }
 
   inline std::string to_string(GeometryType gtype, RTCSceneFlags sflags, IntersectMode imode, IntersectVariant ivariant) {
-    return to_string(gtype) + "." + to_string(sflags) + "." + to_string(ivariant) + to_string(imode);
+    return to_string(gtype) + "." + to_string(sflags) + "." + to_string(imode,ivariant);
   }
 
   /* error reporting function */
