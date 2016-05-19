@@ -338,8 +338,10 @@ namespace embree
 
     if (!isEnabled())
       return SKIPPED;
-    if (!setup(state))
+    if (!setup(state)) {
+      cleanup(state);
       return SKIPPED;
+    }
 
     if (!silent) 
       std::cout << std::setw(60) << name << " " << std::flush;
@@ -3013,25 +3015,90 @@ namespace embree
     }
   };
 
-  struct IncoherentRaysBenchmark : public VerifyApplication::Benchmark
+  struct ParallelIntersectBenchmark : public VerifyApplication::Benchmark
   {
+    size_t N, dN;
+    Vec3f* numbers;
+    LinearBarrierActive barrier;
+    std::vector<thread_t> threads;
+    std::atomic<size_t> pos;
+    std::atomic<size_t> threadIndexCounter;
+    
+    ParallelIntersectBenchmark (std::string name, int isa, size_t N, size_t dN)
+      : VerifyApplication::Benchmark(name,isa,"Mrps"), N(N), dN(dN), pos(0), threadIndexCounter(1) {}
+    
+    ~ParallelIntersectBenchmark() 
+    {
+      if (threads.size()) {
+        pos = -1;
+        barrier.wait(0);
+        for (size_t i=0; i<threads.size(); i++) join(threads[i]);
+        threads.clear();
+      }
+    }
+
+    bool setup(VerifyApplication* state) 
+    {
+      size_t numThreads = getNumberOfLogicalThreads();
+      barrier.init(numThreads);
+      for (size_t i=1; i<numThreads; i++)
+	threads.push_back(createThread((thread_func)static_thread_function,this,1000000,i));
+      setAffinity(0);
+
+      return true;
+    }
+
+    virtual void render_block(size_t i, size_t n) = 0;
+
+    bool thread_function(size_t threadIndex = 0)
+    {
+      barrier.wait(threadIndex);
+      if (pos.load() == -1) return false;
+
+      for (size_t i = pos.fetch_add(dN); i<N; i=pos.fetch_add(dN)) 
+        render_block(i,dN);
+
+      barrier.wait(threadIndex);
+      return true;
+    }
+
+    static void static_thread_function(void* ptr) 
+    {
+      size_t threadIndex = ((ParallelIntersectBenchmark*) ptr)->threadIndexCounter++;
+      while (((ParallelIntersectBenchmark*) ptr)->thread_function(threadIndex));
+    }
+
+    double benchmark(VerifyApplication* state)
+    {
+      double t0 = getSeconds();
+      pos = 0;
+      thread_function();
+      double t1 = getSeconds();
+      return 1E-6*(double)(N)/(t1-t0);
+    }
+
+    virtual void cleanup(VerifyApplication* state) 
+    {
+      pos = -1;
+      barrier.wait(0);
+      for (size_t i=0; i<threads.size(); i++) join(threads[i]);
+      threads.clear();
+    }
+  };
+
+  struct IncoherentRaysBenchmark : public ParallelIntersectBenchmark
+  {
+    RTCDeviceRef device;
     RTCSceneFlags sflags;
     RTCGeometryFlags gflags;
     IntersectMode imode;
     IntersectVariant ivariant;
     size_t numPhi;
-    RTCDeviceRef device;
     Ref<VerifyScene> scene;
-    static const size_t N = 1024*1024;
     Vec3f* numbers;
-    LinearBarrierActive barrier;
-    std::vector<thread_t> threads;
-    static const size_t blockSize = 1024;
-    std::atomic<size_t> pos;
-    std::atomic<size_t> threadIndexCounter;
     
     IncoherentRaysBenchmark (std::string name, int isa, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant, size_t numPhi)
-      : VerifyApplication::Benchmark(name,isa,"Mrps"), sflags(sflags), gflags(gflags), imode(imode), ivariant(ivariant), numPhi(numPhi), numbers(nullptr), pos(0), threadIndexCounter(1) {}
+      : ParallelIntersectBenchmark(name,isa,1024*1024,1024), device(nullptr), sflags(sflags), gflags(gflags), imode(imode), ivariant(ivariant), numPhi(numPhi), numbers(nullptr) {}
     
     ~IncoherentRaysBenchmark() {
       if (numbers) delete[] numbers; numbers = nullptr;
@@ -3039,6 +3106,9 @@ namespace embree
 
     bool setup(VerifyApplication* state) 
     {
+      if (!ParallelIntersectBenchmark::setup(state))
+        return false;
+
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
@@ -3057,20 +3127,11 @@ namespace embree
         numbers[i] = Vec3f(x,y,z);
       }
 
-      size_t numThreads = getNumberOfLogicalThreads();
-      barrier.init(numThreads);
-      for (size_t i=1; i<numThreads; i++)
-	threads.push_back(createThread((thread_func)static_thread_function,this,1000000,i));
-      setAffinity(0);
-
       return true;
     }
 
-    bool thread_function(size_t threadIndex = 0)
+    void render_block(size_t i, size_t dn)
     {
-      barrier.wait(threadIndex);
-      if (pos.load() == -1) return false;
-
       RTCIntersectContext context;
       context.flags = ((ivariant & VARIANT_COHERENT_INCOHERENT_MASK) == VARIANT_COHERENT) ? RTC_INTERSECT_COHERENT :  RTC_INTERSECT_INCOHERENT;
       context.userRayExt = nullptr;
@@ -3079,100 +3140,68 @@ namespace embree
       {
       case MODE_INTERSECT1: 
       {
-        for (size_t i = pos.fetch_add(blockSize); i<N; i=pos.fetch_add(blockSize)) {
-          for (size_t j=0; j<blockSize; j++) {
-            RTCRay ray = fastMakeRay(zero,numbers[i+j]);
-            rtcIntersect(*scene,ray);
-          }
+        for (size_t j=0; j<dn; j++) {
+          RTCRay ray = fastMakeRay(zero,numbers[i+j]);
+          rtcIntersect(*scene,ray);
         }
         break;
       }
       case MODE_INTERSECT4: 
       {
-        for (size_t i = pos.fetch_add(blockSize); i<N; i=pos.fetch_add(blockSize)) {
-          for (size_t j=0; i<blockSize; j+=4) {
-            RTCRay4 ray4;
-            for (size_t k=0; k<4; k++) {
-              setRay(ray4,k,fastMakeRay(zero,numbers[i+j+k]));
-            }
-            __aligned(16) int valid4[4] = { -1,-1,-1,-1 };
-            rtcIntersect4(valid4,*scene,ray4);
+        for (size_t j=0; j<dn; j+=4) {
+          RTCRay4 ray4;
+          for (size_t k=0; k<4; k++) {
+            setRay(ray4,k,fastMakeRay(zero,numbers[i+j+k]));
           }
+          __aligned(16) int valid4[4] = { -1,-1,-1,-1 };
+          rtcIntersect4(valid4,*scene,ray4);
         }
         break;
       }
       case MODE_INTERSECT8: 
       {
-        for (size_t i = pos.fetch_add(blockSize); i<N; i=pos.fetch_add(blockSize)) {
-          for (size_t j=0; i<blockSize; j+=8) {
-            RTCRay8 ray8;
-            for (size_t k=0; k<8; k++) {
-              setRay(ray8,k,fastMakeRay(zero,numbers[i+j+k]));
-            }
-            __aligned(32) int valid8[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
-            rtcIntersect8(valid8,*scene,ray8);
+        for (size_t j=0; j<dn; j+=8) {
+          RTCRay8 ray8;
+          for (size_t k=0; k<8; k++) {
+            setRay(ray8,k,fastMakeRay(zero,numbers[i+j+k]));
           }
+          __aligned(32) int valid8[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
+          rtcIntersect8(valid8,*scene,ray8);
         }
         break;
       }
       case MODE_INTERSECT16: 
       {
-        for (size_t i = pos.fetch_add(blockSize); i<N; i=pos.fetch_add(blockSize)) {
-          for (size_t j=0; i<blockSize; j+=16) {
-            RTCRay16 ray16;
-            for (size_t k=0; k<16; k++) {
-              setRay(ray16,k,fastMakeRay(zero,numbers[i+j+k]));
-            }
-            __aligned(64) int valid16[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
-            rtcIntersect16(valid16,*scene,ray16);
+        for (size_t j=0; j<dn; j+=16) {
+          RTCRay16 ray16;
+          for (size_t k=0; k<16; k++) {
+            setRay(ray16,k,fastMakeRay(zero,numbers[i+j+k]));
           }
+          __aligned(64) int valid16[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
+          rtcIntersect16(valid16,*scene,ray16);
         }
         break;
       }
       case MODE_INTERSECT1M: 
       {
-        for (size_t i = pos.fetch_add(blockSize); i<N; i=pos.fetch_add(blockSize)) {
-          for (size_t j=0; j<blockSize; j+=128) {
-            RTCRay rays[128];
-            for (size_t k=0; k<128; k++) 
-              rays[k] = fastMakeRay(zero,numbers[i+j+k]);
-            rtcIntersect1M(*scene,&context,rays,128,sizeof(RTCRay));
-          }
+        for (size_t j=0; j<dn; j+=128) {
+          RTCRay rays[128];
+          for (size_t k=0; k<128; k++) 
+            rays[k] = fastMakeRay(zero,numbers[i+j+k]);
+          rtcIntersect1M(*scene,&context,rays,128,sizeof(RTCRay));
         }
         break;
       }
       default: break;
       }
-
-      barrier.wait(threadIndex);
-      return true;
-    }
-
-    static void static_thread_function(void* ptr) 
-    {
-      size_t threadIndex = ((IncoherentRaysBenchmark*) ptr)->threadIndexCounter++;
-      while (((IncoherentRaysBenchmark*) ptr)->thread_function(threadIndex));
-    }
-
-    double benchmark(VerifyApplication* state)
-    {
-      double t0 = getSeconds();
-      pos = 0;
-      thread_function();
-      double t1 = getSeconds();
-      return 1E-6*(double)(N)/(t1-t0);
     }
 
     virtual void cleanup(VerifyApplication* state) 
     {
-      pos = -1;
-      barrier.wait(0);
-      for (size_t i=0; i<threads.size(); i++) join(threads[i]);
-      threads.clear();
-
       if (numbers) delete[] numbers; numbers = nullptr;
       scene = nullptr;
       device = nullptr;
+      ParallelIntersectBenchmark::cleanup(state);
     }
   };
 
