@@ -2926,6 +2926,7 @@ namespace embree
 
   struct CoherentRaysBenchmark : public ParallelIntersectBenchmark
   {
+    GeometryType gtype;
     RTCSceneFlags sflags;
     RTCGeometryFlags gflags;
     IntersectMode imode;
@@ -2940,8 +2941,8 @@ namespace embree
     static const size_t numTilesX = width/tileSizeX;
     static const size_t numTilesY = height/tileSizeY;
     
-    CoherentRaysBenchmark (std::string name, int isa, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant, size_t numPhi)
-      : ParallelIntersectBenchmark(name,isa,numTilesX*numTilesY,1), sflags(sflags), gflags(gflags), imode(imode), ivariant(ivariant), numPhi(numPhi) {}
+    CoherentRaysBenchmark (std::string name, int isa, GeometryType gtype, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant, size_t numPhi)
+      : ParallelIntersectBenchmark(name,isa,numTilesX*numTilesY,1), sflags(sflags), gflags(gflags), gtype(gtype), imode(imode), ivariant(ivariant), numPhi(numPhi) {}
     
     bool setup(VerifyApplication* state) 
     {
@@ -2955,7 +2956,15 @@ namespace embree
         return false;
 
       scene = new VerifyScene(device,sflags,aflags_all);
-      scene->addSphere (sampler,gflags,zero,1,numPhi);
+      switch (gtype) {
+      case TRIANGLE_MESH:    scene->addGeometry(gflags,SceneGraph::createTriangleSphere(zero,one,numPhi),false); break;
+      case TRIANGLE_MESH_MB: scene->addGeometry(gflags,SceneGraph::createTriangleSphere(zero,one,numPhi)->set_motion_vector(Vec3fa(0.01f)),true); break;
+      case QUAD_MESH:        scene->addGeometry(gflags,SceneGraph::createQuadSphere(zero,one,numPhi),false); break;
+      case QUAD_MESH_MB:     scene->addGeometry(gflags,SceneGraph::createQuadSphere(zero,one,numPhi)->set_motion_vector(Vec3fa(0.01f)),true); break;
+      case SUBDIV_MESH:      scene->addGeometry(gflags,SceneGraph::createSubdivSphere(zero,one,8,numPhi/8),false); break;
+      case SUBDIV_MESH_MB:   scene->addGeometry(gflags,SceneGraph::createSubdivSphere(zero,one,8,numPhi/8)->set_motion_vector(Vec3fa(0.01f)),true); break;
+      default:               throw std::runtime_error("invalid geometry for benchmark");
+      }
       rtcCommit (*scene);
       return true;
     }
@@ -3082,17 +3091,18 @@ namespace embree
 
   struct IncoherentRaysBenchmark : public ParallelIntersectBenchmark
   {
-    RTCDeviceRef device;
+    GeometryType gtype;
     RTCSceneFlags sflags;
     RTCGeometryFlags gflags;
     IntersectMode imode;
     IntersectVariant ivariant;
     size_t numPhi;
+    RTCDeviceRef device;
     Ref<VerifyScene> scene;
     Vec3f* numbers;
     
-    IncoherentRaysBenchmark (std::string name, int isa, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant, size_t numPhi)
-      : ParallelIntersectBenchmark(name,isa,1024*1024,1024), device(nullptr), sflags(sflags), gflags(gflags), imode(imode), ivariant(ivariant), numPhi(numPhi), numbers(nullptr) {}
+    IncoherentRaysBenchmark (std::string name, int isa, GeometryType gtype, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant, size_t numPhi)
+      : ParallelIntersectBenchmark(name,isa,1024*1024,1024), device(nullptr), gtype(gtype), sflags(sflags), gflags(gflags), imode(imode), ivariant(ivariant), numPhi(numPhi), numbers(nullptr) {}
     
     ~IncoherentRaysBenchmark() {
       if (numbers) delete[] numbers; numbers = nullptr;
@@ -3110,7 +3120,15 @@ namespace embree
         return false;
 
       scene = new VerifyScene(device,sflags,aflags_all);
-      scene->addSphere (sampler,gflags,zero,1,numPhi);
+      switch (gtype) {
+      case TRIANGLE_MESH:    scene->addGeometry(gflags,SceneGraph::createTriangleSphere(zero,one,numPhi),false); break;
+      case TRIANGLE_MESH_MB: scene->addGeometry(gflags,SceneGraph::createTriangleSphere(zero,one,numPhi)->set_motion_vector(Vec3fa(0.01f)),true); break;
+      case QUAD_MESH:        scene->addGeometry(gflags,SceneGraph::createQuadSphere(zero,one,numPhi),false); break;
+      case QUAD_MESH_MB:     scene->addGeometry(gflags,SceneGraph::createQuadSphere(zero,one,numPhi)->set_motion_vector(Vec3fa(0.01f)),true); break;
+      case SUBDIV_MESH:      scene->addGeometry(gflags,SceneGraph::createSubdivSphere(zero,one,8,numPhi/8),false); break;
+      case SUBDIV_MESH_MB:   scene->addGeometry(gflags,SceneGraph::createSubdivSphere(zero,one,8,numPhi/8)->set_motion_vector(Vec3fa(0.01f)),true); break;
+      default:               throw std::runtime_error("invalid geometry for benchmark");
+      }
       rtcCommit (*scene);
 
       numbers = new Vec3f[N];
@@ -3538,15 +3556,17 @@ namespace embree
 
       groups.top()->add(new SimpleBenchmark("simple",isa));
 
-      for (auto sflags : sceneFlags) 
-        for (auto imode : intersectModes) 
+      for (auto gtype : gtypes)
+        for (auto sflags : sceneFlags) 
+          for (auto imode : intersectModes) 
             for (auto ivariant : intersectVariants)
-              groups.top()->add(new CoherentRaysBenchmark("coherent1M."+to_string(sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,imode,ivariant,501));
+              groups.top()->add(new CoherentRaysBenchmark("coherent1000k."+to_string(gtype)+"."+to_string(sflags,imode,ivariant),isa,gtype,sflags,RTC_GEOMETRY_STATIC,imode,ivariant,501));
 
-      for (auto sflags : sceneFlags) 
-        for (auto imode : intersectModes) 
+      for (auto gtype : gtypes)
+        for (auto sflags : sceneFlags) 
+          for (auto imode : intersectModes) 
             for (auto ivariant : intersectVariants)
-              groups.top()->add(new IncoherentRaysBenchmark("incoherent1M."+to_string(sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,imode,ivariant,501));
+              groups.top()->add(new IncoherentRaysBenchmark("incoherent1000k."+to_string(gtype)+"."+to_string(sflags,imode,ivariant),isa,gtype,sflags,RTC_GEOMETRY_STATIC,imode,ivariant,501));
 
       groups.pop();
 
