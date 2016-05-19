@@ -3334,13 +3334,13 @@ namespace embree
       /*                           Benchmarks                                   */
       /**************************************************************************/
       
-      /*push(new TestGroup("benchmarks",false,false));
+      push(new TestGroup("benchmarks",false,false));
       groups.top()->add(new SimpleBenchmark("simple",isa));
       for (auto sflags : sceneFlags) 
         for (auto imode : intersectModes) 
             for (auto ivariant : intersectVariants)
               groups.top()->add(new CoherentIntersect1Benchmark("coherent."+to_string(sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,imode,ivariant,501));
-      groups.pop();*/
+      groups.pop();
       
       groups.pop();
     }
@@ -3365,7 +3365,6 @@ namespace embree
     registerOptionAlias("run","enable");
 
     registerOption("skip", [this] (Ref<ParseStream> cin, const FileName& path) {
-        if (!user_specified_tests) enable_disable_all_tests(tests,true);
         user_specified_tests = true;
         std::string regex = cin->getString();
         enable_disable_some_tests(tests,regex,false);
@@ -3373,7 +3372,6 @@ namespace embree
     registerOptionAlias("skip","disable");
 
     registerOption("skip-before", [this] (Ref<ParseStream> cin, const FileName& path) {
-        if (!user_specified_tests) enable_disable_all_tests(tests,true);
         user_specified_tests = true;
         bool found = false;
         std::string regex = cin->getString();

@@ -32,8 +32,8 @@ namespace embree
     
     struct Test : public RefCount
     {
-      Test (std::string name, int isa, TestType ty) 
-        : name(name), isa(isa), ty(ty), enabled(true), ignoreFailure(false) 
+      Test (std::string name, int isa, TestType ty, bool enabled = true) 
+        : name(name), isa(isa), ty(ty), enabled(enabled), ignoreFailure(false) 
       {
         RandomSampler_init(sampler,0x23F67E21);
       }
@@ -59,7 +59,7 @@ namespace embree
     public:
       const std::string unit;
       Benchmark (const std::string& name, int isa, const std::string& unit)
-        : Test(name,isa,BENCHMARK), unit(unit) {}
+        : Test(name,isa,BENCHMARK,false), unit(unit) {}
       
       virtual bool setup(VerifyApplication* state) { return true; }
       virtual double benchmark(VerifyApplication* state) = 0;
