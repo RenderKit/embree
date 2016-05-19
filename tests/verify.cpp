@@ -2853,168 +2853,6 @@ namespace embree
     }
   };
   
-  struct CoherentRaysBenchmark : public VerifyApplication::Benchmark
-  {
-    RTCSceneFlags sflags;
-    RTCGeometryFlags gflags;
-    IntersectMode imode;
-    IntersectVariant ivariant;
-    size_t numPhi;
-    RTCDeviceRef device;
-    Ref<VerifyScene> scene;
-    
-    CoherentRaysBenchmark (std::string name, int isa, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant, size_t numPhi)
-      : VerifyApplication::Benchmark(name,isa,"Mrps"), sflags(sflags), gflags(gflags), imode(imode), ivariant(ivariant), numPhi(numPhi) {}
-    
-    bool setup(VerifyApplication* state) 
-    {
-      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
-      device = rtcNewDevice(cfg.c_str());
-      error_handler(rtcDeviceGetError(device));
-      if (!supportsIntersectMode(device,imode))
-        return false;
-
-      scene = new VerifyScene(device,sflags,aflags_all);
-      scene->addSphere (sampler,gflags,zero,1,numPhi);
-      rtcCommit (*scene);
-      return true;
-    }
-
-    double benchmark(VerifyApplication* state)
-    {
-      size_t width = 1024;
-      size_t height = 1024;
-      float rcpWidth = 1.0f/1024.0f;
-      float rcpHeight = 1.0f/1024.0f;
-
-      RTCIntersectContext context;
-      context.flags = ((ivariant & VARIANT_COHERENT_INCOHERENT_MASK) == VARIANT_COHERENT) ? RTC_INTERSECT_COHERENT :  RTC_INTERSECT_INCOHERENT;
-      context.userRayExt = nullptr;
-
-      double t0 = getSeconds();
-      switch (imode) 
-      {
-      case MODE_INTERSECT1: 
-      {
-        for (size_t y0=0; y0<height; y0+=16) {
-          for (size_t x0=0; x0<width; x0+=16) {
-            for (size_t dy=0; dy<16; dy++) {
-              for (size_t dx=0; dx<16; dx++) {
-                const size_t y = y0+dy;
-                const size_t x = x0+dx;
-                RTCRay ray = fastMakeRay(zero,Vec3f(float(x)*rcpWidth,1,float(y)*rcpHeight));
-                switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-                case VARIANT_INTERSECT: rtcIntersect(*scene,ray); break;
-                case VARIANT_OCCLUDED : rtcOccluded (*scene,ray); break;
-                }
-              }
-            }
-          }
-        }
-        break;
-      }
-      case MODE_INTERSECT4: 
-      {
-        for (size_t y0=0; y0<height; y0+=16) {
-          for (size_t x0=0; x0<width; x0+=16) {
-            for (size_t dy=0; dy<16; dy+=2) {
-              for (size_t dx=0; dx<16; dx+=2) {
-                RTCRay4 ray4; 
-                for (size_t ddy=0; ddy<2; ddy++) {
-                  for (size_t ddx=0; ddx<2; ddx++) {
-                    setRay(ray4,2*ddy+ddx,fastMakeRay(zero,Vec3f(float(x0+dx+ddx)*rcpWidth,1,float(y0+dy+ddy)*rcpHeight)));
-                  }
-                }
-                __aligned(16) int valid4[4] = { -1,-1,-1,-1 };
-                switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-                case VARIANT_INTERSECT: rtcIntersect4(valid4,*scene,ray4); break;
-                case VARIANT_OCCLUDED : rtcOccluded4 (valid4,*scene,ray4); break;
-                }
-              }
-            }
-          }
-        }
-        break;
-      }
-      case MODE_INTERSECT8: 
-      {
-        for (size_t y0=0; y0<height; y0+=16) {
-          for (size_t x0=0; x0<width; x0+=16) {
-            for (size_t dy=0; dy<16; dy+=4) {
-              for (size_t dx=0; dx<16; dx+=2) {
-                RTCRay8 ray8; 
-                for (size_t ddy=0; ddy<4; ddy++) {
-                  for (size_t ddx=0; ddx<2; ddx++) {
-                    setRay(ray8,2*ddy+ddx,fastMakeRay(zero,Vec3f(float(x0+dx+ddx)*rcpWidth,1,float(y0+dy+ddy)*rcpHeight)));
-                  }
-                }
-                __aligned(32) int valid8[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
-                switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-                case VARIANT_INTERSECT: rtcIntersect8(valid8,*scene,ray8); break;
-                case VARIANT_OCCLUDED : rtcOccluded8 (valid8,*scene,ray8); break;
-                }
-              }
-            }
-          }
-        }
-        break;
-      }
-      case MODE_INTERSECT16: 
-      {
-        for (size_t y0=0; y0<height; y0+=16) {
-          for (size_t x0=0; x0<width; x0+=16) {
-            for (size_t dy=0; dy<16; dy+=4) {
-              for (size_t dx=0; dx<16; dx+=4) {
-                RTCRay16 ray16; 
-                for (size_t ddy=0; ddy<4; ddy++) {
-                  for (size_t ddx=0; ddx<4; ddx++) {
-                    setRay(ray16,4*ddy+ddx,fastMakeRay(zero,Vec3f(float(x0+dx+ddx)*rcpWidth,1,float(y0+dy+ddy)*rcpHeight)));
-                  }
-                }
-                __aligned(64) int valid16[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
-                switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-                case VARIANT_INTERSECT: rtcIntersect16(valid16,*scene,ray16); break;
-                case VARIANT_OCCLUDED : rtcOccluded16 (valid16,*scene,ray16); break;
-                }
-              }
-            }
-          }
-        }
-        break;
-      }
-      case MODE_INTERSECT1M: 
-      {
-        for (size_t y0=0; y0<height; y0+=16) {
-          for (size_t x0=0; x0<width; x0+=16) {
-            RTCRay rays[256];
-            for (size_t dy=0; dy<16; dy++) {
-              for (size_t dx=0; dx<16; dx++) {
-                const size_t y = y0+dy;
-                const size_t x = x0+dx;
-                rays[dy*16+dx] = fastMakeRay(zero,Vec3f(float(x)*rcpWidth,1,float(y)*rcpHeight));
-              }
-            }
-            switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-            case VARIANT_INTERSECT: rtcIntersect1M(*scene,&context,rays,256,sizeof(RTCRay)); break;
-            case VARIANT_OCCLUDED : rtcOccluded1M (*scene,&context,rays,256,sizeof(RTCRay)); break;
-            }
-          }
-        }
-        break;
-      }
-      default: break;
-      }
-      double t1 = getSeconds();
-      return 1E-6*(double)(width*height)/(t1-t0);
-    }
-
-    virtual void cleanup(VerifyApplication* state) 
-    {
-      scene = nullptr;
-      device = nullptr;
-    }
-  };
-
   struct ParallelIntersectBenchmark : public VerifyApplication::Benchmark
   {
     size_t N, dN;
@@ -3083,6 +2921,162 @@ namespace embree
       barrier.wait(0);
       for (size_t i=0; i<threads.size(); i++) join(threads[i]);
       threads.clear();
+    }
+  };
+
+  struct CoherentRaysBenchmark : public ParallelIntersectBenchmark
+  {
+    RTCSceneFlags sflags;
+    RTCGeometryFlags gflags;
+    IntersectMode imode;
+    IntersectVariant ivariant;
+    size_t numPhi;
+    RTCDeviceRef device;
+    Ref<VerifyScene> scene;
+    static const size_t tileSizeX = 16;
+    static const size_t tileSizeY = 16;
+    static const size_t width = 1024;
+    static const size_t height = 1024;
+    static const size_t numTilesX = width/tileSizeX;
+    static const size_t numTilesY = height/tileSizeY;
+    
+    CoherentRaysBenchmark (std::string name, int isa, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant, size_t numPhi)
+      : ParallelIntersectBenchmark(name,isa,numTilesX*numTilesY,1), sflags(sflags), gflags(gflags), imode(imode), ivariant(ivariant), numPhi(numPhi) {}
+    
+    bool setup(VerifyApplication* state) 
+    {
+      if (!ParallelIntersectBenchmark::setup(state))
+        return false;
+
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      device = rtcNewDevice(cfg.c_str());
+      error_handler(rtcDeviceGetError(device));
+      if (!supportsIntersectMode(device,imode))
+        return false;
+
+      scene = new VerifyScene(device,sflags,aflags_all);
+      scene->addSphere (sampler,gflags,zero,1,numPhi);
+      rtcCommit (*scene);
+      return true;
+    }
+
+    void render_block(size_t i, size_t)
+    {
+      float rcpWidth = 1.0f/width;
+      float rcpHeight = 1.0/height;
+      const int tileY = i / numTilesX;
+      const int tileX = i - tileY * numTilesX;
+      const int x0 = tileX * tileSizeX;
+      const int x1 = min(x0+tileSizeX,width);
+      const int y0 = tileY * tileSizeY;
+      const int y1 = min(y0+tileSizeY,height);
+      
+      RTCIntersectContext context;
+      context.flags = ((ivariant & VARIANT_COHERENT_INCOHERENT_MASK) == VARIANT_COHERENT) ? RTC_INTERSECT_COHERENT :  RTC_INTERSECT_INCOHERENT;
+      context.userRayExt = nullptr;
+
+      switch (imode) 
+      {
+      case MODE_INTERSECT1: 
+      {
+        for (size_t y=y0; y<y1; y++) {
+          for (size_t x=x0; x<x1; x++) {
+            RTCRay ray = fastMakeRay(zero,Vec3f(float(x)*rcpWidth,1,float(y)*rcpHeight));
+            switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
+            case VARIANT_INTERSECT: rtcIntersect(*scene,ray); break;
+            case VARIANT_OCCLUDED : rtcOccluded (*scene,ray); break;
+            }
+          }
+        }
+        break;
+      }
+      case MODE_INTERSECT4: 
+      {
+        for (size_t y=y0; y<y1; y+=2) {
+          for (size_t x=x0; x<x1; x+=2) {
+            RTCRay4 ray4; 
+            for (size_t dy=0; dy<2; dy++) {
+              for (size_t dx=0; dx<2; dx++) {
+                setRay(ray4,2*dy+dx,fastMakeRay(zero,Vec3f(float(x+dx)*rcpWidth,1,float(y+dy)*rcpHeight)));
+              }
+            }
+            __aligned(16) int valid4[4] = { -1,-1,-1,-1 };
+            switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
+            case VARIANT_INTERSECT: rtcIntersect4(valid4,*scene,ray4); break;
+            case VARIANT_OCCLUDED : rtcOccluded4 (valid4,*scene,ray4); break;
+            }
+          }
+        }
+        break;
+      }
+      case MODE_INTERSECT8: 
+      {
+        for (size_t y=y0; y<y1; y+=4) {
+          for (size_t x=x0; x<x1; x+=2) {
+            RTCRay8 ray8; 
+            for (size_t dy=0; dy<4; dy++) {
+              for (size_t dx=0; dx<2; dx++) {
+                setRay(ray8,2*dy+dx,fastMakeRay(zero,Vec3f(float(x+dx)*rcpWidth,1,float(y+dy)*rcpHeight)));
+              }
+            }
+            __aligned(32) int valid8[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
+            switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
+            case VARIANT_INTERSECT: rtcIntersect8(valid8,*scene,ray8); break;
+            case VARIANT_OCCLUDED : rtcOccluded8 (valid8,*scene,ray8); break;
+            }
+          }
+        }
+        break;
+      }
+      case MODE_INTERSECT16: 
+      {
+        for (size_t y=y0; y<y1; y+=4) {
+          for (size_t x=x0; x<x1; x+=4) {
+            RTCRay16 ray16; 
+            for (size_t dy=0; dy<4; dy++) {
+              for (size_t dx=0; dx<4; dx++) {
+                setRay(ray16,4*dy+dx,fastMakeRay(zero,Vec3f(float(x+dx)*rcpWidth,1,float(y+dy)*rcpHeight)));
+              }
+            }
+            __aligned(64) int valid16[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
+            switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
+            case VARIANT_INTERSECT: rtcIntersect16(valid16,*scene,ray16); break;
+            case VARIANT_OCCLUDED : rtcOccluded16 (valid16,*scene,ray16); break;
+            }
+          }
+        }
+        break;
+      }
+      case MODE_INTERSECT1M: 
+      {
+        for (size_t y=y0; y<y1; y+=16) {
+          for (size_t x=x0; x<x1; x+=16) {
+            RTCRay rays[256];
+            for (size_t dy=0; dy<16; dy++) {
+              for (size_t dx=0; dx<16; dx++) {
+                rays[dy*16+dx] = fastMakeRay(zero,Vec3f(float(x+dx)*rcpWidth,1,float(y+dy)*rcpHeight));
+              }
+            }
+            switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
+            case VARIANT_INTERSECT: rtcIntersect1M(*scene,&context,rays,256,sizeof(RTCRay)); break;
+            case VARIANT_OCCLUDED : rtcOccluded1M (*scene,&context,rays,256,sizeof(RTCRay)); break;
+            }
+          }
+        }
+        break;
+      }
+      default: break;
+      }
+    }
+
+    double benchmark(VerifyApplication* state) {
+      return tileSizeX*tileSizeY*ParallelIntersectBenchmark::benchmark(state);
+    }
+
+    virtual void cleanup(VerifyApplication* state) 
+    {
+      scene = nullptr;
+      device = nullptr;
     }
   };
 
