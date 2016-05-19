@@ -3136,7 +3136,10 @@ namespace embree
       {
         for (size_t j=0; j<dn; j++) {
           RTCRay ray = fastMakeRay(zero,numbers[i+j]);
-          rtcIntersect(*scene,ray);
+          switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
+          case VARIANT_INTERSECT: rtcIntersect(*scene,ray); break;
+          case VARIANT_OCCLUDED : rtcOccluded (*scene,ray); break;
+          }
         }
         break;
       }
@@ -3148,7 +3151,10 @@ namespace embree
             setRay(ray4,k,fastMakeRay(zero,numbers[i+j+k]));
           }
           __aligned(16) int valid4[4] = { -1,-1,-1,-1 };
-          rtcIntersect4(valid4,*scene,ray4);
+          switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
+          case VARIANT_INTERSECT: rtcIntersect4(valid4,*scene,ray4); break;
+          case VARIANT_OCCLUDED : rtcOccluded4 (valid4,*scene,ray4); break;
+          }
         }
         break;
       }
@@ -3160,7 +3166,10 @@ namespace embree
             setRay(ray8,k,fastMakeRay(zero,numbers[i+j+k]));
           }
           __aligned(32) int valid8[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
-          rtcIntersect8(valid8,*scene,ray8);
+          switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
+          case VARIANT_INTERSECT: rtcIntersect8(valid8,*scene,ray8); break;
+          case VARIANT_OCCLUDED : rtcOccluded8 (valid8,*scene,ray8); break;
+          }
         }
         break;
       }
@@ -3172,7 +3181,10 @@ namespace embree
             setRay(ray16,k,fastMakeRay(zero,numbers[i+j+k]));
           }
           __aligned(64) int valid16[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
-          rtcIntersect16(valid16,*scene,ray16);
+          switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
+          case VARIANT_INTERSECT: rtcIntersect16(valid16,*scene,ray16); break;
+          case VARIANT_OCCLUDED : rtcOccluded16 (valid16,*scene,ray16); break;
+          }
         }
         break;
       }
@@ -3180,9 +3192,11 @@ namespace embree
       {
         for (size_t j=0; j<dn; j+=128) {
           RTCRay rays[128];
-          for (size_t k=0; k<128; k++) 
-            rays[k] = fastMakeRay(zero,numbers[i+j+k]);
-          rtcIntersect1M(*scene,&context,rays,128,sizeof(RTCRay));
+          for (size_t k=0; k<128; k++) rays[k] = fastMakeRay(zero,numbers[i+j+k]);
+          switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
+          case VARIANT_INTERSECT: rtcIntersect1M(*scene,&context,rays,128,sizeof(RTCRay)); break;
+          case VARIANT_OCCLUDED : rtcOccluded1M (*scene,&context,rays,128,sizeof(RTCRay)); break;
+          }
         }
         break;
       }
