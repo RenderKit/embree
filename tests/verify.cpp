@@ -2851,7 +2851,7 @@ namespace embree
     }
   };
   
-  struct CoherentBenchmark : public VerifyApplication::Benchmark
+  struct CoherentRaysBenchmark : public VerifyApplication::Benchmark
   {
     RTCSceneFlags sflags;
     RTCGeometryFlags gflags;
@@ -2861,7 +2861,7 @@ namespace embree
     RTCDeviceRef device;
     Ref<VerifyScene> scene;
     
-    CoherentBenchmark (std::string name, int isa, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant, size_t numPhi)
+    CoherentRaysBenchmark (std::string name, int isa, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant, size_t numPhi)
       : VerifyApplication::Benchmark(name,isa,"Mrps"), sflags(sflags), gflags(gflags), imode(imode), ivariant(ivariant), numPhi(numPhi) {}
     
     bool setup(VerifyApplication* state) 
@@ -3013,7 +3013,7 @@ namespace embree
     }
   };
 
-  struct IncoherentBenchmark : public VerifyApplication::Benchmark
+  struct IncoherentRaysBenchmark : public VerifyApplication::Benchmark
   {
     RTCSceneFlags sflags;
     RTCGeometryFlags gflags;
@@ -3025,10 +3025,10 @@ namespace embree
     static const size_t N = 1024*1024;
     Vec3f* numbers;
     
-    IncoherentBenchmark (std::string name, int isa, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant, size_t numPhi)
+    IncoherentRaysBenchmark (std::string name, int isa, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant, size_t numPhi)
       : VerifyApplication::Benchmark(name,isa,"Mrps"), sflags(sflags), gflags(gflags), imode(imode), ivariant(ivariant), numPhi(numPhi), numbers(nullptr) {}
     
-    ~IncoherentBenchmark() {
+    ~IncoherentRaysBenchmark() {
       if (numbers) delete[] numbers; numbers = nullptr;
     }
 
@@ -3459,12 +3459,12 @@ namespace embree
       for (auto sflags : sceneFlags) 
         for (auto imode : intersectModes) 
             for (auto ivariant : intersectVariants)
-              groups.top()->add(new CoherentBenchmark("coherent1M."+to_string(sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,imode,ivariant,501));
+              groups.top()->add(new CoherentRaysBenchmark("coherent1M."+to_string(sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,imode,ivariant,501));
 
       for (auto sflags : sceneFlags) 
         for (auto imode : intersectModes) 
             for (auto ivariant : intersectVariants)
-              groups.top()->add(new IncoherentBenchmark("incoherent1M."+to_string(sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,imode,ivariant,501));
+              groups.top()->add(new IncoherentRaysBenchmark("incoherent1M."+to_string(sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,imode,ivariant,501));
 
       groups.pop();
 
