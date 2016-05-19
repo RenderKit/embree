@@ -297,6 +297,11 @@ namespace embree
       for (auto P : mesh->v) 
         mesh->v2.push_back(P+dP);
     }
+    else if (Ref<SceneGraph::LineSegmentsNode> mesh = node.dynamicCast<SceneGraph::LineSegmentsNode>()) 
+    {
+      for (auto P : mesh->v) 
+        mesh->v2.push_back(P+dP);
+    }
     else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>()) 
     {
       for (auto P : mesh->positions) 
