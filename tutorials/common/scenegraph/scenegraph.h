@@ -86,6 +86,9 @@ namespace embree
         return empty;
       }
 
+      /* calculates number of primitives */
+      virtual size_t numPrimitives() const = 0;
+
       Ref<Node> set_motion_vector(const Vec3fa& dP) {
         SceneGraph::set_motion_vector(this,dP); return this;
       }
@@ -121,6 +124,10 @@ namespace embree
         return merge(b0,b1);
       }
 
+      virtual size_t numPrimitives() const {
+        return child->numPrimitives();
+      }
+
     public:
       AffineSpace3fa xfm0;
       AffineSpace3fa xfm1;
@@ -151,6 +158,13 @@ namespace embree
         for (auto c : children)
           b.extend(c->bounds());
         return b;
+      }
+
+      virtual size_t numPrimitives() const 
+      {
+        size_t n = 0;
+        for (auto child : children) n += child->numPrimitives();
+        return n;
       }
 
       void triangles_to_quads()
@@ -193,7 +207,11 @@ namespace embree
     {
       LightNode (Ref<Light> light)
         : light(light) {}
-      
+
+      virtual size_t numPrimitives() const {
+        return 0;
+      }
+
       Ref<Light> light;
     };
     
@@ -203,7 +221,11 @@ namespace embree
 
       MaterialNode(const Material& material)
         : material(material) {}
-      
+
+      virtual size_t numPrimitives() const {
+        return 0;
+      }
+
       Material material;
     };
     
@@ -236,6 +258,10 @@ namespace embree
         for (auto x : v ) b.extend(x);
         for (auto x : v2) b.extend(x);
         return b;
+      }
+
+      virtual size_t numPrimitives() const {
+        return triangles.size();
       }
 
       void verify() const;
@@ -279,6 +305,10 @@ namespace embree
         for (auto x : v2) b.extend(x);
         return b;
       }
+      
+      virtual size_t numPrimitives() const {
+        return quads.size();
+      }
 
       void verify() const;
 
@@ -309,6 +339,10 @@ namespace embree
         for (auto x : positions ) b.extend(x);
         for (auto x : positions2) b.extend(x);
         return b;
+      }
+
+      virtual size_t numPrimitives() const {
+        return verticesPerFace.size();
       }
 
       void verify() const;
@@ -353,6 +387,10 @@ namespace embree
         return b;
       }
 
+      virtual size_t numPrimitives() const {
+        return indices.size();
+      }
+
       void verify() const;
 
     public:
@@ -392,6 +430,10 @@ namespace embree
         for (auto x : v ) b.extend(x);
         for (auto x : v2) b.extend(x);
         return b;
+      }
+
+      virtual size_t numPrimitives() const {
+        return hairs.size();
       }
 
       void verify() const;

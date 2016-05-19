@@ -553,6 +553,19 @@ namespace embree
     return str;
   }
 
+  inline std::string to_string(RTCGeometryFlags gflags)
+  {
+    switch (gflags) {
+    case RTC_GEOMETRY_STATIC: return "Static";
+    case RTC_GEOMETRY_DEFORMABLE: return "Deformable";
+    case RTC_GEOMETRY_DYNAMIC: return "Dynamic";
+    }
+  }
+
+  inline std::string to_string(RTCSceneFlags sflags, RTCGeometryFlags gflags) {
+    return to_string(sflags)+to_string(gflags);
+  }
+
   static const size_t numSceneFlags = 64;
 
   RTCSceneFlags getSceneFlag(size_t i) 

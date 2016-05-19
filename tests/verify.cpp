@@ -332,7 +332,7 @@ namespace embree
     return passed ? PASSED : FAILED;
   }
 
-  VerifyApplication::TestReturnValue VerifyApplication::Benchmark::execute(VerifyApplication* state, bool silent)
+  VerifyApplication::TestReturnValue VerifyApplication::Benchmark::execute(VerifyApplication* state, bool silent) try
   {
     //setAffinity(0);
     //sleepSeconds(0.1);
@@ -373,6 +373,12 @@ namespace embree
 
     state->numPassedTests++;
     return VerifyApplication::PASSED;
+  }
+  catch (...)
+  {
+    std::cout << state->red   (" [FAILED]" ) << std::endl << std::flush;
+    state->numFailedTests++;
+    return VerifyApplication::FAILED;
   }
 
   VerifyApplication::TestReturnValue VerifyApplication::TestGroup::execute(VerifyApplication* state, bool silent_in)
@@ -532,6 +538,7 @@ namespace embree
       AssertNoError(device);
       BBox3fa bounds1;
       rtcGetBounds(scene,(RTCBounds&)bounds1);
+      AssertNoError(device);
       return (VerifyApplication::TestReturnValue)(bounds0 == bounds1);
     }
   };
@@ -594,6 +601,8 @@ namespace embree
       if ((size_t)rtcGetUserData(scene,geom11) != 12) return VerifyApplication::FAILED;
       if ((size_t)rtcGetUserData(scene,geom12) != 13) return VerifyApplication::FAILED;
       if ((size_t)rtcGetUserData(scene,geom13) != 14) return VerifyApplication::FAILED;
+      AssertNoError(device);
+
       return VerifyApplication::PASSED;
     }
   };
@@ -759,6 +768,8 @@ namespace embree
           AssertAnyError(device);
         }
       }
+      AssertNoError(device);
+
       return VerifyApplication::PASSED;
     }
   };
@@ -952,6 +963,8 @@ namespace embree
           if (!ok0 || !ok1 || !ok2 || !ok3) return VerifyApplication::FAILED;
         }
       }
+      AssertNoError(device);
+
       return VerifyApplication::PASSED;
     }
   };
@@ -1019,6 +1032,8 @@ namespace embree
           for (size_t i=0; i<numRays; i++) if (rays[i].geomID == -1) return VerifyApplication::FAILED;
         }
       }
+      AssertNoError(device);
+
       return VerifyApplication::PASSED;
     }
   };
@@ -1064,6 +1079,8 @@ namespace embree
         rtcCommit(scene);
         AssertNoError(device);
       }
+      AssertNoError(device);
+
       return VerifyApplication::PASSED;
     }
   };
@@ -1279,6 +1296,7 @@ namespace embree
       //delete[] vertices1;
       delete[] user_vertices0;
       delete[] user_vertices1;
+      AssertNoError(device);
 
       return (VerifyApplication::TestReturnValue) passed;
     }
@@ -1373,6 +1391,7 @@ namespace embree
       //delete[] vertices1;
       delete[] user_vertices0;
       delete[] user_vertices1;
+      AssertNoError(device);
 
       return (VerifyApplication::TestReturnValue) passed;
     }
@@ -1481,6 +1500,7 @@ namespace embree
       //delete[] vertices1;
       delete[] user_vertices0;
       delete[] user_vertices1;
+      AssertNoError(device);
 
       return (VerifyApplication::TestReturnValue) passed;
     }
@@ -1559,6 +1579,8 @@ namespace embree
         const Vec3fa Ng = normalize(Vec3fa(rays[i].Ng[0],rays[i].Ng[1],rays[i].Ng[2])); // FIXME: some geom normals are scaled!!!??
         if (reduce_max(abs(Ng - Vec3fa(0.0f,0.0f,-1.0f))) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
       }
+      AssertNoError(device);
+
       return VerifyApplication::PASSED;
     }
   };
@@ -1625,6 +1647,7 @@ namespace embree
         const Vec3fa Ng = normalize(Vec3fa(rays[i].Ng[0],rays[i].Ng[1],rays[i].Ng[2])); // FIXME: some geom normals are scaled!!!??
         if (reduce_max(abs(Ng - Vec3fa(0.0f,0.0f,-1.0f))) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
       }
+      AssertNoError(device);
       
       return VerifyApplication::PASSED;
     }
@@ -1680,6 +1703,8 @@ namespace embree
         for (size_t i=0; i<4; i++)
           passed &= masks[i] & (1<<i) ? rays[i].geomID != -1 : rays[i].geomID == -1;
       }
+      AssertNoError(device);
+
       return (VerifyApplication::TestReturnValue) passed;
     }
   };
@@ -1744,6 +1769,8 @@ namespace embree
             passed &= dot(dir,Ng) < 0.0f;
         }
       }
+      AssertNoError(device);
+
       return (VerifyApplication::TestReturnValue) passed;
     }
   };
@@ -1900,6 +1927,8 @@ namespace embree
           if (!ok) passed = false;
         }
       }
+      AssertNoError(device);
+
       return (VerifyApplication::TestReturnValue) passed;
     }
   };
@@ -1961,6 +1990,7 @@ namespace embree
           }
         }
       }
+      AssertNoError(device);
       return (VerifyApplication::TestReturnValue) (numFailures == 0);
     }
   };
@@ -2212,6 +2242,8 @@ namespace embree
       double d2 = c2-c1;
       double d3 = c3-c2;
       double d4 = c4-c3;
+      AssertNoError(device);
+
       
       bool ok = (d2 < 2.5*d1) && (d3 < 2.5*d1) && (d4 < 2.5*d1);
       float f = max(d2/d1,d3/d1,d4/d1);
@@ -2291,7 +2323,8 @@ namespace embree
       double d3 = c3-c2;
       double d4 = c4-c3;
       double d5 = c5-c4;
-      
+      AssertNoError(device);
+
       bool ok = (d2 < 2.5*d1) && (d3 < 2.5*d1) && (d4 < 2.5*d1) && (d5 < 2.5*d1);
       float f = max(d2/d1,d3/d1,d4/d1,d5/d1);
       if (!silent) { printf(" (%3.2fx)",f); fflush(stdout); }
@@ -2818,6 +2851,7 @@ namespace embree
         sceneIndex++;
       }
       rtcDeviceSetMemoryMonitorFunction(device,nullptr);
+      AssertNoError(device);
       return VerifyApplication::PASSED;
     }
   };
@@ -2954,6 +2988,8 @@ namespace embree
       default:               throw std::runtime_error("invalid geometry for benchmark");
       }
       rtcCommit (*scene);
+      AssertNoError(device);
+            
       return true;
     }
 
@@ -3072,6 +3108,7 @@ namespace embree
 
     virtual void cleanup(VerifyApplication* state) 
     {
+      AssertNoError(device);
       scene = nullptr;
       device = nullptr;
       ParallelIntersectBenchmark::cleanup(state);
@@ -3119,6 +3156,7 @@ namespace embree
       default:               throw std::runtime_error("invalid geometry for benchmark");
       }
       rtcCommit (*scene);
+      AssertNoError(device);      
 
       numbers = new Vec3f[N];
       for (size_t i=0; i<N; i++) {
@@ -3213,10 +3251,104 @@ namespace embree
 
     virtual void cleanup(VerifyApplication* state) 
     {
+      AssertNoError(device);
       if (numbers) delete[] numbers; numbers = nullptr;
       scene = nullptr;
       device = nullptr;
       ParallelIntersectBenchmark::cleanup(state);
+    }
+  };
+
+  struct CreateGeometryBenchmark : public VerifyApplication::Benchmark
+  {
+    GeometryType gtype;
+    RTCSceneFlags sflags;
+    RTCGeometryFlags gflags;
+    size_t numPhi;
+    size_t numMeshes;
+    bool update;
+    size_t numPrimitives;
+    RTCDeviceRef device;
+    Ref<VerifyScene> scene;
+    std::vector<Ref<SceneGraph::Node>> geometries;
+    
+    CreateGeometryBenchmark (std::string name, int isa, GeometryType gtype, RTCSceneFlags sflags, RTCGeometryFlags gflags, size_t numPhi, size_t numMeshes, bool update)
+      : VerifyApplication::Benchmark(name,isa,"Mprims/s"), gtype(gtype), sflags(sflags), gflags(gflags), numPhi(numPhi), numMeshes(numMeshes), update(update), numPrimitives(0), device(nullptr), scene(nullptr) {}
+
+    void create_scene()
+    {
+      scene = new VerifyScene(device,sflags,aflags_all);
+
+      numPrimitives = 0;
+      for (size_t i=0; i<numMeshes; i++)
+      {
+        numPrimitives += geometries[i]->numPrimitives();
+
+        switch (gtype) { 
+        case TRIANGLE_MESH:    
+        case QUAD_MESH:        
+        case SUBDIV_MESH:      
+          scene->addGeometry(gflags,geometries[i],false); // FIXME: scene graph meshes should store if mesh is mblur mesh
+          break;
+        case TRIANGLE_MESH_MB: 
+        case QUAD_MESH_MB:     
+        case SUBDIV_MESH_MB:   
+          scene->addGeometry(gflags,geometries[i],true); 
+          break;
+        default: 
+          throw std::runtime_error("invalid geometry for benchmark");
+        }
+      }
+    }
+
+    bool setup(VerifyApplication* state) 
+    {
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      device = rtcNewDevice(cfg.c_str());
+      error_handler(rtcDeviceGetError(device));
+
+      for (size_t i=0; i<numMeshes; i++)
+      {
+        switch (gtype) {
+        case TRIANGLE_MESH:    geometries.push_back(SceneGraph::createTriangleSphere(zero,i+1,numPhi)); break;
+        case TRIANGLE_MESH_MB: geometries.push_back(SceneGraph::createTriangleSphere(zero,i+1,numPhi)->set_motion_vector(Vec3fa(0.01f))); break;
+        case QUAD_MESH:        geometries.push_back(SceneGraph::createQuadSphere(zero,i+1,numPhi)); break;
+        case QUAD_MESH_MB:     geometries.push_back(SceneGraph::createQuadSphere(zero,i+1,numPhi)->set_motion_vector(Vec3fa(0.01f))); break;
+        case SUBDIV_MESH:      geometries.push_back(SceneGraph::createSubdivSphere(zero,i+1,8,numPhi/8)); break;
+        case SUBDIV_MESH_MB:   geometries.push_back(SceneGraph::createSubdivSphere(zero,i+1,8,numPhi/8)->set_motion_vector(Vec3fa(0.01f))); break;
+        default:               throw std::runtime_error("invalid geometry for benchmark");
+        }
+      }
+
+      if (update) 
+        create_scene();
+
+      return true;
+    }
+
+    double benchmark(VerifyApplication* state)
+    {
+      if (!update) create_scene();
+
+      double t0 = getSeconds();
+
+      if (update)
+        for (size_t i=0; i<numMeshes; i++) 
+          rtcUpdate(*scene,i);
+
+      rtcCommit (*scene);
+      AssertNoError(device);
+
+      double t1 = getSeconds();
+
+      return 1E-6*double(numPrimitives)/(t1-t0);
+    }
+
+    virtual void cleanup(VerifyApplication* state) 
+    {
+      scene = nullptr;
+      device = nullptr;
+      geometries.clear();
     }
   };
 
@@ -3577,6 +3709,7 @@ namespace embree
         QUAD_MESH_MB, 
         SUBDIV_MESH, 
         //SUBDIV_MESH_MB  // FIXME: not supported yet
+        // FIXME: use more geometry types
       };
 
       groups.top()->add(new SimpleBenchmark("simple",isa));
@@ -3584,12 +3717,55 @@ namespace embree
       for (auto gtype : benchmark_gtypes)
         for (auto sflags : benchmark_sflags_gflags) 
           for (auto imode : benchmark_imodes_ivariants)
-            groups.top()->add(new CoherentRaysBenchmark("coherent."+to_string(gtype)+"_1000k."+to_string(sflags.first,imode.first,imode.second),isa,gtype,sflags.first,sflags.second,imode.first,imode.second,501));
+            groups.top()->add(new CoherentRaysBenchmark("coherent."+to_string(gtype)+"_1000k."+to_string(sflags.first,imode.first,imode.second),
+                                                        isa,gtype,sflags.first,sflags.second,imode.first,imode.second,501));
 
       for (auto gtype : benchmark_gtypes)
         for (auto sflags : benchmark_sflags_gflags) 
           for (auto imode : benchmark_imodes_ivariants)
-            groups.top()->add(new IncoherentRaysBenchmark("incoherent."+to_string(gtype)+"_1000k."+to_string(sflags.first,imode.first,imode.second),isa,gtype,sflags.first,sflags.second,imode.first,imode.second,501));
+            groups.top()->add(new IncoherentRaysBenchmark("incoherent."+to_string(gtype)+"_1000k."+to_string(sflags.first,imode.first,imode.second),
+                                                          isa,gtype,sflags.first,sflags.second,imode.first,imode.second,501));
+
+      std::vector<std::pair<RTCSceneFlags,RTCGeometryFlags>> benchmark_create_sflags_gflags;
+      benchmark_create_sflags_gflags.push_back(std::make_pair(RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC));
+      //benchmark_create_sflags_gflags.push_back(std::make_pair(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC));
+      //benchmark_create_sflags_gflags.push_back(std::make_pair(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DEFORMABLE));
+      benchmark_create_sflags_gflags.push_back(std::make_pair(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DYNAMIC));
+
+      GeometryType benchmark_create_gtypes[] = { 
+        TRIANGLE_MESH, 
+        TRIANGLE_MESH_MB, 
+        QUAD_MESH, 
+        QUAD_MESH_MB, 
+        // FIXME: use more geometry types
+      };
+
+      std::vector<std::tuple<const char*,int,int>> num_primitives;
+      num_primitives.push_back(std::make_tuple("120",6,1));
+      num_primitives.push_back(std::make_tuple("1k" ,17,1));
+      num_primitives.push_back(std::make_tuple("10k",51,1));
+      num_primitives.push_back(std::make_tuple("100k",159,1));
+      num_primitives.push_back(std::make_tuple("1000k_1",501,1));
+      num_primitives.push_back(std::make_tuple("100k_10",159,10));
+      num_primitives.push_back(std::make_tuple("10k_100",51,100));
+      num_primitives.push_back(std::make_tuple("1k_1000",17,1000));
+
+      for (auto gtype : benchmark_create_gtypes)
+        for (auto sflags : benchmark_create_sflags_gflags)
+          for (auto num_prims : num_primitives)
+            groups.top()->add(new CreateGeometryBenchmark("create."+to_string(gtype)+"_"+std::get<0>(num_prims)+"."+to_string(sflags.first,sflags.second),
+                                                          isa,gtype,sflags.first,sflags.second,std::get<1>(num_prims),std::get<2>(num_prims),false));
+
+      std::vector<std::pair<RTCSceneFlags,RTCGeometryFlags>> benchmark_update_sflags_gflags;
+      benchmark_update_sflags_gflags.push_back(std::make_pair(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC));
+      benchmark_update_sflags_gflags.push_back(std::make_pair(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DEFORMABLE));
+      benchmark_update_sflags_gflags.push_back(std::make_pair(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DYNAMIC));
+
+      for (auto gtype : benchmark_create_gtypes)
+        for (auto sflags : benchmark_update_sflags_gflags)
+          for (auto num_prims : num_primitives)
+            groups.top()->add(new CreateGeometryBenchmark("update."+to_string(gtype)+"_"+std::get<0>(num_prims)+"."+to_string(sflags.first,sflags.second),
+                                                          isa,gtype,sflags.first,sflags.second,std::get<1>(num_prims),std::get<2>(num_prims),true));
 
       groups.pop();
 
