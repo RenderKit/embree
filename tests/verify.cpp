@@ -22,7 +22,7 @@
 #include <stack>
 
 #define random use_random_function_of_test // do use random_int() and random_float() from Test class
-//#define drand48 use_random_function_of_test // do use random_int() and random_float() from Test class // FIXME: enable
+#define drand48 use_random_function_of_test // do use random_int() and random_float() from Test class
 
 #define DEFAULT_STACK_SIZE 4*1024*1024
 
@@ -2851,7 +2851,7 @@ namespace embree
     }
   };
   
-  struct CoherentIntersect1Benchmark : public VerifyApplication::Benchmark
+  struct CoherentBenchmark : public VerifyApplication::Benchmark
   {
     RTCSceneFlags sflags;
     RTCGeometryFlags gflags;
@@ -2861,7 +2861,7 @@ namespace embree
     RTCDeviceRef device;
     Ref<VerifyScene> scene;
     
-    CoherentIntersect1Benchmark (std::string name, int isa, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant, size_t numPhi)
+    CoherentBenchmark (std::string name, int isa, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant, size_t numPhi)
       : VerifyApplication::Benchmark(name,isa,"Mrps"), sflags(sflags), gflags(gflags), imode(imode), ivariant(ivariant), numPhi(numPhi) {}
     
     bool setup(VerifyApplication* state) 
@@ -3008,6 +3008,124 @@ namespace embree
 
     virtual void cleanup(VerifyApplication* state) 
     {
+      scene = nullptr;
+      device = nullptr;
+    }
+  };
+
+  struct IncoherentBenchmark : public VerifyApplication::Benchmark
+  {
+    RTCSceneFlags sflags;
+    RTCGeometryFlags gflags;
+    IntersectMode imode;
+    IntersectVariant ivariant;
+    size_t numPhi;
+    RTCDeviceRef device;
+    Ref<VerifyScene> scene;
+    static const size_t N = 1024*1024;
+    Vec3f* numbers;
+    
+    IncoherentBenchmark (std::string name, int isa, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant, size_t numPhi)
+      : VerifyApplication::Benchmark(name,isa,"Mrps"), sflags(sflags), gflags(gflags), imode(imode), ivariant(ivariant), numPhi(numPhi), numbers(nullptr) {}
+    
+    ~IncoherentBenchmark() {
+      if (numbers) delete[] numbers; numbers = nullptr;
+    }
+
+    bool setup(VerifyApplication* state) 
+    {
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      device = rtcNewDevice(cfg.c_str());
+      error_handler(rtcDeviceGetError(device));
+      if (!supportsIntersectMode(device,imode))
+        return false;
+
+      scene = new VerifyScene(device,sflags,aflags_all);
+      scene->addSphere (sampler,gflags,zero,1,numPhi);
+      rtcCommit (*scene);
+
+      numbers = new Vec3f[N];
+      for (size_t i=0; i<N; i++) {
+        float x = 2.0f*random_float()-1.0f;
+        float y = 2.0f*random_float()-1.0f;
+        float z = 2.0f*random_float()-1.0f;
+        numbers[i] = Vec3f(x,y,z);
+      }
+      return true;
+    }
+
+    double benchmark(VerifyApplication* state)
+    {
+      RTCIntersectContext context;
+      context.flags = ((ivariant & VARIANT_COHERENT_INCOHERENT_MASK) == VARIANT_COHERENT) ? RTC_INTERSECT_COHERENT :  RTC_INTERSECT_INCOHERENT;
+      context.userRayExt = nullptr;
+
+      double t0 = getSeconds();
+      switch (imode) 
+      {
+      case MODE_INTERSECT1: 
+      {
+        for (size_t i=0; i<N; i++) {
+          RTCRay ray = fastMakeRay(zero,numbers[i]);
+          rtcIntersect(*scene,ray);
+        }
+        break;
+      }
+      case MODE_INTERSECT4: 
+      {
+        for (size_t i=0; i<N; i+=4) {
+          RTCRay4 ray4;
+          for (size_t j=0; j<4; j++) {
+            setRay(ray4,j,fastMakeRay(zero,numbers[i+j]));
+          }
+          __aligned(16) int valid4[4] = { -1,-1,-1,-1 };
+          rtcIntersect4(valid4,*scene,ray4);
+        }
+        break;
+      }
+      case MODE_INTERSECT8: 
+      {
+        for (size_t i=0; i<N; i+=8) {
+          RTCRay8 ray8;
+          for (size_t j=0; j<8; j++) {
+            setRay(ray8,j,fastMakeRay(zero,numbers[i+j]));
+          }
+          __aligned(32) int valid8[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
+          rtcIntersect8(valid8,*scene,ray8);
+        }
+        break;
+      }
+      case MODE_INTERSECT16: 
+      {
+        for (size_t i=0; i<N; i+=16) {
+          RTCRay16 ray16;
+          for (size_t j=0; j<16; j++) {
+            setRay(ray16,j,fastMakeRay(zero,numbers[i+j]));
+          }
+          __aligned(64) int valid16[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
+          rtcIntersect16(valid16,*scene,ray16);
+        }
+        break;
+      }
+      case MODE_INTERSECT1M: 
+      {
+        for (size_t i=0; i<N; i+=128) {
+          RTCRay rays[128];
+          for (size_t j=0; j<128; j++) 
+            rays[j] = fastMakeRay(zero,numbers[i+j]);
+          rtcIntersect1M(*scene,&context,rays,128,sizeof(RTCRay));
+        }
+        break;
+      }
+      default: break;
+      }
+      double t1 = getSeconds();
+      return 1E-6*(double)(N)/(t1-t0);
+    }
+
+    virtual void cleanup(VerifyApplication* state) 
+    {
+      if (numbers) delete[] numbers; numbers = nullptr;
       scene = nullptr;
       device = nullptr;
     }
@@ -3335,13 +3453,21 @@ namespace embree
       /**************************************************************************/
       
       push(new TestGroup("benchmarks",false,false));
+
       groups.top()->add(new SimpleBenchmark("simple",isa));
+
       for (auto sflags : sceneFlags) 
         for (auto imode : intersectModes) 
             for (auto ivariant : intersectVariants)
-              groups.top()->add(new CoherentIntersect1Benchmark("coherent."+to_string(sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,imode,ivariant,501));
+              groups.top()->add(new CoherentBenchmark("coherent1M."+to_string(sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,imode,ivariant,501));
+
+      for (auto sflags : sceneFlags) 
+        for (auto imode : intersectModes) 
+            for (auto ivariant : intersectVariants)
+              groups.top()->add(new IncoherentBenchmark("incoherent1M."+to_string(sflags,imode,ivariant),isa,sflags,RTC_GEOMETRY_STATIC,imode,ivariant,501));
+
       groups.pop();
-      
+
       groups.pop();
     }
 
