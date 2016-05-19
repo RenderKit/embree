@@ -3273,7 +3273,8 @@ namespace embree
     std::vector<Ref<SceneGraph::Node>> geometries;
     
     CreateGeometryBenchmark (std::string name, int isa, GeometryType gtype, RTCSceneFlags sflags, RTCGeometryFlags gflags, size_t numPhi, size_t numMeshes, bool update)
-      : VerifyApplication::Benchmark(name,isa,"Mprims/s"), gtype(gtype), sflags(sflags), gflags(gflags), numPhi(numPhi), numMeshes(numMeshes), update(update), numPrimitives(0), device(nullptr), scene(nullptr) {}
+      : VerifyApplication::Benchmark(name,isa,"Mprims/s"), gtype(gtype), sflags(sflags), gflags(gflags), numPhi(numPhi), numMeshes(numMeshes), update(update), 
+        numPrimitives(0), device(nullptr), scene(nullptr) {}
 
     void create_scene()
     {
@@ -3288,11 +3289,15 @@ namespace embree
         case TRIANGLE_MESH:    
         case QUAD_MESH:        
         case SUBDIV_MESH:      
+        case HAIR_GEOMETRY:
+        case LINE_GEOMETRY:
           scene->addGeometry(gflags,geometries[i],false); // FIXME: scene graph meshes should store if mesh is mblur mesh
           break;
         case TRIANGLE_MESH_MB: 
         case QUAD_MESH_MB:     
         case SUBDIV_MESH_MB:   
+        case HAIR_GEOMETRY_MB:
+        case LINE_GEOMETRY_MB:
           scene->addGeometry(gflags,geometries[i],true); 
           break;
         default: 
@@ -3310,13 +3315,32 @@ namespace embree
       for (size_t i=0; i<numMeshes; i++)
       {
         switch (gtype) {
-        case TRIANGLE_MESH:    geometries.push_back(SceneGraph::createTriangleSphere(zero,i+1,numPhi)); break;
-        case TRIANGLE_MESH_MB: geometries.push_back(SceneGraph::createTriangleSphere(zero,i+1,numPhi)->set_motion_vector(Vec3fa(0.01f))); break;
-        case QUAD_MESH:        geometries.push_back(SceneGraph::createQuadSphere(zero,i+1,numPhi)); break;
-        case QUAD_MESH_MB:     geometries.push_back(SceneGraph::createQuadSphere(zero,i+1,numPhi)->set_motion_vector(Vec3fa(0.01f))); break;
-        case SUBDIV_MESH:      geometries.push_back(SceneGraph::createSubdivSphere(zero,i+1,8,numPhi/8)); break;
-        case SUBDIV_MESH_MB:   geometries.push_back(SceneGraph::createSubdivSphere(zero,i+1,8,numPhi/8)->set_motion_vector(Vec3fa(0.01f))); break;
+        case TRIANGLE_MESH:    
+        case TRIANGLE_MESH_MB: geometries.push_back(SceneGraph::createTriangleSphere(zero,i+1,numPhi)); break;
+        case QUAD_MESH:        
+        case QUAD_MESH_MB:     geometries.push_back(SceneGraph::createQuadSphere(zero,i+1,numPhi)); break;
+        case SUBDIV_MESH:      
+        case SUBDIV_MESH_MB:   geometries.push_back(SceneGraph::createSubdivSphere(zero,i+1,8,numPhi/8)); break;
+        case LINE_GEOMETRY: 
+        case LINE_GEOMETRY_MB:
+        case HAIR_GEOMETRY:    
+        case HAIR_GEOMETRY_MB: geometries.push_back(SceneGraph::createHairyPlane(i,Vec3fa(i),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4.0f*numPhi*numPhi,true)); break;
         default:               throw std::runtime_error("invalid geometry for benchmark");
+        }
+
+        switch (gtype) {
+        case LINE_GEOMETRY:    
+        case LINE_GEOMETRY_MB: geometries.back() = SceneGraph::convert_bezier_to_lines(geometries.back()); break;
+        default: break;
+        }
+
+        switch (gtype) {
+        case TRIANGLE_MESH_MB: 
+        case QUAD_MESH_MB:     
+        case SUBDIV_MESH_MB:   
+        case HAIR_GEOMETRY_MB: 
+        case LINE_GEOMETRY_MB: geometries.back() = geometries.back()->set_motion_vector(Vec3fa(0.0001f)); break;
+        default: break;
         }
       }
 
@@ -3737,7 +3761,10 @@ namespace embree
         TRIANGLE_MESH_MB, 
         QUAD_MESH, 
         QUAD_MESH_MB, 
-        // FIXME: use more geometry types
+        HAIR_GEOMETRY,
+        HAIR_GEOMETRY_MB,
+        LINE_GEOMETRY,
+        LINE_GEOMETRY_MB
       };
 
       std::vector<std::tuple<const char*,int,int>> num_primitives;

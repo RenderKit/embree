@@ -794,7 +794,9 @@ namespace embree
     HAIR_GEOMETRY,
     HAIR_GEOMETRY_MB,
     CURVE_GEOMETRY,
-    CURVE_GEOMETRY_MB
+    CURVE_GEOMETRY_MB,
+    LINE_GEOMETRY,
+    LINE_GEOMETRY_MB
   };
 
   inline std::string to_string(GeometryType gtype)
@@ -804,12 +806,14 @@ namespace embree
     case TRIANGLE_MESH_MB : return "triangles_mb";
     case QUAD_MESH        : return "quads";
     case QUAD_MESH_MB     : return "quads_mb";
-    case SUBDIV_MESH      : return "subdiv";
-    case SUBDIV_MESH_MB   : return "subdiv_mb";
+    case SUBDIV_MESH      : return "subdivs";
+    case SUBDIV_MESH_MB   : return "subdivs_mb";
     case HAIR_GEOMETRY    : return "hair";
     case HAIR_GEOMETRY_MB : return "hair_mb";
-    case CURVE_GEOMETRY   : return "curve";
-    case CURVE_GEOMETRY_MB: return "curve_mb";
+    case CURVE_GEOMETRY   : return "curves";
+    case CURVE_GEOMETRY_MB: return "curves_mb";
+    case LINE_GEOMETRY   : return "lines";
+    case LINE_GEOMETRY_MB: return "lines_mb";
     }
     return "";
   }
