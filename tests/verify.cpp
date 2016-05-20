@@ -3910,7 +3910,7 @@ namespace embree
     registerOption("plot-over-threads", [this] (Ref<ParseStream> cin, const FileName& path) {
         std::vector<Ref<Benchmark>> benchmarks;
         FileName outFileName = parse_benchmark_list(cin,benchmarks);
-        plot(benchmarks,outFileName,"#primitives",2,getNumberOfLogicalThreads(),1.0f,2,[&] (Ref<Benchmark> benchmark, size_t N) {
+        plot(benchmarks,outFileName,"#threads",2,getNumberOfLogicalThreads(),1.0f,2,[&] (Ref<Benchmark> benchmark, size_t N) {
             benchmark->setNumThreads(N);
             benchmark->setup(this);
             Statistics stat = benchmark->benchmark_loop(this);
