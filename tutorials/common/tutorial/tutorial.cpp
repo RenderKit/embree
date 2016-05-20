@@ -37,14 +37,13 @@
 #include "../image/image.h"
 #include "../transport/transport_host.h"
 
-extern "C" {
-  float g_debug = 0.0f;
-}
-
 namespace embree
 {
   std::string g_tutorialName;
-  extern "C" Mode g_mode = MODE_NORMAL;
+  extern "C" {
+    float g_debug = 0.0f;
+    Mode g_mode = MODE_NORMAL;
+  }
 
   TutorialApplication* TutorialApplication::instance = nullptr; 
 
