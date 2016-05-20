@@ -1,8 +1,28 @@
 Version History
 ---------------
 
+### New Features in Embree 2.10.0
+
+-   Added a new curve geometry which renders the sweep surface of a
+    circle along a Bézier curve.
+-   Intersection filters can update the 'tfar' ray distance.
+-   Geometry types can get disabled at compile time.
+-   Modified and extended the ray stream API.
+-   Added new callback mechanism for the ray stream API.
+-   Improved ray stream performance (up to 5-10%).
+-   Up to 20% faster morton builder on machines with large core counts.
+-   Lots of optimizations for the second generation Intel® Xeon Phi™ coprocessor codenamed Knights Landing.
+-   Added experimental support for compressed BVH nodes (reduces node
+    size to 56--62% of uncompressed size). Compression introduces a
+    typical performance overhead of ~10%.
+-   Bugfix in backface culling mode. We do now properly cull the
+    backfaces and not the frontfaces.
+-   Feature freeze for the first generation Intel® Xeon Phi™ coprocessor
+    codenamed Knights Corner. We will still maintain and add bug fixes
+    to Embree v2.9.0, but Embree 2.10 and future versions will no longer support it.
+
 ### New Features in Embree 2.9.0
-	
+
 -   Improved shadow ray performance (10--100% depending on the scene).
 -   Added initial support for ray streams (10--30% higher performance
     depending on ray coherence in the stream).
