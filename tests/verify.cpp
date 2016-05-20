@@ -3897,23 +3897,25 @@ namespace embree
 
     registerOption("plot-over-primitives", [this] (Ref<ParseStream> cin, const FileName& path) {
 
-        std::vector<std::string> names;
+        std::vector<std::string> regexpr;
         while (cin->peek() != "" && cin->peek()[0] != '-') 
-          names.push_back(cin->getString());
-        if (names.size() == 0) 
+          regexpr.push_back(cin->getString());
+        if (regexpr.size() == 0) 
           throw std::runtime_error("no output file specified");
+        FileName outFileName = regexpr.back();
+        regexpr.pop_back();
 
         std::vector<Ref<Benchmark>> benchmarks;
-        for (size_t i=0; i<names.size()-1; i++) {
-          if (i == names.size()) break;
-          std::string testname = names[i];
-          if (name2test.find(testname) == name2test.end()) throw std::runtime_error("unknown test "+testname);
-          Ref<Test> test = name2test[testname];
-          Ref<Benchmark> benchmark = test.dynamicCast<Benchmark>();
-          if (!benchmark) throw std::runtime_error("test "+testname+" is no benchmark");
-          benchmarks.push_back(benchmark);
+        for (size_t i=0; i<regexpr.size(); i++) 
+        {
+          map_tests(tests,[&] (Ref<Test> test) {
+              if (!regex_match(test->name,regexpr[i])) return;
+              Ref<Benchmark> benchmark = test.dynamicCast<Benchmark>();
+              if (!benchmark) return;
+              benchmarks.push_back(benchmark);
+            });
         }
-        plot_over_primitives(benchmarks,names.back());
+        plot_over_primitives(benchmarks,outFileName);
         exit(1);
       }, "--plot-over-primitive <benchmark0> <benchmark1> ... <outfile>: Plots performance over number of primitives to outfile for the specified benchmarks.");
   }
@@ -3991,7 +3993,9 @@ namespace embree
     plot << "set samples 50, 50" << std::endl;
     plot << "set title \"" << outFileName.name() << "\"" << std::endl; 
     plot << "set xlabel \"#primitives\"" << std::endl;
+    plot << "set logscale x" << std::endl;
     plot << "set ylabel \"" << benchmarks[0]->unit << "\"" << std::endl;
+    plot << "set yrange [0:]" << std::endl;
 
     plot << "plot \\" << std::endl;
     for (size_t i=0; i<benchmarks.size(); i++) {
