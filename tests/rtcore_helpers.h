@@ -561,6 +561,7 @@ namespace embree
     case RTC_GEOMETRY_STATIC: return "Static";
     case RTC_GEOMETRY_DEFORMABLE: return "Deformable";
     case RTC_GEOMETRY_DYNAMIC: return "Dynamic";
+    default: return "UnknownGeometryFlags";
     }
   }
 
