@@ -2910,7 +2910,6 @@ namespace embree
     {
       threadIndexCounter = 1;
       pos = 0;
-      size_t numThreads = getNumberOfLogicalThreads();
       barrier.init(numThreads);
       for (size_t i=1; i<numThreads; i++)
 	threads.push_back(createThread((thread_func)static_thread_function,this,DEFAULT_STACK_SIZE,i));
@@ -3337,7 +3336,7 @@ namespace embree
 
     bool setup(VerifyApplication* state) 
     {
-      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa) + ",threads=" + std::to_string(numThreads);
       device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
 
@@ -3896,28 +3895,30 @@ namespace embree
       }, "--intensity <float>: intensity of testing to perform");
 
     registerOption("plot-over-primitives", [this] (Ref<ParseStream> cin, const FileName& path) {
-
-        std::vector<std::string> regexpr;
-        while (cin->peek() != "" && cin->peek()[0] != '-') 
-          regexpr.push_back(cin->getString());
-        if (regexpr.size() == 0) 
-          throw std::runtime_error("no output file specified");
-        FileName outFileName = regexpr.back();
-        regexpr.pop_back();
-
         std::vector<Ref<Benchmark>> benchmarks;
-        for (size_t i=0; i<regexpr.size(); i++) 
-        {
-          map_tests(tests,[&] (Ref<Test> test) {
-              if (!regex_match(test->name,regexpr[i])) return;
-              Ref<Benchmark> benchmark = test.dynamicCast<Benchmark>();
-              if (!benchmark) return;
-              benchmarks.push_back(benchmark);
-            });
-        }
-        plot_over_primitives(benchmarks,outFileName);
+        FileName outFileName = parse_benchmark_list(cin,benchmarks);
+        plot(benchmarks,outFileName,"#primitives",1000,1100000,1.2f,0,[&] (Ref<Benchmark> benchmark, size_t& N) {
+            N = benchmark->setNumPrimitives(N);
+            benchmark->setup(this);
+            Statistics stat = benchmark->benchmark_loop(this);
+            benchmark->cleanup(this);
+            return stat;
+          });
         exit(1);
-      }, "--plot-over-primitive <benchmark0> <benchmark1> ... <outfile>: Plots performance over number of primitives to outfile for the specified benchmarks.");
+      }, "--plot-over-primitives <benchmark0> <benchmark1> ... <outfile>: Plots performance over number of primitives to outfile for the specified benchmarks.");
+
+    registerOption("plot-over-threads", [this] (Ref<ParseStream> cin, const FileName& path) {
+        std::vector<Ref<Benchmark>> benchmarks;
+        FileName outFileName = parse_benchmark_list(cin,benchmarks);
+        plot(benchmarks,outFileName,"#primitives",2,getNumberOfLogicalThreads(),1.0f,2,[&] (Ref<Benchmark> benchmark, size_t N) {
+            benchmark->setNumThreads(N);
+            benchmark->setup(this);
+            Statistics stat = benchmark->benchmark_loop(this);
+            benchmark->cleanup(this);
+            return stat;
+          });
+        exit(1);
+      }, "--plot-over-primitives <benchmark0> <benchmark1> ... <outfile>: Plots performance over number of primitives to outfile for the specified benchmarks.");
   }
 
   void VerifyApplication::prefix_test_names(Ref<Test> test, std::string prefix)
@@ -3928,6 +3929,28 @@ namespace embree
 
     test->name = prefix + test->name;
     name2test[test->name] = test;
+  }
+
+  FileName VerifyApplication::parse_benchmark_list(Ref<ParseStream> cin, std::vector<Ref<Benchmark>>& benchmarks)
+  {
+    std::vector<std::string> regexpr;
+    while (cin->peek() != "" && cin->peek()[0] != '-') 
+      regexpr.push_back(cin->getString());
+    
+    if (regexpr.size() == 0) throw std::runtime_error("no output file specified");
+    FileName outFileName = regexpr.back();
+    regexpr.pop_back();
+    
+    for (size_t i=0; i<regexpr.size(); i++) 
+    {
+      map_tests(tests,[&] (Ref<Test> test) {
+          if (!regex_match(test->name,regexpr[i])) return;
+          Ref<Benchmark> benchmark = test.dynamicCast<Benchmark>();
+          if (!benchmark) return;
+          benchmarks.push_back(benchmark);
+        });
+    }
+    return outFileName;
   }
 
   bool VerifyApplication::update_tests(Ref<Test> test)
@@ -3981,28 +4004,25 @@ namespace embree
    update_tests(test);
   }
 
-  void VerifyApplication::plot_over_primitives(std::vector<Ref<Benchmark>> benchmarks, const FileName outFileName)
+  template<typename Closure>
+  void VerifyApplication::plot(std::vector<Ref<Benchmark>> benchmarks, const FileName outFileName, std::string xlabel, size_t startN, size_t endN, float f, size_t dn, const Closure& test)
   {
-    size_t startN = 1000;
-    size_t endN = 1000000;
-    float f = 1.2f;
-    
     std::fstream plot;
     plot.open(outFileName, std::fstream::out | std::fstream::trunc);
     plot << "set key inside right top vertical Right noreverse enhanced autotitles box linetype -1 linewidth 1.000" << std::endl;
     plot << "set samples 50, 50" << std::endl;
     plot << "set title \"" << outFileName.name() << "\"" << std::endl; 
-    plot << "set xlabel \"#primitives\"" << std::endl;
-    plot << "set logscale x" << std::endl;
-    plot << "set ylabel \"" << benchmarks[0]->unit << "\"" << std::endl;
+    plot << "set xlabel \"" + xlabel + "\"" << std::endl;
+    if (f != 1.0f) plot << "set logscale x" << std::endl;
+    if (benchmarks.size())
+      plot << "set ylabel \"" << benchmarks[0]->unit << "\"" << std::endl;
     plot << "set yrange [0:]" << std::endl;
 
     plot << "plot \\" << std::endl;
     for (size_t i=0; i<benchmarks.size(); i++) {
       plot << "\"" << outFileName.name() << "." << benchmarks[i]->name << ".txt\" using 1:2 title \"" << benchmarks[i]->name << "\" with lines";
       if (i != benchmarks.size()-1) plot << ",\\";
-      plot << std::endl;
-      
+      plot << std::endl;      
     }
     plot << std::endl;
     plot.close();
@@ -4012,12 +4032,10 @@ namespace embree
       std::fstream data;
       data.open(outFileName.name()+"."+benchmark->name+".txt", std::fstream::out | std::fstream::trunc);
       std::cout << benchmark->name << std::endl;
-      for (size_t i=startN; i<=endN; i*=f) 
+      for (size_t i=startN; i<=endN; i=i*f+dn) 
       {
-        size_t N = benchmark->setNumPrimitives(i);
-        benchmark->setup(this);
-        Statistics stat = benchmark->benchmark_loop(this);
-        benchmark->cleanup(this);
+        size_t N = i;
+        Statistics stat = test(benchmark,N);
         data << " " << N << " " << stat.getAvg() << std::endl;
         std::cout<< " " << N << " " << stat.getAvg() << std::endl;
       }

@@ -60,14 +60,18 @@ namespace embree
     public:
       const std::string unit;
       Benchmark (const std::string& name, int isa, const std::string& unit)
-        : Test(name,isa,BENCHMARK,false), unit(unit) {}
+        : Test(name,isa,BENCHMARK,false), unit(unit), numThreads(getNumberOfLogicalThreads()) {}
       
       virtual size_t setNumPrimitives(size_t N) { return 0; }
+      virtual void setNumThreads(size_t N) { numThreads = N; }
       virtual bool setup(VerifyApplication* state) { return true; }
       virtual double benchmark(VerifyApplication* state) = 0;
       Statistics benchmark_loop(VerifyApplication* state);
       virtual void cleanup(VerifyApplication* state) {}
       virtual TestReturnValue execute(VerifyApplication* state, bool silent);
+
+    public:
+      size_t numThreads;
     };
 
     struct TestGroup : public Test
@@ -113,7 +117,9 @@ namespace embree
       void map_tests(Ref<Test> test, const Function& f);
     void enable_disable_all_tests(Ref<Test> test, bool enabled);
     void enable_disable_some_tests(Ref<Test> test, std::string regex, bool enabled);
-    void plot_over_primitives(std::vector<Ref<Benchmark>> benchmarks, const FileName outFileName);
+     template<typename Closure>
+       void plot(std::vector<Ref<Benchmark>> benchmarks, const FileName outFileName, std::string xlabel, size_t startN, size_t endN, float f, size_t dn, const Closure& test);
+    FileName parse_benchmark_list(Ref<ParseStream> cin, std::vector<Ref<Benchmark>>& benchmarks);
     int main(int argc, char** argv);
     
   public:
