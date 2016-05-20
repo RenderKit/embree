@@ -19,6 +19,8 @@
 
 namespace embree
 {
+  typedef decltype(nullptr) nullptr_t;
+
   inline std::string string_of(RTCError code)
   {
     switch (code) {
@@ -40,7 +42,7 @@ namespace embree
     RTCDeviceRef () 
       : device(nullptr) {}
 
-    RTCDeviceRef (std::nullptr_t) 
+    RTCDeviceRef (nullptr_t) 
       : device(nullptr) {}
     
     RTCDeviceRef (RTCDevice device) 
@@ -78,7 +80,7 @@ namespace embree
       return *this;
     }
       
-    RTCDeviceRef& operator= (std::nullptr_t) 
+    RTCDeviceRef& operator= (nullptr_t) 
     {
       if (device) rtcDeleteDevice(device);
       device = nullptr;
@@ -91,7 +93,7 @@ namespace embree
   public:
     RTCScene scene;
     
-    RTCSceneRef (std::nullptr_t) 
+    RTCSceneRef (nullptr_t) 
       : scene(nullptr) {}
     
     RTCSceneRef (RTCScene scene) 
@@ -119,7 +121,7 @@ namespace embree
       return *this;
     }
         
-    __forceinline RTCSceneRef& operator= (std::nullptr_t) 
+    __forceinline RTCSceneRef& operator= (nullptr_t) 
     {
       if (scene) rtcDeleteScene(scene);
       scene = nullptr;

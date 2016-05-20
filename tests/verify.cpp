@@ -3537,17 +3537,17 @@ namespace embree
 
       push(new TestGroup("triangles",true,true));
       for (auto s : interpolateTests) 
-        groups.top()->add(new InterpolateTrianglesTest(std::to_string(long(s)),isa,s));
+        groups.top()->add(new InterpolateTrianglesTest(std::to_string((long long)(s)),isa,s));
       groups.pop();
 
       push(new TestGroup("subdiv",true,true));
       for (auto s : interpolateTests)
-        groups.top()->add(new InterpolateSubdivTest(std::to_string(long(s)),isa,s));
+        groups.top()->add(new InterpolateSubdivTest(std::to_string((long long)(s)),isa,s));
       groups.pop();
         
       push(new TestGroup("hair",true,true));
       for (auto s : interpolateTests) 
-        groups.top()->add(new InterpolateHairTest(std::to_string(long(s)),isa,s));
+        groups.top()->add(new InterpolateHairTest(std::to_string((long long)(s)),isa,s));
       groups.pop();
 
       groups.pop();
