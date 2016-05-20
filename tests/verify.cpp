@@ -3919,6 +3919,11 @@ namespace embree
           });
         exit(1);
       }, "--plot-over-primitives <benchmark0> <benchmark1> ... <outfile>: Plots performance over number of primitives to outfile for the specified benchmarks.");
+
+    /* the internal tasking system need the device to be present to allow parallel test execution */
+#if !defined(TASKING_INTERNAL)
+    device = nullptr;
+#endif
   }
 
   void VerifyApplication::prefix_test_names(Ref<Test> test, std::string prefix)
