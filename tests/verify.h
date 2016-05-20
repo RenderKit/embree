@@ -21,6 +21,7 @@
 #include "rtcore_helpers.h"
 #include "../tutorials/common/tutorial/application.h"
 #include "../tutorials/common/math/random_sampler.h"
+#include "../tutorials/common/tutorial/statistics.h"
 
 namespace embree
 {
@@ -61,8 +62,10 @@ namespace embree
       Benchmark (const std::string& name, int isa, const std::string& unit)
         : Test(name,isa,BENCHMARK,false), unit(unit) {}
       
+      virtual size_t setNumPrimitives(size_t N) { return 0; }
       virtual bool setup(VerifyApplication* state) { return true; }
       virtual double benchmark(VerifyApplication* state) = 0;
+      Statistics benchmark_loop(VerifyApplication* state);
       virtual void cleanup(VerifyApplication* state) {}
       virtual TestReturnValue execute(VerifyApplication* state, bool silent);
     };
@@ -110,6 +113,7 @@ namespace embree
       void map_tests(Ref<Test> test, const Function& f);
     void enable_disable_all_tests(Ref<Test> test, bool enabled);
     void enable_disable_some_tests(Ref<Test> test, std::string regex, bool enabled);
+    void plot_over_primitives(std::vector<Ref<Benchmark>> benchmarks, const FileName outFileName);
     int main(int argc, char** argv);
     
   public:
@@ -122,6 +126,7 @@ namespace embree
     MutexSys mutex;
     std::vector<int> isas;
     Ref<Test> tests;
+    std::map<std::string,Ref<Test>> name2test;
 
   public:
     RTCDeviceRef device;

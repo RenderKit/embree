@@ -16,7 +16,6 @@
 
 #include "verify.h"
 #include "../tutorials/common/scenegraph/scenegraph.h"
-#include "../tutorials/common/tutorial/statistics.h"
 #include "../kernels/algorithms/parallel_for.h"
 #include <regex>
 #include <stack>
@@ -332,22 +331,9 @@ namespace embree
     return passed ? PASSED : FAILED;
   }
 
-  VerifyApplication::TestReturnValue VerifyApplication::Benchmark::execute(VerifyApplication* state, bool silent) try
+  Statistics VerifyApplication::Benchmark::benchmark_loop(VerifyApplication* state)
   {
-    //setAffinity(0);
     //sleepSeconds(0.1);
-
-    if (!isEnabled())
-      return SKIPPED;
-    if (!setup(state)) {
-      cleanup(state);
-      return SKIPPED;
-    }
-
-    if (!silent) 
-      std::cout << std::setw(TEXT_ALIGN) << name << ": " << std::flush;
-    //sleepSeconds(0.1);
-     
     const size_t skipBenchmarkFrames = 4;
     const size_t numBenchmarkFrames = 16;
     FilteredStatistics stat(0.5f,0.0f);
@@ -364,12 +350,35 @@ namespace embree
       stat.add(dt);
       //sleepSeconds(0.1);
     }
-    cleanup(state);
-    
+    return stat.getStatistics();
+  }
+
+  VerifyApplication::TestReturnValue VerifyApplication::Benchmark::execute(VerifyApplication* state, bool silent) try
+  {
+    if (!isEnabled())
+      return SKIPPED;
+
+    if (!setup(state)) {
+      cleanup(state);
+      return SKIPPED;
+    }
+
+    if (!silent) 
+      std::cout << std::setw(TEXT_ALIGN) << name << ": " << std::flush;
+   
+    Statistics stat;
+    try {
+      stat = benchmark_loop(state);
+    } catch (TestReturnValue v) {
+      return v;
+    }
+
     if (!silent)
       std::cout << std::setw(8) << std::setprecision(3) << std::fixed << stat.getAvg() << " " << unit << " (+/-" << 100.0f*stat.getAvgSigma()/stat.getAvg() << "%)" << std::endl;
 
     sleepSeconds(0.1);
+
+    cleanup(state);
 
     state->numPassedTests++;
     return VerifyApplication::PASSED;
@@ -2899,6 +2908,8 @@ namespace embree
 
     bool setup(VerifyApplication* state) 
     {
+      threadIndexCounter = 1;
+      pos = 0;
       size_t numThreads = getNumberOfLogicalThreads();
       barrier.init(numThreads);
       for (size_t i=1; i<numThreads; i++)
@@ -2966,6 +2977,12 @@ namespace embree
     CoherentRaysBenchmark (std::string name, int isa, GeometryType gtype, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant, size_t numPhi)
       : ParallelIntersectBenchmark(name,isa,numTilesX*numTilesY,1), sflags(sflags), gflags(gflags), gtype(gtype), imode(imode), ivariant(ivariant), numPhi(numPhi) {}
     
+    size_t setNumPrimitives(size_t N) 
+    { 
+      numPhi = ceilf(sqrtf(N/4.0f));
+      return 4.0f*numPhi*numPhi;
+    }
+
     bool setup(VerifyApplication* state) 
     {
       if (!ParallelIntersectBenchmark::setup(state))
@@ -3134,6 +3151,12 @@ namespace embree
       if (numbers) delete[] numbers; numbers = nullptr;
     }
 
+    size_t setNumPrimitives(size_t N) 
+    { 
+      numPhi = ceilf(sqrtf(N/4.0f));
+      return 4.0f*numPhi*numPhi;
+    }
+
     bool setup(VerifyApplication* state) 
     {
       if (!ParallelIntersectBenchmark::setup(state))
@@ -3275,6 +3298,12 @@ namespace embree
     CreateGeometryBenchmark (std::string name, int isa, GeometryType gtype, RTCSceneFlags sflags, RTCGeometryFlags gflags, size_t numPhi, size_t numMeshes, bool update)
       : VerifyApplication::Benchmark(name,isa,"Mprims/s"), gtype(gtype), sflags(sflags), gflags(gflags), numPhi(numPhi), numMeshes(numMeshes), update(update), 
         numPrimitives(0), device(nullptr), scene(nullptr) {}
+
+    size_t setNumPrimitives(size_t N) 
+    { 
+      numPhi = ceilf(sqrtf(N/4.0f));
+      return 4.0f*numPhi*numPhi;
+    }
 
     void create_scene()
     {
@@ -3860,10 +3889,33 @@ namespace embree
         print_tests(tests,0);
         exit(1);
       }, "--print-tests: prints all enabled test names");
+    registerOptionAlias("print-tests","print-names");
     
     registerOption("intensity", [this] (Ref<ParseStream> cin, const FileName& path) {
         intensity = cin->getFloat();
       }, "--intensity <float>: intensity of testing to perform");
+
+    registerOption("plot-over-primitives", [this] (Ref<ParseStream> cin, const FileName& path) {
+
+        std::vector<std::string> names;
+        while (cin->peek() != "" && cin->peek()[0] != '-') 
+          names.push_back(cin->getString());
+        if (names.size() == 0) 
+          throw std::runtime_error("no output file specified");
+
+        std::vector<Ref<Benchmark>> benchmarks;
+        for (size_t i=0; i<names.size()-1; i++) {
+          if (i == names.size()) break;
+          std::string testname = names[i];
+          if (name2test.find(testname) == name2test.end()) throw std::runtime_error("unknown test "+testname);
+          Ref<Test> test = name2test[testname];
+          Ref<Benchmark> benchmark = test.dynamicCast<Benchmark>();
+          if (!benchmark) throw std::runtime_error("test "+testname+" is no benchmark");
+          benchmarks.push_back(benchmark);
+        }
+        plot_over_primitives(benchmarks,names.back());
+        exit(1);
+      }, "--plot-over-primitive <benchmark0> <benchmark1> ... <outfile>: Plots performance over number of primitives to outfile for the specified benchmarks.");
   }
 
   void VerifyApplication::prefix_test_names(Ref<Test> test, std::string prefix)
@@ -3873,6 +3925,7 @@ namespace embree
         prefix_test_names(t,group->extend_prefix(prefix));
 
     test->name = prefix + test->name;
+    name2test[test->name] = test;
   }
 
   bool VerifyApplication::update_tests(Ref<Test> test)
@@ -3924,6 +3977,48 @@ namespace embree
           test->enabled = enabled;
       });
    update_tests(test);
+  }
+
+  void VerifyApplication::plot_over_primitives(std::vector<Ref<Benchmark>> benchmarks, const FileName outFileName)
+  {
+    size_t startN = 1000;
+    size_t endN = 1000000;
+    float f = 1.2f;
+    
+    std::fstream plot;
+    plot.open(outFileName, std::fstream::out | std::fstream::trunc);
+    plot << "set key inside right top vertical Right noreverse enhanced autotitles box linetype -1 linewidth 1.000" << std::endl;
+    plot << "set samples 50, 50" << std::endl;
+    plot << "set title \"" << outFileName.name() << "\"" << std::endl; 
+    plot << "set xlabel \"#primitives\"" << std::endl;
+    plot << "set ylabel \"" << benchmarks[0]->unit << "\"" << std::endl;
+
+    plot << "plot \\" << std::endl;
+    for (size_t i=0; i<benchmarks.size(); i++) {
+      plot << "\"" << outFileName.name() << "." << benchmarks[i]->name << ".txt\" using 1:2 title \"" << benchmarks[i]->name << "\" with lines";
+      if (i != benchmarks.size()-1) plot << ",\\";
+      plot << std::endl;
+      
+    }
+    plot << std::endl;
+    plot.close();
+    
+    for (auto benchmark : benchmarks) 
+    {
+      std::fstream data;
+      data.open(outFileName.name()+"."+benchmark->name+".txt", std::fstream::out | std::fstream::trunc);
+      std::cout << benchmark->name << std::endl;
+      for (size_t i=startN; i<=endN; i*=f) 
+      {
+        size_t N = benchmark->setNumPrimitives(i);
+        benchmark->setup(this);
+        Statistics stat = benchmark->benchmark_loop(this);
+        benchmark->cleanup(this);
+        data << " " << N << " " << stat.getAvg() << std::endl;
+        std::cout<< " " << N << " " << stat.getAvg() << std::endl;
+      }
+      data.close();
+    }
   }
 
   int VerifyApplication::main(int argc, char** argv) try

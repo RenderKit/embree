@@ -85,6 +85,7 @@ namespace embree
     float getMin() const { return stat.getMin(); }
     float getMax() const { return stat.getMax(); }
     float getAvg() const { return stat.getAvg(); }
+    Statistics getStatistics() const { return stat; }
 
   private:
     float fskip_small; // fraction of small outlyers to filter out
