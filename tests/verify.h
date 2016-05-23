@@ -145,6 +145,7 @@ namespace embree
     bool flatten;
     bool parallel;
     bool cdash;
+    FileName database;
 
     /* sets terminal colors */
   public:

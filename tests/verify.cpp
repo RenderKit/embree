@@ -379,6 +379,12 @@ namespace embree
       std::cout << "<DartMeasurement name=\"" + name + ".avg\" type=\"numeric/float\">" << stat.getAvg() << "</DartMeasurement>" << std::endl;
       std::cout << "<DartMeasurement name=\"" + name + ".sigma\" type=\"numeric/float\">" << stat.getAvgSigma() << "</DartMeasurement>" << std::endl;
     }
+    if (state->database != "") {
+       std::fstream db;
+       db.open(state->database+FileName(name).addExt(".txt"), std::fstream::out | std::fstream::app);
+       db << stat.getAvg() << " " << stat.getAvgSigma() << std::endl;
+       db.close();
+    }
 
     sleepSeconds(0.1);
 
@@ -3892,6 +3898,10 @@ namespace embree
     registerOption("cdash-measurements", [this] (Ref<ParseStream> cin, const FileName& path) {
         cdash = true;
       }, "--cdash-measurements: prints cdash measurements");
+
+    registerOption("database", [this] (Ref<ParseStream> cin, const FileName& path) {
+        database = cin->getString();
+      }, "--database: location to folder containing the measurement database");
 
     registerOption("print-tests", [this] (Ref<ParseStream> cin, const FileName& path) {
         print_tests(tests,0);
