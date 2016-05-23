@@ -340,15 +340,15 @@ namespace embree
     db.open(state->database+FileName(name).addExt(".txt"), std::fstream::in | std::fstream::out | std::fstream::app);
     
     bool found = false;
-    double maxAvg = 0.0f;
-    double maxSigma = 0.0f;
+    double maxAvg = neg_inf;
+    double maxSigma = neg_inf;
     while (true) {
       std::string line; std::getline(db,line);
       if (db.eof()) break;
       if (line == "") {
         found = false;
-        maxAvg = 0.0f;
-        maxSigma = 0.0f;
+        maxAvg = neg_inf;
+        maxSigma = neg_inf;
       }
       std::stringstream linestream(line); 
       double avg; linestream >> avg;
@@ -363,7 +363,8 @@ namespace embree
     db << avg << " " << sigma << std::endl;
     db.close();
 
-    return maxAvg;
+    if (found) return maxAvg;
+    else       return avg;
   }
 
   Statistics VerifyApplication::Benchmark::benchmark_loop(VerifyApplication* state)
@@ -415,7 +416,7 @@ namespace embree
     if (state->database != "") {
       double avg = stat.getAvg();
       double maxAvg = updateDatabase(state,stat);
-      passed = avg-maxAvg > -0.02f*avg;
+      passed = avg-maxAvg > -state->benchmark_tolerance*avg;
       error = (avg-maxAvg)/avg;
     }
     
@@ -3467,7 +3468,8 @@ namespace embree
     : Application(Application::FEATURE_RTCORE), intensity(1.0f), tests(new TestGroup("",false,false)), 
       numPassedTests(0), numFailedTests(0), numFailedAndIgnoredTests(0),
       user_specified_tests(false), flatten(true), parallel(true), usecolors(true), cdash(false), 
-      device(rtcNewDevice(rtcore.c_str()))
+      device(rtcNewDevice(rtcore.c_str())),
+      database(""), benchmark_tolerance(0.05f)
   {
 #if defined(__WIN32__)
     usecolors = false;
@@ -3897,9 +3899,18 @@ namespace embree
         if (!user_specified_tests) enable_disable_all_tests(tests,false);
         user_specified_tests = true;
         std::string regex = cin->getString();
+        if (!enable_disable_some_tests(tests,regex,true)) {
+          std::cout << "no tests matched regular expression " << regex << std::endl;
+          exit(1);
+        }
+      }, "--run <regexpr>: Runs all tests whose name match the regular expression. If no test matches the application fails.");
+
+    registerOption("enable", [this] (Ref<ParseStream> cin, const FileName& path) {
+        if (!user_specified_tests) enable_disable_all_tests(tests,false);
+        user_specified_tests = true;
+        std::string regex = cin->getString();
         enable_disable_some_tests(tests,regex,true);
-      }, "--run <regexpr>: Runs all tests whose name match the regular expression.");
-    registerOptionAlias("run","enable");
+      }, "--enable <regexpr>: Enables all tests whose name matches the regular expression.");
 
     registerOption("skip", [this] (Ref<ParseStream> cin, const FileName& path) {
         user_specified_tests = true;
@@ -3947,11 +3958,20 @@ namespace embree
         database = cin->getString();
       }, "--database: location to folder containing the measurement database");
 
+    registerOption("benchmark-tolerance", [this] (Ref<ParseStream> cin, const FileName& path) {
+        benchmark_tolerance = cin->getFloat();
+      }, "--benchmark-tolerance: maximal relative slowdown to let a test pass");
+
     registerOption("print-tests", [this] (Ref<ParseStream> cin, const FileName& path) {
         print_tests(tests,0);
         exit(1);
       }, "--print-tests: prints all enabled test names");
     registerOptionAlias("print-tests","print-names");
+
+    registerOption("print-ctests", [this] (Ref<ParseStream> cin, const FileName& path) {
+        print_ctests(tests,0);
+        exit(1);
+      }, "--print-ctests: prints all test in a form to add to CMakeLists.txt");
     
     registerOption("intensity", [this] (Ref<ParseStream> cin, const FileName& path) {
         intensity = cin->getFloat();
@@ -4047,6 +4067,18 @@ namespace embree
     }
   }
 
+  void VerifyApplication::print_ctests(Ref<Test> test, size_t depth)
+  {
+    if (!test->isEnabled()) return;
+
+    if (Ref<TestGroup> group = test.dynamicCast<TestGroup>()) 
+    {
+      for (auto t : group->tests) print_ctests(t,depth+1);
+    } else {
+      std::cout << "ADD_TEST(NAME " << test->name << " COMMAND verify --no-colors --cdash-measurements --run " << test->name << std::endl;
+    }
+  }
+
   template<typename Function> 
   void VerifyApplication::map_tests(Ref<Test> test, const Function& f)
   {
@@ -4063,13 +4095,17 @@ namespace embree
     update_tests(test);
   }
 
-  void VerifyApplication::enable_disable_some_tests(Ref<Test> test, std::string regex, bool enabled)
+  size_t VerifyApplication::enable_disable_some_tests(Ref<Test> test, std::string regex, bool enabled)
   {
+    size_t N = 0;
     map_tests(test, [&] (Ref<Test> test) { 
-        if (regex_match(test->name,regex)) 
+        if (regex_match(test->name,regex)) {
           test->enabled = enabled;
+          N++;
+        }
       });
    update_tests(test);
+   return N;
   }
 
   template<typename Closure>

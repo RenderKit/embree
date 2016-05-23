@@ -114,10 +114,11 @@ namespace embree
     void prefix_test_names(Ref<Test> test, std::string prefix = "");
     bool update_tests(Ref<Test> test);
     void print_tests(Ref<Test> test, size_t depth);
+    void print_ctests(Ref<Test> test, size_t depth);
     template<typename Function> 
       void map_tests(Ref<Test> test, const Function& f);
     void enable_disable_all_tests(Ref<Test> test, bool enabled);
-    void enable_disable_some_tests(Ref<Test> test, std::string regex, bool enabled);
+    size_t enable_disable_some_tests(Ref<Test> test, std::string regex, bool enabled);
      template<typename Closure>
        void plot(std::vector<Ref<Benchmark>> benchmarks, const FileName outFileName, std::string xlabel, size_t startN, size_t endN, float f, size_t dn, const Closure& test);
     FileName parse_benchmark_list(Ref<ParseStream> cin, std::vector<Ref<Benchmark>>& benchmarks);
@@ -147,6 +148,7 @@ namespace embree
     bool parallel;
     bool cdash;
     FileName database;
+    float benchmark_tolerance;
 
     /* sets terminal colors */
   public:

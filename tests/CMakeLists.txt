@@ -34,7 +34,8 @@ ADD_EXECUTABLE(verify verify.cpp ../tutorials/common/tutorial/application.cpp)
 TARGET_LINK_LIBRARIES(verify sys scenegraph embree)
 SET_PROPERTY(TARGET verify PROPERTY FOLDER tests)
 ADD_TEST(NAME verify COMMAND verify --no-colors)
-ADD_TEST(NAME verify-benchmark COMMAND verify --no-colors --cdash-measurements --run SSE2.benchmarks.coherent.triangles_1000k.Static.Intersect1)
+
+#ADD_TEST(NAME benchmarks.update.lines_mb_1k_1000.DynamicDy COMMAND verify --no-colors --cdash-measurements --run .*benchmarks.update.lines_mb_1k_1000.DynamicDy)namic
 
 ADD_EXECUTABLE(benchmark benchmark.cpp)
 TARGET_LINK_LIBRARIES(benchmark sys embree)
