@@ -331,6 +331,41 @@ namespace embree
     return passed ? PASSED : FAILED;
   }
 
+  double VerifyApplication::Benchmark::updateDatabase(VerifyApplication* state, Statistics stat)
+  {
+    double avg = stat.getAvg();
+    double sigma = stat.getAvgSigma();
+
+    std::fstream db;
+    db.open(state->database+FileName(name).addExt(".txt"), std::fstream::in | std::fstream::out | std::fstream::app);
+    
+    bool found = false;
+    double maxAvg = 0.0f;
+    double maxSigma = 0.0f;
+    while (true) {
+      std::string line; std::getline(db,line);
+      if (db.eof()) break;
+      if (line == "") {
+        found = false;
+        maxAvg = 0.0f;
+        maxSigma = 0.0f;
+      }
+      std::stringstream linestream(line); 
+      double avg; linestream >> avg;
+      double sigma; linestream >> sigma;
+      if (avg > maxAvg) {
+        found = true;
+        maxAvg = avg;
+        maxSigma = sigma;
+      }
+    }
+    db.clear();
+    db << avg << " " << sigma << std::endl;
+    db.close();
+
+    return maxAvg;
+  }
+
   Statistics VerifyApplication::Benchmark::benchmark_loop(VerifyApplication* state)
   {
     //sleepSeconds(0.1);
@@ -362,10 +397,11 @@ namespace embree
       cleanup(state);
       return SKIPPED;
     }
-
-    if (!silent) 
-      std::cout << std::setw(TEXT_ALIGN) << name << ": " << std::flush;
+    
+    /* print benchmark name */
+    std::cout << std::setw(TEXT_ALIGN) << name << ": " << std::flush;
    
+    /* execute benchmark */
     Statistics stat;
     try {
       stat = benchmark_loop(state);
@@ -373,17 +409,25 @@ namespace embree
       return v;
     }
 
-    if (!silent)
-      std::cout << std::setw(8) << std::setprecision(3) << std::fixed << stat.getAvg() << " " << unit << " (+/-" << 100.0f*stat.getAvgSigma()/stat.getAvg() << "%)" << std::endl;
+    /* check against database to see if test passed */
+    bool passed = true;
+    double error = 0.0f;
+    if (state->database != "") {
+      double avg = stat.getAvg();
+      double maxAvg = updateDatabase(state,stat);
+      passed = avg-maxAvg > -0.02f*avg;
+      error = (avg-maxAvg)/avg;
+    }
+    
+    /* print test result */
+    std::cout << std::setw(8) << std::setprecision(3) << std::fixed << stat.getAvg() << " " << unit << " (+/-" << 100.0f*stat.getAvgSigma()/stat.getAvg() << "%)";
+    if (passed) std::cout << state->green(" [PASSED]" ) << " (" << 100.0f*error << "%)" << std::endl << std::flush;
+    else        std::cout << state->red  (" [FAILED]" ) << " (" << 100.0f*error << "%)" << std::endl << std::flush;
+    
+    /* print dart measurement */
     if (state->cdash) {
       std::cout << "<DartMeasurement name=\"" + name + ".avg\" type=\"numeric/float\">" << stat.getAvg() << "</DartMeasurement>" << std::endl;
       std::cout << "<DartMeasurement name=\"" + name + ".sigma\" type=\"numeric/float\">" << stat.getAvgSigma() << "</DartMeasurement>" << std::endl;
-    }
-    if (state->database != "") {
-       std::fstream db;
-       db.open(state->database+FileName(name).addExt(".txt"), std::fstream::out | std::fstream::app);
-       db << stat.getAvg() << " " << stat.getAvgSigma() << std::endl;
-       db.close();
     }
 
     sleepSeconds(0.1);

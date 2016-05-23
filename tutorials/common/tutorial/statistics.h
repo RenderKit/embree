@@ -55,10 +55,10 @@ namespace embree
 
   private:
     double v;   // sum of all values
-    double v2;  // sum of squared of all values
+    double v2;  // sum of squares of all values
     float vmin; // min of all values
     float vmax; // max of all values
-    size_t N;  // number of values
+    size_t N;   // number of values
   };
 
   /* filters outlyers out */

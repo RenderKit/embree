@@ -69,6 +69,7 @@ namespace embree
       Statistics benchmark_loop(VerifyApplication* state);
       virtual void cleanup(VerifyApplication* state) {}
       virtual TestReturnValue execute(VerifyApplication* state, bool silent);
+      double updateDatabase(VerifyApplication* state, Statistics stat);
 
     public:
       size_t numThreads;
