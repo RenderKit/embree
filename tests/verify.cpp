@@ -346,6 +346,8 @@ namespace embree
     /* create plot file */
     std::fstream plot;
     plot.open(base.addExt(".plot"), std::fstream::out | std::fstream::trunc);
+    plot << "set terminal png size 2048,600 enhanced" << std::endl;
+    plot << "set output \"" << base.addExt(".png") << "\"" << std::endl;
     plot << "set key inside right top vertical Right noreverse enhanced autotitles box linetype -1 linewidth 1.000" << std::endl;
     plot << "set samples 50, 50" << std::endl;
     //plot << "set title \"" << name << "\"" << std::endl; 
@@ -383,6 +385,12 @@ namespace embree
     db.clear();
     db << hash << " " << avg << " " << bestAvg << std::endl;
     db.close();
+    
+    /* send chart to cdash */
+    if (state->cdash) {
+      system((std::string("gnuplot ") + base.addExt(".plot").str()).c_str());
+      std::cout << std::endl << "<DartMeasurementFile name=\"" << name << "\" type=\"image/png\">" << base.addExt(".png") << "</DartMeasurementFile>" << std::endl;
+    }
 
     if (found) return bestAvg;
     else       return avg;
@@ -3971,9 +3979,9 @@ namespace embree
         usecolors = false;
       }, "--no-colors: do not use shell colors");
 
-    registerOption("cdash-measurements", [this] (Ref<ParseStream> cin, const FileName& path) {
+    registerOption("cdash", [this] (Ref<ParseStream> cin, const FileName& path) {
         cdash = true;
-      }, "--cdash-measurements: prints cdash measurements");
+      }, "--cdash: prints cdash measurements");
 
     registerOption("database", [this] (Ref<ParseStream> cin, const FileName& path) {
         database = cin->getString();

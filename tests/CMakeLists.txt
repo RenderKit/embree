@@ -36,7 +36,7 @@ SET_PROPERTY(TARGET verify PROPERTY FOLDER tests)
 
 ADD_TEST(NAME verify COMMAND verify --no-colors)
 IF (BUILD_TESTING_BENCHMARK)
-  ADD_TEST(NAME verify_benchmarks COMMAND verify --no-colors --cdash-measurements --benchmark-tolerance 0.05 --database "${BUILD_TESTING_BENCHMARK_DATABASE}" --run .*benchmarks.*)
+  ADD_TEST(NAME verify_benchmarks COMMAND verify --no-colors --cdash --benchmark-tolerance 0.05 --database "${BUILD_TESTING_BENCHMARK_DATABASE}" --run .*benchmarks.*)
 ENDIF()
 
 ADD_EXECUTABLE(benchmark benchmark.cpp)
