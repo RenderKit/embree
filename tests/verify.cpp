@@ -375,6 +375,10 @@ namespace embree
 
     if (!silent)
       std::cout << std::setw(8) << std::setprecision(3) << std::fixed << stat.getAvg() << " " << unit << " (+/-" << 100.0f*stat.getAvgSigma()/stat.getAvg() << "%)" << std::endl;
+    if (state->cdash) {
+      std::cout << "<DartMeasurement name=\"" + name + ".avg\" type=\"numeric/float\">" << stat.getAvg() << "</DartMeasurement>" << std::endl;
+      std::cout << "<DartMeasurement name=\"" + name + ".sigma\" type=\"numeric/float\">" << stat.getAvgSigma() << "</DartMeasurement>" << std::endl;
+    }
 
     sleepSeconds(0.1);
 
@@ -3412,7 +3416,8 @@ namespace embree
   VerifyApplication::VerifyApplication ()
     : Application(Application::FEATURE_RTCORE), intensity(1.0f), tests(new TestGroup("",false,false)), 
       numPassedTests(0), numFailedTests(0), numFailedAndIgnoredTests(0),
-      user_specified_tests(false), flatten(true), parallel(true), usecolors(true), device(rtcNewDevice(rtcore.c_str()))
+      user_specified_tests(false), flatten(true), parallel(true), usecolors(true), cdash(false), 
+      device(rtcNewDevice(rtcore.c_str()))
   {
 #if defined(__WIN32__)
     usecolors = false;
@@ -3883,6 +3888,10 @@ namespace embree
     registerOption("no-colors", [this] (Ref<ParseStream> cin, const FileName& path) {
         usecolors = false;
       }, "--no-colors: do not use shell colors");
+
+    registerOption("cdash-measurements", [this] (Ref<ParseStream> cin, const FileName& path) {
+        cdash = true;
+      }, "--cdash-measurements: prints cdash measurements");
 
     registerOption("print-tests", [this] (Ref<ParseStream> cin, const FileName& path) {
         print_tests(tests,0);
