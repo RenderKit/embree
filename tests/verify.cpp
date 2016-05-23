@@ -333,16 +333,32 @@ namespace embree
 
   double VerifyApplication::Benchmark::updateDatabase(VerifyApplication* state, Statistics stat)
   {
+    FileName base = state->database+FileName(name);
     double avg = stat.getAvg();
     double sigma = stat.getAvgSigma();
 
+    /* create plot file */
+    std::fstream plot;
+    plot.open(base.addExt(".plot"), std::fstream::out | std::fstream::trunc);
+    plot << "set key inside right top vertical Right noreverse enhanced autotitles box linetype -1 linewidth 1.000" << std::endl;
+    plot << "set samples 50, 50" << std::endl;
+    plot << "set title \"" << name << "\"" << std::endl; 
+    plot << "set xlabel \"" << name << "\"" << std::endl;
+    plot << "set ylabel \"" << unit << "\"" << std::endl;
+    plot << "set yrange [0:]" << std::endl;
+    plot << "plot \"" << base.addExt(".txt") << "\" using 1:2 title \"" << name << "\" with lines" << std::endl;      
+    plot << std::endl;
+    plot.close();
+    
+    /* update database */
     std::fstream db;
-    db.open(state->database+FileName(name).addExt(".txt"), std::fstream::in | std::fstream::out | std::fstream::app);
+    db.open(base.addExt(".txt"), std::fstream::in | std::fstream::out | std::fstream::app);
     
     bool found = false;
     double maxAvg = neg_inf;
     double maxSigma = neg_inf;
-    while (true) {
+    while (true) 
+    {
       std::string line; std::getline(db,line);
       if (db.eof()) break;
       if (line == "") {
