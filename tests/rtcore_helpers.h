@@ -59,8 +59,6 @@ namespace embree
       if (device == nullptr) return;
       RTCError error = rtcDeviceGetError(device);
       rtcDeleteDevice(device);
-      if (error != RTC_NO_ERROR) 
-        throw std::runtime_error("Error occured: "+string_of(error));
     }
     
     operator RTCDevice () const { return device; }
