@@ -337,16 +337,24 @@ namespace embree
     double avg = stat.getAvg();
     double sigma = stat.getAvgSigma();
 
+    /* load git hash from file */
+    std::fstream hashFile;
+    hashFile.open("hash", std::fstream::in);
+    std::string hash = "unknown"; hashFile >> hash;
+    hashFile.close();
+
     /* create plot file */
     std::fstream plot;
     plot.open(base.addExt(".plot"), std::fstream::out | std::fstream::trunc);
     plot << "set key inside right top vertical Right noreverse enhanced autotitles box linetype -1 linewidth 1.000" << std::endl;
     plot << "set samples 50, 50" << std::endl;
-    plot << "set title \"" << name << "\"" << std::endl; 
-    plot << "set xlabel \"" << name << "\"" << std::endl;
+    //plot << "set title \"" << name << "\"" << std::endl; 
+    //plot << "set xlabel \"" << name << "\""<< std::endl;
+    plot << "set xtics axis rotate by 90" << std::endl;
     plot << "set ylabel \"" << unit << "\"" << std::endl;
     plot << "set yrange [0:]" << std::endl;
-    plot << "plot \"" << base.addExt(".txt") << "\" using 1:2 title \"" << name << "\" with lines" << std::endl;      
+    plot << "plot \"" << FileName(name).addExt(".txt") << "\" using :2:xtic(1) title \"" << name << "\" with lines, \\" << std::endl; 
+    plot << "     \"" << FileName(name).addExt(".txt") << "\" using :3         title \"best\" with lines" << std::endl;
     plot << std::endl;
     plot.close();
     
@@ -355,31 +363,28 @@ namespace embree
     db.open(base.addExt(".txt"), std::fstream::in | std::fstream::out | std::fstream::app);
     
     bool found = false;
-    double maxAvg = neg_inf;
-    double maxSigma = neg_inf;
+    double bestAvg = neg_inf;
     while (true) 
     {
       std::string line; std::getline(db,line);
       if (db.eof()) break;
       if (line == "") {
         found = false;
-        maxAvg = neg_inf;
-        maxSigma = neg_inf;
+        bestAvg = neg_inf;
       }
       std::stringstream linestream(line); 
+      std::string hash; linestream >> hash;
       double avg; linestream >> avg;
-      double sigma; linestream >> sigma;
-      if (avg > maxAvg) {
+      if (avg > bestAvg) {
         found = true;
-        maxAvg = avg;
-        maxSigma = sigma;
+        bestAvg = avg;
       }
     }
     db.clear();
-    db << avg << " " << sigma << std::endl;
+    db << hash << " " << avg << " " << bestAvg << std::endl;
     db.close();
 
-    if (found) return maxAvg;
+    if (found) return bestAvg;
     else       return avg;
   }
 
@@ -431,9 +436,9 @@ namespace embree
     double error = 0.0f;
     if (state->database != "") {
       double avg = stat.getAvg();
-      double maxAvg = updateDatabase(state,stat);
-      passed = avg-maxAvg > -state->benchmark_tolerance*avg;
-      error = (avg-maxAvg)/avg;
+      double bestAvg = updateDatabase(state,stat);
+      passed = avg-bestAvg > -state->benchmark_tolerance*avg;
+      error = (avg-bestAvg)/avg;
     }
     
     /* print test result */

@@ -45,6 +45,7 @@ CONFIGURE_FILE(
   "${PROJECT_SOURCE_DIR}/kernels/version.h.in"
   "${PROJECT_BINARY_DIR}/version.h"
 )
+FILE(WRITE "${PROJECT_BINARY_DIR}/hash" "${EMBREE_HASH}")
 
 IF(COMMAND cmake_policy)
   if (POLICY CMP0003)
