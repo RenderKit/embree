@@ -36,7 +36,7 @@ SET_PROPERTY(TARGET verify PROPERTY FOLDER tests)
 
 ADD_TEST(NAME verify COMMAND verify --no-colors)
 IF (BUILD_TESTING_MEMCHECK AND CMAKE_MEMORYCHECK_COMMAND)
-  ADD_MEMCHECK_TEST(verify_memcheck verify --no-colors)
+  ADD_MEMCHECK_TEST(verify_memcheck verify --no-colors --intensity 0.1)
   set_tests_properties(verify_memcheck PROPERTIES TIMEOUT 3000)
 ENDIF()
 
