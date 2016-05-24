@@ -124,7 +124,7 @@ namespace embree
   typedef ImageT<Col4f> Image4f;
   
   /*! Generate a JPEG encoded image from a RGB8 buffer in memory. */
-  void encodeRGB8_to_JPEG(unsigned char *image, size_t width, size_t height, unsigned char **encoded, size_t *capacity);
+  void encodeRGB8_to_JPEG(unsigned char *image, size_t width, size_t height, unsigned char **encoded, unsigned long *capacity);
 
   /*! Loads image from EXR file. */
   Ref<Image> loadExr(const FileName& fileName);

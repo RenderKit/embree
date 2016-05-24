@@ -62,7 +62,7 @@ namespace embree
 
     }
 
-    void encodeRGB8_to_JPEG(unsigned char *image, size_t width, size_t height, unsigned char **encoded, size_t *capacity)
+    void encodeRGB8_to_JPEG(unsigned char *image, size_t width, size_t height, unsigned char **encoded, unsigned long *capacity)
     {
 
 #if JPEG_LIB_VERSION >= 80
