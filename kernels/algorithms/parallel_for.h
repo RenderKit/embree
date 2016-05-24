@@ -19,7 +19,7 @@
 #include "../common/default.h"
 #include "range.h"
 
-#include "../../common/tasking/taskscheduler.h"
+#include "../common/tasking/taskscheduler.h"
 
 namespace embree
 {

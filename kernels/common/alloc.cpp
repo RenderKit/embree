@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "alloc.h"
-#include "../../common/sys/thread.h"
+#include "../common/sys/thread.h"
 
 namespace embree
 {

@@ -16,37 +16,51 @@
 
 #pragma once
 
-#include "../common/sys/platform.h"
+#include "../geometry/primitive.h"
+#include "../common/subdiv/subdivpatch1base.h"
 
 namespace embree
 {
-  template<typename Ty>
-    struct range 
+
+  struct __aligned(64) SubdivPatch1Cached : public SubdivPatch1Base
+  {
+    struct Type : public PrimitiveType 
     {
-      __forceinline range () {}
-
-      __forceinline range (const Ty& begin) 
-      : _begin(begin), _end(begin+1) {}
-      
-      __forceinline range (const Ty& begin, const Ty& end) 
-      : _begin(begin), _end(end) {}
-      
-      __forceinline Ty begin() const {
-        return _begin;
-      }
-      
-      __forceinline Ty end() const {
-	return _end;
-      }
-
-      __forceinline Ty size() const {
-        return _end - _begin;
-      }
-
-      friend std::ostream& operator<<(std::ostream& cout, const range& r) {
-        return cout << "range [" << r.begin() << ", " << r.end() << "(";
-      }
-      
-      Ty _begin, _end;
+      Type ();
+      size_t size(const char* This) const;
     };
+    
+    static Type type;
+
+  public:
+
+    /*! constructor for cached subdiv patch */
+    SubdivPatch1Cached (const unsigned int gID,
+                        const unsigned int pID,
+                        const unsigned int subPatch,
+                        const SubdivMesh *const mesh,
+                        const Vec2f uv[4],
+                        const float edge_level[4],
+                        const int subdiv[4],
+                        const int simd_width) 
+      : SubdivPatch1Base(gID,pID,subPatch,mesh,uv,edge_level,subdiv,simd_width) {}
+  };
+
+
+  struct SubdivPatch1Eager 
+  {
+    struct Type : public PrimitiveType 
+    {
+      Type ();
+      size_t size(const char* This) const;
+      size_t blocks(size_t x) const { return x; }
+    };
+    
+    static Type type;
+
+  public:
+    SubdivPatch1Eager() {}
+  };
+
+
 }

@@ -27,18 +27,18 @@
 #include "acceln.h"
 #include "geometry.h"
 
-#include "../xeon/geometry/cylinder.h"
-#include "../xeon/geometry/cone.h"
+#include "../geometry/cylinder.h"
+#include "../geometry/cone.h"
 
-#include "../xeon/bvh/bvh4_factory.h"
-#include "../xeon/bvh/bvh8_factory.h"
+#include "../bvh/bvh4_factory.h"
+#include "../bvh/bvh8_factory.h"
 
 #if defined(TASKING_INTERNAL)
-#  include "../../common/tasking/taskschedulerinternal.h"
+#  include "../common/tasking/taskschedulerinternal.h"
 #endif
 
 #if defined(TASKING_TBB)
-#  include "../../common/tasking/taskschedulertbb.h"
+#  include "../common/tasking/taskschedulertbb.h"
 #endif
 
 namespace embree

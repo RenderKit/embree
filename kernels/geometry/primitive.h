@@ -16,37 +16,24 @@
 
 #pragma once
 
-#include "../common/sys/platform.h"
+#include "../common/default.h"
+#include "../common/scene.h"
+#include "../builders/primrefblock.h"
 
 namespace embree
 {
-  template<typename Ty>
-    struct range 
-    {
-      __forceinline range () {}
+  struct PrimitiveType
+  {
+    /*! constructs the primitive type */
+    PrimitiveType (const std::string& name, size_t bytes, size_t blockSize) 
+    : name(name), bytes(bytes), blockSize(blockSize) {} 
 
-      __forceinline range (const Ty& begin) 
-      : _begin(begin), _end(begin+1) {}
-      
-      __forceinline range (const Ty& begin, const Ty& end) 
-      : _begin(begin), _end(end) {}
-      
-      __forceinline Ty begin() const {
-        return _begin;
-      }
-      
-      __forceinline Ty end() const {
-	return _end;
-      }
+    /*! Returns the number of stored primitives in a block. */
+    virtual size_t size(const char* This) const = 0;
 
-      __forceinline Ty size() const {
-        return _end - _begin;
-      }
-
-      friend std::ostream& operator<<(std::ostream& cout, const range& r) {
-        return cout << "range [" << r.begin() << ", " << r.end() << "(";
-      }
-      
-      Ty _begin, _end;
-    };
+  public:
+    std::string name;       //!< name of this primitive type
+    size_t bytes;           //!< number of bytes of the triangle data
+    size_t blockSize;       //!< block size
+  };
 }

@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "state.h"
-#include "../../common/lexers/streamfilters.h"
+#include "../common/lexers/streamfilters.h"
 
 namespace embree
 {

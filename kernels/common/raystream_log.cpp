@@ -16,7 +16,7 @@
 
 #include "raystream_log.h"
 #include "scene.h"
-#include "../../common/sys/filename.h"
+#include "../common/sys/filename.h"
 
 namespace embree
 {

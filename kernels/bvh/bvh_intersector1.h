@@ -16,37 +16,35 @@
 
 #pragma once
 
-#include "../common/sys/platform.h"
+#include "bvh.h"
+#include "../common/ray.h"
 
 namespace embree
 {
-  template<typename Ty>
-    struct range 
+  namespace isa
+  {
+    /*! BVH single ray intersector. */
+    template<int N, int types, bool robust, typename PrimitiveIntersector1>
+      class BVHNIntersector1
     {
-      __forceinline range () {}
+      /* shortcuts for frequently used types */
+      typedef typename PrimitiveIntersector1::Precalculations Precalculations;
+      typedef typename PrimitiveIntersector1::Primitive Primitive;
+      typedef BVHN<N> BVH;
+      typedef typename BVH::NodeRef NodeRef;
+      typedef typename BVH::Node Node;
+      typedef typename BVH::TransformNode TransformNode;
 
-      __forceinline range (const Ty& begin) 
-      : _begin(begin), _end(begin+1) {}
-      
-      __forceinline range (const Ty& begin, const Ty& end) 
-      : _begin(begin), _end(end) {}
-      
-      __forceinline Ty begin() const {
-        return _begin;
-      }
-      
-      __forceinline Ty end() const {
-	return _end;
-      }
+      static const size_t stackSize = 
+        1+(N-1)*BVH::maxDepth+   // standard depth
+        1+(N-1)*BVH::maxDepth;   // transform feature
 
-      __forceinline Ty size() const {
-        return _end - _begin;
-      }
+      /* right now AVX512KNL SIMD extension only for standard node types */
+      static const size_t Nx = (types == BVH_AN1 || types == BVH_QN1) ? vextend<N>::size : N;
 
-      friend std::ostream& operator<<(std::ostream& cout, const range& r) {
-        return cout << "range [" << r.begin() << ", " << r.end() << "(";
-      }
-      
-      Ty _begin, _end;
+    public:
+      static void intersect(const BVH* This, Ray& ray, const RTCIntersectContext* context);
+      static void occluded (const BVH* This, Ray& ray, const RTCIntersectContext* context);
     };
+  }
 }

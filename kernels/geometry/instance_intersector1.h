@@ -16,37 +16,23 @@
 
 #pragma once
 
-#include "../common/sys/platform.h"
+#include "../common/scene_instance.h"
+#include "../common/ray.h"
 
 namespace embree
 {
-  template<typename Ty>
-    struct range 
+  namespace isa
+  {
+    struct FastInstanceIntersector1
     {
-      __forceinline range () {}
-
-      __forceinline range (const Ty& begin) 
-      : _begin(begin), _end(begin+1) {}
-      
-      __forceinline range (const Ty& begin, const Ty& end) 
-      : _begin(begin), _end(end) {}
-      
-      __forceinline Ty begin() const {
-        return _begin;
-      }
-      
-      __forceinline Ty end() const {
-	return _end;
-      }
-
-      __forceinline Ty size() const {
-        return _end - _begin;
-      }
-
-      friend std::ostream& operator<<(std::ostream& cout, const range& r) {
-        return cout << "range [" << r.begin() << ", " << r.end() << "(";
-      }
-      
-      Ty _begin, _end;
+      static void intersect(const Instance* instance, Ray& ray, size_t item);
+      static void occluded (const Instance* instance, Ray& ray, size_t item);
     };
+
+    struct FastInstanceIntersector1M
+    {
+      static void intersect(const Instance* instance, const RTCIntersectContext* context, Ray** rays, size_t M, size_t item);
+      static void occluded (const Instance* instance, const RTCIntersectContext* context, Ray** rays, size_t M, size_t item);
+    };
+  }
 }

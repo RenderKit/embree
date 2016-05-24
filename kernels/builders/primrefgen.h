@@ -16,37 +16,26 @@
 
 #pragma once
 
-#include "../common/sys/platform.h"
+#include "../common/scene.h"
+#include "../common/primref.h"
+#include "priminfo.h"
+#include "../geometry/bezier1v.h"
 
 namespace embree
 {
-  template<typename Ty>
-    struct range 
-    {
-      __forceinline range () {}
+  namespace isa
+  {
+    template<typename Mesh>
+      PrimInfo createPrimRefArray(Mesh* mesh, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
 
-      __forceinline range (const Ty& begin) 
-      : _begin(begin), _end(begin+1) {}
-      
-      __forceinline range (const Ty& begin, const Ty& end) 
-      : _begin(begin), _end(end) {}
-      
-      __forceinline Ty begin() const {
-        return _begin;
-      }
-      
-      __forceinline Ty end() const {
-	return _end;
-      }
+    template<typename Mesh, size_t timeSteps>
+      PrimInfo createPrimRefArray(Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
 
-      __forceinline Ty size() const {
-        return _end - _begin;
-      }
+    template<typename Mesh, size_t timeSteps>
+      PrimInfo createPrimRefList(Scene* scene, PrimRefList& prims, BuildProgressMonitor& progressMonitor);
 
-      friend std::ostream& operator<<(std::ostream& cout, const range& r) {
-        return cout << "range [" << r.begin() << ", " << r.end() << "(";
-      }
-      
-      Ty _begin, _end;
-    };
+    template<size_t timeSteps>
+      PrimInfo createBezierRefArray(Scene* scene, mvector<BezierPrim>& prims, BuildProgressMonitor& progressMonitor);
+  }
 }
+

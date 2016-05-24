@@ -16,8 +16,8 @@
 
 #include "scene.h"
 
-#include "../xeon/bvh/bvh4_factory.h"
-#include "../xeon/bvh/bvh8_factory.h"
+#include "../bvh/bvh4_factory.h"
+#include "../bvh/bvh8_factory.h"
  
 namespace embree
 {
