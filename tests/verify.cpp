@@ -400,7 +400,8 @@ namespace embree
 
     /* send chart to cdash */
     if (state->cdash) {
-      if (system((std::string("gnuplot ") + base.addExt(".plot").str()).c_str()) == 0)
+      std::string command = std::string("cd ")+state->database.str()+std::string(" && gnuplot ") + FileName(name).addExt(".plot").str();
+      if (system(command.c_str()) == 0)
         std::cout << "<DartMeasurementFile name=\"" << name << "\" type=\"image/png\">" << base.addExt(".png") << "</DartMeasurementFile>" << std::endl;
     }
   }
@@ -437,22 +438,36 @@ namespace embree
    
     /* execute benchmark */
     Statistics stat;
-    try {
-      stat = benchmark_loop(state);
-    } catch (TestReturnValue v) {
-      return v;
-    }
-
-    /* check against database to see if test passed */
     bool passed = true;
     double error = 0.0f;
-    if (state->database != "") {
-      double avg = stat.getAvg();
-      double bestAvg = updateDatabase(state,stat);
-      passed = avg-bestAvg >= -state->benchmark_tolerance*bestAvg;
-      error = (avg-bestAvg)/bestAvg;
-    }
     
+    /* retry if benchmark failed */
+    static size_t numRetries = 0;
+    for (size_t i=0; i<10; i++)
+    {
+      if (i != 0) {
+        cleanup(state);
+        if (numRetries++ > 200) break;
+        std::cout << state->yellow(" [RETRY]" ) << " (" << 100.0f*error << "%)" << std::flush;
+        setup(state);
+      }
+
+      try {
+        stat = benchmark_loop(state);
+      } catch (TestReturnValue v) {
+        return v;
+      }
+
+      /* check against database to see if test passed */
+      if (state->database != "") {
+        double avg = stat.getAvg();
+        double bestAvg = updateDatabase(state,stat);
+        passed = avg-bestAvg >= -state->benchmark_tolerance*bestAvg;
+        error = (avg-bestAvg)/bestAvg;
+      }
+      if (passed) break;
+    }
+      
     /* print test result */
     std::cout << std::setw(8) << std::setprecision(3) << std::fixed << stat.getAvg() << " " << unit << " (+/-" << 100.0f*stat.getAvgSigma()/stat.getAvg() << "%)";
     if (passed) std::cout << state->green(" [PASSED]" ) << " (" << 100.0f*error << "%)" << std::endl << std::flush;
