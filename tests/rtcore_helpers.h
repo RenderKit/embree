@@ -19,6 +19,8 @@
 
 namespace embree
 {
+  typedef decltype(nullptr) nullptr_t;
+
   inline std::string string_of(RTCError code)
   {
     switch (code) {
@@ -37,7 +39,10 @@ namespace embree
   public:
     mutable RTCDevice device;
     
-    RTCDeviceRef (std::nullptr_t) 
+    RTCDeviceRef () 
+      : device(nullptr) {}
+
+    RTCDeviceRef (nullptr_t) 
       : device(nullptr) {}
     
     RTCDeviceRef (RTCDevice device) 
@@ -54,8 +59,6 @@ namespace embree
       if (device == nullptr) return;
       RTCError error = rtcDeviceGetError(device);
       rtcDeleteDevice(device);
-      if (error != RTC_NO_ERROR) 
-        throw std::runtime_error("Error occured: "+string_of(error));
     }
     
     operator RTCDevice () const { return device; }
@@ -75,7 +78,7 @@ namespace embree
       return *this;
     }
       
-    RTCDeviceRef& operator= (std::nullptr_t) 
+    RTCDeviceRef& operator= (nullptr_t) 
     {
       if (device) rtcDeleteDevice(device);
       device = nullptr;
@@ -88,7 +91,7 @@ namespace embree
   public:
     RTCScene scene;
     
-    RTCSceneRef (std::nullptr_t) 
+    RTCSceneRef (nullptr_t) 
       : scene(nullptr) {}
     
     RTCSceneRef (RTCScene scene) 
@@ -116,7 +119,7 @@ namespace embree
       return *this;
     }
         
-    __forceinline RTCSceneRef& operator= (std::nullptr_t) 
+    __forceinline RTCSceneRef& operator= (nullptr_t) 
     {
       if (scene) rtcDeleteScene(scene);
       scene = nullptr;
@@ -124,7 +127,7 @@ namespace embree
     }
   };
 
-  inline RTCRay makeRay(const Vec3fa& org, const Vec3fa& dir) 
+  __forceinline RTCRay makeRay(const Vec3fa& org, const Vec3fa& dir) 
   {
     RTCRay ray; memset(&ray,0,sizeof(RTCRay));
     ray.org[0] = org.x; ray.org[1] = org.y; ray.org[2] = org.z;
@@ -135,7 +138,7 @@ namespace embree
     return ray;
   }
 
-  inline RTCRay makeRay(const Vec3fa& org, const Vec3fa& dir, float tnear, float tfar) 
+  __forceinline RTCRay makeRay(const Vec3fa& org, const Vec3fa& dir, float tnear, float tfar) 
   {
     RTCRay ray; memset(&ray,0,sizeof(RTCRay));
     ray.org[0] = org.x; ray.org[1] = org.y; ray.org[2] = org.z;
@@ -146,7 +149,42 @@ namespace embree
     return ray;
   }
 
-  inline bool neq_ray_special (const RTCRay& ray0, const RTCRay& ray1)
+  __forceinline RTCRay fastMakeRay(const Vec3fa &org, const Vec3fa &dir) 
+  {
+    RTCRay ray;
+    *(Vec3fa*)ray.org = org;
+    *(Vec3fa*)ray.dir = dir;
+    ray.tnear = 0.0f; 
+    ray.tfar = inf;
+    ray.time = 0; 
+    ray.mask = -1;
+    ray.geomID = ray.primID = ray.instID = -1;
+    return ray;
+  }
+
+  __forceinline void fastSetRay(RTCRay &ray, const Vec3fa &org, const Vec3fa &dir) 
+  {
+    *(Vec3fa*)ray.org = org;
+    *(Vec3fa*)ray.dir = dir;
+    ray.tnear = 0.0f; 
+    ray.tfar = inf;
+    ray.time = 0; 
+    ray.mask = -1;
+    ray.geomID = ray.primID = ray.instID = -1;
+  }
+
+  __forceinline RTCRay fastMakeRay(Vec3f org, Vec3f dir, float tnear, float tfar) 
+  {
+    RTCRay ray;
+    ray.org[0] = org.x; ray.org[1] = org.y; ray.org[2] = org.z; // FIXME: optimize
+    ray.dir[0] = dir.x; ray.dir[1] = dir.y; ray.dir[2] = dir.z;
+    ray.tnear = tnear; ray.tfar = tfar;
+    ray.time = 0; ray.mask = -1;
+    ray.geomID = ray.primID = ray.instID = -1;
+    return ray;
+  }
+
+  __forceinline bool neq_ray_special (const RTCRay& ray0, const RTCRay& ray1)
   {
     if (*(int*)&ray0.org[0] != *(int*)&ray1.org[0]) return true;
     if (*(int*)&ray0.org[1] != *(int*)&ray1.org[1]) return true;
@@ -170,7 +208,7 @@ namespace embree
   }
 
   /* Outputs ray to stream */
-  inline std::ostream& operator<<(std::ostream& cout, const RTCRay& ray)
+  __forceinline std::ostream& operator<<(std::ostream& cout, const RTCRay& ray)
   {
     return cout << "Ray { " << std::endl
                 << "  org = " << ray.org[0] << " " << ray.org[1] << " " << ray.org[2] << std::endl
@@ -188,7 +226,7 @@ namespace embree
                 << "}";
   }
 
-  inline void setRay(RTCRay4& ray_o, int i, const RTCRay& ray_i)
+  __forceinline void setRay(RTCRay4& ray_o, int i, const RTCRay& ray_i)
   {
     ray_o.orgx[i] = ray_i.org[0];
     ray_o.orgy[i] = ray_i.org[1];
@@ -210,7 +248,7 @@ namespace embree
     ray_o.Ngz[i] = ray_i.Ng[2];
   }
 
-  inline void setRay(RTCRay8& ray_o, int i, const RTCRay& ray_i)
+  __forceinline void setRay(RTCRay8& ray_o, int i, const RTCRay& ray_i)
   {
     ray_o.orgx[i] = ray_i.org[0];
     ray_o.orgy[i] = ray_i.org[1];
@@ -232,7 +270,7 @@ namespace embree
     ray_o.Ngz[i] = ray_i.Ng[2];
   }
 
-  inline void setRay(RTCRay16& ray_o, int i, const RTCRay& ray_i)
+  __forceinline void setRay(RTCRay16& ray_o, int i, const RTCRay& ray_i)
   {
     ray_o.orgx[i] = ray_i.org[0];
     ray_o.orgy[i] = ray_i.org[1];
@@ -254,7 +292,7 @@ namespace embree
     ray_o.Ngz[i] = ray_i.Ng[2];
   }
 
-  inline void setRay(RTCRayN* ray_o, size_t N, int i, const RTCRay& ray_i)
+  __forceinline void setRay(RTCRayN* ray_o, size_t N, int i, const RTCRay& ray_i)
   {
     RTCRayN_org_x(ray_o,N,i) = ray_i.org[0];
     RTCRayN_org_y(ray_o,N,i) = ray_i.org[1];
@@ -276,7 +314,7 @@ namespace embree
     RTCRayN_Ng_z(ray_o,N,i) = ray_i.Ng[2];
   }
 
-  inline RTCRay getRay(RTCRay4& ray_i, int i)
+  __forceinline RTCRay getRay(RTCRay4& ray_i, int i)
   {
     RTCRay ray_o;
     ray_o.org[0] = ray_i.orgx[i];
@@ -300,7 +338,7 @@ namespace embree
     return ray_o;
   }
 
-  inline RTCRay getRay(RTCRay8& ray_i, int i)
+  __forceinline RTCRay getRay(RTCRay8& ray_i, int i)
   {
     RTCRay ray_o;
     ray_o.org[0] = ray_i.orgx[i];
@@ -324,7 +362,7 @@ namespace embree
     return ray_o;
   }
 
-  inline RTCRay getRay(RTCRay16& ray_i, int i)
+  __forceinline RTCRay getRay(RTCRay16& ray_i, int i)
   {
     RTCRay ray_o;
     ray_o.org[0] = ray_i.orgx[i];
@@ -348,7 +386,7 @@ namespace embree
     return ray_o;
   }
 
-  inline RTCRay getRay(RTCRayN* ray_i, size_t N, int i)
+  __forceinline RTCRay getRay(RTCRayN* ray_i, size_t N, int i)
   {
     RTCRay ray_o;
     ray_o.org[0] = RTCRayN_org_x(ray_i,N,i);
@@ -452,6 +490,40 @@ namespace embree
     return "";
   }
 
+  inline bool has_variant(IntersectMode imode, IntersectVariant ivariant)
+  {
+    switch (imode) {
+    case MODE_INTERSECT1:
+    case MODE_INTERSECT4:
+    case MODE_INTERSECT8:
+    case MODE_INTERSECT16:
+      switch (ivariant) {
+      case VARIANT_INTERSECT: return true;
+      case VARIANT_OCCLUDED : return true;
+      default: return false;
+      }
+    default:
+      return true;
+    }
+  }
+
+  inline std::string to_string(IntersectMode imode, IntersectVariant ivariant)
+  {
+    switch (imode) {
+    case MODE_INTERSECT1:
+    case MODE_INTERSECT4:
+    case MODE_INTERSECT8:
+    case MODE_INTERSECT16:
+      switch (ivariant) {
+      case VARIANT_INTERSECT: return "Intersect" + to_string(imode);
+      case VARIANT_OCCLUDED : return "Occluded" + to_string(imode);
+      default: assert(false);
+      }
+    default:
+      return to_string(ivariant) + to_string(imode);
+    }
+  }
+
   inline RTCAlgorithmFlags to_aflags(IntersectMode imode)
   {
     RTCAlgorithmFlags aflags_stream = (RTCAlgorithmFlags) (RTC_INTERSECT_STREAM);
@@ -481,6 +553,20 @@ namespace embree
     return str;
   }
 
+  inline std::string to_string(RTCGeometryFlags gflags)
+  {
+    switch (gflags) {
+    case RTC_GEOMETRY_STATIC: return "Static";
+    case RTC_GEOMETRY_DEFORMABLE: return "Deformable";
+    case RTC_GEOMETRY_DYNAMIC: return "Dynamic";
+    default: return "UnknownGeometryFlags";
+    }
+  }
+
+  inline std::string to_string(RTCSceneFlags sflags, RTCGeometryFlags gflags) {
+    return to_string(sflags)+to_string(gflags);
+  }
+
   static const size_t numSceneFlags = 64;
 
   RTCSceneFlags getSceneFlag(size_t i) 
@@ -508,6 +594,26 @@ namespace embree
     if (i & 16) sflag |= RTC_SCENE_ROBUST;
     sflags = (RTCSceneFlags) sflag;
     gflags = (RTCGeometryFlags) gflag;
+  }
+
+  inline bool supportsIntersectMode(RTCDevice device, IntersectMode imode)
+  { 
+    switch (imode) {
+    case MODE_INTERSECT_NONE: return true;
+    case MODE_INTERSECT1:   return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT1);
+    case MODE_INTERSECT4:   return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT4);
+    case MODE_INTERSECT8:   return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT8);
+    case MODE_INTERSECT16:  return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT16);
+    case MODE_INTERSECT1M:  return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
+    case MODE_INTERSECTNM1: return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
+    case MODE_INTERSECTNM3: return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
+    case MODE_INTERSECTNM4: return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
+    case MODE_INTERSECTNM8: return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
+    case MODE_INTERSECTNM16:return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
+    case MODE_INTERSECTNp:  return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
+    }
+    assert(false);
+    return false;
   }
 
   template<int N>
@@ -689,7 +795,9 @@ namespace embree
     HAIR_GEOMETRY,
     HAIR_GEOMETRY_MB,
     CURVE_GEOMETRY,
-    CURVE_GEOMETRY_MB
+    CURVE_GEOMETRY_MB,
+    LINE_GEOMETRY,
+    LINE_GEOMETRY_MB
   };
 
   inline std::string to_string(GeometryType gtype)
@@ -699,12 +807,14 @@ namespace embree
     case TRIANGLE_MESH_MB : return "triangles_mb";
     case QUAD_MESH        : return "quads";
     case QUAD_MESH_MB     : return "quads_mb";
-    case SUBDIV_MESH      : return "subdiv";
-    case SUBDIV_MESH_MB   : return "subdiv_mb";
+    case SUBDIV_MESH      : return "subdivs";
+    case SUBDIV_MESH_MB   : return "subdivs_mb";
     case HAIR_GEOMETRY    : return "hair";
     case HAIR_GEOMETRY_MB : return "hair_mb";
-    case CURVE_GEOMETRY   : return "curve";
-    case CURVE_GEOMETRY_MB: return "curve_mb";
+    case CURVE_GEOMETRY   : return "curves";
+    case CURVE_GEOMETRY_MB: return "curves_mb";
+    case LINE_GEOMETRY   : return "lines";
+    case LINE_GEOMETRY_MB: return "lines_mb";
     }
     return "";
   }
@@ -714,11 +824,11 @@ namespace embree
   }
 
   inline std::string to_string(RTCSceneFlags sflags, IntersectMode imode, IntersectVariant ivariant) {
-    return to_string(sflags) + "." + to_string(ivariant) + to_string(imode);
+    return to_string(sflags) + "." + to_string(imode,ivariant);
   }
 
   inline std::string to_string(GeometryType gtype, RTCSceneFlags sflags, IntersectMode imode, IntersectVariant ivariant) {
-    return to_string(gtype) + "." + to_string(sflags) + "." + to_string(ivariant) + to_string(imode);
+    return to_string(gtype) + "." + to_string(sflags) + "." + to_string(imode,ivariant);
   }
 
   /* error reporting function */

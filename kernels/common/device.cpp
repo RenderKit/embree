@@ -160,7 +160,7 @@ namespace embree
   void Device::print()
   {
     const int cpu_features = getCPUFeatures();
-    std::cout << "Embree Ray Tracing Kernels " << __EMBREE_VERSION__ << " (" << __DATE__ << ")" << std::endl;
+    std::cout << "Embree Ray Tracing Kernels " << __EMBREE_VERSION__ << " (" << __EMBREE_HASH__ << ")" << std::endl;
     std::cout << "  Compiler  : " << getCompilerName() << std::endl;
     std::cout << "  Build     : ";
 #if defined(DEBUG)

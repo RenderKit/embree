@@ -20,20 +20,28 @@
 #include "../include/embree2/rtcore_ray.h"
 #include "rtcore_helpers.h"
 #include "../tutorials/common/tutorial/application.h"
+#include "../tutorials/common/math/random_sampler.h"
+#include "../tutorials/common/tutorial/statistics.h"
 
 namespace embree
 {
   class VerifyApplication : public Application
   {
   public:
-    enum TestType { TEST_SHOULD_PASS, TEST_SHOULD_FAIL, TEST_GROUP };
+    enum TestType { TEST_SHOULD_PASS, TEST_SHOULD_FAIL, TEST_GROUP, BENCHMARK };
     enum TestReturnValue { FAILED, PASSED, SKIPPED };
     
     struct Test : public RefCount
     {
-      Test (std::string name, int isa, TestType ty) 
-        : name(name), isa(isa), ty(ty), enabled(true), ignoreFailure(false) {}
+      Test (std::string name, int isa, TestType ty, bool enabled = true) 
+        : name(name), isa(isa), ty(ty), enabled(enabled), ignoreFailure(false) 
+      {
+        RandomSampler_init(sampler,0x23F67E21);
+      }
 
+      float  random_float () { return RandomSampler_getFloat(sampler); }
+      int    random_int   () { return RandomSampler_getInt  (sampler); }
+      Vec3fa random_Vec3fa() { return RandomSampler_get3D   (sampler); }
       bool isEnabled() { return enabled; }
       virtual TestReturnValue run(VerifyApplication* state, bool silent) { return SKIPPED; }
       virtual TestReturnValue execute(VerifyApplication* state, bool silent);
@@ -44,6 +52,28 @@ namespace embree
       TestType ty;
       bool enabled;
       bool ignoreFailure;
+      RandomSampler sampler;
+    };
+
+    class Benchmark : public Test
+    {
+    public:
+      const std::string unit;
+      Benchmark (const std::string& name, int isa, const std::string& unit)
+        : Test(name,isa,BENCHMARK,false), unit(unit), numThreads(getNumberOfLogicalThreads()) {}
+      
+      virtual size_t setNumPrimitives(size_t N) { return 0; }
+      virtual void setNumThreads(size_t N) { numThreads = N; }
+      virtual bool setup(VerifyApplication* state) { return true; }
+      virtual double benchmark(VerifyApplication* state) = 0;
+      Statistics benchmark_loop(VerifyApplication* state);
+      virtual void cleanup(VerifyApplication* state) {}
+      virtual TestReturnValue execute(VerifyApplication* state, bool silent);
+      double updateDatabase(VerifyApplication* state, Statistics stat);
+      void plotDatabase(VerifyApplication* state);
+
+    public:
+      size_t numThreads;
     };
 
     struct TestGroup : public Test
@@ -74,26 +104,6 @@ namespace embree
       IntersectTest (std::string name, int isa, IntersectMode imode, IntersectVariant ivariant, TestType ty = TEST_SHOULD_PASS)
         : Test(name,isa,ty), imode(imode), ivariant(ivariant) {}
 
-      bool supportsIntersectMode(RTCDevice device)
-      { 
-        switch (imode) {
-        case MODE_INTERSECT_NONE: return true;
-        case MODE_INTERSECT1:   return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT1);
-        case MODE_INTERSECT4:   return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT4);
-        case MODE_INTERSECT8:   return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT8);
-        case MODE_INTERSECT16:  return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT16);
-        case MODE_INTERSECT1M:  return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
-        case MODE_INTERSECTNM1: return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
-        case MODE_INTERSECTNM3: return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
-        case MODE_INTERSECTNM4: return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
-        case MODE_INTERSECTNM8: return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
-        case MODE_INTERSECTNM16:return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
-        case MODE_INTERSECTNp:  return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
-        }
-        assert(false);
-        return false;
-      }
-
     public:
       IntersectMode imode;
       IntersectVariant ivariant;
@@ -105,20 +115,27 @@ namespace embree
     void prefix_test_names(Ref<Test> test, std::string prefix = "");
     bool update_tests(Ref<Test> test);
     void print_tests(Ref<Test> test, size_t depth);
+    void print_ctests(Ref<Test> test, size_t depth);
     template<typename Function> 
       void map_tests(Ref<Test> test, const Function& f);
     void enable_disable_all_tests(Ref<Test> test, bool enabled);
-    void enable_disable_some_tests(Ref<Test> test, std::string regex, bool enabled);
+    size_t enable_disable_some_tests(Ref<Test> test, std::string regex, bool enabled);
+     template<typename Closure>
+       void plot(std::vector<Ref<Benchmark>> benchmarks, const FileName outFileName, std::string xlabel, size_t startN, size_t endN, float f, size_t dn, const Closure& test);
+    FileName parse_benchmark_list(Ref<ParseStream> cin, std::vector<Ref<Benchmark>>& benchmarks);
     int main(int argc, char** argv);
     
   public:
     float intensity;
+    std::atomic<size_t> numPassedTests;
     std::atomic<size_t> numFailedTests;
+    std::atomic<size_t> numFailedAndIgnoredTests;
 
   public:
     MutexSys mutex;
     std::vector<int> isas;
     Ref<Test> tests;
+    std::map<std::string,Ref<Test>> name2test;
 
   public:
     RTCDeviceRef device;
@@ -130,6 +147,9 @@ namespace embree
     bool user_specified_tests;
     bool flatten;
     bool parallel;
+    bool cdash;
+    FileName database;
+    float benchmark_tolerance;
 
     /* sets terminal colors */
   public:

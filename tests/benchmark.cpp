@@ -377,8 +377,10 @@ namespace embree
     double run (size_t numThreads)
     {
       int flags = 0;
-#if defined(__UNIX__) && !defined(__APPLE__)
+#if defined(__LINUX__)
       flags |= MAP_POPULATE;
+#elif defined(__FreeBSD__)
+      flags |= MAP_PREFAULT_READ;
 #endif
       size_t startN = 1024*1024*16;
 

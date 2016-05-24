@@ -30,10 +30,8 @@
 
 namespace embree
 {
-
   /********************** Bezier1v **************************/
 
-#if !defined(__AVX__)
   Bezier1v::Type::Type () 
     : PrimitiveType("bezier1v",sizeof(Bezier1v),1) {} 
   
@@ -42,11 +40,9 @@ namespace embree
   }
 
   Bezier1v::Type Bezier1v::type;
-#endif
 
   /********************** Bezier1i **************************/
 
-#if !defined(__AVX__)
   Bezier1i::Type::Type () 
     : PrimitiveType("bezier1i",sizeof(Bezier1i),1) {} 
   
@@ -55,11 +51,9 @@ namespace embree
   }
 
   Bezier1i::Type Bezier1i::type;
-#endif
 
   /********************** Line4i **************************/
 
-#if !defined(__AVX__)
   template<>
   Line4i::Type::Type ()
     : PrimitiveType("line4i",sizeof(Line4i),4) {}
@@ -68,11 +62,9 @@ namespace embree
   size_t Line4i::Type::size(const char* This) const {
     return ((Line4i*)This)->size();
   }
-#endif
   
   /********************** Triangle4 **************************/
 
-#if !defined(__AVX__)
   template<>
   Triangle4::Type::Type () 
     : PrimitiveType("triangle4",sizeof(Triangle4),4) {} 
@@ -81,11 +73,9 @@ namespace embree
   size_t Triangle4::Type::size(const char* This) const {
     return ((Triangle4*)This)->size();
   }
-#endif
 
   /********************** Triangle4v **************************/
 
-#if !defined(__AVX__)
   template<>
   Triangle4v::Type::Type () 
   : PrimitiveType("triangle4v",sizeof(Triangle4v),4) {} 
@@ -94,11 +84,9 @@ namespace embree
   size_t Triangle4v::Type::size(const char* This) const {
     return ((Triangle4v*)This)->size();
   }
-#endif
 
   /********************** Triangle4i **************************/
 
-#if !defined(__AVX__)
   template<>
   Triangle4i::Type::Type () 
     : PrimitiveType("triangle4i",sizeof(Triangle4i),4) {} 
@@ -107,11 +95,9 @@ namespace embree
   size_t Triangle4i::Type::size(const char* This) const {
     return ((Triangle4i*)This)->size();
   }
-#endif
 
   /********************** Triangle4vMB **************************/
 
-#if !defined(__AVX__)
   template<>
   Triangle4vMB::Type::Type () 
   : PrimitiveType("triangle4vmb",sizeof(Triangle4vMB),4) {} 
@@ -120,11 +106,9 @@ namespace embree
   size_t Triangle4vMB::Type::size(const char* This) const {
     return ((Triangle4vMB*)This)->size();
   }
-#endif
 
   /********************** Quad4v **************************/
 
-#if !defined(__AVX__)
   template<>
   Quad4v::Type::Type () 
     : PrimitiveType("quad4v",sizeof(Quad4v),4) {}
@@ -133,11 +117,9 @@ namespace embree
   size_t Quad4v::Type::size(const char* This) const {
     return ((Quad4v*)This)->size();
   }
-#endif
 
   /********************** Quad4i **************************/
 
-#if !defined(__AVX__)
   template<>
   Quad4i::Type::Type () 
     : PrimitiveType("quad4i",sizeof(Quad4i),4) {} 
@@ -146,11 +128,9 @@ namespace embree
   size_t Quad4i::Type::size(const char* This) const {
     return ((Quad4i*)This)->size();
   }
-#endif
 
   /********************** Quad4iMB **************************/
 
-#if !defined(__AVX__)
   template<>
   Quad4iMB::Type::Type () 
   : PrimitiveType("quad4imb",sizeof(Quad4iMB),4) {} 
@@ -159,12 +139,9 @@ namespace embree
   size_t Quad4iMB::Type::size(const char* This) const {
     return ((Quad4iMB*)This)->size();
   }
-#endif
-
 
   /********************** SubdivPatch1Cached **************************/
 
-#if !defined(__AVX__)
   SubdivPatch1Cached::Type::Type () 
     : PrimitiveType("subdivpatch1cached",sizeof(SubdivPatch1Cached),1) {} 
   
@@ -173,11 +150,9 @@ namespace embree
   }
 
   SubdivPatch1Cached::Type SubdivPatch1Cached::type;
-#endif
 
   /********************** SubdivPatch1Eager **************************/
 
-#if !defined(__AVX__)
   SubdivPatch1Eager::Type::Type () 
     : PrimitiveType("subdivpatch1eager",sizeof(SubdivPatch1Eager),1) {} 
   
@@ -186,11 +161,9 @@ namespace embree
   }
 
   SubdivPatch1Eager::Type SubdivPatch1Eager::type;
-#endif
 
   /********************** Virtual Object **************************/
 
-#if !defined(__AVX__)
   Object::Type::Type () 
     : PrimitiveType("object",sizeof(Object),1) {} 
 
@@ -199,7 +172,4 @@ namespace embree
   }
 
   Object::Type Object::type;
-#endif
 }
-
-

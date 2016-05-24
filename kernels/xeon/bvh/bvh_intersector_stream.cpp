@@ -610,7 +610,6 @@ namespace embree
 #endif
 
           }
-       leaf:
 
           /* current ray stream is done? */
           if (unlikely(cur == BVH::invalidNode))

@@ -25,7 +25,9 @@ IF (BUILD_TESTING)
   CMAKE_HOST_SYSTEM_INFORMATION(RESULT memory QUERY TOTAL_PHYSICAL_MEMORY)
   
   SET(BUILD_TESTING_MODEL_DIR "${PROJECT_SOURCE_DIR}/models" CACHE FILEPATH "Path to the folder containing the Embree models for regression testing.")
-  SET(BUILD_TESTING_INTENSIVE OFF CACHE BOOL "Turns on intensive testing.")
+  SET(BUILD_TESTING_INTENSIVE OFF CACHE BOOL "Turns intensive testing on.")
+  SET(BUILD_TESTING_BENCHMARK OFF CACHE PATH "Turns benchmarking on.")
+  SET(BUILD_TESTING_BENCHMARK_DATABASE "${PROJECT_BINARY_DIR}" CACHE PATH "Path to database for benchmarking.")
 
   IF(   NOT EXISTS "${BUILD_TESTING_MODEL_DIR}/embree-models-subdiv.txt"
      OR NOT EXISTS "${BUILD_TESTING_MODEL_DIR}/embree-models-small-win32.txt"

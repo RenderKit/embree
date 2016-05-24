@@ -297,6 +297,11 @@ namespace embree
       for (auto P : mesh->v) 
         mesh->v2.push_back(P+dP);
     }
+    else if (Ref<SceneGraph::LineSegmentsNode> mesh = node.dynamicCast<SceneGraph::LineSegmentsNode>()) 
+    {
+      for (auto P : mesh->v) 
+        mesh->v2.push_back(P+dP);
+    }
     else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>()) 
     {
       for (auto P : mesh->positions) 
@@ -304,21 +309,21 @@ namespace embree
     }
   }
 
-  void SceneGraph::resize_randomly(Ref<Node> node, const size_t N)
+  void SceneGraph::resize_randomly(RandomSampler& sampler, Ref<Node> node, const size_t N)
   {
      if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
-      resize_randomly(xfmNode->child, N);
+       resize_randomly(sampler,xfmNode->child, N);
     }
     else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) 
     {
       for (size_t i=0; i<groupNode->children.size(); i++) 
-        resize_randomly(groupNode->children[i],N);
+        resize_randomly(sampler,groupNode->children[i],N);
     }
     else if (Ref<SceneGraph::TriangleMeshNode> mesh = node.dynamicCast<SceneGraph::TriangleMeshNode>()) 
     {
       if (!mesh->triangles.size()) return;
       for (size_t i=0; i<N; i++) {
-        size_t j = random<int>()%(min(mesh->triangles.size(),N));
+        size_t j = RandomSampler_getInt(sampler)%(min(mesh->triangles.size(),N));
         if (i < mesh->triangles.size()) std::swap(mesh->triangles[i],mesh->triangles[j]);
         else                            mesh->triangles.push_back(mesh->triangles[j]);
       }
@@ -327,7 +332,7 @@ namespace embree
     {
       if (!mesh->quads.size()) return;
       for (size_t i=0; i<N; i++) {
-        size_t j = random<int>()%(min(mesh->quads.size(),N));
+        size_t j = RandomSampler_getInt(sampler)%(min(mesh->quads.size(),N));
         if (i < mesh->quads.size()) std::swap(mesh->quads[i],mesh->quads[j]);
         else                        mesh->quads.push_back(mesh->quads[j]);
       }
@@ -336,7 +341,7 @@ namespace embree
     {
       if (!mesh->hairs.size()) return;
       for (size_t i=0; i<N; i++) {
-        size_t j = random<int>()%(min(mesh->hairs.size(),N));
+        size_t j = RandomSampler_getInt(sampler)%(min(mesh->hairs.size(),N));
         if (i < mesh->hairs.size()) std::swap(mesh->hairs[i],mesh->hairs[j]);
         else                        mesh->hairs.push_back(mesh->hairs[j]);
       }
@@ -790,8 +795,11 @@ namespace embree
     return mesh;
   }
 
-  Ref<SceneGraph::Node> SceneGraph::createHairyPlane (const Vec3fa& pos, const Vec3fa& dx, const Vec3fa& dy, const float len, const float r, size_t numHairs, bool hair, Ref<MaterialNode> material)
+  Ref<SceneGraph::Node> SceneGraph::createHairyPlane (int hash, const Vec3fa& pos, const Vec3fa& dx, const Vec3fa& dy, const float len, const float r, size_t numHairs, bool hair, Ref<MaterialNode> material)
   {
+    RandomSampler sampler;
+    RandomSampler_init(sampler,hash);
+
     SceneGraph::HairSetNode* mesh = new SceneGraph::HairSetNode(hair,material);
 
     if (numHairs == 1) {
@@ -810,7 +818,7 @@ namespace embree
     Vec3fa dz = cross(dx,dy);
     for (size_t i=0; i<numHairs; i++) 
     {
-      const Vec3fa p0 = pos + random<float>()*dx + random<float>()*dy;
+      const Vec3fa p0 = pos + RandomSampler_getFloat(sampler)*dx + RandomSampler_getFloat(sampler)*dy;
       const Vec3fa p1 = p0 + len*normalize(dx);
       const Vec3fa p2 = p0 + len*(normalize(dz)+normalize(dy));
       const Vec3fa p3 = p0 + len*normalize(dz);
@@ -823,24 +831,26 @@ namespace embree
     return mesh;
   }
 
-  Ref<SceneGraph::Node> SceneGraph::createGarbageTriangleMesh (size_t numTriangles, bool mblur, Ref<MaterialNode> material)
+  Ref<SceneGraph::Node> SceneGraph::createGarbageTriangleMesh (int hash, size_t numTriangles, bool mblur, Ref<MaterialNode> material)
   {
+    RandomSampler sampler;
+    RandomSampler_init(sampler,hash);
     SceneGraph::TriangleMeshNode* mesh = new SceneGraph::TriangleMeshNode(material);
 
     mesh->triangles.resize(numTriangles);
     for (size_t i=0; i<numTriangles; i++) {
-      const int v0 = (random<int>() % 32 == 0) ? random<uint32_t>() : 3*i+0;
-      const int v1 = (random<int>() % 32 == 0) ? random<uint32_t>() : 3*i+1;
-      const int v2 = (random<int>() % 32 == 0) ? random<uint32_t>() : 3*i+2;
+      const int v0 = (RandomSampler_getInt(sampler) % 32 == 0) ? RandomSampler_getUInt(sampler) : 3*i+0;
+      const int v1 = (RandomSampler_getInt(sampler) % 32 == 0) ? RandomSampler_getUInt(sampler) : 3*i+1;
+      const int v2 = (RandomSampler_getInt(sampler) % 32 == 0) ? RandomSampler_getUInt(sampler) : 3*i+2;
       mesh->triangles[i] = TriangleMeshNode::Triangle(v0,v1,v2);
     }
 
     mesh->v.resize(3*numTriangles);
     for (size_t i=0; i<3*numTriangles; i++) {
-      const float x = cast_i2f(random<uint32_t>());
-      const float y = cast_i2f(random<uint32_t>());
-      const float z = cast_i2f(random<uint32_t>());
-      const float w = cast_i2f(random<uint32_t>());
+      const float x = cast_i2f(RandomSampler_getUInt(sampler));
+      const float y = cast_i2f(RandomSampler_getUInt(sampler));
+      const float z = cast_i2f(RandomSampler_getUInt(sampler));
+      const float w = cast_i2f(RandomSampler_getUInt(sampler));
       mesh->v[i] = Vec3fa(x,y,z,w);
     }
 
@@ -848,10 +858,10 @@ namespace embree
     {
       mesh->v2.resize(3*numTriangles);
       for (size_t i=0; i<3*numTriangles; i++) {
-        const float x = cast_i2f(random<uint32_t>());
-        const float y = cast_i2f(random<uint32_t>());
-        const float z = cast_i2f(random<uint32_t>());
-        const float w = cast_i2f(random<uint32_t>());
+        const float x = cast_i2f(RandomSampler_getUInt(sampler));
+        const float y = cast_i2f(RandomSampler_getUInt(sampler));
+        const float z = cast_i2f(RandomSampler_getUInt(sampler));
+        const float w = cast_i2f(RandomSampler_getUInt(sampler));
         mesh->v2[i] = Vec3fa(x,y,z,w);
       }
     }
@@ -859,25 +869,27 @@ namespace embree
     return mesh;
   }
 
-  Ref<SceneGraph::Node> SceneGraph::createGarbageQuadMesh (size_t numQuads, bool mblur, Ref<MaterialNode> material)
+  Ref<SceneGraph::Node> SceneGraph::createGarbageQuadMesh (int hash, size_t numQuads, bool mblur, Ref<MaterialNode> material)
   {
+    RandomSampler sampler;
+    RandomSampler_init(sampler,hash);
     SceneGraph::QuadMeshNode* mesh = new SceneGraph::QuadMeshNode(material);
 
     mesh->quads.resize(numQuads);
     for (size_t i=0; i<numQuads; i++) {
-      const int v0 = (random<int>() % 32 == 0) ? random<uint32_t>() : 4*i+0;
-      const int v1 = (random<int>() % 32 == 0) ? random<uint32_t>() : 4*i+1;
-      const int v2 = (random<int>() % 32 == 0) ? random<uint32_t>() : 4*i+2;
-      const int v3 = (random<int>() % 32 == 0) ? random<uint32_t>() : 4*i+3;
+      const int v0 = (RandomSampler_getInt(sampler) % 32 == 0) ? RandomSampler_getUInt(sampler) : 4*i+0;
+      const int v1 = (RandomSampler_getInt(sampler) % 32 == 0) ? RandomSampler_getUInt(sampler) : 4*i+1;
+      const int v2 = (RandomSampler_getInt(sampler) % 32 == 0) ? RandomSampler_getUInt(sampler) : 4*i+2;
+      const int v3 = (RandomSampler_getInt(sampler) % 32 == 0) ? RandomSampler_getUInt(sampler) : 4*i+3;
       mesh->quads[i] = QuadMeshNode::Quad(v0,v1,v2,v3);
     }
 
     mesh->v.resize(4*numQuads);
     for (size_t i=0; i<4*numQuads; i++) {
-      const float x = cast_i2f(random<uint32_t>());
-      const float y = cast_i2f(random<uint32_t>());
-      const float z = cast_i2f(random<uint32_t>());
-      const float w = cast_i2f(random<uint32_t>());
+      const float x = cast_i2f(RandomSampler_getUInt(sampler));
+      const float y = cast_i2f(RandomSampler_getUInt(sampler));
+      const float z = cast_i2f(RandomSampler_getUInt(sampler));
+      const float w = cast_i2f(RandomSampler_getUInt(sampler));
       mesh->v[i] = Vec3fa(x,y,z,w);
     }
 
@@ -885,10 +897,10 @@ namespace embree
     {
       mesh->v2.resize(4*numQuads);
       for (size_t i=0; i<4*numQuads; i++) {
-        const float x = cast_i2f(random<uint32_t>());
-        const float y = cast_i2f(random<uint32_t>());
-        const float z = cast_i2f(random<uint32_t>());
-        const float w = cast_i2f(random<uint32_t>());
+        const float x = cast_i2f(RandomSampler_getUInt(sampler));
+        const float y = cast_i2f(RandomSampler_getUInt(sampler));
+        const float z = cast_i2f(RandomSampler_getUInt(sampler));
+        const float w = cast_i2f(RandomSampler_getUInt(sampler));
         mesh->v2[i] = Vec3fa(x,y,z,w);
       }
     }
@@ -896,21 +908,23 @@ namespace embree
     return mesh;
   }
 
-  Ref<SceneGraph::Node> SceneGraph::createGarbageLineSegments (size_t numLineSegments, bool mblur, Ref<MaterialNode> material)
+  Ref<SceneGraph::Node> SceneGraph::createGarbageLineSegments (int hash, size_t numLineSegments, bool mblur, Ref<MaterialNode> material)
   {
+    RandomSampler sampler;
+    RandomSampler_init(sampler,hash);
     SceneGraph::LineSegmentsNode* mesh = new SceneGraph::LineSegmentsNode(material);
 
     mesh->indices.resize(numLineSegments);
     for (size_t i=0; i<numLineSegments; i++) {
-      mesh->indices[i] = (random<int>() % 32 == 0) ? random<uint32_t>() : 2*i;
+      mesh->indices[i] = (RandomSampler_getInt(sampler) % 32 == 0) ? RandomSampler_getUInt(sampler) : 2*i;
     }
 
     mesh->v.resize(2*numLineSegments);
     for (size_t i=0; i<2*numLineSegments; i++) {
-      const float x = cast_i2f(random<uint32_t>());
-      const float y = cast_i2f(random<uint32_t>());
-      const float z = cast_i2f(random<uint32_t>());
-      const float r = cast_i2f(random<uint32_t>());
+      const float x = cast_i2f(RandomSampler_getUInt(sampler));
+      const float y = cast_i2f(RandomSampler_getUInt(sampler));
+      const float z = cast_i2f(RandomSampler_getUInt(sampler));
+      const float r = cast_i2f(RandomSampler_getUInt(sampler));
       mesh->v[i] = Vec3fa(x,y,z,r);
     }
 
@@ -918,10 +932,10 @@ namespace embree
     {
       mesh->v2.resize(2*numLineSegments);
       for (size_t i=0; i<2*numLineSegments; i++) {
-        const float x = cast_i2f(random<uint32_t>());
-        const float y = cast_i2f(random<uint32_t>());
-        const float z = cast_i2f(random<uint32_t>());
-        const float r = cast_i2f(random<uint32_t>());
+        const float x = cast_i2f(RandomSampler_getUInt(sampler));
+        const float y = cast_i2f(RandomSampler_getUInt(sampler));
+        const float z = cast_i2f(RandomSampler_getUInt(sampler));
+        const float r = cast_i2f(RandomSampler_getUInt(sampler));
         mesh->v2[i] = Vec3fa(x,y,z,r);
       }
     }
@@ -929,22 +943,24 @@ namespace embree
     return mesh;
   }
 
-  Ref<SceneGraph::Node> SceneGraph::createGarbageHair (size_t numHairs, bool mblur, Ref<MaterialNode> material)
+  Ref<SceneGraph::Node> SceneGraph::createGarbageHair (int hash, size_t numHairs, bool mblur, Ref<MaterialNode> material)
   {
+    RandomSampler sampler;
+    RandomSampler_init(sampler,hash);
     SceneGraph::HairSetNode* mesh = new SceneGraph::HairSetNode(true,material);
 
     mesh->hairs.resize(numHairs);
     for (size_t i=0; i<numHairs; i++) {
-      const int v0 = (random<int>() % 32 == 0) ? random<uint32_t>() : 4*i;
+      const int v0 = (RandomSampler_getInt(sampler) % 32 == 0) ? RandomSampler_getUInt(sampler) : 4*i;
       mesh->hairs[i] = HairSetNode::Hair(v0,0);
     }
 
     mesh->v.resize(4*numHairs);
     for (size_t i=0; i<4*numHairs; i++) {
-      const float x = cast_i2f(random<uint32_t>());
-      const float y = cast_i2f(random<uint32_t>());
-      const float z = cast_i2f(random<uint32_t>());
-      const float r = cast_i2f(random<uint32_t>());
+      const float x = cast_i2f(RandomSampler_getUInt(sampler));
+      const float y = cast_i2f(RandomSampler_getUInt(sampler));
+      const float z = cast_i2f(RandomSampler_getUInt(sampler));
+      const float r = cast_i2f(RandomSampler_getUInt(sampler));
       mesh->v[i] = Vec3fa(x,y,z,r);
     }
 
@@ -952,10 +968,10 @@ namespace embree
     {
       mesh->v2.resize(4*numHairs);
       for (size_t i=0; i<4*numHairs; i++) {
-        const float x = cast_i2f(random<uint32_t>());
-        const float y = cast_i2f(random<uint32_t>());
-        const float z = cast_i2f(random<uint32_t>());
-        const float r = cast_i2f(random<uint32_t>());
+        const float x = cast_i2f(RandomSampler_getUInt(sampler));
+        const float y = cast_i2f(RandomSampler_getUInt(sampler));
+        const float z = cast_i2f(RandomSampler_getUInt(sampler));
+        const float r = cast_i2f(RandomSampler_getUInt(sampler));
         mesh->v2[i] = Vec3fa(x,y,z,r);
       }
     }
@@ -963,30 +979,32 @@ namespace embree
     return mesh;
   }
 
-  Ref<SceneGraph::Node> SceneGraph::createGarbageSubdivMesh (size_t numFaces, bool mblur, Ref<MaterialNode> material)
+  Ref<SceneGraph::Node> SceneGraph::createGarbageSubdivMesh (int hash, size_t numFaces, bool mblur, Ref<MaterialNode> material)
   {
+    RandomSampler sampler;
+    RandomSampler_init(sampler,hash);
     SceneGraph::SubdivMeshNode* mesh = new SceneGraph::SubdivMeshNode(material);
 
     for (size_t i=0; i<numFaces; i++) 
     {
-      const size_t f = random<int>() % 20;
+      const size_t f = RandomSampler_getInt(sampler) % 20;
       mesh->verticesPerFace.push_back(f);
       for (size_t j=0; j<f; j++) 
       {
-        mesh->position_indices.push_back((random<int>() % 32 == 0) ? random<uint32_t>() : mesh->positions.size());
+        mesh->position_indices.push_back((RandomSampler_getInt(sampler) % 32 == 0) ? RandomSampler_getUInt(sampler) : mesh->positions.size());
 
-        const float x = cast_i2f(random<uint32_t>());
-        const float y = cast_i2f(random<uint32_t>());
-        const float z = cast_i2f(random<uint32_t>());
-        const float w = cast_i2f(random<uint32_t>());
+        const float x = cast_i2f(RandomSampler_getUInt(sampler));
+        const float y = cast_i2f(RandomSampler_getUInt(sampler));
+        const float z = cast_i2f(RandomSampler_getUInt(sampler));
+        const float w = cast_i2f(RandomSampler_getUInt(sampler));
         mesh->positions.push_back(Vec3fa(x,y,z,w));
 
         if (mblur) 
         {
-          const float x = cast_i2f(random<uint32_t>());
-          const float y = cast_i2f(random<uint32_t>());
-          const float z = cast_i2f(random<uint32_t>());
-          const float w = cast_i2f(random<uint32_t>());
+          const float x = cast_i2f(RandomSampler_getUInt(sampler));
+          const float y = cast_i2f(RandomSampler_getUInt(sampler));
+          const float z = cast_i2f(RandomSampler_getUInt(sampler));
+          const float w = cast_i2f(RandomSampler_getUInt(sampler));
           mesh->positions2.push_back(Vec3fa(x,y,z,w));
         }
       }
