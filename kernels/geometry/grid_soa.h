@@ -20,8 +20,8 @@
 #include "../common/scene_subdiv_mesh.h"
 #include "filter.h"
 #include "../bvh/bvh.h"
-#include "../common/subdiv/tessellation.h"
-#include "../common/subdiv/tessellation_cache.h"
+#include "../subdiv/tessellation.h"
+#include "../subdiv/tessellation_cache.h"
 #include "subdivpatch1cached.h"
 #include "grid_aos.h"
 

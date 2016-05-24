@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "../geometry.h"
-#include "../buffer.h"
+#include "../common/geometry.h"
+#include "../common/buffer.h"
 #include "half_edge.h"
 #include "catmullclark_coefficients.h"
 

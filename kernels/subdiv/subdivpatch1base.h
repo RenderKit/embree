@@ -25,7 +25,7 @@
 #include "gridrange.h"
 #include "patch_eval_grid.h"
 #include "feature_adaptive_eval_grid.h"
-#include "../scene_subdiv_mesh.h"
+#include "../common/scene_subdiv_mesh.h"
 
 namespace embree
 {

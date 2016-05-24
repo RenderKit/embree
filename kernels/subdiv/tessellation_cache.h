@@ -16,8 +16,7 @@
 
 #pragma once
 
-#include "../default.h"
-//#include "subdivpatch1base.h"
+#include "../common/default.h"
 
 #define CACHE_DBG(x) 
 

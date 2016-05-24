@@ -19,8 +19,8 @@
 #include "primitive.h"
 #include "discrete_tessellation.h"
 #include "../bvh/bvh.h"
-#include "../common/subdiv/patch_eval.h"
-#include "../common/subdiv/subdivpatch1base.h"
+#include "../subdiv/patch_eval.h"
+#include "../subdiv/subdivpatch1base.h"
 
 #define GRID_COMPRESS_BOUNDS 1
 

@@ -56,16 +56,16 @@ SET(EMBREE_LIBRARY_FILES
   common/scene_line_segments.cpp
   common/scene_subdiv_mesh.cpp
   common/raystream_log.cpp
-  common/subdiv/tessellation_cache.cpp
-  common/subdiv/subdivpatch1base.cpp
-  common/subdiv/catmullclark_coefficients.cpp
-  common/subdiv/bezier_curve.cpp
+  subdiv/tessellation_cache.cpp
+  subdiv/subdivpatch1base.cpp
+  subdiv/catmullclark_coefficients.cpp
+  subdiv/bezier_curve.cpp
 
   geometry/primitive.cpp
   geometry/instance_intersector1.cpp
   geometry/instance_intersector.cpp
   geometry/grid_soa.cpp	
-  common/subdiv/subdivpatch1base_eval.cpp	
+  subdiv/subdivpatch1base_eval.cpp	
   builders/primrefgen.cpp
 
   bvh/bvh.cpp
@@ -118,7 +118,7 @@ ENDIF()
 
 SET(EMBREE_LIBRARY_FILES_SSE42
     geometry/grid_soa.cpp
-    common/subdiv/subdivpatch1base_eval.cpp
+    subdiv/subdivpatch1base_eval.cpp
     bvh/bvh_intersector1.cpp)
 
 IF (RTCORE_RAY_PACKETS)
@@ -140,7 +140,7 @@ SET(EMBREE_LIBRARY_FILES_AVX
     geometry/instance_intersector1.cpp
     
     geometry/grid_soa.cpp
-    common/subdiv/subdivpatch1base_eval.cpp
+    subdiv/subdivpatch1base_eval.cpp
     builders/primrefgen.avx.cpp
 
     bvh/bvh_rotate.cpp
@@ -177,7 +177,7 @@ SET(EMBREE_LIBRARY_FILES_AVX2
 
     geometry/instance_intersector1.cpp
     geometry/grid_soa.cpp
-    common/subdiv/subdivpatch1base_eval.cpp
+    subdiv/subdivpatch1base_eval.cpp
 
     bvh/bvh_intersector1.cpp)
 
@@ -199,7 +199,7 @@ SET(EMBREE_LIBRARY_FILES_AVX512KNL
 
     geometry/instance_intersector1.cpp
     geometry/grid_soa.cpp
-    common/subdiv/subdivpatch1base_eval.cpp
+    subdiv/subdivpatch1base_eval.cpp
 
     builders/primrefgen.avx512.cpp
     bvh/bvh_builder.avx512.cpp

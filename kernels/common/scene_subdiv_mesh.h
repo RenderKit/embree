@@ -18,10 +18,10 @@
 
 #include "geometry.h"
 #include "buffer.h"
-#include "subdiv/half_edge.h"
-#include "subdiv/tessellation_cache.h"
-#include "subdiv/catmullclark_coefficients.h"
-#include "subdiv/patch.h"
+#include "../subdiv/half_edge.h"
+#include "../subdiv/tessellation_cache.h"
+#include "../subdiv/catmullclark_coefficients.h"
+#include "../subdiv/patch.h"
 #include "../algorithms/pmap.h"
 #include "../algorithms/pset.h"
 
