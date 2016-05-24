@@ -51,7 +51,6 @@ namespace embree
 
     __forceinline void lock()
     {
-      itt_sync_prepare((void*)&flag);
       while (true) 
       {
         while (flag.load()) 
@@ -64,26 +63,18 @@ namespace embree
         if (flag.compare_exchange_strong(expected,true,std::memory_order_acquire))
           break;
       }
-      itt_sync_acquired((void*)&flag);
     }
     
     __forceinline bool try_lock()
     {
-      itt_sync_prepare((void*)&flag);
       bool expected = false;
       if (flag.load() != expected) {
-        itt_sync_cancel((void*)&flag);
         return false;
       }
-      bool success = flag.compare_exchange_strong(expected,true,std::memory_order_acquire);
-      if (success) itt_sync_acquired((void*)&flag);
-      else         itt_sync_cancel((void*)&flag);
-      return success;
+      return flag.compare_exchange_strong(expected,true,std::memory_order_acquire);
     }
 
-    __forceinline void unlock() 
-    {
-      itt_sync_releasing((void*)&flag);
+    __forceinline void unlock() {
       flag.store(false,std::memory_order_release);
     }
     
