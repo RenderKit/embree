@@ -3616,7 +3616,7 @@ namespace embree
       
       push(new TestGroup("overlapping_primitives",true,true));
       for (auto sflags : sceneFlags)
-        groups.top()->add(new OverlappingGeometryTest(to_string(sflags),isa,sflags,RTC_GEOMETRY_STATIC,100000));
+        groups.top()->add(new OverlappingGeometryTest(to_string(sflags),isa,sflags,RTC_GEOMETRY_STATIC,clamp(int(intensity*10000),1000,100000)));
       groups.pop();
 
       push(new TestGroup("new_delete_geometry",true,true));
