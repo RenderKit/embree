@@ -2544,7 +2544,7 @@ namespace embree
     for (size_t i=0; i<task->sceneCount; i++) 
     {
       RandomSampler_init(task->sampler,task->sceneIndex*13565+i*3242);
-      if (i%20 == 0) std::cout << "." << std::flush;
+      if (i%5 == 0) std::cout << "." << std::flush;
 
       RTCSceneFlags sflag = getSceneFlag(i); 
       task->scene = new VerifyScene(thread->device,sflag,aflags_all);
@@ -2562,7 +2562,7 @@ namespace embree
         case 2: pos = Vec3fa(1E30f); break;
         default: break;
         };
-	size_t numPhi = RandomSampler_getInt(task->sampler)%100;
+	size_t numPhi = RandomSampler_getInt(task->sampler)%50;
 	if (type == 2) numPhi = RandomSampler_getInt(task->sampler)%10;
         size_t numTriangles = 2*2*numPhi*(numPhi-1);
 	numTriangles = RandomSampler_getInt(task->sampler)%(numTriangles+1);
