@@ -35,14 +35,14 @@ TARGET_LINK_LIBRARIES(verify sys scenegraph embree)
 SET_PROPERTY(TARGET verify PROPERTY FOLDER tests)
 
 ADD_TEST(NAME verify COMMAND verify --no-colors)
-IF (BUILD_TESTING_MEMCHECK)
+IF (BUILD_TESTING_MEMCHECK AND CMAKE_MEMORYCHECK_COMMAND)
   ADD_MEMCHECK_TEST(verify_memcheck verify --no-colors)
   set_tests_properties(verify_memcheck PROPERTIES TIMEOUT 3000)
 ENDIF()
 
 IF (BUILD_TESTING_BENCHMARK)
   ADD_TEST(NAME verify_benchmarks COMMAND verify --no-colors --cdash --benchmark-tolerance 0.05 --database "${BUILD_TESTING_BENCHMARK_DATABASE}" --run .*benchmarks.*)
-  set_tests_properties(verify_memcheck PROPERTIES TIMEOUT 3000)
+  set_tests_properties(verify_benchmarks PROPERTIES TIMEOUT 3000)
 ENDIF()
 
 ADD_EXECUTABLE(benchmark benchmark.cpp)
