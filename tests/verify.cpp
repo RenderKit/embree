@@ -388,8 +388,8 @@ namespace embree
     
     /* send chart to cdash */
     if (state->cdash) {
-      system((std::string("gnuplot ") + base.addExt(".plot").str()).c_str());
-      std::cout << std::endl << "<DartMeasurementFile name=\"" << name << "\" type=\"image/png\">" << base.addExt(".png") << "</DartMeasurementFile>" << std::endl;
+      if (system((std::string("gnuplot ") + base.addExt(".plot").str()).c_str()) == 0)
+        std::cout << std::endl << "<DartMeasurementFile name=\"" << name << "\" type=\"image/png\">" << base.addExt(".png") << "</DartMeasurementFile>" << std::endl;
     }
 
     if (found) return bestAvg;
