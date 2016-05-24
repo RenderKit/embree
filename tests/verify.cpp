@@ -339,9 +339,13 @@ namespace embree
 
     /* load git hash from file */
     std::fstream hashFile;
+    std::string hash = "unknown";
     hashFile.open("hash", std::fstream::in);
-    std::string hash = "unknown"; hashFile >> hash;
-    hashFile.close();
+    if (!hashFile.is_open()) hashFile.open("../hash", std::fstream::in); // during testing we have to look one level upwards
+    if (hashFile.is_open()) {
+      hashFile >> hash;
+      hashFile.close();
+    }
 
     /* update database */
     std::fstream db;
