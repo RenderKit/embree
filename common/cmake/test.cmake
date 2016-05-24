@@ -26,6 +26,7 @@ IF (BUILD_TESTING)
   
   SET(BUILD_TESTING_MODEL_DIR "${PROJECT_SOURCE_DIR}/models" CACHE FILEPATH "Path to the folder containing the Embree models for regression testing.")
   SET(BUILD_TESTING_INTENSIVE OFF CACHE BOOL "Turns intensive testing on.")
+  SET(BUILD_TESTING_MEMCHECK OFF CACHE BOOL "Turns on memory checking for some tests.")
   SET(BUILD_TESTING_BENCHMARK OFF CACHE PATH "Turns benchmarking on.")
   SET(BUILD_TESTING_BENCHMARK_DATABASE "${PROJECT_BINARY_DIR}" CACHE PATH "Path to database for benchmarking.")
 
@@ -122,3 +123,14 @@ ENDMACRO()
 MACRO (ADD_EMBREE_TEST2 name exe args)
   ADD_EMBREE_MODEL_TEST(${name} ${exe} ${exe} "${args}" "default")
 ENDMACRO()
+
+find_program( CMAKE_MEMORYCHECK_COMMAND valgrind )
+set( CMAKE_MEMORYCHECK_COMMAND_OPTIONS "--trace-children=yes --leak-check=full" )
+
+FUNCTION(ADD_MEMCHECK_TEST name binary)
+  IF (CMAKE_MEMORYCHECK_COMMAND)
+    set(memcheck_command "${CMAKE_MEMORYCHECK_COMMAND} ${CMAKE_MEMORYCHECK_COMMAND_OPTIONS}")
+    separate_arguments(memcheck_command)
+    add_test(NAME ${name} COMMAND ${memcheck_command} ${MY_PROJECT_BINARY_DIR}/${binary} ${ARGN})
+  ENDIF()
+ENDFUNCTION()
