@@ -104,7 +104,6 @@ OPTION(RTCORE_GEOMETRY_SUBDIV "Enables support for subdiv geometries." ON)
 OPTION(RTCORE_GEOMETRY_USER "Enables support for user geometries." ON)
 OPTION(RTCORE_RAY_PACKETS "Enabled support for ray packets." ON)
 
-OPTION(RTCORE_EXPORT_ALL_SYMBOLS "Lets Embree library export all symbols.")
 OPTION(RTCORE_ENABLE_RAYSTREAM_LOGGER "Enables ray stream logger.")
 OPTION(RTCORE_ITT "Enable instrumentation with the ITT API." OFF)
 
