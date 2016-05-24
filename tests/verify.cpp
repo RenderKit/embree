@@ -404,21 +404,16 @@ namespace embree
   Statistics VerifyApplication::Benchmark::benchmark_loop(VerifyApplication* state)
   {
     //sleepSeconds(0.1);
-    const size_t skipBenchmarkFrames = 4;
-    const size_t numBenchmarkFrames = 16;
+    const size_t skipBenchmarkFrames = 1;
+    const size_t numBenchmarkFrames = 8;
     FilteredStatistics stat(0.5f,0.0f);
     size_t numTotalFrames = skipBenchmarkFrames + numBenchmarkFrames;
-    for (size_t i=0; i<skipBenchmarkFrames; i++) 
-    {
+    for (size_t i=0; i<skipBenchmarkFrames; i++) {
       double dt = benchmark(state);
-      //sleepSeconds(0.1);
-    }
-      
-    for (size_t i=skipBenchmarkFrames; i<numTotalFrames; i++) 
-    {
+    }  
+    for (size_t i=skipBenchmarkFrames; i<numTotalFrames; i++) {
       double dt = benchmark(state);
       stat.add(dt);
-      //sleepSeconds(0.1);
     }
     return stat.getStatistics();
   }
