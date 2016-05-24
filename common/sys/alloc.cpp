@@ -139,13 +139,14 @@ namespace embree
       /* try direct huge page allocation first */
       if (tryDirectHugePageAllocation)
       {
+        int huge_flags = flags;
 #ifdef MAP_HUGETLB
-        flags |= MAP_HUGETLB;
+        huge_flags |= MAP_HUGETLB;
 #endif
 #ifdef MAP_ALIGNED_SUPER
-        flags |= MAP_ALIGNED_SUPER;
+        huge_flags |= MAP_ALIGNED_SUPER;
 #endif
-        void* ptr = mmap(0, bytes, PROT_READ | PROT_WRITE, flags, -1, 0);
+        void* ptr = mmap(0, bytes, PROT_READ | PROT_WRITE, huge_flags, -1, 0);
         
         if (ptr == nullptr || ptr == MAP_FAILED)
         {
