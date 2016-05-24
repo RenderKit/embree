@@ -343,23 +343,6 @@ namespace embree
     std::string hash = "unknown"; hashFile >> hash;
     hashFile.close();
 
-    /* create plot file */
-    std::fstream plot;
-    plot.open(base.addExt(".plot"), std::fstream::out | std::fstream::trunc);
-    plot << "set terminal png size 2048,600 enhanced" << std::endl;
-    plot << "set output \"" << base.addExt(".png") << "\"" << std::endl;
-    plot << "set key inside right top vertical Right noreverse enhanced autotitles box linetype -1 linewidth 1.000" << std::endl;
-    plot << "set samples 50, 50" << std::endl;
-    //plot << "set title \"" << name << "\"" << std::endl; 
-    //plot << "set xlabel \"" << name << "\""<< std::endl;
-    plot << "set xtics axis rotate by 90" << std::endl;
-    plot << "set ylabel \"" << unit << "\"" << std::endl;
-    plot << "set yrange [0:]" << std::endl;
-    plot << "plot \"" << FileName(name).addExt(".txt") << "\" using :2:xtic(1) title \"" << name << "\" with lines, \\" << std::endl; 
-    plot << "     \"" << FileName(name).addExt(".txt") << "\" using :3         title \"best\" with lines" << std::endl;
-    plot << std::endl;
-    plot.close();
-    
     /* update database */
     std::fstream db;
     db.open(base.addExt(".txt"), std::fstream::in | std::fstream::out | std::fstream::app);
@@ -385,15 +368,37 @@ namespace embree
     db.clear();
     db << hash << " " << avg << " " << bestAvg << std::endl;
     db.close();
-    
-    /* send chart to cdash */
-    if (state->cdash) {
-      if (system((std::string("gnuplot ") + base.addExt(".plot").str()).c_str()) == 0)
-        std::cout << std::endl << "<DartMeasurementFile name=\"" << name << "\" type=\"image/png\">" << base.addExt(".png") << "</DartMeasurementFile>" << std::endl;
-    }
 
     if (found) return bestAvg;
     else       return avg;
+  }
+
+  void VerifyApplication::Benchmark::plotDatabase(VerifyApplication* state)
+  {
+    FileName base = state->database+FileName(name);
+    
+    /* create plot file */
+    std::fstream plot;
+    plot.open(base.addExt(".plot"), std::fstream::out | std::fstream::trunc);
+    plot << "set terminal png size 2048,600 enhanced" << std::endl;
+    plot << "set output \"" << base.addExt(".png") << "\"" << std::endl;
+    plot << "set key inside right top vertical Right noreverse enhanced autotitles box linetype -1 linewidth 1.000" << std::endl;
+    plot << "set samples 50, 50" << std::endl;
+    //plot << "set title \"" << name << "\"" << std::endl; 
+    //plot << "set xlabel \"" << name << "\""<< std::endl;
+    plot << "set xtics axis rotate by 90" << std::endl;
+    plot << "set ylabel \"" << unit << "\"" << std::endl;
+    plot << "set yrange [0:]" << std::endl;
+    plot << "plot \"" << FileName(name).addExt(".txt") << "\" using :2:xtic(1) title \"" << name << "\" with lines, \\" << std::endl; 
+    plot << "     \"" << FileName(name).addExt(".txt") << "\" using :3         title \"best\" with lines" << std::endl;
+    plot << std::endl;
+    plot.close();
+
+    /* send chart to cdash */
+    if (state->cdash) {
+      if (system((std::string("gnuplot ") + base.addExt(".plot").str()).c_str()) == 0)
+        std::cout << "<DartMeasurementFile name=\"" << name << "\" type=\"image/png\">" << base.addExt(".png") << "</DartMeasurementFile>" << std::endl;
+    }
   }
 
   Statistics VerifyApplication::Benchmark::benchmark_loop(VerifyApplication* state)
@@ -445,8 +450,8 @@ namespace embree
     if (state->database != "") {
       double avg = stat.getAvg();
       double bestAvg = updateDatabase(state,stat);
-      passed = avg-bestAvg > -state->benchmark_tolerance*avg;
-      error = (avg-bestAvg)/avg;
+      passed = avg-bestAvg >= -state->benchmark_tolerance*bestAvg;
+      error = (avg-bestAvg)/bestAvg;
     }
     
     /* print test result */
@@ -459,6 +464,7 @@ namespace embree
       std::cout << "<DartMeasurement name=\"" + name + ".avg\" type=\"numeric/float\">" << stat.getAvg() << "</DartMeasurement>" << std::endl;
       std::cout << "<DartMeasurement name=\"" + name + ".sigma\" type=\"numeric/float\">" << stat.getAvgSigma() << "</DartMeasurement>" << std::endl;
     }
+    plotDatabase(state);
 
     sleepSeconds(0.1);
 

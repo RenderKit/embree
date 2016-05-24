@@ -70,6 +70,7 @@ namespace embree
       virtual void cleanup(VerifyApplication* state) {}
       virtual TestReturnValue execute(VerifyApplication* state, bool silent);
       double updateDatabase(VerifyApplication* state, Statistics stat);
+      void plotDatabase(VerifyApplication* state);
 
     public:
       size_t numThreads;
