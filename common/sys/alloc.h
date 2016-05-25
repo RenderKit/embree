@@ -20,9 +20,6 @@
 
 namespace embree
 {
-#define ALIGN_PTR(ptr,alignment) \
-  ((((size_t)ptr)+alignment-1)&((size_t)-(ssize_t)alignment))
-
 #define ALIGNED_STRUCT                                           \
   void* operator new(size_t size) { return alignedMalloc(size); }       \
   void operator delete(void* ptr) { alignedFree(ptr); }      \
@@ -49,12 +46,6 @@ namespace embree
   void* alignedMalloc(size_t size, size_t align = 64);
   void alignedFree(void* ptr);
   
-  /*! alloca that returns aligned data */
-  template<class T>
-    __forceinline T* aligned_alloca(size_t elements, const size_t alignment = 64) {
-    return (T*)ALIGN_PTR(alloca(elements * sizeof(T) + alignment),alignment);
-  }
-
   /*! allocator that performs aligned allocations */
   template<typename T, size_t alignment = 64>
     struct aligned_allocator

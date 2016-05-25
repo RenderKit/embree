@@ -84,7 +84,8 @@ namespace embree
     }
 
     /*! return closest orthogonal matrix (i.e. a general rotation including reflection) */
-    LinearSpace2 orthogonal() const {
+    LinearSpace2 orthogonal() const 
+    {
       LinearSpace2 m = *this;
 
       // mirrored?
