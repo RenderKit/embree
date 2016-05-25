@@ -397,13 +397,6 @@ namespace embree
     plot << "     \"" << FileName(name).addExt(".txt") << "\" using :3         title \"best\" with lines" << std::endl;
     plot << std::endl;
     plot.close();
-
-    /* send chart to cdash */
-    if (state->cdash) {
-      std::string command = std::string("cd ")+state->database.str()+std::string(" && gnuplot ") + FileName(name).addExt(".plot").str();
-      if (system(command.c_str()) == 0)
-        std::cout << "<DartMeasurementFile name=\"" << name << "\" type=\"image/png\">" << base.addExt(".png") << "</DartMeasurementFile>" << std::endl;
-    }
   }
 
   Statistics VerifyApplication::Benchmark::benchmark_loop(VerifyApplication* state)
@@ -472,16 +465,25 @@ namespace embree
     std::cout << std::setw(8) << std::setprecision(3) << std::fixed << stat.getAvg() << " " << unit << " (+/-" << 100.0f*stat.getAvgSigma()/stat.getAvg() << "%)";
     if (passed) std::cout << state->green(" [PASSED]" ) << " (" << 100.0f*error << "%)" << std::endl << std::flush;
     else        std::cout << state->red  (" [FAILED]" ) << " (" << 100.0f*error << "%)" << std::endl << std::flush;
-    
-    /* print dart measurement */
-    if (state->cdash) {
-      std::cout << "<DartMeasurement name=\"" + name + ".avg\" type=\"numeric/float\">" << stat.getAvg() << "</DartMeasurement>" << std::endl;
-      std::cout << "<DartMeasurement name=\"" + name + ".sigma\" type=\"numeric/float\">" << stat.getAvgSigma() << "</DartMeasurement>" << std::endl;
-    }
     plotDatabase(state);
 
-    sleepSeconds(0.1);
+    /* print dart measurement */
+    if (state->cdash) 
+    {
+      std::cout << "<DartMeasurement name=\"" + name + ".avg\" type=\"numeric/float\">" << stat.getAvg() << "</DartMeasurement>" << std::endl;
+      std::cout << "<DartMeasurement name=\"" + name + ".sigma\" type=\"numeric/float\">" << stat.getAvgSigma() << "</DartMeasurement>" << std::endl;
 
+      /* send plot only when test failed */
+      if (!passed)
+      {
+        FileName base = state->database+FileName(name);
+        std::string command = std::string("cd ")+state->database.str()+std::string(" && gnuplot ") + FileName(name).addExt(".plot").str();
+        if (system(command.c_str()) == 0)
+          std::cout << "<DartMeasurementFile name=\"" << name << "\" type=\"image/png\">" << base.addExt(".png") << "</DartMeasurementFile>" << std::endl;
+      }
+    }   
+
+    sleepSeconds(0.1);
     cleanup(state);
 
     state->numPassedTests++;
