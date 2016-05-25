@@ -281,13 +281,16 @@ __forceinline std::string toString(long long value) {
 #endif
 
 #if defined(__clang__) && !defined(__INTEL_COMPILER)
-#pragma clang diagnostic ignored "-Wunknown-pragmas"
-#pragma clang diagnostic ignored "-Wunused-variable"
-#pragma clang diagnostic ignored "-Wreorder"
-#pragma clang diagnostic ignored "-Wmicrosoft"
-#pragma clang diagnostic ignored "-Wunused-private-field"
-#pragma clang diagnostic ignored "-Wunused-local-typedef"
-#pragma clang diagnostic ignored "-Wunused-function"
+//#pragma clang diagnostic ignored "-Wunknown-pragmas"
+//#pragma clang diagnostic ignored "-Wunused-variable"
+//#pragma clang diagnostic ignored "-Wreorder"
+//#pragma clang diagnostic ignored "-Wmicrosoft"
+//#pragma clang diagnostic ignored "-Wunused-private-field"
+//#pragma clang diagnostic ignored "-Wunused-local-typedef"
+//#pragma clang diagnostic ignored "-Wunused-function"
+#pragma clang diagnostic ignored "-Wnarrowing"
+//#pragma clang diagnostic ignored "-Wc++11-narrowing"
+//#pragma clang diagnostic ignored "-Wdeprecated-register"
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
