@@ -351,7 +351,7 @@ namespace embree
 /// Windows Platform
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifdef __WIN32__
+#if defined(__WIN32__)
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -419,7 +419,7 @@ namespace embree
 /// Linux Platform
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifdef __LINUX__
+#if defined(__LINUX__)
 
 #include <stdio.h>
 #include <unistd.h>
@@ -439,10 +439,32 @@ namespace embree
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
+/// FreeBSD Platform
+////////////////////////////////////////////////////////////////////////////////
+
+#if defined (__FreeBSD__)
+
+#include <sys/sysctl.h>
+
+namespace embree
+{
+  std::string getExecutableFileName()
+  {
+    const int mib[4] = { CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1 };
+    char buf[1024];
+    size_t len = sizeof(buf);
+    if (sysctl(mib, 4, buf, &len, 0x0, 0) == -1) *buf = '\0';
+    return std::string(buf);
+  }
+}
+
+#endif
+
+////////////////////////////////////////////////////////////////////////////////
 /// Mac OS X Platform
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifdef __MACOSX__
+#if defined(__MACOSX__)
 
 #include <mach-o/dyld.h>
 
