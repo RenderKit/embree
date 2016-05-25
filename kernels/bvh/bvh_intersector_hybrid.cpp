@@ -48,7 +48,7 @@ namespace embree
     {
       /* filter out invalid rays */
       vbool<K> valid0 = *valid_i == -1;
-#if defined(RTCORE_IGNORE_INVALID_RAYS)
+#if defined(EMBREE_IGNORE_INVALID_RAYS)
       valid0 &= ray.valid();
 #endif
 
@@ -225,7 +225,7 @@ namespace embree
     {
       /*! filter out already occluded and invalid rays */
       vbool<K> valid = (*valid_i == -1) & (ray.geomID != 0);
-#if defined(RTCORE_IGNORE_INVALID_RAYS)
+#if defined(EMBREE_IGNORE_INVALID_RAYS)
       valid &= ray.valid();
 #endif
       if (none(valid)) return;

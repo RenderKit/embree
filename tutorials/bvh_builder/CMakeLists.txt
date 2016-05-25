@@ -14,7 +14,7 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-SET(ENABLE_ISPC_SUPPORT OFF)
+SET(EMBREE_ISPC_SUPPORT OFF)
 
 IF (TASKING_TBB)
   SET(ADDITIONAL_LIBRARIES ${TBB_LIBRARIES})

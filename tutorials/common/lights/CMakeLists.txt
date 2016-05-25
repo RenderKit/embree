@@ -25,7 +25,7 @@ ADD_LIBRARY(lights STATIC
 TARGET_LINK_LIBRARIES(lights sys)
 SET_PROPERTY(TARGET lights PROPERTY FOLDER tutorials/common)
 
-IF (ENABLE_ISPC_SUPPORT)
+IF (EMBREE_ISPC_SUPPORT)
   ADD_ISPC_LIBRARY(lights_ispc STATIC
     light.ispc
     ambient_light.ispc

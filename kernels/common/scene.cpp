@@ -77,11 +77,11 @@ namespace embree
     createLineAccel();
     createLineMBAccel();
 
-#if defined(RTCORE_GEOMETRY_TRIANGLES)
+#if defined(EMBREE_GEOMETRY_TRIANGLES)
     accels.add(device->bvh4_factory->BVH4InstancedBVH4Triangle4ObjectSplit(this));
 #endif
 
-#if defined(RTCORE_GEOMETRY_USER)
+#if defined(EMBREE_GEOMETRY_USER)
     accels.add(device->bvh4_factory->BVH4UserGeometry(this)); // has to be the last as the instID field of a hit instance is not invalidated by other hit geometry
     accels.add(device->bvh4_factory->BVH4UserGeometryMB(this)); // has to be the last as the instID field of a hit instance is not invalidated by other hit geometry
 #endif
@@ -89,7 +89,7 @@ namespace embree
 
   void Scene::createTriangleAccel()
   {
-#if defined(RTCORE_GEOMETRY_TRIANGLES)
+#if defined(EMBREE_GEOMETRY_TRIANGLES)
     if (device->tri_accel == "default") 
     {
       if (isStatic()) {
@@ -140,7 +140,7 @@ namespace embree
 
   void Scene::createQuadAccel()
   {
-#if defined(RTCORE_GEOMETRY_QUADS)
+#if defined(EMBREE_GEOMETRY_QUADS)
     if (device->quad_accel == "default") 
     {
       int mode =  2*(int)isCompact() + 1*(int)isRobust(); 
@@ -199,7 +199,7 @@ namespace embree
 
   void Scene::createQuadMBAccel()
   {
-#if defined(RTCORE_GEOMETRY_QUADS)
+#if defined(EMBREE_GEOMETRY_QUADS)
     if (device->quad_accel_mb == "default") 
     {
       int mode =  2*(int)isCompact() + 1*(int)isRobust(); 
@@ -224,7 +224,7 @@ namespace embree
 
   void Scene::createTriangleMBAccel()
   {
-#if defined(RTCORE_GEOMETRY_TRIANGLES)
+#if defined(EMBREE_GEOMETRY_TRIANGLES)
     if (device->tri_accel_mb == "default")
     {
 #if defined (__TARGET_AVX__)
@@ -248,7 +248,7 @@ namespace embree
 
   void Scene::createHairAccel()
   {
-#if defined(RTCORE_GEOMETRY_HAIR)
+#if defined(EMBREE_GEOMETRY_HAIR)
     if (device->hair_accel == "default")
     {
       int mode = 2*(int)isCompact() + 1*(int)isRobust();
@@ -299,7 +299,7 @@ namespace embree
 
   void Scene::createHairMBAccel()
   {
-#if defined(RTCORE_GEOMETRY_HAIR)
+#if defined(EMBREE_GEOMETRY_HAIR)
     if (device->hair_accel_mb == "default")
     {
 #if defined (__TARGET_AVX__)
@@ -323,7 +323,7 @@ namespace embree
 
   void Scene::createLineAccel()
   {
-#if defined(RTCORE_GEOMETRY_LINES)
+#if defined(EMBREE_GEOMETRY_LINES)
     if (device->line_accel == "default")
     {
       if (isStatic())
@@ -350,7 +350,7 @@ namespace embree
 
   void Scene::createLineMBAccel()
   {
-#if defined(RTCORE_GEOMETRY_LINES)
+#if defined(EMBREE_GEOMETRY_LINES)
     if (device->line_accel_mb == "default")
     {
 #if defined (__TARGET_AVX__)
@@ -370,7 +370,7 @@ namespace embree
 
   void Scene::createSubdivAccel()
   {
-#if defined(RTCORE_GEOMETRY_SUBDIV)
+#if defined(EMBREE_GEOMETRY_SUBDIV)
     if (device->subdiv_accel == "default") 
     {
       if (isIncoherent(flags) && isStatic())

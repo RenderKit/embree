@@ -272,7 +272,7 @@ namespace embree
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_SSE42_AVX(features,QBVH4Triangle4iIntersector1Pluecker));
     IF_ENABLED_QUADS(SELECT_SYMBOL_DEFAULT_SSE42_AVX(features,QBVH4Quad4iIntersector1Pluecker));
 
-#if defined (RTCORE_RAY_PACKETS)
+#if defined (EMBREE_RAY_PACKETS)
 
     /* select intersectors4 */
     IF_ENABLED_LINES(SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,BVH4Line4iIntersector4));

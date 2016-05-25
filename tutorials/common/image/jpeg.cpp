@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifdef USE_LIBJPEG
+#ifdef EMBREE_TUTORIALS_LIBJPEG
 
 #include "image.h"
 #include "jpeglib.h"
@@ -194,5 +194,5 @@ namespace embree
 
 }
 
-#endif // USE_LIBJPEG
+#endif // EMBREE_TUTORIALS_LIBJPEG
 

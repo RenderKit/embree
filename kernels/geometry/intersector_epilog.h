@@ -51,14 +51,14 @@ namespace embree
         {
           /* ray mask test */
           Geometry* geometry = scene->get(geomID);
-#if defined(RTCORE_RAY_MASK)
+#if defined(EMBREE_RAY_MASK)
           if ((geometry->mask & ray.mask) == 0) return false;
 #endif
           hit.finalize();
           int instID = geomID_to_instID ? geomID_to_instID[0] : geomID;
           
           /* intersection filter test */
-#if defined(RTCORE_INTERSECTION_FILTER)
+#if defined(EMBREE_INTERSECTION_FILTER)
           if (unlikely(filter && geometry->hasIntersectionFilter1())) 
             return runIntersectionFilter1(geometry,ray,context,hit.u,hit.v,hit.t,hit.Ng,instID,primID);
 #endif
@@ -97,14 +97,14 @@ namespace embree
         {
           /* ray mask test */
           Geometry* geometry = scene->get(geomID);
-#if defined(RTCORE_RAY_MASK)
+#if defined(EMBREE_RAY_MASK)
           if ((geometry->mask & ray.mask) == 0) return false;
 #endif
           hit.finalize();
           int instID = geomID_to_instID ? geomID_to_instID[0] : geomID;
           
           /* intersection filter test */
-#if defined(RTCORE_INTERSECTION_FILTER)
+#if defined(EMBREE_INTERSECTION_FILTER)
           if (unlikely(filter && geometry->hasOcclusionFilter1())) 
             return runOcclusionFilter1(geometry,ray,context,hit.u,hit.v,hit.t,hit.Ng,instID,primID);
 #endif
@@ -134,14 +134,14 @@ namespace embree
         {
           /* ray mask test */
           Geometry* geometry = scene->get(geomID);
-#if defined(RTCORE_RAY_MASK)
+#if defined(EMBREE_RAY_MASK)
           if ((geometry->mask & ray.mask[k]) == 0) 
             return false;
 #endif
           hit.finalize();
           
           /* intersection filter test */
-#if defined(RTCORE_INTERSECTION_FILTER)
+#if defined(EMBREE_INTERSECTION_FILTER)
           if (filter && unlikely(geometry->hasIntersectionFilter<vfloat<K>>())) 
             return runIntersectionFilter(geometry,ray,k,context,hit.u,hit.v,hit.t,hit.Ng,geomID,primID);
 #endif
@@ -181,13 +181,13 @@ namespace embree
         {
           /* ray mask test */
           Geometry* geometry = scene->get(geomID);
-#if defined(RTCORE_RAY_MASK)
+#if defined(EMBREE_RAY_MASK)
           if ((geometry->mask & ray.mask[k]) == 0) 
             return false;
 #endif
 
           /* intersection filter test */
-#if defined(RTCORE_INTERSECTION_FILTER)
+#if defined(EMBREE_INTERSECTION_FILTER)
           if (filter && unlikely(geometry->hasOcclusionFilter<vfloat<K>>())) {
             hit.finalize();
             return runOcclusionFilter(geometry,ray,k,context,hit.u,hit.v,hit.t,hit.Ng,geomID,primID);
@@ -226,7 +226,7 @@ namespace embree
           int instID = geomID_to_instID ? geomID_to_instID[0] : geomID;
 
           /* intersection filter test */
-#if defined(RTCORE_INTERSECTION_FILTER) || defined(RTCORE_RAY_MASK)
+#if defined(EMBREE_INTERSECTION_FILTER) || defined(EMBREE_RAY_MASK)
           bool foundhit = false;
           goto entry;
           while (true) 
@@ -239,7 +239,7 @@ namespace embree
           entry:
             Geometry* geometry = scene->get(geomID);
             
-#if defined(RTCORE_RAY_MASK)
+#if defined(EMBREE_RAY_MASK)
             /* goto next hit if mask test fails */
             if ((geometry->mask & ray.mask) == 0) {
               clear(valid,i);
@@ -247,7 +247,7 @@ namespace embree
             }
 #endif
             
-#if defined(RTCORE_INTERSECTION_FILTER) 
+#if defined(EMBREE_INTERSECTION_FILTER) 
             /* call intersection filter function */
             if (filter) {
               if (unlikely(geometry->hasIntersectionFilter1())) {
@@ -309,7 +309,7 @@ namespace embree
           int instID = geomID_to_instID ? geomID_to_instID[0] : geomID;
 
           /* intersection filter test */
-#if defined(RTCORE_INTERSECTION_FILTER) || defined(RTCORE_RAY_MASK)
+#if defined(EMBREE_INTERSECTION_FILTER) || defined(EMBREE_RAY_MASK)
           bool foundhit = false;
           goto entry;
           while (true) 
@@ -322,7 +322,7 @@ namespace embree
           entry:
             Geometry* geometry = scene->get(geomID);
             
-#if defined(RTCORE_RAY_MASK)
+#if defined(EMBREE_RAY_MASK)
             /* goto next hit if mask test fails */
             if ((geometry->mask & ray.mask) == 0) {
               clear(valid,i);
@@ -330,7 +330,7 @@ namespace embree
             }
 #endif
             
-#if defined(RTCORE_INTERSECTION_FILTER) 
+#if defined(EMBREE_INTERSECTION_FILTER) 
             /* call intersection filter function */
             if (filter) {
               if (unlikely(geometry->hasIntersectionFilter1())) {
@@ -376,7 +376,7 @@ namespace embree
         __forceinline bool operator() (const vbool<Mx>& valid_i, Hit& hit) const
         {
           /* intersection filter test */
-#if defined(RTCORE_INTERSECTION_FILTER) || defined(RTCORE_RAY_MASK)
+#if defined(EMBREE_INTERSECTION_FILTER) || defined(EMBREE_RAY_MASK)
           vbool<Mx> valid = valid_i;
           if (Mx > M) valid &= (1<<M)-1;
           size_t m=movemask(valid);
@@ -392,7 +392,7 @@ namespace embree
             const int instID = geomID_to_instID ? geomID_to_instID[0] : geomID;
             Geometry* geometry = scene->get(geomID);
             
-#if defined(RTCORE_RAY_MASK)
+#if defined(EMBREE_RAY_MASK)
             /* goto next hit if mask test fails */
             if ((geometry->mask & ray.mask) == 0) {
               m=__btc(m,i);
@@ -400,7 +400,7 @@ namespace embree
             }
 #endif
             
-#if defined(RTCORE_INTERSECTION_FILTER)
+#if defined(EMBREE_INTERSECTION_FILTER)
             /* if we have no filter then the test passed */
             if (filter) {
               if (unlikely(geometry->hasOcclusionFilter1())) 
@@ -444,7 +444,7 @@ namespace embree
         {
           /* ray mask test */
           Geometry* geometry = scene->get(geomID);
-#if defined(RTCORE_RAY_MASK)
+#if defined(EMBREE_RAY_MASK)
           if ((geometry->mask & ray.mask) == 0) return false;
 #endif
           
@@ -454,7 +454,7 @@ namespace embree
           size_t i = select_min(valid,hit.vt);
           
           /* intersection filter test */
-#if defined(RTCORE_INTERSECTION_FILTER)
+#if defined(EMBREE_INTERSECTION_FILTER)
           if (unlikely(geometry->hasIntersectionFilter1())) 
           {
             bool foundhit = false;
@@ -510,12 +510,12 @@ namespace embree
         {
           /* ray mask test */
           Geometry* geometry = scene->get(geomID);
-#if defined(RTCORE_RAY_MASK)
+#if defined(EMBREE_RAY_MASK)
           if ((geometry->mask & ray.mask) == 0) return false;
 #endif
           
           /* intersection filter test */
-#if defined(RTCORE_INTERSECTION_FILTER)
+#if defined(EMBREE_INTERSECTION_FILTER)
           if (unlikely(geometry->hasOcclusionFilter1())) 
           {
             hit.finalize();
@@ -563,13 +563,13 @@ namespace embree
           Geometry* geometry = scene->get(geomID);
           
           /* ray masking test */
-#if defined(RTCORE_RAY_MASK)
+#if defined(EMBREE_RAY_MASK)
           valid &= (geometry->mask & ray.mask) != 0;
           if (unlikely(none(valid))) return false;
 #endif
           
           /* occlusion filter test */
-#if defined(RTCORE_INTERSECTION_FILTER)
+#if defined(EMBREE_INTERSECTION_FILTER)
           if (filter) {
             if (unlikely(geometry->hasIntersectionFilter<vfloat<K>>())) {
               return runIntersectionFilter(valid,geometry,ray,context,u,v,t,Ng,geomID,primID);
@@ -619,13 +619,13 @@ namespace embree
           const int geomID = geomIDs[i];
           const int primID = primIDs[i];
           Geometry* geometry = scene->get(geomID);
-#if defined(RTCORE_RAY_MASK)
+#if defined(EMBREE_RAY_MASK)
           valid &= (geometry->mask & ray.mask) != 0;
           if (unlikely(none(valid))) return valid;
 #endif
           
           /* intersection filter test */
-#if defined(RTCORE_INTERSECTION_FILTER)
+#if defined(EMBREE_INTERSECTION_FILTER)
           if (filter) {
             if (unlikely(geometry->hasOcclusionFilter<vfloat<K>>()))
             {
@@ -670,13 +670,13 @@ namespace embree
           Geometry* geometry = scene->get(geomID);
           
           /* ray masking test */
-#if defined(RTCORE_RAY_MASK)
+#if defined(EMBREE_RAY_MASK)
           valid &= (geometry->mask & ray.mask) != 0;
           if (unlikely(none(valid))) return false;
 #endif
           
           /* intersection filter test */
-#if defined(RTCORE_INTERSECTION_FILTER)
+#if defined(EMBREE_INTERSECTION_FILTER)
           if (filter) {
             if (unlikely(geometry->hasIntersectionFilter<vfloat<K>>())) {
               return runIntersectionFilter(valid,geometry,ray,context,u,v,t,Ng,geomID,primID);
@@ -721,13 +721,13 @@ namespace embree
           vbool<K> valid = valid_i;
           Geometry* geometry = scene->get(geomID);
           
-#if defined(RTCORE_RAY_MASK)
+#if defined(EMBREE_RAY_MASK)
           valid &= (geometry->mask & ray.mask) != 0;
           if (unlikely(none(valid))) return false;
 #endif
           
           /* occlusion filter test */
-#if defined(RTCORE_INTERSECTION_FILTER)
+#if defined(EMBREE_INTERSECTION_FILTER)
           if (filter) {
             if (unlikely(geometry->hasOcclusionFilter<vfloat<K>>()))
             {
@@ -775,7 +775,7 @@ namespace embree
           int geomID = geomIDs[i];
           
           /* intersection filter test */
-#if defined(RTCORE_INTERSECTION_FILTER) || defined(RTCORE_RAY_MASK)
+#if defined(EMBREE_INTERSECTION_FILTER) || defined(EMBREE_RAY_MASK)
           bool foundhit = false;
           goto entry;
           while (true) 
@@ -787,7 +787,7 @@ namespace embree
           entry:
             Geometry* geometry = scene->get(geomID);
             
-#if defined(RTCORE_RAY_MASK)
+#if defined(EMBREE_RAY_MASK)
             /* goto next hit if mask test fails */
             if ((geometry->mask & ray.mask[k]) == 0) {
               clear(valid,i);
@@ -795,7 +795,7 @@ namespace embree
             }
 #endif
             
-#if defined(RTCORE_INTERSECTION_FILTER) 
+#if defined(EMBREE_INTERSECTION_FILTER) 
             /* call intersection filter function */
             if (filter) {
               if (unlikely(geometry->hasIntersectionFilter<vfloat<K>>())) {
@@ -852,7 +852,7 @@ namespace embree
         {
 
           /* intersection filter test */
-#if defined(RTCORE_INTERSECTION_FILTER) || defined(RTCORE_RAY_MASK)
+#if defined(EMBREE_INTERSECTION_FILTER) || defined(EMBREE_RAY_MASK)
           vbool<Mx> valid = valid_i;
           if (Mx > M) valid &= (1<<M)-1;
           size_t m=movemask(valid);
@@ -867,7 +867,7 @@ namespace embree
             const int geomID = geomIDs[i];
             Geometry* geometry = scene->get(geomID);
             
-#if defined(RTCORE_RAY_MASK)
+#if defined(EMBREE_RAY_MASK)
             /* goto next hit if mask test fails */
             if ((geometry->mask & ray.mask[k]) == 0) {
               m=__btc(m,i);
@@ -875,7 +875,7 @@ namespace embree
             }
 #endif
             
-#if defined(RTCORE_INTERSECTION_FILTER)
+#if defined(EMBREE_INTERSECTION_FILTER)
             /* execute occlusion filer */
             if (filter) {
               if (unlikely(geometry->hasOcclusionFilter<vfloat<K>>())) 
@@ -916,7 +916,7 @@ namespace embree
         __forceinline bool operator() (const vbool<M>& valid_i, Hit& hit) const
         {
           Geometry* geometry = scene->get(geomID);
-#if defined(RTCORE_RAY_MASK)
+#if defined(EMBREE_RAY_MASK)
           /* ray mask test */
           if ((geometry->mask & ray.mask[k]) == 0) 
             return false;
@@ -928,7 +928,7 @@ namespace embree
           size_t i = select_min(valid,hit.vt);
           
           /* intersection filter test */
-#if defined(RTCORE_INTERSECTION_FILTER)
+#if defined(EMBREE_INTERSECTION_FILTER)
           if (filter) {
             if (unlikely(geometry->hasIntersectionFilter<vfloat<K>>())) 
             {
@@ -988,14 +988,14 @@ namespace embree
         __forceinline bool operator() (const vbool<M>& valid_i, Hit& hit) const
         {
           Geometry* geometry = scene->get(geomID);
-#if defined(RTCORE_RAY_MASK)
+#if defined(EMBREE_RAY_MASK)
           /* ray mask test */
           if ((geometry->mask & ray.mask[k]) == 0) 
             return false;
 #endif
 
           /* intersection filter test */
-#if defined(RTCORE_INTERSECTION_FILTER)
+#if defined(EMBREE_INTERSECTION_FILTER)
           if (filter) {
             if (unlikely(geometry->hasOcclusionFilter<vfloat<K>>())) 
             {
