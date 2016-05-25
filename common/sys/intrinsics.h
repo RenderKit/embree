@@ -71,24 +71,6 @@ namespace embree
     return li.QuadPart;
   }
   
-#if defined(__SSE4_2__)
-  
-  __forceinline int __popcnt(int in) {
-    return _mm_popcnt_u32(in);
-  }
-  
-  __forceinline unsigned __popcnt(unsigned in) {
-    return _mm_popcnt_u32(in);
-  }
-  
-#if defined(__X86_64__)
-  __forceinline size_t __popcnt(size_t in) {
-    return _mm_popcnt_u64(in);
-  }
-#endif
-  
-#endif
-  
   __forceinline int __bsf(int v) {
 #if defined(__AVX2__) 
     return _tzcnt_u32(v);
@@ -250,16 +232,6 @@ namespace embree
     return (((uint64_t)high) << 32) + (uint64_t)low;
   }
   
-#if defined(__SSE4_2__)
-  __forceinline unsigned int __popcnt(unsigned int in) {
-    int r = 0; asm ("popcnt %1,%0" : "=r"(r) : "r"(in)); return r;
-  }
-
-  __forceinline int __popcnt(int in) {
-    int r = 0; asm ("popcnt %1,%0" : "=r"(r) : "r"(in)); return r;
-  }
-#endif
-  
   __forceinline int __bsf(int v) {
 #if defined(__AVX2__) 
     return _tzcnt_u32(v);
@@ -291,16 +263,6 @@ namespace embree
 #endif
   }
 
-#if defined(__X86_64__) && defined(__SSE4_2__)
-  __forceinline size_t __popcnt(size_t v) {
-#if defined(__INTEL_COMPILER)
-    return _mm_countbits_64(v); 
-#else
-    return _mm_popcnt_u64(v);
-#endif
-  }
-#endif
-  
   __forceinline int __bscf(int& v) 
   {
     int i = __bsf(v);
@@ -414,6 +376,24 @@ namespace embree
 /// All Platforms
 ////////////////////////////////////////////////////////////////////////////////
   
+#if defined(__SSE4_2__)
+  
+  __forceinline int __popcnt(int in) {
+    return _mm_popcnt_u32(in);
+  }
+  
+  __forceinline unsigned __popcnt(unsigned in) {
+    return _mm_popcnt_u32(in);
+  }
+  
+#if defined(__X86_64__)
+  __forceinline size_t __popcnt(size_t in) {
+    return _mm_popcnt_u64(in);
+  }
+#endif
+  
+#endif
+
   __forceinline uint64_t rdtsc()
   {
     int dummy[4]; 
