@@ -86,10 +86,6 @@ SET(EMBREE_LIBRARY_FILES
   bvh/bvh_intersector1.cpp
   )
 
-IF (ENABLE_ITT)
-   SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} ${ITT_LIBRARY})
-ENDIF()
-
 IF (TASKING_INTERNAL)
   SET(EMBREE_LIBRARY_FILES 
     ../common/tasking/taskschedulerinternal.cpp

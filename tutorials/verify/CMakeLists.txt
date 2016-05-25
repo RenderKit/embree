@@ -14,22 +14,6 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-IF (TARGET_SSE41)
-  ADD_DEFINITIONS(-D__TARGET_SSE41__)
-ENDIF()
-
-IF (TARGET_AVX)
-  ADD_DEFINITIONS(-D__TARGET_AVX__)
-ENDIF()
-
-IF (TARGET_AVX2)
-  ADD_DEFINITIONS(-D__TARGET_AVX2__)
-ENDIF()
-
-IF (TARGET_AVX512KNL)
-  ADD_DEFINITIONS(-D__TARGET_AVX512KNL__)
-ENDIF()
-
 ADD_EXECUTABLE(verify verify.cpp ../common/tutorial/application.cpp)
 TARGET_LINK_LIBRARIES(verify sys scenegraph embree)
 SET_PROPERTY(TARGET verify PROPERTY FOLDER tutorials)
