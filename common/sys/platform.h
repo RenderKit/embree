@@ -293,6 +293,10 @@ __forceinline std::string toString(long long value) {
 //#pragma clang diagnostic ignored "-Wdeprecated-register"
 #endif
 
+#if defined(__GNUC__) && !defined(__INTEL_COMPILER)
+#pragma GCC diagnostic ignored "-Wnarrowing"
+#endif
+
 ////////////////////////////////////////////////////////////////////////////////
 /// Some macros for static profiling
 ////////////////////////////////////////////////////////////////////////////////

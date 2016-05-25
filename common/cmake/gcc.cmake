@@ -23,7 +23,7 @@ SET(FLAGS_AVX   "-mavx")
 SET(FLAGS_AVX2  "-mf16c -mavx2 -mfma -mlzcnt -mbmi -mbmi2")
 SET(FLAGS_AVX512KNL "-mavx512f -mavx512pf -mavx512er -mavx512cd")
 
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -std=c++11 -fvisibility-inlines-hidden -fvisibility=hidden -fno-strict-aliasing -Wno-narrowing")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -std=c++11 -fvisibility-inlines-hidden -fvisibility=hidden -fno-strict-aliasing")
 SET(CMAKE_CXX_FLAGS_DEBUG          "-DDEBUG  -DTBB_USE_DEBUG -g -O0")
 SET(CMAKE_CXX_FLAGS_RELEASE        "-DNDEBUG                    -O3")
 SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-DDEBUG  -DTBB_USE_DEBUG -g -O3")
