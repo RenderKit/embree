@@ -58,26 +58,32 @@ IF (BUILD_TESTING)
     SET(models ${models_small_win32})
   ENDIF()
 
+  IF (WIN32)
+    SET(MY_PROJECT_BINARY_DIR "${PROJECT_BINARY_DIR}/${CMAKE_BUILD_TYPE}")
+  ELSE()
+    SET(MY_PROJECT_BINARY_DIR "${PROJECT_BINARY_DIR}")
+  ENDIF()
+  
   MACRO (ADD_EMBREE_MODEL_TEST name reference executable args model)
   
     ADD_TEST(NAME ${name}
-             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+             WORKING_DIRECTORY ${MY_PROJECT_BINARY_DIR}
              COMMAND python ${PROJECT_SOURCE_DIR}/scripts/invoke_test.py
                      --name ${name}
                      --modeldir ${EMBREE_TESTING_MODEL_DIR}
                      --reference ${reference}
                      --model ${model}
-                     --execute ${CMAKE_CURRENT_BINARY_DIR}/${executable} ${args})
+                     --execute ${MY_PROJECT_BINARY_DIR}/${executable} ${args})
                      
     IF (EMBREE_ISPC_SUPPORT AND EMBREE_RAY_PACKETS)
       ADD_TEST(NAME ${name}_ispc
-               WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+               WORKING_DIRECTORY ${MY_PROJECT_BINARY_DIR}
                COMMAND python ${PROJECT_SOURCE_DIR}/scripts/invoke_test.py
                        --name ${name}_ispc
                        --modeldir ${EMBREE_TESTING_MODEL_DIR}
                        --reference ${reference}
                        --model ${model}
-                       --execute ${CMAKE_CURRENT_BINARY_DIR}/${executable}_ispc ${args})
+                       --execute ${MY_PROJECT_BINARY_DIR}/${executable}_ispc ${args})
     ENDIF()
   ENDMACRO()
   
@@ -125,6 +131,6 @@ IF (EMBREE_TESTING_MEMCHECK)
   FUNCTION(ADD_MEMCHECK_TEST name binary)
     set(memcheck_command "${EMBREE_MEMORYCHECK_COMMAND} ${EMBREE_MEMORYCHECK_COMMAND_OPTIONS}")
     separate_arguments(memcheck_command)
-    add_test(NAME ${name} COMMAND ${memcheck_command} ${CMAKE_CURRENT_BINARY_DIR}/${binary} ${ARGN})
+    add_test(NAME ${name} COMMAND ${memcheck_command} ${MY_PROJECT_BINARY_DIR}/${binary} ${ARGN})
   ENDFUNCTION()
 ENDIF()

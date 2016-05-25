@@ -284,6 +284,13 @@ INCLUDE_DIRECTORIES("${PROJECT_BINARY_DIR}")
 INCLUDE_DIRECTORIES_ISPC("${PROJECT_BINARY_DIR}")
 
 ##############################################################
+# Output paths
+##############################################################
+SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
+SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
+SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
+
+##############################################################
 # Directories to compile
 ##############################################################
 
