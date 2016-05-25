@@ -403,17 +403,10 @@ namespace embree
     return clock;
   }
   
-  __forceinline void __pause_cpu (const int cycles = 0) {
-    for (size_t i=0; i<8; i++)
+  __forceinline void __pause_cpu (const size_t N = 8) 
+  {
+    for (size_t i=0; i<N; i++)
       _mm_pause();    
-  }
-  
-  __forceinline void __pause_cpu_expfalloff(unsigned int &cycles, const unsigned int max_cycles) 
-  { 
-    __pause_cpu(cycles);
-    cycles += cycles;
-    if (cycles > max_cycles) 
-      cycles = max_cycles;
   }
   
   /* prefetches */
