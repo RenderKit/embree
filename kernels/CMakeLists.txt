@@ -125,10 +125,6 @@ IF (EMBREE_RAY_PACKETS)
     bvh/bvh_intersector_stream_filters.cpp)
 ENDIF()
 
-IF (TARGET_SSE42 AND EMBREE_LIBRARY_FILES_SSE42)
- ADD_DEFINITIONS(-D__TARGET_SSE42__)
-ENDIF()
-
 SET(EMBREE_LIBRARY_FILES_AVX
     
     common/scene_subdiv_mesh_avx.cpp
@@ -151,8 +147,7 @@ SET(EMBREE_LIBRARY_FILES_AVX
     bvh/bvh_intersector1.cpp
     
     bvh/bvh.cpp
-    bvh/bvh_statistics.cpp
-    )
+    bvh/bvh_statistics.cpp)
 
 IF (EMBREE_RAY_PACKETS)
   SET(EMBREE_LIBRARY_FILES_AVX ${EMBREE_LIBRARY_FILES_AVX}
@@ -163,10 +158,6 @@ IF (EMBREE_RAY_PACKETS)
     bvh/bvh_intersector_hybrid.cpp
     bvh/bvh_intersector_stream.cpp
     bvh/bvh_intersector_stream_filters.cpp)
-ENDIF()
-
-IF (TARGET_AVX AND EMBREE_LIBRARY_FILES_AVX)
- ADD_DEFINITIONS(-D__TARGET_AVX__)
 ENDIF()
 
 SET(EMBREE_LIBRARY_FILES_AVX2
@@ -185,10 +176,6 @@ IF (EMBREE_RAY_PACKETS)
     bvh/bvh_intersector_hybrid.cpp
     bvh/bvh_intersector_stream.cpp
     bvh/bvh_intersector_stream_filters.cpp)
-ENDIF()
-
-IF (TARGET_AVX2 AND EMBREE_LIBRARY_FILES_AVX2)
- ADD_DEFINITIONS(-D__TARGET_AVX2__)
 ENDIF()
 
 SET(EMBREE_LIBRARY_FILES_AVX512KNL
@@ -218,10 +205,6 @@ IF (EMBREE_RAY_PACKETS)
     bvh/bvh_intersector_hybrid.cpp
     bvh/bvh_intersector_stream.cpp
     bvh/bvh_intersector_stream_filters.cpp)
-ENDIF()
-
-IF (TARGET_AVX512KNL AND EMBREE_LIBRARY_FILES_AVX512KNL)
- ADD_DEFINITIONS(-D__TARGET_AVX512KNL__)
 ENDIF()
 
 ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE} ${EMBREE_LIBRARY_FILES})
