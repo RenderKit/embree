@@ -179,7 +179,7 @@ namespace embree
   }
 #endif
 
-#if defined(__WIN32__)
+#if defined(__WIN32__) || defined(__FreeBSD__)
   __forceinline void sincosf(float x, float *s, float *c) {
     *s = sinf(x); *c = cosf(x);
   }
