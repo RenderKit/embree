@@ -249,35 +249,35 @@ __forceinline std::string toString(long long value) {
 ////////////////////////////////////////////////////////////////////////////////
 
 #if defined(__INTEL_COMPILER)
-#pragma warning(disable:265 ) // floating-point operation result is out of range
-#pragma warning(disable:383 ) // value copied to temporary, reference to temporary used
-#pragma warning(disable:869 ) // parameter was never referenced
-#pragma warning(disable:981 ) // operands are evaluated in unspecified order
-#pragma warning(disable:1418) // external function definition with no prior declaration
-#pragma warning(disable:1419) // external declaration in primary source file
-#pragma warning(disable:1572) // floating-point equality and inequality comparisons are unreliable
-#pragma warning(disable:94  ) // the size of an array must be greater than zero
-#pragma warning(disable:1599) // declaration hides parameter
-#pragma warning(disable:424 ) // extra ";" ignored
+//#pragma warning(disable:265 ) // floating-point operation result is out of range
+//#pragma warning(disable:383 ) // value copied to temporary, reference to temporary used
+//#pragma warning(disable:869 ) // parameter was never referenced
+//#pragma warning(disable:981 ) // operands are evaluated in unspecified order
+//#pragma warning(disable:1418) // external function definition with no prior declaration
+//#pragma warning(disable:1419) // external declaration in primary source file
+//#pragma warning(disable:1572) // floating-point equality and inequality comparisons are unreliable
+//#pragma warning(disable:94  ) // the size of an array must be greater than zero
+//#pragma warning(disable:1599) // declaration hides parameter
+//#pragma warning(disable:424 ) // extra ";" ignored
 #pragma warning(disable:2196) // routine is both "inline" and "noinline"
-#pragma warning(disable:177 ) // label was declared but never referenced
-#pragma warning(disable:114 ) // function was referenced but not defined
-#pragma warning(disable:819 ) // template nesting depth does not match the previous declaration of function
+//#pragma warning(disable:177 ) // label was declared but never referenced
+//#pragma warning(disable:114 ) // function was referenced but not defined
+//#pragma warning(disable:819 ) // template nesting depth does not match the previous declaration of function
 #endif
 
 #if defined(_MSC_VER)
-#pragma warning(disable:4200) // nonstandard extension used : zero-sized array in struct/union
+//#pragma warning(disable:4200) // nonstandard extension used : zero-sized array in struct/union
 #pragma warning(disable:4800) // forcing value to bool 'true' or 'false' (performance warning)
-#pragma warning(disable:4267) // '=' : conversion from 'size_t' to 'unsigned long', possible loss of data
-#pragma warning(disable:4244) // 'argument' : conversion from 'ssize_t' to 'unsigned int', possible loss of data
-#pragma warning(disable:4355) // 'this' : used in base member initializer list
+//#pragma warning(disable:4267) // '=' : conversion from 'size_t' to 'unsigned long', possible loss of data
+//#pragma warning(disable:4244) // 'argument' : conversion from 'ssize_t' to 'unsigned int', possible loss of data
+//#pragma warning(disable:4355) // 'this' : used in base member initializer list
 #pragma warning(disable:391 ) // '<=' : signed / unsigned mismatch
 #pragma warning(disable:4018) // '<' : signed / unsigned mismatch
-#pragma warning(disable:4305) // 'initializing' : truncation from 'double' to 'float'
+//#pragma warning(disable:4305) // 'initializing' : truncation from 'double' to 'float'
 #pragma warning(disable:4068) // unknown pragma
-#pragma warning(disable:4146) // unary minus operator applied to unsigned type, result still unsigned
-#pragma warning(disable:4838) // conversion from 'unsigned int' to 'const int' requires a narrowing conversion)
-#pragma warning(disable:4227) // anachronism used : qualifiers on reference are ignored
+//#pragma warning(disable:4146) // unary minus operator applied to unsigned type, result still unsigned
+//#pragma warning(disable:4838) // conversion from 'unsigned int' to 'const int' requires a narrowing conversion)
+//#pragma warning(disable:4227) // anachronism used : qualifiers on reference are ignored
 #endif
 
 #if defined(__clang__) && !defined(__INTEL_COMPILER)
