@@ -96,7 +96,7 @@ namespace embree
 
   public:    
     SharedLazyTessellationCache::Tag root_ref;
-    AtomicMutex mtx;
+    SpinLock mtx;
 
     unsigned short u[4];                        //!< 16bit discretized u,v coordinates
     unsigned short v[4];

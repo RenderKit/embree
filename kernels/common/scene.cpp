@@ -513,7 +513,7 @@ namespace embree
 
   unsigned Scene::add(Geometry* geometry) 
   {
-    Lock<AtomicMutex> lock(geometriesMutex);
+    Lock<SpinLock> lock(geometriesMutex);
 
     if (usedIDs.size()) {
       int id = usedIDs.back(); 
@@ -528,7 +528,7 @@ namespace embree
 
   void Scene::deleteGeometry(size_t geomID)
   {
-    Lock<AtomicMutex> lock(geometriesMutex);
+    Lock<SpinLock> lock(geometriesMutex);
     
     if (isStatic())
       throw_RTCError(RTC_INVALID_OPERATION,"rtcDeleteGeometry cannot get called in static scenes");

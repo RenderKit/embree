@@ -93,13 +93,13 @@ namespace embree
     __forceinline Type* get() const
     {
       if (ptr == nullptr) {
-	Lock<AtomicMutex> lock(mutex);
+	Lock<SpinLock> lock(mutex);
 	if (ptr == nullptr) ptr = createTls();
       }
       Type* lptr = (Type*) getTls(ptr);
       if (unlikely(lptr == nullptr)) {
 	setTls(ptr,lptr = new Type(init));
-	Lock<AtomicMutex> lock(mutex);
+	Lock<SpinLock> lock(mutex);
 	threads.push_back(lptr);
       }
       return lptr;
@@ -114,7 +114,7 @@ namespace embree
   private:
     mutable tls_t ptr;
     void* init;
-    mutable AtomicMutex mutex;
+    mutable SpinLock mutex;
   public:
     mutable std::vector<Type*> threads;
   };

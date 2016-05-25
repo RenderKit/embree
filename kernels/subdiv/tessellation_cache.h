@@ -49,7 +49,7 @@ namespace embree
    static std::atomic<size_t> *cache_patch_builds;                
    static size_t        cache_num_patches;
    static float **      cache_new_delete_ptr;  
-   __aligned(64) static AtomicMutex mtx;
+   __aligned(64) static SpinLock mtx;
 
     /* print stats for debugging */                 
     static void printStats();
@@ -150,7 +150,7 @@ namespace embree
    struct CacheEntry
    {
      Tag tag;
-     AtomicMutex mutex;
+     SpinLock mutex;
    };
 
  private:
@@ -162,8 +162,8 @@ namespace embree
       
    __aligned(64) std::atomic<size_t> localTime;
    __aligned(64) std::atomic<size_t> next_block;
-   __aligned(64) AtomicMutex   reset_state;
-   __aligned(64) AtomicMutex   linkedlist_mtx;
+   __aligned(64) SpinLock   reset_state;
+   __aligned(64) SpinLock   linkedlist_mtx;
    __aligned(64) std::atomic<size_t> switch_block_threshold;
    __aligned(64) std::atomic<size_t> numRenderThreads;
 

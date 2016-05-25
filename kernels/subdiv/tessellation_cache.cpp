@@ -233,7 +233,7 @@ namespace embree
   std::atomic<size_t> SharedTessellationCacheStats::cache_hits(0);
   std::atomic<size_t> SharedTessellationCacheStats::cache_misses(0);
   std::atomic<size_t> SharedTessellationCacheStats::cache_flushes(0);  
-  AtomicMutex   SharedTessellationCacheStats::mtx;  
+  SpinLock   SharedTessellationCacheStats::mtx;  
   std::atomic<size_t> *SharedTessellationCacheStats::cache_patch_builds(nullptr);
   size_t SharedTessellationCacheStats::cache_num_patches(0);
   float **SharedTessellationCacheStats::cache_new_delete_ptr = nullptr;

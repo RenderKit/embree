@@ -268,7 +268,7 @@ namespace embree
 
         /* if this fails allocate new block */
         {
-          Lock<AtomicMutex> lock(mutex);
+          Lock<SpinLock> lock(mutex);
 	  if (myUsedBlocks == threadUsedBlocks[slot])
 	  {
 		  if (freeBlocks.load() != nullptr) {
@@ -479,7 +479,7 @@ namespace embree
 
   private:
     MemoryMonitorInterface* device;
-    AtomicMutex mutex;
+    SpinLock mutex;
     size_t slotMask;
     std::atomic<Block*> threadUsedBlocks[MAX_THREAD_USED_BLOCK_SLOTS];
     std::atomic<Block*> usedBlocks;

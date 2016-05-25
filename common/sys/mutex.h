@@ -38,11 +38,11 @@ namespace embree
   };
 
   /*! spinning mutex */
-  class AtomicMutex
+  class SpinLock
   {
   public:
  
-    AtomicMutex ()
+    SpinLock ()
       : flag(false) {}
 
     __forceinline bool isLocked() {

@@ -174,7 +174,7 @@ namespace embree
     }
 
     __forceinline Geometry* get_locked(size_t i)  {
-      Lock<AtomicMutex> lock(geometriesMutex);
+      Lock<SpinLock> lock(geometriesMutex);
       Geometry *g = geometries[i]; 
       assert(i < geometries.size()); 
       return g; 
@@ -304,7 +304,7 @@ namespace embree
     bool needSubdivVertices;
     bool is_build;
     MutexSys buildMutex;
-    AtomicMutex geometriesMutex;
+    SpinLock geometriesMutex;
     bool modified;                   //!< true if scene got modified
     
     /*! global lock step task scheduler */
