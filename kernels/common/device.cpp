@@ -22,7 +22,7 @@
 #include "scene_bezier_curves.h"
 #include "scene_subdiv_mesh.h"
 
-#include "subdiv/tessellation_cache.h"
+#include "../subdiv/tessellation_cache.h"
 
 #include "acceln.h"
 #include "geometry.h"

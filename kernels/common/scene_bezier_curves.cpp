@@ -16,7 +16,7 @@
 
 #include "scene_bezier_curves.h"
 #include "scene.h"
-#include "subdiv/bezier_curve.h"
+#include "../subdiv/bezier_curve.h"
 
 namespace embree
 {
