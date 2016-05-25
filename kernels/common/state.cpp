@@ -134,9 +134,9 @@ namespace embree
      * functions */
 #if defined(DEBUG)
     assert(isa::getISA() == ISA);
-#if defined(__TARGET_SSE41__)
-    assert(sse41::getISA() <= SSE41);
-#endif
+//#if defined(__TARGET_SSE41__)
+//    assert(sse41::getISA() <= SSE41);
+//#endif
 #if defined(__TARGET_SSE42__)
     assert(sse42::getISA() <= SSE42);
 #endif
