@@ -864,7 +864,7 @@ namespace embree
         {
           STAT3(normal.trav_xfm_nodes,1,1,1);
           const TransformNode* node = cur.transformNode();
-#if defined(RTCORE_RAY_MASK)
+#if defined(EMBREE_RAY_MASK)
           if (unlikely((ray.mask & node->mask) == 0)) return true;
 #endif          
           leafType = node->type;
@@ -926,7 +926,7 @@ namespace embree
         {
           STAT3(shadow.trav_xfm_nodes,1,1,1);
           const TransformNode* node = cur.transformNode();
-#if defined(RTCORE_RAY_MASK)
+#if defined(EMBREE_RAY_MASK)
           if (unlikely((ray.mask & node->mask) == 0)) return true;
 #endif
           leafType = node->type;

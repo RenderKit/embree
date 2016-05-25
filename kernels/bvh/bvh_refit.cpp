@@ -430,11 +430,11 @@ namespace embree
     Builder* BVH4Triangle4vMeshBuilderSAH (void* bvh, TriangleMesh* mesh, size_t mode);
     Builder* BVH4Triangle4iMeshBuilderSAH (void* bvh, TriangleMesh* mesh, size_t mode);
 
-#if defined(RTCORE_GEOMETRY_LINES)
+#if defined(EMBREE_GEOMETRY_LINES)
     Builder* BVH4Line4iMeshRefitSAH (void* accel, LineSegments* mesh, size_t mode) { return new BVHNRefitT<4,LineSegments,Line4i>((BVH4*)accel,BVH4Line4iMeshBuilderSAH(accel,mesh,mode),mesh,mode); }
 #endif
 
-#if defined(RTCORE_GEOMETRY_TRIANGLES)
+#if defined(EMBREE_GEOMETRY_TRIANGLES)
     Builder* BVH4Triangle4MeshRefitSAH (void* accel, TriangleMesh* mesh, size_t mode) { return new BVHNRefitT<4,TriangleMesh,Triangle4>((BVH4*)accel,BVH4Triangle4MeshBuilderSAH(accel,mesh,mode),mesh,mode); }
 
     Builder* BVH4Triangle4vMeshRefitSAH (void* accel, TriangleMesh* mesh, size_t mode) { return new BVHNRefitT<4,TriangleMesh,Triangle4v>((BVH4*)accel,BVH4Triangle4vMeshBuilderSAH(accel,mesh,mode),mesh,mode); }

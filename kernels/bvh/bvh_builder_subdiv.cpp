@@ -16,7 +16,7 @@
 
 #include "bvh.h"
 
-#if defined(RTCORE_GEOMETRY_SUBDIV)
+#if defined(EMBREE_GEOMETRY_SUBDIV)
 
 #include "bvh_refit.h"
 #include "bvh_builder.h"

@@ -95,7 +95,7 @@ namespace embree
         const vfloat<M> V = dot(R,Vec3vfM(tri_e1)) ^ sgnDen;
         
         /* perform backface culling */        
-#if defined(RTCORE_BACKFACE_CULLING)
+#if defined(EMBREE_BACKFACE_CULLING)
         vbool<M> valid = (den < vfloat<M>(zero)) & (U >= 0.0f) & (V >= 0.0f) & (U+V<=absDen);
 #else
         vbool<M> valid = (den != vfloat<M>(zero)) & (U >= 0.0f) & (V >= 0.0f) & (U+V<=absDen);
@@ -220,7 +220,7 @@ namespace embree
         if (unlikely(none(valid))) return false;
         
         /* perform backface culling */
-#if defined(RTCORE_BACKFACE_CULLING)
+#if defined(EMBREE_BACKFACE_CULLING)
         valid &= den < vfloat<K>(zero);
         if (unlikely(none(valid))) return false;
 #else
@@ -274,7 +274,7 @@ namespace embree
         const vfloat<M> V = dot(R,Vec3vfM(tri_e1)) ^ sgnDen;
         
         /* perform backface culling */
-#if defined(RTCORE_BACKFACE_CULLING)
+#if defined(EMBREE_BACKFACE_CULLING)
         vbool<M> valid = (den < vfloat<M>(zero)) & (U >= 0.0f) & (V >= 0.0f) & (U+V<=absDen);
 #else
         vbool<M> valid = (den != vfloat<M>(zero)) & (U >= 0.0f) & (V >= 0.0f) & (U+V<=absDen);

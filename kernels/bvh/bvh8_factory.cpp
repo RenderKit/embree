@@ -170,7 +170,7 @@ namespace embree
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,QBVH8Triangle4iIntersector1Pluecker));    
     IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,QBVH8Quad4iIntersector1Pluecker));
 
-#if defined (RTCORE_RAY_PACKETS)
+#if defined (EMBREE_RAY_PACKETS)
 
     /* select intersectors4 */
     IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Line4iIntersector4));

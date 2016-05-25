@@ -74,42 +74,42 @@ INCLUDE(test)
 # Embree configuration
 ##############################################################
 
-OPTION(ENABLE_STATIC_LIB "Build Embree as a static library." OFF)
-IF (ENABLE_STATIC_LIB)
+OPTION(EMBREE_STATIC_LIB "Build Embree as a static library." OFF)
+IF (EMBREE_STATIC_LIB)
   SET(EMBREE_LIB_TYPE STATIC)
-  ADD_DEFINITIONS(-DENABLE_STATIC_LIB)
+  ADD_DEFINITIONS(-DEMBREE_STATIC_LIB)
 ELSE()
   SET(EMBREE_LIB_TYPE SHARED)
 ENDIF()
 
-OPTION(ENABLE_ISPC_SUPPORT "Build Embree with support for ISPC applications." ON)
-OPTION(ENABLE_TUTORIALS    "Enable to build Embree tutorials" ON)
+OPTION(EMBREE_ISPC_SUPPORT "Build Embree with support for ISPC applications." ON)
+OPTION(EMBREE_TUTORIALS    "Enable to build Embree tutorials" ON)
 
 ##############################################################################
 # Configurations (add configurations also to common/cmake/embree-config-default.cmake)
 
-OPTION(RTCORE_STAT_COUNTERS "Enables statistic counters.")
+OPTION(EMBREE_STAT_COUNTERS "Enables statistic counters.")
 
-OPTION(RTCORE_RAY_MASK "Enables ray mask support.")
-OPTION(RTCORE_BACKFACE_CULLING "Enables backface culling.")
-OPTION(RTCORE_INTERSECTION_FILTER "Enables intersection filter callback." ON)
-OPTION(RTCORE_INTERSECTION_FILTER_RESTORE "Restores previous hit when hit is filtered out." ON)
-OPTION(RTCORE_IGNORE_INVALID_RAYS "Ignores invalid rays." OFF) # FIXME: enable by default?
+OPTION(EMBREE_RAY_MASK "Enables ray mask support.")
+OPTION(EMBREE_BACKFACE_CULLING "Enables backface culling.")
+OPTION(EMBREE_INTERSECTION_FILTER "Enables intersection filter callback." ON)
+OPTION(EMBREE_INTERSECTION_FILTER_RESTORE "Restores previous hit when hit is filtered out." ON)
+OPTION(EMBREE_IGNORE_INVALID_RAYS "Ignores invalid rays." OFF) # FIXME: enable by default?
 
-OPTION(RTCORE_GEOMETRY_TRIANGLES "Enables support for triangle geometries." ON)
-OPTION(RTCORE_GEOMETRY_QUADS "Enables support for quad geometries." ON)
-OPTION(RTCORE_GEOMETRY_LINES "Enables support for line geometries." ON)
-OPTION(RTCORE_GEOMETRY_HAIR "Enables support for hair geometries." ON)
-OPTION(RTCORE_GEOMETRY_SUBDIV "Enables support for subdiv geometries." ON)
-OPTION(RTCORE_GEOMETRY_USER "Enables support for user geometries." ON)
-OPTION(RTCORE_RAY_PACKETS "Enabled support for ray packets." ON)
+OPTION(EMBREE_GEOMETRY_TRIANGLES "Enables support for triangle geometries." ON)
+OPTION(EMBREE_GEOMETRY_QUADS "Enables support for quad geometries." ON)
+OPTION(EMBREE_GEOMETRY_LINES "Enables support for line geometries." ON)
+OPTION(EMBREE_GEOMETRY_HAIR "Enables support for hair geometries." ON)
+OPTION(EMBREE_GEOMETRY_SUBDIV "Enables support for subdiv geometries." ON)
+OPTION(EMBREE_GEOMETRY_USER "Enables support for user geometries." ON)
+OPTION(EMBREE_RAY_PACKETS "Enabled support for ray packets." ON)
 
-OPTION(RTCORE_ENABLE_RAYSTREAM_LOGGER "Enables ray stream logger.")
+OPTION(EMBREE_RAYSTREAM_LOGGER "Enables ray stream logger.")
 
-SET(RTCORE_TASKING_SYSTEM "TBB" CACHE STRING "Selects tasking system")
-SET_PROPERTY(CACHE RTCORE_TASKING_SYSTEM PROPERTY STRINGS TBB INTERNAL)
+SET(EMBREE_TASKING_SYSTEM "TBB" CACHE STRING "Selects tasking system")
+SET_PROPERTY(CACHE EMBREE_TASKING_SYSTEM PROPERTY STRINGS TBB INTERNAL)
 
-IF (RTCORE_TASKING_SYSTEM STREQUAL "TBB")
+IF (EMBREE_TASKING_SYSTEM STREQUAL "TBB")
   SET(TASKING_TBB      ON )
   SET(TASKING_INTERNAL OFF)
 ELSE()
@@ -185,48 +185,48 @@ ENDIF (WIN32)
 ##############################################################
 
 IF(APPLE)
-  SET(XEON_ISA "AVX2" CACHE STRING "Selects highest ISA to support.")
+  SET(EMBREE_MAX_ISA "AVX2" CACHE STRING "Selects highest ISA to support.")
 ELSEIF(NOT COMPILER STREQUAL "ICC")
-  SET(XEON_ISA "AVX2" CACHE STRING "Selects highest ISA to support.")
+  SET(EMBREE_MAX_ISA "AVX2" CACHE STRING "Selects highest ISA to support.")
 ELSE()
-  SET(XEON_ISA "AVX512KNL" CACHE STRING "Selects highest ISA to support.")
+  SET(EMBREE_MAX_ISA "AVX512KNL" CACHE STRING "Selects highest ISA to support.")
 ENDIF ()
 
-SET_PROPERTY(CACHE XEON_ISA PROPERTY STRINGS SSE2 SSE3 SSSE3 SSE4.1 SSE4.2 AVX AVX-I AVX2 AVX512KNL)
+SET_PROPERTY(CACHE EMBREE_MAX_ISA PROPERTY STRINGS SSE2 SSE3 SSSE3 SSE4.1 SSE4.2 AVX AVX-I AVX2 AVX512KNL)
 
-IF (XEON_ISA STREQUAL "SSE2")
+IF (EMBREE_MAX_ISA STREQUAL "SSE2")
   SET(ISA  1)
 ENDIF ()
 
-IF (XEON_ISA STREQUAL "SSE3")
+IF (EMBREE_MAX_ISA STREQUAL "SSE3")
   SET(ISA  2)
 ENDIF ()
 
-IF (XEON_ISA STREQUAL "SSSE3")
+IF (EMBREE_MAX_ISA STREQUAL "SSSE3")
   SET(ISA  3)
 ENDIF ()
 
-IF (XEON_ISA STREQUAL "SSE4.1")
+IF (EMBREE_MAX_ISA STREQUAL "SSE4.1")
   SET(ISA  4)
 ENDIF ()
 
-IF (XEON_ISA STREQUAL "SSE4.2")
+IF (EMBREE_MAX_ISA STREQUAL "SSE4.2")
   SET(ISA  5)
 ENDIF ()
 
-IF (XEON_ISA STREQUAL "AVX")
+IF (EMBREE_MAX_ISA STREQUAL "AVX")
   SET(ISA  6)
 ENDIF ()
 
-IF (XEON_ISA STREQUAL "AVX-I")
+IF (EMBREE_MAX_ISA STREQUAL "AVX-I")
   SET(ISA  7)
 ENDIF ()
 
-IF (XEON_ISA STREQUAL "AVX2")
+IF (EMBREE_MAX_ISA STREQUAL "AVX2")
   SET(ISA  8)
 ENDIF ()
 
-IF (XEON_ISA STREQUAL "AVX512KNL")
+IF (EMBREE_MAX_ISA STREQUAL "AVX512KNL")
   SET(ISA  9)
 ENDIF ()
 
@@ -292,7 +292,7 @@ INCLUDE_DIRECTORIES_ISPC("${PROJECT_BINARY_DIR}")
 ADD_SUBDIRECTORY(common)
 ADD_SUBDIRECTORY(kernels)
 
-IF (ENABLE_TUTORIALS)
+IF (EMBREE_TUTORIALS)
   ADD_SUBDIRECTORY(tutorials)
   ADD_SUBDIRECTORY(tests)
 ENDIF()

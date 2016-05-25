@@ -43,7 +43,7 @@ namespace embree
           const vfloat<M> v = V * rcpAbsDen;
           const vfloat<M> u1 = vfloat<M>(1.0f) - u;
           const vfloat<M> v1 = vfloat<M>(1.0f) - v;
-#if !defined(__AVX__) || defined(RTCORE_BACKFACE_CULLING) // FIXME: incorrect for default template instantiation for QuadMIntersector1MoellerTrumbore
+#if !defined(__AVX__) || defined(EMBREE_BACKFACE_CULLING) // FIXME: incorrect for default template instantiation for QuadMIntersector1MoellerTrumbore
           vu = select(flags,u1,u); 
           vv = select(flags,v1,v);
           vNg = Vec3<vfloat<M>>(tri_Ng.x,tri_Ng.y,tri_Ng.z);
@@ -197,7 +197,7 @@ namespace embree
         const Vec3vf16 vtx0(select(0x0f0f,vfloat16(v0.x),vfloat16(v2.x)),
                             select(0x0f0f,vfloat16(v0.y),vfloat16(v2.y)),
                             select(0x0f0f,vfloat16(v0.z),vfloat16(v2.z)));
-#if !defined(RTCORE_BACKFACE_CULLING)
+#if !defined(EMBREE_BACKFACE_CULLING)
         const Vec3vf16 vtx1(vfloat16(v1.x),vfloat16(v1.y),vfloat16(v1.z));
         const Vec3vf16 vtx2(vfloat16(v3.x),vfloat16(v3.y),vfloat16(v3.z));
 #else
@@ -215,7 +215,7 @@ namespace embree
         if (unlikely(intersector.intersect(ray,vtx0,vtx1,vtx2,hit))) 
         {
           vfloat16 U = hit.U, V = hit.V, absDen = hit.absDen;
-#if !defined(RTCORE_BACKFACE_CULLING)
+#if !defined(EMBREE_BACKFACE_CULLING)
           hit.U = select(flags,absDen-V,U);
           hit.V = select(flags,absDen-U,V);
           hit.vNg *= select(flags,vfloat16(-1.0f),vfloat16(1.0f)); // FIXME: use XOR
@@ -258,7 +258,7 @@ namespace embree
         __forceinline bool intersect(Ray& ray, const Vec3vf4& v0, const Vec3vf4& v1, const Vec3vf4& v2, const Vec3vf4& v3, const Epilog& epilog) const
       {
         const Vec3vf8 vtx0(vfloat8(v0.x,v2.x),vfloat8(v0.y,v2.y),vfloat8(v0.z,v2.z));
-#if !defined(RTCORE_BACKFACE_CULLING)
+#if !defined(EMBREE_BACKFACE_CULLING)
         const Vec3vf8 vtx1(vfloat8(v1.x),vfloat8(v1.y),vfloat8(v1.z));
         const Vec3vf8 vtx2(vfloat8(v3.x),vfloat8(v3.y),vfloat8(v3.z));        
 #else
@@ -272,7 +272,7 @@ namespace embree
         {
           vfloat8 U = hit.U, V = hit.V, absDen = hit.absDen;
 
-#if !defined(RTCORE_BACKFACE_CULLING)
+#if !defined(EMBREE_BACKFACE_CULLING)
           hit.U = select(flags,absDen-V,U);
           hit.V = select(flags,absDen-U,V);
           hit.vNg *= select(flags,vfloat8(-1.0f),vfloat8(1.0f)); // FIXME: use XOR
@@ -336,7 +336,7 @@ namespace embree
         const vfloat<M> V = dot(R,Vec3vfM(tri_e1)) ^ sgnDen;
         
         /* perform backface culling */
-#if defined(RTCORE_BACKFACE_CULLING)
+#if defined(EMBREE_BACKFACE_CULLING)
         vbool<M> valid = (den < vfloat<M>(zero)) & (U >= 0.0f) & (V >= 0.0f) & (U+V<=absDen);
 #else
         vbool<M> valid = (den != vfloat<M>(zero)) & (U >= 0.0f) & (V >= 0.0f) & (U+V<=absDen);
@@ -417,7 +417,7 @@ namespace embree
         if (unlikely(none(valid))) return false;
         
         /* perform backface culling */
-#if defined(RTCORE_BACKFACE_CULLING)
+#if defined(EMBREE_BACKFACE_CULLING)
         valid &= den < vfloat<K>(zero);
         if (unlikely(none(valid))) return false;
 #else
@@ -507,7 +507,7 @@ namespace embree
         const Vec3vf16 vtx0(select(0x0f0f,vfloat16(v0.x),vfloat16(v2.x)),
                             select(0x0f0f,vfloat16(v0.y),vfloat16(v2.y)),
                             select(0x0f0f,vfloat16(v0.z),vfloat16(v2.z)));
-#if !defined(RTCORE_BACKFACE_CULLING)
+#if !defined(EMBREE_BACKFACE_CULLING)
         const Vec3vf16 vtx1(vfloat16(v1.x),vfloat16(v1.y),vfloat16(v1.z));
         const Vec3vf16 vtx2(vfloat16(v3.x),vfloat16(v3.y),vfloat16(v3.z));
 #else
@@ -551,7 +551,7 @@ namespace embree
                                       const Vec3vf4& v0, const Vec3vf4& v1, const Vec3vf4& v2, const Vec3vf4& v3, const Epilog& epilog) const
       {
         const Vec3vf8 vtx0(vfloat8(v0.x,v2.x),vfloat8(v0.y,v2.y),vfloat8(v0.z,v2.z));
-#if !defined(RTCORE_BACKFACE_CULLING)
+#if !defined(EMBREE_BACKFACE_CULLING)
         const Vec3vf8 vtx1(vfloat8(v1.x),vfloat8(v1.y),vfloat8(v1.z));
         const Vec3vf8 vtx2(vfloat8(v3.x),vfloat8(v3.y),vfloat8(v3.z));
 #else

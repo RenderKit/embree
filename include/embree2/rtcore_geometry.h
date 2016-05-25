@@ -14,8 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __RTCORE_GEOMETRY_H__
-#define __RTCORE_GEOMETRY_H__
+#ifndef __EMBREE_GEOMETRY_H__
+#define __EMBREE_GEOMETRY_H__
 
 /*! \ingroup embree_kernel_api */
 /*! \{ */

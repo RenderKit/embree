@@ -58,7 +58,7 @@ namespace embree
       stack[0].dist = neg_inf;
 
       /* filter out invalid rays */
-#if defined(RTCORE_IGNORE_INVALID_RAYS)
+#if defined(EMBREE_IGNORE_INVALID_RAYS)
       if (!ray.valid()) return;
 #endif
 
@@ -159,7 +159,7 @@ namespace embree
       stack[0] = bvh->root;
       
       /* filter out invalid rays */
-#if defined(RTCORE_IGNORE_INVALID_RAYS)
+#if defined(EMBREE_IGNORE_INVALID_RAYS)
       if (!ray.valid()) return;
 #endif
 

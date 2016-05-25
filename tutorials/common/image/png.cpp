@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifdef USE_LIBPNG
+#ifdef EMBREE_TUTORIALS_LIBPNG
 
 #include "image.h"
 

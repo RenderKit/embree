@@ -22,13 +22,13 @@
 #include <iostream>
 #include <fstream>
 
-#if defined(RTCORE_RAY_PACKETS)
+#if defined(EMBREE_RAY_PACKETS)
 #  define HAS_INTERSECT4 1
 #else
 #  define HAS_INTERSECT4 0
 #endif
 
-#if defined(RTCORE_RAY_PACKETS) && (defined(__TARGET_AVX__) || defined(__TARGET_AVX2__))
+#if defined(EMBREE_RAY_PACKETS) && (defined(__TARGET_AVX__) || defined(__TARGET_AVX2__))
 #  define HAS_INTERSECT8 1
 #else
 #  define HAS_INTERSECT8 0
@@ -725,7 +725,7 @@ namespace embree
 
     stats.print(g_simd_width);
 
-#if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
+#if defined(EMBREE_RAYSTREAM_LOGGER)
     THROW_RUNTIME_ERROR("ray stream logger still active, must be disabled to run 'retrace'");
 #endif
 

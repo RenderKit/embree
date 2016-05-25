@@ -143,13 +143,13 @@ namespace embree
               if (geom->numTimeSteps == 1)
               {
                 switch (geom->type) {
-#if defined(RTCORE_GEOMETRY_TRIANGLES)
+#if defined(EMBREE_GEOMETRY_TRIANGLES)
                 case Geometry::TRIANGLE_MESH:
                   objects[objectID] = new BVH4(Triangle4::type,geom->parent);
                   builders[objectID] = BVH4Triangle4MeshBuilderSAH((BVH4*)objects[objectID],(TriangleMesh*)geom);
                   break;
 #endif
-#if defined(RTCORE_GEOMETRY_QUADS)
+#if defined(EMBREE_GEOMETRY_QUADS)
                 case Geometry::QUAD_MESH:
                   objects[objectID] = new BVH4(Quad4v::type,geom->parent);
                   builders[objectID] = BVH4Quad4vMeshBuilderSAH((BVH4*)objects[objectID],(QuadMesh*)geom);
@@ -163,14 +163,14 @@ namespace embree
                 }
               } else {
                  switch (geom->type) {
-#if defined(RTCORE_GEOMETRY_TRIANGLES)
+#if defined(EMBREE_GEOMETRY_TRIANGLES)
                  case Geometry::TRIANGLE_MESH:
                    objects[objectID] = new BVH4(Triangle4vMB::type,geom->parent);
                    builders[objectID] = BVH4Triangle4vMBMeshBuilderSAH((BVH4*)objects[objectID],(TriangleMesh*)geom);
                    break;
 #endif
 
-#if defined(RTCORE_GEOMETRY_QUADS)
+#if defined(EMBREE_GEOMETRY_QUADS)
                  case Geometry::QUAD_MESH:
                    objects[objectID] = new BVH4(Quad4iMB::type,geom->parent);
                    builders[objectID] = BVH4Quad4iMBMeshBuilderSAH((BVH4*)objects[objectID],(QuadMesh*)geom);

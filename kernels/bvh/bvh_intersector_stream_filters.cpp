@@ -43,7 +43,7 @@ namespace embree
           if (unlikely(ray.tnear > ray.tfar)) { inputRayID++; continue; }
           if (unlikely(!intersect && ray.geomID == 0)) { inputRayID++; continue; } // ignore already occluded rays
 
-#if defined(RTCORE_IGNORE_INVALID_RAYS)
+#if defined(EMBREE_IGNORE_INVALID_RAYS)
           if (unlikely(!ray.valid())) {  inputRayID++; continue; }
 #endif
 
@@ -139,7 +139,7 @@ namespace embree
 
           if (unlikely(!rayN.isValid(offset))) continue;
 
-#if defined(RTCORE_IGNORE_INVALID_RAYS)
+#if defined(EMBREE_IGNORE_INVALID_RAYS)
           __aligned(64) Ray ray = rayN.gather(offset);
           if (unlikely(!ray.valid())) continue; 
 #endif
@@ -237,7 +237,7 @@ namespace embree
 
           if (unlikely(!rayN.isValidByOffset(offset))) continue;
 
-#if defined(RTCORE_IGNORE_INVALID_RAYS)
+#if defined(EMBREE_IGNORE_INVALID_RAYS)
           __aligned(64) Ray ray = rayN.gatherByOffset(offset);
           if (unlikely(!ray.valid())) continue; 
 #endif

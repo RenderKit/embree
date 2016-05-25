@@ -26,15 +26,15 @@ namespace embree
   Ref<Image> loadImageFromDisk(const FileName& fileName)
   {
     std::string ext = toLowerCase(fileName.ext());
-#ifdef USE_OPENEXR
+#ifdef EMBREE_TUTORIALS_OPENEXR
     if (ext == "exr" ) return loadExr(fileName);
 #endif
 
-#ifdef USE_LIBPNG
+#ifdef EMBREE_TUTORIALS_LIBPNG
     if (ext == "png" ) return loadPNG(fileName);
 #endif
 
-#ifdef USE_LIBJPEG
+#ifdef EMBREE_TUTORIALS_LIBJPEG
     if (ext == "jpg" ) return loadJPEG(fileName);
 #endif
 
@@ -72,11 +72,11 @@ namespace embree
   {
     std::string ext = toLowerCase(fileName.ext());
 
-#ifdef USE_OPENEXR
+#ifdef EMBREE_TUTORIALS_OPENEXR
     if (ext == "exr" ) { storeExr(img, fileName);  return; }
 #endif
 
-#ifdef USE_LIBJPEG
+#ifdef EMBREE_TUTORIALS_LIBJPEG
     if (ext == "jpg" ) { storeJPEG(img, fileName);  return; }
 #endif
 

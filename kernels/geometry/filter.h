@@ -42,7 +42,7 @@ namespace embree
       if (likely(geometry->intersectionFilter1)) // old code for compatibility
       {
         /* temporarily update hit information */
-#if defined(RTCORE_INTERSECTION_FILTER_RESTORE)
+#if defined(EMBREE_INTERSECTION_FILTER_RESTORE)
         const float  ray_tfar = ray.tfar;
         const Vec3fa ray_Ng   = ray.Ng;
         const vfloat4   ray_uv_ids = *(vfloat4*)&ray.u;
@@ -60,7 +60,7 @@ namespace embree
         /* restore hit if filter not passed */
         if (unlikely(ray.geomID == -1)) 
         {
-#if defined(RTCORE_INTERSECTION_FILTER_RESTORE)
+#if defined(EMBREE_INTERSECTION_FILTER_RESTORE)
           ray.tfar = ray_tfar;
           ray.Ng = ray_Ng;
           *(vfloat4*)&ray.u = ray_uv_ids;
@@ -84,7 +84,7 @@ namespace embree
       if (likely(geometry->occlusionFilter1)) // old code for compatibility
       {
         /* temporarily update hit information */
-#if defined(RTCORE_INTERSECTION_FILTER_RESTORE)
+#if defined(EMBREE_INTERSECTION_FILTER_RESTORE)
         const float ray_tfar = ray.tfar;
         const int   ray_geomID = ray.geomID;
 #endif
@@ -101,7 +101,7 @@ namespace embree
         /* restore hit if filter not passed */
         if (unlikely(ray.geomID == -1)) 
         {
-#if defined(RTCORE_INTERSECTION_FILTER_RESTORE)
+#if defined(EMBREE_INTERSECTION_FILTER_RESTORE)
           ray.tfar = ray_tfar;
           ray.geomID = ray_geomID;
 #endif
@@ -143,7 +143,7 @@ namespace embree
         const vbool4 valid_passed = valid & (ray.geomID != vint4(-1));
         
         /* restore hit if filter not passed */
-#if defined(RTCORE_INTERSECTION_FILTER_RESTORE)
+#if defined(EMBREE_INTERSECTION_FILTER_RESTORE)
         if (unlikely(any(valid_failed))) 
         {
           vfloat4::store(valid_failed,&ray.u,ray_u);
@@ -174,7 +174,7 @@ namespace embree
       if (likely(filter4)) // old code for compatibility
       {
         /* temporarily update hit information */
-#if defined(RTCORE_INTERSECTION_FILTER_RESTORE)
+#if defined(EMBREE_INTERSECTION_FILTER_RESTORE)
         const vfloat4 ray_tfar = ray.tfar; 
         const vint4 ray_geomID = ray.geomID;
 #endif
@@ -196,7 +196,7 @@ namespace embree
         const vbool4 valid_passed = valid & (ray.geomID != vint4(-1));
         
         /* restore hit if filter not passed */
-#if defined(RTCORE_INTERSECTION_FILTER_RESTORE)
+#if defined(EMBREE_INTERSECTION_FILTER_RESTORE)
         vfloat4::store(valid_failed,&ray.tfar,ray_tfar);
         vint4::store(valid_failed,&ray.geomID,ray_geomID);
 #endif
@@ -235,7 +235,7 @@ namespace embree
       
         /* restore hit if filter not passed */
         const bool passed = ray.geomID[k] != -1;
-#if defined(RTCORE_INTERSECTION_FILTER_RESTORE)
+#if defined(EMBREE_INTERSECTION_FILTER_RESTORE)
         if (unlikely(!passed)) {
           vfloat4::store(&ray.u,ray_u);
           vfloat4::store(&ray.v,ray_v);
@@ -284,7 +284,7 @@ namespace embree
         
         /* restore hit if filter not passed */
         const bool passed = ray.geomID[k] != -1;
-#if defined(RTCORE_INTERSECTION_FILTER_RESTORE)
+#if defined(EMBREE_INTERSECTION_FILTER_RESTORE)
         if (unlikely(!passed)) {
           vfloat4::store(&ray.tfar,ray_tfar);
           vint4::store(&ray.geomID,ray_geomID);
@@ -326,7 +326,7 @@ namespace embree
         const vbool8 valid_passed = valid & (ray.geomID != vint8(-1));
         
         /* restore hit if filter not passed */
-#if defined(RTCORE_INTERSECTION_FILTER_RESTORE)
+#if defined(EMBREE_INTERSECTION_FILTER_RESTORE)
         if (unlikely(any(valid_failed))) 
         {
           vfloat8::store(valid_failed,&ray.u,ray_u);
@@ -357,7 +357,7 @@ namespace embree
       if (likely(filter8)) // old code for compatibility
       {
         /* temporarily update hit information */
-#if defined(RTCORE_INTERSECTION_FILTER_RESTORE)
+#if defined(EMBREE_INTERSECTION_FILTER_RESTORE)
         const vfloat8 ray_tfar = ray.tfar; 
         const vint8 ray_geomID = ray.geomID;
 #endif
@@ -378,7 +378,7 @@ namespace embree
         const vbool8 valid_passed = valid & (ray.geomID != vint8(-1));
         
         /* restore hit if filter not passed */
-#if defined(RTCORE_INTERSECTION_FILTER_RESTORE)
+#if defined(EMBREE_INTERSECTION_FILTER_RESTORE)
         vfloat8::store(valid_failed,&ray.tfar,ray_tfar);
         vint8::store(valid_failed,&ray.geomID,ray_geomID);
 #endif
@@ -416,7 +416,7 @@ namespace embree
         
         /* restore hit if filter not passed */
         const bool passed = ray.geomID[k] != -1;
-#if defined(RTCORE_INTERSECTION_FILTER_RESTORE)
+#if defined(EMBREE_INTERSECTION_FILTER_RESTORE)
         if (unlikely(!passed)) {
           vfloat8::store(&ray.u,ray_u);
           vfloat8::store(&ray.v,ray_v);
@@ -447,7 +447,7 @@ namespace embree
       if (likely(filter8)) // old code for compatibility
       {
         /* temporarily update hit information */
-#if defined(RTCORE_INTERSECTION_FILTER_RESTORE)
+#if defined(EMBREE_INTERSECTION_FILTER_RESTORE)
         const vfloat8 ray_tfar = ray.tfar; 
         const vint8 ray_geomID = ray.geomID;
 #endif
@@ -466,7 +466,7 @@ namespace embree
 
         /* restore hit if filter not passed */
         const bool passed = ray.geomID[k] != -1;
-#if defined(RTCORE_INTERSECTION_FILTER_RESTORE)
+#if defined(EMBREE_INTERSECTION_FILTER_RESTORE)
         if (unlikely(!passed)) {
           vfloat8::store(&ray.tfar,ray_tfar);
           vint8::store(&ray.geomID,ray_geomID);
@@ -511,7 +511,7 @@ namespace embree
         const vbool16 valid_passed = valid & (ray.geomID != vint16(-1));
         
         /* restore hit if filter not passed */
-#if defined(RTCORE_INTERSECTION_FILTER_RESTORE)
+#if defined(EMBREE_INTERSECTION_FILTER_RESTORE)
         if (unlikely(any(valid_failed))) 
         {
           vfloat16::store(valid_failed,&ray.u,ray_u);
@@ -542,7 +542,7 @@ namespace embree
       if (likely(filter16)) // old code for compatibility
       {
         /* temporarily update hit information */
-#if defined(RTCORE_INTERSECTION_FILTER_RESTORE)
+#if defined(EMBREE_INTERSECTION_FILTER_RESTORE)
         const vfloat16 ray_tfar = ray.tfar; 
         const vint16 ray_geomID = ray.geomID;
 #endif
@@ -563,7 +563,7 @@ namespace embree
         const vbool16 valid_passed = valid & (ray.geomID != vint16(-1));
         
         /* restore hit if filter not passed */
-#if defined(RTCORE_INTERSECTION_FILTER_RESTORE)
+#if defined(EMBREE_INTERSECTION_FILTER_RESTORE)
         vfloat16::store(valid_failed,&ray.tfar,ray_tfar);
         vint16::store(valid_failed,&ray.geomID,ray_geomID);
 #endif
@@ -601,7 +601,7 @@ namespace embree
         
         /* restore hit if filter not passed */
         const bool passed = ray.geomID[k] != -1;
-#if defined(RTCORE_INTERSECTION_FILTER_RESTORE)
+#if defined(EMBREE_INTERSECTION_FILTER_RESTORE)
         if (unlikely(!passed)) {
           vfloat16::store(&ray.u,ray_u);
           vfloat16::store(&ray.v,ray_v);
@@ -632,7 +632,7 @@ namespace embree
       if (likely(filter16)) // old code for compatibility
       {
         /* temporarily update hit information */
-#if defined(RTCORE_INTERSECTION_FILTER_RESTORE)
+#if defined(EMBREE_INTERSECTION_FILTER_RESTORE)
         const vfloat16 ray_tfar = ray.tfar; 
         const vint16 ray_geomID = ray.geomID;
 #endif
@@ -651,7 +651,7 @@ namespace embree
         
         /* restore hit if filter not passed */
         const bool passed = ray.geomID[k] != -1;
-#if defined(RTCORE_INTERSECTION_FILTER_RESTORE)
+#if defined(EMBREE_INTERSECTION_FILTER_RESTORE)
         if (unlikely(!passed)) {
           vfloat16::store(&ray.tfar,ray_tfar);
           vint16::store(&ray.geomID,ray_geomID);

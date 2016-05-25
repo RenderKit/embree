@@ -75,12 +75,12 @@ namespace embree
 
           /* ray masking test */
           Geometry* geometry = scene->get(prim.grid.geomID);
-#if defined(RTCORE_RAY_MASK)
+#if defined(EMBREE_RAY_MASK)
           if ((geometry->mask & ray.mask) == 0) return;
 #endif
 
           /* intersection filter test */
-#if defined(RTCORE_INTERSECTION_FILTER)
+#if defined(EMBREE_INTERSECTION_FILTER)
           if (unlikely(geometry->hasIntersectionFilter1())) {
             runIntersectionFilter1(geometry,ray,context,u,v,t,Ng,prim.grid.geomID,prim.grid.primID);
             return;
@@ -271,12 +271,12 @@ namespace embree
         
         /* ray masking test */
         Geometry* geometry = scene->get(prim.grid.geomID);
-#if defined(RTCORE_RAY_MASK)
+#if defined(EMBREE_RAY_MASK)
         if ((geometry->mask & ray.mask) == 0) return false;
 #endif
 
         /* intersection filter test */
-#if defined(RTCORE_INTERSECTION_FILTER)
+#if defined(EMBREE_INTERSECTION_FILTER)
         if (unlikely(geometry->hasOcclusionFilter1()))
         {
           /* calculate hit information */

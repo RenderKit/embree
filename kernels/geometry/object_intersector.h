@@ -48,7 +48,7 @@ namespace embree
       AccelSet* accel = (AccelSet*) scene->get(prim.geomID);
 
       /* perform ray mask test */
-#if defined(RTCORE_RAY_MASK)
+#if defined(EMBREE_RAY_MASK)
       valid &= (ray.mask & accel->mask) != 0;
       if (none(valid)) return;
 #endif
@@ -63,7 +63,7 @@ namespace embree
       AccelSet* accel = (AccelSet*) scene->get(prim.geomID);
 
       /* perform ray mask test */
-#if defined(RTCORE_RAY_MASK)
+#if defined(EMBREE_RAY_MASK)
       valid &= (ray.mask & accel->mask) != 0;
       if (none(valid)) return false;
 #endif
@@ -79,7 +79,7 @@ namespace embree
       AccelSet* accel = (AccelSet*) scene->get(prim.geomID);
 
       /* perform ray mask test */
-#if defined(RTCORE_RAY_MASK)
+#if defined(EMBREE_RAY_MASK)
       valid &= (ray.mask & accel->mask) != 0;
       if (none(valid)) return;
 #endif
@@ -93,7 +93,7 @@ namespace embree
       AccelSet* accel = (AccelSet*) scene->get(prim.geomID);
 
       /* perform ray mask test */
-#if defined(RTCORE_RAY_MASK)
+#if defined(EMBREE_RAY_MASK)
       valid &= (ray.mask & accel->mask) != 0;
       if (none(valid)) return false;
 #endif
@@ -110,7 +110,7 @@ namespace embree
       AccelSet* accel = (AccelSet*) scene->get(prim.geomID);
 
       /* perform ray mask test */
-#if defined(RTCORE_RAY_MASK)
+#if defined(EMBREE_RAY_MASK)
       valid &= (ray.mask & accel->mask) != 0;
       if (none(valid)) return;
 #endif
@@ -124,7 +124,7 @@ namespace embree
       AccelSet* accel = (AccelSet*) scene->get(prim.geomID);
 
       /* perform ray mask test */
-#if defined(RTCORE_RAY_MASK)
+#if defined(EMBREE_RAY_MASK)
       valid &= (ray.mask & accel->mask) != 0;
       if (none(valid)) return false;
 #endif

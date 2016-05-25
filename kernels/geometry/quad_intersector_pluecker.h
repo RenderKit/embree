@@ -59,7 +59,7 @@ namespace embree
           const vfloat<M> minUVW = min(U,V,W);
           const vfloat<M> maxUVW = max(U,V,W);
           vbool<M> valid = maxUVW <= 0.0f;
-#if !defined(RTCORE_BACKFACE_CULLING)
+#if !defined(EMBREE_BACKFACE_CULLING)
           valid |= minUVW >= 0.0f;
 #endif
           if (unlikely(none(valid))) return false;
@@ -132,7 +132,7 @@ namespace embree
         const Vec3vf16 vtx0(select(0x0f0f,vfloat16(v0.x),vfloat16(v2.x)),
                             select(0x0f0f,vfloat16(v0.y),vfloat16(v2.y)),
                             select(0x0f0f,vfloat16(v0.z),vfloat16(v2.z)));
-#if !defined(RTCORE_BACKFACE_CULLING)
+#if !defined(EMBREE_BACKFACE_CULLING)
         const Vec3vf16 vtx1(vfloat16(v1.x),vfloat16(v1.y),vfloat16(v1.z));
         const Vec3vf16 vtx2(vfloat16(v3.x),vfloat16(v3.y),vfloat16(v3.z));
 #else
@@ -176,7 +176,7 @@ namespace embree
         __forceinline bool intersect(Ray& ray, const Vec3vf4& v0, const Vec3vf4& v1, const Vec3vf4& v2, const Vec3vf4& v3, const Epilog& epilog) const
       {
         const Vec3vf8 vtx0(vfloat8(v0.x,v2.x),vfloat8(v0.y,v2.y),vfloat8(v0.z,v2.z));
-#if !defined(RTCORE_BACKFACE_CULLING)
+#if !defined(EMBREE_BACKFACE_CULLING)
         const Vec3vf8 vtx1(vfloat8(v1.x),vfloat8(v1.y),vfloat8(v1.z));
         const Vec3vf8 vtx2(vfloat8(v3.x),vfloat8(v3.y),vfloat8(v3.z));
 #else
@@ -239,7 +239,7 @@ namespace embree
           const vfloat<M> W = dot(cross(v1+v2,e2),D);
           const vfloat<M> minUVW = min(U,V,W);
           const vfloat<M> maxUVW = max(U,V,W);
-#if defined(RTCORE_BACKFACE_CULLING)
+#if defined(EMBREE_BACKFACE_CULLING)
           vbool<M> valid = maxUVW <= 0.0f;
 #else
           vbool<M> valid = (minUVW >= 0.0f) | (maxUVW <= 0.0f);
@@ -305,7 +305,7 @@ namespace embree
           const vfloat<K> W = dot(Vec3vfK(cross(v1+v2,e2)),D);
           const vfloat<K> minUVW = min(U,V,W);
           const vfloat<K> maxUVW = max(U,V,W);
-#if defined(RTCORE_BACKFACE_CULLING)
+#if defined(EMBREE_BACKFACE_CULLING)
           valid &= maxUVW <= 0.0f;
 #else
           valid &= (minUVW >= 0.0f) | (maxUVW <= 0.0f);
@@ -393,7 +393,7 @@ namespace embree
         const Vec3vf16 vtx0(select(0x0f0f,vfloat16(v0.x),vfloat16(v2.x)),
                             select(0x0f0f,vfloat16(v0.y),vfloat16(v2.y)),
                             select(0x0f0f,vfloat16(v0.z),vfloat16(v2.z)));
-#if !defined(RTCORE_BACKFACE_CULLING)
+#if !defined(EMBREE_BACKFACE_CULLING)
         const Vec3vf16 vtx1(vfloat16(v1.x),vfloat16(v1.y),vfloat16(v1.z));
         const Vec3vf16 vtx2(vfloat16(v3.x),vfloat16(v3.y),vfloat16(v3.z));
 #else
@@ -438,7 +438,7 @@ namespace embree
       {
         const Vec3vf8 vtx0(vfloat8(v0.x,v2.x),vfloat8(v0.y,v2.y),vfloat8(v0.z,v2.z));
         const vbool8 flags(0,0,0,0,1,1,1,1);
-#if !defined(RTCORE_BACKFACE_CULLING)
+#if !defined(EMBREE_BACKFACE_CULLING)
         const Vec3vf8 vtx1(vfloat8(v1.x),vfloat8(v1.y),vfloat8(v1.z));
         const Vec3vf8 vtx2(vfloat8(v3.x),vfloat8(v3.y),vfloat8(v3.z));
 #else

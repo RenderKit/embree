@@ -99,7 +99,7 @@ namespace embree
           const vfloat<M> W = dot(cross(v1+v2,e2),D);
           const vfloat<M> minUVW = min(U,V,W);
           const vfloat<M> maxUVW = max(U,V,W);
-#if defined(RTCORE_BACKFACE_CULLING)
+#if defined(EMBREE_BACKFACE_CULLING)
           vbool<M> valid = maxUVW <= 0.0f;
 #else
           vbool<M> valid = (minUVW >= 0.0f) | (maxUVW <= 0.0f);
@@ -190,7 +190,7 @@ namespace embree
           const vfloat<K> W = dot(Vec3vfK(cross(v1+v2,e2)),D);
           const vfloat<K> minUVW = min(U,V,W);
           const vfloat<K> maxUVW = max(U,V,W);
-#if defined(RTCORE_BACKFACE_CULLING)
+#if defined(EMBREE_BACKFACE_CULLING)
           valid &= maxUVW <= 0.0f;
 #else
           valid &= (minUVW >= 0.0f) | (maxUVW <= 0.0f);
@@ -248,7 +248,7 @@ namespace embree
           const vfloat<M> W = dot(cross(v1+v2,e2),D);
           const vfloat<M> minUVW = min(U,V,W);
           const vfloat<M> maxUVW = max(U,V,W);
-#if defined(RTCORE_BACKFACE_CULLING)
+#if defined(EMBREE_BACKFACE_CULLING)
           vbool<M> valid = maxUVW <= 0.0f;
 #else
           vbool<M> valid = (minUVW >= 0.0f) | (maxUVW <= 0.0f);
