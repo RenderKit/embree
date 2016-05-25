@@ -588,12 +588,12 @@ namespace embree
         if (geometries[i]) geometries[i]->immutable();
     }
 
-    /* delete geometry that is scheduled for delete */
-    for (size_t i=0; i<geometries.size(); i++) // FIXME: this late deletion is inefficient in case of many geometries
+    /* clear modified flag */
+    for (size_t i=0; i<geometries.size(); i++)
     {
       Geometry* geom = geometries[i];
       if (!geom) continue;
-      if (geom->isEnabled()) geom->clearModified(); // FIXME: should builders to this?
+      if (geom->isEnabled()) geom->clearModified(); // FIXME: should builders do this?
     }
 
     updateInterface();
@@ -612,7 +612,7 @@ namespace embree
 
   void Scene::build (size_t threadIndex, size_t threadCount) 
   {
-    AutoUnlock<MutexSys> buildLock(buildMutex);
+    Lock<MutexSys> buildLock(buildMutex,false);
 
     /* allocates own taskscheduler for each build */
     Ref<TaskScheduler> scheduler = nullptr;
@@ -674,7 +674,7 @@ namespace embree
     }
 
     /* try to obtain build lock */
-    TryLock<MutexSys> lock(buildMutex);
+    Lock<MutexSys> lock(buildMutex,buildMutex.try_lock());
 
     /* join hierarchy build */
     if (!lock.isLocked()) {

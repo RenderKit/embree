@@ -94,29 +94,10 @@ namespace embree
   /*! safe mutex lock and unlock helper */
   template<typename Mutex> class Lock {
   public:
-    Lock (Mutex& mutex) : mutex(mutex) { mutex.lock(); }
-    ~Lock() { mutex.unlock(); }
-  protected:
-    Mutex& mutex;
-  };
-
-  /*! safe mutex try_lock and unlock helper */
-  template<typename Mutex> class TryLock {
-  public:
-    TryLock (Mutex& mutex) : mutex(mutex), locked(mutex.try_lock()) {}
-    ~TryLock() { if (locked) mutex.unlock(); }
-    __forceinline bool isLocked() const { return locked; }
-  protected:
-    Mutex& mutex;
-    bool locked;
-  };
-
-  /*! safe mutex try_lock and unlock helper */
-  template<typename Mutex> class AutoUnlock {
-  public:
-    AutoUnlock (Mutex& mutex) : mutex(mutex), locked(false) {}
-    ~AutoUnlock() { if (locked) mutex.unlock(); }
-    __forceinline void lock() { locked = true; mutex.lock(); }
+    Lock (Mutex& mutex) : mutex(mutex), locked(true) { mutex.lock(); }
+    Lock (Mutex& mutex, bool locked) : mutex(mutex), locked(locked) {}
+    ~Lock() { if (locked) mutex.unlock(); }
+    __forceinline void lock() { assert(!locked); locked = true; mutex.lock(); }
     __forceinline bool isLocked() const { return locked; }
   protected:
     Mutex& mutex;
