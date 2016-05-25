@@ -294,7 +294,6 @@ ADD_SUBDIRECTORY(kernels)
 
 IF (EMBREE_TUTORIALS)
   ADD_SUBDIRECTORY(tutorials)
-  ADD_SUBDIRECTORY(tests)
 ENDIF()
 
 ##############################################################
