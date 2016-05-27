@@ -61,6 +61,15 @@ inline unsigned int LCG_next(unsigned int value)
   return value * m + n;
 }
 
+inline void RandomSampler_init(RandomSampler& self, int id)
+{
+  unsigned int hash = 0;
+  hash = MurmurHash3_mix(hash, id);
+  hash = MurmurHash3_finalize(hash);
+
+  self.s = hash;
+}
+
 inline void RandomSampler_init(RandomSampler& self, int pixelId, int sampleId)
 {
   unsigned int hash = 0;
@@ -76,17 +85,34 @@ inline void RandomSampler_init(RandomSampler& self, int x, int y, int sampleId)
   RandomSampler_init(self, x | (y << 16), sampleId);
 }
 
-inline float RandomSampler_get1D(RandomSampler& self)
-{
-  self.s = LCG_next(self.s);
+inline int RandomSampler_getInt(RandomSampler& self) {
+  self.s = LCG_next(self.s); return self.s >> 1;
+}
 
-  // avoid expensive uint->float conversion
-  return (float)(int)(self.s >> 1) * 4.656612873077392578125e-10f;
+inline unsigned int RandomSampler_getUInt(RandomSampler& self) {
+  self.s = LCG_next(self.s); return self.s;
+}
+
+inline float RandomSampler_getFloat(RandomSampler& self) {
+  return (float)RandomSampler_getInt(self) * 4.656612873077392578125e-10f;
+}
+
+inline float RandomSampler_get1D(RandomSampler& self) {
+  return RandomSampler_getFloat(self);
 }
 
 inline Vec2f RandomSampler_get2D(RandomSampler& self)
 {
-  float u = RandomSampler_get1D(self);
-  float v = RandomSampler_get1D(self);
+  const float u = RandomSampler_get1D(self);
+  const float v = RandomSampler_get1D(self);
   return make_Vec2f(u,v);
 }
+
+inline Vec3fa RandomSampler_get3D(RandomSampler& self)
+{
+  const float u = RandomSampler_get1D(self);
+  const float v = RandomSampler_get1D(self);
+  const float w = RandomSampler_get1D(self);
+  return make_Vec3fa(u,v,w);
+}
+
