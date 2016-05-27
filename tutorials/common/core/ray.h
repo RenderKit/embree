@@ -45,7 +45,7 @@
     __forceinline RTCRay(const embree::Vec3fa& org, const embree::Vec3fa& dir, 
 			 float tnear = embree::zero, float tfar = embree::inf, 
 			 float time = embree::zero, int mask = -1)
-      : org(org), dir(dir), tnear(tnear), tfar(tfar), geomID(-1), primID(-1), instID(-1), mask(mask), time(time) {}
+      : org(org), dir(dir), tnear(tnear), tfar(tfar), time(time), mask(mask), geomID(-1), primID(-1), instID(-1)  {}
 
     /*! Tests if we hit something. */
     __forceinline operator bool() const { return geomID != -1; }

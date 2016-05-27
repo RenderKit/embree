@@ -57,7 +57,6 @@ namespace embree
     ~RTCDeviceRef ()
     {
       if (device == nullptr) return;
-      RTCError error = rtcDeviceGetError(device);
       rtcDeleteDevice(device);
     }
     
@@ -526,8 +525,6 @@ namespace embree
 
   inline RTCAlgorithmFlags to_aflags(IntersectMode imode)
   {
-    RTCAlgorithmFlags aflags_stream = (RTCAlgorithmFlags) (RTC_INTERSECT_STREAM);
-    RTCAlgorithmFlags aflags_normal = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT4 | RTC_INTERSECT8 | RTC_INTERSECT16 | RTC_INTERSECT_STREAM);
     switch (imode) {
     case MODE_INTERSECT1: return RTC_INTERSECT1;
     case MODE_INTERSECT4: return RTC_INTERSECT4;

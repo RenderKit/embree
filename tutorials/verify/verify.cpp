@@ -269,7 +269,6 @@ namespace embree
 
     unsigned addUserGeometryEmpty (RandomSampler& sampler, Sphere* sphere)
     {
-      BBox3fa bounds = sphere->bounds(); 
       unsigned geom = rtcNewUserGeometry (scene,1);
       rtcSetBoundsFunction(scene,geom,(RTCBoundsFunc)BoundsFunc);
       rtcSetUserData(scene,geom,sphere);
@@ -335,7 +334,6 @@ namespace embree
   {
     FileName base = state->database+FileName(name);
     double avg = stat.getAvg();
-    double sigma = stat.getAvgSigma();
 
     /* load git hash from file */
     std::fstream hashFile;
@@ -407,11 +405,10 @@ namespace embree
     FilteredStatistics stat(0.5f,0.0f);
     size_t numTotalFrames = skipBenchmarkFrames + numBenchmarkFrames;
     for (size_t i=0; i<skipBenchmarkFrames; i++) {
-      double dt = benchmark(state);
+      benchmark(state);
     }  
     for (size_t i=skipBenchmarkFrames; i<numTotalFrames; i++) {
-      double dt = benchmark(state);
-      stat.add(dt);
+      stat.add(benchmark(state));
     }
     return stat.getStatistics();
   }
@@ -625,7 +622,7 @@ namespace embree
       unsigned geom1 = scene.addSphere(sampler,RTC_GEOMETRY_STATIC,zero,1.0f,50);
       AssertNoError(device);
       rtcMapBuffer(scene,geom0,RTC_INDEX_BUFFER);
-      rtcMapBuffer(scene,geom0,RTC_VERTEX_BUFFER);
+      rtcMapBuffer(scene,geom1,RTC_VERTEX_BUFFER);
       AssertNoError(device);
       rtcCommit (scene);
       AssertError(device,RTC_INVALID_OPERATION); // error, buffers still mapped
@@ -647,7 +644,7 @@ namespace embree
       AssertNoError(device);
       Ref<SceneGraph::Node> node = SceneGraph::createTriangleSphere(zero,1.0f,50);
       BBox3fa bounds0 = node->bounds();
-      unsigned geom0 = scene.addGeometry(RTC_GEOMETRY_STATIC,node);
+      scene.addGeometry(RTC_GEOMETRY_STATIC,node);
       AssertNoError(device);
       rtcCommit (scene);
       AssertNoError(device);

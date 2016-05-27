@@ -32,6 +32,7 @@ namespace embree
   Scene::Scene (Device* device, RTCSceneFlags sflags, RTCAlgorithmFlags aflags)
     : Accel(AccelData::TY_UNKNOWN),
       device(device), 
+      commitCounter(0), 
       commitCounterSubdiv(0), 
       numMappedBuffers(0),
       flags(sflags), aflags(aflags), 
@@ -42,7 +43,6 @@ namespace embree
       needSubdivIndices(false), needSubdivVertices(false),
       is_build(false), modified(true),
       numIntersectionFilters1(0), numIntersectionFilters4(0), numIntersectionFilters8(0), numIntersectionFilters16(0), numIntersectionFiltersN(0),
-      commitCounter(0), 
       progress_monitor_function(nullptr), progress_monitor_ptr(nullptr), progress_monitor_counter(0),
       progressInterface(this)
   {
