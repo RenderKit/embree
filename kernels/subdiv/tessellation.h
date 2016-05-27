@@ -19,7 +19,7 @@
 namespace embree
 {
   /* adjust discret tessellation level for feature-adaptive pre-subdivision */
-  __forceinline float adjustTessellationLevel(float l, const int sublevel = 0)
+  __forceinline float adjustTessellationLevel(float l, const size_t sublevel = 0)
   {
     for (size_t i=0; i<sublevel; i++) l *= 0.5f;
     float r = ceilf(l);      
