@@ -100,7 +100,7 @@ namespace embree
         const vfloatx d2 = p.x*p.x + p.y*p.y; 
         const vfloatx r = p.w;
         const vfloatx r2 = r*r;
-        valid &= d2 <= r2 & vfloatx(ray.tnear) < t & t < vfloatx(ray.tfar);
+        valid &= (d2 <= r2) & (vfloatx(ray.tnear) < t) & (t < vfloatx(ray.tfar));
 
         /* update hit information */
          bool ishit = false;
