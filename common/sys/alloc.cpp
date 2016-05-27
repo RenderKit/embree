@@ -114,8 +114,10 @@ namespace embree
 // ============================================
 // ============================================
 
+#if !defined(__MACOSX__)
   static bool tryDirectHugePageAllocation = true;
-
+#endif
+  
 #if USE_MADVISE
   void os_madvise(void *ptr, size_t bytes)
   {
