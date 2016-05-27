@@ -42,12 +42,12 @@ namespace embree
       const int ray_instID = ray.instID;
       ray.org = xfmPoint (world2local,ray_org);
       ray.dir = xfmVector(world2local,ray_dir);
-      ray.geomID = -1;
+      ray.geomID = RTC_INVALID_GEOMETRY_ID;
       ray.instID = instance->id;
       instance->object->intersect((RTCRay&)ray,nullptr);
       ray.org = ray_org;
       ray.dir = ray_dir;
-      if (ray.geomID == -1) {
+      if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
         ray.geomID = ray_geomID;
         ray.instID = ray_instID;
       }
@@ -85,7 +85,7 @@ namespace embree
         lrays[i].tfar = rays[i]->tfar;
         lrays[i].time = rays[i]->time;
         lrays[i].mask = rays[i]->mask;
-        lrays[i].geomID = -1;
+        lrays[i].geomID = RTC_INVALID_GEOMETRY_ID;
         lrays[i].instID = instance->id;
       }
 
@@ -93,7 +93,7 @@ namespace embree
         
       for (size_t i=0; i<M; i++)
       {
-        if (lrays[i].geomID == -1) continue;
+        if (lrays[i].geomID == RTC_INVALID_GEOMETRY_ID) continue;
         rays[i]->instID = lrays[i].instID;
         rays[i]->geomID = lrays[i].geomID;
         rays[i]->primID = lrays[i].primID;
@@ -121,7 +121,7 @@ namespace embree
         lrays[i].tfar = rays[i]->tfar;
         lrays[i].time = rays[i]->time;
         lrays[i].mask = rays[i]->mask;
-        lrays[i].geomID = -1;
+        lrays[i].geomID = RTC_INVALID_GEOMETRY_ID;
         lrays[i].instID = instance->id;
       }
 
@@ -129,7 +129,7 @@ namespace embree
         
       for (size_t i=0; i<M; i++)
       {
-        if (lrays[i].geomID == -1) continue;
+        if (lrays[i].geomID == RTC_INVALID_GEOMETRY_ID) continue;
         rays[i]->geomID = 0;
       }
     }

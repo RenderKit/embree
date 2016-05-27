@@ -59,12 +59,12 @@ namespace embree
       const vint<K> ray_instID = ray.instID;
       ray.org = xfmPoint (world2local,ray_org);
       ray.dir = xfmVector(world2local,ray_dir);
-      ray.geomID = -1;
+      ray.geomID = RTC_INVALID_GEOMETRY_ID;
       ray.instID = instance->id;
       intersectObject(valid,instance->object,ray);
       ray.org = ray_org;
       ray.dir = ray_dir;
-      vbool<K> nohit = ray.geomID == vint<K>(-1);
+      vbool<K> nohit = ray.geomID == vint<K>(RTC_INVALID_GEOMETRY_ID);
       ray.geomID = select(nohit,ray_geomID,ray.geomID);
       ray.instID = select(nohit,ray_instID,ray.instID);
     }
