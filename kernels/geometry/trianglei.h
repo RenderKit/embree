@@ -113,11 +113,13 @@ namespace embree
 	  prims++;
 	} else {
 	  assert(i);
-	  geomID[i] = -1;
-	  primID[i] = -1;
-	  v0[i] = v0[i-1];
-	  v1[i] = 0; 
-	  v2[i] = 0;
+          if (i>0) {
+            geomID[i] = -1;
+            primID[i] = -1;
+            v0[i] = v0[i-1];
+            v1[i] = 0; 
+            v2[i] = 0;
+          }
 	}
 	if (prims) prim = *prims; 
       }
@@ -146,11 +148,13 @@ namespace embree
 	  begin++;
 	} else {
 	  assert(i);
-	  geomID[i] = -1;
-	  primID[i] = -1;
-	  v0[i] = v0[i-1];
-	  v1[i] = 0; 
-	  v2[i] = 0;
+          if (i > 0) {
+            geomID[i] = -1;
+            primID[i] = -1;
+            v0[i] = v0[i-1];
+            v1[i] = 0; 
+            v2[i] = 0;
+          }
 	}
 	if (begin<end) prim = &prims[begin];
       }

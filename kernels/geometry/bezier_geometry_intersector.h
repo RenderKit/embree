@@ -182,8 +182,8 @@ namespace embree
       const vboolx valid_inner = cylinder_inner.intersect(org,dir,tc_inner,u_inner0,Ng_inner0,u_inner1,Ng_inner1);
 
       /* at the unstable area we subdivide deeper */
-      const vboolx unstable0 = !valid_inner | abs(dot(Vec3vfx(normalize(ray.dir)),normalize(Ng_inner0))) < 0.3f;
-      const vboolx unstable1 = !valid_inner | abs(dot(Vec3vfx(normalize(ray.dir)),normalize(Ng_inner1))) < 0.3f;
+      const vboolx unstable0 = (!valid_inner) | (abs(dot(Vec3vfx(normalize(ray.dir)),normalize(Ng_inner0))) < 0.3f);
+      const vboolx unstable1 = (!valid_inner) | (abs(dot(Vec3vfx(normalize(ray.dir)),normalize(Ng_inner1))) < 0.3f);
       
       /* subtract the inner interval from the current hit interval */
       BBox<vfloatx> tp0, tp1;

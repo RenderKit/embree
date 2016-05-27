@@ -85,12 +85,12 @@ namespace embree
           const vfloat<M> d2 = p.x*p.x + p.y*p.y;
           const vfloat<M> r = p.w;
           const vfloat<M> r2 = r*r;
-          vbool<M> valid = valid_i & d2 <= r2 & vfloat<M>(ray.tnear) < t & t < vfloat<M>(ray.tfar);
+          vbool<M> valid = valid_i & (d2 <= r2) & (vfloat<M>(ray.tnear) < t) & (t < vfloat<M>(ray.tfar));
           if (unlikely(none(valid))) return false;
           
           /* ignore denormalized segments */
           const Vec3vfM T = v1.xyz()-v0.xyz();
-          valid &= T.x != vfloat<M>(zero) | T.y != vfloat<M>(zero) | T.z != vfloat<M>(zero);
+          valid &= (T.x != vfloat<M>(zero)) | (T.y != vfloat<M>(zero)) | (T.z != vfloat<M>(zero));
           if (unlikely(none(valid))) return false;
           
           /* update hit information */
@@ -143,12 +143,12 @@ namespace embree
           const vfloat<M> d2 = p.x*p.x + p.y*p.y;
           const vfloat<M> r = p.w;
           const vfloat<M> r2 = r*r;
-          vbool<M> valid = valid_i & d2 <= r2 & vfloat<M>(ray.tnear[k]) < t & t < vfloat<M>(ray.tfar[k]);
+          vbool<M> valid = valid_i & (d2 <= r2) & (vfloat<M>(ray.tnear[k]) < t) & (t < vfloat<M>(ray.tfar[k]));
           if (unlikely(none(valid))) return false;
           
           /* ignore denormalized segments */
           const Vec3vfM T = v1.xyz()-v0.xyz();
-          valid &= T.x != vfloat<M>(zero) | T.y != vfloat<M>(zero) | T.z != vfloat<M>(zero);
+          valid &= (T.x != vfloat<M>(zero)) | (T.y != vfloat<M>(zero)) | (T.z != vfloat<M>(zero));
           if (unlikely(none(valid))) return false;
           
           /* update hit information */
