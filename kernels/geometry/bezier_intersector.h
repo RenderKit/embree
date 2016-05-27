@@ -30,7 +30,7 @@ namespace embree
 
       __forceinline BezierHit(const vbool<M>& valid, const vfloat<M>& U, const vfloat<M>& V, const vfloat<M>& T, const int i, const int N,
                               const Vec3fa& p0, const Vec3fa& p1, const Vec3fa& p2, const Vec3fa& p3)
-        : valid(valid), U(U), V(V), T(T), i(i), N(N), p0(p0), p1(p1), p2(p2), p3(p3) {}
+        : U(U), V(V), T(T), i(i), N(N), p0(p0), p1(p1), p2(p2), p3(p3), valid(valid) {}
       
       __forceinline void finalize() 
       {
@@ -173,7 +173,6 @@ namespace embree
       {
         /* load ray */
         const Vec3fa ray_org(ray.org.x[k],ray.org.y[k],ray.org.z[k]);
-        const Vec3fa ray_dir(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]);
         const float ray_tnear = ray.tnear[k];
         const float ray_tfar  = ray.tfar [k];
         

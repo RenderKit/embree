@@ -30,7 +30,7 @@ namespace embree
       const float r1;  //!< end radius of cone
 
       __forceinline Cone(const Vec3fa& p0, const float r0, const Vec3fa& p1, const float r1) 
-        : p0(p0), r0(r0), p1(p1), r1(r1) {}
+        : p0(p0), p1(p1), r0(r0), r1(r1) {}
 
       __forceinline bool intersect(const Vec3fa& org, const Vec3fa& dir, 
                                    BBox1f& t_o, 

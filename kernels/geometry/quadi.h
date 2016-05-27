@@ -133,7 +133,6 @@ namespace embree
       for (size_t i=0; i<M; i++)
       {
         if (!valid(i)) break;
-        const unsigned geomId = geomID(i);
         const unsigned primId = primID(i);
         const QuadMesh::Quad& q = mesh->quad(primId);
         const Vec3fa p0 = mesh->vertex(q.v[0]);

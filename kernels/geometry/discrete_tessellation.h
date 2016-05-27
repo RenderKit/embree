@@ -21,7 +21,6 @@ namespace embree
   struct DiscreteTessellationPattern
   {
     DiscreteTessellationPattern (float ftess, const int sublevel = 0)
-    : sublevel(sublevel)
     {
       for (size_t i=0; i<sublevel; i++) ftess *= 0.5f;
       int tess = ceil(ftess);
@@ -40,7 +39,6 @@ namespace embree
     }
     
   private:
-    int sublevel;
     float rcp_tess;
     int   N;
   };

@@ -48,7 +48,8 @@ namespace embree
       float* const Nx;
       float* const Ny;
       float* const Nz;
-      const size_t dwidth,dheight;
+      const size_t dwidth;
+      //const size_t dheight;
       size_t count;
       
 
@@ -59,7 +60,7 @@ namespace embree
                                float* Nx, float* Ny, float* Nz,
                                const size_t dwidth, const size_t dheight)
       : x0(x0), x1(x1), y0(y0), y1(y1), swidth(swidth), sheight(sheight), rcp_swidth(1.0f/(swidth-1.0f)), rcp_sheight(1.0f/(sheight-1.0f)), 
-        Px(Px), Py(Py), Pz(Pz), U(U), V(V), Nx(Nx), Ny(Ny), Nz(Nz), dwidth(dwidth), dheight(dheight), count(0)
+        Px(Px), Py(Py), Pz(Pz), U(U), V(V), Nx(Nx), Ny(Ny), Nz(Nz), dwidth(dwidth), /*dheight(dheight),*/ count(0)
       {
         assert(swidth < (2<<20) && sheight < (2<<20));
         const BBox2f srange(Vec2f(0.0f,0.0f),Vec2f(swidth-1,sheight-1));
@@ -130,7 +131,7 @@ namespace embree
                                float* Nx, float* Ny, float* Nz,
                                const size_t dwidth, const size_t dheight)
       : x0(x0), x1(x1), y0(y0), y1(y1), swidth(swidth), sheight(sheight), rcp_swidth(1.0f/(swidth-1.0f)), rcp_sheight(1.0f/(sheight-1.0f)), 
-        Px(Px), Py(Py), Pz(Pz), U(U), V(V), Nx(Nx), Ny(Ny), Nz(Nz), dwidth(dwidth), dheight(dheight), count(0)
+        Px(Px), Py(Py), Pz(Pz), U(U), V(V), Nx(Nx), Ny(Ny), Nz(Nz), dwidth(dwidth), /*dheight(dheight),*/ count(0)
       {
         eval(patch,srange,erange,depth);
       }

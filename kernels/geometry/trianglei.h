@@ -168,7 +168,6 @@ namespace embree
       for (size_t i=0; i<M; i++)
       {
         if (primID(i) == -1) break;
-        const unsigned geomId = geomID(i);
         const unsigned primId = primID(i);
         const TriangleMesh::Triangle& tri = mesh->triangle(primId);
         const Vec3fa p0 = mesh->vertex(tri.v[0]);

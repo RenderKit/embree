@@ -196,8 +196,8 @@ namespace embree
     const auto sy = abs(ab_y) < abs(bc_y);
     const auto sz = abs(ab_z) < abs(bc_z);
     return Vec3<T>(select(sx,cross_ab.x,cross_bc.x),
-                   select(sx,cross_ab.y,cross_bc.y),
-                   select(sx,cross_ab.z,cross_bc.z));
+                   select(sy,cross_ab.y,cross_bc.y),
+                   select(sz,cross_ab.z,cross_bc.z));
   }
 
   template<typename T> __forceinline T       sum      ( const Vec3<T>& a )                   { return a.x+a.y+a.z; }

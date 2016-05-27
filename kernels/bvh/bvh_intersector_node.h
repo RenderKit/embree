@@ -31,11 +31,11 @@ namespace embree
         : org_xyz(ray_org), dir_xyz(ray_dir) 
       {
         const Vec3fa ray_rdir = rcp_safe(ray_dir);
-        const Vec3fa ray_org_rdir = ray_org*ray_rdir;
         org = Vec3<vfloat<N>>(ray_org.x,ray_org.y,ray_org.z);
         dir = Vec3<vfloat<N>>(ray_dir.x,ray_dir.y,ray_dir.z);
         rdir = Vec3<vfloat<N>>(ray_rdir.x,ray_rdir.y,ray_rdir.z);
 #if defined(__AVX2__)
+        const Vec3fa ray_org_rdir = ray_org*ray_rdir;
         org_rdir = Vec3<vfloat<N>>(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
 #endif
         nearX = ray_rdir.x >= 0.0f ? 0*sizeof(vfloat<N>) : 1*sizeof(vfloat<N>);
