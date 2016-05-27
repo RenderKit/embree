@@ -85,7 +85,6 @@ namespace embree
 
       const Vec3vfK ray_org = ray.org;
       const Vec3vfK ray_dir = ray.dir;
-      const vint<K> ray_geomID = ray.geomID;
       ray.org = xfmPoint (world2local,ray_org);
       ray.dir = xfmVector(world2local,ray_dir);
       ray.instID = instance->id;
