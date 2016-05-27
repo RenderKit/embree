@@ -44,7 +44,7 @@ namespace embree
       numIntersectionFilters1(0), numIntersectionFilters4(0), numIntersectionFilters8(0), numIntersectionFilters16(0), numIntersectionFiltersN(0),
       commitCounter(0), 
       progress_monitor_function(nullptr), progress_monitor_ptr(nullptr), progress_monitor_counter(0),
-      vprogressInterface(this)
+      progressInterface(this)
   {
 #if defined(TASKING_INTERNAL)
     scheduler = nullptr;
