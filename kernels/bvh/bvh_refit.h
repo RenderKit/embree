@@ -111,10 +111,10 @@ namespace embree
       }
       
     private:
-      Mesh* mesh;
+      BVH* bvh;
       Builder* builder;
       BVHNRefitter<N>* refitter;
-      BVH* bvh;
+      Mesh* mesh;
     };
   }
 }

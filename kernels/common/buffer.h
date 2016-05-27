@@ -96,7 +96,7 @@ namespace embree
     __forceinline void checkPadding16() const 
     {
        if (size()) 
-         volatile int w = *((int*)getPtr(size()-1)+3); // FIXME: is failing hard avoidable?
+         volatile int MAYBE_UNUSED w = *((int*)getPtr(size()-1)+3); // FIXME: is failing hard avoidable?
     }
 
   protected:

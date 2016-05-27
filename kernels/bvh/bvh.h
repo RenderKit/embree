@@ -793,8 +793,8 @@ namespace embree
       NodeRef child;
       unsigned mask;
       bool identity;
-      AffineSpace3fa world2local; //!< transforms from world space to local space
       AffineSpace3fa local2world; //!< transforms from local space to world space
+      AffineSpace3fa world2local; //!< transforms from world space to local space
       BBox3fa localBounds;
       unsigned int instID;
       unsigned int xfmID;

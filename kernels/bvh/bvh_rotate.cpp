@@ -154,7 +154,7 @@ namespace embree
       {
         __forceinline Item () {}
         __forceinline Item (BVH4::NodeRef ref, const BBox3fa& b) 
-          : ref(ref), bounds(b) { bounds.lower.a = ref.isLeaf() ? 0.0f : area(b); }
+          : bounds(b), ref(ref) { bounds.lower.a = ref.isLeaf() ? 0.0f : area(b); }
 
         __forceinline friend bool operator<(const Item& a, const Item& b) { 
           return a.bounds.lower.a < b.bounds.lower.a; 

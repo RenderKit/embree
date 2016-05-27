@@ -156,7 +156,6 @@ namespace embree
       template<class vfloat>
       __forceinline vfloat eval_du(const size_t i, const vfloat& uu, const vfloat& vv) const
       {
-        const vfloat sx1 = uu, sx0 = 1.0f-sx1;
         const vfloat sy1 = vv, sy0 = 1.0f-sy1;
         return sy0*(v[1][i]-v[0][i]) + sy1*(v[2][i]-v[3][i]); 
       }
@@ -165,7 +164,6 @@ namespace embree
       __forceinline vfloat eval_dv(const size_t i, const vfloat& uu, const vfloat& vv) const
       {
         const vfloat sx1 = uu, sx0 = 1.0f-sx1;
-        const vfloat sy1 = vv, sy0 = 1.0f-sy1;
         return sx0*(v[3][i]-v[0][i]) + sx1*(v[2][i]-v[1][i]);
       }
 

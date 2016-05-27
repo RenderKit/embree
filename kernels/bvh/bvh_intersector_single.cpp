@@ -46,10 +46,8 @@ namespace embree
       vfloat<K> ray_tnear = max(ray.tnear,0.0f);
       vfloat<K> ray_tfar  = max(ray.tfar ,0.0f);
       const Vec3vfK rdir = rcp_safe(ray_dir);
-      const Vec3vfK org(ray_org), org_rdir = org * rdir;
       ray_tnear = select(valid,ray_tnear,vfloat<K>(pos_inf));
       ray_tfar  = select(valid,ray_tfar ,vfloat<K>(neg_inf));
-      const vfloat<K> inf = vfloat<K>(pos_inf);
       Precalculations pre(valid,ray);
 
       /* compute near/far per ray */
@@ -88,10 +86,8 @@ namespace embree
       vfloat<K> ray_tnear = max(ray.tnear,0.0f);
       vfloat<K> ray_tfar  = max(ray.tfar ,0.0f);
       const Vec3vfK rdir = rcp_safe(ray_dir);
-      const Vec3vfK org(ray_org), org_rdir = org * rdir;
       ray_tnear = select(valid,ray_tnear,vfloat<K>(pos_inf));
       ray_tfar  = select(valid,ray_tfar ,vfloat<K>(neg_inf));
-      const vfloat<K> inf = vfloat<K>(pos_inf);
       Precalculations pre(valid,ray);
 
       /* compute near/far per ray */

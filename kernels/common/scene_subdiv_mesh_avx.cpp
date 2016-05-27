@@ -49,8 +49,6 @@ namespace embree
       baseEntry = &vertex_buffer_tags[bufID];
     }
 
-    auto alloc = [](size_t bytes) { return SharedLazyTessellationCache::malloc(bytes); };
-    
     for (size_t i=0,slot=0; i<numFloats; slot++)
     {
       if (i+4 >= numFloats)

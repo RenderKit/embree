@@ -180,7 +180,9 @@
 #define debugbreak()           asm ("int $3")
 #endif
 
-#ifdef __GNUC__
+#if defined(__clang__)
+  #define MAYBE_UNUSED __attribute__((unused))
+#elif defined(__GNUC__)
   #define MAYBE_UNUSED __attribute__((used))
 #else
   #define MAYBE_UNUSED

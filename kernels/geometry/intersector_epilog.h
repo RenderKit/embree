@@ -116,8 +116,8 @@ namespace embree
       struct Intersect1KEpilog1
       {
         RayK<K>& ray;
-        const RTCIntersectContext* context;
         int k;
+        const RTCIntersectContext* context;
         const unsigned int geomID;
         const unsigned int primID;
         Scene* const scene;

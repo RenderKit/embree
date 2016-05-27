@@ -216,7 +216,9 @@ namespace embree
         assert(fiberMask);
         
         StackItemMask* stackPtr      = stack0 + 1;
+#if TWO_STREAMS_FIBER_MODE
         StackItemMask* stackPtr_next = stack1 + 1;
+#endif
 
         NodeRef cur               = bvh->root;
         size_t m_trav_active      = m_active & fiberMask; // lower half of active rays
@@ -385,7 +387,7 @@ namespace embree
 
           /*! intersect stream of rays with all primitives */
           size_t lazy_node = 0;
-          size_t valid_isec = PrimitiveIntersector::intersect(pre,bits,rays,context,ray_ctx,0,prim,num,bvh->scene,NULL,lazy_node);
+          size_t valid_isec MAYBE_UNUSED = PrimitiveIntersector::intersect(pre,bits,rays,context,ray_ctx,0,prim,num,bvh->scene,NULL,lazy_node);
 
           STAT3(normal.trav_hit_boxes[__popcnt(valid_isec)],1,1,1);            
 
@@ -468,7 +470,9 @@ namespace embree
         assert(fiberMask);
         
         StackItemMask* stackPtr      = stack0 + 1;
+#if TWO_STREAMS_FIBER_MODE
         StackItemMask* stackPtr_next = stack1 + 1;
+#endif
 
         NodeRef cur               = bvh->root;
         size_t m_trav_active      = m_active & fiberMask; // lower half of active rays

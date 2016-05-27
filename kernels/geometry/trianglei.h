@@ -161,10 +161,7 @@ namespace embree
     /* Updates the primitive */
     __forceinline BBox3fa update(TriangleMesh* mesh)
     {
-      BBox3fa bounds = empty;
-      vint<M> vgeomID = -1, vprimID = -1;
-      Vec3vfM v0 = zero, v1 = zero, v2 = zero;
-      
+      BBox3fa bounds = empty;      
       for (size_t i=0; i<M; i++)
       {
         if (primID(i) == -1) break;

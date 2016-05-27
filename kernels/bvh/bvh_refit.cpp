@@ -320,7 +320,6 @@ namespace embree
 #endif      
       BBox3fa bounds[N];
 
-      #pragma unroll
       for (size_t i=0; i<N; i++)
         bounds[i] = recurse_bottom(node->child(i));
       
@@ -356,7 +355,6 @@ namespace embree
       Node* node = ref.node();
       BBox3fa bounds[N];
 
-      #pragma unroll
       for (size_t i=0; i<N; i++)
         bounds[i] = recurse_top(node->child(i));
       
@@ -377,7 +375,7 @@ namespace embree
     
     template<int N, typename Mesh, typename Primitive>
     BVHNRefitT<N,Mesh,Primitive>::BVHNRefitT (BVH* bvh, Builder* builder, Mesh* mesh, size_t mode)
-      : builder(builder), refitter(nullptr), mesh(mesh), bvh(bvh) {}
+      : bvh(bvh), builder(builder), refitter(nullptr), mesh(mesh) {}
 
     template<int N, typename Mesh, typename Primitive>
     BVHNRefitT<N,Mesh,Primitive>::~BVHNRefitT () {

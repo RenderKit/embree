@@ -178,7 +178,9 @@ namespace embree
       for (size_t i=0;i<BUCKETS;i++) count[i] = 0;
 
       /* count buckets */
+#if defined(__INTEL_COMPILER)
 #pragma nounroll
+#endif
       for (size_t i=0;i<num;i++) count[ morton[i].get(shift,BUCKETS-1) ]++;
 
       /* prefix sums */

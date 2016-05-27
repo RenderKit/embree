@@ -226,7 +226,7 @@ namespace embree
       for (size_t i=0;i<8;i++) rays_in_octant[i] = 0;
 
       size_t soffset = 0;
-      size_t s = 0;
+      //size_t s = 0;
       //for (size_t s=0;s<streams;s++,soffset+=stream_offset)
       {
         // todo: use SIMD width to compute octants
