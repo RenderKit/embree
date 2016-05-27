@@ -101,14 +101,14 @@ namespace embree
 
   protected:
     MemoryMonitorInterface* device; //!< device to report memory usage to 
-    bool shared;     //!< set if memory is shared with application
-    bool mapped;     //!< set if buffer is mapped
-    bool modified;   //!< true if the buffer got modified
-    unsigned stride; //!< stride of the stream in bytes
     char* ptr;       //!< pointer to buffer data
     char* ptr_ofs;   //!< base pointer plus offset
     size_t bytes;    //!< size of buffer in bytes
     size_t num;      //!< number of elements in the stream
+    size_t stride;   //!< stride of the stream in bytes
+    bool shared;     //!< set if memory is shared with application
+    bool mapped;     //!< set if buffer is mapped
+    bool modified;   //!< true if the buffer got modified
   };
 
   /*! Implements a data stream inside a data buffer. */

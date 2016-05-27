@@ -19,10 +19,10 @@
 namespace embree
 {
   Buffer::Buffer () 
-    : device(nullptr), ptr(nullptr), bytes(0), ptr_ofs(nullptr), stride(0), num(0), shared(false), mapped(false), modified(true) {}
+    : device(nullptr), ptr(nullptr), ptr_ofs(nullptr), bytes(0), num(0), stride(0), shared(false), mapped(false), modified(true) {}
   
   Buffer::Buffer (MemoryMonitorInterface* device_in, size_t num_in, size_t stride_in) 
-    : device(nullptr), ptr(nullptr), bytes(0), ptr_ofs(nullptr), stride(0), num(0), shared(false), mapped(false), modified(true)
+    : device(nullptr), ptr(nullptr), ptr_ofs(nullptr), bytes(0), num(0), stride(0), shared(false), mapped(false), modified(true)
 	//  : Buffer() // FIXME: not supported by VS2012
   {
     init(device_in,num_in,stride_in);

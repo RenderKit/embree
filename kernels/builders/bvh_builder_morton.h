@@ -35,7 +35,7 @@ namespace embree
       __forceinline MortonBuildRecord() {}
 
       __forceinline MortonBuildRecord(const unsigned begin, const unsigned end, NodeRef* parent, unsigned depth)
-        : begin(begin), end(end), parent(parent), depth(depth) {}
+        : begin(begin), end(end), depth(depth), parent(parent) {}
 
       __forceinline unsigned int size() const {
         return end - begin;
@@ -278,9 +278,11 @@ namespace embree
         createLeaf(createLeaf), 
         calculateBounds(calculateBounds),
         progressMonitor(progressMonitor),
-        branchingFactor(branchingFactor), maxDepth(maxDepth), 
-        minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), 
-        morton(nullptr) {}
+        morton(nullptr), 
+        branchingFactor(branchingFactor), 
+        maxDepth(maxDepth), 
+        minLeafSize(minLeafSize), 
+        maxLeafSize(maxLeafSize) {}
       
       void splitFallback(MortonBuildRecord<NodeRef>& current, MortonBuildRecord<NodeRef>& leftChild, MortonBuildRecord<NodeRef>& rightChild) const
       {
@@ -531,13 +533,6 @@ namespace embree
       }
       
     public:
-      MortonID32Bit* morton;
-      const size_t branchingFactor;
-      const size_t maxDepth;
-      const size_t minLeafSize;
-      const size_t maxLeafSize;
-      
-    public:
       ReductionTy identity;
       CreateAllocator& createAllocator;
       AllocNodeFunc& allocNode;
@@ -545,6 +540,13 @@ namespace embree
       CreateLeafFunc& createLeaf;
       CalculateBounds& calculateBounds;
       ProgressMonitor& progressMonitor;
+
+    public:
+      MortonID32Bit* morton;
+      const size_t branchingFactor;
+      const size_t maxDepth;
+      const size_t minLeafSize;
+      const size_t maxLeafSize;
     };
 
     
