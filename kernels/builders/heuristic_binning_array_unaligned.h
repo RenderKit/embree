@@ -64,8 +64,8 @@ namespace embree
         const AffineSpace3fa computeAlignedSpaceMB(Scene* scene, const PrimInfo& pinfo)
         {
           /*! find first curve that defines valid directions */
-          Vec3fa axis0(0,0,1), axisb0(0,1,0);
-          Vec3fa axis1(0,0,1), axisb1(0,1,0);
+          Vec3fa axis0(0,0,1);
+          Vec3fa axis1(0,0,1);
 
           for (size_t i=pinfo.begin; i<pinfo.end; i++)
           {
@@ -76,20 +76,19 @@ namespace embree
             const int curve = curves->curve(primID);
             
             const Vec3fa a3 = curves->vertex(curve+3,0);
-            const Vec3fa a2 = curves->vertex(curve+2,0);
-            const Vec3fa a1 = curves->vertex(curve+1,0);
+            //const Vec3fa a2 = curves->vertex(curve+2,0);
+            //const Vec3fa a1 = curves->vertex(curve+1,0);
             const Vec3fa a0 = curves->vertex(curve+0,0);
             
             const Vec3fa b3 = curves->vertex(curve+3,1);
-            const Vec3fa b2 = curves->vertex(curve+2,1);
-            const Vec3fa b1 = curves->vertex(curve+1,1);
+            //const Vec3fa b2 = curves->vertex(curve+2,1);
+            //const Vec3fa b1 = curves->vertex(curve+1,1);
             const Vec3fa b0 = curves->vertex(curve+0,1);
             
-            if (sqr_length(a3 - a0) > 1E-18f && sqr_length(a1 - a0) > 1E-18f &&
-                sqr_length(b3 - b0) > 1E-18f && sqr_length(b1 - b0) > 1E-18f) 
+            if (sqr_length(a3 - a0) > 1E-18f && sqr_length(b3 - b0) > 1E-18f)
             {
-              axis0 = normalize(a3 - a0); axisb0 = normalize(a1 - a0); 
-              axis1 = normalize(b3 - b0); axisb1 = normalize(b1 - b0); 
+              axis0 = normalize(a3 - a0);
+              axis1 = normalize(b3 - b0);
               break;
             }
           }
