@@ -59,12 +59,12 @@ namespace embree
                        const ProgressMonitor& progressMonitor,
                        const size_t branchingFactor, const size_t maxDepth, const size_t logBlockSize, 
                        const size_t minLeafSize, const size_t maxLeafSize )
-        : prims(prims), 
-        createAlloc(createAlloc), 
+        : createAlloc(createAlloc), 
         createAlignedNode(createAlignedNode), 
         createUnalignedNode(createUnalignedNode), 
         createLeaf(createLeaf),
         progressMonitor(progressMonitor),
+        prims(prims), 
         branchingFactor(branchingFactor), maxDepth(maxDepth), logBlockSize(logBlockSize), 
         minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
         alignedHeuristic(prims), unalignedHeuristic(prims), strandHeuristic(prims) {}
@@ -292,6 +292,13 @@ namespace embree
           return BVH::encodeNode(node);
         }
       }
+    
+    private:      
+      const CreateAllocFunc& createAlloc;
+      const CreateAlignedNodeFunc& createAlignedNode;
+      const CreateUnalignedNodeFunc& createUnalignedNode;
+      const CreateLeafFunc& createLeaf;
+      const ProgressMonitor& progressMonitor;
 
     private:
       BezierPrim* prims;
@@ -300,14 +307,7 @@ namespace embree
       const size_t logBlockSize;
       const size_t minLeafSize;
       const size_t maxLeafSize;
-      
-    private:      
-      const CreateAllocFunc& createAlloc;
-      const CreateAlignedNodeFunc& createAlignedNode;
-      const CreateUnalignedNodeFunc& createUnalignedNode;
-      const CreateLeafFunc& createLeaf;
-      const ProgressMonitor& progressMonitor;
-
+  
     private:
       HeuristicArrayBinningSAH<BezierPrim> alignedHeuristic;
       UnalignedHeuristicArrayBinningSAH<BezierPrim> unalignedHeuristic;

@@ -128,9 +128,9 @@ namespace embree
             geomBounds.extend(bounds);
             centBounds.extend(center2(bounds));
 
-            const BezierCurves* curves = scene->getBezierCurves(prim.geomID());
-            s0t0.extend(curves->bounds(space,prim.primID(),0));
-            s1t1.extend(curves->bounds(space,prim.primID(),1));
+            const BezierCurves* curves = scene->getBezierCurves(geomID);
+            s0t0.extend(curves->bounds(space,primID,0));
+            s1t1.extend(curves->bounds(space,primID,1));
           }
           
           PrimInfoMB ret;
