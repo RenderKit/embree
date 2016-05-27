@@ -33,10 +33,10 @@ namespace embree
           : depth(depth), pinfo(empty) {}
         
         __forceinline GeneralBuildRecord (const PrimInfo& pinfo, size_t depth, size_t* parent) 
-          : pinfo(pinfo), depth(depth), parent(parent) {}
+          : parent(parent), depth(depth), pinfo(pinfo) {}
         
         __forceinline GeneralBuildRecord (const PrimInfo& pinfo, size_t depth, size_t* parent, const Set &prims) 
-          : pinfo(pinfo), depth(depth), parent(parent), prims(prims) {}
+          : parent(parent), depth(depth), prims(prims), pinfo(pinfo) {}
 
         __forceinline BBox3fa bounds() const { return pinfo.geomBounds; }
         
