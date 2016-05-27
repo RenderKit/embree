@@ -732,7 +732,6 @@ void renderTileStandardStream(uniform int taskIndex,
 
   /* generate stream of primary rays */
   uniform int N = 0;
-  uniform int numActive = 0;
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
     /* ISPC workaround for mask == 0 */
@@ -793,7 +792,6 @@ void renderTileStandardStream(uniform int taskIndex,
     
     /* calculate diffuse color of geometries */
     RTCRay& primary = primary_stream[N];
-    Vec3f Ns = normalize(primary.Ng);
     Vec3f diffuse = make_Vec3f(0.0f);
     if (primary.instID == 0) diffuse = colors[primary.instID][primary.primID];
     else                     diffuse = colors[primary.instID][primary.geomID];
