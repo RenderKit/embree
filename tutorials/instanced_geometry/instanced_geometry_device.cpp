@@ -292,7 +292,6 @@ void renderTileStandardStream(int taskIndex,
 
   /* generate stream of primary rays */
   int N = 0;
-  int numActive = 0;
   for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
   {
     /* ISPC workaround for mask == 0 */
