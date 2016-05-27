@@ -38,7 +38,6 @@ namespace embree
         }
 
         /* parallel calculation of sum of squares */
-	double t0 = getSeconds();
         for (size_t m=0; m<M; m++)
         {
           std::atomic<size_t> sum1(0);
@@ -51,8 +50,6 @@ namespace embree
           });
           passed = sum0 == sum1;
         }
-	double t1 = getSeconds();
-	//printf("%zu/%3.2fM ",N,1E-6*double(N*M)/(t1-t0));
       }
       
       return passed;

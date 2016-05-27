@@ -40,12 +40,9 @@ namespace embree
 	Key sum0 = 0; for (size_t i=0; i<N; i++) sum0 += src[i];
         
 	/* sort numbers */
-	double t0 = getSeconds();
 	for (size_t i=0; i<M; i++) {
           radix_sort<Key>(src.data(),tmp.data(),N);
         }
-	double t1 = getSeconds();
-	//printf("%zu/%3.2fM ",N,1E-6*double(N*M)/(t1-t0));
 	
 	/* calculate checksum */
 	Key sum1 = 0; for (size_t i=0; i<N; i++) sum1 += src[i];

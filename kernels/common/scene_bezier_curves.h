@@ -142,10 +142,10 @@ namespace embree
     }
 
   public:
-    int tessellationRate;                           //!< tessellation rate for bezier curve
-    SubType subtype;                                //!< hair or surface geometry
     BufferT<int> curves;                            //!< array of curve indices
     array_t<BufferT<Vec3fa>,2> vertices;            //!< vertex array
     array_t<std::unique_ptr<Buffer>,2> userbuffers; //!< user buffers
+    SubType subtype;                                //!< hair or surface geometry
+    int tessellationRate;                           //!< tessellation rate for bezier curve
   };
 }

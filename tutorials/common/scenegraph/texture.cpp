@@ -28,10 +28,10 @@ namespace embree
   std::map<std::string,Texture*> texture_cache;
 
   Texture::Texture () 
-    : width(-1), height(-1), format(INVALID), bytesPerTexel(0), data(nullptr), width_mask(0), height_mask(0) {}
+    : width(-1), height(-1), format(INVALID), bytesPerTexel(0), width_mask(0), height_mask(0), data(nullptr) {}
   
   Texture::Texture(Ref<Image> img, const std::string fileName)
-    : width(img->width), height(img->height), format(RGBA8), bytesPerTexel(4), data(nullptr), width_mask(0), height_mask(0), fileName(fileName)
+    : width(img->width), height(img->height), format(RGBA8), bytesPerTexel(4), width_mask(0), height_mask(0), data(nullptr), fileName(fileName)
   {
     width_mask  = isPowerOf2(width) ? width-1 : 0;
     height_mask = isPowerOf2(height) ? height-1 : 0;
@@ -41,7 +41,7 @@ namespace embree
   }
 
   Texture::Texture (size_t width, size_t height, const Format format, const char* in)
-    : width(width), height(height), format(format), bytesPerTexel(getFormatBytesPerTexel(format)), data(nullptr), width_mask(0), height_mask(0)
+    : width(width), height(height), format(format), bytesPerTexel(getFormatBytesPerTexel(format)), width_mask(0), height_mask(0), data(nullptr)
   {
     width_mask  = isPowerOf2(width) ? width-1 : 0;
     height_mask = isPowerOf2(height) ? height-1 : 0;

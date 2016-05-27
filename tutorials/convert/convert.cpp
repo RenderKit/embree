@@ -124,7 +124,7 @@ namespace embree
     Ref<HeightField> heightField;
     Ref<SceneGraph::Node> object;
     Ref<Distribution2D> dist;
-    float minDistance;
+    float MAYBE_UNUSED minDistance;
     size_t N;
   };
 

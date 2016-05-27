@@ -140,7 +140,7 @@ namespace embree
     Material objmtl; new (&objmtl) OBJMaterial;
     Ref<SceneGraph::MaterialNode> material = new SceneGraph::MaterialNode(objmtl);
     Ref<SceneGraph::HairSetNode> hairset = new SceneGraph::HairSetNode(true,material); 
-    int numHairs = loadHairASCII(fileName,hairset);
+    int numHairs MAYBE_UNUSED = loadHairASCII(fileName,hairset);
     hairset->verify();
 
 #if CONVERT_TO_BINARY
