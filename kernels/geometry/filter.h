@@ -58,7 +58,7 @@ namespace embree
         AVX_ZERO_UPPER(); geometry->intersectionFilter1(geometry->userPtr,(RTCRay&)ray);
 
         /* restore hit if filter not passed */
-        if (unlikely(ray.geomID == -1)) 
+        if (unlikely(ray.geomID == RTC_INVALID_GEOMETRY_ID)) 
         {
 #if defined(EMBREE_INTERSECTION_FILTER_RESTORE)
           ray.tfar = ray_tfar;
@@ -99,7 +99,7 @@ namespace embree
         AVX_ZERO_UPPER(); geometry->occlusionFilter1(geometry->userPtr,(RTCRay&)ray);
       
         /* restore hit if filter not passed */
-        if (unlikely(ray.geomID == -1)) 
+        if (unlikely(ray.geomID == RTC_INVALID_GEOMETRY_ID)) 
         {
 #if defined(EMBREE_INTERSECTION_FILTER_RESTORE)
           ray.tfar = ray_tfar;

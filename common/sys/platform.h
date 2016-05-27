@@ -183,7 +183,7 @@
 #if defined(__clang__)
   #define MAYBE_UNUSED __attribute__((unused))
 #elif defined(__GNUC__)
-  #define MAYBE_UNUSED __attribute__((used))
+  #define MAYBE_UNUSED __attribute__((unused))
 #else
   #define MAYBE_UNUSED
 #endif

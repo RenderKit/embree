@@ -155,7 +155,7 @@ namespace embree
       : org(org), dir(dir), tnear(tnear), tfar(tfar), time(time), mask(mask), geomID(-1), primID(-1), instID(-1) {}
 
     /* Tests if we hit something */
-    __forceinline operator bool() const { return geomID != -1; }
+    __forceinline operator bool() const { return geomID != RTC_INVALID_GEOMETRY_ID; }
 
     /* Calculates if this is a valid ray that does not cause issues during traversal */
     __forceinline bool valid() const {
@@ -185,9 +185,9 @@ namespace embree
     Vec3fa Ng;   // not normalized geometry normal
     float u;     // barycentric u coordinate of hit
     float v;     // barycentric v coordinate of hit
-    int geomID;  // geometry ID
-    int primID;  // primitive ID
-    int instID;  // instance ID
+    unsigned geomID;  // geometry ID
+    unsigned primID;  // primitive ID
+    unsigned instID;  // instance ID
 
 #if defined(__AVX512F__)
     __forceinline void update(const vbool16& m_mask,
