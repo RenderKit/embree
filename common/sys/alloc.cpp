@@ -17,12 +17,6 @@
 #include "config.h"
 #include "alloc.h"
 #include "intrinsics.h"
-#if defined(TASKING_TBB)
-#  define TBB_IMPLEMENT_CPP0X 0
-#  define __TBB_NO_IMPLICIT_LINKAGE 1
-#  define __TBBMALLOC_NO_IMPLICIT_LINKAGE 1
-#  include "tbb/scalable_allocator.h"
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Windows Platform
@@ -83,13 +77,6 @@ namespace embree
 #include <stdlib.h>
 #include <string.h>
 
-/* hint for transparent huge pages (THP) */
-#if defined(__MACOSX__)
-#define USE_MADVISE 0
-#else
-#define USE_MADVISE 1
-#endif
-
 #define UPGRADE_TO_2M_PAGE_LIMIT (256*1024) 
 #define PAGE_SIZE_2M (2*1024*1024)
 #define PAGE_SIZE_4K (4*1024)
@@ -110,22 +97,17 @@ namespace embree
     return false;
   }
 
-// ============================================
-// ============================================
-// ============================================
-
 #if !defined(__MACOSX__)
   static bool tryDirectHugePageAllocation = true;
 #endif
-  
-#if USE_MADVISE
+
+  /* hint for transparent huge pages (THP) */
   void os_madvise(void *ptr, size_t bytes)
   {
 #if defined(MADV_HUGEPAGE)
     madvise(ptr,bytes,MADV_HUGEPAGE); 
 #endif
   }
-#endif
   
   void* os_malloc(size_t bytes, const int additional_flags)
   {
@@ -166,17 +148,14 @@ namespace embree
     assert( ptr != MAP_FAILED );
     if (ptr == nullptr || ptr == MAP_FAILED) throw std::bad_alloc();
 
-#if USE_MADVISE
     /* advise huge page hint for THP */
     os_madvise(ptr,bytes);
-#endif
 
     return ptr;
   }
 
   void* os_reserve(size_t bytes) 
   {
-
     /* linux always allocates pages on demand, thus just call allocate */
     return os_malloc(bytes);
   }
