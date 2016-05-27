@@ -153,15 +153,15 @@ namespace embree
       else return clamp(tessellationRate,1.0f,4096.0f); // FIXME: do we want to limit edge level?
     }
 
-  public:
-    RTCDisplacementFunc displFunc;    //!< displacement function
-    BBox3fa             displBounds;  //!< bounds for maximal displacement 
-
   private:
     size_t numFaces;           //!< number of faces
     size_t numEdges;           //!< number of edges
     size_t numVertices;        //!< number of vertices
     RTCBoundaryMode boundary;  //!< boundary interpolation mode
+
+  public:
+    RTCDisplacementFunc displFunc;    //!< displacement function
+    BBox3fa             displBounds;  //!< bounds for maximal displacement 
 
     /*! all buffers in this section are provided by the application */
   public:

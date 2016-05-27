@@ -30,16 +30,16 @@ namespace embree
     : Geometry(parent,SUBDIV_MESH,numFaces,numTimeSteps,flags), 
       numFaces(numFaces), 
       numEdges(numEdges), 
-      numHalfEdges(0),
-      faceStartEdge(parent->device),
-      halfEdges(parent->device),
-      invalidFace(parent->device),
       numVertices(numVertices),
       boundary(RTC_BOUNDARY_EDGE_ONLY),
       displFunc(nullptr), 
       displBounds(empty),
-      levelUpdate(false),
-      tessellationRate(2.0f)
+      tessellationRate(2.0f),
+      numHalfEdges(0),
+      faceStartEdge(parent->device),
+      halfEdges(parent->device),
+      invalidFace(parent->device),
+      levelUpdate(false)
   {
     for (size_t i=0; i<numTimeSteps; i++)
       vertices[i].init(parent->device,numVertices,sizeof(Vec3fa));

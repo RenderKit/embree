@@ -1140,10 +1140,10 @@ namespace embree
 
     /*! bvh data */
   public:
-    NodeRef root;                      //!< Root node
-    FastAllocator alloc;               //!< allocator used to allocate nodes
     Device* device;                    //!< device pointer
     Scene* scene;                      //!< scene pointer
+    NodeRef root;                      //!< Root node
+    FastAllocator alloc;               //!< allocator used to allocate nodes
 
     /*! statistics data */
   public:

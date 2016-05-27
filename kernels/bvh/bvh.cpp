@@ -32,7 +32,7 @@ namespace embree
       delete objects[i];
         
     if (data_mem) {
-      os_free( data_mem, size_data_mem );        
+      os_free( data_mem, size_data_mem ); // FIXME: why is this allocated with os_malloc?
       data_mem = nullptr;
       size_data_mem = 0;
     }

@@ -26,7 +26,7 @@ namespace embree
                                       const float edge_level[4],
                                       const int subdiv[4],
                                       const int simd_width)
-    : geom(gID),prim(pID),flags(0),type(INVALID_PATCH)
+    : flags(0), type(INVALID_PATCH), geom(gID), prim(pID)
   {
     static_assert(sizeof(SubdivPatch1Base) == 5 * 64, "SubdivPatch1Base has wrong size");
     //mtx.reset();

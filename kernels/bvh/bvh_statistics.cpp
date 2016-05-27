@@ -205,7 +205,7 @@ namespace embree
     else if (node.isTransformNode())
     {
       numTransformNodes++;
-      TransformNode* n = node.transformNode();
+      //TransformNode* n = node.transformNode();
       bvhSAH += A*travCostTransform;
 
       depth = 0;
