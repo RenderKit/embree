@@ -961,14 +961,19 @@ namespace embree
       __forceinline vfloat<N> dequantizeUpperZ() const { return vfloat<N>(start.z) + vfloat<N>(vint<N>::load(upper_z)) * scale.z; }
 
       template <int M>
-        __forceinline vfloat<M> dequantize(const size_t offset) const { return vfloat<M>(vint<M>::load(lower_x+offset)); }
+      __forceinline vfloat<M> dequantize(const size_t offset) const { return vfloat<M>(vint<M>::load(all_planes+offset)); }
 
-      unsigned char lower_x[N]; //!< 8bit discretized X dimension of lower bounds of all N children
-      unsigned char upper_x[N]; //!< 8bit discretized X dimension of upper bounds of all N children
-      unsigned char lower_y[N]; //!< 8bit discretized Y dimension of lower bounds of all N children
-      unsigned char upper_y[N]; //!< 8bit discretized Y dimension of upper bounds of all N children
-      unsigned char lower_z[N]; //!< 8bit discretized Z dimension of lower bounds of all N children
-      unsigned char upper_z[N]; //!< 8bit discretized Z dimension of upper bounds of all N children
+      union {
+        struct {
+          unsigned char lower_x[N]; //!< 8bit discretized X dimension of lower bounds of all N children
+          unsigned char upper_x[N]; //!< 8bit discretized X dimension of upper bounds of all N children
+          unsigned char lower_y[N]; //!< 8bit discretized Y dimension of lower bounds of all N children
+          unsigned char upper_y[N]; //!< 8bit discretized Y dimension of upper bounds of all N children
+          unsigned char lower_z[N]; //!< 8bit discretized Z dimension of lower bounds of all N children
+          unsigned char upper_z[N]; //!< 8bit discretized Z dimension of upper bounds of all N children
+        };
+        unsigned char all_planes[6*N];
+      };
 
 #if ENABLE_32BIT_OFFSETS_FOR_QUANTIZED_NODES == 1 
       int children[N]; //!< signed 32bit offset to the N children (can be a node or leaf)
