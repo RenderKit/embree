@@ -114,8 +114,8 @@ namespace embree
       size_t end;            //!< end of the memory block
       size_t allocBlockSize; //!< block size for allocations
     private:
-      size_t bytesWasted;    //!< number of bytes wasted
       size_t bytesUsed;      //!< number of total bytes allocated
+      size_t bytesWasted;    //!< number of bytes wasted
     };
 
     /*! Two thread local structures. */
@@ -149,8 +149,8 @@ namespace embree
     };
 
     FastAllocator (MemoryMonitorInterface* device) 
-      : device(device), growSize(defaultBlockSize), usedBlocks(nullptr), freeBlocks(nullptr), slotMask(0),
-      thread_local_allocators(this), thread_local_allocators2(this), bytesUsed(0)
+      : device(device), slotMask(0), usedBlocks(nullptr), freeBlocks(nullptr), growSize(defaultBlockSize), bytesUsed(0), 
+        thread_local_allocators(this), thread_local_allocators2(this)
     {
       for (size_t i=0; i<MAX_THREAD_USED_BLOCK_SLOTS; i++)
         threadUsedBlocks[i] = nullptr;

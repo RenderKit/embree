@@ -122,9 +122,9 @@ namespace embree
 
     public:
       static const char* type;
-      const char* name;
       IntersectFunc intersect;
       OccludedFunc occluded;  
+      const char* name;
     };
     
     struct Intersector4 
@@ -139,9 +139,9 @@ namespace embree
       
     public:
       static const char* type;
-      const char* name;
       IntersectFunc4 intersect;
       OccludedFunc4 occluded;
+      const char* name;
     };
     
     struct Intersector8 
@@ -156,9 +156,9 @@ namespace embree
       
     public:
       static const char* type;
-      const char* name;
       IntersectFunc8 intersect;
       OccludedFunc8 occluded;
+      const char* name;
     };
     
     struct Intersector16 
@@ -173,9 +173,9 @@ namespace embree
       
     public:
       static const char* type;
-      const char* name;
       IntersectFunc16 intersect;
       OccludedFunc16 occluded;
+      const char* name;
     };
 
      struct IntersectorN 
@@ -190,9 +190,9 @@ namespace embree
       
     public:
       static const char* type;
-      const char* name;
       IntersectFuncN intersect;
       OccludedFuncN occluded;
+      const char* name;
     };
    
     struct Intersectors 
@@ -433,7 +433,7 @@ namespace embree
   struct RayStreamFilterFuncs
   {
     __forceinline RayStreamFilterFuncs()
-      : filterSOP(nullptr), filterAOS(nullptr), filterSOA(nullptr) {}
+      : filterAOS(nullptr), filterSOA(nullptr), filterSOP(nullptr) {}
     
     __forceinline RayStreamFilterFuncs(void (*ptr) ()) 
       : filterAOS((filterAOS_func) ptr), filterSOA((filterSOA_func) ptr), filterSOP((filterSOP_func) ptr) {}

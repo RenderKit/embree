@@ -74,9 +74,9 @@ namespace embree
         
       public:
         static const char* type;
-        const char* name;
         IntersectFunc intersect;
         OccludedFunc occluded;  
+        const char* name;
       };
       
       struct Intersector4 
@@ -91,9 +91,9 @@ namespace embree
         
       public:
         static const char* type;
-        const char* name;
         void* intersect;
         void* occluded;
+        const char* name;
 	bool ispc;
       };
       
@@ -109,9 +109,9 @@ namespace embree
         
       public:
         static const char* type;
-        const char* name;
         void* intersect;
         void* occluded;
+        const char* name;
 	bool ispc;
       };
       
@@ -127,9 +127,9 @@ namespace embree
         
       public:
         static const char* type;
-        const char* name;
         void* intersect;
         void* occluded;
+        const char* name;
 	bool ispc;
       };
 
@@ -145,9 +145,9 @@ namespace embree
         
       public:
         static const char* type;
-        const char* name;
         IntersectFunc1M intersect;
-        OccludedFunc1M occluded;  
+        OccludedFunc1M occluded;
+        const char* name;
       };
 
       struct IntersectorN
@@ -162,9 +162,9 @@ namespace embree
         
       public:
         static const char* type;
-        const char* name;
         IntersectFuncN intersect;
-        OccludedFuncN occluded;  
+        OccludedFuncN occluded; 
+        const char* name;
       };
       
     public:

@@ -572,8 +572,8 @@ namespace embree
     public:
       unsigned width;
       unsigned height;
-      unsigned primID;
       unsigned geomID;
+      unsigned primID;
       Vec3fa P[17*17];
     };
   }

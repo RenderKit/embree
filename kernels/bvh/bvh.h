@@ -714,7 +714,6 @@ namespace embree
         const Vec3fa vx(naabb.l.vx.x[i],naabb.l.vx.y[i],naabb.l.vx.z[i]);
         const Vec3fa vy(naabb.l.vy.x[i],naabb.l.vy.y[i],naabb.l.vy.z[i]);
         const Vec3fa vz(naabb.l.vz.x[i],naabb.l.vz.y[i],naabb.l.vz.z[i]);
-        const Vec3fa p (naabb.p   .x[i],naabb.p   .y[i],naabb.p   .z[i]);
         return rsqrt(vx*vx + vy*vy + vz*vz);
       }
 
@@ -775,7 +774,6 @@ namespace embree
         const Vec3fa vx(space0.l.vx.x[i],space0.l.vx.y[i],space0.l.vx.z[i]);
         const Vec3fa vy(space0.l.vy.x[i],space0.l.vy.y[i],space0.l.vy.z[i]);
         const Vec3fa vz(space0.l.vz.x[i],space0.l.vz.y[i],space0.l.vz.z[i]);
-        const Vec3fa p (space0.p   .x[i],space0.p   .y[i],space0.p   .z[i]);
         return rsqrt(vx*vx + vy*vy + vz*vz);
       }
 

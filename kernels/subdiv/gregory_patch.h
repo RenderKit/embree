@@ -809,7 +809,6 @@ namespace embree
       static __forceinline Vec3<T> normal_t(const Vertex matrix[4][4], const Vec3<T> f[2][2], const T& uu, const T& vv) 
     {
       typedef typename T::Bool M;
-      const M m_border = (uu == 0.0f) | (uu == 1.0f) | (vv == 0.0f) | (vv == 1.0f);
       
       const Vec3<T> f0_p = Vec3<T>(matrix[1][1].x,matrix[1][1].y,matrix[1][1].z);
       const Vec3<T> f1_p = Vec3<T>(matrix[1][2].x,matrix[1][2].y,matrix[1][2].z);
@@ -833,13 +832,13 @@ namespace embree
       const M m_corner0 = (uu == 0.0f) & (vv == 0.0f);
       const M m_corner1 = (uu == 1.0f) & (vv == 0.0f);
       const M m_corner2 = (uu == 1.0f) & (vv == 1.0f);
-      const M m_corner3 = (uu == 0.0f) & (vv == 1.0f);
-      
+      const M m_corner3 = (uu == 0.0f) & (vv == 1.0f);      
       const Vec3<T> matrix_11( select(m_corner0,f0_p.x,f0_i.x), select(m_corner0,f0_p.y,f0_i.y), select(m_corner0,f0_p.z,f0_i.z) );
       const Vec3<T> matrix_12( select(m_corner1,f1_p.x,f1_i.x), select(m_corner1,f1_p.y,f1_i.y), select(m_corner1,f1_p.z,f1_i.z) );
       const Vec3<T> matrix_22( select(m_corner2,f2_p.x,f2_i.x), select(m_corner2,f2_p.y,f2_i.y), select(m_corner2,f2_p.z,f2_i.z) );
       const Vec3<T> matrix_21( select(m_corner3,f3_p.x,f3_i.x), select(m_corner3,f3_p.y,f3_i.y), select(m_corner3,f3_p.z,f3_i.z) );
 #else
+      const M m_border = (uu == 0.0f) | (uu == 1.0f) | (vv == 0.0f) | (vv == 1.0f);
       const Vec3<T> matrix_11( select(m_border,f0_p.x,f0_i.x), select(m_border,f0_p.y,f0_i.y), select(m_border,f0_p.z,f0_i.z) );
       const Vec3<T> matrix_12( select(m_border,f1_p.x,f1_i.x), select(m_border,f1_p.y,f1_i.y), select(m_border,f1_p.z,f1_i.z) );
       const Vec3<T> matrix_22( select(m_border,f2_p.x,f2_i.x), select(m_border,f2_p.y,f2_i.y), select(m_border,f2_p.z,f2_i.z) );
