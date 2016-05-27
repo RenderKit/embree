@@ -347,7 +347,7 @@ namespace embree
     __forceinline void readHit(const size_t i, Ray& ray)
     {
       const size_t offset = 4*i;
-      const int geometryID = geomID(offset)[0];
+      const unsigned int geometryID = geomID(offset)[0];
       if (geometryID != RTC_INVALID_GEOMETRY_ID)
       {
         ray.tfar = tfar(offset)[0];
