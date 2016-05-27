@@ -45,10 +45,6 @@ namespace embree
       static const bool enabled = true;
 
       static size_t rotate(NodeRef parentRef, size_t depth = 1);
-      
-#if defined(__AVX__)
-      static void restructure(NodeRef ref, size_t depth = 1);
-#endif
     };
   }
 }
