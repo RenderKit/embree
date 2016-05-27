@@ -30,7 +30,7 @@ namespace embree
 	__forceinline GeneralBuildRecord () {}
         
         __forceinline GeneralBuildRecord (size_t depth) 
-          : depth(depth), pinfo(empty) {}
+          : parent(nullptr), depth(depth), pinfo(empty) {}
         
         __forceinline GeneralBuildRecord (const PrimInfo& pinfo, size_t depth, size_t* parent) 
           : parent(parent), depth(depth), pinfo(pinfo) {}
