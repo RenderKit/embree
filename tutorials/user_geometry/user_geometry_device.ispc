@@ -223,7 +223,6 @@ uniform Instance* uniform createInstance (RTCScene scene, RTCScene object, unifo
 
 void updateInstance (RTCScene scene, uniform Instance* uniform instance)
 {
-  uniform unsigned int geometry = instance->geometry;
   instance->world2local = rcp(instance->local2world);
   instance->normal2world = transposed(rcp(instance->local2world.l));
   rtcUpdate(scene,instance->geometry);

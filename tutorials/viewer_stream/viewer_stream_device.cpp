@@ -108,27 +108,27 @@ RTCScene convertScene(ISPCScene* scene_in)
   {
     ISPCGeometry* geometry = scene_in->geometries[i];
     if (geometry->type == SUBDIV_MESH) {
-      unsigned int geomID = convertSubdivMesh((ISPCSubdivMesh*) geometry, scene_out);
+      unsigned int geomID MAYBE_UNUSED = convertSubdivMesh((ISPCSubdivMesh*) geometry, scene_out);
       assert(geomID == i);
     }
     else if (geometry->type == TRIANGLE_MESH) {
-      unsigned int geomID = convertTriangleMesh((ISPCTriangleMesh*) geometry, scene_out);
+      unsigned int geomID MAYBE_UNUSED = convertTriangleMesh((ISPCTriangleMesh*) geometry, scene_out);
       assert(geomID == i);
     }
     else if (geometry->type == QUAD_MESH) {
-      unsigned int geomID = convertQuadMesh((ISPCQuadMesh*) geometry, scene_out);
+      unsigned int geomID MAYBE_UNUSED = convertQuadMesh((ISPCQuadMesh*) geometry, scene_out);
       assert(geomID == i);
     }
     else if (geometry->type == LINE_SEGMENTS) {
-      unsigned int geomID = convertLineSegments((ISPCLineSegments*) geometry, scene_out);
+      unsigned int geomID MAYBE_UNUSED = convertLineSegments((ISPCLineSegments*) geometry, scene_out);
       assert(geomID == i);
     }
     else if (geometry->type == HAIR_SET) {
-      unsigned int geomID = convertHairSet((ISPCHairSet*) geometry, scene_out);
+      unsigned int geomID MAYBE_UNUSED = convertHairSet((ISPCHairSet*) geometry, scene_out);
       assert(geomID == i);
     }
     else if (geometry->type == CURVES) {
-      unsigned int geomID = convertCurveGeometry((ISPCHairSet*) geometry, scene_out);
+      unsigned int geomID MAYBE_UNUSED = convertCurveGeometry((ISPCHairSet*) geometry, scene_out);
       assert(geomID == i);
     }
     else
