@@ -92,7 +92,7 @@ namespace embree
     static __forceinline void storeu( const vboolf4& mask, void* ptr, const vint4& i ) { storeu(ptr,select(mask,i,loadu(ptr))); }
 #endif
 
-    #if defined(__SSE4_1__)
+#if defined(__SSE4_1__)
     static __forceinline vint4 load( const unsigned char* const ptr ) {
       return _mm_cvtepu8_epi32(_mm_load_si128((__m128i*)ptr));
     }
