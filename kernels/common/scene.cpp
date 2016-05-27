@@ -30,18 +30,21 @@ namespace embree
   void invalid_rtcIntersectN()  { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersectN and rtcOccludedN not enabled"); }
 
   Scene::Scene (Device* device, RTCSceneFlags sflags, RTCAlgorithmFlags aflags)
-    : device(device), 
-      Accel(AccelData::TY_UNKNOWN),
-      flags(sflags), aflags(aflags), numMappedBuffers(0), is_build(false), modified(true), 
+    : Accel(AccelData::TY_UNKNOWN),
+      device(device), 
+      commitCounterSubdiv(0), 
+      numMappedBuffers(0),
+      flags(sflags), aflags(aflags), 
       needTriangleIndices(false), needTriangleVertices(false), 
       needQuadIndices(false), needQuadVertices(false), 
       needBezierIndices(false), needBezierVertices(false),
       needLineIndices(false), needLineVertices(false),
       needSubdivIndices(false), needSubdivVertices(false),
+      is_build(false), modified(true),
       numIntersectionFilters1(0), numIntersectionFilters4(0), numIntersectionFilters8(0), numIntersectionFilters16(0), numIntersectionFiltersN(0),
-      commitCounter(0), commitCounterSubdiv(0), 
+      commitCounter(0), 
       progress_monitor_function(nullptr), progress_monitor_ptr(nullptr), progress_monitor_counter(0),
-      progressInterface(this)
+      vprogressInterface(this)
   {
 #if defined(TASKING_INTERNAL)
     scheduler = nullptr;

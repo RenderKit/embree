@@ -302,9 +302,9 @@ namespace embree
     bool needLineVertices;
     bool needSubdivIndices;
     bool needSubdivVertices;
-    bool is_build;
     MutexSys buildMutex;
     SpinLock geometriesMutex;
+    bool is_build;
     bool modified;                   //!< true if scene got modified
     
     /*! global lock step task scheduler */

@@ -71,7 +71,7 @@ namespace embree
   {
   public:
     ThinDielectricMaterial (const Vec3fa& transmission, const float eta, const float thickness)
-      : MaterialBase(MATERIAL_THIN_DIELECTRIC), transmission(transmission), eta(eta), thickness(thickness), transmissionFactor(log(transmission)*thickness) {}
+      : MaterialBase(MATERIAL_THIN_DIELECTRIC), transmission(transmission), transmissionFactor(log(transmission)*thickness), eta(eta), thickness(thickness) {}
 
   public:
     Vec3fa transmission;
@@ -133,7 +133,7 @@ namespace embree
   {
   public:
     VelvetMaterial (const Vec3fa& reflectance, const float backScattering, const Vec3fa& horizonScatteringColor, const float horizonScatteringFallOff)
-      : MaterialBase(MATERIAL_VELVET), reflectance(reflectance), backScattering(backScattering), horizonScatteringColor(horizonScatteringColor), horizonScatteringFallOff(horizonScatteringFallOff) {}
+      : MaterialBase(MATERIAL_VELVET), reflectance(reflectance), horizonScatteringColor(horizonScatteringColor), backScattering(backScattering), horizonScatteringFallOff(horizonScatteringFallOff) {}
 
   public:
     Vec3fa reflectance;
