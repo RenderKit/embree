@@ -104,7 +104,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   uniform int scene_aflags = RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING | RTC_INTERSECT_STREAM | RTC_INTERPOLATE;
   RTCScene scene_out = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
 
-  for (uniform size_t i=0; i<scene_in->numGeometries; i++)
+  for (uniform size_t i=0; i<numGeometries; i++)
   {
     uniform ISPCGeometry* uniform geometry = scene_in->geometries[i];
     if (geometry->type == SUBDIV_MESH) {

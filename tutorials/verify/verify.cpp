@@ -2316,7 +2316,6 @@ namespace embree
       scene.addSphere(sampler,gflags,zero,2.0f,100);
       scene.addHair  (sampler,gflags,zero,1.0f,1.0f,100);
       rtcCommit (scene);
-      size_t numFailures = 0;
 
       double c0 = getSeconds();
       for (size_t i=0; i<numRays; i++) {
@@ -2389,7 +2388,6 @@ namespace embree
       rtcCommit (scene);
       AssertNoError(device);
 
-      size_t numFailures = 0;
       double c0 = getSeconds();
       for (size_t i=0; i<numRays; i++) {
         Vec3fa org(2.0f*random_float()-1.0f,2.0f*random_float()-1.0f,2.0f*random_float()-1.0f);
@@ -2550,7 +2548,6 @@ namespace embree
     if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
     int geom[1024];
     int types[1024];
-    Sphere spheres[1024];
     size_t numVertices[1024];
     for (size_t i=0; i<1024; i++)  {
       geom[i] = -1;
@@ -3078,7 +3075,7 @@ namespace embree
     static const size_t numTilesY = height/tileSizeY;
     
     CoherentRaysBenchmark (std::string name, int isa, GeometryType gtype, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant, size_t numPhi)
-      : ParallelIntersectBenchmark(name,isa,numTilesX*numTilesY,1), sflags(sflags), gflags(gflags), gtype(gtype), imode(imode), ivariant(ivariant), numPhi(numPhi) {}
+      : ParallelIntersectBenchmark(name,isa,numTilesX*numTilesY,1), gtype(gtype), sflags(sflags), gflags(gflags), imode(imode), ivariant(ivariant), numPhi(numPhi) {}
     
     size_t setNumPrimitives(size_t N) 
     { 
@@ -3248,7 +3245,7 @@ namespace embree
     Vec3f* numbers;
     
     IncoherentRaysBenchmark (std::string name, int isa, GeometryType gtype, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant, size_t numPhi)
-      : ParallelIntersectBenchmark(name,isa,1024*1024,1024), device(nullptr), gtype(gtype), sflags(sflags), gflags(gflags), imode(imode), ivariant(ivariant), numPhi(numPhi), numbers(nullptr) {}
+      : ParallelIntersectBenchmark(name,isa,1024*1024,1024), gtype(gtype), sflags(sflags), gflags(gflags), imode(imode), ivariant(ivariant), numPhi(numPhi), device(nullptr), numbers(nullptr)  {}
     
     ~IncoherentRaysBenchmark() {
       if (numbers) delete[] numbers; numbers = nullptr;
@@ -3514,11 +3511,14 @@ namespace embree
   /////////////////////////////////////////////////////////////////////////////////
 
   VerifyApplication::VerifyApplication ()
-    : Application(Application::FEATURE_RTCORE), intensity(1.0f), tests(new TestGroup("",false,false)), 
+    : Application(Application::FEATURE_RTCORE), 
+      intensity(1.0f), 
       numPassedTests(0), numFailedTests(0), numFailedAndIgnoredTests(0),
-      user_specified_tests(false), flatten(true), parallel(true), usecolors(true), cdash(false), 
+      tests(new TestGroup("",false,false)), 
       device(rtcNewDevice(rtcore.c_str())),
-      database(""), benchmark_tolerance(0.05f)
+      user_specified_tests(false), flatten(true), parallel(true), cdash(false), 
+      database(""), benchmark_tolerance(0.05f),
+      usecolors(true)
   {
 #if defined(__WIN32__)
     usecolors = false;
