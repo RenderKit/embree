@@ -353,10 +353,6 @@ Vec3fa renderPixelPathTrace(float x, float y, const ISPCCamera& camera)
     }
     else if (geometry->type == TRIANGLE_MESH)
     {
-      ISPCTriangleMesh* mesh = (ISPCTriangleMesh*) geometry;
-      ISPCTriangle* triangle = &mesh->triangles[ray.primID];
-      OBJMaterial* material = (OBJMaterial*) &g_ispc_scene->materials[triangle->materialID];
-
       if (dot(ray.dir,ray.Ng) > 0) ray.Ng = neg(ray.Ng);
 
       /* calculate tangent space */
@@ -437,7 +433,6 @@ Vec3fa renderPixelTestEyeLight(float x, float y, const ISPCCamera& camera)
   ray.time = 0;
 
   Vec3fa color = Vec3fa(0.0f);
-  float weight = 1.0f;
 
   rtcIntersect(g_scene,*((RTCRay*)&ray));
   ray.filter = nullptr;
@@ -458,8 +453,8 @@ Vec3fa renderPixelTestEyeLight(float x, float y, const ISPCCamera& camera)
   {
     if (dot(ray.dir,ray.Ng) > 0) ray.Ng = neg(ray.Ng);
     const Vec3fa dz = normalize(ray.Ng);
-    const Vec3fa dx = normalize(cross(dz,ray.dir));
-    const Vec3fa dy = normalize(cross(dz,dx));
+    //const Vec3fa dx = normalize(cross(dz,ray.dir));
+    //const Vec3fa dy = normalize(cross(dz,dx));
     Ng = dz;
   }
 
@@ -483,9 +478,6 @@ void renderTileStandard(int taskIndex,
   const int x1 = min(x0+TILE_SIZE_X,width);
   const int y0 = tileY * TILE_SIZE_Y;
   const int y1 = min(y0+TILE_SIZE_Y,height);
-
-  //int seed = tileY*numTilesX+tileX+0 + g_accu_count;
-  int seed = (tileY*numTilesX+tileX+0) * g_accu_count;
 
   for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
   {

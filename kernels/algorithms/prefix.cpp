@@ -42,13 +42,10 @@ namespace embree
 	std::vector<uint32_t> dst(N);
 	memset(dst.data(),0,N*sizeof(uint32_t));
 	
-	double t0 = getSeconds();
 	for (size_t i=0; i<M; i++) {
 	  uint32_t sum1 = parallel_prefix_sum(src,dst,N,std::plus<uint32_t>());
           passed &= (sum0 == sum1);
         }
-	double t1 = getSeconds();
-	//printf("%zu/%3.2fM ",N,1E-6*double(N*M)/(t1-t0));
         
 	/* check if prefix sum is correct */
 	for (size_t i=0, sum=0; i<N; sum+=src[i++])
