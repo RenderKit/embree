@@ -50,6 +50,7 @@ sed -i.backup  's/print(/printf(/g' $2
 sed -i.backup  's/abort()/exit(1)/g' $2
 sed -i.backup 's/atomic_compare_exchange_global/atomic_cmpxchg/g' $2
 sed -i.backup 's/memory_barrier/__memory_barrier/g' $2
+sed -i 's/ MAYBE_UNUSED//g' $2
 
 # math library
 sed -i.backup  's/Vec3f\([^a]\)/Vec3fa\1/g' $2

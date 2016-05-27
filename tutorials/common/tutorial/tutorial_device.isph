@@ -106,6 +106,7 @@ uniform unsigned int getNumHWThreads();
 
 #define ALIGNED_STRUCT
 #define __aligned(x)
+#define MAYBE_UNUSED
 
 struct Sample3f
 {

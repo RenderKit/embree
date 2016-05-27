@@ -337,7 +337,7 @@ namespace embree
         else
         {
           auto createLeaf = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> int {
-            size_t items = current.pinfo.size();
+            size_t items MAYBE_UNUSED = current.pinfo.size();
             assert(items == 1);
             const unsigned int patchIndex = prims[current.prims.begin()].ID();
             SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;

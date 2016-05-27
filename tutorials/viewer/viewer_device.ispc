@@ -260,37 +260,37 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
     {
       uniform ISPCGeometry* uniform geometry = scene_in->geometries[i];
       if (geometry->type == SUBDIV_MESH) {
-        uniform unsigned int geomID = convertSubdivMesh((uniform ISPCSubdivMesh* uniform) geometry, scene_out);
+        uniform unsigned int geomID MAYBE_UNUSED = convertSubdivMesh((uniform ISPCSubdivMesh* uniform) geometry, scene_out);
         assert(geomID == i);
         rtcDisable(scene_out,geomID);
       }
       else if (geometry->type == TRIANGLE_MESH) {
-        uniform unsigned int geomID = convertTriangleMesh((uniform ISPCTriangleMesh* uniform) geometry, scene_out);
+        uniform unsigned int geomID MAYBE_UNUSED = convertTriangleMesh((uniform ISPCTriangleMesh* uniform) geometry, scene_out);
         assert(geomID == i);
         rtcDisable(scene_out,geomID);
       }
       else if (geometry->type == QUAD_MESH) {
-        uniform unsigned int geomID = convertQuadMesh((uniform ISPCQuadMesh* uniform) geometry, scene_out);
+        uniform unsigned int geomID MAYBE_UNUSED = convertQuadMesh((uniform ISPCQuadMesh* uniform) geometry, scene_out);
         assert(geomID == i);
         rtcDisable(scene_out,geomID);
       }
       else if (geometry->type == LINE_SEGMENTS) {
-        uniform unsigned int geomID = convertLineSegments((uniform ISPCLineSegments* uniform) geometry, scene_out);
+        uniform unsigned int geomID MAYBE_UNUSED = convertLineSegments((uniform ISPCLineSegments* uniform) geometry, scene_out);
         assert(geomID == i);
         rtcDisable(scene_out,geomID);
       }
       else if (geometry->type == HAIR_SET) {
-        uniform unsigned int geomID = convertHairSet((uniform ISPCHairSet* uniform) geometry, scene_out);
+        uniform unsigned int geomID MAYBE_UNUSED = convertHairSet((uniform ISPCHairSet* uniform) geometry, scene_out);
         assert(geomID == i);
         rtcDisable(scene_out,geomID);
       }
       else if (geometry->type == CURVES) {
-        uniform unsigned int geomID = convertCurveGeometry((uniform ISPCHairSet* uniform) geometry, scene_out);
+        uniform unsigned int geomID MAYBE_UNUSED = convertCurveGeometry((uniform ISPCHairSet* uniform) geometry, scene_out);
         assert(geomID == i);
         rtcDisable(scene_out,geomID);
       }
       else if (geometry->type == INSTANCE) {
-        uniform unsigned int geomID = convertInstance((uniform ISPCInstance* uniform) geometry, i, scene_out);
+        uniform unsigned int geomID MAYBE_UNUSED = convertInstance((uniform ISPCInstance* uniform) geometry, i, scene_out);
         assert(geomID == i); geomID_to_inst[geomID] = (uniform ISPCInstance* uniform) geometry;
       }
       else

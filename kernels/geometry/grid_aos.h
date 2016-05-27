@@ -564,7 +564,7 @@ namespace embree
       static void* create(SubdivPatch1Base* const patch, Scene* scene, Allocator& alloc)
       {
         PrimRef prims[32];
-        size_t num = createEager<N>(*patch,scene,scene->getSubdivMesh(patch->geom),patch->prim,alloc,prims);
+        size_t num MAYBE_UNUSED = createEager<N>(*patch,scene,scene->getSubdivMesh(patch->geom),patch->prim,alloc,prims);
         assert(num == 1);
         return (void*) prims[0].ID();
       }

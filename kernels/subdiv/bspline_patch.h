@@ -136,10 +136,10 @@ namespace embree
                                      const Vertex& v10, const Vertex& v11, const Vertex& v12, 
                                      const Vertex& v20, const Vertex& v21, const Vertex& v22)
       {
-        const bool has_back1 = edge0.has_opposite_back(1);
+        const bool MAYBE_UNUSED has_back1 = edge0.has_opposite_back(1);
         const bool has_back0 = edge0.has_opposite_back(0);
         const bool has_front1 = edge0.has_opposite_front(1);
-        const bool has_front2 = edge0.has_opposite_front(2);
+        const bool MAYBE_UNUSED has_front2 = edge0.has_opposite_front(2);
         
         if (likely(has_back0)) {
           if (likely(has_front1)) { assert(has_back1 && has_front2); v00 = edge0.back(3); }

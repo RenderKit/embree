@@ -63,7 +63,7 @@ namespace embree
         assert(swidth < (2<<20) && sheight < (2<<20));
         const BBox2f srange(Vec2f(0.0f,0.0f),Vec2f(swidth-1,sheight-1));
         const BBox2f erange(Vec2f(x0,y0),Vec2f(x1,y1));
-        bool done = eval(patch,subPatch,srange,erange);
+        bool done MAYBE_UNUSED = eval(patch,subPatch,srange,erange);
         assert(done);
         assert(count == (x1-x0+1)*(y1-y0+1));
       }

@@ -85,7 +85,7 @@ namespace embree
       stack_near[0] = inf;
       stack_node[1] = bvh->root;
       stack_near[1] = ray_tnear; 
-      NodeRef* stackEnd = stack_node+stackSizeChunk;
+      NodeRef* stackEnd MAYBE_UNUSED = stack_node+stackSizeChunk;
       NodeRef* __restrict__ sptr_node = stack_node + 2;
       vfloat<K>* __restrict__ sptr_near = stack_near + 2;
       
@@ -263,7 +263,7 @@ namespace embree
       stack_near[0] = inf;
       stack_node[1] = bvh->root;
       stack_near[1] = ray_tnear; 
-      NodeRef* stackEnd = stack_node+stackSizeChunk;
+      NodeRef* stackEnd MAYBE_UNUSED = stack_node+stackSizeChunk;
       NodeRef* __restrict__ sptr_node = stack_node + 2;
       vfloat<K>* __restrict__ sptr_near = stack_near + 2;
       

@@ -223,6 +223,7 @@ Instance* createInstance (RTCScene scene, RTCScene object, int userID, const Vec
 
 void updateInstance (RTCScene scene, Instance* instance)
 {
+  unsigned int geometry = instance->geometry;
   instance->world2local = rcp(instance->local2world);
   instance->normal2world = transposed(rcp(instance->local2world.l));
   rtcUpdate(scene,instance->geometry);
