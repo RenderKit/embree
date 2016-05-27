@@ -36,7 +36,7 @@ namespace embree
       struct PlueckerHitM
     {
       __forceinline PlueckerHitM(const vfloat<M>& U, const vfloat<M>& V, const vfloat<M>& T, const vfloat<M>& den, const Vec3<vfloat<M>>& Ng, const UVMapper& mapUV)
-        : U(U), V(V), T(T), den(den), vNg(Ng), mapUV(mapUV) {}
+        : U(U), V(V), T(T), den(den), mapUV(mapUV), vNg(Ng) {}
       
       __forceinline void finalize() 
       {

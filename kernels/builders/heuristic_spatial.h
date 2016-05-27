@@ -119,7 +119,6 @@ namespace embree
         for (size_t i=0; i<N; i++)
         {
           const PrimRef prim = prims[i];
-          unsigned geomID = prim.geomID() & 0x00FFFFFF;
           unsigned splits = prim.geomID() >> 24;
 
           if (splits == 1)

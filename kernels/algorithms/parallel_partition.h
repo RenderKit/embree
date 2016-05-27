@@ -625,15 +625,8 @@ namespace embree
         size   -= items;
         l_left -= items;
         r_left -= items;
-#pragma nounroll
-        while(items)
-        {
-#if 0 // defined(__AVX512F__)
-          prefetch<PFHINT_L2EX>(((char*)l) + 4*64);
-          prefetch<PFHINT_L2EX>(((char*)r) + 4*64);	  
-          prefetch<PFHINT_L1EX>(((char*)l) + 1*64);
-          prefetch<PFHINT_L1EX>(((char*)r) + 1*64);	  
-#endif
+
+        while(items) {
           items--;
           xchg(*l++,*r++);
         }
@@ -656,7 +649,6 @@ namespace embree
                    {
                      const size_t startID = (taskID+0)*N/tasks;
                      const size_t endID   = (taskID+1)*N/tasks;
-                     const size_t size    = endID-startID;
                      V local_left(empty);
                      V local_right(empty);
                      const size_t mid = serial_partitioning(array,startID,endID,local_left,local_right,cmp,reduction_t);
@@ -691,7 +683,9 @@ namespace embree
       const Range globalRight(mid,N-1);
 
       // without pragma the compiler makes a mess out of this loop
-#pragma novector
+#if defined(__INTEL_COMPILER)
+#pragma novector // FIXME: does this make a performance difference at all?
+#endif
       for (size_t i=0;i<tasks;i++)
       {	    
         const unsigned int left_start  = counter_start[i];

@@ -267,7 +267,6 @@ namespace embree
         void splitFallback(Set& prims, PrimInfo& linfo_o, Set& lprims_o, PrimInfo& rinfo_o, Set& rprims_o)
         {
           size_t num = 0;
-          BBox3fa lbounds = empty, rbounds = empty;
           PrimRefList::item* lblock = lprims_o.insert(new PrimRefList::item);
           PrimRefList::item* rblock = rprims_o.insert(new PrimRefList::item);
           linfo_o.reset();

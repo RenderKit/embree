@@ -38,7 +38,7 @@ namespace embree
       __forceinline MoellerTrumboreHitM() {}
 
       __forceinline MoellerTrumboreHitM(const vbool<M>& valid, const vfloat<M>& U, const vfloat<M>& V, const vfloat<M>& T, const vfloat<M>& absDen, const Vec3<vfloat<M>>& Ng)
-        : valid(valid), U(U), V(V), T(T), absDen(absDen), vNg(Ng) {}
+        : U(U), V(V), T(T), absDen(absDen), valid(valid), vNg(Ng) {}
       
       __forceinline void finalize() 
       {

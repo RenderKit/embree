@@ -66,7 +66,7 @@ namespace embree
       __forceinline PrimInfo () {}
 
       __forceinline PrimInfo (EmptyTy) 
-	: begin(0), end(0), CentGeomBBox3fa(empty) {}
+	: CentGeomBBox3fa(empty), begin(0), end(0) {}
 
       __forceinline void reset() {
 	CentGeomBBox3fa::reset();
@@ -74,10 +74,10 @@ namespace embree
       }
       
       __forceinline PrimInfo (size_t num, const BBox3fa& geomBounds, const BBox3fa& centBounds) 
-	: begin(0), end(num), CentGeomBBox3fa(geomBounds,centBounds) {}
+	: CentGeomBBox3fa(geomBounds,centBounds), begin(0), end(num) {}
       
       __forceinline PrimInfo (size_t begin, size_t end, const BBox3fa& geomBounds, const BBox3fa& centBounds) 
-	: begin(begin), end(end), CentGeomBBox3fa(geomBounds,centBounds) {}
+	: CentGeomBBox3fa(geomBounds,centBounds), begin(begin), end(end) {}
 
       __forceinline void add(const BBox3fa& geomBounds_) {
 	CentGeomBBox3fa::extend(geomBounds_,center2(geomBounds_));

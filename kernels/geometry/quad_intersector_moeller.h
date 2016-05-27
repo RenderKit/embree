@@ -33,7 +33,7 @@ namespace embree
                                const vfloat<M>& absDen, 
                                const Vec3<vfloat<M>>& Ng, 
                                const vbool<M>& flags)
-          : valid(valid), U(U), V(V), T(T), absDen(absDen), tri_Ng(Ng), flags(flags) {}
+          : U(U), V(V), T(T), absDen(absDen), tri_Ng(Ng), valid(valid), flags(flags) {}
       
         __forceinline void finalize() 
         {

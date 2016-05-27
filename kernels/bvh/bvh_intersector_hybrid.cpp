@@ -129,7 +129,7 @@ namespace embree
         while (likely(!cur.isLeaf()))
         {
           /* process nodes */
-          const vbool<K> valid_node = ray_tfar > curDist;
+          STAT(const vbool<K> valid_node = ray_tfar > curDist);
           STAT3(normal.trav_nodes,1,popcnt(valid_node),K);
           const NodeRef nodeRef = cur;
           const BaseNode* __restrict__ const node = nodeRef.baseNode(types);
@@ -305,7 +305,7 @@ namespace embree
         while (likely(!cur.isLeaf()))
         {
           /* process nodes */
-          const vbool<K> valid_node = ray_tfar > curDist;
+          STAT(const vbool<K> valid_node = ray_tfar > curDist);
           STAT3(shadow.trav_nodes,1,popcnt(valid_node),K);
           const NodeRef nodeRef = cur;
           const BaseNode* __restrict__ const node = nodeRef.baseNode(types);
@@ -374,7 +374,7 @@ namespace embree
         
         /* intersect leaf */
         assert(cur != BVH::emptyNode);
-        const vbool<K> valid_leaf = ray_tfar > curDist;
+        STAT(const vbool<K> valid_leaf = ray_tfar > curDist);
         STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),K);
         size_t items; const Primitive* prim = (Primitive*) cur.leaf(items);
 
