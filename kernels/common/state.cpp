@@ -328,7 +328,7 @@ namespace embree
     }
   }
 
-  bool State::verbosity(int N) {
+  bool State::verbosity(size_t N) {
     return N <= verbose;
   }
 

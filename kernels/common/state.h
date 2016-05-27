@@ -45,7 +45,7 @@ namespace embree
     void print();
 
     /*! checks if verbosity level is at least N */
-    bool verbosity(int N);
+    bool verbosity(size_t N);
 
     /*! checks if some particular ISA is enabled */
     bool hasISA(const int isa);
