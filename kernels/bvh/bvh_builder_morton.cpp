@@ -368,15 +368,13 @@ namespace embree
               for (ssize_t j=r.begin(); j<r.end(); j++)
                 generator(mesh->bounds(j),j);
             });
-          
         }
         else
         {
           /* slow path, fallback in case some primitives were invalid */
-
           ParallelPrefixSumState<size_t> pstate;
           MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
-          size_t numPrimitivesGen2 = parallel_prefix_sum( pstate, size_t(0), numPrimitives, block_size, size_t(0), [&](const range<size_t>& r, const size_t base) -> size_t {
+          parallel_prefix_sum( pstate, size_t(0), numPrimitives, block_size, size_t(0), [&](const range<size_t>& r, const size_t base) -> size_t {
               size_t num = 0;
               MortonCodeGenerator generator(mapping,&morton.data()[r.begin()]);
               for (ssize_t j=r.begin(); j<r.end(); j++)
@@ -389,7 +387,7 @@ namespace embree
               return num;
             }, std::plus<size_t>());
 
-          numPrimitivesGen2 = parallel_prefix_sum( pstate, size_t(0), numPrimitives, block_size, size_t(0), [&](const range<size_t>& r, const size_t base) -> size_t {
+          parallel_prefix_sum( pstate, size_t(0), numPrimitives, block_size, size_t(0), [&](const range<size_t>& r, const size_t base) -> size_t {
               size_t num = 0;
               MortonCodeGenerator generator(mapping,&morton.data()[base]);
               for (ssize_t j=r.begin(); j<r.end(); j++)

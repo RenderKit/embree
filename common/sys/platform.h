@@ -297,6 +297,7 @@ __forceinline std::string toString(long long value) {
 
 #if defined(__GNUC__) && !defined(__INTEL_COMPILER)
 #pragma GCC diagnostic ignored "-Wnarrowing"
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
