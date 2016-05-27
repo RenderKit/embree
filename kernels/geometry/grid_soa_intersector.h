@@ -189,7 +189,6 @@ namespace embree
                                             Scene* scene)
       {
         enum { M = Loader::M };
-        typedef typename Loader::vbool vbool;
         typedef typename Loader::vfloat vfloat;
 	const Vec3<vfloat> tri_v012_x = Loader::gather(grid_x,line_offset);
 	const Vec3<vfloat> tri_v012_y = Loader::gather(grid_y,line_offset);
@@ -212,7 +211,6 @@ namespace embree
                                            Scene* scene)
       {
         enum { M = Loader::M };
-        typedef typename Loader::vbool vbool;
         typedef typename Loader::vfloat vfloat;
 	const Vec3<vfloat> tri_v012_x = Loader::gather(grid_x,line_offset);
 	const Vec3<vfloat> tri_v012_y = Loader::gather(grid_y,line_offset);
