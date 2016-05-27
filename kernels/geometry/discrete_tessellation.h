@@ -20,7 +20,7 @@ namespace embree
 {
   struct DiscreteTessellationPattern
   {
-    DiscreteTessellationPattern (float ftess, const int sublevel = 0)
+    DiscreteTessellationPattern (float ftess, const size_t sublevel = 0)
     {
       for (size_t i=0; i<sublevel; i++) ftess *= 0.5f;
       int tess = ceil(ftess);
@@ -30,7 +30,7 @@ namespace embree
     }
     
     /* returns number of intervals (points-1) */
-    __forceinline int size() const {
+    __forceinline unsigned int size() const {
       return N;
     }
     
@@ -40,6 +40,6 @@ namespace embree
     
   private:
     float rcp_tess;
-    int   N;
+    unsigned int N;
   };
 }

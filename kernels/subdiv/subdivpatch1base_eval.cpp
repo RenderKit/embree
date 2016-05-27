@@ -27,7 +27,7 @@ namespace embree
       else if (likely(patch.type == SubdivPatch1Base::BSPLINE_PATCH))
         return ((BSplinePatch3fa*)patch.patch_v)->eval(uu,vv);
       else if (likely(patch.type == SubdivPatch1Base::GREGORY_PATCH))
-	      return ((DenseGregoryPatch3fa*)patch.patch_v)->eval(uu,vv);
+        return ((DenseGregoryPatch3fa*)patch.patch_v)->eval(uu,vv);
       return Vec3fa( zero );
     }
 
@@ -38,33 +38,31 @@ namespace embree
       else if (likely(patch.type == SubdivPatch1Base::BSPLINE_PATCH))
         return ((BSplinePatch3fa*)patch.patch_v)->normal(uu,vv);
       else if (likely(patch.type == SubdivPatch1Base::GREGORY_PATCH))
-	      return ((DenseGregoryPatch3fa*)patch.patch_v)->normal(uu,vv);
+        return ((DenseGregoryPatch3fa*)patch.patch_v)->normal(uu,vv);
       return Vec3fa( zero );
     }
 
     template<typename simdf>
       Vec3<simdf> patchEval(const SubdivPatch1Base& patch, const simdf& uu, const simdf& vv) 
     {
-      typedef typename simdf::Bool simdb;
       if (likely(patch.type == SubdivPatch1Base::BEZIER_PATCH))
         return ((BezierPatch3fa*)patch.patch_v)->eval(uu,vv);
       else if (likely(patch.type == SubdivPatch1Base::BSPLINE_PATCH))
         return ((BSplinePatch3fa*)patch.patch_v)->eval(uu,vv);
       else if (likely(patch.type == SubdivPatch1Base::GREGORY_PATCH))
-	      return ((DenseGregoryPatch3fa*)patch.patch_v)->eval(uu,vv);
+        return ((DenseGregoryPatch3fa*)patch.patch_v)->eval(uu,vv);
       return Vec3<simdf>( zero );
     }
 
     template<typename simdf>
       Vec3<simdf> patchNormal(const SubdivPatch1Base& patch, const simdf& uu, const simdf& vv) 
     {
-      typedef typename simdf::Bool simdb;
       if (likely(patch.type == SubdivPatch1Base::BEZIER_PATCH))
         return ((BezierPatch3fa*)patch.patch_v)->normal(uu,vv);
       else if (likely(patch.type == SubdivPatch1Base::BSPLINE_PATCH))
         return ((BSplinePatch3fa*)patch.patch_v)->normal(uu,vv);
       else if (likely(patch.type == SubdivPatch1Base::GREGORY_PATCH))
-	      return ((DenseGregoryPatch3fa*)patch.patch_v)->normal(uu,vv);
+        return ((DenseGregoryPatch3fa*)patch.patch_v)->normal(uu,vv);
       return Vec3<simdf>( zero );
     }
 
