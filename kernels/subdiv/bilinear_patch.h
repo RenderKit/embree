@@ -65,7 +65,6 @@ namespace embree
 
       __forceinline Vertex eval_du(const float uu, const float vv) const
       {
-        const float sx1 = uu, sx0 = 1.0f-sx1;
         const float sy1 = vv, sy0 = 1.0f-sy1;
         return sy0*(v[1]-v[0]) + sy1*(v[2]-v[3]); 
       }
@@ -73,7 +72,6 @@ namespace embree
       __forceinline Vertex eval_dv(const float uu, const float vv) const
       {
         const float sx1 = uu, sx0 = 1.0f-sx1;
-        const float sy1 = vv, sy0 = 1.0f-sy1;
         return sx0*(v[3]-v[0]) + sx1*(v[2]-v[1]);
       }
 
@@ -125,7 +123,6 @@ namespace embree
       template<class vfloat>
       __forceinline Vec3<vfloat> eval_du(const vfloat& uu, const vfloat& vv) const
       {
-        const vfloat sx1 = uu, sx0 = 1.0f-sx1;
         const vfloat sy1 = vv, sy0 = 1.0f-sy1;
         const vfloat x = sy0*(v[1].x-v[0].x) + sy1*(v[2].x-v[3].x); 
         const vfloat y = sy0*(v[1].y-v[0].y) + sy1*(v[2].y-v[3].y); 
@@ -137,7 +134,6 @@ namespace embree
       __forceinline Vec3<vfloat> eval_dv(const vfloat& uu, const vfloat& vv) const
       {
         const vfloat sx1 = uu, sx0 = 1.0f-sx1;
-        const vfloat sy1 = vv, sy0 = 1.0f-sy1;
         const vfloat x = sx0*(v[3].x-v[0].x) + sx1*(v[2].x-v[1].x);
         const vfloat y = sx0*(v[3].y-v[0].y) + sx1*(v[2].y-v[1].y);
         const vfloat z = sx0*(v[3].z-v[0].z) + sx1*(v[2].z-v[1].z);

@@ -145,9 +145,9 @@ namespace embree
   static const int CPU_FEATURE_BIT_FMA3   = 1 << 12;
   static const int CPU_FEATURE_BIT_SSE4_1 = 1 << 19;
   static const int CPU_FEATURE_BIT_SSE4_2 = 1 << 20;
-  static const int CPU_FEATURE_BIT_MOVBE  = 1 << 22;
+  //static const int CPU_FEATURE_BIT_MOVBE  = 1 << 22;
   static const int CPU_FEATURE_BIT_POPCNT = 1 << 23;
-  static const int CPU_FEATURE_BIT_XSAVE  = 1 << 26;
+  //static const int CPU_FEATURE_BIT_XSAVE  = 1 << 26;
   static const int CPU_FEATURE_BIT_OXSAVE = 1 << 27;
   static const int CPU_FEATURE_BIT_AVX    = 1 << 28;
   static const int CPU_FEATURE_BIT_F16C   = 1 << 29;

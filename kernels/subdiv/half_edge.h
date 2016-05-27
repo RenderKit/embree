@@ -274,7 +274,6 @@ namespace embree
       size_t faceValence = 0;
       size_t edgeValence = 0;
       
-      BBox3fa bounds = empty;
       const HalfEdge* p = this;
       do 
       {
