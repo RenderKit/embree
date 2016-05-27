@@ -172,7 +172,9 @@ namespace embree
       __aligned(64) RContext ray_ctx[MAX_RAYS_PER_OCTANT];
       __aligned(64) Precalculations pre[MAX_RAYS_PER_OCTANT]; 
       __aligned(64) StackItemMask  stack0[stackSizeSingle];  //!< stack of nodes 
+#if TWO_STREAMS_FIBER_MODE
       __aligned(64) StackItemMask  stack1[stackSizeSingle];  //!< stack of nodes 
+#endif
 
       for (size_t r=0;r<numTotalRays;r+=MAX_RAYS_PER_OCTANT)
       {
@@ -193,8 +195,10 @@ namespace embree
         stack0[0].ptr  = BVH::invalidNode;
         stack0[0].mask = (size_t)-1;
 
+#if TWO_STREAMS_FIBER_MODE
         stack1[0].ptr  = BVH::invalidNode;
         stack1[0].mask = (size_t)-1;
+#endif
 
 #if DISTANCE_TEST == 1
         stack0[0].dist = 0;
@@ -436,8 +440,10 @@ namespace embree
       __aligned(64) RContext ray_ctx[MAX_RAYS_PER_OCTANT];
       __aligned(64) Precalculations pre[MAX_RAYS_PER_OCTANT]; 
       __aligned(64) StackItemMask  stack0[stackSizeSingle];  //!< stack of nodes 
+#if TWO_STREAMS_FIBER_MODE
       __aligned(64) StackItemMask  stack1[stackSizeSingle];  //!< stack of nodes
- 
+ #endif
+
       for (size_t r=0;r<numTotalRays;r+=MAX_RAYS_PER_OCTANT)
       {
         Ray** rays = input_rays + r;
@@ -457,8 +463,10 @@ namespace embree
         stack0[0].ptr  = BVH::invalidNode;
         stack0[0].mask = (size_t)-1;
 
+#if TWO_STREAMS_FIBER_MODE
         stack1[0].ptr  = BVH::invalidNode;
         stack1[0].mask = (size_t)-1;
+#endif
 
 #if !TWO_STREAMS_FIBER_MODE
         const size_t fiberMask = m_active;
