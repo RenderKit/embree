@@ -631,21 +631,21 @@ namespace embree
   {
     BVH4Factory* factory = mesh->parent->device->bvh4_factory;
     accel = new BVH4(Triangle4::type,mesh->parent);
-    builder = mesh->parent->device->bvh4_factory->BVH4Triangle4MeshBuilderMortonGeneral(accel,mesh,0);
+    builder = factory->BVH4Triangle4MeshBuilderMortonGeneral(accel,mesh,0);
   }
 
   void BVH4Factory::createTriangleMeshTriangle4vMorton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
     BVH4Factory* factory = mesh->parent->device->bvh4_factory;
     accel = new BVH4(Triangle4v::type,mesh->parent);
-    builder = mesh->parent->device->bvh4_factory->BVH4Triangle4vMeshBuilderMortonGeneral(accel,mesh,0);
+    builder = factory->BVH4Triangle4vMeshBuilderMortonGeneral(accel,mesh,0);
   }
 
   void BVH4Factory::createTriangleMeshTriangle4iMorton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
     BVH4Factory* factory = mesh->parent->device->bvh4_factory;
     accel = new BVH4(Triangle4i::type,mesh->parent);
-    builder = mesh->parent->device->bvh4_factory->BVH4Triangle4iMeshBuilderMortonGeneral(accel,mesh,0); 
+    builder = factory->BVH4Triangle4iMeshBuilderMortonGeneral(accel,mesh,0); 
   }
 
   void BVH4Factory::createTriangleMeshTriangle4(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
