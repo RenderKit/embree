@@ -18,6 +18,10 @@
 #include "../math/sampling.isph"
 #include "../math/linearspace.isph"
 
+#if defined(__cplusplus)
+namespace embree {
+#endif
+
 struct SpotLight
 {
   Light super;            //!< inherited light fields
@@ -145,3 +149,7 @@ export void* uniform SpotLight_create()
 
   return self;
 }
+
+#if defined(__cplusplus)
+}
+#endif

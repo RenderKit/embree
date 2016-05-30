@@ -16,6 +16,10 @@
 
 #include "../common/tutorial/tutorial_device.isph"
 
+#if defined(__cplusplus)
+namespace embree {
+#endif
+
 /* scene data */
 RTCDevice g_device = NULL;
 RTCScene g_scene = NULL;
@@ -355,3 +359,6 @@ export void device_cleanup ()
   g_accu_count = 0;
 }
 
+#if defined(__cplusplus)
+}
+#endif

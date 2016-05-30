@@ -16,6 +16,10 @@
 
 #include "tutorial_device.isph"
 
+#if defined(__cplusplus)
+namespace embree {
+#endif
+
 /* the scene to render */
 extern RTCScene g_scene;
 
@@ -1056,3 +1060,7 @@ Vec3f getTextureTexel3f(void *uniform _texture, float s, float t)
   }
   return make_Vec3f(0.0f,0.0f,0.0f);
 }
+
+#if defined(__cplusplus)
+}
+#endif

@@ -16,6 +16,10 @@
 
 #include "../common/tutorial/tutorial_device.h"
 
+#if defined(__cplusplus)
+namespace embree {
+#endif
+
 const int numPhi = 5;
 const int numTheta = 2*numPhi;
 
@@ -913,3 +917,7 @@ extern "C" void device_cleanup ()
   rtcDeleteScene (g_scene2); g_scene2 = nullptr;
   rtcDeleteDevice(g_device); g_device = nullptr;
 }
+
+#if defined(__cplusplus)
+}
+#endif

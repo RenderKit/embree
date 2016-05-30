@@ -18,6 +18,10 @@
 #include "../scenegraph/texture.h"
 #include "scene_device.h"
 
+#if defined(__cplusplus)
+namespace embree {
+#endif
+
 /* the scene to render */
 extern RTCScene g_scene;
 
@@ -1042,3 +1046,7 @@ Vec3f getTextureTexel3f(const Texture* texture, float s, float t)
    }  
   return Vec3f(0.0f);;
 }
+
+#if defined(__cplusplus)
+}
+#endif

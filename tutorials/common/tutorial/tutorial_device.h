@@ -24,19 +24,25 @@
 #define TILE_SIZE_X 8
 #define TILE_SIZE_Y 8
 
-/* vertex and triangle layout */
-#if !defined(__NO_VERTEX__)
-struct Vertex   { float x,y,z,r; };
-#endif
-struct Triangle { int v0, v1, v2; };
-struct Quad     { int v0, v1, v2, v3; };
-
 #define __RTCRay__
 #define __RTCRay4__
 #define __RTCRay8__
 #define __RTCRay16__
 #include "../../../include/embree2/rtcore.h"
 #include "../../../include/embree2/rtcore_ray.h"
+
+#include "../core/ray.h"
+#include "camera.h"
+#include "scene.h"
+
+namespace embree
+{
+/* vertex and triangle layout */
+#if !defined(__NO_VERTEX__)
+struct Vertex   { float x,y,z,r; };
+#endif
+struct Triangle { int v0, v1, v2; };
+struct Quad     { int v0, v1, v2, v3; };
 
 enum Mode {
   MODE_NORMAL = 0,
@@ -48,11 +54,6 @@ enum Mode {
 void error_handler(const RTCError code, const char* str = nullptr);
 
 extern "C" Mode g_mode;
-
-#include "../core/ray.h"
-#include "camera.h"
-#include "scene.h"
-using namespace embree;
 
 /* returns time stamp counter */
 extern "C" int64_t get_tsc();
@@ -121,3 +122,4 @@ Vec2f getTextureCoordinatesSubdivMesh(void* mesh, const unsigned int primID, con
 
 float  getTextureTexel1f(const Texture* texture,const float u, const float v);
 Vec3f  getTextureTexel3f(const Texture* texture,const float u, const float v);
+}

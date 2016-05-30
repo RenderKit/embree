@@ -19,6 +19,10 @@
 #include "../common/tutorial/tutorial_device.isph"
 #include "../common/tutorial/scene_device.isph"
 
+#if defined(__cplusplus)
+namespace embree {
+#endif
+
 extern uniform ISPCScene* uniform g_ispc_scene;
 extern uniform bool g_changed;
 extern uniform int g_instancing_mode;
@@ -638,3 +642,7 @@ export void device_cleanup ()
   rtcDeleteScene (g_scene); g_scene = NULL;
   rtcDeleteDevice(g_device); g_device = NULL;
 }
+
+#if defined(__cplusplus)
+}
+#endif

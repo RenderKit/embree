@@ -16,6 +16,10 @@
 
 #pragma once
 
+#if defined(__cplusplus)
+namespace embree {
+#endif
+
 /*! \addtogroup rivl_render_embree_ivl */
 /*! @{ */
 
@@ -178,3 +182,7 @@ inline PowerCosineDistribution make_PowerCosineDistribution(const float _exp) {
 #endif
 
 /*! @} */
+
+#if defined(__cplusplus)
+}
+#endif

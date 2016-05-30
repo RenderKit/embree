@@ -16,6 +16,10 @@
 
 #include "../common/tutorial/tutorial_device.h"
 
+#if defined(__cplusplus)
+namespace embree {
+#endif
+
 /* scene data */
 RTCDevice g_device = nullptr;
 RTCScene g_scene = nullptr;
@@ -241,3 +245,6 @@ extern "C" void device_cleanup ()
   alignedFree(vertex_colors); vertex_colors = nullptr;
 }
 
+#if defined(__cplusplus)
+}
+#endif

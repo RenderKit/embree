@@ -18,6 +18,10 @@
 #include "../common/tutorial/tutorial_device.h"
 #include "../common/tutorial/scene_device.h"
 
+#if defined(__cplusplus)
+namespace embree {
+#endif
+
 #if defined(__XEON_PHI__) // FIXME: gather of pointers not working in ISPC for Xeon Phi
 #define renderPixelTestEyeLight renderPixelStandard
 #else
@@ -587,3 +591,7 @@ extern "C" void device_cleanup ()
   g_accu_height = 0;
   g_accu_count = 0;
 }
+
+#if defined(__cplusplus)
+}
+#endif

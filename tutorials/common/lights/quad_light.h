@@ -18,10 +18,14 @@
 
 #include "../math/vec.h"
 
-extern "C" void* QuadLight_create();
+namespace embree 
+{
+  extern "C" void* QuadLight_create();
+  
+  extern "C" void QuadLight_set(void* super,
+                                const Vec3fa& position,
+                                const Vec3fa& edge2,
+                                const Vec3fa& edge1,
+                                const Vec3fa& radiance);
+}
 
-extern "C" void QuadLight_set(void* super,
-                              const Vec3fa& position,
-                              const Vec3fa& edge2,
-                              const Vec3fa& edge1,
-                              const Vec3fa& radiance);

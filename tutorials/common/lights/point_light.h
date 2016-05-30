@@ -18,9 +18,12 @@
 
 #include "../math/vec.h"
 
-extern "C" void* PointLight_create();
-
-extern "C" void PointLight_set(void* super,
-                               const Vec3fa& position,
-                               const Vec3fa& power,
-                               float radius);
+namespace embree 
+{
+  extern "C" void* PointLight_create();
+  
+  extern "C" void PointLight_set(void* super,
+                                 const Vec3fa& position,
+                                 const Vec3fa& power,
+                                 float radius);
+}

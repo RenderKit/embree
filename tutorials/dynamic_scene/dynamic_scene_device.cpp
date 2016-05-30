@@ -16,6 +16,10 @@
 
 #include "../common/tutorial/tutorial_device.h"
 
+#if defined(__cplusplus)
+namespace embree {
+#endif
+
 #if 0
 const int numSpheres = 1000;
 const int numPhi = 5; 
@@ -326,3 +330,7 @@ extern "C" void device_cleanup ()
   rtcDeleteScene (g_scene); g_scene = nullptr;
   rtcDeleteDevice(g_device); g_device = nullptr;
 }
+
+#if defined(__cplusplus)
+}
+#endif

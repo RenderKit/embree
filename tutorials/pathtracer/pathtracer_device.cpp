@@ -21,6 +21,10 @@
 #include "../common/tutorial/scene_device.h"
 #include "../common/tutorial/optics.h"
 
+#if defined(__cplusplus)
+namespace embree {
+#endif
+
 #undef TILE_SIZE_X
 #undef TILE_SIZE_Y
 
@@ -1817,3 +1821,7 @@ extern "C" void device_cleanup ()
   g_accu_height = 0;
   g_accu_count = 0;
 } // device_cleanup
+
+#if defined(__cplusplus)
+}
+#endif

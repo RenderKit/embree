@@ -18,6 +18,10 @@
 #include "../math/sampling.h"
 #include "../math/linearspace.h"
 
+#if defined(__cplusplus)
+namespace embree {
+#endif
+
 struct AmbientLight
 {
   Light super;      //!< inherited light fields
@@ -90,3 +94,7 @@ extern "C" void AmbientLight_set(void* super,
   AmbientLight* self = (AmbientLight*)super;
   self->radiance = radiance;
 }
+
+#if defined(__cplusplus)
+}
+#endif

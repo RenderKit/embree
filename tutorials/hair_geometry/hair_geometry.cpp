@@ -98,7 +98,7 @@ __forceinline float grad(int hash, float x, float y, float z) {
   return x*g3[4*h+0]+y*g3[4*h+1]+z*g3[4*h+2];
 }
 
-float noise(float x) 
+float Noise(float x) 
 {
   float fx = floorf(x);
   int X = (int)fx & 255;
@@ -109,7 +109,7 @@ float noise(float x)
   return lerp(u,g00,g10);
 }
 
-float noise(float x, float y) 
+float Noise(float x, float y) 
 {
   float fx = floorf(x);
   float fy = floorf(y);
@@ -136,7 +136,7 @@ float noise(float x, float y)
   return lerp(v,lerp(u,g00,g10),lerp(u,g01,g11));
 }
 
-float noise(float x, float y, float z) 
+float Noise(float x, float y, float z) 
 {
   float fx = floorf(x);
   float fy = floorf(y);
@@ -179,11 +179,11 @@ float noise(float x, float y, float z)
               lerp(v,lerp(u,g001,g101),lerp(u,g011,g111)));
 }
 
-  Vec3fa noise3D(const Vec3fa& p)
+  Vec3fa Noise3D(const Vec3fa& p)
   {
-    float x = noise(4.0f*p.x);
-    float y = noise(4.0f*p.y);
-    float z = noise(4.0f*p.z);
+    float x = Noise(4.0f*p.x);
+    float y = Noise(4.0f*p.y);
+    float z = Noise(4.0f*p.z);
     return p+0.2f*Vec3fa(x,y,z);
   }
 
@@ -242,8 +242,8 @@ float noise(float x, float y, float z)
         
         Vec3fa l0 = p + r*       (dp + 0.00f*dp); l0.w = thickness;
         Vec3fa l1 = p + r*       (dp + 0.25f*dp); l1.w = thickness;
-        Vec3fa l2 = p + r*noise3D(dp + 0.50f*dp); l2.w = thickness;
-        Vec3fa l3 = p + r*noise3D(dp + 0.75f*dp); l3.w = thickness;
+        Vec3fa l2 = p + r*Noise3D(dp + 0.50f*dp); l2.w = thickness;
+        Vec3fa l3 = p + r*Noise3D(dp + 0.75f*dp); l3.w = thickness;
         
         const unsigned int v_index = hairset->v.size();
         hairset->v.push_back(l0);
