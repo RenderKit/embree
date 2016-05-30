@@ -28,7 +28,8 @@ namespace embree {
 //#define rtcOccluded rtcIntersect
 //#define rtcOccluded1M rtcIntersect1M
 //#define RAYN_FLAGS RTC_INTERSECT_COHERENT
-#define RAYN_FLAGS RTC_INTERSECT_INCOHERENT
+//#define RAYN_FLAGS RTC_INTERSECT_INCOHERENT
+#define RAYN_FLAGS RTC_INTERSECT_COHERENT_COMMON_ORIGIN
 
 extern "C" ISPCScene* g_ispc_scene;
 
@@ -275,9 +276,11 @@ void renderTileStandard(int taskIndex,
     /* eyelight shading */
     Vec3fa color = Vec3fa(0.0f);
     if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
-      //color = Vec3fa(abs(dot(ray.dir,normalize(ray.Ng))));
+#if RAYN_FLAGS == RTC_INTERSECT_COHERENT_COMMON_ORIGIN      
+      color = Vec3fa(abs(dot(ray.dir,normalize(ray.Ng))));
+#else    
       color = ambientOcclusionShading(x,y,ray);
-
+#endif
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
     unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));

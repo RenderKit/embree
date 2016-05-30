@@ -182,11 +182,17 @@ namespace embree
 
         if (m_active == 0) return;
 
+        Vec3fa min_rdir(pos_inf);
+        Vec3fa max_rdir(neg_inf);
         /* do per ray precalculations */
         for (size_t i=0; i<numOctantRays; i++) {
           new (&ray_ctx[i]) RContext(rays[i]);
           new (&pre[i]) Precalculations(*rays[i],bvh);
+          min_rdir = min(min_rdir,ray_ctx[i].rdir);
+          max_rdir = max(max_rdir,ray_ctx[i].rdir);          
         }
+
+        const Vec3fa org_rdir = ray_ctx[0].org_rdir;
 
         stack0[0].ptr  = BVH::invalidNode;
         stack0[0].mask = (size_t)-1;
@@ -218,7 +224,6 @@ namespace embree
           {
             if (unlikely(cur.isLeaf())) break;
             const Node* __restrict__ const node = cur.node();
-            STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);
             assert(m_trav_active);
 
 #if defined(__AVX512F__) 
@@ -266,7 +271,31 @@ namespace embree
             const vfloat<K> bmaxX = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farX));
             const vfloat<K> bmaxY = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farY));
             const vfloat<K> bmaxZ = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farZ));
+#if 0
+            /* interval-based culling test */
+            {
+                const vfloat<K> tminX = msub(bminX, min_rdir.x, org_rdir.x);
+                const vfloat<K> tminY = msub(bminY, min_rdir.y, org_rdir.y);
+                const vfloat<K> tminZ = msub(bminZ, min_rdir.z, org_rdir.z);
+                const vfloat<K> tmaxX = msub(bmaxX, max_rdir.x, org_rdir.x);
+                const vfloat<K> tmaxY = msub(bmaxY, max_rdir.y, org_rdir.y);
+                const vfloat<K> tmaxZ = msub(bmaxZ, max_rdir.z, org_rdir.z);
+                const vfloat<K> tmin  = max(max(tminX,tminY),tminZ);
+                const vfloat<K> tmax  = min(min(tmaxX,tmaxY),tmaxZ);
+                const vbool<K> vmask   = tmin <= tmax;
 
+                if (unlikely(none(vmask))) 
+                {
+                  /*! pop next node */
+                  STAT3(normal.trav_stack_pop,1,1,1);                          
+                  stackPtr--;
+                  cur = NodeRef(stackPtr->ptr);
+                  m_trav_active = stackPtr->mask;
+                  assert(m_trav_active);
+                  goto pop;
+                }
+            }
+#endif            
             vfloat<K> dist(inf);
             vint<K>   maskK(zero);
 
@@ -352,7 +381,6 @@ namespace embree
 
       if (unlikely(isCoherentCommonOrigin(context->flags)))
       {
-        PRINT("CO MODE");
         BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect_co(bvh, input_rays, numTotalRays, context);
         
       }
