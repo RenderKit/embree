@@ -437,7 +437,7 @@ namespace embree
     {
       if (i != 0) {
         cleanup(state);
-        if (numRetries++ > 200) break;
+        if (numRetries++ > 1000) break;
         std::cout << state->yellow(" [RETRY]" ) << " (" << 100.0f*error << "%)" << std::flush;
         setup(state);
       }
