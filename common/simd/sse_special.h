@@ -63,12 +63,12 @@ typedef __m64 v2si;   // vector of 2 int (mmx)
 _PS_CONST(1  , 1.0f);
 _PS_CONST(0p5, 0.5f);
 /* the smallest non denormalized float number */
-_PS_CONST_TYPE(min_norm_pos, int, 0x00800000);
-_PS_CONST_TYPE(mant_mask, int, 0x7f800000);
-_PS_CONST_TYPE(inv_mant_mask, int, ~0x7f800000);
+_PS_CONST_TYPE(min_norm_pos, int, int(0x00800000));
+_PS_CONST_TYPE(mant_mask, int, int(0x7f800000));
+_PS_CONST_TYPE(inv_mant_mask, int, int(~0x7f800000));
 
-_PS_CONST_TYPE(sign_mask, int, 0x80000000);
-_PS_CONST_TYPE(inv_sign_mask, int, ~0x80000000);
+_PS_CONST_TYPE(sign_mask, int, int(0x80000000));
+_PS_CONST_TYPE(inv_sign_mask, int, int(~0x80000000));
 
 _PI32_CONST(1, 1);
 _PI32_CONST(inv1, ~1);
