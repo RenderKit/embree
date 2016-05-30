@@ -33,13 +33,13 @@ struct RTCRay2
   float tnear;   //!< Start of ray segment
   float tfar;    //!< End of ray segment
   float time;    //!< Time of this ray for motion blur.
-  int mask;      //!< used to mask out objects during traversal
+  unsigned int mask; //!< used to mask out objects during traversal
   Vec3f Ng;      //!< Geometric normal.
   float u;       //!< Barycentric u coordinate of hit
   float v;       //!< Barycentric v coordinate of hit
-  int geomID;    //!< geometry ID
-  int primID;    //!< primitive ID
-  int instID;    //!< instance ID
+  unsigned int geomID; //!< geometry ID
+  unsigned int primID; //!< primitive ID
+  unsigned int instID; //!< instance ID
 
   // ray extensions
   float transparency; //!< accumulated transparency value
