@@ -1813,7 +1813,7 @@ namespace embree
         RTCRay rays[4] = { ray0, ray1, ray2, ray3 };
         IntersectWithMode(imode,ivariant,scene,rays,4);
         for (size_t i=0; i<4; i++)
-          passed &= masks[i] & (1<<i) ? rays[i].geomID != -1 : rays[i].geomID == RTC_INVALID_GEOMETRY_ID;
+          passed &= masks[i] & (1<<i) ? rays[i].geomID != RTC_INVALID_GEOMETRY_ID : rays[i].geomID == RTC_INVALID_GEOMETRY_ID;
       }
       AssertNoError(device);
 
@@ -2152,7 +2152,6 @@ namespace embree
           for (size_t j=0; j<M; j++) 
           {
             if (plane) {
-              Vec3fa org = random_Vec3fa() - Vec3fa(0.5f);
               Vec3fa dir = 2.0f*random_Vec3fa() - Vec3fa(1.0f); dir.x = 1.0f;
               rays[j] = makeRay(Vec3fa(pos.x-3.0f,0.0f,0.0f),dir); 
             } else {
@@ -2216,12 +2215,12 @@ namespace embree
       for (size_t i=0; i<numRays; i+=maxStreamSize) 
       {
         size_t M = min(maxStreamSize,numRays-i);
-        int primIDs[maxStreamSize];
+        unsigned int primIDs[maxStreamSize];
         __aligned(16) RTCRay rays[maxStreamSize];
         for (size_t j=0; j<M; j++) 
         {
           Vec3fa org = pos + radius*(2.0f*random_Vec3fa() - Vec3fa(1.0f));
-          int primID = random_int() % plane->triangles.size();
+          unsigned int primID = random_int() % plane->triangles.size();
           Vec3fa v0 = plane->v[plane->triangles[primID].v0];
           Vec3fa v1 = plane->v[plane->triangles[primID].v1];
           Vec3fa v2 = plane->v[plane->triangles[primID].v2];
@@ -2507,7 +2506,7 @@ namespace embree
     RegressionTask* task;
   };
 
-  ssize_t monitorProgressBreak = -1;
+  size_t monitorProgressBreak = 0;
   std::atomic<size_t> monitorProgressInvokations(0);
 
   bool monitorProgressFunction(void* ptr, double dn) 
@@ -2548,14 +2547,6 @@ namespace embree
     }
 
     if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
-    int geom[1024];
-    int types[1024];
-    size_t numVertices[1024];
-    for (size_t i=0; i<1024; i++)  {
-      geom[i] = -1;
-      types[i] = 0;
-      numVertices[i] = 0;
-    }
     bool hasError = false;
 
     for (size_t i=0; i<task->sceneCount; i++) 
@@ -2887,7 +2878,7 @@ namespace embree
     }
   };
 
-  ssize_t monitorMemoryBreak = -1;
+  size_t monitorMemoryBreak = 0;
   std::atomic<size_t> monitorMemoryBytesUsed(0);
   std::atomic<size_t> monitorMemoryInvokations(0);
 
@@ -2938,10 +2929,10 @@ namespace embree
       size_t sceneIndex = 0;
       while (sceneIndex < size_t(30*state->intensity)) 
       {
-        monitorMemoryBreak = -1;
+        monitorMemoryBreak = std::numeric_limits<size_t>::max();
         monitorMemoryBytesUsed = 0;
         monitorMemoryInvokations = 0;
-        monitorProgressBreak = -1;
+        monitorProgressBreak = std::numeric_limits<size_t>::max();
         monitorProgressInvokations = 0;
         RegressionTask task1(sceneIndex,1,0,true);
         func(new ThreadRegressionTask(0,0,state,device,intersectModes,&task1));
@@ -3026,7 +3017,7 @@ namespace embree
     bool thread_function(size_t threadIndex = 0)
     {
       barrier.wait(threadIndex);
-      if (pos.load() == -1) return false;
+      if (pos.load() == size_t(-1)) return false;
 
       for (size_t i = pos.fetch_add(dN); i<N; i=pos.fetch_add(dN)) 
         render_block(i,dN);
