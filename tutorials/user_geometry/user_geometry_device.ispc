@@ -316,7 +316,7 @@ unmasked void sphereIntersectFuncN(const uniform int* uniform valid,
   for (uniform int ui=0; ui<N; ui+=programCount)
   {
     /* calculate varying loop and execution mask */
-    int vi = ui+programIndex;
+    unsigned int vi = ui+programIndex;
     if (vi>=N) continue;
     
     /* ignore inactive rays */
@@ -379,7 +379,7 @@ unmasked void sphereOccludedFuncN(const uniform int* uniform valid,
   for (uniform int ui=0; ui<N; ui+=programCount)
   {
     /* calculate varying loop and execution mask */
-    int vi = ui+programIndex;
+    unsigned int vi = ui+programIndex;
     if (vi>=N) continue;
     
     /* ignore inactive rays */
