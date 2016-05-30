@@ -1864,8 +1864,10 @@ namespace embree
       bool passed = true;
 
       for (size_t i=0; i<numRays; i++) {
-        if (i%2) rays[i] = makeRay(Vec3fa(random_float(),random_float(),+1),Vec3fa(0,0,-1)); 
-        else     rays[i] = makeRay(Vec3fa(random_float(),random_float(),-1),Vec3fa(0,0,+1)); 
+        const float rx = random_float();
+        const float ry = random_float();
+        if (i%2) rays[i] = makeRay(Vec3fa(rx,ry,+1),Vec3fa(0,0,-1)); 
+        else     rays[i] = makeRay(Vec3fa(rx,ry,-1),Vec3fa(0,0,+1)); 
       }
       
       IntersectWithMode(imode,ivariant,scene,rays,numRays);
@@ -2087,8 +2089,8 @@ namespace embree
           {
             if (rand()%2) {
               valid[j] = true;
-              Vec3fa org(2.0f*random_float()-1.0f,2.0f*random_float()-1.0f,2.0f*random_float()-1.0f);
-              Vec3fa dir(2.0f*random_float()-1.0f,2.0f*random_float()-1.0f,2.0f*random_float()-1.0f);
+              Vec3fa org = 2.0f*random_Vec3fa()-Vec3fa(1.0f);
+              Vec3fa dir = 2.0f*random_Vec3fa()-Vec3fa(1.0f);
               rays[j] = makeRay(pos+org,dir); 
             } else {
               valid[j] = false;
@@ -2150,12 +2152,12 @@ namespace embree
           for (size_t j=0; j<M; j++) 
           {
             if (plane) {
-              Vec3fa org(random_float()-0.5f,random_float()-0.5f,random_float()-0.5f);
-              Vec3fa dir(1.0f,2.0f*random_float()-1.0f,2.0f*random_float()-1.0f);
+              Vec3fa org = random_Vec3fa() - Vec3fa(0.5f);
+              Vec3fa dir = 2.0f*random_Vec3fa() - Vec3fa(1.0f); dir.x = 1.0f;
               rays[j] = makeRay(Vec3fa(pos.x-3.0f,0.0f,0.0f),dir); 
             } else {
-              Vec3fa org(2.0f*random_float()-1.0f,2.0f*random_float()-1.0f,2.0f*random_float()-1.0f);
-              Vec3fa dir(2.0f*random_float()-1.0f,2.0f*random_float()-1.0f,2.0f*random_float()-1.0f);
+              Vec3fa org = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
+              Vec3fa dir = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
               rays[j] = makeRay(pos+org,dir); 
             }
           }
@@ -2218,7 +2220,7 @@ namespace embree
         __aligned(16) RTCRay rays[maxStreamSize];
         for (size_t j=0; j<M; j++) 
         {
-          Vec3fa org = pos + radius*Vec3fa(2.0f*random_float()-1.0f,2.0f*random_float()-1.0f,2.0f*random_float()-1.0f);
+          Vec3fa org = pos + radius*(2.0f*random_Vec3fa() - Vec3fa(1.0f));
           int primID = random_int() % plane->triangles.size();
           Vec3fa v0 = plane->v[plane->triangles[primID].v0];
           Vec3fa v1 = plane->v[plane->triangles[primID].v1];
@@ -2281,8 +2283,8 @@ namespace embree
           RTCRay* rays = (RTCRay*) &data[alignment];
           for (size_t j=0; j<M; j++) 
           {
-            Vec3fa org(2.0f*random_float()-1.0f,2.0f*random_float()-1.0f,2.0f*random_float()-1.0f);
-            Vec3fa dir(2.0f*random_float()-1.0f,2.0f*random_float()-1.0f,2.0f*random_float()-1.0f);
+            Vec3fa org = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
+            Vec3fa dir = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
             rays[j] = makeRay(org,dir); 
           }
           IntersectWithMode(imode,ivariant,scene,rays,M);
@@ -2319,32 +2321,32 @@ namespace embree
 
       double c0 = getSeconds();
       for (size_t i=0; i<numRays; i++) {
-        Vec3fa org(2.0f*random_float()-1.0f,2.0f*random_float()-1.0f,2.0f*random_float()-1.0f);
-        Vec3fa dir(2.0f*random_float()-1.0f,2.0f*random_float()-1.0f,2.0f*random_float()-1.0f);
+        Vec3fa org = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
+        Vec3fa dir = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
         rays[i] = makeRay(org,dir); 
       }
       IntersectWithMode(imode,ivariant,scene,rays,numRays);
     
       double c1 = getSeconds();
       for (size_t i=0; i<numRays; i++) {
-        Vec3fa org(2.0f*random_float()-1.0f,2.0f*random_float()-1.0f,2.0f*random_float()-1.0f);
-        Vec3fa dir(2.0f*random_float()-1.0f,2.0f*random_float()-1.0f,2.0f*random_float()-1.0f);
+        Vec3fa org = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
+        Vec3fa dir = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
         rays[i] = makeRay(org+Vec3fa(nan),dir); 
       }
       IntersectWithMode(imode,ivariant,scene,rays,numRays);
 
       double c2 = getSeconds();
       for (size_t i=0; i<numRays; i++) {
-        Vec3fa org(2.0f*random_float()-1.0f,2.0f*random_float()-1.0f,2.0f*random_float()-1.0f);
-        Vec3fa dir(2.0f*random_float()-1.0f,2.0f*random_float()-1.0f,2.0f*random_float()-1.0f);
+        Vec3fa org = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
+        Vec3fa dir = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
         rays[i] = makeRay(org+Vec3fa(nan),dir+Vec3fa(nan)); 
       }
       IntersectWithMode(imode,ivariant,scene,rays,numRays);
 
       double c3 = getSeconds();
       for (size_t i=0; i<numRays; i++) {
-        Vec3fa org(2.0f*random_float()-1.0f,2.0f*random_float()-1.0f,2.0f*random_float()-1.0f);
-        Vec3fa dir(2.0f*random_float()-1.0f,2.0f*random_float()-1.0f,2.0f*random_float()-1.0f);
+        Vec3fa org = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
+        Vec3fa dir = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
         rays[i] = makeRay(org,dir,nan,nan); 
       }
       IntersectWithMode(imode,ivariant,scene,rays,numRays);
@@ -2390,40 +2392,40 @@ namespace embree
 
       double c0 = getSeconds();
       for (size_t i=0; i<numRays; i++) {
-        Vec3fa org(2.0f*random_float()-1.0f,2.0f*random_float()-1.0f,2.0f*random_float()-1.0f);
-        Vec3fa dir(2.0f*random_float()-1.0f,2.0f*random_float()-1.0f,2.0f*random_float()-1.0f);
+        Vec3fa org = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
+        Vec3fa dir = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
         rays[i] = makeRay(org,dir); 
       }
       IntersectWithMode(imode,ivariant,scene,rays,numRays);
 
       double c1 = getSeconds();
       for (size_t i=0; i<numRays; i++) {
-        Vec3fa org(2.0f*random_float()-1.0f,2.0f*random_float()-1.0f,2.0f*random_float()-1.0f);
-        Vec3fa dir(2.0f*random_float()-1.0f,2.0f*random_float()-1.0f,2.0f*random_float()-1.0f);
+        Vec3fa org = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
+        Vec3fa dir = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
         rays[i] = makeRay(org+Vec3fa(inf),dir); 
       }
       IntersectWithMode(imode,ivariant,scene,rays,numRays);
 
       double c2 = getSeconds();
       for (size_t i=0; i<numRays; i++) {
-        Vec3fa org(2.0f*random_float()-1.0f,2.0f*random_float()-1.0f,2.0f*random_float()-1.0f);
-        Vec3fa dir(2.0f*random_float()-1.0f,2.0f*random_float()-1.0f,2.0f*random_float()-1.0f);
+        Vec3fa org = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
+        Vec3fa dir = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
         rays[i] = makeRay(org,dir+Vec3fa(inf)); 
       }
       IntersectWithMode(imode,ivariant,scene,rays,numRays);
 
       double c3 = getSeconds();
       for (size_t i=0; i<numRays; i++) {
-        Vec3fa org(2.0f*random_float()-1.0f,2.0f*random_float()-1.0f,2.0f*random_float()-1.0f);
-        Vec3fa dir(2.0f*random_float()-1.0f,2.0f*random_float()-1.0f,2.0f*random_float()-1.0f);
+        Vec3fa org = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
+        Vec3fa dir = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
         rays[i] = makeRay(org+Vec3fa(inf),dir+Vec3fa(inf)); 
       }
       IntersectWithMode(imode,ivariant,scene,rays,numRays);
 
       double c4 = getSeconds();
       for (size_t i=0; i<numRays; i++) {
-        Vec3fa org(2.0f*random_float()-1.0f,2.0f*random_float()-1.0f,2.0f*random_float()-1.0f);
-        Vec3fa dir(2.0f*random_float()-1.0f,2.0f*random_float()-1.0f,2.0f*random_float()-1.0f);
+        Vec3fa org = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
+        Vec3fa dir = 2.0f*random_Vec3fa() - Vec3fa(1.0f);
         rays[i] = makeRay(org,dir,-0.0f,inf); 
       }
       IntersectWithMode(imode,ivariant,scene,rays,numRays);
@@ -3282,12 +3284,8 @@ namespace embree
       AssertNoError(device);      
 
       numbers = new Vec3f[N];
-      for (size_t i=0; i<N; i++) {
-        float x = 2.0f*random_float()-1.0f;
-        float y = 2.0f*random_float()-1.0f;
-        float z = 2.0f*random_float()-1.0f;
-        numbers[i] = Vec3f(x,y,z);
-      }
+      for (size_t i=0; i<N; i++)
+        numbers[i] = 2.0f*random_Vec3fa()-Vec3fa(1.0f);
 
       return true;
     }
