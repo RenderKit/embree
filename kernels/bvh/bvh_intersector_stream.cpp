@@ -165,6 +165,180 @@ namespace embree
     // =====================================================================================================
     // =====================================================================================================
 
+    template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
+    void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect_co(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, const RTCIntersectContext* context)
+    {
+      __aligned(64) RContext ray_ctx[MAX_RAYS_PER_OCTANT];
+      __aligned(64) Precalculations pre[MAX_RAYS_PER_OCTANT]; 
+      __aligned(64) StackItemMask  stack0[stackSizeSingle];  //!< stack of nodes 
+
+      for (size_t r=0;r<numTotalRays;r+=MAX_RAYS_PER_OCTANT)
+      {
+        Ray** __restrict__ rays = input_rays + r;
+        const size_t numOctantRays = (r + MAX_RAYS_PER_OCTANT >= numTotalRays) ? numTotalRays-r : MAX_RAYS_PER_OCTANT;
+
+        /* inactive rays should have been filtered out before */
+        size_t m_active = numOctantRays == 8*sizeof(size_t) ? (size_t)-1 : (((size_t)1 << numOctantRays))-1;
+
+        if (m_active == 0) return;
+
+        /* do per ray precalculations */
+        for (size_t i=0; i<numOctantRays; i++) {
+          new (&ray_ctx[i]) RContext(rays[i]);
+          new (&pre[i]) Precalculations(*rays[i],bvh);
+        }
+
+        stack0[0].ptr  = BVH::invalidNode;
+        stack0[0].mask = (size_t)-1;
+
+        ///////////////////////////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////////////
+
+        const NearFarPreCompute pc(ray_ctx[0].rdir);
+
+        const size_t fiberMask = m_active;
+        assert(fiberMask);
+        
+        StackItemMask* stackPtr      = stack0 + 1;
+
+        NodeRef cur               = bvh->root;
+        size_t m_trav_active      = m_active & fiberMask; // lower half of active rays
+        NodeRef cur_next          = bvh->root;
+        size_t m_trav_active_next = m_active & (~fiberMask); // upper half of active rays
+        if (m_trav_active_next == 0) cur_next = 0;
+
+        assert(__popcnt(m_trav_active_next) <= 32);
+
+        while (1) pop:
+        {          
+          const vfloat<K> inf(pos_inf);
+
+          while (1)
+          {
+            if (unlikely(cur.isLeaf())) break;
+            const Node* __restrict__ const node = cur.node();
+            STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);
+            assert(m_trav_active);
+
+#if defined(__AVX512F__) 
+            const vlong<K/2> one((size_t)1);
+
+            const vfloat<K> bminmaxX = permute(vfloat<K>::load((float*)&node->lower_x),pc.permX);
+            const vfloat<K> bminmaxY = permute(vfloat<K>::load((float*)&node->lower_y),pc.permY);
+            const vfloat<K> bminmaxZ = permute(vfloat<K>::load((float*)&node->lower_z),pc.permZ);
+
+            vfloat<K> dist(inf);
+            vlong<K/2>   maskK(zero);
+              
+            size_t bits = m_trav_active;
+            do
+            {            
+              STAT3(normal.trav_nodes,1,1,1);                          
+              const size_t i = __bscf(bits);
+              const RContext &ray = ray_ctx[i];
+              const vlong<K/2> bitmask  = one << vlong<K/2>(i);
+
+              const vbool<K> vmask = intersectNode<K,true,robust>(ray,bminmaxX,bminmaxY,bminmaxZ,dist);
+
+              maskK = mask_or((vboold8)vmask,maskK,maskK,bitmask);
+            } while(bits);              
+
+            const vboold8 vmask8 =  maskK != vlong<K/2>(zero);
+            const vbool<K> vmask(vmask8);
+            if (unlikely(none(vmask))) 
+            {
+              /*! pop next node */
+              STAT3(normal.trav_stack_pop,1,1,1);                          
+              stackPtr--;
+              cur = NodeRef(stackPtr->ptr);
+              m_trav_active = stackPtr->mask;
+              assert(m_trav_active);
+              goto pop;
+            }
+
+            BVHNNodeTraverserKHit<types,N,K>::traverseClosestHit(cur, m_trav_active, vmask, dist, (size_t*)&maskK, stackPtr);
+
+#else
+            const vfloat<K> bminX = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.nearX));
+            const vfloat<K> bminY = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.nearY));
+            const vfloat<K> bminZ = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.nearZ));
+            const vfloat<K> bmaxX = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farX));
+            const vfloat<K> bmaxY = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farY));
+            const vfloat<K> bmaxZ = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farZ));
+
+            vfloat<K> dist(inf);
+            vint<K>   maskK(zero);
+
+            const RContext *__restrict__ const cur_ray_ctx = ray_ctx;
+            size_t bits = m_trav_active;
+            do
+            {            
+              STAT3(normal.trav_nodes,1,1,1);                          
+              const size_t i = __bscf(bits);
+              const RContext &ray = cur_ray_ctx[i];
+              const vint<K> bitmask  = vint<K>((int)1 << i);
+              const vbool<K> vmask = intersectNode<K,true, robust> (ray,bminX,bminY,bminZ,bmaxX,bmaxY,bmaxZ,dist);
+
+#if defined(__AVX2__)
+              maskK = maskK | (bitmask & vint<K>(vmask));
+#else
+              maskK = select(vmask,maskK | bitmask,maskK); 
+#endif
+            } while(bits);              
+
+            const vbool<K> vmask = dist < inf;
+            if (unlikely(none(vmask))) 
+            {
+              /*! pop next node */
+              STAT3(normal.trav_stack_pop,1,1,1);                          
+              stackPtr--;
+              cur = NodeRef(stackPtr->ptr);
+              m_trav_active = stackPtr->mask;
+              assert(m_trav_active);
+              goto pop;
+            }
+
+            BVHNNodeTraverserKHit<types,N,K>::traverseClosestHit(cur, m_trav_active, vmask, dist, (unsigned int*)&maskK, stackPtr);
+            assert(m_trav_active);
+#endif
+          }
+
+          /* current ray stream is done? */
+          if (unlikely(cur == BVH::invalidNode))
+            break;
+
+          /*! this is a leaf node */
+          assert(cur != BVH::emptyNode);
+          STAT3(normal.trav_leaves, 1, 1, 1);
+          size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
+          
+          //STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
+          size_t bits = m_trav_active;
+
+          /*! intersect stream of rays with all primitives */
+          size_t lazy_node = 0;
+          size_t valid_isec MAYBE_UNUSED = PrimitiveIntersector::intersect(pre,bits,rays,context,ray_ctx,0,prim,num,bvh->scene,NULL,lazy_node);
+
+          STAT3(normal.trav_hit_boxes[__popcnt(valid_isec)],1,1,1);            
+
+          /*! pop next node */
+          STAT3(normal.trav_stack_pop,1,1,1);                          
+          stackPtr--;
+          cur = NodeRef(stackPtr->ptr);            
+          m_trav_active = stackPtr->mask;
+          assert(m_trav_active);
+        } // traversal + intersection
+
+        ///////////////////////////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////////////
+      }      
+    }
+    
+    // =====================================================================================================
+    // =====================================================================================================
+    // =====================================================================================================
 
     template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
     void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, const RTCIntersectContext* context)
@@ -176,6 +350,13 @@ namespace embree
       __aligned(64) StackItemMask  stack1[stackSizeSingle];  //!< stack of nodes 
 #endif
 
+      if (unlikely(isCoherentCommonOrigin(context->flags)))
+      {
+        PRINT("CO MODE");
+        BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect_co(bvh, input_rays, numTotalRays, context);
+        
+      }
+      
       for (size_t r=0;r<numTotalRays;r+=MAX_RAYS_PER_OCTANT)
       {
         Ray** __restrict__ rays = input_rays + r;

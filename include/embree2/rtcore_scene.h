@@ -58,8 +58,9 @@ enum RTCAlgorithmFlags
 /*! intersection flags */
 enum RTCIntersectFlags
 {
-  RTC_INTERSECT_COHERENT   = 0,  //!< optimize for coherent rays
-  RTC_INTERSECT_INCOHERENT = 1   //!< optimize for incoherent rays
+  RTC_INTERSECT_COHERENT                 = 0,  //!< optimize for coherent rays
+  RTC_INTERSECT_INCOHERENT               = 1,  //!< optimize for incoherent rays
+  RTC_INTERSECT_COHERENT_COMMON_ORIGIN   = 2   //!< optimize for coherent rays with a common origin
 };
 
 /*! intersection context passed to intersect/occluded calls */
