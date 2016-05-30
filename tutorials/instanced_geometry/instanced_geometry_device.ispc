@@ -284,7 +284,6 @@ void renderTileStandardStream(uniform int taskIndex,
   RTCRay primary_stream[TILE_SIZE_X*TILE_SIZE_Y];
   RTCRay shadow_stream[TILE_SIZE_X*TILE_SIZE_Y];
   Vec3f color_stream[TILE_SIZE_X*TILE_SIZE_Y];
-  float weight_stream[TILE_SIZE_X*TILE_SIZE_Y];
   bool valid_stream[TILE_SIZE_X*TILE_SIZE_Y];
 
   /* select stream mode */
@@ -299,7 +298,6 @@ void renderTileStandardStream(uniform int taskIndex,
 
     /* initialize variables */
     color_stream[N] = make_Vec3f(0.0f);
-    weight_stream[N] = 1.0f;
     bool mask = __mask; unmasked { valid_stream[N] = mask; }
 
     /* initialize ray */

@@ -194,7 +194,7 @@ void intersectionFilterN(int* valid,
     return; 
 
   /* iterate over all rays in ray packet */
-  for (int ui=0; ui<N; ui+=1)
+  for (unsigned int ui=0; ui<N; ui+=1)
   {
     /* calculate loop and execution mask */
     unsigned int vi = ui+0;
@@ -256,7 +256,7 @@ void occlusionFilterN(int* valid,
     return; 
 
   /* iterate over all rays in ray packet */
-  for (int ui=0; ui<N; ui+=1)
+  for (unsigned int ui=0; ui<N; ui+=1)
   {
     /* calculate loop and execution mask */
     unsigned int vi = ui+0;

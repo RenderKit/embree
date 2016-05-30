@@ -194,7 +194,7 @@ unmasked void intersectionFilterN(uniform int* uniform valid,
     return; 
 
   /* iterate over all rays in ray packet */
-  for (uniform int ui=0; ui<N; ui+=programCount)
+  for (uniform unsigned int ui=0; ui<N; ui+=programCount)
   {
     /* calculate varying loop and execution mask */
     unsigned int vi = ui+programIndex;
@@ -256,7 +256,7 @@ unmasked void occlusionFilterN(uniform int* uniform valid,
     return; 
 
   /* iterate over all rays in ray packet */
-  for (uniform int ui=0; ui<N; ui+=programCount)
+  for (uniform unsigned int ui=0; ui<N; ui+=programCount)
   {
     /* calculate varying loop and execution mask */
     unsigned int vi = ui+programIndex;
