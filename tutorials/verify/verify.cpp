@@ -237,7 +237,7 @@ namespace embree
       bool mblur = motion != 0.0f;
       Ref<SceneGraph::Node> node = SceneGraph::createTriangleSphere(pos,r,numPhi);
       if (mblur) SceneGraph::set_motion_vector(node,Vec3fa(motion));
-      if (maxTriangles !=   -1) SceneGraph::resize_randomly(sampler,node,maxTriangles);
+      if (maxTriangles != size_t(-1)) SceneGraph::resize_randomly(sampler,node,maxTriangles);
       return addGeometry(gflag,node,mblur);
     }
 
@@ -246,7 +246,7 @@ namespace embree
       bool mblur = motion != 0.0f;
       Ref<SceneGraph::Node> node = SceneGraph::createSubdivSphere(pos,r,numPhi,level);
       if (mblur) SceneGraph::set_motion_vector(node,Vec3fa(motion));
-      if (maxFaces != -1) SceneGraph::resize_randomly(sampler,node,maxFaces);
+      if (maxFaces != size_t(-1)) SceneGraph::resize_randomly(sampler,node,maxFaces);
       addRandomSubdivFeatures(sampler,node.dynamicCast<SceneGraph::SubdivMeshNode>(),10,10,0);
       return addGeometry(gflag,node,mblur);
     }
@@ -734,7 +734,7 @@ namespace embree
       RTCSceneRef scene = rtcDeviceNewScene(device,RTC_SCENE_STATIC,aflags);
       AssertNoError(device);
 
-      unsigned geomID = -1;
+      unsigned geomID = RTC_INVALID_GEOMETRY_ID;
       switch (gtype) {
       case TRIANGLE_MESH    : geomID = rtcNewTriangleMesh   (scene, RTC_GEOMETRY_STATIC, 16, 16, 1); break;
       case TRIANGLE_MESH_MB : geomID = rtcNewTriangleMesh   (scene, RTC_GEOMETRY_STATIC, 16, 16, 2); break;
@@ -890,9 +890,9 @@ namespace embree
   {
     RTCSceneFlags sflags;
     RTCGeometryFlags gflags; 
-    int N;
+    size_t N;
     
-    OverlappingGeometryTest (std::string name, int isa, RTCSceneFlags sflags, RTCGeometryFlags gflags, int N)
+    OverlappingGeometryTest (std::string name, int isa, RTCSceneFlags sflags, RTCGeometryFlags gflags, size_t N)
       : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags), gflags(gflags), N(N) {}
     
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
@@ -1068,10 +1068,10 @@ namespace embree
           rtcIntersect(scene,ray1);
           rtcIntersect(scene,ray2);
           rtcIntersect(scene,ray3);
-          bool ok0 = enabled0 ? ray0.geomID == 0 : ray0.geomID == -1;
-          bool ok1 = enabled1 ? ray1.geomID == 1 : ray1.geomID == -1;
-          bool ok2 = enabled2 ? ray2.geomID == 2 : ray2.geomID == -1;
-          bool ok3 = enabled3 ? ray3.geomID == 3 : ray3.geomID == -1;
+          bool ok0 = enabled0 ? ray0.geomID == 0 : ray0.geomID == RTC_INVALID_GEOMETRY_ID;
+          bool ok1 = enabled1 ? ray1.geomID == 1 : ray1.geomID == RTC_INVALID_GEOMETRY_ID;
+          bool ok2 = enabled2 ? ray2.geomID == 2 : ray2.geomID == RTC_INVALID_GEOMETRY_ID;
+          bool ok3 = enabled3 ? ray3.geomID == 3 : ray3.geomID == RTC_INVALID_GEOMETRY_ID;
           if (!ok0 || !ok1 || !ok2 || !ok3) return VerifyApplication::FAILED;
         }
       }
@@ -1141,7 +1141,7 @@ namespace embree
         for (size_t numRays=1; numRays<maxRays; numRays++) {
           for (size_t i=0; i<numRays; i++) rays[i] = testRays[i%4];
           IntersectWithMode(imode,ivariant,scene,rays,numRays);
-          for (size_t i=0; i<numRays; i++) if (rays[i].geomID == -1) return VerifyApplication::FAILED;
+          for (size_t i=0; i<numRays; i++) if (rays[i].geomID == RTC_INVALID_GEOMETRY_ID) return VerifyApplication::FAILED;
         }
       }
       AssertNoError(device);
@@ -1813,7 +1813,7 @@ namespace embree
         RTCRay rays[4] = { ray0, ray1, ray2, ray3 };
         IntersectWithMode(imode,ivariant,scene,rays,4);
         for (size_t i=0; i<4; i++)
-          passed &= masks[i] & (1<<i) ? rays[i].geomID != -1 : rays[i].geomID == -1;
+          passed &= masks[i] & (1<<i) ? rays[i].geomID != -1 : rays[i].geomID == RTC_INVALID_GEOMETRY_ID;
       }
       AssertNoError(device);
 
@@ -1874,7 +1874,7 @@ namespace embree
       {
         Vec3fa dir(rays[i].dir[0],rays[i].dir[1],rays[i].dir[2]);
         Vec3fa Ng (rays[i].Ng[0], rays[i].Ng[1], rays[i].Ng[2]);
-        if (i%2) passed &= rays[i].geomID == -1;
+        if (i%2) passed &= rays[i].geomID == RTC_INVALID_GEOMETRY_ID;
         else {
           passed &= rays[i].geomID == 0;
           if (ivariant & VARIANT_INTERSECT)
@@ -1902,7 +1902,7 @@ namespace embree
         return;
       
       if (ray.primID & 2)
-        ray.geomID = -1;
+        ray.geomID = RTC_INVALID_GEOMETRY_ID;
     }
     
     static void intersectionFilter4(const void* valid_i, void* userGeomPtr, RTCRay4& ray) 
@@ -1914,7 +1914,7 @@ namespace embree
       for (size_t i=0; i<4; i++)
         if (valid[i] == -1)
           if (ray.primID[i] & 2) 
-            ray.geomID[i] = -1;
+            ray.geomID[i] = RTC_INVALID_GEOMETRY_ID;
     }
     
     static void intersectionFilter8(const void* valid_i, void* userGeomPtr, RTCRay8& ray) 
@@ -1926,7 +1926,7 @@ namespace embree
       for (size_t i=0; i<8; i++)
         if (valid[i] == -1)
           if (ray.primID[i] & 2) 
-            ray.geomID[i] = -1;
+            ray.geomID[i] = RTC_INVALID_GEOMETRY_ID;
     }
     
     static void intersectionFilter16(const void* valid_i, void* userGeomPtr, RTCRay16& ray) 
@@ -1938,7 +1938,7 @@ namespace embree
       for (size_t i=0; i<16; i++)
 	if (valid[i] == -1)
 	  if (ray.primID[i] & 2) 
-	    ray.geomID[i] = -1;
+	    ray.geomID[i] = RTC_INVALID_GEOMETRY_ID;
     }
     
     static void intersectionFilterN(int* valid,
@@ -2035,7 +2035,7 @@ namespace embree
           int primID = iy*4+ix;
           if (!subdiv) primID *= 2;
           RTCRay& ray = rays[iy*4+ix];
-          bool ok = (primID & 2) ? (ray.geomID == -1) : (ray.geomID == 0);
+          bool ok = (primID & 2) ? (ray.geomID == RTC_INVALID_GEOMETRY_ID) : (ray.geomID == 0);
           if (!ok) passed = false;
         }
       }
@@ -2162,7 +2162,7 @@ namespace embree
           IntersectWithMode(imode,ivariant,scene,rays,M);
           for (size_t j=0; j<M; j++) {
             numTests++;
-            numFailures += rays[j].geomID == -1;            
+            numFailures += rays[j].geomID == RTC_INVALID_GEOMETRY_ID;            
           }
         }
       }
@@ -3114,12 +3114,12 @@ namespace embree
     {
       float rcpWidth = 1.0f/width;
       float rcpHeight = 1.0/height;
-      const int tileY = i / numTilesX;
-      const int tileX = i - tileY * numTilesX;
-      const int x0 = tileX * tileSizeX;
-      const int x1 = min(x0+tileSizeX,width);
-      const int y0 = tileY * tileSizeY;
-      const int y1 = min(y0+tileSizeY,height);
+      const unsigned int tileY = i / numTilesX;
+      const unsigned int tileX = i - tileY * numTilesX;
+      const unsigned int x0 = tileX * tileSizeX;
+      const unsigned int x1 = min(x0+tileSizeX,width);
+      const unsigned int y0 = tileY * tileSizeY;
+      const unsigned int y1 = min(y0+tileSizeY,height);
       
       RTCIntersectContext context;
       context.flags = ((ivariant & VARIANT_COHERENT_INCOHERENT_MASK) == VARIANT_COHERENT) ? RTC_INTERSECT_COHERENT :  RTC_INTERSECT_INCOHERENT;
