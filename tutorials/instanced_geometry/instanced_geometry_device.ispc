@@ -202,13 +202,13 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
   {
     /* calculate shading normal in world space */
     Vec3f Ns = ray.Ng;
-    if (ray.instID != -1)
+    if (ray.instID != RTC_INVALID_GEOMETRY_ID)
       Ns = xfmVector(normal_xfm[ray.instID],Ns);
     Ns = normalize(Ns);
 
     /* calculate diffuse color of geometries */
     Vec3f diffuse = make_Vec3f(1,1,1);
-    if (ray.instID != -1) 
+    if (ray.instID != RTC_INVALID_GEOMETRY_ID) 
       diffuse = colors[ray.instID][ray.geomID];
     color = color + diffuse*0.5;
         
@@ -310,7 +310,7 @@ void renderTileStandardStream(uniform int taskIndex,
       primary.tnear = mask ? 0.0f         : (float)(pos_inf); 
       primary.tfar  = mask ? (float)(inf) : (float)(neg_inf); 
     } 
-    primary.instID = -1;
+    primary.instID = RTC_INVALID_GEOMETRY_ID;
     primary.geomID = RTC_INVALID_GEOMETRY_ID;
     primary.primID = RTC_INVALID_GEOMETRY_ID;
     primary.mask = -1;
@@ -353,13 +353,13 @@ void renderTileStandardStream(uniform int taskIndex,
     /* calculate shading normal in world space */
     RTCRay& primary = primary_stream[N];
     Vec3f Ns = primary.Ng;
-    if (primary.instID != -1)
+    if (primary.instID != RTC_INVALID_GEOMETRY_ID)
       Ns = xfmVector(normal_xfm[primary.instID],Ns);
     Ns = normalize(Ns);
 
     /* calculate diffuse color of geometries */
     Vec3f diffuse = make_Vec3f(1,1,1);
-    if (primary.instID != -1) 
+    if (primary.instID != RTC_INVALID_GEOMETRY_ID) 
       diffuse = colors[primary.instID][primary.geomID];
     color_stream[N] = color_stream[N] + diffuse*0.5;
     
@@ -397,13 +397,13 @@ void renderTileStandardStream(uniform int taskIndex,
     /* calculate shading normal in world space */
     RTCRay& primary = primary_stream[N];
     Vec3f Ns = primary.Ng;
-    if (primary.instID != -1)
+    if (primary.instID != RTC_INVALID_GEOMETRY_ID)
       Ns = xfmVector(normal_xfm[primary.instID],Ns);
     Ns = normalize(Ns);
 
     /* calculate diffuse color of geometries */
     Vec3f diffuse = make_Vec3f(1,1,1);
-    if (primary.instID != -1) 
+    if (primary.instID != RTC_INVALID_GEOMETRY_ID) 
       diffuse = colors[primary.instID][primary.geomID];
 
     /* add light contrinution */
