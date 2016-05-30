@@ -28,7 +28,7 @@ namespace embree
   MutexSys::MutexSys( void ) { mutex = new CRITICAL_SECTION; InitializeCriticalSection((CRITICAL_SECTION*)mutex); }
   MutexSys::~MutexSys( void ) { DeleteCriticalSection((CRITICAL_SECTION*)mutex); delete (CRITICAL_SECTION*)mutex; }
   void MutexSys::lock( void ) { EnterCriticalSection((CRITICAL_SECTION*)mutex); }
-  bool MutexSys::try_lock( void ) { return TryEnterCriticalSection((CRITICAL_SECTION*)mutex); }
+  bool MutexSys::try_lock( void ) { return TryEnterCriticalSection((CRITICAL_SECTION*)mutex) != 0; }
   void MutexSys::unlock( void ) { LeaveCriticalSection((CRITICAL_SECTION*)mutex); }
 }
 #endif

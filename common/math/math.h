@@ -27,9 +27,9 @@
 #if (__MSV_VER <= 1700)
 namespace std
 {
-  __forceinline bool isinf ( const float x ) { return !_finite(x); }
-  __forceinline bool isnan ( const float x ) { return _isnan(x); }
-  __forceinline bool isfinite (const float x) { return _finite(x); }
+  __forceinline bool isinf ( const float x ) { return _finite(x) == 0; }
+  __forceinline bool isnan ( const float x ) { return _isnan(x) != 0; }
+  __forceinline bool isfinite (const float x) { return _finite(x) != 0; }
 }
 #endif
 #endif

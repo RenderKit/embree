@@ -53,7 +53,7 @@ namespace embree
     {
       /* every thread entering the barrier decrements this count */
       size_t i0 = i;
-      int cnt0 = enterCount--;
+      size_t cnt0 = enterCount--;
 
       /* all threads except the last one are wait in the barrier */
       if (cnt0 > 1) 
@@ -72,7 +72,7 @@ namespace embree
       }
 
       /* every thread leaving the barrier decrements this count */
-      int cnt1 = exitCount--;
+      size_t cnt1 = exitCount--;
 
       /* the last thread that left the barrier resets the event again */
       if (cnt1 == 1) 
@@ -86,8 +86,8 @@ namespace embree
   public:
     HANDLE events[2];
     volatile size_t i;
-    atomic<int> enterCount;
-    atomic<int> exitCount;
+    atomic<size_t> enterCount;
+    atomic<size_t> exitCount;
     size_t barrierSize;
   };
 }
