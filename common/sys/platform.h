@@ -180,9 +180,7 @@
 #define debugbreak()           asm ("int $3")
 #endif
 
-#if defined(__clang__)
-  #define MAYBE_UNUSED __attribute__((unused))
-#elif defined(__GNUC__)
+#if defined(__clang__) || defined(__GNUC__)
   #define MAYBE_UNUSED __attribute__((unused))
 #else
   #define MAYBE_UNUSED
@@ -261,7 +259,7 @@ __forceinline std::string toString(long long value) {
 //#pragma warning(disable:94  ) // the size of an array must be greater than zero
 //#pragma warning(disable:1599) // declaration hides parameter
 //#pragma warning(disable:424 ) // extra ";" ignored
-#pragma warning(disable:2196) // routine is both "inline" and "noinline"
+//#pragma warning(disable:2196) // routine is both "inline" and "noinline"
 //#pragma warning(disable:177 ) // label was declared but never referenced
 //#pragma warning(disable:114 ) // function was referenced but not defined
 //#pragma warning(disable:819 ) // template nesting depth does not match the previous declaration of function
