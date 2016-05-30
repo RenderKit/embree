@@ -295,7 +295,7 @@ __forceinline std::string toString(long long value) {
 //#pragma clang diagnostic ignored "-Wdeprecated-register"
 #endif
 
-#if defined(__GNUC__) && !defined(__INTEL_COMPILER)
+#if defined(__GNUC__) && !defined(__INTEL_COMPILER) && !defined(__clang__)
 #pragma GCC diagnostic ignored "-Wnarrowing"
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #pragma GCC diagnostic ignored "-Warray-bounds"
