@@ -776,7 +776,7 @@ Vec3f HairMaterial__sample(HairMaterial* uniform This, const BRDF& brdf, const V
 //                              Material                                      //
 ////////////////////////////////////////////////////////////////////////////////
 
-inline void Material__preprocess(ISPCMaterial* uniform materials, int materialID, uniform int numMaterials, BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Medium& medium)
+inline void Material__preprocess(ISPCMaterial* uniform materials, unsigned int materialID, uniform unsigned int numMaterials, BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Medium& medium)
 {
   foreach_unique (id in materialID)
   {
@@ -801,7 +801,7 @@ inline void Material__preprocess(ISPCMaterial* uniform materials, int materialID
   }
 }
 
-inline Vec3f Material__eval(ISPCMaterial* uniform materials, int materialID, uniform int numMaterials, const BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Vec3f& wi)
+inline Vec3f Material__eval(ISPCMaterial* uniform materials, unsigned int materialID, uniform unsigned int numMaterials, const BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Vec3f& wi)
 {
   Vec3f c = make_Vec3f(0.0f);
   foreach_unique (id in materialID)
@@ -827,7 +827,7 @@ inline Vec3f Material__eval(ISPCMaterial* uniform materials, int materialID, uni
   return c;
 }
 
-inline Vec3f Material__sample(ISPCMaterial* uniform uniform materials, int materialID, uniform int numMaterials, const BRDF& brdf, const Vec3f& Lw, const Vec3f& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
+inline Vec3f Material__sample(ISPCMaterial* uniform uniform materials, unsigned int materialID, uniform unsigned int numMaterials, const BRDF& brdf, const Vec3f& Lw, const Vec3f& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
 {
   Vec3f c = make_Vec3f(0.0f);
   foreach_unique (id in materialID)

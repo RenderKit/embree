@@ -776,7 +776,7 @@ Vec3fa HairMaterial__sample(HairMaterial* This, const BRDF& brdf, const Vec3fa& 
 //                              Material                                      //
 ////////////////////////////////////////////////////////////////////////////////
 
-inline void Material__preprocess(ISPCMaterial* materials, int materialID, int numMaterials, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)
+inline void Material__preprocess(ISPCMaterial* materials, unsigned int materialID, unsigned int numMaterials, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)
 {
   unsigned int id = materialID;
   {
@@ -801,7 +801,7 @@ inline void Material__preprocess(ISPCMaterial* materials, int materialID, int nu
   }
 }
 
-inline Vec3fa Material__eval(ISPCMaterial* materials, int materialID, int numMaterials, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi)
+inline Vec3fa Material__eval(ISPCMaterial* materials, unsigned int materialID, unsigned int numMaterials, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi)
 {
   Vec3fa c = Vec3fa(0.0f);
   unsigned int id = materialID;
@@ -827,7 +827,7 @@ inline Vec3fa Material__eval(ISPCMaterial* materials, int materialID, int numMat
   return c;
 }
 
-inline Vec3fa Material__sample(ISPCMaterial* materials, int materialID, int numMaterials, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
+inline Vec3fa Material__sample(ISPCMaterial* materials, unsigned int materialID, unsigned int numMaterials, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
 {
   Vec3fa c = Vec3fa(0.0f);
   unsigned int id = materialID;
