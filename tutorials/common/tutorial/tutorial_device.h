@@ -19,6 +19,7 @@
 #include "../../../common/sys/platform.h"
 #include "../../../kernels/algorithms/parallel_for.h"
 #include "config.h"
+#include "noise.h"
 
 /* size of screen tiles */
 #define TILE_SIZE_X 8
@@ -108,10 +109,6 @@ struct Sample3f
   Vec3fa v;
   float pdf;
 };
-
-/* noise functions */
-float noise(const Vec3fa& p);
-Vec3fa noise3D(const Vec3fa& p);
 
 /* draws progress bar */
 void progressStart();
