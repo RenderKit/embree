@@ -16,14 +16,17 @@
 
 #pragma once
 
-#include "../math/vec.h"
+#include "../math/vec3f.isph"
 
-namespace embree 
-{
-  extern "C" void* DirectionalLight_create();
-  
-  extern "C" void DirectionalLight_set(void* super,
-                                       const Vec3fa& direction,
-                                       const Vec3fa& radiance,
-                                       float cosAngle);
+#if defined(__cplusplus)
+namespace embree {
+#endif
+
+  /* noise functions */
+  float noise(const Vec3f& p);
+  Vec3f noise3D(const Vec3f& p);
+
+#if defined(__cplusplus)
 }
+#endif
+

@@ -16,6 +16,10 @@
 
 #include "../common/tutorial/tutorial_device.isph"
 
+#if defined(__cplusplus)
+namespace embree {
+#endif
+
 /* configuration */
 #define EDGE_LEVEL 256.0f
 #define ENABLE_SMOOTH_NORMALS 0
@@ -314,3 +318,7 @@ export void device_cleanup ()
   rtcDeleteScene (g_scene); g_scene = NULL;
   rtcDeleteDevice(g_device); g_device = NULL;
 }
+
+#if defined(__cplusplus)
+}
+#endif

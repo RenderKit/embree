@@ -18,4 +18,3 @@
 
 #include "../../../common/math/linearspace3.h"
 
-using namespace embree;

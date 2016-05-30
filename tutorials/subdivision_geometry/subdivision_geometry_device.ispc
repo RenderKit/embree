@@ -16,6 +16,10 @@
 
 #include "../common/tutorial/tutorial_device.isph"
 
+#if defined(__cplusplus)
+namespace embree {
+#endif
+
 /* configuration */
 #define MIN_EDGE_LEVEL 2.0f
 #define MAX_EDGE_LEVEL 64.0f
@@ -345,3 +349,7 @@ export void device_cleanup ()
   rtcDeleteScene (g_scene); g_scene = NULL;
   rtcDeleteDevice(g_device); g_device = NULL;
 }
+
+#if defined(__cplusplus)
+}
+#endif

@@ -16,6 +16,10 @@
 
 #include "../common/tutorial/tutorial_device.isph"
 
+#if defined(__cplusplus)
+namespace embree {
+#endif
+
 #if 0
 const uniform int numSpheres = 1000;
 const uniform int numPhi = 5; 
@@ -320,3 +324,7 @@ export void device_cleanup ()
   rtcDeleteScene (g_scene); g_scene = NULL;
   rtcDeleteDevice(g_device); g_device = NULL;
 }
+
+#if defined(__cplusplus)
+}
+#endif

@@ -18,12 +18,9 @@
 
 #include "../math/vec.h"
 
-namespace embree 
+namespace embree
 {
-  extern "C" void* DirectionalLight_create();
-  
-  extern "C" void DirectionalLight_set(void* super,
-                                       const Vec3fa& direction,
-                                       const Vec3fa& radiance,
-                                       float cosAngle);
+  /* noise functions */
+  float noise(const Vec3fa& p);
+  Vec3fa noise3D(const Vec3fa& p);
 }

@@ -21,6 +21,10 @@
 #include "../common/tutorial/scene_device.isph"
 #include "../common/tutorial/optics.isph"
 
+#if defined(__cplusplus)
+namespace embree {
+#endif
+
 #undef TILE_SIZE_X
 #undef TILE_SIZE_Y
 
@@ -1811,3 +1815,7 @@ export void device_cleanup ()
   g_accu_height = 0;
   g_accu_count = 0;
 } // device_cleanup
+
+#if defined(__cplusplus)
+}
+#endif

@@ -18,6 +18,10 @@
 
 #include "../math/vec.isph"
 
+#if defined(__cplusplus)
+namespace embree {
+#endif
+
 struct DifferentialGeometry
 {
   int geomID;
@@ -30,3 +34,7 @@ struct DifferentialGeometry
   Vec3f Ty;
   float tnear_eps;
 };
+
+#if defined(__cplusplus)
+}
+#endif

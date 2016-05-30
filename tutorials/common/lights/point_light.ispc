@@ -18,6 +18,10 @@
 #include "../math/sampling.isph"
 #include "../math/linearspace.isph"
 
+#if defined(__cplusplus)
+namespace embree {
+#endif
+
 struct PointLight
 {
   Light super;    //!< inherited light fields
@@ -140,3 +144,7 @@ export void* uniform PointLight_create()
   PointLight_set(self, make_Vec3f(0.f), make_Vec3f(1.f), 0.f);
   return self;
 }
+
+#if defined(__cplusplus)
+}
+#endif

@@ -16,6 +16,10 @@
 
 #include "../common/tutorial/tutorial_device.h"
 
+#if defined(__cplusplus)
+namespace embree {
+#endif
+
 /* scene data */
 RTCDevice g_device = nullptr;
 RTCScene  g_scene  = nullptr;
@@ -277,3 +281,7 @@ extern "C" void device_cleanup ()
   rtcDeleteScene (g_scene); g_scene = nullptr;
   rtcDeleteDevice(g_device); g_device = nullptr;
 }
+
+#if defined(__cplusplus)
+}
+#endif

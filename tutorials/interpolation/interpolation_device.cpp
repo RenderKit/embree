@@ -16,6 +16,10 @@
 
 #include "../common/tutorial/tutorial_device.h"
 
+#if defined(__cplusplus)
+namespace embree {
+#endif
+
 //#define FORCE_FIXED_EDGE_TESSELLATION
 #define FIXED_EDGE_TESSELLATION_VALUE 16
 
@@ -481,3 +485,6 @@ extern "C" void device_cleanup ()
   rtcDeleteDevice(g_device); g_device = nullptr;
 }
 
+#if defined(__cplusplus)
+}
+#endif

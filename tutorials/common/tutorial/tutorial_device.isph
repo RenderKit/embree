@@ -33,6 +33,7 @@ struct Triangle { int v0, v1, v2; };
 #include "../core/ray.isph"
 #include "camera.isph"
 #include "scene_device.isph"
+#include "noise.isph"
 
 /* include embree API */
 #define __RTCRay1__
@@ -117,10 +118,6 @@ struct Sample3f
 inline Sample3f make_Sample3f(const Vec3f v, const float pdf) {
   Sample3f s; s.v = v; s.pdf = pdf; return s;
 }
-
-/* noise functions */
-float noise(const Vec3f& p);
-Vec3f noise3D(const Vec3f& p);
 
 /* draws progress bar */
 unmasked void progressStart();

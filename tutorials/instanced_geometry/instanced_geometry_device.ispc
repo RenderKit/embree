@@ -16,6 +16,10 @@
 
 #include "../common/tutorial/tutorial_device.isph"
 
+#if defined(__cplusplus)
+namespace embree {
+#endif
+
 const uniform int numPhi = 5;
 const uniform int numTheta = 2*numPhi;
 
@@ -492,3 +496,7 @@ export void device_cleanup ()
   rtcDeleteScene (g_scene1); g_scene1 = NULL;
   rtcDeleteDevice(g_device); g_device = NULL;
 }
+
+#if defined(__cplusplus)
+}
+#endif

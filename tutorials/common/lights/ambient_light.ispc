@@ -18,6 +18,10 @@
 #include "../math/sampling.isph"
 #include "../math/linearspace.isph"
 
+#if defined(__cplusplus)
+namespace embree {
+#endif
+
 struct AmbientLight
 {
   Light super;      //!< inherited light fields
@@ -90,3 +94,7 @@ export void AmbientLight_set(void* uniform super,
   uniform AmbientLight* uniform self = (uniform AmbientLight* uniform)super;
   self->radiance = radiance;
 }
+
+#if defined(__cplusplus)
+}
+#endif
