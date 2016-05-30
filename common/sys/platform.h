@@ -290,7 +290,7 @@ __forceinline std::string toString(long long value) {
 //#pragma clang diagnostic ignored "-Wunused-private-field"
 //#pragma clang diagnostic ignored "-Wunused-local-typedef"
 //#pragma clang diagnostic ignored "-Wunused-function"
-#pragma clang diagnostic ignored "-Wnarrowing"
+//#pragma clang diagnostic ignored "-Wnarrowing"
 //#pragma clang diagnostic ignored "-Wc++11-narrowing"
 //#pragma clang diagnostic ignored "-Wdeprecated-register"
 #endif
