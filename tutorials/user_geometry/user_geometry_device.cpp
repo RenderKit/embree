@@ -110,10 +110,10 @@ void instanceIntersectFuncN(const int* valid,
   const Instance* instance = (const Instance*) ptr;
 
   /* iterate over all rays in ray packet */
-  for (int ui=0; ui<N; ui+=1)
+  for (unsigned int ui=0; ui<N; ui+=1)
   {
     /* calculate loop and execution mask */
-    int vi = ui+0;
+    unsigned int vi = ui+0;
     if (vi>=N) continue;
     
     /* ignore inactive rays */
@@ -165,10 +165,10 @@ void instanceOccludedFuncN(const int* valid,
   const Instance* instance = (const Instance*) ptr;
 
   /* iterate over all rays in ray packet */
-  for (int ui=0; ui<N; ui+=1)
+  for (unsigned int ui=0; ui<N; ui+=1)
   {
     /* calculate loop and execution mask */
-    int vi = ui+0;
+    unsigned int vi = ui+0;
     if (vi>=N) continue;
     
     /* ignore inactive rays */
@@ -313,7 +313,7 @@ void sphereIntersectFuncN(const int* valid,
   const Sphere* spheres = (const Sphere*) ptr;
 
   /* iterate over all rays in ray packet */
-  for (int ui=0; ui<N; ui+=1)
+  for (unsigned int ui=0; ui<N; ui+=1)
   {
     /* calculate loop and execution mask */
     unsigned int vi = ui+0;
@@ -376,7 +376,7 @@ void sphereOccludedFuncN(const int* valid,
   const Sphere* spheres = (const Sphere*) ptr;
 
   /* iterate over all rays in ray packet */
-  for (int ui=0; ui<N; ui+=1)
+  for (unsigned int ui=0; ui<N; ui+=1)
   {
     /* calculate loop and execution mask */
     unsigned int vi = ui+0;
@@ -433,7 +433,7 @@ Sphere* createAnalyticalSpheres (RTCScene scene, size_t N)
 {
   unsigned int geomID = rtcNewUserGeometry(scene,N);
   Sphere* spheres = (Sphere*) alignedMalloc(N*sizeof(Sphere));
-  for (int i=0; i<N; i++) spheres[i].geomID = geomID;
+  for (size_t i=0; i<N; i++) spheres[i].geomID = geomID;
   rtcSetUserData(scene,geomID,spheres);
   rtcSetBoundsFunction(scene,geomID,(RTCBoundsFunc)&sphereBoundsFunc);
   if (g_mode == MODE_NORMAL) {

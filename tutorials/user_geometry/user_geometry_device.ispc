@@ -110,10 +110,10 @@ unmasked void instanceIntersectFuncN(const uniform int* uniform valid,
   const uniform Instance* uniform instance = (const uniform Instance* uniform) ptr;
 
   /* iterate over all rays in ray packet */
-  for (uniform int ui=0; ui<N; ui+=programCount)
+  for (uniform unsigned int ui=0; ui<N; ui+=programCount)
   {
     /* calculate varying loop and execution mask */
-    int vi = ui+programIndex;
+    unsigned int vi = ui+programIndex;
     if (vi>=N) continue;
     
     /* ignore inactive rays */
@@ -165,10 +165,10 @@ unmasked void instanceOccludedFuncN(const uniform int* uniform valid,
   const uniform Instance* uniform instance = (const uniform Instance* uniform) ptr;
 
   /* iterate over all rays in ray packet */
-  for (uniform int ui=0; ui<N; ui+=programCount)
+  for (uniform unsigned int ui=0; ui<N; ui+=programCount)
   {
     /* calculate varying loop and execution mask */
-    int vi = ui+programIndex;
+    unsigned int vi = ui+programIndex;
     if (vi>=N) continue;
     
     /* ignore inactive rays */
@@ -313,7 +313,7 @@ unmasked void sphereIntersectFuncN(const uniform int* uniform valid,
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform) ptr;
 
   /* iterate over all rays in ray packet */
-  for (uniform int ui=0; ui<N; ui+=programCount)
+  for (uniform unsigned int ui=0; ui<N; ui+=programCount)
   {
     /* calculate varying loop and execution mask */
     unsigned int vi = ui+programIndex;
@@ -376,7 +376,7 @@ unmasked void sphereOccludedFuncN(const uniform int* uniform valid,
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform) ptr;
 
   /* iterate over all rays in ray packet */
-  for (uniform int ui=0; ui<N; ui+=programCount)
+  for (uniform unsigned int ui=0; ui<N; ui+=programCount)
   {
     /* calculate varying loop and execution mask */
     unsigned int vi = ui+programIndex;
@@ -433,7 +433,7 @@ uniform Sphere* uniform createAnalyticalSpheres (RTCScene scene, uniform size_t 
 {
   uniform unsigned int geomID = rtcNewUserGeometry(scene,N);
   uniform Sphere* uniform spheres = uniform new uniform Sphere[N];
-  for (uniform int i=0; i<N; i++) spheres[i].geomID = geomID;
+  for (uniform size_t i=0; i<N; i++) spheres[i].geomID = geomID;
   rtcSetUserData(scene,geomID,spheres);
   rtcSetBoundsFunction(scene,geomID,(RTCBoundsFunc)&sphereBoundsFunc);
   if (g_mode == MODE_NORMAL) {
