@@ -78,20 +78,20 @@ Vec3f renderPixelEyeLight(float x, float y, const uniform ISPCCamera& camera)
 
 void renderTileEyeLight(uniform int taskIndex, 
                         uniform int* uniform pixels,
-                        const uniform int width,
-                        const uniform int height, 
+                        const uniform unsigned int width,
+                        const uniform unsigned int height, 
                         const uniform float time,
                         const uniform ISPCCamera& camera,
                         const uniform int numTilesX, 
                         const uniform int numTilesY)
 {
   const uniform int t = taskIndex;
-  const uniform int tileY = t / numTilesX;
-  const uniform int tileX = t - tileY * numTilesX;
-  const uniform int x0 = tileX * TILE_SIZE_X;
-  const uniform int x1 = min(x0+TILE_SIZE_X,width);
-  const uniform int y0 = tileY * TILE_SIZE_Y;
-  const uniform int y1 = min(y0+TILE_SIZE_Y,height);
+  const uniform unsigned int tileY = t / numTilesX;
+  const uniform unsigned int tileX = t - tileY * numTilesX;
+  const uniform unsigned int x0 = tileX * TILE_SIZE_X;
+  const uniform unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const uniform unsigned int y0 = tileY * TILE_SIZE_Y;
+  const uniform unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
@@ -138,20 +138,20 @@ Vec3f renderPixelWireframe(float x, float y, const uniform ISPCCamera& camera)
 
 void renderTileWireframe(uniform int taskIndex, 
                          uniform int* uniform pixels,
-                         const uniform int width,
-                         const uniform int height, 
+                         const uniform unsigned int width,
+                         const uniform unsigned int height, 
                          const uniform float time,
                          const uniform ISPCCamera& camera,
                          const uniform int numTilesX, 
                          const uniform int numTilesY)
 {
   const uniform int t = taskIndex;
-  const uniform int tileY = t / numTilesX;
-  const uniform int tileX = t - tileY * numTilesX;
-  const uniform int x0 = tileX * TILE_SIZE_X;
-  const uniform int x1 = min(x0+TILE_SIZE_X,width);
-  const uniform int y0 = tileY * TILE_SIZE_Y;
-  const uniform int y1 = min(y0+TILE_SIZE_Y,height);
+  const uniform unsigned int tileY = t / numTilesX;
+  const uniform unsigned int tileX = t - tileY * numTilesX;
+  const uniform unsigned int x0 = tileX * TILE_SIZE_X;
+  const uniform unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const uniform unsigned int y0 = tileY * TILE_SIZE_Y;
+  const uniform unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
@@ -189,20 +189,20 @@ Vec3f renderPixelUV(float x, float y, const uniform ISPCCamera& camera)
 
 void renderTileUV(uniform int taskIndex, 
                   uniform int* uniform pixels,
-                  const uniform int width,
-                  const uniform int height, 
+                  const uniform unsigned int width,
+                  const uniform unsigned int height, 
                   const uniform float time,
                   const uniform ISPCCamera& camera,
                   const uniform int numTilesX, 
                   const uniform int numTilesY)
 {
   const uniform int t = taskIndex;
-  const uniform int tileY = t / numTilesX;
-  const uniform int tileX = t - tileY * numTilesX;
-  const uniform int x0 = tileX * TILE_SIZE_X;
-  const uniform int x1 = min(x0+TILE_SIZE_X,width);
-  const uniform int y0 = tileY * TILE_SIZE_Y;
-  const uniform int y1 = min(y0+TILE_SIZE_Y,height);
+  const uniform unsigned int tileY = t / numTilesX;
+  const uniform unsigned int tileX = t - tileY * numTilesX;
+  const uniform unsigned int x0 = tileX * TILE_SIZE_X;
+  const uniform unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const uniform unsigned int y0 = tileY * TILE_SIZE_Y;
+  const uniform unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
@@ -241,20 +241,20 @@ Vec3f renderPixelNg(float x, float y, const uniform ISPCCamera& camera)
 
 void renderTileNg(uniform int taskIndex, 
                   uniform int* uniform pixels,
-                  const uniform int width,
-                  const uniform int height, 
+                  const uniform unsigned int width,
+                  const uniform unsigned int height, 
                   const uniform float time,
                   const uniform ISPCCamera& camera,
                   const uniform int numTilesX, 
                   const uniform int numTilesY)
 {
   const uniform int t = taskIndex;
-  const uniform int tileY = t / numTilesX;
-  const uniform int tileX = t - tileY * numTilesX;
-  const uniform int x0 = tileX * TILE_SIZE_X;
-  const uniform int x1 = min(x0+TILE_SIZE_X,width);
-  const uniform int y0 = tileY * TILE_SIZE_Y;
-  const uniform int y1 = min(y0+TILE_SIZE_Y,height);
+  const uniform unsigned int tileY = t / numTilesX;
+  const uniform unsigned int tileX = t - tileY * numTilesX;
+  const uniform unsigned int x0 = tileX * TILE_SIZE_X;
+  const uniform unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const uniform unsigned int y0 = tileY * TILE_SIZE_Y;
+  const uniform unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
@@ -301,20 +301,20 @@ Vec3f renderPixelGeomID(float x, float y, const uniform ISPCCamera& camera)
 
 void renderTileGeomID(uniform int taskIndex, 
                       uniform int* uniform pixels,
-                      const uniform int width,
-                      const uniform int height, 
+                      const uniform unsigned int width,
+                      const uniform unsigned int height, 
                       const uniform float time,
                       const uniform ISPCCamera& camera,
                       const uniform int numTilesX, 
                       const uniform int numTilesY)
 {
   const uniform int t = taskIndex;
-  const uniform int tileY = t / numTilesX;
-  const uniform int tileX = t - tileY * numTilesX;
-  const uniform int x0 = tileX * TILE_SIZE_X;
-  const uniform int x1 = min(x0+TILE_SIZE_X,width);
-  const uniform int y0 = tileY * TILE_SIZE_Y;
-  const uniform int y1 = min(y0+TILE_SIZE_Y,height);
+  const uniform unsigned int tileY = t / numTilesX;
+  const uniform unsigned int tileX = t - tileY * numTilesX;
+  const uniform unsigned int x0 = tileX * TILE_SIZE_X;
+  const uniform unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const uniform unsigned int y0 = tileY * TILE_SIZE_Y;
+  const uniform unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
@@ -352,20 +352,20 @@ Vec3f renderPixelGeomIDPrimID(float x, float y, const uniform ISPCCamera& camera
 
 void renderTileGeomIDPrimID(uniform int taskIndex, 
                             uniform int* uniform pixels,
-                            const uniform int width,
-                            const uniform int height, 
+                            const uniform unsigned int width,
+                            const uniform unsigned int height, 
                             const uniform float time,
                             const uniform ISPCCamera& camera,
                             const uniform int numTilesX, 
                             const uniform int numTilesY)
 {
   const uniform int t = taskIndex;
-  const uniform int tileY = t / numTilesX;
-  const uniform int tileX = t - tileY * numTilesX;
-  const uniform int x0 = tileX * TILE_SIZE_X;
-  const uniform int x1 = min(x0+TILE_SIZE_X,width);
-  const uniform int y0 = tileY * TILE_SIZE_Y;
-  const uniform int y1 = min(y0+TILE_SIZE_Y,height);
+  const uniform unsigned int tileY = t / numTilesX;
+  const uniform unsigned int tileX = t - tileY * numTilesX;
+  const uniform unsigned int x0 = tileX * TILE_SIZE_X;
+  const uniform unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const uniform unsigned int y0 = tileY * TILE_SIZE_Y;
+  const uniform unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
@@ -404,20 +404,20 @@ Vec3f renderPixelCycles(float x, float y, const uniform ISPCCamera& camera)
 
 void renderTileCycles(uniform int taskIndex, 
                       uniform int* uniform pixels,
-                      const uniform int width,
-                      const uniform int height, 
+                      const uniform unsigned int width,
+                      const uniform unsigned int height, 
                       const uniform float time,
                       const uniform ISPCCamera& camera,
                       const uniform int numTilesX, 
                       const uniform int numTilesY)
 {
   const uniform int t = taskIndex;
-  const uniform int tileY = t / numTilesX;
-  const uniform int tileX = t - tileY * numTilesX;
-  const uniform int x0 = tileX * TILE_SIZE_X;
-  const uniform int x1 = min(x0+TILE_SIZE_X,width);
-  const uniform int y0 = tileY * TILE_SIZE_Y;
-  const uniform int y1 = min(y0+TILE_SIZE_Y,height);
+  const uniform unsigned int tileY = t / numTilesX;
+  const uniform unsigned int tileX = t - tileY * numTilesX;
+  const uniform unsigned int x0 = tileX * TILE_SIZE_X;
+  const uniform unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const uniform unsigned int y0 = tileY * TILE_SIZE_Y;
+  const uniform unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
@@ -458,20 +458,20 @@ Vec3f renderPixelUV16(float x, float y, const uniform ISPCCamera& camera)
 
 void renderTileUV16(uniform int taskIndex, 
                     uniform int* uniform pixels,
-                    const uniform int width,
-                    const uniform int height, 
+                    const uniform unsigned int width,
+                    const uniform unsigned int height, 
                     const uniform float time,
                     const uniform ISPCCamera& camera,
                     const uniform int numTilesX, 
                     const uniform int numTilesY)
 {
   const uniform int t = taskIndex;
-  const uniform int tileY = t / numTilesX;
-  const uniform int tileX = t - tileY * numTilesX;
-  const uniform int x0 = tileX * TILE_SIZE_X;
-  const uniform int x1 = min(x0+TILE_SIZE_X,width);
-  const uniform int y0 = tileY * TILE_SIZE_Y;
-  const uniform int y1 = min(y0+TILE_SIZE_Y,height);
+  const uniform unsigned int tileY = t / numTilesX;
+  const uniform unsigned int tileX = t - tileY * numTilesX;
+  const uniform unsigned int x0 = tileX * TILE_SIZE_X;
+  const uniform unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const uniform unsigned int y0 = tileY * TILE_SIZE_Y;
+  const uniform unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
@@ -553,20 +553,20 @@ Vec3f renderPixelAmbientOcclusion(float x, float y, const uniform ISPCCamera& ca
 
 void renderTileAmbientOcclusion(uniform int taskIndex, 
                                 uniform int* uniform pixels,
-                                const uniform int width,
-                                const uniform int height, 
+                                const uniform unsigned int width,
+                                const uniform unsigned int height, 
                                 const uniform float time,
                                 const uniform ISPCCamera& camera,
                                 const uniform int numTilesX, 
                                 const uniform int numTilesY)
 {
   const uniform int t = taskIndex;
-  const uniform int tileY = t / numTilesX;
-  const uniform int tileX = t - tileY * numTilesX;
-  const uniform int x0 = tileX * TILE_SIZE_X;
-  const uniform int x1 = min(x0+TILE_SIZE_X,width);
-  const uniform int y0 = tileY * TILE_SIZE_Y;
-  const uniform int y1 = min(y0+TILE_SIZE_Y,height);
+  const uniform unsigned int tileY = t / numTilesX;
+  const uniform unsigned int tileX = t - tileY * numTilesX;
+  const uniform unsigned int x0 = tileX * TILE_SIZE_X;
+  const uniform unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const uniform unsigned int y0 = tileY * TILE_SIZE_Y;
+  const uniform unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
@@ -661,20 +661,20 @@ Vec3f renderPixelDifferentials(float x, float y, const uniform ISPCCamera& camer
 
 void renderTileDifferentials(uniform int taskIndex, 
                              uniform int* uniform pixels,
-                             const uniform int width,
-                             const uniform int height, 
+                             const uniform unsigned int width,
+                             const uniform unsigned int height, 
                              const uniform float time,
                              const uniform ISPCCamera& camera,
                              const uniform int numTilesX, 
                              const uniform int numTilesY)
 {
   const uniform int t = taskIndex;
-  const uniform int tileY = t / numTilesX;
-  const uniform int tileX = t - tileY * numTilesX;
-  const uniform int x0 = tileX * TILE_SIZE_X;
-  const uniform int x1 = min(x0+TILE_SIZE_X,width);
-  const uniform int y0 = tileY * TILE_SIZE_Y;
-  const uniform int y1 = min(y0+TILE_SIZE_Y,height);
+  const uniform unsigned int tileY = t / numTilesX;
+  const uniform unsigned int tileX = t - tileY * numTilesX;
+  const uniform unsigned int x0 = tileX * TILE_SIZE_X;
+  const uniform unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const uniform unsigned int y0 = tileY * TILE_SIZE_Y;
+  const uniform unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {

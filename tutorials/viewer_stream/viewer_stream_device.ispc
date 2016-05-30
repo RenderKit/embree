@@ -205,19 +205,19 @@ Vec3f ambientOcclusionShading(int x, int y, RTCRay& ray)
 /* renders a single screen tile */
 void renderTileStandard(uniform int taskIndex,
                         uniform int* uniform pixels,
-                        const uniform int width,
-                        const uniform int height,
+                        const uniform unsigned int width,
+                        const uniform unsigned int height,
                         const uniform float time,
                         const uniform ISPCCamera& camera,
                         const uniform int numTilesX,
                         const uniform int numTilesY)
 {
-  const uniform int tileY = taskIndex / numTilesX;
-  const uniform int tileX = taskIndex - tileY * numTilesX;
-  const uniform int x0 = tileX * TILE_SIZE_X;
-  const uniform int x1 = min(x0+TILE_SIZE_X,width);
-  const uniform int y0 = tileY * TILE_SIZE_Y;
-  const uniform int y1 = min(y0+TILE_SIZE_Y,height);
+  const uniform unsigned int tileY = taskIndex / numTilesX;
+  const uniform unsigned int tileX = taskIndex - tileY * numTilesX;
+  const uniform unsigned int x0 = tileX * TILE_SIZE_X;
+  const uniform unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const uniform unsigned int y0 = tileY * TILE_SIZE_Y;
+  const uniform unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
   RTCRay rays[TILE_SIZE_X*TILE_SIZE_Y];
 
@@ -284,8 +284,8 @@ void renderTileStandard(uniform int taskIndex,
 
 /* task that renders a single screen tile */
 task void renderTileTask(uniform int* uniform pixels,
-                         const uniform int width,
-                         const uniform int height,
+                         const uniform unsigned int width,
+                         const uniform unsigned int height,
                          const uniform float time,
                          const uniform ISPCCamera& camera,
                          const uniform int numTilesX,
@@ -315,8 +315,8 @@ export void device_init (uniform int8* uniform cfg)
 
 /* called by the C++ code to render */
 export void device_render (uniform int* uniform pixels,
-                           const uniform int width,
-                           const uniform int height,
+                           const uniform unsigned int width,
+                           const uniform unsigned int height,
                            const uniform float time,
                            const uniform ISPCCamera& camera)
 {

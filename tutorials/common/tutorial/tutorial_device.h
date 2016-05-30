@@ -79,7 +79,7 @@ __forceinline Vec3f faceforward( const Vec3f& N, const Vec3f& I, const Vec3f& Ng
 #endif
 
 /* standard shading function */
-typedef void (* renderTileFunc)(int taskIndex, int* pixels, const int width, const int height,
+typedef void (* renderTileFunc)(int taskIndex, int* pixels, const unsigned int width, const unsigned int height,
                                 const float time, const ISPCCamera& camera,
                                 const int numTilesX, const int numTilesY);
 extern renderTileFunc renderTile;
@@ -87,7 +87,7 @@ extern renderTileFunc renderTile;
 extern "C" void device_key_pressed_default(int key);
 extern "C" void (*key_pressed_handler)(int key);
 
-void renderTileStandard(int taskIndex, int* pixels, const int width, const int height,
+void renderTileStandard(int taskIndex, int* pixels, const unsigned int width, const unsigned int height,
                         const float time, const ISPCCamera& camera,
                         const int numTilesX, const int numTilesY);
 

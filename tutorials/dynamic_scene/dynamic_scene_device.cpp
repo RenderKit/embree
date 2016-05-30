@@ -223,19 +223,19 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
 /* renders a single screen tile */
 void renderTileStandard(int taskIndex, 
                         int* pixels,
-                        const int width,
-                        const int height, 
+                        const unsigned int width,
+                        const unsigned int height, 
                         const float time,
                         const ISPCCamera& camera,
                         const int numTilesX, 
                         const int numTilesY)
 {
-  const int tileY = taskIndex / numTilesX;
-  const int tileX = taskIndex - tileY * numTilesX;
-  const int x0 = tileX * TILE_SIZE_X;
-  const int x1 = min(x0+TILE_SIZE_X,width);
-  const int y0 = tileY * TILE_SIZE_Y;
-  const int y1 = min(y0+TILE_SIZE_Y,height);
+  const unsigned int tileY = taskIndex / numTilesX;
+  const unsigned int tileX = taskIndex - tileY * numTilesX;
+  const unsigned int x0 = tileX * TILE_SIZE_X;
+  const unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const unsigned int y0 = tileY * TILE_SIZE_Y;
+  const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
@@ -252,8 +252,8 @@ void renderTileStandard(int taskIndex,
 
 /* task that renders a single screen tile */
 void renderTileTask (int taskIndex, int* pixels,
-                         const int width,
-                         const int height, 
+                         const unsigned int width,
+                         const unsigned int height, 
                          const float time,
                          const ISPCCamera& camera,
                          const int numTilesX, 
@@ -299,8 +299,8 @@ void animateSphere (int id, float time)
 
 /* called by the C++ code to render */
 extern "C" void device_render (int* pixels,
-                           const int width,
-                           const int height, 
+                           const unsigned int width,
+                           const unsigned int height, 
                            const float time,
                            const ISPCCamera& camera)
 {
