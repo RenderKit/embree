@@ -237,7 +237,7 @@ void renderTileStandard(int taskIndex,
   const int y0 = tileY * TILE_SIZE_Y;
   const int y1 = min(y0+TILE_SIZE_Y,height);
 
-  for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
+  for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
     /* calculate pixel color */
     Vec3fa color = renderPixelStandard(x,y,camera);
@@ -280,7 +280,7 @@ void animateSphere (int id, float time)
       animateSphere(i,vertices,rcpNumTheta,rcpNumPhi,pos,r,f);
   }); 
 #else
-  for (int phi=0; phi<numPhi+1; phi++) for (int theta=0; theta<numTheta; theta++)
+  for (unsigned int phi=0; phi<numPhi+1; phi++) for (int theta=0; theta<numTheta; theta++)
   {
     Vertex* v = &vertices[phi*numTheta+theta];
     const float phif   = phi*float(pi)*rcpNumPhi;

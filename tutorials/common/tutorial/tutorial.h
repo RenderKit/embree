@@ -69,9 +69,9 @@ namespace embree
     FileName outputImageFilename;
 
     /* benchmark mode settings */
-    int skipBenchmarkFrames;
-    int numBenchmarkFrames;
-    int numBenchmarkRepetitions;
+    size_t skipBenchmarkFrames;
+    size_t numBenchmarkFrames;
+    size_t numBenchmarkRepetitions;
   
     /* window settings */
     bool interactive;

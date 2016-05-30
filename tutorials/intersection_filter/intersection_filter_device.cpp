@@ -154,7 +154,7 @@ void renderTileStandard(int taskIndex,
   const int y0 = tileY * TILE_SIZE_Y;
   const int y1 = min(y0+TILE_SIZE_Y,height);
 
-  for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
+  for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
     /* calculate pixel color */
     Vec3fa color = renderPixelStandard(x,y,camera);
@@ -321,7 +321,7 @@ void renderTileStandardStream(int taskIndex,
   /* generate stream of primary rays */
   int N = 0;
   int numActive = 0;
-  for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
+  for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
     /* ISPC workaround for mask == 0 */
     if (all(1 == 0)) continue;
@@ -360,7 +360,7 @@ void renderTileStandardStream(int taskIndex,
     
     /* terminate rays and update color */
     N = -1;
-    for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
+    for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
     {
       N++;
       /* ISPC workaround for mask == 0 */
@@ -413,7 +413,7 @@ void renderTileStandardStream(int taskIndex,
     /* add light contribution and generate transmission ray */
     N = -1;
     numActive = 0;
-    for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
+    for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
     {
       N++;
       /* ISPC workaround for mask == 0 */
@@ -455,7 +455,7 @@ void renderTileStandardStream(int taskIndex,
 
   /* framebuffer writeback */
   N = 0;
-  for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
+  for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
     /* ISPC workaround for mask == 0 */
     if (all(1 == 0)) continue;

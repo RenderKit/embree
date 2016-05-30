@@ -563,7 +563,7 @@ namespace embree
       std::string str = stream.str();
       
       glRasterPos2i( width-str.size()*12, height - 24); 
-      for ( int i = 0; i < str.size(); ++i )
+      for (size_t i=0; i<str.size(); i++)
         glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, str[i]);
       
       glRasterPos2i( 0, 0 ); 
