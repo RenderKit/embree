@@ -437,7 +437,7 @@ Vec3f renderPixelTestEyeLight(float x, float y, const uniform ISPCCamera& camera
   rtcIntersect(g_scene,*((varying RTCRay*)&ray));
   ray.filter = NULL;
 
-  if (ray.primID == -1)
+  if (ray.primID == RTC_INVALID_GEOMETRY_ID)
     return make_Vec3f(0.0f);
 
   Vec3f Ng;

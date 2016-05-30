@@ -52,18 +52,18 @@ inline uniform float updateEdgeLevel( uniform ISPCSubdivMesh* uniform mesh, cons
 void updateEdgeLevelBuffer( uniform ISPCSubdivMesh* uniform mesh, const uniform Vec3fa& cam_pos, uniform size_t startID, uniform size_t endID )
 {
   for (uniform size_t f=startID; f<endID;f++) {
-       uniform int e = mesh->face_offsets[f];
-       uniform int N = mesh->verticesPerFace[f];
-       if (N == 4) /* fast path for quads */
-         for (uniform size_t i=0; i<4; i++)
-           mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%4);
-       else if (N == 3) /* fast path for triangles */
-         for (uniform size_t i=0; i<3; i++)
-           mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%3);
-       else /* fast path for general polygons */
-        for (uniform size_t i=0; i<N; i++)
-           mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%N);
- }
+    uniform unsigned int e = mesh->face_offsets[f];
+    uniform unsigned int N = mesh->verticesPerFace[f];
+    if (N == 4) /* fast path for quads */
+      for (uniform size_t i=0; i<4; i++)
+        mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%4);
+    else if (N == 3) /* fast path for triangles */
+      for (uniform size_t i=0; i<3; i++)
+        mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%3);
+    else /* fast path for general polygons */
+      for (uniform size_t i=0; i<N; i++)
+        mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%N);
+  }
 }
 
 #if defined(ISPC)
