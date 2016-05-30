@@ -778,7 +778,7 @@ Vec3fa HairMaterial__sample(HairMaterial* This, const BRDF& brdf, const Vec3fa& 
 
 inline void Material__preprocess(ISPCMaterial* materials, int materialID, int numMaterials, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)
 {
-  int id = materialID;
+  unsigned int id = materialID;
   {
     if (id >= 0 && id < numMaterials) // FIXME: workaround for ISPC bug, location reached with empty execution mask
     {
@@ -804,7 +804,7 @@ inline void Material__preprocess(ISPCMaterial* materials, int materialID, int nu
 inline Vec3fa Material__eval(ISPCMaterial* materials, int materialID, int numMaterials, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi)
 {
   Vec3fa c = Vec3fa(0.0f);
-  int id = materialID;
+  unsigned int id = materialID;
   {
     if (id >= 0 && id < numMaterials) // FIXME: workaround for ISPC bug, location reached with empty execution mask
     {
@@ -830,7 +830,7 @@ inline Vec3fa Material__eval(ISPCMaterial* materials, int materialID, int numMat
 inline Vec3fa Material__sample(ISPCMaterial* materials, int materialID, int numMaterials, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
 {
   Vec3fa c = Vec3fa(0.0f);
-  int id = materialID;
+  unsigned int id = materialID;
   {
     if (id >= 0 && id < numMaterials) // FIXME: workaround for ISPC bug, location reached with empty execution mask
     {
@@ -1348,7 +1348,7 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
     dg.tnear_eps = 1024.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar));
   }
   else if (geometry->type == GROUP) {
-    int geomID = ray.geomID; {
+    unsigned int geomID = ray.geomID; {
       postIntersectGeometry(ray,dg,((ISPCGroup*) geometry)->geometries[geomID],materialID);
     }
   }
@@ -1361,7 +1361,7 @@ inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
   int materialID = 0;
   unsigned ray_geomID = g_instancing_mode >= 2 ? ray.instID : ray.geomID;
   dg.tnear_eps = 32.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar));
-  int geomID = ray_geomID;
+  unsigned int geomID = ray_geomID;
   {
     /* get instance and geometry pointers */
     ISPCInstance* instance;
@@ -1453,7 +1453,7 @@ void occlusionFilterOBJ(void* ptr, RTCRay& ray)
 void occlusionFilterHair(void* ptr, RTCRay& ray)
 {
   Vec3fa Kt = Vec3fa(0.0f);
-  int geomID = ray.geomID;
+  unsigned int geomID = ray.geomID;
   {
     ISPCGeometry* geometry = g_ispc_scene->geometries[geomID];
     if (geometry->type == LINE_SEGMENTS)
@@ -1543,7 +1543,7 @@ Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCC
       if (ray.geomID != RTC_INVALID_GEOMETRY_ID) // FIXME: workaround for ISPC bug, location reached with empty execution mask
     {
       Vec3fa dPdu,dPdv;
-      int geomID = ray.geomID; {
+      unsigned int geomID = ray.geomID; {
         rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER0,nullptr,&dPdu.x,&dPdv.x,3);
       }
       Ns = normalize(cross(dPdv,dPdu));

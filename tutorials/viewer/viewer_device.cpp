@@ -434,7 +434,7 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
     materialID = mesh->materialID;
   }
   else if (geometry->type == GROUP) {
-    int geomID = ray.geomID; {
+    unsigned int geomID = ray.geomID; {
       postIntersectGeometry(ray,dg,((ISPCGroup*) geometry)->geometries[geomID],materialID);
     }
   }
@@ -446,7 +446,7 @@ inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
 {
   int materialID = 0;
   unsigned ray_geomID = g_instancing_mode >= 2 ? ray.instID : ray.geomID;
-  int geomID = ray_geomID;
+  unsigned int geomID = ray_geomID;
   {
     /* get instance and geometry pointers */
     ISPCInstance* instance;
@@ -520,7 +520,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
     if (ray.geomID != RTC_INVALID_GEOMETRY_ID) // FIXME: workaround for ISPC bug, location reached with empty execution mask
   {
     Vec3fa dPdu,dPdv;
-    int geomID = ray.geomID; {
+    unsigned int geomID = ray.geomID; {
       rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER0,nullptr,&dPdu.x,&dPdv.x,3);
     }
     dg.Ns = cross(dPdv,dPdu);

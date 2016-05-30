@@ -363,7 +363,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
     Vec3fa diffuse = Vec3fa(1.0f,0.0f,0.0f);
     if (ray.geomID > 0) 
     {
-      int geomID = ray.geomID; {
+      unsigned int geomID = ray.geomID; {
         int geom = geomID == quadCubeID ? quadCubeID2 : geomID; // use special interpolation mesh
         rtcInterpolate(g_scene,geom,ray.primID,ray.u,ray.v,RTC_USER_VERTEX_BUFFER0,&diffuse.x,nullptr,nullptr,3); 
       }
@@ -375,7 +375,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
     Vec3fa Ng = ray.Ng;
     if (ray.geomID >= 3) {
       Vec3fa dPdu,dPdv;
-      int geomID = ray.geomID; {
+      unsigned int geomID = ray.geomID; {
         rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER0,nullptr,&dPdu.x,&dPdv.x,3);
       }
       //return dPdu;
