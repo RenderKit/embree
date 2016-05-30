@@ -268,7 +268,7 @@ void occlusionFilterN(int* valid,
     /* read ray from ray structure */
     Vec3fa ray_org = Vec3fa(RTCRayN_org_x(ray,N,ui),RTCRayN_org_y(ray,N,ui),RTCRayN_org_z(ray,N,ui));
     Vec3fa ray_dir = Vec3fa(RTCRayN_dir_x(ray,N,ui),RTCRayN_dir_y(ray,N,ui),RTCRayN_dir_z(ray,N,ui));
-    int   ray_mask= RTCRayN_mask(ray,N,ui);
+    unsigned ray_mask= RTCRayN_mask(ray,N,ui);
     float hit_t   = RTCHitN_t(potentialHit,N,ui);
 
     /* decode ray IDs */

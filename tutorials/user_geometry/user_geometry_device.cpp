@@ -316,7 +316,7 @@ void sphereIntersectFuncN(const int* valid,
   for (int ui=0; ui<N; ui+=1)
   {
     /* calculate loop and execution mask */
-    int vi = ui+0;
+    unsigned int vi = ui+0;
     if (vi>=N) continue;
     
     /* ignore inactive rays */
@@ -379,7 +379,7 @@ void sphereOccludedFuncN(const int* valid,
   for (int ui=0; ui<N; ui+=1)
   {
     /* calculate loop and execution mask */
-    int vi = ui+0;
+    unsigned int vi = ui+0;
     if (vi>=N) continue;
     
     /* ignore inactive rays */
