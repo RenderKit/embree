@@ -225,7 +225,7 @@ namespace embree
                 << "}";
   }
 
-  __forceinline void setRay(RTCRay4& ray_o, int i, const RTCRay& ray_i)
+  __forceinline void setRay(RTCRay4& ray_o, size_t i, const RTCRay& ray_i)
   {
     ray_o.orgx[i] = ray_i.org[0];
     ray_o.orgy[i] = ray_i.org[1];
@@ -247,7 +247,7 @@ namespace embree
     ray_o.Ngz[i] = ray_i.Ng[2];
   }
 
-  __forceinline void setRay(RTCRay8& ray_o, int i, const RTCRay& ray_i)
+  __forceinline void setRay(RTCRay8& ray_o, size_t i, const RTCRay& ray_i)
   {
     ray_o.orgx[i] = ray_i.org[0];
     ray_o.orgy[i] = ray_i.org[1];
@@ -269,7 +269,7 @@ namespace embree
     ray_o.Ngz[i] = ray_i.Ng[2];
   }
 
-  __forceinline void setRay(RTCRay16& ray_o, int i, const RTCRay& ray_i)
+  __forceinline void setRay(RTCRay16& ray_o, size_t i, const RTCRay& ray_i)
   {
     ray_o.orgx[i] = ray_i.org[0];
     ray_o.orgy[i] = ray_i.org[1];
@@ -313,7 +313,7 @@ namespace embree
     RTCRayN_Ng_z(ray_o,N,i) = ray_i.Ng[2];
   }
 
-  __forceinline RTCRay getRay(RTCRay4& ray_i, int i)
+  __forceinline RTCRay getRay(RTCRay4& ray_i, size_t i)
   {
     RTCRay ray_o;
     ray_o.org[0] = ray_i.orgx[i];
@@ -337,7 +337,7 @@ namespace embree
     return ray_o;
   }
 
-  __forceinline RTCRay getRay(RTCRay8& ray_i, int i)
+  __forceinline RTCRay getRay(RTCRay8& ray_i, size_t i)
   {
     RTCRay ray_o;
     ray_o.org[0] = ray_i.orgx[i];
@@ -361,7 +361,7 @@ namespace embree
     return ray_o;
   }
 
-  __forceinline RTCRay getRay(RTCRay16& ray_i, int i)
+  __forceinline RTCRay getRay(RTCRay16& ray_i, size_t i)
   {
     RTCRay ray_o;
     ray_o.org[0] = ray_i.orgx[i];
@@ -385,7 +385,7 @@ namespace embree
     return ray_o;
   }
 
-  __forceinline RTCRay getRay(RTCRayN* ray_i, size_t N, int i)
+  __forceinline RTCRay getRay(RTCRayN* ray_i, size_t N, size_t i)
   {
     RTCRay ray_o;
     ray_o.org[0] = RTCRayN_org_x(ray_i,N,i);

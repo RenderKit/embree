@@ -35,7 +35,7 @@ namespace embree
   private:
     std::ostream& iostream;
     std::ios::fmtflags flags;
-    int precision;
+    std::streamsize precision;
   };
 
   std::string toLowerCase(const std::string& s);

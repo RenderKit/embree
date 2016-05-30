@@ -69,7 +69,7 @@ namespace embree
       Vec3fa vz = -0.5f*width*local2world.l.vx + 0.5f*height*local2world.l.vy + 0.5f*height*fovScale*local2world.l.vz;
       Vec3fa p =  local2world.p;
       if (flip_y) {
-        vz = vz+height*vy;
+        vz = vz+float(height)*vy;
         vy = -vy;
       }
       return ISPCCamera(AffineSpace3fa(vx,vy,vz,p));

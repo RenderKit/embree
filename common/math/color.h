@@ -137,7 +137,7 @@ namespace embree
       d.r = (unsigned char)(s[0]); 
       d.g = (unsigned char)(s[1]); 
       d.b = (unsigned char)(s[2]); 
-      d.a = 1.0f; 
+      d.a = 255; 
     }
 
     ////////////////////////////////////////////////////////////////////////////////
