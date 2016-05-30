@@ -259,7 +259,7 @@ unmasked void occlusionFilterN(uniform int* uniform valid,
   for (uniform int ui=0; ui<N; ui+=programCount)
   {
     /* calculate varying loop and execution mask */
-    int vi = ui+programIndex;
+    unsigned int vi = ui+programIndex;
     if (vi>=N) continue;
 
     /* ignore inactive rays */
@@ -268,7 +268,7 @@ unmasked void occlusionFilterN(uniform int* uniform valid,
     /* read ray from ray structure */
     Vec3f ray_org = make_Vec3f(RTCRayN_org_x(ray,N,ui),RTCRayN_org_y(ray,N,ui),RTCRayN_org_z(ray,N,ui));
     Vec3f ray_dir = make_Vec3f(RTCRayN_dir_x(ray,N,ui),RTCRayN_dir_y(ray,N,ui),RTCRayN_dir_z(ray,N,ui));
-    int   ray_mask= RTCRayN_mask(ray,N,ui);
+    unsigned ray_mask= RTCRayN_mask(ray,N,ui);
     float hit_t   = RTCHitN_t(potentialHit,N,ui);
 
     /* decode ray IDs */
