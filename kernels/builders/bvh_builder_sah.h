@@ -177,7 +177,7 @@ namespace embree
           /*! compute leaf and split cost */
           const float leafSAH  = intCost*current.pinfo.leafSAH(logBlockSize);
           const float splitSAH = travCost*halfArea(current.pinfo.geomBounds)+intCost*current.split.splitSAH();
-          assert(current.pinfo.size() == 0 || leafSAH >= 0 && splitSAH >= 0);
+          assert((current.pinfo.size() == 0) || ((leafSAH >= 0) && (splitSAH >= 0)));
           
           /*! create a leaf node when threshold reached or SAH tells us to stop */
           if (current.pinfo.size() <= minLeafSize || current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || (current.pinfo.size() <= maxLeafSize && leafSAH <= splitSAH)) {

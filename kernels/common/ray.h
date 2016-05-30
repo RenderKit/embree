@@ -45,9 +45,9 @@ namespace embree
     /* Calculates if this is a valid ray that does not cause issues during traversal */
     __forceinline vbool<K> valid() const
     {
-      const vbool<K> vx = abs(org.x) <= vfloat<K>(FLT_LARGE) & abs(dir.x) <= vfloat<K>(FLT_LARGE);
-      const vbool<K> vy = abs(org.y) <= vfloat<K>(FLT_LARGE) & abs(dir.y) <= vfloat<K>(FLT_LARGE);
-      const vbool<K> vz = abs(org.z) <= vfloat<K>(FLT_LARGE) & abs(dir.z) <= vfloat<K>(FLT_LARGE);
+      const vbool<K> vx = (abs(org.x) <= vfloat<K>(FLT_LARGE)) & (abs(dir.x) <= vfloat<K>(FLT_LARGE));
+      const vbool<K> vy = (abs(org.y) <= vfloat<K>(FLT_LARGE)) & (abs(dir.y) <= vfloat<K>(FLT_LARGE));
+      const vbool<K> vz = (abs(org.z) <= vfloat<K>(FLT_LARGE)) & (abs(dir.z) <= vfloat<K>(FLT_LARGE));
       const vbool<K> vn = abs(tnear) <= vfloat<K>(inf);
       const vbool<K> vf = abs(tfar) <= vfloat<K>(inf);
       return vx & vy & vz & vn & vf;
