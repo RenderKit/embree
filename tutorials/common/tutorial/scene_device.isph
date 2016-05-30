@@ -287,11 +287,6 @@ struct HairMaterial
   float ny;
 };
 
-struct ISPCSubdivMeshKeyFrame {
-  ISPCSubdivMesh** subdiv;                   //!< list of subdiv meshes
-  unsigned int numSubdivMeshes;                       //!< number of subdiv meshes
-};
-
 struct ISPCScene
 {
   uniform ISPCGeometry* uniform* geometries;   //!< list of geometries
@@ -301,8 +296,5 @@ struct ISPCScene
 
   uniform Light* uniform* lights;              //!< list of lights
   unsigned int numLights;                               //!< number of lights
-
-  ISPCSubdivMeshKeyFrame** subdivMeshKeyFrames;
-  unsigned int numSubdivMeshKeyFrames;
 
 }; // ISPCScene

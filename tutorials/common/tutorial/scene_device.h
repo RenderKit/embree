@@ -213,12 +213,6 @@ namespace embree
       unsigned int geomID;
     };
 
-    struct ISPCSubdivMeshKeyFrame
-    {
-      ISPCSubdivMesh** subdiv;                   //!< list of subdiv meshes
-      unsigned int numSubdivMeshes;                       //!< number of subdiv meshes
-    };
-
     struct ISPCLineSegments
     {
       ISPCLineSegments ()
@@ -326,9 +320,6 @@ namespace embree
         Light* light = convertLight(in->lights[i]);
         if (light) lights[numLights++] = light;
       }
-
-      subdivMeshKeyFrames = nullptr;
-      numSubdivMeshKeyFrames = 0;
     }
 
     static ISPCGeometry* convertGeometry (Ref<TutorialScene::Geometry> in)
@@ -413,16 +404,12 @@ namespace embree
 
     Light** lights;              //!< list of lights
     unsigned int numLights;               //!< number of lights
-
-    ISPCSubdivMeshKeyFrame** subdivMeshKeyFrames;
-    unsigned int numSubdivMeshKeyFrames;
   };
 
   typedef ISPCScene::ISPCGeometry ISPCGeometry;
   typedef ISPCScene::ISPCTriangleMesh ISPCTriangleMesh;
   typedef ISPCScene::ISPCQuadMesh ISPCQuadMesh;
   typedef ISPCScene::ISPCSubdivMesh ISPCSubdivMesh;
-  typedef ISPCScene::ISPCSubdivMeshKeyFrame ISPCSubdivMeshKeyFrame;
   typedef ISPCScene::ISPCLineSegments ISPCLineSegments;
   typedef ISPCScene::ISPCHairSet ISPCHairSet;
   typedef ISPCScene::ISPCInstance ISPCInstance;

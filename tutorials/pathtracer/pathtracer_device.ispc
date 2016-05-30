@@ -1705,29 +1705,6 @@ task void updateEdgeLevelBufferTask( uniform ISPCSubdivMesh* uniform mesh, const
 }
 #endif
 
-void updateKeyFrame(uniform ISPCScene* uniform scene_in)
-{
-  for (uniform size_t g=0; g<scene_in->numGeometries; g++)
-  {
-    uniform ISPCGeometry* uniform geometry = g_ispc_scene->geometries[g];
-    if (geometry->type != SUBDIV_MESH) continue;
-    uniform ISPCSubdivMesh* uniform mesh = (uniform ISPCSubdivMesh* uniform) geometry;
-    uniform unsigned int geomID = mesh->geomID;
-
-    if (g_ispc_scene->subdivMeshKeyFrames)
-      {
-	uniform ISPCSubdivMeshKeyFrame *uniform keyframe      = g_ispc_scene->subdivMeshKeyFrames[keyframeID];
-	uniform ISPCSubdivMesh         *uniform keyframe_mesh = keyframe->subdiv[g];
-	rtcSetBuffer(g_scene, geomID, RTC_VERTEX_BUFFER, keyframe_mesh->positions, 0, sizeof(uniform Vec3fa  ));
-	rtcUpdateBuffer(g_scene,geomID,RTC_VERTEX_BUFFER);
-      }
-  }
-
-  keyframeID++;
-  if (keyframeID >= g_ispc_scene->numSubdivMeshKeyFrames)
-    keyframeID = 0;
-}
-
 void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa& cam_pos)
 {
   for (uniform size_t g=0; g<scene_in->numGeometries; g++)
@@ -1800,12 +1777,6 @@ export void device_render (uniform int* uniform pixels,
   camera_changed |= ne(g_accu_vy,camera.xfm.l.vy); g_accu_vy = camera.xfm.l.vy;
   camera_changed |= ne(g_accu_vz,camera.xfm.l.vz); g_accu_vz = camera.xfm.l.vz;
   camera_changed |= ne(g_accu_p, camera.xfm.p);    g_accu_p  = camera.xfm.p;
-
-  if (g_animation && g_ispc_scene->numSubdivMeshKeyFrames) {
-    updateKeyFrame(g_ispc_scene);
-    rtcCommit(g_scene);
-    g_changed = true;
-  }
 
 #if  FIXED_SAMPLING == 0
   g_accu_count++;

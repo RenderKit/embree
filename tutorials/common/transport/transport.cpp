@@ -64,28 +64,6 @@ namespace embree
     g_ispc_scene = new ISPCScene(in);
   }
 
-  void set_scene_keyframes(TutorialScene** in, size_t numKeyFrames)
-  {
-    if (g_ispc_scene)
-    {
-      g_ispc_scene->subdivMeshKeyFrames = new ISPCSubdivMeshKeyFrame*[numKeyFrames];
-      g_ispc_scene->numSubdivMeshKeyFrames = numKeyFrames;
-      for (size_t k=0; k<numKeyFrames; k++)
-      {
-        ISPCSubdivMeshKeyFrame *kf = new ISPCSubdivMeshKeyFrame;
-        
-        kf->subdiv = new ISPCSubdivMesh*[in[k]->geometries.size()];
-        
-        for (size_t i=0; i<in[k]->geometries.size(); i++)
-          kf->subdiv[i] = new ISPCSubdivMesh(in[k]->geometries[i].dynamicCast<TutorialScene::SubdivMesh>());
-        
-        kf->numSubdivMeshes = in[k]->geometries.size();
-        
-        g_ispc_scene->subdivMeshKeyFrames[k] = kf;	
-      }
-    }
-  }
-  
   bool pick(const float x, const float y, const ISPCCamera& camera, Vec3fa& hitPos) {
     return device_pick(x,y,camera,hitPos);
   }
