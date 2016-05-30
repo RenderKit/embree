@@ -55,7 +55,7 @@ namespace embree
       /* verify correct input */
       assert(all(valid0,ray.valid()));
       assert(all(valid0,ray.tnear >= 0.0f));
-      assert(!(types & BVH_MB) || all(valid0,ray.time >= 0.0f & ray.time <= 1.0f));
+      assert(!(types & BVH_MB) || all(valid0,(ray.time >= 0.0f) & (ray.time <= 1.0f)));
       
       /* load ray */
       Vec3vfK ray_org = ray.org;
@@ -233,7 +233,7 @@ namespace embree
       /* verify correct input */
       assert(all(valid,ray.valid()));
       assert(all(valid,ray.tnear >= 0.0f));
-      assert(!(types & BVH_MB) || all(valid,ray.time >= 0.0f & ray.time <= 1.0f));
+      assert(!(types & BVH_MB) || all(valid,(ray.time >= 0.0f) & (ray.time <= 1.0f)));
 
       /* load ray */
       vbool<K> terminated = !valid;
