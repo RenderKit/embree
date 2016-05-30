@@ -249,9 +249,9 @@ struct RTCRay2
   Vec3f Ng;      //!< Geometric normal.
   float u;       //!< Barycentric u coordinate of hit
   float v;       //!< Barycentric v coordinate of hit
-  int geomID;    //!< geometry ID
-  int primID;    //!< primitive ID
-  int instID;    //!< instance ID
+  unsigned int geomID;    //!< geometry ID
+  unsigned int primID;    //!< primitive ID
+  unsigned int instID;    //!< instance ID
 
   // ray extensions
   RTCFilterFuncVarying filter;
