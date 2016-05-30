@@ -468,7 +468,7 @@ namespace embree
       for (size_t i=0; i<vt.size(); i++) mesh->texcoords.push_back(vt[i]);
       
       for (size_t i=0; i<ec.size(); ++i) {
-        assert(ec[i].a < v.size() && ec[i].b < v.size());
+        assert(((size_t)ec[i].a < v.size()) && ((size_t)ec[i].b < v.size()));
         mesh->edge_creases.push_back(Vec2i(ec[i].a, ec[i].b));
         mesh->edge_crease_weights.push_back(ec[i].w);
       }
