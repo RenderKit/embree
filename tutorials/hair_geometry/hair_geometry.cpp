@@ -199,9 +199,9 @@ float noise(float x, float y, float z)
     
     const float rcpNumTheta = rcp((float)numTheta);
     const float rcpNumPhi   = rcp((float)numPhi);
-    for (int phi=0; phi<=numPhi; phi++)
+    for (unsigned int phi=0; phi<=numPhi; phi++)
     {
-      for (int theta=0; theta<numTheta; theta++)
+      for (unsigned int theta=0; theta<numTheta; theta++)
       {
         const float phif   = phi*float(pi)*rcpNumPhi;
         const float thetaf = theta*2.0f*float(pi)*rcpNumTheta;
@@ -211,12 +211,12 @@ float noise(float x, float y, float z)
       }
       if (phi == 0) continue;
       
-      for (int theta=1; theta<=numTheta; theta++) 
+      for (unsigned int theta=1; theta<=numTheta; theta++) 
       {
-        int p00 = (phi-1)*numTheta+theta-1;
-        int p01 = (phi-1)*numTheta+theta%numTheta;
-        int p10 = phi*numTheta+theta-1;
-        int p11 = phi*numTheta+theta%numTheta;
+        unsigned int p00 = (phi-1)*numTheta+theta-1;
+        unsigned int p01 = (phi-1)*numTheta+theta%numTheta;
+        unsigned int p10 = phi*numTheta+theta-1;
+        unsigned int p11 = phi*numTheta+theta%numTheta;
 
         if (phi > 1)
           mesh->triangles.push_back(TutorialScene::Triangle(p10,p00,p01,materialID));
@@ -231,7 +231,7 @@ float noise(float x, float y, float z)
     const float thickness = 0.001f*r;
     TutorialScene::HairSet* hairset = new TutorialScene::HairSet(true);
 
-    int s = 0;
+    unsigned int s = 0;
     for (size_t iy=0; iy<300; iy++)
     {
       for (size_t ix=0; ix<300; ix++)

@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "state.h"
-#include "../../common/lexers/streamfilters.h"
+#include "../common/lexers/streamfilters.h"
 
 namespace embree
 {
@@ -134,9 +134,9 @@ namespace embree
      * functions */
 #if defined(DEBUG)
     assert(isa::getISA() == ISA);
-#if defined(__TARGET_SSE41__)
-    assert(sse41::getISA() <= SSE41);
-#endif
+//#if defined(__TARGET_SSE41__)
+//    assert(sse41::getISA() <= SSE41);
+//#endif
 #if defined(__TARGET_SSE42__)
     assert(sse42::getISA() <= SSE42);
 #endif
@@ -328,7 +328,7 @@ namespace embree
     }
   }
 
-  bool State::verbosity(int N) {
+  bool State::verbosity(size_t N) {
     return N <= verbose;
   }
 

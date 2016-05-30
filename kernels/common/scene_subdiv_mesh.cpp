@@ -16,8 +16,8 @@
 
 #include "scene_subdiv_mesh.h"
 #include "scene.h"
-#include "subdiv/patch_eval.h"
-#include "subdiv/patch_eval_simd.h"
+#include "../subdiv/patch_eval.h"
+#include "../subdiv/patch_eval_simd.h"
 
 #include "../algorithms/sort.h"
 #include "../algorithms/prefix.h"
@@ -30,16 +30,16 @@ namespace embree
     : Geometry(parent,SUBDIV_MESH,numFaces,numTimeSteps,flags), 
       numFaces(numFaces), 
       numEdges(numEdges), 
-      numHalfEdges(0),
-      faceStartEdge(parent->device),
-      halfEdges(parent->device),
-      invalidFace(parent->device),
       numVertices(numVertices),
       boundary(RTC_BOUNDARY_EDGE_ONLY),
       displFunc(nullptr), 
       displBounds(empty),
-      levelUpdate(false),
-      tessellationRate(2.0f)
+      tessellationRate(2.0f),
+      numHalfEdges(0),
+      faceStartEdge(parent->device),
+      halfEdges(parent->device),
+      invalidFace(parent->device),
+      levelUpdate(false)
   {
     for (size_t i=0; i<numTimeSteps; i++)
       vertices[i].init(parent->device,numVertices,sizeof(Vec3fa));
@@ -291,7 +291,7 @@ namespace embree
           edge->vertex_type            = HalfEdge::REGULAR_VERTEX;
 
 	  if (unlikely(holeSet.lookup(f))) 
-	    halfEdges1[e+de] = SubdivMesh::KeyHalfEdge(-1,edge);
+	    halfEdges1[e+de] = SubdivMesh::KeyHalfEdge(std::numeric_limits<uint64_t>::max(),edge);
 	  else
 	    halfEdges1[e+de] = SubdivMesh::KeyHalfEdge(key,edge);
 	}
@@ -315,8 +315,8 @@ namespace embree
       while (e<r.end())
       {
 	const uint64_t key = halfEdges1[e].key;
-	if (key == -1) break;
-	int N=1; while (e+N<numHalfEdges && halfEdges1[e+N].key == key) N++;
+	if (key == std::numeric_limits<uint64_t>::max()) break;
+	size_t N=1; while (e+N<numHalfEdges && halfEdges1[e+N].key == key) N++;
 
         /* border edges are identified by not having an opposite edge set */
 	if (N == 1) {

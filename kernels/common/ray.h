@@ -45,9 +45,9 @@ namespace embree
     /* Calculates if this is a valid ray that does not cause issues during traversal */
     __forceinline vbool<K> valid() const
     {
-      const vbool<K> vx = abs(org.x) <= vfloat<K>(FLT_LARGE) & abs(dir.x) <= vfloat<K>(FLT_LARGE);
-      const vbool<K> vy = abs(org.y) <= vfloat<K>(FLT_LARGE) & abs(dir.y) <= vfloat<K>(FLT_LARGE);
-      const vbool<K> vz = abs(org.z) <= vfloat<K>(FLT_LARGE) & abs(dir.z) <= vfloat<K>(FLT_LARGE);
+      const vbool<K> vx = (abs(org.x) <= vfloat<K>(FLT_LARGE)) & (abs(dir.x) <= vfloat<K>(FLT_LARGE));
+      const vbool<K> vy = (abs(org.y) <= vfloat<K>(FLT_LARGE)) & (abs(dir.y) <= vfloat<K>(FLT_LARGE));
+      const vbool<K> vz = (abs(org.z) <= vfloat<K>(FLT_LARGE)) & (abs(dir.z) <= vfloat<K>(FLT_LARGE));
       const vbool<K> vn = abs(tnear) <= vfloat<K>(inf);
       const vbool<K> vf = abs(tfar) <= vfloat<K>(inf);
       return vx & vy & vz & vn & vf;
@@ -152,10 +152,10 @@ namespace embree
     /* Constructs a ray from origin, direction, and ray segment. Near
      *  has to be smaller than far */
     __forceinline RayK(const Vec3fa& org, const Vec3fa& dir, float tnear = zero, float tfar = inf, float time = zero, int mask = -1)
-      : org(org), dir(dir), tnear(tnear), tfar(tfar), geomID(-1), primID(-1), instID(-1), mask(mask), time(time) {}
+      : org(org), dir(dir), tnear(tnear), tfar(tfar), time(time), mask(mask), geomID(-1), primID(-1), instID(-1) {}
 
     /* Tests if we hit something */
-    __forceinline operator bool() const { return geomID != -1; }
+    __forceinline operator bool() const { return geomID != RTC_INVALID_GEOMETRY_ID; }
 
     /* Calculates if this is a valid ray that does not cause issues during traversal */
     __forceinline bool valid() const {
@@ -185,9 +185,9 @@ namespace embree
     Vec3fa Ng;   // not normalized geometry normal
     float u;     // barycentric u coordinate of hit
     float v;     // barycentric v coordinate of hit
-    int geomID;  // geometry ID
-    int primID;  // primitive ID
-    int instID;  // instance ID
+    unsigned geomID;  // geometry ID
+    unsigned primID;  // primitive ID
+    unsigned instID;  // instance ID
 
 #if defined(__AVX512F__)
     __forceinline void update(const vbool16& m_mask,
@@ -347,7 +347,7 @@ namespace embree
     __forceinline void readHit(const size_t i, Ray& ray)
     {
       const size_t offset = 4*i;
-      const int geometryID = geomID(offset)[0];
+      const unsigned int geometryID = geomID(offset)[0];
       if (geometryID != RTC_INVALID_GEOMETRY_ID)
       {
         ray.tfar = tfar(offset)[0];

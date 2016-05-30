@@ -50,11 +50,11 @@ struct ISPCTriangleMesh
   uniform Vec2f* texcoords;     //!< vertex texcoord array
   uniform ISPCTriangle* triangles;  //!< list of triangles
   uniform ISPCQuad* quads;  //!< list of triangles // FIXME: remove
-  int numVertices;
-  int numTriangles;
-  int numQuads;
-  int geomID;
-  int meshMaterialID;
+  unsigned int numVertices;
+  unsigned int numTriangles;
+  unsigned int numQuads;
+  unsigned int geomID;
+  unsigned int meshMaterialID;
 };
 
 struct ISPCQuadMesh
@@ -65,10 +65,10 @@ struct ISPCQuadMesh
   uniform Vec3fa* normals;       //!< vertex normal array
   uniform Vec2f* texcoords;     //!< vertex texcoord array
   uniform ISPCQuad* quads;  //!< list of triangles
-  int numVertices;
-  int numQuads;
-  int geomID;
-  int meshMaterialID;
+  unsigned int numVertices;
+  unsigned int numQuads;
+  unsigned int geomID;
+  unsigned int meshMaterialID;
 };
 
 struct ISPCSubdivMesh
@@ -88,14 +88,14 @@ struct ISPCSubdivMesh
   uniform int* vertex_creases;          //!< indices of vertex creases
   uniform float* vertex_crease_weights; //!< weight for each vertex crease
   uniform int* face_offsets;
-  int numVertices;
-  int numFaces;
-  int numEdges;
-  int numEdgeCreases;
-  int numVertexCreases;
-  int numHoles;
-  int materialID;
-  int geomID;
+  unsigned int numVertices;
+  unsigned int numFaces;
+  unsigned int numEdges;
+  unsigned int numEdgeCreases;
+  unsigned int numVertexCreases;
+  unsigned int numHoles;
+  unsigned int materialID;
+  unsigned int geomID;
 };
 
 struct ISPCHair
@@ -110,8 +110,8 @@ struct ISPCLineSegments
   Vec3fa* v;        //!< control points (x,y,z,r)
   Vec3fa* v2;       //!< hair control points (x,y,z,r)
   int* indices;     //!< for each segment, index to first control point
-  int numVertices;
-  int numSegments;
+  unsigned int numVertices;
+  unsigned int numSegments;
   int materialID;
 };
 
@@ -121,9 +121,9 @@ struct ISPCHairSet
   Vec3fa* v;       //!< hair control points (x,y,z,r)
   Vec3fa* v2;       //!< hair control points (x,y,z,r)
   ISPCHair* hairs; //!< for each hair, index to first control point
-  int numVertices;
-  int numHairs;
-  int materialID;
+  unsigned int numVertices;
+  unsigned int numHairs;
+  unsigned int materialID;
 };
 
 struct ISPCInstance
@@ -132,7 +132,7 @@ struct ISPCInstance
   int8 align[12];
   AffineSpace3fa space0;
   AffineSpace3fa space1;
-  int geomID;
+  unsigned int geomID;
 };
 
 struct ISPCGroup
@@ -287,22 +287,14 @@ struct HairMaterial
   float ny;
 };
 
-struct ISPCSubdivMeshKeyFrame {
-  ISPCSubdivMesh** subdiv;                   //!< list of subdiv meshes
-  int numSubdivMeshes;                       //!< number of subdiv meshes
-};
-
 struct ISPCScene
 {
   uniform ISPCGeometry* uniform* geometries;   //!< list of geometries
   uniform ISPCMaterial* materials;             //!< material list
-  int numGeometries;                           //!< number of geometries
-  int numMaterials;                            //!< number of materials
+  unsigned int numGeometries;                           //!< number of geometries
+  unsigned int numMaterials;                            //!< number of materials
 
   uniform Light* uniform* lights;              //!< list of lights
-  int numLights;                               //!< number of lights
-
-  ISPCSubdivMeshKeyFrame** subdivMeshKeyFrames;
-  int numSubdivMeshKeyFrames;
+  unsigned int numLights;                               //!< number of lights
 
 }; // ISPCScene

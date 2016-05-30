@@ -503,28 +503,26 @@ namespace embree
     ALIGNED_CLASS;
   private:
 
-    static const size_t MAX_TASKS = 512;
-
-    const Compare& cmp;
-    const Reduction_T& reduction_t;
-    const Reduction_V& reduction_v;
-    const V &init;
-
-    struct Range {
+    struct Range 
+    {
       int start;
       int end;
       Range() {}
 
-    Range(int start, int end) : start(start), end(end) {}
+      Range (int start, int end) 
+      : start(start), end(end) {}
 
-      __forceinline void reset() { start = 0; end = -1; } 
+      __forceinline void reset() { 
+        start = 0; end = -1; 
+      } 
 	
-      __forceinline Range intersect(const Range& r) const
-      {
+      __forceinline Range intersect(const Range& r) const {
         return Range (max(start,r.start),min(end,r.end)); // carefull with ssize_t here
       }
 
-      __forceinline bool empty() const { return end < start; } 
+      __forceinline bool empty() const { 
+        return end < start; 
+      } 
 	
       __forceinline size_t size() const { 
         assert(!empty());
@@ -532,9 +530,17 @@ namespace embree
       }
     };
 
+  private:
+
+    static const size_t MAX_TASKS = 512;
+
+    T* array;
     size_t N;
     size_t tasks; 
-    T* array;
+    const Compare& cmp;
+    const Reduction_T& reduction_t;
+    const Reduction_V& reduction_v;
+    const V &init;
 
     size_t numMisplacedRangesLeft;
     size_t numMisplacedRangesRight;
@@ -545,10 +551,8 @@ namespace embree
     __aligned(64) Range leftMisplacedRanges[MAX_TASKS];  
     __aligned(64) Range rightMisplacedRanges[MAX_TASKS]; 
     __aligned(64) V leftReductions[MAX_TASKS];           
-    __aligned(64) V rightReductions[MAX_TASKS];          
+    __aligned(64) V rightReductions[MAX_TASKS];    
 
-
-     
   public:
      
     __forceinline parallel_partition_static_task(T *array, 
@@ -557,8 +561,8 @@ namespace embree
                                                  const V& init, 
                                                  const Compare& cmp, 
                                                  const Reduction_T& reduction_t, 
-                                                 const Reduction_V& reduction_v) : 
-    array(array), N(N), init(init), cmp(cmp), reduction_t(reduction_t) , reduction_v(reduction_v)
+                                                 const Reduction_V& reduction_v) 
+      : array(array), N(N), cmp(cmp), reduction_t(reduction_t), reduction_v(reduction_v), init(init)
     {
       numMisplacedRangesLeft  = 0;
       numMisplacedRangesRight = 0;
@@ -625,15 +629,8 @@ namespace embree
         size   -= items;
         l_left -= items;
         r_left -= items;
-#pragma nounroll
-        while(items)
-        {
-#if 0 // defined(__AVX512F__)
-          prefetch<PFHINT_L2EX>(((char*)l) + 4*64);
-          prefetch<PFHINT_L2EX>(((char*)r) + 4*64);	  
-          prefetch<PFHINT_L1EX>(((char*)l) + 1*64);
-          prefetch<PFHINT_L1EX>(((char*)r) + 1*64);	  
-#endif
+
+        while(items) {
           items--;
           xchg(*l++,*r++);
         }
@@ -656,7 +653,6 @@ namespace embree
                    {
                      const size_t startID = (taskID+0)*N/tasks;
                      const size_t endID   = (taskID+1)*N/tasks;
-                     const size_t size    = endID-startID;
                      V local_left(empty);
                      V local_right(empty);
                      const size_t mid = serial_partitioning(array,startID,endID,local_left,local_right,cmp,reduction_t);
@@ -691,7 +687,9 @@ namespace embree
       const Range globalRight(mid,N-1);
 
       // without pragma the compiler makes a mess out of this loop
-#pragma novector
+#if defined(__INTEL_COMPILER)
+#pragma novector // FIXME: does this make a performance difference at all?
+#endif
       for (size_t i=0;i<tasks;i++)
       {	    
         const unsigned int left_start  = counter_start[i];

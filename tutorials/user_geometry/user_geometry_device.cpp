@@ -21,8 +21,8 @@ const int numTheta = 2*numPhi;
 
 void renderTileStandardStream(int taskIndex, 
                               int* pixels,
-                              const int width,
-                              const int height, 
+                              const unsigned int width,
+                              const unsigned int height, 
                               const float time,
                               const ISPCCamera& camera,
                               const int numTilesX, 
@@ -110,10 +110,10 @@ void instanceIntersectFuncN(const int* valid,
   const Instance* instance = (const Instance*) ptr;
 
   /* iterate over all rays in ray packet */
-  for (int ui=0; ui<N; ui+=1)
+  for (unsigned int ui=0; ui<N; ui+=1)
   {
     /* calculate loop and execution mask */
-    int vi = ui+0;
+    unsigned int vi = ui+0;
     if (vi>=N) continue;
     
     /* ignore inactive rays */
@@ -165,10 +165,10 @@ void instanceOccludedFuncN(const int* valid,
   const Instance* instance = (const Instance*) ptr;
 
   /* iterate over all rays in ray packet */
-  for (int ui=0; ui<N; ui+=1)
+  for (unsigned int ui=0; ui<N; ui+=1)
   {
     /* calculate loop and execution mask */
-    int vi = ui+0;
+    unsigned int vi = ui+0;
     if (vi>=N) continue;
     
     /* ignore inactive rays */
@@ -223,7 +223,6 @@ Instance* createInstance (RTCScene scene, RTCScene object, int userID, const Vec
 
 void updateInstance (RTCScene scene, Instance* instance)
 {
-  unsigned int geometry = instance->geometry;
   instance->world2local = rcp(instance->local2world);
   instance->normal2world = transposed(rcp(instance->local2world.l));
   rtcUpdate(scene,instance->geometry);
@@ -314,10 +313,10 @@ void sphereIntersectFuncN(const int* valid,
   const Sphere* spheres = (const Sphere*) ptr;
 
   /* iterate over all rays in ray packet */
-  for (int ui=0; ui<N; ui+=1)
+  for (unsigned int ui=0; ui<N; ui+=1)
   {
     /* calculate loop and execution mask */
-    int vi = ui+0;
+    unsigned int vi = ui+0;
     if (vi>=N) continue;
     
     /* ignore inactive rays */
@@ -377,10 +376,10 @@ void sphereOccludedFuncN(const int* valid,
   const Sphere* spheres = (const Sphere*) ptr;
 
   /* iterate over all rays in ray packet */
-  for (int ui=0; ui<N; ui+=1)
+  for (unsigned int ui=0; ui<N; ui+=1)
   {
     /* calculate loop and execution mask */
-    int vi = ui+0;
+    unsigned int vi = ui+0;
     if (vi>=N) continue;
     
     /* ignore inactive rays */
@@ -434,7 +433,7 @@ Sphere* createAnalyticalSpheres (RTCScene scene, size_t N)
 {
   unsigned int geomID = rtcNewUserGeometry(scene,N);
   Sphere* spheres = (Sphere*) alignedMalloc(N*sizeof(Sphere));
-  for (int i=0; i<N; i++) spheres[i].geomID = geomID;
+  for (size_t i=0; i<N; i++) spheres[i].geomID = geomID;
   rtcSetUserData(scene,geomID,spheres);
   rtcSetBoundsFunction(scene,geomID,(RTCBoundsFunc)&sphereBoundsFunc);
   if (g_mode == MODE_NORMAL) {
@@ -677,21 +676,21 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
 /* renders a single screen tile */
 void renderTileStandard(int taskIndex, 
                         int* pixels,
-                        const int width,
-                        const int height, 
+                        const unsigned int width,
+                        const unsigned int height, 
                         const float time,
                         const ISPCCamera& camera,
                         const int numTilesX, 
                         const int numTilesY)
 {
-  const int tileY = taskIndex / numTilesX;
-  const int tileX = taskIndex - tileY * numTilesX;
-  const int x0 = tileX * TILE_SIZE_X;
-  const int x1 = min(x0+TILE_SIZE_X,width);
-  const int y0 = tileY * TILE_SIZE_Y;
-  const int y1 = min(y0+TILE_SIZE_Y,height);
+  const unsigned int tileY = taskIndex / numTilesX;
+  const unsigned int tileX = taskIndex - tileY * numTilesX;
+  const unsigned int x0 = tileX * TILE_SIZE_X;
+  const unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const unsigned int y0 = tileY * TILE_SIZE_Y;
+  const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
-  for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
+  for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
     /* calculate pixel color */
     Vec3fa color = renderPixelStandard(x,y,camera);
@@ -707,24 +706,23 @@ void renderTileStandard(int taskIndex,
 /* renders a single screen tile */
 void renderTileStandardStream(int taskIndex, 
                               int* pixels,
-                              const int width,
-                              const int height, 
+                              const unsigned int width,
+                              const unsigned int height, 
                               const float time,
                               const ISPCCamera& camera,
                               const int numTilesX, 
                               const int numTilesY)
 {
-  const int tileY = taskIndex / numTilesX;
-  const int tileX = taskIndex - tileY * numTilesX;
-  const int x0 = tileX * TILE_SIZE_X;
-  const int x1 = min(x0+TILE_SIZE_X,width);
-  const int y0 = tileY * TILE_SIZE_Y;
-  const int y1 = min(y0+TILE_SIZE_Y,height);
+  const unsigned int tileY = taskIndex / numTilesX;
+  const unsigned int tileX = taskIndex - tileY * numTilesX;
+  const unsigned int x0 = tileX * TILE_SIZE_X;
+  const unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const unsigned int y0 = tileY * TILE_SIZE_Y;
+  const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
   RTCRay primary_stream[TILE_SIZE_X*TILE_SIZE_Y];
   RTCRay shadow_stream[TILE_SIZE_X*TILE_SIZE_Y];
   Vec3fa color_stream[TILE_SIZE_X*TILE_SIZE_Y];
-  float weight_stream[TILE_SIZE_X*TILE_SIZE_Y];
   bool valid_stream[TILE_SIZE_X*TILE_SIZE_Y];
 
   /* select stream mode */
@@ -732,15 +730,13 @@ void renderTileStandardStream(int taskIndex,
 
   /* generate stream of primary rays */
   int N = 0;
-  int numActive = 0;
-  for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
+  for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
     /* ISPC workaround for mask == 0 */
     if (all(1 == 0)) continue;
     
     /* initialize variables */
     color_stream[N] = Vec3fa(0.0f);
-    weight_stream[N] = 1.0f;
     bool mask = 1; { valid_stream[N] = mask; }
 
     /* initialize ray */
@@ -769,7 +765,7 @@ void renderTileStandardStream(int taskIndex,
   
   /* terminate rays and update color */
   N = -1;
-  for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
+  for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
     N++;
     /* ISPC workaround for mask == 0 */
@@ -793,7 +789,6 @@ void renderTileStandardStream(int taskIndex,
     
     /* calculate diffuse color of geometries */
     RTCRay& primary = primary_stream[N];
-    Vec3fa Ns = normalize(primary.Ng);
     Vec3fa diffuse = Vec3fa(0.0f);
     if (primary.instID == 0) diffuse = colors[primary.instID][primary.primID];
     else                     diffuse = colors[primary.instID][primary.geomID];
@@ -821,7 +816,7 @@ void renderTileStandardStream(int taskIndex,
 
   /* add light contribution */
   N = -1;
-  for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
+  for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
     N++;
     /* ISPC workaround for mask == 0 */
@@ -845,7 +840,7 @@ void renderTileStandardStream(int taskIndex,
 
   /* framebuffer writeback */
   N = 0;
-  for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
+  for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
     /* ISPC workaround for mask == 0 */
     if (all(1 == 0)) continue;
@@ -861,8 +856,8 @@ void renderTileStandardStream(int taskIndex,
 
 /* task that renders a single screen tile */
 void renderTileTask (int taskIndex, int* pixels,
-                         const int width,
-                         const int height, 
+                         const unsigned int width,
+                         const unsigned int height, 
                          const float time,
                          const ISPCCamera& camera,
                          const int numTilesX, 
@@ -873,8 +868,8 @@ void renderTileTask (int taskIndex, int* pixels,
 
 /* called by the C++ code to render */
 extern "C" void device_render (int* pixels,
-                           const int width,
-                           const int height, 
+                           const unsigned int width,
+                           const unsigned int height, 
                            const float time,
                            const ISPCCamera& camera)
 {

@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifdef USE_OPENEXR
+#ifdef EMBREE_TUTORIALS_OPENEXR
 
 #include "image.h"
 
@@ -86,5 +86,5 @@ namespace embree
   }
 }
 
-#endif // USE_OPENEXR
+#endif // EMBREE_TUTORIALS_OPENEXR
 

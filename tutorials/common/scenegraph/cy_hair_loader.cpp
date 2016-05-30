@@ -146,7 +146,7 @@ namespace embree
   Ref<SceneGraph::Node> SceneGraph::loadCYHair(const FileName& fileName)
   {
     cyHairFile cyFile;
-    int numHairs = cyFile.load(fileName.c_str());
+    cyFile.load(fileName.c_str());
     
     Material objmtl; new (&objmtl) OBJMaterial;
     Ref<SceneGraph::MaterialNode> material = new SceneGraph::MaterialNode(objmtl);

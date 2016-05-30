@@ -38,11 +38,11 @@ namespace embree
   };
 
   /*! spinning mutex */
-  class AtomicMutex
+  class SpinLock
   {
   public:
  
-    AtomicMutex ()
+    SpinLock ()
       : flag(false) {}
 
     __forceinline bool isLocked() {
@@ -51,7 +51,6 @@ namespace embree
 
     __forceinline void lock()
     {
-      itt_sync_prepare((void*)&flag);
       while (true) 
       {
         while (flag.load()) 
@@ -64,26 +63,18 @@ namespace embree
         if (flag.compare_exchange_strong(expected,true,std::memory_order_acquire))
           break;
       }
-      itt_sync_acquired((void*)&flag);
     }
     
     __forceinline bool try_lock()
     {
-      itt_sync_prepare((void*)&flag);
       bool expected = false;
       if (flag.load() != expected) {
-        itt_sync_cancel((void*)&flag);
         return false;
       }
-      bool success = flag.compare_exchange_strong(expected,true,std::memory_order_acquire);
-      if (success) itt_sync_acquired((void*)&flag);
-      else         itt_sync_cancel((void*)&flag);
-      return success;
+      return flag.compare_exchange_strong(expected,true,std::memory_order_acquire);
     }
 
-    __forceinline void unlock() 
-    {
-      itt_sync_releasing((void*)&flag);
+    __forceinline void unlock() {
       flag.store(false,std::memory_order_release);
     }
     
@@ -103,29 +94,10 @@ namespace embree
   /*! safe mutex lock and unlock helper */
   template<typename Mutex> class Lock {
   public:
-    Lock (Mutex& mutex) : mutex(mutex) { mutex.lock(); }
-    ~Lock() { mutex.unlock(); }
-  protected:
-    Mutex& mutex;
-  };
-
-  /*! safe mutex try_lock and unlock helper */
-  template<typename Mutex> class TryLock {
-  public:
-    TryLock (Mutex& mutex) : mutex(mutex), locked(mutex.try_lock()) {}
-    ~TryLock() { if (locked) mutex.unlock(); }
-    __forceinline bool isLocked() const { return locked; }
-  protected:
-    Mutex& mutex;
-    bool locked;
-  };
-
-  /*! safe mutex try_lock and unlock helper */
-  template<typename Mutex> class AutoUnlock {
-  public:
-    AutoUnlock (Mutex& mutex) : mutex(mutex), locked(false) {}
-    ~AutoUnlock() { if (locked) mutex.unlock(); }
-    __forceinline void lock() { locked = true; mutex.lock(); }
+    Lock (Mutex& mutex) : mutex(mutex), locked(true) { mutex.lock(); }
+    Lock (Mutex& mutex, bool locked) : mutex(mutex), locked(locked) {}
+    ~Lock() { if (locked) mutex.unlock(); }
+    __forceinline void lock() { assert(!locked); locked = true; mutex.lock(); }
     __forceinline bool isLocked() const { return locked; }
   protected:
     Mutex& mutex;

@@ -65,7 +65,7 @@ namespace embree
   }
 
 #define RTCORE_VERIFY_GEOMID(id)                                  \
-  if (id == -1) {                                                  \
+  if (id == RTC_INVALID_GEOMETRY_ID) {                             \
     throw_RTCError(RTC_INVALID_ARGUMENT,"invalid argument");       \
   }
 

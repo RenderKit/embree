@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifdef USE_LIBJPEG
+#ifdef EMBREE_TUTORIALS_LIBJPEG
 
 #include "image.h"
 #include "jpeglib.h"
@@ -62,7 +62,7 @@ namespace embree
 
     }
 
-    void encodeRGB8_to_JPEG(unsigned char *image, size_t width, size_t height, unsigned char **encoded, size_t *capacity)
+    void encodeRGB8_to_JPEG(unsigned char *image, size_t width, size_t height, unsigned char **encoded, unsigned long *capacity)
     {
 
 #if JPEG_LIB_VERSION >= 80
@@ -194,5 +194,5 @@ namespace embree
 
 }
 
-#endif // USE_LIBJPEG
+#endif // EMBREE_TUTORIALS_LIBJPEG
 

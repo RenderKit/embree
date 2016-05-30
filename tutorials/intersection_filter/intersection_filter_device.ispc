@@ -33,13 +33,13 @@ struct RTCRay2
   float tnear;   //!< Start of ray segment
   float tfar;    //!< End of ray segment
   float time;    //!< Time of this ray for motion blur.
-  int mask;      //!< used to mask out objects during traversal
+  unsigned int mask; //!< used to mask out objects during traversal
   Vec3f Ng;      //!< Geometric normal.
   float u;       //!< Barycentric u coordinate of hit
   float v;       //!< Barycentric v coordinate of hit
-  int geomID;    //!< geometry ID
-  int primID;    //!< primitive ID
-  int instID;    //!< instance ID
+  unsigned int geomID; //!< geometry ID
+  unsigned int primID; //!< primitive ID
+  unsigned int instID; //!< instance ID
 
   // ray extensions
   float transparency; //!< accumulated transparency value
@@ -140,19 +140,19 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
 /* renders a single screen tile */
 void renderTileStandard(uniform int taskIndex, 
                         uniform int* uniform pixels,
-                        const uniform int width,
-                        const uniform int height, 
+                        const uniform unsigned int width,
+                        const uniform unsigned int height, 
                         const uniform float time,
                         const uniform ISPCCamera& camera,
                         const uniform int numTilesX, 
                         const uniform int numTilesY)
 {
-  const uniform int tileY = taskIndex / numTilesX;
-  const uniform int tileX = taskIndex - tileY * numTilesX;
-  const uniform int x0 = tileX * TILE_SIZE_X;
-  const uniform int x1 = min(x0+TILE_SIZE_X,width);
-  const uniform int y0 = tileY * TILE_SIZE_Y;
-  const uniform int y1 = min(y0+TILE_SIZE_Y,height);
+  const uniform unsigned int tileY = taskIndex / numTilesX;
+  const uniform unsigned int tileX = taskIndex - tileY * numTilesX;
+  const uniform unsigned int x0 = tileX * TILE_SIZE_X;
+  const uniform unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const uniform unsigned int y0 = tileY * TILE_SIZE_Y;
+  const uniform unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
@@ -194,10 +194,10 @@ unmasked void intersectionFilterN(uniform int* uniform valid,
     return; 
 
   /* iterate over all rays in ray packet */
-  for (uniform int ui=0; ui<N; ui+=programCount)
+  for (uniform unsigned int ui=0; ui<N; ui+=programCount)
   {
     /* calculate varying loop and execution mask */
-    int vi = ui+programIndex;
+    unsigned int vi = ui+programIndex;
     if (vi>=N) continue;
     
     /* ignore inactive rays */
@@ -206,7 +206,7 @@ unmasked void intersectionFilterN(uniform int* uniform valid,
     /* read ray from ray structure */
     Vec3f ray_org = make_Vec3f(RTCRayN_org_x(ray,N,ui),RTCRayN_org_y(ray,N,ui),RTCRayN_org_z(ray,N,ui));
     Vec3f ray_dir = make_Vec3f(RTCRayN_dir_x(ray,N,ui),RTCRayN_dir_y(ray,N,ui),RTCRayN_dir_z(ray,N,ui));
-    int   ray_mask= RTCRayN_mask(ray,N,ui);
+    unsigned ray_mask= RTCRayN_mask(ray,N,ui);
     float hit_t   = RTCHitN_t(potentialHit,N,ui);
 
     /* decode ray IDs */
@@ -256,10 +256,10 @@ unmasked void occlusionFilterN(uniform int* uniform valid,
     return; 
 
   /* iterate over all rays in ray packet */
-  for (uniform int ui=0; ui<N; ui+=programCount)
+  for (uniform unsigned int ui=0; ui<N; ui+=programCount)
   {
     /* calculate varying loop and execution mask */
-    int vi = ui+programIndex;
+    unsigned int vi = ui+programIndex;
     if (vi>=N) continue;
 
     /* ignore inactive rays */
@@ -268,7 +268,7 @@ unmasked void occlusionFilterN(uniform int* uniform valid,
     /* read ray from ray structure */
     Vec3f ray_org = make_Vec3f(RTCRayN_org_x(ray,N,ui),RTCRayN_org_y(ray,N,ui),RTCRayN_org_z(ray,N,ui));
     Vec3f ray_dir = make_Vec3f(RTCRayN_dir_x(ray,N,ui),RTCRayN_dir_y(ray,N,ui),RTCRayN_dir_z(ray,N,ui));
-    int   ray_mask= RTCRayN_mask(ray,N,ui);
+    unsigned ray_mask= RTCRayN_mask(ray,N,ui);
     float hit_t   = RTCHitN_t(potentialHit,N,ui);
 
     /* decode ray IDs */
@@ -295,19 +295,19 @@ unmasked void occlusionFilterN(uniform int* uniform valid,
 /* renders a single screen tile */
 void renderTileStandardStream(uniform int taskIndex, 
                               uniform int* uniform pixels,
-                              const uniform int width,
-                              const uniform int height, 
+                              const uniform unsigned int width,
+                              const uniform unsigned int height, 
                               const uniform float time,
                               const uniform ISPCCamera& camera,
                               const uniform int numTilesX, 
                               const uniform int numTilesY)
 {
-  const uniform int tileY = taskIndex / numTilesX;
-  const uniform int tileX = taskIndex - tileY * numTilesX;
-  const uniform int x0 = tileX * TILE_SIZE_X;
-  const uniform int x1 = min(x0+TILE_SIZE_X,width);
-  const uniform int y0 = tileY * TILE_SIZE_Y;
-  const uniform int y1 = min(y0+TILE_SIZE_Y,height);
+  const uniform unsigned int tileY = taskIndex / numTilesX;
+  const uniform unsigned int tileX = taskIndex - tileY * numTilesX;
+  const uniform unsigned int x0 = tileX * TILE_SIZE_X;
+  const uniform unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const uniform unsigned int y0 = tileY * TILE_SIZE_Y;
+  const uniform unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
   RTCRay2 primary_stream[TILE_SIZE_X*TILE_SIZE_Y];
   RTCRay2 shadow_stream[TILE_SIZE_X*TILE_SIZE_Y];
@@ -640,8 +640,8 @@ export void device_init (uniform int8* uniform cfg)
 
 /* task that renders a single screen tile */
 task void renderTileTask(uniform int* uniform pixels,
-                         const uniform int width,
-                         const uniform int height, 
+                         const uniform unsigned int width,
+                         const uniform unsigned int height, 
                          const uniform float time,
                          const uniform ISPCCamera& camera,
                          const uniform int numTilesX, 
@@ -652,8 +652,8 @@ task void renderTileTask(uniform int* uniform pixels,
 
 /* called by the C++ code to render */
 export void device_render (uniform int* uniform pixels,
-                           const uniform int width,
-                           const uniform int height,
+                           const uniform unsigned int width,
+                           const uniform unsigned int height,
                            const uniform float time,
                            const uniform ISPCCamera& camera)
 {

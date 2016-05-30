@@ -18,10 +18,10 @@
 
 #include "geometry.h"
 #include "buffer.h"
-#include "subdiv/half_edge.h"
-#include "subdiv/tessellation_cache.h"
-#include "subdiv/catmullclark_coefficients.h"
-#include "subdiv/patch.h"
+#include "../subdiv/half_edge.h"
+#include "../subdiv/tessellation_cache.h"
+#include "../subdiv/catmullclark_coefficients.h"
+#include "../subdiv/patch.h"
 #include "../algorithms/pmap.h"
 #include "../algorithms/pset.h"
 
@@ -153,21 +153,21 @@ namespace embree
       else return clamp(tessellationRate,1.0f,4096.0f); // FIXME: do we want to limit edge level?
     }
 
-  public:
-    RTCDisplacementFunc displFunc;    //!< displacement function
-    BBox3fa             displBounds;  //!< bounds for maximal displacement 
-
   private:
     size_t numFaces;           //!< number of faces
     size_t numEdges;           //!< number of edges
     size_t numVertices;        //!< number of vertices
     RTCBoundaryMode boundary;  //!< boundary interpolation mode
 
+  public:
+    RTCDisplacementFunc displFunc;    //!< displacement function
+    BBox3fa             displBounds;  //!< bounds for maximal displacement 
+
     /*! all buffers in this section are provided by the application */
   public:
     
     /*! buffer containing the number of vertices for each face */
-    BufferT<int> faceVertices;
+    BufferT<unsigned> faceVertices;
 
     /*! indices of the vertices composing each face */
     BufferT<unsigned> vertexIndices;

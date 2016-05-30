@@ -19,7 +19,7 @@
 #include "default.h"
 
 /* Makros to gather statistics */
-#ifdef RTCORE_STAT_COUNTERS
+#ifdef EMBREE_STAT_COUNTERS
 #  define STAT(x) x
 #  define STAT3(s,x,y,z) \
   STAT(Stat::get().code  .s+=x);               \

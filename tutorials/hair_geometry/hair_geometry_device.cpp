@@ -249,9 +249,9 @@ struct RTCRay2
   Vec3fa Ng;      //!< Geometric normal.
   float u;       //!< Barycentric u coordinate of hit
   float v;       //!< Barycentric v coordinate of hit
-  int geomID;    //!< geometry ID
-  int primID;    //!< primitive ID
-  int instID;    //!< instance ID
+  unsigned int geomID;    //!< geometry ID
+  unsigned int primID;    //!< primitive ID
+  unsigned int instID;    //!< instance ID
 
   // ray extensions
   RTCFilterFunc filter;
@@ -353,10 +353,6 @@ Vec3fa renderPixelPathTrace(float x, float y, const ISPCCamera& camera)
     }
     else if (geometry->type == TRIANGLE_MESH)
     {
-      ISPCTriangleMesh* mesh = (ISPCTriangleMesh*) geometry;
-      ISPCTriangle* triangle = &mesh->triangles[ray.primID];
-      OBJMaterial* material = (OBJMaterial*) &g_ispc_scene->materials[triangle->materialID];
-
       if (dot(ray.dir,ray.Ng) > 0) ray.Ng = neg(ray.Ng);
 
       /* calculate tangent space */
@@ -437,12 +433,11 @@ Vec3fa renderPixelTestEyeLight(float x, float y, const ISPCCamera& camera)
   ray.time = 0;
 
   Vec3fa color = Vec3fa(0.0f);
-  float weight = 1.0f;
 
   rtcIntersect(g_scene,*((RTCRay*)&ray));
   ray.filter = nullptr;
 
-  if (ray.primID == -1)
+  if (ray.primID == RTC_INVALID_GEOMETRY_ID)
     return Vec3fa(0.0f);
 
   Vec3fa Ng;
@@ -458,8 +453,8 @@ Vec3fa renderPixelTestEyeLight(float x, float y, const ISPCCamera& camera)
   {
     if (dot(ray.dir,ray.Ng) > 0) ray.Ng = neg(ray.Ng);
     const Vec3fa dz = normalize(ray.Ng);
-    const Vec3fa dx = normalize(cross(dz,ray.dir));
-    const Vec3fa dy = normalize(cross(dz,dx));
+    //const Vec3fa dx = normalize(cross(dz,ray.dir));
+    //const Vec3fa dy = normalize(cross(dz,dx));
     Ng = dz;
   }
 
@@ -470,24 +465,21 @@ Vec3fa renderPixelTestEyeLight(float x, float y, const ISPCCamera& camera)
 /* renders a single screen tile */
 void renderTileStandard(int taskIndex,
                         int* pixels,
-                        const int width,
-                        const int height,
+                        const unsigned int width,
+                        const unsigned int height,
                         const float time,
                         const ISPCCamera& camera,
                         const int numTilesX,
                         const int numTilesY)
 {
-  const int tileY = taskIndex / numTilesX;
-  const int tileX = taskIndex - tileY * numTilesX;
-  const int x0 = tileX * TILE_SIZE_X;
-  const int x1 = min(x0+TILE_SIZE_X,width);
-  const int y0 = tileY * TILE_SIZE_Y;
-  const int y1 = min(y0+TILE_SIZE_Y,height);
+  const unsigned int tileY = taskIndex / numTilesX;
+  const unsigned int tileX = taskIndex - tileY * numTilesX;
+  const unsigned int x0 = tileX * TILE_SIZE_X;
+  const unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const unsigned int y0 = tileY * TILE_SIZE_Y;
+  const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
-  //int seed = tileY*numTilesX+tileX+0 + g_accu_count;
-  int seed = (tileY*numTilesX+tileX+0) * g_accu_count;
-
-  for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
+  for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
     /* calculate pixel color */
     Vec3fa color = renderPixelStandard(x,y,camera);
@@ -504,8 +496,8 @@ void renderTileStandard(int taskIndex,
 
 /* task that renders a single screen tile */
 void renderTileTask (int taskIndex, int* pixels,
-                         const int width,
-                         const int height,
+                         const unsigned int width,
+                         const unsigned int height,
                          const float time,
                          const ISPCCamera& camera,
                          const int numTilesX,
@@ -547,8 +539,8 @@ extern "C" void device_init (char* cfg)
 
 /* called by the C++ code to render */
 extern "C" void device_render (int* pixels,
-                           const int width,
-                           const int height,
+                           const unsigned int width,
+                           const unsigned int height,
                            const float time,
                            const ISPCCamera& camera)
 {

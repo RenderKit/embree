@@ -84,8 +84,6 @@ namespace embree
       const Edge tri1_edge1(tri1.v[1],tri1.v[2]);
       const Edge tri1_edge2(tri1.v[2],tri1.v[0]);
 
-      int opp_vtx = -1;
-
       /* rotate triangle 0 to force shared edge between the first and last vertex */
 
       if (unlikely(tri0_edge0 == tri1_edge0)) return pair_order(1,2,0, 2); 

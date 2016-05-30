@@ -199,9 +199,9 @@ namespace embree
     int type = TRIANGLE_MESH;
     file.write((char*)&type,sizeof(int));
     file.write((char*)&numTimeSteps,sizeof(int));
-    int numVerts = numVertices();
+    unsigned numVerts = numVertices();
     file.write((char*)&numVerts,sizeof(int));
-    int numTriangles = triangles.size();
+    unsigned numTriangles = triangles.size();
     file.write((char*)&numTriangles,sizeof(int));
 
     for (size_t j=0; j<numTimeSteps; j++) {

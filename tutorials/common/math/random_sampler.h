@@ -115,3 +115,4 @@ inline Vec3fa RandomSampler_get3D(RandomSampler& self)
   const float w = RandomSampler_get1D(self);
   return Vec3fa(u,v,w);
 }
+

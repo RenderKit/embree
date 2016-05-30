@@ -104,31 +104,31 @@ RTCScene convertScene(ISPCScene* scene_in)
   int scene_aflags = RTC_INTERSECT1 | RTC_INTERSECT_STREAM | RTC_INTERPOLATE;
   RTCScene scene_out = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
 
-  for (size_t i=0; i<scene_in->numGeometries; i++)
+  for (size_t i=0; i<numGeometries; i++)
   {
     ISPCGeometry* geometry = scene_in->geometries[i];
     if (geometry->type == SUBDIV_MESH) {
-      unsigned int geomID = convertSubdivMesh((ISPCSubdivMesh*) geometry, scene_out);
+      unsigned int geomID MAYBE_UNUSED = convertSubdivMesh((ISPCSubdivMesh*) geometry, scene_out);
       assert(geomID == i);
     }
     else if (geometry->type == TRIANGLE_MESH) {
-      unsigned int geomID = convertTriangleMesh((ISPCTriangleMesh*) geometry, scene_out);
+      unsigned int geomID MAYBE_UNUSED = convertTriangleMesh((ISPCTriangleMesh*) geometry, scene_out);
       assert(geomID == i);
     }
     else if (geometry->type == QUAD_MESH) {
-      unsigned int geomID = convertQuadMesh((ISPCQuadMesh*) geometry, scene_out);
+      unsigned int geomID MAYBE_UNUSED = convertQuadMesh((ISPCQuadMesh*) geometry, scene_out);
       assert(geomID == i);
     }
     else if (geometry->type == LINE_SEGMENTS) {
-      unsigned int geomID = convertLineSegments((ISPCLineSegments*) geometry, scene_out);
+      unsigned int geomID MAYBE_UNUSED = convertLineSegments((ISPCLineSegments*) geometry, scene_out);
       assert(geomID == i);
     }
     else if (geometry->type == HAIR_SET) {
-      unsigned int geomID = convertHairSet((ISPCHairSet*) geometry, scene_out);
+      unsigned int geomID MAYBE_UNUSED = convertHairSet((ISPCHairSet*) geometry, scene_out);
       assert(geomID == i);
     }
     else if (geometry->type == CURVES) {
-      unsigned int geomID = convertCurveGeometry((ISPCHairSet*) geometry, scene_out);
+      unsigned int geomID MAYBE_UNUSED = convertCurveGeometry((ISPCHairSet*) geometry, scene_out);
       assert(geomID == i);
     }
     else
@@ -205,25 +205,25 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
 /* renders a single screen tile */
 void renderTileStandard(int taskIndex,
                         int* pixels,
-                        const int width,
-                        const int height,
+                        const unsigned int width,
+                        const unsigned int height,
                         const float time,
                         const ISPCCamera& camera,
                         const int numTilesX,
                         const int numTilesY)
 {
-  const int tileY = taskIndex / numTilesX;
-  const int tileX = taskIndex - tileY * numTilesX;
-  const int x0 = tileX * TILE_SIZE_X;
-  const int x1 = min(x0+TILE_SIZE_X,width);
-  const int y0 = tileY * TILE_SIZE_Y;
-  const int y1 = min(y0+TILE_SIZE_Y,height);
+  const unsigned int tileY = taskIndex / numTilesX;
+  const unsigned int tileX = taskIndex - tileY * numTilesX;
+  const unsigned int x0 = tileX * TILE_SIZE_X;
+  const unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const unsigned int y0 = tileY * TILE_SIZE_Y;
+  const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
   RTCRay rays[TILE_SIZE_X*TILE_SIZE_Y];
 
   /* generate stream of primary rays */
   int N = 0;
-  for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
+  for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
     /* ISPC workaround for mask == 0 */
     if (all(1 == 0)) continue;
@@ -262,7 +262,7 @@ void renderTileStandard(int taskIndex,
 
   /* shade stream of rays */
   N = 0;
-  for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
+  for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
     /* ISPC workaround for mask == 0 */
     if (all(1 == 0)) continue;
@@ -284,8 +284,8 @@ void renderTileStandard(int taskIndex,
 
 /* task that renders a single screen tile */
 void renderTileTask (int taskIndex, int* pixels,
-                         const int width,
-                         const int height,
+                         const unsigned int width,
+                         const unsigned int height,
                          const float time,
                          const ISPCCamera& camera,
                          const int numTilesX,
@@ -315,8 +315,8 @@ extern "C" void device_init (char* cfg)
 
 /* called by the C++ code to render */
 extern "C" void device_render (int* pixels,
-                           const int width,
-                           const int height,
+                           const unsigned int width,
+                           const unsigned int height,
                            const float time,
                            const ISPCCamera& camera)
 {

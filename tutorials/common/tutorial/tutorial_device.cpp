@@ -82,18 +82,19 @@ Vec3fa renderPixelEyeLight(float x, float y, const ISPCCamera& camera)
   else return Vec3fa(embree::abs(dot(ray.dir,normalize(ray.Ng))));
 }
 
-void renderTileEyeLight(int taskIndex, int* pixels, const int width, const int height, 
+void renderTileEyeLight(int taskIndex, int* pixels, 
+                        const unsigned int width, const unsigned int height, 
                         const float time, const ISPCCamera& camera,
                         const int numTilesX, const int numTilesY)
 {
-  const int tileY = taskIndex / numTilesX;
-  const int tileX = taskIndex - tileY * numTilesX;
-  const int x0 = tileX * TILE_SIZE_X;
-  const int x1 = min(x0+TILE_SIZE_X,width);
-  const int y0 = tileY * TILE_SIZE_Y;
-  const int y1 = min(y0+TILE_SIZE_Y,height);
+  const unsigned int tileY = taskIndex / numTilesX;
+  const unsigned int tileX = taskIndex - tileY * numTilesX;
+  const unsigned int x0 = tileX * TILE_SIZE_X;
+  const unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const unsigned int y0 = tileY * TILE_SIZE_Y;
+  const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
-  for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
+  for (unsigned int y = y0; y<y1; y++) for (unsigned int x = x0; x<x1; x++)
   {
     /* calculate pixel color */
     Vec3fa color = renderPixelEyeLight(x,y,camera);
@@ -145,18 +146,19 @@ Vec3fa renderPixelWireframe(float x, float y, const ISPCCamera& camera)
   return color*Vec3fa(embree::abs(dot(ray.dir,normalize(ray.Ng))));
 }
 
-void renderTileWireframe(int taskIndex, int* pixels, const int width, const int height, 
+void renderTileWireframe(int taskIndex, int* pixels, 
+                         const unsigned int width, const unsigned int height, 
                          const float time, const ISPCCamera& camera,
                          const int numTilesX, const int numTilesY)
 {
-  const int tileY = taskIndex / numTilesX;
-  const int tileX = taskIndex - tileY * numTilesX;
-  const int x0 = tileX * TILE_SIZE_X;
-  const int x1 = min(x0+TILE_SIZE_X,width);
-  const int y0 = tileY * TILE_SIZE_Y;
-  const int y1 = min(y0+TILE_SIZE_Y,height);
+  const unsigned int tileY = taskIndex / numTilesX;
+  const unsigned int tileX = taskIndex - tileY * numTilesX;
+  const unsigned int x0 = tileX * TILE_SIZE_X;
+  const unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const unsigned int y0 = tileY * TILE_SIZE_Y;
+  const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
-  for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
+  for (unsigned int y = y0; y<y1; y++) for (unsigned int x = x0; x<x1; x++)
   {
     /* calculate pixel color */
     Vec3fa color = renderPixelWireframe(x,y,camera);
@@ -191,18 +193,19 @@ Vec3fa renderPixelUV(float x, float y, const ISPCCamera& camera)
   else return Vec3fa(ray.u,ray.v,1.0f-ray.u-ray.v);
 }
 
-void renderTileUV(int taskIndex, int* pixels, const int width, const int height, 
+void renderTileUV(int taskIndex, int* pixels, 
+                  const unsigned int width, const unsigned int height, 
                   const float time, const ISPCCamera& camera,
                   const int numTilesX, const int numTilesY)
 {
-  const int tileY = taskIndex / numTilesX;
-  const int tileX = taskIndex - tileY * numTilesX;
-  const int x0 = tileX * TILE_SIZE_X;
-  const int x1 = min(x0+TILE_SIZE_X,width);
-  const int y0 = tileY * TILE_SIZE_Y;
-  const int y1 = min(y0+TILE_SIZE_Y,height);
+  const unsigned int tileY = taskIndex / numTilesX;
+  const unsigned int tileX = taskIndex - tileY * numTilesX;
+  const unsigned int x0 = tileX * TILE_SIZE_X;
+  const unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const unsigned int y0 = tileY * TILE_SIZE_Y;
+  const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
-  for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
+  for (unsigned int y = y0; y<y1; y++) for (unsigned int x = x0; x<x1; x++)
   {
     /* calculate pixel color */
     Vec3fa color = renderPixelUV(x,y,camera);
@@ -240,18 +243,19 @@ Vec3fa renderPixelNg(float x, float y, const ISPCCamera& camera)
   }
 }
 
-void renderTileNg(int taskIndex, int* pixels, const int width, const int height, 
+void renderTileNg(int taskIndex, int* pixels, 
+                  const unsigned int width, const unsigned int height, 
                   const float time, const ISPCCamera& camera,
                   const int numTilesX, const int numTilesY)
 {
-  const int tileY = taskIndex / numTilesX;
-  const int tileX = taskIndex - tileY * numTilesX;
-  const int x0 = tileX * TILE_SIZE_X;
-  const int x1 = min(x0+TILE_SIZE_X,width);
-  const int y0 = tileY * TILE_SIZE_Y;
-  const int y1 = min(y0+TILE_SIZE_Y,height);
+  const unsigned int tileY = taskIndex / numTilesX;
+  const unsigned int tileX = taskIndex - tileY * numTilesX;
+  const unsigned int x0 = tileX * TILE_SIZE_X;
+  const unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const unsigned int y0 = tileY * TILE_SIZE_Y;
+  const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
-  for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
+  for (unsigned int y = y0; y<y1; y++) for (unsigned int x = x0; x<x1; x++)
   {
     /* calculate pixel color */
     Vec3fa color = renderPixelNg(x,y,camera);
@@ -295,18 +299,19 @@ Vec3fa renderPixelGeomID(float x, float y, const ISPCCamera& camera)
   else return embree::abs(dot(ray.dir,normalize(ray.Ng)))*randomColor(ray.geomID);
 }
 
-void renderTileGeomID(int taskIndex, int* pixels, const int width, const int height, 
+void renderTileGeomID(int taskIndex, int* pixels, 
+                      const unsigned int width, const unsigned int height, 
                       const float time, const ISPCCamera& camera,
                       const int numTilesX, const int numTilesY)
 {
-  const int tileY = taskIndex / numTilesX;
-  const int tileX = taskIndex - tileY * numTilesX;
-  const int x0 = tileX * TILE_SIZE_X;
-  const int x1 = min(x0+TILE_SIZE_X,width);
-  const int y0 = tileY * TILE_SIZE_Y;
-  const int y1 = min(y0+TILE_SIZE_Y,height);
+  const unsigned int tileY = taskIndex / numTilesX;
+  const unsigned int tileX = taskIndex - tileY * numTilesX;
+  const unsigned int x0 = tileX * TILE_SIZE_X;
+  const unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const unsigned int y0 = tileY * TILE_SIZE_Y;
+  const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
-  for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
+  for (unsigned int y = y0; y<y1; y++) for (unsigned int x = x0; x<x1; x++)
   {
     /* calculate pixel color */
     Vec3fa color = renderPixelGeomID(x,y,camera);
@@ -341,18 +346,19 @@ Vec3fa renderPixelGeomIDPrimID(float x, float y, const ISPCCamera& camera)
   else return randomColor(ray.geomID ^ ray.primID)*Vec3fa(embree::abs(dot(ray.dir,normalize(ray.Ng))));
 }
 
-void renderTileGeomIDPrimID(int taskIndex, int* pixels, const int width, const int height, 
+void renderTileGeomIDPrimID(int taskIndex, int* pixels, 
+                            const unsigned int width, const unsigned int height, 
                             const float time, const ISPCCamera& camera,
                             const int numTilesX, const int numTilesY)
 {
-  const int tileY = taskIndex / numTilesX;
-  const int tileX = taskIndex - tileY * numTilesX;
-  const int x0 = tileX * TILE_SIZE_X;
-  const int x1 = min(x0+TILE_SIZE_X,width);
-  const int y0 = tileY * TILE_SIZE_Y;
-  const int y1 = min(y0+TILE_SIZE_Y,height);
+  const unsigned int tileY = taskIndex / numTilesX;
+  const unsigned int tileX = taskIndex - tileY * numTilesX;
+  const unsigned int x0 = tileX * TILE_SIZE_X;
+  const unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const unsigned int y0 = tileY * TILE_SIZE_Y;
+  const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
-  for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
+  for (unsigned int y = y0; y<y1; y++) for (unsigned int x = x0; x<x1; x++)
   {
     /* calculate pixel color */
     Vec3fa color = renderPixelGeomIDPrimID(x,y,camera);
@@ -387,18 +393,19 @@ Vec3fa renderPixelCycles(float x, float y, const ISPCCamera& camera)
   return Vec3fa((float)(c1-c0)*scale,0.0f,0.0f);
 }
 
-void renderTileCycles(int taskIndex, int* pixels, const int width, const int height, 
+void renderTileCycles(int taskIndex, int* pixels, 
+                      const unsigned int width, const unsigned int height, 
                       const float time, const ISPCCamera& camera,
                       const int numTilesX, const int numTilesY)
 {
-  const int tileY = taskIndex / numTilesX;
-  const int tileX = taskIndex - tileY * numTilesX;
-  const int x0 = tileX * TILE_SIZE_X;
-  const int x1 = min(x0+TILE_SIZE_X,width);
-  const int y0 = tileY * TILE_SIZE_Y;
-  const int y1 = min(y0+TILE_SIZE_Y,height);
+  const unsigned int tileY = taskIndex / numTilesX;
+  const unsigned int tileX = taskIndex - tileY * numTilesX;
+  const unsigned int x0 = tileX * TILE_SIZE_X;
+  const unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const unsigned int y0 = tileY * TILE_SIZE_Y;
+  const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
-  for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
+  for (unsigned int y = y0; y<y1; y++) for (unsigned int x = x0; x<x1; x++)
   {
     /* calculate pixel color */
     Vec3fa color = renderPixelCycles(x,y,camera);
@@ -436,18 +443,19 @@ Vec3fa renderPixelUV16(float x, float y, const ISPCCamera& camera)
   else return Vec3fa(ray.u,ray.v,1.0f-ray.u-ray.v);
 }
 
-void renderTileUV16(int taskIndex, int* pixels, const int width, const int height, 
+void renderTileUV16(int taskIndex, int* pixels, 
+                    const unsigned int width, const unsigned int height, 
                       const float time, const ISPCCamera& camera,
                       const int numTilesX, const int numTilesY)
 {
-  const int tileY = taskIndex / numTilesX;
-  const int tileX = taskIndex - tileY * numTilesX;
-  const int x0 = tileX * TILE_SIZE_X;
-  const int x1 = min(x0+TILE_SIZE_X,width);
-  const int y0 = tileY * TILE_SIZE_Y;
-  const int y1 = min(y0+TILE_SIZE_Y,height);
+  const unsigned int tileY = taskIndex / numTilesX;
+  const unsigned int tileX = taskIndex - tileY * numTilesX;
+  const unsigned int x0 = tileX * TILE_SIZE_X;
+  const unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const unsigned int y0 = tileY * TILE_SIZE_Y;
+  const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
-  for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
+  for (unsigned int y = y0; y<y1; y++) for (unsigned int x = x0; x<x1; x++)
   {
     /* calculate pixel color */
     Vec3fa color = renderPixelUV16(x,y,camera);
@@ -527,18 +535,19 @@ Vec3fa renderPixelAmbientOcclusion(float x, float y, const ISPCCamera& camera)
   return col * intensity;
 }
 
-void renderTileAmbientOcclusion(int taskIndex, int* pixels, const int width, const int height, 
+void renderTileAmbientOcclusion(int taskIndex, int* pixels, 
+                                const unsigned int width, const unsigned int height, 
                                 const float time, const ISPCCamera& camera,
                                 const int numTilesX, const int numTilesY)
 {
-  const int tileY = taskIndex / numTilesX;
-  const int tileX = taskIndex - tileY * numTilesX;
-  const int x0 = tileX * TILE_SIZE_X;
-  const int x1 = min(x0+TILE_SIZE_X,width);
-  const int y0 = tileY * TILE_SIZE_Y;
-  const int y1 = min(y0+TILE_SIZE_Y,height);
+  const unsigned int tileY = taskIndex / numTilesX;
+  const unsigned int tileX = taskIndex - tileY * numTilesX;
+  const unsigned int x0 = tileX * TILE_SIZE_X;
+  const unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const unsigned int y0 = tileY * TILE_SIZE_Y;
+  const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
-  for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
+  for (unsigned int y = y0; y<y1; y++) for (unsigned int x = x0; x<x1; x++)
   {
     /* calculate pixel color */
     Vec3fa color = renderPixelAmbientOcclusion(x,y,camera);
@@ -629,18 +638,19 @@ Vec3fa renderPixelDifferentials(float x, float y, const ISPCCamera& camera)
   return clamp(color,Vec3fa(zero),Vec3fa(one));
 }
 
-void renderTileDifferentials(int taskIndex, int* pixels, const int width, const int height, 
+void renderTileDifferentials(int taskIndex, int* pixels, 
+                             const unsigned int width, const unsigned int height, 
                              const float time, const ISPCCamera& camera,
                              const int numTilesX, const int numTilesY)
 {
-  const int tileY = taskIndex / numTilesX;
-  const int tileX = taskIndex - tileY * numTilesX;
-  const int x0 = tileX * TILE_SIZE_X;
-  const int x1 = min(x0+TILE_SIZE_X,width);
-  const int y0 = tileY * TILE_SIZE_Y;
-  const int y1 = min(y0+TILE_SIZE_Y,height);
+  const unsigned int tileY = taskIndex / numTilesX;
+  const unsigned int tileX = taskIndex - tileY * numTilesX;
+  const unsigned int x0 = tileX * TILE_SIZE_X;
+  const unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const unsigned int y0 = tileY * TILE_SIZE_Y;
+  const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
-  for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
+  for (unsigned int y = y0; y<y1; y++) for (unsigned int x = x0; x<x1; x++)
   {
     /* calculate pixel color */
     Vec3fa color = renderPixelDifferentials(x,y,camera);

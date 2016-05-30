@@ -27,7 +27,7 @@
 #include "scene_line_segments.h"
 #include "scene_subdiv_mesh.h"
 
-#include "subdiv/tessellation_cache.h"
+#include "../subdiv/tessellation_cache.h"
 
 #include "acceln.h"
 #include "geometry.h"
@@ -174,7 +174,7 @@ namespace embree
     }
 
     __forceinline Geometry* get_locked(size_t i)  {
-      Lock<AtomicMutex> lock(geometriesMutex);
+      Lock<SpinLock> lock(geometriesMutex);
       Geometry *g = geometries[i]; 
       assert(i < geometries.size()); 
       return g; 
@@ -302,9 +302,9 @@ namespace embree
     bool needLineVertices;
     bool needSubdivIndices;
     bool needSubdivVertices;
-    bool is_build;
     MutexSys buildMutex;
-    AtomicMutex geometriesMutex;
+    SpinLock geometriesMutex;
+    bool is_build;
     bool modified;                   //!< true if scene got modified
     
     /*! global lock step task scheduler */

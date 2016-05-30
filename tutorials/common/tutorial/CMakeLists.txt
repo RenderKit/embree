@@ -55,7 +55,7 @@ ADD_LIBRARY(tutorial_device STATIC
 TARGET_LINK_LIBRARIES(tutorial_device tutorial lights)
 SET_PROPERTY(TARGET tutorial_device PROPERTY FOLDER tutorials/common)
 
-IF (ENABLE_ISPC_SUPPORT)
+IF (EMBREE_ISPC_SUPPORT)
   ADD_ISPC_LIBRARY(tutorial_device_ispc STATIC
     tutorial_device.ispc
   )

@@ -16,7 +16,7 @@
 
 #include "scene_bezier_curves.h"
 #include "scene.h"
-#include "subdiv/bezier_curve.h"
+#include "../subdiv/bezier_curve.h"
 
 namespace embree
 {
@@ -197,7 +197,7 @@ namespace embree
     int type = BEZIER_CURVES;
     file.write((char*)&type,sizeof(int));
     file.write((char*)&numTimeSteps,sizeof(int));
-    int numVerts = numVertices();
+    unsigned numVerts = numVertices();
     file.write((char*)&numVerts,sizeof(int));
     file.write((char*)&numPrimitives,sizeof(int));
 

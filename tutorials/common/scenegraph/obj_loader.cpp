@@ -142,7 +142,7 @@ namespace embree
   };
 
   OBJLoader::OBJLoader(const FileName &fileName, const bool subdivMode) 
-    : path(fileName.path()), group(new SceneGraph::GroupNode), subdivMode(subdivMode)
+    : group(new SceneGraph::GroupNode), path(fileName.path()), subdivMode(subdivMode)
   {
     /* open file */
     std::ifstream cin;

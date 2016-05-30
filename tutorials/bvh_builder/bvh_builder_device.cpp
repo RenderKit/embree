@@ -16,8 +16,8 @@
 
 #include "../common/tutorial/tutorial_device.h"
 #include "../../kernels/common/alloc.h"
-#include "../../kernels/xeon/builders/bvh_builder_sah.h"
-#include "../../kernels/xeon/builders/bvh_builder_morton.h"
+#include "../../kernels/builders/bvh_builder_sah.h"
+#include "../../kernels/builders/bvh_builder_morton.h"
 
 RTCDevice g_device = nullptr;
 RTCScene g_scene  = nullptr;
@@ -236,8 +236,8 @@ extern "C" void device_init (char* cfg)
 
 /* task that renders a single screen tile */
 void renderTileStandard(int taskIndex, int* pixels,
-                        const int width,
-                        const int height, 
+                        const unsigned int width,
+                        const unsigned int height, 
                         const float time,
                         const ISPCCamera& camera,
                         const int numTilesX, 
@@ -247,8 +247,8 @@ void renderTileStandard(int taskIndex, int* pixels,
 
 /* task that renders a single screen tile */
 void renderTileTask(int taskIndex, int* pixels,
-                    const int width,
-                    const int height, 
+                    const unsigned int width,
+                    const unsigned int height, 
                     const float time,
                     const ISPCCamera& camera,
                     const int numTilesX, 

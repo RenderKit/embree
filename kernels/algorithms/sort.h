@@ -16,10 +16,10 @@
 
 #pragma once
 
-#include "../../common/sys/platform.h"
-#include "../../common/sys/sysinfo.h"
-#include "../../common/sys/barrier.h"
-#include "../../common/math/math.h"
+#include "../common/sys/platform.h"
+#include "../common/sys/sysinfo.h"
+#include "../common/sys/barrier.h"
+#include "../common/math/math.h"
 #include "parallel_for.h"
 #include <algorithm>
 

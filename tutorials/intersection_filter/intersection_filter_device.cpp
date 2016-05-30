@@ -33,13 +33,13 @@ struct RTCRay2
   float tnear;   //!< Start of ray segment
   float tfar;    //!< End of ray segment
   float time;    //!< Time of this ray for motion blur.
-  int mask;      //!< used to mask out objects during traversal
+  unsigned int mask; //!< used to mask out objects during traversal
   Vec3fa Ng;      //!< Geometric normal.
   float u;       //!< Barycentric u coordinate of hit
   float v;       //!< Barycentric v coordinate of hit
-  int geomID;    //!< geometry ID
-  int primID;    //!< primitive ID
-  int instID;    //!< instance ID
+  unsigned int geomID; //!< geometry ID
+  unsigned int primID; //!< primitive ID
+  unsigned int instID; //!< instance ID
 
   // ray extensions
   float transparency; //!< accumulated transparency value
@@ -140,21 +140,21 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
 /* renders a single screen tile */
 void renderTileStandard(int taskIndex, 
                         int* pixels,
-                        const int width,
-                        const int height, 
+                        const unsigned int width,
+                        const unsigned int height, 
                         const float time,
                         const ISPCCamera& camera,
                         const int numTilesX, 
                         const int numTilesY)
 {
-  const int tileY = taskIndex / numTilesX;
-  const int tileX = taskIndex - tileY * numTilesX;
-  const int x0 = tileX * TILE_SIZE_X;
-  const int x1 = min(x0+TILE_SIZE_X,width);
-  const int y0 = tileY * TILE_SIZE_Y;
-  const int y1 = min(y0+TILE_SIZE_Y,height);
+  const unsigned int tileY = taskIndex / numTilesX;
+  const unsigned int tileX = taskIndex - tileY * numTilesX;
+  const unsigned int x0 = tileX * TILE_SIZE_X;
+  const unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const unsigned int y0 = tileY * TILE_SIZE_Y;
+  const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
-  for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
+  for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
     /* calculate pixel color */
     Vec3fa color = renderPixelStandard(x,y,camera);
@@ -194,10 +194,10 @@ void intersectionFilterN(int* valid,
     return; 
 
   /* iterate over all rays in ray packet */
-  for (int ui=0; ui<N; ui+=1)
+  for (unsigned int ui=0; ui<N; ui+=1)
   {
     /* calculate loop and execution mask */
-    int vi = ui+0;
+    unsigned int vi = ui+0;
     if (vi>=N) continue;
     
     /* ignore inactive rays */
@@ -206,7 +206,7 @@ void intersectionFilterN(int* valid,
     /* read ray from ray structure */
     Vec3fa ray_org = Vec3fa(RTCRayN_org_x(ray,N,ui),RTCRayN_org_y(ray,N,ui),RTCRayN_org_z(ray,N,ui));
     Vec3fa ray_dir = Vec3fa(RTCRayN_dir_x(ray,N,ui),RTCRayN_dir_y(ray,N,ui),RTCRayN_dir_z(ray,N,ui));
-    int   ray_mask= RTCRayN_mask(ray,N,ui);
+    unsigned ray_mask= RTCRayN_mask(ray,N,ui);
     float hit_t   = RTCHitN_t(potentialHit,N,ui);
 
     /* decode ray IDs */
@@ -256,10 +256,10 @@ void occlusionFilterN(int* valid,
     return; 
 
   /* iterate over all rays in ray packet */
-  for (int ui=0; ui<N; ui+=1)
+  for (unsigned int ui=0; ui<N; ui+=1)
   {
     /* calculate loop and execution mask */
-    int vi = ui+0;
+    unsigned int vi = ui+0;
     if (vi>=N) continue;
 
     /* ignore inactive rays */
@@ -268,7 +268,7 @@ void occlusionFilterN(int* valid,
     /* read ray from ray structure */
     Vec3fa ray_org = Vec3fa(RTCRayN_org_x(ray,N,ui),RTCRayN_org_y(ray,N,ui),RTCRayN_org_z(ray,N,ui));
     Vec3fa ray_dir = Vec3fa(RTCRayN_dir_x(ray,N,ui),RTCRayN_dir_y(ray,N,ui),RTCRayN_dir_z(ray,N,ui));
-    int   ray_mask= RTCRayN_mask(ray,N,ui);
+    unsigned ray_mask= RTCRayN_mask(ray,N,ui);
     float hit_t   = RTCHitN_t(potentialHit,N,ui);
 
     /* decode ray IDs */
@@ -295,19 +295,19 @@ void occlusionFilterN(int* valid,
 /* renders a single screen tile */
 void renderTileStandardStream(int taskIndex, 
                               int* pixels,
-                              const int width,
-                              const int height, 
+                              const unsigned int width,
+                              const unsigned int height, 
                               const float time,
                               const ISPCCamera& camera,
                               const int numTilesX, 
                               const int numTilesY)
 {
-  const int tileY = taskIndex / numTilesX;
-  const int tileX = taskIndex - tileY * numTilesX;
-  const int x0 = tileX * TILE_SIZE_X;
-  const int x1 = min(x0+TILE_SIZE_X,width);
-  const int y0 = tileY * TILE_SIZE_Y;
-  const int y1 = min(y0+TILE_SIZE_Y,height);
+  const unsigned int tileY = taskIndex / numTilesX;
+  const unsigned int tileX = taskIndex - tileY * numTilesX;
+  const unsigned int x0 = tileX * TILE_SIZE_X;
+  const unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const unsigned int y0 = tileY * TILE_SIZE_Y;
+  const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
   RTCRay2 primary_stream[TILE_SIZE_X*TILE_SIZE_Y];
   RTCRay2 shadow_stream[TILE_SIZE_X*TILE_SIZE_Y];
@@ -321,7 +321,7 @@ void renderTileStandardStream(int taskIndex,
   /* generate stream of primary rays */
   int N = 0;
   int numActive = 0;
-  for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
+  for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
     /* ISPC workaround for mask == 0 */
     if (all(1 == 0)) continue;
@@ -360,7 +360,7 @@ void renderTileStandardStream(int taskIndex,
     
     /* terminate rays and update color */
     N = -1;
-    for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
+    for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
     {
       N++;
       /* ISPC workaround for mask == 0 */
@@ -413,7 +413,7 @@ void renderTileStandardStream(int taskIndex,
     /* add light contribution and generate transmission ray */
     N = -1;
     numActive = 0;
-    for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
+    for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
     {
       N++;
       /* ISPC workaround for mask == 0 */
@@ -455,7 +455,7 @@ void renderTileStandardStream(int taskIndex,
 
   /* framebuffer writeback */
   N = 0;
-  for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
+  for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
     /* ISPC workaround for mask == 0 */
     if (all(1 == 0)) continue;
@@ -640,8 +640,8 @@ extern "C" void device_init (char* cfg)
 
 /* task that renders a single screen tile */
 void renderTileTask (int taskIndex, int* pixels,
-                         const int width,
-                         const int height, 
+                         const unsigned int width,
+                         const unsigned int height, 
                          const float time,
                          const ISPCCamera& camera,
                          const int numTilesX, 
@@ -652,8 +652,8 @@ void renderTileTask (int taskIndex, int* pixels,
 
 /* called by the C++ code to render */
 extern "C" void device_render (int* pixels,
-                           const int width,
-                           const int height,
+                           const unsigned int width,
+                           const unsigned int height,
                            const float time,
                            const ISPCCamera& camera)
 {

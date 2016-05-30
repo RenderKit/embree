@@ -323,11 +323,11 @@ namespace embree
   }
 
   __forceinline bool is_finite ( const vfloat8& a ) {
-    return all((a >= vfloat8(-FLT_MAX) & (a <= vfloat8(+FLT_MAX))));
+    return all((a >= vfloat8(-FLT_MAX)) & (a <= vfloat8(+FLT_MAX)));
   }
 
   __forceinline bool is_finite ( const vboolf8& valid, const vfloat8& a ) {
-    return all(valid, (a >= vfloat8(-FLT_MAX) & (a <= vfloat8(+FLT_MAX))));
+    return all(valid, (a >= vfloat8(-FLT_MAX)) & (a <= vfloat8(+FLT_MAX)));
   }
       
   ////////////////////////////////////////////////////////////////////////////////

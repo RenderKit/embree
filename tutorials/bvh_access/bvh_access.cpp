@@ -17,8 +17,8 @@
 #include "../common/tutorial/tutorial.h"
 #include "../common/tutorial/tutorial_device.h"
 #include "../../include/embree2/rtcore.h"
-#include "../../kernels/xeon/bvh/bvh.h"
-#include "../../kernels/xeon/geometry/trianglev.h"
+#include "../../kernels/bvh/bvh.h"
+#include "../../kernels/geometry/trianglev.h"
 
 /* error reporting function */
 void error_handler(const RTCError code, const char* str)

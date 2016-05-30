@@ -116,7 +116,7 @@ namespace embree
       virtual void calculateInDegree();
       virtual bool calculateClosed();
       
-      virtual BBox3fa bounds() 
+      virtual BBox3fa bounds() const
       {
         const BBox3fa cbounds = child->bounds();
         const BBox3fa b0 = xfmBounds(xfm0,cbounds);

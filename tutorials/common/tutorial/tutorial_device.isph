@@ -82,8 +82,8 @@ inline Vec3f faceforward( Vec3f N, Vec3f I, Vec3f Ng ) {
 /* standard shading function */
 typedef void (* uniform renderTileFunc)(uniform int taskIndex,
                                         uniform int* uniform pixels,
-                                        const uniform int width,
-                                        const uniform int height,
+                                        const uniform unsigned int width,
+                                        const uniform unsigned int height,
                                         const uniform float time,
                                         const uniform ISPCCamera& camera,
                                         const uniform int numTilesX,
@@ -95,8 +95,8 @@ extern void (* uniform key_pressed_handler)(uniform int key);
 
 void renderTileStandard(uniform int taskIndex,
                         uniform int* uniform pixels,
-                        const uniform int width,
-                        const uniform int height,
+                        const uniform unsigned int width,
+                        const uniform unsigned int height,
                         const uniform float time,
                         const uniform ISPCCamera& camera,
                         const uniform int numTilesX,
@@ -106,6 +106,7 @@ uniform unsigned int getNumHWThreads();
 
 #define ALIGNED_STRUCT
 #define __aligned(x)
+#define MAYBE_UNUSED
 
 struct Sample3f
 {

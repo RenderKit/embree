@@ -249,9 +249,9 @@ struct RTCRay2
   Vec3f Ng;      //!< Geometric normal.
   float u;       //!< Barycentric u coordinate of hit
   float v;       //!< Barycentric v coordinate of hit
-  int geomID;    //!< geometry ID
-  int primID;    //!< primitive ID
-  int instID;    //!< instance ID
+  unsigned int geomID;    //!< geometry ID
+  unsigned int primID;    //!< primitive ID
+  unsigned int instID;    //!< instance ID
 
   // ray extensions
   RTCFilterFuncVarying filter;
@@ -353,10 +353,6 @@ Vec3f renderPixelPathTrace(float x, float y, const uniform ISPCCamera& camera)
     }
     else if (geometry->type == TRIANGLE_MESH)
     {
-      ISPCTriangleMesh* mesh = (ISPCTriangleMesh*) geometry;
-      ISPCTriangle* triangle = &mesh->triangles[ray.primID];
-      OBJMaterial* material = (OBJMaterial*) &g_ispc_scene->materials[triangle->materialID];
-
       if (dot(ray.dir,ray.Ng) > 0) ray.Ng = neg(ray.Ng);
 
       /* calculate tangent space */
@@ -437,12 +433,11 @@ Vec3f renderPixelTestEyeLight(float x, float y, const uniform ISPCCamera& camera
   ray.time = 0;
 
   Vec3f color = make_Vec3f(0.0f);
-  float weight = 1.0f;
 
   rtcIntersect(g_scene,*((varying RTCRay*)&ray));
   ray.filter = NULL;
 
-  if (ray.primID == -1)
+  if (ray.primID == RTC_INVALID_GEOMETRY_ID)
     return make_Vec3f(0.0f);
 
   Vec3f Ng;
@@ -458,8 +453,8 @@ Vec3f renderPixelTestEyeLight(float x, float y, const uniform ISPCCamera& camera
   {
     if (dot(ray.dir,ray.Ng) > 0) ray.Ng = neg(ray.Ng);
     const Vec3f dz = normalize(ray.Ng);
-    const Vec3f dx = normalize(cross(dz,ray.dir));
-    const Vec3f dy = normalize(cross(dz,dx));
+    //const Vec3f dx = normalize(cross(dz,ray.dir));
+    //const Vec3f dy = normalize(cross(dz,dx));
     Ng = dz;
   }
 
@@ -470,22 +465,19 @@ Vec3f renderPixelTestEyeLight(float x, float y, const uniform ISPCCamera& camera
 /* renders a single screen tile */
 void renderTileStandard(uniform int taskIndex,
                         uniform int* uniform pixels,
-                        const uniform int width,
-                        const uniform int height,
+                        const uniform unsigned int width,
+                        const uniform unsigned int height,
                         const uniform float time,
                         const uniform ISPCCamera& camera,
                         const uniform int numTilesX,
                         const uniform int numTilesY)
 {
-  const uniform int tileY = taskIndex / numTilesX;
-  const uniform int tileX = taskIndex - tileY * numTilesX;
-  const uniform int x0 = tileX * TILE_SIZE_X;
-  const uniform int x1 = min(x0+TILE_SIZE_X,width);
-  const uniform int y0 = tileY * TILE_SIZE_Y;
-  const uniform int y1 = min(y0+TILE_SIZE_Y,height);
-
-  //int seed = tileY*numTilesX+tileX+programIndex + g_accu_count;
-  int seed = (tileY*numTilesX+tileX+programIndex) * g_accu_count;
+  const uniform unsigned int tileY = taskIndex / numTilesX;
+  const uniform unsigned int tileX = taskIndex - tileY * numTilesX;
+  const uniform unsigned int x0 = tileX * TILE_SIZE_X;
+  const uniform unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const uniform unsigned int y0 = tileY * TILE_SIZE_Y;
+  const uniform unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
@@ -504,8 +496,8 @@ void renderTileStandard(uniform int taskIndex,
 
 /* task that renders a single screen tile */
 task void renderTileTask(uniform int* uniform pixels,
-                         const uniform int width,
-                         const uniform int height,
+                         const uniform unsigned int width,
+                         const uniform unsigned int height,
                          const uniform float time,
                          const uniform ISPCCamera& camera,
                          const uniform int numTilesX,
@@ -547,8 +539,8 @@ export void device_init (uniform int8* uniform cfg)
 
 /* called by the C++ code to render */
 export void device_render (uniform int* uniform pixels,
-                           const uniform int width,
-                           const uniform int height,
+                           const uniform unsigned int width,
+                           const uniform unsigned int height,
                            const uniform float time,
                            const uniform ISPCCamera& camera)
 {

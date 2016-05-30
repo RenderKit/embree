@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "../../common/sys/platform.h"
+#include "../common/sys/platform.h"
 
 namespace embree
 {

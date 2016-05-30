@@ -170,7 +170,7 @@ namespace embree
     }
     else {
       const size_t id = textureMap[tex] = currentNodeID++;
-      tab(); fprintf(xml,"<texture3d name=\"%s\" id=\"%zu\" src=\"%s\"/>\n",name,textureMap[tex],tex->fileName.c_str());
+      tab(); fprintf(xml,"<texture3d name=\"%s\" id=\"%zu\" src=\"%s\"/>\n",name,id,tex->fileName.c_str());
     }
   }
 
@@ -232,7 +232,7 @@ namespace embree
     const Vec3fa dy = light.v1-light.v2;
     const Vec3fa dz = cross(dx,dy);
     const Vec3fa p = light.v2;
-    store("AffineSpace",AffineSpace3fa(dx,dy,dy,p));
+    store("AffineSpace",AffineSpace3fa(dx,dy,dz,p));
     store("L",light.L);
     close("TriangleLight");
   }
@@ -244,7 +244,7 @@ namespace embree
     const Vec3fa dy = light.v1-light.v0;
     const Vec3fa dz = cross(dx,dy);
     const Vec3fa p = light.v2;
-    store("AffineSpace",AffineSpace3fa(dx,dy,dy,p));
+    store("AffineSpace",AffineSpace3fa(dx,dy,dz,p));
     store("L",light.L);
     close("QuadLight");
   }

@@ -29,7 +29,7 @@ typedef int ssize_t;
 #endif
 
 #ifndef RTCORE_API
-#if defined(_WIN32) && !defined(ENABLE_STATIC_LIB)
+#if defined(_WIN32) && !defined(EMBREE_STATIC_LIB)
 #  define RTCORE_API extern "C" __declspec(dllimport) 
 #else
 #  define RTCORE_API extern "C"

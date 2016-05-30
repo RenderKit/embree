@@ -21,8 +21,8 @@ const int numTheta = 2*numPhi;
 
 void renderTileStandardStream(int taskIndex, 
                               int* pixels,
-                              const int width,
-                              const int height, 
+                              const unsigned int width,
+                              const unsigned int height, 
                               const float time,
                               const ISPCCamera& camera,
                               const int numTilesX, 
@@ -202,13 +202,13 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
   {
     /* calculate shading normal in world space */
     Vec3fa Ns = ray.Ng;
-    if (ray.instID != -1)
+    if (ray.instID != RTC_INVALID_GEOMETRY_ID)
       Ns = xfmVector(normal_xfm[ray.instID],Ns);
     Ns = normalize(Ns);
 
     /* calculate diffuse color of geometries */
     Vec3fa diffuse = Vec3fa(1,1,1);
-    if (ray.instID != -1) 
+    if (ray.instID != RTC_INVALID_GEOMETRY_ID) 
       diffuse = colors[ray.instID][ray.geomID];
     color = color + diffuse*0.5;
         
@@ -237,21 +237,21 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
 /* renders a single screen tile */
 void renderTileStandard(int taskIndex, 
                         int* pixels,
-                        const int width,
-                        const int height, 
+                        const unsigned int width,
+                        const unsigned int height, 
                         const float time,
                         const ISPCCamera& camera,
                         const int numTilesX, 
                         const int numTilesY)
 {
-  const int tileY = taskIndex / numTilesX;
-  const int tileX = taskIndex - tileY * numTilesX;
-  const int x0 = tileX * TILE_SIZE_X;
-  const int x1 = min(x0+TILE_SIZE_X,width);
-  const int y0 = tileY * TILE_SIZE_Y;
-  const int y1 = min(y0+TILE_SIZE_Y,height);
+  const unsigned int tileY = taskIndex / numTilesX;
+  const unsigned int tileX = taskIndex - tileY * numTilesX;
+  const unsigned int x0 = tileX * TILE_SIZE_X;
+  const unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const unsigned int y0 = tileY * TILE_SIZE_Y;
+  const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
-  for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
+  for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
     /* calculate pixel color */
     Vec3fa color = renderPixelStandard(x,y,camera);
@@ -267,24 +267,23 @@ void renderTileStandard(int taskIndex,
 /* renders a single screen tile */
 void renderTileStandardStream(int taskIndex, 
                               int* pixels,
-                              const int width,
-                              const int height, 
+                              const unsigned int width,
+                              const unsigned int height, 
                               const float time,
                               const ISPCCamera& camera,
                               const int numTilesX, 
                               const int numTilesY)
 {
-  const int tileY = taskIndex / numTilesX;
-  const int tileX = taskIndex - tileY * numTilesX;
-  const int x0 = tileX * TILE_SIZE_X;
-  const int x1 = min(x0+TILE_SIZE_X,width);
-  const int y0 = tileY * TILE_SIZE_Y;
-  const int y1 = min(y0+TILE_SIZE_Y,height);
+  const unsigned int tileY = taskIndex / numTilesX;
+  const unsigned int tileX = taskIndex - tileY * numTilesX;
+  const unsigned int x0 = tileX * TILE_SIZE_X;
+  const unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const unsigned int y0 = tileY * TILE_SIZE_Y;
+  const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
   RTCRay primary_stream[TILE_SIZE_X*TILE_SIZE_Y];
   RTCRay shadow_stream[TILE_SIZE_X*TILE_SIZE_Y];
   Vec3fa color_stream[TILE_SIZE_X*TILE_SIZE_Y];
-  float weight_stream[TILE_SIZE_X*TILE_SIZE_Y];
   bool valid_stream[TILE_SIZE_X*TILE_SIZE_Y];
 
   /* select stream mode */
@@ -292,15 +291,13 @@ void renderTileStandardStream(int taskIndex,
 
   /* generate stream of primary rays */
   int N = 0;
-  int numActive = 0;
-  for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
+  for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
     /* ISPC workaround for mask == 0 */
     if (all(1 == 0)) continue;
 
     /* initialize variables */
     color_stream[N] = Vec3fa(0.0f);
-    weight_stream[N] = 1.0f;
     bool mask = 1; { valid_stream[N] = mask; }
 
     /* initialize ray */
@@ -311,7 +308,7 @@ void renderTileStandardStream(int taskIndex,
       primary.tnear = mask ? 0.0f         : (float)(pos_inf); 
       primary.tfar  = mask ? (float)(inf) : (float)(neg_inf); 
     } 
-    primary.instID = -1;
+    primary.instID = RTC_INVALID_GEOMETRY_ID;
     primary.geomID = RTC_INVALID_GEOMETRY_ID;
     primary.primID = RTC_INVALID_GEOMETRY_ID;
     primary.mask = -1;
@@ -329,7 +326,7 @@ void renderTileStandardStream(int taskIndex,
   
   /* terminate rays and update color */
   N = -1;
-  for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
+  for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
     N++;
     /* ISPC workaround for mask == 0 */
@@ -354,13 +351,13 @@ void renderTileStandardStream(int taskIndex,
     /* calculate shading normal in world space */
     RTCRay& primary = primary_stream[N];
     Vec3fa Ns = primary.Ng;
-    if (primary.instID != -1)
+    if (primary.instID != RTC_INVALID_GEOMETRY_ID)
       Ns = xfmVector(normal_xfm[primary.instID],Ns);
     Ns = normalize(Ns);
 
     /* calculate diffuse color of geometries */
     Vec3fa diffuse = Vec3fa(1,1,1);
-    if (primary.instID != -1) 
+    if (primary.instID != RTC_INVALID_GEOMETRY_ID) 
       diffuse = colors[primary.instID][primary.geomID];
     color_stream[N] = color_stream[N] + diffuse*0.5;
     
@@ -386,7 +383,7 @@ void renderTileStandardStream(int taskIndex,
 
   /* add light contribution */
   N = -1;
-  for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
+  for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
     N++;
     /* ISPC workaround for mask == 0 */
@@ -398,13 +395,13 @@ void renderTileStandardStream(int taskIndex,
     /* calculate shading normal in world space */
     RTCRay& primary = primary_stream[N];
     Vec3fa Ns = primary.Ng;
-    if (primary.instID != -1)
+    if (primary.instID != RTC_INVALID_GEOMETRY_ID)
       Ns = xfmVector(normal_xfm[primary.instID],Ns);
     Ns = normalize(Ns);
 
     /* calculate diffuse color of geometries */
     Vec3fa diffuse = Vec3fa(1,1,1);
-    if (primary.instID != -1) 
+    if (primary.instID != RTC_INVALID_GEOMETRY_ID) 
       diffuse = colors[primary.instID][primary.geomID];
 
     /* add light contrinution */
@@ -417,7 +414,7 @@ void renderTileStandardStream(int taskIndex,
 
   /* framebuffer writeback */
   N = 0;
-  for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
+  for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
     /* ISPC workaround for mask == 0 */
     if (all(1 == 0)) continue;
@@ -433,8 +430,8 @@ void renderTileStandardStream(int taskIndex,
 
 /* task that renders a single screen tile */
 void renderTileTask (int taskIndex, int* pixels,
-                         const int width,
-                         const int height, 
+                         const unsigned int width,
+                         const unsigned int height, 
                          const float time,
                          const ISPCCamera& camera,
                          const int numTilesX, 
@@ -445,8 +442,8 @@ void renderTileTask (int taskIndex, int* pixels,
 
 /* called by the C++ code to render */
 extern "C" void device_render (int* pixels,
-                           const int width,
-                           const int height, 
+                           const unsigned int width,
+                           const unsigned int height, 
                            const float time,
                            const ISPCCamera& camera)
 {
