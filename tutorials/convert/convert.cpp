@@ -94,7 +94,7 @@ namespace embree
   {
     Instantiator(const Ref<HeightField>& heightField,
                                const Ref<SceneGraph::Node>& object, const Ref<Image>& distribution, float minDistance, size_t N)
-      : heightField(heightField), object(object), dist(nullptr), minDistance(minDistance), N(N)
+      : heightField(heightField), object(object), dist(nullptr), /*minDistance(minDistance),*/ N(N)
     {
       /* create distribution */
       size_t width = distribution->width;
@@ -124,7 +124,7 @@ namespace embree
     Ref<HeightField> heightField;
     Ref<SceneGraph::Node> object;
     Ref<Distribution2D> dist;
-    float MAYBE_UNUSED minDistance;
+    //float MAYBE_UNUSED minDistance;
     size_t N;
   };
 

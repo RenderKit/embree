@@ -167,7 +167,7 @@ namespace embree
   public:
     
     /*! buffer containing the number of vertices for each face */
-    BufferT<int> faceVertices;
+    BufferT<unsigned> faceVertices;
 
     /*! indices of the vertices composing each face */
     BufferT<unsigned> vertexIndices;

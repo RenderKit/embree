@@ -291,7 +291,7 @@ namespace embree
           edge->vertex_type            = HalfEdge::REGULAR_VERTEX;
 
 	  if (unlikely(holeSet.lookup(f))) 
-	    halfEdges1[e+de] = SubdivMesh::KeyHalfEdge(-1,edge);
+	    halfEdges1[e+de] = SubdivMesh::KeyHalfEdge(std::numeric_limits<uint64_t>::max(),edge);
 	  else
 	    halfEdges1[e+de] = SubdivMesh::KeyHalfEdge(key,edge);
 	}
@@ -315,8 +315,8 @@ namespace embree
       while (e<r.end())
       {
 	const uint64_t key = halfEdges1[e].key;
-	if (key == -1) break;
-	int N=1; while (e+N<numHalfEdges && halfEdges1[e+N].key == key) N++;
+	if (key == std::numeric_limits<uint64_t>::max()) break;
+	size_t N=1; while (e+N<numHalfEdges && halfEdges1[e+N].key == key) N++;
 
         /* border edges are identified by not having an opposite edge set */
 	if (N == 1) {

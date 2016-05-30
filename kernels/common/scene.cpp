@@ -753,7 +753,7 @@ namespace embree
   {
     int magick = 0x35238765LL;
     file.write((char*)&magick,sizeof(magick));
-    int numGroups = size();
+    size_t numGroups = size();
     file.write((char*)&numGroups,sizeof(numGroups));
     for (size_t i=0; i<numGroups; i++) {
       if (geometries[i]) geometries[i]->write(file);
