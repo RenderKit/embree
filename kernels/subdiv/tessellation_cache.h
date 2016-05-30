@@ -137,7 +137,7 @@ namespace embree
        }
        int64_t new_root_ref = (int64_t) ptr;
        new_root_ref -= (int64_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();                                
-       assert( new_root_ref <= REF_TAG_MASK );
+       assert( new_root_ref <= (int64_t)REF_TAG_MASK );
        new_root_ref |= (int64_t)combinedTime << COMMIT_INDEX_SHIFT; 
        data = new_root_ref;
      }
