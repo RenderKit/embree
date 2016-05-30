@@ -290,7 +290,7 @@ namespace embree
     Scene* parent;             //!< pointer to scene this mesh belongs to
     unsigned id;               //!< internal geometry ID
     Type type;                 //!< geometry type 
-    ssize_t numPrimitives;     //!< number of primitives of this geometry
+    size_t numPrimitives;      //!< number of primitives of this geometry
     unsigned numTimeSteps;     //!< number of time steps (1 or 2)
     RTCGeometryFlags flags;    //!< flags of geometry
     bool enabled;              //!< true if geometry is enabled

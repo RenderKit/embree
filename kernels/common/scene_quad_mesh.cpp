@@ -206,9 +206,9 @@ namespace embree
     int type = QUAD_MESH;
     file.write((char*)&type,sizeof(int));
     file.write((char*)&numTimeSteps,sizeof(int));
-    int numVerts = numVertices();
+    unsigned numVerts = numVertices();
     file.write((char*)&numVerts,sizeof(int));
-    int numQuads = quads.size();
+    unsigned numQuads = quads.size();
     file.write((char*)&numQuads,sizeof(int));
 
     for (size_t j=0; j<numTimeSteps; j++) {
