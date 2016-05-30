@@ -54,7 +54,7 @@ namespace embree
           const int vertex_start_id = hairset->v.size();
           
           unsigned int id = 0;
-          for (int i=0; i<points; i++)
+          for (size_t i=0; i<points; i++)
           {
             if (fgets(line,10000,f) != line)
               THROW_RUNTIME_ERROR("error reading line from file " + fileName.str());
@@ -71,7 +71,7 @@ namespace embree
           }
           
           /* add indices to hair starts */
-          for (int i=0; i<points-1; i+=3)
+          for (size_t i=0; i<points-1; i+=3)
             hairset->hairs.push_back(SceneGraph::HairSetNode::Hair(vertex_start_id + i,numCurves));
           
           if (id != points-1) 
@@ -99,7 +99,7 @@ namespace embree
         THROW_RUNTIME_ERROR("invalid binary hair file " + fileName.str());
       if (magick != hair_bin_magick)
         THROW_RUNTIME_ERROR("invalid binary hair file " + fileName.str());
-      int numHairs, numPoints, numSegments; 
+      unsigned int numHairs, numPoints, numSegments; 
       if (fread(&numHairs,sizeof(int),1,fin) != 1) 
         THROW_RUNTIME_ERROR("invalid binary hair file " + fileName.str());
       if (fread(&numPoints,sizeof(int),1,fin) != 1)

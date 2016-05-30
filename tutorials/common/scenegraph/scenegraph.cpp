@@ -611,9 +611,9 @@ namespace embree
     /* create sphere geometry */
     const float rcpNumTheta = rcp((float)numTheta);
     const float rcpNumPhi   = rcp((float)numPhi);
-    for (int phi=0; phi<=numPhi; phi++)
+    for (unsigned int phi=0; phi<=numPhi; phi++)
     {
-      for (int theta=0; theta<numTheta; theta++)
+      for (unsigned int theta=0; theta<numTheta; theta++)
       {
 	const float phif   = phi*float(pi)*rcpNumPhi;
 	const float thetaf = theta*2.0f*float(pi)*rcpNumTheta;
@@ -625,32 +625,32 @@ namespace embree
       
       if (phi == 1)
       {
-	for (int theta=1; theta<=numTheta; theta++) 
+	for (unsigned int theta=1; theta<=numTheta; theta++) 
 	{
-	  int p00 = numTheta-1;
-	  int p10 = phi*numTheta+theta-1;
-	  int p11 = phi*numTheta+theta%numTheta;
+	  unsigned int p00 = numTheta-1;
+	  unsigned int p10 = phi*numTheta+theta-1;
+	  unsigned int p11 = phi*numTheta+theta%numTheta;
           mesh->triangles.push_back(TriangleMeshNode::Triangle(p10,p00,p11));
 	}
       }
       else if (phi == numPhi)
       {
-	for (int theta=1; theta<=numTheta; theta++) 
+	for (unsigned int theta=1; theta<=numTheta; theta++) 
 	{
-	  int p00 = (phi-1)*numTheta+theta-1;
-	  int p01 = (phi-1)*numTheta+theta%numTheta;
-	  int p10 = numPhi*numTheta;
+	  unsigned int p00 = (phi-1)*numTheta+theta-1;
+	  unsigned int p01 = (phi-1)*numTheta+theta%numTheta;
+	  unsigned int p10 = numPhi*numTheta;
           mesh->triangles.push_back(TriangleMeshNode::Triangle(p10,p00,p01));
 	}
       }
       else
       {
-	for (int theta=1; theta<=numTheta; theta++) 
+	for (unsigned int theta=1; theta<=numTheta; theta++) 
 	{
-	  int p00 = (phi-1)*numTheta+theta-1;
-	  int p01 = (phi-1)*numTheta+theta%numTheta;
-	  int p10 = phi*numTheta+theta-1;
-	  int p11 = phi*numTheta+theta%numTheta;
+	  unsigned int p00 = (phi-1)*numTheta+theta-1;
+	  unsigned int p01 = (phi-1)*numTheta+theta%numTheta;
+	  unsigned int p10 = phi*numTheta+theta-1;
+	  unsigned int p11 = phi*numTheta+theta%numTheta;
           mesh->triangles.push_back(TriangleMeshNode::Triangle(p10,p00,p11));
           mesh->triangles.push_back(TriangleMeshNode::Triangle(p01,p11,p00));
 	}
@@ -669,9 +669,9 @@ namespace embree
     /* create sphere geometry */
     const float rcpNumTheta = rcp((float)numTheta);
     const float rcpNumPhi   = rcp((float)numPhi);
-    for (int phi=0; phi<=numPhi; phi++)
+    for (unsigned int phi=0; phi<=numPhi; phi++)
     {
-      for (int theta=0; theta<numTheta; theta++)
+      for (unsigned int theta=0; theta<numTheta; theta++)
       {
 	const float phif   = phi*float(pi)*rcpNumPhi;
 	const float thetaf = theta*2.0f*float(pi)*rcpNumTheta;
@@ -683,32 +683,32 @@ namespace embree
       
       if (phi == 1)
       {
-	for (int theta=1; theta<=numTheta; theta++) 
+	for (unsigned int theta=1; theta<=numTheta; theta++) 
 	{
-	  int p00 = numTheta-1;
-	  int p10 = phi*numTheta+theta-1;
-	  int p11 = phi*numTheta+theta%numTheta;
+	  unsigned int p00 = numTheta-1;
+	  unsigned int p10 = phi*numTheta+theta-1;
+	  unsigned int p11 = phi*numTheta+theta%numTheta;
           mesh->quads.push_back(QuadMeshNode::Quad(p10,p00,p11,p11));
 	}
       }
       else if (phi == numPhi)
       {
-	for (int theta=1; theta<=numTheta; theta++) 
+	for (unsigned int theta=1; theta<=numTheta; theta++) 
 	{
-	  int p00 = (phi-1)*numTheta+theta-1;
-	  int p01 = (phi-1)*numTheta+theta%numTheta;
-	  int p10 = numPhi*numTheta;
+	  unsigned int p00 = (phi-1)*numTheta+theta-1;
+	  unsigned int p01 = (phi-1)*numTheta+theta%numTheta;
+	  unsigned int p10 = numPhi*numTheta;
           mesh->quads.push_back(QuadMeshNode::Quad(p10,p00,p01,p01));
 	}
       }
       else
       {
-	for (int theta=1; theta<=numTheta; theta++) 
+	for (unsigned int theta=1; theta<=numTheta; theta++) 
 	{
-	  int p00 = (phi-1)*numTheta+theta-1;
-	  int p01 = (phi-1)*numTheta+theta%numTheta;
-	  int p10 = phi*numTheta+theta-1;
-	  int p11 = phi*numTheta+theta%numTheta;
+	  unsigned int p00 = (phi-1)*numTheta+theta-1;
+	  unsigned int p01 = (phi-1)*numTheta+theta%numTheta;
+	  unsigned int p10 = phi*numTheta+theta-1;
+	  unsigned int p11 = phi*numTheta+theta%numTheta;
           mesh->quads.push_back(QuadMeshNode::Quad(p10,p00,p01,p11));
 	}
       }
@@ -727,9 +727,9 @@ namespace embree
     /* create sphere geometry */
     const float rcpNumTheta = rcp((float)numTheta);
     const float rcpNumPhi   = rcp((float)numPhi);
-    for (int phi=0; phi<=numPhi; phi++)
+    for (unsigned int phi=0; phi<=numPhi; phi++)
     {
-      for (int theta=0; theta<numTheta; theta++)
+      for (unsigned int theta=0; theta<numTheta; theta++)
       {
 	const float phif   = phi*float(pi)*rcpNumPhi;
 	const float thetaf = theta*2.0f*float(pi)*rcpNumTheta;
@@ -741,11 +741,11 @@ namespace embree
       
       if (phi == 1)
       {
-	for (int theta=1; theta<=numTheta; theta++) 
+	for (unsigned int theta=1; theta<=numTheta; theta++) 
 	{
-	  int p00 = numTheta-1;
-	  int p10 = phi*numTheta+theta-1;
-	  int p11 = phi*numTheta+theta%numTheta;
+	  unsigned int p00 = numTheta-1;
+	  unsigned int p10 = phi*numTheta+theta-1;
+	  unsigned int p11 = phi*numTheta+theta%numTheta;
           mesh->verticesPerFace.push_back(3);
           mesh->position_indices.push_back(p10);
           mesh->position_indices.push_back(p00);
@@ -754,11 +754,11 @@ namespace embree
       }
       else if (phi == numPhi)
       {
-	for (int theta=1; theta<=numTheta; theta++) 
+	for (unsigned int theta=1; theta<=numTheta; theta++) 
 	{
-	  int p00 = (phi-1)*numTheta+theta-1;
-	  int p01 = (phi-1)*numTheta+theta%numTheta;
-	  int p10 = numPhi*numTheta;
+	  unsigned int p00 = (phi-1)*numTheta+theta-1;
+	  unsigned int p01 = (phi-1)*numTheta+theta%numTheta;
+	  unsigned int p10 = numPhi*numTheta;
           mesh->verticesPerFace.push_back(3);
           mesh->position_indices.push_back(p10);
           mesh->position_indices.push_back(p00);
@@ -767,12 +767,12 @@ namespace embree
       }
       else
       {
-	for (int theta=1; theta<=numTheta; theta++) 
+	for (unsigned int theta=1; theta<=numTheta; theta++) 
 	{
-	  int p00 = (phi-1)*numTheta+theta-1;
-	  int p01 = (phi-1)*numTheta+theta%numTheta;
-	  int p10 = phi*numTheta+theta-1;
-	  int p11 = phi*numTheta+theta%numTheta;
+	  unsigned int p00 = (phi-1)*numTheta+theta-1;
+	  unsigned int p01 = (phi-1)*numTheta+theta%numTheta;
+	  unsigned int p10 = phi*numTheta+theta-1;
+	  unsigned int p11 = phi*numTheta+theta%numTheta;
           mesh->verticesPerFace.push_back(4);
           mesh->position_indices.push_back(p10);
           mesh->position_indices.push_back(p00);
