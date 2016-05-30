@@ -269,14 +269,14 @@ __forceinline std::string toString(long long value) {
 
 #if defined(_MSC_VER)
 //#pragma warning(disable:4200) // nonstandard extension used : zero-sized array in struct/union
-#pragma warning(disable:4800) // forcing value to bool 'true' or 'false' (performance warning)
+//#pragma warning(disable:4800) // forcing value to bool 'true' or 'false' (performance warning)
 //#pragma warning(disable:4267) // '=' : conversion from 'size_t' to 'unsigned long', possible loss of data
 //#pragma warning(disable:4244) // 'argument' : conversion from 'ssize_t' to 'unsigned int', possible loss of data
 //#pragma warning(disable:4355) // 'this' : used in base member initializer list
-#pragma warning(disable:391 ) // '<=' : signed / unsigned mismatch
-#pragma warning(disable:4018) // '<' : signed / unsigned mismatch
+//#pragma warning(disable:391 ) // '<=' : signed / unsigned mismatch
+//#pragma warning(disable:4018) // '<' : signed / unsigned mismatch
 //#pragma warning(disable:4305) // 'initializing' : truncation from 'double' to 'float'
-#pragma warning(disable:4068) // unknown pragma
+//#pragma warning(disable:4068) // unknown pragma
 //#pragma warning(disable:4146) // unary minus operator applied to unsigned type, result still unsigned
 //#pragma warning(disable:4838) // conversion from 'unsigned int' to 'const int' requires a narrowing conversion)
 //#pragma warning(disable:4227) // anachronism used : qualifiers on reference are ignored
@@ -290,15 +290,15 @@ __forceinline std::string toString(long long value) {
 //#pragma clang diagnostic ignored "-Wunused-private-field"
 //#pragma clang diagnostic ignored "-Wunused-local-typedef"
 //#pragma clang diagnostic ignored "-Wunused-function"
-#pragma clang diagnostic ignored "-Wnarrowing"
+//#pragma clang diagnostic ignored "-Wnarrowing"
 //#pragma clang diagnostic ignored "-Wc++11-narrowing"
 //#pragma clang diagnostic ignored "-Wdeprecated-register"
 #endif
 
 #if defined(__GNUC__) && !defined(__INTEL_COMPILER) && !defined(__clang__)
-#pragma GCC diagnostic ignored "-Wnarrowing"
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#pragma GCC diagnostic ignored "-Warray-bounds"
+//#pragma GCC diagnostic ignored "-Wnarrowing"
+//#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+//#pragma GCC diagnostic ignored "-Warray-bounds"
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////

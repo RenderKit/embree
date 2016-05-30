@@ -92,14 +92,13 @@ namespace embree
         /* downtraversal loop */
         while (true)
         {
-          size_t mask;
-          vfloat<Nx> tNear;
-
           /*! stop if we found a leaf node */
           if (unlikely(cur.isLeaf())) break;
           STAT3(normal.trav_nodes,1,1,1);
 
           /* intersect node */
+          size_t mask = 0;
+          vfloat<Nx> tNear;
           bool nodeIntersected = BVHNNodeIntersector1<N,Nx,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time,tNear,mask);
           if (unlikely(!nodeIntersected)) break;
 
@@ -189,14 +188,13 @@ namespace embree
         /* downtraversal loop */
         while (true)
         {
-          size_t mask;
-          vfloat<Nx> tNear;
-
           /*! stop if we found a leaf node */
           if (unlikely(cur.isLeaf())) break;
           STAT3(shadow.trav_nodes,1,1,1);
 
           /* intersect node */
+          size_t mask = 0;
+          vfloat<Nx> tNear;
           bool nodeIntersected = BVHNNodeIntersector1<N,Nx,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time,tNear,mask);
           if (unlikely(!nodeIntersected)) break;
 
@@ -295,7 +293,6 @@ namespace embree
     IF_ENABLED_QUADS(DEFINE_INTERSECTOR1(BVH8Quad4iMBIntersector1Pluecker,BVHNIntersector1<8 COMMA BVH_AN2 COMMA false COMMA ArrayIntersector1<QuadMiMBIntersector1Pluecker<4 COMMA true> > >));
 
     IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR1(BVH8GridAOSIntersector1,BVHNIntersector1<8 COMMA BVH_AN1 COMMA true COMMA GridAOSIntersector1>));
-
 
 #endif
   }

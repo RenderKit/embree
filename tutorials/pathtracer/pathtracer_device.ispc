@@ -780,7 +780,7 @@ inline void Material__preprocess(ISPCMaterial* uniform materials, unsigned int m
 {
   foreach_unique (id in materialID)
   {
-    if (id >= 0 && id < numMaterials) // FIXME: workaround for ISPC bug, location reached with empty execution mask
+    if (id < numMaterials) // FIXME: workaround for ISPC bug, location reached with empty execution mask
     {
       ISPCMaterial* uniform material = &materials[id];
 
@@ -806,7 +806,7 @@ inline Vec3f Material__eval(ISPCMaterial* uniform materials, unsigned int materi
   Vec3f c = make_Vec3f(0.0f);
   foreach_unique (id in materialID)
   {
-    if (id >= 0 && id < numMaterials) // FIXME: workaround for ISPC bug, location reached with empty execution mask
+    if (id < numMaterials) // FIXME: workaround for ISPC bug, location reached with empty execution mask
     {
       ISPCMaterial* uniform material = &materials[id];
       switch (material->ty) {
@@ -832,7 +832,7 @@ inline Vec3f Material__sample(ISPCMaterial* uniform uniform materials, unsigned 
   Vec3f c = make_Vec3f(0.0f);
   foreach_unique (id in materialID)
   {
-    if (id >= 0 && id < numMaterials) // FIXME: workaround for ISPC bug, location reached with empty execution mask
+    if (id < numMaterials) // FIXME: workaround for ISPC bug, location reached with empty execution mask
     {
       ISPCMaterial* uniform material = &materials[id];
       switch (material->ty) {

@@ -20,9 +20,10 @@
 #  define RTCORE_API extern "C" __attribute__ ((visibility ("default")))
 #endif
 
+#include "default.h"
 #include "device.h"
 #include "scene.h"
-#include "raystream_log.h"
+#include "../../include/embree2/rtcore_ray.h"
 
 namespace embree
 {  

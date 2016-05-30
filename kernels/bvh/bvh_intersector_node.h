@@ -654,8 +654,8 @@ namespace embree
     {
       static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N,Nx>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist, size_t& mask)
       {
-        if (likely(node.isNodeMB()))            mask = intersectNode<N>(node.nodeMB(),ray,tnear,tfar,time,dist);
-        if (unlikely(node.isUnalignedNodeMB())) mask = intersectNode<N>(node.unalignedNodeMB(),ray,tnear,tfar,time,dist);
+        if (likely(node.isNodeMB()))                     mask = intersectNode<N>(node.nodeMB(),ray,tnear,tfar,time,dist);
+        else /*if (unlikely(node.isUnalignedNodeMB()))*/ mask = intersectNode<N>(node.unalignedNodeMB(),ray,tnear,tfar,time,dist);
         return true;
       }
     };

@@ -55,7 +55,6 @@ SET(EMBREE_LIBRARY_FILES
   common/scene_bezier_curves.cpp
   common/scene_line_segments.cpp
   common/scene_subdiv_mesh.cpp
-  common/raystream_log.cpp
   subdiv/tessellation_cache.cpp
   subdiv/subdivpatch1base.cpp
   subdiv/catmullclark_coefficients.cpp

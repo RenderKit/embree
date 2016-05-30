@@ -135,6 +135,8 @@ namespace embree
             BuildRecord left(current.depth+1);
             BuildRecord right(current.depth+1);
             heuristic.splitFallback(children[bestChild].prims,left.pinfo,left.prims,right.pinfo,right.prims);
+            left .split = find(left );
+            right.split = find(right);
             
             /* add new children left and right */
             children[bestChild] = children[numChildren-1];

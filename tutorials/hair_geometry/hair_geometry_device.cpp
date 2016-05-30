@@ -363,6 +363,8 @@ Vec3fa renderPixelPathTrace(float x, float y, const ISPCCamera& camera)
       /* generate isotropic BRDF */
       AnisotropicBlinn__Constructor(&brdf,Vec3fa(1.0f),Vec3fa(0.0f),dx,1.0f,dy,1.0f,dz);
     }
+    else
+      return color;
 
     /* sample directional light */
     RTCRay2 shadow;

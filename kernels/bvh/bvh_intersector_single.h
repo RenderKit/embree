@@ -86,14 +86,13 @@ namespace embree
           /* downtraversal loop */
           while (true)
           {
-            size_t mask;
-            vfloat<Nx> tNear;
-
             /*! stop if we found a leaf node */
             if (unlikely(cur.isLeaf())) break;
             STAT3(normal.trav_nodes,1,1,1);
 
             /* intersect node */
+            size_t mask = 0;
+            vfloat<Nx> tNear;
             BVHNNodeIntersector1<N,Nx,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time[k],tNear,mask);
 
             /*! if no child is hit, pop next node */
@@ -146,14 +145,13 @@ namespace embree
           /* downtraversal loop */
           while (true)
           {
-            size_t mask;
-            vfloat<Nx> tNear;
-
             /*! stop if we found a leaf node */
             if (unlikely(cur.isLeaf())) break;
             STAT3(shadow.trav_nodes,1,1,1);
 
             /* intersect node */
+            size_t mask = 0;
+            vfloat<Nx> tNear;
             BVHNNodeIntersector1<N,Nx,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time[k],tNear,mask);
 
             /*! if no child is hit, pop next node */

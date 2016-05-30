@@ -235,12 +235,12 @@ namespace embree
           const size_t farX  = nearX ^ 16, farY  = nearY ^ 16, farZ  = nearZ ^ 16;
           
           const Vec3vf4 vscale(scale), voffset(offset);
-          const vfloat4 near_x = madd(vfloat4::load(&this->lower_x[i]+nearX),vscale.x,voffset.x);
-          const vfloat4 near_y = madd(vfloat4::load(&this->lower_x[i]+nearY),vscale.y,voffset.y);
-          const vfloat4 near_z = madd(vfloat4::load(&this->lower_x[i]+nearZ),vscale.z,voffset.z);
-          const vfloat4 far_x  = madd(vfloat4::load(&this->lower_x[i]+farX),vscale.x,voffset.x);
-          const vfloat4 far_y  = madd(vfloat4::load(&this->lower_x[i]+farY),vscale.y,voffset.y);
-          const vfloat4 far_z  = madd(vfloat4::load(&this->lower_x[i]+farZ),vscale.z,voffset.z);
+          const vfloat4 near_x = madd(vfloat4::load(&this->all_planes[i]+nearX),vscale.x,voffset.x);
+          const vfloat4 near_y = madd(vfloat4::load(&this->all_planes[i]+nearY),vscale.y,voffset.y);
+          const vfloat4 near_z = madd(vfloat4::load(&this->all_planes[i]+nearZ),vscale.z,voffset.z);
+          const vfloat4 far_x  = madd(vfloat4::load(&this->all_planes[i]+farX),vscale.x,voffset.x);
+          const vfloat4 far_y  = madd(vfloat4::load(&this->all_planes[i]+farY),vscale.y,voffset.y);
+          const vfloat4 far_z  = madd(vfloat4::load(&this->all_planes[i]+farZ),vscale.z,voffset.z);
           
 #if defined (__AVX2__)
           const vfloat4 tNearX = msub(near_x, rdir.x, org_rdir.x);
@@ -303,12 +303,12 @@ namespace embree
           const size_t farX  = nearX ^ 16, farY  = nearY ^ 16, farZ  = nearZ ^ 16;
           
           const Vec3vf8 vscale(scale), voffset(offset);
-          const vfloat8 near_x = madd(vfloat8::load(&this->lower_x[i]+nearX),vscale.x,voffset.x);
-          const vfloat8 near_y = madd(vfloat8::load(&this->lower_x[i]+nearY),vscale.y,voffset.y);
-          const vfloat8 near_z = madd(vfloat8::load(&this->lower_x[i]+nearZ),vscale.z,voffset.z);
-          const vfloat8 far_x  = madd(vfloat8::load(&this->lower_x[i]+farX),vscale.x,voffset.x);
-          const vfloat8 far_y  = madd(vfloat8::load(&this->lower_x[i]+farY),vscale.y,voffset.y);
-          const vfloat8 far_z  = madd(vfloat8::load(&this->lower_x[i]+farZ),vscale.z,voffset.z);
+          const vfloat8 near_x = madd(vfloat8::load(&this->all_planes[i]+nearX),vscale.x,voffset.x);
+          const vfloat8 near_y = madd(vfloat8::load(&this->all_planes[i]+nearY),vscale.y,voffset.y);
+          const vfloat8 near_z = madd(vfloat8::load(&this->all_planes[i]+nearZ),vscale.z,voffset.z);
+          const vfloat8 far_x  = madd(vfloat8::load(&this->all_planes[i]+farX),vscale.x,voffset.x);
+          const vfloat8 far_y  = madd(vfloat8::load(&this->all_planes[i]+farY),vscale.y,voffset.y);
+          const vfloat8 far_z  = madd(vfloat8::load(&this->all_planes[i]+farZ),vscale.z,voffset.z);
           
 #if defined (__AVX2__)
           const vfloat8 tNearX = msub(near_x, rdir.x, org_rdir.x);
@@ -364,12 +364,17 @@ namespace embree
       public:
         Vec3fa offset;               //!< offset to decompress bounds
         Vec3fa scale;                //!< scale  to decompress bounds
-        unsigned char lower_x[16]; 
-        unsigned char upper_x[16]; 
-        unsigned char lower_y[16]; 
-        unsigned char upper_y[16]; 
-        unsigned char lower_z[16]; 
-        unsigned char upper_z[16]; 
+        union {
+          struct {
+            unsigned char lower_x[16]; 
+            unsigned char upper_x[16]; 
+            unsigned char lower_y[16]; 
+            unsigned char upper_y[16]; 
+            unsigned char lower_z[16]; 
+            unsigned char upper_z[16]; 
+          };
+          unsigned char all_planes[6*16];
+        };
       };
       
       struct EagerLeaf
