@@ -92,7 +92,7 @@ namespace embree
         /* downtraversal loop */
         while (true)
         {
-          size_t mask;
+          size_t mask = 0;
           vfloat<Nx> tNear;
 
           /*! stop if we found a leaf node */
@@ -189,7 +189,7 @@ namespace embree
         /* downtraversal loop */
         while (true)
         {
-          size_t mask;
+          size_t mask = 0;
           vfloat<Nx> tNear;
 
           /*! stop if we found a leaf node */
@@ -295,7 +295,6 @@ namespace embree
     IF_ENABLED_QUADS(DEFINE_INTERSECTOR1(BVH8Quad4iMBIntersector1Pluecker,BVHNIntersector1<8 COMMA BVH_AN2 COMMA false COMMA ArrayIntersector1<QuadMiMBIntersector1Pluecker<4 COMMA true> > >));
 
     IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR1(BVH8GridAOSIntersector1,BVHNIntersector1<8 COMMA BVH_AN1 COMMA true COMMA GridAOSIntersector1>));
-
 
 #endif
   }
