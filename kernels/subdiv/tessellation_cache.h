@@ -189,7 +189,7 @@ namespace embree
    { 
      while(1)
      {
-       unsigned int lock = SharedLazyTessellationCache::sharedLazyTessellationCache.lockThread(t_state);
+       size_t lock = SharedLazyTessellationCache::sharedLazyTessellationCache.lockThread(t_state);
        if (unlikely(lock == 1))
        {
          /* lock failed wait until sync phase is over */
