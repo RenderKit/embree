@@ -116,7 +116,7 @@ namespace embree
         }
       }
       
-      __forceinline void operator() (const BBox3fa& b, const size_t index)
+      __forceinline void operator() (const BBox3fa& b, const unsigned index)
       {
         const vfloat4 lower = (vfloat4)b.lower;
         const vfloat4 upper = (vfloat4)b.upper;
@@ -166,11 +166,11 @@ namespace embree
     };
             
 
-    static void InPlace32BitRadixSort(MortonID32Bit* const morton, const size_t num, const size_t shift = 3*8)
+    static void InPlace32BitRadixSort(MortonID32Bit* const morton, const size_t num, const unsigned int shift = 3*8)
     {
-      static const size_t BITS = 8;
-      static const size_t BUCKETS = (1 << BITS);
-      static const size_t CMP_SORT_THRESHOLD = 16;
+      static const unsigned int BITS = 8;
+      static const unsigned int BUCKETS = (1 << BITS);
+      static const unsigned int CMP_SORT_THRESHOLD = 16;
 
       __aligned(64) unsigned int count[BUCKETS];
 
