@@ -83,7 +83,7 @@ namespace embree
         {
           BBox3fa bounds = empty;
           if (!mesh->valid(j,&bounds)) continue;
-          const PrimRef prim(bounds,mesh->id,j);
+          const PrimRef prim(bounds,mesh->id,unsigned(j));
           pinfo.add(bounds,bounds.center2());
           prims[k++] = prim;
         }
