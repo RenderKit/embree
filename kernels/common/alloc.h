@@ -403,7 +403,7 @@ namespace embree
 	if (next) next->clear(device); next = nullptr;
         const size_t sizeof_Header = offsetof(Block,data[0]);
         size_t sizeof_This = sizeof_Header+reserveEnd;
-        const size_t sizeof_Alloced = sizeof_Header+getBlockAllocatedBytes();
+        const ssize_t sizeof_Alloced = sizeof_Header+getBlockAllocatedBytes();
         os_free(this,sizeof_This);
         if (device) device->memoryMonitor(-sizeof_Alloced,true);
       }
