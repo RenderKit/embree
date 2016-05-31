@@ -90,9 +90,9 @@ namespace embree
         texcoords = in->vt.size() ? &in->vt[0] : nullptr;
         triangles = (ISPCTriangle*) (in->triangles.size() ? &in->triangles[0] : nullptr);
         quads = (ISPCQuad*) (in->quads.size() ? &in->quads[0] : nullptr);
-        numVertices = in->v.size();
-        numTriangles = in->triangles.size();
-        numQuads = in->quads.size();
+        numVertices = unsigned(in->v.size());
+        numTriangles = unsigned(in->triangles.size());
+        numQuads = unsigned(in->quads.size());
         geomID = -1;
         meshMaterialID = in->meshMaterialID;
       }
@@ -125,8 +125,8 @@ namespace embree
         normals = in->vn.size() ? &in->vn[0] : nullptr;
         texcoords = in->vt.size() ? &in->vt[0] : nullptr;
         quads = (ISPCQuad*) (in->quads.size() ? &in->quads[0] : nullptr);
-        numVertices = in->v.size();
-        numQuads = in->quads.size();
+        numVertices = unsigned(in->v.size());
+        numQuads = unsigned(in->quads.size());
         geomID = -1;
         meshMaterialID = in->meshMaterialID;
       }
@@ -165,12 +165,12 @@ namespace embree
         edge_crease_weights = in->edge_crease_weights.size() ? &in->edge_crease_weights[0] : nullptr;
         vertex_creases = in->vertex_creases.size() ? &in->vertex_creases[0] : nullptr;
         vertex_crease_weights = in->vertex_crease_weights.size() ? &in->vertex_crease_weights[0] : nullptr;
-        numVertices = in->positions.size();
-        numFaces = in->verticesPerFace.size();
-        numEdges = in->position_indices.size();
-        numEdgeCreases = in->edge_creases.size();
-        numVertexCreases = in->vertex_creases.size();
-        numHoles = in->holes.size();
+        numVertices = unsigned(in->positions.size());
+        numFaces = unsigned(in->verticesPerFace.size());
+        numEdges = unsigned(in->position_indices.size());
+        numEdgeCreases = unsigned(in->edge_creases.size());
+        numVertexCreases = unsigned(in->vertex_creases.size());
+        numHoles = unsigned(in->holes.size());
         materialID = in->materialID;
         geomID = -1;
 
@@ -224,8 +224,8 @@ namespace embree
         v = in->v.data();
         v2 = in->v2.data();
         indices = in->indices.data();
-        numVertices = in->v.size();
-        numSegments = in->indices.size();
+        numVertices = unsigned(in->v.size());
+        numSegments = unsigned(in->indices.size());
         materialID = in->materialID;
       }
 
@@ -249,8 +249,8 @@ namespace embree
         v = in->v.size() ? &in->v[0] : nullptr;
         v2 = in->v2.size() ? &in->v2[0] : nullptr;
         hairs = (ISPCHair*) (in->hairs.size() ? &in->hairs[0] : nullptr);
-        numVertices = in->v.size();
-        numHairs = in->hairs.size();
+        numVertices = unsigned(in->v.size());
+        numHairs = unsigned(in->hairs.size());
         materialID = in->materialID;
       }
 
@@ -308,10 +308,10 @@ namespace embree
       geometries = new ISPCGeometry*[in->geometries.size()];
       for (size_t i=0; i<in->geometries.size(); i++)
         geometries[i] = convertGeometry(in->geometries[i]);
-      numGeometries = in->geometries.size();
+      numGeometries = unsigned(in->geometries.size());
 
       materials = (ISPCMaterial*) (in->materials.size() ? &in->materials[0] : nullptr);
-      numMaterials = in->materials.size();
+      numMaterials = unsigned(in->materials.size());
 
       lights = new Light*[in->lights.size()];
       numLights = 0;
