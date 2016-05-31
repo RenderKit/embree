@@ -177,8 +177,8 @@ namespace embree
      return localTime+NUM_CACHE_SEGMENTS*globalTime;
    }
 
-   __forceinline unsigned int lockThread  (ThreadWorkState *const t_state) { return t_state->counter.fetch_add(1);  }
-   __forceinline unsigned int unlockThread(ThreadWorkState *const t_state) { assert(isLocked(t_state)); return t_state->counter.fetch_add(-1); }
+   __forceinline size_t lockThread  (ThreadWorkState *const t_state) { return t_state->counter.fetch_add(1);  }
+   __forceinline size_t unlockThread(ThreadWorkState *const t_state) { assert(isLocked(t_state)); return t_state->counter.fetch_add(-1); }
    __forceinline bool isLocked(ThreadWorkState *const t_state) { return t_state->counter != 0; }
 
    static __forceinline void lock  () { sharedLazyTessellationCache.lockThread(threadState()); }
