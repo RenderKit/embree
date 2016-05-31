@@ -61,8 +61,8 @@ namespace embree
         Px(Px), Py(Py), Pz(Pz), U(U), V(V), Nx(Nx), Ny(Ny), Nz(Nz), dwidth(dwidth), dheight(dheight), count(0)
       {
         assert(swidth < (2<<20) && sheight < (2<<20));
-        const BBox2f srange(Vec2f(0.0f,0.0f),Vec2f(swidth-1,sheight-1));
-        const BBox2f erange(Vec2f(x0,y0),Vec2f(x1,y1));
+        const BBox2f srange(Vec2f(0.0f,0.0f),Vec2f(float(swidth-1),float(sheight-1)));
+        const BBox2f erange(Vec2f(float(x0),float(y0)),Vec2f((float)x1,(float)y1));
         bool done MAYBE_UNUSED = eval(patch,subPatch,srange,erange);
         assert(done);
         assert(count == (x1-x0+1)*(y1-y0+1));
