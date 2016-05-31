@@ -165,9 +165,12 @@ namespace embree
     // =====================================================================================================
     // =====================================================================================================
 
+#define INTERVAL_CULL 0
+
     template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
     void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect_co(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, const RTCIntersectContext* context)
     {
+#if defined(__AVX2__)
       __aligned(64) RContext ray_ctx[MAX_RAYS_PER_OCTANT];
       __aligned(64) Precalculations pre[MAX_RAYS_PER_OCTANT]; 
       __aligned(64) StackItemMask  stack0[stackSizeSingle];  //!< stack of nodes 
@@ -184,20 +187,27 @@ namespace embree
 
         Vec3fa rays_min_rdir(pos_inf);
         Vec3fa rays_max_rdir(neg_inf);
-
+        float rays_tnear = pos_inf;
+        float rays_tfar  = neg_inf;
         /* do per ray precalculations */
         for (size_t i=0; i<numOctantRays; i++) {
           new (&ray_ctx[i]) RContext(rays[i]);
           new (&pre[i]) Precalculations(*rays[i],bvh);
           rays_min_rdir     = min(rays_min_rdir,ray_ctx[i].rdir);
           rays_max_rdir     = max(rays_max_rdir,ray_ctx[i].rdir);          
+          rays_tnear        = min(rays_tnear,rays[i]->tnear);
+          rays_tfar         = max(rays_tfar ,rays[i]->tfar);
         }
 
+#if INTERVAL_CULL == 1
 
-        const Vec3fa min_rdir = select(ge_mask(rays_min_rdir,Vec3fa(zero)),rays_min_rdir,rays_max_rdir);
-        const Vec3fa max_rdir = select(ge_mask(rays_min_rdir,Vec3fa(zero)),rays_max_rdir,rays_min_rdir);
+        Vec3fa min_rdir = select(ge_mask(rays_min_rdir,Vec3fa(zero)),rays_min_rdir,rays_max_rdir);
+        Vec3fa max_rdir = select(ge_mask(rays_min_rdir,Vec3fa(zero)),rays_max_rdir,rays_min_rdir);
         const Vec3fa min_org_rdir = min_rdir * rays[0]->org;
         const Vec3fa max_org_rdir = max_rdir * rays[0]->org;
+        min_rdir.w = rays_tnear;
+        max_rdir.w = rays_tfar;
+#endif
 
         stack0[0].ptr  = BVH::invalidNode;
         stack0[0].mask = (size_t)-1;
@@ -208,11 +218,7 @@ namespace embree
 
         const NearFarPreCompute pc(ray_ctx[0].rdir);
 
-        const size_t fiberMask = m_active;
-        assert(fiberMask);
-        
-        StackItemMask* stackPtr      = stack0 + 1;
-
+        StackItemMask* stackPtr   = stack0 + 1;
         NodeRef cur               = bvh->root;
         size_t m_trav_active      = m_active;
 
@@ -224,7 +230,9 @@ namespace embree
           {
             if (unlikely(cur.isLeaf())) break;
             const Node* __restrict__ const node = cur.node();
+
             assert(m_trav_active);
+            size_t bits = m_trav_active;
 
 #if defined(__AVX512F__) 
             const vlong<K/2> one((size_t)1);
@@ -236,7 +244,6 @@ namespace embree
             vfloat<K> dist(inf);
             vlong<K/2>   maskK(zero);
               
-            size_t bits = m_trav_active;
             do
             {            
               STAT3(normal.trav_nodes,1,1,1);                          
@@ -271,19 +278,22 @@ namespace embree
             const vfloat<K> bmaxX = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farX));
             const vfloat<K> bmaxY = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farY));
             const vfloat<K> bmaxZ = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farZ));
-#if 1
+
+#if INTERVAL_CULL == 1
             /* interval-based culling test */
+            if (unlikely(__popcnt(bits) > 1))
             {
+              STAT3(normal.trav_nodes,1,1,1);                          
               const vfloat<K> tminX = msub(bminX, min_rdir.x, min_org_rdir.x);
               const vfloat<K> tminY = msub(bminY, min_rdir.y, min_org_rdir.y);
               const vfloat<K> tminZ = msub(bminZ, min_rdir.z, min_org_rdir.z);
               const vfloat<K> tmaxX = msub(bmaxX, max_rdir.x, max_org_rdir.x);
               const vfloat<K> tmaxY = msub(bmaxY, max_rdir.y, max_org_rdir.y);
               const vfloat<K> tmaxZ = msub(bmaxZ, max_rdir.z, max_org_rdir.z);
-              const vfloat<K> tmin  = max(max(tminX,tminY),tminZ);
-              const vfloat<K> tmax  = min(min(tmaxX,tmaxY),tmaxZ);
-              const vbool<K> vmaskI   = tmin <= tmax;
-
+              const vfloat<K> tmin  = max(max(tminX,tminY),max(tminZ,min_rdir.w)); // tnear
+              const vfloat<K> tmax  = min(min(tmaxX,tmaxY),min(tmaxZ,max_rdir.w)); // tfar
+              const vbool<K> vmaskI   = tmin <= tmax;  
+              //maskK = maskK & vint<K>(vmaskI);
               if (unlikely(none(vmaskI))) 
               {
                 /*! pop next node */
@@ -296,25 +306,18 @@ namespace embree
               }
             }
 #endif            
-            vfloat<K> dist(inf);
-            vint<K>   maskK(zero);
 
-            const RContext *__restrict__ const cur_ray_ctx = ray_ctx;
-            size_t bits = m_trav_active;
+            vint<K>   maskK(zero);
+            vfloat<K> dist(inf);
+
             do
             {            
               STAT3(normal.trav_nodes,1,1,1);                          
               const size_t i = __bscf(bits);
-              const RContext &ray = cur_ray_ctx[i];
+              const RContext &ray = ray_ctx[i];
               const vint<K> bitmask  = vint<K>((int)1 << i);
-
               const vbool<K> vmask = intersectNode<K,true, robust> (ray,bminX,bminY,bminZ,bmaxX,bmaxY,bmaxZ,dist);
-
-#if defined(__AVX2__)
-              maskK = maskK | (bitmask & vint<K>(vmask));
-#else
-              maskK = select(vmask,maskK | bitmask,maskK); 
-#endif
+              maskK = maskK | (vint<K>(vmask) & bitmask);
             } while(bits);              
 
             const vbool<K> vmask = dist < inf;
@@ -365,20 +368,8 @@ namespace embree
         ///////////////////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////
-        if (rays[0]->primID == -1) 
-        {
-          PRINT(*rays[0]);
-          PRINT(min_rdir);
-          PRINT(max_rdir);
-          PRINT(pc.nearX);
-          PRINT(pc.nearY);
-          PRINT(pc.nearZ);
-          PRINT(pc.farX);
-          PRINT(pc.farY);
-          PRINT(pc.farZ);
-          exit(0);
-        }
       }      
+#endif
     }
     
     // =====================================================================================================

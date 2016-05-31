@@ -310,6 +310,11 @@ namespace embree
   }
 #endif
 
+  __forceinline const vfloat8 andnot( const vboolf8& m, const vfloat8& f ) {
+    return _mm256_andnot_ps(m, f); 
+  }
+
+
   __forceinline vfloat8  lerp(const vfloat8& a, const vfloat8& b, const vfloat8& t) {
 #if defined(__AVX2__)
     return madd(t, b, madd(-t, a, a));
