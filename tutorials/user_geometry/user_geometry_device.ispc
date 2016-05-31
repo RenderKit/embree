@@ -19,20 +19,20 @@
 const uniform int numPhi = 5;
 const uniform int numTheta = 2*numPhi;
 
-void renderTileStandardStream(uniform int taskIndex, 
+void renderTileStandardStream(uniform int taskIndex,
                               uniform int* uniform pixels,
                               const uniform unsigned int width,
-                              const uniform unsigned int height, 
+                              const uniform unsigned int height,
                               const uniform float time,
                               const uniform ISPCCamera& camera,
-                              const uniform int numTilesX, 
+                              const uniform int numTilesX,
                               const uniform int numTilesY);
 
 // ======================================================================== //
 //                         User defined instancing                          //
 // ======================================================================== //
 
-struct Instance 
+struct Instance
 {
   ALIGNED_STRUCT
   uniform unsigned int geometry;
@@ -105,8 +105,8 @@ unmasked void instanceIntersectFuncN(const uniform int* uniform valid,
 {
   /* avoid crashing when debug visualizations are used */
   if (context == NULL)
-    return; 
-  
+    return;
+
   const uniform Instance* uniform instance = (const uniform Instance* uniform) ptr;
 
   /* iterate over all rays in ray packet */
@@ -115,10 +115,10 @@ unmasked void instanceIntersectFuncN(const uniform int* uniform valid,
     /* calculate varying loop and execution mask */
     unsigned int vi = ui+programIndex;
     if (vi>=N) continue;
-    
+
     /* ignore inactive rays */
     if (valid[vi] != -1) continue;
-   
+
     /* create transformed ray */
     RTCRay ray;
     const Vec3f ray_org = make_Vec3f(RTCRayN_org_x(rays,N,ui),RTCRayN_org_y(rays,N,ui),RTCRayN_org_z(rays,N,ui));
@@ -160,7 +160,7 @@ unmasked void instanceOccludedFuncN(const uniform int* uniform valid,
 {
   /* avoid crashing when debug visualizations are used */
   if (context == NULL)
-    return; 
+    return;
 
   const uniform Instance* uniform instance = (const uniform Instance* uniform) ptr;
 
@@ -170,7 +170,7 @@ unmasked void instanceOccludedFuncN(const uniform int* uniform valid,
     /* calculate varying loop and execution mask */
     unsigned int vi = ui+programIndex;
     if (vi>=N) continue;
-    
+
     /* ignore inactive rays */
     if (valid[vi] != -1) continue;
 
@@ -318,7 +318,7 @@ unmasked void sphereIntersectFuncN(const uniform int* uniform valid,
     /* calculate varying loop and execution mask */
     unsigned int vi = ui+programIndex;
     if (vi>=N) continue;
-    
+
     /* ignore inactive rays */
     if (valid[vi] != -1) continue;
 
@@ -339,7 +339,7 @@ unmasked void sphereIntersectFuncN(const uniform int* uniform valid,
     const float t0 = 0.5f*rcpA*(-B-Q);
     const float t1 = 0.5f*rcpA*(-B+Q);
 
-    if ((ray_tnear < t0) & (t0 < ray_tfar)) 
+    if ((ray_tnear < t0) & (t0 < ray_tfar))
     {
       RTCRayN_u(rays,N,ui) = 0.0f;
       RTCRayN_v(rays,N,ui) = 0.0f;
@@ -351,7 +351,7 @@ unmasked void sphereIntersectFuncN(const uniform int* uniform valid,
       RTCRayN_Ng_y(rays,N,ui) = Ng.y;
       RTCRayN_Ng_z(rays,N,ui) = Ng.z;
     }
-    if ((ray_tnear < t1) & (t1 < ray_tfar)) 
+    if ((ray_tnear < t1) & (t1 < ray_tfar))
     {
       RTCRayN_u(rays,N,ui) = 0.0f;
       RTCRayN_v(rays,N,ui) = 0.0f;
@@ -381,7 +381,7 @@ unmasked void sphereOccludedFuncN(const uniform int* uniform valid,
     /* calculate varying loop and execution mask */
     unsigned int vi = ui+programIndex;
     if (vi>=N) continue;
-    
+
     /* ignore inactive rays */
     if (valid[vi] != -1) continue;
 
@@ -454,9 +454,9 @@ uniform unsigned int createTriangulatedSphere (RTCScene scene, const uniform Vec
 {
   /* create triangle mesh */
   uniform unsigned int mesh = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 2*numTheta*(numPhi-1), numTheta*(numPhi+1));
-  
+
   /* map triangle and vertex buffers */
-  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
+  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER);
   uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
 
   /* create sphere */
@@ -477,7 +477,7 @@ uniform unsigned int createTriangulatedSphere (RTCScene scene, const uniform Vec
     }
     if (phi == 0) continue;
 
-    for (uniform int theta=1; theta<=numTheta; theta++) 
+    for (uniform int theta=1; theta<=numTheta; theta++)
     {
       uniform int p00 = (phi-1)*numTheta+theta-1;
       uniform int p01 = (phi-1)*numTheta+theta%numTheta;
@@ -485,21 +485,21 @@ uniform unsigned int createTriangulatedSphere (RTCScene scene, const uniform Vec
       uniform int p11 = phi*numTheta+theta%numTheta;
 
       if (phi > 1) {
-        triangles[tri].v0 = p10; 
-        triangles[tri].v1 = p00; 
-        triangles[tri].v2 = p01; 
+        triangles[tri].v0 = p10;
+        triangles[tri].v1 = p00;
+        triangles[tri].v2 = p01;
         tri++;
       }
 
       if (phi < numPhi) {
-        triangles[tri].v0 = p11; 
+        triangles[tri].v0 = p11;
         triangles[tri].v1 = p10;
         triangles[tri].v2 = p01;
         tri++;
       }
     }
   }
-  rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
+  rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER);
   rtcUnmapBuffer(scene,mesh,RTC_INDEX_BUFFER);
   return mesh;
 }
@@ -511,12 +511,12 @@ uniform unsigned int createGroundPlane (RTCScene scene)
   uniform unsigned int mesh = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 2, 4);
 
   /* set vertices */
-  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
-  vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10; 
-  vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10; 
-  vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10; 
+  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER);
+  vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10;
+  vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10;
+  vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10;
   vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
-  rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
+  rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER);
 
   /* set triangles */
   uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
@@ -566,18 +566,18 @@ export void device_init (uniform int8* uniform cfg)
 
   /* create scene with 4 triangulated spheres */
   g_scene1 = rtcDeviceNewScene(g_device, RTC_SCENE_STATIC,aflags);
-  createTriangulatedSphere(g_scene1,make_Vec3f( 0, 0,+1),0.5);
-  createTriangulatedSphere(g_scene1,make_Vec3f(+1, 0, 0),0.5);
-  createTriangulatedSphere(g_scene1,make_Vec3f( 0, 0,-1),0.5);
-  createTriangulatedSphere(g_scene1,make_Vec3f(-1, 0, 0),0.5);
+  createTriangulatedSphere(g_scene1,make_Vec3f( 0, 0,+1),0.5f);
+  createTriangulatedSphere(g_scene1,make_Vec3f(+1, 0, 0),0.5f);
+  createTriangulatedSphere(g_scene1,make_Vec3f( 0, 0,-1),0.5f);
+  createTriangulatedSphere(g_scene1,make_Vec3f(-1, 0, 0),0.5f);
   rtcCommit(g_scene1);
 
   /* create scene with 2 triangulated and 2 analytical spheres */
   g_scene2 = rtcDeviceNewScene(g_device, RTC_SCENE_STATIC,aflags);
-  createTriangulatedSphere(g_scene2,make_Vec3f( 0, 0,+1),0.5);
-  createAnalyticalSphere  (g_scene2,make_Vec3f(+1, 0, 0),0.5);
-  createTriangulatedSphere(g_scene2,make_Vec3f( 0, 0,-1),0.5);
-  createAnalyticalSphere  (g_scene2,make_Vec3f(-1, 0, 0),0.5);
+  createTriangulatedSphere(g_scene2,make_Vec3f( 0, 0,+1),0.5f);
+  createAnalyticalSphere  (g_scene2,make_Vec3f(+1, 0, 0),0.5f);
+  createTriangulatedSphere(g_scene2,make_Vec3f( 0, 0,-1),0.5f);
+  createAnalyticalSphere  (g_scene2,make_Vec3f(-1, 0, 0),0.5f);
   rtcCommit(g_scene2);
 
   /* instantiate geometry */
@@ -589,30 +589,30 @@ export void device_init (uniform int8* uniform cfg)
   rtcCommit(g_scene);
 
   /* set all colors */
-  colors[0][0] = make_Vec3f(0.25,0,0);
-  colors[0][1] = make_Vec3f(0.50,0,0);
-  colors[0][2] = make_Vec3f(0.75,0,0);
-  colors[0][3] = make_Vec3f(1.00,0,0);
+  colors[0][0] = make_Vec3f(0.25f, 0.00f, 0.00f);
+  colors[0][1] = make_Vec3f(0.50f, 0.00f, 0.00f);
+  colors[0][2] = make_Vec3f(0.75f, 0.00f, 0.00f);
+  colors[0][3] = make_Vec3f(1.00f, 0.00f, 0.00f);
 
-  colors[1][0] = make_Vec3f(0,0.25,0);
-  colors[1][1] = make_Vec3f(0,0.50,0);
-  colors[1][2] = make_Vec3f(0,0.75,0);
-  colors[1][3] = make_Vec3f(0,1.00,0);
+  colors[1][0] = make_Vec3f(0.00f, 0.25f, 0.00f);
+  colors[1][1] = make_Vec3f(0.00f, 0.50f, 0.00f);
+  colors[1][2] = make_Vec3f(0.00f, 0.75f, 0.00f);
+  colors[1][3] = make_Vec3f(0.00f, 1.00f, 0.00f);
 
-  colors[2][0] = make_Vec3f(0,0,0.25);
-  colors[2][1] = make_Vec3f(0,0,0.50);
-  colors[2][2] = make_Vec3f(0,0,0.75);
-  colors[2][3] = make_Vec3f(0,0,1.00);
+  colors[2][0] = make_Vec3f(0.00f, 0.00f, 0.25f);
+  colors[2][1] = make_Vec3f(0.00f, 0.00f, 0.50f);
+  colors[2][2] = make_Vec3f(0.00f, 0.00f, 0.75f);
+  colors[2][3] = make_Vec3f(0.00f, 0.00f, 1.00f);
 
-  colors[3][0] = make_Vec3f(0.25,0.25,0);
-  colors[3][1] = make_Vec3f(0.50,0.50,0);
-  colors[3][2] = make_Vec3f(0.75,0.75,0);
-  colors[3][3] = make_Vec3f(1.00,1.00,0);
+  colors[3][0] = make_Vec3f(0.25f, 0.25f, 0.00f);
+  colors[3][1] = make_Vec3f(0.50f, 0.50f, 0.00f);
+  colors[3][2] = make_Vec3f(0.75f, 0.75f, 0.00f);
+  colors[3][3] = make_Vec3f(1.00f, 1.00f, 0.00f);
 
-  colors[4][0] = make_Vec3f(1.0,1.0,1.0);
-  colors[4][1] = make_Vec3f(1.0,1.0,1.0);
-  colors[4][2] = make_Vec3f(1.0,1.0,1.0);
-  colors[4][3] = make_Vec3f(1.0,1.0,1.0);
+  colors[4][0] = make_Vec3f(1.0f, 1.0f, 1.0f);
+  colors[4][1] = make_Vec3f(1.0f, 1.0f, 1.0f);
+  colors[4][2] = make_Vec3f(1.0f, 1.0f, 1.0f);
+  colors[4][3] = make_Vec3f(1.0f, 1.0f, 1.0f);
 
   /* set start render mode */
   if (g_mode == MODE_NORMAL) renderTile = renderTileStandard;
@@ -634,13 +634,13 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
   ray.instID = 4; // set default instance ID
   ray.mask = -1;
   ray.time = 0;
-  
+
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
-  
+
   /* shade pixels */
   Vec3f color = make_Vec3f(0.0f);
-  if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
+  if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
   {
     /* calculate shading normal */
     Vec3f Ns = normalize(ray.Ng);
@@ -650,7 +650,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
     if (ray.instID == 0) diffuse = colors[ray.instID][ray.primID];
     else                 diffuse = colors[ray.instID][ray.geomID];
     color = color + diffuse*0.5;
-    
+
     /* initialize shadow ray */
     Vec3f lightDir = normalize(make_Vec3f(-1,-1,-1));
     RTCRay shadow;
@@ -662,10 +662,10 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
     shadow.primID = 0;
     shadow.mask = -1;
     shadow.time = 0;
-    
+
     /* trace shadow ray */
     rtcOccluded(g_scene,shadow);
-    
+
     /* add light contribution */
     if (shadow.geomID)
       color = color + diffuse*clamp(-dot(lightDir,Ns),0.0f,1.0f);
@@ -674,13 +674,13 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
 }
 
 /* renders a single screen tile */
-void renderTileStandard(uniform int taskIndex, 
+void renderTileStandard(uniform int taskIndex,
                         uniform int* uniform pixels,
                         const uniform unsigned int width,
-                        const uniform unsigned int height, 
+                        const uniform unsigned int height,
                         const uniform float time,
                         const uniform ISPCCamera& camera,
-                        const uniform int numTilesX, 
+                        const uniform int numTilesX,
                         const uniform int numTilesY)
 {
   const uniform unsigned int tileY = taskIndex / numTilesX;
@@ -704,13 +704,13 @@ void renderTileStandard(uniform int taskIndex,
 }
 
 /* renders a single screen tile */
-void renderTileStandardStream(uniform int taskIndex, 
+void renderTileStandardStream(uniform int taskIndex,
                               uniform int* uniform pixels,
                               const uniform unsigned int width,
-                              const uniform unsigned int height, 
+                              const uniform unsigned int height,
                               const uniform float time,
                               const uniform ISPCCamera& camera,
-                              const uniform int numTilesX, 
+                              const uniform int numTilesX,
                               const uniform int numTilesY)
 {
   const uniform unsigned int tileY = taskIndex / numTilesX;
@@ -734,7 +734,7 @@ void renderTileStandardStream(uniform int taskIndex,
   {
     /* ISPC workaround for mask == 0 */
     if (all(__mask == 0)) continue;
-    
+
     /* initialize variables */
     color_stream[N] = make_Vec3f(0.0f);
     bool mask = __mask; unmasked { valid_stream[N] = mask; }
@@ -744,9 +744,9 @@ void renderTileStandardStream(uniform int taskIndex,
     primary.org = make_Vec3f(camera.xfm.p);
     primary.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
     mask = __mask; unmasked { // invalidates inactive rays
-      primary.tnear = mask ? 0.0f         : (float)(pos_inf); 
-      primary.tfar  = mask ? (float)(inf) : (float)(neg_inf); 
-    } 
+      primary.tnear = mask ? 0.0f         : (float)(pos_inf);
+      primary.tfar  = mask ? (float)(inf) : (float)(neg_inf);
+    }
     primary.instID = 4; // set default instance ID
     primary.geomID = RTC_INVALID_GEOMETRY_ID;
     primary.primID = RTC_INVALID_GEOMETRY_ID;
@@ -762,38 +762,38 @@ void renderTileStandardStream(uniform int taskIndex,
   primary_context.flags = iflags;
   primary_context.userRayExt = &primary_stream;
   rtcIntersectVM(g_scene,&primary_context,(varying RTCRay* uniform)&primary_stream,N,sizeof(RTCRay));
-  
+
   /* terminate rays and update color */
   N = -1;
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
     N++;
     /* ISPC workaround for mask == 0 */
-    if (all(__mask == 0)) continue;  
-    
+    if (all(__mask == 0)) continue;
+
     /* invalidate shadow rays by default */
     RTCRay& shadow = shadow_stream[N];
     unmasked {
-      shadow.tnear = (float)(pos_inf); 
-      shadow.tfar  = (float)(neg_inf); 
+      shadow.tnear = (float)(pos_inf);
+      shadow.tfar  = (float)(neg_inf);
     }
-    
+
     /* ignore invalid rays */
     if (valid_stream[N] == false) continue;
-    
+
     /* terminate rays that hit nothing */
     if (primary_stream[N].geomID == RTC_INVALID_GEOMETRY_ID) {
       valid_stream[N] = false;
       continue;
     }
-    
+
     /* calculate diffuse color of geometries */
     RTCRay& primary = primary_stream[N];
     Vec3f diffuse = make_Vec3f(0.0f);
     if (primary.instID == 0) diffuse = colors[primary.instID][primary.primID];
     else                     diffuse = colors[primary.instID][primary.geomID];
     color_stream[N] = color_stream[N] + diffuse*0.5;
-    
+
     /* initialize shadow ray */
     shadow.org = primary.org + primary.tfar*primary.dir;
     shadow.dir = neg(lightDir);
@@ -821,10 +821,10 @@ void renderTileStandardStream(uniform int taskIndex,
     N++;
     /* ISPC workaround for mask == 0 */
     if (all(__mask == 0)) continue;
-    
+
     /* ignore invalid rays */
     if (valid_stream[N] == false) continue;
-    
+
     /* add light contrinution */
     RTCRay& primary = primary_stream[N];
     Vec3f Ns = normalize(primary.Ng);
@@ -844,7 +844,7 @@ void renderTileStandardStream(uniform int taskIndex,
   {
     /* ISPC workaround for mask == 0 */
     if (all(__mask == 0)) continue;
-    
+
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color_stream[N].x,0.0f,1.0f));
     unsigned int g = (unsigned int) (255.0f * clamp(color_stream[N].y,0.0f,1.0f));
@@ -857,10 +857,10 @@ void renderTileStandardStream(uniform int taskIndex,
 /* task that renders a single screen tile */
 task void renderTileTask(uniform int* uniform pixels,
                          const uniform unsigned int width,
-                         const uniform unsigned int height, 
+                         const uniform unsigned int height,
                          const uniform float time,
                          const uniform ISPCCamera& camera,
-                         const uniform int numTilesX, 
+                         const uniform int numTilesX,
                          const uniform int numTilesY)
 {
   renderTile(taskIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
@@ -869,7 +869,7 @@ task void renderTileTask(uniform int* uniform pixels,
 /* called by the C++ code to render */
 export void device_render (uniform int* uniform pixels,
                            const uniform unsigned int width,
-                           const uniform unsigned int height, 
+                           const uniform unsigned int height,
                            const uniform float time,
                            const uniform ISPCCamera& camera)
 {
