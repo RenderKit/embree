@@ -164,7 +164,7 @@ namespace embree
       unsigned dim_offset;
       unsigned geomID;
       unsigned primID;
-      unsigned bvhBytes;
+      size_t bvhBytes;
       char data[1];        //!< after the struct we first store the BVH and then the grid
     };
   }

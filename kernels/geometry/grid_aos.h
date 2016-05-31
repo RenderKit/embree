@@ -423,7 +423,8 @@ namespace embree
               const bool bottom = y+1 == y1;
               const size_t kx0 = x, kx1 = min(x+2,x1);
               const size_t ky0 = y, ky1 = min(y+2,y1);
-              new (&quads[i]) Quads(char(2)*bottom+right,y*grid.width+x);
+              const size_t ofs = y*grid.width+x; assert(ofs <= 255);
+              new (&quads[i]) Quads(2*bottom+right,(unsigned char)ofs);
               const BBox3fa b = getBounds(kx0,kx1,ky0,ky1);
               box_list[i++] = b;
               box.extend(b);
@@ -510,7 +511,7 @@ namespace embree
         __aligned(64) float grid_z[17*17+16];         
         __aligned(64) float grid_u[17*17+16]; 
         __aligned(64) float grid_v[17*17+16];
-        evalGrid(patch,x0,x1,y0,y1,patch.grid_u_res,patch.grid_v_res,grid_x,grid_y,grid_z,grid_u,grid_v,mesh);
+        evalGrid(patch,unsigned(x0),unsigned(x1),unsigned(y0),unsigned(y1),patch.grid_u_res,patch.grid_v_res,grid_x,grid_y,grid_z,grid_u,grid_v,mesh);
         
         const size_t dwidth  = x1-x0+1;
         const size_t dheight = y1-y0+1;
@@ -535,8 +536,8 @@ namespace embree
           const float xi = grid_x[i];
           const float yi = grid_y[i];
           const float zi = grid_z[i];
-          const int   ui = clamp(grid_u[i] * 0xFFFF, 0.0f, float(0xFFFF)); 
-          const int   vi = clamp(grid_v[i] * 0xFFFF, 0.0f, float(0xFFFF)); 
+          const int   ui = (int) clamp(grid_u[i] * 0xFFFF, 0.0f, float(0xFFFF)); 
+          const int   vi = (int) clamp(grid_v[i] * 0xFFFF, 0.0f, float(0xFFFF)); 
           P[i] = Vec3fa(xi,yi,zi);
           P[i].a = (vi << 16) | ui;
         }
