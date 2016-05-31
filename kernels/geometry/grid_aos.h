@@ -543,7 +543,7 @@ namespace embree
       }
       
       template<int N, typename Allocator>
-      static size_t createEager(const SubdivPatch1Base& patch, Scene* scene, SubdivMesh* mesh, size_t primID, Allocator& alloc, PrimRef* prims)
+      static size_t createEager(const SubdivPatch1Base& patch, Scene* scene, SubdivMesh* mesh, unsigned primID, Allocator& alloc, PrimRef* prims)
       {
         size_t num = 0;
         const unsigned x0 = 0, x1 = patch.grid_u_res-1;
