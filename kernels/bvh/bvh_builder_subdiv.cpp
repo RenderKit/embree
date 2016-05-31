@@ -123,7 +123,7 @@ namespace embree
             
             patch_eval_subdivision(mesh->getHalfEdge(f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch)
             {
-              SubdivPatch1Base patch(mesh->id,f,subPatch,mesh,uv,edge_level,subdiv,VSIZEX);
+              SubdivPatch1Base patch(mesh->id,unsigned(f),subPatch,mesh,uv,edge_level,subdiv,VSIZEX);
               size_t num = GridAOS::createEager<N>(patch,scene,mesh,f,alloc,&prims[base.end+s.end]);
               assert(num == GridAOS::getNumEagerLeaves(patch.grid_u_res-1,patch.grid_v_res-1));
               for (size_t i=0; i<num; i++)
@@ -235,7 +235,7 @@ namespace embree
 
         double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "SubdivPatch1CachedBuilderBinnedSAH");
 
-        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
+        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(double(dn)); };
         auto virtualprogress = BuildProgressMonitorFromClosure(progress);
 
         /* initialize allocator and parallel_for_for_prefix_sum */

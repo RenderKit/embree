@@ -234,7 +234,7 @@ namespace embree
       }
 #endif
       
-      bvh->layoutLargeNodes(pinfo.size()*0.005f);
+      bvh->layoutLargeNodes(size_t(pinfo.size()*0.005));
     }
 
     template struct BVHNBuilder<4>;
