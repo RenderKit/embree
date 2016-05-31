@@ -381,7 +381,7 @@ namespace embree
       /* border vertex rule */
       if (unlikely(border_index != -1))
       {
-	const unsigned int second_border_index = border_index+2 >= edge_valence ? 0 : border_index+2;
+	const unsigned int second_border_index = border_index+2 >= int(edge_valence) ? 0 : border_index+2;
 	return (4.0f * vtx + (ring[border_index] + ring[second_border_index])) * 1.0f/6.0f;
       }
       
@@ -415,7 +415,7 @@ namespace embree
 	}
 	else
 	{
-	  const unsigned int second_border_index = border_index+2 >= edge_valence ? 0 : border_index+2;
+	  const unsigned int second_border_index = border_index+2 >= int(edge_valence) ? 0 : border_index+2;
 	  return (ring[second_border_index] - ring[border_index]) * 0.5f;
 	}
       }
@@ -455,7 +455,7 @@ namespace embree
           return ring[2] - vtx;
         }
         else {
-          const unsigned int second_border_index = border_index+2 >= edge_valence ? 0 : border_index+2;
+          const unsigned int second_border_index = border_index+2 >= int(edge_valence) ? 0 : border_index+2;
           return (ring[border_index] - ring[second_border_index]) * 0.5f;
         }
       }

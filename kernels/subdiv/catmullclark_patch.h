@@ -43,7 +43,7 @@ namespace embree
     
     __forceinline void init (const HalfEdge* first_half_edge, const char* vertices, size_t stride) 
     {
-      for (size_t i=0; i<4; i++)
+      for (unsigned i=0; i<4; i++)
         ring[i].init(first_half_edge+i,vertices,stride);
 
       assert(verify());
@@ -295,9 +295,9 @@ namespace embree
     typedef CatmullClark1RingT<Vertex,Vertex_t> CatmullClark1Ring;
     typedef BezierCurveT<Vertex> BezierCurve;
 
-    static const size_t SIZE = MAX_PATCH_VALENCE;
+    static const unsigned SIZE = MAX_PATCH_VALENCE;
     array_t<GeneralCatmullClark1RingT<Vertex,Vertex_t>,SIZE> ring;
-    size_t N;
+    unsigned N;
     
     __forceinline GeneralCatmullClarkPatchT () 
     : N(0) {}
@@ -312,7 +312,7 @@ namespace embree
 
     __forceinline void init (const HalfEdge* h, const char* vertices, size_t stride) 
     {
-      size_t i = 0;
+      unsigned int i = 0;
       const HalfEdge* edge = h; 
       do {
 	      ring[i].init(edge,vertices,stride);
@@ -322,7 +322,7 @@ namespace embree
       N = i;
     }
 
-    __forceinline size_t size() const { 
+    __forceinline unsigned size() const { 
       return N; 
     }
     
@@ -424,11 +424,11 @@ namespace embree
       dest.border_index = -1;
       dest.vtx     = (Vertex_t)center;
       dest.vertex_crease_weight = 0.0f;
-      for (size_t i=0; i<2*N; i++) {
+      for (unsigned i=0; i<2*N; i++) {
         dest.ring[i] = (Vertex_t)center_ring[(2*N+offset+i-1)%(2*N)];
         assert(isvalid(dest.ring[i]));
       }
-      for (size_t i=0; i<N; i++) 
+      for (unsigned i=0; i<N; i++) 
         dest.crease_weight[i] = 0.0f;
       
       assert(offset <= 2*N);
@@ -443,8 +443,8 @@ namespace embree
     {
       N_o = N;
       assert( N );
-      for (size_t i=0; i<N; i++) {
-        size_t ip1 = (i+1)%N; // FIXME: %
+      for (unsigned i=0; i<N; i++) {
+        unsigned ip1 = (i+1)%N; // FIXME: %
         ring[i].subdivide(patch[i].ring[0]);
         patch[i]  .ring[0].edge_level = 0.5f*ring[i].edge_level;
         patch[ip1].ring[3].edge_level = 0.5f*ring[i].edge_level;
@@ -457,10 +457,10 @@ namespace embree
       array_t<Vertex_t,2*SIZE> center_ring;
       float center_vertex_level = 2.0f; // guarantees that irregular vertices get always isolated also for non-quads
       
-      for (size_t i=0; i<N; i++)
+      for (unsigned i=0; i<N; i++)
       {
-        size_t ip1 = (i+1)%N; // FIXME: %
-        size_t im1 = (i+N-1)%N; // FIXME: %
+        unsigned ip1 = (i+1)%N; // FIXME: %
+        unsigned im1 = (i+N-1)%N; // FIXME: %
         bool regular = ring[i].has_last_face() && ring[ip1].face_valence > 2;
         if (likely(regular)) init_regular(patch[i].ring[0],patch[ip1].ring[0],patch[i].ring[1],patch[ip1].ring[3]); 
         else                 init_border (patch[i].ring[0],patch[ip1].ring[0],patch[i].ring[1],patch[ip1].ring[3]);
@@ -478,7 +478,7 @@ namespace embree
       }
       center /= float(N);
       
-      for (size_t i=0; i<N; i++) {
+      for (unsigned int i=0; i<N; i++) {
         init_regular(center,center_ring,center_vertex_level,N,2*i,patch[i].ring[2]);
         
 	assert( patch[i].ring[2].hasValidPositions() );
@@ -519,9 +519,9 @@ namespace embree
     __forceinline void getLimitBorder(BezierCurve curves[GeneralCatmullClarkPatchT::SIZE]) const
     {
       Vertex P0 = ring[0].getLimitVertex();
-      for (size_t i=0; i<N; i++)
+      for (unsigned i=0; i<N; i++)
       {
-        const size_t i0 = i, i1 = i+1==N ? 0 : i+1;
+        const unsigned i0 = i, i1 = i+1==N ? 0 : i+1;
         const Vertex P1 = P0 + (1.0f/3.0f) * ring[i0].getLimitTangent();
         const Vertex P3 = ring[i1].getLimitVertex();
         const Vertex P2 = P3 + (1.0f/3.0f) * ring[i1].getSecondLimitTangent();
@@ -530,17 +530,17 @@ namespace embree
       }
     }
 
-    __forceinline void getLimitBorder(BezierCurve curves[2], const size_t subPatch) const
+    __forceinline void getLimitBorder(BezierCurve curves[2], const unsigned subPatch) const
     {
-      const size_t i0 = subPatch;
+      const unsigned i0 = subPatch;
       const Vertex t0_p = ring[i0].getLimitTangent();
       const Vertex t0_m = ring[i0].getSecondLimitTangent();
           
-      const size_t i1 = subPatch+1 == N ? 0 : subPatch+1;
+      const unsigned i1 = subPatch+1 == N ? 0 : subPatch+1;
       const Vertex t1_p = ring[i1].getLimitTangent();
       const Vertex t1_m = ring[i1].getSecondLimitTangent();
       
-      const size_t i2 = subPatch == 0 ? N-1 : subPatch-1;
+      const unsigned i2 = subPatch == 0 ? N-1 : subPatch-1;
       const Vertex t2_p = ring[i2].getLimitTangent();
       const Vertex t2_m = ring[i2].getSecondLimitTangent();
       
@@ -564,7 +564,7 @@ namespace embree
     friend __forceinline std::ostream &operator<<(std::ostream &o, const GeneralCatmullClarkPatchT &p)
     {
       o << "GeneralCatmullClarkPatch { " << std::endl;
-      for (size_t i=0; i<p.N; i++)
+      for (unsigned i=0; i<p.N; i++)
 	o << "ring" << i << ": " << p.ring[i] << std::endl;
       o << "}" << std::endl;
       return o;
