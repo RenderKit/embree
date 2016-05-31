@@ -101,7 +101,7 @@ void renderTileEyeLight(int taskIndex, int* pixels,
   for (unsigned int y = y0; y<y1; y++) for (unsigned int x = x0; x<x1; x++)
   {
     /* calculate pixel color */
-    Vec3fa color = renderPixelEyeLight(x,y,camera);
+    Vec3fa color = renderPixelEyeLight(float(x),float(y),camera);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -165,7 +165,7 @@ void renderTileWireframe(int taskIndex, int* pixels,
   for (unsigned int y = y0; y<y1; y++) for (unsigned int x = x0; x<x1; x++)
   {
     /* calculate pixel color */
-    Vec3fa color = renderPixelWireframe(x,y,camera);
+    Vec3fa color = renderPixelWireframe(float(x),float(y),camera);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -212,7 +212,7 @@ void renderTileUV(int taskIndex, int* pixels,
   for (unsigned int y = y0; y<y1; y++) for (unsigned int x = x0; x<x1; x++)
   {
     /* calculate pixel color */
-    Vec3fa color = renderPixelUV(x,y,camera);
+    Vec3fa color = renderPixelUV(float(x),float(y),camera);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -262,7 +262,7 @@ void renderTileNg(int taskIndex, int* pixels,
   for (unsigned int y = y0; y<y1; y++) for (unsigned int x = x0; x<x1; x++)
   {
     /* calculate pixel color */
-    Vec3fa color = renderPixelNg(x,y,camera);
+    Vec3fa color = renderPixelNg(float(x),float(y),camera);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -318,7 +318,7 @@ void renderTileGeomID(int taskIndex, int* pixels,
   for (unsigned int y = y0; y<y1; y++) for (unsigned int x = x0; x<x1; x++)
   {
     /* calculate pixel color */
-    Vec3fa color = renderPixelGeomID(x,y,camera);
+    Vec3fa color = renderPixelGeomID(float(x),float(y),camera);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -365,7 +365,7 @@ void renderTileGeomIDPrimID(int taskIndex, int* pixels,
   for (unsigned int y = y0; y<y1; y++) for (unsigned int x = x0; x<x1; x++)
   {
     /* calculate pixel color */
-    Vec3fa color = renderPixelGeomIDPrimID(x,y,camera);
+    Vec3fa color = renderPixelGeomIDPrimID(float(x),float(y),camera);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -412,7 +412,7 @@ void renderTileCycles(int taskIndex, int* pixels,
   for (unsigned int y = y0; y<y1; y++) for (unsigned int x = x0; x<x1; x++)
   {
     /* calculate pixel color */
-    Vec3fa color = renderPixelCycles(x,y,camera);
+    Vec3fa color = renderPixelCycles(float(x),float(y),camera);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -462,7 +462,7 @@ void renderTileUV16(int taskIndex, int* pixels,
   for (unsigned int y = y0; y<y1; y++) for (unsigned int x = x0; x<x1; x++)
   {
     /* calculate pixel color */
-    Vec3fa color = renderPixelUV16(x,y,camera);
+    Vec3fa color = renderPixelUV16(float(x),float(y),camera);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -502,7 +502,7 @@ Vec3fa renderPixelAmbientOcclusion(float x, float y, const ISPCCamera& camera)
 #define AMBIENT_OCCLUSION_SAMPLES 64
 
   /* trace some ambient occlusion rays */
-  int seed = 34*x+12*y;
+  int seed = 34*int(x)+12*int(y);
   for (int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++) 
   {
     Vec3fa dir; 
@@ -554,7 +554,7 @@ void renderTileAmbientOcclusion(int taskIndex, int* pixels,
   for (unsigned int y = y0; y<y1; y++) for (unsigned int x = x0; x<x1; x++)
   {
     /* calculate pixel color */
-    Vec3fa color = renderPixelAmbientOcclusion(x,y,camera);
+    Vec3fa color = renderPixelAmbientOcclusion(float(x),float(y),camera);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -657,7 +657,7 @@ void renderTileDifferentials(int taskIndex, int* pixels,
   for (unsigned int y = y0; y<y1; y++) for (unsigned int x = x0; x<x1; x++)
   {
     /* calculate pixel color */
-    Vec3fa color = renderPixelDifferentials(x,y,camera);
+    Vec3fa color = renderPixelDifferentials(float(x),float(y),camera);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));

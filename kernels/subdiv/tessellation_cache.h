@@ -63,12 +63,6 @@ namespace embree
   void resetTessellationCache();
 
 
- typedef size_t InputTagType;
-
- static __forceinline unsigned int toTag(InputTagType prim)
- {
-   return prim / 320;
- }
  ////////////////////////////////////////////////////////////////////////////////
  ////////////////////////////////////////////////////////////////////////////////
  ////////////////////////////////////////////////////////////////////////////////
@@ -183,8 +177,8 @@ namespace embree
      return localTime+NUM_CACHE_SEGMENTS*globalTime;
    }
 
-   __forceinline unsigned int lockThread  (ThreadWorkState *const t_state) { return t_state->counter.fetch_add(1);  }
-   __forceinline unsigned int unlockThread(ThreadWorkState *const t_state) { assert(isLocked(t_state)); return t_state->counter.fetch_add(-1); }
+   __forceinline size_t lockThread  (ThreadWorkState *const t_state) { return t_state->counter.fetch_add(1);  }
+   __forceinline size_t unlockThread(ThreadWorkState *const t_state) { assert(isLocked(t_state)); return t_state->counter.fetch_add(-1); }
    __forceinline bool isLocked(ThreadWorkState *const t_state) { return t_state->counter != 0; }
 
    static __forceinline void lock  () { sharedLazyTessellationCache.lockThread(threadState()); }
@@ -195,7 +189,7 @@ namespace embree
    { 
      while(1)
      {
-       unsigned int lock = SharedLazyTessellationCache::sharedLazyTessellationCache.lockThread(t_state);
+       size_t lock = SharedLazyTessellationCache::sharedLazyTessellationCache.lockThread(t_state);
        if (unlikely(lock == 1))
        {
          /* lock failed wait until sync phase is over */

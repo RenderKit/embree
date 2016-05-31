@@ -40,7 +40,7 @@ namespace embree
     float getSigma() const 
     {
       if (N == 0) return 0.0f;
-      else return sqrt(max(0.0,v2/N - sqr(v/N)));
+      else return (float) sqrt(max(0.0,v2/N - sqr(v/N)));
     }
 
     float getAvgSigma() const // standard deviation of average
@@ -51,7 +51,7 @@ namespace embree
 
     float getMin() const { return vmin; }
     float getMax() const { return vmax; }
-    float getAvg() const { return v/N; }
+    float getAvg() const { return float(v/N); }
 
   private:
     double v;   // sum of all values
@@ -72,8 +72,8 @@ namespace embree
     {
       v.push_back(a);
       std::sort(v.begin(),v.end(),std::less<float>());
-      size_t skip_small = floor(0.5f*fskip_small*v.size());
-      size_t skip_large = floor(0.5f*fskip_large*v.size());
+      size_t skip_small = (size_t) floor(0.5*fskip_small*double(v.size()));
+      size_t skip_large = (size_t) floor(0.5*fskip_large*double(v.size()));
 
       new (&stat) Statistics;
       for (size_t i=skip_small; i<v.size()-skip_large; i++)

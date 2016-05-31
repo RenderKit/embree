@@ -34,21 +34,21 @@ namespace embree
     float *table_limittangent_b[MAX_RING_FACE_VALENCE+1];
     float table_limittangent_c[MAX_RING_FACE_VALENCE+1];
 
-    __forceinline float set_cos_2PI_div_n(const size_t n) { return cosf(2.0f*M_PI/(float)n); }
+    __forceinline float set_cos_2PI_div_n(const size_t n) { return cosf(2.0f*float(pi)/(float)n); }
 
     __forceinline float set_limittangent_a(const size_t i, const size_t n)  { 
-      const float c0 = 1.0f/(float)n * 1.0f / sqrtf(4.0f + cosf(M_PI/(float)n)*cosf(M_PI/(float)n));   // FIXME: remove
-      const float c1 = (1.0f/(float)n + cosf(M_PI/(float)n) * c0); 
-      return cosf(2.0f*M_PI*(float)i/(float)n) * c1;
+      const float c0 = 1.0f/(float)n * 1.0f / sqrtf(4.0f + cosf(float(pi)/(float)n)*cosf(float(pi)/(float)n));   // FIXME: remove
+      const float c1 = (1.0f/(float)n + cosf(float(pi)/(float)n) * c0); 
+      return cosf(2.0f*float(pi)*(float)i/(float)n) * c1;
     }
 
     __forceinline float set_limittangent_b(const size_t i, const size_t n)  { 
-      const float c0 = 1.0f/(float)n * 1.0f / sqrtf(4.0f + cosf(M_PI/(float)n)*cosf(M_PI/(float)n));  
-      return cosf((2.0f*M_PI*i+M_PI)/(float)n) * c0;
+      const float c0 = 1.0f/(float)n * 1.0f / sqrtf(4.0f + cosf(float(pi)/(float)n)*cosf(float(pi)/(float)n));  
+      return cosf((2.0f*float(pi)*i+float(pi))/(float)n) * c0;
     }
 
     __forceinline float set_limittangent_c(const size_t n)  { 
-      return 2.0f/16.0f * (5.0f + cosf(2.0f*M_PI/(float)n) + cosf(M_PI/(float)n) * sqrtf(18.0f+2.0f*cosf(2.0f*M_PI/(float)n)));
+      return 2.0f/16.0f * (5.0f + cosf(2.0f*float(pi)/(float)n) + cosf(float(pi)/(float)n) * sqrtf(18.0f+2.0f*cosf(2.0f*float(pi)/(float)n)));
     }
 
   public:

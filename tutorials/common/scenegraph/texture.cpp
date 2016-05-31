@@ -31,7 +31,7 @@ namespace embree
     : width(-1), height(-1), format(INVALID), bytesPerTexel(0), width_mask(0), height_mask(0), data(nullptr) {}
   
   Texture::Texture(Ref<Image> img, const std::string fileName)
-    : width(img->width), height(img->height), format(RGBA8), bytesPerTexel(4), width_mask(0), height_mask(0), data(nullptr), fileName(fileName)
+    : width(unsigned(img->width)), height(unsigned(img->height)), format(RGBA8), bytesPerTexel(4), width_mask(0), height_mask(0), data(nullptr), fileName(fileName)
   {
     width_mask  = isPowerOf2(width) ? width-1 : 0;
     height_mask = isPowerOf2(height) ? height-1 : 0;
@@ -40,7 +40,7 @@ namespace embree
     img->convertToRGBA8((unsigned char*)data);
   }
 
-  Texture::Texture (size_t width, size_t height, const Format format, const char* in)
+  Texture::Texture (unsigned width, unsigned height, const Format format, const char* in)
     : width(width), height(height), format(format), bytesPerTexel(getFormatBytesPerTexel(format)), width_mask(0), height_mask(0), data(nullptr)
   {
     width_mask  = isPowerOf2(width) ? width-1 : 0;
@@ -73,7 +73,7 @@ namespace embree
     else THROW_RUNTIME_ERROR("invalid texture format string");
   }
 
-  int Texture::getFormatBytesPerTexel(const Format format)
+  unsigned Texture::getFormatBytesPerTexel(const Format format)
   {
     switch (format) {
     case RGBA8  : return 4;

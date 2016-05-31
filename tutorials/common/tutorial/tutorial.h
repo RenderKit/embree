@@ -62,8 +62,8 @@ namespace embree
     Shader shader;
     
     /* framebuffer settings */
-    size_t width;
-    size_t height;
+    unsigned width;
+    unsigned height;
 
     /* image output settings */
     FileName outputImageFilename;
@@ -77,8 +77,8 @@ namespace embree
     bool interactive;
     bool fullscreen;
     bool benchmarkSleep;
-    size_t window_width;
-    size_t window_height;
+    unsigned window_width;
+    unsigned window_height;
     int windowID;
     
     double time0;

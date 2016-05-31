@@ -82,7 +82,7 @@ namespace embree
     __forceinline unsigned int splitIntoSubRanges(GridRange r[4]) const
     {
       assert( !hasLeafSize() );
-      size_t children = 0;
+      unsigned int children = 0;
       GridRange first,second;
       split(first,second);
 

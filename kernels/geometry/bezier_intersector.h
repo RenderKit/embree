@@ -34,7 +34,7 @@ namespace embree
       
       __forceinline void finalize() 
       {
-        vu = (vfloat<M>(step)+U+vfloat<M>(i))*(1.0f/float(N));
+        vu = (vfloat<M>(step)+U+vfloat<M>(float(i)))*(1.0f/float(N));
         vv = 0.0f;
         vt = T;
       }
@@ -85,7 +85,7 @@ namespace embree
         BezierCurve3fa curve2D(w0,w1,w2,w3,0.0f,1.0f,4);
         
         /* evaluate the bezier curve */
-        vboolx valid = vfloatx(step) < vfloatx(N);
+        vboolx valid = vfloatx(step) < vfloatx(float(N));
         const Vec4vfx p0 = curve2D.eval0(valid,0,N);
         const Vec4vfx p1 = curve2D.eval1(valid,0,N);
         

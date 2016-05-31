@@ -48,11 +48,11 @@ namespace embree
       Triangle (const Triangle& other) 
       : v0(other.v0), v1(other.v1), v2(other.v2), materialID(other.materialID) {}
 
-      Triangle (int v0, int v1, int v2, int materialID) 
+      Triangle (unsigned v0, unsigned v1, unsigned v2, unsigned materialID) 
       : v0(v0), v1(v1), v2(v2), materialID(materialID) {}
 
     public:
-      int v0, v1, v2, materialID;
+      unsigned v0, v1, v2, materialID;
     };
 
     /*! OBJ Quad */
@@ -61,11 +61,11 @@ namespace embree
     public:
       Quad () {}
 
-      Quad (int v0, int v1, int v2, int v3) 
+      Quad (unsigned v0, unsigned v1, unsigned v2, unsigned v3) 
       : v0(v0), v1(v1), v2(v2), v3(v3) {}
 
     public:
-      int v0, v1, v2, v3;
+      unsigned v0, v1, v2, v3;
     };
 
     struct Geometry : public RefCount
@@ -86,7 +86,7 @@ namespace embree
       std::vector<Vec2f> vt;
       std::vector<Triangle> triangles;
       std::vector<Quad> quads; // FIXME: remove
-      int meshMaterialID;
+      unsigned meshMaterialID;
     };
 
     /*! Quad Mesh. */
@@ -98,7 +98,7 @@ namespace embree
       avector<Vec3fa> vn;
       std::vector<Vec2f> vt;
       std::vector<Quad> quads;
-      int meshMaterialID;
+      unsigned meshMaterialID;
     };
 
     /*! Subdivision Mesh. */
@@ -108,26 +108,26 @@ namespace embree
       avector<Vec3fa> positions;            //!< vertex positions
       avector<Vec3fa> normals;              //!< face vertex normals
       std::vector<Vec2f> texcoords;             //!< face texture coordinates
-      std::vector<int> position_indices;        //!< position indices for all faces
-      std::vector<int> normal_indices;          //!< normal indices for all faces
-      std::vector<int> texcoord_indices;        //!< texcoord indices for all faces
-      std::vector<int> verticesPerFace;         //!< number of indices of each face
-      std::vector<int> holes;                   //!< face ID of holes
+      std::vector<unsigned> position_indices;        //!< position indices for all faces
+      std::vector<unsigned> normal_indices;          //!< normal indices for all faces
+      std::vector<unsigned> texcoord_indices;        //!< texcoord indices for all faces
+      std::vector<unsigned> verticesPerFace;         //!< number of indices of each face
+      std::vector<unsigned> holes;                   //!< face ID of holes
       std::vector<Vec2i> edge_creases;          //!< index pairs for edge crease 
       std::vector<float> edge_crease_weights;   //!< weight for each edge crease
-      std::vector<int> vertex_creases;          //!< indices of vertex creases
+      std::vector<unsigned> vertex_creases;          //!< indices of vertex creases
       std::vector<float> vertex_crease_weights; //!< weight for each vertex crease
-      int materialID;
+      unsigned materialID;
     };
 
     struct Hair 
     {
     public:
       Hair () {}
-      Hair (int vertex, int id)
+      Hair (unsigned vertex, unsigned id)
       : vertex(vertex), id(id) {}
     public:
-      int vertex,id;  //!< index of first control point and hair ID
+      unsigned vertex,id;  //!< index of first control point and hair ID
     };
 
     /*! Line segments. */
@@ -136,8 +136,8 @@ namespace embree
       LineSegments () : Geometry(LINE_SEGMENTS) {}
       avector<Vec3fa> v;        //!< control points (x,y,z,r)
       avector<Vec3fa> v2;       //!< control points (x,y,z,r)
-      std::vector<int> indices; //!< index buffer
-      int materialID;
+      std::vector<unsigned> indices; //!< index buffer
+      unsigned materialID;
     };
 
     /*! Hair Set. */
@@ -147,20 +147,20 @@ namespace embree
       avector<Vec3fa> v;       //!< hair control points (x,y,z,r)
       avector<Vec3fa> v2;      //!< hair control points (x,y,z,r)
       std::vector<Hair> hairs; //!< list of hairs
-      int materialID;
+      unsigned materialID;
     };
 
     struct Instance : public Geometry
     {
       ALIGNED_STRUCT;
 
-    Instance(const AffineSpace3fa& space0, const AffineSpace3fa& space1, int geomID)
+    Instance(const AffineSpace3fa& space0, const AffineSpace3fa& space1, unsigned geomID)
       : Geometry(INSTANCE), space0(space0), space1(space1), geomID(geomID) {}
 
     public:
       AffineSpace3fa space0;
       AffineSpace3fa space1;
-      int geomID;
+      unsigned geomID;
     };
 
     struct Group : public Geometry
