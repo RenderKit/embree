@@ -596,7 +596,7 @@ namespace embree
       vertex_crease_weight = h->vertex_crease_weight;
       HalfEdge* p = (HalfEdge*) h;
       
-      size_t e=0, f=0;
+      unsigned int e=0, f=0;
       unsigned min_vertex_index = (unsigned)-1;
       unsigned min_vertex_index_face = (unsigned)-1;
       unsigned min_vertex_index_vertex = (unsigned)-1;
@@ -615,7 +615,7 @@ namespace embree
         if (vertex_index < min_vertex_index) { min_vertex_index = vertex_index; min_vertex_index_face = f; min_vertex_index_vertex = e; }
 
 	/* store first N-2 vertices of face */
-	size_t vn = 0;
+	unsigned int vn = 0;
         for (p = p_next; p!=p_prev; p=p->next()) {
           ring[e++] = Vertex_t::loadu(vertices+p->getStartVertexIndex()*stride);
           vn++;

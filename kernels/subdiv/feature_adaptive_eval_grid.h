@@ -36,9 +36,9 @@ namespace embree
       typedef GregoryPatch3fa GregoryPatch;
 
     private:
-      const size_t x0,x1;
-      const size_t y0,y1;
-      const size_t swidth,sheight;
+      const unsigned x0,x1;
+      const unsigned y0,y1;
+      const unsigned swidth,sheight;
       const float rcp_swidth, rcp_sheight;
       float* const Px;
       float* const Py;
@@ -48,17 +48,17 @@ namespace embree
       float* const Nx;
       float* const Ny;
       float* const Nz;
-      const size_t dwidth;
-      //const size_t dheight;
-      size_t count;
+      const unsigned dwidth;
+      //const unsigned dheight;
+      unsigned count;
       
 
     public:      
-      FeatureAdaptiveEvalGrid (const GeneralCatmullClarkPatch3fa& patch, size_t subPatch,
-                               const size_t x0, const size_t x1, const size_t y0, const size_t y1, const size_t swidth, const size_t sheight, 
+      FeatureAdaptiveEvalGrid (const GeneralCatmullClarkPatch3fa& patch, unsigned subPatch,
+                               const unsigned x0, const unsigned x1, const unsigned y0, const unsigned y1, const unsigned swidth, const unsigned sheight, 
                                float* Px, float* Py, float* Pz, float* U, float* V, 
                                float* Nx, float* Ny, float* Nz,
-                               const size_t dwidth, const size_t dheight)
+                               const unsigned dwidth, const unsigned dheight)
       : x0(x0), x1(x1), y0(y0), y1(y1), swidth(swidth), sheight(sheight), rcp_swidth(1.0f/(swidth-1.0f)), rcp_sheight(1.0f/(sheight-1.0f)), 
         Px(Px), Py(Py), Pz(Pz), U(U), V(V), Nx(Nx), Ny(Ny), Nz(Nz), dwidth(dwidth), /*dheight(dheight),*/ count(0)
       {
@@ -125,11 +125,11 @@ namespace embree
       }
       
       FeatureAdaptiveEvalGrid (const CatmullClarkPatch3fa& patch,
-                               const BBox2f& srange, const BBox2f& erange, const size_t depth,
-                               const size_t x0, const size_t x1, const size_t y0, const size_t y1, const size_t swidth, const size_t sheight, 
+                               const BBox2f& srange, const BBox2f& erange, const unsigned depth,
+                               const unsigned x0, const unsigned x1, const unsigned y0, const unsigned y1, const unsigned swidth, const unsigned sheight, 
                                float* Px, float* Py, float* Pz, float* U, float* V, 
                                float* Nx, float* Ny, float* Nz,
-                               const size_t dwidth, const size_t dheight)
+                               const unsigned dwidth, const unsigned dheight)
       : x0(x0), x1(x1), y0(y0), y1(y1), swidth(swidth), sheight(sheight), rcp_swidth(1.0f/(swidth-1.0f)), rcp_sheight(1.0f/(sheight-1.0f)), 
         Px(Px), Py(Py), Pz(Pz), U(U), V(V), Nx(Nx), Ny(Ny), Nz(Nz), dwidth(dwidth), /*dheight(dheight),*/ count(0)
       {
@@ -144,8 +144,8 @@ namespace embree
         count += (lx1-lx0)*(ly1-ly0);
         
 #if 0
-        for (size_t iy=ly0; iy<ly1; iy++) {
-          for (size_t ix=lx0; ix<lx1; ix++) {
+        for (unsigned iy=ly0; iy<ly1; iy++) {
+          for (unsigned ix=lx0; ix<lx1; ix++) {
             const float lu = select(ix == swidth -1, float(1.0f), (float(ix)-srange.lower.x)*scale_x);
             const float lv = select(iy == sheight-1, float(1.0f), (float(iy)-srange.lower.y)*scale_y);
             const Vec3fa p = patch.eval(lu,lv);
@@ -170,7 +170,7 @@ namespace embree
             const vfloatx v = vfloatx(iy)*rcp_sheight;
             const vintx ofs = (iy-y0)*dwidth+(ix-x0);
             if (likely(all(valid)) && all(iy==iy[0])) {
-              const size_t ofs2 = ofs[0];
+              const unsigned ofs2 = ofs[0];
               vfloatx::storeu(Px+ofs2,p.x);
               vfloatx::storeu(Py+ofs2,p.y);
               vfloatx::storeu(Pz+ofs2,p.z);
@@ -183,7 +183,7 @@ namespace embree
               }
             } else {
               foreach_unique_index(valid,iy,[&](const vboolx& valid, const int iy0, const int j) {
-                  const size_t ofs2 = ofs[j]-j;
+                  const unsigned ofs2 = ofs[j]-j;
                   vfloatx::storeu(valid,Px+ofs2,p.x);
                   vfloatx::storeu(valid,Py+ofs2,p.y);
                   vfloatx::storeu(valid,Pz+ofs2,p.z);
@@ -200,9 +200,9 @@ namespace embree
 #endif
       }
       
-      __forceinline bool final(const CatmullClarkPatch3fa& patch, const CatmullClarkRing::Type type, size_t depth) 
+      __forceinline bool final(const CatmullClarkPatch3fa& patch, const CatmullClarkRing::Type type, unsigned depth) 
       {
-        const size_t max_eval_depth = (type & CatmullClarkRing::TYPE_CREASES) ? PATCH_MAX_EVAL_DEPTH_CREASE : PATCH_MAX_EVAL_DEPTH_IRREGULAR;
+        const unsigned max_eval_depth = (type & CatmullClarkRing::TYPE_CREASES) ? PATCH_MAX_EVAL_DEPTH_CREASE : PATCH_MAX_EVAL_DEPTH_IRREGULAR;
 //#if PATCH_MIN_RESOLUTION
 //        return patch.isFinalResolution(PATCH_MIN_RESOLUTION) || depth>=max_eval_depth;
 //#else
@@ -210,7 +210,7 @@ namespace embree
 //#endif
       }
       
-      void eval(const CatmullClarkPatch3fa& patch, const BBox2f& srange, const BBox2f& erange, const size_t depth, 
+      void eval(const CatmullClarkPatch3fa& patch, const BBox2f& srange, const BBox2f& erange, const unsigned depth, 
                 const BezierCurve3fa* border0 = nullptr, const BezierCurve3fa* border1 = nullptr, const BezierCurve3fa* border2 = nullptr, const BezierCurve3fa* border3 = nullptr)
       {
         if (erange.empty())
@@ -270,16 +270,16 @@ namespace embree
     
     template<typename Eval, typename Patch>
       bool stitch_col(const Patch& patch, int subPatch,
-                      const bool right, const size_t y0, const size_t y1, const int fine_y, const int coarse_y, 
-                      float* Px, float* Py, float* Pz, float* U, float* V, float* Nx, float* Ny, float* Nz, const size_t dx0, const size_t dwidth, const size_t dheight)
+                      const bool right, const unsigned y0, const unsigned y1, const int fine_y, const int coarse_y, 
+                      float* Px, float* Py, float* Pz, float* U, float* V, float* Nx, float* Ny, float* Nz, const unsigned dx0, const unsigned dwidth, const unsigned dheight)
     {
       assert(coarse_y <= fine_y);
       if (likely(fine_y == coarse_y))
         return false;
       
-      const size_t y0s = stitch(y0,fine_y,coarse_y);
-      const size_t y1s = stitch(y1,fine_y,coarse_y);
-      const size_t M = y1s-y0s+1;
+      const unsigned y0s = stitch(y0,fine_y,coarse_y);
+      const unsigned y1s = stitch(y1,fine_y,coarse_y);
+      const unsigned M = y1s-y0s+1;
 
       dynamic_large_stack_array(float,px,M,64*sizeof(float));
       dynamic_large_stack_array(float,py,M,64*sizeof(float));
@@ -292,7 +292,7 @@ namespace embree
       Eval(patch,subPatch, right,right, y0s,y1s, 2,coarse_y+1, px,py,pz,u,v, Nx ? (float*)nx : nullptr,Ny ? (float*)ny : nullptr ,Nz ? (float*)nz : nullptr, 1,4097);
       
       for (int y=y0; y<=y1; y++) {
-        const size_t ys = stitch(y,fine_y,coarse_y)-y0s;
+        const unsigned ys = stitch(y,fine_y,coarse_y)-y0s;
         Px[(y-y0)*dwidth+dx0] = px[ys];
         Py[(y-y0)*dwidth+dx0] = py[ys];
         Pz[(y-y0)*dwidth+dx0] = pz[ys];
@@ -309,16 +309,16 @@ namespace embree
     
     template<typename Eval, typename Patch>
       bool stitch_row(const Patch& patch, int subPatch, 
-                      const bool bottom, const size_t x0, const size_t x1, const int fine_x, const int coarse_x, 
-                      float* Px, float* Py, float* Pz, float* U, float* V, float* Nx, float* Ny, float* Nz, const size_t dy0, const size_t dwidth, const size_t dheight)
+                      const bool bottom, const unsigned x0, const unsigned x1, const int fine_x, const int coarse_x, 
+                      float* Px, float* Py, float* Pz, float* U, float* V, float* Nx, float* Ny, float* Nz, const unsigned dy0, const unsigned dwidth, const unsigned dheight)
     {
       assert(coarse_x <= fine_x);
       if (likely(fine_x == coarse_x))
 	return false;
       
-      const size_t x0s = stitch(x0,fine_x,coarse_x);
-      const size_t x1s = stitch(x1,fine_x,coarse_x);
-      const size_t M = x1s-x0s+1;
+      const unsigned x0s = stitch(x0,fine_x,coarse_x);
+      const unsigned x1s = stitch(x1,fine_x,coarse_x);
+      const unsigned M = x1s-x0s+1;
 
       dynamic_large_stack_array(float,px,M,64*sizeof(float));
       dynamic_large_stack_array(float,py,M,64*sizeof(float));
@@ -331,7 +331,7 @@ namespace embree
       Eval(patch,subPatch, x0s,x1s, bottom,bottom, coarse_x+1,2, px,py,pz,u,v, Nx ? (float*)nx :nullptr,Ny ? (float*)ny : nullptr , Nz ? (float*)nz : nullptr, 4097,1);
       
       for (int x=x0; x<=x1; x++) {
-	const size_t xs = stitch(x,fine_x,coarse_x)-x0s;
+	const unsigned xs = stitch(x,fine_x,coarse_x)-x0s;
 	Px[dy0*dwidth+x-x0] = px[xs];
         Py[dy0*dwidth+x-x0] = py[xs];
         Pz[dy0*dwidth+x-x0] = pz[xs];
@@ -347,9 +347,9 @@ namespace embree
     }
     
     template<typename Eval, typename Patch>
-    void feature_adaptive_eval_grid (const Patch& patch, size_t subPatch, const float levels[4],
-                                     const size_t x0, const size_t x1, const size_t y0, const size_t y1, const size_t swidth, const size_t sheight, 
-                                     float* Px, float* Py, float* Pz, float* U, float* V, float* Nx, float* Ny, float* Nz, const size_t dwidth, const size_t dheight)
+    void feature_adaptive_eval_grid (const Patch& patch, unsigned subPatch, const float levels[4],
+                                     const unsigned x0, const unsigned x1, const unsigned y0, const unsigned y1, const unsigned swidth, const unsigned sheight, 
+                                     float* Px, float* Py, float* Pz, float* U, float* V, float* Nx, float* Ny, float* Nz, const unsigned dwidth, const unsigned dheight)
     {
       bool sl = false, sr = false, st = false, sb = false;
       if (levels) {
@@ -358,7 +358,7 @@ namespace embree
         st = y0 == 0         && stitch_row<Eval,Patch>(patch,subPatch,0,x0,x1,swidth-1,levels[0], Px,Py,Pz,U,V,Nx,Ny,Nz, 0    ,dwidth,dheight);
         sb = y1 == sheight-1 && stitch_row<Eval,Patch>(patch,subPatch,1,x0,x1,swidth-1,levels[2], Px,Py,Pz,U,V,Nx,Ny,Nz, y1-y0,dwidth,dheight);
       }
-      const size_t ofs = st*dwidth+sl;
+      const unsigned ofs = st*dwidth+sl;
       Eval(patch,subPatch,x0+sl,x1-sr,y0+st,y1-sb, swidth,sheight, Px+ofs,Py+ofs,Pz+ofs,U+ofs,V+ofs,Nx?Nx+ofs:nullptr,Ny?Ny+ofs:nullptr,Nz?Nz+ofs:nullptr, dwidth,dheight);
     }
   }

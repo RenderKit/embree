@@ -170,7 +170,7 @@ namespace embree
       }
     }
     
-    static __forceinline void init_regular(const Vertex_t &center, const Vertex_t center_ring[8], const size_t offset, CatmullClark1RingT<Vertex,Vertex_t> &dest)
+    static __forceinline void init_regular(const Vertex_t &center, const Vertex_t center_ring[8], const unsigned int offset, CatmullClark1RingT<Vertex,Vertex_t> &dest)
     {
       dest.vertex_level = 0.0f;
       dest.face_valence = 4;
@@ -183,7 +183,7 @@ namespace embree
       for (size_t i=0; i<4; i++) 
         dest.crease_weight[i] = 0.0f;
       
-      dest.eval_start_index       = (8-offset)>>1;
+      dest.eval_start_index = (8-offset)>>1;
       if (dest.eval_start_index >= dest.face_valence) dest.eval_start_index -= dest.face_valence;
       assert( dest.eval_start_index < dest.face_valence );
       dest.eval_unique_identifier = 0;
@@ -414,13 +414,13 @@ namespace embree
       }
     }
     
-    static __forceinline void init_regular(const Vertex_t &center, const array_t<Vertex_t,2*SIZE>& center_ring, const float vertex_level, const size_t N, const size_t offset, CatmullClark1RingT<Vertex,Vertex_t> &dest)
+    static __forceinline void init_regular(const Vertex_t &center, const array_t<Vertex_t,2*SIZE>& center_ring, const float vertex_level, const unsigned int N, const unsigned int offset, CatmullClark1RingT<Vertex,Vertex_t> &dest)
     {
       assert(N<(MAX_RING_FACE_VALENCE));
       assert(2*N<(MAX_RING_EDGE_VALENCE));
       dest.vertex_level = vertex_level;
-      dest.face_valence = unsigned(N);
-      dest.edge_valence = unsigned(2*N);
+      dest.face_valence = N;
+      dest.edge_valence = 2*N;
       dest.border_index = -1;
       dest.vtx     = (Vertex_t)center;
       dest.vertex_crease_weight = 0.0f;
@@ -432,7 +432,7 @@ namespace embree
         dest.crease_weight[i] = 0.0f;
       
       assert(offset <= 2*N);
-      dest.eval_start_index       = (2*N-offset)>>1;
+      dest.eval_start_index = (2*N-offset)>>1;
       if (dest.eval_start_index >= dest.face_valence) dest.eval_start_index -= dest.face_valence;
       
       assert( dest.eval_start_index < dest.face_valence );
