@@ -44,7 +44,7 @@ namespace embree
       void build(size_t, size_t) 
       {
         /* progress monitor */
-        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
+        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(double(dn)); };
         auto virtualprogress = BuildProgressMonitorFromClosure(progress);
 
         /* fast path for empty BVH */
@@ -144,7 +144,7 @@ namespace embree
       void build(size_t, size_t) 
       {
         /* progress monitor */
-        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
+        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(double(dn)); };
         auto virtualprogress = BuildProgressMonitorFromClosure(progress);
 
         /* fast path for empty BVH */
