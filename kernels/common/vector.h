@@ -49,7 +49,7 @@ namespace embree
       {
         assert(device);
         alignedFree(p);
-        device->memoryMonitor(-n*sizeof(T),true);
+        device->memoryMonitor(-ssize_t(n)*sizeof(T),true);
       }
 
       __forceinline void construct( pointer p, const_reference val ) {

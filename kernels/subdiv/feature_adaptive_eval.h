@@ -210,8 +210,8 @@ namespace embree
           /* parametrization for arbitrary polygons */
           else 
           {
-            const unsigned l = floor(4.0f*uv.x); const float u = 2.0f*frac(4.0f*uv.x); 
-            const unsigned h = floor(4.0f*uv.y); const float v = 2.0f*frac(4.0f*uv.y); 
+            const unsigned l = (unsigned) floor(4.0f*uv.x); const float u = 2.0f*frac(4.0f*uv.x); 
+            const unsigned h = (unsigned) floor(4.0f*uv.y); const float v = 2.0f*frac(4.0f*uv.y); 
             const unsigned i = 4*h+l; assert(i<N);
 
 #if PATCH_USE_GREGORY == 2

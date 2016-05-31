@@ -105,8 +105,8 @@ namespace embree
         {
           for (size_t i=0; i<N; i+=VSIZEX)
           {
-            const vintx vi = vintx(i)+vintx(step);
-            vboolx valid = vi < vintx(N);
+            const vintx vi = vintx(int(i))+vintx(step);
+            vboolx valid = vi < vintx(int(N));
             const size_t offset = s*stream_offset + sizeof(float) * i;
             RayK<VSIZEX> ray = rayN.gather<VSIZEX>(offset);
             valid &= ray.tnear <= ray.tfar;
@@ -203,8 +203,8 @@ namespace embree
         {
           for (size_t i=0; i<N; i+=VSIZEX)
           {
-            const vintx vi = vintx(i)+vintx(step);
-            vboolx valid = vi < vintx(N);
+            const vintx vi = vintx(int(i))+vintx(step);
+            vboolx valid = vi < vintx(int(N));
             const size_t offset = s*stream_offset + sizeof(float) * i;
             RayK<VSIZEX> ray = rayN.gather<VSIZEX>(valid,offset);
              valid &= ray.tnear <= ray.tfar;
