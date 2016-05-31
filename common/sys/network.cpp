@@ -184,7 +184,7 @@ namespace embree
       buffered_socket_t* hsock = (buffered_socket_t*) hsock_i;
       while (bytes) {
         if (hsock->istart == hsock->iend) {
-          ssize_t n = ::recv(hsock->fd,hsock->ibuf,hsock->isize,MSG_NOSIGNAL);
+          ssize_t n = ::recv(hsock->fd,hsock->ibuf,int(hsock->isize),MSG_NOSIGNAL);
           if      (n == 0) throw Disconnect();
           else if (n  < 0) THROW_RUNTIME_ERROR("error reading from socket");
           hsock->istart = 0;

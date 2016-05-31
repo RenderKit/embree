@@ -682,10 +682,10 @@ namespace embree
 
     /*! load texture from binary file */
     else {
-      const size_t width  = stoi(xml->parm("width"));
-      const size_t height = stoi(xml->parm("height"));
+      const unsigned width  = stoi(xml->parm("width"));
+      const unsigned height = stoi(xml->parm("height"));
       const Texture::Format format = Texture::string_to_format(xml->parm("format"));
-      const size_t bytesPerTexel = Texture::getFormatBytesPerTexel(format);
+      const unsigned bytesPerTexel = Texture::getFormatBytesPerTexel(format);
       texture = new Texture(width,height,format);
       if (width*height != fread(texture->data, bytesPerTexel, width*height, binFile)) 
         THROW_RUNTIME_ERROR("error reading from binary file: "+binFileName.str());

@@ -38,7 +38,7 @@ namespace embree
 
     static const char* format_to_string(const Format format);
     static Format string_to_format(const std::string& str);
-    static int getFormatBytesPerTexel(const Format format);
+    static unsigned getFormatBytesPerTexel(const Format format);
 
     static Texture* load(const FileName& fileName); // FIXME: return reference
     

@@ -73,7 +73,7 @@ namespace embree
     else THROW_RUNTIME_ERROR("invalid texture format string");
   }
 
-  int Texture::getFormatBytesPerTexel(const Format format)
+  unsigned Texture::getFormatBytesPerTexel(const Format format)
   {
     switch (format) {
     case RGBA8  : return 4;

@@ -409,11 +409,11 @@ namespace embree
       {
       public:
         Hair () {}
-        Hair (int vertex, int id)
-        : vertex(vertex), id(id) {}
+        Hair (unsigned vertex, unsigned id) 
+          : vertex(vertex), id(id) {}
 
       public:
-        int vertex,id;  //!< index of first control point and hair ID
+        unsigned vertex,id;  //!< index of first control point and hair ID
       };
       
     public:
