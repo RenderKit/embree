@@ -107,15 +107,15 @@ namespace embree
         assert(is_finite(bounds));
 
         /* shift 2x2 quads that wrap around to the left */ // FIXME: causes intersection filter to be called multiple times for some triangles
-        unsigned int u_start = range.u_start, u_end = range.u_end;
-        unsigned int v_start = range.v_start, v_end = range.v_end;
-        unsigned int u_size = u_end-u_start; assert(u_size > 0);
-        unsigned int v_size = v_end-v_start; assert(v_size > 0);
+        size_t u_start = range.u_start, u_end = range.u_end;
+        size_t v_start = range.v_start, v_end = range.v_end;
+        size_t u_size = u_end-u_start; assert(u_size > 0);
+        size_t v_size = v_end-v_start; assert(v_size > 0);
         if (unlikely(u_size < 2 && u_start > 0)) u_start--;
         if (unlikely(v_size < 2 && v_start > 0)) v_start--;
         
         /* we store pointer to first subgrid vertex as leaf node */
-        const unsigned value = 16*(v_start * width + u_start + 1); // +1 to not create empty leaf
+        const size_t value = 16*(v_start * width + u_start + 1); // +1 to not create empty leaf
         curNode = BVH4::encodeTypedLeaf((void*)value,0);
         return bounds;
       }
