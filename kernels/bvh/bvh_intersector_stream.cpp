@@ -209,12 +209,7 @@ namespace embree
         StackItemMask* stackPtr      = stack0 + 1;
 
         NodeRef cur               = bvh->root;
-        size_t m_trav_active      = m_active & fiberMask; // lower half of active rays
-        NodeRef cur_next          = bvh->root;
-        size_t m_trav_active_next = m_active & (~fiberMask); // upper half of active rays
-        if (m_trav_active_next == 0) cur_next = 0;
-
-        assert(__popcnt(m_trav_active_next) <= 32);
+        size_t m_trav_active      = m_active;
 
         while (1) pop:
         {          
@@ -342,14 +337,13 @@ namespace embree
           STAT3(normal.trav_leaves, 1, 1, 1);
           size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
           
-          //STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
+          STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
           size_t bits = m_trav_active;
 
           /*! intersect stream of rays with all primitives */
           size_t lazy_node = 0;
           size_t valid_isec MAYBE_UNUSED = PrimitiveIntersector::intersect(pre,bits,rays,context,ray_ctx,0,prim,num,bvh->scene,NULL,lazy_node);
 
-          STAT3(normal.trav_hit_boxes[__popcnt(valid_isec)],1,1,1);            
 
           /*! pop next node */
           STAT3(normal.trav_stack_pop,1,1,1);                          
@@ -379,11 +373,13 @@ namespace embree
       __aligned(64) StackItemMask  stack1[stackSizeSingle];  //!< stack of nodes 
 #endif
 
+#if defined(__AVX2__)
       if (unlikely(isCoherentCommonOrigin(context->flags)))
       {
-        BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect_co(bvh, input_rays, numTotalRays, context);
-        
+        BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect_co(bvh, input_rays, numTotalRays, context);        
+        return;
       }
+#endif
       
       for (size_t r=0;r<numTotalRays;r+=MAX_RAYS_PER_OCTANT)
       {
@@ -591,7 +587,7 @@ namespace embree
           STAT3(normal.trav_leaves, 1, 1, 1);
           size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
           
-          //STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
+          STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
 #if !TWO_STREAMS_FIBER_MODE
           size_t bits = m_trav_active;
 #else
@@ -601,8 +597,6 @@ namespace embree
           /*! intersect stream of rays with all primitives */
           size_t lazy_node = 0;
           size_t valid_isec MAYBE_UNUSED = PrimitiveIntersector::intersect(pre,bits,rays,context,ray_ctx,0,prim,num,bvh->scene,NULL,lazy_node);
-
-          STAT3(normal.trav_hit_boxes[__popcnt(valid_isec)],1,1,1);            
 
 #if DISTANCE_TEST == 1
           if (unlikely(valid_isec))
@@ -871,7 +865,7 @@ namespace embree
           size_t bits = (m_trav_active<<cur_fiber->getOffset()) & m_active;          
 #endif
           assert(bits);
-          //STAT3(shadow.trav_hit_boxes[__popcnt(bits)],1,1,1);                          
+          STAT3(shadow.trav_hit_boxes[__popcnt(bits)],1,1,1);                          
 
           m_active &= ~PrimitiveIntersector::occluded(pre,bits,rays,context,0,prim,num,bvh->scene,NULL,lazy_node);
           if (unlikely(m_active == 0)) break;
