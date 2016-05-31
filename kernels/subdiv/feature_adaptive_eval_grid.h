@@ -353,10 +353,10 @@ namespace embree
     {
       bool sl = false, sr = false, st = false, sb = false;
       if (levels) {
-        sl = x0 == 0         && stitch_col<Eval,Patch>(patch,subPatch,0,y0,y1,sheight-1,levels[3], Px,Py,Pz,U,V,Nx,Ny,Nz, 0    ,dwidth,dheight);
-        sr = x1 == swidth-1  && stitch_col<Eval,Patch>(patch,subPatch,1,y0,y1,sheight-1,levels[1], Px,Py,Pz,U,V,Nx,Ny,Nz, x1-x0,dwidth,dheight);
-        st = y0 == 0         && stitch_row<Eval,Patch>(patch,subPatch,0,x0,x1,swidth-1,levels[0], Px,Py,Pz,U,V,Nx,Ny,Nz, 0    ,dwidth,dheight);
-        sb = y1 == sheight-1 && stitch_row<Eval,Patch>(patch,subPatch,1,x0,x1,swidth-1,levels[2], Px,Py,Pz,U,V,Nx,Ny,Nz, y1-y0,dwidth,dheight);
+        sl = x0 == 0         && stitch_col<Eval,Patch>(patch,subPatch,0,y0,y1,sheight-1,int(levels[3]), Px,Py,Pz,U,V,Nx,Ny,Nz, 0    ,dwidth,dheight);
+        sr = x1 == swidth-1  && stitch_col<Eval,Patch>(patch,subPatch,1,y0,y1,sheight-1,int(levels[1]), Px,Py,Pz,U,V,Nx,Ny,Nz, x1-x0,dwidth,dheight);
+        st = y0 == 0         && stitch_row<Eval,Patch>(patch,subPatch,0,x0,x1,swidth-1,int(levels[0]), Px,Py,Pz,U,V,Nx,Ny,Nz, 0    ,dwidth,dheight);
+        sb = y1 == sheight-1 && stitch_row<Eval,Patch>(patch,subPatch,1,x0,x1,swidth-1,int(levels[2]), Px,Py,Pz,U,V,Nx,Ny,Nz, y1-y0,dwidth,dheight);
       }
       const unsigned ofs = st*dwidth+sl;
       Eval(patch,subPatch,x0+sl,x1-sr,y0+st,y1-sb, swidth,sheight, Px+ofs,Py+ofs,Pz+ofs,U+ofs,V+ofs,Nx?Nx+ofs:nullptr,Ny?Ny+ofs:nullptr,Nz?Nz+ofs:nullptr, dwidth,dheight);
