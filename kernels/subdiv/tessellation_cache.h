@@ -173,7 +173,7 @@ namespace embree
    //__forceinline size_t getCurrentIndex() { return localTime; }
    __forceinline void   addCurrentIndex(const size_t i=1) { localTime.fetch_add(i); }
 
-   __forceinline size_t getTime(const unsigned globalTime) {
+   __forceinline size_t getTime(const size_t globalTime) {
      return localTime+NUM_CACHE_SEGMENTS*globalTime;
    }
 
@@ -201,7 +201,7 @@ namespace embree
      }
    }
 
-   static __forceinline void* lookup(CacheEntry& entry, unsigned globalTime)
+   static __forceinline void* lookup(CacheEntry& entry, size_t globalTime)
    {   
 #if defined(__X86_64__)
      const int64_t subdiv_patch_root_ref = entry.tag.data; 
@@ -228,7 +228,7 @@ namespace embree
    }
 
    template<typename Constructor>
-     static __forceinline auto lookup (CacheEntry& entry, unsigned globalTime, const Constructor constructor) -> decltype(constructor())
+     static __forceinline auto lookup (CacheEntry& entry, size_t globalTime, const Constructor constructor) -> decltype(constructor())
    {
      ThreadWorkState *t_state = SharedLazyTessellationCache::threadState();
 
@@ -258,7 +258,7 @@ namespace embree
      }
    }
    
-   static __forceinline size_t lookupIndex(volatile Tag* tag, unsigned globalTime)
+   static __forceinline size_t lookupIndex(volatile Tag* tag, size_t globalTime)
    {
      const int64_t subdiv_patch_root_ref = tag->data; 
      
@@ -281,7 +281,7 @@ namespace embree
    __forceinline void prefetchThread(ThreadWorkState *const t_state) {  // FIXME: remove
    }
 
-   __forceinline bool validCacheIndex(const size_t i, const unsigned globalTime)
+   __forceinline bool validCacheIndex(const size_t i, const size_t globalTime)
    {
 #if FORCE_SIMPLE_FLUSH == 1
      return i == getTime(globalTime);
@@ -290,7 +290,7 @@ namespace embree
 #endif
    }
 
-    static __forceinline bool validTag(const Tag& tag, unsigned globalTime)
+    static __forceinline bool validTag(const Tag& tag, size_t globalTime)
     {
       const int64_t subdiv_patch_root_ref = tag.data; 
       if (subdiv_patch_root_ref == 0) return false;

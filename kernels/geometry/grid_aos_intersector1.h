@@ -66,9 +66,9 @@ namespace embree
         if (unlikely(ray.tnear <= t && t <= ray.tfar)) 
         {
           const float rcp0xFFFF = 1.0f/0xFFFF;
-          const Vec3fa uv0 = Vec3fa(p2.u & 0xFFFF, p2.u >> 16, 0.0f)*rcp0xFFFF;
-          const Vec3fa uv1 = Vec3fa(p0.u & 0xFFFF, p0.u >> 16, 0.0f)*rcp0xFFFF;
-          const Vec3fa uv2 = Vec3fa(p1.u & 0xFFFF, p1.u >> 16, 0.0f)*rcp0xFFFF;
+          const Vec3fa uv0 = Vec3fa(float(p2.u & 0xFFFF), float(p2.u >> 16), 0.0f)*rcp0xFFFF;
+          const Vec3fa uv1 = Vec3fa(float(p0.u & 0xFFFF), float(p0.u >> 16), 0.0f)*rcp0xFFFF;
+          const Vec3fa uv2 = Vec3fa(float(p1.u & 0xFFFF), float(p1.u >> 16), 0.0f)*rcp0xFFFF;
           const Vec3fa uv = uvw[0]*uv0+uvw[1]*uv1+uvw[2]*uv2;
           const float u = uv.x * rcpDet;
           const float v = uv.y * rcpDet;
@@ -281,9 +281,9 @@ namespace embree
         {
           /* calculate hit information */
           const float rcp0xFFFF = 1.0f/0xFFFF;
-          const Vec3fa uv0 = Vec3fa(p2.u & 0xFFFF, p2.u >> 16, 0.0f)*rcp0xFFFF;
-          const Vec3fa uv1 = Vec3fa(p0.u & 0xFFFF, p0.u >> 16, 0.0f)*rcp0xFFFF;
-          const Vec3fa uv2 = Vec3fa(p1.u & 0xFFFF, p1.u >> 16, 0.0f)*rcp0xFFFF;
+          const Vec3fa uv0 = Vec3fa(float(p2.u & 0xFFFF), float(p2.u >> 16), 0.0f)*rcp0xFFFF;
+          const Vec3fa uv1 = Vec3fa(float(p0.u & 0xFFFF), float(p0.u >> 16), 0.0f)*rcp0xFFFF;
+          const Vec3fa uv2 = Vec3fa(float(p1.u & 0xFFFF), float(p1.u >> 16), 0.0f)*rcp0xFFFF;
           const Vec3fa uv = uvw[0]*uv0+uvw[1]*uv1+uvw[2]*uv2;
           const float u = uv.x * rcpDet;
           const float v = uv.y * rcpDet;

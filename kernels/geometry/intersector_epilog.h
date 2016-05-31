@@ -116,13 +116,13 @@ namespace embree
       struct Intersect1KEpilog1
       {
         RayK<K>& ray;
-        int k;
+        size_t k;
         const RTCIntersectContext* context;
         const unsigned int geomID;
         const unsigned int primID;
         Scene* const scene;
         
-        __forceinline Intersect1KEpilog1(RayK<K>& ray, int k,
+        __forceinline Intersect1KEpilog1(RayK<K>& ray, size_t k,
                                          const RTCIntersectContext* context, 
                                          const unsigned int geomID, 
                                          const unsigned int primID, 
@@ -163,13 +163,13 @@ namespace embree
       struct Occluded1KEpilog1
       {
         RayK<K>& ray;
-        int k;
+        size_t k;
         const RTCIntersectContext* context;
         const unsigned int geomID;
         const unsigned int primID;
         Scene* const scene;
         
-        __forceinline Occluded1KEpilog1(RayK<K>& ray, int k,
+        __forceinline Occluded1KEpilog1(RayK<K>& ray, size_t k,
                                         const RTCIntersectContext* context, 
                                         const unsigned int geomID, 
                                         const unsigned int primID, 
@@ -538,14 +538,14 @@ namespace embree
         const RTCIntersectContext* context;
         const vint<M>& geomIDs;
         const vint<M>& primIDs;
-        const int i;
+        const size_t i;
         Scene* const scene;
         
         __forceinline IntersectKEpilogM(RayK<K>& ray,
                                         const RTCIntersectContext* context, 
                                        const vint<M>& geomIDs, 
                                        const vint<M>& primIDs, 
-                                       int i,
+                                       size_t i,
                                        Scene* scene)
           : ray(ray), context(context), geomIDs(geomIDs), primIDs(primIDs), i(i), scene(scene) {}
         
@@ -598,7 +598,7 @@ namespace embree
         const RTCIntersectContext* context;
         const vint<M>& geomIDs;
         const vint<M>& primIDs;
-        const int i;
+        const size_t i;
         Scene* const scene;
         
         __forceinline OccludedKEpilogM(vbool<K>& valid0,
@@ -606,7 +606,7 @@ namespace embree
                                        const RTCIntersectContext* context, 
                                        const vint<M>& geomIDs, 
                                        const vint<M>& primIDs, 
-                                       int i,
+                                       size_t i,
                                        Scene* scene)
           : valid0(valid0), ray(ray), context(context), geomIDs(geomIDs), primIDs(primIDs), i(i), scene(scene) {}
         
@@ -751,13 +751,13 @@ namespace embree
       struct Intersect1KEpilogM
       {
         RayK<K>& ray;
-        int k;
+        size_t k;
         const RTCIntersectContext* context;
         const vint<M>& geomIDs;
         const vint<M>& primIDs;
         Scene* const scene;
         
-        __forceinline Intersect1KEpilogM(RayK<K>& ray, int k,
+        __forceinline Intersect1KEpilogM(RayK<K>& ray, size_t k,
                                          const RTCIntersectContext* context, 
                                          const vint<M>& geomIDs, 
                                          const vint<M>& primIDs, 
@@ -834,13 +834,13 @@ namespace embree
       struct Occluded1KEpilogM
       {
         RayK<K>& ray;
-        int k;
+        size_t k;
         const RTCIntersectContext* context;
         const vint<M>& geomIDs;
         const vint<M>& primIDs;
         Scene* const scene;
         
-        __forceinline Occluded1KEpilogM(RayK<K>& ray, int k,
+        __forceinline Occluded1KEpilogM(RayK<K>& ray, size_t k,
                                         const RTCIntersectContext* context, 
                                         const vint<M>& geomIDs, 
                                         const vint<M>& primIDs, 
@@ -899,13 +899,13 @@ namespace embree
       struct Intersect1KEpilogMU
       {
         RayK<K>& ray;
-        int k;
+        size_t k;
         const RTCIntersectContext* context;
         const unsigned int geomID;
         const unsigned int primID;
         Scene* const scene;
         
-        __forceinline Intersect1KEpilogMU(RayK<K>& ray, int k,
+        __forceinline Intersect1KEpilogMU(RayK<K>& ray, size_t k,
                                           const RTCIntersectContext* context, 
                                           const unsigned int geomID, 
                                           const unsigned int primID, 
@@ -971,13 +971,13 @@ namespace embree
       struct Occluded1KEpilogMU
       {
         RayK<K>& ray;
-        int k;
+        size_t k;
         const RTCIntersectContext* context;
         const unsigned int geomID;
         const unsigned int primID;
         Scene* const scene;
         
-        __forceinline Occluded1KEpilogMU(RayK<K>& ray, int k,
+        __forceinline Occluded1KEpilogMU(RayK<K>& ray, size_t k,
                                          const RTCIntersectContext* context, 
                                          const unsigned int geomID, 
                                          const unsigned int primID, 

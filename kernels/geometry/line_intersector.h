@@ -109,7 +109,7 @@ namespace embree
         {
           __forceinline Precalculations (const vbool<K>& valid, const RayK<K>& ray)
           {
-            int mask = movemask(valid);
+            size_t mask = movemask(valid);
             depth_scale = rsqrt(dot(ray.dir,ray.dir));
             while (mask) {
               size_t k = __bscf(mask);

@@ -194,9 +194,9 @@ namespace embree
     }
     
     /*! counts number of polygon edges  */
-    __forceinline size_t numEdges() const
+    __forceinline unsigned int numEdges() const
     {
-      size_t N = 1;
+      unsigned int N = 1;
       for (const HalfEdge* p=this->next(); p!=this; p=p->next(), N++);
       return N;
     }

@@ -97,7 +97,7 @@ namespace embree
         
         
         /*! returns true if the mapping is invalid in some dimension */
-        __forceinline bool invalid(const int dim) const {
+        __forceinline bool invalid(const size_t dim) const {
           return scale[dim] == 0.0f;
         }
         
@@ -326,8 +326,8 @@ namespace embree
           bz.extend(bounds[i-1][2]); float Az = halfArea(bz);
           const vfloat4 lArea = vfloat4(Ax,Ay,Az,Az);
           const vfloat4 rArea = rAreas[i];
-          const vint4 lCount = (count     +blocks_add) >> blocks_shift;
-          const vint4 rCount = (rCounts[i]+blocks_add) >> blocks_shift;
+          const vint4 lCount = (count     +blocks_add) >> int(blocks_shift);
+          const vint4 rCount = (rCounts[i]+blocks_add) >> int(blocks_shift);
           const vfloat4 sah = lArea*vfloat4(lCount) + rArea*vfloat4(rCount);
           vbestPos = select(sah < vbestSAH,ii ,vbestPos);
           vbestSAH = select(sah < vbestSAH,sah,vbestSAH);

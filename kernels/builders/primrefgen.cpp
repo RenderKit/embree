@@ -38,7 +38,7 @@ namespace embree
           BBox3fa bounds = empty;
           if (!mesh->valid(j,&bounds)) continue;
 
-          const PrimRef prim(bounds,mesh->id,j);          
+          const PrimRef prim(bounds,mesh->id,unsigned(j));          
           pinfo.add(bounds,bounds.center2());
           prims[k++] = prim;
         }
@@ -53,11 +53,11 @@ namespace embree
         {
           size_t k = base.size();
           PrimInfo pinfo(empty);
-          for (ssize_t j=r.begin(); j<r.end(); j++)
+          for (size_t j=r.begin(); j<r.end(); j++)
           {
             BBox3fa bounds = empty;
             if (!mesh->valid(j,&bounds)) continue;
-            const PrimRef prim(bounds,mesh->id,j);
+            const PrimRef prim(bounds,mesh->id,unsigned(j));
             pinfo.add(bounds,bounds.center2());
             prims[k++] = prim;
           }
@@ -83,7 +83,7 @@ namespace embree
         {
           BBox3fa bounds = empty;
           if (!mesh->valid(j,&bounds)) continue;
-          const PrimRef prim(bounds,mesh->id,j);
+          const PrimRef prim(bounds,mesh->id,unsigned(j));
           pinfo.add(bounds,bounds.center2());
           prims[k++] = prim;
         }
@@ -102,7 +102,7 @@ namespace embree
           {
             BBox3fa bounds = empty;
             if (!mesh->valid(j,&bounds)) continue;
-            const PrimRef prim(bounds,mesh->id,j);
+            const PrimRef prim(bounds,mesh->id,unsigned(j));
             pinfo.add(bounds,bounds.center2());
             prims[k++] = prim;
           }
@@ -169,7 +169,7 @@ namespace embree
           if (!isvalid((vfloat4)p0) || !isvalid((vfloat4)p1) || !isvalid((vfloat4)p2) || !isvalid((vfloat4)p3))
               continue;
 
-	  const BezierPrim bezier(mesh->subtype,p0,p1,p2,p3,mesh->tessellationRate,mesh->id,j);
+	  const BezierPrim bezier(mesh->subtype,p0,p1,p2,p3,mesh->tessellationRate,mesh->id,unsigned(j));
           const BBox3fa bounds = bezier.bounds();
           pinfo.add(bounds);
           prims[k++] = bezier;
@@ -204,7 +204,7 @@ namespace embree
             if (!isvalid((vfloat4)p0) || !isvalid((vfloat4)p1) || !isvalid((vfloat4)p2) || !isvalid((vfloat4)p3))
               continue;
             
-            const BezierPrim bezier(mesh->subtype,p0,p1,p2,p3,mesh->tessellationRate,mesh->id,j);
+            const BezierPrim bezier(mesh->subtype,p0,p1,p2,p3,mesh->tessellationRate,mesh->id,unsigned(j));
             const BBox3fa bounds = bezier.bounds();
             pinfo.add(bounds);
             prims[k++] = bezier;
