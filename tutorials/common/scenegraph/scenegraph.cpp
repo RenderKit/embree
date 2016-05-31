@@ -954,7 +954,7 @@ namespace embree
 
     mesh->hairs.resize(numHairs);
     for (size_t i=0; i<numHairs; i++) {
-      const int v0 = (RandomSampler_getInt(sampler) % 32 == 0) ? RandomSampler_getUInt(sampler) : 4*i;
+      const unsigned v0 = (RandomSampler_getInt(sampler) % 32 == 0) ? RandomSampler_getUInt(sampler) : unsigned(4*i);
       mesh->hairs[i] = HairSetNode::Hair(v0,0);
     }
 
@@ -990,11 +990,11 @@ namespace embree
 
     for (size_t i=0; i<numFaces; i++) 
     {
-      const size_t f = RandomSampler_getInt(sampler) % 20;
+      const unsigned f = RandomSampler_getInt(sampler) % 20;
       mesh->verticesPerFace.push_back(f);
       for (size_t j=0; j<f; j++) 
       {
-        mesh->position_indices.push_back((RandomSampler_getInt(sampler) % 32 == 0) ? RandomSampler_getUInt(sampler) : mesh->positions.size());
+        mesh->position_indices.push_back((RandomSampler_getInt(sampler) % 32 == 0) ? RandomSampler_getUInt(sampler) : unsigned(mesh->positions.size()));
 
         const float x = cast_i2f(RandomSampler_getUInt(sampler));
         const float y = cast_i2f(RandomSampler_getUInt(sampler));
