@@ -28,6 +28,8 @@ ispc2cpp:
 	@./ispc2cpp.sh curve_geometry/curve_geometry_device.ispc curve_geometry/curve_geometry_device.cpp
 
 osp2emb:
+	@./osp2emb.sh ../../ospray/ospray/math/math.ih common/math/math.isph
+	#@./osp2emb.sh ../../ospray/ospray/math/vec.ih common/math/vec.isph # requires manual changes
 	@./osp2emb.sh ../../ospray/ospray/math/sampling.ih common/math/sampling.isph
 	@./osp2emb.sh ../../ospray/ospray/lights/Light.ih common/lights/light.isph
 	@./osp2emb.sh ../../ospray/ospray/lights/Light.ispc common/lights/light.ispc
@@ -36,5 +38,6 @@ osp2emb:
 	@./osp2emb.sh ../../ospray/ospray/lights/PointLight.ispc common/lights/point_light.ispc
 	@./osp2emb.sh ../../ospray/ospray/lights/QuadLight.ispc common/lights/quad_light.ispc
 	@./osp2emb.sh ../../ospray/ospray/lights/SpotLight.ispc common/lights/spot_light.ispc
+	@echo "\nexport void dummy() {} // just to avoid linker warning under MacOSX" >> common/lights/light.ispc
 
 all: osp2emb ispc2cpp

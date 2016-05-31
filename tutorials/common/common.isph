@@ -14,17 +14,9 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "light.isph"
+#pragma once
 
-Light_EvalRes Light_eval(const uniform Light* uniform,
-                         const DifferentialGeometry&,
-                         const Vec3f&)
-{
-  Light_EvalRes res;
-  res.value = make_Vec3f(0.f);
-  res.dist = inf;
-  res.pdf = 0.f;
-  return res;
-}
-
-export void dummy() {} // just to avoid linker warning under MacOSX
+typedef unsigned int64 uint64;
+typedef unsigned int32 uint32;
+typedef unsigned int16 uint16;
+typedef unsigned int8  uint8;

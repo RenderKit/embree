@@ -104,7 +104,7 @@ namespace embree
     __forceinline const float& operator []( const size_t index ) const { assert(index < 3); return (&x)[index]; }
     __forceinline       float& operator []( const size_t index )       { assert(index < 3); return (&x)[index]; }
   };
-  
+
   ////////////////////////////////////////////////////////////////////////////////
   /// Unary Operators
   ////////////////////////////////////////////////////////////////////////////////
@@ -119,14 +119,14 @@ namespace embree
     return _mm_and_ps(a.m128, mask);
   }
   __forceinline const Vec3fa sign ( const Vec3fa& a ) {
-    return blendv_ps(Vec3fa(one), -Vec3fa(one), _mm_cmplt_ps (a,Vec3fa(zero))); 
+    return blendv_ps(Vec3fa(one), -Vec3fa(one), _mm_cmplt_ps (a,Vec3fa(zero)));
   }
   __forceinline const Vec3fa rcp  ( const Vec3fa& a ) {
     const Vec3fa r = _mm_rcp_ps(a.m128);
 #if defined(__AVX2__)
-    const Vec3fa res = _mm_mul_ps(r,_mm_fnmadd_ps(r, a, vfloat4(2.0f)));     
+    const Vec3fa res = _mm_mul_ps(r,_mm_fnmadd_ps(r, a, vfloat4(2.0f)));
 #else
-    const Vec3fa res = _mm_mul_ps(r,_mm_sub_ps(vfloat4(2.0f), _mm_mul_ps(r, a)));     
+    const Vec3fa res = _mm_mul_ps(r,_mm_sub_ps(vfloat4(2.0f), _mm_mul_ps(r, a)));
     //return _mm_sub_ps(_mm_add_ps(r, r), _mm_mul_ps(_mm_mul_ps(r, r), a));
 #endif
     return res;
@@ -137,17 +137,17 @@ namespace embree
     __m128 r = _mm_rsqrt_ps(a.m128);
     return _mm_add_ps(_mm_mul_ps(_mm_set1_ps(1.5f),r), _mm_mul_ps(_mm_mul_ps(_mm_mul_ps(a, _mm_set1_ps(-0.5f)), r), _mm_mul_ps(r, r)));
   }
-  __forceinline const Vec3fa zero_fix(const Vec3fa& a) { 
-    return blendv_ps(a, _mm_set1_ps(min_rcp_input), _mm_cmplt_ps (abs(a).m128, _mm_set1_ps(min_rcp_input))); 
+  __forceinline const Vec3fa zero_fix(const Vec3fa& a) {
+    return blendv_ps(a, _mm_set1_ps(min_rcp_input), _mm_cmplt_ps (abs(a).m128, _mm_set1_ps(min_rcp_input)));
   }
-  __forceinline const Vec3fa rcp_safe(const Vec3fa& a) { 
-    return rcp(zero_fix(a)); 
+  __forceinline const Vec3fa rcp_safe(const Vec3fa& a) {
+    return rcp(zero_fix(a));
   }
-  __forceinline Vec3fa log ( const Vec3fa& a ) { 
+  __forceinline Vec3fa log ( const Vec3fa& a ) {
     return Vec3fa(logf(a.x),logf(a.y),logf(a.z));
   }
 
-  __forceinline Vec3fa exp ( const Vec3fa& a ) { 
+  __forceinline Vec3fa exp ( const Vec3fa& a ) {
     return Vec3fa(expf(a.x),expf(a.y),expf(a.z));
   }
 
@@ -175,7 +175,7 @@ namespace embree
       return _mm_castsi128_ps(ci);
     }
 #endif
-    
+
 #if defined(__SSE4_1__)
     __forceinline Vec3fa maxi(const Vec3fa& a, const Vec3fa& b) {
       const vint4 ai = _mm_castps_si128(a);
@@ -185,7 +185,7 @@ namespace embree
     }
 #endif
 
-    __forceinline Vec3fa pow ( const Vec3fa& a, const float& b ) { 
+    __forceinline Vec3fa pow ( const Vec3fa& a, const float& b ) {
       return Vec3fa(powf(a.x,b),powf(a.y,b),powf(a.z,b));
     }
 
@@ -243,7 +243,7 @@ namespace embree
     return all(gt_mask(v,Vec3fa(-FLT_LARGE)) & lt_mask(v,Vec3fa(+FLT_LARGE)));
   }
 
-  __forceinline bool is_finite ( const Vec3fa& a ) { 
+  __forceinline bool is_finite ( const Vec3fa& a ) {
     return all(ge_mask(a,Vec3fa(-FLT_MAX)) & le_mask(a,Vec3fa(+FLT_MAX)));
   }
 
@@ -261,7 +261,7 @@ namespace embree
   }
 #endif
 
-  __forceinline Vec3fa cross ( const Vec3fa& a, const Vec3fa& b ) 
+  __forceinline Vec3fa cross ( const Vec3fa& a, const Vec3fa& b )
   {
     vfloat4 a0 = vfloat4(a);
     vfloat4 b0 = shuffle<1,2,0,3>(vfloat4(b));
@@ -278,12 +278,11 @@ namespace embree
   __forceinline float  distance ( const Vec3fa& a, const Vec3fa& b ) { return length(a-b); }
   __forceinline float  halfArea ( const Vec3fa& d )                  { return d.x*(d.y+d.z)+d.y*d.z; }
   __forceinline float  area     ( const Vec3fa& d )                  { return 2.0f*halfArea(d); }
-  __forceinline Vec3fa reflect  ( const Vec3fa& V, const Vec3fa& N ) { return 2.0f*dot(V,N)*N-V; }
 
-  __forceinline Vec3fa normalize_safe( const Vec3fa& a ) { 
+  __forceinline Vec3fa normalize_safe( const Vec3fa& a ) {
     const float d = dot(a,a); if (unlikely(d == 0.0f)) return a; else return a*rsqrt(d);
   }
-  
+
   /*! differentiated normalization */
   __forceinline Vec3fa dnormalize(const Vec3fa& p, const Vec3fa& dp)
   {
@@ -291,7 +290,7 @@ namespace embree
     const float pdp = dot(p,dp);
     return (pp*dp-pdp*p)*rcp(pp)*rsqrt(pp);
   }
-  
+
   ////////////////////////////////////////////////////////////////////////////////
   /// Select
   ////////////////////////////////////////////////////////////////////////////////
@@ -305,8 +304,8 @@ namespace embree
     return blendv_ps(f, t, s);
   }
 
-  __forceinline int maxDim ( const Vec3fa& a ) 
-  { 
+  __forceinline int maxDim ( const Vec3fa& a )
+  {
     if (a.x > a.y) {
       if (a.x > a.z) return 0; else return 2;
     } else {
@@ -335,6 +334,6 @@ namespace embree
   inline std::ostream& operator<<(std::ostream& cout, const Vec3fa& a) {
     return cout << "(" << a.x << ", " << a.y << ", " << a.z << ")";
   }
-  
+
   typedef Vec3fa Vec3fa_t;
 }

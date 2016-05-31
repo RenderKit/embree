@@ -33,7 +33,7 @@ renderTileFunc renderTile;
 /* error reporting function */
 unmasked void error_handler(const uniform RTCError code, const uniform int8* uniform str = NULL)
 {
-  if (code == RTC_NO_ERROR) 
+  if (code == RTC_NO_ERROR)
     return;
 
   print("Embree: ");
@@ -46,10 +46,10 @@ unmasked void error_handler(const uniform RTCError code, const uniform int8* uni
   case RTC_CANCELLED        : print("RTC_CANCELLED"); break;
   default                   : print("invalid error code"); break;
   }
-  if (str) { 
-    print(" ("); 
-    while (*str) putchar(*str++); 
-    print(")\n"); 
+  if (str) {
+    print(" (");
+    while (*str) putchar(*str++);
+    print(")\n");
   }
   abort();
 }
@@ -76,13 +76,13 @@ Vec3f renderPixelEyeLight(float x, float y, const uniform ISPCCamera& camera)
   else return make_Vec3f(abs(dot(ray.dir,normalize(ray.Ng))));
 }
 
-void renderTileEyeLight(uniform int taskIndex, 
+void renderTileEyeLight(uniform int taskIndex,
                         uniform int* uniform pixels,
                         const uniform unsigned int width,
-                        const uniform unsigned int height, 
+                        const uniform unsigned int height,
                         const uniform float time,
                         const uniform ISPCCamera& camera,
-                        const uniform int numTilesX, 
+                        const uniform int numTilesX,
                         const uniform int numTilesY)
 {
   const uniform int t = taskIndex;
@@ -136,13 +136,13 @@ Vec3f renderPixelWireframe(float x, float y, const uniform ISPCCamera& camera)
   return color*make_Vec3f(abs(dot(ray.dir,normalize(ray.Ng))));
 }
 
-void renderTileWireframe(uniform int taskIndex, 
+void renderTileWireframe(uniform int taskIndex,
                          uniform int* uniform pixels,
                          const uniform unsigned int width,
-                         const uniform unsigned int height, 
+                         const uniform unsigned int height,
                          const uniform float time,
                          const uniform ISPCCamera& camera,
-                         const uniform int numTilesX, 
+                         const uniform int numTilesX,
                          const uniform int numTilesY)
 {
   const uniform int t = taskIndex;
@@ -187,13 +187,13 @@ Vec3f renderPixelUV(float x, float y, const uniform ISPCCamera& camera)
   else return make_Vec3f(ray.u,ray.v,1.0f-ray.u-ray.v);
 }
 
-void renderTileUV(uniform int taskIndex, 
+void renderTileUV(uniform int taskIndex,
                   uniform int* uniform pixels,
                   const uniform unsigned int width,
-                  const uniform unsigned int height, 
+                  const uniform unsigned int height,
                   const uniform float time,
                   const uniform ISPCCamera& camera,
-                  const uniform int numTilesX, 
+                  const uniform int numTilesX,
                   const uniform int numTilesY)
 {
   const uniform int t = taskIndex;
@@ -239,13 +239,13 @@ Vec3f renderPixelNg(float x, float y, const uniform ISPCCamera& camera)
   else return normalize(make_Vec3f(ray.Ng.x,ray.Ng.y,ray.Ng.z));
 }
 
-void renderTileNg(uniform int taskIndex, 
+void renderTileNg(uniform int taskIndex,
                   uniform int* uniform pixels,
                   const uniform unsigned int width,
-                  const uniform unsigned int height, 
+                  const uniform unsigned int height,
                   const uniform float time,
                   const uniform ISPCCamera& camera,
-                  const uniform int numTilesX, 
+                  const uniform int numTilesX,
                   const uniform int numTilesY)
 {
   const uniform int t = taskIndex;
@@ -268,7 +268,7 @@ void renderTileNg(uniform int taskIndex,
   }
 }
 
-Vec3f randomColor(const int ID) 
+Vec3f randomColor(const int ID)
 {
   int r = ((ID+13)*17*23) & 255;
   int g = ((ID+15)*11*13) & 255;
@@ -299,13 +299,13 @@ Vec3f renderPixelGeomID(float x, float y, const uniform ISPCCamera& camera)
   else return randomColor(ray.geomID);
 }
 
-void renderTileGeomID(uniform int taskIndex, 
+void renderTileGeomID(uniform int taskIndex,
                       uniform int* uniform pixels,
                       const uniform unsigned int width,
-                      const uniform unsigned int height, 
+                      const uniform unsigned int height,
                       const uniform float time,
                       const uniform ISPCCamera& camera,
-                      const uniform int numTilesX, 
+                      const uniform int numTilesX,
                       const uniform int numTilesY)
 {
   const uniform int t = taskIndex;
@@ -350,13 +350,13 @@ Vec3f renderPixelGeomIDPrimID(float x, float y, const uniform ISPCCamera& camera
   else return randomColor(ray.geomID ^ ray.primID)*make_Vec3f(abs(dot(ray.dir,normalize(ray.Ng))));
 }
 
-void renderTileGeomIDPrimID(uniform int taskIndex, 
+void renderTileGeomIDPrimID(uniform int taskIndex,
                             uniform int* uniform pixels,
                             const uniform unsigned int width,
-                            const uniform unsigned int height, 
+                            const uniform unsigned int height,
                             const uniform float time,
                             const uniform ISPCCamera& camera,
-                            const uniform int numTilesX, 
+                            const uniform int numTilesX,
                             const uniform int numTilesY)
 {
   const uniform int t = taskIndex;
@@ -397,18 +397,18 @@ Vec3f renderPixelCycles(float x, float y, const uniform ISPCCamera& camera)
   uniform int64 c0 = get_tsc();
   rtcIntersect(g_scene,ray);
   uniform int64 c1 = get_tsc();
-  
+
   /* shade pixel */
   return make_Vec3f((uniform float)(c1-c0)*scale,0.0f,0.0f);
 }
 
-void renderTileCycles(uniform int taskIndex, 
+void renderTileCycles(uniform int taskIndex,
                       uniform int* uniform pixels,
                       const uniform unsigned int width,
-                      const uniform unsigned int height, 
+                      const uniform unsigned int height,
                       const uniform float time,
                       const uniform ISPCCamera& camera,
-                      const uniform int numTilesX, 
+                      const uniform int numTilesX,
                       const uniform int numTilesY)
 {
   const uniform int t = taskIndex;
@@ -456,13 +456,13 @@ Vec3f renderPixelUV16(float x, float y, const uniform ISPCCamera& camera)
   else return make_Vec3f(ray.u,ray.v,1.0f-ray.u-ray.v);
 }
 
-void renderTileUV16(uniform int taskIndex, 
+void renderTileUV16(uniform int taskIndex,
                     uniform int* uniform pixels,
                     const uniform unsigned int width,
-                    const uniform unsigned int height, 
+                    const uniform unsigned int height,
                     const uniform float time,
                     const uniform ISPCCamera& camera,
-                    const uniform int numTilesX, 
+                    const uniform int numTilesX,
                     const uniform int numTilesY)
 {
   const uniform int t = taskIndex;
@@ -515,9 +515,9 @@ Vec3f renderPixelAmbientOcclusion(float x, float y, const uniform ISPCCamera& ca
 #define AMBIENT_OCCLUSION_SAMPLES 64
   /* trace some ambient occlusion rays */
   int seed = 34*x+12*y;
-  for (uniform int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++) 
+  for (uniform int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
      {
-      Vec3f dir; 
+      Vec3f dir;
       const float oneOver10000f = 1.f/10000.f;
       seed = 1103515245 * seed + 12345;
       dir.x = (seed%10000)*oneOver10000f;
@@ -525,7 +525,7 @@ Vec3f renderPixelAmbientOcclusion(float x, float y, const uniform ISPCCamera& ca
       dir.y = (seed%10000)*oneOver10000f;
       seed = 1103515245 * seed + 12345;
       dir.z = (seed%10000)*oneOver10000f;
-    
+
       /* initialize shadow ray */
       RTCRay shadow;
       shadow.org = hitPos;
@@ -536,14 +536,14 @@ Vec3f renderPixelAmbientOcclusion(float x, float y, const uniform ISPCCamera& ca
       shadow.primID = RTC_INVALID_GEOMETRY_ID;
       shadow.mask = -1;
       shadow.time = g_debug;
-    
+
       /* trace shadow ray */
       rtcOccluded(g_scene,shadow);
       //rtcIntersect(g_scene,shadow);
-    
+
       /* add light contribution */
       if (shadow.geomID == RTC_INVALID_GEOMETRY_ID)
-        intensity += 1.0f;   
+        intensity += 1.0f;
      }
   intensity *= 1.0f/AMBIENT_OCCLUSION_SAMPLES;
 
@@ -551,13 +551,13 @@ Vec3f renderPixelAmbientOcclusion(float x, float y, const uniform ISPCCamera& ca
   return col * intensity;
 }
 
-void renderTileAmbientOcclusion(uniform int taskIndex, 
+void renderTileAmbientOcclusion(uniform int taskIndex,
                                 uniform int* uniform pixels,
                                 const uniform unsigned int width,
-                                const uniform unsigned int height, 
+                                const uniform unsigned int height,
                                 const uniform float time,
                                 const uniform ISPCCamera& camera,
-                                const uniform int numTilesX, 
+                                const uniform int numTilesX,
                                 const uniform int numTilesY)
 {
   const uniform int t = taskIndex;
@@ -600,7 +600,7 @@ Vec3f renderPixelDifferentials(float x, float y, const uniform ISPCCamera& camer
 
   /* shade pixel */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f);
-  
+
   /* calculate differentials */
   float eps = 0.001f/16.0f;
   Vec3f P00, P01, P10, P11;
@@ -644,14 +644,14 @@ Vec3f renderPixelDifferentials(float x, float y, const uniform ISPCCamera& camer
   case 14: color = 10.0f*(ddPdudv1-ddPdudv0); break;
 
   case 15: {
-    color.x = length(dnormalize(cross(dPdu1,dPdv1),cross(ddPdudu1,dPdv1)+cross(dPdu1,ddPdudv1)))/length(dPdu1); 
-    color.y = length(dnormalize(cross(dPdu1,dPdv1),cross(ddPdudv1,dPdv1)+cross(dPdu1,ddPdvdv1)))/length(dPdv1); 
+    color.x = length(dnormalize(cross(dPdu1,dPdv1),cross(ddPdudu1,dPdv1)+cross(dPdu1,ddPdudv1)))/length(dPdu1);
+    color.y = length(dnormalize(cross(dPdu1,dPdv1),cross(ddPdudv1,dPdv1)+cross(dPdu1,ddPdvdv1)))/length(dPdv1);
     color.z = 0.0f;
     break;
   }
   case 16: {
-    float Cu = length(dnormalize(cross(dPdu1,dPdv1),cross(ddPdudu1,dPdv1)+cross(dPdu1,ddPdudv1)))/length(dPdu1); 
-    float Cv = length(dnormalize(cross(dPdu1,dPdv1),cross(ddPdudv1,dPdv1)+cross(dPdu1,ddPdvdv1)))/length(dPdv1); 
+    float Cu = length(dnormalize(cross(dPdu1,dPdv1),cross(ddPdudu1,dPdv1)+cross(dPdu1,ddPdudv1)))/length(dPdu1);
+    float Cv = length(dnormalize(cross(dPdu1,dPdv1),cross(ddPdudv1,dPdv1)+cross(dPdu1,ddPdvdv1)))/length(dPdv1);
     color = make_Vec3f(sqrt(Cu*Cu + Cv*Cv));
     break;
   }
@@ -659,13 +659,13 @@ Vec3f renderPixelDifferentials(float x, float y, const uniform ISPCCamera& camer
   return clamp(color,make_Vec3f(0.0f),make_Vec3f(1.0f));
 }
 
-void renderTileDifferentials(uniform int taskIndex, 
+void renderTileDifferentials(uniform int taskIndex,
                              uniform int* uniform pixels,
                              const uniform unsigned int width,
-                             const uniform unsigned int height, 
+                             const uniform unsigned int height,
                              const uniform float time,
                              const uniform ISPCCamera& camera,
-                             const uniform int numTilesX, 
+                             const uniform int numTilesX,
                              const uniform int numTilesY)
 {
   const uniform int t = taskIndex;
@@ -690,7 +690,7 @@ void renderTileDifferentials(uniform int taskIndex,
 
 /* returns the point seen through specified pixel */
 export uniform bool device_pick(const uniform float x,
-                                const uniform float y, 
+                                const uniform float y,
                                 const uniform ISPCCamera& camera,
                                 uniform Vec3f& hitPos)
 {
@@ -796,7 +796,7 @@ uniform unsigned int getNumHWThreads()
  return g_numThreads;
 }
 
-static uniform int p[513] = { 
+static uniform int p[513] = {
   151,160,137,91,90,15,131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,21,10,23,
   190, 6,148,247,120,234,75,0,26,197,62,94,252,219,203,117,35,11,32,57,177,33,
   88,237,149,56,87,174,20,125,136,171,168, 68,175,74,165,71,134,139,48,27,166,
@@ -833,20 +833,16 @@ static uniform float g2[128*2] = {
 };
 
 static uniform float g3[128*4] = {
-  -0.582745, 0.443494, -0.680971, 0, -0.601153, 0.791961, 0.106833, 0, -0.265466, 0.576385, -0.772857, 0, 0.981035, 0.0963612, -0.16818, 0, 0.524388, 0.819103, 0.232568, 0, -0.170518, -0.43875, 0.882282, 0, 0.598053, -0.435348, 0.672908, 0, 0.53956, 0.839346, -0.0661294, 0, -0.782511, -0.600267, -0.165398, 0, -0.122114, 0.968043, 0.219044, 0, -0.235567, 0.842331, -0.484755, 0, -0.158657, 0.504139, 0.848924, 0, -0.578396, 0.39317, -0.714756, 0, 0.883328, -0.337159, -0.325661, 0, 0.0597264, -0.0861552, 0.99449, 0, -0.970124, 0.233685, -0.0651921, 0, 0.208238, -0.858421, 0.468776, 0, 0.916908, -0.0997567, 0.38643, 0, -0.786568, -0.577957, -0.217431, 0, 0.14868, 0.618251, -0.77179, 0, -0.24168, 0.675858, 0.69628, 0, -0.50994, 0.83025, 0.225046, 0, -0.534183, -0.676382, -0.507107, 0, -0.793861, -0.6048, -0.0632565, 0, -0.92148, 0.240548, -0.304977, 0, -0.210037, 0.39862, -0.892741, 0, -0.310918, 0.339375, -0.887781, 0, 0.99836, 0.0466305, -0.0331999, 0, -0.0439099, 0.304806, 0.951402, 0, -0.676304, -0.440938, 0.590073, 0, 0.339805, -0.328495, 0.881263, 0, -0.0625568, 0.916832, 0.394342, 0, 0.776463, -0.630153, 0.00360388, 0, -0.224717, -0.8758, 0.427172, 0, 0.618879, -0.70266, -0.351081, 0, -0.380313, 0.101503, -0.919271, 0, 0.149639, -0.957418, 0.246897, 0, 0.128024, 0.948139, 0.290932, 0, -0.292448, 0.893976, -0.339532, 0, -0.192062, -0.972477, -0.131909, 0, 0.44007, -0.870905, 0.218776, 0, 0.303887, -0.659003, -0.688017, 0, 0.195552, 0.41876, -0.886792, 0, -0.889922, 0.454236, -0.0413315, 0, 0.515034, 0.225353, -0.827016, 0, 0.63084, -0.573408, -0.522728, 0, -0.745779, 0.549592, -0.376514, 0, 0.0711763, -0.979204, 0.189982, 0, 0.705657, 0.707887, 0.0307322, 0, 0.114603, 0.655735, -0.746242, 0, -0.0739232, -0.0135353, 0.997172, 0, 0.173356, -0.20818, 0.962605, 0, 0.34008, -0.787344, 0.514232, 0, -0.143596, 0.334295, -0.931465, 0, 0.721989, -0.30942, -0.618863, 0, -0.827657, 0.0410685, 0.559729, 0, -0.804277, -0.418454, 0.421942, 0, -0.379459, 0.792556, 0.477353, 0, 0.0391537, 0.0756503, 0.996365, 0, 0.821943, 0.237588, 0.517651, 0, -0.788974, 0.463584, -0.403249, 0, 0.175972, 0.984364, -0.00782073, 0, 0.891497, 0.399363, 0.213873, 0, -0.819111, 0.106216, 0.563716, 0, 0.105511, 0.544028, -0.832406, 0, -0.464551, 0.63753, 0.614612, 0, 0.232387, 0.935154, -0.267363, 0, 0.777619, 0.272068, -0.566823, 0, 0.975331, 0.190338, 0.111807, 0, 0.224313, 0.450072, -0.86436, 0, 0.841897, -0.536898, 0.0543103, 0, 0.637123, -0.664145, -0.391135, 0, 0.901675, -0.422984, 0.0898189, 0, -0.496241, 0.367413, -0.786608, 0, -0.255468, -0.689763, -0.677469, 0, -0.0616459, -0.951141, -0.302539, 0, -0.431011, -0.889035, -0.154425, 0, -0.0711688, 0.486502, -0.870776, 0, -0.223359, -0.36162, 0.905175, 0, -0.678546, 0.695482, -0.23639, 0, 0.576553, 0.77934, 0.245389, 0, -0.194568, -0.24951, 0.948624, 0, 0.28962, -0.447736, 0.845962, 0, -0.0403821, -0.871893, 0.488028, 0, 0.790972, -0.560788, 0.244705, 0, -0.34553, 0.739953, 0.57713, 0, -0.516376, -0.697122, 0.49737, 0, 0.115998, 0.859293, 0.498156, 0, 0.643831, -0.239955, 0.72657, 0, -0.125114, 0.987348, -0.0974144, 0, -0.306452, 0.610699, -0.73016, 0, -0.269845, 0.893027, -0.360119, 0, 0.328563, -0.570628, -0.752615, 0, -0.306918, -0.42057, 0.853769, 0, 0.699245, -0.51785, 0.492837, 0, -0.558362, -0.469763, -0.68378, 0, 0.476563, -0.841398, 0.254826, 0, 0.0276172, -0.623206, 0.78157, 0, 0.587723, -0.800313, -0.118659, 0, 0.594035, -0.740708, 0.313806, 0, -0.340185, -0.887929, 0.309605, 0, 0.312245, -0.246681, -0.917416, 0, 0.194206, 0.186398, -0.963089, 0, 0.915704, 0.329835, -0.229553, 0, 0.94133, 0.229917, 0.247055, 0, -0.888253, -0.144148, 0.436152, 0, -0.906917, -0.362625, -0.214486, 0, 0.403108, -0.908884, 0.10693, 0, 0.983963, 0.169256, 0.056292, 0, -0.197949, 0.888236, 0.414553, 0, 0.0879741, 0.247673, 0.964841, 0, 0.474384, -0.868071, -0.146331, 0, 0.699884, 0.541342, -0.465953, 0, 0.610965, 0.567249, 0.552223, 0, 0.830508, -0.285788, -0.478103, 0, 0.328573, -0.683076, -0.652263, 0, -0.00537775, 0.873381, 0.487009, 0, -0.51289, 0.828835, 0.223557, 0, -0.871168, -0.15102, 0.467182, 0, -0.545561, 0.390016, -0.741789, 0, 0.874063, 0.259258, 0.410852, 0, -0.781555, 0.612184, -0.120005, 0, -0.284928, 0.708938, -0.645154, 0, -0.568809, 0.0883274, 0.817713, 0, -0.0429388, 0.549957, -0.834088, 0, 0.933296, -0.127233, 0.335813, 0, 0.698149, -0.493464, 0.51873, 0, -0.603413, 0.617495, -0.504572, 0 
+  -0.582745, 0.443494, -0.680971, 0, -0.601153, 0.791961, 0.106833, 0, -0.265466, 0.576385, -0.772857, 0, 0.981035, 0.0963612, -0.16818, 0, 0.524388, 0.819103, 0.232568, 0, -0.170518, -0.43875, 0.882282, 0, 0.598053, -0.435348, 0.672908, 0, 0.53956, 0.839346, -0.0661294, 0, -0.782511, -0.600267, -0.165398, 0, -0.122114, 0.968043, 0.219044, 0, -0.235567, 0.842331, -0.484755, 0, -0.158657, 0.504139, 0.848924, 0, -0.578396, 0.39317, -0.714756, 0, 0.883328, -0.337159, -0.325661, 0, 0.0597264, -0.0861552, 0.99449, 0, -0.970124, 0.233685, -0.0651921, 0, 0.208238, -0.858421, 0.468776, 0, 0.916908, -0.0997567, 0.38643, 0, -0.786568, -0.577957, -0.217431, 0, 0.14868, 0.618251, -0.77179, 0, -0.24168, 0.675858, 0.69628, 0, -0.50994, 0.83025, 0.225046, 0, -0.534183, -0.676382, -0.507107, 0, -0.793861, -0.6048, -0.0632565, 0, -0.92148, 0.240548, -0.304977, 0, -0.210037, 0.39862, -0.892741, 0, -0.310918, 0.339375, -0.887781, 0, 0.99836, 0.0466305, -0.0331999, 0, -0.0439099, 0.304806, 0.951402, 0, -0.676304, -0.440938, 0.590073, 0, 0.339805, -0.328495, 0.881263, 0, -0.0625568, 0.916832, 0.394342, 0, 0.776463, -0.630153, 0.00360388, 0, -0.224717, -0.8758, 0.427172, 0, 0.618879, -0.70266, -0.351081, 0, -0.380313, 0.101503, -0.919271, 0, 0.149639, -0.957418, 0.246897, 0, 0.128024, 0.948139, 0.290932, 0, -0.292448, 0.893976, -0.339532, 0, -0.192062, -0.972477, -0.131909, 0, 0.44007, -0.870905, 0.218776, 0, 0.303887, -0.659003, -0.688017, 0, 0.195552, 0.41876, -0.886792, 0, -0.889922, 0.454236, -0.0413315, 0, 0.515034, 0.225353, -0.827016, 0, 0.63084, -0.573408, -0.522728, 0, -0.745779, 0.549592, -0.376514, 0, 0.0711763, -0.979204, 0.189982, 0, 0.705657, 0.707887, 0.0307322, 0, 0.114603, 0.655735, -0.746242, 0, -0.0739232, -0.0135353, 0.997172, 0, 0.173356, -0.20818, 0.962605, 0, 0.34008, -0.787344, 0.514232, 0, -0.143596, 0.334295, -0.931465, 0, 0.721989, -0.30942, -0.618863, 0, -0.827657, 0.0410685, 0.559729, 0, -0.804277, -0.418454, 0.421942, 0, -0.379459, 0.792556, 0.477353, 0, 0.0391537, 0.0756503, 0.996365, 0, 0.821943, 0.237588, 0.517651, 0, -0.788974, 0.463584, -0.403249, 0, 0.175972, 0.984364, -0.00782073, 0, 0.891497, 0.399363, 0.213873, 0, -0.819111, 0.106216, 0.563716, 0, 0.105511, 0.544028, -0.832406, 0, -0.464551, 0.63753, 0.614612, 0, 0.232387, 0.935154, -0.267363, 0, 0.777619, 0.272068, -0.566823, 0, 0.975331, 0.190338, 0.111807, 0, 0.224313, 0.450072, -0.86436, 0, 0.841897, -0.536898, 0.0543103, 0, 0.637123, -0.664145, -0.391135, 0, 0.901675, -0.422984, 0.0898189, 0, -0.496241, 0.367413, -0.786608, 0, -0.255468, -0.689763, -0.677469, 0, -0.0616459, -0.951141, -0.302539, 0, -0.431011, -0.889035, -0.154425, 0, -0.0711688, 0.486502, -0.870776, 0, -0.223359, -0.36162, 0.905175, 0, -0.678546, 0.695482, -0.23639, 0, 0.576553, 0.77934, 0.245389, 0, -0.194568, -0.24951, 0.948624, 0, 0.28962, -0.447736, 0.845962, 0, -0.0403821, -0.871893, 0.488028, 0, 0.790972, -0.560788, 0.244705, 0, -0.34553, 0.739953, 0.57713, 0, -0.516376, -0.697122, 0.49737, 0, 0.115998, 0.859293, 0.498156, 0, 0.643831, -0.239955, 0.72657, 0, -0.125114, 0.987348, -0.0974144, 0, -0.306452, 0.610699, -0.73016, 0, -0.269845, 0.893027, -0.360119, 0, 0.328563, -0.570628, -0.752615, 0, -0.306918, -0.42057, 0.853769, 0, 0.699245, -0.51785, 0.492837, 0, -0.558362, -0.469763, -0.68378, 0, 0.476563, -0.841398, 0.254826, 0, 0.0276172, -0.623206, 0.78157, 0, 0.587723, -0.800313, -0.118659, 0, 0.594035, -0.740708, 0.313806, 0, -0.340185, -0.887929, 0.309605, 0, 0.312245, -0.246681, -0.917416, 0, 0.194206, 0.186398, -0.963089, 0, 0.915704, 0.329835, -0.229553, 0, 0.94133, 0.229917, 0.247055, 0, -0.888253, -0.144148, 0.436152, 0, -0.906917, -0.362625, -0.214486, 0, 0.403108, -0.908884, 0.10693, 0, 0.983963, 0.169256, 0.056292, 0, -0.197949, 0.888236, 0.414553, 0, 0.0879741, 0.247673, 0.964841, 0, 0.474384, -0.868071, -0.146331, 0, 0.699884, 0.541342, -0.465953, 0, 0.610965, 0.567249, 0.552223, 0, 0.830508, -0.285788, -0.478103, 0, 0.328573, -0.683076, -0.652263, 0, -0.00537775, 0.873381, 0.487009, 0, -0.51289, 0.828835, 0.223557, 0, -0.871168, -0.15102, 0.467182, 0, -0.545561, 0.390016, -0.741789, 0, 0.874063, 0.259258, 0.410852, 0, -0.781555, 0.612184, -0.120005, 0, -0.284928, 0.708938, -0.645154, 0, -0.568809, 0.0883274, 0.817713, 0, -0.0429388, 0.549957, -0.834088, 0, 0.933296, -0.127233, 0.335813, 0, 0.698149, -0.493464, 0.51873, 0, -0.603413, 0.617495, -0.504572, 0
 };
 
 inline float fade(float t) {
-  return (t * t * t) * (t * (t * 6 - 15) + 10); 
+  return (t * t * t) * (t * (t * 6 - 15) + 10);
 }
 
 /*inline float fade(float t) {
-  return t * t * (3 - t * 2); 
+  return t * t * (3 - t * 2);
   }*/
-
-inline float lerp(float t, float a, float b) { 
-  return a + t * (b - a); 
-}
 
 inline float grad(int hash, float x) {
   return x*g1[hash&127];
@@ -862,7 +858,7 @@ inline float grad(int hash, float x, float y, float z) {
   return x*g3[4*h+0]+y*g3[4*h+1]+z*g3[4*h+2];
 }
 
-float noise(float x) 
+float noise(float x)
 {
   float fx = floor(x);
   int X = (int)fx & 255;
@@ -873,34 +869,34 @@ float noise(float x)
   return lerp(u,g00,g10);
 }
 
-float noise(float x, float y) 
+float noise(float x, float y)
 {
   float fx = floor(x);
   float fy = floor(y);
-  
+
   int X = (int)fx & 255;
   int Y = (int)fy & 255;
-  
+
   x -= fx;
   y -= fy;
-  
+
   float u = fade(x);
   float v = fade(y);
-  
+
   int p00  = p[X  ]+Y;
   int p10  = p[X+1]+Y;
   int p01  = p[X  ]+Y+1;
   int p11  = p[X+1]+Y+1;
-  
+
   float g00 = grad(p[p00],x  ,y  );
   float g10 = grad(p[p10],x-1,y  );
   float g01 = grad(p[p01],x  ,y-1);
   float g11 = grad(p[p11],x-1,y-1);
-  
+
   return lerp(v,lerp(u,g00,g10),lerp(u,g01,g11));
 }
 
-float noise(const Vec3f& pos)  
+float noise(const Vec3f& pos)
 {
   float x = pos.x;
   float y = pos.y;
@@ -909,30 +905,30 @@ float noise(const Vec3f& pos)
   float fx = floor(x);
   float fy = floor(y);
   float fz = floor(z);
-  
+
   int X = (int)fx & 255;
   int Y = (int)fy & 255;
   int Z = (int)fz & 255;
-  
+
   x -= fx;
   y -= fy;
   z -= fz;
-  
+
   float u = fade(x);
   float v = fade(y);
   float w = fade(z);
-  
+
   int p00  = p[X]+Y;
   int p000 = p[p00]+Z;
   int p010 = p[p00+1]+Z;
-  int p001 = p000+1; 
+  int p001 = p000+1;
   int p011 = p010+1;
   int p10  = p[X+1]+Y;
   int p100 = p[p10]+Z;
   int p110 = p[p10+1]+Z;
   int p101 = p100+1;
   int p111 = p110+1;
-  
+
   float g000 = grad(p[p000],x  ,y  ,z  );
   float g100 = grad(p[p100],x-1,y  ,z  );
   float g010 = grad(p[p010],x  ,y-1,z  );
@@ -941,7 +937,7 @@ float noise(const Vec3f& pos)
   float g101 = grad(p[p101],x-1,y  ,z-1);
   float g011 = grad(p[p011],x  ,y-1,z-1);
   float g111 = grad(p[p111],x-1,y-1,z-1);
-  
+
   return lerp(w,
               lerp(v,lerp(u,g000,g100),lerp(u,g010,g110)),
               lerp(v,lerp(u,g001,g101),lerp(u,g011,g111)));
@@ -1001,7 +997,7 @@ Vec2f getTextureCoordinatesSubdivMesh(void* uniform _mesh, const unsigned int pr
 	  const float v0 = v;
 	  const float u1 = 1.0f - u;
 	  const float v1 = 1.0f - v;
-	  st = u1*v1 * txt0 + u0*v1* txt1 + u0*v0 * txt2 + u1*v0* txt3;	  
+	  st = u1*v1 * txt0 + u0*v1* txt1 + u0*v0 * txt2 + u1*v0* txt3;
 	}
 #if defined(_DEBUG)
       else
@@ -1022,7 +1018,7 @@ float getTextureTexel1f(void *uniform _texture, float s, float t)
   iv = iv % texture->height; if (iv < 0) iv += texture->height;
 
   if (texture->format == FLOAT32)
-  { 
+  {
     uniform float *uniform data = (uniform float *uniform)texture->data;
     return data[iv*texture->width + iu];
   }
@@ -1039,7 +1035,7 @@ Vec3f getTextureTexel3f(void *uniform _texture, float s, float t)
 {
   uniform Texture * uniform texture = (Texture*)_texture;
   if (!texture) return make_Vec3f(0.0f,0.0f,0.0f);
-  
+
   int iu = (int)floor(s * (float)(texture->width));
   iu = iu % texture->width; if (iu < 0) iu += texture->width;
   int iv = (int)floor(t * (float)(texture->height));

@@ -28,4 +28,3 @@ Light_EvalRes Light_eval(const Light* uniform,
 }
 
 extern "C" void dummy() {} // just to avoid linker warning under MacOSX
-

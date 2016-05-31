@@ -12,6 +12,7 @@ sed -i.backup  's/.isph\"/.h\"/g' $2
 sed -i.backup  's/uniform //g' $2
 sed -i.backup  's/ uniform\*/\*/g' $2
 sed -i.backup  's/ uniform)/)/g' $2
+sed -i.backup  's/*uniform)/*)/g' $2
 sed -i.backup  's/varying //g' $2
 sed -i.backup  's/ varying//g' $2
 sed -i.backup  's/unmasked //g' $2
@@ -21,6 +22,7 @@ sed -i.backup  's/export/extern \"C\"/g' $2
 sed -i.backup 's/int8/char/g' $2
 sed -i.backup 's/int16/int16_t/g' $2
 sed -i.backup 's/int32/int32_t/g' $2
+sed -i.backup 's/uchar/uint8_t/g' $2
 
 sed -i.backup  's/__mask/1/g' $2
 sed -i.backup  's/NULL/nullptr/g' $2
@@ -28,7 +30,10 @@ sed -i.backup  's/NULL/nullptr/g' $2
 sed -i.backup  's/programIndex/0/g' $2
 sed -i.backup  's/programCount/1/g' $2
 sed -i.backup  's/task[ ]*void[ ]*\([a-zA-Z0-9_]*\)[ ]*(/void \1 (int taskIndex, /g' $2
-sed -i.backup  's/launch\[\([^]]*\)\][ ]*\([a-zA-Z0-9_]*\)[ ]*(\([^)]*\))/parallel_for(size_t(0),size_t(\1),[\&](const range<size_t>\& range) \{\n    for (size_t i=range.begin(); i<range.end(); i++)\n      \2(i,\3);\n  \})/g' $2
+sed -i.backup  's/launch\[\([^]]*\)\][ ]*\([a-zA-Z0-9_]*\)[ ]*(\([^)]*\))/parallel_for(size_t(0),size_t(\1),[\&](const range<size_t>\& range) \{\
+    for (size_t i=range.begin(); i<range.end(); i++)\
+      \2(i,\3);\
+  \})/g' $2
 
 sed -i.backup  's/foreach[ ]*([ ]*\([a-zA-Z0-9_]*\)[ ]*=[ ]*\([^ \.]*\)[ ]*\.\.\.[ ]*\([^ ),]*\)[ ]*)/for (unsigned int \1=\2; \1<\3; \1++)/g' $2
 sed -i.backup  's/foreach_tiled[ ]*([ ]*\([a-zA-Z0-9_]*\)[ ]*=[ ]*\([^ \.]*\)[ ]*\.\.\.[ ]*\([^ ),]*\)[ ]*)/for (unsigned int \1=\2; \1<\3; \1++)/g' $2
@@ -69,12 +74,15 @@ sed -i.backup  's/one_over_four_pi/float(one_over_four_pi)/g' $2
 sed -i.backup  's/(two_pi/(float(two_pi)/g' $2
 sed -i.backup  's/[^_(]two_pi/float(two_pi)/g' $2
 sed -i.backup  's/make_Vec2f/Vec2f/g' $2
+sed -i.backup  's/make_Vec2i/Vec2i/g' $2
 sed -i.backup  's/make_Vec3f/Vec3f/g' $2
 sed -i.backup  's/make_Vec3fa/Vec3fa/g' $2
+sed -i.backup  's/make_Vec4f/Vec4f/g' $2
 sed -i.backup  's/make_Sample3f/Sample3f/g' $2
 sed -i.backup  's/make_AffineSpace3f/AffineSpace3f/g' $2
 
 sed -i.backup 's/sincos/sincosf/g' $2
+sed -i.backup 's/ lerp/ lerpr/g' $2
 sed -i 's/\/\/ALIGNED_STRUCT/ALIGNED_STRUCT/g' $2
 
 # Embree specific

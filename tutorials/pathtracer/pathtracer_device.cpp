@@ -219,7 +219,7 @@ inline Vec3fa DielectricReflection__eval(const DielectricReflection* This, const
 inline Vec3fa DielectricReflection__sample(const DielectricReflection* This, const Vec3fa &wo, const DifferentialGeometry &dg, Sample3f &wi, const Vec2f &s)
 {
   const float cosThetaO = clamp(dot(wo,dg.Ns));
-  wi = reflect_(wo,dg.Ns,cosThetaO);
+  wi = Sample3f(reflect(wo,dg.Ns,cosThetaO),1.0f);
   return Vec3fa(fresnelDielectric(cosThetaO,This->eta));
 }
 
@@ -484,7 +484,7 @@ Vec3fa MirrorMaterial__eval(MirrorMaterial* This, const BRDF& brdf, const Vec3fa
 
 Vec3fa MirrorMaterial__sample(MirrorMaterial* This, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
 {
-  wi_o = reflect_(wo,dg.Ns);
+  wi_o = Sample3f(reflect(wo,dg.Ns),1.0f);
   return Vec3fa(This->reflectance);
 }
 
@@ -518,7 +518,7 @@ Vec3fa OBJMaterial__eval(OBJMaterial* material, const BRDF& brdf, const Vec3fa& 
     R = R + (1.0f/float(pi)) * clamp(dot(wi,dg.Ns)) * brdf.Kd;
   }
   if (Ms > 0.0f) {
-    const Sample3f refl = reflect_(wo,dg.Ns);
+    const Sample3f refl = Sample3f(reflect(wo,dg.Ns),1.0f);
     if (dot(refl.v,wi) > 0.0f)
       R = R + (brdf.Ns+2) * float(one_over_two_pi) * powf(max(1e-10f,dot(refl.v,wi)),brdf.Ns) * clamp(dot(wi,dg.Ns)) * brdf.Ks;
   }
@@ -540,7 +540,7 @@ Vec3fa OBJMaterial__sample(OBJMaterial* material, const BRDF& brdf, const Vec3fa
   Sample3f wis = Sample3f(Vec3fa(0.0f),0.0f);
   if (max(max(brdf.Ks.x,brdf.Ks.y),brdf.Ks.z) > 0.0f)
   {
-    const Sample3f refl = reflect_(wo,dg.Ns);
+    const Sample3f refl = Sample3f(reflect(wo,dg.Ns),1.0f);
     wis.v = powerCosineSampleHemisphere(brdf.Ns,s);
     wis.pdf = powerCosineSampleHemispherePDF(wis.v,brdf.Ns);
     wis.v = frame(refl.v) * wis.v;
@@ -638,7 +638,7 @@ Vec3fa ReflectiveMetalMaterial__eval(ReflectiveMetalMaterial* This, const BRDF& 
 
 Vec3fa ReflectiveMetalMaterial__sample(ReflectiveMetalMaterial* This, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
 {
-  wi_o = reflect_(wo,dg.Ns);
+  wi_o = Sample3f(reflect(wo,dg.Ns),1.0f);
   return Vec3fa(This->reflectance) * fresnelConductor(dot(wo,dg.Ns),Vec3fa((Vec3fa)This->eta),Vec3fa((Vec3fa)This->k));
 }
 
@@ -698,7 +698,7 @@ Vec3fa DielectricMaterial__sample(DielectricMaterial* material, const BRDF& brdf
 
   float cosThetaO = clamp(dot(wo,dg.Ns));
   float cosThetaI; Sample3f wit = refract(wo,dg.Ns,eta,cosThetaO,cosThetaI);
-  Sample3f wis = reflect_(wo,dg.Ns);
+  Sample3f wis = Sample3f(reflect(wo,dg.Ns),1.0f);
   float R = fresnelDielectric(cosThetaO,cosThetaI,eta);
   Vec3fa cs = Vec3fa(R);
   Vec3fa ct = Vec3fa(1.0f-R);
@@ -723,7 +723,7 @@ Vec3fa ThinDielectricMaterial__sample(ThinDielectricMaterial* This, const BRDF& 
   if (cosThetaO <= 0.0f) return Vec3fa(0.0f);
   float R = fresnelDielectric(cosThetaO,rcp(This->eta));
   Sample3f wit = Sample3f(neg(wo),1.0f);
-  Sample3f wis = reflect_(wo,dg.Ns);
+  Sample3f wis = Sample3f(reflect(wo,dg.Ns),1.0f);
   Vec3fa ct = exp(Vec3fa(This->transmissionFactor)*rcp(cosThetaO))*Vec3fa(1.0f-R);
   Vec3fa cs = Vec3fa(R);
   return sample_component2(cs,wis,medium,ct,wit,medium,Lw,wi_o,medium,s.x);
@@ -1254,17 +1254,17 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
     materialID = mesh->triangles[ray.primID].materialID;
     if (mesh->texcoords) {
       ISPCTriangle* tri = &mesh->triangles[ray.primID];
-      const Vec2f st0 = Vec2f(mesh->texcoords[tri->v0]);
-      const Vec2f st1 = Vec2f(mesh->texcoords[tri->v1]);
-      const Vec2f st2 = Vec2f(mesh->texcoords[tri->v2]);
+      const Vec2f st0 = mesh->texcoords[tri->v0];
+      const Vec2f st1 = mesh->texcoords[tri->v1];
+      const Vec2f st2 = mesh->texcoords[tri->v2];
       const float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
       const Vec2f st = w*st0 + u*st1 + v*st2;
       dg.u = st.x;
       dg.v = st.y;
       /*
-      const Vec3fa n0 = Vec3fa(mesh->normals[tri->v0]);
-      const Vec3fa n1 = Vec3fa(mesh->normals[tri->v1]);
-      const Vec3fa n2 = Vec3fa(mesh->normals[tri->v2]);
+      const Vec3fa n0 = mesh->normals[tri->v0];
+      const Vec3fa n1 = mesh->normals[tri->v1];
+      const Vec3fa n2 = mesh->normals[tri->v2];
       dg.Ns = w*n0 + u*n1 + v*n2;
       */
     }
@@ -1275,10 +1275,10 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
     materialID = mesh->meshMaterialID;
     if (mesh->texcoords) {
       ISPCQuad* quad = &mesh->quads[ray.primID];
-      const Vec2f st0 = Vec2f(mesh->texcoords[quad->v0]);
-      const Vec2f st1 = Vec2f(mesh->texcoords[quad->v1]);
-      const Vec2f st2 = Vec2f(mesh->texcoords[quad->v2]);
-      const Vec2f st3 = Vec2f(mesh->texcoords[quad->v3]);
+      const Vec2f st0 = mesh->texcoords[quad->v0];
+      const Vec2f st1 = mesh->texcoords[quad->v1];
+      const Vec2f st2 = mesh->texcoords[quad->v2];
+      const Vec2f st3 = mesh->texcoords[quad->v3];
       if (ray.u+ray.v < 1.0f) {
         const float u = ray.u, v = ray.v; const float w = 1.0f-u-v;
         const Vec2f st = w*st0 + u*st1 + v*st3;
@@ -1680,7 +1680,7 @@ inline float updateEdgeLevel( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, const
 
 void updateEdgeLevelBuffer( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, size_t startID, size_t endID )
 {
-  for (size_t f=startID; f<endID;f++) 
+  for (size_t f=startID; f<endID;f++)
   {
     unsigned int e = mesh->face_offsets[f];
     unsigned int N = mesh->verticesPerFace[f];
