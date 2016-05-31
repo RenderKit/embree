@@ -34,7 +34,7 @@ namespace embree
       
       __forceinline void finalize() 
       {
-        vu = (vfloat<M>(step)+U+vfloat<M>(i))*(1.0f/float(N));
+        vu = (vfloat<M>(step)+U+vfloat<M>(float(i)))*(1.0f/float(N));
         vv = 0.0f;
         vt = T;
       }

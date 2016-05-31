@@ -45,8 +45,8 @@ namespace embree
         const unsigned width = x1-x0+1;
         const unsigned height = y1-y0+1;
         const GridRange range(0,width-1,0,height-1);
-        const unsigned bvhBytes  = getBVHBytes(range,0);
-        const unsigned gridBytes = 4*width*height*sizeof(float)+4; // 4 bytes of padding required because of off by 1 read below
+        const size_t bvhBytes  = getBVHBytes(range,0);
+        const size_t gridBytes = 4*size_t(width)*size_t(height)*sizeof(float)+4; // 4 bytes of padding required because of off by 1 read below
         return new (alloc(offsetof(GridSOA,data)+bvhBytes+gridBytes)) GridSOA(*patch,x0,x1,y0,y1,patch->grid_u_res,patch->grid_v_res,scene->getSubdivMesh(patch->geom),bvhBytes,bounds_o);  
       }
 
