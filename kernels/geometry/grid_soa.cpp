@@ -21,12 +21,12 @@ namespace embree
   namespace isa
   {  
     GridSOA::GridSOA(const SubdivPatch1Base& patch, 
-                     const size_t x0, const size_t x1, const size_t y0, const size_t y1, const size_t swidth, const size_t sheight,
+                     const unsigned x0, const unsigned x1, const unsigned y0, const unsigned y1, const unsigned swidth, const unsigned sheight,
                      const SubdivMesh* const geom, const size_t bvhBytes, BBox3fa* bounds_o)
       : root(BVH4::emptyNode), width(x1-x0+1), height(y1-y0+1), dim_offset(width*height), geomID(patch.geom), primID(patch.prim), bvhBytes(bvhBytes)
     {      
       /* the generate loops need padded arrays, thus first store into these temporary arrays */
-      size_t temp_size = width*height+VSIZEX;
+      unsigned temp_size = width*height+VSIZEX;
       dynamic_large_stack_array(float,local_grid_u,temp_size,64*64*sizeof(float));
       dynamic_large_stack_array(float,local_grid_v,temp_size,64*64*sizeof(float));
       dynamic_large_stack_array(float,local_grid_x,temp_size,64*64*sizeof(float));
@@ -39,7 +39,7 @@ namespace embree
                local_grid_x,local_grid_y,local_grid_z,local_grid_u,local_grid_v,geom);
       
       /* encode UVs */
-      for (size_t i=0; i<dim_offset; i+=VSIZEX) {
+      for (unsigned i=0; i<dim_offset; i+=VSIZEX) {
         const vintx iu = (vintx) clamp(vfloatx::load(&local_grid_u[i])*0xFFFF, vfloatx(0.0f), vfloatx(0xFFFF));
         const vintx iv = (vintx) clamp(vfloatx::load(&local_grid_v[i])*0xFFFF, vfloatx(0.0f), vfloatx(0xFFFF));
         vintx::storeu(&local_grid_uv[i], (iv << 16) | iu);
@@ -94,9 +94,9 @@ namespace embree
         
         /* compute the bounds just for the range! */
         BBox3fa bounds( empty );
-        for (size_t v = range.v_start; v<=range.v_end; v++) 
+        for (unsigned v = range.v_start; v<=range.v_end; v++) 
         {
-          for (size_t u = range.u_start; u<=range.u_end; u++)
+          for (unsigned u = range.u_start; u<=range.u_end; u++)
           {
             const float x = grid_x_array[ v * width + u];
             const float y = grid_y_array[ v * width + u];
@@ -115,7 +115,7 @@ namespace embree
         if (unlikely(v_size < 2 && v_start > 0)) v_start--;
         
         /* we store pointer to first subgrid vertex as leaf node */
-        const size_t value = 16*(v_start * width + u_start + 1); // +1 to not create empty leaf
+        const unsigned value = 16*(v_start * width + u_start + 1); // +1 to not create empty leaf
         curNode = BVH4::encodeTypedLeaf((void*)value,0);
         return bounds;
       }
@@ -130,11 +130,11 @@ namespace embree
         
         /* split range */
         GridRange r[4];
-        const size_t children = range.splitIntoSubRanges(r);
+        const unsigned children = range.splitIntoSubRanges(r);
       
         /* recurse into subtrees */
         BBox3fa bounds( empty );
-        for (size_t i=0; i<children; i++)
+        for (unsigned i=0; i<children; i++)
         {
           BBox3fa box = buildBVH( node->child(i), node_array, grid_array, r[i], allocator);
           node->set(i,box);
