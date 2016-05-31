@@ -419,8 +419,8 @@ namespace embree
       assert(N<(MAX_RING_FACE_VALENCE));
       assert(2*N<(MAX_RING_EDGE_VALENCE));
       dest.vertex_level = vertex_level;
-      dest.face_valence = N;
-      dest.edge_valence = 2*N;
+      dest.face_valence = unsigned(N);
+      dest.edge_valence = unsigned(2*N);
       dest.border_index = -1;
       dest.vtx     = (Vertex_t)center;
       dest.vertex_crease_weight = 0.0f;
