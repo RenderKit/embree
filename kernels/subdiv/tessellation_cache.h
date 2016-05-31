@@ -173,7 +173,7 @@ namespace embree
    //__forceinline size_t getCurrentIndex() { return localTime; }
    __forceinline void   addCurrentIndex(const size_t i=1) { localTime.fetch_add(i); }
 
-   __forceinline size_t getTime(const unsigned globalTime) {
+   __forceinline size_t getTime(const size_t globalTime) {
      return localTime+NUM_CACHE_SEGMENTS*globalTime;
    }
 
@@ -228,7 +228,7 @@ namespace embree
    }
 
    template<typename Constructor>
-     static __forceinline auto lookup (CacheEntry& entry, unsigned globalTime, const Constructor constructor) -> decltype(constructor())
+     static __forceinline auto lookup (CacheEntry& entry, size_t globalTime, const Constructor constructor) -> decltype(constructor())
    {
      ThreadWorkState *t_state = SharedLazyTessellationCache::threadState();
 
