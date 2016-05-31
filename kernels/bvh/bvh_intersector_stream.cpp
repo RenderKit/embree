@@ -182,17 +182,22 @@ namespace embree
 
         if (m_active == 0) return;
 
-        Vec3fa min_rdir(pos_inf);
-        Vec3fa max_rdir(neg_inf);
+        Vec3fa rays_min_rdir(pos_inf);
+        Vec3fa rays_max_rdir(neg_inf);
+
         /* do per ray precalculations */
         for (size_t i=0; i<numOctantRays; i++) {
           new (&ray_ctx[i]) RContext(rays[i]);
           new (&pre[i]) Precalculations(*rays[i],bvh);
-          min_rdir = min(min_rdir,ray_ctx[i].rdir);
-          max_rdir = max(max_rdir,ray_ctx[i].rdir);          
+          rays_min_rdir     = min(rays_min_rdir,ray_ctx[i].rdir);
+          rays_max_rdir     = max(rays_max_rdir,ray_ctx[i].rdir);          
         }
 
-        const Vec3fa org_rdir = ray_ctx[0].org_rdir;
+
+        const Vec3fa min_rdir = select(ge_mask(rays_min_rdir,Vec3fa(zero)),rays_min_rdir,rays_max_rdir);
+        const Vec3fa max_rdir = select(ge_mask(rays_min_rdir,Vec3fa(zero)),rays_max_rdir,rays_min_rdir);
+        const Vec3fa min_org_rdir = min_rdir * rays[0]->org;
+        const Vec3fa max_org_rdir = max_rdir * rays[0]->org;
 
         stack0[0].ptr  = BVH::invalidNode;
         stack0[0].mask = (size_t)-1;
@@ -266,29 +271,29 @@ namespace embree
             const vfloat<K> bmaxX = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farX));
             const vfloat<K> bmaxY = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farY));
             const vfloat<K> bmaxZ = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farZ));
-#if 0
+#if 1
             /* interval-based culling test */
             {
-                const vfloat<K> tminX = msub(bminX, min_rdir.x, org_rdir.x);
-                const vfloat<K> tminY = msub(bminY, min_rdir.y, org_rdir.y);
-                const vfloat<K> tminZ = msub(bminZ, min_rdir.z, org_rdir.z);
-                const vfloat<K> tmaxX = msub(bmaxX, max_rdir.x, org_rdir.x);
-                const vfloat<K> tmaxY = msub(bmaxY, max_rdir.y, org_rdir.y);
-                const vfloat<K> tmaxZ = msub(bmaxZ, max_rdir.z, org_rdir.z);
-                const vfloat<K> tmin  = max(max(tminX,tminY),tminZ);
-                const vfloat<K> tmax  = min(min(tmaxX,tmaxY),tmaxZ);
-                const vbool<K> vmask   = tmin <= tmax;
+              const vfloat<K> tminX = msub(bminX, min_rdir.x, min_org_rdir.x);
+              const vfloat<K> tminY = msub(bminY, min_rdir.y, min_org_rdir.y);
+              const vfloat<K> tminZ = msub(bminZ, min_rdir.z, min_org_rdir.z);
+              const vfloat<K> tmaxX = msub(bmaxX, max_rdir.x, max_org_rdir.x);
+              const vfloat<K> tmaxY = msub(bmaxY, max_rdir.y, max_org_rdir.y);
+              const vfloat<K> tmaxZ = msub(bmaxZ, max_rdir.z, max_org_rdir.z);
+              const vfloat<K> tmin  = max(max(tminX,tminY),tminZ);
+              const vfloat<K> tmax  = min(min(tmaxX,tmaxY),tmaxZ);
+              const vbool<K> vmaskI   = tmin <= tmax;
 
-                if (unlikely(none(vmask))) 
-                {
-                  /*! pop next node */
-                  STAT3(normal.trav_stack_pop,1,1,1);                          
-                  stackPtr--;
-                  cur = NodeRef(stackPtr->ptr);
-                  m_trav_active = stackPtr->mask;
-                  assert(m_trav_active);
-                  goto pop;
-                }
+              if (unlikely(none(vmaskI))) 
+              {
+                /*! pop next node */
+                STAT3(normal.trav_stack_pop,1,1,1);                          
+                stackPtr--;
+                cur = NodeRef(stackPtr->ptr);
+                m_trav_active = stackPtr->mask;
+                assert(m_trav_active);
+                goto pop;
+              }
             }
 #endif            
             vfloat<K> dist(inf);
@@ -302,6 +307,7 @@ namespace embree
               const size_t i = __bscf(bits);
               const RContext &ray = cur_ray_ctx[i];
               const vint<K> bitmask  = vint<K>((int)1 << i);
+
               const vbool<K> vmask = intersectNode<K,true, robust> (ray,bminX,bminY,bminZ,bmaxX,bmaxY,bmaxZ,dist);
 
 #if defined(__AVX2__)
@@ -312,6 +318,9 @@ namespace embree
             } while(bits);              
 
             const vbool<K> vmask = dist < inf;
+
+            STAT3(normal.trav_hit_boxes[__popcnt(movemask(vmask))],1,1,1);                          
+
             if (unlikely(none(vmask))) 
             {
               /*! pop next node */
@@ -337,7 +346,7 @@ namespace embree
           STAT3(normal.trav_leaves, 1, 1, 1);
           size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
           
-          STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
+          //STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
           size_t bits = m_trav_active;
 
           /*! intersect stream of rays with all primitives */
@@ -356,6 +365,19 @@ namespace embree
         ///////////////////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////
+        if (rays[0]->primID == -1) 
+        {
+          PRINT(*rays[0]);
+          PRINT(min_rdir);
+          PRINT(max_rdir);
+          PRINT(pc.nearX);
+          PRINT(pc.nearY);
+          PRINT(pc.nearZ);
+          PRINT(pc.farX);
+          PRINT(pc.farY);
+          PRINT(pc.farZ);
+          exit(0);
+        }
       }      
     }
     
