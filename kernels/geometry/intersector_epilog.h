@@ -538,14 +538,14 @@ namespace embree
         const RTCIntersectContext* context;
         const vint<M>& geomIDs;
         const vint<M>& primIDs;
-        const int i;
+        const size_t i;
         Scene* const scene;
         
         __forceinline IntersectKEpilogM(RayK<K>& ray,
                                         const RTCIntersectContext* context, 
                                        const vint<M>& geomIDs, 
                                        const vint<M>& primIDs, 
-                                       int i,
+                                       size_t i,
                                        Scene* scene)
           : ray(ray), context(context), geomIDs(geomIDs), primIDs(primIDs), i(i), scene(scene) {}
         
@@ -598,7 +598,7 @@ namespace embree
         const RTCIntersectContext* context;
         const vint<M>& geomIDs;
         const vint<M>& primIDs;
-        const int i;
+        const size_t i;
         Scene* const scene;
         
         __forceinline OccludedKEpilogM(vbool<K>& valid0,
@@ -606,7 +606,7 @@ namespace embree
                                        const RTCIntersectContext* context, 
                                        const vint<M>& geomIDs, 
                                        const vint<M>& primIDs, 
-                                       int i,
+                                       size_t i,
                                        Scene* scene)
           : valid0(valid0), ray(ray), context(context), geomIDs(geomIDs), primIDs(primIDs), i(i), scene(scene) {}
         
