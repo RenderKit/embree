@@ -97,7 +97,7 @@ namespace embree
         
         
         /*! returns true if the mapping is invalid in some dimension */
-        __forceinline bool invalid(const int dim) const {
+        __forceinline bool invalid(const size_t dim) const {
           return scale[dim] == 0.0f;
         }
         
