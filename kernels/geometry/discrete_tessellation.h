@@ -23,7 +23,7 @@ namespace embree
     DiscreteTessellationPattern (float ftess, const size_t sublevel = 0)
     {
       for (size_t i=0; i<sublevel; i++) ftess *= 0.5f;
-      int tess = ceil(ftess);
+      int tess = (int) ceil(ftess);
       for (size_t i=0; i<sublevel; i++) tess *= 2;
       rcp_tess = 1.0f/float(tess);
       N = tess;

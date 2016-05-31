@@ -320,7 +320,7 @@ namespace embree
     struct BuildProgressMonitorInterface : public BuildProgressMonitor {
       BuildProgressMonitorInterface(Scene* scene) 
       : scene(scene) {}
-      void operator() (size_t dn) { scene->progressMonitor(dn); }
+      void operator() (size_t dn) { scene->progressMonitor(double(dn)); }
     private:
       Scene* scene;
     };

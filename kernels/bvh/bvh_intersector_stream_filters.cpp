@@ -61,7 +61,7 @@ namespace embree
         }
         /* need to flush rays in octant ? */
         if (unlikely(cur_octant == -1))
-          for (size_t i=0;i<8;i++)
+          for (int i=0;i<8;i++)
             if (rays_in_octant[i])
             {
               cur_octant = i;
