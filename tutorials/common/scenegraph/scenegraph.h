@@ -238,10 +238,10 @@ namespace embree
       {
       public:
         Triangle() {}
-        Triangle (int v0, int v1, int v2) 
+        Triangle (unsigned v0, unsigned v1, unsigned v2) 
         : v0(v0), v1(v1), v2(v2) {}
       public:
-        int v0, v1, v2;
+        unsigned v0, v1, v2;
       };
       
     public:
@@ -284,10 +284,10 @@ namespace embree
       {
       public:
         Quad() {}
-        Quad (int v0, int v1, int v2, int v3) 
+        Quad (unsigned v0, unsigned v1, unsigned v2, unsigned v3) 
         : v0(v0), v1(v1), v2(v2), v3(v3) {}
       public:
-        int v0, v1, v2, v3;
+        unsigned v0, v1, v2, v3;
       };
       
     public:
@@ -352,14 +352,14 @@ namespace embree
       avector<Vertex> positions2;           //!< vertex positions for 2nd timestep
       avector<Vertex> normals;              //!< face vertex normals
       std::vector<Vec2f> texcoords;             //!< face texture coordinates
-      std::vector<int> position_indices;        //!< position indices for all faces
-      std::vector<int> normal_indices;          //!< normal indices for all faces
-      std::vector<int> texcoord_indices;        //!< texcoord indices for all faces
-      std::vector<int> verticesPerFace;         //!< number of indices of each face
-      std::vector<int> holes;                   //!< face ID of holes
+      std::vector<unsigned> position_indices;        //!< position indices for all faces
+      std::vector<unsigned> normal_indices;          //!< normal indices for all faces
+      std::vector<unsigned> texcoord_indices;        //!< texcoord indices for all faces
+      std::vector<unsigned> verticesPerFace;         //!< number of indices of each face
+      std::vector<unsigned> holes;                   //!< face ID of holes
       std::vector<Vec2i> edge_creases;          //!< index pairs for edge crease 
       std::vector<float> edge_crease_weights;   //!< weight for each edge crease
-      std::vector<int> vertex_creases;          //!< indices of vertex creases
+      std::vector<unsigned> vertex_creases;          //!< indices of vertex creases
       std::vector<float> vertex_crease_weights; //!< weight for each vertex crease
       Ref<MaterialNode> material;
       RTCBoundaryMode boundaryMode;
@@ -396,7 +396,7 @@ namespace embree
     public:
       avector<Vertex> v;        //!< control points (x,y,z,r)
       avector<Vertex> v2;       //!< control points (x,y,z,r)
-      std::vector<int> indices; //!< list of line segments
+      std::vector<unsigned> indices; //!< list of line segments
       Ref<MaterialNode> material;
     };
 

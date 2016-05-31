@@ -29,24 +29,24 @@ namespace embree
 {
   struct ISPCTriangle
   {
-    int v0;                /*< first triangle vertex */
-    int v1;                /*< second triangle vertex */
-    int v2;                /*< third triangle vertex */
-    int materialID;        /*< material of triangle */
+    unsigned v0;                /*< first triangle vertex */
+    unsigned v1;                /*< second triangle vertex */
+    unsigned v2;                /*< third triangle vertex */
+    unsigned materialID;        /*< material of triangle */
   };
 
   struct ISPCQuad
   {
-    int v0;                /*< first triangle vertex */
-    int v1;                /*< second triangle vertex */
-    int v2;                /*< third triangle vertex */
-    int v3;                /*< fourth triangle vertex */
+    unsigned v0;                /*< first triangle vertex */
+    unsigned v1;                /*< second triangle vertex */
+    unsigned v2;                /*< third triangle vertex */
+    unsigned v3;                /*< fourth triangle vertex */
   };
 
   struct ISPCHair
   {
-    int vertex;
-    int id;
+    unsigned vertex;
+    unsigned id;
   };
 
   enum ISPCType { TRIANGLE_MESH, SUBDIV_MESH, HAIR_SET, INSTANCE, GROUP, QUAD_MESH, LINE_SEGMENTS, CURVES };
@@ -176,8 +176,8 @@ namespace embree
 
         size_t numEdges = in->position_indices.size();
         size_t numFaces = in->verticesPerFace.size();
-        subdivlevel = new float[numEdges];
-        face_offsets = new int[numFaces];
+        subdivlevel = new float[numEdges]; // FIXME: never deleted
+        face_offsets = new unsigned[numFaces]; // FIXME: never deleted
         for (size_t i=0; i<numEdges; i++) subdivlevel[i] = 1.0f;
         int offset = 0;
         for (size_t i=0; i<numFaces; i++)
@@ -192,17 +192,17 @@ namespace embree
       Vec3fa* positions;       //!< vertex positions
       Vec3fa* normals;         //!< face vertex normals
       Vec2f* texcoords;        //!< face texture coordinates
-      int* position_indices;   //!< position indices for all faces
-      int* normal_indices;     //!< normal indices for all faces
-      int* texcoord_indices;   //!< texcoord indices for all faces
-      int* verticesPerFace;    //!< number of indices of each face
-      int* holes;              //!< face ID of holes
+      unsigned* position_indices;   //!< position indices for all faces
+      unsigned* normal_indices;     //!< normal indices for all faces
+      unsigned* texcoord_indices;   //!< texcoord indices for all faces
+      unsigned* verticesPerFace;    //!< number of indices of each face
+      unsigned* holes;              //!< face ID of holes
       float* subdivlevel;      //!< subdivision level
       Vec2i* edge_creases;          //!< crease index pairs
       float* edge_crease_weights;   //!< weight for each crease
-      int* vertex_creases;          //!< indices of vertex creases
+      unsigned* vertex_creases;          //!< indices of vertex creases
       float* vertex_crease_weights; //!< weight for each vertex crease
-      int *face_offsets;
+      unsigned* face_offsets;
       unsigned int numVertices;
       unsigned int numFaces;
       unsigned int numEdges;
@@ -232,7 +232,7 @@ namespace embree
       ISPCGeometry geom;
       Vec3fa* v;        //!< control points (x,y,z,r)
       Vec3fa* v2;       //!< control points (x,y,z,r)
-      int* indices;     //!< for each segment, index to first control point
+      unsigned* indices;     //!< for each segment, index to first control point
       unsigned int numVertices;
       unsigned int numSegments;
       unsigned int materialID;

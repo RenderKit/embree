@@ -79,9 +79,9 @@ namespace embree
 
   void addRandomSubdivFeatures(RandomSampler& sampler, Ref<SceneGraph::SubdivMeshNode> mesh, size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles)
   {
-    std::vector<int> offsets;
-    std::vector<int>& faces = mesh->verticesPerFace;
-    std::vector<int>& indices = mesh->position_indices;
+    std::vector<unsigned> offsets;
+    std::vector<unsigned>& faces = mesh->verticesPerFace;
+    std::vector<unsigned>& indices = mesh->position_indices;
     for (size_t i=0,j=0; i<mesh->verticesPerFace.size(); i++) {
       offsets.push_back(j); j+=mesh->verticesPerFace[i];
     } 
