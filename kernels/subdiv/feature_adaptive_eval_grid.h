@@ -216,10 +216,10 @@ namespace embree
         if (erange.empty())
           return;
         
-        int lx0 = ceilf(erange.lower.x);
-        int lx1 = ceilf(erange.upper.x) + (erange.upper.x == x1 && (srange.lower.x < erange.upper.x || erange.upper.x == 0));
-        int ly0 = ceilf(erange.lower.y);
-        int ly1 = ceilf(erange.upper.y) + (erange.upper.y == y1 && (srange.lower.y < erange.upper.y || erange.upper.y == 0));
+        int lx0 = (int) ceilf(erange.lower.x);
+        int lx1 = (int) ceilf(erange.upper.x) + (erange.upper.x == x1 && (srange.lower.x < erange.upper.x || erange.upper.x == 0));
+        int ly0 = (int) ceilf(erange.lower.y);
+        int ly1 = (int) ceilf(erange.upper.y) + (erange.upper.y == y1 && (srange.lower.y < erange.upper.y || erange.upper.y == 0));
         if (lx0 >= lx1 || ly0 >= ly1) return;
 
         CatmullClarkPatch::Type ty = patch.type();
