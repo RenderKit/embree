@@ -31,8 +31,8 @@ namespace embree
       const T t  = u;
       const T s  = T(1.0f) - u;
       const T n0 = s*s*s;
-      const T n1 = (4.0f*(s*s*s)+(t*t*t)) + (12.0f*((s*t)*s) + 6.0*((t*s)*t));
-      const T n2 = (4.0f*(t*t*t)+(s*s*s)) + (12.0f*((t*s)*t) + 6.0*((s*t)*s));
+      const T n1 = (4.0f*(s*s*s)+(t*t*t)) + (12.0f*((s*t)*s) + 6.0f*((t*s)*t));
+      const T n2 = (4.0f*(t*t*t)+(s*s*s)) + (12.0f*((t*s)*t) + 6.0f*((s*t)*s));
       const T n3 = t*t*t;
       return Vec4<T>(n0,n1,n2,n3);
     }
