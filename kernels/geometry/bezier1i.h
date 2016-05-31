@@ -68,8 +68,8 @@ namespace embree
     {
       const PrimRef& prim = prims[i];
       i++;
-      const size_t geomID = prim.geomID();
-      const size_t primID = prim.primID();
+      const unsigned geomID = prim.geomID();
+      const unsigned primID = prim.primID();
       const BezierCurves* curves = scene->getBezierCurves(geomID);
       const size_t vertexID = curves->curve(primID);
       new (this) Bezier1i(vertexID,geomID,primID);
