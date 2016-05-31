@@ -71,7 +71,7 @@ namespace embree
       const unsigned geomID = prim.geomID();
       const unsigned primID = prim.primID();
       const BezierCurves* curves = scene->getBezierCurves(geomID);
-      const size_t vertexID = curves->curve(primID);
+      const unsigned vertexID = curves->curve(primID);
       new (this) Bezier1i(vertexID,geomID,primID);
     }
 
@@ -82,7 +82,7 @@ namespace embree
       const unsigned geomID = curve.geomID();
       const unsigned primID = curve.primID();
       const BezierCurves* curves = scene->getBezierCurves(geomID);
-      const size_t vertexID = curves->curve(primID);
+      const unsigned vertexID = curves->curve(primID);
       new (this) Bezier1i(vertexID,geomID,primID);
     }
 
