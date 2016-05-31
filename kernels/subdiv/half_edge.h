@@ -48,7 +48,7 @@ namespace embree
     }
     
     __forceinline bool hasOpposite() const { return opposite_half_edge_ofs != 0; }
-    __forceinline void setOpposite(HalfEdge* opposite) { opposite_half_edge_ofs = opposite-this; }
+    __forceinline void setOpposite(HalfEdge* opposite) { opposite_half_edge_ofs = int(opposite-this); }
     
     __forceinline       HalfEdge* next()       { assert( next_half_edge_ofs != 0 ); return &this[next_half_edge_ofs]; }
     __forceinline const HalfEdge* next() const { assert( next_half_edge_ofs != 0 ); return &this[next_half_edge_ofs]; }
