@@ -26,7 +26,12 @@ IF (EMBREE_TESTING_MEMCHECK AND EMBREE_MEMORYCHECK_COMMAND)
 ENDIF()
 
 IF (EMBREE_TESTING_BENCHMARK)
-  ADD_TEST(NAME verify_benchmarks COMMAND verify --no-colors --cdash --benchmark-tolerance 0.05 --database "${EMBREE_TESTING_BENCHMARK_DATABASE}" --run .*benchmarks.*)
+  ADD_TEST(NAME verify_benchmarks COMMAND verify
+    --no-colors --cdash
+    --benchmark-tolerance 0.05
+    --database "${EMBREE_TESTING_BENCHMARK_DATABASE}"
+    --run SSE2.benchmarks.*
+    --run SSE4.2.benchmarks.*)
   set_tests_properties(verify_benchmarks PROPERTIES TIMEOUT 3000)
 ENDIF()
 
