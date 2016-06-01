@@ -30,7 +30,7 @@ SET(CMAKE_CXX_FLAGS_RELEASE        "-DNDEBUG                    -O3 -restrict -n
 SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-DDEBUG  -DTBB_USE_DEBUG -g -O3 -restrict -no-inline-max-total-size -inline-factor=200")
 
 # enable -static-intel and avoid to export ICC specific symbols from Embree
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-intel")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-intel -no-intel-extensions")
 IF (APPLE)
   SET(CMAKE_SHARED_LINKER_FLAGS -Wl,-exported_symbols_list,${PROJECT_SOURCE_DIR}/kernels/export.macosx.map)
 ELSE()
