@@ -30,6 +30,12 @@ SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-DDEBUG  -DTBB_USE_DEBUG -g -O3")
 SET(CMAKE_EXE_LINKER_FLAGS "")
 
 IF (APPLE)
+  SET(CMAKE_SHARED_LINKER_FLAGS -Wl,-exported_symbols_list,${PROJECT_SOURCE_DIR}/kernels/export.macosx.map)
+ELSE()
+  SET(CMAKE_SHARED_LINKER_FLAGS -Wl,--version-script=${PROJECT_SOURCE_DIR}/kernels/export.linux.map)
+ENDIF()
+
+IF (APPLE)
   SET (CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS_INIT} -dynamiclib)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmacosx-version-min=10.7 -stdlib=libc++")
 ENDIF (APPLE)
