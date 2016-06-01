@@ -27,8 +27,8 @@ namespace embree {
 #define AMBIENT_OCCLUSION_SAMPLES 64
 //#define rtcOccluded rtcIntersect
 //#define rtcOccludedVM rtcIntersectVM
-//#define RAYN_FLAGS RTC_INTERSECT_COHERENT
-#define RAYN_FLAGS RTC_INTERSECT_INCOHERENT
+#define RAYN_FLAGS RTC_INTERSECT_COHERENT
+//#define RAYN_FLAGS RTC_INTERSECT_INCOHERENT
 
 extern uniform ISPCScene* uniform g_ispc_scene;
 
@@ -275,8 +275,8 @@ void renderTileStandard(uniform int taskIndex,
     /* eyelight shading */
     Vec3f color = make_Vec3f(0.0f);
     if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
-      //color = make_Vec3f(abs(dot(ray.dir,normalize(ray.Ng))));
-      color = ambientOcclusionShading(x,y,ray);
+      color = make_Vec3f(abs(dot(ray.dir,normalize(ray.Ng))));
+      //color = ambientOcclusionShading(x,y,ray);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));

@@ -103,17 +103,27 @@ namespace embree
       {
         for (size_t s=0; s<streams; s++)
         {
-          for (size_t i=0; i<N; i+=VSIZEX)
+          /* fast path for packet width == SIMD width */
+          if (likely(N == VSIZEX))
           {
-            const vintx vi = vintx(int(i))+vintx(step);
-            vboolx valid = vi < vintx(int(N));
-            const size_t offset = s*stream_offset + sizeof(float) * i;
-            RayK<VSIZEX> ray = rayN.gather<VSIZEX>(offset);
-            valid &= ray.tnear <= ray.tfar;
+            const size_t offset = s*stream_offset;
+            RayK<VSIZEX> &ray = *(RayK<VSIZEX>*)(rayData + offset);
+            vboolx valid = ray.tnear <= ray.tfar;
             if (intersect) scene->intersect(valid,ray,context);
             else           scene->occluded (valid,ray,context);
-            rayN.scatter<VSIZEX>(valid,offset,ray,intersect);
           }
+          else
+            for (size_t i=0; i<N; i+=VSIZEX)
+            {
+              const vintx vi = vintx(int(i))+vintx(step);
+              vboolx valid = vi < vintx(int(N));
+              const size_t offset = s*stream_offset + sizeof(float) * i;
+              RayK<VSIZEX> ray = rayN.gather<VSIZEX>(offset);
+              valid &= ray.tnear <= ray.tfar;
+              if (intersect) scene->intersect(valid,ray,context);
+              else           scene->occluded (valid,ray,context);
+              rayN.scatter<VSIZEX>(valid,offset,ray,intersect);
+            }
         }
         return;
       }
