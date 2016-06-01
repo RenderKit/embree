@@ -31,7 +31,11 @@ SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-DDEBUG  -DTBB_USE_DEBUG -g -O3 -restrict -n
 
 # enable -static-intel and avoid to export ICC specific symbols from Embree
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-intel")
-SET(CMAKE_SHARED_LINKER_FLAGS -Wl,--version-script=${PROJECT_SOURCE_DIR}/kernels/export.linux.map)
+IF (APPLE)
+  SET(CMAKE_SHARED_LINKER_FLAGS -Wl,-exported_symbols_list,${PROJECT_SOURCE_DIR}/kernels/export.macosx.map)
+ELSE()
+  SET(CMAKE_SHARED_LINKER_FLAGS -Wl,--version-script=${PROJECT_SOURCE_DIR}/kernels/export.linux.map)
+ENDIF()
 
 #SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -g -debug inline-debug-info")
 #SET(CMAKE_EXE_LINKER_FLAGS "-g") 
