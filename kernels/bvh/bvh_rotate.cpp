@@ -122,7 +122,7 @@ namespace embree
       }
       
       /*! if we did not find a swap that improves the SAH then do nothing */
-      if (bestChild1 == -1) return 1+reduce_max(cdepth);
+      if (bestChild1 == size_t(-1)) return 1+reduce_max(cdepth);
       
       /*! perform the best found tree rotation */
       Node* child2 = parent->child(bestChild2).node();

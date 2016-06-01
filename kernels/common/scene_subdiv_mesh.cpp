@@ -281,8 +281,8 @@ namespace embree
 	  const uint64_t key = SubdivMesh::Edge(startVertex,endVertex);
 	  
 	  edge->vtx_index              = startVertex;
-	  edge->next_half_edge_ofs     = (de == (N-1)) ? -(N-1) : +1;
-	  edge->prev_half_edge_ofs     = (de ==     0) ? +(N-1) : -1;
+	  edge->next_half_edge_ofs     = (de == (N-1)) ? -int(N-1) : +1;
+	  edge->prev_half_edge_ofs     = (de ==     0) ? +int(N-1) : -1;
 	  edge->opposite_half_edge_ofs = 0;
 	  edge->edge_crease_weight     = edgeCreaseMap.lookup(key,0.0f);
 	  edge->vertex_crease_weight   = vertexCreaseMap.lookup(startVertex,0.0f);
