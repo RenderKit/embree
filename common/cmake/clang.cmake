@@ -40,12 +40,6 @@ SET(CMAKE_CXX_FLAGS_DEBUG          "-DDEBUG  -DTBB_USE_DEBUG -g -O0")
 SET(CMAKE_CXX_FLAGS_RELEASE        "-DNDEBUG                    -O3")
 SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-DDEBUG  -DTBB_USE_DEBUG -g -O3")
 
-IF (APPLE)
-  SET(CMAKE_SHARED_LINKER_FLAGS -Wl,-exported_symbols_list,${PROJECT_SOURCE_DIR}/kernels/export.macosx.map)
-ELSE()
-  SET(CMAKE_SHARED_LINKER_FLAGS -Wl,--version-script=${PROJECT_SOURCE_DIR}/kernels/export.linux.map)
-ENDIF()
-
 ENDIF()
 
 IF (APPLE)
