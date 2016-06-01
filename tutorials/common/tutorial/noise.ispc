@@ -179,6 +179,8 @@ Vec3f noise3D(const Vec3f& p)
   return make_Vec3f(x,y,z);
 }
 
+export void dummy_noise_ispc() {}  // just to avoid compile warning "libnoise.a(noise.dev.o) has no symbols" under MacOSX
+
 #if defined(__cplusplus)
 }
 #endif

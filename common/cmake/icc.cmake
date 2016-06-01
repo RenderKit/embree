@@ -30,8 +30,7 @@ SET(CMAKE_CXX_FLAGS_RELEASE        "-DNDEBUG                    -O3 -restrict -n
 SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-DDEBUG  -DTBB_USE_DEBUG -g -O3 -restrict -no-inline-max-total-size -inline-factor=200")
 
 # enable -static-intel and avoid to export ICC specific symbols from Embree
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-intel")
-SET(CMAKE_SHARED_LINKER_FLAGS -Wl,--exclude-libs=ALL)
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-intel -no-intel-extensions")
 
 #SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -g -debug inline-debug-info")
 #SET(CMAKE_EXE_LINKER_FLAGS "-g") 

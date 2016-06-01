@@ -169,14 +169,20 @@
 #define debugbreak()           __debugbreak()
 
 #else
-#undef __noinline
-#undef __forceinline
+#if !defined(__noinline)
 #define __noinline             __attribute__((noinline))
+#endif
+#if !defined(__forceinline)
 #define __forceinline          inline __attribute__((always_inline))
+#endif
 //#define __restrict             __restrict
 //#define __thread               __thread
+#if !defined(__aligned)
 #define __aligned(...)           __attribute__((aligned(__VA_ARGS__)))
+#endif
+#if !defined(__FUNCTION__)
 #define __FUNCTION__           __PRETTY_FUNCTION__
+#endif
 #define debugbreak()           asm ("int $3")
 #endif
 
