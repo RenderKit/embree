@@ -483,8 +483,10 @@ namespace embree
     sleepSeconds(0.1);
     cleanup(state);
 
-    state->numPassedTests++;
-    return VerifyApplication::PASSED;
+    /* update passed/failed counters */
+    state->numPassedTests += passed;
+    state->numFailedTests += !passed;
+    return passed ? PASSED : FAILED;
   }
   catch (...)
   {
