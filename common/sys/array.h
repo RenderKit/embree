@@ -151,8 +151,10 @@ namespace embree
     __forceinline       Ty& operator[](const unsigned i)       { return data[i]; }
     __forceinline const Ty& operator[](const unsigned i) const { return data[i]; }
 
+#if defined(__X86_64__)
     __forceinline       Ty& operator[](const size_t i)       { return data[i]; }
     __forceinline const Ty& operator[](const size_t i) const { return data[i]; }
+#endif
 
   private:
     Ty arr[max_stack_bytes/sizeof(Ty)];
