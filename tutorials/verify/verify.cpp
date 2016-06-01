@@ -1799,13 +1799,13 @@ namespace embree
       rtcCommit (scene);
       AssertNoError(device);
       
-      for (size_t i=0; i<16; i++) 
+      for (unsigned i=0; i<16; i++) 
       {
-        size_t mask0 = i;
-        size_t mask1 = i+1;
-        size_t mask2 = i+2;
-        size_t mask3 = i+3;
-        size_t masks[4] = { mask0, mask1, mask2, mask3 };
+        unsigned mask0 = i;
+        unsigned mask1 = i+1;
+        unsigned mask2 = i+2;
+        unsigned mask3 = i+3;
+        unsigned masks[4] = { mask0, mask1, mask2, mask3 };
         RTCRay ray0 = makeRay(pos0+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray0.mask = mask0;
         RTCRay ray1 = makeRay(pos1+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray1.mask = mask1;
         RTCRay ray2 = makeRay(pos2+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray2.mask = mask2;
@@ -1813,7 +1813,7 @@ namespace embree
         RTCRay rays[4] = { ray0, ray1, ray2, ray3 };
         IntersectWithMode(imode,ivariant,scene,rays,4);
         for (size_t j=0; j<4; j++)
-          passed &= masks[j] & (j<<i) ? rays[j].geomID != RTC_INVALID_GEOMETRY_ID : rays[j].geomID == RTC_INVALID_GEOMETRY_ID;
+          passed &= masks[j] & (1<<j) ? rays[j].geomID != RTC_INVALID_GEOMETRY_ID : rays[j].geomID == RTC_INVALID_GEOMETRY_ID;
       }
       AssertNoError(device);
 
