@@ -128,11 +128,6 @@ CONFIGURE_FILE(
 ##############################################################
 include(package)
 
-IF (TASKING_TBB)
-  FIND_PACKAGE(TBB REQUIRED)
-  INCLUDE_DIRECTORIES(${TBB_INCLUDE_DIRS})
-ENDIF()
-
 ##############################################################
 # Compiler
 ##############################################################
@@ -285,6 +280,10 @@ INCLUDE (ispc)
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/include)
 INCLUDE_DIRECTORIES("${PROJECT_BINARY_DIR}")
 INCLUDE_DIRECTORIES_ISPC("${PROJECT_BINARY_DIR}")
+IF (TASKING_TBB)
+  FIND_PACKAGE(TBB REQUIRED)
+  INCLUDE_DIRECTORIES(${TBB_INCLUDE_DIRS})
+ENDIF()
 
 ##############################################################
 # Output paths
