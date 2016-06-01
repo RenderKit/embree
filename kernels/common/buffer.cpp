@@ -67,7 +67,7 @@ namespace embree
   {
     if (shared || !ptr) return;
     alignedFree(ptr); 
-    if (device) device->memoryMonitor(-bytes,true);
+    if (device) device->memoryMonitor(-ssize_t(bytes),true);
     ptr = nullptr; ptr_ofs = nullptr; bytes = 0;
   }
 
