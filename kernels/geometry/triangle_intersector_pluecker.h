@@ -97,11 +97,12 @@ namespace embree
           const vfloat<M> U = dot(cross(v2+v0,e0),D);
           const vfloat<M> V = dot(cross(v0+v1,e1),D);
           const vfloat<M> W = dot(cross(v1+v2,e2),D);
-          const vfloat<M> minUVW = min(U,V,W);
-          const vfloat<M> maxUVW = max(U,V,W);
 #if defined(EMBREE_BACKFACE_CULLING)
+          const vfloat<M> maxUVW = max(U,V,W);
           vbool<M> valid = maxUVW <= 0.0f;
 #else
+          const vfloat<M> minUVW = min(U,V,W);
+          const vfloat<M> maxUVW = max(U,V,W);
           vbool<M> valid = (minUVW >= 0.0f) | (maxUVW <= 0.0f);
 #endif
           if (unlikely(none(valid))) return false;
@@ -188,11 +189,12 @@ namespace embree
           const vfloat<K> U = dot(Vec3vfK(cross(v2+v0,e0)),D);
           const vfloat<K> V = dot(Vec3vfK(cross(v0+v1,e1)),D);
           const vfloat<K> W = dot(Vec3vfK(cross(v1+v2,e2)),D);
-          const vfloat<K> minUVW = min(U,V,W);
-          const vfloat<K> maxUVW = max(U,V,W);
 #if defined(EMBREE_BACKFACE_CULLING)
+          const vfloat<K> maxUVW = max(U,V,W);
           valid &= maxUVW <= 0.0f;
 #else
+          const vfloat<K> minUVW = min(U,V,W);
+          const vfloat<K> maxUVW = max(U,V,W);
           valid &= (minUVW >= 0.0f) | (maxUVW <= 0.0f);
 #endif
           if (unlikely(none(valid))) return false;
@@ -246,11 +248,12 @@ namespace embree
           const vfloat<M> U = dot(cross(v2+v0,e0),D);
           const vfloat<M> V = dot(cross(v0+v1,e1),D);
           const vfloat<M> W = dot(cross(v1+v2,e2),D);
-          const vfloat<M> minUVW = min(U,V,W);
-          const vfloat<M> maxUVW = max(U,V,W);
 #if defined(EMBREE_BACKFACE_CULLING)
+          const vfloat<M> maxUVW = max(U,V,W);
           vbool<M> valid = maxUVW <= 0.0f;
 #else
+          const vfloat<M> minUVW = min(U,V,W);
+          const vfloat<M> maxUVW = max(U,V,W);
           vbool<M> valid = (minUVW >= 0.0f) | (maxUVW <= 0.0f);
 #endif
           if (unlikely(none(valid))) return false;
