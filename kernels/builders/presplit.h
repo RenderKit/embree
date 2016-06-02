@@ -93,7 +93,7 @@ namespace embree
 
         /* split scene bounds into two halfes along largest dimension */
         const BBox3fa sceneBounds = item.sceneBounds;
-        const size_t dim = maxDim(sceneBounds.size());
+        const int dim = maxDim(sceneBounds.size());
         const float center = 0.5f*(sceneBounds.lower[dim]+sceneBounds.upper[dim]);
         BBox3fa lsceneBounds = sceneBounds; lsceneBounds.upper[dim] = center;
         BBox3fa rsceneBounds = sceneBounds; rsceneBounds.lower[dim] = center;
