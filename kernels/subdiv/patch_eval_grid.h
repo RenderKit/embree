@@ -243,10 +243,11 @@ namespace embree
           assert(i<MAX_PATCH_VALENCE);
           static_assert(MAX_PATCH_VALENCE <= 16, "MAX_PATCH_VALENCE > 16");
           const int h = (i >> 2) & 3, l = i & 3;
-          const Vec2f uv[4] = { (1.0f/4.0f) * (Vec2f(l,h) + Vec2f(0.0f,0.0f)),
-                                (1.0f/4.0f) * (Vec2f(l,h) + Vec2f(0.5f,0.0f)),
-                                (1.0f/4.0f) * (Vec2f(l,h) + Vec2f(0.5f,0.5f)),
-                                (1.0f/4.0f) * (Vec2f(l,h) + Vec2f(0.0f,0.5f)) };
+          Vec2f base(float(l),float(h));
+          const Vec2f uv[4] = { (1.0f/4.0f) * (base + Vec2f(0.0f,0.0f)),
+                                (1.0f/4.0f) * (base + Vec2f(0.5f,0.0f)),
+                                (1.0f/4.0f) * (base + Vec2f(0.5f,0.5f)),
+                                (1.0f/4.0f) * (base + Vec2f(0.0f,0.5f)) };
           const int neighborSubdiv1[4] = { 0,0,0,0 }; 
           const float levels1[4] = { 0.5f*levels[(i+0)%N], 0.5f*levels[(i+0)%N], 0.5f*levels[(i-1)%N], 0.5f*levels[(i-1)%N] };
           tessellator(uv,neighborSubdiv1,levels1,i);
