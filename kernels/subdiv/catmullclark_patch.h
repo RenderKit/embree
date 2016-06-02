@@ -439,7 +439,7 @@ namespace embree
       dest.eval_unique_identifier = 0;
     }
     
-    __noinline void subdivide(array_t<CatmullClarkPatch,SIZE>& patch, size_t& N_o) const
+    __noinline void subdivide(array_t<CatmullClarkPatch,SIZE>& patch, unsigned& N_o) const
     {
       N_o = N;
       assert( N );

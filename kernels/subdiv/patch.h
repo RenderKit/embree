@@ -226,15 +226,15 @@ namespace embree
     struct SubdividedGeneralPatch
     {
       template<typename Allocator>
-      __noinline static Ref create(const Allocator& alloc, Ref* children, const size_t N) {
+      __noinline static Ref create(const Allocator& alloc, Ref* children, const unsigned N) {
         return Ref(SUBDIVIDED_GENERAL_PATCH, new (alloc(sizeof(SubdividedGeneralPatch))) SubdividedGeneralPatch(children,N));
       }
       
-      __forceinline SubdividedGeneralPatch(Ref* children, const size_t N) : N(N) {
-        for (size_t i=0; i<N; i++) child[i] = children[i];
+      __forceinline SubdividedGeneralPatch(Ref* children, const unsigned N) : N(N) {
+        for (unsigned i=0; i<N; i++) child[i] = children[i];
       }
       
-      size_t N;
+      unsigned N;
       Ref child[MAX_PATCH_VALENCE];
     };
     
@@ -275,7 +275,7 @@ namespace embree
         return nullptr;
       
       /* subdivide patch */
-      size_t N;
+      unsigned N;
       array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE> patches; 
       patch.subdivide(patches,N);
       
