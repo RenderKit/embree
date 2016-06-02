@@ -98,7 +98,7 @@ namespace embree
           
           /* find best child with largest bounding box area */
           int bestChild = -1;
-          int bestSize = 0;
+          size_t bestSize = 0;
           for (size_t i=0; i<numChildren; i++)
           {
             /* ignore leaves as they cannot get split */
@@ -216,7 +216,7 @@ namespace embree
           /* find best child with largest bounding box area */
           int bestChild = -1;
           float bestArea = neg_inf;
-          for (size_t i=0; i<numChildren; i++)
+          for (int i=0; i<numChildren; i++)
           {
             /* ignore leaves as they cannot get split */
             if (children[i].size() <= minLeafSize)
