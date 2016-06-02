@@ -330,24 +330,14 @@ namespace embree
     return passed ? PASSED : FAILED;
   }
 
-  double VerifyApplication::Benchmark::updateDatabase(VerifyApplication* state, Statistics stat)
+  double VerifyApplication::Benchmark::readDatabase(VerifyApplication* state)
   {
-    FileName base = state->database+FileName(name);
-    double avg = stat.getAvg();
-
-    /* load git hash from file */
-    std::fstream hashFile;
-    std::string hash = "unknown";
-    hashFile.open(FileName::executableFolder()+FileName("hash"), std::fstream::in);
-    if (hashFile.is_open()) {
-      hashFile >> hash;
-      hashFile.close();
-    }
-
-    /* update database */
     std::fstream db;
-    db.open(base.addExt(".txt"), std::fstream::in | std::fstream::out | std::fstream::app);
-    
+    FileName base = state->database+FileName(name);
+    db.open(base.addExt(".txt"), std::fstream::in);
+    if (!db.is_open()) 
+      return neg_inf;
+
     bool found = false;
     double bestAvg = neg_inf;
     while (true) 
@@ -366,20 +356,33 @@ namespace embree
         bestAvg = avg;
       }
     }
-    db.clear();
-    db << hash << " " << avg << " " << bestAvg << std::endl;
     db.close();
+    return bestAvg;
+  }
 
-    if (found) return bestAvg;
-    else       return avg;
+  void VerifyApplication::Benchmark::updateDatabase(VerifyApplication* state, Statistics stat, double bestAvg)
+  {
+    /* load git hash from file */
+    std::fstream hashFile;
+    std::string hash = "unknown";
+    hashFile.open(FileName::executableFolder()+FileName("hash"), std::fstream::in);
+    if (hashFile.is_open()) {
+      hashFile >> hash;
+      hashFile.close();
+    }
+
+    /* update database */
+    std::fstream db;
+    FileName base = state->database+FileName(name);
+    db.open(base.addExt(".txt"), std::fstream::out | std::fstream::app);
+    db << hash << " " << stat.getAvg() << " " << bestAvg << std::endl;
+    db.close();
   }
 
   void VerifyApplication::Benchmark::plotDatabase(VerifyApplication* state)
   {
-    FileName base = state->database+FileName(name);
-    
-    /* create plot file */
     std::fstream plot;
+    FileName base = state->database+FileName(name);
     plot.open(base.addExt(".plot"), std::fstream::out | std::fstream::trunc);
     plot << "set terminal png size 2048,600 enhanced" << std::endl;
     plot << "set output \"" << base.addExt(".png") << "\"" << std::endl;
@@ -425,49 +428,60 @@ namespace embree
     /* print benchmark name */
     std::cout << std::setw(TEXT_ALIGN) << name << ": " << std::flush;
    
+    /* read current best from database */
+    double avgdb = 0.0f;
+    if (state->database != "")
+      avgdb = readDatabase(state);
+
     /* execute benchmark */
-    Statistics stat;
-    bool passed = true;
-    double error = 0.0f;
+    Statistics curStat;
+    Statistics bestStat;
+    bool passed = false;
     
     /* retry if benchmark failed */
     static size_t numRetries = 0;
-    for (size_t i=0; i<10; i++)
+    for (size_t i=0; i<10 && !passed; i++)
     {
       if (i != 0) {
         cleanup(state);
         if (numRetries++ > 1000) break;
-        std::cout << state->yellow(" [RETRY]" ) << " (" << 100.0f*error << "%)" << std::flush;
+        std::cout << state->yellow(" [RETRY]" ) << " (" << 100.0f*(curStat.getAvg()-avgdb)/avgdb << "%)" << std::flush;
         setup(state);
       }
 
       try {
-        stat = benchmark_loop(state);
+        curStat = benchmark_loop(state);
+        if (i == 0) bestStat = curStat;
+        if (curStat.getAvg() > bestStat.getAvg()) bestStat = curStat;
       } catch (TestReturnValue v) {
         return v;
       }
 
       /* check against database to see if test passed */
-      if (state->database != "") {
-        double avg = stat.getAvg();
-        double bestAvg = updateDatabase(state,stat);
-        passed = avg-bestAvg >= -state->benchmark_tolerance*bestAvg;
-        error = (avg-bestAvg)/bestAvg;
-      }
-      if (passed) break;
+      if (state->database != "")
+        passed = curStat.getAvg()-avgdb >= -state->benchmark_tolerance*avgdb;
+      else
+        passed = true;
     }
+
+    if (state->database == "" || avgdb == double(neg_inf))
+      avgdb = bestStat.getAvg();
+
+    /* update database */
+    if (state->database != "")
+      updateDatabase(state,bestStat,avgdb);
       
     /* print test result */
-    std::cout << std::setw(8) << std::setprecision(3) << std::fixed << stat.getAvg() << " " << unit << " (+/-" << 100.0f*stat.getAvgSigma()/stat.getAvg() << "%)";
-    if (passed) std::cout << state->green(" [PASSED]" ) << " (" << 100.0f*error << "%)" << std::endl << std::flush;
-    else        std::cout << state->red  (" [FAILED]" ) << " (" << 100.0f*error << "%)" << std::endl << std::flush;
+    std::cout << std::setw(8) << std::setprecision(3) << std::fixed << bestStat.getAvg() << " " << unit << " (+/-" << 100.0f*bestStat.getAvgSigma()/bestStat.getAvg() << "%)";
+    if (passed) std::cout << state->green(" [PASSED]" ) << " (" << 100.0f*(bestStat.getAvg()-avgdb)/avgdb << "%)" << std::endl << std::flush;
+    else        std::cout << state->red  (" [FAILED]" ) << " (" << 100.0f*(bestStat.getAvg()-avgdb)/avgdb << "%)" << std::endl << std::flush;
     plotDatabase(state);
 
     /* print dart measurement */
     if (state->cdash) 
     {
-      //std::cout << "<DartMeasurement name=\"" + name + ".avg\" type=\"numeric/float\">" << stat.getAvg() << "</DartMeasurement>" << std::endl;
-      //std::cout << "<DartMeasurement name=\"" + name + ".sigma\" type=\"numeric/float\">" << stat.getAvgSigma() << "</DartMeasurement>" << std::endl;
+      //std::cout << "<DartMeasurement name=\"" + name + ".avg\" type=\"numeric/float\">" << bestStat.getAvg() << "</DartMeasurement>" << std::endl;
+      //std::cout << "<DartMeasurement name=\"" + name + ".sigma\" type=\"numeric/float\">" << bestStat.getAvgSigma() << "</DartMeasurement>" << std::endl;
 
       /* send plot only when test failed */
       if (!passed)

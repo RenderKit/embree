@@ -69,7 +69,8 @@ namespace embree
       Statistics benchmark_loop(VerifyApplication* state);
       virtual void cleanup(VerifyApplication* state) {}
       virtual TestReturnValue execute(VerifyApplication* state, bool silent);
-      double updateDatabase(VerifyApplication* state, Statistics stat);
+      double readDatabase(VerifyApplication* state);
+      void updateDatabase(VerifyApplication* state, Statistics stat, double bestAvg);
       void plotDatabase(VerifyApplication* state);
 
     public:
