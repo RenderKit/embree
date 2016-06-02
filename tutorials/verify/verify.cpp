@@ -338,21 +338,18 @@ namespace embree
     if (!db.is_open()) 
       return neg_inf;
 
-    bool found = false;
     double bestAvg = neg_inf;
     while (true) 
     {
       std::string line; std::getline(db,line);
       if (db.eof()) break;
       if (line == "") {
-        found = false;
         bestAvg = neg_inf;
       }
       std::stringstream linestream(line); 
       std::string hash; linestream >> hash;
       double avg; linestream >> avg;
       if (avg > bestAvg) {
-        found = true;
         bestAvg = avg;
       }
     }
