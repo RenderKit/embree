@@ -16,9 +16,7 @@
 
 #include "light.h"
 
-#if defined(__cplusplus)
 namespace embree {
-#endif
 
 Light_EvalRes Light_eval(const Light* uniform,
                          const DifferentialGeometry&,
@@ -31,8 +29,4 @@ Light_EvalRes Light_eval(const Light* uniform,
   return res;
 }
 
-extern "C" void dummy() {} // just to avoid linker warning under MacOSX
-
-#if defined(__cplusplus)
-}
-#endif
+} // namespace embree

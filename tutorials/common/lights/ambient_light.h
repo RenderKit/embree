@@ -18,12 +18,10 @@
 
 #include "../math/vec.h"
 
-namespace embree 
+namespace embree
 {
-  
   extern "C" void* AmbientLight_create();
-  
+
   extern "C" void AmbientLight_set(void* super,
-                                   const Vec3fa& radiance);
-  
+                                   const Vec3fa& radiance);  
 }

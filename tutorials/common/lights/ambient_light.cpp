@@ -18,9 +18,7 @@
 #include "../math/sampling.h"
 #include "../math/linearspace.h"
 
-#if defined(__cplusplus)
 namespace embree {
-#endif
 
 struct AmbientLight
 {
@@ -95,6 +93,4 @@ extern "C" void AmbientLight_set(void* super,
   self->radiance = radiance;
 }
 
-#if defined(__cplusplus)
-}
-#endif
+} // namespace embree

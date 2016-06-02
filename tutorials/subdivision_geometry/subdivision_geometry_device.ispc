@@ -16,10 +16,6 @@
 
 #include "../common/tutorial/tutorial_device.isph"
 
-#if defined(__cplusplus)
-namespace embree {
-#endif
-
 /* configuration */
 #define MIN_EDGE_LEVEL 2.0f
 #define MAX_EDGE_LEVEL 64.0f
@@ -37,9 +33,9 @@ RTCDevice g_device = NULL;
 RTCScene g_scene = NULL;
 
 /* previous camera position */
-uniform Vec3f old_p; 
+uniform Vec3f old_p;
 
-__aligned(16) uniform float cube_vertices[8][4] = 
+__aligned(16) uniform float cube_vertices[8][4] =
 {
   { -1.0f, -1.0f, -1.0f, 0.0f },
   {  1.0f, -1.0f, -1.0f, 0.0f },
@@ -51,7 +47,7 @@ __aligned(16) uniform float cube_vertices[8][4] =
   { -1.0f,  1.0f,  1.0f, 0.0f }
 };
 
-__aligned(16) uniform float cube_colors[8][4] = 
+__aligned(16) uniform float cube_colors[8][4] =
 {
   {  0.0f,  0.0f,  0.0f, 0.0f },
   {  1.0f,  0.0f,  0.0f, 0.0f },
@@ -75,7 +71,7 @@ __aligned(16) uniform float cube_edge_crease_weights[12] = {
   inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf
 };
 
-__aligned(16) uniform unsigned int cube_edge_crease_indices[24] = 
+__aligned(16) uniform unsigned int cube_edge_crease_indices[24] =
 {
   0,1, 1,2, 2,3, 3,0,
   4,5, 5,6, 6,7, 7,4,
@@ -88,17 +84,17 @@ __aligned(16) uniform unsigned int cube_edge_crease_indices[24] =
 #define NUM_FACES 6
 #define FACE_SIZE 4
 
-uniform unsigned int cube_indices[24] = { 
-  0, 1, 5, 4, 
-  1, 2, 6, 5, 
-  2, 3, 7, 6, 
-  0, 4, 7, 3, 
-  4, 5, 6, 7, 
-  0, 3, 2, 1, 
+uniform unsigned int cube_indices[24] = {
+  0, 1, 5, 4,
+  1, 2, 6, 5,
+  2, 3, 7, 6,
+  0, 4, 7, 3,
+  4, 5, 6, 7,
+  0, 3, 2, 1,
 };
 
-uniform unsigned int cube_faces[6] = { 
-  4, 4, 4, 4, 4, 4 
+uniform unsigned int cube_faces[6] = {
+  4, 4, 4, 4, 4, 4
 };
 
 #else
@@ -107,16 +103,16 @@ uniform unsigned int cube_faces[6] = {
 #define NUM_FACES 12
 #define FACE_SIZE 3
 
-uniform unsigned int cube_indices[36] = { 
-  1, 5, 4,  0, 1, 4,   
+uniform unsigned int cube_indices[36] = {
+  1, 5, 4,  0, 1, 4,
   2, 6, 5,  1, 2, 5,
-  3, 7, 6,  2, 3, 6,  
+  3, 7, 6,  2, 3, 6,
   4, 7, 3,  0, 4, 3,
-  5, 6, 7,  4, 5, 7,    
-  3, 2, 1,  0, 3, 1 
+  5, 6, 7,  4, 5, 7,
+  3, 2, 1,  0, 3, 1
 };
 
-uniform unsigned int cube_faces[12] = { 
+uniform unsigned int cube_faces[12] = {
   3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3
 };
 
@@ -156,8 +152,8 @@ void updateEdgeLevelBuffer( RTCScene scene_i, uniform unsigned geomID, const uni
   uniform float*  uniform level    = (uniform float*  uniform) rtcMapBuffer(scene_i, geomID, RTC_LEVEL_BUFFER);
   uniform int*    uniform faces    = (uniform int*    uniform) rtcMapBuffer(scene_i, geomID, RTC_INDEX_BUFFER);
   uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcMapBuffer(scene_i, geomID, RTC_VERTEX_BUFFER);
-  
-  for (uniform size_t f=0; f<NUM_FACES; f++) 
+
+  for (uniform size_t f=0; f<NUM_FACES; f++)
   {
     for (uniform size_t i=0; i<FACE_SIZE; i++) {
       const uniform Vec3f v0 = make_Vec3f(vertices[faces[FACE_SIZE*f+(i+0)%FACE_SIZE]]);
@@ -180,12 +176,12 @@ uniform unsigned int addGroundPlane (RTCScene scene_i)
   uniform unsigned int mesh = rtcNewTriangleMesh (scene_i, RTC_GEOMETRY_STATIC, 2, 4);
 
   /* set vertices */
-  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER); 
-  vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10; 
-  vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10; 
-  vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10; 
+  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER);
+  vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10;
+  vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10;
+  vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10;
   vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
-  rtcUnmapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER); 
+  rtcUnmapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER);
 
   /* set triangles */
   uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcMapBuffer(scene_i,mesh,RTC_INDEX_BUFFER);
@@ -239,13 +235,13 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time = 0;
-  
+
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
-  
+
   /* shade pixels */
   Vec3f color = make_Vec3f(0.0f);
-  if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
+  if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
   {
     Vec3f diffuse = ray.geomID != 0 ? make_Vec3f(0.9f,0.6f,0.5f) : make_Vec3f(0.8f,0.0f,0.0f);
 
@@ -260,7 +256,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
 
     color = color + diffuse*0.5f;
     Vec3f lightDir = normalize(make_Vec3f(-1,-1,-1));
-    
+
     /* initialize shadow ray */
     RTCRay shadow;
     shadow.org = ray.org + ray.tfar*ray.dir;
@@ -271,10 +267,10 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
     shadow.primID = RTC_INVALID_GEOMETRY_ID;
     shadow.mask = -1;
     shadow.time = 0;
-    
+
     /* trace shadow ray */
      rtcOccluded(g_scene,shadow);
-             
+
     /* add light contribution */
     if (shadow.geomID == RTC_INVALID_GEOMETRY_ID)
       color = color + diffuse*clamp(-dot(lightDir,normalize(Ng)),0.0f,1.0f);
@@ -283,13 +279,13 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
 }
 
 /* renders a single screen tile */
-void renderTileStandard(uniform int taskIndex, 
+void renderTileStandard(uniform int taskIndex,
                         uniform int* uniform pixels,
                         const uniform unsigned int width,
-                        const uniform unsigned int height, 
+                        const uniform unsigned int height,
                         const uniform float time,
                         const uniform ISPCCamera& camera,
-                        const uniform int numTilesX, 
+                        const uniform int numTilesX,
                         const uniform int numTilesY)
 {
   const uniform unsigned int tileY = taskIndex / numTilesX;
@@ -315,10 +311,10 @@ void renderTileStandard(uniform int taskIndex,
 /* task that renders a single screen tile */
 task void renderTileTask(uniform int* uniform pixels,
                          const uniform unsigned int width,
-                         const uniform unsigned int height, 
+                         const uniform unsigned int height,
                          const uniform float time,
                          const uniform ISPCCamera& camera,
-                         const uniform int numTilesX, 
+                         const uniform int numTilesX,
                          const uniform int numTilesY)
 {
   renderTile(taskIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
@@ -327,7 +323,7 @@ task void renderTileTask(uniform int* uniform pixels,
 /* called by the C++ code to render */
 export void device_render (uniform int* uniform pixels,
                            const uniform unsigned int width,
-                           const uniform unsigned int height, 
+                           const uniform unsigned int height,
                            const uniform float time,
                            const uniform ISPCCamera& camera)
 {
@@ -336,7 +332,7 @@ export void device_render (uniform int* uniform pixels,
 
   /* rebuild scene */
   rtcCommit (g_scene);
-  
+
   /* render image */
   const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
@@ -349,7 +345,3 @@ export void device_cleanup ()
   rtcDeleteScene (g_scene); g_scene = NULL;
   rtcDeleteDevice(g_device); g_device = NULL;
 }
-
-#if defined(__cplusplus)
-}
-#endif

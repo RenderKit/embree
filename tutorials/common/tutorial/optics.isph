@@ -16,10 +16,6 @@
 
 #pragma once
 
-#if defined(__cplusplus)
-namespace embree {
-#endif
-
 /*! \addtogroup rivl_render_embree_ivl */
 /*! @{ */
 
@@ -178,11 +174,5 @@ inline uniform PowerCosineDistribution make_PowerCosineDistribution(const unifor
 #if defined(ISPC)
 inline varying PowerCosineDistribution make_PowerCosineDistribution(const varying float _exp) {
   varying PowerCosineDistribution m; m.exp = _exp; return m;
-}
-#endif
-
-/*! @} */
-
-#if defined(__cplusplus)
 }
 #endif

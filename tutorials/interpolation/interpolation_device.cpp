@@ -16,9 +16,7 @@
 
 #include "../common/tutorial/tutorial_device.h"
 
-#if defined(__cplusplus)
 namespace embree {
-#endif
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
 #define FIXED_EDGE_TESSELLATION_VALUE 16
@@ -36,7 +34,7 @@ unsigned int triCubeID, quadCubeID, quadCubeID2;
 
 #define NUM_VERTICES 8
 
-__aligned(16) float cube_vertices[8][4] = 
+__aligned(16) float cube_vertices[8][4] =
 {
   { -1.0f, -1.0f, -1.0f, 0.0f },
   {  1.0f, -1.0f, -1.0f, 0.0f },
@@ -48,7 +46,7 @@ __aligned(16) float cube_vertices[8][4] =
   { -1.0f,  1.0f,  1.0f, 0.0f }
 };
 
-__aligned(16) float cube_vertex_colors[8][4] = 
+__aligned(16) float cube_vertex_colors[8][4] =
 {
   {  0.0f,  0.0f,  0.0f, 0.0f },
   {  1.0f,  0.0f,  0.0f, 0.0f },
@@ -72,7 +70,7 @@ __aligned(16) float cube_edge_crease_weights[12] = {
   inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf
 };
 
-__aligned(16) unsigned int cube_edge_crease_indices[24] = 
+__aligned(16) unsigned int cube_edge_crease_indices[24] =
 {
   0,1, 1,2, 2,3, 3,0,
   4,5, 5,6, 6,7, 7,4,
@@ -82,38 +80,38 @@ __aligned(16) unsigned int cube_edge_crease_indices[24] =
 #define NUM_QUAD_INDICES 24
 #define NUM_QUAD_FACES 6
 
-unsigned int cube_quad_indices[24] = { 
-  0, 1, 5, 4, 
-  1, 2, 6, 5, 
-  2, 3, 7, 6, 
-  0, 4, 7, 3, 
-  4, 5, 6, 7, 
-  0, 3, 2, 1, 
+unsigned int cube_quad_indices[24] = {
+  0, 1, 5, 4,
+  1, 2, 6, 5,
+  2, 3, 7, 6,
+  0, 4, 7, 3,
+  4, 5, 6, 7,
+  0, 3, 2, 1,
 };
 
-unsigned int cube_quad_faces[6] = { 
-  4, 4, 4, 4, 4, 4 
+unsigned int cube_quad_faces[6] = {
+  4, 4, 4, 4, 4, 4
 };
 
 #define NUM_TRI_INDICES 36
 #define NUM_TRI_FACES 12
 
-unsigned int cube_tri_indices[36] = { 
-  1, 5, 4,  0, 1, 4,   
+unsigned int cube_tri_indices[36] = {
+  1, 5, 4,  0, 1, 4,
   2, 6, 5,  1, 2, 5,
-  3, 7, 6,  2, 3, 6,  
+  3, 7, 6,  2, 3, 6,
   4, 7, 3,  0, 4, 3,
-  5, 6, 7,  4, 5, 7,    
-  3, 2, 1,  0, 3, 1 
+  5, 6, 7,  4, 5, 7,
+  3, 2, 1,  0, 3, 1
 };
 
-unsigned int cube_tri_faces[12] = { 
+unsigned int cube_tri_faces[12] = {
   3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3
 };
 
 #define NUM_HAIR_VERTICES 4
 
-__aligned(16) float hair_vertices[4][4] = 
+__aligned(16) float hair_vertices[4][4] =
 {
   { 0.0f, 0.0f, 0.0f, 0.1f },
   { 0.5f, 1.0f, 0.0f, 0.1f },
@@ -121,7 +119,7 @@ __aligned(16) float hair_vertices[4][4] =
   { 0.0f, 3.0f, 0.0f, 0.1f }
 };
 
-__aligned(16) float hair_vertex_colors[4][4] = 
+__aligned(16) float hair_vertex_colors[4][4] =
 {
   {  1.0f,  0.0f,  0.0f, 0.0f },
   {  1.0f,  1.0f,  0.0f, 0.0f },
@@ -143,12 +141,12 @@ inline float updateEdgeLevel(const Vec3fa& cam_pos, Vec3fa* vtx, unsigned int* i
   const float level = max(min(LEVEL_FACTOR*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
   return level;
 }
-                                      
+
 /* adds a subdiv cube to the scene */
 unsigned int addTriangleSubdivCube (RTCScene scene_i, const Vec3fa& pos)
 {
   unsigned int geomID = rtcNewSubdivisionMesh(scene_i, RTC_GEOMETRY_DYNAMIC, NUM_TRI_FACES, NUM_TRI_INDICES, NUM_VERTICES, 0, 0, 0);
-  
+
   //rtcSetBuffer(scene_i, geomID, RTC_VERTEX_BUFFER, cube_vertices, 0, sizeof(Vec3fa  ));
   Vec3fa* vtx = (Vec3fa*) rtcMapBuffer(scene_i, geomID, RTC_VERTEX_BUFFER);
   for (size_t i=0; i<NUM_VERTICES; i++) vtx[i] = Vec3fa(cube_vertices[i][0]+pos.x,cube_vertices[i][1]+pos.y,cube_vertices[i][2]+pos.z);
@@ -292,12 +290,12 @@ unsigned int addGroundPlane (RTCScene scene_i)
   unsigned int mesh = rtcNewTriangleMesh (scene_i, RTC_GEOMETRY_STATIC, 2, 4);
 
   /* set vertices */
-  Vertex* vertices = (Vertex*) rtcMapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER); 
-  vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10; 
-  vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10; 
-  vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10; 
+  Vertex* vertices = (Vertex*) rtcMapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER);
+  vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10;
+  vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10;
+  vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10;
   vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
-  rtcUnmapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER); 
+  rtcUnmapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER);
 
   /* set triangles */
   Triangle* triangles = (Triangle*) rtcMapBuffer(scene_i,mesh,RTC_INDEX_BUFFER);
@@ -317,7 +315,7 @@ extern "C" void device_init (char* cfg)
 
   /* set error handler */
   rtcDeviceSetErrorFunction(g_device,error_handler);
- 
+
   /* create scene */
   g_scene = rtcDeviceNewScene(g_device, RTC_SCENE_DYNAMIC,RTC_INTERSECT1 | RTC_INTERPOLATE);
 
@@ -329,10 +327,10 @@ extern "C" void device_init (char* cfg)
   quadCubeID = addQuadSubdivCube(g_scene,Vec3fa(4.0f,0.0f,0.0f));
   quadCubeID2 = addQuadSubdivCube(g_scene,Vec3fa(4.0f,0.0f,0.0f));
   triCubeID  = addTriangleSubdivCube(g_scene,Vec3fa(4.0f,0.0f,3.5f));
-  rtcDisable(g_scene,quadCubeID2);  
+  rtcDisable(g_scene,quadCubeID2);
   addTriangleCube(g_scene,Vec3fa(0.0f,0.0f,-3.0f));
   addQuadCube(g_scene,Vec3fa(0.0f,0.0f,3.0f));
-  
+
   /* commit changes to scene */
   rtcCommit (g_scene);
 
@@ -354,22 +352,22 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time = 0;
-  
+
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
-  
+
   /* shade pixels */
   Vec3fa color = Vec3fa(0.0f);
-  if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
+  if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
   {
     /* interpolate diffuse color */
 
     Vec3fa diffuse = Vec3fa(1.0f,0.0f,0.0f);
-    if (ray.geomID > 0) 
+    if (ray.geomID > 0)
     {
       unsigned int geomID = ray.geomID; {
         int geom = geomID == quadCubeID ? quadCubeID2 : geomID; // use special interpolation mesh
-        rtcInterpolate(g_scene,geom,ray.primID,ray.u,ray.v,RTC_USER_VERTEX_BUFFER0,&diffuse.x,nullptr,nullptr,3); 
+        rtcInterpolate(g_scene,geom,ray.primID,ray.u,ray.v,RTC_USER_VERTEX_BUFFER0,&diffuse.x,nullptr,nullptr,3);
       }
       //return diffuse;
       diffuse = 0.5f*diffuse;
@@ -388,7 +386,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
     Ng = normalize(Ng);
     color = color + diffuse*0.5f;
     Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
-    
+
     /* initialize shadow ray */
     RTCRay shadow;
     shadow.org = ray.org + ray.tfar*ray.dir;
@@ -399,10 +397,10 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
     shadow.primID = 0;
     shadow.mask = -1;
     shadow.time = 0;
-    
+
     /* trace shadow ray */
     rtcOccluded(g_scene,shadow);
-    
+
     /* add light contribution */
     if (shadow.geomID) {
       Vec3fa r = normalize(reflect(ray.dir,Ng));
@@ -415,13 +413,13 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
 }
 
 /* renders a single screen tile */
-void renderTileStandard(int taskIndex, 
+void renderTileStandard(int taskIndex,
                         int* pixels,
                         const unsigned int width,
-                        const unsigned int height, 
+                        const unsigned int height,
                         const float time,
                         const ISPCCamera& camera,
-                        const int numTilesX, 
+                        const int numTilesX,
                         const int numTilesY)
 {
   const unsigned int tileY = taskIndex / numTilesX;
@@ -440,17 +438,17 @@ void renderTileStandard(int taskIndex,
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
     unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
     unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;  
+    pixels[y*width+x] = (b << 16) + (g << 8) + r;
   }
 }
 
 /* task that renders a single screen tile */
 void renderTileTask (int taskIndex, int* pixels,
                          const unsigned int width,
-                         const unsigned int height, 
+                         const unsigned int height,
                          const float time,
                          const ISPCCamera& camera,
-                         const int numTilesX, 
+                         const int numTilesX,
                          const int numTilesY)
 {
   renderTile(taskIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
@@ -485,6 +483,4 @@ extern "C" void device_cleanup ()
   rtcDeleteDevice(g_device); g_device = nullptr;
 }
 
-#if defined(__cplusplus)
-}
-#endif
+} // namespace embree

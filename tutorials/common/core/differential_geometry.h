@@ -18,9 +18,7 @@
 
 #include "../math/vec.h"
 
-#if defined(__cplusplus)
 namespace embree {
-#endif
 
 struct DifferentialGeometry
 {
@@ -35,6 +33,4 @@ struct DifferentialGeometry
   float tnear_eps;
 };
 
-#if defined(__cplusplus)
-}
-#endif
+} // namespace embree

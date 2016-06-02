@@ -90,3 +90,13 @@ sed -i.backup  's/RTCFilterFuncVarying/RTCFilterFunc/g' $2
 
 sed -i.backup  's/rtcIntersectVM/rtcIntersect1M/g' $2
 sed -i.backup  's/rtcOccludedVM/rtcOccluded1M/g' $2
+
+# add Embree namespace
+ln=`grep -n -E "#include|#pragma" $2 | tail -1 | cut -d: -f1`
+mv $2 $2.backup
+head -n $ln $2.backup > $2
+echo >> $2
+echo 'namespace embree {' >> $2
+tail -n +$(($ln+1)) $2.backup >> $2
+echo >> $2
+echo '} // namespace embree' >> $2

@@ -16,10 +16,6 @@
 
 #include "tutorial_device.isph"
 
-#if defined(__cplusplus)
-namespace embree {
-#endif
-
 /* the scene to render */
 extern RTCScene g_scene;
 
@@ -37,7 +33,7 @@ renderTileFunc renderTile;
 /* error reporting function */
 unmasked void error_handler(const uniform RTCError code, const uniform int8* uniform str = NULL)
 {
-  if (code == RTC_NO_ERROR) 
+  if (code == RTC_NO_ERROR)
     return;
 
   print("Embree: ");
@@ -50,10 +46,10 @@ unmasked void error_handler(const uniform RTCError code, const uniform int8* uni
   case RTC_CANCELLED        : print("RTC_CANCELLED"); break;
   default                   : print("invalid error code"); break;
   }
-  if (str) { 
-    print(" ("); 
-    while (*str) putchar(*str++); 
-    print(")\n"); 
+  if (str) {
+    print(" (");
+    while (*str) putchar(*str++);
+    print(")\n");
   }
   abort();
 }
@@ -80,13 +76,13 @@ Vec3f renderPixelEyeLight(float x, float y, const uniform ISPCCamera& camera)
   else return make_Vec3f(abs(dot(ray.dir,normalize(ray.Ng))));
 }
 
-void renderTileEyeLight(uniform int taskIndex, 
+void renderTileEyeLight(uniform int taskIndex,
                         uniform int* uniform pixels,
                         const uniform unsigned int width,
-                        const uniform unsigned int height, 
+                        const uniform unsigned int height,
                         const uniform float time,
                         const uniform ISPCCamera& camera,
-                        const uniform int numTilesX, 
+                        const uniform int numTilesX,
                         const uniform int numTilesY)
 {
   const uniform int t = taskIndex;
@@ -140,13 +136,13 @@ Vec3f renderPixelWireframe(float x, float y, const uniform ISPCCamera& camera)
   return color*make_Vec3f(abs(dot(ray.dir,normalize(ray.Ng))));
 }
 
-void renderTileWireframe(uniform int taskIndex, 
+void renderTileWireframe(uniform int taskIndex,
                          uniform int* uniform pixels,
                          const uniform unsigned int width,
-                         const uniform unsigned int height, 
+                         const uniform unsigned int height,
                          const uniform float time,
                          const uniform ISPCCamera& camera,
-                         const uniform int numTilesX, 
+                         const uniform int numTilesX,
                          const uniform int numTilesY)
 {
   const uniform int t = taskIndex;
@@ -191,13 +187,13 @@ Vec3f renderPixelUV(float x, float y, const uniform ISPCCamera& camera)
   else return make_Vec3f(ray.u,ray.v,1.0f-ray.u-ray.v);
 }
 
-void renderTileUV(uniform int taskIndex, 
+void renderTileUV(uniform int taskIndex,
                   uniform int* uniform pixels,
                   const uniform unsigned int width,
-                  const uniform unsigned int height, 
+                  const uniform unsigned int height,
                   const uniform float time,
                   const uniform ISPCCamera& camera,
-                  const uniform int numTilesX, 
+                  const uniform int numTilesX,
                   const uniform int numTilesY)
 {
   const uniform int t = taskIndex;
@@ -243,13 +239,13 @@ Vec3f renderPixelNg(float x, float y, const uniform ISPCCamera& camera)
   else return normalize(make_Vec3f(ray.Ng.x,ray.Ng.y,ray.Ng.z));
 }
 
-void renderTileNg(uniform int taskIndex, 
+void renderTileNg(uniform int taskIndex,
                   uniform int* uniform pixels,
                   const uniform unsigned int width,
-                  const uniform unsigned int height, 
+                  const uniform unsigned int height,
                   const uniform float time,
                   const uniform ISPCCamera& camera,
-                  const uniform int numTilesX, 
+                  const uniform int numTilesX,
                   const uniform int numTilesY)
 {
   const uniform int t = taskIndex;
@@ -272,7 +268,7 @@ void renderTileNg(uniform int taskIndex,
   }
 }
 
-Vec3f randomColor(const int ID) 
+Vec3f randomColor(const int ID)
 {
   int r = ((ID+13)*17*23) & 255;
   int g = ((ID+15)*11*13) & 255;
@@ -303,13 +299,13 @@ Vec3f renderPixelGeomID(float x, float y, const uniform ISPCCamera& camera)
   else return randomColor(ray.geomID);
 }
 
-void renderTileGeomID(uniform int taskIndex, 
+void renderTileGeomID(uniform int taskIndex,
                       uniform int* uniform pixels,
                       const uniform unsigned int width,
-                      const uniform unsigned int height, 
+                      const uniform unsigned int height,
                       const uniform float time,
                       const uniform ISPCCamera& camera,
-                      const uniform int numTilesX, 
+                      const uniform int numTilesX,
                       const uniform int numTilesY)
 {
   const uniform int t = taskIndex;
@@ -354,13 +350,13 @@ Vec3f renderPixelGeomIDPrimID(float x, float y, const uniform ISPCCamera& camera
   else return randomColor(ray.geomID ^ ray.primID)*make_Vec3f(abs(dot(ray.dir,normalize(ray.Ng))));
 }
 
-void renderTileGeomIDPrimID(uniform int taskIndex, 
+void renderTileGeomIDPrimID(uniform int taskIndex,
                             uniform int* uniform pixels,
                             const uniform unsigned int width,
-                            const uniform unsigned int height, 
+                            const uniform unsigned int height,
                             const uniform float time,
                             const uniform ISPCCamera& camera,
-                            const uniform int numTilesX, 
+                            const uniform int numTilesX,
                             const uniform int numTilesY)
 {
   const uniform int t = taskIndex;
@@ -401,18 +397,18 @@ Vec3f renderPixelCycles(float x, float y, const uniform ISPCCamera& camera)
   uniform int64 c0 = get_tsc();
   rtcIntersect(g_scene,ray);
   uniform int64 c1 = get_tsc();
-  
+
   /* shade pixel */
   return make_Vec3f((uniform float)(c1-c0)*scale,0.0f,0.0f);
 }
 
-void renderTileCycles(uniform int taskIndex, 
+void renderTileCycles(uniform int taskIndex,
                       uniform int* uniform pixels,
                       const uniform unsigned int width,
-                      const uniform unsigned int height, 
+                      const uniform unsigned int height,
                       const uniform float time,
                       const uniform ISPCCamera& camera,
-                      const uniform int numTilesX, 
+                      const uniform int numTilesX,
                       const uniform int numTilesY)
 {
   const uniform int t = taskIndex;
@@ -460,13 +456,13 @@ Vec3f renderPixelUV16(float x, float y, const uniform ISPCCamera& camera)
   else return make_Vec3f(ray.u,ray.v,1.0f-ray.u-ray.v);
 }
 
-void renderTileUV16(uniform int taskIndex, 
+void renderTileUV16(uniform int taskIndex,
                     uniform int* uniform pixels,
                     const uniform unsigned int width,
-                    const uniform unsigned int height, 
+                    const uniform unsigned int height,
                     const uniform float time,
                     const uniform ISPCCamera& camera,
-                    const uniform int numTilesX, 
+                    const uniform int numTilesX,
                     const uniform int numTilesY)
 {
   const uniform int t = taskIndex;
@@ -519,9 +515,9 @@ Vec3f renderPixelAmbientOcclusion(float x, float y, const uniform ISPCCamera& ca
 #define AMBIENT_OCCLUSION_SAMPLES 64
   /* trace some ambient occlusion rays */
   int seed = 34*x+12*y;
-  for (uniform int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++) 
+  for (uniform int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
      {
-      Vec3f dir; 
+      Vec3f dir;
       const float oneOver10000f = 1.f/10000.f;
       seed = 1103515245 * seed + 12345;
       dir.x = (seed%10000)*oneOver10000f;
@@ -529,7 +525,7 @@ Vec3f renderPixelAmbientOcclusion(float x, float y, const uniform ISPCCamera& ca
       dir.y = (seed%10000)*oneOver10000f;
       seed = 1103515245 * seed + 12345;
       dir.z = (seed%10000)*oneOver10000f;
-    
+
       /* initialize shadow ray */
       RTCRay shadow;
       shadow.org = hitPos;
@@ -540,14 +536,14 @@ Vec3f renderPixelAmbientOcclusion(float x, float y, const uniform ISPCCamera& ca
       shadow.primID = RTC_INVALID_GEOMETRY_ID;
       shadow.mask = -1;
       shadow.time = g_debug;
-    
+
       /* trace shadow ray */
       rtcOccluded(g_scene,shadow);
       //rtcIntersect(g_scene,shadow);
-    
+
       /* add light contribution */
       if (shadow.geomID == RTC_INVALID_GEOMETRY_ID)
-        intensity += 1.0f;   
+        intensity += 1.0f;
      }
   intensity *= 1.0f/AMBIENT_OCCLUSION_SAMPLES;
 
@@ -555,13 +551,13 @@ Vec3f renderPixelAmbientOcclusion(float x, float y, const uniform ISPCCamera& ca
   return col * intensity;
 }
 
-void renderTileAmbientOcclusion(uniform int taskIndex, 
+void renderTileAmbientOcclusion(uniform int taskIndex,
                                 uniform int* uniform pixels,
                                 const uniform unsigned int width,
-                                const uniform unsigned int height, 
+                                const uniform unsigned int height,
                                 const uniform float time,
                                 const uniform ISPCCamera& camera,
-                                const uniform int numTilesX, 
+                                const uniform int numTilesX,
                                 const uniform int numTilesY)
 {
   const uniform int t = taskIndex;
@@ -604,7 +600,7 @@ Vec3f renderPixelDifferentials(float x, float y, const uniform ISPCCamera& camer
 
   /* shade pixel */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f);
-  
+
   /* calculate differentials */
   float eps = 0.001f/16.0f;
   Vec3f P00, P01, P10, P11;
@@ -648,14 +644,14 @@ Vec3f renderPixelDifferentials(float x, float y, const uniform ISPCCamera& camer
   case 14: color = 10.0f*(ddPdudv1-ddPdudv0); break;
 
   case 15: {
-    color.x = length(dnormalize(cross(dPdu1,dPdv1),cross(ddPdudu1,dPdv1)+cross(dPdu1,ddPdudv1)))/length(dPdu1); 
-    color.y = length(dnormalize(cross(dPdu1,dPdv1),cross(ddPdudv1,dPdv1)+cross(dPdu1,ddPdvdv1)))/length(dPdv1); 
+    color.x = length(dnormalize(cross(dPdu1,dPdv1),cross(ddPdudu1,dPdv1)+cross(dPdu1,ddPdudv1)))/length(dPdu1);
+    color.y = length(dnormalize(cross(dPdu1,dPdv1),cross(ddPdudv1,dPdv1)+cross(dPdu1,ddPdvdv1)))/length(dPdv1);
     color.z = 0.0f;
     break;
   }
   case 16: {
-    float Cu = length(dnormalize(cross(dPdu1,dPdv1),cross(ddPdudu1,dPdv1)+cross(dPdu1,ddPdudv1)))/length(dPdu1); 
-    float Cv = length(dnormalize(cross(dPdu1,dPdv1),cross(ddPdudv1,dPdv1)+cross(dPdu1,ddPdvdv1)))/length(dPdv1); 
+    float Cu = length(dnormalize(cross(dPdu1,dPdv1),cross(ddPdudu1,dPdv1)+cross(dPdu1,ddPdudv1)))/length(dPdu1);
+    float Cv = length(dnormalize(cross(dPdu1,dPdv1),cross(ddPdudv1,dPdv1)+cross(dPdu1,ddPdvdv1)))/length(dPdv1);
     color = make_Vec3f(sqrt(Cu*Cu + Cv*Cv));
     break;
   }
@@ -663,13 +659,13 @@ Vec3f renderPixelDifferentials(float x, float y, const uniform ISPCCamera& camer
   return clamp(color,make_Vec3f(0.0f),make_Vec3f(1.0f));
 }
 
-void renderTileDifferentials(uniform int taskIndex, 
+void renderTileDifferentials(uniform int taskIndex,
                              uniform int* uniform pixels,
                              const uniform unsigned int width,
-                             const uniform unsigned int height, 
+                             const uniform unsigned int height,
                              const uniform float time,
                              const uniform ISPCCamera& camera,
-                             const uniform int numTilesX, 
+                             const uniform int numTilesX,
                              const uniform int numTilesY)
 {
   const uniform int t = taskIndex;
@@ -694,7 +690,7 @@ void renderTileDifferentials(uniform int taskIndex,
 
 /* returns the point seen through specified pixel */
 export uniform bool device_pick(const uniform float x,
-                                const uniform float y, 
+                                const uniform float y,
                                 const uniform ISPCCamera& camera,
                                 uniform Vec3f& hitPos)
 {
@@ -846,7 +842,7 @@ Vec2f getTextureCoordinatesSubdivMesh(void* uniform _mesh, const unsigned int pr
 	  const float v0 = v;
 	  const float u1 = 1.0f - u;
 	  const float v1 = 1.0f - v;
-	  st = u1*v1 * txt0 + u0*v1* txt1 + u0*v0 * txt2 + u1*v0* txt3;	  
+	  st = u1*v1 * txt0 + u0*v1* txt1 + u0*v0 * txt2 + u1*v0* txt3;
 	}
 #if defined(_DEBUG)
       else
@@ -867,7 +863,7 @@ float getTextureTexel1f(void *uniform _texture, float s, float t)
   iv = iv % texture->height; if (iv < 0) iv += texture->height;
 
   if (texture->format == FLOAT32)
-  { 
+  {
     uniform float *uniform data = (uniform float *uniform)texture->data;
     return data[iv*texture->width + iu];
   }
@@ -884,7 +880,7 @@ Vec3f getTextureTexel3f(void *uniform _texture, float s, float t)
 {
   uniform Texture * uniform texture = (Texture*)_texture;
   if (!texture) return make_Vec3f(0.0f,0.0f,0.0f);
-  
+
   int iu = (int)floor(s * (float)(texture->width));
   iu = iu % texture->width; if (iu < 0) iu += texture->width;
   int iv = (int)floor(t * (float)(texture->height));
@@ -901,7 +897,3 @@ Vec3f getTextureTexel3f(void *uniform _texture, float s, float t)
   }
   return make_Vec3f(0.0f,0.0f,0.0f);
 }
-
-#if defined(__cplusplus)
-}
-#endif

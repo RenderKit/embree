@@ -21,10 +21,6 @@
 #include "../common/tutorial/scene_device.isph"
 #include "../common/tutorial/optics.isph"
 
-#if defined(__cplusplus)
-namespace embree {
-#endif
-
 #undef TILE_SIZE_X
 #undef TILE_SIZE_Y
 
@@ -1684,7 +1680,7 @@ inline uniform float updateEdgeLevel( uniform ISPCSubdivMesh* uniform mesh, cons
 
 void updateEdgeLevelBuffer( uniform ISPCSubdivMesh* uniform mesh, const uniform Vec3fa& cam_pos, uniform size_t startID, uniform size_t endID )
 {
-  for (uniform size_t f=startID; f<endID;f++) 
+  for (uniform size_t f=startID; f<endID;f++)
   {
     uniform unsigned int e = mesh->face_offsets[f];
     uniform unsigned int N = mesh->verticesPerFace[f];
@@ -1815,7 +1811,3 @@ export void device_cleanup ()
   g_accu_height = 0;
   g_accu_count = 0;
 } // device_cleanup
-
-#if defined(__cplusplus)
-}
-#endif

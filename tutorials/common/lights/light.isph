@@ -18,10 +18,6 @@
 
 #include "../core/differential_geometry.isph"
 
-#if defined(__cplusplus)
-namespace embree {
-#endif
-
 struct Light;
 
 struct Light_SampleRes
@@ -65,7 +61,3 @@ inline void Light_Constructor(uniform Light* uniform self)
 {
   self->eval = Light_eval;
 }
-
-#if defined(__cplusplus)
-}
-#endif

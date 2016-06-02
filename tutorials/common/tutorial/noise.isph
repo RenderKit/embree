@@ -18,15 +18,6 @@
 
 #include "../math/vec3f.isph"
 
-#if defined(__cplusplus)
-namespace embree {
-#endif
-
-  /* noise functions */
-  float noise(const Vec3f& p);
-  Vec3f noise3D(const Vec3f& p);
-
-#if defined(__cplusplus)
-}
-#endif
-
+/* noise functions */
+float noise(const Vec3f& p);
+Vec3f noise3D(const Vec3f& p);

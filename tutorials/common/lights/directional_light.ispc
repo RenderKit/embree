@@ -18,10 +18,6 @@
 #include "../math/sampling.isph"
 #include "../math/linearspace.isph"
 
-#if defined(__cplusplus)
-namespace embree {
-#endif
-
 struct DirectionalLight
 {
   Light super;      //!< inherited light fields
@@ -105,7 +101,3 @@ export void* uniform DirectionalLight_create()
   DirectionalLight_set(self, make_Vec3f(0.f, 0.f, 1.f), make_Vec3f(1.f), 1.f);
   return self;
 }
-
-#if defined(__cplusplus)
-}
-#endif
