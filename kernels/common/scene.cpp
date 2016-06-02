@@ -518,13 +518,13 @@ namespace embree
     Lock<SpinLock> lock(geometriesMutex);
 
     if (usedIDs.size()) {
-      int id = usedIDs.back(); 
+      unsigned id = usedIDs.back(); 
       usedIDs.pop_back();
       geometries[id] = geometry;
       return id;
     } else {
       geometries.push_back(geometry);
-      return geometries.size()-1;
+      return unsigned(geometries.size()-1);
     }
   }
 
