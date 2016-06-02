@@ -321,7 +321,7 @@ namespace embree
           return;
         }
         
-        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
+        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(double(dn)); };
         
         /* preallocate arrays */
         morton.resize(numPrimitives);
@@ -333,13 +333,13 @@ namespace embree
         size_t block_size = size_t(BLOCK_SIZE);
 
         /* compute scene bounds */
-        BBox3fa cb_empty(empty); cb_empty.lower.a = 0;
-        const BBox3fa centBounds = parallel_reduce 
-          ( size_t(0), numPrimitives, block_size, cb_empty, [&](const range<size_t>& r) -> BBox3fa
+        std::pair<size_t,BBox3fa> cb_empty(0,empty);
+        auto cb = parallel_reduce 
+          ( size_t(0), numPrimitives, block_size, cb_empty, [&](const range<size_t>& r) -> std::pair<size_t,BBox3fa>
             {
+              size_t num = 0;
               BBox3fa bounds = empty;
 
-              size_t num = 0;
               for (size_t j=r.begin(); j<r.end(); j++)
               {
                 BBox3fa prim_bounds = empty;
@@ -347,12 +347,13 @@ namespace embree
                 bounds.extend(center2(prim_bounds));
                 num++;
               }
-              bounds.lower.a = num;
-              //for (size_t i=r.begin(); i<r.end(); i++) bounds.extend(center2(mesh->bounds(i)));
-              return bounds;
-            }, [] (const BBox3fa& a, const BBox3fa& b) { BBox3fa c = merge(a,b); c.lower.a = a.lower.a + b.lower.a; return c; });
+              return std::make_pair(num,bounds);
+            }, [] (const std::pair<size_t,BBox3fa>& a, const std::pair<size_t,BBox3fa>& b) {
+              return std::make_pair(a.first + b.first,merge(a.second,b.second)); 
+            });
 
-        size_t numPrimitivesGen = centBounds.lower.a;
+        size_t numPrimitivesGen = cb.first;
+        const BBox3fa centBounds = cb.second;
 
         /* compute morton codes */
 
