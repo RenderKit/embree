@@ -542,8 +542,8 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"invalid geometry");
     
     geometry->disable();
-    accels.deleteGeometry(geomID);
-    usedIDs.push_back(geomID);
+    accels.deleteGeometry(unsigned(geomID));
+    usedIDs.push_back(unsigned(geomID));
     geometries[geomID] = nullptr;
     delete geometry;
   }
