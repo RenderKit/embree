@@ -109,8 +109,8 @@ namespace embree
       for (size_t i=0; i<M && prims; i++, prims++)
       {
 	const PrimRef& prim = *prims;
-	const size_t geomID = prim.geomID();
-        const size_t primID = prim.primID();
+	const unsigned geomID = prim.geomID();
+        const unsigned primID = prim.primID();
         const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
         const TriangleMesh::Triangle& tri = mesh->triangle(primID);
         const Vec3fa& p0 = mesh->vertex(tri.v[0]);
