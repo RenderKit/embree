@@ -4186,7 +4186,7 @@ namespace embree
       std::fstream data;
       data.open(outFileName.name()+"."+benchmark->name+".txt", std::fstream::out | std::fstream::trunc);
       std::cout << benchmark->name << std::endl;
-      for (size_t i=startN; i<=endN; i=i*f+dn) 
+      for (size_t i=startN; i<=endN; i=size_t(i*f)+dn) 
       {
         size_t N = i;
         Statistics stat = test(benchmark,N);

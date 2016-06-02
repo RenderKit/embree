@@ -23,7 +23,7 @@ namespace embree
     GridSOA::GridSOA(const SubdivPatch1Base& patch, 
                      const unsigned x0, const unsigned x1, const unsigned y0, const unsigned y1, const unsigned swidth, const unsigned sheight,
                      const SubdivMesh* const geom, const size_t bvhBytes, BBox3fa* bounds_o)
-      : root(BVH4::emptyNode), width(x1-x0+1), height(y1-y0+1), dim_offset(width*height), geomID(patch.geom), primID(patch.prim), bvhBytes(bvhBytes)
+      : root(BVH4::emptyNode), width(x1-x0+1), height(y1-y0+1), dim_offset(width*height), geomID(patch.geom), primID(patch.prim), bvhBytes(unsigned(bvhBytes))
     {      
       /* the generate loops need padded arrays, thus first store into these temporary arrays */
       unsigned temp_size = width*height+VSIZEX;

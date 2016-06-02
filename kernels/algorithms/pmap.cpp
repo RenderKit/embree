@@ -32,7 +32,7 @@ namespace embree
       const size_t N = 10000;
       std::vector<uint32_t> keys(N);
       std::vector<uint32_t> vals(N);
-      for (size_t i=0; i<N; i++) keys[i] = 2*i*647382649;
+      for (size_t i=0; i<N; i++) keys[i] = 2*unsigned(i)*647382649;
       for (size_t i=0; i<N; i++) std::swap(keys[i],keys[rand()%N]);
       for (size_t i=0; i<N; i++) vals[i] = 2*rand();
       

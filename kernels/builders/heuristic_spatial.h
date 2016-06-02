@@ -137,9 +137,9 @@ namespace embree
             const vint4 bin0 = mapping.bin(prim.bounds().lower);
             const vint4 bin1 = mapping.bin(prim.bounds().upper);
             
-            for (size_t dim=0; dim<3; dim++) 
+            for (int dim=0; dim<3; dim++) 
             {
-              size_t bin;
+              int bin;
               PrimRef rest = prim;
               size_t l = bin0[dim];
               size_t r = bin1[dim];
@@ -237,7 +237,7 @@ namespace embree
         float bestSAH = inf;
         int   bestDim = -1;
         int   bestPos = 0;
-        for (size_t dim=0; dim<3; dim++) 
+        for (int dim=0; dim<3; dim++) 
         {
           /* ignore zero sized dimensions */
           if (unlikely(mapping.invalid(dim)))

@@ -154,7 +154,7 @@ namespace embree
       
       HalfEdge* p = (HalfEdge*) h;
       
-      size_t i=0;
+      unsigned i=0;
       unsigned min_vertex_index = (unsigned)-1;
       unsigned min_vertex_index_face = (unsigned)-1;
       edge_level = p->edge_level;

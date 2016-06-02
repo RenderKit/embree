@@ -518,13 +518,13 @@ namespace embree
     Lock<SpinLock> lock(geometriesMutex);
 
     if (usedIDs.size()) {
-      int id = usedIDs.back(); 
+      unsigned id = usedIDs.back(); 
       usedIDs.pop_back();
       geometries[id] = geometry;
       return id;
     } else {
       geometries.push_back(geometry);
-      return geometries.size()-1;
+      return unsigned(geometries.size()-1);
     }
   }
 
@@ -542,8 +542,8 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"invalid geometry");
     
     geometry->disable();
-    accels.deleteGeometry(geomID);
-    usedIDs.push_back(geomID);
+    accels.deleteGeometry(unsigned(geomID));
+    usedIDs.push_back(unsigned(geomID));
     geometries[geomID] = nullptr;
     delete geometry;
   }

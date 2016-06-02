@@ -396,7 +396,7 @@ namespace embree
           /* if the morton code is still the same, goto fall back split */
           if (unlikely(bitpos == 32)) 
           {
-            size_t center = (current.begin + current.end)/2; 
+            unsigned center = (current.begin + current.end)/2; 
             left.init(current.begin,center);
             right.init(center,current.end);
             return;
@@ -408,14 +408,14 @@ namespace embree
         const unsigned int bitmask = 1 << bitpos_diff;
         
         /* find location where bit differs using binary search */
-        size_t begin = current.begin;
-        size_t end   = current.end;
+        unsigned begin = current.begin;
+        unsigned end   = current.end;
         while (begin + 1 != end) {
-          const size_t mid = (begin+end)/2;
+          const unsigned mid = (begin+end)/2;
           const unsigned bit = morton[mid].code & bitmask;
           if (bit == 0) begin = mid; else end = mid;
         }
-        size_t center = end;
+        unsigned center = end;
 #if defined(DEBUG)      
         for (unsigned int i=begin;  i<center; i++) assert((morton[i].code & bitmask) == 0);
         for (unsigned int i=center; i<end;    i++) assert((morton[i].code & bitmask) == bitmask);
@@ -513,18 +513,12 @@ namespace embree
       std::pair<NodeRef,BBox3fa> build(MortonID32Bit* src, MortonID32Bit* tmp, size_t numPrimitives) 
       {
         /* using 4 phases radix sort */
-
-        //double i0 = getSeconds();
         morton = src;
-
         radix_sort_u32(src,tmp,numPrimitives);
-
-        //i0 = getSeconds() - i0;
-        //if (numPrimitives > 1000000) PRINT(i0);
 
         /* build BVH */
         NodeRef root;
-        MortonBuildRecord<NodeRef> br(0,numPrimitives,&root,1);
+        MortonBuildRecord<NodeRef> br(0,unsigned(numPrimitives),&root,1);
         
         const BBox3fa bounds = recurse(br, nullptr, true);
         _mm_mfence(); // to allow non-temporal stores during build
