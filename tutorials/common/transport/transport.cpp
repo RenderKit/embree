@@ -21,12 +21,12 @@
 #include "../../common/tutorial/scene_device.h"
 #include "../../../include/embree2/rtcore.h"
 
-extern "C" int64_t get_tsc() {
-  return read_tsc();
-}
-
 namespace embree
 {
+  extern "C" int64_t get_tsc() {
+    return read_tsc();
+  }
+  
   /* framebuffer */
   int* g_pixels = nullptr;
   int g_width = -1;

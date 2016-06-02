@@ -19,6 +19,8 @@
 #include "../common/tutorial/tutorial_device.h"
 #include "../common/tutorial/scene_device.h"
 
+namespace embree {
+
 extern "C" ISPCScene* g_ispc_scene;
 extern "C" bool g_changed;
 extern "C" int g_instancing_mode;
@@ -93,7 +95,7 @@ void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
 #if defined(ISPC)
   parallel_for(size_t(0),size_t( scene_in->numGeometries ),[&](const range<size_t>& range) {
     for (size_t i=range.begin(); i<range.end(); i++)
-      updateMeshEdgeLevelBufferTask(i,scene_in,cam_pos);
+      updateMeshEdgeLevelBufferTask((int)i,scene_in,cam_pos);
   }); 
 #endif
 
@@ -107,7 +109,7 @@ void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
     if (mesh->numFaces < 10000) continue;
     parallel_for(size_t(0),size_t( getNumHWThreads() ),[&](const range<size_t>& range) {
     for (size_t i=range.begin(); i<range.end(); i++)
-      updateSubMeshEdgeLevelBufferTask(i,mesh,cam_pos);
+      updateSubMeshEdgeLevelBufferTask((int)i,mesh,cam_pos);
   }); 
 #else
     updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
@@ -559,7 +561,7 @@ void renderTileStandard(int taskIndex,
 
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
-    Vec3fa color = renderPixelStandard(x,y,camera);
+    Vec3fa color = renderPixelStandard((float)x,(float)y,camera);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -636,7 +638,7 @@ extern "C" void device_render (int* pixels,
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
     for (size_t i=range.begin(); i<range.end(); i++)
-      renderTileTask(i,pixels,width,height,time,camera,numTilesX,numTilesY);
+      renderTileTask((int)i,pixels,width,height,time,camera,numTilesX,numTilesY);
   }); 
   //rtcDebug();
 }
@@ -647,3 +649,5 @@ extern "C" void device_cleanup ()
   rtcDeleteScene (g_scene); g_scene = nullptr;
   rtcDeleteDevice(g_device); g_device = nullptr;
 }
+
+} // namespace embree

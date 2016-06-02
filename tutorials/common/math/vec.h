@@ -20,7 +20,7 @@
 #include "../../../common/math/vec3.h"
 #include "../../../common/math/vec4.h"
 
-using namespace embree;
+namespace embree {
 
 // FIXME: change order of lerp arguments, then remove this function
 template<typename V>
@@ -91,3 +91,5 @@ inline Vec4f srgba_to_linear(const Vec4f c)
 // TODO implement srgba8_to_linear with a 256 entry LUT
 
 #undef APPROXIMATE_SRGB
+
+} // namespace embree

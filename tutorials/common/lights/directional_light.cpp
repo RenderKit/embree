@@ -18,6 +18,8 @@
 #include "../math/sampling.h"
 #include "../math/linearspace.h"
 
+namespace embree {
+
 struct DirectionalLight
 {
   Light super;      //!< inherited light fields
@@ -101,3 +103,5 @@ extern "C" void* DirectionalLight_create()
   DirectionalLight_set(self, Vec3fa(0.f, 0.f, 1.f), Vec3fa(1.f), 1.f);
   return self;
 }
+
+} // namespace embree

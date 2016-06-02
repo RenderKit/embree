@@ -18,6 +18,8 @@
 #include "../math/sampling.h"
 #include "../math/linearspace.h"
 
+namespace embree {
+
 struct SpotLight
 {
   Light super;            //!< inherited light fields
@@ -145,3 +147,5 @@ extern "C" void* SpotLight_create()
 
   return self;
 }
+
+} // namespace embree

@@ -22,23 +22,23 @@ namespace embree
   __forceinline bool isStatic    (RTCSceneFlags flags) { return (flags & 1) == RTC_SCENE_STATIC; }
   __forceinline bool isDynamic   (RTCSceneFlags flags) { return (flags & 1) == RTC_SCENE_DYNAMIC; }
 
-  __forceinline bool isCompact   (RTCSceneFlags flags) { return flags & RTC_SCENE_COMPACT; }
-  __forceinline bool isRobust    (RTCSceneFlags flags) { return flags & RTC_SCENE_ROBUST; }
-  __forceinline bool isCoherent  (RTCSceneFlags flags) { return flags & RTC_SCENE_COHERENT; }
-  __forceinline bool isIncoherent(RTCSceneFlags flags) { return flags & RTC_SCENE_INCOHERENT; }
-  __forceinline bool isHighQuality(RTCSceneFlags flags) { return flags & RTC_SCENE_HIGH_QUALITY; }
+  __forceinline bool isCompact   (RTCSceneFlags flags) { return (flags & RTC_SCENE_COMPACT) != 0; }
+  __forceinline bool isRobust    (RTCSceneFlags flags) { return (flags & RTC_SCENE_ROBUST) != 0; }
+  __forceinline bool isCoherent  (RTCSceneFlags flags) { return (flags & RTC_SCENE_COHERENT) != 0; }
+  __forceinline bool isIncoherent(RTCSceneFlags flags) { return (flags & RTC_SCENE_INCOHERENT) != 0; }
+  __forceinline bool isHighQuality(RTCSceneFlags flags) { return (flags & RTC_SCENE_HIGH_QUALITY) != 0; }
 
   /*! decoding of algorithm flags */
-  __forceinline bool isInterpolatable(RTCAlgorithmFlags flags) { return flags & RTC_INTERPOLATE; }
-  __forceinline bool isStreamMode(RTCAlgorithmFlags flags) { return flags & RTC_INTERSECT_STREAM; }
-  __forceinline bool isIntersect1Mode(RTCAlgorithmFlags flags) { return flags & RTC_INTERSECT1; }
-  __forceinline bool isIntersect4Mode(RTCAlgorithmFlags flags) { return flags & RTC_INTERSECT4; }
-  __forceinline bool isIntersect8Mode(RTCAlgorithmFlags flags) { return flags & RTC_INTERSECT8; }
-  __forceinline bool isIntersect16Mode(RTCAlgorithmFlags flags) { return flags & RTC_INTERSECT16; }
+  __forceinline bool isInterpolatable(RTCAlgorithmFlags flags) { return (flags & RTC_INTERPOLATE) != 0; }
+  __forceinline bool isStreamMode(RTCAlgorithmFlags flags) { return (flags & RTC_INTERSECT_STREAM) != 0; }
+  __forceinline bool isIntersect1Mode(RTCAlgorithmFlags flags) { return (flags & RTC_INTERSECT1) != 0; }
+  __forceinline bool isIntersect4Mode(RTCAlgorithmFlags flags) { return (flags & RTC_INTERSECT4) != 0; }
+  __forceinline bool isIntersect8Mode(RTCAlgorithmFlags flags) { return (flags & RTC_INTERSECT8) != 0; }
+  __forceinline bool isIntersect16Mode(RTCAlgorithmFlags flags) { return (flags & RTC_INTERSECT16) != 0; }
 
    /*! decoding of intersection flags */
-  __forceinline bool isCoherent  (RTCIntersectFlags flags) { return !(flags & RTC_INTERSECT_INCOHERENT); }
-  __forceinline bool isIncoherent(RTCIntersectFlags flags) { return   flags & RTC_INTERSECT_INCOHERENT;  }  
+  __forceinline bool isCoherent  (RTCIntersectFlags flags) { return (flags & RTC_INTERSECT_INCOHERENT) == 0; }
+  __forceinline bool isIncoherent(RTCIntersectFlags flags) { return (flags & RTC_INTERSECT_INCOHERENT) != 0;  }  
 
 #if TBB_INTERFACE_VERSION_MAJOR < 8    
 #  define USE_TASK_ARENA 0

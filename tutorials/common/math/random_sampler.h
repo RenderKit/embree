@@ -18,6 +18,8 @@
 
 #include "../math/vec.h"
 
+namespace embree {
+
 struct RandomSampler
 {
   unsigned int s;
@@ -116,3 +118,4 @@ inline Vec3fa RandomSampler_get3D(RandomSampler& self)
   return Vec3fa(u,v,w);
 }
 
+} // namespace embree

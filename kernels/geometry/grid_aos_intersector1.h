@@ -66,15 +66,15 @@ namespace embree
         if (unlikely(ray.tnear <= t && t <= ray.tfar)) 
         {
           const float rcp0xFFFF = 1.0f/0xFFFF;
-          const Vec3fa uv0 = Vec3fa(p2.u & 0xFFFF, p2.u >> 16, 0.0f)*rcp0xFFFF;
-          const Vec3fa uv1 = Vec3fa(p0.u & 0xFFFF, p0.u >> 16, 0.0f)*rcp0xFFFF;
-          const Vec3fa uv2 = Vec3fa(p1.u & 0xFFFF, p1.u >> 16, 0.0f)*rcp0xFFFF;
+          const Vec3fa uv0 = Vec3fa(float(p2.u & 0xFFFF), float(p2.u >> 16), 0.0f)*rcp0xFFFF;
+          const Vec3fa uv1 = Vec3fa(float(p0.u & 0xFFFF), float(p0.u >> 16), 0.0f)*rcp0xFFFF;
+          const Vec3fa uv2 = Vec3fa(float(p1.u & 0xFFFF), float(p1.u >> 16), 0.0f)*rcp0xFFFF;
           const Vec3fa uv = uvw[0]*uv0+uvw[1]*uv1+uvw[2]*uv2;
           const float u = uv.x * rcpDet;
           const float v = uv.y * rcpDet;
 
           /* ray masking test */
-          Geometry* geometry = scene->get(prim.grid.geomID);
+          Geometry* geometry MAYBE_UNUSED = scene->get(prim.grid.geomID);
 #if defined(EMBREE_RAY_MASK)
           if ((geometry->mask & ray.mask) == 0) return;
 #endif
@@ -270,7 +270,7 @@ namespace embree
         if (ray.tnear > t || t > ray.tfar) return false;
         
         /* ray masking test */
-        Geometry* geometry = scene->get(prim.grid.geomID);
+        Geometry* geometry MAYBE_UNUSED = scene->get(prim.grid.geomID);
 #if defined(EMBREE_RAY_MASK)
         if ((geometry->mask & ray.mask) == 0) return false;
 #endif
@@ -281,9 +281,9 @@ namespace embree
         {
           /* calculate hit information */
           const float rcp0xFFFF = 1.0f/0xFFFF;
-          const Vec3fa uv0 = Vec3fa(p2.u & 0xFFFF, p2.u >> 16, 0.0f)*rcp0xFFFF;
-          const Vec3fa uv1 = Vec3fa(p0.u & 0xFFFF, p0.u >> 16, 0.0f)*rcp0xFFFF;
-          const Vec3fa uv2 = Vec3fa(p1.u & 0xFFFF, p1.u >> 16, 0.0f)*rcp0xFFFF;
+          const Vec3fa uv0 = Vec3fa(float(p2.u & 0xFFFF), float(p2.u >> 16), 0.0f)*rcp0xFFFF;
+          const Vec3fa uv1 = Vec3fa(float(p0.u & 0xFFFF), float(p0.u >> 16), 0.0f)*rcp0xFFFF;
+          const Vec3fa uv2 = Vec3fa(float(p1.u & 0xFFFF), float(p1.u >> 16), 0.0f)*rcp0xFFFF;
           const Vec3fa uv = uvw[0]*uv0+uvw[1]*uv1+uvw[2]*uv2;
           const float u = uv.x * rcpDet;
           const float v = uv.y * rcpDet;

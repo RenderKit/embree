@@ -35,18 +35,18 @@ namespace embree
 
       /*! GridSOA constructor */
       GridSOA(const SubdivPatch1Base& patch, 
-              const size_t x0, const size_t x1, const size_t y0, const size_t y1, const size_t swidth, const size_t sheight,
+              const unsigned x0, const unsigned x1, const unsigned y0, const unsigned y1, const unsigned swidth, const unsigned sheight,
               const SubdivMesh* const geom, const size_t bvhBytes, BBox3fa* bounds_o = nullptr);
 
       /*! Subgrid creation */
       template<typename Allocator>
         static GridSOA* create(SubdivPatch1Base* const patch, unsigned x0, unsigned x1, unsigned y0, unsigned y1, const Scene* scene, Allocator& alloc, BBox3fa* bounds_o = nullptr)
       {
-        const size_t width = x1-x0+1;
-        const size_t height = y1-y0+1;
+        const unsigned width = x1-x0+1;
+        const unsigned height = y1-y0+1;
         const GridRange range(0,width-1,0,height-1);
         const size_t bvhBytes  = getBVHBytes(range,0);
-        const size_t gridBytes = 4*width*height*sizeof(float)+4; // 4 bytes of padding required because of off by 1 read below
+        const size_t gridBytes = 4*size_t(width)*size_t(height)*sizeof(float)+4; // 4 bytes of padding required because of off by 1 read below
         return new (alloc(offsetof(GridSOA,data)+bvhBytes+gridBytes)) GridSOA(*patch,x0,x1,y0,y1,patch->grid_u_res,patch->grid_v_res,scene->getSubdivMesh(patch->geom),bvhBytes,bounds_o);  
       }
 
@@ -57,28 +57,28 @@ namespace embree
         return create(patch,0,patch->grid_u_res-1,0,patch->grid_v_res-1,scene,alloc,bounds_o);
       }
 
-      static size_t getNumEagerLeaves(size_t width, size_t height) {
-        const size_t w = (((width +1)/2)+3)/4;
-        const size_t h = (((height+1)/2)+3)/4;
+      static unsigned getNumEagerLeaves(unsigned width, unsigned height) {
+        const unsigned w = (((width +1)/2)+3)/4;
+        const unsigned h = (((height+1)/2)+3)/4;
         return w*h;
       }
 
       template<typename Allocator>
-        __forceinline static size_t createEager(SubdivPatch1Base& patch, Scene* scene, SubdivMesh* mesh, size_t primID, Allocator& alloc, PrimRef* prims)
+        __forceinline static unsigned createEager(SubdivPatch1Base& patch, Scene* scene, SubdivMesh* mesh, unsigned primID, Allocator& alloc, PrimRef* prims)
       {
-        size_t N = 0;
-        const size_t x0 = 0, x1 = patch.grid_u_res-1;
-        const size_t y0 = 0, y1 = patch.grid_v_res-1;
+        unsigned N = 0;
+        const unsigned x0 = 0, x1 = patch.grid_u_res-1;
+        const unsigned y0 = 0, y1 = patch.grid_v_res-1;
         
-        for (size_t y=y0; y<y1; y+=8)
+        for (unsigned y=y0; y<y1; y+=8)
         {
-          for (size_t x=x0; x<x1; x+=8) 
+          for (unsigned x=x0; x<x1; x+=8) 
           {
-            const size_t lx0 = x, lx1 = min(lx0+8,x1);
-            const size_t ly0 = y, ly1 = min(ly0+8,y1);
+            const unsigned lx0 = x, lx1 = min(lx0+8,x1);
+            const unsigned ly0 = y, ly1 = min(ly0+8,y1);
             BBox3fa bounds;
             GridSOA* leaf = create(&patch,lx0,lx1,ly0,ly1,scene,alloc,&bounds);
-            *prims = PrimRef(bounds,(size_t)BVH4::encodeTypedLeaf(leaf,1)); prims++;
+            *prims = PrimRef(bounds,(unsigned)BVH4::encodeTypedLeaf(leaf,1)); prims++;
             N++;
           }
         }

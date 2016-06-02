@@ -35,9 +35,9 @@ namespace embree
       typedef BilinearPatch3fa BilinearPatch;
 
     private:
-      const size_t x0,x1;
-      const size_t y0,y1;
-      const size_t swidth,sheight;
+      const unsigned x0,x1;
+      const unsigned y0,y1;
+      const unsigned swidth,sheight;
       const float rcp_swidth, rcp_sheight;
       float* const Px;
       float* const Py;
@@ -47,22 +47,22 @@ namespace embree
       float* const Nx;
       float* const Ny;
       float* const Nz;
-      const size_t dwidth,dheight;
-      size_t count;
+      const unsigned dwidth,dheight;
+      unsigned count;
 
     public:      
 
-      PatchEvalGrid (Ref patch, size_t subPatch,
-                     const size_t x0, const size_t x1, const size_t y0, const size_t y1, const size_t swidth, const size_t sheight, 
+      PatchEvalGrid (Ref patch, unsigned subPatch,
+                     const unsigned x0, const unsigned x1, const unsigned y0, const unsigned y1, const unsigned swidth, const unsigned sheight, 
                      float* Px, float* Py, float* Pz, float* U, float* V, 
                      float* Nx, float* Ny, float* Nz,
-                     const size_t dwidth, const size_t dheight)
+                     const unsigned dwidth, const unsigned dheight)
       : x0(x0), x1(x1), y0(y0), y1(y1), swidth(swidth), sheight(sheight), rcp_swidth(1.0f/(swidth-1.0f)), rcp_sheight(1.0f/(sheight-1.0f)), 
         Px(Px), Py(Py), Pz(Pz), U(U), V(V), Nx(Nx), Ny(Ny), Nz(Nz), dwidth(dwidth), dheight(dheight), count(0)
       {
         assert(swidth < (2<<20) && sheight < (2<<20));
-        const BBox2f srange(Vec2f(0.0f,0.0f),Vec2f(swidth-1,sheight-1));
-        const BBox2f erange(Vec2f(x0,y0),Vec2f(x1,y1));
+        const BBox2f srange(Vec2f(0.0f,0.0f),Vec2f(float(swidth-1),float(sheight-1)));
+        const BBox2f erange(Vec2f(float(x0),float(y0)),Vec2f((float)x1,(float)y1));
         bool done MAYBE_UNUSED = eval(patch,subPatch,srange,erange);
         assert(done);
         assert(count == (x1-x0+1)*(y1-y0+1));
@@ -76,8 +76,8 @@ namespace embree
         count += (lx1-lx0)*(ly1-ly0);
         
 #if 0
-        for (size_t iy=ly0; iy<ly1; iy++) {
-          for (size_t ix=lx0; ix<lx1; ix++) {
+        for (unsigned iy=ly0; iy<ly1; iy++) {
+          for (unsigned ix=lx0; ix<lx1; ix++) {
             const float lu = select(ix == swidth -1, float(1.0f), (float(ix)-srange.lower.x)*scale_x);
             const float lv = select(iy == sheight-1, float(1.0f), (float(iy)-srange.lower.y)*scale_y);
             const Vec3fa p = patch->patch.eval(lu,lv);
@@ -102,7 +102,7 @@ namespace embree
             const vfloatx v = vfloatx(iy)*rcp_sheight;
             const vintx ofs = (iy-y0)*dwidth+(ix-x0);
             if (likely(all(valid)) && all(iy==iy[0])) {
-              const size_t ofs2 = ofs[0];
+              const unsigned ofs2 = ofs[0];
               vfloatx::storeu(Px+ofs2,p.x);
               vfloatx::storeu(Py+ofs2,p.y);
               vfloatx::storeu(Pz+ofs2,p.z);
@@ -115,7 +115,7 @@ namespace embree
               }
             } else {
               foreach_unique_index(valid,iy,[&](const vboolx& valid, const int iy0, const int j) {
-                  const size_t ofs2 = ofs[j]-j;
+                  const unsigned ofs2 = ofs[j]-j;
                   vfloatx::storeu(valid,Px+ofs2,p.x);
                   vfloatx::storeu(valid,Py+ofs2,p.y);
                   vfloatx::storeu(valid,Pz+ofs2,p.z);
@@ -132,15 +132,15 @@ namespace embree
 #endif
       }
 
-      bool eval(Ref This, const BBox2f& srange, const BBox2f& erange, const size_t depth) 
+      bool eval(Ref This, const BBox2f& srange, const BBox2f& erange, const unsigned depth) 
       {
         if (erange.empty())
           return true;
         
-        const int lx0 = ceilf(erange.lower.x);
-        const int lx1 = ceilf(erange.upper.x) + (erange.upper.x == x1 && (srange.lower.x < erange.upper.x || erange.upper.x == 0));
-        const int ly0 = ceilf(erange.lower.y);
-        const int ly1 = ceilf(erange.upper.y) + (erange.upper.y == y1 && (srange.lower.y < erange.upper.y || erange.upper.y == 0));
+        const int lx0 = (int) ceilf(erange.lower.x);
+        const int lx1 = (int) ceilf(erange.upper.x) + (erange.upper.x == x1 && (srange.lower.x < erange.upper.x || erange.upper.x == 0));
+        const int ly0 = (int) ceilf(erange.lower.y);
+        const int ly1 = (int) ceilf(erange.upper.y) + (erange.upper.y == y1 && (srange.lower.y < erange.upper.y || erange.upper.y == 0));
         if (lx0 >= lx1 || ly0 >= ly1) 
           return true;
 
@@ -192,7 +192,7 @@ namespace embree
         }
       }
 
-      bool eval(Ref This, size_t subPatch, const BBox2f& srange, const BBox2f& erange) 
+      bool eval(Ref This, unsigned subPatch, const BBox2f& srange, const BBox2f& erange) 
       {
         if (!This) 
           return false;
@@ -211,9 +211,9 @@ namespace embree
       }
     };
 
-    __forceinline size_t patch_eval_subdivision_count (const HalfEdge* h)
+    __forceinline unsigned patch_eval_subdivision_count (const HalfEdge* h)
     {
-      const size_t N = h->numEdges();
+      const unsigned N = h->numEdges();
       if (N == 4) return 1;
       else return N;
     }
@@ -221,10 +221,10 @@ namespace embree
     template<typename Tessellator>
       inline void patch_eval_subdivision (const HalfEdge* h, Tessellator tessellator)
     {
-      const size_t N = h->numEdges();
+      const unsigned N = h->numEdges();
       int neighborSubdiv[GeneralCatmullClarkPatch3fa::SIZE]; // FIXME: use array_t
       float levels[GeneralCatmullClarkPatch3fa::SIZE];
-      for (size_t i=0; i<N; i++) {
+      for (unsigned i=0; i<N; i++) {
         assert(i<GeneralCatmullClarkPatch3fa::SIZE);
         neighborSubdiv[i] = h->hasOpposite() ? h->opposite()->numEdges() != 4 : 0; 
         levels[i] = h->edge_level;
@@ -238,15 +238,16 @@ namespace embree
       }
       else
       {
-        for (size_t i=0; i<N; i++) 
+        for (unsigned i=0; i<N; i++) 
         {
           assert(i<MAX_PATCH_VALENCE);
           static_assert(MAX_PATCH_VALENCE <= 16, "MAX_PATCH_VALENCE > 16");
           const int h = (i >> 2) & 3, l = i & 3;
-          const Vec2f uv[4] = { (1.0f/4.0f) * (Vec2f(l,h) + Vec2f(0.0f,0.0f)),
-                                (1.0f/4.0f) * (Vec2f(l,h) + Vec2f(0.5f,0.0f)),
-                                (1.0f/4.0f) * (Vec2f(l,h) + Vec2f(0.5f,0.5f)),
-                                (1.0f/4.0f) * (Vec2f(l,h) + Vec2f(0.0f,0.5f)) };
+          const Vec2f base((float)l,(float)h);
+          const Vec2f uv[4] = { (1.0f/4.0f) * (base + Vec2f(0.0f,0.0f)),
+                                (1.0f/4.0f) * (base + Vec2f(0.5f,0.0f)),
+                                (1.0f/4.0f) * (base + Vec2f(0.5f,0.5f)),
+                                (1.0f/4.0f) * (base + Vec2f(0.0f,0.5f)) };
           const int neighborSubdiv1[4] = { 0,0,0,0 }; 
           const float levels1[4] = { 0.5f*levels[(i+0)%N], 0.5f*levels[(i+0)%N], 0.5f*levels[(i-1)%N], 0.5f*levels[(i-1)%N] };
           tessellator(uv,neighborSubdiv1,levels1,i);

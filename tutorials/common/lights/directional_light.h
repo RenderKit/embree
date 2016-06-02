@@ -18,9 +18,12 @@
 
 #include "../math/vec.h"
 
-extern "C" void* DirectionalLight_create();
-
-extern "C" void DirectionalLight_set(void* super,
-                                     const Vec3fa& direction,
-                                     const Vec3fa& radiance,
-                                     float cosAngle);
+namespace embree 
+{
+  extern "C" void* DirectionalLight_create();
+  
+  extern "C" void DirectionalLight_set(void* super,
+                                       const Vec3fa& direction,
+                                       const Vec3fa& radiance,
+                                       float cosAngle);
+}

@@ -117,8 +117,8 @@ namespace embree
   };
 
 #if defined(__AVX512F__)
-    template<>
-      __forceinline void RayK<16>::updateK<16>(const size_t i,
+  template<> template<>
+    __forceinline void RayK<16>::updateK<16>(const size_t i,
                                              const size_t rayIndex,
                                              const vfloat16& new_t,
                                              const vfloat16& new_u,

@@ -267,10 +267,10 @@ namespace embree
     {
       for (size_t f=r.begin(); f<r.end(); f++) 
       {
-	const size_t N = faceVertices[f];
-	const size_t e = faceStartEdge[f];
+	const unsigned N = faceVertices[f];
+	const unsigned e = faceStartEdge[f];
 
-	for (size_t de=0; de<N; de++)
+	for (unsigned de=0; de<N; de++)
 	{
 	  HalfEdge* edge = &halfEdges[e+de];
 
@@ -281,8 +281,8 @@ namespace embree
 	  const uint64_t key = SubdivMesh::Edge(startVertex,endVertex);
 	  
 	  edge->vtx_index              = startVertex;
-	  edge->next_half_edge_ofs     = (de == (N-1)) ? -(N-1) : +1;
-	  edge->prev_half_edge_ofs     = (de ==     0) ? +(N-1) : -1;
+	  edge->next_half_edge_ofs     = (de == (N-1)) ? -int(N-1) : +1;
+	  edge->prev_half_edge_ofs     = (de ==     0) ? +int(N-1) : -1;
 	  edge->opposite_half_edge_ofs = 0;
 	  edge->edge_crease_weight     = edgeCreaseMap.lookup(key,0.0f);
 	  edge->vertex_crease_weight   = vertexCreaseMap.lookup(startVertex,0.0f);
@@ -290,7 +290,7 @@ namespace embree
           edge->patch_type             = HalfEdge::COMPLEX_PATCH; // type gets updated below
           edge->vertex_type            = HalfEdge::REGULAR_VERTEX;
 
-	  if (unlikely(holeSet.lookup(f))) 
+	  if (unlikely(holeSet.lookup(unsigned(f)))) 
 	    halfEdges1[e+de] = SubdivMesh::KeyHalfEdge(std::numeric_limits<uint64_t>::max(),edge);
 	  else
 	    halfEdges1[e+de] = SubdivMesh::KeyHalfEdge(key,edge);
@@ -360,7 +360,7 @@ namespace embree
       {
         HalfEdge* edge = &halfEdges[faceStartEdge[f]];
         HalfEdge::PatchType patch_type = edge->patchType();
-        invalidFace[f] = !edge->valid(vertices[0]) || holeSet.lookup(f);
+        invalidFace[f] = !edge->valid(vertices[0]) || holeSet.lookup(unsigned(f));
           
         for (size_t i=0; i<faceVertices[f]; i++) 
         {

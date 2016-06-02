@@ -65,7 +65,7 @@ namespace embree
       g_numThreads = tbb::task_scheduler_init::default_num_threads();
     } else {
       g_tbb_threads_initialized = true;
-      g_tbb_threads.initialize(numThreads);
+      g_tbb_threads.initialize(int(numThreads));
       g_numThreads = numThreads;
     }
   }

@@ -18,12 +18,15 @@
 
 #include "../math/vec.h"
 
-extern "C" void* SpotLight_create();
-
-extern "C" void SpotLight_set(void* super,
-                              const Vec3fa& position,
-                              const Vec3fa& direction,
-                              const Vec3fa& power,
-                              float cosAngleMax,
-                              float cosAngleScale,
-                              float radius);
+namespace embree 
+{
+  extern "C" void* SpotLight_create();
+  
+  extern "C" void SpotLight_set(void* super,
+                                const Vec3fa& position,
+                                const Vec3fa& direction,
+                                const Vec3fa& power,
+                                float cosAngleMax,
+                                float cosAngleScale,
+                                float radius);
+}

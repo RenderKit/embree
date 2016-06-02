@@ -18,6 +18,8 @@
 
 #include "../math/sampling.h"
 
+namespace embree {
+
 /*! \addtogroup rivl_render_embree_ivl */
 /*! @{ */
 
@@ -181,4 +183,4 @@ inline PowerCosineDistribution make_PowerCosineDistribution(const float _exp) {
 }
 #endif
 
-/*! @} */
+} // namespace embree

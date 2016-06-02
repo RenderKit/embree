@@ -18,6 +18,8 @@
 
 #include "../math/vec.h"
 
+namespace embree {
+
 struct DifferentialGeometry
 {
   int geomID;
@@ -30,3 +32,5 @@ struct DifferentialGeometry
   Vec3fa Ty;
   float tnear_eps;
 };
+
+} // namespace embree

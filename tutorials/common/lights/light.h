@@ -18,6 +18,8 @@
 
 #include "../core/differential_geometry.h"
 
+namespace embree {
+
 struct Light;
 
 struct Light_SampleRes
@@ -61,3 +63,5 @@ inline void Light_Constructor(Light* self)
 {
   self->eval = Light_eval;
 }
+
+} // namespace embree

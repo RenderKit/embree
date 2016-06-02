@@ -27,9 +27,9 @@
 #if (__MSV_VER <= 1700)
 namespace std
 {
-  __forceinline bool isinf ( const float x ) { return !_finite(x); }
-  __forceinline bool isnan ( const float x ) { return _isnan(x); }
-  __forceinline bool isfinite (const float x) { return _finite(x); }
+  __forceinline bool isinf ( const float x ) { return _finite(x) == 0; }
+  __forceinline bool isnan ( const float x ) { return _isnan(x) != 0; }
+  __forceinline bool isfinite (const float x) { return _finite(x) != 0; }
 }
 #endif
 #endif
@@ -83,7 +83,6 @@ namespace embree
     return _mm_cvtss_f32(c);
   }
 
-#if !defined(__WIN32__)
   __forceinline float abs  ( const float x ) { return ::fabsf(x); }
   __forceinline float acos ( const float x ) { return ::acosf (x); }
   __forceinline float asin ( const float x ) { return ::asinf (x); }
@@ -103,7 +102,6 @@ namespace embree
   __forceinline float tanh ( const float x ) { return ::tanhf (x); }
   __forceinline float floor( const float x ) { return ::floorf (x); }
   __forceinline float ceil ( const float x ) { return ::ceilf (x); }
-#endif
   __forceinline float frac ( const float x ) { return x-floor(x); }
 
   __forceinline double abs  ( const double x ) { return ::fabs(x); }
@@ -151,9 +149,11 @@ namespace embree
   __forceinline      int min(int      a, int      b) { return a<b ? a:b; }
   __forceinline unsigned min(unsigned a, unsigned b) { return a<b ? a:b; }
   __forceinline  int64_t min(int64_t  a, int64_t  b) { return a<b ? a:b; }
-  __forceinline   size_t min(size_t   a, size_t   b) { return a<b ? a:b; }
   __forceinline    float min(float    a, float    b) { return a<b ? a:b; }
   __forceinline   double min(double   a, double   b) { return a<b ? a:b; }
+#if defined(__X86_64__)
+  __forceinline   size_t min(size_t   a, size_t   b) { return a<b ? a:b; }
+#endif
 
   template<typename T> __forceinline T min(const T& a, const T& b, const T& c) { return min(min(a,b),c); }
   template<typename T> __forceinline T min(const T& a, const T& b, const T& c, const T& d) { return min(min(a,b),min(c,d)); }
@@ -162,9 +162,11 @@ namespace embree
   __forceinline      int max(int      a, int      b) { return a<b ? b:a; }
   __forceinline unsigned max(unsigned a, unsigned b) { return a<b ? b:a; }
   __forceinline  int64_t max(int64_t  a, int64_t  b) { return a<b ? b:a; }
-  __forceinline   size_t max(size_t   a, size_t   b) { return a<b ? b:a; }
   __forceinline    float max(float    a, float    b) { return a<b ? b:a; }
   __forceinline   double max(double   a, double   b) { return a<b ? b:a; }
+#if defined(__X86_64__)
+  __forceinline   size_t max(size_t   a, size_t   b) { return a<b ? b:a; }
+#endif
 
   template<typename T> __forceinline T max(const T& a, const T& b, const T& c) { return max(max(a,b),c); }
   template<typename T> __forceinline T max(const T& a, const T& b, const T& c, const T& d) { return max(max(a,b),max(c,d)); }

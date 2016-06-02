@@ -17,6 +17,8 @@
 #include "../common/tutorial/tutorial_device.h"
 #include "../common/tutorial/optics.h"
 
+namespace embree {
+
 /* scene data */
 RTCDevice g_device = nullptr;
 RTCScene  g_scene  = nullptr;
@@ -235,7 +237,7 @@ void renderTileStandard(int taskIndex,
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
     /* calculate pixel color */
-    Vec3fa color = renderPixelStandard(x,y,camera);
+    Vec3fa color = renderPixelStandard((float)x,(float)y,camera);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -268,7 +270,7 @@ extern "C" void device_render (int* pixels,
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
     for (size_t i=range.begin(); i<range.end(); i++)
-      renderTileTask(i,pixels,width,height,time,camera,numTilesX,numTilesY);
+      renderTileTask((int)i,pixels,width,height,time,camera,numTilesX,numTilesY);
   }); 
 }
 
@@ -278,3 +280,5 @@ extern "C" void device_cleanup ()
   rtcDeleteScene (g_scene); g_scene = nullptr;
   rtcDeleteDevice(g_device); g_device = nullptr;
 }
+
+} // namespace embree

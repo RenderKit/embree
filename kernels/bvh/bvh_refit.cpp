@@ -35,8 +35,8 @@ namespace embree
     template<int N>
     __forceinline bool compare(const typename BVHN<N>::NodeRef* a, const typename BVHN<N>::NodeRef* b)
     {
-      int sa = *(size_t*)&a->node()->lower_x;
-      int sb = *(size_t*)&b->node()->lower_x;
+      size_t sa = *(size_t*)&a->node()->lower_x;
+      size_t sb = *(size_t*)&b->node()->lower_x;
       return sa < sb;
     }
 

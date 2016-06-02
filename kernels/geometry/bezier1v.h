@@ -149,10 +149,10 @@ namespace embree
     {
       const PrimRef& prim = prims[i];
       i++;
-      const size_t geomID = prim.geomID();
-      const size_t primID = prim.primID();
+      const unsigned geomID = prim.geomID();
+      const unsigned primID = prim.primID();
       const BezierCurves* curves = scene->getBezierCurves(geomID);
-      const size_t id = curves->curve(primID);
+      const unsigned id = curves->curve(primID);
       const Vec3fa& p0 = curves->vertex(id+0);
       const Vec3fa& p1 = curves->vertex(id+1);
       const Vec3fa& p2 = curves->vertex(id+2);

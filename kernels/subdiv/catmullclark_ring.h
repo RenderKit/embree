@@ -154,7 +154,7 @@ namespace embree
       
       HalfEdge* p = (HalfEdge*) h;
       
-      size_t i=0;
+      unsigned i=0;
       unsigned min_vertex_index = (unsigned)-1;
       unsigned min_vertex_index_face = (unsigned)-1;
       edge_level = p->edge_level;
@@ -381,7 +381,7 @@ namespace embree
       /* border vertex rule */
       if (unlikely(border_index != -1))
       {
-	const unsigned int second_border_index = border_index+2 >= edge_valence ? 0 : border_index+2;
+	const unsigned int second_border_index = border_index+2 >= int(edge_valence) ? 0 : border_index+2;
 	return (4.0f * vtx + (ring[border_index] + ring[second_border_index])) * 1.0f/6.0f;
       }
       
@@ -415,7 +415,7 @@ namespace embree
 	}
 	else
 	{
-	  const unsigned int second_border_index = border_index+2 >= edge_valence ? 0 : border_index+2;
+	  const unsigned int second_border_index = border_index+2 >= int(edge_valence) ? 0 : border_index+2;
 	  return (ring[second_border_index] - ring[border_index]) * 0.5f;
 	}
       }
@@ -455,7 +455,7 @@ namespace embree
           return ring[2] - vtx;
         }
         else {
-          const unsigned int second_border_index = border_index+2 >= edge_valence ? 0 : border_index+2;
+          const unsigned int second_border_index = border_index+2 >= int(edge_valence) ? 0 : border_index+2;
           return (ring[border_index] - ring[second_border_index]) * 0.5f;
         }
       }
@@ -596,7 +596,7 @@ namespace embree
       vertex_crease_weight = h->vertex_crease_weight;
       HalfEdge* p = (HalfEdge*) h;
       
-      size_t e=0, f=0;
+      unsigned int e=0, f=0;
       unsigned min_vertex_index = (unsigned)-1;
       unsigned min_vertex_index_face = (unsigned)-1;
       unsigned min_vertex_index_vertex = (unsigned)-1;
@@ -615,7 +615,7 @@ namespace embree
         if (vertex_index < min_vertex_index) { min_vertex_index = vertex_index; min_vertex_index_face = f; min_vertex_index_vertex = e; }
 
 	/* store first N-2 vertices of face */
-	size_t vn = 0;
+	unsigned int vn = 0;
         for (p = p_next; p!=p_prev; p=p->next()) {
           ring[e++] = Vertex_t::loadu(vertices+p->getStartVertexIndex()*stride);
           vn++;

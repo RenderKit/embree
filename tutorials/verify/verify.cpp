@@ -79,9 +79,9 @@ namespace embree
 
   void addRandomSubdivFeatures(RandomSampler& sampler, Ref<SceneGraph::SubdivMeshNode> mesh, size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles)
   {
-    std::vector<int> offsets;
-    std::vector<int>& faces = mesh->verticesPerFace;
-    std::vector<int>& indices = mesh->position_indices;
+    std::vector<unsigned> offsets;
+    std::vector<unsigned>& faces = mesh->verticesPerFace;
+    std::vector<unsigned>& indices = mesh->position_indices;
     for (size_t i=0,j=0; i<mesh->verticesPerFace.size(); i++) {
       offsets.push_back(j); j+=mesh->verticesPerFace[i];
     } 
@@ -330,16 +330,39 @@ namespace embree
     return passed ? PASSED : FAILED;
   }
 
-  double VerifyApplication::Benchmark::updateDatabase(VerifyApplication* state, Statistics stat)
+  double VerifyApplication::Benchmark::readDatabase(VerifyApplication* state)
   {
+    std::fstream db;
     FileName base = state->database+FileName(name);
-    double avg = stat.getAvg();
+    db.open(base.addExt(".txt"), std::fstream::in);
+    if (!db.is_open()) 
+      return neg_inf;
 
+    double bestAvg = neg_inf;
+    while (true) 
+    {
+      std::string line; std::getline(db,line);
+      if (db.eof()) break;
+      if (line == "") {
+        bestAvg = neg_inf;
+      }
+      std::stringstream linestream(line); 
+      std::string hash; linestream >> hash;
+      double avg; linestream >> avg;
+      if (avg > bestAvg) {
+        bestAvg = avg;
+      }
+    }
+    db.close();
+    return bestAvg;
+  }
+
+  void VerifyApplication::Benchmark::updateDatabase(VerifyApplication* state, Statistics stat, double bestAvg)
+  {
     /* load git hash from file */
     std::fstream hashFile;
     std::string hash = "unknown";
-    hashFile.open("hash", std::fstream::in);
-    if (!hashFile.is_open()) hashFile.open("../hash", std::fstream::in); // during testing we have to look one level upwards
+    hashFile.open(FileName::executableFolder()+FileName("hash"), std::fstream::in);
     if (hashFile.is_open()) {
       hashFile >> hash;
       hashFile.close();
@@ -347,40 +370,16 @@ namespace embree
 
     /* update database */
     std::fstream db;
-    db.open(base.addExt(".txt"), std::fstream::in | std::fstream::out | std::fstream::app);
-    
-    bool found = false;
-    double bestAvg = neg_inf;
-    while (true) 
-    {
-      std::string line; std::getline(db,line);
-      if (db.eof()) break;
-      if (line == "") {
-        found = false;
-        bestAvg = neg_inf;
-      }
-      std::stringstream linestream(line); 
-      std::string hash; linestream >> hash;
-      double avg; linestream >> avg;
-      if (avg > bestAvg) {
-        found = true;
-        bestAvg = avg;
-      }
-    }
-    db.clear();
-    db << hash << " " << avg << " " << bestAvg << std::endl;
+    FileName base = state->database+FileName(name);
+    db.open(base.addExt(".txt"), std::fstream::out | std::fstream::app);
+    db << hash << " " << stat.getAvg() << " " << bestAvg << std::endl;
     db.close();
-
-    if (found) return bestAvg;
-    else       return avg;
   }
 
   void VerifyApplication::Benchmark::plotDatabase(VerifyApplication* state)
   {
-    FileName base = state->database+FileName(name);
-    
-    /* create plot file */
     std::fstream plot;
+    FileName base = state->database+FileName(name);
     plot.open(base.addExt(".plot"), std::fstream::out | std::fstream::trunc);
     plot << "set terminal png size 2048,600 enhanced" << std::endl;
     plot << "set output \"" << base.addExt(".png") << "\"" << std::endl;
@@ -426,49 +425,60 @@ namespace embree
     /* print benchmark name */
     std::cout << std::setw(TEXT_ALIGN) << name << ": " << std::flush;
    
+    /* read current best from database */
+    double avgdb = 0.0f;
+    if (state->database != "")
+      avgdb = readDatabase(state);
+
     /* execute benchmark */
-    Statistics stat;
-    bool passed = true;
-    double error = 0.0f;
+    Statistics curStat;
+    Statistics bestStat;
+    bool passed = false;
     
     /* retry if benchmark failed */
     static size_t numRetries = 0;
-    for (size_t i=0; i<10; i++)
+    for (size_t i=0; i<10 && !passed; i++)
     {
       if (i != 0) {
         cleanup(state);
         if (numRetries++ > 1000) break;
-        std::cout << state->yellow(" [RETRY]" ) << " (" << 100.0f*error << "%)" << std::flush;
+        std::cout << state->yellow(" [RETRY]" ) << " (" << 100.0f*(curStat.getAvg()-avgdb)/avgdb << "%)" << std::flush;
         setup(state);
       }
 
       try {
-        stat = benchmark_loop(state);
+        curStat = benchmark_loop(state);
+        if (i == 0) bestStat = curStat;
+        if (curStat.getAvg() > bestStat.getAvg()) bestStat = curStat;
       } catch (TestReturnValue v) {
         return v;
       }
 
       /* check against database to see if test passed */
-      if (state->database != "") {
-        double avg = stat.getAvg();
-        double bestAvg = updateDatabase(state,stat);
-        passed = avg-bestAvg >= -state->benchmark_tolerance*bestAvg;
-        error = (avg-bestAvg)/bestAvg;
-      }
-      if (passed) break;
+      if (state->database != "")
+        passed = curStat.getAvg()-avgdb >= -state->benchmark_tolerance*avgdb;
+      else
+        passed = true;
     }
+
+    if (state->database == "" || avgdb == double(neg_inf))
+      avgdb = bestStat.getAvg();
+
+    /* update database */
+    if (state->database != "")
+      updateDatabase(state,bestStat,avgdb);
       
     /* print test result */
-    std::cout << std::setw(8) << std::setprecision(3) << std::fixed << stat.getAvg() << " " << unit << " (+/-" << 100.0f*stat.getAvgSigma()/stat.getAvg() << "%)";
-    if (passed) std::cout << state->green(" [PASSED]" ) << " (" << 100.0f*error << "%)" << std::endl << std::flush;
-    else        std::cout << state->red  (" [FAILED]" ) << " (" << 100.0f*error << "%)" << std::endl << std::flush;
+    std::cout << std::setw(8) << std::setprecision(3) << std::fixed << bestStat.getAvg() << " " << unit << " (+/-" << 100.0f*bestStat.getAvgSigma()/bestStat.getAvg() << "%)";
+    if (passed) std::cout << state->green(" [PASSED]" ) << " (" << 100.0f*(bestStat.getAvg()-avgdb)/avgdb << "%)" << std::endl << std::flush;
+    else        std::cout << state->red  (" [FAILED]" ) << " (" << 100.0f*(bestStat.getAvg()-avgdb)/avgdb << "%)" << std::endl << std::flush;
     plotDatabase(state);
 
     /* print dart measurement */
     if (state->cdash) 
     {
-      std::cout << "<DartMeasurement name=\"" + name + ".avg\" type=\"numeric/float\">" << stat.getAvg() << "</DartMeasurement>" << std::endl;
-      std::cout << "<DartMeasurement name=\"" + name + ".sigma\" type=\"numeric/float\">" << stat.getAvgSigma() << "</DartMeasurement>" << std::endl;
+      //std::cout << "<DartMeasurement name=\"" + name + ".avg\" type=\"numeric/float\">" << bestStat.getAvg() << "</DartMeasurement>" << std::endl;
+      //std::cout << "<DartMeasurement name=\"" + name + ".sigma\" type=\"numeric/float\">" << bestStat.getAvgSigma() << "</DartMeasurement>" << std::endl;
 
       /* send plot only when test failed */
       if (!passed)
@@ -483,8 +493,10 @@ namespace embree
     sleepSeconds(0.1);
     cleanup(state);
 
-    state->numPassedTests++;
-    return VerifyApplication::PASSED;
+    /* update passed/failed counters */
+    state->numPassedTests += passed;
+    state->numFailedTests += !passed;
+    return passed ? PASSED : FAILED;
   }
   catch (...)
   {
@@ -1799,21 +1811,21 @@ namespace embree
       rtcCommit (scene);
       AssertNoError(device);
       
-      for (size_t i=0; i<16; i++) 
+      for (unsigned i=0; i<16; i++) 
       {
-        int mask0 = i;
-        int mask1 = i+1;
-        int mask2 = i+2;
-        int mask3 = i+3;
-        int masks[4] = { mask0, mask1, mask2, mask3 };
+        unsigned mask0 = i;
+        unsigned mask1 = i+1;
+        unsigned mask2 = i+2;
+        unsigned mask3 = i+3;
+        unsigned masks[4] = { mask0, mask1, mask2, mask3 };
         RTCRay ray0 = makeRay(pos0+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray0.mask = mask0;
         RTCRay ray1 = makeRay(pos1+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray1.mask = mask1;
         RTCRay ray2 = makeRay(pos2+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray2.mask = mask2;
         RTCRay ray3 = makeRay(pos3+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray3.mask = mask3;
         RTCRay rays[4] = { ray0, ray1, ray2, ray3 };
         IntersectWithMode(imode,ivariant,scene,rays,4);
-        for (size_t i=0; i<4; i++)
-          passed &= masks[i] & (1<<i) ? rays[i].geomID != RTC_INVALID_GEOMETRY_ID : rays[i].geomID == RTC_INVALID_GEOMETRY_ID;
+        for (size_t j=0; j<4; j++)
+          passed &= masks[j] & (1<<j) ? rays[j].geomID != RTC_INVALID_GEOMETRY_ID : rays[j].geomID == RTC_INVALID_GEOMETRY_ID;
       }
       AssertNoError(device);
 
@@ -2967,14 +2979,14 @@ namespace embree
   struct SimpleBenchmark : public VerifyApplication::Benchmark
   {
     SimpleBenchmark (std::string name, int isa)
-      : VerifyApplication::Benchmark(name,isa,"ms") {}
+      : VerifyApplication::Benchmark(name,isa,"1/s") {}
     
     double benchmark(VerifyApplication* state)
     {
       double t0 = getSeconds();
       for (volatile size_t i=0; i<10000000; i++);
       double t1 = getSeconds();
-      return 1000.0f*(t1-t0);
+      return 1.0f/(t1-t0);
     }
   };
   
@@ -4174,7 +4186,7 @@ namespace embree
       std::fstream data;
       data.open(outFileName.name()+"."+benchmark->name+".txt", std::fstream::out | std::fstream::trunc);
       std::cout << benchmark->name << std::endl;
-      for (size_t i=startN; i<=endN; i=i*f+dn) 
+      for (size_t i=startN; i<=endN; i=size_t(i*f)+dn) 
       {
         size_t N = i;
         Statistics stat = test(benchmark,N);

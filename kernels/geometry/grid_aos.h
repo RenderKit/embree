@@ -423,7 +423,7 @@ namespace embree
               const bool bottom = y+1 == y1;
               const size_t kx0 = x, kx1 = min(x+2,x1);
               const size_t ky0 = y, ky1 = min(y+2,y1);
-              new (&quads[i]) Quads(2*bottom+right,y*grid.width+x);
+              new (&quads[i]) Quads(char(2)*bottom+right,(unsigned char)(y*grid.width+x));
               const BBox3fa b = getBounds(kx0,kx1,ky0,ky1);
               box_list[i++] = b;
               box.extend(b);
@@ -460,7 +460,7 @@ namespace embree
       }
       
       template<typename Allocator>
-      static __forceinline GridAOS* create(Allocator& alloc, const size_t width, const size_t height, const unsigned geomID, const unsigned primID) {
+      static __forceinline GridAOS* create(Allocator& alloc, const unsigned width, const unsigned height, const unsigned geomID, const unsigned primID) {
         return new (alloc(sizeof(GridAOS)-17*17*sizeof(Vec3fa)+width*height*sizeof(Vec3fa))) GridAOS(width,height,geomID,primID);
       }
       
@@ -510,7 +510,7 @@ namespace embree
         __aligned(64) float grid_z[17*17+16];         
         __aligned(64) float grid_u[17*17+16]; 
         __aligned(64) float grid_v[17*17+16];
-        evalGrid(patch,x0,x1,y0,y1,patch.grid_u_res,patch.grid_v_res,grid_x,grid_y,grid_z,grid_u,grid_v,mesh);
+        evalGrid(patch,unsigned(x0),unsigned(x1),unsigned(y0),unsigned(y1),patch.grid_u_res,patch.grid_v_res,grid_x,grid_y,grid_z,grid_u,grid_v,mesh);
         
         const size_t dwidth  = x1-x0+1;
         const size_t dheight = y1-y0+1;
@@ -535,26 +535,26 @@ namespace embree
           const float xi = grid_x[i];
           const float yi = grid_y[i];
           const float zi = grid_z[i];
-          const int   ui = clamp(grid_u[i] * 0xFFFF, 0.0f, float(0xFFFF)); 
-          const int   vi = clamp(grid_v[i] * 0xFFFF, 0.0f, float(0xFFFF)); 
+          const int   ui = int(clamp(grid_u[i] * 0xFFFF, 0.0f, float(0xFFFF))); 
+          const int   vi = int(clamp(grid_v[i] * 0xFFFF, 0.0f, float(0xFFFF))); 
           P[i] = Vec3fa(xi,yi,zi);
           P[i].a = (vi << 16) | ui;
         }
       }
       
       template<int N, typename Allocator>
-      static size_t createEager(const SubdivPatch1Base& patch, Scene* scene, SubdivMesh* mesh, size_t primID, Allocator& alloc, PrimRef* prims)
+      static size_t createEager(const SubdivPatch1Base& patch, Scene* scene, SubdivMesh* mesh, unsigned primID, Allocator& alloc, PrimRef* prims)
       {
         size_t num = 0;
-        const size_t x0 = 0, x1 = patch.grid_u_res-1;
-        const size_t y0 = 0, y1 = patch.grid_v_res-1;
+        const unsigned x0 = 0, x1 = patch.grid_u_res-1;
+        const unsigned y0 = 0, y1 = patch.grid_v_res-1;
         
-        for (size_t y=y0; y<y1; y+=16)
+        for (unsigned y=y0; y<y1; y+=16)
         {
-          for (size_t x=x0; x<x1; x+=16) 
+          for (unsigned x=x0; x<x1; x+=16) 
           {
-            const size_t lx0 = x, lx1 = min(lx0+16,x1);
-            const size_t ly0 = y, ly1 = min(ly0+16,y1);
+            const unsigned lx0 = x, lx1 = min(lx0+16,x1);
+            const unsigned ly0 = y, ly1 = min(ly0+16,y1);
             GridAOS* leaf = GridAOS::create(alloc,lx1-lx0+1,ly1-ly0+1,mesh->id,primID);
             leaf->build(scene,mesh,primID,patch,lx0,lx1,ly0,ly1);
             size_t n = leaf->createEagerPrims<N>(alloc,prims,lx0,lx1,ly0,ly1);

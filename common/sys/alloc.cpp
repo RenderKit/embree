@@ -61,7 +61,8 @@ namespace embree
 
   void os_free(void* ptr, size_t bytes) {
     if (bytes == 0) return;
-    VirtualFree(ptr,0,MEM_RELEASE);
+    if (!VirtualFree(ptr,0,MEM_RELEASE))
+      /*throw std::bad_alloc()*/ return;  // we on purpose do not throw an exception when an error occurs, to avoid throwing an exception during error handling
   }
 }
 #endif
@@ -192,7 +193,7 @@ namespace embree
 
     bytes = (bytes+pageSize-1)&ssize_t(-pageSize);
     if (munmap(ptr,bytes) == -1)
-      throw std::bad_alloc();
+      /*throw std::bad_alloc()*/ return;  // we on purpose do not throw an exception when an error occurs, to avoid throwing an exception during error handling
   }
 }
 
@@ -204,9 +205,15 @@ namespace embree
   
 namespace embree
 {
-  void* alignedMalloc(size_t size, size_t align) {
+  void* alignedMalloc(size_t size, size_t align) 
+  {
     assert((align & (align-1)) == 0);
-    return _mm_malloc(size,align);
+    void* ptr = _mm_malloc(size,align);
+
+    if (size != 0 && ptr == nullptr) 
+      throw std::bad_alloc();
+    
+    return ptr;
   }
   
   void alignedFree(void* ptr) {

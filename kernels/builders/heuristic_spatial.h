@@ -137,9 +137,9 @@ namespace embree
             const vint4 bin0 = mapping.bin(prim.bounds().lower);
             const vint4 bin1 = mapping.bin(prim.bounds().upper);
             
-            for (size_t dim=0; dim<3; dim++) 
+            for (int dim=0; dim<3; dim++) 
             {
-              size_t bin;
+              int bin;
               PrimRef rest = prim;
               size_t l = bin0[dim];
               size_t r = bin1[dim];
@@ -226,8 +226,8 @@ namespace embree
           bz.extend(bounds[i-1][2]); float Az = halfArea(bz);
           const vfloat4 lArea = vfloat4(Ax,Ay,Az,Az);
           const vfloat4 rArea = rAreas[i];
-          const vint4 lCount = (count     +blocks_add) >> blocks_shift;
-          const vint4 rCount = (rCounts[i]+blocks_add) >> blocks_shift;
+          const vint4 lCount = (count     +blocks_add) >> int(blocks_shift);
+          const vint4 rCount = (rCounts[i]+blocks_add) >> int(blocks_shift);
           const vfloat4 sah = lArea*vfloat4(lCount) + rArea*vfloat4(rCount);
           vbestPos  = select(sah < vbestSAH,ii ,vbestPos);
           vbestSAH  = select(sah < vbestSAH,sah,vbestSAH);
@@ -237,7 +237,7 @@ namespace embree
         float bestSAH = inf;
         int   bestDim = -1;
         int   bestPos = 0;
-        for (size_t dim=0; dim<3; dim++) 
+        for (int dim=0; dim<3; dim++) 
         {
           /* ignore zero sized dimensions */
           if (unlikely(mapping.invalid(dim)))

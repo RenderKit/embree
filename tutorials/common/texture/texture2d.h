@@ -19,6 +19,8 @@
 #include "texture.h"
 #include "../math/vec.h"
 
+namespace embree {
+
 struct Texture2D;
 
 typedef Vec4f (*Texture2D_get)(const Texture2D *self,
@@ -111,3 +113,5 @@ inline Vec4f get4f(const Texture2D *self,
   if (self == nullptr) return defaultValue;
   else return get4f(self,where);
 }
+
+} // namespace embree

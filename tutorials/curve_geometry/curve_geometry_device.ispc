@@ -235,7 +235,7 @@ void renderTileStandard(uniform int taskIndex,
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
     /* calculate pixel color */
-    Vec3f color = renderPixelStandard(x,y,camera);
+    Vec3f color = renderPixelStandard((float)x,(float)y,camera);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));

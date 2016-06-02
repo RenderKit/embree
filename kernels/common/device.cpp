@@ -328,7 +328,7 @@ namespace embree
     /* create task scheduler */
     TaskScheduler::create(maxNumThreads,State::set_affinity);
 #if USE_TASK_ARENA
-    arena = new tbb::task_arena(maxNumThreads);
+    arena = new tbb::task_arena(int(maxNumThreads));
 #endif
   }
 

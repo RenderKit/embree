@@ -53,7 +53,7 @@ namespace embree
 	(child2child) of a different second child (child2), and swap child1 
 	and child2child. We perform the best such swap. */
       float bestArea = 0;
-      int bestChild1 = -1, bestChild2 = -1, bestChild2Child = -1;
+      size_t bestChild1 = -1, bestChild2 = -1, bestChild2Child = -1;
       for (size_t c2=0; c2<4; c2++)
       {
 	/*! ignore leaf nodes as we cannot descent into them */
@@ -122,7 +122,7 @@ namespace embree
       }
       
       /*! if we did not find a swap that improves the SAH then do nothing */
-      if (bestChild1 == -1) return 1+reduce_max(cdepth);
+      if (bestChild1 == size_t(-1)) return 1+reduce_max(cdepth);
       
       /*! perform the best found tree rotation */
       Node* child2 = parent->child(bestChild2).node();

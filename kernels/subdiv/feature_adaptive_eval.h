@@ -199,7 +199,7 @@ namespace embree
           }
           
           /* subdivide patch */
-          size_t N;
+          unsigned N;
           array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE> patches; 
           patch.subdivide(patches,N); // FIXME: only have to generate one of the patches
           
@@ -210,8 +210,8 @@ namespace embree
           /* parametrization for arbitrary polygons */
           else 
           {
-            const unsigned l = floor(4.0f*uv.x); const float u = 2.0f*frac(4.0f*uv.x); 
-            const unsigned h = floor(4.0f*uv.y); const float v = 2.0f*frac(4.0f*uv.y); 
+            const unsigned l = (unsigned) floor(4.0f*uv.x); const float u = 2.0f*frac(4.0f*uv.x); 
+            const unsigned h = (unsigned) floor(4.0f*uv.y); const float v = 2.0f*frac(4.0f*uv.y); 
             const unsigned i = 4*h+l; assert(i<N);
 
 #if PATCH_USE_GREGORY == 2

@@ -18,6 +18,10 @@
 
 #include "image.h"
 
+#if defined(__clang__)
+  #pragma clang diagnostic ignored "-Wdeprecated-register"
+#endif
+
 /* include OpenEXR headers */
 #ifdef __WIN32__
 #include <ImfRgbaFile.h>

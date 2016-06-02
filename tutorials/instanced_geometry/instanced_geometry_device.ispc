@@ -254,7 +254,7 @@ void renderTileStandard(uniform int taskIndex,
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
     /* calculate pixel color */
-    Vec3f color = renderPixelStandard(x,y,camera);
+    Vec3f color = renderPixelStandard((float)x,(float)y,camera);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -303,7 +303,7 @@ void renderTileStandardStream(uniform int taskIndex,
     /* initialize ray */
     RTCRay& primary = primary_stream[N];
     primary.org = make_Vec3f(camera.xfm.p);
-    primary.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
+    primary.dir = make_Vec3f(normalize((float)x*camera.xfm.l.vx + (float)y*camera.xfm.l.vy + camera.xfm.l.vz));
     mask = __mask; unmasked { // invalidates inactive rays
       primary.tnear = mask ? 0.0f         : (float)(pos_inf);
       primary.tfar  = mask ? (float)(inf) : (float)(neg_inf);

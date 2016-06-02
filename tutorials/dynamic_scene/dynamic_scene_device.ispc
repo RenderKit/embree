@@ -18,11 +18,11 @@
 
 #if 0
 const uniform int numSpheres = 1000;
-const uniform int numPhi = 5; 
+const uniform int numPhi = 5;
 #else
 const uniform int numSpheres = 20;
-const uniform int numPhi = 120; 
-//const uniform int numPhi = 256; 
+const uniform int numPhi = 120;
+//const uniform int numPhi = 256;
 #endif
 const uniform int numTheta = 2*numPhi;
 
@@ -41,9 +41,9 @@ uniform unsigned int createSphere (uniform RTCGeometryFlags flags, const uniform
   uniform unsigned int mesh = rtcNewTriangleMesh (g_scene, flags, 2*numTheta*(numPhi-1), numTheta*(numPhi+1));
 
   /* map triangle and vertex buffer */
-  uniform Vertex*   uniform vertices  = (uniform Vertex*   uniform) rtcMapBuffer(g_scene,mesh,RTC_VERTEX_BUFFER); 
+  uniform Vertex*   uniform vertices  = (uniform Vertex*   uniform) rtcMapBuffer(g_scene,mesh,RTC_VERTEX_BUFFER);
   uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcMapBuffer(g_scene,mesh,RTC_INDEX_BUFFER);
-  
+
   /* create sphere geometry */
   uniform int tri = 0;
   const uniform float rcpNumTheta = rcp((uniform float)numTheta);
@@ -61,7 +61,7 @@ uniform unsigned int createSphere (uniform RTCGeometryFlags flags, const uniform
     }
     if (phi == 0) continue;
 
-    for (uniform int theta=1; theta<=numTheta; theta++) 
+    for (uniform int theta=1; theta<=numTheta; theta++)
     {
       uniform int p00 = (phi-1)*numTheta+theta-1;
       uniform int p01 = (phi-1)*numTheta+theta%numTheta;
@@ -69,21 +69,21 @@ uniform unsigned int createSphere (uniform RTCGeometryFlags flags, const uniform
       uniform int p11 = phi*numTheta+theta%numTheta;
 
       if (phi > 1) {
-        triangles[tri].v0 = p10; 
-        triangles[tri].v1 = p00; 
-        triangles[tri].v2 = p01; 
+        triangles[tri].v0 = p10;
+        triangles[tri].v1 = p00;
+        triangles[tri].v2 = p01;
         tri++;
       }
 
       if (phi < numPhi) {
-        triangles[tri].v0 = p11; 
+        triangles[tri].v0 = p11;
         triangles[tri].v1 = p10;
-        triangles[tri].v2 = p01; 
+        triangles[tri].v2 = p01;
         tri++;
       }
     }
   }
-  rtcUnmapBuffer(g_scene,mesh,RTC_VERTEX_BUFFER); 
+  rtcUnmapBuffer(g_scene,mesh,RTC_VERTEX_BUFFER);
   rtcUnmapBuffer(g_scene,mesh,RTC_INDEX_BUFFER);
 
   return mesh;
@@ -96,12 +96,12 @@ uniform unsigned int addGroundPlane (RTCScene scene_i)
   uniform unsigned int mesh = rtcNewTriangleMesh (scene_i, RTC_GEOMETRY_STATIC, 2, 4);
 
   /* set vertices */
-  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER); 
-  vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10; 
-  vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10; 
-  vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10; 
+  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER);
+  vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10;
+  vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10;
+  vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10;
   vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
-  rtcUnmapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER); 
+  rtcUnmapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER);
 
   /* set triangles */
   uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcMapBuffer(scene_i,mesh,RTC_INDEX_BUFFER);
@@ -155,10 +155,10 @@ export void device_init (uniform int8* uniform cfg)
 }
 
 /* animates the sphere */
-task void animateSphere (uniform Vertex* uniform vertices, 
+task void animateSphere (uniform Vertex* uniform vertices,
                          const uniform float rcpNumTheta,
                          const uniform float rcpNumPhi,
-                         const uniform Vec3f& pos, 
+                         const uniform Vec3f& pos,
                          const uniform float r,
                          const uniform float f)
 {
@@ -187,18 +187,18 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time = 0;
-  
+
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
-  
+
   /* shade pixels */
   Vec3f color = make_Vec3f(0.0f);
-  if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
+  if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
   {
     Vec3f diffuse = colors[ray.geomID];
     color = color + diffuse*0.1f;
     Vec3f lightDir = normalize(make_Vec3f(-1,-1,-1));
-    
+
     /* initialize shadow ray */
     RTCRay shadow;
     shadow.org = ray.org + ray.tfar*ray.dir;
@@ -209,10 +209,10 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
     shadow.primID = 0;
     shadow.mask = -1;
     shadow.time = 0;
-    
+
     /* trace shadow ray */
     rtcOccluded(g_scene,shadow);
-    
+
     /* add light contribution */
     if (shadow.geomID)
       color = color + diffuse*clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f);
@@ -221,13 +221,13 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
 }
 
 /* renders a single screen tile */
-void renderTileStandard(uniform int taskIndex, 
+void renderTileStandard(uniform int taskIndex,
                         uniform int* uniform pixels,
                         const uniform unsigned int width,
-                        const uniform unsigned int height, 
+                        const uniform unsigned int height,
                         const uniform float time,
                         const uniform ISPCCamera& camera,
-                        const uniform int numTilesX, 
+                        const uniform int numTilesX,
                         const uniform int numTilesY)
 {
   const uniform unsigned int tileY = taskIndex / numTilesX;
@@ -240,7 +240,7 @@ void renderTileStandard(uniform int taskIndex,
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
     /* calculate pixel color */
-    Vec3f color = renderPixelStandard(x,y,camera);
+    Vec3f color = renderPixelStandard((float)x,(float)y,camera);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -253,10 +253,10 @@ void renderTileStandard(uniform int taskIndex,
 /* task that renders a single screen tile */
 task void renderTileTask(uniform int* uniform pixels,
                          const uniform unsigned int width,
-                         const uniform unsigned int height, 
+                         const uniform unsigned int height,
                          const uniform float time,
                          const uniform ISPCCamera& camera,
-                         const uniform int numTilesX, 
+                         const uniform int numTilesX,
                          const uniform int numTilesY)
 {
   renderTile(taskIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
@@ -266,7 +266,7 @@ task void renderTileTask(uniform int* uniform pixels,
 void animateSphere (uniform int id, uniform float time)
 {
   /* animate vertices */
-  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(g_scene,id,RTC_VERTEX_BUFFER); 
+  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(g_scene,id,RTC_VERTEX_BUFFER);
   const uniform float rcpNumTheta = rcp((uniform float)numTheta);
   const uniform float rcpNumPhi   = rcp((uniform float)numPhi);
   const uniform Vec3f pos = position[id];
@@ -288,7 +288,7 @@ void animateSphere (uniform int id, uniform float time)
   }
 #endif
 
-  rtcUnmapBuffer(g_scene,id,RTC_VERTEX_BUFFER); 
+  rtcUnmapBuffer(g_scene,id,RTC_VERTEX_BUFFER);
 
   /* update mesh */
   rtcUpdate (g_scene,id);
@@ -297,7 +297,7 @@ void animateSphere (uniform int id, uniform float time)
 /* called by the C++ code to render */
 export void device_render (uniform int* uniform pixels,
                            const uniform unsigned int width,
-                           const uniform unsigned int height, 
+                           const uniform unsigned int height,
                            const uniform float time,
                            const uniform ISPCCamera& camera)
 {
@@ -307,7 +307,7 @@ export void device_render (uniform int* uniform pixels,
 
   /* commit changes to scene */
   rtcCommit (g_scene);
- 
+
   /* render all pixels */
   const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;

@@ -410,7 +410,7 @@ namespace embree
   }
 
   void sleepSeconds(double t) {
-    Sleep(1000.0*t);
+    Sleep(DWORD(1000.0*t));
   }
 }
 #endif

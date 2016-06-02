@@ -16,6 +16,8 @@
 
 #include "texture2d.h"
 
+namespace embree {
+
 
 // Low-level texel accessors
 //////////////////////////////////////////////////////////////////////////////
@@ -210,3 +212,5 @@ extern "C" void *Texture2D_create(Vec2i &size, void *data,
 
   return self;
 }
+
+} // namespace embree

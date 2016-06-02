@@ -48,14 +48,12 @@ namespace embree
    static std::atomic<size_t> cache_flushes;                
    static std::atomic<size_t> *cache_patch_builds;                
    static size_t        cache_num_patches;
-   static float **      cache_new_delete_ptr;  
    __aligned(64) static SpinLock mtx;
 
     /* print stats for debugging */                 
     static void printStats();
     static void clearStats();
     static void incPatchBuild(const size_t ID, const size_t numPatches);
-    static void newDeletePatchPtr(const size_t ID,  const size_t numPatches, const size_t size);
 
  };
 
@@ -63,12 +61,6 @@ namespace embree
   void resetTessellationCache();
 
 
- typedef size_t InputTagType;
-
- static __forceinline unsigned int toTag(InputTagType prim)
- {
-   return prim / 320;
- }
  ////////////////////////////////////////////////////////////////////////////////
  ////////////////////////////////////////////////////////////////////////////////
  ////////////////////////////////////////////////////////////////////////////////
@@ -179,12 +171,12 @@ namespace embree
    //__forceinline size_t getCurrentIndex() { return localTime; }
    __forceinline void   addCurrentIndex(const size_t i=1) { localTime.fetch_add(i); }
 
-   __forceinline size_t getTime(const unsigned globalTime) {
+   __forceinline size_t getTime(const size_t globalTime) {
      return localTime+NUM_CACHE_SEGMENTS*globalTime;
    }
 
-   __forceinline unsigned int lockThread  (ThreadWorkState *const t_state) { return t_state->counter.fetch_add(1);  }
-   __forceinline unsigned int unlockThread(ThreadWorkState *const t_state) { assert(isLocked(t_state)); return t_state->counter.fetch_add(-1); }
+   __forceinline size_t lockThread  (ThreadWorkState *const t_state) { return t_state->counter.fetch_add(1);  }
+   __forceinline size_t unlockThread(ThreadWorkState *const t_state) { assert(isLocked(t_state)); return t_state->counter.fetch_add(-1); }
    __forceinline bool isLocked(ThreadWorkState *const t_state) { return t_state->counter != 0; }
 
    static __forceinline void lock  () { sharedLazyTessellationCache.lockThread(threadState()); }
@@ -195,7 +187,7 @@ namespace embree
    { 
      while(1)
      {
-       unsigned int lock = SharedLazyTessellationCache::sharedLazyTessellationCache.lockThread(t_state);
+       size_t lock = SharedLazyTessellationCache::sharedLazyTessellationCache.lockThread(t_state);
        if (unlikely(lock == 1))
        {
          /* lock failed wait until sync phase is over */
@@ -207,7 +199,7 @@ namespace embree
      }
    }
 
-   static __forceinline void* lookup(CacheEntry& entry, unsigned globalTime)
+   static __forceinline void* lookup(CacheEntry& entry, size_t globalTime)
    {   
 #if defined(__X86_64__)
      const int64_t subdiv_patch_root_ref = entry.tag.data; 
@@ -234,7 +226,7 @@ namespace embree
    }
 
    template<typename Constructor>
-     static __forceinline auto lookup (CacheEntry& entry, unsigned globalTime, const Constructor constructor) -> decltype(constructor())
+     static __forceinline auto lookup (CacheEntry& entry, size_t globalTime, const Constructor constructor) -> decltype(constructor())
    {
      ThreadWorkState *t_state = SharedLazyTessellationCache::threadState();
 
@@ -264,7 +256,7 @@ namespace embree
      }
    }
    
-   static __forceinline size_t lookupIndex(volatile Tag* tag, unsigned globalTime)
+   static __forceinline size_t lookupIndex(volatile Tag* tag, size_t globalTime)
    {
      const int64_t subdiv_patch_root_ref = tag->data; 
      
@@ -287,7 +279,7 @@ namespace embree
    __forceinline void prefetchThread(ThreadWorkState *const t_state) {  // FIXME: remove
    }
 
-   __forceinline bool validCacheIndex(const size_t i, const unsigned globalTime)
+   __forceinline bool validCacheIndex(const size_t i, const size_t globalTime)
    {
 #if FORCE_SIMPLE_FLUSH == 1
      return i == getTime(globalTime);
@@ -296,7 +288,7 @@ namespace embree
 #endif
    }
 
-    static __forceinline bool validTag(const Tag& tag, unsigned globalTime)
+    static __forceinline bool validTag(const Tag& tag, size_t globalTime)
     {
       const int64_t subdiv_patch_root_ref = tag.data; 
       if (subdiv_patch_root_ref == 0) return false;

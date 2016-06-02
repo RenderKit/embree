@@ -21,8 +21,8 @@ namespace embree
   struct SceneGraphConverter
   {
     TutorialScene* scene;
-    std::map<Ref<SceneGraph::MaterialNode>, size_t> material2id;
-    std::map<Ref<SceneGraph::Node>, size_t> geometry2id;
+    std::map<Ref<SceneGraph::MaterialNode>, unsigned> material2id;
+    std::map<Ref<SceneGraph::Node>, unsigned> geometry2id;
     
     SceneGraphConverter (Ref<SceneGraph::Node> in, TutorialScene* scene, TutorialScene::InstancingMode instancing)
       : scene(scene)
@@ -43,18 +43,18 @@ namespace embree
         convertGeometries(scene->geometries,in,one,one);
     }
 
-    int convert(Ref<SceneGraph::MaterialNode> node) 
+    unsigned convert(Ref<SceneGraph::MaterialNode> node) 
     {
       if (material2id.find(node) == material2id.end()) {
         scene->materials.push_back(node->material);
-        material2id[node] = scene->materials.size()-1;
+        material2id[node] = unsigned(scene->materials.size()-1);
       }
       return material2id[node];
     }
 
     Ref<TutorialScene::Geometry> convertTriangleMesh(Ref<SceneGraph::TriangleMeshNode> mesh, const AffineSpace3fa& space0, const AffineSpace3fa& space1)
     {
-      int materialID = convert(mesh->material);
+      unsigned materialID = convert(mesh->material);
       
       TutorialScene::TriangleMesh* objmesh = new TutorialScene::TriangleMesh();
       const LinearSpace3fa nspace0 = rcp(space0.l).transposed();
@@ -74,7 +74,7 @@ namespace embree
 
     Ref<TutorialScene::Geometry> convertQuadMesh(Ref<SceneGraph::QuadMeshNode> mesh, const AffineSpace3fa& space0, const AffineSpace3fa& space1)
     {
-      int materialID = convert(mesh->material);
+      unsigned materialID = convert(mesh->material);
       
       TutorialScene::QuadMesh* objmesh = new TutorialScene::QuadMesh();
       const LinearSpace3fa nspace0 = rcp(space0.l).transposed();
@@ -94,7 +94,7 @@ namespace embree
 
     Ref<TutorialScene::Geometry> convertSubdivMesh(Ref<SceneGraph::SubdivMeshNode> mesh, const AffineSpace3fa& space0, const AffineSpace3fa& space1)
     {
-      int materialID = convert(mesh->material);
+      unsigned materialID = convert(mesh->material);
       
       TutorialScene::SubdivMesh* subdivmesh = new TutorialScene::SubdivMesh();
       const LinearSpace3fa nspace0 = rcp(space0.l).transposed();
@@ -123,7 +123,7 @@ namespace embree
 
     Ref<TutorialScene::Geometry> convertLineSegments(Ref<SceneGraph::LineSegmentsNode> mesh, const AffineSpace3fa& space0, const AffineSpace3fa& space1)
     {
-      int materialID = convert(mesh->material);
+      unsigned materialID = convert(mesh->material);
       
       TutorialScene::LineSegments* out = new TutorialScene::LineSegments;
       
@@ -149,7 +149,7 @@ namespace embree
 
     Ref<TutorialScene::Geometry> convertHairSet(Ref<SceneGraph::HairSetNode> mesh, const AffineSpace3fa& space0, const AffineSpace3fa& space1)
     {
-      int materialID = convert(mesh->material);
+      unsigned materialID = convert(mesh->material);
       
       TutorialScene::HairSet* hairset = new TutorialScene::HairSet(mesh->hair);
       
@@ -211,7 +211,7 @@ namespace embree
       }
     }
 
-    int lookupGeometries(Ref<SceneGraph::Node> node)
+    unsigned lookupGeometries(Ref<SceneGraph::Node> node)
     {
       if (geometry2id.find(node) == geometry2id.end())
       {
@@ -223,7 +223,7 @@ namespace embree
         else 
           scene->geometries.push_back(new TutorialScene::Group(geometries));
         
-        geometry2id[node] = scene->geometries.size()-1;
+        geometry2id[node] = unsigned(scene->geometries.size()-1);
       }
       return geometry2id[node];
     }

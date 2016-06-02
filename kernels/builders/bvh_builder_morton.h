@@ -116,7 +116,7 @@ namespace embree
         }
       }
       
-      __forceinline void operator() (const BBox3fa& b, const size_t index)
+      __forceinline void operator() (const BBox3fa& b, const unsigned index)
       {
         const vfloat4 lower = (vfloat4)b.lower;
         const vfloat4 upper = (vfloat4)b.upper;
@@ -166,11 +166,11 @@ namespace embree
     };
             
 
-    static void InPlace32BitRadixSort(MortonID32Bit* const morton, const size_t num, const size_t shift = 3*8)
+    inline void InPlace32BitRadixSort(MortonID32Bit* const morton, const size_t num, const unsigned int shift = 3*8)
     {
-      static const size_t BITS = 8;
-      static const size_t BUCKETS = (1 << BITS);
-      static const size_t CMP_SORT_THRESHOLD = 16;
+      static const unsigned int BITS = 8;
+      static const unsigned int BUCKETS = (1 << BITS);
+      static const unsigned int CMP_SORT_THRESHOLD = 16;
 
       __aligned(64) unsigned int count[BUCKETS];
 
@@ -312,8 +312,8 @@ namespace embree
         do {
           
           /* find best child with largest bounding box area */
-          int bestChild = -1;
-          int bestSize = 0;
+          size_t bestChild = -1;
+          size_t bestSize = 0;
           for (size_t i=0; i<numChildren; i++)
           {
             /* ignore leaves as they cannot get split */
@@ -326,7 +326,7 @@ namespace embree
               bestChild = i;
             }
           }
-          if (bestChild == -1) break;
+          if (bestChild == size_t(-1)) break;
           
           /*! split best child into left and right child */
           __aligned(64) MortonBuildRecord<NodeRef> left, right;
@@ -396,7 +396,7 @@ namespace embree
           /* if the morton code is still the same, goto fall back split */
           if (unlikely(bitpos == 32)) 
           {
-            size_t center = (current.begin + current.end)/2; 
+            unsigned center = (current.begin + current.end)/2; 
             left.init(current.begin,center);
             right.init(center,current.end);
             return;
@@ -408,14 +408,14 @@ namespace embree
         const unsigned int bitmask = 1 << bitpos_diff;
         
         /* find location where bit differs using binary search */
-        size_t begin = current.begin;
-        size_t end   = current.end;
+        unsigned begin = current.begin;
+        unsigned end   = current.end;
         while (begin + 1 != end) {
-          const size_t mid = (begin+end)/2;
+          const unsigned mid = (begin+end)/2;
           const unsigned bit = morton[mid].code & bitmask;
           if (bit == 0) begin = mid; else end = mid;
         }
-        size_t center = end;
+        unsigned center = end;
 #if defined(DEBUG)      
         for (unsigned int i=begin;  i<center; i++) assert((morton[i].code & bitmask) == 0);
         for (unsigned int i=center; i<end;    i++) assert((morton[i].code & bitmask) == bitmask);
@@ -513,18 +513,12 @@ namespace embree
       std::pair<NodeRef,BBox3fa> build(MortonID32Bit* src, MortonID32Bit* tmp, size_t numPrimitives) 
       {
         /* using 4 phases radix sort */
-
-        //double i0 = getSeconds();
         morton = src;
-
         radix_sort_u32(src,tmp,numPrimitives);
-
-        //i0 = getSeconds() - i0;
-        //if (numPrimitives > 1000000) PRINT(i0);
 
         /* build BVH */
         NodeRef root;
-        MortonBuildRecord<NodeRef> br(0,numPrimitives,&root,1);
+        MortonBuildRecord<NodeRef> br(0,unsigned(numPrimitives),&root,1);
         
         const BBox3fa bounds = recurse(br, nullptr, true);
         _mm_mfence(); // to allow non-temporal stores during build

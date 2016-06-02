@@ -78,8 +78,8 @@ namespace embree
           const size_t p10 = (y+1)*width+(x+0);
           const size_t p11 = (y+1)*width+(x+1);
           const size_t tri = y*(width-1)+x;
-          mesh->triangles[2*tri+0] = SceneGraph::TriangleMeshNode::Triangle(p00,p01,p10);
-          mesh->triangles[2*tri+1] = SceneGraph::TriangleMeshNode::Triangle(p01,p11,p10);
+          mesh->triangles[2*tri+0] = SceneGraph::TriangleMeshNode::Triangle(unsigned(p00),unsigned(p01),unsigned(p10));
+          mesh->triangles[2*tri+1] = SceneGraph::TriangleMeshNode::Triangle(unsigned(p01),unsigned(p11),unsigned(p10));
         }
       }
       return mesh.dynamicCast<SceneGraph::Node>();

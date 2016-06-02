@@ -19,6 +19,8 @@
 #include "../common/tutorial/tutorial_device.h"
 #include "../common/tutorial/scene_device.h"
 
+namespace embree {
+
 #define USE_INTERFACE 0 // 0 = stream, 1 = single rays/packets, 2 = single rays/packets using stream interface
 #define AMBIENT_OCCLUSION_SAMPLES 64
 //#define rtcOccluded rtcIntersect
@@ -325,7 +327,7 @@ extern "C" void device_render (int* pixels,
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
     for (size_t i=range.begin(); i<range.end(); i++)
-      renderTileTask(i,pixels,width,height,time,camera,numTilesX,numTilesY);
+      renderTileTask((int)i,pixels,width,height,time,camera,numTilesX,numTilesY);
   }); 
 }
 
@@ -335,3 +337,5 @@ extern "C" void device_cleanup ()
   rtcDeleteScene (g_scene); g_scene = nullptr;
   rtcDeleteDevice(g_device); g_device = nullptr;
 }
+
+} // namespace embree

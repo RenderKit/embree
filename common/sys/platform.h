@@ -169,14 +169,20 @@
 #define debugbreak()           __debugbreak()
 
 #else
-#undef __noinline
-#undef __forceinline
+#if !defined(__noinline)
 #define __noinline             __attribute__((noinline))
+#endif
+#if !defined(__forceinline)
 #define __forceinline          inline __attribute__((always_inline))
+#endif
 //#define __restrict             __restrict
 //#define __thread               __thread
+#if !defined(__aligned)
 #define __aligned(...)           __attribute__((aligned(__VA_ARGS__)))
+#endif
+#if !defined(__FUNCTION__)
 #define __FUNCTION__           __PRETTY_FUNCTION__
+#endif
 #define debugbreak()           asm ("int $3")
 #endif
 
@@ -267,7 +273,7 @@ __forceinline std::string toString(long long value) {
 
 #if defined(_MSC_VER)
 //#pragma warning(disable:4200) // nonstandard extension used : zero-sized array in struct/union
-//#pragma warning(disable:4800) // forcing value to bool 'true' or 'false' (performance warning)
+#pragma warning(disable:4800) // forcing value to bool 'true' or 'false' (performance warning)
 //#pragma warning(disable:4267) // '=' : conversion from 'size_t' to 'unsigned long', possible loss of data
 //#pragma warning(disable:4244) // 'argument' : conversion from 'ssize_t' to 'unsigned int', possible loss of data
 //#pragma warning(disable:4355) // 'this' : used in base member initializer list

@@ -30,7 +30,7 @@ namespace embree
       bool passed = true;
       const size_t M = 10;
 
-      for (size_t N=10; N<1000000; N*=2.1f)
+      for (size_t N=10; N<1000000; N=size_t(2.1*N))
       {
 	std::vector<Key> src(N); memset(src.data(),0,N*sizeof(Key));
 	std::vector<Key> tmp(N); memset(tmp.data(),0,N*sizeof(Key));

@@ -281,7 +281,7 @@ namespace embree
     __forceinline bool isBuild() const { return is_build; }
 
   public:
-    std::vector<int> usedIDs; // FIXME: encapsulate this functionality into own class
+    std::vector<unsigned> usedIDs; // FIXME: encapsulate this functionality into own class
     std::vector<Geometry*> geometries; //!< list of all user geometries
     
   public:
@@ -320,7 +320,7 @@ namespace embree
     struct BuildProgressMonitorInterface : public BuildProgressMonitor {
       BuildProgressMonitorInterface(Scene* scene) 
       : scene(scene) {}
-      void operator() (size_t dn) { scene->progressMonitor(dn); }
+      void operator() (size_t dn) { scene->progressMonitor(double(dn)); }
     private:
       Scene* scene;
     };

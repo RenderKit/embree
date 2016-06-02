@@ -88,7 +88,7 @@ namespace embree
     }
 
     /*! returns buffer stride */
-    __forceinline unsigned getStride() const {
+    __forceinline size_t getStride() const {
       return stride;
     }
 

@@ -180,5 +180,3 @@ inline varying PowerCosineDistribution make_PowerCosineDistribution(const varyin
   varying PowerCosineDistribution m; m.exp = _exp; return m;
 }
 #endif
-
-/*! @} */

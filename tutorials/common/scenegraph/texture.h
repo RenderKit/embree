@@ -33,22 +33,22 @@ namespace embree
   public:
     Texture (); 
     Texture (Ref<Image> image, const std::string fileName); 
-    Texture (size_t width, size_t height, const Format format, const char* in = nullptr);
+    Texture (unsigned width, unsigned height, const Format format, const char* in = nullptr);
     ~Texture ();
 
     static const char* format_to_string(const Format format);
     static Format string_to_format(const std::string& str);
-    static int getFormatBytesPerTexel(const Format format);
+    static unsigned getFormatBytesPerTexel(const Format format);
 
     static Texture* load(const FileName& fileName); // FIXME: return reference
     
   public:
-    int width;
-    int height;    
+    unsigned width;
+    unsigned height;    
     Format format;
-    int bytesPerTexel;
-    int width_mask;
-    int height_mask;
+    unsigned bytesPerTexel;
+    unsigned width_mask;
+    unsigned height_mask;
     void* data;
     std::string fileName;
   };

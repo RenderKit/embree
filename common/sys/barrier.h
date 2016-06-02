@@ -106,7 +106,7 @@ namespace embree
     volatile unsigned int mode;
     volatile unsigned int flag0;
     volatile unsigned int flag1;
-    volatile unsigned int threadCount;
+    volatile size_t threadCount;
   };
 }
 

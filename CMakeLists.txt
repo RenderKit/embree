@@ -24,6 +24,7 @@ SET(CPACK_RPM_PACKAGE_RELEASE 1)
 
 PROJECT(embree${EMBREE_VERSION_MAJOR})
 
+
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8.11)
 
 # find git version
@@ -126,11 +127,6 @@ CONFIGURE_FILE(
 # Create Binary Packages (uses above config options)
 ##############################################################
 include(package)
-
-IF (TASKING_TBB)
-  FIND_PACKAGE(TBB REQUIRED)
-  INCLUDE_DIRECTORIES(${TBB_INCLUDE_DIRS})
-ENDIF()
 
 ##############################################################
 # Compiler
@@ -284,6 +280,10 @@ INCLUDE (ispc)
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/include)
 INCLUDE_DIRECTORIES("${PROJECT_BINARY_DIR}")
 INCLUDE_DIRECTORIES_ISPC("${PROJECT_BINARY_DIR}")
+IF (TASKING_TBB)
+  FIND_PACKAGE(TBB REQUIRED)
+  INCLUDE_DIRECTORIES(${TBB_INCLUDE_DIRS})
+ENDIF()
 
 ##############################################################
 # Output paths

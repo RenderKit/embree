@@ -42,7 +42,7 @@ namespace embree
       {
 	/* perform single threaded prefix operation for small N */
 	if (N < SINGLE_THREAD_THRESHOLD) {
-          size_t sum=0;
+          Ty sum=0;
 	  for (size_t i=0; i<N; sum+=src[i++]) dst[i] = sum;
           parent->value = sum;
 	}

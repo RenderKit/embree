@@ -32,7 +32,7 @@ sed -i.backup  's/programCount/1/g' $2
 sed -i.backup  's/task[ ]*void[ ]*\([a-zA-Z0-9_]*\)[ ]*(/void \1 (int taskIndex, /g' $2
 sed -i.backup  's/launch\[\([^]]*\)\][ ]*\([a-zA-Z0-9_]*\)[ ]*(\([^)]*\))/parallel_for(size_t(0),size_t(\1),[\&](const range<size_t>\& range) \{\
     for (size_t i=range.begin(); i<range.end(); i++)\
-      \2(i,\3);\
+      \2((int)i,\3);\
   \})/g' $2
 
 sed -i.backup  's/foreach[ ]*([ ]*\([a-zA-Z0-9_]*\)[ ]*=[ ]*\([^ \.]*\)[ ]*\.\.\.[ ]*\([^ ),]*\)[ ]*)/for (unsigned int \1=\2; \1<\3; \1++)/g' $2
@@ -98,3 +98,13 @@ sed -i.backup  's/RTCFilterFuncVarying/RTCFilterFunc/g' $2
 
 sed -i.backup  's/rtcIntersectVM/rtcIntersect1M/g' $2
 sed -i.backup  's/rtcOccludedVM/rtcOccluded1M/g' $2
+
+# add Embree namespace
+ln=`grep -n -E "#include|#pragma" $2 | tail -1 | cut -d: -f1`
+mv $2 $2.backup
+head -n $ln $2.backup > $2
+echo >> $2
+echo 'namespace embree {' >> $2
+tail -n +$(($ln+1)) $2.backup >> $2
+echo >> $2
+echo '} // namespace embree' >> $2

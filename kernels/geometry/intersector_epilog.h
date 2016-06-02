@@ -50,7 +50,7 @@ namespace embree
         __forceinline bool operator() (Hit& hit) const
         {
           /* ray mask test */
-          Geometry* geometry = scene->get(geomID);
+          Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 #if defined(EMBREE_RAY_MASK)
           if ((geometry->mask & ray.mask) == 0) return false;
 #endif
@@ -96,7 +96,7 @@ namespace embree
         __forceinline bool operator() (Hit& hit) const
         {
           /* ray mask test */
-          Geometry* geometry = scene->get(geomID);
+          Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 #if defined(EMBREE_RAY_MASK)
           if ((geometry->mask & ray.mask) == 0) return false;
 #endif
@@ -116,13 +116,13 @@ namespace embree
       struct Intersect1KEpilog1
       {
         RayK<K>& ray;
-        int k;
+        size_t k;
         const RTCIntersectContext* context;
         const unsigned int geomID;
         const unsigned int primID;
         Scene* const scene;
         
-        __forceinline Intersect1KEpilog1(RayK<K>& ray, int k,
+        __forceinline Intersect1KEpilog1(RayK<K>& ray, size_t k,
                                          const RTCIntersectContext* context, 
                                          const unsigned int geomID, 
                                          const unsigned int primID, 
@@ -133,7 +133,7 @@ namespace embree
         __forceinline bool operator() (Hit& hit) const
         {
           /* ray mask test */
-          Geometry* geometry = scene->get(geomID);
+          Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 #if defined(EMBREE_RAY_MASK)
           if ((geometry->mask & ray.mask[k]) == 0) 
             return false;
@@ -163,13 +163,13 @@ namespace embree
       struct Occluded1KEpilog1
       {
         RayK<K>& ray;
-        int k;
+        size_t k;
         const RTCIntersectContext* context;
         const unsigned int geomID;
         const unsigned int primID;
         Scene* const scene;
         
-        __forceinline Occluded1KEpilog1(RayK<K>& ray, int k,
+        __forceinline Occluded1KEpilog1(RayK<K>& ray, size_t k,
                                         const RTCIntersectContext* context, 
                                         const unsigned int geomID, 
                                         const unsigned int primID, 
@@ -180,7 +180,7 @@ namespace embree
         __forceinline bool operator() (Hit& hit) const
         {
           /* ray mask test */
-          Geometry* geometry = scene->get(geomID);
+          Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 #if defined(EMBREE_RAY_MASK)
           if ((geometry->mask & ray.mask[k]) == 0) 
             return false;
@@ -237,7 +237,7 @@ namespace embree
             geomID = geomIDs[i];
             instID = geomID_to_instID ? geomID_to_instID[0] : geomID;
           entry:
-            Geometry* geometry = scene->get(geomID);
+            Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
             
 #if defined(EMBREE_RAY_MASK)
             /* goto next hit if mask test fails */
@@ -320,7 +320,7 @@ namespace embree
             geomID = geomIDs[i];
             instID = geomID_to_instID ? geomID_to_instID[0] : geomID;
           entry:
-            Geometry* geometry = scene->get(geomID);
+            Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
             
 #if defined(EMBREE_RAY_MASK)
             /* goto next hit if mask test fails */
@@ -390,7 +390,7 @@ namespace embree
 
             const int geomID = geomIDs[i];
             const int instID = geomID_to_instID ? geomID_to_instID[0] : geomID;
-            Geometry* geometry = scene->get(geomID);
+            Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
             
 #if defined(EMBREE_RAY_MASK)
             /* goto next hit if mask test fails */
@@ -443,7 +443,7 @@ namespace embree
         __forceinline bool operator() (const vbool<M>& valid_i, Hit& hit) const
         {
           /* ray mask test */
-          Geometry* geometry = scene->get(geomID);
+          Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 #if defined(EMBREE_RAY_MASK)
           if ((geometry->mask & ray.mask) == 0) return false;
 #endif
@@ -509,7 +509,7 @@ namespace embree
         __forceinline bool operator() (const vbool<M>& valid, Hit& hit) const
         {
           /* ray mask test */
-          Geometry* geometry = scene->get(geomID);
+          Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 #if defined(EMBREE_RAY_MASK)
           if ((geometry->mask & ray.mask) == 0) return false;
 #endif
@@ -538,14 +538,14 @@ namespace embree
         const RTCIntersectContext* context;
         const vint<M>& geomIDs;
         const vint<M>& primIDs;
-        const int i;
+        const size_t i;
         Scene* const scene;
         
         __forceinline IntersectKEpilogM(RayK<K>& ray,
                                         const RTCIntersectContext* context, 
                                        const vint<M>& geomIDs, 
                                        const vint<M>& primIDs, 
-                                       int i,
+                                       size_t i,
                                        Scene* scene)
           : ray(ray), context(context), geomIDs(geomIDs), primIDs(primIDs), i(i), scene(scene) {}
         
@@ -560,7 +560,7 @@ namespace embree
           
           const int geomID = geomIDs[i];
           const int primID = primIDs[i];
-          Geometry* geometry = scene->get(geomID);
+          Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
           
           /* ray masking test */
 #if defined(EMBREE_RAY_MASK)
@@ -598,7 +598,7 @@ namespace embree
         const RTCIntersectContext* context;
         const vint<M>& geomIDs;
         const vint<M>& primIDs;
-        const int i;
+        const size_t i;
         Scene* const scene;
         
         __forceinline OccludedKEpilogM(vbool<K>& valid0,
@@ -606,7 +606,7 @@ namespace embree
                                        const RTCIntersectContext* context, 
                                        const vint<M>& geomIDs, 
                                        const vint<M>& primIDs, 
-                                       int i,
+                                       size_t i,
                                        Scene* scene)
           : valid0(valid0), ray(ray), context(context), geomIDs(geomIDs), primIDs(primIDs), i(i), scene(scene) {}
         
@@ -618,7 +618,7 @@ namespace embree
           /* ray masking test */
           const int geomID = geomIDs[i];
           const int primID = primIDs[i];
-          Geometry* geometry = scene->get(geomID);
+          Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 #if defined(EMBREE_RAY_MASK)
           valid &= (geometry->mask & ray.mask) != 0;
           if (unlikely(none(valid))) return valid;
@@ -667,7 +667,7 @@ namespace embree
           Vec3<vfloat<K>> Ng;
           std::tie(u,v,t,Ng) = hit();
           
-          Geometry* geometry = scene->get(geomID);
+          Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
           
           /* ray masking test */
 #if defined(EMBREE_RAY_MASK)
@@ -719,7 +719,7 @@ namespace embree
         __forceinline vbool<K> operator() (const vbool<K>& valid_i, const Hit& hit) const
         {
           vbool<K> valid = valid_i;
-          Geometry* geometry = scene->get(geomID);
+          Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
           
 #if defined(EMBREE_RAY_MASK)
           valid &= (geometry->mask & ray.mask) != 0;
@@ -751,13 +751,13 @@ namespace embree
       struct Intersect1KEpilogM
       {
         RayK<K>& ray;
-        int k;
+        size_t k;
         const RTCIntersectContext* context;
         const vint<M>& geomIDs;
         const vint<M>& primIDs;
         Scene* const scene;
         
-        __forceinline Intersect1KEpilogM(RayK<K>& ray, int k,
+        __forceinline Intersect1KEpilogM(RayK<K>& ray, size_t k,
                                          const RTCIntersectContext* context, 
                                          const vint<M>& geomIDs, 
                                          const vint<M>& primIDs, 
@@ -785,7 +785,7 @@ namespace embree
             assert(i<M);            
             geomID = geomIDs[i];
           entry:
-            Geometry* geometry = scene->get(geomID);
+            Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
             
 #if defined(EMBREE_RAY_MASK)
             /* goto next hit if mask test fails */
@@ -834,13 +834,13 @@ namespace embree
       struct Occluded1KEpilogM
       {
         RayK<K>& ray;
-        int k;
+        size_t k;
         const RTCIntersectContext* context;
         const vint<M>& geomIDs;
         const vint<M>& primIDs;
         Scene* const scene;
         
-        __forceinline Occluded1KEpilogM(RayK<K>& ray, int k,
+        __forceinline Occluded1KEpilogM(RayK<K>& ray, size_t k,
                                         const RTCIntersectContext* context, 
                                         const vint<M>& geomIDs, 
                                         const vint<M>& primIDs, 
@@ -865,7 +865,7 @@ namespace embree
             hit.finalize(); // FIXME: executed too often
 
             const int geomID = geomIDs[i];
-            Geometry* geometry = scene->get(geomID);
+            Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
             
 #if defined(EMBREE_RAY_MASK)
             /* goto next hit if mask test fails */
@@ -899,13 +899,13 @@ namespace embree
       struct Intersect1KEpilogMU
       {
         RayK<K>& ray;
-        int k;
+        size_t k;
         const RTCIntersectContext* context;
         const unsigned int geomID;
         const unsigned int primID;
         Scene* const scene;
         
-        __forceinline Intersect1KEpilogMU(RayK<K>& ray, int k,
+        __forceinline Intersect1KEpilogMU(RayK<K>& ray, size_t k,
                                           const RTCIntersectContext* context, 
                                           const unsigned int geomID, 
                                           const unsigned int primID, 
@@ -915,7 +915,7 @@ namespace embree
         template<typename Hit>
         __forceinline bool operator() (const vbool<M>& valid_i, Hit& hit) const
         {
-          Geometry* geometry = scene->get(geomID);
+          Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 #if defined(EMBREE_RAY_MASK)
           /* ray mask test */
           if ((geometry->mask & ray.mask[k]) == 0) 
@@ -971,13 +971,13 @@ namespace embree
       struct Occluded1KEpilogMU
       {
         RayK<K>& ray;
-        int k;
+        size_t k;
         const RTCIntersectContext* context;
         const unsigned int geomID;
         const unsigned int primID;
         Scene* const scene;
         
-        __forceinline Occluded1KEpilogMU(RayK<K>& ray, int k,
+        __forceinline Occluded1KEpilogMU(RayK<K>& ray, size_t k,
                                          const RTCIntersectContext* context, 
                                          const unsigned int geomID, 
                                          const unsigned int primID, 
@@ -987,7 +987,7 @@ namespace embree
         template<typename Hit>
         __forceinline bool operator() (const vbool<M>& valid_i, Hit& hit) const
         {
-          Geometry* geometry = scene->get(geomID);
+          Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 #if defined(EMBREE_RAY_MASK)
           /* ray mask test */
           if ((geometry->mask & ray.mask[k]) == 0) 

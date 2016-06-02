@@ -371,7 +371,7 @@ namespace embree
         render(0.0f,ispccamera);
         double t1 = getSeconds();
 
-        float fr = 1.0f/(t1-t0);
+        float fr = float(1.0/(t1-t0));
         stat.add(fr);
         std::cout << "frame [" << std::setw(3) << i << " / " << std::setw(3) << numTotalFrames << "]: " 
                   << std::setw(8) << fr << " fps, " 
@@ -491,7 +491,7 @@ namespace embree
       if (button == GLUT_LEFT_BUTTON && glutGetModifiers() == GLUT_ACTIVE_SHIFT) 
       {
         ISPCCamera ispccamera = camera.getISPCCamera(width,height);
-        Vec3fa p; bool hit = pick(x,y,ispccamera,p);
+        Vec3fa p; bool hit = pick(float(x),float(y),ispccamera,p);
 
         if (hit) {
           Vec3fa delta = p - camera.to;
@@ -504,7 +504,7 @@ namespace embree
       else if (button == GLUT_LEFT_BUTTON && glutGetModifiers() == (GLUT_ACTIVE_CTRL | GLUT_ACTIVE_SHIFT)) 
       {
         ISPCCamera ispccamera = camera.getISPCCamera(width,height);
-        Vec3fa p; bool hit = pick(x,y,ispccamera,p);
+        Vec3fa p; bool hit = pick(float(x),float(y),ispccamera,p);
         if (hit) camera.to = p;
       }
 
@@ -538,7 +538,7 @@ namespace embree
     
     /* render image using ISPC */
     double t0 = getSeconds();
-    render(time0-t0,ispccamera);
+    render(float(time0-t0),ispccamera);
     double dt0 = getSeconds()-t0;
 
     /* draw pixels to screen */
@@ -562,7 +562,7 @@ namespace embree
       stream << 1.0f/dt0 << " fps";
       std::string str = stream.str();
       
-      glRasterPos2i( width-str.size()*12, height - 24); 
+      glRasterPos2i( width-GLint(str.size())*12, height - 24); 
       for (size_t i=0; i<str.size(); i++)
         glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, str[i]);
       

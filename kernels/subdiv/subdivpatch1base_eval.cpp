@@ -68,9 +68,9 @@ namespace embree
 
     /* eval grid over patch and stich edges when required */      
     void evalGrid(const SubdivPatch1Base& patch,
-                  const size_t x0, const size_t x1,
-                  const size_t y0, const size_t y1,
-                  const size_t swidth, const size_t sheight,
+                  const unsigned x0, const unsigned x1,
+                  const unsigned y0, const unsigned y1,
+                  const unsigned swidth, const unsigned sheight,
                   float *__restrict__ const grid_x,
                   float *__restrict__ const grid_y,
                   float *__restrict__ const grid_z,
@@ -78,15 +78,15 @@ namespace embree
                   float *__restrict__ const grid_v,
                   const SubdivMesh* const geom)
     {
-      const size_t dwidth  = x1-x0+1;
-      const size_t dheight = y1-y0+1;
-      const size_t M = dwidth*dheight+VSIZEX;
-      const size_t grid_size_simd_blocks = (M-1)/VSIZEX;
+      const unsigned dwidth  = x1-x0+1;
+      const unsigned dheight = y1-y0+1;
+      const unsigned M = dwidth*dheight+VSIZEX;
+      const unsigned grid_size_simd_blocks = (M-1)/VSIZEX;
 
       if (unlikely(patch.type == SubdivPatch1Base::EVAL_PATCH))
       {
         const bool displ = geom->displFunc;
-        const size_t N = displ ? M : 0;
+        const unsigned N = displ ? M : 0;
         dynamic_large_stack_array(float,grid_Ng_x,N,64*64*sizeof(float));
         dynamic_large_stack_array(float,grid_Ng_y,N,64*64*sizeof(float));
         dynamic_large_stack_array(float,grid_Ng_z,N,64*64*sizeof(float));
@@ -117,7 +117,7 @@ namespace embree
         const Vec2f uv1 = patch.getUV(1);
         const Vec2f uv2 = patch.getUV(2);
         const Vec2f uv3 = patch.getUV(3);
-        for (size_t i=0; i<grid_size_simd_blocks; i++)
+        for (unsigned i=0; i<grid_size_simd_blocks; i++)
         {
           const vfloatx u = vfloatx::load(&grid_u[i*VSIZEX]);
           const vfloatx v = vfloatx::load(&grid_v[i*VSIZEX]);
@@ -137,7 +137,7 @@ namespace embree
         const float last_x = grid_x[dwidth*dheight-1];
         const float last_y = grid_y[dwidth*dheight-1];
         const float last_z = grid_z[dwidth*dheight-1];
-        for (size_t i=dwidth*dheight;i<grid_size_simd_blocks*VSIZEX;i++)
+        for (unsigned i=dwidth*dheight;i<grid_size_simd_blocks*VSIZEX;i++)
         {
           grid_u[i] = last_u;
           grid_v[i] = last_v;
@@ -154,7 +154,7 @@ namespace embree
         /* set last elements in u,v array to last valid point */
         const float last_u = grid_u[dwidth*dheight-1];
         const float last_v = grid_v[dwidth*dheight-1];
-        for (size_t i=dwidth*dheight;i<grid_size_simd_blocks*VSIZEX;i++) {
+        for (unsigned i=dwidth*dheight;i<grid_size_simd_blocks*VSIZEX;i++) {
           grid_u[i] = last_u;
           grid_v[i] = last_v;
         }
@@ -164,7 +164,7 @@ namespace embree
           stitchUVGrid(patch.level,swidth,sheight,x0,y0,dwidth,dheight,grid_u,grid_v);
       
         /* iterates over all grid points */
-        for (size_t i=0; i<grid_size_simd_blocks; i++)
+        for (unsigned i=0; i<grid_size_simd_blocks; i++)
         {
           const vfloatx u = vfloatx::load(&grid_u[i*VSIZEX]);
           const vfloatx v = vfloatx::load(&grid_v[i*VSIZEX]);
@@ -189,16 +189,16 @@ namespace embree
 
     /* eval grid over patch and stich edges when required */      
     BBox3fa evalGridBounds(const SubdivPatch1Base& patch,
-                           const size_t x0, const size_t x1,
-                           const size_t y0, const size_t y1,
-                           const size_t swidth, const size_t sheight,
+                           const unsigned x0, const unsigned x1,
+                           const unsigned y0, const unsigned y1,
+                           const unsigned swidth, const unsigned sheight,
                            const SubdivMesh* const geom)
     {
       BBox3fa b(empty);
-      const size_t dwidth  = x1-x0+1;
-      const size_t dheight = y1-y0+1;
-      const size_t M = dwidth*dheight+VSIZEX;
-      const size_t grid_size_simd_blocks = (M-1)/VSIZEX;
+      const unsigned dwidth  = x1-x0+1;
+      const unsigned dheight = y1-y0+1;
+      const unsigned M = dwidth*dheight+VSIZEX;
+      const unsigned grid_size_simd_blocks = (M-1)/VSIZEX;
       dynamic_large_stack_array(float,grid_u,M,64*64*sizeof(float));
       dynamic_large_stack_array(float,grid_v,M,64*64*sizeof(float));
 
@@ -243,7 +243,7 @@ namespace embree
         const float last_x = grid_x[dwidth*dheight-1];
         const float last_y = grid_y[dwidth*dheight-1];
         const float last_z = grid_z[dwidth*dheight-1];
-        for (size_t i=dwidth*dheight;i<grid_size_simd_blocks*VSIZEX;i++)
+        for (unsigned i=dwidth*dheight;i<grid_size_simd_blocks*VSIZEX;i++)
         {
           grid_u[i] = last_u;
           grid_v[i] = last_v;
@@ -258,7 +258,7 @@ namespace embree
         vfloatx bounds_max_x = neg_inf;
         vfloatx bounds_max_y = neg_inf;
         vfloatx bounds_max_z = neg_inf;
-        for (size_t i = 0; i<grid_size_simd_blocks; i++)
+        for (unsigned i = 0; i<grid_size_simd_blocks; i++)
         {
           vfloatx x = vfloatx::loadu(&grid_x[i * VSIZEX]);
           vfloatx y = vfloatx::loadu(&grid_y[i * VSIZEX]);
@@ -273,14 +273,14 @@ namespace embree
 	  bounds_max_z = max(bounds_max_z,z);
         }
 
-        b.lower.x = reduce_min(bounds_min_x);
+        b.lower.x = reduce_min(bounds_min_x);  
         b.lower.y = reduce_min(bounds_min_y);
         b.lower.z = reduce_min(bounds_min_z);
         b.upper.x = reduce_max(bounds_max_x);
         b.upper.y = reduce_max(bounds_max_y);
         b.upper.z = reduce_max(bounds_max_z);
-        b.lower.a = 0.0f;
-        b.upper.a = 0.0f;
+        b.lower.a = 0;
+        b.upper.a = 0;
       }
       else
       {
@@ -290,7 +290,7 @@ namespace embree
         /* set last elements in u,v array to last valid point */
         const float last_u = grid_u[dwidth*dheight-1];
         const float last_v = grid_v[dwidth*dheight-1];
-        for (size_t i=dwidth*dheight;i<grid_size_simd_blocks*VSIZEX;i++) {
+        for (unsigned i=dwidth*dheight;i<grid_size_simd_blocks*VSIZEX;i++) {
           grid_u[i] = last_u;
           grid_v[i] = last_v;
         }
@@ -310,7 +310,7 @@ namespace embree
         bounds_max[1] = neg_inf;
         bounds_max[2] = neg_inf;
 
-        for (size_t i=0; i<grid_size_simd_blocks; i++)
+        for (unsigned i=0; i<grid_size_simd_blocks; i++)
         {
           const vfloatx u = vfloatx::load(&grid_u[i*VSIZEX]);
           const vfloatx v = vfloatx::load(&grid_v[i*VSIZEX]);
@@ -339,8 +339,8 @@ namespace embree
         b.upper.x = reduce_max(bounds_max[0]);
         b.upper.y = reduce_max(bounds_max[1]);
         b.upper.z = reduce_max(bounds_max[2]);
-        b.lower.a = 0.0f;
-        b.upper.a = 0.0f;
+        b.lower.a = 0;
+        b.upper.a = 0;
       }
 
       assert( std::isfinite(b.lower.x) );

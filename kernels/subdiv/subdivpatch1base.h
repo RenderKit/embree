@@ -113,7 +113,7 @@ namespace embree
 
     struct PatchHalfEdge {
       const HalfEdge* edge;
-      size_t subPatch;
+      unsigned subPatch;
     };
 
     Vec3fa patch_v[4][4];
@@ -122,7 +122,7 @@ namespace embree
       return ((PatchHalfEdge*)patch_v)->edge;
     }
 
-    size_t subPatch() const {
+    unsigned subPatch() const {
       return ((PatchHalfEdge*)patch_v)->subPatch;
     }
 
@@ -130,7 +130,7 @@ namespace embree
       ((PatchHalfEdge*)patch_v)->edge = h;
     }
 
-    void set_subPatch(const size_t s) const {
+    void set_subPatch(const unsigned s) const {
       ((PatchHalfEdge*)patch_v)->subPatch = s;
     }
   };
@@ -149,9 +149,9 @@ namespace embree
 
     /* eval grid over patch and stich edges when required */      
     void evalGrid(const SubdivPatch1Base& patch,
-                  const size_t x0, const size_t x1,
-                  const size_t y0, const size_t y1,
-                  const size_t swidth, const size_t sheight,
+                  const unsigned x0, const unsigned x1,
+                  const unsigned y0, const unsigned y1,
+                  const unsigned swidth, const unsigned sheight,
                   float *__restrict__ const grid_x,
                   float *__restrict__ const grid_y,
                   float *__restrict__ const grid_z,
@@ -161,9 +161,9 @@ namespace embree
 
     /* eval grid over patch and stich edges when required */      
     BBox3fa evalGridBounds(const SubdivPatch1Base& patch,
-                           const size_t x0, const size_t x1,
-                           const size_t y0, const size_t y1,
-                           const size_t swidth, const size_t sheight,
+                           const unsigned x0, const unsigned x1,
+                           const unsigned y0, const unsigned y1,
+                           const unsigned swidth, const unsigned sheight,
                            const SubdivMesh* const geom);
   }
 }

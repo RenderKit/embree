@@ -19,6 +19,8 @@
 #include "texture2d.h"
 #include "ospray/math/AffineSpace.ih"
 
+namespace embree {
+
 
 //! Texture2D including coordinate transformation, plus helpers
 
@@ -86,3 +88,5 @@ inline Vec4f get4f(const TextureParam &tex,
   return get4f(tex.map, tex.xform * uv);
 }
 
+
+} // namespace embree
