@@ -243,7 +243,7 @@ namespace embree
           assert(i<MAX_PATCH_VALENCE);
           static_assert(MAX_PATCH_VALENCE <= 16, "MAX_PATCH_VALENCE > 16");
           const int h = (i >> 2) & 3, l = i & 3;
-          Vec2f base(float(l),float(h));
+          const Vec2f base((float)l,(float)h);
           const Vec2f uv[4] = { (1.0f/4.0f) * (base + Vec2f(0.0f,0.0f)),
                                 (1.0f/4.0f) * (base + Vec2f(0.5f,0.0f)),
                                 (1.0f/4.0f) * (base + Vec2f(0.5f,0.5f)),
