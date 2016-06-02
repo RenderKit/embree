@@ -505,11 +505,11 @@ namespace embree
 
     struct Range 
     {
-      int start;
-      int end;
+      ssize_t start;
+      ssize_t end;
       Range() {}
 
-      Range (int start, int end) 
+      Range (ssize_t start, ssize_t end) 
       : start(start), end(end) {}
 
       __forceinline void reset() { 
@@ -546,8 +546,8 @@ namespace embree
     size_t numMisplacedRangesRight;
     size_t numMisplacedItems;
 
-    __aligned(64) unsigned int counter_start[MAX_TASKS]; 
-    __aligned(64) unsigned int counter_left[MAX_TASKS];  
+    __aligned(64) size_t counter_start[MAX_TASKS]; 
+    __aligned(64) size_t counter_left[MAX_TASKS];  
     __aligned(64) Range leftMisplacedRanges[MAX_TASKS];  
     __aligned(64) Range rightMisplacedRanges[MAX_TASKS]; 
     __aligned(64) V leftReductions[MAX_TASKS];           
@@ -645,8 +645,7 @@ namespace embree
       {
         leftReduction = empty;
         rightReduction = empty;
-        const size_t mid = serial_partitioning(array,0,N,leftReduction,rightReduction,cmp,reduction_t);
-        return mid;
+        return serial_partitioning(array,0,N,leftReduction,rightReduction,cmp,reduction_t);
       }
 
       parallel_for(tasks,[&] (const size_t taskID) 
@@ -679,8 +678,8 @@ namespace embree
       counter_start[tasks] = N;
       counter_left[tasks]  = 0;
 
-      unsigned int mid = counter_left[0];
-      for (unsigned int i=1;i<tasks;i++)
+      size_t mid = counter_left[0];
+      for (size_t i=1;i<tasks;i++)
         mid += counter_left[i];
 
       const Range globalLeft (0,mid-1);
@@ -692,17 +691,16 @@ namespace embree
 #endif
       for (size_t i=0;i<tasks;i++)
       {	    
-        const unsigned int left_start  = counter_start[i];
-        const unsigned int left_end    = counter_start[i] + counter_left[i]-1;
-        const unsigned int right_start = counter_start[i] + counter_left[i];
-        const unsigned int right_end   = counter_start[i+1]-1;
+        const size_t left_start  = counter_start[i];
+        const size_t left_end    = counter_start[i] + counter_left[i]-1;
+        const size_t right_start = counter_start[i] + counter_left[i];
+        const size_t right_end   = counter_start[i+1]-1;
 
         Range left_range (left_start,left_end); // counter[i].start,counter[i].start+counter[i].left-1);
         Range right_range(right_start,right_end); // counter[i].start+counter[i].left,counter[i].start+counter[i].size-1);
 
         Range left_misplaced = globalLeft.intersect(right_range);
         Range right_misplaced = globalRight.intersect(left_range);
-
 
         if (!left_misplaced.empty())  
         {
