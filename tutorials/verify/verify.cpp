@@ -338,8 +338,7 @@ namespace embree
     /* load git hash from file */
     std::fstream hashFile;
     std::string hash = "unknown";
-    hashFile.open("hash", std::fstream::in);
-    if (!hashFile.is_open()) hashFile.open("../hash", std::fstream::in); // during testing we have to look one level upwards
+    hashFile.open(FileName::executableFolder()+FileName("hash"), std::fstream::in);
     if (hashFile.is_open()) {
       hashFile >> hash;
       hashFile.close();
