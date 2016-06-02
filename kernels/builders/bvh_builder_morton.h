@@ -312,8 +312,8 @@ namespace embree
         do {
           
           /* find best child with largest bounding box area */
-          int bestChild = -1;
-          int bestSize = 0;
+          size_t bestChild = -1;
+          size_t bestSize = 0;
           for (size_t i=0; i<numChildren; i++)
           {
             /* ignore leaves as they cannot get split */
@@ -326,7 +326,7 @@ namespace embree
               bestChild = i;
             }
           }
-          if (bestChild == -1) break;
+          if (bestChild == size_t(-1)) break;
           
           /*! split best child into left and right child */
           __aligned(64) MortonBuildRecord<NodeRef> left, right;

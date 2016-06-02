@@ -204,8 +204,8 @@ namespace embree
           const size_t end   = set.end();
           CentGeomBBox3fa local_left(empty);
           CentGeomBBox3fa local_right(empty);
-          const unsigned int splitPos = split.pos;
-          const unsigned int splitDim = split.dim;
+          const int splitPos = split.pos;
+          const int splitDim = split.dim;
           size_t center = serial_partitioning(prims,begin,end,local_left,local_right,
                                               [&] (const PrimRef& ref) { return split.mapping.bin_unsafe(center2(ref.bounds(space)))[splitDim] < splitPos; },
                                               [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend(ref.bounds()); });
@@ -231,8 +231,8 @@ namespace embree
           left.reset(); 
           right.reset();
           PrimInfo init; init.reset();
-          const unsigned int splitPos = split.pos;
-          const unsigned int splitDim = split.dim;
+          const int splitPos = split.pos;
+          const int splitDim = split.dim;
           
           const size_t mid = parallel_in_place_partitioning_static<128,PrimRef,PrimInfo>
 	  (&prims[begin],end-begin,init,left,right,

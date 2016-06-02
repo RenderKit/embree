@@ -340,7 +340,7 @@ namespace embree
               BBox3fa bounds = empty;
 
               size_t num = 0;
-              for (ssize_t j=r.begin(); j<r.end(); j++)
+              for (size_t j=r.begin(); j<r.end(); j++)
               {
                 BBox3fa prim_bounds = empty;
                 if (unlikely(!mesh->valid(j,&prim_bounds))) continue;
@@ -365,7 +365,7 @@ namespace embree
           MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
           parallel_for( size_t(0), numPrimitives, block_size, [&](const range<size_t>& r) -> void {
               MortonCodeGenerator generator(mapping,&morton.data()[r.begin()]);
-              for (ssize_t j=r.begin(); j<r.end(); j++)
+              for (size_t j=r.begin(); j<r.end(); j++)
                 generator(mesh->bounds(j),j);
             });
         }
@@ -377,7 +377,7 @@ namespace embree
           parallel_prefix_sum( pstate, size_t(0), numPrimitives, block_size, size_t(0), [&](const range<size_t>& r, const size_t base) -> size_t {
               size_t num = 0;
               MortonCodeGenerator generator(mapping,&morton.data()[r.begin()]);
-              for (ssize_t j=r.begin(); j<r.end(); j++)
+              for (size_t j=r.begin(); j<r.end(); j++)
               {
                 BBox3fa bounds = empty;
                 if (unlikely(!mesh->valid(j,&bounds))) continue;
@@ -390,7 +390,7 @@ namespace embree
           parallel_prefix_sum( pstate, size_t(0), numPrimitives, block_size, size_t(0), [&](const range<size_t>& r, const size_t base) -> size_t {
               size_t num = 0;
               MortonCodeGenerator generator(mapping,&morton.data()[base]);
-              for (ssize_t j=r.begin(); j<r.end(); j++)
+              for (size_t j=r.begin(); j<r.end(); j++)
               {
                 BBox3fa bounds = empty;
                 if (!mesh->valid(j,&bounds)) continue;
