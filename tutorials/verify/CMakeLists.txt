@@ -21,7 +21,11 @@ INSTALL(TARGETS verify DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT examples)
 
 ADD_TEST(NAME verify COMMAND verify --no-colors)
 IF (EMBREE_TESTING_MEMCHECK AND EMBREE_MEMORYCHECK_COMMAND)
-  ADD_MEMCHECK_TEST(verify_memcheck verify --no-colors --intensity 0.1)
+  ADD_MEMCHECK_TEST(verify_memcheck verify 
+     --no-colors --intensity 0.1 
+     --skip .*AVX.*               # valgrind does not support AVX
+     --skip .*AVX2.*              # valgrind does not support AVX2
+     --skip .*AVX512KNL.*)        # valgrind does not support AVX512KNL
   set_tests_properties(verify_memcheck PROPERTIES TIMEOUT 3000)
 ENDIF()
 
@@ -30,8 +34,7 @@ IF (EMBREE_TESTING_BENCHMARK)
     --no-colors --cdash
     --benchmark-tolerance 0.05
     --database "${EMBREE_TESTING_BENCHMARK_DATABASE}"
-    --run SSE2.benchmarks.*
-    --run SSE4.2.benchmarks.*)
+    --run .*benchmarks.*)
   set_tests_properties(verify_benchmarks PROPERTIES TIMEOUT 3000)
 ENDIF()
 
