@@ -36,7 +36,7 @@ namespace embree
     width_mask  = isPowerOf2(width) ? width-1 : 0;
     height_mask = isPowerOf2(height) ? height-1 : 0;
 
-    data = _mm_malloc(4*width*height,64);
+    data = alignedMalloc(4*width*height,64);
     img->convertToRGBA8((unsigned char*)data);
   }
 
@@ -46,13 +46,13 @@ namespace embree
     width_mask  = isPowerOf2(width) ? width-1 : 0;
     height_mask = isPowerOf2(height) ? height-1 : 0;
 
-    data = _mm_malloc(bytesPerTexel*width*height,64);
+    data = alignedMalloc(bytesPerTexel*width*height,64);
     if (in) memcpy(data,in,bytesPerTexel*width*height);
     else    memset(data,0 ,bytesPerTexel*width*height);
   }
 
   Texture::~Texture () {
-    _mm_free(data);
+    alignedFree(data);
   }
 
   const char* Texture::format_to_string(const Format format)
