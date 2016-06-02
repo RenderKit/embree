@@ -273,7 +273,7 @@ void sphereIntersectFunc(const uniform Sphere* uniform spheres, varying RTCRay& 
     ray.v = 0.0f;
     ray.tfar = t0;
     ray.geomID = sphere.geomID;
-    ray.primID = item;
+    ray.primID = (unsigned) item;
     ray.Ng = ray.org+t0*ray.dir-sphere.p;
   }
   if ((ray.tnear < t1) & (t1 < ray.tfar)) {
@@ -281,7 +281,7 @@ void sphereIntersectFunc(const uniform Sphere* uniform spheres, varying RTCRay& 
     ray.v = 0.0f;
     ray.tfar = t1;
     ray.geomID = sphere.geomID;
-    ray.primID = item;
+    ray.primID = (unsigned) item;
     ray.Ng = ray.org+t1*ray.dir-sphere.p;
   }
 }
