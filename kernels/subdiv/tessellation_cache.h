@@ -48,14 +48,12 @@ namespace embree
    static std::atomic<size_t> cache_flushes;                
    static std::atomic<size_t> *cache_patch_builds;                
    static size_t        cache_num_patches;
-   static float **      cache_new_delete_ptr;  
    __aligned(64) static SpinLock mtx;
 
     /* print stats for debugging */                 
     static void printStats();
     static void clearStats();
     static void incPatchBuild(const size_t ID, const size_t numPatches);
-    static void newDeletePatchPtr(const size_t ID,  const size_t numPatches, const size_t size);
 
  };
 
