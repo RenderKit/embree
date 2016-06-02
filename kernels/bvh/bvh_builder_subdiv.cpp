@@ -77,7 +77,7 @@ namespace embree
 
         double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "SubdivGridEagerBuilderBinnedSAH");
 
-        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
+        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(double(dn)); };
         auto virtualprogress = BuildProgressMonitorFromClosure(progress);
 
         /* initialize allocator and parallel_for_for_prefix_sum */
@@ -313,7 +313,7 @@ namespace embree
                 }
               }
               else {
-                new (&patch) SubdivPatch1Cached(mesh->id,f,subPatch,mesh,uv,edge_level,subdiv,VSIZEX);
+                new (&patch) SubdivPatch1Cached(mesh->id,unsigned(f),subPatch,mesh,uv,edge_level,subdiv,VSIZEX);
                 bound = evalGridBounds(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,mesh);
                 //patch.root_ref.data = (int64_t) GridSOA::create(&patch,scene,[&](size_t bytes) { return (*bvh->alloc.threadLocal())(bytes); });
               }
