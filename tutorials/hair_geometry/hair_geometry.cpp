@@ -250,7 +250,7 @@ float Noise(float x, float y, float z)
         hairset->v.push_back(l1);
         hairset->v.push_back(l2);
         hairset->v.push_back(l3);
-        hairset->hairs.push_back( TutorialScene::Hair(v_index,hairset->hairs.size()) );
+        hairset->hairs.push_back( TutorialScene::Hair(v_index,0) );
       }
     }
     scene.geometries.push_back(hairset);

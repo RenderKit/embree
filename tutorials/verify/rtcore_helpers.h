@@ -585,7 +585,7 @@ namespace embree
     int sflag = 0, gflag = 0;
     if (i & 4) {
       sflag |= RTC_SCENE_DYNAMIC;
-      gflag = min(i&3,size_t(2));
+      gflag = min(int(i)&3,2);
     }
     if (i & 8) sflag |= RTC_SCENE_HIGH_QUALITY;
     if (i & 16) sflag |= RTC_SCENE_ROBUST;

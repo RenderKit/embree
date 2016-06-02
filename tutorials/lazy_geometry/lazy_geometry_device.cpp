@@ -224,8 +224,8 @@ extern "C" void device_init (char* cfg)
 
   /* instantiate geometry */
   createGroundPlane(g_scene);
-  for (size_t i=0; i<numSpheres; i++) {
-    float a = 2.0*float(pi)*(float)i/(float)numSpheres;
+  for (int i=0; i<numSpheres; i++) {
+    float a = 2.0f*float(pi)*(float)i/(float)numSpheres;
     createLazyObject(g_scene,i,10.0f*Vec3fa(cosf(a),0,sinf(a)),1);
   }
   rtcCommit (g_scene);
@@ -302,7 +302,7 @@ void renderTileStandard(int taskIndex,
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
     /* calculate pixel color */
-    Vec3fa color = renderPixelStandard(x,y,camera);
+    Vec3fa color = renderPixelStandard(float(x),float(y),camera);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));

@@ -224,8 +224,8 @@ export void device_init (uniform int8* uniform cfg)
 
   /* instantiate geometry */
   createGroundPlane(g_scene);
-  for (uniform size_t i=0; i<numSpheres; i++) {
-    uniform float a = 2.0*M_PI*(uniform float)i/(uniform float)numSpheres;
+  for (uniform int i=0; i<numSpheres; i++) {
+    uniform float a = 2.0f*M_PI*(uniform float)i/(uniform float)numSpheres;
     createLazyObject(g_scene,i,10.0f*make_Vec3f(cosf(a),0,sinf(a)),1);
   }
   rtcCommit (g_scene);
@@ -302,7 +302,7 @@ void renderTileStandard(uniform int taskIndex,
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
     /* calculate pixel color */
-    Vec3f color = renderPixelStandard(x,y,camera);
+    Vec3f color = renderPixelStandard(float(x),float(y),camera);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
