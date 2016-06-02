@@ -100,8 +100,8 @@ namespace embree
 
         /* calculate valid split range for primitive */
         const BBox3fa bounds = item.prim.bounds();
-        const float lower = 0.9f*bounds.lower[dim]+0.1*bounds.upper[dim];
-        const float upper = 0.1f*bounds.lower[dim]+0.9*bounds.upper[dim];
+        const float lower = 0.9f*bounds.lower[dim]+0.1f*bounds.upper[dim];
+        const float upper = 0.1f*bounds.lower[dim]+0.9f*bounds.upper[dim];
 
         /* if split is on the left side of primitive, continue with right half of scene bounds */
         if (center < lower) {
