@@ -423,7 +423,7 @@ namespace embree
               const bool bottom = y+1 == y1;
               const size_t kx0 = x, kx1 = min(x+2,x1);
               const size_t ky0 = y, ky1 = min(y+2,y1);
-              new (&quads[i]) Quads(char(2)*bottom+right,unsigned char(y*grid.width+x));
+              new (&quads[i]) Quads(char(2)*bottom+right,(unsigned char)(y*grid.width+x));
               const BBox3fa b = getBounds(kx0,kx1,ky0,ky1);
               box_list[i++] = b;
               box.extend(b);
