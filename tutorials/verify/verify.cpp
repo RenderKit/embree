@@ -2982,14 +2982,14 @@ namespace embree
   struct SimpleBenchmark : public VerifyApplication::Benchmark
   {
     SimpleBenchmark (std::string name, int isa)
-      : VerifyApplication::Benchmark(name,isa,"ms") {}
+      : VerifyApplication::Benchmark(name,isa,"/s") {}
     
     double benchmark(VerifyApplication* state)
     {
       double t0 = getSeconds();
       for (volatile size_t i=0; i<10000000; i++);
       double t1 = getSeconds();
-      return 1000.0f*(t1-t0);
+      return 1.0f/(t1-t0);
     }
   };
   
