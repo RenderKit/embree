@@ -576,7 +576,7 @@ extern "C" void device_render (int* pixels,
   enableFilterDispatch = renderTile == renderTileStandard;
   parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
     for (size_t i=range.begin(); i<range.end(); i++)
-      renderTileTask(i,pixels,width,height,time,camera,numTilesX,numTilesY);
+      renderTileTask((int)i,pixels,width,height,time,camera,numTilesX,numTilesY);
   }); 
   enableFilterDispatch = false;
 }
