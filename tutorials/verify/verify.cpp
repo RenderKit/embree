@@ -2982,7 +2982,7 @@ namespace embree
   struct SimpleBenchmark : public VerifyApplication::Benchmark
   {
     SimpleBenchmark (std::string name, int isa)
-      : VerifyApplication::Benchmark(name,isa,"/s") {}
+      : VerifyApplication::Benchmark(name,isa,"1/s") {}
     
     double benchmark(VerifyApplication* state)
     {
