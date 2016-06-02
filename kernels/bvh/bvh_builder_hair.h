@@ -91,7 +91,7 @@ namespace embree
         
         /* fill all children by always splitting the largest one */
         PrimInfo children[MAX_BRANCHING_FACTOR];
-        size_t numChildren = 1;
+        unsigned numChildren = 1;
         children[0] = pinfo;
         
         do {
@@ -99,7 +99,7 @@ namespace embree
           /* find best child with largest bounding box area */
           int bestChild = -1;
           size_t bestSize = 0;
-          for (size_t i=0; i<numChildren; i++)
+          for (unsigned i=0; i<numChildren; i++)
           {
             /* ignore leaves as they cannot get split */
             if (children[i].size() <= maxLeafSize)
