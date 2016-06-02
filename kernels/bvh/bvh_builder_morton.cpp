@@ -367,7 +367,7 @@ namespace embree
           parallel_for( size_t(0), numPrimitives, block_size, [&](const range<size_t>& r) -> void {
               MortonCodeGenerator generator(mapping,&morton.data()[r.begin()]);
               for (size_t j=r.begin(); j<r.end(); j++)
-                generator(mesh->bounds(j),j);
+                generator(mesh->bounds(j),unsigned(j));
             });
         }
         else
@@ -382,7 +382,7 @@ namespace embree
               {
                 BBox3fa bounds = empty;
                 if (unlikely(!mesh->valid(j,&bounds))) continue;
-                generator(bounds,j);
+                generator(bounds,unsigned(j));
                 num++;
               }
               return num;
@@ -395,7 +395,7 @@ namespace embree
               {
                 BBox3fa bounds = empty;
                 if (!mesh->valid(j,&bounds)) continue;
-                generator(bounds,j);
+                generator(bounds,unsigned(j));
                 num++;
               }
               return num;
