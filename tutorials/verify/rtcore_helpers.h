@@ -291,7 +291,7 @@ namespace embree
     ray_o.Ngz[i] = ray_i.Ng[2];
   }
 
-  __forceinline void setRay(RTCRayN* ray_o, size_t N, int i, const RTCRay& ray_i)
+  __forceinline void setRay(RTCRayN* ray_o, size_t N, size_t i, const RTCRay& ray_i)
   {
     RTCRayN_org_x(ray_o,N,i) = ray_i.org[0];
     RTCRayN_org_y(ray_o,N,i) = ray_i.org[1];

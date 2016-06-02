@@ -194,7 +194,7 @@ float Noise(float x, float y, float z)
     TutorialScene::TriangleMesh* mesh = new TutorialScene::TriangleMesh;
 
     Material material;
-    int materialID = scene.materials.size();
+    unsigned materialID = unsigned(scene.materials.size());
     scene.materials.push_back(material);
     
     const float rcpNumTheta = rcp((float)numTheta);
@@ -245,12 +245,11 @@ float Noise(float x, float y, float z)
         Vec3fa l2 = p + r*Noise3D(dp + 0.50f*dp); l2.w = thickness;
         Vec3fa l3 = p + r*Noise3D(dp + 0.75f*dp); l3.w = thickness;
         
-        const unsigned int v_index = hairset->v.size();
+        const unsigned v_index = unsigned(hairset->v.size());
         hairset->v.push_back(l0);
         hairset->v.push_back(l1);
         hairset->v.push_back(l2);
         hairset->v.push_back(l3);
-	
         hairset->hairs.push_back( TutorialScene::Hair(v_index,hairset->hairs.size()) );
       }
     }
@@ -262,7 +261,7 @@ float Noise(float x, float y, float z)
     TutorialScene::TriangleMesh* mesh = new TutorialScene::TriangleMesh;
 
     Material material;
-    int materialID = scene.materials.size();
+    unsigned materialID = unsigned(scene.materials.size());
     scene.materials.push_back(material);
 
     mesh->v.push_back(p00);
