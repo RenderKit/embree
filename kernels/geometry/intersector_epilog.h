@@ -50,7 +50,7 @@ namespace embree
         __forceinline bool operator() (Hit& hit) const
         {
           /* ray mask test */
-          Geometry* geometry = scene->get(geomID);
+          Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 #if defined(EMBREE_RAY_MASK)
           if ((geometry->mask & ray.mask) == 0) return false;
 #endif
@@ -96,7 +96,7 @@ namespace embree
         __forceinline bool operator() (Hit& hit) const
         {
           /* ray mask test */
-          Geometry* geometry = scene->get(geomID);
+          Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 #if defined(EMBREE_RAY_MASK)
           if ((geometry->mask & ray.mask) == 0) return false;
 #endif
@@ -133,7 +133,7 @@ namespace embree
         __forceinline bool operator() (Hit& hit) const
         {
           /* ray mask test */
-          Geometry* geometry = scene->get(geomID);
+          Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 #if defined(EMBREE_RAY_MASK)
           if ((geometry->mask & ray.mask[k]) == 0) 
             return false;
@@ -180,7 +180,7 @@ namespace embree
         __forceinline bool operator() (Hit& hit) const
         {
           /* ray mask test */
-          Geometry* geometry = scene->get(geomID);
+          Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 #if defined(EMBREE_RAY_MASK)
           if ((geometry->mask & ray.mask[k]) == 0) 
             return false;
@@ -237,7 +237,7 @@ namespace embree
             geomID = geomIDs[i];
             instID = geomID_to_instID ? geomID_to_instID[0] : geomID;
           entry:
-            Geometry* geometry = scene->get(geomID);
+            Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
             
 #if defined(EMBREE_RAY_MASK)
             /* goto next hit if mask test fails */
@@ -320,7 +320,7 @@ namespace embree
             geomID = geomIDs[i];
             instID = geomID_to_instID ? geomID_to_instID[0] : geomID;
           entry:
-            Geometry* geometry = scene->get(geomID);
+            Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
             
 #if defined(EMBREE_RAY_MASK)
             /* goto next hit if mask test fails */
@@ -390,7 +390,7 @@ namespace embree
 
             const int geomID = geomIDs[i];
             const int instID = geomID_to_instID ? geomID_to_instID[0] : geomID;
-            Geometry* geometry = scene->get(geomID);
+            Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
             
 #if defined(EMBREE_RAY_MASK)
             /* goto next hit if mask test fails */
@@ -443,7 +443,7 @@ namespace embree
         __forceinline bool operator() (const vbool<M>& valid_i, Hit& hit) const
         {
           /* ray mask test */
-          Geometry* geometry = scene->get(geomID);
+          Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 #if defined(EMBREE_RAY_MASK)
           if ((geometry->mask & ray.mask) == 0) return false;
 #endif
@@ -509,7 +509,7 @@ namespace embree
         __forceinline bool operator() (const vbool<M>& valid, Hit& hit) const
         {
           /* ray mask test */
-          Geometry* geometry = scene->get(geomID);
+          Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 #if defined(EMBREE_RAY_MASK)
           if ((geometry->mask & ray.mask) == 0) return false;
 #endif
@@ -560,7 +560,7 @@ namespace embree
           
           const int geomID = geomIDs[i];
           const int primID = primIDs[i];
-          Geometry* geometry = scene->get(geomID);
+          Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
           
           /* ray masking test */
 #if defined(EMBREE_RAY_MASK)
@@ -618,7 +618,7 @@ namespace embree
           /* ray masking test */
           const int geomID = geomIDs[i];
           const int primID = primIDs[i];
-          Geometry* geometry = scene->get(geomID);
+          Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 #if defined(EMBREE_RAY_MASK)
           valid &= (geometry->mask & ray.mask) != 0;
           if (unlikely(none(valid))) return valid;
@@ -667,7 +667,7 @@ namespace embree
           Vec3<vfloat<K>> Ng;
           std::tie(u,v,t,Ng) = hit();
           
-          Geometry* geometry = scene->get(geomID);
+          Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
           
           /* ray masking test */
 #if defined(EMBREE_RAY_MASK)
@@ -719,7 +719,7 @@ namespace embree
         __forceinline vbool<K> operator() (const vbool<K>& valid_i, const Hit& hit) const
         {
           vbool<K> valid = valid_i;
-          Geometry* geometry = scene->get(geomID);
+          Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
           
 #if defined(EMBREE_RAY_MASK)
           valid &= (geometry->mask & ray.mask) != 0;
@@ -785,7 +785,7 @@ namespace embree
             assert(i<M);            
             geomID = geomIDs[i];
           entry:
-            Geometry* geometry = scene->get(geomID);
+            Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
             
 #if defined(EMBREE_RAY_MASK)
             /* goto next hit if mask test fails */
@@ -865,7 +865,7 @@ namespace embree
             hit.finalize(); // FIXME: executed too often
 
             const int geomID = geomIDs[i];
-            Geometry* geometry = scene->get(geomID);
+            Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
             
 #if defined(EMBREE_RAY_MASK)
             /* goto next hit if mask test fails */
@@ -915,7 +915,7 @@ namespace embree
         template<typename Hit>
         __forceinline bool operator() (const vbool<M>& valid_i, Hit& hit) const
         {
-          Geometry* geometry = scene->get(geomID);
+          Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 #if defined(EMBREE_RAY_MASK)
           /* ray mask test */
           if ((geometry->mask & ray.mask[k]) == 0) 
@@ -987,7 +987,7 @@ namespace embree
         template<typename Hit>
         __forceinline bool operator() (const vbool<M>& valid_i, Hit& hit) const
         {
-          Geometry* geometry = scene->get(geomID);
+          Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 #if defined(EMBREE_RAY_MASK)
           /* ray mask test */
           if ((geometry->mask & ray.mask[k]) == 0) 

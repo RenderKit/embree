@@ -93,7 +93,7 @@ namespace embree
     
     /* pop task and closure from stack */
     right--;
-    if (tasks[right].stackPtr != -1)
+    if (tasks[right].stackPtr != size_t(-1))
       stackPtr = tasks[right].stackPtr;
     
     /* also move left pointer */

@@ -166,7 +166,7 @@ namespace embree
     };
             
 
-    static void InPlace32BitRadixSort(MortonID32Bit* const morton, const size_t num, const unsigned int shift = 3*8)
+    inline void InPlace32BitRadixSort(MortonID32Bit* const morton, const size_t num, const unsigned int shift = 3*8)
     {
       static const unsigned int BITS = 8;
       static const unsigned int BUCKETS = (1 << BITS);

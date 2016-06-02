@@ -27,7 +27,7 @@ IF (BUILD_TESTING)
   SET(EMBREE_TESTING_MODEL_DIR "${PROJECT_SOURCE_DIR}/models" CACHE FILEPATH "Path to the folder containing the Embree models for regression testing.")
   SET(EMBREE_TESTING_INTENSIVE OFF CACHE BOOL "Turns intensive testing on.")
   SET(EMBREE_TESTING_MEMCHECK OFF CACHE BOOL "Turns on memory checking for some tests.")
-  SET(EMBREE_TESTING_BENCHMARK OFF CACHE PATH "Turns benchmarking on.")
+  SET(EMBREE_TESTING_BENCHMARK OFF CACHE BOOL "Turns benchmarking on.")
   SET(EMBREE_TESTING_BENCHMARK_DATABASE "${PROJECT_BINARY_DIR}" CACHE PATH "Path to database for benchmarking.")
 
   IF(   NOT EXISTS "${EMBREE_TESTING_MODEL_DIR}/embree-models-subdiv.txt"
