@@ -139,7 +139,7 @@ namespace embree
             
             for (int dim=0; dim<3; dim++) 
             {
-              size_t bin;
+              unsigned bin;
               PrimRef rest = prim;
               size_t l = bin0[dim];
               size_t r = bin1[dim];
