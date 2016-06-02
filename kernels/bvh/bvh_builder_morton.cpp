@@ -88,7 +88,7 @@ namespace embree
               }
             }
           }
-          res.lower.a = n;
+          res.lower.a = unsigned(n);
         }
 #endif
 
@@ -124,9 +124,9 @@ namespace embree
 
         for (size_t i=0; i<items; i++)
         {
-          const size_t index = morton[start+i].index;
-          const size_t primID = index; 
-          const size_t geomID = this->mesh->id;
+          const unsigned index = morton[start+i].index;
+          const unsigned primID = index; 
+          const unsigned geomID = this->mesh->id;
           const TriangleMesh* mesh = this->mesh;
           const TriangleMesh::Triangle& tri = mesh->triangle(primID);
           const Vec3fa& p0 = mesh->vertex(tri.v[0]);
@@ -145,7 +145,7 @@ namespace embree
         box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
 #if ROTATE_TREE
         if (N == 4)
-          box_o.lower.a = current.size();
+          box_o.lower.a = unsigned(current.size());
 #endif
       }
     
@@ -180,9 +180,9 @@ namespace embree
 
         for (size_t i=0; i<items; i++)
         {
-          const size_t index = morton[start+i].index;
-          const size_t primID = index; 
-          const size_t geomID = this->mesh->id;
+          const unsigned index = morton[start+i].index;
+          const unsigned primID = index; 
+          const unsigned geomID = this->mesh->id;
           const TriangleMesh* mesh = this->mesh;
           const TriangleMesh::Triangle& tri = mesh->triangle(primID);
           const Vec3fa& p0 = mesh->vertex(tri.v[0]);
@@ -235,9 +235,9 @@ namespace embree
         
         for (size_t i=0; i<items; i++)
         {
-          const size_t index = morton[start+i].index;
-          const size_t primID = index; 
-          const size_t geomID = this->mesh->id;
+          const unsigned index = morton[start+i].index;
+          const unsigned primID = index; 
+          const unsigned geomID = this->mesh->id;
           const TriangleMesh* mesh = this->mesh;
           const TriangleMesh::Triangle& tri = mesh->triangle(primID);
           const Vec3fa& p0 = mesh->vertex(tri.v[0]);
@@ -248,8 +248,8 @@ namespace embree
           vgeomID[i] = geomID;
           vprimID[i] = primID;
           v0[i] = (Vec3f*) mesh->vertexPtr(tri.v[0]); 
-          v1[i] = (int*)   mesh->vertexPtr(tri.v[1])-(int*)v0[i]; 
-          v2[i] = (int*)   mesh->vertexPtr(tri.v[2])-(int*)v0[i]; 
+          v1[i] = int(ssize_t((int*)   mesh->vertexPtr(tri.v[1])-(int*)v0[i])); 
+          v2[i] = int(ssize_t((int*)   mesh->vertexPtr(tri.v[2])-(int*)v0[i])); 
         }
         
         for (size_t i=items; i<4; i++)
@@ -356,9 +356,7 @@ namespace embree
         const BBox3fa centBounds = cb.second;
 
         /* compute morton codes */
-
         MortonID32Bit* dest = (MortonID32Bit*) bvh->alloc.specialAlloc(bytesMortonCodes);
-
 
         if (likely(numPrimitivesGen == numPrimitives))
         {
