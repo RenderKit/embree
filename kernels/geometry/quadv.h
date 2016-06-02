@@ -139,8 +139,8 @@ namespace embree
       for (size_t i=0; i<M && begin<end; i++, begin++)
       {
 	const PrimRef& prim = prims[begin];
-        const size_t geomID = prim.geomID();
-        const size_t primID = prim.primID();
+        const unsigned geomID = prim.geomID();
+        const unsigned primID = prim.primID();
         const QuadMesh* __restrict__ const mesh = scene->getQuadMesh(geomID);
         const QuadMesh::Quad& quad = mesh->quad(primID);
         const Vec3fa& p0 = mesh->vertex(quad.v[0]);
