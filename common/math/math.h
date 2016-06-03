@@ -83,8 +83,8 @@ namespace embree
     return _mm_cvtss_f32(c);
   }
 
-#if defined(__WIN32__) && (__MSV_VER <= 1700)
-  __forceinline float nextafter(float x, float y) { return x > y ? x - FLT_EPSILON : x + FLT_EPSILON; }
+#if defined(__WIN32__) && (__MSC_VER <= 1700)
+  __forceinline float nextafter(float x, float y) { if ((x<y) == (x>0)) return x*(1.1f+float(ulp)); else return x*(0.9f-float(ulp)); }
   __forceinline double nextafter(double x, double y) { return _nextafter(x, y); }
 #else
   __forceinline float nextafter(float x, float y) { return ::nextafterf(x, y); }
