@@ -15,8 +15,13 @@
 // ======================================================================== //
 
 #include "tutorial.h"
+#include "tutorial_device.h"
 #include "scene.h"
 #include "statistics.h"
+#include "../scenegraph/scenegraph.h"
+#include "../scenegraph/obj_loader.h"
+#include "../scenegraph/xml_loader.h"
+#include "../image/image.h"
 
 /* include GLUT for display */
 #if defined(__MACOSX__)
@@ -30,11 +35,6 @@
 #  include <GL/gl.h>   
 #  include <GL/glut.h>
 #endif
-
-#include "tutorial_device.h"
-#include "../scenegraph/obj_loader.h"
-#include "../scenegraph/xml_loader.h"
-#include "../image/image.h"
 
 namespace embree
 {
