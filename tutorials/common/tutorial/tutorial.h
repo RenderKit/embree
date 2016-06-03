@@ -24,8 +24,8 @@
 
 namespace embree
 {
+  /* functions provided by each tutorial */
   extern "C" void device_init(const char* cfg);
-  extern "C" void device_set_scene(ISPCScene* scene);
   extern "C" void device_resize(int width, int height);
   extern "C" void device_render(unsigned* pixels, const unsigned width, const unsigned height, const float time, const ISPCCamera& camera);
   extern "C" bool device_pick(const float x, const float y, const ISPCCamera& camera, Vec3fa& hitPos);
@@ -36,6 +36,7 @@ namespace embree
   {
   public:
     TutorialApplication (const std::string& tutorialName, const int features);
+    ~TutorialApplication();
 
   public:
 
@@ -54,9 +55,6 @@ namespace embree
     /* render frame and map framebuffer */
     void render(const float time, const ISPCCamera& camera);
     
-    /* cleanup renderer */
-    void cleanup();
-
   public:
     /* starts tutorial */
     void run(int argc, char** argv);

@@ -187,6 +187,15 @@ namespace embree
     }
   }
 
+  TutorialApplication::~TutorialApplication()
+  {
+    device_cleanup();
+    alignedFree(pixels); 
+    pixels = nullptr;
+    width = 0;
+    height = 0;
+  }
+
   SceneLoadingTutorialApplication::SceneLoadingTutorialApplication (const std::string& tutorialName, int features)
 
     : TutorialApplication(tutorialName, features),
@@ -385,7 +394,7 @@ namespace embree
       /* rebuild scene between repetitions */
       if (numBenchmarkRepetitions)
       {
-        cleanup();
+        device_cleanup();
         device_init(rtcore.c_str());
         resize(width,height);     
       }
@@ -413,7 +422,6 @@ namespace embree
     render(0.0f,ispccamera);
     Ref<Image> image = new Image4uc(width, height, (Col4uc*)pixels);
     storeImage(image, fileName);
-    cleanup();
   }
 
   void TutorialApplication::keyboardFunc(unsigned char key, int x, int y)
@@ -446,7 +454,6 @@ namespace embree
     case '-' : g_debug=clamp(g_debug-0.01f); PRINT(g_debug); break;
 
     case '\033': case 'q': case 'Q':
-      cleanup();
       glutDestroyWindow(windowID);
 #if defined(__MACOSX__)
       exit(1);
@@ -770,14 +777,5 @@ namespace embree
 
   void TutorialApplication::render(const float time, const ISPCCamera& camera) {
     device_render(pixels,width,height,time,camera);
-  }
-
-  void TutorialApplication::cleanup()
-  {
-    device_cleanup();
-    alignedFree(pixels); 
-    pixels = nullptr;
-    width = 0;
-    height = 0;
   }
 }
