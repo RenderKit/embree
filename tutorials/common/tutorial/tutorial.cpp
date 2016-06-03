@@ -419,7 +419,7 @@ namespace embree
   void TutorialApplication::keyboardFunc(unsigned char key, int x, int y)
   {
     /* call tutorial keyboard handler */
-    key_pressed(key);
+    call_key_pressed_handler(key);
 
     switch (key)
     {
@@ -457,7 +457,7 @@ namespace embree
 
   void TutorialApplication::specialFunc(int key, int x, int y)
   {
-    key_pressed(key);
+    call_key_pressed_handler(key);
     
     if (glutGetModifiers() == GLUT_ACTIVE_CTRL)
     {
@@ -629,12 +629,12 @@ namespace embree
     /* set shader mode */
     switch (shader) {
     case SHADER_DEFAULT : break;
-    case SHADER_EYELIGHT: key_pressed(GLUT_KEY_F2); break;
-    case SHADER_UV      : key_pressed(GLUT_KEY_F4); break;
-    case SHADER_NG      : key_pressed(GLUT_KEY_F5); break;
-    case SHADER_GEOMID  : key_pressed(GLUT_KEY_F6); break;
-    case SHADER_GEOMID_PRIMID: key_pressed(GLUT_KEY_F7); break;
-    case SHADER_AMBIENT_OCCLUSION: key_pressed(GLUT_KEY_F11); break;
+    case SHADER_EYELIGHT: call_key_pressed_handler(GLUT_KEY_F2); break;
+    case SHADER_UV      : call_key_pressed_handler(GLUT_KEY_F4); break;
+    case SHADER_NG      : call_key_pressed_handler(GLUT_KEY_F5); break;
+    case SHADER_GEOMID  : call_key_pressed_handler(GLUT_KEY_F6); break;
+    case SHADER_GEOMID_PRIMID: call_key_pressed_handler(GLUT_KEY_F7); break;
+    case SHADER_AMBIENT_OCCLUSION: call_key_pressed_handler(GLUT_KEY_F11); break;
     };
     
     /* benchmark mode */
@@ -751,10 +751,6 @@ namespace embree
 
   void TutorialApplication::set_parameter(size_t parm, ssize_t val) {
     rtcDeviceSetParameter1i(nullptr,(RTCParameter)parm,val);
-  }
-
-  void TutorialApplication::key_pressed (int key) {
-    call_key_pressed_handler(key);
   }
 
   void TutorialApplication::resize(int width, int height)
