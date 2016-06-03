@@ -1076,7 +1076,7 @@ RTCScene convertScene(ISPCScene* scene_in)
   /* use geometry instancing feature */
   if (g_instancing_mode == 1)
   {
-    for (size_t i=0; i<scene_in->numGeometries; i++)
+    for (unsigned int i=0; i<scene_in->numGeometries; i++)
     {
       ISPCGeometry* geometry = scene_in->geometries[i];
       if (geometry->type == SUBDIV_MESH) {
@@ -1121,7 +1121,7 @@ RTCScene convertScene(ISPCScene* scene_in)
   /* use scene instancing feature */
   else if (g_instancing_mode == 2 || g_instancing_mode == 3)
   {
-    for (size_t i=0; i<scene_in->numGeometries; i++)
+    for (unsigned int i=0; i<scene_in->numGeometries; i++)
     {
       ISPCGeometry* geometry = scene_in->geometries[i];
       if (geometry->type == SUBDIV_MESH) {
@@ -1612,7 +1612,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
 
   for (int i=0; i<SAMPLES_PER_PIXEL; i++)
   {
-    RandomSampler_init(sampler, x, y, g_accu_count*SAMPLES_PER_PIXEL+i);
+    RandomSampler_init(sampler, (int)x, (int)y, g_accu_count*SAMPLES_PER_PIXEL+i);
 
     /* calculate pixel color */
     float fx = x + RandomSampler_get1D(sampler);
