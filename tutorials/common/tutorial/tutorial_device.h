@@ -55,13 +55,13 @@ extern "C" Mode g_mode;
 void error_handler(const RTCError code, const char* str = nullptr);
 
 /* returns time stamp counter */
-extern "C" "C" int64_t get_tsc();
+extern "C" int64_t get_tsc();
 
 /* declare some standard library functions */
-extern "C" "C" void abort ();
-extern "C" "C" void exit(int);
-extern "C" "C" int puts ( const char* str );
-extern "C" "C" int putchar ( int character );
+extern "C" void abort ();
+extern "C" void exit(int);
+extern "C" int puts ( const char* str );
+extern "C" int putchar ( int character );
 
 /* face forward for shading normals */
 inline Vec3fa faceforward( Vec3fa N, Vec3fa I, Vec3fa Ng ) {
@@ -124,9 +124,9 @@ inline Sample3f make_Sample3f(const Vec3fa v, const float pdf) {
 }
 
 /* draws progress bar */
-extern "C" "C" void progressStart();
-extern "C" "C" bool progressMonitor(void* ptr, const double n);
-extern "C" "C" void progressEnd();
+extern "C" void progressStart();
+extern "C" bool progressMonitor(void* ptr, const double n);
+extern "C" void progressEnd();
 
 Vec2f  getTextureCoordinatesSubdivMesh(void* mesh, const unsigned int primID, const float u, const float v);
 
