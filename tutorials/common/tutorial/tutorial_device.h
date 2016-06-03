@@ -69,6 +69,7 @@ inline Vec3fa faceforward( Vec3fa N, Vec3fa I, Vec3fa Ng ) {
 }
 
 /* glut keys codes */
+#if !defined(GLUT_KEY_F1)
 #define GLUT_KEY_F1 1
 #define GLUT_KEY_F2 2
 #define GLUT_KEY_F3 3
@@ -81,6 +82,7 @@ inline Vec3fa faceforward( Vec3fa N, Vec3fa I, Vec3fa Ng ) {
 #define GLUT_KEY_F10 10
 #define GLUT_KEY_F11 11
 #define GLUT_KEY_F12 12
+#endif
 
 /* standard shading function */
 typedef void (* renderTileFunc)(int taskIndex,
