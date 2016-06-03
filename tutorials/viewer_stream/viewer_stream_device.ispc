@@ -27,7 +27,8 @@ namespace embree {
 #define AMBIENT_OCCLUSION_SAMPLES 64
 //#define rtcOccluded rtcIntersect
 //#define rtcOccludedVM rtcIntersectVM
-#define RAYN_FLAGS RTC_INTERSECT_COHERENT
+//#define RAYN_FLAGS RTC_INTERSECT_COHERENT
+#define RAYN_FLAGS RTC_INTERSECT_COHERENT_COMMON_ORIGIN
 //#define RAYN_FLAGS RTC_INTERSECT_INCOHERENT
 
 extern uniform ISPCScene* uniform g_ispc_scene;
