@@ -414,7 +414,6 @@ namespace embree
     void* ptr = map();
     Ref<Image> image = new Image4uc(width, height, (Col4uc*)ptr);
     storeImage(image, fileName);
-    unmap();
     cleanup();
   }
 
@@ -574,7 +573,6 @@ namespace embree
     }
     
     glutSwapBuffers();
-    unmap();
     
     double dt1 = getSeconds()-t0;
 
@@ -788,9 +786,6 @@ namespace embree
     return g_pixels;
   }
   
-  void TutorialApplication::unmap () {
-  }
-
   void TutorialApplication::cleanup()
   {
     device_cleanup();

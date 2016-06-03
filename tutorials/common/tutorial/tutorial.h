@@ -67,9 +67,6 @@ namespace embree
     /* map framebuffer */
     int* map ();
     
-    /* unmap framebuffer */
-    void unmap ();
-    
     /* cleanup renderer */
     void cleanup();
 
