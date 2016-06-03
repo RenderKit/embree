@@ -21,12 +21,6 @@
 
 namespace embree {
 
-#if defined(__XEON_PHI__) // FIXME: gather of pointers not working in ISPC for Xeon Phi
-#define renderPixelTestEyeLight renderPixelStandard
-#else
-#define renderPixelPathTrace renderPixelStandard
-#endif
-
 /* accumulation buffer */
 Vec3fa* g_accu = nullptr;
 unsigned int g_accu_width = 0;
@@ -109,8 +103,6 @@ RTCScene convertScene(ISPCScene* scene_in)
 //////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////
-
-#if !defined(__XEON_PHI__)
 
 /*! Anisotropic power cosine microfacet distribution. */
 struct AnisotropicBlinn {
@@ -238,8 +230,6 @@ inline Vec3fa evalBezier(const int geomID, const int primID, const float t)
   //tangent = p21-p20;
 }
 
-#endif
-
 /* extended ray structure that includes total transparency along the ray */
 struct RTCRay2
 {
@@ -269,8 +259,6 @@ void filterDispatch(void* ptr, RTCRay2& ray) {
   if (ray.filter) ray.filter(ptr,*((RTCRay*)&ray));
 }
 
-#if !defined(__XEON_PHI__)
-
 /* occlusion filter function */
 void occlusionFilter(void* ptr, RTCRay2& ray)
 {
@@ -299,7 +287,7 @@ Vec3fa occluded(RTCScene scene, RTCRay2& ray)
 }
 
 /* task that renders a single screen tile */
-Vec3fa renderPixelPathTrace(float x, float y, const ISPCCamera& camera)
+Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
 {
   RandomSampler sampler;
   RandomSampler_init(sampler, (int)x, (int)y, g_accu_count);
@@ -414,56 +402,6 @@ Vec3fa renderPixelPathTrace(float x, float y, const ISPCCamera& camera)
 
     depth++;
   }
-  return color;
-}
-
-#endif
-
-Vec3fa renderPixelTestEyeLight(float x, float y, const ISPCCamera& camera)
-{
-  RandomSampler sampler;
-  RandomSampler_init(sampler, (int)x, (int)y, g_accu_count);
-  x += RandomSampler_get1D(sampler);
-  y += RandomSampler_get1D(sampler);
-
-  /* initialize ray */
-  RTCRay2 ray;
-  ray.org = Vec3fa(camera.xfm.p);
-  ray.dir = Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
-  ray.tnear = 0.0f;
-  ray.tfar = inf;
-  ray.geomID = RTC_INVALID_GEOMETRY_ID;
-  ray.primID = RTC_INVALID_GEOMETRY_ID;
-  ray.mask = -1;
-  ray.time = 0;
-
-  Vec3fa color = Vec3fa(0.0f);
-
-  rtcIntersect(g_scene,*((RTCRay*)&ray));
-  ray.filter = nullptr;
-
-  if (ray.primID == RTC_INVALID_GEOMETRY_ID)
-    return Vec3fa(0.0f);
-
-  Vec3fa Ng;
-  ISPCGeometry* geometry = g_ispc_scene->geometries[ray.geomID];
-  if (geometry->type == HAIR_SET)
-  {
-    const Vec3fa dx = normalize(ray.Ng);
-    const Vec3fa dy = normalize(cross(ray.dir,dx));
-    const Vec3fa dz = normalize(cross(dy,dx));
-    Ng = dz;
-  }
-  else
-  {
-    if (dot(ray.dir,ray.Ng) > 0) ray.Ng = neg(ray.Ng);
-    const Vec3fa dz = normalize(ray.Ng);
-    //const Vec3fa dx = normalize(cross(dz,ray.dir));
-    //const Vec3fa dy = normalize(cross(dz,dx));
-    Ng = dz;
-  }
-
-  color = color + Vec3fa(0.2f + 0.5f * abs(dot(ray.dir,Ng)));
   return color;
 }
 

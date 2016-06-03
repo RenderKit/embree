@@ -22,13 +22,7 @@ namespace embree {
 #define MIN_EDGE_LEVEL 2.0f
 #define MAX_EDGE_LEVEL 64.0f
 #define LEVEL_FACTOR 64.0f
-
-#if defined(__XEON_PHI__)
-#define EDGE_LEVEL 64.0f
-#else
 #define EDGE_LEVEL 256.0f
-#endif
-
 
 /* scene data */
 RTCDevice g_device = nullptr;
