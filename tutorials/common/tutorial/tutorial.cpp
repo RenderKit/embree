@@ -55,7 +55,7 @@ namespace embree
 
       width(512),
       height(512),
-      g_pixels(nullptr), g_width(-1), g_height(-1),
+      pixels(nullptr),
 
       outputImageFilename(""),
 
@@ -411,7 +411,7 @@ namespace embree
     resize(width,height);
     ISPCCamera ispccamera = camera.getISPCCamera(width,height);
     render(0.0f,ispccamera);
-    Ref<Image> image = new Image4uc(width, height, (Col4uc*)g_pixels);
+    Ref<Image> image = new Image4uc(width, height, (Col4uc*)pixels);
     storeImage(image, fileName);
     cleanup();
   }
@@ -540,7 +540,7 @@ namespace embree
     double dt0 = getSeconds()-t0;
 
     /* draw pixels to screen */
-    glDrawPixels(width,height,GL_RGBA,GL_UNSIGNED_BYTE,g_pixels);
+    glDrawPixels(width,height,GL_RGBA,GL_UNSIGNED_BYTE,pixels);
     
     if (fullscreen) 
     {
@@ -759,13 +759,13 @@ namespace embree
 
   void TutorialApplication::resize(int width, int height)
   {
-    if (width == g_width && height == g_height) 
+    if (width == this->width && height == this->height && pixels) 
       return;
 
-    if (g_pixels) alignedFree(g_pixels);
-    g_width = width;
-    g_height = height;
-    g_pixels = (int*) alignedMalloc(g_width*g_height*sizeof(int),64);
+    if (pixels) alignedFree(pixels);
+    this->width = width;
+    this->height = height;
+    pixels = (unsigned*) alignedMalloc(width*height*sizeof(unsigned),64);
   }
 
   void TutorialApplication::set_scene (TutorialScene* in) {
@@ -777,15 +777,15 @@ namespace embree
   }
 
   void TutorialApplication::render(const float time, const ISPCCamera& camera) {
-    device_render(g_pixels,g_width,g_height,time,camera);
+    device_render(pixels,width,height,time,camera);
   }
 
   void TutorialApplication::cleanup()
   {
     device_cleanup();
-    alignedFree(g_pixels); 
-    g_pixels = nullptr;
-    g_width = -1;
-    g_height = -1;
+    alignedFree(pixels); 
+    pixels = nullptr;
+    width = 0;
+    height = 0;
   }
 }

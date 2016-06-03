@@ -32,7 +32,7 @@ namespace embree
   extern "C" void device_resize(int width, int height);
   extern "C" bool device_pick(const float x, const float y, const ISPCCamera& camera, Vec3fa& hitPos);
 
-  extern "C" void device_render(int* pixels, const int width, const int height,
+  extern "C" void device_render(unsigned* pixels, const unsigned width, const unsigned height,
                                 const float time, const ISPCCamera& camera);
   extern "C" void device_cleanup();
 
@@ -103,9 +103,7 @@ namespace embree
     /* framebuffer settings */
     unsigned width;
     unsigned height;
-    int* g_pixels;
-    int g_width;
-    int g_height;
+    unsigned* pixels;
 
     /* image output settings */
     FileName outputImageFilename;
