@@ -411,8 +411,7 @@ namespace embree
     resize(width,height);
     ISPCCamera ispccamera = camera.getISPCCamera(width,height);
     render(0.0f,ispccamera);
-    void* ptr = map();
-    Ref<Image> image = new Image4uc(width, height, (Col4uc*)ptr);
+    Ref<Image> image = new Image4uc(width, height, (Col4uc*)g_pixels);
     storeImage(image, fileName);
     cleanup();
   }
@@ -541,8 +540,7 @@ namespace embree
     double dt0 = getSeconds()-t0;
 
     /* draw pixels to screen */
-    int* pixels = map();
-    glDrawPixels(width,height,GL_RGBA,GL_UNSIGNED_BYTE,pixels);
+    glDrawPixels(width,height,GL_RGBA,GL_UNSIGNED_BYTE,g_pixels);
     
     if (fullscreen) 
     {
@@ -782,10 +780,6 @@ namespace embree
     device_render(g_pixels,g_width,g_height,time,camera);
   }
 
-  int* TutorialApplication::map () {
-    return g_pixels;
-  }
-  
   void TutorialApplication::cleanup()
   {
     device_cleanup();

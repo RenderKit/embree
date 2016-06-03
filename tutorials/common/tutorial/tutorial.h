@@ -64,9 +64,6 @@ namespace embree
     /* render frame and map framebuffer */
     void render(const float time, const ISPCCamera& camera);
     
-    /* map framebuffer */
-    int* map ();
-    
     /* cleanup renderer */
     void cleanup();
 
