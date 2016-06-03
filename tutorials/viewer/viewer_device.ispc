@@ -111,9 +111,8 @@ void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa&
 }
 
 uniform bool g_use_smooth_normals = false;
-void device_key_pressed(uniform int key)
+void device_key_pressed_handler(uniform int key)
 {
-  //print("key = %\n",key);
   if (key == 115 /*c*/) g_use_smooth_normals = !g_use_smooth_normals;
   else device_key_pressed_default(key);
 }
@@ -589,7 +588,7 @@ export void device_init (uniform int8* uniform cfg)
 
   /* set start render mode */
   renderTile = renderTileStandard;
-  key_pressed_handler = device_key_pressed;
+  key_pressed_handler = device_key_pressed_handler;
   old_p = make_Vec3fa(1E10);
 }
 

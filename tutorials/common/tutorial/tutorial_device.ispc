@@ -782,7 +782,7 @@ extern void device_key_pressed_default(uniform int key)
 /* called when a key is pressed */
 void (* uniform key_pressed_handler)(uniform int key) = NULL;
 
-export void call_key_pressed_handler(uniform int key) {
+export void device_key_pressed(uniform int key) {
   if (key_pressed_handler) key_pressed_handler(key);
 }
 

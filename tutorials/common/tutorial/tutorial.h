@@ -25,7 +25,7 @@
 namespace embree
 {
   extern "C" void device_init(const char* cfg);
-  extern "C" void call_key_pressed_handler (int key);
+  extern "C" void device_key_pressed (int key);
   extern "C" void (*key_pressed_handler)(int key);
 
   extern "C" void device_set_scene(ISPCScene* scene);
@@ -45,9 +45,6 @@ namespace embree
 
     /* initialize renderer */
     void init(const char* cfg);
-    
-    /* keypressed event */
-    void key_pressed(int key);
     
     /* passes parameters to the backend */
     void set_parameter(size_t parm, ssize_t val);

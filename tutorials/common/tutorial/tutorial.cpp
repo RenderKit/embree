@@ -419,7 +419,7 @@ namespace embree
   void TutorialApplication::keyboardFunc(unsigned char key, int x, int y)
   {
     /* call tutorial keyboard handler */
-    call_key_pressed_handler(key);
+    device_key_pressed(key);
 
     switch (key)
     {
@@ -457,7 +457,7 @@ namespace embree
 
   void TutorialApplication::specialFunc(int key, int x, int y)
   {
-    call_key_pressed_handler(key);
+    device_key_pressed(key);
     
     if (glutGetModifiers() == GLUT_ACTIVE_CTRL)
     {
@@ -629,12 +629,12 @@ namespace embree
     /* set shader mode */
     switch (shader) {
     case SHADER_DEFAULT : break;
-    case SHADER_EYELIGHT: call_key_pressed_handler(GLUT_KEY_F2); break;
-    case SHADER_UV      : call_key_pressed_handler(GLUT_KEY_F4); break;
-    case SHADER_NG      : call_key_pressed_handler(GLUT_KEY_F5); break;
-    case SHADER_GEOMID  : call_key_pressed_handler(GLUT_KEY_F6); break;
-    case SHADER_GEOMID_PRIMID: call_key_pressed_handler(GLUT_KEY_F7); break;
-    case SHADER_AMBIENT_OCCLUSION: call_key_pressed_handler(GLUT_KEY_F11); break;
+    case SHADER_EYELIGHT: device_key_pressed(GLUT_KEY_F2); break;
+    case SHADER_UV      : device_key_pressed(GLUT_KEY_F4); break;
+    case SHADER_NG      : device_key_pressed(GLUT_KEY_F5); break;
+    case SHADER_GEOMID  : device_key_pressed(GLUT_KEY_F6); break;
+    case SHADER_GEOMID_PRIMID: device_key_pressed(GLUT_KEY_F7); break;
+    case SHADER_AMBIENT_OCCLUSION: device_key_pressed(GLUT_KEY_F11); break;
     };
     
     /* benchmark mode */

@@ -119,9 +119,8 @@ void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
 }
 
 bool g_use_smooth_normals = false;
-void device_key_pressed(int key)
+void device_key_pressed_handler(int key)
 {
-  //printf("key = %\n",key);
   if (key == 115 /*c*/) g_use_smooth_normals = !g_use_smooth_normals;
   else device_key_pressed_default(key);
 }
@@ -597,7 +596,7 @@ extern "C" void device_init (char* cfg)
 
   /* set start render mode */
   renderTile = renderTileStandard;
-  key_pressed_handler = device_key_pressed;
+  key_pressed_handler = device_key_pressed_handler;
   old_p = Vec3fa(1E10);
 }
 

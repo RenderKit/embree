@@ -773,7 +773,7 @@ extern "C"
 {
   void (*key_pressed_handler)(int key) = nullptr;
 
-  void call_key_pressed_handler(int key) {
+  void device_key_pressed(int key) {
     if (key_pressed_handler) key_pressed_handler(key);
   }
 }

@@ -889,7 +889,7 @@ extern "C" int g_instancing_mode;
 
 bool g_animation = true;
 bool g_use_smooth_normals = false;
-void device_key_pressed(int key)
+void device_key_pressed_handler(int key)
 {
   if (key == 32  /* */) g_animation = !g_animation;
   if (key == 115 /*s*/) { g_use_smooth_normals = !g_use_smooth_normals; g_changed = true; }
@@ -1746,7 +1746,7 @@ extern "C" void device_init (char* cfg)
 
   /* set start render mode */
   renderTile = renderTileStandard;
-  key_pressed_handler = device_key_pressed;
+  key_pressed_handler = device_key_pressed_handler;
 
 #if ENABLE_FILTER_FUNCTION == 0
   printf("Warning: filter functions disabled\n");
