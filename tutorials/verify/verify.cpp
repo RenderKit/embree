@@ -2952,10 +2952,10 @@ namespace embree
           rtcDeviceSetMemoryMonitorFunction(device,nullptr);
           return VerifyApplication::FAILED;
         }
-        monitorMemoryBreak = monitorMemoryInvokations * random_float();
+        monitorMemoryBreak = size_t(float(monitorMemoryInvokations) * random_float());
         monitorMemoryBytesUsed = 0;
         monitorMemoryInvokations = 0;
-        monitorProgressBreak = monitorProgressInvokations * 2.0f * random_float();
+        monitorProgressBreak = size_t(float(monitorProgressInvokations) * 2.0f * random_float());
         monitorProgressInvokations = 0;
         RegressionTask task2(sceneIndex,1,0,true);
         func(new ThreadRegressionTask(0,0,state,device,intersectModes,&task2));
@@ -3024,7 +3024,7 @@ namespace embree
       return true;
     }
 
-    virtual void render_block(size_t i, size_t n) = 0;
+    virtual void render_block(unsigned int i, unsigned int n) = 0;
 
     bool thread_function(size_t threadIndex = 0)
     {
@@ -3115,7 +3115,7 @@ namespace embree
       return true;
     }
 
-    void render_block(size_t i, size_t)
+    void render_block(unsigned int i, unsigned int)
     {
       float rcpWidth = 1.0f/width;
       float rcpHeight = 1.0/height;
@@ -3293,7 +3293,7 @@ namespace embree
       return true;
     }
 
-    void render_block(size_t i, size_t dn)
+    void render_block(unsigned int i, unsigned int dn)
     {
       RTCIntersectContext context;
       context.flags = ((ivariant & VARIANT_COHERENT_INCOHERENT_MASK) == VARIANT_COHERENT) ? RTC_INTERSECT_COHERENT :  RTC_INTERSECT_INCOHERENT;
