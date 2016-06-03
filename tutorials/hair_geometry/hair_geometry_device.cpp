@@ -29,9 +29,9 @@ namespace embree {
 
 /* accumulation buffer */
 Vec3fa* g_accu = nullptr;
-size_t g_accu_width = 0;
-size_t g_accu_height = 0;
-size_t g_accu_count = 0;
+unsigned int g_accu_width = 0;
+unsigned int g_accu_height = 0;
+unsigned int g_accu_count = 0;
 Vec3fa g_accu_vx;
 Vec3fa g_accu_vy;
 Vec3fa g_accu_vz;
@@ -422,7 +422,7 @@ Vec3fa renderPixelPathTrace(float x, float y, const ISPCCamera& camera)
 Vec3fa renderPixelTestEyeLight(float x, float y, const ISPCCamera& camera)
 {
   RandomSampler sampler;
-  RandomSampler_init(sampler, x, y, g_accu_count);
+  RandomSampler_init(sampler, (int)x, (int)y, g_accu_count);
   x += RandomSampler_get1D(sampler);
   y += RandomSampler_get1D(sampler);
 

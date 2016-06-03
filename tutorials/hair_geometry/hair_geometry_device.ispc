@@ -27,9 +27,9 @@
 
 /* accumulation buffer */
 uniform Vec3fa* uniform g_accu = NULL;
-uniform size_t g_accu_width = 0;
-uniform size_t g_accu_height = 0;
-uniform size_t g_accu_count = 0;
+uniform unsigned int g_accu_width = 0;
+uniform unsigned int g_accu_height = 0;
+uniform unsigned int g_accu_count = 0;
 uniform Vec3fa g_accu_vx;
 uniform Vec3fa g_accu_vy;
 uniform Vec3fa g_accu_vz;
@@ -420,7 +420,7 @@ Vec3f renderPixelPathTrace(float x, float y, const uniform ISPCCamera& camera)
 Vec3f renderPixelTestEyeLight(float x, float y, const uniform ISPCCamera& camera)
 {
   RandomSampler sampler;
-  RandomSampler_init(sampler, x, y, g_accu_count);
+  RandomSampler_init(sampler, (int)x, (int)y, g_accu_count);
   x += RandomSampler_get1D(sampler);
   y += RandomSampler_get1D(sampler);
 
