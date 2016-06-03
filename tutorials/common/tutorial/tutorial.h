@@ -42,9 +42,6 @@ namespace embree
 
   public:
 
-    /* initialize renderer */
-    void init(const char* cfg);
-    
     /* passes parameters to the backend */
     void set_parameter(size_t parm, ssize_t val);
     

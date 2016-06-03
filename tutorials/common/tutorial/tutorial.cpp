@@ -386,7 +386,7 @@ namespace embree
       if (numBenchmarkRepetitions)
       {
         cleanup();
-        init(rtcore.c_str());
+        device_init(rtcore.c_str());
         resize(width,height);     
       }
  
@@ -624,7 +624,7 @@ namespace embree
   void TutorialApplication::run(int argc, char** argv)
   {
     /* initialize ray tracing core */
-    init(rtcore.c_str());
+    device_init(rtcore.c_str());
     
     /* set shader mode */
     switch (shader) {
@@ -743,10 +743,6 @@ namespace embree
   /* scene */
   extern "C" {
     ISPCScene* g_ispc_scene = nullptr;
-  }
-
-  void TutorialApplication::init(const char* cfg) {
-    device_init(cfg);
   }
 
   void TutorialApplication::set_parameter(size_t parm, ssize_t val) {
