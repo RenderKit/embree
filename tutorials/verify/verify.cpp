@@ -2371,7 +2371,7 @@ namespace embree
 
       
       bool ok = (d2 < 2.5*d1) && (d3 < 2.5*d1) && (d4 < 2.5*d1);
-      float f = max(d2/d1,d3/d1,d4/d1);
+      double f = max(d2/d1,d3/d1,d4/d1);
       if (!silent) { printf(" (%3.2fx)",f); fflush(stdout); }
       return (VerifyApplication::TestReturnValue) ok;
     }
@@ -2450,7 +2450,7 @@ namespace embree
       AssertNoError(device);
 
       bool ok = (d2 < 2.5*d1) && (d3 < 2.5*d1) && (d4 < 2.5*d1) && (d5 < 2.5*d1);
-      float f = max(d2/d1,d3/d1,d4/d1,d5/d1);
+      double f = max(d2/d1,d3/d1,d4/d1,d5/d1);
       if (!silent) { printf(" (%3.2fx)",f); fflush(stdout); }
       return (VerifyApplication::TestReturnValue) ok;
     }
@@ -2498,7 +2498,7 @@ namespace embree
     VerifyApplication* state;
     Ref<VerifyScene> scene;
     BarrierSys barrier;
-    volatile size_t numActiveThreads;
+    volatile unsigned numActiveThreads;
     bool cancelBuild;
     std::atomic<size_t> errorCounter;
     RandomSampler sampler;
