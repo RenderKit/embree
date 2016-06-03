@@ -97,7 +97,7 @@ unsigned int addCurve (RTCScene scene, const Vec3fa& pos)
   }
 
   int* index = (int*) rtcMapBuffer(scene, geomID, RTC_INDEX_BUFFER);
-  for (size_t i=0; i<NUM_CURVES; i++) {
+  for (int i=0; i<NUM_CURVES; i++) {
     index[i] = 4*i;
   }
   rtcUnmapBuffer(scene,geomID,RTC_INDEX_BUFFER);
