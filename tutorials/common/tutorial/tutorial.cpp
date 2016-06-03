@@ -42,6 +42,7 @@ namespace embree
   extern "C" {
     float g_debug = 0.0f;
     Mode g_mode = MODE_NORMAL;
+    ISPCScene* g_ispc_scene = nullptr;
   }
 
   TutorialApplication* TutorialApplication::instance = nullptr; 
@@ -496,7 +497,7 @@ namespace embree
       if (button == GLUT_LEFT_BUTTON && glutGetModifiers() == GLUT_ACTIVE_SHIFT) 
       {
         ISPCCamera ispccamera = camera.getISPCCamera(width,height);
-        Vec3fa p; bool hit = pick(float(x),float(y),ispccamera,p);
+        Vec3fa p; bool hit = device_pick(float(x),float(y),ispccamera,p);
 
         if (hit) {
           Vec3fa delta = p - camera.to;
@@ -509,7 +510,7 @@ namespace embree
       else if (button == GLUT_LEFT_BUTTON && glutGetModifiers() == (GLUT_ACTIVE_CTRL | GLUT_ACTIVE_SHIFT)) 
       {
         ISPCCamera ispccamera = camera.getISPCCamera(width,height);
-        Vec3fa p; bool hit = pick(float(x),float(y),ispccamera,p);
+        Vec3fa p; bool hit = device_pick(float(x),float(y),ispccamera,p);
         if (hit) camera.to = p;
       }
 
@@ -747,11 +748,6 @@ namespace embree
     return read_tsc();
   }
 
-  /* scene */
-  extern "C" {
-    ISPCScene* g_ispc_scene = nullptr;
-  }
-
   void TutorialApplication::set_parameter(size_t parm, ssize_t val) {
     rtcDeviceSetParameter1i(nullptr,(RTCParameter)parm,val);
   }
@@ -769,10 +765,6 @@ namespace embree
 
   void TutorialApplication::set_scene (TutorialScene* in) {
     g_ispc_scene = new ISPCScene(in);
-  }
-
-  bool TutorialApplication::pick(const float x, const float y, const ISPCCamera& camera, Vec3fa& hitPos) {
-    return device_pick(x,y,camera,hitPos);
   }
 
   void TutorialApplication::render(const float time, const ISPCCamera& camera) {

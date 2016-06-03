@@ -49,9 +49,6 @@ namespace embree
     /* set scene to use */
     void set_scene (TutorialScene* in);
     
-    /* pick event */
-    bool pick(const float x, const float y, const ISPCCamera& camera, Vec3fa& hitPos);
-
     /* render frame and map framebuffer */
     void render(const float time, const ISPCCamera& camera);
     
