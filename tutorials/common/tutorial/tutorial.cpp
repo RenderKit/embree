@@ -437,7 +437,7 @@ namespace embree
     rtcDeviceSetParameter1i(nullptr,(RTCParameter)parm,val);
   }
 
-  void TutorialApplication::resize(int width, int height)
+  void TutorialApplication::resize(unsigned width, unsigned height)
   {
     if (width == this->width && height == this->height && pixels) 
       return;

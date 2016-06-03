@@ -58,7 +58,7 @@ namespace embree
     void set_parameter(size_t parm, ssize_t val);
     
     /* resize framebuffer */
-    void resize(int width, int height);
+    void resize(unsigned width, unsigned height);
     
     /* set scene to use */
     void set_scene (TutorialScene* in);
