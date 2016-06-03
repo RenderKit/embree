@@ -120,9 +120,9 @@ inline Sample3f make_Sample3f(const Vec3f v, const float pdf) {
 }
 
 /* draws progress bar */
-unmasked void progressStart();
-unmasked uniform bool progressMonitor(void* uniform ptr, const uniform double n);
-unmasked void progressEnd();
+extern "C" unmasked void progressStart();
+extern "C" unmasked uniform bool progressMonitor(void* uniform ptr, const uniform double n);
+extern "C" unmasked void progressEnd();
 
 Vec2f  getTextureCoordinatesSubdivMesh(void* uniform mesh, const unsigned int primID, const float u, const float v);
 

@@ -1210,7 +1210,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
 
   /* commit changes to scene */
   progressStart();
-  rtcSetProgressMonitorFunction(scene_out,progressMonitor,NULL);
+  rtcSetProgressMonitorFunction(scene_out,(RTCProgressMonitorFunc)&progressMonitor,NULL);
   rtcCommit (scene_out);
   rtcSetProgressMonitorFunction(scene_out,NULL,NULL);
   progressEnd();

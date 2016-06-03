@@ -77,10 +77,11 @@ RTCORE_DEPRECATED RTCScene rtcNewScene (uniform RTCSceneFlags flags, uniform RTC
 RTCScene rtcDeviceNewScene (RTCDevice device, uniform RTCSceneFlags flags, uniform RTCAlgorithmFlags aflags);
 
 /*! \brief Type of progress callback function. */
-typedef unmasked uniform bool (*uniform RTC_PROGRESS_MONITOR_FUNCTION)(void* uniform ptr, const uniform double n);
+typedef unmasked uniform bool (*uniform RTCProgressMonitorFunc)(void* uniform ptr, const uniform double n);
+RTCORE_DEPRECATED typedef unmasked uniform bool (*uniform RTC_PROGRESS_MONITOR_FUNCTION)(void* uniform ptr, const uniform double n);
 
 /*! \brief Sets the progress callback function which is called during hierarchy build. */
-void rtcSetProgressMonitorFunction(RTCScene scene, RTC_PROGRESS_MONITOR_FUNCTION func, void* uniform ptr);
+void rtcSetProgressMonitorFunction(RTCScene scene, RTCProgressMonitorFunc func, void* uniform ptr);
 
 /*! Commits the geometry of the scene. After initializing or modifying
  *  geometries, commit has to get called before tracing

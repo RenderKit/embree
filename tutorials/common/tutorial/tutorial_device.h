@@ -111,9 +111,9 @@ struct Sample3f
 };
 
 /* draws progress bar */
-void progressStart();
-bool progressMonitor(void* ptr, const double dn);
-void progressEnd();
+extern "C" void progressStart();
+extern "C" bool progressMonitor(void* ptr, const double dn);
+extern "C" void progressEnd();
 
 Vec2f getTextureCoordinatesSubdivMesh(void* mesh, const unsigned int primID, const float u, const float v);
 

@@ -796,17 +796,6 @@ uniform unsigned int getNumHWThreads()
  return g_numThreads;
 }
 
-/* draws progress bar */
-unmasked void progressStart() {
-}
-
-unmasked uniform bool progressMonitor(void* uniform ptr, const uniform double n) {
-  return true;
-}
-
-unmasked void progressEnd() {
-}
-
 Vec2f getTextureCoordinatesSubdivMesh(void* uniform _mesh, const unsigned int primID, const float u, const float v)
 {
   uniform ISPCSubdivMesh *uniform mesh = (uniform ISPCSubdivMesh *uniform )_mesh;
