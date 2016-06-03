@@ -302,7 +302,7 @@ Vec3fa occluded(RTCScene scene, RTCRay2& ray)
 Vec3fa renderPixelPathTrace(float x, float y, const ISPCCamera& camera)
 {
   RandomSampler sampler;
-  RandomSampler_init(sampler, x, y, g_accu_count);
+  RandomSampler_init(sampler, (int)x, (int)y, g_accu_count);
   x += RandomSampler_get1D(sampler);
   y += RandomSampler_get1D(sampler);
   float time = RandomSampler_get1D(sampler);
