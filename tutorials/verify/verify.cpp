@@ -82,8 +82,8 @@ namespace embree
     std::vector<unsigned> offsets;
     std::vector<unsigned>& faces = mesh->verticesPerFace;
     std::vector<unsigned>& indices = mesh->position_indices;
-    for (size_t i=0,j=0; i<mesh->verticesPerFace.size(); i++) {
-      offsets.push_back(j); j+=mesh->verticesPerFace[i];
+    for (size_t i=0, j=0; i<mesh->verticesPerFace.size(); i++) {
+      offsets.push_back(unsigned(j)); j+=mesh->verticesPerFace[i];
     } 
     
     for (size_t i=0; i<numEdgeCreases; i++) 
@@ -887,7 +887,7 @@ namespace embree
 
       if ((sflags & RTC_SCENE_DYNAMIC) == 0) 
       {
-        for (size_t i=0; i<10; i++) {
+        for (unsigned int i=0; i<10; i++) {
           rtcDisable(scene,i);
           AssertAnyError(device);
         }
@@ -936,7 +936,7 @@ namespace embree
       scene.addGeometry(gflags,quadmesh2.dynamicCast<SceneGraph::Node>(),true);
 
       Ref<SceneGraph::SubdivMeshNode> subdivmesh = new SceneGraph::SubdivMeshNode(nullptr);
-      for (size_t i=0; i<N; i++) {
+      for (unsigned i=0; i<unsigned(N); i++) {
         subdivmesh->verticesPerFace.push_back(4);
         subdivmesh->position_indices.push_back(4*i+0);
         subdivmesh->position_indices.push_back(4*i+1);
@@ -1175,7 +1175,7 @@ namespace embree
 
       for (size_t i=0; i<size_t(1000*state->intensity); i++) 
       {
-        RandomSampler_init(sampler,i*23565);
+        RandomSampler_init(sampler,int(i*23565));
         if (i%20 == 0) std::cout << "." << std::flush;
         
         RTCSceneFlags sflag = getSceneFlag(i); 
@@ -2030,11 +2030,11 @@ namespace embree
       AssertNoError(device);
       
       RTCRay rays[16];
-      for (size_t iy=0; iy<4; iy++) 
+      for (unsigned int iy=0; iy<4; iy++) 
       {
-        for (size_t ix=0; ix<4; ix++) 
+        for (unsigned int ix=0; ix<4; ix++) 
         {
-          int primID = iy*4+ix;
+          unsigned int primID = iy*4+ix;
           if (!subdiv) primID *= 2;
           rays[iy*4+ix] = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
         }
@@ -2042,11 +2042,11 @@ namespace embree
       IntersectWithMode(imode,ivariant,scene,rays,16);
       
       bool passed = true;
-      for (size_t iy=0; iy<4; iy++) 
+      for (unsigned int iy=0; iy<4; iy++) 
       {
-        for (size_t ix=0; ix<4; ix++) 
+        for (unsigned int ix=0; ix<4; ix++) 
         {
-          int primID = iy*4+ix;
+          unsigned int primID = iy*4+ix;
           if (!subdiv) primID *= 2;
           RTCRay& ray = rays[iy*4+ix];
           bool ok = (primID & 2) ? (ray.geomID == RTC_INVALID_GEOMETRY_ID) : (ray.geomID == 0);
@@ -2506,12 +2506,12 @@ namespace embree
 
   struct ThreadRegressionTask
   {
-    ThreadRegressionTask (size_t threadIndex, size_t threadCount,
+    ThreadRegressionTask (unsigned int threadIndex, unsigned int threadCount,
                           VerifyApplication* state, RTCDeviceRef& device, std::vector<IntersectMode>& intersectModes, RegressionTask* task)
       : threadIndex(threadIndex), threadCount(threadCount), state(state), device(device), intersectModes(intersectModes), task(task) {}
 
-    size_t threadIndex;
-    size_t threadCount;
+    unsigned int threadIndex;
+    unsigned int threadCount;
     VerifyApplication* state;
     RTCDeviceRef& device;
     std::vector<IntersectMode>& intersectModes;
@@ -2607,7 +2607,7 @@ namespace embree
       }
       
       if (thread->threadCount) {
-	task->numActiveThreads = max(size_t(1),RandomSampler_getInt(task->sampler) % thread->threadCount);
+	task->numActiveThreads = max(unsigned(1),RandomSampler_getInt(task->sampler) % thread->threadCount);
 	task->barrier.wait();
         if (build_join_test) rtcCommit(*task->scene);
         else                 {
@@ -2793,7 +2793,7 @@ namespace embree
       }
 
       if (thread->threadCount) {
-	task->numActiveThreads = max(size_t(1),RandomSampler_getInt(task->sampler) % thread->threadCount);
+	task->numActiveThreads = max(unsigned(1),RandomSampler_getInt(task->sampler) % thread->threadCount);
 	task->barrier.wait();
         if (build_join_test) rtcCommit(*task->scene);
         else                 rtcCommitThread(*task->scene,thread->threadIndex,task->numActiveThreads);
@@ -2981,12 +2981,12 @@ namespace embree
     SimpleBenchmark (std::string name, int isa)
       : VerifyApplication::Benchmark(name,isa,"1/s") {}
     
-    double benchmark(VerifyApplication* state)
+    float benchmark(VerifyApplication* state)
     {
       double t0 = getSeconds();
       for (volatile size_t i=0; i<10000000; i++);
       double t1 = getSeconds();
-      return 1.0f/(t1-t0);
+      return 1.0f/float(t1-t0);
     }
   };
   
@@ -3044,13 +3044,13 @@ namespace embree
       while (((ParallelIntersectBenchmark*) ptr)->thread_function(threadIndex));
     }
 
-    double benchmark(VerifyApplication* state)
+    float benchmark(VerifyApplication* state)
     {
       double t0 = getSeconds();
       pos = 0;
       thread_function();
       double t1 = getSeconds();
-      return 1E-6*(double)(N)/(t1-t0);
+      return 1E-6f*(float)(N)/float(t1-t0);
     }
 
     virtual void cleanup(VerifyApplication* state) 
@@ -3224,7 +3224,7 @@ namespace embree
       }
     }
 
-    double benchmark(VerifyApplication* state) {
+    float benchmark(VerifyApplication* state) {
       return tileSizeX*tileSizeY*ParallelIntersectBenchmark::benchmark(state);
     }
 
@@ -3480,7 +3480,7 @@ namespace embree
       return true;
     }
 
-    double benchmark(VerifyApplication* state)
+    float benchmark(VerifyApplication* state)
     {
       if (!update) create_scene();
 

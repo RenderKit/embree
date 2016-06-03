@@ -69,7 +69,7 @@ namespace embree
       virtual size_t setNumPrimitives(size_t N) { return 0; }
       virtual void setNumThreads(size_t N) { numThreads = N; }
       virtual bool setup(VerifyApplication* state) { return true; }
-      virtual double benchmark(VerifyApplication* state) = 0;
+      virtual float benchmark(VerifyApplication* state) = 0;
       Statistics benchmark_loop(VerifyApplication* state);
       virtual void cleanup(VerifyApplication* state) {}
       virtual TestReturnValue execute(VerifyApplication* state, bool silent);
