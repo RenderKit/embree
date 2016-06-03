@@ -38,11 +38,19 @@
 
 namespace embree
 {
-  extern "C" {
+  extern "C" 
+  {
     float g_debug = 0.0f;
     Mode g_mode = MODE_NORMAL;
     ISPCScene* g_ispc_scene = nullptr;
+
+    /* intensity scaling for traversal cost visualization */
+    float scale = 1.0f / 1000000.0f;
+    bool g_changed = false;
+
     int64_t get_tsc() { return read_tsc(); }
+
+    unsigned int g_numThreads = 0;
   }
 
   TutorialApplication* TutorialApplication::instance = nullptr; 

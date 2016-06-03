@@ -1717,7 +1717,7 @@ void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
     ISPCSubdivMesh* mesh = (ISPCSubdivMesh*) geometry;
     unsigned int geomID = mesh->geomID;
 #if defined(ISPC)
-      parallel_for(size_t(0),size_t( getNumHWThreads() ),[&](const range<size_t>& range) {
+    parallel_for(size_t(0),size_t( (mesh->numFaces+4095)/4096 ),[&](const range<size_t>& range) {
     for (size_t i=range.begin(); i<range.end(); i++)
       updateEdgeLevelBufferTask((int)i,mesh,cam_pos);
   }); 

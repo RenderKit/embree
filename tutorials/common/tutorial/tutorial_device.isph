@@ -126,5 +126,5 @@ extern "C" unmasked void progressEnd();
 
 Vec2f  getTextureCoordinatesSubdivMesh(void* uniform mesh, const unsigned int primID, const float u, const float v);
 
-float  getTextureTexel1f(void * uniform texture, float u, float v);
-Vec3f  getTextureTexel3f(void * uniform texture, float u, float v);
+float  getTextureTexel1f(const uniform Texture* uniform texture, float u, float v);
+Vec3f  getTextureTexel3f(const uniform Texture* uniform texture, float u, float v);

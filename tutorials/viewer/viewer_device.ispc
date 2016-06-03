@@ -102,7 +102,7 @@ void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa&
     uniform ISPCSubdivMesh* uniform mesh = (uniform ISPCSubdivMesh* uniform) geometry;
 #if defined(ISPC)
     if (mesh->numFaces < 10000) continue;
-    launch[ getNumHWThreads() ] updateSubMeshEdgeLevelBufferTask(mesh,cam_pos); sync;
+    launch[ (mesh->numFaces+4095)/4096 ] updateSubMeshEdgeLevelBufferTask(mesh,cam_pos); sync;
 #else
     updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
 #endif

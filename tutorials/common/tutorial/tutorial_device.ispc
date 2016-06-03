@@ -15,15 +15,14 @@
 // ======================================================================== //
 
 #include "tutorial_device.isph"
+#include "scene_device.isph"
 
 /* the scene to render */
 extern RTCScene g_scene;
 
-uniform unsigned int g_numThreads = 0;
-
 /* intensity scaling for traversal cost visualization */
-uniform float scale = 1.0f / 1000000.0f;
-uniform bool g_changed = false;
+extern uniform float scale;
+extern uniform bool g_changed;
 
 extern uniform float g_debug;
 
@@ -31,7 +30,7 @@ extern uniform float g_debug;
 renderTileFunc renderTile;
 
 /* error reporting function */
-unmasked void error_handler(const uniform RTCError code, const uniform int8* uniform str = NULL)
+unmasked void error_handler(const uniform RTCError code, const uniform int8* uniform str)
 {
   if (code == RTC_NO_ERROR)
     return;
@@ -786,16 +785,6 @@ export void device_key_pressed(uniform int key) {
   if (key_pressed_handler) key_pressed_handler(key);
 }
 
-task void task_getNumHWThreads() {
- g_numThreads = threadCount;
-}
-
-uniform unsigned int getNumHWThreads()
-{
- launch[ 1 ] task_getNumHWThreads(); sync;
- return g_numThreads;
-}
-
 Vec2f getTextureCoordinatesSubdivMesh(void* uniform _mesh, const unsigned int primID, const float u, const float v)
 {
   uniform ISPCSubdivMesh *uniform mesh = (uniform ISPCSubdivMesh *uniform )_mesh;
@@ -841,9 +830,8 @@ Vec2f getTextureCoordinatesSubdivMesh(void* uniform _mesh, const unsigned int pr
   return st;
 }
 
-float getTextureTexel1f(void *uniform _texture, float s, float t)
+float getTextureTexel1f(const uniform Texture* uniform texture, float s, float t)
 {
-  uniform Texture * uniform texture = (Texture*)_texture;
   if (!texture) return 0.0f;
 
   int iu = (int)floor(s * (float)(texture->width));
@@ -851,12 +839,12 @@ float getTextureTexel1f(void *uniform _texture, float s, float t)
   int iv = (int)floor(t * (float)(texture->height));
   iv = iv % texture->height; if (iv < 0) iv += texture->height;
 
-  if (texture->format == FLOAT32)
+  if (texture->format == Texture_FLOAT32)
   {
     uniform float *uniform data = (uniform float *uniform)texture->data;
     return data[iv*texture->width + iu];
   }
-  else if (texture->format == RGBA8)
+  else if (texture->format == Texture_RGBA8)
   {
     const int offset = (iv * texture->width + iu) * 4;
     uniform unsigned int8 * uniform t = (uniform unsigned int8* uniform)texture->data;
@@ -865,9 +853,8 @@ float getTextureTexel1f(void *uniform _texture, float s, float t)
   return 0.0f;
 }
 
-Vec3f getTextureTexel3f(void *uniform _texture, float s, float t)
+Vec3f getTextureTexel3f(const uniform Texture* uniform texture, float s, float t)
 {
-  uniform Texture * uniform texture = (Texture*)_texture;
   if (!texture) return make_Vec3f(0.0f,0.0f,0.0f);
 
   int iu = (int)floor(s * (float)(texture->width));
@@ -875,7 +862,7 @@ Vec3f getTextureTexel3f(void *uniform _texture, float s, float t)
   int iv = (int)floor(t * (float)(texture->height));
   iv = iv % texture->height; if (iv < 0) iv += texture->height;
 
-  if (texture->format == RGBA8)
+  if (texture->format == Texture_RGBA8)
   {
     const int offset = (iv * texture->width + iu) * 4;
     uniform unsigned int8 * uniform t = (uniform unsigned int8* uniform)texture->data;

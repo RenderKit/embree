@@ -59,9 +59,9 @@ namespace embree
   };
 
   enum TEXTURE_FORMAT {
-    RGBA8        = 1,
-    RGB8         = 2,
-    FLOAT32      = 3,
+    Texture_RGBA8        = 1,
+    Texture_RGB8         = 2,
+    Texture_FLOAT32      = 3,
   };
 
   struct ISPCScene
