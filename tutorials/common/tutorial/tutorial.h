@@ -25,14 +25,11 @@
 namespace embree
 {
   extern "C" void device_init(const char* cfg);
-  extern "C" void device_key_pressed (int key);
-
   extern "C" void device_set_scene(ISPCScene* scene);
   extern "C" void device_resize(int width, int height);
+  extern "C" void device_render(unsigned* pixels, const unsigned width, const unsigned height, const float time, const ISPCCamera& camera);
   extern "C" bool device_pick(const float x, const float y, const ISPCCamera& camera, Vec3fa& hitPos);
-
-  extern "C" void device_render(unsigned* pixels, const unsigned width, const unsigned height,
-                                const float time, const ISPCCamera& camera);
+  extern "C" void device_key_pressed (int key);
   extern "C" void device_cleanup();
 
   class TutorialApplication : public Application
