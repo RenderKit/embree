@@ -39,20 +39,6 @@ namespace embree
     ~TutorialApplication();
 
   public:
-
-    /* passes parameters to the backend */
-    void set_parameter(size_t parm, ssize_t val);
-    
-    /* resize framebuffer */
-    void resize(int width, int height);
-    
-    /* set scene to use */
-    void set_scene (TutorialScene* in);
-    
-    /* render frame and map framebuffer */
-    void render(const float time, const ISPCCamera& camera);
-    
-  public:
     /* starts tutorial */
     void run(int argc, char** argv);
 
@@ -67,6 +53,15 @@ namespace embree
     
     /* render to file mode */
     void renderToFile(const FileName& fileName);
+
+    /* passes parameters to the backend */
+    void set_parameter(size_t parm, ssize_t val);
+    
+    /* resize framebuffer */
+    void resize(int width, int height);
+    
+    /* set scene to use */
+    void set_scene (TutorialScene* in);
 
     /* GLUT callback functions */
   public:

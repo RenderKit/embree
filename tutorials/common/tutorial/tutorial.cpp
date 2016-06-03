@@ -366,7 +366,7 @@ namespace embree
       for (size_t i=0; i<skipBenchmarkFrames; i++) 
       {
         double t0 = getSeconds();
-        render(0.0f,ispccamera);
+        device_render(pixels,width,height,0.0f,ispccamera);
         double t1 = getSeconds();
         std::cout << "frame [" << std::setw(3) << i << " / " << std::setw(3) << numTotalFrames << "]: " <<  std::setw(8) << 1.0/(t1-t0) << " fps (skipped)" << std::endl << std::flush;
         if (benchmarkSleep) sleepSeconds(0.1);
@@ -375,7 +375,7 @@ namespace embree
       for (size_t i=skipBenchmarkFrames; i<numTotalFrames; i++) 
       {
         double t0 = getSeconds();
-        render(0.0f,ispccamera);
+        device_render(pixels,width,height,0.0f,ispccamera);
         double t1 = getSeconds();
 
         float fr = float(1.0/(t1-t0));
@@ -417,9 +417,28 @@ namespace embree
   {
     resize(width,height);
     ISPCCamera ispccamera = camera.getISPCCamera(width,height);
-    render(0.0f,ispccamera);
+    device_render(pixels,width,height,0.0f,ispccamera);
     Ref<Image> image = new Image4uc(width, height, (Col4uc*)pixels);
     storeImage(image, fileName);
+  }
+
+  void TutorialApplication::set_parameter(size_t parm, ssize_t val) {
+    rtcDeviceSetParameter1i(nullptr,(RTCParameter)parm,val);
+  }
+
+  void TutorialApplication::resize(int width, int height)
+  {
+    if (width == this->width && height == this->height && pixels) 
+      return;
+
+    if (pixels) alignedFree(pixels);
+    this->width = width;
+    this->height = height;
+    pixels = (unsigned*) alignedMalloc(width*height*sizeof(unsigned),64);
+  }
+
+  void TutorialApplication::set_scene (TutorialScene* in) {
+    g_ispc_scene = new ISPCScene(in);
   }
 
   void TutorialApplication::keyboardFunc(unsigned char key, int x, int y)
@@ -541,7 +560,7 @@ namespace embree
     
     /* render image using ISPC */
     double t0 = getSeconds();
-    render(float(time0-t0),ispccamera);
+    device_render(pixels,width,height,float(time0-t0),ispccamera);
     double dt0 = getSeconds()-t0;
 
     /* draw pixels to screen */
@@ -739,28 +758,5 @@ namespace embree
   catch (...) {
     std::cout << "Error: unknown exception caught." << std::endl;
     return 1;
-  }
-
-  void TutorialApplication::set_parameter(size_t parm, ssize_t val) {
-    rtcDeviceSetParameter1i(nullptr,(RTCParameter)parm,val);
-  }
-
-  void TutorialApplication::resize(int width, int height)
-  {
-    if (width == this->width && height == this->height && pixels) 
-      return;
-
-    if (pixels) alignedFree(pixels);
-    this->width = width;
-    this->height = height;
-    pixels = (unsigned*) alignedMalloc(width*height*sizeof(unsigned),64);
-  }
-
-  void TutorialApplication::set_scene (TutorialScene* in) {
-    g_ispc_scene = new ISPCScene(in);
-  }
-
-  void TutorialApplication::render(const float time, const ISPCCamera& camera) {
-    device_render(pixels,width,height,time,camera);
   }
 }
