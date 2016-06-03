@@ -2992,14 +2992,14 @@ namespace embree
   
   struct ParallelIntersectBenchmark : public VerifyApplication::Benchmark
   {
-    size_t N, dN;
+    unsigned int N, dN;
     Vec3f* numbers;
     LinearBarrierActive barrier;
     std::vector<thread_t> threads;
-    std::atomic<size_t> pos;
-    std::atomic<size_t> threadIndexCounter;
+    std::atomic<unsigned int> pos;
+    std::atomic<unsigned int> threadIndexCounter;
     
-    ParallelIntersectBenchmark (std::string name, int isa, size_t N, size_t dN)
+    ParallelIntersectBenchmark (std::string name, int isa, unsigned int N, unsigned int dN)
       : VerifyApplication::Benchmark(name,isa,"Mrps"), N(N), dN(dN), pos(0), threadIndexCounter(1) {}
     
     ~ParallelIntersectBenchmark() 
@@ -3026,12 +3026,12 @@ namespace embree
 
     virtual void render_block(unsigned int i, unsigned int n) = 0;
 
-    bool thread_function(size_t threadIndex = 0)
+    bool thread_function(unsigned int threadIndex = 0)
     {
       barrier.wait(threadIndex);
-      if (pos.load() == size_t(-1)) return false;
+      if (pos.load() == unsigned(-1)) return false;
 
-      for (size_t i = pos.fetch_add(dN); i<N; i=pos.fetch_add(dN)) 
+      for (unsigned int i = pos.fetch_add(dN); i<N; i=pos.fetch_add(dN)) 
         render_block(i,dN);
 
       barrier.wait(threadIndex);
@@ -3040,7 +3040,7 @@ namespace embree
 
     static void static_thread_function(void* ptr) 
     {
-      size_t threadIndex = ((ParallelIntersectBenchmark*) ptr)->threadIndexCounter++;
+      unsigned threadIndex = ((ParallelIntersectBenchmark*) ptr)->threadIndexCounter++;
       while (((ParallelIntersectBenchmark*) ptr)->thread_function(threadIndex));
     }
 
@@ -3072,12 +3072,12 @@ namespace embree
     size_t numPhi;
     RTCDeviceRef device;
     Ref<VerifyScene> scene;
-    static const size_t tileSizeX = 16;
-    static const size_t tileSizeY = 16;
-    static const size_t width = 1024;
-    static const size_t height = 1024;
-    static const size_t numTilesX = width/tileSizeX;
-    static const size_t numTilesY = height/tileSizeY;
+    static const unsigned int tileSizeX = 16;
+    static const unsigned int tileSizeY = 16;
+    static const unsigned int width = 1024;
+    static const unsigned int height = 1024;
+    static const unsigned int numTilesX = width/tileSizeX;
+    static const unsigned int numTilesY = height/tileSizeY;
     
     CoherentRaysBenchmark (std::string name, int isa, GeometryType gtype, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant, size_t numPhi)
       : ParallelIntersectBenchmark(name,isa,numTilesX*numTilesY,1), gtype(gtype), sflags(sflags), gflags(gflags), imode(imode), ivariant(ivariant), numPhi(numPhi) {}
@@ -3105,8 +3105,8 @@ namespace embree
       case TRIANGLE_MESH_MB: scene->addGeometry(gflags,SceneGraph::createTriangleSphere(zero,one,numPhi)->set_motion_vector(Vec3fa(0.01f)),true); break;
       case QUAD_MESH:        scene->addGeometry(gflags,SceneGraph::createQuadSphere(zero,one,numPhi),false); break;
       case QUAD_MESH_MB:     scene->addGeometry(gflags,SceneGraph::createQuadSphere(zero,one,numPhi)->set_motion_vector(Vec3fa(0.01f)),true); break;
-      case SUBDIV_MESH:      scene->addGeometry(gflags,SceneGraph::createSubdivSphere(zero,one,8,numPhi/8),false); break;
-      case SUBDIV_MESH_MB:   scene->addGeometry(gflags,SceneGraph::createSubdivSphere(zero,one,8,numPhi/8)->set_motion_vector(Vec3fa(0.01f)),true); break;
+      case SUBDIV_MESH:      scene->addGeometry(gflags,SceneGraph::createSubdivSphere(zero,one,8,float(numPhi)/8.0f),false); break;
+      case SUBDIV_MESH_MB:   scene->addGeometry(gflags,SceneGraph::createSubdivSphere(zero,one,8,float(numPhi)/8.0f)->set_motion_vector(Vec3fa(0.01f)),true); break;
       default:               throw std::runtime_error("invalid geometry for benchmark");
       }
       rtcCommit (*scene);
@@ -3446,11 +3446,11 @@ namespace embree
       {
         switch (gtype) {
         case TRIANGLE_MESH:    
-        case TRIANGLE_MESH_MB: geometries.push_back(SceneGraph::createTriangleSphere(zero,i+1,numPhi)); break;
+        case TRIANGLE_MESH_MB: geometries.push_back(SceneGraph::createTriangleSphere(zero,float(i+1),numPhi)); break;
         case QUAD_MESH:        
-        case QUAD_MESH_MB:     geometries.push_back(SceneGraph::createQuadSphere(zero,i+1,numPhi)); break;
+        case QUAD_MESH_MB:     geometries.push_back(SceneGraph::createQuadSphere(zero,float(i+1),numPhi)); break;
         case SUBDIV_MESH:      
-        case SUBDIV_MESH_MB:   geometries.push_back(SceneGraph::createSubdivSphere(zero,i+1,8,numPhi/8)); break;
+        case SUBDIV_MESH_MB:   geometries.push_back(SceneGraph::createSubdivSphere(zero,float(i+1),8,numPhi/8)); break;
         case HAIR_GEOMETRY:    
         case HAIR_GEOMETRY_MB: geometries.push_back(SceneGraph::createHairyPlane(i,Vec3fa(i),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4.0f*numPhi*numPhi,true)); break;
         case LINE_GEOMETRY: 
