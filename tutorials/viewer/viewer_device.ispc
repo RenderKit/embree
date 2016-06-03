@@ -301,7 +301,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   /* use scene instancing feature */
   else if (g_instancing_mode == 2 || g_instancing_mode == 3)
   {
-    for (uniform size_t i=0; i<scene_in->numGeometries; i++)
+    for (uniform unsigned int i=0; i<scene_in->numGeometries; i++)
     {
       uniform ISPCGeometry* uniform geometry = scene_in->geometries[i];
       if (geometry->type == SUBDIV_MESH) {
@@ -358,7 +358,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   /* no instancing */
   else
   {
-    for (uniform size_t i=0; i<scene_in->numGeometries; i++)
+    for (uniform unsigned int i=0; i<scene_in->numGeometries; i++)
     {
       uniform ISPCGeometry* uniform geometry = scene_in->geometries[i];
       if (geometry->type == SUBDIV_MESH) {
@@ -476,7 +476,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
 {
   /* initialize sampler */
   RandomSampler sampler;
-  RandomSampler_init(sampler, x, y, 0);
+  RandomSampler_init(sampler, (int)x, (int)y, 0);
 
   /* initialize ray */
   RTCRay ray;
