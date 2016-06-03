@@ -16,32 +16,35 @@
 
 #pragma once
 
-#include "../../../common/sys/platform.h"
-#include "../../../kernels/algorithms/parallel_for.h"
 #include "config.h"
-#include "noise.h"
 
 /* size of screen tiles */
 #define TILE_SIZE_X 8
 #define TILE_SIZE_Y 8
 
+/* vertex and triangle layout */
+struct Vertex   { float x,y,z,r;  }; // FIXME: rename to Vertex4f
+struct Triangle { int v0, v1, v2; };
+
+/* include embree API */
 #define __RTCRay__
-#define __RTCRay4__
-#define __RTCRay8__
-#define __RTCRay16__
+#define __RTCRay__
 #include "../../../include/embree2/rtcore.h"
 #include "../../../include/embree2/rtcore_ray.h"
 
+/* include optional vector library */
+#include "../math/math.h"
+#include "../math/vec.h"
+#include "../math/affinespace.h"
 #include "../core/ray.h"
 #include "camera.h"
-#include "scene.h"
+#include "scene_device.h"
+#include "noise.h"
+#if !defined(ISPC)
+#include "../../../kernels/algorithms/parallel_for.h"
 
-namespace embree
-{
-/* vertex and triangle layout */
-struct Vertex   { float x,y,z,r; };
-struct Triangle { int v0, v1, v2; };
-struct Quad     { int v0, v1, v2, v3; };
+namespace embree {
+#endif
 
 enum Mode {
   MODE_NORMAL = 0,
@@ -49,21 +52,26 @@ enum Mode {
   MODE_STREAM_INCOHERENT = 2
 };
 
+extern "C" Mode g_mode;
+
 /* error reporting function */
 void error_handler(const RTCError code, const char* str = nullptr);
 
-extern "C" Mode g_mode;
-
 /* returns time stamp counter */
-extern "C" int64_t get_tsc();
+extern "C" "C" int64_t get_tsc();
+
+/* declare some standard library functions */
+extern "C" "C" void abort ();
+extern "C" "C" void exit(int);
+extern "C" "C" int puts ( const char* str );
+extern "C" "C" int putchar ( int character );
 
 /* face forward for shading normals */
-__forceinline Vec3f faceforward( const Vec3f& N, const Vec3f& I, const Vec3f& Ng ) {
-  return dot(I, Ng) < 0 ? N : -N;
+inline Vec3fa faceforward( Vec3fa N, Vec3fa I, Vec3fa Ng ) {
+  return dot(I, Ng) < 0 ? N : neg(N);
 }
 
 /* glut keys codes */
-#if !defined(GLUT_KEY_F1)
 #define GLUT_KEY_F1 1
 #define GLUT_KEY_F2 2
 #define GLUT_KEY_F3 3
@@ -76,45 +84,56 @@ __forceinline Vec3f faceforward( const Vec3f& N, const Vec3f& I, const Vec3f& Ng
 #define GLUT_KEY_F10 10
 #define GLUT_KEY_F11 11
 #define GLUT_KEY_F12 12
-#endif
 
 /* standard shading function */
-typedef void (* renderTileFunc)(int taskIndex, int* pixels, const unsigned int width, const unsigned int height,
-                                const float time, const ISPCCamera& camera,
-                                const int numTilesX, const int numTilesY);
-extern renderTileFunc renderTile;
+typedef void (* renderTileFunc)(int taskIndex,
+                                        int* pixels,
+                                        const unsigned int width,
+                                        const unsigned int height,
+                                        const float time,
+                                        const ISPCCamera& camera,
+                                        const int numTilesX,
+                                        const int numTilesY);
+extern "C" renderTileFunc renderTile;
 
 extern "C" void device_key_pressed_default(int key);
-extern "C" void (*key_pressed_handler)(int key);
+extern "C" void (* key_pressed_handler)(int key);
 
-void renderTileStandard(int taskIndex, int* pixels, const unsigned int width, const unsigned int height,
-                        const float time, const ISPCCamera& camera,
-                        const int numTilesX, const int numTilesY);
+void renderTileStandard(int taskIndex,
+                        int* pixels,
+                        const unsigned int width,
+                        const unsigned int height,
+                        const float time,
+                        const ISPCCamera& camera,
+                        const int numTilesX,
+                        const int numTilesY);
 
-__forceinline Vec3f  neg(const Vec3f& a ) { return -a; }
-__forceinline Vec3fa neg(const Vec3fa& a) { return -a; }
-__forceinline bool   eq (const Vec3fa& a, const Vec3fa& b) { return a == b; }
-__forceinline bool   ne (const Vec3fa& a, const Vec3fa& b) { return a != b; }
-__forceinline bool   eq (const AffineSpace3fa& a, const AffineSpace3fa& b) { return a == b; }
+unsigned int getNumHWThreads();
+
+#if defined(ISPC)
+#define ALIGNED_STRUCT
+#define __aligned(x)
+#define MAYBE_UNUSED
+#endif
 
 struct Sample3f
 {
-  Sample3f () {}
-
-  Sample3f (const Vec3fa& v, const float pdf)
-    : v(v), pdf(pdf) {}
-
   Vec3fa v;
   float pdf;
 };
 
-/* draws progress bar */
-extern "C" void progressStart();
-extern "C" bool progressMonitor(void* ptr, const double dn);
-extern "C" void progressEnd();
+inline Sample3f make_Sample3f(const Vec3fa v, const float pdf) {
+  Sample3f s; s.v = v; s.pdf = pdf; return s;
+}
 
-Vec2f getTextureCoordinatesSubdivMesh(void* mesh, const unsigned int primID, const float u, const float v);
+/* draws progress bar */
+extern "C" "C" void progressStart();
+extern "C" "C" bool progressMonitor(void* ptr, const double n);
+extern "C" "C" void progressEnd();
+
+Vec2f  getTextureCoordinatesSubdivMesh(void* mesh, const unsigned int primID, const float u, const float v);
 
 float  getTextureTexel1f(const Texture* texture, float u, float v);
-Vec3fa getTextureTexel3f(const Texture* texture, float u, float v);
-}
+Vec3fa  getTextureTexel3f(const Texture* texture, float u, float v);
+
+} // namespace embree

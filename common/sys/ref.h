@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "intrinsics.h"
+#include "atomic.h"
 
 namespace embree
 {

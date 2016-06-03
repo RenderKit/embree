@@ -26,6 +26,12 @@
 struct Vertex   { float x,y,z,r;  }; // FIXME: rename to Vertex4f
 struct Triangle { int v0, v1, v2; };
 
+/* include embree API */
+#define __RTCRay1__
+#define __RTCRay__
+#include "../../../include/embree2/rtcore.isph"
+#include "../../../include/embree2/rtcore_ray.isph"
+
 /* include optional vector library */
 #include "../math/math.isph"
 #include "../math/vec.isph"
@@ -34,12 +40,9 @@ struct Triangle { int v0, v1, v2; };
 #include "camera.isph"
 #include "scene_device.isph"
 #include "noise.isph"
-
-/* include embree API */
-#define __RTCRay1__
-#define __RTCRay__
-#include "../../../include/embree2/rtcore.isph"
-#include "../../../include/embree2/rtcore_ray.isph"
+#if !defined(ISPC)
+#include "../../../kernels/algorithms/parallel_for.h"
+#endif
 
 enum Mode {
   MODE_NORMAL = 0,
@@ -105,9 +108,11 @@ void renderTileStandard(uniform int taskIndex,
 
 uniform unsigned int getNumHWThreads();
 
+#if defined(ISPC)
 #define ALIGNED_STRUCT
 #define __aligned(x)
 #define MAYBE_UNUSED
+#endif
 
 struct Sample3f
 {

@@ -89,18 +89,18 @@ inline Vec3fa sample_component2(const Vec3fa& c0, const Sample3f& wi0, const Med
   const float C  = C0 + C1;
 
   if (C == 0.0f) {
-    wi_o = Sample3f(Vec3fa(0,0,0),0);
+    wi_o = make_Sample3f(Vec3fa(0,0,0),0);
     return Vec3fa(0,0,0);
   }
 
   const float CP0 = C0/C;
   const float CP1 = C1/C;
   if (s < CP0) {
-    wi_o = Sample3f(wi0.v,wi0.pdf*CP0);
+    wi_o = make_Sample3f(wi0.v,wi0.pdf*CP0);
     medium_o = medium0; return c0;
   }
   else {
-    wi_o = Sample3f(wi1.v,wi1.pdf*CP1);
+    wi_o = make_Sample3f(wi1.v,wi1.pdf*CP1);
     medium_o = medium1; return c1;
   }
 }
@@ -221,7 +221,7 @@ inline Vec3fa DielectricReflection__eval(const DielectricReflection* This, const
 inline Vec3fa DielectricReflection__sample(const DielectricReflection* This, const Vec3fa &wo, const DifferentialGeometry &dg, Sample3f &wi, const Vec2f &s)
 {
   const float cosThetaO = clamp(dot(wo,dg.Ns));
-  wi = Sample3f(reflect(wo,dg.Ns,cosThetaO),1.0f);
+  wi = make_Sample3f(reflect(wo,dg.Ns,cosThetaO),1.0f);
   return Vec3fa(fresnelDielectric(cosThetaO,This->eta));
 }
 
@@ -308,23 +308,23 @@ inline Vec3fa DielectricLayerLambertian__sample(const DielectricLayerLambertian*
 {
   /*! refract ray into medium */
   float cosThetaO = dot(wo,dg.Ns);
-  if (cosThetaO <= 0.0f) { wi = Sample3f(Vec3fa(0.0f),0.0f); return Vec3fa(0.f); }
+  if (cosThetaO <= 0.0f) { wi = make_Sample3f(Vec3fa(0.0f),0.0f); return Vec3fa(0.f); }
   float cosThetaO1; Sample3f wo1 = refract(wo,dg.Ns,This->etait,cosThetaO,cosThetaO1);
 
   /*! sample ground BRDF */
-  Sample3f wi1 = Sample3f(Vec3fa(0.f),1.f);
+  Sample3f wi1 = make_Sample3f(Vec3fa(0.f),1.f);
   Vec3fa Fg = Lambertian__sample(&This->ground,neg(wo1.v),dg,wi1,s);
 
   /*! refract ray out of medium */
   float cosThetaI1 = dot(wi1.v,dg.Ns);
-  if (cosThetaI1 <= 0.0f) { wi = Sample3f(Vec3fa(0.0f),0.0f); return Vec3fa(0.f); }
+  if (cosThetaI1 <= 0.0f) { wi = make_Sample3f(Vec3fa(0.0f),0.0f); return Vec3fa(0.f); }
 
   float cosThetaI;
   Sample3f wi0 = refract(neg(wi1.v),neg(dg.Ns),This->etati,cosThetaI1,cosThetaI);
-  if (wi0.pdf == 0.0f) { wi = Sample3f(Vec3fa(0.0f),0.0f); return Vec3fa(0.f); }
+  if (wi0.pdf == 0.0f) { wi = make_Sample3f(Vec3fa(0.0f),0.0f); return Vec3fa(0.f); }
 
   /*! accumulate contribution of path */
-  wi = Sample3f(wi0.v,wi1.pdf);
+  wi = make_Sample3f(wi0.v,wi1.pdf);
   float Fi = 1.0f - fresnelDielectric(cosThetaI,cosThetaI1,This->etait);
   float Fo = 1.0f - fresnelDielectric(cosThetaO,cosThetaO1,This->etait);
   return Fo * This->T * Fg * This->T * Fi;
@@ -439,14 +439,14 @@ inline Vec3fa AnisotropicBlinn__sample(const AnisotropicBlinn* This, const Vec3f
 
   /* reflection */
   if (sz < This->side) {
-    wi_o = Sample3f(reflect(wo,Vec3fa(wh)),wh.w*This->side);
+    wi_o = make_Sample3f(reflect(wo,Vec3fa(wh)),wh.w*This->side);
     const float cosThetaI = dot(wi_o.v,This->dz);
     return This->Kr * AnisotropicBlinn__eval(This,Vec3fa(wh)) * abs(cosThetaI);
   }
 
   /* transmission */
   else {
-    wi_o = Sample3f(reflect(reflect(wo,Vec3fa(wh)),This->dz),wh.w*(1-This->side));
+    wi_o = make_Sample3f(reflect(reflect(wo,Vec3fa(wh)),This->dz),wh.w*(1-This->side));
     const float cosThetaI = dot(wi_o.v,This->dz);
     return This->Kt * AnisotropicBlinn__eval(This,Vec3fa(wh)) * abs(cosThetaI);
   }
@@ -486,7 +486,7 @@ Vec3fa MirrorMaterial__eval(MirrorMaterial* This, const BRDF& brdf, const Vec3fa
 
 Vec3fa MirrorMaterial__sample(MirrorMaterial* This, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
 {
-  wi_o = Sample3f(reflect(wo,dg.Ns),1.0f);
+  wi_o = make_Sample3f(reflect(wo,dg.Ns),1.0f);
   return Vec3fa(This->reflectance);
 }
 
@@ -520,7 +520,7 @@ Vec3fa OBJMaterial__eval(OBJMaterial* material, const BRDF& brdf, const Vec3fa& 
     R = R + (1.0f/float(pi)) * clamp(dot(wi,dg.Ns)) * brdf.Kd;
   }
   if (Ms > 0.0f) {
-    const Sample3f refl = Sample3f(reflect(wo,dg.Ns),1.0f);
+    const Sample3f refl = make_Sample3f(reflect(wo,dg.Ns),1.0f);
     if (dot(refl.v,wi) > 0.0f)
       R = R + (brdf.Ns+2) * float(one_over_two_pi) * powf(max(1e-10f,dot(refl.v,wi)),brdf.Ns) * clamp(dot(wi,dg.Ns)) * brdf.Ks;
   }
@@ -532,17 +532,17 @@ Vec3fa OBJMaterial__eval(OBJMaterial* material, const BRDF& brdf, const Vec3fa& 
 Vec3fa OBJMaterial__sample(OBJMaterial* material, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
 {
   Vec3fa cd = Vec3fa(0.0f);
-  Sample3f wid = Sample3f(Vec3fa(0.0f),0.0f);
+  Sample3f wid = make_Sample3f(Vec3fa(0.0f),0.0f);
   if (max(max(brdf.Kd.x,brdf.Kd.y),brdf.Kd.z) > 0.0f) {
     wid = cosineSampleHemisphere(s.x,s.y,dg.Ns);
     cd = float(one_over_pi) * clamp(dot(wid.v,dg.Ns)) * brdf.Kd;
   }
 
   Vec3fa cs = Vec3fa(0.0f);
-  Sample3f wis = Sample3f(Vec3fa(0.0f),0.0f);
+  Sample3f wis = make_Sample3f(Vec3fa(0.0f),0.0f);
   if (max(max(brdf.Ks.x,brdf.Ks.y),brdf.Ks.z) > 0.0f)
   {
-    const Sample3f refl = Sample3f(reflect(wo,dg.Ns),1.0f);
+    const Sample3f refl = make_Sample3f(reflect(wo,dg.Ns),1.0f);
     wis.v = powerCosineSampleHemisphere(brdf.Ns,s);
     wis.pdf = powerCosineSampleHemispherePDF(wis.v,brdf.Ns);
     wis.v = frame(refl.v) * wis.v;
@@ -550,10 +550,10 @@ Vec3fa OBJMaterial__sample(OBJMaterial* material, const BRDF& brdf, const Vec3fa
   }
 
   Vec3fa ct = Vec3fa(0.0f);
-  Sample3f wit = Sample3f(Vec3fa(0.0f),0.0f);
+  Sample3f wit = make_Sample3f(Vec3fa(0.0f),0.0f);
   if (max(max(brdf.Kt.x,brdf.Kt.y),brdf.Kt.z) > 0.0f)
   {
-    wit = Sample3f(neg(wo),1.0f);
+    wit = make_Sample3f(neg(wo),1.0f);
     ct = brdf.Kt;
   }
 
@@ -567,7 +567,7 @@ Vec3fa OBJMaterial__sample(OBJMaterial* material, const BRDF& brdf, const Vec3fa
   const float C  = Cd + Cs + Ct;
 
   if (C == 0.0f) {
-    wi_o = Sample3f(Vec3fa(0,0,0),0);
+    wi_o = make_Sample3f(Vec3fa(0,0,0),0);
     return Vec3fa(0,0,0);
   }
 
@@ -576,17 +576,17 @@ Vec3fa OBJMaterial__sample(OBJMaterial* material, const BRDF& brdf, const Vec3fa
   const float CPt = Ct/C;
 
   if (s.x < CPd) {
-    wi_o = Sample3f(wid.v,wid.pdf*CPd);
+    wi_o = make_Sample3f(wid.v,wid.pdf*CPd);
     return cd;
   }
   else if (s.x < CPd + CPs)
   {
-    wi_o = Sample3f(wis.v,wis.pdf*CPs);
+    wi_o = make_Sample3f(wis.v,wis.pdf*CPs);
     return cs;
   }
   else
   {
-    wi_o = Sample3f(wit.v,wit.pdf*CPt);
+    wi_o = make_Sample3f(wit.v,wit.pdf*CPt);
     return ct;
   }
 }
@@ -621,9 +621,9 @@ Vec3fa MetalMaterial__sample(MetalMaterial* This, const BRDF& brdf, const Vec3fa
 {
   const PowerCosineDistribution distribution = make_PowerCosineDistribution(rcp(This->roughness));
 
-  if (dot(wo,dg.Ns) <= 0.0f) { wi_o = Sample3f(Vec3fa(0.0f),0.0f); return Vec3fa(0.f); }
+  if (dot(wo,dg.Ns) <= 0.0f) { wi_o = make_Sample3f(Vec3fa(0.0f),0.0f); return Vec3fa(0.f); }
   sample(distribution,wo,dg.Ns,wi_o,s);
-  if (dot(wi_o.v,dg.Ns) <= 0.0f) { wi_o = Sample3f(Vec3fa(0.0f),0.0f); return Vec3fa(0.f); }
+  if (dot(wi_o.v,dg.Ns) <= 0.0f) { wi_o = make_Sample3f(Vec3fa(0.0f),0.0f); return Vec3fa(0.f); }
   return MetalMaterial__eval(This,brdf,wo,dg,wi_o.v);
 }
 
@@ -640,7 +640,7 @@ Vec3fa ReflectiveMetalMaterial__eval(ReflectiveMetalMaterial* This, const BRDF& 
 
 Vec3fa ReflectiveMetalMaterial__sample(ReflectiveMetalMaterial* This, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
 {
-  wi_o = Sample3f(reflect(wo,dg.Ns),1.0f);
+  wi_o = make_Sample3f(reflect(wo,dg.Ns),1.0f);
   return Vec3fa(This->reflectance) * fresnelConductor(dot(wo,dg.Ns),Vec3fa((Vec3fa)This->eta),Vec3fa((Vec3fa)This->k));
 }
 
@@ -700,7 +700,7 @@ Vec3fa DielectricMaterial__sample(DielectricMaterial* material, const BRDF& brdf
 
   float cosThetaO = clamp(dot(wo,dg.Ns));
   float cosThetaI; Sample3f wit = refract(wo,dg.Ns,eta,cosThetaO,cosThetaI);
-  Sample3f wis = Sample3f(reflect(wo,dg.Ns),1.0f);
+  Sample3f wis = make_Sample3f(reflect(wo,dg.Ns),1.0f);
   float R = fresnelDielectric(cosThetaO,cosThetaI,eta);
   Vec3fa cs = Vec3fa(R);
   Vec3fa ct = Vec3fa(1.0f-R);
@@ -724,8 +724,8 @@ Vec3fa ThinDielectricMaterial__sample(ThinDielectricMaterial* This, const BRDF& 
   float cosThetaO = clamp(dot(wo,dg.Ns));
   if (cosThetaO <= 0.0f) return Vec3fa(0.0f);
   float R = fresnelDielectric(cosThetaO,rcp(This->eta));
-  Sample3f wit = Sample3f(neg(wo),1.0f);
-  Sample3f wis = Sample3f(reflect(wo,dg.Ns),1.0f);
+  Sample3f wit = make_Sample3f(neg(wo),1.0f);
+  Sample3f wis = make_Sample3f(reflect(wo,dg.Ns),1.0f);
   Vec3fa ct = exp(Vec3fa(This->transmissionFactor)*rcp(cosThetaO))*Vec3fa(1.0f-R);
   Vec3fa cs = Vec3fa(R);
   return sample_component2(cs,wis,medium,ct,wit,medium,Lw,wi_o,medium,s.x);
@@ -848,7 +848,7 @@ inline Vec3fa Material__sample(ISPCMaterial* materials, unsigned int materialID,
       case MATERIAL_MIRROR: c = MirrorMaterial__sample((MirrorMaterial*)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
       case MATERIAL_THIN_DIELECTRIC: c = ThinDielectricMaterial__sample((ThinDielectricMaterial*)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
       case MATERIAL_HAIR: c = HairMaterial__sample((HairMaterial*)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
-      default: wi_o = Sample3f(Vec3fa(0.0f),0.0f); c = Vec3fa(0.0f); break;
+      default: wi_o = make_Sample3f(Vec3fa(0.0f),0.0f); c = Vec3fa(0.0f); break;
       }
     }
   }

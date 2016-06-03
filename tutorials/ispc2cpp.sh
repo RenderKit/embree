@@ -80,7 +80,7 @@ sed -i.backup  's/make_Vec2i/Vec2i/g' $2
 sed -i.backup  's/make_Vec3f/Vec3f/g' $2
 sed -i.backup  's/make_Vec3fa/Vec3fa/g' $2
 sed -i.backup  's/make_Vec4f/Vec4f/g' $2
-sed -i.backup  's/make_Sample3f/Sample3f/g' $2
+#sed -i.backup  's/make_Sample3f/Sample3f/g' $2
 sed -i.backup  's/make_AffineSpace3f/AffineSpace3f/g' $2
 
 sed -i.backup 's/sincos/sincosf/g' $2
