@@ -364,7 +364,7 @@ namespace embree
     return std::string(filename);
   }
 
-  size_t getNumberOfLogicalThreads() 
+  unsigned int getNumberOfLogicalThreads() 
   {
     static int nThreads = -1;
     if (nThreads != -1) return nThreads;
@@ -493,7 +493,8 @@ namespace embree
 
 namespace embree
 {
-  size_t getNumberOfLogicalThreads() {
+  unsigned int getNumberOfLogicalThreads() 
+  {
     static int nThreads = -1;
     if (nThreads == -1) nThreads = sysconf(_SC_NPROCESSORS_CONF);
     return nThreads;

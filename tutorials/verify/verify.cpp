@@ -2486,19 +2486,19 @@ namespace embree
 
   struct RegressionTask
   {
-    RegressionTask (size_t sceneIndex, size_t sceneCount, size_t threadCount, bool cancelBuild)
+    RegressionTask (unsigned int sceneIndex, unsigned int sceneCount, unsigned int threadCount, bool cancelBuild)
       : sceneIndex(sceneIndex), sceneCount(sceneCount), scene(nullptr), numActiveThreads(0), cancelBuild(cancelBuild), errorCounter(0) 
     { 
       barrier.init(threadCount); 
       RandomSampler_init(sampler,0);
     }
 
-    size_t sceneIndex;
-    size_t sceneCount;
+    unsigned int sceneIndex;
+    unsigned int sceneCount;
     VerifyApplication* state;
     Ref<VerifyScene> scene;
     BarrierSys barrier;
-    volatile unsigned numActiveThreads;
+    volatile unsigned int numActiveThreads;
     bool cancelBuild;
     std::atomic<size_t> errorCounter;
     RandomSampler sampler;
@@ -2534,7 +2534,7 @@ namespace embree
     RegressionTask* task = thread->task;
     if (thread->threadIndex > 0) 
     {
-      for (size_t i=0; i<task->sceneCount; i++) 
+      for (unsigned int i=0; i<task->sceneCount; i++) 
       {
 	task->barrier.wait();
 	if (thread->threadIndex < task->numActiveThreads) 
@@ -2561,7 +2561,7 @@ namespace embree
     if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
     bool hasError = false;
 
-    for (size_t i=0; i<task->sceneCount; i++) 
+    for (unsigned int i=0; i<task->sceneCount; i++) 
     {
       RandomSampler_init(task->sampler,task->sceneIndex*13565+i*3242);
       if (i%5 == 0) std::cout << "." << std::flush;
@@ -2572,7 +2572,7 @@ namespace embree
       if (task->cancelBuild) rtcSetProgressMonitorFunction(*task->scene,monitorProgressFunction,nullptr);
       avector<Sphere*> spheres;
       
-      for (size_t j=0; j<10; j++) 
+      for (unsigned int j=0; j<10; j++) 
       {
         Vec3fa pos = 100.0f*RandomSampler_get3D(task->sampler);
 	int type = RandomSampler_getInt(task->sampler)%6;
@@ -2650,7 +2650,7 @@ namespace embree
     RegressionTask* task = thread->task;
     if (thread->threadIndex > 0) 
     {
-      for (size_t i=0; i<task->sceneCount; i++) 
+      for (unsigned int i=0; i<task->sceneCount; i++) 
       {
 	task->barrier.wait();
 	if (thread->threadIndex < task->numActiveThreads) 
@@ -2685,12 +2685,12 @@ namespace embree
 
     bool hasError = false;
 
-    for (size_t i=0; i<task->sceneCount; i++) 
+    for (unsigned int i=0; i<task->sceneCount; i++) 
     {
       srand(task->sceneIndex*23565+i*2242);
       if (i%20 == 0) std::cout << "." << std::flush;
 
-      for (size_t j=0; j<40; j++) 
+      for (unsigned int j=0; j<40; j++) 
       {
         int index = RandomSampler_getInt(task->sampler)%1024;
         if (geom[index] == -1) 
@@ -2852,22 +2852,22 @@ namespace embree
       }
 
       size_t errorCounter = 0;
-      size_t sceneIndex = 0;
+      unsigned int sceneIndex = 0;
       while (sceneIndex < size_t(30*state->intensity)) 
       {
         if (mode)
         {
           build_join_test = (mode == 2);
-          size_t numThreads = getNumberOfLogicalThreads();
+          unsigned numThreads = getNumberOfLogicalThreads();
           
           std::vector<RegressionTask*> tasks;
           while (numThreads) 
           {
-            size_t N = max(size_t(1),random_int()%numThreads); numThreads -= N;
+            unsigned int N = max(unsigned(1),random_int()%numThreads); numThreads -= N;
             RegressionTask* task = new RegressionTask(sceneIndex++,5,N,false);
             tasks.push_back(task);
             
-            for (size_t i=0; i<N; i++) 
+            for (unsigned int i=0; i<N; i++) 
               threads.push_back(createThread(func,new ThreadRegressionTask(i,N,state,device,intersectModes,task),DEFAULT_STACK_SIZE,numThreads+i));
           }
           
@@ -2938,7 +2938,7 @@ namespace embree
       
       rtcDeviceSetMemoryMonitorFunction(device,monitorMemoryFunction);
       
-      size_t sceneIndex = 0;
+      unsigned int sceneIndex = 0;
       while (sceneIndex < size_t(30*state->intensity)) 
       {
         monitorMemoryBreak = std::numeric_limits<size_t>::max();
@@ -3084,8 +3084,8 @@ namespace embree
     
     size_t setNumPrimitives(size_t N) 
     { 
-      numPhi = ceilf(sqrtf(N/4.0f));
-      return 4.0f*numPhi*numPhi;
+      numPhi = size_t(ceilf(sqrtf(N/4.0f)));
+      return 4*numPhi*numPhi;
     }
 
     bool setup(VerifyApplication* state) 
@@ -3258,8 +3258,8 @@ namespace embree
 
     size_t setNumPrimitives(size_t N) 
     { 
-      numPhi = ceilf(sqrtf(N/4.0f));
-      return 4.0f*numPhi*numPhi;
+      numPhi = size_t(ceilf(sqrtf(N/4.0f)));
+      return 4*numPhi*numPhi;
     }
 
     bool setup(VerifyApplication* state) 
@@ -3279,8 +3279,8 @@ namespace embree
       case TRIANGLE_MESH_MB: scene->addGeometry(gflags,SceneGraph::createTriangleSphere(zero,one,numPhi)->set_motion_vector(Vec3fa(0.01f)),true); break;
       case QUAD_MESH:        scene->addGeometry(gflags,SceneGraph::createQuadSphere(zero,one,numPhi),false); break;
       case QUAD_MESH_MB:     scene->addGeometry(gflags,SceneGraph::createQuadSphere(zero,one,numPhi)->set_motion_vector(Vec3fa(0.01f)),true); break;
-      case SUBDIV_MESH:      scene->addGeometry(gflags,SceneGraph::createSubdivSphere(zero,one,8,numPhi/8),false); break;
-      case SUBDIV_MESH_MB:   scene->addGeometry(gflags,SceneGraph::createSubdivSphere(zero,one,8,numPhi/8)->set_motion_vector(Vec3fa(0.01f)),true); break;
+      case SUBDIV_MESH:      scene->addGeometry(gflags,SceneGraph::createSubdivSphere(zero,one,8,float(numPhi)/8.0f),false); break;
+      case SUBDIV_MESH_MB:   scene->addGeometry(gflags,SceneGraph::createSubdivSphere(zero,one,8,float(numPhi)/8.0f)->set_motion_vector(Vec3fa(0.01f)),true); break;
       default:               throw std::runtime_error("invalid geometry for benchmark");
       }
       rtcCommit (*scene);
@@ -3402,8 +3402,8 @@ namespace embree
 
     size_t setNumPrimitives(size_t N) 
     { 
-      numPhi = ceilf(sqrtf(N/4.0f));
-      return 4.0f*numPhi*numPhi;
+      numPhi = (size_t) ceilf(sqrtf(N/4.0f));
+      return 4*numPhi*numPhi;
     }
 
     void create_scene()
@@ -3495,7 +3495,7 @@ namespace embree
 
       double t1 = getSeconds();
 
-      return 1E-6*double(numPrimitives)/(t1-t0);
+      return 1E-6f*float(numPrimitives)/float(t1-t0);
     }
 
     virtual void cleanup(VerifyApplication* state) 
@@ -4216,7 +4216,7 @@ namespace embree
     std::cout << std::setw(TEXT_ALIGN) << "Tests failed and ignored" << ": " << numFailedAndIgnoredTests << std::endl; 
     std::cout << std::endl;
 
-    return numFailedTests;
+    return (int)numFailedTests;
   }
   catch (const std::exception& e) {
     std::cout << "Error: " << e.what() << std::endl;
