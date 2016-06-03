@@ -50,6 +50,12 @@ typedef int ssize_t;
   #define RTCORE_DEPRECATED
 #endif
 
+#if defined(_WIN32) 
+#  define RTCORE_FORCEINLINE __forceinline
+#else
+#  define RTCORE_FORCEINLINE inline __attribute__((always_inline))
+#endif
+
 /*! Embree API version */
 #define RTCORE_VERSION_MAJOR @EMBREE_VERSION_MAJOR@
 #define RTCORE_VERSION_MINOR @EMBREE_VERSION_MINOR@

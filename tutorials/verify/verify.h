@@ -14,10 +14,14 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "../kernels/common/default.h"
-#include "../kernels/common/ray.h"
+/* we include the Embree headers the very first to make sure they
+ * always compile without any internal Embree specific stuff. */
 #include "../include/embree2/rtcore.h"
 #include "../include/embree2/rtcore_ray.h"
+
+/* now we include all Embree internal files we need for testing */
+#include "../kernels/common/default.h"
+#include "../kernels/common/ray.h"
 #include "rtcore_helpers.h"
 #include "../tutorials/common/tutorial/application.h"
 #include "../tutorials/common/math/random_sampler.h"
