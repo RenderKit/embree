@@ -18,9 +18,7 @@
 #include "../math/sampling.h"
 #include "../math/linearspace.h"
 
-#if defined(__cplusplus)
 namespace embree {
-#endif
 
 struct SpotLight
 {
@@ -150,6 +148,4 @@ extern "C" void* SpotLight_create()
   return self;
 }
 
-#if defined(__cplusplus)
-}
-#endif
+} // namespace embree

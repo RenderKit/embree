@@ -16,12 +16,7 @@
 
 #pragma once
 
-#include "../math/vec.h"
-
-namespace embree
-{
-  extern "C" void* AmbientLight_create();
-
-  extern "C" void AmbientLight_set(void* super,
-                                   const Vec3fa& radiance);  
-}
+typedef unsigned int64 uint64;
+typedef unsigned int32 uint32;
+typedef unsigned int16 uint16;
+typedef unsigned int8  uint8;

@@ -16,9 +16,7 @@
 
 #include "../common/tutorial/tutorial_device.h"
 
-#if defined(__cplusplus)
 namespace embree {
-#endif
 
 RTCDevice g_device = nullptr;
 
@@ -27,7 +25,7 @@ const int numTheta = 2*numPhi;
 const int numSpheres = 64;
 
 /* state of the lazy geometry */
-enum LazyState 
+enum LazyState
 {
   LAZY_INVALID = 0,   // the geometry is not yet created
   LAZY_CREATE = 1,    // one thread is creating the geometry
@@ -36,7 +34,7 @@ enum LazyState
 };
 
 /* representation for our lazy geometry */
-struct LazyGeometry 
+struct LazyGeometry
 {
   ALIGNED_STRUCT
   unsigned int geometry;
@@ -63,9 +61,9 @@ unsigned int createTriangulatedSphere (RTCScene scene, const Vec3fa& p, float r)
 {
   /* create triangle mesh */
   unsigned int mesh = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 2*numTheta*(numPhi-1), numTheta*(numPhi+1));
-  
+
   /* map triangle and vertex buffers */
-  Vertex* vertices = (Vertex*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
+  Vertex* vertices = (Vertex*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER);
   Triangle* triangles = (Triangle*) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
 
   /* create sphere */
@@ -86,7 +84,7 @@ unsigned int createTriangulatedSphere (RTCScene scene, const Vec3fa& p, float r)
     }
     if (phi == 0) continue;
 
-    for (int theta=1; theta<=numTheta; theta++) 
+    for (int theta=1; theta<=numTheta; theta++)
     {
       int p00 = (phi-1)*numTheta+theta-1;
       int p01 = (phi-1)*numTheta+theta%numTheta;
@@ -94,21 +92,21 @@ unsigned int createTriangulatedSphere (RTCScene scene, const Vec3fa& p, float r)
       int p11 = phi*numTheta+theta%numTheta;
 
       if (phi > 1) {
-        triangles[tri].v0 = p10; 
-        triangles[tri].v1 = p00; 
-        triangles[tri].v2 = p01; 
+        triangles[tri].v0 = p10;
+        triangles[tri].v1 = p00;
+        triangles[tri].v2 = p01;
         tri++;
       }
 
       if (phi < numPhi) {
-        triangles[tri].v0 = p11; 
+        triangles[tri].v0 = p11;
         triangles[tri].v1 = p10;
         triangles[tri].v2 = p01;
         tri++;
       }
     }
   }
-  rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
+  rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER);
   rtcUnmapBuffer(scene,mesh,RTC_INDEX_BUFFER);
   return mesh;
 }
@@ -116,7 +114,7 @@ unsigned int createTriangulatedSphere (RTCScene scene, const Vec3fa& p, float r)
 void lazyCreate(LazyGeometry* instance)
 {
   /* one thread will switch the object from the LAZY_INVALID state to the LAZY_CREATE state */
-  if (atomic_cmpxchg((int32_t*)&instance->state,LAZY_INVALID,LAZY_CREATE) == 0) 
+  if (atomic_cmpxchg((int32_t*)&instance->state,LAZY_INVALID,LAZY_CREATE) == 0)
   {
     /* create the geometry */
     printf("creating sphere %i\n",instance->userID);
@@ -126,8 +124,8 @@ void lazyCreate(LazyGeometry* instance)
     /* now switch to the LAZY_COMMIT state */
     __memory_barrier();
     instance->state = LAZY_COMMIT;
-  } 
-  else 
+  }
+  else
   {
     /* wait until the geometry got created */
     while (atomic_cmpxchg((int32_t*)&instance->state,10,11) < LAZY_COMMIT) {
@@ -138,7 +136,7 @@ void lazyCreate(LazyGeometry* instance)
   /* multiple threads might enter the rtcCommit function to jointly
    * build the internal data structures */
   rtcCommit(instance->object);
-  
+
   /* switch to LAZY_VALID state */
   atomic_cmpxchg((int32_t*)&instance->state,LAZY_COMMIT,LAZY_VALID);
 }
@@ -157,7 +155,7 @@ void instanceIntersectFunc(LazyGeometry* instance, RTCRay& ray, size_t item)
   else ray.instID = instance->userID;
 }
 
-void instanceOccludedFunc(LazyGeometry* instance, RTCRay& ray, size_t item) 
+void instanceOccludedFunc(LazyGeometry* instance, RTCRay& ray, size_t item)
 {
   /* create the object if it is not yet created */
   if (instance->state != LAZY_VALID)
@@ -190,12 +188,12 @@ unsigned int createGroundPlane (RTCScene scene)
   unsigned int mesh = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 2, 4);
 
   /* set vertices */
-  Vertex* vertices = (Vertex*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
-  vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10; 
-  vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10; 
-  vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10; 
+  Vertex* vertices = (Vertex*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER);
+  vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10;
+  vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10;
+  vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10;
   vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
-  rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
+  rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER);
 
   /* set triangles */
   Triangle* triangles = (Triangle*) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
@@ -249,18 +247,18 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
   ray.instID = 4; // set default instance ID
   ray.mask = -1;
   ray.time = 0;
-  
+
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
-  
+
   /* shade pixels */
   Vec3fa color = Vec3fa(0.0f);
-  if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
+  if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
   {
     Vec3fa diffuse = Vec3fa(1.0f);
     color = color + diffuse*0.5;
     Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
-    
+
     /* initialize shadow ray */
     RTCRay shadow;
     shadow.org = ray.org + ray.tfar*ray.dir;
@@ -271,10 +269,10 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
     shadow.primID = 0;
     shadow.mask = -1;
     shadow.time = 0;
-    
+
     /* trace shadow ray */
     rtcOccluded(g_scene,shadow);
-    
+
     /* add light contribution */
     if (shadow.geomID)
       color = color + diffuse*clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f);
@@ -283,13 +281,13 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
 }
 
 /* renders a single screen tile */
-void renderTileStandard(int taskIndex, 
+void renderTileStandard(int taskIndex,
                         int* pixels,
                         const unsigned int width,
-                        const unsigned int height, 
+                        const unsigned int height,
                         const float time,
                         const ISPCCamera& camera,
-                        const int numTilesX, 
+                        const int numTilesX,
                         const int numTilesY)
 {
   const unsigned int tileY = taskIndex / numTilesX;
@@ -315,10 +313,10 @@ void renderTileStandard(int taskIndex,
 /* task that renders a single screen tile */
 void renderTileTask (int taskIndex, int* pixels,
                          const unsigned int width,
-                         const unsigned int height, 
+                         const unsigned int height,
                          const float time,
                          const ISPCCamera& camera,
-                         const int numTilesX, 
+                         const int numTilesX,
                          const int numTilesY)
 {
   renderTile(taskIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
@@ -327,7 +325,7 @@ void renderTileTask (int taskIndex, int* pixels,
 /* called by the C++ code to render */
 extern "C" void device_render (int* pixels,
                            const unsigned int width,
-                           const unsigned int height, 
+                           const unsigned int height,
                            const float time,
                            const ISPCCamera& camera)
 {
@@ -347,6 +345,4 @@ extern "C" void device_cleanup ()
   rtcDeleteDevice(g_device); g_device = nullptr;
 }
 
-#if defined(__cplusplus)
-}
-#endif
+} // namespace embree

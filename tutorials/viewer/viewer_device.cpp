@@ -19,9 +19,7 @@
 #include "../common/tutorial/tutorial_device.h"
 #include "../common/tutorial/scene_device.h"
 
-#if defined(__cplusplus)
 namespace embree {
-#endif
 
 extern "C" ISPCScene* g_ispc_scene;
 extern "C" bool g_changed;
@@ -652,6 +650,4 @@ extern "C" void device_cleanup ()
   rtcDeleteDevice(g_device); g_device = nullptr;
 }
 
-#if defined(__cplusplus)
-}
-#endif
+} // namespace embree

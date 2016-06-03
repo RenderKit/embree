@@ -18,9 +18,7 @@
 
 #include "../math/vec.h"
 
-#if defined(__cplusplus)
 namespace embree {
-#endif
 
 struct RandomSampler
 {
@@ -120,7 +118,4 @@ inline Vec3fa RandomSampler_get3D(RandomSampler& self)
   return Vec3fa(u,v,w);
 }
 
-#if defined(__cplusplus)
-}
-#endif
-
+} // namespace embree

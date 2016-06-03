@@ -16,9 +16,7 @@
 
 #include "light.h"
 
-#if defined(__cplusplus)
 namespace embree {
-#endif
 
 struct QuadLight
 {
@@ -105,6 +103,4 @@ extern "C" void* QuadLight_create()
   return self;
 }
 
-#if defined(__cplusplus)
-}
-#endif
+} // namespace embree

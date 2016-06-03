@@ -21,10 +21,6 @@
 #include "../common/tutorial/scene_device.isph"
 #include "../common/tutorial/optics.isph"
 
-#if defined(__cplusplus)
-namespace embree {
-#endif
-
 #undef TILE_SIZE_X
 #undef TILE_SIZE_Y
 
@@ -223,7 +219,7 @@ inline Vec3f DielectricReflection__eval(const varying DielectricReflection* unif
 inline Vec3f DielectricReflection__sample(const varying DielectricReflection* uniform This, const Vec3f &wo, const DifferentialGeometry &dg, Sample3f &wi, const Vec2f &s)
 {
   const float cosThetaO = clamp(dot(wo,dg.Ns));
-  wi = reflect_(wo,dg.Ns,cosThetaO);
+  wi = make_Sample3f(reflect(wo,dg.Ns,cosThetaO),1.0f);
   return make_Vec3f(fresnelDielectric(cosThetaO,This->eta));
 }
 
@@ -488,7 +484,7 @@ Vec3f MirrorMaterial__eval(MirrorMaterial* uniform This, const BRDF& brdf, const
 
 Vec3f MirrorMaterial__sample(MirrorMaterial* uniform This, const BRDF& brdf, const Vec3f& Lw, const Vec3f& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
 {
-  wi_o = reflect_(wo,dg.Ns);
+  wi_o = make_Sample3f(reflect(wo,dg.Ns),1.0f);
   return make_Vec3f(This->reflectance);
 }
 
@@ -522,7 +518,7 @@ Vec3f OBJMaterial__eval(OBJMaterial* uniform material, const BRDF& brdf, const V
     R = R + (1.0f/M_PI) * clamp(dot(wi,dg.Ns)) * brdf.Kd;
   }
   if (Ms > 0.0f) {
-    const Sample3f refl = reflect_(wo,dg.Ns);
+    const Sample3f refl = make_Sample3f(reflect(wo,dg.Ns),1.0f);
     if (dot(refl.v,wi) > 0.0f)
       R = R + (brdf.Ns+2) * one_over_two_pi * powf(max(1e-10f,dot(refl.v,wi)),brdf.Ns) * clamp(dot(wi,dg.Ns)) * brdf.Ks;
   }
@@ -544,7 +540,7 @@ Vec3f OBJMaterial__sample(OBJMaterial* uniform material, const BRDF& brdf, const
   Sample3f wis = make_Sample3f(make_Vec3f(0.0f),0.0f);
   if (max(max(brdf.Ks.x,brdf.Ks.y),brdf.Ks.z) > 0.0f)
   {
-    const Sample3f refl = reflect_(wo,dg.Ns);
+    const Sample3f refl = make_Sample3f(reflect(wo,dg.Ns),1.0f);
     wis.v = powerCosineSampleHemisphere(brdf.Ns,s);
     wis.pdf = powerCosineSampleHemispherePDF(wis.v,brdf.Ns);
     wis.v = frame(refl.v) * wis.v;
@@ -642,7 +638,7 @@ Vec3f ReflectiveMetalMaterial__eval(ReflectiveMetalMaterial* uniform This, const
 
 Vec3f ReflectiveMetalMaterial__sample(ReflectiveMetalMaterial* uniform This, const BRDF& brdf, const Vec3f& Lw, const Vec3f& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
 {
-  wi_o = reflect_(wo,dg.Ns);
+  wi_o = make_Sample3f(reflect(wo,dg.Ns),1.0f);
   return make_Vec3f(This->reflectance) * fresnelConductor(dot(wo,dg.Ns),make_Vec3f((varying Vec3fa)This->eta),make_Vec3f((varying Vec3fa)This->k));
 }
 
@@ -702,7 +698,7 @@ Vec3f DielectricMaterial__sample(DielectricMaterial* uniform material, const BRD
 
   float cosThetaO = clamp(dot(wo,dg.Ns));
   float cosThetaI; Sample3f wit = refract(wo,dg.Ns,eta,cosThetaO,cosThetaI);
-  Sample3f wis = reflect_(wo,dg.Ns);
+  Sample3f wis = make_Sample3f(reflect(wo,dg.Ns),1.0f);
   float R = fresnelDielectric(cosThetaO,cosThetaI,eta);
   Vec3f cs = make_Vec3f(R);
   Vec3f ct = make_Vec3f(1.0f-R);
@@ -727,7 +723,7 @@ Vec3f ThinDielectricMaterial__sample(ThinDielectricMaterial* uniform This, const
   if (cosThetaO <= 0.0f) return make_Vec3f(0.0f);
   float R = fresnelDielectric(cosThetaO,rcp(This->eta));
   Sample3f wit = make_Sample3f(neg(wo),1.0f);
-  Sample3f wis = reflect_(wo,dg.Ns);
+  Sample3f wis = make_Sample3f(reflect(wo,dg.Ns),1.0f);
   Vec3f ct = exp(make_Vec3f(This->transmissionFactor)*rcp(cosThetaO))*make_Vec3f(1.0f-R);
   Vec3f cs = make_Vec3f(R);
   return sample_component2(cs,wis,medium,ct,wit,medium,Lw,wi_o,medium,s.x);
@@ -1258,17 +1254,17 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, uniform 
     materialID = mesh->triangles[ray.primID].materialID;
     if (mesh->texcoords) {
       ISPCTriangle* tri = &mesh->triangles[ray.primID];
-      const Vec2f st0 = make_Vec2f(mesh->texcoords[tri->v0]);
-      const Vec2f st1 = make_Vec2f(mesh->texcoords[tri->v1]);
-      const Vec2f st2 = make_Vec2f(mesh->texcoords[tri->v2]);
+      const Vec2f st0 = mesh->texcoords[tri->v0];
+      const Vec2f st1 = mesh->texcoords[tri->v1];
+      const Vec2f st2 = mesh->texcoords[tri->v2];
       const float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
       const Vec2f st = w*st0 + u*st1 + v*st2;
       dg.u = st.x;
       dg.v = st.y;
       /*
-      const Vec3f n0 = make_Vec3f(mesh->normals[tri->v0]);
-      const Vec3f n1 = make_Vec3f(mesh->normals[tri->v1]);
-      const Vec3f n2 = make_Vec3f(mesh->normals[tri->v2]);
+      const Vec3f n0 = mesh->normals[tri->v0];
+      const Vec3f n1 = mesh->normals[tri->v1];
+      const Vec3f n2 = mesh->normals[tri->v2];
       dg.Ns = w*n0 + u*n1 + v*n2;
       */
     }
@@ -1279,10 +1275,10 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, uniform 
     materialID = mesh->meshMaterialID;
     if (mesh->texcoords) {
       ISPCQuad* quad = &mesh->quads[ray.primID];
-      const Vec2f st0 = make_Vec2f(mesh->texcoords[quad->v0]);
-      const Vec2f st1 = make_Vec2f(mesh->texcoords[quad->v1]);
-      const Vec2f st2 = make_Vec2f(mesh->texcoords[quad->v2]);
-      const Vec2f st3 = make_Vec2f(mesh->texcoords[quad->v3]);
+      const Vec2f st0 = mesh->texcoords[quad->v0];
+      const Vec2f st1 = mesh->texcoords[quad->v1];
+      const Vec2f st2 = mesh->texcoords[quad->v2];
+      const Vec2f st3 = mesh->texcoords[quad->v3];
       if (ray.u+ray.v < 1.0f) {
         const float u = ray.u, v = ray.v; const float w = 1.0f-u-v;
         const Vec2f st = w*st0 + u*st1 + v*st3;
@@ -1684,7 +1680,7 @@ inline uniform float updateEdgeLevel( uniform ISPCSubdivMesh* uniform mesh, cons
 
 void updateEdgeLevelBuffer( uniform ISPCSubdivMesh* uniform mesh, const uniform Vec3fa& cam_pos, uniform size_t startID, uniform size_t endID )
 {
-  for (uniform size_t f=startID; f<endID;f++) 
+  for (uniform size_t f=startID; f<endID;f++)
   {
     uniform unsigned int e = mesh->face_offsets[f];
     uniform unsigned int N = mesh->verticesPerFace[f];
@@ -1815,7 +1811,3 @@ export void device_cleanup ()
   g_accu_height = 0;
   g_accu_count = 0;
 } // device_cleanup
-
-#if defined(__cplusplus)
-}
-#endif

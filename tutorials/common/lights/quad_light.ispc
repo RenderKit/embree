@@ -16,10 +16,6 @@
 
 #include "light.isph"
 
-#if defined(__cplusplus)
-namespace embree {
-#endif
-
 struct QuadLight
 {
   Light super;            //!< inherited light fields
@@ -104,7 +100,3 @@ export void* uniform QuadLight_create()
 
   return self;
 }
-
-#if defined(__cplusplus)
-}
-#endif

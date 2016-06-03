@@ -14,9 +14,17 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-ADD_SUBDIRECTORY(image)
-ADD_SUBDIRECTORY(transport)
-ADD_SUBDIRECTORY(tutorial)
-ADD_SUBDIRECTORY(scenegraph)
-ADD_SUBDIRECTORY(lights)
-ADD_SUBDIRECTORY(texture)
+ADD_LIBRARY(texture STATIC
+  texture2d.cpp
+)
+TARGET_LINK_LIBRARIES(texture sys)
+SET_PROPERTY(TARGET texture PROPERTY FOLDER tutorials/common)
+
+IF (EMBREE_ISPC_SUPPORT)
+  ADD_ISPC_LIBRARY(texture_ispc STATIC
+    texture2d.ispc
+  )
+  TARGET_LINK_LIBRARIES(texture_ispc sys)
+  SET_TARGET_PROPERTIES(texture_ispc PROPERTIES LINKER_LANGUAGE C)
+  SET_PROPERTY(TARGET texture_ispc PROPERTY FOLDER tutorials/common)
+ENDIF()
