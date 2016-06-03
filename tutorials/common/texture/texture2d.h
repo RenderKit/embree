@@ -99,7 +99,7 @@ inline float get1f(const Texture2D *self,
 /*! helper function: get3f() with a default value if the texture is nullptr */
 inline Vec3fa get3f(const Texture2D *self,
                    const Vec2f where,
-                   const Vec3fa defaultValue)
+                   const Vec3fa& defaultValue)
 {
   if (self == nullptr) return defaultValue;
   else return get3f(self,where);

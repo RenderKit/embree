@@ -45,6 +45,6 @@ osp2emb:
 	@./osp2emb.sh ../../ospray/ospray/texture/Texture2D.ih common/texture/texture2d.isph
 	@./osp2emb.sh ../../ospray/ospray/texture/Texture2D.ispc common/texture/texture2d.ispc
 	@./osp2emb.sh ../../ospray/ospray/texture/TextureParam.ih common/texture/texture_param.isph
-	@echo "\nexport void dummy() {} // just to avoid linker warning under MacOSX" >> common/lights/light.ispc
+	@echo "export void dummy() {} // just to avoid linker warning under MacOSX" >> common/lights/light.ispc
 
 all: osp2emb ispc2cpp

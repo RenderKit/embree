@@ -172,7 +172,7 @@ static Vec4f Texture2D_bilinear_##FMT(const uniform Texture2D *uniform self, \
   FCT(SRGB)                    \
   FCT(RGB32F)                  \
   FCT(R8)                      \
-  FCT(R32F)
+  FCT(R32F)   
 
 __foreach_fetcher(__define_tex_get)
 

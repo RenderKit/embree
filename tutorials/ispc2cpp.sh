@@ -99,6 +99,9 @@ sed -i.backup  's/RTCFilterFuncVarying/RTCFilterFunc/g' $2
 sed -i.backup  's/rtcIntersectVM/rtcIntersect1M/g' $2
 sed -i.backup  's/rtcOccludedVM/rtcOccluded1M/g' $2
 
+# to make 32 bit compile happy under Windows
+sed -i.backup 's/const Vec3fa defaultValue/const Vec3fa\& defaultValue/g' $2
+
 # add Embree namespace
 ln=`grep -n -E "#include|#pragma" $2 | tail -1 | cut -d: -f1`
 mv $2 $2.backup

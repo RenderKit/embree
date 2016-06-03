@@ -66,7 +66,7 @@ inline Vec3fa get3f(const TextureParam &tex,
 
 inline Vec3fa get3f(const TextureParam &tex,
                    const Vec2f uv,
-                   const Vec3fa defaultValue)
+                   const Vec3fa& defaultValue)
 {
   if (tex.map == nullptr)
     return defaultValue;

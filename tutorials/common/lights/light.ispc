@@ -26,5 +26,4 @@ Light_EvalRes Light_eval(const uniform Light* uniform,
   res.pdf = 0.f;
   return res;
 }
-
 export void dummy() {} // just to avoid linker warning under MacOSX
