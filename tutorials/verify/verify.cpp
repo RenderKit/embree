@@ -14,6 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#define _CRT_SECURE_NO_WARNINGS
+
 #include "verify.h"
 #include "../tutorials/common/scenegraph/scenegraph.h"
 #include "../kernels/algorithms/parallel_for.h"
@@ -3442,7 +3444,7 @@ namespace embree
       device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
 
-      for (size_t i=0; i<numMeshes; i++)
+      for (unsigned int i=0; i<numMeshes; i++)
       {
         switch (gtype) {
         case TRIANGLE_MESH:    
@@ -3450,11 +3452,11 @@ namespace embree
         case QUAD_MESH:        
         case QUAD_MESH_MB:     geometries.push_back(SceneGraph::createQuadSphere(zero,float(i+1),numPhi)); break;
         case SUBDIV_MESH:      
-        case SUBDIV_MESH_MB:   geometries.push_back(SceneGraph::createSubdivSphere(zero,float(i+1),8,numPhi/8)); break;
+        case SUBDIV_MESH_MB:   geometries.push_back(SceneGraph::createSubdivSphere(zero,float(i+1),8,float(numPhi)/8.0f)); break;
         case HAIR_GEOMETRY:    
-        case HAIR_GEOMETRY_MB: geometries.push_back(SceneGraph::createHairyPlane(i,Vec3fa(i),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4.0f*numPhi*numPhi,true)); break;
+        case HAIR_GEOMETRY_MB: geometries.push_back(SceneGraph::createHairyPlane(i,Vec3fa(float(i)),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4*numPhi*numPhi,true)); break;
         case LINE_GEOMETRY: 
-        case LINE_GEOMETRY_MB: geometries.push_back(SceneGraph::createHairyPlane(i,Vec3fa(i),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4.0f*numPhi*numPhi/3.0f,true)); break;
+        case LINE_GEOMETRY_MB: geometries.push_back(SceneGraph::createHairyPlane(i,Vec3fa(float(i)),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4*numPhi*numPhi/3,true)); break;
         default:               throw std::runtime_error("invalid geometry for benchmark");
         }
 
@@ -3487,7 +3489,7 @@ namespace embree
       double t0 = getSeconds();
 
       if (update)
-        for (size_t i=0; i<numMeshes; i++) 
+        for (unsigned int i=0; i<numMeshes; i++) 
           rtcUpdate(*scene,i);
 
       rtcCommit (*scene);
