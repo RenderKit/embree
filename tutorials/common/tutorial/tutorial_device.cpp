@@ -515,7 +515,7 @@ Vec3fa renderPixelAmbientOcclusion(float x, float y, const ISPCCamera& camera)
 
 #define AMBIENT_OCCLUSION_SAMPLES 64
   /* trace some ambient occlusion rays */
-  int seed = 34*x+12*y;
+  int seed = 34*(int)x+12*(int)y;
   for (int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
      {
       Vec3fa dir;
