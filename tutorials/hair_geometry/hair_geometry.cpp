@@ -15,7 +15,6 @@
 // ======================================================================== //
 
 #include "../common/tutorial/tutorial.h"
-#include "../common/transport/transport_host.h"
 
 namespace embree
 {

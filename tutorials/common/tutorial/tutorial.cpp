@@ -35,7 +35,6 @@
 #include "../scenegraph/obj_loader.h"
 #include "../scenegraph/xml_loader.h"
 #include "../image/image.h"
-#include "../transport/transport_host.h"
 
 namespace embree
 {
@@ -738,5 +737,70 @@ namespace embree
   catch (...) {
     std::cout << "Error: unknown exception caught." << std::endl;
     return 1;
+  }
+
+  extern "C" int64_t get_tsc() {
+    return read_tsc();
+  }
+  
+  /* framebuffer */
+  int* g_pixels = nullptr;
+  int g_width = -1;
+  int g_height = -1;
+
+  /* scene */
+  extern "C" {
+    ISPCScene* g_ispc_scene = nullptr;
+  }
+
+  void init(const char* cfg) {
+    device_init(cfg);
+  }
+
+  void set_parameter(size_t parm, ssize_t val) {
+    rtcDeviceSetParameter1i(nullptr,(RTCParameter)parm,val);
+  }
+
+  void key_pressed (int key) {
+    call_key_pressed_handler(key);
+  }
+
+  void resize(int width, int height)
+  {
+    if (width == g_width && height == g_height) 
+      return;
+
+    if (g_pixels) alignedFree(g_pixels);
+    g_width = width;
+    g_height = height;
+    g_pixels = (int*) alignedMalloc(g_width*g_height*sizeof(int),64);
+  }
+
+  void set_scene (TutorialScene* in) {
+    g_ispc_scene = new ISPCScene(in);
+  }
+
+  bool pick(const float x, const float y, const ISPCCamera& camera, Vec3fa& hitPos) {
+    return device_pick(x,y,camera,hitPos);
+  }
+
+  void render(const float time, const ISPCCamera& camera) {
+    device_render(g_pixels,g_width,g_height,time,camera);
+  }
+
+  int* map () {
+    return g_pixels;
+  }
+  
+  void unmap () {
+  }
+
+  void cleanup()
+  {
+    device_cleanup();
+    alignedFree(g_pixels); 
+    g_pixels = nullptr;
+    g_width = -1;
+    g_height = -1;
   }
 }

@@ -20,9 +20,55 @@
 #include "application.h"
 #include "camera.h"
 #include "scene.h"
+#include "scene_device.h"
 
 namespace embree
 {
+  /* initialize renderer */
+  void init(const char* cfg);
+
+  /* keypressed event */
+  void key_pressed(int key);
+
+  /* passes parameters to the backend */
+  void set_parameter(size_t parm, ssize_t val);
+
+  /* resize framebuffer */
+  void resize(int width, int height);
+
+  /* set scene to use */
+  struct TutorialScene;
+  void set_scene (TutorialScene* in);
+
+  void set_scene_keyframes(TutorialScene** in, size_t numKeyFrames);
+
+  /* pick event */
+  bool pick(const float x, const float y, const ISPCCamera& camera, Vec3fa& hitPos);
+
+  /* render frame and map framebuffer */
+  void render(const float time, const ISPCCamera& camera);
+
+  /* map framebuffer */
+  int* map ();
+  
+  /* unmap framebuffer */
+  void unmap ();
+
+  /* cleanup renderer */
+  void cleanup();
+
+  extern "C" void device_init(const char* cfg);
+  extern "C" void call_key_pressed_handler (int key);
+  extern "C" void (*key_pressed_handler)(int key);
+
+  extern "C" void device_set_scene(ISPCScene* scene);
+  extern "C" void device_resize(int width, int height);
+  extern "C" bool device_pick(const float x, const float y, const ISPCCamera& camera, Vec3fa& hitPos);
+
+  extern "C" void device_render(int* pixels, const int width, const int height,
+                                const float time, const ISPCCamera& camera);
+  extern "C" void device_cleanup();
+
   class TutorialApplication : public Application
   {
   public:
