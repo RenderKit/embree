@@ -169,7 +169,7 @@ namespace embree
     template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
     void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect_co(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, const RTCIntersectContext* context)
     {
-#if defined(__AVX2__)
+#if defined(__AVX2__) && !defined(__AVX512F__)
 
 #define MAX_RAYS 64
       __aligned(64) RContext ray_ctx[MAX_RAYS];
