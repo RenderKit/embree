@@ -192,7 +192,7 @@ namespace embree
     {
       if (i+4 >= numUVs)
       {
-        vbool4 valid1 = vint4(i)+vint4(step) < vint4(numUVs);
+        vbool4 valid1 = vint4(int(i))+vint4(step) < vint4(numUVs);
         if (valid) valid1 &= vint4::loadu(&valid[i]) == vint4(-1);
         if (none(valid1)) { i+=4; continue; }
         interpolateHelper(valid1,vint4::loadu(&primIDs[i]),vfloat4::loadu(&u[i]),vfloat4::loadu(&v[i]),numUVs,buffer, 
@@ -207,7 +207,7 @@ namespace embree
       }
       else
       {
-        vbool8 valid1 = vint8(i)+vint8(step) < vint8(int(numUVs));
+        vbool8 valid1 = vint8(int(i))+vint8(step) < vint8(int(numUVs));
         if (valid) valid1 &= vint8::loadu(&valid[i]) == vint8(-1);
         if (none(valid1)) { i+=8; continue; }
         interpolateHelper(valid1,vint8::loadu(&primIDs[i]),vfloat8::loadu(&u[i]),vfloat8::loadu(&v[i]),numUVs,buffer, 

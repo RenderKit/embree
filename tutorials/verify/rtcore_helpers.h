@@ -291,7 +291,7 @@ namespace embree
     ray_o.Ngz[i] = ray_i.Ng[2];
   }
 
-  __forceinline void setRay(RTCRayN* ray_o, size_t N, int i, const RTCRay& ray_i)
+  __forceinline void setRay(RTCRayN* ray_o, size_t N, size_t i, const RTCRay& ray_i)
   {
     RTCRayN_org_x(ray_o,N,i) = ray_i.org[0];
     RTCRayN_org_y(ray_o,N,i) = ray_i.org[1];
@@ -585,7 +585,7 @@ namespace embree
     int sflag = 0, gflag = 0;
     if (i & 4) {
       sflag |= RTC_SCENE_DYNAMIC;
-      gflag = min(i&3,size_t(2));
+      gflag = min(int(i)&3,2);
     }
     if (i & 8) sflag |= RTC_SCENE_HIGH_QUALITY;
     if (i & 16) sflag |= RTC_SCENE_ROBUST;

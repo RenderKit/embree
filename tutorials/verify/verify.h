@@ -14,10 +14,14 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "../kernels/common/default.h"
-#include "../kernels/common/ray.h"
+/* we include the Embree headers the very first to make sure they
+ * always compile without any internal Embree specific stuff. */
 #include "../include/embree2/rtcore.h"
 #include "../include/embree2/rtcore_ray.h"
+
+/* now we include all Embree internal files we need for testing */
+#include "../kernels/common/default.h"
+#include "../kernels/common/ray.h"
 #include "rtcore_helpers.h"
 #include "../tutorials/common/tutorial/application.h"
 #include "../tutorials/common/math/random_sampler.h"
@@ -69,7 +73,8 @@ namespace embree
       Statistics benchmark_loop(VerifyApplication* state);
       virtual void cleanup(VerifyApplication* state) {}
       virtual TestReturnValue execute(VerifyApplication* state, bool silent);
-      double updateDatabase(VerifyApplication* state, Statistics stat);
+      double readDatabase(VerifyApplication* state);
+      void updateDatabase(VerifyApplication* state, Statistics stat, double bestAvg);
       void plotDatabase(VerifyApplication* state);
 
     public:

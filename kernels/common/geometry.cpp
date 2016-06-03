@@ -20,7 +20,7 @@
 namespace embree
 {
   Geometry::Geometry (Scene* parent, Type type, size_t numPrimitives, size_t numTimeSteps, RTCGeometryFlags flags) 
-    : parent(parent), id(0), type(type), numPrimitives(numPrimitives), numTimeSteps(numTimeSteps), flags(flags),
+    : parent(parent), id(0), type(type), numPrimitives(numPrimitives), numTimeSteps(unsigned(numTimeSteps)), flags(flags),
       enabled(true), modified(true), userPtr(nullptr), mask(-1), used(1),
       intersectionFilter1(nullptr), occlusionFilter1(nullptr),
       intersectionFilter4(nullptr), occlusionFilter4(nullptr),

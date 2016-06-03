@@ -157,7 +157,7 @@ namespace embree
           }
           
           /* subdivide patch */
-          size_t Nc;
+          unsigned Nc;
           array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE> patches; 
           patch.subdivide(patches,Nc); // FIXME: only have to generate one of the patches
           

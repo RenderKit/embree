@@ -17,10 +17,9 @@
 #include "../common/math/random_sampler.h"
 #include "../common/tutorial/tutorial_device.h"
 #include "../common/tutorial/scene_device.h"
+#include "../common/tutorial/optics.h"
 
-#if defined(__cplusplus)
 namespace embree {
-#endif
 
 #if defined(__XEON_PHI__) // FIXME: gather of pointers not working in ISPC for Xeon Phi
 #define renderPixelTestEyeLight renderPixelStandard
@@ -488,7 +487,7 @@ void renderTileStandard(int taskIndex,
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
     /* calculate pixel color */
-    Vec3fa color = renderPixelStandard(x,y,camera);
+    Vec3fa color = renderPixelStandard((float)x,(float)y,camera);
 
     /* write color to framebuffer */
     Vec3fa accu_color = g_accu[y*width+x] + Vec3fa(color.x,color.y,color.z,1.0f); g_accu[y*width+x] = accu_color;
@@ -576,7 +575,7 @@ extern "C" void device_render (int* pixels,
   enableFilterDispatch = renderTile == renderTileStandard;
   parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
     for (size_t i=range.begin(); i<range.end(); i++)
-      renderTileTask(i,pixels,width,height,time,camera,numTilesX,numTilesY);
+      renderTileTask((int)i,pixels,width,height,time,camera,numTilesX,numTilesY);
   }); 
   enableFilterDispatch = false;
 }
@@ -592,6 +591,4 @@ extern "C" void device_cleanup ()
   g_accu_count = 0;
 }
 
-#if defined(__cplusplus)
-}
-#endif
+} // namespace embree

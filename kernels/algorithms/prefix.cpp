@@ -29,7 +29,7 @@ namespace embree
       bool passed = true;
       const size_t M = 10;
       
-      for (size_t N=10; N<10000000; N*=2.1f)
+      for (size_t N=10; N<10000000; N=size_t(2.1*N))
       {
 	/* initialize array with random numbers */
         uint32_t sum0 = 0;

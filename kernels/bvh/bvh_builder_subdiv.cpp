@@ -77,7 +77,7 @@ namespace embree
 
         double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "SubdivGridEagerBuilderBinnedSAH");
 
-        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
+        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(double(dn)); };
         auto virtualprogress = BuildProgressMonitorFromClosure(progress);
 
         /* initialize allocator and parallel_for_for_prefix_sum */
@@ -124,7 +124,7 @@ namespace embree
             patch_eval_subdivision(mesh->getHalfEdge(f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch)
             {
               SubdivPatch1Base patch(mesh->id,unsigned(f),subPatch,mesh,uv,edge_level,subdiv,VSIZEX);
-              size_t num = GridAOS::createEager<N>(patch,scene,mesh,f,alloc,&prims[base.end+s.end]);
+              size_t num = GridAOS::createEager<N>(patch,scene,mesh,unsigned(f),alloc,&prims[base.end+s.end]);
               assert(num == GridAOS::getNumEagerLeaves(patch.grid_u_res-1,patch.grid_v_res-1));
               for (size_t i=0; i<num; i++)
                 s.add(prims[base.end+s.end].bounds());
@@ -295,7 +295,7 @@ namespace embree
             
             patch_eval_subdivision(mesh->getHalfEdge(f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch)
             {
-              const unsigned int patchIndex = base.size()+s.size();
+              const size_t patchIndex = base.size()+s.size();
               assert(patchIndex < numPrimitives);
               SubdivPatch1Base& patch = subdiv_patches[patchIndex];
               BBox3fa bound = empty;
@@ -313,7 +313,7 @@ namespace embree
                 }
               }
               else {
-                new (&patch) SubdivPatch1Cached(mesh->id,f,subPatch,mesh,uv,edge_level,subdiv,VSIZEX);
+                new (&patch) SubdivPatch1Cached(mesh->id,unsigned(f),subPatch,mesh,uv,edge_level,subdiv,VSIZEX);
                 bound = evalGridBounds(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,mesh);
                 //patch.root_ref.data = (int64_t) GridSOA::create(&patch,scene,[&](size_t bytes) { return (*bvh->alloc.threadLocal())(bytes); });
               }
@@ -339,7 +339,7 @@ namespace embree
           auto createLeaf = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> int {
             size_t items MAYBE_UNUSED = current.pinfo.size();
             assert(items == 1);
-            const unsigned int patchIndex = prims[current.prims.begin()].ID();
+            const size_t patchIndex = prims[current.prims.begin()].ID();
             SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
             *current.parent = bvh->encodeLeaf((char*)&subdiv_patches[patchIndex],1);
             return 0;

@@ -322,7 +322,7 @@ namespace embree
       }
 
       else if (tok == Token::Id("tessellation_cache_size") && cin->trySymbol("="))
-        tessellation_cache_size = cin->get().Float() * 1024 * 1024;
+        tessellation_cache_size = size_t(cin->get().Float()*1024.0f*1024.0f);
 
       cin->trySymbol(","); // optional , separator
     }

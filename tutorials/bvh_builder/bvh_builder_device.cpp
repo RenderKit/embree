@@ -123,11 +123,11 @@ namespace embree
   
   void build_morton(avector<PrimRef>& prims, isa::PrimInfo& pinfo)
   {
-    size_t N = pinfo.size();
+    unsigned N = unsigned(pinfo.size());
     /* array for morton builder */
     avector<isa::MortonID32Bit> morton_src(N);
     avector<isa::MortonID32Bit> morton_tmp(N);
-    for (size_t i=0; i<N; i++) 
+    for (unsigned i=0; i<N; i++) 
       morton_src[i].index = i;
     
     /* fast allocator that supports thread local operation */
@@ -222,7 +222,10 @@ namespace embree
     isa::PrimInfo pinfo(empty);
     avector<PrimRef> prims; 
     for (size_t i=0; i<N; i++) {
-      const Vec3fa p = 1000.0f*Vec3fa(drand48(),drand48(),drand48());
+      const float x = float(drand48());
+      const float y = float(drand48());
+      const float z = float(drand48());
+      const Vec3fa p = 1000.0f*Vec3fa(x,y,z);
       const BBox3fa b = BBox3fa(p,p+Vec3fa(1.0f));
       pinfo.add(b);
       const PrimRef prim = PrimRef(b,i);

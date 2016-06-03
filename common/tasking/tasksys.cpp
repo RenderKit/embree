@@ -51,7 +51,7 @@ namespace embree
     parallel_for(size_t(0), size_t(count),[&] (const range<size_t>& r) {
         const size_t threadIndex = TaskScheduler::threadIndex();
         const size_t threadCount = TaskScheduler::threadCount();
-        for (size_t i=r.begin(); i<r.end(); i++) ((TaskFuncType)func)(data,threadIndex,threadCount,i,count);
+        for (size_t i=r.begin(); i<r.end(); i++) ((TaskFuncType)func)(data,int(threadIndex),int(threadCount),int(i),count);
       });
   }
 #endif  

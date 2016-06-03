@@ -76,7 +76,7 @@ namespace embree
         }
         
         /* subdivide patch */
-        size_t N;
+        unsigned N;
         array_t<CatmullClarkPatch3fa,GeneralCatmullClarkPatch3fa::SIZE> patches; 
         patch.subdivide(patches,N);
         

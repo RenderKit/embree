@@ -197,7 +197,7 @@ namespace embree
     int type = BEZIER_CURVES;
     file.write((char*)&type,sizeof(int));
     file.write((char*)&numTimeSteps,sizeof(int));
-    unsigned numVerts = numVertices();
+    size_t numVerts = numVertices();
     file.write((char*)&numVerts,sizeof(int));
     file.write((char*)&numPrimitives,sizeof(int));
 

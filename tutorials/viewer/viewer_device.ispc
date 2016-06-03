@@ -19,10 +19,6 @@
 #include "../common/tutorial/tutorial_device.isph"
 #include "../common/tutorial/scene_device.isph"
 
-#if defined(__cplusplus)
-namespace embree {
-#endif
-
 extern uniform ISPCScene* uniform g_ispc_scene;
 extern uniform bool g_changed;
 extern uniform int g_instancing_mode;
@@ -557,7 +553,7 @@ void renderTileStandard(uniform int taskIndex,
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
-    Vec3f color = renderPixelStandard(x,y,camera);
+    Vec3f color = renderPixelStandard((float)x,(float)y,camera);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -642,7 +638,3 @@ export void device_cleanup ()
   rtcDeleteScene (g_scene); g_scene = NULL;
   rtcDeleteDevice(g_device); g_device = NULL;
 }
-
-#if defined(__cplusplus)
-}
-#endif

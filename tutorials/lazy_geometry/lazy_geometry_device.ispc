@@ -16,10 +16,6 @@
 
 #include "../common/tutorial/tutorial_device.isph"
 
-#if defined(__cplusplus)
-namespace embree {
-#endif
-
 RTCDevice g_device = NULL;
 
 const uniform int numPhi = 20;
@@ -27,7 +23,7 @@ const uniform int numTheta = 2*numPhi;
 const uniform int numSpheres = 64;
 
 /* state of the lazy geometry */
-enum LazyState 
+enum LazyState
 {
   LAZY_INVALID = 0,   // the geometry is not yet created
   LAZY_CREATE = 1,    // one thread is creating the geometry
@@ -36,7 +32,7 @@ enum LazyState
 };
 
 /* representation for our lazy geometry */
-struct LazyGeometry 
+struct LazyGeometry
 {
   ALIGNED_STRUCT
   uniform unsigned int geometry;
@@ -63,9 +59,9 @@ uniform unsigned int createTriangulatedSphere (RTCScene scene, const uniform Vec
 {
   /* create triangle mesh */
   uniform unsigned int mesh = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 2*numTheta*(numPhi-1), numTheta*(numPhi+1));
-  
+
   /* map triangle and vertex buffers */
-  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
+  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER);
   uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
 
   /* create sphere */
@@ -86,7 +82,7 @@ uniform unsigned int createTriangulatedSphere (RTCScene scene, const uniform Vec
     }
     if (phi == 0) continue;
 
-    for (uniform int theta=1; theta<=numTheta; theta++) 
+    for (uniform int theta=1; theta<=numTheta; theta++)
     {
       uniform int p00 = (phi-1)*numTheta+theta-1;
       uniform int p01 = (phi-1)*numTheta+theta%numTheta;
@@ -94,21 +90,21 @@ uniform unsigned int createTriangulatedSphere (RTCScene scene, const uniform Vec
       uniform int p11 = phi*numTheta+theta%numTheta;
 
       if (phi > 1) {
-        triangles[tri].v0 = p10; 
-        triangles[tri].v1 = p00; 
-        triangles[tri].v2 = p01; 
+        triangles[tri].v0 = p10;
+        triangles[tri].v1 = p00;
+        triangles[tri].v2 = p01;
         tri++;
       }
 
       if (phi < numPhi) {
-        triangles[tri].v0 = p11; 
+        triangles[tri].v0 = p11;
         triangles[tri].v1 = p10;
         triangles[tri].v2 = p01;
         tri++;
       }
     }
   }
-  rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
+  rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER);
   rtcUnmapBuffer(scene,mesh,RTC_INDEX_BUFFER);
   return mesh;
 }
@@ -116,7 +112,7 @@ uniform unsigned int createTriangulatedSphere (RTCScene scene, const uniform Vec
 void lazyCreate(uniform LazyGeometry* uniform instance)
 {
   /* one thread will switch the object from the LAZY_INVALID state to the LAZY_CREATE state */
-  if (atomic_compare_exchange_global((uniform int32*)&instance->state,LAZY_INVALID,LAZY_CREATE) == 0) 
+  if (atomic_compare_exchange_global((uniform int32*)&instance->state,LAZY_INVALID,LAZY_CREATE) == 0)
   {
     /* create the geometry */
     print("creating sphere %i\n",instance->userID);
@@ -126,8 +122,8 @@ void lazyCreate(uniform LazyGeometry* uniform instance)
     /* now switch to the LAZY_COMMIT state */
     memory_barrier();
     instance->state = LAZY_COMMIT;
-  } 
-  else 
+  }
+  else
   {
     /* wait until the geometry got created */
     while (atomic_compare_exchange_global((uniform int32*)&instance->state,10,11) < LAZY_COMMIT) {
@@ -138,7 +134,7 @@ void lazyCreate(uniform LazyGeometry* uniform instance)
   /* multiple threads might enter the rtcCommit function to jointly
    * build the internal data structures */
   rtcCommit(instance->object);
-  
+
   /* switch to LAZY_VALID state */
   atomic_compare_exchange_global((uniform int32*)&instance->state,LAZY_COMMIT,LAZY_VALID);
 }
@@ -157,7 +153,7 @@ void instanceIntersectFunc(uniform LazyGeometry* uniform instance, varying RTCRa
   else ray.instID = instance->userID;
 }
 
-void instanceOccludedFunc(uniform LazyGeometry* uniform instance, varying RTCRay& ray, uniform size_t item) 
+void instanceOccludedFunc(uniform LazyGeometry* uniform instance, varying RTCRay& ray, uniform size_t item)
 {
   /* create the object if it is not yet created */
   if (instance->state != LAZY_VALID)
@@ -190,12 +186,12 @@ uniform unsigned int createGroundPlane (RTCScene scene)
   uniform unsigned int mesh = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 2, 4);
 
   /* set vertices */
-  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
-  vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10; 
-  vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10; 
-  vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10; 
+  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER);
+  vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10;
+  vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10;
+  vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10;
   vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
-  rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
+  rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER);
 
   /* set triangles */
   uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
@@ -224,8 +220,8 @@ export void device_init (uniform int8* uniform cfg)
 
   /* instantiate geometry */
   createGroundPlane(g_scene);
-  for (uniform size_t i=0; i<numSpheres; i++) {
-    uniform float a = 2.0*M_PI*(uniform float)i/(uniform float)numSpheres;
+  for (uniform int i=0; i<numSpheres; i++) {
+    uniform float a = 2.0f*M_PI*(uniform float)i/(uniform float)numSpheres;
     createLazyObject(g_scene,i,10.0f*make_Vec3f(cosf(a),0,sinf(a)),1);
   }
   rtcCommit (g_scene);
@@ -249,18 +245,18 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
   ray.instID = 4; // set default instance ID
   ray.mask = -1;
   ray.time = 0;
-  
+
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
-  
+
   /* shade pixels */
   Vec3f color = make_Vec3f(0.0f);
-  if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
+  if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
   {
     Vec3f diffuse = make_Vec3f(1.0f);
     color = color + diffuse*0.5;
     Vec3f lightDir = normalize(make_Vec3f(-1,-1,-1));
-    
+
     /* initialize shadow ray */
     RTCRay shadow;
     shadow.org = ray.org + ray.tfar*ray.dir;
@@ -271,10 +267,10 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
     shadow.primID = 0;
     shadow.mask = -1;
     shadow.time = 0;
-    
+
     /* trace shadow ray */
     rtcOccluded(g_scene,shadow);
-    
+
     /* add light contribution */
     if (shadow.geomID)
       color = color + diffuse*clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f);
@@ -283,13 +279,13 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
 }
 
 /* renders a single screen tile */
-void renderTileStandard(uniform int taskIndex, 
+void renderTileStandard(uniform int taskIndex,
                         uniform int* uniform pixels,
                         const uniform unsigned int width,
-                        const uniform unsigned int height, 
+                        const uniform unsigned int height,
                         const uniform float time,
                         const uniform ISPCCamera& camera,
-                        const uniform int numTilesX, 
+                        const uniform int numTilesX,
                         const uniform int numTilesY)
 {
   const uniform unsigned int tileY = taskIndex / numTilesX;
@@ -302,7 +298,7 @@ void renderTileStandard(uniform int taskIndex,
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
     /* calculate pixel color */
-    Vec3f color = renderPixelStandard(x,y,camera);
+    Vec3f color = renderPixelStandard((float)x,(float)y,camera);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -315,10 +311,10 @@ void renderTileStandard(uniform int taskIndex,
 /* task that renders a single screen tile */
 task void renderTileTask(uniform int* uniform pixels,
                          const uniform unsigned int width,
-                         const uniform unsigned int height, 
+                         const uniform unsigned int height,
                          const uniform float time,
                          const uniform ISPCCamera& camera,
-                         const uniform int numTilesX, 
+                         const uniform int numTilesX,
                          const uniform int numTilesY)
 {
   renderTile(taskIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
@@ -327,7 +323,7 @@ task void renderTileTask(uniform int* uniform pixels,
 /* called by the C++ code to render */
 export void device_render (uniform int* uniform pixels,
                            const uniform unsigned int width,
-                           const uniform unsigned int height, 
+                           const uniform unsigned int height,
                            const uniform float time,
                            const uniform ISPCCamera& camera)
 {
@@ -343,7 +339,3 @@ export void device_cleanup ()
   rtcDeleteScene (g_scene); g_scene = NULL;
   rtcDeleteDevice(g_device); g_device = NULL;
 }
-
-#if defined(__cplusplus)
-}
-#endif

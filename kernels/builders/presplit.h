@@ -93,15 +93,15 @@ namespace embree
 
         /* split scene bounds into two halfes along largest dimension */
         const BBox3fa sceneBounds = item.sceneBounds;
-        const size_t dim = maxDim(sceneBounds.size());
+        const int dim = maxDim(sceneBounds.size());
         const float center = 0.5f*(sceneBounds.lower[dim]+sceneBounds.upper[dim]);
         BBox3fa lsceneBounds = sceneBounds; lsceneBounds.upper[dim] = center;
         BBox3fa rsceneBounds = sceneBounds; rsceneBounds.lower[dim] = center;
 
         /* calculate valid split range for primitive */
         const BBox3fa bounds = item.prim.bounds();
-        const float lower = 0.9f*bounds.lower[dim]+0.1*bounds.upper[dim];
-        const float upper = 0.1f*bounds.lower[dim]+0.9*bounds.upper[dim];
+        const float lower = 0.9f*bounds.lower[dim]+0.1f*bounds.upper[dim];
+        const float upper = 0.1f*bounds.lower[dim]+0.9f*bounds.upper[dim];
 
         /* if split is on the left side of primitive, continue with right half of scene bounds */
         if (center < lower) {

@@ -53,7 +53,7 @@ namespace embree
   }
 
   extern "C" ssize_t ispcGetParameter1i(const RTCParameter parm) {
-    return rtcGetParameter1i(parm);
+    return ssize_t(rtcGetParameter1i(parm));
   }
 
   extern "C" void ispcDeviceSetParameter1i(RTCDevice device, const RTCParameter parm, ssize_t val) {
@@ -61,7 +61,7 @@ namespace embree
   }
 
   extern "C" ssize_t ispcDeviceGetParameter1i(RTCDevice device, const RTCParameter parm) {
-    return rtcDeviceGetParameter1i(device,parm);
+    return ssize_t(rtcDeviceGetParameter1i(device,parm));
   }
 
   extern "C" RTCError ispcGetError() {

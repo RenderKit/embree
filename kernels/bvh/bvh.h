@@ -896,11 +896,7 @@ namespace embree
         while(minF + scale_diff * 255.0f < maxF)
         {
           // win / visual studio workaround
-#if _MSC_VER == 1600 || _MSC_VER == 1700
-          diff *= (1.0f + (float)ulp);
-#else
           diff = nextafterf(diff, FLT_MAX);
-#endif
           scale_diff = diff / 255.0f;
           iterations++;
         }
@@ -1095,13 +1091,13 @@ namespace embree
       assert(!((size_t)node & align_mask));
       ssize_t node_offset = (ssize_t)node-(ssize_t)base;
       assert(node_offset != 0);
-      assert(labs(node_offset) < 0x7fffffff);
+      assert(node_offset >= -ssize_t(0x80000000) && node_offset <= 0x7fffffff);
       return (unsigned int)node_offset | tyQuantizedNode;
     }
 
     static __forceinline int encodeQuantizedLeaf(size_t base, size_t node) {
       ssize_t leaf_offset = (ssize_t)node-(ssize_t)base;
-      assert(labs(leaf_offset) < 0x7fffffff);
+      assert(leaf_offset >= -ssize_t(0x80000000) && leaf_offset <= 0x7fffffff);
       return (int)leaf_offset;
     }
 

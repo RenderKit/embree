@@ -84,7 +84,7 @@ namespace embree
           const float v = uv.y * rcpDet;
 
           /* ray masking test */
-          Geometry* geometry = scene->get(prim.grid.geomID);
+          Geometry* geometry MAYBE_UNUSED = scene->get(prim.grid.geomID);
 #if defined(EMBREE_RAY_MASK)
           if ((geometry->mask & ray.mask[k]) == 0) return;
 #endif
@@ -294,7 +294,7 @@ namespace embree
         if (ray.tnear[k] > t || t > ray.tfar[k]) return false;
 
         /* ray masking test */
-        Geometry* geometry = scene->get(prim.grid.geomID);
+        Geometry* geometry MAYBE_UNUSED = scene->get(prim.grid.geomID);
 #if defined(EMBREE_RAY_MASK)
         if ((geometry->mask & ray.mask[k]) == 0) return false;
 #endif

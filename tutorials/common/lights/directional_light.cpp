@@ -18,9 +18,7 @@
 #include "../math/sampling.h"
 #include "../math/linearspace.h"
 
-#if defined(__cplusplus)
 namespace embree {
-#endif
 
 struct DirectionalLight
 {
@@ -106,6 +104,4 @@ extern "C" void* DirectionalLight_create()
   return self;
 }
 
-#if defined(__cplusplus)
-}
-#endif
+} // namespace embree

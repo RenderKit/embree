@@ -17,10 +17,7 @@
 #include "../common/math/random_sampler.isph"
 #include "../common/tutorial/tutorial_device.isph"
 #include "../common/tutorial/scene_device.isph"
-
-#if defined(__cplusplus)
-namespace embree {
-#endif
+#include "../common/tutorial/optics.isph"
 
 #if defined(__XEON_PHI__) // FIXME: gather of pointers not working in ISPC for Xeon Phi
 #define renderPixelTestEyeLight renderPixelStandard
@@ -488,7 +485,7 @@ void renderTileStandard(uniform int taskIndex,
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
     /* calculate pixel color */
-    Vec3f color = renderPixelStandard(x,y,camera);
+    Vec3f color = renderPixelStandard((float)x,(float)y,camera);
 
     /* write color to framebuffer */
     Vec3fa accu_color = g_accu[y*width+x] + make_Vec3fa(color.x,color.y,color.z,1.0f); g_accu[y*width+x] = accu_color;
@@ -588,7 +585,3 @@ export void device_cleanup ()
   g_accu_height = 0;
   g_accu_count = 0;
 }
-
-#if defined(__cplusplus)
-}
-#endif
