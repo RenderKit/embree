@@ -55,6 +55,7 @@ namespace embree
 
       width(512),
       height(512),
+      g_pixels(nullptr), g_width(-1), g_height(-1),
 
       outputImageFilename(""),
 
@@ -742,30 +743,25 @@ namespace embree
   extern "C" int64_t get_tsc() {
     return read_tsc();
   }
-  
-  /* framebuffer */
-  int* g_pixels = nullptr;
-  int g_width = -1;
-  int g_height = -1;
 
   /* scene */
   extern "C" {
     ISPCScene* g_ispc_scene = nullptr;
   }
 
-  void init(const char* cfg) {
+  void TutorialApplication::init(const char* cfg) {
     device_init(cfg);
   }
 
-  void set_parameter(size_t parm, ssize_t val) {
+  void TutorialApplication::set_parameter(size_t parm, ssize_t val) {
     rtcDeviceSetParameter1i(nullptr,(RTCParameter)parm,val);
   }
 
-  void key_pressed (int key) {
+  void TutorialApplication::key_pressed (int key) {
     call_key_pressed_handler(key);
   }
 
-  void resize(int width, int height)
+  void TutorialApplication::resize(int width, int height)
   {
     if (width == g_width && height == g_height) 
       return;
@@ -776,26 +772,26 @@ namespace embree
     g_pixels = (int*) alignedMalloc(g_width*g_height*sizeof(int),64);
   }
 
-  void set_scene (TutorialScene* in) {
+  void TutorialApplication::set_scene (TutorialScene* in) {
     g_ispc_scene = new ISPCScene(in);
   }
 
-  bool pick(const float x, const float y, const ISPCCamera& camera, Vec3fa& hitPos) {
+  bool TutorialApplication::pick(const float x, const float y, const ISPCCamera& camera, Vec3fa& hitPos) {
     return device_pick(x,y,camera,hitPos);
   }
 
-  void render(const float time, const ISPCCamera& camera) {
+  void TutorialApplication::render(const float time, const ISPCCamera& camera) {
     device_render(g_pixels,g_width,g_height,time,camera);
   }
 
-  int* map () {
+  int* TutorialApplication::map () {
     return g_pixels;
   }
   
-  void unmap () {
+  void TutorialApplication::unmap () {
   }
 
-  void cleanup()
+  void TutorialApplication::cleanup()
   {
     device_cleanup();
     alignedFree(g_pixels); 
