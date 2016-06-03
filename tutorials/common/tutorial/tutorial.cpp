@@ -43,6 +43,7 @@ namespace embree
     float g_debug = 0.0f;
     Mode g_mode = MODE_NORMAL;
     ISPCScene* g_ispc_scene = nullptr;
+    int64_t get_tsc() { return read_tsc(); }
   }
 
   TutorialApplication* TutorialApplication::instance = nullptr; 
@@ -742,10 +743,6 @@ namespace embree
   catch (...) {
     std::cout << "Error: unknown exception caught." << std::endl;
     return 1;
-  }
-
-  extern "C" int64_t get_tsc() {
-    return read_tsc();
   }
 
   void TutorialApplication::set_parameter(size_t parm, ssize_t val) {
