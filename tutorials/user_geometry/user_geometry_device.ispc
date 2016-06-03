@@ -345,7 +345,7 @@ unmasked void sphereIntersectFuncN(const uniform int* uniform valid,
       RTCRayN_v(rays,N,ui) = 0.0f;
       RTCRayN_tfar(rays,N,ui) = t0;
       RTCRayN_geomID(rays,N,ui) = sphere.geomID;
-      RTCRayN_primID(rays,N,ui) = item;
+      RTCRayN_primID(rays,N,ui) = (unsigned int)item;
       const Vec3f Ng = ray_org+t0*ray_dir-sphere.p;
       RTCRayN_Ng_x(rays,N,ui) = Ng.x;
       RTCRayN_Ng_y(rays,N,ui) = Ng.y;
@@ -357,7 +357,7 @@ unmasked void sphereIntersectFuncN(const uniform int* uniform valid,
       RTCRayN_v(rays,N,ui) = 0.0f;
       RTCRayN_tfar(rays,N,ui) = t1;
       RTCRayN_geomID(rays,N,ui) = sphere.geomID;
-      RTCRayN_primID(rays,N,ui) = item;
+      RTCRayN_primID(rays,N,ui) = (unsigned int)item;
       const Vec3f Ng = ray_org+t1*ray_dir-sphere.p;
       RTCRayN_Ng_x(rays,N,ui) = Ng.x;
       RTCRayN_Ng_y(rays,N,ui) = Ng.y;
@@ -742,7 +742,7 @@ void renderTileStandardStream(uniform int taskIndex,
     /* initialize ray */
     RTCRay& primary = primary_stream[N];
     primary.org = make_Vec3f(camera.xfm.p);
-    primary.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
+    primary.dir = make_Vec3f(normalize((float)x*camera.xfm.l.vx + (float)y*camera.xfm.l.vy + camera.xfm.l.vz));
     mask = __mask; unmasked { // invalidates inactive rays
       primary.tnear = mask ? 0.0f         : (float)(pos_inf);
       primary.tfar  = mask ? (float)(inf) : (float)(neg_inf);
