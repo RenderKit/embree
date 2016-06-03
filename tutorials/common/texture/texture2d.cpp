@@ -32,7 +32,7 @@ inline Vec4f getTexel_RGBA8(const Texture2D *self, const Vec2i i)
   const uint32_t g = (c >>  8) & 0xff;
   const uint32_t b = (c >> 16) & 0xff;
   const uint32_t a = c >> 24;
-  return Vec4f(r, g, b, a)*(1.f/255.f);
+  return Vec4f((float)r, (float)g, (float)b, (float)a)*(1.f/255.f);
 }
 
 inline Vec4f getTexel_RGB8(const Texture2D *self, const Vec2i i)
@@ -43,7 +43,7 @@ inline Vec4f getTexel_RGB8(const Texture2D *self, const Vec2i i)
   const uint32_t r = texel[texelOfs];
   const uint32_t g = texel[texelOfs+1];
   const uint32_t b = texel[texelOfs+2];
-  return Vec4f(Vec3fa(r, g, b)*(1.f/255.f), 1.f);
+  return Vec4f(Vec3fa((float)r, (float)g, (float)b)*(1.f/255.f), 1.f);
 }
 
 inline Vec4f getTexel_R8(const Texture2D *self, const Vec2i i)
@@ -205,7 +205,7 @@ extern "C" void *Texture2D_create(Vec2i &size, void *data,
   // negative x), although it should be strictly smaller than 1.0f. We handle
   // this case by having sizef slightly smaller than size, such that
   // frac(x)*sizef is always < size.
-  self->sizef = Vec2f(nextafter(size.x, -1.0f), nextafter(size.y, -1.0f));
+  self->sizef = Vec2f(nextafter((float)size.x, -1.0f), nextafter((float)size.y, -1.0f));
   self->halfTexel = Vec2f(0.5f/size.x, 0.5f/size.y);
   self->data = data;
   self->get = Texture2D_get_addr(type, flags & TEXTURE_FILTER_NEAREST);

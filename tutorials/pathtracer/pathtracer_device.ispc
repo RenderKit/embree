@@ -887,7 +887,7 @@ extern uniform int g_instancing_mode;
 
 uniform bool g_animation = true;
 uniform bool g_use_smooth_normals = false;
-void device_key_pressed(uniform int key)
+void device_key_pressed_handler(uniform int key)
 {
   if (key == 32  /* */) g_animation = !g_animation;
   if (key == 115 /*s*/) { g_use_smooth_normals = !g_use_smooth_normals; g_changed = true; }
@@ -1074,7 +1074,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   /* use geometry instancing feature */
   if (g_instancing_mode == 1)
   {
-    for (uniform size_t i=0; i<scene_in->numGeometries; i++)
+    for (uniform unsigned int i=0; i<scene_in->numGeometries; i++)
     {
       uniform ISPCGeometry* uniform geometry = scene_in->geometries[i];
       if (geometry->type == SUBDIV_MESH) {
@@ -1119,7 +1119,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   /* use scene instancing feature */
   else if (g_instancing_mode == 2 || g_instancing_mode == 3)
   {
-    for (uniform size_t i=0; i<scene_in->numGeometries; i++)
+    for (uniform unsigned int i=0; i<scene_in->numGeometries; i++)
     {
       uniform ISPCGeometry* uniform geometry = scene_in->geometries[i];
       if (geometry->type == SUBDIV_MESH) {
@@ -1176,7 +1176,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   /* no instancing */
   else
   {
-    for (uniform size_t i=0; i<scene_in->numGeometries; i++)
+    for (uniform unsigned int i=0; i<scene_in->numGeometries; i++)
     {
       uniform ISPCGeometry* uniform geometry = scene_in->geometries[i];
       if (geometry->type == SUBDIV_MESH) {
@@ -1210,7 +1210,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
 
   /* commit changes to scene */
   progressStart();
-  rtcSetProgressMonitorFunction(scene_out,progressMonitor,NULL);
+  rtcSetProgressMonitorFunction(scene_out,(RTCProgressMonitorFunc)&progressMonitor,NULL);
   rtcCommit (scene_out);
   rtcSetProgressMonitorFunction(scene_out,NULL,NULL);
   progressEnd();
@@ -1610,7 +1610,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
 
   for (uniform int i=0; i<SAMPLES_PER_PIXEL; i++)
   {
-    RandomSampler_init(sampler, x, y, g_accu_count*SAMPLES_PER_PIXEL+i);
+    RandomSampler_init(sampler, (int)x, (int)y, g_accu_count*SAMPLES_PER_PIXEL+i);
 
     /* calculate pixel color */
     float fx = x + RandomSampler_get1D(sampler);
@@ -1715,7 +1715,7 @@ void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa&
     uniform ISPCSubdivMesh* uniform mesh = (uniform ISPCSubdivMesh* uniform) geometry;
     uniform unsigned int geomID = mesh->geomID;
 #if defined(ISPC)
-      launch[ getNumHWThreads() ] updateEdgeLevelBufferTask(mesh,cam_pos); sync;
+    launch[ (mesh->numFaces+4095)/4096 ] updateEdgeLevelBufferTask(mesh,cam_pos); sync;
 #else
       updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
 #endif
@@ -1741,7 +1741,7 @@ export void device_init (uniform int8* uniform cfg)
 
   /* set start render mode */
   renderTile = renderTileStandard;
-  key_pressed_handler = device_key_pressed;
+  key_pressed_handler = device_key_pressed_handler;
 
 #if ENABLE_FILTER_FUNCTION == 0
   print("Warning: filter functions disabled\n");

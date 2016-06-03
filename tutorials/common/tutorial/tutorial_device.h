@@ -16,34 +16,34 @@
 
 #pragma once
 
-#include "../../../common/sys/platform.h"
-#include "../../../kernels/algorithms/parallel_for.h"
+#define _CRT_SECURE_NO_WARNINGS
+
 #include "config.h"
-#include "noise.h"
 
 /* size of screen tiles */
 #define TILE_SIZE_X 8
 #define TILE_SIZE_Y 8
 
-#define __RTCRay__
-#define __RTCRay4__
-#define __RTCRay8__
-#define __RTCRay16__
-#include "../../../include/embree2/rtcore.h"
-#include "../../../include/embree2/rtcore_ray.h"
+/* vertex and triangle layout */
+struct Vertex   { float x,y,z,r;  }; // FIXME: rename to Vertex4f
+struct Triangle { int v0, v1, v2; };
 
+/* include embree API */
+#include "../../../include/embree2/rtcore.h"
+
+/* include optional vector library */
+#include "../math/math.h"
+#include "../math/vec.h"
+#include "../math/affinespace.h"
 #include "../core/ray.h"
 #include "camera.h"
-#include "scene.h"
+#include "scene_device.h"
+#include "noise.h"
+#if !defined(ISPC)
+#include "../../../kernels/algorithms/parallel_for.h"
 
-namespace embree
-{
-/* vertex and triangle layout */
-#if !defined(__NO_VERTEX__)
-struct Vertex   { float x,y,z,r; };
+namespace embree {
 #endif
-struct Triangle { int v0, v1, v2; };
-struct Quad     { int v0, v1, v2, v3; };
 
 enum Mode {
   MODE_NORMAL = 0,
@@ -51,17 +51,23 @@ enum Mode {
   MODE_STREAM_INCOHERENT = 2
 };
 
+extern "C" Mode g_mode;
+
 /* error reporting function */
 void error_handler(const RTCError code, const char* str = nullptr);
-
-extern "C" Mode g_mode;
 
 /* returns time stamp counter */
 extern "C" int64_t get_tsc();
 
+/* declare some standard library functions */
+extern "C" void abort ();
+extern "C" void exit(int);
+extern "C" int puts ( const char* str );
+extern "C" int putchar ( int character );
+
 /* face forward for shading normals */
-__forceinline Vec3f faceforward( const Vec3f& N, const Vec3f& I, const Vec3f& Ng ) {
-  return dot(I, Ng) < 0 ? N : -N;
+inline Vec3fa faceforward( Vec3fa N, Vec3fa I, Vec3fa Ng ) {
+  return dot(I, Ng) < 0 ? N : neg(N);
 }
 
 /* glut keys codes */
@@ -81,42 +87,54 @@ __forceinline Vec3f faceforward( const Vec3f& N, const Vec3f& I, const Vec3f& Ng
 #endif
 
 /* standard shading function */
-typedef void (* renderTileFunc)(int taskIndex, int* pixels, const unsigned int width, const unsigned int height,
-                                const float time, const ISPCCamera& camera,
-                                const int numTilesX, const int numTilesY);
-extern renderTileFunc renderTile;
+typedef void (* renderTileFunc)(int taskIndex,
+                                        int* pixels,
+                                        const unsigned int width,
+                                        const unsigned int height,
+                                        const float time,
+                                        const ISPCCamera& camera,
+                                        const int numTilesX,
+                                        const int numTilesY);
+extern "C" renderTileFunc renderTile;
 
 extern "C" void device_key_pressed_default(int key);
-extern "C" void (*key_pressed_handler)(int key);
+extern "C" void (* key_pressed_handler)(int key);
 
-void renderTileStandard(int taskIndex, int* pixels, const unsigned int width, const unsigned int height,
-                        const float time, const ISPCCamera& camera,
-                        const int numTilesX, const int numTilesY);
+void renderTileStandard(int taskIndex,
+                        int* pixels,
+                        const unsigned int width,
+                        const unsigned int height,
+                        const float time,
+                        const ISPCCamera& camera,
+                        const int numTilesX,
+                        const int numTilesY);
 
-__forceinline Vec3f  neg(const Vec3f& a ) { return -a; }
-__forceinline Vec3fa neg(const Vec3fa& a) { return -a; }
-__forceinline bool   eq (const Vec3fa& a, const Vec3fa& b) { return a == b; }
-__forceinline bool   ne (const Vec3fa& a, const Vec3fa& b) { return a != b; }
-__forceinline bool   eq (const AffineSpace3fa& a, const AffineSpace3fa& b) { return a == b; }
+unsigned int getNumHWThreads();
+
+#if defined(ISPC)
+#define ALIGNED_STRUCT
+#define __aligned(x)
+#define MAYBE_UNUSED
+#endif
 
 struct Sample3f
 {
-  Sample3f () {}
-
-  Sample3f (const Vec3fa& v, const float pdf)
-    : v(v), pdf(pdf) {}
-
   Vec3fa v;
   float pdf;
 };
 
-/* draws progress bar */
-void progressStart();
-bool progressMonitor(void* ptr, const double dn);
-void progressEnd();
-
-Vec2f getTextureCoordinatesSubdivMesh(void* mesh, const unsigned int primID, const float u, const float v);
-
-float  getTextureTexel1f(const Texture* texture,const float u, const float v);
-Vec3f  getTextureTexel3f(const Texture* texture,const float u, const float v);
+inline Sample3f make_Sample3f(const Vec3fa v, const float pdf) {
+  Sample3f s; s.v = v; s.pdf = pdf; return s;
 }
+
+/* draws progress bar */
+extern "C" void progressStart();
+extern "C" bool progressMonitor(void* ptr, const double n);
+extern "C" void progressEnd();
+
+Vec2f  getTextureCoordinatesSubdivMesh(void* mesh, const unsigned int primID, const float u, const float v);
+
+float  getTextureTexel1f(const Texture* texture, float u, float v);
+Vec3fa  getTextureTexel3f(const Texture* texture, float u, float v);
+
+} // namespace embree

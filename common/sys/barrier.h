@@ -18,6 +18,7 @@
 
 #include "intrinsics.h"
 #include "sysinfo.h"
+#include "atomic.h"
 
 namespace embree
 {

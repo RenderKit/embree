@@ -16,12 +16,16 @@ sed -i.backup  's/*uniform)/*)/g' $2
 sed -i.backup  's/varying //g' $2
 sed -i.backup  's/ varying//g' $2
 sed -i.backup  's/unmasked //g' $2
+sed -i.backup  's/extern \"C\"/__EXTERN_C/g' $2
 sed -i.backup  's/extern/extern \"C\"/g' $2
 sed -i.backup  's/export/extern \"C\"/g' $2
+sed -i.backup  's/extern \"C\" RTCScene/extern RTCScene/g' $2
+sed -i.backup  's/__EXTERN_C/extern \"C\"/g' $2
 
 sed -i.backup 's/int8/char/g' $2
 sed -i.backup 's/int16/int16_t/g' $2
 sed -i.backup 's/int32/int32_t/g' $2
+sed -i.backup 's/int64/int64_t/g' $2
 sed -i.backup 's/uchar/uint8_t/g' $2
 
 sed -i.backup  's/__mask/1/g' $2
@@ -78,7 +82,7 @@ sed -i.backup  's/make_Vec2i/Vec2i/g' $2
 sed -i.backup  's/make_Vec3f/Vec3f/g' $2
 sed -i.backup  's/make_Vec3fa/Vec3fa/g' $2
 sed -i.backup  's/make_Vec4f/Vec4f/g' $2
-sed -i.backup  's/make_Sample3f/Sample3f/g' $2
+#sed -i.backup  's/make_Sample3f/Sample3f/g' $2
 sed -i.backup  's/make_AffineSpace3f/AffineSpace3f/g' $2
 
 sed -i.backup 's/sincos/sincosf/g' $2
@@ -96,8 +100,15 @@ sed -i.backup  's/RTCIntersectFuncVarying/RTCIntersectFunc/g' $2
 sed -i.backup  's/RTCOccludedFuncVarying/RTCOccludedFunc/g' $2
 sed -i.backup  's/RTCFilterFuncVarying/RTCFilterFunc/g' $2
 
+sed -i.backup  's/RTCRay1/RTCRay/g' $2
+sed -i.backup  's/rtcIntersect1/rtcIntersect/g' $2
+
 sed -i.backup  's/rtcIntersectVM/rtcIntersect1M/g' $2
 sed -i.backup  's/rtcOccludedVM/rtcOccluded1M/g' $2
+
+sed -i.backup  's/Texture_FLOAT32/Texture::FLOAT32/g' $2
+sed -i.backup  's/Texture_RGBA8/Texture::RGBA8/g' $2
+sed -i.backup  's/Texture_RGB8/Texture::RGB8/g' $2
 
 # to make 32 bit compile happy under Windows
 sed -i.backup 's/const Vec3fa defaultValue/const Vec3fa\& defaultValue/g' $2

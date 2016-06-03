@@ -102,7 +102,7 @@ void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa&
     uniform ISPCSubdivMesh* uniform mesh = (uniform ISPCSubdivMesh* uniform) geometry;
 #if defined(ISPC)
     if (mesh->numFaces < 10000) continue;
-    launch[ getNumHWThreads() ] updateSubMeshEdgeLevelBufferTask(mesh,cam_pos); sync;
+    launch[ (mesh->numFaces+4095)/4096 ] updateSubMeshEdgeLevelBufferTask(mesh,cam_pos); sync;
 #else
     updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
 #endif
@@ -111,9 +111,8 @@ void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa&
 }
 
 uniform bool g_use_smooth_normals = false;
-void device_key_pressed(uniform int key)
+void device_key_pressed_handler(uniform int key)
 {
-  //print("key = %\n",key);
   if (key == 115 /*c*/) g_use_smooth_normals = !g_use_smooth_normals;
   else device_key_pressed_default(key);
 }
@@ -256,7 +255,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
    /* use geometry instancing feature */
   if (g_instancing_mode == 1)
   {
-    for (uniform size_t i=0; i<scene_in->numGeometries; i++)
+    for (uniform unsigned int i=0; i<scene_in->numGeometries; i++)
     {
       uniform ISPCGeometry* uniform geometry = scene_in->geometries[i];
       if (geometry->type == SUBDIV_MESH) {
@@ -301,7 +300,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   /* use scene instancing feature */
   else if (g_instancing_mode == 2 || g_instancing_mode == 3)
   {
-    for (uniform size_t i=0; i<scene_in->numGeometries; i++)
+    for (uniform unsigned int i=0; i<scene_in->numGeometries; i++)
     {
       uniform ISPCGeometry* uniform geometry = scene_in->geometries[i];
       if (geometry->type == SUBDIV_MESH) {
@@ -358,7 +357,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   /* no instancing */
   else
   {
-    for (uniform size_t i=0; i<scene_in->numGeometries; i++)
+    for (uniform unsigned int i=0; i<scene_in->numGeometries; i++)
     {
       uniform ISPCGeometry* uniform geometry = scene_in->geometries[i];
       if (geometry->type == SUBDIV_MESH) {
@@ -476,7 +475,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
 {
   /* initialize sampler */
   RandomSampler sampler;
-  RandomSampler_init(sampler, x, y, 0);
+  RandomSampler_init(sampler, (int)x, (int)y, 0);
 
   /* initialize ray */
   RTCRay ray;
@@ -589,7 +588,7 @@ export void device_init (uniform int8* uniform cfg)
 
   /* set start render mode */
   renderTile = renderTileStandard;
-  key_pressed_handler = device_key_pressed;
+  key_pressed_handler = device_key_pressed_handler;
   old_p = make_Vec3fa(1E10);
 }
 

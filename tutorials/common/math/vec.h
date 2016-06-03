@@ -22,6 +22,11 @@
 
 namespace embree {
 
+__forceinline Vec3f  neg(const Vec3f& a ) { return -a; }
+__forceinline Vec3fa neg(const Vec3fa& a) { return -a; }
+__forceinline bool   eq (const Vec3fa& a, const Vec3fa& b) { return a == b; }
+__forceinline bool   ne (const Vec3fa& a, const Vec3fa& b) { return a != b; }
+
 // FIXME: change order of lerp arguments, then remove this function
 template<typename V>
 __forceinline V lerpr(float t, const V& v0, const V& v1) {

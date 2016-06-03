@@ -14,6 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#define _CRT_SECURE_NO_WARNINGS
+
 #include "verify.h"
 #include "../tutorials/common/scenegraph/scenegraph.h"
 #include "../kernels/algorithms/parallel_for.h"
@@ -82,8 +84,8 @@ namespace embree
     std::vector<unsigned> offsets;
     std::vector<unsigned>& faces = mesh->verticesPerFace;
     std::vector<unsigned>& indices = mesh->position_indices;
-    for (size_t i=0,j=0; i<mesh->verticesPerFace.size(); i++) {
-      offsets.push_back(j); j+=mesh->verticesPerFace[i];
+    for (size_t i=0, j=0; i<mesh->verticesPerFace.size(); i++) {
+      offsets.push_back(unsigned(j)); j+=mesh->verticesPerFace[i];
     } 
     
     for (size_t i=0; i<numEdgeCreases; i++) 
@@ -887,7 +889,7 @@ namespace embree
 
       if ((sflags & RTC_SCENE_DYNAMIC) == 0) 
       {
-        for (size_t i=0; i<10; i++) {
+        for (unsigned int i=0; i<10; i++) {
           rtcDisable(scene,i);
           AssertAnyError(device);
         }
@@ -936,7 +938,7 @@ namespace embree
       scene.addGeometry(gflags,quadmesh2.dynamicCast<SceneGraph::Node>(),true);
 
       Ref<SceneGraph::SubdivMeshNode> subdivmesh = new SceneGraph::SubdivMeshNode(nullptr);
-      for (size_t i=0; i<N; i++) {
+      for (unsigned i=0; i<unsigned(N); i++) {
         subdivmesh->verticesPerFace.push_back(4);
         subdivmesh->position_indices.push_back(4*i+0);
         subdivmesh->position_indices.push_back(4*i+1);
@@ -1175,7 +1177,7 @@ namespace embree
 
       for (size_t i=0; i<size_t(1000*state->intensity); i++) 
       {
-        RandomSampler_init(sampler,i*23565);
+        RandomSampler_init(sampler,int(i*23565));
         if (i%20 == 0) std::cout << "." << std::flush;
         
         RTCSceneFlags sflag = getSceneFlag(i); 
@@ -2030,11 +2032,11 @@ namespace embree
       AssertNoError(device);
       
       RTCRay rays[16];
-      for (size_t iy=0; iy<4; iy++) 
+      for (unsigned int iy=0; iy<4; iy++) 
       {
-        for (size_t ix=0; ix<4; ix++) 
+        for (unsigned int ix=0; ix<4; ix++) 
         {
-          int primID = iy*4+ix;
+          unsigned int primID = iy*4+ix;
           if (!subdiv) primID *= 2;
           rays[iy*4+ix] = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
         }
@@ -2042,11 +2044,11 @@ namespace embree
       IntersectWithMode(imode,ivariant,scene,rays,16);
       
       bool passed = true;
-      for (size_t iy=0; iy<4; iy++) 
+      for (unsigned int iy=0; iy<4; iy++) 
       {
-        for (size_t ix=0; ix<4; ix++) 
+        for (unsigned int ix=0; ix<4; ix++) 
         {
-          int primID = iy*4+ix;
+          unsigned int primID = iy*4+ix;
           if (!subdiv) primID *= 2;
           RTCRay& ray = rays[iy*4+ix];
           bool ok = (primID & 2) ? (ray.geomID == RTC_INVALID_GEOMETRY_ID) : (ray.geomID == 0);
@@ -2371,7 +2373,7 @@ namespace embree
 
       
       bool ok = (d2 < 2.5*d1) && (d3 < 2.5*d1) && (d4 < 2.5*d1);
-      float f = max(d2/d1,d3/d1,d4/d1);
+      double f = max(d2/d1,d3/d1,d4/d1);
       if (!silent) { printf(" (%3.2fx)",f); fflush(stdout); }
       return (VerifyApplication::TestReturnValue) ok;
     }
@@ -2450,7 +2452,7 @@ namespace embree
       AssertNoError(device);
 
       bool ok = (d2 < 2.5*d1) && (d3 < 2.5*d1) && (d4 < 2.5*d1) && (d5 < 2.5*d1);
-      float f = max(d2/d1,d3/d1,d4/d1,d5/d1);
+      double f = max(d2/d1,d3/d1,d4/d1,d5/d1);
       if (!silent) { printf(" (%3.2fx)",f); fflush(stdout); }
       return (VerifyApplication::TestReturnValue) ok;
     }
@@ -2486,19 +2488,19 @@ namespace embree
 
   struct RegressionTask
   {
-    RegressionTask (size_t sceneIndex, size_t sceneCount, size_t threadCount, bool cancelBuild)
+    RegressionTask (unsigned int sceneIndex, unsigned int sceneCount, unsigned int threadCount, bool cancelBuild)
       : sceneIndex(sceneIndex), sceneCount(sceneCount), scene(nullptr), numActiveThreads(0), cancelBuild(cancelBuild), errorCounter(0) 
     { 
       barrier.init(threadCount); 
       RandomSampler_init(sampler,0);
     }
 
-    size_t sceneIndex;
-    size_t sceneCount;
+    unsigned int sceneIndex;
+    unsigned int sceneCount;
     VerifyApplication* state;
     Ref<VerifyScene> scene;
     BarrierSys barrier;
-    volatile size_t numActiveThreads;
+    volatile unsigned int numActiveThreads;
     bool cancelBuild;
     std::atomic<size_t> errorCounter;
     RandomSampler sampler;
@@ -2506,12 +2508,12 @@ namespace embree
 
   struct ThreadRegressionTask
   {
-    ThreadRegressionTask (size_t threadIndex, size_t threadCount,
+    ThreadRegressionTask (unsigned int threadIndex, unsigned int threadCount,
                           VerifyApplication* state, RTCDeviceRef& device, std::vector<IntersectMode>& intersectModes, RegressionTask* task)
       : threadIndex(threadIndex), threadCount(threadCount), state(state), device(device), intersectModes(intersectModes), task(task) {}
 
-    size_t threadIndex;
-    size_t threadCount;
+    unsigned int threadIndex;
+    unsigned int threadCount;
     VerifyApplication* state;
     RTCDeviceRef& device;
     std::vector<IntersectMode>& intersectModes;
@@ -2534,7 +2536,7 @@ namespace embree
     RegressionTask* task = thread->task;
     if (thread->threadIndex > 0) 
     {
-      for (size_t i=0; i<task->sceneCount; i++) 
+      for (unsigned int i=0; i<task->sceneCount; i++) 
       {
 	task->barrier.wait();
 	if (thread->threadIndex < task->numActiveThreads) 
@@ -2561,7 +2563,7 @@ namespace embree
     if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
     bool hasError = false;
 
-    for (size_t i=0; i<task->sceneCount; i++) 
+    for (unsigned int i=0; i<task->sceneCount; i++) 
     {
       RandomSampler_init(task->sampler,task->sceneIndex*13565+i*3242);
       if (i%5 == 0) std::cout << "." << std::flush;
@@ -2572,7 +2574,7 @@ namespace embree
       if (task->cancelBuild) rtcSetProgressMonitorFunction(*task->scene,monitorProgressFunction,nullptr);
       avector<Sphere*> spheres;
       
-      for (size_t j=0; j<10; j++) 
+      for (unsigned int j=0; j<10; j++) 
       {
         Vec3fa pos = 100.0f*RandomSampler_get3D(task->sampler);
 	int type = RandomSampler_getInt(task->sampler)%6;
@@ -2607,7 +2609,7 @@ namespace embree
       }
       
       if (thread->threadCount) {
-	task->numActiveThreads = max(size_t(1),RandomSampler_getInt(task->sampler) % thread->threadCount);
+	task->numActiveThreads = max(unsigned(1),RandomSampler_getInt(task->sampler) % thread->threadCount);
 	task->barrier.wait();
         if (build_join_test) rtcCommit(*task->scene);
         else                 {
@@ -2650,7 +2652,7 @@ namespace embree
     RegressionTask* task = thread->task;
     if (thread->threadIndex > 0) 
     {
-      for (size_t i=0; i<task->sceneCount; i++) 
+      for (unsigned int i=0; i<task->sceneCount; i++) 
       {
 	task->barrier.wait();
 	if (thread->threadIndex < task->numActiveThreads) 
@@ -2685,12 +2687,12 @@ namespace embree
 
     bool hasError = false;
 
-    for (size_t i=0; i<task->sceneCount; i++) 
+    for (unsigned int i=0; i<task->sceneCount; i++) 
     {
       srand(task->sceneIndex*23565+i*2242);
       if (i%20 == 0) std::cout << "." << std::flush;
 
-      for (size_t j=0; j<40; j++) 
+      for (unsigned int j=0; j<40; j++) 
       {
         int index = RandomSampler_getInt(task->sampler)%1024;
         if (geom[index] == -1) 
@@ -2793,7 +2795,7 @@ namespace embree
       }
 
       if (thread->threadCount) {
-	task->numActiveThreads = max(size_t(1),RandomSampler_getInt(task->sampler) % thread->threadCount);
+	task->numActiveThreads = max(unsigned(1),RandomSampler_getInt(task->sampler) % thread->threadCount);
 	task->barrier.wait();
         if (build_join_test) rtcCommit(*task->scene);
         else                 rtcCommitThread(*task->scene,thread->threadIndex,task->numActiveThreads);
@@ -2852,22 +2854,22 @@ namespace embree
       }
 
       size_t errorCounter = 0;
-      size_t sceneIndex = 0;
+      unsigned int sceneIndex = 0;
       while (sceneIndex < size_t(30*state->intensity)) 
       {
         if (mode)
         {
           build_join_test = (mode == 2);
-          size_t numThreads = getNumberOfLogicalThreads();
+          unsigned numThreads = getNumberOfLogicalThreads();
           
           std::vector<RegressionTask*> tasks;
           while (numThreads) 
           {
-            size_t N = max(size_t(1),random_int()%numThreads); numThreads -= N;
+            unsigned int N = max(unsigned(1),random_int()%numThreads); numThreads -= N;
             RegressionTask* task = new RegressionTask(sceneIndex++,5,N,false);
             tasks.push_back(task);
             
-            for (size_t i=0; i<N; i++) 
+            for (unsigned int i=0; i<N; i++) 
               threads.push_back(createThread(func,new ThreadRegressionTask(i,N,state,device,intersectModes,task),DEFAULT_STACK_SIZE,numThreads+i));
           }
           
@@ -2938,7 +2940,7 @@ namespace embree
       
       rtcDeviceSetMemoryMonitorFunction(device,monitorMemoryFunction);
       
-      size_t sceneIndex = 0;
+      unsigned int sceneIndex = 0;
       while (sceneIndex < size_t(30*state->intensity)) 
       {
         monitorMemoryBreak = std::numeric_limits<size_t>::max();
@@ -2952,10 +2954,10 @@ namespace embree
           rtcDeviceSetMemoryMonitorFunction(device,nullptr);
           return VerifyApplication::FAILED;
         }
-        monitorMemoryBreak = monitorMemoryInvokations * random_float();
+        monitorMemoryBreak = size_t(float(monitorMemoryInvokations) * random_float());
         monitorMemoryBytesUsed = 0;
         monitorMemoryInvokations = 0;
-        monitorProgressBreak = monitorProgressInvokations * 2.0f * random_float();
+        monitorProgressBreak = size_t(float(monitorProgressInvokations) * 2.0f * random_float());
         monitorProgressInvokations = 0;
         RegressionTask task2(sceneIndex,1,0,true);
         func(new ThreadRegressionTask(0,0,state,device,intersectModes,&task2));
@@ -2981,25 +2983,25 @@ namespace embree
     SimpleBenchmark (std::string name, int isa)
       : VerifyApplication::Benchmark(name,isa,"1/s") {}
     
-    double benchmark(VerifyApplication* state)
+    float benchmark(VerifyApplication* state)
     {
       double t0 = getSeconds();
       for (volatile size_t i=0; i<10000000; i++);
       double t1 = getSeconds();
-      return 1.0f/(t1-t0);
+      return 1.0f/float(t1-t0);
     }
   };
   
   struct ParallelIntersectBenchmark : public VerifyApplication::Benchmark
   {
-    size_t N, dN;
+    unsigned int N, dN;
     Vec3f* numbers;
     LinearBarrierActive barrier;
     std::vector<thread_t> threads;
-    std::atomic<size_t> pos;
-    std::atomic<size_t> threadIndexCounter;
+    std::atomic<unsigned int> pos;
+    std::atomic<unsigned int> threadIndexCounter;
     
-    ParallelIntersectBenchmark (std::string name, int isa, size_t N, size_t dN)
+    ParallelIntersectBenchmark (std::string name, int isa, unsigned int N, unsigned int dN)
       : VerifyApplication::Benchmark(name,isa,"Mrps"), N(N), dN(dN), pos(0), threadIndexCounter(1) {}
     
     ~ParallelIntersectBenchmark() 
@@ -3024,14 +3026,14 @@ namespace embree
       return true;
     }
 
-    virtual void render_block(size_t i, size_t n) = 0;
+    virtual void render_block(unsigned int i, unsigned int n) = 0;
 
-    bool thread_function(size_t threadIndex = 0)
+    bool thread_function(unsigned int threadIndex = 0)
     {
       barrier.wait(threadIndex);
-      if (pos.load() == size_t(-1)) return false;
+      if (pos.load() == unsigned(-1)) return false;
 
-      for (size_t i = pos.fetch_add(dN); i<N; i=pos.fetch_add(dN)) 
+      for (unsigned int i = pos.fetch_add(dN); i<N; i=pos.fetch_add(dN)) 
         render_block(i,dN);
 
       barrier.wait(threadIndex);
@@ -3040,17 +3042,17 @@ namespace embree
 
     static void static_thread_function(void* ptr) 
     {
-      size_t threadIndex = ((ParallelIntersectBenchmark*) ptr)->threadIndexCounter++;
+      unsigned threadIndex = ((ParallelIntersectBenchmark*) ptr)->threadIndexCounter++;
       while (((ParallelIntersectBenchmark*) ptr)->thread_function(threadIndex));
     }
 
-    double benchmark(VerifyApplication* state)
+    float benchmark(VerifyApplication* state)
     {
       double t0 = getSeconds();
       pos = 0;
       thread_function();
       double t1 = getSeconds();
-      return 1E-6*(double)(N)/(t1-t0);
+      return 1E-6f*(float)(N)/float(t1-t0);
     }
 
     virtual void cleanup(VerifyApplication* state) 
@@ -3072,20 +3074,20 @@ namespace embree
     size_t numPhi;
     RTCDeviceRef device;
     Ref<VerifyScene> scene;
-    static const size_t tileSizeX = 16;
-    static const size_t tileSizeY = 16;
-    static const size_t width = 1024;
-    static const size_t height = 1024;
-    static const size_t numTilesX = width/tileSizeX;
-    static const size_t numTilesY = height/tileSizeY;
+    static const unsigned int tileSizeX = 16;
+    static const unsigned int tileSizeY = 16;
+    static const unsigned int width = 1024;
+    static const unsigned int height = 1024;
+    static const unsigned int numTilesX = width/tileSizeX;
+    static const unsigned int numTilesY = height/tileSizeY;
     
     CoherentRaysBenchmark (std::string name, int isa, GeometryType gtype, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant, size_t numPhi)
       : ParallelIntersectBenchmark(name,isa,numTilesX*numTilesY,1), gtype(gtype), sflags(sflags), gflags(gflags), imode(imode), ivariant(ivariant), numPhi(numPhi) {}
     
     size_t setNumPrimitives(size_t N) 
     { 
-      numPhi = ceilf(sqrtf(N/4.0f));
-      return 4.0f*numPhi*numPhi;
+      numPhi = size_t(ceilf(sqrtf(N/4.0f)));
+      return 4*numPhi*numPhi;
     }
 
     bool setup(VerifyApplication* state) 
@@ -3105,8 +3107,8 @@ namespace embree
       case TRIANGLE_MESH_MB: scene->addGeometry(gflags,SceneGraph::createTriangleSphere(zero,one,numPhi)->set_motion_vector(Vec3fa(0.01f)),true); break;
       case QUAD_MESH:        scene->addGeometry(gflags,SceneGraph::createQuadSphere(zero,one,numPhi),false); break;
       case QUAD_MESH_MB:     scene->addGeometry(gflags,SceneGraph::createQuadSphere(zero,one,numPhi)->set_motion_vector(Vec3fa(0.01f)),true); break;
-      case SUBDIV_MESH:      scene->addGeometry(gflags,SceneGraph::createSubdivSphere(zero,one,8,numPhi/8),false); break;
-      case SUBDIV_MESH_MB:   scene->addGeometry(gflags,SceneGraph::createSubdivSphere(zero,one,8,numPhi/8)->set_motion_vector(Vec3fa(0.01f)),true); break;
+      case SUBDIV_MESH:      scene->addGeometry(gflags,SceneGraph::createSubdivSphere(zero,one,8,float(numPhi)/8.0f),false); break;
+      case SUBDIV_MESH_MB:   scene->addGeometry(gflags,SceneGraph::createSubdivSphere(zero,one,8,float(numPhi)/8.0f)->set_motion_vector(Vec3fa(0.01f)),true); break;
       default:               throw std::runtime_error("invalid geometry for benchmark");
       }
       rtcCommit (*scene);
@@ -3115,7 +3117,7 @@ namespace embree
       return true;
     }
 
-    void render_block(size_t i, size_t)
+    void render_block(unsigned int i, unsigned int)
     {
       float rcpWidth = 1.0f/width;
       float rcpHeight = 1.0/height;
@@ -3224,7 +3226,7 @@ namespace embree
       }
     }
 
-    double benchmark(VerifyApplication* state) {
+    float benchmark(VerifyApplication* state) {
       return tileSizeX*tileSizeY*ParallelIntersectBenchmark::benchmark(state);
     }
 
@@ -3258,8 +3260,8 @@ namespace embree
 
     size_t setNumPrimitives(size_t N) 
     { 
-      numPhi = ceilf(sqrtf(N/4.0f));
-      return 4.0f*numPhi*numPhi;
+      numPhi = size_t(ceilf(sqrtf(N/4.0f)));
+      return 4*numPhi*numPhi;
     }
 
     bool setup(VerifyApplication* state) 
@@ -3279,8 +3281,8 @@ namespace embree
       case TRIANGLE_MESH_MB: scene->addGeometry(gflags,SceneGraph::createTriangleSphere(zero,one,numPhi)->set_motion_vector(Vec3fa(0.01f)),true); break;
       case QUAD_MESH:        scene->addGeometry(gflags,SceneGraph::createQuadSphere(zero,one,numPhi),false); break;
       case QUAD_MESH_MB:     scene->addGeometry(gflags,SceneGraph::createQuadSphere(zero,one,numPhi)->set_motion_vector(Vec3fa(0.01f)),true); break;
-      case SUBDIV_MESH:      scene->addGeometry(gflags,SceneGraph::createSubdivSphere(zero,one,8,numPhi/8),false); break;
-      case SUBDIV_MESH_MB:   scene->addGeometry(gflags,SceneGraph::createSubdivSphere(zero,one,8,numPhi/8)->set_motion_vector(Vec3fa(0.01f)),true); break;
+      case SUBDIV_MESH:      scene->addGeometry(gflags,SceneGraph::createSubdivSphere(zero,one,8,float(numPhi)/8.0f),false); break;
+      case SUBDIV_MESH_MB:   scene->addGeometry(gflags,SceneGraph::createSubdivSphere(zero,one,8,float(numPhi)/8.0f)->set_motion_vector(Vec3fa(0.01f)),true); break;
       default:               throw std::runtime_error("invalid geometry for benchmark");
       }
       rtcCommit (*scene);
@@ -3293,7 +3295,7 @@ namespace embree
       return true;
     }
 
-    void render_block(size_t i, size_t dn)
+    void render_block(unsigned int i, unsigned int dn)
     {
       RTCIntersectContext context;
       context.flags = ((ivariant & VARIANT_COHERENT_INCOHERENT_MASK) == VARIANT_COHERENT) ? RTC_INTERSECT_COHERENT :  RTC_INTERSECT_INCOHERENT;
@@ -3402,8 +3404,8 @@ namespace embree
 
     size_t setNumPrimitives(size_t N) 
     { 
-      numPhi = ceilf(sqrtf(N/4.0f));
-      return 4.0f*numPhi*numPhi;
+      numPhi = (size_t) ceilf(sqrtf(N/4.0f));
+      return 4*numPhi*numPhi;
     }
 
     void create_scene()
@@ -3442,19 +3444,19 @@ namespace embree
       device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
 
-      for (size_t i=0; i<numMeshes; i++)
+      for (unsigned int i=0; i<numMeshes; i++)
       {
         switch (gtype) {
         case TRIANGLE_MESH:    
-        case TRIANGLE_MESH_MB: geometries.push_back(SceneGraph::createTriangleSphere(zero,i+1,numPhi)); break;
+        case TRIANGLE_MESH_MB: geometries.push_back(SceneGraph::createTriangleSphere(zero,float(i+1),numPhi)); break;
         case QUAD_MESH:        
-        case QUAD_MESH_MB:     geometries.push_back(SceneGraph::createQuadSphere(zero,i+1,numPhi)); break;
+        case QUAD_MESH_MB:     geometries.push_back(SceneGraph::createQuadSphere(zero,float(i+1),numPhi)); break;
         case SUBDIV_MESH:      
-        case SUBDIV_MESH_MB:   geometries.push_back(SceneGraph::createSubdivSphere(zero,i+1,8,numPhi/8)); break;
+        case SUBDIV_MESH_MB:   geometries.push_back(SceneGraph::createSubdivSphere(zero,float(i+1),8,float(numPhi)/8.0f)); break;
         case HAIR_GEOMETRY:    
-        case HAIR_GEOMETRY_MB: geometries.push_back(SceneGraph::createHairyPlane(i,Vec3fa(i),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4.0f*numPhi*numPhi,true)); break;
+        case HAIR_GEOMETRY_MB: geometries.push_back(SceneGraph::createHairyPlane(i,Vec3fa(float(i)),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4*numPhi*numPhi,true)); break;
         case LINE_GEOMETRY: 
-        case LINE_GEOMETRY_MB: geometries.push_back(SceneGraph::createHairyPlane(i,Vec3fa(i),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4.0f*numPhi*numPhi/3.0f,true)); break;
+        case LINE_GEOMETRY_MB: geometries.push_back(SceneGraph::createHairyPlane(i,Vec3fa(float(i)),Vec3fa(1,0,0),Vec3fa(0,1,0),0.01f,0.00001f,4*numPhi*numPhi/3,true)); break;
         default:               throw std::runtime_error("invalid geometry for benchmark");
         }
 
@@ -3480,14 +3482,14 @@ namespace embree
       return true;
     }
 
-    double benchmark(VerifyApplication* state)
+    float benchmark(VerifyApplication* state)
     {
       if (!update) create_scene();
 
       double t0 = getSeconds();
 
       if (update)
-        for (size_t i=0; i<numMeshes; i++) 
+        for (unsigned int i=0; i<numMeshes; i++) 
           rtcUpdate(*scene,i);
 
       rtcCommit (*scene);
@@ -3495,7 +3497,7 @@ namespace embree
 
       double t1 = getSeconds();
 
-      return 1E-6*double(numPrimitives)/(t1-t0);
+      return 1E-6f*float(numPrimitives)/float(t1-t0);
     }
 
     virtual void cleanup(VerifyApplication* state) 
@@ -4216,7 +4218,7 @@ namespace embree
     std::cout << std::setw(TEXT_ALIGN) << "Tests failed and ignored" << ": " << numFailedAndIgnoredTests << std::endl; 
     std::cout << std::endl;
 
-    return numFailedTests;
+    return (int)numFailedTests;
   }
   catch (const std::exception& e) {
     std::cout << "Error: " << e.what() << std::endl;

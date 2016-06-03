@@ -337,7 +337,7 @@ void renderTileStandardStream(int taskIndex,
     /* initialize ray */
     RTCRay2& primary = primary_stream[N];
     primary.org = Vec3fa(camera.xfm.p);
-    primary.dir = Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
+    primary.dir = Vec3fa(normalize((float)x*camera.xfm.l.vx + (float)y*camera.xfm.l.vy + camera.xfm.l.vz));
     mask = 1; { // invalidates inactive rays
       primary.tnear = mask ? 0.0f         : (float)(pos_inf);
       primary.tfar  = mask ? (float)(inf) : (float)(neg_inf);

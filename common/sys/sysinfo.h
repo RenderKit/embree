@@ -166,7 +166,7 @@ namespace embree
   std::string stringOfISA(int features);
 
   /*! return the number of logical threads of the system */
-  size_t getNumberOfLogicalThreads();
+  unsigned int getNumberOfLogicalThreads();
   
   /*! returns the size of the terminal window in characters */
   int getTerminalWidth();

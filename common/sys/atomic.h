@@ -16,8 +16,8 @@
 
 #pragma once
 
+#include <atomic>
 #include "intrinsics.h"
-#include "mutex.h"
 
 namespace embree
 {

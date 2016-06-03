@@ -16,41 +16,10 @@
 
 #pragma once
 
-#include "../../../common/math/vec3.h"
-#include "../tutorial/camera.h"
+#include "../../../common/math/affinespace.h"
 
-namespace embree
+namespace embree 
 {
-  /* initialize renderer */
-  void init(const char* cfg);
-
-  /* keypressed event */
-  void key_pressed(int key);
-
-  /* passes parameters to the backend */
-  void set_parameter(size_t parm, ssize_t val);
-
-  /* resize framebuffer */
-  void resize(int width, int height);
-
-  /* set scene to use */
-  struct TutorialScene;
-  void set_scene (TutorialScene* in);
-
-  void set_scene_keyframes(TutorialScene** in, size_t numKeyFrames);
-
-  /* pick event */
-  bool pick(const float x, const float y, const ISPCCamera& camera, Vec3fa& hitPos);
-
-  /* render frame and map framebuffer */
-  void render(const float time, const ISPCCamera& camera);
-
-  /* map framebuffer */
-  int* map ();
-  
-  /* unmap framebuffer */
-  void unmap ();
-
-  /* cleanup renderer */
-  void cleanup();
+  __forceinline bool   eq (const AffineSpace3fa& a, const AffineSpace3fa& b) { return a == b; }
 }
+

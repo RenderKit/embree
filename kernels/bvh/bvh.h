@@ -114,7 +114,7 @@ namespace embree
   public:
 
     /*! Builder interface to create allocator */
-    struct CreateAlloc 
+    struct CreateAlloc
     {
     public:
       __forceinline CreateAlloc (BVHN* bvh) : bvh(bvh) {}
@@ -895,8 +895,7 @@ namespace embree
         size_t iterations = 0;
         while(minF + scale_diff * 255.0f < maxF)
         {
-          // win / visual studio workaround
-          diff = nextafterf(diff, FLT_MAX);
+          diff = nextafter(diff, FLT_MAX);
           scale_diff = diff / 255.0f;
           iterations++;
         }
@@ -905,14 +904,14 @@ namespace embree
         vfloat<N> floor_lower = floor(  (lower - vfloat<N>(minF)) * vfloat<N>(inv_diff) );
         vfloat<N> ceil_upper  = ceil (  (upper - vfloat<N>(minF)) * vfloat<N>(inv_diff) );
         vint<N> i_floor_lower( floor_lower );
-        vint<N> i_ceil_upper ( ceil_upper  );     
+        vint<N> i_ceil_upper ( ceil_upper  );
 
         /* lower/upper correction */
-        vbool<N> m_lower_correction = ((minF + vfloat<N>(i_floor_lower) * scale_diff) > lower) & m_valid;        
-        vbool<N> m_upper_correction = ((minF + vfloat<N>(i_ceil_upper) * scale_diff) < upper) & m_valid;        
+        vbool<N> m_lower_correction = ((minF + vfloat<N>(i_floor_lower) * scale_diff) > lower) & m_valid;
+        vbool<N> m_upper_correction = ((minF + vfloat<N>(i_ceil_upper) * scale_diff) < upper) & m_valid;
         i_floor_lower  = select(m_lower_correction,i_floor_lower-1,i_floor_lower);
         i_ceil_upper   = select(m_upper_correction,i_ceil_upper +1,i_ceil_upper);
-        
+
         /* disable invalid lanes */
         i_floor_lower = select(m_valid,i_floor_lower,255);
         i_ceil_upper  = select(m_valid,i_ceil_upper ,0);
@@ -929,23 +928,23 @@ namespace embree
         vfloat<N> final_extract_lower = minF + extract_lower * scale_diff;
         vfloat<N> final_extract_upper = minF + extract_upper * scale_diff;
         assert( (movemask(final_extract_lower <= lower ) & movemask(m_valid)) == movemask(m_valid));
-        assert( (movemask(final_extract_upper >= upper ) & movemask(m_valid)) == movemask(m_valid)); 
-#endif        
+        assert( (movemask(final_extract_upper >= upper ) & movemask(m_valid)) == movemask(m_valid));
+#endif
       }
-                                         
-                                         
-      
-      
+
+
+
+
       __forceinline void init(Node &node)
       {
         for (size_t i=0;i<N;i++) children[i] = emptyNode;
         init_dim(node.lower_x,node.upper_x,lower_x,upper_x,start.x,scale.x);
         init_dim(node.lower_y,node.upper_y,lower_y,upper_y,start.y,scale.y);
-        init_dim(node.lower_z,node.upper_z,lower_z,upper_z,start.z,scale.z);        
+        init_dim(node.lower_z,node.upper_z,lower_z,upper_z,start.z,scale.z);
       }
 
-      __forceinline vfloat<N> dequantizeLowerX() const { return vfloat<N>(start.x) + vfloat<N>(vint<N>::load(lower_x)) * scale.x; }      
-      
+      __forceinline vfloat<N> dequantizeLowerX() const { return vfloat<N>(start.x) + vfloat<N>(vint<N>::load(lower_x)) * scale.x; }
+
       __forceinline vfloat<N> dequantizeUpperX() const { return vfloat<N>(start.x) + vfloat<N>(vint<N>::load(upper_x)) * scale.x; }
 
       __forceinline vfloat<N> dequantizeLowerY() const { return vfloat<N>(start.y) + vfloat<N>(vint<N>::load(lower_y)) * scale.y; }
@@ -971,7 +970,7 @@ namespace embree
         unsigned char all_planes[6*N];
       };
 
-#if ENABLE_32BIT_OFFSETS_FOR_QUANTIZED_NODES == 1 
+#if ENABLE_32BIT_OFFSETS_FOR_QUANTIZED_NODES == 1
       int children[N]; //!< signed 32bit offset to the N children (can be a node or leaf)
 #else
       NodeRef children[N];    //!< Pointer to the N children (can be a node or leaf)

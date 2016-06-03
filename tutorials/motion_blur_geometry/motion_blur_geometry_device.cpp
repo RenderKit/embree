@@ -146,7 +146,7 @@ unsigned int addHair (RTCScene scene)
   rtcUnmapBuffer(scene,geomID,RTC_VERTEX_BUFFER1);
 
   int* indices = (int*) rtcMapBuffer(scene,geomID,RTC_INDEX_BUFFER);
-  for (size_t i=0; i<16; i++) {
+  for (int i=0; i<16; i++) {
     indices[i] = 4*i;
   }
   rtcUnmapBuffer(scene,geomID,RTC_INDEX_BUFFER);

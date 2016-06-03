@@ -16,35 +16,4 @@
 
 #pragma once
 
-#include "../../../common/math/vec3.h"
-#include "../tutorial/camera.h"
-
-namespace embree
-{
-  struct Scene
-  {
-    void* materials;  //!< material list
-    void* positions;    //!< vertex position array
-    void* normals;       //!< vertex normal array
-    void* texcoords;     //!< vertex texcoord array
-    void* triangles;  //!< list of triangles
-    int numMaterials;
-    int numVertices;
-    int numTriangles;
-    embree::Vec3f pointLightPosition;
-    embree::Vec3f pointLightIntensity;
-    embree::Vec3f ambientLightIntensity;
-  };
-  
-  extern "C" void device_init(const char* cfg);
-  extern "C" void call_key_pressed_handler (int key);
-  extern "C" void (*key_pressed_handler)(int key);
-
-  extern "C" void device_set_scene(Scene* scene);
-  extern "C" void device_resize(int width, int height);
-  extern "C" bool device_pick(const float x, const float y, const ISPCCamera& camera, Vec3fa& hitPos);
-
-  extern "C" void device_render(int* pixels, const int width, const int height,
-                                const float time, const ISPCCamera& camera);
-  extern "C" void device_cleanup();
-}
+#include "../../../common/math/math.h"
