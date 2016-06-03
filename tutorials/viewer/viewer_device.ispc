@@ -255,7 +255,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
    /* use geometry instancing feature */
   if (g_instancing_mode == 1)
   {
-    for (uniform size_t i=0; i<scene_in->numGeometries; i++)
+    for (uniform unsigned int i=0; i<scene_in->numGeometries; i++)
     {
       uniform ISPCGeometry* uniform geometry = scene_in->geometries[i];
       if (geometry->type == SUBDIV_MESH) {

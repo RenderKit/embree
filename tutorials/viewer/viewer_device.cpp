@@ -263,7 +263,7 @@ RTCScene convertScene(ISPCScene* scene_in)
    /* use geometry instancing feature */
   if (g_instancing_mode == 1)
   {
-    for (size_t i=0; i<scene_in->numGeometries; i++)
+    for (unsigned int i=0; i<scene_in->numGeometries; i++)
     {
       ISPCGeometry* geometry = scene_in->geometries[i];
       if (geometry->type == SUBDIV_MESH) {

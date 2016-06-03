@@ -27,10 +27,7 @@ struct Vertex   { float x,y,z,r;  }; // FIXME: rename to Vertex4f
 struct Triangle { int v0, v1, v2; };
 
 /* include embree API */
-#define __RTCRay__
-#define __RTCRay__
 #include "../../../include/embree2/rtcore.h"
-#include "../../../include/embree2/rtcore_ray.h"
 
 /* include optional vector library */
 #include "../math/math.h"
