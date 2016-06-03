@@ -38,7 +38,6 @@
 
 namespace embree
 {
-  std::string g_tutorialName;
   extern "C" {
     float g_debug = 0.0f;
     Mode g_mode = MODE_NORMAL;
@@ -83,9 +82,6 @@ namespace embree
     /* only a single instance of this class is supported */
     assert(instance == nullptr);
     instance = this;
-
-    /* the coi device needs this name in a static variable */
-    g_tutorialName = tutorialName;
 
     /* for best performance set FTZ and DAZ flags in MXCSR control and status register */
     _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
