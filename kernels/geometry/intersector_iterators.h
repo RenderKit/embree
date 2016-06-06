@@ -44,15 +44,16 @@ namespace embree
           return false;
         }
 
-        template<typename Context>
-        static __forceinline size_t intersect(Precalculations* pre, size_t valid, Ray** rays, const RTCIntersectContext* context, Context* ctx, size_t ty, const Primitive* prim, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node)
+        //template<typename Context>
+        static __forceinline size_t intersect(Precalculations* pre, size_t valid, Ray** rays, const RTCIntersectContext* context,  size_t ty, const Primitive* prim, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) // Context* ctx,
         {
           size_t valid_isec = 0;
           do {
             const size_t i = __bscf(valid);
+            const float old_far = rays[i]->tfar;
             intersect(pre[i],*rays[i],context,ty,prim,num,scene,geomID_to_instID,lazy_node); 
-            valid_isec |= (rays[i]->tfar < ctx[i].tfar()) ? ((size_t)1 << i) : 0;            
-            ctx[i].update(rays[i]);
+            valid_isec |= (rays[i]->tfar < old_far) ? ((size_t)1 << i) : 0;             // ctx[i].tfar()
+            //ctx[i].update(rays[i]);
           } while(unlikely(valid));
           return valid_isec;
         }

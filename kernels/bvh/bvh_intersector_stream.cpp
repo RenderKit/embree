@@ -40,6 +40,8 @@
 //#define DBG_PRINT(x) PRINT(x)
 #define DBG_PRINT(x)
 
+#define ENABLE_CO_PATH 0
+
 namespace embree
 {
   namespace isa
@@ -275,6 +277,8 @@ namespace embree
 
             //if (unlikely(__popcnt(m_trav_bucket) > 1))
 
+            STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
+
             const vfloat<K> fminX = msub(bminX, vfloat<K>(frusta_min_rdir.x), vfloat<K>(frusta_min_org_rdir.x));
             const vfloat<K> fminY = msub(bminY, vfloat<K>(frusta_min_rdir.y), vfloat<K>(frusta_min_org_rdir.y));
             const vfloat<K> fminZ = msub(bminZ, vfloat<K>(frusta_min_rdir.z), vfloat<K>(frusta_min_org_rdir.z));
@@ -288,7 +292,6 @@ namespace embree
             size_t m_node_hit = movemask(vmask_node_hit);
             DBG_PRINT(m_node_hit);
             
-            STAT3(normal.trav_hit_boxes[__popcnt(m_node_hit)],1,1,1);                          
 
             assert(__popcnt(m_node_hit) <= 8 );
 
@@ -302,6 +305,7 @@ namespace embree
               const size_t b   = __bscf(m_node); // box
               DBG_PRINT(b);
               size_t m_current = m_trav_active;
+              assert(m_current);
               DBG_PRINT(m_current);
               DBG_PRINT(__popcnt(m_current));
 
@@ -313,10 +317,14 @@ namespace embree
               const vfloat<K> maxY = vfloat<K>(bmaxY[b]);
               const vfloat<K> maxZ = vfloat<K>(bmaxZ[b]);
 
+              size_t i   = __bsf(m_current) & ~(K-1);
+              const size_t end = __bsr(m_current);
               do {
                 STAT3(normal.trav_nodes,1,1,1);                          
-                const size_t i = min(__bsf(m_current),numOctantRays-K); // ray
+                //const size_t i = min(__bsf(m_current),numOctantRays-K); // ray
                 DBG_PRINT(i);
+                DBG_PRINT(end);
+
                 const vfloat<K> rdir_x     = vfloat<K>::loadu(&rays_rdir_x[i]);
                 const vfloat<K> rdir_y     = vfloat<K>::loadu(&rays_rdir_y[i]);
                 const vfloat<K> rdir_z     = vfloat<K>::loadu(&rays_rdir_z[i]);
@@ -341,8 +349,10 @@ namespace embree
                 DBG_PRINT(__popcnt(m_hit));
                 DBG_PRINT(__popcnt(m_current));
 
-                if (unlikely(m_hit)) break;
-              } while(m_current);
+                //if (unlikely(m_hit)) break;
+                //} while(m_current);
+                i += K;
+              } while(i < end);
 
               m_node_hit ^= m_current ? (size_t)0 : ((size_t)1 << b);
               DBG_PRINT(__popcnt(m_node_hit));
@@ -379,7 +389,17 @@ namespace embree
 
           /*! intersect stream of rays with all primitives */
           size_t lazy_node = 0;
-          size_t valid_isec MAYBE_UNUSED = PrimitiveIntersector::intersect(pre,bits,rays,context,ray_ctx,0,prim,num,bvh->scene,NULL,lazy_node);
+          size_t valid_isec MAYBE_UNUSED = PrimitiveIntersector::intersect(pre,bits,rays,context,0,prim,num,bvh->scene,NULL,lazy_node);
+
+          /* update tfar in ray context on successful hit */
+          size_t isec_bits = valid_isec;
+          while(isec_bits)
+          {
+            const size_t i = __bscf(isec_bits);
+            ray_ctx[i].update(rays[i]);
+            rays_max_dist[i] = rays[i]->tfar;
+          }
+
 
         } // traversal + intersection
 
@@ -405,7 +425,7 @@ namespace embree
       __aligned(64) StackItemMask  stack1[stackSizeSingle];  //!< stack of nodes 
 #endif
 
-#if defined(__AVX2__)
+#if defined(__AVX2__) && ENABLE_CO_PATH == 1
       if (unlikely(isCoherentCommonOrigin(context->flags)))
       {
         BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect_co(bvh, input_rays, numTotalRays, context);        
@@ -628,7 +648,15 @@ namespace embree
 
           /*! intersect stream of rays with all primitives */
           size_t lazy_node = 0;
-          size_t valid_isec MAYBE_UNUSED = PrimitiveIntersector::intersect(pre,bits,rays,context,ray_ctx,0,prim,num,bvh->scene,NULL,lazy_node);
+          size_t valid_isec MAYBE_UNUSED = PrimitiveIntersector::intersect(pre,bits,rays,context,0,prim,num,bvh->scene,NULL,lazy_node);
+
+          /* update tfar in ray context on successful hit */
+          size_t isec_bits = valid_isec;
+          while(isec_bits)
+          {
+            const size_t i = __bscf(isec_bits);
+            ray_ctx[i].update(rays[i]);
+          }
 
 #if DISTANCE_TEST == 1
           if (unlikely(valid_isec))
