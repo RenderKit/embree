@@ -66,7 +66,7 @@ extern "C" int puts ( const char* str );
 extern "C" int putchar ( int character );
 
 /* face forward for shading normals */
-inline Vec3fa faceforward( Vec3fa N, Vec3fa I, Vec3fa Ng ) {
+inline Vec3fa faceforward( Vec3fa &N, Vec3fa &I, Vec3fa &Ng ) {
   return dot(I, Ng) < 0 ? N : neg(N);
 }
 
@@ -123,7 +123,7 @@ struct Sample3f
   float pdf;
 };
 
-inline Sample3f make_Sample3f(const Vec3fa v, const float pdf) {
+inline Sample3f make_Sample3f(const Vec3fa &v, const float pdf) {
   Sample3f s; s.v = v; s.pdf = pdf; return s;
 }
 

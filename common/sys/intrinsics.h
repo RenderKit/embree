@@ -68,7 +68,7 @@ namespace embree
   {
     LARGE_INTEGER li;
     QueryPerformanceCounter(&li);
-    return li.QuadPart;
+    return (size_t)li.QuadPart;
   }
   
   __forceinline int __bsf(int v) {

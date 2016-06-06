@@ -163,7 +163,7 @@ namespace embree
     }
     
     ssize_t index = 0;
-    for (ssize_t i=0;i<cyFile.header.numStrands;i++)
+    for (ssize_t i=0;i<(ssize_t)cyFile.header.numStrands;i++)
     {
       if (cyFile.segments)
       {
