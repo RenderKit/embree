@@ -30,7 +30,7 @@ namespace embree
   {
     if (*taskPtr == nullptr) *taskPtr = new std::vector<void*>;
     std::vector<void*>* lst = (std::vector<void*>*)(*taskPtr);
-    void* ptr = alignedMalloc(size,alignment);
+    void* ptr = alignedMalloc((size_t)size,alignment);
     lst->push_back(ptr);
     return ptr;
   }
