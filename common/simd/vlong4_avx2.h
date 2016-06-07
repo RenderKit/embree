@@ -218,7 +218,7 @@ namespace embree
   /// Comparison Operators + Select
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline const vboold4 operator ==( const vlong4& a, const vlong4& b ) { return vboold4(_mm256_cmpeq_epi64(a,b)); }
+  __forceinline const vboold4 operator ==( const vlong4& a, const vlong4& b ) { return _mm256_cmpeq_epi64(a,b); }
   __forceinline const vboold4 operator ==( const vlong4& a, const long    b ) { return a == vlong4(b); }
   __forceinline const vboold4 operator ==( const long    a, const vlong4& b ) { return vlong4(a) == b; }
   
