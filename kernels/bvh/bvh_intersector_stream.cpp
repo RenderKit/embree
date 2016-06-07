@@ -40,7 +40,7 @@
 //#define DBG_PRINT(x) PRINT(x)
 #define DBG_PRINT(x)
 
-#define ENABLE_CO_PATH 1
+#define ENABLE_CO_PATH 0
 
 namespace embree
 {
@@ -174,7 +174,6 @@ namespace embree
 #if defined(__AVX2__) && !defined(__AVX512F__)
 
 #define MAX_RAYS 64
-      __aligned(64) RContext ray_ctx[MAX_RAYS];
       __aligned(64) Precalculations pre[MAX_RAYS]; 
       __aligned(64) StackItemMask  stack0[stackSizeSingle];  //!< stack of nodes 
 
@@ -207,21 +206,25 @@ namespace embree
         float  frusta_max_dist(neg_inf);
 
         for (size_t i=0; i<numOctantRays; i++) {
-          new (&ray_ctx[i]) RContext(rays[i]);
           new (&pre[i]) Precalculations(*rays[i],bvh);
-          tmp_min_rdir = min(tmp_min_rdir,ray_ctx[i].rdir);
-          tmp_max_rdir = max(tmp_max_rdir,ray_ctx[i].rdir);                      
-          frusta_min_dist = min(frusta_min_dist,ray_ctx[i].rdir.w);
-          frusta_max_dist = max(frusta_max_dist,ray_ctx[i].org_rdir.w);
-          rays_rdir_x[i]     = ray_ctx[i].rdir.x; //todo transpose or gather
-          rays_rdir_y[i]     = ray_ctx[i].rdir.y;
-          rays_rdir_z[i]     = ray_ctx[i].rdir.z;
-          rays_min_dist[i]   = ray_ctx[i].rdir.w; // active
-
-          rays_org_rdir_x[i] = ray_ctx[i].org_rdir.x;
-          rays_org_rdir_y[i] = ray_ctx[i].org_rdir.y;
-          rays_org_rdir_z[i] = ray_ctx[i].org_rdir.z;
-          rays_max_dist[i]   = ray_ctx[i].org_rdir.w;
+          const Vec3fa& org = rays[i]->org;
+          const Vec3fa& dir = rays[i]->dir;
+          const Vec3fa rdir = rcp_safe(dir);
+          const Vec3fa org_rdir = org * rdir;
+          const float tnear = max(0.0f,rays[i]->tnear);
+          const float tfar  = rays[i]->tfar;
+          tmp_min_rdir    = min(tmp_min_rdir,rdir);
+          tmp_max_rdir    = max(tmp_max_rdir,rdir);                      
+          frusta_min_dist = min(frusta_min_dist,tnear);
+          frusta_max_dist = max(frusta_max_dist,tfar);
+          rays_rdir_x[i]     = rdir.x; //todo transpose or gather
+          rays_rdir_y[i]     = rdir.y;
+          rays_rdir_z[i]     = rdir.z;
+          rays_min_dist[i]   = tnear; // active
+          rays_org_rdir_x[i] = org_rdir.x;
+          rays_org_rdir_y[i] = org_rdir.y;
+          rays_org_rdir_z[i] = org_rdir.z;
+          rays_max_dist[i]   = tfar;
         }
 
         const Vec3fa frusta_min_rdir = select(ge_mask(tmp_min_rdir,Vec3fa(zero)),tmp_min_rdir,tmp_max_rdir);
@@ -239,7 +242,7 @@ namespace embree
         ///////////////////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////
 
-        const NearFarPreCompute pc(ray_ctx[0].rdir);
+        const NearFarPreCompute pc(frusta_min_rdir);
 
         StackItemMask* stackPtr   = stack0 + 2;
 
@@ -294,7 +297,6 @@ namespace embree
             DBG_PRINT(vmask_node_hit);
             DBG_PRINT(m_node_hit);
             
-
             // ==================
             const size_t first_index = __bsf(m_trav_active);
 
@@ -319,9 +321,10 @@ namespace embree
             DBG_PRINT(dist);
 
             size_t m_node = m_node_hit ^ m_first_hit;
+
             STAT3(normal.trav_hit_boxes[__popcnt(m_node)],1,1,1);                          
 
-            while(m_node)
+            while(unlikely(m_node))
             {
               DBG_PRINT(m_node);
               const size_t b   = __bscf(m_node); // box
@@ -418,7 +421,6 @@ namespace embree
           {
             do {
               const size_t i = __bscf(valid_isec);
-              ray_ctx[i].update(rays[i]);
               rays_max_dist[i] = rays[i]->tfar;
             } while(valid_isec);
 
