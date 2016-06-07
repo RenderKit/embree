@@ -23,6 +23,7 @@
 
 #if defined (__AVX2__)
 #include "vint8_avx2.h"
+#include "vlong4_avx2.h"
 #else
 #include "vint8_avx.h"
 #endif

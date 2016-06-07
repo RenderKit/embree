@@ -40,7 +40,7 @@
 //#define DBG_PRINT(x) PRINT(x)
 #define DBG_PRINT(x)
 
-#define ENABLE_CO_PATH 0
+#define ENABLE_CO_PATH 1
 
 namespace embree
 {
@@ -197,6 +197,9 @@ namespace embree
         __aligned(64) float rays_min_dist[MAX_RAYS];
         __aligned(64) float rays_max_dist[MAX_RAYS];
 
+        for (size_t i=0; i<MAX_RAYS; i+=K) 
+          vfloat<K>::store(&rays_max_dist[i],vfloat<K>(pos_inf));
+
         /* do per ray precalculations */
         Vec3fa tmp_min_rdir(pos_inf); // todo: avx min/max
         Vec3fa tmp_max_rdir(neg_inf);
@@ -262,8 +265,8 @@ namespace embree
             DBG_PRINT("TRAVERSAL");
             DBG_PRINT(__popcnt(m_trav_active));
 
-            __aligned(64) size_t maskK[8];
-            for (size_t i=0;i<8;i++) maskK[i] = 0; //todo remove
+            __aligned(64) size_t maskK[N];
+            for (size_t i=0;i<N;i++) maskK[i] = m_trav_active; //todo remove
 
             /* interval-based culling test */
             STAT3(normal.trav_nodes,1,1,1);                          
@@ -277,8 +280,6 @@ namespace embree
 
             //if (unlikely(__popcnt(m_trav_bucket) > 1))
 
-            STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
-
             const vfloat<K> fminX = msub(bminX, vfloat<K>(frusta_min_rdir.x), vfloat<K>(frusta_min_org_rdir.x));
             const vfloat<K> fminY = msub(bminY, vfloat<K>(frusta_min_rdir.y), vfloat<K>(frusta_min_org_rdir.y));
             const vfloat<K> fminZ = msub(bminZ, vfloat<K>(frusta_min_rdir.z), vfloat<K>(frusta_min_org_rdir.z));
@@ -288,17 +289,38 @@ namespace embree
             const vfloat<K> fmin  = max(max(fminX,fminY),max(fminZ,frusta_min_dist)); 
             const vfloat<K> fmax  = min(min(fmaxX,fmaxY),min(fmaxZ,frusta_max_dist)); 
             const vbool<K> vmask_node_hit  = fmin <= fmax;  
-            DBG_PRINT(vmask_node_hit);
             size_t m_node_hit = movemask(vmask_node_hit);
+
+            DBG_PRINT(vmask_node_hit);
             DBG_PRINT(m_node_hit);
             
+
+            // ==================
+            const size_t first_index = __bsf(m_trav_active);
+
+            STAT3(normal.trav_nodes,1,1,1);                          
+
+            const vfloat<K> rminX = msub(bminX, vfloat<K>(rays_rdir_x[first_index]), vfloat<K>(rays_org_rdir_x[first_index]));
+            const vfloat<K> rminY = msub(bminY, vfloat<K>(rays_rdir_y[first_index]), vfloat<K>(rays_org_rdir_y[first_index]));
+            const vfloat<K> rminZ = msub(bminZ, vfloat<K>(rays_rdir_z[first_index]), vfloat<K>(rays_org_rdir_z[first_index]));
+            const vfloat<K> rmaxX = msub(bmaxX, vfloat<K>(rays_rdir_x[first_index]), vfloat<K>(rays_org_rdir_x[first_index]));
+            const vfloat<K> rmaxY = msub(bmaxY, vfloat<K>(rays_rdir_y[first_index]), vfloat<K>(rays_org_rdir_y[first_index]));
+            const vfloat<K> rmaxZ = msub(bmaxZ, vfloat<K>(rays_rdir_z[first_index]), vfloat<K>(rays_org_rdir_z[first_index]));
+            const vfloat<K> rmin  = max(max(rminX,rminY),max(rminZ,rays_min_dist[first_index])); 
+            const vfloat<K> rmax  = min(min(rmaxX,rmaxY),min(rmaxZ,rays_max_dist[first_index])); 
+            const vbool<K> vmask_first_hit  = rmin <= rmax;  
+            size_t m_first_hit = movemask(vmask_first_hit);
+
+            // ==================
 
             assert(__popcnt(m_node_hit) <= 8 );
 
             const vfloat<K> dist = fmin;            
             DBG_PRINT(dist);
 
-            size_t m_node = m_node_hit;
+            size_t m_node = m_node_hit ^ m_first_hit;
+            STAT3(normal.trav_hit_boxes[__popcnt(m_node)],1,1,1);                          
+
             while(m_node)
             {
               DBG_PRINT(m_node);
@@ -392,12 +414,19 @@ namespace embree
           size_t valid_isec MAYBE_UNUSED = PrimitiveIntersector::intersect(pre,bits,rays,context,0,prim,num,bvh->scene,NULL,lazy_node);
 
           /* update tfar in ray context on successful hit */
-          size_t isec_bits = valid_isec;
-          while(isec_bits)
+          if(unlikely(valid_isec))
           {
-            const size_t i = __bscf(isec_bits);
-            ray_ctx[i].update(rays[i]);
-            rays_max_dist[i] = rays[i]->tfar;
+            do {
+              const size_t i = __bscf(valid_isec);
+              ray_ctx[i].update(rays[i]);
+              rays_max_dist[i] = rays[i]->tfar;
+            } while(valid_isec);
+
+            /* update max frust distance */
+            vfloat<K> max_dist = vfloat<K>::load(&rays_max_dist[0]);
+            for (size_t i=K;i<MAX_RAYS;i++)
+              max_dist = max(max_dist,vfloat<K>::load(&rays_max_dist[i]));
+            frusta_max_dist = reduce_max(max_dist);
           }
 
 
