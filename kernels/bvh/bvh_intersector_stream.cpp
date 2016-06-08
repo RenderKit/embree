@@ -168,6 +168,287 @@ namespace embree
     // =====================================================================================================
     // =====================================================================================================
 
+
+    template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
+    void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect_co_soa(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, const RTCIntersectContext* context)
+    {
+#if defined(__AVX2__) && !defined(__AVX512F__)
+
+#define MAX_RAYS 64
+      //__aligned(64) Precalculations pre[MAX_RAYS]; 
+      __aligned(64) StackItemMask  stack0[stackSizeSingle];  //!< stack of nodes 
+
+      assert(numTotalRays <= MAX_RAYS);
+      assert((numTotalRays % K) == 0);
+      RayK<K>** __restrict__ input_packets = (RayK<K>**)input_rays;
+
+      const size_t numOctantRays = numTotalRays;
+
+      /* inactive rays should have been filtered out before */
+      size_t m_active = numOctantRays == 8*sizeof(size_t) ? (size_t)-1 : (((size_t)1 << numOctantRays))-1;
+
+      if (unlikely(m_active == 0)) return;
+
+      size_t numPackets = (numOctantRays+K-1)/K;
+
+      __aligned(64) struct Packet {
+        Vec3vfK rdir;
+        Vec3vfK rdir_org;
+        vfloat<K> min_dist;
+        vfloat<K> max_dist;
+      } packet[MAX_RAYS/K];
+
+      Vec3vfK   tmp_min_rdir(pos_inf); 
+      Vec3vfK   tmp_max_rdir(neg_inf);
+      vfloat<K> tmp_min_dist(pos_inf);
+      vfloat<K> tmp_max_dist(neg_inf);
+
+      for (size_t i=0; i<numPackets; i++) 
+      {
+        const Vec3vfK& org     = input_packets[i]->org;
+        const Vec3vfK& dir     = input_packets[i]->dir;
+        const Vec3vfK rdir     = rcp_safe(dir);
+        const Vec3vfK org_rdir = org * rdir;
+        const vfloat<K> tnear  = input_packets[i]->tnear;
+        const vfloat<K> tfar   = input_packets[i]->tfar;
+        const vbool<K> m_valid = (tnear <= tfar) & (tnear >= 0.0f);
+        
+        packet[i].rdir     = rdir;
+        packet[i].org_rdir = org_rdir;
+        packet[i].min_dist = select(m_valid,tnear,0.0f);
+        packet[i].max_dist = select(m_valid,tfar,neg_inf);
+
+        tmp_min_rdir = min(tmp_min_rdir,rdir);
+        tmp_max_rdir = max(tmp_max_rdir,rdir);                      
+        tmp_min_dist = min(tmp_min_dist,tnear);
+        tmp_max_dist = max(tmp_max_dist,tfar);        
+      }
+        
+      const Vec3fa reduced_min_rdir( reduce_min(tmp_min_rdir.x), 
+                                     reduce_min(tmp_min_rdir.y),
+                                     reduce_min(tmp_min_rdir.z) );
+
+      const Vec3fa reduced_max_rdir( reduce_max(tmp_max_rdir.x), 
+                                     reduce_max(tmp_max_rdir.y),
+                                     reduce_max(tmp_max_rdir.z) );
+
+      const float frusta_min_dist = reduce_min(tmp_min_dist);
+      const float frusta_max_dist = reduce_min(tmp_max_dist);
+
+      const Vec3fa frusta_min_rdir = select(ge_mask(reduced_min_rdir,Vec3fa(zero)),reduced_min_rdir,reduced_max_rdir);
+      const Vec3fa frusta_max_rdir = select(ge_mask(reduced_min_rdir,Vec3fa(zero)),reduced_max_rdir,reduced_min_rdir);
+
+      const Vec3fa origin(input_packets[0]->org.x[0],
+                          input_packets[0]->org.y[0],
+                          input_packets[0]->org.z[0]);
+
+      const Vec3fa frusta_min_org_rdir = frusta_min_rdir * origin;
+      const Vec3fa frusta_max_org_rdir = frusta_max_rdir * origin;
+
+      stack0[0].ptr  = BVH::invalidNode;
+      stack0[0].mask = (size_t)-1;
+      stack0[1].ptr  = bvh->root;
+      stack0[1].mask = m_active;
+
+      ///////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////////////////////////////////////////////////////////
+
+      const NearFarPreCompute pc(frusta_min_rdir);
+
+      StackItemMask* stackPtr   = stack0 + 2;
+
+      while (1) pop:
+      {          
+
+        DBG_PRINT("POP");
+        /*! pop next node */
+        STAT3(normal.trav_stack_pop,1,1,1);                          
+        stackPtr--;
+        NodeRef cur = NodeRef(stackPtr->ptr);
+        size_t m_trav_active = stackPtr->mask;
+        assert(m_trav_active);
+
+        while (1)
+        {
+          DBG_PRINT(cur);
+          DBG_PRINT(cur.isLeaf());
+
+          if (unlikely(cur.isLeaf())) break;
+          const Node* __restrict__ const node = cur.node();
+
+          DBG_PRINT("TRAVERSAL");
+          DBG_PRINT(__popcnt(m_trav_active));
+
+          __aligned(64) size_t maskK[N];
+          for (size_t i=0;i<N;i++) maskK[i] = m_trav_active; //todo remove
+
+          /* interval-based culling test */
+          STAT3(normal.trav_nodes,1,1,1);                          
+
+          const vfloat<K> bminX = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.nearX));
+          const vfloat<K> bminY = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.nearY));
+          const vfloat<K> bminZ = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.nearZ));
+          const vfloat<K> bmaxX = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farX));
+          const vfloat<K> bmaxY = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farY));
+          const vfloat<K> bmaxZ = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farZ));
+
+          //if (unlikely(__popcnt(m_trav_bucket) > 1))
+
+          const vfloat<K> fminX = msub(bminX, vfloat<K>(frusta_min_rdir.x), vfloat<K>(frusta_min_org_rdir.x));
+          const vfloat<K> fminY = msub(bminY, vfloat<K>(frusta_min_rdir.y), vfloat<K>(frusta_min_org_rdir.y));
+          const vfloat<K> fminZ = msub(bminZ, vfloat<K>(frusta_min_rdir.z), vfloat<K>(frusta_min_org_rdir.z));
+          const vfloat<K> fmaxX = msub(bmaxX, vfloat<K>(frusta_max_rdir.x), vfloat<K>(frusta_max_org_rdir.x));
+          const vfloat<K> fmaxY = msub(bmaxY, vfloat<K>(frusta_max_rdir.y), vfloat<K>(frusta_max_org_rdir.y));
+          const vfloat<K> fmaxZ = msub(bmaxZ, vfloat<K>(frusta_max_rdir.z), vfloat<K>(frusta_max_org_rdir.z));
+          const vfloat<K> fmin  = max(max(fminX,fminY),max(fminZ,frusta_min_dist)); 
+          const vfloat<K> fmax  = min(min(fmaxX,fmaxY),min(fmaxZ,frusta_max_dist)); 
+          const vbool<K> vmask_node_hit  = fmin <= fmax;  
+          size_t m_node_hit = movemask(vmask_node_hit);
+
+          DBG_PRINT(vmask_node_hit);
+          DBG_PRINT(m_node_hit);
+            
+          // ==================
+          const size_t first_index    = __bsf(m_trav_active);
+          const size_t first_packetID = first_index / K;
+          const size_t first_rayID    = first_index % K;
+
+          Packet &p = packet[first_packetID]; 
+          STAT3(normal.trav_nodes,1,1,1);                          
+
+          const vfloat<K> rminX = msub(bminX, vfloat<K>(p.rdir.x[first_rayID]), vfloat<K>(p.org_rdir.x[first_rayID]));
+          const vfloat<K> rminY = msub(bminY, vfloat<K>(p.rdir.y[first_rayID]), vfloat<K>(p.org_rdir.y[first_rayID]));
+          const vfloat<K> rminZ = msub(bminZ, vfloat<K>(p.rdir.z[first_rayID]), vfloat<K>(p.org_rdir.z[first_rayID]));
+          const vfloat<K> rmaxX = msub(bmaxX, vfloat<K>(p.rdir.x[first_rayID]), vfloat<K>(p.org_rdir.x[first_rayID]));
+          const vfloat<K> rmaxY = msub(bmaxY, vfloat<K>(p.rdir.y[first_rayID]), vfloat<K>(p.org_rdir.y[first_rayID]));
+          const vfloat<K> rmaxZ = msub(bmaxZ, vfloat<K>(p.rdir.z[first_rayID]), vfloat<K>(p.org_rdir.z[first_rayID]));
+          const vfloat<K> rmin  = max(max(rminX,rminY),max(rminZ,p.min_dist[first_rayID])); 
+          const vfloat<K> rmax  = min(min(rmaxX,rmaxY),min(rmaxZ,p.max_dist[first_rayID])); 
+          const vbool<K> vmask_first_hit  = rmin <= rmax;  
+          size_t m_first_hit = movemask(vmask_first_hit);
+
+          // ==================
+
+          assert(__popcnt(m_node_hit) <= 8 );
+
+          const vfloat<K> dist = fmin;            
+          DBG_PRINT(dist);
+
+          size_t m_node = m_node_hit ^ m_first_hit;
+
+          //STAT3(normal.trav_hit_boxes[__popcnt(m_node)],1,1,1);                          
+
+          while(unlikely(m_node)) //todo: iterate over nodes instead of packets?
+          {
+            DBG_PRINT(m_node);
+            const size_t b   = __bscf(m_node); // box
+            DBG_PRINT(b);
+            size_t m_current = m_trav_active;
+            assert(m_current);
+            DBG_PRINT(m_current);
+            DBG_PRINT(__popcnt(m_current));
+
+
+            const vfloat<K> minX = vfloat<K>(bminX[b]);
+            const vfloat<K> minY = vfloat<K>(bminY[b]);
+            const vfloat<K> minZ = vfloat<K>(bminZ[b]);
+            const vfloat<K> maxX = vfloat<K>(bmaxX[b]);
+            const vfloat<K> maxY = vfloat<K>(bmaxY[b]);
+            const vfloat<K> maxZ = vfloat<K>(bmaxZ[b]);
+
+            size_t startPacketID = __bsf(m_current) / K;
+            size_t endPacketID   = __bsr(m_current) / K;
+            for (size_t i=startPacketID;i<=endPacketID;i++) 
+            {
+              STAT3(normal.trav_nodes,1,1,1);                          
+              Packet &p = packet[first_packetID]; 
+
+              const vfloat<K> tminX = msub(minX, p.rdir.x, p.org_rdir.x);
+              const vfloat<K> tminY = msub(minY, p.rdir.y, p.org_rdir.y);
+              const vfloat<K> tminZ = msub(minZ, p.rdir.z, p.org_rdir.z);
+              const vfloat<K> tmaxX = msub(maxX, p.rdir.x, p.org_rdir.x);
+              const vfloat<K> tmaxY = msub(maxY, p.rdir.y, p.org_rdir.y);
+              const vfloat<K> tmaxZ = msub(maxZ, p.rdir.z, p.org_rdir.z);
+              const vfloat<K> tmin  = max(max(tminX,tminY),max(tminZ,p.min_dist)); 
+              const vfloat<K> tmax  = min(min(tmaxX,tmaxY),min(tmaxZ,p.max_dist)); 
+              const vbool<K> vmask   = tmin <= tmax;  
+              const size_t m_hit = movemask(vmask);
+              DBG_PRINT(m_hit);
+              DBG_PRINT(__popcnt(m_current));
+              m_current &= ~((m_hit^0xff) << i);
+              DBG_PRINT(__popcnt(m_hit));
+              DBG_PRINT(__popcnt(m_current));
+
+              //if (unlikely(m_hit)) break;
+              //} while(m_current);
+            };
+
+            m_node_hit ^= m_current ? (size_t)0 : ((size_t)1 << b);
+            DBG_PRINT(__popcnt(m_node_hit));
+
+            maskK[b] = m_current;
+            DBG_PRINT(__popcnt(maskK[b]));
+          }
+
+          //STAT3(normal.trav_hit_boxes[__popcnt(movemask(vmask))],1,1,1);                          
+
+          if (unlikely(m_node_hit == 0)) goto pop;
+
+          DBG_PRINT(m_node_hit);
+          DBG_PRINT("SORT");
+          DBG_PRINT(vbool<K>((int)m_node_hit));
+          BVHNNodeTraverserKHit<types,N,K>::traverseClosestHit(cur, m_trav_active, vbool<K>((int)m_node_hit), dist, (size_t*)maskK, stackPtr);
+          assert(m_trav_active);
+        }
+
+        /* current ray stream is done? */
+        if (unlikely(cur == BVH::invalidNode))
+          break;
+
+        /*! this is a leaf node */
+        assert(cur != BVH::emptyNode);
+        STAT3(normal.trav_leaves, 1, 1, 1);
+        size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
+
+        DBG_PRINT("leaf");
+        DBG_PRINT(__popcnt(m_trav_active));
+
+        STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
+        size_t bits = m_trav_active;
+
+#if 0
+
+        /*! intersect stream of rays with all primitives */
+        size_t lazy_node = 0;
+        size_t valid_isec MAYBE_UNUSED = PrimitiveIntersector::intersect(pre,bits,rays,context,0,prim,num,bvh->scene,NULL,lazy_node);
+#endif
+        size_t valid_isec = 0;
+
+        /* update tfar in ray context on successful hit */
+        if(unlikely(valid_isec))
+        {
+          vfloat<K> max_dist(neg_inf);
+          for (size_t i=0; i<numPackets; i++) 
+          {
+            Packet &p = packet[i]; 
+            vbool<K> m_valid = p.min_dist <= p.max_dist;
+            p.max_dist = select(m_valid,min(p.max_dist,input_packets[i]->tfar),p.max_dist);
+            max_dist = max(max_dist,p.max_dist);            
+          }
+
+          frusta_max_dist = reduce_max(max_dist);
+        }
+
+
+      } // traversal + intersection
+        ///////////////////////////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////////////
+
+#endif
+    }
+
     template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
     void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect_co(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, const RTCIntersectContext* context)
     {
@@ -298,6 +579,7 @@ namespace embree
             DBG_PRINT(m_node_hit);
             
             // ==================
+
             const size_t first_index = __bsf(m_trav_active);
 
             STAT3(normal.trav_nodes,1,1,1);                          
@@ -322,7 +604,7 @@ namespace embree
 
             size_t m_node = m_node_hit ^ m_first_hit;
 
-            STAT3(normal.trav_hit_boxes[__popcnt(m_node)],1,1,1);                          
+            //STAT3(normal.trav_hit_boxes[__popcnt(m_node)],1,1,1);                          
 
             while(unlikely(m_node))
             {
@@ -409,7 +691,7 @@ namespace embree
           DBG_PRINT("leaf");
           DBG_PRINT(__popcnt(m_trav_active));
 
-          //STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
+          STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
           size_t bits = m_trav_active;
 
           /*! intersect stream of rays with all primitives */
@@ -670,7 +952,7 @@ namespace embree
           STAT3(normal.trav_leaves, 1, 1, 1);
           size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
           
-          STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
+          //STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
 #if !TWO_STREAMS_FIBER_MODE
           size_t bits = m_trav_active;
 #else
@@ -956,7 +1238,7 @@ namespace embree
           size_t bits = (m_trav_active<<cur_fiber->getOffset()) & m_active;          
 #endif
           assert(bits);
-          STAT3(shadow.trav_hit_boxes[__popcnt(bits)],1,1,1);                          
+          //STAT3(shadow.trav_hit_boxes[__popcnt(bits)],1,1,1);                          
 
           m_active &= ~PrimitiveIntersector::occluded(pre,bits,rays,context,0,prim,num,bvh->scene,NULL,lazy_node);
           if (unlikely(m_active == 0)) break;
@@ -1012,20 +1294,65 @@ namespace embree
     
 #if defined(__AVX__)
     
-    IF_ENABLED_LINES(DEFINE_INTERSECTORN(BVH8Line4iStreamIntersector,BVHNStreamIntersector<SIMD_MODE(8) COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<LineMiIntersector1<4 COMMA 4 COMMA true> > >));
+    // disabled for now
+    //IF_ENABLED_LINES(DEFINE_INTERSECTORN(BVH8Line4iStreamIntersector,BVHNStreamIntersector<SIMD_MODE(8) COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<LineMiIntersector1<4 COMMA 4 COMMA true> > >));
+
+#if !defined(__AVX512F__)
+    typedef ArrayIntersectorKStream<8,
+                                    TriangleMIntersector1MoellerTrumbore<SIMD_MODE(4) COMMA true >,
+                                    TriangleMIntersectorKMoellerTrumbore<4 COMMA 4 COMMA 8 COMMA true > > Triangle4IntersectorStreamMoellerTrumbore;
+    typedef ArrayIntersectorKStream<8,
+                                    TriangleMIntersector1MoellerTrumbore<SIMD_MODE(4) COMMA false >,
+                                    TriangleMIntersectorKMoellerTrumbore<4 COMMA 4 COMMA 8 COMMA false > > Triangle4IntersectorStreamMoellerTrumboreNoFilter;
+    typedef ArrayIntersectorKStream<8,
+                                    QuadMvIntersector1MoellerTrumbore<4 COMMA true >,
+                                    QuadMvIntersectorKMoellerTrumbore<4 COMMA 8 COMMA true > > Quad4vIntersectorStreamMoellerTrumbore;
+    typedef ArrayIntersectorKStream<8,
+                                    QuadMvIntersector1MoellerTrumbore<4 COMMA false >,
+                                    QuadMvIntersectorKMoellerTrumbore<4 COMMA 8 COMMA false > > Quad4vIntersectorStreamMoellerTrumboreNoFilter;
+    typedef ArrayIntersectorKStream<8,
+                                    QuadMiIntersector1Pluecker<4 COMMA true >,
+                                    QuadMiIntersectorKPluecker<4 COMMA 8 COMMA true > > Quad4iIntersectorStreamPluecker;
+#else
+    typedef ArrayIntersectorKStream<16,
+                                    TriangleMIntersector1MoellerTrumbore<SIMD_MODE(4) COMMA true >,
+                                    TriangleMIntersectorKMoellerTrumbore<4 COMMA 16 COMMA 16 COMMA true > > Triangle4IntersectorStreamMoellerTrumbore;
+    typedef ArrayIntersectorKStream<16,
+                                    TriangleMIntersector1MoellerTrumbore<SIMD_MODE(4) COMMA false >,
+                                    TriangleMIntersectorKMoellerTrumbore<4 COMMA 16 COMMA 16 COMMA false > > Triangle4IntersectorStreamMoellerTrumboreNoFilter;
+
+    typedef ArrayIntersectorKStream<16,
+                                    QuadMvIntersector1MoellerTrumbore<4 COMMA true >,
+                                    QuadMvIntersectorKMoellerTrumbore<4 COMMA 16 COMMA true > > Quad4vIntersectorStreamMoellerTrumbore;
+    typedef ArrayIntersectorKStream<16,
+                                    QuadMvIntersector1MoellerTrumbore<4 COMMA false >,
+                                    QuadMvIntersectorKMoellerTrumbore<4 COMMA 16 COMMA false > > Quad4vIntersectorStreamMoellerTrumboreNoFilter;
+
+    typedef ArrayIntersectorKStream<16,
+                                    QuadMiIntersector1Pluecker<4 COMMA true >,
+                                    QuadMiIntersectorKPluecker<4 COMMA 16 COMMA true > > Quad4iIntersectorStreamPluecker;
+
+#endif
+    
+    IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH8Triangle4StreamIntersectorMoeller,         BVHNStreamIntersector<SIMD_MODE(8) COMMA BVH_AN1 COMMA false COMMA Triangle4IntersectorStreamMoellerTrumbore>));
+    IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH8Triangle4StreamIntersectorMoellerNoFilter, BVHNStreamIntersector<SIMD_MODE(8) COMMA BVH_AN1 COMMA false COMMA Triangle4IntersectorStreamMoellerTrumboreNoFilter>));
+
+    IF_ENABLED_QUADS(DEFINE_INTERSECTORN(BVH8Quad4vStreamIntersectorMoeller,         BVHNStreamIntersector<SIMD_MODE(8) COMMA BVH_AN1 COMMA false COMMA Quad4vIntersectorStreamMoellerTrumbore>));
+    IF_ENABLED_QUADS(DEFINE_INTERSECTORN(BVH8Quad4vStreamIntersectorMoellerNoFilter, BVHNStreamIntersector<SIMD_MODE(8) COMMA BVH_AN1 COMMA false COMMA Quad4vIntersectorStreamMoellerTrumboreNoFilter>));
+    
+    IF_ENABLED_QUADS(DEFINE_INTERSECTORN(BVH8Quad4iStreamIntersectorPluecker,BVHNStreamIntersector<SIMD_MODE(8) COMMA BVH_AN1 COMMA true COMMA Quad4iIntersectorStreamPluecker>));
+
+
+    //IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH8Triangle4vMBStreamIntersectorMoeller,BVHNStreamIntersector<SIMD_MODE(8) COMMA BVH_AN2 COMMA false COMMA ArrayIntersector1<TriangleMvMBIntersector1MoellerTrumbore<SIMD_MODE(4) COMMA true> > >));
+
+    //IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH8Triangle4StreamIntersectorMoellerNoFilter, BVHNStreamIntersector<SIMD_MODE(8) COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<SIMD_MODE(4) COMMA false> > >));
+
     //IF_ENABLED_LINES(DEFINE_INTERSECTORN(BVH8Line4iMBStreamIntersector,BVHNStreamIntersector<SIMD_MODE(8) COMMA BVH_AN2 COMMA false COMMA ArrayIntersector1<LineMiMBIntersector1<SIMD_MODE(4) COMMA true> > >));
     
     //IF_ENABLED_HAIR(DEFINE_INTERSECTORN(BVH8Bezier1vStreamIntersector_OBB,BVHNStreamIntersector<SIMD_MODE(8) COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersector1<Bezier1vIntersector1> >));
     //IF_ENABLED_HAIR(DEFINE_INTERSECTORN(BVH8Bezier1iStreamIntersector_OBB,BVHNStreamIntersector<SIMD_MODE(8) COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersector1<Bezier1iIntersector1> >));
     //IF_ENABLED_HAIR(DEFINE_INTERSECTORN(BVH8Bezier1iMBStreamIntersector_OBB,BVHNStreamIntersector<SIMD_MODE(8) COMMA BVH_AN2_UN2 COMMA false COMMA ArrayIntersector1<Bezier1iIntersector1MB> >));
-    
-    IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH8Triangle4StreamIntersectorMoeller,         BVHNStreamIntersector<SIMD_MODE(8) COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<SIMD_MODE(4) COMMA true> > >));
-    IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH8Triangle4StreamIntersectorMoellerNoFilter, BVHNStreamIntersector<SIMD_MODE(8) COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<SIMD_MODE(4) COMMA false> > >));
-    //IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH8Triangle4vMBStreamIntersectorMoeller,BVHNStreamIntersector<SIMD_MODE(8) COMMA BVH_AN2 COMMA false COMMA ArrayIntersector1<TriangleMvMBIntersector1MoellerTrumbore<SIMD_MODE(4) COMMA true> > >));
-    
-    IF_ENABLED_QUADS(DEFINE_INTERSECTORN(BVH8Quad4vStreamIntersectorMoeller,         BVHNStreamIntersector<SIMD_MODE(8) COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<QuadMvIntersector1MoellerTrumbore<4 COMMA true> > >));
-    IF_ENABLED_QUADS(DEFINE_INTERSECTORN(BVH8Quad4vStreamIntersectorMoellerNoFilter, BVHNStreamIntersector<SIMD_MODE(8) COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<QuadMvIntersector1MoellerTrumbore<4 COMMA false> > >));
-    IF_ENABLED_QUADS(DEFINE_INTERSECTORN(BVH8Quad4iStreamIntersectorPluecker,BVHNStreamIntersector<SIMD_MODE(8) COMMA BVH_AN1 COMMA true COMMA ArrayIntersector1<QuadMiIntersector1Pluecker<4 COMMA true> > >));
+
     //IF_ENABLED_QUADS(DEFINE_INTERSECTORN(BVH8Quad4iMBStreamIntersectorPluecker,BVHNStreamIntersector<SIMD_MODE(8) COMMA BVH_AN2 COMMA false COMMA ArrayIntersector1<QuadMiMBIntersector1Pluecker<4 COMMA true> > >));
     
     //IF_ENABLED_SUBDIV(DEFINE_INTERSECTORN(BVH8GridAOSStreamIntersector,BVHNStreamIntersector<SIMD_MODE(8) COMMA BVH_AN1 COMMA true COMMA GridAOSIntersector1>));
