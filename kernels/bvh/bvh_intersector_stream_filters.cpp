@@ -100,6 +100,30 @@ namespace embree
 
       if (likely(isCoherent(context->flags)))
       {
+#if 1
+
+        if (likely(N == VSIZEX))
+        {
+          __aligned(64) RayK<VSIZEX> *rays_ptr[16]; // max 16 packets (16*4=64)
+          size_t numValidStreams = 0;
+          for (size_t s=0; s<streams; s++)
+          {
+            const size_t offset = s*stream_offset;
+            RayK<VSIZEX> &ray = *(RayK<VSIZEX>*)(rayData + offset);
+            vbool<VSIZEX> m_valid = ray.tnear <= ray.tfar;
+            if (likely(any(m_valid)))
+              rays_ptr[numValidStreams++] = &ray;
+          }
+
+          if (intersect)
+            scene->intersectN((RTCRay**)rays_ptr,numValidStreams,context);
+          else
+            scene->occludedN((RTCRay**)rays_ptr,numValidStreams,context);        
+
+        }
+        else
+          FATAL("HERE");
+#else
         for (size_t s=0; s<streams; s++)
         {
           /* fast path for packet width == SIMD width */
@@ -124,6 +148,7 @@ namespace embree
               rayN.scatter<VSIZEX>(valid,offset,ray,intersect);
             }
         }
+#endif
         return;
       }
 

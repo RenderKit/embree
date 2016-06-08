@@ -327,7 +327,7 @@ namespace embree
       static const size_t stackSizeSingle = 1+(N-1)*BVH::maxDepth;
 
       static void intersect_co(BVH* bvh, Ray **ray, size_t numRays, const RTCIntersectContext* context);
-      static void intersect_co_soa(BVH* bvh, Ray **ray, size_t numRays, const RTCIntersectContext* context);
+      static void intersect_co_soa(BVH* bvh, RayK<K> **input_rays, size_t numValidStreams, const RTCIntersectContext* context);
       
     public:
       static void intersect(BVH* bvh, Ray **ray, size_t numRays, const RTCIntersectContext* context);

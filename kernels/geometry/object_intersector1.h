@@ -145,6 +145,18 @@ namespace embree
         }
         return hit;
       }
+
+        template<int K>
+        static __forceinline void intersectChunk(const vbool<K>& valid, /* PrecalculationsChunk& pre, */ RayK<K>& ray, const RTCIntersectContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node)
+        {
+        }
+
+        template<int K>        
+        static __forceinline vbool<K> occludedChunk(const vbool<K>& valid, /* PrecalculationsChunk& pre, */ RayK<K>& ray, const RTCIntersectContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node) 
+        {
+          return valid;
+        }
+
     };
   }
 }

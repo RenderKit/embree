@@ -70,6 +70,20 @@ namespace embree
 
           return hit;
         }
+
+
+        template<int K>
+        static __forceinline void intersectChunk(const vbool<K>& valid, /* PrecalculationsChunk& pre, */ RayK<K>& ray, const RTCIntersectContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node)
+        {
+        }
+
+        template<int K>        
+        static __forceinline vbool<K> occludedChunk(const vbool<K>& valid, /* PrecalculationsChunk& pre, */ RayK<K>& ray, const RTCIntersectContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node) 
+        {
+          return valid;
+        }
+
+
       };
 
     template<typename Intersector1, typename Intersector2>
@@ -201,18 +215,18 @@ namespace embree
         typedef typename Intersector2::Primitive PrimitiveChunk;
         typedef typename Intersector2::Precalculations PrecalculationsChunk;
         
-        static __forceinline void intersect(const vbool<K>& valid, /* PrecalculationsChunk& pre, */ RayK<K>& ray, const RTCIntersectContext* context, const PrimitiveChunk* prim, size_t num, Scene* scene, size_t& lazy_node)
+        static __forceinline void intersectChunk(const vbool<K>& valid, /* PrecalculationsChunk& pre, */ RayK<K>& ray, const RTCIntersectContext* context, const PrimitiveChunk* prim, size_t num, Scene* scene, size_t& lazy_node)
         {
-          Precalculations pre(valid,ray); //todo: might cause trouble
+          PrecalculationsChunk pre(valid,ray); //todo: might cause trouble
 
           for (size_t i=0; i<num; i++) {
             Intersector2::intersect(valid,pre,ray,context,prim[i],scene);
           }
         }
         
-        static __forceinline vbool<K> occluded(const vbool<K>& valid, /* PrecalculationsChunk& pre, */ RayK<K>& ray, const RTCIntersectContext* context, const PrimitiveChunk* prim, size_t num, Scene* scene, size_t& lazy_node) 
+        static __forceinline vbool<K> occludedChunk(const vbool<K>& valid, /* PrecalculationsChunk& pre, */ RayK<K>& ray, const RTCIntersectContext* context, const PrimitiveChunk* prim, size_t num, Scene* scene, size_t& lazy_node) 
         {
-          Precalculations pre(valid,ray); //todo: might cause trouble
+          PrecalculationsChunk pre(valid,ray); //todo: might cause trouble
 
           vbool<K> valid0 = valid;
           for (size_t i=0; i<num; i++) {
