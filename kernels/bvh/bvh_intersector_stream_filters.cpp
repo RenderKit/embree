@@ -100,7 +100,7 @@ namespace embree
 
       if (likely(isCoherent(context->flags)))
       {
-#if 1
+#if 0
 
         if (likely(N == VSIZEX))
         {

@@ -40,7 +40,7 @@
 //#define DBG_PRINT(x) PRINT(x)
 #define DBG_PRINT(x)
 
-#define ENABLE_CO_PATH 1
+#define ENABLE_CO_PATH 0
 
 namespace embree
 {
@@ -392,7 +392,7 @@ namespace embree
               const size_t m_hit = movemask(vmask);
               DBG_PRINT(m_hit);
               DBG_PRINT(__popcnt(m_current));
-              m_current &= ~((m_hit^0xff) << i);
+              m_current &= ~((m_hit^0xff) << (i*K));
               DBG_PRINT(__popcnt(m_hit));
               DBG_PRINT(__popcnt(m_current));
 
