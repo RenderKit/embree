@@ -53,8 +53,14 @@ namespace embree
       weighted_box_hits += cntrs.code.normal.trav_hit_boxes[i]*i;
     }
     cout << "    #hit_boxes    = " << normal_box_hits << " (total) distribution: ";
-    for (size_t i=0;i<SIZE_HISTOGRAM;i++) cout << "[" << i << "] " << 100.0f * cntrs.code.normal.trav_hit_boxes[i] / normal_box_hits << " ";
-    cout << std::endl;
+    float average = 0.0f;
+    for (size_t i=0;i<SIZE_HISTOGRAM;i++) 
+    {
+      float value = 100.0f * cntrs.code.normal.trav_hit_boxes[i] / normal_box_hits;
+      cout << "[" << i << "] " << value << " ";
+      average += (float)i*cntrs.code.normal.trav_hit_boxes[i] / normal_box_hits;
+    }
+    cout << "    average = " << average << std::endl;
     for (size_t i=0;i<SIZE_HISTOGRAM;i++) cout << "[" << i << "] " << 100.0f * cntrs.code.normal.trav_hit_boxes[i]*i / weighted_box_hits << " ";
     cout << std::endl;
 

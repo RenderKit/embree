@@ -247,7 +247,7 @@ namespace embree
       }
 
       const float frusta_min_dist = reduce_min(tmp_min_dist);
-      const float frusta_max_dist = reduce_min(tmp_max_dist);
+      float frusta_max_dist = reduce_min(tmp_max_dist);
 
       const Vec3fa frusta_min_rdir = select(ge_mask(reduced_min_rdir,Vec3fa(zero)),reduced_min_rdir,reduced_max_rdir);
       const Vec3fa frusta_max_rdir = select(ge_mask(reduced_min_rdir,Vec3fa(zero)),reduced_max_rdir,reduced_min_rdir);
@@ -297,6 +297,10 @@ namespace embree
           __aligned(64) size_t maskK[N];
           for (size_t i=0;i<N;i++) maskK[i] = m_trav_active; //todo remove
 
+          size_t m_leaf = 0;
+          for (size_t i=0;i<N;i++)
+            m_leaf |= node->child(i).isLeaf() ? 0 : ((size_t)1 << i);
+
           /* interval-based culling test */
           STAT3(normal.trav_nodes,1,1,1);                          
 
@@ -345,25 +349,20 @@ namespace embree
           // ==================
 
           assert(__popcnt(m_node_hit) <= 8 );
+          
+          const vfloat<K> dist = select(vmask_first_hit,rmin,fmin);            
 
-          const vfloat<K> dist = fmin;            
           DBG_PRINT(dist);
 
-          size_t m_node = m_node_hit ^ m_first_hit;
+          size_t m_node = m_node_hit ^ (m_first_hit  & m_leaf );
 
           //STAT3(normal.trav_hit_boxes[__popcnt(m_node)],1,1,1);                          
 
           while(unlikely(m_node)) //todo: iterate over nodes instead of packets?
           {
-            DBG_PRINT(m_node);
             const size_t b   = __bscf(m_node); // box
-            DBG_PRINT(b);
             size_t m_current = m_trav_active;
             assert(m_current);
-            DBG_PRINT(m_current);
-            DBG_PRINT(__popcnt(m_current));
-
-
             const vfloat<K> minX = vfloat<K>(bminX[b]);
             const vfloat<K> minY = vfloat<K>(bminY[b]);
             const vfloat<K> minZ = vfloat<K>(bminZ[b]);
@@ -371,13 +370,13 @@ namespace embree
             const vfloat<K> maxY = vfloat<K>(bmaxY[b]);
             const vfloat<K> maxZ = vfloat<K>(bmaxZ[b]);
 
-            size_t startPacketID = __bsf(m_current) / K;
-            size_t endPacketID   = __bsr(m_current) / K;
-            DBG_PRINT(startPacketID);
-            DBG_PRINT(endPacketID);
-            for (size_t i=startPacketID;i<=endPacketID;i++) 
+            const size_t startPacketID = __bsf(m_trav_active) / K;
+            const size_t endPacketID   = __bsr(m_trav_active) / K;
+
+            for (size_t i=startPacketID;i<=endPacketID;i++)
             {
               STAT3(normal.trav_nodes,1,1,1);                          
+
               Packet &p = packet[i]; 
 
               const vfloat<K> tminX = msub(minX, p.rdir.x, p.org_rdir.x);
@@ -390,15 +389,8 @@ namespace embree
               const vfloat<K> tmax  = min(min(tmaxX,tmaxY),min(tmaxZ,p.max_dist)); 
               const vbool<K> vmask   = tmin <= tmax;  
               const size_t m_hit = movemask(vmask);
-              DBG_PRINT(m_hit);
-              DBG_PRINT(__popcnt(m_current));
-              m_current &= ~((m_hit^0xff) << (i*K));
-              DBG_PRINT(__popcnt(m_hit));
-              DBG_PRINT(__popcnt(m_current));
-
-              //if (unlikely(m_hit)) break;
-              //} while(m_current);
-            };
+              m_current &= ~((m_hit^(((size_t)1 << K)-1)) << (i*K));
+            } 
 
             m_node_hit ^= m_current ? (size_t)0 : ((size_t)1 << b);
             DBG_PRINT(__popcnt(m_node_hit));
@@ -430,24 +422,28 @@ namespace embree
         DBG_PRINT("leaf");
         DBG_PRINT(__popcnt(m_trav_active));
 
-        STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
+        //STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
         size_t bits = m_trav_active;
 
 #if 1
 
         /*! intersect stream of rays with all primitives */
         size_t lazy_node = 0;
-        size_t startPacketID = __bsf(bits) / K;
-        size_t endPacketID   = __bsr(bits) / K;
         size_t valid_isec = 0;
-        for (size_t i=startPacketID;i<=endPacketID;i++) 
+        do
         {
+          size_t i = __bsf(bits) / K;
+
+          const size_t m_isec = ((((size_t)1 << K)-1) << (i*K));
+          assert(m_isec & bits);
+          bits &= ~m_isec;
+
           vbool<K> m_valid = input_packets[i]->tnear <= input_packets[i]->tfar;
           PrimitiveIntersector::intersectChunk(m_valid,*input_packets[i],context,prim,num,bvh->scene,lazy_node);
           Packet &p = packet[i]; 
           valid_isec |= movemask((input_packets[i]->tfar < p.max_dist) & m_valid); 
           p.max_dist = select(m_valid,min(p.max_dist,input_packets[i]->tfar),p.max_dist);
-        }
+        } while(bits);
 
         //size_t valid_isec MAYBE_UNUSED = PrimitiveIntersector::intersect(pre,bits,rays,context,0,prim,num,bvh->scene,NULL,lazy_node);
 #endif

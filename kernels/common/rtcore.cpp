@@ -397,7 +397,7 @@ namespace embree
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
     if (((size_t)rays ) & 0x03) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 4 bytes");   
 #endif
-    STAT3(normal.travs,N*M,N,N);
+    STAT3(normal.travs,N*M,N*N,N*N);
 
     /* code path for single ray streams */
     if (likely(N == 1))
@@ -553,7 +553,7 @@ namespace embree
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
     if (((size_t)rays ) & 0x03) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 4 bytes");   
 #endif
-    STAT3(shadow.travs,M,1,1);
+    STAT3(shadow.travs,M,M,M);
 
     /* fast codepath for streams of size 1 */
     if (likely(M == 1)) {
@@ -583,7 +583,7 @@ namespace embree
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
     if (((size_t)rays ) & 0x03) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 4 bytes");   
 #endif
-    STAT3(shadow.travs,N*M,N,N);
+    STAT3(shadow.travs,N*M,N*N,N*N);
 
     /* codepath for single rays */
     if (likely(N == 1))
