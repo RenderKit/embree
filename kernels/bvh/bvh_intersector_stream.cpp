@@ -175,7 +175,8 @@ namespace embree
 #if defined(__AVX2__) && !defined(__AVX512F__)
 
 #define MAX_RAYS 64
-      __aligned(64) StackItemMask  stack0[stackSizeSingle];  //!< stack of nodes 
+      //__aligned(64) StackItemMask  stack[stackSizeSingle];  //!< stack of nodes 
+      __aligned(64) StackItemMaskCoherent  stack[stackSizeSingle];  //!< stack of nodes 
 
       RayK<K>** __restrict__ input_packets = (RayK<K>**)input_rays;
 
@@ -220,8 +221,8 @@ namespace embree
         packet[i].min_dist = select(m_valid,tnear,0.0f);
         packet[i].max_dist = select(m_valid,tfar,neg_inf);
 
-        tmp_min_rdir = min(tmp_min_rdir,rdir);
-        tmp_max_rdir = max(tmp_max_rdir,rdir);                      
+        tmp_min_rdir = min(tmp_min_rdir,select(m_valid,rdir,Vec3vfK(pos_inf)));
+        tmp_max_rdir = max(tmp_max_rdir,select(m_valid,rdir,Vec3vfK(neg_inf)));
         tmp_min_dist = min(tmp_min_dist,packet[i].min_dist);
         tmp_max_dist = max(tmp_max_dist,packet[i].max_dist);        
       }
@@ -238,7 +239,7 @@ namespace embree
       DBG_PRINT(reduced_max_rdir);
 
       /* fallback for different direction signs */
-      if (unlikely(sign(reduced_min_rdir) != sign(reduced_max_rdir)))
+      if (unlikely(sign(reduced_min_rdir) != sign(reduced_max_rdir))) //todo: maybe just disable IA test
       {
         DBG_PRINT("FALLBACK");
         for (size_t i=0; i<numPackets; i++) 
@@ -259,10 +260,16 @@ namespace embree
       const Vec3fa frusta_min_org_rdir = frusta_min_rdir * origin;
       const Vec3fa frusta_max_org_rdir = frusta_max_rdir * origin;
 
-      stack0[0].ptr  = BVH::invalidNode;
-      stack0[0].mask = (size_t)-1;
-      stack0[1].ptr  = bvh->root;
-      stack0[1].mask = m_active;
+      //stack[0].ptr  = BVH::invalidNode;
+      //stack[0].mask = (size_t)-1;
+      //stack[1].ptr  = bvh->root;
+      //stack[1].mask = m_active;
+
+      stack[0].mask    = m_active;
+      stack[0].parent  = 0;
+      stack[0].child   = bvh->root;
+      stack[0].childID = (unsigned int)-1;
+      stack[0].dist    = (unsigned int)-1;
 
       ///////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////////////////////////////////////////////////////////
@@ -270,18 +277,61 @@ namespace embree
 
       const NearFarPreCompute pc(frusta_min_rdir);
 
-      StackItemMask* stackPtr   = stack0 + 2;
+      //StackItemMask* stackPtr   = stack + 2;
+      StackItemMaskCoherent* stackPtr   = stack + 1;
 
       while (1) pop:
       {          
 
+        if (unlikely(stackPtr == stack)) break;
+
         DBG_PRINT("POP");
-        /*! pop next node */
         STAT3(normal.trav_stack_pop,1,1,1);                          
         stackPtr--;
-        NodeRef cur = NodeRef(stackPtr->ptr);
+        /*! pop next node */
+        NodeRef cur = NodeRef(stackPtr->child);
         size_t m_trav_active = stackPtr->mask;
         assert(m_trav_active);
+
+        if (unlikely(stackPtr->parent != 0 && cur.isLeaf()))
+        {
+          NodeRef parent = NodeRef(stackPtr->parent);
+          const Node* __restrict__ const node = parent.node();
+          const size_t b   = stackPtr->childID;
+          char *ptr = (char*)&node->lower_x + b*sizeof(float);
+          assert(cur == node->child(b));
+
+          const vfloat<K> minX = vfloat<K>(*(float*)((const char*)ptr+pc.nearX));
+          const vfloat<K> minY = vfloat<K>(*(float*)((const char*)ptr+pc.nearY));
+          const vfloat<K> minZ = vfloat<K>(*(float*)((const char*)ptr+pc.nearZ));
+          const vfloat<K> maxX = vfloat<K>(*(float*)((const char*)ptr+pc.farX));
+          const vfloat<K> maxY = vfloat<K>(*(float*)((const char*)ptr+pc.farY));
+          const vfloat<K> maxZ = vfloat<K>(*(float*)((const char*)ptr+pc.farZ));
+          
+          const size_t startPacketID = __bsf(m_trav_active) / K;
+          const size_t endPacketID   = __bsr(m_trav_active) / K;
+
+          m_trav_active = 0;
+          for (size_t i=startPacketID;i<=endPacketID;i++)
+          {
+            STAT3(normal.trav_nodes,1,1,1);                          
+
+            Packet &p = packet[i]; 
+
+            const vfloat<K> tminX = msub(minX, p.rdir.x, p.org_rdir.x);
+            const vfloat<K> tminY = msub(minY, p.rdir.y, p.org_rdir.y);
+            const vfloat<K> tminZ = msub(minZ, p.rdir.z, p.org_rdir.z);
+            const vfloat<K> tmaxX = msub(maxX, p.rdir.x, p.org_rdir.x);
+            const vfloat<K> tmaxY = msub(maxY, p.rdir.y, p.org_rdir.y);
+            const vfloat<K> tmaxZ = msub(maxZ, p.rdir.z, p.org_rdir.z);
+            const vfloat<K> tmin  = maxi(maxi(tminX,tminY),maxi(tminZ,p.min_dist)); 
+            const vfloat<K> tmax  = mini(mini(tmaxX,tmaxY),mini(tmaxZ,p.max_dist)); 
+            const vbool<K> vmask   = tmin <= tmax;  
+            const size_t m_hit = movemask(vmask);
+            m_trav_active |= m_hit << (i*K);
+          } 
+          if (m_trav_active == 0) goto pop;
+        }
 
         while (1)
         {
@@ -297,9 +347,9 @@ namespace embree
           __aligned(64) size_t maskK[N];
           for (size_t i=0;i<N;i++) maskK[i] = m_trav_active; //todo remove
 
-          size_t m_leaf = 0;
-          for (size_t i=0;i<N;i++)
-            m_leaf |= node->child(i).isLeaf() ? 0 : ((size_t)1 << i);
+          // size_t m_leaf = 0;
+          // for (size_t i=0;i<N;i++)
+          //   m_leaf |= node->child(i).isLeaf() ? 0 : ((size_t)1 << i);
 
           /* interval-based culling test */
           STAT3(normal.trav_nodes,1,1,1);                          
@@ -319,8 +369,8 @@ namespace embree
           const vfloat<K> fmaxX = msub(bmaxX, vfloat<K>(frusta_max_rdir.x), vfloat<K>(frusta_max_org_rdir.x));
           const vfloat<K> fmaxY = msub(bmaxY, vfloat<K>(frusta_max_rdir.y), vfloat<K>(frusta_max_org_rdir.y));
           const vfloat<K> fmaxZ = msub(bmaxZ, vfloat<K>(frusta_max_rdir.z), vfloat<K>(frusta_max_org_rdir.z));
-          const vfloat<K> fmin  = max(max(fminX,fminY),max(fminZ,frusta_min_dist)); 
-          const vfloat<K> fmax  = min(min(fmaxX,fmaxY),min(fmaxZ,frusta_max_dist)); 
+          const vfloat<K> fmin  = maxi(maxi(fminX,fminY),maxi(fminZ,frusta_min_dist)); 
+          const vfloat<K> fmax  = mini(mini(fmaxX,fmaxY),mini(fmaxZ,frusta_max_dist)); 
           const vbool<K> vmask_node_hit  = fmin <= fmax;  
           size_t m_node_hit = movemask(vmask_node_hit);
 
@@ -341,8 +391,8 @@ namespace embree
           const vfloat<K> rmaxX = msub(bmaxX, vfloat<K>(p.rdir.x[first_rayID]), vfloat<K>(p.org_rdir.x[first_rayID]));
           const vfloat<K> rmaxY = msub(bmaxY, vfloat<K>(p.rdir.y[first_rayID]), vfloat<K>(p.org_rdir.y[first_rayID]));
           const vfloat<K> rmaxZ = msub(bmaxZ, vfloat<K>(p.rdir.z[first_rayID]), vfloat<K>(p.org_rdir.z[first_rayID]));
-          const vfloat<K> rmin  = max(max(rminX,rminY),max(rminZ,p.min_dist[first_rayID])); 
-          const vfloat<K> rmax  = min(min(rmaxX,rmaxY),min(rmaxZ,p.max_dist[first_rayID])); 
+          const vfloat<K> rmin  = maxi(maxi(rminX,rminY),maxi(rminZ,p.min_dist[first_rayID])); 
+          const vfloat<K> rmax  = mini(mini(rmaxX,rmaxY),mini(rmaxZ,p.max_dist[first_rayID])); 
           const vbool<K> vmask_first_hit  = rmin <= rmax;  
           size_t m_first_hit = movemask(vmask_first_hit);
 
@@ -350,11 +400,12 @@ namespace embree
 
           assert(__popcnt(m_node_hit) <= 8 );
           
-          const vfloat<K> dist = select(vmask_first_hit,rmin,fmin);            
+          vfloat<K> dist = select(vmask_first_hit,rmin,fmin);            
+          //vfloat<K> dist = fmin;            
 
           DBG_PRINT(dist);
 
-          size_t m_node = m_node_hit ^ (m_first_hit  & m_leaf );
+          size_t m_node = m_node_hit ^ (m_first_hit /*  & m_leaf */);
 
           //STAT3(normal.trav_hit_boxes[__popcnt(m_node)],1,1,1);                          
 
@@ -385,8 +436,8 @@ namespace embree
               const vfloat<K> tmaxX = msub(maxX, p.rdir.x, p.org_rdir.x);
               const vfloat<K> tmaxY = msub(maxY, p.rdir.y, p.org_rdir.y);
               const vfloat<K> tmaxZ = msub(maxZ, p.rdir.z, p.org_rdir.z);
-              const vfloat<K> tmin  = max(max(tminX,tminY),max(tminZ,p.min_dist)); 
-              const vfloat<K> tmax  = min(min(tmaxX,tmaxY),min(tmaxZ,p.max_dist)); 
+              const vfloat<K> tmin  = maxi(maxi(tminX,tminY),maxi(tminZ,p.min_dist)); 
+              const vfloat<K> tmax  = mini(mini(tmaxX,tmaxY),mini(tmaxZ,p.max_dist)); 
               const vbool<K> vmask   = tmin <= tmax;  
               const size_t m_hit = movemask(vmask);
               m_current &= ~((m_hit^(((size_t)1 << K)-1)) << (i*K));
@@ -394,7 +445,7 @@ namespace embree
 
             m_node_hit ^= m_current ? (size_t)0 : ((size_t)1 << b);
             DBG_PRINT(__popcnt(m_node_hit));
-
+            
             maskK[b] = m_current;
             DBG_PRINT(__popcnt(maskK[b]));
           }
@@ -406,7 +457,8 @@ namespace embree
           DBG_PRINT(m_node_hit);
           DBG_PRINT("SORT");
           DBG_PRINT(vbool<K>((int)m_node_hit));
-          BVHNNodeTraverserKHit<types,N,K>::traverseClosestHit(cur, m_trav_active, vbool<K>((int)m_node_hit), dist, (size_t*)maskK, stackPtr);
+          //BVHNNodeTraverserKHit<types,N,K>::traverseClosestHit(cur, m_trav_active, vbool<K>((int)m_node_hit), dist, (size_t*)maskK, stackPtr);
+          BVHNNodeTraverserKHitCoherent<types,N,K>::traverseClosestHit(cur, m_trav_active, vbool<K>((int)m_node_hit), dist, (size_t*)maskK, stackPtr);
           assert(m_trav_active);
         }
 
