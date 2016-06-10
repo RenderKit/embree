@@ -22,6 +22,7 @@ namespace embree
   {
     static const size_t MAX_RAYS_PER_OCTANT = 8*sizeof(size_t);
     static_assert(MAX_RAYS_PER_OCTANT <= MAX_INTERNAL_STREAM_SIZE,"maximal internal stream size exceeded");
+    static const size_t MAX_COHERENT_RAY_PACKETS = 64 / 4;
 
     __forceinline void RayStream::filterAOS(Scene *scene, RTCRay* _rayN, const size_t N, const size_t stride, const RTCIntersectContext* context, const bool intersect)
     {
@@ -104,21 +105,29 @@ namespace embree
         if (likely(N == VSIZEX))
         {
           __aligned(64) RayK<VSIZEX> *rays_ptr[16]; // max 16 packets (16*4=64)
-          size_t numValidStreams = 0;
+          size_t numStreams = 0;
           for (size_t s=0; s<streams; s++)
           {
             const size_t offset = s*stream_offset;
             RayK<VSIZEX> &ray = *(RayK<VSIZEX>*)(rayData + offset);
-            vbool<VSIZEX> m_valid = ray.tnear <= ray.tfar;
-            if (likely(any(m_valid)))
-              rays_ptr[numValidStreams++] = &ray;
+            rays_ptr[numStreams++] = &ray;
+            if (unlikely(numStreams == MAX_COHERENT_RAY_PACKETS))
+            {
+              if (intersect)
+                scene->intersectN((RTCRay**)rays_ptr,numStreams,context);
+              else
+                scene->occludedN((RTCRay**)rays_ptr,numStreams,context);        
+              numStreams = 0;
+            }
           }
-
-          if (intersect)
-            scene->intersectN((RTCRay**)rays_ptr,numValidStreams,context);
-          else
-            scene->occludedN((RTCRay**)rays_ptr,numValidStreams,context);        
-
+          /* flush remaining streams */
+          if (unlikely(numStreams))
+          {
+            if (intersect)
+              scene->intersectN((RTCRay**)rays_ptr,numStreams,context);
+            else
+              scene->occludedN((RTCRay**)rays_ptr,numStreams,context);        
+          }
         }
         else
           FATAL("HERE");
