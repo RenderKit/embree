@@ -264,6 +264,7 @@ void renderTileStandard(int taskIndex,
 #endif
 
   /* shade stream of rays */
+#if 0
   N = 0;
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
@@ -285,6 +286,7 @@ void renderTileStandard(int taskIndex,
     unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
     pixels[y*width+x] = (b << 16) + (g << 8) + r;
   }
+#endif
 }
 
 /* task that renders a single screen tile */
