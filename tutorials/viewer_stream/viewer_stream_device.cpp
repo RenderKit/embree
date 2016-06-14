@@ -264,7 +264,7 @@ void renderTileStandard(int taskIndex,
 #endif
 
   /* shade stream of rays */
-#if 0
+#if 1
   N = 0;
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {

@@ -489,11 +489,25 @@ namespace embree
 #endif
     }
 
+    template<class T>
+    __forceinline T ia_mul_min(const T &a0, const T &a1,
+                               const T &b0, const T &b1)
+    {
+      return min(min(a0*b0,a0*b1),min(a1*b0,a1*b1));
+    }
+
+    template<class T>
+    __forceinline T ia_mul_max(const T &a0, const T &a1,
+                               const T &b0, const T &b1)
+    {
+      return max(max(a0*b0,a0*b1),max(a1*b0,a1*b1));
+    }
+
+
     template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
     void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect_co(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, const RTCIntersectContext* context)
     {
 #if defined(__AVX2__) && !defined(__AVX512F__)
-
       __aligned(64) Precalculations pre[MAX_RAYS]; 
       __aligned(64) StackItemMaskCoherent  stack[stackSizeSingle];  //!< stack of nodes 
 
@@ -516,6 +530,9 @@ namespace embree
       /* do per ray precalculations */
       Vec3fa tmp_min_rdir(pos_inf); // todo: avx min/max
       Vec3fa tmp_max_rdir(neg_inf);
+      Vec3fa tmp_min_origin(pos_inf); // todo: avx min/max
+      Vec3fa tmp_max_origin(neg_inf);
+
       float  frusta_min_dist(pos_inf);
       float  frusta_max_dist(neg_inf);
 
@@ -535,10 +552,12 @@ namespace embree
         const Vec3fa org_rdir = org * rdir;
         const float tnear = max(0.0f,rays[i]->tnear);
         const float tfar  = rays[i]->tfar;
-        tmp_min_rdir    = min(tmp_min_rdir,rdir);
-        tmp_max_rdir    = max(tmp_max_rdir,rdir);                      
-        frusta_min_dist = min(frusta_min_dist,tnear);
-        frusta_max_dist = max(frusta_max_dist,tfar);
+        tmp_min_origin    = min(tmp_min_origin,org);
+        tmp_max_origin    = max(tmp_max_origin,org);                      
+        tmp_min_rdir      = min(tmp_min_rdir,rdir);
+        tmp_max_rdir      = max(tmp_max_rdir,rdir);                      
+        frusta_min_dist   = min(frusta_min_dist,tnear);
+        frusta_max_dist   = max(frusta_max_dist,tfar);
         
         const size_t packetID = i / K;
         const size_t slotID   = i % K;
@@ -555,9 +574,25 @@ namespace embree
 
       const Vec3fa frusta_min_rdir = select(ge_mask(tmp_min_rdir,Vec3fa(zero)),tmp_min_rdir,tmp_max_rdir);
       const Vec3fa frusta_max_rdir = select(ge_mask(tmp_min_rdir,Vec3fa(zero)),tmp_max_rdir,tmp_min_rdir);
-      const Vec3fa frusta_min_org_rdir = frusta_min_rdir * rays[0]->org;
-      const Vec3fa frusta_max_org_rdir = frusta_max_rdir * rays[0]->org;
 
+      const Vec3fa frusta_min_org_rdir = frusta_min_rdir*select(ge_mask(tmp_min_rdir,Vec3fa(zero)),tmp_max_origin,tmp_min_origin);
+      const Vec3fa frusta_max_org_rdir = frusta_max_rdir*select(ge_mask(tmp_min_rdir,Vec3fa(zero)),tmp_min_origin,tmp_max_origin);
+
+#if 0
+      PRINT(tmp_min_rdir*tmp_min_origin);
+      PRINT(tmp_min_rdir*tmp_max_origin);
+      PRINT(tmp_max_rdir*tmp_min_origin);
+      PRINT(tmp_max_rdir*tmp_max_origin);
+
+      PRINT(tmp_min_origin);
+      PRINT(tmp_max_origin);
+
+      PRINT(frusta_min_org_rdir);
+      PRINT(frusta_max_org_rdir);
+      PRINT(ia_mul_min(frusta_min_rdir,frusta_max_rdir,tmp_min_origin,tmp_max_origin));
+      PRINT(ia_mul_max(frusta_min_rdir,frusta_max_rdir,tmp_min_origin,tmp_max_origin));
+      exit(0);
+#endif
 
       stack[0].mask    = m_active;
       stack[0].parent  = 0;
