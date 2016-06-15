@@ -324,11 +324,7 @@ namespace embree
             const vfloat<K> tmaxZ = msub(maxZ, p.rdir.z, p.org_rdir.z);
             const vfloat<K> tmin  = maxi(maxi(tminX,tminY),maxi(tminZ,p.min_dist)); 
             const vfloat<K> tmax  = mini(mini(tmaxX,tmaxY),mini(tmaxZ,p.max_dist)); 
-#if defined(__AVX512F__)
-            const vbool<K> vmask   = le(tmin,tmax);        
-#else
             const vbool<K> vmask   = tmin <= tmax;  
-#endif
             const size_t m_hit = movemask(vmask);
             m_trav_active |= m_hit << (i*K);
           } 
@@ -441,12 +437,7 @@ namespace embree
               const vfloat<K> tmaxZ = msub(maxZ, p.rdir.z, p.org_rdir.z);
               const vfloat<K> tmin  = maxi(maxi(tminX,tminY),maxi(tminZ,p.min_dist)); 
               const vfloat<K> tmax  = mini(mini(tmaxX,tmaxY),mini(tmaxZ,p.max_dist)); 
-#if defined(__AVX512F__)
-              const vbool<K> vmask = le(tmin,tmax);        
-#else
               const vbool<K> vmask = tmin <= tmax;  
-#endif
-
               const size_t m_hit = movemask(vmask);
               m_current &= ~((m_hit^(((size_t)1 << K)-1)) << (i*K));
             } 
@@ -491,7 +482,7 @@ namespace embree
           PrimitiveIntersector::intersectChunk(m_valid,*input_packets[i],context,prim,num,bvh->scene,lazy_node);
           Packet &p = packet[i]; 
           valid_isec |= movemask((input_packets[i]->tfar < p.max_dist) & m_valid); 
-          //p.max_dist = min(p.max_dist,input_packets[i]->tfar);
+          p.max_dist = min(p.max_dist,input_packets[i]->tfar);
           //p.max_dist = select(m_valid,input_packets[i]->tfar,p.max_dist);
         } while(bits);
 
@@ -567,7 +558,7 @@ namespace embree
       float  frusta_min_dist(pos_inf);
       float  frusta_max_dist(neg_inf);
 
-      const size_t numPackets = (numOctantRays+K-1)/K;
+      //const size_t numPackets = (numOctantRays+K-1)/K;
       const size_t lastPacket = (numOctantRays-1)/K;
 
       /* fill potentially partly filled packet */

@@ -338,15 +338,10 @@ namespace embree
         /*! Intersects K rays with M triangles. */
         static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const RTCIntersectContext* context, const TriangleM<M>& tri, Scene* scene)
         {
-          PRINT(M);
-          PRINT(Mx);
-          PRINT(K);
-
           for (size_t i=0; i<TriangleM<M>::max_size(); i++)
           {
             if (!tri.valid(i)) break;
             STAT3(normal.trav_prims,1,popcnt(valid_i),K);
-            PRINT(tri.primIDs);
             const Vec3<vfloat<K>> p0 = broadcast<vfloat<K>>(tri.v0,i);
             const Vec3<vfloat<K>> e1 = broadcast<vfloat<K>>(tri.e1,i);
             const Vec3<vfloat<K>> e2 = broadcast<vfloat<K>>(tri.e2,i);
