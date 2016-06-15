@@ -22,7 +22,6 @@ namespace embree
   {
     static const size_t MAX_RAYS_PER_OCTANT = 8*sizeof(size_t);
     static_assert(MAX_RAYS_PER_OCTANT <= MAX_INTERNAL_STREAM_SIZE,"maximal internal stream size exceeded");
-    static const size_t MAX_COHERENT_RAY_PACKETS = 64 / 4;
 
     __forceinline void RayStream::filterAOS(Scene *scene, RTCRay* _rayN, const size_t N, const size_t stride, const RTCIntersectContext* context, const bool intersect)
     {
@@ -101,7 +100,7 @@ namespace embree
 
       if (likely(isCoherent(context->flags)))
       {
-#if 0
+#if 1
         if (likely(N == VSIZEX))
         {
           __aligned(64) RayK<VSIZEX> *rays_ptr[16]; // max 16 packets (16*4=64)
@@ -111,6 +110,8 @@ namespace embree
             const size_t offset = s*stream_offset;
             RayK<VSIZEX> &ray = *(RayK<VSIZEX>*)(rayData + offset);
             rays_ptr[numStreams++] = &ray;
+            static const size_t MAX_COHERENT_RAY_PACKETS = 64 / 4;
+
             if (unlikely(numStreams == MAX_COHERENT_RAY_PACKETS))
             {
               if (intersect)

@@ -36,13 +36,14 @@
 #include "../geometry/quadi_intersector_moeller.h"
 #include "../geometry/quadi_intersector_pluecker.h"
 #include "../common/scene.h"
+#include <bitset>
 
 // todo: parent ptr also for single stream, should improve culling.
 
 //#define DBG_PRINT(x) PRINT(x)
 #define DBG_PRINT(x)
 
-#define ENABLE_CO_PATH 0
+#define ENABLE_CO_PATH 1
 #define MAX_RAYS 64
 
 namespace embree
@@ -175,8 +176,7 @@ namespace embree
     template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
     void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect_co_soa(BVH* __restrict__ bvh, RayK<K> **input_rays, size_t numValidStreams, const RTCIntersectContext* context)
     {      
-#if defined(__AVX2__) && !defined(__AVX512F__)
-
+#if defined(__AVX__) 
       __aligned(64) StackItemMaskCoherent  stack[stackSizeSingle];  //!< stack of nodes 
 
       RayK<K>** __restrict__ input_packets = (RayK<K>**)input_rays;
@@ -282,12 +282,19 @@ namespace embree
         NodeRef cur = NodeRef(stackPtr->child);
         size_t m_trav_active = stackPtr->mask;
         assert(m_trav_active);
+        DBG_PRINT(std::bitset<64>(m_trav_active));
 
         //STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
-
+#if defined(__AVX512F__)
+        const vbool<K> maskN = ((unsigned int)1 << N)-1;
+#endif
+            
         /* non-root and leaf => full culling test for all rays */
         if (unlikely(stackPtr->parent != 0 && cur.isLeaf()))
         {
+          DBG_PRINT("cull leaf after pop");
+          DBG_PRINT(std::bitset<64>(m_trav_active));
+
           NodeRef parent = NodeRef(stackPtr->parent);
           const Node* __restrict__ const node = parent.node();
           const size_t b   = stackPtr->childID;
@@ -317,10 +324,16 @@ namespace embree
             const vfloat<K> tmaxZ = msub(maxZ, p.rdir.z, p.org_rdir.z);
             const vfloat<K> tmin  = maxi(maxi(tminX,tminY),maxi(tminZ,p.min_dist)); 
             const vfloat<K> tmax  = mini(mini(tmaxX,tmaxY),mini(tmaxZ,p.max_dist)); 
+#if defined(__AVX512F__)
+            const vbool<K> vmask   = le(tmin,tmax);        
+#else
             const vbool<K> vmask   = tmin <= tmax;  
+#endif
             const size_t m_hit = movemask(vmask);
             m_trav_active |= m_hit << (i*K);
           } 
+          DBG_PRINT(std::bitset<64>(m_trav_active));
+
           if (m_trav_active == 0) goto pop;
         }
 
@@ -357,9 +370,14 @@ namespace embree
           const vfloat<K> fmaxZ = msub(bmaxZ, vfloat<K>(frusta_max_rdir.z), vfloat<K>(frusta_max_org_rdir.z));
           const vfloat<K> fmin  = maxi(maxi(fminX,fminY),maxi(fminZ,frusta_min_dist)); 
           const vfloat<K> fmax  = mini(mini(fmaxX,fmaxY),mini(fmaxZ,frusta_max_dist)); 
-          const vbool<K> vmask_node_hit  = fmin <= fmax;  
+#if defined(__AVX512F__)
+          const vbool<K> vmask_node_hit = le(maskN,fmin,fmax);        
+#else
+          const vbool<K> vmask_node_hit = fmin <= fmax;  
+#endif
+
           size_t m_node_hit = movemask(vmask_node_hit);
-            
+
           // ==================
           const size_t first_index    = __bsf(m_trav_active);
           const size_t first_packetID = first_index / K;
@@ -376,7 +394,13 @@ namespace embree
           const vfloat<K> rmaxZ = msub(bmaxZ, vfloat<K>(p.rdir.z[first_rayID]), vfloat<K>(p.org_rdir.z[first_rayID]));
           const vfloat<K> rmin  = maxi(maxi(rminX,rminY),maxi(rminZ,p.min_dist[first_rayID])); 
           const vfloat<K> rmax  = mini(mini(rmaxX,rmaxY),mini(rmaxZ,p.max_dist[first_rayID])); 
-          const vbool<K> vmask_first_hit  = rmin <= rmax;  
+
+#if defined(__AVX512F__)
+          const vbool<K> vmask_first_hit = le(maskN,rmin,rmax);        
+#else
+          const vbool<K> vmask_first_hit = rmin <= rmax;  
+#endif
+
           size_t m_first_hit = movemask(vmask_first_hit);
 
           // ==================
@@ -389,7 +413,6 @@ namespace embree
           DBG_PRINT(dist);
 
           size_t m_node = m_node_hit ^ (m_first_hit /*  & m_leaf */);
-
           while(unlikely(m_node)) //todo: iterate over nodes instead of packets?
           {
             const size_t b   = __bscf(m_node); // box
@@ -408,6 +431,7 @@ namespace embree
             for (size_t i=startPacketID;i<=endPacketID;i++)
             {
               STAT3(normal.trav_nodes,1,1,1);                          
+              assert(i < numPackets);
               Packet &p = packet[i]; 
               const vfloat<K> tminX = msub(minX, p.rdir.x, p.org_rdir.x);
               const vfloat<K> tminY = msub(minY, p.rdir.y, p.org_rdir.y);
@@ -417,7 +441,12 @@ namespace embree
               const vfloat<K> tmaxZ = msub(maxZ, p.rdir.z, p.org_rdir.z);
               const vfloat<K> tmin  = maxi(maxi(tminX,tminY),maxi(tminZ,p.min_dist)); 
               const vfloat<K> tmax  = mini(mini(tmaxX,tmaxY),mini(tmaxZ,p.max_dist)); 
-              const vbool<K> vmask   = tmin <= tmax;  
+#if defined(__AVX512F__)
+              const vbool<K> vmask = le(tmin,tmax);        
+#else
+              const vbool<K> vmask = tmin <= tmax;  
+#endif
+
               const size_t m_hit = movemask(vmask);
               m_current &= ~((m_hit^(((size_t)1 << K)-1)) << (i*K));
             } 
@@ -446,7 +475,6 @@ namespace embree
         size_t bits = m_trav_active;
 
 #if 1
-
         /*! intersect stream of rays with all primitives */
         size_t lazy_node = 0;
         size_t valid_isec = 0;
@@ -458,12 +486,13 @@ namespace embree
           assert(m_isec & bits);
           bits &= ~m_isec;
 
+
           vbool<K> m_valid = input_packets[i]->tnear <= input_packets[i]->tfar;
           PrimitiveIntersector::intersectChunk(m_valid,*input_packets[i],context,prim,num,bvh->scene,lazy_node);
           Packet &p = packet[i]; 
           valid_isec |= movemask((input_packets[i]->tfar < p.max_dist) & m_valid); 
-          p.max_dist = min(p.max_dist,input_packets[i]->tfar);
-
+          //p.max_dist = min(p.max_dist,input_packets[i]->tfar);
+          //p.max_dist = select(m_valid,input_packets[i]->tfar,p.max_dist);
         } while(bits);
 
 #endif
@@ -480,6 +509,8 @@ namespace embree
           frusta_max_dist = reduce_max(max_dist);
         }
 #endif
+
+
 
       } // traversal + intersection
         ///////////////////////////////////////////////////////////////////////////////////
@@ -507,7 +538,7 @@ namespace embree
     template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
     void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect_co(BVH* __restrict__ bvh, Ray **input_rays, size_t numTotalRays, const RTCIntersectContext* context)
     {
-#if defined(__AVX2__) && !defined(__AVX512F__)
+#if defined(__AVX__) 
       __aligned(64) Precalculations pre[MAX_RAYS]; 
       __aligned(64) StackItemMaskCoherent  stack[stackSizeSingle];  //!< stack of nodes 
 
@@ -836,11 +867,11 @@ namespace embree
       __aligned(64) StackItemMask  stack1[stackSizeSingle];  //!< stack of nodes 
 #endif
 
-#if defined(__AVX2__) && ENABLE_CO_PATH == 1
+#if defined(__AVX__) && ENABLE_CO_PATH == 1
       if (unlikely(isCoherentCommonOrigin(context->flags)))
       {
-        //BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect_co_soa(bvh, (RayK<K> **)input_rays, numTotalRays, context);        
-        BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect_co(bvh, input_rays, numTotalRays, context);        
+        BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect_co_soa(bvh, (RayK<K> **)input_rays, numTotalRays, context);        
+        //BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect_co(bvh, input_rays, numTotalRays, context);        
         return;
       }
 #endif

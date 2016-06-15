@@ -423,10 +423,9 @@ namespace embree
       {
 #if defined(__AVX512F__)
         vint<K> permX,permY,permZ;
-#else
+#endif
         size_t nearX,nearY,nearZ;
         size_t farX,farY,farZ;
-#endif
         __forceinline NearFarPreCompute(const Vec3fa &dir)
         {
 #if defined(__AVX512F__)
@@ -435,14 +434,13 @@ namespace embree
         permX = select(vfloat<K>(dir.x) >= 0.0f,id,id2);
         permY = select(vfloat<K>(dir.y) >= 0.0f,id,id2);
         permZ = select(vfloat<K>(dir.z) >= 0.0f,id,id2);
-#else
+#endif
         nearX = (dir.x < 0.0f) ? 1*sizeof(vfloat<N>) : 0*sizeof(vfloat<N>);
         nearY = (dir.y < 0.0f) ? 3*sizeof(vfloat<N>) : 2*sizeof(vfloat<N>);
         nearZ = (dir.z < 0.0f) ? 5*sizeof(vfloat<N>) : 4*sizeof(vfloat<N>);
         farX  = nearX ^ sizeof(vfloat<N>);
         farY  = nearY ^ sizeof(vfloat<N>);
         farZ  = nearZ ^ sizeof(vfloat<N>);
-#endif
         }
       };
 
