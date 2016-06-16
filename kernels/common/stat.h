@@ -25,9 +25,11 @@
   STAT(Stat::get().code  .s+=x);               \
   STAT(Stat::get().active.s+=y);               \
   STAT(Stat::get().all   .s+=z);
+#  define STAT_USER(i,x) Stat::get().user[i]+=x;
 #else
 #  define STAT(x)
 #  define STAT3(s,x,y,z)
+#  define STAT_USER(i,x) 
 #endif
 
 namespace embree

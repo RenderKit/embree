@@ -338,6 +338,7 @@ namespace embree
         /*! Intersects K rays with M triangles. */
         static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const RTCIntersectContext* context, const TriangleM<M>& tri, Scene* scene)
         {
+          STAT_USER(0,TriangleM<M>::max_size());
           for (size_t i=0; i<TriangleM<M>::max_size(); i++)
           {
             if (!tri.valid(i)) break;

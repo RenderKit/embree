@@ -397,8 +397,7 @@ namespace embree
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
     if (((size_t)rays ) & 0x03) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 4 bytes");   
 #endif
-    STAT3(normal.travs,N*M,N*N,N*N);
-
+    STAT3(normal.travs,N*M,N*M,N*M);
     /* code path for single ray streams */
     if (likely(N == 1))
     {

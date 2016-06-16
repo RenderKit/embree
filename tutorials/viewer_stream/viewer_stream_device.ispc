@@ -27,6 +27,8 @@
 #define RAYN_FLAGS RTC_INTERSECT_COHERENT_COMMON_ORIGIN
 //#define RAYN_FLAGS RTC_INTERSECT_INCOHERENT
 
+#define SHADING 0
+
 extern uniform ISPCScene* uniform g_ispc_scene;
 
 /* scene data */
@@ -261,7 +263,7 @@ void renderTileStandard(uniform int taskIndex,
     rtcIntersectVM(g_scene,&context,&rays[i],1,sizeof(RTCRay));
 #endif
 
-#if 1
+#if SHADING == 1
   /* shade stream of rays */
   N = 0;
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)

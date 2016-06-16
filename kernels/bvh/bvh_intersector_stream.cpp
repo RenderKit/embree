@@ -43,7 +43,7 @@
 //#define DBG_PRINT(x) PRINT(x)
 #define DBG_PRINT(x)
 
-#define ENABLE_CO_PATH 0
+#define ENABLE_CO_PATH 1
 #define MAX_RAYS 64
 
 namespace embree
@@ -180,7 +180,6 @@ namespace embree
       __aligned(64) StackItemMaskCoherent  stack[stackSizeSingle];  //!< stack of nodes 
 
       RayK<K>** __restrict__ input_packets = (RayK<K>**)input_rays;
-
       const size_t numOctantRays = K*numValidStreams;
       assert(numOctantRays <= MAX_RAYS);
 
@@ -244,7 +243,11 @@ namespace embree
       }
 
       const float frusta_min_dist = reduce_min(tmp_min_dist);
-      float frusta_max_dist = reduce_min(tmp_max_dist);
+      const float frusta_max_dist = reduce_min(tmp_max_dist);
+
+      DBG_PRINT(frusta_min_dist);
+      DBG_PRINT(frusta_max_dist);
+
 
       const Vec3fa frusta_min_rdir = select(ge_mask(reduced_min_rdir,Vec3fa(zero)),reduced_min_rdir,reduced_max_rdir);
       const Vec3fa frusta_max_rdir = select(ge_mask(reduced_min_rdir,Vec3fa(zero)),reduced_max_rdir,reduced_min_rdir);
@@ -462,29 +465,30 @@ namespace embree
         DBG_PRINT("leaf");
         DBG_PRINT(__popcnt(m_trav_active));
 
-        //STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
         size_t bits = m_trav_active;
-
 #if 1
         /*! intersect stream of rays with all primitives */
         size_t lazy_node = 0;
         size_t valid_isec = 0;
+        STAT_USER(1,(__popcnt(bits)+K-1)/K*4);
+        STAT_USER(2,(__popcnt(bits)+1)/2);
+        STAT_USER(3,(__popcnt(bits)+3)/4);
         do
         {
           size_t i = __bsf(bits) / K;
-
           const size_t m_isec = ((((size_t)1 << K)-1) << (i*K));
           assert(m_isec & bits);
           bits &= ~m_isec;
 
 
-          vbool<K> m_valid = input_packets[i]->tnear <= input_packets[i]->tfar;
+          vbool<K> m_valid = (input_packets[i]->tnear <= input_packets[i]->tfar); 
           PrimitiveIntersector::intersectChunk(m_valid,*input_packets[i],context,prim,num,bvh->scene,lazy_node);
           Packet &p = packet[i]; 
           valid_isec |= movemask((input_packets[i]->tfar < p.max_dist) & m_valid); 
           p.max_dist = min(p.max_dist,input_packets[i]->tfar);
           //p.max_dist = select(m_valid,input_packets[i]->tfar,p.max_dist);
         } while(bits);
+
 
 #endif
 #if 0

@@ -391,12 +391,15 @@ namespace embree
 
         float fr = float(1.0/(t1-t0));
         stat.add(fr);
-        std::cout << "frame [" << std::setw(3) << i << " / " << std::setw(3) << numTotalFrames << "]: " 
-                  << std::setw(8) << fr << " fps, " 
-                  << "min = " << std::setw(8) << stat.getMin() << " fps, " 
-                  << "avg = " << std::setw(8) << stat.getAvg() << " fps, "
-                  << "max = " << std::setw(8) << stat.getMax() << " fps, "
-                  << "sigma = " << std::setw(6) << stat.getSigma() << " (" << 100.0f*stat.getSigma()/stat.getAvg() << "%)" << std::endl << std::flush;
+        if (numTotalFrames >= 1024 && (i % 64 == 0))
+        {
+          std::cout << "frame [" << std::setw(3) << i << " / " << std::setw(3) << numTotalFrames << "]: " 
+                    << std::setw(8) << fr << " fps, " 
+                    << "min = " << std::setw(8) << stat.getMin() << " fps, " 
+                    << "avg = " << std::setw(8) << stat.getAvg() << " fps, "
+                    << "max = " << std::setw(8) << stat.getMax() << " fps, "
+                    << "sigma = " << std::setw(6) << stat.getSigma() << " (" << 100.0f*stat.getSigma()/stat.getAvg() << "%)" << std::endl << std::flush;
+        }
         if (benchmarkSleep) sleepSeconds(0.1);
       }
 

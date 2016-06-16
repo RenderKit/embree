@@ -74,7 +74,7 @@ namespace embree
 #else
     tbb::parallel_for(tbb::blocked_range<Index>(first,last,minStepSize),[&](const tbb::blocked_range<Index>& r) { 
       func(range<Index>(r.begin(),r.end()));
-    });
+      });
     if (tbb::task::self().is_cancelled())
       throw std::runtime_error("task cancelled");
 #endif

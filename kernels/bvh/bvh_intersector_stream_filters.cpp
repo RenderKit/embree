@@ -100,7 +100,7 @@ namespace embree
 
       if (likely(isCoherent(context->flags)))
       {
-#if 0
+#if 1
         if (likely(N == VSIZEX))
         {
           __aligned(64) RayK<VSIZEX> *rays_ptr[16]; // max 16 packets (16*4=64)
