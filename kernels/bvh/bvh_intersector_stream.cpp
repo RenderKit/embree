@@ -43,7 +43,7 @@
 //#define DBG_PRINT(x) PRINT(x)
 #define DBG_PRINT(x)
 
-#define ENABLE_CO_PATH 0
+#define ENABLE_CO_PATH 1
 #define MAX_RAYS 64
 
 namespace embree
@@ -865,8 +865,8 @@ namespace embree
 #if defined(__AVX__) && ENABLE_CO_PATH == 1
       if (unlikely(isCoherent(context->flags)))
       {
-        BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect_co_soa(bvh, (RayK<K> **)input_rays, numTotalRays, context);        
-        //BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect_co(bvh, input_rays, numTotalRays, context);        
+        //BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect_co_soa(bvh, (RayK<K> **)input_rays, numTotalRays, context);        
+        BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect_co(bvh, input_rays, numTotalRays, context);        
         return;
       }
 #endif

@@ -46,6 +46,21 @@ namespace embree
         Vec3vf4 v0, v1, v2; tri.gather(v0,v1,v2);
         return pre.intersect(ray,v0,v1,v2,UVIdentity<Mx>(),Occluded1EpilogM<M,Mx,filter>(ray,context,tri.geomIDs,tri.primIDs,scene,geomID_to_instID)); 
       }
+
+      /*! Intersect an array of rays with an array of M primitives. */
+      static __forceinline size_t intersect(Precalculations* pre, size_t valid, Ray** rays, const RTCIntersectContext* context,  size_t ty, const Primitive* prim, size_t num, Scene* scene, const unsigned* geomID_to_instID)
+      {
+        size_t valid_isec = 0;
+        do {
+          const size_t i = __bscf(valid);
+          const float old_far = rays[i]->tfar;
+          for (size_t n=0; n<num; n++)
+            intersect(pre[i],*rays[i],context,prim[n],scene,geomID_to_instID);
+          valid_isec |= (rays[i]->tfar < old_far) ? ((size_t)1 << i) : 0;            
+        } while(unlikely(valid));
+        return valid_isec;
+      }
+
     };
     
     /*! Triangle4i intersector for K rays */
