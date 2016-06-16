@@ -518,6 +518,7 @@ namespace embree
       std::cout << std::setw(TEXT_ALIGN) << name << " ..." << std::flush;
     
     std::atomic<int> passed(true);
+
     if (state->parallel && parallel && leaftest) 
     {
       parallel_for(tests.size(),[&] (size_t i) {

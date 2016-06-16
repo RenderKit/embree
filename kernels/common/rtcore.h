@@ -38,8 +38,7 @@ namespace embree
 
    /*! decoding of intersection flags */
   __forceinline bool isCoherent  (RTCIntersectFlags flags) { return (flags & RTC_INTERSECT_INCOHERENT) == 0; }
-  __forceinline bool isIncoherent(RTCIntersectFlags flags) { return (flags & RTC_INTERSECT_INCOHERENT) != 0;  }  
-  __forceinline bool isCoherentCommonOrigin(RTCIntersectFlags flags) { return (flags & RTC_INTERSECT_COHERENT_COMMON_ORIGIN) != 0;  }  
+  __forceinline bool isIncoherent(RTCIntersectFlags flags) { return (flags & RTC_INTERSECT_INCOHERENT) != 0; }
 
 #if TBB_INTERFACE_VERSION_MAJOR < 8    
 #  define USE_TASK_ARENA 0

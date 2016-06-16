@@ -100,7 +100,7 @@ namespace embree
 
       if (likely(isCoherent(context->flags)))
       {
-#if 1
+#if 0
         if (likely(N == VSIZEX))
         {
           __aligned(64) RayK<VSIZEX> *rays_ptr[16]; // max 16 packets (16*4=64)
@@ -133,10 +133,14 @@ namespace embree
         else
           FATAL("HERE");
 #else
-        for (size_t s=0; s<streams; s++)
+        /* fast path for packet width == SIMD width && correct RayK alignment*/
+        const size_t rayDataAlignment = (size_t)rayData        % (VSIZEX*sizeof(float));
+        const size_t offsetAlignment  = (size_t)stream_offset  % (VSIZEX*sizeof(float));
+
+        if (likely(N == VSIZEX && !rayDataAlignment && !offsetAlignment))
         {
-          /* fast path for packet width == SIMD width */
-          if (likely(N == VSIZEX))
+          //PRINT("FAST_PATH");
+          for (size_t s=0; s<streams; s++)
           {
             const size_t offset = s*stream_offset;
             RayK<VSIZEX> &ray = *(RayK<VSIZEX>*)(rayData + offset);
@@ -144,7 +148,9 @@ namespace embree
             if (intersect) scene->intersect(valid,ray,context);
             else           scene->occluded (valid,ray,context);
           }
-          else
+        }
+        else
+          for (size_t s=0; s<streams; s++)
             for (size_t i=0; i<N; i+=VSIZEX)
             {
               const vintx vi = vintx(int(i))+vintx(step);
@@ -156,7 +162,6 @@ namespace embree
               else           scene->occluded (valid,ray,context);
               rayN.scatter<VSIZEX>(valid,offset,ray,intersect);
             }
-        }
 #endif
         return;
       }
