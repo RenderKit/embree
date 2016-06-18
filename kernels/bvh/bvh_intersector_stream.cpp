@@ -43,7 +43,7 @@
 //#define DBG_PRINT(x) PRINT(x)
 #define DBG_PRINT(x)
 
-#define ENABLE_CO_PATH 1
+#define ENABLE_CO_PATH 0
 #define MAX_RAYS 64
 
 namespace embree
