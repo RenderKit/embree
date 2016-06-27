@@ -85,8 +85,8 @@ namespace embree
     int height = (int)max(level[1],level[3])+1;
     
     /* workaround for 2x2 intersection stencil */
-    width = max(width,3); // FIXME: this triggers stitching
-    height = max(height,3);
+    width = max(width,2); // FIXME: this triggers stitching
+    height = max(height,2);
 
     return Vec2i(width,height);
   }
