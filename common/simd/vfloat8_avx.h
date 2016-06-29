@@ -71,6 +71,16 @@ namespace embree
       return _mm256_broadcast_ss((float*)a); 
     }
 
+    static __forceinline vfloat8 broadcast2( const float* const a, const float* const b ) {
+#if defined(__INTEL_COMPILER)
+      const vfloat8 v0 = _mm256_broadcast_ss(a); 
+      const vfloat8 v1 = _mm256_broadcast_ss(b); 
+      return _mm256_blend_ps(v1, v0, 0xf);
+#else
+      return _mm256_set_ps(*b,*b,*b,*b,*a,*a,*a,*a);
+#endif
+    }
+
     static __forceinline const vfloat8 broadcast4f(const vfloat4* ptr) { 
       return _mm256_broadcast_ps((__m128*)ptr); 
     }

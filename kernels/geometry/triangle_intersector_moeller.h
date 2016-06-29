@@ -148,6 +148,67 @@ namespace embree
         if (likely(intersect(ray,v0,v1,v2,hit))) return epilog(hit.valid,hit);
         return false;
       }
+
+      // ==== new interface for ray streams ====
+
+      __forceinline bool intersectN(const Vec3<vfloat<M>>& ray_org,
+                                    const Vec3<vfloat<M>>& ray_dir,
+                                    const vfloat<M>& ray_tnear,
+                                    const vfloat<M>& ray_tfar,
+                                    const Vec3<vfloat<M>>& tri_v0, 
+                                    const Vec3<vfloat<M>>& tri_e1, 
+                                    const Vec3<vfloat<M>>& tri_e2, 
+                                    const Vec3<vfloat<M>>& tri_Ng,
+                                    MoellerTrumboreHitM<M>& hit) const
+      {
+        /* calculate denominator */
+        typedef Vec3<vfloat<M>> Vec3vfM;
+        const Vec3vfM &O = ray_org;
+        const Vec3vfM &D = ray_dir;
+        const Vec3vfM C = Vec3vfM(tri_v0) - O;
+        const Vec3vfM R = cross(D,C);
+        const vfloat<M> den = dot(Vec3vfM(tri_Ng),D);
+        const vfloat<M> absDen = abs(den);
+        const vfloat<M> sgnDen = signmsk(den);
+        
+        /* perform edge tests */
+        const vfloat<M> U = dot(R,Vec3vfM(tri_e2)) ^ sgnDen;
+        const vfloat<M> V = dot(R,Vec3vfM(tri_e1)) ^ sgnDen;
+        
+        /* perform backface culling */        
+#if defined(EMBREE_BACKFACE_CULLING)
+        vbool<M> valid = (den < vfloat<M>(zero)) & (U >= 0.0f) & (V >= 0.0f) & (U+V<=absDen);
+#else
+        vbool<M> valid = (den != vfloat<M>(zero)) & (U >= 0.0f) & (V >= 0.0f) & (U+V<=absDen);
+#endif
+        if (likely(none(valid))) return false;
+        
+        /* perform depth test */
+        const vfloat<M> T = dot(Vec3vfM(tri_Ng),C) ^ sgnDen;
+        valid &= (T > absDen*ray_tnear) & (T < absDen*ray_tfar);
+        if (likely(none(valid))) return false;
+        
+        /* update hit information */
+        new (&hit) MoellerTrumboreHitM<M>(valid,U,V,T,absDen,tri_Ng);
+        return true;
+      }
+
+      template<typename Epilog>
+        __forceinline bool intersectN(const Vec3<vfloat<M>>& ray_org,
+                                      const Vec3<vfloat<M>>& ray_dir,
+                                      const vfloat<M>& ray_tnear,
+                                      const vfloat<M>& ray_tfar,
+                                      const Vec3<vfloat<M>>& v0, 
+                                      const Vec3<vfloat<M>>& e1, 
+                                      const Vec3<vfloat<M>>& e2, 
+                                      const Vec3<vfloat<M>>& Ng, 
+                                      const Epilog& epilog) const
+      {
+        MoellerTrumboreHitM<M> hit;
+        if (likely(intersectN(ray_org,ray_dir,ray_tnear,ray_tfar,v0,e1,e2,Ng,hit))) return epilog(hit.valid,hit);
+        return false;
+      }
+
     };
 
      template<int K>
@@ -339,10 +400,73 @@ namespace embree
             valid_isec |= (rays[i]->tfar < old_far) ? ((size_t)1 << i) : 0;            
           } while(unlikely(valid));
           return valid_isec;
+        }       
+      };
+
+#if defined(__AVX__)
+    template<bool filter>
+      struct TriangleMIntersector1MoellerTrumbore<4,8,filter>
+      {
+        static const size_t M = 4;
+        static const size_t Mx = 8;
+
+        typedef TriangleM<M> Primitive;
+        typedef MoellerTrumboreIntersector1<Mx> Precalculations;
+
+        static __forceinline void intersect(const Precalculations& pre, Ray& ray, const RTCIntersectContext* context, const TriangleM<M>& tri, Scene* scene, const unsigned* geomID_to_instID)
+        {
+          STAT3(normal.trav_prims,1,1,1);
+          pre.intersect(ray,tri.v0,tri.e1,tri.e2,tri.Ng,Intersect1EpilogM<M,Mx,filter>(ray,context,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
         }
-        
+
+        /*! Test if the ray is occluded by one of M triangles. */
+        static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const RTCIntersectContext* context, const TriangleM<M>& tri, Scene* scene, const unsigned* geomID_to_instID)
+        {
+          STAT3(shadow.trav_prims,1,1,1);
+          return pre.intersect(ray,tri.v0,tri.e1,tri.e2,tri.Ng,Occluded1EpilogM<M,Mx,filter>(ray,context,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
+        }
+
+
+        /*! Intersect an array of rays with an array of M primitives. */
+        static __forceinline size_t intersect(Precalculations* pre, size_t valid, Ray** rays, const RTCIntersectContext* context,  size_t ty, const Primitive* prim, size_t num, Scene* scene, const unsigned* geomID_to_instID)
+        {
+          size_t valid_isec = 0;
+          do {
+            const size_t i = __bscf(valid);
+#if 0
+            const size_t j = __bscf(valid) & 0x3f;
+            assert(j < 64);
+            const vfloat<Mx> org_x(vfloat<M>(rays[i]->org.x),vfloat<M>(rays[j]->org.x));
+            const vfloat<Mx> org_y(vfloat<M>(rays[i]->org.y),vfloat<M>(rays[j]->org.y));
+            const vfloat<Mx> org_z(vfloat<M>(rays[i]->org.z),vfloat<M>(rays[j]->org.z));
+            const vfloat<Mx> dir_x(vfloat<M>(rays[i]->dir.x),vfloat<M>(rays[j]->dir.x));
+            const vfloat<Mx> dir_y(vfloat<M>(rays[i]->dir.y),vfloat<M>(rays[j]->dir.y));
+            const vfloat<Mx> dir_z(vfloat<M>(rays[i]->dir.z),vfloat<M>(rays[j]->dir.z));
+            const vfloat<Mx> tnear(vfloat<M>(rays[i]->tnear),vfloat<M>(rays[j]->tnear));
+            const vfloat<Mx> tfar (vfloat<M>(rays[i]->tfar), vfloat<M>(rays[j]->tfar));
+            const Vec3<vfloat<Mx>> ray_org(org_x,org_y,org_z);            
+            const Vec3<vfloat<Mx>> ray_dir(dir_x,dir_y,dir_z);
+
+            for (size_t n=0; n<num; n++)
+            {
+              STAT3(normal.trav_prims,1,1,1);
+              const TriangleM<M>& tri = prim[n];
+              pre->intersectN(ray_org,ray_dir,tnear,tfar,tri.v0,tri.e1,tri.e2,tri.Ng,Intersect1EpilogM<M,Mx,filter>(*rays[0],context,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
+            }
+            valid_isec |=  ((size_t)1 << i) | ((size_t)1 << j); //todo
+
+#else            
+            for (size_t n=0; n<num; n++)
+              intersect(pre[i],*rays[i],context,prim[n],scene,geomID_to_instID);
+            valid_isec |=  ((size_t)1 << i);
+#endif
+
+          } while(unlikely(valid));
+          return valid_isec;
+        }
 
       };
+#endif
 
     /*! Intersects M triangles with K rays. */
     template<int M, int Mx, int K, bool filter>

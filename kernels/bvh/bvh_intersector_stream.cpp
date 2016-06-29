@@ -43,7 +43,7 @@
 //#define DBG_PRINT(x) PRINT(x)
 #define DBG_PRINT(x)
 
-#define ENABLE_CO_PATH 0
+#define ENABLE_CO_PATH 1
 #define MAX_RAYS 64
 
 namespace embree
@@ -1425,11 +1425,11 @@ namespace embree
 
 #if !defined(__AVX512F__)
     typedef ArrayIntersectorKStream<8,
-                                    TriangleMIntersector1MoellerTrumbore<SIMD_MODE(4) COMMA true >,
-                                    TriangleMIntersectorKMoellerTrumbore<4 COMMA 4 COMMA 8 COMMA true > > Triangle4IntersectorStreamMoellerTrumbore;
+                                    TriangleMIntersector1MoellerTrumbore<4 COMMA 8 COMMA true >,
+                                    TriangleMIntersectorKMoellerTrumbore<4 COMMA 8 COMMA 8 COMMA true > > Triangle4IntersectorStreamMoellerTrumbore;
     typedef ArrayIntersectorKStream<8,
-                                    TriangleMIntersector1MoellerTrumbore<SIMD_MODE(4) COMMA false >,
-                                    TriangleMIntersectorKMoellerTrumbore<4 COMMA 4 COMMA 8 COMMA false > > Triangle4IntersectorStreamMoellerTrumboreNoFilter;
+                                    TriangleMIntersector1MoellerTrumbore<4 COMMA 8 COMMA false >,
+                                    TriangleMIntersectorKMoellerTrumbore<4 COMMA 8 COMMA 8 COMMA false > > Triangle4IntersectorStreamMoellerTrumboreNoFilter;
     typedef ArrayIntersectorKStream<8,
                                     QuadMvIntersector1MoellerTrumbore<4 COMMA true >,
                                     QuadMvIntersectorKMoellerTrumbore<4 COMMA 8 COMMA true > > Quad4vIntersectorStreamMoellerTrumbore;
