@@ -29,6 +29,8 @@ namespace embree {
 //#define RAYN_FLAGS RTC_INTERSECT_INCOHERENT
 //#define RAYN_FLAGS RTC_INTERSECT_COHERENT_COMMON_ORIGIN
 
+#define SHADING 1
+
 extern "C" ISPCScene* g_ispc_scene;
 
 /* scene data */
@@ -264,7 +266,7 @@ void renderTileStandard(int taskIndex,
 #endif
 
   /* shade stream of rays */
-#if 1
+#if SHADING == 1
   N = 0;
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {

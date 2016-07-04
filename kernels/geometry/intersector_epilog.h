@@ -420,6 +420,7 @@ namespace embree
           return true;
         }
       };
+
     
     template<int M, bool filter>
       struct Intersect1EpilogMU
@@ -1012,5 +1013,77 @@ namespace embree
           return true;
         }
       };
+
+    // =================================================================================
+
+
+    template<int M, int Mx, bool filter>
+      struct Intersect1EpilogStreamM
+      {
+        Ray **rays;
+        const RTCIntersectContext* context;
+        const vint<M>& geomIDs;
+        const vint<M>& primIDs;
+        Scene* scene;
+        const unsigned* geomID_to_instID;
+        
+        __forceinline Intersect1EpilogStreamM(Ray **rays,
+                                        const RTCIntersectContext* context, 
+                                        const vint<M>& geomIDs, 
+                                        const vint<M>& primIDs, 
+                                        Scene* scene,
+                                        const unsigned* geomID_to_instID)
+          : rays(rays), context(context), geomIDs(geomIDs), primIDs(primIDs), scene(scene), geomID_to_instID(geomID_to_instID) {}
+        
+        template<typename Hit>
+        __forceinline bool operator() (const vbool<Mx>& valid_i, Hit& hit) const
+        {
+          vbool<Mx> valid0 = valid_i & (((1<<M)-1)<<0);
+          vbool<Mx> valid1 = valid_i & (((1<<M)-1)<<M);
+
+          
+          hit.finalize();          
+          if (unlikely(any(valid0)))
+          {
+            const size_t i = select_min(valid0,hit.vt);
+            const int geomID = geomIDs[i%M];
+            const int primID = primIDs[i%M];
+            const int instID = geomID_to_instID ? geomID_to_instID[0] : geomID;
+
+            /* update hit information */
+            const Vec2f uv = hit.uv(i);
+            rays[0]->u = uv.x;
+            rays[0]->v = uv.y;
+            rays[0]->tfar = hit.vt[i];
+            rays[0]->Ng.x = hit.vNg.x[i];
+            rays[0]->Ng.y = hit.vNg.y[i];
+            rays[0]->Ng.z = hit.vNg.z[i];
+            rays[0]->geomID = instID;
+            rays[0]->primID = primID;
+          }
+          if (unlikely(any(valid1)))
+          {
+            const size_t i = select_min(valid1,hit.vt);
+            const int geomID = geomIDs[i%M];
+            const int primID = primIDs[i%M];
+            const int instID = geomID_to_instID ? geomID_to_instID[0] : geomID;
+
+            /* update hit information */
+            const Vec2f uv = hit.uv(i);
+            rays[1]->u = uv.x;
+            rays[1]->v = uv.y;
+            rays[1]->tfar = hit.vt[i];
+            rays[1]->Ng.x = hit.vNg.x[i];
+            rays[1]->Ng.y = hit.vNg.y[i];
+            rays[1]->Ng.z = hit.vNg.z[i];
+            rays[1]->geomID = instID;
+            rays[1]->primID = primID;
+          }
+          return true;
+
+        }
+      };
+
+
   }
 }

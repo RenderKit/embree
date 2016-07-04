@@ -104,7 +104,7 @@ namespace embree
         if (likely(N == VSIZEX))
         {
           //todo :: alignment check
-          __aligned(64) RayK<VSIZEX> *rays_ptr[16]; // max 16 packets (16*4=64)
+          __aligned(64) RayK<VSIZEX> *rays_ptr[MAX_RAYS_PER_OCTANT / VSIZEX]; // max 16 packets (16*4=64)
           size_t numStreams = 0;
           for (size_t s=0; s<streams; s++)
           {
