@@ -242,7 +242,11 @@ namespace embree
       /*! Intersects K rays with one of M triangles. */
       template<typename Epilog>
         __forceinline vbool<K> intersectK(const vbool<K>& valid0, 
-                                          RayK<K>& ray, 
+                                          //RayK<K>& ray, 
+                                          const Vec3<vfloat<K>>& ray_org,
+                                          const Vec3<vfloat<K>>& ray_dir,
+                                          const vfloat<K>& ray_tnear,
+                                          const vfloat<K>& ray_tfar,
                                           const Vec3<vfloat<K>>& tri_v0, 
                                           const Vec3<vfloat<K>>& tri_e1, 
                                           const Vec3<vfloat<K>>& tri_e2, 
@@ -254,9 +258,9 @@ namespace embree
         
         /* calculate denominator */
         vbool<K> valid = valid0;
-        const Vec3vfK C = tri_v0 - ray.org;
-        const Vec3vfK R = cross(ray.dir,C);
-        const vfloat<K> den = dot(tri_Ng,ray.dir);
+        const Vec3vfK C = tri_v0 - ray_org;
+        const Vec3vfK R = cross(ray_dir,C);
+        const vfloat<K> den = dot(tri_Ng,ray_dir);
         const vfloat<K> absDen = abs(den);
         const vfloat<K> sgnDen = signmsk(den);
         
@@ -277,7 +281,7 @@ namespace embree
         
         /* perform depth test */
         const vfloat<K> T = dot(tri_Ng,C) ^ sgnDen;
-        valid &= (T >= absDen*ray.tnear) & (absDen*ray.tfar >= T);
+        valid &= (T >= absDen*ray_tnear) & (absDen*ray_tfar >= T);
         if (unlikely(none(valid))) return false;
         
         /* perform backface culling */
@@ -307,7 +311,20 @@ namespace embree
         const Vec3vfK e1 = tri_v0-tri_v1;
         const Vec3vfK e2 = tri_v2-tri_v0;
         const Vec3vfK Ng = cross(e1,e2);
-        return intersectK(valid0,ray,tri_v0,e1,e2,Ng,epilog);
+        return intersectK(valid0,ray.org,ray.dir,ray.tnear,ray.tfar,tri_v0,e1,e2,Ng,epilog);
+      }
+
+      /*! Intersects K rays with one of M triangles. */
+      template<typename Epilog>
+      __forceinline vbool<K> intersectK(const vbool<K>& valid0, 
+                                        RayK<K>& ray, 
+                                        const Vec3<vfloat<K>>& tri_v0, 
+                                        const Vec3<vfloat<K>>& tri_e1, 
+                                        const Vec3<vfloat<K>>& tri_e2, 
+                                        const Vec3<vfloat<K>>& tri_Ng, 
+                                        const Epilog& epilog) const
+      {
+        return intersectK(valid0,ray.org,ray.dir,ray.tnear,ray.tfar,tri_v0,tri_e1,tri_e2,tri_Ng,epilog);
       }
       
       /*! Intersect k'th ray from ray packet of size K with M triangles. */

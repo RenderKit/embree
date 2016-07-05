@@ -469,7 +469,7 @@ namespace embree
 #if 1
         /*! intersect stream of rays with all primitives */
         size_t lazy_node = 0;
-        size_t valid_isec = 0;
+        //size_t valid_isec = 0;
         STAT_USER(1,(__popcnt(bits)+K-1)/K*4);
         STAT_USER(2,(__popcnt(bits)+1)/2);
         STAT_USER(3,(__popcnt(bits)+3)/4);
@@ -484,7 +484,7 @@ namespace embree
           vbool<K> m_valid = (input_packets[i]->tnear <= input_packets[i]->tfar); 
           PrimitiveIntersector::intersectChunk(m_valid,*input_packets[i],context,prim,num,bvh->scene,lazy_node);
           Packet &p = packet[i]; 
-          valid_isec |= movemask((input_packets[i]->tfar < p.max_dist) & m_valid); 
+          //valid_isec |= movemask((input_packets[i]->tfar < p.max_dist) & m_valid); 
           p.max_dist = min(p.max_dist,input_packets[i]->tfar);
           //p.max_dist = select(m_valid,input_packets[i]->tfar,p.max_dist);
         } while(bits);
@@ -540,8 +540,13 @@ namespace embree
       __aligned(64) struct Packet {
         Vec3vfK rdir;
         Vec3vfK org_rdir;
-        vfloat<K> min_dist;
-        vfloat<K> max_dist;
+        //vfloat<K> min_dist;
+        //vfloat<K> max_dist;
+        RayK<K> ray;
+
+        __forceinline vfloat<K> &min_dist() { return ray.tnear; }
+        __forceinline vfloat<K> &max_dist() { return ray.tfar; }
+
       } packet[MAX_RAYS/K];
 
       Ray** __restrict__ rays = input_rays;
@@ -562,14 +567,20 @@ namespace embree
       float  frusta_min_dist(pos_inf);
       float  frusta_max_dist(neg_inf);
 
-      //const size_t numPackets = (numOctantRays+K-1)/K;
-      const size_t lastPacket = (numOctantRays-1)/K;
+      const size_t numPackets = (numOctantRays+K-1)/K;
 
       /* fill potentially partly filled packet */
-      packet[lastPacket].min_dist = 0.0f;
-      packet[lastPacket].max_dist = neg_inf;
+      for (size_t i=0; i<numPackets; i++) 
+      {
+        packet[i].ray.tnear   = 0.0f;
+        packet[i].ray.tfar    = neg_inf;
+        packet[i].ray.time    = 0.0f;
+        packet[i].ray.mask    = -1;
+        packet[i].ray.primID  = RTC_INVALID_GEOMETRY_ID;
+      }
 
       /* compute IA frusta */
+
       for (size_t i=0; i<numOctantRays; i++) {
         new (&pre[i]) Precalculations(*rays[i],bvh);
         const Vec3fa& org = rays[i]->org;
@@ -587,15 +598,21 @@ namespace embree
         
         const size_t packetID = i / K;
         const size_t slotID   = i % K;
-
+        packet[packetID].ray.dir.x[slotID]     = dir.x;
+        packet[packetID].ray.dir.y[slotID]     = dir.y;
+        packet[packetID].ray.dir.z[slotID]     = dir.z;
+        packet[packetID].ray.org.x[slotID]     = org.x;
+        packet[packetID].ray.org.y[slotID]     = org.y;
+        packet[packetID].ray.org.z[slotID]     = org.z;
         packet[packetID].rdir.x[slotID]     = rdir.x;
         packet[packetID].rdir.y[slotID]     = rdir.y;
         packet[packetID].rdir.z[slotID]     = rdir.z;
         packet[packetID].org_rdir.x[slotID] = org_rdir.x;
         packet[packetID].org_rdir.y[slotID] = org_rdir.y;
         packet[packetID].org_rdir.z[slotID] = org_rdir.z;
-        packet[packetID].min_dist[slotID]   = tnear;
-        packet[packetID].max_dist[slotID]   = tfar;
+        packet[packetID].min_dist()[slotID]   = tnear;
+        packet[packetID].max_dist()[slotID]   = tfar;
+
       }
 
       const Vec3fa frusta_min_rdir = select(ge_mask(tmp_min_rdir,Vec3fa(zero)),tmp_min_rdir,tmp_max_rdir);
@@ -603,22 +620,6 @@ namespace embree
 
       const Vec3fa frusta_min_org_rdir = frusta_min_rdir*select(ge_mask(tmp_min_rdir,Vec3fa(zero)),tmp_max_origin,tmp_min_origin);
       const Vec3fa frusta_max_org_rdir = frusta_max_rdir*select(ge_mask(tmp_min_rdir,Vec3fa(zero)),tmp_min_origin,tmp_max_origin);
-
-#if 0
-      PRINT(tmp_min_rdir*tmp_min_origin);
-      PRINT(tmp_min_rdir*tmp_max_origin);
-      PRINT(tmp_max_rdir*tmp_min_origin);
-      PRINT(tmp_max_rdir*tmp_max_origin);
-
-      PRINT(tmp_min_origin);
-      PRINT(tmp_max_origin);
-
-      PRINT(frusta_min_org_rdir);
-      PRINT(frusta_max_org_rdir);
-      PRINT(ia_mul_min(frusta_min_rdir,frusta_max_rdir,tmp_min_origin,tmp_max_origin));
-      PRINT(ia_mul_max(frusta_min_rdir,frusta_max_rdir,tmp_min_origin,tmp_max_origin));
-      exit(0);
-#endif
 
       stack[0].mask    = m_active;
       stack[0].parent  = 0;
@@ -682,8 +683,8 @@ namespace embree
             const vfloat<K> tmaxX = msub(maxX, p.rdir.x, p.org_rdir.x);
             const vfloat<K> tmaxY = msub(maxY, p.rdir.y, p.org_rdir.y);
             const vfloat<K> tmaxZ = msub(maxZ, p.rdir.z, p.org_rdir.z);
-            const vfloat<K> tmin  = maxi(maxi(tminX,tminY),maxi(tminZ,p.min_dist)); 
-            const vfloat<K> tmax  = mini(mini(tmaxX,tmaxY),mini(tmaxZ,p.max_dist)); 
+            const vfloat<K> tmin  = maxi(maxi(tminX,tminY),maxi(tminZ,p.min_dist())); 
+            const vfloat<K> tmax  = mini(mini(tmaxX,tmaxY),mini(tmaxZ,p.max_dist())); 
             const vbool<K> vmask   = tmin <= tmax;  
             const size_t m_hit = movemask(vmask);
             m_trav_active |= m_hit << (i*K);
@@ -743,8 +744,8 @@ namespace embree
           const vfloat<K> rmaxX = msub(bmaxX, vfloat<K>(p.rdir.x[first_rayID]), vfloat<K>(p.org_rdir.x[first_rayID]));
           const vfloat<K> rmaxY = msub(bmaxY, vfloat<K>(p.rdir.y[first_rayID]), vfloat<K>(p.org_rdir.y[first_rayID]));
           const vfloat<K> rmaxZ = msub(bmaxZ, vfloat<K>(p.rdir.z[first_rayID]), vfloat<K>(p.org_rdir.z[first_rayID]));
-          const vfloat<K> rmin  = maxi(maxi(rminX,rminY),maxi(rminZ,p.min_dist[first_rayID])); 
-          const vfloat<K> rmax  = mini(mini(rmaxX,rmaxY),mini(rmaxZ,p.max_dist[first_rayID])); 
+          const vfloat<K> rmin  = maxi(maxi(rminX,rminY),maxi(rminZ,p.min_dist()[first_rayID])); 
+          const vfloat<K> rmax  = mini(mini(rmaxX,rmaxY),mini(rmaxZ,p.max_dist()[first_rayID])); 
           const vbool<K> vmask_first_hit  = rmin <= rmax;  
           size_t m_first_hit = movemask(vmask_first_hit);
 
@@ -784,8 +785,8 @@ namespace embree
               const vfloat<K> tmaxX = msub(maxX, p.rdir.x, p.org_rdir.x);
               const vfloat<K> tmaxY = msub(maxY, p.rdir.y, p.org_rdir.y);
               const vfloat<K> tmaxZ = msub(maxZ, p.rdir.z, p.org_rdir.z);
-              const vfloat<K> tmin  = maxi(maxi(tminX,tminY),maxi(tminZ,p.min_dist)); 
-              const vfloat<K> tmax  = mini(mini(tmaxX,tmaxY),mini(tmaxZ,p.max_dist)); 
+              const vfloat<K> tmin  = maxi(maxi(tminX,tminY),maxi(tminZ,p.min_dist())); 
+              const vfloat<K> tmax  = mini(mini(tmaxX,tmaxY),mini(tmaxZ,p.max_dist())); 
               const vbool<K> vmask   = tmin <= tmax;  
               const size_t m_hit = movemask(vmask);
               m_current &= ~((m_hit^(((size_t)1 << K)-1)) << (i*K));
@@ -813,20 +814,35 @@ namespace embree
 
         //STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
         size_t bits = m_trav_active;
+        size_t lazy_node = 0;
 
         /*! intersect stream of rays with all primitives */
-        size_t lazy_node = 0;
+#if 0
         size_t valid_isec MAYBE_UNUSED = PrimitiveIntersector::intersect(pre,bits,rays,context,0,prim,num,bvh->scene,NULL,lazy_node);
+#else
+        do
+        {
+          size_t i = __bsf(bits) / K;
+          const size_t m_isec = ((((size_t)1 << K)-1) << (i*K));
+          assert(m_isec & bits);
+          bits &= ~m_isec;
 
+
+          vbool<K> m_valid = (packet[i].ray.tnear <= packet[i].ray.tfar); 
+          PrimitiveIntersector::intersectChunk(m_valid,packet[i].ray,context,prim,num,bvh->scene,lazy_node);
+        } while(bits);
+        
+#endif
         
         /* update tfar in ray context on successful hit */
+#if 0
         if(unlikely(valid_isec))
         {
           do {
             const size_t i = __bscf(valid_isec);
             const size_t packetID = i / K;
             const size_t slotID   = i % K;
-            packet[packetID].max_dist[slotID] = rays[i]->tfar;
+            packet[packetID].max_dist()[slotID] = rays[i]->tfar;
           } while(valid_isec);
 
 #if 0
@@ -837,6 +853,7 @@ namespace embree
           frusta_max_dist = reduce_max(max_dist);
 #endif
         }
+#endif
 
 
       } // traversal + intersection
@@ -844,6 +861,28 @@ namespace embree
         ///////////////////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////
+
+      // packet to single rays
+
+      for (size_t i=0; i<numOctantRays; i++) 
+      {
+        const size_t packetID = i / K;
+        const size_t slotID   = i % K;
+        const RayK<K> &ray = packet[packetID].ray;
+        if (likely(ray.primID[slotID] != RTC_INVALID_GEOMETRY_ID))
+        {
+          input_rays[i]->tfar   = ray.tfar[slotID];
+          input_rays[i]->Ng.x   = ray.Ng.x[slotID];
+          input_rays[i]->Ng.y   = ray.Ng.y[slotID];
+          input_rays[i]->Ng.z   = ray.Ng.z[slotID];
+          input_rays[i]->u      = ray.u[slotID];
+          input_rays[i]->v      = ray.v[slotID];
+          input_rays[i]->geomID = ray.geomID[slotID];
+          input_rays[i]->primID = ray.primID[slotID];
+          input_rays[i]->instID = ray.instID[slotID];
+        }
+
+      }
 
 #endif
     }
@@ -865,7 +904,64 @@ namespace embree
 #if defined(__AVX__) && ENABLE_CO_PATH == 1
       if (unlikely(isCoherent(context->flags)))
       {
-        BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect_co_soa(bvh, (RayK<K> **)input_rays, numTotalRays, context);        
+        RayK<K> rayK[MAX_RAYS / K];
+        RayK<K> *rayK_ptr[MAX_RAYS / K];
+        const size_t numPackets = (numTotalRays+K-1)/K;
+
+        for (size_t i=0; i<MAX_RAYS / K; i++) 
+          rayK_ptr[i] = &rayK[i];
+
+        for (size_t i=0; i<numPackets; i++) 
+        {
+          rayK[i].tnear   = 0.0f;
+          rayK[i].tfar    = neg_inf;
+          rayK[i].time    = 0.0f;
+          rayK[i].mask    = -1;
+          rayK[i].primID  = RTC_INVALID_GEOMETRY_ID;
+        }
+        for (size_t i=0; i<numTotalRays; i++) {
+          const Vec3fa& org = input_rays[i]->org;
+          const Vec3fa& dir = input_rays[i]->dir;
+          const float tnear = max(0.0f,input_rays[i]->tnear);
+          const float tfar  = input_rays[i]->tfar;
+          const size_t packetID = i / K;
+          const size_t slotID   = i % K;
+          rayK[packetID].dir.x[slotID]     = dir.x;
+          rayK[packetID].dir.y[slotID]     = dir.y;
+          rayK[packetID].dir.z[slotID]     = dir.z;
+          rayK[packetID].org.x[slotID]     = org.x;
+          rayK[packetID].org.y[slotID]     = org.y;
+          rayK[packetID].org.z[slotID]     = org.z;
+          rayK[packetID].tnear[slotID]     = tnear;
+          rayK[packetID].tfar[slotID]      = tfar;
+        }
+
+        BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect_co_soa(bvh, rayK_ptr, numPackets, context);     
+
+        for (size_t i=0; i<numTotalRays; i++) 
+        {
+          const size_t packetID = i / K;
+          const size_t slotID   = i % K;
+          const RayK<K> &ray = rayK[packetID];
+          if (likely(ray.primID[slotID] != RTC_INVALID_GEOMETRY_ID))
+          {
+            input_rays[i]->tfar   = ray.tfar[slotID];
+            input_rays[i]->Ng.x   = ray.Ng.x[slotID];
+            input_rays[i]->Ng.y   = ray.Ng.y[slotID];
+            input_rays[i]->Ng.z   = ray.Ng.z[slotID];
+            input_rays[i]->u      = ray.u[slotID];
+            input_rays[i]->v      = ray.v[slotID];
+            input_rays[i]->geomID = ray.geomID[slotID];
+            input_rays[i]->primID = ray.primID[slotID];
+            input_rays[i]->instID = ray.instID[slotID];
+          }
+
+        }
+   
+
+        //BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect_co_soa(bvh, (RayK<K> **)input_rays, numTotalRays, context);        
+
+
         //BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect_co(bvh, input_rays, numTotalRays, context);        
         return;
       }
