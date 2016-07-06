@@ -447,58 +447,12 @@ namespace embree
         /*! Intersect an array of rays with an array of M primitives. */
         static __forceinline size_t intersect(Precalculations* pre, size_t valid, Ray** rays, const RTCIntersectContext* context,  size_t ty, const Primitive* prim, size_t num, Scene* scene, const unsigned* geomID_to_instID)
         {
-          Ray *local_rays[2];
           size_t valid_isec = 0;
           do {
             const size_t i = __bscf(valid);
-#if 1
-            valid_isec |=  ((size_t)1 << i);
-            
-            vfloat<Mx> org_x(rays[i]->org.x);
-            vfloat<Mx> org_y(rays[i]->org.y);
-            vfloat<Mx> org_z(rays[i]->org.z);
-            vfloat<Mx> dir_x(rays[i]->dir.x);
-            vfloat<Mx> dir_y(rays[i]->dir.y);
-            vfloat<Mx> dir_z(rays[i]->dir.z);
-            vfloat<Mx> tnear(rays[i]->tnear);
-            vfloat<Mx> tfar (rays[i]->tfar);
-            local_rays[0] = rays[i];
-            local_rays[1] = rays[i];
-            if (likely(valid))
-            {
-              const size_t j = __bscf(valid);
-              assert(j < 64);
-              const int mask = 0xf;
-              org_x = select(mask,org_x,rays[j]->org.x);
-              org_y = select(mask,org_y,rays[j]->org.y);
-              org_z = select(mask,org_z,rays[j]->org.z);
-              dir_x = select(mask,dir_x,rays[j]->dir.x);
-              dir_y = select(mask,dir_y,rays[j]->dir.y);
-              dir_z = select(mask,dir_z,rays[j]->dir.z);
-              tnear = select(mask,tnear,rays[j]->tnear);
-              tfar  = select(mask,tfar ,rays[j]->tfar);
-              local_rays[1] = rays[j];
-              valid_isec |=  ((size_t)1 << j);
-
-            }
-
-            const Vec3<vfloat<Mx>> ray_org(org_x,org_y,org_z);            
-            const Vec3<vfloat<Mx>> ray_dir(dir_x,dir_y,dir_z);
-
-            for (size_t n=0; n<num; n++)
-            {
-              STAT3(normal.trav_prims,1,1,1);
-              const TriangleM<M>& tri = prim[n];
-              pre->intersectN(ray_org,ray_dir,tnear,tfar,tri.v0,tri.e1,tri.e2,tri.Ng,Intersect1EpilogStreamM<M,Mx,filter>(local_rays,context,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
-            }
-            //valid_isec |=  ((size_t)1 << i) | ((size_t)1 << j); //todo
-
-#else            
             for (size_t n=0; n<num; n++)
               intersect(pre[i],*rays[i],context,prim[n],scene,geomID_to_instID);
             valid_isec |=  ((size_t)1 << i);
-#endif
-
           } while(unlikely(valid));
           return valid_isec;
         }

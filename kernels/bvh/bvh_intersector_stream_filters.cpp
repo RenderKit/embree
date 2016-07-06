@@ -15,13 +15,68 @@
 // ======================================================================== //
 
 #include "bvh_intersector_stream_filters.h"
+#include "bvh_intersector_stream.h"
 
 namespace embree
 {
   namespace isa
   {
     static const size_t MAX_RAYS_PER_OCTANT = 8*sizeof(size_t);
+    static const size_t MAX_RAYS            = MAX_INTERNAL_STREAM_SIZE; // 64
+
     static_assert(MAX_RAYS_PER_OCTANT <= MAX_INTERNAL_STREAM_SIZE,"maximal internal stream size exceeded");
+
+    __forceinline void initAOStoSOA(RayK<VSIZEX> *rayK, Ray **input_rays, const size_t numTotalRays)
+    {
+      const size_t numPackets = (numTotalRays+VSIZEX-1)/VSIZEX;
+      for (size_t i=0; i<numPackets; i++) 
+      {
+        rayK[i].tnear   = 0.0f;
+        rayK[i].tfar    = neg_inf;
+        rayK[i].time    = 0.0f;
+        rayK[i].mask    = -1;
+        rayK[i].primID  = RTC_INVALID_GEOMETRY_ID;
+      }
+
+      for (size_t i=0; i<numTotalRays; i++) {
+        const Vec3fa& org = input_rays[i]->org;
+        const Vec3fa& dir = input_rays[i]->dir;
+        const float tnear = max(0.0f,input_rays[i]->tnear);
+        const float tfar  = input_rays[i]->tfar;
+        const size_t packetID = i / VSIZEX;
+        const size_t slotID   = i % VSIZEX;
+        rayK[packetID].dir.x[slotID]     = dir.x;
+        rayK[packetID].dir.y[slotID]     = dir.y;
+        rayK[packetID].dir.z[slotID]     = dir.z;
+        rayK[packetID].org.x[slotID]     = org.x;
+        rayK[packetID].org.y[slotID]     = org.y;
+        rayK[packetID].org.z[slotID]     = org.z;
+        rayK[packetID].tnear[slotID]     = tnear;
+        rayK[packetID].tfar[slotID]      = tfar;
+      }      
+    }
+
+    __forceinline void writebackSOAtoAOS(Ray ** input_rays, RayK<VSIZEX> *rayK, const size_t numTotalRays)
+    {
+      for (size_t i=0; i<numTotalRays; i++) 
+      {
+        const size_t packetID = i / VSIZEX;
+        const size_t slotID   = i % VSIZEX;
+        const RayK<VSIZEX> &ray = rayK[packetID];
+        if (likely((unsigned)ray.primID[slotID] != RTC_INVALID_GEOMETRY_ID))
+        {
+          input_rays[i]->tfar   = ray.tfar[slotID];
+          input_rays[i]->Ng.x   = ray.Ng.x[slotID];
+          input_rays[i]->Ng.y   = ray.Ng.y[slotID];
+          input_rays[i]->Ng.z   = ray.Ng.z[slotID];
+          input_rays[i]->u      = ray.u[slotID];
+          input_rays[i]->v      = ray.v[slotID];
+          input_rays[i]->geomID = ray.geomID[slotID];
+          input_rays[i]->primID = ray.primID[slotID];
+          input_rays[i]->instID = ray.instID[slotID];
+        }
+      }
+    }
 
     __forceinline void RayStream::filterAOS(Scene *scene, RTCRay* _rayN, const size_t N, const size_t stride, const RTCIntersectContext* context, const bool intersect)
     {
@@ -31,6 +86,13 @@ namespace embree
 
       for (size_t i=0;i<8;i++) rays_in_octant[i] = 0;
       size_t inputRayID = 0;
+
+      /* only enable if coherent flags are enabled and no intersection filter is set */
+#if defined(__AVX__) && ENABLE_COHERENT_STREAM_PATH == 1
+      const bool enableCoherentStream = isCoherent(context->flags);
+#else
+      const bool enableCoherentStream = false;
+#endif
 
       while(1)
       {
@@ -86,8 +148,23 @@ namespace embree
         /* codepath for large number of rays per octant */
         else
         {
-          if (intersect) scene->intersectN((RTCRay**)rays,numOctantRays,context);
-          else           scene->occludedN((RTCRay**)rays,numOctantRays,context);
+          if (unlikely(enableCoherentStream))
+          {
+            /* coherent ray stream code path */
+            RayK<VSIZEX> rayK[MAX_RAYS / VSIZEX];
+            RayK<VSIZEX> *rayK_ptr[MAX_RAYS / VSIZEX];
+            for (size_t i=0;i<MAX_RAYS / VSIZEX;i++) rayK_ptr[i] = &rayK[i];
+            const size_t numPackets = (numOctantRays+VSIZEX-1)/VSIZEX;
+            initAOStoSOA(rayK,rays,numOctantRays);
+            if (intersect) scene->intersectN((RTCRay**)rayK_ptr,numPackets,context);
+            else           scene->occludedN ((RTCRay**)rayK_ptr,numPackets,context);
+            writebackSOAtoAOS(rays,rayK,numOctantRays);            
+          }
+          else {
+            /* incoherent ray stream code path */
+            if (intersect) scene->intersectN((RTCRay**)rays,numOctantRays,context);
+            else           scene->occludedN ((RTCRay**)rays,numOctantRays,context);
+          }
         }
         rays_in_octant[cur_octant] = 0;
 
@@ -100,21 +177,22 @@ namespace embree
 
       if (likely(isCoherent(context->flags)))
       {
-#if 0
+#if defined(__AVX__) && ENABLE_COHERENT_STREAM_PATH == 1
         if (likely(N == VSIZEX))
         {
           //todo :: alignment check
-          __aligned(64) RayK<VSIZEX> *rays_ptr[MAX_RAYS_PER_OCTANT / VSIZEX]; // max 16 packets (16*4=64)
+          __aligned(64) RayK<VSIZEX> *rays_ptr[MAX_RAYS / VSIZEX]; 
           size_t numStreams = 0;
           for (size_t s=0; s<streams; s++)
           {
             const size_t offset = s*stream_offset;
             RayK<VSIZEX> &ray = *(RayK<VSIZEX>*)(rayData + offset);
             rays_ptr[numStreams++] = &ray;
-            static const size_t MAX_COHERENT_RAY_PACKETS = 64 / 4;
+            static const size_t MAX_COHERENT_RAY_PACKETS = MAX_RAYS / VSIZEX;
 
             if (unlikely(numStreams == MAX_COHERENT_RAY_PACKETS))
             {
+
               if (intersect)
                 scene->intersectN((RTCRay**)rays_ptr,numStreams,context);
               else

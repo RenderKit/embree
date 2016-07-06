@@ -224,7 +224,6 @@ void renderTileStandard(int taskIndex,
   const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
   RTCRay rays[TILE_SIZE_X*TILE_SIZE_Y];
-
   /* generate stream of primary rays */
   int N = 0;
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)

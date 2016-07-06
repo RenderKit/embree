@@ -26,7 +26,7 @@
 #define RAYN_FLAGS RTC_INTERSECT_COHERENT
 //#define RAYN_FLAGS RTC_INTERSECT_INCOHERENT
 
-#define SHADING 0
+#define SHADING 1
 
 extern uniform ISPCScene* uniform g_ispc_scene;
 
