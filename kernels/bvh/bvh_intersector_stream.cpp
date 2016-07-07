@@ -492,6 +492,327 @@ namespace embree
 
 #endif
     }
+
+
+
+    template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
+    void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::occluded_coherent_soa(BVH* __restrict__ bvh, RayK<K> **input_rays, size_t numValidStreams, const RTCIntersectContext* context)
+    {      
+#if defined(__AVX__) 
+      __aligned(64) StackItemMaskCoherent  stack[stackSizeSingle];  //!< stack of nodes 
+
+      RayK<K>** __restrict__ input_packets = (RayK<K>**)input_rays;
+      const size_t numOctantRays = K*numValidStreams;
+      assert(numOctantRays <= MAX_RAYS);
+
+      /* inactive rays should have been filtered out before */
+
+      __aligned(64) struct Packet {
+        Vec3vfK rdir;
+        Vec3vfK org_rdir;
+        vfloat<K> min_dist;
+        vfloat<K> max_dist;
+      } packet[MAX_RAYS/K];
+
+      Vec3vfK   tmp_min_rdir(pos_inf); 
+      Vec3vfK   tmp_max_rdir(neg_inf);
+      Vec3vfK   tmp_min_org(pos_inf); 
+      Vec3vfK   tmp_max_org(neg_inf);
+      vfloat<K> tmp_min_dist(pos_inf);
+      vfloat<K> tmp_max_dist(neg_inf);
+
+      size_t m_active = 0;
+      const size_t numPackets = numValidStreams;
+      for (size_t i=0; i<numPackets; i++) 
+      {
+        const vfloat<K> tnear  = input_packets[i]->tnear;
+        const vfloat<K> tfar   = input_packets[i]->tfar;
+        const vbool<K> m_valid = (tnear <= tfar) & (tnear >= 0.0f);
+
+        m_active |= (size_t)movemask(m_valid) << (i*K);
+        packet[i].min_dist = max(tnear,0.0f);
+        packet[i].max_dist = select(m_valid,tfar,neg_inf);
+        tmp_min_dist = min(tmp_min_dist,packet[i].min_dist);
+        tmp_max_dist = max(tmp_max_dist,packet[i].max_dist);        
+
+        const Vec3vfK& org     = input_packets[i]->org;
+        const Vec3vfK& dir     = input_packets[i]->dir;
+        const Vec3vfK rdir     = rcp_safe(dir);
+        const Vec3vfK org_rdir = org * rdir;
+        
+        packet[i].rdir     = rdir;
+        packet[i].org_rdir = org_rdir;
+
+        tmp_min_rdir = min(tmp_min_rdir,select(m_valid,rdir,Vec3vfK(pos_inf)));
+        tmp_max_rdir = max(tmp_max_rdir,select(m_valid,rdir,Vec3vfK(neg_inf)));
+        tmp_min_org  = min(tmp_min_org ,select(m_valid,org ,Vec3vfK(pos_inf)));
+        tmp_max_org  = max(tmp_max_org ,select(m_valid,org ,Vec3vfK(neg_inf)));
+
+      }
+
+      if (unlikely(m_active == 0)) return;
+        
+      const Vec3fa reduced_min_rdir( reduce_min(tmp_min_rdir.x), 
+                                     reduce_min(tmp_min_rdir.y),
+                                     reduce_min(tmp_min_rdir.z) );
+
+      const Vec3fa reduced_max_rdir( reduce_max(tmp_max_rdir.x), 
+                                     reduce_max(tmp_max_rdir.y),
+                                     reduce_max(tmp_max_rdir.z) );
+
+      /* fallback for different direction signs */
+      if (unlikely(movemask(vfloat4(reduced_min_rdir) < vfloat4(zero)) ^ movemask(vfloat4(reduced_max_rdir)  < vfloat4(zero) ))) //todo: maybe just disable IA test
+      {
+        DBG_PRINT("FALLBACK");
+        for (size_t i=0; i<numPackets; i++) 
+          bvh->scene->intersect(input_packets[i]->tnear <= input_packets[i]->tfar,*input_packets[i],context);
+        return;
+      }
+
+      const Vec3fa reduced_min_origin( reduce_min(tmp_min_org.x), 
+                                       reduce_min(tmp_min_org.y),
+                                       reduce_min(tmp_min_org.z) );
+
+      const Vec3fa reduced_max_origin( reduce_max(tmp_max_org.x), 
+                                       reduce_max(tmp_max_org.y),
+                                       reduce_max(tmp_max_org.z) );
+
+      const float frusta_min_dist = reduce_min(tmp_min_dist);
+      const float frusta_max_dist = reduce_max(tmp_max_dist);
+
+      const Vec3fa frusta_min_rdir = select(ge_mask(reduced_min_rdir,Vec3fa(zero)),reduced_min_rdir,reduced_max_rdir);
+      const Vec3fa frusta_max_rdir = select(ge_mask(reduced_min_rdir,Vec3fa(zero)),reduced_max_rdir,reduced_min_rdir);
+
+      const Vec3fa frusta_min_org_rdir = frusta_min_rdir*select(ge_mask(reduced_min_rdir,Vec3fa(zero)),reduced_max_origin,reduced_min_origin);
+      const Vec3fa frusta_max_org_rdir = frusta_max_rdir*select(ge_mask(reduced_min_rdir,Vec3fa(zero)),reduced_min_origin,reduced_max_origin);
+
+      stack[0].mask    = m_active;
+      stack[0].parent  = 0;
+      stack[0].child   = bvh->root;
+      stack[0].childID = (unsigned int)-1;
+      stack[0].dist    = (unsigned int)-1;
+
+      ///////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////////////////////////////////////////////////////////
+
+      const NearFarPreCompute pc(frusta_min_rdir);
+
+      StackItemMaskCoherent* stackPtr   = stack + 1;
+
+      while (1) pop:
+      {          
+
+        if (unlikely(stackPtr == stack)) break;
+
+        DBG_PRINT("POP");
+        STAT3(normal.trav_stack_pop,1,1,1);                          
+        stackPtr--;
+        /*! pop next node */
+        NodeRef cur = NodeRef(stackPtr->child);
+        size_t m_trav_active = stackPtr->mask & m_active;
+        if (unlikely(!m_trav_active)) continue;
+
+        assert(m_trav_active);
+        DBG_PRINT(std::bitset<64>(m_trav_active));
+
+        //STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
+#if defined(__AVX512F__)
+        const vbool<K> maskN = ((unsigned int)1 << N)-1;
+#endif
+            
+        /* non-root and leaf => full culling test for all rays */
+        if (unlikely(stackPtr->parent != 0 && cur.isLeaf()))
+        {
+          DBG_PRINT("cull leaf after pop");
+          DBG_PRINT(std::bitset<64>(m_trav_active));
+
+          NodeRef parent = NodeRef(stackPtr->parent);
+          const Node* __restrict__ const node = parent.node();
+          const size_t b   = stackPtr->childID;
+          char *ptr = (char*)&node->lower_x + b*sizeof(float);
+          assert(cur == node->child(b));
+
+          const vfloat<K> minX = vfloat<K>(*(float*)((const char*)ptr+pc.nearX));
+          const vfloat<K> minY = vfloat<K>(*(float*)((const char*)ptr+pc.nearY));
+          const vfloat<K> minZ = vfloat<K>(*(float*)((const char*)ptr+pc.nearZ));
+          const vfloat<K> maxX = vfloat<K>(*(float*)((const char*)ptr+pc.farX));
+          const vfloat<K> maxY = vfloat<K>(*(float*)((const char*)ptr+pc.farY));
+          const vfloat<K> maxZ = vfloat<K>(*(float*)((const char*)ptr+pc.farZ));
+          
+          const size_t startPacketID = __bsf(m_trav_active) / K;
+          const size_t endPacketID   = __bsr(m_trav_active) / K;
+
+          m_trav_active = 0;
+          for (size_t i=startPacketID;i<=endPacketID;i++)
+          {
+            STAT3(normal.trav_nodes,1,1,1);                          
+            Packet &p = packet[i]; 
+            const vfloat<K> tminX = msub(minX, p.rdir.x, p.org_rdir.x);
+            const vfloat<K> tminY = msub(minY, p.rdir.y, p.org_rdir.y);
+            const vfloat<K> tminZ = msub(minZ, p.rdir.z, p.org_rdir.z);
+            const vfloat<K> tmaxX = msub(maxX, p.rdir.x, p.org_rdir.x);
+            const vfloat<K> tmaxY = msub(maxY, p.rdir.y, p.org_rdir.y);
+            const vfloat<K> tmaxZ = msub(maxZ, p.rdir.z, p.org_rdir.z);
+            const vfloat<K> tmin  = maxi(maxi(tminX,tminY),maxi(tminZ,p.min_dist)); 
+            const vfloat<K> tmax  = mini(mini(tmaxX,tmaxY),mini(tmaxZ,p.max_dist)); 
+            const vbool<K> vmask   = tmin <= tmax;  
+            const size_t m_hit = movemask(vmask);
+            m_trav_active |= m_hit << (i*K);
+          } 
+          DBG_PRINT(std::bitset<64>(m_trav_active));
+
+          if (m_trav_active == 0) goto pop;
+        }
+
+        while (1)
+        {
+          if (unlikely(cur.isLeaf())) break;
+          const Node* __restrict__ const node = cur.node();
+
+          DBG_PRINT("TRAVERSAL");
+          DBG_PRINT(__popcnt(m_trav_active));
+
+          __aligned(64) size_t maskK[N];
+          for (size_t i=0;i<N;i++) maskK[i] = m_trav_active; 
+
+          /* interval-based culling test */
+          STAT3(normal.trav_nodes,1,1,1);                          
+
+          const vfloat<K> bminX = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.nearX));
+          const vfloat<K> bminY = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.nearY));
+          const vfloat<K> bminZ = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.nearZ));
+          const vfloat<K> bmaxX = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farX));
+          const vfloat<K> bmaxY = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farY));
+          const vfloat<K> bmaxZ = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farZ));
+
+          const vfloat<K> fminX = msub(bminX, vfloat<K>(frusta_min_rdir.x), vfloat<K>(frusta_min_org_rdir.x));
+          const vfloat<K> fminY = msub(bminY, vfloat<K>(frusta_min_rdir.y), vfloat<K>(frusta_min_org_rdir.y));
+          const vfloat<K> fminZ = msub(bminZ, vfloat<K>(frusta_min_rdir.z), vfloat<K>(frusta_min_org_rdir.z));
+          const vfloat<K> fmaxX = msub(bmaxX, vfloat<K>(frusta_max_rdir.x), vfloat<K>(frusta_max_org_rdir.x));
+          const vfloat<K> fmaxY = msub(bmaxY, vfloat<K>(frusta_max_rdir.y), vfloat<K>(frusta_max_org_rdir.y));
+          const vfloat<K> fmaxZ = msub(bmaxZ, vfloat<K>(frusta_max_rdir.z), vfloat<K>(frusta_max_org_rdir.z));
+          const vfloat<K> fmin  = maxi(maxi(fminX,fminY),maxi(fminZ,frusta_min_dist)); 
+          const vfloat<K> fmax  = mini(mini(fmaxX,fmaxY),mini(fmaxZ,frusta_max_dist)); 
+#if defined(__AVX512F__)
+          const vbool<K> vmask_node_hit = le(maskN,fmin,fmax);        
+#else
+          const vbool<K> vmask_node_hit = fmin <= fmax;  
+#endif
+
+          size_t m_node_hit = movemask(vmask_node_hit);
+
+          // ==================
+          const size_t first_index    = __bsf(m_trav_active);
+          const size_t first_packetID = first_index / K;
+          const size_t first_rayID    = first_index % K;
+
+          Packet &p = packet[first_packetID]; 
+          STAT3(normal.trav_nodes,1,1,1);                          
+
+          const vfloat<K> rminX = msub(bminX, vfloat<K>(p.rdir.x[first_rayID]), vfloat<K>(p.org_rdir.x[first_rayID]));
+          const vfloat<K> rminY = msub(bminY, vfloat<K>(p.rdir.y[first_rayID]), vfloat<K>(p.org_rdir.y[first_rayID]));
+          const vfloat<K> rminZ = msub(bminZ, vfloat<K>(p.rdir.z[first_rayID]), vfloat<K>(p.org_rdir.z[first_rayID]));
+          const vfloat<K> rmaxX = msub(bmaxX, vfloat<K>(p.rdir.x[first_rayID]), vfloat<K>(p.org_rdir.x[first_rayID]));
+          const vfloat<K> rmaxY = msub(bmaxY, vfloat<K>(p.rdir.y[first_rayID]), vfloat<K>(p.org_rdir.y[first_rayID]));
+          const vfloat<K> rmaxZ = msub(bmaxZ, vfloat<K>(p.rdir.z[first_rayID]), vfloat<K>(p.org_rdir.z[first_rayID]));
+          const vfloat<K> rmin  = maxi(maxi(rminX,rminY),maxi(rminZ,p.min_dist[first_rayID])); 
+          const vfloat<K> rmax  = mini(mini(rmaxX,rmaxY),mini(rmaxZ,p.max_dist[first_rayID])); 
+
+#if defined(__AVX512F__)
+          const vbool<K> vmask_first_hit = le(maskN,rmin,rmax);        
+#else
+          const vbool<K> vmask_first_hit = rmin <= rmax;  
+#endif
+
+          size_t m_first_hit = movemask(vmask_first_hit);
+
+          // ==================
+
+          assert(__popcnt(m_node_hit) <= 8 );
+          
+          DBG_PRINT(dist);
+
+          size_t m_node = m_node_hit ^ (m_first_hit /*  & m_leaf */);
+          while(unlikely(m_node)) 
+          {
+            const size_t b   = __bscf(m_node); // box
+            size_t m_current = m_trav_active;
+            assert(m_current);
+            const vfloat<K> minX = vfloat<K>(bminX[b]);
+            const vfloat<K> minY = vfloat<K>(bminY[b]);
+            const vfloat<K> minZ = vfloat<K>(bminZ[b]);
+            const vfloat<K> maxX = vfloat<K>(bmaxX[b]);
+            const vfloat<K> maxY = vfloat<K>(bmaxY[b]);
+            const vfloat<K> maxZ = vfloat<K>(bmaxZ[b]);
+
+            const size_t startPacketID = __bsf(m_trav_active) / K;
+            const size_t endPacketID   = __bsr(m_trav_active) / K;
+
+            for (size_t i=startPacketID;i<=endPacketID;i++)
+            {
+              STAT3(normal.trav_nodes,1,1,1);                          
+              assert(i < numPackets);
+              Packet &p = packet[i]; 
+              const vfloat<K> tminX = msub(minX, p.rdir.x, p.org_rdir.x);
+              const vfloat<K> tminY = msub(minY, p.rdir.y, p.org_rdir.y);
+              const vfloat<K> tminZ = msub(minZ, p.rdir.z, p.org_rdir.z);
+              const vfloat<K> tmaxX = msub(maxX, p.rdir.x, p.org_rdir.x);
+              const vfloat<K> tmaxY = msub(maxY, p.rdir.y, p.org_rdir.y);
+              const vfloat<K> tmaxZ = msub(maxZ, p.rdir.z, p.org_rdir.z);
+              const vfloat<K> tmin  = maxi(maxi(tminX,tminY),maxi(tminZ,p.min_dist)); 
+              const vfloat<K> tmax  = mini(mini(tmaxX,tmaxY),mini(tmaxZ,p.max_dist)); 
+              const vbool<K> vmask = tmin <= tmax;  
+              const size_t m_hit = movemask(vmask);
+              m_current &= ~((m_hit^(((size_t)1 << K)-1)) << (i*K));
+            } 
+
+            m_node_hit ^= m_current ? (size_t)0 : ((size_t)1 << b);
+            maskK[b] = m_current;
+          }
+
+          //STAT3(normal.trav_hit_boxes[__popcnt(movemask(vmask))],1,1,1);                          
+
+          if (unlikely(m_node_hit == 0)) goto pop;
+
+          BVHNNodeTraverserKHitCoherent<types,N,K>::traverseAnyHit(cur, m_trav_active, vbool<K>((int)m_node_hit), (size_t*)maskK, stackPtr);
+          assert(m_trav_active);
+        }
+
+        /*! this is a leaf node */
+        assert(cur != BVH::emptyNode);
+        STAT3(normal.trav_leaves, 1, 1, 1);
+        size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
+
+        DBG_PRINT("leaf");
+        DBG_PRINT(__popcnt(m_trav_active));
+
+        size_t bits = m_trav_active & m_active;
+
+        /*! intersect stream of rays with all primitives */
+        size_t lazy_node = 0;
+        STAT_USER(1,(__popcnt(bits)+K-1)/K*4);
+        STAT_USER(2,(__popcnt(bits)+1)/2);
+        STAT_USER(3,(__popcnt(bits)+3)/4);
+        do
+        {
+          size_t i = __bsf(bits) / K;
+          const size_t m_isec = ((((size_t)1 << K)-1) << (i*K));
+          assert(m_isec & bits);
+          bits &= ~m_isec;
+
+          vbool<K> m_valid = (input_packets[i]->tnear <= input_packets[i]->tfar); 
+          vbool<K> m_hit = PrimitiveIntersector::occludedChunk(m_valid,*input_packets[i],context,prim,num,bvh->scene,lazy_node);
+          m_active &= ~((size_t)movemask(m_hit) << (i*K));
+        } while(bits);
+
+      } // traversal + intersection
+        ///////////////////////////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////////////
+
+#endif
+    }
     
     // =====================================================================================================
     // =====================================================================================================
@@ -788,6 +1109,14 @@ namespace embree
 #if TWO_STREAMS_FIBER_MODE
       __aligned(64) StackItemMask  stack1[stackSizeSingle];  //!< stack of nodes
  #endif
+
+#if defined(__AVX__) && ENABLE_COHERENT_STREAM_PATH == 1
+      if (unlikely(isCoherent(context->flags)))
+      {
+        BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::occluded_coherent_soa(bvh,  (RayK<K>**)input_rays, numTotalRays, context);     
+        return;
+      }
+#endif
 
       for (size_t r=0;r<numTotalRays;r+=MAX_RAYS_PER_OCTANT)
       {
