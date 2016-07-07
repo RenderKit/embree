@@ -358,7 +358,7 @@ namespace embree
                                         const size_t minLeafSize, const size_t maxLeafSize,
                                         const float travCost, const float intCost)
       {
-        /* builder wants log2 of blockSize as input */
+        /* builder wants log2 of blockSize as input */		  
         const size_t logBlockSize = __bsr(blockSize); 
         assert((blockSize ^ (size_t(1) << logBlockSize)) == 0);
 

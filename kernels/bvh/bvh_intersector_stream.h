@@ -21,7 +21,7 @@
 #include "../common/stack_item.h"
 #include "bvh_traverser1.h"
 
-#define ENABLE_COHERENT_STREAM_PATH 0
+#define ENABLE_COHERENT_STREAM_PATH 1
 
 namespace embree
 {
@@ -245,7 +245,7 @@ namespace embree
             stackPtr->mask    = tMask[r1]; 
             stackPtr->parent  = parent;
             stackPtr->child   = c1;
-            stackPtr->childID = r1;
+            stackPtr->childID = (unsigned int)r1;
             stackPtr->dist    = d1;
             stackPtr++; 
             cur = c0; 
@@ -257,7 +257,7 @@ namespace embree
             stackPtr->mask    = tMask[r0]; 
             stackPtr->parent  = parent;
             stackPtr->child   = c0;
-            stackPtr->childID = r0;
+            stackPtr->childID = (unsigned int)r0;
             stackPtr->dist    = d0;
             stackPtr++; 
             cur = c1; 
