@@ -265,7 +265,7 @@ namespace embree
   template<int B, int A> __forceinline vlong4 shuffle2   (const vlong4& v) { return _mm256_castpd_si256(_mm256_permute2f128_pd(_mm256_castsi256_pd(v),v,(int)_MM_SHUF_PERM3(B,A))); }
 
 
-  __forceinline __int64 toScalar(const vlong4& a)
+  __forceinline __int64_t toScalar(const vlong4& a)
   {
     return _mm_cvtsi128_si64(_mm256_castsi256_si128(a));
   }
@@ -284,9 +284,9 @@ namespace embree
   __forceinline vlong4 vreduce_add2(const vlong4& x) { return x + shuffle<0,1>(x); }
   __forceinline vlong4 vreduce_add (const vlong4& y) { const vlong4 x = vreduce_add2(y); return x + shuffle2<0,1>(x); }
 
-  __forceinline __int64 reduce_add(const vlong4& a) { return toScalar(vreduce_add(a)); }
-  __forceinline __int64 reduce_or (const vlong4& a) { return toScalar(vreduce_or(a)); }
-  __forceinline __int64 reduce_and(const vlong4& a) { return toScalar(vreduce_and(a)); }
+  __forceinline __int64_t reduce_add(const vlong4& a) { return toScalar(vreduce_add(a)); }
+  __forceinline __int64_t reduce_or (const vlong4& a) { return toScalar(vreduce_or(a)); }
+  __forceinline __int64_t reduce_and(const vlong4& a) { return toScalar(vreduce_and(a)); }
   
   ////////////////////////////////////////////////////////////////////////////////
   /// Output Operators
