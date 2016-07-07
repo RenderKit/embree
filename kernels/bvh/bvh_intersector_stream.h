@@ -205,6 +205,49 @@ namespace embree
     public:
 
       template<class T>
+      static __forceinline void traverseAnyHit(NodeRef& cur,
+                                               size_t &m_trav_active,
+                                               const vbool<K> &vmask,
+                                               const T * const tMask,
+                                               StackItemMaskCoherent*& stackPtr)
+      {
+        const NodeRef parent = cur;
+        size_t mask = movemask(vmask);
+        assert(mask != 0);
+        const BaseNode* node = cur.baseNode(types);
+
+        /*! one child is hit, continue with that child */
+        size_t r = __bscf(mask);
+        cur = node->child(r);         
+        cur.prefetch(types);
+        m_trav_active = tMask[r];
+        
+        /* simple in order sequence */
+        assert(cur != BVH::emptyNode);
+        if (likely(mask == 0)) return;
+        stackPtr->mask    = m_trav_active; 
+        stackPtr->parent  = parent;
+        stackPtr->child   = cur;
+        stackPtr->childID = r;
+        stackPtr++;
+
+        for (; ;)
+        {
+          r = __bscf(mask);
+          cur = node->child(r);          
+          cur.prefetch(types);
+          m_trav_active = tMask[r];
+          assert(cur != BVH::emptyNode);
+          if (likely(mask == 0)) return;
+          stackPtr->mask    = m_trav_active;
+          stackPtr->parent  = parent;
+          stackPtr->child   = cur;
+          stackPtr->childID = r;
+          stackPtr++;
+        }
+      }
+
+      template<class T>
       static __forceinline void traverseClosestHit(NodeRef& cur,
                                                    size_t &m_trav_active,
                                                    const vbool<K> &vmask,
@@ -450,6 +493,8 @@ namespace embree
       static const size_t stackSizeSingle = 1+(N-1)*BVH::maxDepth;
 
       static void intersect_coherent_soa(BVH* bvh, RayK<K> **input_rays, size_t numValidStreams, const RTCIntersectContext* context);
+
+      static void occluded_coherent_soa(BVH* bvh, RayK<K> **input_rays, size_t numValidStreams, const RTCIntersectContext* context);
       
     public:
       static void intersect(BVH* bvh, Ray **ray, size_t numRays, const RTCIntersectContext* context);
