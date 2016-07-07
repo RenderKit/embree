@@ -200,7 +200,6 @@ namespace embree
 
       size_t m_active = 0;
       const size_t numPackets = numValidStreams;
-	  PRINT(numPackets);
       for (size_t i=0; i<numPackets; i++) 
       {
         const vfloat<K> tnear  = input_packets[i]->tnear;
@@ -427,12 +426,6 @@ namespace embree
 
             const size_t startPacketID = __bsf(m_trav_active) / K;
             const size_t endPacketID   = __bsr(m_trav_active) / K;
-			PRINT(std::bitset<64>(m_trav_active));
-			PRINT(__popcnt(m_trav_active));
-			PRINT(__bsf(m_trav_active));
-			PRINT(__bsr(m_trav_active));
-			PRINT(startPacketID);
-			PRINT(endPacketID);
 
             for (size_t i=startPacketID;i<=endPacketID;i++)
             {

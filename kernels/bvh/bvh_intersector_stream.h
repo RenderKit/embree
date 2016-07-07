@@ -228,7 +228,7 @@ namespace embree
         stackPtr->mask    = m_trav_active; 
         stackPtr->parent  = parent;
         stackPtr->child   = cur;
-        stackPtr->childID = r;
+        stackPtr->childID = (unsigned int)r;
         stackPtr++;
 
         for (; ;)
@@ -242,7 +242,7 @@ namespace embree
           stackPtr->mask    = m_trav_active;
           stackPtr->parent  = parent;
           stackPtr->child   = cur;
-          stackPtr->childID = r;
+          stackPtr->childID = (unsigned int)r;
           stackPtr++;
         }
       }

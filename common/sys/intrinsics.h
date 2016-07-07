@@ -141,7 +141,7 @@ namespace embree
 #if defined(__AVX2__) 
     return 63 -_lzcnt_u64(v);
 #else
-	  unsigned long r = 0; _BitScanReverse64(&r, v); PRINT(v); PRINT(r); return r;
+	  unsigned long r = 0; _BitScanReverse64(&r, v); return r;
 #endif
   }
 #endif
