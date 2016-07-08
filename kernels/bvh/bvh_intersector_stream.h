@@ -27,16 +27,12 @@ namespace embree
 {
   namespace isa 
   {
-#define DISTANCE_TEST 0
 
     /*! An item on the stack holds the node ID and distance of that node. */
     struct __aligned(8) StackItemMask
     {
       size_t mask;
       size_t ptr; 
-#if DISTANCE_TEST == 1
-      unsigned int dist;
-#endif
     };
 
     template<int types, int N, int K>
@@ -87,10 +83,6 @@ namespace embree
           if (d0 < d1) { 
             stackPtr->ptr = c1; 
             stackPtr->mask = tMask[r1]; 
-#if DISTANCE_TEST == 1
-            assert(tNear[r1] >= 0.0f);
-            stackPtr->dist = d1;
-#endif
             stackPtr++; 
             cur = c0; 
             m_trav_active = tMask[r0]; 
@@ -99,10 +91,6 @@ namespace embree
           else { 
             stackPtr->ptr = c0; 
             stackPtr->mask = tMask[r0]; 
-#if DISTANCE_TEST == 1
-            assert(tNear[r0] >= 0.0f);
-            stackPtr->dist = d0;
-#endif
             stackPtr++; 
             cur = c1; 
             m_trav_active = tMask[r1]; 
@@ -134,10 +122,6 @@ namespace embree
           assert(cur != BVH::emptyNode);
           stackPtr->ptr = cur; 
           stackPtr->mask = m_trav_active;
-#if DISTANCE_TEST == 1
-          assert(tNear[index] >= 0.0f);
-          stackPtr->dist = tNear_i[index];
-#endif
           stackPtr++;
         }
       }

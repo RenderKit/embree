@@ -851,10 +851,6 @@ namespace embree
         stack0[0].ptr  = BVH::invalidNode;
         stack0[0].mask = (size_t)-1;
 
-#if DISTANCE_TEST == 1
-        stack0[0].dist = 0;
-        stack1[0].dist = 0;
-#endif
         ///////////////////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////
@@ -995,30 +991,6 @@ namespace embree
             ray_ctx[i].update(rays[i]);
           }
 
-#if DISTANCE_TEST == 1
-          if (unlikely(valid_isec))
-          {
-            StackItemMask *new_sptr = &stack0[1];
-            for (StackItemMask *sptr = new_sptr;sptr!=stackPtr;sptr++)
-            {
-              assert(sptr < stackPtr);
-              size_t mask = sptr->mask;
-              size_t bits = mask & valid_isec;
-              while (bits) {
-                const size_t i = __bscf(bits);
-                const RContext &ray = ray_ctx[i];
-                const size_t mask_i = (sptr->dist > ray.tfar_ui()) ? ((size_t)1 << i) : 0;
-                mask &= ~mask_i;
-              };
-              if (!mask) continue;
-              new_sptr->ptr  = sptr->ptr; 
-              new_sptr->mask = mask; 
-              new_sptr->dist = sptr->dist;   
-              new_sptr++;
-            }
-            stackPtr = new_sptr;
-          }
-#endif
           /*! pop next node */
           STAT3(normal.trav_stack_pop,1,1,1);                          
           stackPtr--;
