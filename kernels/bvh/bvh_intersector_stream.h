@@ -473,6 +473,10 @@ namespace embree
         }
       };
 
+      // =============================================================================================
+      // =============================================================================================
+      // =============================================================================================
+
       struct Packet {
         Vec3vfK rdir;
         Vec3vfK org_rdir;
@@ -563,6 +567,44 @@ namespace embree
 
         return true;
       }
+
+      __forceinline static size_t intersectNodePacket(const Packet *const packet,
+                                                      const vfloat<K> &minX,
+                                                      const vfloat<K> &minY,
+                                                      const vfloat<K> &minZ,
+                                                      const vfloat<K> &maxX,
+                                                      const vfloat<K> &maxY,
+                                                      const vfloat<K> &maxZ,
+                                                      const size_t m_active)
+      {
+        assert(m_active);
+        const size_t startPacketID = __bsf(m_active) / K;
+        const size_t endPacketID   = __bsr(m_active) / K;
+        size_t m_trav_active = 0;
+        for (size_t i=startPacketID;i<=endPacketID;i++)
+        {
+          STAT3(normal.trav_nodes,1,1,1);                          
+          const Packet &p = packet[i]; 
+          const vfloat<K> tminX = msub(minX, p.rdir.x, p.org_rdir.x);
+          const vfloat<K> tminY = msub(minY, p.rdir.y, p.org_rdir.y);
+          const vfloat<K> tminZ = msub(minZ, p.rdir.z, p.org_rdir.z);
+          const vfloat<K> tmaxX = msub(maxX, p.rdir.x, p.org_rdir.x);
+          const vfloat<K> tmaxY = msub(maxY, p.rdir.y, p.org_rdir.y);
+          const vfloat<K> tmaxZ = msub(maxZ, p.rdir.z, p.org_rdir.z);
+          const vfloat<K> tmin  = maxi(maxi(tminX,tminY),maxi(tminZ,p.min_dist)); 
+          const vfloat<K> tmax  = mini(mini(tmaxX,tmaxY),mini(tmaxZ,p.max_dist)); 
+          const vbool<K> vmask   = tmin <= tmax;  
+          const size_t m_hit = movemask(vmask);
+          m_trav_active |= m_hit << (i*K);
+        } 
+        return m_trav_active;
+      }
+
+
+      // =============================================================================================
+      // =============================================================================================
+      // =============================================================================================
+
 
       static const size_t stackSizeChunk  = N*BVH::maxDepth+1;
       static const size_t stackSizeSingle = 1+(N-1)*BVH::maxDepth;

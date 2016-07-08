@@ -166,6 +166,7 @@ namespace embree
       }
     }
 
+
     // =====================================================================================================
     // =====================================================================================================
     // =====================================================================================================
@@ -237,9 +238,6 @@ namespace embree
         /* non-root and leaf => full culling test for all rays */
         if (unlikely(stackPtr->parent != 0 && cur.isLeaf()))
         {
-          DBG_PRINT("cull leaf after pop");
-          DBG_PRINT(std::bitset<64>(m_trav_active));
-
           NodeRef parent = NodeRef(stackPtr->parent);
           const Node* __restrict__ const node = parent.node();
           const size_t b   = stackPtr->childID;
@@ -252,29 +250,8 @@ namespace embree
           const vfloat<K> maxX = vfloat<K>(*(float*)((const char*)ptr+pc.farX));
           const vfloat<K> maxY = vfloat<K>(*(float*)((const char*)ptr+pc.farY));
           const vfloat<K> maxZ = vfloat<K>(*(float*)((const char*)ptr+pc.farZ));
-          
-          const size_t startPacketID = __bsf(m_trav_active) / K;
-          const size_t endPacketID   = __bsr(m_trav_active) / K;
 
-          m_trav_active = 0;
-          for (size_t i=startPacketID;i<=endPacketID;i++)
-          {
-            STAT3(normal.trav_nodes,1,1,1);                          
-            Packet &p = packet[i]; 
-            const vfloat<K> tminX = msub(minX, p.rdir.x, p.org_rdir.x);
-            const vfloat<K> tminY = msub(minY, p.rdir.y, p.org_rdir.y);
-            const vfloat<K> tminZ = msub(minZ, p.rdir.z, p.org_rdir.z);
-            const vfloat<K> tmaxX = msub(maxX, p.rdir.x, p.org_rdir.x);
-            const vfloat<K> tmaxY = msub(maxY, p.rdir.y, p.org_rdir.y);
-            const vfloat<K> tmaxZ = msub(maxZ, p.rdir.z, p.org_rdir.z);
-            const vfloat<K> tmin  = maxi(maxi(tminX,tminY),maxi(tminZ,p.min_dist)); 
-            const vfloat<K> tmax  = mini(mini(tmaxX,tmaxY),mini(tmaxZ,p.max_dist)); 
-            const vbool<K> vmask   = tmin <= tmax;  
-            const size_t m_hit = movemask(vmask);
-            m_trav_active |= m_hit << (i*K);
-          } 
-          DBG_PRINT(std::bitset<64>(m_trav_active));
-
+          m_trav_active = intersectNodePacket(packet,minX,minY,minZ,maxX,maxY,maxZ,m_trav_active);
           if (m_trav_active == 0) goto pop;
         }
 
@@ -282,9 +259,6 @@ namespace embree
         {
           if (unlikely(cur.isLeaf())) break;
           const Node* __restrict__ const node = cur.node();
-
-          DBG_PRINT("TRAVERSAL");
-          DBG_PRINT(__popcnt(m_trav_active));
 
           __aligned(64) size_t maskK[N];
           for (size_t i=0;i<N;i++) maskK[i] = m_trav_active; 
@@ -353,36 +327,13 @@ namespace embree
           while(unlikely(m_node)) 
           {
             const size_t b   = __bscf(m_node); // box
-            size_t m_current = m_trav_active;
-            assert(m_current);
             const vfloat<K> minX = vfloat<K>(bminX[b]);
             const vfloat<K> minY = vfloat<K>(bminY[b]);
             const vfloat<K> minZ = vfloat<K>(bminZ[b]);
             const vfloat<K> maxX = vfloat<K>(bmaxX[b]);
             const vfloat<K> maxY = vfloat<K>(bmaxY[b]);
             const vfloat<K> maxZ = vfloat<K>(bmaxZ[b]);
-
-            const size_t startPacketID = __bsf(m_trav_active) / K;
-            const size_t endPacketID   = __bsr(m_trav_active) / K;
-
-            for (size_t i=startPacketID;i<=endPacketID;i++)
-            {
-              STAT3(normal.trav_nodes,1,1,1);                          
-              assert(i < numPackets);
-              Packet &p = packet[i]; 
-              const vfloat<K> tminX = msub(minX, p.rdir.x, p.org_rdir.x);
-              const vfloat<K> tminY = msub(minY, p.rdir.y, p.org_rdir.y);
-              const vfloat<K> tminZ = msub(minZ, p.rdir.z, p.org_rdir.z);
-              const vfloat<K> tmaxX = msub(maxX, p.rdir.x, p.org_rdir.x);
-              const vfloat<K> tmaxY = msub(maxY, p.rdir.y, p.org_rdir.y);
-              const vfloat<K> tmaxZ = msub(maxZ, p.rdir.z, p.org_rdir.z);
-              const vfloat<K> tmin  = maxi(maxi(tminX,tminY),maxi(tminZ,p.min_dist)); 
-              const vfloat<K> tmax  = mini(mini(tmaxX,tmaxY),mini(tmaxZ,p.max_dist)); 
-              const vbool<K> vmask = tmin <= tmax;  
-              const size_t m_hit = movemask(vmask);
-              m_current &= ~((m_hit^(((size_t)1 << K)-1)) << (i*K));
-            } 
-
+            const size_t m_current = m_trav_active & intersectNodePacket(packet,minX,minY,minZ,maxX,maxY,maxZ,m_trav_active);
             m_node_hit ^= m_current ? (size_t)0 : ((size_t)1 << b);
             maskK[b] = m_current;
           }
@@ -500,9 +451,6 @@ namespace embree
         /* non-root and leaf => full culling test for all rays */
         if (unlikely(stackPtr->parent != 0 && cur.isLeaf()))
         {
-          DBG_PRINT("cull leaf after pop");
-          DBG_PRINT(std::bitset<64>(m_trav_active));
-
           NodeRef parent = NodeRef(stackPtr->parent);
           const Node* __restrict__ const node = parent.node();
           const size_t b   = stackPtr->childID;
@@ -516,27 +464,7 @@ namespace embree
           const vfloat<K> maxY = vfloat<K>(*(float*)((const char*)ptr+pc.farY));
           const vfloat<K> maxZ = vfloat<K>(*(float*)((const char*)ptr+pc.farZ));
           
-          const size_t startPacketID = __bsf(m_trav_active) / K;
-          const size_t endPacketID   = __bsr(m_trav_active) / K;
-
-          m_trav_active = 0;
-          for (size_t i=startPacketID;i<=endPacketID;i++)
-          {
-            STAT3(normal.trav_nodes,1,1,1);                          
-            Packet &p = packet[i]; 
-            const vfloat<K> tminX = msub(minX, p.rdir.x, p.org_rdir.x);
-            const vfloat<K> tminY = msub(minY, p.rdir.y, p.org_rdir.y);
-            const vfloat<K> tminZ = msub(minZ, p.rdir.z, p.org_rdir.z);
-            const vfloat<K> tmaxX = msub(maxX, p.rdir.x, p.org_rdir.x);
-            const vfloat<K> tmaxY = msub(maxY, p.rdir.y, p.org_rdir.y);
-            const vfloat<K> tmaxZ = msub(maxZ, p.rdir.z, p.org_rdir.z);
-            const vfloat<K> tmin  = maxi(maxi(tminX,tminY),maxi(tminZ,p.min_dist)); 
-            const vfloat<K> tmax  = mini(mini(tmaxX,tmaxY),mini(tmaxZ,p.max_dist)); 
-            const vbool<K> vmask   = tmin <= tmax;  
-            const size_t m_hit = movemask(vmask);
-            m_trav_active |= m_hit << (i*K);
-          } 
-          DBG_PRINT(std::bitset<64>(m_trav_active));
+          m_trav_active = intersectNodePacket(packet,minX,minY,minZ,maxX,maxY,maxZ,m_trav_active);
 
           if (m_trav_active == 0) goto pop;
         }
@@ -613,8 +541,6 @@ namespace embree
           while(unlikely(m_node)) 
           {
             const size_t b   = __bscf(m_node); // box
-            size_t m_current = m_trav_active;
-            assert(m_current);
             const vfloat<K> minX = vfloat<K>(bminX[b]);
             const vfloat<K> minY = vfloat<K>(bminY[b]);
             const vfloat<K> minZ = vfloat<K>(bminZ[b]);
@@ -622,26 +548,7 @@ namespace embree
             const vfloat<K> maxY = vfloat<K>(bmaxY[b]);
             const vfloat<K> maxZ = vfloat<K>(bmaxZ[b]);
 
-            const size_t startPacketID = __bsf(m_trav_active) / K;
-            const size_t endPacketID   = __bsr(m_trav_active) / K;
-
-            for (size_t i=startPacketID;i<=endPacketID;i++)
-            {
-              STAT3(normal.trav_nodes,1,1,1);                          
-              assert(i < numPackets);
-              Packet &p = packet[i]; 
-              const vfloat<K> tminX = msub(minX, p.rdir.x, p.org_rdir.x);
-              const vfloat<K> tminY = msub(minY, p.rdir.y, p.org_rdir.y);
-              const vfloat<K> tminZ = msub(minZ, p.rdir.z, p.org_rdir.z);
-              const vfloat<K> tmaxX = msub(maxX, p.rdir.x, p.org_rdir.x);
-              const vfloat<K> tmaxY = msub(maxY, p.rdir.y, p.org_rdir.y);
-              const vfloat<K> tmaxZ = msub(maxZ, p.rdir.z, p.org_rdir.z);
-              const vfloat<K> tmin  = maxi(maxi(tminX,tminY),maxi(tminZ,p.min_dist)); 
-              const vfloat<K> tmax  = mini(mini(tmaxX,tmaxY),mini(tmaxZ,p.max_dist)); 
-              const vbool<K> vmask = tmin <= tmax;  
-              const size_t m_hit = movemask(vmask);
-              m_current &= ~((m_hit^(((size_t)1 << K)-1)) << (i*K));
-            } 
+            const size_t m_current = m_trav_active & intersectNodePacket(packet,minX,minY,minZ,maxX,maxY,maxZ,m_trav_active);
 
             m_node_hit ^= m_current ? (size_t)0 : ((size_t)1 << b);
             maskK[b] = m_current;
