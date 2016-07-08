@@ -50,9 +50,8 @@ namespace embree
   namespace isa
   {
 /* enable traversal of either two small streams or one large stream */
-#define TWO_STREAMS_FIBER_MODE 0 // 0 = no fiber, 1 = switch at pop, 2 = switch at each node, 3 = switch at leaf
 
-#if TWO_STREAMS_FIBER_MODE == 0 && !defined(__AVX512F__)
+#if !defined(__AVX512F__)
     static const size_t MAX_RAYS_PER_OCTANT = 8*sizeof(unsigned int);
 #else
     static const size_t MAX_RAYS_PER_OCTANT = 8*sizeof(size_t);
@@ -824,9 +823,6 @@ namespace embree
       __aligned(64) RContext ray_ctx[MAX_RAYS_PER_OCTANT];
       __aligned(64) Precalculations pre[MAX_RAYS_PER_OCTANT]; 
       __aligned(64) StackItemMask  stack0[stackSizeSingle];  //!< stack of nodes 
-#if TWO_STREAMS_FIBER_MODE
-      __aligned(64) StackItemMask  stack1[stackSizeSingle];  //!< stack of nodes 
-#endif
 
 #if defined(__AVX__) && ENABLE_COHERENT_STREAM_PATH == 1
       if (unlikely(isCoherent(context->flags)))
@@ -855,11 +851,6 @@ namespace embree
         stack0[0].ptr  = BVH::invalidNode;
         stack0[0].mask = (size_t)-1;
 
-#if TWO_STREAMS_FIBER_MODE
-        stack1[0].ptr  = BVH::invalidNode;
-        stack1[0].mask = (size_t)-1;
-#endif
-
 #if DISTANCE_TEST == 1
         stack0[0].dist = 0;
         stack1[0].dist = 0;
@@ -870,19 +861,10 @@ namespace embree
 
         const NearFarPreCompute pc(ray_ctx[0].rdir);
 
-#if !TWO_STREAMS_FIBER_MODE
         const size_t fiberMask = m_active;
-#else
-        const size_t fiberMask = ((size_t)1 << ((__popcnt(m_active)+1)>>1))-1;
-        assert( ((fiberMask | (~fiberMask)) & m_active) == m_active);
-        assert( __popcnt(fiberMask) + __popcnt((~fiberMask) & m_active) == __popcnt(m_active));
-#endif
         assert(fiberMask);
         
         StackItemMask* stackPtr      = stack0 + 1;
-#if TWO_STREAMS_FIBER_MODE
-        StackItemMask* stackPtr_next = stack1 + 1;
-#endif
 
         NodeRef cur               = bvh->root;
         size_t m_trav_active      = m_active & fiberMask; // lower half of active rays
@@ -891,34 +873,14 @@ namespace embree
         if (m_trav_active_next == 0) cur_next = 0;
 
         assert(__popcnt(m_trav_active_next) <= 32);
-#if TWO_STREAMS_FIBER_MODE
-        RayFiberContext fiber[2];
-        fiber[0].init(cur,m_trav_active,stackPtr,&fiber[1],0);
-#if defined(__AVX512F__)
-        const size_t offset = 0; // have 8-wide 64bit vector support
-#else
-        const size_t offset = __bsf(m_trav_active_next);
-#endif
-        fiber[1].init(cur_next,m_trav_active_next >> offset,stackPtr_next,&fiber[0],offset);
-        if (m_trav_active_next == 0) fiber[0].next = &fiber[0];
-        RayFiberContext *cur_fiber = &fiber[0];
-#endif
 
         while (1) pop:
         {          
-#if TWO_STREAMS_FIBER_MODE == 1
-          cur_fiber = cur_fiber->swapContext(cur,m_trav_active,stackPtr);
-#endif
 
           const vfloat<K> inf(pos_inf);
 
           while (1)
           {
-            /* context swap */
-#if TWO_STREAMS_FIBER_MODE == 2
-            //cur.prefetch_L1(types);
-            cur_fiber = cur_fiber->swapContext(cur,m_trav_active,stackPtr);
-#endif
 
             if (unlikely(cur.isLeaf())) break;
             const Node* __restrict__ const node = cur.node();
@@ -974,11 +936,7 @@ namespace embree
             vfloat<K> dist(inf);
             vint<K>   maskK(zero);
 
-#if !TWO_STREAMS_FIBER_MODE
             const RContext *__restrict__ const cur_ray_ctx = ray_ctx;
-#else
-            const RContext *__restrict__ const cur_ray_ctx = &ray_ctx[cur_fiber->getOffset()];
-#endif
             size_t bits = m_trav_active;
             do
             {            
@@ -1014,28 +972,8 @@ namespace embree
 
           /* current ray stream is done? */
           if (unlikely(cur == BVH::invalidNode))
-          {
-#if !TWO_STREAMS_FIBER_MODE
             break;
-#else
-            /* both ray streams are done? */ 
-            if (cur_fiber->next == cur_fiber)
-              break;
-            else
-            {
-              cur_fiber->next->next = cur_fiber->next;
-#if TWO_STREAMS_FIBER_MODE == 3
-              cur_fiber = cur_fiber->swapContext(cur,m_trav_active,stackPtr);
-#endif
-              goto pop;
-            }
-#endif
-          }
 
-#if TWO_STREAMS_FIBER_MODE == 3
-          cur_fiber = cur_fiber->swapContext(cur,m_trav_active,stackPtr);
-          if (unlikely(!cur.isLeaf())) continue;
-#endif
 
           /*! this is a leaf node */
           assert(cur != BVH::emptyNode);
@@ -1043,11 +981,7 @@ namespace embree
           size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
           
           //STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
-#if !TWO_STREAMS_FIBER_MODE
           size_t bits = m_trav_active;
-#else
-          size_t bits = m_trav_active << cur_fiber->getOffset();
-#endif
 
           /*! intersect stream of rays with all primitives */
           size_t lazy_node = 0;
@@ -1106,9 +1040,6 @@ namespace embree
       __aligned(64) RContext ray_ctx[MAX_RAYS_PER_OCTANT];
       __aligned(64) Precalculations pre[MAX_RAYS_PER_OCTANT]; 
       __aligned(64) StackItemMask  stack0[stackSizeSingle];  //!< stack of nodes 
-#if TWO_STREAMS_FIBER_MODE
-      __aligned(64) StackItemMask  stack1[stackSizeSingle];  //!< stack of nodes
- #endif
 
 #if defined(__AVX__) && ENABLE_COHERENT_STREAM_PATH == 1
       if (unlikely(isCoherent(context->flags)))
@@ -1137,24 +1068,11 @@ namespace embree
         stack0[0].ptr  = BVH::invalidNode;
         stack0[0].mask = (size_t)-1;
 
-#if TWO_STREAMS_FIBER_MODE
-        stack1[0].ptr  = BVH::invalidNode;
-        stack1[0].mask = (size_t)-1;
-#endif
 
-#if !TWO_STREAMS_FIBER_MODE
         const size_t fiberMask = m_active;
-#else
-        const size_t fiberMask = ((size_t)1 << ((__popcnt(m_active)+1)>>1))-1;
-        assert( ((fiberMask | (~fiberMask)) & m_active) == m_active);
-        assert( __popcnt(fiberMask) + __popcnt((~fiberMask) & m_active) == __popcnt(m_active));
-#endif
         assert(fiberMask);
         
         StackItemMask* stackPtr      = stack0 + 1;
-#if TWO_STREAMS_FIBER_MODE
-        StackItemMask* stackPtr_next = stack1 + 1;
-#endif
 
         NodeRef cur               = bvh->root;
         size_t m_trav_active      = m_active & fiberMask; // lower half of active rays
@@ -1163,38 +1081,14 @@ namespace embree
 
         if (m_trav_active_next == 0) cur_next = 0;
 
-
-#if TWO_STREAMS_FIBER_MODE
-        assert(__popcnt(m_trav_active_next) <= 32);
-
-        RayFiberContext fiber[2];
-        fiber[0].init(cur,m_trav_active,stackPtr,&fiber[1],0);
-#if defined(__AVX512F__)
-        const size_t offset = 0; // have 8-wide 64bit vector support
-#else
-        const size_t offset = m_trav_active_next != 0 ? __bsf(m_trav_active_next) : 0;
-#endif
-
-        fiber[1].init(cur_next,m_trav_active_next >> offset,stackPtr_next,&fiber[0],offset);
-        if (m_trav_active_next == 0) fiber[0].next = &fiber[0];
-        RayFiberContext *cur_fiber = &fiber[0];
-#endif
-
         const NearFarPreCompute pc(ray_ctx[0].rdir);
 
         while (1) pop:
         {
-#if TWO_STREAMS_FIBER_MODE == 1
-            cur_fiber = cur_fiber->swapContext(cur,m_trav_active,stackPtr);
-#endif
           const vfloat<K> inf(pos_inf);
 
           while (1)
           {
-#if TWO_STREAMS_FIBER_MODE == 2
-            cur_fiber = cur_fiber->swapContext(cur,m_trav_active,stackPtr);
-#endif
-
             if (likely(cur.isLeaf())) break;
             assert(m_trav_active);
 
@@ -1249,11 +1143,7 @@ namespace embree
             vfloat<K> dist(inf);
             vint<K>   maskK(zero);
 
-#if !TWO_STREAMS_FIBER_MODE
             const RContext *__restrict__ const cur_ray_ctx = ray_ctx;
-#else
-            const RContext *__restrict__ const cur_ray_ctx = &ray_ctx[cur_fiber->getOffset()];
-#endif
             size_t bits = m_trav_active;
 
             assert(__popcnt(m_trav_active) <= 32);
@@ -1282,11 +1172,7 @@ namespace embree
                 stackPtr--;
                 cur = NodeRef(stackPtr->ptr);
                 assert(stackPtr->mask);
-#if !TWO_STREAMS_FIBER_MODE
                 m_trav_active = stackPtr->mask & m_active;
-#else
-                m_trav_active = stackPtr->mask & (m_active>>cur_fiber->getOffset());
-#endif
               } while (unlikely(cur != BVH::invalidNode && m_trav_active == 0));
               goto pop;
             }
@@ -1299,30 +1185,7 @@ namespace embree
 
           /* current ray stream is done? */
           if (unlikely(cur == BVH::invalidNode))
-          {
-#if !TWO_STREAMS_FIBER_MODE
             break;
-#else
-            if (cur_fiber->next == cur_fiber)
-              break;
-            else
-            {
-              cur_fiber->next->next = cur_fiber->next;
-#if TWO_STREAMS_FIBER_MODE == 3
-              cur_fiber = cur_fiber->swapContext(cur,m_trav_active,stackPtr);
-#endif
-              goto pop;
-            }
-#endif
-          }
-
-#if TWO_STREAMS_FIBER_MODE == 3
-          if (likely(cur_fiber->next != cur_fiber))
-          {
-            cur_fiber = cur_fiber->swapContext(cur,m_trav_active,stackPtr);
-            if (unlikely(!cur.isLeaf())) { continue; }
-          }
-#endif
 
           /*! this is a leaf node */
           assert(cur != BVH::emptyNode);
@@ -1330,11 +1193,8 @@ namespace embree
           size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
 
           size_t lazy_node = 0;
-#if !TWO_STREAMS_FIBER_MODE
           size_t bits = m_trav_active & m_active;          
-#else
-          size_t bits = (m_trav_active<<cur_fiber->getOffset()) & m_active;          
-#endif
+
           assert(bits);
           //STAT3(shadow.trav_hit_boxes[__popcnt(bits)],1,1,1);                          
 
@@ -1347,11 +1207,7 @@ namespace embree
             stackPtr--;
             cur = NodeRef(stackPtr->ptr);
             assert(stackPtr->mask);
-#if !TWO_STREAMS_FIBER_MODE
             m_trav_active = stackPtr->mask & m_active;
-#else
-            m_trav_active = stackPtr->mask & (m_active>>cur_fiber->getOffset());
-#endif
           } while (unlikely(cur != BVH::invalidNode && m_trav_active == 0));
         } // traversal + intersection        
       }      
