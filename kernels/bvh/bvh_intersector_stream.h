@@ -473,6 +473,97 @@ namespace embree
         }
       };
 
+      struct Packet {
+        Vec3vfK rdir;
+        Vec3vfK org_rdir;
+        vfloat<K> min_dist;
+        vfloat<K> max_dist;
+      };
+
+      struct Frusta {
+        Vec3fa min_rdir; 
+        Vec3fa max_rdir; 
+        Vec3fa min_org_rdir; 
+        Vec3fa max_org_rdir; 
+        float min_dist;
+        float max_dist;
+      };
+
+      __forceinline static bool initPacketsAndFrusta(RayK<K> **input_packets, const size_t numPackets, Packet *const packet, Frusta &frusta, size_t &m_active)
+      {
+
+        Vec3vfK   tmp_min_rdir(pos_inf); 
+        Vec3vfK   tmp_max_rdir(neg_inf);
+        Vec3vfK   tmp_min_org(pos_inf); 
+        Vec3vfK   tmp_max_org(neg_inf);
+        vfloat<K> tmp_min_dist(pos_inf);
+        vfloat<K> tmp_max_dist(neg_inf);
+
+        for (size_t i=0; i<numPackets; i++) 
+        {
+          const vfloat<K> tnear  = input_packets[i]->tnear;
+          const vfloat<K> tfar   = input_packets[i]->tfar;
+          const vbool<K> m_valid = (tnear <= tfar) & (tnear >= 0.0f);
+
+          m_active |= (size_t)movemask(m_valid) << (i*K);
+          packet[i].min_dist = max(tnear,0.0f);
+          packet[i].max_dist = select(m_valid,tfar,neg_inf);
+          tmp_min_dist = min(tmp_min_dist,packet[i].min_dist);
+          tmp_max_dist = max(tmp_max_dist,packet[i].max_dist);        
+
+          const Vec3vfK& org     = input_packets[i]->org;
+          const Vec3vfK& dir     = input_packets[i]->dir;
+          const Vec3vfK rdir     = rcp_safe(dir);
+          const Vec3vfK org_rdir = org * rdir;
+        
+          packet[i].rdir     = rdir;
+          packet[i].org_rdir = org_rdir;
+
+          tmp_min_rdir = min(tmp_min_rdir,select(m_valid,rdir,Vec3vfK(pos_inf)));
+          tmp_max_rdir = max(tmp_max_rdir,select(m_valid,rdir,Vec3vfK(neg_inf)));
+          tmp_min_org  = min(tmp_min_org ,select(m_valid,org ,Vec3vfK(pos_inf)));
+          tmp_max_org  = max(tmp_max_org ,select(m_valid,org ,Vec3vfK(neg_inf)));
+        }
+
+        const Vec3fa reduced_min_rdir( reduce_min(tmp_min_rdir.x), 
+                                       reduce_min(tmp_min_rdir.y),
+                                       reduce_min(tmp_min_rdir.z) );
+
+        const Vec3fa reduced_max_rdir( reduce_max(tmp_max_rdir.x), 
+                                       reduce_max(tmp_max_rdir.y),
+                                       reduce_max(tmp_max_rdir.z) );
+
+        /* early out for different direction signs */
+        if (unlikely(movemask(vfloat4(reduced_min_rdir) < vfloat4(zero)) ^ 
+                     movemask(vfloat4(reduced_max_rdir)  < vfloat4(zero) ))) return false;
+
+        const Vec3fa reduced_min_origin( reduce_min(tmp_min_org.x), 
+                                         reduce_min(tmp_min_org.y),
+                                         reduce_min(tmp_min_org.z) );
+
+        const Vec3fa reduced_max_origin( reduce_max(tmp_max_org.x), 
+                                         reduce_max(tmp_max_org.y),
+                                         reduce_max(tmp_max_org.z) );
+
+        const float frusta_min_dist = reduce_min(tmp_min_dist);
+        const float frusta_max_dist = reduce_max(tmp_max_dist);
+
+        const Vec3fa frusta_min_rdir = select(ge_mask(reduced_min_rdir,Vec3fa(zero)),reduced_min_rdir,reduced_max_rdir);
+        const Vec3fa frusta_max_rdir = select(ge_mask(reduced_min_rdir,Vec3fa(zero)),reduced_max_rdir,reduced_min_rdir);
+
+        const Vec3fa frusta_min_org_rdir = frusta_min_rdir*select(ge_mask(reduced_min_rdir,Vec3fa(zero)),reduced_max_origin,reduced_min_origin);
+        const Vec3fa frusta_max_org_rdir = frusta_max_rdir*select(ge_mask(reduced_min_rdir,Vec3fa(zero)),reduced_min_origin,reduced_max_origin);
+
+        frusta.min_rdir     = frusta_min_rdir;
+        frusta.max_rdir     = frusta_max_rdir;
+        frusta.min_org_rdir = frusta_min_org_rdir;
+        frusta.max_org_rdir = frusta_max_org_rdir;
+        frusta.min_dist     = frusta_min_dist;
+        frusta.max_dist     = frusta_max_dist;
+
+        return true;
+      }
+
       static const size_t stackSizeChunk  = N*BVH::maxDepth+1;
       static const size_t stackSizeSingle = 1+(N-1)*BVH::maxDepth;
 

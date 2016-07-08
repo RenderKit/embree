@@ -183,84 +183,23 @@ namespace embree
 
       /* inactive rays should have been filtered out before */
 
-      __aligned(64) struct Packet {
-        Vec3vfK rdir;
-        Vec3vfK org_rdir;
-        vfloat<K> min_dist;
-        vfloat<K> max_dist;
-      } packet[MAX_RAYS/K];
-
-      Vec3vfK   tmp_min_rdir(pos_inf); 
-      Vec3vfK   tmp_max_rdir(neg_inf);
-      Vec3vfK   tmp_min_org(pos_inf); 
-      Vec3vfK   tmp_max_org(neg_inf);
-      vfloat<K> tmp_min_dist(pos_inf);
-      vfloat<K> tmp_max_dist(neg_inf);
+      __aligned(64) Packet packet[MAX_RAYS/K];
+      __aligned(64) Frusta frusta;
 
       size_t m_active = 0;
       const size_t numPackets = numValidStreams;
-      for (size_t i=0; i<numPackets; i++) 
+      const bool sameSigns = initPacketsAndFrusta(input_packets,numPackets,packet,frusta,m_active);
+
+      /* valid rays */
+      if (unlikely(m_active == 0)) return; 
+
+      /* fallback for different ray direction signs */
+      if (unlikely(!sameSigns)) 
       {
-        const vfloat<K> tnear  = input_packets[i]->tnear;
-        const vfloat<K> tfar   = input_packets[i]->tfar;
-        const vbool<K> m_valid = (tnear <= tfar) & (tnear >= 0.0f);
-
-        m_active |= (size_t)movemask(m_valid) << (i*K);
-        packet[i].min_dist = max(tnear,0.0f);
-        packet[i].max_dist = select(m_valid,tfar,neg_inf);
-        tmp_min_dist = min(tmp_min_dist,packet[i].min_dist);
-        tmp_max_dist = max(tmp_max_dist,packet[i].max_dist);        
-
-        const Vec3vfK& org     = input_packets[i]->org;
-        const Vec3vfK& dir     = input_packets[i]->dir;
-        const Vec3vfK rdir     = rcp_safe(dir);
-        const Vec3vfK org_rdir = org * rdir;
-        
-        packet[i].rdir     = rdir;
-        packet[i].org_rdir = org_rdir;
-
-        tmp_min_rdir = min(tmp_min_rdir,select(m_valid,rdir,Vec3vfK(pos_inf)));
-        tmp_max_rdir = max(tmp_max_rdir,select(m_valid,rdir,Vec3vfK(neg_inf)));
-        tmp_min_org  = min(tmp_min_org ,select(m_valid,org ,Vec3vfK(pos_inf)));
-        tmp_max_org  = max(tmp_max_org ,select(m_valid,org ,Vec3vfK(neg_inf)));
-
-      }
-
-      if (unlikely(m_active == 0)) return;
-        
-      const Vec3fa reduced_min_rdir( reduce_min(tmp_min_rdir.x), 
-                                     reduce_min(tmp_min_rdir.y),
-                                     reduce_min(tmp_min_rdir.z) );
-
-      const Vec3fa reduced_max_rdir( reduce_max(tmp_max_rdir.x), 
-                                     reduce_max(tmp_max_rdir.y),
-                                     reduce_max(tmp_max_rdir.z) );
-
-      /* fallback for different direction signs */
-      if (unlikely(movemask(vfloat4(reduced_min_rdir) < vfloat4(zero)) ^ movemask(vfloat4(reduced_max_rdir)  < vfloat4(zero) ))) //todo: maybe just disable IA test
-      {
-        DBG_PRINT("FALLBACK");
-        for (size_t i=0; i<numPackets; i++) 
+        for (size_t i=0; i<numPackets; i++) //todo: maybe just disable IA test
           bvh->scene->intersect(input_packets[i]->tnear <= input_packets[i]->tfar,*input_packets[i],context);
         return;
       }
-
-      const Vec3fa reduced_min_origin( reduce_min(tmp_min_org.x), 
-                                       reduce_min(tmp_min_org.y),
-                                       reduce_min(tmp_min_org.z) );
-
-      const Vec3fa reduced_max_origin( reduce_max(tmp_max_org.x), 
-                                       reduce_max(tmp_max_org.y),
-                                       reduce_max(tmp_max_org.z) );
-
-      const float frusta_min_dist = reduce_min(tmp_min_dist);
-      const float frusta_max_dist = reduce_max(tmp_max_dist);
-
-      const Vec3fa frusta_min_rdir = select(ge_mask(reduced_min_rdir,Vec3fa(zero)),reduced_min_rdir,reduced_max_rdir);
-      const Vec3fa frusta_max_rdir = select(ge_mask(reduced_min_rdir,Vec3fa(zero)),reduced_max_rdir,reduced_min_rdir);
-
-      const Vec3fa frusta_min_org_rdir = frusta_min_rdir*select(ge_mask(reduced_min_rdir,Vec3fa(zero)),reduced_max_origin,reduced_min_origin);
-      const Vec3fa frusta_max_org_rdir = frusta_max_rdir*select(ge_mask(reduced_min_rdir,Vec3fa(zero)),reduced_min_origin,reduced_max_origin);
 
       stack[0].mask    = m_active;
       stack[0].parent  = 0;
@@ -272,7 +211,7 @@ namespace embree
       ///////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////////////////////////////////////////////////////////
 
-      const NearFarPreCompute pc(frusta_min_rdir);
+      const NearFarPreCompute pc(frusta.min_rdir);
 
       StackItemMaskCoherent* stackPtr   = stack + 1;
 
@@ -360,14 +299,14 @@ namespace embree
           const vfloat<K> bmaxY = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farY));
           const vfloat<K> bmaxZ = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farZ));
 
-          const vfloat<K> fminX = msub(bminX, vfloat<K>(frusta_min_rdir.x), vfloat<K>(frusta_min_org_rdir.x));
-          const vfloat<K> fminY = msub(bminY, vfloat<K>(frusta_min_rdir.y), vfloat<K>(frusta_min_org_rdir.y));
-          const vfloat<K> fminZ = msub(bminZ, vfloat<K>(frusta_min_rdir.z), vfloat<K>(frusta_min_org_rdir.z));
-          const vfloat<K> fmaxX = msub(bmaxX, vfloat<K>(frusta_max_rdir.x), vfloat<K>(frusta_max_org_rdir.x));
-          const vfloat<K> fmaxY = msub(bmaxY, vfloat<K>(frusta_max_rdir.y), vfloat<K>(frusta_max_org_rdir.y));
-          const vfloat<K> fmaxZ = msub(bmaxZ, vfloat<K>(frusta_max_rdir.z), vfloat<K>(frusta_max_org_rdir.z));
-          const vfloat<K> fmin  = maxi(maxi(fminX,fminY),maxi(fminZ,frusta_min_dist)); 
-          const vfloat<K> fmax  = mini(mini(fmaxX,fmaxY),mini(fmaxZ,frusta_max_dist)); 
+          const vfloat<K> fminX = msub(bminX, vfloat<K>(frusta.min_rdir.x), vfloat<K>(frusta.min_org_rdir.x));
+          const vfloat<K> fminY = msub(bminY, vfloat<K>(frusta.min_rdir.y), vfloat<K>(frusta.min_org_rdir.y));
+          const vfloat<K> fminZ = msub(bminZ, vfloat<K>(frusta.min_rdir.z), vfloat<K>(frusta.min_org_rdir.z));
+          const vfloat<K> fmaxX = msub(bmaxX, vfloat<K>(frusta.max_rdir.x), vfloat<K>(frusta.max_org_rdir.x));
+          const vfloat<K> fmaxY = msub(bmaxY, vfloat<K>(frusta.max_rdir.y), vfloat<K>(frusta.max_org_rdir.y));
+          const vfloat<K> fmaxZ = msub(bmaxZ, vfloat<K>(frusta.max_rdir.z), vfloat<K>(frusta.max_org_rdir.z));
+          const vfloat<K> fmin  = maxi(maxi(fminX,fminY),maxi(fminZ,frusta.min_dist)); 
+          const vfloat<K> fmax  = mini(mini(fmaxX,fmaxY),mini(fmaxZ,frusta.max_dist)); 
 #if defined(__AVX512F__)
           const vbool<K> vmask_node_hit = le(maskN,fmin,fmax);        
 #else
@@ -505,85 +444,23 @@ namespace embree
       assert(numOctantRays <= MAX_RAYS);
 
       /* inactive rays should have been filtered out before */
-
-      __aligned(64) struct Packet {
-        Vec3vfK rdir;
-        Vec3vfK org_rdir;
-        vfloat<K> min_dist;
-        vfloat<K> max_dist;
-      } packet[MAX_RAYS/K];
-
-      Vec3vfK   tmp_min_rdir(pos_inf); 
-      Vec3vfK   tmp_max_rdir(neg_inf);
-      Vec3vfK   tmp_min_org(pos_inf); 
-      Vec3vfK   tmp_max_org(neg_inf);
-      vfloat<K> tmp_min_dist(pos_inf);
-      vfloat<K> tmp_max_dist(neg_inf);
+      __aligned(64) Packet packet[MAX_RAYS/K];
+      __aligned(64) Frusta frusta;
 
       size_t m_active = 0;
       const size_t numPackets = numValidStreams;
-      for (size_t i=0; i<numPackets; i++) 
+      const bool sameSigns = initPacketsAndFrusta(input_packets,numPackets,packet,frusta,m_active);
+
+      /* valid rays */
+      if (unlikely(m_active == 0)) return; 
+
+      /* fallback for different ray direction signs */
+      if (unlikely(!sameSigns)) 
       {
-        const vfloat<K> tnear  = input_packets[i]->tnear;
-        const vfloat<K> tfar   = input_packets[i]->tfar;
-        const vbool<K> m_valid = (tnear <= tfar) & (tnear >= 0.0f);
-
-        m_active |= (size_t)movemask(m_valid) << (i*K);
-        packet[i].min_dist = max(tnear,0.0f);
-        packet[i].max_dist = select(m_valid,tfar,neg_inf);
-        tmp_min_dist = min(tmp_min_dist,packet[i].min_dist);
-        tmp_max_dist = max(tmp_max_dist,packet[i].max_dist);        
-
-        const Vec3vfK& org     = input_packets[i]->org;
-        const Vec3vfK& dir     = input_packets[i]->dir;
-        const Vec3vfK rdir     = rcp_safe(dir);
-        const Vec3vfK org_rdir = org * rdir;
-        
-        packet[i].rdir     = rdir;
-        packet[i].org_rdir = org_rdir;
-
-        tmp_min_rdir = min(tmp_min_rdir,select(m_valid,rdir,Vec3vfK(pos_inf)));
-        tmp_max_rdir = max(tmp_max_rdir,select(m_valid,rdir,Vec3vfK(neg_inf)));
-        tmp_min_org  = min(tmp_min_org ,select(m_valid,org ,Vec3vfK(pos_inf)));
-        tmp_max_org  = max(tmp_max_org ,select(m_valid,org ,Vec3vfK(neg_inf)));
-
-      }
-
-      if (unlikely(m_active == 0)) return;
-        
-      const Vec3fa reduced_min_rdir( reduce_min(tmp_min_rdir.x), 
-                                     reduce_min(tmp_min_rdir.y),
-                                     reduce_min(tmp_min_rdir.z) );
-
-      const Vec3fa reduced_max_rdir( reduce_max(tmp_max_rdir.x), 
-                                     reduce_max(tmp_max_rdir.y),
-                                     reduce_max(tmp_max_rdir.z) );
-
-      /* fallback for different direction signs */
-      if (unlikely(movemask(vfloat4(reduced_min_rdir) < vfloat4(zero)) ^ movemask(vfloat4(reduced_max_rdir)  < vfloat4(zero) ))) //todo: maybe just disable IA test
-      {
-        DBG_PRINT("FALLBACK");
-        for (size_t i=0; i<numPackets; i++) 
-          bvh->scene->intersect(input_packets[i]->tnear <= input_packets[i]->tfar,*input_packets[i],context);
+        for (size_t i=0; i<numPackets; i++) //todo: maybe just disable IA test
+          bvh->scene->occluded(input_packets[i]->tnear <= input_packets[i]->tfar,*input_packets[i],context);
         return;
       }
-
-      const Vec3fa reduced_min_origin( reduce_min(tmp_min_org.x), 
-                                       reduce_min(tmp_min_org.y),
-                                       reduce_min(tmp_min_org.z) );
-
-      const Vec3fa reduced_max_origin( reduce_max(tmp_max_org.x), 
-                                       reduce_max(tmp_max_org.y),
-                                       reduce_max(tmp_max_org.z) );
-
-      const float frusta_min_dist = reduce_min(tmp_min_dist);
-      const float frusta_max_dist = reduce_max(tmp_max_dist);
-
-      const Vec3fa frusta_min_rdir = select(ge_mask(reduced_min_rdir,Vec3fa(zero)),reduced_min_rdir,reduced_max_rdir);
-      const Vec3fa frusta_max_rdir = select(ge_mask(reduced_min_rdir,Vec3fa(zero)),reduced_max_rdir,reduced_min_rdir);
-
-      const Vec3fa frusta_min_org_rdir = frusta_min_rdir*select(ge_mask(reduced_min_rdir,Vec3fa(zero)),reduced_max_origin,reduced_min_origin);
-      const Vec3fa frusta_max_org_rdir = frusta_max_rdir*select(ge_mask(reduced_min_rdir,Vec3fa(zero)),reduced_min_origin,reduced_max_origin);
 
       stack[0].mask    = m_active;
       stack[0].parent  = 0;
@@ -595,7 +472,7 @@ namespace embree
       ///////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////////////////////////////////////////////////////////
 
-      const NearFarPreCompute pc(frusta_min_rdir);
+      const NearFarPreCompute pc(frusta.min_rdir);
 
       StackItemMaskCoherent* stackPtr   = stack + 1;
 
@@ -685,14 +562,14 @@ namespace embree
           const vfloat<K> bmaxY = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farY));
           const vfloat<K> bmaxZ = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farZ));
 
-          const vfloat<K> fminX = msub(bminX, vfloat<K>(frusta_min_rdir.x), vfloat<K>(frusta_min_org_rdir.x));
-          const vfloat<K> fminY = msub(bminY, vfloat<K>(frusta_min_rdir.y), vfloat<K>(frusta_min_org_rdir.y));
-          const vfloat<K> fminZ = msub(bminZ, vfloat<K>(frusta_min_rdir.z), vfloat<K>(frusta_min_org_rdir.z));
-          const vfloat<K> fmaxX = msub(bmaxX, vfloat<K>(frusta_max_rdir.x), vfloat<K>(frusta_max_org_rdir.x));
-          const vfloat<K> fmaxY = msub(bmaxY, vfloat<K>(frusta_max_rdir.y), vfloat<K>(frusta_max_org_rdir.y));
-          const vfloat<K> fmaxZ = msub(bmaxZ, vfloat<K>(frusta_max_rdir.z), vfloat<K>(frusta_max_org_rdir.z));
-          const vfloat<K> fmin  = maxi(maxi(fminX,fminY),maxi(fminZ,frusta_min_dist)); 
-          const vfloat<K> fmax  = mini(mini(fmaxX,fmaxY),mini(fmaxZ,frusta_max_dist)); 
+          const vfloat<K> fminX = msub(bminX, vfloat<K>(frusta.min_rdir.x), vfloat<K>(frusta.min_org_rdir.x));
+          const vfloat<K> fminY = msub(bminY, vfloat<K>(frusta.min_rdir.y), vfloat<K>(frusta.min_org_rdir.y));
+          const vfloat<K> fminZ = msub(bminZ, vfloat<K>(frusta.min_rdir.z), vfloat<K>(frusta.min_org_rdir.z));
+          const vfloat<K> fmaxX = msub(bmaxX, vfloat<K>(frusta.max_rdir.x), vfloat<K>(frusta.max_org_rdir.x));
+          const vfloat<K> fmaxY = msub(bmaxY, vfloat<K>(frusta.max_rdir.y), vfloat<K>(frusta.max_org_rdir.y));
+          const vfloat<K> fmaxZ = msub(bmaxZ, vfloat<K>(frusta.max_rdir.z), vfloat<K>(frusta.max_org_rdir.z));
+          const vfloat<K> fmin  = maxi(maxi(fminX,fminY),maxi(fminZ,frusta.min_dist)); 
+          const vfloat<K> fmax  = mini(mini(fmaxX,fmaxY),mini(fmaxZ,frusta.max_dist)); 
 #if defined(__AVX512F__)
           const vbool<K> vmask_node_hit = le(maskN,fmin,fmax);        
 #else
