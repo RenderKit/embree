@@ -22,61 +22,9 @@ namespace embree
   namespace isa
   {
     static const size_t MAX_RAYS_PER_OCTANT = 8*sizeof(size_t);
-    static const size_t MAX_RAYS            = MAX_INTERNAL_STREAM_SIZE; // 64
 
     static_assert(MAX_RAYS_PER_OCTANT <= MAX_INTERNAL_STREAM_SIZE,"maximal internal stream size exceeded");
 
-    __forceinline void initAOStoSOA(RayK<VSIZEX> *rayK, Ray **input_rays, const size_t numTotalRays)
-    {
-      const size_t numPackets = (numTotalRays+VSIZEX-1)/VSIZEX;
-      for (size_t i=0; i<numPackets; i++) 
-      {
-        rayK[i].tnear   = 0.0f;
-        rayK[i].tfar    = neg_inf;
-        rayK[i].time    = 0.0f;
-        rayK[i].mask    = -1;
-        rayK[i].primID  = RTC_INVALID_GEOMETRY_ID;
-      }
-
-      for (size_t i=0; i<numTotalRays; i++) {
-        const Vec3fa& org = input_rays[i]->org;
-        const Vec3fa& dir = input_rays[i]->dir;
-        const float tnear = max(0.0f,input_rays[i]->tnear);
-        const float tfar  = input_rays[i]->tfar;
-        const size_t packetID = i / VSIZEX;
-        const size_t slotID   = i % VSIZEX;
-        rayK[packetID].dir.x[slotID]     = dir.x;
-        rayK[packetID].dir.y[slotID]     = dir.y;
-        rayK[packetID].dir.z[slotID]     = dir.z;
-        rayK[packetID].org.x[slotID]     = org.x;
-        rayK[packetID].org.y[slotID]     = org.y;
-        rayK[packetID].org.z[slotID]     = org.z;
-        rayK[packetID].tnear[slotID]     = tnear;
-        rayK[packetID].tfar[slotID]      = tfar;
-      }      
-    }
-
-    __forceinline void writebackSOAtoAOS(Ray ** input_rays, RayK<VSIZEX> *rayK, const size_t numTotalRays)
-    {
-      for (size_t i=0; i<numTotalRays; i++) 
-      {
-        const size_t packetID = i / VSIZEX;
-        const size_t slotID   = i % VSIZEX;
-        const RayK<VSIZEX> &ray = rayK[packetID];
-        if (likely((unsigned)ray.primID[slotID] != RTC_INVALID_GEOMETRY_ID))
-        {
-          input_rays[i]->tfar   = ray.tfar[slotID];
-          input_rays[i]->Ng.x   = ray.Ng.x[slotID];
-          input_rays[i]->Ng.y   = ray.Ng.y[slotID];
-          input_rays[i]->Ng.z   = ray.Ng.z[slotID];
-          input_rays[i]->u      = ray.u[slotID];
-          input_rays[i]->v      = ray.v[slotID];
-          input_rays[i]->geomID = ray.geomID[slotID];
-          input_rays[i]->primID = ray.primID[slotID];
-          input_rays[i]->instID = ray.instID[slotID];
-        }
-      }
-    }
 
     __forceinline void RayStream::filterAOS(Scene *scene, RTCRay* _rayN, const size_t N, const size_t stride, const RTCIntersectContext* context, const bool intersect)
     {
@@ -86,13 +34,6 @@ namespace embree
 
       for (size_t i=0;i<8;i++) rays_in_octant[i] = 0;
       size_t inputRayID = 0;
-
-      /* only enable if coherent flags are enabled and no intersection filter is set */
-#if defined(__AVX__) && ENABLE_COHERENT_STREAM_PATH == 1
-      const bool enableCoherentStream = isCoherent(context->flags);
-#else
-      const bool enableCoherentStream = false;
-#endif
 
       while(1)
       {
@@ -108,7 +49,6 @@ namespace embree
 #if defined(EMBREE_IGNORE_INVALID_RAYS)
           if (unlikely(!ray.valid())) {  inputRayID++; continue; }
 #endif
-
 
           const unsigned int octantID = movemask(vfloat4(ray.dir) < 0.0f) & 0x7;
 
@@ -143,28 +83,13 @@ namespace embree
         {
           if (intersect) scene->intersect((RTCRay&)*rays[0],context);
           else           scene->occluded ((RTCRay&)*rays[0],context);
-        }
-        
+        }        
         /* codepath for large number of rays per octant */
         else
         {
-          if (unlikely(enableCoherentStream))
-          {
-            /* coherent ray stream code path */
-            RayK<VSIZEX> rayK[MAX_RAYS / VSIZEX];
-            RayK<VSIZEX> *rayK_ptr[MAX_RAYS / VSIZEX];
-            for (size_t i=0;i<MAX_RAYS / VSIZEX;i++) rayK_ptr[i] = &rayK[i];
-            const size_t numPackets = (numOctantRays+VSIZEX-1)/VSIZEX;
-            initAOStoSOA(rayK,rays,numOctantRays);
-            if (intersect) scene->intersectN((RTCRay**)rayK_ptr,numPackets,context);
-            else           scene->occludedN ((RTCRay**)rayK_ptr,numPackets,context);
-            writebackSOAtoAOS(rays,rayK,numOctantRays);            
-          }
-          else {
-            /* incoherent ray stream code path */
-            if (intersect) scene->intersectN((RTCRay**)rays,numOctantRays,context);
-            else           scene->occludedN ((RTCRay**)rays,numOctantRays,context);
-          }
+          /* incoherent ray stream code path */
+          if (intersect) scene->intersectN((RTCRay**)rays,numOctantRays,context);
+          else           scene->occludedN ((RTCRay**)rays,numOctantRays,context);
         }
         rays_in_octant[cur_octant] = 0;
 
@@ -175,9 +100,9 @@ namespace embree
     {
       RayPacket rayN(rayData,N);
 
-      if (likely(isCoherent(context->flags)))
+      if (unlikely(isCoherent(context->flags)))
       {
-#if defined(__AVX__) && ENABLE_COHERENT_STREAM_PATH == 1
+#if defined(__AVX__) && ENABLE_COHERENT_STREAM_PATH == 1 && 0
         if (likely(N == VSIZEX))
         {
           //todo :: alignment check
@@ -194,9 +119,9 @@ namespace embree
             {
 
               if (intersect)
-                scene->intersectN((RTCRay**)rays_ptr,numStreams,context);
+                scene->intersectN((RTCRay**)rays_ptr,numStreams*VSIZEX,context);
               else
-                scene->occludedN((RTCRay**)rays_ptr,numStreams,context);        
+                scene->occludedN((RTCRay**)rays_ptr,numStreams*VSIZEX,context);        
               numStreams = 0;
             }
           }
@@ -204,9 +129,9 @@ namespace embree
           if (unlikely(numStreams))
           {
             if (intersect)
-              scene->intersectN((RTCRay**)rays_ptr,numStreams,context);
+              scene->intersectN((RTCRay**)rays_ptr,numStreams*VSIZEX,context);
             else
-              scene->occludedN((RTCRay**)rays_ptr,numStreams,context);        
+              scene->occludedN((RTCRay**)rays_ptr,numStreams*VSIZEX,context);        
           }
         }
         else
@@ -321,26 +246,26 @@ namespace embree
     {
       RayPN& rayN = *(RayPN*)&_rayN;
 
+      size_t rayStartIndex = 0;
+
       /* use packet intersector for coherent ray mode */
-      if (likely(isCoherent(context->flags)))
+      if (unlikely(isCoherent(context->flags)))
       {
         size_t s = 0;
         size_t stream_offset = 0;
-        //for (size_t s=0; s<streams; s++)
+        const size_t numPackets = N / VSIZEX;
+        rayStartIndex += numPackets * VSIZEX;
+        for (size_t i=0; i<numPackets * VSIZEX; i+=VSIZEX)
         {
-          for (size_t i=0; i<N; i+=VSIZEX)
-          {
-            const vintx vi = vintx(int(i))+vintx(step);
-            vboolx valid = vi < vintx(int(N));
-            const size_t offset = s*stream_offset + sizeof(float) * i;
-            RayK<VSIZEX> ray = rayN.gather<VSIZEX>(valid,offset);
-             valid &= ray.tnear <= ray.tfar;
-            if (intersect) scene->intersect(valid,ray,context);
-            else           scene->occluded (valid,ray,context);
-            rayN.scatter<VSIZEX>(valid,offset,ray,intersect);
-          }
+          const vintx vi = vintx(int(i))+vintx(step);
+          vboolx valid = vi < vintx(int(N));
+          const size_t offset = s*stream_offset + sizeof(float) * i;
+          RayK<VSIZEX> ray = rayN.gather<VSIZEX>(valid,offset);
+          valid &= ray.tnear <= ray.tfar;
+          if (intersect) scene->intersect(valid,ray,context);
+          else           scene->occluded (valid,ray,context);
+          rayN.scatter<VSIZEX>(valid,offset,ray,intersect);
         }
-        return;
       }
       
       /* otherwise use stream intersector */
@@ -352,15 +277,12 @@ namespace embree
 
       for (size_t i=0;i<8;i++) rays_in_octant[i] = 0;
 
-      size_t soffset = 0;
-      //size_t s = 0;
-      //for (size_t s=0;s<streams;s++,soffset+=stream_offset)
       {
         // todo: use SIMD width to compute octants
-        for (size_t i=0;i<N;i++)
+        for (size_t i=rayStartIndex;i<N;i++)
         {
           /* global + local offset */
-          const size_t offset = soffset + sizeof(float) * i;
+          const size_t offset = sizeof(float) * i;
 
           if (unlikely(!rayN.isValidByOffset(offset))) continue;
 

@@ -166,6 +166,72 @@ namespace embree
       }
     }
 
+    template<int K>
+    __forceinline size_t AOStoSOA(RayK<K> *rayK, Ray **input_rays, const size_t numTotalRays)
+    {
+      const size_t numPackets = (numTotalRays+K-1)/K;
+      for (size_t i=0; i<numPackets; i++) 
+      {
+        rayK[i].tnear   = 0.0f;
+        rayK[i].tfar    = neg_inf;
+        rayK[i].time    = 0.0f;
+        rayK[i].mask    = -1;
+        rayK[i].geomID  = RTC_INVALID_GEOMETRY_ID;
+      }
+
+      Vec3fa min_dir = pos_inf;
+      Vec3fa max_dir = neg_inf;
+
+      for (size_t i=0; i<numTotalRays; i++) {
+        const Vec3fa& org = input_rays[i]->org;
+        const Vec3fa& dir = input_rays[i]->dir;
+        min_dir = min(min_dir,dir);
+        max_dir = max(max_dir,dir);
+        const float tnear = max(0.0f,input_rays[i]->tnear);
+        const float tfar  = input_rays[i]->tfar;
+        const size_t packetID = i / K;
+        const size_t slotID   = i % K;
+        rayK[packetID].dir.x[slotID]     = dir.x;
+        rayK[packetID].dir.y[slotID]     = dir.y;
+        rayK[packetID].dir.z[slotID]     = dir.z;
+        rayK[packetID].org.x[slotID]     = org.x;
+        rayK[packetID].org.y[slotID]     = org.y;
+        rayK[packetID].org.z[slotID]     = org.z;
+        rayK[packetID].tnear[slotID]     = tnear;
+        rayK[packetID].tfar[slotID]      = tfar;
+      }      
+      const size_t sign_min_dir = movemask(vfloat4(min_dir) < 0.0f);
+      const size_t sign_max_dir = movemask(vfloat4(max_dir) < 0.0f);
+      return ((sign_min_dir^sign_max_dir) & 0x7);
+    }
+
+    template<int K,bool occlusion>
+    __forceinline void SOAtoAOS(Ray ** input_rays, RayK<K> *rayK, const size_t numTotalRays)
+    {
+      for (size_t i=0; i<numTotalRays; i++) 
+      {
+        const size_t packetID = i / K;
+        const size_t slotID   = i % K;
+        const RayK<K> &ray = rayK[packetID];
+        if (likely((unsigned)ray.geomID[slotID] != RTC_INVALID_GEOMETRY_ID))
+        {
+          if (occlusion)
+            input_rays[i]->geomID = ray.geomID[slotID];
+          else
+          {
+            input_rays[i]->tfar   = ray.tfar[slotID];
+            input_rays[i]->Ng.x   = ray.Ng.x[slotID];
+            input_rays[i]->Ng.y   = ray.Ng.y[slotID];
+            input_rays[i]->Ng.z   = ray.Ng.z[slotID];
+            input_rays[i]->u      = ray.u[slotID];
+            input_rays[i]->v      = ray.v[slotID];
+            input_rays[i]->geomID = ray.geomID[slotID];
+            input_rays[i]->primID = ray.primID[slotID];
+            input_rays[i]->instID = ray.instID[slotID];
+          }
+        }
+      }
+    }
 
     // =====================================================================================================
     // =====================================================================================================
@@ -173,13 +239,12 @@ namespace embree
 
 
     template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
-    void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect_coherent_soa(BVH* __restrict__ bvh, RayK<K> **input_rays, size_t numValidStreams, const RTCIntersectContext* context)
+    void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect_coherent_soa(BVH* __restrict__ bvh, RayK<K> **input_rays, size_t numOctantRays, const RTCIntersectContext* context)
     {      
 #if defined(__AVX__) 
       __aligned(64) StackItemMaskCoherent  stack[stackSizeSingle];  //!< stack of nodes 
 
       RayK<K>** __restrict__ input_packets = (RayK<K>**)input_rays;
-      const size_t numOctantRays = K*numValidStreams;
       assert(numOctantRays <= MAX_RAYS);
 
       /* inactive rays should have been filtered out before */
@@ -187,20 +252,10 @@ namespace embree
       __aligned(64) Packet packet[MAX_RAYS/K];
       __aligned(64) Frusta frusta;
 
-      size_t m_active = 0;
-      const size_t numPackets = numValidStreams;
-      const bool sameSigns = initPacketsAndFrusta(input_packets,numPackets,packet,frusta,m_active);
+      size_t m_active = initPacketsAndFrusta(input_packets,numOctantRays,packet,frusta);
 
       /* valid rays */
       if (unlikely(m_active == 0)) return; 
-
-      /* fallback for different ray direction signs */
-      if (unlikely(!sameSigns)) 
-      {
-        for (size_t i=0; i<numPackets; i++) //todo: maybe just disable IA test
-          bvh->scene->intersect(input_packets[i]->tnear <= input_packets[i]->tfar,*input_packets[i],context);
-        return;
-      }
 
       stack[0].mask    = m_active;
       stack[0].parent  = 0;
@@ -228,12 +283,8 @@ namespace embree
         NodeRef cur = NodeRef(stackPtr->child);
         size_t m_trav_active = stackPtr->mask;
         assert(m_trav_active);
-        DBG_PRINT(std::bitset<64>(m_trav_active));
 
         //STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
-#if defined(__AVX512F__)
-        const vbool<K> maskN = ((unsigned int)1 << N)-1;
-#endif
             
         /* non-root and leaf => full culling test for all rays */
         if (unlikely(stackPtr->parent != 0 && cur.isLeaf()))
@@ -281,14 +332,9 @@ namespace embree
           const vfloat<K> fmaxZ = msub(bmaxZ, vfloat<K>(frusta.max_rdir.z), vfloat<K>(frusta.max_org_rdir.z));
           const vfloat<K> fmin  = maxi(maxi(fminX,fminY),maxi(fminZ,frusta.min_dist)); 
           const vfloat<K> fmax  = mini(mini(fmaxX,fmaxY),mini(fmaxZ,frusta.max_dist)); 
-#if defined(__AVX512F__)
-          const vbool<K> vmask_node_hit = le(maskN,fmin,fmax);        
-#else
           const vbool<K> vmask_node_hit = fmin <= fmax;  
-#endif
 
-          size_t m_node_hit = movemask(vmask_node_hit);
-
+          size_t m_node_hit = movemask(vmask_node_hit) & (((size_t)1 << N)-1);
           // ==================
           const size_t first_index    = __bsf(m_trav_active);
           const size_t first_packetID = first_index / K;
@@ -306,17 +352,13 @@ namespace embree
           const vfloat<K> rmin  = maxi(maxi(rminX,rminY),maxi(rminZ,p.min_dist[first_rayID])); 
           const vfloat<K> rmax  = mini(mini(rmaxX,rmaxY),mini(rmaxZ,p.max_dist[first_rayID])); 
 
-#if defined(__AVX512F__)
-          const vbool<K> vmask_first_hit = le(maskN,rmin,rmax);        
-#else
           const vbool<K> vmask_first_hit = rmin <= rmax;  
-#endif
 
-          size_t m_first_hit = movemask(vmask_first_hit);
+          size_t m_first_hit = movemask(vmask_first_hit) & (((size_t)1 << N)-1);
 
           // ==================
 
-          assert(__popcnt(m_node_hit) <= 8 );
+          assert(__popcnt(m_node_hit) <= N );
           
           vfloat<K> dist = select(vmask_first_hit,rmin,fmin);            
           //vfloat<K> dist = fmin;            
@@ -385,33 +427,23 @@ namespace embree
 
 
     template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
-    void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::occluded_coherent_soa(BVH* __restrict__ bvh, RayK<K> **input_rays, size_t numValidStreams, const RTCIntersectContext* context)
+    void BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::occluded_coherent_soa(BVH* __restrict__ bvh, RayK<K> **input_rays, size_t numOctantRays, const RTCIntersectContext* context)
     {      
 #if defined(__AVX__) 
       __aligned(64) StackItemMaskCoherent  stack[stackSizeSingle];  //!< stack of nodes 
 
       RayK<K>** __restrict__ input_packets = (RayK<K>**)input_rays;
-      const size_t numOctantRays = K*numValidStreams;
       assert(numOctantRays <= MAX_RAYS);
 
       /* inactive rays should have been filtered out before */
       __aligned(64) Packet packet[MAX_RAYS/K];
       __aligned(64) Frusta frusta;
 
-      size_t m_active = 0;
-      const size_t numPackets = numValidStreams;
-      const bool sameSigns = initPacketsAndFrusta(input_packets,numPackets,packet,frusta,m_active);
+      size_t m_active = initPacketsAndFrusta(input_packets,numOctantRays,packet,frusta);
+
 
       /* valid rays */
       if (unlikely(m_active == 0)) return; 
-
-      /* fallback for different ray direction signs */
-      if (unlikely(!sameSigns)) 
-      {
-        for (size_t i=0; i<numPackets; i++) //todo: maybe just disable IA test
-          bvh->scene->occluded(input_packets[i]->tnear <= input_packets[i]->tfar,*input_packets[i],context);
-        return;
-      }
 
       stack[0].mask    = m_active;
       stack[0].parent  = 0;
@@ -443,11 +475,7 @@ namespace embree
         assert(m_trav_active);
         DBG_PRINT(std::bitset<64>(m_trav_active));
 
-        //STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
-#if defined(__AVX512F__)
-        const vbool<K> maskN = ((unsigned int)1 << N)-1;
-#endif
-            
+        //STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                                      
         /* non-root and leaf => full culling test for all rays */
         if (unlikely(stackPtr->parent != 0 && cur.isLeaf()))
         {
@@ -498,13 +526,9 @@ namespace embree
           const vfloat<K> fmaxZ = msub(bmaxZ, vfloat<K>(frusta.max_rdir.z), vfloat<K>(frusta.max_org_rdir.z));
           const vfloat<K> fmin  = maxi(maxi(fminX,fminY),maxi(fminZ,frusta.min_dist)); 
           const vfloat<K> fmax  = mini(mini(fmaxX,fmaxY),mini(fmaxZ,frusta.max_dist)); 
-#if defined(__AVX512F__)
-          const vbool<K> vmask_node_hit = le(maskN,fmin,fmax);        
-#else
           const vbool<K> vmask_node_hit = fmin <= fmax;  
-#endif
 
-          size_t m_node_hit = movemask(vmask_node_hit);
+          size_t m_node_hit = movemask(vmask_node_hit) & (((size_t)1 << N)-1);;
 
           // ==================
           const size_t first_index    = __bsf(m_trav_active);
@@ -523,13 +547,9 @@ namespace embree
           const vfloat<K> rmin  = maxi(maxi(rminX,rminY),maxi(rminZ,p.min_dist[first_rayID])); 
           const vfloat<K> rmax  = mini(mini(rmaxX,rmaxY),mini(rmaxZ,p.max_dist[first_rayID])); 
 
-#if defined(__AVX512F__)
-          const vbool<K> vmask_first_hit = le(maskN,rmin,rmax);        
-#else
           const vbool<K> vmask_first_hit = rmin <= rmax;  
-#endif
 
-          size_t m_first_hit = movemask(vmask_first_hit);
+          size_t m_first_hit = movemask(vmask_first_hit) & (((size_t)1 << N)-1);
 
           // ==================
 
@@ -571,13 +591,10 @@ namespace embree
         DBG_PRINT(__popcnt(m_trav_active));
 
         size_t bits = m_trav_active & m_active;
-
         /*! intersect stream of rays with all primitives */
         size_t lazy_node = 0;
         STAT_USER(1,(__popcnt(bits)+K-1)/K*4);
-        STAT_USER(2,(__popcnt(bits)+1)/2);
-        STAT_USER(3,(__popcnt(bits)+3)/4);
-        do
+        while(bits)
         {
           size_t i = __bsf(bits) / K;
           const size_t m_isec = ((((size_t)1 << K)-1) << (i*K));
@@ -587,7 +604,7 @@ namespace embree
           vbool<K> m_valid = (input_packets[i]->tnear <= input_packets[i]->tfar); 
           vbool<K> m_hit = PrimitiveIntersector::occludedChunk(m_valid,*input_packets[i],context,prim,num,bvh->scene,lazy_node);
           m_active &= ~((size_t)movemask(m_hit) << (i*K));
-        } while(bits);
+        } 
 
       } // traversal + intersection
         ///////////////////////////////////////////////////////////////////////////////////
@@ -609,9 +626,27 @@ namespace embree
       __aligned(64) StackItemMask  stack0[stackSizeSingle];  //!< stack of nodes 
 
 #if defined(__AVX__) && ENABLE_COHERENT_STREAM_PATH == 1
-      if (unlikely(isCoherent(context->flags)))
+      if (unlikely(PrimitiveIntersector::validChunkIntersector && !robust && isCoherent(context->flags)))
       {
-        BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect_coherent_soa(bvh,  (RayK<K>**)input_rays, numTotalRays, context);     
+        /* AOS to SOA conversion */
+        RayK<K> rayK[MAX_RAYS / K];
+        RayK<K> *rayK_ptr[MAX_RAYS / K];
+        for (size_t i=0;i<MAX_RAYS / K;i++) rayK_ptr[i] = &rayK[i];
+        AOStoSOA(rayK,input_rays,numTotalRays);
+        const size_t numPackets = (numTotalRays+K-1)/K;
+        if (unlikely(numPackets == 1))
+        {
+          /* packet tracer as fallback */
+          bvh->scene->intersect(rayK[0].tnear <= rayK[0].tfar,rayK[0],context);
+        }
+        else
+        {          
+          /* stream tracer as fast path */
+          BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::intersect_coherent_soa(bvh,  (RayK<K>**)rayK_ptr, numTotalRays, context);     
+
+        }
+        /* SOA to AOS conversion */
+        SOAtoAOS<K,false>(input_rays,rayK,numTotalRays);                    
         return;
       }
 #endif
@@ -798,9 +833,26 @@ namespace embree
       __aligned(64) StackItemMask  stack0[stackSizeSingle];  //!< stack of nodes 
 
 #if defined(__AVX__) && ENABLE_COHERENT_STREAM_PATH == 1
-      if (unlikely(isCoherent(context->flags)))
+      if (unlikely(PrimitiveIntersector::validChunkIntersector && !robust && isCoherent(context->flags)))
       {
-        BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::occluded_coherent_soa(bvh,  (RayK<K>**)input_rays, numTotalRays, context);     
+        /* AOS to SOA conversion */
+        RayK<K> rayK[MAX_RAYS / K];
+        RayK<K> *rayK_ptr[MAX_RAYS / K];
+        for (size_t i=0;i<MAX_RAYS / K;i++) rayK_ptr[i] = &rayK[i];
+        AOStoSOA(rayK,input_rays,numTotalRays);
+        const size_t numPackets = (numTotalRays+K-1)/K;
+        if (unlikely(numPackets == 1))
+        {
+          /* packet tracer as fallback */
+          bvh->scene->intersect(rayK[0].tnear <= rayK[0].tfar,rayK[0],context);
+        }
+        else
+        {
+          /* stream tracer as fast path */
+          BVHNStreamIntersector<N, K, types, robust, PrimitiveIntersector>::occluded_coherent_soa(bvh,  (RayK<K>**)rayK_ptr, numTotalRays, context);     
+        }
+        /* SOA to AOS conversion */
+        SOAtoAOS<K,true>(input_rays,rayK,numTotalRays);                    
         return;
       }
 #endif

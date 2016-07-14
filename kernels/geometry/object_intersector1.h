@@ -26,7 +26,9 @@ namespace embree
     struct ObjectIntersector1
     {
       typedef Object Primitive;
-      
+     
+      static const bool validChunkIntersector = false;
+
       struct Precalculations {
         __forceinline Precalculations() {}
         __forceinline Precalculations (const Ray& ray, const void *ptr) {}

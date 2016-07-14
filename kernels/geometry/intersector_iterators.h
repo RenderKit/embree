@@ -28,7 +28,9 @@ namespace embree
       {
         typedef typename Intersector::Primitive Primitive;
         typedef typename Intersector::Precalculations Precalculations;
-        
+
+        static const bool validChunkIntersector = false;
+
         static __forceinline void intersect(Precalculations& pre, Ray& ray, const RTCIntersectContext* context, size_t ty, const Primitive* prim, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node)
         {
           for (size_t i=0; i<num; i++)
@@ -219,6 +221,8 @@ namespace embree
         typedef typename Intersector1::Precalculations Precalculations;
         typedef typename Intersector2::Primitive PrimitiveChunk;
         typedef typename Intersector2::Precalculations PrecalculationsChunk;
+
+        static const bool validChunkIntersector = true;
         
         static __forceinline void intersectChunk(const vbool<K>& valid, /* PrecalculationsChunk& pre, */ RayK<K>& ray, const RTCIntersectContext* context, const PrimitiveChunk* prim, size_t num, Scene* scene, size_t& lazy_node)
         {

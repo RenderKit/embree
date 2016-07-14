@@ -21,7 +21,7 @@
 #include "../common/stack_item.h"
 #include "bvh_traverser1.h"
 
-#define ENABLE_COHERENT_STREAM_PATH 0
+#define ENABLE_COHERENT_STREAM_PATH 1
 
 namespace embree
 {
@@ -493,8 +493,9 @@ namespace embree
         float max_dist;
       };
 
-      __forceinline static bool initPacketsAndFrusta(RayK<K> **input_packets, const size_t numPackets, Packet *const packet, Frusta &frusta, size_t &m_active)
+      __forceinline static size_t initPacketsAndFrusta(RayK<K> **input_packets, const size_t numOctantRays, Packet *const packet, Frusta &frusta)
       {
+        const size_t numPackets = (numOctantRays+K-1)/K;
 
         Vec3vfK   tmp_min_rdir(pos_inf); 
         Vec3vfK   tmp_max_rdir(neg_inf);
@@ -503,6 +504,7 @@ namespace embree
         vfloat<K> tmp_min_dist(pos_inf);
         vfloat<K> tmp_max_dist(neg_inf);
 
+        size_t m_active = 0;
         for (size_t i=0; i<numPackets; i++) 
         {
           const vfloat<K> tnear  = input_packets[i]->tnear;
@@ -529,6 +531,8 @@ namespace embree
           tmp_max_org  = max(tmp_max_org ,select(m_valid,org ,Vec3vfK(neg_inf)));
         }
 
+        m_active &= (numOctantRays == 64) ? (size_t)-1 : (((size_t)1 << numOctantRays)-1);
+
         const Vec3fa reduced_min_rdir( reduce_min(tmp_min_rdir.x), 
                                        reduce_min(tmp_min_rdir.y),
                                        reduce_min(tmp_min_rdir.z) );
@@ -536,10 +540,6 @@ namespace embree
         const Vec3fa reduced_max_rdir( reduce_max(tmp_max_rdir.x), 
                                        reduce_max(tmp_max_rdir.y),
                                        reduce_max(tmp_max_rdir.z) );
-
-        /* early out for different direction signs */
-        if (unlikely(movemask(vfloat4(reduced_min_rdir) < vfloat4(zero)) ^ 
-                     movemask(vfloat4(reduced_max_rdir)  < vfloat4(zero) ))) return false;
 
         const Vec3fa reduced_min_origin( reduce_min(tmp_min_org.x), 
                                          reduce_min(tmp_min_org.y),
@@ -565,7 +565,7 @@ namespace embree
         frusta.min_dist     = frusta_min_dist;
         frusta.max_dist     = frusta_max_dist;
 
-        return true;
+        return m_active;
       }
 
       __forceinline static size_t intersectNodePacket(const Packet *const packet,
