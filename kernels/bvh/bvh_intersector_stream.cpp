@@ -169,7 +169,7 @@ namespace embree
     template<int K>
     __forceinline size_t AOStoSOA(RayK<K> *rayK, Ray **input_rays, const size_t numTotalRays)
     {
-      const size_t numPackets = (numTotalRays+K-1)/K;
+      const size_t numPackets = (numTotalRays+K-1)/K; //todo : OPTIMIZE
       for (size_t i=0; i<numPackets; i++) 
       {
         rayK[i].tnear   = 0.0f;
@@ -199,6 +199,8 @@ namespace embree
         rayK[packetID].org.z[slotID]     = org.z;
         rayK[packetID].tnear[slotID]     = tnear;
         rayK[packetID].tfar[slotID]      = tfar;
+        rayK[packetID].mask[slotID]      = input_rays[i]->mask;
+        rayK[packetID].instID[slotID]    = input_rays[i]->instID;
       }      
       const size_t sign_min_dir = movemask(vfloat4(min_dir) < 0.0f);
       const size_t sign_max_dir = movemask(vfloat4(max_dir) < 0.0f);
