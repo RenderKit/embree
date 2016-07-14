@@ -1,4 +1,4 @@
-   // ======================================================================== //
+// ======================================================================== //
 // Copyright 2009-2016 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
@@ -625,7 +625,8 @@ namespace embree
       __aligned(64) Precalculations pre[MAX_RAYS_PER_OCTANT]; 
       __aligned(64) StackItemMask  stack0[stackSizeSingle];  //!< stack of nodes 
 
-#if defined(__AVX__) && ENABLE_COHERENT_STREAM_PATH == 1
+#if defined(__AVX__) && ENABLE_COHERENT_STREAM_PATH == 1 && !defined(EMBREE_INTERSECTION_FILTER)
+
       if (unlikely(PrimitiveIntersector::validChunkIntersector && !robust && isCoherent(context->flags)))
       {
         /* AOS to SOA conversion */
@@ -832,7 +833,7 @@ namespace embree
       __aligned(64) Precalculations pre[MAX_RAYS_PER_OCTANT]; 
       __aligned(64) StackItemMask  stack0[stackSizeSingle];  //!< stack of nodes 
 
-#if defined(__AVX__) && ENABLE_COHERENT_STREAM_PATH == 1
+#if defined(__AVX__) && ENABLE_COHERENT_STREAM_PATH == 1 && !defined(EMBREE_INTERSECTION_FILTER)
       if (unlikely(PrimitiveIntersector::validChunkIntersector && !robust && isCoherent(context->flags)))
       {
         /* AOS to SOA conversion */
