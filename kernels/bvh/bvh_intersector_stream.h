@@ -583,7 +583,7 @@ namespace embree
         size_t m_trav_active = 0;
         for (size_t i=startPacketID;i<=endPacketID;i++)
         {
-          STAT3(normal.trav_nodes,1,1,1);                          
+          //STAT3(normal.trav_nodes,1,1,1);                          
           const Packet &p = packet[i]; 
           const vfloat<K> tminX = msub(minX, p.rdir.x, p.org_rdir.x);
           const vfloat<K> tminY = msub(minY, p.rdir.y, p.org_rdir.y);
@@ -600,6 +600,77 @@ namespace embree
         return m_trav_active;
       }
 
+      __forceinline static size_t traverseCoherentStream(const size_t m_trav_active,
+                                                         Packet *const packet,
+                                                         const Node* __restrict__ const node,
+                                                         const NearFarPreCompute &pc,
+                                                         const Frusta &frusta,
+                                                         size_t *const maskK,
+                                                         vfloat<K> &dist)
+      {
+        /* interval-based culling test */
+        const vfloat<K> bminX = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.nearX));
+        const vfloat<K> bminY = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.nearY));
+        const vfloat<K> bminZ = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.nearZ));
+        const vfloat<K> bmaxX = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farX));
+        const vfloat<K> bmaxY = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farY));
+        const vfloat<K> bmaxZ = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farZ));
+
+        const vfloat<K> fminX = msub(bminX, vfloat<K>(frusta.min_rdir.x), vfloat<K>(frusta.min_org_rdir.x));
+        const vfloat<K> fminY = msub(bminY, vfloat<K>(frusta.min_rdir.y), vfloat<K>(frusta.min_org_rdir.y));
+        const vfloat<K> fminZ = msub(bminZ, vfloat<K>(frusta.min_rdir.z), vfloat<K>(frusta.min_org_rdir.z));
+        const vfloat<K> fmaxX = msub(bmaxX, vfloat<K>(frusta.max_rdir.x), vfloat<K>(frusta.max_org_rdir.x));
+        const vfloat<K> fmaxY = msub(bmaxY, vfloat<K>(frusta.max_rdir.y), vfloat<K>(frusta.max_org_rdir.y));
+        const vfloat<K> fmaxZ = msub(bmaxZ, vfloat<K>(frusta.max_rdir.z), vfloat<K>(frusta.max_org_rdir.z));
+        const vfloat<K> fmin  = maxi(maxi(fminX,fminY),maxi(fminZ,frusta.min_dist)); 
+        const vfloat<K> fmax  = mini(mini(fmaxX,fmaxY),mini(fmaxZ,frusta.max_dist)); 
+        const vbool<K> vmask_node_hit = fmin <= fmax;  
+        //STAT3(normal.trav_nodes,1,1,1);                          
+
+        size_t m_node_hit = movemask(vmask_node_hit) & (((size_t)1 << N)-1);
+        // ==================
+        const size_t first_index    = __bsf(m_trav_active);
+        const size_t first_packetID = first_index / K;
+        const size_t first_rayID    = first_index % K;
+
+        Packet &p = packet[first_packetID]; 
+        //STAT3(normal.trav_nodes,1,1,1);                          
+
+        const vfloat<K> rminX = msub(bminX, vfloat<K>(p.rdir.x[first_rayID]), vfloat<K>(p.org_rdir.x[first_rayID]));
+        const vfloat<K> rminY = msub(bminY, vfloat<K>(p.rdir.y[first_rayID]), vfloat<K>(p.org_rdir.y[first_rayID]));
+        const vfloat<K> rminZ = msub(bminZ, vfloat<K>(p.rdir.z[first_rayID]), vfloat<K>(p.org_rdir.z[first_rayID]));
+        const vfloat<K> rmaxX = msub(bmaxX, vfloat<K>(p.rdir.x[first_rayID]), vfloat<K>(p.org_rdir.x[first_rayID]));
+        const vfloat<K> rmaxY = msub(bmaxY, vfloat<K>(p.rdir.y[first_rayID]), vfloat<K>(p.org_rdir.y[first_rayID]));
+        const vfloat<K> rmaxZ = msub(bmaxZ, vfloat<K>(p.rdir.z[first_rayID]), vfloat<K>(p.org_rdir.z[first_rayID]));
+        const vfloat<K> rmin  = maxi(maxi(rminX,rminY),maxi(rminZ,p.min_dist[first_rayID])); 
+        const vfloat<K> rmax  = mini(mini(rmaxX,rmaxY),mini(rmaxZ,p.max_dist[first_rayID])); 
+
+        const vbool<K> vmask_first_hit = rmin <= rmax;  
+
+        size_t m_first_hit = movemask(vmask_first_hit) & (((size_t)1 << N)-1);
+
+        // ==================
+          
+        dist = select(vmask_first_hit,rmin,fmin);            
+        //dist = fmin;            
+
+        size_t m_node = m_node_hit ^ (m_first_hit /*  & m_leaf */);
+        while(unlikely(m_node)) 
+        {
+          const size_t b   = __bscf(m_node); 
+          const vfloat<K> minX = vfloat<K>(bminX[b]);
+          const vfloat<K> minY = vfloat<K>(bminY[b]);
+          const vfloat<K> minZ = vfloat<K>(bminZ[b]);
+          const vfloat<K> maxX = vfloat<K>(bmaxX[b]);
+          const vfloat<K> maxY = vfloat<K>(bmaxY[b]);
+          const vfloat<K> maxZ = vfloat<K>(bmaxZ[b]);
+          const size_t m_current = m_trav_active & intersectNodePacket(packet,minX,minY,minZ,maxX,maxY,maxZ,m_trav_active);
+          m_node_hit ^= m_current ? (size_t)0 : ((size_t)1 << b);
+          maskK[b] = m_current;
+        }
+        return m_node_hit;
+      }
+      
 
       // =============================================================================================
       // =============================================================================================

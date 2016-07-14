@@ -248,14 +248,11 @@ namespace embree
       RayK<K>** __restrict__ input_packets = (RayK<K>**)input_rays;
       assert(numOctantRays <= MAX_RAYS);
 
-      /* inactive rays should have been filtered out before */
-
       __aligned(64) Packet packet[MAX_RAYS/K];
       __aligned(64) Frusta frusta;
 
-      size_t m_active = initPacketsAndFrusta(input_packets,numOctantRays,packet,frusta);
+      const size_t m_active = initPacketsAndFrusta(input_packets,numOctantRays,packet,frusta);
 
-      /* valid rays */
       if (unlikely(m_active == 0)) return; 
 
       stack[0].mask    = m_active;
@@ -277,16 +274,13 @@ namespace embree
 
         if (unlikely(stackPtr == stack)) break;
 
-        DBG_PRINT("POP");
         STAT3(normal.trav_stack_pop,1,1,1);                          
         stackPtr--;
         /*! pop next node */
         NodeRef cur = NodeRef(stackPtr->child);
         size_t m_trav_active = stackPtr->mask;
         assert(m_trav_active);
-
-        //STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
-            
+         
         /* non-root and leaf => full culling test for all rays */
         if (unlikely(stackPtr->parent != 0 && cur.isLeaf()))
         {
@@ -314,75 +308,8 @@ namespace embree
 
           __aligned(64) size_t maskK[N];
           for (size_t i=0;i<N;i++) maskK[i] = m_trav_active; 
-
-          /* interval-based culling test */
-          STAT3(normal.trav_nodes,1,1,1);                          
-
-          const vfloat<K> bminX = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.nearX));
-          const vfloat<K> bminY = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.nearY));
-          const vfloat<K> bminZ = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.nearZ));
-          const vfloat<K> bmaxX = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farX));
-          const vfloat<K> bmaxY = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farY));
-          const vfloat<K> bmaxZ = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farZ));
-
-          const vfloat<K> fminX = msub(bminX, vfloat<K>(frusta.min_rdir.x), vfloat<K>(frusta.min_org_rdir.x));
-          const vfloat<K> fminY = msub(bminY, vfloat<K>(frusta.min_rdir.y), vfloat<K>(frusta.min_org_rdir.y));
-          const vfloat<K> fminZ = msub(bminZ, vfloat<K>(frusta.min_rdir.z), vfloat<K>(frusta.min_org_rdir.z));
-          const vfloat<K> fmaxX = msub(bmaxX, vfloat<K>(frusta.max_rdir.x), vfloat<K>(frusta.max_org_rdir.x));
-          const vfloat<K> fmaxY = msub(bmaxY, vfloat<K>(frusta.max_rdir.y), vfloat<K>(frusta.max_org_rdir.y));
-          const vfloat<K> fmaxZ = msub(bmaxZ, vfloat<K>(frusta.max_rdir.z), vfloat<K>(frusta.max_org_rdir.z));
-          const vfloat<K> fmin  = maxi(maxi(fminX,fminY),maxi(fminZ,frusta.min_dist)); 
-          const vfloat<K> fmax  = mini(mini(fmaxX,fmaxY),mini(fmaxZ,frusta.max_dist)); 
-          const vbool<K> vmask_node_hit = fmin <= fmax;  
-
-          size_t m_node_hit = movemask(vmask_node_hit) & (((size_t)1 << N)-1);
-          // ==================
-          const size_t first_index    = __bsf(m_trav_active);
-          const size_t first_packetID = first_index / K;
-          const size_t first_rayID    = first_index % K;
-
-          Packet &p = packet[first_packetID]; 
-          STAT3(normal.trav_nodes,1,1,1);                          
-
-          const vfloat<K> rminX = msub(bminX, vfloat<K>(p.rdir.x[first_rayID]), vfloat<K>(p.org_rdir.x[first_rayID]));
-          const vfloat<K> rminY = msub(bminY, vfloat<K>(p.rdir.y[first_rayID]), vfloat<K>(p.org_rdir.y[first_rayID]));
-          const vfloat<K> rminZ = msub(bminZ, vfloat<K>(p.rdir.z[first_rayID]), vfloat<K>(p.org_rdir.z[first_rayID]));
-          const vfloat<K> rmaxX = msub(bmaxX, vfloat<K>(p.rdir.x[first_rayID]), vfloat<K>(p.org_rdir.x[first_rayID]));
-          const vfloat<K> rmaxY = msub(bmaxY, vfloat<K>(p.rdir.y[first_rayID]), vfloat<K>(p.org_rdir.y[first_rayID]));
-          const vfloat<K> rmaxZ = msub(bmaxZ, vfloat<K>(p.rdir.z[first_rayID]), vfloat<K>(p.org_rdir.z[first_rayID]));
-          const vfloat<K> rmin  = maxi(maxi(rminX,rminY),maxi(rminZ,p.min_dist[first_rayID])); 
-          const vfloat<K> rmax  = mini(mini(rmaxX,rmaxY),mini(rmaxZ,p.max_dist[first_rayID])); 
-
-          const vbool<K> vmask_first_hit = rmin <= rmax;  
-
-          size_t m_first_hit = movemask(vmask_first_hit) & (((size_t)1 << N)-1);
-
-          // ==================
-
-          assert(__popcnt(m_node_hit) <= N );
-          
-          vfloat<K> dist = select(vmask_first_hit,rmin,fmin);            
-          //vfloat<K> dist = fmin;            
-
-          DBG_PRINT(dist);
-
-          size_t m_node = m_node_hit ^ (m_first_hit /*  & m_leaf */);
-          while(unlikely(m_node)) 
-          {
-            const size_t b   = __bscf(m_node); // box
-            const vfloat<K> minX = vfloat<K>(bminX[b]);
-            const vfloat<K> minY = vfloat<K>(bminY[b]);
-            const vfloat<K> minZ = vfloat<K>(bminZ[b]);
-            const vfloat<K> maxX = vfloat<K>(bmaxX[b]);
-            const vfloat<K> maxY = vfloat<K>(bmaxY[b]);
-            const vfloat<K> maxZ = vfloat<K>(bmaxZ[b]);
-            const size_t m_current = m_trav_active & intersectNodePacket(packet,minX,minY,minZ,maxX,maxY,maxZ,m_trav_active);
-            m_node_hit ^= m_current ? (size_t)0 : ((size_t)1 << b);
-            maskK[b] = m_current;
-          }
-
-          //STAT3(normal.trav_hit_boxes[__popcnt(movemask(vmask))],1,1,1);                          
-
+          vfloat<K> dist;
+          const size_t m_node_hit = traverseCoherentStream(m_trav_active, packet, node, pc, frusta, maskK, dist);
           if (unlikely(m_node_hit == 0)) goto pop;
 
           BVHNNodeTraverserKHitCoherent<types,N,K>::traverseClosestHit(cur, m_trav_active, vbool<K>((int)m_node_hit), dist, (size_t*)maskK, stackPtr);
@@ -394,16 +321,11 @@ namespace embree
         STAT3(normal.trav_leaves, 1, 1, 1);
         size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
 
-        DBG_PRINT("leaf");
-        DBG_PRINT(__popcnt(m_trav_active));
-
         size_t bits = m_trav_active;
 
         /*! intersect stream of rays with all primitives */
         size_t lazy_node = 0;
         STAT_USER(1,(__popcnt(bits)+K-1)/K*4);
-        STAT_USER(2,(__popcnt(bits)+1)/2);
-        STAT_USER(3,(__popcnt(bits)+3)/4);
         do
         {
           size_t i = __bsf(bits) / K;
@@ -442,7 +364,6 @@ namespace embree
 
       size_t m_active = initPacketsAndFrusta(input_packets,numOctantRays,packet,frusta);
 
-
       /* valid rays */
       if (unlikely(m_active == 0)) return; 
 
@@ -465,7 +386,6 @@ namespace embree
 
         if (unlikely(stackPtr == stack)) break;
 
-        DBG_PRINT("POP");
         STAT3(normal.trav_stack_pop,1,1,1);                          
         stackPtr--;
         /*! pop next node */
@@ -474,9 +394,7 @@ namespace embree
         if (unlikely(!m_trav_active)) continue;
 
         assert(m_trav_active);
-        DBG_PRINT(std::bitset<64>(m_trav_active));
 
-        //STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                                      
         /* non-root and leaf => full culling test for all rays */
         if (unlikely(stackPtr->parent != 0 && cur.isLeaf()))
         {
@@ -503,79 +421,11 @@ namespace embree
           if (unlikely(cur.isLeaf())) break;
           const Node* __restrict__ const node = cur.node();
 
-          DBG_PRINT("TRAVERSAL");
-          DBG_PRINT(__popcnt(m_trav_active));
-
           __aligned(64) size_t maskK[N];
           for (size_t i=0;i<N;i++) maskK[i] = m_trav_active; 
 
-          /* interval-based culling test */
-          STAT3(normal.trav_nodes,1,1,1);                          
-
-          const vfloat<K> bminX = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.nearX));
-          const vfloat<K> bminY = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.nearY));
-          const vfloat<K> bminZ = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.nearZ));
-          const vfloat<K> bmaxX = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farX));
-          const vfloat<K> bmaxY = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farY));
-          const vfloat<K> bmaxZ = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farZ));
-
-          const vfloat<K> fminX = msub(bminX, vfloat<K>(frusta.min_rdir.x), vfloat<K>(frusta.min_org_rdir.x));
-          const vfloat<K> fminY = msub(bminY, vfloat<K>(frusta.min_rdir.y), vfloat<K>(frusta.min_org_rdir.y));
-          const vfloat<K> fminZ = msub(bminZ, vfloat<K>(frusta.min_rdir.z), vfloat<K>(frusta.min_org_rdir.z));
-          const vfloat<K> fmaxX = msub(bmaxX, vfloat<K>(frusta.max_rdir.x), vfloat<K>(frusta.max_org_rdir.x));
-          const vfloat<K> fmaxY = msub(bmaxY, vfloat<K>(frusta.max_rdir.y), vfloat<K>(frusta.max_org_rdir.y));
-          const vfloat<K> fmaxZ = msub(bmaxZ, vfloat<K>(frusta.max_rdir.z), vfloat<K>(frusta.max_org_rdir.z));
-          const vfloat<K> fmin  = maxi(maxi(fminX,fminY),maxi(fminZ,frusta.min_dist)); 
-          const vfloat<K> fmax  = mini(mini(fmaxX,fmaxY),mini(fmaxZ,frusta.max_dist)); 
-          const vbool<K> vmask_node_hit = fmin <= fmax;  
-
-          size_t m_node_hit = movemask(vmask_node_hit) & (((size_t)1 << N)-1);;
-
-          // ==================
-          const size_t first_index    = __bsf(m_trav_active);
-          const size_t first_packetID = first_index / K;
-          const size_t first_rayID    = first_index % K;
-
-          Packet &p = packet[first_packetID]; 
-          STAT3(normal.trav_nodes,1,1,1);                          
-
-          const vfloat<K> rminX = msub(bminX, vfloat<K>(p.rdir.x[first_rayID]), vfloat<K>(p.org_rdir.x[first_rayID]));
-          const vfloat<K> rminY = msub(bminY, vfloat<K>(p.rdir.y[first_rayID]), vfloat<K>(p.org_rdir.y[first_rayID]));
-          const vfloat<K> rminZ = msub(bminZ, vfloat<K>(p.rdir.z[first_rayID]), vfloat<K>(p.org_rdir.z[first_rayID]));
-          const vfloat<K> rmaxX = msub(bmaxX, vfloat<K>(p.rdir.x[first_rayID]), vfloat<K>(p.org_rdir.x[first_rayID]));
-          const vfloat<K> rmaxY = msub(bmaxY, vfloat<K>(p.rdir.y[first_rayID]), vfloat<K>(p.org_rdir.y[first_rayID]));
-          const vfloat<K> rmaxZ = msub(bmaxZ, vfloat<K>(p.rdir.z[first_rayID]), vfloat<K>(p.org_rdir.z[first_rayID]));
-          const vfloat<K> rmin  = maxi(maxi(rminX,rminY),maxi(rminZ,p.min_dist[first_rayID])); 
-          const vfloat<K> rmax  = mini(mini(rmaxX,rmaxY),mini(rmaxZ,p.max_dist[first_rayID])); 
-
-          const vbool<K> vmask_first_hit = rmin <= rmax;  
-
-          size_t m_first_hit = movemask(vmask_first_hit) & (((size_t)1 << N)-1);
-
-          // ==================
-
-          assert(__popcnt(m_node_hit) <= 8 );
-          
-          DBG_PRINT(dist);
-
-          size_t m_node = m_node_hit ^ (m_first_hit /*  & m_leaf */);
-          while(unlikely(m_node)) 
-          {
-            const size_t b   = __bscf(m_node); // box
-            const vfloat<K> minX = vfloat<K>(bminX[b]);
-            const vfloat<K> minY = vfloat<K>(bminY[b]);
-            const vfloat<K> minZ = vfloat<K>(bminZ[b]);
-            const vfloat<K> maxX = vfloat<K>(bmaxX[b]);
-            const vfloat<K> maxY = vfloat<K>(bmaxY[b]);
-            const vfloat<K> maxZ = vfloat<K>(bmaxZ[b]);
-
-            const size_t m_current = m_trav_active & intersectNodePacket(packet,minX,minY,minZ,maxX,maxY,maxZ,m_trav_active);
-
-            m_node_hit ^= m_current ? (size_t)0 : ((size_t)1 << b);
-            maskK[b] = m_current;
-          }
-
-          //STAT3(normal.trav_hit_boxes[__popcnt(movemask(vmask))],1,1,1);                          
+          vfloat<K> dist;
+          const size_t m_node_hit = traverseCoherentStream(m_trav_active, packet, node, pc, frusta, maskK, dist);
 
           if (unlikely(m_node_hit == 0)) goto pop;
 
@@ -587,9 +437,6 @@ namespace embree
         assert(cur != BVH::emptyNode);
         STAT3(normal.trav_leaves, 1, 1, 1);
         size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
-
-        DBG_PRINT("leaf");
-        DBG_PRINT(__popcnt(m_trav_active));
 
         size_t bits = m_trav_active & m_active;
         /*! intersect stream of rays with all primitives */
@@ -625,7 +472,7 @@ namespace embree
     {
       __aligned(64) RContext ray_ctx[MAX_RAYS_PER_OCTANT];
       __aligned(64) Precalculations pre[MAX_RAYS_PER_OCTANT]; 
-      __aligned(64) StackItemMask  stack0[stackSizeSingle];  //!< stack of nodes 
+      __aligned(64) StackItemMask  stack[stackSizeSingle];  //!< stack of nodes 
 
 #if ENABLE_COHERENT_STREAM_PATH == 1 
 
@@ -671,30 +518,31 @@ namespace embree
           new (&pre[i]) Precalculations(*rays[i],bvh);
         }
 
-        stack0[0].ptr  = BVH::invalidNode;
-        stack0[0].mask = (size_t)-1;
+        stack[0].ptr  = BVH::invalidNode;
+        stack[0].mask = (size_t)-1;
+        stack[1].ptr  = bvh->root;
+        stack[1].mask = m_active;
 
         ///////////////////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////
 
         const NearFarPreCompute pc(ray_ctx[0].rdir);
-
-        const size_t fiberMask = m_active;
-        assert(fiberMask);
         
-        StackItemMask* stackPtr      = stack0 + 1;
+        StackItemMask* stackPtr      = stack + 2;
 
-        NodeRef cur               = bvh->root;
-        size_t m_trav_active      = m_active & fiberMask; // lower half of active rays
-        NodeRef cur_next          = bvh->root;
-        size_t m_trav_active_next = m_active & (~fiberMask); // upper half of active rays
-        if (m_trav_active_next == 0) cur_next = 0;
-
-        assert(__popcnt(m_trav_active_next) <= 32);
+        //NodeRef cur               = bvh->root;
+        //size_t m_trav_active      = m_active; 
 
         while (1) pop:
         {          
+          /*! pop next node */
+          STAT3(normal.trav_stack_pop,1,1,1);                          
+          stackPtr--;
+          NodeRef cur = NodeRef(stackPtr->ptr);            
+          size_t m_trav_active = stackPtr->mask;
+          assert(m_trav_active);
+
 
           const vfloat<K> inf(pos_inf);
 
@@ -731,16 +579,7 @@ namespace embree
 
             const vboold8 vmask8 =  maskK != vlong<K/2>(zero);
             const vbool<K> vmask(vmask8);
-            if (unlikely(none(vmask))) 
-            {
-              /*! pop next node */
-              STAT3(normal.trav_stack_pop,1,1,1);                          
-              stackPtr--;
-              cur = NodeRef(stackPtr->ptr);
-              m_trav_active = stackPtr->mask;
-              assert(m_trav_active);
-              goto pop;
-            }
+            if (unlikely(none(vmask))) goto pop;
 
             BVHNNodeTraverserKHit<types,N,K>::traverseClosestHit(cur, m_trav_active, vmask, dist, (size_t*)&maskK, stackPtr);
 
@@ -773,16 +612,7 @@ namespace embree
             } while(bits);              
 
             const vbool<K> vmask = dist < inf;
-            if (unlikely(none(vmask))) 
-            {
-              /*! pop next node */
-              STAT3(normal.trav_stack_pop,1,1,1);                          
-              stackPtr--;
-              cur = NodeRef(stackPtr->ptr);
-              m_trav_active = stackPtr->mask;
-              assert(m_trav_active);
-              goto pop;
-            }
+            if (unlikely(none(vmask))) goto pop;
 
             BVHNNodeTraverserKHit<types,N,K>::traverseClosestHit(cur, m_trav_active, vmask, dist, (unsigned int*)&maskK, stackPtr);
             assert(m_trav_active);
@@ -792,7 +622,6 @@ namespace embree
           /* current ray stream is done? */
           if (unlikely(cur == BVH::invalidNode))
             break;
-
 
           /*! this is a leaf node */
           assert(cur != BVH::emptyNode);
@@ -813,13 +642,6 @@ namespace embree
             const size_t i = __bscf(isec_bits);
             ray_ctx[i].update(rays[i]);
           }
-
-          /*! pop next node */
-          STAT3(normal.trav_stack_pop,1,1,1);                          
-          stackPtr--;
-          cur = NodeRef(stackPtr->ptr);            
-          m_trav_active = stackPtr->mask;
-          assert(m_trav_active);
         } // traversal + intersection
 
         ///////////////////////////////////////////////////////////////////////////////////
@@ -834,7 +656,7 @@ namespace embree
     {
       __aligned(64) RContext ray_ctx[MAX_RAYS_PER_OCTANT];
       __aligned(64) Precalculations pre[MAX_RAYS_PER_OCTANT]; 
-      __aligned(64) StackItemMask  stack0[stackSizeSingle];  //!< stack of nodes 
+      __aligned(64) StackItemMask  stack[stackSizeSingle];  //!< stack of nodes 
 
 #if ENABLE_COHERENT_STREAM_PATH == 1 
       if (unlikely(PrimitiveIntersector::validChunkIntersector && !robust && isCoherent(context->flags)))
@@ -866,11 +688,8 @@ namespace embree
       {
         Ray** rays = input_rays + r;
         const size_t numOctantRays = (r + MAX_RAYS_PER_OCTANT >= numTotalRays) ? numTotalRays-r : MAX_RAYS_PER_OCTANT;
-
-        /* inactive rays should have been filtered out before */
         size_t m_active = numOctantRays ==  8*sizeof(size_t) ? (size_t)-1 : (((size_t)1 << numOctantRays))-1;
-
-        if (m_active == 0) return;
+        if (unlikely(m_active == 0)) continue;
 
         /* do per ray precalculations */
         for (size_t i=0; i<numOctantRays; i++) {
@@ -878,26 +697,25 @@ namespace embree
           new (&pre[i]) Precalculations(*rays[i],bvh);
         }
 
-        stack0[0].ptr  = BVH::invalidNode;
-        stack0[0].mask = (size_t)-1;
+        stack[0].ptr  = BVH::invalidNode;
+        stack[0].mask = (size_t)-1;
+        stack[1].ptr  = bvh->root;
+        stack[1].mask = m_active;
 
-
-        const size_t fiberMask = m_active;
-        assert(fiberMask);
-        
-        StackItemMask* stackPtr      = stack0 + 1;
-
-        NodeRef cur               = bvh->root;
-        size_t m_trav_active      = m_active & fiberMask; // lower half of active rays
-        NodeRef cur_next          = bvh->root;
-        size_t m_trav_active_next = m_active & (~fiberMask); // upper half of active rays
-
-        if (m_trav_active_next == 0) cur_next = 0;
+        StackItemMask* stackPtr      = stack + 2;
 
         const NearFarPreCompute pc(ray_ctx[0].rdir);
 
         while (1) pop:
         {
+          /*! pop next node */
+          STAT3(shadow.trav_stack_pop,1,1,1);                          
+          stackPtr--;
+          NodeRef cur = NodeRef(stackPtr->ptr);
+          assert(stackPtr->mask);
+          size_t m_trav_active = stackPtr->mask & m_active;
+          if (unlikely(m_trav_active == 0 && cur != BVH::invalidNode)) continue;
+
           const vfloat<K> inf(pos_inf);
 
           while (1)
@@ -929,20 +747,7 @@ namespace embree
               maskK = mask_or((vboold8)vmask,maskK,maskK,bitmask);
             } while(bits);          
             const vboold8 vmask = (maskK != vlong<K/2>(zero)); 
-            if (unlikely(none(vmask))) 
-            {
-              /*! pop next node */
-              STAT3(shadow.trav_stack_pop,1,1,1);                          
-              do {
-                //assert(stackPtr > stack);
-                stackPtr--;
-                cur = NodeRef(stackPtr->ptr);
-                assert(stackPtr->mask);
-                m_trav_active = stackPtr->mask & m_active;
-              } while (unlikely(!m_trav_active));
-              assert(m_trav_active);
-              goto pop;
-            }
+            if (unlikely(none(vmask))) goto pop;            
 
             BVHNNodeTraverserKHit<types,N,K>::traverseAnyHit(cur,m_trav_active,vmask,(size_t*)&maskK,stackPtr); 
 #else
@@ -977,21 +782,9 @@ namespace embree
             } while(bits);          
             const vbool<K> vmask = maskK != vint<K>(zero); 
 
-            if (unlikely(none(vmask))) 
-            {
-              /*! pop next node */
-              STAT3(shadow.trav_stack_pop,1,1,1);  
-              do {
-                stackPtr--;
-                cur = NodeRef(stackPtr->ptr);
-                assert(stackPtr->mask);
-                m_trav_active = stackPtr->mask & m_active;
-              } while (unlikely(cur != BVH::invalidNode && m_trav_active == 0));
-              goto pop;
-            }
+            if (unlikely(none(vmask))) goto pop;
 
             BVHNNodeTraverserKHit<types,N,K>::traverseAnyHit(cur,m_trav_active,vmask,(unsigned int*)&maskK,stackPtr); 
-
 #endif
 
           }
@@ -1009,19 +802,9 @@ namespace embree
           size_t bits = m_trav_active & m_active;          
 
           assert(bits);
-          //STAT3(shadow.trav_hit_boxes[__popcnt(bits)],1,1,1);                          
-
           m_active &= ~PrimitiveIntersector::occluded(pre,bits,rays,context,0,prim,num,bvh->scene,NULL,lazy_node);
           if (unlikely(m_active == 0)) break;
 
-          /*! pop next node */
-          STAT3(shadow.trav_stack_pop,1,1,1);                          
-          do {
-            stackPtr--;
-            cur = NodeRef(stackPtr->ptr);
-            assert(stackPtr->mask);
-            m_trav_active = stackPtr->mask & m_active;
-          } while (unlikely(cur != BVH::invalidNode && m_trav_active == 0));
         } // traversal + intersection        
       }      
     }

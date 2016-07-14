@@ -23,10 +23,8 @@ namespace embree {
 
 #define USE_INTERFACE 0 // 0 = stream, 1 = single rays/packets, 2 = single rays/packets using stream interface
 #define AMBIENT_OCCLUSION_SAMPLES 64
-//#define rtcOccluded rtcIntersect
-//#define rtcOccluded1M rtcIntersect1M
-#define RAYN_FLAGS RTC_INTERSECT_COHERENT
-//#define RAYN_FLAGS RTC_INTERSECT_INCOHERENT
+//#define RAYN_FLAGS RTC_INTERSECT_COHERENT
+#define RAYN_FLAGS RTC_INTERSECT_INCOHERENT
 
 #define SHADING 1
 
@@ -272,7 +270,7 @@ void renderTileStandard(int taskIndex,
     /* eyelight shading */
     Vec3fa color = Vec3fa(0.0f);
     if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
-#if RAYN_FLAGS == RTC_INTERSECT_COHERENT
+#if 0 // RAYN_FLAGS == RTC_INTERSECT_COHERENT
       color = Vec3fa(abs(dot(normalize(ray.dir),normalize(ray.Ng))));
 #else    
       color = ambientOcclusionShading(x,y,ray);
