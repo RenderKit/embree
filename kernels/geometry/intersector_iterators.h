@@ -236,7 +236,6 @@ namespace embree
         static __forceinline vbool<K> occludedChunk(const vbool<K>& valid, /* PrecalculationsChunk& pre, */ RayK<K>& ray, const RTCIntersectContext* context, const PrimitiveChunk* prim, size_t num, Scene* scene, size_t& lazy_node) 
         {
           PrecalculationsChunk pre(valid,ray); //todo: might cause trouble
-
           vbool<K> valid0 = valid;
           for (size_t i=0; i<num; i++) {
             valid0 &= !Intersector2::occluded(valid0,pre,ray,context,prim[i],scene);

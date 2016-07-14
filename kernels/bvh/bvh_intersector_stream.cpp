@@ -230,6 +230,7 @@ namespace embree
             input_rays[i]->instID = ray.instID[slotID];
           }
         }
+
       }
     }
 
@@ -603,6 +604,7 @@ namespace embree
 
           vbool<K> m_valid = (input_packets[i]->tnear <= input_packets[i]->tfar); 
           vbool<K> m_hit = PrimitiveIntersector::occludedChunk(m_valid,*input_packets[i],context,prim,num,bvh->scene,lazy_node);
+          input_packets[i]->geomID = select(m_hit,vint<K>(zero),input_packets[i]->geomID);
           m_active &= ~((size_t)movemask(m_hit) << (i*K));
         } 
 
@@ -625,10 +627,11 @@ namespace embree
       __aligned(64) Precalculations pre[MAX_RAYS_PER_OCTANT]; 
       __aligned(64) StackItemMask  stack0[stackSizeSingle];  //!< stack of nodes 
 
-#if defined(__AVX__) && ENABLE_COHERENT_STREAM_PATH == 1 && !defined(EMBREE_INTERSECTION_FILTER)
+#if ENABLE_COHERENT_STREAM_PATH == 1 
 
       if (unlikely(PrimitiveIntersector::validChunkIntersector && !robust && isCoherent(context->flags)))
       {
+
         /* AOS to SOA conversion */
         RayK<K> rayK[MAX_RAYS / K];
         RayK<K> *rayK_ptr[MAX_RAYS / K];
@@ -833,9 +836,10 @@ namespace embree
       __aligned(64) Precalculations pre[MAX_RAYS_PER_OCTANT]; 
       __aligned(64) StackItemMask  stack0[stackSizeSingle];  //!< stack of nodes 
 
-#if defined(__AVX__) && ENABLE_COHERENT_STREAM_PATH == 1 && !defined(EMBREE_INTERSECTION_FILTER)
+#if ENABLE_COHERENT_STREAM_PATH == 1 
       if (unlikely(PrimitiveIntersector::validChunkIntersector && !robust && isCoherent(context->flags)))
       {
+
         /* AOS to SOA conversion */
         RayK<K> rayK[MAX_RAYS / K];
         RayK<K> *rayK_ptr[MAX_RAYS / K];

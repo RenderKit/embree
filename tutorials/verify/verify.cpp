@@ -1693,7 +1693,9 @@ namespace embree
       for (size_t i=0; i<256; i++)
       {
         if (rays[i].geomID != 0) return VerifyApplication::FAILED;
+        
         if (ivariant & VARIANT_OCCLUDED) continue;
+
         if (rays[i].primID != 0) return VerifyApplication::FAILED;
         if (abs(rays[i].u - u[i]) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
         if (abs(rays[i].v - v[i]) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
