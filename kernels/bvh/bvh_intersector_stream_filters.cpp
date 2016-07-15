@@ -15,13 +15,16 @@
 // ======================================================================== //
 
 #include "bvh_intersector_stream_filters.h"
+#include "bvh_intersector_stream.h"
 
 namespace embree
 {
   namespace isa
   {
     static const size_t MAX_RAYS_PER_OCTANT = 8*sizeof(size_t);
+
     static_assert(MAX_RAYS_PER_OCTANT <= MAX_INTERNAL_STREAM_SIZE,"maximal internal stream size exceeded");
+
 
     __forceinline void RayStream::filterAOS(Scene *scene, RTCRay* _rayN, const size_t N, const size_t stride, const RTCIntersectContext* context, const bool intersect)
     {
@@ -46,7 +49,6 @@ namespace embree
 #if defined(EMBREE_IGNORE_INVALID_RAYS)
           if (unlikely(!ray.valid())) {  inputRayID++; continue; }
 #endif
-
 
           const unsigned int octantID = movemask(vfloat4(ray.dir) < 0.0f) & 0x7;
 
@@ -81,13 +83,13 @@ namespace embree
         {
           if (intersect) scene->intersect((RTCRay&)*rays[0],context);
           else           scene->occluded ((RTCRay&)*rays[0],context);
-        }
-        
+        }        
         /* codepath for large number of rays per octant */
         else
         {
+          /* incoherent ray stream code path */
           if (intersect) scene->intersectN((RTCRay**)rays,numOctantRays,context);
-          else           scene->occludedN((RTCRay**)rays,numOctantRays,context);
+          else           scene->occludedN ((RTCRay**)rays,numOctantRays,context);
         }
         rays_in_octant[cur_octant] = 0;
 
@@ -98,23 +100,73 @@ namespace embree
     {
       RayPacket rayN(rayData,N);
 
-      /* use packet intersector for coherent ray mode */
-      if (likely(isCoherent(context->flags)))
+      if (unlikely(isCoherent(context->flags)))
       {
-        for (size_t s=0; s<streams; s++)
+#if defined(__AVX__) && ENABLE_COHERENT_STREAM_PATH == 1 && 0
+        if (likely(N == VSIZEX))
         {
-          for (size_t i=0; i<N; i+=VSIZEX)
+          //todo :: alignment check
+          __aligned(64) RayK<VSIZEX> *rays_ptr[MAX_RAYS / VSIZEX]; 
+          size_t numStreams = 0;
+          for (size_t s=0; s<streams; s++)
           {
-            const vintx vi = vintx(int(i))+vintx(step);
-            vboolx valid = vi < vintx(int(N));
-            const size_t offset = s*stream_offset + sizeof(float) * i;
-            RayK<VSIZEX> ray = rayN.gather<VSIZEX>(offset);
-            valid &= ray.tnear <= ray.tfar;
-            if (intersect) scene->intersect(valid,ray,context);
-            else           scene->occluded (valid,ray,context);
-            rayN.scatter<VSIZEX>(valid,offset,ray,intersect);
+            const size_t offset = s*stream_offset;
+            RayK<VSIZEX> &ray = *(RayK<VSIZEX>*)(rayData + offset);
+            rays_ptr[numStreams++] = &ray;
+            static const size_t MAX_COHERENT_RAY_PACKETS = MAX_RAYS / VSIZEX;
+
+            if (unlikely(numStreams == MAX_COHERENT_RAY_PACKETS))
+            {
+
+              if (intersect)
+                scene->intersectN((RTCRay**)rays_ptr,numStreams*VSIZEX,context);
+              else
+                scene->occludedN((RTCRay**)rays_ptr,numStreams*VSIZEX,context);        
+              numStreams = 0;
+            }
+          }
+          /* flush remaining streams */
+          if (unlikely(numStreams))
+          {
+            if (intersect)
+              scene->intersectN((RTCRay**)rays_ptr,numStreams*VSIZEX,context);
+            else
+              scene->occludedN((RTCRay**)rays_ptr,numStreams*VSIZEX,context);        
           }
         }
+        else
+          FATAL("HERE");
+#else
+        /* fast path for packet width == SIMD width && correct RayK alignment*/
+        const size_t rayDataAlignment = (size_t)rayData        % (VSIZEX*sizeof(float));
+        const size_t offsetAlignment  = (size_t)stream_offset  % (VSIZEX*sizeof(float));
+
+        if (likely(N == VSIZEX && !rayDataAlignment && !offsetAlignment))
+        {
+          //PRINT("FAST_PATH");
+          for (size_t s=0; s<streams; s++)
+          {
+            const size_t offset = s*stream_offset;
+            RayK<VSIZEX> &ray = *(RayK<VSIZEX>*)(rayData + offset);
+            vboolx valid = ray.tnear <= ray.tfar;
+            if (intersect) scene->intersect(valid,ray,context);
+            else           scene->occluded (valid,ray,context);
+          }
+        }
+        else
+          for (size_t s=0; s<streams; s++)
+            for (size_t i=0; i<N; i+=VSIZEX)
+            {
+              const vintx vi = vintx(int(i))+vintx(step);
+              vboolx valid = vi < vintx(int(N));
+              const size_t offset = s*stream_offset + sizeof(float) * i;
+              RayK<VSIZEX> ray = rayN.gather<VSIZEX>(offset);
+              valid &= ray.tnear <= ray.tfar;
+              if (intersect) scene->intersect(valid,ray,context);
+              else           scene->occluded (valid,ray,context);
+              rayN.scatter<VSIZEX>(valid,offset,ray,intersect);
+            }
+#endif
         return;
       }
 
@@ -194,26 +246,26 @@ namespace embree
     {
       RayPN& rayN = *(RayPN*)&_rayN;
 
+      size_t rayStartIndex = 0;
+
       /* use packet intersector for coherent ray mode */
-      if (likely(isCoherent(context->flags)))
+      if (unlikely(isCoherent(context->flags)))
       {
         size_t s = 0;
         size_t stream_offset = 0;
-        //for (size_t s=0; s<streams; s++)
+        const size_t numPackets = N / VSIZEX;
+        rayStartIndex += numPackets * VSIZEX;
+        for (size_t i=0; i<numPackets * VSIZEX; i+=VSIZEX)
         {
-          for (size_t i=0; i<N; i+=VSIZEX)
-          {
-            const vintx vi = vintx(int(i))+vintx(step);
-            vboolx valid = vi < vintx(int(N));
-            const size_t offset = s*stream_offset + sizeof(float) * i;
-            RayK<VSIZEX> ray = rayN.gather<VSIZEX>(valid,offset);
-             valid &= ray.tnear <= ray.tfar;
-            if (intersect) scene->intersect(valid,ray,context);
-            else           scene->occluded (valid,ray,context);
-            rayN.scatter<VSIZEX>(valid,offset,ray,intersect);
-          }
+          const vintx vi = vintx(int(i))+vintx(step);
+          vboolx valid = vi < vintx(int(N));
+          const size_t offset = s*stream_offset + sizeof(float) * i;
+          RayK<VSIZEX> ray = rayN.gather<VSIZEX>(valid,offset);
+          valid &= ray.tnear <= ray.tfar;
+          if (intersect) scene->intersect(valid,ray,context);
+          else           scene->occluded (valid,ray,context);
+          rayN.scatter<VSIZEX>(valid,offset,ray,intersect);
         }
-        return;
       }
       
       /* otherwise use stream intersector */
@@ -225,15 +277,12 @@ namespace embree
 
       for (size_t i=0;i<8;i++) rays_in_octant[i] = 0;
 
-      size_t soffset = 0;
-      //size_t s = 0;
-      //for (size_t s=0;s<streams;s++,soffset+=stream_offset)
       {
         // todo: use SIMD width to compute octants
-        for (size_t i=0;i<N;i++)
+        for (size_t i=rayStartIndex;i<N;i++)
         {
           /* global + local offset */
-          const size_t offset = soffset + sizeof(float) * i;
+          const size_t offset = sizeof(float) * i;
 
           if (unlikely(!rayN.isValidByOffset(offset))) continue;
 

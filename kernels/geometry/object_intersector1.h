@@ -26,7 +26,9 @@ namespace embree
     struct ObjectIntersector1
     {
       typedef Object Primitive;
-      
+     
+      static const bool validChunkIntersector = false;
+
       struct Precalculations {
         __forceinline Precalculations() {}
         __forceinline Precalculations (const Ray& ray, const void *ptr) {}
@@ -61,8 +63,8 @@ namespace embree
         return ray.geomID == 0;
       }
       
-      template<typename Context>
-      static __forceinline size_t intersect(Precalculations* pre, size_t valid_in, Ray** rays, const RTCIntersectContext* context, Context* ctx, size_t ty, const Primitive* prims, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node)
+      //template<typename Context>
+      static __forceinline size_t intersect(Precalculations* pre, size_t valid_in, Ray** rays, const RTCIntersectContext* context /*, Context* ctx */ , size_t ty, const Primitive* prims, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node)
       {
         AVX_ZERO_UPPER();
         
@@ -92,13 +94,13 @@ namespace embree
           accel->intersect1M((RTCRay**)rays_filtered,N,prim.primID,context);
         }
 
-        /* update all contexts */
-        size_t valid = valid_in;
-        while (unlikely(valid)) {
-          const size_t i = __bscf(valid);
-          ctx[i].update(rays[i]);
-        }
-        return valid;
+        /* /\* update all contexts *\/ */
+        /* size_t valid = valid_in; */
+        /* while (unlikely(valid)) { */
+        /*   const size_t i = __bscf(valid); */
+        /*   ctx[i].update(rays[i]); */
+        /* } */
+        return valid_in;
       }
 
       static __forceinline size_t occluded(Precalculations* pre, size_t valid_in, Ray** rays, const RTCIntersectContext* context, size_t ty, const Primitive* prims, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node)
@@ -145,6 +147,18 @@ namespace embree
         }
         return hit;
       }
+
+        template<int K>
+        static __forceinline void intersectChunk(const vbool<K>& valid, /* PrecalculationsChunk& pre, */ RayK<K>& ray, const RTCIntersectContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node)
+        {
+        }
+
+        template<int K>        
+        static __forceinline vbool<K> occludedChunk(const vbool<K>& valid, /* PrecalculationsChunk& pre, */ RayK<K>& ray, const RTCIntersectContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node) 
+        {
+          return valid;
+        }
+
     };
   }
 }

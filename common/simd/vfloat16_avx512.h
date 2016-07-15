@@ -727,13 +727,13 @@ namespace embree
     _mm512_mask_compressstoreu_ps(addr,mask,reg);
   }
 
-  __forceinline vfloat16 gather16f(const vboolf16& mask, const float *const ptr, __m512i index, const _MM_INDEX_SCALE_ENUM scale) {
+  __forceinline vfloat16 gather16f(const vboolf16& mask, const float *const ptr, __m512i index, const int scale= 4 ) {
     vfloat16 r = vfloat16::undefined();
-    return _mm512_mask_i32extgather_ps(r,mask,index,ptr,_MM_UPCONV_PS_NONE,scale,0);
+    return _mm512_mask_i32gather_ps(r,mask,index,ptr,scale);
   }
   
-  __forceinline void scatter16f(const vboolf16& mask,const float *const ptr, const __m512i index,const vfloat16 v, const _MM_INDEX_SCALE_ENUM scale) {
-    _mm512_mask_i32extscatter_ps((void*)ptr,mask,index,v,_MM_DOWNCONV_PS_NONE,scale,0);
+  __forceinline void scatter16f(const vboolf16& mask,const float *const ptr, const __m512i index,const vfloat16 v, const int scale = 4) {
+    _mm512_mask_i32scatter_ps((void*)ptr,mask,index,v,scale);
   }
 
   __forceinline vfloat16 loadAOS4to16f(const float& x,const float& y, const float& z)

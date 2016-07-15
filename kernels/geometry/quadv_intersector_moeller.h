@@ -43,6 +43,21 @@ namespace embree
         STAT3(shadow.trav_prims,1,1,1);
         return pre.occluded(ray,context, quad.v0,quad.v1,quad.v2,quad.v3,quad.geomIDs,quad.primIDs,scene,geomID_to_instID);
       }
+
+      /*! Intersect an array of rays with an array of M primitives. */
+      static __forceinline size_t intersect(Precalculations* pre, size_t valid, Ray** rays, const RTCIntersectContext* context,  size_t ty, const Primitive* prim, size_t num, Scene* scene, const unsigned* geomID_to_instID)
+      {
+        size_t valid_isec = 0;
+        do {
+          const size_t i = __bscf(valid);
+          const float old_far = rays[i]->tfar;
+          for (size_t n=0; n<num; n++)
+            intersect(pre[i],*rays[i],context,prim[n],scene,geomID_to_instID);
+          valid_isec |= (rays[i]->tfar < old_far) ? ((size_t)1 << i) : 0;            
+        } while(unlikely(valid));
+        return valid_isec;
+      }
+
     };
 
     /*! Intersects M triangles with K rays. */

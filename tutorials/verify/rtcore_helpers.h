@@ -619,6 +619,7 @@ namespace embree
     assert(Nrays<1024);
     const size_t alignment = size_t(rays) % 64;
     __aligned(64) char data[1024*sizeof(RTCRay)+64];
+    assert((size_t)data % 64 == 0);
     for (size_t i=0; i<Nrays; i+=N) 
     {
       size_t L = min(size_t(N),Nrays-i);
@@ -628,6 +629,7 @@ namespace embree
     }
     
     size_t M = (Nrays+N-1)/N;
+    assert(sizeof(RTCRayN) <= sizeof(RTCRay)*N);
     switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
     case VARIANT_INTERSECT: rtcIntersectNM(scene,context,(RTCRayN*)&data[alignment],N,M,N*sizeof(RTCRay)); break;
     case VARIANT_OCCLUDED : rtcOccludedNM(scene,context,(RTCRayN*)&data[alignment],N,M,N*sizeof(RTCRay)); break;

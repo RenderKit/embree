@@ -185,11 +185,11 @@ inline void scatter(float& ptr, const size_t stride, const size_t pid, const siz
 
 /* intersection filter function */
 void intersectionFilterN(int* valid,
-                                  void* ptr,
-                                  const RTCIntersectContext* context,
-                                  struct RTCRayN* ray,
-                                  const struct RTCHitN* potentialHit,
-                                  const size_t N)
+                         void* ptr,
+                         const RTCIntersectContext* context,
+                         struct RTCRayN* ray,
+                         const struct RTCHitN* potentialHit,
+                         const size_t N)
 {
   /* avoid crashing when debug visualizations are used */
   if (context == nullptr)

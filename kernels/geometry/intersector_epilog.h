@@ -420,6 +420,7 @@ namespace embree
           return true;
         }
       };
+
     
     template<int M, bool filter>
       struct Intersect1EpilogMU
@@ -1012,5 +1013,9 @@ namespace embree
           return true;
         }
       };
+
+    // =================================================================================
+
+
   }
 }

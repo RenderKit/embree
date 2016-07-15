@@ -28,7 +28,9 @@ namespace embree
       {
         typedef typename Intersector::Primitive Primitive;
         typedef typename Intersector::Precalculations Precalculations;
-        
+
+        static const bool validChunkIntersector = false;
+
         static __forceinline void intersect(Precalculations& pre, Ray& ray, const RTCIntersectContext* context, size_t ty, const Primitive* prim, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node)
         {
           for (size_t i=0; i<num; i++)
@@ -44,17 +46,21 @@ namespace embree
           return false;
         }
 
-        template<typename Context>
-        static __forceinline size_t intersect(Precalculations* pre, size_t valid, Ray** rays, const RTCIntersectContext* context, Context* ctx, size_t ty, const Primitive* prim, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node)
+        static __forceinline size_t intersect(Precalculations* pre, size_t valid, Ray** rays, const RTCIntersectContext* context,  size_t ty, const Primitive* prim, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node)
         {
+#if 0
           size_t valid_isec = 0;
           do {
             const size_t i = __bscf(valid);
-            intersect(pre[i],*rays[i],context,ty,prim,num,scene,geomID_to_instID,lazy_node); 
-            valid_isec |= (rays[i]->tfar < ctx[i].tfar()) ? ((size_t)1 << i) : 0;            
-            ctx[i].update(rays[i]);
+            const float old_far = rays[i]->tfar;
+            for (size_t n=0; n<num; n++)
+              Intersector::intersect(pre[i],*rays[i],context,prim[n],scene,geomID_to_instID);
+            valid_isec |= (rays[i]->tfar < old_far) ? ((size_t)1 << i) : 0;            
           } while(unlikely(valid));
           return valid_isec;
+#else
+          return Intersector::intersect(pre,valid,rays,context,ty,prim,num,scene,geomID_to_instID);
+#endif
         }
 
         static __forceinline size_t occluded(Precalculations* pre, size_t valid, Ray** rays, const RTCIntersectContext* context, size_t ty, const Primitive* prim, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) 
@@ -71,6 +77,20 @@ namespace embree
 
           return hit;
         }
+
+
+        template<int K>
+        static __forceinline void intersectChunk(const vbool<K>& valid, /* PrecalculationsChunk& pre, */ RayK<K>& ray, const RTCIntersectContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node)
+        {
+        }
+
+        template<int K>        
+        static __forceinline vbool<K> occludedChunk(const vbool<K>& valid, /* PrecalculationsChunk& pre, */ RayK<K>& ray, const RTCIntersectContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node) 
+        {
+          return valid;
+        }
+
+
       };
 
     template<typename Intersector1, typename Intersector2>
@@ -191,5 +211,80 @@ namespace embree
           return false;
         }
       };
+
+    // =============================================================================================
+
+    template<int K, typename Intersector1, typename Intersector2>
+      struct ArrayIntersectorKStream 
+      {
+        typedef typename Intersector1::Primitive Primitive;
+        typedef typename Intersector1::Precalculations Precalculations;
+        typedef typename Intersector2::Primitive PrimitiveChunk;
+        typedef typename Intersector2::Precalculations PrecalculationsChunk;
+
+        static const bool validChunkIntersector = true;
+        
+        static __forceinline void intersectChunk(const vbool<K>& valid, /* PrecalculationsChunk& pre, */ RayK<K>& ray, const RTCIntersectContext* context, const PrimitiveChunk* prim, size_t num, Scene* scene, size_t& lazy_node)
+        {
+          PrecalculationsChunk pre(valid,ray); //todo: might cause trouble
+
+          for (size_t i=0; i<num; i++) {
+            Intersector2::intersect(valid,pre,ray,context,prim[i],scene);
+          }
+        }
+        
+        static __forceinline vbool<K> occludedChunk(const vbool<K>& valid, /* PrecalculationsChunk& pre, */ RayK<K>& ray, const RTCIntersectContext* context, const PrimitiveChunk* prim, size_t num, Scene* scene, size_t& lazy_node) 
+        {
+          PrecalculationsChunk pre(valid,ray); //todo: might cause trouble
+          vbool<K> valid0 = valid;
+          for (size_t i=0; i<num; i++) {
+            valid0 &= !Intersector2::occluded(valid0,pre,ray,context,prim[i],scene);
+            if (none(valid0)) break;
+          }
+          return !valid0;
+        }
+
+        static __forceinline void intersect(Precalculations& pre, Ray& ray, const RTCIntersectContext* context, size_t ty, const Primitive* prim, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node)
+        {
+          for (size_t i=0; i<num; i++)
+            Intersector1::intersect(pre,ray,context,prim[i],scene,geomID_to_instID);
+        }
+        
+        static __forceinline bool occluded(Precalculations& pre, Ray& ray, const RTCIntersectContext* context, size_t ty, const Primitive* prim, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) 
+        {
+          for (size_t i=0; i<num; i++) {
+            if (Intersector1::occluded(pre,ray,context,prim[i],scene,geomID_to_instID))
+              return true;
+          }
+          return false;
+        }
+
+        static __forceinline size_t intersect(Precalculations* pre, size_t valid, Ray** rays, const RTCIntersectContext* context,  size_t ty, const Primitive* prim, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node)
+        {
+          return Intersector1::intersect(pre,valid,rays,context,ty,prim,num,scene,geomID_to_instID);
+        }
+
+        static __forceinline size_t occluded(Precalculations* pre, size_t valid, Ray** rays, const RTCIntersectContext* context, size_t ty, const Primitive* prim, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) 
+        {
+          //todo : fix
+          size_t hit = 0;
+          do {
+            const size_t i = __bscf(valid);            
+            if (occluded(pre[i],*rays[i],context,ty,prim,num,scene,geomID_to_instID,lazy_node))
+            {
+              hit |= (size_t)1 << i;
+              rays[i]->geomID = 0;
+            }
+          } while(valid);
+
+          return hit;
+        }
+
+        
+
+      };
+
+
+
   }
 }

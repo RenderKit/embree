@@ -452,18 +452,27 @@ namespace embree
   }
 
   
-  __forceinline vint16 gather16i(const vboolf16& mask, const int *const ptr, const vint16& index,const _MM_INDEX_SCALE_ENUM scale) {
-    return _mm512_mask_i32extgather_epi32(_mm512_undefined_epi32(),mask,index,ptr,_MM_UPCONV_EPI32_NONE,scale,0);
+  __forceinline vint16 gather16i(const vboolf16& mask, const int *const ptr, const vint16& index,const int scale = 4) {
+    return _mm512_mask_i32gather_epi32(_mm512_undefined_epi32(),mask,index,ptr,scale);
   }
   
-  __forceinline vint16 gather16i(const vboolf16& mask, vint16& dest, const int *const ptr, const vint16& index,const _MM_INDEX_SCALE_ENUM scale) {
-    return _mm512_mask_i32extgather_epi32(dest,mask,index,ptr,_MM_UPCONV_EPI32_NONE,scale,0);
+  __forceinline vint16 gather16i(const vboolf16& mask, vint16& dest, const int *const ptr, const vint16& index,const int scale = 4) {
+    return _mm512_mask_i32gather_epi32(dest,mask,index,ptr,scale);
   }
   
-  __forceinline void scatter16i(const vboolf16& mask,int *const ptr, const vint16& index,const vint16& v, const _MM_INDEX_SCALE_ENUM scale) {
-    _mm512_mask_i32extscatter_epi32((int*)ptr,mask,index,v,_MM_DOWNCONV_EPI32_NONE,scale,0);
+  __forceinline void scatter16i(const vboolf16& mask,int *const ptr, const vint16& index,const vint16& v, const int scale = 4) {
+    _mm512_mask_i32scatter_epi32((int*)ptr,mask,index,v,scale);
   }
-    
+
+  __forceinline vint16 conflict16i(const vint16& index)
+  {
+    return _mm512_conflict_epi32(index);
+  }
+
+  __forceinline vint16 conflict16i(const vboolf16& mask, vint16& dest, const vint16& index)
+  {
+    return _mm512_mask_conflict_epi32(dest,mask,index);
+  }    
 
   __forceinline void compactustore16i_low(const vboolf16 mask, void *addr, const vint16& reg) {
     _mm512_mask_compressstoreu_epi32(addr,mask,reg);

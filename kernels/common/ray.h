@@ -54,7 +54,11 @@ namespace embree
     }
 
     __forceinline void get(RayK<1>* ray) const;
+    __forceinline void get(const size_t i, RayK<1>& ray) const;
     __forceinline void set(const RayK<1>* ray);
+    __forceinline void set(const size_t i, const RayK<1>& ray);
+
+    __forceinline void copy(const size_t dest, const size_t source);
 
     __forceinline void update(const vbool<K>& m_mask,
                               const vfloat<K>& new_t,
@@ -249,6 +253,18 @@ namespace embree
     }
   }
 
+  /* Extracts a single ray out of a ray packet*/
+  template<int K>
+    __forceinline void RayK<K>::get(const size_t i, RayK<1>& ray) const
+  {
+    ray.org.x = org.x[i]; ray.org.y = org.y[i]; ray.org.z = org.z[i];
+    ray.dir.x = dir.x[i]; ray.dir.y = dir.y[i]; ray.dir.z = dir.z[i];
+    ray.tnear = tnear[i]; ray.tfar  = tfar [i]; ray.time  = time[i]; ray.mask = mask[i];
+    ray.Ng.x = Ng.x[i]; ray.Ng.y = Ng.y[i]; ray.Ng.z = Ng.z[i];
+    ray.u = u[i]; ray.v = v[i];
+    ray.geomID = geomID[i]; ray.primID = primID[i]; ray.instID = instID[i];
+  }
+
   /* Converts single rays to ray packet */
   template<int K>
   __forceinline void RayK<K>::set(const RayK<1>* ray)
@@ -262,6 +278,30 @@ namespace embree
       u[i] = ray[i].u; v[i] = ray[i].v;
       geomID[i] = ray[i].geomID; primID[i] = ray[i].primID; instID[i] = ray[i].instID;
     }
+  }
+
+  /* inserts a single ray into a ray packet element */
+  template<int K>
+    __forceinline void RayK<K>::set(const size_t i, const RayK<1>& ray)
+  {
+    org.x[i] = ray.org.x; org.y[i] = ray.org.y; org.z[i] = ray.org.z;
+    dir.x[i] = ray.dir.x; dir.y[i] = ray.dir.y; dir.z[i] = ray.dir.z;
+    tnear[i] = ray.tnear; tfar [i] = ray.tfar;  time[i] = ray.time; mask[i] = ray.mask;
+    Ng.x[i] = ray.Ng.x; Ng.y[i] = ray.Ng.y; Ng.z[i] = ray.Ng.z;
+    u[i] = ray.u; v[i] = ray.v;
+    geomID[i] = ray.geomID; primID[i] = ray.primID; instID[i] = ray.instID;
+  }
+
+  /* copies a ray packet element into another element*/
+  template<int K>
+    __forceinline void RayK<K>::copy(const size_t dest, const size_t source)
+  {
+    org.x[dest] = org.x[source]; org.y[dest] = org.y[source]; org.z[dest] = org.z[source];
+    dir.x[dest] = dir.x[source]; dir.y[dest] = dir.y[source]; dir.z[dest] = dir.z[source];
+    tnear[dest] = tnear[source]; tfar [dest] = tfar[source];  time[dest] = time[source]; mask[dest] = mask[source];
+    Ng.x[dest] = Ng.x[source]; Ng.y[dest] = Ng.y[source]; Ng.z[dest] = Ng.z[source];
+    u[dest] = u[source]; v[dest] = v[source];
+    geomID[dest] = geomID[source]; primID[dest] = primID[source]; instID[dest] = instID[source];
   }
 
   /* Shortcuts */
