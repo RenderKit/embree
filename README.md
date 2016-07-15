@@ -1,5 +1,8 @@
 % Embree: High Performance Ray Tracing Kernels 2.10.0
 % Intel Corporation
+% Tigra : optimizations for path tracer
+
+Tigra: path tracer works faster to 5% with dragon scene.
 
 Embree Overview
 ===============
