@@ -1,0 +1,308 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="RelWithDebInfo|Win32">
+      <Configuration>RelWithDebInfo</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGUID>{A0667ED1-6021-3554-AF34-EDDBCFC327BF}</ProjectGUID>
+    <Keyword>Win32Proj</Keyword>
+    <Platform>Win32</Platform>
+    <ProjectName>pathtracer</ProjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>Intel C++ Compiler XE 15.0</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>Intel C++ Compiler XE 15.0</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>Intel C++ Compiler XE 15.0</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">D:\info\embree\0embree-2.10.0\embree-2.10.0\Debug\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">pathtracer.dir\Debug\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">pathtracer</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">.exe</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</GenerateManifest>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">D:\info\embree\0embree-2.10.0\embree-2.10.0\Release\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">pathtracer.dir\Release\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">pathtracer</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">.exe</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</GenerateManifest>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">D:\info\embree\0embree-2.10.0\embree-2.10.0\RelWithDebInfo\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">pathtracer.dir\RelWithDebInfo\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">pathtracer</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">.exe</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">true</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">true</GenerateManifest>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <AdditionalOptions> /Qdiag-disable:11074 /Qdiag-disable:11075 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalIncludeDirectories>D:\info\embree\0embree-2.10.0\embree-2.10.0\include;D:\info\embree\0embree-2.10.0\embree-2.10.0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AssemblerListingLocation>Debug/</AssemblerListingLocation>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <Optimization>Disabled</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;TASKING_INTERNAL;CMAKE_INTDIR="Debug";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;TASKING_INTERNAL;CMAKE_INTDIR=\"Debug\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>D:\info\embree\0embree-2.10.0\embree-2.10.0\include;D:\info\embree\0embree-2.10.0\embree-2.10.0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>D:\info\embree\0embree-2.10.0\embree-2.10.0\include;D:\info\embree\0embree-2.10.0\embree-2.10.0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Link>
+      <AdditionalOptions> /machine:X86 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib;..\..\Debug\embree.lib;..\..\Debug\tutorial.lib;..\..\Debug\image.lib;..\..\Debug\transport.lib;..\..\Debug\tutorial_device.lib;..\..\Debug\embree_sse42.lib;..\..\Debug\embree_avx.lib;..\..\Debug\embree_avx2.lib;..\..\Debug\simd.lib;..\..\Debug\tutorial.lib;..\..\Debug\scenegraph.lib;..\..\Debug\image.lib;..\..\Debug\lexers.lib;glu32.lib;opengl32.lib;..\common\freeglut\Win32\freeglut.lib;..\..\Debug\lights.lib;..\..\Debug\sys.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImportLibrary>D:/info/embree/0embree-2.10.0/embree-2.10.0/Debug/pathtracer.lib</ImportLibrary>
+      <ProgramDataBaseFile>D:/info/embree/0embree-2.10.0/embree-2.10.0/Debug/pathtracer.pdb</ProgramDataBaseFile>
+      <SubSystem>Console</SubSystem>
+      <Version>
+      </Version>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <AdditionalOptions> /Qdiag-disable:11074 /Qdiag-disable:11075 /Qinline-max-total-size- /Qinline-factor=200 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalIncludeDirectories>D:\info\embree\0embree-2.10.0\embree-2.10.0\include;D:\info\embree\0embree-2.10.0\embree-2.10.0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AssemblerListingLocation>Release/</AssemblerListingLocation>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <Optimization>MaxSpeedHighLevel</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;TASKING_INTERNAL;CMAKE_INTDIR="Release";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;TASKING_INTERNAL;CMAKE_INTDIR=\"Release\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>D:\info\embree\0embree-2.10.0\embree-2.10.0\include;D:\info\embree\0embree-2.10.0\embree-2.10.0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>D:\info\embree\0embree-2.10.0\embree-2.10.0\include;D:\info\embree\0embree-2.10.0\embree-2.10.0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Link>
+      <AdditionalOptions> /machine:X86 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib;..\..\Release\embree.lib;..\..\Release\tutorial.lib;..\..\Release\image.lib;..\..\Release\transport.lib;..\..\Release\tutorial_device.lib;..\..\Release\embree_sse42.lib;..\..\Release\embree_avx.lib;..\..\Release\embree_avx2.lib;..\..\Release\simd.lib;..\..\Release\tutorial.lib;..\..\Release\scenegraph.lib;..\..\Release\image.lib;..\..\Release\lexers.lib;glu32.lib;opengl32.lib;..\common\freeglut\Win32\freeglut.lib;..\..\Release\lights.lib;..\..\Release\sys.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImportLibrary>D:/info/embree/0embree-2.10.0/embree-2.10.0/Release/pathtracer.lib</ImportLibrary>
+      <ProgramDataBaseFile>D:/info/embree/0embree-2.10.0/embree-2.10.0/Release/pathtracer.pdb</ProgramDataBaseFile>
+      <SubSystem>Console</SubSystem>
+      <Version>
+      </Version>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">
+    <ClCompile>
+      <AdditionalOptions> /Qdiag-disable:11074 /Qdiag-disable:11075 /Qinline-max-total-size- /Qinline-factor=200 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalIncludeDirectories>D:\info\embree\0embree-2.10.0\embree-2.10.0\include;D:\info\embree\0embree-2.10.0\embree-2.10.0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AssemblerListingLocation>RelWithDebInfo/</AssemblerListingLocation>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <Optimization>Full</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;DEBUG;TASKING_INTERNAL;CMAKE_INTDIR="RelWithDebInfo";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;DEBUG;TASKING_INTERNAL;CMAKE_INTDIR=\"RelWithDebInfo\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>D:\info\embree\0embree-2.10.0\embree-2.10.0\include;D:\info\embree\0embree-2.10.0\embree-2.10.0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>D:\info\embree\0embree-2.10.0\embree-2.10.0\include;D:\info\embree\0embree-2.10.0\embree-2.10.0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Link>
+      <AdditionalOptions> /machine:X86 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib;..\..\RelWithDebInfo\embree.lib;..\..\RelWithDebInfo\tutorial.lib;..\..\RelWithDebInfo\image.lib;..\..\RelWithDebInfo\transport.lib;..\..\RelWithDebInfo\tutorial_device.lib;..\..\RelWithDebInfo\embree_sse42.lib;..\..\RelWithDebInfo\embree_avx.lib;..\..\RelWithDebInfo\embree_avx2.lib;..\..\RelWithDebInfo\simd.lib;..\..\RelWithDebInfo\tutorial.lib;..\..\RelWithDebInfo\scenegraph.lib;..\..\RelWithDebInfo\image.lib;..\..\RelWithDebInfo\lexers.lib;glu32.lib;opengl32.lib;..\common\freeglut\Win32\freeglut.lib;..\..\RelWithDebInfo\lights.lib;..\..\RelWithDebInfo\sys.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImportLibrary>D:/info/embree/0embree-2.10.0/embree-2.10.0/RelWithDebInfo/pathtracer.lib</ImportLibrary>
+      <ProgramDataBaseFile>D:/info/embree/0embree-2.10.0/embree-2.10.0/RelWithDebInfo/pathtracer.pdb</ProgramDataBaseFile>
+      <SubSystem>Console</SubSystem>
+      <Version>
+      </Version>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <CustomBuild Include="CMakeLists.txt">
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Building Custom Rule D:/info/embree/0embree-2.10.0/embree-2.10.0/tutorials/pathtracer/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">setlocal
+d:\inst\cmake-3.5.0-rc1-win32-x86\cmake-3.5.0-rc1-win32-x86\bin\cmake.exe -HD:/info/embree/0embree-2.10.0/embree-2.10.0 -BD:/info/embree/0embree-2.10.0/embree-2.10.0 --check-stamp-file D:\info\embree\0embree-2.10.0\embree-2.10.0\tutorials\pathtracer\CMakeFiles\generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">D:/info/embree/0embree-2.10.0/embree-2.10.0/tutorials/pathtracer/CMakeLists.txt;D:\info\embree\0embree-2.10.0\embree-2.10.0\tutorials\pathtracer\CMakeLists.txt;D:\info\embree\0embree-2.10.0\embree-2.10.0\common\cmake\tutorial.cmake;D:\info\embree\0embree-2.10.0\embree-2.10.0\tutorials\pathtracer\CMakeLists.txt;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">D:\info\embree\0embree-2.10.0\embree-2.10.0\tutorials\pathtracer\CMakeFiles\generate.stamp</Outputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Building Custom Rule D:/info/embree/0embree-2.10.0/embree-2.10.0/tutorials/pathtracer/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">setlocal
+d:\inst\cmake-3.5.0-rc1-win32-x86\cmake-3.5.0-rc1-win32-x86\bin\cmake.exe -HD:/info/embree/0embree-2.10.0/embree-2.10.0 -BD:/info/embree/0embree-2.10.0/embree-2.10.0 --check-stamp-file D:\info\embree\0embree-2.10.0\embree-2.10.0\tutorials\pathtracer\CMakeFiles\generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">D:/info/embree/0embree-2.10.0/embree-2.10.0/tutorials/pathtracer/CMakeLists.txt;D:\info\embree\0embree-2.10.0\embree-2.10.0\tutorials\pathtracer\CMakeLists.txt;D:\info\embree\0embree-2.10.0\embree-2.10.0\common\cmake\tutorial.cmake;D:\info\embree\0embree-2.10.0\embree-2.10.0\tutorials\pathtracer\CMakeLists.txt;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">D:\info\embree\0embree-2.10.0\embree-2.10.0\tutorials\pathtracer\CMakeFiles\generate.stamp</Outputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">Building Custom Rule D:/info/embree/0embree-2.10.0/embree-2.10.0/tutorials/pathtracer/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">setlocal
+d:\inst\cmake-3.5.0-rc1-win32-x86\cmake-3.5.0-rc1-win32-x86\bin\cmake.exe -HD:/info/embree/0embree-2.10.0/embree-2.10.0 -BD:/info/embree/0embree-2.10.0/embree-2.10.0 --check-stamp-file D:\info\embree\0embree-2.10.0\embree-2.10.0\tutorials\pathtracer\CMakeFiles\generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">D:/info/embree/0embree-2.10.0/embree-2.10.0/tutorials/pathtracer/CMakeLists.txt;D:\info\embree\0embree-2.10.0\embree-2.10.0\tutorials\pathtracer\CMakeLists.txt;D:\info\embree\0embree-2.10.0\embree-2.10.0\common\cmake\tutorial.cmake;D:\info\embree\0embree-2.10.0\embree-2.10.0\tutorials\pathtracer\CMakeLists.txt;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">D:\info\embree\0embree-2.10.0\embree-2.10.0\tutorials\pathtracer\CMakeFiles\generate.stamp</Outputs>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="pathtracer.cpp" />
+    <ClCompile Include="pathtracer_device.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="D:/info/embree/0embree-2.10.0/embree-2.10.0/ZERO_CHECK.vcxproj">
+      <Project>8AB1104F-B101-3199-A7EE-5D06209E6979</Project>
+    </ProjectReference>
+    <ProjectReference Include="D:/info/embree/0embree-2.10.0/embree-2.10.0/kernels/xeon/embree.vcxproj">
+      <Project>C0E18C8B-903A-3F5A-B92F-BAE8364436B7</Project>
+    </ProjectReference>
+    <ProjectReference Include="D:/info/embree/0embree-2.10.0/embree-2.10.0/kernels/xeon/embree_avx.vcxproj">
+      <Project>1FB2535C-32C5-330F-8B25-1AB59BEDB31A</Project>
+    </ProjectReference>
+    <ProjectReference Include="D:/info/embree/0embree-2.10.0/embree-2.10.0/kernels/xeon/embree_avx2.vcxproj">
+      <Project>A60782A8-2DB7-3EE7-BD9B-C9CBACB0D10F</Project>
+    </ProjectReference>
+    <ProjectReference Include="D:/info/embree/0embree-2.10.0/embree-2.10.0/kernels/xeon/embree_sse42.vcxproj">
+      <Project>BFCA2BDE-4472-32ED-BDC9-AE51AA6570BB</Project>
+    </ProjectReference>
+    <ProjectReference Include="D:/info/embree/0embree-2.10.0/embree-2.10.0/tutorials/common/image/image.vcxproj">
+      <Project>CB7EBDAC-F57A-3591-9018-F1625CCA504B</Project>
+    </ProjectReference>
+    <ProjectReference Include="D:/info/embree/0embree-2.10.0/embree-2.10.0/common/lexers/lexers.vcxproj">
+      <Project>050463A1-D9A2-389E-99E9-246D0C91D5C1</Project>
+    </ProjectReference>
+    <ProjectReference Include="D:/info/embree/0embree-2.10.0/embree-2.10.0/tutorials/common/lights/lights.vcxproj">
+      <Project>600ADE90-5D0E-3D50-AB12-0A5B1E51EB06</Project>
+    </ProjectReference>
+    <ProjectReference Include="D:/info/embree/0embree-2.10.0/embree-2.10.0/tutorials/common/scenegraph/scenegraph.vcxproj">
+      <Project>2DDFCDAC-C4BF-346D-A9C3-ADD70DBFE7C3</Project>
+    </ProjectReference>
+    <ProjectReference Include="D:/info/embree/0embree-2.10.0/embree-2.10.0/common/simd/simd.vcxproj">
+      <Project>C675906B-49EE-394A-A415-4816B8C9A4EB</Project>
+    </ProjectReference>
+    <ProjectReference Include="D:/info/embree/0embree-2.10.0/embree-2.10.0/common/sys/sys.vcxproj">
+      <Project>97211C70-401D-3C39-973E-BE22B168D7E6</Project>
+    </ProjectReference>
+    <ProjectReference Include="D:/info/embree/0embree-2.10.0/embree-2.10.0/tutorials/common/transport/transport.vcxproj">
+      <Project>2DC35D9C-E359-396F-9417-7FAED9B278BD</Project>
+    </ProjectReference>
+    <ProjectReference Include="D:/info/embree/0embree-2.10.0/embree-2.10.0/tutorials/common/tutorial/tutorial.vcxproj">
+      <Project>134AD1D3-67B2-3941-89A1-8C31E6C273D5</Project>
+    </ProjectReference>
+    <ProjectReference Include="D:/info/embree/0embree-2.10.0/embree-2.10.0/tutorials/common/tutorial/tutorial_device.vcxproj">
+      <Project>7431EDEA-81E5-3323-AAA3-97864DD5D600</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

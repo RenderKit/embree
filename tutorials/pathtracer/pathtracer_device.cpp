@@ -45,12 +45,14 @@ unsigned int keyframeID = 0;
 struct BRDF
 {
   float Ns;               /*< specular exponent */
+  int Ns_i;
   float Ni;               /*< optical density for the surface (index of refraction) */
   Vec3fa Ka;              /*< ambient reflectivity */
   Vec3fa Kd;              /*< diffuse reflectivity */
   Vec3fa Ks;              /*< specular reflectivity */
   Vec3fa Kt;              /*< transmission filter */
   float dummy[30];
+  int Ni_i;
 };
 
 struct Medium
@@ -79,11 +81,30 @@ inline Vec3fa sample_component2(const Vec3fa& c0, const Sample3f& wi0, const Med
                                const Vec3fa& c1, const Sample3f& wi1, const Medium& medium1,
                                const Vec3fa& Lw, Sample3f& wi_o, Medium& medium_o, const float s)
 {
+  /*
   const Vec3fa m0 = Lw*c0/wi0.pdf;
   const Vec3fa m1 = Lw*c1/wi1.pdf;
 
   const float C0 = wi0.pdf == 0.0f ? 0.0f : max(max(m0.x,m0.y),m0.z);
   const float C1 = wi1.pdf == 0.0f ? 0.0f : max(max(m1.x,m1.y),m1.z);
+  */
+  
+  float C0 = 0.0f;
+  float C1 = 0.0f;
+  
+  if (fabsf(wi0.pdf)>1e-10f)
+  {	 
+	  const Vec3fa m0 = Lw*c0/wi0.pdf; 
+	  C0 = max(max(m0.x,m0.y),m0.z);
+  }  
+  
+  if (fabsf(wi1.pdf)>1e-10f)
+  {	 
+	  const Vec3fa m1 = Lw*c1/wi1.pdf; 
+	  C1 = max(max(m1.x,m1.y),m1.z);
+  }
+
+  
   const float C  = C0 + C1;
 
   if (C == 0.0f) {
@@ -92,12 +113,12 @@ inline Vec3fa sample_component2(const Vec3fa& c0, const Sample3f& wi0, const Med
   }
 
   const float CP0 = C0/C;
-  const float CP1 = C1/C;
   if (s < CP0) {
     wi_o = Sample3f(wi0.v,wi0.pdf*CP0);
     medium_o = medium0; return c0;
   }
   else {
+  const float CP1 = C1/C;
     wi_o = Sample3f(wi1.v,wi1.pdf*CP1);
     medium_o = medium1; return c1;
   }
@@ -109,7 +130,8 @@ inline Sample3f cosineSampleHemisphere(const float  u, const float  v, const Vec
   Vec3fa localDir = cosineSampleHemisphere(Vec2f(u,v));
   Sample3f s;
   s.v = frame(N) * localDir;
-  s.pdf = cosineSampleHemispherePDF(localDir);
+  //s.pdf = cosineSampleHemispherePDF(localDir);
+  s.pdf = cosineSampleHemispherePDF(localDir.z);
   return s;
 }
 
@@ -126,13 +148,16 @@ struct Minneart
   /*! The amount of backscattering. A value of 0 means lambertian
    *  diffuse, and inf means maximum backscattering. */
   float b;
+  int b_i;
 };
 
 inline Vec3fa Minneart__eval(const Minneart* This,
                      const Vec3fa &wo, const DifferentialGeometry &dg, const Vec3fa &wi)
 {
   const float cosThetaI = clamp(dot(wi,dg.Ns));
-  const float backScatter = powf(clamp(dot(wo,wi)), This->b);
+
+  const float backScatter = pow1(clamp(dot(wo,wi)), This->b, This->b_i);
+
   return (backScatter * cosThetaI * float(one_over_pi)) * This->R;
 }
 
@@ -150,6 +175,11 @@ inline void Minneart__Constructor(Minneart* This, const Vec3fa& R, const float b
 {
   This->R = R;
   This->b = b;
+
+  This->b_i = (int)(This->b);
+
+  if (fabsf(This->b - This->b_i) > 1e-3f)
+	  This->b_i = -1;
 }
 
 inline Minneart make_Minneart(const Vec3fa& R, const float f) {
@@ -171,6 +201,7 @@ struct Velvety
   /*! The falloff of horizon scattering. 0 no falloff,
    *  and inf means maximum falloff. */
   float f;
+  int f_i;
 };
 
 inline Vec3fa Velvety__eval(const Velvety* This,
@@ -179,7 +210,9 @@ inline Vec3fa Velvety__eval(const Velvety* This,
   const float cosThetaO = clamp(dot(wo,dg.Ns));
   const float cosThetaI = clamp(dot(wi,dg.Ns));
   const float sinThetaO = sqrt(1.0f - cosThetaO * cosThetaO);
-  const float horizonScatter = powf(sinThetaO, This->f);
+
+  const float horizonScatter = pow1(sinThetaO, This->f, This->f_i);
+
   return (horizonScatter * cosThetaI * float(one_over_pi)) * This->R;
 }
 
@@ -197,6 +230,11 @@ inline void Velvety__Constructor(Velvety* This, const Vec3fa& R, const float f)
 {
   This->R = R;
   This->f = f;
+
+  This->f_i = (int)(This->f);
+
+  if (fabsf(This->f - This->f_i) > 1e-3f)
+	  This->f_i = -1;
 }
 
 inline Velvety make_Velvety(const Vec3fa& R, const float f) {
@@ -223,6 +261,16 @@ inline Vec3fa DielectricReflection__sample(const DielectricReflection* This, con
   return Vec3fa(fresnelDielectric(cosThetaO,This->eta));
 }
 
+inline Vec3fa DielectricReflection__sample1(const DielectricReflection* This, const Vec3fa &wo, const DifferentialGeometry &dg, Sample3f &wi, const Vec2f &s, float &cosThetaO1)
+{
+  cosThetaO1 = (dot(wo,dg.Ns));
+  
+  const float cosThetaO = clamp(cosThetaO1);
+  
+  wi = reflect_(wo,dg.Ns,cosThetaO);
+  return Vec3fa(fresnelDielectric(cosThetaO,This->eta));
+}
+
 inline void DielectricReflection__Constructor(DielectricReflection* This,
                                               const float etai,
                                               const float etat)
@@ -240,13 +288,14 @@ inline DielectricReflection make_DielectricReflection(const float etai, const fl
 
 struct Lambertian
 {
-  Vec3fa R;
+  Vec3fa R, R1pi;
 };
 
 inline Vec3fa Lambertian__eval(const Lambertian* This,
                               const Vec3fa &wo, const DifferentialGeometry &dg, const Vec3fa &wi)
 {
-  return This->R * (1.0f/(float)(float(pi))) * clamp(dot(wi,dg.Ns));
+  //return This->R * (1.0f/(float)(float(pi))) * clamp(dot(wi,dg.Ns));
+  return This->R1pi * clamp(dot(wi, dg.Ns));
 }
 
 inline Vec3fa Lambertian__sample(const Lambertian* This,
@@ -262,6 +311,7 @@ inline Vec3fa Lambertian__sample(const Lambertian* This,
 inline void Lambertian__Constructor(Lambertian* This, const Vec3fa& R)
 {
   This->R = R;
+  This->R1pi = R * (float(one_over_pi));
 }
 
 inline Lambertian make_Lambertian(const Vec3fa& R) {
@@ -289,13 +339,21 @@ inline Vec3fa DielectricLayerLambertian__eval(const DielectricLayerLambertian* T
   if (cosThetaI <= 0.0f || cosThetaO <= 0.0f) return Vec3fa(0.f);
 
   float cosThetaO1;
+  
   const Sample3f wo1 = refract(wo,dg.Ns,This->etait,cosThetaO,cosThetaO1);
+  
   float cosThetaI1;
+  
   const Sample3f wi1 = refract(wi,dg.Ns,This->etait,cosThetaI,cosThetaI1);
+
   const float Fi = 1.0f - fresnelDielectric(cosThetaI,cosThetaI1,This->etait);
+  
   const Vec3fa Fg = Lambertian__eval(&This->ground,neg(wo1.v),dg,neg(wi1.v));
+  
   const float Fo = 1.0f - fresnelDielectric(cosThetaO,cosThetaO1,This->etait);
-  return Fo * This->T * Fg * This->T * Fi;
+  
+  //return Fo * This->T * Fg * This->T * Fi;
+  return This->T *  This->T * (Fo * Fg *  Fi);
 }
 
 inline Vec3fa DielectricLayerLambertian__sample(const DielectricLayerLambertian* This,
@@ -325,7 +383,41 @@ inline Vec3fa DielectricLayerLambertian__sample(const DielectricLayerLambertian*
   wi = Sample3f(wi0.v,wi1.pdf);
   float Fi = 1.0f - fresnelDielectric(cosThetaI,cosThetaI1,This->etait);
   float Fo = 1.0f - fresnelDielectric(cosThetaO,cosThetaO1,This->etait);
-  return Fo * This->T * Fg * This->T * Fi;
+  //return Fo * This->T * Fg * This->T * Fi;
+  return This->T *  This->T * (Fo * Fg *  Fi);
+}
+
+inline Vec3fa DielectricLayerLambertian__sample1(const DielectricLayerLambertian* This,
+                                               const Vec3fa &wo,
+                                               const DifferentialGeometry &dg,
+                                               Sample3f &wi,
+                                               const Vec2f &s,
+											   const float &cosThetaO
+											   )
+{
+  /*! refract ray into medium */
+  //float cosThetaO = dot(wo,dg.Ns);
+  if (cosThetaO <= 0.0f) { wi = Sample3f(Vec3fa(0.0f),0.0f); return Vec3fa(0.f); }
+  float cosThetaO1; Sample3f wo1 = refract(wo,dg.Ns,This->etait,cosThetaO,cosThetaO1);
+
+  /*! sample ground BRDF */
+  Sample3f wi1 = Sample3f(Vec3fa(0.f),1.f);
+  Vec3fa Fg = Lambertian__sample(&This->ground,neg(wo1.v),dg,wi1,s);
+
+  /*! refract ray out of medium */
+  float cosThetaI1 = dot(wi1.v,dg.Ns);
+  if (cosThetaI1 <= 0.0f) { wi = Sample3f(Vec3fa(0.0f),0.0f); return Vec3fa(0.f); }
+
+  float cosThetaI;
+  Sample3f wi0 = refract(neg(wi1.v),neg(dg.Ns),This->etati,cosThetaI1,cosThetaI);
+  if (wi0.pdf == 0.0f) { wi = Sample3f(Vec3fa(0.0f),0.0f); return Vec3fa(0.f); }
+
+  /*! accumulate contribution of path */
+  wi = Sample3f(wi0.v,wi1.pdf);
+  float Fi = 1.0f - fresnelDielectric(cosThetaI,cosThetaI1,This->etait);
+  float Fo = 1.0f - fresnelDielectric(cosThetaO,cosThetaO1,This->etait);
+  //return Fo * This->T * Fg * This->T * Fi;
+  return This->T *  This->T * (Fo * Fg *  Fi);
 }
 
 inline void DielectricLayerLambertian__Constructor(DielectricLayerLambertian* This,
@@ -374,8 +466,8 @@ inline void AnisotropicBlinn__Constructor(AnisotropicBlinn* This, const Vec3fa& 
   This->dy = dy;
   This->ny = ny;
   This->dz = dz;
-  This->norm1 = sqrtf((nx+1)*(ny+1)) * float(one_over_two_pi);
-  This->norm2 = sqrtf((nx+2)*(ny+2)) * float(one_over_two_pi);
+  This->norm1 = sqrt((nx+1)*(ny+1)) * float(one_over_two_pi);
+  This->norm2 = sqrt((nx+2)*(ny+2)) * float(one_over_two_pi);
   This->side = reduce_max(Kr)/(reduce_max(Kr)+reduce_max(Kt));
 }
 
@@ -386,10 +478,17 @@ inline float AnisotropicBlinn__eval(const AnisotropicBlinn* This, const Vec3fa& 
   const float cosPhiH   = dot(wh, This->dx);
   const float sinPhiH   = dot(wh, This->dy);
   const float cosThetaH = dot(wh, This->dz);
-  const float R = sqr(cosPhiH)+sqr(sinPhiH);
+
+  const float cc = sqr(cosPhiH);
+  const float ss = sqr(sinPhiH);
+
+  const float R = cc+ss;
+
   if (R == 0.0f) return This->norm2;
-  const float n = (This->nx*sqr(cosPhiH)+This->ny*sqr(sinPhiH))*rcp(R);
-  return This->norm2 * powf(abs(cosThetaH), n);
+
+  const float n = (This->nx*cc+This->ny*ss)*rcp(R);
+  //n dynamic, no needs to speedup
+  return This->norm2 * pow(abs(cosThetaH), n);
 }
 
 /*! Samples the distribution. \param s is the sample location
@@ -397,15 +496,27 @@ inline float AnisotropicBlinn__eval(const AnisotropicBlinn* This, const Vec3fa& 
 inline Vec3fa AnisotropicBlinn__sample(const AnisotropicBlinn* This, const float sx, const float sy)
 {
   const float phi =float(two_pi)*sx;
-  const float sinPhi0 = sqrtf(This->nx+1)*sinf(phi);
-  const float cosPhi0 = sqrtf(This->ny+1)*cosf(phi);
+
+  float cosa, sina;
+
+  sincosf(phi, &sina, &cosa);
+
+  const float sinPhi0 = sqrt(This->nx+1)*sina;
+  const float cosPhi0 = sqrt(This->ny+1)*cosa;
+
   const float norm = rsqrt(sqr(sinPhi0)+sqr(cosPhi0));
+  
   const float sinPhi = sinPhi0*norm;
   const float cosPhi = cosPhi0*norm;
   const float n = This->nx*sqr(cosPhi)+This->ny*sqr(sinPhi);
-  const float cosTheta = powf(sy,rcp(n+1));
+
+  //n dynamic, no needs to speedup
+  const float cosTheta = pow(sy,rcp(n+1));
+
   const float sinTheta = cos2sin(cosTheta);
-  const float pdf = This->norm1*powf(cosTheta,n);
+
+  const float pdf = This->norm1*pow(cosTheta,n);
+
   const Vec3fa h = Vec3fa(cosPhi * sinTheta, sinPhi * sinTheta, cosTheta);
   const Vec3fa wh = h.x*This->dx + h.y*This->dy + h.z*This->dz;
   return Vec3fa(wh,pdf);
@@ -503,6 +614,11 @@ void OBJMaterial__preprocess(OBJMaterial* material, BRDF& brdf, const Vec3fa& wo
     brdf.Ks = d * Vec3fa(material->Ks);
     //if (material->map_Ks) brdf.Ks *= material->map_Ks->get(dg.st);
     brdf.Ns = material->Ns;
+	brdf.Ns_i = (int)(material->Ns);
+
+	if (fabsf(brdf.Ns - brdf.Ns_i) > 1e-3f)
+		brdf.Ns_i = -1;
+
     //if (material->map_Ns) { brdf.Ns *= material->map_Ns.get(dg.st); }
     brdf.Kt = (1.0f-d)*Vec3fa(material->Kt);
     brdf.Ni = material->Ni;
@@ -515,12 +631,18 @@ Vec3fa OBJMaterial__eval(OBJMaterial* material, const BRDF& brdf, const Vec3fa& 
   const float Ms = max(max(brdf.Ks.x,brdf.Ks.y),brdf.Ks.z);
   const float Mt = max(max(brdf.Kt.x,brdf.Kt.y),brdf.Kt.z);
   if (Md > 0.0f) {
-    R = R + (1.0f/float(pi)) * clamp(dot(wi,dg.Ns)) * brdf.Kd;
+	  R = R + (float(one_over_pi))  * brdf.Kd* clamp(dot(wi, dg.Ns));
   }
   if (Ms > 0.0f) {
     const Sample3f refl = reflect_(wo,dg.Ns);
+
     if (dot(refl.v,wi) > 0.0f)
-      R = R + (brdf.Ns+2) * float(one_over_two_pi) * powf(max(1e-10f,dot(refl.v,wi)),brdf.Ns) * clamp(dot(wi,dg.Ns)) * brdf.Ks;
+      R = R + (brdf.Ns+2) * float(one_over_two_pi) * 
+		pow1(
+			max(1e-10f,dot(refl.v,wi)),
+			brdf.Ns,
+			brdf.Ns_i
+		) * clamp(dot(wi,dg.Ns)) * brdf.Ks;
   }
   if (Mt > 0.0f) {
   }
@@ -542,9 +664,15 @@ Vec3fa OBJMaterial__sample(OBJMaterial* material, const BRDF& brdf, const Vec3fa
   {
     const Sample3f refl = reflect_(wo,dg.Ns);
     wis.v = powerCosineSampleHemisphere(brdf.Ns,s);
-    wis.pdf = powerCosineSampleHemispherePDF(wis.v,brdf.Ns);
+    wis.pdf = powerCosineSampleHemispherePDF1(wis.v,brdf.Ns, brdf.Ns_i);
     wis.v = frame(refl.v) * wis.v;
-    cs = (brdf.Ns+2) * float(one_over_two_pi) * powf(max(dot(refl.v,wis.v),1e-10f),brdf.Ns) * clamp(dot(wis.v,dg.Ns)) * brdf.Ks;
+    cs = (brdf.Ns+2) * float(one_over_two_pi) * 
+		pow1(
+			max(dot(refl.v,wis.v),1e-10f),
+			brdf.Ns,
+			brdf.Ns_i
+			) 
+			* clamp(dot(wis.v,dg.Ns)) * brdf.Ks;
   }
 
   Vec3fa ct = Vec3fa(0.0f);
@@ -570,22 +698,24 @@ Vec3fa OBJMaterial__sample(OBJMaterial* material, const BRDF& brdf, const Vec3fa
   }
 
   const float CPd = Cd/C;
-  const float CPs = Cs/C;
-  const float CPt = Ct/C;
 
   if (s.x < CPd) {
     wi_o = Sample3f(wid.v,wid.pdf*CPd);
     return cd;
   }
-  else if (s.x < CPd + CPs)
-  {
-    wi_o = Sample3f(wis.v,wis.pdf*CPs);
-    return cs;
-  }
-  else
-  {
-    wi_o = Sample3f(wit.v,wit.pdf*CPt);
-    return ct;
+  else {
+	  const float CPs = Cs / C;
+	  if (s.x < CPd + CPs)
+	  {
+		  wi_o = Sample3f(wis.v, wis.pdf*CPs);
+		  return cs;
+	  }
+	  else
+	  {
+		  const float CPt = Ct / C;
+		  wi_o = Sample3f(wit.v, wit.pdf*CPt);
+		  return ct;
+	  }
   }
 }
 
@@ -608,11 +738,18 @@ Vec3fa MetalMaterial__eval(MetalMaterial* This, const BRDF& brdf, const Vec3fa& 
   const Vec3fa wh = normalize(wi+wo);
   const float cosThetaH = dot(wh, dg.Ns);
   const float cosTheta = dot(wi, wh); // = dot(wo, wh);
+  
   const Vec3fa F = eval(fresnel,cosTheta);
+
   const float D = eval(distribution,cosThetaH);
+
+  /*
   const float G = min(1.0f, min(2.0f * cosThetaH * cosThetaO / cosTheta,
                                 2.0f * cosThetaH * cosThetaI / cosTheta));
-  return (Vec3fa(This->reflectance)*F) * D * G * rcp(4.0f*cosThetaO);
+								*/
+  const float G = min(1.0f, ((cosThetaH + cosThetaH) / cosTheta)*min(cosThetaO,cosThetaI));
+
+  return (Vec3fa(This->reflectance)*F) * (D * G * rcp(4.0f*cosThetaO));
 }
 
 Vec3fa MetalMaterial__sample(MetalMaterial* This, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
@@ -638,8 +775,15 @@ Vec3fa ReflectiveMetalMaterial__eval(ReflectiveMetalMaterial* This, const BRDF& 
 
 Vec3fa ReflectiveMetalMaterial__sample(ReflectiveMetalMaterial* This, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
 {
-  wi_o = reflect_(wo,dg.Ns);
-  return Vec3fa(This->reflectance) * fresnelConductor(dot(wo,dg.Ns),Vec3fa((Vec3fa)This->eta),Vec3fa((Vec3fa)This->k));
+	float ccc;
+	
+	wi_o = reflect_1(wo,dg.Ns,ccc);
+
+  return Vec3fa(This->reflectance) * 
+	  fresnelConductor(
+	  //dot(wo,dg.Ns),
+	  ccc,
+	  Vec3fa((Vec3fa)This->eta),Vec3fa((Vec3fa)This->k));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -748,8 +892,17 @@ Vec3fa MetallicPaintMaterial__sample(MetallicPaintMaterial* This, const BRDF& br
 {
   DielectricReflection reflection; DielectricReflection__Constructor(&reflection, 1.0f, This->eta);
   DielectricLayerLambertian lambertian; DielectricLayerLambertian__Constructor(&lambertian, Vec3fa((float)1.0f), 1.0f, This->eta, make_Lambertian(Vec3fa((Vec3fa)This->shadeColor)));
+  
+  
+  float cosThetaO;
+  
+  Sample3f wi0; Vec3fa c0 = DielectricReflection__sample1(&reflection,wo,dg,wi0,s,cosThetaO);
+  Sample3f wi1; Vec3fa c1 = DielectricLayerLambertian__sample1(&lambertian,wo,dg,wi1,s,cosThetaO);
+  
+  /*
   Sample3f wi0; Vec3fa c0 = DielectricReflection__sample(&reflection,wo,dg,wi0,s);
   Sample3f wi1; Vec3fa c1 = DielectricLayerLambertian__sample(&lambertian,wo,dg,wi1,s);
+  */
   return sample_component2(c0,wi0,medium,c1,wi1,medium,Lw,wi_o,medium,s.x);
 }
 
@@ -1061,15 +1214,22 @@ RTCScene convertScene(ISPCScene* scene_in)
   geomID_to_inst  = (ISPCInstance_ptr*) alignedMalloc(numGeometries*sizeof(ISPCInstance_ptr));
 
   /* create scene */
-  int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
+  int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT; //fastest!
+  //int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT | RTC_SCENE_ROBUST;
+  
   int scene_aflags = RTC_INTERSECT1;
+  //int scene_aflags = RTC_INTERSECT4; //error: no intersect4 occlude4
 
   if (g_subdiv_mode)
     scene_flags = RTC_SCENE_DYNAMIC | RTC_SCENE_INCOHERENT | RTC_SCENE_ROBUST;
 
   scene_aflags |= RTC_INTERPOLATE;
 
-  RTCScene scene_out = rtcDeviceNewScene(g_device,(RTCSceneFlags)scene_flags, (RTCAlgorithmFlags) scene_aflags);
+  RTCScene scene_out = rtcDeviceNewScene(
+  g_device,
+  (RTCSceneFlags)scene_flags, 
+  (RTCAlgorithmFlags) scene_aflags
+  );
 
   /* use geometry instancing feature */
   if (g_instancing_mode == 1)
@@ -1238,6 +1398,7 @@ inline void evalBezier(const ISPCHairSet* hair, const int primID, const float t,
   const Vec3fa p10 = p00 * t0 + p01 * t1;
   const Vec3fa p11 = p01 * t0 + p02 * t1;
   const Vec3fa p12 = p02 * t0 + p03 * t1;
+  
   const Vec3fa p20 = p10 * t0 + p11 * t1;
   const Vec3fa p21 = p11 * t0 + p12 * t1;
   const Vec3fa p30 = p20 * t0 + p21 * t1;
@@ -1537,7 +1698,7 @@ Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCC
 
       break;
     }
-    Vec3fa Ns = normalize(ray.Ng);
+    Vec3fa Ns = ray.Ng;
 
     if (g_use_smooth_normals)
       if (ray.geomID != RTC_INVALID_GEOMETRY_ID) // FIXME: workaround for ISPC bug, location reached with empty execution mask
@@ -1546,8 +1707,10 @@ Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCC
       int geomID = ray.geomID; {
         rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER0,nullptr,&dPdu.x,&dPdv.x,3);
       }
-      Ns = normalize(cross(dPdv,dPdu));
+      Ns = cross(dPdv,dPdu);
     }
+
+	  Ns = normalize(Ns);
 
     /* compute differential geometry */
     dg.geomID = ray.geomID;
@@ -1557,9 +1720,18 @@ Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCC
     dg.P  = ray.org+ray.tfar*ray.dir;
     dg.Ng = ray.Ng;
     dg.Ns = Ns;
+
     int materialID = postIntersect(ray,dg);
-    dg.Ng = face_forward(ray.dir,normalize(dg.Ng));
-    dg.Ns = face_forward(ray.dir,normalize(dg.Ns));
+
+    dg.Ng = face_forward(ray.dir,
+		normalize
+		(dg.Ng)
+		);
+
+    dg.Ns = face_forward(ray.dir,
+		//normalize
+		(dg.Ns)
+		);
 
     /*! Compute  simple volumetric effect. */
     Vec3fa c = Vec3fa(1.0f);
@@ -1595,8 +1767,13 @@ Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCC
 
     /* setup secondary ray */
     float sign = dot(wi1.v,dg.Ng) < 0.0f ? -1.0f : 1.0f;
+	
     dg.P = dg.P + sign*dg.tnear_eps*dg.Ng;
-    ray = RTCRay(dg.P,normalize(wi1.v),dg.tnear_eps,inf,time);
+	
+    ray = RTCRay(dg.P,
+	//normalize
+	(wi1.v)
+	,dg.tnear_eps,inf,time);
   }
   return L;
 }
@@ -1608,6 +1785,8 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
 
   Vec3fa L = Vec3fa(0.0f);
 
+  
+	//tigra: add adaptive distributed here!
   for (int i=0; i<SAMPLES_PER_PIXEL; i++)
   {
     RandomSampler_init(sampler, x, y, g_accu_count*SAMPLES_PER_PIXEL+i);
@@ -1618,6 +1797,8 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
     L = L + renderPixelFunction(fx,fy,sampler,camera);
   }
   L = L*(1.0f/SAMPLES_PER_PIXEL);
+  
+  
   return L;
 }
 
@@ -1765,7 +1946,9 @@ extern "C" void device_init (char* cfg)
   rtcDeviceSetErrorFunction(g_device,error_handler);
 
   /* set start render mode */
+  //renderTile is local, не должно быть у всех
   renderTile = renderTileStandard;
+  
   key_pressed_handler = device_key_pressed;
 
 #if ENABLE_FILTER_FUNCTION == 0
@@ -1775,6 +1958,22 @@ extern "C" void device_init (char* cfg)
 } // device_init
 
 /* called by the C++ code to render */
+
+//tigra: device_render = run iteration
+/*
+вызывается из
+\tutorials\common\transport\transport.cpp
+  void render(const float time, const ISPCCamera& camera) {
+    device_render(g_pixels,g_width,g_height,time,camera);
+  }
+  
+render вызывается в
+\tutorials\common\tutorial\tutorial.cpp
+void TutorialApplication::renderBenchmark()
+void TutorialApplication::renderToFile(const FileName& fileName)
+void TutorialApplication::displayFunc(void)   
+*/
+
 extern "C" void device_render (int* pixels,
                            const int width,
                            const int height,
