@@ -66,7 +66,7 @@ ELSE()
   SET(EMBREE_LIB_TYPE SHARED)
 ENDIF()
 
-OPTION(ENABLE_ISPC_SUPPORT "Build Embree with support for ISPC applications." ON)
+#OPTION(ENABLE_ISPC_SUPPORT "Build Embree with support for ISPC applications." ON)
 OPTION(ENABLE_TUTORIALS    "Enable to build Embree tutorials" ON)
 
 ##############################################################################
@@ -102,6 +102,12 @@ ELSE()
   SET(TASKING_INTERNAL ON )
   SET(TASKING_TBB      OFF)
 ENDIF()
+
+#tigra off tbb
+  SET(TASKING_INTERNAL ON )
+  SET(TASKING_TBB      OFF)
+
+
 
 IF (TASKING_INTERNAL)
   ADD_DEFINITIONS(-DTASKING_INTERNAL)
