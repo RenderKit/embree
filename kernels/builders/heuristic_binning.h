@@ -169,21 +169,34 @@ namespace embree
       __forceinline BinInfo(EmptyTy) {
 	clear();
       }
-      
+
       /*! clears the bin info */
       __forceinline void clear() 
       {
+        const vint4 zero(0);
+#if defined(__AVX__)
+        const vfloat4 lower(pos_inf);
+        const vfloat4 upper(neg_inf);
+        const vfloat8 emptyBounds(lower,upper);
+
+	for (size_t i=0; i<BINS; i++) {
+          vfloat8::store(&bounds[i][0],emptyBounds);
+          vfloat8::store(&bounds[i][1],emptyBounds);
+          vfloat8::store(&bounds[i][2],emptyBounds);
+	  counts[i] = zero;
+	}
+#else
 	for (size_t i=0; i<BINS; i++) {
 	  bounds[i][0] = bounds[i][1] = bounds[i][2] = empty;
-	  counts[i] = 0;
+	  counts[i] = zero;
 	}
+#endif
       }
       
       /*! bins an array of primitives */
       __forceinline void bin (const PrimRef* prims, size_t N, const BinMapping<BINS>& mapping)
       {
-	if (N == 0) return;
-        
+	if (unlikely(N == 0)) return;
 	size_t i; 
 	for (i=0; i<N-1; i+=2)
         {

@@ -117,7 +117,6 @@ namespace embree
     if (isHugePageCandidate(bytes)) 
     {
       bytes = (bytes+PAGE_SIZE_2M-1)&ssize_t(-PAGE_SIZE_2M);
-
 #if !defined(__MACOSX__)
       /* try direct huge page allocation first */
       if (tryDirectHugePageAllocation)
