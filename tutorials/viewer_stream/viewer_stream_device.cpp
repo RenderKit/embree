@@ -307,7 +307,7 @@ extern "C" void device_init (char* cfg)
   rtcDeviceSetErrorFunction(g_device,error_handler);
 
   /* create scene */
-#if 0
+#if 1
   g_scene = convertScene(g_ispc_scene);
 #else
   rtcDeleteDevice(g_device); g_device = nullptr;

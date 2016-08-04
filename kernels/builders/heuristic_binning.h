@@ -212,16 +212,10 @@ namespace embree
           const BBox3fa prim0 = prims[i+0].bounds(); 
           const Vec3fa center0 = Vec3fa(center2(prim0)); 
           const vint4 bin0 = (vint4)mapping.bin(center0); 
-          prefetchL1(&prims[i+2]);
-          /* const Vec3ia bin0 = mapping.bin(center0);  */
           
           const BBox3fa prim1 = prims[i+1].bounds(); 
           const Vec3fa center1 = Vec3fa(center2(prim1)); 
           const vint4 bin1 = (vint4)mapping.bin(center1); 
-
-          prefetchL1(&prims[i+3]);
-
-          // const Vec3ia bin1 = mapping.bin(center1); 
           
           /*! increase bounds for bins for even primitive */
           const unsigned int b00 = extract<0>(bin0); bounds(b00,0).extend(prim0); 
