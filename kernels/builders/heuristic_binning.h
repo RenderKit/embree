@@ -170,6 +170,28 @@ namespace embree
 	clear();
       }
 
+      /*! bin access function */
+
+#if 1
+      __forceinline BBox3fa &bounds(const size_t binID, const size_t dimID)             { return _bounds[binID][dimID]; }
+      __forceinline const BBox3fa &bounds(const size_t binID, const size_t dimID) const { return _bounds[binID][dimID]; }
+
+      __forceinline int &counts(const size_t binID, const size_t dimID)             { return _counts[binID][dimID]; }
+      __forceinline const int &counts(const size_t binID, const size_t dimID) const { return _counts[binID][dimID]; }
+
+      __forceinline vint4 &counts(const size_t binID)             { return _counts[binID]; }
+      __forceinline const vint4 &counts(const size_t binID) const { return _counts[binID]; }
+#else
+      __forceinline BBox3fa &bounds(const size_t binID, const size_t dimID)             { return bins[binID].bounds[dimID]; }
+      __forceinline const BBox3fa &bounds(const size_t binID, const size_t dimID) const { return bins[binID].bounds[dimID]; }
+
+      __forceinline int &counts(const size_t binID, const size_t dimID)             { return bins[binID].counts[dimID]; }
+      __forceinline const int &counts(const size_t binID, const size_t dimID) const { return bins[binID].counts[dimID]; }
+
+      __forceinline vint4 &counts(const size_t binID)             { return bins[binID].counts; }
+      __forceinline const vint4 &counts(const size_t binID) const { return bins[binID].counts; }
+#endif
+
       /*! clears the bin info */
       __forceinline void clear() 
       {
@@ -177,15 +199,15 @@ namespace embree
         const vfloat8 emptyBounds(pos_inf,pos_inf,pos_inf,0.0f,neg_inf,neg_inf,neg_inf,0.0f);
 
 	for (size_t i=0; i<BINS; i++) {
-          vfloat8::store(&bounds[i][0],emptyBounds);
-          vfloat8::store(&bounds[i][1],emptyBounds);
-          vfloat8::store(&bounds[i][2],emptyBounds);
-	  counts[i] = vint4(zero);
+          vfloat8::store(&bounds(i,0),emptyBounds);
+          vfloat8::store(&bounds(i,1),emptyBounds);
+          vfloat8::store(&bounds(i,2),emptyBounds);
+	  counts(i) = vint4(zero);
 	}
 #else
 	for (size_t i=0; i<BINS; i++) {
-	  bounds[i][0] = bounds[i][1] = bounds[i][2] = empty;
-	  counts[i] = vint4(zero);
+	  bounds(i,0) = bounds(i,1) = bounds(i,2) = empty;
+	  counts(i) = vint4(zero);
 	}
 #endif
       }
@@ -211,33 +233,33 @@ namespace embree
           // const Vec3ia bin1 = mapping.bin(center1); 
           
           /*! increase bounds for bins for even primitive */
-          const unsigned int b00 = extract<0>(bin0); bounds[b00][0].extend(prim0); 
-          const unsigned int b01 = extract<1>(bin0); bounds[b01][1].extend(prim0); 
-          const unsigned int b02 = extract<2>(bin0); bounds[b02][2].extend(prim0); 
+          const unsigned int b00 = extract<0>(bin0); bounds(b00,0).extend(prim0); 
+          const unsigned int b01 = extract<1>(bin0); bounds(b01,1).extend(prim0); 
+          const unsigned int b02 = extract<2>(bin0); bounds(b02,2).extend(prim0); 
 
-          counts[b00][0]++;
-          counts[b01][1]++;
-          counts[b02][2]++;
+          counts(b00,0)++;
+          counts(b01,1)++;
+          counts(b02,2)++;
 
           /*! increase bounds of bins for odd primitive */
-          const unsigned int b10 = extract<0>(bin1);  bounds[b10][0].extend(prim1); 
-          const unsigned int b11 = extract<1>(bin1);  bounds[b11][1].extend(prim1); 
-          const unsigned int b12 = extract<2>(bin1);  bounds[b12][2].extend(prim1); 
+          const unsigned int b10 = extract<0>(bin1);  bounds(b10,0).extend(prim1); 
+          const unsigned int b11 = extract<1>(bin1);  bounds(b11,1).extend(prim1); 
+          const unsigned int b12 = extract<2>(bin1);  bounds(b12,2).extend(prim1); 
 
-          counts[b10][0]++;
-          counts[b11][1]++;
-          counts[b12][2]++;
+          counts(b10,0)++;
+          counts(b11,1)++;
+          counts(b12,2)++;
         }
 	/*! for uneven number of primitives */
 	if (i < N)
         {
           /*! map primitive to bin */
-          const BBox3fa prim0 = prims[i].bounds(); const Vec3fa center0 = Vec3fa(center2(prim0)); const Vec3ia bin0 = mapping.bin(center0); 
+          const BBox3fa prim0 = prims[i].bounds(); const Vec3fa center0 = Vec3fa(center2(prim0)); const vint4 bin0 = (vint4)mapping.bin(center0); 
           
           /*! increase bounds of bins */
-          const int b00 = bin0.x; counts[b00][0]++; bounds[b00][0].extend(prim0);
-          const int b01 = bin0.y; counts[b01][1]++; bounds[b01][1].extend(prim0);
-          const int b02 = bin0.z; counts[b02][2]++; bounds[b02][2].extend(prim0);
+          const int b00 = extract<0>(bin0); counts(b00,0)++; bounds(b00,0).extend(prim0);
+          const int b01 = extract<1>(bin0); counts(b01,1)++; bounds(b01,1).extend(prim0);
+          const int b02 = extract<2>(bin0); counts(b02,2)++; bounds(b02,2).extend(prim0);
         }
       }
 
@@ -250,30 +272,30 @@ namespace embree
 	for (i=0; i<N-1; i+=2)
         {
           /*! map even and odd primitive to bin */
-          const BBox3fa prim0 = prims[i+0].bounds(space); const Vec3fa center0 = Vec3fa(center2(prim0)); const Vec3ia bin0 = mapping.bin(center0); 
-          const BBox3fa prim1 = prims[i+1].bounds(space); const Vec3fa center1 = Vec3fa(center2(prim1)); const Vec3ia bin1 = mapping.bin(center1); 
+          const BBox3fa prim0 = prims[i+0].bounds(space); const Vec3fa center0 = Vec3fa(center2(prim0)); const vint4 bin0 = (vint4)mapping.bin(center0); 
+          const BBox3fa prim1 = prims[i+1].bounds(space); const Vec3fa center1 = Vec3fa(center2(prim1)); const vint4 bin1 = (vint4)mapping.bin(center1); 
           
           /*! increase bounds for bins for even primitive */
-          const int b00 = bin0.x; counts[b00][0]++; bounds[b00][0].extend(prim0);
-          const int b01 = bin0.y; counts[b01][1]++; bounds[b01][1].extend(prim0);
-          const int b02 = bin0.z; counts[b02][2]++; bounds[b02][2].extend(prim0);
+          const int b00 = extract<0>(bin0); counts(b00,0)++; bounds(b00,0).extend(prim0);
+          const int b01 = extract<1>(bin0); counts(b01,1)++; bounds(b01,1).extend(prim0);
+          const int b02 = extract<2>(bin0); counts(b02,2)++; bounds(b02,2).extend(prim0);
           
           /*! increase bounds of bins for odd primitive */
-          const int b10 = bin1.x; counts[b10][0]++; bounds[b10][0].extend(prim1);
-          const int b11 = bin1.y; counts[b11][1]++; bounds[b11][1].extend(prim1);
-          const int b12 = bin1.z; counts[b12][2]++; bounds[b12][2].extend(prim1);
+          const int b10 = extract<0>(bin1); counts(b10,0)++; bounds(b10,0).extend(prim1);
+          const int b11 = extract<1>(bin1); counts(b11,1)++; bounds(b11,1).extend(prim1);
+          const int b12 = extract<2>(bin1); counts(b12,2)++; bounds(b12,2).extend(prim1);
         }
 	
 	/*! for uneven number of primitives */
 	if (i < N)
         {
           /*! map primitive to bin */
-          const BBox3fa prim0 = prims[i].bounds(space); const Vec3fa center0 = Vec3fa(center2(prim0)); const Vec3ia bin0 = mapping.bin(center0); 
+          const BBox3fa prim0 = prims[i].bounds(space); const Vec3fa center0 = Vec3fa(center2(prim0)); const vint4 bin0 = (vint4)mapping.bin(center0); 
           
           /*! increase bounds of bins */
-          const int b00 = bin0.x; counts[b00][0]++; bounds[b00][0].extend(prim0);
-          const int b01 = bin0.y; counts[b01][1]++; bounds[b01][1].extend(prim0);
-          const int b02 = bin0.z; counts[b02][2]++; bounds[b02][2].extend(prim0);
+          const int b00 = extract<0>(bin0); counts(b00,0)++; bounds(b00,0).extend(prim0);
+          const int b01 = extract<1>(bin0); counts(b01,1)++; bounds(b01,1).extend(prim0);
+          const int b02 = extract<2>(bin0); counts(b02,2)++; bounds(b02,2).extend(prim0);
         }
       }
       
@@ -290,23 +312,23 @@ namespace embree
       {
 	for (size_t i=0; i<numBins; i++) 
         {
-          counts[i] += other.counts[i];
-          bounds[i][0].extend(other.bounds[i][0]);
-          bounds[i][1].extend(other.bounds[i][1]);
-          bounds[i][2].extend(other.bounds[i][2]);
+          counts(i) += other.counts(i);
+          bounds(i,0).extend(other.bounds(i,0));
+          bounds(i,1).extend(other.bounds(i,1));
+          bounds(i,2).extend(other.bounds(i,2));
         }
       }
 
-      /*! reducesr binning information */
+      /*! reduces binning information */
       static __forceinline const BinInfo reduce (const BinInfo& a, const BinInfo& b)
       {
         BinInfo c;
 	for (size_t i=0; i<BINS; i++) 
         {
-          c.counts[i] = a.counts[i]+b.counts[i];
-          c.bounds[i][0] = embree::merge(a.bounds[i][0],b.bounds[i][0]);
-          c.bounds[i][1] = embree::merge(a.bounds[i][1],b.bounds[i][1]);
-          c.bounds[i][2] = embree::merge(a.bounds[i][2],b.bounds[i][2]);
+          c.counts(i) = a.counts(i)+b.counts(i);
+          c.bounds(i,0) = embree::merge(a.bounds(i,0),b.bounds(i,0));
+          c.bounds(i,1) = embree::merge(a.bounds(i,1),b.bounds(i,1));
+          c.bounds(i,2) = embree::merge(a.bounds(i,2),b.bounds(i,2));
         }
         return c;
       }
@@ -320,11 +342,11 @@ namespace embree
 	vint4 count = 0; BBox3fa bx = empty; BBox3fa by = empty; BBox3fa bz = empty;
 	for (size_t i=mapping.size()-1; i>0; i--)
         {
-          count += counts[i];
+          count += counts(i);
           rCounts[i] = count;
-          bx.extend(bounds[i][0]); rAreas[i][0] = halfArea(bx);
-          by.extend(bounds[i][1]); rAreas[i][1] = halfArea(by);
-          bz.extend(bounds[i][2]); rAreas[i][2] = halfArea(bz);
+          bx.extend(bounds(i,0)); rAreas[i][0] = halfArea(bx);
+          by.extend(bounds(i,1)); rAreas[i][1] = halfArea(by);
+          bz.extend(bounds(i,2)); rAreas[i][2] = halfArea(bz);
           rAreas[i][3] = 0.0f;
         }
 	/* sweep from left to right and compute SAH */
@@ -333,10 +355,10 @@ namespace embree
 	count = 0; bx = empty; by = empty; bz = empty;
 	for (size_t i=1; i<mapping.size(); i++, ii+=1)
         {
-          count += counts[i-1];
-          bx.extend(bounds[i-1][0]); float Ax = halfArea(bx);
-          by.extend(bounds[i-1][1]); float Ay = halfArea(by);
-          bz.extend(bounds[i-1][2]); float Az = halfArea(bz);
+          count += counts(i-1);
+          bx.extend(bounds(i-1,0)); float Ax = halfArea(bx);
+          by.extend(bounds(i-1,1)); float Ay = halfArea(by);
+          bz.extend(bounds(i-1,2)); float Az = halfArea(bz);
           const vfloat4 lArea = vfloat4(Ax,Ay,Az,Az);
           const vfloat4 rArea = rAreas[i];
           const vint4 lCount = (count     +blocks_add) >> int(blocks_shift);
@@ -378,21 +400,28 @@ namespace embree
 	size_t leftCount = 0;
 	BBox3fa leftBounds = empty;
 	for (size_t i=0; i<(size_t)split.pos; i++) {
-	  leftCount += counts[i][split.dim];
-	  leftBounds.extend(bounds[i][split.dim]);
+	  leftCount += counts(i,split.dim);
+	  leftBounds.extend(bounds(i,split.dim));
 	}
 	size_t rightCount = 0;
 	BBox3fa rightBounds = empty;
 	for (size_t i=split.pos; i<mapping.size(); i++) {
-	  rightCount += counts[i][split.dim];
-	  rightBounds.extend(bounds[i][split.dim]);
+	  rightCount += counts(i,split.dim);
+	  rightBounds.extend(bounds(i,split.dim));
 	}
 	new (&info) SplitInfo(leftCount,leftBounds,rightCount,rightBounds);
       }
       
     private:
-      BBox3fa bounds[BINS][3]; //!< geometry bounds for each bin in each dimension
-      vint4    counts[BINS];    //!< counts number of primitives that map into the bins
+
+#if 0
+      struct __aligned(64) Bin {
+        BBox3fa bounds[3];
+        vint4 counts;
+      } bins[BINS];
+#endif
+      BBox3fa _bounds[BINS][3]; //!< geometry bounds for each bin in each dimension
+      vint4   _counts[BINS];    //!< counts number of primitives that map into the bins
     };
 
 #if defined(__AVX512F__)
