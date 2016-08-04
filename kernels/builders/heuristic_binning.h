@@ -173,22 +173,19 @@ namespace embree
       /*! clears the bin info */
       __forceinline void clear() 
       {
-        const vint4 zero(0);
 #if defined(__AVX__)
-        const vfloat4 lower(pos_inf);
-        const vfloat4 upper(neg_inf);
-        const vfloat8 emptyBounds(lower,upper);
+        const vfloat8 emptyBounds(pos_inf,pos_inf,pos_inf,0.0f,neg_inf,neg_inf,neg_inf,0.0f);
 
 	for (size_t i=0; i<BINS; i++) {
           vfloat8::store(&bounds[i][0],emptyBounds);
           vfloat8::store(&bounds[i][1],emptyBounds);
           vfloat8::store(&bounds[i][2],emptyBounds);
-	  counts[i] = zero;
+	  counts[i] = vint4(zero);
 	}
 #else
 	for (size_t i=0; i<BINS; i++) {
 	  bounds[i][0] = bounds[i][1] = bounds[i][2] = empty;
-	  counts[i] = zero;
+	  counts[i] = vint4(zero);
 	}
 #endif
       }
@@ -203,31 +200,34 @@ namespace embree
           /*! map even and odd primitive to bin */
           const BBox3fa prim0 = prims[i+0].bounds(); 
           const Vec3fa center0 = Vec3fa(center2(prim0)); 
-          const Vec3ia bin0 = mapping.bin(center0); 
+          const vint4 bin0 = (vint4)mapping.bin(center0); 
+
+          /* const Vec3ia bin0 = mapping.bin(center0);  */
           
           const BBox3fa prim1 = prims[i+1].bounds(); 
           const Vec3fa center1 = Vec3fa(center2(prim1)); 
-          const Vec3ia bin1 = mapping.bin(center1); 
+          const vint4 bin1 = (vint4)mapping.bin(center1); 
+
+          // const Vec3ia bin1 = mapping.bin(center1); 
           
           /*! increase bounds for bins for even primitive */
-          const unsigned int b00 = bin0.x; bounds[b00][0].extend(prim0);
-          const unsigned int b01 = bin0.y; bounds[b01][1].extend(prim0);
-          const unsigned int b02 = bin0.z; bounds[b02][2].extend(prim0);
-          
+          const unsigned int b00 = extract<0>(bin0); bounds[b00][0].extend(prim0); 
+          const unsigned int b01 = extract<1>(bin0); bounds[b01][1].extend(prim0); 
+          const unsigned int b02 = extract<2>(bin0); bounds[b02][2].extend(prim0); 
+
           counts[b00][0]++;
           counts[b01][1]++;
           counts[b02][2]++;
 
           /*! increase bounds of bins for odd primitive */
-          const unsigned int b10 = bin1.x;  bounds[b10][0].extend(prim1);
-          const unsigned int b11 = bin1.y;  bounds[b11][1].extend(prim1);
-          const unsigned int b12 = bin1.z;  bounds[b12][2].extend(prim1);
+          const unsigned int b10 = extract<0>(bin1);  bounds[b10][0].extend(prim1); 
+          const unsigned int b11 = extract<1>(bin1);  bounds[b11][1].extend(prim1); 
+          const unsigned int b12 = extract<2>(bin1);  bounds[b12][2].extend(prim1); 
 
           counts[b10][0]++;
           counts[b11][1]++;
           counts[b12][2]++;
         }
-	
 	/*! for uneven number of primitives */
 	if (i < N)
         {
