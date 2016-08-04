@@ -172,7 +172,6 @@ namespace embree
 
       /*! bin access function */
 
-#if 1
       __forceinline BBox3fa &bounds(const size_t binID, const size_t dimID)             { return _bounds[binID][dimID]; }
       __forceinline const BBox3fa &bounds(const size_t binID, const size_t dimID) const { return _bounds[binID][dimID]; }
 
@@ -181,16 +180,6 @@ namespace embree
 
       __forceinline vint4 &counts(const size_t binID)             { return _counts[binID]; }
       __forceinline const vint4 &counts(const size_t binID) const { return _counts[binID]; }
-#else
-      __forceinline BBox3fa &bounds(const size_t binID, const size_t dimID)             { return bins[binID].bounds[dimID]; }
-      __forceinline const BBox3fa &bounds(const size_t binID, const size_t dimID) const { return bins[binID].bounds[dimID]; }
-
-      __forceinline int &counts(const size_t binID, const size_t dimID)             { return bins[binID].counts[dimID]; }
-      __forceinline const int &counts(const size_t binID, const size_t dimID) const { return bins[binID].counts[dimID]; }
-
-      __forceinline vint4 &counts(const size_t binID)             { return bins[binID].counts; }
-      __forceinline const vint4 &counts(const size_t binID) const { return bins[binID].counts; }
-#endif
 
       /*! clears the bin info */
       __forceinline void clear() 
@@ -223,12 +212,14 @@ namespace embree
           const BBox3fa prim0 = prims[i+0].bounds(); 
           const Vec3fa center0 = Vec3fa(center2(prim0)); 
           const vint4 bin0 = (vint4)mapping.bin(center0); 
-
+          prefetchL1(&prims[i+2]);
           /* const Vec3ia bin0 = mapping.bin(center0);  */
           
           const BBox3fa prim1 = prims[i+1].bounds(); 
           const Vec3fa center1 = Vec3fa(center2(prim1)); 
           const vint4 bin1 = (vint4)mapping.bin(center1); 
+
+          prefetchL1(&prims[i+3]);
 
           // const Vec3ia bin1 = mapping.bin(center1); 
           
@@ -414,12 +405,6 @@ namespace embree
       
     private:
 
-#if 0
-      struct __aligned(64) Bin {
-        BBox3fa bounds[3];
-        vint4 counts;
-      } bins[BINS];
-#endif
       BBox3fa _bounds[BINS][3]; //!< geometry bounds for each bin in each dimension
       vint4   _counts[BINS];    //!< counts number of primitives that map into the bins
     };
