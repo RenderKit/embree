@@ -18,6 +18,8 @@
 
 #include "default.h"
 
+#define ENABLE_PARALLEL_BLOCK_ALLOCATION 1
+
 namespace embree
 {
   class FastAllocator 
@@ -149,11 +151,14 @@ namespace embree
     };
 
     FastAllocator (MemoryMonitorInterface* device) 
-      : device(device), slotMask(0), usedBlocks(nullptr), freeBlocks(nullptr), growSize(defaultBlockSize), bytesUsed(0), 
-      thread_local_allocators(this), thread_local_allocators2(this)
+      : device(device), slotMask(0), usedBlocks(nullptr), freeBlocks(nullptr), growSize(defaultBlockSize), bytesUsed(0), thread_local_allocators(this), thread_local_allocators2(this)
     {
       for (size_t i=0; i<MAX_THREAD_USED_BLOCK_SLOTS; i++)
+      {
         threadUsedBlocks[i] = nullptr;
+        threadBlocks[i] = nullptr;
+        assert(!slotMutex[i].isLocked());
+      }
     }
 
     ~FastAllocator () { 
@@ -193,6 +198,22 @@ namespace embree
     /*! frees state not required after build */
     __forceinline void cleanup() 
     {
+
+#if ENABLE_PARALLEL_BLOCK_ALLOCATION == 1
+      /* move thread local blocks to global block list */
+      for (size_t i=0;i<MAX_THREAD_USED_BLOCK_SLOTS;i++)
+      {
+        while (threadBlocks[i].load() != nullptr) {
+          Block* nextUsedBlock = threadBlocks[i].load()->next;
+          threadBlocks[i].load()->next = usedBlocks.load();
+          usedBlocks = threadBlocks[i].load();
+          threadBlocks[i] = nextUsedBlock;
+        }
+        assert(threadBlocks[i] == nullptr);
+        threadBlocks[i] = nullptr;
+      }
+#endif
+      
       for (size_t t=0; t<thread_local_allocators.threads.size(); t++)
         bytesUsed += thread_local_allocators.threads[t]->getUsedBytes();
 
@@ -227,7 +248,10 @@ namespace embree
       }
 
       for (size_t i=0; i<MAX_THREAD_USED_BLOCK_SLOTS; i++) 
+      {
         threadUsedBlocks[i] = nullptr;
+        threadBlocks[i] = nullptr;
+      }
       
       /* reset all thread local allocators */
       thread_local_allocators.reset();
@@ -241,7 +265,10 @@ namespace embree
       bytesUsed = 0;
       if (usedBlocks.load() != nullptr) usedBlocks.load()->clear(device); usedBlocks = nullptr;
       if (freeBlocks.load() != nullptr) freeBlocks.load()->clear(device); freeBlocks = nullptr;
-      for (size_t i=0; i<MAX_THREAD_USED_BLOCK_SLOTS; i++) threadUsedBlocks[i] = nullptr;
+      for (size_t i=0; i<MAX_THREAD_USED_BLOCK_SLOTS; i++) {
+        threadUsedBlocks[i] = nullptr;
+        threadBlocks[i] = nullptr;
+      }
     }
 
 
@@ -266,6 +293,21 @@ namespace embree
         /* throw error if allocation is too large */
         if (bytes > maxAllocationSize)
           throw_RTCError(RTC_UNKNOWN_ERROR,"allocation is too large");
+
+#if ENABLE_PARALLEL_BLOCK_ALLOCATION == 1
+        /* parallel block creation in case of no freeBlocks, avoids single global mutex */
+        if (likely(freeBlocks.load() == nullptr)) 
+          {
+            {
+              Lock<SpinLock> lock(slotMutex[slot]);
+              if (myUsedBlocks == threadUsedBlocks[slot])
+              {
+                threadBlocks[slot] = threadUsedBlocks[slot] = Block::create(device,maxAllocationSize-maxAlignment, maxAllocationSize-maxAlignment, threadBlocks[slot]);              
+              }    
+            }
+            continue;
+          }        
+#endif
 
         /* if this fails allocate new block */
         {
@@ -485,6 +527,10 @@ namespace embree
     std::atomic<Block*> threadUsedBlocks[MAX_THREAD_USED_BLOCK_SLOTS];
     std::atomic<Block*> usedBlocks;
     std::atomic<Block*> freeBlocks;
+
+    std::atomic<Block*> threadBlocks[MAX_THREAD_USED_BLOCK_SLOTS];
+    SpinLock slotMutex[MAX_THREAD_USED_BLOCK_SLOTS];
+
     size_t growSize;
     size_t bytesUsed;            //!< bumber of total bytes used
 

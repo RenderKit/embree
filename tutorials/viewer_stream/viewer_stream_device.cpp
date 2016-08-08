@@ -102,7 +102,7 @@ unsigned int convertCurveGeometry(ISPCHairSet* hair, RTCScene scene_out)
 RTCScene convertScene(ISPCScene* scene_in)
 {
   size_t numGeometries = scene_in->numGeometries;
-  int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
+  int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT; // | RTC_SCENE_HIGH_QUALITY;
   int scene_aflags = RTC_INTERSECT1 | RTC_INTERSECT_STREAM | RTC_INTERPOLATE;
   RTCScene scene_out = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
 
@@ -310,17 +310,17 @@ extern "C" void device_init (char* cfg)
 #if 1
   g_scene = convertScene(g_ispc_scene);
 #else
-  rtcDeleteDevice(g_device); g_device = nullptr;
+  //rtcDeleteDevice(g_device); g_device = nullptr;
   while(1)
   {
-    g_device = rtcNewDevice(cfg);
+    //g_device = rtcNewDevice(cfg);
     g_scene = convertScene(g_ispc_scene);
     double t0 = getSeconds();
     rtcCommit (g_scene);
     double t1 = getSeconds();
     PRINT(t1-t0);
     rtcDeleteScene (g_scene); g_scene = nullptr;
-    rtcDeleteDevice(g_device); g_device = nullptr;
+    //rtcDeleteDevice(g_device); g_device = nullptr;
   }
 #endif
   rtcCommit (g_scene);
