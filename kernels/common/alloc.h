@@ -209,7 +209,6 @@ namespace embree
           usedBlocks = threadBlocks[i].load();
           threadBlocks[i] = nextUsedBlock;
         }
-        assert(threadBlocks[i] == nullptr);
         threadBlocks[i] = nullptr;
       }
 #endif
