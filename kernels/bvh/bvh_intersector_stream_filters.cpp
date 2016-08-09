@@ -113,7 +113,7 @@ namespace embree
 
       if (unlikely(isCoherent(context->flags) && N == VSIZEX && !rayDataAlignment && !offsetAlignment))
       {
-#if defined(__AVX__) && ENABLE_COHERENT_STREAM_PATH == 1 && 1
+#if defined(__AVX__) && ENABLE_COHERENT_STREAM_PATH == 1 && 0
         __aligned(64) RayK<VSIZEX> *rays_ptr[MAX_RAYS_PER_OCTANT / VSIZEX]; 
         size_t numStreams = 0;
         for (size_t s=0; s<streams; s++)
@@ -233,11 +233,11 @@ namespace embree
       size_t rayStartIndex = 0;
 
       /* use packet intersector for coherent ray mode */
-      if (unlikely(isCoherent(context->flags)) && VSIZEX > 4)
+      if (unlikely(isCoherent(context->flags)))
       {
         size_t s = 0;
         size_t stream_offset = 0;
-        const size_t numPackets = N / VSIZEX;
+        const size_t numPackets = (N+VSIZEX-1) / VSIZEX;
         rayStartIndex += numPackets * VSIZEX;
         for (size_t i=0; i<numPackets * VSIZEX; i+=VSIZEX)
         {
