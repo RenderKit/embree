@@ -18,7 +18,12 @@
 
 #include "default.h"
 
+/* only activate in 64bit mode */
+#if defined(__X86_64__)
 #define ENABLE_PARALLEL_BLOCK_ALLOCATION 1
+#else
+#define ENABLE_PARALLEL_BLOCK_ALLOCATION 0
+#endif
 
 namespace embree
 {
