@@ -111,9 +111,15 @@ namespace embree
       PRINT(offsetAlignment);
 #endif
 
-      if (unlikely(isCoherent(context->flags) && N == VSIZEX && !rayDataAlignment && !offsetAlignment))
+      /* can we use the fast path ? */
+      if (unlikely(isCoherent(context->flags) && 
+                   N == VSIZEX                && 
+                   !rayDataAlignment          && 
+                   !offsetAlignment))
       {
-#if defined(__AVX__) && ENABLE_COHERENT_STREAM_PATH == 1 && 0
+#if defined(__AVX__) && ENABLE_COHERENT_STREAM_PATH == 1 && 0 // FIXME: deactivated
+        /* the problem here is that we would have to test for non-common ray direction signs               */
+        /* which would make the code quite complicated, or the frusta-cull code would need to deal with it */
         __aligned(64) RayK<VSIZEX> *rays_ptr[MAX_RAYS_PER_OCTANT / VSIZEX]; 
         size_t numStreams = 0;
         for (size_t s=0; s<streams; s++)
@@ -125,24 +131,24 @@ namespace embree
 
           if (unlikely(numStreams == MAX_COHERENT_RAY_PACKETS))
           {
-
+            const size_t size = numStreams*VSIZEX;
             if (intersect)
-              scene->intersectN((RTCRay**)rays_ptr,numStreams*VSIZEX,context);
+              scene->intersectN((RTCRay**)rays_ptr,size,context);
             else
-              scene->occludedN((RTCRay**)rays_ptr,numStreams*VSIZEX,context);        
+              scene->occludedN((RTCRay**)rays_ptr,size,context);        
             numStreams = 0;
           }
         }
         /* flush remaining streams */
         if (unlikely(numStreams))
         {
+          const size_t size = numStreams*VSIZEX;
           if (intersect)
-            scene->intersectN((RTCRay**)rays_ptr,numStreams*VSIZEX,context);
+            scene->intersectN((RTCRay**)rays_ptr,size,context);
           else
-            scene->occludedN((RTCRay**)rays_ptr,numStreams*VSIZEX,context);        
+            scene->occludedN((RTCRay**)rays_ptr,size,context);        
         }
 #else
-        //PRINT("FAST_PATH");
         for (size_t s=0; s<streams; s++)
           {
             const size_t offset = s*stream_offset;

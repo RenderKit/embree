@@ -124,6 +124,7 @@ namespace embree
   //DECLARE_BUILDER2(void,QuadMesh,size_t,BVH8Quad4iMBMeshBuilderSAH);
 
   DECLARE_BUILDER2(void,Scene,size_t,BVH8Triangle4SceneBuilderSpatialSAH);
+  DECLARE_BUILDER2(void,Scene,size_t,BVH8Triangle4SceneBuilderFastSpatialSAH);
 
   DECLARE_BUILDER2(void,Scene,size_t,BVH8SubdivGridEagerBuilderBinnedSAH);
 
@@ -152,6 +153,7 @@ namespace embree
     IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_AVX(features,BVH8QuantizedQuad4iSceneBuilderSAH));
    
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX(features,BVH8Triangle4SceneBuilderSpatialSAH));
+    IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX(features,BVH8Triangle4SceneBuilderFastSpatialSAH));
 
     IF_ENABLED_SUBDIV(SELECT_SYMBOL_INIT_AVX(features,BVH8SubdivGridEagerBuilderBinnedSAH));
 
@@ -450,12 +452,11 @@ namespace embree
   {
     BVH8* accel = new BVH8(Triangle4::type,scene);
     Accel::Intersectors intersectors= BVH8Triangle4Intersectors(accel);
-
     Builder* builder = nullptr;
     if      (scene->device->tri_builder == "default"     )  builder = BVH8Triangle4SceneBuilderSAH(accel,scene,0);
     else if (scene->device->tri_builder == "sah"         )  builder = BVH8Triangle4SceneBuilderSAH(accel,scene,0);
     else if (scene->device->tri_builder == "sah_spatial" )  builder = BVH8Triangle4SceneBuilderSpatialSAH(accel,scene,0);
-    else if (scene->device->tri_builder == "sah_presplit") builder = BVH8Triangle4SceneBuilderSAH(accel,scene,MODE_HIGH_QUALITY);
+    else if (scene->device->tri_builder == "sah_presplit")     builder = BVH8Triangle4SceneBuilderSAH(accel,scene,MODE_HIGH_QUALITY);
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH8<Triangle4>");
 
     return new AccelInstance(accel,builder,intersectors);
@@ -484,7 +485,11 @@ namespace embree
   {
     BVH8* accel = new BVH8(Triangle4::type,scene);
     Accel::Intersectors intersectors= BVH8Triangle4Intersectors(accel);
-    Builder* builder = BVH8Triangle4SceneBuilderSpatialSAH(accel,scene,0);
+    Builder *builder = NULL;
+    if (scene->device->tri_builder == "sah_fast_spatial" ) 
+      builder = BVH8Triangle4SceneBuilderFastSpatialSAH(accel,scene,0);
+    else
+      builder = BVH8Triangle4SceneBuilderSpatialSAH(accel,scene,0);
     return new AccelInstance(accel,builder,intersectors);
   }
 
