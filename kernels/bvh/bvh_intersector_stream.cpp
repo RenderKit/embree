@@ -480,6 +480,7 @@ namespace embree
 
       if (unlikely(PrimitiveIntersector::validChunkIntersector && !robust && isCoherent(context->flags)))
       {
+        //PRINT(K);
 
         /* AOS to SOA conversion */
         RayK<K> rayK[MAX_RAYS / K];

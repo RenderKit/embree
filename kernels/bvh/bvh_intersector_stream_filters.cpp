@@ -100,51 +100,50 @@ namespace embree
     {
       RayPacket rayN(rayData,N);
 
-      if (unlikely(isCoherent(context->flags)))
+      /* fast path for packet width == SIMD width && correct RayK alignment*/
+      const size_t rayDataAlignment = (size_t)rayData        % (VSIZEX*sizeof(float));
+      const size_t offsetAlignment  = (size_t)stream_offset  % (VSIZEX*sizeof(float));
+
+#if 0
+      PRINT(VSIZEX);
+      PRINT(N);
+      PRINT(rayDataAlignment);
+      PRINT(offsetAlignment);
+#endif
+
+      if (unlikely(isCoherent(context->flags) && N == VSIZEX && !rayDataAlignment && !offsetAlignment))
       {
-#if defined(__AVX__) && ENABLE_COHERENT_STREAM_PATH == 1 && 0
-        if (likely(N == VSIZEX))
+#if defined(__AVX__) && ENABLE_COHERENT_STREAM_PATH == 1 && 1
+        __aligned(64) RayK<VSIZEX> *rays_ptr[MAX_RAYS_PER_OCTANT / VSIZEX]; 
+        size_t numStreams = 0;
+        for (size_t s=0; s<streams; s++)
         {
-          //todo :: alignment check
-          __aligned(64) RayK<VSIZEX> *rays_ptr[MAX_RAYS / VSIZEX]; 
-          size_t numStreams = 0;
-          for (size_t s=0; s<streams; s++)
-          {
-            const size_t offset = s*stream_offset;
-            RayK<VSIZEX> &ray = *(RayK<VSIZEX>*)(rayData + offset);
-            rays_ptr[numStreams++] = &ray;
-            static const size_t MAX_COHERENT_RAY_PACKETS = MAX_RAYS / VSIZEX;
+          const size_t offset = s*stream_offset;
+          RayK<VSIZEX> &ray = *(RayK<VSIZEX>*)(rayData + offset);
+          rays_ptr[numStreams++] = &ray;
+          static const size_t MAX_COHERENT_RAY_PACKETS = MAX_RAYS_PER_OCTANT / VSIZEX;
 
-            if (unlikely(numStreams == MAX_COHERENT_RAY_PACKETS))
-            {
-
-              if (intersect)
-                scene->intersectN((RTCRay**)rays_ptr,numStreams*VSIZEX,context);
-              else
-                scene->occludedN((RTCRay**)rays_ptr,numStreams*VSIZEX,context);        
-              numStreams = 0;
-            }
-          }
-          /* flush remaining streams */
-          if (unlikely(numStreams))
+          if (unlikely(numStreams == MAX_COHERENT_RAY_PACKETS))
           {
+
             if (intersect)
               scene->intersectN((RTCRay**)rays_ptr,numStreams*VSIZEX,context);
             else
               scene->occludedN((RTCRay**)rays_ptr,numStreams*VSIZEX,context);        
+            numStreams = 0;
           }
         }
-        else
-          FATAL("HERE");
-#else
-        /* fast path for packet width == SIMD width && correct RayK alignment*/
-        const size_t rayDataAlignment = (size_t)rayData        % (VSIZEX*sizeof(float));
-        const size_t offsetAlignment  = (size_t)stream_offset  % (VSIZEX*sizeof(float));
-
-        if (likely(N == VSIZEX && !rayDataAlignment && !offsetAlignment))
+        /* flush remaining streams */
+        if (unlikely(numStreams))
         {
-          //PRINT("FAST_PATH");
-          for (size_t s=0; s<streams; s++)
+          if (intersect)
+            scene->intersectN((RTCRay**)rays_ptr,numStreams*VSIZEX,context);
+          else
+            scene->occludedN((RTCRay**)rays_ptr,numStreams*VSIZEX,context);        
+        }
+#else
+        //PRINT("FAST_PATH");
+        for (size_t s=0; s<streams; s++)
           {
             const size_t offset = s*stream_offset;
             RayK<VSIZEX> &ray = *(RayK<VSIZEX>*)(rayData + offset);
@@ -152,20 +151,6 @@ namespace embree
             if (intersect) scene->intersect(valid,ray,context);
             else           scene->occluded (valid,ray,context);
           }
-        }
-        else
-          for (size_t s=0; s<streams; s++)
-            for (size_t i=0; i<N; i+=VSIZEX)
-            {
-              const vintx vi = vintx(int(i))+vintx(step);
-              vboolx valid = vi < vintx(int(N));
-              const size_t offset = s*stream_offset + sizeof(float) * i;
-              RayK<VSIZEX> ray = rayN.gather<VSIZEX>(offset);
-              valid &= ray.tnear <= ray.tfar;
-              if (intersect) scene->intersect(valid,ray,context);
-              else           scene->occluded (valid,ray,context);
-              rayN.scatter<VSIZEX>(valid,offset,ray,intersect);
-            }
 #endif
         return;
       }
@@ -245,11 +230,10 @@ namespace embree
     void RayStream::filterSOP(Scene *scene, const RTCRayNp& _rayN, const size_t N, const RTCIntersectContext* context, const bool intersect)
     {
       RayPN& rayN = *(RayPN*)&_rayN;
-
       size_t rayStartIndex = 0;
 
       /* use packet intersector for coherent ray mode */
-      if (unlikely(isCoherent(context->flags)))
+      if (unlikely(isCoherent(context->flags)) && VSIZEX > 4)
       {
         size_t s = 0;
         size_t stream_offset = 0;
@@ -266,6 +250,7 @@ namespace embree
           else           scene->occluded (valid,ray,context);
           rayN.scatter<VSIZEX>(valid,offset,ray,intersect);
         }
+        return;
       }
       
       /* otherwise use stream intersector */
