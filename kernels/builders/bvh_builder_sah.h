@@ -17,6 +17,7 @@
 #pragma once
 
 #include "heuristic_binning_array_aligned.h"
+#include "heuristic_spatial_array_aligned.h"
 #include "heuristic_spatial_binning_list.h"
 
 namespace embree

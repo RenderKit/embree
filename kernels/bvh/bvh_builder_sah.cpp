@@ -529,10 +529,6 @@ namespace embree
 
         double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + toString(N) + "BuilderFastSpatialSAH");
 
-#if PROFILE
-        profile(2,PROFILE_RUNS,numPrimitives,[&] (ProfileTimer& timer) {
-#endif
-
         /* create primref array */
         const size_t numSplitPrimitives = max(numPrimitives,size_t(presplitFactor*numPrimitives));
         prims.resize(numSplitPrimitives);
@@ -546,11 +542,7 @@ namespace embree
         
         /* call BVH builder */
         bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
-        BVHNBuilder<N>::build(bvh,CreateLeaf<N,Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
-
-#if PROFILE
-          }); 
-#endif	
+        BVHNBuilderFastSpatial<N>::build(bvh,CreateLeaf<N,Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
 	/* clear temporary data for static geometry */
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
