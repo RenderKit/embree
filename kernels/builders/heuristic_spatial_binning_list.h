@@ -114,7 +114,7 @@ namespace embree
         }
         
         /*! splits a list of primitives */
-        void split(const Split& split, const PrimInfo& pinfo, Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
+        void split(const Split& split, const PrimInfo& pinfo, Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset, const size_t depth) 
         {
           if (split.spatial) return spatial_binning.split(split.spatialSplit(),pinfo,set,left,lset,right,rset);
           else               return  object_binning.split(split.objectSplit() ,pinfo,set,left,lset,right,rset);
@@ -126,7 +126,7 @@ namespace embree
           //std::sort(&prims[set.begin()],&prims[set.end()]); 
         }
 
-        void splitFallback(Set& prims, PrimInfo& linfo_o, Set& lprims_o, PrimInfo& rinfo_o, Set& rprims_o) {
+        void splitFallback(Set& prims, PrimInfo& linfo_o, Set& lprims_o, PrimInfo& rinfo_o, Set& rprims_o, const size_t depth) {
           object_binning.splitFallback(prims,linfo_o,lprims_o,rinfo_o,rprims_o);
         }
 

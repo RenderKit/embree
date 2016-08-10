@@ -18,10 +18,45 @@
 
 #include "heuristic_binning.h"
 
+#define DOUBLE_BUFFERED 0
+
 namespace embree
 {
   namespace isa
   { 
+
+    /* serial partitioning */
+    template<typename T, typename V, typename Compare, typename Reduction_T>
+      __forceinline size_t serial_partitioning(T* const array, 
+                                               T* const left,
+                                               T* const right, 
+                                               const size_t begin,
+                                               const size_t end, 
+                                               V& leftReduction,
+                                               V& rightReduction,
+                                               const Compare& cmp, 
+                                               const Reduction_T& reduction_t)
+    {
+      T* l = left;
+      T* r = right;
+
+      for (size_t i=begin;i<end;i++)
+      {
+        if (cmp(array[i]))
+        {
+          reduction_t(leftReduction,array[i]);
+          *l++ = array[i];
+        }
+        else
+        {
+          reduction_t(rightReduction,array[i]);
+          *r-- = array[i];
+        }
+      }
+      return l - left;
+    }
+
+
     /*! Performs standard object binning */
 #if defined(__AVX512F__)
     template<typename PrimRef, size_t BINS = 16>
@@ -49,21 +84,6 @@ namespace embree
         /*! remember prim array */
         __forceinline HeuristicArraySpatialSAH (PrimRef* prims0,PrimRef* prims1)
           : prims0(prims0), prims1(prims1) {}
-
-        const std::pair<BBox3fa,BBox3fa> computePrimInfoMB(Scene* scene, const PrimInfo& pinfo)
-        {
-          BBox3fa bounds0 = empty;
-          BBox3fa bounds1 = empty;
-          for (size_t i=pinfo.begin; i<pinfo.end; i++) // FIXME: parallelize
-          {
-            BezierPrim& prim = prims0[i];
-            const size_t geomID = prim.geomID();
-            const BezierCurves* curves = scene->getBezierCurves(geomID);
-            bounds0.extend(curves->bounds(prim.primID(),0));
-            bounds1.extend(curves->bounds(prim.primID(),1));
-          }
-          return std::pair<BBox3fa,BBox3fa>(bounds0,bounds1);
-        }
 
         /*! finds the best split */
         const Split find(const PrimInfo& pinfo, const size_t logBlockSize)
@@ -102,31 +122,41 @@ namespace embree
         }
         
         /*! array partitioning */
-        void split(const Split& spliti, const PrimInfo& pinfo, PrimInfo& left, PrimInfo& right) 
-        {
-          Set lset,rset;
-          Set set(pinfo.begin,pinfo.end);
-          if (likely(pinfo.size() < PARALLEL_THRESHOLD)) 
-            sequential_split(spliti,set,left,lset,right,rset);
-          else
-            parallel_split(spliti,set,left,lset,right,rset);
-        }
+        /* void split(const Split& spliti, const PrimInfo& pinfo, PrimInfo& left, PrimInfo& right)  */
+        /* { */
+        /*   Set lset,rset; */
+        /*   Set set(pinfo.begin,pinfo.end); */
+        /*   if (likely(pinfo.size() < PARALLEL_THRESHOLD))  */
+        /*     sequential_split(spliti,set,left,lset,right,rset); */
+        /*   else */
+        /*     parallel_split(spliti,set,left,lset,right,rset); */
+        /* } */
         
         /*! array partitioning */
-        void split(const Split& split, const PrimInfo& pinfo, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
+        void split(const Split& split, const PrimInfo& pinfo, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset, const size_t depth) 
         {
-          if (likely(pinfo.size() < PARALLEL_THRESHOLD)) 
-            sequential_split(split,set,left,lset,right,rset);
-          else                                
-            parallel_split(split,set,left,lset,right,rset);
+          PRINT(depth);
+          //if (likely(pinfo.size() < PARALLEL_THRESHOLD)) 
+          sequential_split(split,set,left,lset,right,rset,depth);
+            //else                                
+            //parallel_split(split,set,left,lset,right,rset);
         }
 
         /*! array partitioning */
-        void sequential_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
+        void sequential_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset, const size_t depth) 
         {
-          if (!split.valid()) {
+          // determine input and output primref arrays
+#if DOUBLE_BUFFERED == 1
+          PrimRef* const source = (depth % 2) ? prims0 : prims1;
+          PrimRef* const dest   = (depth % 2) ? prims1 : prims0;
+#else
+          PrimRef* const source = prims0;
+          PrimRef* const dest   = prims1;
+
+#endif
+          if (unlikely(!split.valid())) {
             deterministic_order(set);
-            return splitFallback(set,left,lset,right,rset);
+            return splitFallback(set,left,lset,right,rset,depth);
           }
           
           const size_t begin = set.begin();
@@ -215,27 +245,44 @@ namespace embree
         }
         
         /*! array partitioning */
-        void splitFallback(const PrimInfo& pinfo, PrimInfo& left, PrimInfo& right) 
-        {
-          Set lset,rset;
-          Set set(pinfo.begin,pinfo.end);
-          splitFallback(set,left,lset,right,rset);
-        }
+        /* void splitFallback(const PrimInfo& pinfo, PrimInfo& left, PrimInfo& right)  */
+        /* { */
+        /*   Set lset,rset; */
+        /*   Set set(pinfo.begin,pinfo.end); */
+        /*   splitFallback(set,left,lset,right,rset); */
+        /* } */
         
-        void splitFallback(const Set& set, PrimInfo& linfo, Set& lset, PrimInfo& rinfo, Set& rset)
+        void splitFallback(const Set& set, 
+                           PrimInfo& linfo, Set& lset, 
+                           PrimInfo& rinfo, Set& rset,
+                           const size_t depth)
         {
           const size_t begin = set.begin();
           const size_t end   = set.end();
           const size_t center = (begin + end)/2;
+
+#if DOUBLE_BUFFERED == 1
+          PrimRef* const source = (depth % 2) ? prims0 : prims1;
+          PrimRef* const dest   = (depth % 2) ? prims1 : prims0;
+#else
+          PrimRef* const source = prims0;
+          PrimRef* const dest   = prims1;
+#endif
           
           CentGeomBBox3fa left; left.reset();
           for (size_t i=begin; i<center; i++)
-            left.extend(prims0[i].bounds());
+          {
+            left.extend(source[i].bounds());
+            dest[i] = source[i];
+          }
           new (&linfo) PrimInfo(begin,center,left.geomBounds,left.centBounds);
           
           CentGeomBBox3fa right; right.reset();
           for (size_t i=center; i<end; i++)
-            right.extend(prims0[i].bounds());	
+          {
+            right.extend(source[i].bounds());	
+            dest[i] = source[i];
+          }
           new (&rinfo) PrimInfo(center,end,right.geomBounds,right.centBounds);
           
           new (&lset) range<size_t>(begin,center);

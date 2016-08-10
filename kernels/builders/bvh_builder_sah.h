@@ -135,7 +135,7 @@ namespace embree
             /*! split best child into left and right child */
             BuildRecord left(current.depth+1);
             BuildRecord right(current.depth+1);
-            heuristic.splitFallback(children[bestChild].prims,left.pinfo,left.prims,right.pinfo,right.prims);
+            heuristic.splitFallback(children[bestChild].prims,left.pinfo,left.prims,right.pinfo,right.prims,current.depth);
             left .split = find(left );
             right.split = find(right);
             
@@ -163,7 +163,7 @@ namespace embree
         }
         
         __forceinline void partition(BuildRecord& brecord, BuildRecord& lrecord, BuildRecord& rrecord) {
-          heuristic.split(brecord.split,brecord.pinfo,brecord.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
+          heuristic.split(brecord.split,brecord.pinfo,brecord.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims,brecord.depth);
         }
         
         const ReductionTy recurse(BuildRecord& current, Allocator alloc, bool toplevel)
@@ -567,7 +567,9 @@ namespace embree
         static ReductionTy build_reduce(NodeRef& root,
                                         CreateAllocFunc createAlloc, 
                                         const ReductionTy& identity, 
-                                        CreateNodeFunc createNode, UpdateNodeFunc updateNode, CreateLeafFunc createLeaf, 
+                                        CreateNodeFunc createNode, 
+                                        UpdateNodeFunc updateNode, 
+                                        CreateLeafFunc createLeaf, 
                                         ProgressMonitor progressMonitor,
                                         PrimRef* prims0, PrimRef* prims1, const PrimInfo& pinfo, 
                                         const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, 

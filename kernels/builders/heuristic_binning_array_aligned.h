@@ -113,20 +113,20 @@ namespace embree
         }
         
         /*! array partitioning */
-        void split(const Split& split, const PrimInfo& pinfo, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
+        void split(const Split& split, const PrimInfo& pinfo, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset, const size_t depth=0) 
         {
           if (likely(pinfo.size() < PARALLEL_THRESHOLD)) 
-            sequential_split(split,set,left,lset,right,rset);
+            sequential_split(split,set,left,lset,right,rset,depth);
           else                                
-            parallel_split(split,set,left,lset,right,rset);
+            parallel_split(split,set,left,lset,right,rset,depth);
         }
 
         /*! array partitioning */
-        void sequential_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
+        void sequential_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset, const size_t depth=0) 
         {
           if (!split.valid()) {
             deterministic_order(set);
-            return splitFallback(set,left,lset,right,rset);
+            return splitFallback(set,left,lset,right,rset,depth);
           }
           
           const size_t begin = set.begin();
@@ -163,11 +163,11 @@ namespace embree
         }
         
         /*! array partitioning */
-        __noinline void parallel_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset)
+        __noinline void parallel_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset, const size_t depth=0)
         {
           if (!split.valid()) {
             deterministic_order(set);
-            return splitFallback(set,left,lset,right,rset);
+            return splitFallback(set,left,lset,right,rset,depth);
           }
           
           const size_t begin = set.begin();
@@ -222,7 +222,7 @@ namespace embree
           splitFallback(set,left,lset,right,rset);
         }
         
-        void splitFallback(const Set& set, PrimInfo& linfo, Set& lset, PrimInfo& rinfo, Set& rset)
+        void splitFallback(const Set& set, PrimInfo& linfo, Set& lset, PrimInfo& rinfo, Set& rset, const size_t depth=0)
         {
           const size_t begin = set.begin();
           const size_t end   = set.end();
