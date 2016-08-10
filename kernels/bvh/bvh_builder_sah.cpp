@@ -103,6 +103,33 @@ namespace embree
       BVH* bvh;
       PrimRef* prims;
     };
+
+
+    template<int N, typename Primitive>
+    struct CreateLeafSpatial
+    {
+      typedef BVHN<N> BVH;
+
+      __forceinline CreateLeafSpatial (BVH* bvh, PrimRef* prims0, PrimRef* prims1) : bvh(bvh), prims0(prims0), prims1(prims1) {}
+      
+      __forceinline size_t operator() (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc)
+      {
+        size_t n = current.prims.size();
+        size_t items = Primitive::blocks(n);
+        size_t start = current.prims.begin();
+        Primitive* accel = (Primitive*) alloc->alloc1.malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
+        typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,items);
+        for (size_t i=0; i<items; i++) {
+          accel[i].fill(prims0,start,current.prims.end(),bvh->scene,false);
+        }
+        *current.parent = node;
+	return n;
+      }
+
+      BVH* bvh;
+      PrimRef* prims0;
+      PrimRef* prims1;
+    };
     
     /************************************************************************************/ 
     /************************************************************************************/
@@ -544,7 +571,7 @@ namespace embree
         
         /* call BVH builder */
         bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
-        BVHNBuilderFastSpatial<N>::build(bvh,CreateLeaf<N,Primitive>(bvh,prims0.data()),bvh->scene->progressInterface,prims0.data(),prims1.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
+        BVHNBuilderFastSpatial<N>::build(bvh,CreateLeafSpatial<N,Primitive>(bvh,prims0.data(),prims1.data()),bvh->scene->progressInterface,prims0.data(),prims1.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
 	/* clear temporary data for static geometry */
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();

@@ -516,7 +516,8 @@ namespace embree
     struct BVHBuilderBinnedFastSpatialSAH
     {
       typedef range<size_t> Set;
-      typedef HeuristicArrayBinningSAH<PrimRef> Heuristic;
+      //typedef HeuristicArrayBinningSAH<PrimRef> Heuristic;
+      typedef HeuristicArraySpatialSAH<PrimRef> Heuristic;
       typedef GeneralBuildRecord<Set,typename Heuristic::Split> BuildRecord;
       
       /*! standard build without reduction */
@@ -578,7 +579,7 @@ namespace embree
         assert((blockSize ^ (size_t(1) << logBlockSize)) == 0);
 
         /* instantiate array binning heuristic */
-        Heuristic heuristic(prims0);
+        Heuristic heuristic(prims0,prims1);
         
         typedef GeneralBVHBuilder<
           BuildRecord,

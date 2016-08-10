@@ -237,8 +237,11 @@ namespace embree
     // ========================================================================================================================================================
 
     template<int N>
-    void BVHNBuilderFastSpatial<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progress_in, PrimRef* prims0, PrimRef* prims1, const PrimInfo& pinfo, 
-                                                        const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost)
+    void BVHNBuilderFastSpatial<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progress_in, 
+                                                        PrimRef* prims0, PrimRef* prims1, 
+                                                        const PrimInfo& pinfo, const size_t blockSize, 
+                                                        const size_t minLeafSize, const size_t maxLeafSize, 
+                                                        const float travCost, const float intCost)
     {
       auto progressFunc = [&] (size_t dn) { 
         progress_in(dn); 

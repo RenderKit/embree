@@ -44,11 +44,11 @@ namespace embree
         static const size_t PARALLEL_PARITION_BLOCK_SIZE = 128;
 #endif
         __forceinline HeuristicArraySpatialSAH ()
-          : prims(nullptr) {}
+          : prims0(nullptr), prims1(nullptr) {}
         
         /*! remember prim array */
-        __forceinline HeuristicArraySpatialSAH (PrimRef* prims)
-          : prims(prims) {}
+        __forceinline HeuristicArraySpatialSAH (PrimRef* prims0,PrimRef* prims1)
+          : prims0(prims0), prims1(prims1) {}
 
         const std::pair<BBox3fa,BBox3fa> computePrimInfoMB(Scene* scene, const PrimInfo& pinfo)
         {
@@ -56,7 +56,7 @@ namespace embree
           BBox3fa bounds1 = empty;
           for (size_t i=pinfo.begin; i<pinfo.end; i++) // FIXME: parallelize
           {
-            BezierPrim& prim = prims[i];
+            BezierPrim& prim = prims0[i];
             const size_t geomID = prim.geomID();
             const BezierCurves* curves = scene->getBezierCurves(geomID);
             bounds0.extend(curves->bounds(prim.primID(),0));
@@ -85,7 +85,7 @@ namespace embree
         {
           Binner binner(empty); // FIXME: this clear can be optimized away
           const BinMapping<BINS> mapping(pinfo);
-          binner.bin(prims,set.begin(),set.end(),mapping);
+          binner.bin(prims0,set.begin(),set.end(),mapping);
           return binner.best(mapping,logBlockSize);
         }
         
@@ -96,7 +96,7 @@ namespace embree
           const BinMapping<BINS> mapping(pinfo);
           const BinMapping<BINS>& _mapping = mapping; // CLANG 3.4 parser bug workaround
           binner = parallel_reduce(set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,binner,
-                                   [&] (const range<size_t>& r) -> Binner { Binner binner(empty); binner.bin(prims+r.begin(),r.size(),_mapping); return binner; },
+                                   [&] (const range<size_t>& r) -> Binner { Binner binner(empty); binner.bin(prims0+r.begin(),r.size(),_mapping); return binner; },
                                    [&] (const Binner& b0, const Binner& b1) -> Binner { Binner r = b0; r.merge(b1,_mapping.size()); return r; });
           return binner.best(mapping,logBlockSize);
         }
@@ -144,7 +144,7 @@ namespace embree
           const vint4 vSplitPos(splitPos);
           const vbool4 vSplitMask( (int)splitDimMask );
 #endif
-          size_t center = serial_partitioning(prims,begin,end,local_left,local_right,
+          size_t center = serial_partitioning(prims0,begin,end,local_left,local_right,
                                               [&] (const PrimRef& ref) { 
 #if defined(__AVX512F__)
                                                 return split.mapping.bin_unsafe(ref,vSplitPos,vSplitMask);                                                 
@@ -190,7 +190,7 @@ namespace embree
 
 #endif
           const size_t mid = parallel_in_place_partitioning_static<PARALLEL_PARITION_BLOCK_SIZE,PrimRef,PrimInfo>(
-            &prims[begin],end-begin,init,left,right,isLeft,
+            &prims0[begin],end-begin,init,left,right,isLeft,
             [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.add(ref.bounds()); },
             [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); });
           
@@ -205,13 +205,13 @@ namespace embree
         void deterministic_order(const Set& set) 
         {
           /* required as parallel partition destroys original primitive order */
-          std::sort(&prims[set.begin()],&prims[set.end()]);
+          std::sort(&prims0[set.begin()],&prims0[set.end()]);
         }
 
          void deterministic_order(const PrimInfo& pinfo) 
         {
           /* required as parallel partition destroys original primitive order */
-          std::sort(&prims[pinfo.begin],&prims[pinfo.end]);
+          std::sort(&prims0[pinfo.begin],&prims0[pinfo.end]);
         }
         
         /*! array partitioning */
@@ -230,12 +230,12 @@ namespace embree
           
           CentGeomBBox3fa left; left.reset();
           for (size_t i=begin; i<center; i++)
-            left.extend(prims[i].bounds());
+            left.extend(prims0[i].bounds());
           new (&linfo) PrimInfo(begin,center,left.geomBounds,left.centBounds);
           
           CentGeomBBox3fa right; right.reset();
           for (size_t i=center; i<end; i++)
-            right.extend(prims[i].bounds());	
+            right.extend(prims0[i].bounds());	
           new (&rinfo) PrimInfo(center,end,right.geomBounds,right.centBounds);
           
           new (&lset) range<size_t>(begin,center);
@@ -243,7 +243,8 @@ namespace embree
         }
         
       private:
-        PrimRef* const prims;
+        PrimRef* const prims0;
+        PrimRef* const prims1;
       };
   }
 }
