@@ -97,7 +97,7 @@ namespace embree
           : spatial_binning(splitPrimitive) {}
         
         /*! finds the best split */
-        const Split find(Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
+        const Split find(Set& set, const PrimInfo& pinfo, const size_t logBlockSize, const size_t depth=0)
         {
           SplitInfo oinfo;
           const ObjectSplit objectSplit  = object_binning.find(set,pinfo,logBlockSize,oinfo);

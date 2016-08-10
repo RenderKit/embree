@@ -101,6 +101,11 @@ namespace embree
     bvh8_factory = new BVH8Factory(enabled_cpu_features);
 #endif
 
+    /* per default enable affinity on KNL */
+
+    if (hasISA(AVX512KNL))
+      State::set_affinity = true;
+
     /* setup tasking system */
     initTaskingSystem(numThreads);
 

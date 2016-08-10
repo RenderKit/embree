@@ -18,7 +18,7 @@
 
 #include "heuristic_binning.h"
 
-#define DOUBLE_BUFFERED 0
+#define SPATIAL_DOUBLE_BUFFERED 1
 
 namespace embree
 {
@@ -53,7 +53,7 @@ namespace embree
           *r-- = array[i];
         }
       }
-      return l - left;
+      return begin + l - left;
     }
 
 
@@ -86,26 +86,38 @@ namespace embree
           : prims0(prims0), prims1(prims1) {}
 
         /*! finds the best split */
-        const Split find(const PrimInfo& pinfo, const size_t logBlockSize)
+        const Split find(const PrimInfo& pinfo, const size_t logBlockSize, const size_t depth)
         {
-          Set set(pinfo.begin,pinfo.end);
-          if (likely(pinfo.size() < PARALLEL_THRESHOLD)) return sequential_find(set,pinfo,logBlockSize);
-          else                                           return   parallel_find(set,pinfo,logBlockSize);
+          //Set set(pinfo.begin,pinfo.end);
+          //if (likely(pinfo.size() < PARALLEL_THRESHOLD)) 
+          return sequential_find(set,pinfo,logBlockSize,depth);
+            //else
+            //  return   parallel_find(set,pinfo,logBlockSize);
         }
 
         /*! finds the best split */
-        const Split find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
+        const Split find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize, const size_t depth)
         {
-          if (likely(pinfo.size() < PARALLEL_THRESHOLD)) return sequential_find(set,pinfo,logBlockSize);
-          else                                           return   parallel_find(set,pinfo,logBlockSize);
+          PING;
+          PRINT(pinfo);
+
+          //if (likely(pinfo.size() < PARALLEL_THRESHOLD)) 
+          return sequential_find(set,pinfo,logBlockSize,depth);
+            //else
+            //  return   parallel_find(set,pinfo,logBlockSize);
         }
         
         /*! finds the best split */
-        const Split sequential_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
+        const Split sequential_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize, const size_t depth)
         {
+#if SPATIAL_DOUBLE_BUFFERED == 1
+          PrimRef* const source = (depth % 2) ? prims0 : prims1;
+#else
+          PrimRef* const source = prims0;
+#endif
           Binner binner(empty); // FIXME: this clear can be optimized away
           const BinMapping<BINS> mapping(pinfo);
-          binner.bin(prims0,set.begin(),set.end(),mapping);
+          binner.bin(source,set.begin(),set.end(),mapping);
           return binner.best(mapping,logBlockSize);
         }
         
@@ -137,7 +149,12 @@ namespace embree
         {
           PRINT(depth);
           //if (likely(pinfo.size() < PARALLEL_THRESHOLD)) 
+          PING;
           sequential_split(split,set,left,lset,right,rset,depth);
+          PRINT(split);
+          PRINT(left);
+          PRINT(right);
+
             //else                                
             //parallel_split(split,set,left,lset,right,rset);
         }
@@ -146,13 +163,12 @@ namespace embree
         void sequential_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset, const size_t depth) 
         {
           // determine input and output primref arrays
-#if DOUBLE_BUFFERED == 1
+#if SPATIAL_DOUBLE_BUFFERED == 1
           PrimRef* const source = (depth % 2) ? prims0 : prims1;
           PrimRef* const dest   = (depth % 2) ? prims1 : prims0;
 #else
           PrimRef* const source = prims0;
-          PrimRef* const dest   = prims1;
-
+          //PrimRef* const dest   = prims1;
 #endif
           if (unlikely(!split.valid())) {
             deterministic_order(set);
@@ -174,7 +190,15 @@ namespace embree
           const vint4 vSplitPos(splitPos);
           const vbool4 vSplitMask( (int)splitDimMask );
 #endif
-          size_t center = serial_partitioning(prims0,begin,end,local_left,local_right,
+
+#if SPATIAL_DOUBLE_BUFFERED == 1
+          size_t center = serial_partitioning(source,
+                                              dest + begin,
+                                              dest + end - 1,
+#else
+          size_t center = serial_partitioning(source,
+#endif
+                                              begin,end,local_left,local_right,
                                               [&] (const PrimRef& ref) { 
 #if defined(__AVX512F__)
                                                 return split.mapping.bin_unsafe(ref,vSplitPos,vSplitMask);                                                 
@@ -184,6 +208,7 @@ namespace embree
                                               },
                                               [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend(ref.bounds()); });          
           
+                                              PRINT(center);
           new (&left ) PrimInfo(begin,center,local_left.geomBounds,local_left.centBounds);
           new (&right) PrimInfo(center,end,local_right.geomBounds,local_right.centBounds);
           new (&lset) range<size_t>(begin,center);
@@ -261,7 +286,7 @@ namespace embree
           const size_t end   = set.end();
           const size_t center = (begin + end)/2;
 
-#if DOUBLE_BUFFERED == 1
+#if SPATIAL_DOUBLE_BUFFERED == 1
           PrimRef* const source = (depth % 2) ? prims0 : prims1;
           PrimRef* const dest   = (depth % 2) ? prims1 : prims0;
 #else

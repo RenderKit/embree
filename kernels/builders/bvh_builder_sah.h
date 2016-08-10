@@ -159,7 +159,7 @@ namespace embree
         }
         
         __forceinline const typename Heuristic::Split find(BuildRecord& current) {
-          return heuristic.find (current.prims,current.pinfo,logBlockSize);
+          return heuristic.find (current.prims,current.pinfo,logBlockSize,current.depth);
         }
         
         __forceinline void partition(BuildRecord& brecord, BuildRecord& lrecord, BuildRecord& rrecord) {

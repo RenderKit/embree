@@ -114,13 +114,19 @@ namespace embree
       
       __forceinline size_t operator() (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc)
       {
+#if SPATIAL_DOUBLE_BUFFERED == 1
+        PrimRef* const source = (current.depth % 2) ? prims0 : prims1;
+#else
+        PrimRef* const source = prims0;
+#endif
+
         size_t n = current.prims.size();
         size_t items = Primitive::blocks(n);
         size_t start = current.prims.begin();
         Primitive* accel = (Primitive*) alloc->alloc1.malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
         typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,items);
         for (size_t i=0; i<items; i++) {
-          accel[i].fill(prims0,start,current.prims.end(),bvh->scene,false);
+          accel[i].fill(source,start,current.prims.end(),bvh->scene,false);
         }
         *current.parent = node;
 	return n;
