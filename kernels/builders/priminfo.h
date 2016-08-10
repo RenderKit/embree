@@ -147,5 +147,6 @@ namespace embree
     public:
       PrimInfo left,right;
     };
+
   }
 }

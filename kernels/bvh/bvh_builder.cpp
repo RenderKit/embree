@@ -229,25 +229,29 @@ namespace embree
       }
 #endif
       
-      bvh->layoutLargeNodes(size_t(pinfo.size()*0.005));
+      bvh->layoutLargeNodes(size_t(pinfo.size()*0.005f));
     }
 
+    // ========================================================================================================================================================
+    // ========================================================================================================================================================
+    // ========================================================================================================================================================
 
     template<int N>
-    void BVHNBuilderFastSpatial<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progress_in, PrimRef* prims, const PrimInfo& pinfo, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost)
+    void BVHNBuilderFastSpatial<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progress_in, PrimRef* prims0, PrimRef* prims1, const PrimInfo& pinfo, 
+                                                        const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost)
     {
       auto progressFunc = [&] (size_t dn) { 
         progress_in(dn); 
       };
             
-      auto createLeafFunc = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> size_t {
+      auto createLeafFunc = [&] (const BVHBuilderBinnedFastSpatialSAH::BuildRecord& current, Allocator* alloc) -> size_t {
         return createLeaf(current,alloc);
       };
       
       NodeRef root;
-      BVHBuilderBinnedSAH::build_reduce<NodeRef>
+      BVHBuilderBinnedFastSpatialSAH::build_reduce<NodeRef>
         (root,typename BVH::CreateAlloc(bvh),size_t(0),typename BVH::CreateNode(bvh),rotate<N>,createLeafFunc,progressFunc,
-         prims,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
+         prims0,prims1,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
       bvh->set(root,pinfo.geomBounds,pinfo.size());      
       bvh->layoutLargeNodes(size_t(pinfo.size()*0.005f));
