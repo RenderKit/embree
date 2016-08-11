@@ -18,7 +18,7 @@
 
 #include "heuristic_binning.h"
 
-#define SPATIAL_DOUBLE_BUFFERED 1
+#define SPATIAL_DOUBLE_BUFFERED 0
 
 namespace embree
 {
@@ -61,7 +61,7 @@ namespace embree
 #if defined(__AVX512F__)
     template<typename PrimRef, size_t BINS = 16>
 #else
-    template<typename PrimRef, size_t BINS = 32>
+      template<typename PrimRef, size_t BINS = 32>
 #endif
       struct HeuristicArraySpatialSAH
       {
@@ -86,35 +86,47 @@ namespace embree
           : prims0(prims0), prims1(prims1) {}
 
         /*! finds the best split */
-        const Split find(const PrimInfo& pinfo, const size_t logBlockSize, const size_t depth)
+        const Split find(const PrimInfo& pinfo, const size_t logBlockSize)
         {
           //Set set(pinfo.begin,pinfo.end);
           //if (likely(pinfo.size() < PARALLEL_THRESHOLD)) 
-          return sequential_find(set,pinfo,logBlockSize,depth);
-            //else
-            //  return   parallel_find(set,pinfo,logBlockSize);
+          return sequential_find(set,pinfo,logBlockSize);
+          //else
+          //  return   parallel_find(set,pinfo,logBlockSize);
         }
 
         /*! finds the best split */
-        const Split find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize, const size_t depth)
+        const Split find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
+          std::cout << std::endl;
           PING;
           PRINT(pinfo);
-
           //if (likely(pinfo.size() < PARALLEL_THRESHOLD)) 
-          return sequential_find(set,pinfo,logBlockSize,depth);
-            //else
-            //  return   parallel_find(set,pinfo,logBlockSize);
+          return sequential_find(set,pinfo,logBlockSize);
+          //else
+          //  return   parallel_find(set,pinfo,logBlockSize);
         }
         
         /*! finds the best split */
-        const Split sequential_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize, const size_t depth)
+        const Split sequential_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
 #if SPATIAL_DOUBLE_BUFFERED == 1
-          PrimRef* const source = (depth % 2) ? prims0 : prims1;
+          PrimRef* const source = (pinfo.index % 2) ? prims1 : prims0;
 #else
           PrimRef* const source = prims0;
 #endif
+          PING;
+          PRINT(pinfo.geomBounds);
+
+          if (set.size() < 16)
+          {
+            for (size_t i=set.begin();i<set.end();i++)
+              PRINT(source[i]);
+          }
+
+          for (size_t i=set.begin();i<set.end();i++)
+            assert(subset(source[i].bounds(),pinfo.geomBounds));
+
           Binner binner(empty); // FIXME: this clear can be optimized away
           const BinMapping<BINS> mapping(pinfo);
           binner.bin(source,set.begin(),set.end(),mapping);
@@ -145,34 +157,35 @@ namespace embree
         /* } */
         
         /*! array partitioning */
-        void split(const Split& split, const PrimInfo& pinfo, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset, const size_t depth) 
+        void split(const Split& split, const PrimInfo& pinfo, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
         {
-          PRINT(depth);
+          std::cout << std::endl;
           //if (likely(pinfo.size() < PARALLEL_THRESHOLD)) 
           PING;
-          sequential_split(split,set,left,lset,right,rset,depth);
+          sequential_split(split,set,left,lset,right,rset,pinfo.index);
           PRINT(split);
+          PRINT(pinfo);
           PRINT(left);
           PRINT(right);
 
-            //else                                
-            //parallel_split(split,set,left,lset,right,rset);
+          //else                                
+          //parallel_split(split,set,left,lset,right,rset);
         }
 
         /*! array partitioning */
-        void sequential_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset, const size_t depth) 
+        void sequential_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset, const size_t index) 
         {
           // determine input and output primref arrays
 #if SPATIAL_DOUBLE_BUFFERED == 1
-          PrimRef* const source = (depth % 2) ? prims0 : prims1;
-          PrimRef* const dest   = (depth % 2) ? prims1 : prims0;
+          PrimRef* const source = (index % 2) ? prims1 : prims0;
+          PrimRef* const dest   = (index % 2) ? prims0 : prims1;
 #else
           PrimRef* const source = prims0;
           //PrimRef* const dest   = prims1;
 #endif
           if (unlikely(!split.valid())) {
             deterministic_order(set);
-            return splitFallback(set,left,lset,right,rset,depth);
+            return splitFallback(set,left,lset,right,rset,index);
           }
           
           const size_t begin = set.begin();
@@ -196,127 +209,148 @@ namespace embree
                                               dest + begin,
                                               dest + end - 1,
 #else
-          size_t center = serial_partitioning(source,
+                                              size_t center = serial_partitioning(source,
 #endif
-                                              begin,end,local_left,local_right,
-                                              [&] (const PrimRef& ref) { 
+                                                                                  begin,end,local_left,local_right,
+                                                                                  [&] (const PrimRef& ref) { 
 #if defined(__AVX512F__)
-                                                return split.mapping.bin_unsafe(ref,vSplitPos,vSplitMask);                                                 
+                                                                                    return split.mapping.bin_unsafe(ref,vSplitPos,vSplitMask);                                                 
 #else
-                                                return any(((vint4)split.mapping.bin_unsafe(center2(ref.bounds())) < vSplitPos) & vSplitMask); 
+                                                                                    return any(((vint4)split.mapping.bin_unsafe(center2(ref.bounds())) < vSplitPos) & vSplitMask); 
 #endif
-                                              },
-                                              [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend(ref.bounds()); });          
+                                                                                  },
+                                                                                  [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend(ref.bounds()); });          
           
                                               PRINT(center);
-          new (&left ) PrimInfo(begin,center,local_left.geomBounds,local_left.centBounds);
-          new (&right) PrimInfo(center,end,local_right.geomBounds,local_right.centBounds);
-          new (&lset) range<size_t>(begin,center);
-          new (&rset) range<size_t>(center,end);
-          assert(area(left.geomBounds) >= 0.0f);
-          assert(area(right.geomBounds) >= 0.0f);
-        }
-        
-        /*! array partitioning */
-        __noinline void parallel_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset)
-        {
-          if (!split.valid()) {
-            deterministic_order(set);
-            return splitFallback(set,left,lset,right,rset);
-          }
-          
-          const size_t begin = set.begin();
-          const size_t end   = set.end();
-          left.reset(); 
-          right.reset();
-          PrimInfo init; init.reset();
-          const unsigned int splitPos = split.pos;
-          const unsigned int splitDim = split.dim;
-          const unsigned int splitDimMask = (unsigned int)1 << splitDim;
-
-#if defined(__AVX512F__)
-          const vint16 vSplitPos(splitPos);
-          const vbool16 vSplitMask( (int)splitDimMask );
-          auto isLeft = [&] (const PrimRef &ref) { return split.mapping.bin_unsafe(ref,vSplitPos,vSplitMask); };
-#else
-          const vint4 vSplitPos(splitPos);
-          const vbool4 vSplitMask( (int)splitDimMask );
-          auto isLeft = [&] (const PrimRef &ref) { return any(((vint4)split.mapping.bin_unsafe(center2(ref.bounds())) < vSplitPos) & vSplitMask); };
-
-#endif
-          const size_t mid = parallel_in_place_partitioning_static<PARALLEL_PARITION_BLOCK_SIZE,PrimRef,PrimInfo>(
-            &prims0[begin],end-begin,init,left,right,isLeft,
-            [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.add(ref.bounds()); },
-            [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); });
-          
-          const size_t center = begin+mid;
-          left.begin  = begin;  left.end  = center; 
-          right.begin = center; right.end = end;
-          
-          new (&lset) range<size_t>(begin,center);
-          new (&rset) range<size_t>(center,end);
-        }
-        
-        void deterministic_order(const Set& set) 
-        {
-          /* required as parallel partition destroys original primitive order */
-          std::sort(&prims0[set.begin()],&prims0[set.end()]);
-        }
-
-         void deterministic_order(const PrimInfo& pinfo) 
-        {
-          /* required as parallel partition destroys original primitive order */
-          std::sort(&prims0[pinfo.begin],&prims0[pinfo.end]);
-        }
-        
-        /*! array partitioning */
-        /* void splitFallback(const PrimInfo& pinfo, PrimInfo& left, PrimInfo& right)  */
-        /* { */
-        /*   Set lset,rset; */
-        /*   Set set(pinfo.begin,pinfo.end); */
-        /*   splitFallback(set,left,lset,right,rset); */
-        /* } */
-        
-        void splitFallback(const Set& set, 
-                           PrimInfo& linfo, Set& lset, 
-                           PrimInfo& rinfo, Set& rset,
-                           const size_t depth)
-        {
-          const size_t begin = set.begin();
-          const size_t end   = set.end();
-          const size_t center = (begin + end)/2;
+                                              new (&left ) PrimInfo(begin,center,local_left.geomBounds,local_left.centBounds,index+1);
+                                              new (&right) PrimInfo(center,end,local_right.geomBounds,local_right.centBounds,index+1);
+                                              new (&lset) range<size_t>(begin,center);
+                                              new (&rset) range<size_t>(center,end);
+                                              assert(area(left.geomBounds) >= 0.0f);
+                                              assert(area(right.geomBounds) >= 0.0f);
 
 #if SPATIAL_DOUBLE_BUFFERED == 1
-          PrimRef* const source = (depth % 2) ? prims0 : prims1;
-          PrimRef* const dest   = (depth % 2) ? prims1 : prims0;
+                                              for (size_t i=begin;i<center;i++)
+                                                assert(subset(dest[i].bounds(),local_left.geomBounds));
+                                              for (size_t i=center;i<end;i++)
+                                                assert(subset(dest[i].bounds(),local_right.geomBounds));
+                                              if (lset.size() < 16)
+                                              {
+                                                PRINT(left);
+                                                for (size_t i=begin;i<center;i++)
+                                                  PRINT(dest[i]);
+                                              }
+                                              if (rset.size() < 16)
+                                              {
+                                                PRINT(right);
+                                                for (size_t i=center;i<end;i++)
+                                                  PRINT(dest[i]);
+                                              }
+
+#endif
+                                              }
+        
+          /*! array partitioning */
+          __noinline void parallel_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset)
+          {
+            if (!split.valid()) {
+              deterministic_order(set);
+              return splitFallback(set,left,lset,right,rset);
+            }
+          
+            const size_t begin = set.begin();
+            const size_t end   = set.end();
+            left.reset(); 
+            right.reset();
+            PrimInfo init; init.reset();
+            const unsigned int splitPos = split.pos;
+            const unsigned int splitDim = split.dim;
+            const unsigned int splitDimMask = (unsigned int)1 << splitDim;
+
+#if defined(__AVX512F__)
+            const vint16 vSplitPos(splitPos);
+            const vbool16 vSplitMask( (int)splitDimMask );
+            auto isLeft = [&] (const PrimRef &ref) { return split.mapping.bin_unsafe(ref,vSplitPos,vSplitMask); };
 #else
-          PrimRef* const source = prims0;
-          PrimRef* const dest   = prims1;
+            const vint4 vSplitPos(splitPos);
+            const vbool4 vSplitMask( (int)splitDimMask );
+            auto isLeft = [&] (const PrimRef &ref) { return any(((vint4)split.mapping.bin_unsafe(center2(ref.bounds())) < vSplitPos) & vSplitMask); };
+
+#endif
+            const size_t mid = parallel_in_place_partitioning_static<PARALLEL_PARITION_BLOCK_SIZE,PrimRef,PrimInfo>(
+              &prims0[begin],end-begin,init,left,right,isLeft,
+              [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.add(ref.bounds()); },
+              [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); });
+          
+            const size_t center = begin+mid;
+            left.begin  = begin;  left.end  = center; 
+            right.begin = center; right.end = end;
+          
+            new (&lset) range<size_t>(begin,center);
+            new (&rset) range<size_t>(center,end);
+          }
+        
+          void deterministic_order(const Set& set) 
+          {
+            /* required as parallel partition destroys original primitive order */
+            std::sort(&prims0[set.begin()],&prims0[set.end()]);
+          }
+
+          void deterministic_order(const PrimInfo& pinfo) 
+          {
+            /* required as parallel partition destroys original primitive order */
+            std::sort(&prims0[pinfo.begin],&prims0[pinfo.end]);
+          }
+        
+          /*! array partitioning */
+          /* void splitFallback(const PrimInfo& pinfo, PrimInfo& left, PrimInfo& right)  */
+          /* { */
+          /*   Set lset,rset; */
+          /*   Set set(pinfo.begin,pinfo.end); */
+          /*   splitFallback(set,left,lset,right,rset); */
+          /* } */
+        
+          void splitFallback(const Set& set, 
+                             PrimInfo& linfo, Set& lset, 
+                             PrimInfo& rinfo, Set& rset,
+                             const size_t index)
+          {
+            FATAL("HERE");
+            const size_t begin = set.begin();
+            const size_t end   = set.end();
+            const size_t center = (begin + end)/2;
+
+#if SPATIAL_DOUBLE_BUFFERED == 1
+            PrimRef* const source = (index % 2) ? prims1 : prims0;
+            PrimRef* const dest   = (index % 2) ? prims0 : prims1;
+#else
+            PrimRef* const source = prims0;
+            PrimRef* const dest   = prims1;
 #endif
           
-          CentGeomBBox3fa left; left.reset();
-          for (size_t i=begin; i<center; i++)
-          {
-            left.extend(source[i].bounds());
-            dest[i] = source[i];
-          }
-          new (&linfo) PrimInfo(begin,center,left.geomBounds,left.centBounds);
+            CentGeomBBox3fa left; left.reset();
+            for (size_t i=begin; i<center; i++)
+            {
+              left.extend(source[i].bounds());
+              dest[i] = source[i];
+            }
+            new (&linfo) PrimInfo(begin,center,left.geomBounds,left.centBounds,index+1);
           
-          CentGeomBBox3fa right; right.reset();
-          for (size_t i=center; i<end; i++)
-          {
-            right.extend(source[i].bounds());	
-            dest[i] = source[i];
-          }
-          new (&rinfo) PrimInfo(center,end,right.geomBounds,right.centBounds);
+            CentGeomBBox3fa right; right.reset();
+            for (size_t i=center; i<end; i++)
+            {
+              right.extend(source[i].bounds());	
+              dest[i] = source[i];
+            }
+            new (&rinfo) PrimInfo(center,end,right.geomBounds,right.centBounds,index+1);
           
-          new (&lset) range<size_t>(begin,center);
-          new (&rset) range<size_t>(center,end);
-        }
+            new (&lset) range<size_t>(begin,center);
+            new (&rset) range<size_t>(center,end);
+          }
         
-      private:
-        PrimRef* const prims0;
-        PrimRef* const prims1;
-      };
+        private:
+          PrimRef* const prims0;
+          PrimRef* const prims1;
+        };
+      }
   }
-}

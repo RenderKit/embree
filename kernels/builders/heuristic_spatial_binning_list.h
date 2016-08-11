@@ -97,7 +97,7 @@ namespace embree
           : spatial_binning(splitPrimitive) {}
         
         /*! finds the best split */
-        const Split find(Set& set, const PrimInfo& pinfo, const size_t logBlockSize, const size_t depth=0)
+        const Split find(Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
           SplitInfo oinfo;
           const ObjectSplit objectSplit  = object_binning.find(set,pinfo,logBlockSize,oinfo);
@@ -114,7 +114,7 @@ namespace embree
         }
         
         /*! splits a list of primitives */
-        void split(const Split& split, const PrimInfo& pinfo, Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset, const size_t depth) 
+        void split(const Split& split, const PrimInfo& pinfo, Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
         {
           if (split.spatial) return spatial_binning.split(split.spatialSplit(),pinfo,set,left,lset,right,rset);
           else               return  object_binning.split(split.objectSplit() ,pinfo,set,left,lset,right,rset);
@@ -126,7 +126,7 @@ namespace embree
           //std::sort(&prims[set.begin()],&prims[set.end()]); 
         }
 
-        void splitFallback(Set& prims, PrimInfo& linfo_o, Set& lprims_o, PrimInfo& rinfo_o, Set& rprims_o, const size_t depth) {
+        void splitFallback(Set& prims, PrimInfo& linfo_o, Set& lprims_o, PrimInfo& rinfo_o, Set& rprims_o, const size_t index=0) {
           object_binning.splitFallback(prims,linfo_o,lprims_o,rinfo_o,rprims_o);
         }
 

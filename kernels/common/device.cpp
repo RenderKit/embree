@@ -193,8 +193,10 @@ namespace embree
     std::cout << "TBB_header_interface_" << TBB_INTERFACE_VERSION << " TBB_lib_interface_" << tbb::TBB_runtime_interface_version() << " ";
 #endif
 #if defined(TASKING_INTERNAL)
-      std::cout << "internal_tasking_system ";
+    std::cout << "internal_tasking_system ";
 #endif
+    std::cout << std::endl;
+    std::cout << "    Affinity: " << (State::set_affinity ? "true" : "false") << std::endl;
     std::cout << std::endl;
 
     /* check of FTZ and DAZ flags are set in CSR */

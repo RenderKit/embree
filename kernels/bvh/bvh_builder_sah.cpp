@@ -115,7 +115,7 @@ namespace embree
       __forceinline size_t operator() (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc)
       {
 #if SPATIAL_DOUBLE_BUFFERED == 1
-        PrimRef* const source = (current.depth % 2) ? prims0 : prims1;
+        PrimRef* const source = (current.pinfo.index % 2) ? prims1 : prims0;
 #else
         PrimRef* const source = prims0;
 #endif

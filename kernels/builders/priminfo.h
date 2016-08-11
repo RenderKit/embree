@@ -66,18 +66,18 @@ namespace embree
       __forceinline PrimInfo () {}
 
       __forceinline PrimInfo (EmptyTy) 
-	: CentGeomBBox3fa(empty), begin(0), end(0) {}
+	: CentGeomBBox3fa(empty), begin(0), end(0), index(0) {}
 
       __forceinline void reset() {
 	CentGeomBBox3fa::reset();
-	begin = end = 0;
+	begin = end = index = 0;
       }
       
-      __forceinline PrimInfo (size_t num, const BBox3fa& geomBounds, const BBox3fa& centBounds) 
-	: CentGeomBBox3fa(geomBounds,centBounds), begin(0), end(num) {}
+      __forceinline PrimInfo (size_t num, const BBox3fa& geomBounds, const BBox3fa& centBounds, const size_t index=0) 
+	: CentGeomBBox3fa(geomBounds,centBounds), begin(0), end(num), index(index) {}
       
-      __forceinline PrimInfo (size_t begin, size_t end, const BBox3fa& geomBounds, const BBox3fa& centBounds) 
-	: CentGeomBBox3fa(geomBounds,centBounds), begin(begin), end(end) {}
+      __forceinline PrimInfo (size_t begin, size_t end, const BBox3fa& geomBounds, const BBox3fa& centBounds, const size_t index=0) 
+	: CentGeomBBox3fa(geomBounds,centBounds), begin(begin), end(end), index(index) {}
 
       __forceinline void add(const BBox3fa& geomBounds_) {
 	CentGeomBBox3fa::extend(geomBounds_,center2(geomBounds_));
@@ -123,11 +123,12 @@ namespace embree
       
       /*! stream output */
       friend std::ostream& operator<<(std::ostream& cout, const PrimInfo& pinfo) {
-	return cout << "PrimInfo { begin = " << pinfo.begin << ", end = " << pinfo.end << ", geomBounds = " << pinfo.geomBounds << ", centBounds = " << pinfo.centBounds << "}";
+	return cout << "PrimInfo { begin = " << pinfo.begin << ", end = " << pinfo.end << ", geomBounds = " << pinfo.geomBounds << ", centBounds = " << pinfo.centBounds << ", index = " << pinfo.index << "}";
       }
       
     public:
       size_t begin,end;          //!< number of primitives
+      size_t index;              //!< used as index for double buffering
     };
 
     struct PrimInfo2 
@@ -147,6 +148,8 @@ namespace embree
     public:
       PrimInfo left,right;
     };
+
+
 
   }
 }

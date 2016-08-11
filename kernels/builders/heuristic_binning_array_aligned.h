@@ -66,7 +66,7 @@ namespace embree
         }
 
         /*! finds the best split */
-        const Split find(const PrimInfo& pinfo, const size_t logBlockSize, const size_t depth=0)
+        const Split find(const PrimInfo& pinfo, const size_t logBlockSize)
         {
           Set set(pinfo.begin,pinfo.end);
           if (likely(pinfo.size() < PARALLEL_THRESHOLD)) return sequential_find(set,pinfo,logBlockSize);
@@ -74,7 +74,7 @@ namespace embree
         }
 
         /*! finds the best split */
-        const Split find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize, const size_t depth=0)
+        const Split find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
           if (likely(pinfo.size() < PARALLEL_THRESHOLD)) return sequential_find(set,pinfo,logBlockSize);
           else                                           return   parallel_find(set,pinfo,logBlockSize);
@@ -113,20 +113,20 @@ namespace embree
         }
         
         /*! array partitioning */
-        void split(const Split& split, const PrimInfo& pinfo, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset, const size_t depth=0) 
+        void split(const Split& split, const PrimInfo& pinfo, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
         {
           if (likely(pinfo.size() < PARALLEL_THRESHOLD)) 
-            sequential_split(split,set,left,lset,right,rset,depth);
+            sequential_split(split,set,left,lset,right,rset);
           else                                
-            parallel_split(split,set,left,lset,right,rset,depth);
+            parallel_split(split,set,left,lset,right,rset);
         }
 
         /*! array partitioning */
-        void sequential_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset, const size_t depth=0) 
+        void sequential_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
         {
           if (!split.valid()) {
             deterministic_order(set);
-            return splitFallback(set,left,lset,right,rset,depth);
+            return splitFallback(set,left,lset,right,rset);
           }
           
           const size_t begin = set.begin();
@@ -163,11 +163,11 @@ namespace embree
         }
         
         /*! array partitioning */
-        __noinline void parallel_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset, const size_t depth=0)
+        __noinline void parallel_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset)
         {
           if (!split.valid()) {
             deterministic_order(set);
-            return splitFallback(set,left,lset,right,rset,depth);
+            return splitFallback(set,left,lset,right,rset);
           }
           
           const size_t begin = set.begin();
@@ -215,14 +215,14 @@ namespace embree
         }
         
         /*! array partitioning */
-        void splitFallback(const PrimInfo& pinfo, PrimInfo& left, PrimInfo& right) 
+        void splitFallback(const PrimInfo& pinfo, PrimInfo& left, PrimInfo& right, const size_t index=0) 
         {
           Set lset,rset;
           Set set(pinfo.begin,pinfo.end);
           splitFallback(set,left,lset,right,rset);
         }
         
-        void splitFallback(const Set& set, PrimInfo& linfo, Set& lset, PrimInfo& rinfo, Set& rset, const size_t depth=0)
+        void splitFallback(const Set& set, PrimInfo& linfo, Set& lset, PrimInfo& rinfo, Set& rset, const size_t index=0)
         {
           const size_t begin = set.begin();
           const size_t end   = set.end();

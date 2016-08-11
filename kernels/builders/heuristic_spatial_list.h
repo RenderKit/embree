@@ -38,7 +38,7 @@ namespace embree
           : splitPrimitive(splitPrimitive) {}
         
         /*! finds the best split */
-        const Split find(Set& set, const PrimInfo& pinfo, const size_t logBlockSize, const size_t depth=0)
+        const Split find(Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
           if (likely(pinfo.size() < 10000)) return sequential_find(set,pinfo,logBlockSize);
           else                              return   parallel_find(set,pinfo,logBlockSize);
