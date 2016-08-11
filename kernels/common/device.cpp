@@ -86,6 +86,10 @@ namespace embree
       _MM_SET_EXCEPTION_MASK(exceptions);
     }
 
+    /* per default enable affinity on KNL */
+    if (hasISA(AVX512KNL))
+      State::set_affinity = true;
+
     /* print info header */
     if (State::verbosity(1))
       print();
@@ -101,10 +105,6 @@ namespace embree
     bvh8_factory = new BVH8Factory(enabled_cpu_features);
 #endif
 
-    /* per default enable affinity on KNL */
-
-    if (hasISA(AVX512KNL))
-      State::set_affinity = true;
 
     /* setup tasking system */
     initTaskingSystem(numThreads);
@@ -195,8 +195,6 @@ namespace embree
 #if defined(TASKING_INTERNAL)
     std::cout << "internal_tasking_system ";
 #endif
-    std::cout << std::endl;
-    std::cout << "    Affinity: " << (State::set_affinity ? "true" : "false") << std::endl;
     std::cout << std::endl;
 
     /* check of FTZ and DAZ flags are set in CSR */

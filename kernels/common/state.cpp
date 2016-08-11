@@ -335,7 +335,8 @@ namespace embree
   void State::print()
   {
     std::cout << "general:" << std::endl;
-    std::cout << "  build threads = " << numThreads << std::endl;
+    std::cout << "  build threads = " << numThreads   << std::endl;
+    std::cout << "  affinity      = " << set_affinity << std::endl;
     std::cout << "  verbosity     = " << verbose << std::endl;
     
     std::cout << "triangles:" << std::endl;

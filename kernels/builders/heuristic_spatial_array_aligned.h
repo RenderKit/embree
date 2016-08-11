@@ -18,7 +18,7 @@
 
 #include "heuristic_binning.h"
 
-#define SPATIAL_DOUBLE_BUFFERED 0
+#define SPATIAL_DOUBLE_BUFFERED 1
 
 namespace embree
 {
@@ -56,35 +56,6 @@ namespace embree
       return begin + l - left;
     }
 
-template<size_t BINS>
-	  struct SpatialSplit
-	  {
-		  typedef BinSplit<BINS> Split;
-		  Split split;
-		  size_t leftCount;
-		  size_t rightCount;
-
-		  __forceinline SpatialSplit () {}
-
-		  __forceinline SpatialSplit(const Split &other) 
-		  {
-			  split = other;
-			  
-		  }
-
-		  __forceinline SpatialSplit(const SpatialSplit& other)
-		  {
-			  split = other.split;
-		  }
-
-		  __forceinline SpatialSplit& operator= (const SpatialSplit& other)
-		  {
-			  split = other.split;
-			  return *this;
-		  }
-  };
-
-
     /*! Performs standard object binning */
 #if defined(__AVX512F__)
     template<typename PrimRef, size_t BINS = 16>
@@ -94,7 +65,6 @@ template<size_t BINS>
       struct HeuristicArraySpatialSAH
       {
         typedef BinSplit<BINS> Split;
-		//typedef SpatialSplit<BINS> Split;
         typedef BinInfo<BINS,PrimRef> Binner;
         typedef range<size_t> Set;
 
@@ -114,15 +84,6 @@ template<size_t BINS>
         __forceinline HeuristicArraySpatialSAH (PrimRef* prims0,PrimRef* prims1)
           : prims0(prims0), prims1(prims1) {}
 
-        /*! finds the best split */
-        const Split find(const PrimInfo& pinfo, const size_t logBlockSize)
-        {
-          //Set set(pinfo.begin,pinfo.end);
-          //if (likely(pinfo.size() < PARALLEL_THRESHOLD)) 
-          return sequential_find(set,pinfo,logBlockSize);
-          //else
-          //  return   parallel_find(set,pinfo,logBlockSize);
-        }
 
         /*! finds the best split */
         const Split find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
@@ -130,7 +91,7 @@ template<size_t BINS>
           //std::cout << std::endl;
           //PING;
           //PRINT(pinfo);
-		  //PRINT(pinfo.index);
+          //PRINT(pinfo.index);
           //if (likely(pinfo.size() < PARALLEL_THRESHOLD)) 
           return sequential_find(set,pinfo,logBlockSize);
           //else
@@ -153,7 +114,9 @@ template<size_t BINS>
           Binner binner(empty); // FIXME: this clear can be optimized away
           const BinMapping<BINS> mapping(pinfo);
           binner.bin(source,set.begin(),set.end(),mapping);
-          return binner.best(mapping,logBlockSize);
+          Split s = binner.best(mapping,logBlockSize);
+          s.lcount = binner.getLeftCount(mapping,s);
+          return s;
         }
         
         /*! finds the best split */
@@ -211,7 +174,7 @@ template<size_t BINS>
             return splitFallback(set,left,lset,right,rset,index);
           }
           
-		  //const size_t countBinningLeft = 
+          //const size_t countBinningLeft = 
 
           const size_t begin = set.begin();
           const size_t end   = set.end();
@@ -246,7 +209,7 @@ template<size_t BINS>
                                                                                   },
                                                                                   [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend(ref.bounds()); });          
           
-                                              //PRINT(center);
+                                              assert(center == begin + split.lcount);
                                               new (&left ) PrimInfo(begin,center,local_left.geomBounds,local_left.centBounds,index+1);
                                               new (&right) PrimInfo(center,end,local_right.geomBounds,local_right.centBounds,index+1);
                                               new (&lset) range<size_t>(begin,center);
@@ -262,9 +225,18 @@ template<size_t BINS>
 #endif
                                               }
         
+#if 0
           /*! array partitioning */
           __noinline void parallel_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset)
           {
+#if SPATIAL_DOUBLE_BUFFERED == 1
+          PrimRef* const source = (index % 2) ? prims1 : prims0;
+          //PrimRef* const dest   = (index % 2) ? prims0 : prims1;
+#else
+          PrimRef* const source = prims0;
+          //PrimRef* const dest   = prims1;
+#endif
+
             if (!split.valid()) {
               deterministic_order(set);
               return splitFallback(set,left,lset,right,rset);
@@ -301,33 +273,19 @@ template<size_t BINS>
             new (&lset) range<size_t>(begin,center);
             new (&rset) range<size_t>(center,end);
           }
-        
+#endif
+
           void deterministic_order(const Set& set) 
           {
             /* required as parallel partition destroys original primitive order */
             std::sort(&prims0[set.begin()],&prims0[set.end()]);
           }
 
-          void deterministic_order(const PrimInfo& pinfo) 
-          {
-            /* required as parallel partition destroys original primitive order */
-            std::sort(&prims0[pinfo.begin],&prims0[pinfo.end]);
-          }
-        
-          /*! array partitioning */
-          /* void splitFallback(const PrimInfo& pinfo, PrimInfo& left, PrimInfo& right)  */
-          /* { */
-          /*   Set lset,rset; */
-          /*   Set set(pinfo.begin,pinfo.end); */
-          /*   splitFallback(set,left,lset,right,rset); */
-          /* } */
-        
           void splitFallback(const Set& set, 
                              PrimInfo& linfo, Set& lset, 
                              PrimInfo& rinfo, Set& rset,
                              const size_t index)
           {
-            FATAL("HERE");
             const size_t begin = set.begin();
             const size_t end   = set.end();
             const size_t center = (begin + end)/2;
@@ -337,14 +295,15 @@ template<size_t BINS>
             PrimRef* const dest   = (index % 2) ? prims0 : prims1;
 #else
             PrimRef* const source = prims0;
-            PrimRef* const dest   = prims1;
 #endif
           
             CentGeomBBox3fa left; left.reset();
             for (size_t i=begin; i<center; i++)
             {
               left.extend(source[i].bounds());
+#if SPATIAL_DOUBLE_BUFFERED == 1
               dest[i] = source[i];
+#endif
             }
             new (&linfo) PrimInfo(begin,center,left.geomBounds,left.centBounds,index+1);
           
@@ -352,10 +311,11 @@ template<size_t BINS>
             for (size_t i=center; i<end; i++)
             {
               right.extend(source[i].bounds());	
+#if SPATIAL_DOUBLE_BUFFERED == 1
               dest[i] = source[i];
+#endif
             }
-            new (&rinfo) PrimInfo(center,end,right.geomBounds,right.centBounds,index+1);
-          
+            new (&rinfo) PrimInfo(center,end,right.geomBounds,right.centBounds,index+1);         
             new (&lset) range<size_t>(begin,center);
             new (&rset) range<size_t>(center,end);
           }

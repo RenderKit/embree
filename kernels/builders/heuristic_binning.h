@@ -120,11 +120,11 @@ namespace embree
       {
         /*! construct an invalid split by default */
         __forceinline BinSplit()
-          : sah(inf), dim(-1), pos(0) {}
+          : sah(inf), dim(-1), pos(0), lcount(0) {}
         
         /*! constructs specified split */
         __forceinline BinSplit(float sah, int dim, int pos, const BinMapping<BINS>& mapping)
-          : sah(sah), dim(dim), pos(pos), mapping(mapping) {}
+          : sah(sah), dim(dim), pos(pos), lcount(0), mapping(mapping) {}
         
         /*! tests if this split is valid */
         __forceinline bool valid() const { return dim != -1; }
@@ -141,6 +141,7 @@ namespace embree
         float sah;                //!< SAH cost of the split
         int dim;                  //!< split dimension
         int pos;                  //!< bin index for splitting
+        unsigned int lcount;      //!< primitives on the left side of the split 
         BinMapping<BINS> mapping; //!< mapping into bins
       };
     
@@ -397,29 +398,29 @@ namespace embree
 	new (&info) SplitInfo(leftCount,leftBounds,rightCount,rightBounds);
       }
 
-	  /*! gets the number of primitives left of the split */
-	  __forceinline size_t getLeftCount(const BinMapping<BINS>& mapping, const Split& split) const
-	  {
-		  if (unlikely(split.dim == -1)) return -1;
+      /*! gets the number of primitives left of the split */
+      __forceinline size_t getLeftCount(const BinMapping<BINS>& mapping, const Split& split) const
+      {
+        if (unlikely(split.dim == -1)) return -1;
 
-		  size_t leftCount = 0;
-		  for (size_t i = 0; i < (size_t)split.pos; i++) {
-			  leftCount += counts(i, split.dim);
-		  }
-		  return leftCount;
-	  }
+        size_t leftCount = 0;
+        for (size_t i = 0; i < (size_t)split.pos; i++) {
+          leftCount += counts(i, split.dim);
+        }
+        return leftCount;
+      }
 
-	  /*! gets the number of primitives right of the split */
-	  __forceinline size_t getRightCount(const BinMapping<BINS>& mapping, const Split& split) const
-	  {
-		  if (unlikely(split.dim == -1)) return -1;
+      /*! gets the number of primitives right of the split */
+      __forceinline size_t getRightCount(const BinMapping<BINS>& mapping, const Split& split) const
+      {
+        if (unlikely(split.dim == -1)) return -1;
 
-		  size_t rightCount = 0;
-		  for (size_t i = (size_t)split.pos; i<mapping.size(); i++) {
-			  rightCount += counts(i, split.dim);
-		  }
-		  return rightCount;
-	  }
+        size_t rightCount = 0;
+        for (size_t i = (size_t)split.pos; i<mapping.size(); i++) {
+          rightCount += counts(i, split.dim);
+        }
+        return rightCount;
+      }
 
     private:
 
@@ -685,6 +686,31 @@ namespace embree
 	
 	return Split(bestSAH,bestDim,bestPos,mapping);
 
+      }
+
+
+      /*! gets the number of primitives left of the split */
+      __forceinline size_t getLeftCount(const BinMapping<16>& mapping, const Split& split) const
+      {
+        if (unlikely(split.dim == -1)) return -1;
+
+        size_t leftCount = 0;
+        for (size_t i = 0; i < (size_t)split.pos; i++) {
+          leftCount += count[split.dim][i];
+        }
+        return leftCount;
+      }
+
+      /*! gets the number of primitives right of the split */
+      __forceinline size_t getRightCount(const BinMapping<16>& mapping, const Split& split) const
+      {
+        if (unlikely(split.dim == -1)) return -1;
+
+        size_t rightCount = 0;
+        for (size_t i = (size_t)split.pos; i<mapping.size(); i++) {
+          rightCount += count[split.dim][i];
+        }
+        return rightCount;
       }
             
     private:

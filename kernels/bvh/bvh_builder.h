@@ -179,7 +179,7 @@ namespace embree
         struct BVHNBuilderV {
           void build(BVH* bvh, BuildProgressMonitor& progress, PrimRef* prims0, PrimRef* prims1, const PrimInfo& pinfo, 
                      const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost);
-          virtual size_t createLeaf (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) = 0;
+          virtual size_t createLeaf (const BVHBuilderBinnedFastSpatialSAH::BuildRecord& current, Allocator* alloc) = 0;
         };
 
         template<typename CreateLeafFunc>
