@@ -25,12 +25,12 @@ namespace embree
 #endif
 
 #define DECLARE_SYMBOL(type,name)                                       \
-  namespace isa    { extern type name; }                                 \
-  namespace sse41  { extern type name; }                                 \
-  namespace sse42  { extern type name; }                                 \
-  namespace avx    { extern type name; }                                 \
-  namespace avx2   { extern type name; }                                 \
-  namespace avx512 { extern type name; }                                 \
+  namespace isa       { extern type name; }                             \
+  namespace sse41     { extern type name; }                             \
+  namespace sse42     { extern type name; }                             \
+  namespace avx       { extern type name; }                             \
+  namespace avx2      { extern type name; }                             \
+  namespace avx512knl { extern type name; }                             \
   void name##_error() { throw_RTCError(RTC_UNKNOWN_ERROR,"internal error in ISA selection for " TOSTRING(name)); } \
   type name((type)name##_error);
 
@@ -38,12 +38,12 @@ namespace embree
   type name;
 
 #define DECLARE_SYMBOL2(type,name)                                       \
-  namespace isa    { extern type name; }                                 \
-  namespace sse41  { extern type name; }                                 \
-  namespace sse42  { extern type name; }                                 \
-  namespace avx    { extern type name; }                                 \
-  namespace avx2   { extern type name; }                                 \
-  namespace avx512 { extern type name; }                                 \
+  namespace isa       { extern type name; }                              \
+  namespace sse41     { extern type name; }                              \
+  namespace sse42     { extern type name; }                              \
+  namespace avx       { extern type name; }                              \
+  namespace avx2      { extern type name; }                              \
+  namespace avx512knl { extern type name; }                              \
   void name##_error() { throw_RTCError(RTC_UNKNOWN_ERROR,"internal error in ISA selection for " TOSTRING(name)); }
 
 #define DEFINE_BUILDER2(Accel,Mesh,Args,symbol)                         \
@@ -51,11 +51,11 @@ namespace embree
   symbol##Func symbol;
 
 #define DECLARE_BUILDER2(Accel,Mesh,Args,symbol)                         \
-  namespace isa   { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
-  namespace sse41 { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
-  namespace avx   { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
-  namespace avx2  { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
-  namespace avx512  { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
+  namespace isa       { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
+  namespace sse41     { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
+  namespace avx       { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
+  namespace avx2      { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
+  namespace avx512knl { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
   void symbol##_error() { throw_RTCError(RTC_UNSUPPORTED_CPU,"builder " TOSTRING(symbol) " not supported by your CPU"); } \
 
 #define INIT_SYMBOL(features,intersector)                      \
@@ -102,7 +102,7 @@ namespace embree
 #define __TARGET_SIMD16__
 #endif
 #define SELECT_SYMBOL_AVX512KNL(features,intersector) \
-  if ((features & AVX512KNL) == AVX512KNL) intersector = avx512::intersector; 
+  if ((features & AVX512KNL) == AVX512KNL) intersector = avx512knl::intersector;
 #else
 #define SELECT_SYMBOL_AVX512KNL(features,intersector)
 #endif
@@ -203,10 +203,10 @@ namespace embree
       else return getISA(depth-1); 
     }
   };
-  namespace isa    { int getISA(); };
-  namespace sse41  { int getISA(); };
-  namespace sse42  { int getISA(); };
-  namespace avx    { int getISA(); };
-  namespace avx2   { int getISA(); };
-  namespace avx512 { int getISA(); };
+  namespace isa       { int getISA(); };
+  namespace sse41     { int getISA(); };
+  namespace sse42     { int getISA(); };
+  namespace avx       { int getISA(); };
+  namespace avx2      { int getISA(); };
+  namespace avx512knl { int getISA(); };
 }

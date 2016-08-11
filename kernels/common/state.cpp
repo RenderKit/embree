@@ -147,7 +147,7 @@ namespace embree
     assert(avx2::getISA() <= AVX2);
 #endif
 #if defined (__TARGET_AVX512KNL__)
-    assert(avx512::getISA() <= AVX512KNL);
+    assert(avx512knl::getISA() <= AVX512KNL);
 #endif
 #endif
   }

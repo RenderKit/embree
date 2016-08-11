@@ -29,7 +29,7 @@
 
 /* define isa namespace and ISA bitvector */
 #if defined (__AVX512F__)
-#  define isa avx512
+#  define isa avx512knl
 #  define ISA AVX512KNL
 #  define ISA_STR "AVX512KNL"
 #elif defined (__AVX2__)
