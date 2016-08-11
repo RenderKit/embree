@@ -112,7 +112,7 @@ namespace embree
 
       __forceinline CreateLeafSpatial (BVH* bvh, PrimRef* prims0, PrimRef* prims1) : bvh(bvh), prims0(prims0), prims1(prims1) {}
       
-      __forceinline size_t operator() (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc)
+	  __forceinline size_t operator() (const BVHBuilderBinnedFastSpatialSAH::BuildRecord& current, Allocator* alloc)
       {
 #if SPATIAL_DOUBLE_BUFFERED == 1
         PrimRef* const source = (current.pinfo.index % 2) ? prims1 : prims0;

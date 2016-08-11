@@ -56,6 +56,34 @@ namespace embree
       return begin + l - left;
     }
 
+template<size_t BINS>
+	  struct SpatialSplit
+	  {
+		  typedef BinSplit<BINS> Split;
+		  Split split;
+		  size_t leftCount;
+		  size_t rightCount;
+
+		  __forceinline SpatialSplit () {}
+
+		  __forceinline SpatialSplit(const Split &other) 
+		  {
+			  split = other;
+			  
+		  }
+
+		  __forceinline SpatialSplit(const SpatialSplit& other)
+		  {
+			  split = other.split;
+		  }
+
+		  __forceinline SpatialSplit& operator= (const SpatialSplit& other)
+		  {
+			  split = other.split;
+			  return *this;
+		  }
+  };
+
 
     /*! Performs standard object binning */
 #if defined(__AVX512F__)
@@ -66,6 +94,7 @@ namespace embree
       struct HeuristicArraySpatialSAH
       {
         typedef BinSplit<BINS> Split;
+		//typedef SpatialSplit<BINS> Split;
         typedef BinInfo<BINS,PrimRef> Binner;
         typedef range<size_t> Set;
 
@@ -98,9 +127,10 @@ namespace embree
         /*! finds the best split */
         const Split find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
-          std::cout << std::endl;
-          PING;
-          PRINT(pinfo);
+          //std::cout << std::endl;
+          //PING;
+          //PRINT(pinfo);
+		  //PRINT(pinfo.index);
           //if (likely(pinfo.size() < PARALLEL_THRESHOLD)) 
           return sequential_find(set,pinfo,logBlockSize);
           //else
@@ -115,14 +145,7 @@ namespace embree
 #else
           PrimRef* const source = prims0;
 #endif
-          PING;
-          PRINT(pinfo.geomBounds);
-
-          if (set.size() < 16)
-          {
-            for (size_t i=set.begin();i<set.end();i++)
-              PRINT(source[i]);
-          }
+          //PRINT(pinfo.geomBounds);
 
           for (size_t i=set.begin();i<set.end();i++)
             assert(subset(source[i].bounds(),pinfo.geomBounds));
@@ -159,14 +182,14 @@ namespace embree
         /*! array partitioning */
         void split(const Split& split, const PrimInfo& pinfo, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
         {
-          std::cout << std::endl;
+          //std::cout << std::endl;
           //if (likely(pinfo.size() < PARALLEL_THRESHOLD)) 
-          PING;
+          //PING;
           sequential_split(split,set,left,lset,right,rset,pinfo.index);
-          PRINT(split);
-          PRINT(pinfo);
-          PRINT(left);
-          PRINT(right);
+          //PRINT(split);
+          //PRINT(pinfo);
+          //PRINT(left);
+          //PRINT(right);
 
           //else                                
           //parallel_split(split,set,left,lset,right,rset);
@@ -188,6 +211,8 @@ namespace embree
             return splitFallback(set,left,lset,right,rset,index);
           }
           
+		  //const size_t countBinningLeft = 
+
           const size_t begin = set.begin();
           const size_t end   = set.end();
           CentGeomBBox3fa local_left(empty);
@@ -221,7 +246,7 @@ namespace embree
                                                                                   },
                                                                                   [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend(ref.bounds()); });          
           
-                                              PRINT(center);
+                                              //PRINT(center);
                                               new (&left ) PrimInfo(begin,center,local_left.geomBounds,local_left.centBounds,index+1);
                                               new (&right) PrimInfo(center,end,local_right.geomBounds,local_right.centBounds,index+1);
                                               new (&lset) range<size_t>(begin,center);
@@ -234,19 +259,6 @@ namespace embree
                                                 assert(subset(dest[i].bounds(),local_left.geomBounds));
                                               for (size_t i=center;i<end;i++)
                                                 assert(subset(dest[i].bounds(),local_right.geomBounds));
-                                              if (lset.size() < 16)
-                                              {
-                                                PRINT(left);
-                                                for (size_t i=begin;i<center;i++)
-                                                  PRINT(dest[i]);
-                                              }
-                                              if (rset.size() < 16)
-                                              {
-                                                PRINT(right);
-                                                for (size_t i=center;i<end;i++)
-                                                  PRINT(dest[i]);
-                                              }
-
 #endif
                                               }
         

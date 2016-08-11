@@ -396,7 +396,31 @@ namespace embree
 	}
 	new (&info) SplitInfo(leftCount,leftBounds,rightCount,rightBounds);
       }
-      
+
+	  /*! gets the number of primitives left of the split */
+	  __forceinline size_t getLeftCount(const BinMapping<BINS>& mapping, const Split& split) const
+	  {
+		  if (unlikely(split.dim == -1)) return -1;
+
+		  size_t leftCount = 0;
+		  for (size_t i = 0; i < (size_t)split.pos; i++) {
+			  leftCount += counts(i, split.dim);
+		  }
+		  return leftCount;
+	  }
+
+	  /*! gets the number of primitives right of the split */
+	  __forceinline size_t getRightCount(const BinMapping<BINS>& mapping, const Split& split) const
+	  {
+		  if (unlikely(split.dim == -1)) return -1;
+
+		  size_t rightCount = 0;
+		  for (size_t i = (size_t)split.pos; i<mapping.size(); i++) {
+			  rightCount += counts(i, split.dim);
+		  }
+		  return rightCount;
+	  }
+
     private:
 
       BBox3fa _bounds[BINS][3]; //!< geometry bounds for each bin in each dimension
