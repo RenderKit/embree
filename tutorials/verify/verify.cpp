@@ -3863,6 +3863,8 @@ namespace embree
       benchmark_imodes_ivariants.push_back(std::make_pair(MODE_INTERSECT4,VARIANT_OCCLUDED));
       benchmark_imodes_ivariants.push_back(std::make_pair(MODE_INTERSECT8,VARIANT_INTERSECT));
       benchmark_imodes_ivariants.push_back(std::make_pair(MODE_INTERSECT8,VARIANT_OCCLUDED));
+      benchmark_imodes_ivariants.push_back(std::make_pair(MODE_INTERSECT16,VARIANT_INTERSECT));
+      benchmark_imodes_ivariants.push_back(std::make_pair(MODE_INTERSECT16,VARIANT_OCCLUDED));
       benchmark_imodes_ivariants.push_back(std::make_pair(MODE_INTERSECT1M,VARIANT_INTERSECT_INCOHERENT));
       benchmark_imodes_ivariants.push_back(std::make_pair(MODE_INTERSECT1M,VARIANT_OCCLUDED_INCOHERENT));
 

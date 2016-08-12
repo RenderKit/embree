@@ -407,7 +407,7 @@ namespace embree
 #endif
 
 #if defined(__TARGET_SIMD16__) && defined(EMBREE_RAY_PACKETS)
-    case RTC_CONFIG_INTERSECT16: return hasISA(AVX512KNL) | hasISA(KNC);
+    case RTC_CONFIG_INTERSECT16: return hasISA(AVX512KNL);
 #else
     case RTC_CONFIG_INTERSECT16: return 0;
 #endif
