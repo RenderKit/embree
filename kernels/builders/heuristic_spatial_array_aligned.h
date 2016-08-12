@@ -56,6 +56,11 @@ namespace embree
         /*! compute extended ranges */
         __forceinline void setExtentedRanges(const Set& set, Set& lset, Set& rset)
         {
+          /* PING; */
+          /* PRINT(set); */
+          /* PRINT(lset); */
+          /* PRINT(rset); */
+
           assert(set.ext_range_size() > 0);
           const size_t parent_size          = set.size();
           const size_t ext_range_size       = set.ext_range_size();
@@ -76,10 +81,50 @@ namespace embree
           /* PRINT(right_ext_range_size); */
           /* PRINT(left_factor); */
           //exit(0);
+          /* PRINT("UPDATE"); */
           lset.set_ext_range(lset.end() + left_ext_range_size);
           rset.set_ext_range(rset.end() + right_ext_range_size);
+
+          /* PRINT(lset); */
+          /* PRINT(rset); */
+
         }
 
+        __noinline void moveExtentedRange(const Set& set, const Set& lset, Set& rset)
+        {
+          const size_t left_ext_range_size = lset.ext_range_size();
+          const size_t right_size = rset.size();
+          /* PING; */
+          /* PRINT(set); */
+          /* PRINT(lset); */
+          /* PRINT(rset); */
+          /* PRINT(left_ext_range_size); */
+          /* PRINT(right_size); */
+
+          // has the left child an extended range ?
+          if (left_ext_range_size > 0)
+          {
+            PrimRef* const source = prims0;
+            // left extended range smaller than right range ?
+            if (left_ext_range_size < right_size)
+            {
+              // only move a small part of of the beginning of the right range to the end
+              for (size_t i=rset.begin();i<rset.begin()+left_ext_range_size;i++)
+                source[i+right_size] = source[i];
+            }
+            else
+            {
+              // no overlap, move entire right range to new location, can be made fully parallel
+              for (size_t i=rset.begin();i<rset.end();i++)
+                source[i+left_ext_range_size] = source[i];
+            }
+            // update right range
+            assert(rset.ext_end() + left_ext_range_size == set.ext_end());
+            rset.move_right(left_ext_range_size);
+            /* PRINT(rset); */
+            //exit(0);
+          }
+        }
 
         /*! finds the best split */
         const Split find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
@@ -192,21 +237,22 @@ namespace embree
           assert(center == begin + split.lcount);
           new (&left ) PrimInfo(begin,center,local_left.geomBounds,local_left.centBounds);
           new (&right) PrimInfo(center,end,local_right.geomBounds,local_right.centBounds);
-          new (&lset) range<size_t>(begin,center);
-          new (&rset) range<size_t>(center,end);
+          new (&lset) extended_range<size_t>(begin,center,center);
+          new (&rset) extended_range<size_t>(center,end,end);
           assert(area(left.geomBounds) >= 0.0f);
           assert(area(right.geomBounds) >= 0.0f);
-
-          for (size_t i=begin;i<center;i++)
-            assert(subset(source[i].bounds(),local_left.geomBounds));
-          for (size_t i=center;i<end;i++)
-            assert(subset(source[i].bounds(),local_right.geomBounds));
 
           // if we have an extended range
           if (set.has_ext_range()) 
           {
             setExtentedRanges(set,lset,rset);
+            moveExtentedRange(set,lset,rset);
           }
+
+          for (size_t i=lset.begin();i<lset.end();i++)
+            assert(subset(source[i].bounds(),local_left.geomBounds));
+          for (size_t i=rset.begin();i<rset.end();i++)
+            assert(subset(source[i].bounds(),local_right.geomBounds));
 
         }
         
@@ -249,8 +295,8 @@ namespace embree
             left.begin  = begin;  left.end  = center; 
             right.begin = center; right.end = end;
           
-            new (&lset) range<size_t>(begin,center);
-            new (&rset) range<size_t>(center,end);
+          new (&lset) extended_range<size_t>(begin,center,center);
+          new (&rset) extended_range<size_t>(center,end,end);
           }
 #endif
 
@@ -283,14 +329,15 @@ namespace embree
               right.extend(source[i].bounds());	
             }
             new (&rinfo) PrimInfo(center,end,right.geomBounds,right.centBounds);         
-            new (&lset) range<size_t>(begin,center);
-            new (&rset) range<size_t>(center,end);
+            new (&lset) extended_range<size_t>(begin,center,center);
+            new (&rset) extended_range<size_t>(center,end,end);
 
             // if we have an extended range
-          if (set.has_ext_range()) 
-          {
-            setExtentedRanges(set,lset,rset);
-          }
+            if (set.has_ext_range()) 
+            {
+              setExtentedRanges(set,lset,rset);
+              moveExtentedRange(set,lset,rset);              
+            }
 
           }
         

@@ -97,6 +97,12 @@ namespace embree
         _ext_end = ext_end;
       }
 
+      __forceinline void move_right(const size_t plus){
+        _begin   += plus;
+        _end     += plus;
+        _ext_end += plus;
+      }
+
 
       friend std::ostream& operator<<(std::ostream& cout, const extended_range& r) {
         return cout << "extended_range [" << r.begin() << ", " << r.end() <<  " (" << r.ext_end() << ")]";
