@@ -149,6 +149,9 @@ namespace embree
 #if defined (__TARGET_AVX512KNL__)
     assert(avx512knl::getISA() <= AVX512KNL);
 #endif
+#if defined (__TARGET_AVX512SKX__)
+    assert(avx512skx::getISA() <= AVX512SKX);
+#endif
 #endif
   }
 
@@ -199,6 +202,7 @@ namespace embree
     else if (isa == "avxi") return AVXI;
     else if (isa == "avx2") return AVX2;
     else if (isa == "avx512knl") return AVX512KNL;
+    else if (isa == "avx512skx") return AVX512SKX;
     else return SSE2;
   }
 

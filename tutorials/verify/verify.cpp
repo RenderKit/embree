@@ -3538,6 +3538,7 @@ namespace embree
     if (hasISA(AVX)) isas.push_back(AVX);
     if (hasISA(AVX2)) isas.push_back(AVX2);
     if (hasISA(AVX512KNL)) isas.push_back(AVX512KNL);
+    if (hasISA(AVX512SKX)) isas.push_back(AVX512SKX);
     
     /* create list of all intersect modes to test */
     intersectModes.push_back(MODE_INTERSECT1);
