@@ -18,43 +18,11 @@
 
 #include "heuristic_binning.h"
 
-#define SPATIAL_DOUBLE_BUFFERED 1
-
 namespace embree
 {
   namespace isa
   { 
 
-    /* serial partitioning */
-    template<typename T, typename V, typename Compare, typename Reduction_T>
-      __forceinline size_t serial_partitioning(T* const array, 
-                                               T* const left,
-                                               T* const right, 
-                                               const size_t begin,
-                                               const size_t end, 
-                                               V& leftReduction,
-                                               V& rightReduction,
-                                               const Compare& cmp, 
-                                               const Reduction_T& reduction_t)
-    {
-      T* l = left;
-      T* r = right;
-
-      for (size_t i=begin;i<end;i++)
-      {
-        if (cmp(array[i]))
-        {
-          reduction_t(leftReduction,array[i]);
-          *l++ = array[i];
-        }
-        else
-        {
-          reduction_t(rightReduction,array[i]);
-          *r-- = array[i];
-        }
-      }
-      return begin + l - left;
-    }
 
     /*! Performs standard object binning */
 #if defined(__AVX512F__)
@@ -66,7 +34,7 @@ namespace embree
       {
         typedef BinSplit<BINS> Split;
         typedef BinInfo<BINS,PrimRef> Binner;
-        typedef range<size_t> Set;
+        typedef extended_range<size_t> Set;
 
 #if defined(__AVX512F__)
         static const size_t PARALLEL_THRESHOLD = 3*1024; 
@@ -78,11 +46,11 @@ namespace embree
         static const size_t PARALLEL_PARITION_BLOCK_SIZE = 128;
 #endif
         __forceinline HeuristicArraySpatialSAH ()
-          : prims0(nullptr), prims1(nullptr) {}
+          : prims0(nullptr) {}
         
         /*! remember prim array */
-        __forceinline HeuristicArraySpatialSAH (PrimRef* prims0,PrimRef* prims1)
-          : prims0(prims0), prims1(prims1) {}
+        __forceinline HeuristicArraySpatialSAH (PrimRef* prims0)
+          : prims0(prims0) {}
 
 
         /*! finds the best split */
@@ -101,12 +69,7 @@ namespace embree
         /*! finds the best split */
         const Split sequential_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
-#if SPATIAL_DOUBLE_BUFFERED == 1
-          PrimRef* const source = (pinfo.index % 2) ? prims1 : prims0;
-#else
           PrimRef* const source = prims0;
-#endif
-          //PRINT(pinfo.geomBounds);
 
           for (size_t i=set.begin();i<set.end();i++)
             assert(subset(source[i].bounds(),pinfo.geomBounds));
@@ -148,7 +111,7 @@ namespace embree
           //std::cout << std::endl;
           //if (likely(pinfo.size() < PARALLEL_THRESHOLD)) 
           //PING;
-          sequential_split(split,set,left,lset,right,rset,pinfo.index);
+          sequential_split(split,set,left,lset,right,rset);
           //PRINT(split);
           //PRINT(pinfo);
           //PRINT(left);
@@ -159,19 +122,14 @@ namespace embree
         }
 
         /*! array partitioning */
-        void sequential_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset, const size_t index) 
+        void sequential_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
         {
           // determine input and output primref arrays
-#if SPATIAL_DOUBLE_BUFFERED == 1
-          PrimRef* const source = (index % 2) ? prims1 : prims0;
-          PrimRef* const dest   = (index % 2) ? prims0 : prims1;
-#else
           PrimRef* const source = prims0;
-          //PrimRef* const dest   = prims1;
-#endif
+
           if (unlikely(!split.valid())) {
             deterministic_order(set);
-            return splitFallback(set,left,lset,right,rset,index);
+            return splitFallback(set,left,lset,right,rset);
           }
           
           //const size_t countBinningLeft = 
@@ -192,50 +150,36 @@ namespace embree
           const vbool4 vSplitMask( (int)splitDimMask );
 #endif
 
-#if SPATIAL_DOUBLE_BUFFERED == 1
           size_t center = serial_partitioning(source,
-                                              dest + begin,
-                                              dest + end - 1,
-#else
-                                              size_t center = serial_partitioning(source,
-#endif
-                                                                                  begin,end,local_left,local_right,
-                                                                                  [&] (const PrimRef& ref) { 
+                                              begin,end,local_left,local_right,
+                                              [&] (const PrimRef& ref) { 
 #if defined(__AVX512F__)
-                                                                                    return split.mapping.bin_unsafe(ref,vSplitPos,vSplitMask);                                                 
+                                                return split.mapping.bin_unsafe(ref,vSplitPos,vSplitMask);                                                 
 #else
-                                                                                    return any(((vint4)split.mapping.bin_unsafe(center2(ref.bounds())) < vSplitPos) & vSplitMask); 
+                                                return any(((vint4)split.mapping.bin_unsafe(center2(ref.bounds())) < vSplitPos) & vSplitMask); 
 #endif
-                                                                                  },
-                                                                                  [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend(ref.bounds()); });          
+                                              },
+                                              [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend(ref.bounds()); });          
           
-                                              assert(center == begin + split.lcount);
-                                              new (&left ) PrimInfo(begin,center,local_left.geomBounds,local_left.centBounds,index+1);
-                                              new (&right) PrimInfo(center,end,local_right.geomBounds,local_right.centBounds,index+1);
-                                              new (&lset) range<size_t>(begin,center);
-                                              new (&rset) range<size_t>(center,end);
-                                              assert(area(left.geomBounds) >= 0.0f);
-                                              assert(area(right.geomBounds) >= 0.0f);
+          assert(center == begin + split.lcount);
+          new (&left ) PrimInfo(begin,center,local_left.geomBounds,local_left.centBounds);
+          new (&right) PrimInfo(center,end,local_right.geomBounds,local_right.centBounds);
+          new (&lset) range<size_t>(begin,center);
+          new (&rset) range<size_t>(center,end);
+          assert(area(left.geomBounds) >= 0.0f);
+          assert(area(right.geomBounds) >= 0.0f);
 
-#if SPATIAL_DOUBLE_BUFFERED == 1
-                                              for (size_t i=begin;i<center;i++)
-                                                assert(subset(dest[i].bounds(),local_left.geomBounds));
-                                              for (size_t i=center;i<end;i++)
-                                                assert(subset(dest[i].bounds(),local_right.geomBounds));
-#endif
-                                              }
+          for (size_t i=begin;i<center;i++)
+            assert(subset(source[i].bounds(),local_left.geomBounds));
+          for (size_t i=center;i<end;i++)
+            assert(subset(source[i].bounds(),local_right.geomBounds));
+        }
         
 #if 0
           /*! array partitioning */
           __noinline void parallel_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset)
           {
-#if SPATIAL_DOUBLE_BUFFERED == 1
-          PrimRef* const source = (index % 2) ? prims1 : prims0;
-          //PrimRef* const dest   = (index % 2) ? prims0 : prims1;
-#else
           PrimRef* const source = prims0;
-          //PrimRef* const dest   = prims1;
-#endif
 
             if (!split.valid()) {
               deterministic_order(set);
@@ -283,46 +227,33 @@ namespace embree
 
           void splitFallback(const Set& set, 
                              PrimInfo& linfo, Set& lset, 
-                             PrimInfo& rinfo, Set& rset,
-                             const size_t index)
+                             PrimInfo& rinfo, Set& rset)
           {
             const size_t begin = set.begin();
             const size_t end   = set.end();
             const size_t center = (begin + end)/2;
 
-#if SPATIAL_DOUBLE_BUFFERED == 1
-            PrimRef* const source = (index % 2) ? prims1 : prims0;
-            PrimRef* const dest   = (index % 2) ? prims0 : prims1;
-#else
             PrimRef* const source = prims0;
-#endif
           
             CentGeomBBox3fa left; left.reset();
             for (size_t i=begin; i<center; i++)
             {
               left.extend(source[i].bounds());
-#if SPATIAL_DOUBLE_BUFFERED == 1
-              dest[i] = source[i];
-#endif
             }
-            new (&linfo) PrimInfo(begin,center,left.geomBounds,left.centBounds,index+1);
+            new (&linfo) PrimInfo(begin,center,left.geomBounds,left.centBounds);
           
             CentGeomBBox3fa right; right.reset();
             for (size_t i=center; i<end; i++)
             {
               right.extend(source[i].bounds());	
-#if SPATIAL_DOUBLE_BUFFERED == 1
-              dest[i] = source[i];
-#endif
             }
-            new (&rinfo) PrimInfo(center,end,right.geomBounds,right.centBounds,index+1);         
+            new (&rinfo) PrimInfo(center,end,right.geomBounds,right.centBounds);         
             new (&lset) range<size_t>(begin,center);
             new (&rset) range<size_t>(center,end);
           }
         
         private:
           PrimRef* const prims0;
-          PrimRef* const prims1;
         };
       }
   }

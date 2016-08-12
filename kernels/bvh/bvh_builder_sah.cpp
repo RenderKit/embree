@@ -110,15 +110,11 @@ namespace embree
     {
       typedef BVHN<N> BVH;
 
-      __forceinline CreateLeafSpatial (BVH* bvh, PrimRef* prims0, PrimRef* prims1) : bvh(bvh), prims0(prims0), prims1(prims1) {}
+      __forceinline CreateLeafSpatial (BVH* bvh, PrimRef* prims0) : bvh(bvh), prims0(prims0) {}
       
 	  __forceinline size_t operator() (const BVHBuilderBinnedFastSpatialSAH::BuildRecord& current, Allocator* alloc)
       {
-#if SPATIAL_DOUBLE_BUFFERED == 1
-        PrimRef* const source = (current.pinfo.index % 2) ? prims1 : prims0;
-#else
         PrimRef* const source = prims0;
-#endif
 
         size_t n = current.prims.size();
         size_t items = Primitive::blocks(n);
@@ -134,7 +130,6 @@ namespace embree
 
       BVH* bvh;
       PrimRef* prims0;
-      PrimRef* prims1;
     };
     
     /************************************************************************************/ 
@@ -533,20 +528,19 @@ namespace embree
       Scene* scene;
       Mesh* mesh;
       mvector<PrimRef> prims0;
-      mvector<PrimRef> prims1;
       const size_t sahBlockSize;
       const float intCost;
       const size_t minLeafSize;
       const size_t maxLeafSize;
-      const float presplitFactor;
+      const float splitFactor;
 
       BVHNBuilderFastSpatialSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
-        : bvh(bvh), scene(scene), mesh(nullptr), prims0(scene->device), prims1(scene->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)),
-          presplitFactor((mode & MODE_HIGH_QUALITY) ? defaultPresplitFactor : 1.0f) {}
+        : bvh(bvh), scene(scene), mesh(nullptr), prims0(scene->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)),
+          splitFactor(defaultPresplitFactor) {}
 
       BVHNBuilderFastSpatialSAH (BVH* bvh, Mesh* mesh, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
-        : bvh(bvh), scene(nullptr), mesh(mesh), prims0(bvh->device), prims1(bvh->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)),
-          presplitFactor((mode & MODE_HIGH_QUALITY ) ? defaultPresplitFactor : 1.0f) {}
+        : bvh(bvh), scene(nullptr), mesh(mesh), prims0(bvh->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)),
+          splitFactor(defaultPresplitFactor) {}
 
       // FIXME: shrink bvh->alloc in destructor here and in other builders too
 
@@ -556,7 +550,6 @@ namespace embree
 	const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,1>();
         if (numPrimitives == 0) {
           prims0.clear();
-          prims1.clear();
           bvh->clear();
           return;
         }
@@ -564,26 +557,20 @@ namespace embree
         double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + toString(N) + "BuilderFastSpatialSAH");
 
         /* create primref array */
-        const size_t numSplitPrimitives = max(numPrimitives,size_t(presplitFactor*numPrimitives));
+        const size_t numSplitPrimitives = max(numPrimitives,size_t(splitFactor*numPrimitives));
         prims0.resize(numSplitPrimitives);
-        prims1.resize(numSplitPrimitives);
         PrimInfo pinfo = mesh ? 
           createPrimRefArray<Mesh>  (mesh ,prims0,bvh->scene->progressInterface) : 
           createPrimRefArray<Mesh,1>(scene,prims0,bvh->scene->progressInterface);
-        
-        /* perform pre-splitting */
-        if (presplitFactor > 1.0f) 
-          pinfo = presplit<Mesh>(scene, pinfo, prims0);
-        
+                
         /* call BVH builder */
         bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
-        BVHNBuilderFastSpatial<N>::build(bvh,CreateLeafSpatial<N,Primitive>(bvh,prims0.data(),prims1.data()),bvh->scene->progressInterface,prims0.data(),prims1.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
+        BVHNBuilderFastSpatial<N>::build(bvh,CreateLeafSpatial<N,Primitive>(bvh,prims0.data()),bvh->scene->progressInterface,prims0.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
 	/* clear temporary data for static geometry */
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
 	if (staticGeom) {
           prims0.clear();
-          prims1.clear();
           bvh->shrink();
         }
 	bvh->cleanup();
@@ -592,7 +579,6 @@ namespace embree
 
       void clear() {
         prims0.clear();
-        prims1.clear();
        }
     };
 
