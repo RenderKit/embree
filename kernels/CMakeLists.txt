@@ -183,16 +183,16 @@ SET(EMBREE_LIBRARY_FILES_AVX512KNL
     geometry/grid_soa.cpp
     subdiv/subdivpatch1base_eval.cpp
 
-    builders/primrefgen.avx512.cpp
-    bvh/bvh_builder.avx512.cpp
-    bvh/bvh_builder_sah.avx512.cpp
-    bvh/bvh_builder_twolevel.avx512.cpp
-    bvh/bvh_builder_instancing.avx512.cpp
-    bvh/bvh_builder_morton.avx512.cpp
+    builders/primrefgen.avx512knl.cpp
+    bvh/bvh_builder.avx512knl.cpp
+    bvh/bvh_builder_sah.avx512knl.cpp
+    bvh/bvh_builder_twolevel.avx512knl.cpp
+    bvh/bvh_builder_instancing.avx512knl.cpp
+    bvh/bvh_builder_morton.avx512knl.cpp
 
     bvh/bvh_refit.cpp
     bvh/bvh_rotate.cpp
-    bvh/bvh_builder_subdiv.avx512.cpp
+    bvh/bvh_builder_subdiv.avx512knl.cpp
     bvh/bvh_intersector1.cpp)
 
 IF (EMBREE_RAY_PACKETS)
@@ -231,10 +231,10 @@ IF (TARGET_AVX2 AND EMBREE_LIBRARY_FILES_AVX2)
 ENDIF()
 
 IF (TARGET_AVX512KNL AND EMBREE_LIBRARY_FILES_AVX512KNL)
-  ADD_LIBRARY(embree_avx512 STATIC ${EMBREE_LIBRARY_FILES_AVX512KNL})
-  SET_TARGET_PROPERTIES(embree_avx512 PROPERTIES COMPILE_FLAGS "${FLAGS_AVX512KNL}")
-  SET_PROPERTY(TARGET embree_avx512 PROPERTY FOLDER kernels)
-  SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_avx512)
+  ADD_LIBRARY(embree_avx512knl STATIC ${EMBREE_LIBRARY_FILES_AVX512KNL})
+  SET_TARGET_PROPERTIES(embree_avx512knl PROPERTIES COMPILE_FLAGS "${FLAGS_AVX512KNL}")
+  SET_PROPERTY(TARGET embree_avx512knl PROPERTY FOLDER kernels)
+  SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_avx512knl)
 ENDIF()
 
 TARGET_LINK_LIBRARIES(embree ${EMBREE_LIBRARIES} sys simd lexers)
