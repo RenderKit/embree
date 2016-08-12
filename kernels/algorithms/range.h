@@ -84,6 +84,20 @@ namespace embree
         return _ext_end - _begin;
       }
 
+      __forceinline Ty ext_range_size() const {
+        return _ext_end - _end;
+      }
+
+      __forceinline bool has_ext_range() const {
+        return (_ext_end - _end) > 0;
+      }
+
+      __forceinline void set_ext_range(const size_t ext_end){
+        assert(ext_end >= _end);
+        _ext_end = ext_end;
+      }
+
+
       friend std::ostream& operator<<(std::ostream& cout, const extended_range& r) {
         return cout << "extended_range [" << r.begin() << ", " << r.end() <<  " (" << r.ext_end() << ")]";
       }

@@ -53,6 +53,34 @@ namespace embree
           : prims0(prims0) {}
 
 
+        /*! compute extended ranges */
+        __forceinline void setExtentedRanges(const Set& set, Set& lset, Set& rset)
+        {
+          assert(set.ext_range_size() > 0);
+          const size_t parent_size          = set.size();
+          const size_t ext_range_size       = set.ext_range_size();
+          const size_t left_size            = lset.size();
+          //const size_t right_size           = rset.size();
+          const float left_factor           = (float)left_size / parent_size;
+          //const float right_factor          = (float)right_size / parent_size;
+          const size_t left_ext_range_size  = min((size_t)(left_factor * ext_range_size),ext_range_size);
+          const size_t right_ext_range_size = ext_range_size - left_ext_range_size;
+
+          /* std::cout << std::endl; */
+          /* PRINT(parent_size); */
+          /* PRINT(left_size); */
+          /* PRINT(right_size); */
+
+          /* PRINT(ext_range_size); */
+          /* PRINT(left_ext_range_size); */
+          /* PRINT(right_ext_range_size); */
+          /* PRINT(left_factor); */
+          //exit(0);
+          lset.set_ext_range(lset.end() + left_ext_range_size);
+          rset.set_ext_range(rset.end() + right_ext_range_size);
+        }
+
+
         /*! finds the best split */
         const Split find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
@@ -173,6 +201,13 @@ namespace embree
             assert(subset(source[i].bounds(),local_left.geomBounds));
           for (size_t i=center;i<end;i++)
             assert(subset(source[i].bounds(),local_right.geomBounds));
+
+          // if we have an extended range
+          if (set.has_ext_range()) 
+          {
+            setExtentedRanges(set,lset,rset);
+          }
+
         }
         
 #if 0
@@ -250,6 +285,13 @@ namespace embree
             new (&rinfo) PrimInfo(center,end,right.geomBounds,right.centBounds);         
             new (&lset) range<size_t>(begin,center);
             new (&rset) range<size_t>(center,end);
+
+            // if we have an extended range
+          if (set.has_ext_range()) 
+          {
+            setExtentedRanges(set,lset,rset);
+          }
+
           }
         
         private:

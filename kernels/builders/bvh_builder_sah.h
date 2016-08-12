@@ -571,8 +571,11 @@ namespace embree
                                         UpdateNodeFunc updateNode, 
                                         CreateLeafFunc createLeaf, 
                                         ProgressMonitor progressMonitor,
-                                        PrimRef* prims0, const PrimInfo& pinfo, 
-                                        const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, 
+                                        PrimRef* prims0, 
+                                        const size_t extSize,
+                                        const PrimInfo& pinfo, 
+                                        const size_t branchingFactor, 
+                                        const size_t maxDepth, const size_t blockSize, 
                                         const size_t minLeafSize, const size_t maxLeafSize,
                                         const float travCost, const float intCost)
       {
@@ -607,7 +610,7 @@ namespace embree
                         minLeafSize,maxLeafSize,travCost,intCost);
         
         /* build hierarchy */
-        BuildRecord br(pinfo,1,(size_t*)&root,Set(0,pinfo.size()));
+        BuildRecord br(pinfo,1,(size_t*)&root,Set(0,pinfo.size(),extSize));
         return builder(br);
       }
     };

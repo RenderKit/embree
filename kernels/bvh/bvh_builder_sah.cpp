@@ -565,7 +565,7 @@ namespace embree
                 
         /* call BVH builder */
         bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
-        BVHNBuilderFastSpatial<N>::build(bvh,CreateLeafSpatial<N,Primitive>(bvh,prims0.data()),bvh->scene->progressInterface,prims0.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
+        BVHNBuilderFastSpatial<N>::build(bvh,CreateLeafSpatial<N,Primitive>(bvh,prims0.data()),bvh->scene->progressInterface,prims0.data(),numSplitPrimitives,pinfo,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
 	/* clear temporary data for static geometry */
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
