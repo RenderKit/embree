@@ -19,7 +19,7 @@
 #include "default.h"
 
 /* only activate in 64bit mode */
-#if defined(__X86_64__)
+#if defined(__X86_64__) && !defined(__WIN32__)
 #define ENABLE_PARALLEL_BLOCK_ALLOCATION 1
 #else
 #define ENABLE_PARALLEL_BLOCK_ALLOCATION 0
