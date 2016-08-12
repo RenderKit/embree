@@ -3020,11 +3020,11 @@ namespace embree
     bool setup(VerifyApplication* state) 
     {
       threadIndexCounter = 1;
-      pos = 0;
+      pos = 0;      
       barrier.init(numThreads);
       for (size_t i=1; i<numThreads; i++)
 	threads.push_back(createThread((thread_func)static_thread_function,this,DEFAULT_STACK_SIZE,i));
-      setAffinity(0);
+      //setAffinity(0);
 
       return true;
     }
@@ -3037,6 +3037,7 @@ namespace embree
       if (pos.load() == unsigned(-1)) return false;
 
       for (unsigned int i = pos.fetch_add(dN); i<N; i=pos.fetch_add(dN)) 
+      //for (unsigned int i = threadIndex*dN; i<N; i+=numThreads*dN) 
         render_block(i,dN);
 
       barrier.wait(threadIndex);
@@ -3055,7 +3056,7 @@ namespace embree
       pos = 0;
       thread_function();
       double t1 = getSeconds();
-      return 1E-6f*(float)(N)/float(t1-t0);
+      return 1E-6f * (float)(N)/float(t1-t0);
     }
 
     virtual void cleanup(VerifyApplication* state) 
@@ -3253,9 +3254,11 @@ namespace embree
     RTCDeviceRef device;
     Ref<VerifyScene> scene;
     Vec3f* numbers;
+    static const size_t numRays = 1024*1024*8;
+    static const size_t deltaRays = 1024;
     
     IncoherentRaysBenchmark (std::string name, int isa, GeometryType gtype, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant, size_t numPhi)
-      : ParallelIntersectBenchmark(name,isa,1024*1024,1024), gtype(gtype), sflags(sflags), gflags(gflags), imode(imode), ivariant(ivariant), numPhi(numPhi), device(nullptr), numbers(nullptr)  {}
+      : ParallelIntersectBenchmark(name,isa,numRays,deltaRays), gtype(gtype), sflags(sflags), gflags(gflags), imode(imode), ivariant(ivariant), numPhi(numPhi), device(nullptr), numbers(nullptr)  {}
     
     ~IncoherentRaysBenchmark() {
       if (numbers) delete[] numbers; numbers = nullptr;
