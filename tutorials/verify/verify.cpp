@@ -2998,7 +2998,7 @@ namespace embree
   struct ParallelIntersectBenchmark : public VerifyApplication::Benchmark
   {
     unsigned int N, dN;
-    Vec3f* numbers;
+    Vec3fa* numbers;
     LinearBarrierActive barrier;
     std::vector<thread_t> threads;
     std::atomic<unsigned int> pos;
@@ -3253,8 +3253,8 @@ namespace embree
     size_t numPhi;
     RTCDeviceRef device;
     Ref<VerifyScene> scene;
-    Vec3f* numbers;
-    static const size_t numRays = 1024*1024*8;
+    Vec3fa* numbers;
+    static const size_t numRays = 16*1024*1024;
     static const size_t deltaRays = 1024;
     
     IncoherentRaysBenchmark (std::string name, int isa, GeometryType gtype, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant, size_t numPhi)
@@ -3294,7 +3294,7 @@ namespace embree
       rtcCommit (*scene);
       AssertNoError(device);      
 
-      numbers = new Vec3f[N];
+      numbers = new Vec3fa[N];
       for (size_t i=0; i<N; i++)
         numbers[i] = 2.0f*random_Vec3fa()-Vec3fa(1.0f);
 
@@ -3312,7 +3312,8 @@ namespace embree
       case MODE_INTERSECT1: 
       {
         for (size_t j=0; j<dn; j++) {
-          RTCRay ray = fastMakeRay(zero,numbers[i+j]);
+          RTCRay ray; 
+          fastMakeRay(ray,zero,numbers[i+j]);
           switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
           case VARIANT_INTERSECT: rtcIntersect(*scene,ray); break;
           case VARIANT_OCCLUDED : rtcOccluded (*scene,ray); break;
@@ -3369,7 +3370,7 @@ namespace embree
       {
         for (size_t j=0; j<dn; j+=128) {
           RTCRay rays[128];
-          for (size_t k=0; k<128; k++) rays[k] = fastMakeRay(zero,numbers[i+j+k]);
+          for (size_t k=0; k<128; k++) fastMakeRay(rays[k],zero,numbers[i+j+k]);
           switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
           case VARIANT_INTERSECT: rtcIntersect1M(*scene,&context,rays,128,sizeof(RTCRay)); break;
           case VARIANT_OCCLUDED : rtcOccluded1M (*scene,&context,rays,128,sizeof(RTCRay)); break;
