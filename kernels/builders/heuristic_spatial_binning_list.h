@@ -126,7 +126,7 @@ namespace embree
           //std::sort(&prims[set.begin()],&prims[set.end()]); 
         }
 
-        void splitFallback(Set& prims, PrimInfo& linfo_o, Set& lprims_o, PrimInfo& rinfo_o, Set& rprims_o, const size_t index=0) {
+        void splitFallback(Set& prims, PrimInfo& linfo_o, Set& lprims_o, PrimInfo& rinfo_o, Set& rprims_o) {
           object_binning.splitFallback(prims,linfo_o,lprims_o,rinfo_o,rprims_o);
         }
 

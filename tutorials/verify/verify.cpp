@@ -2998,7 +2998,7 @@ namespace embree
   struct ParallelIntersectBenchmark : public VerifyApplication::Benchmark
   {
     unsigned int N, dN;
-    Vec3f* numbers;
+    Vec3fa* numbers;
     LinearBarrierActive barrier;
     std::vector<thread_t> threads;
     std::atomic<unsigned int> pos;
@@ -3020,11 +3020,11 @@ namespace embree
     bool setup(VerifyApplication* state) 
     {
       threadIndexCounter = 1;
-      pos = 0;
+      pos = 0;      
       barrier.init(numThreads);
       for (size_t i=1; i<numThreads; i++)
 	threads.push_back(createThread((thread_func)static_thread_function,this,DEFAULT_STACK_SIZE,i));
-      setAffinity(0);
+      //setAffinity(0);
 
       return true;
     }
@@ -3037,6 +3037,7 @@ namespace embree
       if (pos.load() == unsigned(-1)) return false;
 
       for (unsigned int i = pos.fetch_add(dN); i<N; i=pos.fetch_add(dN)) 
+      //for (unsigned int i = threadIndex*dN; i<N; i+=numThreads*dN) 
         render_block(i,dN);
 
       barrier.wait(threadIndex);
@@ -3055,7 +3056,7 @@ namespace embree
       pos = 0;
       thread_function();
       double t1 = getSeconds();
-      return 1E-6f*(float)(N)/float(t1-t0);
+      return 1E-6f * (float)(N)/float(t1-t0);
     }
 
     virtual void cleanup(VerifyApplication* state) 
@@ -3077,10 +3078,10 @@ namespace embree
     size_t numPhi;
     RTCDeviceRef device;
     Ref<VerifyScene> scene;
-    static const unsigned int tileSizeX = 16;
-    static const unsigned int tileSizeY = 16;
-    static const unsigned int width = 1024;
-    static const unsigned int height = 1024;
+    static const unsigned int tileSizeX = 32;
+    static const unsigned int tileSizeY = 32;
+    static const unsigned int width = 4096;
+    static const unsigned int height = 4096;
     static const unsigned int numTilesX = width/tileSizeX;
     static const unsigned int numTilesY = height/tileSizeY;
     
@@ -3252,10 +3253,12 @@ namespace embree
     size_t numPhi;
     RTCDeviceRef device;
     Ref<VerifyScene> scene;
-    Vec3f* numbers;
+    Vec3fa* numbers;
+    static const size_t numRays = 16*1024*1024;
+    static const size_t deltaRays = 1024;
     
     IncoherentRaysBenchmark (std::string name, int isa, GeometryType gtype, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant, size_t numPhi)
-      : ParallelIntersectBenchmark(name,isa,1024*1024,1024), gtype(gtype), sflags(sflags), gflags(gflags), imode(imode), ivariant(ivariant), numPhi(numPhi), device(nullptr), numbers(nullptr)  {}
+      : ParallelIntersectBenchmark(name,isa,numRays,deltaRays), gtype(gtype), sflags(sflags), gflags(gflags), imode(imode), ivariant(ivariant), numPhi(numPhi), device(nullptr), numbers(nullptr)  {}
     
     ~IncoherentRaysBenchmark() {
       if (numbers) delete[] numbers; numbers = nullptr;
@@ -3291,7 +3294,7 @@ namespace embree
       rtcCommit (*scene);
       AssertNoError(device);      
 
-      numbers = new Vec3f[N];
+      numbers = new Vec3fa[N];
       for (size_t i=0; i<N; i++)
         numbers[i] = 2.0f*random_Vec3fa()-Vec3fa(1.0f);
 
@@ -3309,7 +3312,8 @@ namespace embree
       case MODE_INTERSECT1: 
       {
         for (size_t j=0; j<dn; j++) {
-          RTCRay ray = fastMakeRay(zero,numbers[i+j]);
+          RTCRay ray; 
+          fastMakeRay(ray,zero,numbers[i+j]);
           switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
           case VARIANT_INTERSECT: rtcIntersect(*scene,ray); break;
           case VARIANT_OCCLUDED : rtcOccluded (*scene,ray); break;
@@ -3366,7 +3370,7 @@ namespace embree
       {
         for (size_t j=0; j<dn; j+=128) {
           RTCRay rays[128];
-          for (size_t k=0; k<128; k++) rays[k] = fastMakeRay(zero,numbers[i+j+k]);
+          for (size_t k=0; k<128; k++) fastMakeRay(rays[k],zero,numbers[i+j+k]);
           switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
           case VARIANT_INTERSECT: rtcIntersect1M(*scene,&context,rays,128,sizeof(RTCRay)); break;
           case VARIANT_OCCLUDED : rtcOccluded1M (*scene,&context,rays,128,sizeof(RTCRay)); break;
@@ -3864,6 +3868,8 @@ namespace embree
       benchmark_imodes_ivariants.push_back(std::make_pair(MODE_INTERSECT4,VARIANT_OCCLUDED));
       benchmark_imodes_ivariants.push_back(std::make_pair(MODE_INTERSECT8,VARIANT_INTERSECT));
       benchmark_imodes_ivariants.push_back(std::make_pair(MODE_INTERSECT8,VARIANT_OCCLUDED));
+      benchmark_imodes_ivariants.push_back(std::make_pair(MODE_INTERSECT16,VARIANT_INTERSECT));
+      benchmark_imodes_ivariants.push_back(std::make_pair(MODE_INTERSECT16,VARIANT_OCCLUDED));
       benchmark_imodes_ivariants.push_back(std::make_pair(MODE_INTERSECT1M,VARIANT_INTERSECT_INCOHERENT));
       benchmark_imodes_ivariants.push_back(std::make_pair(MODE_INTERSECT1M,VARIANT_OCCLUDED_INCOHERENT));
 

@@ -237,8 +237,10 @@ namespace embree
     // ========================================================================================================================================================
 
     template<int N>
-    void BVHNBuilderFastSpatial<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progress_in, 
-                                                        PrimRef* prims0, PrimRef* prims1, 
+    void BVHNBuilderFastSpatial<N>::BVHNBuilderV::build(BVH* bvh, 
+                                                        BuildProgressMonitor& progress_in, 
+                                                        PrimRef* prims0, 
+                                                        const size_t extSize,
                                                         const PrimInfo& pinfo, const size_t blockSize, 
                                                         const size_t minLeafSize, const size_t maxLeafSize, 
                                                         const float travCost, const float intCost)
@@ -254,7 +256,7 @@ namespace embree
       NodeRef root;
       BVHBuilderBinnedFastSpatialSAH::build_reduce<NodeRef>
         (root,typename BVH::CreateAlloc(bvh),size_t(0),typename BVH::CreateNode(bvh),rotate<N>,createLeafFunc,progressFunc,
-         prims0,prims1,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
+         prims0,extSize,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
       bvh->set(root,pinfo.geomBounds,pinfo.size());      
       bvh->layoutLargeNodes(size_t(pinfo.size()*0.005f));

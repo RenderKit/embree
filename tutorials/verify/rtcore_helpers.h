@@ -161,7 +161,7 @@ namespace embree
     return ray;
   }
 
-  __forceinline void fastSetRay(RTCRay &ray, const Vec3fa &org, const Vec3fa &dir) 
+  __forceinline void fastMakeRay(RTCRay &ray, const Vec3fa &org, const Vec3fa &dir) 
   {
     *(Vec3fa*)ray.org = org;
     *(Vec3fa*)ray.dir = dir;

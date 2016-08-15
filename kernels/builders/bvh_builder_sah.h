@@ -135,7 +135,7 @@ namespace embree
             /*! split best child into left and right child */
             BuildRecord left(current.depth+1);
             BuildRecord right(current.depth+1);
-            heuristic.splitFallback(children[bestChild].prims,left.pinfo,left.prims,right.pinfo,right.prims,children[bestChild].pinfo.index);
+            heuristic.splitFallback(children[bestChild].prims,left.pinfo,left.prims,right.pinfo,right.prims);
             left .split = find(left );
             right.split = find(right);
             
@@ -515,7 +515,7 @@ namespace embree
     /* Spatial SAH builder that operates on an double-buffered array of BuildRecords */
     struct BVHBuilderBinnedFastSpatialSAH
     {
-      typedef range<size_t> Set;
+      typedef extended_range<size_t> Set;
       //typedef HeuristicArrayBinningSAH<PrimRef> Heuristic;
       typedef HeuristicArraySpatialSAH<PrimRef> Heuristic;
       typedef GeneralBuildRecord<Set,typename Heuristic::Split> BuildRecord;
@@ -571,8 +571,11 @@ namespace embree
                                         UpdateNodeFunc updateNode, 
                                         CreateLeafFunc createLeaf, 
                                         ProgressMonitor progressMonitor,
-                                        PrimRef* prims0, PrimRef* prims1, const PrimInfo& pinfo, 
-                                        const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, 
+                                        PrimRef* prims0, 
+                                        const size_t extSize,
+                                        const PrimInfo& pinfo, 
+                                        const size_t branchingFactor, 
+                                        const size_t maxDepth, const size_t blockSize, 
                                         const size_t minLeafSize, const size_t maxLeafSize,
                                         const float travCost, const float intCost)
       {
@@ -581,7 +584,7 @@ namespace embree
         assert((blockSize ^ (size_t(1) << logBlockSize)) == 0);
 
         /* instantiate array binning heuristic */
-        Heuristic heuristic(prims0,prims1);
+        Heuristic heuristic(prims0);
         
         typedef GeneralBVHBuilder<
           BuildRecord,
@@ -607,7 +610,7 @@ namespace embree
                         minLeafSize,maxLeafSize,travCost,intCost);
         
         /* build hierarchy */
-        BuildRecord br(pinfo,1,(size_t*)&root,Set(0,pinfo.size()));
+        BuildRecord br(pinfo,1,(size_t*)&root,Set(0,pinfo.size(),extSize));
         return builder(br);
       }
     };

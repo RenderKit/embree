@@ -60,7 +60,7 @@
 #  endif
 #endif
 
-/* detect Windows 95/98/NT/2000/XP/Vista/7 platform */
+/* detect Windows 95/98/NT/2000/XP/Vista/7/8/10 platform */
 #if (defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)) && !defined(__CYGWIN__)
 #  if !defined(__WIN32__)
 #     define __WIN32__
