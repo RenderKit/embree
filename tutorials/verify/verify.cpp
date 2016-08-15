@@ -3078,10 +3078,10 @@ namespace embree
     size_t numPhi;
     RTCDeviceRef device;
     Ref<VerifyScene> scene;
-    static const unsigned int tileSizeX = 16;
-    static const unsigned int tileSizeY = 16;
-    static const unsigned int width = 1024;
-    static const unsigned int height = 1024;
+    static const unsigned int tileSizeX = 32;
+    static const unsigned int tileSizeY = 32;
+    static const unsigned int width = 4096;
+    static const unsigned int height = 4096;
     static const unsigned int numTilesX = width/tileSizeX;
     static const unsigned int numTilesY = height/tileSizeY;
     
