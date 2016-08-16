@@ -159,8 +159,8 @@ namespace embree
         {
           PrimRef* const source = prims0;
           SpatialBinner binner(empty); // FIXME: this clear can be optimized away
-          //const BinMapping<OBJECT_BINS> mapping(pinfo);
-          //binner.bin(source,set.begin(),set.end(),mapping);
+          const BinMapping<SPATIAL_BINS> mapping(pinfo);
+          binner.bin(source,set.begin(),set.end(),mapping);
           //Split s = binner.best(mapping,logBlockSize);
           //s.lcount = binner.getLeftCount(mapping,s);
           Split s;
@@ -176,7 +176,10 @@ namespace embree
             assert(subset(source[i].bounds(),pinfo.geomBounds));
 
           Split s = object_find(set,pinfo,logBlockSize);
+          if (set.has_ext_range()) 
+          {
 
+          }
           return s;
         }
         
