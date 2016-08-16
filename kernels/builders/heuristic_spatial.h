@@ -68,11 +68,15 @@ namespace embree
       {
         /*! construct an invalid split by default */
         __forceinline SpatialBinSplit() 
-          : sah(inf), dim(-1), pos(0) {}
+          : sah(inf), dim(-1), pos(0), left(-1), right(-1) {}
         
         /*! constructs specified split */
         __forceinline SpatialBinSplit(float sah, int dim, int pos, const SpatialBinMapping<BINS>& mapping)
-          : sah(sah), dim(dim), pos(pos), mapping(mapping) {}
+          : sah(sah), dim(dim), pos(pos), left(-1), right(-1), mapping(mapping) {}
+
+        /*! constructs specified split */
+        __forceinline SpatialBinSplit(float sah, int dim, int pos, int left, int right, const SpatialBinMapping<BINS>& mapping)
+          : sah(sah), dim(dim), pos(pos), left(left), right(right), mapping(mapping) {}
         
         /*! tests if this split is valid */
         __forceinline bool valid() const { return dim != -1; }
@@ -82,13 +86,15 @@ namespace embree
         
         /*! stream output */
         friend std::ostream& operator<<(std::ostream& cout, const SpatialBinSplit& split) {
-          return cout << "SpatialBinSplit { sah = " << split.sah << ", dim = " << split.dim << ", pos = " << split.pos << "}";
+          return cout << "SpatialBinSplit { sah = " << split.sah << ", dim = " << split.dim << ", pos = " << split.pos << ", left = " << split.left << ", right = " << split.right << "}";
         }
         
       public:
         float sah;                 //!< SAH cost of the split
         int   dim;                 //!< split dimension
         int   pos;                 //!< split position
+        int   left;                //!< number of elements on the left side
+        int   right;               //!< number of elements on the rightside
         SpatialBinMapping<BINS> mapping; //!< mapping into bins
       };    
     
@@ -216,7 +222,7 @@ namespace embree
         
         /* sweep from left to right and compute SAH */
         vint4 blocks_add = (1 << blocks_shift)-1;
-        vint4 ii = 1; vfloat4 vbestSAH = pos_inf; vint4 vbestPos = 0;
+        vint4 ii = 1; vfloat4 vbestSAH = pos_inf; vint4 vbestPos = 0; vint4 vbestlCount = 0; vint4 vbestrCount = 0;
         count = 0; bx = empty; by = empty; bz = empty;
         for (size_t i=1; i<BINS; i++, ii+=1)
         {
@@ -229,14 +235,19 @@ namespace embree
           const vint4 lCount = (count     +blocks_add) >> int(blocks_shift);
           const vint4 rCount = (rCounts[i]+blocks_add) >> int(blocks_shift);
           const vfloat4 sah = lArea*vfloat4(lCount) + rArea*vfloat4(rCount);
-          vbestPos  = select(sah < vbestSAH,ii ,vbestPos);
-          vbestSAH  = select(sah < vbestSAH,sah,vbestSAH);
+          const vbool4 mask = sah < vbestSAH;
+          vbestPos    = select(mask,ii ,vbestPos);
+          vbestSAH    = select(mask,sah,vbestSAH);
+          vbestlCount = select(mask,count,vbestlCount);
+          vbestrCount = select(mask,rCounts[i],vbestrCount);
         }
         
         /* find best dimension */
         float bestSAH = inf;
         int   bestDim = -1;
         int   bestPos = 0;
+        int   bestlCount = 0;
+        int   bestrCount = 0;
         for (int dim=0; dim<3; dim++) 
         {
           /* ignore zero sized dimensions */
@@ -248,6 +259,8 @@ namespace embree
             bestDim = dim;
             bestPos = vbestPos[dim];
             bestSAH = vbestSAH[dim];
+            bestlCount = vbestlCount[dim];
+            bestrCount = vbestrCount[dim];
           }
         }
         
@@ -256,7 +269,7 @@ namespace embree
           return SpatialBinSplit<BINS>(inf,-1,0,mapping);
         
         /* return best found split */
-        return SpatialBinSplit<BINS>(bestSAH,bestDim,bestPos,mapping);
+        return SpatialBinSplit<BINS>(bestSAH,bestDim,bestPos,bestlCount,bestrCount,mapping);
       }
       
     private:

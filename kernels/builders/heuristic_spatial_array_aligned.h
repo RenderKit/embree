@@ -150,7 +150,7 @@ namespace embree
           const BinMapping<OBJECT_BINS> mapping(pinfo);
           binner.bin(source,set.begin(),set.end(),mapping);
           Split s = binner.best(mapping,logBlockSize);
-          //s.lcount = binner.getLeftCount(mapping,s);
+          s.lcount = binner.getLeftCount(mapping,s);
           return s;
         }
 
@@ -159,10 +159,11 @@ namespace embree
         __noinline const SpatialSplit spatial_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
           PrimRef* const source = prims0;
-          SpatialBinner binner(empty); // FIXME: this clear can be optimized away
+          SpatialBinner binner(empty); 
           const SpatialBinMapping<SPATIAL_BINS> mapping(pinfo);
           binner.bin(splitPrimitive,source,set.begin(),set.end(),mapping);
           SpatialSplit s = binner.best(pinfo,mapping,logBlockSize);
+
           //s.lcount = binner.getLeftCount(mapping,s);
           return s;
         }
@@ -179,7 +180,15 @@ namespace embree
           if (set.has_ext_range()) 
           {
             SpatialSplit spatial_split = spatial_find(set,pinfo,logBlockSize);
-            PRINT(spatial_split);
+            if (spatial_split.sah < object_split.sah)
+            {
+              PRINT(object_split);
+              PRINT(set.has_ext_range());
+              PRINT(set);
+              PRINT(spatial_split);
+              PRINT(spatial_split.left + spatial_split.right - set.size());
+              exit(0);
+            }
           }
           return object_split;
         }
