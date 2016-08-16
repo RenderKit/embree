@@ -321,6 +321,7 @@ namespace embree
     if (isa == AVX) return "AVX";
     if (isa == AVX2) return "AVX2";
     if (isa == AVX512KNL) return "AVX512KNL";
+    if (isa == AVX512SKX) return "AVX512SKX";
     if (isa == KNC) return "KNC";
     return "UNKNOWN";
   }
@@ -342,6 +343,7 @@ namespace embree
     if (hasISA(features,AVXI)) v += "AVXI ";
     if (hasISA(features,AVX2)) v += "AVX2 ";
     if (hasISA(features,AVX512KNL)) v += "AVX512KNL ";
+    if (hasISA(features,AVX512SKX)) v += "AVX512SKX ";
     if (hasISA(features,KNC)) v += "KNC ";
     return v;
   }

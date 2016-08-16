@@ -22,6 +22,7 @@ SET(FLAGS_SSE42 "-msse4.2")
 SET(FLAGS_AVX   "-mavx")
 SET(FLAGS_AVX2  "-mf16c -mavx2 -mfma -mlzcnt -mbmi -mbmi2")
 SET(FLAGS_AVX512KNL "-march=knl")
+SET(FLAGS_AVX512SKX "-march=skx")
 
 IF (WIN32)
 

@@ -133,6 +133,8 @@ MACRO (ISPC_COMPILE)
         # in v1.9.0 ISPC changed the ISA suffix of avx512knl-i32x16 to just 'avx512knl'
         IF (${target} STREQUAL "avx512knl-i32x16" AND NOT ISPC_VERSION VERSION_LESS "1.9.0")
           SET(target "avx512knl")
+        ELSEIF (${target} STREQUAL "avx512skx-i32x16")
+          SET(target "avx512skx")
         ENDIF()
         SET(results ${results} "${outdir}/${fname}.dev_${target}${ISPC_TARGET_EXT}")
       ENDFOREACH()

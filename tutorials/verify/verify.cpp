@@ -3078,10 +3078,10 @@ namespace embree
     size_t numPhi;
     RTCDeviceRef device;
     Ref<VerifyScene> scene;
-    static const unsigned int tileSizeX = 16;
-    static const unsigned int tileSizeY = 16;
-    static const unsigned int width = 1024;
-    static const unsigned int height = 1024;
+    static const unsigned int tileSizeX = 32;
+    static const unsigned int tileSizeY = 32;
+    static const unsigned int width = 4096;
+    static const unsigned int height = 4096;
     static const unsigned int numTilesX = width/tileSizeX;
     static const unsigned int numTilesY = height/tileSizeY;
     
@@ -3542,6 +3542,7 @@ namespace embree
     if (hasISA(AVX)) isas.push_back(AVX);
     if (hasISA(AVX2)) isas.push_back(AVX2);
     if (hasISA(AVX512KNL)) isas.push_back(AVX512KNL);
+    if (hasISA(AVX512SKX)) isas.push_back(AVX512SKX);
     
     /* create list of all intersect modes to test */
     intersectModes.push_back(MODE_INTERSECT1);

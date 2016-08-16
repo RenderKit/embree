@@ -521,7 +521,9 @@ namespace embree
   /* this should use a vbool8 and a vint8_64...*/
   __forceinline void gather_prefetch64(void const* base_addr,const vbool16 &mask, const vint16& offset, const int scale = 1, const int hint = _MM_HINT_T0)
   {
+#if defined(__AVX512PF__)
     _mm512_mask_prefetch_i64gather_pd(offset,mask,base_addr,scale,hint);
+#endif
   }
 
 

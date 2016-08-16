@@ -22,6 +22,7 @@ SET(FLAGS_SSE42 "-msse4.2")
 SET(FLAGS_AVX   "-mavx")
 SET(FLAGS_AVX2  "-mf16c -mavx2 -mfma -mlzcnt -mbmi -mbmi2")
 SET(FLAGS_AVX512KNL "-mavx512f -mavx512pf -mavx512er -mavx512cd")
+SET(FLAGS_AVX512SKX "-mavx512f -mavx512dq -mavx512cd -mavx512bw -mavx512vl")
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fPIC -std=c++11 -fvisibility-inlines-hidden -fvisibility=hidden -fno-strict-aliasing")
 SET(CMAKE_CXX_FLAGS_DEBUG          "-DDEBUG  -DTBB_USE_DEBUG -g -O0")

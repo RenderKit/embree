@@ -22,6 +22,7 @@ SET(FLAGS_SSE42  "-xsse4.2")
 SET(FLAGS_AVX    "-xAVX")
 SET(FLAGS_AVX2   "-xCORE-AVX2")
 SET(FLAGS_AVX512KNL "-xMIC-AVX512")
+SET(FLAGS_AVX512SKX "-xCORE-AVX512")
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fPIC -std=c++11 -fvisibility-inlines-hidden -fvisibility=hidden -no-ansi-alias -fasm-blocks")
 
