@@ -515,22 +515,30 @@ namespace embree
     /* Spatial SAH builder that operates on an double-buffered array of BuildRecords */
     struct BVHBuilderBinnedFastSpatialSAH
     {
+#if defined(__AVX512F__)
+      static const size_t OBJECT_BINS = 16;
+#else
+      static const size_t OBJECT_BINS = 32;
+#endif
+      static const size_t SPATIAL_BINS = 16;
+
       typedef extended_range<size_t> Set;
-      //typedef HeuristicArrayBinningSAH<PrimRef> Heuristic;
-      typedef HeuristicArraySpatialSAH<PrimRef> Heuristic;
-      typedef GeneralBuildRecord<Set,typename Heuristic::Split> BuildRecord;
-      
+      typedef BinSplit<OBJECT_BINS> Split;
+      typedef GeneralBuildRecord<Set,Split> BuildRecord;
+
       /*! standard build without reduction */
       template<typename NodeRef, 
         typename CreateAllocFunc, 
         typename CreateNodeFunc, 
         typename CreateLeafFunc, 
+        typename SplitPrimitiveFunc, 
         typename ProgressMonitor>
         
         static void build(NodeRef& root,
                           CreateAllocFunc createAlloc, 
                           CreateNodeFunc createNode, 
                           CreateLeafFunc createLeaf, 
+                          SplitPrimitiveFunc splitPrimitive,
                           ProgressMonitor progressMonitor, 
                           PrimRef* prims, const PrimInfo& pinfo, 
                           const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, 
@@ -548,6 +556,7 @@ namespace embree
                      createNode,
                      updateNode,
                      createLeaf,
+                     splitPrimitive,
                      progressMonitor,
                      prims,
                      pinfo,
@@ -562,6 +571,7 @@ namespace embree
         typename CreateNodeFunc, 
         typename UpdateNodeFunc, 
         typename CreateLeafFunc, 
+        typename SplitPrimitiveFunc, 
         typename ProgressMonitor>
         
         static ReductionTy build_reduce(NodeRef& root,
@@ -570,6 +580,7 @@ namespace embree
                                         CreateNodeFunc createNode, 
                                         UpdateNodeFunc updateNode, 
                                         CreateLeafFunc createLeaf, 
+                                        SplitPrimitiveFunc splitPrimitive,
                                         ProgressMonitor progressMonitor,
                                         PrimRef* prims0, 
                                         const size_t extSize,
@@ -582,6 +593,8 @@ namespace embree
         /* builder wants log2 of blockSize as input */		  
         const size_t logBlockSize = __bsr(blockSize); 
         assert((blockSize ^ (size_t(1) << logBlockSize)) == 0);
+
+        typedef HeuristicArraySpatialSAH<SplitPrimitiveFunc,PrimRef,OBJECT_BINS, SPATIAL_BINS> Heuristic;
 
         /* instantiate array binning heuristic */
         Heuristic heuristic(prims0);

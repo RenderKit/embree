@@ -179,29 +179,36 @@ namespace embree
         struct BVHNBuilderV {
           void build(BVH* bvh, BuildProgressMonitor& progress, PrimRef* prims0, const size_t extSize, const PrimInfo& pinfo, 
                      const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost);
+          virtual void splitPrimitive (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o) = 0;
+
           virtual size_t createLeaf (const BVHBuilderBinnedFastSpatialSAH::BuildRecord& current, Allocator* alloc) = 0;
         };
 
-        template<typename CreateLeafFunc>
+        template<typename SplitPrimitiveFunc, typename CreateLeafFunc>
         struct BVHNBuilderT : public BVHNBuilderV
         {
-          BVHNBuilderT (CreateLeafFunc createLeafFunc)
-            : createLeafFunc(createLeafFunc) {}
+          BVHNBuilderT (SplitPrimitiveFunc splitPrimitiveFunc, CreateLeafFunc createLeafFunc)
+            : splitPrimitiveFunc(splitPrimitiveFunc), createLeafFunc(createLeafFunc) {}
 
+          void splitPrimitive (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o) {
+            splitPrimitiveFunc(prim,dim,pos,left_o,right_o);
+          }
+          
           size_t createLeaf(const BVHBuilderBinnedFastSpatialSAH::BuildRecord& current, Allocator* alloc) {
             return createLeafFunc(current,alloc);
           }
 
         private:
+          SplitPrimitiveFunc splitPrimitiveFunc;
           CreateLeafFunc createLeafFunc;
         };
 
-        template<typename CreateLeafFunc>
-        static void build(BVH* bvh, CreateLeafFunc createLeaf, 
+        template<typename SplitPrimitiveFunc, typename CreateLeafFunc>
+        static void build(BVH* bvh, SplitPrimitiveFunc splitPrimitive, CreateLeafFunc createLeaf, 
                           BuildProgressMonitor& progress, PrimRef* prims0,const size_t extSize,
                           const PrimInfo& pinfo, const size_t blockSize, const size_t minLeafSize, 
                           const size_t maxLeafSize, const float travCost, const float intCost) {
-          BVHNBuilderT<CreateLeafFunc>(createLeaf).build(bvh,progress,prims0,extSize,pinfo,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
+          BVHNBuilderT<SplitPrimitiveFunc, CreateLeafFunc>(splitPrimitive,createLeaf).build(bvh,progress,prims0,extSize,pinfo,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
         }
       };
 

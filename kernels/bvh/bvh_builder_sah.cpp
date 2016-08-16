@@ -409,8 +409,11 @@ namespace embree
              
         /* call BVH builder */
         bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
-        BVHNBuilderSpatial<N>::build(bvh,splitPrimitive,CreateListLeaf<N,Primitive>(bvh),bvh->scene->progressInterface,prims,pinfo,
-                                    sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
+        BVHNBuilderSpatial<N>::build(bvh,
+                                     splitPrimitive,
+                                     CreateListLeaf<N,Primitive>(bvh),
+                                     bvh->scene->progressInterface,prims,pinfo,
+                                     sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
         
         /* clear temporary data for static geometry */
 	if (scene->isStatic()) bvh->shrink();
@@ -563,9 +566,27 @@ namespace embree
           createPrimRefArray<Mesh>  (mesh ,prims0,bvh->scene->progressInterface) : 
           createPrimRefArray<Mesh,1>(scene,prims0,bvh->scene->progressInterface);
                 
+        /* function that splits a primitive at some position and dimension */
+        auto splitPrimitive = [&] (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o) {
+          TriangleMesh* mesh = (TriangleMesh*) scene->get(prim.geomID() & 0x00FFFFFF); 
+          TriangleMesh::Triangle tri = mesh->triangle(prim.primID());
+          const Vec3fa v0 = mesh->vertex(tri.v[0]);
+          const Vec3fa v1 = mesh->vertex(tri.v[1]);
+          const Vec3fa v2 = mesh->vertex(tri.v[2]);
+          splitTriangle(prim,dim,pos,v0,v1,v2,left_o,right_o);
+        };
+
         /* call BVH builder */
         bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
-        BVHNBuilderFastSpatial<N>::build(bvh,CreateLeafSpatial<N,Primitive>(bvh,prims0.data()),bvh->scene->progressInterface,prims0.data(),numSplitPrimitives,pinfo,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
+        BVHNBuilderFastSpatial<N>::build(bvh,
+                                         splitPrimitive,
+                                         CreateLeafSpatial<N,Primitive>(bvh,prims0.data()),
+                                         bvh->scene->progressInterface,
+                                         prims0.data(),
+                                         numSplitPrimitives,
+                                         pinfo,
+                                         sahBlockSize,minLeafSize,maxLeafSize,
+                                         travCost,intCost);
 
 	/* clear temporary data for static geometry */
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();

@@ -89,6 +89,7 @@ namespace embree
       }
 
       __forceinline bool has_ext_range() const {
+        assert(_ext_end >= _end);
         return (_ext_end - _end) > 0;
       }
 

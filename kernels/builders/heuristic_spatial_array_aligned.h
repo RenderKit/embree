@@ -17,6 +17,7 @@
 #pragma once
 
 #include "heuristic_binning.h"
+#include "heuristic_spatial.h"
 
 namespace embree
 {
@@ -26,14 +27,15 @@ namespace embree
 
     /*! Performs standard object binning */
 #if defined(__AVX512F__)
-    template<typename PrimRef, size_t BINS = 16>
+    template<typename SplitPrimitive, typename PrimRef, size_t OBJECT_BINS = 16, size_t SPATIAL_BINS = 16>
 #else
-      template<typename PrimRef, size_t BINS = 32>
+      template<typename SplitPrimitive, typename PrimRef, size_t OBJECT_BINS = 32, size_t SPATIAL_BINS = 16>
 #endif
       struct HeuristicArraySpatialSAH
       {
-        typedef BinSplit<BINS> Split;
-        typedef BinInfo<BINS,PrimRef> Binner;
+        typedef BinSplit<OBJECT_BINS> Split;
+        typedef BinInfo<OBJECT_BINS,PrimRef> ObjectBinner;
+        typedef SpatialBinInfo<SPATIAL_BINS,PrimRef> SpatialBinner;
         typedef extended_range<size_t> Set;
 
 #if defined(__AVX512F__)
@@ -138,6 +140,32 @@ namespace embree
           //else
           //  return   parallel_find(set,pinfo,logBlockSize);
         }
+
+        /*! finds the best object split */
+        __noinline const Split object_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
+        {
+          PrimRef* const source = prims0;
+          ObjectBinner binner(empty); // FIXME: this clear can be optimized away
+          const BinMapping<OBJECT_BINS> mapping(pinfo);
+          binner.bin(source,set.begin(),set.end(),mapping);
+          Split s = binner.best(mapping,logBlockSize);
+          //s.lcount = binner.getLeftCount(mapping,s);
+          return s;
+        }
+
+
+        /*! finds the best object split */
+        __noinline const Split spatial_find(const SplitPrimitive& splitPrimitive, const Set& set, const PrimInfo& pinfo)
+        {
+          PrimRef* const source = prims0;
+          SpatialBinner binner(empty); // FIXME: this clear can be optimized away
+          //const BinMapping<OBJECT_BINS> mapping(pinfo);
+          //binner.bin(source,set.begin(),set.end(),mapping);
+          //Split s = binner.best(mapping,logBlockSize);
+          //s.lcount = binner.getLeftCount(mapping,s);
+          Split s;
+          return s;
+        }
         
         /*! finds the best split */
         const Split sequential_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
@@ -147,23 +175,20 @@ namespace embree
           for (size_t i=set.begin();i<set.end();i++)
             assert(subset(source[i].bounds(),pinfo.geomBounds));
 
-          Binner binner(empty); // FIXME: this clear can be optimized away
-          const BinMapping<BINS> mapping(pinfo);
-          binner.bin(source,set.begin(),set.end(),mapping);
-          Split s = binner.best(mapping,logBlockSize);
-          s.lcount = binner.getLeftCount(mapping,s);
+          Split s = object_find(set,pinfo,logBlockSize);
+
           return s;
         }
         
         /*! finds the best split */
         __noinline const Split parallel_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
-          Binner binner(empty);
-          const BinMapping<BINS> mapping(pinfo);
-          const BinMapping<BINS>& _mapping = mapping; // CLANG 3.4 parser bug workaround
+          ObjectBinner binner(empty);
+          const BinMapping<OBJECT_BINS> mapping(pinfo);
+          const BinMapping<OBJECT_BINS>& _mapping = mapping; // CLANG 3.4 parser bug workaround
           binner = parallel_reduce(set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,binner,
-                                   [&] (const range<size_t>& r) -> Binner { Binner binner(empty); binner.bin(prims0+r.begin(),r.size(),_mapping); return binner; },
-                                   [&] (const Binner& b0, const Binner& b1) -> Binner { Binner r = b0; r.merge(b1,_mapping.size()); return r; });
+                                   [&] (const range<size_t>& r) -> ObjectBinner { ObjectBinner binner(empty); binner.bin(prims0+r.begin(),r.size(),_mapping); return binner; },
+                                   [&] (const ObjectBinner& b0, const ObjectBinner& b1) -> ObjectBinner { ObjectBinner r = b0; r.merge(b1,_mapping.size()); return r; });
           return binner.best(mapping,logBlockSize);
         }
         
@@ -205,8 +230,6 @@ namespace embree
             return splitFallback(set,left,lset,right,rset);
           }
           
-          //const size_t countBinningLeft = 
-
           const size_t begin = set.begin();
           const size_t end   = set.end();
           CentGeomBBox3fa local_left(empty);
