@@ -115,9 +115,7 @@ namespace embree
 #if !PROFILE 
           if (mesh->isModified()) 
 #endif
-            tbb::this_task_arena::isolate( [&] {
             builder->build(0,0);
-              });
           
           /* create build primitive */
           if (!object->bounds.empty())

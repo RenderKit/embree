@@ -23,8 +23,8 @@ const int numSpheres = 1000;
 const int numPhi = 5;
 #else
 const int numSpheres = 20;
-//const int numPhi = 120;
-const int numPhi = 256;
+const int numPhi = 120;
+//const int numPhi = 256;
 #endif
 const int numTheta = 2*numPhi;
 

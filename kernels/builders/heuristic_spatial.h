@@ -114,7 +114,7 @@ namespace embree
       
       /*! bins an array of triangles */
       template<typename SplitPrimitive>
-        __forceinline void bin(const SplitPrimitive& splitPrimitive, const PrimRef* prims, size_t N, const PrimInfo& pinfo, const SpatialBinMapping<BINS>& mapping)
+        __forceinline void bin(const SplitPrimitive& splitPrimitive, const PrimRef* prims, size_t N, const SpatialBinMapping<BINS>& mapping)
       {
         for (size_t i=0; i<N; i++)
         {

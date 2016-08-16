@@ -37,6 +37,7 @@ namespace embree
         typedef BinInfo<OBJECT_BINS,PrimRef> ObjectBinner;
         typedef SpatialBinInfo<SPATIAL_BINS,PrimRef> SpatialBinner;
         typedef extended_range<size_t> Set;
+        typedef SpatialBinSplit<SPATIAL_BINS> SpatialSplit;
 
 #if defined(__AVX512F__)
         static const size_t PARALLEL_THRESHOLD = 3*1024; 
@@ -51,8 +52,8 @@ namespace embree
           : prims0(nullptr) {}
         
         /*! remember prim array */
-        __forceinline HeuristicArraySpatialSAH (PrimRef* prims0)
-          : prims0(prims0) {}
+        __forceinline HeuristicArraySpatialSAH (const SplitPrimitive& splitPrimitive, PrimRef* prims0)
+          : prims0(prims0), splitPrimitive(splitPrimitive) {}
 
 
         /*! compute extended ranges */
@@ -155,15 +156,14 @@ namespace embree
 
 
         /*! finds the best object split */
-        __noinline const Split spatial_find(const SplitPrimitive& splitPrimitive, const Set& set, const PrimInfo& pinfo)
+        __noinline const SpatialSplit spatial_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
           PrimRef* const source = prims0;
           SpatialBinner binner(empty); // FIXME: this clear can be optimized away
-          const BinMapping<SPATIAL_BINS> mapping(pinfo);
-          binner.bin(source,set.begin(),set.end(),mapping);
-          //Split s = binner.best(mapping,logBlockSize);
+          const SpatialBinMapping<SPATIAL_BINS> mapping(pinfo);
+          binner.bin(splitPrimitive,source,set.begin(),set.end(),mapping);
+          SpatialSplit s = binner.best(pinfo,mapping,logBlockSize);
           //s.lcount = binner.getLeftCount(mapping,s);
-          Split s;
           return s;
         }
         
@@ -175,12 +175,13 @@ namespace embree
           for (size_t i=set.begin();i<set.end();i++)
             assert(subset(source[i].bounds(),pinfo.geomBounds));
 
-          Split s = object_find(set,pinfo,logBlockSize);
+          Split object_split = object_find(set,pinfo,logBlockSize);
           if (set.has_ext_range()) 
           {
-
+            SpatialSplit spatial_split = spatial_find(set,pinfo,logBlockSize);
+            PRINT(spatial_split);
           }
-          return s;
+          return object_split;
         }
         
         /*! finds the best split */
@@ -369,6 +370,8 @@ namespace embree
         
         private:
           PrimRef* const prims0;
+          const SplitPrimitive& splitPrimitive;
+
         };
       }
   }

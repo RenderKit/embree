@@ -51,7 +51,7 @@ namespace embree
           const SpatialBinMapping<BINS> mapping(pinfo);
           PrimRefList::iterator i=prims;
           while (PrimRefList::item* block = i.next())
-            binner.bin(splitPrimitive,block->base(),block->size(),pinfo,mapping);
+            binner.bin(splitPrimitive,block->base(),block->size(),mapping);
           return binner.best(pinfo,mapping,logBlockSize);
         }
 
@@ -67,7 +67,7 @@ namespace embree
           {
             Binner binner(empty);
             while (PrimRefList::item* block = i.next()) {
-              binner.bin(splitPrimitive,block->base(),block->size(),pinfo,_mapping);
+              binner.bin(splitPrimitive,block->base(),block->size(),_mapping);
             }
             return binner;
           },[](const Binner& a, const Binner& b) -> Binner { return SpatialBinInfo<BINS,PrimRef>::reduce(a,b); });
