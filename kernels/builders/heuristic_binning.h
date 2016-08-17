@@ -51,6 +51,16 @@ namespace embree
           ofs16 = ofs;
 #endif          
         }
+
+        __forceinline BinMapping(const size_t &num, const vfloat4 &ofs, const vfloat4 &scale)  : num(num), ofs(ofs), scale(scale)
+        {
+#if defined(__AVX512F__)
+          ofs16 = ofs;
+          scale16 = scale;    
+#endif          
+        }
+
+
         
         /*! returns number of bins */
         __forceinline size_t size() const { return num; }

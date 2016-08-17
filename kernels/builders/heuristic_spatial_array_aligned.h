@@ -130,7 +130,7 @@ namespace embree
         }
 
         /*! finds the best split */
-        const Split find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
+        const Split find(Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
           //std::cout << std::endl;
           //PING;
@@ -156,20 +156,64 @@ namespace embree
 
 
         /*! finds the best object split */
-        __noinline const SpatialSplit spatial_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
+        __noinline const SpatialSplit spatial_find(Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
           PrimRef* const source = prims0;
           SpatialBinner binner(empty); 
           const SpatialBinMapping<SPATIAL_BINS> mapping(pinfo);
           binner.bin(splitPrimitive,source,set.begin(),set.end(),mapping);
+          // todo: find best spatial split not exeeding the extended range
           SpatialSplit s = binner.best(pinfo,mapping,logBlockSize);
 
           //s.lcount = binner.getLeftCount(mapping,s);
           return s;
         }
+
+
+        /*! subdivides primitives based on a spatial split */
+        __noinline void sequential_spatial_split(Set& set, const SpatialSplit &split, const SpatialBinMapping<SPATIAL_BINS> &mapping)
+        {
+          assert(set.has_ext_range());
+          const size_t max_ext_range_size = set.ext_range_size();
+          const size_t ext_range_start = set.end();
+          size_t ext_elements = 0;
+          PrimRef* source = prims0;
+          
+          PRINT(set.size());
+          PRINT(max_ext_range_size);
+          PRINT(ext_range_start);
+          const float fpos = split.mapping.pos(split.pos,split.dim);
+
+          for (size_t i=set.begin();i<set.end();i++)
+          {
+            int bin0 = split.mapping.bin(source[i].lower)[split.dim];
+            int bin1 = split.mapping.bin(source[i].upper)[split.dim];
+            if (unlikely(bin0 < split.pos && bin1 >= split.pos))
+            {
+              PrimRef left,right;
+              splitPrimitive(source[i],split.dim,fpos,left,right);
+
+              const vint4 bin_left = mapping.bin(center(left.bounds()));
+              const vint4 bin_right = mapping.bin(center(right.bounds()));
+
+              assert(bin_left[split.dim]  <  split.pos);
+              assert(bin_right[split.dim] >= split.pos);
+
+              //source[i] = left;
+              assert(ext_elements <= max_ext_range_size);
+              source[ext_range_start+ext_elements++] = right;              
+            }
+          }
+          PRINT(ext_elements);
+          PRINT(split.left);
+          PRINT(split.right);
+          PRINT(split.left+split.right);
+          PRINT(set.size()+ext_elements);
+          assert(split.left+split.right==set.size()+ext_elements);
+        }
         
         /*! finds the best split */
-        const Split sequential_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
+        const Split sequential_find(Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
           PrimRef* const source = prims0;
 
@@ -180,21 +224,26 @@ namespace embree
           if (set.has_ext_range()) 
           {
             SpatialSplit spatial_split = spatial_find(set,pinfo,logBlockSize);
-            if (spatial_split.sah < object_split.sah)
+            /* valid spatial split, better SAH and number of splits do not exceed extended range */
+            if (spatial_split.sah < object_split.sah && 
+                spatial_split.left + spatial_split.right <= set.ext_range_size())
             {
               PRINT(object_split);
               PRINT(set.has_ext_range());
               PRINT(set);
               PRINT(spatial_split);
               PRINT(spatial_split.left + spatial_split.right - set.size());
-              exit(0);
+              //exit(0);
+              PRINT("virtual split");
+              sequential_spatial_split(set,spatial_split,spatial_split.mapping);
+              std::cout << std::endl;
             }
           }
           return object_split;
         }
         
         /*! finds the best split */
-        __noinline const Split parallel_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
+        __noinline const Split parallel_find(Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
           ObjectBinner binner(empty);
           const BinMapping<OBJECT_BINS> mapping(pinfo);
