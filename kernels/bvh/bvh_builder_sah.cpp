@@ -356,7 +356,6 @@ namespace embree
           bvh->clear();
           return;
         }
-      
         double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "BuilderSpatialSAH");
         
         /* create primref list */

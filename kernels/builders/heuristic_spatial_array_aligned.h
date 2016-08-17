@@ -23,7 +23,8 @@ namespace embree
 {
   namespace isa
   { 
-#define ENABLE_SPATIAL_SPLITS 0
+#define ENABLE_SPATIAL_SPLITS 1
+#define DBG_PRINT(x)
 
     /*! Performs standard object binning */
 #if defined(__AVX512F__)
@@ -60,9 +61,9 @@ namespace embree
         __forceinline void setExtentedRanges(const Set& set, Set& lset, Set& rset)
         {
           /* PING; */
-          /* PRINT(set); */
-          /* PRINT(lset); */
-          /* PRINT(rset); */
+          /* DBG_PRINT(set); */
+          /* DBG_PRINT(lset); */
+          /* DBG_PRINT(rset); */
 
           assert(set.ext_range_size() > 0);
           const size_t parent_size          = set.size();
@@ -75,21 +76,21 @@ namespace embree
           const size_t right_ext_range_size = ext_range_size - left_ext_range_size;
 
           /* std::cout << std::endl; */
-          /* PRINT(parent_size); */
-          /* PRINT(left_size); */
-          /* PRINT(right_size); */
+          /* DBG_PRINT(parent_size); */
+          /* DBG_PRINT(left_size); */
+          /* DBG_PRINT(right_size); */
 
-          /* PRINT(ext_range_size); */
-          /* PRINT(left_ext_range_size); */
-          /* PRINT(right_ext_range_size); */
-          /* PRINT(left_factor); */
+          /* DBG_PRINT(ext_range_size); */
+          /* DBG_PRINT(left_ext_range_size); */
+          /* DBG_PRINT(right_ext_range_size); */
+          /* DBG_PRINT(left_factor); */
           //exit(0);
-          /* PRINT("UPDATE"); */
+          /* DBG_PRINT("UPDATE"); */
           lset.set_ext_range(lset.end() + left_ext_range_size);
           rset.set_ext_range(rset.end() + right_ext_range_size);
 
-          /* PRINT(lset); */
-          /* PRINT(rset); */
+          /* DBG_PRINT(lset); */
+          /* DBG_PRINT(rset); */
 
         }
 
@@ -98,11 +99,11 @@ namespace embree
           const size_t left_ext_range_size = lset.ext_range_size();
           const size_t right_size = rset.size();
           /* PING; */
-          /* PRINT(set); */
-          /* PRINT(lset); */
-          /* PRINT(rset); */
-          /* PRINT(left_ext_range_size); */
-          /* PRINT(right_size); */
+          /* DBG_PRINT(set); */
+          /* DBG_PRINT(lset); */
+          /* DBG_PRINT(rset); */
+          /* DBG_PRINT(left_ext_range_size); */
+          /* DBG_PRINT(right_size); */
 
           // has the left child an extended range ?
           if (left_ext_range_size > 0)
@@ -124,7 +125,7 @@ namespace embree
             // update right range
             assert(rset.ext_end() + left_ext_range_size == set.ext_end());
             rset.move_right(left_ext_range_size);
-            /* PRINT(rset); */
+            /* DBG_PRINT(rset); */
             //exit(0);
           }
         }
@@ -134,8 +135,8 @@ namespace embree
         {
           //std::cout << std::endl;
           //PING;
-          //PRINT(pinfo);
-          //PRINT(pinfo.index);
+          //DBG_PRINT(pinfo);
+          //DBG_PRINT(pinfo.index);
           //if (likely(pinfo.size() < PARALLEL_THRESHOLD)) 
           return sequential_find(set,pinfo,logBlockSize);
           //else
@@ -143,14 +144,15 @@ namespace embree
         }
 
         /*! finds the best object split */
-        __noinline const Split object_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
+        __noinline const Split object_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize, SplitInfo &info)
         {
           PrimRef* const source = prims0;
           ObjectBinner binner(empty); // FIXME: this clear can be optimized away
           const BinMapping<OBJECT_BINS> mapping(pinfo);
           binner.bin(source,set.begin(),set.end(),mapping);
           Split s = binner.best(mapping,logBlockSize);
-          s.lcount = binner.getLeftCount(mapping,s);
+          s.lcount = (unsigned int)binner.getLeftCount(mapping,s);
+		  binner.getSplitInfo(mapping, s, info);
           return s;
         }
 
@@ -179,9 +181,9 @@ namespace embree
           size_t ext_elements = 0;
           PrimRef* source = prims0;
           
-          PRINT(set.size());
-          PRINT(max_ext_range_size);
-          PRINT(ext_range_start);
+          DBG_PRINT(set.size());
+          DBG_PRINT(max_ext_range_size);
+          DBG_PRINT(ext_range_start);
           const float fpos = split.mapping.pos(split.pos,split.dim);
 
           //const BinMapping<OBJECT_BINS> test_mapping(16,2.0f*split.mapping.ofs,split.mapping.scale*0.5f);
@@ -197,20 +199,20 @@ namespace embree
                 PrimRef left,right;
                 splitPrimitive(source[i],split.dim,fpos,left,right);
 
-                //PRINT(source[i]);
-                //PRINT(left);
-                //PRINT(right);
-                //PRINT(split.pos);
-                //PRINT(split.dim);
-                //PRINT(fpos);
-                //PRINT(left.bounds().size()[split.dim] < 1E-5f);
-                //PRINT(right.bounds().size()[split.dim] < 1E-5f);
+                //DBG_PRINT(source[i]);
+                //DBG_PRINT(left);
+                //DBG_PRINT(right);
+                //DBG_PRINT(split.pos);
+                //DBG_PRINT(split.dim);
+                //DBG_PRINT(fpos);
+                //DBG_PRINT(left.bounds().size()[split.dim] < 1E-5f);
+                //DBG_PRINT(right.bounds().size()[split.dim] < 1E-5f);
 
                 //const vint4 bin_left = (vint4)split.mapping.bin(center(left.bounds()));
                 //const vint4 bin_right = (vint4)split.mapping.bin(center(right.bounds()));
 
-                //PRINT(bin_left);
-                //PRINT(bin_right);
+                //DBG_PRINT(bin_left);
+                //DBG_PRINT(bin_right);
 
                 //assert(bin_left[split.dim]  <  split.pos);
                 //assert(bin_right[split.dim] >= split.pos);
@@ -221,11 +223,11 @@ namespace embree
               }
             }
           }
-          PRINT(ext_elements);
-          PRINT(split.left);
-          PRINT(split.right);
-          PRINT(split.left+split.right);
-          PRINT(set.size()+ext_elements);
+          DBG_PRINT(ext_elements);
+          DBG_PRINT(split.left);
+          DBG_PRINT(split.right);
+          DBG_PRINT(split.left+split.right);
+          DBG_PRINT(set.size()+ext_elements);
           assert(split.left+split.right==set.size()+ext_elements);     
           assert(set.end()+ext_elements<=set.ext_end());
           return Set(set.begin(),set.end()+ext_elements,set.ext_end());
@@ -238,33 +240,37 @@ namespace embree
 
           for (size_t i=set.begin();i<set.end();i++)
             assert(subset(source[i].bounds(),pinfo.geomBounds));
-
-          Split object_split = object_find(set,pinfo,logBlockSize);
+		  SplitInfo info;
+          Split object_split = object_find(set,pinfo,logBlockSize,info);
 #if ENABLE_SPATIAL_SPLITS == 1
-          if (set.has_ext_range()) 
+          if (unlikely(set.has_ext_range()))
           {
-            SpatialSplit spatial_split = spatial_find(set,pinfo,logBlockSize);
-            /* valid spatial split, better SAH and number of splits do not exceed extended range */
-            if (spatial_split.sah < object_split.sah && 
-                spatial_split.left + spatial_split.right - set.size() <= set.ext_range_size())
-            {
-              PRINT(object_split);
-              PRINT(set.has_ext_range());
-              PRINT(set);
-              PRINT(spatial_split);
-              PRINT(spatial_split.left + spatial_split.right - set.size());
-              //exit(0);
-              PRINT("virtual split");
-              set = sequential_create_spatial_splits(set,spatial_split,spatial_split.mapping);
-              std::cout << std::endl;
-              // mark that we have a spatial split 
-              object_split.lcount = (unsigned int)-1;
-              object_split.sah    = spatial_split.sah;
-              object_split.dim    = spatial_split.dim;
-              object_split.pos    = spatial_split.pos;
-              object_split.mapping.ofs   = spatial_split.mapping.ofs;
-              object_split.mapping.scale = spatial_split.mapping.scale;
-            }
+			const BBox3fa overlap = intersect(info.leftBounds, info.rightBounds);
+			if (safeArea(overlap) >= 0.2f*safeArea(pinfo.geomBounds))
+				{
+			     SpatialSplit spatial_split = spatial_find(set, pinfo, logBlockSize);
+					  /* valid spatial split, better SAH and number of splits do not exceed extended range */
+					  if (spatial_split.sah < object_split.sah &&
+						  spatial_split.left + spatial_split.right - set.size() <= set.ext_range_size())
+					  {
+						  DBG_PRINT(object_split);
+						  DBG_PRINT(set.has_ext_range());
+						  DBG_PRINT(set);
+						  PRINT(spatial_split);
+						  DBG_PRINT(spatial_split.left + spatial_split.right - set.size());
+						  //exit(0);
+						  DBG_PRINT("virtual split");
+						  set = sequential_create_spatial_splits(set, spatial_split, spatial_split.mapping);
+						  std::cout << std::endl;
+						  // mark that we have a spatial split 
+						  object_split.lcount = (unsigned int)-1;
+						  object_split.sah = spatial_split.sah;
+						  object_split.dim = spatial_split.dim;
+						  object_split.pos = spatial_split.pos;
+						  object_split.mapping.ofs = spatial_split.mapping.ofs;
+						  object_split.mapping.scale = spatial_split.mapping.scale;
+					  }
+				  }
           }
 #endif
           return object_split;
@@ -300,10 +306,10 @@ namespace embree
           //if (likely(pinfo.size() < PARALLEL_THRESHOLD)) 
           //PING;
           sequential_split(split,set,left,lset,right,rset);
-          //PRINT(split);
-          //PRINT(pinfo);
-          //PRINT(left);
-          //PRINT(right);
+          //DBG_PRINT(split);
+          //DBG_PRINT(pinfo);
+          //DBG_PRINT(left);
+          //DBG_PRINT(right);
 
           //else                                
           //parallel_split(split,set,left,lset,right,rset);
@@ -410,7 +416,7 @@ namespace embree
           
           if (unlikely(split.lcount == (unsigned int)-1))
           {
-            PRINT("PARTITIONING");
+            DBG_PRINT("PARTITIONING");
             sequential_spatial_split(split,set,left,lset,right,rset);
             //exit(0);
           }
