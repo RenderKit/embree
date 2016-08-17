@@ -40,6 +40,11 @@ namespace embree
           scale = select(ulpsized,vfloat4(0.0f),vfloat4(BINS * 0.99f)/diag);
           ofs  = (vfloat4) pinfo.geomBounds.lower;
         }
+
+        /*! inits the mapping */
+        __forceinline SpatialBinMapping(const vfloat4& ofs, const vfloat4 &scale) : ofs(ofs), scale(scale)
+        {
+        }
         
         /*! slower but safe binning */
         __forceinline vint4 bin(const Vec3fa& p) const
@@ -58,7 +63,7 @@ namespace embree
           return scale[dim] == 0.0f;
         }
         
-      private:
+      public:
         vfloat4 ofs,scale;  //!< linear function that maps to bin ID
       };
 
