@@ -41,6 +41,7 @@ namespace embree
   {
     static const float travCost = 1.0f;
     static const float defaultPresplitFactor = 1.2f;
+    static const float defaultSplitFactorFastSpatial = 1.5f;
 
     typedef FastAllocator::ThreadLocal2 Allocator;
 
@@ -118,6 +119,7 @@ namespace embree
 
         size_t n = current.prims.size();
         size_t items = Primitive::blocks(n);
+
         size_t start = current.prims.begin();
         Primitive* accel = (Primitive*) alloc->alloc1.malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
         typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,items);
@@ -538,11 +540,11 @@ namespace embree
 
       BVHNBuilderFastSpatialSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
         : bvh(bvh), scene(scene), mesh(nullptr), prims0(scene->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)),
-          splitFactor(defaultPresplitFactor) {}
+          splitFactor(defaultSplitFactorFastSpatial) {}
 
       BVHNBuilderFastSpatialSAH (BVH* bvh, Mesh* mesh, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
         : bvh(bvh), scene(nullptr), mesh(mesh), prims0(bvh->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)),
-          splitFactor(defaultPresplitFactor) {}
+          splitFactor(defaultSplitFactorFastSpatial) {}
 
       // FIXME: shrink bvh->alloc in destructor here and in other builders too
 
@@ -567,7 +569,7 @@ namespace embree
                 
         /* function that splits a primitive at some position and dimension */
         auto splitPrimitive = [&] (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o) {
-          TriangleMesh* mesh = (TriangleMesh*) scene->get(prim.geomID() & 0x00FFFFFF); 
+          TriangleMesh* mesh = (TriangleMesh*) scene->get(prim.geomID()); //  & 0x00FFFFFF 
           TriangleMesh::Triangle tri = mesh->triangle(prim.primID());
           const Vec3fa v0 = mesh->vertex(tri.v[0]);
           const Vec3fa v1 = mesh->vertex(tri.v[1]);
