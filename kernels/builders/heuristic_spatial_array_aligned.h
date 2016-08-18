@@ -152,7 +152,7 @@ namespace embree
           binner.bin(source,set.begin(),set.end(),mapping);
           Split s = binner.best(mapping,logBlockSize);
           s.lcount = (unsigned int)binner.getLeftCount(mapping,s);
-		  binner.getSplitInfo(mapping, s, info);
+          binner.getSplitInfo(mapping, s, info);
           return s;
         }
 
