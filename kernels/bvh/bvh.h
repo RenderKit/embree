@@ -208,7 +208,7 @@ namespace embree
 
       /*! Prefetches the node this reference points to */
       __forceinline void prefetch(int types=0) const {
-#if defined(__AVX512F__)
+#if defined(__AVX512PF__) // MIC
           if (types != BVH_FLAG_QUANTIZED_NODE) {
             prefetchL2(((char*)ptr)+0*64);
             prefetchL2(((char*)ptr)+1*64);
