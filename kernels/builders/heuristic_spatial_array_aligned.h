@@ -24,6 +24,8 @@ namespace embree
   namespace isa
   { 
 #define ENABLE_SPATIAL_SPLITS 1
+#define ENABLE_ARRAY_CHECKS 0
+
 #define DBG_PRINT(x) 
 //PRINT(x)
 
@@ -202,28 +204,24 @@ namespace embree
               {
                 PrimRef left,right;
                 splitPrimitive(source[i],split.dim,fpos,left,right);
-
-                //DBG_PRINT(source[i]);
-                //DBG_PRINT(left);
-                //DBG_PRINT(right);
-                //DBG_PRINT(split.pos);
-                //DBG_PRINT(split.dim);
-                //DBG_PRINT(fpos);
-                //DBG_PRINT(left.bounds().size()[split.dim] < 1E-5f);
-                //DBG_PRINT(right.bounds().size()[split.dim] < 1E-5f);
-
-                //const vint4 bin_left = (vint4)split.mapping.bin(center(left.bounds()));
-                //const vint4 bin_right = (vint4)split.mapping.bin(center(right.bounds()));
-
-                //DBG_PRINT(bin_left);
-                //DBG_PRINT(bin_right);
-
-                //assert(bin_left[split.dim]  <  split.pos);
-                //assert(bin_right[split.dim] >= split.pos);
-
+                
+                // no empty splits
+                if (unlikely(left.bounds().empty() || right.bounds().empty())) continue;
+                
+#if ENABLE_ARRAY_CHECKS == 1
+                assert(left.lower.x <= left.upper.x);
+                assert(left.lower.y <= left.upper.y);
+                assert(left.lower.z <= left.upper.z);
+                
+                assert(right.lower.x <= right.upper.x);
+                assert(right.lower.y <= right.upper.y);
+                assert(right.lower.z <= right.upper.z);
+#endif
                 source[i] = left;
                 assert(ext_elements <= max_ext_range_size);
-                source[ext_range_start+ext_elements++] = right;              
+                source[ext_range_start+ext_elements++] = right;     
+                /* break if  the number of subdivided elements are greater than the maximal allowed size */
+                if (unlikely(ext_elements >= max_ext_range_size)) break;
               }
             }
           }
@@ -232,7 +230,8 @@ namespace embree
           DBG_PRINT(split.right);
           DBG_PRINT(split.left+split.right);
           DBG_PRINT(set.size()+ext_elements);
-          assert(split.left+split.right==set.size()+ext_elements);     
+
+          assert(max_ext_range_size >= ext_elements);     
           assert(set.end()+ext_elements<=set.ext_end());
           return Set(set.begin(),set.end()+ext_elements,set.ext_end());
         }
@@ -240,17 +239,20 @@ namespace embree
         /*! finds the best split */
         const Split sequential_find(Set& set, PrimInfo& pinfo, const size_t logBlockSize)
         {
-          PrimRef* const source = prims0;
 
+#if ENABLE_ARRAY_CHECKS == 1
+          PrimRef* const source = prims0;
           for (size_t i=set.begin();i<set.end();i++)
             assert(subset(source[i].bounds(),pinfo.geomBounds));
+#endif
+
           SplitInfo info;
           Split object_split = object_find(set,pinfo,logBlockSize,info);
 #if ENABLE_SPATIAL_SPLITS == 1
           if (unlikely(set.has_ext_range()))
           {
             const BBox3fa overlap = intersect(info.leftBounds, info.rightBounds);
-            if (safeArea(overlap) >= 0.2f*safeArea(pinfo.geomBounds))
+            if (safeArea(overlap) >= 0.05f*safeArea(pinfo.geomBounds))
             {
               SpatialSplit spatial_split = spatial_find(set, pinfo, logBlockSize);
               /* valid spatial split, better SAH and number of splits do not exceed extended range */
@@ -262,8 +264,7 @@ namespace embree
                 DBG_PRINT(set);
                 DBG_PRINT(spatial_split);
                 DBG_PRINT(spatial_split.left + spatial_split.right - set.size());
-                //exit(0);
-                DBG_PRINT("virtual split");
+          
                 set = sequential_create_spatial_splits(set, spatial_split, spatial_split.mapping);
                 // set new range in priminfo
                 pinfo.begin = set.begin();
@@ -311,6 +312,7 @@ namespace embree
           //std::cout << std::endl;
           //if (likely(pinfo.size() < PARALLEL_THRESHOLD)) 
           //PING;
+          assert(area(pinfo.geomBounds) >= 0.0f);
           sequential_split(split,set,left,lset,right,rset);
           //DBG_PRINT(split);
           //DBG_PRINT(pinfo);
@@ -357,13 +359,28 @@ namespace embree
           new (&right) PrimInfo(center,end,local_right.geomBounds,local_right.centBounds);
           new (&lset) extended_range<size_t>(begin,center,center);
           new (&rset) extended_range<size_t>(center,end,end);
+
+          if (area(left.geomBounds) < 0.0f)
+          {
+            PRINT(left.geomBounds.size());
+            PRINT(right.geomBounds.size());
+            PRINT(split);
+            PRINT(set);
+            PRINT(lset);
+            PRINT(rset);
+            PRINT(left);
+            PRINT(right);
+          }
           assert(area(left.geomBounds) >= 0.0f);
           assert(area(right.geomBounds) >= 0.0f);
+
+#if ENABLE_ARRAY_CHECKS == 1
           // verify that the left and right ranges are correct
           for (size_t i=lset.begin();i<lset.end();i++)
             assert(subset(source[i].bounds(),local_left.geomBounds));
           for (size_t i=rset.begin();i<rset.end();i++)
             assert(subset(source[i].bounds(),local_right.geomBounds));
+#endif
         }
 
 
@@ -403,10 +420,12 @@ namespace embree
           assert(area(right.geomBounds) >= 0.0f);
 
           // verify that the left and right ranges are correct
+#if ENABLE_ARRAY_CHECKS == 1
           for (size_t i=lset.begin();i<lset.end();i++)
             assert(subset(source[i].bounds(),local_left.geomBounds));
           for (size_t i=rset.begin();i<rset.end();i++)
             assert(subset(source[i].bounds(),local_right.geomBounds));
+#endif
         }
 
 
@@ -527,7 +546,6 @@ namespace embree
             setExtentedRanges(set,lset,rset);
             moveExtentedRange(set,lset,linfo,rset,rinfo);              
           }
-
         }
         
       private:

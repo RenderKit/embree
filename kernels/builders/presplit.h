@@ -59,7 +59,8 @@ namespace embree
       BBox3fa bounds = prim.bounds();
       BBox3fa cleft (max(left .lower,bounds.lower),min(left .upper,bounds.upper));
       BBox3fa cright(max(right.lower,bounds.lower),min(right.upper,bounds.upper));
-      
+
+
       new (&left_o ) PrimRef(cleft, prim.geomID(), prim.primID());
       new (&right_o) PrimRef(cright,prim.geomID(), prim.primID());
     }
