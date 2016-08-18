@@ -18,13 +18,6 @@
 
 namespace embree
 {
-//#if defined(__AVX512F__) && !defined(__AVX512VL__)
-#if defined(__AVX512F__)
-#define SIMD_MODE(x) x, 16  // use 16-wide SIMD calculations for KNL even for 4 and 8 wide SIMD
-#else
-#define SIMD_MODE(x) x, x   // calculate with same SIMD width otherwise
-#endif
-
 #define DECLARE_SYMBOL(type,name)                                       \
   namespace isa       { extern type name; }                             \
   namespace sse41     { extern type name; }                             \
