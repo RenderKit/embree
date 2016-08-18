@@ -51,6 +51,16 @@ namespace embree
           ofs16 = ofs;
 #endif          
         }
+
+        __forceinline BinMapping(const size_t &num, const vfloat4 &ofs, const vfloat4 &scale)  : num(num), ofs(ofs), scale(scale)
+        {
+#if defined(__AVX512F__)
+          ofs16 = ofs;
+          scale16 = scale;    
+#endif          
+        }
+
+
         
         /*! returns number of bins */
         __forceinline size_t size() const { return num; }
@@ -376,7 +386,7 @@ namespace embree
       }
       
       /*! calculates extended split information */
-      __forceinline void getSplitInfo(const BinMapping<BINS>& mapping, const Split& split, SplitInfo& info) const // FIXME: still required?
+      __forceinline void getSplitInfo(const BinMapping<BINS>& mapping, const Split& split, SplitInfo& info) const 
       {
 	if (split.dim == -1) {
 	  new (&info) SplitInfo(0,empty,0,empty);
@@ -688,6 +698,33 @@ namespace embree
 
       }
 
+      /*! calculates extended split information */
+      __forceinline void getSplitInfo(const BinMapping<16>& mapping, const Split& split, SplitInfo& info) const // FIXME: still required?
+      {
+	if (split.dim == -1) {
+	  new (&info) SplitInfo(0,empty,0,empty);
+	  return;
+	}
+	// FIXME: horizontal reduction!
+
+	size_t leftCount = 0;
+	BBox3fa leftBounds = empty;
+	for (size_t i=0; i<(size_t)split.pos; i++) {
+	  leftCount += count[split.dim][i];
+          Vec3fa bounds_lower(lower[split.dim].x[i],lower[split.dim].y[i],lower[split.dim].z[i]);
+          Vec3fa bounds_upper(upper[split.dim].x[i],upper[split.dim].y[i],upper[split.dim].z[i]);
+	  leftBounds.extend(BBox3fa(bounds_lower,bounds_upper));
+	}
+	size_t rightCount = 0;
+	BBox3fa rightBounds = empty;
+	for (size_t i=split.pos; i<mapping.size(); i++) {
+	  rightCount += count[split.dim][i];
+          Vec3fa bounds_lower(lower[split.dim].x[i],lower[split.dim].y[i],lower[split.dim].z[i]);
+          Vec3fa bounds_upper(upper[split.dim].x[i],upper[split.dim].y[i],upper[split.dim].z[i]);
+	  rightBounds.extend(BBox3fa(bounds_lower,bounds_upper));
+	}
+	new (&info) SplitInfo(leftCount,leftBounds,rightCount,rightBounds);
+      }
 
       /*! gets the number of primitives left of the split */
       __forceinline size_t getLeftCount(const BinMapping<16>& mapping, const Split& split) const

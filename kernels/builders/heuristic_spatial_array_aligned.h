@@ -23,7 +23,8 @@ namespace embree
 {
   namespace isa
   { 
-
+#define ENABLE_SPATIAL_SPLITS 1
+#define DBG_PRINT(x)
 
     /*! Performs standard object binning */
 #if defined(__AVX512F__)
@@ -60,9 +61,9 @@ namespace embree
         __forceinline void setExtentedRanges(const Set& set, Set& lset, Set& rset)
         {
           /* PING; */
-          /* PRINT(set); */
-          /* PRINT(lset); */
-          /* PRINT(rset); */
+          /* DBG_PRINT(set); */
+          /* DBG_PRINT(lset); */
+          /* DBG_PRINT(rset); */
 
           assert(set.ext_range_size() > 0);
           const size_t parent_size          = set.size();
@@ -75,21 +76,21 @@ namespace embree
           const size_t right_ext_range_size = ext_range_size - left_ext_range_size;
 
           /* std::cout << std::endl; */
-          /* PRINT(parent_size); */
-          /* PRINT(left_size); */
-          /* PRINT(right_size); */
+          /* DBG_PRINT(parent_size); */
+          /* DBG_PRINT(left_size); */
+          /* DBG_PRINT(right_size); */
 
-          /* PRINT(ext_range_size); */
-          /* PRINT(left_ext_range_size); */
-          /* PRINT(right_ext_range_size); */
-          /* PRINT(left_factor); */
+          /* DBG_PRINT(ext_range_size); */
+          /* DBG_PRINT(left_ext_range_size); */
+          /* DBG_PRINT(right_ext_range_size); */
+          /* DBG_PRINT(left_factor); */
           //exit(0);
-          /* PRINT("UPDATE"); */
+          /* DBG_PRINT("UPDATE"); */
           lset.set_ext_range(lset.end() + left_ext_range_size);
           rset.set_ext_range(rset.end() + right_ext_range_size);
 
-          /* PRINT(lset); */
-          /* PRINT(rset); */
+          /* DBG_PRINT(lset); */
+          /* DBG_PRINT(rset); */
 
         }
 
@@ -98,11 +99,11 @@ namespace embree
           const size_t left_ext_range_size = lset.ext_range_size();
           const size_t right_size = rset.size();
           /* PING; */
-          /* PRINT(set); */
-          /* PRINT(lset); */
-          /* PRINT(rset); */
-          /* PRINT(left_ext_range_size); */
-          /* PRINT(right_size); */
+          /* DBG_PRINT(set); */
+          /* DBG_PRINT(lset); */
+          /* DBG_PRINT(rset); */
+          /* DBG_PRINT(left_ext_range_size); */
+          /* DBG_PRINT(right_size); */
 
           // has the left child an extended range ?
           if (left_ext_range_size > 0)
@@ -124,18 +125,18 @@ namespace embree
             // update right range
             assert(rset.ext_end() + left_ext_range_size == set.ext_end());
             rset.move_right(left_ext_range_size);
-            /* PRINT(rset); */
+            /* DBG_PRINT(rset); */
             //exit(0);
           }
         }
 
         /*! finds the best split */
-        const Split find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
+        const Split find(Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
           //std::cout << std::endl;
           //PING;
-          //PRINT(pinfo);
-          //PRINT(pinfo.index);
+          //DBG_PRINT(pinfo);
+          //DBG_PRINT(pinfo.index);
           //if (likely(pinfo.size() < PARALLEL_THRESHOLD)) 
           return sequential_find(set,pinfo,logBlockSize);
           //else
@@ -143,58 +144,140 @@ namespace embree
         }
 
         /*! finds the best object split */
-        __noinline const Split object_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
+        __noinline const Split object_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize, SplitInfo &info)
         {
           PrimRef* const source = prims0;
           ObjectBinner binner(empty); // FIXME: this clear can be optimized away
           const BinMapping<OBJECT_BINS> mapping(pinfo);
           binner.bin(source,set.begin(),set.end(),mapping);
           Split s = binner.best(mapping,logBlockSize);
-          s.lcount = binner.getLeftCount(mapping,s);
+          s.lcount = (unsigned int)binner.getLeftCount(mapping,s);
+          binner.getSplitInfo(mapping, s, info);
           return s;
         }
 
 
         /*! finds the best object split */
-        __noinline const SpatialSplit spatial_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
+        __noinline const SpatialSplit spatial_find(Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
           PrimRef* const source = prims0;
           SpatialBinner binner(empty); 
           const SpatialBinMapping<SPATIAL_BINS> mapping(pinfo);
           binner.bin(splitPrimitive,source,set.begin(),set.end(),mapping);
+          // todo: find best spatial split not exeeding the extended range
           SpatialSplit s = binner.best(pinfo,mapping,logBlockSize);
 
           //s.lcount = binner.getLeftCount(mapping,s);
           return s;
         }
+
+
+        /*! subdivides primitives based on a spatial split */
+        __noinline Set sequential_create_spatial_splits(const Set& set, const SpatialSplit &split, const SpatialBinMapping<SPATIAL_BINS> &mapping)
+        {
+          assert(set.has_ext_range());
+          const size_t max_ext_range_size = set.ext_range_size();
+          const size_t ext_range_start = set.end();
+          size_t ext_elements = 0;
+          PrimRef* source = prims0;
+          
+          DBG_PRINT(set.size());
+          DBG_PRINT(max_ext_range_size);
+          DBG_PRINT(ext_range_start);
+          const float fpos = split.mapping.pos(split.pos,split.dim);
+
+          //const BinMapping<OBJECT_BINS> test_mapping(16,2.0f*split.mapping.ofs,split.mapping.scale*0.5f);
+
+          for (size_t i=set.begin();i<set.end();i++)
+          {
+            int bin0 = split.mapping.bin(source[i].lower)[split.dim];
+            int bin1 = split.mapping.bin(source[i].upper)[split.dim];
+            if (unlikely(bin0 < split.pos && bin1 >= split.pos))
+            {
+              //if (source[i].lower[split.dim] < fpos &&  source[i].upper[split.dim] > fpos)
+              {
+                PrimRef left,right;
+                splitPrimitive(source[i],split.dim,fpos,left,right);
+
+                //DBG_PRINT(source[i]);
+                //DBG_PRINT(left);
+                //DBG_PRINT(right);
+                //DBG_PRINT(split.pos);
+                //DBG_PRINT(split.dim);
+                //DBG_PRINT(fpos);
+                //DBG_PRINT(left.bounds().size()[split.dim] < 1E-5f);
+                //DBG_PRINT(right.bounds().size()[split.dim] < 1E-5f);
+
+                //const vint4 bin_left = (vint4)split.mapping.bin(center(left.bounds()));
+                //const vint4 bin_right = (vint4)split.mapping.bin(center(right.bounds()));
+
+                //DBG_PRINT(bin_left);
+                //DBG_PRINT(bin_right);
+
+                //assert(bin_left[split.dim]  <  split.pos);
+                //assert(bin_right[split.dim] >= split.pos);
+
+                source[i] = left;
+                assert(ext_elements <= max_ext_range_size);
+                source[ext_range_start+ext_elements++] = right;              
+              }
+            }
+          }
+          DBG_PRINT(ext_elements);
+          DBG_PRINT(split.left);
+          DBG_PRINT(split.right);
+          DBG_PRINT(split.left+split.right);
+          DBG_PRINT(set.size()+ext_elements);
+          assert(split.left+split.right==set.size()+ext_elements);     
+          assert(set.end()+ext_elements<=set.ext_end());
+          return Set(set.begin(),set.end()+ext_elements,set.ext_end());
+        }
         
         /*! finds the best split */
-        const Split sequential_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
+        const Split sequential_find(Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
           PrimRef* const source = prims0;
 
           for (size_t i=set.begin();i<set.end();i++)
             assert(subset(source[i].bounds(),pinfo.geomBounds));
-
-          Split object_split = object_find(set,pinfo,logBlockSize);
-          if (set.has_ext_range()) 
+		  SplitInfo info;
+          Split object_split = object_find(set,pinfo,logBlockSize,info);
+#if ENABLE_SPATIAL_SPLITS == 1
+          if (unlikely(set.has_ext_range()))
           {
-            SpatialSplit spatial_split = spatial_find(set,pinfo,logBlockSize);
-            if (spatial_split.sah < object_split.sah)
-            {
-              PRINT(object_split);
-              PRINT(set.has_ext_range());
-              PRINT(set);
-              PRINT(spatial_split);
-              PRINT(spatial_split.left + spatial_split.right - set.size());
-              exit(0);
-            }
+			const BBox3fa overlap = intersect(info.leftBounds, info.rightBounds);
+			if (safeArea(overlap) >= 0.2f*safeArea(pinfo.geomBounds))
+				{
+			     SpatialSplit spatial_split = spatial_find(set, pinfo, logBlockSize);
+					  /* valid spatial split, better SAH and number of splits do not exceed extended range */
+					  if (spatial_split.sah < object_split.sah &&
+						  spatial_split.left + spatial_split.right - set.size() <= set.ext_range_size())
+					  {
+						  DBG_PRINT(object_split);
+						  DBG_PRINT(set.has_ext_range());
+						  DBG_PRINT(set);
+						  PRINT(spatial_split);
+						  DBG_PRINT(spatial_split.left + spatial_split.right - set.size());
+						  //exit(0);
+						  DBG_PRINT("virtual split");
+						  set = sequential_create_spatial_splits(set, spatial_split, spatial_split.mapping);
+						  std::cout << std::endl;
+						  // mark that we have a spatial split 
+						  object_split.lcount = (unsigned int)-1;
+						  object_split.sah = spatial_split.sah;
+						  object_split.dim = spatial_split.dim;
+						  object_split.pos = spatial_split.pos;
+						  object_split.mapping.ofs = spatial_split.mapping.ofs;
+						  object_split.mapping.scale = spatial_split.mapping.scale;
+					  }
+				  }
           }
+#endif
           return object_split;
         }
         
         /*! finds the best split */
-        __noinline const Split parallel_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
+        __noinline const Split parallel_find(Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
           ObjectBinner binner(empty);
           const BinMapping<OBJECT_BINS> mapping(pinfo);
@@ -223,26 +306,19 @@ namespace embree
           //if (likely(pinfo.size() < PARALLEL_THRESHOLD)) 
           //PING;
           sequential_split(split,set,left,lset,right,rset);
-          //PRINT(split);
-          //PRINT(pinfo);
-          //PRINT(left);
-          //PRINT(right);
+          //DBG_PRINT(split);
+          //DBG_PRINT(pinfo);
+          //DBG_PRINT(left);
+          //DBG_PRINT(right);
 
           //else                                
           //parallel_split(split,set,left,lset,right,rset);
         }
 
         /*! array partitioning */
-        void sequential_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
+        void sequential_object_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
         {
-          // determine input and output primref arrays
           PrimRef* const source = prims0;
-
-          if (unlikely(!split.valid())) {
-            deterministic_order(set);
-            return splitFallback(set,left,lset,right,rset);
-          }
-          
           const size_t begin = set.begin();
           const size_t end   = set.end();
           CentGeomBBox3fa local_left(empty);
@@ -270,7 +346,7 @@ namespace embree
                                               },
                                               [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend(ref.bounds()); });          
           
-          assert(center == begin + split.lcount);
+          //assert(center == begin + split.lcount);
           new (&left ) PrimInfo(begin,center,local_left.geomBounds,local_left.centBounds);
           new (&right) PrimInfo(center,end,local_right.geomBounds,local_right.centBounds);
           new (&lset) extended_range<size_t>(begin,center,center);
@@ -278,17 +354,81 @@ namespace embree
           assert(area(left.geomBounds) >= 0.0f);
           assert(area(right.geomBounds) >= 0.0f);
 
-          // if we have an extended range
+          // verify that the left and right ranges are correct
+          for (size_t i=lset.begin();i<lset.end();i++)
+            assert(subset(source[i].bounds(),local_left.geomBounds));
+          for (size_t i=rset.begin();i<rset.end();i++)
+            assert(subset(source[i].bounds(),local_right.geomBounds));
+        }
+
+
+        /*! array partitioning */
+        void sequential_spatial_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
+        {
+          assert(split.lcount == (unsigned int)-1);
+
+          PrimRef* const source = prims0;
+          const size_t begin = set.begin();
+          const size_t end   = set.end();
+          CentGeomBBox3fa local_left(empty);
+          CentGeomBBox3fa local_right(empty);
+          const unsigned int splitPos = split.pos;
+          const unsigned int splitDim = split.dim;
+          const unsigned int splitDimMask = (unsigned int)1 << splitDim; 
+
+          const SpatialBinMapping<SPATIAL_BINS> mapping(split.mapping.ofs,split.mapping.scale);
+
+          const vint4 vSplitPos(splitPos);
+          const vbool4 vSplitMask( (int)splitDimMask );
+
+          size_t center = serial_partitioning(source,
+                                              begin,end,local_left,local_right,
+                                              [&] (const PrimRef& ref) { 
+                                                return any(((vint4)mapping.bin(ref.bounds().lower) < vSplitPos) & vSplitMask); 
+                                              },
+                                              [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend(ref.bounds()); });          
+          
+          //assert(center == begin + split.lcount);
+          new (&left ) PrimInfo(begin,center,local_left.geomBounds,local_left.centBounds);
+          new (&right) PrimInfo(center,end,local_right.geomBounds,local_right.centBounds);
+          new (&lset) extended_range<size_t>(begin,center,center);
+          new (&rset) extended_range<size_t>(center,end,end);
+          assert(area(left.geomBounds) >= 0.0f);
+          assert(area(right.geomBounds) >= 0.0f);
+
+          // verify that the left and right ranges are correct
+          for (size_t i=lset.begin();i<lset.end();i++)
+            assert(subset(source[i].bounds(),local_left.geomBounds));
+          for (size_t i=rset.begin();i<rset.end();i++)
+            assert(subset(source[i].bounds(),local_right.geomBounds));
+        }
+
+
+        /*! array partitioning */
+        void sequential_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
+        {
+          // determine input and output primref arrays
+
+          if (unlikely(!split.valid())) {
+            deterministic_order(set);
+            return splitFallback(set,left,lset,right,rset);
+          }
+          
+          if (unlikely(split.lcount == (unsigned int)-1))
+          {
+            DBG_PRINT("PARTITIONING");
+            sequential_spatial_split(split,set,left,lset,right,rset);
+            //exit(0);
+          }
+          else
+            sequential_object_split(split,set,left,lset,right,rset);
+
+          // if we have an extended range, move right split range
           if (set.has_ext_range()) 
           {
             setExtentedRanges(set,lset,rset);
             moveExtentedRange(set,lset,rset);
           }
-
-          for (size_t i=lset.begin();i<lset.end();i++)
-            assert(subset(source[i].bounds(),local_left.geomBounds));
-          for (size_t i=rset.begin();i<rset.end();i++)
-            assert(subset(source[i].bounds(),local_right.geomBounds));
 
         }
         
