@@ -41,7 +41,7 @@ namespace embree
   {
     static const float travCost = 1.0f;
     static const float defaultPresplitFactor = 1.2f;
-    static const float defaultSplitFactorFastSpatial = 1.5f;
+    static const float defaultSplitFactorFastSpatial = 2.0f;
 
     typedef FastAllocator::ThreadLocal2 Allocator;
 
@@ -118,9 +118,16 @@ namespace embree
         PrimRef* const source = prims0;
 
         size_t n = current.prims.size();
+
+
         size_t items = Primitive::blocks(n);
 
         size_t start = current.prims.begin();
+
+        // remove number of split encoding
+        for (size_t i=0; i<n; i++) 
+          source[start+i].lower.a &= 0x00FFFFFF;
+
         Primitive* accel = (Primitive*) alloc->alloc1.malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
         typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,items);
         for (size_t i=0; i<items; i++) {
@@ -566,16 +573,35 @@ namespace embree
         PrimInfo pinfo = mesh ? 
           createPrimRefArray<Mesh>  (mesh ,prims0,bvh->scene->progressInterface) : 
           createPrimRefArray<Mesh,1>(scene,prims0,bvh->scene->progressInterface);
-                
+           
+        const float A = area(pinfo.geomBounds);
+        const float f = 10.0f;
+
+        /* calculate maximal number of spatial splits per primitive */
+        parallel_for( size_t(0), numPrimitives, [&](const range<size_t>& r)
+                      {
+                        for (size_t i=r.begin(); i<r.end(); i++)
+                        {
+                          PrimRef& prim = prims0[i];
+                          assert((prim.lower.a & 0xFF000000) == 0);
+                          const float nf = ceilf(f*pinfo.size()*area(prim.bounds())/A);
+                          const size_t n = 4+min(ssize_t(127-4), max(ssize_t(1), ssize_t(nf)));
+                          prim.lower.a |= n << 24;              
+                        }
+                      });
+
+
+        
         /* function that splits a primitive at some position and dimension */
         auto splitPrimitive = [&] (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o) {
-          TriangleMesh* mesh = (TriangleMesh*) scene->get(prim.geomID()); //  & 0x00FFFFFF 
+          TriangleMesh* mesh = (TriangleMesh*) scene->get(prim.geomID() & 0x00FFFFFF );  
           TriangleMesh::Triangle tri = mesh->triangle(prim.primID());
           const Vec3fa v0 = mesh->vertex(tri.v[0]);
           const Vec3fa v1 = mesh->vertex(tri.v[1]);
           const Vec3fa v2 = mesh->vertex(tri.v[2]);
           splitTriangle(prim,dim,pos,v0,v1,v2,left_o,right_o);
         };
+
 
         /* call BVH builder */
         bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));

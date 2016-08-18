@@ -25,6 +25,8 @@ namespace embree
   { 
 #define ENABLE_SPATIAL_SPLITS 1
 #define ENABLE_ARRAY_CHECKS 0
+#define OVERLAP_THRESHOLD 0.1f
+#define USE_SPATIAL_SPLIT_SAH_THRESHOLD 0.95f
 
 #define DBG_PRINT(x) 
 //PRINT(x)
@@ -196,12 +198,18 @@ namespace embree
 
           for (size_t i=set.begin();i<set.end();i++)
           {
+            const unsigned int splits = source[i].geomID() >> 24;
+
+            if (likely(splits <= 1)) continue;
+
             int bin0 = split.mapping.bin(source[i].lower)[split.dim];
             int bin1 = split.mapping.bin(source[i].upper)[split.dim];
             if (unlikely(bin0 < split.pos && bin1 >= split.pos))
             {
               //if (source[i].lower[split.dim] < fpos &&  source[i].upper[split.dim] > fpos)
               {
+                assert(splits > 1);
+
                 PrimRef left,right;
                 splitPrimitive(source[i],split.dim,fpos,left,right);
                 
@@ -217,9 +225,13 @@ namespace embree
                 assert(right.lower.y <= right.upper.y);
                 assert(right.lower.z <= right.upper.z);
 #endif
+                left.lower.a  = (left.lower.a & 0x00FFFFFF) | ((splits-1) << 24);
+                right.lower.a = (right.lower.a & 0x00FFFFFF) | ((splits-1) << 24);
+
                 source[i] = left;
                 assert(ext_elements <= max_ext_range_size);
-                source[ext_range_start+ext_elements++] = right;     
+                source[ext_range_start+ext_elements] = right;     
+                ext_elements++;
                 /* break if  the number of subdivided elements are greater than the maximal allowed size */
                 if (unlikely(ext_elements >= max_ext_range_size)) break;
               }
@@ -252,11 +264,11 @@ namespace embree
           if (unlikely(set.has_ext_range()))
           {
             const BBox3fa overlap = intersect(info.leftBounds, info.rightBounds);
-            if (safeArea(overlap) >= 0.05f*safeArea(pinfo.geomBounds))
+            if (safeArea(overlap) >= OVERLAP_THRESHOLD*safeArea(pinfo.geomBounds))
             {
               SpatialSplit spatial_split = spatial_find(set, pinfo, logBlockSize);
               /* valid spatial split, better SAH and number of splits do not exceed extended range */
-              if (spatial_split.sah < object_split.sah &&
+              if (spatial_split.sah/object_split.sah <= USE_SPATIAL_SPLIT_SAH_THRESHOLD &&
                   spatial_split.left + spatial_split.right - set.size() <= set.ext_range_size())
               {
                 DBG_PRINT(object_split);
