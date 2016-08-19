@@ -40,7 +40,7 @@ namespace embree
       {
         Vec3fa v0 = v1; v1 = v[i];
         float v0d = v0[dim], v1d = v1[dim];
-        
+
         if (v0d <= pos) left. extend(v0); // this point is on left side
         if (v0d >= pos) right.extend(v0); // this point is on right side
         
@@ -64,6 +64,77 @@ namespace embree
       new (&left_o ) PrimRef(cleft, prim.geomID(), prim.primID());
       new (&right_o) PrimRef(cright,prim.geomID(), prim.primID());
     }
+
+
+
+    __forceinline void condExtendBounds(BBox3fa &left, BBox3fa &right, const vbool4& mask_left, const vbool4& mask_right, const vbool4& mask_cross, const vfloat4& factor, const vfloat4& a, const vfloat4 &b)
+    {
+      vfloat4 lower_left  = (vfloat4)left.lower;
+      vfloat4 upper_left  = (vfloat4)left.upper;
+      vfloat4 lower_right = (vfloat4)right.lower;
+      vfloat4 upper_right = (vfloat4)right.upper;
+
+      lower_left   = min(lower_left  ,select(mask_left ,a,lower_left ));
+      upper_left   = max(upper_left  ,select(mask_left ,a,upper_left ));
+      lower_right  = min(lower_right ,select(mask_right,a,lower_right ));
+      upper_right  = max(upper_right ,select(mask_right,a,upper_right ));
+      const vfloat4 c = a + factor * (b-a);
+
+      lower_left   = min(lower_left  ,select(mask_cross,c,lower_left ));
+      upper_left   = max(upper_left  ,select(mask_cross,c,upper_left ));
+      lower_right  = min(lower_right ,select(mask_cross,c,lower_right ));
+      upper_right  = max(upper_right ,select(mask_cross,c,upper_right ));
+
+      left.lower  = (Vec3fa)lower_left;
+      left.upper  = (Vec3fa)upper_left;
+      right.lower = (Vec3fa)lower_right;
+      right.upper = (Vec3fa)upper_right;
+    } 
+
+    template<size_t dim>
+    __forceinline void condExtendBounds2(BBox3fa &left, BBox3fa &right, const vbool4& mask_left, const vbool4& mask_right, const vbool4& mask_cross, const vfloat4& factor, const Vec3fa& a, const Vec3fa& b)
+    {
+      if (mask_left[dim])   left.extend(a);
+      if (mask_right[dim])  right.extend(a);
+      if (mask_cross[dim]) { 
+          const Vec3fa c = a + factor[dim] * (b-a);
+          left.extend(c);
+          right.extend(c);
+        }
+    }
+    __forceinline void splitTriangle2(const PrimRef& prim, int dim, float pos, 
+                                      const Vec3fa& a, const Vec3fa& b, const Vec3fa& c, PrimRef& left_o, PrimRef& right_o)
+    {
+      BBox3fa left = empty, right = empty;
+      const vfloat4 v0(a[dim],b[dim],c[dim],0.0f);
+      const vfloat4 v1(b[dim],c[dim],a[dim],1.0f);
+      const vfloat4 pos4(pos);
+      const vfloat4 factor = (pos-v0)/(v1-v0);
+
+      const vbool4 mask_cross = ((v0 < pos4) & (pos4 < v1)) | ((v1 < pos4) & (pos4 < v0));
+      const vbool4 mask_left  = v0 <= pos4;
+      const vbool4 mask_right = v0 >= pos4;
+
+#if 0
+      condExtendBounds(left,right,shuffle<0>(mask_left),shuffle<0>(mask_right),shuffle<0>(mask_cross),shuffle<0>(factor),(vfloat4)a,(vfloat4)b);
+      condExtendBounds(left,right,shuffle<1>(mask_left),shuffle<1>(mask_right),shuffle<1>(mask_cross),shuffle<1>(factor),(vfloat4)b,(vfloat4)c);
+      condExtendBounds(left,right,shuffle<2>(mask_left),shuffle<2>(mask_right),shuffle<2>(mask_cross),shuffle<2>(factor),(vfloat4)c,(vfloat4)a);
+#else
+      condExtendBounds2<0>(left,right,mask_left,mask_right,mask_cross,factor,a,b);
+      condExtendBounds2<1>(left,right,mask_left,mask_right,mask_cross,factor,b,c);
+      condExtendBounds2<2>(left,right,mask_left,mask_right,mask_cross,factor,c,a);
+
+#endif
+      /* clip against current bounds */
+      BBox3fa bounds = prim.bounds();
+      BBox3fa cleft (max(left .lower,bounds.lower),min(left .upper,bounds.upper));
+      BBox3fa cright(max(right.lower,bounds.lower),min(right.upper,bounds.upper));
+
+
+      new (&left_o ) PrimRef(cleft, prim.geomID(), prim.primID());
+      new (&right_o) PrimRef(cright,prim.geomID(), prim.primID());
+    }
+
 
     template<typename Split>
       inline void split_primref(const PrimInfo& pinfo, Split& split, PrimRef& prim, PrimRef* prims_o, size_t N)

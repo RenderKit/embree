@@ -39,11 +39,13 @@ namespace embree
           const vfloat4 diag = (vfloat4) pinfo.geomBounds.size();
           scale = select(ulpsized,vfloat4(0.0f),vfloat4(BINS * 0.99f)/diag);
           ofs  = (vfloat4) pinfo.geomBounds.lower;
+          inv_scale = 1.0f / scale; 
         }
 
         /*! inits the mapping */
         __forceinline SpatialBinMapping(const vfloat4& ofs, const vfloat4 &scale) : ofs(ofs), scale(scale)
         {
+          inv_scale = 1.0f / scale; 
         }
         
         /*! slower but safe binning */
@@ -55,7 +57,8 @@ namespace embree
         
         /*! calculates left spatial position of bin */
         __forceinline float pos(const int bin, const int dim) const {
-          return float(bin)/scale[dim]+ofs[dim];
+          //return float(bin)/scale[dim]+ofs[dim];
+          return float(bin)*inv_scale[dim]+ofs[dim];
         }
         
         /*! returns true if the mapping is invalid in some dimension */
@@ -64,7 +67,7 @@ namespace embree
         }
         
       public:
-        vfloat4 ofs,scale;  //!< linear function that maps to bin ID
+        vfloat4 ofs,scale,inv_scale;  //!< linear function that maps to bin ID
       };
 
     /*! stores all information required to perform some split */
@@ -132,7 +135,7 @@ namespace embree
           const PrimRef prim = prims[i];
           unsigned splits = prim.geomID() >> 24;
 
-          if (splits == 1)
+          if (unlikely(splits == 1))
           {
             const vint4 bin = mapping.bin(center(prim.bounds()));
             for (size_t dim=0; dim<3; dim++) 
@@ -154,18 +157,27 @@ namespace embree
               PrimRef rest = prim;
               size_t l = bin0[dim];
               size_t r = bin1[dim];
+
+              // same bin optimization
+              if (likely(l == r)) 
+              {
+                numBegin[l][dim]++;
+                numEnd  [l][dim]++;
+                bounds  [l][dim].extend(prim.bounds());
+                continue;
+              }
+
               for (bin=bin0[dim]; bin<bin1[dim]; bin++) 
               {
                 const float pos = mapping.pos(bin+1,dim);
                 
                 PrimRef left,right;
                 splitPrimitive(rest,dim,pos,left,right);
-                if (left.bounds().empty()) l++;
-                
+                if (unlikely(left.bounds().empty())) l++;                
                 bounds[bin][dim].extend(left.bounds());
                 rest = right;
               }
-              if (rest.bounds().empty()) r--;
+              if (unlikely(rest.bounds().empty())) r--;
               numBegin[l][dim]++;
               numEnd  [r][dim]++;
               bounds  [bin][dim].extend(rest.bounds());

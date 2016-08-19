@@ -596,10 +596,18 @@ namespace embree
         auto splitPrimitive = [&] (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o) {
           TriangleMesh* mesh = (TriangleMesh*) scene->get(prim.geomID() & 0x00FFFFFF );  
           TriangleMesh::Triangle tri = mesh->triangle(prim.primID());
-          const Vec3fa v0 = mesh->vertex(tri.v[0]);
-          const Vec3fa v1 = mesh->vertex(tri.v[1]);
-          const Vec3fa v2 = mesh->vertex(tri.v[2]);
+          const Vec3fa &v0 = mesh->vertex(tri.v[0]);
+          const Vec3fa &v1 = mesh->vertex(tri.v[1]);
+          const Vec3fa &v2 = mesh->vertex(tri.v[2]);
           splitTriangle(prim,dim,pos,v0,v1,v2,left_o,right_o);
+
+#if 0
+          PrimRef left_test, right_test;
+          splitTriangle2(prim,dim,pos,v0,v1,v2,left_test,right_test);
+
+          assert(left_test.bounds() == left_o.bounds());
+          assert(right_test.bounds() == right_o.bounds());
+#endif
         };
 
 
