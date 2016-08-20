@@ -203,6 +203,7 @@ namespace embree
   __forceinline const vint16 operator <<( const vint16& a, const vint16& n ) { return _mm512_sllv_epi32(a, n); }
   __forceinline const vint16 operator >>( const vint16& a, const vint16& n ) { return _mm512_srav_epi32(a, n); }
 
+  __forceinline const vint16 sll ( const vint16& a, const int b ) { return _mm512_slli_epi32(a, b); }
   __forceinline const vint16 sra ( const vint16& a, const int b ) { return _mm512_srai_epi32(a, b); }
   __forceinline const vint16 srl ( const vint16& a, const int b ) { return _mm512_srli_epi32(a, b); }
   

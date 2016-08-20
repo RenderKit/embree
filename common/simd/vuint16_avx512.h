@@ -190,11 +190,12 @@ namespace embree
   __forceinline const vuint16 operator ^( const unsigned int a, const vuint16& b ) { return vuint16(a) ^ b; }
 
   __forceinline const vuint16 operator <<( const vuint16& a, const unsigned int n ) { return _mm512_slli_epi32(a, n); }
-  __forceinline const vuint16 operator >>( const vuint16& a, const unsigned int n ) { return _mm512_srai_epi32(a, n); }
+  __forceinline const vuint16 operator >>( const vuint16& a, const unsigned int n ) { return _mm512_srai_epi32(a, n); } // FIXME: why not srl?
 
   __forceinline const vuint16 operator <<( const vuint16& a, const vuint16& n ) { return _mm512_sllv_epi32(a, n); }
-  __forceinline const vuint16 operator >>( const vuint16& a, const vuint16& n ) { return _mm512_srav_epi32(a, n); }
+  __forceinline const vuint16 operator >>( const vuint16& a, const vuint16& n ) { return _mm512_srav_epi32(a, n); } // FIXME: why not srl?
 
+  __forceinline const vuint16 sll ( const vuint16& a, const unsigned int b ) { return _mm512_slli_epi32(a, b); }
   __forceinline const vuint16 sra ( const vuint16& a, const unsigned int b ) { return _mm512_srai_epi32(a, b); }
   __forceinline const vuint16 srl ( const vuint16& a, const unsigned int b ) { return _mm512_srli_epi32(a, b); }
   
