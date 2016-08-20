@@ -27,6 +27,7 @@ namespace embree {
 //#define RAYN_FLAGS RTC_INTERSECT_INCOHERENT
 
 #define SHADING 1
+#define HIGH_QUALITY 1
 
 extern "C" ISPCScene* g_ispc_scene;
 
@@ -102,7 +103,10 @@ unsigned int convertCurveGeometry(ISPCHairSet* hair, RTCScene scene_out)
 RTCScene convertScene(ISPCScene* scene_in)
 {
   size_t numGeometries = scene_in->numGeometries;
-  int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT | RTC_SCENE_HIGH_QUALITY;
+  int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
+#if HIGH_QUALITY == 1
+  scene_flags |= RTC_SCENE_HIGH_QUALITY;
+#endif
   int scene_aflags = RTC_INTERSECT1 | RTC_INTERSECT_STREAM | RTC_INTERPOLATE;
   RTCScene scene_out = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
 
@@ -307,7 +311,7 @@ extern "C" void device_init (char* cfg)
   rtcDeviceSetErrorFunction(g_device,error_handler);
 
   /* create scene */
-#if 1
+#if 0
   g_scene = convertScene(g_ispc_scene);
 #else
   //rtcDeleteDevice(g_device); g_device = nullptr;
