@@ -28,6 +28,7 @@ namespace embree {
 
 #define SHADING 1
 #define HIGH_QUALITY 1
+#define LOOP 0
 
 extern "C" ISPCScene* g_ispc_scene;
 
@@ -311,7 +312,7 @@ extern "C" void device_init (char* cfg)
   rtcDeviceSetErrorFunction(g_device,error_handler);
 
   /* create scene */
-#if 0
+#if LOOP == 0
   g_scene = convertScene(g_ispc_scene);
 #else
   //rtcDeleteDevice(g_device); g_device = nullptr;

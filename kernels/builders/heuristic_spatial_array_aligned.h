@@ -28,7 +28,6 @@ namespace embree
 #define OVERLAP_THRESHOLD 0.2f
 #define USE_SPATIAL_SPLIT_SAH_THRESHOLD 0.98f
 
-
 // todo: PRIMITIVES_PER_LEAF
 
 #define DBG_PRINT(x) 
@@ -57,6 +56,10 @@ namespace embree
         static const size_t PARALLEL_FIND_BLOCK_SIZE = 1024;
         static const size_t PARALLEL_PARITION_BLOCK_SIZE = 128;
 #endif
+
+        static const size_t MOVE_STEP_SIZE = 64;
+        static const size_t CREATE_SPLITS_STEP_SIZE = 64;
+
         __forceinline HeuristicArraySpatialSAH ()
           : prims0(nullptr) {}
         
@@ -92,15 +95,21 @@ namespace embree
             // left extended range smaller than right range ?
             if (left_ext_range_size < right_size)
             {
-              // only move a small part of of the beginning of the right range to the end
-              for (size_t i=rset.begin();i<rset.begin()+left_ext_range_size;i++)
-                prims0[i+right_size] = prims0[i];
+              /* only move a small part of the beginning of the right range to the end */
+              /* for (size_t i=rset.begin();i<rset.begin()+left_ext_range_size;i++) */
+              parallel_for( rset.begin(), rset.begin()+left_ext_range_size, MOVE_STEP_SIZE, [&](const range<size_t>& r) {
+                  for (size_t i=r.begin(); i<r.end(); i++)
+                    prims0[i+right_size] = prims0[i];
+                });
             }
             else
             {
-              // no overlap, move entire right range to new location, can be made fully parallel
-              for (size_t i=rset.begin();i<rset.end();i++)
-                prims0[i+left_ext_range_size] = prims0[i];
+              /* no overlap, move entire right range to new location, can be made fully parallel */
+              /* for (size_t i=rset.begin();i<rset.end();i++) */
+              parallel_for( rset.begin(), rset.end(), MOVE_STEP_SIZE,  [&](const range<size_t>& r) {
+                  for (size_t i=r.begin(); i<r.end(); i++)
+                    prims0[i+left_ext_range_size] = prims0[i];
+                });
             }
             // update right range
             assert(rset.ext_end() + left_ext_range_size == set.ext_end());
@@ -225,7 +234,7 @@ namespace embree
           
           const float fpos = split.mapping.pos(split.pos,split.dim);
           
-          parallel_for( set.begin(), set.end(), [&](const range<size_t>& r) {
+          parallel_for( set.begin(), set.end(), CREATE_SPLITS_STEP_SIZE, [&](const range<size_t>& r) {
               for (size_t i=r.begin();i<r.end();i++)
               {
                 const unsigned int splits = prims0[i].geomID() >> 24;
