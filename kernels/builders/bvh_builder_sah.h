@@ -102,7 +102,7 @@ namespace embree
           /* this should never occur but is a fatal error */
           if (current.depth > maxDepth) 
             throw_RTCError(RTC_UNKNOWN_ERROR,"depth limit reached");
-          
+
           /* create leaf for few primitives */
           if (current.pinfo.size() <= maxLeafSize)
             return createLeaf(current,alloc);
@@ -112,7 +112,6 @@ namespace embree
           BuildRecord children[MAX_BRANCHING_FACTOR];
           size_t numChildren = 1;
           children[0] = current;
-          
           do {
             
             /* find best child with largest bounding box area */
@@ -170,7 +169,7 @@ namespace embree
         {
           if (alloc == nullptr)
             alloc = createAlloc();
-          
+
           /* call memory monitor function to signal progress */
           if (toplevel && current.size() <= SINGLE_THREADED_THRESHOLD)
             progressMonitor(current.size());
