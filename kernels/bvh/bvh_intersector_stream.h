@@ -103,7 +103,7 @@ namespace embree
         }
         /*! slow path for more than two hits */
         const size_t hits = __popcnt(movemask(vmask));
-        const vint<K> dist_i = select(vmask,(asInt(tNear) & 0xfffffff8) | vint<K>( step ),0x7fffffff);
+        const vint<K> dist_i = select(vmask, (asInt(tNear) & 0xfffffff8) | vint<K>(step), 0x7fffffff);
 #if defined(__AVX512F__)
         const vint8 tmp = _mm512_castsi512_si256(dist_i);
         const vint<K> dist_i_sorted = sortNetwork(tmp);
@@ -298,7 +298,7 @@ namespace embree
         }
         /*! slow path for more than two hits */
         const size_t hits = __popcnt(movemask(vmask));
-        const vint<K> dist_i = select(vmask,(asInt(tNear) & 0xfffffff8) | vint<K>( step ),0x7fffffff);
+        const vint<K> dist_i = select(vmask, (asInt(tNear) & 0xfffffff8) | vint<K>(step), 0x7fffffff);
 #if defined(__AVX512F__)
         const vint8 tmp = _mm512_castsi512_si256(dist_i);
         const vint<K> dist_i_sorted = sortNetwork(tmp);
@@ -336,7 +336,7 @@ namespace embree
     // ==================================================================================================
 
 
-    template<int K, bool robust>
+    template<bool robust>
     class __aligned(32) RayContext 
     {
     public:
@@ -348,11 +348,11 @@ namespace embree
       __forceinline RayContext(Ray* ray)
       {
 #if defined(__AVX512F__)
-        vfloat<K> org(vfloat4(ray->org));
-        vfloat<K> dir(vfloat4(ray->dir));
-        vfloat<K> rdir       = select(0x7777,rcp_safe(dir),max(vfloat<K>(ray->tnear),vfloat<K>(zero)));
-        vfloat<K> org_rdir   = robust ? select(0x7777,org,ray->tfar) : select(0x7777,org * rdir,ray->tfar);
-        vfloat<K> res = select(0xf,rdir,org_rdir);
+        vfloat16 org(vfloat4(ray->org));
+        vfloat16 dir(vfloat4(ray->dir));
+        vfloat16 rdir     = select(0x7777,rcp_safe(dir),max(vfloat16(ray->tnear),vfloat16(zero)));
+        vfloat16 org_rdir = robust ? select(0x7777,org,ray->tfar) : select(0x7777,org * rdir,ray->tfar);
+        vfloat16 res = select(0xf,rdir,org_rdir);
         vfloat8 r = extractf256bit(res);
         *(vfloat8*)this = r;          
 #else
@@ -389,7 +389,7 @@ namespace embree
       typedef typename PrimitiveIntersector::Precalculations Precalculations;
       typedef typename PrimitiveIntersector::Primitive Primitive;
       typedef BVHN<N> BVH;
-      typedef RayContext<K,robust> RContext;
+      typedef RayContext<robust> RContext;
       typedef typename BVH::NodeRef NodeRef;
       typedef typename BVH::BaseNode BaseNode;
       typedef typename BVH::Node Node;
@@ -613,12 +613,12 @@ namespace embree
                                                          vfloat<K> &dist)
       {
         /* interval-based culling test */
-        const vfloat<K> bminX = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.nearX));
-        const vfloat<K> bminY = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.nearY));
-        const vfloat<K> bminZ = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.nearZ));
-        const vfloat<K> bmaxX = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farX));
-        const vfloat<K> bmaxY = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farY));
-        const vfloat<K> bmaxZ = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farZ));
+        const vfloat<K> bminX = vfloat<K>(*(const vfloat<N>*)((const char*)&node->lower_x+pc.nearX));
+        const vfloat<K> bminY = vfloat<K>(*(const vfloat<N>*)((const char*)&node->lower_x+pc.nearY));
+        const vfloat<K> bminZ = vfloat<K>(*(const vfloat<N>*)((const char*)&node->lower_x+pc.nearZ));
+        const vfloat<K> bmaxX = vfloat<K>(*(const vfloat<N>*)((const char*)&node->lower_x+pc.farX));
+        const vfloat<K> bmaxY = vfloat<K>(*(const vfloat<N>*)((const char*)&node->lower_x+pc.farY));
+        const vfloat<K> bmaxZ = vfloat<K>(*(const vfloat<N>*)((const char*)&node->lower_x+pc.farZ));
 
         const vfloat<K> fminX = msub(bminX, vfloat<K>(frusta.min_rdir.x), vfloat<K>(frusta.min_org_rdir.x));
         const vfloat<K> fminY = msub(bminY, vfloat<K>(frusta.min_rdir.y), vfloat<K>(frusta.min_org_rdir.y));

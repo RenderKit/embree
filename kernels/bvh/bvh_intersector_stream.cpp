@@ -65,7 +65,7 @@ namespace embree
 
 #if defined(__AVX512F__)
     template<int K, bool dist_update, bool robust>
-    __forceinline vbool<K> intersectNode(const RayContext<K,robust> &ctx,
+    __forceinline vbool<K> intersectNode(const RayContext<robust> &ctx,
                                          const vfloat<K> &bminmaxX,
                                          const vfloat<K> &bminmaxY,
                                          const vfloat<K> &bminmaxZ,
@@ -100,7 +100,7 @@ namespace embree
 #endif
 
     template<int K, bool dist_update, bool robust>
-    __forceinline vbool<K> intersectNode(const RayContext<K,robust> &ctx,
+    __forceinline vbool<K> intersectNode(const RayContext<robust> &ctx,
                                          const vfloat<K> &bminX,
                                          const vfloat<K> &bminY,
                                          const vfloat<K> &bminZ,
@@ -128,6 +128,7 @@ namespace embree
 
 
 #if defined(__AVX512F__)
+        // FIXME: dead code
         const unsigned int maskN = ((unsigned int)1 << N)-1;
         const vbool<K> vmask   = le(maskN,tNear,tFar);        
 #else
@@ -292,12 +293,12 @@ namespace embree
           char *ptr = (char*)&node->lower_x + b*sizeof(float);
           assert(cur == node->child(b));
 
-          const vfloat<K> minX = vfloat<K>(*(float*)((const char*)ptr+pc.nearX));
-          const vfloat<K> minY = vfloat<K>(*(float*)((const char*)ptr+pc.nearY));
-          const vfloat<K> minZ = vfloat<K>(*(float*)((const char*)ptr+pc.nearZ));
-          const vfloat<K> maxX = vfloat<K>(*(float*)((const char*)ptr+pc.farX));
-          const vfloat<K> maxY = vfloat<K>(*(float*)((const char*)ptr+pc.farY));
-          const vfloat<K> maxZ = vfloat<K>(*(float*)((const char*)ptr+pc.farZ));
+          const vfloat<K> minX = vfloat<K>(*(const float*)((const char*)ptr+pc.nearX));
+          const vfloat<K> minY = vfloat<K>(*(const float*)((const char*)ptr+pc.nearY));
+          const vfloat<K> minZ = vfloat<K>(*(const float*)((const char*)ptr+pc.nearZ));
+          const vfloat<K> maxX = vfloat<K>(*(const float*)((const char*)ptr+pc.farX));
+          const vfloat<K> maxY = vfloat<K>(*(const float*)((const char*)ptr+pc.farY));
+          const vfloat<K> maxZ = vfloat<K>(*(const float*)((const char*)ptr+pc.farZ));
 
           m_trav_active = intersectNodePacket(packet,minX,minY,minZ,maxX,maxY,maxZ,m_trav_active);
           if (m_trav_active == 0) goto pop;
@@ -406,12 +407,12 @@ namespace embree
           char *ptr = (char*)&node->lower_x + b*sizeof(float);
           assert(cur == node->child(b));
 
-          const vfloat<K> minX = vfloat<K>(*(float*)((const char*)ptr+pc.nearX));
-          const vfloat<K> minY = vfloat<K>(*(float*)((const char*)ptr+pc.nearY));
-          const vfloat<K> minZ = vfloat<K>(*(float*)((const char*)ptr+pc.nearZ));
-          const vfloat<K> maxX = vfloat<K>(*(float*)((const char*)ptr+pc.farX));
-          const vfloat<K> maxY = vfloat<K>(*(float*)((const char*)ptr+pc.farY));
-          const vfloat<K> maxZ = vfloat<K>(*(float*)((const char*)ptr+pc.farZ));
+          const vfloat<K> minX = vfloat<K>(*(const float*)((const char*)ptr+pc.nearX));
+          const vfloat<K> minY = vfloat<K>(*(const float*)((const char*)ptr+pc.nearY));
+          const vfloat<K> minZ = vfloat<K>(*(const float*)((const char*)ptr+pc.nearZ));
+          const vfloat<K> maxX = vfloat<K>(*(const float*)((const char*)ptr+pc.farX));
+          const vfloat<K> maxY = vfloat<K>(*(const float*)((const char*)ptr+pc.farY));
+          const vfloat<K> maxZ = vfloat<K>(*(const float*)((const char*)ptr+pc.farZ));
           
           m_trav_active = intersectNodePacket(packet,minX,minY,minZ,maxX,maxY,maxZ,m_trav_active);
 
@@ -558,9 +559,9 @@ namespace embree
 #if defined(__AVX512F__) 
             const vlong<K/2> one((size_t)1);
 
-            const vfloat<K> bminmaxX = permute(vfloat<K>::load((float*)&node->lower_x),pc.permX);
-            const vfloat<K> bminmaxY = permute(vfloat<K>::load((float*)&node->lower_y),pc.permY);
-            const vfloat<K> bminmaxZ = permute(vfloat<K>::load((float*)&node->lower_z),pc.permZ);
+            const vfloat<K> bminmaxX = permute(vfloat<K>::load((const float*)&node->lower_x),pc.permX);
+            const vfloat<K> bminmaxY = permute(vfloat<K>::load((const float*)&node->lower_y),pc.permY);
+            const vfloat<K> bminmaxZ = permute(vfloat<K>::load((const float*)&node->lower_z),pc.permZ);
 
             vfloat<K> dist(inf);
             vlong<K/2>   maskK(zero);
@@ -585,12 +586,12 @@ namespace embree
             BVHNNodeTraverserKHit<types,N,K>::traverseClosestHit(cur, m_trav_active, vmask, dist, (size_t*)&maskK, stackPtr);
 
 #else
-            const vfloat<K> bminX = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.nearX));
-            const vfloat<K> bminY = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.nearY));
-            const vfloat<K> bminZ = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.nearZ));
-            const vfloat<K> bmaxX = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farX));
-            const vfloat<K> bmaxY = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farY));
-            const vfloat<K> bmaxZ = vfloat<K>(*(vfloat<N>*)((const char*)&node->lower_x+pc.farZ));
+            const vfloat<K> bminX = vfloat<K>(*(const vfloat<N>*)((const char*)&node->lower_x+pc.nearX));
+            const vfloat<K> bminY = vfloat<K>(*(const vfloat<N>*)((const char*)&node->lower_x+pc.nearY));
+            const vfloat<K> bminZ = vfloat<K>(*(const vfloat<N>*)((const char*)&node->lower_x+pc.nearZ));
+            const vfloat<K> bmaxX = vfloat<K>(*(const vfloat<N>*)((const char*)&node->lower_x+pc.farX));
+            const vfloat<K> bmaxY = vfloat<K>(*(const vfloat<N>*)((const char*)&node->lower_x+pc.farY));
+            const vfloat<K> bmaxZ = vfloat<K>(*(const vfloat<N>*)((const char*)&node->lower_x+pc.farZ));
 
             vfloat<K> dist(inf);
             vint<K>   maskK(zero);
@@ -729,12 +730,12 @@ namespace embree
 
 #if defined(__AVX512F__) 
             const vlong<K/2> one((size_t)1);
-            const vfloat<K> bminmaxX = permute(vfloat<K>::load((float*)&node->lower_x),pc.permX);
-            const vfloat<K> bminmaxY = permute(vfloat<K>::load((float*)&node->lower_y),pc.permY);
-            const vfloat<K> bminmaxZ = permute(vfloat<K>::load((float*)&node->lower_z),pc.permZ);
+            const vfloat<K> bminmaxX = permute(vfloat<K>::load((const float*)&node->lower_x),pc.permX);
+            const vfloat<K> bminmaxY = permute(vfloat<K>::load((const float*)&node->lower_y),pc.permY);
+            const vfloat<K> bminmaxZ = permute(vfloat<K>::load((const float*)&node->lower_z),pc.permZ);
 
             vfloat<K> dist(inf);
-            vlong<K/2>   maskK(zero);
+            vlong<K/2> maskK(zero);
 
             size_t bits = m_trav_active;
             do
@@ -752,12 +753,12 @@ namespace embree
 
             BVHNNodeTraverserKHit<types,N,K>::traverseAnyHit(cur,m_trav_active,vmask,(size_t*)&maskK,stackPtr); 
 #else
-            const vfloat<K> bminX = vfloat<K>(*(vfloat<K>*)((const char*)&node->lower_x+pc.nearX));
-            const vfloat<K> bminY = vfloat<K>(*(vfloat<K>*)((const char*)&node->lower_x+pc.nearY));
-            const vfloat<K> bminZ = vfloat<K>(*(vfloat<K>*)((const char*)&node->lower_x+pc.nearZ));
-            const vfloat<K> bmaxX = vfloat<K>(*(vfloat<K>*)((const char*)&node->lower_x+pc.farX));
-            const vfloat<K> bmaxY = vfloat<K>(*(vfloat<K>*)((const char*)&node->lower_x+pc.farY));
-            const vfloat<K> bmaxZ = vfloat<K>(*(vfloat<K>*)((const char*)&node->lower_x+pc.farZ));
+            const vfloat<K> bminX = vfloat<K>(*(const vfloat<N>*)((const char*)&node->lower_x+pc.nearX));
+            const vfloat<K> bminY = vfloat<K>(*(const vfloat<N>*)((const char*)&node->lower_x+pc.nearY));
+            const vfloat<K> bminZ = vfloat<K>(*(const vfloat<N>*)((const char*)&node->lower_x+pc.nearZ));
+            const vfloat<K> bmaxX = vfloat<K>(*(const vfloat<N>*)((const char*)&node->lower_x+pc.farX));
+            const vfloat<K> bmaxY = vfloat<K>(*(const vfloat<N>*)((const char*)&node->lower_x+pc.farY));
+            const vfloat<K> bmaxZ = vfloat<K>(*(const vfloat<N>*)((const char*)&node->lower_x+pc.farZ));
 
             vfloat<K> dist(inf);
             vint<K>   maskK(zero);
@@ -811,6 +812,11 @@ namespace embree
     }
 
 
+    ////////////////////////////////////////////////////////////////////////////////
+    /// BVH4IntersectorStream Definitions
+    ////////////////////////////////////////////////////////////////////////////////
+
+#if !defined(__AVX512F__) // FIXME: BVH4 with AVX512 does not work correctly
 
     IF_ENABLED_LINES(DEFINE_INTERSECTORN(BVH4Line4iStreamIntersector,BVHNStreamIntersector<SIMD_MODE(4) COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<LineMiIntersector1<4 COMMA 4 COMMA true> > >));
     
@@ -839,6 +845,8 @@ namespace embree
     //IF_ENABLED_SUBDIV(DEFINE_INTERSECTORN(BVH4Subdivpatch1CachedStreamIntersector,BVHNStreamIntersector<4 COMMA BVH_AN1 COMMA true COMMA SubdivPatch1CachedIntersector1>));
     //IF_ENABLED_SUBDIV(DEFINE_INTERSECTORN(BVH4GridAOSStreamIntersector,BVHNStreamIntersector<4 COMMA BVH_AN1 COMMA true COMMA GridAOSIntersector1>));
     //IF_ENABLED_USER(DEFINE_INTERSECTORN(BVH4VirtualMBStreamIntersector,BVHNStreamIntersector<4 COMMA BVH_AN2 COMMA false COMMA ObjectIntersector1>));
+
+#endif
     
     ////////////////////////////////////////////////////////////////////////////////
     /// BVH8IntersectorStream Definitions
