@@ -610,11 +610,23 @@ namespace embree
 #endif
         };
 
+        auto splitPrimitive2 = [&] (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o) {
+          TriangleMesh* mesh = (TriangleMesh*) scene->get(prim.geomID() & 0x00FFFFFF );  
+          TriangleMesh::Triangle tri = mesh->triangle(prim.primID());
+          const Vec3fa &v0 = mesh->vertex(tri.v[0]);
+          const Vec3fa &v1 = mesh->vertex(tri.v[1]);
+          const Vec3fa &v2 = mesh->vertex(tri.v[2]);
+          splitTriangle(prim,dim,pos,v0,v1,v2,left_o,right_o);
+
+        };
+
+
 
         /* call BVH builder */
         bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
         BVHNBuilderFastSpatial<N>::build(bvh,
                                          splitPrimitive,
+                                         splitPrimitive2,
                                          CreateLeafSpatial<N,Primitive>(bvh,prims0.data()),
                                          bvh->scene->progressInterface,
                                          prims0.data(),

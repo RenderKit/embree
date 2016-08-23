@@ -256,6 +256,9 @@ namespace embree
         splitPrimitive(prim,dim,pos,left_o,right_o);
       };
 
+      auto splitPrimitiveFunc2 = [&] (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o) -> void {
+        splitPrimitive2(prim,dim,pos,left_o,right_o);
+      };
             
       auto createLeafFunc = [&] (const BVHBuilderBinnedFastSpatialSAH::BuildRecord& current, Allocator* alloc) -> size_t {
         return createLeaf(current,alloc);
@@ -263,7 +266,7 @@ namespace embree
       
       NodeRef root;
       BVHBuilderBinnedFastSpatialSAH::build_reduce<NodeRef>
-        (root,typename BVH::CreateAlloc(bvh),size_t(0),typename BVH::CreateNode(bvh),rotate<N>,createLeafFunc,splitPrimitiveFunc, progressFunc,
+        (root,typename BVH::CreateAlloc(bvh),size_t(0),typename BVH::CreateNode(bvh),rotate<N>,createLeafFunc,splitPrimitiveFunc,splitPrimitiveFunc2, progressFunc,
          prims0,extSize,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
       bvh->set(root,pinfo.geomBounds,pinfo.size());      

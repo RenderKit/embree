@@ -28,7 +28,7 @@ namespace embree {
 
 #define SHADING 1
 #define HIGH_QUALITY 1
-#define LOOP 0
+#define LOOP 1
 
 extern "C" ISPCScene* g_ispc_scene;
 

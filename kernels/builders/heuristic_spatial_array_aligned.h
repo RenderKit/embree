@@ -35,9 +35,9 @@ namespace embree
 
     /*! Performs standard object binning */
 #if defined(__AVX512F__)
-    template<typename SplitPrimitive, typename PrimRef, size_t OBJECT_BINS = 16, size_t SPATIAL_BINS = 16, size_t PRIMITIVES_PER_LEAF = 4>
+    template<typename SplitPrimitive, typename SplitPrimitive2, typename PrimRef, size_t OBJECT_BINS = 16, size_t SPATIAL_BINS = 16, size_t PRIMITIVES_PER_LEAF = 4>
 #else
-      template<typename SplitPrimitive, typename PrimRef, size_t OBJECT_BINS = 32, size_t SPATIAL_BINS = 16, size_t PRIMITIVES_PER_LEAF = 4>
+      template<typename SplitPrimitive, typename SplitPrimitive2, typename PrimRef, size_t OBJECT_BINS = 32, size_t SPATIAL_BINS = 16, size_t PRIMITIVES_PER_LEAF = 4>
 #endif
       struct HeuristicArraySpatialSAH
       {
@@ -64,8 +64,8 @@ namespace embree
           : prims0(nullptr) {}
         
         /*! remember prim array */
-        __forceinline HeuristicArraySpatialSAH (const SplitPrimitive& splitPrimitive, PrimRef* prims0)
-          : prims0(prims0), splitPrimitive(splitPrimitive) {}
+        __forceinline HeuristicArraySpatialSAH (const SplitPrimitive& splitPrimitive, const SplitPrimitive2& splitPrimitive2, PrimRef* prims0)
+          : prims0(prims0), splitPrimitive(splitPrimitive), splitPrimitive2(splitPrimitive2) {}
 
 
         /*! compute extended ranges */
@@ -558,7 +558,7 @@ namespace embree
       private:
         PrimRef* const prims0;
         const SplitPrimitive& splitPrimitive;
-
+        const SplitPrimitive2& splitPrimitive2;
       };
   }
 }
