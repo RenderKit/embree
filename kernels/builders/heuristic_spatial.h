@@ -56,13 +56,13 @@ namespace embree
         }
         
         /*! calculates left spatial position of bin */
-        __forceinline float pos(const int bin, const int dim) const {
+        __forceinline float pos(const size_t bin, const size_t dim) const {
           //return float(bin)/scale[dim]+ofs[dim];
           return float(bin)*inv_scale[dim]+ofs[dim];
         }
         
         /*! returns true if the mapping is invalid in some dimension */
-        __forceinline bool invalid(const int dim) const {
+        __forceinline bool invalid(const size_t dim) const {
           return scale[dim] == 0.0f;
         }
         
