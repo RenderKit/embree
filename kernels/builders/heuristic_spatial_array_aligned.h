@@ -25,8 +25,8 @@ namespace embree
   { 
 #define ENABLE_SPATIAL_SPLITS 1
 #define ENABLE_ARRAY_CHECKS 0
-#define OVERLAP_THRESHOLD 0.2f
-#define USE_SPATIAL_SPLIT_SAH_THRESHOLD 0.98f
+#define OVERLAP_THRESHOLD 0.1f
+#define USE_SPATIAL_SPLIT_SAH_THRESHOLD 0.95f
 
 // todo: PRIMITIVES_PER_LEAF
 
@@ -64,8 +64,8 @@ namespace embree
           : prims0(nullptr) {}
         
         /*! remember prim array */
-        __forceinline HeuristicArraySpatialSAH (const SplitPrimitive& splitPrimitive, const SplitPrimitive2& splitPrimitive2, PrimRef* prims0)
-          : prims0(prims0), splitPrimitive(splitPrimitive), splitPrimitive2(splitPrimitive2) {}
+        __forceinline HeuristicArraySpatialSAH (const SplitPrimitive& splitPrimitive, const SplitPrimitive2& splitPrimitive2, PrimRef* prims0, const PrimInfo &root_info)
+          : prims0(prims0), splitPrimitive(splitPrimitive), splitPrimitive2(splitPrimitive2), root_info(root_info) {}
 
 
         /*! compute extended ranges */
@@ -123,9 +123,8 @@ namespace embree
         const Split find(Set& set, PrimInfo& pinfo, const size_t logBlockSize)
         {
 #if ENABLE_ARRAY_CHECKS == 1
-          PrimRef* const source = prims0;
           for (size_t i=set.begin();i<set.end();i++)
-            assert(subset(source[i].bounds(),pinfo.geomBounds));
+            assert(subset(prims0[i].bounds(),pinfo.geomBounds));
 #endif
           SplitInfo info;
           
@@ -133,24 +132,23 @@ namespace embree
           Split object_split = pinfo.size() < PARALLEL_THRESHOLD ? sequential_object_find(set,pinfo,logBlockSize,info) : parallel_object_find(set,pinfo,logBlockSize,info);
           
 #if ENABLE_SPATIAL_SPLITS == 1
-          if (unlikely(set.has_ext_range()) && set.size() > PRIMITIVES_PER_LEAF)
+          if (unlikely(set.has_ext_range()))
           {
             const BBox3fa overlap = intersect(info.leftBounds, info.rightBounds);
-            if (safeArea(overlap) >= OVERLAP_THRESHOLD*safeArea(pinfo.geomBounds))
+            
+            //if (safeArea(overlap) >= OVERLAP_THRESHOLD*safeArea(pinfo.geomBounds))
+            //PRINT(safeArea(overlap) / safeArea(root_info.geomBounds));
+            if (safeArea(overlap) / safeArea(root_info.geomBounds) >= 1E-5f &&
+                safeArea(overlap) >= OVERLAP_THRESHOLD*safeArea(pinfo.geomBounds))
             {
+              
               /* sequential or parallel */ 
               SpatialSplit spatial_split = pinfo.size() < PARALLEL_THRESHOLD ? sequential_spatial_find(set, pinfo, logBlockSize) : parallel_spatial_find(set, pinfo, logBlockSize);
 
               /* valid spatial split, better SAH and number of splits do not exceed extended range */
               if (spatial_split.sah/object_split.sah <= USE_SPATIAL_SPLIT_SAH_THRESHOLD &&
                   spatial_split.left + spatial_split.right - set.size() <= set.ext_range_size())
-              {
-                DBG_PRINT(object_split);
-                DBG_PRINT(set.has_ext_range());
-                DBG_PRINT(set);
-                DBG_PRINT(spatial_split);
-                DBG_PRINT(spatial_split.left + spatial_split.right - set.size());
-          
+              {          
                 set = create_spatial_splits(set, spatial_split, spatial_split.mapping);
                 // set new range in priminfo
                 pinfo.begin = set.begin();
@@ -173,10 +171,9 @@ namespace embree
         /*! finds the best object split */
         __noinline const Split sequential_object_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize, SplitInfo &info)
         {
-          PrimRef* const source = prims0;
           ObjectBinner binner(empty); // FIXME: this clear can be optimized away
           const BinMapping<OBJECT_BINS> mapping(pinfo);
-          binner.bin(source,set.begin(),set.end(),mapping);
+          binner.bin(prims0,set.begin(),set.end(),mapping);
           Split s = binner.best(mapping,logBlockSize);
           s.lcount = (unsigned int)binner.getLeftCount(mapping,s);
           binner.getSplitInfo(mapping, s, info);
@@ -201,10 +198,13 @@ namespace embree
         /*! finds the best object split */
         __noinline const SpatialSplit sequential_spatial_find(Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
-          PrimRef* const source = prims0;
           SpatialBinner binner(empty); 
           const SpatialBinMapping<SPATIAL_BINS> mapping(pinfo);
-          binner.bin(splitPrimitive,source,set.begin(),set.end(),mapping);
+#if 1
+          splitPrimitive2(binner,prims0,set.begin(),set.end(),mapping);
+#else
+          binner.bin(splitPrimitive,prims0,set.begin(),set.end(),mapping);
+#endif
           // todo: find best spatial split not exeeding the extended range
           return binner.best(pinfo,mapping,logBlockSize);
         }
@@ -215,7 +215,14 @@ namespace embree
           const SpatialBinMapping<SPATIAL_BINS> mapping(pinfo);
           const SpatialBinMapping<SPATIAL_BINS>& _mapping = mapping; // CLANG 3.4 parser bug workaround
           binner = parallel_reduce(set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,binner,
-                                   [&] (const range<size_t>& r) -> SpatialBinner { SpatialBinner binner(empty); binner.bin(splitPrimitive,prims0,r.begin(),r.end(),_mapping); return binner; },
+                                   [&] (const range<size_t>& r) -> SpatialBinner { 
+                                     SpatialBinner binner(empty); 
+#if 1
+                                     splitPrimitive2(binner,prims0,r.begin(),r.end(),_mapping);
+#else
+                                     binner.bin(splitPrimitive,prims0,r.begin(),r.end(),_mapping); 
+#endif
+                                     return binner; },
                                    [&] (const SpatialBinner& b0, const SpatialBinner& b1) -> SpatialBinner { return SpatialBinner::reduce(b0,b1); });
           return binner.best(pinfo,mapping,logBlockSize);
         }
@@ -331,7 +338,6 @@ namespace embree
         /*! array partitioning */
         void sequential_object_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
         {
-          PrimRef* const source = prims0;
           const size_t begin = set.begin();
           const size_t end   = set.end();
           CentGeomBBox3fa local_left(empty);
@@ -348,7 +354,7 @@ namespace embree
           const vbool4 vSplitMask( (int)splitDimMask );
 #endif
 
-          size_t center = serial_partitioning(source,
+          size_t center = serial_partitioning(prims0,
                                               begin,end,local_left,local_right,
                                               [&] (const PrimRef& ref) { 
 #if defined(__AVX512F__)
@@ -371,9 +377,9 @@ namespace embree
 #if ENABLE_ARRAY_CHECKS == 1
           // verify that the left and right ranges are correct
           for (size_t i=lset.begin();i<lset.end();i++)
-            assert(subset(source[i].bounds(),local_left.geomBounds));
+            assert(subset(prims0[i].bounds(),local_left.geomBounds));
           for (size_t i=rset.begin();i<rset.end();i++)
-            assert(subset(source[i].bounds(),local_right.geomBounds));
+            assert(subset(prims0[i].bounds(),local_right.geomBounds));
 #endif
         }
 
@@ -559,6 +565,7 @@ namespace embree
         PrimRef* const prims0;
         const SplitPrimitive& splitPrimitive;
         const SplitPrimitive2& splitPrimitive2;
+        const PrimInfo &root_info;
       };
   }
 }

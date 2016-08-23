@@ -151,9 +151,9 @@ namespace embree
             const vint4 bin0 = mapping.bin(prim.bounds().lower);
             const vint4 bin1 = mapping.bin(prim.bounds().upper);
             
-            for (int dim=0; dim<3; dim++) 
+            for (size_t dim=0; dim<3; dim++) 
             {
-              int bin;
+              size_t bin;
               PrimRef rest = prim;
               size_t l = bin0[dim];
               size_t r = bin1[dim];

@@ -169,7 +169,7 @@ namespace embree
     // =======================================================================================
     // =======================================================================================
 
-    template<int N>
+    template<int N, int NUM_SPATIAL_SPLITS>
       struct BVHNBuilderFastSpatial
       {
         typedef BVHN<N> BVH;
@@ -181,7 +181,7 @@ namespace embree
                      const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost);
           virtual void splitPrimitive (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o) = 0;
 
-          virtual void splitPrimitive2 (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o) = 0;
+          virtual void splitPrimitive2 (SpatialBinInfo<NUM_SPATIAL_SPLITS,PrimRef> &spatialBinner, const PrimRef* const source, const size_t begin, const size_t end, const SpatialBinMapping<NUM_SPATIAL_SPLITS> &mapping) = 0;
 
           virtual size_t createLeaf (const BVHBuilderBinnedFastSpatialSAH::BuildRecord& current, Allocator* alloc) = 0;
         };
@@ -196,8 +196,8 @@ namespace embree
             splitPrimitiveFunc(prim,dim,pos,left_o,right_o);
           }
 
-          __forceinline void splitPrimitive2 (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o) {
-            splitPrimitiveFunc2(prim,dim,pos,left_o,right_o);
+          __forceinline void splitPrimitive2 (SpatialBinInfo<NUM_SPATIAL_SPLITS,PrimRef> &spatialBinner, const PrimRef* const source, const size_t begin, const size_t end, const SpatialBinMapping<NUM_SPATIAL_SPLITS> &mapping) {
+            splitPrimitiveFunc2(spatialBinner,source,begin,end,mapping);
           }
           
           size_t createLeaf(const BVHBuilderBinnedFastSpatialSAH::BuildRecord& current, Allocator* alloc) {
