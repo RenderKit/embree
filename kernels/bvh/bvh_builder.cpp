@@ -173,13 +173,17 @@ namespace embree
       };
       auto identity = std::make_pair(BBox3fa(empty),BBox3fa(empty));
       
+      
       NodeRef root;
-      BVHBuilderBinnedSAH::build_reduce<NodeRef>
+      std::pair<BBox3fa,BBox3fa> root_bounds = BVHBuilderBinnedSAH::build_reduce<NodeRef>
         (root,typename BVH::CreateAlloc(bvh),identity,CreateNodeMB<N>(bvh),reduce,createLeafFunc,progressFunc,
          prims,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
-      bvh->set(root,pinfo.geomBounds,pinfo.size());
-      
+      /* set bounding box to merge bounds of all time steps */
+      //bvh->set(root,pinfo.geomBounds,pinfo.size());
+      bvh->set(root,merge(root_bounds.first,root_bounds.second),pinfo.size());
+
+
 #if ROTATE_TREE
       if (N == 4)
       {

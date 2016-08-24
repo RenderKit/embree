@@ -494,22 +494,20 @@ namespace embree
           prims.clear();
           bvh->clear();
           return;
-        }
-      
+        }      
         double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + toString(N) + "BuilderMblurSAH");
 	    
         //bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef));
         prims.resize(numPrimitives);
-        
         const PrimInfo pinfo = mesh ? 
           createPrimRefArray<Mesh>(mesh,prims,bvh->scene->progressInterface) : 
           createPrimRefArray<Mesh,2>(scene,prims,bvh->scene->progressInterface);
-        
+
         /* call BVH builder */
         bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
         BVHNBuilderMblur<N>::build(bvh,CreateLeafMB<N,Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,
                                   sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
-        
+
 	/* clear temporary data for static geometry */
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
 	if (staticGeom) {
