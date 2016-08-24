@@ -172,7 +172,7 @@ namespace embree
                 const float pos = mapping.pos(bin+1,dim);
                 
                 PrimRef left,right;
-                splitPrimitive(rest,dim,pos,left,right);
+                splitPrimitive(rest,(int)dim,pos,left,right);
                 if (unlikely(left.bounds().empty())) l++;                
                 bounds[bin][dim].extend(left.bounds());
                 rest = right;
