@@ -35,9 +35,9 @@ namespace embree
 
     /*! Performs standard object binning */
 #if defined(__AVX512F__)
-    template<typename SplitPrimitive, typename SplitPrimitive2, typename PrimRef, size_t OBJECT_BINS = 16, size_t SPATIAL_BINS = 16, size_t PRIMITIVES_PER_LEAF = 4>
+    template<typename SplitPrimitive, typename SplitPrimitiveBinner, typename PrimRef, size_t OBJECT_BINS = 16, size_t SPATIAL_BINS = 16, size_t PRIMITIVES_PER_LEAF = 4>
 #else
-      template<typename SplitPrimitive, typename SplitPrimitive2, typename PrimRef, size_t OBJECT_BINS = 32, size_t SPATIAL_BINS = 16, size_t PRIMITIVES_PER_LEAF = 4>
+      template<typename SplitPrimitive, typename SplitPrimitiveBinner, typename PrimRef, size_t OBJECT_BINS = 32, size_t SPATIAL_BINS = 16, size_t PRIMITIVES_PER_LEAF = 4>
 #endif
       struct HeuristicArraySpatialSAH
       {
@@ -64,8 +64,8 @@ namespace embree
           : prims0(nullptr) {}
         
         /*! remember prim array */
-        __forceinline HeuristicArraySpatialSAH (const SplitPrimitive& splitPrimitive, const SplitPrimitive2& splitPrimitive2, PrimRef* prims0, const PrimInfo &root_info)
-          : prims0(prims0), splitPrimitive(splitPrimitive), splitPrimitive2(splitPrimitive2), root_info(root_info) {}
+        __forceinline HeuristicArraySpatialSAH (const SplitPrimitive& splitPrimitive, const SplitPrimitiveBinner& splitPrimitiveBinner, PrimRef* prims0, const PrimInfo &root_info)
+          : prims0(prims0), splitPrimitive(splitPrimitive), splitPrimitiveBinner(splitPrimitiveBinner), root_info(root_info) {}
 
 
         /*! compute extended ranges */
@@ -201,7 +201,7 @@ namespace embree
           SpatialBinner binner(empty); 
           const SpatialBinMapping<SPATIAL_BINS> mapping(pinfo);
 #if 1
-          splitPrimitive2(binner,prims0,set.begin(),set.end(),mapping);
+          splitPrimitiveBinner(binner,prims0,set.begin(),set.end(),mapping);
 #else
           binner.bin(splitPrimitive,prims0,set.begin(),set.end(),mapping);
 #endif
@@ -218,7 +218,7 @@ namespace embree
                                    [&] (const range<size_t>& r) -> SpatialBinner { 
                                      SpatialBinner binner(empty); 
 #if 1
-                                     splitPrimitive2(binner,prims0,r.begin(),r.end(),_mapping);
+                                     splitPrimitiveBinner(binner,prims0,r.begin(),r.end(),_mapping);
 #else
                                      binner.bin(splitPrimitive,prims0,r.begin(),r.end(),_mapping); 
 #endif
@@ -564,7 +564,7 @@ namespace embree
       private:
         PrimRef* const prims0;
         const SplitPrimitive& splitPrimitive;
-        const SplitPrimitive2& splitPrimitive2;
+        const SplitPrimitiveBinner& splitPrimitiveBinner;
         const PrimInfo &root_info;
       };
   }

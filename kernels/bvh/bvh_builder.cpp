@@ -288,7 +288,7 @@ namespace embree
     template struct BVHNBuilderQuantized<8>;
     template struct BVHNBuilderMblur<8>;
     template struct BVHNBuilderSpatial<8>;
-    template struct BVHNBuilderFastSpatial<8,16>;
+    template struct BVHNBuilderFastSpatial<8,FAST_SPATIAL_BUILDER_NUM_SPATIAL_SPLITS>;
 #endif
   }
 }

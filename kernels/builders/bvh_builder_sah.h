@@ -510,6 +510,7 @@ namespace embree
       }
     };
 
+#define FAST_SPATIAL_BUILDER_NUM_SPATIAL_SPLITS 16
 
     /* Spatial SAH builder that operates on an double-buffered array of BuildRecords */
     struct BVHBuilderBinnedFastSpatialSAH
@@ -519,7 +520,7 @@ namespace embree
 #else
       static const size_t OBJECT_BINS = 32;
 #endif
-      static const size_t SPATIAL_BINS = 16;
+      static const size_t SPATIAL_BINS = FAST_SPATIAL_BUILDER_NUM_SPATIAL_SPLITS;
 
       typedef extended_range<size_t> Set;
       typedef BinSplit<OBJECT_BINS> Split;

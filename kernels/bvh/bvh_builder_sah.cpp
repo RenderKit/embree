@@ -32,6 +32,8 @@
 #include "../geometry/quadi_mb.h"
 #include "../geometry/object.h"
 
+#include "../common/state.h"
+
 #define PROFILE 0
 #define PROFILE_RUNS 20
 
@@ -41,7 +43,6 @@ namespace embree
   {
     static const float travCost = 1.0f;
     static const float defaultPresplitFactor = 1.2f;
-    static const float defaultSplitFactorFastSpatial = 2.0f;
 
     typedef FastAllocator::ThreadLocal2 Allocator;
 
@@ -113,7 +114,7 @@ namespace embree
 
       __forceinline CreateLeafSpatial (BVH* bvh, PrimRef* prims0) : bvh(bvh), prims0(prims0) {}
       
-	  __forceinline size_t operator() (const BVHBuilderBinnedFastSpatialSAH::BuildRecord& current, Allocator* alloc)
+      __forceinline size_t operator() (const BVHBuilderBinnedFastSpatialSAH::BuildRecord& current, Allocator* alloc)
       {
         PrimRef* const source = prims0;
 
@@ -187,20 +188,20 @@ namespace embree
         profile(2,PROFILE_RUNS,numPrimitives,[&] (ProfileTimer& timer) {
 #endif
 
-        /* create primref array */
-        const size_t numSplitPrimitives = max(numPrimitives,size_t(presplitFactor*numPrimitives));
-        prims.resize(numSplitPrimitives);
-        PrimInfo pinfo = mesh ? 
-          createPrimRefArray<Mesh>  (mesh ,prims,bvh->scene->progressInterface) : 
-          createPrimRefArray<Mesh,1>(scene,prims,bvh->scene->progressInterface);
+            /* create primref array */
+            const size_t numSplitPrimitives = max(numPrimitives,size_t(presplitFactor*numPrimitives));
+            prims.resize(numSplitPrimitives);
+            PrimInfo pinfo = mesh ? 
+              createPrimRefArray<Mesh>  (mesh ,prims,bvh->scene->progressInterface) : 
+              createPrimRefArray<Mesh,1>(scene,prims,bvh->scene->progressInterface);
         
-        /* perform pre-splitting */
-        if (presplitFactor > 1.0f) 
-          pinfo = presplit<Mesh>(scene, pinfo, prims);
+            /* perform pre-splitting */
+            if (presplitFactor > 1.0f) 
+              pinfo = presplit<Mesh>(scene, pinfo, prims);
         
-        /* call BVH builder */
-        bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
-        BVHNBuilder<N>::build(bvh,CreateLeaf<N,Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
+            /* call BVH builder */
+            bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
+            BVHNBuilder<N>::build(bvh,CreateLeaf<N,Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
 #if PROFILE
           }); 
@@ -265,20 +266,20 @@ namespace embree
 #if PROFILE
         profile(2,PROFILE_RUNS,numPrimitives,[&] (ProfileTimer& timer) {
 #endif
-        /* create primref array */
-        const size_t numSplitPrimitives = max(numPrimitives,size_t(presplitFactor*numPrimitives));
-        prims.resize(numSplitPrimitives);
-        PrimInfo pinfo = mesh ? 
-          createPrimRefArray<Mesh>  (mesh ,prims,bvh->scene->progressInterface) : 
-          createPrimRefArray<Mesh,1>(scene,prims,bvh->scene->progressInterface);
+            /* create primref array */
+            const size_t numSplitPrimitives = max(numPrimitives,size_t(presplitFactor*numPrimitives));
+            prims.resize(numSplitPrimitives);
+            PrimInfo pinfo = mesh ? 
+              createPrimRefArray<Mesh>  (mesh ,prims,bvh->scene->progressInterface) : 
+              createPrimRefArray<Mesh,1>(scene,prims,bvh->scene->progressInterface);
         
-        /* perform pre-splitting */
-        if (presplitFactor > 1.0f) 
-          pinfo = presplit<Mesh>(scene, pinfo, prims);
+            /* perform pre-splitting */
+            if (presplitFactor > 1.0f) 
+              pinfo = presplit<Mesh>(scene, pinfo, prims);
         
-        /* call BVH builder */
-        bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
-        BVHNBuilderQuantized<N>::build(bvh,CreateLeafQuantized<N,Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
+            /* call BVH builder */
+            bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
+            BVHNBuilderQuantized<N>::build(bvh,CreateLeafQuantized<N,Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
 #if PROFILE
           }); 
@@ -375,35 +376,35 @@ namespace embree
         PrimRefList::iterator iter = prims;
         const size_t threadCount = TaskScheduler::threadCount();
         const float A = (float) parallel_reduce(size_t(0),threadCount,0.0, [&] (const range<size_t>& r) -> double // FIXME: this sum is not deterministic
-        {
-          double A = 0.0f;
-          while (PrimRefList::item* block = iter.next()) {
-            for (size_t i=0; i<block->size(); i++) 
-              A += area(block->at(i).bounds());
-          }
-          return A;
-        },std::plus<double>());
+                                                {
+                                                  double A = 0.0f;
+                                                  while (PrimRefList::item* block = iter.next()) {
+                                                    for (size_t i=0; i<block->size(); i++) 
+                                                      A += area(block->at(i).bounds());
+                                                  }
+                                                  return A;
+                                                },std::plus<double>());
         
         /* calculate maximal number of spatial splits per primitive */
         float f = 10.0f;
         iter = prims;
         parallel_reduce(size_t(0),threadCount,size_t(0), [&] (const range<size_t>& r) -> size_t
-        {
-          size_t num = 0;
-          while (PrimRefList::item* block = iter.next()) {
-            for (size_t i=0; i<block->size(); i++) {
-              PrimRef& prim = block->at(i);
-              assert((prim.lower.a & 0xFF000000) == 0);
-              const float nf = ceil(f*pinfo.size()*area(prim.bounds())/A);
-              //const size_t n = 64;
-              //const size_t n = min(ssize_t(127), max(ssize_t(1), ssize_t(nf)));
-              const size_t n = 4+min(ssize_t(127-4), max(ssize_t(1), ssize_t(nf)));
-              num += n;
-              prim.lower.a |= n << 24;
-            }
-          }
-          return num;
-        },std::plus<size_t>());
+                        {
+                          size_t num = 0;
+                          while (PrimRefList::item* block = iter.next()) {
+                            for (size_t i=0; i<block->size(); i++) {
+                              PrimRef& prim = block->at(i);
+                              assert((prim.lower.a & 0xFF000000) == 0);
+                              const float nf = ceil(f*pinfo.size()*area(prim.bounds())/A);
+                              //const size_t n = 64;
+                              //const size_t n = min(ssize_t(127), max(ssize_t(1), ssize_t(nf)));
+                              const size_t n = 4+min(ssize_t(127-4), max(ssize_t(1), ssize_t(nf)));
+                              num += n;
+                              prim.lower.a |= n << 24;
+                            }
+                          }
+                          return num;
+                        },std::plus<size_t>());
         
         /* function that splits a primitive at some position and dimension */
         auto splitPrimitive = [&] (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o) {
@@ -506,7 +507,7 @@ namespace embree
         /* call BVH builder */
         bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
         BVHNBuilderMblur<N>::build(bvh,CreateLeafMB<N,Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,
-                                  sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
+                                   sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
 	/* clear temporary data for static geometry */
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
@@ -529,8 +530,6 @@ namespace embree
     /************************************************************************************/
     /************************************************************************************/
 
-#define FAST_SPATIAL_NUM_SPATIAL_SPLITS 16
-
     template<int N, typename Mesh, typename Primitive>
     struct BVHNBuilderFastSpatialSAH : public Builder
     {
@@ -547,11 +546,11 @@ namespace embree
 
       BVHNBuilderFastSpatialSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
         : bvh(bvh), scene(scene), mesh(nullptr), prims0(scene->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)),
-          splitFactor(defaultSplitFactorFastSpatial) {}
+          splitFactor(scene->device->tri_builder_replication_factor) {}
 
       BVHNBuilderFastSpatialSAH (BVH* bvh, Mesh* mesh, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
         : bvh(bvh), scene(nullptr), mesh(mesh), prims0(bvh->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)),
-          splitFactor(defaultSplitFactorFastSpatial) {}
+          splitFactor(scene->device->tri_builder_replication_factor) {}
 
       // FIXME: shrink bvh->alloc in destructor here and in other builders too
 
@@ -589,8 +588,6 @@ namespace embree
                           prim.lower.a |= n << 24;              
                         }
                       });
-
-
         
         /* function that splits a primitive at some position and dimension */
         auto splitPrimitive = [&] (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o) {
@@ -602,24 +599,24 @@ namespace embree
           splitTriangle(prim,dim,pos,v0,v1,v2,left_o,right_o);
         };
 
-        auto splitPrimitive2 = [&] (SpatialBinInfo<FAST_SPATIAL_NUM_SPATIAL_SPLITS,PrimRef> &binner, const PrimRef* const source, const size_t begin, const size_t end, 
-                                    const SpatialBinMapping<FAST_SPATIAL_NUM_SPATIAL_SPLITS> &mapping) {
+        auto splitPrimitive2 = [&] (SpatialBinInfo<FAST_SPATIAL_BUILDER_NUM_SPATIAL_SPLITS,PrimRef> &binner, const PrimRef* const source, const size_t begin, const size_t end, 
+                                    const SpatialBinMapping<FAST_SPATIAL_BUILDER_NUM_SPATIAL_SPLITS> &mapping) {
           binner.bin(splitPrimitive,source,begin,end,mapping);
         };
 
 
         /* call BVH builder */
         bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
-        BVHNBuilderFastSpatial<N,FAST_SPATIAL_NUM_SPATIAL_SPLITS>::build(bvh,
-                                                                         splitPrimitive,
-                                                                         splitPrimitive2,
-                                                                         CreateLeafSpatial<N,Primitive>(bvh,prims0.data()),
-                                                                         bvh->scene->progressInterface,
-                                                                         prims0.data(),
-                                                                         numSplitPrimitives,
-                                                                         pinfo,
-                                                                         sahBlockSize,minLeafSize,maxLeafSize,
-                                                                         travCost,intCost);
+        BVHNBuilderFastSpatial<N,FAST_SPATIAL_BUILDER_NUM_SPATIAL_SPLITS>::build(bvh,
+                                                                                 splitPrimitive,
+                                                                                 splitPrimitive2,
+                                                                                 CreateLeafSpatial<N,Primitive>(bvh,prims0.data()),
+                                                                                 bvh->scene->progressInterface,
+                                                                                 prims0.data(),
+                                                                                 numSplitPrimitives,
+                                                                                 pinfo,
+                                                                                 sahBlockSize,minLeafSize,maxLeafSize,
+                                                                                 travCost,intCost);
         
 	/* clear temporary data for static geometry */
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
@@ -633,7 +630,7 @@ namespace embree
 
       void clear() {
         prims0.clear();
-       }
+      }
     };
 
 
@@ -681,7 +678,7 @@ namespace embree
 
     Builder* BVH8Triangle4SceneBuilderFastSpatialSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderFastSpatialSAH<8,TriangleMesh,Triangle4>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
 
- #endif
+#endif
 #endif
 
 #if defined(EMBREE_GEOMETRY_QUADS)
