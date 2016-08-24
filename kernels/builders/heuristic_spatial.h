@@ -76,15 +76,15 @@ namespace embree
       {
         /*! construct an invalid split by default */
         __forceinline SpatialBinSplit() 
-          : sah(inf), dim(-1), pos(0), left(-1), right(-1) {}
+          : sah(inf), dim(-1), pos(0), left(-1), right(-1), factor(1.0f) {}
         
         /*! constructs specified split */
         __forceinline SpatialBinSplit(float sah, int dim, int pos, const SpatialBinMapping<BINS>& mapping)
-          : sah(sah), dim(dim), pos(pos), left(-1), right(-1), mapping(mapping) {}
+          : sah(sah), dim(dim), pos(pos), left(-1), right(-1), factor(1.0f), mapping(mapping) {}
 
         /*! constructs specified split */
-        __forceinline SpatialBinSplit(float sah, int dim, int pos, int left, int right, const SpatialBinMapping<BINS>& mapping)
-          : sah(sah), dim(dim), pos(pos), left(left), right(right), mapping(mapping) {}
+        __forceinline SpatialBinSplit(float sah, int dim, int pos, int left, int right, float factor, const SpatialBinMapping<BINS>& mapping)
+          : sah(sah), dim(dim), pos(pos), left(left), right(right), factor(factor), mapping(mapping) {}
         
         /*! tests if this split is valid */
         __forceinline bool valid() const { return dim != -1; }
@@ -94,7 +94,7 @@ namespace embree
         
         /*! stream output */
         friend std::ostream& operator<<(std::ostream& cout, const SpatialBinSplit& split) {
-          return cout << "SpatialBinSplit { sah = " << split.sah << ", dim = " << split.dim << ", pos = " << split.pos << ", left = " << split.left << ", right = " << split.right << "}";
+          return cout << "SpatialBinSplit { sah = " << split.sah << ", dim = " << split.dim << ", pos = " << split.pos << ", left = " << split.left << ", right = " << split.right << ", factor = " << split.factor << "}";
         }
         
       public:
@@ -102,7 +102,8 @@ namespace embree
         int   dim;                 //!< split dimension
         int   pos;                 //!< split position
         int   left;                //!< number of elements on the left side
-        int   right;               //!< number of elements on the rightside
+        int   right;               //!< number of elements on the right side
+        float factor;              //!< factor splitting the extended range
         SpatialBinMapping<BINS> mapping; //!< mapping into bins
       };    
     
@@ -286,7 +287,7 @@ namespace embree
           return SpatialBinSplit<BINS>(inf,-1,0,mapping);
         
         /* return best found split */
-        return SpatialBinSplit<BINS>(bestSAH,bestDim,bestPos,bestlCount,bestrCount,mapping);
+        return SpatialBinSplit<BINS>(bestSAH,bestDim,bestPos,bestlCount,bestrCount,1.0f,mapping);
       }
       
     private:
