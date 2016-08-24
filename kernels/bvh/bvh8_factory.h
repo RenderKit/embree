@@ -40,7 +40,7 @@ namespace embree
     Accel* BVH8Triangle4(Scene* scene);
     Accel* BVH8Triangle4ObjectSplit(Scene* scene);
     Accel* BVH8Triangle4SpatialSplit(Scene* scene);
-
+    Accel* BVH8Triangle4FastSpatialSplit(Scene* scene);
 
     Accel* BVH8Triangle4vMB(Scene* scene);
     Accel* BVH8SubdivGridEager(Scene* scene);

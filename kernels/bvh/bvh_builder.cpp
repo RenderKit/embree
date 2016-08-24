@@ -282,6 +282,7 @@ namespace embree
     template struct BVHNBuilderQuantized<4>;
     template struct BVHNBuilderMblur<4>;    
     template struct BVHNBuilderSpatial<4>;
+    template struct BVHNBuilderFastSpatial<4,FAST_SPATIAL_BUILDER_NUM_SPATIAL_SPLITS>;
 
 #if defined(__AVX__)
     template struct BVHNBuilder<8>;

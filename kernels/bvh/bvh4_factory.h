@@ -60,6 +60,7 @@ namespace embree
     Accel* BVH4Triangle4iTwolevel(Scene* scene);
 
     Accel* BVH4Triangle4SpatialSplit(Scene* scene);
+    Accel* BVH4Triangle4FastSpatialSplit(Scene* scene);
     Accel* BVH4Triangle4ObjectSplit(Scene* scene);
     Accel* BVH4Triangle4vObjectSplit(Scene* scene);
     Accel* BVH4Triangle4iObjectSplit(Scene* scene);
@@ -236,6 +237,10 @@ namespace embree
     DEFINE_BUILDER2(void,Scene,size_t,BVH4Triangle4SceneBuilderSpatialSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH4Triangle4vSceneBuilderSpatialSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH4Triangle4iSceneBuilderSpatialSAH);
+
+    DEFINE_BUILDER2(void,Scene,size_t,BVH4Triangle4SceneBuilderFastSpatialSAH);
+    DEFINE_BUILDER2(void,Scene,size_t,BVH4Triangle4vSceneBuilderFastSpatialSAH);
+    DEFINE_BUILDER2(void,Scene,size_t,BVH4Triangle4iSceneBuilderFastSpatialSAH);
     
     DEFINE_BUILDER2(void,LineSegments,size_t,BVH4Line4iMeshBuilderSAH);
     //DEFINE_BUILDER2(void,LineSegments,size_t,BVH4Line4iMBMeshBuilderSAH);
