@@ -68,9 +68,10 @@ namespace embree
 
 
         /*! compute extended ranges */
-        __forceinline void setExtentedRanges(const Set& set, Set& lset, Set& rset)
+        __forceinline void setExtentedRanges(const Set& set, Set& lset, Set& rset, const size_t lweight, const size_t rweight)
         {
           assert(set.ext_range_size() > 0);
+#if ENABLE_ARRAY_CHECKS == 1
           size_t weight_left  = 0;
           size_t weight_right = 0;
           for (size_t i = lset.begin(); i < lset.end(); i++)
@@ -78,11 +79,19 @@ namespace embree
           for (size_t i = rset.begin(); i < rset.end(); i++)
             weight_right += prims0[i].lower.a >> 24;
 
-          const float new_left_factor = (float)weight_left / (weight_left + weight_right);
-          const size_t parent_size          = set.size();
+          assert(lweight == weight_left);
+          assert(rweight == weight_right);
+#endif
+
+
+
+          //const float new_left_factor = (float)weight_left / (weight_left + weight_right);
+          const float left_factor = (float)lweight / (lweight + rweight);
+
+          //const size_t parent_size          = set.size();
           const size_t ext_range_size       = set.ext_range_size();
-          const size_t left_size            = lset.size();
-          const float left_factor           = new_left_factor;
+          //const size_t left_size            = lset.size();
+          //const float left_factor           = new_left_factor;
 
           //const float left_factor = (float)left_size / parent_size;
           const size_t left_ext_range_size  = min((size_t)(floorf(left_factor * ext_range_size)),ext_range_size);
@@ -313,27 +322,29 @@ namespace embree
             return splitFallback(set,left,lset,right,rset);
           }
 
+          std::pair<size_t,size_t> ext_weights(0,0);
+
           if (unlikely(split.lcount == (unsigned int)-1))
           {
             /* spatial split */
             if (likely(pinfo.size() < PARALLEL_THRESHOLD)) 
-              sequential_spatial_split(split,set,left,lset,right,rset);
+              ext_weights = sequential_spatial_split(split,set,left,lset,right,rset);
             else
-              parallel_spatial_split(split,set,left,lset,right,rset);
+              ext_weights = parallel_spatial_split(split,set,left,lset,right,rset);
           }
           else
           {
             /* object split */
             if (likely(pinfo.size() < PARALLEL_THRESHOLD)) 
-              sequential_object_split(split,set,left,lset,right,rset);
+              ext_weights = sequential_object_split(split,set,left,lset,right,rset);
             else
-              parallel_object_split(split,set,left,lset,right,rset);
+              ext_weights = parallel_object_split(split,set,left,lset,right,rset);
           }
 
           /* if we have an extended range, set extended child ranges and move right split range */
           if (unlikely(set.has_ext_range())) 
           {
-            setExtentedRanges(set,lset,rset);
+            setExtentedRanges(set,lset,rset,ext_weights.first,ext_weights.second);
             moveExtentedRange(set,lset,left,rset,right);
           }
 
@@ -346,12 +357,12 @@ namespace embree
         }
 
         /*! array partitioning */
-        void sequential_object_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
+        std::pair<size_t,size_t> sequential_object_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
         {
           const size_t begin = set.begin();
           const size_t end   = set.end();
-          CentGeomBBox3fa local_left(empty);
-          CentGeomBBox3fa local_right(empty);
+          PrimInfo local_left(empty);
+          PrimInfo local_right(empty);
           const unsigned int splitPos = split.pos;
           const unsigned int splitDim = split.dim;
           const unsigned int splitDimMask = (unsigned int)1 << splitDim; 
@@ -373,8 +384,11 @@ namespace embree
                                                 return any(((vint4)split.mapping.bin_unsafe(center2(ref.bounds())) < vSplitPos) & vSplitMask); 
 #endif
                                               },
-                                              [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend(ref.bounds()); });          
+                                              [] (PrimInfo& pinfo,const PrimRef& ref) { pinfo.add(ref.bounds(),ref.lower.a >> 24); });          
           
+          const size_t left_weight  = local_left.end;
+          const size_t right_weight = local_right.end;
+
           //assert(center == begin + split.lcount);
           new (&left ) PrimInfo(begin,center,local_left.geomBounds,local_left.centBounds);
           new (&right) PrimInfo(center,end,local_right.geomBounds,local_right.centBounds);
@@ -391,17 +405,18 @@ namespace embree
           for (size_t i=rset.begin();i<rset.end();i++)
             assert(subset(prims0[i].bounds(),local_right.geomBounds));
 #endif
+          return std::pair<size_t,size_t>(left_weight,right_weight);
         }
 
 
         /*! array partitioning */
-        __noinline void sequential_spatial_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
+        __noinline std::pair<size_t,size_t> sequential_spatial_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
         {
           assert(split.lcount == (unsigned int)-1);
           const size_t begin = set.begin();
           const size_t end   = set.end();
-          CentGeomBBox3fa local_left(empty);
-          CentGeomBBox3fa local_right(empty);
+          PrimInfo local_left(empty);
+          PrimInfo local_right(empty);
           const unsigned int splitPos = split.pos;
           const unsigned int splitDim = split.dim;
           const unsigned int splitDimMask = (unsigned int)1 << splitDim; 
@@ -417,7 +432,10 @@ namespace embree
                                                 const Vec3fa c = ref.bounds().center();
                                                 return any(((vint4)mapping.bin(c) < vSplitPos) & vSplitMask); 
                                               },
-                                              [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend(ref.bounds()); });          
+                                              [] (PrimInfo& pinfo,const PrimRef& ref) { pinfo.add(ref.bounds(),ref.lower.a >> 24); });          
+
+          const size_t left_weight  = local_left.end;
+          const size_t right_weight = local_right.end;
           
           //assert(center == begin + split.lcount);
           new (&left ) PrimInfo(begin,center,local_left.geomBounds,local_left.centBounds);
@@ -434,12 +452,13 @@ namespace embree
           for (size_t i=rset.begin();i<rset.end();i++)
             assert(subset(prims0[i].bounds(),local_right.geomBounds));
 #endif
+          return std::pair<size_t,size_t>(left_weight,right_weight);
         }
 
 
         
         /*! array partitioning */
-        __noinline void parallel_object_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset)
+        __noinline std::pair<size_t,size_t> parallel_object_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset)
         {
           const size_t begin = set.begin();
           const size_t end   = set.end();
@@ -462,8 +481,11 @@ namespace embree
 #endif
           const size_t mid = parallel_in_place_partitioning_static<PARALLEL_PARITION_BLOCK_SIZE,PrimRef,PrimInfo>(
             &prims0[begin],end-begin,init,left,right,isLeft,
-            [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.add(ref.bounds()); },
+            [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.add(ref.bounds(),ref.lower.a >> 24); },
             [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); });
+
+          const size_t left_weight  = left.end;
+          const size_t right_weight = right.end;
           
           const size_t center = begin+mid;
           left.begin  = begin;  left.end  = center; 
@@ -482,10 +504,11 @@ namespace embree
           for (size_t i=rset.begin();i<rset.end();i++)
             assert(subset(prims0[i].bounds(),right.geomBounds));
 #endif
+          return std::pair<size_t,size_t>(left_weight,right_weight);
         }
 
         /*! array partitioning */
-        __noinline void parallel_spatial_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset)
+        __noinline std::pair<size_t,size_t> parallel_spatial_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset)
         {
           assert(split.lcount == (unsigned int)-1);
           const size_t begin = set.begin();
@@ -508,8 +531,11 @@ namespace embree
 
           const size_t mid = parallel_in_place_partitioning_static<PARALLEL_PARITION_BLOCK_SIZE,PrimRef,PrimInfo>(
             &prims0[begin],end-begin,init,left,right,isLeft,
-            [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.add(ref.bounds()); },
+            [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.add(ref.bounds(),ref.lower.a >> 24); },
             [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); });
+
+          const size_t left_weight  = left.end;
+          const size_t right_weight = right.end;
           
           const size_t center = begin+mid;
           left.begin  = begin;  left.end  = center; 
@@ -528,7 +554,7 @@ namespace embree
           for (size_t i=rset.begin();i<rset.end();i++)
             assert(subset(prims0[i].bounds(),right.geomBounds));
 #endif
-
+          return std::pair<size_t,size_t>(left_weight,right_weight);
         }
 
 
@@ -547,26 +573,29 @@ namespace embree
           const size_t end   = set.end();
           const size_t center = (begin + end)/2;
 
-          CentGeomBBox3fa left; left.reset();
+          PrimInfo left(empty);
           for (size_t i=begin; i<center; i++)
           {
-            left.extend(prims0[i].bounds());
+            left.add(prims0[i].bounds(),prims0[i].lower.a >> 24);
           }
+          const size_t lweight = left.end;
           new (&linfo) PrimInfo(begin,center,left.geomBounds,left.centBounds);
           
-          CentGeomBBox3fa right; right.reset();
+          PrimInfo right(empty);
           for (size_t i=center; i<end; i++)
           {
-            right.extend(prims0[i].bounds());	
+            right.add(prims0[i].bounds(),prims0[i].lower.a >> 24);	
           }
+          const size_t rweight = right.end;
           new (&rinfo) PrimInfo(center,end,right.geomBounds,right.centBounds);         
+
           new (&lset) extended_range<size_t>(begin,center,center);
           new (&rset) extended_range<size_t>(center,end,end);
 
           // if we have an extended range
           if (set.has_ext_range()) 
           {
-            setExtentedRanges(set,lset,rset);
+            setExtentedRanges(set,lset,rset,lweight,rweight);
             moveExtentedRange(set,lset,linfo,rset,rinfo);              
           }
         }
