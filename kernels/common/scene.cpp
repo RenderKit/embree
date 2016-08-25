@@ -101,17 +101,23 @@ namespace embree
 #if defined (__TARGET_AVX__)
           if (device->hasISA(AVX))
 	  {
-            if (isHighQuality()) accels.add(device->bvh8_factory->BVH8Triangle4SpatialSplit(this));
-            //if (isHighQuality()) accels.add(device->bvh8_factory->BVH8Triangle4FastSpatialSplit(this));
-
-            else                 accels.add(device->bvh8_factory->BVH8Triangle4ObjectSplit(this));
+            if (isHighQuality()) 
+            {
+              /* new spatial split builder is now active per default */
+              accels.add(device->bvh8_factory->BVH8Triangle4SpatialSplit(this)); 
+            }
+            else
+              accels.add(device->bvh8_factory->BVH8Triangle4ObjectSplit(this));
           }
           else 
 #endif
           {
-            if (isHighQuality()) accels.add(device->bvh4_factory->BVH4Triangle4SpatialSplit(this));
-            //if (isHighQuality()) accels.add(device->bvh4_factory->BVH4Triangle4FastSpatialSplit(this));
-
+            
+            if (isHighQuality()) 
+            {
+              /* new spatial split builder is now active per default */
+              accels.add(device->bvh4_factory->BVH4Triangle4SpatialSplit(this));
+            }
             else accels.add(device->bvh4_factory->BVH4Triangle4ObjectSplit(this));            
           }
           break;

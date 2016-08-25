@@ -486,19 +486,10 @@ namespace embree
     BVH8* accel = new BVH8(Triangle4::type,scene);
     Accel::Intersectors intersectors= BVH8Triangle4Intersectors(accel);
     Builder *builder = NULL;
-    if (scene->device->tri_builder == "sah_fast_spatial" ) 
-      builder = BVH8Triangle4SceneBuilderFastSpatialSAH(accel,scene,0);
-    else
+    if (scene->device->tri_builder == "sah_spatial" ) 
       builder = BVH8Triangle4SceneBuilderSpatialSAH(accel,scene,0);
-    return new AccelInstance(accel,builder,intersectors);
-  }
-
-  Accel* BVH8Factory::BVH8Triangle4FastSpatialSplit(Scene* scene)
-  {
-    BVH8* accel = new BVH8(Triangle4::type,scene);
-    Accel::Intersectors intersectors= BVH8Triangle4Intersectors(accel);
-    Builder *builder = NULL;
-    builder = BVH8Triangle4SceneBuilderFastSpatialSAH(accel,scene,0);
+    else
+      builder = BVH8Triangle4SceneBuilderFastSpatialSAH(accel,scene,0);
     return new AccelInstance(accel,builder,intersectors);
   }
 
