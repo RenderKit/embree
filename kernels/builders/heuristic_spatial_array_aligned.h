@@ -27,17 +27,16 @@ namespace embree
 #define ENABLE_ARRAY_CHECKS 0
 #define OVERLAP_THRESHOLD 0.1f
 #define USE_SPATIAL_SPLIT_SAH_THRESHOLD 0.99f
-
-// todo: PRIMITIVES_PER_LEAF
+#define SPATIAL_SPLIT_AREA_THRESHOLD 0.000005f
 
 #define DBG_PRINT(x) 
 //PRINT(x)
 
     /*! Performs standard object binning */
 #if defined(__AVX512F__)
-    template<typename SplitPrimitive, typename SplitPrimitiveBinner, typename PrimRef, size_t OBJECT_BINS = 16, size_t SPATIAL_BINS = 16, size_t PRIMITIVES_PER_LEAF = 4>
+    template<typename SplitPrimitive, typename SplitPrimitiveBinner, typename PrimRef, size_t OBJECT_BINS = 16, size_t SPATIAL_BINS = 16>
 #else
-      template<typename SplitPrimitive, typename SplitPrimitiveBinner, typename PrimRef, size_t OBJECT_BINS = 32, size_t SPATIAL_BINS = 16, size_t PRIMITIVES_PER_LEAF = 4>
+      template<typename SplitPrimitive, typename SplitPrimitiveBinner, typename PrimRef, size_t OBJECT_BINS = 32, size_t SPATIAL_BINS = 16>
 #endif
       struct HeuristicArraySpatialSAH
       {
@@ -72,28 +71,20 @@ namespace embree
         __forceinline void setExtentedRanges(const Set& set, Set& lset, Set& rset)
         {
           assert(set.ext_range_size() > 0);
-		  size_t weight_left  = 0;
-		  size_t weight_right = 0;
-		  for (size_t i = lset.begin(); i < lset.end(); i++)
-			  weight_left += prims0[i].lower.a >> 24;
-		  for (size_t i = rset.begin(); i < rset.end(); i++)
-			  weight_right += prims0[i].lower.a >> 24;
+          size_t weight_left  = 0;
+          size_t weight_right = 0;
+          for (size_t i = lset.begin(); i < lset.end(); i++)
+            weight_left += prims0[i].lower.a >> 24;
+          for (size_t i = rset.begin(); i < rset.end(); i++)
+            weight_right += prims0[i].lower.a >> 24;
 
-		  const float new_left_factor = (float)weight_left / (weight_left + weight_right);
+          const float new_left_factor = (float)weight_left / (weight_left + weight_right);
           const size_t parent_size          = set.size();
           const size_t ext_range_size       = set.ext_range_size();
           const size_t left_size            = lset.size();
           const float left_factor           = new_left_factor;
 
-		  //const float left_factor = (float)left_size / parent_size;
-#if 0
-		  PRINT(lset);
-		  PRINT(rset);
-		  PRINT(weight_left);
-		  PRINT(weight_right);
-		  PRINT(new_left_factor);
-		  PRINT((float)left_size / parent_size);
-#endif
+          //const float left_factor = (float)left_size / parent_size;
           const size_t left_ext_range_size  = min((size_t)(floorf(left_factor * ext_range_size)),ext_range_size);
           const size_t right_ext_range_size = ext_range_size - left_ext_range_size;
           lset.set_ext_range(lset.end() + left_ext_range_size);
@@ -148,7 +139,8 @@ namespace embree
           
           /* sequential or parallel */ 
           Split object_split = pinfo.size() < PARALLEL_THRESHOLD ? sequential_object_find(set,pinfo,logBlockSize,info) : parallel_object_find(set,pinfo,logBlockSize,info);
-          
+          object_split.lcount = 0;
+
 #if ENABLE_SPATIAL_SPLITS == 1
           if (unlikely(set.has_ext_range()))
           {
@@ -156,7 +148,7 @@ namespace embree
             
             //if (safeArea(overlap) >= OVERLAP_THRESHOLD*safeArea(pinfo.geomBounds))
             //PRINT(safeArea(overlap) / safeArea(root_info.geomBounds));
-            if (safeArea(overlap) / safeArea(root_info.geomBounds) >= 1E-5f &&
+            if (safeArea(overlap) / safeArea(root_info.geomBounds) >= SPATIAL_SPLIT_AREA_THRESHOLD &&
                 safeArea(overlap) >= OVERLAP_THRESHOLD*safeArea(pinfo.geomBounds))
             {
               
@@ -193,7 +185,7 @@ namespace embree
           const BinMapping<OBJECT_BINS> mapping(pinfo);
           binner.bin(prims0,set.begin(),set.end(),mapping);
           Split s = binner.best(mapping,logBlockSize);
-          s.lcount = (unsigned int)binner.getLeftCount(mapping,s);
+          //s.lcount = (unsigned int)binner.getLeftCount(mapping,s);
           binner.getSplitInfo(mapping, s, info);
           return s;
         }
@@ -511,8 +503,8 @@ namespace embree
           const vbool4 vSplitMask( (int)splitDimMask );
 
           auto isLeft = [&] (const PrimRef &ref) { 
-          const Vec3fa c = ref.bounds().center();
-          return any(((vint4)mapping.bin(c) < vSplitPos) & vSplitMask); };
+            const Vec3fa c = ref.bounds().center();
+            return any(((vint4)mapping.bin(c) < vSplitPos) & vSplitMask); };
 
           const size_t mid = parallel_in_place_partitioning_static<PARALLEL_PARITION_BLOCK_SIZE,PrimRef,PrimInfo>(
             &prims0[begin],end-begin,init,left,right,isLeft,
