@@ -577,7 +577,7 @@ namespace embree
         const size_t numPrimitives = pinfo.size();
 
         const float A = area(pinfo.geomBounds);
-        const float f = 10.0f;
+		const float f = 10.0f;
 
         /* calculate maximal number of spatial splits per primitive */
         parallel_for( size_t(0), numPrimitives, [&](const range<size_t>& r)
@@ -587,7 +587,8 @@ namespace embree
                           PrimRef& prim = prims0[i];
                           assert((prim.lower.a & 0xFF000000) == 0);
                           const float nf = ceilf(f*pinfo.size()*area(prim.bounds())/A);
-                          const size_t n = 4+min(ssize_t(127-4), max(ssize_t(1), ssize_t(nf)));
+                          size_t n = 4+min(ssize_t(127-4), max(ssize_t(1), ssize_t(nf)));
+						  //if (area(prim.bounds()) / A < 1E-5f) n = 2;
                           prim.lower.a |= n << 24;              
                         }
                       });

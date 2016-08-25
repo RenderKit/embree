@@ -26,7 +26,7 @@ namespace embree
 #define ENABLE_SPATIAL_SPLITS 1
 #define ENABLE_ARRAY_CHECKS 0
 #define OVERLAP_THRESHOLD 0.1f
-#define USE_SPATIAL_SPLIT_SAH_THRESHOLD 0.95f
+#define USE_SPATIAL_SPLIT_SAH_THRESHOLD 0.99f
 
 // todo: PRIMITIVES_PER_LEAF
 
@@ -72,10 +72,28 @@ namespace embree
         __forceinline void setExtentedRanges(const Set& set, Set& lset, Set& rset)
         {
           assert(set.ext_range_size() > 0);
+		  size_t weight_left  = 0;
+		  size_t weight_right = 0;
+		  for (size_t i = lset.begin(); i < lset.end(); i++)
+			  weight_left += prims0[i].lower.a >> 24;
+		  for (size_t i = rset.begin(); i < rset.end(); i++)
+			  weight_right += prims0[i].lower.a >> 24;
+
+		  const float new_left_factor = (float)weight_left / (weight_left + weight_right);
           const size_t parent_size          = set.size();
           const size_t ext_range_size       = set.ext_range_size();
           const size_t left_size            = lset.size();
-          const float left_factor           = (float)left_size / parent_size;
+          const float left_factor           = new_left_factor;
+
+		  //const float left_factor = (float)left_size / parent_size;
+#if 0
+		  PRINT(lset);
+		  PRINT(rset);
+		  PRINT(weight_left);
+		  PRINT(weight_right);
+		  PRINT(new_left_factor);
+		  PRINT((float)left_size / parent_size);
+#endif
           const size_t left_ext_range_size  = min((size_t)(floorf(left_factor * ext_range_size)),ext_range_size);
           const size_t right_ext_range_size = ext_range_size - left_ext_range_size;
           lset.set_ext_range(lset.end() + left_ext_range_size);
@@ -240,7 +258,7 @@ namespace embree
           ext_elements.store(0);
           
           const float fpos = split.mapping.pos(split.pos,split.dim);
-          
+        
           parallel_for( set.begin(), set.end(), CREATE_SPLITS_STEP_SIZE, [&](const range<size_t>& r) {
               for (size_t i=r.begin();i<r.end();i++)
               {
