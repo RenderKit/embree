@@ -577,7 +577,7 @@ namespace embree
         const size_t numPrimitives = pinfo.size();
 
         const float A = area(pinfo.geomBounds);
-		const float f = 10.0f;
+        const float f = 10.0f;
 
         /* calculate maximal number of spatial splits per primitive */
         parallel_for( size_t(0), numPrimitives, [&](const range<size_t>& r)
@@ -587,8 +587,8 @@ namespace embree
                           PrimRef& prim = prims0[i];
                           assert((prim.lower.a & 0xFF000000) == 0);
                           const float nf = ceilf(f*pinfo.size()*area(prim.bounds())/A);
+                          // FIXME: is there a better general heuristic ?
                           size_t n = 4+min(ssize_t(127-4), max(ssize_t(1), ssize_t(nf)));
-						  //if (area(prim.bounds()) / A < 1E-5f) n = 2;
                           prim.lower.a |= n << 24;              
                         }
                       });
@@ -600,7 +600,16 @@ namespace embree
           const Vec3fa &v0 = mesh->vertex(tri.v[0]);
           const Vec3fa &v1 = mesh->vertex(tri.v[1]);
           const Vec3fa &v2 = mesh->vertex(tri.v[2]);
+
           splitTriangle(prim,dim,pos,v0,v1,v2,left_o,right_o);
+#if 0
+          PrimRef lo,ro;
+          splitTriangle2(prim,dim,pos,v0,v1,v2,lo,ro);
+          //PRINT(lo);
+          //PRINT(ro);
+          //assert(left_o.bounds() == lo.bounds());
+          //assert(right_o.bounds() == ro.bounds());
+#endif
         };
 
         auto splitPrimitive2 = [&] (SpatialBinInfo<FAST_SPATIAL_BUILDER_NUM_SPATIAL_SPLITS,PrimRef> &binner, const PrimRef* const source, const size_t begin, const size_t end, 

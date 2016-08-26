@@ -27,7 +27,7 @@ namespace embree {
 //#define RAYN_FLAGS RTC_INTERSECT_INCOHERENT
 
 #define SHADING 1
-#define HIGH_QUALITY 0
+#define HIGH_QUALITY 1
 #define LOOP 0
 
 extern "C" ISPCScene* g_ispc_scene;

@@ -25,12 +25,10 @@ namespace embree
   { 
 #define ENABLE_SPATIAL_SPLITS 1
 #define ENABLE_ARRAY_CHECKS 0
+
 #define OVERLAP_THRESHOLD 0.1f
 #define USE_SPATIAL_SPLIT_SAH_THRESHOLD 0.99f
 #define SPATIAL_SPLIT_AREA_THRESHOLD 0.000005f
-
-#define DBG_PRINT(x) 
-//PRINT(x)
 
     /*! Performs standard object binning */
 #if defined(__AVX512F__)
@@ -82,18 +80,14 @@ namespace embree
           assert(lweight == weight_left);
           assert(rweight == weight_right);
 #endif
-
-
-
           //const float new_left_factor = (float)weight_left / (weight_left + weight_right);
-          const float left_factor = (float)lweight / (lweight + rweight);
+          //const size_t parent_size    = set.size();
+          //const size_t left_size      = lset.size();
+          //const float left_factor     = new_left_factor;
+          //const float left_factor     = (float)left_size / parent_size;
 
-          //const size_t parent_size          = set.size();
+          const float left_factor           = (float)lweight / (lweight + rweight);
           const size_t ext_range_size       = set.ext_range_size();
-          //const size_t left_size            = lset.size();
-          //const float left_factor           = new_left_factor;
-
-          //const float left_factor = (float)left_size / parent_size;
           const size_t left_ext_range_size  = min((size_t)(floorf(left_factor * ext_range_size)),ext_range_size);
           const size_t right_ext_range_size = ext_range_size - left_ext_range_size;
           lset.set_ext_range(lset.end() + left_ext_range_size);
@@ -107,14 +101,13 @@ namespace embree
           const size_t left_ext_range_size = lset.ext_range_size();
           const size_t right_size = rset.size();
 
-          // has the left child an extended range ?
+          /* has the left child an extended range? */
           if (left_ext_range_size > 0)
           {
-            // left extended range smaller than right range ?
+            /* left extended range smaller than right range ? */
             if (left_ext_range_size < right_size)
             {
               /* only move a small part of the beginning of the right range to the end */
-              /* for (size_t i=rset.begin();i<rset.begin()+left_ext_range_size;i++) */
               parallel_for( rset.begin(), rset.begin()+left_ext_range_size, MOVE_STEP_SIZE, [&](const range<size_t>& r) {
                   for (size_t i=r.begin(); i<r.end(); i++)
                     prims0[i+right_size] = prims0[i];
@@ -123,13 +116,12 @@ namespace embree
             else
             {
               /* no overlap, move entire right range to new location, can be made fully parallel */
-              /* for (size_t i=rset.begin();i<rset.end();i++) */
               parallel_for( rset.begin(), rset.end(), MOVE_STEP_SIZE,  [&](const range<size_t>& r) {
                   for (size_t i=r.begin(); i<r.end(); i++)
                     prims0[i+left_ext_range_size] = prims0[i];
                 });
             }
-            // update right range
+            /* update right range */
             assert(rset.ext_end() + left_ext_range_size == set.ext_end());
             rset.move_right(left_ext_range_size);
             right.begin = rset.begin();
@@ -155,12 +147,10 @@ namespace embree
           {
             const BBox3fa overlap = intersect(info.leftBounds, info.rightBounds);
             
-            //if (safeArea(overlap) >= OVERLAP_THRESHOLD*safeArea(pinfo.geomBounds))
-            //PRINT(safeArea(overlap) / safeArea(root_info.geomBounds));
+            /* do only spatial splits if the child bounds overlap */
             if (safeArea(overlap) / safeArea(root_info.geomBounds) >= SPATIAL_SPLIT_AREA_THRESHOLD &&
                 safeArea(overlap) >= OVERLAP_THRESHOLD*safeArea(pinfo.geomBounds))
-            {
-              
+            {              
               /* sequential or parallel */ 
               SpatialSplit spatial_split = pinfo.size() < PARALLEL_THRESHOLD ? sequential_spatial_find(set, pinfo, logBlockSize) : parallel_spatial_find(set, pinfo, logBlockSize);
 
@@ -169,10 +159,10 @@ namespace embree
                   spatial_split.left + spatial_split.right - set.size() <= set.ext_range_size())
               {          
                 set = create_spatial_splits(set, spatial_split, spatial_split.mapping);
-                // set new range in priminfo
+                /* set new range in priminfo */
                 pinfo.begin = set.begin();
                 pinfo.end   = set.end();
-                // mark that we have a spatial split 
+                /* mark that we have a spatial split during partitioning */
                 object_split.data = (unsigned int)-1;
                 object_split.sah = spatial_split.sah;
                 object_split.dim = spatial_split.dim;
@@ -190,11 +180,10 @@ namespace embree
         /*! finds the best object split */
         __noinline const Split sequential_object_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize, SplitInfo &info)
         {
-          ObjectBinner binner(empty); // FIXME: this clear can be optimized away
+          ObjectBinner binner(empty); 
           const BinMapping<OBJECT_BINS> mapping(pinfo);
           binner.bin(prims0,set.begin(),set.end(),mapping);
           Split s = binner.best(mapping,logBlockSize);
-          //s.data = (unsigned int)binner.getLeftCount(mapping,s);
           binner.getSplitInfo(mapping, s, info);
           return s;
         }
@@ -224,7 +213,7 @@ namespace embree
 #else
           binner.bin(splitPrimitive,prims0,set.begin(),set.end(),mapping);
 #endif
-          // todo: find best spatial split not exeeding the extended range
+          /* todo: find best spatial split not exeeding the extended range */
           return binner.best(pinfo,mapping,logBlockSize);
         }
 
@@ -265,43 +254,40 @@ namespace embree
               {
                 const unsigned int splits = prims0[i].geomID() >> 24;
 
-                if (likely(splits <= 1)) continue; //todo: does this ever happen ?
+                if (likely(splits <= 1)) continue; /* todo: does this ever happen ? */
 
-                int bin0 = split.mapping.bin(prims0[i].lower)[split.dim];
-                int bin1 = split.mapping.bin(prims0[i].upper)[split.dim];
-                if (unlikely(bin0 < split.pos && bin1 >= split.pos))
+                //int bin0 = split.mapping.bin(prims0[i].lower)[split.dim];
+                //int bin1 = split.mapping.bin(prims0[i].upper)[split.dim];
+                //if (unlikely(bin0 < split.pos && bin1 >= split.pos))
+                if (prims0[i].lower[split.dim] < fpos && prims0[i].upper[split.dim] > fpos)
                 {
+                  assert(splits > 1);
 
-                  //if (prims0[i].lower[split.dim] < fpos &&  prims0[i].upper[split.dim] > fpos)
-                  {
-                    assert(splits > 1);
-
-                    PrimRef left,right;
-                    splitPrimitive(prims0[i],split.dim,fpos,left,right);
+                  PrimRef left,right;
+                  splitPrimitive(prims0[i],split.dim,fpos,left,right);
                 
-                    // no empty splits
-                    if (unlikely(left.bounds().empty() || right.bounds().empty())) continue;
+                  // no empty splits
+                  if (unlikely(left.bounds().empty() || right.bounds().empty())) continue;
                 
 #if ENABLE_ARRAY_CHECKS == 1
-                    assert(left.lower.x <= left.upper.x);
-                    assert(left.lower.y <= left.upper.y);
-                    assert(left.lower.z <= left.upper.z);
+                  assert(left.lower.x <= left.upper.x);
+                  assert(left.lower.y <= left.upper.y);
+                  assert(left.lower.z <= left.upper.z);
                 
-                    assert(right.lower.x <= right.upper.x);
-                    assert(right.lower.y <= right.upper.y);
-                    assert(right.lower.z <= right.upper.z);
+                  assert(right.lower.x <= right.upper.x);
+                  assert(right.lower.y <= right.upper.y);
+                  assert(right.lower.z <= right.upper.z);
 #endif
-                    left.lower.a  = (left.lower.a & 0x00FFFFFF) | ((splits-1) << 24);
-                    right.lower.a = (right.lower.a & 0x00FFFFFF) | ((splits-1) << 24);
+                  left.lower.a  = (left.lower.a & 0x00FFFFFF) | ((splits-1) << 24);
+                  right.lower.a = (right.lower.a & 0x00FFFFFF) | ((splits-1) << 24);
 
-                    const size_t ID = ext_elements.fetch_add(1);
+                  const size_t ID = ext_elements.fetch_add(1);
 
-                    /* break if the number of subdivided elements are greater than the maximal allowed size */
-                    if (unlikely(ID >= max_ext_range_size)) break;
-                    assert(ID <= max_ext_range_size);
-                    prims0[i] = left;
-                    prims0[ext_range_start+ID] = right;     
-                  }
+                  /* break if the number of subdivided elements are greater than the maximal allowed size */
+                  if (unlikely(ID >= max_ext_range_size)) break;
+                  assert(ID <= max_ext_range_size);
+                  prims0[i] = left;
+                  prims0[ext_range_start+ID] = right;     
                 }
               }
             });
@@ -399,7 +385,7 @@ namespace embree
           assert(area(right.geomBounds) >= 0.0f);
 
 #if ENABLE_ARRAY_CHECKS == 1
-          // verify that the left and right ranges are correct
+          /*  verify that the left and right ranges are correct */
           for (size_t i=lset.begin();i<lset.end();i++)
             assert(subset(prims0[i].bounds(),local_left.geomBounds));
           for (size_t i=rset.begin();i<rset.end();i++)
@@ -437,7 +423,6 @@ namespace embree
           const size_t left_weight  = local_left.end;
           const size_t right_weight = local_right.end;
           
-          //assert(center == begin + split.data);
           new (&left ) PrimInfo(begin,center,local_left.geomBounds,local_left.centBounds);
           new (&right) PrimInfo(center,end,local_right.geomBounds,local_right.centBounds);
           new (&lset) extended_range<size_t>(begin,center,center);
@@ -445,7 +430,7 @@ namespace embree
           assert(area(left.geomBounds) >= 0.0f);
           assert(area(right.geomBounds) >= 0.0f);
 
-          // verify that the left and right ranges are correct
+          /* verify that the left and right ranges are correct */
 #if ENABLE_ARRAY_CHECKS == 1
           for (size_t i=lset.begin();i<lset.end();i++)
             assert(subset(prims0[i].bounds(),local_left.geomBounds));
@@ -548,7 +533,7 @@ namespace embree
           assert(area(right.geomBounds) >= 0.0f);
 
 #if ENABLE_ARRAY_CHECKS == 1
-          // verify that the left and right ranges are correct
+          /* verify that the left and right ranges are correct */
           for (size_t i=lset.begin();i<lset.end();i++)
             assert(subset(prims0[i].bounds(),left.geomBounds));
           for (size_t i=rset.begin();i<rset.end();i++)
@@ -568,7 +553,6 @@ namespace embree
                            PrimInfo& linfo, Set& lset, 
                            PrimInfo& rinfo, Set& rset)
         {
-          DBG_PRINT("FALLBACK");
           const size_t begin = set.begin();
           const size_t end   = set.end();
           const size_t center = (begin + end)/2;
@@ -592,7 +576,7 @@ namespace embree
           new (&lset) extended_range<size_t>(begin,center,center);
           new (&rset) extended_range<size_t>(center,end,end);
 
-          // if we have an extended range
+          /* if we have an extended range */
           if (set.has_ext_range()) 
           {
             setExtentedRanges(set,lset,rset,lweight,rweight);
