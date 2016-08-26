@@ -601,7 +601,7 @@ namespace embree
           const Vec3fa &v1 = mesh->vertex(tri.v[1]);
           const Vec3fa &v2 = mesh->vertex(tri.v[2]);
 
-          splitTriangle(prim,dim,pos,v0,v1,v2,left_o,right_o);
+          splitTriangle2(prim,dim,pos,v0,v1,v2,left_o,right_o);
 #if 0
           PrimRef lo,ro;
           splitTriangle2(prim,dim,pos,v0,v1,v2,lo,ro);
@@ -612,7 +612,8 @@ namespace embree
 #endif
         };
 
-        auto splitPrimitive2 = [&] (SpatialBinInfo<FAST_SPATIAL_BUILDER_NUM_SPATIAL_SPLITS,PrimRef> &binner, const PrimRef* const source, const size_t begin, const size_t end, 
+        auto splitPrimitive2 = [&] (SpatialBinInfo<FAST_SPATIAL_BUILDER_NUM_SPATIAL_SPLITS,PrimRef> &binner, 
+                                    const PrimRef* const source, const size_t begin, const size_t end, 
                                     const SpatialBinMapping<FAST_SPATIAL_BUILDER_NUM_SPATIAL_SPLITS> &mapping) {
           binner.bin(splitPrimitive,source,begin,end,mapping);
         };

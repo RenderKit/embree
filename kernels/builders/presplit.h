@@ -124,6 +124,110 @@ namespace embree
     }
 
 
+    template<size_t N>
+      struct PrimRefBoundsN {
+        Vec3<vfloat<N>> lower;
+        Vec3<vfloat<N>> upper;
+
+        __forceinline PrimRefBoundsN(const Vec3<vfloat<N>> &v)
+        {
+          lower = upper = v;
+        }
+
+        __forceinline PrimRefBoundsN(const PrimRefBoundsN<N> &o)
+        {
+          lower = o.lower;
+          upper = o.upper;
+        }
+
+        __forceinline void extend(const Vec3<vfloat<N>> &v)
+        {
+          lower = min(lower,v);
+          upper = max(upper,v);
+        }
+
+        __forceinline void clip(const BBox3fa &bounds)
+        {
+          Vec3<vfloat<N>> b_lower(bounds.lower.x,bounds.lower.y,bounds.lower.z);
+          Vec3<vfloat<N>> b_upper(bounds.upper.x,bounds.upper.y,bounds.upper.z);
+          lower = max(lower,b_lower);
+          upper = min(upper,b_upper);
+        }
+
+        __forceinline BBox3fa extract(const size_t i)
+        {
+          return BBox3fa(Vec3fa(lower.x[i],lower.y[i],lower.z[i]),
+                         Vec3fa(upper.x[i],upper.y[i],upper.z[i]));
+        }
+
+      };
+
+    template<size_t N>
+    __forceinline void splitTriangleN(const PrimRef& prim, const size_t dim, const vfloat<N> pos, 
+                                      const Vec3fa& a, const Vec3fa& b, const Vec3fa& c, 
+                                      PrimRefBoundsN<N>& left_o, PrimRefBoundsN<N>& right_o)
+    {
+      const Vec3fa v[3] = { a,b,c };
+
+      const size_t tminID = v[1][dim] <= v[0][dim];
+      const size_t tmaxID = 1 - tminID;
+      const size_t minID  = v[2][dim]  < v[tminID][dim] ? 2 : tminID;
+      const size_t maxID  = v[2][dim] >= v[tmaxID][dim] ? 2 : tmaxID;
+      const size_t midID  = 3-minID-maxID;
+
+      const Vec3<vfloat<N>> vmin(v[minID].x,v[minID].y,v[minID].z);
+      const Vec3<vfloat<N>> vmax(v[maxID].x,v[maxID].y,v[maxID].z);
+      const Vec3<vfloat<N>> vmid(v[midID].x,v[midID].y,v[midID].z);
+      
+      const vbool<N> m_mid         = vmid[dim] <= pos;
+      const Vec3<vfloat<N>> vstart = select(m_mid,vmin,vmid);
+      const Vec3<vfloat<N>> vend   = select(m_mid,vmid,vmax);
+      const vfloat<N> t0           = (pos-  vmin[dim])/(vmax[dim]-vmin[dim]);
+      const vfloat<N> t1           = (pos-vstart[dim])/(vend[dim]-vstart[dim]);
+      const Vec3<vfloat<N>> s0     = vmin   + t0 * (vmax - vmin);
+      const Vec3<vfloat<N>> s1     = vstart + t1 * (vend - vstart);
+
+      PrimRefBoundsN<N> s(s0); s.extend(s1);
+      left_o = s;
+      left_o.extend(vmin);
+      left_o.extend(vstart);
+      left_o.clip(prim.bounds());
+
+      right_o = s;
+      right_o.extend(vmax);
+      right_o.extend(vend);
+      right_o.clip(prim.bounds());
+
+#if 0
+
+      const size_t startID = v[vmidID][dim] <= pos ? vminID : vmidID;
+      const size_t endID   = v[vmidID][dim] <= pos ? vmidID : vmaxID;
+
+      const float t0      = (pos-v[vminID][dim])/(v[vmaxID][dim]-v[vminID][dim]);
+      const float t1      = (pos-v[startID][dim])/(v[endID][dim]-v[startID][dim]);
+      const Vec3fa s0     = v[minID] + t0 * (v[vmaxID]-v[vminID]);
+      const Vec3fa s1     = v[startID] + t0 * (v[endID]-v[startID]);
+      BBox3fa left(v[vminID]);
+      left.extend(s0);
+      left.extend(s1);
+      left.extend(v[startID]);
+      BBox3fa right(v[vmaxID]);
+      right.extend(s0);
+      right.extend(s1);
+      right.extend(v[endID]);     
+
+      /* clip against current bounds */
+      BBox3fa bounds = prim.bounds();
+      BBox3fa cleft (max(left .lower,bounds.lower),min(left .upper,bounds.upper));
+      BBox3fa cright(max(right.lower,bounds.lower),min(right.upper,bounds.upper));
+
+
+      new (&left_o ) PrimRef(cleft, prim.geomID(), prim.primID());
+      new (&right_o) PrimRef(cright,prim.geomID(), prim.primID());
+#endif
+    }
+
+
     template<typename Split>
       inline void split_primref(const PrimInfo& pinfo, Split& split, PrimRef& prim, PrimRef* prims_o, size_t N)
     {
