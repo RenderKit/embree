@@ -66,7 +66,7 @@ namespace embree
 
 
         /*! compute extended ranges */
-        __forceinline void setExtentedRanges(const Set& set, Set& lset, Set& rset, const size_t lweight, const size_t rweight)
+        __noinline void setExtentedRanges(const Set& set, Set& lset, Set& rset, const size_t lweight, const size_t rweight)
         {
           assert(set.ext_range_size() > 0);
 #if ENABLE_ARRAY_CHECKS == 1
@@ -92,7 +92,6 @@ namespace embree
           const size_t right_ext_range_size = ext_range_size - left_ext_range_size;
           lset.set_ext_range(lset.end() + left_ext_range_size);
           rset.set_ext_range(rset.end() + right_ext_range_size);
-
         }
 
         /*! move ranges */
@@ -108,7 +107,7 @@ namespace embree
             if (left_ext_range_size < right_size)
             {
               /* only move a small part of the beginning of the right range to the end */
-              parallel_for( rset.begin(), rset.begin()+left_ext_range_size, MOVE_STEP_SIZE, [&](const range<size_t>& r) {
+              parallel_for( rset.begin(), rset.begin()+left_ext_range_size, MOVE_STEP_SIZE, [&](const range<size_t>& r) {                  
                   for (size_t i=r.begin(); i<r.end(); i++)
                     prims0[i+right_size] = prims0[i];
                 });
@@ -291,11 +290,12 @@ namespace embree
                 }
               }
             });
-
+          
           assert(ext_elements.load() <= max_ext_range_size);
           assert(max_ext_range_size >= ext_elements);     
           assert(set.end()+ext_elements.load()<=set.ext_end());
-          return Set(set.begin(),set.end()+ext_elements.load(),set.ext_end());
+          
+          return Set(set.begin(),set.end()+min(ext_elements.load(),max_ext_range_size),set.ext_end());
         }
                         
         
