@@ -603,20 +603,119 @@ namespace embree
 
           splitTriangle2(prim,dim,pos,v0,v1,v2,left_o,right_o);
 #if 0
-          PrimRef lo,ro;
-          splitTriangle2(prim,dim,pos,v0,v1,v2,lo,ro);
-          //PRINT(lo);
-          //PRINT(ro);
-          //assert(left_o.bounds() == lo.bounds());
-          //assert(right_o.bounds() == ro.bounds());
+          PrimRefBoundsN<8> left8,right8;
+          const vfloat8 pos8(pos);
+          splitTriangleN<8> (prim,dim,pos,v0,v1,v2,left8,right8);
+          BBox3fa lo = left8.extract(0);
+          BBox3fa ro = right8.extract(0);
+
+          //PrimRef lo,ro;
+          //splitTriangle2(prim,dim,pos,v0,v1,v2,lo,ro);
+          //if (left_o.bounds() != lo || right_o.bounds() != ro)
+          if ((movemask(abs(right_o.bounds().lower-ro.lower) >= Vec3fa(1E-4f)) & 0x7) != 0)
+          {
+#if 0
+            std::cout << std::setprecision(15);
+            PRINT(left_o.bounds());
+            PRINT(right_o.bounds());
+            PRINT(lo);
+            PRINT(ro);
+            PRINT(abs(left_o.bounds().lower-lo.lower));
+            PRINT(abs(left_o.bounds().upper-lo.upper));
+            PRINT(abs(right_o.bounds().lower-ro.lower));
+            PRINT(abs(right_o.bounds().upper-ro.upper));
+#endif
+            //assert((movemask(abs(left_o.bounds().lower-lo.lower) >= Vec3fa(1E-4f)) & 0x7) == 0);
+            //assert((movemask(abs(left_o.bounds().upper-lo.upper) >= Vec3fa(1E-4f)) & 0x7) == 0);
+            //assert((movemask(abs(right_o.bounds().lower-ro.lower) >= Vec3fa(1E-4f)) & 0x7) == 0);
+            //assert((movemask(abs(right_o.bounds().upper-ro.upper) >= Vec3fa(1E-4f)) & 0x7) == 0);
+
+          }
+          //assert(left_o.bounds() == lo);
+          //assert(right_o.bounds() == ro);
 #endif
         };
 
         auto splitPrimitive2 = [&] (SpatialBinInfo<FAST_SPATIAL_BUILDER_NUM_SPATIAL_SPLITS,PrimRef> &binner, 
                                     const PrimRef* const source, const size_t begin, const size_t end, 
-                                    const SpatialBinMapping<FAST_SPATIAL_BUILDER_NUM_SPATIAL_SPLITS> &mapping) {
-          binner.bin(splitPrimitive,source,begin,end,mapping);
-        };
+                                    const SpatialBinMapping<FAST_SPATIAL_BUILDER_NUM_SPATIAL_SPLITS> &mapping)
+          {
+#if 0
+            binner.bin(splitPrimitive,source,begin,end,mapping);
+#else
+            for (size_t i=begin; i<end; i++)
+            {
+              const PrimRef &prim = source[i];
+              const unsigned int splits = prim.geomID() >> 24;
+
+              if (unlikely(splits == 1))
+              {
+                const vint4 bin = mapping.bin(center(prim.bounds()));
+                for (size_t dim=0; dim<3; dim++) 
+                  binner.add(dim,bin[dim],bin[dim],bin[dim],prim.bounds());
+              } 
+              else
+              {
+                const vint4 bin0 = mapping.bin(prim.bounds().lower);
+                const vint4 bin1 = mapping.bin(prim.bounds().upper);
+
+                for (size_t dim=0; dim<3; dim++) 
+                {
+                  size_t bin;
+                  size_t l = bin0[dim];
+                  size_t r = bin1[dim];
+
+                  // same bin optimization
+                  if (likely(l == r)) 
+                  {
+                    binner.add(dim,l,l,l,prim.bounds());
+                    continue;
+                  }
+                  const size_t bin_start = bin0[dim];
+                  const size_t bin_end   = bin1[dim];
+#if defined(__AVX__)
+                  BBox3fa rest = prim.bounds();
+                  TriangleMesh* mesh = (TriangleMesh*) scene->get(prim.geomID() & 0x00FFFFFF );  
+                  TriangleMesh::Triangle tri = mesh->triangle(prim.primID());
+                  const Vec3fa v[3] = { mesh->vertex(tri.v[0]), mesh->vertex(tri.v[1]), mesh->vertex(tri.v[2])};
+
+                  for (bin=bin_start; bin<bin_end;) 
+                  {
+                    const vfloat8 pos8 = mapping.posN<8>(vfloat8(step) + float(bin+1),dim);
+                    PrimRefBoundsN<8> left8,right8;
+                    splitTriangleN<8> (dim,pos8,v,left8,right8);
+                    for (size_t j=0;j<8;j++,bin++)
+                    {
+                      if (bin >= bin_end) break;
+                      BBox3fa left  = intersect(rest,left8.extract(j));
+                      BBox3fa right = intersect(rest,right8.extract(j));
+                      if (unlikely(left.empty())) l++;                
+                      binner.extend(dim,bin,left);
+                      rest = right;                      
+                    }
+                  }
+                  if (unlikely(rest.empty())) r--;
+                  binner.add(dim,l,r,bin,rest);                  
+#else
+                  PrimRef rest = prim;
+                  for (bin=bin_start; bin<bin_end; bin++) 
+                  {
+                    const float pos = mapping.pos(bin+1,dim);
+                    PrimRef left,right;
+                    splitPrimitive(rest,(int)dim,pos,left,right);
+                    if (unlikely(left.bounds().empty())) l++;                
+                    binner.extend(dim,bin,left.bounds());
+                    rest = right;
+                  }
+                  if (unlikely(rest.bounds().empty())) r--;
+                  binner.add(dim,l,r,bin,rest.bounds());
+#endif
+                }
+              }
+            }              
+#endif
+          };
+
 
 
         /* call BVH builder */

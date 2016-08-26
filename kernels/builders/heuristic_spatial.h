@@ -54,11 +54,35 @@ namespace embree
           const vint4 i = floori((vfloat4(p)-ofs)*scale);
           return clamp(i,vint4(0),vint4(BINS-1));
         }
+
+        __forceinline std::pair<vint4,vint4> bin(const BBox3fa& b) const
+        {
+#if defined(__AVX__)
+          const vfloat8 ofs8(ofs);
+          const vfloat8 scale8(scale);
+          const vint8 lu   = floori((vfloat8::loadu(&b)-ofs8)*scale8);
+          const vint8 c_lu = clamp(lu,vint8(zero),vint8(BINS-1));
+          return std::pair<vint4,vint4>(extract4<0>(c_lu),extract4<1>(c_lu));
+#else
+          const vint4 lower = floori((vfloat4(b.lower)-ofs)*scale);
+          const vint4 upper = floori((vfloat4(b.upper)-ofs)*scale);
+          const vint4 c_lower = clamp(lower,vint4(0),vint4(BINS-1));
+          const vint4 c_upper = clamp(upper,vint4(0),vint4(BINS-1));
+          return std::pair<vint4,vint4>(c_lower,c_upper);
+#endif
+        }
+
         
         /*! calculates left spatial position of bin */
         __forceinline float pos(const size_t bin, const size_t dim) const {
           //return float(bin)/scale[dim]+ofs[dim];
           return float(bin)*inv_scale[dim]+ofs[dim];
+        }
+
+        /*! calculates left spatial position of bin */
+        template<size_t N>
+        __forceinline vfloat<N> posN(const vfloat<N> bin, const size_t dim) const {
+          return bin*vfloat<N>(inv_scale[dim])+vfloat<N>(ofs[dim]);
         }
         
         /*! returns true if the mapping is invalid in some dimension */
@@ -126,6 +150,32 @@ namespace embree
           numBegin[i] = numEnd[i] = 0;
         }
       }
+      
+      /*! adds binning data */
+      __forceinline void add(const size_t dim,
+                             const size_t beginID, 
+                             const size_t endID, 
+                             const size_t binID, 
+                             const BBox3fa &b) 
+      {
+        assert(beginID >= 0 && beginID < BINS);
+        assert(endID >= 0 && endID < BINS);
+        assert(binID >= 0 && binID < BINS);
+
+        numBegin[beginID][dim]++;
+        numEnd  [endID][dim]++;
+        bounds  [binID][dim].extend(b);        
+      }
+
+      /*! extends binning bounds */
+      __forceinline void extend(const size_t dim,
+                                const size_t binID, 
+                                const BBox3fa &b) 
+      {
+        assert(binID >= 0 && binID < BINS);
+        bounds  [binID][dim].extend(b);        
+      }
+
       
       /*! bins an array of triangles */
       template<typename SplitPrimitive>
