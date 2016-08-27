@@ -324,6 +324,7 @@ extern "C" void device_init (char* cfg)
     rtcCommit (g_scene);
     double t1 = getSeconds();
     PRINT(t1-t0);
+
     rtcDeleteScene (g_scene); g_scene = nullptr;
     //rtcDeleteDevice(g_device); g_device = nullptr;
   }
