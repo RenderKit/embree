@@ -52,8 +52,8 @@ namespace embree
     return str == regex; 
 #else
 
-#if defined(__GNUC__)
-#if (_GNUC__ <= 4) && (__GNUC_MINOR__ <= 9) // workaround for older gcc version
+#if defined(__GNUC__) && !defined(__INTEL_COMPILER) && !defined(__clang__)
+#if (_GNUC__ <= 4) && (__GNUC_MINOR__ < 8) // workaround for older gcc version
     return str == regex; 
 #endif
 #endif
