@@ -72,7 +72,9 @@ namespace embree
                                      const _MM_INDEX_SCALE_ENUM scale = _MM_SCALE_4,
                                      const _MM_UPCONV_PS_ENUM up = _MM_UPCONV_PS_NONE) 
   {
+#if defined(__AVX512PF__)
     _mm512_mask_prefetch_i32extgather_ps(index,m_active,ptr,up,scale,mode);
+#endif
   }
   
   __forceinline void scatter_prefetch(const vboolf16 &m_active,
@@ -82,7 +84,9 @@ namespace embree
                                       const _MM_INDEX_SCALE_ENUM scale = _MM_SCALE_4,
                                       const _MM_UPCONV_PS_ENUM up = _MM_UPCONV_PS_NONE) 
   {
+#if defined(__AVX512PF__)
     _mm512_mask_prefetch_i32extscatter_ps(ptr,m_active,index,up,scale,mode);
+#endif
   }
 
   template<const int D, const int C, const int B, const int A> 

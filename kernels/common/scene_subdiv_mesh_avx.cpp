@@ -16,8 +16,8 @@
 
 #include "scene_subdiv_mesh.h"
 #include "scene.h"
-#include "subdiv/patch_eval.h"
-#include "subdiv/patch_eval_simd.h"
+#include "../subdiv/patch_eval.h"
+#include "../subdiv/patch_eval_simd.h"
 
 namespace embree
 {
@@ -49,8 +49,6 @@ namespace embree
       baseEntry = &vertex_buffer_tags[bufID];
     }
 
-    auto alloc = [](size_t bytes) { return SharedLazyTessellationCache::malloc(bytes); };
-    
     for (size_t i=0,slot=0; i<numFloats; slot++)
     {
       if (i+4 >= numFloats)
@@ -194,7 +192,7 @@ namespace embree
     {
       if (i+4 >= numUVs)
       {
-        vbool4 valid1 = vint4(i)+vint4(step) < vint4(numUVs);
+        vbool4 valid1 = vint4(int(i))+vint4(step) < vint4(numUVs);
         if (valid) valid1 &= vint4::loadu(&valid[i]) == vint4(-1);
         if (none(valid1)) { i+=4; continue; }
         interpolateHelper(valid1,vint4::loadu(&primIDs[i]),vfloat4::loadu(&u[i]),vfloat4::loadu(&v[i]),numUVs,buffer, 
@@ -209,7 +207,7 @@ namespace embree
       }
       else
       {
-        vbool8 valid1 = vint8(i)+vint8(step) < vint8(numUVs);
+        vbool8 valid1 = vint8(int(i))+vint8(step) < vint8(int(numUVs));
         if (valid) valid1 &= vint8::loadu(&valid[i]) == vint8(-1);
         if (none(valid1)) { i+=8; continue; }
         interpolateHelper(valid1,vint8::loadu(&primIDs[i]),vfloat8::loadu(&u[i]),vfloat8::loadu(&v[i]),numUVs,buffer, 

@@ -16,6 +16,8 @@
 
 #include "../common/tutorial/tutorial_device.h"
 
+namespace embree {
+
 /* scene data */
 RTCDevice g_device = nullptr;
 RTCScene g_scene = nullptr;
@@ -33,21 +35,21 @@ unsigned int addCube (RTCScene scene_i)
   vertex_colors = (Vec3fa*) alignedMalloc(8*sizeof(Vec3fa));
 
   /* set vertices and vertex colors */
-  Vertex* vertices = (Vertex*) rtcMapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER); 
-  vertex_colors[0] = Vec3fa(0,0,0); vertices[0].x = -1; vertices[0].y = -1; vertices[0].z = -1; 
-  vertex_colors[1] = Vec3fa(0,0,1); vertices[1].x = -1; vertices[1].y = -1; vertices[1].z = +1; 
-  vertex_colors[2] = Vec3fa(0,1,0); vertices[2].x = -1; vertices[2].y = +1; vertices[2].z = -1; 
-  vertex_colors[3] = Vec3fa(0,1,1); vertices[3].x = -1; vertices[3].y = +1; vertices[3].z = +1; 
-  vertex_colors[4] = Vec3fa(1,0,0); vertices[4].x = +1; vertices[4].y = -1; vertices[4].z = -1; 
-  vertex_colors[5] = Vec3fa(1,0,1); vertices[5].x = +1; vertices[5].y = -1; vertices[5].z = +1; 
-  vertex_colors[6] = Vec3fa(1,1,0); vertices[6].x = +1; vertices[6].y = +1; vertices[6].z = -1; 
-  vertex_colors[7] = Vec3fa(1,1,1); vertices[7].x = +1; vertices[7].y = +1; vertices[7].z = +1; 
-  rtcUnmapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER); 
+  Vertex* vertices = (Vertex*) rtcMapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER);
+  vertex_colors[0] = Vec3fa(0,0,0); vertices[0].x = -1; vertices[0].y = -1; vertices[0].z = -1;
+  vertex_colors[1] = Vec3fa(0,0,1); vertices[1].x = -1; vertices[1].y = -1; vertices[1].z = +1;
+  vertex_colors[2] = Vec3fa(0,1,0); vertices[2].x = -1; vertices[2].y = +1; vertices[2].z = -1;
+  vertex_colors[3] = Vec3fa(0,1,1); vertices[3].x = -1; vertices[3].y = +1; vertices[3].z = +1;
+  vertex_colors[4] = Vec3fa(1,0,0); vertices[4].x = +1; vertices[4].y = -1; vertices[4].z = -1;
+  vertex_colors[5] = Vec3fa(1,0,1); vertices[5].x = +1; vertices[5].y = -1; vertices[5].z = +1;
+  vertex_colors[6] = Vec3fa(1,1,0); vertices[6].x = +1; vertices[6].y = +1; vertices[6].z = -1;
+  vertex_colors[7] = Vec3fa(1,1,1); vertices[7].x = +1; vertices[7].y = +1; vertices[7].z = +1;
+  rtcUnmapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER);
 
   /* set triangles and face colors */
   int tri = 0;
   Triangle* triangles = (Triangle*) rtcMapBuffer(scene_i,mesh,RTC_INDEX_BUFFER);
-  
+
   // left side
   face_colors[tri] = Vec3fa(1,0,0); triangles[tri].v0 = 0; triangles[tri].v1 = 2; triangles[tri].v2 = 1; tri++;
   face_colors[tri] = Vec3fa(1,0,0); triangles[tri].v0 = 1; triangles[tri].v1 = 2; triangles[tri].v2 = 3; tri++;
@@ -86,12 +88,12 @@ unsigned int addGroundPlane (RTCScene scene_i)
   unsigned int mesh = rtcNewTriangleMesh (scene_i, RTC_GEOMETRY_STATIC, 2, 4);
 
   /* set vertices */
-  Vertex* vertices = (Vertex*) rtcMapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER); 
-  vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10; 
-  vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10; 
-  vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10; 
+  Vertex* vertices = (Vertex*) rtcMapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER);
+  vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10;
+  vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10;
+  vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10;
   vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
-  rtcUnmapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER); 
+  rtcUnmapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER);
 
   /* set triangles */
   Triangle* triangles = (Triangle*) rtcMapBuffer(scene_i,mesh,RTC_INDEX_BUFFER);
@@ -111,7 +113,7 @@ extern "C" void device_init (char* cfg)
 
   /* set error handler */
   rtcDeviceSetErrorFunction(g_device,error_handler);
- 
+
   /* create scene */
   g_scene = rtcDeviceNewScene(g_device, RTC_SCENE_STATIC,RTC_INTERSECT1);
 
@@ -142,18 +144,18 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time = 0;
-  
+
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
-  
+
   /* shade pixels */
   Vec3fa color = Vec3fa(0.0f);
-  if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
+  if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
   {
     Vec3fa diffuse = face_colors[ray.primID];
     color = color + diffuse*0.5f;
     Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
-    
+
     /* initialize shadow ray */
     RTCRay shadow;
     shadow.org = ray.org + ray.tfar*ray.dir;
@@ -164,10 +166,10 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
     shadow.primID = 0;
     shadow.mask = -1;
     shadow.time = 0;
-    
+
     /* trace shadow ray */
     rtcOccluded(g_scene,shadow);
-    
+
     /* add light contribution */
     if (shadow.geomID)
       color = color + diffuse*clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f);
@@ -176,42 +178,42 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
 }
 
 /* renders a single screen tile */
-void renderTileStandard(int taskIndex, 
+void renderTileStandard(int taskIndex,
                         int* pixels,
-                        const int width,
-                        const int height, 
+                        const unsigned int width,
+                        const unsigned int height,
                         const float time,
                         const ISPCCamera& camera,
-                        const int numTilesX, 
+                        const int numTilesX,
                         const int numTilesY)
 {
-  const int tileY = taskIndex / numTilesX;
-  const int tileX = taskIndex - tileY * numTilesX;
-  const int x0 = tileX * TILE_SIZE_X;
-  const int x1 = min(x0+TILE_SIZE_X,width);
-  const int y0 = tileY * TILE_SIZE_Y;
-  const int y1 = min(y0+TILE_SIZE_Y,height);
+  const unsigned int tileY = taskIndex / numTilesX;
+  const unsigned int tileX = taskIndex - tileY * numTilesX;
+  const unsigned int x0 = tileX * TILE_SIZE_X;
+  const unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const unsigned int y0 = tileY * TILE_SIZE_Y;
+  const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
-  for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
+  for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
     /* calculate pixel color */
-    Vec3fa color = renderPixelStandard(x,y,camera);
+    Vec3fa color = renderPixelStandard((float)x,(float)y,camera);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
     unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
     unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;  
+    pixels[y*width+x] = (b << 16) + (g << 8) + r;
   }
 }
 
 /* task that renders a single screen tile */
 void renderTileTask (int taskIndex, int* pixels,
-                         const int width,
-                         const int height, 
+                         const unsigned int width,
+                         const unsigned int height,
                          const float time,
                          const ISPCCamera& camera,
-                         const int numTilesX, 
+                         const int numTilesX,
                          const int numTilesY)
 {
   renderTile(taskIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
@@ -219,8 +221,8 @@ void renderTileTask (int taskIndex, int* pixels,
 
 /* called by the C++ code to render */
 extern "C" void device_render (int* pixels,
-                           const int width,
-                           const int height,
+                           const unsigned int width,
+                           const unsigned int height,
                            const float time,
                            const ISPCCamera& camera)
 {
@@ -228,7 +230,7 @@ extern "C" void device_render (int* pixels,
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
     for (size_t i=range.begin(); i<range.end(); i++)
-      renderTileTask(i,pixels,width,height,time,camera,numTilesX,numTilesY);
+      renderTileTask((int)i,pixels,width,height,time,camera,numTilesX,numTilesY);
   }); 
 }
 
@@ -241,3 +243,4 @@ extern "C" void device_cleanup ()
   alignedFree(vertex_colors); vertex_colors = nullptr;
 }
 
+} // namespace embree

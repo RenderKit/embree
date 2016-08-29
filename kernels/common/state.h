@@ -45,7 +45,7 @@ namespace embree
     void print();
 
     /*! checks if verbosity level is at least N */
-    bool verbosity(int N);
+    bool verbosity(size_t N);
 
     /*! checks if some particular ISA is enabled */
     bool hasISA(const int isa);
@@ -54,7 +54,7 @@ namespace embree
     std::string tri_accel;                 //!< acceleration structure to use for triangles
     std::string tri_builder;               //!< builder to use for triangles
     std::string tri_traverser;             //!< traverser to use for triangles
-    double      tri_builder_replication_factor; //!< maximally factor*N many primitives in accel
+    float      tri_builder_replication_factor; //!< maximally factor*N many primitives in accel
 
   public:
     std::string tri_accel_mb;              //!< acceleration structure to use for motion blur triangles

@@ -219,7 +219,7 @@ inline Vec3f DielectricReflection__eval(const varying DielectricReflection* unif
 inline Vec3f DielectricReflection__sample(const varying DielectricReflection* uniform This, const Vec3f &wo, const DifferentialGeometry &dg, Sample3f &wi, const Vec2f &s)
 {
   const float cosThetaO = clamp(dot(wo,dg.Ns));
-  wi = reflect_(wo,dg.Ns,cosThetaO);
+  wi = make_Sample3f(reflect(wo,dg.Ns,cosThetaO),1.0f);
   return make_Vec3f(fresnelDielectric(cosThetaO,This->eta));
 }
 
@@ -484,7 +484,7 @@ Vec3f MirrorMaterial__eval(MirrorMaterial* uniform This, const BRDF& brdf, const
 
 Vec3f MirrorMaterial__sample(MirrorMaterial* uniform This, const BRDF& brdf, const Vec3f& Lw, const Vec3f& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
 {
-  wi_o = reflect_(wo,dg.Ns);
+  wi_o = make_Sample3f(reflect(wo,dg.Ns),1.0f);
   return make_Vec3f(This->reflectance);
 }
 
@@ -518,7 +518,7 @@ Vec3f OBJMaterial__eval(OBJMaterial* uniform material, const BRDF& brdf, const V
     R = R + (1.0f/M_PI) * clamp(dot(wi,dg.Ns)) * brdf.Kd;
   }
   if (Ms > 0.0f) {
-    const Sample3f refl = reflect_(wo,dg.Ns);
+    const Sample3f refl = make_Sample3f(reflect(wo,dg.Ns),1.0f);
     if (dot(refl.v,wi) > 0.0f)
       R = R + (brdf.Ns+2) * one_over_two_pi * powf(max(1e-10f,dot(refl.v,wi)),brdf.Ns) * clamp(dot(wi,dg.Ns)) * brdf.Ks;
   }
@@ -540,7 +540,7 @@ Vec3f OBJMaterial__sample(OBJMaterial* uniform material, const BRDF& brdf, const
   Sample3f wis = make_Sample3f(make_Vec3f(0.0f),0.0f);
   if (max(max(brdf.Ks.x,brdf.Ks.y),brdf.Ks.z) > 0.0f)
   {
-    const Sample3f refl = reflect_(wo,dg.Ns);
+    const Sample3f refl = make_Sample3f(reflect(wo,dg.Ns),1.0f);
     wis.v = powerCosineSampleHemisphere(brdf.Ns,s);
     wis.pdf = powerCosineSampleHemispherePDF(wis.v,brdf.Ns);
     wis.v = frame(refl.v) * wis.v;
@@ -638,7 +638,7 @@ Vec3f ReflectiveMetalMaterial__eval(ReflectiveMetalMaterial* uniform This, const
 
 Vec3f ReflectiveMetalMaterial__sample(ReflectiveMetalMaterial* uniform This, const BRDF& brdf, const Vec3f& Lw, const Vec3f& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
 {
-  wi_o = reflect_(wo,dg.Ns);
+  wi_o = make_Sample3f(reflect(wo,dg.Ns),1.0f);
   return make_Vec3f(This->reflectance) * fresnelConductor(dot(wo,dg.Ns),make_Vec3f((varying Vec3fa)This->eta),make_Vec3f((varying Vec3fa)This->k));
 }
 
@@ -698,7 +698,7 @@ Vec3f DielectricMaterial__sample(DielectricMaterial* uniform material, const BRD
 
   float cosThetaO = clamp(dot(wo,dg.Ns));
   float cosThetaI; Sample3f wit = refract(wo,dg.Ns,eta,cosThetaO,cosThetaI);
-  Sample3f wis = reflect_(wo,dg.Ns);
+  Sample3f wis = make_Sample3f(reflect(wo,dg.Ns),1.0f);
   float R = fresnelDielectric(cosThetaO,cosThetaI,eta);
   Vec3f cs = make_Vec3f(R);
   Vec3f ct = make_Vec3f(1.0f-R);
@@ -723,7 +723,7 @@ Vec3f ThinDielectricMaterial__sample(ThinDielectricMaterial* uniform This, const
   if (cosThetaO <= 0.0f) return make_Vec3f(0.0f);
   float R = fresnelDielectric(cosThetaO,rcp(This->eta));
   Sample3f wit = make_Sample3f(neg(wo),1.0f);
-  Sample3f wis = reflect_(wo,dg.Ns);
+  Sample3f wis = make_Sample3f(reflect(wo,dg.Ns),1.0f);
   Vec3f ct = exp(make_Vec3f(This->transmissionFactor)*rcp(cosThetaO))*make_Vec3f(1.0f-R);
   Vec3f cs = make_Vec3f(R);
   return sample_component2(cs,wis,medium,ct,wit,medium,Lw,wi_o,medium,s.x);
@@ -776,11 +776,11 @@ Vec3f HairMaterial__sample(HairMaterial* uniform This, const BRDF& brdf, const V
 //                              Material                                      //
 ////////////////////////////////////////////////////////////////////////////////
 
-inline void Material__preprocess(ISPCMaterial* uniform materials, int materialID, uniform int numMaterials, BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Medium& medium)
+inline void Material__preprocess(ISPCMaterial* uniform materials, unsigned int materialID, uniform unsigned int numMaterials, BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Medium& medium)
 {
   foreach_unique (id in materialID)
   {
-    if (id >= 0 && id < numMaterials) // FIXME: workaround for ISPC bug, location reached with empty execution mask
+    if (id < numMaterials) // FIXME: workaround for ISPC bug, location reached with empty execution mask
     {
       ISPCMaterial* uniform material = &materials[id];
 
@@ -801,12 +801,12 @@ inline void Material__preprocess(ISPCMaterial* uniform materials, int materialID
   }
 }
 
-inline Vec3f Material__eval(ISPCMaterial* uniform materials, int materialID, uniform int numMaterials, const BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Vec3f& wi)
+inline Vec3f Material__eval(ISPCMaterial* uniform materials, unsigned int materialID, uniform unsigned int numMaterials, const BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Vec3f& wi)
 {
   Vec3f c = make_Vec3f(0.0f);
   foreach_unique (id in materialID)
   {
-    if (id >= 0 && id < numMaterials) // FIXME: workaround for ISPC bug, location reached with empty execution mask
+    if (id < numMaterials) // FIXME: workaround for ISPC bug, location reached with empty execution mask
     {
       ISPCMaterial* uniform material = &materials[id];
       switch (material->ty) {
@@ -827,12 +827,12 @@ inline Vec3f Material__eval(ISPCMaterial* uniform materials, int materialID, uni
   return c;
 }
 
-inline Vec3f Material__sample(ISPCMaterial* uniform uniform materials, int materialID, uniform int numMaterials, const BRDF& brdf, const Vec3f& Lw, const Vec3f& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
+inline Vec3f Material__sample(ISPCMaterial* uniform uniform materials, unsigned int materialID, uniform unsigned int numMaterials, const BRDF& brdf, const Vec3f& Lw, const Vec3f& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
 {
   Vec3f c = make_Vec3f(0.0f);
   foreach_unique (id in materialID)
   {
-    if (id >= 0 && id < numMaterials) // FIXME: workaround for ISPC bug, location reached with empty execution mask
+    if (id < numMaterials) // FIXME: workaround for ISPC bug, location reached with empty execution mask
     {
       ISPCMaterial* uniform material = &materials[id];
       switch (material->ty) {
@@ -887,7 +887,7 @@ extern uniform int g_instancing_mode;
 
 uniform bool g_animation = true;
 uniform bool g_use_smooth_normals = false;
-void device_key_pressed(uniform int key)
+void device_key_pressed_handler(uniform int key)
 {
   if (key == 32  /* */) g_animation = !g_animation;
   if (key == 115 /*s*/) { g_use_smooth_normals = !g_use_smooth_normals; g_changed = true; }
@@ -1074,7 +1074,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   /* use geometry instancing feature */
   if (g_instancing_mode == 1)
   {
-    for (uniform size_t i=0; i<scene_in->numGeometries; i++)
+    for (uniform unsigned int i=0; i<scene_in->numGeometries; i++)
     {
       uniform ISPCGeometry* uniform geometry = scene_in->geometries[i];
       if (geometry->type == SUBDIV_MESH) {
@@ -1119,7 +1119,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   /* use scene instancing feature */
   else if (g_instancing_mode == 2 || g_instancing_mode == 3)
   {
-    for (uniform size_t i=0; i<scene_in->numGeometries; i++)
+    for (uniform unsigned int i=0; i<scene_in->numGeometries; i++)
     {
       uniform ISPCGeometry* uniform geometry = scene_in->geometries[i];
       if (geometry->type == SUBDIV_MESH) {
@@ -1176,31 +1176,31 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   /* no instancing */
   else
   {
-    for (uniform size_t i=0; i<scene_in->numGeometries; i++)
+    for (uniform unsigned int i=0; i<scene_in->numGeometries; i++)
     {
       uniform ISPCGeometry* uniform geometry = scene_in->geometries[i];
       if (geometry->type == SUBDIV_MESH) {
-        uniform unsigned int geomID = convertSubdivMesh((uniform ISPCSubdivMesh* uniform) geometry, scene_out);
+        uniform unsigned int geomID MAYBE_UNUSED = convertSubdivMesh((uniform ISPCSubdivMesh* uniform) geometry, scene_out);
         assert(geomID == i);
       }
       else if (geometry->type == TRIANGLE_MESH) {
-        uniform unsigned int geomID = convertTriangleMesh((uniform ISPCTriangleMesh* uniform) geometry, scene_out);
+        uniform unsigned int geomID MAYBE_UNUSED = convertTriangleMesh((uniform ISPCTriangleMesh* uniform) geometry, scene_out);
         assert(geomID == i);
       }
       else if (geometry->type == QUAD_MESH) {
-        uniform unsigned int geomID = convertQuadMesh((uniform ISPCQuadMesh* uniform) geometry, scene_out);
+        uniform unsigned int geomID MAYBE_UNUSED = convertQuadMesh((uniform ISPCQuadMesh* uniform) geometry, scene_out);
         assert(geomID == i);
       }
       else if (geometry->type == LINE_SEGMENTS) {
-        uniform unsigned int geomID = convertLineSegments((uniform ISPCLineSegments* uniform) geometry, scene_out);
+        uniform unsigned int geomID MAYBE_UNUSED = convertLineSegments((uniform ISPCLineSegments* uniform) geometry, scene_out);
         assert(geomID == i);
       }
       else if (geometry->type == HAIR_SET) {
-        uniform unsigned int geomID = convertHairSet((uniform ISPCHairSet* uniform) geometry, scene_out);
+        uniform unsigned int geomID MAYBE_UNUSED = convertHairSet((uniform ISPCHairSet* uniform) geometry, scene_out);
         assert(geomID == i);
       }
       else if (geometry->type == CURVES) {
-        uniform unsigned int geomID = convertCurveGeometry((uniform ISPCHairSet* uniform) geometry, scene_out);
+        uniform unsigned int geomID MAYBE_UNUSED = convertCurveGeometry((uniform ISPCHairSet* uniform) geometry, scene_out);
         assert(geomID == i);
       }
       else
@@ -1210,7 +1210,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
 
   /* commit changes to scene */
   progressStart();
-  rtcSetProgressMonitorFunction(scene_out,progressMonitor,NULL);
+  rtcSetProgressMonitorFunction(scene_out,(RTCProgressMonitorFunc)&progressMonitor,NULL);
   rtcCommit (scene_out);
   rtcSetProgressMonitorFunction(scene_out,NULL,NULL);
   progressEnd();
@@ -1254,17 +1254,17 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, uniform 
     materialID = mesh->triangles[ray.primID].materialID;
     if (mesh->texcoords) {
       ISPCTriangle* tri = &mesh->triangles[ray.primID];
-      const Vec2f st0 = make_Vec2f(mesh->texcoords[tri->v0]);
-      const Vec2f st1 = make_Vec2f(mesh->texcoords[tri->v1]);
-      const Vec2f st2 = make_Vec2f(mesh->texcoords[tri->v2]);
+      const Vec2f st0 = mesh->texcoords[tri->v0];
+      const Vec2f st1 = mesh->texcoords[tri->v1];
+      const Vec2f st2 = mesh->texcoords[tri->v2];
       const float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
       const Vec2f st = w*st0 + u*st1 + v*st2;
       dg.u = st.x;
       dg.v = st.y;
       /*
-      const Vec3f n0 = make_Vec3f(mesh->normals[tri->v0]);
-      const Vec3f n1 = make_Vec3f(mesh->normals[tri->v1]);
-      const Vec3f n2 = make_Vec3f(mesh->normals[tri->v2]);
+      const Vec3f n0 = mesh->normals[tri->v0];
+      const Vec3f n1 = mesh->normals[tri->v1];
+      const Vec3f n2 = mesh->normals[tri->v2];
       dg.Ns = w*n0 + u*n1 + v*n2;
       */
     }
@@ -1275,10 +1275,10 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, uniform 
     materialID = mesh->meshMaterialID;
     if (mesh->texcoords) {
       ISPCQuad* quad = &mesh->quads[ray.primID];
-      const Vec2f st0 = make_Vec2f(mesh->texcoords[quad->v0]);
-      const Vec2f st1 = make_Vec2f(mesh->texcoords[quad->v1]);
-      const Vec2f st2 = make_Vec2f(mesh->texcoords[quad->v2]);
-      const Vec2f st3 = make_Vec2f(mesh->texcoords[quad->v3]);
+      const Vec2f st0 = mesh->texcoords[quad->v0];
+      const Vec2f st1 = mesh->texcoords[quad->v1];
+      const Vec2f st2 = mesh->texcoords[quad->v2];
+      const Vec2f st3 = mesh->texcoords[quad->v3];
       if (ray.u+ray.v < 1.0f) {
         const float u = ray.u, v = ray.v; const float w = 1.0f-u-v;
         const Vec2f st = w*st0 + u*st1 + v*st3;
@@ -1610,7 +1610,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
 
   for (uniform int i=0; i<SAMPLES_PER_PIXEL; i++)
   {
-    RandomSampler_init(sampler, x, y, g_accu_count*SAMPLES_PER_PIXEL+i);
+    RandomSampler_init(sampler, (int)x, (int)y, g_accu_count*SAMPLES_PER_PIXEL+i);
 
     /* calculate pixel color */
     float fx = x + RandomSampler_get1D(sampler);
@@ -1624,24 +1624,24 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
 /* renders a single screen tile */
 void renderTileStandard(uniform int taskIndex,
                         uniform int* uniform pixels,
-                        const uniform int width,
-                        const uniform int height,
+                        const uniform unsigned int width,
+                        const uniform unsigned int height,
                         const uniform float time,
                         const uniform ISPCCamera& camera,
                         const uniform int numTilesX,
                         const uniform int numTilesY)
 {
-  const uniform int tileY = taskIndex / numTilesX;
-  const uniform int tileX = taskIndex - tileY * numTilesX;
-  const uniform int x0 = tileX * TILE_SIZE_X;
-  const uniform int x1 = min(x0+TILE_SIZE_X,width);
-  const uniform int y0 = tileY * TILE_SIZE_Y;
-  const uniform int y1 = min(y0+TILE_SIZE_Y,height);
+  const uniform unsigned int tileY = taskIndex / numTilesX;
+  const uniform unsigned int tileX = taskIndex - tileY * numTilesX;
+  const uniform unsigned int x0 = tileX * TILE_SIZE_X;
+  const uniform unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const uniform unsigned int y0 = tileY * TILE_SIZE_Y;
+  const uniform unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
     /* calculate pixel color */
-    Vec3f color = renderPixelStandard(x,y,camera);
+    Vec3f color = renderPixelStandard((float)x,(float)y,camera);
 
     /* write color to framebuffer */
     Vec3fa accu_color = g_accu[y*width+x] + make_Vec3fa(color.x,color.y,color.z,1.0f); g_accu[y*width+x] = accu_color;
@@ -1655,8 +1655,8 @@ void renderTileStandard(uniform int taskIndex,
 
 /* task that renders a single screen tile */
 task void renderTileTask(uniform int* uniform pixels,
-                         const uniform int width,
-                         const uniform int height,
+                         const uniform unsigned int width,
+                         const uniform unsigned int height,
                          const uniform float time,
                          const uniform ISPCCamera& camera,
                          const uniform int numTilesX,
@@ -1680,19 +1680,20 @@ inline uniform float updateEdgeLevel( uniform ISPCSubdivMesh* uniform mesh, cons
 
 void updateEdgeLevelBuffer( uniform ISPCSubdivMesh* uniform mesh, const uniform Vec3fa& cam_pos, uniform size_t startID, uniform size_t endID )
 {
-  for (uniform size_t f=startID; f<endID;f++) {
-       uniform int e = mesh->face_offsets[f];
-       uniform int N = mesh->verticesPerFace[f];
-       if (N == 4) /* fast path for quads */
-         for (uniform size_t i=0; i<4; i++)
-           mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%4);
+  for (uniform size_t f=startID; f<endID;f++)
+  {
+    uniform unsigned int e = mesh->face_offsets[f];
+    uniform unsigned int N = mesh->verticesPerFace[f];
+    if (N == 4) /* fast path for quads */
+      for (uniform size_t i=0; i<4; i++)
+        mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%4);
        else if (N == 3) /* fast path for triangles */
          for (uniform size_t i=0; i<3; i++)
            mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%3);
        else /* fast path for general polygons */
-        for (uniform size_t i=0; i<N; i++)
+         for (uniform size_t i=0; i<N; i++)
            mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%N);
- }
+  }
 }
 
 #if defined(ISPC)
@@ -1705,29 +1706,6 @@ task void updateEdgeLevelBufferTask( uniform ISPCSubdivMesh* uniform mesh, const
 }
 #endif
 
-void updateKeyFrame(uniform ISPCScene* uniform scene_in)
-{
-  for (uniform size_t g=0; g<scene_in->numGeometries; g++)
-  {
-    uniform ISPCGeometry* uniform geometry = g_ispc_scene->geometries[g];
-    if (geometry->type != SUBDIV_MESH) continue;
-    uniform ISPCSubdivMesh* uniform mesh = (uniform ISPCSubdivMesh* uniform) geometry;
-    uniform unsigned int geomID = mesh->geomID;
-
-    if (g_ispc_scene->subdivMeshKeyFrames)
-      {
-	uniform ISPCSubdivMeshKeyFrame *uniform keyframe      = g_ispc_scene->subdivMeshKeyFrames[keyframeID];
-	uniform ISPCSubdivMesh         *uniform keyframe_mesh = keyframe->subdiv[g];
-	rtcSetBuffer(g_scene, geomID, RTC_VERTEX_BUFFER, keyframe_mesh->positions, 0, sizeof(uniform Vec3fa  ));
-	rtcUpdateBuffer(g_scene,geomID,RTC_VERTEX_BUFFER);
-      }
-  }
-
-  keyframeID++;
-  if (keyframeID >= g_ispc_scene->numSubdivMeshKeyFrames)
-    keyframeID = 0;
-}
-
 void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa& cam_pos)
 {
   for (uniform size_t g=0; g<scene_in->numGeometries; g++)
@@ -1737,7 +1715,7 @@ void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa&
     uniform ISPCSubdivMesh* uniform mesh = (uniform ISPCSubdivMesh* uniform) geometry;
     uniform unsigned int geomID = mesh->geomID;
 #if defined(ISPC)
-      launch[ getNumHWThreads() ] updateEdgeLevelBufferTask(mesh,cam_pos); sync;
+    launch[ (mesh->numFaces+4095)/4096 ] updateEdgeLevelBufferTask(mesh,cam_pos); sync;
 #else
       updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
 #endif
@@ -1763,7 +1741,7 @@ export void device_init (uniform int8* uniform cfg)
 
   /* set start render mode */
   renderTile = renderTileStandard;
-  key_pressed_handler = device_key_pressed;
+  key_pressed_handler = device_key_pressed_handler;
 
 #if ENABLE_FILTER_FUNCTION == 0
   print("Warning: filter functions disabled\n");
@@ -1773,8 +1751,8 @@ export void device_init (uniform int8* uniform cfg)
 
 /* called by the C++ code to render */
 export void device_render (uniform int* uniform pixels,
-                           const uniform int width,
-                           const uniform int height,
+                           const uniform unsigned int width,
+                           const uniform unsigned int height,
                            const uniform float time,
                            const uniform ISPCCamera& camera)
 {
@@ -1800,12 +1778,6 @@ export void device_render (uniform int* uniform pixels,
   camera_changed |= ne(g_accu_vy,camera.xfm.l.vy); g_accu_vy = camera.xfm.l.vy;
   camera_changed |= ne(g_accu_vz,camera.xfm.l.vz); g_accu_vz = camera.xfm.l.vz;
   camera_changed |= ne(g_accu_p, camera.xfm.p);    g_accu_p  = camera.xfm.p;
-
-  if (g_animation && g_ispc_scene->numSubdivMeshKeyFrames) {
-    updateKeyFrame(g_ispc_scene);
-    rtcCommit(g_scene);
-    g_changed = true;
-  }
 
 #if  FIXED_SAMPLING == 0
   g_accu_count++;

@@ -21,6 +21,8 @@
 #include "../common/tutorial/scene_device.h"
 #include "../common/tutorial/optics.h"
 
+namespace embree {
+
 #undef TILE_SIZE_X
 #undef TILE_SIZE_Y
 
@@ -87,18 +89,18 @@ inline Vec3fa sample_component2(const Vec3fa& c0, const Sample3f& wi0, const Med
   const float C  = C0 + C1;
 
   if (C == 0.0f) {
-    wi_o = Sample3f(Vec3fa(0,0,0),0);
+    wi_o = make_Sample3f(Vec3fa(0,0,0),0);
     return Vec3fa(0,0,0);
   }
 
   const float CP0 = C0/C;
   const float CP1 = C1/C;
   if (s < CP0) {
-    wi_o = Sample3f(wi0.v,wi0.pdf*CP0);
+    wi_o = make_Sample3f(wi0.v,wi0.pdf*CP0);
     medium_o = medium0; return c0;
   }
   else {
-    wi_o = Sample3f(wi1.v,wi1.pdf*CP1);
+    wi_o = make_Sample3f(wi1.v,wi1.pdf*CP1);
     medium_o = medium1; return c1;
   }
 }
@@ -219,7 +221,7 @@ inline Vec3fa DielectricReflection__eval(const DielectricReflection* This, const
 inline Vec3fa DielectricReflection__sample(const DielectricReflection* This, const Vec3fa &wo, const DifferentialGeometry &dg, Sample3f &wi, const Vec2f &s)
 {
   const float cosThetaO = clamp(dot(wo,dg.Ns));
-  wi = reflect_(wo,dg.Ns,cosThetaO);
+  wi = make_Sample3f(reflect(wo,dg.Ns,cosThetaO),1.0f);
   return Vec3fa(fresnelDielectric(cosThetaO,This->eta));
 }
 
@@ -306,23 +308,23 @@ inline Vec3fa DielectricLayerLambertian__sample(const DielectricLayerLambertian*
 {
   /*! refract ray into medium */
   float cosThetaO = dot(wo,dg.Ns);
-  if (cosThetaO <= 0.0f) { wi = Sample3f(Vec3fa(0.0f),0.0f); return Vec3fa(0.f); }
+  if (cosThetaO <= 0.0f) { wi = make_Sample3f(Vec3fa(0.0f),0.0f); return Vec3fa(0.f); }
   float cosThetaO1; Sample3f wo1 = refract(wo,dg.Ns,This->etait,cosThetaO,cosThetaO1);
 
   /*! sample ground BRDF */
-  Sample3f wi1 = Sample3f(Vec3fa(0.f),1.f);
+  Sample3f wi1 = make_Sample3f(Vec3fa(0.f),1.f);
   Vec3fa Fg = Lambertian__sample(&This->ground,neg(wo1.v),dg,wi1,s);
 
   /*! refract ray out of medium */
   float cosThetaI1 = dot(wi1.v,dg.Ns);
-  if (cosThetaI1 <= 0.0f) { wi = Sample3f(Vec3fa(0.0f),0.0f); return Vec3fa(0.f); }
+  if (cosThetaI1 <= 0.0f) { wi = make_Sample3f(Vec3fa(0.0f),0.0f); return Vec3fa(0.f); }
 
   float cosThetaI;
   Sample3f wi0 = refract(neg(wi1.v),neg(dg.Ns),This->etati,cosThetaI1,cosThetaI);
-  if (wi0.pdf == 0.0f) { wi = Sample3f(Vec3fa(0.0f),0.0f); return Vec3fa(0.f); }
+  if (wi0.pdf == 0.0f) { wi = make_Sample3f(Vec3fa(0.0f),0.0f); return Vec3fa(0.f); }
 
   /*! accumulate contribution of path */
-  wi = Sample3f(wi0.v,wi1.pdf);
+  wi = make_Sample3f(wi0.v,wi1.pdf);
   float Fi = 1.0f - fresnelDielectric(cosThetaI,cosThetaI1,This->etait);
   float Fo = 1.0f - fresnelDielectric(cosThetaO,cosThetaO1,This->etait);
   return Fo * This->T * Fg * This->T * Fi;
@@ -437,14 +439,14 @@ inline Vec3fa AnisotropicBlinn__sample(const AnisotropicBlinn* This, const Vec3f
 
   /* reflection */
   if (sz < This->side) {
-    wi_o = Sample3f(reflect(wo,Vec3fa(wh)),wh.w*This->side);
+    wi_o = make_Sample3f(reflect(wo,Vec3fa(wh)),wh.w*This->side);
     const float cosThetaI = dot(wi_o.v,This->dz);
     return This->Kr * AnisotropicBlinn__eval(This,Vec3fa(wh)) * abs(cosThetaI);
   }
 
   /* transmission */
   else {
-    wi_o = Sample3f(reflect(reflect(wo,Vec3fa(wh)),This->dz),wh.w*(1-This->side));
+    wi_o = make_Sample3f(reflect(reflect(wo,Vec3fa(wh)),This->dz),wh.w*(1-This->side));
     const float cosThetaI = dot(wi_o.v,This->dz);
     return This->Kt * AnisotropicBlinn__eval(This,Vec3fa(wh)) * abs(cosThetaI);
   }
@@ -484,7 +486,7 @@ Vec3fa MirrorMaterial__eval(MirrorMaterial* This, const BRDF& brdf, const Vec3fa
 
 Vec3fa MirrorMaterial__sample(MirrorMaterial* This, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
 {
-  wi_o = reflect_(wo,dg.Ns);
+  wi_o = make_Sample3f(reflect(wo,dg.Ns),1.0f);
   return Vec3fa(This->reflectance);
 }
 
@@ -518,7 +520,7 @@ Vec3fa OBJMaterial__eval(OBJMaterial* material, const BRDF& brdf, const Vec3fa& 
     R = R + (1.0f/float(pi)) * clamp(dot(wi,dg.Ns)) * brdf.Kd;
   }
   if (Ms > 0.0f) {
-    const Sample3f refl = reflect_(wo,dg.Ns);
+    const Sample3f refl = make_Sample3f(reflect(wo,dg.Ns),1.0f);
     if (dot(refl.v,wi) > 0.0f)
       R = R + (brdf.Ns+2) * float(one_over_two_pi) * powf(max(1e-10f,dot(refl.v,wi)),brdf.Ns) * clamp(dot(wi,dg.Ns)) * brdf.Ks;
   }
@@ -530,17 +532,17 @@ Vec3fa OBJMaterial__eval(OBJMaterial* material, const BRDF& brdf, const Vec3fa& 
 Vec3fa OBJMaterial__sample(OBJMaterial* material, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
 {
   Vec3fa cd = Vec3fa(0.0f);
-  Sample3f wid = Sample3f(Vec3fa(0.0f),0.0f);
+  Sample3f wid = make_Sample3f(Vec3fa(0.0f),0.0f);
   if (max(max(brdf.Kd.x,brdf.Kd.y),brdf.Kd.z) > 0.0f) {
     wid = cosineSampleHemisphere(s.x,s.y,dg.Ns);
     cd = float(one_over_pi) * clamp(dot(wid.v,dg.Ns)) * brdf.Kd;
   }
 
   Vec3fa cs = Vec3fa(0.0f);
-  Sample3f wis = Sample3f(Vec3fa(0.0f),0.0f);
+  Sample3f wis = make_Sample3f(Vec3fa(0.0f),0.0f);
   if (max(max(brdf.Ks.x,brdf.Ks.y),brdf.Ks.z) > 0.0f)
   {
-    const Sample3f refl = reflect_(wo,dg.Ns);
+    const Sample3f refl = make_Sample3f(reflect(wo,dg.Ns),1.0f);
     wis.v = powerCosineSampleHemisphere(brdf.Ns,s);
     wis.pdf = powerCosineSampleHemispherePDF(wis.v,brdf.Ns);
     wis.v = frame(refl.v) * wis.v;
@@ -548,10 +550,10 @@ Vec3fa OBJMaterial__sample(OBJMaterial* material, const BRDF& brdf, const Vec3fa
   }
 
   Vec3fa ct = Vec3fa(0.0f);
-  Sample3f wit = Sample3f(Vec3fa(0.0f),0.0f);
+  Sample3f wit = make_Sample3f(Vec3fa(0.0f),0.0f);
   if (max(max(brdf.Kt.x,brdf.Kt.y),brdf.Kt.z) > 0.0f)
   {
-    wit = Sample3f(neg(wo),1.0f);
+    wit = make_Sample3f(neg(wo),1.0f);
     ct = brdf.Kt;
   }
 
@@ -565,7 +567,7 @@ Vec3fa OBJMaterial__sample(OBJMaterial* material, const BRDF& brdf, const Vec3fa
   const float C  = Cd + Cs + Ct;
 
   if (C == 0.0f) {
-    wi_o = Sample3f(Vec3fa(0,0,0),0);
+    wi_o = make_Sample3f(Vec3fa(0,0,0),0);
     return Vec3fa(0,0,0);
   }
 
@@ -574,17 +576,17 @@ Vec3fa OBJMaterial__sample(OBJMaterial* material, const BRDF& brdf, const Vec3fa
   const float CPt = Ct/C;
 
   if (s.x < CPd) {
-    wi_o = Sample3f(wid.v,wid.pdf*CPd);
+    wi_o = make_Sample3f(wid.v,wid.pdf*CPd);
     return cd;
   }
   else if (s.x < CPd + CPs)
   {
-    wi_o = Sample3f(wis.v,wis.pdf*CPs);
+    wi_o = make_Sample3f(wis.v,wis.pdf*CPs);
     return cs;
   }
   else
   {
-    wi_o = Sample3f(wit.v,wit.pdf*CPt);
+    wi_o = make_Sample3f(wit.v,wit.pdf*CPt);
     return ct;
   }
 }
@@ -619,9 +621,9 @@ Vec3fa MetalMaterial__sample(MetalMaterial* This, const BRDF& brdf, const Vec3fa
 {
   const PowerCosineDistribution distribution = make_PowerCosineDistribution(rcp(This->roughness));
 
-  if (dot(wo,dg.Ns) <= 0.0f) { wi_o = Sample3f(Vec3fa(0.0f),0.0f); return Vec3fa(0.f); }
+  if (dot(wo,dg.Ns) <= 0.0f) { wi_o = make_Sample3f(Vec3fa(0.0f),0.0f); return Vec3fa(0.f); }
   sample(distribution,wo,dg.Ns,wi_o,s);
-  if (dot(wi_o.v,dg.Ns) <= 0.0f) { wi_o = Sample3f(Vec3fa(0.0f),0.0f); return Vec3fa(0.f); }
+  if (dot(wi_o.v,dg.Ns) <= 0.0f) { wi_o = make_Sample3f(Vec3fa(0.0f),0.0f); return Vec3fa(0.f); }
   return MetalMaterial__eval(This,brdf,wo,dg,wi_o.v);
 }
 
@@ -638,7 +640,7 @@ Vec3fa ReflectiveMetalMaterial__eval(ReflectiveMetalMaterial* This, const BRDF& 
 
 Vec3fa ReflectiveMetalMaterial__sample(ReflectiveMetalMaterial* This, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
 {
-  wi_o = reflect_(wo,dg.Ns);
+  wi_o = make_Sample3f(reflect(wo,dg.Ns),1.0f);
   return Vec3fa(This->reflectance) * fresnelConductor(dot(wo,dg.Ns),Vec3fa((Vec3fa)This->eta),Vec3fa((Vec3fa)This->k));
 }
 
@@ -698,7 +700,7 @@ Vec3fa DielectricMaterial__sample(DielectricMaterial* material, const BRDF& brdf
 
   float cosThetaO = clamp(dot(wo,dg.Ns));
   float cosThetaI; Sample3f wit = refract(wo,dg.Ns,eta,cosThetaO,cosThetaI);
-  Sample3f wis = reflect_(wo,dg.Ns);
+  Sample3f wis = make_Sample3f(reflect(wo,dg.Ns),1.0f);
   float R = fresnelDielectric(cosThetaO,cosThetaI,eta);
   Vec3fa cs = Vec3fa(R);
   Vec3fa ct = Vec3fa(1.0f-R);
@@ -722,8 +724,8 @@ Vec3fa ThinDielectricMaterial__sample(ThinDielectricMaterial* This, const BRDF& 
   float cosThetaO = clamp(dot(wo,dg.Ns));
   if (cosThetaO <= 0.0f) return Vec3fa(0.0f);
   float R = fresnelDielectric(cosThetaO,rcp(This->eta));
-  Sample3f wit = Sample3f(neg(wo),1.0f);
-  Sample3f wis = reflect_(wo,dg.Ns);
+  Sample3f wit = make_Sample3f(neg(wo),1.0f);
+  Sample3f wis = make_Sample3f(reflect(wo,dg.Ns),1.0f);
   Vec3fa ct = exp(Vec3fa(This->transmissionFactor)*rcp(cosThetaO))*Vec3fa(1.0f-R);
   Vec3fa cs = Vec3fa(R);
   return sample_component2(cs,wis,medium,ct,wit,medium,Lw,wi_o,medium,s.x);
@@ -776,11 +778,11 @@ Vec3fa HairMaterial__sample(HairMaterial* This, const BRDF& brdf, const Vec3fa& 
 //                              Material                                      //
 ////////////////////////////////////////////////////////////////////////////////
 
-inline void Material__preprocess(ISPCMaterial* materials, int materialID, int numMaterials, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)
+inline void Material__preprocess(ISPCMaterial* materials, unsigned int materialID, unsigned int numMaterials, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)
 {
-  int id = materialID;
+  unsigned int id = materialID;
   {
-    if (id >= 0 && id < numMaterials) // FIXME: workaround for ISPC bug, location reached with empty execution mask
+    if (id < numMaterials) // FIXME: workaround for ISPC bug, location reached with empty execution mask
     {
       ISPCMaterial* material = &materials[id];
 
@@ -801,12 +803,12 @@ inline void Material__preprocess(ISPCMaterial* materials, int materialID, int nu
   }
 }
 
-inline Vec3fa Material__eval(ISPCMaterial* materials, int materialID, int numMaterials, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi)
+inline Vec3fa Material__eval(ISPCMaterial* materials, unsigned int materialID, unsigned int numMaterials, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi)
 {
   Vec3fa c = Vec3fa(0.0f);
-  int id = materialID;
+  unsigned int id = materialID;
   {
-    if (id >= 0 && id < numMaterials) // FIXME: workaround for ISPC bug, location reached with empty execution mask
+    if (id < numMaterials) // FIXME: workaround for ISPC bug, location reached with empty execution mask
     {
       ISPCMaterial* material = &materials[id];
       switch (material->ty) {
@@ -827,12 +829,12 @@ inline Vec3fa Material__eval(ISPCMaterial* materials, int materialID, int numMat
   return c;
 }
 
-inline Vec3fa Material__sample(ISPCMaterial* materials, int materialID, int numMaterials, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
+inline Vec3fa Material__sample(ISPCMaterial* materials, unsigned int materialID, unsigned int numMaterials, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
 {
   Vec3fa c = Vec3fa(0.0f);
-  int id = materialID;
+  unsigned int id = materialID;
   {
-    if (id >= 0 && id < numMaterials) // FIXME: workaround for ISPC bug, location reached with empty execution mask
+    if (id < numMaterials) // FIXME: workaround for ISPC bug, location reached with empty execution mask
     {
       ISPCMaterial* material = &materials[id];
       switch (material->ty) {
@@ -846,7 +848,7 @@ inline Vec3fa Material__sample(ISPCMaterial* materials, int materialID, int numM
       case MATERIAL_MIRROR: c = MirrorMaterial__sample((MirrorMaterial*)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
       case MATERIAL_THIN_DIELECTRIC: c = ThinDielectricMaterial__sample((ThinDielectricMaterial*)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
       case MATERIAL_HAIR: c = HairMaterial__sample((HairMaterial*)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
-      default: wi_o = Sample3f(Vec3fa(0.0f),0.0f); c = Vec3fa(0.0f); break;
+      default: wi_o = make_Sample3f(Vec3fa(0.0f),0.0f); c = Vec3fa(0.0f); break;
       }
     }
   }
@@ -887,7 +889,7 @@ extern "C" int g_instancing_mode;
 
 bool g_animation = true;
 bool g_use_smooth_normals = false;
-void device_key_pressed(int key)
+void device_key_pressed_handler(int key)
 {
   if (key == 32  /* */) g_animation = !g_animation;
   if (key == 115 /*s*/) { g_use_smooth_normals = !g_use_smooth_normals; g_changed = true; }
@@ -1061,7 +1063,7 @@ RTCScene convertScene(ISPCScene* scene_in)
   geomID_to_inst  = (ISPCInstance_ptr*) alignedMalloc(numGeometries*sizeof(ISPCInstance_ptr));
 
   /* create scene */
-  int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
+  int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT; // | RTC_SCENE_HIGH_QUALITY;
   int scene_aflags = RTC_INTERSECT1;
 
   if (g_subdiv_mode)
@@ -1074,7 +1076,7 @@ RTCScene convertScene(ISPCScene* scene_in)
   /* use geometry instancing feature */
   if (g_instancing_mode == 1)
   {
-    for (size_t i=0; i<scene_in->numGeometries; i++)
+    for (unsigned int i=0; i<scene_in->numGeometries; i++)
     {
       ISPCGeometry* geometry = scene_in->geometries[i];
       if (geometry->type == SUBDIV_MESH) {
@@ -1119,7 +1121,7 @@ RTCScene convertScene(ISPCScene* scene_in)
   /* use scene instancing feature */
   else if (g_instancing_mode == 2 || g_instancing_mode == 3)
   {
-    for (size_t i=0; i<scene_in->numGeometries; i++)
+    for (unsigned int i=0; i<scene_in->numGeometries; i++)
     {
       ISPCGeometry* geometry = scene_in->geometries[i];
       if (geometry->type == SUBDIV_MESH) {
@@ -1176,31 +1178,31 @@ RTCScene convertScene(ISPCScene* scene_in)
   /* no instancing */
   else
   {
-    for (size_t i=0; i<scene_in->numGeometries; i++)
+    for (unsigned int i=0; i<scene_in->numGeometries; i++)
     {
       ISPCGeometry* geometry = scene_in->geometries[i];
       if (geometry->type == SUBDIV_MESH) {
-        unsigned int geomID = convertSubdivMesh((ISPCSubdivMesh*) geometry, scene_out);
+        unsigned int geomID MAYBE_UNUSED = convertSubdivMesh((ISPCSubdivMesh*) geometry, scene_out);
         assert(geomID == i);
       }
       else if (geometry->type == TRIANGLE_MESH) {
-        unsigned int geomID = convertTriangleMesh((ISPCTriangleMesh*) geometry, scene_out);
+        unsigned int geomID MAYBE_UNUSED = convertTriangleMesh((ISPCTriangleMesh*) geometry, scene_out);
         assert(geomID == i);
       }
       else if (geometry->type == QUAD_MESH) {
-        unsigned int geomID = convertQuadMesh((ISPCQuadMesh*) geometry, scene_out);
+        unsigned int geomID MAYBE_UNUSED = convertQuadMesh((ISPCQuadMesh*) geometry, scene_out);
         assert(geomID == i);
       }
       else if (geometry->type == LINE_SEGMENTS) {
-        unsigned int geomID = convertLineSegments((ISPCLineSegments*) geometry, scene_out);
+        unsigned int geomID MAYBE_UNUSED = convertLineSegments((ISPCLineSegments*) geometry, scene_out);
         assert(geomID == i);
       }
       else if (geometry->type == HAIR_SET) {
-        unsigned int geomID = convertHairSet((ISPCHairSet*) geometry, scene_out);
+        unsigned int geomID MAYBE_UNUSED = convertHairSet((ISPCHairSet*) geometry, scene_out);
         assert(geomID == i);
       }
       else if (geometry->type == CURVES) {
-        unsigned int geomID = convertCurveGeometry((ISPCHairSet*) geometry, scene_out);
+        unsigned int geomID MAYBE_UNUSED = convertCurveGeometry((ISPCHairSet*) geometry, scene_out);
         assert(geomID == i);
       }
       else
@@ -1210,7 +1212,7 @@ RTCScene convertScene(ISPCScene* scene_in)
 
   /* commit changes to scene */
   progressStart();
-  rtcSetProgressMonitorFunction(scene_out,progressMonitor,nullptr);
+  rtcSetProgressMonitorFunction(scene_out,(RTCProgressMonitorFunc)&progressMonitor,nullptr);
   rtcCommit (scene_out);
   rtcSetProgressMonitorFunction(scene_out,nullptr,nullptr);
   progressEnd();
@@ -1254,17 +1256,17 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
     materialID = mesh->triangles[ray.primID].materialID;
     if (mesh->texcoords) {
       ISPCTriangle* tri = &mesh->triangles[ray.primID];
-      const Vec2f st0 = Vec2f(mesh->texcoords[tri->v0]);
-      const Vec2f st1 = Vec2f(mesh->texcoords[tri->v1]);
-      const Vec2f st2 = Vec2f(mesh->texcoords[tri->v2]);
+      const Vec2f st0 = mesh->texcoords[tri->v0];
+      const Vec2f st1 = mesh->texcoords[tri->v1];
+      const Vec2f st2 = mesh->texcoords[tri->v2];
       const float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
       const Vec2f st = w*st0 + u*st1 + v*st2;
       dg.u = st.x;
       dg.v = st.y;
       /*
-      const Vec3fa n0 = Vec3fa(mesh->normals[tri->v0]);
-      const Vec3fa n1 = Vec3fa(mesh->normals[tri->v1]);
-      const Vec3fa n2 = Vec3fa(mesh->normals[tri->v2]);
+      const Vec3fa n0 = mesh->normals[tri->v0];
+      const Vec3fa n1 = mesh->normals[tri->v1];
+      const Vec3fa n2 = mesh->normals[tri->v2];
       dg.Ns = w*n0 + u*n1 + v*n2;
       */
     }
@@ -1275,10 +1277,10 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
     materialID = mesh->meshMaterialID;
     if (mesh->texcoords) {
       ISPCQuad* quad = &mesh->quads[ray.primID];
-      const Vec2f st0 = Vec2f(mesh->texcoords[quad->v0]);
-      const Vec2f st1 = Vec2f(mesh->texcoords[quad->v1]);
-      const Vec2f st2 = Vec2f(mesh->texcoords[quad->v2]);
-      const Vec2f st3 = Vec2f(mesh->texcoords[quad->v3]);
+      const Vec2f st0 = mesh->texcoords[quad->v0];
+      const Vec2f st1 = mesh->texcoords[quad->v1];
+      const Vec2f st2 = mesh->texcoords[quad->v2];
+      const Vec2f st3 = mesh->texcoords[quad->v3];
       if (ray.u+ray.v < 1.0f) {
         const float u = ray.u, v = ray.v; const float w = 1.0f-u-v;
         const Vec2f st = w*st0 + u*st1 + v*st3;
@@ -1348,7 +1350,7 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
     dg.tnear_eps = 1024.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar));
   }
   else if (geometry->type == GROUP) {
-    int geomID = ray.geomID; {
+    unsigned int geomID = ray.geomID; {
       postIntersectGeometry(ray,dg,((ISPCGroup*) geometry)->geometries[geomID],materialID);
     }
   }
@@ -1361,7 +1363,7 @@ inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
   int materialID = 0;
   unsigned ray_geomID = g_instancing_mode >= 2 ? ray.instID : ray.geomID;
   dg.tnear_eps = 32.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar));
-  int geomID = ray_geomID;
+  unsigned int geomID = ray_geomID;
   {
     /* get instance and geometry pointers */
     ISPCInstance* instance;
@@ -1453,7 +1455,7 @@ void occlusionFilterOBJ(void* ptr, RTCRay& ray)
 void occlusionFilterHair(void* ptr, RTCRay& ray)
 {
   Vec3fa Kt = Vec3fa(0.0f);
-  int geomID = ray.geomID;
+  unsigned int geomID = ray.geomID;
   {
     ISPCGeometry* geometry = g_ispc_scene->geometries[geomID];
     if (geometry->type == LINE_SEGMENTS)
@@ -1543,7 +1545,7 @@ Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCC
       if (ray.geomID != RTC_INVALID_GEOMETRY_ID) // FIXME: workaround for ISPC bug, location reached with empty execution mask
     {
       Vec3fa dPdu,dPdv;
-      int geomID = ray.geomID; {
+      unsigned int geomID = ray.geomID; {
         rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER0,nullptr,&dPdu.x,&dPdv.x,3);
       }
       Ns = normalize(cross(dPdv,dPdu));
@@ -1610,7 +1612,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
 
   for (int i=0; i<SAMPLES_PER_PIXEL; i++)
   {
-    RandomSampler_init(sampler, x, y, g_accu_count*SAMPLES_PER_PIXEL+i);
+    RandomSampler_init(sampler, (int)x, (int)y, g_accu_count*SAMPLES_PER_PIXEL+i);
 
     /* calculate pixel color */
     float fx = x + RandomSampler_get1D(sampler);
@@ -1624,24 +1626,24 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
 /* renders a single screen tile */
 void renderTileStandard(int taskIndex,
                         int* pixels,
-                        const int width,
-                        const int height,
+                        const unsigned int width,
+                        const unsigned int height,
                         const float time,
                         const ISPCCamera& camera,
                         const int numTilesX,
                         const int numTilesY)
 {
-  const int tileY = taskIndex / numTilesX;
-  const int tileX = taskIndex - tileY * numTilesX;
-  const int x0 = tileX * TILE_SIZE_X;
-  const int x1 = min(x0+TILE_SIZE_X,width);
-  const int y0 = tileY * TILE_SIZE_Y;
-  const int y1 = min(y0+TILE_SIZE_Y,height);
+  const unsigned int tileY = taskIndex / numTilesX;
+  const unsigned int tileX = taskIndex - tileY * numTilesX;
+  const unsigned int x0 = tileX * TILE_SIZE_X;
+  const unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const unsigned int y0 = tileY * TILE_SIZE_Y;
+  const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
-  for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
+  for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
     /* calculate pixel color */
-    Vec3fa color = renderPixelStandard(x,y,camera);
+    Vec3fa color = renderPixelStandard((float)x,(float)y,camera);
 
     /* write color to framebuffer */
     Vec3fa accu_color = g_accu[y*width+x] + Vec3fa(color.x,color.y,color.z,1.0f); g_accu[y*width+x] = accu_color;
@@ -1655,8 +1657,8 @@ void renderTileStandard(int taskIndex,
 
 /* task that renders a single screen tile */
 void renderTileTask (int taskIndex, int* pixels,
-                         const int width,
-                         const int height,
+                         const unsigned int width,
+                         const unsigned int height,
                          const float time,
                          const ISPCCamera& camera,
                          const int numTilesX,
@@ -1680,19 +1682,20 @@ inline float updateEdgeLevel( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, const
 
 void updateEdgeLevelBuffer( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, size_t startID, size_t endID )
 {
-  for (size_t f=startID; f<endID;f++) {
-       int e = mesh->face_offsets[f];
-       int N = mesh->verticesPerFace[f];
-       if (N == 4) /* fast path for quads */
-         for (size_t i=0; i<4; i++)
-           mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%4);
+  for (size_t f=startID; f<endID;f++)
+  {
+    unsigned int e = mesh->face_offsets[f];
+    unsigned int N = mesh->verticesPerFace[f];
+    if (N == 4) /* fast path for quads */
+      for (size_t i=0; i<4; i++)
+        mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%4);
        else if (N == 3) /* fast path for triangles */
          for (size_t i=0; i<3; i++)
            mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%3);
        else /* fast path for general polygons */
-        for (size_t i=0; i<N; i++)
+         for (size_t i=0; i<N; i++)
            mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%N);
- }
+  }
 }
 
 #if defined(ISPC)
@@ -1705,29 +1708,6 @@ void updateEdgeLevelBufferTask (int taskIndex,  ISPCSubdivMesh* mesh, const Vec3
 }
 #endif
 
-void updateKeyFrame(ISPCScene* scene_in)
-{
-  for (size_t g=0; g<scene_in->numGeometries; g++)
-  {
-    ISPCGeometry* geometry = g_ispc_scene->geometries[g];
-    if (geometry->type != SUBDIV_MESH) continue;
-    ISPCSubdivMesh* mesh = (ISPCSubdivMesh*) geometry;
-    unsigned int geomID = mesh->geomID;
-
-    if (g_ispc_scene->subdivMeshKeyFrames)
-      {
-	ISPCSubdivMeshKeyFrame *keyframe      = g_ispc_scene->subdivMeshKeyFrames[keyframeID];
-	ISPCSubdivMesh         *keyframe_mesh = keyframe->subdiv[g];
-	rtcSetBuffer(g_scene, geomID, RTC_VERTEX_BUFFER, keyframe_mesh->positions, 0, sizeof(Vec3fa  ));
-	rtcUpdateBuffer(g_scene,geomID,RTC_VERTEX_BUFFER);
-      }
-  }
-
-  keyframeID++;
-  if (keyframeID >= g_ispc_scene->numSubdivMeshKeyFrames)
-    keyframeID = 0;
-}
-
 void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
 {
   for (size_t g=0; g<scene_in->numGeometries; g++)
@@ -1737,9 +1717,9 @@ void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
     ISPCSubdivMesh* mesh = (ISPCSubdivMesh*) geometry;
     unsigned int geomID = mesh->geomID;
 #if defined(ISPC)
-      parallel_for(size_t(0),size_t( getNumHWThreads() ),[&](const range<size_t>& range) {
+    parallel_for(size_t(0),size_t( (mesh->numFaces+4095)/4096 ),[&](const range<size_t>& range) {
     for (size_t i=range.begin(); i<range.end(); i++)
-      updateEdgeLevelBufferTask(i,mesh,cam_pos);
+      updateEdgeLevelBufferTask((int)i,mesh,cam_pos);
   }); 
 #else
       updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
@@ -1766,7 +1746,7 @@ extern "C" void device_init (char* cfg)
 
   /* set start render mode */
   renderTile = renderTileStandard;
-  key_pressed_handler = device_key_pressed;
+  key_pressed_handler = device_key_pressed_handler;
 
 #if ENABLE_FILTER_FUNCTION == 0
   printf("Warning: filter functions disabled\n");
@@ -1776,8 +1756,8 @@ extern "C" void device_init (char* cfg)
 
 /* called by the C++ code to render */
 extern "C" void device_render (int* pixels,
-                           const int width,
-                           const int height,
+                           const unsigned int width,
+                           const unsigned int height,
                            const float time,
                            const ISPCCamera& camera)
 {
@@ -1804,12 +1784,6 @@ extern "C" void device_render (int* pixels,
   camera_changed |= ne(g_accu_vz,camera.xfm.l.vz); g_accu_vz = camera.xfm.l.vz;
   camera_changed |= ne(g_accu_p, camera.xfm.p);    g_accu_p  = camera.xfm.p;
 
-  if (g_animation && g_ispc_scene->numSubdivMeshKeyFrames) {
-    updateKeyFrame(g_ispc_scene);
-    rtcCommit(g_scene);
-    g_changed = true;
-  }
-
 #if  FIXED_SAMPLING == 0
   g_accu_count++;
 #endif
@@ -1830,7 +1804,7 @@ extern "C" void device_render (int* pixels,
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
     for (size_t i=range.begin(); i<range.end(); i++)
-      renderTileTask(i,pixels,width,height,time,camera,numTilesX,numTilesY);
+      renderTileTask((int)i,pixels,width,height,time,camera,numTilesX,numTilesY);
   }); 
   //rtcDebug();
 } // device_render
@@ -1845,3 +1819,5 @@ extern "C" void device_cleanup ()
   g_accu_height = 0;
   g_accu_count = 0;
 } // device_cleanup
+
+} // namespace embree

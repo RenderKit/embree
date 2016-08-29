@@ -16,13 +16,15 @@
 
 #pragma once
 
-////////////////////////////////////////////////////////////////////////////////
-/// Constants
-////////////////////////////////////////////////////////////////////////////////
+#include "../common.isph"
 
-#define inf     (1e100f)  //floatbits(0x7F800000)
-#define pos_inf (1e100f)  //floatbits(0x7F800000)
-#define neg_inf (-1e100f) //floatbits(0xFF800000)
+// ------------------------------------------------------------------
+// Constants
+// ------------------------------------------------------------------
+
+#define inf     (1e100f)
+#define pos_inf (1e100f)
+#define neg_inf (-1e100f)
 
 #define M_PI     3.14159265358979323846f
 #define pi       3.14159265358979323846f
@@ -32,21 +34,71 @@
 #define one_over_pi      0.31830988618379069122f
 #define one_over_two_pi  0.15915494309189534561f
 #define one_over_four_pi 0.079577471545947672804f
+#define one_over_two_pi_sqr 0.050660591821168885722f
 
-#define sqrtf sqrt
-#define sinf sin
-#define cosf cos
-#define powf pow
+/*! c-style reciprocal. required since ispc 1.7 due to type changes in this version */
+inline float rcpf(const float f) { return rcp(f); }
+/*! c-style reciprocal. required since ispc 1.7 due to type changes in this version */
+inline uniform float rcpf(const uniform float f) { return rcp(f); }
 
-////////////////////////////////////////////////////////////////////////////////
-/// Functions
-////////////////////////////////////////////////////////////////////////////////
+/*! c-style square root.  */
+inline float sqrtf(const float f) { return sqrt(f); }
+/*! c-style square root */
+inline uniform float sqrtf(const uniform float f) { return sqrt(f); }
 
+/*! c-style reciprocal square root.  */
+inline float rsqrtf(const float f) { return rsqrt(f); }
+/*! c-style reciprocal square root */
+inline uniform float rsqrtf(const uniform float f) { return rsqrt(f); }
+
+/*! square.  */
+inline float sqr(const float f) { return f*f; }
+/*! square.  */
 inline uniform float sqr(const uniform float f) { return f*f; }
-inline varying float sqr(const varying float f) { return f*f; }
+/*! c-style square.  */
+inline float sqrf(const float f) { return f*f; }
+/*! c-style square */
+inline uniform float sqrf(const uniform float f) { return f*f; }
 
-inline uniform float rcp_safe(uniform float f) { return rcp((abs(f) < 1e-8f) ? 1e-8f : f); }
-inline varying float rcp_safe(varying float f) { return rcp((abs(f) < 1e-8f) ? 1e-8f : f); }
+/*! c-style pow function.  */
+inline float powf(const float a, const float b) { return pow(a,b); }
+/*! c-style pow function */
+inline uniform float powf(const uniform float a, const uniform float b) { return pow(a,b); }
+
+
+/*! c-style cos.  */
+inline float cosf(const float f) { return cos(f); }
+/*! c-style cos */
+inline uniform float cosf(const uniform float f) { return cos(f); }
+
+/*! c-style sin.  */
+inline float sinf(const float f) { return sin(f); }
+/*! c-style sin */
+inline uniform float sinf(const uniform float f) { return sin(f); }
+
+/*! c-style exp.  */
+inline float expf(const float f) { return exp(f); }
+/*! c-style exp */
+inline uniform float expf(const uniform float f) { return exp(f); }
+
+/*! c-style log.  */
+inline float logf(const float f) { return log(f); }
+/*! c-style log */
+inline uniform float logf(const uniform float f) { return log(f); }
+
+/*! c-style abs.  */
+inline float absf(const float f) { return abs(f); }
+/*! c-style abs */
+inline uniform float absf(const uniform float f) { return abs(f); }
+
+
+// inline float clamp(const float f) { return max(min(1.f,f),0.f); }
+
+inline uniform float rcp_safe(uniform float f) { return rcpf((abs(f) < 1e-8f) ? 1e-8f : f); }
+inline varying float rcp_safe(varying float f) { return rcpf((abs(f) < 1e-8f) ? 1e-8f : f); }
+
+inline uniform float sqrt_safe(uniform float f) { return sqrt(max(f, 0.0f)); }
+inline varying float sqrt_safe(varying float f) { return sqrt(max(f, 0.0f)); }
 
 inline uniform float clamp (const uniform float v) { return max(0.0f,min(v,1.0f)); }
 inline varying float clamp (const varying float v) { return max(0.0f,min(v,1.0f)); }
@@ -57,14 +109,89 @@ inline varying float clamp (const varying float v, const varying float lower, co
 inline uniform int clamp (const uniform int v, const uniform int lower, const uniform int upper) { return max(lower,min(v,upper)); }
 inline varying int clamp (const varying int v, const varying int lower, const varying int upper) { return max(lower,min(v,upper)); }
 
+inline uniform float frac(const uniform float x)  { return x - floor(x); }
+inline varying float frac(const varying float x)  { return x - floor(x); }
+
 inline uniform float deg2rad (const uniform float x)  { return x * 1.74532925199432957692e-2f; }
 inline varying float deg2rad (const varying float x)  { return x * 1.74532925199432957692e-2f; }
 
 inline uniform float rad2deg (const uniform float x)  { return x * 5.72957795130823208768e1f; }
 inline varying float rad2deg (const varying float x)  { return x * 5.72957795130823208768e1f; }
 
-inline uniform float sin2cos ( const uniform float x )  { return sqrt(max(0.0f,1.0f-x*x)); }
-inline varying float sin2cos ( const varying float x )  { return sqrt(max(0.0f,1.0f-x*x)); }
+inline float cos2sin(const float f) { return sqrt(max(0.f, 1.f - sqr(f))); }
+inline float sin2cos(const float f) { return cos2sin(f); }
 
-inline uniform float cos2sin ( const uniform float x )  { return sin2cos(x); }
-inline varying float cos2sin ( const varying float x )  { return sin2cos(x); }
+inline uniform float nextafter(const uniform float a, const uniform float b)
+{
+  //! Match the behavior of the C99 math.h function.
+  if (a == b) return(b);
+
+  //! We will compute the smallest representable floating increment or decrement around 'a'.
+  uniform float delta = (b > a) ? 1.0f : -1.0f;
+
+  //! Iteratively compute the positive or negative increment.
+  while (a + 0.5f * delta != a) delta *= 0.5f;
+
+  //! Return the smallest number greater than 'a' or the largest number smaller than 'a'.
+  return(a + delta);
+}
+
+#define __define_lerp(TYPE)                                             \
+  inline TYPE lerp(float factor, TYPE a, TYPE b)                        \
+  {                                                                     \
+    return (1-factor)* a + factor * b;                                  \
+  }                                                                     \
+  inline uniform TYPE lerp(uniform float factor, uniform TYPE a, uniform TYPE b) \
+  {                                                                     \
+    return (1-factor)* a + factor * b;                                  \
+  }
+
+
+__define_lerp(int8)
+__define_lerp(int32)
+__define_lerp(float)
+__define_lerp(uint8)
+__define_lerp(uint32)
+
+#undef __define_lerp
+
+// ------------------------------------------------------------------
+// min4/max4, for all types
+// ------------------------------------------------------------------
+#define __define_op4T(MM,TYPE)                                  \
+  inline uniform TYPE MM##4(uniform TYPE a, uniform TYPE b,     \
+                            uniform TYPE c, uniform TYPE d)     \
+  {                                                             \
+    return MM(a, MM(b, MM(c, d)));                              \
+  }                                                             \
+  inline varying TYPE MM##4(varying TYPE a, varying TYPE b,     \
+                            varying TYPE c, varying TYPE d)     \
+  {                                                             \
+    return MM(a, MM(b, MM(c, d)));                              \
+  }
+
+#define __define_op4(MM)                        \
+  __define_op4T(MM,int8)                        \
+  __define_op4T(MM,int32)                       \
+  __define_op4T(MM,uint8)                       \
+  __define_op4T(MM,uint32)                      \
+  __define_op4T(MM,float)                       \
+  __define_op4T(MM,double)
+
+__define_op4(min)
+__define_op4(max)
+
+#undef __define_op4T
+#undef __define_op4
+
+#define SIMILAR_EPSILON .00001f
+inline float similar(float a, float b)
+{
+  return absf(a - b) <= SIMILAR_EPSILON;
+}
+
+inline uniform float similar(uniform float a, uniform float b)
+{
+  return absf(a - b) <= SIMILAR_EPSILON;
+}
+#undef SIMILAR_EPSILON

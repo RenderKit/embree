@@ -61,7 +61,7 @@ namespace embree
     ImageT (size_t width = 0, size_t height = 0, const std::string& name = "")
       : Image(width,height,name)
     {
-      data = (T*) malloc(width*height*sizeof(T));
+      data = new T[width*height];
       memset(data,0,width*height*sizeof(T));
     }
 
@@ -69,7 +69,7 @@ namespace embree
     ImageT (size_t width, size_t height, const T& color, const std::string& name = "")
       : Image(width,height,name)
     {
-      data = (T*) malloc(width*height*sizeof(T));
+      data = new T[width*height];
       for (size_t i=0; i<width*height; i++) data[i] = color;
     }
 
@@ -78,7 +78,7 @@ namespace embree
       : Image(width,height,name)
     {
       if (copy) {
-        data = (T*) malloc(width*height*sizeof(T));
+        data = new T[width*height];
         for (size_t i=0; i<width*height; i++) data[i] = color[i];
       } 
       else {
@@ -88,7 +88,7 @@ namespace embree
 
     /*! image destruction */
     virtual ~ImageT() {
-      if (data) free(data); data = nullptr;
+      delete[] data; data = nullptr;
     }
     
     /*! returns pixel color */
@@ -124,7 +124,7 @@ namespace embree
   typedef ImageT<Col4f> Image4f;
   
   /*! Generate a JPEG encoded image from a RGB8 buffer in memory. */
-  void encodeRGB8_to_JPEG(unsigned char *image, size_t width, size_t height, unsigned char **encoded, size_t *capacity);
+  void encodeRGB8_to_JPEG(unsigned char *image, size_t width, size_t height, unsigned char **encoded, unsigned long *capacity);
 
   /*! Loads image from EXR file. */
   Ref<Image> loadExr(const FileName& fileName);

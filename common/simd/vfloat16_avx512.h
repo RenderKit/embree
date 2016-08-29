@@ -172,7 +172,15 @@ namespace embree
   
   __forceinline const vfloat16 signmsk   ( const vfloat16& a ) { return _mm512_castsi512_ps(_mm512_and_epi32(_mm512_castps_si512(a),_mm512_set1_epi32(0x80000000))); }
 
-  __forceinline const vfloat16 rcp  ( const vfloat16& a ) { return _mm512_rcp28_ps(a); };
+  __forceinline const vfloat16 rcp(const vfloat16& a) {
+#if defined(__AVX512ER__)
+    return _mm512_rcp28_ps(a);
+#else
+    const vfloat16 r = _mm512_rcp14_ps(a.v);
+    return _mm512_mul_ps(r, _mm512_fnmadd_ps(r, a, vfloat16(2.0f)));
+#endif
+  }
+
   __forceinline const vfloat16 sqr  ( const vfloat16& a ) { return _mm512_mul_ps(a,a); }
   __forceinline const vfloat16 sqrt ( const vfloat16& a ) { return _mm512_sqrt_ps(a); }
   __forceinline const vfloat16 rsqrt( const vfloat16& a ) { return _mm512_invsqrt_ps(a); }
@@ -727,13 +735,13 @@ namespace embree
     _mm512_mask_compressstoreu_ps(addr,mask,reg);
   }
 
-  __forceinline vfloat16 gather16f(const vboolf16& mask, const float *const ptr, __m512i index, const _MM_INDEX_SCALE_ENUM scale) {
+  __forceinline vfloat16 gather16f(const vboolf16& mask, const float *const ptr, __m512i index, const int scale= 4 ) {
     vfloat16 r = vfloat16::undefined();
-    return _mm512_mask_i32extgather_ps(r,mask,index,ptr,_MM_UPCONV_PS_NONE,scale,0);
+    return _mm512_mask_i32gather_ps(r,mask,index,ptr,scale);
   }
   
-  __forceinline void scatter16f(const vboolf16& mask,const float *const ptr, const __m512i index,const vfloat16 v, const _MM_INDEX_SCALE_ENUM scale) {
-    _mm512_mask_i32extscatter_ps((void*)ptr,mask,index,v,_MM_DOWNCONV_PS_NONE,scale,0);
+  __forceinline void scatter16f(const vboolf16& mask,const float *const ptr, const __m512i index,const vfloat16 v, const int scale = 4) {
+    _mm512_mask_i32scatter_ps((void*)ptr,mask,index,v,scale);
   }
 
   __forceinline vfloat16 loadAOS4to16f(const float& x,const float& y, const float& z)

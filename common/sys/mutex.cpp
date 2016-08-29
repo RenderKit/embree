@@ -28,7 +28,7 @@ namespace embree
   MutexSys::MutexSys( void ) { mutex = new CRITICAL_SECTION; InitializeCriticalSection((CRITICAL_SECTION*)mutex); }
   MutexSys::~MutexSys( void ) { DeleteCriticalSection((CRITICAL_SECTION*)mutex); delete (CRITICAL_SECTION*)mutex; }
   void MutexSys::lock( void ) { EnterCriticalSection((CRITICAL_SECTION*)mutex); }
-  bool MutexSys::try_lock( void ) { return TryEnterCriticalSection((CRITICAL_SECTION*)mutex); }
+  bool MutexSys::try_lock( void ) { return TryEnterCriticalSection((CRITICAL_SECTION*)mutex) != 0; }
   void MutexSys::unlock( void ) { LeaveCriticalSection((CRITICAL_SECTION*)mutex); }
 }
 #endif
@@ -101,5 +101,5 @@ namespace embree
   };
 
   mutex_regression_test<MutexSys> mutex_sys_regression("sys_mutex_regression_test");
-  mutex_regression_test<AtomicMutex> mutex_atomic_regression("atomic_mutex_regression_test");
+  mutex_regression_test<SpinLock> mutex_atomic_regression("atomic_mutex_regression_test");
 }

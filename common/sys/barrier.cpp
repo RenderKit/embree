@@ -53,7 +53,7 @@ namespace embree
     {
       /* every thread entering the barrier decrements this count */
       size_t i0 = i;
-      int cnt0 = enterCount--;
+      size_t cnt0 = enterCount--;
 
       /* all threads except the last one are wait in the barrier */
       if (cnt0 > 1) 
@@ -72,7 +72,7 @@ namespace embree
       }
 
       /* every thread leaving the barrier decrements this count */
-      int cnt1 = exitCount--;
+      size_t cnt1 = exitCount--;
 
       /* the last thread that left the barrier resets the event again */
       if (cnt1 == 1) 
@@ -86,8 +86,8 @@ namespace embree
   public:
     HANDLE events[2];
     volatile size_t i;
-    atomic<int> enterCount;
-    atomic<int> exitCount;
+    atomic<size_t> enterCount;
+    atomic<size_t> exitCount;
     size_t barrierSize;
   };
 }
@@ -155,13 +155,6 @@ namespace embree
     ((BarrierSysImplementation*) opaque)->wait();
   }
 
-#define MIN_MIC_BARRIER_WAIT_CYCLES 8
-#define MAX_MIC_BARRIER_WAIT_CYCLES 256
-
-  __forceinline void barrier_pause(unsigned int& cycles) {
-    __pause_cpu_expfalloff(cycles,MAX_MIC_BARRIER_WAIT_CYCLES);
-  }
-
   LinearBarrierActive::LinearBarrierActive (size_t N) 
     : count0(nullptr), count1(nullptr), mode(0), flag0(0), flag1(0), threadCount(0)
   { 
@@ -200,9 +193,8 @@ namespace embree
         
         for (size_t i=1; i<threadCount; i++)
         {
-          unsigned int wait_cycles = MIN_MIC_BARRIER_WAIT_CYCLES;
           while (likely(count0[i] == 0)) 
-            barrier_pause(wait_cycles);
+            __pause_cpu();
         }
         mode  = 1;
         flag1 = 0;
@@ -213,9 +205,8 @@ namespace embree
       {					
         count0[threadIndex] = 1;
         {
-          unsigned int wait_cycles = MIN_MIC_BARRIER_WAIT_CYCLES;
           while (likely(flag0 == 0))
-            barrier_pause(wait_cycles);
+            __pause_cpu();
         }
         
       }		
@@ -229,9 +220,8 @@ namespace embree
         
         for (size_t i=1; i<threadCount; i++)
         {		
-          unsigned int wait_cycles = MIN_MIC_BARRIER_WAIT_CYCLES;
           while (likely(count1[i] == 0))
-            barrier_pause(wait_cycles);
+            __pause_cpu();
         }
         
         mode  = 0;
@@ -243,9 +233,8 @@ namespace embree
       {					
         count1[threadIndex] = 1;
         {
-          unsigned int wait_cycles = MIN_MIC_BARRIER_WAIT_CYCLES;
           while (likely(flag1 == 0))
-            barrier_pause(wait_cycles);
+            __pause_cpu();
         }
       }		
     }					

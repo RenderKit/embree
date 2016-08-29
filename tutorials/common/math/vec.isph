@@ -16,8 +16,931 @@
 
 #pragma once
 
-#include "veci.isph"
-#include "vec2f.isph"
-#include "vec3f.isph"
-#include "vec3fa.isph"
-#include "vec4f.isph"
+#include "math.isph"
+
+#define __define_ispc_vector2(TYPE,ABB)         \
+  struct Vec2##ABB {                            \
+    TYPE x; TYPE y;                             \
+  };                                            \
+
+#define __define_ispc_vector3(TYPE,ABB)         \
+  struct Vec3##ABB {                            \
+    TYPE x,y,z;                                 \
+  };                                            \
+  struct Vec3##ABB##a {                         \
+    TYPE x,y,z,w;                               \
+  };                                            \
+
+#define __define_ispc_vector4(TYPE,ABB)         \
+  struct Vec4##ABB {                            \
+    TYPE x,y,z,w;                               \
+  };                                            \
+
+__define_ispc_vector2(int,i);
+__define_ispc_vector2(unsigned int,ui);
+__define_ispc_vector2(unsigned int8,uc);
+__define_ispc_vector2(float,f);
+
+__define_ispc_vector3(int,i);
+__define_ispc_vector3(unsigned int,ui);
+__define_ispc_vector3(unsigned int8,uc);
+__define_ispc_vector3(float,f);
+
+__define_ispc_vector4(int,i);
+__define_ispc_vector4(unsigned int,ui);
+__define_ispc_vector4(unsigned int8,uc);
+__define_ispc_vector4(float,f);
+
+#undef __define_ispc_vector2
+#undef __define_ispc_vector3
+#undef __define_ispc_vector4
+
+
+
+
+/*! defines all constructors "make_Vec2[T]" for 2-vector type */
+#define __define_ispc_constructors2(UV,TYPE,ABB,ITYPE,IABB)     \
+  inline UV Vec2##ABB make_Vec2##ABB(const UV ITYPE x,          \
+                                     const UV ITYPE y)          \
+  {                                                             \
+    UV Vec2##ABB ret;                                           \
+    ret.x = x;                                                  \
+    ret.y = y;                                                  \
+    return ret;                                                 \
+  }                                                             \
+  inline UV Vec2##ABB make_Vec2##ABB(const UV ITYPE x)          \
+  {                                                             \
+    UV Vec2##ABB ret;                                           \
+    ret.x = x;                                                  \
+    ret.y = x;                                                  \
+    return ret;                                                 \
+  }                                                             \
+
+/*! defines all constructors "make_Vec3[T]" and "make_Vec3[T]a" for
+  3-vector type */
+#define __define_ispc_constructors3(UV,TYPE,ABB,ITYPE,IABB)             \
+  inline UV Vec3##ABB make_Vec3##ABB(const UV ITYPE x)                  \
+  {                                                                     \
+    UV Vec3##ABB ret;                                                   \
+    ret.x = x;                                                          \
+    ret.y = x;                                                          \
+    ret.z = x;                                                          \
+    return ret;                                                         \
+  }                                                                     \
+  inline UV Vec3##ABB make_Vec3##ABB(const UV Vec3##IABB v)             \
+  {                                                                     \
+    UV Vec3##ABB ret;                                                   \
+    ret.x = v.x;                                                        \
+    ret.y = v.y;                                                        \
+    ret.z = v.z;                                                        \
+    return ret;                                                         \
+  }                                                                     \
+  inline UV Vec3##ABB make_Vec3##ABB(const UV Vec3##IABB##a v)          \
+  {                                                                     \
+    UV Vec3##ABB ret;                                                   \
+    ret.x = v.x;                                                        \
+    ret.y = v.y;                                                        \
+    ret.z = v.z;                                                        \
+    return ret;                                                         \
+  }                                                                     \
+  inline UV Vec3##ABB make_Vec3##ABB(const UV ITYPE x,                  \
+                                     const UV ITYPE y,                  \
+                                     const UV ITYPE z)                  \
+  {                                                                     \
+    UV Vec3##ABB ret;                                                   \
+    ret.x = x;                                                          \
+    ret.y = y;                                                          \
+    ret.z = z;                                                          \
+    return ret;                                                         \
+  }                                                                     \
+  inline UV Vec3##ABB make_Vec3##ABB(const UV Vec4##IABB v)             \
+  {                                                                     \
+    UV Vec3##ABB ret;                                                   \
+    ret.x = v.x;                                                        \
+    ret.y = v.y;                                                        \
+    ret.z = v.z;                                                        \
+    return ret;                                                         \
+  }                                                                     \
+  /* the '3a' variants */                                               \
+  inline UV Vec3##ABB##a make_Vec3##ABB##a(const UV ITYPE x)            \
+  {                                                                     \
+    UV Vec3##ABB##a ret;                                                \
+    ret.x = x;                                                          \
+    ret.y = x;                                                          \
+    ret.z = x;                                                          \
+    ret.w = 0;                                                          \
+    return ret;                                                         \
+  }                                                                     \
+  inline UV Vec3##ABB##a make_Vec3##ABB##a(const UV Vec3##IABB &v)      \
+  {                                                                     \
+    UV Vec3##ABB##a ret;                                                \
+    ret.x = v.x;                                                        \
+    ret.y = v.y;                                                        \
+    ret.z = v.z;                                                        \
+    ret.w = 0;                                                          \
+    return ret;                                                         \
+  }                                                                     \
+  inline UV Vec3##ABB##a make_Vec3##ABB##a(const UV Vec3##IABB##a v)    \
+  {                                                                     \
+    UV Vec3##ABB##a ret;                                                \
+    ret.x = v.x;                                                        \
+    ret.y = v.y;                                                        \
+    ret.z = v.z;                                                        \
+    ret.w = v.w;                                                        \
+    return ret;                                                         \
+  }                                                                     \
+  inline UV Vec3##ABB##a make_Vec3##ABB##a(const UV ITYPE x,            \
+                                           const UV ITYPE y,            \
+                                           const UV ITYPE z)            \
+  {                                                                     \
+    UV Vec3##ABB##a ret;                                                \
+    ret.x = x;                                                          \
+    ret.y = y;                                                          \
+    ret.z = z;                                                          \
+    ret.w = 0;                                                          \
+    return ret;                                                         \
+  }                                                                     \
+  inline UV Vec3##ABB##a make_Vec3##ABB##a(const UV ITYPE x,            \
+                                           const UV ITYPE y,            \
+                                           const UV ITYPE z,            \
+                                           const UV ITYPE w)            \
+  {                                                                     \
+    UV Vec3##ABB##a ret;                                                \
+    ret.x = x;                                                          \
+    ret.y = y;                                                          \
+    ret.z = z;                                                          \
+    ret.w = w;                                                          \
+    return ret;                                                         \
+  }                                                                     \
+  inline UV Vec3##ABB##a make_Vec3##ABB##a(const UV Vec3##IABB &v,      \
+                                           const UV ITYPE w)            \
+  {                                                                     \
+    UV Vec3##ABB##a ret;                                                \
+    ret.x = v.x;                                                        \
+    ret.y = v.y;                                                        \
+    ret.z = v.z;                                                        \
+    ret.w = w;                                                          \
+    return ret;                                                         \
+  }                                                                     \
+  inline UV Vec3##ABB##a make_Vec3##ABB##a(const UV Vec4##IABB v)       \
+  {                                                                     \
+    UV Vec3##ABB##a ret;                                                \
+    ret.x = v.x;                                                        \
+    ret.y = v.y;                                                        \
+    ret.z = v.z;                                                        \
+    ret.w = v.w;                                                        \
+    return ret;                                                         \
+  }                                                                     \
+
+
+
+
+
+/*! defines all constructors "make_Vec4[T]" for 4-vector type */
+#define __define_ispc_constructors4(UV,TYPE,ABB,ITYPE,IABB)     \
+  /*! construct Vec4 from a single scalar */                    \
+  inline UV Vec4##ABB make_Vec4##ABB(const UV ITYPE f)          \
+  {                                                             \
+    UV Vec4##ABB ret;                                           \
+    ret.x = f;                                                  \
+    ret.y = f;                                                  \
+    ret.z = f;                                                  \
+    ret.w = f;                                                  \
+    return ret;                                                 \
+  }                                                             \
+  /*! construct Vec4 from a 4 scalars */                        \
+  inline UV Vec4##ABB make_Vec4##ABB(const UV ITYPE x,          \
+                                     const UV ITYPE y,          \
+                                     const UV ITYPE z,          \
+                                     const UV ITYPE w)          \
+  {                                                             \
+    UV Vec4##ABB ret;                                           \
+    ret.x = x;                                                  \
+    ret.y = y;                                                  \
+    ret.z = z;                                                  \
+    ret.w = w;                                                  \
+    return ret;                                                 \
+  }                                                             \
+  /*! construct Vec4 from another Vec4 (of another type) */     \
+  inline UV Vec4##ABB make_Vec4##ABB(const UV Vec4##IABB v)     \
+  {                                                             \
+    UV Vec4##ABB ret;                                           \
+    ret.x = v.x;                                                \
+    ret.y = v.y;                                                \
+    ret.z = v.z;                                                \
+    ret.w = v.w;                                                \
+    return ret;                                                 \
+  }                                                             \
+
+
+#define __define_ispc_lift_constructors4(UV,TYPE,ABB)           \
+  /*! lift Vec4 from Vec3; fill in with 0es */                  \
+  inline UV Vec4##ABB make_Vec4##ABB(const UV Vec3##ABB v)      \
+  {                                                             \
+    UV Vec4##ABB ret;                                           \
+    ret.x = (TYPE)v.x;                                          \
+    ret.y = (TYPE)v.y;                                          \
+    ret.z = (TYPE)v.z;                                          \
+    ret.w = (TYPE)0;                                            \
+    return ret;                                                 \
+  }                                                             \
+
+#define __define_ispc_constructors_uv_t(UV,OTYPE,OABB,ITYPE,IABB)       \
+  __define_ispc_constructors2(UV,OTYPE,OABB,ITYPE,IABB)                 \
+  __define_ispc_constructors3(UV,OTYPE,OABB,ITYPE,IABB)                 \
+  __define_ispc_constructors4(UV,OTYPE,OABB,ITYPE,IABB)                 \
+
+#define __define_ispc_constructors_uv(UV,TYPE,ABB)              \
+  __define_ispc_constructors_uv_t(UV,TYPE,ABB,int,i)            \
+  __define_ispc_constructors_uv_t(UV,TYPE,ABB,unsigned int,ui)  \
+  __define_ispc_constructors_uv_t(UV,TYPE,ABB,unsigned int8,uc) \
+  __define_ispc_constructors_uv_t(UV,TYPE,ABB,float,f)          \
+  __define_ispc_lift_constructors4(UV,TYPE,ABB)                 \
+
+#define __define_ispc_constructors(UV)                  \
+  __define_ispc_constructors_uv(UV,unsigned int,ui)     \
+  __define_ispc_constructors_uv(UV,unsigned int8,uc)    \
+  __define_ispc_constructors_uv(UV,int,i)               \
+  __define_ispc_constructors_uv(UV,float,f)             \
+
+__define_ispc_constructors(uniform);
+__define_ispc_constructors(varying);
+
+#undef __define_ispc_constructors2
+#undef __define_ispc_constructors3
+#undef __define_ispc_constructors3a
+#undef __define_ispc_constructors4
+#undef __define_ispc_lift_constructors4
+#undef __define_ispc_constructors_uv
+#undef __define_ispc_constructors
+
+
+// =======================================================
+// define 'lifted' binary operators (min/max/...)
+
+#define __lift_binaryFct(FCT,T)                                         \
+  /* ********************************************************* */       \
+  /*                    ---- Vec2 ----                         */       \
+  /* ********************************************************* */       \
+  /* uniform Vec2 FCT(uniform Vec2, uniform Vec2) */                    \
+  inline uniform Vec2##T FCT(const uniform Vec2##T a,                   \
+                             const uniform Vec2##T b)                   \
+  {  return make_Vec2##T(FCT(a.x,b.x),FCT(a.y,b.y)); }                  \
+  /* Vec2 FCT(Vec2, Vec2) */                                            \
+  inline varying Vec2##T FCT(const varying Vec2##T a,                   \
+                             const varying Vec2##T b)                   \
+  {  return make_Vec2##T(FCT(a.x,b.x),FCT(a.y,b.y)); }                  \
+  /* Vec2 FCT(Vec2, uniform Vec2) */                                    \
+  inline varying Vec2##T FCT(const varying Vec2##T a,                   \
+                             const uniform Vec2##T b)                   \
+  {  return make_Vec2##T(FCT(a.x,b.x),FCT(a.y,b.y)); }                  \
+  /* Vec2 FCT(uniform Vec2, Vec2) */                                    \
+  inline varying Vec2##T FCT(const uniform Vec2##T a,                   \
+                             const varying Vec2##T b)                   \
+  {  return make_Vec2##T(FCT(a.x,b.x),FCT(a.y,b.y)); }                  \
+                                                                        \
+  /* ********************************************************* */       \
+  /*                    ---- Vec3 ----                         */       \
+  /* ********************************************************* */       \
+  /* uniform Vec3 FCT(uniform Vec3, uniform Vec3) */                    \
+  inline uniform Vec3##T FCT(const uniform Vec3##T a,                   \
+                             const uniform Vec3##T b)                   \
+  {  return make_Vec3##T(FCT(a.x,b.x),FCT(a.y,b.y),FCT(a.z,b.z)); }     \
+  /* Vec3 FCT(Vec3, Vec3) */                                            \
+  inline varying Vec3##T FCT(const varying Vec3##T a,                   \
+                             const varying Vec3##T b)                   \
+  {  return make_Vec3##T(FCT(a.x,b.x),FCT(a.y,b.y),FCT(a.z,b.z)); }     \
+  /* Vec3 FCT(uniformVec3, Vec3) */                                     \
+  inline varying Vec3##T FCT(const uniform Vec3##T a,                   \
+                             const varying Vec3##T b)                   \
+  {  return make_Vec3##T(FCT(a.x,b.x),FCT(a.y,b.y),FCT(a.z,b.z)); }     \
+  /* Vec3 FCT(Vec3, uniformVec3) */                                     \
+  inline varying Vec3##T FCT(const varying Vec3##T a,                   \
+                             const uniform Vec3##T b)                   \
+  {  return make_Vec3##T(FCT(a.x,b.x),FCT(a.y,b.y),FCT(a.z,b.z)); }     \
+                                                                        \
+  /* ********************************************************* */       \
+  /*                    ---- Vec3a (from 3a and 3a) ----  */            \
+  /* ********************************************************* */       \
+  /* uniform Vec3a FCT(uniform Vec3a, uniform Vec3a) */                 \
+  inline uniform Vec3##T##a FCT(const uniform Vec3##T##a a,             \
+                                const uniform Vec3##T##a b)             \
+  {  return make_Vec3##T##a(FCT(a.x,b.x),FCT(a.y,b.y),FCT(a.z,b.z),FCT(a.w,b.w)); } \
+  /* Vec3a FCT(Vec3a, Vec3a) */                                         \
+  inline varying Vec3##T##a FCT(const varying Vec3##T##a a,             \
+                                const varying Vec3##T##a b)             \
+  {  return make_Vec3##T##a(FCT(a.x,b.x),FCT(a.y,b.y),FCT(a.z,b.z),FCT(a.w,b.w)); } \
+                                                                        \
+  /* ********************************************************* */       \
+  /*                    ---- Vec3a (from 3 and 3a) ----  */             \
+  /* ********************************************************* */       \
+  /* uniform Vec3a FCT(uniform Vec3a, uniform Vec3a) */                 \
+  inline uniform Vec3##T##a FCT(const uniform Vec3##T a,                \
+                                const uniform Vec3##T##a b)             \
+  {  return make_Vec3##T##a(FCT(a.x,b.x),FCT(a.y,b.y),FCT(a.z,b.z)); }  \
+  /* Vec3a FCT(Vec3a, Vec3a) */                                         \
+  inline varying Vec3##T##a FCT(const varying Vec3##T a,                \
+                                const varying Vec3##T##a b)             \
+  {  return make_Vec3##T##a(FCT(a.x,b.x),FCT(a.y,b.y),FCT(a.z,b.z)); }  \
+                                                                        \
+  /* ********************************************************* */       \
+  /*                    ---- Vec3a (from 3a and 3) ----  */             \
+  /* ********************************************************* */       \
+  /* uniform Vec3a FCT(uniform Vec3a, uniform Vec3a) */                 \
+  inline uniform Vec3##T##a FCT(const uniform Vec3##T##a a,             \
+                                const uniform Vec3##T b)                \
+  {  return make_Vec3##T##a(FCT(a.x,b.x),FCT(a.y,b.y),FCT(a.z,b.z)); }  \
+  /* Vec3a FCT(Vec3a, Vec3a) */                                         \
+  inline varying Vec3##T##a FCT(const varying Vec3##T##a a,             \
+                                const varying Vec3##T b)                \
+  {  return make_Vec3##T##a(FCT(a.x,b.x),FCT(a.y,b.y),FCT(a.z,b.z)); }  \
+                                                                        \
+  /* ********************************************************* */       \
+  /*                    ---- Vec4 ----                         */       \
+  /* ********************************************************* */       \
+  /* uniform Vec4 FCT(uniform Vec4, uniform Vec4) */                    \
+  inline uniform Vec4##T FCT(const uniform Vec4##T a,                   \
+                             const uniform Vec4##T b)                   \
+  {  return make_Vec4##T(FCT(a.x,b.x),FCT(a.y,b.y),                     \
+                         FCT(a.z,b.z),FCT(a.w,b.w)); }                  \
+  /* Vec4 FCT(Vec4, Vec4) */                                            \
+  inline varying Vec4##T FCT(const varying Vec4##T a,                   \
+                             const varying Vec4##T b)                   \
+  {  return make_Vec4##T(FCT(a.x,b.x),FCT(a.y,b.y),                     \
+                         FCT(a.z,b.z),FCT(a.w,b.w)); }                  \
+
+__lift_binaryFct(min,f)
+__lift_binaryFct(max,f)
+__lift_binaryFct(min,i)
+__lift_binaryFct(max,i)
+__lift_binaryFct(min,ui)
+__lift_binaryFct(max,ui)
+
+#undef __lift_binaryFct
+
+// =======================================================
+
+// for now, let's implement those manually - should eventually do those via a macro!
+
+inline uniform Vec3f neg(const uniform Vec3f v)
+{ return make_Vec3f(-v.x,-v.y,-v.z); }
+inline Vec3f neg(const Vec3f v)
+{ return make_Vec3f(-v.x,-v.y,-v.z); }
+inline uniform Vec3f negate(const uniform Vec3f &a)
+{ return(make_Vec3f(-a.x, -a.y, -a.z)); }
+inline varying Vec3f negate(const varying Vec3f &a)
+{ return(make_Vec3f(-a.x, -a.y, -a.z)); }
+
+
+#define __define_binary_operator_typed(opname,op,abb,type)              \
+  /* Vec2##abb */                                                       \
+  inline uniform Vec2##abb opname (const uniform Vec2##abb a,           \
+                                   const uniform Vec2##abb b) {         \
+    return make_Vec2##abb(a.x op b.x, a.y op b.y);                      \
+  }                                                                     \
+  inline Vec2##abb opname (const Vec2##abb a, const Vec2##abb b) {      \
+    return make_Vec2##abb(a.x op b.x, a.y op b.y);                      \
+  }                                                                     \
+  inline uniform Vec2##abb opname (const uniform Vec2##abb a,           \
+                                   const uniform type b) {              \
+    return make_Vec2##abb(a.x op b, a.y op b);                          \
+  }                                                                     \
+  inline Vec2##abb opname (const Vec2##abb a, const type b) {           \
+    return make_Vec2##abb(a.x op b, a.y op b);                          \
+  }                                                                     \
+  inline uniform Vec2##abb opname (const uniform type a,                \
+                                   const uniform Vec2##abb b) {         \
+    return make_Vec2##abb(a op b.x, a op b.y);                          \
+  }                                                                     \
+  inline Vec2##abb opname (const type a, const Vec2##abb b) {           \
+    return make_Vec2##abb(a op b.x, a op b.y);                          \
+  }                                                                     \
+  /* Vec3##abb */                                                       \
+  inline uniform Vec3##abb opname (const uniform Vec3##abb a,           \
+                                   const uniform Vec3##abb b) {         \
+    return make_Vec3##abb(a.x op b.x, a.y op b.y, a.z op b.z);          \
+  }                                                                     \
+  inline Vec3##abb opname (const Vec3##abb a, const Vec3##abb b) {      \
+    return make_Vec3##abb(a.x op b.x, a.y op b.y, a.z op b.z);          \
+  }                                                                     \
+  inline uniform Vec3##abb opname (const uniform Vec3##abb a,           \
+                                   const uniform type b) {              \
+    return make_Vec3##abb(a.x op b, a.y op b, a.z op b);                \
+  }                                                                     \
+  inline Vec3##abb opname (const Vec3##abb a, const type b) {           \
+    return make_Vec3##abb(a.x op b, a.y op b, a.z op b);                \
+  }                                                                     \
+  inline uniform Vec3##abb opname (const uniform type a,                \
+                                   const uniform Vec3##abb b) {         \
+    return make_Vec3##abb(a op b.x, a op b.y, a op b.z);                \
+  }                                                                     \
+  inline Vec3##abb opname (const type a, const Vec3##abb b) {           \
+    return make_Vec3##abb(a op b.x, a op b.y, a op b.z);                \
+  }                                                                     \
+  /* Vec3##abb##a */                                                    \
+  inline uniform Vec3##abb##a opname (const uniform Vec3##abb##a a,     \
+                                      const uniform Vec3##abb##a b) {   \
+    return make_Vec3##abb##a(a.x op b.x, a.y op b.y, a.z op b.z, a.w op b.w); \
+  }                                                                     \
+  inline Vec3##abb##a opname (const Vec3##abb##a a, const Vec3##abb##a b) { \
+    return make_Vec3##abb##a(a.x op b.x, a.y op b.y, a.z op b.z, a.w op b.w); \
+  }                                                                     \
+  inline uniform Vec3##abb##a opname (const uniform Vec3##abb##a a,     \
+                                      const uniform type b) {           \
+    return make_Vec3##abb##a(a.x op b, a.y op b, a.z op b, a.w op b);   \
+  }                                                                     \
+  inline Vec3##abb##a opname (const Vec3##abb##a a, const type b) {     \
+    return make_Vec3##abb##a(a.x op b, a.y op b, a.z op b, a.w op b);   \
+  }                                                                     \
+  inline uniform Vec3##abb##a opname (const uniform type a,             \
+                                      const uniform Vec3##abb##a b) {   \
+    return make_Vec3##abb##a(a op b.x, a op b.y, a op b.z, a op b.w);   \
+  }                                                                     \
+  inline Vec3##abb##a opname (const type a, const Vec3##abb##a b) {     \
+    return make_Vec3##abb##a(a op b.x, a op b.y, a op b.z, a op b.w);   \
+  }                                                                     \
+  /* Vec4##abb */                                                       \
+  inline uniform Vec4##abb opname (const uniform Vec4##abb a,           \
+                                   const uniform Vec4##abb b) {         \
+    return make_Vec4##abb(a.x op b.x, a.y op b.y, a.z op b.z, a.w op b.w); \
+  }                                                                     \
+  inline Vec4##abb opname (const Vec4##abb a, const Vec4##abb b) {      \
+    return make_Vec4##abb(a.x op b.x, a.y op b.y, a.z op b.z, a.w op b.w); \
+  }                                                                     \
+  inline uniform Vec4##abb opname (const uniform Vec4##abb a,           \
+                                   const uniform type b) {              \
+    return make_Vec4##abb(a.x op b, a.y op b, a.z op b, a.w op b);      \
+  }                                                                     \
+  inline Vec4##abb opname (const Vec4##abb a, const type b) {           \
+    return make_Vec4##abb(a.x op b, a.y op b, a.z op b, a.w op b);      \
+  }                                                                     \
+  inline uniform Vec4##abb opname (const uniform type a,                \
+                                   const uniform Vec4##abb b) {         \
+    return make_Vec4##abb(a op b.x, a op b.y, a op b.z, a op b.w);      \
+  }                                                                     \
+  inline Vec4##abb opname (const type a, const Vec4##abb b) {           \
+    return make_Vec4##abb(a op b.x, a op b.y, a op b.z, a op b.w);      \
+  }
+
+#define __define_binary_operator(opname,op)             \
+  __define_binary_operator_typed(opname,op,f,float)     \
+  __define_binary_operator_typed(opname,op,i,int32)     \
+  __define_binary_operator_typed(opname,op,ui,uint32)
+
+
+// define 'regular' operators
+__define_binary_operator( operator+, + );
+__define_binary_operator( operator-, - );
+__define_binary_operator( operator*, * );
+__define_binary_operator( operator/, / );
+
+// define old functional operators as used in the embree path tracer, deprecated
+__define_binary_operator( add, + );
+__define_binary_operator( sub, - );
+__define_binary_operator( mul, * );
+
+#undef __define_binary_operator
+
+inline float reduce_mul(const Vec3f v)
+{ return v.x * v.y * v.z; }
+inline uniform float reduce_mul(const uniform Vec3f v)
+{ return v.x * v.y * v.z; }
+
+inline float reduce_max(const Vec3f v)
+{ return max(max(v.x,v.y),v.z); }
+
+inline float reduce_add(const Vec3f v)
+{ return v.x+v.y+v.z; }
+
+inline uniform float reduce_add(const uniform Vec3f v)
+{ return v.x+v.y+v.z; }
+
+inline float reduce_avg(const Vec3f v)
+{ return (v.x+v.y+v.z)*(1.0f/3.0f); }
+
+inline float luminance(const Vec3f& c)
+{ return 0.212671f*c.x + 0.715160f*c.y + 0.072169f*c.z; }
+
+inline uniform bool eq(const uniform Vec2f a, const uniform Vec2f b)
+{ return a.x==b.x && a.y==b.y; }
+inline bool eq(const Vec2f a, const Vec2f b)
+{ return a.x==b.x & a.y==b.y; }
+inline uniform bool eq(const uniform Vec3f a, const uniform Vec3f b)
+{ return a.x==b.x && a.y==b.y && a.z==b.z; }
+inline bool eq(const Vec3f a, const Vec3f b)
+{ return a.x==b.x & a.y==b.y & a.z==b.z; }
+inline uniform bool eq(const uniform Vec3fa a, const uniform Vec3fa b)
+{ return a.x==b.x && a.y==b.y && a.z==b.z; }
+inline bool eq(const Vec3fa a, const Vec3fa b)
+{ return a.x==b.x & a.y==b.y & a.z==b.z; }
+
+inline uniform bool ne(const uniform Vec2f a, const uniform Vec2f b)
+{ return !eq(a,b); }
+inline bool ne(const Vec2f a, const Vec2f b)
+{ return !eq(a,b); }
+inline uniform bool ne(const uniform Vec3f a, const uniform Vec3f b)
+{ return !eq(a,b); }
+inline bool ne(const Vec3f a, const Vec3f b)
+{ return !eq(a,b); }
+inline uniform bool ne(const uniform Vec3fa a, const uniform Vec3fa b)
+{ return !eq(a,b); }
+inline bool ne(const Vec3fa a, const Vec3fa b)
+{ return !eq(a,b); }
+
+
+// ------------------------------------------------------------------
+// dot product
+// ------------------------------------------------------------------
+/*! computes 3D dot product for *all-uniform* Vec3fs */
+inline uniform float dot(const uniform Vec3f a, const uniform Vec3f b)
+{ return a.x*b.x+a.y*b.y+a.z*b.z; }
+/*! computes 3D dot product for Vec3fs that produce varying results */
+inline float dot(const Vec3f a, const Vec3f b)
+{ return a.x*b.x+a.y*b.y+a.z*b.z; }
+
+inline uniform float length(const uniform Vec3f a) { return sqrtf(dot(a,a)); }
+inline varying float length(const varying Vec3f a) { return sqrtf(dot(a,a)); }
+
+inline uniform float distance(const uniform Vec3f a, const uniform Vec3f b) { return length(sub(a,b)); }
+inline varying float distance(const varying Vec3f a, const uniform Vec3f b) { return length(sub(a,b)); }
+
+
+inline uniform float dot(const uniform Vec3fa a, const uniform Vec3fa b) { return a.x*b.x+a.y*b.y+a.z*b.z; }
+inline varying float dot(const varying Vec3fa a, const varying Vec3fa b) { return a.x*b.x+a.y*b.y+a.z*b.z; }
+
+inline uniform float length(const uniform Vec3fa a) { return sqrtf(dot(a,a)); }
+inline varying float length(const varying Vec3fa a) { return sqrtf(dot(a,a)); }
+
+inline uniform float distance(const uniform Vec3fa a, const uniform Vec3fa b) { return length(sub(a,b)); }
+inline varying float distance(const varying Vec3fa a, const uniform Vec3fa b) { return length(sub(a,b)); }
+
+// ------------------------------------------------------------------
+// cross product
+// ------------------------------------------------------------------
+/*! computes 3D cross product for *all-uniform* Vec3fs */
+inline uniform Vec3f cross(const uniform Vec3f &a, const uniform Vec3f &b)
+{ return make_Vec3f(a.y*b.z-a.z*b.y,
+                    a.z*b.x-a.x*b.z,
+                    a.x*b.y-a.y*b.x); }
+/*! computes 3D cross product for Vec3fs that produce varying results */
+inline Vec3f cross(const Vec3f &a, const Vec3f &b)
+{ return make_Vec3f(a.y*b.z-a.z*b.y,
+                    a.z*b.x-a.x*b.z,
+                    a.x*b.y-a.y*b.x); }
+
+
+// ------------------------------------------------------------------
+// normalize
+// ------------------------------------------------------------------
+/*! compute and return normalized version of uniform Vec3f passed to this fct */
+inline uniform Vec3f normalize(const uniform Vec3f &v)
+{ return v * (1.f/sqrt(dot(v,v))); }
+/*! compute and return normalized version of varying Vec3f passed to this fct */
+inline Vec3f normalize(const Vec3f v)
+{ return v * (1.f/sqrt(dot(v,v))); }
+/*! compute and return normalized version of varying Vec3f passed to this fct */
+inline Vec3f normalize(const Vec3f v, float &len)
+{ len = sqrtf(dot(v,v)); return v * rcpf(len); }
+
+inline Vec3f safe_normalize(const Vec3f v)
+{ return v * (1.f/sqrt(max(1e-6f,dot(v,v)))); }
+
+/*! differentiated normalization */
+inline varying Vec3f dnormalize(const varying Vec3f& p, const varying Vec3f& dp)
+{
+  const float pp  = dot(p,p);
+  const float pdp = dot(p,dp);
+  return (pp*dp-pdp*p)*rcp(pp)*rsqrt(pp);
+}
+
+
+inline uniform Vec3fa normalize(const uniform Vec3fa &v) { return v * (1.f/sqrt(dot(v,v))); }
+inline varying Vec3fa normalize(const varying Vec3fa  v) { return v * (1.f/sqrt(dot(v,v))); }
+
+inline varying Vec3fa dnormalize(const varying Vec3fa& p, const varying Vec3fa& dp)
+{
+  const float pp  = dot(p,p);
+  const float pdp = dot(p,dp);
+  return (pp*dp-pdp*p)*rcp(pp)*rsqrt(pp);
+}
+
+
+#define __lift_unary_fct(F)                             \
+  inline uniform Vec2f F(const uniform Vec2f v)         \
+  { return make_Vec2f(F(v.x),F(v.y)); }                 \
+  inline Vec2f F(const Vec2f v)                         \
+  { return make_Vec2f(F(v.x),F(v.y)); }                 \
+  inline uniform Vec3f F(const uniform Vec3f v)         \
+  { return make_Vec3f(F(v.x),F(v.y),F(v.z)); }          \
+  inline Vec3f F(const Vec3f v)                         \
+  { return make_Vec3f(F(v.x),F(v.y),F(v.z)); }          \
+  inline uniform Vec3fa F(const uniform Vec3fa v)       \
+  { return make_Vec3fa(F(v.x),F(v.y),F(v.z),F(v.w)); }  \
+  inline Vec3fa F(const Vec3fa v)                       \
+  { return make_Vec3fa(F(v.x),F(v.y),F(v.z),F(v.w)); }  \
+  inline uniform Vec4f F(const uniform Vec4f v)         \
+  { return make_Vec4f(F(v.x),F(v.y),F(v.z),F(v.w)); }   \
+  inline Vec4f F(const Vec4f v)                         \
+  { return make_Vec4f(F(v.x),F(v.y),F(v.z),F(v.w)); }
+
+__lift_unary_fct(absf)
+__lift_unary_fct(rcpf)
+__lift_unary_fct(expf)
+__lift_unary_fct(logf)
+
+__lift_unary_fct(floor)
+__lift_unary_fct(abs)
+__lift_unary_fct(rcp)
+__lift_unary_fct(exp)
+__lift_unary_fct(frac)
+__lift_unary_fct(sqr)
+
+#undef __lift_unary_fct
+
+/*! make RGBA from RGB */
+inline Vec4f make_Vec4f(const Vec3f rgb, const float a)
+{ return make_Vec4f(rgb.x,rgb.y,rgb.z,a); }
+
+/*! make RGBA from RGB */
+inline uniform Vec4f make_Vec4f(const uniform Vec3f rgb, const uniform float a)
+{ return make_Vec4f(rgb.x,rgb.y,rgb.z,a); }
+
+// // ------------------------------------------------------------------
+// // vector functions (abs,rcp,...):
+// // ------------------------------------------------------------------
+// /*! return vector of absolute values of input vector */
+// inline uniform Vec3f abs(const uniform Vec3f v)
+// { return make_Vec3f(abs(v.x),abs(v.y),abs(v.z)); }
+// /*! return vector of absolute values of input vector */
+// inline Vec3f abs(const Vec3f v)
+// { return make_Vec3f(abs(v.x),abs(v.y),abs(v.z)); }
+// /*! return vector of reciprocals of input vector */
+// inline uniform Vec3f rcp(const uniform Vec3f v)
+// { return make_Vec3f(rcp(v.x),rcp(v.y),rcp(v.z)); }
+// /*! return vector of reciprocals of input vector */
+// inline Vec3f rcp(const Vec3f v)
+// { return make_Vec3f(rcp(v.x),rcp(v.y),rcp(v.z)); }
+
+#define __define_lerp2(ABB)                                             \
+  inline uniform Vec2##ABB lerp(uniform float factor, const uniform Vec2##ABB a, const uniform Vec2##ABB b) \
+  {                                                                     \
+    return make_Vec2##ABB(lerp(factor, a.x, b.x), lerp(factor, a.y, b.y)); \
+  }                                                                     \
+  inline Vec2##ABB lerp(float factor, const Vec2##ABB a, const Vec2##ABB b) \
+  {                                                                     \
+    return make_Vec2##ABB(lerp(factor, a.x, b.x), lerp(factor, a.y, b.y)); \
+  }
+
+#define __define_lerp3(ABB)                                             \
+  inline uniform Vec3##ABB lerp(uniform float factor, const uniform Vec3##ABB a, const uniform Vec3##ABB b) \
+  {                                                                     \
+    return make_Vec3##ABB(lerp(factor, a.x, b.x), lerp(factor, a.y, b.y), lerp(factor, a.z, b.z)); \
+  }                                                                     \
+  inline Vec3##ABB lerp(float factor, const Vec3##ABB a, const Vec3##ABB b) \
+  {                                                                     \
+    return make_Vec3##ABB(lerp(factor, a.x, b.x), lerp(factor, a.y, b.y), lerp(factor, a.z, b.z)); \
+  }                                                                     \
+
+#define __define_lerp3a(ABB)                                            \
+  inline uniform Vec3##ABB##a lerp(uniform float factor, const uniform Vec3##ABB##a a, const uniform Vec3##ABB##a b) \
+  {                                                                     \
+    return make_Vec3##ABB##a(lerp(factor, a.x, b.x), lerp(factor, a.y, b.y), lerp(factor, a.z, b.z), lerp(factor, a.w, b.w)); \
+  }                                                                     \
+  inline Vec3##ABB##a lerp(float factor, const Vec3##ABB##a a, const Vec3##ABB##a b) \
+  {                                                                     \
+    return make_Vec3##ABB##a(lerp(factor, a.x, b.x), lerp(factor, a.y, b.y), lerp(factor, a.z, b.z), lerp(factor, a.w, b.w)); \
+  }
+
+#define __define_lerp4(ABB)                                             \
+  inline uniform Vec4##ABB lerp(uniform float factor, const uniform Vec4##ABB a, const uniform Vec4##ABB b) \
+  {                                                                     \
+    return make_Vec4##ABB(lerp(factor, a.x, b.x), lerp(factor, a.y, b.y), lerp(factor, a.z, b.z), lerp(factor, a.w, b.w)); \
+  }                                                                     \
+  inline Vec4##ABB lerp(float factor, const Vec4##ABB a, const Vec4##ABB b) \
+  {                                                                     \
+    return make_Vec4##ABB(lerp(factor, a.x, b.x), lerp(factor, a.y, b.y), lerp(factor, a.z, b.z), lerp(factor, a.w, b.w)); \
+  }
+
+__define_lerp2(f)
+__define_lerp2(i)
+__define_lerp2(ui)
+__define_lerp2(uc)
+__define_lerp3(f)
+__define_lerp3(i)
+__define_lerp3(ui)
+__define_lerp3(uc)
+//__define_lerp3a(i)
+//__define_lerp3a(ui)
+//__define_lerp3a(uc)
+__define_lerp4(f)
+__define_lerp4(i)
+__define_lerp4(ui)
+__define_lerp4(uc)
+
+#undef __define_lerp2
+#undef __define_lerp3
+#undef __define_lerp4
+
+inline Vec2i make_Vec2i(const Vec2f &a)
+{ return make_Vec2i((int)a.x, (int)a.y); }
+
+inline Vec2i integer_cast(const Vec2f &a)
+{ return make_Vec2i(a); }
+
+inline Vec2f clamp(const Vec2f &a, const uniform Vec2f &b, const uniform Vec2f &c)
+{ return(make_Vec2f(clamp(a.x, b.x, c.x), clamp(a.y, b.y, c.y))); }
+
+
+inline uniform Vec3i operator*(const uniform Vec3i &a, const uniform int b)
+{ return(make_Vec3i(a.x * b, a.y * b, a.z * b)); }
+
+inline uniform Vec3i operator+(const uniform Vec3i &a, const uniform Vec3i &b)
+{ return(make_Vec3i(a.x + b.x, a.y + b.y, a.z + b.z)); }
+
+inline Vec3i operator+(const varying Vec3i &a, const varying Vec3i &b)
+{ return(make_Vec3i(a.x + b.x, a.y + b.y, a.z + b.z)); }
+
+// Workaround for compiler bug.
+inline Vec3i operator+(const uniform Vec3i &a, const varying Vec3i &b)
+{ return(make_Vec3i(a.x + b.x, a.y + b.y, a.z + b.z)); }
+
+inline Vec3i operator+(const varying Vec3i &a, const varying int32 b)
+{ return(make_Vec3i(a.x + b, a.y + b, a.z + b)); }
+
+inline uniform Vec3i operator+(const uniform Vec3i &a, const uniform int b)
+{ return(make_Vec3i(a.x + b, a.y + b, a.z + b)); }
+
+inline uniform Vec3i operator-(const uniform Vec3i &a, const uniform int b)
+{ return(make_Vec3i(a.x - b, a.y - b, a.z - b)); }
+
+inline Vec3i operator-(const varying Vec3i &a, const uniform Vec3i &b)
+{ return(make_Vec3i(a.x - b.x, a.y - b.y, a.z - b.z)); }
+
+inline Vec3i operator-(const varying Vec3i &a, const varying Vec3i &b)
+{ return(make_Vec3i(a.x - b.x, a.y - b.y, a.z - b.z)); }
+
+inline Vec3i operator-(const varying Vec3i &a, const varying int32 b)
+{ return(make_Vec3i(a.x - b, a.y - b, a.z - b)); }
+
+inline uniform Vec3i operator/(const uniform Vec3i &a, const uniform int b)
+{ return(make_Vec3i(a.x / b, a.y / b, a.z / b)); }
+
+inline Vec3f float_cast(const Vec3i &a)
+{ return make_Vec3f(a); }
+
+inline Vec3i integer_cast(const Vec3f &a)
+{ return make_Vec3i(a); }
+
+inline Vec3i operator>>(const Vec3i &a, const int b)
+{ return(make_Vec3i(a.x >> b, a.y >> b, a.z >> b)); }
+
+inline Vec3i operator<<(const Vec3i &a, const int b)
+{ return(make_Vec3i(a.x << b, a.y << b, a.z << b)); }
+
+inline Vec3i bitwise_AND(const Vec3i &a, const int b)
+{ return(make_Vec3i(a.x & b, a.y & b, a.z &b)); }
+
+inline Vec3f powf(const Vec3f v, const float f)
+{ return make_Vec3f(powf(v.x,f),powf(v.y,f),powf(v.z,f)); }
+
+inline uniform Vec3f powf(const uniform Vec3f v, const uniform float f)
+{ return make_Vec3f(powf(v.x,f),powf(v.y,f),powf(v.z,f)); }
+
+inline Vec3f clamp(const Vec3f &a, const uniform Vec3f &b, const uniform Vec3f &c)
+{ return(make_Vec3f(clamp(a.x, b.x, c.x), clamp(a.y, b.y, c.y), clamp(a.z, b.z, c.z))); }
+
+inline Vec3f clamp(const Vec3f &a, const Vec3f &b, const Vec3f &c)
+{ return(make_Vec3f(clamp(a.x, b.x, c.x), clamp(a.y, b.y, c.y), clamp(a.z, b.z, c.z))); }
+
+inline Vec3i clamp(const Vec3i &a, const uniform Vec3i &b, const uniform Vec3i &c)
+{ return(make_Vec3i(clamp(a.x, b.x, c.x), clamp(a.y, b.y, c.y), clamp(a.z, b.z, c.z))); }
+
+//! The next machine representable number from 'a' in the direction of 'b'.
+inline uniform Vec3f nextafter(const uniform Vec3i &a, const uniform Vec3i &b)
+{ return(make_Vec3f(nextafter(a.x, b.x), nextafter(a.y, b.y), nextafter(a.z, b.z))); }
+
+inline varying float reduce_min(const varying Vec3f &a)
+{ return(min(min(a.x, a.y), a.z)); }
+
+inline varying float reduce_min(const varying Vec4f &a)
+{ return(min(min(min(a.x, a.y), a.z), a.w)); }
+
+inline uniform float reduce_min(const uniform Vec3f &a)
+{ return(min(min(a.x, a.y), a.z)); }
+
+inline uniform float reduce_max(const uniform Vec3i &a)
+{ return(max(max(a.x, a.y), a.z)); }
+
+inline uniform float reduce_max(const uniform Vec3f &a)
+{ return(max(max(a.x, a.y), a.z)); }
+
+inline uniform float reduce_add(const uniform Vec3f &a)
+{ return(a.x+a.y+a.z); }
+
+inline uniform float reduce_avg(const uniform Vec3f &a)
+{ return((a.x+a.y+a.z)*(1.0f/3.0f)); }
+
+inline uniform float luminance(const uniform Vec3f& c)
+{ return 0.212671f*c.x + 0.715160f*c.y + 0.072169f*c.z; }
+
+inline varying Vec3f pow(const varying Vec3f &a, const varying float b)
+{ return(make_Vec3f(pow(a.x, b), pow(a.y, b), pow(a.z, b))); }
+
+inline varying Vec4f pow(const varying Vec4f &a, const varying float b)
+{ return(make_Vec4f(pow(a.x, b), pow(a.y, b), pow(a.z, b), pow(a.w, b))); }
+
+inline uniform bool isnan(uniform Vec3f v)
+{ return isnan(v.x+v.y+v.z); }
+
+inline bool isnan(Vec3f v)
+{ return isnan(v.x+v.y+v.z); }
+
+inline uniform bool isnan(uniform Vec3fa v)
+{ return isnan(v.x+v.y+v.z); }
+
+inline bool isnan(Vec3fa v)
+{ return isnan(v.x+v.y+v.z); }
+
+inline void out(uniform Vec3f v) { print("(%,%,%)",v.x,v.y,v.z); }
+inline void out(Vec3f v) { print("\n(%\n %\n %)",v.x,v.y,v.z); }
+inline void out(uniform Vec3i v) { print("(%,%,%)",v.x,v.y,v.z); }
+inline void out(Vec3i v) { print("\n(%\n %\n %)",v.x,v.y,v.z); }
+
+
+// -------------------------------------------------------
+// set/get functions for vectors
+// should eventually get moved to macros so they work for all types
+// -------------------------------------------------------
+
+/*! set vector 'v's value in dimension 'd' to 'f' */
+inline void set(uniform Vec3f &v, const uniform uint32 dim, const uniform float f)
+{ (&v.x)[dim] = f; }
+
+/*! get vector 'v's value in dimension 'd' */
+inline float get(const uniform Vec3f &v, const uniform uint32 dim)
+{ return (&v.x)[dim]; }
+
+
+// -------------------------------------------------------
+// sRGB conversion functions
+// -------------------------------------------------------
+#define APPROXIMATE_SRGB
+
+inline float linear_to_srgb(const float f)
+{
+  const float c = max(f, 0.f);
+#ifdef APPROXIMATE_SRGB
+  return pow(c, 1.f/2.2f);
+#else
+  return c <= 0.0031308f ? 12.92f*c : pow(c, 1.f/2.4f)*1.055f - 0.055f;
+#endif
+}
+
+inline Vec4f linear_to_srgba(const Vec4f c)
+{
+  return make_Vec4f(linear_to_srgb(c.x),
+                    linear_to_srgb(c.y),
+                    linear_to_srgb(c.z),
+                    max(c.w, 0.f)); // alpha is never gamma-corrected
+}
+
+inline uint32 linear_to_srgba8(const Vec4f c)
+{
+#if 1
+  Vec4f l = 255.f * min(linear_to_srgba(c), make_Vec4f(1.f));
+  return
+    ((uint32)l.x << 0)  |
+    ((uint32)l.y << 8)  |
+    ((uint32)l.z << 16) |
+    ((uint32)l.w << 24);
+#else
+//  TODO use ISPC's float_to_srgb8 once it is fixed (issue #1198)
+  return
+    (float_to_srgb8(c.x) << 0)  |
+    (float_to_srgb8(c.y) << 8)  |
+    (float_to_srgb8(c.z) << 16) |
+    ((uint32)clamp(c.w, 0.f, 1.f) << 24); // alpha is never gamma-corrected
+#endif
+}
+
+inline float srgb_to_linear(const float f)
+{
+  const float c = max(f, 0.f);
+#ifdef APPROXIMATE_SRGB
+  return pow(c, 2.2f);
+#else
+  return c <= 0.04045f ? c/12.92f : pow((c + 0.055f)/1.055f, 2.4f);
+#endif
+}
+
+inline Vec4f srgba_to_linear(const Vec4f c)
+{
+  return make_Vec4f(srgb_to_linear(c.x),
+                    srgb_to_linear(c.y),
+                    srgb_to_linear(c.z),
+                    max(c.w, 0.f));  // alpha is never gamma-corrected
+}
+
+// TODO implement srgba8_to_linear with a 256 entry LUT
+
+#undef APPROXIMATE_SRGB

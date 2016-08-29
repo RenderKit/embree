@@ -26,6 +26,9 @@
 struct Vertex   { float x,y,z,r;  }; // FIXME: rename to Vertex4f
 struct Triangle { int v0, v1, v2; };
 
+/* include embree API */
+#include "../../../include/embree2/rtcore.isph"
+
 /* include optional vector library */
 #include "../math/math.isph"
 #include "../math/vec.isph"
@@ -33,12 +36,10 @@ struct Triangle { int v0, v1, v2; };
 #include "../core/ray.isph"
 #include "camera.isph"
 #include "scene_device.isph"
-
-/* include embree API */
-#define __RTCRay1__
-#define __RTCRay__
-#include "../../../include/embree2/rtcore.isph"
-#include "../../../include/embree2/rtcore_ray.isph"
+#include "noise.isph"
+#if !defined(ISPC)
+#include "../../../kernels/algorithms/parallel_for.h"
+#endif
 
 enum Mode {
   MODE_NORMAL = 0,
@@ -66,6 +67,7 @@ inline Vec3f faceforward( Vec3f N, Vec3f I, Vec3f Ng ) {
 }
 
 /* glut keys codes */
+#if !defined(GLUT_KEY_F1)
 #define GLUT_KEY_F1 1
 #define GLUT_KEY_F2 2
 #define GLUT_KEY_F3 3
@@ -78,12 +80,13 @@ inline Vec3f faceforward( Vec3f N, Vec3f I, Vec3f Ng ) {
 #define GLUT_KEY_F10 10
 #define GLUT_KEY_F11 11
 #define GLUT_KEY_F12 12
+#endif
 
 /* standard shading function */
 typedef void (* uniform renderTileFunc)(uniform int taskIndex,
                                         uniform int* uniform pixels,
-                                        const uniform int width,
-                                        const uniform int height,
+                                        const uniform unsigned int width,
+                                        const uniform unsigned int height,
                                         const uniform float time,
                                         const uniform ISPCCamera& camera,
                                         const uniform int numTilesX,
@@ -95,8 +98,8 @@ extern void (* uniform key_pressed_handler)(uniform int key);
 
 void renderTileStandard(uniform int taskIndex,
                         uniform int* uniform pixels,
-                        const uniform int width,
-                        const uniform int height,
+                        const uniform unsigned int width,
+                        const uniform unsigned int height,
                         const uniform float time,
                         const uniform ISPCCamera& camera,
                         const uniform int numTilesX,
@@ -104,8 +107,11 @@ void renderTileStandard(uniform int taskIndex,
 
 uniform unsigned int getNumHWThreads();
 
+#if defined(ISPC)
 #define ALIGNED_STRUCT
 #define __aligned(x)
+#define MAYBE_UNUSED
+#endif
 
 struct Sample3f
 {
@@ -117,16 +123,12 @@ inline Sample3f make_Sample3f(const Vec3f v, const float pdf) {
   Sample3f s; s.v = v; s.pdf = pdf; return s;
 }
 
-/* noise functions */
-float noise(const Vec3f& p);
-Vec3f noise3D(const Vec3f& p);
-
 /* draws progress bar */
-unmasked void progressStart();
-unmasked uniform bool progressMonitor(void* uniform ptr, const uniform double n);
-unmasked void progressEnd();
+extern "C" unmasked void progressStart();
+extern "C" unmasked uniform bool progressMonitor(void* uniform ptr, const uniform double n);
+extern "C" unmasked void progressEnd();
 
 Vec2f  getTextureCoordinatesSubdivMesh(void* uniform mesh, const unsigned int primID, const float u, const float v);
 
-float  getTextureTexel1f(void * uniform texture, float u, float v);
-Vec3f  getTextureTexel3f(void * uniform texture, float u, float v);
+float  getTextureTexel1f(const uniform Texture* uniform texture, float u, float v);
+Vec3f  getTextureTexel3f(const uniform Texture* uniform texture, float u, float v);

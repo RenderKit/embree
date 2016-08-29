@@ -30,7 +30,7 @@ namespace embree
       bool passed = true;
       const size_t M = 10;
 
-      for (size_t N=10; N<10000000; N*=2.1f)
+      for (size_t N=10; N<1000000; N=size_t(2.1*N))
       {
 	std::vector<Key> src(N); memset(src.data(),0,N*sizeof(Key));
 	std::vector<Key> tmp(N); memset(tmp.data(),0,N*sizeof(Key));
@@ -40,12 +40,9 @@ namespace embree
 	Key sum0 = 0; for (size_t i=0; i<N; i++) sum0 += src[i];
         
 	/* sort numbers */
-	double t0 = getSeconds();
 	for (size_t i=0; i<M; i++) {
           radix_sort<Key>(src.data(),tmp.data(),N);
         }
-	double t1 = getSeconds();
-	//printf("%zu/%3.2fM ",N,1E-6*double(N*M)/(t1-t0));
 	
 	/* calculate checksum */
 	Key sum1 = 0; for (size_t i=0; i<N; i++) sum1 += src[i];

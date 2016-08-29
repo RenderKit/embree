@@ -45,16 +45,20 @@ namespace embree
     /* Calculates if this is a valid ray that does not cause issues during traversal */
     __forceinline vbool<K> valid() const
     {
-      const vbool<K> vx = abs(org.x) <= vfloat<K>(FLT_LARGE) & abs(dir.x) <= vfloat<K>(FLT_LARGE);
-      const vbool<K> vy = abs(org.y) <= vfloat<K>(FLT_LARGE) & abs(dir.y) <= vfloat<K>(FLT_LARGE);
-      const vbool<K> vz = abs(org.z) <= vfloat<K>(FLT_LARGE) & abs(dir.z) <= vfloat<K>(FLT_LARGE);
+      const vbool<K> vx = (abs(org.x) <= vfloat<K>(FLT_LARGE)) & (abs(dir.x) <= vfloat<K>(FLT_LARGE));
+      const vbool<K> vy = (abs(org.y) <= vfloat<K>(FLT_LARGE)) & (abs(dir.y) <= vfloat<K>(FLT_LARGE));
+      const vbool<K> vz = (abs(org.z) <= vfloat<K>(FLT_LARGE)) & (abs(dir.z) <= vfloat<K>(FLT_LARGE));
       const vbool<K> vn = abs(tnear) <= vfloat<K>(inf);
       const vbool<K> vf = abs(tfar) <= vfloat<K>(inf);
       return vx & vy & vz & vn & vf;
     }
 
     __forceinline void get(RayK<1>* ray) const;
+    __forceinline void get(const size_t i, RayK<1>& ray) const;
     __forceinline void set(const RayK<1>* ray);
+    __forceinline void set(const size_t i, const RayK<1>& ray);
+
+    __forceinline void copy(const size_t dest, const size_t source);
 
     __forceinline void update(const vbool<K>& m_mask,
                               const vfloat<K>& new_t,
@@ -117,8 +121,8 @@ namespace embree
   };
 
 #if defined(__AVX512F__)
-    template<>
-      __forceinline void RayK<16>::updateK<16>(const size_t i,
+  template<> template<>
+    __forceinline void RayK<16>::updateK<16>(const size_t i,
                                              const size_t rayIndex,
                                              const vfloat16& new_t,
                                              const vfloat16& new_u,
@@ -152,10 +156,10 @@ namespace embree
     /* Constructs a ray from origin, direction, and ray segment. Near
      *  has to be smaller than far */
     __forceinline RayK(const Vec3fa& org, const Vec3fa& dir, float tnear = zero, float tfar = inf, float time = zero, int mask = -1)
-      : org(org), dir(dir), tnear(tnear), tfar(tfar), geomID(-1), primID(-1), instID(-1), mask(mask), time(time) {}
+      : org(org), dir(dir), tnear(tnear), tfar(tfar), time(time), mask(mask), geomID(-1), primID(-1), instID(-1) {}
 
     /* Tests if we hit something */
-    __forceinline operator bool() const { return geomID != -1; }
+    __forceinline operator bool() const { return geomID != RTC_INVALID_GEOMETRY_ID; }
 
     /* Calculates if this is a valid ray that does not cause issues during traversal */
     __forceinline bool valid() const {
@@ -185,9 +189,9 @@ namespace embree
     Vec3fa Ng;   // not normalized geometry normal
     float u;     // barycentric u coordinate of hit
     float v;     // barycentric v coordinate of hit
-    int geomID;  // geometry ID
-    int primID;  // primitive ID
-    int instID;  // instance ID
+    unsigned geomID;  // geometry ID
+    unsigned primID;  // primitive ID
+    unsigned instID;  // instance ID
 
 #if defined(__AVX512F__)
     __forceinline void update(const vbool16& m_mask,
@@ -249,6 +253,18 @@ namespace embree
     }
   }
 
+  /* Extracts a single ray out of a ray packet*/
+  template<int K>
+    __forceinline void RayK<K>::get(const size_t i, RayK<1>& ray) const
+  {
+    ray.org.x = org.x[i]; ray.org.y = org.y[i]; ray.org.z = org.z[i];
+    ray.dir.x = dir.x[i]; ray.dir.y = dir.y[i]; ray.dir.z = dir.z[i];
+    ray.tnear = tnear[i]; ray.tfar  = tfar [i]; ray.time  = time[i]; ray.mask = mask[i];
+    ray.Ng.x = Ng.x[i]; ray.Ng.y = Ng.y[i]; ray.Ng.z = Ng.z[i];
+    ray.u = u[i]; ray.v = v[i];
+    ray.geomID = geomID[i]; ray.primID = primID[i]; ray.instID = instID[i];
+  }
+
   /* Converts single rays to ray packet */
   template<int K>
   __forceinline void RayK<K>::set(const RayK<1>* ray)
@@ -262,6 +278,30 @@ namespace embree
       u[i] = ray[i].u; v[i] = ray[i].v;
       geomID[i] = ray[i].geomID; primID[i] = ray[i].primID; instID[i] = ray[i].instID;
     }
+  }
+
+  /* inserts a single ray into a ray packet element */
+  template<int K>
+    __forceinline void RayK<K>::set(const size_t i, const RayK<1>& ray)
+  {
+    org.x[i] = ray.org.x; org.y[i] = ray.org.y; org.z[i] = ray.org.z;
+    dir.x[i] = ray.dir.x; dir.y[i] = ray.dir.y; dir.z[i] = ray.dir.z;
+    tnear[i] = ray.tnear; tfar [i] = ray.tfar;  time[i] = ray.time; mask[i] = ray.mask;
+    Ng.x[i] = ray.Ng.x; Ng.y[i] = ray.Ng.y; Ng.z[i] = ray.Ng.z;
+    u[i] = ray.u; v[i] = ray.v;
+    geomID[i] = ray.geomID; primID[i] = ray.primID; instID[i] = ray.instID;
+  }
+
+  /* copies a ray packet element into another element*/
+  template<int K>
+    __forceinline void RayK<K>::copy(const size_t dest, const size_t source)
+  {
+    org.x[dest] = org.x[source]; org.y[dest] = org.y[source]; org.z[dest] = org.z[source];
+    dir.x[dest] = dir.x[source]; dir.y[dest] = dir.y[source]; dir.z[dest] = dir.z[source];
+    tnear[dest] = tnear[source]; tfar [dest] = tfar[source];  time[dest] = time[source]; mask[dest] = mask[source];
+    Ng.x[dest] = Ng.x[source]; Ng.y[dest] = Ng.y[source]; Ng.z[dest] = Ng.z[source];
+    u[dest] = u[source]; v[dest] = v[source];
+    geomID[dest] = geomID[source]; primID[dest] = primID[source]; instID[dest] = instID[source];
   }
 
   /* Shortcuts */
@@ -347,7 +387,7 @@ namespace embree
     __forceinline void readHit(const size_t i, Ray& ray)
     {
       const size_t offset = 4*i;
-      const int geometryID = geomID(offset)[0];
+      const unsigned int geometryID = geomID(offset)[0];
       if (geometryID != RTC_INVALID_GEOMETRY_ID)
       {
         ray.tfar = tfar(offset)[0];

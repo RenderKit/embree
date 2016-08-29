@@ -22,6 +22,7 @@ SET(FLAGS_SSE42 "-msse4.2")
 SET(FLAGS_AVX   "-mavx")
 SET(FLAGS_AVX2  "-mf16c -mavx2 -mfma -mlzcnt -mbmi -mbmi2")
 SET(FLAGS_AVX512KNL "-march=knl")
+SET(FLAGS_AVX512SKX "-march=skx")
 
 IF (WIN32)
 
@@ -35,14 +36,10 @@ SET(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} /DEBUG")
 
 ELSE()
 
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -std=c++11 -fno-strict-aliasing -Wno-narrowing -Wno-deprecated-register")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fPIC -std=c++11 -fvisibility-inlines-hidden -fvisibility=hidden -fno-strict-aliasing")
 SET(CMAKE_CXX_FLAGS_DEBUG          "-DDEBUG  -DTBB_USE_DEBUG -g -O0")
 SET(CMAKE_CXX_FLAGS_RELEASE        "-DNDEBUG                    -O3")
 SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-DDEBUG  -DTBB_USE_DEBUG -g -O3")
-
-IF (NOT RTCORE_EXPORT_ALL_SYMBOLS)
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility-inlines-hidden -fvisibility=hidden")
-ENDIF()
 
 ENDIF()
 

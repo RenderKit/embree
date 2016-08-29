@@ -71,6 +71,16 @@ namespace embree
       return _mm256_broadcast_ss((float*)a); 
     }
 
+    static __forceinline vfloat8 broadcast2( const float* const a, const float* const b ) {
+#if defined(__INTEL_COMPILER)
+      const vfloat8 v0 = _mm256_broadcast_ss(a); 
+      const vfloat8 v1 = _mm256_broadcast_ss(b); 
+      return _mm256_blend_ps(v1, v0, 0xf);
+#else
+      return _mm256_set_ps(*b,*b,*b,*b,*a,*a,*a,*a);
+#endif
+    }
+
     static __forceinline const vfloat8 broadcast4f(const vfloat4* ptr) { 
       return _mm256_broadcast_ps((__m128*)ptr); 
     }
@@ -310,6 +320,11 @@ namespace embree
   }
 #endif
 
+  __forceinline const vfloat8 andnot( const vboolf8& m, const vfloat8& f ) {
+    return _mm256_andnot_ps(m, f); 
+  }
+
+
   __forceinline vfloat8  lerp(const vfloat8& a, const vfloat8& b, const vfloat8& t) {
 #if defined(__AVX2__)
     return madd(t, b, madd(-t, a, a));
@@ -323,11 +338,11 @@ namespace embree
   }
 
   __forceinline bool is_finite ( const vfloat8& a ) {
-    return all((a >= vfloat8(-FLT_MAX) & (a <= vfloat8(+FLT_MAX))));
+    return all((a >= vfloat8(-FLT_MAX)) & (a <= vfloat8(+FLT_MAX)));
   }
 
   __forceinline bool is_finite ( const vboolf8& valid, const vfloat8& a ) {
-    return all(valid, (a >= vfloat8(-FLT_MAX) & (a <= vfloat8(+FLT_MAX))));
+    return all(valid, (a >= vfloat8(-FLT_MAX)) & (a <= vfloat8(+FLT_MAX)));
   }
       
   ////////////////////////////////////////////////////////////////////////////////
@@ -417,6 +432,9 @@ namespace embree
     return y;
   }
 
+  __forceinline vint8 floori (const vfloat8& a) {
+    return vint8(floor(a));
+  }
   ////////////////////////////////////////////////////////////////////////////////
   /// Transpose
   ////////////////////////////////////////////////////////////////////////////////

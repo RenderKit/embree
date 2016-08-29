@@ -20,9 +20,10 @@
 #  define RTCORE_API extern "C" __attribute__ ((visibility ("default")))
 #endif
 
+#include "default.h"
 #include "device.h"
 #include "scene.h"
-#include "raystream_log.h"
+#include "../../include/embree2/rtcore_ray.h"
 
 namespace embree
 {  
@@ -179,7 +180,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcDebug);
 
-#if defined(RTCORE_STAT_COUNTERS)
+#if defined(EMBREE_STAT_COUNTERS)
     Stat::print(std::cout);
     Stat::clear();
 #endif
@@ -229,14 +230,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcCommit);
     RTCORE_VERIFY_HANDLE(hscene);
-
-#if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
-    RayStreamLogger::rayStreamLogger.dumpGeometry(scene);
-#endif
-
-    /* perform scene build */
     scene->build(0,0);
-    
     RTCORE_CATCH_END(scene->device);
   }
 
@@ -291,17 +285,8 @@ namespace embree
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
     if (((size_t)&ray) & 0x0F        ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 16 bytes");   
 #endif
-
-#if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
-    RTCRay old_ray = ray;
-#endif
-
     STAT3(normal.travs,1,1,1);
     scene->intersect(ray,nullptr);
-
-#if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
-    RayStreamLogger::rayStreamLogger.logRay1Intersect(scene,old_ray,ray);
-#endif
     RTCORE_CATCH_END(scene->device);
   }
 
@@ -311,7 +296,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcIntersect4);
 
-#if defined(__TARGET_SIMD4__) && defined (RTCORE_RAY_PACKETS)
+#if defined(__TARGET_SIMD4__) && defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
@@ -320,17 +305,7 @@ namespace embree
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<4; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(normal.travs,1,cnt,4);
-
-#if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
-    RTCRay4 old_ray = ray;
-#endif
-
     scene->intersect4(valid,ray,nullptr);
-
-#if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
-    RayStreamLogger::rayStreamLogger.logRay4Intersect(valid,scene,old_ray,ray);
-#endif
-
 #else
     throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect4 not supported");  
 #endif
@@ -343,7 +318,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcIntersect8);
 
-#if defined(__TARGET_SIMD8__) && defined (RTCORE_RAY_PACKETS)
+#if defined(__TARGET_SIMD8__) && defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
@@ -352,17 +327,7 @@ namespace embree
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<8; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(normal.travs,1,cnt,8);
-
-#if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
-    RTCRay8 old_ray = ray;
-#endif
-
     scene->intersect8(valid,ray,nullptr);
-
-#if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
-    RayStreamLogger::rayStreamLogger.logRay8Intersect(valid,scene,old_ray,ray);
-#endif
-
 #else
     throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect8 not supported");      
 #endif
@@ -375,7 +340,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcIntersect16);
 
-#if defined(__TARGET_SIMD16__) && defined (RTCORE_RAY_PACKETS)
+#if defined(__TARGET_SIMD16__) && defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
@@ -384,17 +349,7 @@ namespace embree
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<16; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(normal.travs,1,cnt,16);
-
-#if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
-    RTCRay16 old_ray = ray;
-#endif
-
     scene->intersect16(valid,ray,nullptr);
-
-#if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
-    RayStreamLogger::rayStreamLogger.logRay16Intersect(valid,scene,old_ray,ray);
-#endif
-
 #else
     throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect16 not supported");
 #endif
@@ -407,14 +362,13 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcIntersect1M);
 
-#if defined (RTCORE_RAY_PACKETS)
+#if defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
     if (((size_t)rays ) & 0x03) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 4 bytes");   
 #endif
-    STAT3(normal.travs,M,1,1);
-   
+    STAT3(normal.travs,M,M,M);
     /* fast codepath for single rays */
     if (likely(M == 1)) {
       if (likely(rays->tnear <= rays->tfar)) 
@@ -437,14 +391,13 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcIntersectNM);
 
-#if defined (RTCORE_RAY_PACKETS)
+#if defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
     if (((size_t)rays ) & 0x03) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 4 bytes");   
 #endif
-    STAT3(normal.travs,N*M,N,N);
-
+    STAT3(normal.travs,N*M,N*M,N*M);
     /* code path for single ray streams */
     if (likely(N == 1))
     {
@@ -474,7 +427,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcIntersectNp);
 
-#if defined (RTCORE_RAY_PACKETS)
+#if defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
@@ -517,16 +470,7 @@ namespace embree
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
     if (((size_t)&ray) & 0x0F        ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 16 bytes");   
 #endif
-
-#if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
-    RTCRay old_ray = ray;
-#endif
-
     scene->occluded(ray,nullptr);
-
-#if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
-    RayStreamLogger::rayStreamLogger.logRay1Occluded(scene,old_ray,ray);
-#endif
     RTCORE_CATCH_END(scene->device);
   }
   
@@ -536,7 +480,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcOccluded4);
 
-#if defined(__TARGET_SIMD4__) && defined (RTCORE_RAY_PACKETS)
+#if defined(__TARGET_SIMD4__) && defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
@@ -545,17 +489,7 @@ namespace embree
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<4; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(shadow.travs,1,cnt,4);
-
-#if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
-    RTCRay4 old_ray = ray;
-#endif
-
     scene->occluded4(valid,ray,nullptr);
-
-#if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
-    RayStreamLogger::rayStreamLogger.logRay4Occluded(valid,scene,old_ray,ray);
-#endif
-
 #else
     throw_RTCError(RTC_INVALID_OPERATION,"rtcOccluded4 not supported");
 #endif
@@ -568,7 +502,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcOccluded8);
 
-#if defined(__TARGET_SIMD8__) && defined (RTCORE_RAY_PACKETS)
+#if defined(__TARGET_SIMD8__) && defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
@@ -577,17 +511,7 @@ namespace embree
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<8; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(shadow.travs,1,cnt,8);
-
-#if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
-    RTCRay8 old_ray = ray;
-#endif
-
     scene->occluded8(valid,ray,nullptr);
-
-#if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
-    RayStreamLogger::rayStreamLogger.logRay8Occluded(valid,scene,old_ray,ray);
-#endif
-
 #else
     throw_RTCError(RTC_INVALID_OPERATION,"rtcOccluded8 not supported");
 #endif
@@ -600,7 +524,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcOccluded16);
 
-#if defined(__TARGET_SIMD16__) && defined (RTCORE_RAY_PACKETS)
+#if defined(__TARGET_SIMD16__) && defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
@@ -609,17 +533,7 @@ namespace embree
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<16; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(shadow.travs,1,cnt,16);
-
-#if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
-    RTCRay16 old_ray = ray;
-#endif
-
     scene->occluded16(valid,ray,nullptr);
-
-#if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
-    RayStreamLogger::rayStreamLogger.logRay16Occluded(valid,scene,old_ray,ray);
-#endif
-    
 #else
     throw_RTCError(RTC_INVALID_OPERATION,"rtcOccluded16 not supported");
 #endif
@@ -632,13 +546,13 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcOccluded1M);
 
-#if defined (RTCORE_RAY_PACKETS)
+#if defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
     if (((size_t)rays ) & 0x03) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 4 bytes");   
 #endif
-    STAT3(shadow.travs,M,1,1);
+    STAT3(shadow.travs,M,M,M);
 
     /* fast codepath for streams of size 1 */
     if (likely(M == 1)) {
@@ -661,14 +575,14 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcOccludedNM);
 
-#if defined (RTCORE_RAY_PACKETS)
+#if defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (stride < sizeof(RTCRay)) throw_RTCError(RTC_INVALID_OPERATION,"stride too small");
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
     if (((size_t)rays ) & 0x03) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 4 bytes");   
 #endif
-    STAT3(shadow.travs,N*M,N,N);
+    STAT3(shadow.travs,N*M,N*N,N*N);
 
     /* codepath for single rays */
     if (likely(N == 1))
@@ -699,7 +613,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcOccludedNp);
 
-#if defined (RTCORE_RAY_PACKETS)
+#if defined (EMBREE_RAY_PACKETS)
 #if defined(DEBUG)
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
@@ -1379,7 +1293,7 @@ namespace embree
   }
 
 
-#if defined (RTCORE_RAY_PACKETS)
+#if defined (EMBREE_RAY_PACKETS)
   RTCORE_API void rtcInterpolateN(RTCScene hscene, unsigned geomID, 
                                   const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
                                   RTCBufferType buffer,
@@ -1395,7 +1309,7 @@ namespace embree
   }
 #endif
 
-#if defined (RTCORE_RAY_PACKETS)
+#if defined (EMBREE_RAY_PACKETS)
   RTCORE_API void rtcInterpolateN2(RTCScene hscene, unsigned geomID, 
                                    const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
                                    RTCBufferType buffer,

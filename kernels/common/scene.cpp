@@ -16,8 +16,8 @@
 
 #include "scene.h"
 
-#include "../xeon/bvh/bvh4_factory.h"
-#include "../xeon/bvh/bvh8_factory.h"
+#include "../bvh/bvh4_factory.h"
+#include "../bvh/bvh8_factory.h"
  
 namespace embree
 {
@@ -30,18 +30,20 @@ namespace embree
   void invalid_rtcIntersectN()  { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersectN and rtcOccludedN not enabled"); }
 
   Scene::Scene (Device* device, RTCSceneFlags sflags, RTCAlgorithmFlags aflags)
-    : device(device), 
-      Accel(AccelData::TY_UNKNOWN),
-      flags(sflags), aflags(aflags), numMappedBuffers(0), is_build(false), modified(true), 
+    : Accel(AccelData::TY_UNKNOWN),
+      device(device), 
+      commitCounter(0), 
+      commitCounterSubdiv(0), 
+      numMappedBuffers(0),
+      flags(sflags), aflags(aflags), 
       needTriangleIndices(false), needTriangleVertices(false), 
       needQuadIndices(false), needQuadVertices(false), 
       needBezierIndices(false), needBezierVertices(false),
       needLineIndices(false), needLineVertices(false),
       needSubdivIndices(false), needSubdivVertices(false),
-      numIntersectionFilters1(0), numIntersectionFilters4(0), numIntersectionFilters8(0), numIntersectionFilters16(0), numIntersectionFiltersN(0),
-      commitCounter(0), commitCounterSubdiv(0), 
-      progress_monitor_function(nullptr), progress_monitor_ptr(nullptr), progress_monitor_counter(0),
-      progressInterface(this)
+      is_build(false), modified(true),
+      progressInterface(this), progress_monitor_function(nullptr), progress_monitor_ptr(nullptr), progress_monitor_counter(0), 
+      numIntersectionFilters1(0), numIntersectionFilters4(0), numIntersectionFilters8(0), numIntersectionFilters16(0), numIntersectionFiltersN(0)
   {
 #if defined(TASKING_INTERNAL)
     scheduler = nullptr;
@@ -77,11 +79,11 @@ namespace embree
     createLineAccel();
     createLineMBAccel();
 
-#if defined(RTCORE_GEOMETRY_TRIANGLES)
+#if defined(EMBREE_GEOMETRY_TRIANGLES)
     accels.add(device->bvh4_factory->BVH4InstancedBVH4Triangle4ObjectSplit(this));
 #endif
 
-#if defined(RTCORE_GEOMETRY_USER)
+#if defined(EMBREE_GEOMETRY_USER)
     accels.add(device->bvh4_factory->BVH4UserGeometry(this)); // has to be the last as the instID field of a hit instance is not invalidated by other hit geometry
     accels.add(device->bvh4_factory->BVH4UserGeometryMB(this)); // has to be the last as the instID field of a hit instance is not invalidated by other hit geometry
 #endif
@@ -89,7 +91,7 @@ namespace embree
 
   void Scene::createTriangleAccel()
   {
-#if defined(RTCORE_GEOMETRY_TRIANGLES)
+#if defined(EMBREE_GEOMETRY_TRIANGLES)
     if (device->tri_accel == "default") 
     {
       if (isStatic()) {
@@ -99,13 +101,23 @@ namespace embree
 #if defined (__TARGET_AVX__)
           if (device->hasISA(AVX))
 	  {
-            if (isHighQuality()) accels.add(device->bvh8_factory->BVH8Triangle4SpatialSplit(this));
-            else                 accels.add(device->bvh8_factory->BVH8Triangle4ObjectSplit(this));
+            if (isHighQuality()) 
+            {
+              /* new spatial split builder is now active per default */
+              accels.add(device->bvh8_factory->BVH8Triangle4SpatialSplit(this)); 
+            }
+            else
+              accels.add(device->bvh8_factory->BVH8Triangle4ObjectSplit(this));
           }
           else 
 #endif
           {
-            if (isHighQuality()) accels.add(device->bvh4_factory->BVH4Triangle4SpatialSplit(this));
+            
+            if (isHighQuality()) 
+            {
+              /* new spatial split builder is now active per default */
+              accels.add(device->bvh4_factory->BVH4Triangle4SpatialSplit(this));
+            }
             else accels.add(device->bvh4_factory->BVH4Triangle4ObjectSplit(this));            
           }
           break;
@@ -140,7 +152,7 @@ namespace embree
 
   void Scene::createQuadAccel()
   {
-#if defined(RTCORE_GEOMETRY_QUADS)
+#if defined(EMBREE_GEOMETRY_QUADS)
     if (device->quad_accel == "default") 
     {
       int mode =  2*(int)isCompact() + 1*(int)isRobust(); 
@@ -199,7 +211,7 @@ namespace embree
 
   void Scene::createQuadMBAccel()
   {
-#if defined(RTCORE_GEOMETRY_QUADS)
+#if defined(EMBREE_GEOMETRY_QUADS)
     if (device->quad_accel_mb == "default") 
     {
       int mode =  2*(int)isCompact() + 1*(int)isRobust(); 
@@ -224,7 +236,7 @@ namespace embree
 
   void Scene::createTriangleMBAccel()
   {
-#if defined(RTCORE_GEOMETRY_TRIANGLES)
+#if defined(EMBREE_GEOMETRY_TRIANGLES)
     if (device->tri_accel_mb == "default")
     {
 #if defined (__TARGET_AVX__)
@@ -248,7 +260,7 @@ namespace embree
 
   void Scene::createHairAccel()
   {
-#if defined(RTCORE_GEOMETRY_HAIR)
+#if defined(EMBREE_GEOMETRY_HAIR)
     if (device->hair_accel == "default")
     {
       int mode = 2*(int)isCompact() + 1*(int)isRobust();
@@ -299,7 +311,7 @@ namespace embree
 
   void Scene::createHairMBAccel()
   {
-#if defined(RTCORE_GEOMETRY_HAIR)
+#if defined(EMBREE_GEOMETRY_HAIR)
     if (device->hair_accel_mb == "default")
     {
 #if defined (__TARGET_AVX__)
@@ -323,7 +335,7 @@ namespace embree
 
   void Scene::createLineAccel()
   {
-#if defined(RTCORE_GEOMETRY_LINES)
+#if defined(EMBREE_GEOMETRY_LINES)
     if (device->line_accel == "default")
     {
       if (isStatic())
@@ -350,7 +362,7 @@ namespace embree
 
   void Scene::createLineMBAccel()
   {
-#if defined(RTCORE_GEOMETRY_LINES)
+#if defined(EMBREE_GEOMETRY_LINES)
     if (device->line_accel_mb == "default")
     {
 #if defined (__TARGET_AVX__)
@@ -370,7 +382,7 @@ namespace embree
 
   void Scene::createSubdivAccel()
   {
-#if defined(RTCORE_GEOMETRY_SUBDIV)
+#if defined(EMBREE_GEOMETRY_SUBDIV)
     if (device->subdiv_accel == "default") 
     {
       if (isIncoherent(flags) && isStatic())
@@ -513,22 +525,22 @@ namespace embree
 
   unsigned Scene::add(Geometry* geometry) 
   {
-    Lock<AtomicMutex> lock(geometriesMutex);
+    Lock<SpinLock> lock(geometriesMutex);
 
     if (usedIDs.size()) {
-      int id = usedIDs.back(); 
+      unsigned id = usedIDs.back(); 
       usedIDs.pop_back();
       geometries[id] = geometry;
       return id;
     } else {
       geometries.push_back(geometry);
-      return geometries.size()-1;
+      return unsigned(geometries.size()-1);
     }
   }
 
   void Scene::deleteGeometry(size_t geomID)
   {
-    Lock<AtomicMutex> lock(geometriesMutex);
+    Lock<SpinLock> lock(geometriesMutex);
     
     if (isStatic())
       throw_RTCError(RTC_INVALID_OPERATION,"rtcDeleteGeometry cannot get called in static scenes");
@@ -540,8 +552,8 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"invalid geometry");
     
     geometry->disable();
-    accels.deleteGeometry(geomID);
-    usedIDs.push_back(geomID);
+    accels.deleteGeometry(unsigned(geomID));
+    usedIDs.push_back(unsigned(geomID));
     geometries[geomID] = nullptr;
     delete geometry;
   }
@@ -588,12 +600,12 @@ namespace embree
         if (geometries[i]) geometries[i]->immutable();
     }
 
-    /* delete geometry that is scheduled for delete */
-    for (size_t i=0; i<geometries.size(); i++) // FIXME: this late deletion is inefficient in case of many geometries
+    /* clear modified flag */
+    for (size_t i=0; i<geometries.size(); i++)
     {
       Geometry* geom = geometries[i];
       if (!geom) continue;
-      if (geom->isEnabled()) geom->clearModified(); // FIXME: should builders to this?
+      if (geom->isEnabled()) geom->clearModified(); // FIXME: should builders do this?
     }
 
     updateInterface();
@@ -612,7 +624,7 @@ namespace embree
 
   void Scene::build (size_t threadIndex, size_t threadCount) 
   {
-    AutoUnlock<MutexSys> buildLock(buildMutex);
+    Lock<MutexSys> buildLock(buildMutex,false);
 
     /* allocates own taskscheduler for each build */
     Ref<TaskScheduler> scheduler = nullptr;
@@ -674,7 +686,7 @@ namespace embree
     }
 
     /* try to obtain build lock */
-    TryLock<MutexSys> lock(buildMutex);
+    Lock<MutexSys> lock(buildMutex,buildMutex.try_lock());
 
     /* join hierarchy build */
     if (!lock.isLocked()) {
@@ -751,7 +763,7 @@ namespace embree
   {
     int magick = 0x35238765LL;
     file.write((char*)&magick,sizeof(magick));
-    int numGroups = size();
+    size_t numGroups = size();
     file.write((char*)&numGroups,sizeof(numGroups));
     for (size_t i=0; i<numGroups; i++) {
       if (geometries[i]) geometries[i]->write(file);

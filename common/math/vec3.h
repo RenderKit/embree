@@ -196,28 +196,27 @@ namespace embree
     const auto sy = abs(ab_y) < abs(bc_y);
     const auto sz = abs(ab_z) < abs(bc_z);
     return Vec3<T>(select(sx,cross_ab.x,cross_bc.x),
-                   select(sx,cross_ab.y,cross_bc.y),
-                   select(sx,cross_ab.z,cross_bc.z));
+                   select(sy,cross_ab.y,cross_bc.y),
+                   select(sz,cross_ab.z,cross_bc.z));
   }
 
   template<typename T> __forceinline T       sum      ( const Vec3<T>& a )                   { return a.x+a.y+a.z; }
 
   template<typename T> __forceinline      T  halfArea ( const Vec3<T>& d )                  { return d.x*(d.y+d.z)+d.y*d.z; }
   template<typename T> __forceinline      T  area     ( const Vec3<T>& d )                  { return 2.0f*halfArea(d); }
-  template<typename T> __forceinline Vec3<T> reflect  ( const Vec3<T>& V, const Vec3fa& N ) { return 2.0f*dot(V,N)*N-V; }
 
   template<typename T> __forceinline Vec3<T> normalize_safe( const Vec3<T>& a ) {
     const T d = dot(a,a); return select(d == T( zero ), a ,  a*rsqrt(d) );
   }
 
-  template<typename T> __forceinline T sqr_point_to_line_distance(const Vec3<T>& P, const Vec3<T>& Q0, const Vec3<T>& Q1) 
+  template<typename T> __forceinline T sqr_point_to_line_distance(const Vec3<T>& P, const Vec3<T>& Q0, const Vec3<T>& Q1)
   {
     const Vec3<T> N = cross(P-Q0,Q1-Q0);
     const Vec3<T> D = Q1-Q0;
     return dot(N,N)*rcp(dot(D,D));
   }
 
-  template<typename T> __forceinline T sqr_point_to_line_distance(const Vec3<T>& PmQ0, const Vec3<T>& Q1mQ0) 
+  template<typename T> __forceinline T sqr_point_to_line_distance(const Vec3<T>& PmQ0, const Vec3<T>& Q1mQ0)
   {
     const Vec3<T> N = cross(PmQ0,Q1mQ0);
     const Vec3<T> D = Q1mQ0;

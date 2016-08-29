@@ -1,5 +1,7 @@
 
 ispc2cpp:
+	@./ispc2cpp.sh common/tutorial/tutorial_device.isph common/tutorial/tutorial_device.h
+	@./ispc2cpp.sh common/tutorial/tutorial_device.ispc common/tutorial/tutorial_device.cpp
 	@./ispc2cpp.sh common/core/differential_geometry.isph common/core/differential_geometry.h
 	@./ispc2cpp.sh common/math/random_sampler.isph common/math/random_sampler.h
 	@./ispc2cpp.sh common/math/sampling.isph common/math/sampling.h
@@ -11,6 +13,9 @@ ispc2cpp:
 	@./ispc2cpp.sh common/lights/point_light.ispc common/lights/point_light.cpp
 	@./ispc2cpp.sh common/lights/quad_light.ispc common/lights/quad_light.cpp
 	@./ispc2cpp.sh common/lights/spot_light.ispc common/lights/spot_light.cpp
+	@./ispc2cpp.sh common/texture/texture2d.isph common/texture/texture2d.h
+	@./ispc2cpp.sh common/texture/texture2d.ispc common/texture/texture2d.cpp
+	@./ispc2cpp.sh common/texture/texture_param.isph common/texture/texture_param.h
 	@./ispc2cpp.sh triangle_geometry/triangle_geometry_device.ispc triangle_geometry/triangle_geometry_device.cpp
 	@./ispc2cpp.sh dynamic_scene/dynamic_scene_device.ispc dynamic_scene/dynamic_scene_device.cpp
 	@./ispc2cpp.sh user_geometry/user_geometry_device.ispc user_geometry/user_geometry_device.cpp
@@ -28,6 +33,8 @@ ispc2cpp:
 	@./ispc2cpp.sh curve_geometry/curve_geometry_device.ispc curve_geometry/curve_geometry_device.cpp
 
 osp2emb:
+	@./osp2emb.sh ../../ospray/ospray/math/math.ih common/math/math.isph
+	#@./osp2emb.sh ../../ospray/ospray/math/vec.ih common/math/vec.isph # requires manual changes
 	@./osp2emb.sh ../../ospray/ospray/math/sampling.ih common/math/sampling.isph
 	@./osp2emb.sh ../../ospray/ospray/lights/Light.ih common/lights/light.isph
 	@./osp2emb.sh ../../ospray/ospray/lights/Light.ispc common/lights/light.ispc
@@ -36,5 +43,10 @@ osp2emb:
 	@./osp2emb.sh ../../ospray/ospray/lights/PointLight.ispc common/lights/point_light.ispc
 	@./osp2emb.sh ../../ospray/ospray/lights/QuadLight.ispc common/lights/quad_light.ispc
 	@./osp2emb.sh ../../ospray/ospray/lights/SpotLight.ispc common/lights/spot_light.ispc
+	@./osp2emb.sh ../../ospray/ospray/include/ospray/OSPTexture.h common/texture/texture.h
+	@./osp2emb.sh ../../ospray/ospray/texture/Texture2D.ih common/texture/texture2d.isph
+	@./osp2emb.sh ../../ospray/ospray/texture/Texture2D.ispc common/texture/texture2d.ispc
+	@./osp2emb.sh ../../ospray/ospray/texture/TextureParam.ih common/texture/texture_param.isph
+	@echo "export void dummy() {} // just to avoid linker warning under MacOSX" >> common/lights/light.ispc
 
 all: osp2emb ispc2cpp

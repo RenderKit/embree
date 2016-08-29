@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "state.h"
-#include "../../common/lexers/streamfilters.h"
+#include "../common/lexers/streamfilters.h"
 
 namespace embree
 {
@@ -134,9 +134,9 @@ namespace embree
      * functions */
 #if defined(DEBUG)
     assert(isa::getISA() == ISA);
-#if defined(__TARGET_SSE41__)
-    assert(sse41::getISA() <= SSE41);
-#endif
+//#if defined(__TARGET_SSE41__)
+//    assert(sse41::getISA() <= SSE41);
+//#endif
 #if defined(__TARGET_SSE42__)
     assert(sse42::getISA() <= SSE42);
 #endif
@@ -147,7 +147,10 @@ namespace embree
     assert(avx2::getISA() <= AVX2);
 #endif
 #if defined (__TARGET_AVX512KNL__)
-    assert(avx512::getISA() <= AVX512KNL);
+    assert(avx512knl::getISA() <= AVX512KNL);
+#endif
+#if defined (__TARGET_AVX512SKX__)
+    assert(avx512skx::getISA() <= AVX512SKX);
 #endif
 #endif
   }
@@ -199,6 +202,7 @@ namespace embree
     else if (isa == "avxi") return AVXI;
     else if (isa == "avx2") return AVX2;
     else if (isa == "avx512knl") return AVX512KNL;
+    else if (isa == "avx512skx") return AVX512SKX;
     else return SSE2;
   }
 
@@ -238,7 +242,7 @@ namespace embree
       else if ((tok == Token::Id("tri_traverser") || tok == Token::Id("traverser")) && cin->trySymbol("="))
         tri_traverser = cin->get().Identifier();
       else if (tok == Token::Id("tri_builder_replication_factor") && cin->trySymbol("="))
-        tri_builder_replication_factor = cin->get().Int();
+        tri_builder_replication_factor = cin->get().Float();
 
       else if ((tok == Token::Id("tri_accel_mb") || tok == Token::Id("accel_mb")) && cin->trySymbol("="))
         tri_accel_mb = cin->get().Identifier();
@@ -322,20 +326,21 @@ namespace embree
       }
 
       else if (tok == Token::Id("tessellation_cache_size") && cin->trySymbol("="))
-        tessellation_cache_size = cin->get().Float() * 1024 * 1024;
+        tessellation_cache_size = size_t(cin->get().Float()*1024.0f*1024.0f);
 
       cin->trySymbol(","); // optional , separator
     }
   }
 
-  bool State::verbosity(int N) {
+  bool State::verbosity(size_t N) {
     return N <= verbose;
   }
 
   void State::print()
   {
     std::cout << "general:" << std::endl;
-    std::cout << "  build threads = " << numThreads << std::endl;
+    std::cout << "  build threads = " << numThreads   << std::endl;
+    std::cout << "  affinity      = " << set_affinity << std::endl;
     std::cout << "  verbosity     = " << verbose << std::endl;
     
     std::cout << "triangles:" << std::endl;

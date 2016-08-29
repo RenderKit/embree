@@ -121,7 +121,7 @@ namespace embree
 
       /*! construction of new task */
       __forceinline Task (TaskFunction* closure, Task* parent, size_t stackPtr, size_t N) 
-        : closure(closure), parent(parent), stackPtr(stackPtr), dependencies(1), stealable(true), N(N)
+        : dependencies(1), stealable(true), closure(closure), parent(parent), stackPtr(stackPtr), N(N)
       {
         if (parent) parent->add_dependencies(+1);
 	switch_state(DONE,INITIALIZED);
@@ -129,7 +129,7 @@ namespace embree
 
       /*! construction of stolen task, stealing thread will decrement initial dependency */
       __forceinline Task (TaskFunction* closure, Task* parent) 
-        : closure(closure), parent(parent), stackPtr(-1), dependencies(1), stealable(false), N(1)
+        : dependencies(1), stealable(false), closure(closure), parent(parent), stackPtr(-1), N(1)
       {
 	switch_state(DONE,INITIALIZED);
       }
@@ -205,7 +205,7 @@ namespace embree
       ALIGNED_STRUCT;
 
       Thread (size_t threadIndex, const Ref<TaskScheduler>& scheduler)
-      : threadIndex(threadIndex), scheduler(scheduler), task(nullptr) {}
+      : threadIndex(threadIndex), task(nullptr), scheduler(scheduler) {}
 
       __forceinline size_t threadCount() {
         return scheduler->threadCounter;

@@ -18,6 +18,7 @@
 
 #include "intrinsics.h"
 #include "sysinfo.h"
+#include "atomic.h"
 
 namespace embree
 {
@@ -41,7 +42,7 @@ namespace embree
   };
 
   /*! fast active barrier using atomitc counter */
-  struct __aligned(64) BarrierActive 
+  struct BarrierActive 
   {
   public:
     BarrierActive () 
@@ -63,7 +64,7 @@ namespace embree
   };
 
   /*! fast active barrier that does not require initialization to some number of threads */
-  struct __aligned(64) BarrierActiveAutoReset
+  struct BarrierActiveAutoReset
   {
   public:
     BarrierActiveAutoReset () 
@@ -86,7 +87,7 @@ namespace embree
     std::atomic<size_t> cntr1;
   };
 
-  class __aligned(64) LinearBarrierActive
+  class LinearBarrierActive
   {
   public:
 
@@ -106,7 +107,7 @@ namespace embree
     volatile unsigned int mode;
     volatile unsigned int flag0;
     volatile unsigned int flag1;
-    volatile unsigned int threadCount;
+    volatile size_t threadCount;
   };
 }
 

@@ -20,15 +20,14 @@
 namespace embree
 {
   Geometry::Geometry (Scene* parent, Type type, size_t numPrimitives, size_t numTimeSteps, RTCGeometryFlags flags) 
-    : parent(parent), type(type), numPrimitives(numPrimitives), numTimeSteps(numTimeSteps), id(0), flags(flags),
-      enabled(true), modified(true), mask(-1), used(1),
+    : parent(parent), id(0), type(type), numPrimitives(numPrimitives), numTimeSteps(unsigned(numTimeSteps)), flags(flags),
+      enabled(true), modified(true), userPtr(nullptr), mask(-1), used(1),
       intersectionFilter1(nullptr), occlusionFilter1(nullptr),
       intersectionFilter4(nullptr), occlusionFilter4(nullptr),
       intersectionFilter8(nullptr), occlusionFilter8(nullptr),
       intersectionFilter16(nullptr), occlusionFilter16(nullptr),
       intersectionFilterN(nullptr), occlusionFilterN(nullptr),
-      hasIntersectionFilterMask(0), hasOcclusionFilterMask(0), ispcIntersectionFilterMask(0), ispcOcclusionFilterMask(0),
-      userPtr(nullptr)
+      hasIntersectionFilterMask(0), hasOcclusionFilterMask(0), ispcIntersectionFilterMask(0), ispcOcclusionFilterMask(0)
   {
     id = parent->add(this);
     parent->setModified();

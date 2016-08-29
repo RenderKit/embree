@@ -35,6 +35,11 @@
 #define TBB_IMPLEMENT_CPP0X 0
 #define __TBB_NO_IMPLICIT_LINKAGE 1
 #define __TBBMALLOC_NO_IMPLICIT_LINKAGE 1
+#include "tbb/tbb_config.h"
+#undef TBB_USE_CAPTURED_EXCEPTION
+#define TBB_USE_CAPTURED_EXCEPTION 0
+#undef __TBB_EXCEPTION_PTR_PRESENT
+#define __TBB_EXCEPTION_PTR_PRESENT 1
 #include "tbb/tbb.h"
 
 namespace embree

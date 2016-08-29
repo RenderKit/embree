@@ -14,9 +14,13 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifdef USE_OPENEXR
+#ifdef EMBREE_TUTORIALS_OPENEXR
 
 #include "image.h"
+
+#if defined(__clang__)
+  #pragma clang diagnostic ignored "-Wdeprecated-register"
+#endif
 
 /* include OpenEXR headers */
 #ifdef __WIN32__
@@ -86,5 +90,5 @@ namespace embree
   }
 }
 
-#endif // USE_OPENEXR
+#endif // EMBREE_TUTORIALS_OPENEXR
 

@@ -598,3 +598,5 @@ void rtcInterpolate2(RTCScene scene, uniform unsigned int geomID, varying unsign
                     (uniform float* uniform)ddPdudu,(uniform float* uniform)ddPdvdv,(uniform float* uniform)ddPdudv,
                     numFloats);
 }
+
+export void dummy_rtcore_ispc() {}  // just to avoid compile warning "libembree.a(rtcore_ispc.dev.o) has no symbols" under MacOSX

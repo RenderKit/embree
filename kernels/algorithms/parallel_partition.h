@@ -503,28 +503,26 @@ namespace embree
     ALIGNED_CLASS;
   private:
 
-    static const size_t MAX_TASKS = 512;
-
-    const Compare& cmp;
-    const Reduction_T& reduction_t;
-    const Reduction_V& reduction_v;
-    const V &init;
-
-    struct Range {
-      int start;
-      int end;
+    struct Range 
+    {
+      ssize_t start;
+      ssize_t end;
       Range() {}
 
-    Range(int start, int end) : start(start), end(end) {}
+      Range (ssize_t start, ssize_t end) 
+      : start(start), end(end) {}
 
-      __forceinline void reset() { start = 0; end = -1; } 
+      __forceinline void reset() { 
+        start = 0; end = -1; 
+      } 
 	
-      __forceinline Range intersect(const Range& r) const
-      {
+      __forceinline Range intersect(const Range& r) const {
         return Range (max(start,r.start),min(end,r.end)); // carefull with ssize_t here
       }
 
-      __forceinline bool empty() const { return end < start; } 
+      __forceinline bool empty() const { 
+        return end < start; 
+      } 
 	
       __forceinline size_t size() const { 
         assert(!empty());
@@ -532,23 +530,29 @@ namespace embree
       }
     };
 
+  private:
+
+    static const size_t MAX_TASKS = 512;
+
+    T* array;
     size_t N;
     size_t tasks; 
-    T* array;
+    const Compare& cmp;
+    const Reduction_T& reduction_t;
+    const Reduction_V& reduction_v;
+    const V &init;
 
     size_t numMisplacedRangesLeft;
     size_t numMisplacedRangesRight;
     size_t numMisplacedItems;
 
-    __aligned(64) unsigned int counter_start[MAX_TASKS]; 
-    __aligned(64) unsigned int counter_left[MAX_TASKS];  
+    __aligned(64) size_t counter_start[MAX_TASKS]; 
+    __aligned(64) size_t counter_left[MAX_TASKS];  
     __aligned(64) Range leftMisplacedRanges[MAX_TASKS];  
     __aligned(64) Range rightMisplacedRanges[MAX_TASKS]; 
     __aligned(64) V leftReductions[MAX_TASKS];           
-    __aligned(64) V rightReductions[MAX_TASKS];          
+    __aligned(64) V rightReductions[MAX_TASKS];    
 
-
-     
   public:
      
     __forceinline parallel_partition_static_task(T *array, 
@@ -557,8 +561,8 @@ namespace embree
                                                  const V& init, 
                                                  const Compare& cmp, 
                                                  const Reduction_T& reduction_t, 
-                                                 const Reduction_V& reduction_v) : 
-    array(array), N(N), init(init), cmp(cmp), reduction_t(reduction_t) , reduction_v(reduction_v)
+                                                 const Reduction_V& reduction_v) 
+      : array(array), N(N), cmp(cmp), reduction_t(reduction_t), reduction_v(reduction_v), init(init)
     {
       numMisplacedRangesLeft  = 0;
       numMisplacedRangesRight = 0;
@@ -625,15 +629,8 @@ namespace embree
         size   -= items;
         l_left -= items;
         r_left -= items;
-#pragma nounroll
-        while(items)
-        {
-#if 0 // defined(__AVX512F__)
-          prefetch<PFHINT_L2EX>(((char*)l) + 4*64);
-          prefetch<PFHINT_L2EX>(((char*)r) + 4*64);	  
-          prefetch<PFHINT_L1EX>(((char*)l) + 1*64);
-          prefetch<PFHINT_L1EX>(((char*)r) + 1*64);	  
-#endif
+
+        while(items) {
           items--;
           xchg(*l++,*r++);
         }
@@ -648,15 +645,13 @@ namespace embree
       {
         leftReduction = empty;
         rightReduction = empty;
-        const size_t mid = serial_partitioning(array,0,N,leftReduction,rightReduction,cmp,reduction_t);
-        return mid;
+        return serial_partitioning(array,0,N,leftReduction,rightReduction,cmp,reduction_t);
       }
 
       parallel_for(tasks,[&] (const size_t taskID) 
                    {
                      const size_t startID = (taskID+0)*N/tasks;
                      const size_t endID   = (taskID+1)*N/tasks;
-                     const size_t size    = endID-startID;
                      V local_left(empty);
                      V local_right(empty);
                      const size_t mid = serial_partitioning(array,startID,endID,local_left,local_right,cmp,reduction_t);
@@ -683,28 +678,29 @@ namespace embree
       counter_start[tasks] = N;
       counter_left[tasks]  = 0;
 
-      unsigned int mid = counter_left[0];
-      for (unsigned int i=1;i<tasks;i++)
+      size_t mid = counter_left[0];
+      for (size_t i=1;i<tasks;i++)
         mid += counter_left[i];
 
       const Range globalLeft (0,mid-1);
       const Range globalRight(mid,N-1);
 
       // without pragma the compiler makes a mess out of this loop
-#pragma novector
+#if defined(__INTEL_COMPILER)
+#pragma novector // FIXME: does this make a performance difference at all?
+#endif
       for (size_t i=0;i<tasks;i++)
       {	    
-        const unsigned int left_start  = counter_start[i];
-        const unsigned int left_end    = counter_start[i] + counter_left[i]-1;
-        const unsigned int right_start = counter_start[i] + counter_left[i];
-        const unsigned int right_end   = counter_start[i+1]-1;
+        const size_t left_start  = counter_start[i];
+        const size_t left_end    = counter_start[i] + counter_left[i]-1;
+        const size_t right_start = counter_start[i] + counter_left[i];
+        const size_t right_end   = counter_start[i+1]-1;
 
         Range left_range (left_start,left_end); // counter[i].start,counter[i].start+counter[i].left-1);
         Range right_range(right_start,right_end); // counter[i].start+counter[i].left,counter[i].start+counter[i].size-1);
 
         Range left_misplaced = globalLeft.intersect(right_range);
         Range right_misplaced = globalRight.intersect(left_range);
-
 
         if (!left_misplaced.empty())  
         {

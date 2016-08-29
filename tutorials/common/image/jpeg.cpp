@@ -14,14 +14,13 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifdef USE_LIBJPEG
+#ifdef EMBREE_TUTORIALS_LIBJPEG
 
 #include "image.h"
 #include "jpeglib.h"
 
 namespace embree
 {
-
     void compress(struct jpeg_compress_struct *cinfo, unsigned char *image)
     {
 
@@ -52,17 +51,18 @@ namespace embree
         JSAMPARRAY scanline = (*cinfo->mem->alloc_sarray)((j_common_ptr) cinfo, JPOOL_IMAGE, bytes, 1);
 
         /*! Allocate storage for the decompressed image. */
-        unsigned char *image = (unsigned char *) malloc(cinfo->output_height * bytes);  if (image == nullptr) return(nullptr);
+        unsigned char* image = new unsigned char[cinfo->output_height * bytes];  
 
         /*! Here we use the library state variable 'output_scanline' as the loop index. */
-        while (cinfo->output_scanline < cinfo->output_height) jpeg_read_scanlines(cinfo, scanline, 1), memcpy(&image[(cinfo->output_scanline - 1) * bytes], scanline[0], bytes);
+        while (cinfo->output_scanline < cinfo->output_height) 
+          jpeg_read_scanlines(cinfo, scanline, 1), memcpy(&image[(cinfo->output_scanline - 1) * bytes], scanline[0], bytes);
 
         /*! Finish decompression. */
-        jpeg_finish_decompress(cinfo);  return(image);
-
+        jpeg_finish_decompress(cinfo);  
+        return(image);
     }
 
-    void encodeRGB8_to_JPEG(unsigned char *image, size_t width, size_t height, unsigned char **encoded, size_t *capacity)
+    void encodeRGB8_to_JPEG(unsigned char *image, size_t width, size_t height, unsigned char **encoded, unsigned long *capacity)
     {
 
 #if JPEG_LIB_VERSION >= 80
@@ -143,8 +143,10 @@ namespace embree
         }
 
         /*! Clean up. */
-        jpeg_destroy_decompress(&cinfo);  free(rgb);  fclose(file);  return(image);
-
+        jpeg_destroy_decompress(&cinfo);  
+        delete[] rgb;  
+        fclose(file);  
+        return(image);
     }
 
     void storeJPEG(const Ref<Image> &image, const FileName &filename)
@@ -172,7 +174,7 @@ namespace embree
         jpeg_stdio_dest(&cinfo, file);
 
         /*! Allocate storage for the uncompressed packed image. */
-        unsigned char *rgb = (unsigned char *) malloc(3 * image->height * image->width);
+        unsigned char* rgb = new unsigned char [3 * image->height * image->width];
 
         /*! Convert the image to unsigned char RGB. */
         for (size_t y=0, i=0 ; y < image->height ; y++) {
@@ -188,11 +190,11 @@ namespace embree
         compress(&cinfo, rgb);
 
         /*! At this point 'jerror.num_warnings' could be checked for corrupt-data warnings. */
-        jpeg_destroy_compress(&cinfo);  free(rgb);  fclose(file);
-
+        jpeg_destroy_compress(&cinfo);  
+        delete [] rgb;
+        fclose(file);
     }
-
 }
 
-#endif // USE_LIBJPEG
+#endif // EMBREE_TUTORIALS_LIBJPEG
 

@@ -267,7 +267,7 @@ namespace embree
     std::vector<Vec2f> loadVec2fArray(const Ref<XML>& xml);
     std::vector<Vec3f> loadVec3fArray(const Ref<XML>& xml);
     avector<Vec3fa> loadVec4fArray(const Ref<XML>& xml);
-    std::vector<int>   loadIntArray(const Ref<XML>& xml);
+    std::vector<unsigned> loadUIntArray(const Ref<XML>& xml);
     std::vector<Vec2i> loadVec2iArray(const Ref<XML>& xml);
     std::vector<Vec3i> loadVec3iArray(const Ref<XML>& xml);
     std::vector<Vec4i> loadVec4iArray(const Ref<XML>& xml);
@@ -505,23 +505,23 @@ namespace embree
     return res;
   }
 
-  std::vector<int> XMLLoader::loadIntArray(const Ref<XML>& xml)
+  std::vector<unsigned> XMLLoader::loadUIntArray(const Ref<XML>& xml)
   {
     /*! do not fail of array does not exist */
-    if (!xml) { return std::vector<int>(); }
+    if (!xml) { return std::vector<unsigned>(); }
 
     size_t size = 0;
-    int* data = nullptr;
+    unsigned* data = nullptr;
     if (xml->parm("ofs") != "") {
-      data = (int*)loadBinary(xml,sizeof(int),size);
+      data = (unsigned*)loadBinary(xml,sizeof(unsigned),size);
     } else {
       size_t elts = xml->body.size();
       size = elts;
-      data = (int*) alignedMalloc(size*sizeof(int));
+      data = (unsigned*) alignedMalloc(size*sizeof(unsigned));
       for (size_t i=0; i<size; i++) 
         data[i] = xml->body[i].Int();
     }
-    std::vector<int> res;
+    std::vector<unsigned> res;
     for (size_t i=0; i<size; i++) res.push_back(data[i]);
     alignedFree(data);
     return res;
@@ -682,10 +682,10 @@ namespace embree
 
     /*! load texture from binary file */
     else {
-      const size_t width  = stoi(xml->parm("width"));
-      const size_t height = stoi(xml->parm("height"));
+      const unsigned width  = stoi(xml->parm("width"));
+      const unsigned height = stoi(xml->parm("height"));
       const Texture::Format format = Texture::string_to_format(xml->parm("format"));
-      const size_t bytesPerTexel = Texture::getFormatBytesPerTexel(format);
+      const unsigned bytesPerTexel = Texture::getFormatBytesPerTexel(format);
       texture = new Texture(width,height,format);
       if (width*height != fread(texture->data, bytesPerTexel, width*height, binFile)) 
         THROW_RUNTIME_ERROR("error reading from binary file: "+binFileName.str());
@@ -898,14 +898,14 @@ namespace embree
     std::vector<Vec3f> normals = loadVec3fArray(xml->childOpt("normals"));
     for (size_t i=0; i<normals.size(); i++) mesh->normals.push_back(normals[i]);
     mesh->texcoords = loadVec2fArray(xml->childOpt("texcoords"));
-    mesh->position_indices = loadIntArray(xml->childOpt("position_indices"));
-    mesh->normal_indices   = loadIntArray(xml->childOpt("normal_indices"));
-    mesh->texcoord_indices = loadIntArray(xml->childOpt("texcoord_indices"));
-    mesh->verticesPerFace  = loadIntArray(xml->childOpt("faces"));
-    mesh->holes            = loadIntArray(xml->childOpt("holes"));
+    mesh->position_indices = loadUIntArray(xml->childOpt("position_indices"));
+    mesh->normal_indices   = loadUIntArray(xml->childOpt("normal_indices"));
+    mesh->texcoord_indices = loadUIntArray(xml->childOpt("texcoord_indices"));
+    mesh->verticesPerFace  = loadUIntArray(xml->childOpt("faces"));
+    mesh->holes            = loadUIntArray(xml->childOpt("holes"));
     mesh->edge_creases     = loadVec2iArray(xml->childOpt("edge_creases"));
     mesh->edge_crease_weights = loadFloatArray(xml->childOpt("edge_crease_weights"));
-    mesh->vertex_creases      = loadIntArray(xml->childOpt("vertex_creases"));
+    mesh->vertex_creases      = loadUIntArray(xml->childOpt("vertex_creases"));
     mesh->vertex_crease_weights = loadFloatArray(xml->childOpt("vertex_crease_weights"));
     mesh->verify();
     return mesh;
@@ -916,7 +916,7 @@ namespace embree
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
     avector<Vec3fa> positions  = loadVec4fArray(xml->childOpt("positions"));
     avector<Vec3fa> positions2 = loadVec4fArray(xml->childOpt("positions2"));
-    std::vector<int>    indices    = loadIntArray(xml->childOpt("indices"));
+    std::vector<unsigned> indices    = loadUIntArray(xml->childOpt("indices"));
 
     SceneGraph::LineSegmentsNode* mesh = new SceneGraph::LineSegmentsNode(material);
     mesh->v .resize(positions .size()); for (size_t i=0; i<positions .size(); i++) mesh->v [i] = positions [i];
@@ -961,13 +961,13 @@ namespace embree
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
     avector<Vec3fa> positions  = loadVec4fArray(xml->childOpt("positions"));
     avector<Vec3fa> positions2 = loadVec4fArray(xml->childOpt("positions2"));
-    std::vector<int> indices       = loadIntArray(xml->childOpt("indices"));
+    std::vector<unsigned> indices = loadUIntArray(xml->childOpt("indices"));
 
     SceneGraph::HairSetNode* hair = new SceneGraph::HairSetNode(false,material);
 
     hair->hairs.resize(indices.size());
     for (size_t i=0; i<indices.size(); i++) {
-      hair->hairs[i] = SceneGraph::HairSetNode::Hair(4*i,0);
+      hair->hairs[i] = SceneGraph::HairSetNode::Hair(unsigned(4*i),0);
     }
       
     if (positions.size())

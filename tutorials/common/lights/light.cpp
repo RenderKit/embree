@@ -16,6 +16,8 @@
 
 #include "light.h"
 
+namespace embree {
+
 Light_EvalRes Light_eval(const Light* uniform,
                          const DifferentialGeometry&,
                          const Vec3fa&)
@@ -26,3 +28,6 @@ Light_EvalRes Light_eval(const Light* uniform,
   res.pdf = 0.f;
   return res;
 }
+extern "C" void dummy() {} // just to avoid linker warning under MacOSX
+
+} // namespace embree

@@ -16,6 +16,7 @@
 
 #include "tutorial.h"
 #include "scene.h"
+#include "statistics.h"
 
 /* include GLUT for display */
 #if defined(__MACOSX__)
@@ -30,20 +31,30 @@
 #  include <GL/glut.h>
 #endif
 
+/* include tutorial_device.h after GLUT, as otherwise we may get
+ * warnings of redefined GLUT_KEY_F1, etc. */
 #include "tutorial_device.h"
+#include "../scenegraph/scenegraph.h"
 #include "../scenegraph/obj_loader.h"
 #include "../scenegraph/xml_loader.h"
 #include "../image/image.h"
-#include "../transport/transport_host.h"
-
-extern "C" {
-  float g_debug = 0.0f;
-}
 
 namespace embree
 {
-  std::string g_tutorialName;
-  extern "C" Mode g_mode = MODE_NORMAL;
+  extern "C" 
+  {
+    float g_debug = 0.0f;
+    Mode g_mode = MODE_NORMAL;
+    ISPCScene* g_ispc_scene = nullptr;
+
+    /* intensity scaling for traversal cost visualization */
+    float scale = 1.0f / 1000000.0f;
+    bool g_changed = false;
+
+    int64_t get_tsc() { return read_tsc(); }
+
+    unsigned int g_numThreads = 0;
+  }
 
   TutorialApplication* TutorialApplication::instance = nullptr; 
 
@@ -56,6 +67,7 @@ namespace embree
 
       width(512),
       height(512),
+      pixels(nullptr),
 
       outputImageFilename(""),
 
@@ -81,9 +93,6 @@ namespace embree
     /* only a single instance of this class is supported */
     assert(instance == nullptr);
     instance = this;
-
-    /* the coi device needs this name in a static variable */
-    g_tutorialName = tutorialName;
 
     /* for best performance set FTZ and DAZ flags in MXCSR control and status register */
     _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
@@ -185,6 +194,15 @@ namespace embree
         "  stream-coherent  : coherent stream mode\n"
         "  stream-incoherent: incoherent stream mode\n");
     }
+  }
+
+  TutorialApplication::~TutorialApplication()
+  {
+    device_cleanup();
+    alignedFree(pixels); 
+    pixels = nullptr;
+    width = 0;
+    height = 0;
   }
 
   SceneLoadingTutorialApplication::SceneLoadingTutorialApplication (const std::string& tutorialName, int features)
@@ -292,7 +310,7 @@ namespace embree
         const float r = cin->getFloat();
         const size_t N = cin->getInt();
         Material obj; new (&obj) OBJMaterial();
-        scene->add(SceneGraph::createHairyPlane(p0,dx,dy,len,r,N,true,new SceneGraph::MaterialNode(obj)));
+        scene->add(SceneGraph::createHairyPlane(0,p0,dx,dy,len,r,N,true,new SceneGraph::MaterialNode(obj)));
       }, "--hair-plane p.x p.y p.z dx.x dx.y dx.z dy.x dy.y dy.z length radius num: adds a hair plane originated at p0 and spanned by the vectors dx and dy. num hairs are generated with speficied length and radius.");    
     
     registerOption("curve-plane", [this] (Ref<ParseStream> cin, const FileName& path) {
@@ -303,7 +321,7 @@ namespace embree
         const float r = cin->getFloat();
         const size_t N = cin->getInt();
         Material obj; new (&obj) OBJMaterial();
-        scene->add(SceneGraph::createHairyPlane(p0,dx,dy,len,r,N,false,new SceneGraph::MaterialNode(obj)));
+        scene->add(SceneGraph::createHairyPlane(0,p0,dx,dy,len,r,N,false,new SceneGraph::MaterialNode(obj)));
       }, "--curve-plane p.x p.y p.z dx.x dx.y dx.z dy.x dy.y dy.z length radius: adds a plane build of bezier curves originated at p0 and spanned by the vectors dx and dy. num curves are generated with speficied length and radius.");    
 
     registerOption("triangle-sphere", [this] (Ref<ParseStream> cin, const FileName& path) {
@@ -342,78 +360,6 @@ namespace embree
       }, "--pregenerate: enabled pregenerate subdiv mode");    
   }
 
-  /* calculates min/avg/max and sigma */
-  struct Statistics
-  {
-  public:
-    Statistics() 
-      : v(0.0f), v2(0.0f), vmin(pos_inf), vmax(neg_inf), N(0) {}
-
-    void add(float a) 
-    {
-      v += a;
-      v2 += a*a;
-      vmin = min(vmin,a);
-      vmax = max(vmax,a);
-      N++;
-    }
-
-    float getSigma() const 
-    {
-      if (N == 0) return 0.0f;
-      else return sqrt(max(0.0,v2/N - sqr(v/N)));
-    }
-
-    float getAvgSigma() const // standard deviation of average
-    {
-      if (N == 0) return 0.0f;
-      else return getSigma()/sqrt(float(N));
-    }
-
-    float getMin() const { return vmin; }
-    float getMax() const { return vmax; }
-    float getAvg() const { return v/N; }
-
-  private:
-    double v;   // sum of all values
-    double v2;  // sum of squared of all values
-    float vmin; // min of all values
-    float vmax; // max of all values
-    size_t N;  // number of values
-  };
-
-  /* filters outlyers out */
-  struct FilteredStatistics
-  {
-  public:
-    FilteredStatistics(float fskip_small, float fskip_large) 
-      : fskip_small(fskip_small), fskip_large(fskip_large) {}
-
-    void add(float a) 
-    {
-      v.push_back(a);
-      std::sort(v.begin(),v.end(),std::less<float>());
-      size_t skip_small = floor(0.5f*fskip_small*v.size());
-      size_t skip_large = floor(0.5f*fskip_large*v.size());
-
-      new (&stat) Statistics;
-      for (size_t i=skip_small; i<v.size()-skip_large; i++)
-        stat.add(v[i]);
-    }
-
-    float getSigma() const { return stat.getSigma(); }
-    float getAvgSigma() const { return stat.getAvgSigma(); }
-    float getMin() const { return stat.getMin(); }
-    float getMax() const { return stat.getMax(); }
-    float getAvg() const { return stat.getAvg(); }
-
-  private:
-    float fskip_small; // fraction of small outlyers to filter out
-    float fskip_large; // fraction of large outlyers to filter out
-    std::vector<float> v;
-    Statistics stat;
-  };
-
   void TutorialApplication::renderBenchmark()
   {
     IOStreamStateRestorer cout_state(std::cout);
@@ -431,7 +377,7 @@ namespace embree
       for (size_t i=0; i<skipBenchmarkFrames; i++) 
       {
         double t0 = getSeconds();
-        render(0.0f,ispccamera);
+        device_render(pixels,width,height,0.0f,ispccamera);
         double t1 = getSeconds();
         std::cout << "frame [" << std::setw(3) << i << " / " << std::setw(3) << numTotalFrames << "]: " <<  std::setw(8) << 1.0/(t1-t0) << " fps (skipped)" << std::endl << std::flush;
         if (benchmarkSleep) sleepSeconds(0.1);
@@ -440,25 +386,28 @@ namespace embree
       for (size_t i=skipBenchmarkFrames; i<numTotalFrames; i++) 
       {
         double t0 = getSeconds();
-        render(0.0f,ispccamera);
+        device_render(pixels,width,height,0.0f,ispccamera);
         double t1 = getSeconds();
 
-        float fr = 1.0f/(t1-t0);
+        float fr = float(1.0/(t1-t0));
         stat.add(fr);
-        std::cout << "frame [" << std::setw(3) << i << " / " << std::setw(3) << numTotalFrames << "]: " 
-                  << std::setw(8) << fr << " fps, " 
-                  << "min = " << std::setw(8) << stat.getMin() << " fps, " 
-                  << "avg = " << std::setw(8) << stat.getAvg() << " fps, "
-                  << "max = " << std::setw(8) << stat.getMax() << " fps, "
-                  << "sigma = " << std::setw(6) << stat.getSigma() << " (" << 100.0f*stat.getSigma()/stat.getAvg() << "%)" << std::endl << std::flush;
+        if (numTotalFrames >= 1024 && (i % 64 == 0))
+        {
+          std::cout << "frame [" << std::setw(3) << i << " / " << std::setw(3) << numTotalFrames << "]: " 
+                    << std::setw(8) << fr << " fps, " 
+                    << "min = " << std::setw(8) << stat.getMin() << " fps, " 
+                    << "avg = " << std::setw(8) << stat.getAvg() << " fps, "
+                    << "max = " << std::setw(8) << stat.getMax() << " fps, "
+                    << "sigma = " << std::setw(6) << stat.getSigma() << " (" << 100.0f*stat.getSigma()/stat.getAvg() << "%)" << std::endl << std::flush;
+        }
         if (benchmarkSleep) sleepSeconds(0.1);
       }
 
       /* rebuild scene between repetitions */
       if (numBenchmarkRepetitions)
       {
-        cleanup();
-        init(rtcore.c_str());
+        device_cleanup();
+        device_init(rtcore.c_str());
         resize(width,height);     
       }
  
@@ -482,18 +431,34 @@ namespace embree
   {
     resize(width,height);
     ISPCCamera ispccamera = camera.getISPCCamera(width,height);
-    render(0.0f,ispccamera);
-    void* ptr = map();
-    Ref<Image> image = new Image4uc(width, height, (Col4uc*)ptr);
+    device_render(pixels,width,height,0.0f,ispccamera);
+    Ref<Image> image = new Image4uc(width, height, (Col4uc*)pixels);
     storeImage(image, fileName);
-    unmap();
-    cleanup();
+  }
+
+  void TutorialApplication::set_parameter(size_t parm, ssize_t val) {
+    rtcDeviceSetParameter1i(nullptr,(RTCParameter)parm,val);
+  }
+
+  void TutorialApplication::resize(unsigned width, unsigned height)
+  {
+    if (width == this->width && height == this->height && pixels) 
+      return;
+
+    if (pixels) alignedFree(pixels);
+    this->width = width;
+    this->height = height;
+    pixels = (unsigned*) alignedMalloc(width*height*sizeof(unsigned),64);
+  }
+
+  void TutorialApplication::set_scene (TutorialScene* in) {
+    g_ispc_scene = new ISPCScene(in);
   }
 
   void TutorialApplication::keyboardFunc(unsigned char key, int x, int y)
   {
     /* call tutorial keyboard handler */
-    key_pressed(key);
+    device_key_pressed(key);
 
     switch (key)
     {
@@ -520,7 +485,6 @@ namespace embree
     case '-' : g_debug=clamp(g_debug-0.01f); PRINT(g_debug); break;
 
     case '\033': case 'q': case 'Q':
-      cleanup();
       glutDestroyWindow(windowID);
 #if defined(__MACOSX__)
       exit(1);
@@ -531,7 +495,7 @@ namespace embree
 
   void TutorialApplication::specialFunc(int key, int x, int y)
   {
-    key_pressed(key);
+    device_key_pressed(key);
     
     if (glutGetModifiers() == GLUT_ACTIVE_CTRL)
     {
@@ -563,7 +527,7 @@ namespace embree
       if (button == GLUT_LEFT_BUTTON && glutGetModifiers() == GLUT_ACTIVE_SHIFT) 
       {
         ISPCCamera ispccamera = camera.getISPCCamera(width,height);
-        Vec3fa p; bool hit = pick(x,y,ispccamera,p);
+        Vec3fa p; bool hit = device_pick(float(x),float(y),ispccamera,p);
 
         if (hit) {
           Vec3fa delta = p - camera.to;
@@ -576,7 +540,7 @@ namespace embree
       else if (button == GLUT_LEFT_BUTTON && glutGetModifiers() == (GLUT_ACTIVE_CTRL | GLUT_ACTIVE_SHIFT)) 
       {
         ISPCCamera ispccamera = camera.getISPCCamera(width,height);
-        Vec3fa p; bool hit = pick(x,y,ispccamera,p);
+        Vec3fa p; bool hit = device_pick(float(x),float(y),ispccamera,p);
         if (hit) camera.to = p;
       }
 
@@ -610,11 +574,10 @@ namespace embree
     
     /* render image using ISPC */
     double t0 = getSeconds();
-    render(time0-t0,ispccamera);
+    device_render(pixels,width,height,float(time0-t0),ispccamera);
     double dt0 = getSeconds()-t0;
 
     /* draw pixels to screen */
-    int* pixels = map();
     glDrawPixels(width,height,GL_RGBA,GL_UNSIGNED_BYTE,pixels);
     
     if (fullscreen) 
@@ -634,8 +597,8 @@ namespace embree
       stream << 1.0f/dt0 << " fps";
       std::string str = stream.str();
       
-      glRasterPos2i( width-str.size()*12, height - 24); 
-      for ( int i = 0; i < str.size(); ++i )
+      glRasterPos2i( width-GLint(str.size())*12, height - 24); 
+      for (size_t i=0; i<str.size(); i++)
         glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, str[i]);
       
       glRasterPos2i( 0, 0 ); 
@@ -646,7 +609,6 @@ namespace embree
     }
     
     glutSwapBuffers();
-    unmap();
     
     double dt1 = getSeconds()-t0;
 
@@ -700,17 +662,17 @@ namespace embree
   void TutorialApplication::run(int argc, char** argv)
   {
     /* initialize ray tracing core */
-    init(rtcore.c_str());
+    device_init(rtcore.c_str());
     
     /* set shader mode */
     switch (shader) {
     case SHADER_DEFAULT : break;
-    case SHADER_EYELIGHT: key_pressed(GLUT_KEY_F2); break;
-    case SHADER_UV      : key_pressed(GLUT_KEY_F4); break;
-    case SHADER_NG      : key_pressed(GLUT_KEY_F5); break;
-    case SHADER_GEOMID  : key_pressed(GLUT_KEY_F6); break;
-    case SHADER_GEOMID_PRIMID: key_pressed(GLUT_KEY_F7); break;
-    case SHADER_AMBIENT_OCCLUSION: key_pressed(GLUT_KEY_F11); break;
+    case SHADER_EYELIGHT: device_key_pressed(GLUT_KEY_F2); break;
+    case SHADER_UV      : device_key_pressed(GLUT_KEY_F4); break;
+    case SHADER_NG      : device_key_pressed(GLUT_KEY_F5); break;
+    case SHADER_GEOMID  : device_key_pressed(GLUT_KEY_F6); break;
+    case SHADER_GEOMID_PRIMID: device_key_pressed(GLUT_KEY_F7); break;
+    case SHADER_AMBIENT_OCCLUSION: device_key_pressed(GLUT_KEY_F11); break;
     };
     
     /* benchmark mode */
@@ -810,5 +772,30 @@ namespace embree
   catch (...) {
     std::cout << "Error: unknown exception caught." << std::endl;
     return 1;
+  }
+
+  /* draws progress bar */
+  static int progressWidth = 0;
+  static std::atomic<size_t> progressDots(0);
+  
+  extern "C" void progressStart() 
+  {
+    progressDots = 0;
+    progressWidth = max(3,getTerminalWidth());
+    std::cout << "[" << std::flush;
+  }
+  
+  extern "C" bool progressMonitor(void* ptr, const double n)
+  {
+    size_t olddots = progressDots;
+    size_t maxdots = progressWidth-2;
+    size_t newdots = max(olddots,min(size_t(maxdots),size_t(n*double(maxdots))));
+    if (progressDots.compare_exchange_strong(olddots,newdots))
+      for (size_t i=olddots; i<newdots; i++) std::cout << "." << std::flush;
+    return true;
+  }
+  
+  extern "C" void progressEnd() {
+    std::cout << "]" << std::endl;
   }
 }

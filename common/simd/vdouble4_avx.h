@@ -20,11 +20,15 @@ namespace embree
 { 
 #if defined(__AVX__) && defined(__X86_64__)
 
+#ifndef _MM_SHUF_PERM2
 #define _MM_SHUF_PERM2(e3, e2, e1, e0) \
   ((int)(((e3)<<3) | ((e2)<<2) | ((e1)<<1) | (e0)))
+#endif
 
+#ifndef _MM_SHUF_PERM3
 #define _MM_SHUF_PERM3(e1, e0) \
   ((int)(((e1)<<4) | (e0)))
+#endif
 
   /* 4-wide AVX 64bit double type */
   template<>

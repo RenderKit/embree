@@ -66,7 +66,7 @@ namespace embree
     }
     
     /*! returns the i'th curve */
-    __forceinline const int& curve(size_t i) const {
+    __forceinline const unsigned int& curve(size_t i) const {
       return curves[i];
     }
     
@@ -83,8 +83,8 @@ namespace embree
     /*! check if the i'th primitive is valid */
     __forceinline bool valid(size_t i, BBox3fa* bbox = nullptr) const 
     {
-      const int index = curve(i);
-      if (index < 0 || index+3 >= numVertices()) return false;
+      const unsigned int index = curve(i);
+      if (index+3 >= numVertices()) return false;
       
       for (size_t j=0; j<numTimeSteps; j++) 
       {
@@ -112,7 +112,7 @@ namespace embree
     /*! calculates bounding box of i'th bezier curve */
     __forceinline BBox3fa bounds(size_t i, size_t j = 0) const 
     {
-      const int index = curve(i);
+      const unsigned int index = curve(i);
       const float r0 = radius(index+0,j);
       const float r1 = radius(index+1,j);
       const float r2 = radius(index+2,j);
@@ -128,7 +128,7 @@ namespace embree
     /*! calculates bounding box of i'th bezier curve */
     __forceinline BBox3fa bounds(const AffineSpace3fa& space, size_t i, size_t j = 0) const 
     {
-      const int index = curve(i);
+      const unsigned int index = curve(i);
       const float r0 = radius(index+0,j);
       const float r1 = radius(index+1,j);
       const float r2 = radius(index+2,j);
@@ -142,10 +142,10 @@ namespace embree
     }
 
   public:
-    int tessellationRate;                           //!< tessellation rate for bezier curve
-    SubType subtype;                                //!< hair or surface geometry
-    BufferT<int> curves;                            //!< array of curve indices
+    BufferT<unsigned int> curves;                   //!< array of curve indices
     array_t<BufferT<Vec3fa>,2> vertices;            //!< vertex array
     array_t<std::unique_ptr<Buffer>,2> userbuffers; //!< user buffers
+    SubType subtype;                                //!< hair or surface geometry
+    int tessellationRate;                           //!< tessellation rate for bezier curve
   };
 }

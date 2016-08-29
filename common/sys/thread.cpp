@@ -175,11 +175,11 @@ namespace embree
 namespace embree
 {
   /* changes thread ID mapping such that we first fill up all thread on one core */
-  ssize_t mapThreadID(ssize_t threadID)
+  size_t mapThreadID(size_t threadID)
   {
     static MutexSys mutex;
     Lock<MutexSys> lock(mutex);
-    static std::vector<int> threadIDs;
+    static std::vector<size_t> threadIDs;
 
     if (threadIDs.size() == 0)
     {
@@ -218,7 +218,7 @@ namespace embree
     }
 
     /* re-map threadIDs if mapping is available */
-    ssize_t ID = threadID;
+    size_t ID = threadID;
     if (threadID < threadIDs.size())
       ID = threadIDs[threadID];
 
@@ -231,6 +231,29 @@ namespace embree
     cpu_set_t cset;
     CPU_ZERO(&cset);
     CPU_SET(mapThreadID(affinity), &cset);
+
+    if (pthread_setaffinity_np(pthread_self(), sizeof(cset), &cset) != 0)
+      WARNING("pthread_setaffinity_np failed"); // on purpose only a warning
+  }
+}
+#endif
+
+////////////////////////////////////////////////////////////////////////////////
+/// FreeBSD Platform
+////////////////////////////////////////////////////////////////////////////////
+
+#if defined(__FreeBSD__)
+
+#include <pthread_np.h>
+
+namespace embree
+{
+  /*! set affinity of the calling thread */
+  void setAffinity(ssize_t affinity)
+  {
+    cpuset_t cset;
+    CPU_ZERO(&cset);
+    CPU_SET(affinity, &cset);
 
     if (pthread_setaffinity_np(pthread_self(), sizeof(cset), &cset) != 0)
       WARNING("pthread_setaffinity_np failed"); // on purpose only a warning
@@ -290,8 +313,9 @@ namespace embree
   static void* threadStartup(ThreadStartupData* parg)
   {
     _mm_setcsr(_mm_getcsr() | /*FTZ:*/ (1<<15) | /*DAZ:*/ (1<<6));
-
-#if !defined(__LINUX__)
+    
+    /*! Mac OS X does not support setting affinity at thread creation time */
+#if defined(__MACOSX__)
     if (parg->affinity >= 0)
 	setAffinity(parg->affinity);
 #endif
@@ -320,7 +344,15 @@ namespace embree
       cpu_set_t cset;
       CPU_ZERO(&cset);
       CPU_SET(mapThreadID(threadID), &cset);
-      if (pthread_setaffinity_np(*tid,sizeof(cpu_set_t),&cset))
+      if (pthread_setaffinity_np(*tid, sizeof(cset), &cset))
+        WARNING("pthread_setaffinity_np failed"); // on purpose only a warning
+    }
+#elif defined(__FreeBSD__)
+    if (threadID >= 0) {
+      cpuset_t cset;
+      CPU_ZERO(&cset);
+      CPU_SET(threadID, &cset);
+      if (pthread_setaffinity_np(*tid, sizeof(cset), &cset))
         WARNING("pthread_setaffinity_np failed"); // on purpose only a warning
     }
 #endif
@@ -347,8 +379,8 @@ namespace embree
   }
 
   /*! creates thread local storage */
-  tls_t createTls() {
-    static int cntr = 0;
+  tls_t createTls() 
+  {
     pthread_key_t* key = new pthread_key_t;
     if (pthread_key_create(key,nullptr) != 0)
       FATAL("pthread_key_create failed");

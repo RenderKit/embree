@@ -68,26 +68,8 @@ namespace embree
   {
     LARGE_INTEGER li;
     QueryPerformanceCounter(&li);
-    return li.QuadPart;
+    return (size_t)li.QuadPart;
   }
-  
-#if defined(__SSE4_2__)
-  
-  __forceinline int __popcnt(int in) {
-    return _mm_popcnt_u32(in);
-  }
-  
-  __forceinline unsigned __popcnt(unsigned in) {
-    return _mm_popcnt_u32(in);
-  }
-  
-#if defined(__X86_64__)
-  __forceinline size_t __popcnt(size_t in) {
-    return _mm_popcnt_u64(in);
-  }
-#endif
-  
-#endif
   
   __forceinline int __bsf(int v) {
 #if defined(__AVX2__) 
@@ -140,7 +122,7 @@ namespace embree
   
   __forceinline int __bsr(int v) {
 #if defined(__AVX2__) 
-    return _lzcnt_u32(v);
+    return 31 - _lzcnt_u32(v);
 #else
     unsigned long r = 0; _BitScanReverse(&r,v); return r;
 #endif
@@ -148,7 +130,7 @@ namespace embree
   
   __forceinline unsigned __bsr(unsigned v) {
 #if defined(__AVX2__) 
-    return _lzcnt_u32(v);
+    return 31 - _lzcnt_u32(v);
 #else
     unsigned long r = 0; _BitScanReverse(&r,v); return r;
 #endif
@@ -157,9 +139,9 @@ namespace embree
 #if defined(__X86_64__)
   __forceinline size_t __bsr(size_t v) {
 #if defined(__AVX2__) 
-    return _lzcnt_u64(v);
+    return 63 -_lzcnt_u64(v);
 #else
-    unsigned long r = 0; _BitScanReverse64(&r,v); return r;
+	  unsigned long r = 0; _BitScanReverse64(&r, v); return r;
 #endif
   }
 #endif
@@ -250,16 +232,6 @@ namespace embree
     return (((uint64_t)high) << 32) + (uint64_t)low;
   }
   
-#if defined(__SSE4_2__)
-  __forceinline unsigned int __popcnt(unsigned int in) {
-    int r = 0; asm ("popcnt %1,%0" : "=r"(r) : "r"(in)); return r;
-  }
-
-  __forceinline int __popcnt(int in) {
-    int r = 0; asm ("popcnt %1,%0" : "=r"(r) : "r"(in)); return r;
-  }
-#endif
-  
   __forceinline int __bsf(int v) {
 #if defined(__AVX2__) 
     return _tzcnt_u32(v);
@@ -268,6 +240,7 @@ namespace embree
 #endif
   }
   
+#if defined(__X86_64__)
   __forceinline unsigned __bsf(unsigned v) 
   {
 #if defined(__AVX2__) 
@@ -276,6 +249,7 @@ namespace embree
     unsigned r = 0; asm ("bsf %1,%0" : "=r"(r) : "r"(v)); return r;
 #endif
   }
+#endif
   
   __forceinline size_t __bsf(size_t v) {
 #if defined(__AVX2__)
@@ -289,16 +263,6 @@ namespace embree
 #endif
   }
 
-#if defined(__X86_64__) && defined(__SSE4_2__)
-  __forceinline size_t __popcnt(size_t v) {
-#if defined(__INTEL_COMPILER)
-    return _mm_countbits_64(v); 
-#else
-    return _mm_popcnt_u64(v);
-#endif
-  }
-#endif
-  
   __forceinline int __bscf(int& v) 
   {
     int i = __bsf(v);
@@ -306,12 +270,14 @@ namespace embree
     return i;
   }
   
+#if defined(__X86_64__)
   __forceinline unsigned int __bscf(unsigned int& v) 
   {
     unsigned int i = __bsf(v);
     v &= v-1;
     return i;
   }
+#endif
   
   __forceinline size_t __bscf(size_t& v) 
   {
@@ -328,6 +294,7 @@ namespace embree
 #endif
   }
   
+#if defined(__X86_64__)
   __forceinline unsigned __bsr(unsigned v) {
 #if defined(__AVX2__) 
     return 31 - _lzcnt_u32(v);
@@ -335,6 +302,7 @@ namespace embree
     unsigned r = 0; asm ("bsr %1,%0" : "=r"(r) : "r"(v)); return r;
 #endif
   }
+#endif
   
   __forceinline size_t __bsr(size_t v) {
 #if defined(__AVX2__)
@@ -363,7 +331,11 @@ namespace embree
 #if defined(__INTEL_COMPILER)
     return _blsr_u64(v);
 #else
+#if defined(__X86_64__)
     return __blsr_u64(v);
+#else
+    return __blsr_u32(v);
+#endif
 #endif
 #else
     return v & (v-1);
@@ -404,6 +376,24 @@ namespace embree
 /// All Platforms
 ////////////////////////////////////////////////////////////////////////////////
   
+#if defined(__SSE4_2__)
+  
+  __forceinline int __popcnt(int in) {
+    return _mm_popcnt_u32(in);
+  }
+  
+  __forceinline unsigned __popcnt(unsigned in) {
+    return _mm_popcnt_u32(in);
+  }
+  
+#if defined(__X86_64__)
+  __forceinline size_t __popcnt(size_t in) {
+    return _mm_popcnt_u64(in);
+  }
+#endif
+  
+#endif
+
   __forceinline uint64_t rdtsc()
   {
     int dummy[4]; 
@@ -413,17 +403,10 @@ namespace embree
     return clock;
   }
   
-  __forceinline void __pause_cpu (const int cycles = 0) {
-    for (size_t i=0; i<8; i++)
+  __forceinline void __pause_cpu (const size_t N = 8) 
+  {
+    for (size_t i=0; i<N; i++)
       _mm_pause();    
-  }
-  
-  __forceinline void __pause_cpu_expfalloff(unsigned int &cycles, const unsigned int max_cycles) 
-  { 
-    __pause_cpu(cycles);
-    cycles += cycles;
-    if (cycles > max_cycles) 
-      cycles = max_cycles;
   }
   
   /* prefetches */

@@ -29,24 +29,24 @@ namespace embree
 {
   struct ISPCTriangle
   {
-    int v0;                /*< first triangle vertex */
-    int v1;                /*< second triangle vertex */
-    int v2;                /*< third triangle vertex */
-    int materialID;        /*< material of triangle */
+    unsigned v0;                /*< first triangle vertex */
+    unsigned v1;                /*< second triangle vertex */
+    unsigned v2;                /*< third triangle vertex */
+    unsigned materialID;        /*< material of triangle */
   };
 
   struct ISPCQuad
   {
-    int v0;                /*< first triangle vertex */
-    int v1;                /*< second triangle vertex */
-    int v2;                /*< third triangle vertex */
-    int v3;                /*< fourth triangle vertex */
+    unsigned v0;                /*< first triangle vertex */
+    unsigned v1;                /*< second triangle vertex */
+    unsigned v2;                /*< third triangle vertex */
+    unsigned v3;                /*< fourth triangle vertex */
   };
 
   struct ISPCHair
   {
-    int vertex;
-    int id;
+    unsigned vertex;
+    unsigned id;
   };
 
   enum ISPCType { TRIANGLE_MESH, SUBDIV_MESH, HAIR_SET, INSTANCE, GROUP, QUAD_MESH, LINE_SEGMENTS, CURVES };
@@ -59,9 +59,9 @@ namespace embree
   };
 
   enum TEXTURE_FORMAT {
-    RGBA8        = 1,
-    RGB8         = 2,
-    FLOAT32      = 3,
+    Texture_RGBA8        = 1,
+    Texture_RGB8         = 2,
+    Texture_FLOAT32      = 3,
   };
 
   struct ISPCScene
@@ -75,9 +75,9 @@ namespace embree
 
     struct ISPCTriangleMesh
     {
-      ISPCTriangleMesh (int numTriangles,
-                        int numQuads,
-                        int numVertices,
+      ISPCTriangleMesh (unsigned int numTriangles,
+                        unsigned int numQuads,
+                        unsigned int numVertices,
                         int meshMaterialID)
       : geom(TRIANGLE_MESH), positions(nullptr), positions2(nullptr), normals(nullptr), texcoords(nullptr), triangles(nullptr), quads(nullptr),
         numVertices(numVertices), numTriangles(numTriangles), numQuads(numQuads), geomID(0), meshMaterialID(meshMaterialID) {}
@@ -90,9 +90,9 @@ namespace embree
         texcoords = in->vt.size() ? &in->vt[0] : nullptr;
         triangles = (ISPCTriangle*) (in->triangles.size() ? &in->triangles[0] : nullptr);
         quads = (ISPCQuad*) (in->quads.size() ? &in->quads[0] : nullptr);
-        numVertices = in->v.size();
-        numTriangles = in->triangles.size();
-        numQuads = in->quads.size();
+        numVertices = unsigned(in->v.size());
+        numTriangles = unsigned(in->triangles.size());
+        numQuads = unsigned(in->quads.size());
         geomID = -1;
         meshMaterialID = in->meshMaterialID;
       }
@@ -105,13 +105,13 @@ namespace embree
       Vec2f* texcoords;     //!< vertex texcoord array
       ISPCTriangle* triangles;  //!< list of triangles
       ISPCQuad* quads;      //!< list of quads // FIXME: remove
-      int numVertices;
-      int numTriangles;
-      int numQuads;
-      int geomID;
-      int meshMaterialID;
+      unsigned int numVertices;
+      unsigned int numTriangles;
+      unsigned int numQuads;
+      unsigned int geomID;
+      unsigned int meshMaterialID;
     };
-
+    
     struct ISPCQuadMesh
     {
       ISPCQuadMesh ()
@@ -125,8 +125,8 @@ namespace embree
         normals = in->vn.size() ? &in->vn[0] : nullptr;
         texcoords = in->vt.size() ? &in->vt[0] : nullptr;
         quads = (ISPCQuad*) (in->quads.size() ? &in->quads[0] : nullptr);
-        numVertices = in->v.size();
-        numQuads = in->quads.size();
+        numVertices = unsigned(in->v.size());
+        numQuads = unsigned(in->quads.size());
         geomID = -1;
         meshMaterialID = in->meshMaterialID;
       }
@@ -138,15 +138,15 @@ namespace embree
       Vec3fa* normals;       //!< vertex normal array
       Vec2f* texcoords;     //!< vertex texcoord array
       ISPCQuad* quads;      //!< list of quads
-      int numVertices;
-      int numQuads;
-      int geomID;
-      int meshMaterialID;
+      unsigned int numVertices;
+      unsigned int numQuads;
+      unsigned int geomID;
+      unsigned int meshMaterialID;
     };
 
     struct ISPCSubdivMesh
     {
-      ISPCSubdivMesh (int numVertices, int numFaces, int numEdges, int materialID)
+      ISPCSubdivMesh (unsigned int numVertices, unsigned int numFaces, unsigned int numEdges, unsigned int materialID)
       : geom(SUBDIV_MESH), positions(nullptr), normals(nullptr), texcoords(nullptr), position_indices(nullptr), normal_indices(nullptr), texcoord_indices(nullptr), verticesPerFace(nullptr), holes(nullptr),
         subdivlevel(nullptr), edge_creases(nullptr), edge_crease_weights(nullptr), vertex_creases(nullptr), vertex_crease_weights(nullptr), face_offsets(nullptr),
         numVertices(numVertices), numFaces(numFaces), numEdges(numEdges), numEdgeCreases(0), numVertexCreases(0), numHoles(0), materialID(materialID), geomID(0) {}
@@ -165,19 +165,19 @@ namespace embree
         edge_crease_weights = in->edge_crease_weights.size() ? &in->edge_crease_weights[0] : nullptr;
         vertex_creases = in->vertex_creases.size() ? &in->vertex_creases[0] : nullptr;
         vertex_crease_weights = in->vertex_crease_weights.size() ? &in->vertex_crease_weights[0] : nullptr;
-        numVertices = in->positions.size();
-        numFaces = in->verticesPerFace.size();
-        numEdges = in->position_indices.size();
-        numEdgeCreases = in->edge_creases.size();
-        numVertexCreases = in->vertex_creases.size();
-        numHoles = in->holes.size();
+        numVertices = unsigned(in->positions.size());
+        numFaces = unsigned(in->verticesPerFace.size());
+        numEdges = unsigned(in->position_indices.size());
+        numEdgeCreases = unsigned(in->edge_creases.size());
+        numVertexCreases = unsigned(in->vertex_creases.size());
+        numHoles = unsigned(in->holes.size());
         materialID = in->materialID;
         geomID = -1;
 
         size_t numEdges = in->position_indices.size();
         size_t numFaces = in->verticesPerFace.size();
-        subdivlevel = new float[numEdges];
-        face_offsets = new int[numFaces];
+        subdivlevel = new float[numEdges]; // FIXME: never deleted
+        face_offsets = new unsigned[numFaces]; // FIXME: never deleted
         for (size_t i=0; i<numEdges; i++) subdivlevel[i] = 1.0f;
         int offset = 0;
         for (size_t i=0; i<numFaces; i++)
@@ -192,31 +192,25 @@ namespace embree
       Vec3fa* positions;       //!< vertex positions
       Vec3fa* normals;         //!< face vertex normals
       Vec2f* texcoords;        //!< face texture coordinates
-      int* position_indices;   //!< position indices for all faces
-      int* normal_indices;     //!< normal indices for all faces
-      int* texcoord_indices;   //!< texcoord indices for all faces
-      int* verticesPerFace;    //!< number of indices of each face
-      int* holes;              //!< face ID of holes
+      unsigned* position_indices;   //!< position indices for all faces
+      unsigned* normal_indices;     //!< normal indices for all faces
+      unsigned* texcoord_indices;   //!< texcoord indices for all faces
+      unsigned* verticesPerFace;    //!< number of indices of each face
+      unsigned* holes;              //!< face ID of holes
       float* subdivlevel;      //!< subdivision level
       Vec2i* edge_creases;          //!< crease index pairs
       float* edge_crease_weights;   //!< weight for each crease
-      int* vertex_creases;          //!< indices of vertex creases
+      unsigned* vertex_creases;          //!< indices of vertex creases
       float* vertex_crease_weights; //!< weight for each vertex crease
-      int *face_offsets;
-      int numVertices;
-      int numFaces;
-      int numEdges;
-      int numEdgeCreases;
-      int numVertexCreases;
-      int numHoles;
-      int materialID;
-      int geomID;
-    };
-
-    struct ISPCSubdivMeshKeyFrame
-    {
-      ISPCSubdivMesh** subdiv;                   //!< list of subdiv meshes
-      int numSubdivMeshes;                       //!< number of subdiv meshes
+      unsigned* face_offsets;
+      unsigned int numVertices;
+      unsigned int numFaces;
+      unsigned int numEdges;
+      unsigned int numEdgeCreases;
+      unsigned int numVertexCreases;
+      unsigned int numHoles;
+      unsigned int materialID;
+      unsigned int geomID;
     };
 
     struct ISPCLineSegments
@@ -230,23 +224,23 @@ namespace embree
         v = in->v.data();
         v2 = in->v2.data();
         indices = in->indices.data();
-        numVertices = in->v.size();
-        numSegments = in->indices.size();
+        numVertices = unsigned(in->v.size());
+        numSegments = unsigned(in->indices.size());
         materialID = in->materialID;
       }
 
       ISPCGeometry geom;
       Vec3fa* v;        //!< control points (x,y,z,r)
       Vec3fa* v2;       //!< control points (x,y,z,r)
-      int* indices;     //!< for each segment, index to first control point
-      int numVertices;
-      int numSegments;
-      int materialID;
+      unsigned* indices;     //!< for each segment, index to first control point
+      unsigned int numVertices;
+      unsigned int numSegments;
+      unsigned int materialID;
     };
 
     struct ISPCHairSet
     {
-      ISPCHairSet (int numHairs, int numVertices, int materialID)
+      ISPCHairSet (unsigned int numHairs, unsigned int numVertices, int materialID)
       : geom(HAIR_SET), v(nullptr), v2(nullptr), hairs(nullptr),
         numVertices(numVertices), numHairs(numHairs), materialID(materialID) {}
 
@@ -255,8 +249,8 @@ namespace embree
         v = in->v.size() ? &in->v[0] : nullptr;
         v2 = in->v2.size() ? &in->v2[0] : nullptr;
         hairs = (ISPCHair*) (in->hairs.size() ? &in->hairs[0] : nullptr);
-        numVertices = in->v.size();
-        numHairs = in->hairs.size();
+        numVertices = unsigned(in->v.size());
+        numHairs = unsigned(in->hairs.size());
         materialID = in->materialID;
       }
 
@@ -264,9 +258,9 @@ namespace embree
       Vec3fa* v;       //!< hair control points (x,y,z,r)
       Vec3fa* v2;       //!< hair control points (x,y,z,r)
       ISPCHair* hairs; //!< for each hair, index to first control point
-      int numVertices;
-      int numHairs;
-      int materialID;
+      unsigned int numVertices;
+      unsigned int numHairs;
+      unsigned int materialID;
     };
 
     struct ISPCInstance
@@ -282,7 +276,7 @@ namespace embree
       ISPCGeometry geom;
       AffineSpace3fa space0;
       AffineSpace3fa space1;
-      int geomID;
+      unsigned int geomID;
     };
 
     struct ISPCGroup
@@ -314,10 +308,10 @@ namespace embree
       geometries = new ISPCGeometry*[in->geometries.size()];
       for (size_t i=0; i<in->geometries.size(); i++)
         geometries[i] = convertGeometry(in->geometries[i]);
-      numGeometries = in->geometries.size();
+      numGeometries = unsigned(in->geometries.size());
 
       materials = (ISPCMaterial*) (in->materials.size() ? &in->materials[0] : nullptr);
-      numMaterials = in->materials.size();
+      numMaterials = unsigned(in->materials.size());
 
       lights = new Light*[in->lights.size()];
       numLights = 0;
@@ -326,9 +320,6 @@ namespace embree
         Light* light = convertLight(in->lights[i]);
         if (light) lights[numLights++] = light;
       }
-
-      subdivMeshKeyFrames = nullptr;
-      numSubdivMeshKeyFrames = 0;
     }
 
     static ISPCGeometry* convertGeometry (Ref<TutorialScene::Geometry> in)
@@ -408,22 +399,17 @@ namespace embree
   public:
     ISPCGeometry** geometries;   //!< list of geometries
     ISPCMaterial* materials;     //!< material list
-    int numGeometries;           //!< number of geometries
-    int numMaterials;            //!< number of materials
+    unsigned int numGeometries;           //!< number of geometries
+    unsigned int numMaterials;            //!< number of materials
 
     Light** lights;              //!< list of lights
-    int numLights;               //!< number of lights
-
-    ISPCSubdivMeshKeyFrame** subdivMeshKeyFrames;
-    int numSubdivMeshKeyFrames;
-
+    unsigned int numLights;               //!< number of lights
   };
 
   typedef ISPCScene::ISPCGeometry ISPCGeometry;
   typedef ISPCScene::ISPCTriangleMesh ISPCTriangleMesh;
   typedef ISPCScene::ISPCQuadMesh ISPCQuadMesh;
   typedef ISPCScene::ISPCSubdivMesh ISPCSubdivMesh;
-  typedef ISPCScene::ISPCSubdivMeshKeyFrame ISPCSubdivMeshKeyFrame;
   typedef ISPCScene::ISPCLineSegments ISPCLineSegments;
   typedef ISPCScene::ISPCHairSet ISPCHairSet;
   typedef ISPCScene::ISPCInstance ISPCInstance;

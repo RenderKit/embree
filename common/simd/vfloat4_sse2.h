@@ -323,6 +323,11 @@ namespace embree
 #endif
 #endif
 
+  __forceinline const vfloat4 andnot( const vboolf4& m, const vfloat4& f ) {
+    return _mm_andnot_ps(m, f); 
+  }
+
+
   __forceinline vfloat4  lerp(const vfloat4& a, const vfloat4& b, const vfloat4& t) {
 #if defined(__AVX2__)
     return madd(t, b, madd(-t, a, a));
@@ -336,11 +341,11 @@ namespace embree
   }
 
   __forceinline bool is_finite ( const vfloat4& a ) {
-    return all((a >= vfloat4(-FLT_MAX) & (a <= vfloat4(+FLT_MAX))));
+    return all((a >= vfloat4(-FLT_MAX)) & (a <= vfloat4(+FLT_MAX)));
   }
 
   __forceinline bool is_finite ( const vboolf4& valid, const vfloat4& a ) {
-    return all(valid, a >= vfloat4(-FLT_MAX) & (a <= vfloat4(+FLT_MAX)));
+    return all(valid, (a >= vfloat4(-FLT_MAX)) & (a <= vfloat4(+FLT_MAX)));
   }
   
   ////////////////////////////////////////////////////////////////////////////////

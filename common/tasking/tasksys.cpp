@@ -30,7 +30,7 @@ namespace embree
   {
     if (*taskPtr == nullptr) *taskPtr = new std::vector<void*>;
     std::vector<void*>* lst = (std::vector<void*>*)(*taskPtr);
-    void* ptr = _mm_malloc(size,alignment);
+    void* ptr = alignedMalloc((size_t)size,alignment);
     lst->push_back(ptr);
     return ptr;
   }
@@ -38,7 +38,7 @@ namespace embree
  extern "C" __dllexport void ISPCSync(void* task) 
   {
     std::vector<void*>* lst = (std::vector<void*>*)task;
-    for (size_t i=0; i<lst->size(); i++) _mm_free((*lst)[i]);
+    for (size_t i=0; i<lst->size(); i++) alignedFree((*lst)[i]);
     delete lst;
   }
 
@@ -51,7 +51,7 @@ namespace embree
     parallel_for(size_t(0), size_t(count),[&] (const range<size_t>& r) {
         const size_t threadIndex = TaskScheduler::threadIndex();
         const size_t threadCount = TaskScheduler::threadCount();
-        for (size_t i=r.begin(); i<r.end(); i++) ((TaskFuncType)func)(data,threadIndex,threadCount,i,count);
+        for (size_t i=r.begin(); i<r.end(); i++) ((TaskFuncType)func)(data,int(threadIndex),int(threadCount),int(i),count);
       });
   }
 #endif  

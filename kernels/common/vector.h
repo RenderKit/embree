@@ -49,7 +49,7 @@ namespace embree
       {
         assert(device);
         alignedFree(p);
-        device->memoryMonitor(-n*sizeof(T),true);
+        device->memoryMonitor(-ssize_t(n)*sizeof(T),true);
       }
 
       __forceinline void construct( pointer p, const_reference val ) {
@@ -69,7 +69,7 @@ namespace embree
 #define VECTOR_INIT_ALLOCATOR
 #define vector_t mvector
 #define allocator_t aligned_monitored_allocator<T,std::alignment_of<T>::value>
-#include "../../common/sys/vector_t.h"
+#include "../common/sys/vector_t.h"
 #undef vector_t
 #undef allocator_t
 #undef VECTOR_INIT_ALLOCATOR

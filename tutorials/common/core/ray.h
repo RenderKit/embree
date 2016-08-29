@@ -33,6 +33,10 @@
 
 #include "../../../common/simd/simd.h"
 
+/* include API ray definitions, except RTCRay1 and RTCRay, as we define these ourselves */
+#define __RTCRay__
+#include "../../../include/embree2/rtcore_ray.h"
+
   /*! Ray structure. Contains all information about a ray including
    *  precomputed reciprocal direction. */
   struct RTCRay
@@ -45,10 +49,10 @@
     __forceinline RTCRay(const embree::Vec3fa& org, const embree::Vec3fa& dir, 
 			 float tnear = embree::zero, float tfar = embree::inf, 
 			 float time = embree::zero, int mask = -1)
-      : org(org), dir(dir), tnear(tnear), tfar(tfar), geomID(-1), primID(-1), instID(-1), mask(mask), time(time) {}
+      : org(org), dir(dir), tnear(tnear), tfar(tfar), time(time), mask(mask), geomID(-1), primID(-1), instID(-1)  {}
 
     /*! Tests if we hit something. */
-    __forceinline operator bool() const { return geomID != -1; }
+    __forceinline operator bool() const { return geomID != RTC_INVALID_GEOMETRY_ID; }
 
   public:
     embree::Vec3fa org;        //!< Ray origin
@@ -56,15 +60,15 @@
     float tnear;       //!< Start of ray segment
     float tfar;        //!< End of ray segment
     float time;        //!< Time of this ray for motion blur.
-    int mask;          //!< used to mask out objects during traversal
+    unsigned int mask;          //!< used to mask out objects during traversal
 
   public:
     embree::Vec3fa Ng;         //!< Not normalized geometry normal
     float u;           //!< Barycentric u coordinate of hit
     float v;           //!< Barycentric v coordinate of hit
-    int geomID;           //!< geometry ID
-    int primID;           //!< primitive ID
-    int instID;           //!< instance ID
+    unsigned int geomID;           //!< geometry ID
+    unsigned int primID;           //!< primitive ID
+    unsigned int instID;           //!< instance ID
 
     // ray extensions
   public:

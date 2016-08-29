@@ -29,7 +29,7 @@ typedef int ssize_t;
 #endif
 
 #ifndef RTCORE_API
-#if defined(_WIN32) && !defined(ENABLE_STATIC_LIB)
+#if defined(_WIN32) && !defined(EMBREE_STATIC_LIB)
 #  define RTCORE_API extern "C" __declspec(dllimport) 
 #else
 #  define RTCORE_API extern "C"
@@ -48,6 +48,12 @@ typedef int ssize_t;
   #define RTCORE_DEPRECATED __declspec(deprecated)
 #else
   #define RTCORE_DEPRECATED
+#endif
+
+#if defined(_WIN32) 
+#  define RTCORE_FORCEINLINE __forceinline
+#else
+#  define RTCORE_FORCEINLINE inline __attribute__((always_inline))
 #endif
 
 /*! Embree API version */

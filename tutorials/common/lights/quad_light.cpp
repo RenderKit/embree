@@ -16,6 +16,8 @@
 
 #include "light.h"
 
+namespace embree {
+
 struct QuadLight
 {
   Light super;            //!< inherited light fields
@@ -100,3 +102,5 @@ extern "C" void* QuadLight_create()
 
   return self;
 }
+
+} // namespace embree

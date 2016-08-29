@@ -17,18 +17,15 @@
 #include "../common/math/random_sampler.h"
 #include "../common/tutorial/tutorial_device.h"
 #include "../common/tutorial/scene_device.h"
+#include "../common/tutorial/optics.h"
 
-#if defined(__XEON_PHI__) // FIXME: gather of pointers not working in ISPC for Xeon Phi
-#define renderPixelTestEyeLight renderPixelStandard
-#else
-#define renderPixelPathTrace renderPixelStandard
-#endif
+namespace embree {
 
 /* accumulation buffer */
 Vec3fa* g_accu = nullptr;
-size_t g_accu_width = 0;
-size_t g_accu_height = 0;
-size_t g_accu_count = 0;
+unsigned int g_accu_width = 0;
+unsigned int g_accu_height = 0;
+unsigned int g_accu_count = 0;
 Vec3fa g_accu_vx;
 Vec3fa g_accu_vy;
 Vec3fa g_accu_vz;
@@ -106,8 +103,6 @@ RTCScene convertScene(ISPCScene* scene_in)
 //////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////
-
-#if !defined(__XEON_PHI__)
 
 /*! Anisotropic power cosine microfacet distribution. */
 struct AnisotropicBlinn {
@@ -235,8 +230,6 @@ inline Vec3fa evalBezier(const int geomID, const int primID, const float t)
   //tangent = p21-p20;
 }
 
-#endif
-
 /* extended ray structure that includes total transparency along the ray */
 struct RTCRay2
 {
@@ -249,9 +242,9 @@ struct RTCRay2
   Vec3fa Ng;      //!< Geometric normal.
   float u;       //!< Barycentric u coordinate of hit
   float v;       //!< Barycentric v coordinate of hit
-  int geomID;    //!< geometry ID
-  int primID;    //!< primitive ID
-  int instID;    //!< instance ID
+  unsigned int geomID;    //!< geometry ID
+  unsigned int primID;    //!< primitive ID
+  unsigned int instID;    //!< instance ID
 
   // ray extensions
   RTCFilterFunc filter;
@@ -265,8 +258,6 @@ void filterDispatch(void* ptr, RTCRay2& ray) {
   if (!enableFilterDispatch) return;
   if (ray.filter) ray.filter(ptr,*((RTCRay*)&ray));
 }
-
-#if !defined(__XEON_PHI__)
 
 /* occlusion filter function */
 void occlusionFilter(void* ptr, RTCRay2& ray)
@@ -296,10 +287,10 @@ Vec3fa occluded(RTCScene scene, RTCRay2& ray)
 }
 
 /* task that renders a single screen tile */
-Vec3fa renderPixelPathTrace(float x, float y, const ISPCCamera& camera)
+Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
 {
   RandomSampler sampler;
-  RandomSampler_init(sampler, x, y, g_accu_count);
+  RandomSampler_init(sampler, (int)x, (int)y, g_accu_count);
   x += RandomSampler_get1D(sampler);
   y += RandomSampler_get1D(sampler);
   float time = RandomSampler_get1D(sampler);
@@ -353,10 +344,6 @@ Vec3fa renderPixelPathTrace(float x, float y, const ISPCCamera& camera)
     }
     else if (geometry->type == TRIANGLE_MESH)
     {
-      ISPCTriangleMesh* mesh = (ISPCTriangleMesh*) geometry;
-      ISPCTriangle* triangle = &mesh->triangles[ray.primID];
-      OBJMaterial* material = (OBJMaterial*) &g_ispc_scene->materials[triangle->materialID];
-
       if (dot(ray.dir,ray.Ng) > 0) ray.Ng = neg(ray.Ng);
 
       /* calculate tangent space */
@@ -367,6 +354,8 @@ Vec3fa renderPixelPathTrace(float x, float y, const ISPCCamera& camera)
       /* generate isotropic BRDF */
       AnisotropicBlinn__Constructor(&brdf,Vec3fa(1.0f),Vec3fa(0.0f),dx,1.0f,dy,1.0f,dz);
     }
+    else
+      return color;
 
     /* sample directional light */
     RTCRay2 shadow;
@@ -416,81 +405,27 @@ Vec3fa renderPixelPathTrace(float x, float y, const ISPCCamera& camera)
   return color;
 }
 
-#endif
-
-Vec3fa renderPixelTestEyeLight(float x, float y, const ISPCCamera& camera)
-{
-  RandomSampler sampler;
-  RandomSampler_init(sampler, x, y, g_accu_count);
-  x += RandomSampler_get1D(sampler);
-  y += RandomSampler_get1D(sampler);
-
-  /* initialize ray */
-  RTCRay2 ray;
-  ray.org = Vec3fa(camera.xfm.p);
-  ray.dir = Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
-  ray.tnear = 0.0f;
-  ray.tfar = inf;
-  ray.geomID = RTC_INVALID_GEOMETRY_ID;
-  ray.primID = RTC_INVALID_GEOMETRY_ID;
-  ray.mask = -1;
-  ray.time = 0;
-
-  Vec3fa color = Vec3fa(0.0f);
-  float weight = 1.0f;
-
-  rtcIntersect(g_scene,*((RTCRay*)&ray));
-  ray.filter = nullptr;
-
-  if (ray.primID == -1)
-    return Vec3fa(0.0f);
-
-  Vec3fa Ng;
-  ISPCGeometry* geometry = g_ispc_scene->geometries[ray.geomID];
-  if (geometry->type == HAIR_SET)
-  {
-    const Vec3fa dx = normalize(ray.Ng);
-    const Vec3fa dy = normalize(cross(ray.dir,dx));
-    const Vec3fa dz = normalize(cross(dy,dx));
-    Ng = dz;
-  }
-  else
-  {
-    if (dot(ray.dir,ray.Ng) > 0) ray.Ng = neg(ray.Ng);
-    const Vec3fa dz = normalize(ray.Ng);
-    const Vec3fa dx = normalize(cross(dz,ray.dir));
-    const Vec3fa dy = normalize(cross(dz,dx));
-    Ng = dz;
-  }
-
-  color = color + Vec3fa(0.2f + 0.5f * abs(dot(ray.dir,Ng)));
-  return color;
-}
-
 /* renders a single screen tile */
 void renderTileStandard(int taskIndex,
                         int* pixels,
-                        const int width,
-                        const int height,
+                        const unsigned int width,
+                        const unsigned int height,
                         const float time,
                         const ISPCCamera& camera,
                         const int numTilesX,
                         const int numTilesY)
 {
-  const int tileY = taskIndex / numTilesX;
-  const int tileX = taskIndex - tileY * numTilesX;
-  const int x0 = tileX * TILE_SIZE_X;
-  const int x1 = min(x0+TILE_SIZE_X,width);
-  const int y0 = tileY * TILE_SIZE_Y;
-  const int y1 = min(y0+TILE_SIZE_Y,height);
+  const unsigned int tileY = taskIndex / numTilesX;
+  const unsigned int tileX = taskIndex - tileY * numTilesX;
+  const unsigned int x0 = tileX * TILE_SIZE_X;
+  const unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const unsigned int y0 = tileY * TILE_SIZE_Y;
+  const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
-  //int seed = tileY*numTilesX+tileX+0 + g_accu_count;
-  int seed = (tileY*numTilesX+tileX+0) * g_accu_count;
-
-  for (int y=y0; y<y1; y++) for (int x=x0; x<x1; x++)
+  for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
     /* calculate pixel color */
-    Vec3fa color = renderPixelStandard(x,y,camera);
+    Vec3fa color = renderPixelStandard((float)x,(float)y,camera);
 
     /* write color to framebuffer */
     Vec3fa accu_color = g_accu[y*width+x] + Vec3fa(color.x,color.y,color.z,1.0f); g_accu[y*width+x] = accu_color;
@@ -504,8 +439,8 @@ void renderTileStandard(int taskIndex,
 
 /* task that renders a single screen tile */
 void renderTileTask (int taskIndex, int* pixels,
-                         const int width,
-                         const int height,
+                         const unsigned int width,
+                         const unsigned int height,
                          const float time,
                          const ISPCCamera& camera,
                          const int numTilesX,
@@ -547,8 +482,8 @@ extern "C" void device_init (char* cfg)
 
 /* called by the C++ code to render */
 extern "C" void device_render (int* pixels,
-                           const int width,
-                           const int height,
+                           const unsigned int width,
+                           const unsigned int height,
                            const float time,
                            const ISPCCamera& camera)
 {
@@ -578,7 +513,7 @@ extern "C" void device_render (int* pixels,
   enableFilterDispatch = renderTile == renderTileStandard;
   parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
     for (size_t i=range.begin(); i<range.end(); i++)
-      renderTileTask(i,pixels,width,height,time,camera,numTilesX,numTilesY);
+      renderTileTask((int)i,pixels,width,height,time,camera,numTilesX,numTilesY);
   }); 
   enableFilterDispatch = false;
 }
@@ -593,3 +528,5 @@ extern "C" void device_cleanup ()
   g_accu_height = 0;
   g_accu_count = 0;
 }
+
+} // namespace embree

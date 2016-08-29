@@ -16,6 +16,7 @@
 
 ADD_SUBDIRECTORY(common)
 
+ADD_SUBDIRECTORY(verify)
 ADD_SUBDIRECTORY(triangle_geometry)
 ADD_SUBDIRECTORY(dynamic_scene)
 ADD_SUBDIRECTORY(user_geometry)
@@ -34,7 +35,7 @@ ADD_SUBDIRECTORY(interpolation)
 ADD_SUBDIRECTORY(convert)
 ADD_SUBDIRECTORY(curve_geometry)
 
-IF (RTCORE_RAY_PACKETS)
+IF (EMBREE_RAY_PACKETS)
 ADD_SUBDIRECTORY(viewer_stream)
 ENDIF()
 

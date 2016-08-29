@@ -16,19 +16,25 @@
 
 #pragma once
 
+#include "../math/sampling.h"
+
+namespace embree {
+
 /*! \addtogroup rivl_render_embree_ivl */
 /*! @{ */
 
 /*! Reflects a viewing vector V at a normal N. */
-inline Sample3f reflect_(const Vec3fa &V, const Vec3fa &N) {
-  float cosi = dot(V,N);
-  return Sample3f(2.0f*cosi*N-V, 1.0f);
-}
+inline Vec3fa reflect(const Vec3fa& V, const Vec3fa& N) { return 2.0f*dot(V,N)*N-V; }
+#ifdef ISPC
+inline Vec3fa reflect(const Vec3fa& V, const Vec3fa& N) { return 2.0f*dot(V,N)*N-V; }
+inline Vec3fa reflect(const Vec3fa& V, const Vec3fa& N) { return 2.0f*dot(V,N)*N-V; }
+inline Vec3fa reflect(const Vec3fa& V, const Vec3fa& N) { return 2.0f*dot(V,N)*N-V; }
+#endif
 
 /*! Reflects a viewing vector V at a normal N. Cosine between V
  *  and N is given as input. */
-inline Sample3f reflect_(const Vec3fa &V, const Vec3fa &N, const float cosi) {
-  return Sample3f(2.0f*cosi*N-V, 1.0f);
+inline Vec3fa reflect(const Vec3fa &V, const Vec3fa &N, const float cosi) {
+  return 2.0f*cosi*N-V;
 }
 
 // =======================================================
@@ -42,9 +48,9 @@ inline Sample3f refract(const Vec3fa& V, const Vec3fa& N, const float eta,
                         const float cosi, float &cost)
 {
   const float k = 1.0f-eta*eta*(1.0f-cosi*cosi);
-  if (k < 0.0f) { cost = 0.0f; return Sample3f(Vec3fa(0.f),0.0f); }
+  if (k < 0.0f) { cost = 0.0f; return make_Sample3f(Vec3fa(0.f),0.0f); }
   cost = sqrt(k);
-  return Sample3f(eta*(cosi*N-V)-cost*N, sqr(eta));
+  return make_Sample3f(eta*(cosi*N-V)-cost*N, sqr(eta));
 }
 
 /*! Computes fresnel coefficient for media interface with relative
@@ -150,8 +156,8 @@ inline void sample(const PowerCosineDistribution& This, const Vec3fa& wo, const 
   Sample3f wh;
   wh.v = frame(N) * dir;
   wh.pdf = powerCosineSampleHemispherePDF(dir,This.exp);
-  Sample3f r = reflect_(wo,wh.v);
-  wi = Sample3f(r.v,wh.pdf/(4.0f*abs(dot(wo,wh.v))));
+  Sample3f r = make_Sample3f(reflect(wo,wh.v),1.0f);
+  wi = make_Sample3f(r.v,wh.pdf/(4.0f*abs(dot(wo,wh.v))));
 }
 
 /*! Samples the power cosine distribution. */
@@ -162,8 +168,8 @@ inline void sample(const PowerCosineDistribution& This, const Vec3fa& wo, const 
   Sample3f wh;
   wh.v = frame(N) * dir;
   wh.pdf = powerCosineSampleHemispherePDF(dir,This.exp);
-  Sample3f r = reflect_(wo,wh.v);
-  wi = Sample3f(r.v,wh.pdf/(4.0f*abs(dot(wo,wh.v))));
+  Sample3f r = make_Sample3f(reflect(wo,wh.v),1.0f);
+  wi = make_Sample3f(r.v,wh.pdf/(4.0f*abs(dot(wo,wh.v))));
 }
 #endif
 
@@ -177,4 +183,4 @@ inline PowerCosineDistribution make_PowerCosineDistribution(const float _exp) {
 }
 #endif
 
-/*! @} */
+} // namespace embree

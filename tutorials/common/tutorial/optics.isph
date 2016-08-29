@@ -16,19 +16,23 @@
 
 #pragma once
 
+#include "../math/sampling.isph"
+
 /*! \addtogroup rivl_render_embree_ivl */
 /*! @{ */
 
 /*! Reflects a viewing vector V at a normal N. */
-inline Sample3f reflect_(const Vec3f &V, const Vec3f &N) {
-  float cosi = dot(V,N);
-  return make_Sample3f(2.0f*cosi*N-V, 1.0f);
-}
+inline uniform Vec3f reflect(const uniform Vec3f& V, const uniform Vec3f& N) { return 2.0f*dot(V,N)*N-V; }
+#ifdef ISPC
+inline varying Vec3f reflect(const uniform Vec3f& V, const varying Vec3f& N) { return 2.0f*dot(V,N)*N-V; }
+inline varying Vec3f reflect(const varying Vec3f& V, const uniform Vec3f& N) { return 2.0f*dot(V,N)*N-V; }
+inline varying Vec3f reflect(const varying Vec3f& V, const varying Vec3f& N) { return 2.0f*dot(V,N)*N-V; }
+#endif
 
 /*! Reflects a viewing vector V at a normal N. Cosine between V
  *  and N is given as input. */
-inline Sample3f reflect_(const Vec3f &V, const Vec3f &N, const float cosi) {
-  return make_Sample3f(2.0f*cosi*N-V, 1.0f);
+inline Vec3f reflect(const Vec3f &V, const Vec3f &N, const float cosi) {
+  return 2.0f*cosi*N-V;
 }
 
 // =======================================================
@@ -150,7 +154,7 @@ inline void sample(const uniform PowerCosineDistribution& This, const Vec3f& wo,
   Sample3f wh;
   wh.v = frame(N) * dir;
   wh.pdf = powerCosineSampleHemispherePDF(dir,This.exp);
-  Sample3f r = reflect_(wo,wh.v);
+  Sample3f r = make_Sample3f(reflect(wo,wh.v),1.0f);
   wi = make_Sample3f(r.v,wh.pdf/(4.0f*abs(dot(wo,wh.v))));
 }
 
@@ -162,7 +166,7 @@ inline void sample(const varying PowerCosineDistribution& This, const Vec3f& wo,
   Sample3f wh;
   wh.v = frame(N) * dir;
   wh.pdf = powerCosineSampleHemispherePDF(dir,This.exp);
-  Sample3f r = reflect_(wo,wh.v);
+  Sample3f r = make_Sample3f(reflect(wo,wh.v),1.0f);
   wi = make_Sample3f(r.v,wh.pdf/(4.0f*abs(dot(wo,wh.v))));
 }
 #endif
@@ -176,5 +180,3 @@ inline varying PowerCosineDistribution make_PowerCosineDistribution(const varyin
   varying PowerCosineDistribution m; m.exp = _exp; return m;
 }
 #endif
-
-/*! @} */

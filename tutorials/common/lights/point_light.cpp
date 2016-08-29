@@ -18,6 +18,8 @@
 #include "../math/sampling.h"
 #include "../math/linearspace.h"
 
+namespace embree {
+
 struct PointLight
 {
   Light super;    //!< inherited light fields
@@ -140,3 +142,5 @@ extern "C" void* PointLight_create()
   PointLight_set(self, Vec3fa(0.f), Vec3fa(1.f), 0.f);
   return self;
 }
+
+} // namespace embree

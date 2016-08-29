@@ -146,7 +146,7 @@ namespace embree
   Ref<SceneGraph::Node> SceneGraph::loadCYHair(const FileName& fileName)
   {
     cyHairFile cyFile;
-    int numHairs = cyFile.load(fileName.c_str());
+    cyFile.load(fileName.c_str());
     
     Material objmtl; new (&objmtl) OBJMaterial;
     Ref<SceneGraph::MaterialNode> material = new SceneGraph::MaterialNode(objmtl);
@@ -163,13 +163,13 @@ namespace embree
     }
     
     ssize_t index = 0;
-    for (ssize_t i=0;i<cyFile.header.numStrands;i++)
+    for (ssize_t i=0;i<(ssize_t)cyFile.header.numStrands;i++)
     {
       if (cyFile.segments)
       {
         ssize_t numSegments = cyFile.segments[i];       
         for (ssize_t j=0; j<numSegments-3; j+=3) {
-          hairset->hairs.push_back(SceneGraph::HairSetNode::Hair(index + j,i));
+          hairset->hairs.push_back(SceneGraph::HairSetNode::Hair(unsigned(index + j),unsigned(i)));
         }
         index += numSegments+1;	
       }
@@ -177,7 +177,7 @@ namespace embree
       {
         ssize_t numSegments = cyFile.header.defaultSegments;       
         for (ssize_t j=0; j<numSegments-3; j+=3) {
-          hairset->hairs.push_back(SceneGraph::HairSetNode::Hair(index + j,i));
+          hairset->hairs.push_back(SceneGraph::HairSetNode::Hair(unsigned(index + j),unsigned(i)));
         }
         index += numSegments+1;
       }

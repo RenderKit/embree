@@ -57,6 +57,7 @@ namespace embree
     __forceinline explicit vint( const __m256 a ) : v(_mm256_cvtps_epi32(a)) {}
     __forceinline explicit vint( const vboolf8 &a ) : v(_mm256_castps_si256((__m256)a)) {}
 
+
     ////////////////////////////////////////////////////////////////////////////////
     /// Constants
     ////////////////////////////////////////////////////////////////////////////////
@@ -106,6 +107,8 @@ namespace embree
 		  ptr[i] = ((unsigned char*)&x)[i];
 #endif
     }
+
+    static __forceinline vint8 broadcast64(const long long &a) { return _mm256_set1_epi64x(a); }
     
     ////////////////////////////////////////////////////////////////////////////////
     /// Array Access
@@ -238,6 +241,11 @@ namespace embree
   }
 #endif
 
+  __forceinline const vint8 notand( const vboolf8& m, const vint8& f) {
+    return _mm256_castps_si256(_mm256_andnot_ps(m, _mm256_castsi256_ps(f))); 
+  }
+
+
   ////////////////////////////////////////////////////////////////////////////////
   /// Movement/Shifting/Shuffling Functions
   ////////////////////////////////////////////////////////////////////////////////
@@ -270,6 +278,7 @@ namespace embree
   template<> __forceinline const vint8 shuffle<0, 1, 0, 1>( const vint8& b ) { return _mm256_castps_si256(_mm256_castpd_ps(_mm256_movedup_pd(_mm256_castps_pd(_mm256_castsi256_ps(b))))); }
 
   __forceinline const vint8 broadcast(const int* ptr) { return _mm256_castps_si256(_mm256_broadcast_ss((const float*)ptr)); }
+
   template<size_t i> __forceinline const vint8 insert4(const vint8& a, const vint4& b) { return _mm256_insertf128_si256(a, b, i); }
   template<size_t i> __forceinline const vint4 extract4   (const vint8& a) { return _mm256_extractf128_si256(a, i); }
   template<>         __forceinline const vint4 extract4<0>(const vint8& a) { return _mm256_castsi256_si128(a);      }

@@ -24,6 +24,8 @@
 
 #include "../math/vec.h"
 
+namespace embree {
+
 
 inline Vec3fa cartesian(const float phi, const float sinTheta, const float cosTheta)
 {
@@ -139,3 +141,5 @@ inline float uniformSampleTrianglePDF(const Vec3fa &a, const Vec3fa &b, const Ve
 {
   return 2.0f * rcp(abs(length(cross(a-c, b-c))));
 }
+
+} // namespace embree

@@ -100,6 +100,7 @@ namespace embree
       vint4::store_uchar(ptr + 4,ih);
     }
 
+    static __forceinline vint8 broadcast64(const long long &a) { return _mm256_set1_epi64x(a); }
     
     ////////////////////////////////////////////////////////////////////////////////
     /// Array Access
@@ -223,6 +224,11 @@ namespace embree
   __forceinline const vint8 select( const vboolf8& m, const vint8& t, const vint8& f ) {
     return _mm256_castps_si256(_mm256_blendv_ps(_mm256_castsi256_ps(f), _mm256_castsi256_ps(t), m)); 
   }
+
+  __forceinline const vint8 notand( const vboolf8& m, const vint8& f) {
+    return _mm256_castps_si256(_mm256_andnot_ps(m, _mm256_castsi256_ps(f))); 
+  }
+
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Movement/Shifting/Shuffling Functions

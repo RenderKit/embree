@@ -19,6 +19,7 @@
 #include "materials.h"
 #include "lights.h"
 #include "../../../include/embree2/rtcore.h"
+#include "../math/random_sampler.h"
 
 namespace embree
 {  
@@ -31,7 +32,7 @@ namespace embree
     void store(Ref<Node> root, const FileName& fname, bool embedTextures);
     void set_motion_blur(Ref<Node> node0, Ref<Node> node1);
     void set_motion_vector(Ref<Node> node, const Vec3fa& dP);
-    void resize_randomly(Ref<Node> node, const size_t N);
+    void resize_randomly(RandomSampler& sampler, Ref<Node> node, const size_t N);
     Ref<Node> convert_triangles_to_quads(Ref<Node> node);
     Ref<Node> convert_quads_to_subdivs(Ref<Node> node);
     Ref<Node> convert_bezier_to_lines(Ref<Node> node);
@@ -45,13 +46,13 @@ namespace embree
     Ref<Node> createSubdivSphere  (const Vec3fa& center, const float radius, size_t numPhi, float tessellationRate, Ref<MaterialNode> material = nullptr);
     Ref<Node> createSphereShapedHair(const Vec3fa& center, const float radius, Ref<MaterialNode> material = nullptr);
   
-    Ref<Node> createHairyPlane    (const Vec3fa& pos, const Vec3fa& dx, const Vec3fa& dy, const float len, const float r, size_t numHairs, bool hair, Ref<MaterialNode> material = nullptr);
+    Ref<Node> createHairyPlane    (int hash, const Vec3fa& pos, const Vec3fa& dx, const Vec3fa& dy, const float len, const float r, size_t numHairs, bool hair, Ref<MaterialNode> material = nullptr);
 
-    Ref<Node> createGarbageTriangleMesh (size_t numTriangles, bool mblur, Ref<MaterialNode> material = nullptr);
-    Ref<Node> createGarbageQuadMesh (size_t numQuads, bool mblur, Ref<MaterialNode> material = nullptr);
-    Ref<Node> createGarbageHair (size_t numHairs, bool mblur, Ref<MaterialNode> material = nullptr);
-    Ref<Node> createGarbageLineSegments (size_t numLineSegments, bool mblur, Ref<MaterialNode> material = nullptr);
-    Ref<Node> createGarbageSubdivMesh (size_t numFaces, bool mblur, Ref<MaterialNode> material = nullptr);
+    Ref<Node> createGarbageTriangleMesh (int hash, size_t numTriangles, bool mblur, Ref<MaterialNode> material = nullptr);
+    Ref<Node> createGarbageQuadMesh (int hash, size_t numQuads, bool mblur, Ref<MaterialNode> material = nullptr);
+    Ref<Node> createGarbageHair (int hash, size_t numHairs, bool mblur, Ref<MaterialNode> material = nullptr);
+    Ref<Node> createGarbageLineSegments (int hash, size_t numLineSegments, bool mblur, Ref<MaterialNode> material = nullptr);
+    Ref<Node> createGarbageSubdivMesh (int hash, size_t numFaces, bool mblur, Ref<MaterialNode> material = nullptr);
 
     struct Node : public RefCount
     {
@@ -85,6 +86,9 @@ namespace embree
         return empty;
       }
 
+      /* calculates number of primitives */
+      virtual size_t numPrimitives() const = 0;
+
       Ref<Node> set_motion_vector(const Vec3fa& dP) {
         SceneGraph::set_motion_vector(this,dP); return this;
       }
@@ -112,12 +116,16 @@ namespace embree
       virtual void calculateInDegree();
       virtual bool calculateClosed();
       
-      virtual BBox3fa bounds() 
+      virtual BBox3fa bounds() const
       {
         const BBox3fa cbounds = child->bounds();
         const BBox3fa b0 = xfmBounds(xfm0,cbounds);
         const BBox3fa b1 = xfmBounds(xfm1,cbounds);
         return merge(b0,b1);
+      }
+
+      virtual size_t numPrimitives() const {
+        return child->numPrimitives();
       }
 
     public:
@@ -150,6 +158,13 @@ namespace embree
         for (auto c : children)
           b.extend(c->bounds());
         return b;
+      }
+
+      virtual size_t numPrimitives() const 
+      {
+        size_t n = 0;
+        for (auto child : children) n += child->numPrimitives();
+        return n;
       }
 
       void triangles_to_quads()
@@ -192,7 +207,11 @@ namespace embree
     {
       LightNode (Ref<Light> light)
         : light(light) {}
-      
+
+      virtual size_t numPrimitives() const {
+        return 0;
+      }
+
       Ref<Light> light;
     };
     
@@ -202,7 +221,11 @@ namespace embree
 
       MaterialNode(const Material& material)
         : material(material) {}
-      
+
+      virtual size_t numPrimitives() const {
+        return 0;
+      }
+
       Material material;
     };
     
@@ -215,10 +238,10 @@ namespace embree
       {
       public:
         Triangle() {}
-        Triangle (int v0, int v1, int v2) 
+        Triangle (unsigned v0, unsigned v1, unsigned v2) 
         : v0(v0), v1(v1), v2(v2) {}
       public:
-        int v0, v1, v2;
+        unsigned v0, v1, v2;
       };
       
     public:
@@ -235,6 +258,10 @@ namespace embree
         for (auto x : v ) b.extend(x);
         for (auto x : v2) b.extend(x);
         return b;
+      }
+
+      virtual size_t numPrimitives() const {
+        return triangles.size();
       }
 
       void verify() const;
@@ -257,10 +284,10 @@ namespace embree
       {
       public:
         Quad() {}
-        Quad (int v0, int v1, int v2, int v3) 
+        Quad (unsigned v0, unsigned v1, unsigned v2, unsigned v3) 
         : v0(v0), v1(v1), v2(v2), v3(v3) {}
       public:
-        int v0, v1, v2, v3;
+        unsigned v0, v1, v2, v3;
       };
       
     public:
@@ -277,6 +304,10 @@ namespace embree
         for (auto x : v ) b.extend(x);
         for (auto x : v2) b.extend(x);
         return b;
+      }
+      
+      virtual size_t numPrimitives() const {
+        return quads.size();
       }
 
       void verify() const;
@@ -310,6 +341,10 @@ namespace embree
         return b;
       }
 
+      virtual size_t numPrimitives() const {
+        return verticesPerFace.size();
+      }
+
       void verify() const;
 
     public:
@@ -317,14 +352,14 @@ namespace embree
       avector<Vertex> positions2;           //!< vertex positions for 2nd timestep
       avector<Vertex> normals;              //!< face vertex normals
       std::vector<Vec2f> texcoords;             //!< face texture coordinates
-      std::vector<int> position_indices;        //!< position indices for all faces
-      std::vector<int> normal_indices;          //!< normal indices for all faces
-      std::vector<int> texcoord_indices;        //!< texcoord indices for all faces
-      std::vector<int> verticesPerFace;         //!< number of indices of each face
-      std::vector<int> holes;                   //!< face ID of holes
+      std::vector<unsigned> position_indices;        //!< position indices for all faces
+      std::vector<unsigned> normal_indices;          //!< normal indices for all faces
+      std::vector<unsigned> texcoord_indices;        //!< texcoord indices for all faces
+      std::vector<unsigned> verticesPerFace;         //!< number of indices of each face
+      std::vector<unsigned> holes;                   //!< face ID of holes
       std::vector<Vec2i> edge_creases;          //!< index pairs for edge crease 
       std::vector<float> edge_crease_weights;   //!< weight for each edge crease
-      std::vector<int> vertex_creases;          //!< indices of vertex creases
+      std::vector<unsigned> vertex_creases;          //!< indices of vertex creases
       std::vector<float> vertex_crease_weights; //!< weight for each vertex crease
       Ref<MaterialNode> material;
       RTCBoundaryMode boundaryMode;
@@ -352,12 +387,16 @@ namespace embree
         return b;
       }
 
+      virtual size_t numPrimitives() const {
+        return indices.size();
+      }
+
       void verify() const;
 
     public:
       avector<Vertex> v;        //!< control points (x,y,z,r)
       avector<Vertex> v2;       //!< control points (x,y,z,r)
-      std::vector<int> indices; //!< list of line segments
+      std::vector<unsigned> indices; //!< list of line segments
       Ref<MaterialNode> material;
     };
 
@@ -370,11 +409,11 @@ namespace embree
       {
       public:
         Hair () {}
-        Hair (int vertex, int id)
-        : vertex(vertex), id(id) {}
+        Hair (unsigned vertex, unsigned id) 
+          : vertex(vertex), id(id) {}
 
       public:
-        int vertex,id;  //!< index of first control point and hair ID
+        unsigned vertex,id;  //!< index of first control point and hair ID
       };
       
     public:
@@ -391,6 +430,10 @@ namespace embree
         for (auto x : v ) b.extend(x);
         for (auto x : v2) b.extend(x);
         return b;
+      }
+
+      virtual size_t numPrimitives() const {
+        return hairs.size();
       }
 
       void verify() const;

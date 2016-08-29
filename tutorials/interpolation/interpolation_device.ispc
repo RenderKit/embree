@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "../common/tutorial/tutorial_device.isph"
+#include "../common/tutorial/optics.isph"
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
 #define FIXED_EDGE_TESSELLATION_VALUE 16
@@ -32,7 +33,7 @@ uniform unsigned int triCubeID, quadCubeID, quadCubeID2;
 
 #define NUM_VERTICES 8
 
-__aligned(16) uniform float cube_vertices[8][4] = 
+__aligned(16) uniform float cube_vertices[8][4] =
 {
   { -1.0f, -1.0f, -1.0f, 0.0f },
   {  1.0f, -1.0f, -1.0f, 0.0f },
@@ -44,7 +45,7 @@ __aligned(16) uniform float cube_vertices[8][4] =
   { -1.0f,  1.0f,  1.0f, 0.0f }
 };
 
-__aligned(16) uniform float cube_vertex_colors[8][4] = 
+__aligned(16) uniform float cube_vertex_colors[8][4] =
 {
   {  0.0f,  0.0f,  0.0f, 0.0f },
   {  1.0f,  0.0f,  0.0f, 0.0f },
@@ -68,7 +69,7 @@ __aligned(16) uniform float cube_edge_crease_weights[12] = {
   inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf
 };
 
-__aligned(16) uniform unsigned int cube_edge_crease_indices[24] = 
+__aligned(16) uniform unsigned int cube_edge_crease_indices[24] =
 {
   0,1, 1,2, 2,3, 3,0,
   4,5, 5,6, 6,7, 7,4,
@@ -78,38 +79,38 @@ __aligned(16) uniform unsigned int cube_edge_crease_indices[24] =
 #define NUM_QUAD_INDICES 24
 #define NUM_QUAD_FACES 6
 
-uniform unsigned int cube_quad_indices[24] = { 
-  0, 1, 5, 4, 
-  1, 2, 6, 5, 
-  2, 3, 7, 6, 
-  0, 4, 7, 3, 
-  4, 5, 6, 7, 
-  0, 3, 2, 1, 
+uniform unsigned int cube_quad_indices[24] = {
+  0, 1, 5, 4,
+  1, 2, 6, 5,
+  2, 3, 7, 6,
+  0, 4, 7, 3,
+  4, 5, 6, 7,
+  0, 3, 2, 1,
 };
 
-uniform unsigned int cube_quad_faces[6] = { 
-  4, 4, 4, 4, 4, 4 
+uniform unsigned int cube_quad_faces[6] = {
+  4, 4, 4, 4, 4, 4
 };
 
 #define NUM_TRI_INDICES 36
 #define NUM_TRI_FACES 12
 
-uniform unsigned int cube_tri_indices[36] = { 
-  1, 5, 4,  0, 1, 4,   
+uniform unsigned int cube_tri_indices[36] = {
+  1, 5, 4,  0, 1, 4,
   2, 6, 5,  1, 2, 5,
-  3, 7, 6,  2, 3, 6,  
+  3, 7, 6,  2, 3, 6,
   4, 7, 3,  0, 4, 3,
-  5, 6, 7,  4, 5, 7,    
-  3, 2, 1,  0, 3, 1 
+  5, 6, 7,  4, 5, 7,
+  3, 2, 1,  0, 3, 1
 };
 
-uniform unsigned int cube_tri_faces[12] = { 
+uniform unsigned int cube_tri_faces[12] = {
   3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3
 };
 
 #define NUM_HAIR_VERTICES 4
 
-__aligned(16) uniform float hair_vertices[4][4] = 
+__aligned(16) uniform float hair_vertices[4][4] =
 {
   { 0.0f, 0.0f, 0.0f, 0.1f },
   { 0.5f, 1.0f, 0.0f, 0.1f },
@@ -117,7 +118,7 @@ __aligned(16) uniform float hair_vertices[4][4] =
   { 0.0f, 3.0f, 0.0f, 0.1f }
 };
 
-__aligned(16) uniform float hair_vertex_colors[4][4] = 
+__aligned(16) uniform float hair_vertex_colors[4][4] =
 {
   {  1.0f,  0.0f,  0.0f, 0.0f },
   {  1.0f,  1.0f,  0.0f, 0.0f },
@@ -139,12 +140,12 @@ inline uniform float updateEdgeLevel(const uniform Vec3fa& cam_pos, uniform Vec3
   const uniform float level = max(min(LEVEL_FACTOR*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
   return level;
 }
-                                      
+
 /* adds a subdiv cube to the scene */
 uniform unsigned int addTriangleSubdivCube (RTCScene scene_i, const uniform Vec3f& pos)
 {
   uniform unsigned int geomID = rtcNewSubdivisionMesh(scene_i, RTC_GEOMETRY_DYNAMIC, NUM_TRI_FACES, NUM_TRI_INDICES, NUM_VERTICES, 0, 0, 0);
-  
+
   //rtcSetBuffer(scene_i, geomID, RTC_VERTEX_BUFFER, cube_vertices, 0, sizeof(uniform Vec3fa  ));
   uniform Vec3fa* uniform vtx = (uniform Vec3fa* uniform) rtcMapBuffer(scene_i, geomID, RTC_VERTEX_BUFFER);
   for (uniform size_t i=0; i<NUM_VERTICES; i++) vtx[i] = make_Vec3fa(cube_vertices[i][0]+pos.x,cube_vertices[i][1]+pos.y,cube_vertices[i][2]+pos.z);
@@ -288,12 +289,12 @@ uniform unsigned int addGroundPlane (RTCScene scene_i)
   uniform unsigned int mesh = rtcNewTriangleMesh (scene_i, RTC_GEOMETRY_STATIC, 2, 4);
 
   /* set vertices */
-  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER); 
-  vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10; 
-  vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10; 
-  vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10; 
+  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER);
+  vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10;
+  vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10;
+  vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10;
   vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
-  rtcUnmapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER); 
+  rtcUnmapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER);
 
   /* set triangles */
   uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcMapBuffer(scene_i,mesh,RTC_INDEX_BUFFER);
@@ -313,7 +314,7 @@ export void device_init (uniform int8* uniform cfg)
 
   /* set error handler */
   rtcDeviceSetErrorFunction(g_device,error_handler);
- 
+
   /* create scene */
   g_scene = rtcDeviceNewScene(g_device, RTC_SCENE_DYNAMIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING | RTC_INTERPOLATE);
 
@@ -325,10 +326,10 @@ export void device_init (uniform int8* uniform cfg)
   quadCubeID = addQuadSubdivCube(g_scene,make_Vec3f(4.0f,0.0f,0.0f));
   quadCubeID2 = addQuadSubdivCube(g_scene,make_Vec3f(4.0f,0.0f,0.0f));
   triCubeID  = addTriangleSubdivCube(g_scene,make_Vec3f(4.0f,0.0f,3.5f));
-  rtcDisable(g_scene,quadCubeID2);  
+  rtcDisable(g_scene,quadCubeID2);
   addTriangleCube(g_scene,make_Vec3f(0.0f,0.0f,-3.0f));
   addQuadCube(g_scene,make_Vec3f(0.0f,0.0f,3.0f));
-  
+
   /* commit changes to scene */
   rtcCommit (g_scene);
 
@@ -350,22 +351,22 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time = 0;
-  
+
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
-  
+
   /* shade pixels */
   Vec3f color = make_Vec3f(0.0f);
-  if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
+  if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
   {
     /* interpolate diffuse color */
 
     Vec3f diffuse = make_Vec3f(1.0f,0.0f,0.0f);
-    if (ray.geomID > 0) 
+    if (ray.geomID > 0)
     {
       foreach_unique (geomID in ray.geomID) {
         uniform int geom = geomID == quadCubeID ? quadCubeID2 : geomID; // use special interpolation mesh
-        rtcInterpolate(g_scene,geom,ray.primID,ray.u,ray.v,RTC_USER_VERTEX_BUFFER0,&diffuse.x,NULL,NULL,3); 
+        rtcInterpolate(g_scene,geom,ray.primID,ray.u,ray.v,RTC_USER_VERTEX_BUFFER0,&diffuse.x,NULL,NULL,3);
       }
       //return diffuse;
       diffuse = 0.5f*diffuse;
@@ -384,7 +385,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
     Ng = normalize(Ng);
     color = color + diffuse*0.5f;
     Vec3f lightDir = normalize(make_Vec3f(-1,-1,-1));
-    
+
     /* initialize shadow ray */
     RTCRay shadow;
     shadow.org = ray.org + ray.tfar*ray.dir;
@@ -395,10 +396,10 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
     shadow.primID = 0;
     shadow.mask = -1;
     shadow.time = 0;
-    
+
     /* trace shadow ray */
     rtcOccluded(g_scene,shadow);
-    
+
     /* add light contribution */
     if (shadow.geomID) {
       Vec3f r = normalize(reflect(ray.dir,Ng));
@@ -411,42 +412,42 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
 }
 
 /* renders a single screen tile */
-void renderTileStandard(uniform int taskIndex, 
+void renderTileStandard(uniform int taskIndex,
                         uniform int* uniform pixels,
-                        const uniform int width,
-                        const uniform int height, 
+                        const uniform unsigned int width,
+                        const uniform unsigned int height,
                         const uniform float time,
                         const uniform ISPCCamera& camera,
-                        const uniform int numTilesX, 
+                        const uniform int numTilesX,
                         const uniform int numTilesY)
 {
-  const uniform int tileY = taskIndex / numTilesX;
-  const uniform int tileX = taskIndex - tileY * numTilesX;
-  const uniform int x0 = tileX * TILE_SIZE_X;
-  const uniform int x1 = min(x0+TILE_SIZE_X,width);
-  const uniform int y0 = tileY * TILE_SIZE_Y;
-  const uniform int y1 = min(y0+TILE_SIZE_Y,height);
+  const uniform unsigned int tileY = taskIndex / numTilesX;
+  const uniform unsigned int tileX = taskIndex - tileY * numTilesX;
+  const uniform unsigned int x0 = tileX * TILE_SIZE_X;
+  const uniform unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const uniform unsigned int y0 = tileY * TILE_SIZE_Y;
+  const uniform unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
     /* calculate pixel color */
-    Vec3f color = renderPixelStandard(x,y,camera);
+    Vec3f color = renderPixelStandard((float)x,(float)y,camera);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
     unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
     unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;  
+    pixels[y*width+x] = (b << 16) + (g << 8) + r;
   }
 }
 
 /* task that renders a single screen tile */
 task void renderTileTask(uniform int* uniform pixels,
-                         const uniform int width,
-                         const uniform int height, 
+                         const uniform unsigned int width,
+                         const uniform unsigned int height,
                          const uniform float time,
                          const uniform ISPCCamera& camera,
-                         const uniform int numTilesX, 
+                         const uniform int numTilesX,
                          const uniform int numTilesY)
 {
   renderTile(taskIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
@@ -454,8 +455,8 @@ task void renderTileTask(uniform int* uniform pixels,
 
 /* called by the C++ code to render */
 export void device_render (uniform int* uniform pixels,
-                           const uniform int width,
-                           const uniform int height,
+                           const uniform unsigned int width,
+                           const uniform unsigned int height,
                            const uniform float time,
                            const uniform ISPCCamera& camera)
 {
@@ -477,4 +478,3 @@ export void device_cleanup ()
   rtcDeleteScene (g_scene); g_scene = NULL;
   rtcDeleteDevice(g_device); g_device = NULL;
 }
-

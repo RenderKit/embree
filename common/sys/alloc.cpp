@@ -13,15 +13,10 @@
 // See the License for the specific language governing permissions and      //
 // limitations under the License.                                           //
 // ======================================================================== //
+
 #include "config.h"
 #include "alloc.h"
 #include "intrinsics.h"
-#if defined(TASKING_TBB)
-#  define TBB_IMPLEMENT_CPP0X 0
-#  define __TBB_NO_IMPLICIT_LINKAGE 1
-#  define __TBBMALLOC_NO_IMPLICIT_LINKAGE 1
-#  include "tbb/scalable_allocator.h"
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Windows Platform
@@ -66,7 +61,8 @@ namespace embree
 
   void os_free(void* ptr, size_t bytes) {
     if (bytes == 0) return;
-    VirtualFree(ptr,0,MEM_RELEASE);
+    if (!VirtualFree(ptr,0,MEM_RELEASE))
+      /*throw std::bad_alloc()*/ return;  // we on purpose do not throw an exception when an error occurs, to avoid throwing an exception during error handling
   }
 }
 #endif
@@ -81,13 +77,6 @@ namespace embree
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
-
-/* hint for transparent huge pages (THP) */
-#if defined(__MACOSX__)
-#define USE_MADVISE 0
-#else
-#define USE_MADVISE 1
-#endif
 
 #define UPGRADE_TO_2M_PAGE_LIMIT (256*1024) 
 #define PAGE_SIZE_2M (2*1024*1024)
@@ -109,23 +98,17 @@ namespace embree
     return false;
   }
 
-// ============================================
-// ============================================
-// ============================================
-
+#if !defined(__MACOSX__)
   static bool tryDirectHugePageAllocation = true;
+#endif
 
-#if USE_MADVISE
+  /* hint for transparent huge pages (THP) */
   void os_madvise(void *ptr, size_t bytes)
   {
-#ifdef MADV_HUGEPAGE
-    int res = madvise(ptr,bytes,MADV_HUGEPAGE); 
-#if defined(DEBUG)
-    if (res) perror("madvise failed: ");
-#endif
+#if defined(MADV_HUGEPAGE)
+    madvise(ptr,bytes,MADV_HUGEPAGE); 
 #endif
   }
-#endif
   
   void* os_malloc(size_t bytes, const int additional_flags)
   {
@@ -134,12 +117,18 @@ namespace embree
     if (isHugePageCandidate(bytes)) 
     {
       bytes = (bytes+PAGE_SIZE_2M-1)&ssize_t(-PAGE_SIZE_2M);
-
 #if !defined(__MACOSX__)
       /* try direct huge page allocation first */
       if (tryDirectHugePageAllocation)
       {
-        void* ptr = mmap(0, bytes, PROT_READ | PROT_WRITE, flags | MAP_HUGETLB, -1, 0);
+        int huge_flags = flags;
+#ifdef MAP_HUGETLB
+        huge_flags |= MAP_HUGETLB;
+#endif
+#ifdef MAP_ALIGNED_SUPER
+        huge_flags |= MAP_ALIGNED_SUPER;
+#endif
+        void* ptr = mmap(0, bytes, PROT_READ | PROT_WRITE, huge_flags, -1, 0);
         
         if (ptr == nullptr || ptr == MAP_FAILED)
         {
@@ -159,17 +148,14 @@ namespace embree
     assert( ptr != MAP_FAILED );
     if (ptr == nullptr || ptr == MAP_FAILED) throw std::bad_alloc();
 
-#if USE_MADVISE
     /* advise huge page hint for THP */
     os_madvise(ptr,bytes);
-#endif
 
     return ptr;
   }
 
   void* os_reserve(size_t bytes) 
   {
-
     /* linux always allocates pages on demand, thus just call allocate */
     return os_malloc(bytes);
   }
@@ -206,7 +192,7 @@ namespace embree
 
     bytes = (bytes+pageSize-1)&ssize_t(-pageSize);
     if (munmap(ptr,bytes) == -1)
-      throw std::bad_alloc();
+      /*throw std::bad_alloc()*/ return;  // we on purpose do not throw an exception when an error occurs, to avoid throwing an exception during error handling
   }
 }
 
@@ -221,30 +207,15 @@ namespace embree
   void* alignedMalloc(size_t size, size_t align) 
   {
     assert((align & (align-1)) == 0);
-//#if defined(TASKING_TBB) // FIXME: have to disable this for now as the TBB allocator itself seems to access some uninitialized value when using valgrind
-//    return scalable_aligned_malloc(size,align);
-//#else
+    void* ptr = _mm_malloc(size,align);
 
-// #if USE_MADVISE
-//     if (size >= 16*PAGE_SIZE_2M) 
-//     {
-//       align = PAGE_SIZE_2M;
-//       void *ptr = _mm_malloc(size,align);
-//       os_madvise(ptr,size);
-//       return ptr;
-//      }
-// #endif
-
-    return _mm_malloc(size,align);
-//#endif
+    if (size != 0 && ptr == nullptr) 
+      throw std::bad_alloc();
+    
+    return ptr;
   }
   
-  void alignedFree(void* ptr) 
-  {
-//#if defined(TASKING_TBB)
-//    scalable_aligned_free(ptr);
-//#else
+  void alignedFree(void* ptr) {
     _mm_free(ptr);
-//#endif
   }
 }

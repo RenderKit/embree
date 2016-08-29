@@ -92,7 +92,7 @@ namespace embree
     static __forceinline void storeu( const vboolf4& mask, void* ptr, const vint4& i ) { storeu(ptr,select(mask,i,loadu(ptr))); }
 #endif
 
-    #if defined(__SSE4_1__)
+#if defined(__SSE4_1__)
     static __forceinline vint4 load( const unsigned char* const ptr ) {
       return _mm_cvtepu8_epi32(_mm_load_si128((__m128i*)ptr));
     }
@@ -134,6 +134,9 @@ namespace embree
 #endif
     }
 
+#if defined(__x86_64__)
+    static __forceinline vint4 broadcast64(const long long &a) { return _mm_set1_epi64x(a); }
+#endif
     ////////////////////////////////////////////////////////////////////////////////
     /// Array Access
     ////////////////////////////////////////////////////////////////////////////////
@@ -282,6 +285,11 @@ namespace embree
 #endif
 #endif
 
+  __forceinline const vint4 notand( const vboolf4& m, const vint4& f ) {
+    return _mm_castps_si128(_mm_andnot_ps(m, _mm_castsi128_ps(f))); 
+  }
+
+
   ////////////////////////////////////////////////////////////////////////////////
   // Movement/Shifting/Shuffling Functions
   ////////////////////////////////////////////////////////////////////////////////
@@ -314,6 +322,7 @@ namespace embree
   template<size_t src> __forceinline int extract( const vint4& b ) { return b[src]; }
   template<size_t dst> __forceinline const vint4 insert( const vint4& a, const int b ) { vint4 c = a; c[dst] = b; return c; }
 #endif
+
 
   template<> __forceinline int extract<0>( const vint4& b ) { return _mm_cvtsi128_si32(b); }
 

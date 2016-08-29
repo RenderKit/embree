@@ -12,15 +12,21 @@ sed -i.backup  's/.isph\"/.h\"/g' $2
 sed -i.backup  's/uniform //g' $2
 sed -i.backup  's/ uniform\*/\*/g' $2
 sed -i.backup  's/ uniform)/)/g' $2
+sed -i.backup  's/*uniform)/*)/g' $2
 sed -i.backup  's/varying //g' $2
 sed -i.backup  's/ varying//g' $2
 sed -i.backup  's/unmasked //g' $2
+sed -i.backup  's/extern \"C\"/__EXTERN_C/g' $2
 sed -i.backup  's/extern/extern \"C\"/g' $2
 sed -i.backup  's/export/extern \"C\"/g' $2
+sed -i.backup  's/extern \"C\" RTCScene/extern RTCScene/g' $2
+sed -i.backup  's/__EXTERN_C/extern \"C\"/g' $2
 
 sed -i.backup 's/int8/char/g' $2
 sed -i.backup 's/int16/int16_t/g' $2
 sed -i.backup 's/int32/int32_t/g' $2
+sed -i.backup 's/int64/int64_t/g' $2
+sed -i.backup 's/uchar/uint8_t/g' $2
 
 sed -i.backup  's/__mask/1/g' $2
 sed -i.backup  's/NULL/nullptr/g' $2
@@ -28,15 +34,18 @@ sed -i.backup  's/NULL/nullptr/g' $2
 sed -i.backup  's/programIndex/0/g' $2
 sed -i.backup  's/programCount/1/g' $2
 sed -i.backup  's/task[ ]*void[ ]*\([a-zA-Z0-9_]*\)[ ]*(/void \1 (int taskIndex, /g' $2
-sed -i.backup  's/launch\[\([^]]*\)\][ ]*\([a-zA-Z0-9_]*\)[ ]*(\([^)]*\))/parallel_for(size_t(0),size_t(\1),[\&](const range<size_t>\& range) \{\n    for (size_t i=range.begin(); i<range.end(); i++)\n      \2(i,\3);\n  \})/g' $2
+sed -i.backup  's/launch\[\([^]]*\)\][ ]*\([a-zA-Z0-9_]*\)[ ]*(\([^)]*\))/parallel_for(size_t(0),size_t(\1),[\&](const range<size_t>\& range) \{\
+    for (size_t i=range.begin(); i<range.end(); i++)\
+      \2((int)i,\3);\
+  \})/g' $2
 
-sed -i.backup  's/foreach[ ]*([ ]*\([a-zA-Z0-9_]*\)[ ]*=[ ]*\([^ \.]*\)[ ]*\.\.\.[ ]*\([^ ),]*\)[ ]*)/for (int \1=\2; \1<\3; \1++)/g' $2
-sed -i.backup  's/foreach_tiled[ ]*([ ]*\([a-zA-Z0-9_]*\)[ ]*=[ ]*\([^ \.]*\)[ ]*\.\.\.[ ]*\([^ ),]*\)[ ]*)/for (int \1=\2; \1<\3; \1++)/g' $2
+sed -i.backup  's/foreach[ ]*([ ]*\([a-zA-Z0-9_]*\)[ ]*=[ ]*\([^ \.]*\)[ ]*\.\.\.[ ]*\([^ ),]*\)[ ]*)/for (unsigned int \1=\2; \1<\3; \1++)/g' $2
+sed -i.backup  's/foreach_tiled[ ]*([ ]*\([a-zA-Z0-9_]*\)[ ]*=[ ]*\([^ \.]*\)[ ]*\.\.\.[ ]*\([^ ),]*\)[ ]*)/for (unsigned int \1=\2; \1<\3; \1++)/g' $2
 
-sed -i.backup  's/foreach[ ]*([ ]*\([a-zA-Z0-9_]*\)[ ]*=[ ]*\([^ \.]*\)[ ]*\.\.\.[ ]*\([^ ),]*\)[ ]*\,[ ]*\([a-zA-Z0-9_]*\)[ ]*=[ ]*\([^ \.]*\)[ ]*\.\.\.[ ]*\([^ ),]*\)[ ]*)/for (int \1=\2; \1<\3; \1++) for (int \4=\5; \4<\6; \4++)/g' $2
-sed -i.backup  's/foreach_tiled[ ]*([ ]*\([a-zA-Z0-9_]*\)[ ]*=[ ]*\([^ \.]*\)[ ]*\.\.\.[ ]*\([^ ),]*\)[ ]*\,[ ]*\([a-zA-Z0-9_]*\)[ ]*=[ ]*\([^ \.]*\)[ ]*\.\.\.[ ]*\([^ ),]*\)[ ]*)/for (int \1=\2; \1<\3; \1++) for (int \4=\5; \4<\6; \4++)/g' $2
+sed -i.backup  's/foreach[ ]*([ ]*\([a-zA-Z0-9_]*\)[ ]*=[ ]*\([^ \.]*\)[ ]*\.\.\.[ ]*\([^ ),]*\)[ ]*\,[ ]*\([a-zA-Z0-9_]*\)[ ]*=[ ]*\([^ \.]*\)[ ]*\.\.\.[ ]*\([^ ),]*\)[ ]*)/for (unsigned int \1=\2; \1<\3; \1++) for (int \4=\5; \4<\6; \4++)/g' $2
+sed -i.backup  's/foreach_tiled[ ]*([ ]*\([a-zA-Z0-9_]*\)[ ]*=[ ]*\([^ \.]*\)[ ]*\.\.\.[ ]*\([^ ),]*\)[ ]*\,[ ]*\([a-zA-Z0-9_]*\)[ ]*=[ ]*\([^ \.]*\)[ ]*\.\.\.[ ]*\([^ ),]*\)[ ]*)/for (unsigned int \1=\2; \1<\3; \1++) for (unsigned int \4=\5; \4<\6; \4++)/g' $2
 
-sed -i.backup  's/foreach_unique[ ]*([ ]*\([[:alnum:]_]*\)[ ]*in[ ]*\([[:alnum:]._]*\))/int \1 = \2;/g' $2
+sed -i.backup  's/foreach_unique[ ]*([ ]*\([[:alnum:]_]*\)[ ]*in[ ]*\([[:alnum:]._]*\))/unsigned int \1 = \2;/g' $2
 
 sed -i.backup  's/new[ ]*\([a-zA-Z0-9_]*\)[ ]*\[\([^]]*\)\]/(\1\*) alignedMalloc(\2\*sizeof(\1))/g' $2
 sed -i.backup  's/delete[ ]*\[[ ]*\][ ]*\([a-zA-Z0-9_]*\)/alignedFree(\1)/g' $2
@@ -69,12 +78,15 @@ sed -i.backup  's/one_over_four_pi/float(one_over_four_pi)/g' $2
 sed -i.backup  's/(two_pi/(float(two_pi)/g' $2
 sed -i.backup  's/[^_(]two_pi/float(two_pi)/g' $2
 sed -i.backup  's/make_Vec2f/Vec2f/g' $2
+sed -i.backup  's/make_Vec2i/Vec2i/g' $2
 sed -i.backup  's/make_Vec3f/Vec3f/g' $2
 sed -i.backup  's/make_Vec3fa/Vec3fa/g' $2
-sed -i.backup  's/make_Sample3f/Sample3f/g' $2
+sed -i.backup  's/make_Vec4f/Vec4f/g' $2
+#sed -i.backup  's/make_Sample3f/Sample3f/g' $2
 sed -i.backup  's/make_AffineSpace3f/AffineSpace3f/g' $2
 
 sed -i.backup 's/sincos/sincosf/g' $2
+sed -i.backup 's/ lerp/ lerpr/g' $2
 sed -i 's/\/\/ALIGNED_STRUCT/ALIGNED_STRUCT/g' $2
 
 # Embree specific
@@ -88,5 +100,25 @@ sed -i.backup  's/RTCIntersectFuncVarying/RTCIntersectFunc/g' $2
 sed -i.backup  's/RTCOccludedFuncVarying/RTCOccludedFunc/g' $2
 sed -i.backup  's/RTCFilterFuncVarying/RTCFilterFunc/g' $2
 
+sed -i.backup  's/RTCRay1/RTCRay/g' $2
+sed -i.backup  's/rtcIntersect1/rtcIntersect/g' $2
+
 sed -i.backup  's/rtcIntersectVM/rtcIntersect1M/g' $2
 sed -i.backup  's/rtcOccludedVM/rtcOccluded1M/g' $2
+
+sed -i.backup  's/Texture_FLOAT32/Texture::FLOAT32/g' $2
+sed -i.backup  's/Texture_RGBA8/Texture::RGBA8/g' $2
+sed -i.backup  's/Texture_RGB8/Texture::RGB8/g' $2
+
+# to make 32 bit compile happy under Windows
+sed -i.backup 's/const Vec3fa defaultValue/const Vec3fa\& defaultValue/g' $2
+
+# add Embree namespace
+ln=`grep -n -E "#include|#pragma" $2 | tail -1 | cut -d: -f1`
+mv $2 $2.backup
+head -n $ln $2.backup > $2
+echo >> $2
+echo 'namespace embree {' >> $2
+tail -n +$(($ln+1)) $2.backup >> $2
+echo >> $2
+echo '} // namespace embree' >> $2

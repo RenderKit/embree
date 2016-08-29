@@ -125,6 +125,10 @@ namespace embree
     return _mm_shuffle_ps(a, b, _MM_SHUFFLE(i3, i2, i1, i0));
   }
 
+  template<size_t i0> __forceinline const vboolf4 shuffle( const vboolf4& b ) {
+    return shuffle<i0,i0,i0,i0>(b);
+  }
+
 #if defined(__SSE3__)
   template<> __forceinline const vboolf4 shuffle<0, 0, 2, 2>( const vboolf4& a ) { return _mm_moveldup_ps(a); }
   template<> __forceinline const vboolf4 shuffle<1, 1, 3, 3>( const vboolf4& a ) { return _mm_movehdup_ps(a); }

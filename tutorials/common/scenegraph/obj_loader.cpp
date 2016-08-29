@@ -78,7 +78,7 @@ namespace embree
   /*! Read int from a string. */
   static inline int getInt(const char*& token) {
     token += strspn(token, " \t");
-    int n = (float)atoi(token);
+    int n = atoi(token);
     token += strcspn(token, " \t\r");
     return n;
   }
@@ -142,7 +142,7 @@ namespace embree
   };
 
   OBJLoader::OBJLoader(const FileName &fileName, const bool subdivMode) 
-    : path(fileName.path()), group(new SceneGraph::GroupNode), subdivMode(subdivMode)
+    : group(new SceneGraph::GroupNode), path(fileName.path()), subdivMode(subdivMode)
   {
     /* open file */
     std::ifstream cin;
@@ -264,7 +264,7 @@ namespace embree
         new (&material) OBJMaterial(*this);
       } else if (type == MATTE) {
         if (coat_eta != 1.0f) new (&material) MetallicPaintMaterial (Kd,zero,0.0f,eta.x);
-        else                  new (&material) OBJMaterial(1.0f,nullptr,Kd,map_Kd,Ks,nullptr,1.0f/(1E-6+roughness),nullptr,nullptr);
+        else                  new (&material) OBJMaterial(1.0f,nullptr,Kd,map_Kd,Ks,nullptr,1.0f/(1E-6f+roughness),nullptr,nullptr);
       } else if (type == GLASS) {
         new (&material) ThinDielectricMaterial(Vec3fa(1.0f),eta.x,0.1f);
       } else if (type == METAL) {
@@ -468,7 +468,7 @@ namespace embree
       for (size_t i=0; i<vt.size(); i++) mesh->texcoords.push_back(vt[i]);
       
       for (size_t i=0; i<ec.size(); ++i) {
-        assert(ec[i].a < v.size() && ec[i].b < v.size());
+        assert(((size_t)ec[i].a < v.size()) && ((size_t)ec[i].b < v.size()));
         mesh->edge_creases.push_back(Vec2i(ec[i].a, ec[i].b));
         mesh->edge_crease_weights.push_back(ec[i].w);
       }
@@ -476,7 +476,7 @@ namespace embree
       for (size_t j=0; j<curGroup.size(); j++)
       {
         const std::vector<Vertex>& face = curGroup[j];
-        mesh->verticesPerFace.push_back(face.size());
+        mesh->verticesPerFace.push_back(int(face.size()));
         for (size_t i=0; i<face.size(); i++)
           mesh->position_indices.push_back(face[i].v);
       }

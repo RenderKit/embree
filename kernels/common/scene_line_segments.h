@@ -62,7 +62,7 @@ namespace embree
     }
 
     /*! returns the i'th segment */
-    __forceinline const int& segment(size_t i) const {
+    __forceinline const unsigned int& segment(size_t i) const {
       return segments[i];
     }
 
@@ -84,8 +84,8 @@ namespace embree
     /*! check if the i'th primitive is valid */
     __forceinline bool valid(size_t i, BBox3fa* bbox = nullptr) const
     {
-      const int index = segment(i);
-      if (index < 0 || index+1 >= numVertices()) return false;
+      const unsigned int index = segment(i);
+      if (index+1 >= numVertices()) return false;
 
       for (size_t j=0; j<numTimeSteps; j++)
       {
@@ -109,7 +109,7 @@ namespace embree
     /*! calculates bounding box of i'th line segment */
     __forceinline BBox3fa bounds(size_t i, size_t j = 0) const
     {
-      const int index = segment(i);
+      const unsigned int index = segment(i);
       const float r0 = radius(index+0,j);
       const float r1 = radius(index+1,j);
       const Vec3fa v0 = vertex(index+0,j);
@@ -121,7 +121,7 @@ namespace embree
     /*! calculates bounding box of i'th line segment */
     __forceinline BBox3fa bounds(const AffineSpace3fa& space, size_t i, size_t j = 0) const
     {
-      const int index = segment(i);
+      const unsigned int index = segment(i);
       const float r0 = radius(index+0,j);
       const float r1 = radius(index+1,j);
       const Vec3fa v0 = xfmPoint(space,vertex(index+0,j));
@@ -131,7 +131,7 @@ namespace embree
     }
 
   public:
-    BufferT<int> segments;                          //!< array of line segment indices
+    BufferT<unsigned int> segments;                 //!< array of line segment indices
     array_t<BufferT<Vec3fa>,2> vertices;            //!< vertex array
     array_t<std::unique_ptr<Buffer>,2> userbuffers; //!< user buffers
   };

@@ -49,7 +49,7 @@ namespace embree
   {
     vbool valid1 = valid0;
     while (any(valid1)) {
-      const int j = __bsf(movemask(valid1));
+      const int j = int(__bsf(movemask(valid1)));
       const int i = vi[j];
       const vbool valid2 = valid1 & (i == vi);
       valid1 = valid1 & !valid2;
@@ -63,7 +63,7 @@ namespace embree
   {
     vbool valid1 = valid0;
     while (any(valid1)) {
-      const int j = __bsf(movemask(valid1));
+      const int j = (int) __bsf(movemask(valid1));
       const int i = vi[j];
       const vbool valid2 = valid1 & (i == vi);
       valid1 = valid1 & !valid2;
