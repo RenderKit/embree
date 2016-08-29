@@ -532,7 +532,7 @@ namespace embree
         typename CreateNodeFunc, 
         typename CreateLeafFunc, 
         typename SplitPrimitiveFunc, 
-        typename SplitPrimitiveFunc2, 
+        typename BinnerSplitPrimitiveFunc, 
         typename ProgressMonitor>
         
         static void build(NodeRef& root,
@@ -540,7 +540,7 @@ namespace embree
                           CreateNodeFunc createNode, 
                           CreateLeafFunc createLeaf, 
                           SplitPrimitiveFunc splitPrimitive,
-                          SplitPrimitiveFunc2 splitPrimitive2,
+                          BinnerSplitPrimitiveFunc binnerSplitPrimitive,
                           ProgressMonitor progressMonitor, 
                           PrimRef* prims, const PrimInfo& pinfo, 
                           const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, 
@@ -559,7 +559,7 @@ namespace embree
                      updateNode,
                      createLeaf,
                      splitPrimitive,
-                     splitPrimitive2,
+                     binnerSplitPrimitive,
                      progressMonitor,
                      prims,
                      pinfo,
@@ -575,7 +575,7 @@ namespace embree
         typename UpdateNodeFunc, 
         typename CreateLeafFunc, 
         typename SplitPrimitiveFunc, 
-        typename SplitPrimitiveFunc2, 
+        typename BinnerSplitPrimitiveFunc, 
         typename ProgressMonitor>
         
         static ReductionTy build_reduce(NodeRef& root,
@@ -585,7 +585,7 @@ namespace embree
                                         UpdateNodeFunc updateNode, 
                                         CreateLeafFunc createLeaf, 
                                         SplitPrimitiveFunc splitPrimitive,
-                                        SplitPrimitiveFunc2 splitPrimitive2,
+                                        BinnerSplitPrimitiveFunc binnerSplitPrimitive,
                                         ProgressMonitor progressMonitor,
                                         PrimRef* prims0, 
                                         const size_t extSize,
@@ -600,10 +600,10 @@ namespace embree
         assert((blockSize ^ (size_t(1) << logBlockSize)) == 0);
 
 
-        typedef HeuristicArraySpatialSAH<SplitPrimitiveFunc,SplitPrimitiveFunc2, PrimRef,OBJECT_BINS, SPATIAL_BINS> Heuristic;
+        typedef HeuristicArraySpatialSAH<SplitPrimitiveFunc,BinnerSplitPrimitiveFunc, PrimRef,OBJECT_BINS, SPATIAL_BINS> Heuristic;
 
         /* instantiate array binning heuristic */
-        Heuristic heuristic(splitPrimitive,splitPrimitive2,prims0,pinfo);
+        Heuristic heuristic(splitPrimitive,binnerSplitPrimitive,prims0,pinfo);
         
         typedef GeneralBVHBuilder<
           BuildRecord,

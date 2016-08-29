@@ -181,23 +181,23 @@ namespace embree
                      const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost);
           virtual void splitPrimitive (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o) = 0;
 
-          virtual void splitPrimitive2 (SpatialBinInfo<NUM_SPATIAL_SPLITS,PrimRef> &spatialBinner, const PrimRef* const source, const size_t begin, const size_t end, const SpatialBinMapping<NUM_SPATIAL_SPLITS> &mapping) = 0;
+          virtual void binnerSplit (SpatialBinInfo<NUM_SPATIAL_SPLITS,PrimRef> &spatialBinner, const PrimRef* const source, const size_t begin, const size_t end, const SpatialBinMapping<NUM_SPATIAL_SPLITS> &mapping) = 0;
 
           virtual size_t createLeaf (const BVHBuilderBinnedFastSpatialSAH::BuildRecord& current, Allocator* alloc) = 0;
         };
 
-        template<typename SplitPrimitiveFunc, typename SplitPrimitiveFunc2, typename CreateLeafFunc>
+        template<typename SplitPrimitiveFunc, typename BinnerSplitPrimitiveFunc, typename CreateLeafFunc>
         struct BVHNBuilderT : public BVHNBuilderV
         {
-          BVHNBuilderT (SplitPrimitiveFunc splitPrimitiveFunc, SplitPrimitiveFunc2 splitPrimitiveFunc2, CreateLeafFunc createLeafFunc)
-            : splitPrimitiveFunc(splitPrimitiveFunc), splitPrimitiveFunc2(splitPrimitiveFunc2), createLeafFunc(createLeafFunc) {}
+          BVHNBuilderT (SplitPrimitiveFunc splitPrimitiveFunc, BinnerSplitPrimitiveFunc binnerSplitPrimitive, CreateLeafFunc createLeafFunc)
+            : splitPrimitiveFunc(splitPrimitiveFunc), binnerSplitPrimitive(binnerSplitPrimitive), createLeafFunc(createLeafFunc) {}
 
           __forceinline void splitPrimitive (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o) {
             splitPrimitiveFunc(prim,dim,pos,left_o,right_o);
           }
 
-          __forceinline void splitPrimitive2 (SpatialBinInfo<NUM_SPATIAL_SPLITS,PrimRef> &spatialBinner, const PrimRef* const source, const size_t begin, const size_t end, const SpatialBinMapping<NUM_SPATIAL_SPLITS> &mapping) {
-            splitPrimitiveFunc2(spatialBinner,source,begin,end,mapping);
+          __forceinline void binnerSplit (SpatialBinInfo<NUM_SPATIAL_SPLITS,PrimRef> &spatialBinner, const PrimRef* const source, const size_t begin, const size_t end, const SpatialBinMapping<NUM_SPATIAL_SPLITS> &mapping) {
+            binnerSplitPrimitive(spatialBinner,source,begin,end,mapping);
           }
           
           size_t createLeaf(const BVHBuilderBinnedFastSpatialSAH::BuildRecord& current, Allocator* alloc) {
@@ -206,17 +206,17 @@ namespace embree
 
         private:
           SplitPrimitiveFunc splitPrimitiveFunc;
-          SplitPrimitiveFunc2 splitPrimitiveFunc2;
+          BinnerSplitPrimitiveFunc binnerSplitPrimitive;
           CreateLeafFunc createLeafFunc;
         };
 
-        template<typename SplitPrimitiveFunc, typename SplitPrimitiveFunc2, typename CreateLeafFunc>
-        static void build(BVH* bvh, SplitPrimitiveFunc splitPrimitive, SplitPrimitiveFunc2 splitPrimitive2, 
+        template<typename SplitPrimitiveFunc, typename BinnerSplitPrimitiveFunc, typename CreateLeafFunc>
+        static void build(BVH* bvh, SplitPrimitiveFunc splitPrimitive, BinnerSplitPrimitiveFunc binnerSplit, 
                           CreateLeafFunc createLeaf, 
                           BuildProgressMonitor& progress, PrimRef* prims0,const size_t extSize,
                           const PrimInfo& pinfo, const size_t blockSize, const size_t minLeafSize, 
                           const size_t maxLeafSize, const float travCost, const float intCost) {
-          BVHNBuilderT<SplitPrimitiveFunc,SplitPrimitiveFunc2, CreateLeafFunc>(splitPrimitive,splitPrimitive2,createLeaf).build(bvh,progress,prims0,extSize,pinfo,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
+          BVHNBuilderT<SplitPrimitiveFunc,BinnerSplitPrimitiveFunc, CreateLeafFunc>(splitPrimitive,binnerSplit,createLeaf).build(bvh,progress,prims0,extSize,pinfo,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
         }
       };
 

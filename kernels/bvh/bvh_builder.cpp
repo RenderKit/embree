@@ -260,8 +260,8 @@ namespace embree
         splitPrimitive(prim,dim,pos,left_o,right_o);
       };
 
-      auto splitPrimitiveFunc2 = [&] (SpatialBinInfo<NUM_SPATIAL_SPLITS,PrimRef> &spatialBinner, const PrimRef* const source, const size_t begin, const size_t end, const SpatialBinMapping<NUM_SPATIAL_SPLITS> &mapping) -> void {
-        splitPrimitive2(spatialBinner,source,begin,end,mapping);
+      auto binnerSplitPrimitiveFunc = [&] (SpatialBinInfo<NUM_SPATIAL_SPLITS,PrimRef> &spatialBinner, const PrimRef* const source, const size_t begin, const size_t end, const SpatialBinMapping<NUM_SPATIAL_SPLITS> &mapping) -> void {
+        binnerSplit(spatialBinner,source,begin,end,mapping);
       };
             
       auto createLeafFunc = [&] (const BVHBuilderBinnedFastSpatialSAH::BuildRecord& current, Allocator* alloc) -> size_t {
@@ -270,7 +270,7 @@ namespace embree
       
       NodeRef root;
       BVHBuilderBinnedFastSpatialSAH::build_reduce<NodeRef>
-        (root,typename BVH::CreateAlloc(bvh),size_t(0),typename BVH::CreateNode(bvh),rotate<N>,createLeafFunc,splitPrimitiveFunc,splitPrimitiveFunc2, progressFunc,
+        (root,typename BVH::CreateAlloc(bvh),size_t(0),typename BVH::CreateNode(bvh),rotate<N>,createLeafFunc,splitPrimitiveFunc,binnerSplitPrimitiveFunc, progressFunc,
          prims0,extSize,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
       bvh->set(root,pinfo.geomBounds,pinfo.size());      
