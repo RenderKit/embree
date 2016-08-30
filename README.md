@@ -1,4 +1,4 @@
-% Embree: High Performance Ray Tracing Kernels 2.10.0
+% Embree: High Performance Ray Tracing Kernels 2.11.0
 % Intel Corporation
 
 Embree Overview
@@ -87,14 +87,14 @@ Windows Installer
 
 You can install the 64 bit version of the Embree library using the
 Windows installer application
-[embree-2.10.0-x64.exe](https://github.com/embree/embree/releases/download/v2.10.0/embree-2.10.0.x64.exe). This
+[embree-2.11.0-x64.exe](https://github.com/embree/embree/releases/download/v2.11.0/embree-2.11.0.x64.exe). This
 will install the 64 bit Embree version by default in `Program
-Files\Intel\Embree v2.10.0 x64`. To install the 32 bit
+Files\Intel\Embree v2.11.0 x64`. To install the 32 bit
 Embree library use the
-[embree-2.10.0-win32.exe](https://github.com/embree/embree/releases/download/v2.10.0/embree-2.10.0.win32.exe)
+[embree-2.11.0-win32.exe](https://github.com/embree/embree/releases/download/v2.11.0/embree-2.11.0.win32.exe)
 installer. This will install the 32 bit Embree version by default in
-`Program Files\Intel\Embree v2.10.0 win32` on 32 bit
-systems and `Program Files (x86)\Intel\Embree v2.10.0 win32`
+`Program Files\Intel\Embree v2.11.0 win32` on 32 bit
+systems and `Program Files (x86)\Intel\Embree v2.11.0 win32`
 on 64 bit systems.
 
 You have to set the path to the `lib` folder manually to your `PATH`
@@ -106,15 +106,15 @@ Embree installation.
 To uninstall Embree again open `Programs and Features` by clicking the
 `Start button`, clicking `Control Panel`, clicking `Programs`, and
 then clicking `Programs and Features`. Select `Embree
-2.10.0` and uninstall it.
+2.11.0` and uninstall it.
 
 Windows ZIP File
 -----------------
 
 Embree is also delivered as a ZIP file for 64 bit
-[embree-2.10.0.x64.windows.zip](https://github.com/embree/embree/releases/download/v2.10.0/embree-2.10.0.x64.windows.zip)
+[embree-2.11.0.x64.windows.zip](https://github.com/embree/embree/releases/download/v2.11.0/embree-2.11.0.x64.windows.zip)
 and 32 bit
-[embree-2.10.0.win32.windows.zip](https://github.com/embree/embree/releases/download/v2.10.0/embree-2.10.0.win32.windows.zip). After
+[embree-2.11.0.win32.windows.zip](https://github.com/embree/embree/releases/download/v2.11.0/embree-2.11.0.win32.windows.zip). After
 unpacking this ZIP file you should set the path to the `lib` folder
 manually to your `PATH` environment variable for applications to find
 Embree. To compile applications with Embree you also have to set the
@@ -128,18 +128,18 @@ Linux RPMs
 ----------
 
 Uncompress the 'tar.gz' file
-[embree-2.10.0.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v2.10.0/embree-2.10.0.x86_64.rpm.tar.gz)
+[embree-2.11.0.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v2.11.0/embree-2.11.0.x86_64.rpm.tar.gz)
 to
 obtain the individual RPM files:
 
-    tar xzf embree-2.10.0.x86_64.rpm.tar.gz
+    tar xzf embree-2.11.0.x86_64.rpm.tar.gz
 
 To install the Embree using the RPM packages on your Linux system type
 the following:
 
-    sudo rpm --install embree-lib-2.10.0-1.x86_64.rpm
-    sudo rpm --install embree-devel-2.10.0-1.x86_64.rpm
-    sudo rpm --install embree-examples-2.10.0-1.x86_64.rpm
+    sudo rpm --install embree-lib-2.11.0-1.x86_64.rpm
+    sudo rpm --install embree-devel-2.11.0-1.x86_64.rpm
+    sudo rpm --install embree-examples-2.11.0-1.x86_64.rpm
 
 You also have to install the Intel® Threading Building Blocks (TBB)
 using `yum`:
@@ -169,21 +169,21 @@ the tutorials to start them.
 
 To uninstall Embree again just execute the following:
 
-    sudo rpm --erase embree-lib-2.10.0-1.x86_64
-    sudo rpm --erase embree-devel-2.10.0-1.x86_64
-    sudo rpm --erase embree-examples-2.10.0-1.x86_64
+    sudo rpm --erase embree-lib-2.11.0-1.x86_64
+    sudo rpm --erase embree-devel-2.11.0-1.x86_64
+    sudo rpm --erase embree-examples-2.11.0-1.x86_64
 
 Linux tar.gz files
 ------------------
 
 The Linux version of Embree is also delivered as a tar.gz file
-[embree-2.10.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v2.10.0/embree-2.10.0.x86_64.linux.tar.gz). Unpack
+[embree-2.11.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v2.11.0/embree-2.11.0.x86_64.linux.tar.gz). Unpack
 this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to setup the environment properly:
 
-    tar xzf embree-2.10.0.x64.linux.tar.gz
-    source embree-2.10.0.x64.linux/embree-vars.sh
+    tar xzf embree-2.11.0.x64.linux.tar.gz
+    source embree-2.11.0.x64.linux/embree-vars.sh
 
 If you want to ship Embree with your application best use the Embree
 version provided through the tar.gz file.
@@ -193,7 +193,7 @@ Mac OS X PKG Installer
 
 To install the Embree library on your Mac OS X system use the
 provided package installer inside
-[embree-2.10.0.x86_64.dmg](https://github.com/embree/embree/releases/download/v2.10.0/embree-2.10.0.x86_64.dmg). This
+[embree-2.11.0.x86_64.dmg](https://github.com/embree/embree/releases/download/v2.11.0/embree-2.11.0.x86_64.dmg). This
 will install Embree by default into `/opt/local/lib` and
 `/opt/local/include` directories. The Embree tutorials are installed
 into the `/Applications/Embree2` folder.
@@ -215,13 +215,13 @@ Mac OS X tar.gz file
 ---------------------
 
 The Mac OS X version of Embree is also delivered as a tar.gz file
-[embree-2.10.0.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v2.10.0/embree-2.10.0.x86_64.macosx.tar.gz). Unpack
+[embree-2.11.0.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v2.11.0/embree-2.11.0.x86_64.macosx.tar.gz). Unpack
 this file using `tar` and and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to setup the environment properly:
 
-    tar xzf embree-2.10.0.x64.macosx.tar.gz
-    source embree-2.10.0.x64.macosx/embree-vars.sh
+    tar xzf embree-2.11.0.x64.macosx.tar.gz
+    source embree-2.11.0.x64.macosx/embree-vars.sh
 
 If you want to ship Embree with your application please use the Embree
 library of the provided tar.gz file. The library name of that Embree
@@ -467,9 +467,9 @@ parameters that can be configured in CMake:
                                and debug symbols
                                (RelWithDebInfo).
 
-  ENABLE_ISPC_SUPPORT          Enables ISPC support of Embree.  ON
+  EMBREE_ISPC_SUPPORT          Enables ISPC support of Embree.  ON
 
-  ENABLE_STATIC_LIB            Builds Embree as a static        OFF
+  EMBREE_STATIC_LIB            Builds Embree as a static        OFF
                                library. When using the
                                statically compiled Embree
                                library, you have to define
@@ -477,55 +477,55 @@ parameters that can be configured in CMake:
                                including rtcore.h in your
                                application.
 
-  ENABLE_TUTORIALS             Enables build of Embree          ON
+  EMBREE_TUTORIALS             Enables build of Embree          ON
                                tutorials.
 
-  RTCORE_BACKFACE_CULLING      Enables backface culling, i.e.   OFF
+  EMBREE_BACKFACE_CULLING      Enables backface culling, i.e.   OFF
                                only surfaces facing a ray can
                                be hit.
 
-  RTCORE_INTERSECTION_FILTER   Enables the intersection filter  ON
+  EMBREE_INTERSECTION_FILTER   Enables the intersection filter  ON
                                feature.
 
-  RTCORE_INTERSECTION_FILTER   Restore previous hit when        ON
+  EMBREE_INTERSECTION_FILTER   Restore previous hit when        ON
   _RESTORE                     ignoring hits.
 
-  RTCORE_RAY_MASK              Enables the ray masking feature. OFF
+  EMBREE_RAY_MASK              Enables the ray masking feature. OFF
 
-  RTCORE_RAY_PACKETS           Enables ray packet support.      ON
+  EMBREE_RAY_PACKETS           Enables ray packet support.      ON
 
-  RTCORE_IGNORE_INVALID_RAYS   Makes code robust against the    OFF
+  EMBREE_IGNORE_INVALID_RAYS   Makes code robust against the    OFF
                                risk of full-tree traversals
                                caused by invalid rays (e.g.
                                rays containing INF/NaN as
                                origins).
 
-  RTCORE_TASKING_SYSTEM        Chooses between Intel® Threading TBB
+  EMBREE_TASKING_SYSTEM        Chooses between Intel® Threading TBB
                                Building Blocks (TBB) or an
                                internal tasking system
                                (INTERNAL).
 
-  XEON_ISA                     Select highest supported ISA on  AVX2
+  EMBREE_MAX_ISA               Select highest supported ISA on  AVX2
                                Intel® Xeon® CPUs (SSE2, SSE3,
                                SSSE3, SSE4.1, SSE4.2, AVX,
                                AVX-I, AVX2, or AVX512KNL).
 
-  RTCORE_GEOMETRY_TRIANGLES   Enables support for triangle      ON
+  EMBREE_GEOMETRY_TRIANGLES   Enables support for triangle      ON
                               geometries.
 
-  RTCORE_GEOMETRY_QUADS       Enables support for quad          ON
+  EMBREE_GEOMETRY_QUADS       Enables support for quad          ON
                               geometries.
 
-  RTCORE_GEOMETRY_LINES       Enables support for line          ON
+  EMBREE_GEOMETRY_LINES       Enables support for line          ON
                               geometries.
 
-  RTCORE_GEOMETRY_HAIR        Enables support for hair          ON
+  EMBREE_GEOMETRY_HAIR        Enables support for hair          ON
                               geometries.
 
-  RTCORE_GEOMETRY_SUBDIV      Enables support for subdiv        ON
+  EMBREE_GEOMETRY_SUBDIV      Enables support for subdiv        ON
                               geometries.
 
-  RTCORE_GEOMETRY_USER        Enables support for user          ON
+  EMBREE_GEOMETRY_USER        Enables support for user          ON
                               geometries.
 
   ---------------------------- -------------------------------- --------
@@ -1134,7 +1134,7 @@ The following example demonstrates how to create some line segment geometry:
     // fill indices here
     rtcUnmapBuffer(scene, geomID, RTC_INDEX_BUFFER);
 
-### Bezier Hair Geometry
+### Bézier Hair Geometry
 
 Hair geometries are supported, which consist of multiple hairs
 represented as cubic Bézier curves with varying radius per control
@@ -1164,7 +1164,7 @@ and radius stored in `x`, `y`, `z`, `r` order in memory. The hair
 radii have to be greater or equal zero. All buffers have to get
 unmapped before an `rtcCommit` call to the scene.
 
-The implementation may choose to subdivide the bezier curve into
+The implementation may choose to subdivide the Bézier curve into
 multiple cylinders-like primitives. The number of cylinders the curve
 gets subdivided into can be specified per hair geometry through the
 `rtcSetTessellationRate(RTCScene scene, unsigned geomID, float rate)`
@@ -1193,7 +1193,7 @@ geometry.
 
 ### Bézier Curve Geometry
 
-The bezier curve geometry consists of multiple cubic Bézier curves
+The Bézier curve geometry consists of multiple cubic Bézier curves
 with varying radius per control point. The cuve surface is defined as
 the sweep surface of sweeping a varying radius circle tangential along
 the Bézier curve. As a limitation, the radius of the curve has to be
