@@ -347,7 +347,7 @@ namespace embree
 
       __forceinline RayContext(Ray* ray)
       {
-#if defined(__AVX512F__)
+#if defined(__AVX512F__) && !defined(__AVX512VL__)
         vfloat16 org(vfloat4(ray->org));
         vfloat16 dir(vfloat4(ray->dir));
         vfloat16 rdir     = select(0x7777,rcp_safe(dir),max(vfloat16(ray->tnear),vfloat16(zero)));
@@ -661,7 +661,7 @@ namespace embree
         size_t m_node = m_node_hit ^ (m_first_hit /*  & m_leaf */);
         while(unlikely(m_node)) 
         {
-          const size_t b   = __bscf(m_node); 
+          const size_t b = __bscf(m_node);
           const vfloat<K> minX = vfloat<K>(bminX[b]);
           const vfloat<K> minY = vfloat<K>(bminY[b]);
           const vfloat<K> minZ = vfloat<K>(bminZ[b]);
