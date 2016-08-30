@@ -218,7 +218,7 @@ namespace embree
                 continue;
               }
 
-              for (bin=bin0[dim]; bin<bin1[dim]; bin++) 
+              for (bin=(size_t)bin0[dim]; bin<(size_t)bin1[dim]; bin++) 
               {
                 const float pos = mapping.pos(bin+1,dim);
                 
