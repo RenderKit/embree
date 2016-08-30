@@ -344,7 +344,16 @@ namespace embree
 
     /* wait for all threads to terminate */
     threadCounter--;
-    while (threadCounter > 0) yield();
+	size_t loopIndex = 1;
+#define LOOP_YIELD_THRESHOLD 4096
+	while (threadCounter > 0) {
+		if ((loopIndex % LOOP_YIELD_THRESHOLD) == 0)
+			yield();
+		else
+			_mm_pause(); 
+		
+	  loopIndex++;
+	}
     return except;
   }
 
