@@ -350,12 +350,14 @@ namespace embree
 #define LOOP_YIELD_THRESHOLD 4096
 	while (threadCounter > 0) {
 #if defined(__WIN32__)
-		if ((loopIndex % LOOP_YIELD_THRESHOLD) == 0)
-			yield();
-		else
-			_mm_pause(); 
-#endif		
+          if ((loopIndex % LOOP_YIELD_THRESHOLD) == 0)
+            yield();
+          else
+            _mm_pause(); 
 	  loopIndex++;
+#else
+          yield();
+#endif		
 	}
     return except;
   }
