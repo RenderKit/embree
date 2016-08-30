@@ -400,58 +400,6 @@ namespace embree
         1+(N-1)*BVH::maxDepth+   // standard depth
         1+(N-1)*BVH::maxDepth;   // transform feature
 
-
-      struct __aligned(32) RayFiberContext {
-        NodeRef node;
-        size_t mask;
-        StackItemMask* stackPtr;
-        RayFiberContext *next;
-#if !defined(__AVX512F__)
-        size_t offset;
-#endif
-        
-        __forceinline void init(NodeRef _node,
-                                size_t  _mask,
-                                StackItemMask* _stackPtr,
-                                RayFiberContext *_next,
-                                size_t _offset)
-        {
-          node        = _node;
-          mask        = _mask;
-          stackPtr    = _stackPtr;
-          next        = _next;
-#if !defined(__AVX512F__)
-          offset      = _offset;
-#endif
-        }
-
-        __forceinline RayFiberContext *swapContext(NodeRef &_node,
-                                                   size_t  &_mask,
-                                                   StackItemMask*&_stackPtr)
-        {
-          node = _node;
-          mask = _mask;
-          stackPtr = _stackPtr;          
-          assert(next);
-          _node     = next->node;
-          _mask     = next->mask;
-          _stackPtr = next->stackPtr;          
-          return next;
-        }
-
-        __forceinline size_t getOffset()
-        {
-#if !defined(__AVX512F__)
-          return offset;
-#else
-          return 0;
-#endif
-
-        }
-                           
-      };
-
-
       struct NearFarPreCompute
       {
 #if defined(__AVX512F__)
@@ -459,6 +407,7 @@ namespace embree
 #endif
         size_t nearX,nearY,nearZ;
         size_t farX,farY,farZ;
+
         __forceinline NearFarPreCompute(const Vec3fa &dir)
         {
 #if defined(__AVX512F__)
