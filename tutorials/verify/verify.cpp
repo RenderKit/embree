@@ -2998,73 +2998,29 @@ namespace embree
   struct ParallelIntersectBenchmark : public VerifyApplication::Benchmark
   {
     unsigned int N, dN;
-    Vec3fa* numbers;
-    LinearBarrierActive barrier;
-    std::vector<thread_t> threads;
-    std::atomic<unsigned int> pos;
-    std::atomic<unsigned int> threadIndexCounter;
     
     ParallelIntersectBenchmark (std::string name, int isa, unsigned int N, unsigned int dN)
-      : VerifyApplication::Benchmark(name,isa,"Mrps"), N(N), dN(dN), pos(0), threadIndexCounter(1) {}
-    
-    ~ParallelIntersectBenchmark() 
-    {
-      if (threads.size()) {
-        pos = -1;
-        barrier.wait(0);
-        for (size_t i=0; i<threads.size(); i++) join(threads[i]);
-        threads.clear();
-      }
-    }
+      : VerifyApplication::Benchmark(name,isa,"Mrps"), N(N), dN(dN) {}
 
     bool setup(VerifyApplication* state) 
     {
-      threadIndexCounter = 1;
-      pos = 0;      
-      barrier.init(numThreads);
-      for (size_t i=1; i<numThreads; i++)
-	threads.push_back(createThread((thread_func)static_thread_function,this,DEFAULT_STACK_SIZE,i));
-      //setAffinity(0);
-
       return true;
     }
 
     virtual void render_block(unsigned int i, unsigned int n) = 0;
 
-    bool thread_function(unsigned int threadIndex = 0)
-    {
-      barrier.wait(threadIndex);
-      if (pos.load() == unsigned(-1)) return false;
-
-      for (unsigned int i = pos.fetch_add(dN); i<N; i=pos.fetch_add(dN)) 
-      //for (unsigned int i = threadIndex*dN; i<N; i+=numThreads*dN) 
-        render_block(i,dN);
-
-      barrier.wait(threadIndex);
-      return true;
-    }
-
-    static void static_thread_function(void* ptr) 
-    {
-      unsigned threadIndex = ((ParallelIntersectBenchmark*) ptr)->threadIndexCounter++;
-      while (((ParallelIntersectBenchmark*) ptr)->thread_function(threadIndex));
-    }
-
     float benchmark(VerifyApplication* state)
     {
       double t0 = getSeconds();
-      pos = 0;
-      thread_function();
+      parallel_for(N/dN, [&](unsigned int i) {
+        render_block(i*dN, dN);
+      });
       double t1 = getSeconds();
       return 1E-6f * (float)(N)/float(t1-t0);
     }
 
     virtual void cleanup(VerifyApplication* state) 
     {
-      pos = -1;
-      barrier.wait(0);
-      for (size_t i=0; i<threads.size(); i++) join(threads[i]);
-      threads.clear();
     }
   };
 
@@ -4214,6 +4170,9 @@ namespace embree
     /* for best performance set FTZ and DAZ flags in MXCSR control and status register */
     _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
     _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
+
+    /* initialize the task scheduler */
+    tbb::task_scheduler_init tbb_threads;
 
     /* parse command line options */
     parseCommandLine(argc,argv);
