@@ -153,7 +153,7 @@ namespace embree
     IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_AVX(features,BVH8QuantizedQuad4iSceneBuilderSAH));
    
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX(features,BVH8Triangle4SceneBuilderSpatialSAH));
-    IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX(features,BVH8Triangle4SceneBuilderFastSpatialSAH));
+    IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX512KNL_AVX512SKX(features,BVH8Triangle4SceneBuilderFastSpatialSAH));
 
     IF_ENABLED_SUBDIV(SELECT_SYMBOL_INIT_AVX(features,BVH8SubdivGridEagerBuilderBinnedSAH));
 
@@ -486,10 +486,10 @@ namespace embree
     BVH8* accel = new BVH8(Triangle4::type,scene);
     Accel::Intersectors intersectors= BVH8Triangle4Intersectors(accel);
     Builder *builder = NULL;
-    if (scene->device->tri_builder == "sah_fast_spatial" ) 
-      builder = BVH8Triangle4SceneBuilderFastSpatialSAH(accel,scene,0);
-    else
+    if (scene->device->tri_builder == "sah_spatial" ) 
       builder = BVH8Triangle4SceneBuilderSpatialSAH(accel,scene,0);
+    else
+      builder = BVH8Triangle4SceneBuilderFastSpatialSAH(accel,scene,0);
     return new AccelInstance(accel,builder,intersectors);
   }
 

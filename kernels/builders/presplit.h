@@ -66,74 +66,82 @@ namespace embree
     }
 
 
-
-    __forceinline void condExtendBounds(BBox3fa &left, BBox3fa &right, const vbool4& mask_left, const vbool4& mask_right, const vbool4& mask_cross, const vfloat4& factor, const vfloat4& a, const vfloat4 &b)
+    __forceinline void splitTriangleFast(const BBox3fa& bounds, 
+                                         const size_t dim, 
+                                         const float pos, 
+                                         const Vec3fa v[4],
+                                         const Vec3fa inv_length[4],
+                                         BBox3fa& left_o, 
+                                         BBox3fa& right_o)
     {
-      vfloat4 lower_left  = (vfloat4)left.lower;
-      vfloat4 upper_left  = (vfloat4)left.upper;
-      vfloat4 lower_right = (vfloat4)right.lower;
-      vfloat4 upper_right = (vfloat4)right.upper;
+      BBox3fa left = empty, right = empty;
+      /* clip triangle to left and right box by processing all edges */
+      for (size_t i=0; i<3; i++)
+      {
+        const Vec3fa &v0 = v[i]; 
+        const Vec3fa &v1 = v[i+1]; 
+        const float v0d = v0[dim];
+        const float v1d = v1[dim];
 
-      lower_left   = min(lower_left  ,select(mask_left ,a,lower_left ));
-      upper_left   = max(upper_left  ,select(mask_left ,a,upper_left ));
-      lower_right  = min(lower_right ,select(mask_right,a,lower_right ));
-      upper_right  = max(upper_right ,select(mask_right,a,upper_right ));
-      const vfloat4 c = a + factor * (b-a);
-
-      lower_left   = min(lower_left  ,select(mask_cross,c,lower_left ));
-      upper_left   = max(upper_left  ,select(mask_cross,c,upper_left ));
-      lower_right  = min(lower_right ,select(mask_cross,c,lower_right ));
-      upper_right  = max(upper_right ,select(mask_cross,c,upper_right ));
-
-      left.lower  = (Vec3fa)lower_left;
-      left.upper  = (Vec3fa)upper_left;
-      right.lower = (Vec3fa)lower_right;
-      right.upper = (Vec3fa)upper_right;
-    } 
-
-    template<size_t dim>
-    __forceinline void condExtendBounds2(BBox3fa &left, BBox3fa &right, const vbool4& mask_left, const vbool4& mask_right, const vbool4& mask_cross, const vfloat4& factor, const Vec3fa& a, const Vec3fa& b)
-    {
-      if (mask_left[dim])   left.extend(a);
-      if (mask_right[dim])  right.extend(a);
-      if (mask_cross[dim]) { 
-          const Vec3fa c = a + factor[dim] * (b-a);
+        if (v0d <= pos) left. extend(v0); // this point is on left side
+        if (v0d >= pos) right.extend(v0); // this point is on right side
+        
+        if ((v0d < pos && pos < v1d) || (v1d < pos && pos < v0d)) // the edge crosses the splitting location
+        {
+          assert((v1d-v0d) != 0.0f);
+          //const Vec3fa c = v0 + (pos-v0d)/(v1d-v0d)*(v1-v0);
+          const Vec3fa c = v0 + (pos-v0d)*inv_length[i][dim]*(v1-v0);
           left.extend(c);
           right.extend(c);
         }
-    }
-    __forceinline void splitTriangle2(const PrimRef& prim, int dim, float pos, 
-                                      const Vec3fa& a, const Vec3fa& b, const Vec3fa& c, PrimRef& left_o, PrimRef& right_o)
-    {
-      BBox3fa left = empty, right = empty;
-      const vfloat4 v0(a[dim],b[dim],c[dim],0.0f);
-      const vfloat4 v1(b[dim],c[dim],a[dim],1.0f);
-      const vfloat4 pos4(pos);
-      const vfloat4 factor = (pos-v0)/(v1-v0);
-
-      const vbool4 mask_cross = ((v0 < pos4) & (pos4 < v1)) | ((v1 < pos4) & (pos4 < v0));
-      const vbool4 mask_left  = v0 <= pos4;
-      const vbool4 mask_right = v0 >= pos4;
-
-#if 0
-      condExtendBounds(left,right,shuffle<0>(mask_left),shuffle<0>(mask_right),shuffle<0>(mask_cross),shuffle<0>(factor),(vfloat4)a,(vfloat4)b);
-      condExtendBounds(left,right,shuffle<1>(mask_left),shuffle<1>(mask_right),shuffle<1>(mask_cross),shuffle<1>(factor),(vfloat4)b,(vfloat4)c);
-      condExtendBounds(left,right,shuffle<2>(mask_left),shuffle<2>(mask_right),shuffle<2>(mask_cross),shuffle<2>(factor),(vfloat4)c,(vfloat4)a);
-#else
-      condExtendBounds2<0>(left,right,mask_left,mask_right,mask_cross,factor,a,b);
-      condExtendBounds2<1>(left,right,mask_left,mask_right,mask_cross,factor,b,c);
-      condExtendBounds2<2>(left,right,mask_left,mask_right,mask_cross,factor,c,a);
-
-#endif
+      }
+      //assert(!left.empty());  // happens if split does not hit triangle
+      //assert(!right.empty()); // happens if split does not hit triangle
+      
       /* clip against current bounds */
-      BBox3fa bounds = prim.bounds();
-      BBox3fa cleft (max(left .lower,bounds.lower),min(left .upper,bounds.upper));
-      BBox3fa cright(max(right.lower,bounds.lower),min(right.upper,bounds.upper));
-
-
-      new (&left_o ) PrimRef(cleft, prim.geomID(), prim.primID());
-      new (&right_o) PrimRef(cright,prim.geomID(), prim.primID());
+      left_o  = intersect(left,bounds);
+      right_o = intersect(right,bounds);
     }
+
+    template<size_t N>
+      struct PrimRefBoundsN {
+        Vec3<vfloat<N>> lower;
+        Vec3<vfloat<N>> upper;
+
+        __forceinline PrimRefBoundsN() {}
+
+        __forceinline PrimRefBoundsN(const Vec3<vfloat<N>> &v)
+        {
+          lower = upper = v;
+        }
+
+        __forceinline PrimRefBoundsN(const PrimRefBoundsN<N> &o)
+        {
+          lower = o.lower;
+          upper = o.upper;
+        }
+
+        __forceinline void extend(const Vec3<vfloat<N>> &v)
+        {
+          lower = min(lower,v);
+          upper = max(upper,v);
+        }
+
+        __forceinline void clip(const BBox3fa &bounds)
+        {
+          Vec3<vfloat<N>> b_lower(bounds.lower.x,bounds.lower.y,bounds.lower.z);
+          Vec3<vfloat<N>> b_upper(bounds.upper.x,bounds.upper.y,bounds.upper.z);
+          lower = max(lower,b_lower);
+          upper = min(upper,b_upper);
+        }
+
+        __forceinline BBox3fa extract(const size_t i)
+        {
+          return BBox3fa(Vec3fa(lower.x[i],lower.y[i],lower.z[i]),
+                         Vec3fa(upper.x[i],upper.y[i],upper.z[i]));
+        }
+
+      };
 
 
     template<typename Split>

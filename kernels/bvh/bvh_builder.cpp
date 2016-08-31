@@ -173,13 +173,17 @@ namespace embree
       };
       auto identity = std::make_pair(BBox3fa(empty),BBox3fa(empty));
       
+      
       NodeRef root;
-      BVHBuilderBinnedSAH::build_reduce<NodeRef>
+      std::pair<BBox3fa,BBox3fa> root_bounds = BVHBuilderBinnedSAH::build_reduce<NodeRef>
         (root,typename BVH::CreateAlloc(bvh),identity,CreateNodeMB<N>(bvh),reduce,createLeafFunc,progressFunc,
          prims,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
-      bvh->set(root,pinfo.geomBounds,pinfo.size());
-      
+      /* set bounding box to merge bounds of all time steps */
+      //bvh->set(root,pinfo.geomBounds,pinfo.size());
+      bvh->set(root,merge(root_bounds.first,root_bounds.second),pinfo.size());
+
+
 #if ROTATE_TREE
       if (N == 4)
       {
@@ -239,14 +243,14 @@ namespace embree
     // ========================================================================================================================================================
     // ========================================================================================================================================================
 
-    template<int N>
-    void BVHNBuilderFastSpatial<N>::BVHNBuilderV::build(BVH* bvh, 
-                                                        BuildProgressMonitor& progress_in, 
-                                                        PrimRef* prims0, 
-                                                        const size_t extSize,
-                                                        const PrimInfo& pinfo, const size_t blockSize, 
-                                                        const size_t minLeafSize, const size_t maxLeafSize, 
-                                                        const float travCost, const float intCost)
+    template<int N, int NUM_SPATIAL_SPLITS>
+    void BVHNBuilderFastSpatial<N,NUM_SPATIAL_SPLITS>::BVHNBuilderV::build(BVH* bvh, 
+                                                                           BuildProgressMonitor& progress_in, 
+                                                                           PrimRef* prims0, 
+                                                                           const size_t extSize,
+                                                                           const PrimInfo& pinfo, const size_t blockSize, 
+                                                                           const size_t minLeafSize, const size_t maxLeafSize, 
+                                                                           const float travCost, const float intCost)
     {
       auto progressFunc = [&] (size_t dn) { 
         progress_in(dn); 
@@ -256,6 +260,9 @@ namespace embree
         splitPrimitive(prim,dim,pos,left_o,right_o);
       };
 
+      auto binnerSplitPrimitiveFunc = [&] (SpatialBinInfo<NUM_SPATIAL_SPLITS,PrimRef> &spatialBinner, const PrimRef* const source, const size_t begin, const size_t end, const SpatialBinMapping<NUM_SPATIAL_SPLITS> &mapping) -> void {
+        binnerSplit(spatialBinner,source,begin,end,mapping);
+      };
             
       auto createLeafFunc = [&] (const BVHBuilderBinnedFastSpatialSAH::BuildRecord& current, Allocator* alloc) -> size_t {
         return createLeaf(current,alloc);
@@ -263,7 +270,7 @@ namespace embree
       
       NodeRef root;
       BVHBuilderBinnedFastSpatialSAH::build_reduce<NodeRef>
-        (root,typename BVH::CreateAlloc(bvh),size_t(0),typename BVH::CreateNode(bvh),rotate<N>,createLeafFunc,splitPrimitiveFunc, progressFunc,
+        (root,typename BVH::CreateAlloc(bvh),size_t(0),typename BVH::CreateNode(bvh),rotate<N>,createLeafFunc,splitPrimitiveFunc,binnerSplitPrimitiveFunc, progressFunc,
          prims0,extSize,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
       bvh->set(root,pinfo.geomBounds,pinfo.size());      
@@ -275,13 +282,14 @@ namespace embree
     template struct BVHNBuilderQuantized<4>;
     template struct BVHNBuilderMblur<4>;    
     template struct BVHNBuilderSpatial<4>;
+    template struct BVHNBuilderFastSpatial<4,FAST_SPATIAL_BUILDER_NUM_SPATIAL_SPLITS>;
 
 #if defined(__AVX__)
     template struct BVHNBuilder<8>;
     template struct BVHNBuilderQuantized<8>;
     template struct BVHNBuilderMblur<8>;
     template struct BVHNBuilderSpatial<8>;
-    template struct BVHNBuilderFastSpatial<8>;
+    template struct BVHNBuilderFastSpatial<8,FAST_SPATIAL_BUILDER_NUM_SPATIAL_SPLITS>;
 #endif
   }
 }

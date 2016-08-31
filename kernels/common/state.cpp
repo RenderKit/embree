@@ -242,7 +242,7 @@ namespace embree
       else if ((tok == Token::Id("tri_traverser") || tok == Token::Id("traverser")) && cin->trySymbol("="))
         tri_traverser = cin->get().Identifier();
       else if (tok == Token::Id("tri_builder_replication_factor") && cin->trySymbol("="))
-        tri_builder_replication_factor = cin->get().Int();
+        tri_builder_replication_factor = cin->get().Float();
 
       else if ((tok == Token::Id("tri_accel_mb") || tok == Token::Id("accel_mb")) && cin->trySymbol("="))
         tri_accel_mb = cin->get().Identifier();
