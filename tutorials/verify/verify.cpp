@@ -3215,16 +3215,11 @@ namespace embree
     size_t numPhi;
     RTCDeviceRef device;
     Ref<VerifyScene> scene;
-    Vec3fa* numbers;
     static const size_t numRays = 16*1024*1024;
     static const size_t deltaRays = 1024;
     
     IncoherentRaysBenchmark (std::string name, int isa, GeometryType gtype, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant, size_t numPhi)
-      : ParallelIntersectBenchmark(name,isa,numRays,deltaRays), gtype(gtype), sflags(sflags), gflags(gflags), imode(imode), ivariant(ivariant), numPhi(numPhi), device(nullptr), numbers(nullptr)  {}
-    
-    ~IncoherentRaysBenchmark() {
-      if (numbers) delete[] numbers; numbers = nullptr;
-    }
+      : ParallelIntersectBenchmark(name,isa,numRays,deltaRays), gtype(gtype), sflags(sflags), gflags(gflags), imode(imode), ivariant(ivariant), numPhi(numPhi), device(nullptr)  {}
 
     size_t setNumPrimitives(size_t N) 
     { 
@@ -3256,10 +3251,6 @@ namespace embree
       rtcCommit (*scene);
       AssertNoError(device);      
 
-      numbers = new Vec3fa[N];
-      for (size_t i=0; i<N; i++)
-        numbers[i] = 2.0f*random_Vec3fa()-Vec3fa(1.0f);
-
       return true;
     }
 
@@ -3269,13 +3260,16 @@ namespace embree
       context.flags = ((ivariant & VARIANT_COHERENT_INCOHERENT_MASK) == VARIANT_COHERENT) ? RTC_INTERSECT_COHERENT :  RTC_INTERSECT_INCOHERENT;
       context.userRayExt = nullptr;
 
+      RandomSampler sampler;
+      RandomSampler_init(sampler, i);
+
       switch (imode) 
       {
       case MODE_INTERSECT1: 
       {
         for (size_t j=0; j<dn; j++) {
           RTCRay ray; 
-          fastMakeRay(ray,zero,numbers[i+j]);
+          fastMakeRay(ray,zero,sampler);
           switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
           case VARIANT_INTERSECT: rtcIntersect(*scene,ray); break;
           case VARIANT_OCCLUDED : rtcOccluded (*scene,ray); break;
@@ -3288,7 +3282,7 @@ namespace embree
         for (size_t j=0; j<dn; j+=4) {
           RTCRay4 ray4;
           for (size_t k=0; k<4; k++) {
-            setRay(ray4,k,fastMakeRay(zero,numbers[i+j+k]));
+            setRay(ray4,k,fastMakeRay(zero,sampler));
           }
           __aligned(16) int valid4[4] = { -1,-1,-1,-1 };
           switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
@@ -3303,7 +3297,7 @@ namespace embree
         for (size_t j=0; j<dn; j+=8) {
           RTCRay8 ray8;
           for (size_t k=0; k<8; k++) {
-            setRay(ray8,k,fastMakeRay(zero,numbers[i+j+k]));
+            setRay(ray8,k,fastMakeRay(zero,sampler));
           }
           __aligned(32) int valid8[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
           switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
@@ -3318,7 +3312,7 @@ namespace embree
         for (size_t j=0; j<dn; j+=16) {
           RTCRay16 ray16;
           for (size_t k=0; k<16; k++) {
-            setRay(ray16,k,fastMakeRay(zero,numbers[i+j+k]));
+            setRay(ray16,k,fastMakeRay(zero,sampler));
           }
           __aligned(64) int valid16[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
           switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
@@ -3332,7 +3326,7 @@ namespace embree
       {
         for (size_t j=0; j<dn; j+=128) {
           RTCRay rays[128];
-          for (size_t k=0; k<128; k++) fastMakeRay(rays[k],zero,numbers[i+j+k]);
+          for (size_t k=0; k<128; k++) fastMakeRay(rays[k],zero,sampler);
           switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
           case VARIANT_INTERSECT: rtcIntersect1M(*scene,&context,rays,128,sizeof(RTCRay)); break;
           case VARIANT_OCCLUDED : rtcOccluded1M (*scene,&context,rays,128,sizeof(RTCRay)); break;
@@ -3347,7 +3341,6 @@ namespace embree
     virtual void cleanup(VerifyApplication* state) 
     {
       AssertNoError(device);
-      if (numbers) delete[] numbers; numbers = nullptr;
       scene = nullptr;
       device = nullptr;
       ParallelIntersectBenchmark::cleanup(state);
