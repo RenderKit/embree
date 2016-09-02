@@ -1,10 +1,45 @@
 Version History
 ---------------
+### New Features in Embree 2.11.0
+
+-   Improved performance for streams of coherent (single) rays flagged
+    with `RTC_INTERSECT_COHERENT`. For such coherent ray streams, e.g.
+    primary rays, the performance typically improves by 1.3–2×.
+-   New spatial split BVH builder for triangles, which is 2–6× faster
+    than the previous version and more memory conservative.
+-   Improved performance and scalability of all standard BVH builders on
+    systems with large core counts.
+-   Fixed `rtcGetBounds` for motion blur scenes.
+-   Thread affinity is now on by default when running on the latest
+    Intel® Xeon Phi™ processor.
+-   Added AVX512 support for future Intel® Xeon processors.
+
+### New Features in Embree 2.10.0
+
+-   Added a new curve geometry which renders the sweep surface of a
+    circle along a Bézier curve.
+-   Intersection filters can update the `tfar` ray distance.
+-   Geometry types can get disabled at compile time.
+-   Modified and extended the ray stream API.
+-   Added new callback mechanism for the ray stream API.
+-   Improved ray stream performance (up to 5–10%).
+-   Up to 20% faster morton builder on machines with large core counts.
+-   Lots of optimizations for the second generation Intel® Xeon Phi™
+    processor codenamed Knights Landing.
+-   Added experimental support for compressed BVH nodes (reduces node
+    size to 56–62% of uncompressed size). Compression introduces a
+    typical performance overhead of ~10%.
+-   Bugfix in backface culling mode. We do now properly cull the
+    backfaces and not the frontfaces.
+-   Feature freeze for the first generation Intel® Xeon Phi™ coprocessor
+    codenamed Knights Corner. We will still maintain and add bug fixes
+    to Embree v2.9.0, but Embree 2.10 and future versions will no longer
+    support it.
 
 ### New Features in Embree 2.9.0
-	
--   Improved shadow ray performance (10--100% depending on the scene).
--   Added initial support for ray streams (10--30% higher performance
+
+-   Improved shadow ray performance (10–100% depending on the scene).
+-   Added initial support for ray streams (10–30% higher performance
     depending on ray coherence in the stream).
 -   Added support to calculate second order derivatives using the
     `rtcInterpolate2` function.
@@ -16,7 +51,7 @@ Version History
 ### New Features in Embree 2.8.1
 
 -   Added support for setting per geometry tessellation rate (supported
-    for subdivision and bezier geometries).
+    for subdivision and Bézier geometries).
 -   Added support for motion blurred instances.
 
 ### New Features in Embree 2.8.0
@@ -217,14 +252,14 @@ Version History
 ### Example Performance Numbers for Embree 2.1
 
 BVH rebuild performance (including triangle accel generation, excluding
-memory allocation) for scenes with 2--12 million triangles:
+memory allocation) for scenes with 2–12 million triangles:
 
 -   Intel® Core™ i7 (Haswell-based CPU, 4 cores @ 3.0 GHz)
-    -   7--8 million triangles/s for the SAH-based BVH builder
-    -   30--36 million triangles/s for the Morton code-based BVH builder
+    -   7–8 million triangles/s for the SAH-based BVH builder
+    -   30–36 million triangles/s for the Morton code-based BVH builder
 -   Intel® Xeon Phi™ 7120
-    -   37--40 million triangles/s for the SAH-based BVH builder
-    -   140--160 million triangles/s for the Morton code-based BVH
+    -   37–40 million triangles/s for the SAH-based BVH builder
+    -   140–160 million triangles/s for the Morton code-based BVH
         builder
 
 Rendering of the Crown model (`crown.ecs`) with 4 samples per pixel

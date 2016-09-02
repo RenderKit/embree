@@ -58,6 +58,10 @@ namespace embree
   Device::Device (const char* cfg, bool singledevice)
     : State(singledevice)
   {
+    /* per default enable affinity on KNL */
+    if (hasISA(AVX512KNL))
+      State::set_affinity = true;
+
     /* initialize global state */
     State::parseString(cfg);
     if (FileName::executableFolder() != FileName(""))
@@ -85,10 +89,6 @@ namespace embree
       //exceptions &= ~_MM_MASK_INEXACT;
       _MM_SET_EXCEPTION_MASK(exceptions);
     }
-
-    /* per default enable affinity on KNL */
-    if (hasISA(AVX512KNL))
-      State::set_affinity = true;
 
     /* print info header */
     if (State::verbosity(1))

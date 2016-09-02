@@ -3004,73 +3004,29 @@ namespace embree
   struct ParallelIntersectBenchmark : public VerifyApplication::Benchmark
   {
     unsigned int N, dN;
-    Vec3fa* numbers;
-    LinearBarrierActive barrier;
-    std::vector<thread_t> threads;
-    std::atomic<unsigned int> pos;
-    std::atomic<unsigned int> threadIndexCounter;
     
     ParallelIntersectBenchmark (std::string name, int isa, unsigned int N, unsigned int dN)
-      : VerifyApplication::Benchmark(name,isa,"Mrps"), N(N), dN(dN), pos(0), threadIndexCounter(1) {}
-    
-    ~ParallelIntersectBenchmark() 
-    {
-      if (threads.size()) {
-        pos = -1;
-        barrier.wait(0);
-        for (size_t i=0; i<threads.size(); i++) join(threads[i]);
-        threads.clear();
-      }
-    }
+      : VerifyApplication::Benchmark(name,isa,"Mrps"), N(N), dN(dN) {}
 
     bool setup(VerifyApplication* state) 
     {
-      threadIndexCounter = 1;
-      pos = 0;      
-      barrier.init(numThreads);
-      for (size_t i=1; i<numThreads; i++)
-	threads.push_back(createThread((thread_func)static_thread_function,this,DEFAULT_STACK_SIZE,i));
-      //setAffinity(0);
-
       return true;
     }
 
     virtual void render_block(unsigned int i, unsigned int n) = 0;
 
-    bool thread_function(unsigned int threadIndex = 0)
-    {
-      barrier.wait(threadIndex);
-      if (pos.load() == unsigned(-1)) return false;
-
-      for (unsigned int i = pos.fetch_add(dN); i<N; i=pos.fetch_add(dN)) 
-      //for (unsigned int i = threadIndex*dN; i<N; i+=numThreads*dN) 
-        render_block(i,dN);
-
-      barrier.wait(threadIndex);
-      return true;
-    }
-
-    static void static_thread_function(void* ptr) 
-    {
-      unsigned threadIndex = ((ParallelIntersectBenchmark*) ptr)->threadIndexCounter++;
-      while (((ParallelIntersectBenchmark*) ptr)->thread_function(threadIndex));
-    }
-
     float benchmark(VerifyApplication* state)
     {
       double t0 = getSeconds();
-      pos = 0;
-      thread_function();
+      parallel_for(N/dN, [&](unsigned int i) {
+        render_block(i*dN, dN);
+      });
       double t1 = getSeconds();
       return 1E-6f * (float)(N)/float(t1-t0);
     }
 
     virtual void cleanup(VerifyApplication* state) 
     {
-      pos = -1;
-      barrier.wait(0);
-      for (size_t i=0; i<threads.size(); i++) join(threads[i]);
-      threads.clear();
     }
   };
 
@@ -3259,16 +3215,11 @@ namespace embree
     size_t numPhi;
     RTCDeviceRef device;
     Ref<VerifyScene> scene;
-    Vec3fa* numbers;
     static const size_t numRays = 16*1024*1024;
     static const size_t deltaRays = 1024;
     
     IncoherentRaysBenchmark (std::string name, int isa, GeometryType gtype, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant, size_t numPhi)
-      : ParallelIntersectBenchmark(name,isa,numRays,deltaRays), gtype(gtype), sflags(sflags), gflags(gflags), imode(imode), ivariant(ivariant), numPhi(numPhi), device(nullptr), numbers(nullptr)  {}
-    
-    ~IncoherentRaysBenchmark() {
-      if (numbers) delete[] numbers; numbers = nullptr;
-    }
+      : ParallelIntersectBenchmark(name,isa,numRays,deltaRays), gtype(gtype), sflags(sflags), gflags(gflags), imode(imode), ivariant(ivariant), numPhi(numPhi), device(nullptr)  {}
 
     size_t setNumPrimitives(size_t N) 
     { 
@@ -3300,10 +3251,6 @@ namespace embree
       rtcCommit (*scene);
       AssertNoError(device);      
 
-      numbers = new Vec3fa[N];
-      for (size_t i=0; i<N; i++)
-        numbers[i] = 2.0f*random_Vec3fa()-Vec3fa(1.0f);
-
       return true;
     }
 
@@ -3313,13 +3260,16 @@ namespace embree
       context.flags = ((ivariant & VARIANT_COHERENT_INCOHERENT_MASK) == VARIANT_COHERENT) ? RTC_INTERSECT_COHERENT :  RTC_INTERSECT_INCOHERENT;
       context.userRayExt = nullptr;
 
+      RandomSampler sampler;
+      RandomSampler_init(sampler, i);
+
       switch (imode) 
       {
       case MODE_INTERSECT1: 
       {
         for (size_t j=0; j<dn; j++) {
           RTCRay ray; 
-          fastMakeRay(ray,zero,numbers[i+j]);
+          fastMakeRay(ray,zero,sampler);
           switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
           case VARIANT_INTERSECT: rtcIntersect(*scene,ray); break;
           case VARIANT_OCCLUDED : rtcOccluded (*scene,ray); break;
@@ -3332,7 +3282,7 @@ namespace embree
         for (size_t j=0; j<dn; j+=4) {
           RTCRay4 ray4;
           for (size_t k=0; k<4; k++) {
-            setRay(ray4,k,fastMakeRay(zero,numbers[i+j+k]));
+            setRay(ray4,k,fastMakeRay(zero,sampler));
           }
           __aligned(16) int valid4[4] = { -1,-1,-1,-1 };
           switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
@@ -3347,7 +3297,7 @@ namespace embree
         for (size_t j=0; j<dn; j+=8) {
           RTCRay8 ray8;
           for (size_t k=0; k<8; k++) {
-            setRay(ray8,k,fastMakeRay(zero,numbers[i+j+k]));
+            setRay(ray8,k,fastMakeRay(zero,sampler));
           }
           __aligned(32) int valid8[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
           switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
@@ -3362,7 +3312,7 @@ namespace embree
         for (size_t j=0; j<dn; j+=16) {
           RTCRay16 ray16;
           for (size_t k=0; k<16; k++) {
-            setRay(ray16,k,fastMakeRay(zero,numbers[i+j+k]));
+            setRay(ray16,k,fastMakeRay(zero,sampler));
           }
           __aligned(64) int valid16[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
           switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
@@ -3376,7 +3326,7 @@ namespace embree
       {
         for (size_t j=0; j<dn; j+=128) {
           RTCRay rays[128];
-          for (size_t k=0; k<128; k++) fastMakeRay(rays[k],zero,numbers[i+j+k]);
+          for (size_t k=0; k<128; k++) fastMakeRay(rays[k],zero,sampler);
           switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
           case VARIANT_INTERSECT: rtcIntersect1M(*scene,&context,rays,128,sizeof(RTCRay)); break;
           case VARIANT_OCCLUDED : rtcOccluded1M (*scene,&context,rays,128,sizeof(RTCRay)); break;
@@ -3391,7 +3341,6 @@ namespace embree
     virtual void cleanup(VerifyApplication* state) 
     {
       AssertNoError(device);
-      if (numbers) delete[] numbers; numbers = nullptr;
       scene = nullptr;
       device = nullptr;
       ParallelIntersectBenchmark::cleanup(state);
@@ -4220,6 +4169,9 @@ namespace embree
     /* for best performance set FTZ and DAZ flags in MXCSR control and status register */
     _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
     _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
+
+    /* initialize the task scheduler */
+    tbb::task_scheduler_init tbb_threads;
 
     /* parse command line options */
     parseCommandLine(argc,argv);
