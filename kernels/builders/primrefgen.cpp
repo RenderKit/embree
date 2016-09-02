@@ -44,7 +44,7 @@ namespace embree
         }
         return pinfo;
       }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
-      
+
       /* if we need to filter out geometry, run again */
       if (pinfo.size() != prims.size())
       {

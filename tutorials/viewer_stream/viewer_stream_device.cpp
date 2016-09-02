@@ -26,9 +26,9 @@ namespace embree {
 #define RAYN_FLAGS RTC_INTERSECT_COHERENT
 //#define RAYN_FLAGS RTC_INTERSECT_INCOHERENT
 
-#define SHADING 1
-#define HIGH_QUALITY 1
-#define LOOP 0
+#define SIMPLE_SHADING 0
+#define HIGH_QUALITY_BVH 0
+#define INFINITE_BUILD_LOOP 0
 
 extern "C" ISPCScene* g_ispc_scene;
 
@@ -105,7 +105,7 @@ RTCScene convertScene(ISPCScene* scene_in)
 {
   size_t numGeometries = scene_in->numGeometries;
   int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
-#if HIGH_QUALITY == 1
+#if HIGH_QUALITY_BVH == 1
   scene_flags |= RTC_SCENE_HIGH_QUALITY;
 #endif
   int scene_aflags = RTC_INTERSECT1 | RTC_INTERSECT_STREAM | RTC_INTERPOLATE;
@@ -264,7 +264,6 @@ void renderTileStandard(int taskIndex,
 #endif
 
   /* shade stream of rays */
-#if SHADING == 1
   N = 0;
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
@@ -275,7 +274,7 @@ void renderTileStandard(int taskIndex,
     /* eyelight shading */
     Vec3fa color = Vec3fa(0.0f);
     if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
-#if RAYN_FLAGS == RTC_INTERSECT_COHERENT
+#if SIMPLE_SHADING == 1
       color = Vec3fa(abs(dot(normalize(ray.dir),normalize(ray.Ng))));
 #else    
       color = ambientOcclusionShading(x,y,ray);
@@ -286,7 +285,6 @@ void renderTileStandard(int taskIndex,
     unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
     pixels[y*width+x] = (b << 16) + (g << 8) + r;
   }
-#endif
 }
 
 /* task that renders a single screen tile */
@@ -312,20 +310,17 @@ extern "C" void device_init (char* cfg)
   rtcDeviceSetErrorFunction(g_device,error_handler);
 
   /* create scene */
-#if LOOP == 0
+#if INFINITE_BUILD_LOOP == 0
   g_scene = convertScene(g_ispc_scene);
 #else
-  //rtcDeleteDevice(g_device); g_device = nullptr;
   while(1)
   {
-    //g_device = rtcNewDevice(cfg);
     g_scene = convertScene(g_ispc_scene);
     double t0 = getSeconds();
     rtcCommit (g_scene);
     double t1 = getSeconds();
     PRINT(t1-t0);
     rtcDeleteScene (g_scene); g_scene = nullptr;
-    //rtcDeleteDevice(g_device); g_device = nullptr;
   }
 #endif
   rtcCommit (g_scene);

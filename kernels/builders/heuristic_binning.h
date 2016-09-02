@@ -130,11 +130,11 @@ namespace embree
       {
         /*! construct an invalid split by default */
         __forceinline BinSplit()
-          : sah(inf), dim(-1), pos(0), lcount(0) {}
+          : sah(inf), dim(-1), pos(0), data(0) {}
         
         /*! constructs specified split */
         __forceinline BinSplit(float sah, int dim, int pos, const BinMapping<BINS>& mapping)
-          : sah(sah), dim(dim), pos(pos), lcount(0), mapping(mapping) {}
+          : sah(sah), dim(dim), pos(pos), data(0), mapping(mapping) {}
         
         /*! tests if this split is valid */
         __forceinline bool valid() const { return dim != -1; }
@@ -151,7 +151,7 @@ namespace embree
         float sah;                //!< SAH cost of the split
         int dim;                  //!< split dimension
         int pos;                  //!< bin index for splitting
-        unsigned int lcount;      //!< primitives on the left side of the split 
+        unsigned int data;        //!< extra optional split data
         BinMapping<BINS> mapping; //!< mapping into bins
       };
     
