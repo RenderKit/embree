@@ -16,6 +16,7 @@
 
 #include "../kernels/common/default.h"
 #include "../include/embree2/rtcore.h"
+#include "../tutorials/common/math/random_sampler.h"
 
 namespace embree
 {
@@ -161,6 +162,11 @@ namespace embree
     return ray;
   }
 
+  __forceinline RTCRay fastMakeRay(const Vec3fa &org, RandomSampler &sampler)
+  {
+    return fastMakeRay(org, 2.0f*RandomSampler_get3D(sampler)-Vec3fa(1.0f));
+  }
+
   __forceinline void fastMakeRay(RTCRay &ray, const Vec3fa &org, const Vec3fa &dir) 
   {
     *(Vec3fa*)ray.org = org;
@@ -170,6 +176,11 @@ namespace embree
     ray.time = 0; 
     ray.mask = -1;
     ray.geomID = ray.primID = ray.instID = -1;
+  }
+
+  __forceinline void fastMakeRay(RTCRay &ray, const Vec3fa &org, RandomSampler &sampler)
+  {
+    fastMakeRay(ray, org, 2.0f*RandomSampler_get3D(sampler)-Vec3fa(1.0f));
   }
 
   __forceinline RTCRay fastMakeRay(Vec3f org, Vec3f dir, float tnear, float tfar) 

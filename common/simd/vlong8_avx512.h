@@ -193,6 +193,7 @@ namespace embree
   __forceinline const vlong8 operator <<( const vlong8& a, const vlong8& n ) { return _mm512_sllv_epi64(a, n); }
   __forceinline const vlong8 operator >>( const vlong8& a, const vlong8& n ) { return _mm512_srav_epi64(a, n); }
 
+  __forceinline const vlong8 sll ( const vlong8& a, const long b ) { return _mm512_slli_epi64(a, b); }
   __forceinline const vlong8 sra ( const vlong8& a, const long b ) { return _mm512_srai_epi64(a, b); }
   __forceinline const vlong8 srl ( const vlong8& a, const long b ) { return _mm512_srli_epi64(a, b); }
   

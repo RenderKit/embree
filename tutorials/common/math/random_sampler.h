@@ -25,7 +25,7 @@ struct RandomSampler
   unsigned int s;
 };
 
-inline unsigned int MurmurHash3_mix(unsigned int hash, unsigned int k)
+__forceinline unsigned int MurmurHash3_mix(unsigned int hash, unsigned int k)
 {
   const unsigned int c1 = 0xcc9e2d51;
   const unsigned int c2 = 0x1b873593;
@@ -44,7 +44,7 @@ inline unsigned int MurmurHash3_mix(unsigned int hash, unsigned int k)
   return hash;
 }
 
-inline unsigned int MurmurHash3_finalize(unsigned int hash)
+__forceinline unsigned int MurmurHash3_finalize(unsigned int hash)
 {
   hash ^= hash >> 16;
   hash *= 0x85ebca6b;
@@ -55,7 +55,7 @@ inline unsigned int MurmurHash3_finalize(unsigned int hash)
   return hash;
 }
 
-inline unsigned int LCG_next(unsigned int value)
+__forceinline unsigned int LCG_next(unsigned int value)
 {
   const unsigned int m = 1664525;
   const unsigned int n = 1013904223;
@@ -63,7 +63,7 @@ inline unsigned int LCG_next(unsigned int value)
   return value * m + n;
 }
 
-inline void RandomSampler_init(RandomSampler& self, int id)
+__forceinline void RandomSampler_init(RandomSampler& self, int id)
 {
   unsigned int hash = 0;
   hash = MurmurHash3_mix(hash, id);
@@ -72,7 +72,7 @@ inline void RandomSampler_init(RandomSampler& self, int id)
   self.s = hash;
 }
 
-inline void RandomSampler_init(RandomSampler& self, int pixelId, int sampleId)
+__forceinline void RandomSampler_init(RandomSampler& self, int pixelId, int sampleId)
 {
   unsigned int hash = 0;
   hash = MurmurHash3_mix(hash, pixelId);
@@ -82,40 +82,46 @@ inline void RandomSampler_init(RandomSampler& self, int pixelId, int sampleId)
   self.s = hash;
 }
 
-inline void RandomSampler_init(RandomSampler& self, int x, int y, int sampleId)
+__forceinline void RandomSampler_init(RandomSampler& self, int x, int y, int sampleId)
 {
   RandomSampler_init(self, x | (y << 16), sampleId);
 }
 
-inline int RandomSampler_getInt(RandomSampler& self) {
+__forceinline int RandomSampler_getInt(RandomSampler& self) {
   self.s = LCG_next(self.s); return self.s >> 1;
 }
 
-inline unsigned int RandomSampler_getUInt(RandomSampler& self) {
+__forceinline unsigned int RandomSampler_getUInt(RandomSampler& self) {
   self.s = LCG_next(self.s); return self.s;
 }
 
-inline float RandomSampler_getFloat(RandomSampler& self) {
+__forceinline float RandomSampler_getFloat(RandomSampler& self) {
   return (float)RandomSampler_getInt(self) * 4.656612873077392578125e-10f;
 }
 
-inline float RandomSampler_get1D(RandomSampler& self) {
+__forceinline float RandomSampler_get1D(RandomSampler& self) {
   return RandomSampler_getFloat(self);
 }
 
-inline Vec2f RandomSampler_get2D(RandomSampler& self)
+__forceinline Vec2f RandomSampler_get2D(RandomSampler& self)
 {
   const float u = RandomSampler_get1D(self);
   const float v = RandomSampler_get1D(self);
   return Vec2f(u,v);
 }
 
-inline Vec3fa RandomSampler_get3D(RandomSampler& self)
+__forceinline Vec3fa RandomSampler_get3D(RandomSampler& self)
 {
+  /*
   const float u = RandomSampler_get1D(self);
   const float v = RandomSampler_get1D(self);
   const float w = RandomSampler_get1D(self);
   return Vec3fa(u,v,w);
+  */
+  const int u = RandomSampler_getUInt(self);
+  const int v = RandomSampler_getUInt(self);
+  const int w = RandomSampler_getUInt(self);
+  return Vec3fa(srl(Vec3ia(u,v,w), 1)) * 4.656612873077392578125e-10f;
 }
 
 } // namespace embree

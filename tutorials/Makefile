@@ -3,7 +3,7 @@ ispc2cpp:
 	@./ispc2cpp.sh common/tutorial/tutorial_device.isph common/tutorial/tutorial_device.h
 	@./ispc2cpp.sh common/tutorial/tutorial_device.ispc common/tutorial/tutorial_device.cpp
 	@./ispc2cpp.sh common/core/differential_geometry.isph common/core/differential_geometry.h
-	@./ispc2cpp.sh common/math/random_sampler.isph common/math/random_sampler.h
+        #@./ispc2cpp.sh common/math/random_sampler.isph common/math/random_sampler.h # manual optimizations
 	@./ispc2cpp.sh common/math/sampling.isph common/math/sampling.h
 	@./ispc2cpp.sh common/tutorial/optics.isph common/tutorial/optics.h
 	@./ispc2cpp.sh common/lights/light.isph common/lights/light.h

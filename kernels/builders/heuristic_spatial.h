@@ -54,15 +54,39 @@ namespace embree
           const vint4 i = floori((vfloat4(p)-ofs)*scale);
           return clamp(i,vint4(0),vint4(BINS-1));
         }
+
+        __forceinline std::pair<vint4,vint4> bin(const BBox3fa& b) const
+        {
+#if defined(__AVX__)
+          const vfloat8 ofs8(ofs);
+          const vfloat8 scale8(scale);
+          const vint8 lu   = floori((vfloat8::loadu(&b)-ofs8)*scale8);
+          const vint8 c_lu = clamp(lu,vint8(zero),vint8(BINS-1));
+          return std::pair<vint4,vint4>(extract4<0>(c_lu),extract4<1>(c_lu));
+#else
+          const vint4 lower = floori((vfloat4(b.lower)-ofs)*scale);
+          const vint4 upper = floori((vfloat4(b.upper)-ofs)*scale);
+          const vint4 c_lower = clamp(lower,vint4(0),vint4(BINS-1));
+          const vint4 c_upper = clamp(upper,vint4(0),vint4(BINS-1));
+          return std::pair<vint4,vint4>(c_lower,c_upper);
+#endif
+        }
+
         
         /*! calculates left spatial position of bin */
-        __forceinline float pos(const int bin, const int dim) const {
+        __forceinline float pos(const size_t bin, const size_t dim) const {
           //return float(bin)/scale[dim]+ofs[dim];
           return float(bin)*inv_scale[dim]+ofs[dim];
         }
+
+        /*! calculates left spatial position of bin */
+        template<size_t N>
+        __forceinline vfloat<N> posN(const vfloat<N> bin, const size_t dim) const {
+          return bin*vfloat<N>(inv_scale[dim])+vfloat<N>(ofs[dim]);
+        }
         
         /*! returns true if the mapping is invalid in some dimension */
-        __forceinline bool invalid(const int dim) const {
+        __forceinline bool invalid(const size_t dim) const {
           return scale[dim] == 0.0f;
         }
         
@@ -76,15 +100,15 @@ namespace embree
       {
         /*! construct an invalid split by default */
         __forceinline SpatialBinSplit() 
-          : sah(inf), dim(-1), pos(0), left(-1), right(-1) {}
+          : sah(inf), dim(-1), pos(0), left(-1), right(-1), factor(1.0f) {}
         
         /*! constructs specified split */
         __forceinline SpatialBinSplit(float sah, int dim, int pos, const SpatialBinMapping<BINS>& mapping)
-          : sah(sah), dim(dim), pos(pos), left(-1), right(-1), mapping(mapping) {}
+          : sah(sah), dim(dim), pos(pos), left(-1), right(-1), factor(1.0f), mapping(mapping) {}
 
         /*! constructs specified split */
-        __forceinline SpatialBinSplit(float sah, int dim, int pos, int left, int right, const SpatialBinMapping<BINS>& mapping)
-          : sah(sah), dim(dim), pos(pos), left(left), right(right), mapping(mapping) {}
+        __forceinline SpatialBinSplit(float sah, int dim, int pos, int left, int right, float factor, const SpatialBinMapping<BINS>& mapping)
+          : sah(sah), dim(dim), pos(pos), left(left), right(right), factor(factor), mapping(mapping) {}
         
         /*! tests if this split is valid */
         __forceinline bool valid() const { return dim != -1; }
@@ -94,7 +118,7 @@ namespace embree
         
         /*! stream output */
         friend std::ostream& operator<<(std::ostream& cout, const SpatialBinSplit& split) {
-          return cout << "SpatialBinSplit { sah = " << split.sah << ", dim = " << split.dim << ", pos = " << split.pos << ", left = " << split.left << ", right = " << split.right << "}";
+          return cout << "SpatialBinSplit { sah = " << split.sah << ", dim = " << split.dim << ", pos = " << split.pos << ", left = " << split.left << ", right = " << split.right << ", factor = " << split.factor << "}";
         }
         
       public:
@@ -102,7 +126,8 @@ namespace embree
         int   dim;                 //!< split dimension
         int   pos;                 //!< split position
         int   left;                //!< number of elements on the left side
-        int   right;               //!< number of elements on the rightside
+        int   right;               //!< number of elements on the right side
+        float factor;              //!< factor splitting the extended range
         SpatialBinMapping<BINS> mapping; //!< mapping into bins
       };    
     
@@ -125,6 +150,32 @@ namespace embree
           numBegin[i] = numEnd[i] = 0;
         }
       }
+      
+      /*! adds binning data */
+      __forceinline void add(const size_t dim,
+                             const size_t beginID, 
+                             const size_t endID, 
+                             const size_t binID, 
+                             const BBox3fa &b) 
+      {
+        assert(beginID >= 0 && beginID < BINS);
+        assert(endID >= 0 && endID < BINS);
+        assert(binID >= 0 && binID < BINS);
+
+        numBegin[beginID][dim]++;
+        numEnd  [endID][dim]++;
+        bounds  [binID][dim].extend(b);        
+      }
+
+      /*! extends binning bounds */
+      __forceinline void extend(const size_t dim,
+                                const size_t binID, 
+                                const BBox3fa &b) 
+      {
+        assert(binID >= 0 && binID < BINS);
+        bounds  [binID][dim].extend(b);        
+      }
+
       
       /*! bins an array of triangles */
       template<typename SplitPrimitive>
@@ -151,9 +202,9 @@ namespace embree
             const vint4 bin0 = mapping.bin(prim.bounds().lower);
             const vint4 bin1 = mapping.bin(prim.bounds().upper);
             
-            for (int dim=0; dim<3; dim++) 
+            for (size_t dim=0; dim<3; dim++) 
             {
-              int bin;
+              size_t bin;
               PrimRef rest = prim;
               size_t l = bin0[dim];
               size_t r = bin1[dim];
@@ -167,12 +218,12 @@ namespace embree
                 continue;
               }
 
-              for (bin=bin0[dim]; bin<bin1[dim]; bin++) 
+              for (bin=(size_t)bin0[dim]; bin<(size_t)bin1[dim]; bin++) 
               {
                 const float pos = mapping.pos(bin+1,dim);
                 
                 PrimRef left,right;
-                splitPrimitive(rest,dim,pos,left,right);
+                splitPrimitive(rest,(int)dim,pos,left,right);
                 if (unlikely(left.bounds().empty())) l++;                
                 bounds[bin][dim].extend(left.bounds());
                 rest = right;
@@ -286,7 +337,7 @@ namespace embree
           return SpatialBinSplit<BINS>(inf,-1,0,mapping);
         
         /* return best found split */
-        return SpatialBinSplit<BINS>(bestSAH,bestDim,bestPos,bestlCount,bestrCount,mapping);
+        return SpatialBinSplit<BINS>(bestSAH,bestDim,bestPos,bestlCount,bestrCount,1.0f,mapping);
       }
       
     private:

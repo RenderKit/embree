@@ -84,6 +84,11 @@ namespace embree
 	end++;
       }
 
+      __forceinline void add(const BBox3fa& geomBounds_, const size_t i) {
+	CentGeomBBox3fa::extend(geomBounds_,center2(geomBounds_));
+	end+=i;
+      }
+
       __forceinline void add(const size_t i=1) {
 	end+=i;
       }

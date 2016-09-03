@@ -26,7 +26,7 @@
 #define RAYN_FLAGS RTC_INTERSECT_COHERENT
 //#define RAYN_FLAGS RTC_INTERSECT_INCOHERENT
 
-#define SHADING 1
+#define SIMPLE_SHADING 0
 
 extern uniform ISPCScene* uniform g_ispc_scene;
 
@@ -262,7 +262,6 @@ void renderTileStandard(uniform int taskIndex,
     rtcIntersectVM(g_scene,&context,&rays[i],1,sizeof(RTCRay));
 #endif
 
-#if SHADING == 1
   /* shade stream of rays */
   N = 0;
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
@@ -274,8 +273,11 @@ void renderTileStandard(uniform int taskIndex,
     /* eyelight shading */
     Vec3f color = make_Vec3f(0.0f);
     if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
+#if SIMPLE_SHADING == 1
       color = make_Vec3f(abs(dot(ray.dir,normalize(ray.Ng))));
-      //color = ambientOcclusionShading(x,y,ray);
+#else
+      color = ambientOcclusionShading(x,y,ray);
+#endif
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -283,7 +285,6 @@ void renderTileStandard(uniform int taskIndex,
     unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
     pixels[y*width+x] = (b << 16) + (g << 8) + r;
   }
-#endif
 }
 
 /* task that renders a single screen tile */
