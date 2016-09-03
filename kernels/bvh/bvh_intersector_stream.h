@@ -31,7 +31,6 @@ namespace embree
 {
   namespace isa 
   {
-
     /*! An item on the stack holds the node ID and distance of that node. */
     struct __aligned(8) StackItemMask
     {
@@ -39,22 +38,20 @@ namespace embree
       size_t ptr; 
     };
 
-    template<int types, int N, int K>
-      class BVHNNodeTraverserKHit
+    template<int types, int N, int Nx>
+      class BVHNNodeTraverserHit
     {
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
       typedef typename BVH::BaseNode BaseNode;
 
-
     public:
-
       template<class T>
       static __forceinline void traverseClosestHit(NodeRef& cur,
-                                                   size_t &m_trav_active,
-                                                   const vbool<K> &vmask,
-                                                   const vfloat<K>& tNear,
-                                                   const T * const tMask,
+                                                   size_t& m_trav_active,
+                                                   const vbool<Nx>& vmask,
+                                                   const vfloat<Nx>& tNear,
+                                                   const T* const tMask,
                                                    StackItemMask*& stackPtr)
       {
         size_t mask = movemask(vmask);
@@ -70,7 +67,7 @@ namespace embree
         assert(cur != BVH::emptyNode);
         if (unlikely(mask == 0)) return;
 
-        const unsigned int * const tNear_i = (unsigned int*)&tNear;
+        const unsigned int* const tNear_i = (unsigned int*)&tNear;
 
         /*! two children are hit, push far child, and continue with closer child */
         NodeRef c0 = cur; 
@@ -103,14 +100,14 @@ namespace embree
         }
         /*! slow path for more than two hits */
         const size_t hits = __popcnt(movemask(vmask));
-        const vint<K> dist_i = select(vmask, (asInt(tNear) & 0xfffffff8) | vint<K>(step), 0x7fffffff);
+        const vint<Nx> dist_i = select(vmask, (asInt(tNear) & 0xfffffff8) | vint<Nx>(step), 0x7fffffff);
 #if defined(__AVX512F__)
         const vint8 tmp = _mm512_castsi512_si256(dist_i);
-        const vint<K> dist_i_sorted = sortNetwork(tmp);
+        const vint<Nx> dist_i_sorted = sortNetwork(tmp);
 #else
-        const vint<K> dist_i_sorted = sortNetwork(dist_i);
+        const vint<Nx> dist_i_sorted = sortNetwork(dist_i);
 #endif
-        const vint<K> sorted_index = dist_i_sorted & 7;
+        const vint<Nx> sorted_index = dist_i_sorted & 7;
 
         size_t i = hits-1;
         for (;;)
@@ -132,9 +129,9 @@ namespace embree
 
       template<class T, class M>
       static __forceinline void traverseAnyHit(NodeRef& cur,
-                                               size_t &m_trav_active,
-                                               const M &vmask,
-                                               const T * const tMask,
+                                               size_t& m_trav_active,
+                                               const M& vmask,
+                                               const T* const tMask,
                                                StackItemMask*& stackPtr)
       {
         size_t mask = movemask(vmask);
@@ -189,14 +186,12 @@ namespace embree
       typedef typename BVH::NodeRef NodeRef;
       typedef typename BVH::BaseNode BaseNode;
 
-
     public:
-
       template<class T>
       static __forceinline void traverseAnyHit(NodeRef& cur,
-                                               size_t &m_trav_active,
-                                               const vbool<K> &vmask,
-                                               const T * const tMask,
+                                               size_t& m_trav_active,
+                                               const vbool<K>& vmask,
+                                               const T* const tMask,
                                                StackItemMaskCoherent*& stackPtr)
       {
         const NodeRef parent = cur;
@@ -237,10 +232,10 @@ namespace embree
 
       template<class T>
       static __forceinline void traverseClosestHit(NodeRef& cur,
-                                                   size_t &m_trav_active,
-                                                   const vbool<K> &vmask,
+                                                   size_t& m_trav_active,
+                                                   const vbool<K>& vmask,
                                                    const vfloat<K>& tNear,
-                                                   const T * const tMask,
+                                                   const T* const tMask,
                                                    StackItemMaskCoherent*& stackPtr)
       {
         const NodeRef parent = cur;
@@ -257,7 +252,7 @@ namespace embree
         assert(cur != BVH::emptyNode);
         if (unlikely(mask == 0)) return;
 
-        const unsigned int * const tNear_i = (unsigned int*)&tNear;
+        const unsigned int* const tNear_i = (unsigned int*)&tNear;
 
         /*! two children are hit, push far child, and continue with closer child */
         NodeRef c0 = cur; 
@@ -335,7 +330,6 @@ namespace embree
     // ==================================================================================================
     // ==================================================================================================
 
-
     template<bool robust>
     class __aligned(32) RayContext 
     {
@@ -376,9 +370,7 @@ namespace embree
       __forceinline float tfar() const {
         return org_rdir.w;
       }
-
     };
-
 
 
     /*! BVH ray stream intersector. */
@@ -403,26 +395,26 @@ namespace embree
       struct NearFarPreCompute
       {
 #if defined(__AVX512F__)
-        vint<K> permX,permY,permZ;
+        vint<K> permX, permY, permZ;
 #endif
-        size_t nearX,nearY,nearZ;
-        size_t farX,farY,farZ;
+        size_t nearX, nearY, nearZ;
+        size_t farX, farY, farZ;
 
-        __forceinline NearFarPreCompute(const Vec3fa &dir)
+        __forceinline NearFarPreCompute(const Vec3fa& dir)
         {
 #if defined(__AVX512F__)
-        const vint<K> id( step );
-        const vint<K> id2 = align_shift_right<K/2>(id,id);
-        permX = select(vfloat<K>(dir.x) >= 0.0f,id,id2);
-        permY = select(vfloat<K>(dir.y) >= 0.0f,id,id2);
-        permZ = select(vfloat<K>(dir.z) >= 0.0f,id,id2);
+          const vint<K> id(step);
+          const vint<K> id2 = align_shift_right<K/2>(id, id);
+          permX = select(vfloat<K>(dir.x) >= 0.0f, id, id2);
+          permY = select(vfloat<K>(dir.y) >= 0.0f, id, id2);
+          permZ = select(vfloat<K>(dir.z) >= 0.0f, id, id2);
 #endif
-        nearX = (dir.x < 0.0f) ? 1*sizeof(vfloat<N>) : 0*sizeof(vfloat<N>);
-        nearY = (dir.y < 0.0f) ? 3*sizeof(vfloat<N>) : 2*sizeof(vfloat<N>);
-        nearZ = (dir.z < 0.0f) ? 5*sizeof(vfloat<N>) : 4*sizeof(vfloat<N>);
-        farX  = nearX ^ sizeof(vfloat<N>);
-        farY  = nearY ^ sizeof(vfloat<N>);
-        farZ  = nearZ ^ sizeof(vfloat<N>);
+          nearX = (dir.x < 0.0f) ? 1*sizeof(vfloat<N>) : 0*sizeof(vfloat<N>);
+          nearY = (dir.y < 0.0f) ? 3*sizeof(vfloat<N>) : 2*sizeof(vfloat<N>);
+          nearZ = (dir.z < 0.0f) ? 5*sizeof(vfloat<N>) : 4*sizeof(vfloat<N>);
+          farX  = nearX ^ sizeof(vfloat<N>);
+          farY  = nearY ^ sizeof(vfloat<N>);
+          farZ  = nearZ ^ sizeof(vfloat<N>);
         }
       };
 
@@ -430,14 +422,16 @@ namespace embree
       // =============================================================================================
       // =============================================================================================
 
-      struct Packet {
+      struct Packet
+      {
         Vec3vfK rdir;
         Vec3vfK org_rdir;
         vfloat<K> min_dist;
         vfloat<K> max_dist;
       };
 
-      struct Frusta {
+      struct Frusta
+      {
         Vec3fa min_rdir; 
         Vec3fa max_rdir; 
         Vec3fa min_org_rdir; 
@@ -446,7 +440,7 @@ namespace embree
         float max_dist;
       };
 
-      __forceinline static size_t initPacketsAndFrusta(RayK<K> **input_packets, const size_t numOctantRays, Packet *const packet, Frusta &frusta)
+      __forceinline static size_t initPacketsAndFrusta(RayK<K>** inputPackets, const size_t numOctantRays, Packet* const packet, Frusta& frusta)
       {
         const size_t numPackets = (numOctantRays+K-1)/K;
 
@@ -458,30 +452,30 @@ namespace embree
         vfloat<K> tmp_max_dist(neg_inf);
 
         size_t m_active = 0;
-        for (size_t i=0; i<numPackets; i++) 
+        for (size_t i = 0; i < numPackets; i++)
         {
-          const vfloat<K> tnear  = input_packets[i]->tnear;
-          const vfloat<K> tfar   = input_packets[i]->tfar;
+          const vfloat<K> tnear  = inputPackets[i]->tnear;
+          const vfloat<K> tfar   = inputPackets[i]->tfar;
           const vbool<K> m_valid = (tnear <= tfar) & (tnear >= 0.0f);
 
           m_active |= (size_t)movemask(m_valid) << (i*K);
-          packet[i].min_dist = max(tnear,0.0f);
-          packet[i].max_dist = select(m_valid,tfar,neg_inf);
-          tmp_min_dist = min(tmp_min_dist,packet[i].min_dist);
-          tmp_max_dist = max(tmp_max_dist,packet[i].max_dist);        
+          packet[i].min_dist = max(tnear, 0.0f);
+          packet[i].max_dist = select(m_valid, tfar, neg_inf);
+          tmp_min_dist = min(tmp_min_dist, packet[i].min_dist);
+          tmp_max_dist = max(tmp_max_dist, packet[i].max_dist);
 
-          const Vec3vfK& org     = input_packets[i]->org;
-          const Vec3vfK& dir     = input_packets[i]->dir;
+          const Vec3vfK& org     = inputPackets[i]->org;
+          const Vec3vfK& dir     = inputPackets[i]->dir;
           const Vec3vfK rdir     = rcp_safe(dir);
           const Vec3vfK org_rdir = org * rdir;
         
           packet[i].rdir     = rdir;
           packet[i].org_rdir = org_rdir;
 
-          tmp_min_rdir = min(tmp_min_rdir,select(m_valid,rdir,Vec3vfK(pos_inf)));
-          tmp_max_rdir = max(tmp_max_rdir,select(m_valid,rdir,Vec3vfK(neg_inf)));
-          tmp_min_org  = min(tmp_min_org ,select(m_valid,org ,Vec3vfK(pos_inf)));
-          tmp_max_org  = max(tmp_max_org ,select(m_valid,org ,Vec3vfK(neg_inf)));
+          tmp_min_rdir = min(tmp_min_rdir, select(m_valid,rdir, Vec3vfK(pos_inf)));
+          tmp_max_rdir = max(tmp_max_rdir, select(m_valid,rdir, Vec3vfK(neg_inf)));
+          tmp_min_org  = min(tmp_min_org , select(m_valid,org , Vec3vfK(pos_inf)));
+          tmp_max_org  = max(tmp_max_org , select(m_valid,org , Vec3vfK(neg_inf)));
         }
 
         m_active &= (numOctantRays == 64) ? (size_t)-1 : (((size_t)1 << numOctantRays)-1);
@@ -505,11 +499,11 @@ namespace embree
         const float frusta_min_dist = reduce_min(tmp_min_dist);
         const float frusta_max_dist = reduce_max(tmp_max_dist);
 
-        const Vec3fa frusta_min_rdir = select(ge_mask(reduced_min_rdir,Vec3fa(zero)),reduced_min_rdir,reduced_max_rdir);
-        const Vec3fa frusta_max_rdir = select(ge_mask(reduced_min_rdir,Vec3fa(zero)),reduced_max_rdir,reduced_min_rdir);
+        const Vec3fa frusta_min_rdir = select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_min_rdir, reduced_max_rdir);
+        const Vec3fa frusta_max_rdir = select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_max_rdir, reduced_min_rdir);
 
-        const Vec3fa frusta_min_org_rdir = frusta_min_rdir*select(ge_mask(reduced_min_rdir,Vec3fa(zero)),reduced_max_origin,reduced_min_origin);
-        const Vec3fa frusta_max_org_rdir = frusta_max_rdir*select(ge_mask(reduced_min_rdir,Vec3fa(zero)),reduced_min_origin,reduced_max_origin);
+        const Vec3fa frusta_min_org_rdir = frusta_min_rdir * select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_max_origin, reduced_min_origin);
+        const Vec3fa frusta_max_org_rdir = frusta_max_rdir * select(ge_mask(reduced_min_rdir, Vec3fa(zero)), reduced_min_origin, reduced_max_origin);
 
         frusta.min_rdir     = frusta_min_rdir;
         frusta.max_rdir     = frusta_max_rdir;
@@ -521,32 +515,32 @@ namespace embree
         return m_active;
       }
 
-      __forceinline static size_t intersectNodePacket(const Packet *const packet,
-                                                      const vfloat<K> &minX,
-                                                      const vfloat<K> &minY,
-                                                      const vfloat<K> &minZ,
-                                                      const vfloat<K> &maxX,
-                                                      const vfloat<K> &maxY,
-                                                      const vfloat<K> &maxZ,
+      __forceinline static size_t intersectNodePacket(const Packet* const packet,
+                                                      const vfloat<K>& minX,
+                                                      const vfloat<K>& minY,
+                                                      const vfloat<K>& minZ,
+                                                      const vfloat<K>& maxX,
+                                                      const vfloat<K>& maxY,
+                                                      const vfloat<K>& maxZ,
                                                       const size_t m_active)
       {
         assert(m_active);
         const size_t startPacketID = __bsf(m_active) / K;
         const size_t endPacketID   = __bsr(m_active) / K;
         size_t m_trav_active = 0;
-        for (size_t i=startPacketID;i<=endPacketID;i++)
+        for (size_t i = startPacketID; i <= endPacketID; i++)
         {
           //STAT3(normal.trav_nodes,1,1,1);                          
-          const Packet &p = packet[i]; 
+          const Packet& p = packet[i];
           const vfloat<K> tminX = msub(minX, p.rdir.x, p.org_rdir.x);
           const vfloat<K> tminY = msub(minY, p.rdir.y, p.org_rdir.y);
           const vfloat<K> tminZ = msub(minZ, p.rdir.z, p.org_rdir.z);
           const vfloat<K> tmaxX = msub(maxX, p.rdir.x, p.org_rdir.x);
           const vfloat<K> tmaxY = msub(maxY, p.rdir.y, p.org_rdir.y);
           const vfloat<K> tmaxZ = msub(maxZ, p.rdir.z, p.org_rdir.z);
-          const vfloat<K> tmin  = maxi(maxi(tminX,tminY),maxi(tminZ,p.min_dist)); 
-          const vfloat<K> tmax  = mini(mini(tmaxX,tmaxY),mini(tmaxZ,p.max_dist)); 
-          const vbool<K> vmask   = tmin <= tmax;  
+          const vfloat<K> tmin  = maxi(maxi(tminX, tminY), maxi(tminZ, p.min_dist));
+          const vfloat<K> tmax  = mini(mini(tmaxX, tmaxY), mini(tmaxZ, p.max_dist));
+          const vbool<K> vmask  = tmin <= tmax;
           const size_t m_hit = movemask(vmask);
           m_trav_active |= m_hit << (i*K);
         } 
@@ -554,20 +548,20 @@ namespace embree
       }
 
       __forceinline static size_t traverseCoherentStream(const size_t m_trav_active,
-                                                         Packet *const packet,
+                                                         Packet* const packet,
                                                          const Node* __restrict__ const node,
-                                                         const NearFarPreCompute &pc,
-                                                         const Frusta &frusta,
-                                                         size_t *const maskK,
-                                                         vfloat<K> &dist)
+                                                         const NearFarPreCompute& pc,
+                                                         const Frusta& frusta,
+                                                         size_t* const maskK,
+                                                         vfloat<K>& dist)
       {
         /* interval-based culling test */
-        const vfloat<K> bminX = vfloat<K>(*(const vfloat<N>*)((const char*)&node->lower_x+pc.nearX));
-        const vfloat<K> bminY = vfloat<K>(*(const vfloat<N>*)((const char*)&node->lower_x+pc.nearY));
-        const vfloat<K> bminZ = vfloat<K>(*(const vfloat<N>*)((const char*)&node->lower_x+pc.nearZ));
-        const vfloat<K> bmaxX = vfloat<K>(*(const vfloat<N>*)((const char*)&node->lower_x+pc.farX));
-        const vfloat<K> bmaxY = vfloat<K>(*(const vfloat<N>*)((const char*)&node->lower_x+pc.farY));
-        const vfloat<K> bmaxZ = vfloat<K>(*(const vfloat<N>*)((const char*)&node->lower_x+pc.farZ));
+        const vfloat<K> bminX = vfloat<K>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.nearX));
+        const vfloat<K> bminY = vfloat<K>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.nearY));
+        const vfloat<K> bminZ = vfloat<K>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.nearZ));
+        const vfloat<K> bmaxX = vfloat<K>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.farX));
+        const vfloat<K> bmaxY = vfloat<K>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.farY));
+        const vfloat<K> bmaxZ = vfloat<K>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.farZ));
 
         const vfloat<K> fminX = msub(bminX, vfloat<K>(frusta.min_rdir.x), vfloat<K>(frusta.min_org_rdir.x));
         const vfloat<K> fminY = msub(bminY, vfloat<K>(frusta.min_rdir.y), vfloat<K>(frusta.min_org_rdir.y));
@@ -575,8 +569,8 @@ namespace embree
         const vfloat<K> fmaxX = msub(bmaxX, vfloat<K>(frusta.max_rdir.x), vfloat<K>(frusta.max_org_rdir.x));
         const vfloat<K> fmaxY = msub(bmaxY, vfloat<K>(frusta.max_rdir.y), vfloat<K>(frusta.max_org_rdir.y));
         const vfloat<K> fmaxZ = msub(bmaxZ, vfloat<K>(frusta.max_rdir.z), vfloat<K>(frusta.max_org_rdir.z));
-        const vfloat<K> fmin  = maxi(maxi(fminX,fminY),maxi(fminZ,frusta.min_dist)); 
-        const vfloat<K> fmax  = mini(mini(fmaxX,fmaxY),mini(fmaxZ,frusta.max_dist)); 
+        const vfloat<K> fmin  = maxi(maxi(fminX, fminY), maxi(fminZ, frusta.min_dist));
+        const vfloat<K> fmax  = mini(mini(fmaxX, fmaxY), mini(fmaxZ, frusta.max_dist));
         const vbool<K> vmask_node_hit = fmin <= fmax;  
         //STAT3(normal.trav_nodes,1,1,1);                          
 
@@ -595,8 +589,8 @@ namespace embree
         const vfloat<K> rmaxX = msub(bmaxX, vfloat<K>(p.rdir.x[first_rayID]), vfloat<K>(p.org_rdir.x[first_rayID]));
         const vfloat<K> rmaxY = msub(bmaxY, vfloat<K>(p.rdir.y[first_rayID]), vfloat<K>(p.org_rdir.y[first_rayID]));
         const vfloat<K> rmaxZ = msub(bmaxZ, vfloat<K>(p.rdir.z[first_rayID]), vfloat<K>(p.org_rdir.z[first_rayID]));
-        const vfloat<K> rmin  = maxi(maxi(rminX,rminY),maxi(rminZ,p.min_dist[first_rayID])); 
-        const vfloat<K> rmax  = mini(mini(rmaxX,rmaxY),mini(rmaxZ,p.max_dist[first_rayID])); 
+        const vfloat<K> rmin  = maxi(maxi(rminX, rminY), maxi(rminZ, p.min_dist[first_rayID]));
+        const vfloat<K> rmax  = mini(mini(rmaxX, rmaxY), mini(rmaxZ, p.max_dist[first_rayID]));
 
         const vbool<K> vmask_first_hit = rmin <= rmax;  
 
@@ -604,7 +598,7 @@ namespace embree
 
         // ==================
           
-        dist = select(vmask_first_hit,rmin,fmin);            
+        dist = select(vmask_first_hit, rmin, fmin);
         //dist = fmin;            
 
         size_t m_node = m_node_hit ^ (m_first_hit /*  & m_leaf */);
@@ -617,31 +611,27 @@ namespace embree
           const vfloat<K> maxX = vfloat<K>(bmaxX[b]);
           const vfloat<K> maxY = vfloat<K>(bmaxY[b]);
           const vfloat<K> maxZ = vfloat<K>(bmaxZ[b]);
-          const size_t m_current = m_trav_active & intersectNodePacket(packet,minX,minY,minZ,maxX,maxY,maxZ,m_trav_active);
+          const size_t m_current = m_trav_active & intersectNodePacket(packet, minX, minY, minZ, maxX, maxY, maxZ, m_trav_active);
           m_node_hit ^= m_current ? (size_t)0 : ((size_t)1 << b);
           maskK[b] = m_current;
         }
         return m_node_hit;
       }
       
-
       // =============================================================================================
       // =============================================================================================
       // =============================================================================================
-
 
       static const size_t stackSizeChunk  = N*BVH::maxDepth+1;
       static const size_t stackSizeSingle = 1+(N-1)*BVH::maxDepth;
 
-      static void intersect_coherent_soa(BVH* bvh, RayK<K> **input_rays, size_t numValidStreams, const RTCIntersectContext* context);
+      static void intersectCoherentSOA(BVH* bvh, RayK<K>** inputRays, size_t numValidStreams, const RTCIntersectContext* context);
 
-      static void occluded_coherent_soa(BVH* bvh, RayK<K> **input_rays, size_t numValidStreams, const RTCIntersectContext* context);
+      static void occludedCoherentSOA(BVH* bvh, RayK<K>** inputRays, size_t numValidStreams, const RTCIntersectContext* context);
       
     public:
-      static void intersect(BVH* bvh, Ray **ray, size_t numRays, const RTCIntersectContext* context);
-      static void occluded (BVH* bvh, Ray **ray, size_t numRays, const RTCIntersectContext* context);
+      static void intersect(BVH* bvh, Ray** ray, size_t numRays, const RTCIntersectContext* context);
+      static void occluded (BVH* bvh, Ray** ray, size_t numRays, const RTCIntersectContext* context);
     };
-
-
   }
 }
