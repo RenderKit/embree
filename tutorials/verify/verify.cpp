@@ -3013,13 +3013,13 @@ namespace embree
       return true;
     }
 
-    virtual void render_block(unsigned int i, unsigned int n) = 0;
+    virtual void render_block(size_t i, size_t n) = 0;
 
     float benchmark(VerifyApplication* state)
     {
       double t0 = getSeconds();
-      parallel_for(N/dN, [&](unsigned int i) {
-        render_block(i*dN, dN);
+      parallel_for((size_t)N/dN, [&](size_t i) {
+          render_block(i*dN, dN);
       });
       double t1 = getSeconds();
       return 1E-6f * (float)(N)/float(t1-t0);
@@ -3083,7 +3083,7 @@ namespace embree
       return true;
     }
 
-    void render_block(unsigned int i, unsigned int)
+    void render_block(size_t i, size_t)
     {
       float rcpWidth = 1.0f/width;
       float rcpHeight = 1.0/height;
@@ -3254,7 +3254,7 @@ namespace embree
       return true;
     }
 
-    void render_block(unsigned int i, unsigned int dn)
+    void render_block(size_t i, size_t dn)
     {
       RTCIntersectContext context;
       context.flags = ((ivariant & VARIANT_COHERENT_INCOHERENT_MASK) == VARIANT_COHERENT) ? RTC_INTERSECT_COHERENT :  RTC_INTERSECT_INCOHERENT;
@@ -4170,8 +4170,10 @@ namespace embree
     _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
     _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
 
+#if defined(TASKING_TBB)
     /* initialize the task scheduler */
     tbb::task_scheduler_init tbb_threads;
+#endif
 
     /* parse command line options */
     parseCommandLine(argc,argv);
