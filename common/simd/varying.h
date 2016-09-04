@@ -91,8 +91,7 @@ namespace embree
   template<int N, int N2 = VSIZEX>
   struct vextend
   {
-//#if defined(__AVX512F__) && !defined(__AVX512VL__) // KNL
-#if defined(__AVX512F__)
+#if defined(__AVX512F__) && !defined(__AVX512VL__) // KNL
     /* use 16-wide SIMD calculations on KNL even for 4 and 8 wide SIMD */
     static const int size = (N2 == VSIZEX) ? VSIZEX : N;
     #define SIMD_MODE(N) N, 16
