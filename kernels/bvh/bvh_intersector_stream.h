@@ -31,7 +31,7 @@ namespace embree
 {
   namespace isa 
   {
-    /*! An item on the stack holds the node ID and distance of that node. */
+    /*! An item on the stack holds the node ID and the active mask for that node. */
     struct __aligned(8) StackItemMask
     {
       size_t mask;
@@ -98,6 +98,7 @@ namespace embree
             return; 
           }
         }
+
         /*! slow path for more than two hits */
         const size_t hits = __popcnt(movemask(vmask));
         const vint<Nx> dist_i = select(vmask, (asInt(tNear) & 0xfffffff8) | vint<Nx>(step), 0x7fffffff);
@@ -291,6 +292,7 @@ namespace embree
             return; 
           }
         }
+
         /*! slow path for more than two hits */
         const size_t hits = __popcnt(movemask(vmask));
         const vint<K> dist_i = select(vmask, (asInt(tNear) & 0xfffffff8) | vint<K>(step), 0x7fffffff);
@@ -374,14 +376,14 @@ namespace embree
 
 
     /*! BVH ray stream intersector. */
-    template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
+    template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
       class BVHNStreamIntersector
     {
       /* shortcuts for frequently used types */
       typedef typename PrimitiveIntersector::Precalculations Precalculations;
       typedef typename PrimitiveIntersector::Primitive Primitive;
       typedef BVHN<N> BVH;
-      typedef RayContext<robust> RContext;
+      typedef RayContext<robust> RayCtx;
       typedef typename BVH::NodeRef NodeRef;
       typedef typename BVH::BaseNode BaseNode;
       typedef typename BVH::Node Node;
