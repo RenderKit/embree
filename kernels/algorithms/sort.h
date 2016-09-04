@@ -242,8 +242,8 @@ namespace embree
       
     private:
       
-      void radixIteration(Ty* __restrict const src, 
-			  Ty* __restrict const dst, 
+      void radixIteration(Ty* __restrict src, 
+			  Ty* __restrict dst, 
 			  const size_t startID, 
 			  const size_t endID, 
 			  const size_t threadIndex, 
