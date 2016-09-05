@@ -241,7 +241,6 @@ namespace embree
     template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
     void BVHNStreamIntersector<N, Nx, K, types, robust, PrimitiveIntersector>::intersectCoherentSOA(BVH* __restrict__ bvh, RayK<K>** inputRays, size_t numOctantRays, const RTCIntersectContext* context)
     {      
-#if defined(__AVX__) 
       __aligned(64) StackItemMaskCoherent stack[stackSizeSingle];  //!< stack of nodes
 
       RayK<K>** __restrict__ inputPackets = (RayK<K>**)inputRays;
@@ -338,13 +337,11 @@ namespace embree
         } while(bits);
 
       } // traversal + intersection
-#endif
     }
 
     template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
     void BVHNStreamIntersector<N, Nx, K, types, robust, PrimitiveIntersector>::occludedCoherentSOA(BVH* __restrict__ bvh, RayK<K>** inputRays, size_t numOctantRays, const RTCIntersectContext* context)
     {      
-#if defined(__AVX__) 
       __aligned(64) StackItemMaskCoherent stack[stackSizeSingle];  //!< stack of nodes
 
       RayK<K>** __restrict__ inputPackets = (RayK<K>**)inputRays;
@@ -447,7 +444,6 @@ namespace embree
         } 
 
       } // traversal + intersection
-#endif
     }
     
     // =====================================================================================================
