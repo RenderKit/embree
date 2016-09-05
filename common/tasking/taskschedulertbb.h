@@ -43,13 +43,7 @@
 #include "tbb/tbb.h"
 
 namespace embree
-{
-#  define SPAWN_BEGIN tbb::task_group __internal_task_group
-#  define SPAWN(closure) __internal_task_group.run(closure)
-#  define SPAWN_END __internal_task_group.wait();                       \
-  if (tbb::task::self().is_cancelled())                                 \
-    throw std::runtime_error("task group cancelled");
-  
+{  
   struct TaskScheduler
   {
     /*! initializes the task scheduler */

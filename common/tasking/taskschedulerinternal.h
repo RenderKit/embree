@@ -43,11 +43,6 @@
 
 namespace embree
 {
-#  define SPAWN_BEGIN 
-#  define SPAWN(closure) TaskScheduler::spawn(closure)
-#  define SPAWN_END if (!TaskScheduler::wait())      \
-      throw std::runtime_error("task cancelled");
-
   struct TaskScheduler : public RefCount
   {
     ALIGNED_STRUCT;

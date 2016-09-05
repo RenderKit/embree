@@ -244,24 +244,12 @@ namespace embree
           if (current.size() > SINGLE_THREADED_THRESHOLD) 
           {
             /*! parallel_for is faster than spawing sub-tasks */
-#if defined(TASKING_TBB)
             parallel_for(size_t(0), numChildren, [&] (const range<size_t>& r) {
                 for (size_t i=r.begin(); i<r.end(); i++) {
                   values[i] = recurse(children[i],nullptr,true); 
                   _mm_mfence(); // to allow non-temporal stores during build
                 }                
               });
-#else
-
-            SPAWN_BEGIN;
-            //for (size_t i=0; i<numChildren; i++) 
-            for (ssize_t i=numChildren-1; i>=0; i--)
-              SPAWN(([&,i] { 
-                    values[i] = recurse(children[i],nullptr,true); 
-                    _mm_mfence(); // to allow non-temporal stores during build
-                  }));
-            SPAWN_END;
-#endif            
             /* perform reduction */
             return updateNode(node,values,numChildren);
           }

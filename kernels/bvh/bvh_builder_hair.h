@@ -251,13 +251,12 @@ namespace embree
           /* spawn tasks or ... */
           if (pinfo.size() > SINGLE_THREADED_THRESHOLD)
           {
-            SPAWN_BEGIN;
-            for (size_t i=0; i<numChildren; i++) 
-              SPAWN(([&,i] { 
-                    node->child(i) = recurse(depth+1,children[i],nullptr,true); 
-                    _mm_mfence(); // to allow non-temporal stores during build
-                  }));
-            SPAWN_END;
+            parallel_for(size_t(0), numChildren, [&] (const range<size_t>& r) {
+                for (size_t i=r.begin(); i<r.end(); i++) {
+                  node->child(i) = recurse(depth+1,children[i],nullptr,true); 
+                  _mm_mfence(); // to allow non-temporal stores during build
+                }                
+              });
           }
           /* ... continue sequential */
           else {
@@ -275,13 +274,13 @@ namespace embree
           /* spawn tasks or ... */
           if (pinfo.size() > SINGLE_THREADED_THRESHOLD)
           {
-            SPAWN_BEGIN;
-            for (size_t i=0; i<numChildren; i++) 
-              SPAWN(([&,i] { 
+
+            parallel_for(size_t(0), numChildren, [&] (const range<size_t>& r) {
+                for (size_t i=r.begin(); i<r.end(); i++) {
                     node->child(i) = recurse(depth+1,children[i],nullptr,true);
                     _mm_mfence(); // to allow non-temporal stores during build
-                  }));
-            SPAWN_END;
+                }                
+              });
           }
           /* ... continue sequentially */
           else

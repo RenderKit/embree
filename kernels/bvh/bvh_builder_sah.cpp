@@ -661,6 +661,8 @@ namespace embree
 
                 for (size_t dim=0; dim<3; dim++) 
                 {
+                  if (unlikely(mapping.invalid(dim))) { continue; }
+
                   size_t bin;
                   size_t l = bin0[dim];
                   size_t r = bin1[dim];
