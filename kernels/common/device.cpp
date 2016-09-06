@@ -41,6 +41,10 @@
 #  include "../common/tasking/taskschedulertbb.h"
 #endif
 
+#if defined(TASKING_PPL)
+#  include "../common/tasking/taskschedulerppl.h"
+#endif
+
 namespace embree
 {
   /*! some global variables that can be set via rtcSetParameter1i for debugging purposes */

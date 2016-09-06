@@ -14,16 +14,35 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
+#include "taskschedulerppl.h"
 
-#if defined(TASKING_INTERNAL)
-#  include "taskschedulerinternal.h"
-#endif
-      
-#if defined(TASKING_TBB)
-#  include "taskschedulertbb.h"
-#endif
-
-#if defined(TASKING_PPL)
-#  include "taskschedulerppl.h"
-#endif
+namespace embree
+{
+  bool g_ppl_threads_initialized = false;
+    
+  size_t TaskScheduler::g_numThreads = 0;
+  
+  void TaskScheduler::create(size_t numThreads, bool set_affinity)
+  {
+    /* first terminate threads in case we configured them */
+    if (g_ppl_threads_initialized) {
+ 
+      g_ppl_threads_initialized = false;
+    }
+    
+    /* now either keep default settings or configure number of threads */
+    if (numThreads == 0) 
+    {
+      g_ppl_threads_initialized = false;
+      g_numThreads = 1;
+    } else {
+      g_ppl_threads_initialized = true;
+      g_numThreads = numThreads;
+    }
+  }
+  
+  void TaskScheduler::destroy()
+  {
+   
+  }
+}

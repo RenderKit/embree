@@ -65,12 +65,24 @@ namespace embree
     }
     return parallel_reduce_internal(taskCount,first,last,minStepSize,identity,func,reduction);
 
-#else 
+#elif defined(TASKING_TBB)
     return tbb::parallel_reduce(tbb::blocked_range<Index>(first,last,minStepSize),identity,
       [&](const tbb::blocked_range<Index>& r, const Value& start) { return reduction(start,func(range<Index>(r.begin(),r.end()))); },
       reduction);
     if (tbb::task::self().is_cancelled())
       throw std::runtime_error("task cancelled");
+#else // TASKING_PPL
+	  //concurrency::combinable<Value> res;
+
+	 // concurrency::parallel_for(first, last, minStepSize, [&](Index i) {
+		//  res.local() = reduction(func(i), res.local());
+	  //});
+	  //return res.combine(reduction);
+	  //PRINT("PPL PARALLEL_REDUCE");
+	  Value res = identity;
+	  for (Index i = first; i < last; i++)
+		  res = reduction(res, func(range<Index>(i, i + 1)));
+	  return res;
 #endif
   }
 

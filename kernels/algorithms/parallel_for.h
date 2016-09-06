@@ -37,12 +37,16 @@ namespace embree
         throw std::runtime_error("task cancelled");
     }
 
-#else 
+#elif defined(TASKING_TBB)
     tbb::parallel_for(Index(0),N,Index(1),[&](Index i) { 
 	func(i);
       });
     if (tbb::task::self().is_cancelled())
       throw std::runtime_error("task cancelled");
+#else // TASKING_PPL
+	  concurrency::parallel_for(Index(0),N,Index(1),[&](Index i) { 
+		  func(i);
+	});
 #endif
   }
 
@@ -71,12 +75,18 @@ namespace embree
     TaskScheduler::spawn(first,last,minStepSize,func);
     if (!TaskScheduler::wait())
         throw std::runtime_error("task cancelled");
-#else
+#elif defined(TASKING_TBB)
     tbb::parallel_for(tbb::blocked_range<Index>(first,last,minStepSize),[&](const tbb::blocked_range<Index>& r) { 
       func(range<Index>(r.begin(),r.end()));
       });
     if (tbb::task::self().is_cancelled())
       throw std::runtime_error("task cancelled");
+#else  // TASKING_PPL
+	//FIXME optimize
+	//PRINT("PPL PARALLEL_FOR");
+	concurrency::parallel_for(first,last,minStepSize,[&](Index i) { 
+		func(i);
+	});	
 #endif
   }
 

@@ -45,10 +45,12 @@ namespace embree
       progressInterface(this), progress_monitor_function(nullptr), progress_monitor_ptr(nullptr), progress_monitor_counter(0), 
       numIntersectionFilters1(0), numIntersectionFilters4(0), numIntersectionFilters8(0), numIntersectionFilters16(0), numIntersectionFiltersN(0)
   {
-#if defined(TASKING_INTERNAL)
+#if defined(TASKING_INTERNAL) 
     scheduler = nullptr;
-#else
+#elif defined(TASKING_TBB)
     group = new tbb::task_group;
+#elif defined(TASKING_PPL)
+	group = new concurrency::task_group;
 #endif
 
     intersectors = Accel::Intersectors(missing_rtcCommit);
@@ -411,7 +413,7 @@ namespace embree
     for (size_t i=0; i<geometries.size(); i++)
       delete geometries[i];
 
-#if TASKING_TBB
+#if defined(TASKING_TBB) || defined(TASKING_PPL)
     delete group; group = nullptr;
 #endif
   }
@@ -672,7 +674,7 @@ namespace embree
 
 #endif
 
-#if defined(TASKING_TBB)
+#if defined(TASKING_TBB) || defined(TASKING_PPL)
 
   void Scene::build (size_t threadIndex, size_t threadCount) 
   {
@@ -724,7 +726,7 @@ namespace embree
     _mm_setcsr(mxcsr | /* FTZ */ (1<<15) | /* DAZ */ (1<<6));
     
     try {
-
+#if defined(TASKING_TBB)
 #if TBB_INTERFACE_VERSION_MAJOR < 8    
       tbb::task_group_context ctx( tbb::task_group_context::isolated, tbb::task_group_context::default_traits);
 #else
@@ -746,6 +748,14 @@ namespace embree
      
       /* reset MXCSR register again */
       _mm_setcsr(mxcsr);
+#else
+		group->run([&]{
+			concurrency::parallel_for(size_t(0), size_t(1), size_t(1), [&](size_t) { build_task(); });
+		});
+		if (threadCount) group_barrier.wait(threadCount);
+		group->wait();
+
+#endif
     } 
     catch (...) {
 

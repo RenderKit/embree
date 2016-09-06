@@ -16,14 +16,48 @@
 
 #pragma once
 
-#if defined(TASKING_INTERNAL)
-#  include "taskschedulerinternal.h"
-#endif
-      
-#if defined(TASKING_TBB)
-#  include "taskschedulertbb.h"
+#include "../sys/platform.h"
+#include "../sys/alloc.h"
+#include "../sys/barrier.h"
+#include "../sys/thread.h"
+#include "../sys/mutex.h"
+#include "../sys/condition.h"
+#include "../sys/ref.h"
+#include "../../kernels/algorithms/range.h"
+
+#if !defined(__WIN32__)
+#error PPL tasking system only available under windows
 #endif
 
-#if defined(TASKING_PPL)
-#  include "taskschedulerppl.h"
-#endif
+#include <ppl.h>
+
+namespace embree
+{  
+  struct TaskScheduler
+  {
+    /*! initializes the task scheduler */
+    static void create(size_t numThreads, bool set_affinity);
+
+    /*! destroys the task scheduler again */
+    static void destroy();
+    
+    /* returns the index of the current thread */
+    static __forceinline size_t threadIndex()
+    {
+      size_t ID = GetCurrentThreadId();
+	  //PRINT(ID);
+	  return ID;
+    }
+  
+    /* returns the total number of threads */
+    static __forceinline size_t threadCount() {
+	  size_t num = GetMaximumProcessorCount(ALL_PROCESSOR_GROUPS);
+	  //PRINT(num);
+      return num;
+    }
+
+  private:
+    static size_t g_numThreads;
+  };
+};
+

@@ -3040,12 +3040,12 @@ namespace embree
     size_t numPhi;
     RTCDeviceRef device;
     Ref<VerifyScene> scene;
-    static const unsigned int tileSizeX = 32;
-    static const unsigned int tileSizeY = 32;
-    static const unsigned int width = 4096;
-    static const unsigned int height = 4096;
-    static const unsigned int numTilesX = width/tileSizeX;
-    static const unsigned int numTilesY = height/tileSizeY;
+	static const size_t tileSizeX = 32;
+	static const size_t tileSizeY = 32;
+	static const size_t width = 4096;
+	static const size_t height = 4096;
+	static const size_t numTilesX = width / tileSizeX;
+	static const size_t numTilesY = height / tileSizeY;
     
     CoherentRaysBenchmark (std::string name, int isa, GeometryType gtype, RTCSceneFlags sflags, RTCGeometryFlags gflags, IntersectMode imode, IntersectVariant ivariant, size_t numPhi)
       : ParallelIntersectBenchmark(name,isa,numTilesX*numTilesY,1), gtype(gtype), sflags(sflags), gflags(gflags), imode(imode), ivariant(ivariant), numPhi(numPhi) {}
@@ -3087,12 +3087,12 @@ namespace embree
     {
       float rcpWidth = 1.0f/width;
       float rcpHeight = 1.0/height;
-      const unsigned int tileY = i / numTilesX;
-      const unsigned int tileX = i - tileY * numTilesX;
-      const unsigned int x0 = tileX * tileSizeX;
-      const unsigned int x1 = min(x0+tileSizeX,width);
-      const unsigned int y0 = tileY * tileSizeY;
-      const unsigned int y1 = min(y0+tileSizeY,height);
+      const size_t tileY = i / numTilesX;
+	  const size_t tileX = i - tileY * numTilesX;
+	  const size_t x0 = tileX * tileSizeX;
+	  const size_t x1 = min(x0 + tileSizeX, width);
+	  const size_t y0 = tileY * tileSizeY;
+	  const size_t y1 = min(y0 + tileSizeY, height);
       
       RTCIntersectContext context;
       context.flags = ((ivariant & VARIANT_COHERENT_INCOHERENT_MASK) == VARIANT_COHERENT) ? RTC_INTERSECT_COHERENT :  RTC_INTERSECT_INCOHERENT;
@@ -3261,7 +3261,7 @@ namespace embree
       context.userRayExt = nullptr;
 
       RandomSampler sampler;
-      RandomSampler_init(sampler, i);
+      RandomSampler_init(sampler, (int)i);
 
       switch (imode) 
       {

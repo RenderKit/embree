@@ -308,12 +308,15 @@ namespace embree
     bool modified;                   //!< true if scene got modified
     
     /*! global lock step task scheduler */
-#if defined(TASKING_INTERNAL)
+#if defined(TASKING_INTERNAL) 
     MutexSys schedulerMutex;
     Ref<TaskScheduler> scheduler;
-#else
+#elif defined(TASKING_TBB)
     tbb::task_group* group;
     BarrierActiveAutoReset group_barrier;
+#elif defined(TASKING_PPL)
+	concurrency::task_group* group;
+	BarrierActiveAutoReset group_barrier;
 #endif
     
   public:
