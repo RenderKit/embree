@@ -277,8 +277,10 @@ namespace embree
                   assert(right.lower.y <= right.upper.y);
                   assert(right.lower.z <= right.upper.z);
 #endif
-                  left.lower.a  = (left.lower.a & 0x00FFFFFF) | ((splits-1) << 24);
-                  right.lower.a = (right.lower.a & 0x00FFFFFF) | ((splits-1) << 24);
+                  //left.lower.a  = (left.lower.a & 0x00FFFFFF) | ((splits-1) << 24);
+                  //right.lower.a = (right.lower.a & 0x00FFFFFF) | ((splits-1) << 24);
+                  left.lower.a  = (left.lower.a & 0x00FFFFFF) | (splits << 24);
+                  right.lower.a = (right.lower.a & 0x00FFFFFF) | (splits << 24);
 
                   const size_t ID = ext_elements.fetch_add(1);
 
