@@ -49,16 +49,20 @@ namespace embree
 
         /*! one child is hit, continue with that child */
         size_t r = __bscf(mask);
+        cur = node->child(r);
+        cur.prefetch(types);
         if (likely(mask == 0)) {
-          cur = node->child(r); cur.prefetch(types);
           assert(cur != BVH::emptyNode);
           return;
         }
 
         /*! two children are hit, push far child, and continue with closer child */
-        NodeRef c0 = node->child(r); c0.prefetch(types); const unsigned int d0 = ((unsigned int*)&tNear)[r];
+        NodeRef c0 = cur;
+        const unsigned int d0 = ((unsigned int*)&tNear)[r];
         r = __bscf(mask);
-        NodeRef c1 = node->child(r); c1.prefetch(types); const unsigned int d1 = ((unsigned int*)&tNear)[r];
+        NodeRef c1 = node->child(r);
+        c1.prefetch(types);
+        const unsigned int d1 = ((unsigned int*)&tNear)[r];
         assert(c0 != BVH::emptyNode);
         assert(c1 != BVH::emptyNode);
         if (likely(mask == 0)) {
@@ -107,6 +111,7 @@ namespace embree
         size_t r = __bscf(mask);
         cur = node->child(r); 
         cur.prefetch(types);
+
         /* simpler in sequence traversal order */
         assert(cur != BVH::emptyNode);
         if (likely(mask == 0)) return;
@@ -145,27 +150,15 @@ namespace embree
 
         /*! one child is hit, continue with that child */
         size_t r = __bscf(mask);
-
-#if defined(__AVX512PF__) // MIC
         cur = node->child(r);
         cur.prefetch(types);
         if (likely(mask == 0)) {
           assert(cur != BVH::emptyNode);
           return;
         }
-        NodeRef c0 = cur;
-#else
-        if (likely(mask == 0)) {
-          cur = node->child(r);
-          cur.prefetch(types);
-          assert(cur != BVH::emptyNode);
-          return;
-        }
-        NodeRef c0 = node->child(r);
-        c0.prefetch(types);
-#endif
 
         /*! two children are hit, push far child, and continue with closer child */
+        NodeRef c0 = cur;
         const unsigned int d0 = ((unsigned int*)&tNear)[r];
         r = __bscf(mask);
         NodeRef c1 = node->child(r);
@@ -235,6 +228,7 @@ namespace embree
         size_t r = __bscf(mask);
         cur = node->child(r);
         cur.prefetch(types);
+
         /* simpler in sequence traversal order */
         assert(cur != BVH::emptyNode);
         if (likely(mask == 0)) return;
