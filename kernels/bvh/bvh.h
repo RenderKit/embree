@@ -932,9 +932,6 @@ namespace embree
 #endif
       }
 
-
-
-
       __forceinline void init(Node &node)
       {
         for (size_t i=0;i<N;i++) children[i] = emptyNode;
@@ -958,6 +955,12 @@ namespace embree
       template <int M>
       __forceinline vfloat<M> dequantize(const size_t offset) const { return vfloat<M>(vint<M>::load(all_planes+offset)); }
 
+#if ENABLE_32BIT_OFFSETS_FOR_QUANTIZED_NODES == 1
+      int children[N]; //!< signed 32bit offset to the N children (can be a node or leaf)
+#else
+      NodeRef children[N];    //!< Pointer to the N children (can be a node or leaf)
+#endif
+
       union {
         struct {
           unsigned char lower_x[N]; //!< 8bit discretized X dimension of lower bounds of all N children
@@ -970,11 +973,6 @@ namespace embree
         unsigned char all_planes[6*N];
       };
 
-#if ENABLE_32BIT_OFFSETS_FOR_QUANTIZED_NODES == 1
-      int children[N]; //!< signed 32bit offset to the N children (can be a node or leaf)
-#else
-      NodeRef children[N];    //!< Pointer to the N children (can be a node or leaf)
-#endif
       Vec3f start;
       Vec3f scale;
     };
