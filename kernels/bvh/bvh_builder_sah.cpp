@@ -576,7 +576,19 @@ namespace embree
         /* primref array could be smaller due to invalid geometry */
         const size_t numPrimitives = pinfo.size();
 
-        const float A = area(pinfo.geomBounds);
+        /* calculate total surface area */
+        const float A = (float) parallel_reduce(size_t(0),numPrimitives,0.0, [&] (const range<size_t>& r) -> double // FIXME: this sum is not deterministic
+                                                {
+                                                  double A = 0.0f;
+                                                   for (size_t i=r.begin(); i<r.end(); i++)
+                                                   {
+                                                     PrimRef& prim = prims0[i];
+                                                     A += area(prim.bounds());
+                                                  }
+                                                  return A;
+                                                },std::plus<double>());
+
+        //const float A = area(pinfo.geomBounds);
         const float f = 10.0f;
 
         /* calculate maximal number of spatial splits per primitive */
