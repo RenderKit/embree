@@ -427,7 +427,7 @@ namespace embree
         for (size_t i=0; i<N; i++) children[i] = emptyNode;
       }
 
-        /*! Returns reference to specified child */
+      /*! Returns reference to specified child */
       __forceinline       NodeRef& child(size_t i)       { assert(i<N); return children[i]; }
       __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
 
@@ -447,6 +447,38 @@ namespace embree
       }
 
       NodeRef children[N];    //!< Pointer to the N children (can be a node or leaf)
+    };
+
+    struct BaseCompressedNode
+    {
+      /*! Clears the node. */
+      __forceinline void clear() {
+        for (size_t i=0; i<N; i++) children[i] = emptyNode;
+      }
+
+      /*! Returns NodeRef to specified child which is combined from 64bit this pointer + 32bit offset*/
+      __forceinline       NodeRef child(size_t i)       { assert(i<N); assert(children[i] != emptyNode); return ((ssize_t)this + children[i]); }
+      __forceinline const NodeRef child(size_t i) const { assert(i<N); assert(children[i] != emptyNode); return ((ssize_t)this + children[i]); }
+
+      __forceinline       int& childOffset(size_t i)       { assert(i<N); return children[i]; }
+      __forceinline const int& childOffset(size_t i) const { assert(i<N); return children[i]; }
+
+      /*! verifies the node */
+      __forceinline bool verify() const
+      {
+        for (size_t i=0; i<N; i++) {
+          if (childOffset(i) == BVHN::emptyNode) {
+            for (; i<N; i++) {
+              if (childOffset(i) != BVHN::emptyNode)
+                return false;
+            }
+            break;
+          }
+        }
+        return true;
+      }
+
+      int children[N]; //!< signed 32bit offset to the N children (can be a node or leaf)
     };
 
     /*! BVHN Node */
@@ -803,60 +835,27 @@ namespace embree
 
 
     /*! BVHN Quantized Node */
-    struct __aligned(16) QuantizedNode
-    {
+#if ENABLE_32BIT_OFFSETS_FOR_QUANTIZED_NODES == 1
+    struct __aligned(16) QuantizedNode : public BaseCompressedNode {
+      using BaseCompressedNode::children;
+#else
+    struct __aligned(16) QuantizedNode : public BaseNode {
+      using BaseNode::children;
+#endif
+
       static const unsigned char MIN_QUAN_8BIT = 0;
       static const unsigned char MAX_QUAN_8BIT = 255;
 
       /*! Clears the node. */
       __forceinline void clear() {
-        for (size_t i=0; i<N; i++) children[i] = emptyNode;
         for (size_t i=0; i<N; i++) lower_x[i] = lower_y[i] = lower_z[i] = MAX_QUAN_8BIT;
         for (size_t i=0; i<N; i++) upper_x[i] = upper_y[i] = upper_z[i] = MIN_QUAN_8BIT;
-      }
-
 #if ENABLE_32BIT_OFFSETS_FOR_QUANTIZED_NODES == 1
-        /*! Returns NodeRef to specified child which is combined from 64bit this pointer + 32bit offset*/
-      __forceinline       NodeRef child(size_t i)       { assert(i<N); assert(children[i] != emptyNode); return ((ssize_t)this + children[i]); }
-      __forceinline const NodeRef child(size_t i) const { assert(i<N); assert(children[i] != emptyNode); return ((ssize_t)this + children[i]); }
-
-      __forceinline       int& childOffset(size_t i)       { assert(i<N); return children[i]; }
-      __forceinline const int& childOffset(size_t i) const { assert(i<N); return children[i]; }
-
-      /*! verifies the node */
-      __forceinline bool verify() const
-      {
-        for (size_t i=0; i<N; i++) {
-          if (childOffset(i) == BVHN::emptyNode) {
-            for (; i<N; i++) {
-              if (childOffset(i) != BVHN::emptyNode)
-                return false;
-            }
-            break;
-          }
-        }
-        return true;
-      }
+        BaseCompressedNode::clear();
 #else
-        /*! Returns reference to specified child */
-      __forceinline       NodeRef& child(size_t i)       { assert(i<N); return children[i]; }
-      __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
-
-      /*! verifies the node */
-      __forceinline bool verify() const
-      {
-        for (size_t i=0; i<N; i++) {
-          if (child(i) == BVHN::emptyNode) {
-            for (; i<N; i++) {
-              if (child(i) != BVHN::emptyNode)
-                return false;
-            }
-            break;
-          }
-        }
-        return true;
-      }
+        BaseNode::clear();
 #endif
+      }
 
       /*! Returns bounds of specified child. */
       __forceinline BBox3fa bounds(size_t i) const
@@ -871,12 +870,10 @@ namespace embree
         return BBox3fa(lower,upper);
       }
 
-
       /*! Returns extent of bounds of specified child. */
       __forceinline Vec3fa extend(size_t i) const {
         return bounds(i).size();
       }
-
 
       static __forceinline void init_dim(const vfloat<N> &lower,
                                          const vfloat<N> &upper,
@@ -955,11 +952,6 @@ namespace embree
       template <int M>
       __forceinline vfloat<M> dequantize(const size_t offset) const { return vfloat<M>(vint<M>::load(all_planes+offset)); }
 
-#if ENABLE_32BIT_OFFSETS_FOR_QUANTIZED_NODES == 1
-      int children[N]; //!< signed 32bit offset to the N children (can be a node or leaf)
-#else
-      NodeRef children[N];    //!< Pointer to the N children (can be a node or leaf)
-#endif
 
       union {
         struct {
