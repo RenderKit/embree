@@ -894,7 +894,6 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
-
   Accel* BVH4Factory::BVH4Triangle4ObjectSplit(Scene* scene)
   {
     BVH4* accel = new BVH4(Triangle4::type,scene);
