@@ -217,7 +217,7 @@ namespace embree
           }, [](const bool a, const bool b) { return a && b; });
         }
 
-        /* only enable fast mode of no subdiv mesh got enabled or disabled since last run */
+        /* only enable fast mode if no subdiv mesh got enabled or disabled since last run */
         fastUpdateMode &= numSubdivEnableDisableEvents == scene->numSubdivEnableDisableEvents;
         numSubdivEnableDisableEvents = scene->numSubdivEnableDisableEvents;
 
