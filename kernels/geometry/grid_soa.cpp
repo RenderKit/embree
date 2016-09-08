@@ -66,7 +66,7 @@ namespace embree
       {
         /* create BVH */
         BBox3fa bounds_t;
-        root = buildBVH(bvhData(t),gridData(t),bvhBytes,&bounds_t);
+        root = buildBVH(t,&bounds_t);
         bounds.extend(bounds_t);
       }
       if (bounds_o) *bounds_o = bounds;
@@ -86,39 +86,21 @@ namespace embree
       return bytes;
     }
     
-    BVH4::NodeRef GridSOA::buildBVH(char* node_array, float* grid_array, const size_t bvhBytes, BBox3fa* bounds_o)
+    BVH4::NodeRef GridSOA::buildBVH(size_t time, BBox3fa* bounds_o)
     {
       BVH4::NodeRef root = 0; size_t allocator = 0;
       GridRange range(0,width-1,0,height-1);
-      BBox3fa bounds = buildBVH(root,node_array,grid_array,range,allocator);
+      BBox3fa bounds = buildBVH(root,time,range,allocator);
       if (bounds_o) *bounds_o = bounds;
       assert(allocator == bvhBytes);
       return root;
     }
 
-    BBox3fa GridSOA::buildBVH(BVH4::NodeRef& curNode, char* node_array, float* grid_array, const GridRange& range, size_t& allocator)
+    BBox3fa GridSOA::buildBVH(BVH4::NodeRef& curNode, size_t time, const GridRange& range, size_t& allocator)
     {
       /*! create leaf node */
       if (unlikely(range.hasLeafSize()))
       {
-        const float* const grid_x_array = grid_array + 0 * dim_offset;
-        const float* const grid_y_array = grid_array + 1 * dim_offset;
-        const float* const grid_z_array = grid_array + 2 * dim_offset;
-        
-        /* compute the bounds just for the range! */
-        BBox3fa bounds( empty );
-        for (unsigned v = range.v_start; v<=range.v_end; v++) 
-        {
-          for (unsigned u = range.u_start; u<=range.u_end; u++)
-          {
-            const float x = grid_x_array[ v * width + u];
-            const float y = grid_y_array[ v * width + u];
-            const float z = grid_z_array[ v * width + u];
-            bounds.extend( Vec3fa(x,y,z) );
-          }
-        }
-        assert(is_finite(bounds));
-
         /* shift 2x2 quads that wrap around to the left */ // FIXME: causes intersection filter to be called multiple times for some triangles
         size_t u_start = range.u_start, u_end = range.u_end;
         size_t v_start = range.v_start, v_end = range.v_end;
@@ -130,14 +112,14 @@ namespace embree
         /* we store pointer to first subgrid vertex as leaf node */
         const size_t value = 16*(v_start * width + u_start + 1); // +1 to not create empty leaf
         curNode = BVH4::encodeTypedLeaf((void*)value,0);
-        return bounds;
+        return calculateBounds(time,range);
       }
       
       /* create internal node */
       else 
       {
         /* allocate new bvh4 node */
-        BVH4::Node* node = (BVH4::Node *)&node_array[allocator];
+        BVH4::Node* node = (BVH4::Node *)&bvhData(time)[allocator];
         allocator += sizeof(BVH4::Node);
         node->clear();
         
@@ -149,7 +131,7 @@ namespace embree
         BBox3fa bounds( empty );
         for (unsigned i=0; i<children; i++)
         {
-          BBox3fa box = buildBVH( node->child(i), node_array, grid_array, r[i], allocator);
+          BBox3fa box = buildBVH( node->child(i), time, r[i], allocator);
           node->set(i,box);
           bounds.extend(box);
         }

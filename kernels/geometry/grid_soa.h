@@ -90,23 +90,45 @@ namespace embree
       }
 
       /*! returns pointer to BVH array */
-      __forceinline char* bvhData(size_t t = 0) {
-        return &data[t*bvhBytes];
-      }
+      __forceinline       char* bvhData(size_t t = 0)       { return &data[t*bvhBytes]; }
+      __forceinline const char* bvhData(size_t t = 0) const { return &data[t*bvhBytes]; }
 
       /*! returns pointer to Grid array */
-      __forceinline float* gridData(size_t t = 0) {
-        return (float*) &data[time_steps*bvhBytes + t*gridBytes];
-      }
+      __forceinline       float* gridData(size_t t = 0)       { return (float*) &data[time_steps*bvhBytes + t*gridBytes]; }
+      __forceinline const float* gridData(size_t t = 0) const { return (float*) &data[time_steps*bvhBytes + t*gridBytes]; }
       
       /*! returns the size of the BVH over the grid in bytes */
       static size_t getBVHBytes(const GridRange& range, const unsigned int leafBytes);
 
+      /*! calculates bounding box of grid range */
+      __forceinline BBox3fa calculateBounds(size_t time, const GridRange& range) const
+      {
+        const float* const grid_array = gridData(time);
+        const float* const grid_x_array = grid_array + 0 * dim_offset;
+        const float* const grid_y_array = grid_array + 1 * dim_offset;
+        const float* const grid_z_array = grid_array + 2 * dim_offset;
+        
+        /* compute the bounds just for the range! */
+        BBox3fa bounds( empty );
+        for (unsigned v = range.v_start; v<=range.v_end; v++) 
+        {
+          for (unsigned u = range.u_start; u<=range.u_end; u++)
+          {
+            const float x = grid_x_array[ v * width + u];
+            const float y = grid_y_array[ v * width + u];
+            const float z = grid_z_array[ v * width + u];
+            bounds.extend( Vec3fa(x,y,z) );
+          }
+        }
+        assert(is_finite(bounds));
+        return bounds;
+      }
+
       /*! Evaluates grid over patch and builds BVH4 tree over the grid. */
-      BVH4::NodeRef buildBVH(char* node_array, float* grid_array, const size_t bvhBytes, BBox3fa* bounds_o);
+      BVH4::NodeRef buildBVH(size_t time, BBox3fa* bounds_o);
       
       /*! Create BVH4 tree over grid. */
-      BBox3fa buildBVH(BVH4::NodeRef& curNode, char* node_array, float* grid_array, const GridRange& range, size_t& localCounter);
+      BBox3fa buildBVH(BVH4::NodeRef& curNode, size_t time, const GridRange& range, size_t& localCounter);
 
       struct Gather2x3
       {
