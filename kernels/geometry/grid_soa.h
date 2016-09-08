@@ -158,6 +158,22 @@ namespace embree
                                shuffle<1,1,2,2>(r0),  // r01, r01, r02, r02
                                shuffle<0,1,1,2>(r1)); // r10, r11, r11, r12
         }
+
+        static __forceinline void gather(const float* const grid_x, 
+                                         const float* const grid_y, 
+                                         const float* const grid_z, 
+                                         const size_t line_offset,
+                                         Vec3<vfloat4>& v0_o,
+                                         Vec3<vfloat4>& v1_o,
+                                         Vec3<vfloat4>& v2_o)
+        {
+          const Vec3<vfloat4> tri_v012_x = gather(grid_x,line_offset);
+          const Vec3<vfloat4> tri_v012_y = gather(grid_y,line_offset);
+          const Vec3<vfloat4> tri_v012_z = gather(grid_z,line_offset);
+          v0_o = Vec3<vfloat4>(tri_v012_x[0],tri_v012_y[0],tri_v012_z[0]);
+          v1_o = Vec3<vfloat4>(tri_v012_x[1],tri_v012_y[1],tri_v012_z[1]);
+          v2_o = Vec3<vfloat4>(tri_v012_x[2],tri_v012_y[2],tri_v012_z[2]);
+        }
       };
       
 #if defined (__AVX__)
@@ -178,6 +194,22 @@ namespace embree
           return Vec3<vfloat8>(unpacklo(r0,r1),         // r00, r10, r01, r11, r10, r20, r11, r21
                                shuffle<1,1,2,2>(r0),    // r01, r01, r02, r02, r11, r11, r12, r12
                                shuffle<0,1,1,2>(r1));   // r10, r11, r11, r12, r20, r21, r21, r22
+        }
+
+        static __forceinline void gather(const float* const grid_x, 
+                                         const float* const grid_y, 
+                                         const float* const grid_z, 
+                                         const size_t line_offset,
+                                         Vec3<vfloat8>& v0_o,
+                                         Vec3<vfloat8>& v1_o,
+                                         Vec3<vfloat8>& v2_o)
+        {
+          const Vec3<vfloat8> tri_v012_x = gather(grid_x,line_offset);
+          const Vec3<vfloat8> tri_v012_y = gather(grid_y,line_offset);
+          const Vec3<vfloat8> tri_v012_z = gather(grid_z,line_offset);
+          v0_o = Vec3<vfloat8>(tri_v012_x[0],tri_v012_y[0],tri_v012_z[0]);
+          v1_o = Vec3<vfloat8>(tri_v012_x[1],tri_v012_y[1],tri_v012_z[1]);
+          v2_o = Vec3<vfloat8>(tri_v012_x[2],tri_v012_y[2],tri_v012_z[2]);
         }
       };
 #endif

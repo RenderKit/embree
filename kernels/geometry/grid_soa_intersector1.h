@@ -53,20 +53,15 @@ namespace embree
                                             Precalculations& pre,
                                             Scene* scene)
       {
+        typedef typename Loader::vfloat vfloat;
         const size_t dim_offset    = pre.grid->dim_offset;
         const float* const grid_y  = grid_x + 1 * dim_offset;
         const float* const grid_z  = grid_x + 2 * dim_offset;
         const float* const grid_uv = grid_x + 3 * dim_offset;
 
-        typedef typename Loader::vfloat vfloat;
-	const Vec3<vfloat> tri_v012_x = Loader::gather(grid_x,line_offset);
-	const Vec3<vfloat> tri_v012_y = Loader::gather(grid_y,line_offset);
-	const Vec3<vfloat> tri_v012_z = Loader::gather(grid_z,line_offset);
-        
-	const Vec3<vfloat> v0(tri_v012_x[0],tri_v012_y[0],tri_v012_z[0]);
-	const Vec3<vfloat> v1(tri_v012_x[1],tri_v012_y[1],tri_v012_z[1]);
-	const Vec3<vfloat> v2(tri_v012_x[2],tri_v012_y[2],tri_v012_z[2]);
-        
+        Vec3<vfloat> v0, v1, v2;
+        Loader::gather(grid_x,grid_y,grid_z,line_offset,v0,v1,v2);
+       
         auto mapUV = [&](vfloat& u, vfloat& v) {
           const Vec3<vfloat> tri_v012_uv = Loader::gather(grid_uv,line_offset);	
           const Vec2<vfloat> uv0 = GridSOA::decodeUV(tri_v012_uv[0]);
@@ -88,19 +83,14 @@ namespace embree
                                            Precalculations& pre,
                                            Scene* scene)
       {
+        typedef typename Loader::vfloat vfloat;
         const size_t dim_offset    = pre.grid->dim_offset;
         const float* const grid_y  = grid_x + 1 * dim_offset;
         const float* const grid_z  = grid_x + 2 * dim_offset;
         const float* const grid_uv = grid_x + 3 * dim_offset;
 
-        typedef typename Loader::vfloat vfloat;
-	const Vec3<vfloat> tri_v012_x = Loader::gather(grid_x,line_offset);
-	const Vec3<vfloat> tri_v012_y = Loader::gather(grid_y,line_offset);
-	const Vec3<vfloat> tri_v012_z = Loader::gather(grid_z,line_offset);
-        
-	const Vec3<vfloat> v0(tri_v012_x[0],tri_v012_y[0],tri_v012_z[0]);
-	const Vec3<vfloat> v1(tri_v012_x[1],tri_v012_y[1],tri_v012_z[1]);
-	const Vec3<vfloat> v2(tri_v012_x[2],tri_v012_y[2],tri_v012_z[2]);
+        Vec3<vfloat> v0, v1, v2;
+        Loader::gather(grid_x,grid_y,grid_z,line_offset,v0,v1,v2);
         
         auto mapUV = [&](vfloat& u, vfloat& v) {
           const Vec3<vfloat> tri_v012_uv = Loader::gather(grid_uv,line_offset);	
