@@ -62,15 +62,7 @@ namespace embree
         Vec3<vfloat> v0, v1, v2;
         Loader::gather(grid_x,grid_y,grid_z,line_offset,v0,v1,v2);
        
-        auto mapUV = [&](vfloat& u, vfloat& v) {
-          const Vec3<vfloat> tri_v012_uv = Loader::gather(grid_uv,line_offset);	
-          const Vec2<vfloat> uv0 = GridSOA::decodeUV(tri_v012_uv[0]);
-          const Vec2<vfloat> uv1 = GridSOA::decodeUV(tri_v012_uv[1]);
-          const Vec2<vfloat> uv2 = GridSOA::decodeUV(tri_v012_uv[2]);        
-          const Vec2<vfloat> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
-          u = uv[0];v = uv[1]; 
-        };
-
+        GridSOA::UVMapper<Loader> mapUV(pre.grid,grid_uv);
         PlueckerIntersector1<Loader::M> intersector(ray,nullptr);
         intersector.intersect(ray,v0,v1,v2,mapUV,Intersect1EpilogMU<Loader::M,true>(ray,context,pre.grid->geomID,pre.grid->primID,scene,nullptr));
       };
@@ -92,15 +84,7 @@ namespace embree
         Vec3<vfloat> v0, v1, v2;
         Loader::gather(grid_x,grid_y,grid_z,line_offset,v0,v1,v2);
         
-        auto mapUV = [&](vfloat& u, vfloat& v) {
-          const Vec3<vfloat> tri_v012_uv = Loader::gather(grid_uv,line_offset);	
-          const Vec2<vfloat> uv0 = GridSOA::decodeUV(tri_v012_uv[0]);
-          const Vec2<vfloat> uv1 = GridSOA::decodeUV(tri_v012_uv[1]);
-          const Vec2<vfloat> uv2 = GridSOA::decodeUV(tri_v012_uv[2]);        
-          const Vec2<vfloat> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
-          u = uv[0];v = uv[1]; 
-        };
-
+        GridSOA::UVMapper<Loader> mapUV(pre.grid,grid_uv);
         PlueckerIntersector1<Loader::M> intersector(ray,nullptr);
         return intersector.intersect(ray,v0,v1,v2,mapUV,Occluded1EpilogMU<Loader::M,true>(ray,context,pre.grid->geomID,pre.grid->primID,scene,nullptr));
       }
