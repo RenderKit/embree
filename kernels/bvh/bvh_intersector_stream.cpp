@@ -305,11 +305,11 @@ namespace embree
 
           __aligned(64) size_t maskK[N];
           for (size_t i = 0; i < N; i++) maskK[i] = m_trav_active;
-          vfloat<K> dist;
+          vfloat<Nx> dist;
           const size_t m_node_hit = traverseCoherentStream(m_trav_active, packet, node, pc, frusta, maskK, dist);
           if (unlikely(m_node_hit == 0)) goto pop;
 
-          BVHNNodeTraverserStreamHitCoherent<N, K, types>::traverseClosestHit(cur, m_trav_active, vbool<K>((int)m_node_hit), dist, (size_t*)maskK, stackPtr);
+          BVHNNodeTraverserStreamHitCoherent<N, Nx, types>::traverseClosestHit(cur, m_trav_active, vbool<Nx>((int)m_node_hit), dist, (size_t*)maskK, stackPtr);
           assert(m_trav_active);
         }
 
@@ -412,12 +412,12 @@ namespace embree
           __aligned(64) size_t maskK[N];
           for (size_t i = 0; i < N; i++) maskK[i] = m_trav_active;
 
-          vfloat<K> dist;
+          vfloat<Nx> dist;
           const size_t m_node_hit = traverseCoherentStream(m_trav_active, packet, node, pc, frusta, maskK, dist);
 
           if (unlikely(m_node_hit == 0)) goto pop;
 
-          BVHNNodeTraverserStreamHitCoherent<N, K, types>::traverseAnyHit(cur, m_trav_active, vbool<K>((int)m_node_hit), (size_t*)maskK, stackPtr);
+          BVHNNodeTraverserStreamHitCoherent<N, Nx, types>::traverseAnyHit(cur, m_trav_active, vbool<Nx>((int)m_node_hit), (size_t*)maskK, stackPtr);
           assert(m_trav_active);
         }
 
@@ -475,7 +475,6 @@ namespace embree
         {          
           /* stream tracer as fast path */
           BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersectCoherentSOA(bvh, (RayK<K>**)rayK_ptr, numTotalRays, context);
-
         }
         /* SOA to AOS conversion */
         SOAtoAOS<K, false>(inputRays, rayK, numTotalRays);
