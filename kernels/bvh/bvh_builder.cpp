@@ -100,24 +100,14 @@ namespace embree
         return createLeaf(current,alloc);
       };
             
-#if ENABLE_32BIT_OFFSETS_FOR_QUANTIZED_NODES == 1 
-      typename BVH::QuantizedNode *first = (typename BVH::QuantizedNode*)bvh->alloc.malloc(sizeof(typename BVH::QuantizedNode), bvh->byteNodeAlignment);
-      NodeRef &root = *(NodeRef*)first; // as the builder assigns current.parent = (size_t*)&root
-      assert(((size_t)first & 0x7) == 0); 
-#else
       NodeRef root = 0;
-#endif
       BVHBuilderBinnedSAH::build_reduce<NodeRef>
         (root,typename BVH::CreateAlloc(bvh),size_t(0),typename BVH::CreateQuantizedNode(bvh),dummy<N>,createLeafFunc,progressFunc,
          prims,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
-#if ENABLE_32BIT_OFFSETS_FOR_QUANTIZED_NODES == 1 
-      NodeRef new_root = ((size_t)first + first->childOffset(0)) | BVH::tyQuantizedNode;
-#else
       NodeRef new_root = (size_t)root | BVH::tyQuantizedNode;
       // todo: COPY LAYOUT FOR LARGE NODES !!!
       //bvh->layoutLargeNodes(pinfo.size()*0.005f);
-#endif
       assert(new_root.isQuantizedNode());
       bvh->set(new_root,pinfo.geomBounds,pinfo.size());
     }

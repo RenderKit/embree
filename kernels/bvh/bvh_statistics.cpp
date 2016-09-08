@@ -221,11 +221,7 @@ namespace embree
       bvhSAH += A*travCostAligned;
       depth = 0;
       for (size_t i=0; i<N; i++) {
-#if ENABLE_32BIT_OFFSETS_FOR_QUANTIZED_NODES == 1 
-        if (n->childOffset(i) == BVH::emptyNode) continue; 
-#else
         if (n->child(i) == BVH::emptyNode) continue; 
-#endif
         childrenQuantizedNodes++;
         const float Ai = max(0.0f,halfArea(n->extend(i)));
         size_t cdepth; statistics(n->child(i),Ai,cdepth); 

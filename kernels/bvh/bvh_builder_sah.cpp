@@ -91,14 +91,7 @@ namespace embree
           accel[i].fill(prims,start,current.prims.end(),bvh->scene,false);
         }
 
-#if ENABLE_32BIT_OFFSETS_FOR_QUANTIZED_NODES == 1 
-        typename BVH::QuantizedNode *parent = (typename BVH::QuantizedNode *)((size_t)current.parent & (~0x7));
-        const size_t index = (size_t)current.parent & 0x7;
-        parent->childOffset(index) = bvh->encodeQuantizedLeaf((size_t)parent,(size_t)node);
-        assert((ssize_t)node == (ssize_t)parent + parent->childOffset(index));
-#else
         *current.parent = node;
-#endif
 	return n;
       }
 
