@@ -128,7 +128,13 @@ namespace embree
       BVH4::NodeRef buildBVH(size_t time, BBox3fa* bounds_o);
       
       /*! Create BVH4 tree over grid. */
-      BBox3fa buildBVH(BVH4::NodeRef& curNode, size_t time, const GridRange& range, size_t& localCounter);
+      BBox3fa buildBVH(BVH4::NodeRef& curNode, size_t time, const GridRange& range, size_t& allocator);
+
+      /*! Evaluates grid over patch and builds MBlur BVH4 tree over the grid. */
+      BVH4::NodeRef buildMBlurBVH(size_t time, std::pair<BBox3fa,BBox3fa>* bounds_o);
+      
+      /*! Create MBlur BVH4 tree over grid. */
+      std::pair<BBox3fa,BBox3fa> buildMBlurBVH(BVH4::NodeRef& curNode, size_t time, const GridRange& range, size_t& allocator);
 
       struct Gather2x3
       {

@@ -60,16 +60,24 @@ namespace embree
         memcpy(grid_uv,local_grid_uv,dim_offset*sizeof(int));       
       }
 
-      /* now create the BVHs */
-      BBox3fa bounds = empty;
-      for (size_t t=0; t<time_steps; t++)
-      {
-        /* create BVH */
-        BBox3fa bounds_t;
-        root = buildBVH(t,&bounds_t);
-        bounds.extend(bounds_t);
+      /* create normal BVH when no motion blur is active */
+      if (time_steps == 1) {
+        root = buildBVH(0,bounds_o);
       }
-      if (bounds_o) *bounds_o = bounds;
+
+      /* otherwise build MBlur BVH */
+      else
+      {
+        for (size_t t=0; t<time_steps; t++)
+        {
+          std::pair<BBox3fa,BBox3fa> bounds;
+          root = buildMBlurBVH(t,&bounds);
+          if (bounds_o) {
+            bounds_o[t+0] = bounds.first;
+            bounds_o[t+1] = bounds.second;
+          }
+        }
+      }
     }
 
     size_t GridSOA::getBVHBytes(const GridRange& range, const unsigned int leafBytes)
@@ -109,9 +117,11 @@ namespace embree
         if (unlikely(u_size < 2 && u_start > 0)) u_start--;
         if (unlikely(v_size < 2 && v_start > 0)) v_start--;
         
-        /* we store pointer to first subgrid vertex as leaf node */
+        /* we store index of first subgrid vertex as leaf node */
         const size_t value = 16*(v_start * width + u_start + 1); // +1 to not create empty leaf
         curNode = BVH4::encodeTypedLeaf((void*)value,0);
+
+        /* return bounding box */
         return calculateBounds(time,range);
       }
       
@@ -138,6 +148,68 @@ namespace embree
         
         curNode = BVH4::encodeNode(node);
         assert(is_finite(bounds));
+        return bounds;
+      }
+    }
+
+    BVH4::NodeRef GridSOA::buildMBlurBVH(size_t time, std::pair<BBox3fa,BBox3fa>* bounds_o)
+    {
+      BVH4::NodeRef root = 0; size_t allocator = 0;
+      GridRange range(0,width-1,0,height-1);
+      std::pair<BBox3fa,BBox3fa> bounds = buildMBlurBVH(root,time,range,allocator);
+      if (bounds_o) *bounds_o = bounds;
+      assert(allocator == bvhBytes);
+      return root;
+    }
+
+    std::pair<BBox3fa,BBox3fa> GridSOA::buildMBlurBVH(BVH4::NodeRef& curNode, size_t time, const GridRange& range, size_t& allocator)
+    {
+      /*! create leaf node */
+      if (unlikely(range.hasLeafSize()))
+      {
+        /* shift 2x2 quads that wrap around to the left */ // FIXME: causes intersection filter to be called multiple times for some triangles
+        size_t u_start = range.u_start, u_end = range.u_end;
+        size_t v_start = range.v_start, v_end = range.v_end;
+        size_t u_size = u_end-u_start; assert(u_size > 0);
+        size_t v_size = v_end-v_start; assert(v_size > 0);
+        if (unlikely(u_size < 2 && u_start > 0)) u_start--;
+        if (unlikely(v_size < 2 && v_start > 0)) v_start--;
+        
+        /* we store index of first subgrid vertex as leaf node */
+        const size_t value = 16*(v_start * width + u_start + 1); // +1 to not create empty leaf
+        curNode = BVH4::encodeTypedLeaf((void*)value,0);
+
+        /* return bounding box */
+        const BBox3fa bounds0 = calculateBounds(time+0,range);
+        const BBox3fa bounds1 = calculateBounds(time+1,range);
+        return std::make_pair(bounds0,bounds1);
+      }
+      
+      /* create internal node */
+      else 
+      {
+        /* allocate new bvh4 node */
+        BVH4::NodeMB* node = (BVH4::NodeMB *)&bvhData(time)[allocator];
+        allocator += sizeof(BVH4::NodeMB);
+        node->clear();
+        
+        /* split range */
+        GridRange r[4];
+        const unsigned children = range.splitIntoSubRanges(r);
+      
+        /* recurse into subtrees */
+        std::pair<BBox3fa,BBox3fa> bounds(empty,empty);
+        for (unsigned i=0; i<children; i++)
+        {
+          std::pair<BBox3fa,BBox3fa> box = buildMBlurBVH( node->child(i), time, r[i], allocator);
+          node->set(i,box.first,box.second);
+          bounds.first. extend(box.first);
+          bounds.second.extend(box.second);
+        }
+        
+        curNode = BVH4::encodeNode(node);
+        assert(is_finite(bounds.first));
+        assert(is_finite(bounds.second));
         return bounds;
       }
     }
