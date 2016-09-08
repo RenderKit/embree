@@ -39,6 +39,7 @@ namespace embree
       g_ppl_threads_initialized = true;
       g_numThreads = numThreads;
     }
+	concurrency::CurrentScheduler::Create(concurrency::SchedulerPolicy(2, concurrency::MinConcurrency, g_numThreads, concurrency::MaxConcurrency, g_numThreads));
   }
   
   void TaskScheduler::destroy()
