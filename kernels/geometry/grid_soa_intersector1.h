@@ -58,7 +58,6 @@ namespace embree
         const float* const grid_z  = grid_x + 2 * dim_offset;
         const float* const grid_uv = grid_x + 3 * dim_offset;
 
-        enum { M = Loader::M };
         typedef typename Loader::vfloat vfloat;
 	const Vec3<vfloat> tri_v012_x = Loader::gather(grid_x,line_offset);
 	const Vec3<vfloat> tri_v012_y = Loader::gather(grid_y,line_offset);
@@ -77,8 +76,8 @@ namespace embree
           u = uv[0];v = uv[1]; 
         };
 
-        PlueckerIntersector1<M> intersector(ray,nullptr);
-        intersector.intersect(ray,v0,v1,v2,mapUV,Intersect1EpilogMU<M,true>(ray,context,pre.grid->geomID,pre.grid->primID,scene,nullptr));
+        PlueckerIntersector1<Loader::M> intersector(ray,nullptr);
+        intersector.intersect(ray,v0,v1,v2,mapUV,Intersect1EpilogMU<Loader::M,true>(ray,context,pre.grid->geomID,pre.grid->primID,scene,nullptr));
       };
       
       template<typename Loader>
@@ -94,7 +93,6 @@ namespace embree
         const float* const grid_z  = grid_x + 2 * dim_offset;
         const float* const grid_uv = grid_x + 3 * dim_offset;
 
-        enum { M = Loader::M };
         typedef typename Loader::vfloat vfloat;
 	const Vec3<vfloat> tri_v012_x = Loader::gather(grid_x,line_offset);
 	const Vec3<vfloat> tri_v012_y = Loader::gather(grid_y,line_offset);
@@ -113,8 +111,8 @@ namespace embree
           u = uv[0];v = uv[1]; 
         };
 
-        PlueckerIntersector1<M> intersector(ray,nullptr);
-        return intersector.intersect(ray,v0,v1,v2,mapUV,Occluded1EpilogMU<M,true>(ray,context,pre.grid->geomID,pre.grid->primID,scene,nullptr));
+        PlueckerIntersector1<Loader::M> intersector(ray,nullptr);
+        return intersector.intersect(ray,v0,v1,v2,mapUV,Occluded1EpilogMU<Loader::M,true>(ray,context,pre.grid->geomID,pre.grid->primID,scene,nullptr));
       }
       
       /*! Intersect a ray with the primitive. */
