@@ -185,14 +185,19 @@ namespace embree
 #if !defined (__X86_64__)
       unsigned align0;
 #endif
-      unsigned short time_steps;
-      unsigned short width;
-      unsigned short height;
-      unsigned short dim_offset;
+      unsigned time_steps;
+      unsigned width;
+
+      unsigned height;
+      unsigned dim_offset;
       unsigned geomID;
       unsigned primID;
+
       unsigned bvhBytes;
       unsigned gridBytes;
+      unsigned align0;
+      unsigned align1;
+
       char data[1];        //!< after the struct we first store the BVH and then the grid
     };
   }
