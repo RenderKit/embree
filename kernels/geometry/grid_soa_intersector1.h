@@ -62,7 +62,7 @@ namespace embree
         Vec3<vfloat> v0, v1, v2;
         Loader::gather(grid_x,grid_y,grid_z,line_offset,v0,v1,v2);
        
-        GridSOA::UVMapper<Loader> mapUV(pre.grid,grid_uv);
+        GridSOA::MapUV<Loader> mapUV(grid_uv,line_offset);
         PlueckerIntersector1<Loader::M> intersector(ray,nullptr);
         intersector.intersect(ray,v0,v1,v2,mapUV,Intersect1EpilogMU<Loader::M,true>(ray,context,pre.grid->geomID,pre.grid->primID,scene,nullptr));
       };
@@ -84,7 +84,7 @@ namespace embree
         Vec3<vfloat> v0, v1, v2;
         Loader::gather(grid_x,grid_y,grid_z,line_offset,v0,v1,v2);
         
-        GridSOA::UVMapper<Loader> mapUV(pre.grid,grid_uv);
+        GridSOA::MapUV<Loader> mapUV(grid_uv,line_offset);
         PlueckerIntersector1<Loader::M> intersector(ray,nullptr);
         return intersector.intersect(ray,v0,v1,v2,mapUV,Occluded1EpilogMU<Loader::M,true>(ray,context,pre.grid->geomID,pre.grid->primID,scene,nullptr));
       }
@@ -150,7 +150,7 @@ namespace embree
         Vec3<vfloat> c1 = lerp(a1,b1,vfloat(ftime));
         Vec3<vfloat> c2 = lerp(a2,b2,vfloat(ftime));
 
-        GridSOA::UVMapper<Loader> mapUV(pre.grid,grid_uv);
+        GridSOA::MapUV<Loader> mapUV(grid_uv,line_offset);
         PlueckerIntersector1<Loader::M> intersector(ray,nullptr);
         intersector.intersect(ray,c0,c1,c2,mapUV,Intersect1EpilogMU<Loader::M,true>(ray,context,pre.grid->geomID,pre.grid->primID,scene,nullptr));
       };
@@ -180,7 +180,7 @@ namespace embree
         Vec3<vfloat> c1 = lerp(a1,b1,vfloat(ftime));
         Vec3<vfloat> c2 = lerp(a2,b2,vfloat(ftime));
         
-        GridSOA::UVMapper<Loader> mapUV(pre.grid,grid_uv);
+        GridSOA::MapUV<Loader> mapUV(grid_uv,line_offset);
         PlueckerIntersector1<Loader::M> intersector(ray,nullptr);
         return intersector.intersect(ray,c0,c1,c2,mapUV,Occluded1EpilogMU<Loader::M,true>(ray,context,pre.grid->geomID,pre.grid->primID,scene,nullptr));
       }

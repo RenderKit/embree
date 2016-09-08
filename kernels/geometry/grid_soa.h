@@ -144,27 +144,24 @@ namespace embree
       std::pair<BBox3fa,BBox3fa> buildMBlurBVH(BVH4::NodeRef& curNode, size_t time, const GridRange& range, size_t& allocator);
 
       template<typename Loader>
-        struct UVMapper
-        {
-          typedef typename Loader::vfloat vfloat;
+        struct MapUV
+      {
+        typedef typename Loader::vfloat vfloat;
+        const float* const grid_uv;
+        size_t line_offset;
 
-          GridSOA* grid;
-          const float* const grid_uv;
-          
-          __forceinline UVMapper(GridSOA* grid, const float* const grid_uv) 
-            : grid(grid), grid_uv(grid_uv) {}
-          
-          __forceinline void operator() (vfloat& u, vfloat& v) const 
-          {
-            const size_t line_offset   = grid->width;
-            const Vec3<vfloat> tri_v012_uv = Loader::gather(grid_uv,line_offset);	
-            const Vec2<vfloat> uv0 = GridSOA::decodeUV(tri_v012_uv[0]);
-            const Vec2<vfloat> uv1 = GridSOA::decodeUV(tri_v012_uv[1]);
-            const Vec2<vfloat> uv2 = GridSOA::decodeUV(tri_v012_uv[2]);        
-            const Vec2<vfloat> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
-            u = uv[0]; v = uv[1]; 
-          }
-        };
+        __forceinline MapUV(const float* const grid_uv, size_t line_offset)
+          : grid_uv(grid_uv), line_offset(line_offset) {}
+
+        __forceinline void operator() (vfloat& u, vfloat& v) const {
+          const Vec3<vfloat> tri_v012_uv = Loader::gather(grid_uv,line_offset);	
+          const Vec2<vfloat> uv0 = GridSOA::decodeUV(tri_v012_uv[0]);
+          const Vec2<vfloat> uv1 = GridSOA::decodeUV(tri_v012_uv[1]);
+          const Vec2<vfloat> uv2 = GridSOA::decodeUV(tri_v012_uv[2]);        
+          const Vec2<vfloat> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
+          u = uv[0];v = uv[1]; 
+        }
+      };
 
       struct Gather2x3
       {
