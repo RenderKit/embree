@@ -84,7 +84,7 @@ namespace embree
 #else  // TASKING_PPL
 	//FIXME optimize
 	//PRINT("PPL PARALLEL_FOR");
-	concurrency::parallel_for(first,last,minStepSize,[&](Index i) { 
+	concurrency::parallel_for(first,last,Index(1),[&](Index i) { 
 		func(i);
 	});	
 #endif

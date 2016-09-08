@@ -94,7 +94,8 @@ namespace embree
     auto range_reduction = [&](Iterator_size_t begin, Iterator_size_t end, const Value& start) { 
       return reduction(start,func(range<Index>(begin.v,end.v))); 
     };
-    return concurrency::parallel_reduce(Iterator_size_t(first),Iterator_size_t(last),identity,range_reduction,reduction);
+    const Value v = concurrency::parallel_reduce(Iterator_size_t(first),Iterator_size_t(last),identity,range_reduction,reduction);
+	return v;
 #endif
   }
 
