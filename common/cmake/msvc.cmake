@@ -31,7 +31,7 @@ ENDIF()
 SET(FLAGS_AVX512KNL "")
 SET(FLAGS_AVX512SKX "")
 
-SET(COMMON_CXX_FLAGS "/EHsc /MP /GR")
+SET(COMMON_CXX_FLAGS "/EHsc /MP /GR /GS-")
 IF (${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel")
   SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /Qdiag-disable:11074 ")  # remark #11074: Inlining inhibited by limit max-size
   SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /Qdiag-disable:11075 ")  # remark #11075: To get full report use -Qopt-report:4 -Qopt-report-phase ipo

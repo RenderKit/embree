@@ -96,8 +96,8 @@ namespace embree
           const BinMapping<BINS> mapping(pinfo);
           const BinMapping<BINS>& _mapping = mapping; // CLANG 3.4 parser bug workaround
           binner = parallel_reduce(set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,binner,
-                                   [&] (const range<size_t>& r) -> Binner { Binner binner(empty); binner.bin(prims+r.begin(),r.size(),_mapping); return binner; },
-                                   [&] (const Binner& b0, const Binner& b1) -> Binner { Binner r = b0; r.merge(b1,_mapping.size()); return r; });
+			  [&](const range<size_t>& r) -> Binner { Binner binner(empty); binner.bin(prims + r.begin(), r.size(), _mapping); return binner; },
+			  [&](const Binner& b0, const Binner& b1) -> Binner { Binner r = b0; r.merge(b1, _mapping.size()); return r; });
           return binner.best(mapping,logBlockSize);
         }
         
