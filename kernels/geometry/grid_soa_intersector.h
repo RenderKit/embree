@@ -101,7 +101,7 @@ namespace embree
       {
         const size_t dim_offset    = pre.grid->dim_offset;
         const size_t line_offset   = pre.grid->width;
-        const float* const grid_x  = pre.grid->gridData() + ((size_t) (prim) >> 4) - 1;
+        const float* const grid_x  = pre.grid->decodeLeaf(0,prim);
         const float* const grid_y  = grid_x + 1 * dim_offset;
         const float* const grid_z  = grid_x + 2 * dim_offset;
         const float* const grid_uv = grid_x + 3 * dim_offset;
@@ -129,7 +129,7 @@ namespace embree
       {
         const size_t dim_offset    = pre.grid->dim_offset;
         const size_t line_offset   = pre.grid->width;
-        const float* const grid_x  = pre.grid->gridData() + ((size_t) (prim) >> 4) - 1;
+        const float* const grid_x  = pre.grid->decodeLeaf(0,prim);
         const float* const grid_y  = grid_x + 1 * dim_offset;
         const float* const grid_z  = grid_x + 2 * dim_offset;
         const float* const grid_uv = grid_x + 3 * dim_offset;
@@ -226,7 +226,7 @@ namespace embree
       {
         const size_t dim_offset    = pre.grid->dim_offset;
         const size_t line_offset   = pre.grid->width;
-        const float* const grid_x  = pre.grid->gridData() + ((size_t) (prim) >> 4) - 1;
+        const float* const grid_x  = pre.grid->decodeLeaf(0,prim);
         const float* const grid_y  = grid_x + 1 * dim_offset;
         const float* const grid_z  = grid_x + 2 * dim_offset;
         const float* const grid_uv = grid_x + 3 * dim_offset;
@@ -244,7 +244,7 @@ namespace embree
       {
         const size_t dim_offset    = pre.grid->dim_offset;
         const size_t line_offset   = pre.grid->width;
-        const float* const grid_x  = pre.grid->gridData() + ((size_t) (prim) >> 4) - 1;
+        const float* const grid_x  = pre.grid->decodeLeaf(0,prim);
         const float* const grid_y  = grid_x + 1 * dim_offset;
         const float* const grid_z  = grid_x + 2 * dim_offset;
         const float* const grid_uv = grid_x + 3 * dim_offset;
