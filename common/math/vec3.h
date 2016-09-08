@@ -155,6 +155,11 @@ namespace embree
     return Vec3<T>(select(s,t.x,f.x),select(s,t.y,f.y),select(s,t.z,f.z));
   }
 
+  template<typename T>
+    __forceinline Vec3<T> lerp(const Vec3<T>& v0, const Vec3<T>& v1, const T& t) {
+    return (T(1.0f)-t)*v0 + t*v1;
+  }
+
   template<typename T> __forceinline int maxDim ( const Vec3<T>& a )
   {
     if (a.x > a.y) {
