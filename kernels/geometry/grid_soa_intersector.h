@@ -161,14 +161,15 @@ namespace embree
         static __forceinline void intersect(RayK<K>& ray, size_t k,
                                             const RTCIntersectContext* context, 
                                             const float* const grid_x,
-                                            const float* const grid_y,
-                                            const float* const grid_z,
-                                            const float* const grid_uv,
                                             const size_t line_offset,
                                             Precalculations& pre,
                                             Scene* scene)
       {
         typedef typename Loader::vfloat vfloat;
+        const size_t dim_offset    = pre.grid->dim_offset;
+        const float* const grid_y  = grid_x + 1 * dim_offset;
+        const float* const grid_z  = grid_x + 2 * dim_offset;
+        const float* const grid_uv = grid_x + 3 * dim_offset;
         Vec3<vfloat> v0, v1, v2; Loader::gather(grid_x,grid_y,grid_z,line_offset,v0,v1,v2);
         pre.intersector.intersect(ray,k,v0,v1,v2,GridSOA::MapUV<Loader>(grid_uv,line_offset),Intersect1KEpilogMU<Loader::M,K,true>(ray,k,context,pre.grid->geomID,pre.grid->primID,scene));
       };
@@ -177,14 +178,15 @@ namespace embree
         static __forceinline bool occluded(RayK<K>& ray, size_t k,
                                            const RTCIntersectContext* context, 
                                            const float* const grid_x,
-                                           const float* const grid_y,
-                                           const float* const grid_z,
-                                           const float* const grid_uv,
                                            const size_t line_offset,
                                            Precalculations& pre,
                                            Scene* scene)
       {
         typedef typename Loader::vfloat vfloat;
+        const size_t dim_offset    = pre.grid->dim_offset;
+        const float* const grid_y  = grid_x + 1 * dim_offset;
+        const float* const grid_z  = grid_x + 2 * dim_offset;
+        const float* const grid_uv = grid_x + 3 * dim_offset;
         Vec3<vfloat> v0, v1, v2; Loader::gather(grid_x,grid_y,grid_z,line_offset,v0,v1,v2);
         return pre.intersector.intersect(ray,k,v0,v1,v2,GridSOA::MapUV<Loader>(grid_uv,line_offset),Occluded1KEpilogMU<Loader::M,K,true>(ray,k,context,pre.grid->geomID,pre.grid->primID,scene));
       }
@@ -192,36 +194,28 @@ namespace embree
       /*! Intersect a ray with the primitive. */
       static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, const RTCIntersectContext* context, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
       {
-        const size_t dim_offset    = pre.grid->dim_offset;
         const size_t line_offset   = pre.grid->width;
         const float* const grid_x  = pre.grid->decodeLeaf(0,prim);
-        const float* const grid_y  = grid_x + 1 * dim_offset;
-        const float* const grid_z  = grid_x + 2 * dim_offset;
-        const float* const grid_uv = grid_x + 3 * dim_offset;
         
 #if defined(__AVX__)
-        intersect<GridSOA::Gather3x3>( ray, k, context, grid_x,grid_y,grid_z,grid_uv, line_offset, pre, scene);
+        intersect<GridSOA::Gather3x3>( ray, k, context, grid_x, line_offset, pre, scene);
 #else
-        intersect<GridSOA::Gather2x3>(ray, k, context, grid_x            ,grid_y            ,grid_z            ,grid_uv            , line_offset, pre, scene);
-        intersect<GridSOA::Gather2x3>(ray, k, context, grid_x+line_offset,grid_y+line_offset,grid_z+line_offset,grid_uv+line_offset, line_offset, pre, scene);
+        intersect<GridSOA::Gather2x3>(ray, k, context, grid_x            , line_offset, pre, scene);
+        intersect<GridSOA::Gather2x3>(ray, k, context, grid_x+line_offset, line_offset, pre, scene);
 #endif
       }
       
       /*! Test if the ray is occluded by the primitive */
       static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, const RTCIntersectContext* context, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
       {
-        const size_t dim_offset    = pre.grid->dim_offset;
         const size_t line_offset   = pre.grid->width;
         const float* const grid_x  = pre.grid->decodeLeaf(0,prim);
-        const float* const grid_y  = grid_x + 1 * dim_offset;
-        const float* const grid_z  = grid_x + 2 * dim_offset;
-        const float* const grid_uv = grid_x + 3 * dim_offset;
         
 #if defined(__AVX__)
-        return occluded<GridSOA::Gather3x3>( ray, k, context, grid_x,grid_y,grid_z,grid_uv, line_offset, pre, scene);
+        return occluded<GridSOA::Gather3x3>( ray, k, context, grid_x, line_offset, pre, scene);
 #else
-        if (occluded<GridSOA::Gather2x3>(ray, k, context, grid_x            ,grid_y            ,grid_z            ,grid_uv            , line_offset, pre, scene)) return true;
-        if (occluded<GridSOA::Gather2x3>(ray, k, context, grid_x+line_offset,grid_y+line_offset,grid_z+line_offset,grid_uv+line_offset, line_offset, pre, scene)) return true;
+        if (occluded<GridSOA::Gather2x3>(ray, k, context, grid_x            , line_offset, pre, scene)) return true;
+        if (occluded<GridSOA::Gather2x3>(ray, k, context, grid_x+line_offset, line_offset, pre, scene)) return true;
 #endif
         return false;
       } 
