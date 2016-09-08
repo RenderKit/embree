@@ -72,17 +72,28 @@ namespace embree
     if (tbb::task::self().is_cancelled())
       throw std::runtime_error("task cancelled");
 #else // TASKING_PPL
-	  //concurrency::combinable<Value> res;
 
-	 // concurrency::parallel_for(first, last, minStepSize, [&](Index i) {
-		//  res.local() = reduction(func(i), res.local());
-	  //});
-	  //return res.combine(reduction);
-	  //PRINT("PPL PARALLEL_REDUCE");
-	  Value res = identity;
-	  for (Index i = first; i < last; i++)
-		  res = reduction(res, func(range<Index>(i, i + 1)));
-	  return res;
+    struct Iterator_size_t
+    {
+      size_t v;
+      typedef std::forward_iterator_tag iterator_category;
+	    typedef Value value_type;
+	    typedef size_t difference_type;
+	    typedef size_t distance_type;	
+	    typedef Value* pointer;
+	    typedef Value& reference;
+      __forceinline Iterator_size_t() {}
+      __forceinline Iterator_size_t(size_t v) : v(v) {}
+      __forceinline bool operator== (Iterator_size_t other) { return v == other.v; }
+      __forceinline bool operator!= (Iterator_size_t other) { return v != other.v; }
+      __forceinline Iterator_size_t operator++() { return Iterator_size_t(++v); }
+      __forceinline Iterator_size_t operator++(int) { return Iterator_size_t(v++); }
+    };
+
+    auto range_reduction = [&](Iterator_size_t begin, Iterator_size_t end, const Value& start) { 
+      return reduction(start,func(range<Index>(begin.v,end.v))); 
+    };
+    return concurrency::parallel_reduce(Iterator_size_t(first),Iterator_size_t(last),identity,range_reduction,reduction);
 #endif
   }
 
