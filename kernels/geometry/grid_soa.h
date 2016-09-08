@@ -34,27 +34,31 @@ namespace embree
     public:
 
       /*! GridSOA constructor */
-      GridSOA(const SubdivPatch1Base& patch, 
+      GridSOA(const SubdivPatch1Base* patches, const unsigned time_steps,
               const unsigned x0, const unsigned x1, const unsigned y0, const unsigned y1, const unsigned swidth, const unsigned sheight,
-              const SubdivMesh* const geom, const size_t bvhBytes, BBox3fa* bounds_o = nullptr);
+              const SubdivMesh* const geom, const size_t bvhBytes, const size_t gridBytes, BBox3fa* bounds_o = nullptr);
 
       /*! Subgrid creation */
       template<typename Allocator>
-        static GridSOA* create(SubdivPatch1Base* const patch, unsigned x0, unsigned x1, unsigned y0, unsigned y1, const Scene* scene, Allocator& alloc, BBox3fa* bounds_o = nullptr)
+        static GridSOA* create(const SubdivPatch1Base* patches, const unsigned time_steps,
+                               unsigned x0, unsigned x1, unsigned y0, unsigned y1, 
+                               const Scene* scene, Allocator& alloc, BBox3fa* bounds_o = nullptr)
       {
         const unsigned width = x1-x0+1;
         const unsigned height = y1-y0+1;
         const GridRange range(0,width-1,0,height-1);
         const size_t bvhBytes  = getBVHBytes(range,0);
         const size_t gridBytes = 4*size_t(width)*size_t(height)*sizeof(float)+4; // 4 bytes of padding required because of off by 1 read below
-        return new (alloc(offsetof(GridSOA,data)+bvhBytes+gridBytes)) GridSOA(*patch,x0,x1,y0,y1,patch->grid_u_res,patch->grid_v_res,scene->getSubdivMesh(patch->geom),bvhBytes,bounds_o);  
+        void* data = alloc(offsetof(GridSOA,data)+time_steps*bvhBytes+time_steps*gridBytes);
+        return new (data) GridSOA(patches,time_steps,x0,x1,y0,y1,patches->grid_u_res,patches->grid_v_res,scene->getSubdivMesh(patches->geom),bvhBytes,gridBytes,bounds_o);  
       }
 
       /*! Grid creation */
       template<typename Allocator>
-        static GridSOA* create(SubdivPatch1Base* const patch, const Scene* scene, const Allocator& alloc, BBox3fa* bounds_o = nullptr) 
+        static GridSOA* create(const SubdivPatch1Base* const patches, const unsigned time_steps,
+                               const Scene* scene, const Allocator& alloc, BBox3fa* bounds_o = nullptr) 
       {
-        return create(patch,0,patch->grid_u_res-1,0,patch->grid_v_res-1,scene,alloc,bounds_o);
+        return create(patches,time_steps,0,patches->grid_u_res-1,0,patches->grid_v_res-1,scene,alloc,bounds_o);
       }
 
       static unsigned getNumEagerLeaves(unsigned width, unsigned height) {
@@ -77,7 +81,7 @@ namespace embree
             const unsigned lx0 = x, lx1 = min(lx0+8,x1);
             const unsigned ly0 = y, ly1 = min(ly0+8,y1);
             BBox3fa bounds;
-            GridSOA* leaf = create(&patch,lx0,lx1,ly0,ly1,scene,alloc,&bounds);
+            GridSOA* leaf = create(&patch,1,lx0,lx1,ly0,ly1,scene,alloc,&bounds);
             *prims = PrimRef(bounds,(unsigned)BVH4::encodeTypedLeaf(leaf,1)); prims++;
             N++;
           }
@@ -86,13 +90,13 @@ namespace embree
       }
 
       /*! returns pointer to BVH array */
-      __forceinline char* bvhData() {
-        return &data[0];
+      __forceinline char* bvhData(size_t t = 0) {
+        return &data[t*bvhBytes];
       }
 
       /*! returns pointer to Grid array */
-      __forceinline float* gridData() {
-        return (float*) &data[bvhBytes];
+      __forceinline float* gridData(size_t t = 0) {
+        return (float*) &data[time_steps*bvhBytes + t*gridBytes];
       }
       
       /*! returns the size of the BVH over the grid in bytes */
@@ -159,12 +163,14 @@ namespace embree
 #if !defined (__X86_64__)
       unsigned align0;
 #endif
-      unsigned width;
-      unsigned height;
-      unsigned dim_offset;
+      unsigned short time_steps;
+      unsigned short width;
+      unsigned short height;
+      unsigned short dim_offset;
       unsigned geomID;
       unsigned primID;
       unsigned bvhBytes;
+      unsigned gridBytes;
       char data[1];        //!< after the struct we first store the BVH and then the grid
     };
   }

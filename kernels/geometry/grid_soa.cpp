@@ -20,10 +20,11 @@ namespace embree
 {
   namespace isa
   {  
-    GridSOA::GridSOA(const SubdivPatch1Base& patch, 
+    GridSOA::GridSOA(const SubdivPatch1Base* patches, unsigned time_steps, 
                      const unsigned x0, const unsigned x1, const unsigned y0, const unsigned y1, const unsigned swidth, const unsigned sheight,
-                     const SubdivMesh* const geom, const size_t bvhBytes, BBox3fa* bounds_o)
-      : root(BVH4::emptyNode), width(x1-x0+1), height(y1-y0+1), dim_offset(width*height), geomID(patch.geom), primID(patch.prim), bvhBytes(unsigned(bvhBytes))
+                     const SubdivMesh* const geom, const size_t bvhBytes, const size_t gridBytes, BBox3fa* bounds_o)
+      : root(BVH4::emptyNode), time_steps(time_steps), width(x1-x0+1), height(y1-y0+1), dim_offset(width*height), 
+        geomID(patches->geom), primID(patches->prim), bvhBytes(unsigned(bvhBytes)), gridBytes(unsigned(gridBytes))
     {      
       /* the generate loops need padded arrays, thus first store into these temporary arrays */
       unsigned temp_size = width*height+VSIZEX;
@@ -34,29 +35,41 @@ namespace embree
       dynamic_large_stack_array(float,local_grid_z,temp_size,64*64*sizeof(float));
       dynamic_large_stack_array(float,local_grid_uv,temp_size,64*64*sizeof(float));
 
-      /* compute vertex grid (+displacement) */
-      evalGrid(patch,x0,x1,y0,y1,swidth,sheight,
-               local_grid_x,local_grid_y,local_grid_z,local_grid_u,local_grid_v,geom);
-      
-      /* encode UVs */
-      for (unsigned i=0; i<dim_offset; i+=VSIZEX) {
-        const vintx iu = (vintx) clamp(vfloatx::load(&local_grid_u[i])*0xFFFF, vfloatx(0.0f), vfloatx(0xFFFF));
-        const vintx iv = (vintx) clamp(vfloatx::load(&local_grid_v[i])*0xFFFF, vfloatx(0.0f), vfloatx(0xFFFF));
-        vintx::storeu(&local_grid_uv[i], (iv << 16) | iu);
+      /* first create the grids for each time step */
+      for (size_t t=0; t<time_steps; t++)
+      {
+        /* compute vertex grid (+displacement) */
+        evalGrid(patches[t],x0,x1,y0,y1,swidth,sheight,
+                 local_grid_x,local_grid_y,local_grid_z,local_grid_u,local_grid_v,geom);
+        
+        /* encode UVs */
+        for (unsigned i=0; i<dim_offset; i+=VSIZEX) {
+          const vintx iu = (vintx) clamp(vfloatx::load(&local_grid_u[i])*0xFFFF, vfloatx(0.0f), vfloatx(0xFFFF));
+          const vintx iv = (vintx) clamp(vfloatx::load(&local_grid_v[i])*0xFFFF, vfloatx(0.0f), vfloatx(0xFFFF));
+          vintx::storeu(&local_grid_uv[i], (iv << 16) | iu);
+        }
+        
+        /* copy temporary data to compact grid */
+        float* const grid_x  = (float*)(gridData(t) + 0*dim_offset);
+        float* const grid_y  = (float*)(gridData(t) + 1*dim_offset);
+        float* const grid_z  = (float*)(gridData(t) + 2*dim_offset);
+        int  * const grid_uv = (int*  )(gridData(t) + 3*dim_offset);
+        memcpy(grid_x, local_grid_x, dim_offset*sizeof(float));
+        memcpy(grid_y, local_grid_y, dim_offset*sizeof(float));
+        memcpy(grid_z, local_grid_z, dim_offset*sizeof(float));
+        memcpy(grid_uv,local_grid_uv,dim_offset*sizeof(int));       
       }
 
-      /* copy temporary data to compact grid */
-      float* const grid_x  = (float*)(gridData() + 0*dim_offset);
-      float* const grid_y  = (float*)(gridData() + 1*dim_offset);
-      float* const grid_z  = (float*)(gridData() + 2*dim_offset);
-      int  * const grid_uv = (int*  )(gridData() + 3*dim_offset);
-      memcpy(grid_x, local_grid_x, dim_offset*sizeof(float));
-      memcpy(grid_y, local_grid_y, dim_offset*sizeof(float));
-      memcpy(grid_z, local_grid_z, dim_offset*sizeof(float));
-      memcpy(grid_uv,local_grid_uv,dim_offset*sizeof(int));
-      
-      /* create BVH */
-      root = buildBVH(bvhData(),gridData(),bvhBytes,bounds_o);
+      /* now create the BVHs */
+      BBox3fa bounds = empty;
+      for (size_t t=0; t<time_steps; t++)
+      {
+        /* create BVH */
+        BBox3fa bounds_t;
+        root = buildBVH(bvhData(t),gridData(t),bvhBytes,&bounds_t);
+        bounds.extend(bounds_t);
+      }
+      if (bounds_o) *bounds_o = bounds;
     }
 
     size_t GridSOA::getBVHBytes(const GridRange& range, const unsigned int leafBytes)
