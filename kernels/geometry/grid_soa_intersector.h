@@ -169,12 +169,7 @@ namespace embree
                                             Scene* scene)
       {
         typedef typename Loader::vfloat vfloat;
-	const Vec3<vfloat> tri_v012_x = Loader::gather(grid_x,line_offset);
-	const Vec3<vfloat> tri_v012_y = Loader::gather(grid_y,line_offset);
-	const Vec3<vfloat> tri_v012_z = Loader::gather(grid_z,line_offset);
-	const Vec3<vfloat> v0(tri_v012_x[0],tri_v012_y[0],tri_v012_z[0]);
-	const Vec3<vfloat> v1(tri_v012_x[1],tri_v012_y[1],tri_v012_z[1]);
-	const Vec3<vfloat> v2(tri_v012_x[2],tri_v012_y[2],tri_v012_z[2]);
+        Vec3<vfloat> v0, v1, v2; Loader::gather(grid_x,grid_y,grid_z,line_offset,v0,v1,v2);
         pre.intersector.intersect(ray,k,v0,v1,v2,GridSOA::MapUV<Loader>(grid_uv,line_offset),Intersect1KEpilogMU<Loader::M,K,true>(ray,k,context,pre.grid->geomID,pre.grid->primID,scene));
       };
       
@@ -190,12 +185,7 @@ namespace embree
                                            Scene* scene)
       {
         typedef typename Loader::vfloat vfloat;
-	const Vec3<vfloat> tri_v012_x = Loader::gather(grid_x,line_offset);
-	const Vec3<vfloat> tri_v012_y = Loader::gather(grid_y,line_offset);
-	const Vec3<vfloat> tri_v012_z = Loader::gather(grid_z,line_offset);
-	const Vec3<vfloat> v0(tri_v012_x[0],tri_v012_y[0],tri_v012_z[0]);
-	const Vec3<vfloat> v1(tri_v012_x[1],tri_v012_y[1],tri_v012_z[1]);
-	const Vec3<vfloat> v2(tri_v012_x[2],tri_v012_y[2],tri_v012_z[2]);
+        Vec3<vfloat> v0, v1, v2; Loader::gather(grid_x,grid_y,grid_z,line_offset,v0,v1,v2);
         return pre.intersector.intersect(ray,k,v0,v1,v2,GridSOA::MapUV<Loader>(grid_uv,line_offset),Occluded1KEpilogMU<Loader::M,K,true>(ray,k,context,pre.grid->geomID,pre.grid->primID,scene));
       }
 
