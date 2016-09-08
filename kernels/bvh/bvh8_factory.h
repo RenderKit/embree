@@ -126,20 +126,20 @@ namespace embree
     DEFINE_SYMBOL2(Accel::Intersector16,BVH8Quad4iIntersector16HybridPlueckerNoFilter);
     DEFINE_SYMBOL2(Accel::Intersector16,BVH8Quad4iMBIntersector16HybridPluecker);
 
-    DEFINE_SYMBOL2(Accel::IntersectorN,BVH8Line4iStreamIntersector);
-    //DEFINE_SYMBOL2(Accel::IntersectorN,BVH8Line4iMBStreamIntersector);
-    DEFINE_SYMBOL2(Accel::IntersectorN,BVH8Bezier1vStreamIntersector_OBB);
-    DEFINE_SYMBOL2(Accel::IntersectorN,BVH8Bezier1iStreamIntersector_OBB);
-    //DEFINE_SYMBOL2(Accel::IntersectorN,BVH8Bezier1iMBStreamIntersector_OBB);
-    DEFINE_SYMBOL2(Accel::IntersectorN,BVH8Triangle4StreamIntersectorMoeller);
-    DEFINE_SYMBOL2(Accel::IntersectorN,BVH8Triangle4StreamIntersectorMoellerNoFilter);
-    //DEFINE_SYMBOL2(Accel::IntersectorN,BVH8Triangle4vMBStreamIntersectorMoeller);
-    DEFINE_SYMBOL2(Accel::IntersectorN,BVH8Quad4vStreamIntersectorMoeller);
-    DEFINE_SYMBOL2(Accel::IntersectorN,BVH8Quad4vStreamIntersectorMoellerNoFilter);
-    DEFINE_SYMBOL2(Accel::IntersectorN,BVH8Quad4iStreamIntersectorPluecker);
-    //DEFINE_SYMBOL2(Accel::IntersectorN,BVH8Quad4iMBStreamIntersectorPluecker);
-    //DEFINE_SYMBOL2(Accel::IntersectorN,BVH8GridAOSStreamIntersector);
-    //DEFINE_SYMBOL2(Accel::IntersectorN,QBVH8Triangle4StreamIntersectorMoeller);
+    DEFINE_SYMBOL2(Accel::IntersectorN,BVH8Line4iIntersectorStream);
+    //DEFINE_SYMBOL2(Accel::IntersectorN,BVH8Line4iMBIntersectorStream);
+    DEFINE_SYMBOL2(Accel::IntersectorN,BVH8Bezier1vIntersectorStream_OBB);
+    DEFINE_SYMBOL2(Accel::IntersectorN,BVH8Bezier1iIntersectorStream_OBB);
+    //DEFINE_SYMBOL2(Accel::IntersectorN,BVH8Bezier1iMBIntersectorStream_OBB);
+    DEFINE_SYMBOL2(Accel::IntersectorN,BVH8Triangle4IntersectorStreamMoeller);
+    DEFINE_SYMBOL2(Accel::IntersectorN,BVH8Triangle4IntersectorStreamMoellerNoFilter);
+    //DEFINE_SYMBOL2(Accel::IntersectorN,BVH8Triangle4vMBIntersectorStreamMoeller);
+    DEFINE_SYMBOL2(Accel::IntersectorN,BVH8Quad4vIntersectorStreamMoeller);
+    DEFINE_SYMBOL2(Accel::IntersectorN,BVH8Quad4vIntersectorStreamMoellerNoFilter);
+    DEFINE_SYMBOL2(Accel::IntersectorN,BVH8Quad4iIntersectorStreamPluecker);
+    //DEFINE_SYMBOL2(Accel::IntersectorN,BVH8Quad4iMBIntersectorStreamPluecker);
+    //DEFINE_SYMBOL2(Accel::IntersectorN,BVH8GridAOSIntersectorStream);
+    //DEFINE_SYMBOL2(Accel::IntersectorN,QBVH8Triangle4IntersectorStreamMoeller);
 
     DEFINE_BUILDER2(void,Scene,size_t,BVH8Bezier1vBuilder_OBB_New);
     DEFINE_BUILDER2(void,Scene,size_t,BVH8Bezier1iBuilder_OBB_New);

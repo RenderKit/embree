@@ -38,8 +38,8 @@ namespace embree
       size_t ptr; 
     };
 
-    template<int types, int N, int Nx>
-      class BVHNNodeTraverserHit
+    template<int N, int Nx, int types>
+      class BVHNNodeTraverserStreamHit
     {
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
@@ -180,8 +180,8 @@ namespace embree
       unsigned int dist;
     };
 
-    template<int types, int N, int K>
-      class BVHNNodeTraverserKHitCoherent
+    template<int N, int K, int types>
+      class BVHNNodeTraverserStreamHitCoherent
     {
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
@@ -377,7 +377,7 @@ namespace embree
 
     /*! BVH ray stream intersector. */
     template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
-      class BVHNStreamIntersector
+      class BVHNIntersectorStream
     {
       /* shortcuts for frequently used types */
       typedef typename PrimitiveIntersector::Precalculations Precalculations;
