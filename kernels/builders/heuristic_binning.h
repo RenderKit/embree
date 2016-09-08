@@ -181,6 +181,12 @@ namespace embree
 	clear();
       }
 
+#if !defined(__AVX__)
+	  __forceinline BinInfo(const BinInfo &b) {
+		  memcpy(this, &b, sizeof(BinInfo));
+	  }
+#endif
+
       /*! bin access function */
 
       __forceinline BBox3fa &bounds(const size_t binID, const size_t dimID)             { return _bounds[binID][dimID]; }
@@ -316,10 +322,10 @@ namespace embree
       }
 
       /*! reduces binning information */
-      static __forceinline const BinInfo reduce (const BinInfo& a, const BinInfo& b)
+      static __forceinline const BinInfo reduce (const BinInfo& a, const BinInfo& b, const size_t numBins = BINS)
       {
         BinInfo c;
-	for (size_t i=0; i<BINS; i++) 
+	for (size_t i=0; i<numBins; i++) 
         {
           c.counts(i) = a.counts(i)+b.counts(i);
           c.bounds(i,0) = embree::merge(a.bounds(i,0),b.bounds(i,0));
