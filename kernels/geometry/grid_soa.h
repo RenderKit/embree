@@ -97,6 +97,13 @@ namespace embree
       __forceinline       float* gridData(size_t t = 0)       { return (float*) &data[time_steps*bvhBytes + t*gridBytes]; }
       __forceinline const float* gridData(size_t t = 0) const { return (float*) &data[time_steps*bvhBytes + t*gridBytes]; }
       
+      __forceinline void* encodeLeaf(size_t u, size_t v) {
+        return (void*) (16*(v * width + u + 1)); // +1 to not create empty leaf
+      }
+      __forceinline float* decodeLeaf(size_t t, const void* ptr) {
+        return gridData(t) + (((size_t) (ptr) >> 4) - 1);
+      }
+
       /*! returns the size of the BVH over the grid in bytes */
       static size_t getBVHBytes(const GridRange& range, const unsigned int leafBytes);
 

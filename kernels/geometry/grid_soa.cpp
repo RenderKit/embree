@@ -118,8 +118,7 @@ namespace embree
         if (unlikely(v_size < 2 && v_start > 0)) v_start--;
         
         /* we store index of first subgrid vertex as leaf node */
-        const size_t value = 16*(v_start * width + u_start + 1); // +1 to not create empty leaf
-        curNode = BVH4::encodeTypedLeaf((void*)value,0);
+        curNode = BVH4::encodeTypedLeaf(encodeLeaf(u_start,v_start),0);
 
         /* return bounding box */
         return calculateBounds(time,range);
