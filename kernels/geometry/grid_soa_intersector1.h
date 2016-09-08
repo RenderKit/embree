@@ -146,13 +146,13 @@ namespace embree
         Vec3<vfloat> b0, b1, b2;
         Loader::gather(grid_x+grid_offset,grid_y+grid_offset,grid_z+grid_offset,line_offset,b0,b1,b2);
        
-        Vec3<vfloat> c0 = lerp(a0,b0,vfloat(ftime));
-        Vec3<vfloat> c1 = lerp(a1,b1,vfloat(ftime));
-        Vec3<vfloat> c2 = lerp(a2,b2,vfloat(ftime));
+        Vec3<vfloat> v0 = lerp(a0,b0,vfloat(ftime));
+        Vec3<vfloat> v1 = lerp(a1,b1,vfloat(ftime));
+        Vec3<vfloat> v2 = lerp(a2,b2,vfloat(ftime));
 
         GridSOA::MapUV<Loader> mapUV(grid_uv,line_offset);
         PlueckerIntersector1<Loader::M> intersector(ray,nullptr);
-        intersector.intersect(ray,c0,c1,c2,mapUV,Intersect1EpilogMU<Loader::M,true>(ray,context,pre.grid->geomID,pre.grid->primID,scene,nullptr));
+        intersector.intersect(ray,v0,v1,v2,mapUV,Intersect1EpilogMU<Loader::M,true>(ray,context,pre.grid->geomID,pre.grid->primID,scene,nullptr));
       };
       
       template<typename Loader>
@@ -176,13 +176,13 @@ namespace embree
         Vec3<vfloat> b0, b1, b2;
         Loader::gather(grid_x+grid_offset,grid_y+grid_offset,grid_z+grid_offset,line_offset,b0,b1,b2);
        
-        Vec3<vfloat> c0 = lerp(a0,b0,vfloat(ftime));
-        Vec3<vfloat> c1 = lerp(a1,b1,vfloat(ftime));
-        Vec3<vfloat> c2 = lerp(a2,b2,vfloat(ftime));
+        Vec3<vfloat> v0 = lerp(a0,b0,vfloat(ftime));
+        Vec3<vfloat> v1 = lerp(a1,b1,vfloat(ftime));
+        Vec3<vfloat> v2 = lerp(a2,b2,vfloat(ftime));
         
         GridSOA::MapUV<Loader> mapUV(grid_uv,line_offset);
         PlueckerIntersector1<Loader::M> intersector(ray,nullptr);
-        return intersector.intersect(ray,c0,c1,c2,mapUV,Occluded1EpilogMU<Loader::M,true>(ray,context,pre.grid->geomID,pre.grid->primID,scene,nullptr));
+        return intersector.intersect(ray,v0,v1,v2,mapUV,Occluded1EpilogMU<Loader::M,true>(ray,context,pre.grid->geomID,pre.grid->primID,scene,nullptr));
       }
       
       /*! Intersect a ray with the primitive. */
