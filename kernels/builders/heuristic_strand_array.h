@@ -133,8 +133,8 @@ namespace embree
             : cos(otherCos), axis(otherAxis) {}
 
         public:
-			Vec3fa axis;
           float cos;
+          Vec3fa axis;
         };
         
         const BestAxis best = parallel_reduce
@@ -172,8 +172,8 @@ namespace embree
             c.rbounds = embree::merge(a.rbounds,b.rbounds);
             return c;
           }
+          size_t lnum, rnum;
           BBox3fa lbounds, rbounds;
-		  size_t lnum, rnum;
         };
         const LinearSpace3fa space0 = frame(axis0).transposed();
         const LinearSpace3fa space1 = frame(axis1).transposed();
