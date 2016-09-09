@@ -24,7 +24,7 @@ namespace embree
                      const unsigned x0, const unsigned x1, const unsigned y0, const unsigned y1, const unsigned swidth, const unsigned sheight,
                      const SubdivMesh* const geom, const size_t bvhBytes, const size_t gridBytes, BBox3fa* bounds_o)
       : root(BVH4::emptyNode), time_steps(time_steps), width(x1-x0+1), height(y1-y0+1), dim_offset(width*height), 
-        geomID(patches->geom), primID(patches->prim), bvhBytes(unsigned(bvhBytes)), gridBytes(unsigned(gridBytes))
+        geomID(patches->geom), primID(patches->prim), bvhBytes(unsigned(bvhBytes)), gridOffset(max(1u,time_steps-1)*bvhBytes), gridBytes(unsigned(gridBytes))
     {      
       /* the generate loops need padded arrays, thus first store into these temporary arrays */
       unsigned temp_size = width*height+VSIZEX;
@@ -68,7 +68,7 @@ namespace embree
       /* otherwise build MBlur BVH */
       else
       {
-        for (size_t t=0; t<time_steps; t++)
+        for (size_t t=0; t<time_steps-1; t++)
         {
           std::pair<BBox3fa,BBox3fa> bounds;
           root = buildMBlurBVH(t,&bounds);

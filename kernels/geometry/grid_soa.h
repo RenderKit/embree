@@ -49,7 +49,7 @@ namespace embree
         const GridRange range(0,width-1,0,height-1);
         const size_t bvhBytes  = getBVHBytes(range,0);
         const size_t gridBytes = 4*size_t(width)*size_t(height)*sizeof(float)+4; // 4 bytes of padding required because of off by 1 read below
-        void* data = alloc(offsetof(GridSOA,data)+time_steps*bvhBytes+time_steps*gridBytes);
+        void* data = alloc(offsetof(GridSOA,data)+max(1u,time_steps-1)*bvhBytes+time_steps*gridBytes);
         return new (data) GridSOA(patches,time_steps,x0,x1,y0,y1,patches->grid_u_res,patches->grid_v_res,scene->getSubdivMesh(patches->geom),bvhBytes,gridBytes,bounds_o);  
       }
 
@@ -94,8 +94,8 @@ namespace embree
       __forceinline const char* bvhData(size_t t = 0) const { return &data[t*bvhBytes]; }
 
       /*! returns pointer to Grid array */
-      __forceinline       float* gridData(size_t t = 0)       { return (float*) &data[time_steps*bvhBytes + t*gridBytes]; }
-      __forceinline const float* gridData(size_t t = 0) const { return (float*) &data[time_steps*bvhBytes + t*gridBytes]; }
+      __forceinline       float* gridData(size_t t = 0)       { return (float*) &data[gridOffset + t*gridBytes]; }
+      __forceinline const float* gridData(size_t t = 0) const { return (float*) &data[gridOffset + t*gridBytes]; }
       
       __forceinline void* encodeLeaf(size_t u, size_t v) {
         return (void*) (16*(v * width + u + 1)); // +1 to not create empty leaf
@@ -259,8 +259,8 @@ namespace embree
       unsigned primID;
 
       unsigned bvhBytes;
+      unsigned gridOffset;
       unsigned gridBytes;
-      unsigned align0;
       unsigned align1;
 
       char data[1];        //!< after the struct we first store the BVH and then the grid
