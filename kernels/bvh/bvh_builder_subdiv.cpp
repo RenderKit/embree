@@ -347,23 +347,23 @@ namespace embree
         double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "SubdivPatch1CachedBuilderBinnedSAH");
 
         /* calculate number of primitives (some patches need initial subdivision) */
-        numPrimitives = countPatches();
-        prims.resize(numPrimitives);
-        bounds.resize(numPrimitives);
+        size_t numSubPrimitives = countPatches();
+        prims.resize(numSubPrimitives);
+        bounds.resize(numSubPrimitives);
         
         /* exit if there are no primitives to process */
-        if (numPrimitives == 0) {
+        if (numSubPrimitives == 0) {
           bvh->set(BVH::emptyNode,empty,0);
           bvh->postBuild(t0);
           return;
         }
         
         /* Allocate memory for gregory and b-spline patches */
-        bvh->subdiv_patches.resize(sizeof(SubdivPatch1Cached) * numPrimitives);
+        bvh->subdiv_patches.resize(sizeof(SubdivPatch1Cached) * numSubPrimitives);
 
         /* switch between fast and slow mode */
-        if (fastUpdateMode) cachedUpdate(numPrimitives);
-        else cachedRebuild(numPrimitives);
+        if (fastUpdateMode) cachedUpdate(numSubPrimitives);
+        else cachedRebuild(numSubPrimitives);
         
 	/* clear temporary data for static geometry */
 	if (scene->isStatic()) {
