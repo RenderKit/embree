@@ -184,7 +184,7 @@ namespace embree
       {
         if (ref == BVH::emptyNode) return BBox3fa(empty);
         size_t num; SubdivPatch1Cached *sptr = (SubdivPatch1Cached*)ref.leaf(num);
-        const size_t index = ((size_t)sptr - (size_t)this->bvh->data_mem) / sizeof(SubdivPatch1Cached);
+        const size_t index = ((size_t)sptr - (size_t)bvh->subdiv_patches.data()) / sizeof(SubdivPatch1Cached);
         return prims[index].bounds(); 
       }
 
@@ -265,24 +265,9 @@ namespace embree
         }
         
         /* Allocate memory for gregory and b-spline patches */
-        if (this->bvh->size_data_mem < sizeof(SubdivPatch1Cached) * numPrimitives) 
-        {
-          if (this->bvh->data_mem) os_free( this->bvh->data_mem, this->bvh->size_data_mem );
-          this->bvh->data_mem      = nullptr;
-          this->bvh->size_data_mem = 0;
-        }
+        bvh->subdiv_patches.resize(sizeof(SubdivPatch1Cached) * numPrimitives);
+        SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)bvh->subdiv_patches.data();
         
-        if (bvh->data_mem == nullptr)
-        {
-          this->bvh->size_data_mem = sizeof(SubdivPatch1Cached) * numPrimitives;
-          if ( this->bvh->size_data_mem != 0) this->bvh->data_mem = os_malloc( this->bvh->size_data_mem );        
-          else                                this->bvh->data_mem = nullptr;
-        }
-        assert(this->bvh->data_mem);
-        SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
-        
-        //atomic_t numChanged = 0;
-        //atomic_t numUnchanged = 0;
         pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
         {
           PrimInfo s(empty);
@@ -299,8 +284,6 @@ namespace embree
               
               if (likely(fastUpdateMode)) {
                 bool grid_changed = patch.updateEdgeLevels(edge_level,subdiv,mesh,VSIZEX);
-                //grid_changed = true;
-                //if (grid_changed) atomic_add(&numChanged,1); else atomic_add(&numUnchanged,1);
                 if (grid_changed) {
                   patch.resetRootRef();
                   bound = evalGridBounds(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,mesh);
@@ -312,7 +295,6 @@ namespace embree
               else {
                 new (&patch) SubdivPatch1Cached(mesh->id,unsigned(f),subPatch,mesh,uv,edge_level,subdiv,VSIZEX);
                 bound = evalGridBounds(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,mesh);
-                //patch.root_ref.data = (int64_t) GridSOA::create(&patch,scene,[&](size_t bytes) { return (*bvh->alloc.threadLocal())(bytes); });
               }
               bounds[patchIndex] = bound;
               prims[patchIndex] = PrimRef(bound,patchIndex);
@@ -321,8 +303,6 @@ namespace embree
           }
           return s;
         }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a, b); });
-        //PRINT(numChanged);
-        //PRINT(numUnchanged);
 
         if (fastUpdateMode)
         {
@@ -337,7 +317,6 @@ namespace embree
             size_t items MAYBE_UNUSED = current.pinfo.size();
             assert(items == 1);
             const size_t patchIndex = prims[current.prims.begin()].ID();
-            SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
             *current.parent = bvh->encodeLeaf((char*)&subdiv_patches[patchIndex],1);
             return 0;
           };
