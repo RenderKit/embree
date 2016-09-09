@@ -47,7 +47,8 @@ namespace embree
         const unsigned width = x1-x0+1;
         const unsigned height = y1-y0+1;
         const GridRange range(0,width-1,0,height-1);
-        const size_t bvhBytes  = getBVHBytes(range,0);
+        const size_t nodeBytes = time_steps == 1 ? sizeof(BVH4::Node) : sizeof(BVH4::NodeMB);
+        const size_t bvhBytes  = getBVHBytes(range,nodeBytes,0);
         const size_t gridBytes = 4*size_t(width)*size_t(height)*sizeof(float)+4; // 4 bytes of padding required because of off by 1 read below
         void* data = alloc(offsetof(GridSOA,data)+max(1u,time_steps-1)*bvhBytes+time_steps*gridBytes);
         return new (data) GridSOA(patches,time_steps,x0,x1,y0,y1,patches->grid_u_res,patches->grid_v_res,scene->getSubdivMesh(patches->geom),bvhBytes,gridBytes,bounds_o);  
@@ -105,7 +106,7 @@ namespace embree
       }
 
       /*! returns the size of the BVH over the grid in bytes */
-      static size_t getBVHBytes(const GridRange& range, const unsigned int leafBytes);
+      static size_t getBVHBytes(const GridRange& range, const size_t nodeBytes, const size_t leafBytes);
 
       /*! calculates bounding box of grid range */
       __forceinline BBox3fa calculateBounds(size_t time, const GridRange& range) const

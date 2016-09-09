@@ -80,17 +80,17 @@ namespace embree
       }
     }
 
-    size_t GridSOA::getBVHBytes(const GridRange& range, const unsigned int leafBytes)
+    size_t GridSOA::getBVHBytes(const GridRange& range, const size_t nodeBytes, const size_t leafBytes)
     {
       if (range.hasLeafSize()) 
         return leafBytes;
       
       __aligned(64) GridRange r[4];
-      const unsigned int children = range.splitIntoSubRanges(r);
+      const size_t children = range.splitIntoSubRanges(r);
       
-      size_t bytes = sizeof(BVH4::Node);
-      for (unsigned int i=0;i<children;i++)
-        bytes += getBVHBytes(r[i],leafBytes);
+      size_t bytes = nodeBytes;
+      for (size_t i=0; i<children; i++)
+        bytes += getBVHBytes(r[i],nodeBytes,leafBytes);
       return bytes;
     }
     
