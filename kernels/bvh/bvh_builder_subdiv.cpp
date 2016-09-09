@@ -221,6 +221,8 @@ namespace embree
         fastUpdateMode &= numSubdivEnableDisableEvents == scene->numSubdivEnableDisableEvents;
         numSubdivEnableDisableEvents = scene->numSubdivEnableDisableEvents;
 
+        //static size_t counter = 0; if ((++counter) % 16 == 0) fastUpdateMode = false;
+
         /* skip build for empty scene */
         if (numPrimitives == 0) {
           prims.resize(numPrimitives);
@@ -238,7 +240,7 @@ namespace embree
         auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(double(dn)); };
         auto virtualprogress = BuildProgressMonitorFromClosure(progress);
 
-        /* initialize allocator and parallel_for_for_prefix_sum */
+        /* calculate number of primitives (some patches need initial subdivision) */
         Scene::Iterator<SubdivMesh> iter(scene);
         pstate.init(iter,size_t(1024));
         PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
@@ -248,10 +250,6 @@ namespace embree
           {          
             if (!mesh->valid(f)) continue;
             s += patch_eval_subdivision_count (mesh->getHalfEdge(f)); 
-            if (unlikely(!fastUpdateMode)) {
-              typename BVH::Allocator alloc(bvh);
-              mesh->patch_eval_trees[f] = Patch3fa::create(alloc, mesh->getHalfEdge(f), mesh->getVertexBuffer().getPtr(), mesh->getVertexBuffer().getStride());
-            }
           }
           return PrimInfo(s,empty,empty);
         }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });
@@ -259,6 +257,7 @@ namespace embree
         prims.resize(numPrimitives);
         bounds.resize(numPrimitives);
         
+        /* exit if there are no primitives to process */
         if (numPrimitives == 0) {
           bvh->set(BVH::emptyNode,empty,0);
           return;
@@ -268,6 +267,7 @@ namespace embree
         bvh->subdiv_patches.resize(sizeof(SubdivPatch1Cached) * numPrimitives);
         SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)bvh->subdiv_patches.data();
         
+        /* generate patches */
         pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
         {
           PrimInfo s(empty);
@@ -275,6 +275,11 @@ namespace embree
           {
             if (!mesh->valid(f)) continue;
             
+            if (!fastUpdateMode) {
+              typename BVH::Allocator alloc(bvh);
+              mesh->patch_eval_trees[f] = Patch3fa::create(alloc, mesh->getHalfEdge(f), mesh->getVertexBuffer().getPtr(), mesh->getVertexBuffer().getStride());
+            }
+
             patch_eval_subdivision(mesh->getHalfEdge(f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch)
             {
               const size_t patchIndex = base.size()+s.size();
