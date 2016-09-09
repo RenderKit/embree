@@ -409,6 +409,7 @@ namespace embree
     /* entry functions for the scene builder */
     Builder* BVH4SubdivGridEagerBuilderBinnedSAH   (void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivGridEagerBuilderBinnedSAHClass<4>((BVH4*)bvh,scene); }
     Builder* BVH4SubdivPatch1CachedBuilderBinnedSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1CachedBuilderBinnedSAHClass<4,false>((BVH4*)bvh,scene); }
+    Builder* BVH4SubdivPatch1MBlurCachedBuilderBinnedSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1CachedBuilderBinnedSAHClass<4,true>((BVH4*)bvh,scene); }
 
 #if defined(__AVX__)
     Builder* BVH8SubdivGridEagerBuilderBinnedSAH   (void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivGridEagerBuilderBinnedSAHClass<8>((BVH8*)bvh,scene); }

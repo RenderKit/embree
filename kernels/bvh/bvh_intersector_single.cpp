@@ -120,6 +120,7 @@ namespace embree
     IF_ENABLED_HAIR(DEFINE_INTERSECTOR4(BVH4Bezier1iIntersector4Single_OBB, BVHNIntersectorKSingle<4 COMMA 4 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1iIntersectorK<4> > >));
     IF_ENABLED_HAIR(DEFINE_INTERSECTOR4(BVH4Bezier1iMBIntersector4Single_OBB,BVHNIntersectorKSingle<4 COMMA 4 COMMA BVH_AN2_UN2 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1iIntersectorKMB<4> > >));
 
+    IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR4(BVH4Subdivpatch1MBlurCachedIntersector4, BVHNIntersectorKSingle<4 COMMA 4 COMMA BVH_AN2 COMMA false COMMA SubdivPatch1MBlurCachedIntersector4>));
     IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR4(BVH4GridAOSIntersector4, BVHNIntersectorKSingle<4 COMMA 4 COMMA BVH_AN1 COMMA true COMMA GridAOSIntersectorK<4> >));
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -137,6 +138,7 @@ namespace embree
     IF_ENABLED_HAIR(DEFINE_INTERSECTOR8(BVH4Bezier1iIntersector8Single_OBB, BVHNIntersectorKSingle<4 COMMA 8 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA Bezier1iIntersectorK<8> > >));
     IF_ENABLED_HAIR(DEFINE_INTERSECTOR8(BVH4Bezier1iMBIntersector8Single_OBB,BVHNIntersectorKSingle<4 COMMA 8 COMMA BVH_AN2_UN2 COMMA false COMMA ArrayIntersectorK_1<8 COMMA Bezier1iIntersectorKMB<8> > >));
 
+    IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR4(BVH4Subdivpatch1MBlurCachedIntersector8, BVHNIntersectorKSingle<4 COMMA 8 COMMA BVH_AN2 COMMA false COMMA SubdivPatch1MBlurCachedIntersector8>));
     IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR8(BVH4GridAOSIntersector8, BVHNIntersectorKSingle<4 COMMA 8 COMMA BVH_AN1 COMMA true COMMA GridAOSIntersectorK<8> >));
 #endif
 
@@ -155,6 +157,7 @@ namespace embree
     IF_ENABLED_HAIR(DEFINE_INTERSECTOR16(BVH4Bezier1iIntersector16Single_OBB, BVHNIntersectorKSingle<4 COMMA 16 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA Bezier1iIntersectorK<16> > >));
     IF_ENABLED_HAIR(DEFINE_INTERSECTOR16(BVH4Bezier1iMBIntersector16Single_OBB,BVHNIntersectorKSingle<4 COMMA 16 COMMA BVH_AN2_UN2 COMMA false COMMA ArrayIntersectorK_1<16 COMMA Bezier1iIntersectorKMB<16> > >));
 
+    IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR16(BVH4Subdivpatch1MBlurCachedIntersector16, BVHNIntersectorKSingle<4 COMMA 16 COMMA BVH_AN2 COMMA false COMMA SubdivPatch1MBlurCachedIntersector16>));
     IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR16(BVH4GridAOSIntersector16, BVHNIntersectorKSingle<4 COMMA 16 COMMA BVH_AN1 COMMA true COMMA GridAOSIntersectorK<16> >));
 #endif
 

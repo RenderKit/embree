@@ -101,6 +101,7 @@ namespace embree
     void createLineAccel();
     void createLineMBAccel();
     void createSubdivAccel();
+    void createSubdivMBAccel();
 
     /*! Scene destruction */
     ~Scene ();
