@@ -256,16 +256,13 @@ namespace embree
           return PrimInfo(s,empty,empty);
         }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });
         numPrimitives = pinfo.size();
+        prims.resize(numPrimitives);
+        bounds.resize(numPrimitives);
         
         if (numPrimitives == 0) {
-          prims.resize(numPrimitives);
-          bounds.resize(numPrimitives);
           bvh->set(BVH::emptyNode,empty,0);
           return;
         }
-        
-        prims.resize(numPrimitives);
-        bounds.resize(numPrimitives);
         
         /* Allocate memory for gregory and b-spline patches */
         if (this->bvh->size_data_mem < sizeof(SubdivPatch1Cached) * numPrimitives) 
