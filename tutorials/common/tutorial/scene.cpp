@@ -102,6 +102,10 @@ namespace embree
       subdivmesh->positions.resize(mesh->positions.size()); 
       for (size_t i=0; i<mesh->positions.size(); i++) 
         subdivmesh->positions[i] = xfmPoint(space0,mesh->positions[i]);
+
+      subdivmesh->positions2.resize(mesh->positions2.size()); 
+      for (size_t i=0; i<mesh->positions2.size(); i++) 
+        subdivmesh->positions2[i] = xfmPoint(space0,mesh->positions2[i]);
       
       subdivmesh->normals.resize(mesh->normals.size()); 
       for (size_t i=0; i<mesh->normals.size(); i++) 

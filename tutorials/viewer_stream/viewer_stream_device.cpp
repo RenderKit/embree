@@ -23,12 +23,12 @@ namespace embree {
 
 #define USE_INTERFACE 0 // 0 = stream, 1 = single rays/packets, 2 = single rays/packets using stream interface
 #define AMBIENT_OCCLUSION_SAMPLES 64
+//#define rtcOccluded rtcIntersect
+//#define rtcOccluded1M rtcIntersect1M
 #define RAYN_FLAGS RTC_INTERSECT_COHERENT
 //#define RAYN_FLAGS RTC_INTERSECT_INCOHERENT
 
 #define SIMPLE_SHADING 0
-#define HIGH_QUALITY_BVH 0
-#define INFINITE_BUILD_LOOP 0
 
 extern "C" ISPCScene* g_ispc_scene;
 
@@ -59,10 +59,11 @@ unsigned int convertQuadMesh(ISPCQuadMesh* mesh, RTCScene scene_out)
 unsigned int convertSubdivMesh(ISPCSubdivMesh* mesh, RTCScene scene_out)
 {
   unsigned int geomID = rtcNewSubdivisionMesh(scene_out, RTC_GEOMETRY_STATIC, mesh->numFaces, mesh->numEdges, mesh->numVertices,
-                                                      mesh->numEdgeCreases, mesh->numVertexCreases, mesh->numHoles);
+                                                      mesh->numEdgeCreases, mesh->numVertexCreases, mesh->numHoles, mesh->positions2 ? 2 : 1);
   mesh->geomID = geomID;
   for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = 16.0f;
   rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa  ));
+  if (mesh->positions2) rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER1, mesh->positions2, 0, sizeof(Vec3fa));
   rtcSetBuffer(scene_out, geomID, RTC_LEVEL_BUFFER,  mesh->subdivlevel, 0, sizeof(float));
   rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->position_indices  , 0, sizeof(unsigned int));
   rtcSetBuffer(scene_out, geomID, RTC_FACE_BUFFER,   mesh->verticesPerFace, 0, sizeof(unsigned int));
@@ -105,9 +106,6 @@ RTCScene convertScene(ISPCScene* scene_in)
 {
   size_t numGeometries = scene_in->numGeometries;
   int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
-#if HIGH_QUALITY_BVH == 1
-  scene_flags |= RTC_SCENE_HIGH_QUALITY;
-#endif
   int scene_aflags = RTC_INTERSECT1 | RTC_INTERSECT_STREAM | RTC_INTERPOLATE;
   RTCScene scene_out = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
 
@@ -227,6 +225,7 @@ void renderTileStandard(int taskIndex,
   const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
   RTCRay rays[TILE_SIZE_X*TILE_SIZE_Y];
+
   /* generate stream of primary rays */
   int N = 0;
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
@@ -234,11 +233,14 @@ void renderTileStandard(int taskIndex,
     /* ISPC workaround for mask == 0 */
     if (all(1 == 0)) continue;
 
+    RandomSampler sampler;
+    RandomSampler_init(sampler, x, y, 0);
+
     /* initialize ray */
     RTCRay& ray = rays[N++];
 
     ray.org = Vec3fa(camera.xfm.p);
-    ray.dir = Vec3fa((float)x*camera.xfm.l.vx + (float)y*camera.xfm.l.vy + camera.xfm.l.vz);
+    ray.dir = Vec3fa(normalize((float)x*camera.xfm.l.vx + (float)y*camera.xfm.l.vy + camera.xfm.l.vz));
     bool mask = 1; { // invalidates inactive rays
       ray.tnear = mask ? 0.0f         : (float)(pos_inf);
       ray.tfar  = mask ? (float)(inf) : (float)(neg_inf);
@@ -246,7 +248,7 @@ void renderTileStandard(int taskIndex,
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
     ray.primID = RTC_INVALID_GEOMETRY_ID;
     ray.mask = -1;
-    ray.time = 0.0f; 
+    ray.time = RandomSampler_get1D(sampler);
   }
 
   RTCIntersectContext context;
@@ -275,10 +277,11 @@ void renderTileStandard(int taskIndex,
     Vec3fa color = Vec3fa(0.0f);
     if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
 #if SIMPLE_SHADING == 1
-      color = Vec3fa(abs(dot(normalize(ray.dir),normalize(ray.Ng))));
-#else    
+      color = Vec3fa(abs(dot(ray.dir,normalize(ray.Ng))));
+#else
       color = ambientOcclusionShading(x,y,ray);
 #endif
+
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
     unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
@@ -310,19 +313,7 @@ extern "C" void device_init (char* cfg)
   rtcDeviceSetErrorFunction(g_device,error_handler);
 
   /* create scene */
-#if INFINITE_BUILD_LOOP == 0
   g_scene = convertScene(g_ispc_scene);
-#else
-  while(1)
-  {
-    g_scene = convertScene(g_ispc_scene);
-    double t0 = getSeconds();
-    rtcCommit (g_scene);
-    double t1 = getSeconds();
-    PRINT(t1-t0);
-    rtcDeleteScene (g_scene); g_scene = nullptr;
-  }
-#endif
   rtcCommit (g_scene);
 
   /* set render tile function to use */

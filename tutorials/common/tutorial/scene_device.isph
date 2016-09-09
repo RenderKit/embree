@@ -75,6 +75,7 @@ struct ISPCSubdivMesh
 {
   uniform ISPCGeometry geom;
   uniform Vec3fa* positions;       //!< vertex positions
+  uniform Vec3fa* positions2;      //!< vertex positions for second timestep
   uniform Vec3fa* normals;         //!< face vertex normals
   uniform Vec2f* texcoords;        //!< face texture coordinates
   uniform int* position_indices;   //!< position indices for all faces
