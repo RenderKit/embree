@@ -1005,6 +1005,15 @@ namespace embree
     /*! called by all builders after build ended */
     void postBuild(double t0);
 
+    /*! allocator class */
+    struct Allocator {
+      BVHN* bvh;
+      Allocator (BVHN* bvh) : bvh(bvh) {}
+      __forceinline void* operator() (size_t bytes) const { 
+        return bvh->alloc.threadLocal()->malloc(bytes); 
+      }
+    };
+
     /*! shrink allocated memory */
     void shrink() {
       alloc.shrink();

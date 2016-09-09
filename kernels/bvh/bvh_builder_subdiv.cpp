@@ -249,7 +249,7 @@ namespace embree
             if (!mesh->valid(f)) continue;
             s += patch_eval_subdivision_count (mesh->getHalfEdge(f)); 
             if (unlikely(!fastUpdateMode)) {
-              auto alloc = [&] (size_t bytes) { return bvh->alloc.threadLocal()->malloc(bytes); };
+              typename BVH::Allocator alloc(bvh);
               mesh->patch_eval_trees[f] = Patch3fa::create(alloc, mesh->getHalfEdge(f), mesh->getVertexBuffer().getPtr(), mesh->getVertexBuffer().getStride());
             }
           }
