@@ -257,34 +257,59 @@ namespace embree
             if (!mesh->valid(f)) continue;
             
             typename BVH::Allocator alloc(bvh);
-            mesh->patch_eval_trees[f] = Patch3fa::create(alloc, mesh->getHalfEdge(f), mesh->getVertexBuffer().getPtr(), mesh->getVertexBuffer().getStride());
+            for (size_t t=0; t<timeSteps; t++)
+              mesh->patch_eval_trees[f*timeSteps+t] = Patch3fa::create(alloc, mesh->getHalfEdge(f), mesh->getVertexBuffer(t).getPtr(), mesh->getVertexBuffer(t).getStride());
 
             patch_eval_subdivision(mesh->getHalfEdge(f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch)
             {
               const size_t patchIndex = base.size()+s.size();
               assert(patchIndex < numPrimitives);
-              SubdivPatch1Base& patch = subdiv_patches[patchIndex];
-              new (&patch) SubdivPatch1Cached(mesh->id,unsigned(f),subPatch,mesh,0,uv,edge_level,subdiv,VSIZEX);
-              BBox3fa bound = evalGridBounds(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,mesh);
-              bounds[patchIndex] = bound;
-              prims[patchIndex] = PrimRef(bound,patchIndex);
-              s.add(bound);
+              for (size_t t=0; t<timeSteps; t++)
+              {
+                SubdivPatch1Base& patch = subdiv_patches[timeSteps*patchIndex+t];
+                new (&patch) SubdivPatch1Cached(mesh->id,unsigned(f),subPatch,mesh,t,uv,edge_level,subdiv,VSIZEX);
+                BBox3fa bound = evalGridBounds(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,mesh);
+                bounds[timeSteps*patchIndex+t] = bound;
+                if (t != 0) continue;
+                prims[patchIndex] = PrimRef(bound,patchIndex);
+                s.add(bound);
+              }
             });
           }
           return s;
         }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a, b); });
 
-        /* build BVH over patches */
-        auto createLeaf = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> int {
-          size_t items MAYBE_UNUSED = current.pinfo.size();
-          assert(items == 1);
-          const size_t patchIndex = prims[current.prims.begin()].ID();
-          *current.parent = bvh->encodeLeaf((char*)&subdiv_patches[patchIndex],1);
-          return 0;
-        };
-        
-        auto virtualprogress = BuildProgressMonitorFromClosure([&] (size_t dn) { bvh->scene->progressMonitor(double(dn)); });
-        BVHNBuilder<N>::build(bvh,createLeaf,virtualprogress,prims.data(),pinfo,N,1,1,1.0f,1.0f);
+        /* build normal BVH over patches */
+        if (timeSteps == 1)
+        {
+          auto createLeaf = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> int {
+            size_t items MAYBE_UNUSED = current.pinfo.size();
+            assert(items == 1);
+            const size_t patchIndex = prims[current.prims.begin()].ID();
+            *current.parent = bvh->encodeLeaf((char*)&subdiv_patches[patchIndex],1);
+            return 0;
+          };
+          
+          auto virtualprogress = BuildProgressMonitorFromClosure([&] (size_t dn) { bvh->scene->progressMonitor(double(dn)); });
+          BVHNBuilder<N>::build(bvh,createLeaf,virtualprogress,prims.data(),pinfo,N,1,1,1.0f,1.0f);
+        }
+
+        /* build MBlur BVH over patches */
+        else
+        {
+          auto createLeaf = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> std::pair<BBox3fa,BBox3fa> {
+            size_t items MAYBE_UNUSED = current.pinfo.size();
+            assert(items == 1);
+            const size_t patchIndex = prims[current.prims.begin()].ID();
+            *current.parent = bvh->encodeLeaf((char*)&subdiv_patches[patchIndex],1);
+            const BBox3fa bounds0 = bounds[timeSteps*patchIndex+0];
+            const BBox3fa bounds1 = bounds[timeSteps*patchIndex+1];
+            return std::make_pair(bounds0,bounds1);
+          };
+          
+          auto virtualprogress = BuildProgressMonitorFromClosure([&] (size_t dn) { bvh->scene->progressMonitor(double(dn)); });
+          BVHNBuilderMblur<N>::build(bvh,createLeaf,virtualprogress,prims.data(),pinfo,N,1,1,1.0f,1.0f);
+        }
       }
 
       void cachedUpdate(size_t numPrimitives)
