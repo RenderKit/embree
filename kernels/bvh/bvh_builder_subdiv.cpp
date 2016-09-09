@@ -162,12 +162,13 @@ namespace embree
     // =======================================================================================================
     // =======================================================================================================
 
-    template<int N>
+    template<int N, bool mblur>
     struct BVHNSubdivPatch1CachedBuilderBinnedSAHClass : public Builder, public BVHNRefitter<N>::LeafBoundsInterface
     {
       ALIGNED_STRUCT;
 
       typedef BVHN<N> BVH;
+      static const size_t timeSteps = mblur?2:1;
 
       BVH* bvh;
       std::unique_ptr<BVHNRefitter<N>> refitter;
@@ -192,10 +193,10 @@ namespace embree
       {
         /* initialize all half edge structures */
         bool fastUpdateMode = true;
-        numPrimitives = scene->getNumPrimitives<SubdivMesh,1>();
+        numPrimitives = scene->getNumPrimitives<SubdivMesh,timeSteps>();
         if (numPrimitives > 0 || scene->isInterpolatable()) 
         {
-          Scene::Iterator<SubdivMesh> iter(scene,scene->isInterpolatable());
+          Scene::Iterator<SubdivMesh,timeSteps> iter(scene,scene->isInterpolatable());
           fastUpdateMode = parallel_reduce(size_t(0),iter.size(),true,[&](const range<size_t>& range)
           {
             bool fastUpdate = true;
@@ -211,7 +212,7 @@ namespace embree
               fastUpdate &= !iter[i]->vertex_crease_weights.isModified(); 
               fastUpdate &= iter[i]->levels.isModified();
               iter[i]->initializeHalfEdgeStructures();
-              iter[i]->patch_eval_trees.resize(iter[i]->size());
+              iter[i]->patch_eval_trees.resize(iter[i]->size()*timeSteps);
             }
             return fastUpdate;
           }, [](const bool a, const bool b) { return a && b; });
@@ -225,7 +226,7 @@ namespace embree
 
       size_t countSubPatches()
       {
-        Scene::Iterator<SubdivMesh> iter(scene);
+        Scene::Iterator<SubdivMesh,timeSteps> iter(scene);
         pstate.init(iter,size_t(1024));
 
         PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
@@ -247,7 +248,7 @@ namespace embree
         SubdivPatch1Cached* const subdiv_patches = (SubdivPatch1Cached*) bvh->subdiv_patches.data();
         bvh->alloc.reset();
 
-        Scene::Iterator<SubdivMesh> iter(scene);
+        Scene::Iterator<SubdivMesh,timeSteps> iter(scene);
         PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
         {
           PrimInfo s(empty);
@@ -290,7 +291,7 @@ namespace embree
       {
         SubdivPatch1Cached* const subdiv_patches = (SubdivPatch1Cached*) bvh->subdiv_patches.data();
 
-        Scene::Iterator<SubdivMesh> iter(scene);
+        Scene::Iterator<SubdivMesh,timeSteps> iter(scene);
         parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
         {
           PrimInfo s(empty);
@@ -349,7 +350,7 @@ namespace embree
         /* calculate number of primitives (some patches need initial subdivision) */
         size_t numSubPatches = countSubPatches();
         prims.resize(numSubPatches);
-        bounds.resize(numSubPatches);
+        bounds.resize(numSubPatches*timeSteps);
         
         /* exit if there are no primitives to process */
         if (numSubPatches == 0) {
@@ -359,9 +360,10 @@ namespace embree
         }
         
         /* Allocate memory for gregory and b-spline patches */
-        bvh->subdiv_patches.resize(sizeof(SubdivPatch1Cached) * numSubPatches);
+        bvh->subdiv_patches.resize(sizeof(SubdivPatch1Cached) * numSubPatches * timeSteps);
 
         /* switch between fast and slow mode */
+        if (timeSteps != 1) cachedRebuild(numSubPatches);
         if (fastUpdateMode) cachedUpdate(numSubPatches);
         else cachedRebuild(numSubPatches);
         
@@ -381,7 +383,7 @@ namespace embree
     
     /* entry functions for the scene builder */
     Builder* BVH4SubdivGridEagerBuilderBinnedSAH   (void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivGridEagerBuilderBinnedSAHClass<4>((BVH4*)bvh,scene); }
-    Builder* BVH4SubdivPatch1CachedBuilderBinnedSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1CachedBuilderBinnedSAHClass<4>((BVH4*)bvh,scene); }
+    Builder* BVH4SubdivPatch1CachedBuilderBinnedSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1CachedBuilderBinnedSAHClass<4,false>((BVH4*)bvh,scene); }
 
 #if defined(__AVX__)
     Builder* BVH8SubdivGridEagerBuilderBinnedSAH   (void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivGridEagerBuilderBinnedSAHClass<8>((BVH8*)bvh,scene); }
