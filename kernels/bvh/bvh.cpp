@@ -23,19 +23,13 @@ namespace embree
   BVHN<N>::BVHN (const PrimitiveType& primTy, Scene* scene)
     : AccelData((N==4) ? AccelData::TY_BVH4 : (N==8) ? AccelData::TY_BVH8 : AccelData::TY_UNKNOWN),
       primTy(primTy), device(scene->device), scene(scene),
-      root(emptyNode), alloc(scene->device), numPrimitives(0), numVertices(0), data_mem(nullptr), size_data_mem(0) {}
+      root(emptyNode), alloc(scene->device), numPrimitives(0), numVertices(0) {}
 
   template<int N>
   BVHN<N>::~BVHN ()
   {
     for (size_t i=0; i<objects.size(); i++) 
       delete objects[i];
-        
-    if (data_mem) {
-      os_free( data_mem, size_data_mem ); // FIXME: why is this allocated with os_malloc?
-      data_mem = nullptr;
-      size_data_mem = 0;
-    }
   }
 
   template<int N>

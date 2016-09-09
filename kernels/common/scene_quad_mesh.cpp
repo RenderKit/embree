@@ -172,7 +172,7 @@ namespace embree
 
     for (size_t i=0; i<numFloats; i+=VSIZEX)
     {
-      const vboolx valid = vintx(i)+vintx(step) < vintx(numFloats);
+      const vboolx valid = vintx((int)i)+vintx(step) < vintx(numFloats);
       const size_t ofs = i*sizeof(float);
       const Quad& tri = quad(primID);
       const vfloatx p0 = vfloatx::loadu(valid,(float*)&src[tri.v[0]*stride+ofs]);

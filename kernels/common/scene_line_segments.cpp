@@ -170,7 +170,7 @@ namespace embree
     {
       const size_t ofs = i*sizeof(float);
       const size_t segment = segments[primID];
-      const vboolx valid = vintx(i)+vintx(step) < vintx(numFloats);
+      const vboolx valid = vintx((int)i)+vintx(step) < vintx(numFloats);
       const vfloatx p0 = vfloatx::loadu(valid,(float*)&src[(segment+0)*stride+ofs]);
       const vfloatx p1 = vfloatx::loadu(valid,(float*)&src[(segment+1)*stride+ofs]);
       if (P      ) vfloatx::storeu(valid,P+i,(1.0f-u)*p0 + u*p1);

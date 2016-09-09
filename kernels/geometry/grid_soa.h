@@ -34,27 +34,31 @@ namespace embree
     public:
 
       /*! GridSOA constructor */
-      GridSOA(const SubdivPatch1Base& patch, 
+      GridSOA(const SubdivPatch1Base* patches, const unsigned time_steps,
               const unsigned x0, const unsigned x1, const unsigned y0, const unsigned y1, const unsigned swidth, const unsigned sheight,
-              const SubdivMesh* const geom, const size_t bvhBytes, BBox3fa* bounds_o = nullptr);
+              const SubdivMesh* const geom, const size_t bvhBytes, const size_t gridBytes, BBox3fa* bounds_o = nullptr);
 
       /*! Subgrid creation */
       template<typename Allocator>
-        static GridSOA* create(SubdivPatch1Base* const patch, unsigned x0, unsigned x1, unsigned y0, unsigned y1, const Scene* scene, Allocator& alloc, BBox3fa* bounds_o = nullptr)
+        static GridSOA* create(const SubdivPatch1Base* patches, const unsigned time_steps,
+                               unsigned x0, unsigned x1, unsigned y0, unsigned y1, 
+                               const Scene* scene, Allocator& alloc, BBox3fa* bounds_o = nullptr)
       {
         const unsigned width = x1-x0+1;
         const unsigned height = y1-y0+1;
         const GridRange range(0,width-1,0,height-1);
         const size_t bvhBytes  = getBVHBytes(range,0);
         const size_t gridBytes = 4*size_t(width)*size_t(height)*sizeof(float)+4; // 4 bytes of padding required because of off by 1 read below
-        return new (alloc(offsetof(GridSOA,data)+bvhBytes+gridBytes)) GridSOA(*patch,x0,x1,y0,y1,patch->grid_u_res,patch->grid_v_res,scene->getSubdivMesh(patch->geom),bvhBytes,bounds_o);  
+        void* data = alloc(offsetof(GridSOA,data)+time_steps*bvhBytes+time_steps*gridBytes);
+        return new (data) GridSOA(patches,time_steps,x0,x1,y0,y1,patches->grid_u_res,patches->grid_v_res,scene->getSubdivMesh(patches->geom),bvhBytes,gridBytes,bounds_o);  
       }
 
       /*! Grid creation */
       template<typename Allocator>
-        static GridSOA* create(SubdivPatch1Base* const patch, const Scene* scene, const Allocator& alloc, BBox3fa* bounds_o = nullptr) 
+        static GridSOA* create(const SubdivPatch1Base* const patches, const unsigned time_steps,
+                               const Scene* scene, const Allocator& alloc, BBox3fa* bounds_o = nullptr) 
       {
-        return create(patch,0,patch->grid_u_res-1,0,patch->grid_v_res-1,scene,alloc,bounds_o);
+        return create(patches,time_steps,0,patches->grid_u_res-1,0,patches->grid_v_res-1,scene,alloc,bounds_o);
       }
 
       static unsigned getNumEagerLeaves(unsigned width, unsigned height) {
@@ -77,7 +81,7 @@ namespace embree
             const unsigned lx0 = x, lx1 = min(lx0+8,x1);
             const unsigned ly0 = y, ly1 = min(ly0+8,y1);
             BBox3fa bounds;
-            GridSOA* leaf = create(&patch,lx0,lx1,ly0,ly1,scene,alloc,&bounds);
+            GridSOA* leaf = create(&patch,1,lx0,lx1,ly0,ly1,scene,alloc,&bounds);
             *prims = PrimRef(bounds,(unsigned)BVH4::encodeTypedLeaf(leaf,1)); prims++;
             N++;
           }
@@ -86,23 +90,78 @@ namespace embree
       }
 
       /*! returns pointer to BVH array */
-      __forceinline char* bvhData() {
-        return &data[0];
-      }
+      __forceinline       char* bvhData(size_t t = 0)       { return &data[t*bvhBytes]; }
+      __forceinline const char* bvhData(size_t t = 0) const { return &data[t*bvhBytes]; }
 
       /*! returns pointer to Grid array */
-      __forceinline float* gridData() {
-        return (float*) &data[bvhBytes];
-      }
+      __forceinline       float* gridData(size_t t = 0)       { return (float*) &data[time_steps*bvhBytes + t*gridBytes]; }
+      __forceinline const float* gridData(size_t t = 0) const { return (float*) &data[time_steps*bvhBytes + t*gridBytes]; }
       
+      __forceinline void* encodeLeaf(size_t u, size_t v) {
+        return (void*) (16*(v * width + u + 1)); // +1 to not create empty leaf
+      }
+      __forceinline float* decodeLeaf(size_t t, const void* ptr) {
+        return gridData(t) + (((size_t) (ptr) >> 4) - 1);
+      }
+
       /*! returns the size of the BVH over the grid in bytes */
       static size_t getBVHBytes(const GridRange& range, const unsigned int leafBytes);
 
+      /*! calculates bounding box of grid range */
+      __forceinline BBox3fa calculateBounds(size_t time, const GridRange& range) const
+      {
+        const float* const grid_array = gridData(time);
+        const float* const grid_x_array = grid_array + 0 * dim_offset;
+        const float* const grid_y_array = grid_array + 1 * dim_offset;
+        const float* const grid_z_array = grid_array + 2 * dim_offset;
+        
+        /* compute the bounds just for the range! */
+        BBox3fa bounds( empty );
+        for (unsigned v = range.v_start; v<=range.v_end; v++) 
+        {
+          for (unsigned u = range.u_start; u<=range.u_end; u++)
+          {
+            const float x = grid_x_array[ v * width + u];
+            const float y = grid_y_array[ v * width + u];
+            const float z = grid_z_array[ v * width + u];
+            bounds.extend( Vec3fa(x,y,z) );
+          }
+        }
+        assert(is_finite(bounds));
+        return bounds;
+      }
+
       /*! Evaluates grid over patch and builds BVH4 tree over the grid. */
-      BVH4::NodeRef buildBVH(char* node_array, float* grid_array, const size_t bvhBytes, BBox3fa* bounds_o);
+      BVH4::NodeRef buildBVH(size_t time, BBox3fa* bounds_o);
       
       /*! Create BVH4 tree over grid. */
-      BBox3fa buildBVH(BVH4::NodeRef& curNode, char* node_array, float* grid_array, const GridRange& range, size_t& localCounter);
+      BBox3fa buildBVH(BVH4::NodeRef& curNode, size_t time, const GridRange& range, size_t& allocator);
+
+      /*! Evaluates grid over patch and builds MBlur BVH4 tree over the grid. */
+      BVH4::NodeRef buildMBlurBVH(size_t time, std::pair<BBox3fa,BBox3fa>* bounds_o);
+      
+      /*! Create MBlur BVH4 tree over grid. */
+      std::pair<BBox3fa,BBox3fa> buildMBlurBVH(BVH4::NodeRef& curNode, size_t time, const GridRange& range, size_t& allocator);
+
+      template<typename Loader>
+        struct MapUV
+      {
+        typedef typename Loader::vfloat vfloat;
+        const float* const grid_uv;
+        size_t line_offset;
+
+        __forceinline MapUV(const float* const grid_uv, size_t line_offset)
+          : grid_uv(grid_uv), line_offset(line_offset) {}
+
+        __forceinline void operator() (vfloat& u, vfloat& v) const {
+          const Vec3<vfloat> tri_v012_uv = Loader::gather(grid_uv,line_offset);	
+          const Vec2<vfloat> uv0 = GridSOA::decodeUV(tri_v012_uv[0]);
+          const Vec2<vfloat> uv1 = GridSOA::decodeUV(tri_v012_uv[1]);
+          const Vec2<vfloat> uv2 = GridSOA::decodeUV(tri_v012_uv[2]);        
+          const Vec2<vfloat> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
+          u = uv[0];v = uv[1]; 
+        }
+      };
 
       struct Gather2x3
       {
@@ -118,6 +177,22 @@ namespace embree
           return Vec3<vfloat4>(unpacklo(r0,r1),       // r00, r10, r01, r11
                                shuffle<1,1,2,2>(r0),  // r01, r01, r02, r02
                                shuffle<0,1,1,2>(r1)); // r10, r11, r11, r12
+        }
+
+        static __forceinline void gather(const float* const grid_x, 
+                                         const float* const grid_y, 
+                                         const float* const grid_z, 
+                                         const size_t line_offset,
+                                         Vec3<vfloat4>& v0_o,
+                                         Vec3<vfloat4>& v1_o,
+                                         Vec3<vfloat4>& v2_o)
+        {
+          const Vec3<vfloat4> tri_v012_x = gather(grid_x,line_offset);
+          const Vec3<vfloat4> tri_v012_y = gather(grid_y,line_offset);
+          const Vec3<vfloat4> tri_v012_z = gather(grid_z,line_offset);
+          v0_o = Vec3<vfloat4>(tri_v012_x[0],tri_v012_y[0],tri_v012_z[0]);
+          v1_o = Vec3<vfloat4>(tri_v012_x[1],tri_v012_y[1],tri_v012_z[1]);
+          v2_o = Vec3<vfloat4>(tri_v012_x[2],tri_v012_y[2],tri_v012_z[2]);
         }
       };
       
@@ -140,6 +215,22 @@ namespace embree
                                shuffle<1,1,2,2>(r0),    // r01, r01, r02, r02, r11, r11, r12, r12
                                shuffle<0,1,1,2>(r1));   // r10, r11, r11, r12, r20, r21, r21, r22
         }
+
+        static __forceinline void gather(const float* const grid_x, 
+                                         const float* const grid_y, 
+                                         const float* const grid_z, 
+                                         const size_t line_offset,
+                                         Vec3<vfloat8>& v0_o,
+                                         Vec3<vfloat8>& v1_o,
+                                         Vec3<vfloat8>& v2_o)
+        {
+          const Vec3<vfloat8> tri_v012_x = gather(grid_x,line_offset);
+          const Vec3<vfloat8> tri_v012_y = gather(grid_y,line_offset);
+          const Vec3<vfloat8> tri_v012_z = gather(grid_z,line_offset);
+          v0_o = Vec3<vfloat8>(tri_v012_x[0],tri_v012_y[0],tri_v012_z[0]);
+          v1_o = Vec3<vfloat8>(tri_v012_x[1],tri_v012_y[1],tri_v012_z[1]);
+          v2_o = Vec3<vfloat8>(tri_v012_x[2],tri_v012_y[2],tri_v012_z[2]);
+        }
       };
 #endif
 
@@ -159,12 +250,19 @@ namespace embree
 #if !defined (__X86_64__)
       unsigned align0;
 #endif
+      unsigned time_steps;
       unsigned width;
+
       unsigned height;
       unsigned dim_offset;
       unsigned geomID;
       unsigned primID;
+
       unsigned bvhBytes;
+      unsigned gridBytes;
+      unsigned align0;
+      unsigned align1;
+
       char data[1];        //!< after the struct we first store the BVH and then the grid
     };
   }
