@@ -223,7 +223,7 @@ namespace embree
         return fastUpdateMode;
       }
 
-      size_t countPatches()
+      size_t countSubPatches()
       {
         Scene::Iterator<SubdivMesh> iter(scene);
         pstate.init(iter,size_t(1024));
@@ -332,14 +332,14 @@ namespace embree
       void build(size_t, size_t) 
       {
         /* initialize all half edge structures */
-        size_t numPrimitives;
-        bool fastUpdateMode = initializeHalfEdges(numPrimitives);
+        size_t numPatches;
+        bool fastUpdateMode = initializeHalfEdges(numPatches);
         //static size_t counter = 0; if ((++counter) % 16 == 0) fastUpdateMode = false;
 
         /* skip build for empty scene */
-        if (numPrimitives == 0) {
-          prims.resize(numPrimitives);
-          bounds.resize(numPrimitives);
+        if (numPatches == 0) {
+          prims.resize(numPatches);
+          bounds.resize(numPatches);
           bvh->set(BVH::emptyNode,empty,0);
           return;
         }
@@ -347,23 +347,23 @@ namespace embree
         double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "SubdivPatch1CachedBuilderBinnedSAH");
 
         /* calculate number of primitives (some patches need initial subdivision) */
-        size_t numSubPrimitives = countPatches();
-        prims.resize(numSubPrimitives);
-        bounds.resize(numSubPrimitives);
+        size_t numSubPatches = countSubPatches();
+        prims.resize(numSubPatches);
+        bounds.resize(numSubPatches);
         
         /* exit if there are no primitives to process */
-        if (numSubPrimitives == 0) {
+        if (numSubPatches == 0) {
           bvh->set(BVH::emptyNode,empty,0);
           bvh->postBuild(t0);
           return;
         }
         
         /* Allocate memory for gregory and b-spline patches */
-        bvh->subdiv_patches.resize(sizeof(SubdivPatch1Cached) * numSubPrimitives);
+        bvh->subdiv_patches.resize(sizeof(SubdivPatch1Cached) * numSubPatches);
 
         /* switch between fast and slow mode */
-        if (fastUpdateMode) cachedUpdate(numSubPrimitives);
-        else cachedRebuild(numSubPrimitives);
+        if (fastUpdateMode) cachedUpdate(numSubPatches);
+        else cachedRebuild(numSubPatches);
         
 	/* clear temporary data for static geometry */
 	if (scene->isStatic()) {
