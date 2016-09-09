@@ -183,7 +183,7 @@ namespace embree
 	clear();
       }
 
-#if !defined(__AVX__)
+#if 0 // !defined(__AVX__)
 	  __forceinline BinInfo(const BinInfo &b) {
 		  memcpy(this, &b, sizeof(BinInfo));
 	  }
