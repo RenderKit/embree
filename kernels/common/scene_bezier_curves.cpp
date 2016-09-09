@@ -179,7 +179,7 @@ namespace embree
     {
       size_t ofs = i*sizeof(float);
       const size_t curve = curves[primID];
-      const vboolx valid = vintx(i)+vintx(step) < vintx(numFloats);
+      const vboolx valid = vintx((int)i)+vintx(step) < vintx(numFloats);
       const vfloatx p0 = vfloatx::loadu(valid,(float*)&src[(curve+0)*stride+ofs]);
       const vfloatx p1 = vfloatx::loadu(valid,(float*)&src[(curve+1)*stride+ofs]);
       const vfloatx p2 = vfloatx::loadu(valid,(float*)&src[(curve+2)*stride+ofs]);

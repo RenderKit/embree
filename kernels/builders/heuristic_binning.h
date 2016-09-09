@@ -158,6 +158,7 @@ namespace embree
     /*! stores extended information about the split */
     struct SplitInfo
     {
+
       __forceinline SplitInfo () {}
       
       __forceinline SplitInfo (size_t leftCount, const BBox3fa& leftBounds, size_t rightCount, const BBox3fa& rightBounds)
@@ -172,6 +173,7 @@ namespace embree
     template<size_t BINS, typename PrimRef>
       struct __aligned(64) BinInfo
     {
+		  
       typedef BinSplit<BINS> Split;
       
       __forceinline BinInfo() {
@@ -312,6 +314,7 @@ namespace embree
       /*! merges in other binning information */
       __forceinline void merge (const BinInfo& other, size_t numBins)
       {
+		
 	for (size_t i=0; i<numBins; i++) 
         {
           counts(i) += other.counts(i);

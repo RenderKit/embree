@@ -174,7 +174,7 @@ namespace embree
       size_t ofs = i*sizeof(float);
       const float w = 1.0f-u-v;
       const Triangle& tri = triangle(primID);
-      const vboolx valid = vintx(i)+vintx(step) < vintx(numFloats);
+      const vboolx valid = vintx((int)i)+vintx(step) < vintx(numFloats);
       const vfloatx p0 = vfloatx::loadu(valid,(float*)&src[tri.v[0]*stride+ofs]);
       const vfloatx p1 = vfloatx::loadu(valid,(float*)&src[tri.v[1]*stride+ofs]);
       const vfloatx p2 = vfloatx::loadu(valid,(float*)&src[tri.v[2]*stride+ofs]);

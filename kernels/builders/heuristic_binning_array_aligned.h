@@ -39,7 +39,7 @@ namespace embree
         static const size_t PARALLEL_FIND_BLOCK_SIZE = 768;
         static const size_t PARALLEL_PARITION_BLOCK_SIZE = 128;
 #else
-        static const size_t PARALLEL_THRESHOLD = 3*1024;
+		static const size_t PARALLEL_THRESHOLD = 3 * 1024;
         static const size_t PARALLEL_FIND_BLOCK_SIZE = 1024;
         static const size_t PARALLEL_PARITION_BLOCK_SIZE = 128;
 #endif
@@ -76,6 +76,7 @@ namespace embree
         /*! finds the best split */
         const Split find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
+
           if (likely(pinfo.size() < PARALLEL_THRESHOLD)) return sequential_find(set,pinfo,logBlockSize);
           else                                           return   parallel_find(set,pinfo,logBlockSize);
         }
@@ -97,8 +98,7 @@ namespace embree
           const BinMapping<BINS>& _mapping = mapping; // CLANG 3.4 parser bug workaround
           binner = parallel_reduce(set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,binner,
 			  [&](const range<size_t>& r) -> Binner { Binner binner(empty); binner.bin(prims + r.begin(), r.size(), _mapping); return binner; },
-		  [&](const Binner& b0, const Binner& b1) -> Binner { Binner r = b0; r.merge(b1, _mapping.size()); return r; });
-
+			  [&](const Binner& b0, const Binner& b1) -> Binner { Binner r = b0; r.merge(b1, _mapping.size()); return r; });
 		  return binner.best(mapping,logBlockSize);
         }
         

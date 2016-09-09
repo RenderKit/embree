@@ -124,7 +124,7 @@ namespace embree
         const Vec3fa axis0 = normalize(prims[set.begin()].p3 - prims[set.begin()].p0);
       
         /* find 2nd axis that is most misaligned with first axis */
-        struct BestAxis
+        struct __aligned(16) BestAxis
         {
           __forceinline BestAxis () 
             : cos(inf), axis(Vec3fa(1.0f,0.0f,0.0f)) {}
@@ -132,9 +132,16 @@ namespace embree
           __forceinline BestAxis (float otherCos, const Vec3fa& otherAxis) 
             : cos(otherCos), axis(otherAxis) {}
 
+#if !defined(__AVX__)
+		  __forceinline BestAxis(const BestAxis &i)
+		  {
+			  memcpy(this, &i, sizeof(BestAxis));
+		  }
+#endif
+
         public:
+			Vec3fa axis;
           float cos;
-          Vec3fa axis;
         };
         
         const BestAxis best = parallel_reduce
@@ -158,12 +165,19 @@ namespace embree
         const Vec3fa axis1 = best.axis;
         
         /* partition the two strands */
-        struct Info
+        struct __aligned(16) Info
         {
           __forceinline Info() 
             : lnum(0), rnum(0), lbounds(empty), rbounds(empty) {}
 
-          __forceinline static Info merge(const Info& a, const Info& b) 
+#if !defined(__AVX__)
+		  __forceinline Info(const Info &i)
+		  {
+			  memcpy(this, &i, sizeof(Info));
+		  }
+#endif
+
+		  __forceinline static Info merge(const Info& a, const Info& b) 
           {
             Info c;
             c.lnum = a.lnum+b.lnum;
@@ -172,8 +186,8 @@ namespace embree
             c.rbounds = embree::merge(a.rbounds,b.rbounds);
             return c;
           }
-          size_t lnum, rnum;
           BBox3fa lbounds, rbounds;
+		  size_t lnum, rnum;
         };
         const LinearSpace3fa space0 = frame(axis0).transposed();
         const LinearSpace3fa space1 = frame(axis1).transposed();
