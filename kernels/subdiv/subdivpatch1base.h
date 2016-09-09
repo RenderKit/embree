@@ -52,6 +52,7 @@ namespace embree
                       const unsigned int pID,
                       const unsigned int subPatch,
                       const SubdivMesh *const mesh,
+                      const size_t time,
                       const Vec2f uv[4],
                       const float edge_level[4],
                       const int subdiv[4],
@@ -113,26 +114,19 @@ namespace embree
 
     struct PatchHalfEdge {
       const HalfEdge* edge;
+      unsigned time;
       unsigned subPatch;
     };
 
     Vec3fa patch_v[4][4];
 
-    const HalfEdge *edge() const {
-      return ((PatchHalfEdge*)patch_v)->edge;
-    }
+    const HalfEdge *edge() const { return ((PatchHalfEdge*)patch_v)->edge; }
+    unsigned time() const { return ((PatchHalfEdge*)patch_v)->time; }
+    unsigned subPatch() const { return ((PatchHalfEdge*)patch_v)->subPatch; }
 
-    unsigned subPatch() const {
-      return ((PatchHalfEdge*)patch_v)->subPatch;
-    }
-
-    void set_edge(const HalfEdge *h) const {
-      ((PatchHalfEdge*)patch_v)->edge = h;
-    }
-
-    void set_subPatch(const unsigned s) const {
-      ((PatchHalfEdge*)patch_v)->subPatch = s;
-    }
+    void set_edge(const HalfEdge *h) const { ((PatchHalfEdge*)patch_v)->edge = h; }
+    void set_time(const unsigned t) const { ((PatchHalfEdge*)patch_v)->time = t; }
+    void set_subPatch(const unsigned s) const { ((PatchHalfEdge*)patch_v)->subPatch = s; }
   };
 
   namespace isa

@@ -39,11 +39,12 @@ namespace embree
                         const unsigned int pID,
                         const unsigned int subPatch,
                         const SubdivMesh *const mesh,
+                        const size_t time,
                         const Vec2f uv[4],
                         const float edge_level[4],
                         const int subdiv[4],
                         const int simd_width) 
-      : SubdivPatch1Base(gID,pID,subPatch,mesh,uv,edge_level,subdiv,simd_width) {}
+      : SubdivPatch1Base(gID,pID,subPatch,mesh,time,uv,edge_level,subdiv,simd_width) {}
   };
 
 

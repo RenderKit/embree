@@ -123,7 +123,7 @@ namespace embree
             
             patch_eval_subdivision(mesh->getHalfEdge(f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch)
             {
-              SubdivPatch1Base patch(mesh->id,unsigned(f),subPatch,mesh,uv,edge_level,subdiv,VSIZEX);
+              SubdivPatch1Base patch(mesh->id,unsigned(f),subPatch,mesh,0,uv,edge_level,subdiv,VSIZEX);
               size_t num = GridAOS::createEager<N>(patch,scene,mesh,unsigned(f),alloc,&prims[base.end+s.end]);
               assert(num == GridAOS::getNumEagerLeaves(patch.grid_u_res-1,patch.grid_v_res-1));
               for (size_t i=0; i<num; i++)
@@ -263,7 +263,7 @@ namespace embree
               const size_t patchIndex = base.size()+s.size();
               assert(patchIndex < numPrimitives);
               SubdivPatch1Base& patch = subdiv_patches[patchIndex];
-              new (&patch) SubdivPatch1Cached(mesh->id,unsigned(f),subPatch,mesh,uv,edge_level,subdiv,VSIZEX);
+              new (&patch) SubdivPatch1Cached(mesh->id,unsigned(f),subPatch,mesh,0,uv,edge_level,subdiv,VSIZEX);
               BBox3fa bound = evalGridBounds(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,mesh);
               bounds[patchIndex] = bound;
               prims[patchIndex] = PrimRef(bound,patchIndex);
