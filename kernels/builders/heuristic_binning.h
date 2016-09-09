@@ -183,12 +183,6 @@ namespace embree
 	clear();
       }
 
-#if 0 // !defined(__AVX__)
-	  __forceinline BinInfo(const BinInfo &b) {
-		  memcpy(this, &b, sizeof(BinInfo));
-	  }
-#endif
-
       /*! bin access function */
 
       __forceinline BBox3fa &bounds(const size_t binID, const size_t dimID)             { return _bounds[binID][dimID]; }

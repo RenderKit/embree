@@ -39,7 +39,6 @@ namespace embree
   {
     /* calculate number of tasks to use */
     const size_t taskCount = state.taskCount;
-
     /* perform parallel prefix sum */
     parallel_for(taskCount, [&](const size_t taskIndex)
     {

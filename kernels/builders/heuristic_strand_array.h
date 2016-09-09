@@ -132,13 +132,6 @@ namespace embree
           __forceinline BestAxis (float otherCos, const Vec3fa& otherAxis) 
             : cos(otherCos), axis(otherAxis) {}
 
-#if !defined(__AVX__)
-		  __forceinline BestAxis(const BestAxis &i)
-		  {
-			  memcpy(this, &i, sizeof(BestAxis));
-		  }
-#endif
-
         public:
 			Vec3fa axis;
           float cos;
@@ -169,13 +162,6 @@ namespace embree
         {
           __forceinline Info() 
             : lnum(0), rnum(0), lbounds(empty), rbounds(empty) {}
-
-#if !defined(__AVX__)
-		  __forceinline Info(const Info &i)
-		  {
-			  memcpy(this, &i, sizeof(Info));
-		  }
-#endif
 
 		  __forceinline static Info merge(const Info& a, const Info& b) 
           {
