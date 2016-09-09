@@ -188,6 +188,111 @@ namespace embree
         return prims[index].bounds(); 
       }
 
+      size_t countPatches()
+      {
+        Scene::Iterator<SubdivMesh> iter(scene);
+        pstate.init(iter,size_t(1024));
+
+        PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
+        { 
+          size_t s = 0;
+          for (size_t f=r.begin(); f!=r.end(); ++f) 
+          {          
+            if (!mesh->valid(f)) continue;
+            s += patch_eval_subdivision_count (mesh->getHalfEdge(f)); 
+          }
+          return PrimInfo(s,empty,empty);
+        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });
+
+        return pinfo.size();
+      }
+
+      void cachedRebuild(size_t numPrimitives)
+      {
+        SubdivPatch1Cached* const subdiv_patches = (SubdivPatch1Cached*) bvh->subdiv_patches.data();
+
+        Scene::Iterator<SubdivMesh> iter(scene);
+        PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
+        {
+          PrimInfo s(empty);
+          for (size_t f=r.begin(); f!=r.end(); ++f) 
+          {
+            if (!mesh->valid(f)) continue;
+            
+            typename BVH::Allocator alloc(bvh);
+            mesh->patch_eval_trees[f] = Patch3fa::create(alloc, mesh->getHalfEdge(f), mesh->getVertexBuffer().getPtr(), mesh->getVertexBuffer().getStride());
+
+            patch_eval_subdivision(mesh->getHalfEdge(f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch)
+            {
+              const size_t patchIndex = base.size()+s.size();
+              assert(patchIndex < numPrimitives);
+              SubdivPatch1Base& patch = subdiv_patches[patchIndex];
+              new (&patch) SubdivPatch1Cached(mesh->id,unsigned(f),subPatch,mesh,uv,edge_level,subdiv,VSIZEX);
+              BBox3fa bound = evalGridBounds(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,mesh);
+              bounds[patchIndex] = bound;
+              prims[patchIndex] = PrimRef(bound,patchIndex);
+              s.add(bound);
+            });
+          }
+          return s;
+        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a, b); });
+
+        /* build BVH over patches */
+        auto createLeaf = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> int {
+          size_t items MAYBE_UNUSED = current.pinfo.size();
+          assert(items == 1);
+          const size_t patchIndex = prims[current.prims.begin()].ID();
+          *current.parent = bvh->encodeLeaf((char*)&subdiv_patches[patchIndex],1);
+          return 0;
+        };
+        
+        auto virtualprogress = BuildProgressMonitorFromClosure([&] (size_t dn) { bvh->scene->progressMonitor(double(dn)); });
+        BVHNBuilder<N>::build(bvh,createLeaf,virtualprogress,prims.data(),pinfo,N,1,1,1.0f,1.0f);
+      }
+
+      void cachedUpdate(size_t numPrimitives)
+      {
+        SubdivPatch1Cached* const subdiv_patches = (SubdivPatch1Cached*) bvh->subdiv_patches.data();
+
+        Scene::Iterator<SubdivMesh> iter(scene);
+        parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
+        {
+          PrimInfo s(empty);
+          for (size_t f=r.begin(); f!=r.end(); ++f) 
+          {
+            if (!mesh->valid(f)) continue;
+            
+            patch_eval_subdivision(mesh->getHalfEdge(f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch)
+            {
+              const size_t patchIndex = base.size()+s.size();
+              assert(patchIndex < numPrimitives);
+              SubdivPatch1Base& patch = subdiv_patches[patchIndex];
+              BBox3fa bound = empty;
+              
+              bool grid_changed = patch.updateEdgeLevels(edge_level,subdiv,mesh,VSIZEX);
+              if (grid_changed) {
+                patch.resetRootRef();
+                bound = evalGridBounds(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,mesh);
+              }
+              else {
+                bound = bounds[patchIndex];
+              }
+
+              bounds[patchIndex] = bound;
+              prims[patchIndex] = PrimRef(bound,patchIndex);
+              s.add(bound);
+            });
+          }
+          return s;
+        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a, b); });
+
+        /* refit BVH over patches */
+        if (!refitter)
+          refitter.reset(new BVHNRefitter<N>(bvh,*(typename BVHNRefitter<N>::LeafBoundsInterface*)this));
+        
+        refitter->refit();
+      }
+
       void build(size_t, size_t) 
       {
         /* initialize all half edge structures */
@@ -238,19 +343,7 @@ namespace embree
         double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "SubdivPatch1CachedBuilderBinnedSAH");
 
         /* calculate number of primitives (some patches need initial subdivision) */
-        Scene::Iterator<SubdivMesh> iter(scene);
-        pstate.init(iter,size_t(1024));
-        PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
-        { 
-          size_t s = 0;
-          for (size_t f=r.begin(); f!=r.end(); ++f) 
-          {          
-            if (!mesh->valid(f)) continue;
-            s += patch_eval_subdivision_count (mesh->getHalfEdge(f)); 
-          }
-          return PrimInfo(s,empty,empty);
-        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });
-        numPrimitives = pinfo.size();
+        numPrimitives = countPatches();
         prims.resize(numPrimitives);
         bounds.resize(numPrimitives);
         
@@ -262,70 +355,10 @@ namespace embree
         
         /* Allocate memory for gregory and b-spline patches */
         bvh->subdiv_patches.resize(sizeof(SubdivPatch1Cached) * numPrimitives);
-        SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)bvh->subdiv_patches.data();
-        
-        /* generate patches */
-        pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
-        {
-          PrimInfo s(empty);
-          for (size_t f=r.begin(); f!=r.end(); ++f) 
-          {
-            if (!mesh->valid(f)) continue;
-            
-            if (!fastUpdateMode) {
-              typename BVH::Allocator alloc(bvh);
-              mesh->patch_eval_trees[f] = Patch3fa::create(alloc, mesh->getHalfEdge(f), mesh->getVertexBuffer().getPtr(), mesh->getVertexBuffer().getStride());
-            }
 
-            patch_eval_subdivision(mesh->getHalfEdge(f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch)
-            {
-              const size_t patchIndex = base.size()+s.size();
-              assert(patchIndex < numPrimitives);
-              SubdivPatch1Base& patch = subdiv_patches[patchIndex];
-              BBox3fa bound = empty;
-              
-              if (likely(fastUpdateMode)) {
-                bool grid_changed = patch.updateEdgeLevels(edge_level,subdiv,mesh,VSIZEX);
-                if (grid_changed) {
-                  patch.resetRootRef();
-                  bound = evalGridBounds(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,mesh);
-                }
-                else {
-                  bound = bounds[patchIndex];
-                }
-              }
-              else {
-                new (&patch) SubdivPatch1Cached(mesh->id,unsigned(f),subPatch,mesh,uv,edge_level,subdiv,VSIZEX);
-                bound = evalGridBounds(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,mesh);
-              }
-              bounds[patchIndex] = bound;
-              prims[patchIndex] = PrimRef(bound,patchIndex);
-              s.add(bound);
-            });
-          }
-          return s;
-        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a, b); });
-
-        if (fastUpdateMode)
-        {
-          if (!refitter)
-            refitter.reset(new BVHNRefitter<N>(bvh,*(typename BVHNRefitter<N>::LeafBoundsInterface*)this));
-
-          refitter->refit();
-        }
-        else
-        {
-          auto createLeaf = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> int {
-            size_t items MAYBE_UNUSED = current.pinfo.size();
-            assert(items == 1);
-            const size_t patchIndex = prims[current.prims.begin()].ID();
-            *current.parent = bvh->encodeLeaf((char*)&subdiv_patches[patchIndex],1);
-            return 0;
-          };
-          
-          auto virtualprogress = BuildProgressMonitorFromClosure([&] (size_t dn) { bvh->scene->progressMonitor(double(dn)); });
-          BVHNBuilder<N>::build(bvh,createLeaf,virtualprogress,prims.data(),pinfo,N,1,1,1.0f,1.0f);
-        }
+        /* switch between fast and slow mode */
+        if (fastUpdateMode) cachedUpdate(numPrimitives);
+        else cachedRebuild(numPrimitives);
         
 	/* clear temporary data for static geometry */
 	if (scene->isStatic()) {
