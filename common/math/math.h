@@ -246,7 +246,7 @@ namespace embree
 
 
   template<typename V>
-    __forceinline V lerp(const V &v0, const V &v1, const float t) {
+    __forceinline V lerp(const V& v0, const V& v1, const float t) {
     return (1.0f-t)*v0 + t*v1;
   }
 
