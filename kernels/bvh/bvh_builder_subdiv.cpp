@@ -170,7 +170,7 @@ namespace embree
       typedef BVHN<N> BVH;
 
       BVH* bvh;
-      BVHNRefitter<N>* refitter;
+      std::unique_ptr<BVHNRefitter<N>> refitter;
       Scene* scene;
       mvector<PrimRef> prims; 
       mvector<BBox3fa> bounds; 
@@ -236,9 +236,6 @@ namespace embree
           bvh->alloc.reset();
 
         double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "SubdivPatch1CachedBuilderBinnedSAH");
-
-        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(double(dn)); };
-        auto virtualprogress = BuildProgressMonitorFromClosure(progress);
 
         /* calculate number of primitives (some patches need initial subdivision) */
         Scene::Iterator<SubdivMesh> iter(scene);
@@ -311,8 +308,8 @@ namespace embree
 
         if (fastUpdateMode)
         {
-          if (refitter == nullptr)
-            refitter = new BVHNRefitter<N>(bvh,*(typename BVHNRefitter<N>::LeafBoundsInterface*)this);
+          if (!refitter)
+            refitter.reset(new BVHNRefitter<N>(bvh,*(typename BVHNRefitter<N>::LeafBoundsInterface*)this));
 
           refitter->refit();
         }
@@ -326,9 +323,8 @@ namespace embree
             return 0;
           };
           
+          auto virtualprogress = BuildProgressMonitorFromClosure([&] (size_t dn) { bvh->scene->progressMonitor(double(dn)); });
           BVHNBuilder<N>::build(bvh,createLeaf,virtualprogress,prims.data(),pinfo,N,1,1,1.0f,1.0f);
-
-          delete refitter; refitter = nullptr;
         }
         
 	/* clear temporary data for static geometry */
