@@ -1027,12 +1027,14 @@ namespace embree
           int index = random_int()%128;
           Vec3fa pos = 100.0f*random_Vec3fa();
           if (geom[index] == -1) {
-            switch (random_int()%4) {
-            // FIXME: test more geometry types
+            switch (random_int()%7) {
             case 0: geom[index] = scene.addSphere(sampler,RTC_GEOMETRY_STATIC,pos,2.0f,10); break;
-            case 1: geom[index] = scene.addHair  (sampler,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,10); break;
-            case 2: geom[index] = scene.addSubdivSphere(sampler,RTC_GEOMETRY_STATIC,pos,2.0f,4,4); break;
-            case 3: 
+            case 1: geom[index] = scene.addSphere(sampler,RTC_GEOMETRY_STATIC,pos,2.0f,10,-1,1.0f); break;
+            case 2: geom[index] = scene.addHair  (sampler,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,10); break;
+            case 3: geom[index] = scene.addHair  (sampler,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,10,1.0f); break;
+            case 4: geom[index] = scene.addSubdivSphere(sampler,RTC_GEOMETRY_STATIC,pos,2.0f,4,4); break;
+            case 5: geom[index] = scene.addSubdivSphere(sampler,RTC_GEOMETRY_STATIC,pos,2.0f,4,4,-1,1.0f); break;
+            case 6: 
               spheres[index] = Sphere(pos,2.0f);
               geom[index] = scene.addUserGeometryEmpty(sampler,&spheres[index]); break;
             }
