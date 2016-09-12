@@ -955,13 +955,26 @@ namespace embree
         subdivmesh->positions.push_back(Vec3fa(0,1,0));
         subdivmesh->positions.push_back(Vec3fa(1,1,0));
         subdivmesh->positions.push_back(Vec3fa(1,0,0));
-        /*subdivmesh->positions2.push_back(Vec3fa(0,0,0));
-        subdivmesh->positions2.push_back(Vec3fa(0,1,0));
-        subdivmesh->positions2.push_back(Vec3fa(1,1,0));
-        subdivmesh->positions2.push_back(Vec3fa(1,0,0));*/
       }
       scene.addGeometry(gflags,subdivmesh.dynamicCast<SceneGraph::Node>(),false);
-      //scene.addGeometry(gflags,subdivmesh.dynamicCast<SceneGraph::Node>(),true); // FIXME: enable mblur subdiv test when supported
+
+      Ref<SceneGraph::SubdivMeshNode> subdivmesh2 = new SceneGraph::SubdivMeshNode(nullptr);
+      for (unsigned i=0; i<unsigned(N); i++) {
+        subdivmesh2->verticesPerFace.push_back(4);
+        subdivmesh2->position_indices.push_back(4*i+0);
+        subdivmesh2->position_indices.push_back(4*i+1);
+        subdivmesh2->position_indices.push_back(4*i+2);
+        subdivmesh2->position_indices.push_back(4*i+3);
+        subdivmesh2->positions.push_back(Vec3fa(0,0,0));
+        subdivmesh2->positions.push_back(Vec3fa(0,1,0));
+        subdivmesh2->positions.push_back(Vec3fa(1,1,0));
+        subdivmesh2->positions.push_back(Vec3fa(1,0,0));
+        subdivmesh2->positions2.push_back(Vec3fa(0,0,0));
+        subdivmesh2->positions2.push_back(Vec3fa(0,1,1));
+        subdivmesh2->positions2.push_back(Vec3fa(1,1,1));
+        subdivmesh2->positions2.push_back(Vec3fa(1,0,1));
+      }
+      scene.addGeometry(gflags,subdivmesh2.dynamicCast<SceneGraph::Node>(),true);
       
       Ref<SceneGraph::HairSetNode> hairgeom = SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),p,dx,dy,0.2f,0.01f,1,true).dynamicCast<SceneGraph::HairSetNode>();
       for (size_t i=0; i<N; i++) hairgeom->hairs.push_back(hairgeom->hairs.back());
