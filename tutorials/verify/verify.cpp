@@ -249,6 +249,15 @@ namespace embree
       return addGeometry(gflag,node,mblur);
     }
 
+    unsigned addQuadSphere (RandomSampler& sampler, RTCGeometryFlags gflag, const Vec3fa& pos, const float r, size_t numPhi, size_t maxQuads = -1, float motion = 0.0f)
+    {
+      bool mblur = motion != 0.0f;
+      Ref<SceneGraph::Node> node = SceneGraph::createQuadSphere(pos,r,numPhi);
+      if (mblur) SceneGraph::set_motion_vector(node,Vec3fa(motion));
+      if (maxQuads != size_t(-1)) SceneGraph::resize_randomly(sampler,node,maxQuads);
+      return addGeometry(gflag,node,mblur);
+    }
+
     unsigned int addSubdivSphere (RandomSampler& sampler, RTCGeometryFlags gflag, const Vec3fa& pos, const float r, size_t numPhi, float level, size_t maxFaces = -1, float motion = 0.0f)
     {
       bool mblur = motion != 0.0f;
@@ -1027,14 +1036,16 @@ namespace embree
           int index = random_int()%128;
           Vec3fa pos = 100.0f*random_Vec3fa();
           if (geom[index] == -1) {
-            switch (random_int()%7) {
+            switch (random_int()%9) {
             case 0: geom[index] = scene.addSphere(sampler,RTC_GEOMETRY_STATIC,pos,2.0f,10); break;
             case 1: geom[index] = scene.addSphere(sampler,RTC_GEOMETRY_STATIC,pos,2.0f,10,-1,1.0f); break;
-            case 2: geom[index] = scene.addHair  (sampler,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,10); break;
-            case 3: geom[index] = scene.addHair  (sampler,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,10,1.0f); break;
-            case 4: geom[index] = scene.addSubdivSphere(sampler,RTC_GEOMETRY_STATIC,pos,2.0f,4,4); break;
-            case 5: geom[index] = scene.addSubdivSphere(sampler,RTC_GEOMETRY_STATIC,pos,2.0f,4,4,-1,1.0f); break;
-            case 6: 
+            case 2: geom[index] = scene.addQuadSphere(sampler,RTC_GEOMETRY_STATIC,pos,2.0f,10); break;
+            case 3: geom[index] = scene.addQuadSphere(sampler,RTC_GEOMETRY_STATIC,pos,2.0f,10,-1,1.0f); break;
+            case 4: geom[index] = scene.addHair  (sampler,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,10); break;
+            case 5: geom[index] = scene.addHair  (sampler,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,10,1.0f); break;
+            case 6: geom[index] = scene.addSubdivSphere(sampler,RTC_GEOMETRY_STATIC,pos,2.0f,4,4); break;
+            case 7: geom[index] = scene.addSubdivSphere(sampler,RTC_GEOMETRY_STATIC,pos,2.0f,4,4,-1,1.0f); break;
+            case 8: 
               spheres[index] = Sphere(pos,2.0f);
               geom[index] = scene.addUserGeometryEmpty(sampler,&spheres[index]); break;
             }
@@ -1081,7 +1092,7 @@ namespace embree
       VerifyScene scene(device,sflags,aflags);
       AssertNoError(device);
       unsigned geom0 = scene.addSphere      (sampler,RTC_GEOMETRY_STATIC,Vec3fa(-1,0,-1),1.0f,50);
-      unsigned geom1 = scene.addHair        (sampler,RTC_GEOMETRY_STATIC,Vec3fa(-1,0,+1),1.0f,1.0f,1);
+      unsigned geom1 = scene.addQuadSphere  (sampler,RTC_GEOMETRY_STATIC,Vec3fa(-1,0,+1),1.0f,50);
       unsigned geom2 = scene.addSubdivSphere(sampler,RTC_GEOMETRY_STATIC,Vec3fa(+1,0,-1),1.0f,5,4);
       unsigned geom3 = scene.addHair        (sampler,RTC_GEOMETRY_STATIC,Vec3fa(+1,0,+1),1.0f,1.0f,1);
       AssertNoError(device);
@@ -1150,7 +1161,7 @@ namespace embree
       Vec3fa pos2 = Vec3fa(+10,0,-10);
       Vec3fa pos3 = Vec3fa(+10,0,+10);
       unsigned geom0 = scene.addSphere      (sampler,gflags,pos0,1.0f,numPhi);
-      unsigned geom1 = scene.addSphereHair  (sampler,gflags,pos1,1.0f);
+      unsigned geom1 = scene.addQuadSphere  (sampler,gflags,pos1,1.0f,numPhi);
       unsigned geom2 = scene.addSubdivSphere(sampler,gflags,pos2,1.0f,numPhi,4);
       unsigned geom3 = scene.addSphereHair  (sampler,gflags,pos3,1.0f);
       AssertNoError(device);
@@ -1160,7 +1171,7 @@ namespace embree
         bool move0 = i & 1, move1 = i & 2, move2 = i & 4, move3 = i & 8;
         Vec3fa ds(2,0.1f,2);
         if (move0) { move_mesh(scene,geom0,numVertices,ds); pos0 += ds; }
-        if (move1) { move_mesh(scene,geom1,4,ds); pos1 += ds; }
+        if (move1) { move_mesh(scene,geom1,numVertices,ds); pos1 += ds; }
         if (move2) { move_mesh(scene,geom2,numVertices,ds); pos2 += ds; }
         if (move3) { move_mesh(scene,geom3,4,ds); pos3 += ds; }
         rtcCommit (scene);
@@ -1827,7 +1838,7 @@ namespace embree
       
       VerifyScene scene(device,sflags,to_aflags(imode));
       unsigned geom0 = scene.addSphere      (sampler,gflags,pos0,1.0f,50);
-      unsigned geom1 = scene.addHair        (sampler,gflags,pos1,1.0f,1.0f,1);
+      unsigned geom1 = scene.addQuadSphere  (sampler,gflags,pos1,1.0f,1.0f,1);
       unsigned geom2 = scene.addSubdivSphere(sampler,gflags,pos2,1.0f,5,4);
       unsigned geom3 = scene.addHair        (sampler,gflags,pos3,1.0f,1.0f,1);
       rtcSetMask(scene,geom0,1);
