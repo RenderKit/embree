@@ -43,12 +43,6 @@ namespace embree
         __forceinline Precalculations (const vbool<K>& valid, RayK<K>& ray)
           : grid(nullptr), intersector(valid,ray) {}
         
-        __forceinline ~Precalculations() 
-        {
-	  if (grid)
-            SharedLazyTessellationCache::sharedLazyTessellationCache.unlock();
-        }
-        
       public:
         GridSOA* grid;
         PlueckerIntersectorK<M,K> intersector; // FIXME: use quad intersector

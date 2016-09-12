@@ -271,6 +271,8 @@ namespace embree
                 SubdivPatch1Base& patch = subdiv_patches[timeSteps*patchIndex+t];
                 new (&patch) SubdivPatch1Cached(mesh->id,unsigned(f),subPatch,mesh,t,uv,edge_level,subdiv,VSIZEX);
                 BBox3fa bound = evalGridBounds(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,mesh);
+                //GridSOA* grid = GridSOA::create(&patch,1,scene,alloc);
+                //patch.root_ref.data = (int64_t) grid;
                 bounds[timeSteps*patchIndex+t] = bound;
                 if (t != 0) continue;
                 prims[patchIndex] = PrimRef(bound,patchIndex);

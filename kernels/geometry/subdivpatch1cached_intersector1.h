@@ -26,12 +26,36 @@ namespace embree
 {
   namespace isa
   {
+    template<typename T>
+      class SubdivPatch1CachedPrecalculations : public T
+    { 
+    public:
+      __forceinline SubdivPatch1CachedPrecalculations (Ray& ray, const void* ptr) 
+        : T(ray,ptr) {}
+      
+      __forceinline ~SubdivPatch1CachedPrecalculations() {
+        if (this->grid) SharedLazyTessellationCache::sharedLazyTessellationCache.unlock();
+      }
+    };
+
+    template<int K, typename T>
+      class SubdivPatch1CachedPrecalculationsK : public T
+    { 
+    public:
+      __forceinline SubdivPatch1CachedPrecalculationsK (const vbool<K>& valid, RayK<K>& ray)
+        : T(valid,ray) {}
+      
+      __forceinline ~SubdivPatch1CachedPrecalculationsK() {
+        if (this->grid) SharedLazyTessellationCache::sharedLazyTessellationCache.unlock();
+      }
+    };
+
     class SubdivPatch1CachedIntersector1
     {
     public:
       typedef SubdivPatch1Cached Primitive;
-      typedef GridSOAIntersector1::Precalculations Precalculations;
-      
+      typedef SubdivPatch1CachedPrecalculations<GridSOAIntersector1::Precalculations> Precalculations;
+
       static __forceinline bool processLazyNode(Precalculations& pre, const Primitive* prim_i, Scene* scene, size_t& lazy_node)
       {
         Primitive* prim = (Primitive*) prim_i;
@@ -39,7 +63,8 @@ namespace embree
         GridSOA* grid = (GridSOA*) SharedLazyTessellationCache::lookup(prim->entry(),scene->commitCounterSubdiv,[&] () {
             auto alloc = [] (const size_t bytes) { return SharedLazyTessellationCache::sharedLazyTessellationCache.malloc(bytes); };
             return GridSOA::create((SubdivPatch1Base*)prim,1,scene,alloc);
-          });
+            });
+        //GridSOA* grid = (GridSOA*) prim->root_ref.data;
         lazy_node = grid->root;
         pre.grid = grid;
         return false;
@@ -70,7 +95,7 @@ namespace embree
     {
     public:
       typedef SubdivPatch1Cached Primitive;
-      typedef GridSOAMBlurIntersector1::Precalculations Precalculations;
+      typedef SubdivPatch1CachedPrecalculations<GridSOAMBlurIntersector1::Precalculations> Precalculations;
       
       static __forceinline bool processLazyNode(Precalculations& pre, const Primitive* prim_i, Scene* scene, size_t& lazy_node)
       {
@@ -110,7 +135,7 @@ namespace embree
     struct SubdivPatch1CachedIntersectorK
     {
       typedef SubdivPatch1Cached Primitive;
-      typedef typename GridSOAIntersectorK<K>::Precalculations Precalculations;
+      typedef SubdivPatch1CachedPrecalculationsK<K,typename GridSOAIntersectorK<K>::Precalculations> Precalculations;
       
       static __forceinline bool processLazyNode(Precalculations& pre, const Primitive* prim_i, Scene* scene, size_t& lazy_node)
       {
@@ -158,7 +183,7 @@ namespace embree
     struct SubdivPatch1MBlurCachedIntersectorK
     {
       typedef SubdivPatch1Cached Primitive;
-      typedef typename GridSOAMBlurIntersectorK<K>::Precalculations Precalculations;
+      typedef SubdivPatch1CachedPrecalculationsK<K,typename GridSOAMBlurIntersectorK<K>::Precalculations> Precalculations;
       
       static __forceinline bool processLazyNode(Precalculations& pre, const Primitive* prim_i, Scene* scene, size_t& lazy_node)
       {
