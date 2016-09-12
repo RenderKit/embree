@@ -94,7 +94,7 @@ namespace embree
         if (geom->patch_eval_trees.size())
         {
           feature_adaptive_eval_grid<PatchEvalGrid> 
-            (geom->patch_eval_trees[patch.prim], patch.subPatch(), patch.needsStitching() ? patch.level : nullptr,
+            (geom->patch_eval_trees[geom->numTimeSteps*patch.prim+patch.time()], patch.subPatch(), patch.needsStitching() ? patch.level : nullptr,
              x0,x1,y0,y1,swidth,sheight,
              grid_x,grid_y,grid_z,grid_u,grid_v,
              displ ? (float*)grid_Ng_x : nullptr, displ ? (float*)grid_Ng_y : nullptr, displ ? (float*)grid_Ng_z : nullptr,
@@ -102,7 +102,7 @@ namespace embree
         }
         else 
         {
-          GeneralCatmullClarkPatch3fa ccpatch(patch.edge(),geom->getVertexBuffer(0));
+          GeneralCatmullClarkPatch3fa ccpatch(patch.edge(),geom->getVertexBuffer(patch.time()));
           
           feature_adaptive_eval_grid<FeatureAdaptiveEvalGrid,GeneralCatmullClarkPatch3fa> 
             (ccpatch, patch.subPatch(), patch.needsStitching() ? patch.level : nullptr,
@@ -215,7 +215,7 @@ namespace embree
         if (geom->patch_eval_trees.size())
         {
           feature_adaptive_eval_grid<PatchEvalGrid> 
-            (geom->patch_eval_trees[patch.prim], patch.subPatch(), patch.needsStitching() ? patch.level : nullptr,
+            (geom->patch_eval_trees[geom->numTimeSteps*patch.prim+patch.time()], patch.subPatch(), patch.needsStitching() ? patch.level : nullptr,
              x0,x1,y0,y1,swidth,sheight,
              grid_x,grid_y,grid_z,grid_u,grid_v,
              displ ? (float*)grid_Ng_x : nullptr, displ ? (float*)grid_Ng_y : nullptr, displ ? (float*)grid_Ng_z : nullptr,
@@ -223,7 +223,7 @@ namespace embree
         } 
         else 
         {
-          GeneralCatmullClarkPatch3fa ccpatch(patch.edge(),geom->getVertexBuffer(0));
+          GeneralCatmullClarkPatch3fa ccpatch(patch.edge(),geom->getVertexBuffer(patch.time()));
           
           feature_adaptive_eval_grid <FeatureAdaptiveEvalGrid,GeneralCatmullClarkPatch3fa>
             (ccpatch, patch.subPatch(), patch.needsStitching() ? patch.level : nullptr,

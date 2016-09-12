@@ -24,7 +24,7 @@ namespace embree
                      const unsigned x0, const unsigned x1, const unsigned y0, const unsigned y1, const unsigned swidth, const unsigned sheight,
                      const SubdivMesh* const geom, const size_t bvhBytes, const size_t gridBytes, BBox3fa* bounds_o)
       : root(BVH4::emptyNode), time_steps(time_steps), width(x1-x0+1), height(y1-y0+1), dim_offset(width*height), 
-        geomID(patches->geom), primID(patches->prim), bvhBytes(unsigned(bvhBytes)), gridBytes(unsigned(gridBytes))
+        geomID(patches->geom), primID(patches->prim), bvhBytes(unsigned(bvhBytes)), gridOffset(max(1u,time_steps-1)*bvhBytes), gridBytes(unsigned(gridBytes))
     {      
       /* the generate loops need padded arrays, thus first store into these temporary arrays */
       unsigned temp_size = width*height+VSIZEX;
@@ -48,7 +48,7 @@ namespace embree
           const vintx iv = (vintx) clamp(vfloatx::load(&local_grid_v[i])*0xFFFF, vfloatx(0.0f), vfloatx(0xFFFF));
           vintx::storeu(&local_grid_uv[i], (iv << 16) | iu);
         }
-        
+
         /* copy temporary data to compact grid */
         float* const grid_x  = (float*)(gridData(t) + 0*dim_offset);
         float* const grid_y  = (float*)(gridData(t) + 1*dim_offset);
@@ -68,7 +68,7 @@ namespace embree
       /* otherwise build MBlur BVH */
       else
       {
-        for (size_t t=0; t<time_steps; t++)
+        for (size_t t=0; t<time_steps-1; t++)
         {
           std::pair<BBox3fa,BBox3fa> bounds;
           root = buildMBlurBVH(t,&bounds);
@@ -80,17 +80,17 @@ namespace embree
       }
     }
 
-    size_t GridSOA::getBVHBytes(const GridRange& range, const unsigned int leafBytes)
+    size_t GridSOA::getBVHBytes(const GridRange& range, const size_t nodeBytes, const size_t leafBytes)
     {
       if (range.hasLeafSize()) 
         return leafBytes;
       
       __aligned(64) GridRange r[4];
-      const unsigned int children = range.splitIntoSubRanges(r);
+      const size_t children = range.splitIntoSubRanges(r);
       
-      size_t bytes = sizeof(BVH4::Node);
-      for (unsigned int i=0;i<children;i++)
-        bytes += getBVHBytes(r[i],leafBytes);
+      size_t bytes = nodeBytes;
+      for (size_t i=0; i<children; i++)
+        bytes += getBVHBytes(r[i],nodeBytes,leafBytes);
       return bytes;
     }
     

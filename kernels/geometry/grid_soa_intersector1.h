@@ -145,7 +145,7 @@ namespace embree
 
         Vec3<vfloat> b0, b1, b2;
         Loader::gather(grid_x+grid_offset,grid_y+grid_offset,grid_z+grid_offset,line_offset,b0,b1,b2);
-       
+
         Vec3<vfloat> v0 = lerp(a0,b0,vfloat(ftime));
         Vec3<vfloat> v1 = lerp(a1,b1,vfloat(ftime));
         Vec3<vfloat> v2 = lerp(a2,b2,vfloat(ftime));
@@ -189,9 +189,9 @@ namespace embree
       static __forceinline void intersect(Precalculations& pre, Ray& ray, const RTCIntersectContext* context, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) 
       {
         /* calculate time segment itime and fractional time ftime */
-        const int time_steps = pre.grid->time_steps;
-        const float time = ray.time*float(time_steps);
-        const int   itime = clamp(int(floor(time)),0,time_steps-1);
+        const int time_segments = pre.grid->time_steps-1;
+        const float time = ray.time*float(time_segments);
+        const int   itime = clamp(int(floor(time)),0,time_segments-1);
         const float ftime = time - float(itime);
 
         const size_t line_offset   = pre.grid->width;
@@ -209,9 +209,9 @@ namespace embree
       static __forceinline bool occluded(Precalculations& pre, Ray& ray, const RTCIntersectContext* context, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) 
       {
         /* calculate time segment itime and fractional time ftime */
-        const int time_steps = pre.grid->time_steps;
-        const float time = ray.time*float(time_steps);
-        const int   itime = clamp(int(floor(time)),0,time_steps-1);
+        const int time_segments = pre.grid->time_steps-1;
+        const float time = ray.time*float(time_segments);
+        const int   itime = clamp(int(floor(time)),0,time_segments-1);
         const float ftime = time - float(itime);
 
         const size_t line_offset   = pre.grid->width;

@@ -84,12 +84,12 @@ namespace embree
 
       ISPCTriangleMesh (Ref<TutorialScene::TriangleMesh> in) : geom(TRIANGLE_MESH)
       {
-        positions = in->v.size() ? &in->v[0] : nullptr;
-        positions2 = in->v2.size() ? &in->v2[0] : nullptr;
-        normals = in->vn.size() ? &in->vn[0] : nullptr;
-        texcoords = in->vt.size() ? &in->vt[0] : nullptr;
-        triangles = (ISPCTriangle*) (in->triangles.size() ? &in->triangles[0] : nullptr);
-        quads = (ISPCQuad*) (in->quads.size() ? &in->quads[0] : nullptr);
+        positions = in->v.data();
+        positions2 = in->v2.data();
+        normals = in->vn.data();
+        texcoords = in->vt.data();
+        triangles = (ISPCTriangle*) in->triangles.data();
+        quads = (ISPCQuad*) in->quads.data();
         numVertices = unsigned(in->v.size());
         numTriangles = unsigned(in->triangles.size());
         numQuads = unsigned(in->quads.size());
@@ -120,11 +120,11 @@ namespace embree
 
       ISPCQuadMesh (Ref<TutorialScene::QuadMesh> in) : geom(QUAD_MESH)
       {
-        positions = in->v.size() ? &in->v[0] : nullptr;
-        positions2 = in->v2.size() ? &in->v2[0] : nullptr;
-        normals = in->vn.size() ? &in->vn[0] : nullptr;
-        texcoords = in->vt.size() ? &in->vt[0] : nullptr;
-        quads = (ISPCQuad*) (in->quads.size() ? &in->quads[0] : nullptr);
+        positions = in->v.data();
+        positions2 = in->v2.data();
+        normals = in->vn.data();
+        texcoords = in->vt.data();
+        quads = (ISPCQuad*) in->quads.data();
         numVertices = unsigned(in->v.size());
         numQuads = unsigned(in->quads.size());
         geomID = -1;
@@ -147,24 +147,25 @@ namespace embree
     struct ISPCSubdivMesh
     {
       ISPCSubdivMesh (unsigned int numVertices, unsigned int numFaces, unsigned int numEdges, unsigned int materialID)
-      : geom(SUBDIV_MESH), positions(nullptr), normals(nullptr), texcoords(nullptr), position_indices(nullptr), normal_indices(nullptr), texcoord_indices(nullptr), verticesPerFace(nullptr), holes(nullptr),
+      : geom(SUBDIV_MESH), positions(nullptr), positions2(nullptr), normals(nullptr), texcoords(nullptr), position_indices(nullptr), normal_indices(nullptr), texcoord_indices(nullptr), verticesPerFace(nullptr), holes(nullptr),
         subdivlevel(nullptr), edge_creases(nullptr), edge_crease_weights(nullptr), vertex_creases(nullptr), vertex_crease_weights(nullptr), face_offsets(nullptr),
         numVertices(numVertices), numFaces(numFaces), numEdges(numEdges), numEdgeCreases(0), numVertexCreases(0), numHoles(0), materialID(materialID), geomID(0) {}
 
       ISPCSubdivMesh (Ref<TutorialScene::SubdivMesh> in) : geom(SUBDIV_MESH)
       {
-        positions = in->positions.size() ? &in->positions[0] : nullptr; // FIXME: use c++11 data() function
-        normals = in->normals.size() ? &in->normals[0] : nullptr;
-        texcoords = in->texcoords.size() ? &in->texcoords[0] : nullptr;
-        position_indices = in->position_indices.size()   ? &in->position_indices[0] : nullptr;
-        normal_indices = in->normal_indices.size()   ? &in->normal_indices[0] : nullptr;
-        texcoord_indices = in->texcoord_indices.size()   ? &in->texcoord_indices[0] : nullptr;
-        verticesPerFace = in->verticesPerFace.size() ? &in->verticesPerFace[0] : nullptr;
-        holes = in->holes.size() ? &in->holes[0] : nullptr;
-        edge_creases = in->edge_creases.size() ? &in->edge_creases[0] : nullptr;
-        edge_crease_weights = in->edge_crease_weights.size() ? &in->edge_crease_weights[0] : nullptr;
-        vertex_creases = in->vertex_creases.size() ? &in->vertex_creases[0] : nullptr;
-        vertex_crease_weights = in->vertex_crease_weights.size() ? &in->vertex_crease_weights[0] : nullptr;
+        positions = in->positions.data();
+        positions2 = in->positions2.data();
+        normals = in->normals.data();
+        texcoords = in->texcoords.data();
+        position_indices = in->position_indices.data();
+        normal_indices = in->normal_indices.data();
+        texcoord_indices = in->texcoord_indices.data();
+        verticesPerFace = in->verticesPerFace.data();
+        holes = in->holes.data();
+        edge_creases = in->edge_creases.data();
+        edge_crease_weights = in->edge_crease_weights.data();
+        vertex_creases = in->vertex_creases.data();
+        vertex_crease_weights = in->vertex_crease_weights.data();
         numVertices = unsigned(in->positions.size());
         numFaces = unsigned(in->verticesPerFace.size());
         numEdges = unsigned(in->position_indices.size());
@@ -190,6 +191,7 @@ namespace embree
     public:
       ISPCGeometry geom;
       Vec3fa* positions;       //!< vertex positions
+      Vec3fa* positions2;      //!< vertex positions for second time step
       Vec3fa* normals;         //!< face vertex normals
       Vec2f* texcoords;        //!< face texture coordinates
       unsigned* position_indices;   //!< position indices for all faces
@@ -246,9 +248,9 @@ namespace embree
 
       ISPCHairSet (bool hair, Ref<TutorialScene::HairSet> in) : geom(hair ? HAIR_SET : CURVES)
       {
-        v = in->v.size() ? &in->v[0] : nullptr;
-        v2 = in->v2.size() ? &in->v2[0] : nullptr;
-        hairs = (ISPCHair*) (in->hairs.size() ? &in->hairs[0] : nullptr);
+        v = in->v.data();
+        v2 = in->v2.data();
+        hairs = (ISPCHair*) in->hairs.data();
         numVertices = unsigned(in->v.size());
         numHairs = unsigned(in->hairs.size());
         materialID = in->materialID;

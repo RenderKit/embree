@@ -22,6 +22,7 @@ namespace embree
                                       const unsigned int pID,
                                       const unsigned int subPatch,
                                       const SubdivMesh *const mesh,
+                                      const size_t time,
                                       const Vec2f uv[4],
                                       const float edge_level[4],
                                       const int subdiv[4],
@@ -37,23 +38,24 @@ namespace embree
     {
 #if PATCH_USE_BEZIER_PATCH 
       type = BEZIER_PATCH;
-      new (patch_v) BezierPatch3fa(BSplinePatch3fa(CatmullClarkPatch3fa(edge,mesh->getVertexBuffer())));
+      new (patch_v) BezierPatch3fa(BSplinePatch3fa(CatmullClarkPatch3fa(edge,mesh->getVertexBuffer(time))));
 #else
       type = BSPLINE_PATCH;
-      new (patch_v) BSplinePatch3fa(CatmullClarkPatch3fa(edge,mesh->getVertexBuffer())); // FIXME: init BSpline directly from half edge structure
+      new (patch_v) BSplinePatch3fa(CatmullClarkPatch3fa(edge,mesh->getVertexBuffer(time))); // FIXME: init BSpline directly from half edge structure
 #endif      
     }
 #if PATCH_USE_GREGORY == 2
     else if (edge->patch_type == HalfEdge::IRREGULAR_QUAD_PATCH) 
     {
       type = GREGORY_PATCH;
-      new (patch_v) DenseGregoryPatch3fa(GregoryPatch3fa(CatmullClarkPatch3fa(edge,mesh->getVertexBuffer())));
+      new (patch_v) DenseGregoryPatch3fa(GregoryPatch3fa(CatmullClarkPatch3fa(edge,mesh->getVertexBuffer(time))));
     }
 #endif
     else
     {
       type = EVAL_PATCH;
       set_edge(mesh->getHalfEdge(pID));
+      set_time(time);
       set_subPatch(subPatch);
     }
 

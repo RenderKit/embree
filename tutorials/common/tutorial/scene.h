@@ -106,6 +106,7 @@ namespace embree
     {
       SubdivMesh () : Geometry(SUBDIV_MESH) {}
       avector<Vec3fa> positions;            //!< vertex positions
+      avector<Vec3fa> positions2;            //!< vertex positions
       avector<Vec3fa> normals;              //!< face vertex normals
       std::vector<Vec2f> texcoords;             //!< face texture coordinates
       std::vector<unsigned> position_indices;        //!< position indices for all faces

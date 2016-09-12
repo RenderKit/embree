@@ -50,7 +50,7 @@ namespace embree
 #elif defined(TASKING_TBB)
     group = new tbb::task_group;
 #elif defined(TASKING_PPL)
-	group = new concurrency::task_group;
+    group = new concurrency::task_group;
 #endif
 
     intersectors = Accel::Intersectors(missing_rtcCommit);
@@ -76,6 +76,7 @@ namespace embree
     createQuadAccel();
     createQuadMBAccel();
     createSubdivAccel();
+    createSubdivMBAccel();
     createHairAccel();
     createHairMBAccel();
     createLineAccel();
@@ -407,6 +408,11 @@ namespace embree
 #endif
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown subdiv accel "+device->subdiv_accel);
 #endif
+  }
+
+  void Scene::createSubdivMBAccel()
+  {
+    accels.add(device->bvh4_factory->BVH4SubdivPatch1MBlurCached(this));
   }
 
   Scene::~Scene () 

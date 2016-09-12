@@ -16,6 +16,8 @@
 
 #pragma once
 
+#define _CRT_SECURE_NO_WARNINGS
+
 #include "config.h"
 
 /* size of screen tiles */
@@ -62,8 +64,8 @@ extern "C" uniform int puts ( const uniform int8* uniform str );
 extern "C" uniform int putchar ( uniform int character );
 
 /* face forward for shading normals */
-inline Vec3f faceforward( Vec3f N, Vec3f I, Vec3f Ng ) {
-  return dot(I, Ng) < 0 ? N : neg(N);
+inline Vec3f faceforward( const Vec3f& N, const Vec3f& I, const Vec3f& Ng ) {
+  Vec3f NN = N; return dot(I, Ng) < 0 ? NN : neg(NN);
 }
 
 /* glut keys codes */
@@ -119,9 +121,15 @@ struct Sample3f
   float pdf;
 };
 
-inline Sample3f make_Sample3f(const Vec3f v, const float pdf) {
+inline uniform Sample3f make_Sample3f(const uniform Vec3f& v, const uniform float pdf) {
+  uniform Sample3f s; s.v = v; s.pdf = pdf; return s;
+}
+
+#if defined(ISPC)
+inline Sample3f make_Sample3f(const Vec3f& v, const float pdf) {
   Sample3f s; s.v = v; s.pdf = pdf; return s;
 }
+#endif
 
 /* draws progress bar */
 extern "C" unmasked void progressStart();

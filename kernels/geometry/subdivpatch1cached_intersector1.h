@@ -66,6 +66,46 @@ namespace embree
       }
     };
 
+    class SubdivPatch1MBlurCachedIntersector1
+    {
+    public:
+      typedef SubdivPatch1Cached Primitive;
+      typedef GridSOAMBlurIntersector1::Precalculations Precalculations;
+      
+      static __forceinline bool processLazyNode(Precalculations& pre, const Primitive* prim_i, Scene* scene, size_t& lazy_node)
+      {
+        Primitive* prim = (Primitive*) prim_i;
+        if (pre.grid) SharedLazyTessellationCache::sharedLazyTessellationCache.unlock();
+        GridSOA* grid = (GridSOA*) SharedLazyTessellationCache::lookup(prim->entry(),scene->commitCounterSubdiv,[&] () {
+            auto alloc = [] (const size_t bytes) { return SharedLazyTessellationCache::sharedLazyTessellationCache.malloc(bytes); };
+            return GridSOA::create((SubdivPatch1Base*)prim,2,scene,alloc);
+          });
+        lazy_node = grid->root;
+        pre.grid = grid;
+        return false;
+      }
+
+      /*! Intersect a ray with the primitive. */
+      static __forceinline void intersect(Precalculations& pre, Ray& ray, const RTCIntersectContext* context, const Primitive* prim, size_t ty, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) 
+      {
+        if (likely(ty == 0)) GridSOAMBlurIntersector1::intersect(pre,ray,context,prim,ty,scene,lazy_node);
+        else                 processLazyNode(pre,prim,scene,lazy_node);
+      }
+      static __forceinline void intersect(Precalculations& pre, Ray& ray, const RTCIntersectContext* context, size_t ty0, const Primitive* prim, size_t ty, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) {
+        intersect(pre,ray,context,prim,ty,scene,geomID_to_instID,lazy_node);
+      }
+      
+      /*! Test if the ray is occluded by the primitive */
+      static __forceinline bool occluded(Precalculations& pre, Ray& ray, const RTCIntersectContext* context, const Primitive* prim, size_t ty, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) 
+      {
+        if (likely(ty == 0)) return GridSOAMBlurIntersector1::occluded(pre,ray,context,prim,ty,scene,lazy_node);
+        else                 return processLazyNode(pre,prim,scene,lazy_node);
+      }
+      static __forceinline bool occluded(Precalculations& pre, Ray& ray, const RTCIntersectContext* context, size_t ty0, const Primitive* prim, size_t ty, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) {
+        return occluded(pre,ray,context,prim,ty,scene,geomID_to_instID,lazy_node);
+      }
+    };
+
     template <int K>
     struct SubdivPatch1CachedIntersectorK
     {
@@ -113,5 +153,41 @@ namespace embree
     typedef SubdivPatch1CachedIntersectorK<4>  SubdivPatch1CachedIntersector4;
     typedef SubdivPatch1CachedIntersectorK<8>  SubdivPatch1CachedIntersector8;
     typedef SubdivPatch1CachedIntersectorK<16> SubdivPatch1CachedIntersector16;
+
+    template <int K>
+    struct SubdivPatch1MBlurCachedIntersectorK
+    {
+      typedef SubdivPatch1Cached Primitive;
+      typedef typename GridSOAMBlurIntersectorK<K>::Precalculations Precalculations;
+      
+      static __forceinline bool processLazyNode(Precalculations& pre, const Primitive* prim_i, Scene* scene, size_t& lazy_node)
+      {
+        Primitive* prim = (Primitive*) prim_i;
+        if (pre.grid) SharedLazyTessellationCache::sharedLazyTessellationCache.unlock();
+        GridSOA* grid = (GridSOA*) SharedLazyTessellationCache::lookup(prim->entry(),scene->commitCounterSubdiv,[&] () {
+            auto alloc = [] (const size_t bytes) { return SharedLazyTessellationCache::sharedLazyTessellationCache.malloc(bytes); };
+            return GridSOA::create((SubdivPatch1Base*)prim,2,scene,alloc);
+          });
+        lazy_node = grid->root;
+        pre.grid = grid;
+        return false;
+      }
+      
+      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, const RTCIntersectContext* context, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
+      {
+        if (likely(ty == 0)) GridSOAMBlurIntersectorK<K>::intersect(pre,ray,k,context,prim,ty,scene,lazy_node);
+        else                 processLazyNode(pre,prim,scene,lazy_node);
+      }
+      
+      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, const RTCIntersectContext* context, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
+      {
+        if (likely(ty == 0)) return GridSOAMBlurIntersectorK<K>::occluded(pre,ray,k,context,prim,ty,scene,lazy_node);
+        else                 return processLazyNode(pre,prim,scene,lazy_node);
+      }
+    };
+
+    typedef SubdivPatch1MBlurCachedIntersectorK<4>  SubdivPatch1MBlurCachedIntersector4;
+    typedef SubdivPatch1MBlurCachedIntersectorK<8>  SubdivPatch1MBlurCachedIntersector8;
+    typedef SubdivPatch1MBlurCachedIntersectorK<16> SubdivPatch1MBlurCachedIntersector16;
   }
 }
