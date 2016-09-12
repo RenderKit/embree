@@ -26,7 +26,7 @@ namespace embree
     typedef vint8   Int;
 
     enum { size = 8 }; // number of SIMD elements
-    __mmask8 v;          // data
+    __mmask8 v;        // data
     
     ////////////////////////////////////////////////////////////////////////////////
     /// Constructors, Assignment & Cast Operators
@@ -37,11 +37,11 @@ namespace embree
     __forceinline vboold8& operator=(const vboold8 &f) { v = f.v; return *this; }
 
     __forceinline vboold(const __mmask8 &t) { v = t; }
-    __forceinline operator __mmask8 () const { return v; }
+    __forceinline operator __mmask8() const { return v; }
     
-    __forceinline vboold(bool b) { v = b ? 0xFF : 0x00; }
-    __forceinline vboold(int t ) { v = (__mmask8)t; }
-    __forceinline vboold(unsigned int t ) { v = (__mmask8)t; }
+    __forceinline vboold(bool b) { v = b ? 0xff : 0x00; }
+    __forceinline vboold(int t)  { v = (__mmask8)t; }
+    __forceinline vboold(unsigned int t) { v = (__mmask8)t; }
 
     /* return int8 mask */
     __forceinline __m128i mask8() const { 
@@ -72,15 +72,15 @@ namespace embree
   
   __forceinline vboold8 operator!(const vboold8 &a) { return _mm512_knot(a); }
   
-   ////////////////////////////////////////////////////////////////////////////////
-   /// Binary Operators
-   ////////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////////
+  /// Binary Operators
+  ////////////////////////////////////////////////////////////////////////////////
   
-  __forceinline vboold8 operator&(const vboold8 &a, const vboold8 &b) { return _mm512_kand(a,b); }
-  __forceinline vboold8 operator|(const vboold8 &a, const vboold8 &b) { return _mm512_kor(a,b); }
-  __forceinline vboold8 operator^(const vboold8 &a, const vboold8 &b) { return _mm512_kxor(a,b); }
+  __forceinline vboold8 operator&(const vboold8 &a, const vboold8 &b) { return _mm512_kand(a, b); }
+  __forceinline vboold8 operator|(const vboold8 &a, const vboold8 &b) { return _mm512_kor(a, b); }
+  __forceinline vboold8 operator^(const vboold8 &a, const vboold8 &b) { return _mm512_kxor(a, b); }
 
-  __forceinline vboold8 andn(const vboold8 &a, const vboold8 &b) { return _mm512_kandn(b,a); }
+  __forceinline vboold8 andn(const vboold8 &a, const vboold8 &b) { return _mm512_kandn(b, a); }
   
   ////////////////////////////////////////////////////////////////////////////////
   /// Assignment Operators
@@ -105,9 +105,9 @@ namespace embree
   /// Reduction Operations
   ////////////////////////////////////////////////////////////////////////////////
   
-  __forceinline int all (const vboold8 &a) { return  _mm512_kortestc(a,a) != 0; }
-  __forceinline int any (const vboold8 &a) { return  _mm512_kortestz(a,a) == 0; }
-  __forceinline int none(const vboold8 &a) { return  _mm512_kortestz(a,a) != 0; }
+  __forceinline int all (const vboold8 &a) { return a.v == 0xff; }
+  __forceinline int any (const vboold8 &a) { return _mm512_kortestz(a, a) == 0; }
+  __forceinline int none(const vboold8 &a) { return _mm512_kortestz(a, a) != 0; }
 
   __forceinline int all ( const vboold8& valid, const vboold8& b ) { return all(!valid | b); }
   __forceinline int any ( const vboold8& valid, const vboold8& b ) { return any( valid & b); }
@@ -120,8 +120,8 @@ namespace embree
   /// Convertion Operations
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline unsigned int toInt (const vboold8 &a) { return _mm512_mask2int(a); }
-  __forceinline vboold8      toMask8(const int &a)      { return _mm512_int2mask(a); }
+  __forceinline unsigned int toInt(const vboold8 &a) { return _mm512_mask2int(a); }
+  __forceinline vboold8      toMask8(const int &a)   { return _mm512_int2mask(a); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Get/Set Functions
