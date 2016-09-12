@@ -73,6 +73,9 @@ namespace embree
       throw std::runtime_error("task cancelled");
     return v;
 #else // TASKING_PPL
+#if 0
+		return  func(range<Index>(first, last));
+#else
 		struct AlignedValue
 		{
 			char storage[alignof(Value)+sizeof(Value)];
@@ -110,7 +113,7 @@ namespace embree
 		};
 		const Value v = concurrency::parallel_reduce(Iterator_size_t(first), Iterator_size_t(last), AlignedValue(identity), range_reduction, reduction);
 		return v;
-
+#endif
 
 #if 0
     auto range_reduction = [&](Iterator_size_t begin, Iterator_size_t end, const Value& start) { 

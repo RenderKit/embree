@@ -49,7 +49,11 @@ namespace embree
     ProgressMonitorClosure (const Closure& closure) : closure(closure) {}
     void operator() (size_t dn) { closure(dn); }
   private:
-    const Closure& closure;
+#if defined(TASKING_PPL)
+     Closure closure;
+#else
+	 const Closure &closure;
+#endif
   };
   template<typename Closure> __forceinline const ProgressMonitorClosure<Closure> BuildProgressMonitorFromClosure(const Closure& closure) {
     return ProgressMonitorClosure<Closure>(closure);
