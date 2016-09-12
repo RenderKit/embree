@@ -1099,7 +1099,7 @@ namespace embree
     /*! data arrays for special builders */
   public:
     std::vector<BVHN*> objects;
-    avector<char> subdiv_patches;
+    avector<char,aligned_allocator<char,32>> subdiv_patches;
   };
 
   template<>
