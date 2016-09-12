@@ -2612,7 +2612,7 @@ namespace embree
       for (unsigned int j=0; j<10; j++) 
       {
         Vec3fa pos = 100.0f*RandomSampler_get3D(task->sampler);
-	int type = RandomSampler_getInt(task->sampler)%6;
+	int type = RandomSampler_getInt(task->sampler)%9;
         switch (RandomSampler_getInt(task->sampler)%16) {
         case 0: pos = Vec3fa(nan); break;
         case 1: pos = Vec3fa(inf); break;
@@ -2626,11 +2626,14 @@ namespace embree
         switch (type) {
         case 0: task->scene->addSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
 	case 1: task->scene->addSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
-	case 2: task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
-	case 3: task->scene->addHair  (task->sampler,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,numTriangles,0.0f); break;
-	case 4: task->scene->addHair  (task->sampler,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,numTriangles,1.0f); break; 
+        case 2: task->scene->addQuadSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
+	case 3: task->scene->addQuadSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
+	case 4: task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
+        case 5: task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,4,numTriangles,1.0f); break;
+	case 6: task->scene->addHair  (task->sampler,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,numTriangles,0.0f); break;
+	case 7: task->scene->addHair  (task->sampler,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,numTriangles,1.0f); break; 
 
-        case 5: {
+        case 8: {
 	  Sphere* sphere = new Sphere(pos,2.0f); spheres.push_back(sphere); 
 	  task->scene->addUserGeometryEmpty(task->sampler,sphere); break;
         }
@@ -2732,7 +2735,7 @@ namespace embree
         int index = RandomSampler_getInt(task->sampler)%1024;
         if (geom[index] == -1) 
         {
-          int type = RandomSampler_getInt(task->sampler)%10;
+          int type = RandomSampler_getInt(task->sampler)%19;
           Vec3fa pos = 100.0f*RandomSampler_get3D(task->sampler);
           switch (RandomSampler_getInt(task->sampler)%16) {
           case 0: pos = Vec3fa(nan); break;
@@ -2741,7 +2744,7 @@ namespace embree
           default: break;
           };
           size_t numPhi = RandomSampler_getInt(task->sampler)%100;
-	  if (type >= 3 || type <= 5) numPhi = RandomSampler_getInt(task->sampler)%10;
+	  if (type >= 12 || type <= 17) numPhi = RandomSampler_getInt(task->sampler)%10;
 #if defined(__WIN32__)          
           numPhi = RandomSampler_getInt(task->sampler) % 4;
 #endif
@@ -2754,13 +2757,28 @@ namespace embree
           case 0: geom[index] = task->scene->addSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
           case 1: geom[index] = task->scene->addSphere(task->sampler,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles,0.0f); break;
           case 2: geom[index] = task->scene->addSphere(task->sampler,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
-          case 3: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
-	  case 4: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
-	  case 5: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
-          case 6: geom[index] = task->scene->addSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
-          case 7: geom[index] = task->scene->addSphere(task->sampler,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles,1.0f); break;
-          case 8: geom[index] = task->scene->addSphere(task->sampler,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
-          case 9: spheres[index] = Sphere(pos,2.0f); geom[index] = task->scene->addUserGeometryEmpty(task->sampler,&spheres[index]); break;
+
+          case 3: geom[index] = task->scene->addSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
+          case 4: geom[index] = task->scene->addSphere(task->sampler,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles,1.0f); break;
+          case 5: geom[index] = task->scene->addSphere(task->sampler,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
+
+          case 6: geom[index] = task->scene->addQuadSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
+          case 7: geom[index] = task->scene->addQuadSphere(task->sampler,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles,0.0f); break;
+          case 8: geom[index] = task->scene->addQuadSphere(task->sampler,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
+
+          case 9: geom[index] = task->scene->addQuadSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
+          case 10: geom[index] = task->scene->addQuadSphere(task->sampler,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles,1.0f); break;
+          case 11: geom[index] = task->scene->addQuadSphere(task->sampler,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
+
+          case 12: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
+	  case 13: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
+	  case 14: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
+
+          case 15: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,4,numTriangles,1.0f); break;
+	  case 16: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,4,numTriangles,1.0f); break;
+	  case 17: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,4,numTriangles,1.0f); break;
+
+          case 18: spheres[index] = Sphere(pos,2.0f); geom[index] = task->scene->addUserGeometryEmpty(task->sampler,&spheres[index]); break;
           }; 
 	  //if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
           if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) {
