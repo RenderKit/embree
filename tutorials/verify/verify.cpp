@@ -1080,10 +1080,10 @@ namespace embree
       error_handler(rtcDeviceGetError(device));
       VerifyScene scene(device,sflags,aflags);
       AssertNoError(device);
-      unsigned geom0 = scene.addSphere(sampler,RTC_GEOMETRY_STATIC,Vec3fa(-1,0,-1),1.0f,50);
-      unsigned geom1 = scene.addHair  (sampler,RTC_GEOMETRY_STATIC,Vec3fa(-1,0,+1),1.0f,1.0f,1);
-      unsigned geom2 = scene.addSphere(sampler,RTC_GEOMETRY_STATIC,Vec3fa(+1,0,-1),1.0f,50);
-      unsigned geom3 = scene.addHair  (sampler,RTC_GEOMETRY_STATIC,Vec3fa(+1,0,+1),1.0f,1.0f,1);
+      unsigned geom0 = scene.addSphere      (sampler,RTC_GEOMETRY_STATIC,Vec3fa(-1,0,-1),1.0f,50);
+      unsigned geom1 = scene.addHair        (sampler,RTC_GEOMETRY_STATIC,Vec3fa(-1,0,+1),1.0f,1.0f,1);
+      unsigned geom2 = scene.addSubdivSphere(sampler,RTC_GEOMETRY_STATIC,Vec3fa(+1,0,-1),1.0f,5,4);
+      unsigned geom3 = scene.addHair        (sampler,RTC_GEOMETRY_STATIC,Vec3fa(+1,0,+1),1.0f,1.0f,1);
       AssertNoError(device);
       
       for (size_t i=0; i<16; i++) 
@@ -1149,10 +1149,10 @@ namespace embree
       Vec3fa pos1 = Vec3fa(-10,0,+10);
       Vec3fa pos2 = Vec3fa(+10,0,-10);
       Vec3fa pos3 = Vec3fa(+10,0,+10);
-      unsigned geom0 = scene.addSphere    (sampler,gflags,pos0,1.0f,numPhi);
-      unsigned geom1 = scene.addSphereHair(sampler,gflags,pos1,1.0f);
-      unsigned geom2 = scene.addSphere    (sampler,gflags,pos2,1.0f,numPhi);
-      unsigned geom3 = scene.addSphereHair(sampler,gflags,pos3,1.0f);
+      unsigned geom0 = scene.addSphere      (sampler,gflags,pos0,1.0f,numPhi);
+      unsigned geom1 = scene.addSphereHair  (sampler,gflags,pos1,1.0f);
+      unsigned geom2 = scene.addSubdivSphere(sampler,gflags,pos2,1.0f,numPhi,4);
+      unsigned geom3 = scene.addSphereHair  (sampler,gflags,pos3,1.0f);
       AssertNoError(device);
       
       for (size_t i=0; i<16; i++) 
@@ -1826,10 +1826,10 @@ namespace embree
       Vec3fa pos3 = Vec3fa(+10,0,+10);
       
       VerifyScene scene(device,sflags,to_aflags(imode));
-      unsigned geom0 = scene.addSphere(sampler,gflags,pos0,1.0f,50);
-      unsigned geom1 = scene.addHair  (sampler,gflags,pos1,1.0f,1.0f,1);
-      unsigned geom2 = scene.addSphere(sampler,gflags,pos2,1.0f,50);
-      unsigned geom3 = scene.addHair  (sampler,gflags,pos3,1.0f,1.0f,1);
+      unsigned geom0 = scene.addSphere      (sampler,gflags,pos0,1.0f,50);
+      unsigned geom1 = scene.addHair        (sampler,gflags,pos1,1.0f,1.0f,1);
+      unsigned geom2 = scene.addSubdivSphere(sampler,gflags,pos2,1.0f,5,4);
+      unsigned geom3 = scene.addHair        (sampler,gflags,pos3,1.0f,1.0f,1);
       rtcSetMask(scene,geom0,1);
       rtcSetMask(scene,geom1,2);
       rtcSetMask(scene,geom2,4);
