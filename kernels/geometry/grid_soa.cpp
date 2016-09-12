@@ -48,7 +48,7 @@ namespace embree
           const vintx iv = (vintx) clamp(vfloatx::load(&local_grid_v[i])*0xFFFF, vfloatx(0.0f), vfloatx(0xFFFF));
           vintx::storeu(&local_grid_uv[i], (iv << 16) | iu);
         }
-        
+
         /* copy temporary data to compact grid */
         float* const grid_x  = (float*)(gridData(t) + 0*dim_offset);
         float* const grid_y  = (float*)(gridData(t) + 1*dim_offset);

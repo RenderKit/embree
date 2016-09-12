@@ -301,7 +301,7 @@ namespace embree
             size_t items MAYBE_UNUSED = current.pinfo.size();
             assert(items == 1);
             const size_t patchIndex = prims[current.prims.begin()].ID();
-            *current.parent = bvh->encodeLeaf((char*)&subdiv_patches[patchIndex],1);
+            *current.parent = bvh->encodeLeaf((char*)&subdiv_patches[timeSteps*patchIndex+0],1);
             const BBox3fa bounds0 = bounds[timeSteps*patchIndex+0];
             const BBox3fa bounds1 = bounds[timeSteps*patchIndex+1];
             return std::make_pair(bounds0,bounds1);
@@ -371,7 +371,7 @@ namespace embree
         }
 
         double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "SubdivPatch1" + (mblur ? "MBlur" : "") + "CachedBuilderBinnedSAH");
-
+        
         /* calculate number of primitives (some patches need initial subdivision) */
         size_t numSubPatches = countSubPatches();
         prims.resize(numSubPatches);
@@ -389,7 +389,7 @@ namespace embree
 
         /* switch between fast and slow mode */
         if (timeSteps != 1) cachedRebuild(numSubPatches);
-        if (fastUpdateMode) cachedUpdate(numSubPatches);
+        else if (fastUpdateMode) cachedUpdate(numSubPatches);
         else cachedRebuild(numSubPatches);
         
 	/* clear temporary data for static geometry */

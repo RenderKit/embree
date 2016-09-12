@@ -291,9 +291,9 @@ namespace embree
       static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, const RTCIntersectContext* context, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
       {
         /* calculate time segment itime and fractional time ftime */
-        const int time_steps = pre.grid->time_steps;
-        const float time = ray.time[k]*float(time_steps);
-        const int   itime = clamp(int(floor(time)),0,time_steps-1);
+        const int time_segments = pre.grid->time_steps-1;
+        const float time = ray.time[k]*float(time_segments);
+        const int   itime = clamp(int(floor(time)),0,time_segments-1);
         const float ftime = time - float(itime);
 
         const size_t line_offset   = pre.grid->width;
@@ -311,9 +311,9 @@ namespace embree
       static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, const RTCIntersectContext* context, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
       {
         /* calculate time segment itime and fractional time ftime */
-        const int time_steps = pre.grid->time_steps;
-        const float time = ray.time[k]*float(time_steps);
-        const int   itime = clamp(int(floor(time)),0,time_steps-1);
+        const int time_segments = pre.grid->time_steps-1;
+        const float time = ray.time[k]*float(time_segments);
+        const int   itime = clamp(int(floor(time)),0,time_segments-1);
         const float ftime = time - float(itime);
 
         const size_t line_offset   = pre.grid->width;
