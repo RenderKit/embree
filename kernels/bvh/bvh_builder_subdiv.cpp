@@ -179,9 +179,10 @@ namespace embree
       mvector<BBox3fa> bounds; 
       ParallelForForPrefixSumState<PrimInfo> pstate;
       size_t numSubdivEnableDisableEvents;
+      bool cached;
 
-      BVHNSubdivPatch1CachedBuilderBinnedSAHClass (BVH* bvh, Scene* scene)
-        : bvh(bvh), refitter(nullptr), scene(scene), prims(scene->device), bounds(scene->device), numSubdivEnableDisableEvents(0) {}
+      BVHNSubdivPatch1CachedBuilderBinnedSAHClass (BVH* bvh, Scene* scene, bool cached)
+        : bvh(bvh), refitter(nullptr), scene(scene), prims(scene->device), bounds(scene->device), numSubdivEnableDisableEvents(0), cached(cached) {}
       
       virtual const BBox3fa leafBounds (typename BVH::NodeRef& ref) const
       {
@@ -245,7 +246,7 @@ namespace embree
         return pinfo.size();
       }
 
-      void cachedRebuild(size_t numPrimitives)
+      void rebuild(size_t numPrimitives)
       {
         SubdivPatch1Cached* const subdiv_patches = (SubdivPatch1Cached*) bvh->subdiv_patches.data();
         bvh->alloc.reset();
@@ -266,17 +267,21 @@ namespace embree
             {
               const size_t patchIndex = base.size()+s.size();
               assert(patchIndex < numPrimitives);
+
               for (size_t t=0; t<timeSteps; t++)
               {
                 SubdivPatch1Base& patch = subdiv_patches[timeSteps*patchIndex+t];
                 new (&patch) SubdivPatch1Cached(mesh->id,unsigned(f),subPatch,mesh,t,uv,edge_level,subdiv,VSIZEX);
                 BBox3fa bound = evalGridBounds(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,mesh);
-                //GridSOA* grid = GridSOA::create(&patch,1,scene,alloc);
-                //patch.root_ref.data = (int64_t) grid;
                 bounds[timeSteps*patchIndex+t] = bound;
                 if (t != 0) continue;
                 prims[patchIndex] = PrimRef(bound,patchIndex);
                 s.add(bound);
+              }
+
+              if (!cached) {
+                SubdivPatch1Base& patch = subdiv_patches[timeSteps*patchIndex];
+                patch.root_ref.data = (int64_t) GridSOA::create(&patch,timeSteps,scene,alloc);
               }
             });
           }
@@ -392,9 +397,9 @@ namespace embree
         bvh->subdiv_patches.resize(sizeof(SubdivPatch1Cached) * numSubPatches * timeSteps);
 
         /* switch between fast and slow mode */
-        if (timeSteps != 1) cachedRebuild(numSubPatches);
-        else if (fastUpdateMode) cachedUpdate(numSubPatches);
-        else cachedRebuild(numSubPatches);
+        if (timeSteps != 1) rebuild(numSubPatches);
+        else if (cached && fastUpdateMode) cachedUpdate(numSubPatches);
+        else rebuild(numSubPatches);
         
 	/* clear temporary data for static geometry */
 	if (scene->isStatic()) {
@@ -412,8 +417,8 @@ namespace embree
     
     /* entry functions for the scene builder */
     Builder* BVH4SubdivGridEagerBuilderBinnedSAH   (void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivGridEagerBuilderBinnedSAHClass<4>((BVH4*)bvh,scene); }
-    Builder* BVH4SubdivPatch1CachedBuilderBinnedSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1CachedBuilderBinnedSAHClass<4,false>((BVH4*)bvh,scene); }
-    Builder* BVH4SubdivPatch1MBlurCachedBuilderBinnedSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1CachedBuilderBinnedSAHClass<4,true>((BVH4*)bvh,scene); }
+    Builder* BVH4SubdivPatch1CachedBuilderBinnedSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1CachedBuilderBinnedSAHClass<4,false>((BVH4*)bvh,scene,mode); }
+    Builder* BVH4SubdivPatch1MBlurCachedBuilderBinnedSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1CachedBuilderBinnedSAHClass<4,true>((BVH4*)bvh,scene,mode); }
 
 #if defined(__AVX__)
     Builder* BVH8SubdivGridEagerBuilderBinnedSAH   (void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivGridEagerBuilderBinnedSAHClass<8>((BVH8*)bvh,scene); }

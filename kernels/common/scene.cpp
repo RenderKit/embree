@@ -399,9 +399,10 @@ namespace embree
           accels.add(device->bvh4_factory->BVH4SubdivGridEager(this));
       }
       else
-        accels.add(device->bvh4_factory->BVH4SubdivPatch1Cached(this));
+        accels.add(device->bvh4_factory->BVH4SubdivPatch1(this,true));
     }
-    else if (device->subdiv_accel == "bvh4.subdivpatch1cached") accels.add(device->bvh4_factory->BVH4SubdivPatch1Cached(this));
+    else if (device->subdiv_accel == "bvh4.subdivpatch1"      ) accels.add(device->bvh4_factory->BVH4SubdivPatch1(this,false));
+    else if (device->subdiv_accel == "bvh4.subdivpatch1cached") accels.add(device->bvh4_factory->BVH4SubdivPatch1(this,true));
     else if (device->subdiv_accel == "bvh4.grid.eager"        ) accels.add(device->bvh4_factory->BVH4SubdivGridEager(this));
 #if defined (__TARGET_AVX__)
     else if (device->subdiv_accel == "bvh8.grid.eager"        ) accels.add(device->bvh8_factory->BVH8SubdivGridEager(this));
@@ -412,7 +413,18 @@ namespace embree
 
   void Scene::createSubdivMBAccel()
   {
-    accels.add(device->bvh4_factory->BVH4SubdivPatch1MBlurCached(this));
+#if defined(EMBREE_GEOMETRY_SUBDIV)
+    if (device->subdiv_accel_mb == "default") 
+    {
+      if (isIncoherent(flags) && isStatic())
+        accels.add(device->bvh4_factory->BVH4SubdivPatch1MBlur(this,false));
+      else
+        accels.add(device->bvh4_factory->BVH4SubdivPatch1MBlur(this,true));
+    }
+    else if (device->subdiv_accel_mb == "bvh4.subdivpatch1"      ) accels.add(device->bvh4_factory->BVH4SubdivPatch1MBlur(this,false));
+    else if (device->subdiv_accel_mb == "bvh4.subdivpatch1cached") accels.add(device->bvh4_factory->BVH4SubdivPatch1MBlur(this,true));
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown subdiv mblur accel "+device->subdiv_accel_mb);
+#endif
   }
 
   Scene::~Scene () 

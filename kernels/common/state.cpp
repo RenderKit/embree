@@ -96,6 +96,7 @@ namespace embree
 #endif
 
     subdiv_accel = "default";
+    subdiv_accel_mb = "default";
 
     float_exceptions = false;
     scene_flags = -1;
@@ -303,6 +304,8 @@ namespace embree
 
       else if (tok == Token::Id("subdiv_accel") && cin->trySymbol("="))
         subdiv_accel = cin->get().Identifier();
+      else if (tok == Token::Id("subdiv_accel_mb") && cin->trySymbol("="))
+        subdiv_accel_mb = cin->get().Identifier();
       
       else if (tok == Token::Id("verbose") && cin->trySymbol("="))
         verbose = cin->get().Int();
