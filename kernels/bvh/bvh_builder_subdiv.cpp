@@ -168,6 +168,8 @@ namespace embree
       ALIGNED_STRUCT;
 
       typedef BVHN<N> BVH;
+      typedef typename BVHN<N>::Allocator BVH_Allocator;
+
       static const size_t timeSteps = mblur?2:1;
 
       BVH* bvh;
@@ -256,7 +258,7 @@ namespace embree
           {
             if (!mesh->valid(f)) continue;
             
-            typename BVH::Allocator alloc(bvh);
+            BVH_Allocator alloc(bvh);
             for (size_t t=0; t<timeSteps; t++)
               mesh->patch_eval_trees[f*timeSteps+t] = Patch3fa::create(alloc, mesh->getHalfEdge(f), mesh->getVertexBuffer(t).getPtr(), mesh->getVertexBuffer(t).getStride());
 

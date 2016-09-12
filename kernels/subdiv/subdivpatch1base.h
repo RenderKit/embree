@@ -125,7 +125,7 @@ namespace embree
     unsigned subPatch() const { return ((PatchHalfEdge*)patch_v)->subPatch; }
 
     void set_edge(const HalfEdge *h) const { ((PatchHalfEdge*)patch_v)->edge = h; }
-    void set_time(const unsigned t) const { ((PatchHalfEdge*)patch_v)->time = t; }
+    void set_time(const size_t t) const { ((PatchHalfEdge*)patch_v)->time = (unsigned)t; }
     void set_subPatch(const unsigned s) const { ((PatchHalfEdge*)patch_v)->subPatch = s; }
   };
 

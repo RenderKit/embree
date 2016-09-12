@@ -138,7 +138,7 @@ namespace embree
     IF_ENABLED_HAIR(DEFINE_INTERSECTOR8(BVH4Bezier1iIntersector8Single_OBB, BVHNIntersectorKSingle<4 COMMA 8 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA Bezier1iIntersectorK<8> > >));
     IF_ENABLED_HAIR(DEFINE_INTERSECTOR8(BVH4Bezier1iMBIntersector8Single_OBB,BVHNIntersectorKSingle<4 COMMA 8 COMMA BVH_AN2_UN2 COMMA false COMMA ArrayIntersectorK_1<8 COMMA Bezier1iIntersectorKMB<8> > >));
 
-    IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR4(BVH4Subdivpatch1MBlurCachedIntersector8, BVHNIntersectorKSingle<4 COMMA 8 COMMA BVH_AN2 COMMA false COMMA SubdivPatch1MBlurCachedIntersector8>));
+    IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR8(BVH4Subdivpatch1MBlurCachedIntersector8, BVHNIntersectorKSingle<4 COMMA 8 COMMA BVH_AN2 COMMA false COMMA SubdivPatch1MBlurCachedIntersector8>));
     IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR8(BVH4GridAOSIntersector8, BVHNIntersectorKSingle<4 COMMA 8 COMMA BVH_AN1 COMMA true COMMA GridAOSIntersectorK<8> >));
 #endif
 
