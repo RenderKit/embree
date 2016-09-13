@@ -118,6 +118,10 @@ void displacementFunction(void* ptr, unsigned int geomID, int unsigned primID,
     const Vec3fa P = Vec3fa(px[i],py[i],pz[i]);
     const Vec3fa Ng = Vec3fa(nx[i],ny[i],nz[i]);
     const Vec3fa dP = displacement(P)*Ng;
+
+    //Vec3fa pp;
+    //rtcInterpolate2(g_scene,geomID,primID,u[i],v[i],RTC_VERTEX_BUFFER,(float*)&pp,nullptr,nullptr,nullptr,nullptr,nullptr,3);
+
     px[i] += dP.x; py[i] += dP.y; pz[i] += dP.z;
   }
 }

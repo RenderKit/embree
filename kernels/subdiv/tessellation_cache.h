@@ -23,6 +23,7 @@
 /* force a complete cache invalidation when running out of allocation space */
 #define FORCE_SIMPLE_FLUSH 0
 
+#define THREAD_BLOCK_ATOMIC_ADD 4
 
 #if defined(DEBUG)
 #define CACHE_STATS(x) 
@@ -188,11 +189,11 @@ namespace embree
    { 
      while(1)
      {
-       size_t lock = SharedLazyTessellationCache::sharedLazyTessellationCache.lockThread(t_state);
-       if (unlikely(lock == 1))
+       size_t lock = SharedLazyTessellationCache::sharedLazyTessellationCache.lockThread(t_state,1);
+       if (unlikely(lock >= THREAD_BLOCK_ATOMIC_ADD))
        {
          /* lock failed wait until sync phase is over */
-         sharedLazyTessellationCache.unlockThread(t_state);	       
+         sharedLazyTessellationCache.unlockThread(t_state,-1);	       
          sharedLazyTessellationCache.waitForUsersLessEqual(t_state,0);
        }
        else

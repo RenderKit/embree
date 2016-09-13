@@ -106,9 +106,8 @@ namespace embree
 
             /* block all threads */
 	    for (ThreadWorkState *t=current_t_state;t!=nullptr;t=t->next)
-	      if (lockThread(t) == 1)
-		waitForUsersLessEqual(t,1);
-
+	      if (lockThread(t,THREAD_BLOCK_ATOMIC_ADD) != 0)
+		waitForUsersLessEqual(t,THREAD_BLOCK_ATOMIC_ADD);
 
             /* switch to the next segment */
 	    addCurrentIndex();
@@ -129,7 +128,7 @@ namespace embree
             /* release all blocked threads */
 
 	    for (ThreadWorkState *t=current_t_state;t!=nullptr;t=t->next)
-	      unlockThread(t);
+	      unlockThread(t,-THREAD_BLOCK_ATOMIC_ADD);
 
             /* unlock the linked list of thread states */
 
@@ -154,8 +153,8 @@ namespace embree
 
     /* block all threads */
     for (ThreadWorkState *t=current_t_state;t!=nullptr;t=t->next)
-      if (lockThread(t) == 1)
-        waitForUsersLessEqual(t,1);
+      if (lockThread(t,THREAD_BLOCK_ATOMIC_ADD) != 0)
+        waitForUsersLessEqual(t,THREAD_BLOCK_ATOMIC_ADD);
 
     /* reset to the first segment */
     next_block = 0;
@@ -170,7 +169,7 @@ namespace embree
 
     /* release all blocked threads */
     for (ThreadWorkState *t=current_t_state;t!=nullptr;t=t->next)
-      unlockThread(t);
+      unlockThread(t,-THREAD_BLOCK_ATOMIC_ADD);
 
     /* unlock the linked list of thread states */
     linkedlist_mtx.unlock();	    
@@ -189,8 +188,8 @@ namespace embree
 
     /* block all threads */
     for (ThreadWorkState *t=current_t_state;t!=nullptr;t=t->next)
-      if (lockThread(t) == 1)
-        waitForUsersLessEqual(t,1);
+      if (lockThread(t,THREAD_BLOCK_ATOMIC_ADD) != 0)
+        waitForUsersLessEqual(t,THREAD_BLOCK_ATOMIC_ADD);
 
     /* reallocate data */
     if (data) os_free(data,size);
@@ -215,7 +214,7 @@ namespace embree
 
     /* release all blocked threads */
     for (ThreadWorkState *t=current_t_state;t!=nullptr;t=t->next)
-      unlockThread(t);
+      unlockThread(t,-THREAD_BLOCK_ATOMIC_ADD);
 
     /* unlock the linked list of thread states */
     linkedlist_mtx.unlock();	    
