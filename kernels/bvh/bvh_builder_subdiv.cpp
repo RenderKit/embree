@@ -215,7 +215,7 @@ namespace embree
               fastUpdate &= !iter[i]->vertex_crease_weights.isModified(); 
               fastUpdate &= iter[i]->levels.isModified();
               iter[i]->initializeHalfEdgeStructures();
-              iter[i]->patch_eval_trees.resize(iter[i]->size()*timeSteps);
+              //iter[i]->patch_eval_trees.resize(iter[i]->size()*timeSteps);
             }
             return fastUpdate;
           }, [](const bool a, const bool b) { return a && b; });
@@ -260,8 +260,8 @@ namespace embree
             if (!mesh->valid(f)) continue;
             
             BVH_Allocator alloc(bvh);
-            for (size_t t=0; t<timeSteps; t++)
-              mesh->patch_eval_trees[f*timeSteps+t] = Patch3fa::create(alloc, mesh->getHalfEdge(f), mesh->getVertexBuffer(t).getPtr(), mesh->getVertexBuffer(t).getStride());
+            //for (size_t t=0; t<timeSteps; t++)
+            //mesh->patch_eval_trees[f*timeSteps+t] = Patch3fa::create(alloc, mesh->getHalfEdge(f), mesh->getVertexBuffer(t).getPtr(), mesh->getVertexBuffer(t).getStride());
 
             patch_eval_subdivision(mesh->getHalfEdge(f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch)
             {
@@ -272,16 +272,35 @@ namespace embree
               {
                 SubdivPatch1Base& patch = subdiv_patches[timeSteps*patchIndex+t];
                 new (&patch) SubdivPatch1Cached(mesh->id,unsigned(f),subPatch,mesh,t,uv,edge_level,subdiv,VSIZEX);
-                BBox3fa bound = evalGridBounds(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,mesh);
-                bounds[timeSteps*patchIndex+t] = bound;
-                if (t != 0) continue;
-                prims[patchIndex] = PrimRef(bound,patchIndex);
-                s.add(bound);
               }
-
-              if (!cached) {
+              
+              if (cached)
+              {
+                for (size_t t=0; t<timeSteps; t++)
+                {
+                  SubdivPatch1Base& patch = subdiv_patches[timeSteps*patchIndex+t];
+                  BBox3fa bound = evalGridBounds(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,mesh);
+                  bounds[timeSteps*patchIndex+t] = bound;
+                  if (t != 0) continue;
+                  prims[patchIndex] = PrimRef(bound,patchIndex);
+                  s.add(bound);
+                }
+              }
+              else
+              {
+                assert(timeSteps <= 129);
+                BBox3fa mybounds[129];
                 SubdivPatch1Base& patch = subdiv_patches[timeSteps*patchIndex];
-                patch.root_ref.data = (int64_t) GridSOA::create(&patch,timeSteps,scene,alloc);
+                patch.root_ref.data = (int64_t) GridSOA::create(&patch,timeSteps,scene,alloc,mybounds);
+
+                for (size_t t=0; t<timeSteps; t++)
+                {
+                  BBox3fa bound = mybounds[t];
+                  bounds[timeSteps*patchIndex+t] = bound;
+                  if (t != 0) continue;
+                  prims[patchIndex] = PrimRef(bound,patchIndex);
+                  s.add(bound);
+                }
               }
             });
           }
@@ -407,7 +426,7 @@ namespace embree
           bvh->shrink();
         }
         bvh->cleanup();
-        bvh->postBuild(t0);
+        bvh->postBuild(t0);        
       }
       
       void clear() {
