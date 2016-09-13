@@ -202,6 +202,9 @@ namespace embree
 #if defined(TASKING_INTERNAL)
     std::cout << "internal_tasking_system ";
 #endif
+#if defined(TASKING_PPL)
+	std::cout << "PPL ";
+#endif
     std::cout << std::endl;
 
     /* check of FTZ and DAZ flags are set in CSR */
