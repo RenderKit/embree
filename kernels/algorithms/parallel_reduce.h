@@ -73,9 +73,6 @@ namespace embree
       throw std::runtime_error("task cancelled");
     return v;
 #else // TASKING_PPL
-#if 0
-		return  func(range<Index>(first, last));
-#else
 		struct AlignedValue
 		{
 			char storage[__alignof(Value)+sizeof(Value)];
@@ -114,15 +111,6 @@ namespace embree
 		const Value v = concurrency::parallel_reduce(Iterator_size_t(first), Iterator_size_t(last), AlignedValue(identity), range_reduction, reduction);
 		return v;
 #endif
-
-#if 0
-    auto range_reduction = [&](Iterator_size_t begin, Iterator_size_t end, const Value& start) { 
-		assert(begin.v < end.v);
-      return reduction(start,func(range<Index>(begin.v,end.v))); 
-    };
-    return concurrency::parallel_reduce(Iterator_size_t(first),Iterator_size_t(last),identity,range_reduction,reduction);
-#endif
-#endif
   }
 
   template<typename Index, typename Value, typename Func, typename Reduction>
@@ -131,80 +119,3 @@ namespace embree
     return parallel_reduce(first,last,Index(1),identity,func,reduction);
   }
 }
-
-#if 0
-	AlignedValue aligned_identity(identity);
-
-	auto reduction_aligned = [&](const AlignedValue& a, const AlignedValue& b) -> AlignedValue {
-		return AlignedValue(reduction((Value&)a, (Value&)b));
-	};
-
-	auto range_reduction_aligned = [&](Iterator_size_t begin, Iterator_size_t end, const AlignedValue& start) {
-		assert(begin.v < end.v);
-		Value v = func(range<Index>(begin.v, end.v));
-		return AlignedValue(reduction((Value&)start, v));
-	};
-	AlignedValue res = concurrency::parallel_reduce(Iterator_size_t(first), Iterator_size_t(last), aligned_identity, range_reduction_aligned, reduction_aligned);
-	Value vv = res;
-	return vv;
-
-	struct AlignedValue {
-		bool valid;
-		char data[sizeof(Value) + 64];
-
-		__forceinline const char *getAlignedPtr() const {
-			const size_t alignment = (size_t)data % 64;
-			const char *ptr = (char*)data + ((alignment) ? (64 - alignment) : 0);
-			assert((size_t)ptr % 64 == 0);
-			return ptr;
-		}
-
-		__forceinline AlignedValue() {
-			FATAL("HERE");
-		}
-
-
-		__forceinline AlignedValue(const Value &v) {
-			PING;
-			//memcpy((char*)getAlignedPtr(), &v, sizeof(Value));
-			*(Value*)getAlignedPtr() = std::move(v);
-			valid = true;
-		}
-
-		__forceinline AlignedValue(const AlignedValue &v) {
-			PING;
-			assert(v.valid);
-			//memcpy((char*)getAlignedPtr(), (char*)v.getAlignedPtr(), sizeof(Value));
-			*(Value*)getAlignedPtr() = std::move(*(Value*)v.getAlignedPtr());
-			valid = true;
-		}
-
-		__forceinline operator Value&(void) { PING;  assert(valid); return *(Value*)getAlignedPtr(); }
-
-		__forceinline AlignedValue& operator=(const AlignedValue& v)
-		{
-			assert(valid);
-			assert(v.valid);
-			*(Value*)getAlignedPtr() = std::move(*(Value*)v.getAlignedPtr());
-			return *this;
-		}
-
-	};
-
-	struct Iterator_size_t
-	{
-		size_t v;
-		typedef std::forward_iterator_tag iterator_category;
-		typedef AlignedValue value_type;
-		typedef size_t difference_type;
-		typedef size_t distance_type;
-		typedef AlignedValue* pointer;
-		typedef AlignedValue& reference;
-		__forceinline Iterator_size_t() {}
-		__forceinline Iterator_size_t(size_t v) : v(v) {}
-		__forceinline bool operator== (Iterator_size_t other) { return v == other.v; }
-		__forceinline bool operator!= (Iterator_size_t other) { return v != other.v; }
-		__forceinline Iterator_size_t operator++() { return Iterator_size_t(++v); }
-		__forceinline Iterator_size_t operator++(int) { return Iterator_size_t(v++); }
-	};
-#endif
