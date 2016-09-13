@@ -184,6 +184,10 @@ namespace embree
           return s;
         }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a, b); });
 
+        auto virtualprogress = BuildProgressMonitorFromClosure([&] (size_t dn) { 
+            //bvh->scene->progressMonitor(double(dn)); // FIXME: triggers GCC compiler bug
+          });
+        
         /* build normal BVH over patches */
         if (timeSteps == 1)
         {
@@ -195,7 +199,6 @@ namespace embree
             return 0;
           };
           
-          auto virtualprogress = BuildProgressMonitorFromClosure([&] (size_t dn) { bvh->scene->progressMonitor(double(dn)); });
           BVHNBuilder<N>::build(bvh,createLeaf,virtualprogress,prims.data(),pinfo,N,1,1,1.0f,1.0f);
         }
 
@@ -212,7 +215,6 @@ namespace embree
             return std::make_pair(bounds0,bounds1);
           };
           
-          auto virtualprogress = BuildProgressMonitorFromClosure([&] (size_t dn) { bvh->scene->progressMonitor(double(dn)); });
           BVHNBuilderMblur<N>::build(bvh,createLeaf,virtualprogress,prims.data(),pinfo,N,1,1,1.0f,1.0f);
         }
       }
