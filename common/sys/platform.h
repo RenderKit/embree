@@ -283,6 +283,7 @@ __forceinline std::string toString(long long value) {
 //#pragma warning(disable:4146) // unary minus operator applied to unsigned type, result still unsigned
 //#pragma warning(disable:4838) // conversion from 'unsigned int' to 'const int' requires a narrowing conversion)
 //#pragma warning(disable:4227) // anachronism used : qualifiers on reference are ignored
+#pragma warning(disable:4503) // decorated name length exceeded, name was truncated
 #endif
 
 #if defined(__clang__) && !defined(__INTEL_COMPILER)
