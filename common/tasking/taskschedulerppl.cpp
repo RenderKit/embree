@@ -44,6 +44,6 @@ namespace embree
   
   void TaskScheduler::destroy()
   {
-   
+	  concurrency::CurrentScheduler::Detach();
   }
 }
