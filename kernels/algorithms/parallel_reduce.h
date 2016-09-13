@@ -78,10 +78,10 @@ namespace embree
 #else
 		struct AlignedValue
 		{
-			char storage[alignof(Value)+sizeof(Value)];
+			char storage[__alignof(Value)+sizeof(Value)];
 			static uintptr_t alignUp(uintptr_t p, size_t a) { return p + (~(p - 1) % a); };
-			Value* getValuePtr() { return reinterpret_cast<Value*>(alignUp(uintptr_t(storage), alignof(Value))); }
-			const Value* getValuePtr() const { return reinterpret_cast<Value*>(alignUp(uintptr_t(storage), alignof(Value))); }
+			Value* getValuePtr() { return reinterpret_cast<Value*>(alignUp(uintptr_t(storage), __alignof(Value))); }
+			const Value* getValuePtr() const { return reinterpret_cast<Value*>(alignUp(uintptr_t(storage), __alignof(Value))); }
 			AlignedValue(const Value& v) { new(getValuePtr()) Value(v); }
 			AlignedValue(const AlignedValue& v) { new(getValuePtr()) Value(*v.getValuePtr()); }
 			AlignedValue(const AlignedValue&& v) { new(getValuePtr()) Value(*v.getValuePtr()); };

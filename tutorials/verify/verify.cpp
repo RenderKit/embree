@@ -1837,10 +1837,10 @@ namespace embree
       Vec3fa pos3 = Vec3fa(+10,0,+10);
       
       VerifyScene scene(device,sflags,to_aflags(imode));
-      unsigned geom0 = scene.addSphere      (sampler,gflags,pos0,1.0f,50);
-      unsigned geom1 = scene.addQuadSphere  (sampler,gflags,pos1,1.0f,1.0f,1);
-      unsigned geom2 = scene.addSubdivSphere(sampler,gflags,pos2,1.0f,5,4);
-      unsigned geom3 = scene.addHair        (sampler,gflags,pos3,1.0f,1.0f,1);
+      unsigned int geom0 = scene.addSphere      (sampler,gflags,pos0,1.0f,50);
+      unsigned int geom1 = scene.addQuadSphere  (sampler,gflags,pos1,1.0f,1.0f,1);
+      unsigned int geom2 = scene.addSubdivSphere(sampler,gflags,pos2,1.0f,5,4);
+      unsigned int geom3 = scene.addHair        (sampler,gflags,pos3,1.0f,1.0f,1);
       rtcSetMask(scene,geom0,1);
       rtcSetMask(scene,geom1,2);
       rtcSetMask(scene,geom2,4);
