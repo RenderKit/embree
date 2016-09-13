@@ -25,11 +25,11 @@ namespace embree
   namespace isa
   {
 #if defined(__SSE__)
-    typedef void (*ISPCFilterFunc4)(void* ptr, RTCRay4& ray, __m128 valid);
+    typedef void (*ISPCFilterFunc4)(void* ptr, RTCRay4& ray, __m128i valid);
 #endif
     
 #if defined(__AVX__)
-  typedef void (*ISPCFilterFunc8)(void* ptr, RTCRay8& ray, __m256 valid);
+  typedef void (*ISPCFilterFunc8)(void* ptr, RTCRay8& ray, __m256i valid);
 #endif
 
 #if defined(__AVX512F__)
@@ -136,7 +136,7 @@ namespace embree
         
         /* invoke filter function */
         AVX_ZERO_UPPER();
-        if (geometry->hasISPCIntersectionFilter<vfloat4>()) ((ISPCFilterFunc4)filter4)(geometry->userPtr,(RTCRay4&)ray,valid);
+        if (geometry->hasISPCIntersectionFilter<vfloat4>()) ((ISPCFilterFunc4)filter4)(geometry->userPtr,(RTCRay4&)ray,valid.mask32());
         else { const vint4 mask = valid.mask32(); filter4(&mask,geometry->userPtr,(RTCRay4&)ray); }
       
         const vbool4 valid_failed = valid & (ray.geomID == vint4(-1));
@@ -189,7 +189,7 @@ namespace embree
         
         /* invoke filter function */
         AVX_ZERO_UPPER();
-        if (geometry->hasISPCOcclusionFilter<vfloat4>()) ((ISPCFilterFunc4)filter4)(geometry->userPtr,(RTCRay4&)ray,valid);
+        if (geometry->hasISPCOcclusionFilter<vfloat4>()) ((ISPCFilterFunc4)filter4)(geometry->userPtr,(RTCRay4&)ray,valid.mask32());
         else { const vint4 mask = valid.mask32(); filter4(&mask,geometry->userPtr,(RTCRay4&)ray); }
       
         const vbool4 valid_failed = valid & (ray.geomID == vint4(-1));
@@ -230,7 +230,7 @@ namespace embree
         
         /* invoke filter function */
         AVX_ZERO_UPPER();
-        if (geometry->hasISPCIntersectionFilter<vfloat4>()) ((ISPCFilterFunc4)filter4)(geometry->userPtr,(RTCRay4&)ray,valid);
+        if (geometry->hasISPCIntersectionFilter<vfloat4>()) ((ISPCFilterFunc4)filter4)(geometry->userPtr,(RTCRay4&)ray,valid.mask32());
         else { const vint4 mask = valid.mask32(); filter4(&mask,geometry->userPtr,(RTCRay4&)ray); }
       
         /* restore hit if filter not passed */
@@ -279,7 +279,7 @@ namespace embree
         
         /* invoke filter function */
         AVX_ZERO_UPPER();
-        if (geometry->hasISPCOcclusionFilter<vfloat4>()) ((ISPCFilterFunc4)filter4)(geometry->userPtr,(RTCRay4&)ray,valid);
+        if (geometry->hasISPCOcclusionFilter<vfloat4>()) ((ISPCFilterFunc4)filter4)(geometry->userPtr,(RTCRay4&)ray,valid.mask32());
         else { const vint4 mask = valid.mask32(); filter4(&mask,geometry->userPtr,(RTCRay4&)ray); }
         
         /* restore hit if filter not passed */
@@ -319,7 +319,7 @@ namespace embree
         const vfloat8 ray_Ng_z = ray.Ng.z;     vfloat8::store(valid,&ray.Ng.z,Ng.z);
         
         /* invoke filter function */    
-        if (geometry->hasISPCIntersectionFilter<vfloat8>()) ((ISPCFilterFunc8)filter8)(geometry->userPtr,(RTCRay8&)ray,valid);
+        if (geometry->hasISPCIntersectionFilter<vfloat8>()) ((ISPCFilterFunc8)filter8)(geometry->userPtr,(RTCRay8&)ray,valid.mask32());
         else { const vint8 mask = valid.mask32(); filter8(&mask,geometry->userPtr,(RTCRay8&)ray); }
         
         const vbool8 valid_failed = valid & (ray.geomID == vint8(-1));
@@ -371,7 +371,7 @@ namespace embree
         vfloat8::store(valid,&ray.Ng.z,Ng.z);
         
         /* invoke filter function */
-        if (geometry->hasISPCOcclusionFilter<vfloat8>()) ((ISPCFilterFunc8)filter8)(geometry->userPtr,(RTCRay8&)ray,valid);
+        if (geometry->hasISPCOcclusionFilter<vfloat8>()) ((ISPCFilterFunc8)filter8)(geometry->userPtr,(RTCRay8&)ray,valid.mask32());
         else { const vint8 mask = valid.mask32(); filter8(&mask,geometry->userPtr,(RTCRay8&)ray); }
         
         const vbool8 valid_failed = valid & (ray.geomID == vint8(-1));
@@ -411,7 +411,7 @@ namespace embree
         const vfloat8 ray_Ng_z = ray.Ng.z;     ray.Ng.z[k] = Ng.z;
         
         /* invoke filter function */
-        if (geometry->hasISPCIntersectionFilter<vfloat8>()) ((ISPCFilterFunc8)filter8)(geometry->userPtr,(RTCRay8&)ray,valid);
+        if (geometry->hasISPCIntersectionFilter<vfloat8>()) ((ISPCFilterFunc8)filter8)(geometry->userPtr,(RTCRay8&)ray,valid.mask32());
         else filter8(&valid,geometry->userPtr,(RTCRay8&)ray);
         
         /* restore hit if filter not passed */
@@ -461,7 +461,7 @@ namespace embree
         ray.Ng.z[k] = Ng.z;
         
         /* invoke filter function */
-        if (geometry->hasISPCOcclusionFilter<vfloat8>()) ((ISPCFilterFunc8)filter8)(geometry->userPtr,(RTCRay8&)ray,valid);
+        if (geometry->hasISPCOcclusionFilter<vfloat8>()) ((ISPCFilterFunc8)filter8)(geometry->userPtr,(RTCRay8&)ray,valid.mask32());
         else filter8(&valid,geometry->userPtr,(RTCRay8&)ray);
 
         /* restore hit if filter not passed */

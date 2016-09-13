@@ -18,10 +18,14 @@
 
 #include "sse.h"
 
+#if defined(__AVX512VL__)
+#include "vboolf8_avx512.h"
+#else
 #include "vboolf8_avx.h"
+#endif
 #include "vboold4_avx.h"
 
-#if defined (__AVX2__)
+#if defined(__AVX2__)
 #include "vint8_avx2.h"
 #include "vlong4_avx2.h"
 #else
@@ -30,7 +34,7 @@
 #include "vfloat8_avx.h"
 #include "vdouble4_avx.h"
 
-#if defined (__AVX512F__)
+#if defined(__AVX512F__)
 #include "avx512.h"
 #endif
 

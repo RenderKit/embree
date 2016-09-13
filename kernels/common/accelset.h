@@ -46,13 +46,13 @@ namespace embree
     typedef RTCOccludedFuncN OccludedFuncN;
 
 #if defined(__SSE__)
-    typedef void (*ISPCIntersectFunc4)(void* ptr, RTCRay4& ray, size_t item, __m128 valid);
-    typedef void (*ISPCOccludedFunc4 )(void* ptr, RTCRay4& ray, size_t item, __m128 valid);
+    typedef void (*ISPCIntersectFunc4)(void* ptr, RTCRay4& ray, size_t item, __m128i valid);
+    typedef void (*ISPCOccludedFunc4 )(void* ptr, RTCRay4& ray, size_t item, __m128i valid);
 #endif
 
 #if defined(__AVX__)
-    typedef void (*ISPCIntersectFunc8)(void* ptr, RTCRay8& ray, size_t item, __m256 valid);
-    typedef void (*ISPCOccludedFunc8 )(void* ptr, RTCRay8& ray, size_t item, __m256 valid);
+    typedef void (*ISPCIntersectFunc8)(void* ptr, RTCRay8& ray, size_t item, __m256i valid);
+    typedef void (*ISPCOccludedFunc8 )(void* ptr, RTCRay8& ray, size_t item, __m256i valid);
 #endif
 
 #if defined(__AVX512F__)
@@ -233,8 +233,12 @@ namespace embree
       {
         assert(item < size());
         if (likely(intersectors.intersector4.intersect)) { // old code for compatibility
-          if (intersectors.intersector4.ispc) ((ISPCIntersectFunc4)intersectors.intersector4.intersect)(intersectors.ptr,ray,item,valid);
-          else                                ((    IntersectFunc4)intersectors.intersector4.intersect)(&valid,intersectors.ptr,ray,item);
+          if (intersectors.intersector4.ispc) {
+            ((ISPCIntersectFunc4)intersectors.intersector4.intersect)(intersectors.ptr,ray,item,valid.mask32());
+          } else {
+            vint4 mask = valid.mask32();
+            ((IntersectFunc4)intersectors.intersector4.intersect)(&mask,intersectors.ptr,ray,item);
+          }
         } else {
           vint4 mask = valid.mask32();
           assert(intersectors.intersectorN.intersect);          
@@ -249,8 +253,12 @@ namespace embree
       {
         assert(item < size());
         if (likely(intersectors.intersector8.intersect)) { // old code for compatibility
-          if (intersectors.intersector8.ispc) ((ISPCIntersectFunc8)intersectors.intersector8.intersect)(intersectors.ptr,ray,item,valid);
-          else                                ((    IntersectFunc8)intersectors.intersector8.intersect)(&valid,intersectors.ptr,ray,item);
+          if (intersectors.intersector8.ispc) {
+            ((ISPCIntersectFunc8)intersectors.intersector8.intersect)(intersectors.ptr,ray,item,valid.mask32());
+          } else {
+            vint8 mask = valid.mask32();
+            ((IntersectFunc8)intersectors.intersector8.intersect)(&mask,intersectors.ptr,ray,item);
+          }
         } else {
           vint8 mask = valid.mask32();
           assert(intersectors.intersectorN.intersect);
@@ -267,8 +275,7 @@ namespace embree
         if (likely(intersectors.intersector16.intersect)) { // old code for compatibility
           if (intersectors.intersector16.ispc) {
             ((ISPCIntersectFunc16)intersectors.intersector16.intersect)(intersectors.ptr,ray,item,valid.mask8());
-          }
-          else {
+          } else {
             vint16 mask = valid.mask32();
             ((IntersectFunc16)intersectors.intersector16.intersect)(&mask,intersectors.ptr,ray,item);
           }
@@ -324,8 +331,12 @@ namespace embree
       {
         assert(item < size());
 	if (likely(intersectors.intersector4.occluded)) { // old code for compatibility
-          if (intersectors.intersector4.ispc) ((ISPCOccludedFunc4)intersectors.intersector4.occluded)(intersectors.ptr,ray,item,valid);
-          else                                ((    OccludedFunc4)intersectors.intersector4.occluded)(&valid,intersectors.ptr,ray,item);
+          if (intersectors.intersector4.ispc) {
+            ((ISPCOccludedFunc4)intersectors.intersector4.occluded)(intersectors.ptr,ray,item,valid.mask32());
+          } else {
+            vint4 mask = valid.mask32();
+            ((OccludedFunc4)intersectors.intersector4.occluded)(&mask,intersectors.ptr,ray,item);
+          }
         } else {
           vint4 mask = valid.mask32();
           assert(intersectors.intersectorN.occluded);          
@@ -340,8 +351,12 @@ namespace embree
       {
         assert(item < size());
 	if (likely(intersectors.intersector8.occluded)) { // old code for compatibility
-          if (intersectors.intersector8.ispc) ((ISPCOccludedFunc8)intersectors.intersector8.occluded)(intersectors.ptr,ray,item,valid);
-          else                                ((    OccludedFunc8)intersectors.intersector8.occluded)(&valid,intersectors.ptr,ray,item);
+          if (intersectors.intersector8.ispc) {
+            ((ISPCOccludedFunc8)intersectors.intersector8.occluded)(intersectors.ptr,ray,item,valid.mask32());
+          } else {
+            vint8 mask = valid.mask32();
+            ((OccludedFunc8)intersectors.intersector8.occluded)(&mask,intersectors.ptr,ray,item);
+          }
         } else {
           vint8 mask = valid.mask32();
           assert(intersectors.intersectorN.occluded);          

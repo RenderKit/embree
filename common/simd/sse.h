@@ -38,6 +38,10 @@ namespace embree
   extern const __m128d _mm_lookupmask_pd[4];
 }
 
+#if defined(__AVX512VL__)
+#include "vboolf4_avx512.h"
+#else
 #include "vboolf4_sse2.h"
+#endif
 #include "vint4_sse2.h"
 #include "vfloat4_sse2.h"

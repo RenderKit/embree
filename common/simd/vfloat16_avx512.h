@@ -97,14 +97,14 @@ namespace embree
     static __forceinline vfloat16 load (const void* const ptr) { return _mm512_load_ps((float*)ptr);  }
     static __forceinline vfloat16 loadu(const void* const ptr) { return _mm512_loadu_ps((float*)ptr); }
 
-    static __forceinline vfloat16 load (const vboolf16& mask, const void* const ptr) { return _mm512_mask_load_ps (_mm512_setzero_ps(),mask,(float*)ptr);  }
+    static __forceinline vfloat16 load (const vboolf16& mask, const void* const ptr) { return _mm512_mask_load_ps (_mm512_setzero_ps(),mask,(float*)ptr); }
     static __forceinline vfloat16 loadu(const vboolf16& mask, const void* const ptr) { return _mm512_mask_loadu_ps(_mm512_setzero_ps(),mask,(float*)ptr); }
 
-    static __forceinline void store (void* const ptr, const vfloat16& v) { _mm512_store_ps((float*)ptr,v); }
-    static __forceinline void storeu(void* const ptr, const vfloat16& v ) { _mm512_storeu_ps((float*)ptr,v); }
+    static __forceinline void store (void* const ptr, const vfloat16& v) { _mm512_store_ps ((float*)ptr,v); }
+    static __forceinline void storeu(void* const ptr, const vfloat16& v) { _mm512_storeu_ps((float*)ptr,v); }
 
-    static __forceinline void store (const vboolf16& mask, void* ptr, const vfloat16& v ) { _mm512_mask_store_ps ((float*)ptr,mask,v); }
-    static __forceinline void storeu(const vboolf16& mask, void* ptr, const vfloat16& v ) { _mm512_mask_storeu_ps((float*)ptr,mask,v); }
+    static __forceinline void store (const vboolf16& mask, void* ptr, const vfloat16& v) { _mm512_mask_store_ps ((float*)ptr,mask,v); }
+    static __forceinline void storeu(const vboolf16& mask, void* ptr, const vfloat16& v) { _mm512_mask_storeu_ps((float*)ptr,mask,v); }
 
     static __forceinline void store_nt(void *__restrict__ ptr, const vfloat16& a) {
       _mm512_stream_ps(ptr,a);

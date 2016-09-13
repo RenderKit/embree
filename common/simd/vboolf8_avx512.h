@@ -20,129 +20,121 @@ namespace embree
 {
   /* 8-wide AVX-512 bool type */
   template<>
-  struct vboold<8>
+  struct vboolf<8>
   {
-    typedef vboold8 Bool;
+    typedef vboolf8 Bool;
     typedef vint8   Int;
 
     enum { size = 8 }; // number of SIMD elements
     __mmask8 v;        // data
-    
+
     ////////////////////////////////////////////////////////////////////////////////
     /// Constructors, Assignment & Cast Operators
     ////////////////////////////////////////////////////////////////////////////////
-    
-    __forceinline vboold() {}
-    __forceinline vboold(const vboold8 &t) { v = t.v; }
-    __forceinline vboold8& operator=(const vboold8 &f) { v = f.v; return *this; }
 
-    __forceinline vboold(const __mmask8 &t) { v = t; }
+    __forceinline vboolf() {}
+    __forceinline vboolf(const vboolf8 &t) { v = t.v; }
+    __forceinline vboolf8& operator=(const vboolf8 &f) { v = f.v; return *this; }
+
+    __forceinline vboolf(const __mmask8 &t) { v = t; }
     __forceinline operator __mmask8() const { return v; }
-    
-    __forceinline vboold(bool b) { v = b ? 0xff : 0x00; }
-    __forceinline vboold(int t)  { v = (__mmask8)t; }
-    __forceinline vboold(unsigned int t) { v = (__mmask8)t; }
+
+    __forceinline vboolf(bool b) { v = b ? 0xff : 0x00; }
+    __forceinline vboolf(int t)  { v = (__mmask8)t; }
+    __forceinline vboolf(unsigned int t) { v = (__mmask8)t; }
 
     /* return int8 mask */
     __forceinline __m128i mask8() const {
-#if defined(__AVX512BW__)
       return _mm_movm_epi8(v);
-#else
-      const __m512i f = _mm512_set_1to8_epi64(0);
-      const __m512i t = _mm512_set_1to8_epi64(-1);
-      const __m512i m =  _mm512_mask_or_epi64(f,v,t,t); 
-      return _mm512_cvtepi64_epi8(m);
-#endif
+    }
+
+    /* return int32 mask */
+    __forceinline __m256i mask32() const {
+      return _mm256_movm_epi32(v);
     }
 
     /* return int64 mask */
-    __forceinline __m512i mask64() const { 
-#if defined(__AVX512DQ__)
+    __forceinline __m512i mask64() const {
       return _mm512_movm_epi64(v);
-#else
-      const __m512i f = _mm512_set_1to8_epi64(0);
-      const __m512i t = _mm512_set_1to8_epi64(-1);
-      return _mm512_mask_or_epi64(f,v,t,t); 
-#endif
     }
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Constants
     ////////////////////////////////////////////////////////////////////////////////
 
-    __forceinline vboold( FalseTy ) : v(0x00) {}
-    __forceinline vboold( TrueTy  ) : v(0xff) {}
+    __forceinline vboolf( FalseTy ) : v(0x00) {}
+    __forceinline vboolf( TrueTy  ) : v(0xff) {}
   };
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Unary Operators
   ////////////////////////////////////////////////////////////////////////////////
-  
-  __forceinline vboold8 operator!(const vboold8 &a) { return _mm512_knot(a); }
-  
+
+  __forceinline vboolf8 operator!(const vboolf8 &a) { return _mm512_knot(a); }
+
   ////////////////////////////////////////////////////////////////////////////////
   /// Binary Operators
   ////////////////////////////////////////////////////////////////////////////////
-  
-  __forceinline vboold8 operator&(const vboold8 &a, const vboold8 &b) { return _mm512_kand(a, b); }
-  __forceinline vboold8 operator|(const vboold8 &a, const vboold8 &b) { return _mm512_kor(a, b); }
-  __forceinline vboold8 operator^(const vboold8 &a, const vboold8 &b) { return _mm512_kxor(a, b); }
 
-  __forceinline vboold8 andn(const vboold8 &a, const vboold8 &b) { return _mm512_kandn(b, a); }
-  
+  __forceinline vboolf8 operator&(const vboolf8 &a, const vboolf8 &b) { return _mm512_kand(a, b); }
+  __forceinline vboolf8 operator|(const vboolf8 &a, const vboolf8 &b) { return _mm512_kor(a, b); }
+  __forceinline vboolf8 operator^(const vboolf8 &a, const vboolf8 &b) { return _mm512_kxor(a, b); }
+
+  __forceinline vboolf8 andn(const vboolf8 &a, const vboolf8 &b) { return _mm512_kandn(b, a); }
+
   ////////////////////////////////////////////////////////////////////////////////
   /// Assignment Operators
   ////////////////////////////////////////////////////////////////////////////////
-  
-  __forceinline const vboold8 operator &=( vboold8& a, const vboold8& b ) { return a = a & b; }
-  __forceinline const vboold8 operator |=( vboold8& a, const vboold8& b ) { return a = a | b; }
-  __forceinline const vboold8 operator ^=( vboold8& a, const vboold8& b ) { return a = a ^ b; }
-  
+
+  __forceinline const vboolf8 operator &=( vboolf8& a, const vboolf8& b ) { return a = a & b; }
+  __forceinline const vboolf8 operator |=( vboolf8& a, const vboolf8& b ) { return a = a | b; }
+  __forceinline const vboolf8 operator ^=( vboolf8& a, const vboolf8& b ) { return a = a ^ b; }
+
   ////////////////////////////////////////////////////////////////////////////////
   /// Comparison Operators + Select
   ////////////////////////////////////////////////////////////////////////////////
-  
-  __forceinline const vboold8 operator !=( const vboold8& a, const vboold8& b ) { return _mm512_kxor(a, b); }
-  __forceinline const vboold8 operator ==( const vboold8& a, const vboold8& b ) { return _mm512_kxnor(a, b); }
-  
-  __forceinline vboold8 select(const vboold8 &s, const vboold8 &a, const vboold8 &b) {
+
+  __forceinline const vboolf8 operator !=( const vboolf8& a, const vboolf8& b ) { return _mm512_kxor(a, b); }
+  __forceinline const vboolf8 operator ==( const vboolf8& a, const vboolf8& b ) { return _mm512_kxnor(a, b); }
+
+  __forceinline vboolf8 select(const vboolf8 &s, const vboolf8 &a, const vboolf8 &b) {
     return _mm512_kor(_mm512_kand(s, a), _mm512_kandn(s, b));
   }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Reduction Operations
   ////////////////////////////////////////////////////////////////////////////////
-  
-  __forceinline int all (const vboold8 &a) { return a.v == 0xff; }
-  __forceinline int any (const vboold8 &a) { return _mm512_kortestz(a, a) == 0; }
-  __forceinline int none(const vboold8 &a) { return _mm512_kortestz(a, a) != 0; }
 
-  __forceinline int all ( const vboold8& valid, const vboold8& b ) { return all(!valid | b); }
-  __forceinline int any ( const vboold8& valid, const vboold8& b ) { return any( valid & b); }
-  __forceinline int none( const vboold8& valid, const vboold8& b ) { return none(valid & b); }
-  
-  __forceinline size_t movemask( const vboold8& a ) { return _mm512_kmov(a); }
-  __forceinline size_t popcnt  ( const vboold8& a ) { return _mm_countbits_64(a.v); }
-  
+  __forceinline int all (const vboolf8 &a) { return a.v == 0xff; }
+  __forceinline int any (const vboolf8 &a) { return _mm512_kortestz(a, a) == 0; }
+  __forceinline int none(const vboolf8 &a) { return _mm512_kortestz(a, a) != 0; }
+
+  __forceinline int all ( const vboolf8& valid, const vboolf8& b ) { return all(!valid | b); }
+  __forceinline int any ( const vboolf8& valid, const vboolf8& b ) { return any( valid & b); }
+  __forceinline int none( const vboolf8& valid, const vboolf8& b ) { return none(valid & b); }
+
+  __forceinline size_t movemask( const vboolf8& a ) { return _mm512_kmov(a); }
+  __forceinline size_t popcnt  ( const vboolf8& a ) { return _mm_countbits_64(a.v); }
+
   ////////////////////////////////////////////////////////////////////////////////
   /// Conversion Operations
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline unsigned int toInt(const vboold8 &a) { return _mm512_mask2int(a); }
+  __forceinline unsigned int toInt(const vboolf8 &a) { return _mm512_mask2int(a); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Get/Set Functions
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline bool get(const vboold8& a, size_t index) { assert(index < 8); return (toInt(a) >> index) & 1; }
-  __forceinline void set(vboold8& a, size_t index)       { assert(index < 8); a |= 1 << index; }
-  __forceinline void clear(vboold8& a, size_t index)     { assert(index < 8); a = andn(a, 1 << index); }
+  __forceinline bool get(const vboolf8& a, size_t index) { assert(index < 8); return (toInt(a) >> index) & 1; }
+  __forceinline void set(vboolf8& a, size_t index)       { assert(index < 8); a |= 1 << index; }
+  __forceinline void clear(vboolf8& a, size_t index)     { assert(index < 8); a = andn(a, 1 << index); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Output Operators
   ////////////////////////////////////////////////////////////////////////////////
-  
-  inline std::ostream& operator<<(std::ostream& cout, const vboold8& a)
+
+  inline std::ostream& operator<<(std::ostream& cout, const vboolf8& a)
   {
     cout << "<";
     for (size_t i=0; i<8; i++) {
