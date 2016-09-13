@@ -24,26 +24,32 @@ namespace embree
   
   void TaskScheduler::create(size_t numThreads, bool set_affinity)
   {
-    /* first terminate threads in case we configured them */
-    if (g_ppl_threads_initialized) {
- 
-      g_ppl_threads_initialized = false;
-    }
-    
-    /* now either keep default settings or configure number of threads */
-    if (numThreads == 0) 
-    {
-      g_ppl_threads_initialized = false;
-      g_numThreads = 1;
-    } else {
-      g_ppl_threads_initialized = true;
-      g_numThreads = numThreads;
-    }
-	concurrency::CurrentScheduler::Create(concurrency::SchedulerPolicy(2, concurrency::MinConcurrency, g_numThreads, concurrency::MaxConcurrency, g_numThreads));
+	  /* first terminate threads in case we configured them */
+	  if (g_ppl_threads_initialized) {
+		  concurrency::CurrentScheduler::Detach();
+		  g_ppl_threads_initialized = false;
+	  }
+
+	  /* now either keep default settings or configure number of threads */
+	  if (numThreads == 0)
+	  {
+		  g_ppl_threads_initialized = false;
+		  g_numThreads = threadCount();
+	  }
+	  else {
+		  g_ppl_threads_initialized = true;
+		  g_numThreads = numThreads;
+		  concurrency::CurrentScheduler::Create(concurrency::SchedulerPolicy(2, concurrency::MinConcurrency, g_numThreads, concurrency::MaxConcurrency, g_numThreads));
+	  }
   }
+	//
   
   void TaskScheduler::destroy()
   {
-	  concurrency::CurrentScheduler::Detach();
+	  if (g_ppl_threads_initialized)
+	  {
+		  concurrency::CurrentScheduler::Detach();
+		  g_ppl_threads_initialized = false;
+	  }
   }
 }

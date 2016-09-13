@@ -45,14 +45,12 @@ namespace embree
     static __forceinline size_t threadIndex()
     {
       size_t ID = GetCurrentThreadId();
-	  //PRINT(ID);
 	  return ID;
     }
   
     /* returns the total number of threads */
     static __forceinline size_t threadCount() {
 	  size_t num = GetMaximumProcessorCount(ALL_PROCESSOR_GROUPS);
-	  //PRINT(num);
       return num;
     }
 
