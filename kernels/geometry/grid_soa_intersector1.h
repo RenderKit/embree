@@ -35,12 +35,6 @@ namespace embree
         __forceinline Precalculations (Ray& ray, const void* ptr) 
           : grid(nullptr) {}
         
-        __forceinline ~Precalculations() 
-        {
-	  if (grid)
-            SharedLazyTessellationCache::sharedLazyTessellationCache.unlock();
-        }
-        
       public:
         GridSOA* grid;
       };

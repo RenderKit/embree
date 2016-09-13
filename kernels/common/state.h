@@ -99,8 +99,9 @@ namespace embree
     int object_accel_mb_max_leaf_size;         //!< maximal leaf size for mblur object acceleration structure
 
   public:
-    size_t      tessellation_cache_size;   //!< size of the shared tessellation cache 
+    size_t tessellation_cache_size;        //!< size of the shared tessellation cache 
     std::string subdiv_accel;              //!< acceleration structure to use for subdivision surfaces
+    std::string subdiv_accel_mb;           //!< acceleration structure to use for subdivision surfaces
 
   public:
     bool float_exceptions;                 //!< enable floating point exceptions

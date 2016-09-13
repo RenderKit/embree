@@ -42,7 +42,6 @@ namespace embree
     Accel* BVH8Triangle4SpatialSplit(Scene* scene);
 
     Accel* BVH8Triangle4vMB(Scene* scene);
-    Accel* BVH8SubdivGridEager(Scene* scene);
     Accel* BVH8Quad4v(Scene* scene);
     Accel* BVH8Quad4i(Scene* scene);
     Accel* BVH8Quad4iMB(Scene* scene);
@@ -61,7 +60,6 @@ namespace embree
     Accel::Intersectors BVH8Quad4vIntersectors(BVH8* bvh);
     Accel::Intersectors BVH8Quad4iIntersectors(BVH8* bvh);
     Accel::Intersectors BVH8Quad4iMBIntersectors(BVH8* bvh);
-    Accel::Intersectors BVH8SubdivGridEagerIntersectors(BVH8* bvh);
 
     Accel::Intersectors QBVH8Triangle4iIntersectors(BVH8* bvh);
     Accel::Intersectors QBVH8Quad4iIntersectors(BVH8* bvh);
@@ -160,7 +158,5 @@ namespace embree
     
     DEFINE_BUILDER2(void,Scene,size_t,BVH8Triangle4SceneBuilderSpatialSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH8Triangle4SceneBuilderFastSpatialSAH);
-
-    DEFINE_BUILDER2(void,Scene,size_t,BVH8SubdivGridEagerBuilderBinnedSAH);
   };
 }
