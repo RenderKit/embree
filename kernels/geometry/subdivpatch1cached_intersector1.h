@@ -19,7 +19,6 @@
 #include "subdivpatch1cached.h"
 #include "grid_soa_intersector1.h"
 #include "grid_soa_intersector.h"
-#include "grid_aos_intersector1.h"
 #include "../common/ray.h"
 
 namespace embree

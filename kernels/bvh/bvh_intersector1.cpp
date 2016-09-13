@@ -30,7 +30,6 @@
 #include "../geometry/triangle_intersector_pluecker.h"
 #include "../geometry/triangle4i_intersector_pluecker.h"
 #include "../geometry/subdivpatch1cached_intersector1.h"
-#include "../geometry/grid_aos_intersector1.h"
 #include "../geometry/object_intersector1.h"
 #include "../geometry/quadv_intersector_moeller.h"
 #include "../geometry/quadi_intersector_moeller.h"
@@ -261,8 +260,6 @@ namespace embree
     IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR1(BVH4Subdivpatch1MBlurIntersector1,BVHNIntersector1<4 COMMA BVH_AN2 COMMA false COMMA SubdivPatch1MBlurCachedIntersector1<false>>)); // FIXME: robust mode not compiling
     IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR1(BVH4Subdivpatch1MBlurCachedIntersector1,BVHNIntersector1<4 COMMA BVH_AN2 COMMA false COMMA SubdivPatch1MBlurCachedIntersector1<true>>)); // FIXME: robust mode not compiling
 
-    IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR1(BVH4GridAOSIntersector1,BVHNIntersector1<4 COMMA BVH_AN1 COMMA true COMMA GridAOSIntersector1>));
-
     IF_ENABLED_USER(DEFINE_INTERSECTOR1(BVH4VirtualIntersector1,BVHNIntersector1<4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<ObjectIntersector1> >));
     IF_ENABLED_USER(DEFINE_INTERSECTOR1(BVH4VirtualMBIntersector1,BVHNIntersector1<4 COMMA BVH_AN2 COMMA false COMMA ArrayIntersector1<ObjectIntersector1> >));
 
@@ -295,8 +292,6 @@ namespace embree
     IF_ENABLED_LINES(DEFINE_INTERSECTOR1(BVH8Line4iMBIntersector1,BVHNIntersector1<8 COMMA BVH_AN2 COMMA false COMMA ArrayIntersector1<LineMiMBIntersector1<4 COMMA 4 COMMA true> > >));
     IF_ENABLED_QUADS(DEFINE_INTERSECTOR1(BVH8Quad4iIntersector1Pluecker,BVHNIntersector1<8 COMMA BVH_AN1 COMMA true COMMA ArrayIntersector1<QuadMiIntersector1Pluecker<4 COMMA true> > >));
     IF_ENABLED_QUADS(DEFINE_INTERSECTOR1(BVH8Quad4iMBIntersector1Pluecker,BVHNIntersector1<8 COMMA BVH_AN2 COMMA false COMMA ArrayIntersector1<QuadMiMBIntersector1Pluecker<4 COMMA true> > >));
-
-    IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR1(BVH8GridAOSIntersector1,BVHNIntersector1<8 COMMA BVH_AN1 COMMA true COMMA GridAOSIntersector1>));
 
 #endif
   }

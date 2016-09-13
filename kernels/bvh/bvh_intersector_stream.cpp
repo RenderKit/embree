@@ -30,7 +30,6 @@
 #include "../geometry/triangle_intersector_pluecker.h"
 #include "../geometry/triangle4i_intersector_pluecker.h"
 #include "../geometry/subdivpatch1cached_intersector1.h"
-#include "../geometry/grid_aos_intersector1.h"
 #include "../geometry/object_intersector1.h"
 #include "../geometry/quadv_intersector_moeller.h"
 #include "../geometry/quadi_intersector_moeller.h"
@@ -832,7 +831,6 @@ namespace embree
     //IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH4Triangle4vMBIntersectorStreamMoeller,BVHNIntersectorStream<SIMD_MODE(4) COMMA BVH_AN2 COMMA false COMMA ArrayIntersector1<TriangleMvMBIntersector1MoellerTrumbore<SIMD_MODE(4) COMMA true> > >));
     //IF_ENABLED_QUADS(DEFINE_INTERSECTORN(BVH4Quad4iMBIntersectorStreamPluecker,BVHNIntersectorStream<4 COMMA BVH_AN2 COMMA false COMMA ArrayIntersector1<QuadMiMBIntersector1Pluecker<4 COMMA true> > >));
     //IF_ENABLED_SUBDIV(DEFINE_INTERSECTORN(BVH4Subdivpatch1CachedIntersectorStream,BVHNIntersectorStream<4 COMMA BVH_AN1 COMMA true COMMA SubdivPatch1CachedIntersector1>));
-    //IF_ENABLED_SUBDIV(DEFINE_INTERSECTORN(BVH4GridAOSIntersectorStream,BVHNIntersectorStream<4 COMMA BVH_AN1 COMMA true COMMA GridAOSIntersector1>));
     //IF_ENABLED_USER(DEFINE_INTERSECTORN(BVH4VirtualMBIntersectorStream,BVHNIntersectorStream<4 COMMA BVH_AN2 COMMA false COMMA ObjectIntersector1>));
 
 #endif
@@ -866,8 +864,6 @@ namespace embree
     //IF_ENABLED_HAIR(DEFINE_INTERSECTORN(BVH8Bezier1iMBIntersectorStream_OBB,BVHNIntersectorStream<SIMD_MODE(8) COMMA BVH_AN2_UN2 COMMA false COMMA ArrayIntersector1<Bezier1iIntersector1MB> >));
 
     //IF_ENABLED_QUADS(DEFINE_INTERSECTORN(BVH8Quad4iMBIntersectorStreamPluecker,BVHNIntersectorStream<SIMD_MODE(8) COMMA BVH_AN2 COMMA false COMMA ArrayIntersector1<QuadMiMBIntersector1Pluecker<4 COMMA true> > >));
-    
-    //IF_ENABLED_SUBDIV(DEFINE_INTERSECTORN(BVH8GridAOSIntersectorStream,BVHNIntersectorStream<SIMD_MODE(8) COMMA BVH_AN1 COMMA true COMMA GridAOSIntersector1>));
     
 #endif
   }
