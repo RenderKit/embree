@@ -26,7 +26,6 @@ namespace embree
   {
 	  /* first terminate threads in case we configured them */
 	  if (g_ppl_threads_initialized) {
-		  concurrency::CurrentScheduler::Detach();
 		  g_ppl_threads_initialized = false;
 	  }
 
@@ -39,7 +38,11 @@ namespace embree
 	  else {
 		  g_ppl_threads_initialized = true;
 		  g_numThreads = numThreads;
-		  concurrency::CurrentScheduler::Create(concurrency::SchedulerPolicy(2, concurrency::MinConcurrency, g_numThreads, concurrency::MaxConcurrency, g_numThreads));
+		  try {
+			  concurrency::Scheduler::SetDefaultSchedulerPolicy(concurrency::SchedulerPolicy(2, concurrency::MinConcurrency, g_numThreads, concurrency::MaxConcurrency, g_numThreads));
+		  }
+		  catch(concurrency::default_scheduler_exists &)
+		  { }
 	  }
   }
 	//
@@ -48,7 +51,6 @@ namespace embree
   {
 	  if (g_ppl_threads_initialized)
 	  {
-		  concurrency::CurrentScheduler::Detach();
 		  g_ppl_threads_initialized = false;
 	  }
   }
