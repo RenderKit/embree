@@ -602,52 +602,20 @@ namespace embree
         auto splitPrimitive = [&] (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o) {
           TriangleMesh* mesh = (TriangleMesh*) scene->get(prim.geomID() & 0x00FFFFFF );  
           TriangleMesh::Triangle tri = mesh->triangle(prim.primID());
-          const Vec3fa &v0 = mesh->vertex(tri.v[0]);
-          const Vec3fa &v1 = mesh->vertex(tri.v[1]);
-          const Vec3fa &v2 = mesh->vertex(tri.v[2]);
-
-          splitTriangle(prim,dim,pos,v0,v1,v2,left_o,right_o);
-#if 0
-          PrimRefBoundsN<8> left8,right8;
-          const vfloat8 pos8(pos);
-          splitTriangleN<8> (prim,dim,pos,v0,v1,v2,left8,right8);
-          BBox3fa lo = left8.extract(0);
-          BBox3fa ro = right8.extract(0);
-
-          //PrimRef lo,ro;
-          //splitTriangle2(prim,dim,pos,v0,v1,v2,lo,ro);
-          //if (left_o.bounds() != lo || right_o.bounds() != ro)
-          if ((movemask(abs(right_o.bounds().lower-ro.lower) >= Vec3fa(1E-4f)) & 0x7) != 0)
-          {
-#if 0
-            std::cout << std::setprecision(15);
-            PRINT(left_o.bounds());
-            PRINT(right_o.bounds());
-            PRINT(lo);
-            PRINT(ro);
-            PRINT(abs(left_o.bounds().lower-lo.lower));
-            PRINT(abs(left_o.bounds().upper-lo.upper));
-            PRINT(abs(right_o.bounds().lower-ro.lower));
-            PRINT(abs(right_o.bounds().upper-ro.upper));
-#endif
-            //assert((movemask(abs(left_o.bounds().lower-lo.lower) >= Vec3fa(1E-4f)) & 0x7) == 0);
-            //assert((movemask(abs(left_o.bounds().upper-lo.upper) >= Vec3fa(1E-4f)) & 0x7) == 0);
-            //assert((movemask(abs(right_o.bounds().lower-ro.lower) >= Vec3fa(1E-4f)) & 0x7) == 0);
-            //assert((movemask(abs(right_o.bounds().upper-ro.upper) >= Vec3fa(1E-4f)) & 0x7) == 0);
-
-          }
-          //assert(left_o.bounds() == lo);
-          //assert(right_o.bounds() == ro);
-#endif
+          const Vec3fa& a = mesh->vertex(tri.v[0]);
+          const Vec3fa& b = mesh->vertex(tri.v[1]);
+          const Vec3fa& c = mesh->vertex(tri.v[2]);          
+          const Vec3fa v[4] = { a,b,c,a };
+          const vfloat4 v1(b[dim],c[dim],a[dim],b[dim]);
+          const vfloat4 v0(a[dim],b[dim],c[dim],a[dim]);
+          const vfloat4 inv_length = 1.0f / (v1-v0);
+          splitTriangleFast(prim,dim,pos,v,inv_length,left_o,right_o);
         };
 
         auto splitPrimitive2 = [&] (SpatialBinInfo<FAST_SPATIAL_BUILDER_NUM_SPATIAL_SPLITS,PrimRef> &binner, 
                                     const PrimRef* const source, const size_t begin, const size_t end, 
                                     const SpatialBinMapping<FAST_SPATIAL_BUILDER_NUM_SPATIAL_SPLITS> &mapping)
           {
-#if 0
-            binner.bin(splitPrimitive,source,begin,end,mapping);
-#else
             for (size_t i=begin; i<end; i++)
             {
               const PrimRef &prim = source[i];
@@ -708,7 +676,6 @@ namespace embree
                 }
               }
             }              
-#endif
           };
 
 

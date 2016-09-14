@@ -103,6 +103,40 @@ namespace embree
       right_o = intersect(right,bounds);
     }
 
+    __forceinline void splitTriangleFast(const PrimRef& prim, 
+                                         const size_t dim, 
+                                         const float pos, 
+                                         const Vec3fa v[4],
+                                         const vfloat4 &inv_length4,
+                                         PrimRef& left_o, 
+                                         PrimRef& right_o)
+    {
+      BBox3fa left = empty, right = empty;
+      for (size_t i=0; i<3; i++)
+      {
+        const Vec3fa &v0 = v[i]; 
+        const Vec3fa &v1 = v[i+1]; 
+        const float v0d = v0[dim];
+        const float v1d = v1[dim];
+        const float inv_length = inv_length4[i];
+
+        if (v0d <= pos) left. extend(v0); // this point is on left side
+        if (v0d >= pos) right.extend(v0); // this point is on right side
+        
+        if ((v0d < pos && pos < v1d) || (v1d < pos && pos < v0d)) // the edge crosses the splitting location
+        {
+          assert((v1d-v0d) != 0.0f);
+          const Vec3fa c = v0 + (pos-v0d)*inv_length*(v1-v0);
+          left.extend(c);
+          right.extend(c);
+        }
+      }
+      /* clip against current bounds */
+      new (&left_o ) PrimRef(intersect(left ,prim.bounds()),prim.geomID(), prim.primID());
+      new (&right_o) PrimRef(intersect(right,prim.bounds()),prim.geomID(), prim.primID());
+    }
+
+
     template<size_t N>
       struct PrimRefBoundsN {
         Vec3<vfloat<N>> lower;
