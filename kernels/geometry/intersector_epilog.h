@@ -224,7 +224,6 @@ namespace embree
           size_t i = select_min(valid,hit.vt);
           int geomID = geomIDs[i];
           int instID = geomID_to_instID ? geomID_to_instID[0] : geomID;
-
           /* intersection filter test */
 #if defined(EMBREE_INTERSECTION_FILTER) || defined(EMBREE_RAY_MASK)
           bool foundhit = false;
