@@ -20,6 +20,8 @@ namespace embree
     class vector_t
     {
     public:
+      typedef T value_type;
+    
 
 #if defined(VECTOR_INIT_ALLOCATOR)
     template<typename M>

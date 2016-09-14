@@ -262,7 +262,7 @@ namespace embree
   private:
     template<typename T> T load(const Ref<XML>& xml) { assert(false); return T(zero); }
     template<typename T> T load(const Ref<XML>& xml, const T& opt) { assert(false); return T(zero); }
-    char* loadBinary(const Ref<XML>& xml, size_t eltSize, size_t& size);
+    template<typename Vector> Vector loadBinary(const Ref<XML>& xml);
 
     std::vector<float> loadFloatArray(const Ref<XML>& xml);
     std::vector<Vec2f> loadVec2fArray(const Ref<XML>& xml);
@@ -396,7 +396,8 @@ namespace embree
     }
   }
 
-  char* XMLLoader::loadBinary(const Ref<XML>& xml, size_t eltSize, size_t& size)
+  template<typename Vector>
+  Vector XMLLoader::loadBinary(const Ref<XML>& xml)
   {
     if (!binFile) 
       THROW_RUNTIME_ERROR("cannot open file "+binFileName.str()+" for reading");
@@ -404,11 +405,13 @@ namespace embree
     size_t ofs = atol(xml->parm("ofs").c_str());
     fseek(binFile,long(ofs),SEEK_SET);
 
-    size = atol(xml->parm("size").c_str());
+    size_t size = atol(xml->parm("size").c_str());
     if (size == 0) size = atol(xml->parm("num").c_str()); // version for BGF format
-    char* data = (char*) alignedMalloc(size*eltSize);
 
-    if (size != fread(data, eltSize, size, binFile)) 
+    Vector data;
+    data.resize(size);
+
+    if (size != fread(data.data(), sizeof(typename Vector::value_type), size, binFile)) 
       THROW_RUNTIME_ERROR("error reading from binary file: "+binFileName.str());
 
     return data;
@@ -416,213 +419,165 @@ namespace embree
 
   std::vector<float> XMLLoader::loadFloatArray(const Ref<XML>& xml)
   {
-    /*! do not fail of array does not exist */
-    if (!xml) { return std::vector<float>(); }
+    if (!xml) return std::vector<float>();
 
-    size_t size = 0;
-    float* data = nullptr;
     if (xml->parm("ofs") != "") {
-      data = (float*)loadBinary(xml,sizeof(float),size);
-    } else {
-      size_t elts = xml->body.size();
-      size = elts;
-      data = (float*) alignedMalloc(size*sizeof(float));
-      for (size_t i=0; i<size; i++) 
+      return loadBinary<std::vector<float>>(xml);
+    } 
+    else 
+    {
+      std::vector<float> data;
+      data.resize(xml->body.size());
+      for (size_t i=0; i<data.size(); i++) 
         data[i] = xml->body[i].Float();
+      return data;
     }
-    std::vector<float> res;
-    for (size_t i=0; i<size; i++) res.push_back(data[i]);
-    alignedFree(data);
-    return res;
   }
 
   std::vector<Vec2f> XMLLoader::loadVec2fArray(const Ref<XML>& xml)
   {
-    /*! do not fail of array does not exist */
-    if (!xml) { return std::vector<Vec2f>(); }
+    if (!xml) return std::vector<Vec2f>();
 
-    size_t size = 0;
-    Vec2f* data = nullptr;
     if (xml->parm("ofs") != "") {
-      data = (Vec2f*)loadBinary(xml,2*sizeof(float),size);
-    } else {
-      size_t elts = xml->body.size();
-      if (elts % 2 != 0) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong vector<float2> body");
-      size = elts/2;
-      data = (Vec2f*) alignedMalloc(size*sizeof(Vec2f));
-      for (size_t i=0; i<size; i++) 
+      return loadBinary<std::vector<Vec2f>>(xml);
+    } 
+    else 
+    {
+      std::vector<Vec2f> data;
+      if (xml->body.size() % 2 != 0) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong vector<float2> body");
+      data.resize(xml->body.size()/2);
+      for (size_t i=0; i<data.size(); i++) 
         data[i] = Vec2f(xml->body[2*i+0].Float(),xml->body[2*i+1].Float());
+      return data;
     }
-    std::vector<Vec2f> res;
-    for (size_t i=0; i<size; i++) res.push_back(data[i]);
-    alignedFree(data);
-    return res;
   }
 
   std::vector<Vec3f> XMLLoader::loadVec3fArray(const Ref<XML>& xml)
   {
-    /*! do not fail of array does not exist */
-    if (!xml) { return std::vector<Vec3f>(); }
+    if (!xml) return std::vector<Vec3f>();
 
-    size_t size = 0;
-    Vec3f* data = nullptr;
     if (xml->parm("ofs") != "") {
-      data = (Vec3f*) loadBinary(xml,3*sizeof(float),size);
-    }
-    else {
-      size_t elts = xml->body.size();
-      if (elts % 3 != 0) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong vector<float3> body");
-      size = elts/3;
-      data = (Vec3f*) alignedMalloc(size*sizeof(Vec3f));
-      for (size_t i=0; i<size; i++) 
+      return loadBinary<std::vector<Vec3f>>(xml);
+    } 
+    else 
+    {
+      std::vector<Vec3f> data;
+      if (xml->body.size() % 3 != 0) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong vector<float3> body");
+      data.resize(xml->body.size()/3);
+      for (size_t i=0; i<data.size(); i++) 
         data[i] = Vec3f(xml->body[3*i+0].Float(),xml->body[3*i+1].Float(),xml->body[3*i+2].Float());
+      return data;
     }
-    std::vector<Vec3f> res;
-    for (size_t i=0; i<size; i++) res.push_back(data[i]);
-    alignedFree(data);
-    return res;
   }
 
   avector<Vec3fa> XMLLoader::loadVec3faArray(const Ref<XML>& xml)
   {
-    /*! do not fail of array does not exist */
-    if (!xml) { return avector<Vec3fa>(); }
+    if (!xml) return avector<Vec3fa>();
 
-    size_t size = 0;
-    Vec3f* data = nullptr;
     if (xml->parm("ofs") != "") {
-      data = (Vec3f*) loadBinary(xml,3*sizeof(float),size);
+      std::vector<Vec3f> temp = loadBinary<std::vector<Vec3f>>(xml);
+      avector<Vec3fa> data; data.resize(temp.size());
+      for (size_t i=0; i<temp.size(); i++) data[i] = Vec3fa(temp[i]);
+      return data;
+    } 
+    else 
+    {
+      avector<Vec3fa> data;
+      if (xml->body.size() % 3 != 0) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong vector<float3> body");
+      data.resize(xml->body.size()/3);
+      for (size_t i=0; i<data.size(); i++) 
+        data[i] = Vec3fa(xml->body[3*i+0].Float(),xml->body[3*i+1].Float(),xml->body[3*i+2].Float());
+      return data;
     }
-    else {
-      size_t elts = xml->body.size();
-      if (elts % 3 != 0) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong vector<float3> body");
-      size = elts/3;
-      data = (Vec3f*) alignedMalloc(size*sizeof(Vec3f));
-      for (size_t i=0; i<size; i++) 
-        data[i] = Vec3f(xml->body[3*i+0].Float(),xml->body[3*i+1].Float(),xml->body[3*i+2].Float());
-    }
-    avector<Vec3fa> res;
-    for (size_t i=0; i<size; i++) res.push_back(Vec3fa(data[i].x,data[i].y,data[i].z));
-    alignedFree(data);
-    return res;
   }
 
   avector<Vec3fa> XMLLoader::loadVec4fArray(const Ref<XML>& xml)
   {
-    /*! do not fail of array does not exist */
-    if (!xml) { return avector<Vec3fa>(); }
+    if (!xml) return avector<Vec3fa>();
 
-    size_t size = 0;
-    Vec3fa* data = nullptr;
     if (xml->parm("ofs") != "") {
-      data = (Vec3fa*) loadBinary(xml,4*sizeof(float),size);
-    }
-    else {
-      size_t elts = xml->body.size();
-      if (elts % 4 != 0) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong vector<float4> body");
-      size = elts/4;
-      data = (Vec3fa*) alignedMalloc(size*sizeof(Vec3fa));
-      for (size_t i=0; i<size; i++) 
+      return loadBinary<avector<Vec3fa>>(xml);
+    } 
+    else 
+    {
+      avector<Vec3fa> data;
+      if (xml->body.size() % 4 != 0) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong vector<float4> body");
+      data.resize(xml->body.size()/4);
+      for (size_t i=0; i<data.size(); i++) 
         data[i] = Vec3fa(xml->body[4*i+0].Float(),xml->body[4*i+1].Float(),xml->body[4*i+2].Float(),xml->body[4*i+3].Float());
+      return data;
     }
-    avector<Vec3fa> res;
-    for (size_t i=0; i<size; i++) res.push_back(data[i]);
-    alignedFree(data);
-    return res;
   }
 
   std::vector<unsigned> XMLLoader::loadUIntArray(const Ref<XML>& xml)
   {
-    /*! do not fail of array does not exist */
-    if (!xml) { return std::vector<unsigned>(); }
+    if (!xml) return std::vector<unsigned>();
 
-    size_t size = 0;
-    unsigned* data = nullptr;
     if (xml->parm("ofs") != "") {
-      data = (unsigned*)loadBinary(xml,sizeof(unsigned),size);
-    } else {
-      size_t elts = xml->body.size();
-      size = elts;
-      data = (unsigned*) alignedMalloc(size*sizeof(unsigned));
-      for (size_t i=0; i<size; i++) 
+      return loadBinary<std::vector<unsigned>>(xml);
+    } 
+    else 
+    {
+      std::vector<unsigned> data;
+      data.resize(xml->body.size());
+      for (size_t i=0; i<data.size(); i++) 
         data[i] = xml->body[i].Int();
+      return data;
     }
-    std::vector<unsigned> res;
-    for (size_t i=0; i<size; i++) res.push_back(data[i]);
-    alignedFree(data);
-    return res;
   }
 
   std::vector<Vec2i> XMLLoader::loadVec2iArray(const Ref<XML>& xml)
   {
-    /*! do not fail of array does not exist */
-    if (!xml) { return std::vector<Vec2i>(); }
-    
-    size_t size = 0;
-    Vec2i* data = nullptr;
+    if (!xml) return std::vector<Vec2i>();
+
     if (xml->parm("ofs") != "") {
-      data = (Vec2i*) loadBinary(xml,2*sizeof(int),size);
-    }
-    else {
-      size_t elts = xml->body.size();
-      if (elts % 2 != 0) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong vector<int2> body");
-      size = elts/2;
-      data = (Vec2i*) alignedMalloc(size*sizeof(Vec2i));
-      for (size_t i=0; i<size; i++) 
+      return loadBinary<std::vector<Vec2i>>(xml);
+    } 
+    else 
+    {
+      std::vector<Vec2i> data;
+      if (xml->body.size() % 2 != 0) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong vector<int2> body");
+      data.resize(xml->body.size()/2);
+      for (size_t i=0; i<data.size(); i++) 
         data[i] = Vec2i(xml->body[2*i+0].Int(),xml->body[2*i+1].Int());
+      return data;
     }
-    std::vector<Vec2i> res;
-    for (size_t i=0; i<size; i++) res.push_back(data[i]);
-    alignedFree(data);
-    return res;
   }
 
   std::vector<Vec3i> XMLLoader::loadVec3iArray(const Ref<XML>& xml)
   {
-    /*! do not fail of array does not exist */
-    if (!xml) { return std::vector<Vec3i>(); }
-    
-    size_t size = 0;
-    Vec3i* data = nullptr;
+    if (!xml) return std::vector<Vec3i>();
+
     if (xml->parm("ofs") != "") {
-      data = (Vec3i*) loadBinary(xml,3*sizeof(int),size);
-    }
-    else {
-      size_t elts = xml->body.size();
-      if (elts % 3 != 0) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong vector<int3> body");
-      size = elts/3;
-      data = (Vec3i*) alignedMalloc(size*sizeof(Vec3i));
-      for (size_t i=0; i<size; i++) 
+      return loadBinary<std::vector<Vec3i>>(xml);
+    } 
+    else 
+    {
+      std::vector<Vec3i> data;
+      if (xml->body.size() % 3 != 0) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong vector<int3> body");
+      data.resize(xml->body.size()/3);
+      for (size_t i=0; i<data.size(); i++) 
         data[i] = Vec3i(xml->body[3*i+0].Int(),xml->body[3*i+1].Int(),xml->body[3*i+2].Int());
+      return data;
     }
-    std::vector<Vec3i> res;
-    for (size_t i=0; i<size; i++) res.push_back(data[i]);
-    alignedFree(data);
-    return res;
   }
 
   std::vector<Vec4i> XMLLoader::loadVec4iArray(const Ref<XML>& xml)
   {
-    /*! do not fail of array does not exist */
-    if (!xml) { return std::vector<Vec4i>(); }
-    
-    size_t size = 0;
-    Vec4i* data = nullptr;
+    if (!xml) return std::vector<Vec4i>();
+
     if (xml->parm("ofs") != "") {
-      data = (Vec4i*) loadBinary(xml,4*sizeof(int),size);
-    }
-    else {
-      size_t elts = xml->body.size();
-      if (elts % 4 != 0) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong vector<int4> body");
-      size = elts/4;
-      data = (Vec4i*) alignedMalloc(size*sizeof(Vec4i));
-      for (size_t i=0; i<size; i++) 
+      return loadBinary<std::vector<Vec4i>>(xml);
+    } 
+    else 
+    {
+      std::vector<Vec4i> data;
+      if (xml->body.size() % 4 != 0) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong vector<int4> body");
+      data.resize(xml->body.size()/4);
+      for (size_t i=0; i<data.size(); i++) 
         data[i] = Vec4i(xml->body[4*i+0].Int(),xml->body[4*i+1].Int(),xml->body[4*i+2].Int(),xml->body[4*i+3].Int());
+      return data;
     }
-    std::vector<Vec4i> res;
-    for (size_t i=0; i<size; i++) res.push_back(data[i]);
-    alignedFree(data);
-    return res;
   }
 
   //////////////////////////////////////////////////////////////////////////////
