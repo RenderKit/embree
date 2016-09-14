@@ -37,18 +37,25 @@ namespace embree
       vector_t (size_t sz) 
         : size_active(0), size_alloced(0), items(nullptr) { resize(sz); }
 #endif
-
       
       ~vector_t() {
         clear();
       }
-
+    
       vector_t (const vector_t& other)
       {
         size_active = other.size_active;
         size_alloced = other.size_alloced;
         items = alloc.allocate(size_alloced);
         for (size_t i=0; i<size_active; i++) items[i] = other.items[i];
+      }
+    
+      vector_t (vector_t&& other)
+      {
+        alloc = std::move(other.alloc);
+        size_active = other.size_active; other.size_active = 0;
+        size_alloced = other.size_alloced; other.size_alloced = 0;
+        items = other.items; other.items = nullptr;
       }
 
       vector_t& operator=(const vector_t& other) 
