@@ -60,15 +60,15 @@ namespace embree
     {
       OBJMaterial material(1.0f,Vec3fa(1.0f),Vec3fa(0.0f),1.0f);
       Ref<SceneGraph::MaterialNode> mnode = new SceneGraph::MaterialNode((Material&)material);
-      Ref<SceneGraph::TriangleMeshNode> mesh = new SceneGraph::TriangleMeshNode(mnode);
+      Ref<SceneGraph::TriangleMeshNode> mesh = new SceneGraph::TriangleMeshNode(mnode,1);
 
       const size_t width = texture->width;
       const size_t height = texture->height;
       
-      mesh->v.resize(height*width);
+      mesh->positions[0]->resize(height*width);
       for (size_t y=0; y<height; y++) 
         for (size_t x=0; x<width; x++) 
-          mesh->v[y*width+x] = at(x,y);
+          mesh->positions[0]->at(y*width+x) = at(x,y);
 
       mesh->triangles.resize(2*(height-1)*(width-1));
       for (size_t y=0; y<height-1; y++) {
@@ -93,7 +93,7 @@ namespace embree
   struct Instantiator : public RefCount
   {
     Instantiator(const Ref<HeightField>& heightField,
-                               const Ref<SceneGraph::Node>& object, const Ref<Image>& distribution, float minDistance, size_t N)
+                 const Ref<SceneGraph::Node>& object, const Ref<Image>& distribution, float minDistance, size_t N)
       : heightField(heightField), object(object), dist(nullptr), /*minDistance(minDistance),*/ N(N)
     {
       /* create distribution */

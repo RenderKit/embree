@@ -26,6 +26,17 @@ namespace embree
   public:
     XML (const std::string& name = "") : name(name) {}
 
+    /*! returns number of children of XML node */
+    size_t size() const { return children.size(); }
+
+    /*! checks if child with specified node tag exists */
+    bool hasChild(const std::string& childID) const 
+    {
+      for (size_t i=0; i<children.size(); i++)
+        if (children[i]->name == childID) return true;
+      return false;
+    }
+
     /*! returns a parameter of the XML node */
     std::string parm(const std::string& parmID) const {
       std::map<std::string,std::string>::const_iterator i = parms.find(parmID);

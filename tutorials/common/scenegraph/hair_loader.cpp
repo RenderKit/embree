@@ -51,7 +51,7 @@ namespace embree
           if (fgets(line,10000,f) != line)
             THROW_RUNTIME_ERROR("error reading line from file " + fileName.str());
           
-          const unsigned vertex_start_id = (unsigned) hairset->v.size();
+          const unsigned vertex_start_id = (unsigned) hairset->numVertices();
           
           unsigned int id = 0;
           for (size_t i=0; i<points; i++)
@@ -67,7 +67,7 @@ namespace embree
             if (i == 0) sscanf(line,"%d : Bezier %f %f %f %f",&id,&v.x,&v.y,&v.z,&v.w);
             else        sscanf(line,"%d : %f %f %f %f",&id,&v.x,&v.y,&v.z,&v.w);
             //printf("%d %d : %f %f %f %f \n",id,vertex_start_id+id,v.x,v.y,v.z,v.w);		
-            hairset->v.push_back(v);
+            hairset->positions[0]->push_back(v);
           }
           
           /* add indices to hair starts */
@@ -106,14 +106,14 @@ namespace embree
         THROW_RUNTIME_ERROR("invalid binary hair file " + fileName.str());
       if (fread(&numSegments,sizeof(int),1,fin) != 1)
         THROW_RUNTIME_ERROR("invalid binary hair file " + fileName.str());
-      hairset->v.resize(numPoints);
+      hairset->positions[0]->resize(numPoints);
       hairset->hairs.resize(numSegments);
       if (numPoints) {
-        if (fread(&hairset->v[0],sizeof(Vec3fa),numPoints,fin) != numPoints)
+        if (fread(hairset->positions[0]->data(),sizeof(Vec3fa),numPoints,fin) != numPoints)
           THROW_RUNTIME_ERROR("invalid binary hair file " + fileName.str());
       }
       if (numSegments) {
-        if (fread(&hairset->hairs[0],sizeof(SceneGraph::HairSetNode::Hair),numSegments,fin) != numSegments)
+        if (fread(hairset->hairs.data(),sizeof(SceneGraph::HairSetNode::Hair),numSegments,fin) != numSegments)
           THROW_RUNTIME_ERROR("invalid binary hair file " + fileName.str());
       }
       fclose(fin);
@@ -129,7 +129,7 @@ namespace embree
   {
     Material objmtl; new (&objmtl) OBJMaterial;
     Ref<SceneGraph::MaterialNode> material = new SceneGraph::MaterialNode(objmtl);
-    Ref<SceneGraph::HairSetNode> hairset = new SceneGraph::HairSetNode(true,material); 
+    Ref<SceneGraph::HairSetNode> hairset = new SceneGraph::HairSetNode(true,material,1); 
     loadHairBin(fileName,hairset);
     hairset->verify();
     return hairset.cast<SceneGraph::Node>();
@@ -139,12 +139,12 @@ namespace embree
   {
     Material objmtl; new (&objmtl) OBJMaterial;
     Ref<SceneGraph::MaterialNode> material = new SceneGraph::MaterialNode(objmtl);
-    Ref<SceneGraph::HairSetNode> hairset = new SceneGraph::HairSetNode(true,material); 
+    Ref<SceneGraph::HairSetNode> hairset = new SceneGraph::HairSetNode(true,material,1); 
     size_t numHairs MAYBE_UNUSED = loadHairASCII(fileName,hairset);
     hairset->verify();
 
 #if CONVERT_TO_BINARY
-    size_t numPoints = hairset->v.size();
+    size_t numPoints = hairset->numVertices();
     size_t numSegments = hairset->hairs.size();
     FILE* fout = fopen(fileName.setExt(".bin").c_str(),"wb");
     if (!fout) THROW_RUNTIME_ERROR("could not open " + fileName.str());
@@ -152,8 +152,8 @@ namespace embree
     fwrite(&numHairs,sizeof(int),1,fout);
     fwrite(&numPoints,sizeof(int),1,fout);
     fwrite(&numSegments,sizeof(int),1,fout);
-    if (numPoints) fwrite(&hairset->v[0],sizeof(Vec3fa),numPoints,fout);
-    if (numSegments) fwrite(&hairset->hairs[0],sizeof(SceneGraph::HairSet::Hair),numSegments,fout);
+    if (numPoints) fwrite(hairset->positions[0]->data(),sizeof(Vec3fa),numPoints,fout);
+    if (numSegments) fwrite(hairset->hairs->data(),sizeof(SceneGraph::HairSet::Hair),numSegments,fout);
     fclose(fout);
 #endif
     

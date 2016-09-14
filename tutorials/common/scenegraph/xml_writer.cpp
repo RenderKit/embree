@@ -406,10 +406,11 @@ namespace embree
   {
     open("TriangleMesh",id);
     store(mesh->material);
-    store("positions",mesh->v);
-    if (mesh->v2.size()) store("positions2",mesh->v2);
-    store("normals",mesh->vn);
-    store("texcoords",mesh->vt);
+    if (mesh->numTimeSteps() != 1) open("animated_positions");
+    for (const auto& p : mesh->positions) store("positions",*p);
+    if (mesh->numTimeSteps() != 1) close("animated_positions");
+    store("normals",mesh->normals);
+    store("texcoords",mesh->texcoords);
     store("triangles",mesh->triangles);
     close("TriangleMesh");
   }
@@ -418,10 +419,11 @@ namespace embree
   {
     open("QuadMesh",id);
     store(mesh->material);
-    store("positions",mesh->v);
-    if (mesh->v2.size()) store("positions2",mesh->v2);
-    store("normals",mesh->vn);
-    store("texcoords",mesh->vt);
+    if (mesh->numTimeSteps() != 1) open("animated_positions");
+    for (const auto& p : mesh->positions) store("positions",*p);
+    if (mesh->numTimeSteps() != 1) close("animated_positions");
+    store("normals",mesh->normals);
+    store("texcoords",mesh->texcoords);
     store("indices",mesh->quads);
     close("QuadMesh");
   }
@@ -430,8 +432,9 @@ namespace embree
   {
     open("SubdivisionMesh",id);
     store(mesh->material);
-    store("positions",mesh->positions);
-    if (mesh->positions2.size()) store("positions2",mesh->positions2);
+    if (mesh->numTimeSteps() != 1) open("animated_positions");
+    for (const auto& p : mesh->positions_) store("positions",*p);
+    if (mesh->numTimeSteps() != 1) close("animated_positions");
     store("normals",mesh->normals);
     store("texcoords",mesh->texcoords);
     store("position_indices",mesh->position_indices);
@@ -450,19 +453,21 @@ namespace embree
   {
     open("LineSegments",id);
     store(mesh->material);
-    store4f("positions",mesh->v);
-    if (mesh->v2.size()) store4f("positions2",mesh->v2);
+    if (mesh->numTimeSteps() != 1) open("animated_positions");
+    for (const auto& p : mesh->positions) store4f("positions",*p);
+    if (mesh->numTimeSteps() != 1) close("animated_positions");
     store("indices",mesh->indices);
     close("LineSegments");
   }
 
-  void XMLWriter::store(Ref<SceneGraph::HairSetNode> hair, ssize_t id)
+  void XMLWriter::store(Ref<SceneGraph::HairSetNode> mesh, ssize_t id)
   {
     open("Hair",id);
-    store(hair->material);
-    store4f("positions",hair->v);
-    if (hair->v2.size()) store4f("positions2",hair->v2);
-    store("indices",hair->hairs);
+    store(mesh->material);
+    if (mesh->numTimeSteps() != 1) open("animated_positions");
+    for (const auto& p : mesh->positions) store4f("positions",*p);
+    if (mesh->numTimeSteps() != 1) close("animated_positions");
+    store("indices",mesh->hairs);
     close("Hair");
   }
 

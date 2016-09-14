@@ -116,32 +116,40 @@ namespace embree
   
   void SceneGraph::TriangleMeshNode::verify() const
   {
-    const size_t numVertices = v.size();
-    if (v2.size() && v2.size() != numVertices) THROW_RUNTIME_ERROR("incompatible vertex array sizes");
-    if (vn.size() && vn.size() != numVertices) THROW_RUNTIME_ERROR("incompatible vertex array sizes");
-    if (vt.size() && vt.size() != numVertices) THROW_RUNTIME_ERROR("incompatible vertex array sizes");
+    const size_t N = numVertices();
+    for (const auto& p : positions) 
+      if (p->size() != N) 
+        THROW_RUNTIME_ERROR("incompatible vertex array sizes");
+    if (normals.size() && normals.size() != N) THROW_RUNTIME_ERROR("incompatible vertex array sizes");
+    if (texcoords.size() && texcoords.size() != N) THROW_RUNTIME_ERROR("incompatible vertex array sizes");
     for (auto tri : triangles) {
-      if (size_t(tri.v0) >= numVertices || size_t(tri.v1) >= numVertices || size_t(tri.v2) >= numVertices)
+      if (size_t(tri.v0) >= N || size_t(tri.v1) >= N || size_t(tri.v2) >= N)
         THROW_RUNTIME_ERROR("invalid triangle");
     }
   }
 
   void SceneGraph::QuadMeshNode::verify() const
   {
-    const size_t numVertices = v.size();
-    if (v2.size() && v2.size() != numVertices) THROW_RUNTIME_ERROR("incompatible vertex array sizes");
-    if (vn.size() && vn.size() != numVertices) THROW_RUNTIME_ERROR("incompatible vertex array sizes");
-    if (vt.size() && vt.size() != numVertices) THROW_RUNTIME_ERROR("incompatible vertex array sizes");
+    const size_t N = numVertices();
+    for (const auto& p : positions) 
+      if (p->size() != N) 
+        THROW_RUNTIME_ERROR("incompatible vertex array sizes");
+    if (normals.size() && normals.size() != N) THROW_RUNTIME_ERROR("incompatible vertex array sizes");
+    if (texcoords.size() && texcoords.size() != N) THROW_RUNTIME_ERROR("incompatible vertex array sizes");
     for (auto quad : quads) {
-      if (size_t(quad.v0) >= numVertices || size_t(quad.v1) >= numVertices || size_t(quad.v2) >= numVertices || size_t(quad.v3) >= numVertices)
+      if (size_t(quad.v0) >= N || size_t(quad.v1) >= N || size_t(quad.v2) >= N || size_t(quad.v3) >= N)
         THROW_RUNTIME_ERROR("invalid quad");
     }
   }
 
   void SceneGraph::SubdivMeshNode::verify() const
   {
+    const size_t N = numPositions();
+    for (const auto& p : positions_) 
+      if (p->size() != N) 
+        THROW_RUNTIME_ERROR("incompatible position array sizes");
     for (auto i : position_indices) 
-      if (size_t(i) >= positions.size()) THROW_RUNTIME_ERROR("invalid position index array");
+      if (size_t(i) >= N) THROW_RUNTIME_ERROR("invalid position index array");
     for (auto i : normal_indices) 
       if (size_t(i) >= normals.size()) THROW_RUNTIME_ERROR("invalid normal index array");
     for (auto i : texcoord_indices) 
@@ -149,43 +157,45 @@ namespace embree
     for (auto i : holes) 
       if (size_t(i) >= verticesPerFace.size()) THROW_RUNTIME_ERROR("invalid hole index array");
     for (auto crease : edge_creases) 
-      if (max(size_t(crease.x),size_t(crease.y)) >= positions.size()) THROW_RUNTIME_ERROR("invalid edge crease array");
+      if (max(size_t(crease.x),size_t(crease.y)) >= N) THROW_RUNTIME_ERROR("invalid edge crease array");
     if (edge_crease_weights.size() != edge_creases.size())
       THROW_RUNTIME_ERROR("invalid edge crease weight array");
     for (auto crease : vertex_creases) 
-      if (size_t(crease) >= positions.size()) THROW_RUNTIME_ERROR("invalid vertex crease array");
+      if (size_t(crease) >= N) THROW_RUNTIME_ERROR("invalid vertex crease array");
     if (vertex_crease_weights.size() != vertex_creases.size())
       THROW_RUNTIME_ERROR("invalid vertex crease weight array");
   }
 
   void SceneGraph::LineSegmentsNode::verify() const
   {
-    const size_t numVertices = v.size();
-    if (v2.size() && v2.size() != numVertices) THROW_RUNTIME_ERROR("incompatible vertex array sizes");
-    for (auto i : indices) {
-      if (size_t(i) >= numVertices)
+    const size_t N = numVertices();
+    for (const auto& p : positions) 
+      if (p->size() != N) 
+        THROW_RUNTIME_ERROR("incompatible vertex array sizes");
+    for (auto i : indices)
+      if (size_t(i) >= N)
         THROW_RUNTIME_ERROR("invalid line segment");
-    }
   }
 
   void SceneGraph::HairSetNode::verify() const
   {
-    const size_t numVertices = v.size();
-    if (v2.size() && v2.size() != numVertices) THROW_RUNTIME_ERROR("incompatible vertex array sizes");
-    for (auto hair : hairs) {
-      if (size_t(hair.vertex) >= numVertices)
+    const size_t N = numVertices();
+    for (const auto& p : positions) 
+      if (p->size() != N) 
+        THROW_RUNTIME_ERROR("incompatible vertex array sizes");
+    for (auto hair : hairs)
+      if (size_t(hair.vertex) >= N)
         THROW_RUNTIME_ERROR("invalid hair");
-    }
   }
   
-  void SceneGraph::set_motion_blur(Ref<SceneGraph::Node> node0, Ref<SceneGraph::Node> node1)
+  void SceneGraph::extend_animation(Ref<SceneGraph::Node> node0, Ref<SceneGraph::Node> node1)
   {
     if (Ref<SceneGraph::TransformNode> xfmNode0 = node0.dynamicCast<SceneGraph::TransformNode>()) 
     {
       if (Ref<SceneGraph::TransformNode> xfmNode1 = node1.dynamicCast<SceneGraph::TransformNode>()) 
       {
         xfmNode0->xfm1 = xfmNode1->xfm0;
-        set_motion_blur(xfmNode0->child, xfmNode1->child);
+        extend_animation(xfmNode0->child, xfmNode1->child);
       } 
       else THROW_RUNTIME_ERROR("incompatible scene graph"); 
     }
@@ -197,7 +207,7 @@ namespace embree
           THROW_RUNTIME_ERROR("incompatible scene graph");
 
         for (size_t i=0; i<groupNode0->children.size(); i++) 
-          set_motion_blur(groupNode0->children[i],groupNode1->children[i]);
+          extend_animation(groupNode0->children[i],groupNode1->children[i]);
       } 
       else THROW_RUNTIME_ERROR("incompatible scene graph"); 
     }
@@ -205,15 +215,11 @@ namespace embree
     {
       if (Ref<SceneGraph::TriangleMeshNode> mesh1 = node1.dynamicCast<SceneGraph::TriangleMeshNode>())
       {
-        if (mesh0->v.size() != mesh1->v.size())
+        if (mesh0->numVertices() != mesh1->numVertices())
           THROW_RUNTIME_ERROR("incompatible scene graph");
 
-        bool different = false;
-        for (size_t i=0; i<mesh0->v.size(); i++) 
-          different |= mesh0->v[i] != mesh1->v[i];
-        
-        if (different)
-          mesh0->v2 = mesh1->v;
+        for (auto& p : mesh1->positions)
+          mesh0->positions.push_back(std::move(p));
       } 
       else THROW_RUNTIME_ERROR("incompatible scene graph"); 
     }
@@ -221,15 +227,11 @@ namespace embree
     {
       if (Ref<SceneGraph::QuadMeshNode> mesh1 = node1.dynamicCast<SceneGraph::QuadMeshNode>())
       {
-        if (mesh0->v.size() != mesh1->v.size())
+        if (mesh0->numVertices() != mesh1->numVertices())
           THROW_RUNTIME_ERROR("incompatible scene graph");
 
-        bool different = false;
-        for (size_t i=0; i<mesh0->v.size(); i++) 
-          different |= mesh0->v[i] != mesh1->v[i];
-        
-        if (different)
-          mesh0->v2 = mesh1->v;
+        for (auto& p : mesh1->positions)
+          mesh0->positions.push_back(std::move(p));
       } 
       else THROW_RUNTIME_ERROR("incompatible scene graph"); 
     }
@@ -237,15 +239,11 @@ namespace embree
     {
       if (Ref<SceneGraph::HairSetNode> mesh1 = node1.dynamicCast<SceneGraph::HairSetNode>()) 
       {
-        if (mesh0->v.size() != mesh1->v.size())
+        if (mesh0->numVertices() != mesh1->numVertices())
           THROW_RUNTIME_ERROR("incompatible scene graph");
 
-        bool different = false;
-        for (size_t i=0; i<mesh0->v.size(); i++) 
-          different |= mesh0->v[i] != mesh1->v[i];
-        
-        if (different)
-          mesh0->v2 = mesh1->v;
+        for (auto& p : mesh1->positions)
+          mesh0->positions.push_back(std::move(p));
       }
       else THROW_RUNTIME_ERROR("incompatible scene graph"); 
     }
@@ -253,22 +251,63 @@ namespace embree
     {
       if (Ref<SceneGraph::SubdivMeshNode> mesh1 = node1.dynamicCast<SceneGraph::SubdivMeshNode>()) 
       {
-        if (mesh0->positions.size() != mesh1->positions.size())
+        if (mesh0->numPositions() != mesh1->numPositions())
           THROW_RUNTIME_ERROR("incompatible scene graph");
-        if (mesh0->verticesPerFace.size() != mesh1->verticesPerFace.size())
+        if (mesh0->verticesPerFace != mesh1->verticesPerFace)
           THROW_RUNTIME_ERROR("incompatible scene graph");
-        for (size_t i=0; i<mesh0->verticesPerFace.size(); i++) 
-          if (mesh0->verticesPerFace[i] != mesh1->verticesPerFace[i])
-            THROW_RUNTIME_ERROR("incompatible scene graph");
 
-        bool different = false;
-        for (size_t i=0; i<mesh0->positions.size(); i++) 
-          different |= mesh0->positions[i] != mesh1->positions[i];
-        
-        if (different)
-          mesh0->positions2 = mesh1->positions;
+        for (auto& p : mesh1->positions_)
+          mesh0->positions_.push_back(std::move(p));
       }
       else THROW_RUNTIME_ERROR("incompatible scene graph"); 
+    }
+  }
+
+  void SceneGraph::optimize_animation(Ref<SceneGraph::Node> node)
+  {
+    if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) 
+      optimize_animation(xfmNode->child);
+
+    else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) 
+    {
+      for (const auto& child : groupNode->children) 
+        optimize_animation(child);
+    }
+    else if (Ref<SceneGraph::TriangleMeshNode> mesh = node.dynamicCast<SceneGraph::TriangleMeshNode>()) 
+    {
+      bool equal = true;
+      for (size_t i=1; i<mesh->numTimeSteps(); i++)
+        equal &= mesh->positions[0] == mesh->positions[i];
+
+      if (equal)
+        mesh->positions.resize(1);
+    }
+    else if (Ref<SceneGraph::QuadMeshNode> mesh = node.dynamicCast<SceneGraph::QuadMeshNode>()) 
+    {
+      bool equal = true;
+      for (size_t i=1; i<mesh->numTimeSteps(); i++)
+        equal &= mesh->positions[0] == mesh->positions[i];
+
+      if (equal)
+        mesh->positions.resize(1);
+    }
+    else if (Ref<SceneGraph::HairSetNode> mesh = node.dynamicCast<SceneGraph::HairSetNode>()) 
+    {
+      bool equal = true;
+      for (size_t i=1; i<mesh->numTimeSteps(); i++)
+        equal &= mesh->positions[0] == mesh->positions[i];
+
+      if (equal)
+        mesh->positions.resize(1);
+    }
+    else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>()) 
+    {
+      bool equal = true;
+      for (size_t i=1; i<mesh->numTimeSteps(); i++)
+        equal &= mesh->positions_[0] == mesh->positions_[i];
+
+      if (equal)
+        mesh->positions_.resize(1);
     }
   }
 
@@ -284,28 +323,38 @@ namespace embree
     }
     else if (Ref<SceneGraph::TriangleMeshNode> mesh = node.dynamicCast<SceneGraph::TriangleMeshNode>()) 
     {
-      for (auto P : mesh->v) 
-        mesh->v2.push_back(P+dP);
+      std::unique_ptr<avector<Vec3fa>> positions1(new avector<Vec3fa>());
+      for (auto P : *mesh->positions.back()) 
+        positions1->push_back(P+dP);
+      mesh->positions.push_back(std::move(positions1));
     }
     else if (Ref<SceneGraph::QuadMeshNode> mesh = node.dynamicCast<SceneGraph::QuadMeshNode>()) 
     {
-      for (auto P : mesh->v) 
-        mesh->v2.push_back(P+dP);
+      std::unique_ptr<avector<Vec3fa>> positions1(new avector<Vec3fa>());
+      for (auto P : *mesh->positions.back()) 
+        positions1->push_back(P+dP);
+      mesh->positions.push_back(std::move(positions1));
     }
     else if (Ref<SceneGraph::HairSetNode> mesh = node.dynamicCast<SceneGraph::HairSetNode>()) 
     {
-      for (auto P : mesh->v) 
-        mesh->v2.push_back(P+dP);
+      std::unique_ptr<avector<Vec3fa>> positions1(new avector<Vec3fa>());
+      for (auto P : *mesh->positions.back()) 
+        positions1->push_back(P+dP);
+      mesh->positions.push_back(std::move(positions1));
     }
     else if (Ref<SceneGraph::LineSegmentsNode> mesh = node.dynamicCast<SceneGraph::LineSegmentsNode>()) 
     {
-      for (auto P : mesh->v) 
-        mesh->v2.push_back(P+dP);
+      std::unique_ptr<avector<Vec3fa>> positions1(new avector<Vec3fa>());
+      for (auto P : *mesh->positions.back()) 
+        positions1->push_back(P+dP);
+      mesh->positions.push_back(std::move(positions1));
     }
     else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>()) 
     {
-      for (auto P : mesh->positions) 
-        mesh->positions2.push_back(P+dP);
+      std::unique_ptr<avector<Vec3fa>> positions1(new avector<Vec3fa>());
+      for (auto P : *mesh->positions_.back()) 
+        positions1->push_back(P+dP);
+      mesh->positions_.push_back(std::move(positions1));
     }
   }
 
@@ -389,10 +438,13 @@ namespace embree
     else if (Ref<SceneGraph::TriangleMeshNode> tmesh = node.dynamicCast<SceneGraph::TriangleMeshNode>()) 
     {
       SceneGraph::QuadMeshNode* qmesh = new SceneGraph::QuadMeshNode(tmesh->material);
-      qmesh->v = tmesh->v;
-      qmesh->v2 = tmesh->v2;
-      qmesh->vn = tmesh->vn;
-      qmesh->vt = tmesh->vt;
+
+      for (auto& p : tmesh->positions)
+        qmesh->positions.push_back(std::move(p));
+
+      qmesh->normals = tmesh->normals;
+      qmesh->texcoords = tmesh->texcoords;
+
       for (size_t i=0; i<tmesh->triangles.size(); i++)
       {
         const int a0 = tmesh->triangles[i+0].v0;
@@ -437,8 +489,10 @@ namespace embree
     else if (Ref<SceneGraph::QuadMeshNode> tmesh = node.dynamicCast<SceneGraph::QuadMeshNode>()) 
     {
       SceneGraph::SubdivMeshNode* smesh = new SceneGraph::SubdivMeshNode(tmesh->material);
-      smesh->positions = tmesh->v;
-      smesh->positions2 = tmesh->v2;
+
+      for (auto& p : tmesh->positions)
+        smesh->positions_.push_back(std::move(p));
+
       for (size_t i=0; i<tmesh->quads.size(); i++) {
         smesh->position_indices.push_back(tmesh->quads[i].v0);
         smesh->position_indices.push_back(tmesh->quads[i].v1);
@@ -447,11 +501,11 @@ namespace embree
           smesh->position_indices.push_back(tmesh->quads[i].v3);
       }
       
-      smesh->normals = tmesh->vn;
+      smesh->normals = tmesh->normals;
       if (smesh->normals.size())
         smesh->normal_indices = smesh->position_indices;
       
-      smesh->texcoords = tmesh->vt;
+      smesh->texcoords = tmesh->texcoords;
       if (smesh->texcoords.size())
         smesh->texcoord_indices = smesh->position_indices;
       
@@ -476,8 +530,10 @@ namespace embree
     else if (Ref<SceneGraph::HairSetNode> hmesh = node.dynamicCast<SceneGraph::HairSetNode>()) 
     {
       SceneGraph::LineSegmentsNode* lmesh = new SceneGraph::LineSegmentsNode(hmesh->material);
-      lmesh->v  = hmesh->v;
-      lmesh->v2 = hmesh->v2;
+
+      for (auto& p : hmesh->positions)
+        lmesh->positions.push_back(std::move(p));
+
       for (auto hair : hmesh->hairs) {
         lmesh->indices.push_back(hair.vertex+0);
         lmesh->indices.push_back(hair.vertex+1);
@@ -508,17 +564,18 @@ namespace embree
 
   Ref<SceneGraph::Node> SceneGraph::createTrianglePlane (const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy, size_t width, size_t height, Ref<MaterialNode> material)
   {
-    SceneGraph::TriangleMeshNode* mesh = new SceneGraph::TriangleMeshNode(material);
-    mesh->v.resize((width+1)*(height+1));
+    SceneGraph::TriangleMeshNode* mesh = new SceneGraph::TriangleMeshNode(material,1);    
+    mesh->positions[0]->resize((width+1)*(height+1));
     mesh->triangles.resize(2*width*height);
+    avector<Vec3fa>& positions = *mesh->positions[0];
 
     for (size_t y=0; y<=height; y++) {
       for (size_t x=0; x<=width; x++) {
         Vec3fa p = p0+float(x)/float(width)*dx+float(y)/float(height)*dy;
         size_t i = y*(width+1)+x;
-        mesh->v[i].x = p.x;
-        mesh->v[i].y = p.y;
-        mesh->v[i].z = p.z;
+        positions[i].x = p.x;
+        positions[i].y = p.y;
+        positions[i].z = p.z;
       }
     }
     for (size_t y=0; y<height; y++) {
@@ -537,17 +594,18 @@ namespace embree
 
   Ref<SceneGraph::Node> SceneGraph::createQuadPlane (const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy, size_t width, size_t height, Ref<MaterialNode> material)
   {
-    SceneGraph::QuadMeshNode* mesh = new SceneGraph::QuadMeshNode(material);
-    mesh->v.resize((width+1)*(height+1));
+    SceneGraph::QuadMeshNode* mesh = new SceneGraph::QuadMeshNode(material,1);
+    mesh->positions[0]->resize((width+1)*(height+1));
     mesh->quads.resize(width*height);
+    avector<Vec3fa>& positions = *mesh->positions[0];
 
     for (size_t y=0; y<=height; y++) {
       for (size_t x=0; x<=width; x++) {
         Vec3fa p = p0+float(x)/float(width)*dx+float(y)/float(height)*dy;
         size_t i = y*(width+1)+x;
-        mesh->v[i].x = p.x;
-        mesh->v[i].y = p.y;
-        mesh->v[i].z = p.z;
+        positions[i].x = p.x;
+        positions[i].y = p.y;
+        positions[i].z = p.z;
       }
     }
     for (size_t y=0; y<height; y++) {
@@ -568,9 +626,9 @@ namespace embree
 
   Ref<SceneGraph::Node> SceneGraph::createSubdivPlane (const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy, size_t width, size_t height, float tessellationRate, Ref<MaterialNode> material)
   {
-    SceneGraph::SubdivMeshNode* mesh = new SceneGraph::SubdivMeshNode(material);
+    SceneGraph::SubdivMeshNode* mesh = new SceneGraph::SubdivMeshNode(material,1);
     mesh->tessellationRate = tessellationRate;
-    mesh->positions.resize((width+1)*(height+1));
+    mesh->positions_[0]->resize((width+1)*(height+1));
     mesh->position_indices.resize(4*width*height);
     mesh->verticesPerFace.resize(width*height);
 
@@ -578,9 +636,9 @@ namespace embree
       for (size_t x=0; x<=width; x++) {
         Vec3fa p = p0+float(x)/float(width)*dx+float(y)/float(height)*dy;
         size_t i = y*(width+1)+x;
-        mesh->positions[i].x = p.x;
-        mesh->positions[i].y = p.y;
-        mesh->positions[i].z = p.z;
+        mesh->positions_[0]->at(i).x = p.x;
+        mesh->positions_[0]->at(i).y = p.y;
+        mesh->positions_[0]->at(i).z = p.z;
       }
     }
     for (size_t y=0; y<height; y++) {
@@ -606,8 +664,8 @@ namespace embree
     unsigned numPhi = unsigned(N);
     unsigned numTheta = 2*numPhi;
     unsigned numVertices = numTheta*(numPhi+1);
-    SceneGraph::TriangleMeshNode* mesh = new SceneGraph::TriangleMeshNode(material);
-    mesh->v.resize(numVertices);
+    SceneGraph::TriangleMeshNode* mesh = new SceneGraph::TriangleMeshNode(material,1);
+    mesh->positions[0]->resize(numVertices);
 
     /* create sphere geometry */
     const float rcpNumTheta = rcp(float(numTheta));
@@ -618,9 +676,9 @@ namespace embree
       {
 	const float phif   = phi*float(pi)*rcpNumPhi;
 	const float thetaf = theta*2.0f*float(pi)*rcpNumTheta;
-	mesh->v[phi*numTheta+theta].x = center.x + radius*sin(phif)*sin(thetaf);
-        mesh->v[phi*numTheta+theta].y = center.y + radius*cos(phif);
-	mesh->v[phi*numTheta+theta].z = center.z + radius*sin(phif)*cos(thetaf);
+	mesh->positions[0]->at(phi*numTheta+theta).x = center.x + radius*sin(phif)*sin(thetaf);
+        mesh->positions[0]->at(phi*numTheta+theta).y = center.y + radius*cos(phif);
+	mesh->positions[0]->at(phi*numTheta+theta).z = center.z + radius*sin(phif)*cos(thetaf);
       }
       if (phi == 0) continue;
       
@@ -665,8 +723,8 @@ namespace embree
     unsigned numPhi = unsigned(N);
     unsigned numTheta = 2*numPhi;
     unsigned numVertices = numTheta*(numPhi+1);
-    SceneGraph::QuadMeshNode* mesh = new SceneGraph::QuadMeshNode(material);
-    mesh->v.resize(numVertices);
+    SceneGraph::QuadMeshNode* mesh = new SceneGraph::QuadMeshNode(material,1);
+    mesh->positions[0]->resize(numVertices);
 
     /* create sphere geometry */
     const float rcpNumTheta = rcp(float(numTheta));
@@ -677,9 +735,9 @@ namespace embree
       {
 	const float phif   = phi*float(pi)*rcpNumPhi;
 	const float thetaf = theta*2.0f*float(pi)*rcpNumTheta;
-	mesh->v[phi*numTheta+theta].x = center.x + radius*sin(phif)*sin(thetaf);
-        mesh->v[phi*numTheta+theta].y = center.y + radius*cos(phif);
-	mesh->v[phi*numTheta+theta].z = center.z + radius*sin(phif)*cos(thetaf);
+	mesh->positions[0]->at(phi*numTheta+theta).x = center.x + radius*sin(phif)*sin(thetaf);
+        mesh->positions[0]->at(phi*numTheta+theta).y = center.y + radius*cos(phif);
+	mesh->positions[0]->at(phi*numTheta+theta).z = center.z + radius*sin(phif)*cos(thetaf);
       }
       if (phi == 0) continue;
       
@@ -723,9 +781,9 @@ namespace embree
     unsigned numPhi = unsigned(N);
     unsigned numTheta = 2*numPhi;
     unsigned numVertices = numTheta*(numPhi+1);
-    SceneGraph::SubdivMeshNode* mesh = new SceneGraph::SubdivMeshNode(material);
+    SceneGraph::SubdivMeshNode* mesh = new SceneGraph::SubdivMeshNode(material,1);
     mesh->tessellationRate = tessellationRate;
-    mesh->positions.resize(numVertices);
+    mesh->positions_[0]->resize(numVertices);
 
     /* create sphere geometry */
     const float rcpNumTheta = rcp((float)numTheta);
@@ -736,9 +794,9 @@ namespace embree
       {
 	const float phif   = phi*float(pi)*rcpNumPhi;
 	const float thetaf = theta*2.0f*float(pi)*rcpNumTheta;
-	mesh->positions[phi*numTheta+theta].x = center.x + radius*sin(phif)*sin(thetaf);
-        mesh->positions[phi*numTheta+theta].y = center.y + radius*cos(phif);
-	mesh->positions[phi*numTheta+theta].z = center.z + radius*sin(phif)*cos(thetaf);
+	mesh->positions_[0]->at(phi*numTheta+theta).x = center.x + radius*sin(phif)*sin(thetaf);
+        mesh->positions_[0]->at(phi*numTheta+theta).y = center.y + radius*cos(phif);
+	mesh->positions_[0]->at(phi*numTheta+theta).z = center.z + radius*sin(phif)*cos(thetaf);
       }
       if (phi == 0) continue;
       
@@ -789,12 +847,12 @@ namespace embree
 
   Ref<SceneGraph::Node> SceneGraph::createSphereShapedHair(const Vec3fa& center, const float radius, Ref<MaterialNode> material)
   {
-    SceneGraph::HairSetNode* mesh = new SceneGraph::HairSetNode(true,material);
+    SceneGraph::HairSetNode* mesh = new SceneGraph::HairSetNode(true,material,1);
     mesh->hairs.push_back(SceneGraph::HairSetNode::Hair(0,0));
-    mesh->v.push_back(Vec3fa(center,radius));
-    mesh->v.push_back(Vec3fa(center,radius));
-    mesh->v.push_back(Vec3fa(center,radius));
-    mesh->v.push_back(Vec3fa(center,radius));
+    mesh->positions[0]->push_back(Vec3fa(center,radius));
+    mesh->positions[0]->push_back(Vec3fa(center,radius));
+    mesh->positions[0]->push_back(Vec3fa(center,radius));
+    mesh->positions[0]->push_back(Vec3fa(center,radius));
     return mesh;
   }
 
@@ -803,7 +861,7 @@ namespace embree
     RandomSampler sampler;
     RandomSampler_init(sampler,hash);
 
-    SceneGraph::HairSetNode* mesh = new SceneGraph::HairSetNode(hair,material);
+    SceneGraph::HairSetNode* mesh = new SceneGraph::HairSetNode(hair,material,1);
 
     if (numHairs == 1) {
       const Vec3fa p0 = pos;
@@ -811,10 +869,10 @@ namespace embree
       const Vec3fa p2 = p0 + len*Vec3fa(0,1,1);
       const Vec3fa p3 = p0 + len*Vec3fa(0,1,0);
       mesh->hairs.push_back(HairSetNode::Hair(0,0));
-      mesh->v.push_back(Vec3fa(p0,r));
-      mesh->v.push_back(Vec3fa(p1,r));
-      mesh->v.push_back(Vec3fa(p2,r));
-      mesh->v.push_back(Vec3fa(p3,r));
+      mesh->positions[0]->push_back(Vec3fa(p0,r));
+      mesh->positions[0]->push_back(Vec3fa(p1,r));
+      mesh->positions[0]->push_back(Vec3fa(p2,r));
+      mesh->positions[0]->push_back(Vec3fa(p3,r));
       return mesh;
     }
 
@@ -826,10 +884,10 @@ namespace embree
       const Vec3fa p2 = p0 + len*(normalize(dz)+normalize(dy));
       const Vec3fa p3 = p0 + len*normalize(dz);
       mesh->hairs.push_back(HairSetNode::Hair(unsigned(4*i),unsigned(i)));
-      mesh->v.push_back(Vec3fa(p0,r));
-      mesh->v.push_back(Vec3fa(p1,r));
-      mesh->v.push_back(Vec3fa(p2,r));
-      mesh->v.push_back(Vec3fa(p3,r));
+      mesh->positions[0]->push_back(Vec3fa(p0,r));
+      mesh->positions[0]->push_back(Vec3fa(p1,r));
+      mesh->positions[0]->push_back(Vec3fa(p2,r));
+      mesh->positions[0]->push_back(Vec3fa(p3,r));
     }
     return mesh;
   }
@@ -838,7 +896,7 @@ namespace embree
   {
     RandomSampler sampler;
     RandomSampler_init(sampler,hash);
-    SceneGraph::TriangleMeshNode* mesh = new SceneGraph::TriangleMeshNode(material);
+    SceneGraph::TriangleMeshNode* mesh = new SceneGraph::TriangleMeshNode(material,mblur?2:1);
 
     mesh->triangles.resize(numTriangles);
     for (size_t i=0; i<numTriangles; i++) {
@@ -848,24 +906,24 @@ namespace embree
       mesh->triangles[i] = TriangleMeshNode::Triangle(v0,v1,v2);
     }
 
-    mesh->v.resize(3*numTriangles);
+    mesh->positions[0]->resize(3*numTriangles);
     for (size_t i=0; i<3*numTriangles; i++) {
       const float x = cast_i2f(RandomSampler_getUInt(sampler));
       const float y = cast_i2f(RandomSampler_getUInt(sampler));
       const float z = cast_i2f(RandomSampler_getUInt(sampler));
       const float w = cast_i2f(RandomSampler_getUInt(sampler));
-      mesh->v[i] = Vec3fa(x,y,z,w);
+      mesh->positions[0]->at(i) = Vec3fa(x,y,z,w);
     }
 
     if (mblur) 
     {
-      mesh->v2.resize(3*numTriangles);
+      mesh->positions[1]->resize(3*numTriangles);
       for (size_t i=0; i<3*numTriangles; i++) {
         const float x = cast_i2f(RandomSampler_getUInt(sampler));
         const float y = cast_i2f(RandomSampler_getUInt(sampler));
         const float z = cast_i2f(RandomSampler_getUInt(sampler));
         const float w = cast_i2f(RandomSampler_getUInt(sampler));
-        mesh->v2[i] = Vec3fa(x,y,z,w);
+        mesh->positions[1]->at(i) = Vec3fa(x,y,z,w);
       }
     }
 
@@ -876,7 +934,7 @@ namespace embree
   {
     RandomSampler sampler;
     RandomSampler_init(sampler,hash);
-    SceneGraph::QuadMeshNode* mesh = new SceneGraph::QuadMeshNode(material);
+    SceneGraph::QuadMeshNode* mesh = new SceneGraph::QuadMeshNode(material,mblur?2:1);
 
     mesh->quads.resize(numQuads);
     for (size_t i=0; i<numQuads; i++) {
@@ -887,24 +945,24 @@ namespace embree
       mesh->quads[i] = QuadMeshNode::Quad(v0,v1,v2,v3);
     }
 
-    mesh->v.resize(4*numQuads);
+    mesh->positions[0]->resize(4*numQuads);
     for (size_t i=0; i<4*numQuads; i++) {
       const float x = cast_i2f(RandomSampler_getUInt(sampler));
       const float y = cast_i2f(RandomSampler_getUInt(sampler));
       const float z = cast_i2f(RandomSampler_getUInt(sampler));
       const float w = cast_i2f(RandomSampler_getUInt(sampler));
-      mesh->v[i] = Vec3fa(x,y,z,w);
+      mesh->positions[0]->at(i) = Vec3fa(x,y,z,w);
     }
 
     if (mblur) 
     {
-      mesh->v2.resize(4*numQuads);
+      mesh->positions[1]->resize(4*numQuads);
       for (size_t i=0; i<4*numQuads; i++) {
         const float x = cast_i2f(RandomSampler_getUInt(sampler));
         const float y = cast_i2f(RandomSampler_getUInt(sampler));
         const float z = cast_i2f(RandomSampler_getUInt(sampler));
         const float w = cast_i2f(RandomSampler_getUInt(sampler));
-        mesh->v2[i] = Vec3fa(x,y,z,w);
+        mesh->positions[1]->at(i) = Vec3fa(x,y,z,w);
       }
     }
 
@@ -915,31 +973,31 @@ namespace embree
   {
     RandomSampler sampler;
     RandomSampler_init(sampler,hash);
-    SceneGraph::LineSegmentsNode* mesh = new SceneGraph::LineSegmentsNode(material);
+    SceneGraph::LineSegmentsNode* mesh = new SceneGraph::LineSegmentsNode(material,mblur?2:1);
 
     mesh->indices.resize(numLineSegments);
     for (size_t i=0; i<numLineSegments; i++) {
       mesh->indices[i] = (RandomSampler_getInt(sampler) % 32 == 0) ? RandomSampler_getUInt(sampler) : unsigned(2*i);
     }
 
-    mesh->v.resize(2*numLineSegments);
+    mesh->positions[0]->resize(2*numLineSegments);
     for (size_t i=0; i<2*numLineSegments; i++) {
       const float x = cast_i2f(RandomSampler_getUInt(sampler));
       const float y = cast_i2f(RandomSampler_getUInt(sampler));
       const float z = cast_i2f(RandomSampler_getUInt(sampler));
       const float r = cast_i2f(RandomSampler_getUInt(sampler));
-      mesh->v[i] = Vec3fa(x,y,z,r);
+      mesh->positions[0]->at(i) = Vec3fa(x,y,z,r);
     }
 
     if (mblur) 
     {
-      mesh->v2.resize(2*numLineSegments);
+      mesh->positions[1]->resize(2*numLineSegments);
       for (size_t i=0; i<2*numLineSegments; i++) {
         const float x = cast_i2f(RandomSampler_getUInt(sampler));
         const float y = cast_i2f(RandomSampler_getUInt(sampler));
         const float z = cast_i2f(RandomSampler_getUInt(sampler));
         const float r = cast_i2f(RandomSampler_getUInt(sampler));
-        mesh->v2[i] = Vec3fa(x,y,z,r);
+        mesh->positions[1]->at(i) = Vec3fa(x,y,z,r);
       }
     }
 
@@ -950,7 +1008,7 @@ namespace embree
   {
     RandomSampler sampler;
     RandomSampler_init(sampler,hash);
-    SceneGraph::HairSetNode* mesh = new SceneGraph::HairSetNode(true,material);
+    SceneGraph::HairSetNode* mesh = new SceneGraph::HairSetNode(true,material,mblur?2:1);
 
     mesh->hairs.resize(numHairs);
     for (size_t i=0; i<numHairs; i++) {
@@ -958,24 +1016,24 @@ namespace embree
       mesh->hairs[i] = HairSetNode::Hair(v0,0);
     }
 
-    mesh->v.resize(4*numHairs);
+    mesh->positions[0]->resize(4*numHairs);
     for (size_t i=0; i<4*numHairs; i++) {
       const float x = cast_i2f(RandomSampler_getUInt(sampler));
       const float y = cast_i2f(RandomSampler_getUInt(sampler));
       const float z = cast_i2f(RandomSampler_getUInt(sampler));
       const float r = cast_i2f(RandomSampler_getUInt(sampler));
-      mesh->v[i] = Vec3fa(x,y,z,r);
+      mesh->positions[0]->at(i) = Vec3fa(x,y,z,r);
     }
 
     if (mblur) 
     {
-      mesh->v2.resize(4*numHairs);
+      mesh->positions[1]->resize(4*numHairs);
       for (size_t i=0; i<4*numHairs; i++) {
         const float x = cast_i2f(RandomSampler_getUInt(sampler));
         const float y = cast_i2f(RandomSampler_getUInt(sampler));
         const float z = cast_i2f(RandomSampler_getUInt(sampler));
         const float r = cast_i2f(RandomSampler_getUInt(sampler));
-        mesh->v2[i] = Vec3fa(x,y,z,r);
+        mesh->positions[1]->at(i) = Vec3fa(x,y,z,r);
       }
     }
 
@@ -986,7 +1044,7 @@ namespace embree
   {
     RandomSampler sampler;
     RandomSampler_init(sampler,hash);
-    SceneGraph::SubdivMeshNode* mesh = new SceneGraph::SubdivMeshNode(material);
+    SceneGraph::SubdivMeshNode* mesh = new SceneGraph::SubdivMeshNode(material,mblur?2:1);
 
     for (size_t i=0; i<numFaces; i++) 
     {
@@ -994,13 +1052,13 @@ namespace embree
       mesh->verticesPerFace.push_back(f);
       for (size_t j=0; j<f; j++) 
       {
-        mesh->position_indices.push_back((RandomSampler_getInt(sampler) % 32 == 0) ? RandomSampler_getUInt(sampler) : unsigned(mesh->positions.size()));
+        mesh->position_indices.push_back((RandomSampler_getInt(sampler) % 32 == 0) ? RandomSampler_getUInt(sampler) : unsigned(mesh->numPositions()));
 
         const float x = cast_i2f(RandomSampler_getUInt(sampler));
         const float y = cast_i2f(RandomSampler_getUInt(sampler));
         const float z = cast_i2f(RandomSampler_getUInt(sampler));
         const float w = cast_i2f(RandomSampler_getUInt(sampler));
-        mesh->positions.push_back(Vec3fa(x,y,z,w));
+        mesh->positions_[0]->push_back(Vec3fa(x,y,z,w));
 
         if (mblur) 
         {
@@ -1008,7 +1066,7 @@ namespace embree
           const float y = cast_i2f(RandomSampler_getUInt(sampler));
           const float z = cast_i2f(RandomSampler_getUInt(sampler));
           const float w = cast_i2f(RandomSampler_getUInt(sampler));
-          mesh->positions2.push_back(Vec3fa(x,y,z,w));
+          mesh->positions_[1]->push_back(Vec3fa(x,y,z,w));
         }
       }
     }

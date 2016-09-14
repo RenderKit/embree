@@ -441,16 +441,16 @@ namespace embree
   {
     const std::map<Vertex, uint32_t>::iterator& entry = vertexMap.find(i);
     if (entry != vertexMap.end()) return(entry->second);
-    mesh->v.push_back(Vec3fa(v[i.v].x,v[i.v].y,v[i.v].z));
+    mesh->positions[0]->push_back(Vec3fa(v[i.v].x,v[i.v].y,v[i.v].z));
     if (i.vn >= 0) {
-      while (mesh->vn.size() < mesh->v.size()) mesh->vn.push_back(zero); // some vertices might not had a normal
-      mesh->vn[mesh->v.size()-1] = vn[i.vn];
+      while (mesh->normals.size() < mesh->positions[0]->size()) mesh->normals.push_back(zero); // some vertices might not had a normal
+      mesh->normals[mesh->positions[0]->size()-1] = vn[i.vn];
     }
     if (i.vt >= 0) {
-      while (mesh->vt.size() < mesh->v.size()) mesh->vt.push_back(zero); // some vertices might not had a texture coordinate
-      mesh->vt[mesh->v.size()-1] = vt[i.vt];
+      while (mesh->texcoords.size() < mesh->positions[0]->size()) mesh->texcoords.push_back(zero); // some vertices might not had a texture coordinate
+      mesh->texcoords[mesh->positions[0]->size()-1] = vt[i.vt];
     }
-    return(vertexMap[i] = int(mesh->v.size()) - 1);
+    return(vertexMap[i] = int(mesh->positions[0]->size()) - 1);
   }
 
   /*! end current facegroup and append to mesh */
@@ -460,10 +460,10 @@ namespace embree
 
     if (subdivMode)
     {
-      Ref<SceneGraph::SubdivMeshNode> mesh = new SceneGraph::SubdivMeshNode(curMaterial);
+      Ref<SceneGraph::SubdivMeshNode> mesh = new SceneGraph::SubdivMeshNode(curMaterial,1);
       group->add(mesh.cast<SceneGraph::Node>());
 
-      for (size_t i=0; i<v.size();  i++) mesh->positions.push_back(v[i]);
+      for (size_t i=0; i<v.size();  i++) mesh->positions_[0]->push_back(v[i]);
       for (size_t i=0; i<vn.size(); i++) mesh->normals  .push_back(vn[i]);
       for (size_t i=0; i<vt.size(); i++) mesh->texcoords.push_back(vt[i]);
       
@@ -484,7 +484,7 @@ namespace embree
     }
     else
     {
-      Ref<SceneGraph::TriangleMeshNode> mesh = new SceneGraph::TriangleMeshNode(curMaterial);
+      Ref<SceneGraph::TriangleMeshNode> mesh = new SceneGraph::TriangleMeshNode(curMaterial,1);
       group->add(mesh.cast<SceneGraph::Node>());
       
       // merge three indices into one
@@ -503,15 +503,15 @@ namespace embree
           v0 = getVertex(vertexMap, mesh, i0);
           v1 = getVertex(vertexMap, mesh, i1);
           v2 = getVertex(vertexMap, mesh, i2);
-          assert(v0 < mesh->v.size());
-          assert(v1 < mesh->v.size());
-          assert(v2 < mesh->v.size());
+          assert(v0 < mesh->numVertices());
+          assert(v1 < mesh->numVertices());
+          assert(v2 < mesh->numVertices());
           mesh->triangles.push_back(SceneGraph::TriangleMeshNode::Triangle(v0,v1,v2));
         }
       }
       /* there may be vertices without normals or texture coordinates, thus we have to make these arrays the same size here */
-      if (mesh->vn.size()) while (mesh->vn.size() < mesh->v.size()) mesh->vn.push_back(zero);
-      if (mesh->vt.size()) while (mesh->vt.size() < mesh->v.size()) mesh->vt.push_back(zero);
+      if (mesh->normals  .size()) while (mesh->normals  .size() < mesh->numVertices()) mesh->normals  .push_back(zero);
+      if (mesh->texcoords.size()) while (mesh->texcoords.size() < mesh->numVertices()) mesh->texcoords.push_back(zero);
       mesh->verify();
     }
     curGroup.clear();

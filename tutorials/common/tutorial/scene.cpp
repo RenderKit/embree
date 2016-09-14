@@ -58,10 +58,20 @@ namespace embree
       
       TutorialScene::TriangleMesh* objmesh = new TutorialScene::TriangleMesh();
       const LinearSpace3fa nspace0 = rcp(space0.l).transposed();
-      objmesh->v. resize(mesh->v. size()); for (size_t i=0; i<mesh->v. size(); i++) objmesh->v [i] = xfmPoint ( space0,mesh->v [i]);
-      objmesh->v2.resize(mesh->v2.size()); for (size_t i=0; i<mesh->v2.size(); i++) objmesh->v2[i] = xfmPoint ( space1,mesh->v2[i]);
-      objmesh->vn.resize(mesh->vn.size()); for (size_t i=0; i<mesh->vn.size(); i++) objmesh->vn[i] = xfmVector(nspace0,mesh->vn[i]);
-      objmesh->vt = mesh->vt;
+
+      objmesh->v.resize(mesh->positions[0]->size()); 
+      for (size_t i=0; i<mesh->positions[0]->size(); i++) 
+        objmesh->v [i] = xfmPoint ( space0,mesh->positions[0]->at(i));
+
+      if (mesh->numTimeSteps() > 1) {
+        objmesh->v2.resize(mesh->positions[1]->size()); 
+        for (size_t i=0; i<mesh->positions[1]->size(); i++) 
+          objmesh->v2[i] = xfmPoint ( space1,mesh->positions[1]->at(i));
+      }
+      objmesh->vn.resize(mesh->normals.size()); 
+      for (size_t i=0; i<mesh->normals.size(); i++) 
+        objmesh->vn[i] = xfmVector(nspace0,mesh->normals[i]);
+      objmesh->vt = mesh->texcoords;
       
       objmesh->triangles.resize(mesh->triangles.size());
       for (size_t i=0; i<mesh->triangles.size(); i++) {
@@ -78,10 +88,20 @@ namespace embree
       
       TutorialScene::QuadMesh* objmesh = new TutorialScene::QuadMesh();
       const LinearSpace3fa nspace0 = rcp(space0.l).transposed();
-      objmesh->v. resize(mesh->v. size()); for (size_t i=0; i<mesh->v. size(); i++) objmesh->v [i] = xfmPoint ( space0,mesh->v [i]);
-      objmesh->v2.resize(mesh->v2.size()); for (size_t i=0; i<mesh->v2.size(); i++) objmesh->v2[i] = xfmPoint ( space1,mesh->v2[i]);
-      objmesh->vn.resize(mesh->vn.size()); for (size_t i=0; i<mesh->vn.size(); i++) objmesh->vn[i] = xfmVector(nspace0,mesh->vn[i]);
-      objmesh->vt = mesh->vt;
+
+      objmesh->v. resize(mesh->positions[0]->size()); 
+      for (size_t i=0; i<mesh->positions[0]->size(); i++) 
+        objmesh->v [i] = xfmPoint ( space0,mesh->positions[0]->at(i));
+
+      if (mesh->numTimeSteps() > 1) {
+        objmesh->v2.resize(mesh->positions[1]->size()); 
+        for (size_t i=0; i<mesh->positions[1]->size(); i++) 
+          objmesh->v2[i] = xfmPoint ( space1,mesh->positions[1]->at(i));
+      }
+      objmesh->vn.resize(mesh->normals.size()); 
+      for (size_t i=0; i<mesh->normals.size(); i++) 
+        objmesh->vn[i] = xfmVector(nspace0,mesh->normals[i]);
+      objmesh->vt = mesh->texcoords;
       
       objmesh->quads.resize(mesh->quads.size());
       for (size_t i=0; i<mesh->quads.size(); i++) {
@@ -99,13 +119,16 @@ namespace embree
       TutorialScene::SubdivMesh* subdivmesh = new TutorialScene::SubdivMesh();
       const LinearSpace3fa nspace0 = rcp(space0.l).transposed();
       
-      subdivmesh->positions.resize(mesh->positions.size()); 
-      for (size_t i=0; i<mesh->positions.size(); i++) 
-        subdivmesh->positions[i] = xfmPoint(space0,mesh->positions[i]);
+      subdivmesh->positions.resize(mesh->positions_[0]->size()); 
+      for (size_t i=0; i<mesh->positions_[0]->size(); i++) 
+        subdivmesh->positions[i] = xfmPoint(space0,mesh->positions_[0]->at(i));
 
-      subdivmesh->positions2.resize(mesh->positions2.size()); 
-      for (size_t i=0; i<mesh->positions2.size(); i++) 
-        subdivmesh->positions2[i] = xfmPoint(space0,mesh->positions2[i]);
+      if (mesh->numTimeSteps() > 1)
+      {
+        subdivmesh->positions2.resize(mesh->positions_[1]->size()); 
+        for (size_t i=0; i<mesh->positions_[1]->size(); i++) 
+          subdivmesh->positions2[i] = xfmPoint(space0,mesh->positions_[1]->at(i));
+      }
       
       subdivmesh->normals.resize(mesh->normals.size()); 
       for (size_t i=0; i<mesh->normals.size(); i++) 
@@ -131,16 +154,19 @@ namespace embree
       
       TutorialScene::LineSegments* out = new TutorialScene::LineSegments;
       
-      out->v.resize(mesh->v.size()); 
-      for (size_t i=0; i<mesh->v.size(); i++) {
-        out->v[i] = xfmPoint(space0,mesh->v[i]);
-        out->v[i].w = mesh->v[i].w;
+      out->v.resize(mesh->positions[0]->size()); 
+      for (size_t i=0; i<mesh->positions[0]->size(); i++) {
+        out->v[i] = xfmPoint(space0,mesh->positions[0]->at(i));
+        out->v[i].w = mesh->positions[0]->at(i).w;
       }
       
-      out->v2.resize(mesh->v2.size()); 
-      for (size_t i=0; i<mesh->v2.size(); i++) {
-        out->v2[i] = xfmPoint(space1,mesh->v2[i]);
-        out->v2[i].w = mesh->v2[i].w;
+      if (mesh->numTimeSteps() > 1)
+      {
+        out->v2.resize(mesh->positions[1]->size()); 
+        for (size_t i=0; i<mesh->positions[1]->size(); i++) {
+          out->v2[i] = xfmPoint(space1,mesh->positions[1]->at(i));
+          out->v2[i].w = mesh->positions[1]->at(i).w;
+        }
       }
       
       out->indices.resize(mesh->indices.size()); 
@@ -157,16 +183,19 @@ namespace embree
       
       TutorialScene::HairSet* hairset = new TutorialScene::HairSet(mesh->hair);
       
-      hairset->v.resize(mesh->v.size()); 
-      for (size_t i=0; i<mesh->v.size(); i++) {
-        hairset->v[i] = xfmPoint(space0,mesh->v[i]);
-        hairset->v[i].w = mesh->v[i].w;
+      hairset->v.resize(mesh->positions[0]->size()); 
+      for (size_t i=0; i<mesh->positions[0]->size(); i++) {
+        hairset->v[i] = xfmPoint(space0,mesh->positions[0]->at(i));
+        hairset->v[i].w = mesh->positions[0]->at(i).w;
       }
       
-      hairset->v2.resize(mesh->v2.size()); 
-      for (size_t i=0; i<mesh->v2.size(); i++) {
-        hairset->v2[i] = xfmPoint(space1,mesh->v2[i]);
-        hairset->v2[i].w = mesh->v2[i].w;
+      if (mesh->numTimeSteps() > 1)
+      {
+        hairset->v2.resize(mesh->positions[1]->size()); 
+        for (size_t i=0; i<mesh->positions[1]->size(); i++) {
+          hairset->v2[i] = xfmPoint(space1,mesh->positions[1]->at(i));
+          hairset->v2[i].w = mesh->positions[1]->at(i).w;
+        }
       }
       
       hairset->hairs.resize(mesh->hairs.size()); 

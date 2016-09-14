@@ -171,20 +171,20 @@ namespace embree
       if (Ref<SceneGraph::TriangleMeshNode> mesh = node.dynamicCast<SceneGraph::TriangleMeshNode>()) 
       {
         int numTimeSteps = mblur ? 2 : 1;
-        unsigned geomID = rtcNewTriangleMesh (scene, gflag, mesh->triangles.size(), mesh->v.size(), numTimeSteps);
+        unsigned geomID = rtcNewTriangleMesh (scene, gflag, mesh->triangles.size(), mesh->numVertices(), numTimeSteps);
         rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER ,mesh->triangles.data(),0,sizeof(SceneGraph::TriangleMeshNode::Triangle));
-        if (mesh->v .size()) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER0,mesh->v .data(),0,sizeof(SceneGraph::TriangleMeshNode::Vertex));
-        if (mesh->v2.size()) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER1,mesh->v2.data(),0,sizeof(SceneGraph::TriangleMeshNode::Vertex));
+        if (mesh->numTimeSteps() >= 1) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER0,mesh->positions[0]->data(),0,sizeof(SceneGraph::TriangleMeshNode::Vertex));
+        if (mesh->numTimeSteps() >= 2) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER1,mesh->positions[1]->data(),0,sizeof(SceneGraph::TriangleMeshNode::Vertex));
         AssertNoError(device);
         return geomID;
       }
       else if (Ref<SceneGraph::QuadMeshNode> mesh = node.dynamicCast<SceneGraph::QuadMeshNode>())
       {
         int numTimeSteps = mblur ? 2 : 1;
-        unsigned geomID = rtcNewQuadMesh (scene, gflag, mesh->quads.size(), mesh->v.size(), numTimeSteps);
+        unsigned geomID = rtcNewQuadMesh (scene, gflag, mesh->quads.size(), mesh->numVertices(), numTimeSteps);
         rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER ,mesh->quads.data(),0,sizeof(SceneGraph::QuadMeshNode::Quad  ));
-        if (mesh->v .size()) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER0,mesh->v .data(),0,sizeof(SceneGraph::QuadMeshNode::Vertex));
-        if (mesh->v2.size()) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER1,mesh->v2.data(),0,sizeof(SceneGraph::QuadMeshNode::Vertex));
+        if (mesh->numTimeSteps() >= 1) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER0,mesh->positions[0]->data(),0,sizeof(SceneGraph::QuadMeshNode::Vertex));
+        if (mesh->numTimeSteps() >= 2) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER1,mesh->positions[1]->data(),0,sizeof(SceneGraph::QuadMeshNode::Vertex));
         AssertNoError(device);
         return geomID;
       } 
@@ -192,12 +192,12 @@ namespace embree
       {
         int numTimeSteps = mblur ? 2 : 1;
         unsigned geomID = rtcNewSubdivisionMesh (scene, gflag, 
-                                                 mesh->verticesPerFace.size(), mesh->position_indices.size(), mesh->positions.size(), 
+                                                 mesh->verticesPerFace.size(), mesh->position_indices.size(), mesh->numPositions(), 
                                                  mesh->edge_creases.size(), mesh->vertex_creases.size(), mesh->holes.size(), numTimeSteps);
         rtcSetBuffer(scene,geomID,RTC_FACE_BUFFER  ,mesh->verticesPerFace.data(), 0,sizeof(int));
         rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER ,mesh->position_indices.data(),0,sizeof(int));
-        if (mesh->positions .size()) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER0,mesh->positions .data(),0,sizeof(SceneGraph::SubdivMeshNode::Vertex));
-        if (mesh->positions2.size()) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER1,mesh->positions2.data(),0,sizeof(SceneGraph::SubdivMeshNode::Vertex));
+        if (mesh->numTimeSteps() >= 1) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER0,mesh->positions_[0]->data(),0,sizeof(SceneGraph::SubdivMeshNode::Vertex));
+        if (mesh->numTimeSteps() >= 2) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER1,mesh->positions_[1]->data(),0,sizeof(SceneGraph::SubdivMeshNode::Vertex));
         if (mesh->edge_creases.size()) rtcSetBuffer(scene,geomID,RTC_EDGE_CREASE_INDEX_BUFFER,mesh->edge_creases.data(),0,2*sizeof(int));
         if (mesh->edge_crease_weights.size()) rtcSetBuffer(scene,geomID,RTC_EDGE_CREASE_WEIGHT_BUFFER,mesh->edge_crease_weights.data(),0,sizeof(float));
         if (mesh->vertex_creases.size()) rtcSetBuffer(scene,geomID,RTC_VERTEX_CREASE_INDEX_BUFFER,mesh->vertex_creases.data(),0,sizeof(int));
@@ -210,18 +210,18 @@ namespace embree
       }
       else if (Ref<SceneGraph::HairSetNode> mesh = node.dynamicCast<SceneGraph::HairSetNode>())
       {
-        unsigned int geomID = rtcNewHairGeometry (scene, gflag, mesh->hairs.size(), mesh->v.size(), mblur ? 2 : 1);
-        rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER,mesh->v.data(),0,sizeof(SceneGraph::HairSetNode::Vertex));
-        if (mblur) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER1,mesh->v2.data(),0,sizeof(SceneGraph::HairSetNode::Vertex));
+        unsigned int geomID = rtcNewHairGeometry (scene, gflag, mesh->hairs.size(), mesh->numVertices(), mblur ? 2 : 1);
+        rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER,mesh->positions[0]->data(),0,sizeof(SceneGraph::HairSetNode::Vertex));
+        if (mblur) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER1,mesh->positions[1]->data(),0,sizeof(SceneGraph::HairSetNode::Vertex));
         rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER,mesh->hairs.data(),0,sizeof(SceneGraph::HairSetNode::Hair));
         AssertNoError(device);
         return geomID;
       } 
       else if (Ref<SceneGraph::LineSegmentsNode> mesh = node.dynamicCast<SceneGraph::LineSegmentsNode>())
       {
-        unsigned int geomID = rtcNewLineSegments (scene, gflag, mesh->indices.size(), mesh->v.size(), mblur ? 2 : 1);
-        rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER,mesh->v.data(),0,sizeof(SceneGraph::LineSegmentsNode::Vertex));
-        if (mblur) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER1,mesh->v2.data(),0,sizeof(SceneGraph::LineSegmentsNode::Vertex));
+        unsigned int geomID = rtcNewLineSegments (scene, gflag, mesh->indices.size(), mesh->numVertices(), mblur ? 2 : 1);
+        rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER,mesh->positions[0]->data(),0,sizeof(SceneGraph::LineSegmentsNode::Vertex));
+        if (mblur) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER1,mesh->positions[1]->data(),0,sizeof(SceneGraph::LineSegmentsNode::Vertex));
         rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER,mesh->indices.data(),0,sizeof(int));
         AssertNoError(device);
         return geomID;
@@ -953,35 +953,35 @@ namespace embree
       for (size_t i=0; i<N; i++) quadmesh2->quads.push_back(quadmesh2->quads.back());
       scene.addGeometry(gflags,quadmesh2.dynamicCast<SceneGraph::Node>(),true);
 
-      Ref<SceneGraph::SubdivMeshNode> subdivmesh = new SceneGraph::SubdivMeshNode(nullptr);
+      Ref<SceneGraph::SubdivMeshNode> subdivmesh = new SceneGraph::SubdivMeshNode(nullptr,1);
       for (unsigned i=0; i<unsigned(N); i++) {
         subdivmesh->verticesPerFace.push_back(4);
         subdivmesh->position_indices.push_back(4*i+0);
         subdivmesh->position_indices.push_back(4*i+1);
         subdivmesh->position_indices.push_back(4*i+2);
         subdivmesh->position_indices.push_back(4*i+3);
-        subdivmesh->positions.push_back(Vec3fa(0,0,0));
-        subdivmesh->positions.push_back(Vec3fa(0,1,0));
-        subdivmesh->positions.push_back(Vec3fa(1,1,0));
-        subdivmesh->positions.push_back(Vec3fa(1,0,0));
+        subdivmesh->positions_[0]->push_back(Vec3fa(0,0,0));
+        subdivmesh->positions_[0]->push_back(Vec3fa(0,1,0));
+        subdivmesh->positions_[0]->push_back(Vec3fa(1,1,0));
+        subdivmesh->positions_[0]->push_back(Vec3fa(1,0,0));
       }
       scene.addGeometry(gflags,subdivmesh.dynamicCast<SceneGraph::Node>(),false);
 
-      Ref<SceneGraph::SubdivMeshNode> subdivmesh2 = new SceneGraph::SubdivMeshNode(nullptr);
+      Ref<SceneGraph::SubdivMeshNode> subdivmesh2 = new SceneGraph::SubdivMeshNode(nullptr,2);
       for (unsigned i=0; i<unsigned(N); i++) {
         subdivmesh2->verticesPerFace.push_back(4);
         subdivmesh2->position_indices.push_back(4*i+0);
         subdivmesh2->position_indices.push_back(4*i+1);
         subdivmesh2->position_indices.push_back(4*i+2);
         subdivmesh2->position_indices.push_back(4*i+3);
-        subdivmesh2->positions.push_back(Vec3fa(0,0,0));
-        subdivmesh2->positions.push_back(Vec3fa(0,1,0));
-        subdivmesh2->positions.push_back(Vec3fa(1,1,0));
-        subdivmesh2->positions.push_back(Vec3fa(1,0,0));
-        subdivmesh2->positions2.push_back(Vec3fa(0,0,0));
-        subdivmesh2->positions2.push_back(Vec3fa(0,1,1));
-        subdivmesh2->positions2.push_back(Vec3fa(1,1,1));
-        subdivmesh2->positions2.push_back(Vec3fa(1,0,1));
+        subdivmesh2->positions_[0]->push_back(Vec3fa(0,0,0));
+        subdivmesh2->positions_[0]->push_back(Vec3fa(0,1,0));
+        subdivmesh2->positions_[0]->push_back(Vec3fa(1,1,0));
+        subdivmesh2->positions_[0]->push_back(Vec3fa(1,0,0));
+        subdivmesh2->positions_[1]->push_back(Vec3fa(0,0,0));
+        subdivmesh2->positions_[1]->push_back(Vec3fa(0,1,1));
+        subdivmesh2->positions_[1]->push_back(Vec3fa(1,1,1));
+        subdivmesh2->positions_[1]->push_back(Vec3fa(1,0,1));
       }
       scene.addGeometry(gflags,subdivmesh2.dynamicCast<SceneGraph::Node>(),true);
       
@@ -2270,9 +2270,9 @@ namespace embree
         {
           Vec3fa org = pos + radius*(2.0f*random_Vec3fa() - Vec3fa(1.0f));
           unsigned int primID = random_int() % plane->triangles.size();
-          Vec3fa v0 = plane->v[plane->triangles[primID].v0];
-          Vec3fa v1 = plane->v[plane->triangles[primID].v1];
-          Vec3fa v2 = plane->v[plane->triangles[primID].v2];
+          Vec3fa v0 = plane->positions[0]->at(plane->triangles[primID].v0);
+          Vec3fa v1 = plane->positions[0]->at(plane->triangles[primID].v1);
+          Vec3fa v2 = plane->positions[0]->at(plane->triangles[primID].v2);
           Vec3fa c = (v0+v1+v2)/3.0f;
           primIDs[j] = primID;
           rays[j] = makeRay(org,c-org); 

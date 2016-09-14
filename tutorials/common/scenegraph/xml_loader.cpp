@@ -248,6 +248,7 @@ namespace embree
     Ref<SceneGraph::Node> loadTransformNode(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadTransform2Node(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadAnimation2Node(const Ref<XML>& xml);
+    Ref<SceneGraph::Node> loadAnimationNode(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadGroupNode(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadNode(const Ref<XML>& xml);
 
@@ -266,6 +267,7 @@ namespace embree
     std::vector<float> loadFloatArray(const Ref<XML>& xml);
     std::vector<Vec2f> loadVec2fArray(const Ref<XML>& xml);
     std::vector<Vec3f> loadVec3fArray(const Ref<XML>& xml);
+    avector<Vec3fa> loadVec3faArray(const Ref<XML>& xml);
     avector<Vec3fa> loadVec4fArray(const Ref<XML>& xml);
     std::vector<unsigned> loadUIntArray(const Ref<XML>& xml);
     std::vector<Vec2i> loadVec2iArray(const Ref<XML>& xml);
@@ -477,6 +479,30 @@ namespace embree
     }
     std::vector<Vec3f> res;
     for (size_t i=0; i<size; i++) res.push_back(data[i]);
+    alignedFree(data);
+    return res;
+  }
+
+  avector<Vec3fa> XMLLoader::loadVec3faArray(const Ref<XML>& xml)
+  {
+    /*! do not fail of array does not exist */
+    if (!xml) { return avector<Vec3fa>(); }
+
+    size_t size = 0;
+    Vec3f* data = nullptr;
+    if (xml->parm("ofs") != "") {
+      data = (Vec3f*) loadBinary(xml,3*sizeof(float),size);
+    }
+    else {
+      size_t elts = xml->body.size();
+      if (elts % 3 != 0) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong vector<float3> body");
+      size = elts/3;
+      data = (Vec3f*) alignedMalloc(size*sizeof(Vec3f));
+      for (size_t i=0; i<size; i++) 
+        data[i] = Vec3f(xml->body[3*i+0].Float(),xml->body[3*i+1].Float(),xml->body[3*i+2].Float());
+    }
+    avector<Vec3fa> res;
+    for (size_t i=0; i<size; i++) res.push_back(Vec3fa(data[i].x,data[i].y,data[i].z));
     alignedFree(data);
     return res;
   }
@@ -851,18 +877,24 @@ namespace embree
   Ref<SceneGraph::Node> XMLLoader::loadTriangleMesh(const Ref<XML>& xml) 
   {
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
-    std::vector<Vec3f> positions = loadVec3fArray(xml->childOpt("positions"));
-    std::vector<Vec3f> positions2= loadVec3fArray(xml->childOpt("positions2"));
-    std::vector<Vec3f> normals   = loadVec3fArray(xml->childOpt("normals"  ));
-    std::vector<Vec2f> texcoords = loadVec2fArray(xml->childOpt("texcoords"));
-    std::vector<Vec3i> triangles = loadVec3iArray(xml->childOpt("triangles"));
-
     SceneGraph::TriangleMeshNode* mesh = new SceneGraph::TriangleMeshNode(material);
-    for (size_t i=0; i<positions.size(); i++) mesh->v.push_back(positions[i]);
-    for (size_t i=0; i<positions2.size();i++) mesh->v2.push_back(positions2[i]);
-    for (size_t i=0; i<normals.size();   i++) mesh->vn.push_back(normals[i]);
-    for (size_t i=0; i<texcoords.size(); i++) mesh->vt.push_back(texcoords[i]);
-    for (size_t i=0; i<triangles.size(); i++) mesh->triangles.push_back(SceneGraph::TriangleMeshNode::Triangle(triangles[i].x,triangles[i].y,triangles[i].z));
+
+    if (Ref<XML> child = xml->childOpt("animated_positions")) {
+      for (size_t i=0; i<child->size(); i++)
+        mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec3faArray(xml->child(i))))));
+    } else {
+      mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec3faArray(xml->childOpt("positions"))))));
+      if (xml->hasChild("positions2")) 
+        mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec3faArray(xml->childOpt("positions2"))))));
+    }
+    
+    mesh->normals = loadVec3faArray(xml->childOpt("normals"));
+    mesh->texcoords = loadVec2fArray(xml->childOpt("texcoords"));
+
+    std::vector<Vec3i> triangles = loadVec3iArray(xml->childOpt("triangles"));
+    for (size_t i=0; i<triangles.size(); i++) 
+      mesh->triangles.push_back(SceneGraph::TriangleMeshNode::Triangle(triangles[i].x,triangles[i].y,triangles[i].z));
+
     mesh->verify();
     return mesh;
   }
@@ -870,18 +902,23 @@ namespace embree
   Ref<SceneGraph::Node> XMLLoader::loadQuadMesh(const Ref<XML>& xml) 
   {
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
-    std::vector<Vec3f> positions = loadVec3fArray(xml->childOpt("positions"));
-    std::vector<Vec3f> positions2= loadVec3fArray(xml->childOpt("positions2"));
-    std::vector<Vec3f> normals   = loadVec3fArray(xml->childOpt("normals"  ));
-    std::vector<Vec2f> texcoords = loadVec2fArray(xml->childOpt("texcoords"));
-    std::vector<Vec4i> indices   = loadVec4iArray(xml->childOpt("indices"));
-
     SceneGraph::QuadMeshNode* mesh = new SceneGraph::QuadMeshNode(material);
-    for (size_t i=0; i<positions.size(); i++) mesh->v.push_back(positions[i]);
-    for (size_t i=0; i<positions2.size();i++) mesh->v2.push_back(positions2[i]);
-    for (size_t i=0; i<normals.size();   i++) mesh->vn.push_back(normals[i]);
-    for (size_t i=0; i<texcoords.size(); i++) mesh->vt.push_back(texcoords[i]);
-    for (size_t i=0; i<indices.size();   i++) mesh->quads.push_back(SceneGraph::QuadMeshNode::Quad(indices[i].x,indices[i].y,indices[i].z,indices[i].w));
+
+    if (Ref<XML> child = xml->childOpt("animated_positions")) {
+      for (size_t i=0; i<child->size(); i++)
+        mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec3faArray(xml->child(i))))));
+    } else {
+      mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec3faArray(xml->childOpt("positions"))))));
+      if (xml->hasChild("positions2")) 
+        mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec3faArray(xml->childOpt("positions2"))))));
+    }
+    
+    mesh->normals = loadVec3faArray(xml->childOpt("normals"));
+    mesh->texcoords = loadVec2fArray(xml->childOpt("texcoords"));
+
+    std::vector<Vec4i> indices = loadVec4iArray(xml->childOpt("indices"));
+    for (size_t i=0; i<indices.size(); i++) 
+      mesh->quads.push_back(SceneGraph::QuadMeshNode::Quad(indices[i].x,indices[i].y,indices[i].z,indices[i].w));
     mesh->verify();
     return mesh;
   }
@@ -889,14 +926,18 @@ namespace embree
   Ref<SceneGraph::Node> XMLLoader::loadSubdivMesh(const Ref<XML>& xml) 
   {
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
-
     SceneGraph::SubdivMeshNode* mesh = new SceneGraph::SubdivMeshNode(material);
-    std::vector<Vec3f> positions = loadVec3fArray(xml->childOpt("positions"));
-    for (size_t i=0; i<positions.size(); i++) mesh->positions.push_back(positions[i]);
-    std::vector<Vec3f> positions2 = loadVec3fArray(xml->childOpt("positions2"));
-    for (size_t i=0; i<positions2.size(); i++) mesh->positions2.push_back(positions2[i]);
-    std::vector<Vec3f> normals = loadVec3fArray(xml->childOpt("normals"));
-    for (size_t i=0; i<normals.size(); i++) mesh->normals.push_back(normals[i]);
+
+    if (Ref<XML> child = xml->childOpt("animated_positions")) {
+      for (size_t i=0; i<child->size(); i++)
+        mesh->positions_.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec3faArray(xml->child(i))))));
+    } else {
+      mesh->positions_.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec3faArray(xml->childOpt("positions"))))));
+      if (xml->hasChild("positions2")) 
+        mesh->positions_.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec3faArray(xml->childOpt("positions2"))))));
+    }
+
+    mesh->normals = loadVec3faArray(xml->childOpt("normals"));
     mesh->texcoords = loadVec2fArray(xml->childOpt("texcoords"));
     mesh->position_indices = loadUIntArray(xml->childOpt("position_indices"));
     mesh->normal_indices   = loadUIntArray(xml->childOpt("normal_indices"));
@@ -914,14 +955,18 @@ namespace embree
   Ref<SceneGraph::Node> XMLLoader::loadLineSegments(const Ref<XML>& xml) 
   {
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
-    avector<Vec3fa> positions  = loadVec4fArray(xml->childOpt("positions"));
-    avector<Vec3fa> positions2 = loadVec4fArray(xml->childOpt("positions2"));
-    std::vector<unsigned> indices    = loadUIntArray(xml->childOpt("indices"));
-
     SceneGraph::LineSegmentsNode* mesh = new SceneGraph::LineSegmentsNode(material);
-    mesh->v .resize(positions .size()); for (size_t i=0; i<positions .size(); i++) mesh->v [i] = positions [i];
-    mesh->v2.resize(positions2.size()); for (size_t i=0; i<positions2.size(); i++) mesh->v2[i] = positions2[i];
-    mesh->indices.resize(indices.size()); for (size_t i=0; i<indices.size(); i++) mesh->indices[i] = indices[i];
+
+    if (Ref<XML> child = xml->childOpt("animated_positions")) {
+      for (size_t i=0; i<child->size(); i++)
+        mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec4fArray(xml->child(i))))));
+    } else {
+      mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec4fArray(xml->childOpt("positions"))))));
+      if (xml->hasChild("positions2")) 
+        mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec4fArray(xml->childOpt("positions2"))))));
+    }
+
+    mesh->indices = loadUIntArray(xml->childOpt("indices"));
     mesh->verify();
     return mesh;
   }
@@ -929,88 +974,92 @@ namespace embree
   Ref<SceneGraph::Node> XMLLoader::loadBezierHair(const Ref<XML>& xml) 
   {
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
-    avector<Vec3fa> positions  = loadVec4fArray(xml->childOpt("positions"));
-    avector<Vec3fa> positions2 = loadVec4fArray(xml->childOpt("positions2"));
-    std::vector<Vec2i> indices     = loadVec2iArray(xml->childOpt("indices"));
+    SceneGraph::HairSetNode* mesh = new SceneGraph::HairSetNode(true,material);
 
-    SceneGraph::HairSetNode* hair = new SceneGraph::HairSetNode(true,material);
-    hair->v .resize(positions .size()); for (size_t i=0; i<positions .size(); i++) hair->v [i] = positions [i];
-    hair->v2.resize(positions2.size()); for (size_t i=0; i<positions2.size(); i++) hair->v2[i] = positions2[i];
-    hair->hairs.resize(indices.size()); for (size_t i=0; i<indices.size(); i++) hair->hairs[i] = SceneGraph::HairSetNode::Hair(indices[i].x,indices[i].y);
-    hair->verify();
-    return hair;
+    if (Ref<XML> child = xml->childOpt("animated_positions")) {
+      for (size_t i=0; i<child->size(); i++)
+        mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec4fArray(xml->child(i))))));
+    } else {
+      mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec4fArray(xml->childOpt("positions"))))));
+      if (xml->hasChild("positions2")) 
+        mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec4fArray(xml->childOpt("positions2"))))));
+    }
+    
+    std::vector<Vec2i> indices = loadVec2iArray(xml->childOpt("indices"));
+    mesh->hairs.resize(indices.size()); 
+    for (size_t i=0; i<indices.size(); i++) 
+      mesh->hairs[i] = SceneGraph::HairSetNode::Hair(indices[i].x,indices[i].y);
+
+    mesh->verify();
+    return mesh;
   }
 
   Ref<SceneGraph::Node> XMLLoader::loadBezierCurves(const Ref<XML>& xml) 
   {
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
-    avector<Vec3fa> positions  = loadVec4fArray(xml->childOpt("positions"));
-    avector<Vec3fa> positions2 = loadVec4fArray(xml->childOpt("positions2"));
-    std::vector<Vec2i> indices     = loadVec2iArray(xml->childOpt("indices"));
+    SceneGraph::HairSetNode* mesh = new SceneGraph::HairSetNode(false,material);
 
-    SceneGraph::HairSetNode* hair = new SceneGraph::HairSetNode(false,material);
-    hair->v .resize(positions .size()); for (size_t i=0; i<positions .size(); i++) hair->v [i] = positions [i];
-    hair->v2.resize(positions2.size()); for (size_t i=0; i<positions2.size(); i++) hair->v2[i] = positions2[i];
-    hair->hairs.resize(indices.size()); for (size_t i=0; i<indices.size(); i++) hair->hairs[i] = SceneGraph::HairSetNode::Hair(indices[i].x,indices[i].y);
-    hair->verify();
-    return hair;
+    if (Ref<XML> child = xml->childOpt("animated_positions")) {
+      for (size_t i=0; i<child->size(); i++)
+        mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec4fArray(xml->child(i))))));
+    } else {
+      mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec4fArray(xml->childOpt("positions"))))));
+      if (xml->hasChild("positions2")) 
+        mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec4fArray(xml->childOpt("positions2"))))));
+    }
+    
+    std::vector<Vec2i> indices = loadVec2iArray(xml->childOpt("indices"));
+    mesh->hairs.resize(indices.size()); 
+    for (size_t i=0; i<indices.size(); i++) 
+      mesh->hairs[i] = SceneGraph::HairSetNode::Hair(indices[i].x,indices[i].y);
+
+    mesh->verify();
+    return mesh;
+  }
+
+  avector<Vec3fa> convert_bspline_to_bezier(const std::vector<unsigned>& indices, const avector<Vec3fa>& positions)
+  {
+    avector<Vec3fa> positions_o;
+    positions_o.resize(4*indices.size());
+    for (size_t i=0; i<indices.size(); i++) 
+    {
+      const size_t idx = indices[i];
+      vfloat4 v0 = vfloat4::loadu(&positions[idx-1]);  
+      vfloat4 v1 = vfloat4::loadu(&positions[idx+0]);
+      vfloat4 v2 = vfloat4::loadu(&positions[idx+1]);
+      vfloat4 v3 = vfloat4::loadu(&positions[idx+2]);
+      v0 = select(isnan(v0),2.0f*v1-v2,v0); // nan triggers edge rule
+      v3 = select(isnan(v3),2.0f*v2-v1,v3); // nan triggers edge rule
+      positions_o[4*i+0] = Vec3fa((1.0f/6.0f)*v0 + (2.0f/3.0f)*v1 + (1.0f/6.0f)*v2);
+      positions_o[4*i+1] = Vec3fa((2.0f/3.0f)*v1 + (1.0f/3.0f)*v2);
+      positions_o[4*i+2] = Vec3fa((1.0f/3.0f)*v1 + (2.0f/3.0f)*v2);
+      positions_o[4*i+3] = Vec3fa((1.0f/6.0f)*v1 + (2.0f/3.0f)*v2 + (1.0f/6.0f)*v3);
+    }
+    return positions_o;
   }
 
   Ref<SceneGraph::Node> XMLLoader::loadBSplineCurves(const Ref<XML>& xml) 
   {
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
-    avector<Vec3fa> positions  = loadVec4fArray(xml->childOpt("positions"));
-    avector<Vec3fa> positions2 = loadVec4fArray(xml->childOpt("positions2"));
+    SceneGraph::HairSetNode* mesh = new SceneGraph::HairSetNode(false,material);
+
     std::vector<unsigned> indices = loadUIntArray(xml->childOpt("indices"));
-
-    SceneGraph::HairSetNode* hair = new SceneGraph::HairSetNode(false,material);
-
-    hair->hairs.resize(indices.size());
+    mesh->hairs.resize(indices.size());
     for (size_t i=0; i<indices.size(); i++) {
-      hair->hairs[i] = SceneGraph::HairSetNode::Hair(unsigned(4*i),0);
+      mesh->hairs[i] = SceneGraph::HairSetNode::Hair(unsigned(4*i),0);
     }
       
-    if (positions.size())
-    {
-      /* converts b-spline to bezier basis */
-      hair->v.resize(4*indices.size());
-      for (size_t i=0; i<indices.size(); i++) 
-      {
-        const size_t idx = indices[i];
-        vfloat4 v0 = vfloat4::loadu(&positions[idx-1]);  
-        vfloat4 v1 = vfloat4::loadu(&positions[idx+0]);
-        vfloat4 v2 = vfloat4::loadu(&positions[idx+1]);
-        vfloat4 v3 = vfloat4::loadu(&positions[idx+2]);
-        v0 = select(isnan(v0),2.0f*v1-v2,v0); // nan triggers edge rule
-        v3 = select(isnan(v3),2.0f*v2-v1,v3); // nan triggers edge rule
-        hair->v[4*i+0] = Vec3fa((1.0f/6.0f)*v0 + (2.0f/3.0f)*v1 + (1.0f/6.0f)*v2);
-        hair->v[4*i+1] = Vec3fa((2.0f/3.0f)*v1 + (1.0f/3.0f)*v2);
-        hair->v[4*i+2] = Vec3fa((1.0f/3.0f)*v1 + (2.0f/3.0f)*v2);
-        hair->v[4*i+3] = Vec3fa((1.0f/6.0f)*v1 + (2.0f/3.0f)*v2 + (1.0f/6.0f)*v3);
-      }
+    if (Ref<XML> child = xml->childOpt("animated_positions")) {
+      for (size_t i=0; i<child->size(); i++)
+        mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(convert_bspline_to_bezier(indices,loadVec4fArray(xml->child(i)))))));
+    } else {
+      mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(convert_bspline_to_bezier(indices,loadVec4fArray(xml->childOpt("positions")))))));
+      if (xml->hasChild("positions2")) 
+        mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(convert_bspline_to_bezier(indices,loadVec4fArray(xml->childOpt("positions2")))))));
     }
 
-    if (positions2.size()) 
-    {
-      /* converts b-spline to bezier basis */
-      hair->v2.resize(4*indices.size());
-      for (size_t i=0; i<indices.size(); i++) 
-      {
-        const size_t idx = indices[i];
-        vfloat4 v0 = vfloat4::loadu(&positions2[idx-1]);
-        vfloat4 v1 = vfloat4::loadu(&positions2[idx+0]);
-        vfloat4 v2 = vfloat4::loadu(&positions2[idx+1]);
-        vfloat4 v3 = vfloat4::loadu(&positions2[idx+2]);
-        v0 = select(isnan(v0),2.0f*v1-v2,v0); // nan triggers edge rule
-        v3 = select(isnan(v3),2.0f*v2-v1,v3); // nan triggers edge rule
-        hair->v2[4*i+0] = Vec3fa((1.0f/6.0f)*v0 + (2.0f/3.0f)*v1 + (1.0f/6.0f)*v2);
-        hair->v2[4*i+1] = Vec3fa((2.0f/3.0f)*v1 + (1.0f/3.0f)*v2);
-        hair->v2[4*i+2] = Vec3fa((1.0f/3.0f)*v1 + (2.0f/3.0f)*v2);
-        hair->v2[4*i+3] = Vec3fa((1.0f/6.0f)*v1 + (2.0f/3.0f)*v2 + (1.0f/6.0f)*v3);
-      }
-    }
-    hair->verify();
-    return hair;
+    mesh->verify();
+    return mesh;
   }
 
   Ref<SceneGraph::Node> XMLLoader::loadTransformNode(const Ref<XML>& xml) 
@@ -1041,8 +1090,21 @@ namespace embree
     if (xml->children.size() != 2) THROW_RUNTIME_ERROR("invalid Animation2 node");
     Ref<SceneGraph::Node> node0 = loadNode(xml->children[0]);
     Ref<SceneGraph::Node> node1 = loadNode(xml->children[1]);
-    SceneGraph::set_motion_blur(node0,node1);
+    SceneGraph::extend_animation(node0,node1);
+    SceneGraph::optimize_animation(node0);
     return node0;
+  }
+
+  Ref<SceneGraph::Node> XMLLoader::loadAnimationNode(const Ref<XML>& xml) 
+  {
+    if (xml->children.size() == 0) THROW_RUNTIME_ERROR("invalid Animation node");
+    Ref<SceneGraph::Node> node = loadNode(xml->children[0]);
+    for (size_t i=1; i<xml->children.size(); i++) {
+      Ref<SceneGraph::Node> nodei = loadNode(xml->children[1]);
+      SceneGraph::extend_animation(node,nodei);
+    }
+    SceneGraph::optimize_animation(node);
+    return node;
   }
 
   Ref<SceneGraph::Node> XMLLoader::loadGroupNode(const Ref<XML>& xml) 
@@ -1098,6 +1160,7 @@ namespace embree
       else if (xml->name == "Transform"       ) return sceneMap[id] = loadTransformNode   (xml);
       else if (xml->name == "Transform2"      ) return sceneMap[id] = loadTransform2Node  (xml);
       else if (xml->name == "Animation2"      ) return sceneMap[id] = loadAnimation2Node  (xml);
+      else if (xml->name == "Animation"       ) return sceneMap[id] = loadAnimationNode   (xml);
 
       else THROW_RUNTIME_ERROR(xml->loc.str()+": unknown tag: "+xml->name);
     }
@@ -1119,16 +1182,16 @@ namespace embree
   {
     size_t matid = xml->child("materiallist")->body[0].Int();
     Ref<SceneGraph::MaterialNode> material = id2material.at(matid);
-    std::vector<Vec3f> positions = loadVec3fArray(xml->childOpt("vertex"));
-    std::vector<Vec3f> normals   = loadVec3fArray(xml->childOpt("normal"));
-    std::vector<Vec2f> texcoords = loadVec2fArray(xml->childOpt("texcoord"));
-    std::vector<Vec4i> triangles = loadVec4iArray(xml->childOpt("prim"));
-
     SceneGraph::TriangleMeshNode* mesh = new SceneGraph::TriangleMeshNode(material);
-    for (size_t i=0; i<positions.size(); i++) mesh->v.push_back(positions[i]);
-    for (size_t i=0; i<normals.size();   i++) mesh->vn.push_back(normals[i]);
-    for (size_t i=0; i<texcoords.size(); i++) mesh->vt.push_back(texcoords[i]);
-    for (size_t i=0; i<triangles.size(); i++) mesh->triangles.push_back(SceneGraph::TriangleMeshNode::Triangle(triangles[i].x,triangles[i].y,triangles[i].z));
+
+    mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec3faArray(xml->childOpt("vertex"))))));
+    mesh->normals = loadVec3faArray(xml->childOpt("normal"));
+    mesh->texcoords = loadVec2fArray(xml->childOpt("texcoord"));
+
+    std::vector<Vec4i> triangles = loadVec4iArray(xml->childOpt("prim"));
+    for (size_t i=0; i<triangles.size(); i++) 
+      mesh->triangles.push_back(SceneGraph::TriangleMeshNode::Triangle(triangles[i].x,triangles[i].y,triangles[i].z));
+
     return mesh;
   }
 
