@@ -272,7 +272,7 @@ namespace embree
       }
       
       /*! finds the best split by scanning binning information */
-      SpatialBinSplit<BINS> best(const PrimInfo& pinfo, const SpatialBinMapping<BINS>& mapping, const size_t blocks_shift) const
+      SpatialBinSplit<BINS> best(const PrimInfo& pinfo, const SpatialBinMapping<BINS>& mapping, const size_t blocks_shift, const size_t maxCount = (size_t)-1) const 
       {
         /* sweep from right to left and compute parallel prefix of merged bounds */
         vfloat4 rAreas[BINS];
@@ -304,10 +304,10 @@ namespace embree
           const vint4 rCount = (rCounts[i]+blocks_add) >> int(blocks_shift);
           const vfloat4 sah = lArea*vfloat4(lCount) + rArea*vfloat4(rCount);
           const vbool4 mask = sah < vbestSAH;
-          vbestPos    = select(mask,ii ,vbestPos);
-          vbestSAH    = select(mask,sah,vbestSAH);
-          vbestlCount = select(mask,count,vbestlCount);
-          vbestrCount = select(mask,rCounts[i],vbestrCount);
+          vbestPos      = select(mask,ii ,vbestPos);
+          vbestSAH      = select(mask,sah,vbestSAH);
+          vbestlCount   = select(mask,count,vbestlCount);
+          vbestrCount   = select(mask,rCounts[i],vbestrCount);
         }
         
         /* find best dimension */
@@ -323,7 +323,7 @@ namespace embree
             continue;
           
           /* test if this is a better dimension */
-          if (vbestSAH[dim] < bestSAH && vbestPos[dim] != 0) {
+          if (vbestSAH[dim] < bestSAH && vbestPos[dim] != 0 && (vbestlCount[dim]+vbestrCount[dim]<=maxCount)) {
             bestDim = dim;
             bestPos = vbestPos[dim];
             bestSAH = vbestSAH[dim];

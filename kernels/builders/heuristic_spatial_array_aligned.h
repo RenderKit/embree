@@ -207,13 +207,9 @@ namespace embree
         {
           SpatialBinner binner(empty); 
           const SpatialBinMapping<SPATIAL_BINS> mapping(pinfo);
-#if 1
           splitPrimitiveBinner(binner,prims0,set.begin(),set.end(),mapping);
-#else
-          binner.bin(splitPrimitive,prims0,set.begin(),set.end(),mapping);
-#endif
-          /* todo: find best spatial split not exeeding the extended range */
-          return binner.best(pinfo,mapping,logBlockSize);
+          /* todo: best spatial split not exeeding the extended range does not provide any benefit ?*/
+          return binner.best(pinfo,mapping,logBlockSize); //,set.ext_size());
         }
 
         __noinline const SpatialSplit parallel_spatial_find(Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
@@ -224,14 +220,11 @@ namespace embree
           binner = parallel_reduce(set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,binner,
                                    [&] (const range<size_t>& r) -> SpatialBinner { 
                                      SpatialBinner binner(empty); 
-#if 1
                                      splitPrimitiveBinner(binner,prims0,r.begin(),r.end(),_mapping);
-#else
-                                     binner.bin(splitPrimitive,prims0,r.begin(),r.end(),_mapping); 
-#endif
                                      return binner; },
                                    [&] (const SpatialBinner& b0, const SpatialBinner& b1) -> SpatialBinner { return SpatialBinner::reduce(b0,b1); });
-          return binner.best(pinfo,mapping,logBlockSize);
+          /* todo: best spatial split not exeeding the extended range does not provide any benefit ?*/
+          return binner.best(pinfo,mapping,logBlockSize); //,set.ext_size());
         }
 
 
