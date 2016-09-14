@@ -277,7 +277,7 @@ namespace embree
     {
       bool equal = true;
       for (size_t i=1; i<mesh->numTimeSteps(); i++)
-        equal &= mesh->positions[0] == mesh->positions[i];
+        equal &= *mesh->positions[0] == *mesh->positions[i];
 
       if (equal)
         mesh->positions.resize(1);
@@ -286,7 +286,7 @@ namespace embree
     {
       bool equal = true;
       for (size_t i=1; i<mesh->numTimeSteps(); i++)
-        equal &= mesh->positions[0] == mesh->positions[i];
+        equal &= *mesh->positions[0] == *mesh->positions[i];
 
       if (equal)
         mesh->positions.resize(1);
@@ -295,7 +295,7 @@ namespace embree
     {
       bool equal = true;
       for (size_t i=1; i<mesh->numTimeSteps(); i++)
-        equal &= mesh->positions[0] == mesh->positions[i];
+        equal &= *mesh->positions[0] == *mesh->positions[i];
 
       if (equal)
         mesh->positions.resize(1);
@@ -304,7 +304,7 @@ namespace embree
     {
       bool equal = true;
       for (size_t i=1; i<mesh->numTimeSteps(); i++)
-        equal &= mesh->positions_[0] == mesh->positions_[i];
+        equal &= *mesh->positions_[0] == *mesh->positions_[i];
 
       if (equal)
         mesh->positions_.resize(1);

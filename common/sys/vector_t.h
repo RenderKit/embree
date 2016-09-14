@@ -129,6 +129,21 @@ namespace embree
         size_active = size_alloced = 0;
       }
 
+    /******************** Comparisons **************************/
+    
+    friend bool operator== (const vector_t& a, const vector_t& b) 
+    {
+      if (a.size() != b.size()) return false;
+      for (size_t i=0; i<a.size(); i++)
+        if (a[i] != b[i])
+          return false;
+      return true;
+    }
+
+    friend bool operator!= (const vector_t& a, const vector_t& b) {
+      return !(a==b);
+    }
+
     private:
 
       void internal_resize(size_t new_active, size_t new_alloced)

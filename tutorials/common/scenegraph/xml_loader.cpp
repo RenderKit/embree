@@ -724,7 +724,7 @@ namespace embree
   Parms XMLLoader::loadMaterialParms(const Ref<XML>& parms)
   {
     Parms material;
-    for (size_t i=0; i<parms->children.size(); i++) 
+    for (size_t i=0; i<parms->size(); i++) 
     {
       Ref<XML> entry = parms->children[i];
       std::string name = entry->parm("name");
@@ -879,9 +879,9 @@ namespace embree
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
     SceneGraph::TriangleMeshNode* mesh = new SceneGraph::TriangleMeshNode(material);
 
-    if (Ref<XML> child = xml->childOpt("animated_positions")) {
-      for (size_t i=0; i<child->size(); i++)
-        mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec3faArray(xml->child(i))))));
+    if (Ref<XML> animation = xml->childOpt("animated_positions")) {
+      for (size_t i=0; i<animation->size(); i++)
+        mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec3faArray(animation->child(i))))));
     } else {
       mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec3faArray(xml->childOpt("positions"))))));
       if (xml->hasChild("positions2")) 
@@ -904,9 +904,9 @@ namespace embree
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
     SceneGraph::QuadMeshNode* mesh = new SceneGraph::QuadMeshNode(material);
 
-    if (Ref<XML> child = xml->childOpt("animated_positions")) {
-      for (size_t i=0; i<child->size(); i++)
-        mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec3faArray(xml->child(i))))));
+    if (Ref<XML> animation = xml->childOpt("animated_positions")) {
+      for (size_t i=0; i<animation->size(); i++)
+        mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec3faArray(animation->child(i))))));
     } else {
       mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec3faArray(xml->childOpt("positions"))))));
       if (xml->hasChild("positions2")) 
@@ -928,9 +928,9 @@ namespace embree
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
     SceneGraph::SubdivMeshNode* mesh = new SceneGraph::SubdivMeshNode(material);
 
-    if (Ref<XML> child = xml->childOpt("animated_positions")) {
-      for (size_t i=0; i<child->size(); i++)
-        mesh->positions_.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec3faArray(xml->child(i))))));
+    if (Ref<XML> animation = xml->childOpt("animated_positions")) {
+      for (size_t i=0; i<animation->size(); i++)
+        mesh->positions_.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec3faArray(animation->child(i))))));
     } else {
       mesh->positions_.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec3faArray(xml->childOpt("positions"))))));
       if (xml->hasChild("positions2")) 
@@ -957,9 +957,9 @@ namespace embree
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
     SceneGraph::LineSegmentsNode* mesh = new SceneGraph::LineSegmentsNode(material);
 
-    if (Ref<XML> child = xml->childOpt("animated_positions")) {
-      for (size_t i=0; i<child->size(); i++)
-        mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec4fArray(xml->child(i))))));
+    if (Ref<XML> animation = xml->childOpt("animated_positions")) {
+      for (size_t i=0; i<animation->size(); i++)
+        mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec4fArray(animation->child(i))))));
     } else {
       mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec4fArray(xml->childOpt("positions"))))));
       if (xml->hasChild("positions2")) 
@@ -976,9 +976,9 @@ namespace embree
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
     SceneGraph::HairSetNode* mesh = new SceneGraph::HairSetNode(true,material);
 
-    if (Ref<XML> child = xml->childOpt("animated_positions")) {
-      for (size_t i=0; i<child->size(); i++)
-        mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec4fArray(xml->child(i))))));
+    if (Ref<XML> animation = xml->childOpt("animated_positions")) {
+      for (size_t i=0; i<animation->size(); i++)
+        mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec4fArray(animation->child(i))))));
     } else {
       mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec4fArray(xml->childOpt("positions"))))));
       if (xml->hasChild("positions2")) 
@@ -999,9 +999,9 @@ namespace embree
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
     SceneGraph::HairSetNode* mesh = new SceneGraph::HairSetNode(false,material);
 
-    if (Ref<XML> child = xml->childOpt("animated_positions")) {
-      for (size_t i=0; i<child->size(); i++)
-        mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec4fArray(xml->child(i))))));
+    if (Ref<XML> animation = xml->childOpt("animated_positions")) {
+      for (size_t i=0; i<animation->size(); i++)
+        mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec4fArray(animation->child(i))))));
     } else {
       mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec4fArray(xml->childOpt("positions"))))));
       if (xml->hasChild("positions2")) 
@@ -1049,9 +1049,9 @@ namespace embree
       mesh->hairs[i] = SceneGraph::HairSetNode::Hair(unsigned(4*i),0);
     }
       
-    if (Ref<XML> child = xml->childOpt("animated_positions")) {
-      for (size_t i=0; i<child->size(); i++)
-        mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(convert_bspline_to_bezier(indices,loadVec4fArray(xml->child(i)))))));
+    if (Ref<XML> animation = xml->childOpt("animated_positions")) {
+      for (size_t i=0; i<animation->size(); i++)
+        mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(convert_bspline_to_bezier(indices,loadVec4fArray(animation->child(i)))))));
     } else {
       mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(convert_bspline_to_bezier(indices,loadVec4fArray(xml->childOpt("positions")))))));
       if (xml->hasChild("positions2")) 
@@ -1067,7 +1067,7 @@ namespace embree
     AffineSpace3fa space = load<AffineSpace3fa>(xml->children[0]);
 
     Ref<SceneGraph::GroupNode> group = new SceneGraph::GroupNode;
-    for (size_t i=1; i<xml->children.size(); i++)
+    for (size_t i=1; i<xml->size(); i++)
       group->add(loadNode(xml->children[i]));
 
     return new SceneGraph::TransformNode(space,group.cast<SceneGraph::Node>());
@@ -1079,7 +1079,7 @@ namespace embree
     AffineSpace3fa space1 = load<AffineSpace3fa>(xml->children[1]);
 
     Ref<SceneGraph::GroupNode> group = new SceneGraph::GroupNode;
-    for (size_t i=2; i<xml->children.size(); i++) 
+    for (size_t i=2; i<xml->size(); i++) 
       group->add(loadNode(xml->children[i]));
 
     return new SceneGraph::TransformNode(space0,space1,group.cast<SceneGraph::Node>());
@@ -1087,7 +1087,7 @@ namespace embree
 
   Ref<SceneGraph::Node> XMLLoader::loadAnimation2Node(const Ref<XML>& xml) 
   {
-    if (xml->children.size() != 2) THROW_RUNTIME_ERROR("invalid Animation2 node");
+    if (xml->size() != 2) THROW_RUNTIME_ERROR("invalid Animation2 node");
     Ref<SceneGraph::Node> node0 = loadNode(xml->children[0]);
     Ref<SceneGraph::Node> node1 = loadNode(xml->children[1]);
     SceneGraph::extend_animation(node0,node1);
@@ -1097,9 +1097,9 @@ namespace embree
 
   Ref<SceneGraph::Node> XMLLoader::loadAnimationNode(const Ref<XML>& xml) 
   {
-    if (xml->children.size() == 0) THROW_RUNTIME_ERROR("invalid Animation node");
+    if (xml->size() == 0) THROW_RUNTIME_ERROR("invalid Animation node");
     Ref<SceneGraph::Node> node = loadNode(xml->children[0]);
-    for (size_t i=1; i<xml->children.size(); i++) {
+    for (size_t i=1; i<xml->size(); i++) {
       Ref<SceneGraph::Node> nodei = loadNode(xml->children[1]);
       SceneGraph::extend_animation(node,nodei);
     }
@@ -1110,7 +1110,7 @@ namespace embree
   Ref<SceneGraph::Node> XMLLoader::loadGroupNode(const Ref<XML>& xml) 
   {
     Ref<SceneGraph::GroupNode> group = new SceneGraph::GroupNode;
-    for (size_t i=0; i<xml->children.size(); i++)
+    for (size_t i=0; i<xml->size(); i++)
       group->add(loadNode(xml->children[i]));
     return group.cast<SceneGraph::Node>();
   }
@@ -1268,7 +1268,7 @@ namespace embree
     if (xml->name == "scene") 
     {
       Ref<SceneGraph::GroupNode> group = new SceneGraph::GroupNode;
-      for (size_t i=0; i<xml->children.size(); i++) { 
+      for (size_t i=0; i<xml->size(); i++) { 
         group->add(loadNode(xml->children[i]));
       }
       root = group.cast<SceneGraph::Node>();
@@ -1276,7 +1276,7 @@ namespace embree
     else if (xml->name == "BGFscene") 
     {
       Ref<SceneGraph::Node> last = nullptr;
-      for (size_t i=0; i<xml->children.size(); i++) { 
+      for (size_t i=0; i<xml->size(); i++) { 
         root = loadBGFNode(xml->children[i]);
       }
     }
