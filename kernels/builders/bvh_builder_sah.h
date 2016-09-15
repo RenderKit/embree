@@ -129,7 +129,7 @@ namespace embree
                 bestChild = i;
               }
             }
-            if (bestChild == -1) break;
+            if (bestChild == (size_t)-1) break;
             
             /*! split best child into left and right child */
             BuildRecord left(current.depth+1);

@@ -323,7 +323,7 @@ namespace embree
             continue;
           
           /* test if this is a better dimension */
-          if (vbestSAH[dim] < bestSAH && vbestPos[dim] != 0 && (vbestlCount[dim]+vbestrCount[dim]<=maxCount)) {
+          if (vbestSAH[dim] < bestSAH && vbestPos[dim] != 0 /* && (vbestlCount[dim]+vbestrCount[dim]<=(int)maxCount) */) {
             bestDim = dim;
             bestPos = vbestPos[dim];
             bestSAH = vbestSAH[dim];

@@ -126,15 +126,15 @@ namespace embree
     }
     
     __forceinline bool has_last_face() const {
-      return border_index != edge_valence-2;
+      return (size_t)border_index != (size_t)edge_valence-2;
     }
 
     __forceinline bool has_opposite_front(size_t i) const {
-      return border_index != 2*i;
+      return (size_t)border_index != 2*i;
     }
 
     __forceinline bool has_opposite_back(size_t i) const {
-      return border_index != (edge_valence-2-2*i);
+      return (size_t)border_index != ((size_t)edge_valence-2-2*i);
     }
     
     __forceinline BBox3fa bounds() const
@@ -410,7 +410,7 @@ namespace embree
       /* border vertex rule */
       if (unlikely(border_index != -1))
       {	
-	if (border_index != edge_valence-2 ) {
+	if (border_index != (int)edge_valence-2 ) {
 	  return ring[0] - vtx; 
 	}
 	else
@@ -572,7 +572,7 @@ namespace embree
     }
     
     __forceinline bool has_last_face() const {
-      return border_face != face_valence-1;
+      return border_face != (int)face_valence-1;
     }
     
     __forceinline bool has_second_face() const {
