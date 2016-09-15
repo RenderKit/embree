@@ -79,7 +79,8 @@ namespace embree
     /*! Triangle Mesh. */
     struct TriangleMesh : public Geometry
     {
-      TriangleMesh () : Geometry(TRIANGLE_MESH) {}
+      TriangleMesh () 
+        : Geometry(TRIANGLE_MESH), materialID(0) {}
       avector<Vec3fa> v;
       avector<Vec3fa> v2;
       avector<Vec3fa> vn;
@@ -91,7 +92,8 @@ namespace embree
     /*! Quad Mesh. */
     struct QuadMesh : public Geometry
     {
-      QuadMesh () : Geometry(QUAD_MESH) {}
+      QuadMesh () 
+        : Geometry(QUAD_MESH), materialID(0) {}
       avector<Vec3fa> v;
       avector<Vec3fa> v2;
       avector<Vec3fa> vn;
@@ -103,7 +105,8 @@ namespace embree
     /*! Subdivision Mesh. */
     struct SubdivMesh : public Geometry
     {
-      SubdivMesh () : Geometry(SUBDIV_MESH) {}
+      SubdivMesh () 
+        : Geometry(SUBDIV_MESH),materialID(0) {}
       avector<Vec3fa> positions;            //!< vertex positions
       avector<Vec3fa> positions2;            //!< vertex positions
       avector<Vec3fa> normals;              //!< face vertex normals
@@ -133,7 +136,8 @@ namespace embree
     /*! Line segments. */
     struct LineSegments : public Geometry
     {
-      LineSegments () : Geometry(LINE_SEGMENTS) {}
+      LineSegments () 
+        : Geometry(LINE_SEGMENTS), materialID(0) {}
       avector<Vec3fa> v;        //!< control points (x,y,z,r)
       avector<Vec3fa> v2;       //!< control points (x,y,z,r)
       std::vector<unsigned> indices; //!< index buffer
