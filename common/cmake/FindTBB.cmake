@@ -56,7 +56,7 @@ ELSE ()
 
   FIND_PATH(EMBREE_TBB_ROOT include/tbb/tbb.h
     DOC "Root of TBB installation"
-    PATHS ${PROJECT_SOURCE_DIR}/tbb /opt/intel/composerxe/tbb
+    PATHS ${PROJECT_SOURCE_DIR}/tbb /opt/intel/composerxe/tbb 
     NO_DEFAULT_PATH
   )
   FIND_PATH(EMBREE_TBB_ROOT include/tbb/tbb.h)
@@ -75,8 +75,8 @@ ELSE ()
       FIND_LIBRARY(TBB_LIBRARY_MALLOC tbbmalloc PATHS ${EMBREE_TBB_ROOT}/lib NO_DEFAULT_PATH)
     ELSE()
       FIND_PATH(TBB_INCLUDE_DIR tbb/task_scheduler_init.h PATHS ${EMBREE_TBB_ROOT}/include NO_DEFAULT_PATH)
-      FIND_LIBRARY(TBB_LIBRARY tbb PATHS ${EMBREE_TBB_ROOT}/lib/intel64/gcc4.4 ${EMBREE_TBB_ROOT}/lib ${EMBREE_TBB_ROOT}/lib64 NO_DEFAULT_PATH)
-      FIND_LIBRARY(TBB_LIBRARY_MALLOC tbbmalloc PATHS ${EMBREE_TBB_ROOT}/lib/intel64/gcc4.4 ${EMBREE_TBB_ROOT}/lib ${EMBREE_TBB_ROOT}/lib64 NO_DEFAULT_PATH)
+      FIND_LIBRARY(TBB_LIBRARY tbb PATHS ${EMBREE_TBB_ROOT}/lib/intel64/gcc4.4 ${EMBREE_TBB_ROOT}/lib ${EMBREE_TBB_ROOT}/lib64  /usr/libx86_64-linux-gnu/ NO_DEFAULT_PATH)
+      FIND_LIBRARY(TBB_LIBRARY_MALLOC tbbmalloc PATHS ${EMBREE_TBB_ROOT}/lib/intel64/gcc4.4 ${EMBREE_TBB_ROOT}/lib ${EMBREE_TBB_ROOT}/lib64  /usr/libx86_64-linux-gnu/ NO_DEFAULT_PATH)
     ENDIF()
   ENDIF()
 

@@ -191,7 +191,7 @@ namespace embree
             const vint4 bin = mapping.bin(center(prim.bounds()));
             for (size_t dim=0; dim<3; dim++) 
             {
-              assert(bin[dim] >= 0 && bin[dim] < BINS);
+              assert(bin[dim] >= (int)0 && bin[dim] < (int)BINS);
               numBegin[bin[dim]][dim]++;
               numEnd  [bin[dim]][dim]++;
               bounds  [bin[dim]][dim].extend(prim.bounds());
