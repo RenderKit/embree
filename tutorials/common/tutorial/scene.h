@@ -90,10 +90,10 @@ namespace embree
     struct TriangleMesh : public Geometry
     {
       TriangleMesh (avector<Vec3fa>& positions, avector<Vec3fa>& normals, std::vector<Vec2f>& texcoords, std::vector<Triangle>& triangles, unsigned materialID)
-        : Geometry(TRIANGLE_MESH), positions(positions), normals(normals), texcoords(texcoords), triangles(triangles), numTimeSteps(1), numVertices(positions.size()), materialID(materialID) {}
+        : Geometry(TRIANGLE_MESH), positions(positions), normals(normals), texcoords(texcoords), triangles(triangles), numTimeSteps(1), numVertices((unsigned int)positions.size()), materialID(materialID) {}
 
       TriangleMesh (Ref<SceneGraph::TriangleMeshNode> mesh, const AffineSpace3fa& space0, const AffineSpace3fa& space1, unsigned materialID)
-        : Geometry(TRIANGLE_MESH), numTimeSteps(mesh->numTimeSteps()), numVertices(mesh->numVertices()), materialID(materialID)
+        : Geometry(TRIANGLE_MESH), numTimeSteps((unsigned int)mesh->numTimeSteps()), numVertices((unsigned int)mesh->numVertices()), materialID(materialID)
       {
         positions.resize(numTimeSteps*numVertices); 
         for (size_t t=0; t<numTimeSteps; t++) {
@@ -132,7 +132,7 @@ namespace embree
     struct QuadMesh : public Geometry
     {
       QuadMesh (Ref<SceneGraph::QuadMeshNode> mesh, const AffineSpace3fa& space0, const AffineSpace3fa& space1, unsigned materialID)
-        : Geometry(QUAD_MESH), numTimeSteps(mesh->numTimeSteps()), numVertices(mesh->numVertices()), materialID(materialID)
+		  : Geometry(QUAD_MESH), numTimeSteps((unsigned int)mesh->numTimeSteps()), numVertices((unsigned int)mesh->numVertices()), materialID(materialID)
       {
         positions.resize(numTimeSteps*numVertices); 
         for (size_t t=0; t<numTimeSteps; t++) {
@@ -171,7 +171,7 @@ namespace embree
     struct SubdivMesh : public Geometry
     {
       SubdivMesh (Ref<SceneGraph::SubdivMeshNode> mesh, const AffineSpace3fa& space0, const AffineSpace3fa& space1, unsigned materialID)
-        : Geometry(SUBDIV_MESH), numTimeSteps(mesh->numTimeSteps()), numPositions(mesh->numPositions()), materialID(materialID)
+		  : Geometry(SUBDIV_MESH), numTimeSteps((unsigned int)mesh->numTimeSteps()), numPositions((unsigned int)mesh->numPositions()), materialID(materialID)
       {
         positions.resize(numTimeSteps*numPositions); 
         for (size_t t=0; t<numTimeSteps; t++) {
@@ -221,7 +221,7 @@ namespace embree
     struct LineSegments : public Geometry
     {
       LineSegments (Ref<SceneGraph::LineSegmentsNode> mesh, const AffineSpace3fa& space0, const AffineSpace3fa& space1, unsigned materialID)
-        : Geometry(LINE_SEGMENTS), numTimeSteps(mesh->numTimeSteps()), numVertices(mesh->numVertices()), materialID(materialID)
+		  : Geometry(LINE_SEGMENTS), numTimeSteps((unsigned int)mesh->numTimeSteps()), numVertices((unsigned int)mesh->numVertices()), materialID(materialID)
       {
         positions.resize(numTimeSteps*numVertices); 
         for (size_t t=0; t<numTimeSteps; t++) {
@@ -251,10 +251,10 @@ namespace embree
     struct HairSet : public Geometry
     {
       HairSet (avector<Vec3fa>& positions, std::vector<Hair>& hairs, unsigned materialID, bool hair)
-        : Geometry(hair ? HAIR_SET : CURVES), positions(positions), hairs(hairs), numTimeSteps(1), numVertices(positions.size()), materialID(materialID) {}
+		  : Geometry(hair ? HAIR_SET : CURVES), positions(positions), hairs(hairs), numTimeSteps(1), numVertices((unsigned int)positions.size()), materialID(materialID) {}
       
       HairSet (Ref<SceneGraph::HairSetNode> mesh, const AffineSpace3fa& space0, const AffineSpace3fa& space1, unsigned materialID)
-        : Geometry(mesh->hair ? HAIR_SET : CURVES), numTimeSteps(mesh->numTimeSteps()), numVertices(mesh->numVertices()), materialID(materialID)
+		  : Geometry(mesh->hair ? HAIR_SET : CURVES), numTimeSteps((unsigned int)mesh->numTimeSteps()), numVertices((unsigned int)mesh->numVertices()), materialID(materialID)
       {
         positions.resize(numTimeSteps*numVertices); 
         for (size_t t=0; t<numTimeSteps; t++) {
