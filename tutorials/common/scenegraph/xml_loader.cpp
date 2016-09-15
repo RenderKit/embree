@@ -836,11 +836,11 @@ namespace embree
 
     if (Ref<XML> animation = xml->childOpt("animated_positions")) {
       for (size_t i=0; i<animation->size(); i++)
-        mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec3faArray(animation->child(i))))));
+        mesh->positions.push_back(loadVec3faArray(animation->child(i)));
     } else {
-      mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec3faArray(xml->childOpt("positions"))))));
+      mesh->positions.push_back(loadVec3faArray(xml->childOpt("positions")));
       if (xml->hasChild("positions2")) 
-        mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec3faArray(xml->childOpt("positions2"))))));
+        mesh->positions.push_back(loadVec3faArray(xml->childOpt("positions2")));
     }
     
     mesh->normals = loadVec3faArray(xml->childOpt("normals"));
@@ -861,11 +861,11 @@ namespace embree
 
     if (Ref<XML> animation = xml->childOpt("animated_positions")) {
       for (size_t i=0; i<animation->size(); i++)
-        mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec3faArray(animation->child(i))))));
+        mesh->positions.push_back(loadVec3faArray(animation->child(i)));
     } else {
-      mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec3faArray(xml->childOpt("positions"))))));
+      mesh->positions.push_back(loadVec3faArray(xml->childOpt("positions")));
       if (xml->hasChild("positions2")) 
-        mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec3faArray(xml->childOpt("positions2"))))));
+        mesh->positions.push_back(loadVec3faArray(xml->childOpt("positions2")));
     }
     
     mesh->normals = loadVec3faArray(xml->childOpt("normals"));
@@ -885,11 +885,11 @@ namespace embree
 
     if (Ref<XML> animation = xml->childOpt("animated_positions")) {
       for (size_t i=0; i<animation->size(); i++)
-        mesh->positions_.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec3faArray(animation->child(i))))));
+        mesh->positions_.push_back(loadVec3faArray(animation->child(i)));
     } else {
-      mesh->positions_.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec3faArray(xml->childOpt("positions"))))));
+      mesh->positions_.push_back(loadVec3faArray(xml->childOpt("positions")));
       if (xml->hasChild("positions2")) 
-        mesh->positions_.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec3faArray(xml->childOpt("positions2"))))));
+        mesh->positions_.push_back(loadVec3faArray(xml->childOpt("positions2")));
     }
 
     mesh->normals = loadVec3faArray(xml->childOpt("normals"));
@@ -914,11 +914,11 @@ namespace embree
 
     if (Ref<XML> animation = xml->childOpt("animated_positions")) {
       for (size_t i=0; i<animation->size(); i++)
-        mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec4fArray(animation->child(i))))));
+        mesh->positions.push_back(loadVec4fArray(animation->child(i)));
     } else {
-      mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec4fArray(xml->childOpt("positions"))))));
+      mesh->positions.push_back(loadVec4fArray(xml->childOpt("positions")));
       if (xml->hasChild("positions2")) 
-        mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec4fArray(xml->childOpt("positions2"))))));
+        mesh->positions.push_back(loadVec4fArray(xml->childOpt("positions2")));
     }
 
     mesh->indices = loadUIntArray(xml->childOpt("indices"));
@@ -933,11 +933,11 @@ namespace embree
 
     if (Ref<XML> animation = xml->childOpt("animated_positions")) {
       for (size_t i=0; i<animation->size(); i++)
-        mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec4fArray(animation->child(i))))));
+        mesh->positions.push_back(loadVec4fArray(animation->child(i)));
     } else {
-      mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec4fArray(xml->childOpt("positions"))))));
+      mesh->positions.push_back(loadVec4fArray(xml->childOpt("positions")));
       if (xml->hasChild("positions2")) 
-        mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec4fArray(xml->childOpt("positions2"))))));
+        mesh->positions.push_back(loadVec4fArray(xml->childOpt("positions2")));
     }
     
     std::vector<Vec2i> indices = loadVec2iArray(xml->childOpt("indices"));
@@ -956,11 +956,11 @@ namespace embree
 
     if (Ref<XML> animation = xml->childOpt("animated_positions")) {
       for (size_t i=0; i<animation->size(); i++)
-        mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec4fArray(animation->child(i))))));
+        mesh->positions.push_back(loadVec4fArray(animation->child(i)));
     } else {
-      mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec4fArray(xml->childOpt("positions"))))));
+      mesh->positions.push_back(loadVec4fArray(xml->childOpt("positions")));
       if (xml->hasChild("positions2")) 
-        mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec4fArray(xml->childOpt("positions2"))))));
+        mesh->positions.push_back(loadVec4fArray(xml->childOpt("positions2")));
     }
     
     std::vector<Vec2i> indices = loadVec2iArray(xml->childOpt("indices"));
@@ -1006,11 +1006,11 @@ namespace embree
       
     if (Ref<XML> animation = xml->childOpt("animated_positions")) {
       for (size_t i=0; i<animation->size(); i++)
-        mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(convert_bspline_to_bezier(indices,loadVec4fArray(animation->child(i)))))));
+        mesh->positions.push_back(convert_bspline_to_bezier(indices,loadVec4fArray(animation->child(i))));
     } else {
-      mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(convert_bspline_to_bezier(indices,loadVec4fArray(xml->childOpt("positions")))))));
+      mesh->positions.push_back(convert_bspline_to_bezier(indices,loadVec4fArray(xml->childOpt("positions"))));
       if (xml->hasChild("positions2")) 
-        mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(convert_bspline_to_bezier(indices,loadVec4fArray(xml->childOpt("positions2")))))));
+        mesh->positions.push_back(convert_bspline_to_bezier(indices,loadVec4fArray(xml->childOpt("positions2"))));
     }
 
     mesh->verify();
@@ -1144,7 +1144,7 @@ namespace embree
     Ref<SceneGraph::MaterialNode> material = id2material.at(matid);
     SceneGraph::TriangleMeshNode* mesh = new SceneGraph::TriangleMeshNode(material);
 
-    mesh->positions.push_back(std::move(std::unique_ptr<avector<Vec3fa>>(new avector<Vec3fa>(loadVec3faArray(xml->childOpt("vertex"))))));
+    mesh->positions.push_back(loadVec3faArray(xml->childOpt("vertex")));
     mesh->normals = loadVec3faArray(xml->childOpt("normal"));
     mesh->texcoords = loadVec2fArray(xml->childOpt("texcoord"));
 

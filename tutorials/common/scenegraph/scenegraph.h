@@ -250,7 +250,7 @@ namespace embree
         : Node(true), material(material) 
       {
         for (size_t i=0; i<numTimeSteps; i++)
-          positions.push_back(std::move(std::unique_ptr<avector<Vertex>>(new avector<Vertex>())));
+          positions.push_back(avector<Vertex>());
       }
       
       virtual void setMaterial(Ref<MaterialNode> material) {
@@ -261,7 +261,7 @@ namespace embree
       {
         BBox3fa b = empty;
         for (const auto& p : positions)
-          for (auto x : *p)
+          for (auto x : p)
             b.extend(x);
         return b;
       }
@@ -272,7 +272,7 @@ namespace embree
 
       size_t numVertices() const {
         assert(positions.size());
-        return positions[0]->size();
+        return positions[0].size();
       }
 
       size_t numTimeSteps() const {
@@ -282,7 +282,7 @@ namespace embree
       void verify() const;
 
     public:
-      std::vector<std::unique_ptr<avector<Vertex>>> positions;
+      std::vector<avector<Vertex>> positions;
       avector<Vertex> normals;
       std::vector<Vec2f> texcoords;
       std::vector<Triangle> triangles;
@@ -309,7 +309,7 @@ namespace embree
         : Node(true), material(material) 
       {
         for (size_t i=0; i<numTimeSteps; i++)
-          positions.push_back(std::move(std::unique_ptr<avector<Vertex>>(new avector<Vertex>())));
+          positions.push_back(avector<Vertex>());
       }
       
       virtual void setMaterial(Ref<MaterialNode> material) {
@@ -320,7 +320,7 @@ namespace embree
       {
         BBox3fa b = empty;
         for (const auto& p : positions)
-          for (auto x : *p)
+          for (auto x : p)
             b.extend(x);
         return b;
       }
@@ -331,7 +331,7 @@ namespace embree
 
       size_t numVertices() const {
         assert(positions.size());
-        return positions[0]->size();
+        return positions[0].size();
       }
 
       size_t numTimeSteps() const {
@@ -341,7 +341,7 @@ namespace embree
       void verify() const;
 
     public:
-      std::vector<std::unique_ptr<avector<Vertex>>> positions;
+      std::vector<avector<Vertex>> positions;
       avector<Vertex> normals;
       std::vector<Vec2f> texcoords;
       std::vector<Quad> quads;
@@ -357,7 +357,7 @@ namespace embree
         : Node(true), material(material), boundaryMode(RTC_BOUNDARY_EDGE_ONLY), tessellationRate(2.0f) 
       {
         for (size_t i=0; i<numTimeSteps; i++)
-          positions_.push_back(std::move(std::unique_ptr<avector<Vertex>>(new avector<Vertex>())));
+          positions_.push_back(avector<Vertex>());
       }
       
       virtual void setMaterial(Ref<MaterialNode> material) {
@@ -368,7 +368,7 @@ namespace embree
       {
         BBox3fa b = empty;
         for (const auto& p : positions_)
-          for (auto x : *p)
+          for (auto x : p)
             b.extend(x);
         return b;
       }
@@ -379,7 +379,7 @@ namespace embree
 
       size_t numPositions() const {
         assert(positions_.size());
-        return positions_[0]->size();
+        return positions_[0].size();
       }
 
       size_t numTimeSteps() const {
@@ -389,7 +389,7 @@ namespace embree
       void verify() const;
 
     public:
-      std::vector<std::unique_ptr<avector<Vertex>>> positions_; //!< vertex positions for multiple timesteps
+      std::vector<avector<Vertex>> positions_; //!< vertex positions for multiple timesteps
       avector<Vertex> normals;              //!< face vertex normals
       std::vector<Vec2f> texcoords;             //!< face texture coordinates
       std::vector<unsigned> position_indices;        //!< position indices for all faces
@@ -416,7 +416,7 @@ namespace embree
         : Node(true), material(material) 
       {
         for (size_t i=0; i<numTimeSteps; i++)
-          positions.push_back(std::move(std::unique_ptr<avector<Vertex>>(new avector<Vertex>())));
+          positions.push_back(avector<Vertex>());
       }
       
       virtual void setMaterial(Ref<MaterialNode> material) {
@@ -427,7 +427,7 @@ namespace embree
       {
         BBox3fa b = empty;
         for (const auto& p : positions)
-          for (auto x : *p)
+          for (auto x : p)
             b.extend(x);
         return b;
       }
@@ -438,7 +438,7 @@ namespace embree
 
       size_t numVertices() const {
         assert(positions.size());
-        return positions[0]->size();
+        return positions[0].size();
       }
 
       size_t numTimeSteps() const {
@@ -448,7 +448,7 @@ namespace embree
       void verify() const;
 
     public:
-      std::vector<std::unique_ptr<avector<Vertex>>> positions; //!< line control points (x,y,z,r) for multiple timesteps
+      std::vector<avector<Vertex>> positions; //!< line control points (x,y,z,r) for multiple timesteps
       std::vector<unsigned> indices; //!< list of line segments
       Ref<MaterialNode> material;
     };
@@ -474,7 +474,7 @@ namespace embree
         : Node(true), hair(hair), material(material) 
       {
         for (size_t i=0; i<numTimeSteps; i++)
-          positions.push_back(std::move(std::unique_ptr<avector<Vertex>>(new avector<Vertex>())));
+          positions.push_back(avector<Vertex>());
       }
 
       virtual void setMaterial(Ref<MaterialNode> material) {
@@ -485,7 +485,7 @@ namespace embree
       {
         BBox3fa b = empty;
         for (const auto& p : positions)
-          for (auto x : *p)
+          for (auto x : p)
             b.extend(x);
         return b;
       }
@@ -496,7 +496,7 @@ namespace embree
 
       size_t numVertices() const {
         assert(positions.size());
-        return positions[0]->size();
+        return positions[0].size();
       }
 
       size_t numTimeSteps() const {
@@ -507,7 +507,7 @@ namespace embree
 
     public:
       bool hair;                //!< true is this is hair geometry, false if this are curves
-      std::vector<std::unique_ptr<avector<Vertex>>> positions; //!< hair control points (x,y,z,r) for multiple timesteps
+      std::vector<avector<Vertex>> positions; //!< hair control points (x,y,z,r) for multiple timesteps
       std::vector<Hair> hairs;  //!< list of hairs
       Ref<MaterialNode> material;
     };

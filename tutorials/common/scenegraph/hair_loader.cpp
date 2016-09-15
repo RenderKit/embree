@@ -67,7 +67,7 @@ namespace embree
             if (i == 0) sscanf(line,"%d : Bezier %f %f %f %f",&id,&v.x,&v.y,&v.z,&v.w);
             else        sscanf(line,"%d : %f %f %f %f",&id,&v.x,&v.y,&v.z,&v.w);
             //printf("%d %d : %f %f %f %f \n",id,vertex_start_id+id,v.x,v.y,v.z,v.w);		
-            hairset->positions[0]->push_back(v);
+            hairset->positions[0].push_back(v);
           }
           
           /* add indices to hair starts */
@@ -106,10 +106,10 @@ namespace embree
         THROW_RUNTIME_ERROR("invalid binary hair file " + fileName.str());
       if (fread(&numSegments,sizeof(int),1,fin) != 1)
         THROW_RUNTIME_ERROR("invalid binary hair file " + fileName.str());
-      hairset->positions[0]->resize(numPoints);
+      hairset->positions[0].resize(numPoints);
       hairset->hairs.resize(numSegments);
       if (numPoints) {
-        if (fread(hairset->positions[0]->data(),sizeof(Vec3fa),numPoints,fin) != numPoints)
+        if (fread(hairset->positions[0].data(),sizeof(Vec3fa),numPoints,fin) != numPoints)
           THROW_RUNTIME_ERROR("invalid binary hair file " + fileName.str());
       }
       if (numSegments) {
@@ -152,7 +152,7 @@ namespace embree
     fwrite(&numHairs,sizeof(int),1,fout);
     fwrite(&numPoints,sizeof(int),1,fout);
     fwrite(&numSegments,sizeof(int),1,fout);
-    if (numPoints) fwrite(hairset->positions[0]->data(),sizeof(Vec3fa),numPoints,fout);
+    if (numPoints) fwrite(hairset->positions[0].data(),sizeof(Vec3fa),numPoints,fout);
     if (numSegments) fwrite(hairset->hairs->data(),sizeof(SceneGraph::HairSet::Hair),numSegments,fout);
     fclose(fout);
 #endif

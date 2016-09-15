@@ -65,10 +65,10 @@ namespace embree
       const size_t width = texture->width;
       const size_t height = texture->height;
       
-      mesh->positions[0]->resize(height*width);
+      mesh->positions[0].resize(height*width);
       for (size_t y=0; y<height; y++) 
         for (size_t x=0; x<width; x++) 
-          mesh->positions[0]->at(y*width+x) = at(x,y);
+          mesh->positions[0][y*width+x] = at(x,y);
 
       mesh->triangles.resize(2*(height-1)*(width-1));
       for (size_t y=0; y<height-1; y++) {

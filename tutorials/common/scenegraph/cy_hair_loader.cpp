@@ -159,7 +159,7 @@ namespace embree
       v.y = cyFile.points[3*i+1];
       v.z = cyFile.points[3*i+2];
       v.w = cyFile.thickness ? cyFile.thickness[i] : 0.1f;
-      hairset->positions[0]->push_back(v);
+      hairset->positions[0].push_back(v);
     }
     
     ssize_t index = 0;

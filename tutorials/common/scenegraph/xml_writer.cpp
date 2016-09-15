@@ -407,7 +407,7 @@ namespace embree
     open("TriangleMesh",id);
     store(mesh->material);
     if (mesh->numTimeSteps() != 1) open("animated_positions");
-    for (const auto& p : mesh->positions) store("positions",*p);
+    for (const auto& p : mesh->positions) store("positions",p);
     if (mesh->numTimeSteps() != 1) close("animated_positions");
     store("normals",mesh->normals);
     store("texcoords",mesh->texcoords);
@@ -420,7 +420,7 @@ namespace embree
     open("QuadMesh",id);
     store(mesh->material);
     if (mesh->numTimeSteps() != 1) open("animated_positions");
-    for (const auto& p : mesh->positions) store("positions",*p);
+    for (const auto& p : mesh->positions) store("positions",p);
     if (mesh->numTimeSteps() != 1) close("animated_positions");
     store("normals",mesh->normals);
     store("texcoords",mesh->texcoords);
@@ -433,7 +433,7 @@ namespace embree
     open("SubdivisionMesh",id);
     store(mesh->material);
     if (mesh->numTimeSteps() != 1) open("animated_positions");
-    for (const auto& p : mesh->positions_) store("positions",*p);
+    for (const auto& p : mesh->positions_) store("positions",p);
     if (mesh->numTimeSteps() != 1) close("animated_positions");
     store("normals",mesh->normals);
     store("texcoords",mesh->texcoords);
@@ -454,7 +454,7 @@ namespace embree
     open("LineSegments",id);
     store(mesh->material);
     if (mesh->numTimeSteps() != 1) open("animated_positions");
-    for (const auto& p : mesh->positions) store4f("positions",*p);
+    for (const auto& p : mesh->positions) store4f("positions",p);
     if (mesh->numTimeSteps() != 1) close("animated_positions");
     store("indices",mesh->indices);
     close("LineSegments");
@@ -465,7 +465,7 @@ namespace embree
     open("Hair",id);
     store(mesh->material);
     if (mesh->numTimeSteps() != 1) open("animated_positions");
-    for (const auto& p : mesh->positions) store4f("positions",*p);
+    for (const auto& p : mesh->positions) store4f("positions",p);
     if (mesh->numTimeSteps() != 1) close("animated_positions");
     store("indices",mesh->hairs);
     close("Hair");

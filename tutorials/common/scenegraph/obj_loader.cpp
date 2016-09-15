@@ -441,16 +441,16 @@ namespace embree
   {
     const std::map<Vertex, uint32_t>::iterator& entry = vertexMap.find(i);
     if (entry != vertexMap.end()) return(entry->second);
-    mesh->positions[0]->push_back(Vec3fa(v[i.v].x,v[i.v].y,v[i.v].z));
+    mesh->positions[0].push_back(Vec3fa(v[i.v].x,v[i.v].y,v[i.v].z));
     if (i.vn >= 0) {
-      while (mesh->normals.size() < mesh->positions[0]->size()) mesh->normals.push_back(zero); // some vertices might not had a normal
-      mesh->normals[mesh->positions[0]->size()-1] = vn[i.vn];
+      while (mesh->normals.size() < mesh->positions[0].size()) mesh->normals.push_back(zero); // some vertices might not had a normal
+      mesh->normals[mesh->positions[0].size()-1] = vn[i.vn];
     }
     if (i.vt >= 0) {
-      while (mesh->texcoords.size() < mesh->positions[0]->size()) mesh->texcoords.push_back(zero); // some vertices might not had a texture coordinate
-      mesh->texcoords[mesh->positions[0]->size()-1] = vt[i.vt];
+      while (mesh->texcoords.size() < mesh->positions[0].size()) mesh->texcoords.push_back(zero); // some vertices might not had a texture coordinate
+      mesh->texcoords[mesh->positions[0].size()-1] = vt[i.vt];
     }
-    return(vertexMap[i] = int(mesh->positions[0]->size()) - 1);
+    return(vertexMap[i] = int(mesh->positions[0].size()) - 1);
   }
 
   /*! end current facegroup and append to mesh */
@@ -463,7 +463,7 @@ namespace embree
       Ref<SceneGraph::SubdivMeshNode> mesh = new SceneGraph::SubdivMeshNode(curMaterial,1);
       group->add(mesh.cast<SceneGraph::Node>());
 
-      for (size_t i=0; i<v.size();  i++) mesh->positions_[0]->push_back(v[i]);
+      for (size_t i=0; i<v.size();  i++) mesh->positions_[0].push_back(v[i]);
       for (size_t i=0; i<vn.size(); i++) mesh->normals  .push_back(vn[i]);
       for (size_t i=0; i<vt.size(); i++) mesh->texcoords.push_back(vt[i]);
       
