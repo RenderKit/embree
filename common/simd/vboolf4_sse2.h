@@ -152,7 +152,7 @@ namespace embree
   __forceinline bool any       ( const vboolf4& b ) { return _mm_movemask_ps(b) != 0x0; }
   __forceinline bool none      ( const vboolf4& b ) { return _mm_movemask_ps(b) == 0x0; }
 
-  __forceinline bool all       ( const vboolf4& valid, const vboolf4& b ) { return all(!valid | b); }
+  __forceinline bool all       ( const vboolf4& valid, const vboolf4& b ) { return all((!valid) | b); }
   __forceinline bool any       ( const vboolf4& valid, const vboolf4& b ) { return any( valid & b); }
   __forceinline bool none      ( const vboolf4& valid, const vboolf4& b ) { return none(valid & b); }
   

@@ -164,7 +164,7 @@ namespace embree
   __forceinline bool any       ( const vboolf8& a ) { return !_mm256_testz_ps(a,a); }
   __forceinline bool none      ( const vboolf8& a ) { return _mm256_testz_ps(a,a) != 0; }
 
-  __forceinline bool all       ( const vboolf8& valid, const vboolf8& b ) { return all(!valid | b); }
+  __forceinline bool all       ( const vboolf8& valid, const vboolf8& b ) { return all((!valid) | b); }
   __forceinline bool any       ( const vboolf8& valid, const vboolf8& b ) { return any( valid & b); }
   __forceinline bool none      ( const vboolf8& valid, const vboolf8& b ) { return none(valid & b); }
 

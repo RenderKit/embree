@@ -109,7 +109,7 @@ namespace embree
   __forceinline int any (const vboolf4 &a) { return _mm512_kortestz(a, a) == 0; }
   __forceinline int none(const vboolf4 &a) { return _mm512_kortestz(a, a) != 0; }
 
-  __forceinline int all ( const vboolf4& valid, const vboolf4& b ) { return all(!valid | b); }
+  __forceinline int all ( const vboolf4& valid, const vboolf4& b ) { return all((!valid) | b); }
   __forceinline int any ( const vboolf4& valid, const vboolf4& b ) { return any( valid & b); }
   __forceinline int none( const vboolf4& valid, const vboolf4& b ) { return none(valid & b); }
 
