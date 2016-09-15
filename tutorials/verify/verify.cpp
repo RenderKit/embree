@@ -196,8 +196,8 @@ namespace embree
                                                  mesh->edge_creases.size(), mesh->vertex_creases.size(), mesh->holes.size(), numTimeSteps);
         rtcSetBuffer(scene,geomID,RTC_FACE_BUFFER  ,mesh->verticesPerFace.data(), 0,sizeof(int));
         rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER ,mesh->position_indices.data(),0,sizeof(int));
-        if (mesh->numTimeSteps() >= 1) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER0,mesh->positions_[0].data(),0,sizeof(SceneGraph::SubdivMeshNode::Vertex));
-        if (mesh->numTimeSteps() >= 2) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER1,mesh->positions_[1].data(),0,sizeof(SceneGraph::SubdivMeshNode::Vertex));
+        if (mesh->numTimeSteps() >= 1) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER0,mesh->positions[0].data(),0,sizeof(SceneGraph::SubdivMeshNode::Vertex));
+        if (mesh->numTimeSteps() >= 2) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER1,mesh->positions[1].data(),0,sizeof(SceneGraph::SubdivMeshNode::Vertex));
         if (mesh->edge_creases.size()) rtcSetBuffer(scene,geomID,RTC_EDGE_CREASE_INDEX_BUFFER,mesh->edge_creases.data(),0,2*sizeof(int));
         if (mesh->edge_crease_weights.size()) rtcSetBuffer(scene,geomID,RTC_EDGE_CREASE_WEIGHT_BUFFER,mesh->edge_crease_weights.data(),0,sizeof(float));
         if (mesh->vertex_creases.size()) rtcSetBuffer(scene,geomID,RTC_VERTEX_CREASE_INDEX_BUFFER,mesh->vertex_creases.data(),0,sizeof(int));
@@ -960,10 +960,10 @@ namespace embree
         subdivmesh->position_indices.push_back(4*i+1);
         subdivmesh->position_indices.push_back(4*i+2);
         subdivmesh->position_indices.push_back(4*i+3);
-        subdivmesh->positions_[0].push_back(Vec3fa(0,0,0));
-        subdivmesh->positions_[0].push_back(Vec3fa(0,1,0));
-        subdivmesh->positions_[0].push_back(Vec3fa(1,1,0));
-        subdivmesh->positions_[0].push_back(Vec3fa(1,0,0));
+        subdivmesh->positions[0].push_back(Vec3fa(0,0,0));
+        subdivmesh->positions[0].push_back(Vec3fa(0,1,0));
+        subdivmesh->positions[0].push_back(Vec3fa(1,1,0));
+        subdivmesh->positions[0].push_back(Vec3fa(1,0,0));
       }
       scene.addGeometry(gflags,subdivmesh.dynamicCast<SceneGraph::Node>(),false);
 
@@ -974,14 +974,14 @@ namespace embree
         subdivmesh2->position_indices.push_back(4*i+1);
         subdivmesh2->position_indices.push_back(4*i+2);
         subdivmesh2->position_indices.push_back(4*i+3);
-        subdivmesh2->positions_[0].push_back(Vec3fa(0,0,0));
-        subdivmesh2->positions_[0].push_back(Vec3fa(0,1,0));
-        subdivmesh2->positions_[0].push_back(Vec3fa(1,1,0));
-        subdivmesh2->positions_[0].push_back(Vec3fa(1,0,0));
-        subdivmesh2->positions_[1].push_back(Vec3fa(0,0,0));
-        subdivmesh2->positions_[1].push_back(Vec3fa(0,1,1));
-        subdivmesh2->positions_[1].push_back(Vec3fa(1,1,1));
-        subdivmesh2->positions_[1].push_back(Vec3fa(1,0,1));
+        subdivmesh2->positions[0].push_back(Vec3fa(0,0,0));
+        subdivmesh2->positions[0].push_back(Vec3fa(0,1,0));
+        subdivmesh2->positions[0].push_back(Vec3fa(1,1,0));
+        subdivmesh2->positions[0].push_back(Vec3fa(1,0,0));
+        subdivmesh2->positions[1].push_back(Vec3fa(0,0,0));
+        subdivmesh2->positions[1].push_back(Vec3fa(0,1,1));
+        subdivmesh2->positions[1].push_back(Vec3fa(1,1,1));
+        subdivmesh2->positions[1].push_back(Vec3fa(1,0,1));
       }
       scene.addGeometry(gflags,subdivmesh2.dynamicCast<SceneGraph::Node>(),true);
       

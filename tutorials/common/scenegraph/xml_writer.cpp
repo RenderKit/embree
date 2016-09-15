@@ -433,7 +433,7 @@ namespace embree
     open("SubdivisionMesh",id);
     store(mesh->material);
     if (mesh->numTimeSteps() != 1) open("animated_positions");
-    for (const auto& p : mesh->positions_) store("positions",p);
+    for (const auto& p : mesh->positions) store("positions",p);
     if (mesh->numTimeSteps() != 1) close("animated_positions");
     store("normals",mesh->normals);
     store("texcoords",mesh->texcoords);

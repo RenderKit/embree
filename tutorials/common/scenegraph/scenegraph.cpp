@@ -145,7 +145,7 @@ namespace embree
   void SceneGraph::SubdivMeshNode::verify() const
   {
     const size_t N = numPositions();
-    for (const auto& p : positions_) 
+    for (const auto& p : positions) 
       if (p.size() != N) 
         THROW_RUNTIME_ERROR("incompatible position array sizes");
     for (auto i : position_indices) 
@@ -256,8 +256,8 @@ namespace embree
         if (mesh0->verticesPerFace != mesh1->verticesPerFace)
           THROW_RUNTIME_ERROR("incompatible scene graph");
 
-        for (auto& p : mesh1->positions_)
-          mesh0->positions_.push_back(std::move(p));
+        for (auto& p : mesh1->positions)
+          mesh0->positions.push_back(std::move(p));
       }
       else THROW_RUNTIME_ERROR("incompatible scene graph"); 
     }
@@ -304,10 +304,10 @@ namespace embree
     {
       bool equal = true;
       for (size_t i=1; i<mesh->numTimeSteps(); i++)
-        equal &= mesh->positions_[0] == mesh->positions_[i];
+        equal &= mesh->positions[0] == mesh->positions[i];
 
       if (equal)
-        mesh->positions_.resize(1);
+        mesh->positions.resize(1);
     }
   }
 
@@ -352,9 +352,9 @@ namespace embree
     else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>()) 
     {
       avector<Vec3fa> positions1;
-      for (auto P : mesh->positions_.back()) 
+      for (auto P : mesh->positions.back()) 
         positions1.push_back(P+dP);
-      mesh->positions_.push_back(std::move(positions1));
+      mesh->positions.push_back(std::move(positions1));
     }
   }
 
@@ -491,7 +491,7 @@ namespace embree
       SceneGraph::SubdivMeshNode* smesh = new SceneGraph::SubdivMeshNode(tmesh->material);
 
       for (auto& p : tmesh->positions)
-        smesh->positions_.push_back(std::move(p));
+        smesh->positions.push_back(std::move(p));
 
       for (size_t i=0; i<tmesh->quads.size(); i++) {
         smesh->position_indices.push_back(tmesh->quads[i].v0);
@@ -626,7 +626,7 @@ namespace embree
   {
     SceneGraph::SubdivMeshNode* mesh = new SceneGraph::SubdivMeshNode(material,1);
     mesh->tessellationRate = tessellationRate;
-    mesh->positions_[0].resize((width+1)*(height+1));
+    mesh->positions[0].resize((width+1)*(height+1));
     mesh->position_indices.resize(4*width*height);
     mesh->verticesPerFace.resize(width*height);
 
@@ -634,9 +634,9 @@ namespace embree
       for (size_t x=0; x<=width; x++) {
         Vec3fa p = p0+float(x)/float(width)*dx+float(y)/float(height)*dy;
         size_t i = y*(width+1)+x;
-        mesh->positions_[0][i].x = p.x;
-        mesh->positions_[0][i].y = p.y;
-        mesh->positions_[0][i].z = p.z;
+        mesh->positions[0][i].x = p.x;
+        mesh->positions[0][i].y = p.y;
+        mesh->positions[0][i].z = p.z;
       }
     }
     for (size_t y=0; y<height; y++) {
@@ -781,7 +781,7 @@ namespace embree
     unsigned numVertices = numTheta*(numPhi+1);
     SceneGraph::SubdivMeshNode* mesh = new SceneGraph::SubdivMeshNode(material,1);
     mesh->tessellationRate = tessellationRate;
-    mesh->positions_[0].resize(numVertices);
+    mesh->positions[0].resize(numVertices);
 
     /* create sphere geometry */
     const float rcpNumTheta = rcp((float)numTheta);
@@ -792,9 +792,9 @@ namespace embree
       {
 	const float phif   = phi*float(pi)*rcpNumPhi;
 	const float thetaf = theta*2.0f*float(pi)*rcpNumTheta;
-	mesh->positions_[0][phi*numTheta+theta].x = center.x + radius*sin(phif)*sin(thetaf);
-        mesh->positions_[0][phi*numTheta+theta].y = center.y + radius*cos(phif);
-	mesh->positions_[0][phi*numTheta+theta].z = center.z + radius*sin(phif)*cos(thetaf);
+	mesh->positions[0][phi*numTheta+theta].x = center.x + radius*sin(phif)*sin(thetaf);
+        mesh->positions[0][phi*numTheta+theta].y = center.y + radius*cos(phif);
+	mesh->positions[0][phi*numTheta+theta].z = center.z + radius*sin(phif)*cos(thetaf);
       }
       if (phi == 0) continue;
       
@@ -1056,7 +1056,7 @@ namespace embree
         const float y = cast_i2f(RandomSampler_getUInt(sampler));
         const float z = cast_i2f(RandomSampler_getUInt(sampler));
         const float w = cast_i2f(RandomSampler_getUInt(sampler));
-        mesh->positions_[0].push_back(Vec3fa(x,y,z,w));
+        mesh->positions[0].push_back(Vec3fa(x,y,z,w));
 
         if (mblur) 
         {
@@ -1064,7 +1064,7 @@ namespace embree
           const float y = cast_i2f(RandomSampler_getUInt(sampler));
           const float z = cast_i2f(RandomSampler_getUInt(sampler));
           const float w = cast_i2f(RandomSampler_getUInt(sampler));
-          mesh->positions_[1].push_back(Vec3fa(x,y,z,w));
+          mesh->positions[1].push_back(Vec3fa(x,y,z,w));
         }
       }
     }

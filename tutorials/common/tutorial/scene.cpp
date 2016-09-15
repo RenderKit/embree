@@ -119,15 +119,15 @@ namespace embree
       TutorialScene::SubdivMesh* subdivmesh = new TutorialScene::SubdivMesh();
       const LinearSpace3fa nspace0 = rcp(space0.l).transposed();
       
-      subdivmesh->positions.resize(mesh->positions_[0].size()); 
-      for (size_t i=0; i<mesh->positions_[0].size(); i++) 
-        subdivmesh->positions[i] = xfmPoint(space0,mesh->positions_[0][i]);
+      subdivmesh->positions.resize(mesh->positions[0].size()); 
+      for (size_t i=0; i<mesh->positions[0].size(); i++) 
+        subdivmesh->positions[i] = xfmPoint(space0,mesh->positions[0][i]);
 
       if (mesh->numTimeSteps() > 1)
       {
-        subdivmesh->positions2.resize(mesh->positions_[1].size()); 
-        for (size_t i=0; i<mesh->positions_[1].size(); i++) 
-          subdivmesh->positions2[i] = xfmPoint(space0,mesh->positions_[1][i]);
+        subdivmesh->positions2.resize(mesh->positions[1].size()); 
+        for (size_t i=0; i<mesh->positions[1].size(); i++) 
+          subdivmesh->positions2[i] = xfmPoint(space0,mesh->positions[1][i]);
       }
       
       subdivmesh->normals.resize(mesh->normals.size()); 

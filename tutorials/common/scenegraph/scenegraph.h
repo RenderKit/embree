@@ -357,7 +357,7 @@ namespace embree
         : Node(true), material(material), boundaryMode(RTC_BOUNDARY_EDGE_ONLY), tessellationRate(2.0f) 
       {
         for (size_t i=0; i<numTimeSteps; i++)
-          positions_.push_back(avector<Vertex>());
+          positions.push_back(avector<Vertex>());
       }
       
       virtual void setMaterial(Ref<MaterialNode> material) {
@@ -367,7 +367,7 @@ namespace embree
       virtual BBox3fa bounds() const
       {
         BBox3fa b = empty;
-        for (const auto& p : positions_)
+        for (const auto& p : positions)
           for (auto x : p)
             b.extend(x);
         return b;
@@ -378,18 +378,18 @@ namespace embree
       }
 
       size_t numPositions() const {
-        assert(positions_.size());
-        return positions_[0].size();
+        assert(positions.size());
+        return positions[0].size();
       }
 
       size_t numTimeSteps() const {
-        return positions_.size();
+        return positions.size();
       }
 
       void verify() const;
 
     public:
-      std::vector<avector<Vertex>> positions_; //!< vertex positions for multiple timesteps
+      std::vector<avector<Vertex>> positions; //!< vertex positions for multiple timesteps
       avector<Vertex> normals;              //!< face vertex normals
       std::vector<Vec2f> texcoords;             //!< face texture coordinates
       std::vector<unsigned> position_indices;        //!< position indices for all faces

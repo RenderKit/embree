@@ -463,7 +463,7 @@ namespace embree
       Ref<SceneGraph::SubdivMeshNode> mesh = new SceneGraph::SubdivMeshNode(curMaterial,1);
       group->add(mesh.cast<SceneGraph::Node>());
 
-      for (size_t i=0; i<v.size();  i++) mesh->positions_[0].push_back(v[i]);
+      for (size_t i=0; i<v.size();  i++) mesh->positions[0].push_back(v[i]);
       for (size_t i=0; i<vn.size(); i++) mesh->normals  .push_back(vn[i]);
       for (size_t i=0; i<vt.size(); i++) mesh->texcoords.push_back(vt[i]);
       
