@@ -75,13 +75,6 @@ namespace embree
 
     struct ISPCTriangleMesh
     {
-      ISPCTriangleMesh (unsigned int numTriangles,
-                        unsigned int numQuads,
-                        unsigned int numVertices,
-                        int materialID)
-      : geom(TRIANGLE_MESH), positions(nullptr), positions2(nullptr), normals(nullptr), texcoords(nullptr), triangles(nullptr),
-        numVertices(numVertices), numTriangles(numTriangles), numQuads(numQuads), geomID(0), materialID(materialID) {}
-
       ISPCTriangleMesh (Ref<TutorialScene::TriangleMesh> in) : geom(TRIANGLE_MESH)
       {
         positions = in->v.data();
@@ -104,17 +97,12 @@ namespace embree
       ISPCTriangle* triangles;  //!< list of triangles
       unsigned int numVertices;
       unsigned int numTriangles;
-      unsigned int numQuads;
       unsigned int geomID;
       unsigned int materialID;
     };
     
     struct ISPCQuadMesh
     {
-      ISPCQuadMesh ()
-      : geom(QUAD_MESH), positions(nullptr), positions2(nullptr), normals(nullptr), texcoords(nullptr), quads(nullptr),
-        numVertices(0), numQuads(0), geomID(0), materialID(0) {}
-
       ISPCQuadMesh (Ref<TutorialScene::QuadMesh> in) : geom(QUAD_MESH)
       {
         positions = in->v.data();
@@ -143,11 +131,6 @@ namespace embree
 
     struct ISPCSubdivMesh
     {
-      ISPCSubdivMesh (unsigned int numVertices, unsigned int numFaces, unsigned int numEdges, unsigned int materialID)
-      : geom(SUBDIV_MESH), positions(nullptr), positions2(nullptr), normals(nullptr), texcoords(nullptr), position_indices(nullptr), normal_indices(nullptr), texcoord_indices(nullptr), verticesPerFace(nullptr), holes(nullptr),
-        subdivlevel(nullptr), edge_creases(nullptr), edge_crease_weights(nullptr), vertex_creases(nullptr), vertex_crease_weights(nullptr), face_offsets(nullptr),
-        numVertices(numVertices), numFaces(numFaces), numEdges(numEdges), numEdgeCreases(0), numVertexCreases(0), numHoles(0), materialID(materialID), geomID(0) {}
-
       ISPCSubdivMesh (Ref<TutorialScene::SubdivMesh> in) : geom(SUBDIV_MESH)
       {
         positions = in->positions.data();
@@ -214,10 +197,6 @@ namespace embree
 
     struct ISPCLineSegments
     {
-      ISPCLineSegments ()
-      : geom(LINE_SEGMENTS), v(nullptr), v2(nullptr), indices(nullptr),
-        numVertices(0), numSegments(0), materialID(0) {}
-
       ISPCLineSegments (Ref<TutorialScene::LineSegments> in) : geom(LINE_SEGMENTS)
       {
         v = in->v.data();
@@ -239,10 +218,6 @@ namespace embree
 
     struct ISPCHairSet
     {
-      ISPCHairSet (unsigned int numHairs, unsigned int numVertices, int materialID)
-      : geom(HAIR_SET), v(nullptr), v2(nullptr), hairs(nullptr),
-        numVertices(numVertices), numHairs(numHairs), materialID(materialID) {}
-
       ISPCHairSet (bool hair, Ref<TutorialScene::HairSet> in) : geom(hair ? HAIR_SET : CURVES)
       {
         v = in->v.data();
@@ -265,9 +240,6 @@ namespace embree
     struct ISPCInstance
     {
       ALIGNED_STRUCT;
-
-      ISPCInstance ()
-      : geom(INSTANCE), space0(one), space1(one), geomID(0) {}
 
       ISPCInstance (Ref<TutorialScene::Instance> in)
       : geom(INSTANCE), space0(in->space0), space1(in->space1), geomID(in->geomID) {}

@@ -51,7 +51,6 @@ struct ISPCTriangleMesh
   uniform ISPCTriangle* triangles;  //!< list of triangles
   unsigned int numVertices;
   unsigned int numTriangles;
-  unsigned int numQuads;
   unsigned int geomID;
   unsigned int materialID;
 };
