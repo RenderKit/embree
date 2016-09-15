@@ -16,11 +16,8 @@
 
 #pragma once
 
-#if defined(__AVX2__) && defined(__X86_64__)
-
 namespace embree
 { 
-
 #ifndef _MM_SHUF_PERM2
 #define _MM_SHUF_PERM2(e3, e2, e1, e0) \
   ((int)(((e3)<<3) | ((e2)<<2) | ((e1)<<1) | (e0)))
@@ -38,7 +35,7 @@ namespace embree
     typedef vboold4 Bool;
 
     enum  { size = 4 }; // number of SIMD elements
-    union {              // data
+    union {             // data
       __m256i v; 
       long i[4]; 
     };
@@ -107,16 +104,24 @@ namespace embree
       _mm256_store_si256((__m256i*)ptr,v);
     }
 
-    static __forceinline void storeu(void* ptr, const vlong4& v ) {
+    static __forceinline void storeu(void* ptr, const vlong4& v) {
       _mm256_storeu_si256((__m256i*)ptr,v);
     }
 
-    static __forceinline void storeu(const vboold4& mask, long* ptr, const vlong4& f ) {
+    static __forceinline void storeu(const vboold4& mask, long* ptr, const vlong4& f) {
+#if defined(__AVX512VL__)
+      _mm256_mask_storeu_epi64(ptr,mask,f);
+#else
       _mm256_maskstore_pd((double*)ptr,mask,_mm256_castsi256_pd(f));
+#endif
     }
 
     static __forceinline void store(const vboold4& mask, void* ptr, const vlong4& f) {
+#if defined(__AVX512VL__)
+      _mm256_mask_store_epi64(ptr,mask,f);
+#else
       _mm256_maskstore_pd((double*)ptr,mask,_mm256_castsi256_pd(f));
+#endif
     }
 
     static __forceinline vlong4 broadcast64bit(size_t v) {
@@ -218,33 +223,46 @@ namespace embree
   /// Comparison Operators + Select
   ////////////////////////////////////////////////////////////////////////////////
 
+#if defined(__AVX512VL__)
+  __forceinline const vboold4 operator ==( const vlong4& a, const vlong4& b ) { return _mm256_cmp_epi64_mask(a,b,_MM_CMPINT_EQ); }
+  __forceinline const vboold4 operator !=( const vlong4& a, const vlong4& b ) { return _mm256_cmp_epi64_mask(a,b,_MM_CMPINT_NE); }
+  __forceinline const vboold4 operator < ( const vlong4& a, const vlong4& b ) { return _mm256_cmp_epi64_mask(a,b,_MM_CMPINT_LT); }
+  __forceinline const vboold4 operator >=( const vlong4& a, const vlong4& b ) { return _mm256_cmp_epi64_mask(a,b,_MM_CMPINT_GE); }
+  __forceinline const vboold4 operator > ( const vlong4& a, const vlong4& b ) { return _mm256_cmp_epi64_mask(a,b,_MM_CMPINT_GT); }
+  __forceinline const vboold4 operator <=( const vlong4& a, const vlong4& b ) { return _mm256_cmp_epi64_mask(a,b,_MM_CMPINT_LE); }
+#else
   __forceinline const vboold4 operator ==( const vlong4& a, const vlong4& b ) { return _mm256_cmpeq_epi64(a,b); }
+  __forceinline const vboold4 operator !=( const vlong4& a, const vlong4& b ) { return !(a == b); }
+  __forceinline const vboold4 operator > ( const vlong4& a, const vlong4& b ) { return _mm256_cmpgt_epi64(a,b); }
+  __forceinline const vboold4 operator < ( const vlong4& a, const vlong4& b ) { return _mm256_cmpgt_epi64(b,a); }
+  __forceinline const vboold4 operator >=( const vlong4& a, const vlong4& b ) { return !(a < b); }
+  __forceinline const vboold4 operator <=( const vlong4& a, const vlong4& b ) { return !(a > b); }
+#endif
+
   __forceinline const vboold4 operator ==( const vlong4& a, const long    b ) { return a == vlong4(b); }
   __forceinline const vboold4 operator ==( const long    a, const vlong4& b ) { return vlong4(a) == b; }
-  
-  __forceinline const vboold4 operator !=( const vlong4& a, const vlong4& b ) { return !(a == b); }
+
   __forceinline const vboold4 operator !=( const vlong4& a, const long    b ) { return a != vlong4(b); }
   __forceinline const vboold4 operator !=( const long    a, const vlong4& b ) { return vlong4(a) != b; }
 
-  __forceinline const vboold4 operator > ( const vlong4& a, const vlong4& b ) { return _mm256_cmpgt_epi64(a,b); }
   __forceinline const vboold4 operator > ( const vlong4& a, const long    b ) { return a >  vlong4(b); }
   __forceinline const vboold4 operator > ( const long    a, const vlong4& b ) { return vlong4(a) >  b; }
-  
-  __forceinline const vboold4 operator < ( const vlong4& a, const vlong4& b ) { return _mm256_cmpgt_epi64(b,a); }
+
   __forceinline const vboold4 operator < ( const vlong4& a, const long    b ) { return a <  vlong4(b); }
   __forceinline const vboold4 operator < ( const long    a, const vlong4& b ) { return vlong4(a) <  b; }
-  
-  __forceinline const vboold4 operator >=( const vlong4& a, const vlong4& b ) { return !(a < b); }
+
   __forceinline const vboold4 operator >=( const vlong4& a, const long    b ) { return a >= vlong4(b); }
   __forceinline const vboold4 operator >=( const long    a, const vlong4& b ) { return vlong4(a) >= b; }
 
-
-  __forceinline const vboold4 operator <=( const vlong4& a, const vlong4& b ) { return !(a > b); }
   __forceinline const vboold4 operator <=( const vlong4& a, const long    b ) { return a <= vlong4(b); }
   __forceinline const vboold4 operator <=( const long    a, const vlong4& b ) { return vlong4(a) <= b; }
-    
+
   __forceinline const vlong4 select( const vboold4& m, const vlong4& t, const vlong4& f ) {
+#if defined(__AVX512VL__)
+    return _mm256_mask_blend_epi64(m, f, t);
+#else
     return _mm256_castpd_si256(_mm256_blendv_pd(_mm256_castsi256_pd(f), _mm256_castsi256_pd(t), m));
+#endif
   }
 
   __forceinline void xchg(const vboold4& m, vlong4& a, vlong4& b) {
@@ -252,7 +270,11 @@ namespace embree
   }
 
   __forceinline vboold4 test(const vlong4& a, const vlong4& b) {
+#if defined(__AVX512VL__)
+    return _mm256_test_epi64_mask(a,b);
+#else
     return _mm256_testz_si256(a,b);
+#endif
   }
 
   ////////////////////////////////////////////////////////////////////////////////
@@ -300,5 +322,3 @@ namespace embree
     return cout;
   }
 }
-
-#endif
