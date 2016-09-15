@@ -78,7 +78,7 @@ namespace embree
         SceneGraph::TriangleMeshNode::Triangle& tri = mesh->triangles[i];
         objmesh->triangles[i] = TutorialScene::Triangle(tri.v0,tri.v1,tri.v2,materialID);
       }
-      objmesh->meshMaterialID = materialID;
+      objmesh->materialID = materialID;
       return objmesh;
     }
 
@@ -108,7 +108,7 @@ namespace embree
         SceneGraph::QuadMeshNode::Quad& quad = mesh->quads[i];
         objmesh->quads[i] = TutorialScene::Quad(quad.v0,quad.v1,quad.v2,quad.v3);
       }
-      objmesh->meshMaterialID = materialID;
+      objmesh->materialID = materialID;
       return objmesh;
     }
 

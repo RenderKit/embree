@@ -85,7 +85,7 @@ namespace embree
       avector<Vec3fa> vn;
       std::vector<Vec2f> vt;
       std::vector<Triangle> triangles;
-      unsigned meshMaterialID;
+      unsigned materialID;
     };
 
     /*! Quad Mesh. */
@@ -97,7 +97,7 @@ namespace embree
       avector<Vec3fa> vn;
       std::vector<Vec2f> vt;
       std::vector<Quad> quads;
-      unsigned meshMaterialID;
+      unsigned materialID;
     };
 
     /*! Subdivision Mesh. */

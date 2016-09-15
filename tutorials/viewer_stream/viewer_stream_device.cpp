@@ -28,9 +28,7 @@ namespace embree {
 #define RAYN_FLAGS RTC_INTERSECT_COHERENT
 //#define RAYN_FLAGS RTC_INTERSECT_INCOHERENT
 
-#define SIMPLE_SHADING 1
-#define INFINITE_BUILD_LOOP 0
-#define HIGH_QUALITY 0
+#define SIMPLE_SHADING 0
 
 extern "C" ISPCScene* g_ispc_scene;
 
@@ -108,9 +106,6 @@ RTCScene convertScene(ISPCScene* scene_in)
 {
   size_t numGeometries = scene_in->numGeometries;
   int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
-#if HIGH_QUALITY == 1
-  scene_flags |= RTC_SCENE_HIGH_QUALITY;
-#endif
   int scene_aflags = RTC_INTERSECT1 | RTC_INTERSECT_STREAM | RTC_INTERPOLATE;
   RTCScene scene_out = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
 
@@ -318,19 +313,7 @@ extern "C" void device_init (char* cfg)
   rtcDeviceSetErrorFunction(g_device,error_handler);
 
   /* create scene */
-#if INFINITE_BUILD_LOOP == 0
   g_scene = convertScene(g_ispc_scene);
-#else
-  while (1)
-  {
-	  g_scene = convertScene(g_ispc_scene);
-	  double t0 = getSeconds();
-	  rtcCommit(g_scene);
-	  double t1 = getSeconds();
-	  PRINT(t1 - t0);
-	  rtcDeleteScene(g_scene); g_scene = nullptr;
-  }
-#endif
   rtcCommit (g_scene);
 
   /* set render tile function to use */

@@ -906,7 +906,7 @@ unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
 #if ENABLE_FILTER_FUNCTION == 1
   rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&occlusionFilterOpaque);
 
-  ISPCMaterial& material = g_ispc_scene->materials[mesh->meshMaterialID];
+  ISPCMaterial& material = g_ispc_scene->materials[mesh->materialID];
   //if (material.ty == MATERIAL_DIELECTRIC || material.ty == MATERIAL_THIN_DIELECTRIC)
   //  rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&intersectionFilterReject);
   //else
@@ -932,7 +932,7 @@ unsigned int convertQuadMesh(ISPCQuadMesh* mesh, RTCScene scene_out)
 #if ENABLE_FILTER_FUNCTION == 1
   rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&occlusionFilterOpaque);
 
-  ISPCMaterial& material = g_ispc_scene->materials[mesh->meshMaterialID];
+  ISPCMaterial& material = g_ispc_scene->materials[mesh->materialID];
   //if (material.ty == MATERIAL_DIELECTRIC || material.ty == MATERIAL_THIN_DIELECTRIC)
   //  rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&intersectionFilterReject);
   //else
@@ -1275,7 +1275,7 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
   else if (geometry->type == QUAD_MESH)
   {
     ISPCQuadMesh* mesh = (ISPCQuadMesh*) geometry;
-    materialID = mesh->meshMaterialID;
+    materialID = mesh->materialID;
     if (mesh->texcoords) {
       ISPCQuad* quad = &mesh->quads[ray.primID];
       const Vec2f st0 = mesh->texcoords[quad->v0];

@@ -53,7 +53,7 @@ struct ISPCTriangleMesh
   unsigned int numTriangles;
   unsigned int numQuads;
   unsigned int geomID;
-  unsigned int meshMaterialID;
+  unsigned int materialID;
 };
 
 struct ISPCQuadMesh
@@ -67,7 +67,7 @@ struct ISPCQuadMesh
   unsigned int numVertices;
   unsigned int numQuads;
   unsigned int geomID;
-  unsigned int meshMaterialID;
+  unsigned int materialID;
 };
 
 struct ISPCSubdivMesh

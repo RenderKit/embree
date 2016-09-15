@@ -78,9 +78,9 @@ namespace embree
       ISPCTriangleMesh (unsigned int numTriangles,
                         unsigned int numQuads,
                         unsigned int numVertices,
-                        int meshMaterialID)
+                        int materialID)
       : geom(TRIANGLE_MESH), positions(nullptr), positions2(nullptr), normals(nullptr), texcoords(nullptr), triangles(nullptr),
-        numVertices(numVertices), numTriangles(numTriangles), numQuads(numQuads), geomID(0), meshMaterialID(meshMaterialID) {}
+        numVertices(numVertices), numTriangles(numTriangles), numQuads(numQuads), geomID(0), materialID(materialID) {}
 
       ISPCTriangleMesh (Ref<TutorialScene::TriangleMesh> in) : geom(TRIANGLE_MESH)
       {
@@ -92,7 +92,7 @@ namespace embree
         numVertices = unsigned(in->v.size());
         numTriangles = unsigned(in->triangles.size());
         geomID = -1;
-        meshMaterialID = in->meshMaterialID;
+        materialID = in->materialID;
       }
 
     public:
@@ -106,14 +106,14 @@ namespace embree
       unsigned int numTriangles;
       unsigned int numQuads;
       unsigned int geomID;
-      unsigned int meshMaterialID;
+      unsigned int materialID;
     };
     
     struct ISPCQuadMesh
     {
       ISPCQuadMesh ()
       : geom(QUAD_MESH), positions(nullptr), positions2(nullptr), normals(nullptr), texcoords(nullptr), quads(nullptr),
-        numVertices(0), numQuads(0), geomID(0), meshMaterialID(0) {}
+        numVertices(0), numQuads(0), geomID(0), materialID(0) {}
 
       ISPCQuadMesh (Ref<TutorialScene::QuadMesh> in) : geom(QUAD_MESH)
       {
@@ -125,7 +125,7 @@ namespace embree
         numVertices = unsigned(in->v.size());
         numQuads = unsigned(in->quads.size());
         geomID = -1;
-        meshMaterialID = in->meshMaterialID;
+        materialID = in->materialID;
       }
 
     public:
@@ -138,7 +138,7 @@ namespace embree
       unsigned int numVertices;
       unsigned int numQuads;
       unsigned int geomID;
-      unsigned int meshMaterialID;
+      unsigned int materialID;
     };
 
     struct ISPCSubdivMesh

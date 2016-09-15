@@ -405,7 +405,7 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, uniform 
   else if (geometry->type == QUAD_MESH)
   {
     uniform ISPCQuadMesh* uniform mesh = (uniform ISPCQuadMesh* uniform) geometry;
-    materialID = mesh->meshMaterialID;
+    materialID = mesh->materialID;
   }
   else if (geometry->type == SUBDIV_MESH)
   {

@@ -413,7 +413,7 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
   else if (geometry->type == QUAD_MESH)
   {
     ISPCQuadMesh* mesh = (ISPCQuadMesh*) geometry;
-    materialID = mesh->meshMaterialID;
+    materialID = mesh->materialID;
   }
   else if (geometry->type == SUBDIV_MESH)
   {
@@ -639,7 +639,7 @@ extern "C" void device_render (int* pixels,
   parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
     for (size_t i=range.begin(); i<range.end(); i++)
       renderTileTask((int)i,pixels,width,height,time,camera,numTilesX,numTilesY);
-    }); 
+  }); 
   //rtcDebug();
 }
 
