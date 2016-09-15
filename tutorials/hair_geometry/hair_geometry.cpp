@@ -188,90 +188,102 @@ float Noise(float x, float y, float z)
 
   void addHairySphere (TutorialScene& scene, const Vec3fa& p, float r)
   {
-    const size_t numPhi   = 20;
-    const size_t numTheta = 2*numPhi;
-    TutorialScene::TriangleMesh* mesh = new TutorialScene::TriangleMesh;
-
     Material material;
     unsigned materialID = unsigned(scene.materials.size());
     scene.materials.push_back(material);
     
-    const float rcpNumTheta = rcp((float)numTheta);
-    const float rcpNumPhi   = rcp((float)numPhi);
-    for (unsigned int phi=0; phi<=numPhi; phi++)
     {
-      for (unsigned int theta=0; theta<numTheta; theta++)
-      {
-        const float phif   = phi*float(pi)*rcpNumPhi;
-        const float thetaf = theta*2.0f*float(pi)*rcpNumTheta;
-        const Vec3fa dp(sin(phif)*sin(thetaf),cos(phif),sin(phif)*cos(thetaf));
-        mesh->v. push_back(p+r*dp);
-        mesh->vn.push_back(dp);
-      }
-      if (phi == 0) continue;
+      const size_t numPhi   = 20;
+      const size_t numTheta = 2*numPhi;
       
-      for (unsigned int theta=1; theta<=numTheta; theta++) 
+      avector<Vec3fa> positions;
+      avector<Vec3fa> normals;
+      std::vector<Vec2f> texcoords;
+      std::vector<TutorialScene::Triangle> triangles;
+
+      const float rcpNumTheta = rcp((float)numTheta);
+      const float rcpNumPhi   = rcp((float)numPhi);
+      for (unsigned int phi=0; phi<=numPhi; phi++)
       {
-        unsigned int p00 = (phi-1)*numTheta+theta-1;
-        unsigned int p01 = (phi-1)*numTheta+theta%numTheta;
-        unsigned int p10 = phi*numTheta+theta-1;
-        unsigned int p11 = phi*numTheta+theta%numTheta;
-
-        if (phi > 1)
-          mesh->triangles.push_back(TutorialScene::Triangle(p10,p00,p01,materialID));
+        for (unsigned int theta=0; theta<numTheta; theta++)
+        {
+          const float phif   = phi*float(pi)*rcpNumPhi;
+          const float thetaf = theta*2.0f*float(pi)*rcpNumTheta;
+          const Vec3fa dp(sin(phif)*sin(thetaf),cos(phif),sin(phif)*cos(thetaf));
+          positions.push_back(p+r*dp);
+          normals.push_back(dp);
+        }
+        if (phi == 0) continue;
         
-        if (phi < numPhi) 
-          mesh->triangles.push_back(TutorialScene::Triangle(p11,p10,p01,materialID));
+        for (unsigned int theta=1; theta<=numTheta; theta++) 
+        {
+          unsigned int p00 = (phi-1)*numTheta+theta-1;
+          unsigned int p01 = (phi-1)*numTheta+theta%numTheta;
+          unsigned int p10 = phi*numTheta+theta-1;
+          unsigned int p11 = phi*numTheta+theta%numTheta;
+          
+          if (phi > 1)
+            triangles.push_back(TutorialScene::Triangle(p10,p00,p01,materialID));
+          
+          if (phi < numPhi) 
+            triangles.push_back(TutorialScene::Triangle(p11,p10,p01,materialID));
+        }
       }
+      
+      scene.geometries.push_back(new TutorialScene::TriangleMesh(positions,normals,texcoords,triangles,materialID));
     }
-    scene.geometries.push_back(mesh);
-    //generateHairOnTriangleMesh(scene,mesh,0.5f*r,0.001f*r,80);
 
-    const float thickness = 0.001f*r;
-    TutorialScene::HairSet* hairset = new TutorialScene::HairSet(true);
-
-    unsigned int s = 0;
-    for (size_t iy=0; iy<300; iy++)
     {
-      for (size_t ix=0; ix<300; ix++)
+      const float thickness = 0.001f*r;
+      avector<Vec3fa> positions; 
+      std::vector<TutorialScene::Hair> hairs;
+      
+      unsigned int s = 0;
+      for (size_t iy=0; iy<300; iy++)
       {
-        float fx = (float(ix)+2.0f*g2[s])/300.0f; s=(s+1)%255;
-        float fy = (float(iy)+2.0f*g2[s])/300.0f; s=(s+1)%255;
-        Vec3fa dp = uniformSampleSphere(fx,fy);
-        
-        Vec3fa l0 = p + r*       (dp + 0.00f*dp); l0.w = thickness;
-        Vec3fa l1 = p + r*       (dp + 0.25f*dp); l1.w = thickness;
-        Vec3fa l2 = p + r*Noise3D(dp + 0.50f*dp); l2.w = thickness;
-        Vec3fa l3 = p + r*Noise3D(dp + 0.75f*dp); l3.w = thickness;
-        
-        const unsigned v_index = unsigned(hairset->v.size());
-        hairset->v.push_back(l0);
-        hairset->v.push_back(l1);
-        hairset->v.push_back(l2);
-        hairset->v.push_back(l3);
-        hairset->hairs.push_back( TutorialScene::Hair(v_index,0) );
+        for (size_t ix=0; ix<300; ix++)
+        {
+          float fx = (float(ix)+2.0f*g2[s])/300.0f; s=(s+1)%255;
+          float fy = (float(iy)+2.0f*g2[s])/300.0f; s=(s+1)%255;
+          Vec3fa dp = uniformSampleSphere(fx,fy);
+          
+          Vec3fa l0 = p + r*       (dp + 0.00f*dp); l0.w = thickness;
+          Vec3fa l1 = p + r*       (dp + 0.25f*dp); l1.w = thickness;
+          Vec3fa l2 = p + r*Noise3D(dp + 0.50f*dp); l2.w = thickness;
+          Vec3fa l3 = p + r*Noise3D(dp + 0.75f*dp); l3.w = thickness;
+          
+          const size_t v_index = positions.size();
+          positions.push_back(l0);
+          positions.push_back(l1);
+          positions.push_back(l2);
+          positions.push_back(l3);
+          hairs.push_back( TutorialScene::Hair(unsigned(v_index),0) );
+        }
       }
+      scene.geometries.push_back(new TutorialScene::HairSet(positions,hairs,materialID,true));
     }
-    scene.geometries.push_back(hairset);
   }
 
   void addGroundPlane (TutorialScene& scene, const Vec3fa& p00, const Vec3fa& p01, const Vec3fa& p10, const Vec3fa& p11)
   {
-    TutorialScene::TriangleMesh* mesh = new TutorialScene::TriangleMesh;
+     avector<Vec3fa> positions;
+     avector<Vec3fa> normals;
+     std::vector<Vec2f> texcoords;
+     std::vector<TutorialScene::Triangle> triangles;
 
-    Material material;
-    unsigned materialID = unsigned(scene.materials.size());
-    scene.materials.push_back(material);
+     Material material;
+     unsigned materialID = unsigned(scene.materials.size());
+     scene.materials.push_back(material);
 
-    mesh->v.push_back(p00);
-    mesh->v.push_back(p01);
-    mesh->v.push_back(p10);
-    mesh->v.push_back(p11);
+     positions.push_back(p00);
+     positions.push_back(p01);
+     positions.push_back(p10);
+     positions.push_back(p11);
 
-    mesh->triangles.push_back(TutorialScene::Triangle(0,1,2,materialID));
-    mesh->triangles.push_back(TutorialScene::Triangle(2,1,3,materialID));
-
-    scene.geometries.push_back(mesh);
+     triangles.push_back(TutorialScene::Triangle(0,1,2,materialID));
+     triangles.push_back(TutorialScene::Triangle(2,1,3,materialID));
+     
+     scene.geometries.push_back(new TutorialScene::TriangleMesh(positions,normals,texcoords,triangles,materialID));
   }
 
   struct Tutorial : public TutorialApplication 

@@ -61,18 +61,20 @@ Vec3fa sampleSphere(const float u, const float v)
 
 void convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
 {
-  unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices, mesh->positions2 ? 2 : 1);
-  rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER,mesh->positions,0,sizeof(Vertex));
-  if (mesh->positions2) rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER1,mesh->positions2,0,sizeof(Vertex));
+  unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices, mesh->numTimeSteps);
+  for (size_t t=0; t<mesh->numTimeSteps; t++) {
+    rtcSetBuffer(scene_out,geomID,(RTCBufferType)(RTC_VERTEX_BUFFER+t),mesh->positions+t*mesh->numVertices,0,sizeof(Vertex));
+  }
   rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,mesh->triangles,0,sizeof(ISPCTriangle));
   rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&filterDispatch);
 }
 
 void convertHairSet(ISPCHairSet* hair, RTCScene scene_out)
 {
-  unsigned int geomID = rtcNewHairGeometry (scene_out, RTC_GEOMETRY_STATIC, hair->numHairs, hair->numVertices, hair->v2 ? 2 : 1);
-  rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER,hair->v,0,sizeof(Vertex));
-  if (hair->v2) rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER1,hair->v2,0,sizeof(Vertex));
+  unsigned int geomID = rtcNewHairGeometry (scene_out, RTC_GEOMETRY_STATIC, hair->numHairs, hair->numVertices, hair->numTimeSteps);
+  for (size_t t=0; t<hair->numTimeSteps; t++) {
+    rtcSetBuffer(scene_out,geomID,(RTCBufferType)(RTC_VERTEX_BUFFER+t),hair->positions+t*hair->numVertices,0,sizeof(Vertex));
+  }
   rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair));
   rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&filterDispatch);
 }
@@ -210,7 +212,7 @@ inline Vec3fa evalBezier(const int geomID, const int primID, const float t)
 {
   const float t0 = 1.0f - t, t1 = t;
   const ISPCHairSet* hair = (const ISPCHairSet*) g_ispc_scene->geometries[geomID];
-  const Vec3fa* vertices = hair->v;
+  const Vec3fa* vertices = hair->positions;
   const ISPCHair* hairs = hair->hairs;
 
   const int i = hairs[primID].vertex;

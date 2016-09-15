@@ -77,12 +77,12 @@ namespace embree
     {
       ISPCTriangleMesh (Ref<TutorialScene::TriangleMesh> in) : geom(TRIANGLE_MESH)
       {
-        positions = in->v.data();
-        positions2 = in->v2.data();
-        normals = in->vn.data();
-        texcoords = in->vt.data();
+        positions = in->positions.data();
+        normals = in->normals.data();
+        texcoords = in->texcoords.data();
         triangles = (ISPCTriangle*) in->triangles.data();
-        numVertices = unsigned(in->v.size());
+        numTimeSteps = in->numTimeSteps;
+        numVertices = in->numVertices;
         numTriangles = unsigned(in->triangles.size());
         geomID = -1;
         materialID = in->materialID;
@@ -90,11 +90,12 @@ namespace embree
 
     public:
       ISPCGeometry geom;
-      Vec3fa* positions;    //!< vertex position array
-      Vec3fa* positions2;    //!< vertex position array
+      Vec3fa* positions;     //!< vertex position array with all timesteps
       Vec3fa* normals;       //!< vertex normal array
-      Vec2f* texcoords;     //!< vertex texcoord array
+      Vec2f* texcoords;      //!< vertex texcoord array
       ISPCTriangle* triangles;  //!< list of triangles
+
+      unsigned int numTimeSteps;
       unsigned int numVertices;
       unsigned int numTriangles;
       unsigned int geomID;
@@ -105,12 +106,12 @@ namespace embree
     {
       ISPCQuadMesh (Ref<TutorialScene::QuadMesh> in) : geom(QUAD_MESH)
       {
-        positions = in->v.data();
-        positions2 = in->v2.data();
-        normals = in->vn.data();
-        texcoords = in->vt.data();
+        positions = in->positions.data();
+        normals = in->normals.data();
+        texcoords = in->texcoords.data();
         quads = (ISPCQuad*) in->quads.data();
-        numVertices = unsigned(in->v.size());
+        numTimeSteps = in->numTimeSteps;
+        numVertices = in->numVertices;
         numQuads = unsigned(in->quads.size());
         geomID = -1;
         materialID = in->materialID;
@@ -119,10 +120,11 @@ namespace embree
     public:
       ISPCGeometry geom;
       Vec3fa* positions;    //!< vertex position array
-      Vec3fa* positions2;    //!< vertex position array
       Vec3fa* normals;       //!< vertex normal array
       Vec2f* texcoords;     //!< vertex texcoord array
       ISPCQuad* quads;      //!< list of quads
+
+      unsigned int numTimeSteps;
       unsigned int numVertices;
       unsigned int numQuads;
       unsigned int geomID;
@@ -134,7 +136,6 @@ namespace embree
       ISPCSubdivMesh (Ref<TutorialScene::SubdivMesh> in) : geom(SUBDIV_MESH)
       {
         positions = in->positions.data();
-        positions2 = in->positions2.data();
         normals = in->normals.data();
         texcoords = in->texcoords.data();
         position_indices = in->position_indices.data();
@@ -146,7 +147,8 @@ namespace embree
         edge_crease_weights = in->edge_crease_weights.data();
         vertex_creases = in->vertex_creases.data();
         vertex_crease_weights = in->vertex_crease_weights.data();
-        numVertices = unsigned(in->positions.size());
+        numTimeSteps = in->numTimeSteps;
+        numVertices = in->numPositions;
         numFaces = unsigned(in->verticesPerFace.size());
         numEdges = unsigned(in->position_indices.size());
         numEdgeCreases = unsigned(in->edge_creases.size());
@@ -171,7 +173,6 @@ namespace embree
     public:
       ISPCGeometry geom;
       Vec3fa* positions;       //!< vertex positions
-      Vec3fa* positions2;      //!< vertex positions for second time step
       Vec3fa* normals;         //!< face vertex normals
       Vec2f* texcoords;        //!< face texture coordinates
       unsigned* position_indices;   //!< position indices for all faces
@@ -185,6 +186,8 @@ namespace embree
       unsigned* vertex_creases;          //!< indices of vertex creases
       float* vertex_crease_weights; //!< weight for each vertex crease
       unsigned* face_offsets;
+
+      unsigned int numTimeSteps;
       unsigned int numVertices;
       unsigned int numFaces;
       unsigned int numEdges;
@@ -199,18 +202,20 @@ namespace embree
     {
       ISPCLineSegments (Ref<TutorialScene::LineSegments> in) : geom(LINE_SEGMENTS)
       {
-        v = in->v.data();
-        v2 = in->v2.data();
+        positions = in->positions.data();
         indices = in->indices.data();
-        numVertices = unsigned(in->v.size());
+        numTimeSteps = in->numTimeSteps;
+        numVertices = in->numVertices;
         numSegments = unsigned(in->indices.size());
         materialID = in->materialID;
       }
 
+    public:
       ISPCGeometry geom;
-      Vec3fa* v;        //!< control points (x,y,z,r)
-      Vec3fa* v2;       //!< control points (x,y,z,r)
-      unsigned* indices;     //!< for each segment, index to first control point
+      Vec3fa* positions;        //!< control points (x,y,z,r)
+      unsigned* indices;        //!< for each segment, index to first control point
+      
+      unsigned int numTimeSteps;
       unsigned int numVertices;
       unsigned int numSegments;
       unsigned int materialID;
@@ -220,18 +225,20 @@ namespace embree
     {
       ISPCHairSet (bool hair, Ref<TutorialScene::HairSet> in) : geom(hair ? HAIR_SET : CURVES)
       {
-        v = in->v.data();
-        v2 = in->v2.data();
+        positions = in->positions.data();
         hairs = (ISPCHair*) in->hairs.data();
-        numVertices = unsigned(in->v.size());
+        numTimeSteps = in->numTimeSteps;
+        numVertices = in->numVertices;
         numHairs = unsigned(in->hairs.size());
         materialID = in->materialID;
       }
 
+    public:
       ISPCGeometry geom;
-      Vec3fa* v;       //!< hair control points (x,y,z,r)
-      Vec3fa* v2;       //!< hair control points (x,y,z,r)
-      ISPCHair* hairs; //!< for each hair, index to first control point
+      Vec3fa* positions;       //!< hair control points (x,y,z,r)
+      ISPCHair* hairs;         //!< for each hair, index to first control point
+      
+      unsigned int numTimeSteps;
       unsigned int numVertices;
       unsigned int numHairs;
       unsigned int materialID;

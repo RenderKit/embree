@@ -68,6 +68,16 @@ namespace embree
       unsigned v0, v1, v2, v3;
     };
 
+    struct Hair 
+    {
+    public:
+      Hair () {}
+      Hair (unsigned vertex, unsigned id)
+      : vertex(vertex), id(id) {}
+    public:
+      unsigned vertex,id;  //!< index of first control point and hair ID
+    };
+
     struct Geometry : public RefCount
     {
       enum Type { TRIANGLE_MESH, SUBDIV_MESH, HAIR_SET, INSTANCE, GROUP, QUAD_MESH, LINE_SEGMENTS, CURVES };
@@ -79,88 +89,204 @@ namespace embree
     /*! Triangle Mesh. */
     struct TriangleMesh : public Geometry
     {
-      TriangleMesh () 
-        : Geometry(TRIANGLE_MESH), materialID(0) {}
-      avector<Vec3fa> v;
-      avector<Vec3fa> v2;
-      avector<Vec3fa> vn;
-      std::vector<Vec2f> vt;
-      std::vector<Triangle> triangles;
+      TriangleMesh (avector<Vec3fa>& positions, avector<Vec3fa>& normals, std::vector<Vec2f>& texcoords, std::vector<Triangle>& triangles, unsigned materialID)
+        : Geometry(TRIANGLE_MESH), positions(positions), normals(normals), texcoords(texcoords), triangles(triangles), numTimeSteps(1), numVertices(positions.size()), materialID(materialID) {}
+
+      TriangleMesh (Ref<SceneGraph::TriangleMeshNode> mesh, const AffineSpace3fa& space0, const AffineSpace3fa& space1, unsigned materialID)
+        : Geometry(TRIANGLE_MESH), numTimeSteps(mesh->numTimeSteps()), numVertices(mesh->numVertices()), materialID(materialID)
+      {
+        positions.resize(numTimeSteps*numVertices); 
+        for (size_t t=0; t<numTimeSteps; t++) {
+          float time = numTimeSteps > 1 ? float(t)/float(numTimeSteps-1) : 0.0f;
+          const AffineSpace3fa space = lerp(space0,space1,time);
+          for (size_t i=0; i<numVertices; i++) 
+            positions[t*numVertices+i] = xfmPoint (space,mesh->positions[t][i]);
+        }
+
+        const LinearSpace3fa nspace0 = rcp(space0.l).transposed();
+        normals.resize(mesh->normals.size()); 
+        for (size_t i=0; i<mesh->normals.size(); i++) 
+          normals[i] = xfmVector(nspace0,mesh->normals[i]);
+
+        texcoords = mesh->texcoords;
+        
+        triangles.resize(mesh->triangles.size());
+        for (size_t i=0; i<mesh->triangles.size(); i++) {
+          SceneGraph::TriangleMeshNode::Triangle& tri = mesh->triangles[i];
+          triangles[i] = TutorialScene::Triangle(tri.v0,tri.v1,tri.v2,materialID);
+        }
+      }
+
+    public:
+      avector<Vec3fa> positions;        //!< vertex positions for all time steps
+      avector<Vec3fa> normals;          //!< vertex normals
+      std::vector<Vec2f> texcoords;     //!< texture coordinates
+      std::vector<Triangle> triangles;  //!< triangle indices
+
+      unsigned numTimeSteps;
+      unsigned numVertices;
       unsigned materialID;
     };
 
     /*! Quad Mesh. */
     struct QuadMesh : public Geometry
     {
-      QuadMesh () 
-        : Geometry(QUAD_MESH), materialID(0) {}
-      avector<Vec3fa> v;
-      avector<Vec3fa> v2;
-      avector<Vec3fa> vn;
-      std::vector<Vec2f> vt;
-      std::vector<Quad> quads;
+      QuadMesh (Ref<SceneGraph::QuadMeshNode> mesh, const AffineSpace3fa& space0, const AffineSpace3fa& space1, unsigned materialID)
+        : Geometry(QUAD_MESH), numTimeSteps(mesh->numTimeSteps()), numVertices(mesh->numVertices()), materialID(materialID)
+      {
+        positions.resize(numTimeSteps*numVertices); 
+        for (size_t t=0; t<numTimeSteps; t++) {
+          float time = numTimeSteps > 1 ? float(t)/float(numTimeSteps-1) : 0.0f;
+          const AffineSpace3fa space = lerp(space0,space1,time);
+          for (size_t i=0; i<numVertices; i++) 
+            positions[t*numVertices+i] = xfmPoint (space,mesh->positions[t][i]);
+        }
+
+        const LinearSpace3fa nspace0 = rcp(space0.l).transposed();
+        normals.resize(mesh->normals.size()); 
+        for (size_t i=0; i<mesh->normals.size(); i++) 
+          normals[i] = xfmVector(nspace0,mesh->normals[i]);
+
+        texcoords = mesh->texcoords;
+        
+        quads.resize(mesh->quads.size());
+        for (size_t i=0; i<mesh->quads.size(); i++) {
+          SceneGraph::QuadMeshNode::Quad& quad = mesh->quads[i];
+          quads[i] = TutorialScene::Quad(quad.v0,quad.v1,quad.v2,quad.v3);
+        }
+      }
+
+    public:
+      avector<Vec3fa> positions;       //!< vertex positions for all time steps
+      avector<Vec3fa> normals;         //!< vertex normals
+      std::vector<Vec2f> texcoords;    //!< texture coordinates
+      std::vector<Quad> quads;         //!< quad indices
+
+      unsigned numTimeSteps;
+      unsigned numVertices;
       unsigned materialID;
     };
 
     /*! Subdivision Mesh. */
     struct SubdivMesh : public Geometry
     {
-      SubdivMesh () 
-        : Geometry(SUBDIV_MESH),materialID(0) {}
-      avector<Vec3fa> positions;            //!< vertex positions
-      avector<Vec3fa> positions2;            //!< vertex positions
-      avector<Vec3fa> normals;              //!< face vertex normals
+      SubdivMesh (Ref<SceneGraph::SubdivMeshNode> mesh, const AffineSpace3fa& space0, const AffineSpace3fa& space1, unsigned materialID)
+        : Geometry(SUBDIV_MESH), numTimeSteps(mesh->numTimeSteps()), numPositions(mesh->numPositions()), materialID(materialID)
+      {
+        positions.resize(numTimeSteps*numPositions); 
+        for (size_t t=0; t<numTimeSteps; t++) {
+          float time = numTimeSteps > 1 ? float(t)/float(numTimeSteps-1) : 0.0f;
+          const AffineSpace3fa space = lerp(space0,space1,time);
+          for (size_t i=0; i<numPositions; i++) 
+            positions[t*numPositions+i] = xfmPoint (space,mesh->positions[t][i]);
+        }
+
+        const LinearSpace3fa nspace0 = rcp(space0.l).transposed();
+        normals.resize(mesh->normals.size()); 
+        for (size_t i=0; i<mesh->normals.size(); i++) 
+          normals[i] = xfmVector(nspace0,mesh->normals[i]);
+        
+        texcoords = mesh->texcoords;
+        position_indices = mesh->position_indices;
+        normal_indices = mesh->normal_indices;
+        texcoord_indices = mesh->texcoord_indices;
+        verticesPerFace = mesh->verticesPerFace;
+        holes = mesh->holes;
+        edge_creases = mesh->edge_creases;
+        edge_crease_weights = mesh->edge_crease_weights;
+        vertex_creases = mesh->vertex_creases;
+        vertex_crease_weights = mesh->vertex_crease_weights;
+      }
+
+    public:
+      avector<Vec3fa> positions;                //!< vertex positions for all timesteps
+      avector<Vec3fa> normals;                  //!< face vertex normals
       std::vector<Vec2f> texcoords;             //!< face texture coordinates
-      std::vector<unsigned> position_indices;        //!< position indices for all faces
-      std::vector<unsigned> normal_indices;          //!< normal indices for all faces
-      std::vector<unsigned> texcoord_indices;        //!< texcoord indices for all faces
-      std::vector<unsigned> verticesPerFace;         //!< number of indices of each face
-      std::vector<unsigned> holes;                   //!< face ID of holes
+      std::vector<unsigned> position_indices;   //!< position indices for all faces
+      std::vector<unsigned> normal_indices;     //!< normal indices for all faces
+      std::vector<unsigned> texcoord_indices;   //!< texcoord indices for all faces
+      std::vector<unsigned> verticesPerFace;    //!< number of indices of each face
+      std::vector<unsigned> holes;              //!< face ID of holes
       std::vector<Vec2i> edge_creases;          //!< index pairs for edge crease 
       std::vector<float> edge_crease_weights;   //!< weight for each edge crease
-      std::vector<unsigned> vertex_creases;          //!< indices of vertex creases
+      std::vector<unsigned> vertex_creases;     //!< indices of vertex creases
       std::vector<float> vertex_crease_weights; //!< weight for each vertex crease
-      unsigned materialID;
-    };
 
-    struct Hair 
-    {
-    public:
-      Hair () {}
-      Hair (unsigned vertex, unsigned id)
-      : vertex(vertex), id(id) {}
-    public:
-      unsigned vertex,id;  //!< index of first control point and hair ID
+      unsigned numTimeSteps;
+      unsigned numPositions;
+      unsigned materialID;
     };
 
     /*! Line segments. */
     struct LineSegments : public Geometry
     {
-      LineSegments () 
-        : Geometry(LINE_SEGMENTS), materialID(0) {}
-      avector<Vec3fa> v;        //!< control points (x,y,z,r)
-      avector<Vec3fa> v2;       //!< control points (x,y,z,r)
-      std::vector<unsigned> indices; //!< index buffer
+      LineSegments (Ref<SceneGraph::LineSegmentsNode> mesh, const AffineSpace3fa& space0, const AffineSpace3fa& space1, unsigned materialID)
+        : Geometry(LINE_SEGMENTS), numTimeSteps(mesh->numTimeSteps()), numVertices(mesh->numVertices()), materialID(materialID)
+      {
+        positions.resize(numTimeSteps*numVertices); 
+        for (size_t t=0; t<numTimeSteps; t++) {
+          float time = numTimeSteps > 1 ? float(t)/float(numTimeSteps-1) : 0.0f;
+          const AffineSpace3fa space = lerp(space0,space1,time);
+          for (size_t i=0; i<numVertices; i++) {
+            positions[t*numVertices+i] = xfmPoint (space,mesh->positions[t][i]);
+            positions[t*numVertices+i].w = mesh->positions[t][i].w;
+          }
+        }
+
+        indices.resize(mesh->indices.size()); 
+        for (size_t i=0; i<mesh->indices.size(); i++)
+          indices[i] = mesh->indices[i];
+      }
+
+    public:
+      avector<Vec3fa> positions;        //!< control points (x,y,z,r) for all timesteps
+      std::vector<unsigned> indices;    //!< index buffer
+
+      unsigned numTimeSteps;
+      unsigned numVertices;
       unsigned materialID;
     };
 
     /*! Hair Set. */
     struct HairSet : public Geometry
     {
-      HairSet (bool hair) : Geometry(hair ? HAIR_SET : CURVES) {}
-      avector<Vec3fa> v;       //!< hair control points (x,y,z,r)
-      avector<Vec3fa> v2;      //!< hair control points (x,y,z,r)
-      std::vector<Hair> hairs; //!< list of hairs
+      HairSet (avector<Vec3fa>& positions, std::vector<Hair>& hairs, unsigned materialID, bool hair)
+        : Geometry(hair ? HAIR_SET : CURVES), positions(positions), hairs(hairs), numTimeSteps(1), numVertices(positions.size()), materialID(materialID) {}
+      
+      HairSet (Ref<SceneGraph::HairSetNode> mesh, const AffineSpace3fa& space0, const AffineSpace3fa& space1, unsigned materialID)
+        : Geometry(mesh->hair ? HAIR_SET : CURVES), numTimeSteps(mesh->numTimeSteps()), numVertices(mesh->numVertices()), materialID(materialID)
+      {
+        positions.resize(numTimeSteps*numVertices); 
+        for (size_t t=0; t<numTimeSteps; t++) {
+          float time = numTimeSteps > 1 ? float(t)/float(numTimeSteps-1) : 0.0f;
+          const AffineSpace3fa space = lerp(space0,space1,time);
+          for (size_t i=0; i<numVertices; i++) {
+            positions[t*numVertices+i] = xfmPoint (space,mesh->positions[t][i]);
+            positions[t*numVertices+i].w = mesh->positions[t][i].w;
+          }
+        }
+        
+        hairs.resize(mesh->hairs.size()); 
+        for (size_t i=0; i<mesh->hairs.size(); i++)
+          hairs[i] = TutorialScene::Hair(mesh->hairs[i].vertex,mesh->hairs[i].id);
+      }
+
+    public:
+      avector<Vec3fa> positions;  //!< hair control points (x,y,z,r)
+      std::vector<Hair> hairs;    //!< list of hairs
+      
+      unsigned numTimeSteps;
+      unsigned numVertices;
       unsigned materialID;
     };
-
+    
     struct Instance : public Geometry
     {
       ALIGNED_STRUCT;
 
-    Instance(const AffineSpace3fa& space0, const AffineSpace3fa& space1, unsigned geomID)
-      : Geometry(INSTANCE), space0(space0), space1(space1), geomID(geomID) {}
-
+      Instance (const AffineSpace3fa& space0, const AffineSpace3fa& space1, unsigned geomID)
+        : Geometry(INSTANCE), space0(space0), space1(space1), geomID(geomID) {}
+      
     public:
       AffineSpace3fa space0;
       AffineSpace3fa space1;

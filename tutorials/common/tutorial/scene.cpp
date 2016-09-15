@@ -52,158 +52,24 @@ namespace embree
       return material2id[node];
     }
 
-    Ref<TutorialScene::Geometry> convertTriangleMesh(Ref<SceneGraph::TriangleMeshNode> mesh, const AffineSpace3fa& space0, const AffineSpace3fa& space1)
-    {
-      unsigned materialID = convert(mesh->material);
-      
-      TutorialScene::TriangleMesh* objmesh = new TutorialScene::TriangleMesh();
-      const LinearSpace3fa nspace0 = rcp(space0.l).transposed();
-
-      objmesh->v.resize(mesh->positions[0].size()); 
-      for (size_t i=0; i<mesh->positions[0].size(); i++) 
-        objmesh->v [i] = xfmPoint ( space0,mesh->positions[0][i]);
-
-      if (mesh->numTimeSteps() > 1) {
-        objmesh->v2.resize(mesh->positions[1].size()); 
-        for (size_t i=0; i<mesh->positions[1].size(); i++) 
-          objmesh->v2[i] = xfmPoint ( space1,mesh->positions[1][i]);
-      }
-      objmesh->vn.resize(mesh->normals.size()); 
-      for (size_t i=0; i<mesh->normals.size(); i++) 
-        objmesh->vn[i] = xfmVector(nspace0,mesh->normals[i]);
-      objmesh->vt = mesh->texcoords;
-      
-      objmesh->triangles.resize(mesh->triangles.size());
-      for (size_t i=0; i<mesh->triangles.size(); i++) {
-        SceneGraph::TriangleMeshNode::Triangle& tri = mesh->triangles[i];
-        objmesh->triangles[i] = TutorialScene::Triangle(tri.v0,tri.v1,tri.v2,materialID);
-      }
-      objmesh->materialID = materialID;
-      return objmesh;
+    Ref<TutorialScene::Geometry> convertTriangleMesh(Ref<SceneGraph::TriangleMeshNode> mesh, const AffineSpace3fa& space0, const AffineSpace3fa& space1) {
+      return new TutorialScene::TriangleMesh(mesh,space0,space1,convert(mesh->material));
+    }
+    
+    Ref<TutorialScene::Geometry> convertQuadMesh(Ref<SceneGraph::QuadMeshNode> mesh, const AffineSpace3fa& space0, const AffineSpace3fa& space1) {
+      return new TutorialScene::QuadMesh(mesh,space0,space1,convert(mesh->material));
     }
 
-    Ref<TutorialScene::Geometry> convertQuadMesh(Ref<SceneGraph::QuadMeshNode> mesh, const AffineSpace3fa& space0, const AffineSpace3fa& space1)
-    {
-      unsigned materialID = convert(mesh->material);
-      
-      TutorialScene::QuadMesh* objmesh = new TutorialScene::QuadMesh();
-      const LinearSpace3fa nspace0 = rcp(space0.l).transposed();
-
-      objmesh->v. resize(mesh->positions[0].size()); 
-      for (size_t i=0; i<mesh->positions[0].size(); i++) 
-        objmesh->v [i] = xfmPoint ( space0,mesh->positions[0][i]);
-
-      if (mesh->numTimeSteps() > 1) {
-        objmesh->v2.resize(mesh->positions[1].size()); 
-        for (size_t i=0; i<mesh->positions[1].size(); i++) 
-          objmesh->v2[i] = xfmPoint ( space1,mesh->positions[1][i]);
-      }
-      objmesh->vn.resize(mesh->normals.size()); 
-      for (size_t i=0; i<mesh->normals.size(); i++) 
-        objmesh->vn[i] = xfmVector(nspace0,mesh->normals[i]);
-      objmesh->vt = mesh->texcoords;
-      
-      objmesh->quads.resize(mesh->quads.size());
-      for (size_t i=0; i<mesh->quads.size(); i++) {
-        SceneGraph::QuadMeshNode::Quad& quad = mesh->quads[i];
-        objmesh->quads[i] = TutorialScene::Quad(quad.v0,quad.v1,quad.v2,quad.v3);
-      }
-      objmesh->materialID = materialID;
-      return objmesh;
+    Ref<TutorialScene::Geometry> convertSubdivMesh(Ref<SceneGraph::SubdivMeshNode> mesh, const AffineSpace3fa& space0, const AffineSpace3fa& space1) {
+      return new TutorialScene::SubdivMesh(mesh,space0,space1,convert(mesh->material));
     }
 
-    Ref<TutorialScene::Geometry> convertSubdivMesh(Ref<SceneGraph::SubdivMeshNode> mesh, const AffineSpace3fa& space0, const AffineSpace3fa& space1)
-    {
-      unsigned materialID = convert(mesh->material);
-      
-      TutorialScene::SubdivMesh* subdivmesh = new TutorialScene::SubdivMesh();
-      const LinearSpace3fa nspace0 = rcp(space0.l).transposed();
-      
-      subdivmesh->positions.resize(mesh->positions[0].size()); 
-      for (size_t i=0; i<mesh->positions[0].size(); i++) 
-        subdivmesh->positions[i] = xfmPoint(space0,mesh->positions[0][i]);
-
-      if (mesh->numTimeSteps() > 1)
-      {
-        subdivmesh->positions2.resize(mesh->positions[1].size()); 
-        for (size_t i=0; i<mesh->positions[1].size(); i++) 
-          subdivmesh->positions2[i] = xfmPoint(space0,mesh->positions[1][i]);
-      }
-      
-      subdivmesh->normals.resize(mesh->normals.size()); 
-      for (size_t i=0; i<mesh->normals.size(); i++) 
-        subdivmesh->normals[i] = xfmVector(nspace0,mesh->normals[i]);
-      
-      subdivmesh->texcoords = mesh->texcoords;
-      subdivmesh->position_indices = mesh->position_indices;
-      subdivmesh->normal_indices = mesh->normal_indices;
-      subdivmesh->texcoord_indices = mesh->texcoord_indices;
-      subdivmesh->verticesPerFace = mesh->verticesPerFace;
-      subdivmesh->holes = mesh->holes;
-      subdivmesh->edge_creases = mesh->edge_creases;
-      subdivmesh->edge_crease_weights = mesh->edge_crease_weights;
-      subdivmesh->vertex_creases = mesh->vertex_creases;
-      subdivmesh->vertex_crease_weights = mesh->vertex_crease_weights;
-      subdivmesh->materialID = materialID;
-      return subdivmesh;
+    Ref<TutorialScene::Geometry> convertLineSegments(Ref<SceneGraph::LineSegmentsNode> mesh, const AffineSpace3fa& space0, const AffineSpace3fa& space1) {
+      return new TutorialScene::LineSegments(mesh,space0,space1,convert(mesh->material));
     }
 
-    Ref<TutorialScene::Geometry> convertLineSegments(Ref<SceneGraph::LineSegmentsNode> mesh, const AffineSpace3fa& space0, const AffineSpace3fa& space1)
-    {
-      unsigned materialID = convert(mesh->material);
-      
-      TutorialScene::LineSegments* out = new TutorialScene::LineSegments;
-      
-      out->v.resize(mesh->positions[0].size()); 
-      for (size_t i=0; i<mesh->positions[0].size(); i++) {
-        out->v[i] = xfmPoint(space0,mesh->positions[0][i]);
-        out->v[i].w = mesh->positions[0][i].w;
-      }
-      
-      if (mesh->numTimeSteps() > 1)
-      {
-        out->v2.resize(mesh->positions[1].size()); 
-        for (size_t i=0; i<mesh->positions[1].size(); i++) {
-          out->v2[i] = xfmPoint(space1,mesh->positions[1][i]);
-          out->v2[i].w = mesh->positions[1][i].w;
-        }
-      }
-      
-      out->indices.resize(mesh->indices.size()); 
-      for (size_t i=0; i<mesh->indices.size(); i++)
-        out->indices[i] = mesh->indices[i];
-
-      out->materialID = materialID;
-      return out;
-    }
-
-    Ref<TutorialScene::Geometry> convertHairSet(Ref<SceneGraph::HairSetNode> mesh, const AffineSpace3fa& space0, const AffineSpace3fa& space1)
-    {
-      unsigned materialID = convert(mesh->material);
-      
-      TutorialScene::HairSet* hairset = new TutorialScene::HairSet(mesh->hair);
-      
-      hairset->v.resize(mesh->positions[0].size()); 
-      for (size_t i=0; i<mesh->positions[0].size(); i++) {
-        hairset->v[i] = xfmPoint(space0,mesh->positions[0][i]);
-        hairset->v[i].w = mesh->positions[0][i].w;
-      }
-      
-      if (mesh->numTimeSteps() > 1)
-      {
-        hairset->v2.resize(mesh->positions[1].size()); 
-        for (size_t i=0; i<mesh->positions[1].size(); i++) {
-          hairset->v2[i] = xfmPoint(space1,mesh->positions[1][i]);
-          hairset->v2[i].w = mesh->positions[1][i].w;
-        }
-      }
-      
-      hairset->hairs.resize(mesh->hairs.size()); 
-      for (size_t i=0; i<mesh->hairs.size(); i++)
-        hairset->hairs[i] = TutorialScene::Hair(mesh->hairs[i].vertex,mesh->hairs[i].id);
-
-      hairset->materialID = materialID;
-      return hairset;
+    Ref<TutorialScene::Geometry> convertHairSet(Ref<SceneGraph::HairSetNode> mesh, const AffineSpace3fa& space0, const AffineSpace3fa& space1) {
+      return new TutorialScene::HairSet(mesh,space0,space1,convert(mesh->material));
     }
 
      void convertLights(Ref<SceneGraph::Node> node, const AffineSpace3fa& space0, const AffineSpace3fa& space1)
