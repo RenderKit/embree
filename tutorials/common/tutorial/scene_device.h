@@ -79,7 +79,7 @@ namespace embree
                         unsigned int numQuads,
                         unsigned int numVertices,
                         int meshMaterialID)
-      : geom(TRIANGLE_MESH), positions(nullptr), positions2(nullptr), normals(nullptr), texcoords(nullptr), triangles(nullptr), quads(nullptr),
+      : geom(TRIANGLE_MESH), positions(nullptr), positions2(nullptr), normals(nullptr), texcoords(nullptr), triangles(nullptr),
         numVertices(numVertices), numTriangles(numTriangles), numQuads(numQuads), geomID(0), meshMaterialID(meshMaterialID) {}
 
       ISPCTriangleMesh (Ref<TutorialScene::TriangleMesh> in) : geom(TRIANGLE_MESH)
@@ -89,10 +89,8 @@ namespace embree
         normals = in->vn.data();
         texcoords = in->vt.data();
         triangles = (ISPCTriangle*) in->triangles.data();
-        quads = (ISPCQuad*) in->quads.data();
         numVertices = unsigned(in->v.size());
         numTriangles = unsigned(in->triangles.size());
-        numQuads = unsigned(in->quads.size());
         geomID = -1;
         meshMaterialID = in->meshMaterialID;
       }
@@ -104,7 +102,6 @@ namespace embree
       Vec3fa* normals;       //!< vertex normal array
       Vec2f* texcoords;     //!< vertex texcoord array
       ISPCTriangle* triangles;  //!< list of triangles
-      ISPCQuad* quads;      //!< list of quads // FIXME: remove
       unsigned int numVertices;
       unsigned int numTriangles;
       unsigned int numQuads;

@@ -49,7 +49,6 @@ struct ISPCTriangleMesh
   uniform Vec3fa* normals;       //!< vertex normal array
   uniform Vec2f* texcoords;     //!< vertex texcoord array
   uniform ISPCTriangle* triangles;  //!< list of triangles
-  uniform ISPCQuad* quads;  //!< list of triangles // FIXME: remove
   unsigned int numVertices;
   unsigned int numTriangles;
   unsigned int numQuads;

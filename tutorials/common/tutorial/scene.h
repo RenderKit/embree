@@ -85,7 +85,6 @@ namespace embree
       avector<Vec3fa> vn;
       std::vector<Vec2f> vt;
       std::vector<Triangle> triangles;
-      std::vector<Quad> quads; // FIXME: remove
       unsigned meshMaterialID;
     };
 
