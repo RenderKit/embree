@@ -440,7 +440,7 @@ namespace embree
       SceneGraph::QuadMeshNode* qmesh = new SceneGraph::QuadMeshNode(tmesh->material);
 
       for (auto& p : tmesh->positions)
-        qmesh->positions.push_back(std::move(p));
+        qmesh->positions.push_back(p);
 
       qmesh->normals = tmesh->normals;
       qmesh->texcoords = tmesh->texcoords;
@@ -491,7 +491,7 @@ namespace embree
       SceneGraph::SubdivMeshNode* smesh = new SceneGraph::SubdivMeshNode(tmesh->material);
 
       for (auto& p : tmesh->positions)
-        smesh->positions.push_back(std::move(p));
+        smesh->positions.push_back(p);
 
       for (size_t i=0; i<tmesh->quads.size(); i++) {
         smesh->position_indices.push_back(tmesh->quads[i].v0);
@@ -532,7 +532,7 @@ namespace embree
       SceneGraph::LineSegmentsNode* lmesh = new SceneGraph::LineSegmentsNode(hmesh->material);
 
       for (auto& p : hmesh->positions)
-        lmesh->positions.push_back(std::move(p));
+        lmesh->positions.push_back(p);
 
       for (auto hair : hmesh->hairs) {
         lmesh->indices.push_back(hair.vertex+0);
