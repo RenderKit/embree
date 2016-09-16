@@ -233,7 +233,11 @@ namespace embree
   }
 
   __forceinline vboold4 test(const vdouble4& a, const vdouble4& b) {
+#if defined(__AVX512VL__)
     return _mm256_test_epi64_mask(_mm256_castpd_si256(a),_mm256_castpd_si256(b));
+#else
+    return _mm256_testz_si256(_mm256_castpd_si256(a),_mm256_castpd_si256(b));
+#endif
   }
 
   ////////////////////////////////////////////////////////////////////////////////
