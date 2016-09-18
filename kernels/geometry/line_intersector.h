@@ -67,7 +67,7 @@ namespace embree
         
         template<typename Epilog>
         static __forceinline bool intersect(Ray& ray, const Precalculations& pre,
-                                            const vbool<M>& valid_i, const Vec4vfM& v0, const Vec4vfM& v1,
+                                            const Vec4vfM& v0, const Vec4vfM& v1,
                                             const Epilog& epilog)
         {
           /* transform end points into ray space */
@@ -85,7 +85,7 @@ namespace embree
           const vfloat<M> d2 = p.x*p.x + p.y*p.y;
           const vfloat<M> r = p.w;
           const vfloat<M> r2 = r*r;
-          vbool<M> valid = valid_i & (d2 <= r2) & (vfloat<M>(ray.tnear) < t) & (t < vfloat<M>(ray.tfar));
+          vbool<M> valid = (d2 <= r2) & (vfloat<M>(ray.tnear) < t) & (t < vfloat<M>(ray.tfar));
           if (unlikely(none(valid))) return false;
           
           /* ignore denormalized segments */
@@ -123,7 +123,7 @@ namespace embree
         
         template<typename Epilog>
         static __forceinline bool intersect(RayK<K>& ray, size_t k, const Precalculations& pre,
-                                            const vbool<M>& valid_i, const Vec4vfM& v0, const Vec4vfM& v1,
+                                            const Vec4vfM& v0, const Vec4vfM& v1,
                                             const Epilog& epilog)
         {
           /* transform end points into ray space */
@@ -143,7 +143,7 @@ namespace embree
           const vfloat<M> d2 = p.x*p.x + p.y*p.y;
           const vfloat<M> r = p.w;
           const vfloat<M> r2 = r*r;
-          vbool<M> valid = valid_i & (d2 <= r2) & (vfloat<M>(ray.tnear[k]) < t) & (t < vfloat<M>(ray.tfar[k]));
+          vbool<M> valid = (d2 <= r2) & (vfloat<M>(ray.tnear[k]) < t) & (t < vfloat<M>(ray.tfar[k]));
           if (unlikely(none(valid))) return false;
           
           /* ignore denormalized segments */
