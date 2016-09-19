@@ -128,7 +128,7 @@ namespace embree
         }
       };
 
-    /*! Intersects 4 motion blur quads with 1 ray */
+    /*! Intersects M motion blur quads with 1 ray */
     template<int M, bool filter>
       struct QuadMiMBIntersector1Pluecker
     {
@@ -152,7 +152,7 @@ namespace embree
       }
     };
     
-    /*! Intersects M quads with K rays. */
+    /*! Intersects M motion blur quads with K rays. */
     template<int M, int K, bool filter>
       struct QuadMiMBIntersectorKPluecker
       {
