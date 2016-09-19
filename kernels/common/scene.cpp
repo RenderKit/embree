@@ -601,7 +601,7 @@ namespace embree
   
     /* build all hierarchies of this scene */
     accels.build(0,0);
-    
+
     /* make static geometry immutable */
     if (isStatic()) 
     {

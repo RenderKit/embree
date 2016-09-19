@@ -22,7 +22,6 @@ namespace embree
     public:
       typedef T value_type;
     
-
 #if defined(VECTOR_INIT_ALLOCATOR)
     template<typename M>
     vector_t (M alloc) 
@@ -182,7 +181,8 @@ namespace embree
         /* reallocate and copy items */
         T* old_items = items;
         items = alloc.allocate(new_alloced);
-        for (size_t i=0; i<size_copy; i++) items[i] = old_items[i];
+        for (size_t i=0; i<size_copy; i++) items[i] = std::move(old_items[i]);
+        for (size_t i=size_copy; i<size_active; i++) ::new (&items[i]) T();
         alloc.deallocate(old_items,size_alloced);
         size_alloced = new_alloced;
       }

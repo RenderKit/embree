@@ -33,7 +33,41 @@ namespace embree
     
     /*! Buffer destruction */
     ~Buffer ();
+
+    /*! this class is not copyable */
+  public:
+    Buffer (const Buffer& other) DELETED; // do not implement
+    Buffer& operator= (const Buffer& other) DELETED; // do not implement
       
+    /*! make the class movable */
+  public:
+    Buffer (Buffer&& other)
+    {
+      device = other.device;     other.device = nullptr;
+      ptr = other.ptr;           other.ptr = nullptr;
+      ptr_ofs = other.ptr_ofs;   other.ptr_ofs = nullptr;
+      bytes = other.bytes;       other.bytes = 0;
+      num = other.num;           other.num = 0;
+      stride = other.stride;     other.stride = 0;
+      shared = other.shared;     other.shared = false;
+      mapped = other.mapped;     other.mapped = false;
+      modified = other.modified; other.modified = false;
+    }
+
+    Buffer& operator= (Buffer&& other)
+    {
+      device = other.device;     other.device = nullptr;
+      ptr = other.ptr;           other.ptr = nullptr;
+      ptr_ofs = other.ptr_ofs;   other.ptr_ofs = nullptr;
+      bytes = other.bytes;       other.bytes = 0;
+      num = other.num;           other.num = 0;
+      stride = other.stride;     other.stride = 0;
+      shared = other.shared;     other.shared = false;
+      mapped = other.mapped;     other.mapped = false;
+      modified = other.modified; other.modified = false;
+      return *this;
+    }
+
   public:
     
     /*! initialized the buffer */

@@ -24,6 +24,7 @@ namespace embree
     : Geometry(parent,TRIANGLE_MESH,numTriangles,numTimeSteps,flags)
   {
     triangles.init(parent->device,numTriangles,sizeof(Triangle));
+    vertices.resize(numTimeSteps);
     for (size_t i=0; i<numTimeSteps; i++) {
       vertices[i].init(parent->device,numVertices,sizeof(Vec3fa));
     }
@@ -119,14 +120,17 @@ namespace embree
     const bool freeTriangles = !parent->needTriangleIndices;
     const bool freeVertices  = !parent->needTriangleVertices;
     if (freeTriangles) triangles.free(); 
-    if (freeVertices ) vertices[0].free();
-    if (freeVertices ) vertices[1].free();
+    if (freeVertices )
+      for (auto& buffer : vertices)
+        buffer.free();
   }
 
   bool TriangleMesh::verify () 
   {
     /*! verify consistent size of vertex arrays */
-    if (numTimeSteps == 2 && vertices[0].size() != vertices[1].size())
+    if (vertices.size() == 0) return false;
+    for (const auto& buffer : vertices)
+      if (vertices[0].size() != buffer.size())
         return false;
 
     /*! verify proper triangle indices */
@@ -137,14 +141,11 @@ namespace embree
     }
 
     /*! verify proper triangle vertices */
-    for (size_t j=0; j<numTimeSteps; j++) 
-    {
-      BufferT<Vec3fa>& verts = vertices[j];
-      for (size_t i=0; i<verts.size(); i++) {
-	if (!isvalid(verts[i])) 
+    for (const auto& buffer : vertices)
+      for (size_t i=0; i<vertices.size(); i++)
+	if (!isvalid(buffer[i])) 
 	  return false;
-      }
-    }
+
     return true;
   }
 

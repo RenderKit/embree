@@ -182,11 +182,10 @@ namespace embree
 
       return true;
     }
-
+    
   public:
     BufferT<Triangle> triangles;                    //!< array of triangles
-    array_t<BufferT<Vec3fa>,2> vertices;            //!< vertex array
-    array_t<std::unique_ptr<Buffer>,2> userbuffers; //!< user buffers
-
+    vector<BufferT<Vec3fa>> vertices;               //!< vertex array
+    array_t<std::unique_ptr<Buffer>,2> userbuffers; //!< user buffers // FIXME: no std::unique_ptr here
   };
 }
