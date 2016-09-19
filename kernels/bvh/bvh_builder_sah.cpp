@@ -41,8 +41,8 @@ namespace embree
 {
   namespace isa
   {
-    static const float travCost = 1.0f;
-    static const float defaultPresplitFactor = 1.2f;
+    MAYBE_UNUSED static const float travCost = 1.0f;
+    MAYBE_UNUSED static const float defaultPresplitFactor = 1.2f;
 
     typedef FastAllocator::ThreadLocal2 Allocator;
 
