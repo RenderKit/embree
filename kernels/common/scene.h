@@ -371,6 +371,22 @@ namespace embree
     std::atomic<size_t> numIntersectionFilters8;   //!< number of enabled intersection/occlusion filters for 8-wide ray packets
     std::atomic<size_t> numIntersectionFilters16;  //!< number of enabled intersection/occlusion filters for 16-wide ray packets
     std::atomic<size_t> numIntersectionFiltersN;   //!< number of enabled intersection/occlusion filters for N-wide ray packets
+
+  public:
+
+    /* verifies that all mblur meshes have the same number of timesteps */
+    size_t numTimeSteps;
+    size_t numMBlurGeometries;
+    SpinLock checkMotionBlurTimeStepsLock;
+    void checkMotionBlurTimeSteps(unsigned N, ssize_t cnt) 
+    {
+      if (N == 1) return;
+      Lock<SpinLock> lock(checkMotionBlurTimeStepsLock);
+      if (numMBlurGeometries == 0) numTimeSteps = N;
+      numMBlurGeometries += cnt;
+      if (numMBlurGeometries != 0 && numTimeSteps != N)
+        throw_RTCError(RTC_INVALID_ARGUMENT,"number of motion blur timesteps of all meshes has to be identical");
+    }
   };
 
   template<> __forceinline size_t Scene::getNumPrimitives<TriangleMesh,1>() const { return world1.numTriangles; } 

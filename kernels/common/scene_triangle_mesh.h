@@ -106,6 +106,9 @@ namespace embree
 
     /*! triangle mesh construction */
     TriangleMesh (Scene* parent, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps); 
+
+    /*! triangle mesh destruction */
+    ~TriangleMesh ();
   
     /*! writes the triangle mesh geometry to disk */
     void write(std::ofstream& file);

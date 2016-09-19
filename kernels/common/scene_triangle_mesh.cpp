@@ -23,12 +23,17 @@ namespace embree
   TriangleMesh::TriangleMesh (Scene* parent, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps)
     : Geometry(parent,TRIANGLE_MESH,numTriangles,numTimeSteps,flags)
   {
+    parent->checkMotionBlurTimeSteps(numTimeSteps,+1);
     triangles.init(parent->device,numTriangles,sizeof(Triangle));
     vertices.resize(numTimeSteps);
     for (size_t i=0; i<numTimeSteps; i++) {
       vertices[i].init(parent->device,numVertices,sizeof(Vec3fa));
     }
     enabling();
+  }
+
+  TriangleMesh::~TriangleMesh () {
+    parent->checkMotionBlurTimeSteps(numTimeSteps,-1);
   }
   
   void TriangleMesh::enabling() 

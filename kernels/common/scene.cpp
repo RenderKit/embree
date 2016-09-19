@@ -43,7 +43,8 @@ namespace embree
       needSubdivIndices(false), needSubdivVertices(false),
       is_build(false), modified(true),
       progressInterface(this), progress_monitor_function(nullptr), progress_monitor_ptr(nullptr), progress_monitor_counter(0), 
-      numIntersectionFilters1(0), numIntersectionFilters4(0), numIntersectionFilters8(0), numIntersectionFilters16(0), numIntersectionFiltersN(0)
+      numIntersectionFilters1(0), numIntersectionFilters4(0), numIntersectionFilters8(0), numIntersectionFilters16(0), numIntersectionFiltersN(0),
+      numTimeSteps(0), numMBlurGeometries(0)
   {
 #if defined(TASKING_INTERNAL) 
     scheduler = nullptr;
