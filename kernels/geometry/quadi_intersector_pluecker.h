@@ -63,14 +63,14 @@ namespace embree
 
     };
 
-    /*! Intersects M triangles with K rays. */
+    /*! Intersects M quads with K rays. */
     template<int M, int K, bool filter>
       struct QuadMiIntersectorKPluecker
       {
         typedef QuadMi<M> Primitive;
         typedef QuadMIntersectorKPluecker<M,K,filter> Precalculations;
         
-        /*! Intersects K rays with M triangles. */
+        /*! Intersects K rays with M quads. */
         static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const RTCIntersectContext* context, const QuadMi<M>& quad, Scene* scene)
         {
           for (size_t i=0; i<QuadMi<M>::max_size(); i++)
@@ -89,7 +89,7 @@ namespace embree
           }
         }
         
-        /*! Test for K rays if they are occluded by any of the M triangles. */
+        /*! Test for K rays if they are occluded by any of the M quads. */
         static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const RTCIntersectContext* context, const QuadMi<M>& quad, Scene* scene)
         {
           vbool<K> valid0 = valid_i;
@@ -111,7 +111,7 @@ namespace embree
           return !valid0;
         }
         
-        /*! Intersect a ray with M triangles and updates the hit. */
+        /*! Intersect a ray with M quads and updates the hit. */
         static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, const RTCIntersectContext* context, const QuadMi<M>& quad, Scene* scene)
         {
           STAT3(normal.trav_prims,1,1,1);
@@ -119,7 +119,7 @@ namespace embree
           pre.intersect1(ray,k,context,v0,v1,v2,v3,quad.geomIDs,quad.primIDs,scene); 
         }
         
-        /*! Test if the ray is occluded by one of the M triangles. */
+        /*! Test if the ray is occluded by one of the M quads. */
         static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, const RTCIntersectContext* context, const QuadMi<M>& quad, Scene* scene)
         {
           STAT3(shadow.trav_prims,1,1,1);
@@ -128,7 +128,7 @@ namespace embree
         }
       };
 
-    /*! Intersects 4 motion blur quads with 1 ray using SSE */
+    /*! Intersects 4 motion blur quads with 1 ray */
     template<int M, bool filter>
       struct QuadMiMBIntersector1Pluecker
     {
@@ -152,14 +152,14 @@ namespace embree
       }
     };
     
-    /*! Intersects M triangles with K rays. */
+    /*! Intersects M quads with K rays. */
     template<int M, int K, bool filter>
       struct QuadMiMBIntersectorKPluecker
       {
         typedef QuadMiMB<M> Primitive;
         typedef QuadMIntersectorKPluecker<M,K,filter> Precalculations;
         
-        /*! Intersects K rays with M triangles. */
+        /*! Intersects K rays with M quads. */
         static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const RTCIntersectContext* context, const QuadMiMB<M>& quad, Scene* scene)
         {
           for (size_t i=0; i<QuadMiMB<M>::max_size(); i++)
@@ -174,7 +174,7 @@ namespace embree
           }
         }
         
-        /*! Test for K rays if they are occluded by any of the M triangles. */
+        /*! Test for K rays if they are occluded by any of the M quads. */
         static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const RTCIntersectContext* context, const QuadMiMB<M>& quad, Scene* scene)
         {
           vbool<K> valid0 = valid_i;
@@ -192,7 +192,7 @@ namespace embree
           return !valid0;
         }
         
-        /*! Intersect a ray with M triangles and updates the hit. */
+        /*! Intersect a ray with M quads and updates the hit. */
         static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, const RTCIntersectContext* context, const QuadMiMB<M>& quad, Scene* scene)
         {
           STAT3(normal.trav_prims,1,1,1);
@@ -200,7 +200,7 @@ namespace embree
           pre.intersect1(ray,k,context,v0,v1,v2,v3,quad.geomIDs,quad.primIDs,scene); 
         }
         
-        /*! Test if the ray is occluded by one of the M triangles. */
+        /*! Test if the ray is occluded by one of the M quads. */
         static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, const RTCIntersectContext* context, const QuadMiMB<M>& quad, Scene* scene)
         {
           STAT3(shadow.trav_prims,1,1,1);
