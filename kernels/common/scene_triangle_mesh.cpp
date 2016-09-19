@@ -60,32 +60,33 @@ namespace embree
     /* verify that all accesses are 4 bytes aligned */
     if (((size_t(ptr) + offset) & 0x3) || (stride & 0x3)) 
       throw_RTCError(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
-
-    switch (type) {
-    case RTC_INDEX_BUFFER  : 
-      triangles.set(ptr,offset,stride); 
-      break;
-    case RTC_VERTEX_BUFFER0: 
-      vertices[0].set(ptr,offset,stride); 
-      vertices[0].checkPadding16();
-      break;
-    case RTC_VERTEX_BUFFER1: 
-      vertices[1].set(ptr,offset,stride); 
-      vertices[1].checkPadding16();
-      break;
-    case RTC_USER_VERTEX_BUFFER0: 
-      if (userbuffers[0] == nullptr) userbuffers[0].reset(new Buffer(parent->device,numVertices(),stride)); 
-      userbuffers[0]->set(ptr,offset,stride);  
-      userbuffers[0]->checkPadding16();
-      break;
-    case RTC_USER_VERTEX_BUFFER1: 
-      if (userbuffers[1] == nullptr) userbuffers[1].reset(new Buffer(parent->device,numVertices(),stride)); 
-      userbuffers[1]->set(ptr,offset,stride);  
-      userbuffers[1]->checkPadding16();
-      break;
-
-    default: 
-      throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
+    
+    if (type >= RTC_VERTEX_BUFFER0 && type <= RTC_VERTEX_BUFFER0+RTC_MAX_TIME_STEPS) 
+    {
+      size_t t = type - RTC_VERTEX_BUFFER0;
+      vertices[t].set(ptr,offset,stride); 
+      vertices[t].checkPadding16();
+    } 
+    else 
+    {
+      switch (type) {
+      case RTC_INDEX_BUFFER  : 
+        triangles.set(ptr,offset,stride); 
+        break;
+      case RTC_USER_VERTEX_BUFFER0: 
+        if (userbuffers[0] == nullptr) userbuffers[0].reset(new Buffer(parent->device,numVertices(),stride)); 
+        userbuffers[0]->set(ptr,offset,stride);  
+        userbuffers[0]->checkPadding16();
+        break;
+      case RTC_USER_VERTEX_BUFFER1: 
+        if (userbuffers[1] == nullptr) userbuffers[1].reset(new Buffer(parent->device,numVertices(),stride)); 
+        userbuffers[1]->set(ptr,offset,stride);  
+        userbuffers[1]->checkPadding16();
+        break;
+        
+      default: 
+        throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
+      }
     }
   }
 
@@ -93,12 +94,16 @@ namespace embree
   {
     if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
-
-    switch (type) {
-    case RTC_INDEX_BUFFER  : return triangles.map(parent->numMappedBuffers);
-    case RTC_VERTEX_BUFFER0: return vertices[0].map(parent->numMappedBuffers);
-    case RTC_VERTEX_BUFFER1: return vertices[1].map(parent->numMappedBuffers);
-    default                : throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); return nullptr;
+    
+    if (type == RTC_INDEX_BUFFER) {
+      return triangles.map(parent->numMappedBuffers);
+    }
+    else if (type >= RTC_VERTEX_BUFFER0 && type <= RTC_VERTEX_BUFFER0+RTC_MAX_TIME_STEPS) {
+      return vertices[type - RTC_VERTEX_BUFFER0].map(parent->numMappedBuffers);
+    }
+    else {
+      throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); 
+      return nullptr;
     }
   }
 
@@ -107,11 +112,14 @@ namespace embree
     if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
-    switch (type) {
-    case RTC_INDEX_BUFFER  : triangles  .unmap(parent->numMappedBuffers); break;
-    case RTC_VERTEX_BUFFER0: vertices[0].unmap(parent->numMappedBuffers); break;
-    case RTC_VERTEX_BUFFER1: vertices[1].unmap(parent->numMappedBuffers); break;
-    default                : throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); break;
+    if (type == RTC_INDEX_BUFFER) {
+      triangles  .unmap(parent->numMappedBuffers);
+    }
+    else if (type >= RTC_VERTEX_BUFFER0 && type <= RTC_VERTEX_BUFFER0+RTC_MAX_TIME_STEPS) {
+      vertices[type - RTC_VERTEX_BUFFER0].unmap(parent->numMappedBuffers);
+    }
+    else {
+      throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); 
     }
   }
 
@@ -158,7 +166,7 @@ namespace embree
 #endif
 
     /* calculate base pointer and stride */
-    assert((buffer >= RTC_VERTEX_BUFFER0 && buffer <= RTC_VERTEX_BUFFER1) ||
+    assert((buffer >= RTC_VERTEX_BUFFER0 && buffer <= RTC_VERTEX_BUFFER0 + RTC_MAX_TIME_STEPS) ||
            (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
     const char* src = nullptr; 
     size_t stride = 0;

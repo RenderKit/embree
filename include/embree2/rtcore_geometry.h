@@ -23,6 +23,9 @@
 /*! invalid geometry ID */
 #define RTC_INVALID_GEOMETRY_ID ((unsigned)-1)
 
+/*! maximal number of time steps */
+#define RTC_MAX_TIME_STEPS 129
+
 /*! \brief Specifies the type of buffers when mapping buffers */
 enum RTCBufferType {
   RTC_INDEX_BUFFER         = 0x01000000,
