@@ -39,7 +39,7 @@ IF (EMBREE_TESTING_BENCHMARK)
     --run .*benchmarks.*
     --skip .*_120.* --skip .*_1k.* --skip .*_10k.* --skip .*100k.*  # skip all smaller build benchmarks
   )
-  set_tests_properties(verify_benchmarks PROPERTIES TIMEOUT 3000)
+  set_tests_properties(verify_benchmarks PROPERTIES TIMEOUT 10800)
 ENDIF()
 
 SET(CPACK_NSIS_MENU_LINKS ${CPACK_NSIS_MENU_LINKS} "${CMAKE_INSTALL_BINDIR}/verify" "verify")
