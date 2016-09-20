@@ -489,7 +489,8 @@ namespace embree
     std::cout << std::setw(8) << std::setprecision(3) << std::fixed << bestStat.getAvg() << " " << unit << " (+/-" << 100.0f*bestStat.getAvgSigma()/bestStat.getAvg() << "%)";
     if (passed) std::cout << state->green(" [PASSED]" ) << " (" << 100.0f*(bestStat.getAvg()-avgdb)/avgdb << "%)" << std::endl << std::flush;
     else        std::cout << state->red  (" [FAILED]" ) << " (" << 100.0f*(bestStat.getAvg()-avgdb)/avgdb << "%)" << std::endl << std::flush;
-    plotDatabase(state);
+    if (state->database != "")
+      plotDatabase(state);
 
     /* print dart measurement */
     if (state->cdash) 
