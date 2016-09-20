@@ -354,7 +354,7 @@ namespace embree
     STAT(size_t cnt=0; for (size_t i=0; i<16; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(normal.travs,1,cnt,16);
     IntersectContext context;
-    scene->intersect16(valid,ray,context);
+    scene->intersect16(valid,ray,&context);
 #else
     throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect16 not supported");
 #endif
