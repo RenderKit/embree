@@ -1055,7 +1055,7 @@ namespace embree
     if (xml->size() == 0) THROW_RUNTIME_ERROR("invalid Animation node");
     Ref<SceneGraph::Node> node = loadNode(xml->children[0]);
     for (size_t i=1; i<xml->size(); i++) {
-      Ref<SceneGraph::Node> nodei = loadNode(xml->children[1]);
+      Ref<SceneGraph::Node> nodei = loadNode(xml->children[i]);
       SceneGraph::extend_animation(node,nodei);
     }
     SceneGraph::optimize_animation(node);

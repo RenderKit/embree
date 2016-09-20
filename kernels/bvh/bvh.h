@@ -1089,6 +1089,7 @@ namespace embree
     Device* device;                    //!< device pointer
     Scene* scene;                      //!< scene pointer
     NodeRef root;                      //!< Root node
+    bool msmblur;                      //!< when true root points to array of roots for MSMBlur mode
     FastAllocator alloc;               //!< allocator used to allocate nodes
 
     /*! statistics data */

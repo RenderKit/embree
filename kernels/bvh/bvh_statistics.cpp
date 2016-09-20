@@ -36,7 +36,16 @@ namespace embree
     childrenQuantizedNodes = 0;
     bvhSAH = 0.0f; leafSAH = 0.0f;
     float A = max(0.0f,halfArea(bvh->bounds));
-    statistics(bvh->root,A,depth);
+    if (bvh->msmblur) {
+      NodeRef* roots = (NodeRef*)(size_t)bvh->root;
+      for (size_t i=0; i<bvh->scene->numTimeSteps-1; i++) {
+        size_t cdepth; statistics(roots[i],A,cdepth);
+        depth=max(depth,cdepth);
+      }
+    }
+    else {
+      statistics(bvh->root,A,depth);
+    }
     bvhSAH /= halfArea(bvh->bounds);
     leafSAH /= halfArea(bvh->bounds);
     assert(depth <= BVH::maxDepth);

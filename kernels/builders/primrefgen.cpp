@@ -113,7 +113,7 @@ namespace embree
     }
 
     template<typename Mesh>
-    PrimInfo createPrimRefArrayMBlur(size_t timeStep, Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor)
+    PrimInfo createPrimRefArrayMBlur(size_t timeSegment, Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor)
     {
       ParallelForForPrefixSumState<PrimInfo> pstate;
       Scene::Iterator<Mesh,2> iter(scene);
@@ -127,7 +127,7 @@ namespace embree
         for (size_t j=r.begin(); j<r.end(); j++)
         {
           BBox3fa bounds = empty;
-          if (!mesh->valid(j,timeStep,&bounds)) continue;
+          if (!mesh->valid(j,timeSegment,&bounds)) continue;
           const PrimRef prim(bounds,mesh->id,unsigned(j));
           pinfo.add(bounds,bounds.center2());
           prims[k++] = prim;
@@ -146,7 +146,7 @@ namespace embree
           for (size_t j=r.begin(); j<r.end(); j++)
           {
             BBox3fa bounds = empty;
-            if (!mesh->valid(j,timeStep,&bounds)) continue;
+            if (!mesh->valid(j,timeSegment,&bounds)) continue;
             const PrimRef prim(bounds,mesh->id,unsigned(j));
             pinfo.add(bounds,bounds.center2());
             prims[k++] = prim;

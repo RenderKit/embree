@@ -60,11 +60,23 @@ namespace embree
 #if defined(EMBREE_IGNORE_INVALID_RAYS)
       if (!ray.valid()) return;
 #endif
-
       /* verify correct input */
       assert(ray.valid());
       assert(ray.tnear >= 0.0f);
       assert(!(types & BVH_MB) || (ray.time >= 0.0f && ray.time <= 1.0f));
+
+      /*! select proper root for msmblur mode */
+      if (unlikely(types & BVH_AN2))  
+      {  
+        /* calculate time segment itime and fractional time ftime */
+        const int time_segments = bvh->scene->numTimeSteps-1;
+        const float time = ray.time*float(time_segments);
+        const int   itime = clamp(int(floor(time)),0,time_segments-1);
+        const float ftime = time - float(itime);
+        context->ftime = ftime;
+        NodeRef* roots = (NodeRef*)(size_t)bvh->root;
+        stack[0].ptr = roots[itime];
+      }
 
       /*! load the ray into SIMD registers */
       size_t leafType = 0;
@@ -98,7 +110,7 @@ namespace embree
           /* intersect node */
           size_t mask = 0;
           vfloat<Nx> tNear;
-          bool nodeIntersected = BVHNNodeIntersector1<N,Nx,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time,tNear,mask);
+          bool nodeIntersected = BVHNNodeIntersector1<N,Nx,types,robust>::intersect(cur,vray,ray_near,ray_far,context->ftime,tNear,mask);
           if (unlikely(!nodeIntersected)) break;
 
           /*! if no child is hit, pop next node */
@@ -166,6 +178,19 @@ namespace embree
       assert(ray.tnear >= 0.0f);
       assert(!(types & BVH_MB) || (ray.time >= 0.0f && ray.time <= 1.0f));
 
+      /*! select proper root for msmblur mode */
+      if (unlikely(types & BVH_AN2))  
+      {  
+        /* calculate time segment itime and fractional time ftime */
+        const int time_segments = bvh->scene->numTimeSteps-1;
+        const float time = ray.time*float(time_segments);
+        const int   itime = clamp(int(floor(time)),0,time_segments-1);
+        const float ftime = time - float(itime);
+        context->ftime = ftime;
+        NodeRef* roots = (NodeRef*)(size_t)bvh->root;
+        stack[0] = roots[itime];
+      }
+
       /*! load the ray into SIMD registers */
       size_t leafType = 0;
       const unsigned int* geomID_to_instID = nullptr;
@@ -194,7 +219,7 @@ namespace embree
           /* intersect node */
           size_t mask = 0;
           vfloat<Nx> tNear;
-          bool nodeIntersected = BVHNNodeIntersector1<N,Nx,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time,tNear,mask);
+          bool nodeIntersected = BVHNNodeIntersector1<N,Nx,types,robust>::intersect(cur,vray,ray_near,ray_far,context->ftime,tNear,mask);
           if (unlikely(!nodeIntersected)) break;
 
           /*! if no child is hit, pop next node */

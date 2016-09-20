@@ -454,8 +454,8 @@ namespace embree
       return -1;
     }
 
-    if (numTimeSteps == 0 || numTimeSteps > 2) {
-      throw_RTCError(RTC_INVALID_OPERATION,"only 1 or 2 time steps supported");
+    if (numTimeSteps == 0 || numTimeSteps > RTC_MAX_TIME_STEPS) {
+      throw_RTCError(RTC_INVALID_OPERATION,"maximal number of timesteps exceeded");
       return -1;
     }
     

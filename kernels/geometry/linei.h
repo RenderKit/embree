@@ -88,21 +88,20 @@ namespace embree
     }
 
     /* Calculate the bounds of the line segments at t0 */
-    __forceinline BBox3fa bounds0(const Scene* scene) const
+    __forceinline BBox3fa bounds0(const Scene* scene) const // FIXME: remove
     {
       return bounds(scene,0);
     }
 
     /* Calculate the bounds of the line segments at t1 */
-    __forceinline BBox3fa bounds1(const Scene* scene) const
+    __forceinline BBox3fa bounds1(const Scene* scene) const // FIXME: remove
     {
       return bounds(scene,1);
     }
 
     /* Calculate primitive bounds */
-    __forceinline std::pair<BBox3fa,BBox3fa> bounds(const Scene* scene)
-    {
-      return std::make_pair(bounds0(scene), bounds1(scene));
+    __forceinline std::pair<BBox3fa,BBox3fa> bounds2(const Scene* scene, size_t time = 0) {
+      return std::make_pair(bounds(scene,time+0), bounds(scene,time+1));
     }
 
     /* Fill line segment from line segment list */
@@ -164,10 +163,10 @@ namespace embree
     }
 
     /* Fill line segment from line segment list */
-    __forceinline std::pair<BBox3fa,BBox3fa> fill_mblur(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list)
+    __forceinline std::pair<BBox3fa,BBox3fa> fill_mblur(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list, size_t time)
     {
       fill(prims,begin,end,scene,list);
-      return bounds(scene);
+      return bounds2(scene,time);
     }
 
     /* Updates the primitive */

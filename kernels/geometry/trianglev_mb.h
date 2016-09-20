@@ -145,7 +145,7 @@ namespace embree
     }
     
     /* Fill triangle from triangle list */
-    __forceinline std::pair<BBox3fa,BBox3fa> fill_mblur(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list)
+    __forceinline std::pair<BBox3fa,BBox3fa> fill_mblur(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list, size_t time)
     {
       vint<M> vgeomID = -1, vprimID = -1;
       Vec3vfM va0 = zero, vb0 = zero, vc0 = zero;
@@ -161,12 +161,12 @@ namespace embree
         const unsigned primID = prim.primID();
         const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
         const TriangleMesh::Triangle& tri = mesh->triangle(primID);
-	const Vec3fa& a0 = mesh->vertex(tri.v[0],0); bounds0.extend(a0);
-	const Vec3fa& a1 = mesh->vertex(tri.v[0],1); bounds1.extend(a1);
-        const Vec3fa& b0 = mesh->vertex(tri.v[1],0); bounds0.extend(b0);
-	const Vec3fa& b1 = mesh->vertex(tri.v[1],1); bounds1.extend(b1);
-        const Vec3fa& c0 = mesh->vertex(tri.v[2],0); bounds0.extend(c0);
-	const Vec3fa& c1 = mesh->vertex(tri.v[2],1); bounds1.extend(c1);
+	const Vec3fa& a0 = mesh->vertex(tri.v[0],time+0); bounds0.extend(a0);
+	const Vec3fa& a1 = mesh->vertex(tri.v[0],time+1); bounds1.extend(a1);
+        const Vec3fa& b0 = mesh->vertex(tri.v[1],time+0); bounds0.extend(b0);
+	const Vec3fa& b1 = mesh->vertex(tri.v[1],time+1); bounds1.extend(b1);
+        const Vec3fa& c0 = mesh->vertex(tri.v[2],time+0); bounds0.extend(c0);
+	const Vec3fa& c1 = mesh->vertex(tri.v[2],time+1); bounds1.extend(c1);
         vgeomID [i] = geomID;
         vprimID [i] = primID;
         va0.x[i] = a0.x; va0.y[i] = a0.y; va0.z[i] = a0.z;

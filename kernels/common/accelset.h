@@ -189,11 +189,11 @@ namespace embree
       }
 
       /*! Calculates the bounds of an item */
-      __forceinline std::pair<BBox3fa,BBox3fa> bounds_mblur (size_t item) const
+      __forceinline std::pair<BBox3fa,BBox3fa> bounds_mblur (size_t item, size_t time) const
       {
         BBox3fa box[2]; 
         assert(item < size());
-        if (boundsFunc2) boundsFunc2(boundsFunc2UserPtr,intersectors.ptr,item,(RTCBounds*)box);
+        if (boundsFunc2) boundsFunc2(boundsFunc2UserPtr,intersectors.ptr,item,(RTCBounds*)box); // FIXME: have to pass time !!!!!!!!!!!
         else             boundsFunc(intersectors.ptr,item,(RTCBounds&)box[0]);
         return std::make_pair(box[0],box[1]);
       }

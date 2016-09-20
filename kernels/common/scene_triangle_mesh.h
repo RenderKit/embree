@@ -196,7 +196,7 @@ namespace embree
       return true;
     }
 
-    /*! check if the i'th primitive is valid at j'th timesrange */
+    /*! check if the i'th primitive is valid at j'th timesegment */
     __forceinline bool valid(size_t i, size_t j, BBox3fa* bbox = nullptr) const 
     {
       const Triangle& tri = triangle(i);
