@@ -91,7 +91,7 @@ namespace embree
       };
 
       /*! Intersect a ray with the primitive. */
-      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const RTCIntersectContext* context, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
+      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
       {
         const size_t dim_offset    = pre.grid->dim_offset;
         const size_t line_offset   = pre.grid->width;
@@ -119,7 +119,7 @@ namespace embree
       }
 
       /*! Test if the ray is occluded by the primitive */
-      static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const RTCIntersectContext* context, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
+      static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
       {
         const size_t dim_offset    = pre.grid->dim_offset;
         const size_t line_offset   = pre.grid->width;
@@ -153,7 +153,7 @@ namespace embree
 
       template<typename Loader>
         static __forceinline void intersect(RayK<K>& ray, size_t k,
-                                            const RTCIntersectContext* context, 
+                                            IntersectContext* context, 
                                             const float* const grid_x,
                                             const size_t line_offset,
                                             Precalculations& pre,
@@ -170,7 +170,7 @@ namespace embree
       
       template<typename Loader>
         static __forceinline bool occluded(RayK<K>& ray, size_t k,
-                                           const RTCIntersectContext* context, 
+                                           IntersectContext* context, 
                                            const float* const grid_x,
                                            const size_t line_offset,
                                            Precalculations& pre,
@@ -186,7 +186,7 @@ namespace embree
       }
 
       /*! Intersect a ray with the primitive. */
-      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, const RTCIntersectContext* context, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
+      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
       {
         const size_t line_offset   = pre.grid->width;
         const float* const grid_x  = pre.grid->decodeLeaf(0,prim);
@@ -200,7 +200,7 @@ namespace embree
       }
       
       /*! Test if the ray is occluded by the primitive */
-      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, const RTCIntersectContext* context, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
+      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
       {
         const size_t line_offset   = pre.grid->width;
         const float* const grid_x  = pre.grid->decodeLeaf(0,prim);
@@ -226,7 +226,7 @@ namespace embree
       template<typename Loader>
         static __forceinline void intersect(RayK<K>& ray, size_t k,
                                             const float ftime,
-                                            const RTCIntersectContext* context, 
+                                            IntersectContext* context, 
                                             const float* const grid_x,
                                             const size_t line_offset,
                                             Precalculations& pre,
@@ -255,7 +255,7 @@ namespace embree
       template<typename Loader>
         static __forceinline bool occluded(RayK<K>& ray, size_t k,
                                            const float ftime,
-                                           const RTCIntersectContext* context, 
+                                           IntersectContext* context, 
                                            const float* const grid_x,
                                            const size_t line_offset,
                                            Precalculations& pre,
@@ -282,7 +282,7 @@ namespace embree
       }
 
       /*! Intersect a ray with the primitive. */
-      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, const RTCIntersectContext* context, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
+      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
       {
         /* calculate time segment itime and fractional time ftime */
         const int time_segments = pre.grid->time_steps-1;
@@ -302,7 +302,7 @@ namespace embree
       }
       
       /*! Test if the ray is occluded by the primitive */
-      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, const RTCIntersectContext* context, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
+      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
       {
         /* calculate time segment itime and fractional time ftime */
         const int time_segments = pre.grid->time_steps-1;

@@ -626,13 +626,13 @@ namespace embree
       static const size_t stackSizeChunk  = N*BVH::maxDepth+1;
       static const size_t stackSizeSingle = 1+(N-1)*BVH::maxDepth;
 
-      static void intersectCoherentSOA(BVH* bvh, RayK<K>** inputRays, size_t numValidStreams, const RTCIntersectContext* context);
+      static void intersectCoherentSOA(BVH* bvh, RayK<K>** inputRays, size_t numValidStreams, IntersectContext* context);
 
-      static void occludedCoherentSOA(BVH* bvh, RayK<K>** inputRays, size_t numValidStreams, const RTCIntersectContext* context);
+      static void occludedCoherentSOA(BVH* bvh, RayK<K>** inputRays, size_t numValidStreams, IntersectContext* context);
       
     public:
-      static void intersect(BVH* bvh, Ray** ray, size_t numRays, const RTCIntersectContext* context);
-      static void occluded (BVH* bvh, Ray** ray, size_t numRays, const RTCIntersectContext* context);
+      static void intersect(BVH* bvh, Ray** ray, size_t numRays, IntersectContext* context);
+      static void occluded (BVH* bvh, Ray** ray, size_t numRays, IntersectContext* context);
     };
   }
 }

@@ -31,21 +31,21 @@ namespace embree
       typedef QuadMIntersector1MoellerTrumbore<M,filter> Precalculations;
         
       /*! Intersect a ray with the M quads and updates the hit. */
-      static __forceinline void intersect(const Precalculations& pre, Ray& ray, const RTCIntersectContext* context, const Primitive& quad, Scene* scene, const unsigned* geomID_to_instID)
+      static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& quad, Scene* scene, const unsigned* geomID_to_instID)
       {
         STAT3(normal.trav_prims,1,1,1);
         pre.intersect(ray,context,quad.v0,quad.v1,quad.v2,quad.v3,quad.geomIDs,quad.primIDs,scene,geomID_to_instID);
       }
         
       /*! Test if the ray is occluded by one of M quads. */
-      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const RTCIntersectContext* context, const Primitive& quad, Scene* scene, const unsigned* geomID_to_instID)
+      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& quad, Scene* scene, const unsigned* geomID_to_instID)
       {
         STAT3(shadow.trav_prims,1,1,1);
         return pre.occluded(ray,context, quad.v0,quad.v1,quad.v2,quad.v3,quad.geomIDs,quad.primIDs,scene,geomID_to_instID);
       }
 
       /*! Intersect an array of rays with an array of M primitives. */
-      static __forceinline size_t intersect(Precalculations* pre, size_t valid, Ray** rays, const RTCIntersectContext* context,  size_t ty, const Primitive* prim, size_t num, Scene* scene, const unsigned* geomID_to_instID)
+      static __forceinline size_t intersect(Precalculations* pre, size_t valid, Ray** rays, IntersectContext* context,  size_t ty, const Primitive* prim, size_t num, Scene* scene, const unsigned* geomID_to_instID)
       {
         size_t valid_isec = 0;
         do {
@@ -68,7 +68,7 @@ namespace embree
         typedef QuadMIntersectorKMoellerTrumbore<M,K,filter> Precalculations;
         
         /*! Intersects K rays with M triangles. */
-        static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const RTCIntersectContext* context, const QuadMv<M>& quad, Scene* scene)
+        static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const QuadMv<M>& quad, Scene* scene)
         {
           for (size_t i=0; i<QuadMv<M>::max_size(); i++)
           {
@@ -83,7 +83,7 @@ namespace embree
         }
         
         /*! Test for K rays if they are occluded by any of the M triangles. */
-        static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const RTCIntersectContext* context, const QuadMv<M>& quad, Scene* scene)
+        static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const QuadMv<M>& quad, Scene* scene)
         {
           vbool<K> valid0 = valid_i;
           
@@ -102,14 +102,14 @@ namespace embree
         }
         
         /*! Intersect a ray with M triangles and updates the hit. */
-        static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, const RTCIntersectContext* context, const QuadMv<M>& quad, Scene* scene)
+        static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const QuadMv<M>& quad, Scene* scene)
         {
           STAT3(normal.trav_prims,1,1,1);
           pre.intersect1(ray,k,context,quad.v0,quad.v1,quad.v2,quad.v3,quad.geomIDs,quad.primIDs,scene); 
         }
         
         /*! Test if the ray is occluded by one of the M triangles. */
-        static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, const RTCIntersectContext* context, const QuadMv<M>& quad, Scene* scene)
+        static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const QuadMv<M>& quad, Scene* scene)
         {
           STAT3(shadow.trav_prims,1,1,1);
           return pre.occluded1(ray,k,context,quad.v0,quad.v1,quad.v2,quad.v3,quad.geomIDs,quad.primIDs,scene); 

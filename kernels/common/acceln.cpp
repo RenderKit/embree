@@ -39,42 +39,42 @@ namespace embree
     accels.push_back(accel);
   }
   
-  void AccelN::intersect (void* ptr, RTCRay& ray, const RTCIntersectContext* context) 
+  void AccelN::intersect (void* ptr, RTCRay& ray, IntersectContext* context) 
   {
     AccelN* This = (AccelN*)ptr;
     for (size_t i=0; i<This->validAccels.size(); i++)
       This->validAccels[i]->intersect(ray,context);
   }
 
-  void AccelN::intersect4 (const void* valid, void* ptr, RTCRay4& ray, const RTCIntersectContext* context) 
+  void AccelN::intersect4 (const void* valid, void* ptr, RTCRay4& ray, IntersectContext* context) 
   {
     AccelN* This = (AccelN*)ptr;
     for (size_t i=0; i<This->validAccels.size(); i++)
       This->validAccels[i]->intersect4(valid,ray,context);
   }
 
-  void AccelN::intersect8 (const void* valid, void* ptr, RTCRay8& ray, const RTCIntersectContext* context) 
+  void AccelN::intersect8 (const void* valid, void* ptr, RTCRay8& ray, IntersectContext* context) 
   {
     AccelN* This = (AccelN*)ptr;
     for (size_t i=0; i<This->validAccels.size(); i++)
       This->validAccels[i]->intersect8(valid,ray,context);
   }
 
-  void AccelN::intersect16 (const void* valid, void* ptr, RTCRay16& ray, const RTCIntersectContext* context) 
+  void AccelN::intersect16 (const void* valid, void* ptr, RTCRay16& ray, IntersectContext* context) 
   {
     AccelN* This = (AccelN*)ptr;
     for (size_t i=0; i<This->validAccels.size(); i++)
       This->validAccels[i]->intersect16(valid,ray,context);
   }
 
-  void AccelN::intersectN (void* ptr, RTCRay** ray, const size_t N, const RTCIntersectContext* context)
+  void AccelN::intersectN (void* ptr, RTCRay** ray, const size_t N, IntersectContext* context)
   {
     AccelN* This = (AccelN*)ptr;
     for (size_t i=0; i<This->validAccels.size(); i++)
       This->validAccels[i]->intersectN(ray,N,context);
   }
 
-  void AccelN::occluded (void* ptr, RTCRay& ray, const RTCIntersectContext* context) 
+  void AccelN::occluded (void* ptr, RTCRay& ray, IntersectContext* context) 
   {
     AccelN* This = (AccelN*)ptr;
     for (size_t i=0; i<This->validAccels.size(); i++) {
@@ -83,7 +83,7 @@ namespace embree
     }
   }
 
-  void AccelN::occluded4 (const void* valid, void* ptr, RTCRay4& ray, const RTCIntersectContext* context) 
+  void AccelN::occluded4 (const void* valid, void* ptr, RTCRay4& ray, IntersectContext* context) 
   {
     AccelN* This = (AccelN*)ptr;
     for (size_t i=0; i<This->validAccels.size(); i++) {
@@ -96,7 +96,7 @@ namespace embree
     }
   }
 
-  void AccelN::occluded8 (const void* valid, void* ptr, RTCRay8& ray, const RTCIntersectContext* context) 
+  void AccelN::occluded8 (const void* valid, void* ptr, RTCRay8& ray, IntersectContext* context) 
   {
     AccelN* This = (AccelN*)ptr;
     for (size_t i=0; i<This->validAccels.size(); i++) {
@@ -111,7 +111,7 @@ namespace embree
     }
   }
 
-  void AccelN::occluded16 (const void* valid, void* ptr, RTCRay16& ray, const RTCIntersectContext* context) 
+  void AccelN::occluded16 (const void* valid, void* ptr, RTCRay16& ray, IntersectContext* context) 
   {
     AccelN* This = (AccelN*)ptr;
     for (size_t i=0; i<This->validAccels.size(); i++) {
@@ -124,7 +124,7 @@ namespace embree
     }
   }
 
-  void AccelN::occludedN (void* ptr, RTCRay** ray, const size_t N, const RTCIntersectContext* context)
+  void AccelN::occludedN (void* ptr, RTCRay** ray, const size_t N, IntersectContext* context)
   {
     AccelN* This = (AccelN*)ptr;
     size_t M = N;
