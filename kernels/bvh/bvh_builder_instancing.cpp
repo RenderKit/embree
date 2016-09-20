@@ -29,10 +29,10 @@ namespace embree
   {
     //Builder* BVH4Triangle4SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode = 0);
     Builder* BVH4Triangle4MeshBuilderSAH    (void* bvh, TriangleMesh* mesh, size_t mode = 0);
-    Builder* BVH4Triangle4vMBMeshBuilderSAH (void* bvh, TriangleMesh* mesh, size_t mode = 0);
+    //Builder* BVH4Triangle4vMBMeshBuilderSAH (void* bvh, TriangleMesh* mesh, size_t mode = 0);
 
     Builder* BVH4Quad4vMeshBuilderSAH        (void* bvh, QuadMesh* mesh,     size_t mode = 0);
-    Builder* BVH4Quad4iMBMeshBuilderSAH     (void* bvh, QuadMesh* mesh,     size_t mode = 0);
+    //Builder* BVH4Quad4iMBMeshBuilderSAH     (void* bvh, QuadMesh* mesh,     size_t mode = 0);
 
     template<int N>
     BVHNBuilderInstancing<N>::BVHNBuilderInstancing (BVH* bvh, Scene* scene)
@@ -162,8 +162,8 @@ namespace embree
                 default                     : break; 
                 }
               } else {
-                 switch (geom->type) {
-#if defined(EMBREE_GEOMETRY_TRIANGLES)
+                switch (geom->type) {
+/*#if defined(EMBREE_GEOMETRY_TRIANGLES)
                  case Geometry::TRIANGLE_MESH:
                    objects[objectID] = new BVH4(Triangle4vMB::type,geom->parent);
                    builders[objectID] = BVH4Triangle4vMBMeshBuilderSAH((BVH4*)objects[objectID],(TriangleMesh*)geom);
@@ -175,7 +175,7 @@ namespace embree
                    objects[objectID] = new BVH4(Quad4iMB::type,geom->parent);
                    builders[objectID] = BVH4Quad4iMBMeshBuilderSAH((BVH4*)objects[objectID],(QuadMesh*)geom);
                    break;
-#endif
+                   #endif*/
                  case Geometry::USER_GEOMETRY: break;
                  case Geometry::BEZIER_CURVES: break;
                  case Geometry::SUBDIV_MESH  : break;

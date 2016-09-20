@@ -134,10 +134,8 @@ namespace embree
     };
 
     template<int N>
-    void BVHNBuilderMblur<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progress_in, PrimRef* prims, const PrimInfo& pinfo, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost)
+    std::tuple<typename BVHN<N>::NodeRef,std::pair<BBox3fa,BBox3fa>> BVHNBuilderMblur<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progress_in, PrimRef* prims, const PrimInfo& pinfo, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost)
     {
-      //bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
-
       auto progressFunc = [&] (size_t dn) { 
         progress_in(dn); 
       };
@@ -163,16 +161,13 @@ namespace embree
       };
       auto identity = std::make_pair(BBox3fa(empty),BBox3fa(empty));
       
-      
       NodeRef root;
       std::pair<BBox3fa,BBox3fa> root_bounds = BVHBuilderBinnedSAH::build_reduce<NodeRef>
         (root,typename BVH::CreateAlloc(bvh),identity,CreateNodeMB<N>(bvh),reduce,createLeafFunc,progressFunc,
          prims,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
       /* set bounding box to merge bounds of all time steps */
-      //bvh->set(root,pinfo.geomBounds,pinfo.size());
-      bvh->set(root,merge(root_bounds.first,root_bounds.second),pinfo.size());
-
+      bvh->set(root,merge(root_bounds.first,root_bounds.second),pinfo.size()); // FIXME: remove later
 
 #if ROTATE_TREE
       if (N == 4)
@@ -184,6 +179,8 @@ namespace embree
 #endif
       
       //bvh->layoutLargeNodes(pinfo.size()*0.005f); // FIXME: implement for Mblur nodes and activate
+      
+      return std::make_tuple(root,root_bounds);
     }
 
     template<int N>
