@@ -163,6 +163,16 @@ namespace embree
       return BBox3fa(min(v0,v1,v2),max(v0,v1,v2));
     }
 
+    /*! calculates the bounds of the i'th triangle at the j'th timestep */
+    __forceinline BBox3fa bounds(size_t i, size_t j) const 
+    {
+      const Triangle& tri = triangle(i);
+      const Vec3fa v0 = vertex(tri.v[0],j);
+      const Vec3fa v1 = vertex(tri.v[1],j);
+      const Vec3fa v2 = vertex(tri.v[2],j);
+      return BBox3fa(min(v0,v1,v2),max(v0,v1,v2));
+    }
+
     /*! check if the i'th primitive is valid */
     __forceinline bool valid(size_t i, BBox3fa* bbox = nullptr) const 
     {
@@ -182,6 +192,28 @@ namespace embree
 
       if (likely(bbox)) 
         *bbox = bounds(i);
+
+      return true;
+    }
+
+    /*! check if the i'th primitive is valid at j'th timesrange */
+    __forceinline bool valid(size_t i, size_t j, BBox3fa* bbox = nullptr) const 
+    {
+      const Triangle& tri = triangle(i);
+      if (unlikely(tri.v[0] >= numVertices())) return false;
+      if (unlikely(tri.v[1] >= numVertices())) return false;
+      if (unlikely(tri.v[2] >= numVertices())) return false;
+
+      assert(j+1 < numTimeSteps);
+      const Vec3fa a0 = vertex(tri.v[0],j+0); if (unlikely(!isvalid(a0))) return false;
+      const Vec3fa a1 = vertex(tri.v[1],j+0); if (unlikely(!isvalid(a1))) return false;
+      const Vec3fa a2 = vertex(tri.v[2],j+0); if (unlikely(!isvalid(a2))) return false;
+      const Vec3fa b0 = vertex(tri.v[0],j+1); if (unlikely(!isvalid(b0))) return false;
+      const Vec3fa b1 = vertex(tri.v[1],j+1); if (unlikely(!isvalid(b1))) return false;
+      const Vec3fa b2 = vertex(tri.v[2],j+1); if (unlikely(!isvalid(b2))) return false;
+      
+      if (likely(bbox)) 
+        *bbox = BBox3fa(min(a0,a1,a2),max(a0,a1,a2));
 
       return true;
     }

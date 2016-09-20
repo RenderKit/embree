@@ -112,6 +112,51 @@ namespace embree
       return pinfo;
     }
 
+    template<typename Mesh>
+    PrimInfo createPrimRefArrayMBlur(size_t timeStep, Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor)
+    {
+      ParallelForForPrefixSumState<PrimInfo> pstate;
+      Scene::Iterator<Mesh,2> iter(scene);
+      
+      /* first try */
+      progressMonitor(0);
+      pstate.init(iter,size_t(1024));
+      PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](Mesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
+      {
+        PrimInfo pinfo(empty);
+        for (size_t j=r.begin(); j<r.end(); j++)
+        {
+          BBox3fa bounds = empty;
+          if (!mesh->valid(j,timeStep,&bounds)) continue;
+          const PrimRef prim(bounds,mesh->id,unsigned(j));
+          pinfo.add(bounds,bounds.center2());
+          prims[k++] = prim;
+        }
+        return pinfo;
+      }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
+      
+      /* if we need to filter out geometry, run again */
+      if (pinfo.size() != prims.size())
+      {
+        progressMonitor(0);
+        pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](Mesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
+        {
+          k = base.size();
+          PrimInfo pinfo(empty);
+          for (size_t j=r.begin(); j<r.end(); j++)
+          {
+            BBox3fa bounds = empty;
+            if (!mesh->valid(j,timeStep,&bounds)) continue;
+            const PrimRef prim(bounds,mesh->id,unsigned(j));
+            pinfo.add(bounds,bounds.center2());
+            prims[k++] = prim;
+          }
+          return pinfo;
+        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
+      }
+      return pinfo;
+    }
+
     template<typename Mesh, size_t timeSteps>
       PrimInfo createPrimRefList(Scene* scene, PrimRefList& prims_o, BuildProgressMonitor& progressMonitor)
     {
@@ -231,6 +276,12 @@ namespace embree
     template PrimInfo createPrimRefArray<SubdivMesh,1>(Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
     template PrimInfo createPrimRefArray<AccelSet,1>(Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
     template PrimInfo createPrimRefArray<AccelSet,2>(Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
+
+    template PrimInfo createPrimRefArrayMBlur<TriangleMesh>(size_t timeStep, Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
+    //template PrimInfo createPrimRefArrayMBlur<QuadMesh>(size_t timeStep, Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
+    //template PrimInfo createPrimRefArrayMBlur<BezierCurves>(size_t timeStep, Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
+    //template PrimInfo createPrimRefArrayMBlur<LineSegments>(size_t timeStep, Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
+    //template PrimInfo createPrimRefArrayMBlur<AccelSet>(size_t timeStep, Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
 
     template PrimInfo createBezierRefArray<1>(Scene* scene, mvector<BezierPrim>& prims, BuildProgressMonitor& progressMonitor);
     template PrimInfo createBezierRefArray<2>(Scene* scene, mvector<BezierPrim>& prims, BuildProgressMonitor& progressMonitor);

@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and      //
 // limitations under the License.                                           //
 // ======================================================================== //
-
+ 
 #pragma once
 
 #include "default.h"
@@ -55,7 +55,7 @@ namespace embree
         if (geom == nullptr) return nullptr;
         if (!all && !geom->isEnabled()) return nullptr;
         if (geom->getType() != Ty::geom_type) return nullptr;
-        if (geom->numTimeSteps != timeSteps) return nullptr;
+        if ((geom->numTimeSteps == 1) != (timeSteps == 1)) return nullptr;
         return (Ty*) geom;
       }
 
