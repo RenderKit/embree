@@ -34,7 +34,7 @@ namespace embree
         __forceinline Precalculations (const Ray& ray, const void *ptr) {}
       };
       
-      static __forceinline void intersect(const Precalculations& pre, Ray& ray, const RTCIntersectContext* context, const Primitive& prim, Scene* scene, const unsigned* geomID_to_instID) 
+      static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim, Scene* scene, const unsigned* geomID_to_instID) 
       {
         AVX_ZERO_UPPER();
         AccelSet* accel = (AccelSet*) scene->get(prim.geomID);
@@ -48,7 +48,7 @@ namespace embree
         accel->intersect((RTCRay&)ray,prim.primID,context);
       }
       
-      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const RTCIntersectContext* context, const Primitive& prim, Scene* scene, const unsigned* geomID_to_instID) 
+      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim, Scene* scene, const unsigned* geomID_to_instID) 
       {
         AVX_ZERO_UPPER();
         AccelSet* accel = (AccelSet*) scene->get(prim.geomID);
@@ -64,7 +64,7 @@ namespace embree
       }
       
       //template<typename Context>
-      static __forceinline size_t intersect(Precalculations* pre, size_t valid_in, Ray** rays, const RTCIntersectContext* context /*, Context* ctx */ , size_t ty, const Primitive* prims, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node)
+      static __forceinline size_t intersect(Precalculations* pre, size_t valid_in, Ray** rays, IntersectContext* context /*, Context* ctx */ , size_t ty, const Primitive* prims, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node)
       {
         AVX_ZERO_UPPER();
         
@@ -103,7 +103,7 @@ namespace embree
         return valid_in;
       }
 
-      static __forceinline size_t occluded(Precalculations* pre, size_t valid_in, Ray** rays, const RTCIntersectContext* context, size_t ty, const Primitive* prims, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node)
+      static __forceinline size_t occluded(Precalculations* pre, size_t valid_in, Ray** rays, IntersectContext* context, size_t ty, const Primitive* prims, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node)
       {
         AVX_ZERO_UPPER();
         size_t hit = 0;
@@ -149,12 +149,12 @@ namespace embree
       }
 
         template<int K>
-        static __forceinline void intersectChunk(const vbool<K>& valid, /* PrecalculationsChunk& pre, */ RayK<K>& ray, const RTCIntersectContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node)
+        static __forceinline void intersectChunk(const vbool<K>& valid, /* PrecalculationsChunk& pre, */ RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node)
         {
         }
 
         template<int K>        
-        static __forceinline vbool<K> occludedChunk(const vbool<K>& valid, /* PrecalculationsChunk& pre, */ RayK<K>& ray, const RTCIntersectContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node) 
+        static __forceinline vbool<K> occludedChunk(const vbool<K>& valid, /* PrecalculationsChunk& pre, */ RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node) 
         {
           return valid;
         }

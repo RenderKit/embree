@@ -26,7 +26,7 @@ namespace embree
   namespace isa
   {
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK>
-    void BVHNIntersectorKSingle<N,K,types,robust,PrimitiveIntersectorK>::intersect(vint<K>* __restrict__ valid_i, BVH* __restrict__ bvh, RayK<K>& __restrict__ ray, const RTCIntersectContext* context)
+    void BVHNIntersectorKSingle<N,K,types,robust,PrimitiveIntersectorK>::intersect(vint<K>* __restrict__ valid_i, BVH* __restrict__ bvh, RayK<K>& __restrict__ ray, IntersectContext* context)
     {
       /* filter out invalid rays */
       vbool<K> valid = *valid_i == -1;
@@ -65,7 +65,7 @@ namespace embree
 
     
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK>
-    void BVHNIntersectorKSingle<N,K,types,robust,PrimitiveIntersectorK>::occluded(vint<K>* __restrict__ valid_i, BVH* __restrict__ bvh, RayK<K>& __restrict__ ray, const RTCIntersectContext* context)
+    void BVHNIntersectorKSingle<N,K,types,robust,PrimitiveIntersectorK>::occluded(vint<K>* __restrict__ valid_i, BVH* __restrict__ bvh, RayK<K>& __restrict__ ray, IntersectContext* context)
     {
       /*! filter out already occluded and invalid rays */
       vbool<K> valid = (*valid_i == -1) & (ray.geomID != 0);

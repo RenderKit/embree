@@ -26,7 +26,7 @@ namespace embree
     static_assert(MAX_RAYS_PER_OCTANT <= MAX_INTERNAL_STREAM_SIZE,"maximal internal stream size exceeded");
 
 
-    __forceinline void RayStream::filterAOS(Scene *scene, RTCRay* _rayN, const size_t N, const size_t stride, const RTCIntersectContext* context, const bool intersect)
+    __forceinline void RayStream::filterAOS(Scene *scene, RTCRay* _rayN, const size_t N, const size_t stride, IntersectContext* context, const bool intersect)
     {
       Ray* __restrict__ rayN = (Ray*)_rayN;
       __aligned(64) Ray* octants[8][MAX_RAYS_PER_OCTANT];
@@ -96,7 +96,7 @@ namespace embree
         }
     }
 
-    __forceinline void RayStream::filterSOA(Scene *scene, char* rayData, const size_t N, const size_t streams, const size_t stream_offset, const RTCIntersectContext* context, const bool intersect)
+    __forceinline void RayStream::filterSOA(Scene *scene, char* rayData, const size_t N, const size_t streams, const size_t stream_offset, IntersectContext* context, const bool intersect)
     {
       RayPacket rayN(rayData,N);
 
@@ -112,7 +112,7 @@ namespace embree
 #endif
 
       /* can we use the fast path ? */
-      if (unlikely(isCoherent(context->flags) && 
+      if (unlikely(isCoherent(context->context->flags) && 
                    N == VSIZEX                && 
                    !rayDataAlignment          && 
                    !offsetAlignment))
@@ -233,13 +233,13 @@ namespace embree
         }
     }
 
-    void RayStream::filterSOP(Scene *scene, const RTCRayNp& _rayN, const size_t N, const RTCIntersectContext* context, const bool intersect)
+    void RayStream::filterSOP(Scene *scene, const RTCRayNp& _rayN, const size_t N, IntersectContext* context, const bool intersect)
     {
       RayPN& rayN = *(RayPN*)&_rayN;
       size_t rayStartIndex = 0;
 
       /* use packet intersector for coherent ray mode */
-      if (unlikely(isCoherent(context->flags)))
+      if (unlikely(isCoherent(context->context->flags)))
       {
         size_t s = 0;
         size_t stream_offset = 0;

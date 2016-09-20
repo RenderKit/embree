@@ -237,7 +237,7 @@ namespace embree
     // =====================================================================================================
 
     template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
-    void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersectCoherentSOA(BVH* __restrict__ bvh, RayK<K>** inputRays, size_t numOctantRays, const RTCIntersectContext* context)
+    void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersectCoherentSOA(BVH* __restrict__ bvh, RayK<K>** inputRays, size_t numOctantRays, IntersectContext* context)
     {      
       __aligned(64) StackItemMaskCoherent stack[stackSizeSingle];  //!< stack of nodes
 
@@ -338,7 +338,7 @@ namespace embree
     }
 
     template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
-    void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occludedCoherentSOA(BVH* __restrict__ bvh, RayK<K>** inputRays, size_t numOctantRays, const RTCIntersectContext* context)
+    void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occludedCoherentSOA(BVH* __restrict__ bvh, RayK<K>** inputRays, size_t numOctantRays, IntersectContext* context)
     {      
       __aligned(64) StackItemMaskCoherent stack[stackSizeSingle];  //!< stack of nodes
 
@@ -449,14 +449,14 @@ namespace embree
     // =====================================================================================================
 
     template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
-    void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersect(BVH* __restrict__ bvh, Ray** inputRays, size_t numTotalRays, const RTCIntersectContext* context)
+    void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersect(BVH* __restrict__ bvh, Ray** inputRays, size_t numTotalRays, IntersectContext* context)
     {
       __aligned(64) RayCtx ray_ctx[MAX_RAYS_PER_OCTANT];
       __aligned(64) Precalculations pre[MAX_RAYS_PER_OCTANT]; 
       __aligned(64) StackItemMask stack[stackSizeSingle];  //!< stack of nodes
 
 #if ENABLE_COHERENT_STREAM_PATH == 1 
-      if (unlikely(PrimitiveIntersector::validChunkIntersector && !robust && isCoherent(context->flags)))
+      if (unlikely(PrimitiveIntersector::validChunkIntersector && !robust && isCoherent(context->context->flags)))
       {
         /* AOS to SOA conversion */
         RayK<K> rayK[MAX_RAYS / K];
@@ -624,14 +624,14 @@ namespace embree
 
 
     template<int N, int Nx, int K, int types, bool robust, typename PrimitiveIntersector>
-    void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occluded(BVH* __restrict__ bvh, Ray **inputRays, size_t numTotalRays, const RTCIntersectContext* context)
+    void BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occluded(BVH* __restrict__ bvh, Ray **inputRays, size_t numTotalRays, IntersectContext* context)
     {
       __aligned(64) RayCtx ray_ctx[MAX_RAYS_PER_OCTANT];
       __aligned(64) Precalculations pre[MAX_RAYS_PER_OCTANT]; 
       __aligned(64) StackItemMask stack[stackSizeSingle];  //!< stack of nodes
 
 #if ENABLE_COHERENT_STREAM_PATH == 1 
-      if (unlikely(PrimitiveIntersector::validChunkIntersector && !robust && isCoherent(context->flags)))
+      if (unlikely(PrimitiveIntersector::validChunkIntersector && !robust && isCoherent(context->context->flags)))
       {
         /* AOS to SOA conversion */
         RayK<K> rayK[MAX_RAYS / K];

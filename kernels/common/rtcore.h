@@ -14,6 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#pragma once
+
 #include "../../include/embree2/rtcore.h"
 
 namespace embree

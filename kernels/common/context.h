@@ -16,23 +16,18 @@
 
 #pragma once
 
-#include "../common/scene_instance.h"
-#include "../common/ray.h"
+#include "default.h"
+#include "rtcore.h"
 
 namespace embree
 {
-  namespace isa
+  struct IntersectContext
   {
-    struct FastInstanceIntersector1
-    {
-      static void intersect(const Instance* instance, Ray& ray, size_t item);
-      static void occluded (const Instance* instance, Ray& ray, size_t item);
-    };
+  public:
+    __forceinline IntersectContext(const RTCIntersectContext* context = nullptr)
+      : context(context) {}
 
-    struct FastInstanceIntersector1M
-    {
-      static void intersect(const Instance* instance, IntersectContext* context, Ray** rays, size_t M, size_t item);
-      static void occluded (const Instance* instance, IntersectContext* context, Ray** rays, size_t M, size_t item);
-    };
-  }
+  public:
+    const RTCIntersectContext* context;
+  };
 }

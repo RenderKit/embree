@@ -58,7 +58,7 @@ namespace embree
                                            const vfloat<K> &ray_tnear, 
                                            const vfloat<K> &ray_tfar,
                                            const Vec3viK& nearXYZ, 
-                                           const RTCIntersectContext* context)
+                                           IntersectContext* context)
       {
 	/*! stack state */
 	StackItemT<NodeRef> stack[stackSizeSingle];  //!< stack of nodes 
@@ -122,7 +122,7 @@ namespace embree
       
       static __forceinline bool occluded1(const BVH* bvh, NodeRef root, const size_t k, Precalculations& pre,
                                           RayK<K>& ray, const Vec3vfK &ray_org, const Vec3vfK &ray_dir, const Vec3vfK &ray_rdir, const vfloat<K> &ray_tnear, const vfloat<K> &ray_tfar,
-                                          const Vec3viK& nearXYZ, const RTCIntersectContext* context)
+                                          const Vec3viK& nearXYZ, IntersectContext* context)
       {
 	/*! stack state */
 	NodeRef stack[stackSizeSingle];  //!< stack of nodes that still need to get traversed
@@ -181,8 +181,8 @@ namespace embree
 	return false;
       }
       
-      static void intersect(vint<K>* valid, BVH* bvh, RayK<K>& ray, const RTCIntersectContext* context);
-      static void occluded (vint<K>* valid, BVH* bvh, RayK<K>& ray, const RTCIntersectContext* context);
+      static void intersect(vint<K>* valid, BVH* bvh, RayK<K>& ray, IntersectContext* context);
+      static void occluded (vint<K>* valid, BVH* bvh, RayK<K>& ray, IntersectContext* context);
     };
   }
 }
