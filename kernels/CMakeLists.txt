@@ -83,6 +83,7 @@ SET(EMBREE_LIBRARY_FILES
   bvh/bvh_builder_subdiv.cpp
 
   bvh/bvh_intersector1.cpp
+  bvh/bvh_collider.cpp
   )
 
 IF (TASKING_INTERNAL)
@@ -122,7 +123,8 @@ ENDIF()
 SET(EMBREE_LIBRARY_FILES_SSE42
     geometry/grid_soa.cpp
     subdiv/subdivpatch1base_eval.cpp
-    bvh/bvh_intersector1.cpp)
+    bvh/bvh_intersector1.cpp
+    bvh/bvh_collider.cpp)
 
 IF (EMBREE_RAY_PACKETS)
     SET(EMBREE_LIBRARY_FILES_SSE42 ${EMBREE_LIBRARY_FILES_SSE42}
@@ -152,6 +154,7 @@ SET(EMBREE_LIBRARY_FILES_AVX
     bvh/bvh_builder_instancing.avx.cpp
     bvh/bvh_builder_subdiv.avx.cpp
     bvh/bvh_intersector1.cpp
+    bvh/bvh_collider.cpp
     
     bvh/bvh.cpp
     bvh/bvh_statistics.cpp)
@@ -173,7 +176,8 @@ SET(EMBREE_LIBRARY_FILES_AVX2
     geometry/grid_soa.cpp
     subdiv/subdivpatch1base_eval.cpp
 
-    bvh/bvh_intersector1.cpp)
+    bvh/bvh_intersector1.cpp
+    bvh/bvh_collider.cpp)
 
 IF (EMBREE_RAY_PACKETS)
   SET(EMBREE_LIBRARY_FILES_AVX2 ${EMBREE_LIBRARY_FILES_AVX2}

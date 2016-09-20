@@ -33,6 +33,8 @@
 
 namespace embree
 {
+  DECLARE_SYMBOL2(Accel::Collider,BVH4Collider);
+
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4Line4iIntersector1);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4Line4iMBIntersector1);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4Bezier1vIntersector1);
@@ -206,6 +208,8 @@ namespace embree
 
   BVH4Factory::BVH4Factory (int features)
   {
+    SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,BVH4Collider);
+
     /* select builders */
     IF_ENABLED_LINES(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4BuilderTwoLevelLineSegmentsSAH));
     IF_ENABLED_TRIS (SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4BuilderTwoLevelTriangleMeshSAH));
@@ -474,6 +478,7 @@ namespace embree
   {
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
+    intersectors.collider               = BVH4Collider;
     intersectors.intersector1           = BVH4Triangle4Intersector1Moeller;
     intersectors.intersector4_filter    = BVH4Triangle4Intersector4HybridMoeller;
     intersectors.intersector4_nofilter  = BVH4Triangle4Intersector4HybridMoellerNoFilter;

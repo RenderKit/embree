@@ -69,6 +69,9 @@ struct RTCIntersectContext
   void* userRayExt;          //!< can be used to pass extended ray data to callbacks
 };
 
+/*! collision callback */
+typedef void (*RTCCollideFunc) (void* userPtr, size_t geomID0, size_t primID0, size_t geomID1, size_t primID1);
+
 /*! \brief Defines an opaque scene type */
 typedef struct __RTCScene {}* RTCScene;
 
@@ -107,6 +110,9 @@ RTCORE_API void rtcCommitThread(RTCScene scene, unsigned int threadID, unsigned 
 /*! Returns to AABB of the scene. rtcCommit has to get called
  *  previously to this function. */
 RTCORE_API void rtcGetBounds(RTCScene scene, RTCBounds& bounds_o);
+
+/*! Performs collision detection of two scenes */
+RTCORE_API void rtcCollide (RTCScene scene0, RTCScene scene1, RTCCollideFunc callback, void* userPtr);
 
 /*! Intersects a single ray with the scene. The ray has to be aligned
  *  to 16 bytes. This function can only be called for scenes with the

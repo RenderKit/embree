@@ -51,6 +51,9 @@ namespace embree
     ALIGNED_CLASS;
   public:
 
+    /*! Type of collide function */
+    typedef void (*CollideFunc)(void* bvh0, void* bvh1, RTCCollideFunc callback, void* userPtr);
+
     /*! Type of intersect function pointer for single rays. */
     typedef void (*IntersectFunc)(void* ptr,           /*!< pointer to user data */
                                   RTCRay& ray,         /*!< ray to intersect */
@@ -110,6 +113,21 @@ namespace embree
                                   const size_t N,      /*!< number of rays in stream */
                                   IntersectContext* context   /*!< layout flags */);
     typedef void (*ErrorFunc) ();
+
+    struct Collider
+    {
+      Collider (ErrorFunc error = nullptr) 
+      : collide((CollideFunc)error), name(nullptr) {}
+
+      Collider (CollideFunc collide, const char* name)
+      : collide(collide), name(name) {}
+
+      operator bool() const { return name; }
+
+    public:
+      CollideFunc collide;  
+      const char* name;
+    };
 
     struct Intersector1
     {
@@ -202,10 +220,14 @@ namespace embree
         : ptr(nullptr) {}
 
       Intersectors (ErrorFunc error) 
-      : ptr(nullptr), intersector1(error), intersector4(error), intersector8(error), intersector16(error), intersectorN(error) {}
+      : ptr(nullptr), collider(error), intersector1(error), intersector4(error), intersector8(error), intersector16(error), intersectorN(error) {}
 
       void print(size_t ident) 
       {
+        if (collider.name) {
+          for (size_t i=0; i<ident; i++) std::cout << " ";
+          std::cout << "collider  = " << collider.name << std::endl;
+        }
         if (intersector1.name) {
           for (size_t i=0; i<ident; i++) std::cout << " ";
           std::cout << "intersector1  = " << intersector1.name << std::endl;
@@ -250,6 +272,7 @@ namespace embree
 
     public:
       AccelData* ptr;
+      Collider collider;
       Intersector1 intersector1;
       Intersector4 intersector4;
       Intersector4 intersector4_filter;
@@ -283,6 +306,12 @@ namespace embree
     
     /*! build acceleration structure */
     virtual void build (size_t threadIndex, size_t threadCount) = 0;
+
+    /*! collides two scenes */
+    __forceinline void collide (Accel* scene0, Accel* scene1, RTCCollideFunc callback, void* userPtr) {
+      assert(intersectors.collider.collide);
+      intersectors.collider.collide(scene0->intersectors.ptr,scene1->intersectors.ptr,callback,userPtr);
+    }
 
     /*! Intersects a single ray with the scene. */
     __forceinline void intersect (RTCRay& ray, IntersectContext* context) {
@@ -400,6 +429,10 @@ namespace embree
   public:
     Intersectors intersectors;
   };
+
+#define DEFINE_COLLIDER(symbol,collider)                         \
+  Accel::Collider symbol((Accel::CollideFunc)collider::collide,     \
+                         TOSTRING(isa) "::" TOSTRING(symbol));
 
 #define DEFINE_INTERSECTOR1(symbol,intersector)                         \
   Accel::Intersector1 symbol((Accel::IntersectFunc)intersector::intersect, \

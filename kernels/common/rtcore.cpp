@@ -276,6 +276,23 @@ namespace embree
     RTCORE_CATCH_END(scene->device);
   }
   
+  RTCORE_API void rtcCollide (RTCScene hscene0, RTCScene hscene1, RTCCollideFunc callback, void* userPtr)
+  {
+    Scene* scene0 = (Scene*) hscene0;
+    Scene* scene1 = (Scene*) hscene1;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcCollide);
+#if defined(DEBUG)
+    RTCORE_VERIFY_HANDLE(hscene0);
+    RTCORE_VERIFY_HANDLE(hscene1);
+    if (scene0->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
+    if (scene1->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
+    if (scene0->device != scene1->device) throw_RTCError(RTC_INVALID_OPERATION,"scenes are from different devices");
+#endif
+    scene0->collide(scene0,scene1,callback,userPtr);
+    RTCORE_CATCH_END(scene0->device);
+  }
+
   RTCORE_API void rtcIntersect (RTCScene hscene, RTCRay& ray) 
   {
     Scene* scene = (Scene*) hscene;
