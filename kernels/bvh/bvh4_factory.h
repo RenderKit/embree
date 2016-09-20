@@ -110,6 +110,7 @@ namespace embree
     static void createTriangleMeshTriangle4i(TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
 
     static void createQuadMeshQuad4v(QuadMesh* mesh, AccelData*& accel, Builder*& builder);
+    static void createQuadMeshQuad4vMorton(QuadMesh* mesh, AccelData*& accel, Builder*& builder);
 
   private:
     DEFINE_SYMBOL2(Accel::Intersector1,BVH4Line4iIntersector1);
@@ -287,9 +288,10 @@ namespace embree
     DEFINE_BUILDER2(void,TriangleMesh,size_t,BVH4Triangle4MeshBuilderMortonGeneral);
     DEFINE_BUILDER2(void,TriangleMesh,size_t,BVH4Triangle4vMeshBuilderMortonGeneral);
     DEFINE_BUILDER2(void,TriangleMesh,size_t,BVH4Triangle4iMeshBuilderMortonGeneral);
-
     DEFINE_BUILDER2(void,Scene,size_t,BVH4QuantizedTriangle4iSceneBuilderSAH);
+
     DEFINE_BUILDER2(void,Scene,size_t,BVH4QuantizedQuad4iSceneBuilderSAH);
+    DEFINE_BUILDER2(void,QuadMesh,size_t,BVH4Quad4vMeshBuilderMortonGeneral);
 
   };
 }

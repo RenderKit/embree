@@ -159,45 +159,52 @@ namespace embree
 #if defined(EMBREE_GEOMETRY_QUADS)
     if (device->quad_accel == "default") 
     {
-      int mode =  2*(int)isCompact() + 1*(int)isRobust(); 
-      switch (mode) {
-      case /*0b00*/ 0:
+      if (isDynamic() && !isRobust()) {
+        accels.add(device->bvh4_factory->BVH4Quad4vTwolevel(this));
+      }
+      else
+      {
+        /* static */
+        int mode =  2*(int)isCompact() + 1*(int)isRobust(); 
+        switch (mode) {
+        case /*0b00*/ 0:
 #if defined (__TARGET_AVX__)
-        if (device->hasISA(AVX))
-          accels.add(device->bvh8_factory->BVH8Quad4v(this));
-        else
+          if (device->hasISA(AVX))
+            accels.add(device->bvh8_factory->BVH8Quad4v(this));
+          else
 #endif
-          accels.add(device->bvh4_factory->BVH4Quad4v(this));
-        break;
+            accels.add(device->bvh4_factory->BVH4Quad4v(this));
+          break;
 
-      case /*0b01*/ 1:
+        case /*0b01*/ 1:
 #if defined (__TARGET_AVX__) && 1
-        if (device->hasISA(AVX))
-          accels.add(device->bvh8_factory->BVH8Quad4i(this));
-        else
+          if (device->hasISA(AVX))
+            accels.add(device->bvh8_factory->BVH8Quad4i(this));
+          else
 #endif
-          accels.add(device->bvh4_factory->BVH4Quad4i(this));
-        break;
+            accels.add(device->bvh4_factory->BVH4Quad4i(this));
+          break;
 
-      case /*0b10*/ 2: 
+        case /*0b10*/ 2: 
 #if defined (__TARGET_AVX__)
-        if (device->hasISA(AVX))
-        {
-          // FIXME: reduce performance overhead of 10% compared to uncompressed bvh8
-          // if (isExclusiveIntersect1Mode())
-          //   accels.add(device->bvh8_factory->BVH8QuantizedQuad4i(this)); 
-          // else
-          accels.add(device->bvh8_factory->BVH8Quad4i(this)); 
-        }
-        else
+          if (device->hasISA(AVX))
+          {
+            // FIXME: reduce performance overhead of 10% compared to uncompressed bvh8
+            // if (isExclusiveIntersect1Mode())
+            //   accels.add(device->bvh8_factory->BVH8QuantizedQuad4i(this)); 
+            // else
+            accels.add(device->bvh8_factory->BVH8Quad4i(this)); 
+          }
+          else
 #endif
-        {
-          accels.add(device->bvh4_factory->BVH4Quad4i(this));
+          {
+            accels.add(device->bvh4_factory->BVH4Quad4i(this));
+          }
+          break;
+
+        case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4Quad4i(this)); break;
+
         }
-        break;
-
-      case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4Quad4i(this)); break;
-
       }
     }
     else if (device->quad_accel == "bvh4.quad4v")       accels.add(device->bvh4_factory->BVH4Quad4v(this));

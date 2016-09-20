@@ -204,6 +204,7 @@ namespace embree
   DECLARE_BUILDER2(void,TriangleMesh,size_t,BVH4Triangle4MeshBuilderMortonGeneral);
   DECLARE_BUILDER2(void,TriangleMesh,size_t,BVH4Triangle4vMeshBuilderMortonGeneral);
   DECLARE_BUILDER2(void,TriangleMesh,size_t,BVH4Triangle4iMeshBuilderMortonGeneral);
+  DECLARE_BUILDER2(void,QuadMesh    ,size_t,BVH4Quad4vMeshBuilderMortonGeneral);
 
   BVH4Factory::BVH4Factory (int features)
   {
@@ -263,6 +264,7 @@ namespace embree
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4Triangle4MeshBuilderMortonGeneral));
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4Triangle4vMeshBuilderMortonGeneral));
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4Triangle4iMeshBuilderMortonGeneral));
+    IF_ENABLED_QUADS(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4Quad4vMeshBuilderMortonGeneral));
 
     /* select intersectors1 */
     IF_ENABLED_LINES(SELECT_SYMBOL_DEFAULT_AVX_AVX2      (features,BVH4Line4iIntersector1));
@@ -694,6 +696,14 @@ namespace embree
     builder = factory->BVH4Triangle4iMeshBuilderMortonGeneral(accel,mesh,0); 
   }
 
+  void BVH4Factory::createQuadMeshQuad4vMorton(QuadMesh* mesh, AccelData*& accel, Builder*& builder)
+  {
+    BVH4Factory* factory = mesh->parent->device->bvh4_factory;
+    accel = new BVH4(Quad4v::type,mesh->parent);
+    builder = factory->BVH4Quad4vMeshBuilderMortonGeneral(accel,mesh,0);
+  }
+
+
   void BVH4Factory::createTriangleMeshTriangle4(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
     BVH4Factory* factory = mesh->parent->device->bvh4_factory;
@@ -735,9 +745,9 @@ namespace embree
     BVH4Factory* factory = mesh->parent->device->bvh4_factory;
     accel = new BVH4(Quad4v::type,mesh->parent);
     switch (mesh->flags) {
-      case RTC_GEOMETRY_STATIC:     builder = factory->BVH4Quad4vMeshBuilderSAH(accel,mesh,0); break;
-      //case RTC_GEOMETRY_DEFORMABLE: builder = factory->BVH4Quad4vMeshRefitSAH(accel,mesh,0); break;
-      //case RTC_GEOMETRY_DYNAMIC:    builder = factory->BVH4Quad4vMeshBuilderMortonGeneral(accel,mesh,0); break;
+    case RTC_GEOMETRY_STATIC:     builder = factory->BVH4Quad4vMeshBuilderSAH(accel,mesh,0); break;
+    case RTC_GEOMETRY_DEFORMABLE: builder = factory->BVH4Quad4vMeshRefitSAH(accel,mesh,0); break;
+    case RTC_GEOMETRY_DYNAMIC:    builder = factory->BVH4Quad4vMeshBuilderMortonGeneral(accel,mesh,0); break;
     default: throw_RTCError(RTC_UNKNOWN_ERROR,"invalid geometry flag");
     }
   }
