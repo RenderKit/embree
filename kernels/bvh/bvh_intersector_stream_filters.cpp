@@ -104,13 +104,6 @@ namespace embree
       const size_t rayDataAlignment = (size_t)rayData        % (VSIZEX*sizeof(float));
       const size_t offsetAlignment  = (size_t)stream_offset  % (VSIZEX*sizeof(float));
 
-#if 0
-      PRINT(VSIZEX);
-      PRINT(N);
-      PRINT(rayDataAlignment);
-      PRINT(offsetAlignment);
-#endif
-
       /* can we use the fast path ? */
       if (unlikely(isCoherent(context->context->flags) && 
                    N == VSIZEX                && 
