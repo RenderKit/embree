@@ -151,7 +151,7 @@ namespace embree
   DECLARE_BUILDER2(void,Scene,const createLineSegmentsAccelTy,BVH4BuilderTwoLevelLineSegmentsSAH);
   DECLARE_BUILDER2(void,Scene,const createTriangleMeshAccelTy,BVH4BuilderTwoLevelTriangleMeshSAH);
   DECLARE_BUILDER2(void,Scene,const createTriangleMeshAccelTy,BVH4BuilderInstancingTriangleMeshSAH);
-  //DECLARE_BUILDER2(void,Scene,const createQuadMeshAccelTy,BVH4BuilderTwoLevelQuadMeshSAH);
+  DECLARE_BUILDER2(void,Scene,const createQuadMeshAccelTy,BVH4BuilderTwoLevelQuadMeshSAH);
   //DECLARE_BUILDER2(void,Scene,const createQuadMeshAccelTy,BVH4BuilderInstancingQuadMeshSAH);
 
   DECLARE_BUILDER2(void,Scene,size_t,BVH4Bezier1vBuilder_OBB_New);
@@ -182,7 +182,7 @@ namespace embree
   DECLARE_BUILDER2(void,TriangleMesh,size_t,BVH4Triangle4MeshBuilderSAH);
   DECLARE_BUILDER2(void,TriangleMesh,size_t,BVH4Triangle4vMeshBuilderSAH);
   DECLARE_BUILDER2(void,TriangleMesh,size_t,BVH4Triangle4iMeshBuilderSAH);
-  //DECLARE_BUILDER2(void,QuadMesh,size_t,BVH4Quad4vMeshBuilderSAH);
+  DECLARE_BUILDER2(void,QuadMesh,size_t,BVH4Quad4vMeshBuilderSAH);
   //DECLARE_BUILDER2(void,QuadMesh,size_t,BVH4Quad4iMeshBuilderSAH);
 
   DECLARE_BUILDER2(void,Scene,size_t,BVH4Bezier1vSceneBuilderSAH);
@@ -199,6 +199,7 @@ namespace embree
   DECLARE_BUILDER2(void,TriangleMesh,size_t,BVH4Triangle4MeshRefitSAH);
   DECLARE_BUILDER2(void,TriangleMesh,size_t,BVH4Triangle4vMeshRefitSAH);
   DECLARE_BUILDER2(void,TriangleMesh,size_t,BVH4Triangle4iMeshRefitSAH);
+  DECLARE_BUILDER2(void,QuadMesh    ,size_t,BVH4Quad4vMeshRefitSAH);
 
   DECLARE_BUILDER2(void,TriangleMesh,size_t,BVH4Triangle4MeshBuilderMortonGeneral);
   DECLARE_BUILDER2(void,TriangleMesh,size_t,BVH4Triangle4vMeshBuilderMortonGeneral);
@@ -210,8 +211,8 @@ namespace embree
     IF_ENABLED_LINES(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4BuilderTwoLevelLineSegmentsSAH));
     IF_ENABLED_TRIS (SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4BuilderTwoLevelTriangleMeshSAH));
     IF_ENABLED_TRIS (SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4BuilderInstancingTriangleMeshSAH));
-
-    //IF_ENABLED_QUADS (SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4BuilderTwoLevelQuadMeshSAH));
+    
+    IF_ENABLED_QUADS (SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4BuilderTwoLevelQuadMeshSAH));
     //IF_ENABLED_QUADS (SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4BuilderInstancingQuadMeshSAH));
 
     IF_ENABLED_HAIR(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1vBuilder_OBB_New));
@@ -241,7 +242,7 @@ namespace embree
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4Triangle4MeshBuilderSAH));
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4Triangle4vMeshBuilderSAH));
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4Triangle4iMeshBuilderSAH));
-    //IF_ENABLED_QUADS(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4Quad4vMeshBuilderSAH));
+    IF_ENABLED_QUADS(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4Quad4vMeshBuilderSAH));
     //IF_ENABLED_QUADS(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4Quad4iMeshBuilderSAH));
     IF_ENABLED_LINES(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Line4iSceneBuilderSAH));
     IF_ENABLED_LINES(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Line4iMBSceneBuilderSAH));
@@ -257,6 +258,7 @@ namespace embree
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4Triangle4MeshRefitSAH));
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4Triangle4vMeshRefitSAH));
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4Triangle4iMeshRefitSAH));
+    IF_ENABLED_QUADS(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4Quad4vMeshRefitSAH));
 
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4Triangle4MeshBuilderMortonGeneral));
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4Triangle4vMeshBuilderMortonGeneral));
@@ -728,6 +730,19 @@ namespace embree
     }
   }
 
+  void BVH4Factory::createQuadMeshQuad4v(QuadMesh* mesh, AccelData*& accel, Builder*& builder)
+  {
+    BVH4Factory* factory = mesh->parent->device->bvh4_factory;
+    accel = new BVH4(Quad4v::type,mesh->parent);
+    switch (mesh->flags) {
+      case RTC_GEOMETRY_STATIC:     builder = factory->BVH4Quad4vMeshBuilderSAH(accel,mesh,0); break;
+      //case RTC_GEOMETRY_DEFORMABLE: builder = factory->BVH4Quad4vMeshRefitSAH(accel,mesh,0); break;
+      //case RTC_GEOMETRY_DYNAMIC:    builder = factory->BVH4Quad4vMeshBuilderMortonGeneral(accel,mesh,0); break;
+    default: throw_RTCError(RTC_UNKNOWN_ERROR,"invalid geometry flag");
+    }
+  }
+
+
   Accel* BVH4Factory::BVH4Bezier1v(Scene* scene)
   {
     BVH4* accel = new BVH4(Bezier1v::type,scene);
@@ -1083,6 +1098,13 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
+  Accel* BVH4Factory::BVH4Quad4vTwolevel(Scene* scene)
+  {
+    BVH4* accel = new BVH4(Quad4v::type,scene);
+    Accel::Intersectors intersectors = BVH4Quad4vIntersectors(accel);
+    Builder* builder = BVH4BuilderTwoLevelQuadMeshSAH(accel,scene,&createQuadMeshQuad4v);
+    return new AccelInstance(accel,builder,intersectors);
+  }
 
 }
 
