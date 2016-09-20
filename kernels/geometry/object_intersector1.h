@@ -64,7 +64,7 @@ namespace embree
       }
       
       //template<typename Context>
-      static __forceinline size_t intersect(Precalculations* pre, size_t valid_in, Ray** rays, IntersectContext* context /*, Context* ctx */ , size_t ty, const Primitive* prims, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node)
+      static __forceinline size_t intersect(Precalculations* pre, size_t valid_in, Ray** rays, IntersectContext* context, size_t ty, const Primitive* prims, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node)
       {
         AVX_ZERO_UPPER();
         

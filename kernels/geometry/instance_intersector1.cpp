@@ -68,7 +68,7 @@ namespace embree
     
     DEFINE_SET_INTERSECTOR1(InstanceIntersector1,FastInstanceIntersector1);
 
-    void FastInstanceIntersector1M::intersect(const Instance* instance, IntersectContext* context, Ray** rays, size_t M, size_t item)
+    void FastInstanceIntersector1M::intersect(const Instance* instance, RTCIntersectContext* context, Ray** rays, size_t M, size_t item)
     {
       assert(M<MAX_INTERNAL_STREAM_SIZE);
       Ray lrays[MAX_INTERNAL_STREAM_SIZE];
@@ -89,7 +89,7 @@ namespace embree
         lrays[i].instID = instance->id;
       }
 
-      rtcIntersect1M((RTCScene)instance->object,context->context,(RTCRay*)lrays,M,sizeof(Ray));
+      rtcIntersect1M((RTCScene)instance->object,context,(RTCRay*)lrays,M,sizeof(Ray));
         
       for (size_t i=0; i<M; i++)
       {
@@ -104,7 +104,7 @@ namespace embree
       }
     }
     
-    void FastInstanceIntersector1M::occluded (const Instance* instance, IntersectContext* context, Ray** rays, size_t M, size_t item)
+    void FastInstanceIntersector1M::occluded (const Instance* instance, RTCIntersectContext* context, Ray** rays, size_t M, size_t item)
     {
       assert(M<MAX_INTERNAL_STREAM_SIZE);
       Ray lrays[MAX_INTERNAL_STREAM_SIZE];
@@ -125,7 +125,7 @@ namespace embree
         lrays[i].instID = instance->id;
       }
 
-      rtcOccluded1M((RTCScene)instance->object,context->context,(RTCRay*)lrays,M,sizeof(Ray));
+      rtcOccluded1M((RTCScene)instance->object,context,(RTCRay*)lrays,M,sizeof(Ray));
         
       for (size_t i=0; i<M; i++)
       {
