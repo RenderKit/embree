@@ -57,7 +57,7 @@ namespace embree
         const BBox3fa bounds(lower,upper);
         size_t mask = movemask(tris1.valid()) & overlap(bounds,bounds1);
         for (size_t m=mask, j=__bsf(m); m!=0; m=__btc(m,j), j=__bsf(m)) 
-          callback(userPtr,tris0.geomID(i),tris0.primID(i),tris1.geomID(j),tris1.primID(i));
+          callback(userPtr,tris0.geomID(i),tris0.primID(i),tris1.geomID(j),tris1.primID(j));
       }
     }
 
@@ -145,6 +145,7 @@ namespace embree
           }
         }
       }
+      
       PRINT(steps);
       AVX_ZERO_UPPER();
     }
