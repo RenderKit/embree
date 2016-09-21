@@ -15,7 +15,6 @@
 // ======================================================================== //
 
 #include "bvh_collider.h"
-#include "../geometry/triangle.h"
 
 namespace embree
 { 
@@ -24,26 +23,53 @@ namespace embree
     template<int N>
     __forceinline size_t overlap(const BBox3fa& box0, const typename BVHN<N>::Node& node1)
     {
-      vfloat<N> lower_x = max(vfloat<N>(box0.lower.x),node1.lower_x);
-      vfloat<N> lower_y = max(vfloat<N>(box0.lower.y),node1.lower_y);
-      vfloat<N> lower_z = max(vfloat<N>(box0.lower.z),node1.lower_z);
-      vfloat<N> upper_x = min(vfloat<N>(box0.upper.x),node1.upper_x);
-      vfloat<N> upper_y = min(vfloat<N>(box0.upper.y),node1.upper_y);
-      vfloat<N> upper_z = min(vfloat<N>(box0.upper.z),node1.upper_z);
+      const vfloat<N> lower_x = max(vfloat<N>(box0.lower.x),node1.lower_x);
+      const vfloat<N> lower_y = max(vfloat<N>(box0.lower.y),node1.lower_y);
+      const vfloat<N> lower_z = max(vfloat<N>(box0.lower.z),node1.lower_z);
+      const vfloat<N> upper_x = min(vfloat<N>(box0.upper.x),node1.upper_x);
+      const vfloat<N> upper_y = min(vfloat<N>(box0.upper.y),node1.upper_y);
+      const vfloat<N> upper_z = min(vfloat<N>(box0.upper.z),node1.upper_z);
       return movemask((lower_x <= upper_x) & (lower_y <= upper_y) & (lower_z <= upper_z));
     }
 
-    /*template<int N>
-    __forceinline size_t overlap(const typename BVHN<N>::Node& node0, size_t i0, const typename BVHN<N>::Node& node1)
+    template<int N>
+    __forceinline size_t overlap(const BBox3fa& box0, const BBox<Vec3<vfloat<N>>>& box1)
     {
-      vfloat<N> lower_x = max(vfloat<N>(node0.lower_x[i0]),node1.lower_x);
-      vfloat<N> lower_y = max(vfloat<N>(node0.lower_y[i0]),node1.lower_y);
-      vfloat<N> lower_z = max(vfloat<N>(node0.lower_z[i0]),node1.lower_z);
-      vfloat<N> upper_x = min(vfloat<N>(node0.upper_x[i0]),node1.upper_x);
-      vfloat<N> upper_y = min(vfloat<N>(node0.upper_y[i0]),node1.upper_y);
-      vfloat<N> upper_z = min(vfloat<N>(node0.upper_z[i0]),node1.upper_z);
-      return movemask((lower_x > upper_x) | (lower_y > upper_y) | (lower_z > upper_z));
-      }*/
+      const vfloat<N> lower_x = max(vfloat<N>(box0.lower.x),box1.lower.x);
+      const vfloat<N> lower_y = max(vfloat<N>(box0.lower.y),box1.lower.y);
+      const vfloat<N> lower_z = max(vfloat<N>(box0.lower.z),box1.lower.z);
+      const vfloat<N> upper_x = min(vfloat<N>(box0.upper.x),box1.upper.x);
+      const vfloat<N> upper_y = min(vfloat<N>(box0.upper.y),box1.upper.y);
+      const vfloat<N> upper_z = min(vfloat<N>(box0.upper.z),box1.upper.z);
+      return movemask((lower_x <= upper_x) & (lower_y <= upper_y) & (lower_z <= upper_z));
+    }
+
+    template<int N>
+    void BVHNCollider<N>::processLeaf(const Triangle4v& __restrict__ tris0, const Triangle4v& __restrict__ tris1, RTCCollideFunc callback, void* userPtr)
+    {
+      BBox<Vec3vf4> bounds0(min(tris0.v0,tris0.v1,tris0.v2),max(tris0.v0,tris0.v1,tris0.v2));
+      BBox<Vec3vf4> bounds1(min(tris1.v0,tris1.v1,tris1.v2),max(tris1.v0,tris1.v1,tris1.v2));
+     
+      for (size_t i=0; i<tris0.size(); i++)  // FIXME: iterate over smaller leaf
+      {
+        const Vec3fa lower(bounds0.lower.x[i],bounds0.lower.y[i],bounds0.lower.z[i]);
+        const Vec3fa upper(bounds0.upper.x[i],bounds0.upper.y[i],bounds0.upper.z[i]);
+        const BBox3fa bounds(lower,upper);
+        size_t mask = movemask(tris1.valid()) & overlap(bounds,bounds1);
+        for (size_t m=mask, j=__bsf(m); m!=0; m=__btc(m,j), j=__bsf(m)) 
+          callback(userPtr,tris0.geomID(i),tris0.primID(i),tris1.geomID(j),tris1.primID(i));
+      }
+    }
+
+    template<int N>
+    void BVHNCollider<N>::processLeaf(NodeRef node0, NodeRef node1, RTCCollideFunc callback, void* userPtr)
+    {
+      size_t N0; Triangle4v* leaf0 = (Triangle4v*) node0.leaf(N0);
+      size_t N1; Triangle4v* leaf1 = (Triangle4v*) node1.leaf(N1);
+      for (size_t i=0; i<N0; i++)
+        for (size_t j=0; j<N1; j++)
+          processLeaf(leaf0[i],leaf1[j],callback,userPtr);
+    }
 
     template<int N>
     void BVHNCollider<N>::collide(BVH* __restrict__ bvh0, BVH* __restrict__ bvh1, RTCCollideFunc callback, void* userPtr)
@@ -81,7 +107,8 @@ namespace embree
         steps++;
         if (cur.node0.isLeaf()) {
           if (cur.node1.isLeaf()) {
-            callback(userPtr,(size_t)cur.node0,0,(size_t)cur.node1,0);
+            //callback(userPtr,(size_t)cur.node0,0,(size_t)cur.node1,0);
+            processLeaf(cur.node0,cur.node1,callback,userPtr);
           } else {
             Node* node1 = cur.node1.node();
             size_t mask = overlap<N>(cur.bounds0,*node1);

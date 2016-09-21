@@ -17,6 +17,7 @@
 #pragma once
 
 #include "bvh.h"
+#include "../geometry/trianglev.h"
 
 namespace embree
 {
@@ -32,6 +33,8 @@ namespace embree
       static const size_t stackSize = 2*(1+(N-1)*BVH::maxDepth);
 
     public:
+      static void processLeaf(const Triangle4v& tris0, const Triangle4v& tris1, RTCCollideFunc callback, void* userPtr);
+      static void processLeaf(NodeRef leaf0, NodeRef leaf1, RTCCollideFunc callback, void* userPtr);
       static void collide(BVH* __restrict__ bvh0, BVH* __restrict__ bvh1, RTCCollideFunc callback, void* userPtr);
     };
   }
