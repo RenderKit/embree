@@ -29,7 +29,7 @@ namespace embree
         typedef typename Intersector::Primitive Primitive;
         typedef typename Intersector::Precalculations Precalculations;
 
-        static const bool validChunkIntersector = false;
+        static const bool validIntersectorK = false;
 
         static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, size_t ty, const Primitive* prim, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node)
         {
@@ -80,17 +80,15 @@ namespace embree
 
 
         template<int K>
-        static __forceinline void intersectChunk(const vbool<K>& valid, /* PrecalculationsChunk& pre, */ RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node)
+        static __forceinline void intersectK(const vbool<K>& valid, /* PrecalculationsK& pre, */ RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node)
         {
         }
 
         template<int K>        
-        static __forceinline vbool<K> occludedChunk(const vbool<K>& valid, /* PrecalculationsChunk& pre, */ RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node) 
+        static __forceinline vbool<K> occludedK(const vbool<K>& valid, /* PrecalculationsK& pre, */ RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node)
         {
           return valid;
         }
-
-
       };
 
     template<typename Intersector1, typename Intersector2>
@@ -214,31 +212,31 @@ namespace embree
 
     // =============================================================================================
 
-    template<int K, typename Intersector1, typename Intersector2>
+    template<int K, typename Intersector1, typename IntersectorK>
       struct ArrayIntersectorKStream 
       {
         typedef typename Intersector1::Primitive Primitive;
         typedef typename Intersector1::Precalculations Precalculations;
-        typedef typename Intersector2::Primitive PrimitiveChunk;
-        typedef typename Intersector2::Precalculations PrecalculationsChunk;
+        typedef typename IntersectorK::Primitive PrimitiveK;
+        typedef typename IntersectorK::Precalculations PrecalculationsK;
 
-        static const bool validChunkIntersector = true;
+        static const bool validIntersectorK = true;
         
-        static __forceinline void intersectChunk(const vbool<K>& valid, /* PrecalculationsChunk& pre, */ RayK<K>& ray, IntersectContext* context, const PrimitiveChunk* prim, size_t num, Scene* scene, size_t& lazy_node)
+        static __forceinline void intersectK(const vbool<K>& valid, /* PrecalculationsK& pre, */ RayK<K>& ray, IntersectContext* context, const PrimitiveK* prim, size_t num, Scene* scene, size_t& lazy_node)
         {
-          PrecalculationsChunk pre(valid,ray); //todo: might cause trouble
+          PrecalculationsK pre(valid,ray); //todo: might cause trouble
 
           for (size_t i=0; i<num; i++) {
-            Intersector2::intersect(valid,pre,ray,context,prim[i],scene);
+            IntersectorK::intersect(valid,pre,ray,context,prim[i],scene);
           }
         }
         
-        static __forceinline vbool<K> occludedChunk(const vbool<K>& valid, /* PrecalculationsChunk& pre, */ RayK<K>& ray, IntersectContext* context, const PrimitiveChunk* prim, size_t num, Scene* scene, size_t& lazy_node) 
+        static __forceinline vbool<K> occludedK(const vbool<K>& valid, /* PrecalculationsK& pre, */ RayK<K>& ray, IntersectContext* context, const PrimitiveK* prim, size_t num, Scene* scene, size_t& lazy_node)
         {
-          PrecalculationsChunk pre(valid,ray); //todo: might cause trouble
+          PrecalculationsK pre(valid,ray); //todo: might cause trouble
           vbool<K> valid0 = valid;
           for (size_t i=0; i<num; i++) {
-            valid0 &= !Intersector2::occluded(valid0,pre,ray,context,prim[i],scene);
+            valid0 &= !IntersectorK::occluded(valid0,pre,ray,context,prim[i],scene);
             if (none(valid0)) break;
           }
           return !valid0;
@@ -279,12 +277,6 @@ namespace embree
 
           return hit;
         }
-
-        
-
       };
-
-
-
   }
 }

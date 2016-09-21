@@ -330,7 +330,7 @@ namespace embree
           bits &= ~m_isec;
 
           vbool<K> m_valid = (inputPackets[i]->tnear <= inputPackets[i]->tfar);
-          PrimitiveIntersector::intersectChunk(m_valid, *inputPackets[i], context, prim, num, bvh->scene, lazy_node);
+          PrimitiveIntersector::intersectK(m_valid, *inputPackets[i], context, prim, num, bvh->scene, lazy_node);
           Packet &p = packet[i]; 
           p.max_dist = min(p.max_dist, inputPackets[i]->tfar);
         } while(bits);
@@ -437,7 +437,7 @@ namespace embree
           bits &= ~m_isec;
 
           vbool<K> m_valid = (inputPackets[i]->tnear <= inputPackets[i]->tfar);
-          vbool<K> m_hit = PrimitiveIntersector::occludedChunk(m_valid, *inputPackets[i], context, prim, num, bvh->scene, lazy_node);
+          vbool<K> m_hit = PrimitiveIntersector::occludedK(m_valid, *inputPackets[i], context, prim, num, bvh->scene, lazy_node);
           inputPackets[i]->geomID = select(m_hit, vint<K>(zero), inputPackets[i]->geomID);
           m_active &= ~((size_t)movemask(m_hit) << (i*K));
         } 
@@ -457,7 +457,7 @@ namespace embree
       __aligned(64) StackItemMask stack[stackSizeSingle];  //!< stack of nodes
 
 #if ENABLE_COHERENT_STREAM_PATH == 1 
-      if (unlikely(PrimitiveIntersector::validChunkIntersector && !robust && isCoherent(context->user->flags)))
+      if (unlikely(PrimitiveIntersector::validIntersectorK && !robust && isCoherent(context->user->flags)))
       {
         /* AOS to SOA conversion */
         RayK<K> rayK[MAX_RAYS / K];
@@ -632,7 +632,7 @@ namespace embree
       __aligned(64) StackItemMask stack[stackSizeSingle];  //!< stack of nodes
 
 #if ENABLE_COHERENT_STREAM_PATH == 1 
-      if (unlikely(PrimitiveIntersector::validChunkIntersector && !robust && isCoherent(context->user->flags)))
+      if (unlikely(PrimitiveIntersector::validIntersectorK && !robust && isCoherent(context->user->flags)))
       {
         /* AOS to SOA conversion */
         RayK<K> rayK[MAX_RAYS / K];

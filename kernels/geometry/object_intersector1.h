@@ -27,7 +27,7 @@ namespace embree
     {
       typedef Object Primitive;
      
-      static const bool validChunkIntersector = false;
+      static const bool validIntersectorK = false;
 
       struct Precalculations {
         __forceinline Precalculations() {}
@@ -148,17 +148,16 @@ namespace embree
         return hit;
       }
 
-        template<int K>
-        static __forceinline void intersectChunk(const vbool<K>& valid, /* PrecalculationsChunk& pre, */ RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node)
-        {
-        }
+      template<int K>
+      static __forceinline void intersectK(const vbool<K>& valid, /* PrecalculationsK& pre, */ RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node)
+      {
+      }
 
-        template<int K>        
-        static __forceinline vbool<K> occludedChunk(const vbool<K>& valid, /* PrecalculationsChunk& pre, */ RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node) 
-        {
-          return valid;
-        }
-
+      template<int K>
+      static __forceinline vbool<K> occludedK(const vbool<K>& valid, /* PrecalculationsK& pre, */ RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node)
+      {
+        return valid;
+      }
     };
   }
 }
