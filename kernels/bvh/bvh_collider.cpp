@@ -30,7 +30,7 @@ namespace embree
       vfloat<N> upper_x = min(vfloat<N>(box0.upper.x),node1.upper_x);
       vfloat<N> upper_y = min(vfloat<N>(box0.upper.y),node1.upper_y);
       vfloat<N> upper_z = min(vfloat<N>(box0.upper.z),node1.upper_z);
-      return movemask((lower_x > upper_x) | (lower_y > upper_y) | (lower_z > upper_z));
+      return movemask((lower_x <= upper_x) & (lower_y <= upper_y) & (lower_z <= upper_z));
     }
 
     /*template<int N>
@@ -48,6 +48,8 @@ namespace embree
     template<int N>
     void BVHNCollider<N>::collide(BVH* __restrict__ bvh0, BVH* __restrict__ bvh1, RTCCollideFunc callback, void* userPtr)
     {
+      size_t steps = 0;
+
       /*! stack state */
       struct StackItem 
       {
@@ -69,59 +71,54 @@ namespace embree
       stack[0] = StackItem(bvh0->root,bvh0->bounds,bvh1->root,bvh1->bounds);
 
       /* pop loop */
-      while (true) pop:
+      while (true)
       {
         /*! pop next node */
         if (unlikely(stackPtr == stack)) break;
         stackPtr--;
         StackItem cur = *stackPtr;
 
-        /* downtraversal loop */
-        while (true)
-        {
-          if (cur.node0.isLeaf()) {
-            if (cur.node1.isLeaf()) {
-              callback(userPtr,(size_t)cur.node0,0,(size_t)cur.node1,0);
-              goto pop;
+        steps++;
+        if (cur.node0.isLeaf()) {
+          if (cur.node1.isLeaf()) {
+            callback(userPtr,(size_t)cur.node0,0,(size_t)cur.node1,0);
+          } else {
+            Node* node1 = cur.node1.node();
+            size_t mask = overlap<N>(cur.bounds0,*node1);
+            for (size_t m=mask, i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {
+              node1->child(i).prefetch(BVH_FLAG_ALIGNED_NODE);
+              *stackPtr++ = StackItem(cur.node0,cur.bounds0,node1->child(i),node1->bounds(i));
+              
+            }
+          }
+        } else {
+          if (cur.node1.isLeaf()) {
+            Node* node0 = cur.node0.node();
+            size_t mask = overlap<N>(cur.bounds1,*node0);
+            for (size_t m=mask, i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {
+              node0->child(i).prefetch(BVH_FLAG_ALIGNED_NODE);
+              *stackPtr++ = StackItem(node0->child(i),node0->bounds(i),cur.node1,cur.bounds1);                
+            }
+          } else {
+            if (area(cur.bounds0) > area(cur.bounds1)) {
+              Node* node0 = cur.node0.node();
+              size_t mask = overlap<N>(cur.bounds1,*node0);
+              for (size_t m=mask, i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {
+                node0->child(i).prefetch(BVH_FLAG_ALIGNED_NODE);
+                *stackPtr++ = StackItem(node0->child(i),node0->bounds(i),cur.node1,cur.bounds1);
+              }
             } else {
               Node* node1 = cur.node1.node();
               size_t mask = overlap<N>(cur.bounds0,*node1);
               for (size_t m=mask, i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {
                 node1->child(i).prefetch(BVH_FLAG_ALIGNED_NODE);
                 *stackPtr++ = StackItem(cur.node0,cur.bounds0,node1->child(i),node1->bounds(i));
-                
-              }
-            }
-          } else {
-            if (cur.node1.isLeaf()) {
-              Node* node0 = cur.node0.node();
-              size_t mask = overlap<N>(cur.bounds1,*node0);
-              for (size_t m=mask, i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {
-                node0->child(i).prefetch(BVH_FLAG_ALIGNED_NODE);
-                *stackPtr++ = StackItem(node0->child(i),node0->bounds(i),cur.node1,cur.bounds1);                
-              }
-            } else {
-              if (area(cur.bounds0) > area(cur.bounds1)) {
-                Node* node0 = cur.node0.node();
-                size_t mask = overlap<N>(cur.bounds1,*node0);
-                for (size_t m=mask, i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {
-                  node0->child(i).prefetch(BVH_FLAG_ALIGNED_NODE);
-                  *stackPtr++ = StackItem(node0->child(i),node0->bounds(i),cur.node1,cur.bounds1);
-                }
-              } else {
-                Node* node1 = cur.node1.node();
-                size_t mask = overlap<N>(cur.bounds0,*node1);
-                for (size_t m=mask, i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {
-                  node1->child(i).prefetch(BVH_FLAG_ALIGNED_NODE);
-                  *stackPtr++ = StackItem(cur.node0,cur.bounds0,node1->child(i),node1->bounds(i));
-                }
               }
             }
           }
-          stackPtr--;
-          cur = *stackPtr;
         }
       }
+      PRINT(steps);
       AVX_ZERO_UPPER();
     }
 
