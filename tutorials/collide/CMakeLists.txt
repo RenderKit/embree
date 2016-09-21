@@ -14,32 +14,8 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-ADD_SUBDIRECTORY(common)
-
-ADD_SUBDIRECTORY(verify)
-ADD_SUBDIRECTORY(triangle_geometry)
-ADD_SUBDIRECTORY(dynamic_scene)
-ADD_SUBDIRECTORY(user_geometry)
-ADD_SUBDIRECTORY(viewer)
-ADD_SUBDIRECTORY(instanced_geometry)
-ADD_SUBDIRECTORY(intersection_filter)
-ADD_SUBDIRECTORY(pathtracer)
-ADD_SUBDIRECTORY(hair_geometry)
-ADD_SUBDIRECTORY(subdivision_geometry)
-ADD_SUBDIRECTORY(displacement_geometry)
-ADD_SUBDIRECTORY(bvh_builder)
-ADD_SUBDIRECTORY(lazy_geometry)
-ADD_SUBDIRECTORY(bvh_access)
-ADD_SUBDIRECTORY(motion_blur_geometry)
-ADD_SUBDIRECTORY(interpolation)
-ADD_SUBDIRECTORY(convert)
-ADD_SUBDIRECTORY(curve_geometry)
-ADD_SUBDIRECTORY(collide)
-
-IF (EMBREE_RAY_PACKETS)
-ADD_SUBDIRECTORY(viewer_stream)
-ENDIF()
-
-# propagate menu links up
-SET(CPACK_NSIS_MENU_LINKS ${CPACK_NSIS_MENU_LINKS} PARENT_SCOPE)
+ADD_EXECUTABLE(collide collide.cpp collide_device.cpp ../common/tutorial/application.cpp)
+TARGET_LINK_LIBRARIES(collide embree tutorial image tutorial_device noise)
+SET_PROPERTY(TARGET collide PROPERTY FOLDER tutorials)
+INSTALL(TARGETS collide DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT examples)
 
