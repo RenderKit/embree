@@ -144,15 +144,11 @@ namespace embree
 
       if (numBenchmarkRounds)
         benchmark();
-
-      if (interactive)
-      {
-        /* do collision detection */
+      else
         rtcCollide(g_scene0,g_scene1,CollideFunc,nullptr);
         
-        /* start tutorial */
+      if (interactive)
         run(argc,argv);
-      }
       
       return 0;
     }  

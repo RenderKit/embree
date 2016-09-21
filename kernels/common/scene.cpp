@@ -147,6 +147,7 @@ namespace embree
 
 #if defined (__TARGET_AVX__)
     else if (device->tri_accel == "bvh8.triangle4")       accels.add(device->bvh8_factory->BVH8Triangle4(this));
+    else if (device->tri_accel == "bvh8.triangle4v")      accels.add(device->bvh8_factory->BVH8Triangle4v(this));
     else if (device->tri_accel == "bvh8.triangle4i")      accels.add(device->bvh8_factory->BVH8Triangle4i(this));
     else if (device->tri_accel == "qbvh8.triangle4i")     accels.add(device->bvh8_factory->BVH8QuantizedTriangle4i(this));
 #endif
