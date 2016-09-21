@@ -70,7 +70,7 @@ struct RTCIntersectContext
 };
 
 /*! collision callback */
-typedef void (*RTCCollideFunc) (void* userPtr, size_t geomID0, size_t primID0, size_t geomID1, size_t primID1);
+typedef void (*RTCCollideFunc) (void* userPtr, unsigned geomID0, unsigned primID0, unsigned geomID1, unsigned primID1);
 
 /*! \brief Defines an opaque scene type */
 typedef struct __RTCScene {}* RTCScene;

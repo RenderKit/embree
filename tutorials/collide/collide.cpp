@@ -25,7 +25,7 @@ namespace embree
   TutorialScene g_tutorial_scene0;
   TutorialScene g_tutorial_scene1;
 
-  void CollideFunc (void* userPtr, size_t geomID0, size_t primID0, size_t geomID1, size_t primID1) {
+  void CollideFunc (void* userPtr, unsigned geomID0, unsigned primID0, unsigned geomID1, unsigned primID1) {
     PRINT4(geomID0,primID0,geomID1,primID1);
   }
 
