@@ -50,7 +50,9 @@ namespace embree
 
     Accel* BVH8QuantizedTriangle4i(Scene* scene);
     Accel* BVH8QuantizedQuad4i(Scene* scene);
-    
+
+    static void createTriangleMeshTriangle4(TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
+
   private:
     Accel::Intersectors BVH8Line4iIntersectors(BVH8* bvh);
     Accel::Intersectors BVH8Line4iMBIntersectors(BVH8* bvh);
@@ -171,10 +173,20 @@ namespace embree
     DEFINE_BUILDER2(void,Scene,size_t,BVH8Quad4iMBSceneBuilderSAH);
     //DEFINE_BUILDER2(void,QuadMesh,size_t,BVH8Quad4iMBMeshBuilderSAH);
 
+    DEFINE_BUILDER2(void,TriangleMesh,size_t,BVH8Triangle4MeshBuilderSAH);
+    DEFINE_BUILDER2(void,TriangleMesh,size_t,BVH8Triangle4vMeshBuilderSAH);
+    DEFINE_BUILDER2(void,TriangleMesh,size_t,BVH8Triangle4iMeshBuilderSAH);
+    DEFINE_BUILDER2(void,TriangleMesh,size_t,BVH8Triangle4MeshRefitSAH);
+    DEFINE_BUILDER2(void,TriangleMesh,size_t,BVH8Triangle4vMeshRefitSAH);
+    DEFINE_BUILDER2(void,TriangleMesh,size_t,BVH8Triangle4iMeshRefitSAH);
+
     DEFINE_BUILDER2(void,Scene,size_t,BVH8QuantizedTriangle4iSceneBuilderSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH8QuantizedQuad4iSceneBuilderSAH);
     
     DEFINE_BUILDER2(void,Scene,size_t,BVH8Triangle4SceneBuilderSpatialSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH8Triangle4SceneBuilderFastSpatialSAH);
+
+    DEFINE_BUILDER2(void,Scene,const createTriangleMeshAccelTy,BVH8BuilderTwoLevelTriangleMeshSAH);
+
   };
 }
