@@ -20,7 +20,8 @@ namespace embree
 { 
   namespace isa
   {
-#define CSTAT(x) x
+#define CSTAT(x) 
+
     size_t bvh_collide_traversal_steps = 0;
     size_t bvh_collide_leaf_pairs = 0;
     size_t bvh_collide_leaf_iterations = 0;

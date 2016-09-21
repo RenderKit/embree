@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "../common/tutorial/tutorial.h"
+#include "../common/tutorial/statistics.h"
 #include <set>
 
 namespace embree
@@ -28,7 +29,12 @@ namespace embree
   std::set<std::pair<unsigned,unsigned>> set0;
   std::set<std::pair<unsigned,unsigned>> set1;
 
-  void CollideFunc (void* userPtr, unsigned geomID0, unsigned primID0, unsigned geomID1, unsigned primID1) {
+  size_t skipBenchmarkRounds = 0;
+  size_t numBenchmarkRounds = 0;
+
+  void CollideFunc (void* userPtr, unsigned geomID0, unsigned primID0, unsigned geomID1, unsigned primID1) 
+  {
+    if (numBenchmarkRounds) return;
     //PRINT4(geomID0,primID0,geomID1,primID1);
     set0.insert(std::make_pair(geomID0,primID0));
     set1.insert(std::make_pair(geomID1,primID1));
@@ -40,14 +46,21 @@ namespace embree
     Ref<SceneGraph::Node> scene1;
 
     Tutorial()
-      : TutorialApplication("collide",FEATURE_RTCORE) 
+      : TutorialApplication("collide",FEATURE_RTCORE)
     {
       registerOption("i", [this] (Ref<ParseStream> cin, const FileName& path) {
           FileName filename = path + cin->getFileName();
           Ref<SceneGraph::Node> scene = SceneGraph::load(filename);
           if (scene0 && scene1) throw std::runtime_error("maximally two scenes can get collided");
           if (scene0) scene1 = scene; else scene0 = scene;
-      }, "-i <filename>: parses scene from <filename>");
+        }, "-i <filename>: parses scene from <filename>");
+
+      registerOption("benchmark", [this] (Ref<ParseStream> cin, const FileName& path) {
+          skipBenchmarkRounds = cin->getInt();
+          numBenchmarkRounds = cin->getInt();
+          interactive = false;
+        }, "--benchmark <N> <M>: enabled benchmark mode, skips N collisions, measures M collisions");
+
     }
  
     unsigned int convertTriangleMesh(Ref<TutorialScene::TriangleMesh> mesh, RTCScene scene_out)
@@ -75,6 +88,39 @@ namespace embree
       return scene_out;
     }
 
+    void benchmark()
+    {
+      Statistics stat;
+      //FilteredStatistics stat(0.5f,0.0f);
+      size_t numTotalRounds = skipBenchmarkRounds + numBenchmarkRounds;
+      for (size_t i=0; i<skipBenchmarkRounds; i++) 
+      {
+        //double t0 = getSeconds();
+        rtcCollide(g_scene0,g_scene1,CollideFunc,nullptr);
+        //double t1 = getSeconds();
+        //float dt = float(t1-t0);
+        //std::cout << "round [" << std::setw(3) << i << " / " << std::setw(3) << numTotalRounds << "]: " <<  std::setw(8) << 1000.0f*dt << " ms (skipped)" << std::endl << std::flush;
+        //if (benchmarkSleep) sleepSeconds(0.1);
+      }
+        
+      for (size_t i=skipBenchmarkRounds; i<numTotalRounds; i++) 
+      {
+        double t0 = getSeconds();
+        rtcCollide(g_scene0,g_scene1,CollideFunc,nullptr);
+        double t1 = getSeconds();
+        
+        float dt = float(t1-t0);
+        stat.add(dt);
+        //if (benchmarkSleep) sleepSeconds(0.1);
+      }
+
+      std::cout << "round [" << std::setw(3) << skipBenchmarkRounds << " - " << std::setw(3) << numTotalRounds << "]: " 
+                << "min = " << std::setw(8) << 1000.0f*stat.getMin() << " ms, " 
+                << "avg = " << std::setw(8) << 1000.0f*stat.getAvg() << " ms, "
+                << "max = " << std::setw(8) << 1000.0f*stat.getMax() << " ms, "
+                << "sigma = " << std::setw(6) << stat.getSigma() << " (" << 100.0f*stat.getSigma()/stat.getAvg() << "%)" << std::endl << std::flush;
+    }
+        
     int main(int argc, char** argv) try
     {
       /* parse command line options */
@@ -96,13 +142,17 @@ namespace embree
       g_scene1 = convertScene(g_tutorial_scene1);
       g_scene = g_scene0;
 
-      /* do collision detection */
-      std::cout << "calculating collisions ... " << std::flush;
-      rtcCollide(g_scene0,g_scene1,CollideFunc,nullptr);
-      std::cout << "[DONE]" << std::endl;
+      if (numBenchmarkRounds)
+        benchmark();
 
-      /* start tutorial */
-      run(argc,argv);
+      if (interactive)
+      {
+        /* do collision detection */
+        rtcCollide(g_scene0,g_scene1,CollideFunc,nullptr);
+        
+        /* start tutorial */
+        run(argc,argv);
+      }
       
       return 0;
     }  
