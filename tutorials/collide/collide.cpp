@@ -29,7 +29,7 @@ namespace embree
   std::set<std::pair<unsigned,unsigned>> set1;
 
   void CollideFunc (void* userPtr, unsigned geomID0, unsigned primID0, unsigned geomID1, unsigned primID1) {
-    PRINT4(geomID0,primID0,geomID1,primID1);
+    //PRINT4(geomID0,primID0,geomID1,primID1);
     set0.insert(std::make_pair(geomID0,primID0));
     set1.insert(std::make_pair(geomID1,primID1));
   }

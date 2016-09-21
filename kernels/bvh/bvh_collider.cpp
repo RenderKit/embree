@@ -20,6 +20,12 @@ namespace embree
 { 
   namespace isa
   {
+#define CSTAT(x) x
+    size_t bvh_collide_traversal_steps = 0;
+    size_t bvh_collide_leaf_pairs = 0;
+    size_t bvh_collide_leaf_iterations = 0;
+    size_t bvh_collide_prim_pairs = 0;
+
     template<int N>
     __forceinline size_t overlap(const BBox3fa& box0, const typename BVHN<N>::Node& node1)
     {
@@ -45,24 +51,45 @@ namespace embree
     }
 
     template<int N>
-    void BVHNCollider<N>::processLeaf(const Triangle4v& __restrict__ tris0, const Triangle4v& __restrict__ tris1, RTCCollideFunc callback, void* userPtr)
+    __forceinline void BVHNCollider<N>::processLeaf(const Triangle4v& __restrict__ tris0, const Triangle4v& __restrict__ tris1, RTCCollideFunc callback, void* userPtr)
     {
       BBox<Vec3vf4> bounds0(min(tris0.v0,tris0.v1,tris0.v2),max(tris0.v0,tris0.v1,tris0.v2));
       BBox<Vec3vf4> bounds1(min(tris1.v0,tris1.v1,tris1.v2),max(tris1.v0,tris1.v1,tris1.v2));
      
-      for (size_t i=0; i<tris0.size(); i++)  // FIXME: iterate over smaller leaf
+      if (tris0.size() < tris1.size())
       {
-        const Vec3fa lower(bounds0.lower.x[i],bounds0.lower.y[i],bounds0.lower.z[i]);
-        const Vec3fa upper(bounds0.upper.x[i],bounds0.upper.y[i],bounds0.upper.z[i]);
-        const BBox3fa bounds(lower,upper);
-        size_t mask = movemask(tris1.valid()) & overlap(bounds,bounds1);
-        for (size_t m=mask, j=__bsf(m); m!=0; m=__btc(m,j), j=__bsf(m)) 
-          callback(userPtr,tris0.geomID(i),tris0.primID(i),tris1.geomID(j),tris1.primID(j));
+        for (size_t i=0; i<tris0.size(); i++) 
+        {
+          CSTAT(bvh_collide_leaf_iterations++);
+          const Vec3fa lower(bounds0.lower.x[i],bounds0.lower.y[i],bounds0.lower.z[i]);
+          const Vec3fa upper(bounds0.upper.x[i],bounds0.upper.y[i],bounds0.upper.z[i]);
+          const BBox3fa bounds(lower,upper);
+          size_t mask = movemask(tris1.valid()) & overlap(bounds,bounds1);
+          for (size_t m=mask, j=__bsf(m); m!=0; m=__btc(m,j), j=__bsf(m)) {
+            CSTAT(bvh_collide_prim_pairs++);
+            callback(userPtr,tris0.geomID(i),tris0.primID(i),tris1.geomID(j),tris1.primID(j));
+          }
+        }
+      } 
+      else 
+      {
+        for (size_t j=0; j<tris1.size(); j++) 
+        {
+          CSTAT(bvh_collide_leaf_iterations++);
+          const Vec3fa lower(bounds1.lower.x[j],bounds1.lower.y[j],bounds1.lower.z[j]);
+          const Vec3fa upper(bounds1.upper.x[j],bounds1.upper.y[j],bounds1.upper.z[j]);
+          const BBox3fa bounds(lower,upper);
+          size_t mask = movemask(tris0.valid()) & overlap(bounds,bounds0);
+          for (size_t m=mask, i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {
+            CSTAT(bvh_collide_prim_pairs++);
+            callback(userPtr,tris0.geomID(i),tris0.primID(i),tris1.geomID(j),tris1.primID(j));
+          }
+        }
       }
     }
 
     template<int N>
-    void BVHNCollider<N>::processLeaf(NodeRef node0, NodeRef node1, RTCCollideFunc callback, void* userPtr)
+    __forceinline void BVHNCollider<N>::processLeaf(NodeRef node0, NodeRef node1, RTCCollideFunc callback, void* userPtr)
     {
       size_t N0; Triangle4v* leaf0 = (Triangle4v*) node0.leaf(N0);
       size_t N1; Triangle4v* leaf1 = (Triangle4v*) node1.leaf(N1);
@@ -74,7 +101,7 @@ namespace embree
     template<int N>
     void BVHNCollider<N>::collide(BVH* __restrict__ bvh0, BVH* __restrict__ bvh1, RTCCollideFunc callback, void* userPtr)
     {
-      size_t steps = 0;
+      
 
       /*! stack state */
       struct StackItem 
@@ -104,10 +131,10 @@ namespace embree
         stackPtr--;
         StackItem cur = *stackPtr;
 
-        steps++;
+        CSTAT(bvh_collide_traversal_steps++);
         if (cur.node0.isLeaf()) {
           if (cur.node1.isLeaf()) {
-            //callback(userPtr,(size_t)cur.node0,0,(size_t)cur.node1,0);
+            CSTAT(bvh_collide_leaf_pairs++);
             processLeaf(cur.node0,cur.node1,callback,userPtr);
           } else {
             Node* node1 = cur.node1.node();
@@ -146,7 +173,10 @@ namespace embree
         }
       }
       
-      PRINT(steps);
+      CSTAT(PRINT(bvh_collide_traversal_steps));
+      CSTAT(PRINT(bvh_collide_leaf_pairs));
+      CSTAT(PRINT(bvh_collide_leaf_iterations));
+      CSTAT(PRINT(bvh_collide_prim_pairs));
       AVX_ZERO_UPPER();
     }
 
