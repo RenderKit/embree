@@ -20,7 +20,7 @@ namespace embree
 { 
   namespace isa
   {
-#define CSTAT(x) 
+#define CSTAT(x)
 
     size_t bvh_collide_traversal_steps = 0;
     size_t bvh_collide_leaf_pairs = 0;
@@ -139,40 +139,41 @@ namespace embree
           if (cur.node1.isLeaf()) {
             CSTAT(bvh_collide_leaf_pairs++);
             processLeaf(cur.node0,cur.node1,callback,userPtr);
-          } else {
-            Node* node1 = cur.node1.node();
-            size_t mask = overlap<N>(cur.bounds0,*node1);
-            for (size_t m=mask, i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {
-              node1->child(i).prefetch(BVH_FLAG_ALIGNED_NODE);
-              *stackPtr++ = StackItem(cur.node0,cur.bounds0,node1->child(i),node1->bounds(i));
-              
-            }
-          }
+            continue;
+          } else goto recurse_node1;
+
         } else {
           if (cur.node1.isLeaf()) {
-            Node* node0 = cur.node0.node();
-            size_t mask = overlap<N>(cur.bounds1,*node0);
-            for (size_t m=mask, i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {
-              node0->child(i).prefetch(BVH_FLAG_ALIGNED_NODE);
-              *stackPtr++ = StackItem(node0->child(i),node0->bounds(i),cur.node1,cur.bounds1);                
-            }
+            goto recurse_node0;
           } else {
             if (area(cur.bounds0) > area(cur.bounds1)) {
-              Node* node0 = cur.node0.node();
-              size_t mask = overlap<N>(cur.bounds1,*node0);
-              for (size_t m=mask, i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {
-                node0->child(i).prefetch(BVH_FLAG_ALIGNED_NODE);
-                *stackPtr++ = StackItem(node0->child(i),node0->bounds(i),cur.node1,cur.bounds1);
-              }
+              goto recurse_node0;
             } else {
-              Node* node1 = cur.node1.node();
-              size_t mask = overlap<N>(cur.bounds0,*node1);
-              for (size_t m=mask, i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {
-                node1->child(i).prefetch(BVH_FLAG_ALIGNED_NODE);
-                *stackPtr++ = StackItem(cur.node0,cur.bounds0,node1->child(i),node1->bounds(i));
-              }
+              goto recurse_node1;
             }
           }
+        }
+
+        {
+        recurse_node0:
+          Node* node0 = cur.node0.node();
+          size_t mask = overlap<N>(cur.bounds1,*node0);
+          for (size_t m=mask, i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {
+            node0->child(i).prefetch(BVH_FLAG_ALIGNED_NODE);
+            *stackPtr++ = StackItem(node0->child(i),node0->bounds(i),cur.node1,cur.bounds1);
+          }
+          continue;
+        }
+
+        {
+        recurse_node1:
+          Node* node1 = cur.node1.node();
+          size_t mask = overlap<N>(cur.bounds0,*node1);
+          for (size_t m=mask, i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {
+            node1->child(i).prefetch(BVH_FLAG_ALIGNED_NODE);
+            *stackPtr++ = StackItem(cur.node0,cur.bounds0,node1->child(i),node1->bounds(i));          
+          }
+          continue;
         }
       }
       
