@@ -105,7 +105,7 @@ namespace embree
       const size_t offsetAlignment  = (size_t)stream_offset  % (VSIZEX*sizeof(float));
 
       /* can we use the fast path ? */
-      if (unlikely(isCoherent(context->context->flags) && 
+      if (unlikely(isCoherent(context->user->flags) &&
                    N == VSIZEX                && 
                    !rayDataAlignment          && 
                    !offsetAlignment))
@@ -232,7 +232,7 @@ namespace embree
       size_t rayStartIndex = 0;
 
       /* use packet intersector for coherent ray mode */
-      if (unlikely(isCoherent(context->context->flags)))
+      if (unlikely(isCoherent(context->user->flags)))
       {
         size_t s = 0;
         size_t stream_offset = 0;

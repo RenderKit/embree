@@ -74,8 +74,8 @@ namespace embree
         const float time = ray.time*float(time_segments);
         const int   itime = clamp(int(floor(time)),0,time_segments-1);
         const float ftime = time - float(itime);
-        context->ftime = ftime;
         context->itime = itime;
+        context->ftime = ftime;
         NodeRef* roots = (NodeRef*)(size_t)bvh->root;
         stack[0].ptr = roots[itime];
       }
@@ -188,8 +188,8 @@ namespace embree
         const float time = ray.time*float(time_segments);
         const int   itime = clamp(int(floor(time)),0,time_segments-1);
         const float ftime = time - float(itime);
-        context->ftime = ftime;
         context->itime = itime;
+        context->ftime = ftime;
         NodeRef* roots = (NodeRef*)(size_t)bvh->root;
         stack[0] = roots[itime];
       }

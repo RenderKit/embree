@@ -457,7 +457,7 @@ namespace embree
       __aligned(64) StackItemMask stack[stackSizeSingle];  //!< stack of nodes
 
 #if ENABLE_COHERENT_STREAM_PATH == 1 
-      if (unlikely(PrimitiveIntersector::validChunkIntersector && !robust && isCoherent(context->context->flags)))
+      if (unlikely(PrimitiveIntersector::validChunkIntersector && !robust && isCoherent(context->user->flags)))
       {
         /* AOS to SOA conversion */
         RayK<K> rayK[MAX_RAYS / K];
@@ -632,7 +632,7 @@ namespace embree
       __aligned(64) StackItemMask stack[stackSizeSingle];  //!< stack of nodes
 
 #if ENABLE_COHERENT_STREAM_PATH == 1 
-      if (unlikely(PrimitiveIntersector::validChunkIntersector && !robust && isCoherent(context->context->flags)))
+      if (unlikely(PrimitiveIntersector::validChunkIntersector && !robust && isCoherent(context->user->flags)))
       {
         /* AOS to SOA conversion */
         RayK<K> rayK[MAX_RAYS / K];
