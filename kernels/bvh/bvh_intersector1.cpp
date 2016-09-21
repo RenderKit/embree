@@ -189,6 +189,7 @@ namespace embree
         const int   itime = clamp(int(floor(time)),0,time_segments-1);
         const float ftime = time - float(itime);
         context->ftime = ftime;
+        context->itime = itime;
         NodeRef* roots = (NodeRef*)(size_t)bvh->root;
         stack[0] = roots[itime];
       }
