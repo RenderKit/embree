@@ -151,14 +151,11 @@ namespace embree
       }
       else
       {
-#if 1
-        bvh->bounds = parallel_refit(bvh->root,0);
-#else
         numSubTrees = 0;
         gather_subtree_refs(bvh->root,numSubTrees,0);
 
         if (numSubTrees)
-          parallel_for(size_t(0), numSubTrees, [&] (const range<size_t>& r) {
+			parallel_for(size_t(0), numSubTrees, size_t(1), [&](const range<size_t>& r) {
               for (size_t i=r.begin(); i<r.end(); i++) {
                 NodeRef& ref = subTrees[i];
                 recurse_bottom(ref);
@@ -167,7 +164,6 @@ namespace embree
 
         numSubTrees = 0;        
         bvh->bounds = refit_toplevel(bvh->root,numSubTrees,0);
-#endif
       }
 #else
       /* single threaded fallback */
@@ -180,7 +176,7 @@ namespace embree
       else 
       {
 
-        parallel_for(size_t(0), roots.size(), [&] (const range<size_t>& r) {
+        parallel_for(size_t(0), roots.size(),  [&] (const range<size_t>& r) {
             for (size_t i=r.begin(); i<r.end(); i++) {
               NodeRef& ref = *roots[i];
               recurse_bottom(ref);
@@ -283,60 +279,6 @@ namespace embree
       else
         return leafBounds.leafBounds(ref);
     }
-
-    template<int N>
-    BBox3fa BVHNRefitter<N>::parallel_refit(NodeRef& ref,
-                                            const size_t depth)
-    {
-      /* this is a leaf node */
-      if (unlikely(ref.isLeaf()))
-        return leafBounds.leafBounds(ref);
-
-      Node* node = ref.node();
-
-#if defined(__AVX__)  
-      ref.prefetchW();
-#endif      
-      BBox3fa bounds[N];
-
-      if (likely(depth >= 4)) 
-      {
-        for (size_t i=0; i<N; i++) {
-          NodeRef& child = node->child(i);
-          bounds[i] = BBox3fa(empty);
-              
-          if (unlikely(child == BVH::emptyNode)) continue;
-          bounds[i] = parallel_refit(child,depth+1); 
-        }
-      }
-      else
-      {
-        parallel_for(size_t(0),size_t(N),size_t(1), [&] (const range<size_t>& r) {
-            for (size_t i=r.begin(); i<r.end(); i++) {
-              const size_t index = i;
-              NodeRef& child = node->child(index);
-              bounds[index] = BBox3fa(empty);
-              
-              if (unlikely(child == BVH::emptyNode)) continue;
-              bounds[index] = parallel_refit(child,depth+1); 
-            }
-          },tbb::simple_partitioner());
-      }
-
-      BBox<Vec3<vfloat<N>>> boundsT = transpose<N>(bounds);
-      
-      /* set new bounds */
-      node->lower_x = boundsT.lower.x;
-      node->lower_y = boundsT.lower.y;
-      node->lower_z = boundsT.lower.z;
-      node->upper_x = boundsT.upper.x;
-      node->upper_y = boundsT.upper.y;
-      node->upper_z = boundsT.upper.z;
-        
-      return merge<N>(bounds);
-    }
-
-
 
     template<int N>
     void BVHNRefitter<N>::calculate_refit_roots ()

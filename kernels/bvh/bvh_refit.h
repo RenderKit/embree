@@ -57,9 +57,6 @@ namespace embree
                              size_t &subtrees,
                              const size_t depth = 0);
 
-      BBox3fa parallel_refit(NodeRef& ref,
-                             const size_t depth = 0);
-
       /* dynamic subtrees */
       __forceinline BBox3fa node_bounds(NodeRef& ref)
       {
@@ -106,6 +103,11 @@ namespace embree
       {
         size_t num; char* prim = ref.leaf(num);
         if (unlikely(ref == BVH::emptyNode)) return empty;
+
+		// trying to prefetch geomIDs as it will be accessed first
+		for (size_t i = 0; i < num; i++)
+			prefetchL1(&((Primitive*)prim)[i].geomIDs);
+
         BBox3fa bounds = empty;
         for (size_t i=0; i<num; i++)
             bounds.extend(((Primitive*)prim)[i].update(mesh));
