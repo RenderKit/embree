@@ -478,7 +478,6 @@ namespace embree
   {
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
-    intersectors.collider               = BVH4Collider;
     intersectors.intersector1           = BVH4Triangle4Intersector1Moeller;
     intersectors.intersector4_filter    = BVH4Triangle4Intersector4HybridMoeller;
     intersectors.intersector4_nofilter  = BVH4Triangle4Intersector4HybridMoellerNoFilter;
@@ -503,6 +502,7 @@ namespace embree
   {
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
+    intersectors.collider      = BVH4Collider;
     intersectors.intersector1  = BVH4Triangle4vIntersector1Pluecker;
     intersectors.intersector4  = BVH4Triangle4vIntersector4HybridPluecker;
     intersectors.intersector8  = BVH4Triangle4vIntersector8HybridPluecker;
