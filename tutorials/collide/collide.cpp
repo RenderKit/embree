@@ -25,6 +25,10 @@ namespace embree
   TutorialScene g_tutorial_scene0;
   TutorialScene g_tutorial_scene1;
 
+  void CollideFunc (void* userPtr, size_t geomID0, size_t primID0, size_t geomID1, size_t primID1) {
+    PRINT4(geomID0,primID0,geomID1,primID1);
+  }
+
   struct Tutorial : public TutorialApplication
   {
     Ref<SceneGraph::Node> scene0;
@@ -88,6 +92,9 @@ namespace embree
       g_scene = g_scene0;
 
       /* do collision detection */
+      std::cout << "calculating collisions ... " << std::flush;
+      rtcCollide(g_scene0,g_scene1,CollideFunc,nullptr);
+      std::cout << "[DONE]" << std::endl;
 
       /* start tutorial */
       run(argc,argv);
