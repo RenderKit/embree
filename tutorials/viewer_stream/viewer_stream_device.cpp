@@ -29,6 +29,7 @@ namespace embree {
 //#define RAYN_FLAGS RTC_INTERSECT_INCOHERENT
 
 #define SIMPLE_SHADING 0
+#define DYNAMIC_BENCHMARK 0
 
 extern "C" ISPCScene* g_ispc_scene;
 
@@ -38,7 +39,12 @@ RTCScene g_scene = nullptr;
 
 unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
 {
-  unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices, mesh->numTimeSteps);
+#if DYNAMIC_BENCHMARK == 1
+  RTCGeometryFlags flags = RTC_GEOMETRY_DEFORMABLE;
+#else
+  RTCGeometryFlags flags = RTC_GEOMETRY_STATIC;
+#endif
+  unsigned int geomID = rtcNewTriangleMesh (scene_out, flags, mesh->numTriangles, mesh->numVertices, mesh->numTimeSteps);
   for (size_t t=0; t<mesh->numTimeSteps; t++) {
     rtcSetBuffer(scene_out, geomID, (RTCBufferType)(RTC_VERTEX_BUFFER+t),mesh->positions+t*mesh->numVertices, 0, sizeof(Vec3fa      ));
   }
@@ -49,7 +55,12 @@ unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
 
 unsigned int convertQuadMesh(ISPCQuadMesh* mesh, RTCScene scene_out)
 {
-  unsigned int geomID = rtcNewQuadMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numQuads, mesh->numVertices, mesh->numTimeSteps);
+#if DYNAMIC_BENCHMARK == 1
+  RTCGeometryFlags flags = RTC_GEOMETRY_DEFORMABLE;
+#else
+  RTCGeometryFlags flags = RTC_GEOMETRY_STATIC;
+#endif
+  unsigned int geomID = rtcNewQuadMesh (scene_out, flags, mesh->numQuads, mesh->numVertices, mesh->numTimeSteps);
   for (size_t t=0; t<mesh->numTimeSteps; t++) {
     rtcSetBuffer(scene_out, geomID, (RTCBufferType)(RTC_VERTEX_BUFFER+t),mesh->positions+t*mesh->numVertices, 0, sizeof(Vec3fa      ));
   }
@@ -111,7 +122,12 @@ unsigned int convertCurveGeometry(ISPCHairSet* hair, RTCScene scene_out)
 RTCScene convertScene(ISPCScene* scene_in)
 {
   size_t numGeometries = scene_in->numGeometries;
+#if DYNAMIC_BENCHMARK == 1
+  int scene_flags = RTC_SCENE_DYNAMIC | RTC_SCENE_INCOHERENT;
+#else
   int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
+#endif
+
   int scene_aflags = RTC_INTERSECT1 | RTC_INTERSECT_STREAM | RTC_INTERPOLATE;
   RTCScene scene_out = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
 
@@ -148,6 +164,25 @@ RTCScene convertScene(ISPCScene* scene_in)
   return scene_out;
 }
 
+  void updateScene(ISPCScene* scene_in, RTCScene g_scene)
+{
+  size_t numGeometries = scene_in->numGeometries;
+  for (size_t i=0; i<numGeometries; i++)
+  {
+    ISPCGeometry* geometry = scene_in->geometries[i];
+    if (geometry->type == SUBDIV_MESH) {
+      rtcUpdate (g_scene,((ISPCSubdivMesh*)geometry)->geomID);
+    }
+    else if (geometry->type == TRIANGLE_MESH) {
+      rtcUpdate (g_scene,((ISPCTriangleMesh*)geometry)->geomID);
+    }
+    else if (geometry->type == QUAD_MESH) {
+      rtcUpdate (g_scene,((ISPCQuadMesh*)geometry)->geomID);
+    }
+    else
+      assert(false);
+  }
+}
 /* renders a single pixel casting with ambient occlusion */
 Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
 {
@@ -320,6 +355,17 @@ extern "C" void device_init (char* cfg)
 
   /* create scene */
   g_scene = convertScene(g_ispc_scene);
+
+#if DYNAMIC_BENCHMARK == 1
+  while(1)
+  {
+    double t0 = getSeconds();
+    updateScene (g_ispc_scene,g_scene);
+    rtcCommit(g_scene);
+    double t1 = getSeconds();
+    PRINT(t1-t0);
+  }
+#endif
   rtcCommit (g_scene);
 
   /* set render tile function to use */
