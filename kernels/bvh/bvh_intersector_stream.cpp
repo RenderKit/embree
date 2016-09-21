@@ -22,6 +22,7 @@
 #include "../geometry/trianglev.h"
 #include "../geometry/trianglev_mb.h"
 #include "../geometry/trianglei.h"
+#include "../geometry/trianglei_mb.h"
 #include "../geometry/intersector_iterators.h"
 #include "../geometry/bezier1v_intersector.h"
 #include "../geometry/bezier1i_intersector.h"

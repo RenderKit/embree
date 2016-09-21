@@ -28,6 +28,9 @@
 #include "../geometry/trianglev.h"
 #include "../geometry/trianglei.h"
 
+#include "../geometry/quadv.h"
+#include "../geometry/quadi.h"
+
 #define ROTATE_TREE 1 // specifies number of tree rotation rounds to perform
 
 #define BLOCK_SIZE 1024
@@ -272,6 +275,63 @@ namespace embree
       TriangleMesh* mesh;
       MortonID32Bit* morton;
     };
+
+    template<int N>
+    struct CreateMortonLeaf<N,Quad4v>
+    {
+      typedef BVHN<N> BVH;
+      typedef typename BVH::NodeRef NodeRef;
+
+      __forceinline CreateMortonLeaf (QuadMesh* mesh, MortonID32Bit* morton)
+        : mesh(mesh), morton(morton) {}
+      
+      __noinline void operator() (MortonBuildRecord<NodeRef>& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
+      {
+        vfloat4 lower(pos_inf);
+        vfloat4 upper(neg_inf);
+        size_t items = current.size();
+        size_t start = current.begin;
+        assert(items<=4);
+        
+        /* allocate leaf node */
+        Quad4v* accel = (Quad4v*) alloc->alloc1.malloc(sizeof(Quad4v));
+        *current.parent = BVH::encodeLeaf((char*)accel,1);
+        
+        vint4 vgeomID = -1, vprimID = -1;
+        Vec3vf4 v0 = zero, v1 = zero, v2 = zero, v3 = zero;
+
+        for (size_t i=0; i<items; i++)
+        {
+          const unsigned index = morton[start+i].index;
+          const unsigned primID = index; 
+          const unsigned geomID = this->mesh->id;
+          const QuadMesh* mesh = this->mesh;
+          const QuadMesh::Quad& tri = mesh->quad(primID);
+          const Vec3fa& p0 = mesh->vertex(tri.v[0]);
+          const Vec3fa& p1 = mesh->vertex(tri.v[1]);
+          const Vec3fa& p2 = mesh->vertex(tri.v[2]);
+          const Vec3fa& p3 = mesh->vertex(tri.v[3]);
+          lower = min(lower,(vfloat4)p0,(vfloat4)p1,(vfloat4)p2,(vfloat4)p3);
+          upper = max(upper,(vfloat4)p0,(vfloat4)p1,(vfloat4)p2,(vfloat4)p3);
+          vgeomID [i] = geomID;
+          vprimID [i] = primID;
+          v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
+          v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
+          v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
+          v3.x[i] = p3.x; v3.y[i] = p3.y; v3.z[i] = p3.z;
+        }
+        Quad4v::store_nt(accel,Quad4v(v0,v1,v2,v3,vgeomID,vprimID));
+        box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
+#if ROTATE_TREE
+        if (N == 4)
+          box_o.lower.a = current.size();
+#endif
+      }
+    private:
+      QuadMesh* mesh;
+      MortonID32Bit* morton;
+    };
+
     
     template<typename Mesh>
     struct CalculateMeshBounds
@@ -448,6 +508,11 @@ namespace embree
     Builder* BVH4Triangle4vMeshBuilderMortonGeneral (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVHNMeshBuilderMorton<4,TriangleMesh,Triangle4v>((BVH4*)bvh,mesh,4,4*BVH4::maxLeafBlocks); }
     Builder* BVH4Triangle4iMeshBuilderMortonGeneral (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVHNMeshBuilderMorton<4,TriangleMesh,Triangle4i>((BVH4*)bvh,mesh,4,4*BVH4::maxLeafBlocks); }
 #endif
+
+#if defined(EMBREE_GEOMETRY_QUADS)
+    Builder* BVH4Quad4vMeshBuilderMortonGeneral (void* bvh, QuadMesh* mesh, size_t mode) { return new class BVHNMeshBuilderMorton<4,QuadMesh,Quad4v>((BVH4*)bvh,mesh,4,4*BVH4::maxLeafBlocks); }
+#endif
+
   }
 }
 

@@ -24,7 +24,6 @@ const int numPhi = 5;
 #else
 const int numSpheres = 20;
 const int numPhi = 120;
-//const int numPhi = 256;
 #endif
 const int numTheta = 2*numPhi;
 
@@ -87,7 +86,6 @@ unsigned int createSphere (RTCGeometryFlags flags, const Vec3fa& pos, const floa
   }
   rtcUnmapBuffer(g_scene,mesh,RTC_VERTEX_BUFFER);
   rtcUnmapBuffer(g_scene,mesh,RTC_INDEX_BUFFER);
-
   return mesh;
 }
 

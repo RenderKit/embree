@@ -146,10 +146,10 @@ namespace embree
 
     
   public:
-    vint<M> v0;         // offset to 2nd vertex
-    vint<M> v1;         // offset to 2nd vertex
-    vint<M> v2;         // offset to 3rd vertex
-    vint<M> v3;         // offset to 4rd vertex
+    vint<M> v0;         // index of 1st vertex
+    vint<M> v1;         // index of 2nd vertex
+    vint<M> v2;         // index of 3rd vertex
+    vint<M> v3;         // index of 4rd vertex
     vint<M> geomIDs;    // geometry ID of mesh
     vint<M> primIDs;    // primitive ID of primitive inside mesh
   };
