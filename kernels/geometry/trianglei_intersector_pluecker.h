@@ -133,7 +133,7 @@ namespace embree
         static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& tri, Scene* scene, const unsigned* geomID_to_instID)
         {
           STAT3(normal.trav_prims,1,1,1);
-          Vec3<vfloat<M>> v0,v1,v2; tri.gather(v0,v1,v2,scene,context->ftime,context->itime);
+          Vec3<vfloat<M>> v0,v1,v2; tri.gather(v0,v1,v2,scene,context->itime,context->ftime);
           pre.intersect(ray,v0,v1,v2,UVIdentity<Mx>(),Intersect1EpilogM<M,Mx,filter>(ray,context,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
         }
 
@@ -141,7 +141,7 @@ namespace embree
         static __forceinline bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& tri, Scene* scene, const unsigned* geomID_to_instID)
         {
           STAT3(shadow.trav_prims,1,1,1);
-          Vec3<vfloat<M>> v0,v1,v2; tri.gather(v0,v1,v2,scene,context->ftime,context->itime);
+          Vec3<vfloat<M>> v0,v1,v2; tri.gather(v0,v1,v2,scene,context->itime,context->ftime);
           return pre.intersect(ray,v0,v1,v2,UVIdentity<Mx>(),Occluded1EpilogM<M,Mx,filter>(ray,context,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
         }
       };
@@ -160,9 +160,9 @@ namespace embree
             {
               if (!tri.valid(i)) break;
               STAT3(normal.trav_prims,1,popcnt(valid_i),K);
-              const Vec3<vfloat<K>> v0 = tri.getVertex(tri.v0,i,scene,ray.time);
-              const Vec3<vfloat<K>> v1 = tri.getVertex(tri.v1,i,scene,ray.time);
-              const Vec3<vfloat<K>> v2 = tri.getVertex(tri.v2,i,scene,ray.time);
+              const Vec3<vfloat<K>> v0 = tri.getVertex(tri.v0,i,scene,0,ray.time);
+              const Vec3<vfloat<K>> v1 = tri.getVertex(tri.v1,i,scene,0,ray.time);
+              const Vec3<vfloat<K>> v2 = tri.getVertex(tri.v2,i,scene,0,ray.time);
               pre.intersectK(valid_i,ray,v0,v1,v2,UVIdentity<K>(),IntersectKEpilogM<M,K,filter>(ray,context,tri.geomIDs,tri.primIDs,i,scene));
             }
           }
@@ -175,9 +175,9 @@ namespace embree
             {
               if (!tri.valid(i)) break;
               STAT3(shadow.trav_prims,1,popcnt(valid0),K);
-              const Vec3<vfloat<K>> v0 = tri.getVertex(tri.v0,i,scene,ray.time);
-              const Vec3<vfloat<K>> v1 = tri.getVertex(tri.v1,i,scene,ray.time);
-              const Vec3<vfloat<K>> v2 = tri.getVertex(tri.v2,i,scene,ray.time);
+              const Vec3<vfloat<K>> v0 = tri.getVertex(tri.v0,i,scene,0,ray.time);
+              const Vec3<vfloat<K>> v1 = tri.getVertex(tri.v1,i,scene,0,ray.time);
+              const Vec3<vfloat<K>> v2 = tri.getVertex(tri.v2,i,scene,0,ray.time);
               pre.intersectK(valid0,ray,v0,v1,v2,UVIdentity<K>(),OccludedKEpilogM<M,K,filter>(valid0,ray,context,tri.geomIDs,tri.primIDs,i,scene));
               if (none(valid0)) break;
             }
@@ -188,7 +188,7 @@ namespace embree
           static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const TriangleMiMB<M>& tri, Scene* scene)
           {
             STAT3(normal.trav_prims,1,1,1);
-            Vec3<vfloat<M>> v0,v1,v2; tri.gather(v0,v1,v2,scene,ray.time[k]);
+            Vec3<vfloat<M>> v0,v1,v2; tri.gather(v0,v1,v2,scene,0,ray.time[k]);
             pre.intersect(ray,k,v0,v1,v2,UVIdentity<Mx>(),Intersect1KEpilogM<M,Mx,K,filter>(ray,k,context,tri.geomIDs,tri.primIDs,scene));
           }
 
@@ -196,7 +196,7 @@ namespace embree
           static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const TriangleMiMB<M>& tri, Scene* scene)
           {
             STAT3(shadow.trav_prims,1,1,1);
-            Vec3<vfloat<M>> v0,v1,v2; tri.gather(v0,v1,v2,scene,ray.time[k]);
+            Vec3<vfloat<M>> v0,v1,v2; tri.gather(v0,v1,v2,scene,0,ray.time[k]);
             return pre.intersect(ray,k,v0,v1,v2,UVIdentity<Mx>(),Occluded1KEpilogM<M,Mx,K,filter>(ray,k,context,tri.geomIDs,tri.primIDs,scene));
           }
         };
