@@ -57,7 +57,9 @@ namespace embree
                              size_t &subtrees,
                              const size_t depth = 0);
 
-      
+      BBox3fa parallel_refit(NodeRef& ref,
+                             const size_t depth = 0);
+
       /* dynamic subtrees */
       __forceinline BBox3fa node_bounds(NodeRef& ref)
       {
