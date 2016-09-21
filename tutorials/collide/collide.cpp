@@ -32,12 +32,19 @@ namespace embree
   size_t skipBenchmarkRounds = 0;
   size_t numBenchmarkRounds = 0;
 
-  void CollideFunc (void* userPtr, unsigned geomID0, unsigned primID0, unsigned geomID1, unsigned primID1) 
+  void CollideFunc (void* userPtr, RTCCollision* collisions, size_t num_collisions)
   {
     if (numBenchmarkRounds) return;
-    //PRINT4(geomID0,primID0,geomID1,primID1);
-    set0.insert(std::make_pair(geomID0,primID0));
-    set1.insert(std::make_pair(geomID1,primID1));
+    for (size_t i=0; i<num_collisions; i++)
+    {
+      const unsigned geomID0 = collisions[i].geomID0;
+      const unsigned primID0 = collisions[i].primID0;
+      const unsigned geomID1 = collisions[i].geomID1;
+      const unsigned primID1 = collisions[i].primID1;
+      //PRINT4(geomID0,primID0,geomID1,primID1);
+      set0.insert(std::make_pair(geomID0,primID0));
+      set1.insert(std::make_pair(geomID1,primID1));
+    }
   }
 
   struct Tutorial : public TutorialApplication
@@ -48,6 +55,8 @@ namespace embree
     Tutorial()
       : TutorialApplication("collide",FEATURE_RTCORE)
     {
+      rtcore += ",tri_accel=bvh4.triangle4v";
+
       registerOption("i", [this] (Ref<ParseStream> cin, const FileName& path) {
           FileName filename = path + cin->getFileName();
           Ref<SceneGraph::Node> scene = SceneGraph::load(filename);
@@ -60,7 +69,6 @@ namespace embree
           numBenchmarkRounds = cin->getInt();
           interactive = false;
         }, "--benchmark <N> <M>: enabled benchmark mode, skips N collisions, measures M collisions");
-
     }
  
     unsigned int convertTriangleMesh(Ref<TutorialScene::TriangleMesh> mesh, RTCScene scene_out)
@@ -119,6 +127,7 @@ namespace embree
                 << "avg = " << std::setw(8) << 1000.0f*stat.getAvg() << " ms, "
                 << "max = " << std::setw(8) << 1000.0f*stat.getMax() << " ms, "
                 << "sigma = " << std::setw(6) << stat.getSigma() << " (" << 100.0f*stat.getSigma()/stat.getAvg() << "%)" << std::endl << std::flush;
+
     }
         
     int main(int argc, char** argv) try

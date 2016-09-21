@@ -27,6 +27,19 @@ namespace embree
     size_t bvh_collide_leaf_iterations = 0;
     size_t bvh_collide_prim_pairs = 0;
 
+    struct Collision
+    {
+      __forceinline Collision() {}
+
+      __forceinline Collision (unsigned geomID0, unsigned primID0, unsigned geomID1, unsigned primID1)
+        : geomID0(geomID0), primID0(primID0), geomID1(geomID1), primID1(primID1) {}
+
+      unsigned geomID0;
+      unsigned primID0;
+      unsigned geomID1;
+      unsigned primID1;
+    };
+
     template<int N>
     __forceinline size_t overlap(const BBox3fa& box0, const typename BVHN<N>::Node& node1)
     {
@@ -66,7 +79,9 @@ namespace embree
     template<int N>
     __forceinline void BVHNCollider<N>::processLeaf(const Triangle4v& __restrict__ tris0, const Triangle4v& __restrict__ tris1, RTCCollideFunc callback, void* userPtr)
     {
-      //asm("labelleaf");
+      Collision collisions[4*4];
+      size_t num_collisions = 0;
+
       size_t size0 = tris0.size();
       size_t size1 = tris1.size();
       BBox<Vec3vf4> bounds0(min(tris0.v0,tris0.v1,tris0.v2),max(tris0.v0,tris0.v1,tris0.v2));
@@ -76,12 +91,11 @@ namespace embree
       {
         for (size_t i=0; i<size0; i++) 
         {
-          //asm("labelleaf1");
           CSTAT(bvh_collide_leaf_iterations++);
           size_t mask = movemask(tris1.valid()) & overlap(bounds0,i,bounds1);
           for (size_t m=mask, j=__bsf(m); m!=0; m=__btc(m,j), j=__bsf(m)) {
             CSTAT(bvh_collide_prim_pairs++);
-            callback(userPtr,tris0.geomID(i),tris0.primID(i),tris1.geomID(j),tris1.primID(j));
+            collisions[num_collisions++] = Collision(tris0.geomID(i),tris0.primID(i),tris1.geomID(j),tris1.primID(j));
           }
         }
       } 
@@ -89,15 +103,16 @@ namespace embree
       {
         for (size_t j=0; j<size1; j++) 
         {
-          //asm("labelleaf2");
           CSTAT(bvh_collide_leaf_iterations++);
           size_t mask = movemask(tris0.valid()) & overlap(bounds1,j,bounds0);
           for (size_t m=mask, i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {
             CSTAT(bvh_collide_prim_pairs++);
-            callback(userPtr,tris0.geomID(i),tris0.primID(i),tris1.geomID(j),tris1.primID(j));
+            collisions[num_collisions++] = Collision(tris0.geomID(i),tris0.primID(i),tris1.geomID(j),tris1.primID(j));
           }
         }
       }
+      if (num_collisions)
+        callback(userPtr,(RTCCollision*)&collisions,num_collisions);
     }
 
     template<int N>
@@ -138,7 +153,6 @@ namespace embree
       /* pop loop */
       while (true)
       {
-        //asm("label1");
         /*! pop next node */
         if (unlikely(stackPtr == stack)) break;
         stackPtr--;
@@ -166,7 +180,6 @@ namespace embree
 
         {
         recurse_node0:
-          //asm("label2");
           Node* node0 = cur.node0.node();
           size_t mask = overlap<N>(cur.bounds1,*node0);
           for (size_t m=mask, i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {
@@ -178,7 +191,6 @@ namespace embree
 
         {
         recurse_node1:
-          //asm("label3");
           Node* node1 = cur.node1.node();
           size_t mask = overlap<N>(cur.bounds0,*node1);
           for (size_t m=mask, i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {
