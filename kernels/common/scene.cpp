@@ -254,12 +254,12 @@ namespace embree
 #if defined (__TARGET_AVX__)
       if (device->hasISA(AVX))
       {
-        accels.add(device->bvh8_factory->BVH8Triangle4vMB(this));
+        accels.add(device->bvh8_factory->BVH8Triangle4iMB(this));
       }
       else
 #endif
       {
-        accels.add(device->bvh4_factory->BVH4Triangle4vMB(this));
+        accels.add(device->bvh4_factory->BVH4Triangle4iMB(this));
       }
     }
     else if (device->tri_accel_mb == "bvh4.triangle4vmb") accels.add(device->bvh4_factory->BVH4Triangle4vMB(this));
