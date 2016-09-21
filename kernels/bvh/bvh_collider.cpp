@@ -54,12 +54,14 @@ namespace embree
     template<int N>
     __forceinline void BVHNCollider<N>::processLeaf(const Triangle4v& __restrict__ tris0, const Triangle4v& __restrict__ tris1, RTCCollideFunc callback, void* userPtr)
     {
+      size_t size0 = tris0.size();
+      size_t size1 = tris1.size();
       BBox<Vec3vf4> bounds0(min(tris0.v0,tris0.v1,tris0.v2),max(tris0.v0,tris0.v1,tris0.v2));
       BBox<Vec3vf4> bounds1(min(tris1.v0,tris1.v1,tris1.v2),max(tris1.v0,tris1.v1,tris1.v2));
      
-      if (tris0.size() < tris1.size())
+      if (size0 < size1)
       {
-        for (size_t i=0; i<tris0.size(); i++) 
+        for (size_t i=0; i<size0; i++) 
         {
           CSTAT(bvh_collide_leaf_iterations++);
           const Vec3fa lower(bounds0.lower.x[i],bounds0.lower.y[i],bounds0.lower.z[i]);
@@ -74,7 +76,7 @@ namespace embree
       } 
       else 
       {
-        for (size_t j=0; j<tris1.size(); j++) 
+        for (size_t j=0; j<size1; j++) 
         {
           CSTAT(bvh_collide_leaf_iterations++);
           const Vec3fa lower(bounds1.lower.x[j],bounds1.lower.y[j],bounds1.lower.z[j]);
