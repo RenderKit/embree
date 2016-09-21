@@ -20,7 +20,7 @@ namespace embree
 { 
   namespace isa
   {
-#define CSTAT(x) 
+#define CSTAT(x)
 
     size_t bvh_collide_traversal_steps = 0;
     size_t bvh_collide_leaf_pairs = 0;
@@ -52,8 +52,21 @@ namespace embree
     }
 
     template<int N>
+    __forceinline size_t overlap(const BBox<Vec3<vfloat<N>>>& box0, size_t i, const BBox<Vec3<vfloat<N>>>& box1)
+    {
+      const vfloat<N> lower_x = max(vfloat<N>(box0.lower.x[i]),box1.lower.x);
+      const vfloat<N> lower_y = max(vfloat<N>(box0.lower.y[i]),box1.lower.y);
+      const vfloat<N> lower_z = max(vfloat<N>(box0.lower.z[i]),box1.lower.z);
+      const vfloat<N> upper_x = min(vfloat<N>(box0.upper.x[i]),box1.upper.x);
+      const vfloat<N> upper_y = min(vfloat<N>(box0.upper.y[i]),box1.upper.y);
+      const vfloat<N> upper_z = min(vfloat<N>(box0.upper.z[i]),box1.upper.z);
+      return movemask((lower_x <= upper_x) & (lower_y <= upper_y) & (lower_z <= upper_z));
+    }
+
+    template<int N>
     __forceinline void BVHNCollider<N>::processLeaf(const Triangle4v& __restrict__ tris0, const Triangle4v& __restrict__ tris1, RTCCollideFunc callback, void* userPtr)
     {
+      //asm("labelleaf");
       size_t size0 = tris0.size();
       size_t size1 = tris1.size();
       BBox<Vec3vf4> bounds0(min(tris0.v0,tris0.v1,tris0.v2),max(tris0.v0,tris0.v1,tris0.v2));
@@ -63,11 +76,9 @@ namespace embree
       {
         for (size_t i=0; i<size0; i++) 
         {
+          //asm("labelleaf1");
           CSTAT(bvh_collide_leaf_iterations++);
-          const Vec3fa lower(bounds0.lower.x[i],bounds0.lower.y[i],bounds0.lower.z[i]);
-          const Vec3fa upper(bounds0.upper.x[i],bounds0.upper.y[i],bounds0.upper.z[i]);
-          const BBox3fa bounds(lower,upper);
-          size_t mask = movemask(tris1.valid()) & overlap(bounds,bounds1);
+          size_t mask = movemask(tris1.valid()) & overlap(bounds0,i,bounds1);
           for (size_t m=mask, j=__bsf(m); m!=0; m=__btc(m,j), j=__bsf(m)) {
             CSTAT(bvh_collide_prim_pairs++);
             callback(userPtr,tris0.geomID(i),tris0.primID(i),tris1.geomID(j),tris1.primID(j));
@@ -78,11 +89,9 @@ namespace embree
       {
         for (size_t j=0; j<size1; j++) 
         {
+          //asm("labelleaf2");
           CSTAT(bvh_collide_leaf_iterations++);
-          const Vec3fa lower(bounds1.lower.x[j],bounds1.lower.y[j],bounds1.lower.z[j]);
-          const Vec3fa upper(bounds1.upper.x[j],bounds1.upper.y[j],bounds1.upper.z[j]);
-          const BBox3fa bounds(lower,upper);
-          size_t mask = movemask(tris0.valid()) & overlap(bounds,bounds0);
+          size_t mask = movemask(tris0.valid()) & overlap(bounds1,j,bounds0);
           for (size_t m=mask, i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {
             CSTAT(bvh_collide_prim_pairs++);
             callback(userPtr,tris0.geomID(i),tris0.primID(i),tris1.geomID(j),tris1.primID(j));
@@ -129,21 +138,22 @@ namespace embree
       /* pop loop */
       while (true)
       {
+        //asm("label1");
         /*! pop next node */
         if (unlikely(stackPtr == stack)) break;
         stackPtr--;
         StackItem cur = *stackPtr;
 
         CSTAT(bvh_collide_traversal_steps++);
-        if (cur.node0.isLeaf()) {
-          if (cur.node1.isLeaf()) {
+        if (unlikely(cur.node0.isLeaf())) {
+          if (unlikely(cur.node1.isLeaf())) {
             CSTAT(bvh_collide_leaf_pairs++);
             processLeaf(cur.node0,cur.node1,callback,userPtr);
             continue;
           } else goto recurse_node1;
 
         } else {
-          if (cur.node1.isLeaf()) {
+          if (unlikely(cur.node1.isLeaf())) {
             goto recurse_node0;
           } else {
             if (area(cur.bounds0) > area(cur.bounds1)) {
@@ -156,6 +166,7 @@ namespace embree
 
         {
         recurse_node0:
+          //asm("label2");
           Node* node0 = cur.node0.node();
           size_t mask = overlap<N>(cur.bounds1,*node0);
           for (size_t m=mask, i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {
@@ -167,6 +178,7 @@ namespace embree
 
         {
         recurse_node1:
+          //asm("label3");
           Node* node1 = cur.node1.node();
           size_t mask = overlap<N>(cur.bounds0,*node1);
           for (size_t m=mask, i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {
