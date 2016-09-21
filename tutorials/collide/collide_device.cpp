@@ -18,6 +18,7 @@
 #include "../common/core/differential_geometry.h"
 #include "../common/tutorial/tutorial_device.h"
 #include "../common/tutorial/scene_device.h"
+#include <set>
 
 namespace embree {
 
@@ -28,6 +29,9 @@ extern RTCScene g_scene; // unused
 extern RTCDevice g_device;
 extern RTCScene g_scene0;
 extern RTCScene g_scene1;
+
+extern std::set<std::pair<unsigned,unsigned>> set0;
+extern std::set<std::pair<unsigned,unsigned>> set1;
 
 /* task that renders a single screen tile */
 Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
@@ -64,7 +68,17 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
   }
 
   /* shade all rays that hit something */
-  const Vec3fa color = sceneID == 0 ? Vec3fa(1.0f,0.0f,0.0f) : Vec3fa(0.0f,1.0f,0.0f);
+  Vec3fa color(0,0,0);
+  if (sceneID == 0) {
+    color = Vec3fa(1.0f,0.0f,0.0f);
+    if (set0.find(std::make_pair(ray.geomID,ray.primID)) != set0.end())
+      color = Vec3fa(1.0f,1.0f,0.0f);
+  } else {
+    color = Vec3fa(0.0f,0.0f,1.0f);
+    if (set1.find(std::make_pair(ray.geomID,ray.primID)) != set1.end())
+      color = Vec3fa(0.0f,1.0f,1.0f);
+  }
+
   return color*abs(dot(neg(ray.dir),normalize(ray.Ng)));
 }
 
