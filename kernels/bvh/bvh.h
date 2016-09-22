@@ -1026,22 +1026,22 @@ namespace embree
 
 
     /*! return the true root */
-    NodeRef getRoot(const RayPrecalculations& pre) const {
+    __forceinline NodeRef getRoot(const RayPrecalculations& pre) const {
       return root;
     }
 
-    NodeRef getRoot(const RayPrecalculationsMB& pre) const {
+    __forceinline NodeRef getRoot(const RayPrecalculationsMB& pre) const {
       NodeRef* roots = (NodeRef*)(size_t)root;
       return roots[pre.itime()];
     }
 
     template<int K>
-    NodeRef getRoot(const RayKPrecalculations<K>& pre, size_t k) const {
+    __forceinline NodeRef getRoot(const RayKPrecalculations<K>& pre, size_t k) const {
       return root;
     }
 
     template<int K>
-    NodeRef getRoot(const RayKPrecalculationsMB<K>& pre, size_t k) const {
+    __forceinline NodeRef getRoot(const RayKPrecalculationsMB<K>& pre, size_t k) const {
       NodeRef* roots = (NodeRef*)(size_t)root;
       return roots[pre.itime(k)];
     }
