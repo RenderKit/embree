@@ -28,9 +28,11 @@ namespace embree
     {
       typedef Object Primitive;
       
-      struct Precalculations {
-        __forceinline Precalculations (const vbool<K>& valid, const RayK<K>& ray) {}
+      struct PrecalculationsBase {
+        __forceinline PrecalculationsBase (const vbool<K>& valid, const RayK<K>& ray) {}
       };
+
+      typedef IntersectorKPrecalculations<K,PrecalculationsBase> Precalculations;
       
       static __forceinline void intersect(const vbool<K>& valid_i, const Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive& prim, Scene* scene);
       static __forceinline vbool<K> occluded(const vbool<K>& valid_i, const Precalculations& pre, const RayK<K>& ray, IntersectContext* context, const Primitive& prim, Scene* scene);

@@ -69,7 +69,7 @@ namespace embree
       struct TriangleMiIntersectorKPluecker
       {
         typedef TriangleMi<M> Primitive;
-        typedef PlueckerIntersectorK<Mx,K> Precalculations;
+        typedef IntersectorKPrecalculations<K,PlueckerIntersectorK<Mx,K>> Precalculations;
         
         static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive& tri, Scene* scene)
         {
@@ -151,7 +151,7 @@ namespace embree
         struct TriangleMiMBIntersectorKPluecker
         {
           typedef TriangleMiMB<M> Primitive;
-          typedef PlueckerIntersectorK<Mx,K> Precalculations;
+          typedef IntersectorKPrecalculationsMB<K,PlueckerIntersectorK<Mx,K>> Precalculations;
 
           /*! Intersects K rays with M triangles. */
           static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const TriangleMiMB<M>& tri, Scene* scene)
@@ -188,7 +188,7 @@ namespace embree
           static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const TriangleMiMB<M>& tri, Scene* scene)
           {
             STAT3(normal.trav_prims,1,1,1);
-            Vec3<vfloat<M>> v0,v1,v2; tri.gather(v0,v1,v2,scene,0,ray.time[k]);
+            Vec3<vfloat<M>> v0,v1,v2; tri.gather(v0,v1,v2,scene,pre.itime(k),pre.ftime(k));
             pre.intersect(ray,k,v0,v1,v2,UVIdentity<Mx>(),Intersect1KEpilogM<M,Mx,K,filter>(ray,k,context,tri.geomIDs,tri.primIDs,scene));
           }
 
@@ -196,7 +196,7 @@ namespace embree
           static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const TriangleMiMB<M>& tri, Scene* scene)
           {
             STAT3(shadow.trav_prims,1,1,1);
-            Vec3<vfloat<M>> v0,v1,v2; tri.gather(v0,v1,v2,scene,0,ray.time[k]);
+            Vec3<vfloat<M>> v0,v1,v2; tri.gather(v0,v1,v2,scene,pre.itime(k),pre.ftime(k));
             return pre.intersect(ray,k,v0,v1,v2,UVIdentity<Mx>(),Occluded1KEpilogM<M,Mx,K,filter>(ray,k,context,tri.geomIDs,tri.primIDs,scene));
           }
         };

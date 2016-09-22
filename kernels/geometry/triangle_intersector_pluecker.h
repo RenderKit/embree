@@ -324,7 +324,7 @@ namespace embree
       struct TriangleMvIntersectorKPluecker
       {
         typedef TriangleMv<M> Primitive;
-        typedef PlueckerIntersectorK<Mx,K> Precalculations;
+        typedef IntersectorKPrecalculations<K,PlueckerIntersectorK<Mx,K>> Precalculations;
         
         /*! Intersects K rays with M triangles. */
         static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive& tri, Scene* scene)

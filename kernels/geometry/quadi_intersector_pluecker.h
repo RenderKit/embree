@@ -68,7 +68,7 @@ namespace embree
       struct QuadMiIntersectorKPluecker
       {
         typedef QuadMi<M> Primitive;
-        typedef QuadMIntersectorKPluecker<M,K,filter> Precalculations;
+        typedef IntersectorKPrecalculations<K,QuadMIntersectorKPluecker<M,K,filter>> Precalculations;
         
         /*! Intersects K rays with M quads. */
         static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const QuadMi<M>& quad, Scene* scene)
@@ -157,7 +157,7 @@ namespace embree
       struct QuadMiMBIntersectorKPluecker
       {
         typedef QuadMiMB<M> Primitive;
-        typedef QuadMIntersectorKPluecker<M,K,filter> Precalculations;
+        typedef IntersectorKPrecalculationsMB<K,QuadMIntersectorKPluecker<M,K,filter>> Precalculations;
         
         /*! Intersects K rays with M quads. */
         static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const QuadMiMB<M>& quad, Scene* scene)

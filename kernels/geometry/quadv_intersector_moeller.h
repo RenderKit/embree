@@ -65,7 +65,7 @@ namespace embree
       struct QuadMvIntersectorKMoellerTrumbore
       {
         typedef QuadMv<M> Primitive;
-        typedef QuadMIntersectorKMoellerTrumbore<M,K,filter> Precalculations;
+        typedef IntersectorKPrecalculations<K,QuadMIntersectorKMoellerTrumbore<M,K,filter>> Precalculations;
         
         /*! Intersects K rays with M triangles. */
         static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const QuadMv<M>& quad, Scene* scene)

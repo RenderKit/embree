@@ -99,7 +99,7 @@ namespace embree
     struct LineMiIntersectorK
     {
       typedef LineMi<M> Primitive;
-      typedef typename LineIntersectorK<Mx,K>::Precalculations Precalculations;
+      typedef IntersectorKPrecalculations<K, typename LineIntersectorK<Mx,K>::Precalculations> Precalculations;
 
       static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive& line, Scene* scene)
       {
@@ -120,7 +120,7 @@ namespace embree
     struct LineMiMBIntersectorK
     {
       typedef LineMi<M> Primitive;
-      typedef typename LineIntersectorK<Mx,K>::Precalculations Precalculations;
+      typedef IntersectorKPrecalculationsMB<K, typename LineIntersectorK<Mx,K>::Precalculations> Precalculations;
 
       static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context,  const Primitive& line, Scene* scene)
       {

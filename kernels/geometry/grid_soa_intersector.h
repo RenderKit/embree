@@ -31,7 +31,7 @@ namespace embree
       typedef SubdivPatch1Cached Primitive;
       typedef Vec3<vfloat<K>> Vec3vfK;
 
-      class Precalculations
+      class PrecalculationsBase
       {
 #if defined(__AVX__)
         static const int M = 8;
@@ -40,13 +40,15 @@ namespace embree
 #endif
 
       public:
-        __forceinline Precalculations (const vbool<K>& valid, RayK<K>& ray)
+        __forceinline PrecalculationsBase (const vbool<K>& valid, const RayK<K>& ray)
           : grid(nullptr), intersector(valid,ray) {}
 
       public:
         GridSOA* grid;
         PlueckerIntersectorK<M,K> intersector; // FIXME: use quad intersector
       };
+
+      typedef IntersectorKPrecalculations<K,PrecalculationsBase> Precalculations;
 
       struct MapUV0
       {
@@ -221,7 +223,8 @@ namespace embree
     public:
       typedef SubdivPatch1Cached Primitive;
       typedef Vec3<vfloat<K>> Vec3vfK;
-      typedef typename GridSOAIntersectorK<K>::Precalculations Precalculations;
+      typedef typename GridSOAIntersectorK<K>::PrecalculationsBase PrecalculationsBase;
+      typedef IntersectorKPrecalculationsMB<K,PrecalculationsBase> Precalculations;
 
       template<typename Loader>
         static __forceinline void intersect(RayK<K>& ray, size_t k,

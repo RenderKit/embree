@@ -85,7 +85,7 @@ namespace embree
       struct Bezier1iIntersectorK
     {
       typedef Bezier1i Primitive;
-      typedef Bezier1iIntersectorK Precalculations;
+      typedef IntersectorKPrecalculations<K,Bezier1iIntersectorK> Precalculations;
 
       __forceinline Bezier1iIntersectorK(const vbool<K>& valid, const RayK<K>& ray) 
         : intersectorHair(valid,ray), intersectorCurve(valid,ray) {}
@@ -213,7 +213,7 @@ namespace embree
     struct Bezier1iIntersectorKMB
     {
       typedef Bezier1i Primitive;
-      typedef Bezier1iIntersectorKMB Precalculations;
+      typedef IntersectorKPrecalculationsMB<K,Bezier1iIntersectorKMB> Precalculations;
 
       __forceinline Bezier1iIntersectorKMB (const vbool<K>& valid, const RayK<K>& ray) 
         : intersectorHair(valid,ray), intersectorCurve(valid,ray) {}

@@ -41,8 +41,8 @@ namespace embree
       class SubdivPatch1CachedPrecalculationsK : public T
     { 
     public:
-      __forceinline SubdivPatch1CachedPrecalculationsK (const vbool<K>& valid, RayK<K>& ray)
-        : T(valid,ray) {}
+      __forceinline SubdivPatch1CachedPrecalculationsK (const vbool<K>& valid, RayK<K>& ray, const Scene* scene)
+        : T(valid,ray,scene) {}
       
       __forceinline ~SubdivPatch1CachedPrecalculationsK() {
         if (cached && this->grid) SharedLazyTessellationCache::sharedLazyTessellationCache.unlock();

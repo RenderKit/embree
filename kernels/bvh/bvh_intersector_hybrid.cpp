@@ -68,7 +68,7 @@ namespace embree
       ray_tnear = select(valid0,ray_tnear,vfloat<K>(pos_inf));
       ray_tfar  = select(valid0,ray_tfar ,vfloat<K>(neg_inf));
       const vfloat<K> inf = vfloat<K>(pos_inf);
-      Precalculations pre(valid0,ray);
+      Precalculations pre(valid0,ray,bvh->scene);
 
       /* compute near/far per ray */
       Vec3viK nearXYZ;
@@ -246,7 +246,7 @@ namespace embree
       ray_tnear = select(valid,ray_tnear,vfloat<K>(pos_inf));
       ray_tfar  = select(valid,ray_tfar ,vfloat<K>(neg_inf));
       const vfloat<K> inf = vfloat<K>(pos_inf);
-      Precalculations pre(valid,ray);
+      Precalculations pre(valid,ray,bvh->scene);
 
       /* compute near/far per ray */
       Vec3viK nearXYZ;

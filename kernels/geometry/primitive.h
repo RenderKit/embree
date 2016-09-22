@@ -18,6 +18,7 @@
 
 #include "../common/default.h"
 #include "../common/scene.h"
+#include "../common/simd/simd.h"
 #include "../builders/primrefblock.h"
 
 namespace embree
@@ -70,6 +71,45 @@ namespace embree
     float ftime_;
   };
 
+  template<int K>
+  class RayKPrecalculations
+  {
+  public:
+    __forceinline RayKPrecalculations() {}
+    __forceinline RayKPrecalculations(const vbool<K>& valid, const RayK<K>& ray, const Scene* scene) {}
+
+    __forceinline vfloat<K> ftime() const { return zero; }
+
+    __forceinline int itime(size_t k) const { return 0; }
+    __forceinline float ftime(size_t k) const { return 0.0f; }
+  };
+
+  template<int K>
+  class RayKPrecalculationsMB
+  {
+  public:
+    __forceinline RayKPrecalculationsMB() {}
+
+    __forceinline RayKPrecalculationsMB(const vbool<K>& valid, const RayK<K>& ray, const Scene* scene)
+    {
+      /* calculate time segment itime and fractional time ftime */
+      const int time_segments = scene->numTimeSteps-1;
+      const vfloat<K> time = ray.time*float(time_segments);
+      itime_ = clamp(vint<K>(floor(time)),vint<K>(0),vint<K>(time_segments-1));
+      ftime_ = time - vfloat<K>(itime_);
+    }
+
+    __forceinline vfloat<K> ftime() const { return ftime_; }
+
+    __forceinline int itime(size_t k) const { return itime_[k]; }
+    __forceinline float ftime(size_t k) const { return ftime_[k]; }
+
+  private:
+    /* used for msmblur implementation */
+    vint<K> itime_;
+    vfloat<K> ftime_;
+  };
+
   template<typename Precalculations>
   struct Intersector1Precalculations : public RayPrecalculations, public Precalculations
   {
@@ -86,5 +126,23 @@ namespace embree
 
     __forceinline Intersector1PrecalculationsMB(const Ray& ray, const void* ptr, const Scene* scene)
       : RayPrecalculationsMB(ray, ptr, scene), Precalculations(ray, ptr) {}
+  };
+
+  template<int K, typename Precalculations>
+  struct IntersectorKPrecalculations : public RayKPrecalculations<K>, public Precalculations
+  {
+    __forceinline IntersectorKPrecalculations() {}
+
+    __forceinline IntersectorKPrecalculations(const vbool<K>& valid, const RayK<K>& ray, const Scene* scene)
+      : RayKPrecalculations<K>(valid, ray, scene), Precalculations(valid, ray) {}
+  };
+
+  template<int K, typename Precalculations>
+  struct IntersectorKPrecalculationsMB : public RayKPrecalculationsMB<K>, public Precalculations
+  {
+    __forceinline IntersectorKPrecalculationsMB() {}
+
+    __forceinline IntersectorKPrecalculationsMB(const vbool<K>& valid, const RayK<K>& ray, const Scene* scene)
+      : RayKPrecalculationsMB<K>(valid, ray, scene), Precalculations(valid, ray) {}
   };
 }

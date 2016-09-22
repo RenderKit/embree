@@ -80,7 +80,7 @@ namespace embree
       struct Bezier1vIntersectorK
     {
       typedef Bezier1v Primitive;
-      typedef Bezier1vIntersectorK Precalculations;
+      typedef IntersectorKPrecalculations<K,Bezier1vIntersectorK> Precalculations;
 
       __forceinline Bezier1vIntersectorK(const vbool<K>& valid, const RayK<K>& ray) 
         : intersectorHair(valid,ray), intersectorCurve(valid,ray) {}
