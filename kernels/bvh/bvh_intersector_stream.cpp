@@ -791,6 +791,10 @@ namespace embree
                                     TriangleMIntersectorKMoellerTrumbore<4 COMMA VSIZEX COMMA VSIZEX COMMA false > > Triangle4IntersectorStreamMoellerTrumboreNoFilter;
 
     typedef ArrayIntersectorKStream<VSIZEX,
+                                    TriangleMvIntersector1Pluecker<4 COMMA VSIZEX COMMA true >,
+                                    TriangleMvIntersectorKPluecker<4 COMMA VSIZEX COMMA VSIZEX COMMA true > > Triangle4vIntersectorStreamPluecker;
+
+    typedef ArrayIntersectorKStream<VSIZEX,
                                     TriangleMiIntersector1Pluecker<4 COMMA VSIZEX COMMA true >,
                                     TriangleMiIntersectorKPluecker<4 COMMA VSIZEX COMMA VSIZEX COMMA true > > Triangle4iIntersectorStreamPluecker;
 
@@ -851,6 +855,7 @@ namespace embree
     
     IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH8Triangle4IntersectorStreamMoeller,         BVHNIntersectorStream<SIMD_MODE(8) COMMA VSIZEX COMMA BVH_AN1 COMMA false COMMA Triangle4IntersectorStreamMoellerTrumbore>));
     IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH8Triangle4IntersectorStreamMoellerNoFilter, BVHNIntersectorStream<SIMD_MODE(8) COMMA VSIZEX COMMA BVH_AN1 COMMA false COMMA Triangle4IntersectorStreamMoellerTrumboreNoFilter>));
+    IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH8Triangle4vIntersectorStreamPluecker,       BVHNIntersectorStream<SIMD_MODE(8) COMMA VSIZEX COMMA BVH_AN1 COMMA true COMMA Triangle4vIntersectorStreamPluecker>));
     IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH8Triangle4iIntersectorStreamPluecker,       BVHNIntersectorStream<SIMD_MODE(8) COMMA VSIZEX COMMA BVH_AN1 COMMA true COMMA Triangle4iIntersectorStreamPluecker>));
 
     IF_ENABLED_QUADS(DEFINE_INTERSECTORN(BVH8Quad4vIntersectorStreamMoeller,         BVHNIntersectorStream<SIMD_MODE(8) COMMA VSIZEX COMMA BVH_AN1 COMMA false COMMA Quad4vIntersectorStreamMoellerTrumbore>));

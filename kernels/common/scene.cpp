@@ -41,9 +41,9 @@ namespace embree
       needBezierIndices(false), needBezierVertices(false),
       needLineIndices(false), needLineVertices(false),
       needSubdivIndices(false), needSubdivVertices(false),
-      is_build(false), modified(true),
-      progressInterface(this), progress_monitor_function(nullptr), progress_monitor_ptr(nullptr), progress_monitor_counter(0), 
-      numIntersectionFilters1(0), numIntersectionFilters4(0), numIntersectionFilters8(0), numIntersectionFilters16(0), numIntersectionFiltersN(0)
+    is_build(false), modified(true),
+    progressInterface(this), progress_monitor_function(nullptr), progress_monitor_ptr(nullptr), progress_monitor_counter(0), 
+    numIntersectionFilters1(0), numIntersectionFilters4(0), numIntersectionFilters8(0), numIntersectionFilters16(0), numIntersectionFiltersN(0)
   {
 #if defined(TASKING_INTERNAL) 
     scheduler = nullptr;
@@ -129,15 +129,30 @@ namespace embree
         case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4Triangle4iObjectSplit(this)); break;
         }
       }
-      else 
+      else /* dynamic */
       {
-        int mode =  2*(int)isCompact() + 1*(int)isRobust();
-        switch (mode) {
-        case /*0b00*/ 0: accels.add(device->bvh4_factory->BVH4Triangle4Twolevel(this)); break;
-        case /*0b01*/ 1: accels.add(device->bvh4_factory->BVH4Triangle4vTwolevel(this)); break;
-        case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4Triangle4iTwolevel(this)); break;
-        case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4Triangle4iTwolevel(this)); break;
-        }
+#if defined (__TARGET_AVX__)
+          if (device->hasISA(AVX))
+	  {
+            int mode =  2*(int)isCompact() + 1*(int)isRobust();
+            switch (mode) {
+            case /*0b00*/ 0: accels.add(device->bvh8_factory->BVH8Triangle4Twolevel(this)); break;
+            case /*0b01*/ 1: accels.add(device->bvh8_factory->BVH8Triangle4vTwolevel(this)); break;
+            case /*0b10*/ 2: accels.add(device->bvh8_factory->BVH8Triangle4iTwolevel(this)); break;
+            case /*0b11*/ 3: accels.add(device->bvh8_factory->BVH8Triangle4iTwolevel(this)); break;
+            }
+          }
+          else
+#endif
+          {
+            int mode =  2*(int)isCompact() + 1*(int)isRobust();
+            switch (mode) {
+            case /*0b00*/ 0: accels.add(device->bvh4_factory->BVH4Triangle4Twolevel(this)); break;
+            case /*0b01*/ 1: accels.add(device->bvh4_factory->BVH4Triangle4vTwolevel(this)); break;
+            case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4Triangle4iTwolevel(this)); break;
+            case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4Triangle4iTwolevel(this)); break;
+            }
+          }
       }
     }
     else if (device->tri_accel == "bvh4.triangle4")       accels.add(device->bvh4_factory->BVH4Triangle4(this));
@@ -766,11 +781,11 @@ namespace embree
       /* reset MXCSR register again */
       _mm_setcsr(mxcsr);
 #else
-		group->run([&]{
-			concurrency::parallel_for(size_t(0), size_t(1), size_t(1), [&](size_t) { build_task(); });
-		});
-		if (threadCount) group_barrier.wait(threadCount);
-		group->wait();
+      group->run([&]{
+          concurrency::parallel_for(size_t(0), size_t(1), size_t(1), [&](size_t) { build_task(); });
+        });
+      if (threadCount) group_barrier.wait(threadCount);
+      group->wait();
 
 #endif
     } 
