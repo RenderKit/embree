@@ -99,14 +99,15 @@ namespace embree
                               Vec3<vfloat<M>>& p2, 
                               Vec3<vfloat<M>>& p3,
                               const Scene *const scene,
-                              const size_t j) const;
+                              const size_t itime) const;
 
     __forceinline void gather(Vec3<vfloat<M>>& p0, 
                               Vec3<vfloat<M>>& p1, 
                               Vec3<vfloat<M>>& p2, 
                               Vec3<vfloat<M>>& p3,
                               const Scene *const scene,
-                              const float time) const;
+                              const size_t itime,
+                              const float ftime) const;
     
     /* Calculate the bounds of the quads */
     __forceinline const BBox3fa bounds(const Scene *const scene, const size_t j=0) const 
@@ -127,24 +128,10 @@ namespace embree
       return bounds;
     }
     
-
-    /* Calculate the bounds of the triangles at t0 */
-    __forceinline BBox3fa bounds0(const Scene *const scene) const 
-    {
-      return bounds(scene,0);
-    }
-
-    /* Calculate the bounds of the triangles at t1 */
-    __forceinline BBox3fa bounds1(const Scene *const scene) const 
-    {
-      return bounds(scene,1);
-    }
-
     /* Calculate primitive bounds */
-    __forceinline std::pair<BBox3fa,BBox3fa> bounds(const Scene *const scene) {
-      return std::make_pair(bounds0(scene),bounds1(scene));
+    __forceinline std::pair<BBox3fa,BBox3fa> bounds2(const Scene* const scene, const size_t j) {
+      return std::make_pair(bounds(scene,j+0),bounds(scene,j+1));
     }
-
     
     /* Fill quad from quad list */
     __forceinline std::pair<BBox3fa,BBox3fa> fill_mblur(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list, size_t time)
@@ -178,74 +165,56 @@ namespace embree
       }
       
       new (this) QuadMiMB(v0,v1,v2,v3,geomID,primID); // FIXME: use non temporal store
-      return bounds(scene);
-    }
-    
-    /* Updates the primitive */
-    __forceinline BBox3fa update(QuadMesh* mesh)
-    {
-      BBox3fa bounds = empty;
-      for (size_t i=0; i<M; i++)
-      {
-        if (!valid(i)) break;
-        const unsigned primId = primID(i);
-        const QuadMesh::Quad& q = mesh->quad(primId);
-        const Vec3fa p0 = mesh->vertex(q.v[0]);
-        const Vec3fa p1 = mesh->vertex(q.v[1]);
-        const Vec3fa p2 = mesh->vertex(q.v[2]);
-        const Vec3fa p3 = mesh->vertex(q.v[3]);
-        bounds.extend(merge(BBox3fa(p0),BBox3fa(p1),BBox3fa(p2),BBox3fa(p3)));
-      }
-      return bounds;
+      return bounds2(scene,time);
     }
     
   public:
     vint<M> v0;         // index of 1st vertex
     vint<M> v1;         // index of 2nd vertex
     vint<M> v2;         // index of 3rd vertex
-    vint<M> v3;         // index of 4rd vertex
+    vint<M> v3;         // index of 4th vertex
     vint<M> geomIDs;    // geometry ID of mesh
     vint<M> primIDs;    // primitive ID of primitive inside mesh
   };
-
+  
   template<>
     __forceinline void QuadMiMB<4>::gather(Vec3vf4& p0, 
                                            Vec3vf4& p1, 
                                            Vec3vf4& p2, 
                                            Vec3vf4& p3,
                                            const Scene *const scene,
-                                           const size_t j) const
+                                           const size_t itime) const
   {
     const QuadMesh* mesh0 = scene->getQuadMesh(geomIDs[0]);
     const QuadMesh* mesh1 = scene->getQuadMesh(geomIDs[1]);
     const QuadMesh* mesh2 = scene->getQuadMesh(geomIDs[2]);
     const QuadMesh* mesh3 = scene->getQuadMesh(geomIDs[3]);
 
-    const vfloat4 a0 = vfloat4::loadu(mesh0->vertexPtr(v0[0],j));
-    const vfloat4 a1 = vfloat4::loadu(mesh1->vertexPtr(v0[1],j));
-    const vfloat4 a2 = vfloat4::loadu(mesh2->vertexPtr(v0[2],j));
-    const vfloat4 a3 = vfloat4::loadu(mesh3->vertexPtr(v0[3],j));
+    const vfloat4 a0 = vfloat4::loadu(mesh0->vertexPtr(v0[0],itime));
+    const vfloat4 a1 = vfloat4::loadu(mesh1->vertexPtr(v0[1],itime));
+    const vfloat4 a2 = vfloat4::loadu(mesh2->vertexPtr(v0[2],itime));
+    const vfloat4 a3 = vfloat4::loadu(mesh3->vertexPtr(v0[3],itime));
 
     transpose(a0,a1,a2,a3,p0.x,p0.y,p0.z);
 
-    const vfloat4 b0 = vfloat4::loadu(mesh0->vertexPtr(v1[0],j));
-    const vfloat4 b1 = vfloat4::loadu(mesh1->vertexPtr(v1[1],j));
-    const vfloat4 b2 = vfloat4::loadu(mesh2->vertexPtr(v1[2],j));
-    const vfloat4 b3 = vfloat4::loadu(mesh3->vertexPtr(v1[3],j));
+    const vfloat4 b0 = vfloat4::loadu(mesh0->vertexPtr(v1[0],itime));
+    const vfloat4 b1 = vfloat4::loadu(mesh1->vertexPtr(v1[1],itime));
+    const vfloat4 b2 = vfloat4::loadu(mesh2->vertexPtr(v1[2],itime));
+    const vfloat4 b3 = vfloat4::loadu(mesh3->vertexPtr(v1[3],itime));
 
     transpose(b0,b1,b2,b3,p1.x,p1.y,p1.z);
 
-    const vfloat4 c0 = vfloat4::loadu(mesh0->vertexPtr(v2[0],j));
-    const vfloat4 c1 = vfloat4::loadu(mesh1->vertexPtr(v2[1],j));
-    const vfloat4 c2 = vfloat4::loadu(mesh2->vertexPtr(v2[2],j));
-    const vfloat4 c3 = vfloat4::loadu(mesh3->vertexPtr(v2[3],j));
+    const vfloat4 c0 = vfloat4::loadu(mesh0->vertexPtr(v2[0],itime));
+    const vfloat4 c1 = vfloat4::loadu(mesh1->vertexPtr(v2[1],itime));
+    const vfloat4 c2 = vfloat4::loadu(mesh2->vertexPtr(v2[2],itime));
+    const vfloat4 c3 = vfloat4::loadu(mesh3->vertexPtr(v2[3],itime));
 
     transpose(c0,c1,c2,c3,p2.x,p2.y,p2.z);
 
-    const vfloat4 d0 = vfloat4::loadu(mesh0->vertexPtr(v3[0],j));
-    const vfloat4 d1 = vfloat4::loadu(mesh1->vertexPtr(v3[1],j));
-    const vfloat4 d2 = vfloat4::loadu(mesh2->vertexPtr(v3[2],j));
-    const vfloat4 d3 = vfloat4::loadu(mesh3->vertexPtr(v3[3],j));
+    const vfloat4 d0 = vfloat4::loadu(mesh0->vertexPtr(v3[0],itime));
+    const vfloat4 d1 = vfloat4::loadu(mesh1->vertexPtr(v3[1],itime));
+    const vfloat4 d2 = vfloat4::loadu(mesh2->vertexPtr(v3[2],itime));
+    const vfloat4 d3 = vfloat4::loadu(mesh3->vertexPtr(v3[3],itime));
 
     transpose(d0,d1,d2,d3,p3.x,p3.y,p3.z);
   }
@@ -258,14 +227,15 @@ namespace embree
                                            Vec3vf4& p2, 
                                            Vec3vf4& p3,
                                            const Scene *const scene,
-                                           const float t) const
+                                           const size_t itime,
+                                           const float ftime) const
   {
-    const vfloat4 t0 = 1.0f - t;
-    const vfloat4 t1 = t;
+    const vfloat4 t0 = 1.0f - ftime;
+    const vfloat4 t1 = ftime;
     Vec3vf4 a0,a1,a2,a3;
-    gather(a0,a1,a2,a3,scene,(size_t)0);
+    gather(a0,a1,a2,a3,scene,itime+0);
     Vec3vf4 b0,b1,b2,b3;
-    gather(b0,b1,b2,b3,scene,(size_t)1);
+    gather(b0,b1,b2,b3,scene,itime+1);
     p0 = t0 * a0 + t1 * b0;
     p1 = t0 * a1 + t1 * b1;
     p2 = t0 * a2 + t1 * b2;

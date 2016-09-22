@@ -441,17 +441,28 @@ namespace embree
 
   unsigned Scene::newUserGeometry (size_t items, size_t numTimeSteps) 
   {
+    if (numTimeSteps == 0 || numTimeSteps > RTC_MAX_TIME_STEPS) {
+      throw_RTCError(RTC_INVALID_OPERATION,"maximal number of timesteps exceeded");
+      return -1;
+    }
+
     Geometry* geom = new UserGeometry(this,items,numTimeSteps);
     return geom->id;
   }
 
   unsigned Scene::newInstance (Scene* scene, size_t numTimeSteps) 
   {
+    if (numTimeSteps == 0 || numTimeSteps > RTC_MAX_TIME_STEPS) {
+      throw_RTCError(RTC_INVALID_OPERATION,"maximal number of timesteps exceeded");
+      return -1;
+    }
+
     Geometry* geom = new Instance(this,scene,numTimeSteps);
     return geom->id;
   }
   
-  unsigned Scene::newGeometryInstance (Geometry* geom) {
+  unsigned Scene::newGeometryInstance (Geometry* geom) 
+  {
     Geometry* instance = new GeometryInstance(this,geom);
     return instance->id;
   }
@@ -479,8 +490,8 @@ namespace embree
       return -1;
     }
 
-    if (numTimeSteps == 0 || numTimeSteps > 2) {
-      throw_RTCError(RTC_INVALID_OPERATION,"only 1 or 2 time steps supported");
+    if (numTimeSteps == 0 || numTimeSteps > RTC_MAX_TIME_STEPS) {
+      throw_RTCError(RTC_INVALID_OPERATION,"maximal number of timesteps exceeded");
       return -1;
     }
     
@@ -495,8 +506,8 @@ namespace embree
       return -1;
     }
 
-    if (numTimeSteps == 0 || numTimeSteps > 2) {
-      throw_RTCError(RTC_INVALID_OPERATION,"only 1 or 2 time steps supported");
+    if (numTimeSteps == 0 || numTimeSteps > RTC_MAX_TIME_STEPS) {
+      throw_RTCError(RTC_INVALID_OPERATION,"maximal number of timesteps exceeded");
       return -1;
     }
 
@@ -518,8 +529,8 @@ namespace embree
       return -1;
     }
 
-    if (numTimeSteps == 0 || numTimeSteps > 2) {
-      throw_RTCError(RTC_INVALID_OPERATION,"only 1 or 2 time steps supported");
+    if (numTimeSteps == 0 || numTimeSteps > RTC_MAX_TIME_STEPS) {
+      throw_RTCError(RTC_INVALID_OPERATION,"maximal number of timesteps exceeded");
       return -1;
     }
     
@@ -534,8 +545,8 @@ namespace embree
       return -1;
     }
 
-    if (numTimeSteps == 0 || numTimeSteps > 2) {
-      throw_RTCError(RTC_INVALID_OPERATION,"only 1 or 2 time steps supported");
+    if (numTimeSteps == 0 || numTimeSteps > RTC_MAX_TIME_STEPS) {
+      throw_RTCError(RTC_INVALID_OPERATION,"maximal number of timesteps exceeded");
       return -1;
     }
 

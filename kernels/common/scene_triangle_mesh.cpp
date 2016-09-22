@@ -23,7 +23,6 @@ namespace embree
   TriangleMesh::TriangleMesh (Scene* parent, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps)
     : Geometry(parent,TRIANGLE_MESH,numTriangles,numTimeSteps,flags)
   {
-    parent->checkMotionBlurTimeSteps(numTimeSteps,+1);
     triangles.init(parent->device,numTriangles,sizeof(Triangle));
     vertices.resize(numTimeSteps);
     for (size_t i=0; i<numTimeSteps; i++) {
@@ -32,10 +31,6 @@ namespace embree
     enabling();
   }
 
-  TriangleMesh::~TriangleMesh () {
-    parent->checkMotionBlurTimeSteps(numTimeSteps,-1);
-  }
-  
   void TriangleMesh::enabling() 
   { 
     if (numTimeSteps == 1) parent->world1.numTriangles += triangles.size();
@@ -118,7 +113,7 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
     if (type == RTC_INDEX_BUFFER) {
-      triangles  .unmap(parent->numMappedBuffers);
+      triangles.unmap(parent->numMappedBuffers);
     }
     else if (type >= RTC_VERTEX_BUFFER0 && type <= RTC_VERTEX_BUFFER0+RTC_MAX_TIME_STEPS) {
       vertices[type - RTC_VERTEX_BUFFER0].unmap(parent->numMappedBuffers);
@@ -146,14 +141,14 @@ namespace embree
       if (vertices[0].size() != buffer.size())
         return false;
 
-    /*! verify proper triangle indices */
+    /*! verify triangle indices */
     for (size_t i=0; i<triangles.size(); i++) {     
       if (triangles[i].v[0] >= numVertices()) return false; 
       if (triangles[i].v[1] >= numVertices()) return false; 
       if (triangles[i].v[2] >= numVertices()) return false; 
     }
 
-    /*! verify proper triangle vertices */
+    /*! verify vertices */
     for (const auto& buffer : vertices)
       for (size_t i=0; i<vertices.size(); i++)
 	if (!isvalid(buffer[i])) 
@@ -225,6 +220,5 @@ namespace embree
 
     while ((file.tellp() % 16) != 0) { char c = 0; file.write(&c,1); }
     for (size_t i=0; i<numTriangles; i++) file.write((char*)&triangle(i),sizeof(Triangle));  
-
   }
 }

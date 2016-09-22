@@ -56,9 +56,6 @@ namespace embree
 
     };
 
-
-
-
     /* last edge of triangle 0 is shared */
     static __forceinline unsigned int pair_order(const unsigned int tri0_vtx_index0,
                                                  const unsigned int tri0_vtx_index1,
@@ -101,15 +98,11 @@ namespace embree
       return -1;
     }
 
-    
   public:
 
     /*! triangle mesh construction */
     TriangleMesh (Scene* parent, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps); 
 
-    /*! triangle mesh destruction */
-    ~TriangleMesh ();
-  
     /*! writes the triangle mesh geometry to disk */
     void write(std::ofstream& file);
 
@@ -220,7 +213,7 @@ namespace embree
     
   public:
     BufferT<Triangle> triangles;                    //!< array of triangles
-    vector<BufferT<Vec3fa>> vertices;               //!< vertex array
+    vector<BufferT<Vec3fa>> vertices;               //!< vertex array for each timestep
     array_t<std::unique_ptr<Buffer>,2> userbuffers; //!< user buffers // FIXME: no std::unique_ptr here
   };
 }

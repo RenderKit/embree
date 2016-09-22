@@ -34,7 +34,7 @@ namespace embree
 
       /*! outputs triangle indices */
       __forceinline friend std::ostream &operator<<(std::ostream& cout, const Quad& q) {
-        return cout << "{ quad " << q.v[0] << ", " << q.v[1] << ", " << q.v[2] << ", " << q.v[3] << " }";
+        return cout << "Quad {" << q.v[0] << ", " << q.v[1] << ", " << q.v[2] << ", " << q.v[3] << " }";
       }
     };
 
@@ -97,6 +97,17 @@ namespace embree
       return BBox3fa(min(v0,v1,v2,v3),max(v0,v1,v2,v3));
     }
 
+    /*! calculates the bounds of the i'th triangle at the j'th timestep */
+    __forceinline BBox3fa bounds(size_t i, size_t j) const 
+    {
+      const Quad& q = quad(i);
+      const Vec3fa v0  = vertex(q.v[0],j);
+      const Vec3fa v1  = vertex(q.v[1],j);
+      const Vec3fa v2  = vertex(q.v[2],j);
+      const Vec3fa v3  = vertex(q.v[3],j);
+      return BBox3fa(min(v0,v1,v2,v3),max(v0,v1,v2,v3));
+    }
+
     /*! check if the i'th primitive is valid */
     __forceinline bool valid(size_t i, BBox3fa* bbox = nullptr) const 
     {
@@ -122,10 +133,34 @@ namespace embree
 
       return true;
     }
+
+     /*! check if the i'th primitive is valid at j'th timesegment */
+    __forceinline bool valid(size_t i, size_t j, BBox3fa* bbox = nullptr) const 
+    {
+      const Quad& q = quad(i);
+      if (unlikely(q.v[0] >= numVertices())) return false;
+      if (unlikely(q.v[1] >= numVertices())) return false;
+      if (unlikely(q.v[2] >= numVertices())) return false;
+
+      assert(j+1 < numTimeSteps);
+      const Vec3fa a0 = vertex(q.v[0],j+0); if (unlikely(!isvalid(a0))) return false;
+      const Vec3fa a1 = vertex(q.v[1],j+0); if (unlikely(!isvalid(a1))) return false;
+      const Vec3fa a2 = vertex(q.v[2],j+0); if (unlikely(!isvalid(a2))) return false;
+      const Vec3fa a3 = vertex(q.v[3],j+0); if (unlikely(!isvalid(a3))) return false;
+      const Vec3fa b0 = vertex(q.v[0],j+1); if (unlikely(!isvalid(b0))) return false;
+      const Vec3fa b1 = vertex(q.v[1],j+1); if (unlikely(!isvalid(b1))) return false;
+      const Vec3fa b2 = vertex(q.v[2],j+1); if (unlikely(!isvalid(b2))) return false;
+      const Vec3fa b3 = vertex(q.v[3],j+1); if (unlikely(!isvalid(b3))) return false;
+      
+      if (likely(bbox)) 
+        *bbox = BBox3fa(min(a0,a1,a2,a3),max(a0,a1,a2,a3));
+
+      return true;
+    }
     
   public:
     BufferT<Quad> quads;                            //!< array of quads
-    array_t<BufferT<Vec3fa>,2> vertices;            //!< vertex array
-    array_t<std::unique_ptr<Buffer>,2> userbuffers; //!< user buffers
+    vector<BufferT<Vec3fa>> vertices;               //!< vertex array for each timestep
+    array_t<std::unique_ptr<Buffer>,2> userbuffers; //!< user buffers  // FIXME: no std::unique_ptr here
   };
 }
