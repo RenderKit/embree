@@ -246,7 +246,7 @@ namespace embree
       }
 
     public:
-      BVH4::NodeRef root;
+      BVH4::NodeRef root[15];
 #if !defined (__X86_64__)
       unsigned align0;
 #endif
