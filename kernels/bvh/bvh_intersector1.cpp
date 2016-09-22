@@ -48,13 +48,13 @@ namespace embree
     void BVHNIntersector1<N,types,robust,PrimitiveIntersector1>::intersect(const BVH* __restrict__ bvh, Ray& __restrict__ ray, IntersectContext* context)
     {
       /*! perform per ray precalculations required by the primitive intersector */
-      Precalculations pre(ray,bvh);
+      Precalculations pre(ray,bvh,bvh->scene);
 
       /*! stack state */
       StackItemT<NodeRef> stack[stackSize];           //!< stack of nodes 
       StackItemT<NodeRef>* stackPtr = stack+1;        //!< current stack pointer
       StackItemT<NodeRef>* stackEnd = stack+stackSize;
-      stack[0].ptr  = bvh->root;
+      stack[0].ptr  = bvh->getRoot(pre);
       stack[0].dist = neg_inf;
 
       /* filter out invalid rays */
@@ -65,20 +65,6 @@ namespace embree
       assert(ray.valid());
       assert(ray.tnear >= 0.0f);
       assert(!(types & BVH_MB) || (ray.time >= 0.0f && ray.time <= 1.0f));
-
-      /*! select proper root for msmblur mode */
-      if (unlikely(types & BVH_AN2))  
-      {  
-        /* calculate time segment itime and fractional time ftime */
-        const int time_segments = bvh->scene->numTimeSteps-1;
-        const float time = ray.time*float(time_segments);
-        const int   itime = clamp(int(floor(time)),0,time_segments-1);
-        const float ftime = time - float(itime);
-        context->itime = itime;
-        context->ftime = ftime;
-        NodeRef* roots = (NodeRef*)(size_t)bvh->root;
-        stack[0].ptr = roots[itime];
-      }
 
       /*! load the ray into SIMD registers */
       size_t leafType = 0;
@@ -112,7 +98,7 @@ namespace embree
           /* intersect node */
           size_t mask = 0;
           vfloat<Nx> tNear;
-          bool nodeIntersected = BVHNNodeIntersector1<N,Nx,types,robust>::intersect(cur,vray,ray_near,ray_far,context->ftime,tNear,mask);
+          bool nodeIntersected = BVHNNodeIntersector1<N,Nx,types,robust>::intersect(cur,vray,ray_near,ray_far,pre.ftime(),tNear,mask);
           if (unlikely(!nodeIntersected)) break;
 
           /*! if no child is hit, pop next node */
@@ -162,13 +148,13 @@ namespace embree
         return;
 
       /*! perform per ray precalculations required by the primitive intersector */
-      Precalculations pre(ray,bvh);
+      Precalculations pre(ray,bvh,bvh->scene);
 
       /*! stack state */
       NodeRef stack[stackSize];  //!< stack of nodes that still need to get traversed
       NodeRef* stackPtr = stack+1;        //!< current stack pointer
       NodeRef* stackEnd = stack+stackSize;
-      stack[0] = bvh->root;
+      stack[0] = bvh->getRoot(pre);
       
       /* filter out invalid rays */
 #if defined(EMBREE_IGNORE_INVALID_RAYS)
@@ -179,20 +165,6 @@ namespace embree
       assert(ray.valid());
       assert(ray.tnear >= 0.0f);
       assert(!(types & BVH_MB) || (ray.time >= 0.0f && ray.time <= 1.0f));
-
-      /*! select proper root for msmblur mode */
-      if (unlikely(types & BVH_AN2))  
-      {  
-        /* calculate time segment itime and fractional time ftime */
-        const int time_segments = bvh->scene->numTimeSteps-1;
-        const float time = ray.time*float(time_segments);
-        const int   itime = clamp(int(floor(time)),0,time_segments-1);
-        const float ftime = time - float(itime);
-        context->itime = itime;
-        context->ftime = ftime;
-        NodeRef* roots = (NodeRef*)(size_t)bvh->root;
-        stack[0] = roots[itime];
-      }
 
       /*! load the ray into SIMD registers */
       size_t leafType = 0;
@@ -222,7 +194,7 @@ namespace embree
           /* intersect node */
           size_t mask = 0;
           vfloat<Nx> tNear;
-          bool nodeIntersected = BVHNNodeIntersector1<N,Nx,types,robust>::intersect(cur,vray,ray_near,ray_far,context->ftime,tNear,mask);
+          bool nodeIntersected = BVHNNodeIntersector1<N,Nx,types,robust>::intersect(cur,vray,ray_near,ray_far,pre.ftime(),tNear,mask);
           if (unlikely(!nodeIntersected)) break;
 
           /*! if no child is hit, pop next node */

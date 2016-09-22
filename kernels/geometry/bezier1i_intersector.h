@@ -26,7 +26,7 @@ namespace embree
     struct Bezier1iIntersector1
     {
       typedef Bezier1i Primitive;
-      typedef Bezier1iIntersector1 Precalculations;
+      typedef Intersector1Precalculations<Bezier1iIntersector1> Precalculations;
 
       __forceinline Bezier1iIntersector1() {}
 
@@ -147,7 +147,7 @@ namespace embree
     struct Bezier1iIntersector1MB
     {
       typedef Bezier1i Primitive;
-      typedef Bezier1iIntersector1MB Precalculations;
+      typedef MBIntersector1Precalculations<Bezier1iIntersector1MB> Precalculations;
       
       __forceinline Bezier1iIntersector1MB() {}
 

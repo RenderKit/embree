@@ -29,7 +29,7 @@ namespace embree
     struct Bezier1vIntersector1
     {
       typedef Bezier1v Primitive;
-      typedef Bezier1vIntersector1 Precalculations;
+      typedef Intersector1Precalculations<Bezier1vIntersector1> Precalculations;
 
       __forceinline Bezier1vIntersector1() {}
 

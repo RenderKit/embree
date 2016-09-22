@@ -29,9 +29,5 @@ namespace embree
 
   public:
     const RTCIntersectContext* user;
-
-    /* used for msmblur implementation */
-    int itime;
-    float ftime;
   };
 }

@@ -29,8 +29,8 @@ namespace embree
       class SubdivPatch1CachedPrecalculations : public T
     { 
     public:
-      __forceinline SubdivPatch1CachedPrecalculations (Ray& ray, const void* ptr) 
-        : T(ray,ptr) {}
+      __forceinline SubdivPatch1CachedPrecalculations (const Ray& ray, const void* ptr, const Scene* scene)
+        : T(ray,ptr,scene) {}
       
       __forceinline ~SubdivPatch1CachedPrecalculations() {
         if (cached && this->grid) SharedLazyTessellationCache::sharedLazyTessellationCache.unlock();
@@ -119,7 +119,7 @@ namespace embree
         else {
           grid = (GridSOA*) prim->root_ref.data;
         }
-        lazy_node = grid->root(context->itime);
+        lazy_node = grid->root(pre.itime());
         pre.grid = grid;
         return false;
       }
@@ -225,7 +225,7 @@ namespace embree
         else {
           grid = (GridSOA*) prim->root_ref.data;
         }
-        lazy_node = grid->root(context->itime);
+        lazy_node = grid->root(0/*context->itime*/);
         pre.grid = grid;
         return false;
       }

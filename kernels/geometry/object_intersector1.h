@@ -29,10 +29,12 @@ namespace embree
      
       static const bool validIntersectorK = false;
 
-      struct Precalculations {
-        __forceinline Precalculations() {}
-        __forceinline Precalculations (const Ray& ray, const void *ptr) {}
+      struct PrecalculationsBase {
+        __forceinline PrecalculationsBase() {}
+        __forceinline PrecalculationsBase (const Ray& ray, const void *ptr) {}
       };
+
+      typedef Intersector1Precalculations<PrecalculationsBase> Precalculations;
       
       static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim, Scene* scene, const unsigned* geomID_to_instID) 
       {

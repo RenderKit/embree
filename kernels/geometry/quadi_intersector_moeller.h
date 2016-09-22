@@ -28,7 +28,7 @@ namespace embree
       struct QuadMiIntersector1MoellerTrumbore
     {
       typedef QuadMi<M> Primitive;
-      typedef QuadMIntersector1MoellerTrumbore<M,filter> Precalculations;
+      typedef Intersector1Precalculations<QuadMIntersector1MoellerTrumbore<M,filter>> Precalculations;
         
       /*! Intersect a ray with the M quads and updates the hit. */
       static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& quad, Scene* scene, const unsigned* geomID_to_instID)

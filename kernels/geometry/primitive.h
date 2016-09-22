@@ -36,4 +36,55 @@ namespace embree
     size_t bytes;           //!< number of bytes of the triangle data
     size_t blockSize;       //!< block size
   };
+
+  class RayPrecalculations
+  {
+  public:
+    __forceinline RayPrecalculations() {}
+    __forceinline RayPrecalculations(const Ray& ray, const void* ptr, const Scene* scene) {}
+
+    __forceinline int itime() const { return 0; }
+    __forceinline float ftime() const { return 0.0f; }
+  };
+
+  class RayMBPrecalculations
+  {
+  public:
+    __forceinline RayMBPrecalculations() {}
+
+    __forceinline RayMBPrecalculations(const Ray& ray, const void* ptr, const Scene* scene)
+    {
+      /* calculate time segment itime and fractional time ftime */
+      const int time_segments = scene->numTimeSteps-1;
+      const float time = ray.time*float(time_segments);
+      itime_ = clamp(int(floor(time)),0,time_segments-1);
+      ftime_ = time - float(itime_);
+    }
+
+    __forceinline int itime() const { return itime_; }
+    __forceinline float ftime() const { return ftime_; }
+
+  private:
+    /* used for msmblur implementation */
+    int itime_;
+    float ftime_;
+  };
+
+  template<typename Precalculations>
+  struct Intersector1Precalculations : public RayPrecalculations, public Precalculations
+  {
+    __forceinline Intersector1Precalculations() {}
+
+    __forceinline Intersector1Precalculations(const Ray& ray, const void* ptr, const Scene* scene)
+      : RayPrecalculations(ray, ptr, scene), Precalculations(ray, ptr) {}
+  };
+
+  template<typename Precalculations>
+  struct MBIntersector1Precalculations : public RayMBPrecalculations, public Precalculations
+  {
+    __forceinline MBIntersector1Precalculations() {}
+
+    __forceinline MBIntersector1Precalculations(const Ray& ray, const void* ptr, const Scene* scene)
+      : RayMBPrecalculations(ray, ptr, scene), Precalculations(ray, ptr) {}
+  };
 }

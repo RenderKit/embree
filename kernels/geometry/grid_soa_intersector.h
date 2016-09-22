@@ -30,9 +30,9 @@ namespace embree
     public:
       typedef SubdivPatch1Cached Primitive;
       typedef Vec3<vfloat<K>> Vec3vfK;
-      
-      class Precalculations 
-      { 
+
+      class Precalculations
+      {
 #if defined(__AVX__)
         static const int M = 8;
 #else
@@ -42,11 +42,11 @@ namespace embree
       public:
         __forceinline Precalculations (const vbool<K>& valid, RayK<K>& ray)
           : grid(nullptr), intersector(valid,ray) {}
-        
+
       public:
         GridSOA* grid;
         PlueckerIntersectorK<M,K> intersector; // FIXME: use quad intersector
-      };     
+      };
 
       struct MapUV0
       {
@@ -56,7 +56,7 @@ namespace embree
         __forceinline MapUV0(const float* const grid_uv, size_t ofs00, size_t ofs01, size_t ofs10, size_t ofs11)
           : grid_uv(grid_uv), ofs00(ofs00), ofs01(ofs01), ofs10(ofs10), ofs11(ofs11) {}
 
-        __forceinline void operator() (vfloat<K>& u, vfloat<K>& v) const { 
+        __forceinline void operator() (vfloat<K>& u, vfloat<K>& v) const {
           const vfloat<K> uv00(grid_uv[ofs00]);
           const vfloat<K> uv01(grid_uv[ofs01]);
           const vfloat<K> uv10(grid_uv[ofs10]);
@@ -64,8 +64,8 @@ namespace embree
           const Vec2<vfloat<K>> uv0 = GridSOA::decodeUV(uv00);
           const Vec2<vfloat<K>> uv1 = GridSOA::decodeUV(uv01);
           const Vec2<vfloat<K>> uv2 = GridSOA::decodeUV(uv10);
-          const Vec2<vfloat<K>> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
-          u = uv[0];v = uv[1]; 
+          const Vec2<vfloat<K>> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;
+          u = uv[0];v = uv[1];
         }
       };
 
@@ -77,7 +77,7 @@ namespace embree
         __forceinline MapUV1(const float* const grid_uv, size_t ofs00, size_t ofs01, size_t ofs10, size_t ofs11)
           : grid_uv(grid_uv), ofs00(ofs00), ofs01(ofs01), ofs10(ofs10), ofs11(ofs11) {}
 
-        __forceinline void operator() (vfloat<K>& u, vfloat<K>& v) const { 
+        __forceinline void operator() (vfloat<K>& u, vfloat<K>& v) const {
           const vfloat<K> uv00(grid_uv[ofs00]);
           const vfloat<K> uv01(grid_uv[ofs01]);
           const vfloat<K> uv10(grid_uv[ofs10]);
@@ -85,8 +85,8 @@ namespace embree
           const Vec2<vfloat<K>> uv0 = GridSOA::decodeUV(uv10);
           const Vec2<vfloat<K>> uv1 = GridSOA::decodeUV(uv01);
           const Vec2<vfloat<K>> uv2 = GridSOA::decodeUV(uv11);
-          const Vec2<vfloat<K>> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
-          u = uv[0];v = uv[1]; 
+          const Vec2<vfloat<K>> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;
+          u = uv[0];v = uv[1];
         }
       };
 
@@ -99,10 +99,10 @@ namespace embree
         const float* const grid_y  = grid_x + 1 * dim_offset;
         const float* const grid_z  = grid_x + 2 * dim_offset;
         const float* const grid_uv = grid_x + 3 * dim_offset;
-        
-        for (size_t y=0; y<2; y++) 
+
+        for (size_t y=0; y<2; y++)
         {
-          for (size_t x=0; x<2; x++) 
+          for (size_t x=0; x<2; x++)
           {
             const size_t ofs00 = (y+0)*line_offset+(x+0);
             const size_t ofs01 = (y+0)*line_offset+(x+1);
@@ -127,11 +127,11 @@ namespace embree
         const float* const grid_y  = grid_x + 1 * dim_offset;
         const float* const grid_z  = grid_x + 2 * dim_offset;
         const float* const grid_uv = grid_x + 3 * dim_offset;
-        
+
         vbool<K> valid = valid_i;
-        for (size_t y=0; y<2; y++) 
+        for (size_t y=0; y<2; y++)
         {
-          for (size_t x=0; x<2; x++) 
+          for (size_t x=0; x<2; x++)
           {
             const size_t ofs00 = (y+0)*line_offset+(x+0);
             const size_t ofs01 = (y+0)*line_offset+(x+1);
@@ -153,7 +153,7 @@ namespace embree
 
       template<typename Loader>
         static __forceinline void intersect(RayK<K>& ray, size_t k,
-                                            IntersectContext* context, 
+                                            IntersectContext* context,
                                             const float* const grid_x,
                                             const size_t line_offset,
                                             Precalculations& pre,
@@ -167,10 +167,10 @@ namespace embree
         Vec3<vfloat> v0, v1, v2; Loader::gather(grid_x,grid_y,grid_z,line_offset,v0,v1,v2);
         pre.intersector.intersect(ray,k,v0,v1,v2,GridSOA::MapUV<Loader>(grid_uv,line_offset),Intersect1KEpilogMU<Loader::M,K,true>(ray,k,context,pre.grid->geomID,pre.grid->primID,scene));
       };
-      
+
       template<typename Loader>
         static __forceinline bool occluded(RayK<K>& ray, size_t k,
-                                           IntersectContext* context, 
+                                           IntersectContext* context,
                                            const float* const grid_x,
                                            const size_t line_offset,
                                            Precalculations& pre,
@@ -190,7 +190,7 @@ namespace embree
       {
         const size_t line_offset   = pre.grid->width;
         const float* const grid_x  = pre.grid->decodeLeaf(0,prim);
-        
+
 #if defined(__AVX__)
         intersect<GridSOA::Gather3x3>( ray, k, context, grid_x, line_offset, pre, scene);
 #else
@@ -198,13 +198,13 @@ namespace embree
         intersect<GridSOA::Gather2x3>(ray, k, context, grid_x+line_offset, line_offset, pre, scene);
 #endif
       }
-      
+
       /*! Test if the ray is occluded by the primitive */
       static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
       {
         const size_t line_offset   = pre.grid->width;
         const float* const grid_x  = pre.grid->decodeLeaf(0,prim);
-        
+
 #if defined(__AVX__)
         return occluded<GridSOA::Gather3x3>( ray, k, context, grid_x, line_offset, pre, scene);
 #else
@@ -212,7 +212,7 @@ namespace embree
         if (occluded<GridSOA::Gather2x3>(ray, k, context, grid_x+line_offset, line_offset, pre, scene)) return true;
 #endif
         return false;
-      } 
+      }
     };
 
     template<int K>
@@ -226,7 +226,7 @@ namespace embree
       template<typename Loader>
         static __forceinline void intersect(RayK<K>& ray, size_t k,
                                             const float ftime,
-                                            IntersectContext* context, 
+                                            IntersectContext* context,
                                             const float* const grid_x,
                                             const size_t line_offset,
                                             Precalculations& pre,
@@ -244,18 +244,18 @@ namespace embree
 
         Vec3<vfloat> b0, b1, b2;
         Loader::gather(grid_x+grid_offset,grid_y+grid_offset,grid_z+grid_offset,line_offset,b0,b1,b2);
-       
+
         Vec3<vfloat> v0 = lerp(a0,b0,vfloat(ftime));
         Vec3<vfloat> v1 = lerp(a1,b1,vfloat(ftime));
         Vec3<vfloat> v2 = lerp(a2,b2,vfloat(ftime));
 
         pre.intersector.intersect(ray,k,v0,v1,v2,GridSOA::MapUV<Loader>(grid_uv,line_offset),Intersect1KEpilogMU<Loader::M,K,true>(ray,k,context,pre.grid->geomID,pre.grid->primID,scene));
       };
-      
+
       template<typename Loader>
         static __forceinline bool occluded(RayK<K>& ray, size_t k,
                                            const float ftime,
-                                           IntersectContext* context, 
+                                           IntersectContext* context,
                                            const float* const grid_x,
                                            const size_t line_offset,
                                            Precalculations& pre,
@@ -267,13 +267,13 @@ namespace embree
         const float* const grid_y  = grid_x + 1 * dim_offset;
         const float* const grid_z  = grid_x + 2 * dim_offset;
         const float* const grid_uv = grid_x + 3 * dim_offset;
-        
+
         Vec3<vfloat> a0, a1, a2;
         Loader::gather(grid_x,grid_y,grid_z,line_offset,a0,a1,a2);
 
         Vec3<vfloat> b0, b1, b2;
         Loader::gather(grid_x+grid_offset,grid_y+grid_offset,grid_z+grid_offset,line_offset,b0,b1,b2);
-       
+
         Vec3<vfloat> v0 = lerp(a0,b0,vfloat(ftime));
         Vec3<vfloat> v1 = lerp(a1,b1,vfloat(ftime));
         Vec3<vfloat> v2 = lerp(a2,b2,vfloat(ftime));
@@ -285,30 +285,30 @@ namespace embree
       static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
       {
         const size_t line_offset   = pre.grid->width;
-        const float* const grid_x  = pre.grid->decodeLeaf(context->itime,prim);
-        
+        const float* const grid_x  = pre.grid->decodeLeaf(0/*context->itime*/,prim);
+
 #if defined(__AVX__)
-        intersect<GridSOA::Gather3x3>( ray, k, context->ftime, context, grid_x, line_offset, pre, scene);
+        intersect<GridSOA::Gather3x3>( ray, k, 0.0f/*context->ftime*/, context, grid_x, line_offset, pre, scene);
 #else
-        intersect<GridSOA::Gather2x3>(ray, k, context->ftime, context, grid_x            , line_offset, pre, scene);
-        intersect<GridSOA::Gather2x3>(ray, k, context->ftime, context, grid_x+line_offset, line_offset, pre, scene);
+        intersect<GridSOA::Gather2x3>(ray, k, 0.0f/*context->ftime*/, context, grid_x            , line_offset, pre, scene);
+        intersect<GridSOA::Gather2x3>(ray, k, 0.0f/*context->ftime*/, context, grid_x+line_offset, line_offset, pre, scene);
 #endif
       }
-      
+
       /*! Test if the ray is occluded by the primitive */
       static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
       {
         const size_t line_offset   = pre.grid->width;
-        const float* const grid_x  = pre.grid->decodeLeaf(context->itime,prim);
-        
+        const float* const grid_x  = pre.grid->decodeLeaf(0/*context->itime*/,prim);
+
 #if defined(__AVX__)
-        return occluded<GridSOA::Gather3x3>( ray, k, context->ftime, context, grid_x, line_offset, pre, scene);
+        return occluded<GridSOA::Gather3x3>( ray, k, 0.0f/*context->ftime*/, context, grid_x, line_offset, pre, scene);
 #else
-        if (occluded<GridSOA::Gather2x3>(ray, k, context->ftime, context, grid_x            , line_offset, pre, scene)) return true;
-        if (occluded<GridSOA::Gather2x3>(ray, k, context->ftime, context, grid_x+line_offset, line_offset, pre, scene)) return true;
+        if (occluded<GridSOA::Gather2x3>(ray, k, 0.0f/*context->ftime*/, context, grid_x            , line_offset, pre, scene)) return true;
+        if (occluded<GridSOA::Gather2x3>(ray, k, 0.0f/*context->ftime*/, context, grid_x+line_offset, line_offset, pre, scene)) return true;
 #endif
         return false;
-      } 
+      }
     };
   }
 }

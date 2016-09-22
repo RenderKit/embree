@@ -100,14 +100,12 @@ namespace embree
         typedef typename Intersector1::Precalculations Precalculations1;
         typedef typename Intersector2::Precalculations Precalculations2;
 
-        struct Precalculations
+        struct Precalculations : public Precalculations2
         {
-          __forceinline Precalculations (const Ray& ray, const void* ptr)
-            : pre1(ray,ptr), pre2(ray,ptr) {}
+          __forceinline Precalculations (const Ray& ray, const void* ptr, const Scene* scene)
+            : Precalculations2(ray,ptr,scene), pre1(ray,ptr,scene) {}
 
-        public:
           Precalculations1 pre1;
-          Precalculations2 pre2;
         };
         
         static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, size_t ty, const Primitive* prim_i, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node)
@@ -119,7 +117,7 @@ namespace embree
           } else {
             Primitive2 prim = (Primitive2) prim_i;
             for (size_t i=0; i<num; i++)
-              Intersector2::intersect(pre.pre2,ray,context,prim[i],scene,geomID_to_instID);
+              Intersector2::intersect(pre,ray,context,prim[i],scene,geomID_to_instID);
           }
         }
         
@@ -134,7 +132,7 @@ namespace embree
           } else {
             Primitive2 prim = (Primitive2) prim_i;
             for (size_t i=0; i<num; i++) {
-              if (Intersector2::occluded(pre.pre2,ray,context,prim[i],scene,geomID_to_instID))
+              if (Intersector2::occluded(pre,ray,context,prim[i],scene,geomID_to_instID))
                 return true;
             }
           }

@@ -29,7 +29,7 @@ namespace embree
       struct QuadMiIntersector1Pluecker
     {
       typedef QuadMi<M> Primitive;
-      typedef QuadMIntersector1Pluecker<M,filter> Precalculations;
+      typedef Intersector1Precalculations<QuadMIntersector1Pluecker<M,filter>> Precalculations;
         
       /*! Intersect a ray with the M quads and updates the hit. */
       static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& quad, Scene* scene, const unsigned* geomID_to_instID)
@@ -133,13 +133,13 @@ namespace embree
       struct QuadMiMBIntersector1Pluecker
     {
       typedef QuadMiMB<M> Primitive;
-      typedef QuadMIntersector1Pluecker<M,filter> Precalculations;
+      typedef MBIntersector1Precalculations<QuadMIntersector1Pluecker<M,filter>> Precalculations;
         
       /*! Intersect a ray with the M quads and updates the hit. */
       static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& quad, Scene* scene, const unsigned* geomID_to_instID)
       {
         STAT3(normal.trav_prims,1,1,1);
-        Vec3<vfloat<M>> v0,v1,v2,v3; quad.gather(v0,v1,v2,v3,scene,context->itime,context->ftime);
+        Vec3<vfloat<M>> v0,v1,v2,v3; quad.gather(v0,v1,v2,v3,scene,pre.itime(),pre.ftime());
         pre.intersect(ray,context,v0,v1,v2,v3,quad.geomIDs,quad.primIDs,scene,geomID_to_instID); 
       }
         
@@ -147,7 +147,7 @@ namespace embree
       static __forceinline bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& quad, Scene* scene, const unsigned* geomID_to_instID)
       {
         STAT3(shadow.trav_prims,1,1,1);
-        Vec3<vfloat<M>> v0,v1,v2,v3; quad.gather(v0,v1,v2,v3,scene,context->itime,context->ftime);
+        Vec3<vfloat<M>> v0,v1,v2,v3; quad.gather(v0,v1,v2,v3,scene,pre.itime(),pre.ftime());
         return pre.occluded(ray,context,v0,v1,v2,v3,quad.geomIDs,quad.primIDs,scene,geomID_to_instID); 
       }
     };

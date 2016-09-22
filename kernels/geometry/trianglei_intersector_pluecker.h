@@ -32,7 +32,7 @@ namespace embree
     struct TriangleMiIntersector1Pluecker
     {
       typedef TriangleMi<M> Primitive;
-      typedef PlueckerIntersector1<Mx> Precalculations;
+      typedef Intersector1Precalculations<PlueckerIntersector1<Mx>> Precalculations;
       
       static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& tri, Scene* scene, const unsigned* geomID_to_instID)
       {
@@ -127,13 +127,13 @@ namespace embree
         struct TriangleMiMBIntersector1Pluecker
       {
         typedef TriangleMiMB<M> Primitive;
-        typedef PlueckerIntersector1<Mx> Precalculations;
+        typedef MBIntersector1Precalculations<PlueckerIntersector1<Mx>> Precalculations;
 
         /*! Intersect a ray with the M triangles and updates the hit. */
         static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& tri, Scene* scene, const unsigned* geomID_to_instID)
         {
           STAT3(normal.trav_prims,1,1,1);
-          Vec3<vfloat<M>> v0,v1,v2; tri.gather(v0,v1,v2,scene,context->itime,context->ftime);
+          Vec3<vfloat<M>> v0,v1,v2; tri.gather(v0,v1,v2,scene,pre.itime(),pre.ftime());
           pre.intersect(ray,v0,v1,v2,UVIdentity<Mx>(),Intersect1EpilogM<M,Mx,filter>(ray,context,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
         }
 
@@ -141,7 +141,7 @@ namespace embree
         static __forceinline bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& tri, Scene* scene, const unsigned* geomID_to_instID)
         {
           STAT3(shadow.trav_prims,1,1,1);
-          Vec3<vfloat<M>> v0,v1,v2; tri.gather(v0,v1,v2,scene,context->itime,context->ftime);
+          Vec3<vfloat<M>> v0,v1,v2; tri.gather(v0,v1,v2,scene,pre.itime(),pre.ftime());
           return pre.intersect(ray,v0,v1,v2,UVIdentity<Mx>(),Occluded1EpilogM<M,Mx,filter>(ray,context,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
         }
       };

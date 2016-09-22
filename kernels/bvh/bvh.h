@@ -1024,6 +1024,17 @@ namespace embree
       alloc.cleanup();
     }
 
+
+    /*! return the true root */
+    NodeRef getRoot(const RayPrecalculations& pre) const {
+      return root;
+    }
+
+    NodeRef getRoot(const RayMBPrecalculations& pre) const {
+      NodeRef* roots = (NodeRef*)(size_t)root;
+      return roots[pre.itime()];
+    }
+
   public:
 
     /*! Encodes a node */

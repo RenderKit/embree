@@ -389,7 +389,7 @@ namespace embree
       struct TriangleMIntersector1MoellerTrumbore
       {
         typedef TriangleM<M> Primitive;
-        typedef MoellerTrumboreIntersector1<Mx> Precalculations;
+        typedef Intersector1Precalculations<MoellerTrumboreIntersector1<Mx>> Precalculations;
         
         /*! Intersect a ray with the M triangles and updates the hit. */
         static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const TriangleM<M>& tri, Scene* scene, const unsigned* geomID_to_instID)
@@ -428,7 +428,7 @@ namespace embree
         static const size_t Mx = 8;
 
         typedef TriangleM<M> Primitive;
-        typedef MoellerTrumboreIntersector1<Mx> Precalculations;
+        typedef Intersector1Precalculations<MoellerTrumboreIntersector1<Mx>> Precalculations;
 
         static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const TriangleM<M>& tri, Scene* scene, const unsigned* geomID_to_instID)
         {
@@ -523,13 +523,13 @@ namespace embree
       struct TriangleMvMBIntersector1MoellerTrumbore
       {
         typedef TriangleMvMB<M> Primitive;
-        typedef MoellerTrumboreIntersector1<Mx> Precalculations;
+        typedef MBIntersector1Precalculations<MoellerTrumboreIntersector1<Mx>> Precalculations;
         
         /*! Intersect a ray with the M triangles and updates the hit. */
         static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const TriangleMvMB<M>& tri, Scene* scene, const unsigned* geomID_to_instID)
         {
           STAT3(normal.trav_prims,1,1,1);
-          const Vec3<vfloat<Mx>> time(context->ftime);
+          const Vec3<vfloat<Mx>> time(pre.ftime());
           const Vec3<vfloat<Mx>> v0 = madd(time,Vec3<vfloat<Mx>>(tri.dv0),Vec3<vfloat<Mx>>(tri.v0));
           const Vec3<vfloat<Mx>> v1 = madd(time,Vec3<vfloat<Mx>>(tri.dv1),Vec3<vfloat<Mx>>(tri.v1));
           const Vec3<vfloat<Mx>> v2 = madd(time,Vec3<vfloat<Mx>>(tri.dv2),Vec3<vfloat<Mx>>(tri.v2));
@@ -540,7 +540,7 @@ namespace embree
         static __forceinline bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const TriangleMvMB<M>& tri, Scene* scene, const unsigned* geomID_to_instID)
         {
           STAT3(shadow.trav_prims,1,1,1);
-          const Vec3<vfloat<Mx>> time(context->ftime);
+          const Vec3<vfloat<Mx>> time(pre.ftime());
           const Vec3<vfloat<Mx>> v0 = madd(time,Vec3<vfloat<Mx>>(tri.dv0),Vec3<vfloat<Mx>>(tri.v0));
           const Vec3<vfloat<Mx>> v1 = madd(time,Vec3<vfloat<Mx>>(tri.dv1),Vec3<vfloat<Mx>>(tri.v1));
           const Vec3<vfloat<Mx>> v2 = madd(time,Vec3<vfloat<Mx>>(tri.dv2),Vec3<vfloat<Mx>>(tri.v2));
