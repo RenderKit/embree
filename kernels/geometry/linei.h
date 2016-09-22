@@ -68,8 +68,8 @@ namespace embree
     __forceinline int primID(const size_t i) const { assert(i<M); return primIDs[i]; }
 
     /* gather the line segments */
-    __forceinline void gather(Vec4<vfloat<M>>& p0, Vec4<vfloat<M>>& p1, const Scene* scene, size_t j = 0) const;
-    __forceinline void gather(Vec4<vfloat<M>>& p0, Vec4<vfloat<M>>& p1, const Scene* scene, float t) const;
+    __forceinline void gather(Vec4<vfloat<M>>& p0, Vec4<vfloat<M>>& p1, const Scene* scene, size_t itime = 0) const;
+    __forceinline void gather(Vec4<vfloat<M>>& p0, Vec4<vfloat<M>>& p1, const Scene* scene, size_t itime, float ftime) const;
 
     /* Calculate the bounds of the line segments */
     __forceinline const BBox3fa bounds(const Scene* scene, size_t j = 0) const
@@ -87,20 +87,8 @@ namespace embree
       return bounds;
     }
 
-    /* Calculate the bounds of the line segments at t0 */
-    __forceinline BBox3fa bounds0(const Scene* scene) const // FIXME: remove
-    {
-      return bounds(scene,0);
-    }
-
-    /* Calculate the bounds of the line segments at t1 */
-    __forceinline BBox3fa bounds1(const Scene* scene) const // FIXME: remove
-    {
-      return bounds(scene,1);
-    }
-
     /* Calculate primitive bounds */
-    __forceinline std::pair<BBox3fa,BBox3fa> bounds2(const Scene* scene, size_t time = 0) {
+    __forceinline std::pair<BBox3fa,BBox3fa> bounds2(const Scene* scene, size_t time) {
       return std::make_pair(bounds(scene,time+0), bounds(scene,time+1));
     }
 
@@ -196,37 +184,37 @@ namespace embree
   };
 
   template<>
-  __forceinline void LineMi<4>::gather(Vec4vf4& p0, Vec4vf4& p1, const Scene* scene, size_t j) const
+  __forceinline void LineMi<4>::gather(Vec4vf4& p0, Vec4vf4& p1, const Scene* scene, size_t itime) const
   {
     const LineSegments* geom0 = scene->getLineSegments(geomIDs[0]);
     const LineSegments* geom1 = scene->getLineSegments(geomIDs[1]);
     const LineSegments* geom2 = scene->getLineSegments(geomIDs[2]);
     const LineSegments* geom3 = scene->getLineSegments(geomIDs[3]);
 
-    const vfloat4 a0 = vfloat4::loadu(geom0->vertexPtr(v0[0],j));
-    const vfloat4 a1 = vfloat4::loadu(geom1->vertexPtr(v0[1],j));
-    const vfloat4 a2 = vfloat4::loadu(geom2->vertexPtr(v0[2],j));
-    const vfloat4 a3 = vfloat4::loadu(geom3->vertexPtr(v0[3],j));
+    const vfloat4 a0 = vfloat4::loadu(geom0->vertexPtr(v0[0],itime));
+    const vfloat4 a1 = vfloat4::loadu(geom1->vertexPtr(v0[1],itime));
+    const vfloat4 a2 = vfloat4::loadu(geom2->vertexPtr(v0[2],itime));
+    const vfloat4 a3 = vfloat4::loadu(geom3->vertexPtr(v0[3],itime));
 
     transpose(a0,a1,a2,a3,p0.x,p0.y,p0.z,p0.w);
 
-    const vfloat4 b0 = vfloat4::loadu(geom0->vertexPtr(v0[0]+1,j));
-    const vfloat4 b1 = vfloat4::loadu(geom1->vertexPtr(v0[1]+1,j));
-    const vfloat4 b2 = vfloat4::loadu(geom2->vertexPtr(v0[2]+1,j));
-    const vfloat4 b3 = vfloat4::loadu(geom3->vertexPtr(v0[3]+1,j));
+    const vfloat4 b0 = vfloat4::loadu(geom0->vertexPtr(v0[0]+1,itime));
+    const vfloat4 b1 = vfloat4::loadu(geom1->vertexPtr(v0[1]+1,itime));
+    const vfloat4 b2 = vfloat4::loadu(geom2->vertexPtr(v0[2]+1,itime));
+    const vfloat4 b3 = vfloat4::loadu(geom3->vertexPtr(v0[3]+1,itime));
 
     transpose(b0,b1,b2,b3,p1.x,p1.y,p1.z,p1.w);
   }
 
   template<>
-  __forceinline void LineMi<4>::gather(Vec4vf4& p0, Vec4vf4& p1, const Scene* scene, float t) const
+    __forceinline void LineMi<4>::gather(Vec4vf4& p0, Vec4vf4& p1, const Scene* scene, size_t itime, float ftime) const
   {
-    const vfloat4 t0 = 1.0f - t;
-    const vfloat4 t1 = t;
+    const vfloat4 t0 = 1.0f - ftime;
+    const vfloat4 t1 = ftime;
     Vec4vf4 a0,a1;
-    gather(a0,a1,scene,(size_t)0);
+    gather(a0,a1,scene,itime+0);
     Vec4vf4 b0,b1;
-    gather(b0,b1,scene,(size_t)1);
+    gather(b0,b1,scene,itime+1);
     p0 = t0 * a0 + t1 * b0;
     p1 = t0 * a1 + t1 * b1;
   }

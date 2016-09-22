@@ -127,7 +127,7 @@ namespace embree
         for (size_t j=r.begin(); j<r.end(); j++)
         {
           BBox3fa bounds = empty;
-          if (!mesh->valid(j,timeSegment,&bounds)) continue;
+          if (!mesh->valid2(j,timeSegment,bounds)) continue;
           const PrimRef prim(bounds,mesh->id,unsigned(j));
           pinfo.add(bounds,bounds.center2());
           prims[k++] = prim;
@@ -146,7 +146,7 @@ namespace embree
           for (size_t j=r.begin(); j<r.end(); j++)
           {
             BBox3fa bounds = empty;
-            if (!mesh->valid(j,timeSegment,&bounds)) continue;
+            if (!mesh->valid2(j,timeSegment,bounds)) continue;
             const PrimRef prim(bounds,mesh->id,unsigned(j));
             pinfo.add(bounds,bounds.center2());
             prims[k++] = prim;
@@ -280,7 +280,7 @@ namespace embree
     template PrimInfo createPrimRefArrayMBlur<TriangleMesh>(size_t timeStep, Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
     template PrimInfo createPrimRefArrayMBlur<QuadMesh>(size_t timeStep, Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
     //template PrimInfo createPrimRefArrayMBlur<BezierCurves>(size_t timeStep, Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
-    //template PrimInfo createPrimRefArrayMBlur<LineSegments>(size_t timeStep, Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
+    template PrimInfo createPrimRefArrayMBlur<LineSegments>(size_t timeStep, Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
     //template PrimInfo createPrimRefArrayMBlur<AccelSet>(size_t timeStep, Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
 
     template PrimInfo createBezierRefArray<1>(Scene* scene, mvector<BezierPrim>& prims, BuildProgressMonitor& progressMonitor);

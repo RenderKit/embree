@@ -81,33 +81,20 @@ namespace embree
       return vertices[j][i].w;
     }
 
-    /*! check if the i'th primitive is valid */
-    __forceinline bool valid(size_t i, BBox3fa* bbox = nullptr) const
+    /*! calculates bounding box of i'th line segment */
+    __forceinline BBox3fa bounds(size_t i) const
     {
       const unsigned int index = segment(i);
-      if (index+1 >= numVertices()) return false;
-
-      for (size_t j=0; j<numTimeSteps; j++)
-      {
-        const float r0 = radius(index+0,j);
-        const float r1 = radius(index+1,j);
-        if (!isvalid(r0) || !isvalid(r1))
-          return false;
-        if (min(r0,r1) < 0.0f)
-          return false;
-
-        const Vec3fa v0 = vertex(index+0,j);
-        const Vec3fa v1 = vertex(index+1,j);
-        if (!isvalid(v0) || !isvalid(v1))
-          return false;
-      }
-
-      if (bbox) *bbox = bounds(i);
-      return true;
+      const float r0 = radius(index+0);
+      const float r1 = radius(index+1);
+      const Vec3fa v0 = vertex(index+0);
+      const Vec3fa v1 = vertex(index+1);
+      const BBox3fa b = merge(BBox3fa(v0),BBox3fa(v1));
+      return enlarge(b,Vec3fa(max(r0,r1)));
     }
 
-    /*! calculates bounding box of i'th line segment */
-    __forceinline BBox3fa bounds(size_t i, size_t j = 0) const
+    /*! calculates bounding box of i'th line segment for the j'th time step */
+    __forceinline BBox3fa bounds(size_t i, size_t j) const
     {
       const unsigned int index = segment(i);
       const float r0 = radius(index+0,j);
@@ -118,21 +105,35 @@ namespace embree
       return enlarge(b,Vec3fa(max(r0,r1)));
     }
 
-    /*! calculates bounding box of i'th line segment */
-    __forceinline BBox3fa bounds(const AffineSpace3fa& space, size_t i, size_t j = 0) const
+    /*! check if the i'th primitive is valid at the j'th time step */
+    __forceinline bool valid1(size_t i, size_t j) const
     {
       const unsigned int index = segment(i);
-      const float r0 = radius(index+0,j);
-      const float r1 = radius(index+1,j);
-      const Vec3fa v0 = xfmPoint(space,vertex(index+0,j));
-      const Vec3fa v1 = xfmPoint(space,vertex(index+1,j));
-      const BBox3fa b = merge(BBox3fa(v0),BBox3fa(v1));
-      return enlarge(b,Vec3fa(max(r0,r1)));
+      if (index+1 >= numVertices()) return false;
+
+      const float r0 = radius(index+0,j); if (!isvalid(r0)) return false;
+      const float r1 = radius(index+1,j); if (!isvalid(r1)) return false;
+      if (min(r0,r1) < 0.0f) return false;
+      
+      const Vec3fa v0 = vertex(index+0,j); if (!isvalid(v0)) return false;
+      const Vec3fa v1 = vertex(index+1,j); if (!isvalid(v1)) return false;
+      
+      return true;
+    }
+
+    /*! check if the i'th primitive is valid */
+    __forceinline bool valid(size_t i, BBox3fa* bbox) const {
+      *bbox = bounds(i); return valid1(i,0);
+    }
+
+    /*! check if the i'th primitive is valid at the j'th time segment */
+    __forceinline bool valid2(size_t i, size_t j, BBox3fa& bbox) const {
+      bbox = merge(bounds(i,j+0),bounds(i,j+1)); return valid1(i,j+0) && valid1(i,j+1);
     }
 
   public:
     BufferT<unsigned int> segments;                 //!< array of line segment indices
-    array_t<BufferT<Vec3fa>,2> vertices;            //!< vertex array
-    array_t<std::unique_ptr<Buffer>,2> userbuffers; //!< user buffers
+    vector<BufferT<Vec3fa>> vertices;               //!< vertex array for each timestep
+    array_t<std::unique_ptr<Buffer>,2> userbuffers; //!< user buffers // FIXME: no std::unique_ptr here
   };
 }

@@ -34,7 +34,7 @@ namespace embree
 
       /*! outputs triangle indices */
       __forceinline friend std::ostream &operator<<(std::ostream& cout, const Triangle& t) {
-        return cout << "{ tri " << t.v[0] << ", " << t.v[1] << ", " << t.v[2] << " }";
+        return cout << "Triangle { " << t.v[0] << ", " << t.v[1] << ", " << t.v[2] << " }";
       }
     };
 
@@ -45,15 +45,13 @@ namespace embree
 
       __forceinline Edge() {}
 
-      __forceinline Edge(const uint32_t &v0,
-                         const uint32_t &v1)
-      {
+      __forceinline Edge(const uint32_t& v0, const uint32_t& v1) {
         e = v0 < v1 ? (((uint64_t)v1 << 32) | (uint64_t)v0) : (((uint64_t)v0 << 32) | (uint64_t)v1);
       }
 
-      __forceinline friend bool operator==( const Edge& a, const Edge& b ) 
-      { return a.e == b.e; };
-
+      __forceinline friend bool operator==( const Edge& a, const Edge& b ) { 
+        return a.e == b.e; 
+      }
     };
 
     /* last edge of triangle 0 is shared */
@@ -189,8 +187,8 @@ namespace embree
       return true;
     }
 
-    /*! check if the i'th primitive is valid at j'th timesegment */
-    __forceinline bool valid(size_t i, size_t j, BBox3fa* bbox = nullptr) const 
+    /*! check if the i'th primitive is valid at j'th time segment */
+    __forceinline bool valid2(size_t i, size_t j, BBox3fa& bbox) const 
     {
       const Triangle& tri = triangle(i);
       if (unlikely(tri.v[0] >= numVertices())) return false;
@@ -205,9 +203,7 @@ namespace embree
       const Vec3fa b1 = vertex(tri.v[1],j+1); if (unlikely(!isvalid(b1))) return false;
       const Vec3fa b2 = vertex(tri.v[2],j+1); if (unlikely(!isvalid(b2))) return false;
       
-      if (likely(bbox)) 
-        *bbox = BBox3fa(min(a0,a1,a2),max(a0,a1,a2));
-
+      bbox = BBox3fa(min(a0,a1,a2),max(a0,a1,a2));
       return true;
     }
     

@@ -69,14 +69,14 @@ namespace embree
       static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& line, Scene* scene, const unsigned* geomID_to_instID)
       {
         STAT3(normal.trav_prims,1,1,1);
-        Vec4<vfloat<M>> v0,v1; line.gather(v0,v1,scene,ray.time);
+        Vec4<vfloat<M>> v0,v1; line.gather(v0,v1,scene,context->itime,context->ftime);
         LineIntersector1<Mx>::intersect(ray,pre,v0,v1,Intersect1EpilogM<M,Mx,filter>(ray,context,line.geomIDs,line.primIDs,scene,geomID_to_instID));
       }
 
       static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& line, Scene* scene, const unsigned* geomID_to_instID)
       {
         STAT3(shadow.trav_prims,1,1,1);
-        Vec4<vfloat<M>> v0,v1; line.gather(v0,v1,scene,ray.time);
+        Vec4<vfloat<M>> v0,v1; line.gather(v0,v1,scene,context->itime,context->ftime);
         return LineIntersector1<Mx>::intersect(ray,pre,v0,v1,Occluded1EpilogM<M,Mx,filter>(ray,context,line.geomIDs,line.primIDs,scene,geomID_to_instID));
       }
 
@@ -93,7 +93,6 @@ namespace embree
         } while(unlikely(valid));
         return valid_isec;
       }
-
     };
 
     template<int M, int Mx, int K, bool filter>

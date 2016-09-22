@@ -135,7 +135,7 @@ namespace embree
     }
 
      /*! check if the i'th primitive is valid at j'th timesegment */
-    __forceinline bool valid(size_t i, size_t j, BBox3fa* bbox = nullptr) const 
+    __forceinline bool valid2(size_t i, size_t j, BBox3fa& bbox) const 
     {
       const Quad& q = quad(i);
       if (unlikely(q.v[0] >= numVertices())) return false;
@@ -152,9 +152,7 @@ namespace embree
       const Vec3fa b2 = vertex(q.v[2],j+1); if (unlikely(!isvalid(b2))) return false;
       const Vec3fa b3 = vertex(q.v[3],j+1); if (unlikely(!isvalid(b3))) return false;
       
-      if (likely(bbox)) 
-        *bbox = BBox3fa(min(a0,a1,a2,a3),max(a0,a1,a2,a3));
-
+      bbox = BBox3fa(min(a0,a1,a2,a3),max(a0,a1,a2,a3));
       return true;
     }
     
