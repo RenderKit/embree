@@ -1035,6 +1035,17 @@ namespace embree
       return roots[pre.itime()];
     }
 
+    template<int K>
+    NodeRef getRoot(const RayKPrecalculations<K>& pre, size_t k) const {
+      return root;
+    }
+
+    template<int K>
+    NodeRef getRoot(const RayKPrecalculationsMB<K>& pre, size_t k) const {
+      NodeRef* roots = (NodeRef*)(size_t)root;
+      return roots[pre.itime(k)];
+    }
+
   public:
 
     /*! Encodes a node */

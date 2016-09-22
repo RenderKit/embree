@@ -288,13 +288,13 @@ namespace embree
       static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
       {
         const size_t line_offset   = pre.grid->width;
-        const float* const grid_x  = pre.grid->decodeLeaf(0/*context->itime*/,prim);
+        const float* const grid_x  = pre.grid->decodeLeaf(pre.itime(k),prim);
 
 #if defined(__AVX__)
-        intersect<GridSOA::Gather3x3>( ray, k, 0.0f/*context->ftime*/, context, grid_x, line_offset, pre, scene);
+        intersect<GridSOA::Gather3x3>( ray, k, pre.ftime(k), context, grid_x, line_offset, pre, scene);
 #else
-        intersect<GridSOA::Gather2x3>(ray, k, 0.0f/*context->ftime*/, context, grid_x            , line_offset, pre, scene);
-        intersect<GridSOA::Gather2x3>(ray, k, 0.0f/*context->ftime*/, context, grid_x+line_offset, line_offset, pre, scene);
+        intersect<GridSOA::Gather2x3>(ray, k, pre.ftime(k), context, grid_x            , line_offset, pre, scene);
+        intersect<GridSOA::Gather2x3>(ray, k, pre.ftime(k), context, grid_x+line_offset, line_offset, pre, scene);
 #endif
       }
 
@@ -302,13 +302,13 @@ namespace embree
       static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
       {
         const size_t line_offset   = pre.grid->width;
-        const float* const grid_x  = pre.grid->decodeLeaf(0/*context->itime*/,prim);
+        const float* const grid_x  = pre.grid->decodeLeaf(pre.itime(k),prim);
 
 #if defined(__AVX__)
-        return occluded<GridSOA::Gather3x3>( ray, k, 0.0f/*context->ftime*/, context, grid_x, line_offset, pre, scene);
+        return occluded<GridSOA::Gather3x3>( ray, k, pre.ftime(k), context, grid_x, line_offset, pre, scene);
 #else
-        if (occluded<GridSOA::Gather2x3>(ray, k, 0.0f/*context->ftime*/, context, grid_x            , line_offset, pre, scene)) return true;
-        if (occluded<GridSOA::Gather2x3>(ray, k, 0.0f/*context->ftime*/, context, grid_x+line_offset, line_offset, pre, scene)) return true;
+        if (occluded<GridSOA::Gather2x3>(ray, k, pre.ftime(k), context, grid_x            , line_offset, pre, scene)) return true;
+        if (occluded<GridSOA::Gather2x3>(ray, k, pre.ftime(k), context, grid_x+line_offset, line_offset, pre, scene)) return true;
 #endif
         return false;
       }

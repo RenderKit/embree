@@ -93,7 +93,7 @@ namespace embree
             /* intersect node */
             size_t mask = 0;
             vfloat<Nx> tNear;
-            BVHNNodeIntersector1<N,Nx,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time[k],tNear,mask);
+            BVHNNodeIntersector1<N,Nx,types,robust>::intersect(cur,vray,ray_near,ray_far,pre.ftime(k),tNear,mask);
 
             /*! if no child is hit, pop next node */
             if (unlikely(mask == 0))
@@ -152,7 +152,7 @@ namespace embree
             /* intersect node */
             size_t mask = 0;
             vfloat<Nx> tNear;
-            BVHNNodeIntersector1<N,Nx,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time[k],tNear,mask);
+            BVHNNodeIntersector1<N,Nx,types,robust>::intersect(cur,vray,ray_near,ray_far,pre.ftime(k),tNear,mask);
 
             /*! if no child is hit, pop next node */
             if (unlikely(mask == 0))

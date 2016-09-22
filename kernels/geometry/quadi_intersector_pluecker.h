@@ -196,7 +196,7 @@ namespace embree
         static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const QuadMiMB<M>& quad, Scene* scene)
         {
           STAT3(normal.trav_prims,1,1,1);
-          Vec3<vfloat<M>> v0,v1,v2,v3; quad.gather(v0,v1,v2,v3,scene,ray.time[k]);
+          Vec3<vfloat<M>> v0,v1,v2,v3; quad.gather(v0,v1,v2,v3,scene,pre.itime(k),pre.ftime(k));
           pre.intersect1(ray,k,context,v0,v1,v2,v3,quad.geomIDs,quad.primIDs,scene); 
         }
         
@@ -204,7 +204,7 @@ namespace embree
         static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const QuadMiMB<M>& quad, Scene* scene)
         {
           STAT3(shadow.trav_prims,1,1,1);
-          Vec3<vfloat<M>> v0,v1,v2,v3; quad.gather(v0,v1,v2,v3,scene,ray.time[k]);
+          Vec3<vfloat<M>> v0,v1,v2,v3; quad.gather(v0,v1,v2,v3,scene,pre.itime(k),pre.ftime(k));
           return pre.occluded1(ray,k,context,v0,v1,v2,v3,quad.geomIDs,quad.primIDs,scene); 
         }
       };

@@ -125,14 +125,14 @@ namespace embree
       static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context,  const Primitive& line, Scene* scene)
       {
         STAT3(normal.trav_prims,1,1,1);
-        Vec4<vfloat<M>> v0,v1; line.gather(v0,v1,scene,ray.time[k]);
+        Vec4<vfloat<M>> v0,v1; line.gather(v0,v1,scene,pre.itime(k),pre.ftime(k));
         LineIntersectorK<Mx,K>::intersect(ray,k,pre,v0,v1,Intersect1KEpilogM<M,Mx,K,filter>(ray,k,context,line.geomIDs,line.primIDs,scene));
       }
 
       static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive& line, Scene* scene)
       {
         STAT3(shadow.trav_prims,1,1,1);
-        Vec4<vfloat<M>> v0,v1; line.gather(v0,v1,scene,ray.time[k]);
+        Vec4<vfloat<M>> v0,v1; line.gather(v0,v1,scene,pre.itime(k),pre.ftime(k));
         return LineIntersectorK<Mx,K>::intersect(ray,k,pre,v0,v1,Occluded1KEpilogM<M,Mx,K,filter>(ray,k,context,line.geomIDs,line.primIDs,scene));
       }
     };
