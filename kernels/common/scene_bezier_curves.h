@@ -108,6 +108,26 @@ namespace embree
       if (bbox) *bbox = bounds(i);
       return true;
     }
+
+    /*! check if the i'th primitive is valid at the j'th timerange */
+    __forceinline bool valid(size_t i, size_t j, Vec3fa& c0, Vec3fa& c1, Vec3fa& c2, Vec3fa& c3) const 
+    {
+      const unsigned int index = curve(i);
+      if (index+3 >= numVertices()) return false;
+      const Vec3fa a0 = vertex(index+0,j+0); if (!isvalid((vfloat4)a0)) return false;
+      const Vec3fa a1 = vertex(index+1,j+0); if (!isvalid((vfloat4)a1)) return false;
+      const Vec3fa a2 = vertex(index+2,j+0); if (!isvalid((vfloat4)a2)) return false;
+      const Vec3fa a3 = vertex(index+3,j+0); if (!isvalid((vfloat4)a3)) return false;
+      const Vec3fa b0 = vertex(index+0,j+1); if (!isvalid((vfloat4)b0)) return false;
+      const Vec3fa b1 = vertex(index+1,j+1); if (!isvalid((vfloat4)b1)) return false;
+      const Vec3fa b2 = vertex(index+2,j+1); if (!isvalid((vfloat4)b2)) return false;
+      const Vec3fa b3 = vertex(index+3,j+1); if (!isvalid((vfloat4)b3)) return false;
+      c0 = 0.5f*(a0+b0);
+      c1 = 0.5f*(a1+b1);
+      c2 = 0.5f*(a2+b2);
+      c3 = 0.5f*(a3+b3);
+      return true;
+    }
     
     /*! calculates bounding box of i'th bezier curve */
     __forceinline BBox3fa bounds(size_t i, size_t j = 0) const 
@@ -143,7 +163,7 @@ namespace embree
 
   public:
     BufferT<unsigned int> curves;                   //!< array of curve indices
-    array_t<BufferT<Vec3fa>,2> vertices;            //!< vertex array
+    vector<BufferT<Vec3fa>> vertices;               //!< vertex array for each timestep
     array_t<std::unique_ptr<Buffer>,2> userbuffers; //!< user buffers
     SubType subtype;                                //!< hair or surface geometry
     int tessellationRate;                           //!< tessellation rate for bezier curve

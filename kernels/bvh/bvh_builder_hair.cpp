@@ -160,11 +160,20 @@ namespace embree
         //profile(1,5,numPrimitives,[&] (ProfileTimer& timer) {
 
         /* create primref array */
-        bvh->alloc.init_estimate(numPrimitives*sizeof(Primitive));
+        const size_t numTimeSegments = scene->numTimeSteps-1; assert(scene->numTimeSteps > 1);
         prims.resize(numPrimitives);
-        const PrimInfo pinfo = createBezierRefArray<2>(scene,prims,virtualprogress);
+        bvh->alloc.init_estimate(numPrimitives*sizeof(Primitive)*numTimeSegments);
+        NodeRef* roots = (NodeRef*) bvh->alloc.threadLocal2()->alloc0.malloc(sizeof(NodeRef)*numTimeSegments,BVH::byteNodeAlignment);
+
+        /* build BVH for each timestep */
+        BBox3fa bounds = empty;
+        size_t num_bvh_primitives = 0;
+        for (size_t t=0; t<numTimeSegments; t++)
+        {
+          /* call BVH builder */
+          const PrimInfo pinfo = createBezierRefArrayMBlur(t,scene,prims,virtualprogress);
         
-        NodeRef root = bvh_obb_builder_binned_sah<N>
+          NodeRef root = bvh_obb_builder_binned_sah<N>
           (
             [&] () { return bvh->alloc.threadLocal2(); },
 
@@ -173,7 +182,7 @@ namespace embree
               NodeMB* node = (NodeMB*) alloc->alloc0.malloc(sizeof(NodeMB),16); node->clear();
               for (size_t i=0; i<numChildren; i++) 
               {
-                std::pair<BBox3fa,BBox3fa> bounds = alignedHeuristic.computePrimInfoMB(scene,children[i]);
+                std::pair<BBox3fa,BBox3fa> bounds = alignedHeuristic.computePrimInfoMB(t,scene,children[i]);
                 node->set(i,bounds.first,bounds.second);
               }
               return node;
@@ -185,7 +194,7 @@ namespace embree
               for (size_t i=0; i<numChildren; i++) 
               {
                 const AffineSpace3fa space = unalignedHeuristic.computeAlignedSpaceMB(scene,children[i]); 
-                UnalignedHeuristicArrayBinningSAH<BezierPrim>::PrimInfoMB pinfo = unalignedHeuristic.computePrimInfoMB(scene,children[i],space);
+                UnalignedHeuristicArrayBinningSAH<BezierPrim>::PrimInfoMB pinfo = unalignedHeuristic.computePrimInfoMB(t,scene,children[i],space);
                 node->set(i,space,pinfo.s0t0,pinfo.s1t1);
               }
               return node;
@@ -204,8 +213,13 @@ namespace embree
             },
             progress,
             prims.data(),pinfo,N,BVH::maxBuildDepthLeaf,1,1,BVH::maxLeafBlocks);
-        
-        bvh->set(root,pinfo.geomBounds,pinfo.size());
+
+          roots[t] = root;
+          bounds.extend(pinfo.geomBounds);
+          num_bvh_primitives = max(num_bvh_primitives,pinfo.size());
+        }
+        bvh->set(NodeRef((size_t)roots),bounds,num_bvh_primitives);
+        bvh->msmblur = true;
 
         //});
         

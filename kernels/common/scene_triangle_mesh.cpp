@@ -150,7 +150,7 @@ namespace embree
 
     /*! verify vertices */
     for (const auto& buffer : vertices)
-      for (size_t i=0; i<vertices.size(); i++)
+      for (size_t i=0; i<buffer.size(); i++)
 	if (!isvalid(buffer[i])) 
 	  return false;
 
