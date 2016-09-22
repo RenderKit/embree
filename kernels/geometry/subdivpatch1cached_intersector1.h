@@ -71,7 +71,7 @@ namespace embree
         else {
           grid = (GridSOA*) prim->root_ref.data;
         }
-        lazy_node = grid->root[0];
+        lazy_node = grid->root(0);
         pre.grid = grid;
         return false;
       }
@@ -119,7 +119,7 @@ namespace embree
         else {
           grid = (GridSOA*) prim->root_ref.data;
         }
-        lazy_node = grid->root[context->itime];
+        lazy_node = grid->root(context->itime);
         pre.grid = grid;
         return false;
       }
@@ -166,7 +166,7 @@ namespace embree
         else {
           grid = (GridSOA*) prim->root_ref.data;
         }
-        lazy_node = grid->root[0];
+        lazy_node = grid->root(0);
         pre.grid = grid;
         return false;
       }
@@ -225,7 +225,7 @@ namespace embree
         else {
           grid = (GridSOA*) prim->root_ref.data;
         }
-        lazy_node = grid->root[context->itime];
+        lazy_node = grid->root(context->itime);
         pre.grid = grid;
         return false;
       }

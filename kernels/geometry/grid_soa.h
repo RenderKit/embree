@@ -48,8 +48,9 @@ namespace embree
         const GridRange range(0,width-1,0,height-1);
         const size_t nodeBytes = time_steps == 1 ? sizeof(BVH4::Node) : sizeof(BVH4::NodeMB);
         const size_t bvhBytes  = getBVHBytes(range,nodeBytes,0);
-        const size_t gridBytes = 4*size_t(width)*size_t(height)*sizeof(float)+4; // 4 bytes of padding required because of off by 1 read below
-        void* data = alloc(offsetof(GridSOA,data)+max(1u,time_steps-1)*bvhBytes+time_steps*gridBytes);
+        const size_t gridBytes = 4*size_t(width)*size_t(height)*sizeof(float);  // 4 bytes of padding after grid required because of off by 1 read below
+        const size_t rootBytes = time_steps*sizeof(BVH4::NodeRef);
+        void* data = alloc(offsetof(GridSOA,data)+max(1u,time_steps-1)*bvhBytes+time_steps*gridBytes+rootBytes);
         return new (data) GridSOA(patches,time_steps,x0,x1,y0,y1,patches->grid_u_res,patches->grid_v_res,scene->getSubdivMesh(patches->geom),bvhBytes,gridBytes,bounds_o);  
       }
 
@@ -88,6 +89,10 @@ namespace embree
         }
         return N;
       }
+
+       /*! returns reference to root */
+      __forceinline       BVH4::NodeRef& root(size_t t = 0)       { return (BVH4::NodeRef&)data[rootOffset + t*sizeof(BVH4::NodeRef)]; }
+      __forceinline const BVH4::NodeRef& root(size_t t = 0) const { return (BVH4::NodeRef&)data[rootOffset + t*sizeof(BVH4::NodeRef)]; }
 
       /*! returns pointer to BVH array */
       __forceinline       char* bvhData(size_t t = 0)       { return &data[t*bvhBytes]; }
@@ -246,10 +251,8 @@ namespace embree
       }
 
     public:
-      BVH4::NodeRef root[15];
-#if !defined (__X86_64__)
       unsigned align0;
-#endif
+      unsigned align1;
       unsigned time_steps;
       unsigned width;
 
@@ -261,9 +264,9 @@ namespace embree
       unsigned bvhBytes;
       unsigned gridOffset;
       unsigned gridBytes;
-      unsigned align1;
+      unsigned rootOffset;
 
-      char data[1];        //!< after the struct we first store the BVH and then the grid
+      char data[1];        //!< after the struct we first store the BVH, then the grid, and finally the roots
     };
   }
 }

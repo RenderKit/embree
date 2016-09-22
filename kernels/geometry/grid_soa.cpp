@@ -23,8 +23,8 @@ namespace embree
     GridSOA::GridSOA(const SubdivPatch1Base* patches, unsigned time_steps, 
                      const unsigned x0, const unsigned x1, const unsigned y0, const unsigned y1, const unsigned swidth, const unsigned sheight,
                      const SubdivMesh* const geom, const size_t bvhBytes, const size_t gridBytes, BBox3fa* bounds_o)
-      : /*root(BVH4::emptyNode),*/ time_steps(time_steps), width(x1-x0+1), height(y1-y0+1), dim_offset(width*height), 
-        geomID(patches->geom), primID(patches->prim), bvhBytes(unsigned(bvhBytes)), gridOffset(max(1u,time_steps-1)*unsigned(bvhBytes)), gridBytes(unsigned(gridBytes))
+      : time_steps(time_steps), width(x1-x0+1), height(y1-y0+1), dim_offset(width*height), 
+        geomID(patches->geom), primID(patches->prim), bvhBytes(unsigned(bvhBytes)), gridOffset(max(1u,time_steps-1)*unsigned(bvhBytes)), gridBytes(unsigned(gridBytes)), rootOffset(gridOffset+time_steps*gridBytes)
     {      
       /* the generate loops need padded arrays, thus first store into these temporary arrays */
       unsigned temp_size = width*height+VSIZEX;
@@ -62,7 +62,7 @@ namespace embree
 
       /* create normal BVH when no motion blur is active */
       if (time_steps == 1) {
-        root[0] = buildBVH(0,bounds_o);
+        root(0) = buildBVH(0,bounds_o);
       }
 
       /* otherwise build MBlur BVH */
@@ -71,7 +71,7 @@ namespace embree
         for (size_t t=0; t<time_steps-1; t++)
         {
           std::pair<BBox3fa,BBox3fa> bounds;
-          root[t] = buildMBlurBVH(t,&bounds);
+          root(t) = buildMBlurBVH(t,&bounds);
           if (bounds_o) {
             bounds_o[t+0] = bounds.first;
             bounds_o[t+1] = bounds.second;
