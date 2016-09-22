@@ -523,7 +523,7 @@ namespace embree
       struct TriangleMvMBIntersector1MoellerTrumbore
       {
         typedef TriangleMvMB<M> Primitive;
-        typedef MBIntersector1Precalculations<MoellerTrumboreIntersector1<Mx>> Precalculations;
+        typedef Intersector1PrecalculationsMB<MoellerTrumboreIntersector1<Mx>> Precalculations;
         
         /*! Intersect a ray with the M triangles and updates the hit. */
         static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const TriangleMvMB<M>& tri, Scene* scene, const unsigned* geomID_to_instID)

@@ -64,7 +64,7 @@ namespace embree
     struct LineMiMBIntersector1
     {
       typedef LineMi<M> Primitive;
-      typedef MBIntersector1Precalculations<typename LineIntersector1<Mx>::Precalculations> Precalculations;
+      typedef Intersector1PrecalculationsMB<typename LineIntersector1<Mx>::Precalculations> Precalculations;
 
       static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& line, Scene* scene, const unsigned* geomID_to_instID)
       {

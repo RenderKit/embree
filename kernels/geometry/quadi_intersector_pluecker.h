@@ -133,7 +133,7 @@ namespace embree
       struct QuadMiMBIntersector1Pluecker
     {
       typedef QuadMiMB<M> Primitive;
-      typedef MBIntersector1Precalculations<QuadMIntersector1Pluecker<M,filter>> Precalculations;
+      typedef Intersector1PrecalculationsMB<QuadMIntersector1Pluecker<M,filter>> Precalculations;
         
       /*! Intersect a ray with the M quads and updates the hit. */
       static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& quad, Scene* scene, const unsigned* geomID_to_instID)

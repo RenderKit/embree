@@ -47,12 +47,12 @@ namespace embree
     __forceinline float ftime() const { return 0.0f; }
   };
 
-  class RayMBPrecalculations
+  class RayPrecalculationsMB
   {
   public:
-    __forceinline RayMBPrecalculations() {}
+    __forceinline RayPrecalculationsMB() {}
 
-    __forceinline RayMBPrecalculations(const Ray& ray, const void* ptr, const Scene* scene)
+    __forceinline RayPrecalculationsMB(const Ray& ray, const void* ptr, const Scene* scene)
     {
       /* calculate time segment itime and fractional time ftime */
       const int time_segments = scene->numTimeSteps-1;
@@ -80,11 +80,11 @@ namespace embree
   };
 
   template<typename Precalculations>
-  struct MBIntersector1Precalculations : public RayMBPrecalculations, public Precalculations
+  struct Intersector1PrecalculationsMB : public RayPrecalculationsMB, public Precalculations
   {
-    __forceinline MBIntersector1Precalculations() {}
+    __forceinline Intersector1PrecalculationsMB() {}
 
-    __forceinline MBIntersector1Precalculations(const Ray& ray, const void* ptr, const Scene* scene)
-      : RayMBPrecalculations(ray, ptr, scene), Precalculations(ray, ptr) {}
+    __forceinline Intersector1PrecalculationsMB(const Ray& ray, const void* ptr, const Scene* scene)
+      : RayPrecalculationsMB(ray, ptr, scene), Precalculations(ray, ptr) {}
   };
 }

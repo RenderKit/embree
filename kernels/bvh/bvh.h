@@ -1030,7 +1030,7 @@ namespace embree
       return root;
     }
 
-    NodeRef getRoot(const RayMBPrecalculations& pre) const {
+    NodeRef getRoot(const RayPrecalculationsMB& pre) const {
       NodeRef* roots = (NodeRef*)(size_t)root;
       return roots[pre.itime()];
     }

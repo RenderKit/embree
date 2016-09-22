@@ -127,7 +127,7 @@ namespace embree
         struct TriangleMiMBIntersector1Pluecker
       {
         typedef TriangleMiMB<M> Primitive;
-        typedef MBIntersector1Precalculations<PlueckerIntersector1<Mx>> Precalculations;
+        typedef Intersector1PrecalculationsMB<PlueckerIntersector1<Mx>> Precalculations;
 
         /*! Intersect a ray with the M triangles and updates the hit. */
         static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& tri, Scene* scene, const unsigned* geomID_to_instID)

@@ -120,7 +120,7 @@ namespace embree
     public:
       typedef SubdivPatch1Cached Primitive;
       typedef GridSOAIntersector1::PrecalculationsBase PrecalculationsBase;
-      typedef MBIntersector1Precalculations<PrecalculationsBase> Precalculations;
+      typedef Intersector1PrecalculationsMB<PrecalculationsBase> Precalculations;
       
       template<typename Loader>
         static __forceinline void intersect(Ray& ray, const float ftime,
