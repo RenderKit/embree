@@ -730,6 +730,7 @@ namespace embree
     Builder* builder = nullptr;
     if      (scene->device->quad_builder == "default"     ) builder = BVH8Quad4vSceneBuilderSAH(accel,scene,0);
     else if (scene->device->quad_builder == "dynamic"     ) builder = BVH8BuilderTwoLevelQuadMeshSAH(accel,scene,&createQuadMeshQuad4v);
+    else if (scene->device->quad_builder == "morton"     ) builder = BVH8BuilderTwoLevelQuadMeshSAH(accel,scene,&createQuadMeshQuad4vMorton);
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->quad_builder+" for BVH8<Quad4v>");
     return new AccelInstance(accel,builder,intersectors);
   }

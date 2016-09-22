@@ -27,13 +27,10 @@
 
 #include <algorithm>
 
-#define STATIC_SUBTREE_EXTRACTION 1
-
 namespace embree
 {
   namespace isa
   {
-    static const size_t block_size = 1024;
     static const size_t SINGLE_THREAD_THRESHOLD = 4*1024;
     
     template<int N>
@@ -134,20 +131,11 @@ namespace embree
     BVHNRefitter<N>::BVHNRefitter (BVH* bvh, const LeafBoundsInterface& leafBounds)
       : bvh(bvh), leafBounds(leafBounds), numSubTrees(0)
     {
-#if STATIC_SUBTREE_EXTRACTION
-
-#else
-      if (bvh->numPrimitives > block_size) {
-        annotate_tree_sizes(bvh->root);
-        calculate_refit_roots();
-      }
-#endif
     }
 
     template<int N>
     void BVHNRefitter<N>::refit()
     {
-#if STATIC_SUBTREE_EXTRACTION
       if (bvh->numPrimitives <= SINGLE_THREAD_THRESHOLD) {
         bvh->bounds = recurse_bottom(bvh->root);
       }
@@ -165,29 +153,7 @@ namespace embree
 
         numSubTrees = 0;        
         bvh->bounds = refit_toplevel(bvh->root,numSubTrees,0);
-      }
-#else
-      /* single threaded fallback */
-      size_t numRoots = roots.size();
-      if (numRoots <= 1) {
-        bvh->bounds = recurse_bottom(bvh->root);
-      }
-
-      /* parallel refit */
-      else 
-      {
-
-        parallel_for(size_t(0), roots.size(),  [&] (const range<size_t>& r) {
-            for (size_t i=r.begin(); i<r.end(); i++) {
-              NodeRef& ref = *roots[i];
-              recurse_bottom(ref);
-              ref.setBarrier();
-            }
-          });
-        bvh->bounds = recurse_top(bvh->root);
-      }
-#endif
-    
+      }    
   }
 
     template<int N>
@@ -260,32 +226,6 @@ namespace embree
     // =========================================================
     // =========================================================
 
-
-    template<int N>
-    void BVHNRefitter<N>::calculate_refit_roots ()
-    {
-      if (!bvh->root.isNode()) return;
-      
-      roots.push_back(&bvh->root);
-      std::make_heap (roots.begin(), roots.end(), compare<N>);
-      
-      while (true)
-      {
-        std::pop_heap(roots.begin(), roots.end(), compare<N>);
-        NodeRef* node = roots.back();
-        roots.pop_back();
-        if (*(size_t*)&node->node()->lower_x < block_size) 
-          break;
-        
-        for (size_t i=0; i<N; i++) {
-          NodeRef* child = &node->node()->child(i);
-          if (child->isNode()) {
-            roots.push_back(child);
-            std::push_heap(roots.begin(), roots.end(), compare<N>);
-          }
-        }
-      }
-    }
     
     template<int N>
     BBox3fa BVHNRefitter<N>::recurse_bottom(NodeRef& ref)
@@ -325,64 +265,6 @@ namespace embree
       return merge<N>(bounds);
     }
 
-    template<int N>
-    size_t BVHNRefitter<N>::annotate_tree_sizes(NodeRef& ref)
-    {
-      if (ref.isNode())
-      {
-        Node* node = ref.node();
-        size_t n = 0;
-        for (size_t i=0; i<N; i++) {
-          NodeRef& child = node->child(i);
-          if (child == BVH::emptyNode) continue;
-          n += annotate_tree_sizes(child); 
-        }
-        *((size_t*)&node->lower_x) = n;
-        return n;
-      }
-      else
-      {
-        size_t num; 
-        ref.leaf(num);
-        return num;
-      }
-    }
-    
-    template<int N>
-    BBox3fa BVHNRefitter<N>::recurse_top(NodeRef& ref)
-    {
-      /* stop here if we encounter a barrier */
-      if (unlikely(ref.isBarrier())) {
-        ref.clearBarrier();
-        return node_bounds(ref);
-      }
-      
-      /* this is a leaf node */
-      if (unlikely(ref.isLeaf()))
-        return leafBounds.leafBounds(ref);
-      
-      /* recurse if this is an internal node */
-      Node* node = ref.node();
-      BBox3fa bounds[N];
-
-      for (size_t i=0; i<N; i++)
-        bounds[i] = recurse_top(node->child(i));
-      
-      /* AOS to SOA transform */
-      BBox<Vec3<vfloat<N>>> boundsT = transpose<N>(bounds);
-      
-      /* set new bounds */
-      node->lower_x = boundsT.lower.x;
-      node->lower_y = boundsT.lower.y;
-      node->lower_z = boundsT.lower.z;
-      node->upper_x = boundsT.upper.x;
-      node->upper_y = boundsT.upper.y;
-      node->upper_z = boundsT.upper.z;
-
-      /* return merged bounds */
-      return merge<N>(bounds);
-    }
-    
     template<int N, typename Mesh, typename Primitive>
     BVHNRefitT<N,Mesh,Primitive>::BVHNRefitT (BVH* bvh, Builder* builder, Mesh* mesh, size_t mode)
       : bvh(bvh), builder(builder), refitter(nullptr), mesh(mesh) {}
