@@ -105,19 +105,27 @@ namespace embree
       return numFaces; 
     };
 
-    /*! calculates the bounds of the i'th subdivision patch */
-    __forceinline BBox3fa bounds(size_t i) const {
-      return halfEdges[faceStartEdge[i]].bounds(vertices[0]);
+    /*! calculates the bounds of the i'th subdivision patch at the j'th timestep */
+    __forceinline BBox3fa bounds(size_t i, size_t j = 0) const {
+      return halfEdges[faceStartEdge[i]].bounds(vertices[j]);
     }
 
     /*! check if the i'th primitive is valid */
-    __forceinline bool valid(size_t i, BBox3fa* bbox = nullptr) const 
+    __forceinline bool valid(size_t i) const 
     {
       if (unlikely(boundary == RTC_BOUNDARY_NONE)) {
         if (getHalfEdge(i)->faceHasBorder()) return false;
       }
-      if (bbox) *bbox = bounds(i);
-      return !invalidFace[i];
+      return !invalidFace(i);
+    }
+
+    /*! check if the i'th primitive is valid for the j'th time range */
+    __forceinline bool valid(size_t i, size_t j) const 
+    {
+      if (unlikely(boundary == RTC_BOUNDARY_NONE)) {
+        if (getHalfEdge(i)->faceHasBorder()) return false;
+      }
+      return !invalidFace(i,j);
     }
 
     /*! initializes the half edge data structure */
@@ -173,7 +181,7 @@ namespace embree
     BufferT<unsigned> vertexIndices;
 
     /*! vertex buffer (one buffer for each time step) */
-    array_t<BufferT<Vec3fa>,2> vertices;
+    vector<BufferT<Vec3fa>> vertices;
 
     /*! user data buffers */
     array_t<std::unique_ptr<Buffer>,2> userbuffers;
@@ -213,7 +221,11 @@ namespace embree
     pset<uint32_t> holeSet;
 
     /*! fast lookup table to detect invalid faces */
-    mvector<char> invalidFace;
+    mvector<char> invalid_face;
+
+    /*! test if face i is invalid in timestep j */
+    __forceinline       char& invalidFace(size_t i, size_t j = 0)       { return invalid_face[i*numTimeSteps+j]; }
+    __forceinline const char& invalidFace(size_t i, size_t j = 0) const { return invalid_face[i*numTimeSteps+j]; }
 
     /*! flag whether only the edge levels have changed and the mesh has no creases,
      *  allows for simple bvh update instead of full rebuild in cached mode */
@@ -232,7 +244,7 @@ namespace embree
       assert(slot < slots); 
       return slots*prim+slot;
     }
-    std::vector<SharedLazyTessellationCache::CacheEntry> vertex_buffer_tags[2];
+    std::vector<std::vector<SharedLazyTessellationCache::CacheEntry>> vertex_buffer_tags;
     std::vector<SharedLazyTessellationCache::CacheEntry> user_buffer_tags[2];
     std::vector<Patch3fa::Ref> patch_eval_trees;
       

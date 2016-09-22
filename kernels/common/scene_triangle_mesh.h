@@ -203,6 +203,7 @@ namespace embree
       const Vec3fa b1 = vertex(tri.v[1],j+1); if (unlikely(!isvalid(b1))) return false;
       const Vec3fa b2 = vertex(tri.v[2],j+1); if (unlikely(!isvalid(b2))) return false;
       
+      /* use bounds of first time step in builder */
       bbox = BBox3fa(min(a0,a1,a2),max(a0,a1,a2));
       return true;
     }

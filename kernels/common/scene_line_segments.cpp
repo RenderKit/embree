@@ -60,7 +60,7 @@ namespace embree
     if (((size_t(ptr) + offset) & 0x3) || (stride & 0x3))
       throw_RTCError(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
 
-    if (type >= RTC_VERTEX_BUFFER0 && type <= RTC_VERTEX_BUFFER0+RTC_MAX_TIME_STEPS) 
+    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER0+numTimeSteps) 
     {
       size_t t = type - RTC_VERTEX_BUFFER0;
       vertices[t].set(ptr,offset,stride); 
@@ -99,7 +99,7 @@ namespace embree
     if (type == RTC_INDEX_BUFFER) {
       return segments.map(parent->numMappedBuffers);
     }
-    else if (type >= RTC_VERTEX_BUFFER0 && type <= RTC_VERTEX_BUFFER0+RTC_MAX_TIME_STEPS) {
+    else if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER0+numTimeSteps) {
       return vertices[type - RTC_VERTEX_BUFFER0].map(parent->numMappedBuffers);
     }
     else {
@@ -116,7 +116,7 @@ namespace embree
     if (type == RTC_INDEX_BUFFER) {
       segments.unmap(parent->numMappedBuffers);
     }
-    else if (type >= RTC_VERTEX_BUFFER0 && type <= RTC_VERTEX_BUFFER0+RTC_MAX_TIME_STEPS) {
+    else if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER0+numTimeSteps) {
       vertices[type - RTC_VERTEX_BUFFER0].unmap(parent->numMappedBuffers);
     }
     else {
@@ -169,7 +169,7 @@ namespace embree
 
 
     /* calculate base pointer and stride */
-    assert((buffer >= RTC_VERTEX_BUFFER0 && buffer <= RTC_VERTEX_BUFFER0 + RTC_MAX_TIME_STEPS) ||
+    assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTC_VERTEX_BUFFER0 + numTimeSteps) ||
            (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
     const char* src = nullptr;
     size_t stride = 0;

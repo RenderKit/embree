@@ -127,8 +127,10 @@ namespace embree
     }
 
     /*! check if the i'th primitive is valid at the j'th time segment */
-    __forceinline bool valid2(size_t i, size_t j, BBox3fa& bbox) const {
-      bbox = merge(bounds(i,j+0),bounds(i,j+1)); return valid1(i,j+0) && valid1(i,j+1);
+    __forceinline bool valid2(size_t i, size_t j, BBox3fa& bbox) const 
+    {
+      bbox = bounds(i,j);  // use bounds of first time step in builder
+      return valid1(i,j+0) && valid1(i,j+1);
     }
 
   public:
