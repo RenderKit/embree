@@ -50,7 +50,7 @@ namespace embree
         __forceinline HeuristicArrayBinningSAH (PrimRef* prims)
           : prims(prims) {}
 
-        const std::pair<BBox3fa,BBox3fa> computePrimInfoMB(Scene* scene, const PrimInfo& pinfo)
+        const std::pair<BBox3fa,BBox3fa> computePrimInfoMB(size_t timeSegment, Scene* scene, const PrimInfo& pinfo)
         {
           BBox3fa bounds0 = empty;
           BBox3fa bounds1 = empty;
@@ -59,8 +59,8 @@ namespace embree
             BezierPrim& prim = prims[i];
             const size_t geomID = prim.geomID();
             const BezierCurves* curves = scene->getBezierCurves(geomID);
-            bounds0.extend(curves->bounds(prim.primID(),0));
-            bounds1.extend(curves->bounds(prim.primID(),1));
+            bounds0.extend(curves->bounds(prim.primID(),timeSegment+0));
+            bounds1.extend(curves->bounds(prim.primID(),timeSegment+1));
           }
           return std::pair<BBox3fa,BBox3fa>(bounds0,bounds1);
         }

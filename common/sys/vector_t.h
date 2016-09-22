@@ -21,6 +21,8 @@ namespace embree
     {
     public:
       typedef T value_type;
+      typedef T* iterator;
+      typedef const T* const_iterator;
     
 #if defined(VECTOR_INIT_ALLOCATOR)
     template<typename M>
@@ -76,9 +78,12 @@ namespace embree
       }
 
       /********************** Iterators  ****************************/
+    
+      __forceinline       iterator begin()       { return items; };
+      __forceinline const_iterator begin() const { return items; };
 
-      __forceinline T* begin() const { return items; };
-      __forceinline T* end  () const { return items+size_active; };
+      __forceinline       iterator end  ()       { return items+size_active; };
+      __forceinline const_iterator end  () const { return items+size_active; };
 
 
       /********************** Capacity ****************************/

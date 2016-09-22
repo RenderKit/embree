@@ -158,15 +158,17 @@ namespace embree
       {
         STAT3(normal.trav_prims,1,1,1);
         const BezierCurves* geom = (BezierCurves*) scene->get(prim.geomID());
-        const Vec3fa a0 = geom->vertex(prim.vertexID+0,0);
-        const Vec3fa a1 = geom->vertex(prim.vertexID+1,0);
-        const Vec3fa a2 = geom->vertex(prim.vertexID+2,0);
-        const Vec3fa a3 = geom->vertex(prim.vertexID+3,0);
-        const Vec3fa b0 = geom->vertex(prim.vertexID+0,1);
-        const Vec3fa b1 = geom->vertex(prim.vertexID+1,1);
-        const Vec3fa b2 = geom->vertex(prim.vertexID+2,1);
-        const Vec3fa b3 = geom->vertex(prim.vertexID+3,1);
-        const float t0 = 1.0f-ray.time, t1 = ray.time;
+        const int   itime = pre.itime();
+        const float ftime = pre.ftime();
+        const Vec3fa a0 = geom->vertex(prim.vertexID+0,itime+0);
+        const Vec3fa a1 = geom->vertex(prim.vertexID+1,itime+0);
+        const Vec3fa a2 = geom->vertex(prim.vertexID+2,itime+0);
+        const Vec3fa a3 = geom->vertex(prim.vertexID+3,itime+0);
+        const Vec3fa b0 = geom->vertex(prim.vertexID+0,itime+1);
+        const Vec3fa b1 = geom->vertex(prim.vertexID+1,itime+1);
+        const Vec3fa b2 = geom->vertex(prim.vertexID+2,itime+1);
+        const Vec3fa b3 = geom->vertex(prim.vertexID+3,itime+1);
+        const float t0 = 1.0f-ftime, t1 = ftime;
         const Vec3fa p0 = t0*a0 + t1*b0;
         const Vec3fa p1 = t0*a1 + t1*b1;
         const Vec3fa p2 = t0*a2 + t1*b2;
@@ -181,15 +183,17 @@ namespace embree
       {
         STAT3(shadow.trav_prims,1,1,1);
         const BezierCurves* geom = (BezierCurves*) scene->get(prim.geomID());
-        const Vec3fa a0 = geom->vertex(prim.vertexID+0,0);
-        const Vec3fa a1 = geom->vertex(prim.vertexID+1,0);
-        const Vec3fa a2 = geom->vertex(prim.vertexID+2,0);
-        const Vec3fa a3 = geom->vertex(prim.vertexID+3,0);
-        const Vec3fa b0 = geom->vertex(prim.vertexID+0,1);
-        const Vec3fa b1 = geom->vertex(prim.vertexID+1,1);
-        const Vec3fa b2 = geom->vertex(prim.vertexID+2,1);
-        const Vec3fa b3 = geom->vertex(prim.vertexID+3,1);
-        const float t0 = 1.0f-ray.time, t1 = ray.time;
+        const int   itime = pre.itime();
+        const float ftime = pre.ftime();
+        const Vec3fa a0 = geom->vertex(prim.vertexID+0,itime+0);
+        const Vec3fa a1 = geom->vertex(prim.vertexID+1,itime+0);
+        const Vec3fa a2 = geom->vertex(prim.vertexID+2,itime+0);
+        const Vec3fa a3 = geom->vertex(prim.vertexID+3,itime+0);
+        const Vec3fa b0 = geom->vertex(prim.vertexID+0,itime+1);
+        const Vec3fa b1 = geom->vertex(prim.vertexID+1,itime+1);
+        const Vec3fa b2 = geom->vertex(prim.vertexID+2,itime+1);
+        const Vec3fa b3 = geom->vertex(prim.vertexID+3,itime+1);
+        const float t0 = 1.0f-ftime, t1 = ftime;
         const Vec3fa p0 = t0*a0 + t1*b0;
         const Vec3fa p1 = t0*a1 + t1*b1;
         const Vec3fa p2 = t0*a2 + t1*b2;
@@ -220,7 +224,7 @@ namespace embree
       static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, const size_t k, IntersectContext* context, const Primitive& prim, Scene* scene)
       {
         STAT3(normal.trav_prims,1,1,1);
-        const BezierCurves* geom = (BezierCurves*) scene->get(prim.geomID());
+        const BezierCurves* geom = (BezierCurves*) scene->get(prim.geomID());        
         const Vec3fa a0 = geom->vertex(prim.vertexID+0,0);
         const Vec3fa a1 = geom->vertex(prim.vertexID+1,0);
         const Vec3fa a2 = geom->vertex(prim.vertexID+2,0);
