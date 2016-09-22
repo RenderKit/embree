@@ -453,6 +453,12 @@ namespace embree
 #if defined(EMBREE_GEOMETRY_QUADS)
     Builder* BVH4Quad4vMeshBuilderSAH (void* bvh, QuadMesh* mesh, size_t mode);
     Builder* BVH4Quad4vMeshRefitSAH (void* accel, QuadMesh* mesh, size_t mode) { return new BVHNRefitT<4,QuadMesh,Quad4v>((BVH4*)accel,BVH4Quad4vMeshBuilderSAH(accel,mesh,mode),mesh,mode); }
+
+#if  defined(__AVX__)
+    Builder* BVH8Quad4vMeshBuilderSAH (void* bvh, QuadMesh* mesh, size_t mode);
+    Builder* BVH8Quad4vMeshRefitSAH (void* accel, QuadMesh* mesh, size_t mode) { return new BVHNRefitT<8,QuadMesh,Quad4v>((BVH8*)accel,BVH4Quad4vMeshBuilderSAH(accel,mesh,mode),mesh,mode); }
+#endif
+
 #endif
   }
 }
