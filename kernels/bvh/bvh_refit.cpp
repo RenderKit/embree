@@ -16,6 +16,7 @@
 
 #include "bvh_refit.h"
 #include "bvh_statistics.h"
+#include "bvh_rotate.h"
 
 #include "../geometry/linei.h"
 #include "../geometry/triangle.h"
@@ -33,6 +34,7 @@ namespace embree
   namespace isa
   {
     static const size_t block_size = 1024;
+    static const size_t SINGLE_THREAD_THRESHOLD = 4*1024;
     
     template<int N>
     __forceinline bool compare(const typename BVHN<N>::NodeRef* a, const typename BVHN<N>::NodeRef* b)
@@ -146,19 +148,18 @@ namespace embree
     void BVHNRefitter<N>::refit()
     {
 #if STATIC_SUBTREE_EXTRACTION
-      if (bvh->numPrimitives <= block_size) {
+      if (bvh->numPrimitives <= SINGLE_THREAD_THRESHOLD) {
         bvh->bounds = recurse_bottom(bvh->root);
       }
       else
       {
         numSubTrees = 0;
         gather_subtree_refs(bvh->root,numSubTrees,0);
-
         if (numSubTrees)
-			parallel_for(size_t(0), numSubTrees, size_t(1), [&](const range<size_t>& r) {
+          parallel_for(size_t(0), numSubTrees, size_t(1), [&](const range<size_t>& r) {
               for (size_t i=r.begin(); i<r.end(); i++) {
                 NodeRef& ref = subTrees[i];
-                recurse_bottom(ref);
+                subTreeBounds[i] = recurse_bottom(ref);
               }
             });
 
@@ -190,46 +191,23 @@ namespace embree
   }
 
     template<int N>
-    size_t BVHNRefitter<N>::annotate_tree_sizes(NodeRef& ref)
-    {
-      if (ref.isNode())
-      {
-        Node* node = ref.node();
-        size_t n = 0;
-        for (size_t i=0; i<N; i++) {
-          NodeRef& child = node->child(i);
-          if (child == BVH::emptyNode) continue;
-          n += annotate_tree_sizes(child); 
-        }
-        *((size_t*)&node->lower_x) = n;
-        return n;
-      }
-      else
-      {
-        size_t num; 
-        ref.leaf(num);
-        return num;
-      }
-    }
-
-    template<int N>
     void BVHNRefitter<N>::gather_subtree_refs(NodeRef& ref,
                                               size_t &subtrees,
                                               const size_t depth)
     {
+      if (depth >= MAX_SUB_TREE_EXTRACTION_DEPTH) 
+      {
+        assert(subtrees < MAX_NUM_SUB_TREES);
+        subTrees[subtrees++] = ref;
+        return;
+      }
+
       if (ref.isNode())
       {
-        if (depth >= MAX_SUB_TREE_EXTRACTION_DEPTH) 
-        {
-          assert(subtrees < MAX_NUM_SUB_TREES);
-          subTrees[subtrees++] = ref;
-          return;
-        }
-
         Node* node = ref.node();
         for (size_t i=0; i<N; i++) {
           NodeRef& child = node->child(i);
-          if (child == BVH::emptyNode) continue;
+          if (unlikely(child == BVH::emptyNode)) continue;
           gather_subtree_refs(child,subtrees,depth+1); 
         }
       }
@@ -240,26 +218,24 @@ namespace embree
                                             size_t &subtrees,
                                             const size_t depth)
     {
+      if (depth >= MAX_SUB_TREE_EXTRACTION_DEPTH) 
+      {
+        assert(subtrees < MAX_NUM_SUB_TREES);
+        assert(subTrees[subtrees] == ref);
+        return subTreeBounds[subtrees++];
+      }
+
       if (ref.isNode())
       {
         Node* node = ref.node();
         BBox3fa bounds[N];
 
-        if (depth >= MAX_SUB_TREE_EXTRACTION_DEPTH) 
-        {
-          assert(subtrees < MAX_NUM_SUB_TREES);
-          assert(subTrees[subtrees++] == ref);
-        }
-
         for (size_t i=0; i<N; i++)
         {
           NodeRef& child = node->child(i);
-          bounds[i] = BBox3fa(empty);
 
-          if (unlikely(child == BVH::emptyNode)) continue;
-
-          if (depth >= MAX_SUB_TREE_EXTRACTION_DEPTH) 
-            bounds[i] = node->bounds();
+          if (unlikely(child == BVH::emptyNode)) 
+            bounds[i] = BBox3fa(empty);
           else
             bounds[i] = refit_toplevel(child,subtrees,depth+1); 
         }
@@ -279,6 +255,11 @@ namespace embree
       else
         return leafBounds.leafBounds(ref);
     }
+
+    // =========================================================
+    // =========================================================
+    // =========================================================
+
 
     template<int N>
     void BVHNRefitter<N>::calculate_refit_roots ()
@@ -323,6 +304,11 @@ namespace embree
       BBox3fa bounds[N];
 
       for (size_t i=0; i<N; i++)
+        if (unlikely(node->child(i) == BVH::emptyNode))
+        {
+          bounds[i] = BBox3fa(empty);          
+        }
+      else
         bounds[i] = recurse_bottom(node->child(i));
       
       /* AOS to SOA transform */
@@ -335,9 +321,31 @@ namespace embree
       node->upper_x = boundsT.upper.x;
       node->upper_y = boundsT.upper.y;
       node->upper_z = boundsT.upper.z;
-      
-      /* return merged bounds */
+
       return merge<N>(bounds);
+    }
+
+    template<int N>
+    size_t BVHNRefitter<N>::annotate_tree_sizes(NodeRef& ref)
+    {
+      if (ref.isNode())
+      {
+        Node* node = ref.node();
+        size_t n = 0;
+        for (size_t i=0; i<N; i++) {
+          NodeRef& child = node->child(i);
+          if (child == BVH::emptyNode) continue;
+          n += annotate_tree_sizes(child); 
+        }
+        *((size_t*)&node->lower_x) = n;
+        return n;
+      }
+      else
+      {
+        size_t num; 
+        ref.leaf(num);
+        return num;
+      }
     }
     
     template<int N>

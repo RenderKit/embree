@@ -364,6 +364,7 @@ extern "C" void device_init (char* cfg)
     rtcCommit(g_scene);
     double t1 = getSeconds();
     PRINT(t1-t0);
+    //exit(0);
   }
 #endif
   rtcCommit (g_scene);
