@@ -247,21 +247,24 @@ namespace embree
     struct ISPCInstance
     {
       ALIGNED_STRUCT;
-
-      ISPCInstance (Ref<TutorialScene::Instance> in)
-      : geom(INSTANCE), space0(one), space1(one), geomID(in->geomID) 
-      {
-        switch (in->spaces.size()) {
-        case 1: space0 = space1 = in->spaces[0]; break;
-        case 2: space0 = in->spaces[0]; space1 = in->spaces[1]; break;
-        default: throw std::runtime_error("only 1 or 2 transformation timesteps supported by tutorials");
-        }
+      
+      static ISPCInstance* create (Ref<TutorialScene::Instance> in) {
+        return ::new (alignedMalloc(sizeof(ISPCInstance)+(in->spaces.size()-1)*sizeof(AffineSpace3fa))) ISPCInstance(in);
       }
 
+    private:
+      ISPCInstance (Ref<TutorialScene::Instance> in)
+      : geom(INSTANCE), geomID(in->geomID), numTimeSteps(in->spaces.size()) 
+      {
+        for (size_t i=0; i<numTimeSteps; i++)
+          spaces[i] = in->spaces[i];
+      }
+
+    public:
       ISPCGeometry geom;
-      AffineSpace3fa space0;
-      AffineSpace3fa space1;
       unsigned int geomID;
+      unsigned int numTimeSteps;
+      AffineSpace3fa spaces[1];
     };
 
     struct ISPCGroup
@@ -322,7 +325,7 @@ namespace embree
       else if (in->type == TutorialScene::Geometry::CURVES)
         return (ISPCGeometry*) new ISPCHairSet(false,in.dynamicCast<TutorialScene::HairSet>());
       else if (in->type == TutorialScene::Geometry::INSTANCE)
-        return (ISPCGeometry*) new ISPCInstance(in.dynamicCast<TutorialScene::Instance>());
+        return (ISPCGeometry*) ISPCInstance::create(in.dynamicCast<TutorialScene::Instance>());
       else if (in->type == TutorialScene::Geometry::GROUP)
         return (ISPCGeometry*) new ISPCGroup(in.dynamicCast<TutorialScene::Group>());
       else

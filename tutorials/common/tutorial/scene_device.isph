@@ -128,10 +128,10 @@ struct ISPCHairSet
 struct ISPCInstance
 {
   uniform ISPCGeometry geom;
-  int8 align[12];
-  AffineSpace3fa space0;
-  AffineSpace3fa space1;
-  unsigned int geomID;
+  uniform unsigned int geomID;
+  uniform unsigned int numTimeSteps;
+  uniform unsigned int align;
+  AffineSpace3fa spaces[1];
 };
 
 struct ISPCGroup

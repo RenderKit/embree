@@ -48,6 +48,10 @@ inline uniform AffineSpace3f make_AffineSpace3f(const uniform AffineSpace3fa l) 
   uniform AffineSpace3f xfm; xfm.l = make_LinearSpace3f(l.l); xfm.p = make_Vec3f(l.p); return xfm;
 }
 
+inline varying AffineSpace3f make_AffineSpace3f(const varying AffineSpace3fa l) {
+  varying AffineSpace3f xfm; xfm.l = make_LinearSpace3f(l.l); xfm.p = make_Vec3f(l.p); return xfm;
+}
+
 inline uniform AffineSpace3f make_AffineSpace3f(const uniform Vec3f x, const uniform Vec3f y, const uniform Vec3f z, const uniform Vec3f p) {
   uniform AffineSpace3f xfm; xfm.l.vx = x; xfm.l.vy = y; xfm.l.vz = z; xfm.p = p; return xfm;
 }
