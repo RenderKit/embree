@@ -35,8 +35,14 @@ namespace embree
   /*! Instanced acceleration structure */
   struct Instance : public AccelSet
   {
+    ALIGNED_STRUCT;
   public:
+    static Instance* create (Scene* parent, Scene* object, size_t numTimeSteps) {
+      return ::new (alignedMalloc(sizeof(Instance)+(numTimeSteps-1)*sizeof(AffineSpace3fa))) Instance(parent,object,numTimeSteps);
+    }
+  private:
     Instance (Scene* parent, Scene* object, size_t numTimeSteps); 
+  public:
     virtual void setTransform(const AffineSpace3fa& local2world, size_t timeStep);
     virtual void setMask (unsigned mask);
     virtual void build(size_t threadIndex, size_t threadCount) {}
@@ -44,7 +50,7 @@ namespace embree
   public:
 
     __forceinline AffineSpace3fa getWorld2Local() const {
-      return world2local[0];
+      return world2local0;
     }
 
     __forceinline AffineSpace3fa getWorld2Local(float t) const 
@@ -57,16 +63,38 @@ namespace embree
       return rcp(lerp(local2world[itime+0],local2world[itime+1],ftime));
     }
 
-    /* calculates transformation from world to local space */
-    __forceinline AffineSpace3fa getWorld2LocalSpecial(float time) const
+    template<int K>
+      __forceinline AffineSpaceT<LinearSpace3<Vec3<vfloat<K>>>> getWorld2Local(const vbool<K>& valid, vfloat<K> t) const
     {
-      if (likely(numTimeSteps == 1)) return world2local[0];
-      else                           return getWorld2Local(time);
+      typedef AffineSpaceT<LinearSpace3<Vec3<vfloat<K>>>> AffineSpace3vfK;
+      
+      /* calculate time segment itime and fractional time ftime */
+      const int time_segments = numTimeSteps-1;
+      const vfloat<K> time = t*vfloat<K>(time_segments);
+      const vint<K> itime_k = clamp(vint<K>(floor(time)),vint<K>(0),vint<K>(time_segments-1));
+      const vfloat<K> ftime = time - vfloat<K>(itime_k);
+#if 1
+      assert(any(valid));
+      const size_t index = __bsf(movemask(valid));
+      const int itime = itime_k[index];
+      const vfloat<K> t0 = vfloat<K>(1.0f)-ftime;
+      const vfloat<K> t1 = ftime;
+      return rcp(t0*AffineSpace3vfK(local2world[itime+0])+t1*AffineSpace3vfK(local2world[itime+1]));
+#else
+      AffineSpaceT<Vec3<vfloat<K>>> result = one;
+      const vfloat<K> t0 = vfloat<K>(1.0f)-ftime;
+      const vfloat<K> t1 = ftime;
+      foreach_unique(valid,itime_k,[&] (const vbool<K>& valid, int itime) {
+          AffineSpaceT<Vec3<vfloat<K>>> m(rcp(t0*AffineSpace3vfK(local2world[itime+0])+t1*AffineSpace3vfK(local2world[itime+1])));
+          result = select(valid,m,result);
+        });
+      return result;
+#endif
     }
     
   public:
-    AffineSpace3fa local2world[2]; //!< transforms from local space to world space
-    AffineSpace3fa world2local[2]; //!< transforms from world space to local space
     Scene* object;                 //!< pointer to instanced acceleration structure
+    AffineSpace3fa world2local0;   //!< transformation from world space to local space for timestep 0
+    AffineSpace3fa local2world[1]; //!< transformation from local space to world space for each timestep
   };
 }

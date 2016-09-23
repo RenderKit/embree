@@ -40,19 +40,16 @@ namespace embree
 #endif
 
     template<int K>
-    void FastInstanceIntersectorK<K>::intersect(vint<K>* valid, const Instance* instance, RayK<K>& ray, size_t item)
+    void FastInstanceIntersectorK<K>::intersect(vint<K>* validi, const Instance* instance, RayK<K>& ray, size_t item)
     {
       typedef Vec3<vfloat<K>> Vec3vfK;
       typedef AffineSpaceT<LinearSpace3<Vec3vfK>> AffineSpace3vfK;
       
       AffineSpace3vfK world2local;
-      if (likely(instance->numTimeSteps == 1)) {
-        world2local = instance->world2local[0];
-      } else {
-        vfloat<K> t1 = ray.time, t0 = vfloat<K>(1.0f)-t1;
-        world2local = rcp(t0*AffineSpace3vfK(instance->local2world[0]) + t1*AffineSpace3vfK(instance->local2world[1]));
-      }
-      
+      const vbool<K> valid = *validi == vint<K>(-1);
+      if (likely(instance->numTimeSteps == 1)) world2local = instance->getWorld2Local();
+      else                                     world2local = instance->getWorld2Local<K>(valid,ray.time);
+
       const Vec3vfK ray_org = ray.org;
       const Vec3vfK ray_dir = ray.dir;
       const vint<K> ray_geomID = ray.geomID;
@@ -61,7 +58,7 @@ namespace embree
       ray.dir = xfmVector(world2local,ray_dir);
       ray.geomID = RTC_INVALID_GEOMETRY_ID;
       ray.instID = instance->id;
-      intersectObject(valid,instance->object,ray);
+      intersectObject(validi,instance->object,ray);
       ray.org = ray_org;
       ray.dir = ray_dir;
       vbool<K> nohit = ray.geomID == vint<K>(RTC_INVALID_GEOMETRY_ID);
@@ -70,25 +67,22 @@ namespace embree
     }
     
     template<int K>
-    void FastInstanceIntersectorK<K>::occluded(vint<K>* valid, const Instance* instance, RayK<K>& ray, size_t item)
+    void FastInstanceIntersectorK<K>::occluded(vint<K>* validi, const Instance* instance, RayK<K>& ray, size_t item)
     {
       typedef Vec3<vfloat<K>> Vec3vfK;
       typedef AffineSpaceT<LinearSpace3<Vec3vfK>> AffineSpace3vfK;
 
       AffineSpace3vfK world2local;
-      if (likely(instance->numTimeSteps == 1)) {
-        world2local = instance->world2local[0];
-      } else {
-        vfloat<K> t1 = ray.time, t0 = vfloat<K>(1.0f)-t1;
-        world2local = rcp(t0*AffineSpace3vfK(instance->local2world[0]) + t1*AffineSpace3vfK(instance->local2world[1]));
-      }
+      const vbool<K> valid = *validi == vint<K>(-1);
+      if (likely(instance->numTimeSteps == 1)) world2local = instance->getWorld2Local();
+      else                                     world2local = instance->getWorld2Local<K>(valid,ray.time);
 
       const Vec3vfK ray_org = ray.org;
       const Vec3vfK ray_dir = ray.dir;
       ray.org = xfmPoint (world2local,ray_org);
       ray.dir = xfmVector(world2local,ray_dir);
       ray.instID = instance->id;
-      occludedObject(valid,instance->object,ray);
+      occludedObject(validi,instance->object,ray);
       ray.org = ray_org;
       ray.dir = ray_dir;
     }

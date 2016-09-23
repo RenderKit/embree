@@ -31,7 +31,8 @@ namespace embree
 
     void FastInstanceIntersector1::intersect(const Instance* instance, Ray& ray, size_t item)
     {
-      const AffineSpace3fa world2local = instance->getWorld2LocalSpecial(ray.time);
+      const AffineSpace3fa world2local = 
+        likely(instance->numTimeSteps == 1) ? instance->getWorld2Local() : instance->getWorld2Local(ray.time);
       const Vec3fa ray_org = ray.org;
       const Vec3fa ray_dir = ray.dir;
       const int ray_geomID = ray.geomID;
@@ -51,7 +52,8 @@ namespace embree
     
     void FastInstanceIntersector1::occluded (const Instance* instance, Ray& ray, size_t item)
     {
-      const AffineSpace3fa world2local = instance->getWorld2LocalSpecial(ray.time);
+      const AffineSpace3fa world2local = 
+        likely(instance->numTimeSteps == 1) ? instance->getWorld2Local() : instance->getWorld2Local(ray.time);
       const Vec3fa ray_org = ray.org;
       const Vec3fa ray_dir = ray.dir;
       ray.org = xfmPoint (world2local,ray_org);
