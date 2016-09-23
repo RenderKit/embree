@@ -897,7 +897,7 @@ namespace embree
     Builder* BVH4VirtualMBSceneBuilderSAH    (void* bvh, Scene* scene, size_t mode) {
       int minLeafSize = scene->device->object_accel_mb_min_leaf_size;
       int maxLeafSize = scene->device->object_accel_mb_max_leaf_size;
-      return new BVHNBuilderMblurSAH<4,AccelSet,Object>((BVH4*)bvh,scene,4,1.0f,minLeafSize,maxLeafSize);
+      return new BVHNBuilderMSMBlurSAH<4,AccelSet,Object>((BVH4*)bvh,scene,4,1.0f,minLeafSize,maxLeafSize);
     }
 #endif
   }

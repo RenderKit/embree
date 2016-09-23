@@ -217,6 +217,11 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
+    /*! Set bounds function. */
+    virtual void setBoundsFunction3 (RTCBoundsFunc3 bounds, void* userPtr) { 
+      throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
+    }
+
     /*! Set intersect function for single rays. */
     virtual void setIntersectFunction (RTCIntersectFunc intersect, bool ispc = false) { 
       throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 

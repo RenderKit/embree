@@ -301,6 +301,10 @@ namespace embree
     rtcSetBoundsFunction2(scene,geomID,bounds,userPtr);
   }
 
+  extern "C" void ispcSetBoundsFunction3 (RTCScene scene, unsigned geomID, RTCBoundsFunc3 bounds, void* userPtr) {
+    rtcSetBoundsFunction3(scene,geomID,bounds,userPtr);
+  }
+
   extern "C" void ispcSetIntersectFunction1 (RTCScene hscene, unsigned geomID, RTCIntersectFunc intersect) 
   {
     Scene* scene = (Scene*) hscene;

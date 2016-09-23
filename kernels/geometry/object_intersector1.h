@@ -23,7 +23,8 @@ namespace embree
 {
   namespace isa
   {
-    struct ObjectIntersector1
+//    template<bool mblur>
+      struct ObjectIntersector1
     {
       typedef Object Primitive;
      
@@ -34,6 +35,9 @@ namespace embree
         __forceinline PrecalculationsBase (const Ray& ray, const void *ptr) {}
       };
 
+      //typedef typename std::conditional<mblur, 
+      //  Intersector1Precalculations<PrecalculationsBase>,
+      //  Intersector1PrecalculationsMB<PrecalculationsBase>>::type Precalculations;
       typedef Intersector1Precalculations<PrecalculationsBase> Precalculations;
       
       static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim, Scene* scene, const unsigned* geomID_to_instID) 

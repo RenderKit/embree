@@ -29,6 +29,7 @@ namespace embree
     virtual void setMask (unsigned mask);
     virtual void setBoundsFunction (RTCBoundsFunc bounds);
     virtual void setBoundsFunction2 (RTCBoundsFunc2 bounds, void* userPtr);
+    virtual void setBoundsFunction3 (RTCBoundsFunc3 bounds, void* userPtr);
     virtual void setIntersectFunction (RTCIntersectFunc intersect, bool ispc);
     virtual void setIntersectFunction4 (RTCIntersectFunc4 intersect4, bool ispc);
     virtual void setIntersectFunction8 (RTCIntersectFunc8 intersect8, bool ispc);

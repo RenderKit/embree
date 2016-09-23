@@ -24,7 +24,7 @@ namespace embree
   {
   public:
     InstanceFactory(int features);
-    DEFINE_SYMBOL2(RTCBoundsFunc2,InstanceBoundsFunc);
+    DEFINE_SYMBOL2(RTCBoundsFunc3,InstanceBoundsFunc);
     DEFINE_SYMBOL2(AccelSet::Intersector1,InstanceIntersector1);
     DEFINE_SYMBOL2(AccelSet::Intersector4,InstanceIntersector4);
     DEFINE_SYMBOL2(AccelSet::Intersector8,InstanceIntersector8);
@@ -47,18 +47,21 @@ namespace embree
       return world2local[0];
     }
 
-    __forceinline AffineSpace3fa getWorld2Local(float time) const {
-      return rcp(lerp(local2world[0],local2world[1],time));
+    __forceinline AffineSpace3fa getWorld2Local(float t) const 
+    {
+      /* calculate time segment itime and fractional time ftime */
+      const int time_segments = numTimeSteps-1;
+      const float time = t*float(time_segments);
+      const int itime = clamp(int(floor(time)),0,time_segments-1);
+      const float ftime = time - float(itime);
+      return rcp(lerp(local2world[itime+0],local2world[itime+1],ftime));
     }
 
     /* calculates transformation from world to local space */
     __forceinline AffineSpace3fa getWorld2LocalSpecial(float time) const
     {
-      if (likely(numTimeSteps == 1)) {
-        return world2local[0];
-      } else {
-        return rcp(lerp(local2world[0],local2world[1],time));
-      }
+      if (likely(numTimeSteps == 1)) return world2local[0];
+      else                           return getWorld2Local(time);
     }
     
   public:

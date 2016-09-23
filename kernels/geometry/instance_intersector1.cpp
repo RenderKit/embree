@@ -21,17 +21,13 @@ namespace embree
 {
   namespace isa
   {
-    void InstanceBoundsFunction(void* userPtr, const Instance* instance, size_t item, BBox3fa* bounds_o) 
+    void InstanceBoundsFunction(void* userPtr, const Instance* instance, size_t item, size_t time, BBox3fa& bounds_o) 
     {
-      if (instance->numTimeSteps == 1) {
-        bounds_o[0] = xfmBounds(instance->local2world[0],instance->object->bounds);
-      } else {
-        bounds_o[0] = xfmBounds(instance->local2world[0],instance->object->bounds);
-        bounds_o[1] = xfmBounds(instance->local2world[1],instance->object->bounds);
-      }
+      assert(time < instance->numTimeSteps);
+      bounds_o = xfmBounds(instance->local2world[time],instance->object->bounds);
     }
 
-    RTCBoundsFunc2 InstanceBoundsFunc = (RTCBoundsFunc2) InstanceBoundsFunction;
+    RTCBoundsFunc3 InstanceBoundsFunc = (RTCBoundsFunc3) InstanceBoundsFunction;
 
     void FastInstanceIntersector1::intersect(const Instance* instance, Ray& ray, size_t item)
     {

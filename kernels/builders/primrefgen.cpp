@@ -326,7 +326,7 @@ namespace embree
     //template PrimInfo createPrimRefArrayMBlur<BezierCurves>(size_t timeSegment, Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
     template PrimInfo createPrimRefArrayMBlur<LineSegments>(size_t timeSegment, Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
     //template PrimInfo createPrimRefArrayMBlur<SubdivMesh>(size_t timeSegment, Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
-    //template PrimInfo createPrimRefArrayMBlur<AccelSet>(size_t timeSegment, Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
+    template PrimInfo createPrimRefArrayMBlur<AccelSet>(size_t timeSegment, Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
 
     template PrimInfo createBezierRefArray<1>(Scene* scene, mvector<BezierPrim>& prims, BuildProgressMonitor& progressMonitor);
     template PrimInfo createBezierRefArray<2>(Scene* scene, mvector<BezierPrim>& prims, BuildProgressMonitor& progressMonitor);

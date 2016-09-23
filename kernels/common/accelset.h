@@ -179,12 +179,13 @@ namespace embree
       virtual void build (size_t threadIndex, size_t threadCount) = 0;
 
       /*! Calculates the bounds of an item */
-      __forceinline BBox3fa bounds (size_t item) const
+      __forceinline BBox3fa bounds (size_t item, size_t time = 0) const
       {
         BBox3fa box[2]; // have to always use 2 boxes as the geometry might have motion blur
         assert(item < size());
-        if (boundsFunc2) boundsFunc2(boundsFunc2UserPtr,intersectors.ptr,item,(RTCBounds*)box);
-        else             boundsFunc(intersectors.ptr,item,(RTCBounds&)box[0]);
+        if      (likely(boundsFunc3)) boundsFunc3(boundsFuncUserPtr,intersectors.ptr,item,time,(RTCBounds&)box[0]);
+        else if (likely(boundsFunc2)) boundsFunc2(boundsFuncUserPtr,intersectors.ptr,item,(RTCBounds*)box);
+        else                          boundsFunc (intersectors.ptr,item,(RTCBounds&)box[0]);
         return box[0];
       }
 
@@ -193,8 +194,14 @@ namespace embree
       {
         BBox3fa box[2]; 
         assert(item < size());
-        if (boundsFunc2) boundsFunc2(boundsFunc2UserPtr,intersectors.ptr,item,(RTCBounds*)box); // FIXME: have to pass time !!!!!!!!!!!
-        else             boundsFunc(intersectors.ptr,item,(RTCBounds&)box[0]);
+        if (likely(boundsFunc3)) {
+          boundsFunc3(boundsFuncUserPtr,intersectors.ptr,item,time+0,(RTCBounds&)box[0]);
+          boundsFunc3(boundsFuncUserPtr,intersectors.ptr,item,time+1,(RTCBounds&)box[1]);
+        }
+        else if (likely(boundsFunc2))
+          boundsFunc2(boundsFuncUserPtr,intersectors.ptr,item,(RTCBounds*)box);
+        else                  
+          boundsFunc(intersectors.ptr,item,(RTCBounds&)box[0]);
         return std::make_pair(box[0],box[1]);
       }
 
@@ -204,6 +211,15 @@ namespace embree
         const BBox3fa b = bounds(i);
         if (bbox) *bbox = b;
         return isvalid(b);
+      }
+
+      /*! check if the i'th primitive is valid for the j'th time segment */
+      __forceinline bool valid2(size_t i, size_t j, BBox3fa& bbox) const 
+      {
+        const BBox3fa bounds0 = bounds(i,j+0);
+        const BBox3fa bounds1 = bounds(i,j+1);
+        bbox = bounds0; // use bounding box of first timestep to build BVH
+        return isvalid(bounds0) && isvalid(bounds1);
       }
       
       void enabling ();
@@ -411,7 +427,8 @@ namespace embree
     public:
       RTCBoundsFunc  boundsFunc;
       RTCBoundsFunc2 boundsFunc2;
-      void* boundsFunc2UserPtr;
+      RTCBoundsFunc3 boundsFunc3;
+      void* boundsFuncUserPtr;
 
       struct Intersectors 
       {

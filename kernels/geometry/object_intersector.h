@@ -32,6 +32,9 @@ namespace embree
         __forceinline PrecalculationsBase (const vbool<K>& valid, const RayK<K>& ray) {}
       };
 
+      //typedef typename std::conditional<mblur, 
+      //  IntersectorKPrecalculations<K,PrecalculationsBase>,
+      //  IntersectorKPrecalculationsMB<K,PrecalculationsBase>>::type Precalculations;
       typedef IntersectorKPrecalculations<K,PrecalculationsBase> Precalculations;
       
       static __forceinline void intersect(const vbool<K>& valid_i, const Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive& prim, Scene* scene);
@@ -41,6 +44,14 @@ namespace embree
     typedef ObjectIntersectorK<4>  ObjectIntersector4;
     typedef ObjectIntersectorK<8>  ObjectIntersector8;
     typedef ObjectIntersectorK<16> ObjectIntersector16;
+
+    //typedef ObjectIntersectorK<4,false>  ObjectIntersector4;
+    //typedef ObjectIntersectorK<8,false>  ObjectIntersector8;
+    //typedef ObjectIntersectorK<16,false> ObjectIntersector16;
+
+    //typedef ObjectIntersectorK<4,true>  ObjectIntersector4MB;
+    //typedef ObjectIntersectorK<8,true>  ObjectIntersector8MB;
+    //typedef ObjectIntersectorK<16,true> ObjectIntersector16MB;
 
     template<>
     __forceinline void ObjectIntersector4::intersect(const vbool4& valid_i, const Precalculations& pre, Ray4& ray, IntersectContext* context, const Primitive& prim, Scene* scene)
