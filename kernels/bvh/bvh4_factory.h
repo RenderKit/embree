@@ -74,6 +74,9 @@ namespace embree
     Accel* BVH4QuantizedTriangle4i(Scene* scene);
     Accel* BVH4QuantizedQuad4i(Scene* scene);
 
+    Accel* BVH4Quad4vSpatialSplit(Scene* scene);
+    Accel* BVH4Quad4vObjectSplit(Scene* scene);
+
 
   private:
     Accel::Intersectors BVH4Line4iIntersectors(BVH4* bvh);
@@ -266,6 +269,8 @@ namespace embree
     DEFINE_BUILDER2(void,Scene,size_t,BVH4Triangle4SceneBuilderFastSpatialSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH4Triangle4vSceneBuilderFastSpatialSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH4Triangle4iSceneBuilderFastSpatialSAH);
+
+    DEFINE_BUILDER2(void,Scene,size_t,BVH4Quad4vSceneBuilderFastSpatialSAH);
     
     DEFINE_BUILDER2(void,LineSegments,size_t,BVH4Line4iMeshBuilderSAH);
     //DEFINE_BUILDER2(void,LineSegments,size_t,BVH4Line4iMBMeshBuilderSAH);

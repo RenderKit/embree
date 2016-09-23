@@ -45,6 +45,9 @@ namespace embree
     Accel* BVH8Triangle4iMB(Scene* scene);
 
     Accel* BVH8Quad4v(Scene* scene);
+    Accel* BVH8Quad4vObjectSplit(Scene* scene);
+    Accel* BVH8Quad4vSpatialSplit(Scene* scene);
+
     Accel* BVH8Quad4i(Scene* scene);
     Accel* BVH8Quad4iMB(Scene* scene);
 
