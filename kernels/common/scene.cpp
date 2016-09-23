@@ -175,7 +175,7 @@ namespace embree
     if (device->quad_accel == "default") 
     {
       if (isDynamic() && !isRobust()) {
-#if defined (__TARGET_AVX__)
+#if defined (__TARGET_AVX__) && 0
         if (device->hasISA(AVX))
           accels.add(device->bvh8_factory->BVH8Quad4vTwolevel(this));
         else
