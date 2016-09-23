@@ -83,14 +83,14 @@ namespace embree
     }
 
      template<typename T>
-     __forceinline Vec3<T> getVertex(const vint<M> &v, const size_t index, const Scene *const scene, const T& time) const
+     __forceinline Vec3<T> getVertex(const vint<M> &v, const size_t index, const Scene *const scene, const size_t itime, const T& ftime) const
     {
       const QuadMesh* mesh = scene->getQuadMesh(geomID(index));
-      const Vec3fa v0  = *(Vec3fa*)mesh->vertexPtr(v[index],0);
-      const Vec3fa v1  = *(Vec3fa*)mesh->vertexPtr(v[index],1);
+      const Vec3fa v0  = *(Vec3fa*)mesh->vertexPtr(v[index],itime+0);
+      const Vec3fa v1  = *(Vec3fa*)mesh->vertexPtr(v[index],itime+1);
       const Vec3<T> p0(v0.x,v0.y,v0.z);
       const Vec3<T> p1(v1.x,v1.y,v1.z);
-      return (T(one)-time)*p0 + time*p1;
+      return (T(one)-ftime)*p0 + ftime*p1;
     }
 
     /* gather the quads */

@@ -562,14 +562,9 @@ namespace embree
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
     intersectors.intersector1  = BVH4Triangle4iMBIntersector1Pluecker;
-    /*
     intersectors.intersector4  = BVH4Triangle4iMBIntersector4HybridPluecker;
     intersectors.intersector8  = BVH4Triangle4iMBIntersector8HybridPluecker;
     intersectors.intersector16 = BVH4Triangle4iMBIntersector16HybridPluecker;
-    */
-    intersectors.intersector4  = BVH4Triangle4iMBIntersector4SinglePluecker;
-    intersectors.intersector8  = BVH4Triangle4iMBIntersector8SinglePluecker;
-    intersectors.intersector16 = BVH4Triangle4iMBIntersector16SinglePluecker;
     //intersectors.intersectorN  = BVH4Triangle4iMBIntersectorStreamPluecker;
     return intersectors;
   }
@@ -607,14 +602,9 @@ namespace embree
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
     intersectors.intersector1 = BVH4Quad4iMBIntersector1Pluecker;
-    /*
     intersectors.intersector4 = BVH4Quad4iMBIntersector4HybridPluecker;
     intersectors.intersector8 = BVH4Quad4iMBIntersector8HybridPluecker;
     intersectors.intersector16= BVH4Quad4iMBIntersector16HybridPluecker;
-    */
-    intersectors.intersector4 = BVH4Quad4iMBIntersector4SinglePluecker;
-    intersectors.intersector8 = BVH4Quad4iMBIntersector8SinglePluecker;
-    intersectors.intersector16= BVH4Quad4iMBIntersector16SinglePluecker;
     //intersectors.intersectorN = BVH4Quad4iMBIntersectorStreamPluecker;
     return intersectors;
   }

@@ -78,6 +78,7 @@ namespace embree
     __forceinline RayKPrecalculations() {}
     __forceinline RayKPrecalculations(const vbool<K>& valid, const RayK<K>& ray, const Scene* scene) {}
 
+    __forceinline vint<K> itime() const { return zero; }
     __forceinline vfloat<K> ftime() const { return zero; }
 
     __forceinline int itime(size_t k) const { return 0; }
@@ -99,6 +100,7 @@ namespace embree
       ftime_ = time - vfloat<K>(itime_);
     }
 
+    __forceinline vint<K> itime() const { return itime_; }
     __forceinline vfloat<K> ftime() const { return ftime_; }
 
     __forceinline int itime(size_t k) const { return itime_[k]; }

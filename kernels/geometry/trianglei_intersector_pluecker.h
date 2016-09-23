@@ -156,13 +156,14 @@ namespace embree
           /*! Intersects K rays with M triangles. */
           static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const TriangleMiMB<M>& tri, Scene* scene)
           {
+            const int itime = pre.itime(__bsf(movemask(valid_i))); // assume itime is uniform
             for (size_t i=0; i<TriangleMiMB<M>::max_size(); i++)
             {
               if (!tri.valid(i)) break;
               STAT3(normal.trav_prims,1,popcnt(valid_i),K);
-              const Vec3<vfloat<K>> v0 = tri.getVertex(tri.v0,i,scene,0,ray.time);
-              const Vec3<vfloat<K>> v1 = tri.getVertex(tri.v1,i,scene,0,ray.time);
-              const Vec3<vfloat<K>> v2 = tri.getVertex(tri.v2,i,scene,0,ray.time);
+              const Vec3<vfloat<K>> v0 = tri.getVertex(tri.v0,i,scene,itime,pre.ftime());
+              const Vec3<vfloat<K>> v1 = tri.getVertex(tri.v1,i,scene,itime,pre.ftime());
+              const Vec3<vfloat<K>> v2 = tri.getVertex(tri.v2,i,scene,itime,pre.ftime());
               pre.intersectK(valid_i,ray,v0,v1,v2,UVIdentity<K>(),IntersectKEpilogM<M,K,filter>(ray,context,tri.geomIDs,tri.primIDs,i,scene));
             }
           }
@@ -171,13 +172,14 @@ namespace embree
           static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const TriangleMiMB<M>& tri, Scene* scene)
           {
             vbool<K> valid0 = valid_i;
+            const int itime = pre.itime(__bsf(movemask(valid_i))); // assume itime is uniform
             for (size_t i=0; i<TriangleMiMB<M>::max_size(); i++)
             {
               if (!tri.valid(i)) break;
               STAT3(shadow.trav_prims,1,popcnt(valid0),K);
-              const Vec3<vfloat<K>> v0 = tri.getVertex(tri.v0,i,scene,0,ray.time);
-              const Vec3<vfloat<K>> v1 = tri.getVertex(tri.v1,i,scene,0,ray.time);
-              const Vec3<vfloat<K>> v2 = tri.getVertex(tri.v2,i,scene,0,ray.time);
+              const Vec3<vfloat<K>> v0 = tri.getVertex(tri.v0,i,scene,itime,pre.ftime());
+              const Vec3<vfloat<K>> v1 = tri.getVertex(tri.v1,i,scene,itime,pre.ftime());
+              const Vec3<vfloat<K>> v2 = tri.getVertex(tri.v2,i,scene,itime,pre.ftime());
               pre.intersectK(valid0,ray,v0,v1,v2,UVIdentity<K>(),OccludedKEpilogM<M,K,filter>(valid0,ray,context,tri.geomIDs,tri.primIDs,i,scene));
               if (none(valid0)) break;
             }

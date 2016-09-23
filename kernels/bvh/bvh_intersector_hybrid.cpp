@@ -48,15 +48,15 @@ namespace embree
     void BVHNIntersectorKHybrid<N,K,types,robust,PrimitiveIntersectorK,single>::intersect(vint<K>* __restrict__ valid_i, BVH* __restrict__ bvh, RayK<K>& __restrict__ ray, IntersectContext* context)
     {
       /* filter out invalid rays */
-      vbool<K> valid0 = *valid_i == -1;
+      vbool<K> valid = *valid_i == -1;
 #if defined(EMBREE_IGNORE_INVALID_RAYS)
-      valid0 &= ray.valid();
+      valid &= ray.valid();
 #endif
 
       /* verify correct input */
-      assert(all(valid0,ray.valid()));
-      assert(all(valid0,ray.tnear >= 0.0f));
-      assert(!(types & BVH_MB) || all(valid0,(ray.time >= 0.0f) & (ray.time <= 1.0f)));
+      assert(all(valid,ray.valid()));
+      assert(all(valid,ray.tnear >= 0.0f));
+      assert(!(types & BVH_MB) || all(valid,(ray.time >= 0.0f) & (ray.time <= 1.0f)));
       
       /* load ray */
       Vec3vfK ray_org = ray.org;
@@ -65,10 +65,10 @@ namespace embree
       vfloat<K> ray_tfar  = max(ray.tfar ,0.0f);
       const Vec3vfK rdir = rcp_safe(ray_dir);
       const Vec3vfK org(ray_org), org_rdir = org * rdir;
-      ray_tnear = select(valid0,ray_tnear,vfloat<K>(pos_inf));
-      ray_tfar  = select(valid0,ray_tfar ,vfloat<K>(neg_inf));
+      ray_tnear = select(valid,ray_tnear,vfloat<K>(pos_inf));
+      ray_tfar  = select(valid,ray_tfar ,vfloat<K>(neg_inf));
       const vfloat<K> inf = vfloat<K>(pos_inf);
-      Precalculations pre(valid0,ray,bvh->scene);
+      Precalculations pre(valid,ray,bvh->scene);
 
       /* compute near/far per ray */
       Vec3viK nearXYZ;
@@ -79,12 +79,24 @@ namespace embree
         nearXYZ.z = select(rdir.z >= 0.0f,vint<K>(4*(int)sizeof(vfloat<N>)),vint<K>(5*(int)sizeof(vfloat<N>)));
       }
 
+      /* if the rays belong to different time segments, immediately switch to single ray traversal */
+      size_t valid_bits = movemask(valid);
+      const size_t valid_first = __bsf(valid_bits);
+      if (unlikely((types & BVH_MB) && valid_bits && (movemask(pre.itime() == pre.itime(valid_first)) != valid_bits)))
+      {
+        for (size_t i=valid_first; valid_bits!=0; valid_bits=__btc(valid_bits,i), i=__bsf(valid_bits)) {
+          BVHNIntersectorKSingle<N,K,types,robust,PrimitiveIntersectorK>::intersect1(bvh, bvh->getRoot(pre,i), i, pre, ray, ray_org, ray_dir, rdir, ray_tnear, ray_tfar, nearXYZ, context);
+        }
+        AVX_ZERO_UPPER();
+        return;
+      }
+
       /* allocate stack and push root node */
       vfloat<K> stack_near[stackSizeChunk];
       NodeRef stack_node[stackSizeChunk];
       stack_node[0] = BVH::invalidNode;
       stack_near[0] = inf;
-      stack_node[1] = bvh->root;
+      stack_node[1] = bvh->getRoot(pre, valid_first);
       stack_near[1] = ray_tnear; 
       NodeRef* stackEnd MAYBE_UNUSED = stack_node+stackSizeChunk;
       NodeRef* __restrict__ sptr_node = stack_node + 2;
@@ -145,7 +157,7 @@ namespace embree
             if (unlikely(child == BVH::emptyNode)) break;
             vfloat<K> lnearP;
             vbool<K> lhit(false);
-            BVHNNodeIntersectorK<N,K,types,robust>::intersect(nodeRef,i,org,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP,lhit);
+            BVHNNodeIntersectorK<N,K,types,robust>::intersect(nodeRef,i,org,rdir,org_rdir,ray_tnear,ray_tfar,pre.ftime(),lnearP,lhit);
 
             /* if we hit the child we choose to continue with that child if it
                is closer than the current next child, or we push it onto the stack */
@@ -219,8 +231,6 @@ namespace embree
     // ===================================================================================================================================================================
     // ===================================================================================================================================================================
 
-
-    
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK, bool single>
     void BVHNIntersectorKHybrid<N,K,types,robust,PrimitiveIntersectorK,single>::occluded(vint<K>* __restrict__ valid_i, BVH* __restrict__ bvh, RayK<K>& __restrict__ ray, IntersectContext* context)
     {
@@ -257,12 +267,26 @@ namespace embree
         nearXYZ.z = select(rdir.z >= 0.0f,vint<K>(4*(int)sizeof(vfloat<N>)),vint<K>(5*(int)sizeof(vfloat<N>)));
       }
 
+      /* if the rays belong to different time segments, immediately switch to single ray traversal */
+      size_t valid_bits = movemask(valid);
+      const size_t valid_first = __bsf(valid_bits);
+      if (unlikely((types & BVH_MB) && valid_bits && (movemask(pre.itime() == pre.itime(valid_first)) != valid_bits)))
+      {
+        for (size_t i=valid_first; valid_bits!=0; valid_bits=__btc(valid_bits,i), i=__bsf(valid_bits)) {
+          if (BVHNIntersectorKSingle<N,K,types,robust,PrimitiveIntersectorK>::occluded1(bvh,bvh->getRoot(pre,i),i,pre,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar,nearXYZ,context))
+            set(terminated, i);
+        }
+        vint<K>::store(valid & terminated,&ray.geomID,0);
+        AVX_ZERO_UPPER();
+        return;
+      }
+
       /* allocate stack and push root node */
       vfloat<K> stack_near[stackSizeChunk];
       NodeRef stack_node[stackSizeChunk];
       stack_node[0] = BVH::invalidNode;
       stack_near[0] = inf;
-      stack_node[1] = bvh->root;
+      stack_node[1] = bvh->getRoot(pre, valid_first);
       stack_near[1] = ray_tnear; 
       NodeRef* stackEnd MAYBE_UNUSED = stack_node+stackSizeChunk;
       NodeRef* __restrict__ sptr_node = stack_node + 2;
@@ -321,7 +345,7 @@ namespace embree
             if (unlikely(child == BVH::emptyNode)) break;
             vfloat<K> lnearP;
             vbool<K> lhit(false);
-            BVHNNodeIntersectorK<N,K,types,robust>::intersect(nodeRef,i,org,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP,lhit);
+            BVHNNodeIntersectorK<N,K,types,robust>::intersect(nodeRef,i,org,rdir,org_rdir,ray_tnear,ray_tfar,pre.ftime(),lnearP,lhit);
 
             /* if we hit the child we choose to continue with that child if it
                is closer than the current next child, or we push it onto the stack */

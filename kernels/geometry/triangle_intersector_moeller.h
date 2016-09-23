@@ -562,7 +562,7 @@ namespace embree
           {
             if (!tri.valid(i)) break;
             STAT3(normal.trav_prims,1,popcnt(valid_i),K);
-            const Vec3<vfloat<K>> time(ray.time);
+            const Vec3<vfloat<K>> time(pre.ftime());
             const Vec3<vfloat<K>> v0 = madd(time,broadcast<vfloat<K>>(tri.dv0,i),broadcast<vfloat<K>>(tri.v0,i));
             const Vec3<vfloat<K>> v1 = madd(time,broadcast<vfloat<K>>(tri.dv1,i),broadcast<vfloat<K>>(tri.v1,i));
             const Vec3<vfloat<K>> v2 = madd(time,broadcast<vfloat<K>>(tri.dv2,i),broadcast<vfloat<K>>(tri.v2,i));
@@ -579,7 +579,7 @@ namespace embree
           {
             if (!tri.valid(i)) break;
             STAT3(shadow.trav_prims,1,popcnt(valid0),K);
-            const Vec3<vfloat<K>> time(ray.time);
+            const Vec3<vfloat<K>> time(pre.ftime());
             const Vec3<vfloat<K>> v0 = madd(time,broadcast<vfloat<K>>(tri.dv0,i),broadcast<vfloat<K>>(tri.v0,i));
             const Vec3<vfloat<K>> v1 = madd(time,broadcast<vfloat<K>>(tri.dv1,i),broadcast<vfloat<K>>(tri.v1,i));
             const Vec3<vfloat<K>> v2 = madd(time,broadcast<vfloat<K>>(tri.dv2,i),broadcast<vfloat<K>>(tri.v2,i));
@@ -593,7 +593,7 @@ namespace embree
         static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const TriangleMvMB<M>& tri, Scene* scene)
         {
           STAT3(normal.trav_prims,1,1,1);
-          const Vec3<vfloat<Mx>> time(ray.time[k]);
+          const Vec3<vfloat<Mx>> time(pre.ftime(k));
           const Vec3<vfloat<Mx>> v0 = madd(time,Vec3<vfloat<Mx>>(tri.dv0),Vec3<vfloat<Mx>>(tri.v0));
           const Vec3<vfloat<Mx>> v1 = madd(time,Vec3<vfloat<Mx>>(tri.dv1),Vec3<vfloat<Mx>>(tri.v1));
           const Vec3<vfloat<Mx>> v2 = madd(time,Vec3<vfloat<Mx>>(tri.dv2),Vec3<vfloat<Mx>>(tri.v2));
@@ -604,7 +604,7 @@ namespace embree
         static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const TriangleMvMB<M>& tri, Scene* scene)
         {
           STAT3(shadow.trav_prims,1,1,1);
-          const Vec3<vfloat<Mx>> time(ray.time[k]);
+          const Vec3<vfloat<Mx>> time(pre.ftime(k));
           const Vec3<vfloat<Mx>> v0 = madd(time,Vec3<vfloat<Mx>>(tri.dv0),Vec3<vfloat<Mx>>(tri.v0));
           const Vec3<vfloat<Mx>> v1 = madd(time,Vec3<vfloat<Mx>>(tri.dv1),Vec3<vfloat<Mx>>(tri.v1));
           const Vec3<vfloat<Mx>> v2 = madd(time,Vec3<vfloat<Mx>>(tri.dv2),Vec3<vfloat<Mx>>(tri.v2));
