@@ -64,7 +64,7 @@ namespace embree
     }
 
     template<int K>
-      __forceinline AffineSpaceT<LinearSpace3<Vec3<vfloat<K>>>> getWorld2Local(const vbool<K>& valid, vfloat<K> t) const
+      __forceinline AffineSpaceT<LinearSpace3<Vec3<vfloat<K>>>> getWorld2Local(const vbool<K>& valid, const vfloat<K>& t) const
     {
       typedef AffineSpaceT<LinearSpace3<Vec3<vfloat<K>>>> AffineSpace3vfK;
       
