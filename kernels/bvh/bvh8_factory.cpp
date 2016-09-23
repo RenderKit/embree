@@ -741,7 +741,7 @@ namespace embree
     if      (scene->device->tri_builder_mb == "default"     )  builder = BVH8Triangle4iMBSceneBuilderSAH(accel,scene,0);
     else if (scene->device->tri_builder_mb == "sah"         )  builder = BVH8Triangle4iMBSceneBuilderSAH(accel,scene,0);
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder_mb+" for BVH8<Triangle4iMB>");
-
+    scene->needTriangleVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
 
