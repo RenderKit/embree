@@ -249,7 +249,14 @@ namespace embree
       ALIGNED_STRUCT;
 
       ISPCInstance (Ref<TutorialScene::Instance> in)
-      : geom(INSTANCE), space0(in->space0), space1(in->space1), geomID(in->geomID) {}
+      : geom(INSTANCE), space0(one), space1(one), geomID(in->geomID) 
+      {
+        switch (in->spaces.size()) {
+        case 1: space0 = space1 = in->spaces[0]; break;
+        case 2: space0 = in->spaces[0]; space1 = in->spaces[1]; break;
+        default: throw std::runtime_error("only 1 or 2 transformation timesteps supported by tutorials");
+        }
+      }
 
       ISPCGeometry geom;
       AffineSpace3fa space0;

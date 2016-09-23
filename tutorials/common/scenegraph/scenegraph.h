@@ -98,16 +98,98 @@ namespace embree
       size_t indegree;   // number of nodes pointing to us
       bool closed;       // determines if the subtree may represent an instance
     };
+
+    struct Transformations
+    {
+      __forceinline Transformations() {}
+
+      __forceinline Transformations(OneTy) {
+        spaces.push_back(one);
+      }
+      
+      __forceinline Transformations(const AffineSpace3fa& space) {
+        spaces.push_back(space);
+      }
+
+      __forceinline Transformations(const AffineSpace3fa& space0, const AffineSpace3fa& space1) {
+        spaces.push_back(space0);
+        spaces.push_back(space1);
+      }
+
+      __forceinline Transformations(const avector<AffineSpace3fa>& spaces)
+        : spaces(spaces) { assert(spaces.size()); }
+
+      __forceinline size_t size() const {
+        return spaces.size();
+      }
+
+      __forceinline       AffineSpace3fa& operator[] ( const size_t i )       { return spaces[i]; }
+      __forceinline const AffineSpace3fa& operator[] ( const size_t i ) const { return spaces[i]; }
+
+      BBox3fa bounds ( const BBox3fa& cbounds ) const 
+      {
+        BBox3fa r = empty;
+        for (size_t i=0; i<spaces.size(); i++)
+          r.extend(xfmBounds(spaces[i],cbounds));
+        return r;
+      }
+
+      void add (const Transformations& other) {
+        for (size_t i=0; i<other.size(); i++) spaces.push_back(other[i]);
+      }
+
+      friend __forceinline Transformations operator* ( const Transformations& a, const Transformations& b ) 
+      {
+        if (a.size() == 1) 
+        {
+          Transformations c(b.size());
+          for (size_t i=0; i<b.size(); i++) c[i] = a[0] * b[i];
+          return c;
+        } 
+        else if (b.size() == 1) 
+        {
+          Transformations c(a.size());
+          for (size_t i=0; i<a.size(); i++) c[i] = a[i] * b[0];
+          return c;
+        }
+        else if (a.size() == b.size())
+        {
+          Transformations c(a.size());
+          for (size_t i=0; i<a.size(); i++) c[i] = a[i] * b[i];
+          return c;
+        }
+        else
+          THROW_RUNTIME_ERROR("number of transformations does not match");        
+      }
+
+      AffineSpace3fa interpolate (const float gtime) const
+      {
+        if (spaces.size() == 1) return spaces[0];
+
+         /* calculate time segment itime and fractional time ftime */
+        const int time_segments = spaces.size()-1;
+        const float time = gtime*float(time_segments);
+        const int itime = clamp(int(floor(time)),0,time_segments-1);
+        const float ftime = time - float(itime);
+        return lerp(spaces[itime+0],spaces[itime+1],ftime);
+      }
+
+    public:
+      avector<AffineSpace3fa> spaces;
+    };
     
     struct TransformNode : public Node
     {
       ALIGNED_STRUCT;
 
       TransformNode (const AffineSpace3fa& xfm, const Ref<Node>& child)
-        : xfm0(xfm), xfm1(xfm), child(child) {}
+        : spaces(xfm), child(child) {}
 
       TransformNode (const AffineSpace3fa& xfm0, const AffineSpace3fa& xfm1, const Ref<Node>& child)
-        : xfm0(xfm0), xfm1(xfm1), child(child) {}
+        : spaces(xfm0,xfm1), child(child) {}
+
+      TransformNode (const avector<AffineSpace3fa>& spaces, const Ref<Node>& child)
+        : spaces(spaces), child(child) {}
 
       virtual void setMaterial(Ref<MaterialNode> material) {
         child->setMaterial(material);
@@ -117,12 +199,8 @@ namespace embree
       virtual void calculateInDegree();
       virtual bool calculateClosed();
       
-      virtual BBox3fa bounds() const
-      {
-        const BBox3fa cbounds = child->bounds();
-        const BBox3fa b0 = xfmBounds(xfm0,cbounds);
-        const BBox3fa b1 = xfmBounds(xfm1,cbounds);
-        return merge(b0,b1);
+      virtual BBox3fa bounds() const {
+        return spaces.bounds(child->bounds());
       }
 
       virtual size_t numPrimitives() const {
@@ -130,8 +208,7 @@ namespace embree
       }
 
     public:
-      AffineSpace3fa xfm0;
-      AffineSpace3fa xfm1;
+      Transformations spaces;
       Ref<Node> child;
     };
     
