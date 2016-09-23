@@ -141,6 +141,7 @@ namespace embree
       if (unlikely(q.v[0] >= numVertices())) return false;
       if (unlikely(q.v[1] >= numVertices())) return false;
       if (unlikely(q.v[2] >= numVertices())) return false;
+      if (unlikely(q.v[3] >= numVertices())) return false;
 
       assert(j+1 < numTimeSteps);
       const Vec3fa a0 = vertex(q.v[0],j+0); if (unlikely(!isvalid(a0))) return false;

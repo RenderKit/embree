@@ -164,10 +164,10 @@ namespace embree
       BBox3fa bounds = empty;
       vint<M> vgeomID = -1, vprimID = -1;
       Vec3vfM v0 = zero, v1 = zero, v2 = zero;
-	
-      for (size_t i=0; i<M; i++)
+
+	  for (size_t i=0; i<M; i++)
       {
-        if (geomID(i) == -1) break;
+        if (unlikely(geomID(i) == -1)) break;
         const unsigned geomId = geomID(i);
         const unsigned primId = primID(i);
         const TriangleMesh::Triangle& tri = mesh->triangle(primId);

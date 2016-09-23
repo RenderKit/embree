@@ -117,20 +117,23 @@ namespace embree
       
       const Vec3fa v0 = vertex(index+0,j); if (!isvalid(v0)) return false;
       const Vec3fa v1 = vertex(index+1,j); if (!isvalid(v1)) return false;
-      
       return true;
     }
 
     /*! check if the i'th primitive is valid */
-    __forceinline bool valid(size_t i, BBox3fa* bbox) const {
-      *bbox = bounds(i); return valid1(i,0);
+    __forceinline bool valid(size_t i, BBox3fa* bbox) const 
+    {
+      if (!valid1(i,0)) return false;
+      if (bbox) *bbox = bounds(i); 
+      return true;
     }
 
     /*! check if the i'th primitive is valid at the j'th time segment */
     __forceinline bool valid2(size_t i, size_t j, BBox3fa& bbox) const 
     {
+      if (!valid1(i,j+0) || valid1(i,j+1)) return false;
       bbox = bounds(i,j);  // use bounds of first time step in builder
-      return valid1(i,j+0) && valid1(i,j+1);
+      return true;
     }
 
   public:
