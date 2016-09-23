@@ -28,6 +28,7 @@ namespace embree
 {
   namespace isa
   {
+    /* deprecated code */
     __forceinline void splitTriangle(const PrimRef& prim, int dim, float pos, 
                                      const Vec3fa& a, const Vec3fa& b, const Vec3fa& c, PrimRef& left_o, PrimRef& right_o)
     {
@@ -65,21 +66,25 @@ namespace embree
       new (&right_o) PrimRef(cright,prim.geomID(), prim.primID());
     }
 
+    //////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////
 
-    __forceinline void splitTriangleFast(const BBox3fa& bounds, 
-                                         const size_t dim, 
-                                         const float pos, 
-                                         const Vec3fa v[4],
-                                         const Vec3fa inv_length[4],
-                                         BBox3fa& left_o, 
-                                         BBox3fa& right_o)
+    template<size_t N>
+    __forceinline void splitTriQuadFast(const BBox3fa& bounds, 
+                                        const size_t dim, 
+                                        const float pos, 
+                                        const Vec3fa v[4],
+                                        const Vec3fa inv_length[4],
+                                        BBox3fa& left_o, 
+                                        BBox3fa& right_o)
     {
       BBox3fa left = empty, right = empty;
       /* clip triangle to left and right box by processing all edges */
-      for (size_t i=0; i<3; i++)
+      for (size_t i=0; i<N; i++)
       {
         const Vec3fa &v0 = v[i]; 
-        const Vec3fa &v1 = v[i+1]; 
+        const Vec3fa &v1 = v[(i+1)%4]; 
         const float v0d = v0[dim];
         const float v1d = v1[dim];
 
@@ -89,7 +94,6 @@ namespace embree
         if ((v0d < pos && pos < v1d) || (v1d < pos && pos < v0d)) // the edge crosses the splitting location
         {
           assert((v1d-v0d) != 0.0f);
-          //const Vec3fa c = v0 + (pos-v0d)/(v1d-v0d)*(v1-v0);
           const Vec3fa c = v0 + (pos-v0d)*inv_length[i][dim]*(v1-v0);
           left.extend(c);
           right.extend(c);
@@ -103,16 +107,17 @@ namespace embree
       right_o = intersect(right,bounds);
     }
 
-    __forceinline void splitTriangleFast(const PrimRef& prim, 
-                                         const size_t dim, 
-                                         const float pos, 
-                                         const Vec3fa v[4],
-                                         const vfloat4 &inv_length4,
-                                         PrimRef& left_o, 
-                                         PrimRef& right_o)
+    template<size_t N>
+    __forceinline void splitTriQuadFast(const PrimRef& prim, 
+                                        const size_t dim, 
+                                        const float pos, 
+                                        const Vec3fa v[4],
+                                        const vfloat4 &inv_length4,
+                                        PrimRef& left_o, 
+                                        PrimRef& right_o)
     {
       BBox3fa left = empty, right = empty;
-      for (size_t i=0; i<3; i++)
+      for (size_t i=0; i<N; i++)
       {
         const Vec3fa &v0 = v[i]; 
         const Vec3fa &v1 = v[i+1]; 
@@ -135,6 +140,12 @@ namespace embree
       new (&left_o ) PrimRef(intersect(left ,prim.bounds()),prim.geomID(), prim.primID());
       new (&right_o) PrimRef(intersect(right,prim.bounds()),prim.geomID(), prim.primID());
     }
+
+    //////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////
+
+
 
 
     template<size_t N>

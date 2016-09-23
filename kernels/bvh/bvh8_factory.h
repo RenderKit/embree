@@ -214,5 +214,8 @@ namespace embree
     DEFINE_BUILDER2(void,QuadMesh,size_t,BVH8Quad4vMeshBuilderSAH);
     DEFINE_BUILDER2(void,QuadMesh,size_t,BVH8Quad4vMeshRefitSAH);
     DEFINE_BUILDER2(void,QuadMesh,size_t,BVH8Quad4vMeshBuilderMortonGeneral);
+
+    DEFINE_BUILDER2(void,Scene,size_t,BVH8Quad4vSceneBuilderFastSpatialSAH);
+
   };
 }
