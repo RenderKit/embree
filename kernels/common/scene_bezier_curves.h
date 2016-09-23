@@ -114,14 +114,16 @@ namespace embree
     {
       const unsigned int index = curve(i);
       if (index+3 >= numVertices()) return false;
-      const Vec3fa a0 = vertex(index+0,j+0); if (!isvalid((vfloat4)a0)) return false;
-      const Vec3fa a1 = vertex(index+1,j+0); if (!isvalid((vfloat4)a1)) return false;
-      const Vec3fa a2 = vertex(index+2,j+0); if (!isvalid((vfloat4)a2)) return false;
-      const Vec3fa a3 = vertex(index+3,j+0); if (!isvalid((vfloat4)a3)) return false;
-      const Vec3fa b0 = vertex(index+0,j+1); if (!isvalid((vfloat4)b0)) return false;
-      const Vec3fa b1 = vertex(index+1,j+1); if (!isvalid((vfloat4)b1)) return false;
-      const Vec3fa b2 = vertex(index+2,j+1); if (!isvalid((vfloat4)b2)) return false;
-      const Vec3fa b3 = vertex(index+3,j+1); if (!isvalid((vfloat4)b3)) return false;
+      const Vec3fa a0 = vertex(index+0,j+0); if (unlikely(!isvalid((vfloat4)a0))) return false;
+      const Vec3fa a1 = vertex(index+1,j+0); if (unlikely(!isvalid((vfloat4)a1))) return false;
+      const Vec3fa a2 = vertex(index+2,j+0); if (unlikely(!isvalid((vfloat4)a2))) return false;
+      const Vec3fa a3 = vertex(index+3,j+0); if (unlikely(!isvalid((vfloat4)a3))) return false;
+      const Vec3fa b0 = vertex(index+0,j+1); if (unlikely(!isvalid((vfloat4)b0))) return false;
+      const Vec3fa b1 = vertex(index+1,j+1); if (unlikely(!isvalid((vfloat4)b1))) return false;
+      const Vec3fa b2 = vertex(index+2,j+1); if (unlikely(!isvalid((vfloat4)b2))) return false;
+      const Vec3fa b3 = vertex(index+3,j+1); if (unlikely(!isvalid((vfloat4)b3))) return false;
+      if (unlikely(min(a0.w,a1.w,a2.w,a3.w) < 0.0f)) return false;
+      if (unlikely(min(b0.w,b1.w,b2.w,b3.w) < 0.0f)) return false;
       c0 = 0.5f*(a0+b0);
       c1 = 0.5f*(a1+b1);
       c2 = 0.5f*(a2+b2);

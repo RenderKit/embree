@@ -110,13 +110,9 @@ namespace embree
     {
       const unsigned int index = segment(i);
       if (index+1 >= numVertices()) return false;
-
-      const float r0 = radius(index+0,j); if (!isvalid(r0)) return false;
-      const float r1 = radius(index+1,j); if (!isvalid(r1)) return false;
-      if (min(r0,r1) < 0.0f) return false;
-      
-      const Vec3fa v0 = vertex(index+0,j); if (!isvalid(v0)) return false;
-      const Vec3fa v1 = vertex(index+1,j); if (!isvalid(v1)) return false;
+      const Vec3fa v0 = vertex(index+0,j); if (unlikely(!isvalid((vfloat4)v0))) return false;
+      const Vec3fa v1 = vertex(index+1,j); if (unlikely(!isvalid((vfloat4)v1))) return false;
+      if (min(v0.w,v1.w) < 0.0f) return false;
       return true;
     }
 
@@ -124,14 +120,14 @@ namespace embree
     __forceinline bool valid(size_t i, BBox3fa* bbox) const 
     {
       if (!valid1(i,0)) return false;
-      if (bbox) *bbox = bounds(i); 
+      *bbox = bounds(i); 
       return true;
     }
 
     /*! check if the i'th primitive is valid at the j'th time segment */
     __forceinline bool valid2(size_t i, size_t j, BBox3fa& bbox) const 
     {
-      if (!valid1(i,j+0) || valid1(i,j+1)) return false;
+      if (!valid1(i,j+0) || !valid1(i,j+1)) return false;
       bbox = bounds(i,j);  // use bounds of first time step in builder
       return true;
     }

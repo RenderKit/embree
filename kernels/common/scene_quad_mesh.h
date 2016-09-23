@@ -124,7 +124,7 @@ namespace embree
         const Vec3fa v2 = vertex(q.v[2],j);
         const Vec3fa v3 = vertex(q.v[3],j);
 
-        if (!isvalid(v0) || !isvalid(v1) || !isvalid(v2) || !isvalid(v3))
+        if (unlikely(!isvalid(v0) || !isvalid(v1) || !isvalid(v2) || !isvalid(v3)))
           return false;
       }
 
