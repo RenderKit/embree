@@ -56,7 +56,7 @@ namespace embree
     __forceinline RayPrecalculationsMB(const Ray& ray, const void* ptr, const Scene* scene)
     {
       /* calculate time segment itime and fractional time ftime */
-      const int time_segments = scene->numTimeSteps-1;
+      const int time_segments = (int)scene->numTimeSteps-1;
       const float time = ray.time*float(time_segments);
       itime_ = clamp(int(floor(time)),0,time_segments-1);
       ftime_ = time - float(itime_);
@@ -94,7 +94,7 @@ namespace embree
     __forceinline RayKPrecalculationsMB(const vbool<K>& valid, const RayK<K>& ray, const Scene* scene)
     {
       /* calculate time segment itime and fractional time ftime */
-      const int time_segments = scene->numTimeSteps-1;
+      const int time_segments = (int)scene->numTimeSteps-1;
       const vfloat<K> time = ray.time*float(time_segments);
       itime_ = clamp(vint<K>(floor(time)),vint<K>(0),vint<K>(time_segments-1));
       ftime_ = time - vfloat<K>(itime_);
