@@ -1205,7 +1205,7 @@ namespace embree
     
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
     {
-      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      std::string cfg = state->rtcore + "isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
 
