@@ -29,7 +29,7 @@ namespace embree {
 //#define RAYN_FLAGS RTC_INTERSECT_INCOHERENT
 
 #define SIMPLE_SHADING 0
-#define DYNAMIC_BENCHMARK 0
+#define DYNAMIC_BENCHMARK 1
 
 extern "C" ISPCScene* g_ispc_scene;
 
