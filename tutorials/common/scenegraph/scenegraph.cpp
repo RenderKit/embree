@@ -78,7 +78,7 @@ namespace embree
     indegree++;
     if (indegree == 1) {
       child->calculateInDegree();
-      if (xfm0 != xfm1) child->calculateInDegree(); // break instanced up when motion blur is used
+      if (spaces.size() > 1) child->calculateInDegree(); // break instance up when motion blur is used
     }
   }
 
@@ -194,7 +194,7 @@ namespace embree
     {
       if (Ref<SceneGraph::TransformNode> xfmNode1 = node1.dynamicCast<SceneGraph::TransformNode>()) 
       {
-        xfmNode0->xfm1 = xfmNode1->xfm0;
+        xfmNode0->spaces.add(xfmNode1->spaces);
         extend_animation(xfmNode0->child, xfmNode1->child);
       } 
       else THROW_RUNTIME_ERROR("incompatible scene graph"); 

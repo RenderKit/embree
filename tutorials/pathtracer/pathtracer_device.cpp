@@ -1038,15 +1038,15 @@ unsigned int convertInstance(ISPCInstance* instance, int meshID, RTCScene scene_
     } else */
   {
     RTCScene scene_inst = geomID_to_scene[instance->geomID];
-    if (eq(AffineSpace3fa(instance->space0),AffineSpace3fa(instance->space1))) {
+    if (instance->numTimeSteps == 1) {
       unsigned int geomID = rtcNewInstance(scene_out, scene_inst);
-      rtcSetTransform(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->space0.l.vx.x);
+      rtcSetTransform(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->spaces[0].l.vx.x);
       return geomID;
     }
     else {
-      unsigned int geomID = rtcNewInstance2(scene_out, scene_inst, 2);
-      rtcSetTransform2(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->space0.l.vx.x,0);
-      rtcSetTransform2(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->space1.l.vx.x,1);
+      unsigned int geomID = rtcNewInstance2(scene_out, scene_inst, instance->numTimeSteps);
+      for (size_t t=0; t<instance->numTimeSteps; t++)
+        rtcSetTransform2(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->spaces[t].l.vx.x,t);
       return geomID;
     }
   }
@@ -1365,6 +1365,19 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
     assert(false);
 }
 
+AffineSpace3fa calculate_interpolated_space (ISPCInstance* instance, float gtime)
+{
+  if (instance->numTimeSteps == 1) 
+    return AffineSpace3fa(instance->spaces[0]);
+
+  /* calculate time segment itime and fractional time ftime */
+  const int time_segments = instance->numTimeSteps-1;
+  const float time = gtime*(float)(time_segments);
+  const int itime = clamp((int)(floor(time)),(int)0,time_segments-1);
+  const float ftime = time - (float)(itime);
+  return (1.0f-ftime)*AffineSpace3fa(instance->spaces[itime+0]) + ftime*AffineSpace3fa(instance->spaces[itime+1]);
+}
+
 inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
 {
   int materialID = 0;
@@ -1387,7 +1400,8 @@ inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
 
     /* convert normals */
     if (instance) {
-      AffineSpace3fa space = (1.0f-ray.time)*AffineSpace3fa(instance->space0) + ray.time*AffineSpace3fa(instance->space1);
+      //AffineSpace3fa space = (1.0f-ray.time)*AffineSpace3fa(instance->space0) + ray.time*AffineSpace3fa(instance->space1);
+      AffineSpace3fa space = calculate_interpolated_space(instance,ray.time);
       dg.Ng = xfmVector(space,dg.Ng);
       dg.Ns = xfmVector(space,dg.Ns);
     }

@@ -247,6 +247,7 @@ namespace embree
     Ref<SceneGraph::MaterialNode> loadMaterial(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadTransformNode(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadTransform2Node(const Ref<XML>& xml);
+    Ref<SceneGraph::Node> loadTransformAnimationNode(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadAnimation2Node(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadAnimationNode(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadGroupNode(const Ref<XML>& xml);
@@ -383,8 +384,13 @@ namespace embree
     } else if (xml->parm("rotate_z") != "") {
       float degrees; sscanf(xml->parm("rotate_z").c_str(),"%f",&degrees);
       return AffineSpace3fa::rotate(Vec3f(0,0,1),deg2rad(degrees));
-    } else if (xml->parm("rotate") != "" && xml->parm("axis") != "") {
-      float degrees; sscanf(xml->parm("rotate").c_str(),"%f",&degrees);
+    } else if (xml->parm("angle") != "" && xml->parm("axis") != "" && xml->parm("point") != "") {
+      float degrees; sscanf(xml->parm("angle").c_str(),"%f",&degrees);
+      float vx,vy,vz; sscanf(xml->parm("axis" ).c_str(),"%f %f %f",&vx,&vy,&vz);
+      float px,py,pz; sscanf(xml->parm("point").c_str(),"%f %f %f",&px,&py,&pz);
+      return AffineSpace3fa::rotate(Vec3f(px,py,pz),Vec3f(vx,vy,vz),deg2rad(degrees));
+    } else if (xml->parm("angle") != "" && xml->parm("axis") != "") {
+      float degrees; sscanf(xml->parm("angle").c_str(),"%f",&degrees);
       float x,y,z; sscanf(xml->parm("axis").c_str(),"%f %f %f",&x,&y,&z);
       return AffineSpace3fa::rotate(Vec3f(x,y,z),deg2rad(degrees));
     } else {
@@ -1040,9 +1046,21 @@ namespace embree
     return new SceneGraph::TransformNode(space0,space1,group.cast<SceneGraph::Node>());
   }
 
+  Ref<SceneGraph::Node> XMLLoader::loadTransformAnimationNode(const Ref<XML>& xml) 
+  {
+    if (xml->size() < 2) THROW_RUNTIME_ERROR(xml->loc.str()+": invalid TransformAnimation node");
+
+    avector<AffineSpace3fa> spaces(xml->size()-1);
+    for (size_t i=0; i<xml->size()-1; i++)
+      spaces[i] = load<AffineSpace3fa>(xml->children[i]);
+
+    Ref<SceneGraph::Node> child = loadNode(xml->children[xml->size()-1]);
+    return new SceneGraph::TransformNode(spaces,child);
+  }
+
   Ref<SceneGraph::Node> XMLLoader::loadAnimation2Node(const Ref<XML>& xml) 
   {
-    if (xml->size() != 2) THROW_RUNTIME_ERROR("invalid Animation2 node");
+    if (xml->size() != 2) THROW_RUNTIME_ERROR(xml->loc.str()+": invalid Animation2 node");
     Ref<SceneGraph::Node> node0 = loadNode(xml->children[0]);
     Ref<SceneGraph::Node> node1 = loadNode(xml->children[1]);
     SceneGraph::extend_animation(node0,node1);
@@ -1052,7 +1070,7 @@ namespace embree
 
   Ref<SceneGraph::Node> XMLLoader::loadAnimationNode(const Ref<XML>& xml) 
   {
-    if (xml->size() == 0) THROW_RUNTIME_ERROR("invalid Animation node");
+    if (xml->size() == 0) THROW_RUNTIME_ERROR(xml->loc.str()+": invalid Animation node");
     Ref<SceneGraph::Node> node = loadNode(xml->children[0]);
     for (size_t i=1; i<xml->size(); i++) {
       Ref<SceneGraph::Node> nodei = loadNode(xml->children[i]);
@@ -1114,6 +1132,7 @@ namespace embree
       else if (xml->name == "Group"           ) return sceneMap[id] = loadGroupNode       (xml);
       else if (xml->name == "Transform"       ) return sceneMap[id] = loadTransformNode   (xml);
       else if (xml->name == "Transform2"      ) return sceneMap[id] = loadTransform2Node  (xml);
+      else if (xml->name == "TransformAnimation") return sceneMap[id] = loadTransformAnimationNode(xml);
       else if (xml->name == "Animation2"      ) return sceneMap[id] = loadAnimation2Node  (xml);
       else if (xml->name == "Animation"       ) return sceneMap[id] = loadAnimationNode   (xml);
 

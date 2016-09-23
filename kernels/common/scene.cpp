@@ -477,7 +477,7 @@ namespace embree
       return -1;
     }
 
-    Geometry* geom = new Instance(this,scene,numTimeSteps);
+    Geometry* geom = Instance::create(this,scene,numTimeSteps);
     return geom->id;
   }
   
