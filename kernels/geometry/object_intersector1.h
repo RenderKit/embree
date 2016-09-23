@@ -23,7 +23,7 @@ namespace embree
 {
   namespace isa
   {
-//    template<bool mblur>
+    template<bool mblur>
       struct ObjectIntersector1
     {
       typedef Object Primitive;
@@ -35,10 +35,9 @@ namespace embree
         __forceinline PrecalculationsBase (const Ray& ray, const void *ptr) {}
       };
 
-      //typedef typename std::conditional<mblur, 
-      //  Intersector1Precalculations<PrecalculationsBase>,
-      //  Intersector1PrecalculationsMB<PrecalculationsBase>>::type Precalculations;
-      typedef Intersector1Precalculations<PrecalculationsBase> Precalculations;
+      typedef typename std::conditional<mblur, 
+        Intersector1PrecalculationsMB<PrecalculationsBase>,
+        Intersector1Precalculations<PrecalculationsBase>>::type Precalculations;
       
       static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim, Scene* scene, const unsigned* geomID_to_instID) 
       {
@@ -51,7 +50,7 @@ namespace embree
           return;
 #endif
 
-        accel->intersect((RTCRay&)ray,prim.primID,context);
+        accel->intersect(ray,prim.primID,context);
       }
       
       static __forceinline bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim, Scene* scene, const unsigned* geomID_to_instID) 
@@ -65,7 +64,7 @@ namespace embree
           return false;
 #endif
 
-        accel->occluded((RTCRay&)ray,prim.primID,context);
+        accel->occluded(ray,prim.primID,context);
         return ray.geomID == 0;
       }
       
@@ -97,7 +96,7 @@ namespace embree
           if (unlikely(N == 0)) continue;
 
           /* call user stream intersection function */
-          accel->intersect1M((RTCRay**)rays_filtered,N,prim.primID,context);
+          accel->intersect1M(rays_filtered,N,prim.primID,context);
         }
 
         /* /\* update all contexts *\/ */
@@ -140,7 +139,7 @@ namespace embree
           if (unlikely(N == 0)) continue;
 
           /* call user stream occluded function */
-          accel->occluded1M((RTCRay**)rays_filtered,N,prim.primID,context);
+          accel->occluded1M(rays_filtered,N,prim.primID,context);
 
           /* mark occluded rays */
           for (size_t i=0; i<N; i++)
