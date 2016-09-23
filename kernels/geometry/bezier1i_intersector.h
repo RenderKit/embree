@@ -26,12 +26,19 @@ namespace embree
     struct Bezier1iIntersector1
     {
       typedef Bezier1i Primitive;
-      typedef Intersector1Precalculations<Bezier1iIntersector1> Precalculations;
 
-      __forceinline Bezier1iIntersector1() {}
+      struct PrecalculationsBase
+      {
+        __forceinline PrecalculationsBase() {}
 
-      __forceinline Bezier1iIntersector1(const Ray& ray, const void* ptr)
-        : intersectorHair(ray,ptr), intersectorCurve(ray,ptr) {}
+        __forceinline PrecalculationsBase(const Ray& ray, const void* ptr)
+          : intersectorHair(ray,ptr), intersectorCurve(ray,ptr) {}
+
+        Bezier1Intersector1 intersectorHair;
+        BezierGeometry1Intersector1 intersectorCurve;
+      };
+
+      typedef Intersector1Precalculations<PrecalculationsBase> Precalculations;
 
       static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim, Scene* scene, const unsigned* geomID_to_instID)
       {
@@ -74,24 +81,28 @@ namespace embree
         } while(unlikely(valid));
         return valid_isec;
       }
-
-
-    public:
-      Bezier1Intersector1 intersectorHair;
-      BezierGeometry1Intersector1 intersectorCurve;
     };
 
     template<int K>
       struct Bezier1iIntersectorK
     {
       typedef Bezier1i Primitive;
-      typedef IntersectorKPrecalculations<K,Bezier1iIntersectorK> Precalculations;
 
-      __forceinline Bezier1iIntersectorK(const vbool<K>& valid, const RayK<K>& ray) 
-        : intersectorHair(valid,ray), intersectorCurve(valid,ray) {}
+      struct PrecalculationsBase
+      {
+        __forceinline PrecalculationsBase() {}
 
-      __forceinline Bezier1iIntersectorK (const RayK<K>& ray, size_t k) 
-        : intersectorHair(ray,k), intersectorCurve(ray,k) {}
+        __forceinline PrecalculationsBase(const vbool<K>& valid, const RayK<K>& ray)
+          : intersectorHair(valid,ray), intersectorCurve(valid,ray) {}
+
+        __forceinline PrecalculationsBase(const RayK<K>& ray, size_t k)
+          : intersectorHair(ray,k), intersectorCurve(ray,k) {}
+
+        Bezier1IntersectorK<K> intersectorHair;
+        BezierGeometry1IntersectorK<K> intersectorCurve;
+      };
+
+      typedef IntersectorKPrecalculations<K,PrecalculationsBase> Precalculations;
       
       static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, const size_t k, IntersectContext* context, const Primitive& prim, Scene* scene)
       {
@@ -138,21 +149,24 @@ namespace embree
         }
         return valid_o;
       }
-
-    public:
-      Bezier1IntersectorK<K> intersectorHair;
-      BezierGeometry1IntersectorK<K> intersectorCurve;
     };
     
     struct Bezier1iIntersector1MB
     {
       typedef Bezier1i Primitive;
-      typedef Intersector1PrecalculationsMB<Bezier1iIntersector1MB> Precalculations;
       
-      __forceinline Bezier1iIntersector1MB() {}
+      struct PrecalculationsBase
+      {
+        __forceinline PrecalculationsBase() {}
 
-      __forceinline Bezier1iIntersector1MB(const Ray& ray, const void* ptr)
-        : intersectorHair(ray,ptr), intersectorCurve(ray,ptr) {}
+        __forceinline PrecalculationsBase(const Ray& ray, const void* ptr)
+          : intersectorHair(ray,ptr), intersectorCurve(ray,ptr) {}
+
+        Bezier1Intersector1 intersectorHair;
+        BezierGeometry1Intersector1 intersectorCurve;
+      };
+
+      typedef Intersector1PrecalculationsMB<PrecalculationsBase> Precalculations;
             
       static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim, Scene* scene, const unsigned* geomID_to_instID)
       {
@@ -203,23 +217,28 @@ namespace embree
         else
           return pre.intersectorCurve.intersect(ray,p0,p1,p2,p3,Occluded1Epilog1<true>(ray,context,prim.geomID(),prim.primID(),scene,geomID_to_instID));
       }
-
-    public:
-      Bezier1Intersector1 intersectorHair;
-      BezierGeometry1Intersector1 intersectorCurve;
     };
 
     template<int K>
     struct Bezier1iIntersectorKMB
     {
       typedef Bezier1i Primitive;
-      typedef IntersectorKPrecalculationsMB<K,Bezier1iIntersectorKMB> Precalculations;
 
-      __forceinline Bezier1iIntersectorKMB (const vbool<K>& valid, const RayK<K>& ray) 
-        : intersectorHair(valid,ray), intersectorCurve(valid,ray) {}
+      struct PrecalculationsBase
+      {
+        __forceinline PrecalculationsBase() {}
 
-      __forceinline Bezier1iIntersectorKMB (const RayK<K>& ray, size_t k) 
-        : intersectorHair(ray,k), intersectorCurve(ray,k) {}
+        __forceinline PrecalculationsBase(const vbool<K>& valid, const RayK<K>& ray)
+          : intersectorHair(valid,ray), intersectorCurve(valid,ray) {}
+
+        __forceinline PrecalculationsBase(const RayK<K>& ray, size_t k)
+          : intersectorHair(ray,k), intersectorCurve(ray,k) {}
+
+        Bezier1IntersectorK<K> intersectorHair;
+        BezierGeometry1IntersectorK<K> intersectorCurve;
+      };
+
+      typedef IntersectorKPrecalculationsMB<K,PrecalculationsBase> Precalculations;
       
       static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, const size_t k, IntersectContext* context, const Primitive& prim, Scene* scene)
       {
@@ -270,10 +289,6 @@ namespace embree
         else
           return pre.intersectorCurve.intersect(ray,k,a0,a1,a2,a3,Occluded1KEpilog1<K,true>(ray,k,context,prim.geomID(),prim.primID(),scene));
       }
-
-    public:
-      Bezier1IntersectorK<K> intersectorHair;
-      BezierGeometry1IntersectorK<K> intersectorCurve;
     };
   }
 }
