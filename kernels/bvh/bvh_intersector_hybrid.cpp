@@ -57,6 +57,17 @@ namespace embree
       assert(all(valid,ray.valid()));
       assert(all(valid,ray.tnear >= 0.0f));
       assert(!(types & BVH_MB) || all(valid,(ray.time >= 0.0f) & (ray.time <= 1.0f)));
+
+      /* if the rays belong to different time segments, immediately switch to single ray traversal */
+      Precalculations pre(valid,ray,bvh->scene);
+      size_t valid_bits = movemask(valid);
+      const size_t valid_first = __bsf(valid_bits);
+      if (unlikely((types & BVH_MB) && valid_bits && (movemask(pre.itime() == pre.itime(valid_first)) != valid_bits)))
+      {
+        intersectSingle(valid, bvh, pre, ray, context);
+        AVX_ZERO_UPPER();
+        return;
+      }
       
       /* load ray */
       Vec3vfK ray_org = ray.org;
@@ -68,7 +79,6 @@ namespace embree
       ray_tnear = select(valid,ray_tnear,vfloat<K>(pos_inf));
       ray_tfar  = select(valid,ray_tfar ,vfloat<K>(neg_inf));
       const vfloat<K> inf = vfloat<K>(pos_inf);
-      Precalculations pre(valid,ray,bvh->scene);
 
       /* compute near/far per ray */
       Vec3viK nearXYZ;
@@ -77,18 +87,6 @@ namespace embree
         nearXYZ.x = select(rdir.x >= 0.0f,vint<K>(0*(int)sizeof(vfloat<N>)),vint<K>(1*(int)sizeof(vfloat<N>)));
         nearXYZ.y = select(rdir.y >= 0.0f,vint<K>(2*(int)sizeof(vfloat<N>)),vint<K>(3*(int)sizeof(vfloat<N>)));
         nearXYZ.z = select(rdir.z >= 0.0f,vint<K>(4*(int)sizeof(vfloat<N>)),vint<K>(5*(int)sizeof(vfloat<N>)));
-      }
-
-      /* if the rays belong to different time segments, immediately switch to single ray traversal */
-      size_t valid_bits = movemask(valid);
-      const size_t valid_first = __bsf(valid_bits);
-      if (unlikely((types & BVH_MB) && valid_bits && (movemask(pre.itime() == pre.itime(valid_first)) != valid_bits)))
-      {
-        for (size_t i=valid_first; valid_bits!=0; valid_bits=__btc(valid_bits,i), i=__bsf(valid_bits)) {
-          BVHNIntersectorKSingle<N,K,types,robust,PrimitiveIntersectorK>::intersect1(bvh, bvh->getRoot(pre,i), i, pre, ray, ray_org, ray_dir, rdir, ray_tnear, ray_tfar, nearXYZ, context);
-        }
-        AVX_ZERO_UPPER();
-        return;
       }
 
       /* allocate stack and push root node */
@@ -227,6 +225,31 @@ namespace embree
       AVX_ZERO_UPPER();
     }
 
+    template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK, bool single>
+    void BVHNIntersectorKHybrid<N,K,types,robust,PrimitiveIntersectorK,single>::intersectSingle(const vbool<K>& __restrict__ valid, BVH* __restrict__ bvh, Precalculations& __restrict__ pre, RayK<K>& __restrict__ ray, IntersectContext* context)
+    {
+      /* load ray */
+      Vec3vfK ray_org = ray.org;
+      Vec3vfK ray_dir = ray.dir;
+      vfloat<K> ray_tnear = max(ray.tnear,0.0f);
+      vfloat<K> ray_tfar  = max(ray.tfar ,0.0f);
+      const Vec3vfK rdir = rcp_safe(ray_dir);
+      ray_tnear = select(valid,ray_tnear,vfloat<K>(pos_inf));
+      ray_tfar  = select(valid,ray_tfar ,vfloat<K>(neg_inf));
+
+      /* compute near/far per ray */
+      Vec3viK nearXYZ;
+      nearXYZ.x = select(rdir.x >= 0.0f,vint<K>(0*(int)sizeof(vfloat<N>)),vint<K>(1*(int)sizeof(vfloat<N>)));
+      nearXYZ.y = select(rdir.y >= 0.0f,vint<K>(2*(int)sizeof(vfloat<N>)),vint<K>(3*(int)sizeof(vfloat<N>)));
+      nearXYZ.z = select(rdir.z >= 0.0f,vint<K>(4*(int)sizeof(vfloat<N>)),vint<K>(5*(int)sizeof(vfloat<N>)));
+
+      /* iterates over all rays in the packet using single ray traversal */
+      size_t bits = movemask(valid);
+      for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
+        BVHNIntersectorKSingle<N,K,types,robust,PrimitiveIntersectorK>::intersect1(bvh, bvh->getRoot(pre,i), i, pre, ray, ray_org, ray_dir, rdir, ray_tnear, ray_tfar, nearXYZ, context);
+      }
+    }
+
     // ===================================================================================================================================================================
     // ===================================================================================================================================================================
     // ===================================================================================================================================================================
@@ -246,6 +269,17 @@ namespace embree
       assert(all(valid,ray.tnear >= 0.0f));
       assert(!(types & BVH_MB) || all(valid,(ray.time >= 0.0f) & (ray.time <= 1.0f)));
 
+      /* if the rays belong to different time segments, immediately switch to single ray traversal */
+      Precalculations pre(valid,ray,bvh->scene);
+      size_t valid_bits = movemask(valid);
+      const size_t valid_first = __bsf(valid_bits);
+      if (unlikely((types & BVH_MB) && valid_bits && (movemask(pre.itime() == pre.itime(valid_first)) != valid_bits)))
+      {
+        occludedSingle(valid, bvh, pre, ray, context);
+        AVX_ZERO_UPPER();
+        return;
+      }
+
       /* load ray */
       vbool<K> terminated = !valid;
       Vec3vfK ray_org = ray.org, ray_dir = ray.dir;
@@ -256,7 +290,6 @@ namespace embree
       ray_tnear = select(valid,ray_tnear,vfloat<K>(pos_inf));
       ray_tfar  = select(valid,ray_tfar ,vfloat<K>(neg_inf));
       const vfloat<K> inf = vfloat<K>(pos_inf);
-      Precalculations pre(valid,ray,bvh->scene);
 
       /* compute near/far per ray */
       Vec3viK nearXYZ;
@@ -265,20 +298,6 @@ namespace embree
         nearXYZ.x = select(rdir.x >= 0.0f,vint<K>(0*(int)sizeof(vfloat<N>)),vint<K>(1*(int)sizeof(vfloat<N>)));
         nearXYZ.y = select(rdir.y >= 0.0f,vint<K>(2*(int)sizeof(vfloat<N>)),vint<K>(3*(int)sizeof(vfloat<N>)));
         nearXYZ.z = select(rdir.z >= 0.0f,vint<K>(4*(int)sizeof(vfloat<N>)),vint<K>(5*(int)sizeof(vfloat<N>)));
-      }
-
-      /* if the rays belong to different time segments, immediately switch to single ray traversal */
-      size_t valid_bits = movemask(valid);
-      const size_t valid_first = __bsf(valid_bits);
-      if (unlikely((types & BVH_MB) && valid_bits && (movemask(pre.itime() == pre.itime(valid_first)) != valid_bits)))
-      {
-        for (size_t i=valid_first; valid_bits!=0; valid_bits=__btc(valid_bits,i), i=__bsf(valid_bits)) {
-          if (BVHNIntersectorKSingle<N,K,types,robust,PrimitiveIntersectorK>::occluded1(bvh,bvh->getRoot(pre,i),i,pre,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar,nearXYZ,context))
-            set(terminated, i);
-        }
-        vint<K>::store(valid & terminated,&ray.geomID,0);
-        AVX_ZERO_UPPER();
-        return;
       }
 
       /* allocate stack and push root node */
@@ -415,6 +434,33 @@ namespace embree
       }
       vint<K>::store(valid & terminated,&ray.geomID,0);
       AVX_ZERO_UPPER();
+    }
+
+    template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK, bool single>
+    void BVHNIntersectorKHybrid<N,K,types,robust,PrimitiveIntersectorK,single>::occludedSingle(const vbool<K>& __restrict__ valid, BVH* __restrict__ bvh, Precalculations& __restrict__ pre, RayK<K>& __restrict__ ray, IntersectContext* context)
+    {
+      /* load ray */
+      vbool<K> terminated = !valid;
+      Vec3vfK ray_org = ray.org, ray_dir = ray.dir;
+      vfloat<K> ray_tnear = max(ray.tnear,0.0f);
+      vfloat<K> ray_tfar  = max(ray.tfar ,0.0f);
+      const Vec3vfK rdir = rcp_safe(ray_dir);
+      ray_tnear = select(valid,ray_tnear,vfloat<K>(pos_inf));
+      ray_tfar  = select(valid,ray_tfar ,vfloat<K>(neg_inf));
+
+      /* compute near/far per ray */
+      Vec3viK nearXYZ;
+      nearXYZ.x = select(rdir.x >= 0.0f,vint<K>(0*(int)sizeof(vfloat<N>)),vint<K>(1*(int)sizeof(vfloat<N>)));
+      nearXYZ.y = select(rdir.y >= 0.0f,vint<K>(2*(int)sizeof(vfloat<N>)),vint<K>(3*(int)sizeof(vfloat<N>)));
+      nearXYZ.z = select(rdir.z >= 0.0f,vint<K>(4*(int)sizeof(vfloat<N>)),vint<K>(5*(int)sizeof(vfloat<N>)));
+
+      /* iterates over all rays in the packet using single ray traversal */
+      size_t bits = movemask(valid);
+      for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
+        if (BVHNIntersectorKSingle<N,K,types,robust,PrimitiveIntersectorK>::occluded1(bvh,bvh->getRoot(pre,i),i,pre,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar,nearXYZ,context))
+          set(terminated, i);
+      }
+      vint<K>::store(valid & terminated,&ray.geomID,0);
     }
 
     ////////////////////////////////////////////////////////////////////////////////
