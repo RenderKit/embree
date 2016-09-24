@@ -57,6 +57,7 @@
 #include <map>
 #include <algorithm>
 #include <functional>
+#include <utility>
 
 namespace embree
 {

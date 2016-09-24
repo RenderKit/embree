@@ -35,7 +35,7 @@ namespace embree
     ~Buffer ();
 
     /*! this class is not copyable */
-  public:
+  private:
     Buffer (const Buffer& other) DELETED; // do not implement
     Buffer& operator= (const Buffer& other) DELETED; // do not implement
       
@@ -153,6 +153,14 @@ namespace embree
 
     typedef T value_type;
 
+    BufferT () {}
+    BufferT (BufferT&& other) : Buffer(std::move(other)) {}
+    BufferT& operator= (BufferT&& other)
+    {
+      Buffer::operator=(std::move(other));
+      return *this;
+    }
+
     /*! access to the ith element of the buffer stream */
     __forceinline const T& operator[](size_t i) const 
     {
@@ -168,6 +176,14 @@ namespace embree
   public:
 
     typedef Vec3fa value_type;
+
+    BufferT () {}
+    BufferT (BufferT&& other) : Buffer(std::move(other)) {}
+    BufferT& operator= (BufferT&& other)
+    {
+      Buffer::operator=(std::move(other));
+      return *this;
+    }
 
     /*! access to the ith element of the buffer stream */
     __forceinline const Vec3fa operator[](size_t i) const
