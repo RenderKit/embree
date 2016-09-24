@@ -111,10 +111,6 @@ namespace embree
     /// BVH4Intersector4Single Definitions
     ////////////////////////////////////////////////////////////////////////////////
 
-    IF_ENABLED_TRIS(DEFINE_INTERSECTOR4(BVH4Triangle4iMBIntersector4SinglePluecker,BVHNIntersectorKSingle<4 COMMA 4 COMMA BVH_AN2 COMMA false COMMA ArrayIntersectorK_1<4 COMMA TriangleMiMBIntersectorKPluecker<SIMD_MODE(4) COMMA 4 COMMA true> > >));
-
-    IF_ENABLED_QUADS(DEFINE_INTERSECTOR4(BVH4Quad4iMBIntersector4SinglePluecker,BVHNIntersectorKSingle<4 COMMA 4 COMMA BVH_AN2 COMMA false COMMA ArrayIntersectorK_1<4 COMMA QuadMiMBIntersectorKPluecker<4 COMMA 4 COMMA true > > >));
-
     IF_ENABLED_LINES(DEFINE_INTERSECTOR4(BVH4Line4iIntersector4,  BVHNIntersectorKSingle<4 COMMA 4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA LineMiIntersectorK  <SIMD_MODE(4) COMMA 4 COMMA true> > >));
     IF_ENABLED_LINES(DEFINE_INTERSECTOR4(BVH4Line4iMBIntersector4,BVHNIntersectorKSingle<4 COMMA 4 COMMA BVH_AN2 COMMA false COMMA ArrayIntersectorK_1<4 COMMA LineMiMBIntersectorK<SIMD_MODE(4) COMMA 4 COMMA true> > >));
    
@@ -133,10 +129,6 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
 
 #if defined(__AVX__)
-    IF_ENABLED_TRIS(DEFINE_INTERSECTOR8(BVH4Triangle4iMBIntersector8SinglePluecker,BVHNIntersectorKSingle<4 COMMA 8 COMMA BVH_AN2 COMMA false COMMA ArrayIntersectorK_1<8 COMMA TriangleMiMBIntersectorKPluecker<SIMD_MODE(4) COMMA 8 COMMA true> > >));
-
-    IF_ENABLED_QUADS(DEFINE_INTERSECTOR8(BVH4Quad4iMBIntersector8SinglePluecker,BVHNIntersectorKSingle<4 COMMA 8 COMMA BVH_AN2 COMMA false COMMA ArrayIntersectorK_1<8 COMMA QuadMiMBIntersectorKPluecker<4 COMMA 8 COMMA true> > >));
-
     IF_ENABLED_LINES(DEFINE_INTERSECTOR8(BVH4Line4iIntersector8,  BVHNIntersectorKSingle<4 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA LineMiIntersectorK  <SIMD_MODE(4) COMMA 8 COMMA true> > >));
     IF_ENABLED_LINES(DEFINE_INTERSECTOR8(BVH4Line4iMBIntersector8,BVHNIntersectorKSingle<4 COMMA 8 COMMA BVH_AN2 COMMA false COMMA ArrayIntersectorK_1<8 COMMA LineMiMBIntersectorK<SIMD_MODE(4) COMMA 8 COMMA true> > >));
    
@@ -156,10 +148,6 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
 
 #if defined(__AVX512F__)
-    IF_ENABLED_TRIS(DEFINE_INTERSECTOR16(BVH4Triangle4iMBIntersector16SinglePluecker,BVHNIntersectorKSingle<4 COMMA 16 COMMA BVH_AN2 COMMA false COMMA ArrayIntersectorK_1<16 COMMA TriangleMiMBIntersectorKPluecker<SIMD_MODE(4) COMMA 16 COMMA true> > >));
-
-    IF_ENABLED_QUADS(DEFINE_INTERSECTOR16(BVH4Quad4iMBIntersector16SinglePluecker,BVHNIntersectorKSingle<4 COMMA 16 COMMA BVH_AN2 COMMA false COMMA ArrayIntersectorK_1<16 COMMA QuadMiMBIntersectorKPluecker<4 COMMA 16 COMMA true> > >));
-
     IF_ENABLED_LINES(DEFINE_INTERSECTOR16(BVH4Line4iIntersector16,  BVHNIntersectorKSingle<4 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA LineMiIntersectorK  <SIMD_MODE(4) COMMA 16 COMMA true> > >));
     IF_ENABLED_LINES(DEFINE_INTERSECTOR16(BVH4Line4iMBIntersector16,BVHNIntersectorKSingle<4 COMMA 16 COMMA BVH_AN2 COMMA false COMMA ArrayIntersectorK_1<16 COMMA LineMiMBIntersectorK<SIMD_MODE(4) COMMA 16 COMMA true> > >));
    
@@ -179,17 +167,12 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
 
 #if defined(__AVX__)
-    IF_ENABLED_TRIS(DEFINE_INTERSECTOR4(BVH8Triangle4iMBIntersector4SinglePluecker,BVHNIntersectorKSingle<8 COMMA 4 COMMA BVH_AN2 COMMA false COMMA ArrayIntersectorK_1<4 COMMA TriangleMiMBIntersectorKPluecker<SIMD_MODE(4) COMMA 4 COMMA true> > >));
-
-    IF_ENABLED_QUADS(DEFINE_INTERSECTOR4(BVH8Quad4iMBIntersector4SinglePluecker,BVHNIntersectorKSingle<8 COMMA 4 COMMA BVH_AN2 COMMA false COMMA ArrayIntersectorK_1<4 COMMA QuadMiMBIntersectorKPluecker<4 COMMA 4 COMMA true> > >));
-
     IF_ENABLED_LINES(DEFINE_INTERSECTOR4(BVH8Line4iIntersector4,  BVHNIntersectorKSingle<8 COMMA 4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA LineMiIntersectorK  <SIMD_MODE(4) COMMA 4 COMMA true> > >));
     IF_ENABLED_LINES(DEFINE_INTERSECTOR4(BVH8Line4iMBIntersector4,BVHNIntersectorKSingle<8 COMMA 4 COMMA BVH_AN2 COMMA false COMMA ArrayIntersectorK_1<4 COMMA LineMiMBIntersectorK<SIMD_MODE(4) COMMA 4 COMMA true> > >));
    
     IF_ENABLED_HAIR(DEFINE_INTERSECTOR4(BVH8Bezier1vIntersector4Single_OBB, BVHNIntersectorKSingle<8 COMMA 4 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1vIntersectorK<4> > >));
     IF_ENABLED_HAIR(DEFINE_INTERSECTOR4(BVH8Bezier1iIntersector4Single_OBB, BVHNIntersectorKSingle<8 COMMA 4 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1iIntersectorK<4> > >));
     IF_ENABLED_HAIR(DEFINE_INTERSECTOR4(BVH8Bezier1iMBIntersector4Single_OBB,BVHNIntersectorKSingle<8 COMMA 4 COMMA BVH_AN2_UN2 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1iIntersectorKMB<4> > >));
-
 #endif
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -197,17 +180,12 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
 
 #if defined(__AVX__)
-    IF_ENABLED_TRIS(DEFINE_INTERSECTOR8(BVH8Triangle4iMBIntersector8SinglePluecker,BVHNIntersectorKSingle<8 COMMA 8 COMMA BVH_AN2 COMMA false COMMA ArrayIntersectorK_1<8 COMMA TriangleMiMBIntersectorKPluecker<SIMD_MODE(4) COMMA 8 COMMA true> > >));
-
-    IF_ENABLED_QUADS(DEFINE_INTERSECTOR8(BVH8Quad4iMBIntersector8SinglePluecker,BVHNIntersectorKSingle<8 COMMA 8 COMMA BVH_AN2 COMMA false COMMA ArrayIntersectorK_1<8 COMMA QuadMiMBIntersectorKPluecker<4 COMMA 8 COMMA true> > >));
-
     IF_ENABLED_LINES(DEFINE_INTERSECTOR8(BVH8Line4iIntersector8,  BVHNIntersectorKSingle<8 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA LineMiIntersectorK  <SIMD_MODE(4) COMMA 8 COMMA true> > >));
     IF_ENABLED_LINES(DEFINE_INTERSECTOR8(BVH8Line4iMBIntersector8,BVHNIntersectorKSingle<8 COMMA 8 COMMA BVH_AN2 COMMA false COMMA ArrayIntersectorK_1<8 COMMA LineMiMBIntersectorK<SIMD_MODE(4) COMMA 8 COMMA true> > >));
    
     IF_ENABLED_HAIR(DEFINE_INTERSECTOR8(BVH8Bezier1vIntersector8Single_OBB, BVHNIntersectorKSingle<8 COMMA 8 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA Bezier1vIntersectorK<8> > >));
     IF_ENABLED_HAIR(DEFINE_INTERSECTOR8(BVH8Bezier1iIntersector8Single_OBB, BVHNIntersectorKSingle<8 COMMA 8 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA Bezier1iIntersectorK<8> > >));
     IF_ENABLED_HAIR(DEFINE_INTERSECTOR8(BVH8Bezier1iMBIntersector8Single_OBB,BVHNIntersectorKSingle<8 COMMA 8 COMMA BVH_AN2_UN2 COMMA false COMMA ArrayIntersectorK_1<8 COMMA Bezier1iIntersectorKMB<8> > >));
-
 #endif
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -215,17 +193,12 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
 
 #if defined(__AVX512F__)
-    IF_ENABLED_TRIS(DEFINE_INTERSECTOR16(BVH8Triangle4iMBIntersector16SinglePluecker,BVHNIntersectorKSingle<8 COMMA 16 COMMA BVH_AN2 COMMA false COMMA ArrayIntersectorK_1<16 COMMA TriangleMiMBIntersectorKPluecker<SIMD_MODE(4) COMMA 16 COMMA true> > >));
-
-    IF_ENABLED_QUADS(DEFINE_INTERSECTOR16(BVH8Quad4iMBIntersector16SinglePluecker,BVHNIntersectorKSingle<8 COMMA 16 COMMA BVH_AN2 COMMA false COMMA ArrayIntersectorK_1<16 COMMA QuadMiMBIntersectorKPluecker<4 COMMA 16 COMMA true > > >));
-
     IF_ENABLED_LINES(DEFINE_INTERSECTOR4(BVH8Line4iIntersector16,  BVHNIntersectorKSingle<8 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA LineMiIntersectorK  <SIMD_MODE(4) COMMA 16 COMMA true> > >));
     IF_ENABLED_LINES(DEFINE_INTERSECTOR4(BVH8Line4iMBIntersector16,BVHNIntersectorKSingle<8 COMMA 16 COMMA BVH_AN2 COMMA false COMMA ArrayIntersectorK_1<16 COMMA LineMiMBIntersectorK<SIMD_MODE(4) COMMA 16 COMMA true> > >));
    
     IF_ENABLED_HAIR(DEFINE_INTERSECTOR16(BVH8Bezier1vIntersector16Single_OBB, BVHNIntersectorKSingle<8 COMMA 16 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA Bezier1vIntersectorK<16> > >));
     IF_ENABLED_HAIR(DEFINE_INTERSECTOR16(BVH8Bezier1iIntersector16Single_OBB, BVHNIntersectorKSingle<8 COMMA 16 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA Bezier1iIntersectorK<16> > >));
     IF_ENABLED_HAIR(DEFINE_INTERSECTOR16(BVH8Bezier1iMBIntersector16Single_OBB,BVHNIntersectorKSingle<8 COMMA 16 COMMA BVH_AN2_UN2 COMMA false COMMA ArrayIntersectorK_1<16 COMMA Bezier1iIntersectorKMB<16> > >));
-
 #endif
   }
 }
