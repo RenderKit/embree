@@ -169,7 +169,7 @@ namespace embree
               {
                 BBox3fa mybounds[RTC_MAX_TIME_STEPS];
                 SubdivPatch1Base& patch = subdiv_patches[numTimeSteps*patchIndex];
-                patch.root_ref.data = (int64_t) GridSOA::create(&patch,numTimeSteps,scene,alloc,mybounds);
+                patch.root_ref.data = (int64_t) GridSOA::create(&patch,(unsigned)numTimeSteps,scene,alloc,mybounds);
 
                 for (size_t t=0; t<numTimeSteps; t++)
                 {

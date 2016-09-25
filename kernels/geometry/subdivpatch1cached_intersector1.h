@@ -113,7 +113,7 @@ namespace embree
           if (pre.grid) SharedLazyTessellationCache::sharedLazyTessellationCache.unlock();
           grid = (GridSOA*) SharedLazyTessellationCache::lookup(prim->entry(),scene->commitCounterSubdiv,[&] () {
               auto alloc = [] (const size_t bytes) { return SharedLazyTessellationCache::sharedLazyTessellationCache.malloc(bytes); };
-              return GridSOA::create((SubdivPatch1Base*)prim,scene->numTimeSteps,scene,alloc);
+              return GridSOA::create((SubdivPatch1Base*)prim,(unsigned)scene->numTimeSteps,scene,alloc);
             });
         }
         else {
@@ -219,7 +219,7 @@ namespace embree
           if (pre.grid) SharedLazyTessellationCache::sharedLazyTessellationCache.unlock();
           grid = (GridSOA*) SharedLazyTessellationCache::lookup(prim->entry(),scene->commitCounterSubdiv,[&] () {
               auto alloc = [] (const size_t bytes) { return SharedLazyTessellationCache::sharedLazyTessellationCache.malloc(bytes); };
-              return GridSOA::create((SubdivPatch1Base*)prim,scene->numTimeSteps,scene,alloc);
+              return GridSOA::create((SubdivPatch1Base*)prim,(unsigned)scene->numTimeSteps,scene,alloc);
             });
         }
         else {
