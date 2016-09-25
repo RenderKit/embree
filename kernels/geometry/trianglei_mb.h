@@ -123,23 +123,10 @@ namespace embree
       return bounds;
     }
 
-    /* Calculate the bounds of the triangles at t0 */
-    __forceinline BBox3fa bounds0(const Scene *const scene, size_t itime) const
-    {
-      return bounds(scene,itime+0);
-    }
-
-    /* Calculate the bounds of the triangles at t1 */
-    __forceinline BBox3fa bounds1(const Scene *const scene, size_t itime) const
-    {
-      return bounds(scene,itime+1);
-    }
-
     /* Calculate primitive bounds */
-    __forceinline std::pair<BBox3fa,BBox3fa> bounds(const Scene *const scene, size_t itime) {
-      return std::make_pair(bounds0(scene,itime),bounds1(scene,itime));
+    __forceinline std::pair<BBox3fa,BBox3fa> bounds2(const Scene *const scene, size_t itime) {
+      return std::make_pair(bounds(scene,itime+0),bounds(scene,itime+1));
     }
-
 
     /* Fill triangle from triangle list */
     __forceinline std::pair<BBox3fa,BBox3fa> fill_mblur(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list, size_t itime)
@@ -171,7 +158,7 @@ namespace embree
       }
 
       new (this) TriangleMiMB(v0,v1,v2,geomID,primID); // FIXME: use non temporal store
-      return bounds(scene,itime);
+      return bounds2(scene,itime);
     }
 
     /* Updates the primitive */

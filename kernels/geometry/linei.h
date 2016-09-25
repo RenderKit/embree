@@ -72,14 +72,14 @@ namespace embree
     __forceinline void gather(Vec4<vfloat<M>>& p0, Vec4<vfloat<M>>& p1, const Scene* scene, size_t itime, float ftime) const;
 
     /* Calculate the bounds of the line segments */
-    __forceinline const BBox3fa bounds(const Scene* scene, size_t j = 0) const
+    __forceinline const BBox3fa bounds(const Scene* scene, size_t itime = 0) const
     {
       BBox3fa bounds = empty;
       for (size_t i=0; i<M && valid(i); i++)
       {
         const LineSegments* geom = scene->getLineSegments(geomID(i));
-        const Vec3fa& p0 = geom->vertex(v0[i]+0,j);
-        const Vec3fa& p1 = geom->vertex(v0[i]+1,j);
+        const Vec3fa& p0 = geom->vertex(v0[i]+0,itime);
+        const Vec3fa& p1 = geom->vertex(v0[i]+1,itime);
         BBox3fa b = merge(BBox3fa(p0),BBox3fa(p1));
         b = enlarge(b,Vec3fa(max(p0.w,p1.w)));
         bounds.extend(b);
@@ -88,8 +88,8 @@ namespace embree
     }
 
     /* Calculate primitive bounds */
-    __forceinline std::pair<BBox3fa,BBox3fa> bounds2(const Scene* scene, size_t time) {
-      return std::make_pair(bounds(scene,time+0), bounds(scene,time+1));
+    __forceinline std::pair<BBox3fa,BBox3fa> bounds2(const Scene* scene, size_t itime) {
+      return std::make_pair(bounds(scene,itime+0), bounds(scene,itime+1));
     }
 
     /* Fill line segment from line segment list */
@@ -151,10 +151,10 @@ namespace embree
     }
 
     /* Fill line segment from line segment list */
-    __forceinline std::pair<BBox3fa,BBox3fa> fill_mblur(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list, size_t time)
+    __forceinline std::pair<BBox3fa,BBox3fa> fill_mblur(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list, size_t itime)
     {
       fill(prims,begin,end,scene,list);
-      return bounds2(scene,time);
+      return bounds2(scene,itime);
     }
 
     /* Updates the primitive */

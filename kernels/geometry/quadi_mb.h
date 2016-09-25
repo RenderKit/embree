@@ -110,16 +110,16 @@ namespace embree
                               const float ftime) const;
     
     /* Calculate the bounds of the quads */
-    __forceinline const BBox3fa bounds(const Scene *const scene, const size_t j=0) const 
+    __forceinline const BBox3fa bounds(const Scene *const scene, const size_t itime=0) const
     {
       BBox3fa bounds = empty;
       for (size_t i=0; i<M && valid(i); i++)
       {
 	const QuadMesh* mesh = scene->getQuadMesh(geomID(i));
-	const Vec3fa &p0 = mesh->vertex(v0[i],j);
-	const Vec3fa &p1 = mesh->vertex(v1[i],j);
-	const Vec3fa &p2 = mesh->vertex(v2[i],j);
-	const Vec3fa &p3 = mesh->vertex(v3[i],j);
+        const Vec3fa &p0 = mesh->vertex(v0[i],itime);
+        const Vec3fa &p1 = mesh->vertex(v1[i],itime);
+        const Vec3fa &p2 = mesh->vertex(v2[i],itime);
+        const Vec3fa &p3 = mesh->vertex(v3[i],itime);
 	bounds.extend(p0);
 	bounds.extend(p1);
 	bounds.extend(p2);
@@ -129,12 +129,12 @@ namespace embree
     }
     
     /* Calculate primitive bounds */
-    __forceinline std::pair<BBox3fa,BBox3fa> bounds2(const Scene* const scene, const size_t j) {
-      return std::make_pair(bounds(scene,j+0),bounds(scene,j+1));
+    __forceinline std::pair<BBox3fa,BBox3fa> bounds2(const Scene* const scene, const size_t itime) {
+      return std::make_pair(bounds(scene,itime+0),bounds(scene,itime+1));
     }
     
     /* Fill quad from quad list */
-    __forceinline std::pair<BBox3fa,BBox3fa> fill_mblur(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list, size_t time)
+    __forceinline std::pair<BBox3fa,BBox3fa> fill_mblur(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list, size_t itime)
     {
       vint<M> geomID = -1, primID = -1;
       vint<M> v0 = zero, v1 = zero, v2 = zero, v3 = zero;
@@ -165,7 +165,7 @@ namespace embree
       }
       
       new (this) QuadMiMB(v0,v1,v2,v3,geomID,primID); // FIXME: use non temporal store
-      return bounds2(scene,time);
+      return bounds2(scene,itime);
     }
     
   public:

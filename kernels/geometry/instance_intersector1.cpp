@@ -21,10 +21,10 @@ namespace embree
 {
   namespace isa
   {
-    void InstanceBoundsFunction(void* userPtr, const Instance* instance, size_t item, size_t time, BBox3fa& bounds_o) 
+    void InstanceBoundsFunction(void* userPtr, const Instance* instance, size_t item, size_t itime, BBox3fa& bounds_o)
     {
-      assert(time < instance->numTimeSteps);
-      bounds_o = xfmBounds(instance->local2world[time],instance->object->bounds);
+      assert(itime < instance->numTimeSteps);
+      bounds_o = xfmBounds(instance->local2world[itime],instance->object->bounds);
     }
 
     RTCBoundsFunc3 InstanceBoundsFunc = (RTCBoundsFunc3) InstanceBoundsFunction;
