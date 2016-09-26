@@ -31,14 +31,14 @@ namespace embree
 
     template<typename M>
     vector_t (M alloc, size_t sz) 
-      : alloc(alloc), size_active(0), size_alloced(0), items(nullptr) { resize(sz); }
+      : alloc(alloc), size_active(0), size_alloced(0), items(nullptr) { internal_resize_init(sz); }
 
 #else
       vector_t () 
         : size_active(0), size_alloced(0), items(nullptr) {}
     
       vector_t (size_t sz) 
-        : size_active(0), size_alloced(0), items(nullptr) { resize(sz); }
+        : size_active(0), size_alloced(0), items(nullptr) { internal_resize_init(sz); }
 #endif
       
       ~vector_t() {
@@ -167,6 +167,18 @@ namespace embree
     }
 
     private:
+
+      void internal_resize_init(size_t new_active)
+      {
+        assert(size_active == 0); 
+        assert(size_alloced == 0);
+        assert(items == nullptr);
+        if (new_active == 0) return;
+        items = alloc.allocate(new_active);
+        for (size_t i=0; i<new_active; i++) ::new (&items[i]) T();
+        size_active = new_active;
+        size_alloced = new_active;
+      }
 
       void internal_resize(size_t new_active, size_t new_alloced)
       {
