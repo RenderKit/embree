@@ -70,7 +70,7 @@ namespace embree
       
       /* calculate time segment itime and fractional time ftime */
       const int time_segments = numTimeSteps-1;
-      const vfloat<K> time = t*vfloat<K>(time_segments);
+      const vfloat<K> time = t*vfloat<K>(float(time_segments));
       const vint<K> itime_k = clamp(vint<K>(floor(time)),vint<K>(0),vint<K>(time_segments-1));
       const vfloat<K> ftime = time - vfloat<K>(itime_k);
 #if 1

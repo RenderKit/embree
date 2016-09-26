@@ -254,7 +254,7 @@ namespace embree
 
     private:
       ISPCInstance (Ref<TutorialScene::Instance> in)
-      : geom(INSTANCE), geomID(in->geomID), numTimeSteps(in->spaces.size()) 
+      : geom(INSTANCE), geomID(in->geomID), numTimeSteps(unsigned(in->spaces.size())) 
       {
         for (size_t i=0; i<numTimeSteps; i++)
           spaces[i] = in->spaces[i];

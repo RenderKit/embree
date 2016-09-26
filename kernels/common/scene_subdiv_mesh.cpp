@@ -102,7 +102,7 @@ namespace embree
     if (type != RTC_LEVEL_BUFFER)
       parent->commitCounterSubdiv++;
 
-    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER0+numTimeSteps) 
+    if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) 
     {
       size_t t = type - RTC_VERTEX_BUFFER0;
       vertices[t].set(ptr,offset,stride); 
@@ -142,7 +142,7 @@ namespace embree
     if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
-    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER0+numTimeSteps) {
+    if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) {
       return vertices[type - RTC_VERTEX_BUFFER0].map(parent->numMappedBuffers);
     } 
     else
@@ -166,7 +166,7 @@ namespace embree
     if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
-    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER0+numTimeSteps) {
+    if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) {
       vertices[type - RTC_VERTEX_BUFFER0].unmap(parent->numMappedBuffers);
     }
     else
@@ -204,7 +204,7 @@ namespace embree
     if (type != RTC_LEVEL_BUFFER)
       parent->commitCounterSubdiv++;
 
-    if (type >= RTC_VERTEX_BUFFER0 && type < RTC_VERTEX_BUFFER0+numTimeSteps) {
+    if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) {
       vertices[type - RTC_VERTEX_BUFFER0].setModified(true);
     }
     else
@@ -583,7 +583,7 @@ namespace embree
 #endif
 
     /* calculate base pointer and stride */
-    assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTC_VERTEX_BUFFER0 + numTimeSteps) ||
+    assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) ||
            (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
     const char* src = nullptr; 
     size_t stride = 0;
@@ -643,7 +643,7 @@ namespace embree
 #endif
 
     /* calculate base pointer and stride */
-    assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTC_VERTEX_BUFFER0 + numTimeSteps) ||
+    assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) ||
            (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
     const char* src = nullptr; 
     size_t stride = 0;

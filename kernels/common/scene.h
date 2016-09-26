@@ -375,10 +375,10 @@ namespace embree
   public:
 
     /* verifies that all mblur meshes have the same number of timesteps */
-    size_t numTimeSteps;
-    size_t numMBlurGeometries;
+    unsigned numTimeSteps;
+    unsigned numMBlurGeometries;
     SpinLock checkMotionBlurTimeStepsLock;
-    void checkMotionBlurTimeSteps(unsigned N, ssize_t cnt) 
+    void checkMotionBlurTimeSteps(unsigned N, int cnt) 
     {
       if (N == 1) return;
       Lock<SpinLock> lock(checkMotionBlurTimeStepsLock);

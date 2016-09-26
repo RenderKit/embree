@@ -29,7 +29,7 @@ namespace embree
       intersectionFilterN(nullptr), occlusionFilterN(nullptr),
       hasIntersectionFilterMask(0), hasOcclusionFilterMask(0), ispcIntersectionFilterMask(0), ispcOcclusionFilterMask(0)
   {
-    parent->checkMotionBlurTimeSteps(numTimeSteps,+1);
+    parent->checkMotionBlurTimeSteps(unsigned(numTimeSteps),+1);
     id = parent->add(this);
     parent->setModified();
   }
