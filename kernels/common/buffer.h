@@ -27,13 +27,12 @@ namespace embree
 
     /*! Buffer construction */
     BufferRef (size_t num = 0, size_t stride = 0)
-      : ptr_ofs(nullptr), stride(stride), num(num), bytes(num*stride) {}
+      : ptr_ofs(nullptr), stride(stride), num(num) {}
 
     /*! make the class movable */
     BufferRef (BufferRef&& other) 
     {
       ptr_ofs = other.ptr_ofs;   other.ptr_ofs = nullptr;
-      bytes = other.bytes;       other.bytes = 0;
       num = other.num;           other.num = 0;
       stride = other.stride;     other.stride = 0;
     }
@@ -41,7 +40,6 @@ namespace embree
     BufferRef& operator= (BufferRef&& other)
     {
       ptr_ofs = other.ptr_ofs;   other.ptr_ofs = nullptr;
-      bytes = other.bytes;       other.bytes = 0;
       num = other.num;           other.num = 0;
       stride = other.stride;     other.stride = 0;
       return *this;
@@ -53,7 +51,6 @@ namespace embree
     void set(char* ptr_ofs_in, size_t stride_in) {
       ptr_ofs = ptr_ofs_in;
       stride = stride_in;
-      bytes = num*stride;
     }
 
     /*! returns pointer to first element */
@@ -66,6 +63,11 @@ namespace embree
     __forceinline size_t size() const { 
       return num; 
     }
+
+    /*! returns the number of bytes of the buffer */
+    __forceinline size_t bytes() const { 
+      return num*stride; 
+    }
     
     /*! returns buffer stride */
     __forceinline size_t getStride() const {
@@ -76,7 +78,6 @@ namespace embree
     char* ptr_ofs;   //!< base pointer plus offset
     size_t stride;   //!< stride of the stream in bytes
     size_t num;      //!< number of elements in the stream
-    size_t bytes;    //!< size of buffer in bytes // FIXME: remove
   };
 
   /*! Implements a typed data stream from a data buffer reference. */
@@ -117,12 +118,6 @@ namespace embree
       assert(i<num);
       return Vec3fa(vfloat4::loadu((float*)(ptr_ofs + i*stride)));
     }
-
-    __forceinline char* getPtr( size_t i = 0 ) const 
-    {
-      assert(i<num);
-      return ptr_ofs + i*stride;
-    }
   };
 
   /*! Implements an API data buffer object. This class may or may not own the data. */
@@ -133,11 +128,11 @@ namespace embree
 
     /*! Buffer construction */
     APIBuffer () 
-      : device(nullptr), ptr(nullptr), shared(false), mapped(false), modified(true) {}
+      : device(nullptr), ptr(nullptr), allocated(false), shared(false), mapped(false), modified(true) {}
     
     /*! Buffer construction */
     APIBuffer (MemoryMonitorInterface* device, size_t num_in, size_t stride_in) 
-      : BufferRefT<T>(num_in,stride_in), device(device), ptr(nullptr), shared(false), mapped(false), modified(true) {}
+      : BufferRefT<T>(num_in,stride_in), device(device), ptr(nullptr), allocated(false), shared(false), mapped(false), modified(true) {}
     
     /*! Buffer destruction */
     ~APIBuffer () {
@@ -178,7 +173,6 @@ namespace embree
     {
       device = device_in;
       ptr = nullptr;
-      this->bytes = num_in*stride_in;
       this->ptr_ofs = nullptr;
       this->num = num_in;
       this->stride = stride_in;
@@ -202,8 +196,9 @@ namespace embree
     
     /*! allocated buffer */
     void alloc() {
-      if (device) device->memoryMonitor(this->bytes,false);
-      ptr = this->ptr_ofs = (char*) alignedMalloc(this->bytes);
+      if (device) device->memoryMonitor(this->bytes(),false);
+      ptr = this->ptr_ofs = (char*) alignedMalloc(this->bytes());
+      allocated = true; // this flag is sticky, such that we do never allocated a buffer again after it was freed
     }
     
     /*! frees the buffer */
@@ -211,8 +206,8 @@ namespace embree
     {
       if (shared || !ptr) return;
       alignedFree(ptr); 
-      if (device) device->memoryMonitor(-ssize_t(this->bytes),true);
-      ptr = nullptr; this->ptr_ofs = nullptr; this->bytes = 0;
+      if (device) device->memoryMonitor(-ssize_t(this->bytes()),true);
+      ptr = nullptr; this->ptr_ofs = nullptr;
     }
     
     /*! maps the buffer */
@@ -227,7 +222,7 @@ namespace embree
         throw_RTCError(RTC_INVALID_OPERATION,"buffer is already mapped");
       
       /* allocate buffer */
-      if (!ptr && !shared && this->bytes)
+      if (!ptr && !shared && !allocated)
         alloc();
       
       /* return mapped buffer */
@@ -263,36 +258,22 @@ namespace embree
       return modified;
     }
     
-    /*! returns the number of elements of the buffer */
-    __forceinline size_t size() const { 
-      return this->num; 
-    }
-    
     /*! returns true of the buffer is not empty */
     __forceinline operator bool() const { 
       return ptr; 
     }
     
-    /*! returns pointer to first element */
-    __forceinline const char* getPtr( size_t i = 0 ) const {
-      return this->ptr_ofs + i*this->stride;
-    }
-    
-    /*! returns buffer stride */
-    __forceinline size_t getStride() const {
-      return this->stride;
-    }
-    
     /*! checks padding to 16 byte check, fails hard */
     __forceinline void checkPadding16() const 
     {
-       if (size()) 
-         volatile int MAYBE_UNUSED w = *((int*)getPtr(size()-1)+3); // FIXME: is failing hard avoidable?
+      if (BufferRef::size()) 
+        volatile int MAYBE_UNUSED w = *((int*)BufferRef::getPtr(BufferRef::size()-1)+3); // FIXME: is failing hard avoidable?
     }
 
   protected:
     MemoryMonitorInterface* device; //!< device to report memory usage to 
     char* ptr;       //!< pointer to buffer data
+    bool allocated;  //!< set if buffer got allocated by us
     bool shared;     //!< set if memory is shared with application
     bool mapped;     //!< set if buffer is mapped
     bool modified;   //!< true if the buffer got modified
