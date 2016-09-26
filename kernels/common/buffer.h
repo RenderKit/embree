@@ -20,146 +20,76 @@
 
 namespace embree
 {
-  /*! Implements a data buffer. */
-  class Buffer
+  /*! Implements a reference to a data buffer, this class does not own the buffer content. */
+  class BufferRef
   {
   public:
 
     /*! Buffer construction */
-    Buffer (); 
+    BufferRef (size_t num = 0, size_t stride = 0)
+      : ptr_ofs(nullptr), stride(stride), num(num), bytes(num*stride) {}
 
-    /*! Buffer construction */
-    Buffer (MemoryMonitorInterface* device, size_t num_in, size_t stride_in); 
-    
-    /*! Buffer destruction */
-    ~Buffer ();
-
-    /*! this class is not copyable */
-  private:
-    Buffer (const Buffer& other) DELETED; // do not implement
-    Buffer& operator= (const Buffer& other) DELETED; // do not implement
-      
     /*! make the class movable */
-  public:
-    Buffer (Buffer&& other)
+    BufferRef (BufferRef&& other) 
     {
-      device = other.device;     other.device = nullptr;
-      ptr = other.ptr;           other.ptr = nullptr;
       ptr_ofs = other.ptr_ofs;   other.ptr_ofs = nullptr;
       bytes = other.bytes;       other.bytes = 0;
       num = other.num;           other.num = 0;
       stride = other.stride;     other.stride = 0;
-      shared = other.shared;     other.shared = false;
-      mapped = other.mapped;     other.mapped = false;
-      modified = other.modified; other.modified = false;
     }
-
-    Buffer& operator= (Buffer&& other)
+    
+    BufferRef& operator= (BufferRef&& other)
     {
-      device = other.device;     other.device = nullptr;
-      ptr = other.ptr;           other.ptr = nullptr;
       ptr_ofs = other.ptr_ofs;   other.ptr_ofs = nullptr;
       bytes = other.bytes;       other.bytes = 0;
       num = other.num;           other.num = 0;
       stride = other.stride;     other.stride = 0;
-      shared = other.shared;     other.shared = false;
-      mapped = other.mapped;     other.mapped = false;
-      modified = other.modified; other.modified = false;
       return *this;
     }
 
   public:
     
-    /*! initialized the buffer */
-    void init(MemoryMonitorInterface* device, size_t num_in, size_t stride_in);
-
     /*! sets shared buffer */
-    void set(void* ptr_in, size_t ofs_in, size_t stride_in);
-
-    /*! sets shared buffer */
-    void set(void* ptr);
-
-    /*! allocated buffer */
-    void alloc();
-
-    /*! fees the buffer */
-    void free();
-
-    /*! maps the buffer */
-    void* map(std::atomic<size_t>& cntr);
-    
-    /*! unmaps the buffer */
-    void unmap(std::atomic<size_t>& cntr);
-
-    /*! checks if the buffer is mapped */
-    __forceinline bool isMapped() const {
-      return mapped; 
+    void set(char* ptr_ofs_in, size_t stride_in) {
+      ptr_ofs = ptr_ofs_in;
+      stride = stride_in;
+      bytes = num*stride;
     }
 
-    /*! mark buffer as modified or unmodified */
-    __forceinline void setModified(bool b) {
-      modified = b;
-    }
-
-    /*! mark buffer as modified or unmodified */
-    __forceinline bool isModified() const {
-      return modified;
+    /*! returns pointer to first element */
+    __forceinline const char* getPtr( size_t i = 0 ) const {
+      assert(i<num);
+      return ptr_ofs + i*stride;
     }
 
     /*! returns the number of elements of the buffer */
     __forceinline size_t size() const { 
       return num; 
     }
-
-    /*! returns true of the buffer is not empty */
-    __forceinline operator bool() const { 
-      return ptr; 
-    }
-
-    /*! returns pointer to first element */
-    __forceinline const char* getPtr( size_t i = 0 ) const {
-      return ptr_ofs + i*stride;
-    }
-
+    
     /*! returns buffer stride */
     __forceinline size_t getStride() const {
       return stride;
     }
 
-    /*! checks padding to 16 byte check, fails hard */
-    __forceinline void checkPadding16() const 
-    {
-       if (size()) 
-         volatile int MAYBE_UNUSED w = *((int*)getPtr(size()-1)+3); // FIXME: is failing hard avoidable?
-    }
-
   protected:
-    MemoryMonitorInterface* device; //!< device to report memory usage to 
-    char* ptr;       //!< pointer to buffer data
     char* ptr_ofs;   //!< base pointer plus offset
-    size_t bytes;    //!< size of buffer in bytes
-    size_t num;      //!< number of elements in the stream
     size_t stride;   //!< stride of the stream in bytes
-    bool shared;     //!< set if memory is shared with application
-    bool mapped;     //!< set if buffer is mapped
-    bool modified;   //!< true if the buffer got modified
+    size_t num;      //!< number of elements in the stream
+    size_t bytes;    //!< size of buffer in bytes // FIXME: remove
   };
 
-  /*! Implements a data stream inside a data buffer. */
+  /*! Implements a typed data stream from a data buffer reference. */
   template<typename T>
-    class BufferT : public Buffer
+    class BufferRefT : public BufferRef
   {
   public:
 
     typedef T value_type;
 
-    BufferT () {}
-    BufferT (BufferT&& other) : Buffer(std::move(other)) {}
-    BufferT& operator= (BufferT&& other)
-    {
-      Buffer::operator=(std::move(other));
-      return *this;
-    }
+    BufferRefT (size_t num = 0, size_t stride = 0) : BufferRef(num,stride) {}
+    BufferRefT (BufferRefT&& other) : BufferRef(std::move(other)) {}
+    BufferRefT& operator= (BufferRefT&& other) { BufferRef::operator=(std::move(other)); return *this; }
 
     /*! access to the ith element of the buffer stream */
     __forceinline const T& operator[](size_t i) const 
@@ -169,21 +99,17 @@ namespace embree
     }
   };
 
-  /*! Implements a data stream inside a data buffer. */
+  /*! Implements a typed data stream from a data buffer reference. */
   template<>
-    class BufferT<Vec3fa> : public Buffer
+    class BufferRefT<Vec3fa> : public BufferRef
   {
   public:
 
     typedef Vec3fa value_type;
 
-    BufferT () {}
-    BufferT (BufferT&& other) : Buffer(std::move(other)) {}
-    BufferT& operator= (BufferT&& other)
-    {
-      Buffer::operator=(std::move(other));
-      return *this;
-    }
+    BufferRefT (size_t num = 0, size_t stride = 0) : BufferRef(num,stride) {}
+    BufferRefT (BufferRefT&& other) : BufferRef(std::move(other)) {}
+    BufferRefT& operator= (BufferRefT&& other) { BufferRef::operator=(std::move(other)); return *this; }
 
     /*! access to the ith element of the buffer stream */
     __forceinline const Vec3fa operator[](size_t i) const
@@ -197,5 +123,178 @@ namespace embree
       assert(i<num);
       return ptr_ofs + i*stride;
     }
+  };
+
+  /*! Implements an API data buffer object. This class may or may not own the data. */
+  template<typename T>
+    class APIBuffer : public BufferRefT<T>
+  {
+  public:
+
+    /*! Buffer construction */
+    APIBuffer () 
+      : device(nullptr), ptr(nullptr), shared(false), mapped(false), modified(true) {}
+    
+    /*! Buffer construction */
+    APIBuffer (MemoryMonitorInterface* device, size_t num_in, size_t stride_in) 
+      : BufferRefT<T>(num_in,stride_in), device(device), ptr(nullptr), shared(false), mapped(false), modified(true) {}
+    
+    /*! Buffer destruction */
+    ~APIBuffer () {
+      free();
+    }
+    
+    /*! this class is not copyable */
+  private:
+    APIBuffer (const APIBuffer& other) DELETED; // do not implement
+    APIBuffer& operator= (const APIBuffer& other) DELETED; // do not implement
+    
+    /*! make the class movable */
+  public:
+    APIBuffer (APIBuffer&& other) : BufferRefT<T>(std::move(other))
+    {
+      device = other.device;     other.device = nullptr;
+      ptr = other.ptr;           other.ptr = nullptr;
+      shared = other.shared;     other.shared = false;
+      mapped = other.mapped;     other.mapped = false;
+      modified = other.modified; other.modified = false;
+    }
+    
+    APIBuffer& operator= (APIBuffer&& other)
+    {
+      device = other.device;     other.device = nullptr;
+      ptr = other.ptr;           other.ptr = nullptr;
+      shared = other.shared;     other.shared = false;
+      mapped = other.mapped;     other.mapped = false;
+      modified = other.modified; other.modified = false;
+      BufferRefT<T>::operator=(std::move(other));
+      return *this;
+    }
+    
+  public:
+    
+    /* inits the buffer */
+    void init(MemoryMonitorInterface* device_in, size_t num_in, size_t stride_in) 
+    {
+      device = device_in;
+      ptr = nullptr;
+      this->bytes = num_in*stride_in;
+      this->ptr_ofs = nullptr;
+      this->num = num_in;
+      this->stride = stride_in;
+      shared = false;
+      mapped = false;
+      modified = true;
+    }
+
+    /*! sets shared buffer */
+    void set(void* ptr_in, size_t ofs_in, size_t stride_in)
+    {
+      /* report error if buffer is not existing */
+      if (!device)
+        throw_RTCError(RTC_INVALID_ARGUMENT,"invalid buffer specified");
+      
+      ptr = (char*) ptr_in;
+      shared = true;
+
+      BufferRefT<T>::set(ptr+ofs_in,stride_in);
+    }
+    
+    /*! allocated buffer */
+    void alloc() {
+      if (device) device->memoryMonitor(this->bytes,false);
+      ptr = this->ptr_ofs = (char*) alignedMalloc(this->bytes);
+    }
+    
+    /*! frees the buffer */
+    void free()
+    {
+      if (shared || !ptr) return;
+      alignedFree(ptr); 
+      if (device) device->memoryMonitor(-ssize_t(this->bytes),true);
+      ptr = nullptr; this->ptr_ofs = nullptr; this->bytes = 0;
+    }
+    
+    /*! maps the buffer */
+    void* map(std::atomic<size_t>& cntr)
+    {
+      /* report error if buffer is not existing */
+      if (!device)
+        throw_RTCError(RTC_INVALID_ARGUMENT,"invalid buffer specified");
+      
+      /* report error if buffer is already mapped */
+      if (mapped)
+        throw_RTCError(RTC_INVALID_OPERATION,"buffer is already mapped");
+      
+      /* allocate buffer */
+      if (!ptr && !shared && this->bytes)
+        alloc();
+      
+      /* return mapped buffer */
+      cntr++;
+      mapped = true;
+      return ptr;
+    }
+    
+    /*! unmaps the buffer */
+    void unmap(std::atomic<size_t>& cntr)
+    {
+      /* report error if buffer not mapped */
+      if (!mapped)
+        throw_RTCError(RTC_INVALID_OPERATION,"buffer is not mapped");
+      
+      /* unmap buffer */
+      cntr--;
+      mapped = false;
+    }
+    
+    /*! checks if the buffer is mapped */
+    __forceinline bool isMapped() const {
+      return mapped; 
+    }
+    
+    /*! mark buffer as modified or unmodified */
+    __forceinline void setModified(bool b) {
+      modified = b;
+    }
+    
+    /*! mark buffer as modified or unmodified */
+    __forceinline bool isModified() const {
+      return modified;
+    }
+    
+    /*! returns the number of elements of the buffer */
+    __forceinline size_t size() const { 
+      return this->num; 
+    }
+    
+    /*! returns true of the buffer is not empty */
+    __forceinline operator bool() const { 
+      return ptr; 
+    }
+    
+    /*! returns pointer to first element */
+    __forceinline const char* getPtr( size_t i = 0 ) const {
+      return this->ptr_ofs + i*this->stride;
+    }
+    
+    /*! returns buffer stride */
+    __forceinline size_t getStride() const {
+      return this->stride;
+    }
+    
+    /*! checks padding to 16 byte check, fails hard */
+    __forceinline void checkPadding16() const 
+    {
+       if (size()) 
+         volatile int MAYBE_UNUSED w = *((int*)getPtr(size()-1)+3); // FIXME: is failing hard avoidable?
+    }
+
+  protected:
+    MemoryMonitorInterface* device; //!< device to report memory usage to 
+    char* ptr;       //!< pointer to buffer data
+    bool shared;     //!< set if memory is shared with application
+    bool mapped;     //!< set if buffer is mapped
+    bool modified;   //!< true if the buffer got modified
   };
 }

@@ -74,12 +74,12 @@ namespace embree
         triangles.set(ptr,offset,stride); 
         break;
       case RTC_USER_VERTEX_BUFFER0: 
-        if (userbuffers[0] == nullptr) userbuffers[0].reset(new Buffer(parent->device,numVertices(),stride)); 
+        if (userbuffers[0] == nullptr) userbuffers[0].reset(new APIBuffer<char>(parent->device,numVertices(),stride)); 
         userbuffers[0]->set(ptr,offset,stride);  
         userbuffers[0]->checkPadding16();
         break;
       case RTC_USER_VERTEX_BUFFER1: 
-        if (userbuffers[1] == nullptr) userbuffers[1].reset(new Buffer(parent->device,numVertices(),stride)); 
+        if (userbuffers[1] == nullptr) userbuffers[1].reset(new APIBuffer<char>(parent->device,numVertices(),stride)); 
         userbuffers[1]->set(ptr,offset,stride);  
         userbuffers[1]->checkPadding16();
         break;

@@ -52,7 +52,7 @@ namespace embree
       pmap (const std::vector<SourceKey>& keys, const std::vector<Val>& values) { init(keys,values); }
 
     template<typename SourceKey>
-      pmap (const BufferT<SourceKey>& keys, const BufferT<Val>& values) { init(keys,values); }
+      pmap (const BufferRefT<SourceKey>& keys, const BufferRefT<Val>& values) { init(keys,values); }
 
     /*! initialized the parallel map from a vector with keys and values */
     template<typename SourceKey>
@@ -75,7 +75,7 @@ namespace embree
 
     /*! initialized the parallel map from user buffers with keys and values */
     template<typename SourceKey>
-      void init(const BufferT<SourceKey>& keys, const BufferT<Val>& values) 
+      void init(const BufferRefT<SourceKey>& keys, const BufferRefT<Val>& values) 
     {
       /* reserve sufficient space for all data */
       assert(keys.size() == values.size());

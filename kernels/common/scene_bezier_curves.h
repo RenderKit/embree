@@ -164,9 +164,9 @@ namespace embree
     }
 
   public:
-    BufferT<unsigned int> curves;                   //!< array of curve indices
-    vector<BufferT<Vec3fa>> vertices;               //!< vertex array for each timestep
-    array_t<std::unique_ptr<Buffer>,2> userbuffers; //!< user buffers
+    APIBuffer<unsigned int> curves;                   //!< array of curve indices
+    vector<APIBuffer<Vec3fa>> vertices;               //!< vertex array for each timestep
+    array_t<std::unique_ptr<APIBuffer<char>>,2> userbuffers; //!< user buffers
     SubType subtype;                                //!< hair or surface geometry
     int tessellationRate;                           //!< tessellation rate for bezier curve
   };

@@ -133,8 +133,8 @@ namespace embree
     }
 
   public:
-    BufferT<unsigned int> segments;                 //!< array of line segment indices
-    vector<BufferT<Vec3fa>> vertices;               //!< vertex array for each timestep
-    array_t<std::unique_ptr<Buffer>,2> userbuffers; //!< user buffers // FIXME: no std::unique_ptr here
+    APIBuffer<unsigned int> segments;                 //!< array of line segment indices
+    vector<APIBuffer<Vec3fa>> vertices;               //!< vertex array for each timestep
+    array_t<std::unique_ptr<APIBuffer<char>>,2> userbuffers; //!< user buffers // FIXME: no std::unique_ptr here
   };
 }

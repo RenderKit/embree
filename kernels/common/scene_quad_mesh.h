@@ -159,8 +159,8 @@ namespace embree
     }
     
   public:
-    BufferT<Quad> quads;                            //!< array of quads
-    vector<BufferT<Vec3fa>> vertices;               //!< vertex array for each timestep
-    array_t<std::unique_ptr<Buffer>,2> userbuffers; //!< user buffers  // FIXME: no std::unique_ptr here
+    APIBuffer<Quad> quads;                            //!< array of quads
+    vector<APIBuffer<Vec3fa>> vertices;               //!< vertex array for each timestep
+    array_t<std::unique_ptr<APIBuffer<char>>,2> userbuffers; //!< user buffers  // FIXME: no std::unique_ptr here
   };
 }

@@ -209,8 +209,8 @@ namespace embree
     }
     
   public:
-    BufferT<Triangle> triangles;                    //!< array of triangles
-    vector<BufferT<Vec3fa>> vertices;               //!< vertex array for each timestep
-    array_t<std::unique_ptr<Buffer>,2> userbuffers; //!< user buffers // FIXME: no std::unique_ptr here
+    APIBuffer<Triangle> triangles;                    //!< array of triangles
+    vector<APIBuffer<Vec3fa>> vertices;               //!< vertex array for each timestep
+    array_t<std::unique_ptr<APIBuffer<char>>,2> userbuffers; //!< user buffers // FIXME: no std::unique_ptr here
   };
 }
