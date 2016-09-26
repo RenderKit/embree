@@ -63,6 +63,15 @@ namespace embree
         accel->occluded(valid,ray,prim.primID,context);
         return ray.geomID == 0;
       }
+
+      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive& prim, Scene* scene) {
+        intersect(vbool<K>(1<<int(k)),pre,ray,context,prim,scene);
+      }
+      
+      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive& prim, Scene* scene) {
+        occluded(vbool<K>(1<<int(k)),pre,ray,context,prim,scene);
+        return ray.geomID[k] == 0; 
+      }
     };
 
     typedef ObjectIntersectorK<4,false>  ObjectIntersector4;

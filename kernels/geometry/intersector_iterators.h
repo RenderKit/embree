@@ -141,34 +141,6 @@ namespace embree
       };
     
     template<int K, typename Intersector>
-      struct ArrayIntersectorK
-      {
-        typedef typename Intersector::Primitive Primitive;
-        typedef typename Intersector::Precalculations Precalculations;
-        
-        static __forceinline void intersect(const vbool<K>& valid, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node)
-        {
-          for (size_t i=0; i<num; i++) {
-            Intersector::intersect(valid,pre,ray,context,prim[i],scene);
-          }
-        }
-        
-        static __forceinline vbool<K> occluded(const vbool<K>& valid, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node) 
-        {
-          vbool<K> valid0 = valid;
-          for (size_t i=0; i<num; i++) {
-            valid0 &= !Intersector::occluded(valid0,pre,ray,context,prim[i],scene);
-            if (none(valid0)) break;
-          }
-          return !valid0;
-        }
-
-        /* Dummy functions for templates */
-        static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node) {}
-        static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node) { return false; }
-      };
-    
-    template<int K, typename Intersector>
       struct ArrayIntersectorK_1 
       {
         typedef typename Intersector::Primitive Primitive;
