@@ -2509,6 +2509,8 @@ namespace embree
     {
       for (auto ivariant : intersectVariants)
       {
+        if (!has_variant(imode,ivariant)) continue;
+
         RTCRay rays[numRays];
         for (size_t i=0; i<numRays; i++) {
           Vec3fa org = 2.0f*RandomSampler_get3D(sampler) - Vec3fa(1.0f);
@@ -3562,6 +3564,7 @@ namespace embree
     intersectVariants.push_back(VARIANT_OCCLUDED_COHERENT);
     intersectVariants.push_back(VARIANT_INTERSECT_INCOHERENT);
     intersectVariants.push_back(VARIANT_OCCLUDED_INCOHERENT);
+    intersectVariants.push_back(VARIANT_INTERSECT_OCCLUDED_COHERENT);
 
     /* create list of all scene flags to test */
     sceneFlags.push_back(RTC_SCENE_STATIC);
