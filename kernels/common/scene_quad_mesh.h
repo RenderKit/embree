@@ -77,12 +77,22 @@ namespace embree
     }
 
     /*! returns i'th vertex of j'th timestep */
-    __forceinline const Vec3fa vertex(size_t i, size_t j = 0) const {
+    __forceinline const Vec3fa vertex(size_t i) const {
+      return vertices0[i];
+    }
+
+    /*! returns i'th vertex of j'th timestep */
+    __forceinline const char* vertexPtr(size_t i) const {
+      return vertices0.getPtr(i);
+    }
+
+    /*! returns i'th vertex of j'th timestep */
+    __forceinline const Vec3fa vertex(size_t i, size_t j) const {
       return vertices[j][i];
     }
 
     /*! returns i'th vertex of j'th timestep */
-    __forceinline const char* vertexPtr(size_t i, size_t j = 0) const {
+    __forceinline const char* vertexPtr(size_t i, size_t j) const {
       return vertices[j].getPtr(i);
     }
 
@@ -160,6 +170,7 @@ namespace embree
     
   public:
     APIBuffer<Quad> quads;                            //!< array of quads
+    BufferRefT<Vec3fa> vertices0;                     //!< fast access to first vertex buffer
     vector<APIBuffer<Vec3fa>> vertices;               //!< vertex array for each timestep
     array_t<std::unique_ptr<APIBuffer<char>>,2> userbuffers; //!< user buffers  // FIXME: no std::unique_ptr here
   };
