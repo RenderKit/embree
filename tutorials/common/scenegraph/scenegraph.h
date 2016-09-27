@@ -33,6 +33,7 @@ namespace embree
     void extend_animation(Ref<Node> node0, Ref<Node> node1);
     void optimize_animation(Ref<Node> node0);
     void set_motion_vector(Ref<Node> node, const Vec3fa& dP);
+    void set_motion_vector(Ref<Node> node, const avector<Vec3fa>& motion_vector);
     void resize_randomly(RandomSampler& sampler, Ref<Node> node, const size_t N);
     Ref<Node> convert_triangles_to_quads(Ref<Node> node);
     Ref<Node> convert_quads_to_subdivs(Ref<Node> node);
@@ -92,6 +93,10 @@ namespace embree
 
       Ref<Node> set_motion_vector(const Vec3fa& dP) {
         SceneGraph::set_motion_vector(this,dP); return this;
+      }
+
+      Ref<Node> set_motion_vector(const avector<Vec3fa>& motion_vector) {
+        SceneGraph::set_motion_vector(this,motion_vector); return this;
       }
 
     protected:

@@ -358,6 +358,68 @@ namespace embree
     }
   }
 
+  void SceneGraph::set_motion_vector(Ref<SceneGraph::Node> node, const avector<Vec3fa>& motion_vector)
+  {
+    if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
+      set_motion_vector(xfmNode->child,motion_vector);
+    }
+    else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) 
+    {
+      for (size_t i=0; i<groupNode->children.size(); i++) 
+        set_motion_vector(groupNode->children[i],motion_vector);
+    }
+    else if (Ref<SceneGraph::TriangleMeshNode> mesh = node.dynamicCast<SceneGraph::TriangleMeshNode>()) 
+    {
+      avector<Vec3fa> positions = std::move(mesh->positions[0]);
+      mesh->positions.clear();
+      for (size_t t=0; t<motion_vector.size(); t++) {
+        avector<Vec3fa> tpositions(positions.size());
+        for (size_t i=0; i<positions.size(); i++) tpositions[i] = positions[i] + motion_vector[t];
+        mesh->positions.push_back(std::move(tpositions));
+      }
+    }
+    else if (Ref<SceneGraph::QuadMeshNode> mesh = node.dynamicCast<SceneGraph::QuadMeshNode>()) 
+    {
+      avector<Vec3fa> positions = std::move(mesh->positions[0]);
+      mesh->positions.clear();
+      for (size_t t=0; t<motion_vector.size(); t++) {
+        avector<Vec3fa> tpositions(positions.size());
+        for (size_t i=0; i<positions.size(); i++) tpositions[i] = positions[i] + motion_vector[t];
+        mesh->positions.push_back(std::move(tpositions));
+      }
+    }
+    else if (Ref<SceneGraph::HairSetNode> mesh = node.dynamicCast<SceneGraph::HairSetNode>()) 
+    {
+      avector<Vec3fa> positions = std::move(mesh->positions[0]);
+      mesh->positions.clear();
+      for (size_t t=0; t<motion_vector.size(); t++) {
+        avector<Vec3fa> tpositions(positions.size());
+        for (size_t i=0; i<positions.size(); i++) tpositions[i] = positions[i] + motion_vector[t];
+        mesh->positions.push_back(std::move(tpositions));
+      }
+    }
+    else if (Ref<SceneGraph::LineSegmentsNode> mesh = node.dynamicCast<SceneGraph::LineSegmentsNode>()) 
+    {
+      avector<Vec3fa> positions = std::move(mesh->positions[0]);
+      mesh->positions.clear();
+      for (size_t t=0; t<motion_vector.size(); t++) {
+        avector<Vec3fa> tpositions(positions.size());
+        for (size_t i=0; i<positions.size(); i++) tpositions[i] = positions[i] + motion_vector[t];
+        mesh->positions.push_back(std::move(tpositions));
+      }
+    }
+    else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>()) 
+    {
+      avector<Vec3fa> positions = std::move(mesh->positions[0]);
+      mesh->positions.clear();
+      for (size_t t=0; t<motion_vector.size(); t++) {
+        avector<Vec3fa> tpositions(positions.size());
+        for (size_t i=0; i<positions.size(); i++) tpositions[i] = positions[i] + motion_vector[t];
+        mesh->positions.push_back(std::move(tpositions));
+      }
+    }
+  }
+
   void SceneGraph::resize_randomly(RandomSampler& sampler, Ref<Node> node, const size_t N)
   {
      if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
