@@ -29,22 +29,6 @@ namespace embree
     BufferRef (size_t num = 0, size_t stride = 0)
       : ptr_ofs(nullptr), stride(stride), num(num) {}
 
-    /*! make the class movable */
-    BufferRef (BufferRef&& other) 
-    {
-      ptr_ofs = other.ptr_ofs;   other.ptr_ofs = nullptr;
-      num = other.num;           other.num = 0;
-      stride = other.stride;     other.stride = 0;
-    }
-    
-    BufferRef& operator= (BufferRef&& other)
-    {
-      ptr_ofs = other.ptr_ofs;   other.ptr_ofs = nullptr;
-      num = other.num;           other.num = 0;
-      stride = other.stride;     other.stride = 0;
-      return *this;
-    }
-
   public:
     
     /*! sets shared buffer */
@@ -88,9 +72,8 @@ namespace embree
 
     typedef T value_type;
 
-    BufferRefT (size_t num = 0, size_t stride = 0) : BufferRef(num,stride) {}
-    BufferRefT (BufferRefT&& other) : BufferRef(std::move(other)) {}
-    BufferRefT& operator= (BufferRefT&& other) { BufferRef::operator=(std::move(other)); return *this; }
+    BufferRefT (size_t num = 0, size_t stride = 0) 
+      : BufferRef(num,stride) {}
 
     /*! access to the ith element of the buffer stream */
     __forceinline const T& operator[](size_t i) const 
@@ -108,9 +91,8 @@ namespace embree
 
     typedef Vec3fa value_type;
 
-    BufferRefT (size_t num = 0, size_t stride = 0) : BufferRef(num,stride) {}
-    BufferRefT (BufferRefT&& other) : BufferRef(std::move(other)) {}
-    BufferRefT& operator= (BufferRefT&& other) { BufferRef::operator=(std::move(other)); return *this; }
+    BufferRefT (size_t num = 0, size_t stride = 0) 
+      : BufferRef(num,stride) {}
 
     /*! access to the ith element of the buffer stream */
     __forceinline const Vec3fa operator[](size_t i) const
