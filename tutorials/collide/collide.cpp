@@ -44,6 +44,24 @@ namespace embree
       //PRINT4(geomID0,primID0,geomID1,primID1);
       set0.insert(std::make_pair(geomID0,primID0));
       set1.insert(std::make_pair(geomID1,primID1));
+
+      /* verify result */
+      Ref<TutorialScene::TriangleMesh> mesh0 = g_tutorial_scene0.geometries[geomID0].dynamicCast<TutorialScene::TriangleMesh>();
+      TutorialScene::Triangle tri0 = mesh0->triangles[primID0];
+      BBox3fa bounds0 = empty;
+      bounds0.extend(mesh0->positions[tri0.v0]);
+      bounds0.extend(mesh0->positions[tri0.v1]);
+      bounds0.extend(mesh0->positions[tri0.v2]);
+
+      Ref<TutorialScene::TriangleMesh> mesh1 = g_tutorial_scene0.geometries[geomID1].dynamicCast<TutorialScene::TriangleMesh>();
+      TutorialScene::Triangle tri1 = mesh1->triangles[primID1];
+      BBox3fa bounds1 = empty;
+      bounds1.extend(mesh0->positions[tri1.v0]);
+      bounds1.extend(mesh0->positions[tri1.v1]);
+      bounds1.extend(mesh0->positions[tri1.v2]);
+
+      if (disjoint(bounds0,bounds1))
+        throw std::runtime_error("bounds do not overlap");
     }
   }
 
