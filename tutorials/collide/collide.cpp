@@ -31,9 +31,11 @@ namespace embree
 
   size_t skipBenchmarkRounds = 0;
   size_t numBenchmarkRounds = 0;
+  size_t numTotalCollisions = 0;
 
   void CollideFunc (void* userPtr, RTCCollision* collisions, size_t num_collisions)
   {
+    numTotalCollisions++;
     if (numBenchmarkRounds) return;
     for (size_t i=0; i<num_collisions; i++)
     {
@@ -122,6 +124,7 @@ namespace embree
       for (size_t i=0; i<skipBenchmarkRounds; i++) 
       {
         //double t0 = getSeconds();
+        numTotalCollisions = 0;
         rtcCollide(g_scene0,g_scene1,CollideFunc,nullptr);
         //double t1 = getSeconds();
         //float dt = float(t1-t0);
@@ -132,6 +135,7 @@ namespace embree
       for (size_t i=skipBenchmarkRounds; i<numTotalRounds; i++) 
       {
         double t0 = getSeconds();
+        numTotalCollisions = 0;
         rtcCollide(g_scene0,g_scene1,CollideFunc,nullptr);
         double t1 = getSeconds();
         
@@ -140,12 +144,14 @@ namespace embree
         //if (benchmarkSleep) sleepSeconds(0.1);
       }
 
-      std::cout << "round [" << std::setw(3) << skipBenchmarkRounds << " - " << std::setw(3) << numTotalRounds << "]: " 
-                << "min = " << std::setw(8) << 1000.0f*stat.getMin() << " ms, " 
+      std::cout << "Absolute:" << std::endl;
+      std::cout << "  min = " << std::setw(8) << 1000.0f*stat.getMin() << " ms, " 
                 << "avg = " << std::setw(8) << 1000.0f*stat.getAvg() << " ms, "
-                << "max = " << std::setw(8) << 1000.0f*stat.getMax() << " ms, "
-                << "sigma = " << std::setw(6) << stat.getSigma() << " (" << 100.0f*stat.getSigma()/stat.getAvg() << "%)" << std::endl << std::flush;
-
+                << "max = " << std::setw(8) << 1000.0f*stat.getMax() << " ms " << std::endl;
+      std::cout << "Per Collision ( " << numTotalCollisions << " collisions ):" << std::endl;
+      std::cout << "  min = " << std::setw(8) << 1E9f*stat.getMin()/float(numTotalCollisions) << " ns, " 
+                << "avg = " << std::setw(8) << 1E9f*stat.getAvg()/float(numTotalCollisions) << " ns, "
+                << "max = " << std::setw(8) << 1E9f*stat.getMax()/float(numTotalCollisions) << " ns" << std::endl;
     }
         
     int main(int argc, char** argv) try
