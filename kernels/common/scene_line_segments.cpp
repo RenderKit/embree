@@ -65,6 +65,7 @@ namespace embree
       size_t t = type - RTC_VERTEX_BUFFER0;
       vertices[t].set(ptr,offset,stride); 
       vertices[t].checkPadding16();
+      vertices0 = vertices[0];
     } 
     else 
     {
@@ -118,6 +119,7 @@ namespace embree
     }
     else if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) {
       vertices[type - RTC_VERTEX_BUFFER0].unmap(parent->numMappedBuffers);
+      vertices0 = vertices[0];
     }
     else {
       throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); 

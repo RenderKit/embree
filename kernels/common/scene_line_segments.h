@@ -66,18 +66,33 @@ namespace embree
       return segments[i];
     }
 
+     /*! returns i'th vertex of the first time step */
+    __forceinline Vec3fa vertex(size_t i) const {
+      return vertices0[i];
+    }
+
+    /*! returns i'th vertex of the first time step */
+    __forceinline const char* vertexPtr(size_t i) const {
+      return vertices0.getPtr(i);
+    }
+
+    /*! returns i'th radius of the first time step */
+    __forceinline float radius(size_t i) const {
+      return vertices0[i].w;
+    }
+
     /*! returns i'th vertex of j'th timestep */
-    __forceinline Vec3fa vertex(size_t i, size_t j = 0) const {
+    __forceinline Vec3fa vertex(size_t i, size_t j) const {
       return vertices[j][i];
     }
 
     /*! returns i'th vertex of j'th timestep */
-    __forceinline const char* vertexPtr(size_t i, size_t j = 0) const {
+    __forceinline const char* vertexPtr(size_t i, size_t j) const {
       return vertices[j].getPtr(i);
     }
 
     /*! returns i'th radius of j'th timestep */
-    __forceinline float radius(size_t i, size_t j = 0) const {
+    __forceinline float radius(size_t i, size_t j) const {
       return vertices[j][i].w;
     }
 
@@ -134,6 +149,7 @@ namespace embree
 
   public:
     APIBuffer<unsigned int> segments;                 //!< array of line segment indices
+    BufferRefT<Vec3fa> vertices0;                     //!< fast access to first vertex buffer
     vector<APIBuffer<Vec3fa>> vertices;               //!< vertex array for each timestep
     array_t<std::unique_ptr<APIBuffer<char>>,2> userbuffers; //!< user buffers // FIXME: no std::unique_ptr here
   };
