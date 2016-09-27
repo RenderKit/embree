@@ -111,21 +111,20 @@ namespace embree
     unsigned short grid_v_res;
 
     unsigned short grid_size_simd_blocks;
+    unsigned int time_;
 
     struct PatchHalfEdge {
       const HalfEdge* edge;
-      unsigned time;
       unsigned subPatch;
     };
 
     Vec3fa patch_v[4][4];
 
     const HalfEdge *edge() const { return ((PatchHalfEdge*)patch_v)->edge; }
-    unsigned time() const { return ((PatchHalfEdge*)patch_v)->time; }
+    unsigned time() const { return time_; }
     unsigned subPatch() const { return ((PatchHalfEdge*)patch_v)->subPatch; }
 
     void set_edge(const HalfEdge *h) const { ((PatchHalfEdge*)patch_v)->edge = h; }
-    void set_time(const size_t t) const { ((PatchHalfEdge*)patch_v)->time = (unsigned)t; }
     void set_subPatch(const unsigned s) const { ((PatchHalfEdge*)patch_v)->subPatch = s; }
   };
 

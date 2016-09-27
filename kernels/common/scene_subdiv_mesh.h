@@ -94,6 +94,7 @@ namespace embree
     void immutable ();
     bool verify ();
     void setDisplacementFunction (RTCDisplacementFunc func, RTCBounds* bounds);
+    void setDisplacementFunction2 (RTCDisplacementFunc2 func, RTCBounds* bounds);
     void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
     void interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
                       RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
@@ -169,6 +170,7 @@ namespace embree
 
   public:
     RTCDisplacementFunc displFunc;    //!< displacement function
+    RTCDisplacementFunc2 displFunc2;    //!< displacement function
     BBox3fa             displBounds;  //!< bounds for maximal displacement 
 
     /*! all buffers in this section are provided by the application */

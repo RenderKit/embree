@@ -32,7 +32,8 @@ namespace embree
       numEdges(numEdges), 
       numVertices(numVertices),
       boundary(RTC_BOUNDARY_EDGE_ONLY),
-      displFunc(nullptr), 
+      displFunc(nullptr),
+      displFunc2(nullptr),
       displBounds(empty),
       tessellationRate(2.0f),
       numHalfEdges(0),
@@ -230,6 +231,16 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
     this->displFunc   = func;
+    if (bounds) this->displBounds = *(BBox3fa*)bounds; 
+    else        this->displBounds = empty;
+  }
+
+  void SubdivMesh::setDisplacementFunction2 (RTCDisplacementFunc2 func, RTCBounds* bounds) 
+  {
+    if (parent->isStatic() && parent->isBuild())
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
+
+    this->displFunc2   = func;
     if (bounds) this->displBounds = *(BBox3fa*)bounds; 
     else        this->displBounds = empty;
   }

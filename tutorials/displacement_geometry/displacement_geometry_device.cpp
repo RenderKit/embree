@@ -103,7 +103,10 @@ float displacement_dv(const Vec3fa& P, const Vec3fa& dPdv)
   return (displacement(P+dv*dPdv)-displacement(P))/dv;
 }
 
-void displacementFunction(void* ptr, unsigned int geomID, int unsigned primID,
+void displacementFunction(void* ptr, 
+                                   unsigned int geomID, 
+                                   unsigned int primID,
+                                   unsigned int time,
                                    const float* u,      /*!< u coordinates (source) */
                                    const float* v,      /*!< v coordinates (source) */
                                    const float* nx,     /*!< x coordinates of normal at point to displace (source) */
@@ -136,7 +139,7 @@ unsigned int addCube (RTCScene scene_i)
   for (size_t i=0; i<NUM_INDICES; i++) level[i] = EDGE_LEVEL;
   rtcUnmapBuffer(scene_i, geomID, RTC_LEVEL_BUFFER);
 
-  rtcSetDisplacementFunction(scene_i,geomID,(RTCDisplacementFunc)&displacementFunction,nullptr);
+  rtcSetDisplacementFunction2(scene_i,geomID,displacementFunction,nullptr);
 
   return geomID;
 }

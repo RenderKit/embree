@@ -167,9 +167,6 @@ void rtcSetOccludedFunction1Mp (RTCScene scene, uniform unsigned geomID, uniform
  *  geometry. */
 void rtcSetOccludedFunctionN (RTCScene scene, uniform unsigned geomID, uniform RTCOccludedFuncN occluded);
 
-/*! \brief Sets the displacement function. */
-void rtcSetDisplacementFunction (RTCScene scene, uniform unsigned int geomID, uniform RTCDisplacementFunc func, uniform RTCBounds *uniform bounds);
-
 /*! @} */
 
 #endif
