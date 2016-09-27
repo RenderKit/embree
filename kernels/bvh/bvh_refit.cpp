@@ -141,6 +141,7 @@ namespace embree
       }
       else
       {
+		BBox3fa subTreeBounds[MAX_NUM_SUB_TREES];
         numSubTrees = 0;
         gather_subtree_refs(bvh->root,numSubTrees,0);
         if (numSubTrees)
@@ -152,7 +153,7 @@ namespace embree
             });
 
         numSubTrees = 0;        
-        bvh->bounds = refit_toplevel(bvh->root,numSubTrees,0);
+        bvh->bounds = refit_toplevel(bvh->root,numSubTrees,subTreeBounds,0);
       }    
   }
 
@@ -182,6 +183,7 @@ namespace embree
     template<int N>
     BBox3fa BVHNRefitter<N>::refit_toplevel(NodeRef& ref,
                                             size_t &subtrees,
+											const BBox3fa *const subTreeBounds,
                                             const size_t depth)
     {
       if (depth >= MAX_SUB_TREE_EXTRACTION_DEPTH) 
@@ -203,7 +205,7 @@ namespace embree
           if (unlikely(child == BVH::emptyNode)) 
             bounds[i] = BBox3fa(empty);
           else
-            bounds[i] = refit_toplevel(child,subtrees,depth+1); 
+            bounds[i] = refit_toplevel(child,subtrees,subTreeBounds,depth+1); 
         }
         
         BBox<Vec3<vfloat<N>>> boundsT = transpose<N>(bounds);

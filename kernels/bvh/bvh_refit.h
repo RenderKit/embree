@@ -53,6 +53,7 @@ namespace embree
       /* single-threaded top-level refit */
       BBox3fa refit_toplevel(NodeRef& ref,
                              size_t &subtrees,
+							 const BBox3fa *const subTreeBounds,
                              const size_t depth = 0);
 
       /* single-threaded subtree refit */
@@ -66,7 +67,6 @@ namespace embree
       static const size_t MAX_NUM_SUB_TREES             = (N==4) ? 256 : (N==8) ? 512 : N*N*N; // N ^ MAX_SUB_TREE_EXTRACTION_DEPTH
       size_t numSubTrees;
       NodeRef subTrees[MAX_NUM_SUB_TREES];
-      BBox3fa subTreeBounds[MAX_NUM_SUB_TREES];
     };
 
     template<int N, typename Mesh, typename Primitive>

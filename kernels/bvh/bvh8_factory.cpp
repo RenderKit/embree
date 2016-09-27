@@ -162,6 +162,8 @@ namespace embree
 
   DECLARE_BUILDER2(void,QuadMesh,size_t,BVH8Quad4vMeshBuilderMortonGeneral);
 
+  DECLARE_BUILDER2(void,Scene,size_t,BVH8Quad4vSceneBuilderFastSpatialSAH);
+
   BVH8Factory::BVH8Factory (int features)
   {
     /* select builders */
@@ -205,7 +207,7 @@ namespace embree
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX(features,BVH8Triangle4SceneBuilderSpatialSAH));
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX512KNL_AVX512SKX(features,BVH8Triangle4SceneBuilderFastSpatialSAH));
 
-
+    IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_AVX_AVX512KNL_AVX512SKX(features,BVH8Quad4vSceneBuilderFastSpatialSAH));
 
     IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8Line4iIntersector1));
     IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8Line4iMBIntersector1));
@@ -665,10 +667,11 @@ namespace embree
     BVH8* accel = new BVH8(Triangle4::type,scene);
     Accel::Intersectors intersectors= BVH8Triangle4Intersectors(accel);
     Builder *builder = NULL;
-    if (scene->device->tri_builder == "sah_spatial" ) 
-      builder = BVH8Triangle4SceneBuilderSpatialSAH(accel,scene,0);
-    else
+    if (scene->device->tri_builder == "sah_fast_spatial" || scene->device->tri_builder == "default") 
       builder = BVH8Triangle4SceneBuilderFastSpatialSAH(accel,scene,0);
+    else if (scene->device->tri_builder == "sah_spatial" ) 
+      builder = BVH8Triangle4SceneBuilderSpatialSAH(accel,scene,0);
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH8<Triangle4>");
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -728,12 +731,30 @@ namespace embree
     BVH8* accel = new BVH8(Quad4v::type,scene);
     Accel::Intersectors intersectors = BVH8Quad4vIntersectors(accel);
     Builder* builder = nullptr;
-    if      (scene->device->quad_builder == "default"     ) builder = BVH8Quad4vSceneBuilderSAH(accel,scene,0);
-    else if (scene->device->quad_builder == "dynamic"     ) builder = BVH8BuilderTwoLevelQuadMeshSAH(accel,scene,&createQuadMeshQuad4v);
-    else if (scene->device->quad_builder == "morton"     ) builder = BVH8BuilderTwoLevelQuadMeshSAH(accel,scene,&createQuadMeshQuad4vMorton);
+    if      (scene->device->quad_builder == "default"      ) builder = BVH8Quad4vSceneBuilderSAH(accel,scene,0);
+    else if (scene->device->quad_builder == "dynamic"      ) builder = BVH8BuilderTwoLevelQuadMeshSAH(accel,scene,&createQuadMeshQuad4v);
+    else if (scene->device->quad_builder == "morton"       ) builder = BVH8BuilderTwoLevelQuadMeshSAH(accel,scene,&createQuadMeshQuad4vMorton);
+    else if (scene->device->quad_builder == "sah_fast_spatial" ) builder = BVH8Quad4vSceneBuilderFastSpatialSAH(accel,scene,0);
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->quad_builder+" for BVH8<Quad4v>");
     return new AccelInstance(accel,builder,intersectors);
   }
+
+  Accel* BVH8Factory::BVH8Quad4vObjectSplit(Scene* scene)
+  {
+    BVH8* accel = new BVH8(Quad4v::type,scene);
+    Accel::Intersectors intersectors = BVH8Quad4vIntersectors(accel);
+    Builder* builder = BVH8Quad4vSceneBuilderSAH(accel,scene,0);
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+  Accel* BVH8Factory::BVH8Quad4vSpatialSplit(Scene* scene)
+  {
+    BVH8* accel = new BVH8(Quad4v::type,scene);
+    Accel::Intersectors intersectors = BVH8Quad4vIntersectors(accel);
+    Builder* builder = BVH8Quad4vSceneBuilderFastSpatialSAH(accel,scene,0);
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
 
   Accel* BVH8Factory::BVH8Quad4i(Scene* scene)
   {

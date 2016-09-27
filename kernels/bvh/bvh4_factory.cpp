@@ -183,6 +183,8 @@ namespace embree
   DECLARE_BUILDER2(void,Scene,size_t,BVH4Triangle4vSceneBuilderFastSpatialSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH4Triangle4iSceneBuilderFastSpatialSAH);
 
+  DECLARE_BUILDER2(void,Scene,size_t,BVH4Quad4vSceneBuilderFastSpatialSAH);
+
   DECLARE_BUILDER2(void,LineSegments,size_t,BVH4Line4iMeshBuilderSAH);
   //DECLARE_BUILDER2(void,LineSegments,size_t,BVH4Line4iMBMeshBuilderSAH);
   DECLARE_BUILDER2(void,TriangleMesh,size_t,BVH4Triangle4MeshBuilderSAH);
@@ -245,6 +247,8 @@ namespace embree
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4SceneBuilderFastSpatialSAH));
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vSceneBuilderFastSpatialSAH));
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4iSceneBuilderFastSpatialSAH));
+
+    IF_ENABLED_QUADS(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Quad4vSceneBuilderFastSpatialSAH));
 
     IF_ENABLED_LINES(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Line4iMeshBuilderSAH));
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4Triangle4MeshBuilderSAH));
@@ -1100,6 +1104,22 @@ namespace embree
   {
     BVH4* accel = new BVH4(Quad4v::type,scene);
     Builder* builder = BVH4Quad4vSceneBuilderSAH(accel,scene,0);
+    Accel::Intersectors intersectors = BVH4Quad4vIntersectors(accel);
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+  Accel* BVH4Factory::BVH4Quad4vObjectSplit(Scene* scene)
+  {
+    BVH4* accel = new BVH4(Quad4v::type,scene);
+    Builder* builder = BVH4Quad4vSceneBuilderSAH(accel,scene,0);
+    Accel::Intersectors intersectors = BVH4Quad4vIntersectors(accel);
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+  Accel* BVH4Factory::BVH4Quad4vSpatialSplit(Scene* scene)
+  {
+    BVH4* accel = new BVH4(Quad4v::type,scene);
+    Builder* builder = BVH4Quad4vSceneBuilderFastSpatialSAH(accel,scene,0);
     Accel::Intersectors intersectors = BVH4Quad4vIntersectors(accel);
     return new AccelInstance(accel,builder,intersectors);
   }

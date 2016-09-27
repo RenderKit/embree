@@ -176,12 +176,12 @@ namespace embree
     if (device->quad_accel == "default") 
     {
       if (isDynamic() && !isRobust()) {
-//#if defined (__TARGET_AVX__)
-//          if (device->hasISA(AVX))
-//            accels.add(device->bvh8_factory->BVH8Quad4vTwolevel(this));
-//          else
-//#endif
-            accels.add(device->bvh4_factory->BVH4Quad4vTwolevel(this));
+#if defined (__TARGET_AVX__)
+        if (device->hasISA(AVX))
+          accels.add(device->bvh8_factory->BVH8Quad4vTwolevel(this));
+        else
+#endif
+          accels.add(device->bvh4_factory->BVH4Quad4vTwolevel(this));
       }
       else
       {
@@ -191,10 +191,20 @@ namespace embree
         case /*0b00*/ 0:
 #if defined (__TARGET_AVX__)
           if (device->hasISA(AVX))
-            accels.add(device->bvh8_factory->BVH8Quad4v(this));
+          {
+            if (isHighQuality()) 
+              accels.add(device->bvh8_factory->BVH8Quad4vSpatialSplit(this));
+            else
+              accels.add(device->bvh8_factory->BVH8Quad4vObjectSplit(this));
+          }
           else
 #endif
-            accels.add(device->bvh4_factory->BVH4Quad4v(this));
+          {
+            if (isHighQuality()) 
+              accels.add(device->bvh4_factory->BVH4Quad4vSpatialSplit(this));
+            else
+              accels.add(device->bvh4_factory->BVH4Quad4vObjectSplit(this));
+          }
           break;
 
         case /*0b01*/ 1:
