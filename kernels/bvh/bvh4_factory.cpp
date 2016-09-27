@@ -1016,7 +1016,7 @@ namespace embree
   {
     if (cached)
     {
-      BVH4* accel = new BVH4(SubdivPatch1Cached::type,scene);
+      BVH4* accel = new BVH4(SubdivPatch1Cached::type_cached,scene);
       Accel::Intersectors intersectors = BVH4SubdivPatch1CachedIntersectors(accel);
       Builder* builder = BVH4SubdivPatch1CachedBuilderBinnedSAH(accel,scene,1);
       scene->needSubdivIndices = false;
@@ -1038,7 +1038,7 @@ namespace embree
   {
     if (cached)
     {
-      BVH4* accel = new BVH4(SubdivPatch1Cached::type,scene);
+      BVH4* accel = new BVH4(SubdivPatch1Cached::type_cached,scene);
       Accel::Intersectors intersectors = BVH4SubdivPatch1MBlurCachedIntersectors(accel);
       Builder* builder = BVH4SubdivPatch1MBlurCachedBuilderBinnedSAH(accel,scene,1);
       scene->needSubdivIndices = false;
