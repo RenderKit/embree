@@ -288,7 +288,7 @@ unsigned int addLines (RTCScene scene, const Vec3fa& pos)
   return geomID;
 }
 
-/* adds an instanced triangle cube to the scene */
+/* adds an instanced triangle cube to the scene, rotate instance */
 unsigned int addInstancedTriangleCube (RTCScene global_scene, const Vec3fa& pos)
 {
   RTCScene scene = rtcDeviceNewScene(g_device, RTC_SCENE_STATIC,RTC_INTERSECT1);
@@ -305,6 +305,41 @@ unsigned int addInstancedTriangleCube (RTCScene global_scene, const Vec3fa& pos)
     AffineSpace3fa scale = AffineSpace3fa::scale(Vec3fa(2.0f,1.0f,1.0f));
     AffineSpace3fa translation = AffineSpace3fa::translate(pos);
     AffineSpace3fa xfm = translation*rotation*scale;
+    rtcSetTransform2(global_scene,instID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&xfm,t);
+  }
+  return instID;
+}
+
+/* adds an instanced quad cube to the scene, rotate instance and geometry */
+unsigned int addInstancedQuadCube (RTCScene global_scene, const Vec3fa& pos)
+{
+  RTCScene scene = rtcDeviceNewScene(g_device, RTC_SCENE_STATIC,RTC_INTERSECT1);
+  unsigned int geomID = rtcNewQuadMesh (scene, RTC_GEOMETRY_STATIC, 6, 8, numTimeSteps);
+  rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  cube_quad_indices , 0, 4*sizeof(unsigned int));
+  
+  for (size_t t=0; t<numTimeSteps; t++) 
+  {
+    RTCBufferType bufID = (RTCBufferType)(RTC_VERTEX_BUFFER0+t);
+    Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene,geomID,bufID);
+
+    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),0.5f*(float)t*float(pi)/(float)numTimeSteps);
+    AffineSpace3fa scale = AffineSpace3fa::scale(Vec3fa(2.0f,1.0f,1.0f));
+    
+    for (int i=0; i<8; i++) {
+      Vec3fa v = Vec3fa(cube_vertices[i][0],cube_vertices[i][1],cube_vertices[i][2]);
+      vertices[i] = Vec3fa(xfmPoint(rotation*scale,v));
+    }
+    rtcUnmapBuffer(scene,geomID,bufID);
+  }
+  rtcCommit(scene);
+  
+  unsigned int instID = rtcNewInstance2(global_scene,scene,numTimeSteps);
+
+  for (size_t t=0; t<numTimeSteps; t++)
+  {
+    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),0.5f*(float)t*float(pi)/(float)numTimeSteps);
+    AffineSpace3fa translation = AffineSpace3fa::translate(pos);
+    AffineSpace3fa xfm = translation*rotation;
     rtcSetTransform2(global_scene,instID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&xfm,t);
   }
   return instID;
@@ -360,6 +395,7 @@ extern "C" void device_init (char* cfg)
   addCurveOrHair (g_scene,Vec3fa( 0,3, 0),false);
   addCurveOrHair (g_scene,Vec3fa(+5,3, 0),true);
   addInstancedTriangleCube(g_scene,Vec3fa(-5,3,+5));
+  addInstancedQuadCube    (g_scene,Vec3fa( 0,3,+5));
   addGroundPlane(g_scene);
 
   /* commit changes to scene */
