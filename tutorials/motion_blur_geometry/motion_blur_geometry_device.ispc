@@ -46,7 +46,7 @@ __aligned(16) uniform float cube_vertices[8][4] =
   { -1.0f,  1.0f,  1.0f, 0.0f }
 };
 
-uniform unsigned int cube_indices[36] = {
+uniform unsigned int cube_triangle_indices[36] = {
   1, 5, 4,  0, 1, 4,
   2, 6, 5,  1, 2, 5,
   3, 7, 6,  2, 3, 6,
@@ -64,12 +64,39 @@ uniform unsigned int cube_quad_indices[24] = {
   0, 3, 2, 1,
 };
 
+__aligned(16) uniform float cube_vertex_crease_weights[8] = {
+  inf, inf,inf, inf, inf, inf, inf, inf
+};
+
+__aligned(16) uniform unsigned int cube_vertex_crease_indices[8] = {
+  0,1,2,3,4,5,6,7
+};
+
+__aligned(16) uniform float cube_edge_crease_weights[12] = {
+  inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf
+};
+
+__aligned(16) uniform unsigned int cube_edge_crease_indices[24] =
+{
+  0,1, 1,2, 2,3, 3,0,
+  4,5, 5,6, 6,7, 7,4,
+  0,4, 1,5, 2,6, 3,7,
+};
+
+#define NUM_INDICES 24
+#define NUM_FACES 6
+#define FACE_SIZE 4
+
+uniform unsigned int cube_quad_faces[6] = {
+  4, 4, 4, 4, 4, 4
+};
+
 /* adds a cube to the scene */
 uniform unsigned int addTriangleCube (RTCScene scene, const uniform Vec3f& pos)
 {
   /* create a triangulated cube with 12 triangles and 8 vertices */
   uniform unsigned int geomID = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 12, 8, numTimeSteps);
-  rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  cube_indices , 0, 3*sizeof(uniform unsigned int));
+  rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  cube_triangle_indices , 0, 3*sizeof(uniform unsigned int));
 
   for (uniform size_t t=0; t<numTimeSteps; t++) 
   {
@@ -133,6 +160,44 @@ uniform unsigned int addQuadCube (RTCScene scene, const uniform Vec3f& pos)
   face_colors[3] = make_Vec3f(1.0f);
   face_colors[4] = make_Vec3f(0,0,1);
   face_colors[5] = make_Vec3f(1,1,0);*/
+  return geomID;
+}
+
+/* adds a subdivision cube to the scene */
+uniform unsigned int addSubdivCube (RTCScene scene, const uniform Vec3f& pos)
+{
+  /* create a triangulated cube with 6 quads and 8 vertices */
+  uniform unsigned int geomID = rtcNewSubdivisionMesh(scene, RTC_GEOMETRY_STATIC, NUM_FACES, NUM_INDICES, 8, 0, 0, 0, numTimeSteps);
+
+  //rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER, cube_vertices,  0, sizeof(uniform Vec3fa  ));
+  rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  cube_quad_indices, 0, sizeof(uniform unsigned int));
+  rtcSetBuffer(scene, geomID, RTC_FACE_BUFFER,   cube_quad_faces,0, sizeof(uniform unsigned int));
+
+  rtcSetBuffer(scene, geomID, RTC_EDGE_CREASE_INDEX_BUFFER,   cube_edge_crease_indices,  0, 2*sizeof(uniform unsigned int));
+  rtcSetBuffer(scene, geomID, RTC_EDGE_CREASE_WEIGHT_BUFFER,  cube_edge_crease_weights,  0, sizeof(uniform float));
+
+  rtcSetBuffer(scene, geomID, RTC_VERTEX_CREASE_INDEX_BUFFER, cube_vertex_crease_indices,0, sizeof(uniform unsigned int));
+  rtcSetBuffer(scene, geomID, RTC_VERTEX_CREASE_WEIGHT_BUFFER,cube_vertex_crease_weights,0, sizeof(uniform float));
+
+  uniform float* uniform level = (uniform float* uniform) rtcMapBuffer(scene, geomID, RTC_LEVEL_BUFFER);
+  for (uniform size_t i=0; i<NUM_INDICES; i++) level[i] = 16.0f;
+  rtcUnmapBuffer(scene, geomID, RTC_LEVEL_BUFFER);
+
+  for (uniform size_t t=0; t<numTimeSteps; t++) 
+  {
+    uniform RTCBufferType bufID = (uniform RTCBufferType)(RTC_VERTEX_BUFFER0+t);
+    uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcMapBuffer(scene,geomID,bufID);
+
+    uniform AffineSpace3f rotation = make_AffineSpace3f_rotate(make_Vec3f(0,0,0),make_Vec3f(0,1,0),(float)t*pi/(float)numTimeSteps);
+    uniform AffineSpace3f scale = make_AffineSpace3f_scale(make_Vec3f(2.0f,1.0f,1.0f));
+    
+    for (uniform int i=0; i<8; i++) {
+      uniform Vec3f v = make_Vec3f(cube_vertices[i][0],cube_vertices[i][1],cube_vertices[i][2]);
+      vertices[i] = make_Vec3fa(xfmPoint(rotation*scale,v)+pos);
+    }
+    rtcUnmapBuffer(scene,geomID,bufID);
+  }
+
   return geomID;
 }
 
@@ -231,6 +296,7 @@ export void device_init (uniform int8* uniform cfg)
   /* add geometry to the scene */
   addTriangleCube(g_scene,make_Vec3f(-5,3,-5));
   addQuadCube    (g_scene,make_Vec3f( 0,3,-5));
+  addSubdivCube  (g_scene,make_Vec3f(+5,3,-5));
   addCurveOrHair (g_scene,make_Vec3f(-5,3, 0),false);
   addCurveOrHair (g_scene,make_Vec3f( 0,3, 0),true);
   addGroundPlane(g_scene);

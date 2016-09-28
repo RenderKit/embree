@@ -48,7 +48,7 @@ __aligned(16) float cube_vertices[8][4] =
   { -1.0f,  1.0f,  1.0f, 0.0f }
 };
 
-unsigned int cube_indices[36] = {
+unsigned int cube_triangle_indices[36] = {
   1, 5, 4,  0, 1, 4,
   2, 6, 5,  1, 2, 5,
   3, 7, 6,  2, 3, 6,
@@ -66,12 +66,39 @@ unsigned int cube_quad_indices[24] = {
   0, 3, 2, 1,
 };
 
+__aligned(16) float cube_vertex_crease_weights[8] = {
+  inf, inf,inf, inf, inf, inf, inf, inf
+};
+
+__aligned(16) unsigned int cube_vertex_crease_indices[8] = {
+  0,1,2,3,4,5,6,7
+};
+
+__aligned(16) float cube_edge_crease_weights[12] = {
+  inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf
+};
+
+__aligned(16) unsigned int cube_edge_crease_indices[24] =
+{
+  0,1, 1,2, 2,3, 3,0,
+  4,5, 5,6, 6,7, 7,4,
+  0,4, 1,5, 2,6, 3,7,
+};
+
+#define NUM_INDICES 24
+#define NUM_FACES 6
+#define FACE_SIZE 4
+
+unsigned int cube_quad_faces[6] = {
+  4, 4, 4, 4, 4, 4
+};
+
 /* adds a cube to the scene */
 unsigned int addTriangleCube (RTCScene scene, const Vec3fa& pos)
 {
   /* create a triangulated cube with 12 triangles and 8 vertices */
   unsigned int geomID = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 12, 8, numTimeSteps);
-  rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  cube_indices , 0, 3*sizeof(unsigned int));
+  rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  cube_triangle_indices , 0, 3*sizeof(unsigned int));
 
   for (size_t t=0; t<numTimeSteps; t++) 
   {
@@ -135,6 +162,44 @@ unsigned int addQuadCube (RTCScene scene, const Vec3fa& pos)
   face_colors[3] = Vec3fa(1.0f);
   face_colors[4] = Vec3fa(0,0,1);
   face_colors[5] = Vec3fa(1,1,0);*/
+  return geomID;
+}
+
+/* adds a subdivision cube to the scene */
+unsigned int addSubdivCube (RTCScene scene, const Vec3fa& pos)
+{
+  /* create a triangulated cube with 6 quads and 8 vertices */
+  unsigned int geomID = rtcNewSubdivisionMesh(scene, RTC_GEOMETRY_STATIC, NUM_FACES, NUM_INDICES, 8, 0, 0, 0, numTimeSteps);
+
+  //rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER, cube_vertices,  0, sizeof(Vec3fa  ));
+  rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  cube_quad_indices, 0, sizeof(unsigned int));
+  rtcSetBuffer(scene, geomID, RTC_FACE_BUFFER,   cube_quad_faces,0, sizeof(unsigned int));
+
+  rtcSetBuffer(scene, geomID, RTC_EDGE_CREASE_INDEX_BUFFER,   cube_edge_crease_indices,  0, 2*sizeof(unsigned int));
+  rtcSetBuffer(scene, geomID, RTC_EDGE_CREASE_WEIGHT_BUFFER,  cube_edge_crease_weights,  0, sizeof(float));
+
+  rtcSetBuffer(scene, geomID, RTC_VERTEX_CREASE_INDEX_BUFFER, cube_vertex_crease_indices,0, sizeof(unsigned int));
+  rtcSetBuffer(scene, geomID, RTC_VERTEX_CREASE_WEIGHT_BUFFER,cube_vertex_crease_weights,0, sizeof(float));
+
+  float* level = (float*) rtcMapBuffer(scene, geomID, RTC_LEVEL_BUFFER);
+  for (size_t i=0; i<NUM_INDICES; i++) level[i] = 16.0f;
+  rtcUnmapBuffer(scene, geomID, RTC_LEVEL_BUFFER);
+
+  for (size_t t=0; t<numTimeSteps; t++) 
+  {
+    RTCBufferType bufID = (RTCBufferType)(RTC_VERTEX_BUFFER0+t);
+    Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene,geomID,bufID);
+
+    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),(float)t*float(pi)/(float)numTimeSteps);
+    AffineSpace3fa scale = AffineSpace3fa::scale(Vec3fa(2.0f,1.0f,1.0f));
+    
+    for (int i=0; i<8; i++) {
+      Vec3fa v = Vec3fa(cube_vertices[i][0],cube_vertices[i][1],cube_vertices[i][2]);
+      vertices[i] = Vec3fa(xfmPoint(rotation*scale,v)+pos);
+    }
+    rtcUnmapBuffer(scene,geomID,bufID);
+  }
+
   return geomID;
 }
 
@@ -233,6 +298,7 @@ extern "C" void device_init (char* cfg)
   /* add geometry to the scene */
   addTriangleCube(g_scene,Vec3fa(-5,3,-5));
   addQuadCube    (g_scene,Vec3fa( 0,3,-5));
+  addSubdivCube  (g_scene,Vec3fa(+5,3,-5));
   addCurveOrHair (g_scene,Vec3fa(-5,3, 0),false);
   addCurveOrHair (g_scene,Vec3fa( 0,3, 0),true);
   addGroundPlane(g_scene);
