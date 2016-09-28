@@ -343,6 +343,95 @@ uniform unsigned int addInstancedQuadCube (RTCScene global_scene, const uniform 
   return instID;
 }
 
+// ======================================================================== //
+//                     User defined sphere geometry                         //
+// ======================================================================== //
+
+struct Sphere
+{
+  ALIGNED_STRUCT
+  Vec3f p;                      //!< position of the sphere
+  float r;                      //!< radius of the sphere
+  unsigned int geomID;
+};
+
+unmasked void sphereBoundsFunc(const uniform Sphere* uniform spheres, uniform size_t item, uniform RTCBounds* uniform bounds_o)
+{
+  const uniform Sphere& sphere = spheres[item];
+  bounds_o->lower_x = sphere.p.x-sphere.r;
+  bounds_o->lower_y = sphere.p.y-sphere.r;
+  bounds_o->lower_z = sphere.p.z-sphere.r;
+  bounds_o->upper_x = sphere.p.x+sphere.r;
+  bounds_o->upper_y = sphere.p.y+sphere.r;
+  bounds_o->upper_z = sphere.p.z+sphere.r;
+}
+
+void sphereIntersectFunc(const uniform Sphere* uniform spheres, varying RTCRay& ray, uniform size_t item)
+{
+  const uniform Sphere& sphere = spheres[item];
+  const Vec3f v = ray.org-sphere.p;
+  const float A = dot(ray.dir,ray.dir);
+  const float B = 2.0f*dot(v,ray.dir);
+  const float C = dot(v,v) - sqr(sphere.r);
+  const float D = B*B - 4.0f*A*C;
+  if (D < 0.0f) return;
+  const float Q = sqrt(D);
+  const float rcpA = rcp(A);
+  const float t0 = 0.5f*rcpA*(-B-Q);
+  const float t1 = 0.5f*rcpA*(-B+Q);
+  if ((ray.tnear < t0) & (t0 < ray.tfar)) {
+    ray.u = 0.0f;
+    ray.v = 0.0f;
+    ray.tfar = t0;
+    ray.geomID = sphere.geomID;
+    ray.primID = (unsigned int) item;
+    ray.Ng = ray.org+t0*ray.dir-sphere.p;
+  }
+  if ((ray.tnear < t1) & (t1 < ray.tfar)) {
+    ray.u = 0.0f;
+    ray.v = 0.0f;
+    ray.tfar = t1;
+    ray.geomID = sphere.geomID;
+    ray.primID = (unsigned int) item;
+    ray.Ng = ray.org+t1*ray.dir-sphere.p;
+  }
+}
+
+void sphereOccludedFunc(const uniform Sphere* uniform spheres, varying RTCRay& ray, uniform size_t item)
+{
+  const uniform Sphere& sphere = spheres[item];
+  const Vec3f v = ray.org-sphere.p;
+  const float A = dot(ray.dir,ray.dir);
+  const float B = 2.0f*dot(v,ray.dir);
+  const float C = dot(v,v) - sqr(sphere.r);
+  const float D = B*B - 4.0f*A*C;
+  if (D < 0.0f) return;
+  const float Q = sqrt(D);
+  const float rcpA = rcp(A);
+  const float t0 = 0.5f*rcpA*(-B-Q);
+  const float t1 = 0.5f*rcpA*(-B+Q);
+  if ((ray.tnear < t0) & (t0 < ray.tfar)) {
+    ray.geomID = 0;
+  }
+  if ((ray.tnear < t1) & (t1 < ray.tfar)) {
+    ray.geomID = 0;
+  }
+}
+
+uniform Sphere* uniform addUserGeometrySphere (RTCScene scene, const uniform Vec3f& p, uniform float r)
+{
+  uniform unsigned int geomID = rtcNewUserGeometry(scene,1);
+  uniform Sphere* uniform sphere = uniform new uniform Sphere;
+  sphere->p = p;
+  sphere->r = r;
+  sphere->geomID = geomID;
+  rtcSetUserData(scene,geomID,sphere);
+  rtcSetBoundsFunction(scene,geomID,(RTCBoundsFunc)&sphereBoundsFunc);
+  rtcSetIntersectFunction(scene,geomID,(RTCIntersectFuncVarying)&sphereIntersectFunc);
+  rtcSetOccludedFunction (scene,geomID,(RTCOccludedFuncVarying )&sphereOccludedFunc);
+  return sphere;
+}
+
 /* adds a ground plane to the scene */
 uniform unsigned int addGroundPlane (RTCScene scene)
 {
@@ -394,6 +483,7 @@ export void device_init (uniform int8* uniform cfg)
   addCurveOrHair (g_scene,make_Vec3f(+5,3, 0),true);
   addInstancedTriangleCube(g_scene,make_Vec3f(-5,3,+5));
   addInstancedQuadCube    (g_scene,make_Vec3f( 0,3,+5));
+  addUserGeometrySphere   (g_scene,make_Vec3f(+5,3,+5),1.0f);
   addGroundPlane(g_scene);
 
   /* commit changes to scene */
