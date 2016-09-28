@@ -114,7 +114,7 @@ uniform unsigned int addTriangleCube (RTCScene scene, const uniform Vec3f& pos)
   }
 
   /* create face color array */
-  /*face_colors = uniform new uniform Vec3f[12];
+  face_colors = uniform new uniform Vec3f[12];
   face_colors[0] = make_Vec3f(1,0,0);
   face_colors[1] = make_Vec3f(1,0,0);
   face_colors[2] = make_Vec3f(0,1,0);
@@ -126,7 +126,7 @@ uniform unsigned int addTriangleCube (RTCScene scene, const uniform Vec3f& pos)
   face_colors[8] = make_Vec3f(0,0,1);
   face_colors[9] = make_Vec3f(0,0,1);
   face_colors[10] = make_Vec3f(1,1,0);
-  face_colors[11] = make_Vec3f(1,1,0);*/
+  face_colors[11] = make_Vec3f(1,1,0);
   return geomID;
 }
 
@@ -152,14 +152,6 @@ uniform unsigned int addQuadCube (RTCScene scene, const uniform Vec3f& pos)
     rtcUnmapBuffer(scene,geomID,bufID);
   }
 
-  /* create face color array */
-  /*face_colors = uniform new uniform Vec3f[6];
-  face_colors[0] = make_Vec3f(1,0,0);
-  face_colors[1] = make_Vec3f(0,1,0);
-  face_colors[2] = make_Vec3f(0.5f);
-  face_colors[3] = make_Vec3f(1.0f);
-  face_colors[4] = make_Vec3f(0,0,1);
-  face_colors[5] = make_Vec3f(1,1,0);*/
   return geomID;
 }
 
@@ -544,7 +536,18 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
   {
     Vec3f diffuse = make_Vec3f(0.5f,0.5f,0.5f);
-    //if (ray.geomID == 0) diffuse = face_colors[ray.primID];
+    switch (ray.geomID) {
+    case 0: diffuse = face_colors[ray.primID]; break;
+    case 1: diffuse = face_colors[2*ray.primID]; break;
+    case 2: diffuse = face_colors[2*ray.primID]; break;
+    case 3: diffuse = make_Vec3f(0.5f,0.5f,0.5f); break;
+    case 4: diffuse = make_Vec3f(0.5f,0.5f,0.5f); break;
+    case 5: diffuse = make_Vec3f(0.5f,0.5f,0.5f); break;
+    case 6: diffuse = face_colors[ray.primID]; break;
+    case 7: diffuse = face_colors[2*ray.primID]; break;
+    case 8: diffuse = make_Vec3f(0.5f,0.0f,0.0f); break;
+    default: diffuse = make_Vec3f(0.5f,0.5f,0.5f); break;
+    }
     //else if (ray.geomID == 1) diffuse = make_Vec3f(0.0f,1.0f,0.0f);
     //else diffuse = make_Vec3f(0.5f,0.5f,0.5f);
     color = color + diffuse*0.5f;

@@ -116,7 +116,7 @@ unsigned int addTriangleCube (RTCScene scene, const Vec3fa& pos)
   }
 
   /* create face color array */
-  /*face_colors = (Vec3fa*) alignedMalloc(12*sizeof(Vec3fa));
+  face_colors = (Vec3fa*) alignedMalloc(12*sizeof(Vec3fa));
   face_colors[0] = Vec3fa(1,0,0);
   face_colors[1] = Vec3fa(1,0,0);
   face_colors[2] = Vec3fa(0,1,0);
@@ -128,7 +128,7 @@ unsigned int addTriangleCube (RTCScene scene, const Vec3fa& pos)
   face_colors[8] = Vec3fa(0,0,1);
   face_colors[9] = Vec3fa(0,0,1);
   face_colors[10] = Vec3fa(1,1,0);
-  face_colors[11] = Vec3fa(1,1,0);*/
+  face_colors[11] = Vec3fa(1,1,0);
   return geomID;
 }
 
@@ -154,14 +154,6 @@ unsigned int addQuadCube (RTCScene scene, const Vec3fa& pos)
     rtcUnmapBuffer(scene,geomID,bufID);
   }
 
-  /* create face color array */
-  /*face_colors = (Vec3fa*) alignedMalloc(6*sizeof(Vec3fa));
-  face_colors[0] = Vec3fa(1,0,0);
-  face_colors[1] = Vec3fa(0,1,0);
-  face_colors[2] = Vec3fa(0.5f);
-  face_colors[3] = Vec3fa(1.0f);
-  face_colors[4] = Vec3fa(0,0,1);
-  face_colors[5] = Vec3fa(1,1,0);*/
   return geomID;
 }
 
@@ -546,7 +538,18 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
   {
     Vec3fa diffuse = Vec3fa(0.5f,0.5f,0.5f);
-    //if (ray.geomID == 0) diffuse = face_colors[ray.primID];
+    switch (ray.geomID) {
+    case 0: diffuse = face_colors[ray.primID]; break;
+    case 1: diffuse = face_colors[2*ray.primID]; break;
+    case 2: diffuse = face_colors[2*ray.primID]; break;
+    case 3: diffuse = Vec3fa(0.5f,0.5f,0.5f); break;
+    case 4: diffuse = Vec3fa(0.5f,0.5f,0.5f); break;
+    case 5: diffuse = Vec3fa(0.5f,0.5f,0.5f); break;
+    case 6: diffuse = face_colors[ray.primID]; break;
+    case 7: diffuse = face_colors[2*ray.primID]; break;
+    case 8: diffuse = Vec3fa(0.5f,0.0f,0.0f); break;
+    default: diffuse = Vec3fa(0.5f,0.5f,0.5f); break;
+    }
     //else if (ray.geomID == 1) diffuse = Vec3fa(0.0f,1.0f,0.0f);
     //else diffuse = Vec3fa(0.5f,0.5f,0.5f);
     color = color + diffuse*0.5f;
