@@ -319,10 +319,10 @@ namespace embree
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_SSE42_AVX(features,BVH4Triangle4iIntersector4HybridPluecker));
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4Triangle4vMBIntersector4HybridMoeller));
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4Triangle4iMBIntersector4HybridPluecker));
-    IF_ENABLED_QUADS(SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,BVH4Quad4vIntersector4HybridMoeller));
-    IF_ENABLED_QUADS(SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,BVH4Quad4vIntersector4HybridMoellerNoFilter));
-    IF_ENABLED_QUADS(SELECT_SYMBOL_DEFAULT_AVX     (features,BVH4Quad4iIntersector4HybridPluecker));
-    IF_ENABLED_QUADS(SELECT_SYMBOL_DEFAULT_AVX     (features,BVH4Quad4iMBIntersector4HybridPluecker));
+    IF_ENABLED_QUADS(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4Quad4vIntersector4HybridMoeller));
+    IF_ENABLED_QUADS(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4Quad4vIntersector4HybridMoellerNoFilter));
+    IF_ENABLED_QUADS(SELECT_SYMBOL_DEFAULT_SSE42_AVX     (features,BVH4Quad4iIntersector4HybridPluecker));
+    IF_ENABLED_QUADS(SELECT_SYMBOL_DEFAULT_SSE42_AVX     (features,BVH4Quad4iMBIntersector4HybridPluecker));
     IF_ENABLED_SUBDIV(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4Subdivpatch1Intersector4));
     IF_ENABLED_SUBDIV(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4Subdivpatch1CachedIntersector4));
     IF_ENABLED_SUBDIV(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4Subdivpatch1MBlurIntersector4));

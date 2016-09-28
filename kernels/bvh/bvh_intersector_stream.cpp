@@ -169,14 +169,7 @@ namespace embree
     {
       const size_t numPackets = (numTotalRays+K-1)/K; //todo : OPTIMIZE
       for (size_t i = 0; i < numPackets; i++)
-      {
         new (&rayK[i]) RayK<K>(zero,zero,zero,neg_inf);
-        /*rayK[i].tnear  = 0.0f;
-        rayK[i].tfar   = neg_inf;
-        rayK[i].time   = 0.0f;
-        rayK[i].mask   = -1;
-        rayK[i].geomID = RTC_INVALID_GEOMETRY_ID;*/
-      }
 
       Vec3fa min_dir = pos_inf;
       Vec3fa max_dir = neg_inf;
