@@ -253,6 +253,41 @@ unsigned int addCurveOrHair (RTCScene scene, const Vec3fa& pos, bool curve)
   return geomID;
 }
 
+/* add line geometry */
+unsigned int addLines (RTCScene scene, const Vec3fa& pos)
+{
+  unsigned int geomID = rtcNewLineSegments (scene, RTC_GEOMETRY_STATIC, 15, 16, numTimeSteps);
+
+  Vec3fa* bspline = (Vec3fa*) alignedMalloc(16*sizeof(Vec3fa));
+  for (int i=0; i<16; i++) {
+    float f = (float)(i)/16.0f;
+    bspline[i] = Vec3fa(4.0f*(f-0.5f),sin(12.0f*f),cos(12.0f*f));
+  }
+
+  for (size_t t=0; t<numTimeSteps; t++) 
+  {
+    RTCBufferType bufID = (RTCBufferType)(RTC_VERTEX_BUFFER0+t);
+    Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene,geomID,bufID);
+
+    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),(float)t*float(pi)/(float)numTimeSteps);
+    AffineSpace3fa scale = AffineSpace3fa::scale(Vec3fa(2.0f,1.0f,1.0f));
+    
+    for (int i=0; i<16; i++)
+      vertices[i] = Vec3fa(xfmPoint(rotation*scale,bspline[i])+pos,0.02f);
+
+    rtcUnmapBuffer(scene,geomID,bufID);
+  }
+
+  int* indices = (int*) rtcMapBuffer(scene,geomID,RTC_INDEX_BUFFER);
+  for (int i=0; i<15; i++) {
+    indices[i] = i;
+  }
+  rtcUnmapBuffer(scene,geomID,RTC_INDEX_BUFFER);
+
+  alignedFree(bspline);
+  return geomID;
+}
+
 /* adds a ground plane to the scene */
 unsigned int addGroundPlane (RTCScene scene)
 {
@@ -299,8 +334,9 @@ extern "C" void device_init (char* cfg)
   addTriangleCube(g_scene,Vec3fa(-5,3,-5));
   addQuadCube    (g_scene,Vec3fa( 0,3,-5));
   addSubdivCube  (g_scene,Vec3fa(+5,3,-5));
-  addCurveOrHair (g_scene,Vec3fa(-5,3, 0),false);
-  addCurveOrHair (g_scene,Vec3fa( 0,3, 0),true);
+  addLines       (g_scene,Vec3fa(-5,3, 0));
+  addCurveOrHair (g_scene,Vec3fa( 0,3, 0),false);
+  addCurveOrHair (g_scene,Vec3fa(+5,3, 0),true);
   addGroundPlane(g_scene);
 
   /* commit changes to scene */

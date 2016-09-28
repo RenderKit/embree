@@ -251,6 +251,41 @@ uniform unsigned int addCurveOrHair (RTCScene scene, const uniform Vec3f& pos, b
   return geomID;
 }
 
+/* add line geometry */
+uniform unsigned int addLines (RTCScene scene, const uniform Vec3f& pos)
+{
+  uniform unsigned int geomID = rtcNewLineSegments (scene, RTC_GEOMETRY_STATIC, 15, 16, numTimeSteps);
+
+  uniform Vec3f* uniform bspline = uniform new uniform Vec3f[16];
+  for (uniform int i=0; i<16; i++) {
+    uniform float f = (uniform float)(i)/16.0f;
+    bspline[i] = make_Vec3f(4.0f*(f-0.5f),sin(12.0f*f),cos(12.0f*f));
+  }
+
+  for (uniform size_t t=0; t<numTimeSteps; t++) 
+  {
+    uniform RTCBufferType bufID = (uniform RTCBufferType)(RTC_VERTEX_BUFFER0+t);
+    uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcMapBuffer(scene,geomID,bufID);
+
+    uniform AffineSpace3f rotation = make_AffineSpace3f_rotate(make_Vec3f(0,0,0),make_Vec3f(0,1,0),(float)t*pi/(float)numTimeSteps);
+    uniform AffineSpace3f scale = make_AffineSpace3f_scale(make_Vec3f(2.0f,1.0f,1.0f));
+    
+    for (uniform int i=0; i<16; i++)
+      vertices[i] = make_Vec3fa(xfmPoint(rotation*scale,bspline[i])+pos,0.02f);
+
+    rtcUnmapBuffer(scene,geomID,bufID);
+  }
+
+  uniform int* uniform indices = (uniform int* uniform) rtcMapBuffer(scene,geomID,RTC_INDEX_BUFFER);
+  for (uniform int i=0; i<15; i++) {
+    indices[i] = i;
+  }
+  rtcUnmapBuffer(scene,geomID,RTC_INDEX_BUFFER);
+
+  delete[] bspline;
+  return geomID;
+}
+
 /* adds a ground plane to the scene */
 uniform unsigned int addGroundPlane (RTCScene scene)
 {
@@ -297,8 +332,9 @@ export void device_init (uniform int8* uniform cfg)
   addTriangleCube(g_scene,make_Vec3f(-5,3,-5));
   addQuadCube    (g_scene,make_Vec3f( 0,3,-5));
   addSubdivCube  (g_scene,make_Vec3f(+5,3,-5));
-  addCurveOrHair (g_scene,make_Vec3f(-5,3, 0),false);
-  addCurveOrHair (g_scene,make_Vec3f( 0,3, 0),true);
+  addLines       (g_scene,make_Vec3f(-5,3, 0));
+  addCurveOrHair (g_scene,make_Vec3f( 0,3, 0),false);
+  addCurveOrHair (g_scene,make_Vec3f(+5,3, 0),true);
   addGroundPlane(g_scene);
 
   /* commit changes to scene */
