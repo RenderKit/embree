@@ -34,7 +34,7 @@ namespace embree
     __forceinline RayK(const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& dir,
                        const vfloat<K>& tnear = zero, const vfloat<K>& tfar = inf,
                        const vfloat<K>& time = zero, const vint<K>& mask = -1)
-      : org(org), dir(dir), tnear(tnear), tfar(tfar), geomID(-1), primID(-1), instID(-1), mask(mask), time(time) {}
+      : org(org), dir(dir), tnear(tnear), tfar(tfar), time(time), mask(mask), geomID(-1), primID(-1), instID(-1) {}
 
     /* Returns the size of the ray */
     static __forceinline size_t size() { return K; }
