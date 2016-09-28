@@ -355,21 +355,34 @@ struct Sphere
   unsigned int geomID;
 };
 
-unmasked void sphereBoundsFunc(const uniform Sphere* uniform spheres, uniform size_t item, uniform RTCBounds* uniform bounds_o)
+unmasked void sphereBoundsFunc(void* uniform userPtr, const uniform Sphere* uniform spheres, uniform size_t item, uniform size_t time, uniform RTCBounds& bounds_o)
 {
+  uniform float ft = (float)(pi) * (uniform float) time / (uniform float) (numTimeSteps-1);
   const uniform Sphere& sphere = spheres[item];
-  bounds_o->lower_x = sphere.p.x-sphere.r;
-  bounds_o->lower_y = sphere.p.y-sphere.r;
-  bounds_o->lower_z = sphere.p.z-sphere.r;
-  bounds_o->upper_x = sphere.p.x+sphere.r;
-  bounds_o->upper_y = sphere.p.y+sphere.r;
-  bounds_o->upper_z = sphere.p.z+sphere.r;
+  uniform Vec3f p = sphere.p + make_Vec3f(sin(ft),0.0f,cos(ft));
+  bounds_o.lower_x = p.x-sphere.r;
+  bounds_o.lower_y = p.y-sphere.r;
+  bounds_o.lower_z = p.z-sphere.r;
+  bounds_o.upper_x = p.x+sphere.r;
+  bounds_o.upper_y = p.y+sphere.r;
+  bounds_o.upper_z = p.z+sphere.r;
 }
 
 void sphereIntersectFunc(const uniform Sphere* uniform spheres, varying RTCRay& ray, uniform size_t item)
 {
   const uniform Sphere& sphere = spheres[item];
-  const Vec3f v = ray.org-sphere.p;
+
+  const int time_segments = numTimeSteps-1;
+  const float time = ray.time*(float)(time_segments);
+  const int itime = clamp((int)(floor(time)),(varying int)0,time_segments-1);
+  const float ftime = time - (float)(itime);
+  const float ft0 = (float)(pi) * (float) (itime+0) / (float) (numTimeSteps-1);
+  const float ft1 = (float)(pi) * (float) (itime+1) / (float) (numTimeSteps-1);
+  const Vec3f p0 = sphere.p + make_Vec3f(sin(ft0),0.0f,cos(ft0));
+  const Vec3f p1 = sphere.p + make_Vec3f(sin(ft1),0.0f,cos(ft1));
+  const Vec3f sphere_p = (1.0f-ftime)*p0 + ftime*p1;
+
+  const Vec3f v = ray.org-sphere_p;
   const float A = dot(ray.dir,ray.dir);
   const float B = 2.0f*dot(v,ray.dir);
   const float C = dot(v,v) - sqr(sphere.r);
@@ -385,7 +398,7 @@ void sphereIntersectFunc(const uniform Sphere* uniform spheres, varying RTCRay& 
     ray.tfar = t0;
     ray.geomID = sphere.geomID;
     ray.primID = (unsigned int) item;
-    ray.Ng = ray.org+t0*ray.dir-sphere.p;
+    ray.Ng = ray.org+t0*ray.dir-sphere_p;
   }
   if ((ray.tnear < t1) & (t1 < ray.tfar)) {
     ray.u = 0.0f;
@@ -393,14 +406,25 @@ void sphereIntersectFunc(const uniform Sphere* uniform spheres, varying RTCRay& 
     ray.tfar = t1;
     ray.geomID = sphere.geomID;
     ray.primID = (unsigned int) item;
-    ray.Ng = ray.org+t1*ray.dir-sphere.p;
+    ray.Ng = ray.org+t1*ray.dir-sphere_p;
   }
 }
 
 void sphereOccludedFunc(const uniform Sphere* uniform spheres, varying RTCRay& ray, uniform size_t item)
 {
   const uniform Sphere& sphere = spheres[item];
-  const Vec3f v = ray.org-sphere.p;
+
+  const int time_segments = numTimeSteps-1;
+  const float time = ray.time*(float)(time_segments);
+  const int itime = clamp((int)(floor(time)),(varying int)0,time_segments-1);
+  const float ftime = time - (float)(itime);
+  const float ft0 = (float)(pi) * (float) (itime+0) / (float) (numTimeSteps-1);
+  const float ft1 = (float)(pi) * (float) (itime+1) / (float) (numTimeSteps-1);
+  const Vec3f p0 = sphere.p + make_Vec3f(sin(ft0),0.0f,cos(ft0));
+  const Vec3f p1 = sphere.p + make_Vec3f(sin(ft1),0.0f,cos(ft1));
+  const Vec3f sphere_p = (1.0f-ftime)*p0 + ftime*p1;
+
+  const Vec3f v = ray.org-sphere_p;
   const float A = dot(ray.dir,ray.dir);
   const float B = 2.0f*dot(v,ray.dir);
   const float C = dot(v,v) - sqr(sphere.r);
@@ -426,7 +450,7 @@ uniform Sphere* uniform addUserGeometrySphere (RTCScene scene, const uniform Vec
   sphere->r = r;
   sphere->geomID = geomID;
   rtcSetUserData(scene,geomID,sphere);
-  rtcSetBoundsFunction(scene,geomID,(RTCBoundsFunc)&sphereBoundsFunc);
+  rtcSetBoundsFunction3(scene,geomID,(RTCBoundsFunc3)&sphereBoundsFunc,NULL);
   rtcSetIntersectFunction(scene,geomID,(RTCIntersectFuncVarying)&sphereIntersectFunc);
   rtcSetOccludedFunction (scene,geomID,(RTCOccludedFuncVarying )&sphereOccludedFunc);
   return sphere;

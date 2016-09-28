@@ -357,21 +357,34 @@ struct Sphere
   unsigned int geomID;
 };
 
-void sphereBoundsFunc(const Sphere* spheres, size_t item, RTCBounds* bounds_o)
+void sphereBoundsFunc(void* userPtr, const Sphere* spheres, size_t item, size_t time, RTCBounds& bounds_o)
 {
+  float ft = (float)(pi) * (float) time / (float) (numTimeSteps-1);
   const Sphere& sphere = spheres[item];
-  bounds_o->lower_x = sphere.p.x-sphere.r;
-  bounds_o->lower_y = sphere.p.y-sphere.r;
-  bounds_o->lower_z = sphere.p.z-sphere.r;
-  bounds_o->upper_x = sphere.p.x+sphere.r;
-  bounds_o->upper_y = sphere.p.y+sphere.r;
-  bounds_o->upper_z = sphere.p.z+sphere.r;
+  Vec3fa p = sphere.p + Vec3fa(sin(ft),0.0f,cos(ft));
+  bounds_o.lower_x = p.x-sphere.r;
+  bounds_o.lower_y = p.y-sphere.r;
+  bounds_o.lower_z = p.z-sphere.r;
+  bounds_o.upper_x = p.x+sphere.r;
+  bounds_o.upper_y = p.y+sphere.r;
+  bounds_o.upper_z = p.z+sphere.r;
 }
 
 void sphereIntersectFunc(const Sphere* spheres, RTCRay& ray, size_t item)
 {
   const Sphere& sphere = spheres[item];
-  const Vec3fa v = ray.org-sphere.p;
+
+  const int time_segments = numTimeSteps-1;
+  const float time = ray.time*(float)(time_segments);
+  const int itime = clamp((int)(floor(time)),(int)0,time_segments-1);
+  const float ftime = time - (float)(itime);
+  const float ft0 = (float)(pi) * (float) (itime+0) / (float) (numTimeSteps-1);
+  const float ft1 = (float)(pi) * (float) (itime+1) / (float) (numTimeSteps-1);
+  const Vec3fa p0 = sphere.p + Vec3fa(sin(ft0),0.0f,cos(ft0));
+  const Vec3fa p1 = sphere.p + Vec3fa(sin(ft1),0.0f,cos(ft1));
+  const Vec3fa sphere_p = (1.0f-ftime)*p0 + ftime*p1;
+
+  const Vec3fa v = ray.org-sphere_p;
   const float A = dot(ray.dir,ray.dir);
   const float B = 2.0f*dot(v,ray.dir);
   const float C = dot(v,v) - sqr(sphere.r);
@@ -387,7 +400,7 @@ void sphereIntersectFunc(const Sphere* spheres, RTCRay& ray, size_t item)
     ray.tfar = t0;
     ray.geomID = sphere.geomID;
     ray.primID = (unsigned int) item;
-    ray.Ng = ray.org+t0*ray.dir-sphere.p;
+    ray.Ng = ray.org+t0*ray.dir-sphere_p;
   }
   if ((ray.tnear < t1) & (t1 < ray.tfar)) {
     ray.u = 0.0f;
@@ -395,14 +408,25 @@ void sphereIntersectFunc(const Sphere* spheres, RTCRay& ray, size_t item)
     ray.tfar = t1;
     ray.geomID = sphere.geomID;
     ray.primID = (unsigned int) item;
-    ray.Ng = ray.org+t1*ray.dir-sphere.p;
+    ray.Ng = ray.org+t1*ray.dir-sphere_p;
   }
 }
 
 void sphereOccludedFunc(const Sphere* spheres, RTCRay& ray, size_t item)
 {
   const Sphere& sphere = spheres[item];
-  const Vec3fa v = ray.org-sphere.p;
+
+  const int time_segments = numTimeSteps-1;
+  const float time = ray.time*(float)(time_segments);
+  const int itime = clamp((int)(floor(time)),(int)0,time_segments-1);
+  const float ftime = time - (float)(itime);
+  const float ft0 = (float)(pi) * (float) (itime+0) / (float) (numTimeSteps-1);
+  const float ft1 = (float)(pi) * (float) (itime+1) / (float) (numTimeSteps-1);
+  const Vec3fa p0 = sphere.p + Vec3fa(sin(ft0),0.0f,cos(ft0));
+  const Vec3fa p1 = sphere.p + Vec3fa(sin(ft1),0.0f,cos(ft1));
+  const Vec3fa sphere_p = (1.0f-ftime)*p0 + ftime*p1;
+
+  const Vec3fa v = ray.org-sphere_p;
   const float A = dot(ray.dir,ray.dir);
   const float B = 2.0f*dot(v,ray.dir);
   const float C = dot(v,v) - sqr(sphere.r);
@@ -428,7 +452,7 @@ Sphere* addUserGeometrySphere (RTCScene scene, const Vec3fa& p, float r)
   sphere->r = r;
   sphere->geomID = geomID;
   rtcSetUserData(scene,geomID,sphere);
-  rtcSetBoundsFunction(scene,geomID,(RTCBoundsFunc)&sphereBoundsFunc);
+  rtcSetBoundsFunction3(scene,geomID,(RTCBoundsFunc3)&sphereBoundsFunc,nullptr);
   rtcSetIntersectFunction(scene,geomID,(RTCIntersectFunc)&sphereIntersectFunc);
   rtcSetOccludedFunction (scene,geomID,(RTCOccludedFunc )&sphereOccludedFunc);
   return sphere;
