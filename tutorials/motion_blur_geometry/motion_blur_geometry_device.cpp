@@ -210,7 +210,7 @@ unsigned int addCurveOrHair (RTCScene scene, const Vec3fa& pos, bool curve)
   Vec3fa* bspline = (Vec3fa*) alignedMalloc(16*sizeof(Vec3fa));
   for (int i=0; i<16; i++) {
     float f = (float)(i)/16.0f;
-    bspline[i] = Vec3fa(4.0f*(f-0.5f),sin(12.0f*f),cos(12.0f*f));
+    bspline[i] = Vec3fa(2.0f*f-1.0f,sin(12.0f*f),cos(12.0f*f));
   }
   Vec3fa* bezier = (Vec3fa*) alignedMalloc(4*13*sizeof(Vec3fa));
   for (int i=0; i<13; i++) {
@@ -229,7 +229,7 @@ unsigned int addCurveOrHair (RTCScene scene, const Vec3fa& pos, bool curve)
     AffineSpace3fa scale = AffineSpace3fa::scale(Vec3fa(2.0f,1.0f,1.0f));
     
     for (int i=0; i<4*13; i++)
-      vertices[i] = Vec3fa(xfmPoint(rotation*scale,bezier[i])+pos,0.02f);
+      vertices[i] = Vec3fa(xfmPoint(rotation*scale,bezier[i])+pos,0.2f);
 
     rtcUnmapBuffer(scene,geomID,bufID);
   }
@@ -253,7 +253,7 @@ unsigned int addLines (RTCScene scene, const Vec3fa& pos)
   Vec3fa* bspline = (Vec3fa*) alignedMalloc(16*sizeof(Vec3fa));
   for (int i=0; i<16; i++) {
     float f = (float)(i)/16.0f;
-    bspline[i] = Vec3fa(4.0f*(f-0.5f),sin(12.0f*f),cos(12.0f*f));
+    bspline[i] = Vec3fa(2.0f*f-1.0f,sin(12.0f*f),cos(12.0f*f));
   }
 
   for (size_t t=0; t<numTimeSteps; t++) 
@@ -265,7 +265,7 @@ unsigned int addLines (RTCScene scene, const Vec3fa& pos)
     AffineSpace3fa scale = AffineSpace3fa::scale(Vec3fa(2.0f,1.0f,1.0f));
     
     for (int i=0; i<16; i++)
-      vertices[i] = Vec3fa(xfmPoint(rotation*scale,bspline[i])+pos,0.02f);
+      vertices[i] = Vec3fa(xfmPoint(rotation*scale,bspline[i])+pos,0.2f);
 
     rtcUnmapBuffer(scene,geomID,bufID);
   }
@@ -527,6 +527,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
+  ray.instID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time = time;
 
@@ -538,20 +539,22 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
   {
     Vec3fa diffuse = Vec3fa(0.5f,0.5f,0.5f);
-    switch (ray.geomID) {
+    if (ray.instID == RTC_INVALID_GEOMETRY_ID)
+      ray.instID = ray.geomID;
+    switch (ray.instID) {
     case 0: diffuse = face_colors[ray.primID]; break;
     case 1: diffuse = face_colors[2*ray.primID]; break;
     case 2: diffuse = face_colors[2*ray.primID]; break;
-    case 3: diffuse = Vec3fa(0.5f,0.5f,0.5f); break;
-    case 4: diffuse = Vec3fa(0.5f,0.5f,0.5f); break;
-    case 5: diffuse = Vec3fa(0.5f,0.5f,0.5f); break;
+
+    case 3: diffuse = Vec3fa(0.5f,0.0f,0.0f); break;
+    case 4: diffuse = Vec3fa(0.0f,0.5f,0.0f); break;
+    case 5: diffuse = Vec3fa(0.0f,0.0f,0.5f); break;
+
     case 6: diffuse = face_colors[ray.primID]; break;
     case 7: diffuse = face_colors[2*ray.primID]; break;
-    case 8: diffuse = Vec3fa(0.5f,0.0f,0.0f); break;
+    case 8: diffuse = Vec3fa(0.5f,0.5f,0.0f); break;
     default: diffuse = Vec3fa(0.5f,0.5f,0.5f); break;
     }
-    //else if (ray.geomID == 1) diffuse = Vec3fa(0.0f,1.0f,0.0f);
-    //else diffuse = Vec3fa(0.5f,0.5f,0.5f);
     color = color + diffuse*0.5f;
     Vec3fa lightDir = normalize(Vec3fa(-1,-4,-1));
 
@@ -563,6 +566,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
     shadow.tfar = inf;
     shadow.geomID = 1;
     shadow.primID = 0;
+    shadow.instID = RTC_INVALID_GEOMETRY_ID;
     shadow.mask = -1;
     shadow.time = time;
 

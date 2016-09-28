@@ -208,7 +208,7 @@ uniform unsigned int addCurveOrHair (RTCScene scene, const uniform Vec3f& pos, b
   uniform Vec3f* uniform bspline = uniform new uniform Vec3f[16];
   for (uniform int i=0; i<16; i++) {
     uniform float f = (uniform float)(i)/16.0f;
-    bspline[i] = make_Vec3f(4.0f*(f-0.5f),sin(12.0f*f),cos(12.0f*f));
+    bspline[i] = make_Vec3f(2.0f*f-1.0f,sin(12.0f*f),cos(12.0f*f));
   }
   uniform Vec3f* uniform bezier = uniform new uniform Vec3f[4*13];
   for (uniform int i=0; i<13; i++) {
@@ -227,7 +227,7 @@ uniform unsigned int addCurveOrHair (RTCScene scene, const uniform Vec3f& pos, b
     uniform AffineSpace3f scale = make_AffineSpace3f_scale(make_Vec3f(2.0f,1.0f,1.0f));
     
     for (uniform int i=0; i<4*13; i++)
-      vertices[i] = make_Vec3fa(xfmPoint(rotation*scale,bezier[i])+pos,0.02f);
+      vertices[i] = make_Vec3fa(xfmPoint(rotation*scale,bezier[i])+pos,0.2f);
 
     rtcUnmapBuffer(scene,geomID,bufID);
   }
@@ -251,7 +251,7 @@ uniform unsigned int addLines (RTCScene scene, const uniform Vec3f& pos)
   uniform Vec3f* uniform bspline = uniform new uniform Vec3f[16];
   for (uniform int i=0; i<16; i++) {
     uniform float f = (uniform float)(i)/16.0f;
-    bspline[i] = make_Vec3f(4.0f*(f-0.5f),sin(12.0f*f),cos(12.0f*f));
+    bspline[i] = make_Vec3f(2.0f*f-1.0f,sin(12.0f*f),cos(12.0f*f));
   }
 
   for (uniform size_t t=0; t<numTimeSteps; t++) 
@@ -263,7 +263,7 @@ uniform unsigned int addLines (RTCScene scene, const uniform Vec3f& pos)
     uniform AffineSpace3f scale = make_AffineSpace3f_scale(make_Vec3f(2.0f,1.0f,1.0f));
     
     for (uniform int i=0; i<16; i++)
-      vertices[i] = make_Vec3fa(xfmPoint(rotation*scale,bspline[i])+pos,0.02f);
+      vertices[i] = make_Vec3fa(xfmPoint(rotation*scale,bspline[i])+pos,0.2f);
 
     rtcUnmapBuffer(scene,geomID,bufID);
   }
@@ -525,6 +525,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
+  ray.instID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time = time;
 
@@ -536,20 +537,22 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
   {
     Vec3f diffuse = make_Vec3f(0.5f,0.5f,0.5f);
-    switch (ray.geomID) {
+    if (ray.instID == RTC_INVALID_GEOMETRY_ID)
+      ray.instID = ray.geomID;
+    switch (ray.instID) {
     case 0: diffuse = face_colors[ray.primID]; break;
     case 1: diffuse = face_colors[2*ray.primID]; break;
     case 2: diffuse = face_colors[2*ray.primID]; break;
-    case 3: diffuse = make_Vec3f(0.5f,0.5f,0.5f); break;
-    case 4: diffuse = make_Vec3f(0.5f,0.5f,0.5f); break;
-    case 5: diffuse = make_Vec3f(0.5f,0.5f,0.5f); break;
+
+    case 3: diffuse = make_Vec3f(0.5f,0.0f,0.0f); break;
+    case 4: diffuse = make_Vec3f(0.0f,0.5f,0.0f); break;
+    case 5: diffuse = make_Vec3f(0.0f,0.0f,0.5f); break;
+
     case 6: diffuse = face_colors[ray.primID]; break;
     case 7: diffuse = face_colors[2*ray.primID]; break;
-    case 8: diffuse = make_Vec3f(0.5f,0.0f,0.0f); break;
+    case 8: diffuse = make_Vec3f(0.5f,0.5f,0.0f); break;
     default: diffuse = make_Vec3f(0.5f,0.5f,0.5f); break;
     }
-    //else if (ray.geomID == 1) diffuse = make_Vec3f(0.0f,1.0f,0.0f);
-    //else diffuse = make_Vec3f(0.5f,0.5f,0.5f);
     color = color + diffuse*0.5f;
     Vec3f lightDir = normalize(make_Vec3f(-1,-4,-1));
 
@@ -561,6 +564,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
     shadow.tfar = inf;
     shadow.geomID = 1;
     shadow.primID = 0;
+    shadow.instID = RTC_INVALID_GEOMETRY_ID;
     shadow.mask = -1;
     shadow.time = time;
 
