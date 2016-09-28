@@ -288,6 +288,28 @@ unsigned int addLines (RTCScene scene, const Vec3fa& pos)
   return geomID;
 }
 
+/* adds an instanced triangle cube to the scene */
+unsigned int addInstancedTriangleCube (RTCScene global_scene, const Vec3fa& pos)
+{
+  RTCScene scene = rtcDeviceNewScene(g_device, RTC_SCENE_STATIC,RTC_INTERSECT1);
+  unsigned int meshID = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 12, 8, 1);
+  rtcSetBuffer(scene, meshID, RTC_INDEX_BUFFER,  cube_triangle_indices , 0, 3*sizeof(unsigned int));
+  rtcSetBuffer(scene, meshID, RTC_VERTEX_BUFFER, cube_vertices, 0, 4*sizeof(float));
+  rtcCommit(scene);
+  
+  unsigned int instID = rtcNewInstance2(global_scene,scene,numTimeSteps);
+
+  for (size_t t=0; t<numTimeSteps; t++)
+  {
+    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),(float)t*float(pi)/(float)numTimeSteps);
+    AffineSpace3fa scale = AffineSpace3fa::scale(Vec3fa(2.0f,1.0f,1.0f));
+    AffineSpace3fa translation = AffineSpace3fa::translate(pos);
+    AffineSpace3fa xfm = translation*rotation*scale;
+    rtcSetTransform2(global_scene,instID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&xfm,t);
+  }
+  return instID;
+}
+
 /* adds a ground plane to the scene */
 unsigned int addGroundPlane (RTCScene scene)
 {
@@ -337,6 +359,7 @@ extern "C" void device_init (char* cfg)
   addLines       (g_scene,Vec3fa(-5,3, 0));
   addCurveOrHair (g_scene,Vec3fa( 0,3, 0),false);
   addCurveOrHair (g_scene,Vec3fa(+5,3, 0),true);
+  addInstancedTriangleCube(g_scene,Vec3fa(-5,3,+5));
   addGroundPlane(g_scene);
 
   /* commit changes to scene */

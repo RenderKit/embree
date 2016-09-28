@@ -70,6 +70,7 @@ sed -i.backup 's/make_LinearSpace3fa_scale/LinearSpace3fa::scale/g' $2
 sed -i.backup 's/make_LinearSpace3fa_rotate/LinearSpace3fa::rotate/g' $2
 sed -i.backup 's/make_AffineSpace3fa_scale/AffineSpace3fa::scale/g' $2
 sed -i.backup 's/make_AffineSpace3fa_rotate/AffineSpace3fa::rotate/g' $2
+sed -i.backup 's/make_AffineSpace3fa_translate/AffineSpace3fa::translate/g' $2
 
 sed -i.backup  's/M_PI/float(pi)/g' $2
 sed -i.backup  's/\*pi\*/\*float(pi)\*/g' $2

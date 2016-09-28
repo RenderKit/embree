@@ -286,6 +286,28 @@ uniform unsigned int addLines (RTCScene scene, const uniform Vec3f& pos)
   return geomID;
 }
 
+/* adds an instanced triangle cube to the scene */
+uniform unsigned int addInstancedTriangleCube (RTCScene global_scene, const uniform Vec3f& pos)
+{
+  RTCScene scene = rtcDeviceNewScene(g_device, RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
+  uniform unsigned int meshID = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 12, 8, 1);
+  rtcSetBuffer(scene, meshID, RTC_INDEX_BUFFER,  cube_triangle_indices , 0, 3*sizeof(uniform unsigned int));
+  rtcSetBuffer(scene, meshID, RTC_VERTEX_BUFFER, cube_vertices, 0, 4*sizeof(uniform float));
+  rtcCommit(scene);
+  
+  uniform unsigned int instID = rtcNewInstance2(global_scene,scene,numTimeSteps);
+
+  for (uniform size_t t=0; t<numTimeSteps; t++)
+  {
+    uniform AffineSpace3f rotation = make_AffineSpace3f_rotate(make_Vec3f(0,0,0),make_Vec3f(0,1,0),(float)t*pi/(float)numTimeSteps);
+    uniform AffineSpace3f scale = make_AffineSpace3f_scale(make_Vec3f(2.0f,1.0f,1.0f));
+    uniform AffineSpace3f translation = make_AffineSpace3f_translate(pos);
+    uniform AffineSpace3f xfm = translation*rotation*scale;
+    rtcSetTransform2(global_scene,instID,RTC_MATRIX_COLUMN_MAJOR,(uniform float* uniform)&xfm,t);
+  }
+  return instID;
+}
+
 /* adds a ground plane to the scene */
 uniform unsigned int addGroundPlane (RTCScene scene)
 {
@@ -335,6 +357,7 @@ export void device_init (uniform int8* uniform cfg)
   addLines       (g_scene,make_Vec3f(-5,3, 0));
   addCurveOrHair (g_scene,make_Vec3f( 0,3, 0),false);
   addCurveOrHair (g_scene,make_Vec3f(+5,3, 0),true);
+  addInstancedTriangleCube(g_scene,make_Vec3f(-5,3,+5));
   addGroundPlane(g_scene);
 
   /* commit changes to scene */
