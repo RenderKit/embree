@@ -167,7 +167,11 @@ namespace embree
       new (this) QuadMiMB(v0,v1,v2,v3,geomID,primID); // FIXME: use non temporal store
       return bounds2(scene,itime);
     }
-    
+
+    friend std::ostream& operator<<(std::ostream& cout, const QuadMiMB& quad) {
+      return cout << "QuadMiMB<" << M << ">( v0 = " << quad.v0 << ", v1 = " << quad.v1 << ", v2 = " << quad.v2 << ", v3 = " << quad.v3 << ", geomID = " << quad.geomIDs << ", primID = " << quad.primIDs << " )";
+    }
+
   public:
     vint<M> v0;         // index of 1st vertex
     vint<M> v1;         // index of 2nd vertex
@@ -176,7 +180,7 @@ namespace embree
     vint<M> geomIDs;    // geometry ID of mesh
     vint<M> primIDs;    // primitive ID of primitive inside mesh
   };
-  
+
   template<>
     __forceinline void QuadMiMB<4>::gather(Vec3vf4& p0, 
                                            Vec3vf4& p1, 

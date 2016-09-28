@@ -73,12 +73,12 @@ unsigned int addTriangleCube (RTCScene scene)
   unsigned int geomID = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 12, 8, numTimeSteps);
   rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  cube_indices , 0, 3*sizeof(unsigned int));
 
-  for (size_t i=0; i<numTimeSteps; i++) 
+  for (size_t t=0; t<numTimeSteps; t++) 
   {
-    RTCBufferType bufID = (RTCBufferType)(RTC_VERTEX_BUFFER0+i);
+    RTCBufferType bufID = (RTCBufferType)(RTC_VERTEX_BUFFER0+t);
     Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene,geomID,bufID);
 
-    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),(float)i*float(pi)/(float)numTimeSteps);
+    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),(float)t*float(pi)/(float)numTimeSteps);
     AffineSpace3fa scale = AffineSpace3fa::scale(Vec3fa(2.0f,1.0f,1.0f));
     
     for (int i=0; i<8; i++) {
@@ -111,18 +111,18 @@ unsigned int addQuadCube (RTCScene scene)
   /* create a quad cube with 6 quads and 8 vertices */
   unsigned int geomID = rtcNewQuadMesh (scene, RTC_GEOMETRY_STATIC, 6, 8, numTimeSteps);
   rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  cube_quad_indices , 0, 4*sizeof(unsigned int));
-
-  for (size_t i=0; i<numTimeSteps; i++) 
+  
+  for (size_t t=0; t<numTimeSteps; t++) 
   {
-    RTCBufferType bufID = (RTCBufferType)(RTC_VERTEX_BUFFER0+i);
+    RTCBufferType bufID = (RTCBufferType)(RTC_VERTEX_BUFFER0+t);
     Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene,geomID,bufID);
 
-    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),(float)i*float(pi)/(float)numTimeSteps);
-    AffineSpace3fa scale = AffineSpace3fa::scale(Vec3fa(2.0f,1.0f,1.0f));    
+    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),(float)t*float(pi)/(float)numTimeSteps);
+    AffineSpace3fa scale = AffineSpace3fa::scale(Vec3fa(2.0f,1.0f,1.0f));
     
     for (int i=0; i<8; i++) {
       Vec3fa v = Vec3fa(cube_vertices[i][0],cube_vertices[i][1],cube_vertices[i][2]);
-      vertices[i] = Vec3fa(xfmPoint(rotation*scale,v)+Vec3fa(-3,3,-3));
+      vertices[i] = Vec3fa(xfmPoint(rotation*scale,v)+Vec3fa(0,3,-3));
     }
     rtcUnmapBuffer(scene,geomID,bufID);
   }
@@ -217,7 +217,7 @@ extern "C" void device_init (char* cfg)
   g_scene = rtcDeviceNewScene(g_device, RTC_SCENE_STATIC,RTC_INTERSECT1);
 
   /* add geometry to the scene */
-  //addTriangleCube(g_scene);
+  addTriangleCube(g_scene);
   addQuadCube(g_scene);
   //addHair(g_scene);
   addGroundPlane(g_scene);
@@ -250,7 +250,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
 
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
-
+  
   /* shade pixels */
   Vec3fa color = Vec3fa(0.0f);
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID)

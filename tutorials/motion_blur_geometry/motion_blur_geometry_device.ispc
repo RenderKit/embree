@@ -55,7 +55,7 @@ uniform unsigned int cube_indices[36] = {
   1, 3, 5,  3, 7, 5
 };
 
-unsigned int cube_quad_indices[24] = {
+uniform unsigned int cube_quad_indices[24] = {
   0, 1, 3, 6,
   4, 5, 7, 6,
   0, 1, 5, 4,
@@ -71,12 +71,12 @@ uniform unsigned int addTriangleCube (RTCScene scene)
   uniform unsigned int geomID = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 12, 8, numTimeSteps);
   rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  cube_indices , 0, 3*sizeof(uniform unsigned int));
 
-  for (uniform size_t i=0; i<numTimeSteps; i++) 
+  for (uniform size_t t=0; t<numTimeSteps; t++) 
   {
-    uniform RTCBufferType bufID = (uniform RTCBufferType)(RTC_VERTEX_BUFFER0+i);
+    uniform RTCBufferType bufID = (uniform RTCBufferType)(RTC_VERTEX_BUFFER0+t);
     uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcMapBuffer(scene,geomID,bufID);
 
-    uniform AffineSpace3f rotation = make_AffineSpace3f_rotate(make_Vec3f(0,0,0),make_Vec3f(0,1,0),(float)i*pi/(float)numTimeSteps);
+    uniform AffineSpace3f rotation = make_AffineSpace3f_rotate(make_Vec3f(0,0,0),make_Vec3f(0,1,0),(float)t*pi/(float)numTimeSteps);
     uniform AffineSpace3f scale = make_AffineSpace3f_scale(make_Vec3f(2.0f,1.0f,1.0f));
     
     for (uniform int i=0; i<8; i++) {
@@ -108,19 +108,19 @@ uniform unsigned int addQuadCube (RTCScene scene)
 {
   /* create a quad cube with 6 quads and 8 vertices */
   uniform unsigned int geomID = rtcNewQuadMesh (scene, RTC_GEOMETRY_STATIC, 6, 8, numTimeSteps);
-  rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  cube_quad_indices , 0, 4*sizeof(unsigned int));
-
-  for (uniform size_t i=0; i<numTimeSteps; i++) 
+  rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  cube_quad_indices , 0, 4*sizeof(uniform unsigned int));
+  
+  for (uniform size_t t=0; t<numTimeSteps; t++) 
   {
-    uniform RTCBufferType bufID = (uniform RTCBufferType)(RTC_VERTEX_BUFFER0+i);
+    uniform RTCBufferType bufID = (uniform RTCBufferType)(RTC_VERTEX_BUFFER0+t);
     uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcMapBuffer(scene,geomID,bufID);
 
-    uniform AffineSpace3f rotation = make_AffineSpace3f_rotate(make_Vec3f(0,0,0),make_Vec3f(0,1,0),(float)i*pi/(float)numTimeSteps);
-    uniform AffineSpace3f scale = make_AffineSpace3f_scale(make_Vec3f(2.0f,1.0f,1.0f));    
+    uniform AffineSpace3f rotation = make_AffineSpace3f_rotate(make_Vec3f(0,0,0),make_Vec3f(0,1,0),(float)t*pi/(float)numTimeSteps);
+    uniform AffineSpace3f scale = make_AffineSpace3f_scale(make_Vec3f(2.0f,1.0f,1.0f));
     
     for (uniform int i=0; i<8; i++) {
       uniform Vec3f v = make_Vec3f(cube_vertices[i][0],cube_vertices[i][1],cube_vertices[i][2]);
-      vertices[i] = make_Vec3fa(xfmPoint(rotation*scale,v)+make_Vec3f(-3,3,-3));
+      vertices[i] = make_Vec3fa(xfmPoint(rotation*scale,v)+make_Vec3f(0,3,-3));
     }
     rtcUnmapBuffer(scene,geomID,bufID);
   }
@@ -215,7 +215,7 @@ export void device_init (uniform int8* uniform cfg)
   g_scene = rtcDeviceNewScene(g_device, RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
 
   /* add geometry to the scene */
-  //addTriangleCube(g_scene);
+  addTriangleCube(g_scene);
   addQuadCube(g_scene);
   //addHair(g_scene);
   addGroundPlane(g_scene);
@@ -248,7 +248,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
 
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
-
+  
   /* shade pixels */
   Vec3f color = make_Vec3f(0.0f);
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
