@@ -66,7 +66,9 @@ sed -i.backup 's/LinearSpace3f/LinearSpace3fa/g' $2
 sed -i.backup 's/AffineSpace3f\([^a]\)/AffineSpace3fa\1/g' $2
 
 sed -i.backup  's/make_Ray/RTCRay/g' $2
+sed -i.backup 's/make_LinearSpace3fa_scale/LinearSpace3fa::scale/g' $2
 sed -i.backup 's/make_LinearSpace3fa_rotate/LinearSpace3fa::rotate/g' $2
+sed -i.backup 's/make_AffineSpace3fa_scale/AffineSpace3fa::scale/g' $2
 sed -i.backup 's/make_AffineSpace3fa_rotate/AffineSpace3fa::rotate/g' $2
 
 sed -i.backup  's/M_PI/float(pi)/g' $2
