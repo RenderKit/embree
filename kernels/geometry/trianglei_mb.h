@@ -96,7 +96,10 @@ namespace embree
     __forceinline void gather(Vec3<vfloat<M>>& p0,
                               Vec3<vfloat<M>>& p1,
                               Vec3<vfloat<M>>& p2,
-                              const Scene *const scene,
+                              const TriangleMesh* mesh0,
+                              const TriangleMesh* mesh1,
+                              const TriangleMesh* mesh2,
+                              const TriangleMesh* mesh3,
                               const size_t itime) const;
 
     __forceinline void gather(Vec3<vfloat<M>>& p0,
@@ -190,14 +193,12 @@ namespace embree
     __forceinline void TriangleMiMB<4>::gather(Vec3vf4& p0,
                                                Vec3vf4& p1,
                                                Vec3vf4& p2,
-                                               const Scene *const scene,
+                                               const TriangleMesh* mesh0,
+                                               const TriangleMesh* mesh1,
+                                               const TriangleMesh* mesh2,
+                                               const TriangleMesh* mesh3,
                                                const size_t itime) const
   {
-    const TriangleMesh* mesh0 = scene->getTriangleMesh(geomIDs[0]);
-    const TriangleMesh* mesh1 = scene->getTriangleMesh(geomIDs[1]);
-    const TriangleMesh* mesh2 = scene->getTriangleMesh(geomIDs[2]);
-    const TriangleMesh* mesh3 = scene->getTriangleMesh(geomIDs[3]);
-
     const vfloat4 a0 = vfloat4::loadu(mesh0->vertexPtr(v0[0],itime));
     const vfloat4 a1 = vfloat4::loadu(mesh1->vertexPtr(v0[1],itime));
     const vfloat4 a2 = vfloat4::loadu(mesh2->vertexPtr(v0[2],itime));
@@ -228,12 +229,17 @@ namespace embree
                                                const size_t itime,
                                                const float ftime) const
   {
+    const TriangleMesh* mesh0 = scene->getTriangleMesh(geomIDs[0]);
+    const TriangleMesh* mesh1 = scene->getTriangleMesh(geomIDs[1]);
+    const TriangleMesh* mesh2 = scene->getTriangleMesh(geomIDs[2]);
+    const TriangleMesh* mesh3 = scene->getTriangleMesh(geomIDs[3]);
+
     const vfloat4 t0 = 1.0f - ftime;
     const vfloat4 t1 = ftime;
     Vec3vf4 a0,a1,a2;
-    gather(a0,a1,a2,scene,itime+0);
+    gather(a0,a1,a2,mesh0,mesh1,mesh2,mesh3,itime+0);
     Vec3vf4 b0,b1,b2;
-    gather(b0,b1,b2,scene,itime+1);
+    gather(b0,b1,b2,mesh0,mesh1,mesh2,mesh3,itime+1);
     p0 = t0 * a0 + t1 * b0;
     p1 = t0 * a1 + t1 * b1;
     p2 = t0 * a2 + t1 * b2;
