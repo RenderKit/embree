@@ -302,13 +302,13 @@ namespace embree
     Type type;                 //!< geometry type 
     size_t numPrimitives;      //!< number of primitives of this geometry
     unsigned numTimeSteps;     //!< number of time steps
-    int numTimeSegments;       //!< number of time segments (precomputed)
+    float numTimeSegments;     //!< number of time segments (precalculation)
     RTCGeometryFlags flags;    //!< flags of geometry
     bool enabled;              //!< true if geometry is enabled
     bool modified;             //!< true if geometry is modified
     void* userPtr;             //!< user pointer
     unsigned mask;             //!< for masking out geometry
-    std::atomic<size_t> used;   //!< counts by how many enabled instances this geometry is used
+    std::atomic<size_t> used;  //!< counts by how many enabled instances this geometry is used
     
   public:
     RTCFilterFunc intersectionFilter1;

@@ -232,10 +232,11 @@ namespace embree
     const TriangleMesh* mesh2 = scene->getTriangleMesh(geomIDs[2]);
     const TriangleMesh* mesh3 = scene->getTriangleMesh(geomIDs[3]);
 
-    const vint4 time_segments(mesh0->numTimeSegments, mesh1->numTimeSegments, mesh2->numTimeSegments, mesh3->numTimeSegments);
-    const vfloat4 time_scaled = time*vfloat4(time_segments);
-    const vint4 itime = clamp(vint4(floor(time_scaled)),vint4(0),time_segments-1);
-    const vfloat4 ftime = time_scaled - vfloat4(itime);
+    const vfloat4 time_segments(mesh0->numTimeSegments, mesh1->numTimeSegments, mesh2->numTimeSegments, mesh3->numTimeSegments);
+    const vfloat4 time_scaled = time*time_segments;
+    const vfloat4 itimef = clamp(floor(time_scaled),vfloat4(zero),time_segments-1.0f);
+    const vint4 itime = vint4(itimef);
+    const vfloat4 ftime = time_scaled - itimef;
 
     const vfloat4 t0 = 1.0f - ftime;
     const vfloat4 t1 = ftime;
