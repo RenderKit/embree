@@ -48,17 +48,19 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
   ray.time = 0.0f;
 
   /* intersect ray with scene */
+  unsigned sceneID = 0;
   rtcIntersect(g_scene0,ray);
-  unsigned geomID0 = ray.geomID; 
-  ray.geomID = RTC_INVALID_GEOMETRY_ID;
-  rtcIntersect(g_scene1,ray);
-  unsigned sceneID = -1;
-  if (ray.geomID != RTC_INVALID_GEOMETRY_ID) {
-    sceneID = 1;
-  } else {
-    ray.geomID = geomID0;
+  if (g_scene1) {
+    unsigned geomID0 = ray.geomID; 
+    ray.geomID = RTC_INVALID_GEOMETRY_ID;
+    rtcIntersect(g_scene1,ray);
     if (ray.geomID != RTC_INVALID_GEOMETRY_ID) {
-      sceneID = 0;
+      sceneID = 1;
+    } else {
+      ray.geomID = geomID0;
+      if (ray.geomID != RTC_INVALID_GEOMETRY_ID) {
+        sceneID = 0;
+      }
     }
   }
 

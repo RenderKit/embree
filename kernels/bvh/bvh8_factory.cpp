@@ -712,7 +712,7 @@ namespace embree
   {
     BVH8* accel = new BVH8(Triangle4v::type,scene);
     Accel::Intersectors intersectors= BVH8Triangle4vIntersectors(accel);
-
+    
     Builder* builder = nullptr;
     if      (scene->device->tri_builder == "default"     )  builder = BVH8Triangle4vSceneBuilderSAH(accel,scene,0);
     else if (scene->device->tri_builder == "sah"         )  builder = BVH8Triangle4vSceneBuilderSAH(accel,scene,0);

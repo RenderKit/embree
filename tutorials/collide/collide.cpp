@@ -55,7 +55,11 @@ namespace embree
       bounds0.extend(mesh0->positions[tri0.v1]);
       bounds0.extend(mesh0->positions[tri0.v2]);
 
-      Ref<TutorialScene::TriangleMesh> mesh1 = g_tutorial_scene1.geometries[geomID1].dynamicCast<TutorialScene::TriangleMesh>();
+      Ref<TutorialScene::TriangleMesh> mesh1 = 
+        g_scene1 ? 
+        g_tutorial_scene1.geometries[geomID1].dynamicCast<TutorialScene::TriangleMesh>() :
+        g_tutorial_scene0.geometries[geomID1].dynamicCast<TutorialScene::TriangleMesh>();
+
       TutorialScene::Triangle tri1 = mesh1->triangles[primID1];
       BBox3fa bounds1 = empty;
       bounds1.extend(mesh1->positions[tri1.v0]);
@@ -125,7 +129,8 @@ namespace embree
       {
         //double t0 = getSeconds();
         numTotalCollisions = 0;
-        rtcCollide(g_scene0,g_scene1,CollideFunc,nullptr);
+        if (g_scene1) rtcCollide(g_scene0,g_scene1,CollideFunc,nullptr);
+        else          rtcCollide(g_scene0,g_scene0,CollideFunc,nullptr);
         //double t1 = getSeconds();
         //float dt = float(t1-t0);
         //std::cout << "round [" << std::setw(3) << i << " / " << std::setw(3) << numTotalRounds << "]: " <<  std::setw(8) << 1000.0f*dt << " ms (skipped)" << std::endl << std::flush;
@@ -136,7 +141,8 @@ namespace embree
       {
         double t0 = getSeconds();
         numTotalCollisions = 0;
-        rtcCollide(g_scene0,g_scene1,CollideFunc,nullptr);
+        if (g_scene1) rtcCollide(g_scene0,g_scene1,CollideFunc,nullptr);
+        else          rtcCollide(g_scene0,g_scene0,CollideFunc,nullptr);
         double t1 = getSeconds();
         
         float dt = float(t1-t0);
@@ -160,26 +166,28 @@ namespace embree
       parseCommandLine(argc,argv);
 
       /* test if user has set two scenes */
-      if (!scene0 || !scene1)
-         throw std::runtime_error("you have to specify two scenes to collide");
+      if (!scene0 && !scene1)
+        throw std::runtime_error("you have to specify one or two scenes to collide");
 
       /* convert model */
       g_tutorial_scene0.add(scene0,TutorialScene::INSTANCING_NONE); 
-      g_tutorial_scene1.add(scene1,TutorialScene::INSTANCING_NONE); 
+      if (scene1) g_tutorial_scene1.add(scene1,TutorialScene::INSTANCING_NONE); 
       
       /* initialize ray tracing core */
       g_device = rtcNewDevice(rtcore.c_str());
       //error_handler(rtcDeviceGetError(g_device));
       //device_init(rtcore.c_str());
       g_scene0 = convertScene(g_tutorial_scene0);
-      g_scene1 = convertScene(g_tutorial_scene1);
+      if (scene1) g_scene1 = convertScene(g_tutorial_scene1);
       g_scene = g_scene0;
 
       if (numBenchmarkRounds)
         benchmark();
-      else
+      else if (g_scene1)
         rtcCollide(g_scene0,g_scene1,CollideFunc,nullptr);
-        
+      else 
+        rtcCollide(g_scene0,g_scene0,CollideFunc,nullptr);
+
       if (interactive)
         run(argc,argv);
       
