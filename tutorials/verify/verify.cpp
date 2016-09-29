@@ -489,7 +489,8 @@ namespace embree
     std::cout << std::setw(8) << std::setprecision(3) << std::fixed << bestStat.getAvg() << " " << unit << " (+/-" << 100.0f*bestStat.getAvgSigma()/bestStat.getAvg() << "%)";
     if (passed) std::cout << state->green(" [PASSED]" ) << " (" << 100.0f*(bestStat.getAvg()-avgdb)/avgdb << "%)" << std::endl << std::flush;
     else        std::cout << state->red  (" [FAILED]" ) << " (" << 100.0f*(bestStat.getAvg()-avgdb)/avgdb << "%)" << std::endl << std::flush;
-    plotDatabase(state);
+    if (state->database != "")
+      plotDatabase(state);
 
     /* print dart measurement */
     if (state->cdash) 
@@ -1204,7 +1205,7 @@ namespace embree
     
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
     {
-      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      std::string cfg = state->rtcore + "isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       error_handler(rtcDeviceGetError(device));
 
@@ -2508,6 +2509,8 @@ namespace embree
     {
       for (auto ivariant : intersectVariants)
       {
+        if (!has_variant(imode,ivariant)) continue;
+
         RTCRay rays[numRays];
         for (size_t i=0; i<numRays; i++) {
           Vec3fa org = 2.0f*RandomSampler_get3D(sampler) - Vec3fa(1.0f);
@@ -3561,6 +3564,7 @@ namespace embree
     intersectVariants.push_back(VARIANT_OCCLUDED_COHERENT);
     intersectVariants.push_back(VARIANT_INTERSECT_INCOHERENT);
     intersectVariants.push_back(VARIANT_OCCLUDED_INCOHERENT);
+    intersectVariants.push_back(VARIANT_INTERSECT_OCCLUDED_COHERENT);
 
     /* create list of all scene flags to test */
     sceneFlags.push_back(RTC_SCENE_STATIC);

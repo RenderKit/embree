@@ -43,14 +43,33 @@ namespace embree
     Accel* BVH8Triangle4i(Scene* scene);
     Accel* BVH8Triangle4v(Scene* scene);
     Accel* BVH8Triangle4vMB(Scene* scene);
+    Accel* BVH8Triangle4iMB(Scene* scene);
 
     Accel* BVH8Quad4v(Scene* scene);
+    Accel* BVH8Quad4vObjectSplit(Scene* scene);
+    Accel* BVH8Quad4vSpatialSplit(Scene* scene);
+
     Accel* BVH8Quad4i(Scene* scene);
     Accel* BVH8Quad4iMB(Scene* scene);
 
     Accel* BVH8QuantizedTriangle4i(Scene* scene);
     Accel* BVH8QuantizedQuad4i(Scene* scene);
-    
+    Accel* BVH8Quad4vTwolevel(Scene* scene);
+
+    Accel* BVH8Triangle4Twolevel(Scene* scene);
+    Accel* BVH8Triangle4vTwolevel(Scene* scene);
+    Accel* BVH8Triangle4iTwolevel(Scene* scene);
+
+    static void createTriangleMeshTriangle4Morton (TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
+    static void createTriangleMeshTriangle4vMorton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
+    static void createTriangleMeshTriangle4iMorton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
+    static void createTriangleMeshTriangle4 (TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
+    static void createTriangleMeshTriangle4v(TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
+    static void createTriangleMeshTriangle4i(TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
+
+    static void createQuadMeshQuad4vMorton(QuadMesh* mesh, AccelData*& accel, Builder*& builder);
+    static void createQuadMeshQuad4v(QuadMesh* mesh, AccelData*& accel, Builder*& builder);
+
   private:
     Accel::Intersectors BVH8Line4iIntersectors(BVH8* bvh);
     Accel::Intersectors BVH8Line4iMBIntersectors(BVH8* bvh);
@@ -58,9 +77,10 @@ namespace embree
     Accel::Intersectors BVH8Bezier1iIntersectors_OBB(BVH8* bvh);
     Accel::Intersectors BVH8Bezier1iMBIntersectors_OBB(BVH8* bvh);
     Accel::Intersectors BVH8Triangle4Intersectors(BVH8* bvh);
-    Accel::Intersectors BVH8Triangle4iIntersectors(BVH8* bvh);
     Accel::Intersectors BVH8Triangle4vIntersectors(BVH8* bvh);
+    Accel::Intersectors BVH8Triangle4iIntersectors(BVH8* bvh);
     Accel::Intersectors BVH8Triangle4vMBIntersectors(BVH8* bvh);
+    Accel::Intersectors BVH8Triangle4iMBIntersectors(BVH8* bvh);
     Accel::Intersectors BVH8Quad4vIntersectors(BVH8* bvh);
     Accel::Intersectors BVH8Quad4iIntersectors(BVH8* bvh);
     Accel::Intersectors BVH8Quad4iMBIntersectors(BVH8* bvh);
@@ -77,9 +97,11 @@ namespace embree
     DEFINE_SYMBOL2(Accel::Intersector1,BVH8Bezier1iIntersector1_OBB);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH8Bezier1iMBIntersector1_OBB);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH8Triangle4Intersector1Moeller);
+    DEFINE_SYMBOL2(Accel::Intersector1,BVH8Triangle4vIntersector1Pluecker);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH8Triangle4iIntersector1Pluecker);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH8Triangle4vIntersector1Moeller);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH8Triangle4vMBIntersector1Moeller);
+    DEFINE_SYMBOL2(Accel::Intersector1,BVH8Triangle4iMBIntersector1Pluecker);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH8Quad4vIntersector1Moeller);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH8Quad4iIntersector1Pluecker);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH8Quad4iMBIntersector1Pluecker);
@@ -94,9 +116,11 @@ namespace embree
     DEFINE_SYMBOL2(Accel::Intersector4,BVH8Bezier1iMBIntersector4Single_OBB);
     DEFINE_SYMBOL2(Accel::Intersector4,BVH8Triangle4Intersector4HybridMoeller);
     DEFINE_SYMBOL2(Accel::Intersector4,BVH8Triangle4Intersector4HybridMoellerNoFilter);
+    DEFINE_SYMBOL2(Accel::Intersector4,BVH8Triangle4vIntersector4HybridPluecker);
     DEFINE_SYMBOL2(Accel::Intersector4,BVH8Triangle4iIntersector4HybridPluecker);
     DEFINE_SYMBOL2(Accel::Intersector4,BVH8Triangle4iIntersector4HybridPlueckerNoFilter);
     DEFINE_SYMBOL2(Accel::Intersector4,BVH8Triangle4vMBIntersector4HybridMoeller);
+    DEFINE_SYMBOL2(Accel::Intersector4,BVH8Triangle4iMBIntersector4HybridPluecker);
     DEFINE_SYMBOL2(Accel::Intersector4,BVH8GridAOSIntersector4);
     DEFINE_SYMBOL2(Accel::Intersector4,BVH8Quad4vIntersector4HybridMoeller);
     DEFINE_SYMBOL2(Accel::Intersector4,BVH8Quad4vIntersector4HybridMoellerNoFilter);
@@ -111,9 +135,11 @@ namespace embree
     DEFINE_SYMBOL2(Accel::Intersector8,BVH8Bezier1iMBIntersector8Single_OBB);
     DEFINE_SYMBOL2(Accel::Intersector8,BVH8Triangle4Intersector8HybridMoeller);
     DEFINE_SYMBOL2(Accel::Intersector8,BVH8Triangle4Intersector8HybridMoellerNoFilter);
+    DEFINE_SYMBOL2(Accel::Intersector8,BVH8Triangle4vIntersector8HybridPluecker);
     DEFINE_SYMBOL2(Accel::Intersector8,BVH8Triangle4iIntersector8HybridPluecker);
     DEFINE_SYMBOL2(Accel::Intersector8,BVH8Triangle4iIntersector8HybridPlueckerNoFilter);
     DEFINE_SYMBOL2(Accel::Intersector8,BVH8Triangle4vMBIntersector8HybridMoeller);
+    DEFINE_SYMBOL2(Accel::Intersector8,BVH8Triangle4iMBIntersector8HybridPluecker);
     DEFINE_SYMBOL2(Accel::Intersector8,BVH8GridAOSIntersector8);
     DEFINE_SYMBOL2(Accel::Intersector8,BVH8Quad4vIntersector8HybridMoeller);
     DEFINE_SYMBOL2(Accel::Intersector8,BVH8Quad4vIntersector8HybridMoellerNoFilter);
@@ -128,9 +154,11 @@ namespace embree
     DEFINE_SYMBOL2(Accel::Intersector16,BVH8Bezier1iMBIntersector16Single_OBB);
     DEFINE_SYMBOL2(Accel::Intersector16,BVH8Triangle4Intersector16HybridMoeller);
     DEFINE_SYMBOL2(Accel::Intersector16,BVH8Triangle4Intersector16HybridMoellerNoFilter);
+    DEFINE_SYMBOL2(Accel::Intersector16,BVH8Triangle4vIntersector16HybridPluecker);
     DEFINE_SYMBOL2(Accel::Intersector16,BVH8Triangle4iIntersector16HybridPluecker);
     DEFINE_SYMBOL2(Accel::Intersector16,BVH8Triangle4iIntersector16HybridPlueckerNoFilter);
     DEFINE_SYMBOL2(Accel::Intersector16,BVH8Triangle4vMBIntersector16HybridMoeller);
+    DEFINE_SYMBOL2(Accel::Intersector16,BVH8Triangle4iMBIntersector16HybridPluecker);
     DEFINE_SYMBOL2(Accel::Intersector16,BVH8GridAOSIntersector16);
     DEFINE_SYMBOL2(Accel::Intersector16,BVH8Quad4vIntersector16HybridMoeller);
     DEFINE_SYMBOL2(Accel::Intersector16,BVH8Quad4vIntersector16HybridMoellerNoFilter);
@@ -145,6 +173,7 @@ namespace embree
     //DEFINE_SYMBOL2(Accel::IntersectorN,BVH8Bezier1iMBIntersectorStream_OBB);
     DEFINE_SYMBOL2(Accel::IntersectorN,BVH8Triangle4IntersectorStreamMoeller);
     DEFINE_SYMBOL2(Accel::IntersectorN,BVH8Triangle4IntersectorStreamMoellerNoFilter);
+    DEFINE_SYMBOL2(Accel::IntersectorN,BVH8Triangle4vIntersectorStreamPluecker);
     DEFINE_SYMBOL2(Accel::IntersectorN,BVH8Triangle4iIntersectorStreamPluecker);
     //DEFINE_SYMBOL2(Accel::IntersectorN,BVH8Triangle4vMBIntersectorStreamMoeller);
     DEFINE_SYMBOL2(Accel::IntersectorN,BVH8Quad4vIntersectorStreamMoeller);
@@ -165,15 +194,36 @@ namespace embree
     DEFINE_BUILDER2(void,Scene,size_t,BVH8Triangle4iSceneBuilderSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH8Triangle4vSceneBuilderSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH8Triangle4vMBSceneBuilderSAH);
+    DEFINE_BUILDER2(void,Scene,size_t,BVH8Triangle4iMBSceneBuilderSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH8Quad4vSceneBuilderSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH8Quad4iSceneBuilderSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH8Quad4iMBSceneBuilderSAH);
     //DEFINE_BUILDER2(void,QuadMesh,size_t,BVH8Quad4iMBMeshBuilderSAH);
+
+    DEFINE_BUILDER2(void,TriangleMesh,size_t,BVH8Triangle4MeshBuilderSAH);
+    DEFINE_BUILDER2(void,TriangleMesh,size_t,BVH8Triangle4vMeshBuilderSAH);
+    DEFINE_BUILDER2(void,TriangleMesh,size_t,BVH8Triangle4iMeshBuilderSAH);
+    DEFINE_BUILDER2(void,TriangleMesh,size_t,BVH8Triangle4MeshRefitSAH);
+    DEFINE_BUILDER2(void,TriangleMesh,size_t,BVH8Triangle4vMeshRefitSAH);
+    DEFINE_BUILDER2(void,TriangleMesh,size_t,BVH8Triangle4iMeshRefitSAH);
 
     DEFINE_BUILDER2(void,Scene,size_t,BVH8QuantizedTriangle4iSceneBuilderSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH8QuantizedQuad4iSceneBuilderSAH);
     
     DEFINE_BUILDER2(void,Scene,size_t,BVH8Triangle4SceneBuilderSpatialSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH8Triangle4SceneBuilderFastSpatialSAH);
+
+    DEFINE_BUILDER2(void,Scene,const createTriangleMeshAccelTy,BVH8BuilderTwoLevelTriangleMeshSAH);
+    DEFINE_BUILDER2(void,TriangleMesh,size_t,BVH8Triangle4MeshBuilderMortonGeneral);
+    DEFINE_BUILDER2(void,TriangleMesh,size_t,BVH8Triangle4vMeshBuilderMortonGeneral);
+    DEFINE_BUILDER2(void,TriangleMesh,size_t,BVH8Triangle4iMeshBuilderMortonGeneral);
+
+    DEFINE_BUILDER2(void,Scene,const createQuadMeshAccelTy,BVH8BuilderTwoLevelQuadMeshSAH);
+    DEFINE_BUILDER2(void,QuadMesh,size_t,BVH8Quad4vMeshBuilderSAH);
+    DEFINE_BUILDER2(void,QuadMesh,size_t,BVH8Quad4vMeshRefitSAH);
+    DEFINE_BUILDER2(void,QuadMesh,size_t,BVH8Quad4vMeshBuilderMortonGeneral);
+
+    DEFINE_BUILDER2(void,Scene,size_t,BVH8Quad4vSceneBuilderFastSpatialSAH);
+
   };
 }

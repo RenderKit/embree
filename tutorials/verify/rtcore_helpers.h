@@ -476,17 +476,20 @@ namespace embree
   
   enum IntersectVariant
   {
-    VARIANT_INTERSECT = 0,
-    VARIANT_OCCLUDED = 1,
+    VARIANT_INTERSECT = 1,
+    VARIANT_OCCLUDED = 2,
     VARIANT_COHERENT = 0,
-    VARIANT_INCOHERENT = 2,
-    VARIANT_INTERSECT_OCCLUDED_MASK = 1,
-    VARIANT_COHERENT_INCOHERENT_MASK = 2,
+    VARIANT_INCOHERENT = 4,
+    VARIANT_INTERSECT_OCCLUDED_MASK = 3,
+    VARIANT_COHERENT_INCOHERENT_MASK = 4,
     
-    VARIANT_INTERSECT_COHERENT = 0,
-    VARIANT_OCCLUDED_COHERENT = 1,
-    VARIANT_INTERSECT_INCOHERENT = 2,
-    VARIANT_OCCLUDED_INCOHERENT = 3
+    VARIANT_INTERSECT_COHERENT = 1,
+    VARIANT_OCCLUDED_COHERENT = 2,
+    VARIANT_INTERSECT_INCOHERENT = 5,
+    VARIANT_OCCLUDED_INCOHERENT = 6,
+    VARIANT_INTERSECT_OCCLUDED = 3,
+    VARIANT_INTERSECT_OCCLUDED_COHERENT = 3,
+    VARIANT_INTERSECT_OCCLUDED_INCOHERENT = 7,
   };
 
   inline std::string to_string(IntersectVariant ivariant)
@@ -496,6 +499,9 @@ namespace embree
     case VARIANT_OCCLUDED_COHERENT : return "OccludedCoherent";
     case VARIANT_INTERSECT_INCOHERENT: return "IntersectIncoherent";
     case VARIANT_OCCLUDED_INCOHERENT : return "OccludedIncoherent";
+    case VARIANT_INTERSECT_OCCLUDED_COHERENT: return "IntersectOccludedCoherent";
+    case VARIANT_INTERSECT_OCCLUDED_INCOHERENT : return "IntersectOccludedIncoherent";
+    default: assert(false);
     }
     return "";
   }
@@ -510,6 +516,7 @@ namespace embree
       switch (ivariant) {
       case VARIANT_INTERSECT: return true;
       case VARIANT_OCCLUDED : return true;
+      case VARIANT_INTERSECT_OCCLUDED : return true;
       default: return false;
       }
     default:
@@ -527,6 +534,7 @@ namespace embree
       switch (ivariant) {
       case VARIANT_INTERSECT: return "Intersect" + to_string(imode);
       case VARIANT_OCCLUDED : return "Occluded" + to_string(imode);
+      case VARIANT_INTERSECT_OCCLUDED : return "IntersectOccluded" + to_string(imode);
       default: assert(false);
       }
     default:
@@ -644,6 +652,7 @@ namespace embree
     switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
     case VARIANT_INTERSECT: rtcIntersectNM(scene,context,(RTCRayN*)&data[alignment],N,M,N*sizeof(RTCRay)); break;
     case VARIANT_OCCLUDED : rtcOccludedNM(scene,context,(RTCRayN*)&data[alignment],N,M,N*sizeof(RTCRay)); break;
+    default: assert(false);
     }
     
     for (size_t i=0; i<Nrays; i+=N) 
@@ -654,7 +663,7 @@ namespace embree
     }
   }
 
-  inline void IntersectWithMode(IntersectMode mode, IntersectVariant ivariant, RTCScene scene, RTCRay* rays, size_t N)
+  inline void IntersectWithModeInternal(IntersectMode mode, IntersectVariant ivariant, RTCScene scene, RTCRay* rays, size_t N)
   {
     RTCIntersectContext context;
     context.flags = ((ivariant & VARIANT_COHERENT_INCOHERENT_MASK) == VARIANT_COHERENT) ? RTC_INTERSECT_COHERENT :  RTC_INTERSECT_INCOHERENT;
@@ -664,14 +673,16 @@ namespace embree
     {
     case MODE_INTERSECT_NONE: 
       break;
-    case MODE_INTERSECT1: 
+    case MODE_INTERSECT1:
     {
       switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
       case VARIANT_INTERSECT: for (size_t i=0; i<N; i++) rtcIntersect(scene,rays[i]); break;
       case VARIANT_OCCLUDED : for (size_t i=0; i<N; i++) rtcOccluded (scene,rays[i]); break;
+      default: assert(false);
       }
       break;
     }
+
     case MODE_INTERSECT4: 
     {
       for (size_t i=0; i<N; i+=4) 
@@ -685,6 +696,7 @@ namespace embree
         switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
         case VARIANT_INTERSECT: rtcIntersect4(valid,scene,ray4); break;
         case VARIANT_OCCLUDED : rtcOccluded4 (valid,scene,ray4); break;
+        default: assert(false);
         }
         for (size_t j=0; j<M; j++) rays[i+j] = getRay(ray4,j);
       }
@@ -703,6 +715,7 @@ namespace embree
         switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
         case VARIANT_INTERSECT: rtcIntersect8(valid,scene,ray8); break;
         case VARIANT_OCCLUDED : rtcOccluded8 (valid,scene,ray8); break;
+        default: assert(false);
         }
         for (size_t j=0; j<M; j++) rays[i+j] = getRay(ray8,j);
       }
@@ -721,6 +734,7 @@ namespace embree
         switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
         case VARIANT_INTERSECT: rtcIntersect16(valid,scene,ray16); break;
         case VARIANT_OCCLUDED : rtcOccluded16 (valid,scene,ray16); break;
+        default: assert(false);
         }
         for (size_t j=0; j<M; j++) rays[i+j] = getRay(ray16,j);
       }
@@ -729,8 +743,9 @@ namespace embree
     case MODE_INTERSECT1M: 
     {
       switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-        case VARIANT_INTERSECT: rtcIntersect1M(scene,&context,rays,N,sizeof(RTCRay)); break;
-        case VARIANT_OCCLUDED : rtcOccluded1M (scene,&context,rays,N,sizeof(RTCRay)); break;
+      case VARIANT_INTERSECT: rtcIntersect1M(scene,&context,rays,N,sizeof(RTCRay)); break;
+      case VARIANT_OCCLUDED : rtcOccluded1M (scene,&context,rays,N,sizeof(RTCRay)); break;
+      default: assert(false);
       }
       break;
     }
@@ -785,6 +800,7 @@ namespace embree
       switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
       case VARIANT_INTERSECT: rtcIntersectNp(scene,&context,rayp,N); break;
       case VARIANT_OCCLUDED : rtcOccludedNp(scene,&context,rayp,N); break;
+      default: assert(false);
       }
      
       for (size_t j=0; j<N; j++) rays[j] = getRay(ray,N,j);
@@ -792,6 +808,23 @@ namespace embree
       break;
     }
     }
+  }
+
+  inline void IntersectWithMode(IntersectMode mode, IntersectVariant ivariant, RTCScene scene, RTCRay* rays, size_t N)
+  {
+    /* verify occluded result against intersect */
+    if ((ivariant & VARIANT_INTERSECT_OCCLUDED) == VARIANT_INTERSECT_OCCLUDED)
+    {
+      avector<RTCRay,aligned_allocator<RTCRay,16>> rays2(N);
+      for (size_t i=0; i<N; i++) rays2[i] = rays[i];
+      IntersectWithModeInternal(mode,IntersectVariant(ivariant & ~VARIANT_OCCLUDED),scene,rays,N);
+      IntersectWithModeInternal(mode,IntersectVariant(ivariant & ~VARIANT_INTERSECT),scene,rays2.data(),N);
+      for (size_t i=0; i<N; i++)
+        if ((rays[i].geomID == RTC_INVALID_GEOMETRY_ID) != (rays2[i].geomID == RTC_INVALID_GEOMETRY_ID))
+          throw std::runtime_error("Intersect/Occluded mismatch");
+    }
+    else
+      IntersectWithModeInternal(mode,ivariant,scene,rays,N);
   }
 
   enum GeometryType

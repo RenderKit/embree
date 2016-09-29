@@ -19,6 +19,7 @@ ADD_LIBRARY(scenegraph STATIC
     xml_loader.cpp
     xml_writer.cpp
     obj_loader.cpp
+    ply_loader.cpp
     hair_loader.cpp
     cy_hair_loader.cpp
     corona_loader.cpp

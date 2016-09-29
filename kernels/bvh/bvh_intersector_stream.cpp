@@ -22,6 +22,7 @@
 #include "../geometry/trianglev.h"
 #include "../geometry/trianglev_mb.h"
 #include "../geometry/trianglei.h"
+#include "../geometry/trianglei_mb.h"
 #include "../geometry/intersector_iterators.h"
 #include "../geometry/bezier1v_intersector.h"
 #include "../geometry/bezier1i_intersector.h"
@@ -168,13 +169,7 @@ namespace embree
     {
       const size_t numPackets = (numTotalRays+K-1)/K; //todo : OPTIMIZE
       for (size_t i = 0; i < numPackets; i++)
-      {
-        rayK[i].tnear  = 0.0f;
-        rayK[i].tfar   = neg_inf;
-        rayK[i].time   = 0.0f;
-        rayK[i].mask   = -1;
-        rayK[i].geomID = RTC_INVALID_GEOMETRY_ID;
-      }
+        new (&rayK[i]) RayK<K>(zero,zero,zero,neg_inf);
 
       Vec3fa min_dir = pos_inf;
       Vec3fa max_dir = neg_inf;
@@ -463,17 +458,17 @@ namespace embree
         RayK<K>* rayK_ptr[MAX_RAYS / K];
         for (size_t i = 0; i < MAX_RAYS / K; i++) rayK_ptr[i] = &rayK[i];
         AOStoSOA(rayK, inputRays, numTotalRays);
-        const size_t numPackets = (numTotalRays+K-1)/K;
-        if (unlikely(numPackets == 1))
-        {
-          /* packet tracer as fallback */
-          bvh->scene->intersect(rayK[0].tnear <= rayK[0].tfar, rayK[0], context);
-        }
-        else
-        {          
+        //const size_t numPackets = (numTotalRays+K-1)/K;
+        //if (unlikely(numPackets == 1)) // FIXME: we cannot call this way into the virtual intersect interface again, this will again iterate over BVHs
+        //{
+        //  /* packet tracer as fallback */
+        //  bvh->scene->intersect(rayK[0].tnear <= rayK[0].tfar, rayK[0], context);
+        //}
+        //else
+        //{          
           /* stream tracer as fast path */
           BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersectCoherentSOA(bvh, (RayK<K>**)rayK_ptr, numTotalRays, context);
-        }
+          //}
         /* SOA to AOS conversion */
         SOAtoAOS<K, false>(inputRays, rayK, numTotalRays);
         return;
@@ -638,17 +633,17 @@ namespace embree
         RayK<K>* rayK_ptr[MAX_RAYS / K];
         for (size_t i = 0; i < MAX_RAYS / K; i++) rayK_ptr[i] = &rayK[i];
         AOStoSOA(rayK, inputRays, numTotalRays);
-        const size_t numPackets = (numTotalRays+K-1)/K;
-        if (unlikely(numPackets == 1))
-        {
-          /* packet tracer as fallback */
-          bvh->scene->intersect(rayK[0].tnear <= rayK[0].tfar, rayK[0], context);
-        }
-        else
-        {
+        //const size_t numPackets = (numTotalRays+K-1)/K;
+        //if (unlikely(numPackets == 1)) // FIXME: we cannot call this way into the virtual intersect interface again, this will again iterate over BVHs
+        //{
+        //  /* packet tracer as fallback */
+        //  bvh->scene->occluded(rayK[0].tnear <= rayK[0].tfar, rayK[0], context);
+        //}
+        //else
+        //{
           /* stream tracer as fast path */
           BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occludedCoherentSOA(bvh, (RayK<K>**)rayK_ptr, numTotalRays, context);
-        }
+          //}
         /* SOA to AOS conversion */
         SOAtoAOS<K, true>(inputRays, rayK, numTotalRays);
         return;
@@ -790,6 +785,10 @@ namespace embree
                                     TriangleMIntersectorKMoellerTrumbore<4 COMMA VSIZEX COMMA VSIZEX COMMA false > > Triangle4IntersectorStreamMoellerTrumboreNoFilter;
 
     typedef ArrayIntersectorKStream<VSIZEX,
+                                    TriangleMvIntersector1Pluecker<4 COMMA VSIZEX COMMA true >,
+                                    TriangleMvIntersectorKPluecker<4 COMMA VSIZEX COMMA VSIZEX COMMA true > > Triangle4vIntersectorStreamPluecker;
+
+    typedef ArrayIntersectorKStream<VSIZEX,
                                     TriangleMiIntersector1Pluecker<4 COMMA VSIZEX COMMA true >,
                                     TriangleMiIntersectorKPluecker<4 COMMA VSIZEX COMMA VSIZEX COMMA true > > Triangle4iIntersectorStreamPluecker;
 
@@ -850,6 +849,7 @@ namespace embree
     
     IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH8Triangle4IntersectorStreamMoeller,         BVHNIntersectorStream<SIMD_MODE(8) COMMA VSIZEX COMMA BVH_AN1 COMMA false COMMA Triangle4IntersectorStreamMoellerTrumbore>));
     IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH8Triangle4IntersectorStreamMoellerNoFilter, BVHNIntersectorStream<SIMD_MODE(8) COMMA VSIZEX COMMA BVH_AN1 COMMA false COMMA Triangle4IntersectorStreamMoellerTrumboreNoFilter>));
+    IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH8Triangle4vIntersectorStreamPluecker,       BVHNIntersectorStream<SIMD_MODE(8) COMMA VSIZEX COMMA BVH_AN1 COMMA true COMMA Triangle4vIntersectorStreamPluecker>));
     IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH8Triangle4iIntersectorStreamPluecker,       BVHNIntersectorStream<SIMD_MODE(8) COMMA VSIZEX COMMA BVH_AN1 COMMA true COMMA Triangle4iIntersectorStreamPluecker>));
 
     IF_ENABLED_QUADS(DEFINE_INTERSECTORN(BVH8Quad4vIntersectorStreamMoeller,         BVHNIntersectorStream<SIMD_MODE(8) COMMA VSIZEX COMMA BVH_AN1 COMMA false COMMA Quad4vIntersectorStreamMoellerTrumbore>));
