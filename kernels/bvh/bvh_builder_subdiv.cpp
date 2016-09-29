@@ -39,6 +39,159 @@ namespace embree
   {
     typedef FastAllocator::ThreadLocal2 Allocator;
 
+    template<int N>
+    struct BVHNSubdivPatch1EagerBuilderBinnedSAHClass : public Builder
+    {
+      ALIGNED_STRUCT;
+
+      typedef BVHN<N> BVH;
+
+      BVH* bvh;
+      Scene* scene;
+      mvector<PrimRef> prims;
+      ParallelForForPrefixSumState<PrimInfo> pstate;
+      
+      BVHNSubdivPatch1EagerBuilderBinnedSAHClass (BVH* bvh, Scene* scene)
+        : bvh(bvh), scene(scene), prims(scene->device) {}
+
+#define SUBGRID 9
+
+      static unsigned getNumEagerLeaves(unsigned width, unsigned height) {
+        const unsigned w = (width+SUBGRID-1)/SUBGRID;
+        const unsigned h = (width+SUBGRID-1)/SUBGRID;
+        return w*h;
+      }
+
+      __forceinline static unsigned createEager(SubdivPatch1Base& patch, Scene* scene, SubdivMesh* mesh, unsigned primID, FastAllocator::ThreadLocal& alloc, PrimRef* prims)
+      {
+        unsigned NN = 0;
+        const unsigned x0 = 0, x1 = patch.grid_u_res-1;
+        const unsigned y0 = 0, y1 = patch.grid_v_res-1;
+        
+        for (unsigned y=y0; y<y1; y+=SUBGRID-1)
+        {
+          for (unsigned x=x0; x<x1; x+=SUBGRID-1) 
+          {
+            const unsigned lx0 = x, lx1 = min(lx0+SUBGRID-1,x1);
+            const unsigned ly0 = y, ly1 = min(ly0+SUBGRID-1,y1);
+            BBox3fa bounds;
+            GridSOA* leaf = GridSOA::create(&patch,1,lx0,lx1,ly0,ly1,scene,alloc,&bounds);
+            *prims = PrimRef(bounds,BVH4::encodeTypedLeaf(leaf,1)); prims++;
+            NN++;
+          }
+        }
+        return NN;
+      }
+
+      void build(size_t, size_t) 
+      {
+        /* initialize all half edge structures */
+        const size_t numPrimitives = scene->getNumPrimitives<SubdivMesh,1>();
+        if (numPrimitives > 0 || scene->isInterpolatable()) {
+          Scene::Iterator<SubdivMesh> iter(scene,scene->isInterpolatable());
+          parallel_for(size_t(0),iter.size(),[&](const range<size_t>& range) {
+              for (size_t i=range.begin(); i<range.end(); i++)
+                if (iter[i]) iter[i]->initializeHalfEdgeStructures();
+            });
+        }
+
+        /* skip build for empty scene */
+        if (numPrimitives == 0) {
+          prims.resize(numPrimitives);
+          bvh->set(BVH::emptyNode,empty,0);
+          return;
+        }
+        bvh->alloc.reset();
+
+        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "SubdivPatch1EagerBuilderBinnedSAH");
+
+        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(double(dn)); };
+        auto virtualprogress = BuildProgressMonitorFromClosure(progress);
+
+        /* initialize allocator and parallel_for_for_prefix_sum */
+        Scene::Iterator<SubdivMesh> iter(scene);
+        pstate.init(iter,size_t(1024));
+
+        PrimInfo pinfo1 = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
+        { 
+          size_t p = 0;
+          size_t g = 0;
+          for (size_t f=r.begin(); f!=r.end(); ++f) {          
+            if (!mesh->valid(f)) continue;
+            patch_eval_subdivision(mesh->getHalfEdge(f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch)
+            {
+              float level[4]; SubdivPatch1Base::computeEdgeLevels(edge_level,subdiv,level);
+              Vec2i grid = SubdivPatch1Base::computeGridSize(level);
+              size_t num = getNumEagerLeaves(grid.x,grid.y);
+              g+=num;
+              p++;
+            });
+          }
+          return PrimInfo(p,g,empty,empty);
+        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.begin+b.begin,a.end+b.end,empty,empty); });
+        size_t numSubPatches = pinfo1.begin;
+        if (numSubPatches == 0) {
+          bvh->set(BVH::emptyNode,empty,0);
+          return;
+        }
+
+        prims.resize(pinfo1.end);
+        if (pinfo1.end == 0) {
+          bvh->set(BVH::emptyNode,empty,0);
+          return;
+        }
+
+        PrimInfo pinfo3 = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
+        {
+          FastAllocator::ThreadLocal& alloc = *bvh->alloc.threadLocal();
+          
+          PrimInfo s(empty);
+          for (size_t f=r.begin(); f!=r.end(); ++f) {
+            if (!mesh->valid(f)) continue;
+            
+            patch_eval_subdivision(mesh->getHalfEdge(f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch)
+            {
+              SubdivPatch1Base patch(mesh->id,unsigned(f),subPatch,mesh,0,uv,edge_level,subdiv,VSIZEX);
+              size_t num = createEager(patch,scene,mesh,unsigned(f),alloc,&prims[base.end+s.end]);
+              assert(num == getNumEagerLeaves(patch.grid_u_res,patch.grid_v_res));
+              for (size_t i=0; i<num; i++)
+                s.add(prims[base.end+s.end].bounds());
+              s.begin++;
+            });
+          }
+          return s;
+        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a, b); });
+
+        PrimInfo pinfo(pinfo3.end,pinfo3.geomBounds,pinfo3.centBounds);
+        
+        auto createLeaf =  [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> int {
+          assert(current.pinfo.size() == 1);
+          size_t leaf = (size_t) prims[current.prims.begin()].ID();
+          *current.parent = leaf;
+          return 0;
+        };
+       
+        BVHNBuilder<N>::build(bvh,createLeaf,virtualprogress,prims.data(),pinfo,N,1,1,1.0f,1.0f);
+        
+	/* clear temporary data for static geometry */
+	if (scene->isStatic()) {
+          prims.clear();
+          bvh->shrink();
+        }
+        bvh->cleanup();
+        bvh->postBuild(t0);
+      }
+
+      void clear() {
+        prims.clear();
+      }
+    };
+
+    // =======================================================================================================
+    // =======================================================================================================
+    // =======================================================================================================
+
+
     template<int N, bool mblur>
     struct BVHNSubdivPatch1CachedBuilderBinnedSAHClass : public Builder, public BVHNRefitter<N>::LeafBoundsInterface
     {
@@ -337,6 +490,7 @@ namespace embree
     };
     
     /* entry functions for the scene builder */
+    Builder* BVH4SubdivPatch1EagerBuilderBinnedSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1EagerBuilderBinnedSAHClass<4>((BVH4*)bvh,scene); }
     Builder* BVH4SubdivPatch1CachedBuilderBinnedSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1CachedBuilderBinnedSAHClass<4,false>((BVH4*)bvh,scene,mode); }
     Builder* BVH4SubdivPatch1MBlurCachedBuilderBinnedSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1CachedBuilderBinnedSAHClass<4,true>((BVH4*)bvh,scene,mode); }
   }

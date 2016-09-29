@@ -43,8 +43,10 @@ namespace embree
                                unsigned x0, unsigned x1, unsigned y0, unsigned y1, 
                                const Scene* scene, Allocator& alloc, BBox3fa* bounds_o = nullptr)
       {
-        const unsigned width = x1-x0+1;
-        const unsigned height = y1-y0+1;
+        if (x1-x0 < 2 && x0 > 0) x0--;
+        if (y1-y0 < 2 && y0 > 0) y0--;
+        const unsigned width = x1-x0+1;  assert(width >= 3);
+        const unsigned height = y1-y0+1; assert(height >= 3);
         const GridRange range(0,width-1,0,height-1);
         const size_t nodeBytes = time_steps == 1 ? sizeof(BVH4::Node) : sizeof(BVH4::NodeMB);
         const size_t bvhBytes  = getBVHBytes(range,nodeBytes,0);
@@ -60,34 +62,6 @@ namespace embree
                                const Scene* scene, const Allocator& alloc, BBox3fa* bounds_o = nullptr) 
       {
         return create(patches,time_steps,0,patches->grid_u_res-1,0,patches->grid_v_res-1,scene,alloc,bounds_o);
-      }
-
-      static unsigned getNumEagerLeaves(unsigned width, unsigned height) {
-        const unsigned w = (((width +1)/2)+3)/4;
-        const unsigned h = (((height+1)/2)+3)/4;
-        return w*h;
-      }
-
-      template<typename Allocator>
-        __forceinline static unsigned createEager(SubdivPatch1Base& patch, Scene* scene, SubdivMesh* mesh, unsigned primID, Allocator& alloc, PrimRef* prims)
-      {
-        unsigned N = 0;
-        const unsigned x0 = 0, x1 = patch.grid_u_res-1;
-        const unsigned y0 = 0, y1 = patch.grid_v_res-1;
-        
-        for (unsigned y=y0; y<y1; y+=8)
-        {
-          for (unsigned x=x0; x<x1; x+=8) 
-          {
-            const unsigned lx0 = x, lx1 = min(lx0+8,x1);
-            const unsigned ly0 = y, ly1 = min(ly0+8,y1);
-            BBox3fa bounds;
-            GridSOA* leaf = create(&patch,1,lx0,lx1,ly0,ly1,scene,alloc,&bounds);
-            *prims = PrimRef(bounds,(unsigned)BVH4::encodeTypedLeaf(leaf,1)); prims++;
-            N++;
-          }
-        }
-        return N;
       }
 
        /*! returns reference to root */

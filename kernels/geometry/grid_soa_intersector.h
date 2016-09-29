@@ -28,7 +28,7 @@ namespace embree
     class GridSOAIntersectorK
     {
     public:
-      typedef SubdivPatch1Cached Primitive;
+      typedef void Primitive;
       typedef Vec3<vfloat<K>> Vec3vfK;
 
       class PrecalculationsBase
@@ -221,7 +221,7 @@ namespace embree
     class GridSOAMBlurIntersectorK
     {
     public:
-      typedef SubdivPatch1Cached Primitive;
+      typedef void Primitive;
       typedef Vec3<vfloat<K>> Vec3vfK;
       typedef typename GridSOAIntersectorK<K>::PrecalculationsBase PrecalculationsBase;
       typedef IntersectorKPrecalculationsMB<K,PrecalculationsBase> Precalculations;
