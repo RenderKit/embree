@@ -374,18 +374,24 @@ namespace embree
 
   public:
 
-    /* verifies that all mblur meshes have the same number of timesteps */
+    /* global mblur timesteps */
     unsigned numTimeSteps;
     unsigned numMBlurGeometries;
-    SpinLock checkMotionBlurTimeStepsLock;
-    void checkMotionBlurTimeSteps(unsigned N, int cnt) 
+    SpinLock updateMotionBlurTimeStepsLock;
+    void updateMotionBlurTimeSteps(unsigned N, int count)
     {
       if (N == 1) return;
-      Lock<SpinLock> lock(checkMotionBlurTimeStepsLock);
-      if (numMBlurGeometries == 0) numTimeSteps = N;
-      numMBlurGeometries += cnt;
-      if (numMBlurGeometries != 0 && numTimeSteps != N)
-        throw_RTCError(RTC_INVALID_ARGUMENT,"number of motion blur timesteps of all meshes has to be identical");
+      /* FIXME: remove this check after implementing for non-powers-of-two */
+      if ((N & (N-1)) != 0)
+        throw_RTCError(RTC_INVALID_ARGUMENT,"number of motion blur timesteps must be a power of two");
+      Lock<SpinLock> lock(updateMotionBlurTimeStepsLock);
+
+      if (numMBlurGeometries == 0)
+        numTimeSteps = N;
+      else
+        numTimeSteps = max(numTimeSteps, N);
+
+      numMBlurGeometries += count;
     }
   };
 
