@@ -302,6 +302,7 @@ namespace embree
     Type type;                 //!< geometry type 
     size_t numPrimitives;      //!< number of primitives of this geometry
     unsigned numTimeSteps;     //!< number of time steps
+    int numTimeSegments;       //!< number of time segments (precomputed)
     RTCGeometryFlags flags;    //!< flags of geometry
     bool enabled;              //!< true if geometry is enabled
     bool modified;             //!< true if geometry is modified

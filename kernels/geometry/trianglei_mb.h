@@ -100,14 +100,13 @@ namespace embree
                               const TriangleMesh* mesh1,
                               const TriangleMesh* mesh2,
                               const TriangleMesh* mesh3,
-                              const size_t itime) const;
+                              const vint<M>& itime) const;
 
     __forceinline void gather(Vec3<vfloat<M>>& p0,
                               Vec3<vfloat<M>>& p1,
                               Vec3<vfloat<M>>& p2,
                               const Scene *const scene,
-                              const size_t itime,
-                              const float ftime) const;
+                              const float time) const;
 
     /* Calculate the bounds of the triangles */
     __forceinline const BBox3fa bounds(const Scene *const scene, const size_t itime=0) const
@@ -197,26 +196,26 @@ namespace embree
                                                const TriangleMesh* mesh1,
                                                const TriangleMesh* mesh2,
                                                const TriangleMesh* mesh3,
-                                               const size_t itime) const
+                                               const vint4& itime) const
   {
-    const vfloat4 a0 = vfloat4::loadu(mesh0->vertexPtr(v0[0],itime));
-    const vfloat4 a1 = vfloat4::loadu(mesh1->vertexPtr(v0[1],itime));
-    const vfloat4 a2 = vfloat4::loadu(mesh2->vertexPtr(v0[2],itime));
-    const vfloat4 a3 = vfloat4::loadu(mesh3->vertexPtr(v0[3],itime));
+    const vfloat4 a0 = vfloat4::loadu(mesh0->vertexPtr(v0[0],itime[0]));
+    const vfloat4 a1 = vfloat4::loadu(mesh1->vertexPtr(v0[1],itime[1]));
+    const vfloat4 a2 = vfloat4::loadu(mesh2->vertexPtr(v0[2],itime[2]));
+    const vfloat4 a3 = vfloat4::loadu(mesh3->vertexPtr(v0[3],itime[3]));
 
     transpose(a0,a1,a2,a3,p0.x,p0.y,p0.z);
 
-    const vfloat4 b0 = vfloat4::loadu(mesh0->vertexPtr(v1[0],itime));
-    const vfloat4 b1 = vfloat4::loadu(mesh1->vertexPtr(v1[1],itime));
-    const vfloat4 b2 = vfloat4::loadu(mesh2->vertexPtr(v1[2],itime));
-    const vfloat4 b3 = vfloat4::loadu(mesh3->vertexPtr(v1[3],itime));
+    const vfloat4 b0 = vfloat4::loadu(mesh0->vertexPtr(v1[0],itime[0]));
+    const vfloat4 b1 = vfloat4::loadu(mesh1->vertexPtr(v1[1],itime[1]));
+    const vfloat4 b2 = vfloat4::loadu(mesh2->vertexPtr(v1[2],itime[2]));
+    const vfloat4 b3 = vfloat4::loadu(mesh3->vertexPtr(v1[3],itime[3]));
 
     transpose(b0,b1,b2,b3,p1.x,p1.y,p1.z);
 
-    const vfloat4 c0 = vfloat4::loadu(mesh0->vertexPtr(v2[0],itime));
-    const vfloat4 c1 = vfloat4::loadu(mesh1->vertexPtr(v2[1],itime));
-    const vfloat4 c2 = vfloat4::loadu(mesh2->vertexPtr(v2[2],itime));
-    const vfloat4 c3 = vfloat4::loadu(mesh3->vertexPtr(v2[3],itime));
+    const vfloat4 c0 = vfloat4::loadu(mesh0->vertexPtr(v2[0],itime[0]));
+    const vfloat4 c1 = vfloat4::loadu(mesh1->vertexPtr(v2[1],itime[1]));
+    const vfloat4 c2 = vfloat4::loadu(mesh2->vertexPtr(v2[2],itime[2]));
+    const vfloat4 c3 = vfloat4::loadu(mesh3->vertexPtr(v2[3],itime[3]));
 
     transpose(c0,c1,c2,c3,p2.x,p2.y,p2.z);
   }
@@ -226,18 +225,22 @@ namespace embree
                                                Vec3vf4& p1,
                                                Vec3vf4& p2,
                                                const Scene *const scene,
-                                               const size_t itime,
-                                               const float ftime) const
+                                               const float time) const
   {
     const TriangleMesh* mesh0 = scene->getTriangleMesh(geomIDs[0]);
     const TriangleMesh* mesh1 = scene->getTriangleMesh(geomIDs[1]);
     const TriangleMesh* mesh2 = scene->getTriangleMesh(geomIDs[2]);
     const TriangleMesh* mesh3 = scene->getTriangleMesh(geomIDs[3]);
 
+    const vint4 time_segments(mesh0->numTimeSegments, mesh1->numTimeSegments, mesh2->numTimeSegments, mesh3->numTimeSegments);
+    const vfloat4 time_scaled = time*vfloat4(time_segments);
+    const vint4 itime = clamp(vint4(floor(time_scaled)),vint4(0),time_segments-1);
+    const vfloat4 ftime = time_scaled - vfloat4(itime);
+
     const vfloat4 t0 = 1.0f - ftime;
     const vfloat4 t1 = ftime;
     Vec3vf4 a0,a1,a2;
-    gather(a0,a1,a2,mesh0,mesh1,mesh2,mesh3,itime+0);
+    gather(a0,a1,a2,mesh0,mesh1,mesh2,mesh3,itime);
     Vec3vf4 b0,b1,b2;
     gather(b0,b1,b2,mesh0,mesh1,mesh2,mesh3,itime+1);
     p0 = t0 * a0 + t1 * b0;
