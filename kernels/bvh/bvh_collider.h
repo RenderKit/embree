@@ -35,6 +35,7 @@ namespace embree
     public:
       static void processLeaf(const Triangle4v& tris0, const Triangle4v& tris1, RTCCollideFunc callback, void* userPtr);
       static void processLeaf(NodeRef leaf0, NodeRef leaf1, RTCCollideFunc callback, void* userPtr);
+      static void collide_recurse(NodeRef node0, const BBox3fa& bounds0, NodeRef node1, const BBox3fa& bounds1, RTCCollideFunc callback, void* userPtr);
       static void collide(BVH* __restrict__ bvh0, BVH* __restrict__ bvh1, RTCCollideFunc callback, void* userPtr);
     };
   }

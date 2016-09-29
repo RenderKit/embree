@@ -35,7 +35,7 @@ namespace embree
 
   void CollideFunc (void* userPtr, RTCCollision* collisions, size_t num_collisions)
   {
-    numTotalCollisions++;
+    //numTotalCollisions++;
     if (numBenchmarkRounds) return;
     for (size_t i=0; i<num_collisions; i++)
     {

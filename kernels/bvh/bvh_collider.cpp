@@ -126,81 +126,55 @@ namespace embree
     }
 
     template<int N>
-    void BVHNCollider<N>::collide(BVH* __restrict__ bvh0, BVH* __restrict__ bvh1, RTCCollideFunc callback, void* userPtr)
+    void BVHNCollider<N>::collide_recurse(NodeRef ref0, const BBox3fa& bounds0, NodeRef ref1, const BBox3fa& bounds1, RTCCollideFunc callback, void* userPtr)
     {
-      
-
-      /*! stack state */
-      struct StackItem 
-      {
-      public:
-        __forceinline StackItem () {}
-
-        __forceinline StackItem (NodeRef node0, const BBox3fa& bounds0,
-                                 NodeRef node1, const BBox3fa& bounds1)
-          : node0(node0), node1(node1), bounds0(bounds0), bounds1(bounds1) {}
+      CSTAT(bvh_collide_traversal_steps++);
+      if (unlikely(ref0.isLeaf())) {
+        if (unlikely(ref1.isLeaf())) {
+          CSTAT(bvh_collide_leaf_pairs++);
+          processLeaf(ref0,ref1,callback,userPtr);
+          return;
+        } else goto recurse_node1;
         
-      public:
-        NodeRef node0;
-        NodeRef node1;
-        BBox3fa bounds0;
-        BBox3fa bounds1;
-      };
-      StackItem stack[stackSize];           //!< stack of nodes 
-      StackItem* stackPtr = stack+1;        //!< current stack pointer
-      stack[0] = StackItem(bvh0->root,bvh0->bounds,bvh1->root,bvh1->bounds);
-
-      /* pop loop */
-      while (true)
-      {
-        /*! pop next node */
-        if (unlikely(stackPtr == stack)) break;
-        stackPtr--;
-        StackItem cur = *stackPtr;
-
-        CSTAT(bvh_collide_traversal_steps++);
-        if (unlikely(cur.node0.isLeaf())) {
-          if (unlikely(cur.node1.isLeaf())) {
-            CSTAT(bvh_collide_leaf_pairs++);
-            processLeaf(cur.node0,cur.node1,callback,userPtr);
-            continue;
-          } else goto recurse_node1;
-
+      } else {
+        if (unlikely(ref1.isLeaf())) {
+          goto recurse_node0;
         } else {
-          if (unlikely(cur.node1.isLeaf())) {
+          if (area(bounds0) > area(bounds1)) {
             goto recurse_node0;
           } else {
-            if (area(cur.bounds0) > area(cur.bounds1)) {
-              goto recurse_node0;
-            } else {
-              goto recurse_node1;
-            }
+            goto recurse_node1;
           }
-        }
-
-        {
-        recurse_node0:
-          Node* node0 = cur.node0.node();
-          size_t mask = overlap<N>(cur.bounds1,*node0);
-          for (size_t m=mask, i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {
-            node0->child(i).prefetch(BVH_FLAG_ALIGNED_NODE);
-            *stackPtr++ = StackItem(node0->child(i),node0->bounds(i),cur.node1,cur.bounds1);
-          }
-          continue;
-        }
-
-        {
-        recurse_node1:
-          Node* node1 = cur.node1.node();
-          size_t mask = overlap<N>(cur.bounds0,*node1);
-          for (size_t m=mask, i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {
-            node1->child(i).prefetch(BVH_FLAG_ALIGNED_NODE);
-            *stackPtr++ = StackItem(cur.node0,cur.bounds0,node1->child(i),node1->bounds(i));          
-          }
-          continue;
         }
       }
+
+      {
+      recurse_node0:
+        Node* node0 = ref0.node();
+        size_t mask = overlap<N>(bounds1,*node0);
+        for (size_t m=mask, i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {
+          node0->child(i).prefetch(BVH_FLAG_ALIGNED_NODE);
+          collide_recurse(node0->child(i),node0->bounds(i),ref1,bounds1,callback,userPtr);
+        }
+        return;
+      }
       
+      {
+      recurse_node1:
+        Node* node1 = ref1.node();
+        size_t mask = overlap<N>(bounds0,*node1);
+        for (size_t m=mask, i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {
+          node1->child(i).prefetch(BVH_FLAG_ALIGNED_NODE);
+          collide_recurse(ref0,bounds0,node1->child(i),node1->bounds(i),callback,userPtr);
+        }
+        return;
+      }
+    }
+
+    template<int N>
+    void BVHNCollider<N>::collide(BVH* __restrict__ bvh0, BVH* __restrict__ bvh1, RTCCollideFunc callback, void* userPtr)
+    {
+      collide_recurse(bvh0->root,bvh0->bounds,bvh1->root,bvh1->bounds,callback,userPtr);
       CSTAT(PRINT(bvh_collide_traversal_steps));
       CSTAT(PRINT(bvh_collide_leaf_pairs));
       CSTAT(PRINT(bvh_collide_leaf_iterations));
