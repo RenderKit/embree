@@ -48,6 +48,7 @@ namespace embree
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4Triangle4vMBIntersector1Moeller);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4Triangle4iMBIntersector1Pluecker);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4Subdivpatch1Intersector1);
+  DECLARE_SYMBOL2(Accel::Intersector1,BVH4Subdivpatch1EagerIntersector1);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4Subdivpatch1CachedIntersector1);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4Subdivpatch1MBlurIntersector1);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4Subdivpatch1MBlurCachedIntersector1);
@@ -77,6 +78,7 @@ namespace embree
   DECLARE_SYMBOL2(Accel::Intersector4,BVH4Quad4iIntersector4HybridPluecker);
   DECLARE_SYMBOL2(Accel::Intersector4,BVH4Quad4iMBIntersector4HybridPluecker);
   DECLARE_SYMBOL2(Accel::Intersector4,BVH4Subdivpatch1Intersector4);
+  DECLARE_SYMBOL2(Accel::Intersector4,BVH4Subdivpatch1EagerIntersector4);
   DECLARE_SYMBOL2(Accel::Intersector4,BVH4Subdivpatch1CachedIntersector4);
   DECLARE_SYMBOL2(Accel::Intersector4,BVH4Subdivpatch1MBlurIntersector4);
   DECLARE_SYMBOL2(Accel::Intersector4,BVH4Subdivpatch1MBlurCachedIntersector4);
@@ -101,6 +103,7 @@ namespace embree
   DECLARE_SYMBOL2(Accel::Intersector8,BVH4Quad4iIntersector8HybridPluecker);
   DECLARE_SYMBOL2(Accel::Intersector8,BVH4Quad4iMBIntersector8HybridPluecker);
   DECLARE_SYMBOL2(Accel::Intersector8,BVH4Subdivpatch1Intersector8);
+  DECLARE_SYMBOL2(Accel::Intersector8,BVH4Subdivpatch1EagerIntersector8);
   DECLARE_SYMBOL2(Accel::Intersector8,BVH4Subdivpatch1CachedIntersector8);
   DECLARE_SYMBOL2(Accel::Intersector8,BVH4Subdivpatch1MBlurIntersector8);
   DECLARE_SYMBOL2(Accel::Intersector8,BVH4Subdivpatch1MBlurCachedIntersector8);
@@ -125,6 +128,7 @@ namespace embree
   DECLARE_SYMBOL2(Accel::Intersector16,BVH4Quad4iIntersector16HybridPluecker);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH4Quad4iMBIntersector16HybridPluecker);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH4Subdivpatch1Intersector16);
+  DECLARE_SYMBOL2(Accel::Intersector16,BVH4Subdivpatch1EagerIntersector16);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH4Subdivpatch1CachedIntersector16);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH4Subdivpatch1MBlurIntersector16);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH4Subdivpatch1MBlurCachedIntersector16);
@@ -200,6 +204,7 @@ namespace embree
   DECLARE_BUILDER2(void,Scene,size_t,BVH4VirtualSceneBuilderSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH4VirtualMBSceneBuilderSAH);
 
+  DECLARE_BUILDER2(void,Scene,size_t,BVH4SubdivPatch1EagerBuilderBinnedSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH4SubdivPatch1CachedBuilderBinnedSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH4SubdivPatch1MBlurCachedBuilderBinnedSAH);
 
@@ -263,6 +268,7 @@ namespace embree
     IF_ENABLED_USER(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4VirtualSceneBuilderSAH));
     IF_ENABLED_USER(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4VirtualMBSceneBuilderSAH));
 
+    IF_ENABLED_SUBDIV(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4SubdivPatch1EagerBuilderBinnedSAH));
     IF_ENABLED_SUBDIV(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4SubdivPatch1CachedBuilderBinnedSAH));
     IF_ENABLED_SUBDIV(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4SubdivPatch1MBlurCachedBuilderBinnedSAH));
 
@@ -292,6 +298,7 @@ namespace embree
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4Triangle4vMBIntersector1Moeller));
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4Triangle4iMBIntersector1Pluecker));
     IF_ENABLED_SUBDIV(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4Subdivpatch1Intersector1));
+    IF_ENABLED_SUBDIV(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4Subdivpatch1EagerIntersector1));
     IF_ENABLED_SUBDIV(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4Subdivpatch1CachedIntersector1));
     IF_ENABLED_SUBDIV(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4Subdivpatch1MBlurIntersector1));
     IF_ENABLED_SUBDIV(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4Subdivpatch1MBlurCachedIntersector1));
@@ -324,6 +331,7 @@ namespace embree
     IF_ENABLED_QUADS(SELECT_SYMBOL_DEFAULT_SSE42_AVX     (features,BVH4Quad4iIntersector4HybridPluecker));
     IF_ENABLED_QUADS(SELECT_SYMBOL_DEFAULT_SSE42_AVX     (features,BVH4Quad4iMBIntersector4HybridPluecker));
     IF_ENABLED_SUBDIV(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4Subdivpatch1Intersector4));
+    IF_ENABLED_SUBDIV(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4Subdivpatch1EagerIntersector4));
     IF_ENABLED_SUBDIV(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4Subdivpatch1CachedIntersector4));
     IF_ENABLED_SUBDIV(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4Subdivpatch1MBlurIntersector4));
     IF_ENABLED_SUBDIV(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4Subdivpatch1MBlurCachedIntersector4));
@@ -350,6 +358,7 @@ namespace embree
     IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_AVX     (features,BVH4Quad4iIntersector8HybridPluecker));
     IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_AVX     (features,BVH4Quad4iMBIntersector8HybridPluecker));
     IF_ENABLED_SUBDIV(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH4Subdivpatch1Intersector8));
+    IF_ENABLED_SUBDIV(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH4Subdivpatch1EagerIntersector8));
     IF_ENABLED_SUBDIV(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH4Subdivpatch1CachedIntersector8));
     IF_ENABLED_SUBDIV(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH4Subdivpatch1MBlurIntersector8));
     IF_ENABLED_SUBDIV(SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH4Subdivpatch1MBlurCachedIntersector8));
@@ -375,6 +384,7 @@ namespace embree
     IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH4Quad4iIntersector16HybridPluecker));
     IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH4Quad4iMBIntersector16HybridPluecker));
     IF_ENABLED_SUBDIV(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH4Subdivpatch1Intersector16));
+    IF_ENABLED_SUBDIV(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH4Subdivpatch1EagerIntersector16));
     IF_ENABLED_SUBDIV(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH4Subdivpatch1CachedIntersector16));
     IF_ENABLED_SUBDIV(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH4Subdivpatch1MBlurIntersector16));
     IF_ENABLED_SUBDIV(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH4Subdivpatch1MBlurCachedIntersector16));
@@ -634,6 +644,18 @@ namespace embree
     intersectors.intersector8  = BVH4Subdivpatch1Intersector8;
     intersectors.intersector16 = BVH4Subdivpatch1Intersector16;
     //intersectors.intersectorN  = BVH4Subdivpatch1IntersectorStream;
+    return intersectors;
+  }
+
+  Accel::Intersectors BVH4Factory::BVH4SubdivPatch1EagerIntersectors(BVH4* bvh)
+  {
+    Accel::Intersectors intersectors;
+    intersectors.ptr = bvh;
+    intersectors.intersector1  = BVH4Subdivpatch1EagerIntersector1;
+    intersectors.intersector4  = BVH4Subdivpatch1EagerIntersector4;
+    intersectors.intersector8  = BVH4Subdivpatch1EagerIntersector8;
+    intersectors.intersector16 = BVH4Subdivpatch1EagerIntersector16;
+    //intersectors.intersectorN  = BVH4Subdivpatch1EagerIntersectorStream;
     return intersectors;
   }
 
@@ -1023,7 +1045,6 @@ namespace embree
       BVH4* accel = new BVH4(SubdivPatch1Cached::type_cached,scene);
       Accel::Intersectors intersectors = BVH4SubdivPatch1CachedIntersectors(accel);
       Builder* builder = BVH4SubdivPatch1CachedBuilderBinnedSAH(accel,scene,1);
-      scene->needSubdivIndices = false;
       scene->needSubdivVertices = true;
       return new AccelInstance(accel,builder,intersectors);
     }
@@ -1032,10 +1053,17 @@ namespace embree
       BVH4* accel = new BVH4(SubdivPatch1Cached::type,scene);
       Accel::Intersectors intersectors = BVH4SubdivPatch1Intersectors(accel);
       Builder* builder = BVH4SubdivPatch1CachedBuilderBinnedSAH(accel,scene,0);
-      scene->needSubdivIndices = false;
       scene->needSubdivVertices = true;
       return new AccelInstance(accel,builder,intersectors);
     }
+  }
+
+  Accel* BVH4Factory::BVH4SubdivPatch1Eager(Scene* scene)
+  {
+    BVH4* accel = new BVH4(SubdivPatch1Cached::type,scene); // FIXME: use different type
+    Accel::Intersectors intersectors = BVH4SubdivPatch1EagerIntersectors(accel);
+    Builder* builder = BVH4SubdivPatch1EagerBuilderBinnedSAH(accel,scene,0);
+    return new AccelInstance(accel,builder,intersectors);
   }
 
   Accel* BVH4Factory::BVH4SubdivPatch1MBlur(Scene* scene, bool cached)
@@ -1045,7 +1073,6 @@ namespace embree
       BVH4* accel = new BVH4(SubdivPatch1Cached::type_cached,scene);
       Accel::Intersectors intersectors = BVH4SubdivPatch1MBlurCachedIntersectors(accel);
       Builder* builder = BVH4SubdivPatch1MBlurCachedBuilderBinnedSAH(accel,scene,1);
-      scene->needSubdivIndices = false;
       scene->needSubdivVertices = true;
       return new AccelInstance(accel,builder,intersectors);
     }
@@ -1054,7 +1081,6 @@ namespace embree
       BVH4* accel = new BVH4(SubdivPatch1Cached::type,scene);
       Accel::Intersectors intersectors = BVH4SubdivPatch1MBlurIntersectors(accel);
       Builder* builder = BVH4SubdivPatch1MBlurCachedBuilderBinnedSAH(accel,scene,0);
-      scene->needSubdivIndices = false;
       scene->needSubdivVertices = true;
       return new AccelInstance(accel,builder,intersectors);
     }
