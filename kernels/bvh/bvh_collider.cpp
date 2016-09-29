@@ -22,6 +22,7 @@ namespace embree
   {
 #define CSTAT(x)
 
+    size_t parallel_depth_threshold = 5;
     size_t bvh_collide_traversal_steps = 0;
     size_t bvh_collide_leaf_pairs = 0;
     size_t bvh_collide_leaf_iterations = 0;
@@ -126,7 +127,7 @@ namespace embree
     }
 
     template<int N>
-    void BVHNCollider<N>::collide_recurse(NodeRef ref0, const BBox3fa& bounds0, NodeRef ref1, const BBox3fa& bounds1, RTCCollideFunc callback, void* userPtr)
+    void BVHNCollider<N>::collide_recurse(NodeRef ref0, const BBox3fa& bounds0, NodeRef ref1, const BBox3fa& bounds1, RTCCollideFunc callback, void* userPtr, size_t depth)
     {
       CSTAT(bvh_collide_traversal_steps++);
       if (unlikely(ref0.isLeaf())) {
@@ -152,9 +153,23 @@ namespace embree
       recurse_node0:
         Node* node0 = ref0.node();
         size_t mask = overlap<N>(bounds1,*node0);
-        for (size_t m=mask, i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {
-          node0->child(i).prefetch(BVH_FLAG_ALIGNED_NODE);
-          collide_recurse(node0->child(i),node0->bounds(i),ref1,bounds1,callback,userPtr);
+        //for (size_t m=mask, i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {
+        //for (size_t i=0; i<N; i++) {
+        if (depth < parallel_depth_threshold) 
+        {
+          parallel_for(size_t(N), [&] ( size_t i ) {
+              if (mask & ( 1 << i)) {
+                node0->child(i).prefetch(BVH_FLAG_ALIGNED_NODE);
+                collide_recurse(node0->child(i),node0->bounds(i),ref1,bounds1,callback,userPtr,depth+1);
+              }
+            });
+        } 
+        else 
+        {
+          for (size_t m=mask, i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {
+            node0->child(i).prefetch(BVH_FLAG_ALIGNED_NODE);
+            collide_recurse(node0->child(i),node0->bounds(i),ref1,bounds1,callback,userPtr,depth+1);
+          }
         }
         return;
       }
@@ -163,9 +178,23 @@ namespace embree
       recurse_node1:
         Node* node1 = ref1.node();
         size_t mask = overlap<N>(bounds0,*node1);
-        for (size_t m=mask, i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {
-          node1->child(i).prefetch(BVH_FLAG_ALIGNED_NODE);
-          collide_recurse(ref0,bounds0,node1->child(i),node1->bounds(i),callback,userPtr);
+        //for (size_t m=mask, i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {
+        //for (size_t i=0; i<N; i++) {
+        if (depth < parallel_depth_threshold) 
+        {
+          parallel_for(size_t(N), [&] ( size_t i ) {
+              if (mask & ( 1 << i)) {
+                node1->child(i).prefetch(BVH_FLAG_ALIGNED_NODE);
+                collide_recurse(ref0,bounds0,node1->child(i),node1->bounds(i),callback,userPtr,depth+1);
+              }
+            });
+        }
+        else
+        {
+          for (size_t m=mask, i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {
+            node1->child(i).prefetch(BVH_FLAG_ALIGNED_NODE);
+            collide_recurse(ref0,bounds0,node1->child(i),node1->bounds(i),callback,userPtr,depth+1);
+          }
         }
         return;
       }
@@ -174,7 +203,7 @@ namespace embree
     template<int N>
     void BVHNCollider<N>::collide(BVH* __restrict__ bvh0, BVH* __restrict__ bvh1, RTCCollideFunc callback, void* userPtr)
     {
-      collide_recurse(bvh0->root,bvh0->bounds,bvh1->root,bvh1->bounds,callback,userPtr);
+      collide_recurse(bvh0->root,bvh0->bounds,bvh1->root,bvh1->bounds,callback,userPtr,0);
       CSTAT(PRINT(bvh_collide_traversal_steps));
       CSTAT(PRINT(bvh_collide_leaf_pairs));
       CSTAT(PRINT(bvh_collide_leaf_iterations));
