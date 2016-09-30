@@ -41,6 +41,32 @@ namespace embree
       unsigned primID1;
     };
 
+    bool intersect_triangle_triangle (const Vec3fa& a0, const Vec3fa& a1, const Vec3fa& a2,
+                                      const Vec3fa& b0, const Vec3fa& b1, const Vec3fa& b2)
+    {
+      /* calculate triangle planes */
+      const Vec3fa Na = cross(a1-a0,a2-a0);
+      const float  Ca = dot(Na,a0);
+      const Vec3fa Nb = cross(b1-b0,b2-b0);
+      const float  Cb = dot(Nb,b0);
+      
+      /* project triangle A onto plane B */
+      const float a0Nb = dot(Nb,a0)-Cb;
+      const float a1Nb = dot(Nb,a1)-Cb;
+      const float a2Nb = dot(Nb,a2)-Cb;
+      if (max(a0Nb,a1Nb,a2Nb) < 0.0f) return false;
+      if (min(a0Nb,a1Nb,a2Nb) > 0.0f) return false;
+
+      /* project triangle B onto plane A */
+      const float b0Nb = dot(Na,b0)-Ca;
+      const float b1Nb = dot(Na,b1)-Ca;
+      const float b2Nb = dot(Na,b2)-Ca;
+      if (max(b0Nb,b1Nb,b2Nb) < 0.0f) return false;
+      if (min(b0Nb,b1Nb,b2Nb) > 0.0f) return false;
+
+      return true;
+    }                              
+
     template<int N>
     __forceinline size_t overlap(const BBox3fa& box0, const typename BVHN<N>::Node& node1)
     {

@@ -17,6 +17,7 @@
 #include "../common/tutorial/tutorial.h"
 #include "../common/tutorial/statistics.h"
 #include <set>
+#include "../../common/sys/mutex.h"
 
 namespace embree
 {
@@ -32,11 +33,14 @@ namespace embree
   size_t skipBenchmarkRounds = 0;
   size_t numBenchmarkRounds = 0;
   size_t numTotalCollisions = 0;
+  SpinLock mutex;
 
   void CollideFunc (void* userPtr, RTCCollision* collisions, size_t num_collisions)
   {
     //numTotalCollisions++;
     if (numBenchmarkRounds) return;
+
+    Lock<SpinLock> lock(mutex);
     for (size_t i=0; i<num_collisions; i++)
     {
       const unsigned geomID0 = collisions[i].geomID0;
