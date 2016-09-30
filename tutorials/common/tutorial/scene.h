@@ -51,6 +51,10 @@ namespace embree
       Triangle (unsigned v0, unsigned v1, unsigned v2, unsigned materialID) 
       : v0(v0), v1(v1), v2(v2), materialID(materialID) {}
 
+      friend std::ostream& operator<<(std::ostream& cout, const Triangle& tri) {
+        return cout << "Triangle (" << tri.v0 << ", " << tri.v1 << ", " << tri.v2 << ")";
+      }
+
     public:
       unsigned v0, v1, v2, materialID;
     };

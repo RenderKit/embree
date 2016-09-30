@@ -177,6 +177,8 @@ namespace embree
       g_tutorial_scene0.add(scene0,TutorialScene::INSTANCING_NONE); 
       if (scene1) g_tutorial_scene1.add(scene1,TutorialScene::INSTANCING_NONE); 
       
+      Ref<TutorialScene::TriangleMesh> mesh = g_tutorial_scene0.geometries[0].dynamicCast<TutorialScene::TriangleMesh>();
+
       /* initialize ray tracing core */
       g_device = rtcNewDevice(rtcore.c_str());
       //error_handler(rtcDeviceGetError(g_device));

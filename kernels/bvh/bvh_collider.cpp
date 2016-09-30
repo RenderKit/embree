@@ -112,6 +112,7 @@ namespace embree
       const Vec3fa b0 = mesh1->vertex(tri1.v[0]);
       const Vec3fa b1 = mesh1->vertex(tri1.v[1]);
       const Vec3fa b2 = mesh1->vertex(tri1.v[2]);
+
       return intersect_triangle_triangle(a0,a1,a2,b0,b1,b2);
     }
 
