@@ -388,8 +388,8 @@ namespace embree
       else
       {
         /* FIXME: remove this check after implementing for non-powers-of-two */
-        if ((numTimeSteps & (numTimeSteps-1)) != 0 || (N & (N-1)) != 0)
-          throw_RTCError(RTC_INVALID_ARGUMENT,"number of motion blur timesteps must be a power of two");
+        if (((numTimeSteps-1) & (numTimeSteps-2)) != 0 || ((N-1) & (N-2)) != 0)
+          throw_RTCError(RTC_INVALID_ARGUMENT,"number of motion blur time segments must be a power of two");
 
         numTimeSteps = max(numTimeSteps, N);
       }
