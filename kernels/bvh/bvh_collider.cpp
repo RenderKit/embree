@@ -20,13 +20,16 @@ namespace embree
 { 
   namespace isa
   {
-#define CSTAT(x)
+#define CSTAT(x) x
 
     size_t parallel_depth_threshold = 5;
-    size_t bvh_collide_traversal_steps = 0;
-    size_t bvh_collide_leaf_pairs = 0;
-    size_t bvh_collide_leaf_iterations = 0;
-    size_t bvh_collide_prim_pairs = 0;
+    std::atomic<size_t> bvh_collide_traversal_steps(0);
+    std::atomic<size_t> bvh_collide_leaf_pairs(0);
+    std::atomic<size_t> bvh_collide_leaf_iterations(0);
+    std::atomic<size_t> bvh_collide_prim_intersections1(0);
+    std::atomic<size_t> bvh_collide_prim_intersections2(0);
+    std::atomic<size_t> bvh_collide_prim_intersections3(0);
+    std::atomic<size_t> bvh_collide_prim_intersections(0);
 
     struct Collision
     {
@@ -44,6 +47,8 @@ namespace embree
     bool intersect_triangle_triangle (const Vec3fa& a0, const Vec3fa& a1, const Vec3fa& a2,
                                       const Vec3fa& b0, const Vec3fa& b1, const Vec3fa& b2)
     {
+      CSTAT(bvh_collide_prim_intersections1++);
+
       /* calculate triangle planes */
       const Vec3fa Na = cross(a1-a0,a2-a0);
       const float  Ca = dot(Na,a0);
@@ -56,6 +61,7 @@ namespace embree
       const float a2Nb = dot(Nb,a2)-Cb;
       if (max(a0Nb,a1Nb,a2Nb) < 0.0f) return false;
       if (min(a0Nb,a1Nb,a2Nb) > 0.0f) return false;
+      CSTAT(bvh_collide_prim_intersections2++);
 
       /* project triangle B onto plane A */
       const float b0Nb = dot(Na,b0)-Ca;
@@ -63,6 +69,7 @@ namespace embree
       const float b2Nb = dot(Na,b2)-Ca;
       if (max(b0Nb,b1Nb,b2Nb) < 0.0f) return false;
       if (min(b0Nb,b1Nb,b2Nb) > 0.0f) return false;
+      CSTAT(bvh_collide_prim_intersections3++);
 
       return true;
     }                              
@@ -120,9 +127,18 @@ namespace embree
         {
           CSTAT(bvh_collide_leaf_iterations++);
           size_t mask = movemask(tris1.valid()) & overlap(bounds0,i,bounds1);
-          for (size_t m=mask, j=__bsf(m); m!=0; m=__btc(m,j), j=__bsf(m)) {
-            CSTAT(bvh_collide_prim_pairs++);
-            collisions[num_collisions++] = Collision(tris0.geomID(i),tris0.primID(i),tris1.geomID(j),tris1.primID(j));
+          for (size_t m=mask, j=__bsf(m); m!=0; m=__btc(m,j), j=__bsf(m)) 
+          {
+            const Vec3fa a0(tris0.v0.x[j],tris0.v0.y[j],tris0.v0.z[j]);
+            const Vec3fa a1(tris0.v1.x[j],tris0.v1.y[j],tris0.v1.z[j]);
+            const Vec3fa a2(tris0.v2.x[j],tris0.v2.y[j],tris0.v2.z[j]);
+            const Vec3fa b0(tris1.v0.x[j],tris1.v0.y[j],tris1.v0.z[j]);
+            const Vec3fa b1(tris1.v1.x[j],tris1.v1.y[j],tris1.v1.z[j]);
+            const Vec3fa b2(tris1.v2.x[j],tris1.v2.y[j],tris1.v2.z[j]);
+            if (intersect_triangle_triangle(a0,a1,a2,b0,b1,b2)) {
+              CSTAT(bvh_collide_prim_intersections++);
+              collisions[num_collisions++] = Collision(tris0.geomID(i),tris0.primID(i),tris1.geomID(j),tris1.primID(j));
+            }
           }
         }
       } 
@@ -133,8 +149,16 @@ namespace embree
           CSTAT(bvh_collide_leaf_iterations++);
           size_t mask = movemask(tris0.valid()) & overlap(bounds1,j,bounds0);
           for (size_t m=mask, i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {
-            CSTAT(bvh_collide_prim_pairs++);
-            collisions[num_collisions++] = Collision(tris0.geomID(i),tris0.primID(i),tris1.geomID(j),tris1.primID(j));
+            const Vec3fa a0(tris0.v0.x[j],tris0.v0.y[j],tris0.v0.z[j]);
+            const Vec3fa a1(tris0.v1.x[j],tris0.v1.y[j],tris0.v1.z[j]);
+            const Vec3fa a2(tris0.v2.x[j],tris0.v2.y[j],tris0.v2.z[j]);
+            const Vec3fa b0(tris1.v0.x[j],tris1.v0.y[j],tris1.v0.z[j]);
+            const Vec3fa b1(tris1.v1.x[j],tris1.v1.y[j],tris1.v1.z[j]);
+            const Vec3fa b2(tris1.v2.x[j],tris1.v2.y[j],tris1.v2.z[j]);
+            if (intersect_triangle_triangle(a0,a1,a2,b0,b1,b2)) {
+              CSTAT(bvh_collide_prim_intersections++);
+              collisions[num_collisions++] = Collision(tris0.geomID(i),tris0.primID(i),tris1.geomID(j),tris1.primID(j));
+            }
           }
         }
       }
@@ -233,7 +257,10 @@ namespace embree
       CSTAT(PRINT(bvh_collide_traversal_steps));
       CSTAT(PRINT(bvh_collide_leaf_pairs));
       CSTAT(PRINT(bvh_collide_leaf_iterations));
-      CSTAT(PRINT(bvh_collide_prim_pairs));
+      CSTAT(PRINT(bvh_collide_prim_intersections1));
+      CSTAT(PRINT(bvh_collide_prim_intersections2));
+      CSTAT(PRINT(bvh_collide_prim_intersections3));
+      CSTAT(PRINT(bvh_collide_prim_intersections));
       AVX_ZERO_UPPER();
     }
 
