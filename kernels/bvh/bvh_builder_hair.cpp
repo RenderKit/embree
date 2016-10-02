@@ -48,7 +48,7 @@ namespace embree
         auto virtualprogress = BuildProgressMonitorFromClosure(progress);
 
         /* fast path for empty BVH */
-        const size_t numPrimitives = scene->getNumPrimitives<BezierCurves,1>();
+        const size_t numPrimitives = scene->getNumPrimitives<BezierCurves,false>();
         if (numPrimitives == 0) {
           prims.clear();
           bvh->set(BVH::emptyNode,empty,0);
@@ -62,7 +62,7 @@ namespace embree
         /* create primref array */
         bvh->alloc.init_estimate(numPrimitives*sizeof(Primitive));
         prims.resize(numPrimitives);
-        const PrimInfo pinfo = createBezierRefArray<1>(scene,prims,virtualprogress);
+        const PrimInfo pinfo = createBezierRefArray(scene,prims,virtualprogress);
         
         /* build hierarchy */
         typename BVH::NodeRef root = bvh_obb_builder_binned_sah<N>
@@ -148,7 +148,7 @@ namespace embree
         auto virtualprogress = BuildProgressMonitorFromClosure(progress);
 
         /* fast path for empty BVH */
-        const size_t numPrimitives = scene->getNumPrimitives<BezierCurves,2>();
+        const size_t numPrimitives = scene->getNumPrimitives<BezierCurves,true>();
         if (numPrimitives == 0) {
           prims.clear();
           bvh->set(BVH::emptyNode,empty,0);

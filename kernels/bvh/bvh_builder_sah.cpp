@@ -169,7 +169,7 @@ namespace embree
       void build(size_t, size_t) 
       {
 	/* skip build for empty scene */
-	const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,1>();
+        const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,false>();
         if (numPrimitives == 0) {
           prims.clear();
           bvh->clear();
@@ -187,7 +187,7 @@ namespace embree
             prims.resize(numSplitPrimitives);
             PrimInfo pinfo = mesh ? 
               createPrimRefArray<Mesh>  (mesh ,prims,bvh->scene->progressInterface) : 
-              createPrimRefArray<Mesh,1>(scene,prims,bvh->scene->progressInterface);
+              createPrimRefArray<Mesh,false>(scene,prims,bvh->scene->progressInterface);
         
             /* perform pre-splitting */
             if (presplitFactor > 1.0f) 
@@ -248,7 +248,7 @@ namespace embree
       void build(size_t, size_t) 
       {
 	/* skip build for empty scene */
-	const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,1>();
+        const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,false>();
         if (numPrimitives == 0) {
           prims.clear();
           bvh->clear();
@@ -265,7 +265,7 @@ namespace embree
             prims.resize(numSplitPrimitives);
             PrimInfo pinfo = mesh ? 
               createPrimRefArray<Mesh>  (mesh ,prims,bvh->scene->progressInterface) : 
-              createPrimRefArray<Mesh,1>(scene,prims,bvh->scene->progressInterface);
+              createPrimRefArray<Mesh,false>(scene,prims,bvh->scene->progressInterface);
         
             /* perform pre-splitting */
             if (presplitFactor > 1.0f) 
@@ -355,7 +355,7 @@ namespace embree
       void build(size_t, size_t) 
       {
 	/* skip build for empty scene */
-	const size_t numPrimitives = scene->getNumPrimitives<Mesh,1>();
+        const size_t numPrimitives = scene->getNumPrimitives<Mesh,false>();
         if (numPrimitives == 0) {
           bvh->clear();
           return;
@@ -364,7 +364,7 @@ namespace embree
         
         /* create primref list */
         PrimRefList prims;
-        PrimInfo pinfo = createPrimRefList<Mesh,1>(scene,prims,bvh->scene->progressInterface);
+        PrimInfo pinfo = createPrimRefList<Mesh,false>(scene,prims,bvh->scene->progressInterface);
         
         /* calculate total surface area */
         PrimRefList::iterator iter = prims;
@@ -483,7 +483,7 @@ namespace embree
       void build(size_t, size_t) 
       {
 	/* skip build for empty scene */
-	const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,2>();
+        const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,true>();
 
         if (numPrimitives == 0) {
           prims.clear();
@@ -496,7 +496,7 @@ namespace embree
         prims.resize(numPrimitives);
         const PrimInfo pinfo = mesh ? 
           createPrimRefArray<Mesh>(mesh,prims,bvh->scene->progressInterface) : 
-          createPrimRefArray<Mesh,2>(scene,prims,bvh->scene->progressInterface);
+          createPrimRefArray<Mesh,true>(scene,prims,bvh->scene->progressInterface);
 
         /* call BVH builder */
         bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
@@ -567,7 +567,7 @@ namespace embree
       void build(size_t, size_t) 
       {
 	/* skip build for empty scene */
-	const size_t numPrimitives = scene->getNumPrimitives<Mesh,2>();
+        const size_t numPrimitives = scene->getNumPrimitives<Mesh,true>();
         
         if (numPrimitives == 0) {
           prims.clear();
@@ -647,7 +647,7 @@ namespace embree
       void build(size_t, size_t) 
       {
 	/* skip build for empty scene */
-	const size_t numOriginalPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,1>();
+        const size_t numOriginalPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,false>();
         if (numOriginalPrimitives == 0) {
           prims0.clear();
           bvh->clear();
@@ -661,7 +661,7 @@ namespace embree
         prims0.resize(numSplitPrimitives);
         PrimInfo pinfo = mesh ? 
           createPrimRefArray<Mesh>  (mesh ,prims0,bvh->scene->progressInterface) : 
-          createPrimRefArray<Mesh,1>(scene,prims0,bvh->scene->progressInterface);
+          createPrimRefArray<Mesh,false>(scene,prims0,bvh->scene->progressInterface);
 
         /* primref array could be smaller due to invalid geometry */
         const size_t numPrimitives = pinfo.size();
@@ -826,7 +826,7 @@ namespace embree
       void build(size_t, size_t) 
       {
 	/* skip build for empty scene */
-	const size_t numOriginalPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,1>();
+        const size_t numOriginalPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,false>();
         if (numOriginalPrimitives == 0) {
           prims0.clear();
           bvh->clear();
@@ -840,7 +840,7 @@ namespace embree
         prims0.resize(numSplitPrimitives);
         PrimInfo pinfo = mesh ? 
           createPrimRefArray<Mesh>  (mesh ,prims0,bvh->scene->progressInterface) : 
-          createPrimRefArray<Mesh,1>(scene,prims0,bvh->scene->progressInterface);
+          createPrimRefArray<Mesh,false>(scene,prims0,bvh->scene->progressInterface);
 
         /* primref array could be smaller due to invalid geometry */
         const size_t numPrimitives = pinfo.size();

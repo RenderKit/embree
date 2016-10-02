@@ -27,12 +27,12 @@ namespace embree
   }
 
   void AccelSet::enabling () {
-    if (numTimeSteps == 1) parent->world1.numUserGeometries += numPrimitives;
-    else                   parent->world2.numUserGeometries += numPrimitives;
+    if (numTimeSteps == 1) parent->world.numUserGeometries += numPrimitives;
+    else                   parent->worldMB.numUserGeometries += numPrimitives;
   }
   
   void AccelSet::disabling() { 
-    if (numTimeSteps == 1) parent->world1.numUserGeometries -= numPrimitives;
-    else                   parent->world2.numUserGeometries -= numPrimitives;
+    if (numTimeSteps == 1) parent->world.numUserGeometries -= numPrimitives;
+    else                   parent->worldMB.numUserGeometries -= numPrimitives;
   }
 }

@@ -86,7 +86,7 @@ namespace embree
       void build(size_t, size_t) 
       {
         /* initialize all half edge structures */
-        const size_t numPrimitives = scene->getNumPrimitives<SubdivMesh,1>();
+        const size_t numPrimitives = scene->getNumPrimitives<SubdivMesh,false>();
         if (numPrimitives > 0 || scene->isInterpolatable()) {
           Scene::Iterator<SubdivMesh> iter(scene,scene->isInterpolatable());
           parallel_for(size_t(0),iter.size(),[&](const range<size_t>& range) {
@@ -201,8 +201,6 @@ namespace embree
       typedef typename BVH::NodeRef NodeRef;
       typedef typename BVHN<N>::Allocator BVH_Allocator;
 
-      static const size_t MBLUR = mblur?2:1;
-
       BVH* bvh;
       std::unique_ptr<BVHNRefitter<N>> refitter;
       Scene* scene;
@@ -228,10 +226,10 @@ namespace embree
       {
         /* initialize all half edge structures */
         bool fastUpdateMode = true;
-        numPrimitives = scene->getNumPrimitives<SubdivMesh,MBLUR>();
+        numPrimitives = scene->getNumPrimitives<SubdivMesh,mblur>();
         if (numPrimitives > 0 || scene->isInterpolatable()) 
         {
-          Scene::Iterator<SubdivMesh,MBLUR> iter(scene,scene->isInterpolatable());
+          Scene::Iterator<SubdivMesh,mblur> iter(scene,scene->isInterpolatable());
           fastUpdateMode = parallel_reduce(size_t(0),iter.size(),true,[&](const range<size_t>& range)
           {
             bool fastUpdate = true;
@@ -261,7 +259,7 @@ namespace embree
 
       size_t countSubPatches()
       {
-        Scene::Iterator<SubdivMesh,MBLUR> iter(scene);
+        Scene::Iterator<SubdivMesh,mblur> iter(scene);
         pstate.init(iter,size_t(1024));
 
         PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
@@ -283,7 +281,7 @@ namespace embree
         SubdivPatch1Cached* const subdiv_patches = (SubdivPatch1Cached*) bvh->subdiv_patches.data();
         bvh->alloc.reset();
 
-        Scene::Iterator<SubdivMesh,MBLUR> iter(scene);
+        Scene::Iterator<SubdivMesh,mblur> iter(scene);
         PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
         {
           PrimInfo s(empty);
@@ -397,7 +395,7 @@ namespace embree
       {
         SubdivPatch1Cached* const subdiv_patches = (SubdivPatch1Cached*) bvh->subdiv_patches.data();
 
-        Scene::Iterator<SubdivMesh,MBLUR> iter(scene);
+        Scene::Iterator<SubdivMesh,mblur> iter(scene);
         parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
         {
           PrimInfo s(empty);

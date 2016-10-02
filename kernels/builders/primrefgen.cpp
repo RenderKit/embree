@@ -67,11 +67,11 @@ namespace embree
       return pinfo;
     }
 
-    template<typename Mesh, size_t timeSteps>
+    template<typename Mesh, bool mblur>
     PrimInfo createPrimRefArray(Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor)
     {
       ParallelForForPrefixSumState<PrimInfo> pstate;
-      Scene::Iterator<Mesh,timeSteps> iter(scene);
+      Scene::Iterator<Mesh,mblur> iter(scene);
       
       /* first try */
       progressMonitor(0);
@@ -116,7 +116,7 @@ namespace embree
     PrimInfo createPrimRefArrayMBlur(size_t timeSegment, Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor)
     {
       ParallelForForPrefixSumState<PrimInfo> pstate;
-      Scene::Iterator<Mesh,2> iter(scene);
+      Scene::Iterator<Mesh,true> iter(scene);
       
       /* first try */
       progressMonitor(0);
@@ -157,11 +157,11 @@ namespace embree
       return pinfo;
     }
 
-    template<typename Mesh, size_t timeSteps>
+    template<typename Mesh, bool mblur>
       PrimInfo createPrimRefList(Scene* scene, PrimRefList& prims_o, BuildProgressMonitor& progressMonitor)
     {
       progressMonitor(0);
-      Scene::Iterator<Mesh,timeSteps> iter(scene);
+      Scene::Iterator<Mesh,mblur> iter(scene);
       PrimInfo pinfo = parallel_for_for_reduce( iter, PrimInfo(empty), [&](Mesh* mesh, const range<size_t>& r, size_t k) -> PrimInfo
       {
         PrimInfo pinfo(empty);
@@ -183,11 +183,10 @@ namespace embree
     }
 
 
-    template<size_t timeSteps>
     PrimInfo createBezierRefArray(Scene* scene, mvector<BezierPrim>& prims, BuildProgressMonitor& progressMonitor)
     {
       ParallelForForPrefixSumState<PrimInfo> pstate;
-      Scene::Iterator<BezierCurves,timeSteps> iter(scene);
+      Scene::Iterator<BezierCurves,false> iter(scene);
 
       /* first try */
       progressMonitor(0);
@@ -205,12 +204,6 @@ namespace embree
 	  Vec3fa p1 = mesh->vertex(ofs+1,0);
 	  Vec3fa p2 = mesh->vertex(ofs+2,0);
 	  Vec3fa p3 = mesh->vertex(ofs+3,0);
-	  if (timeSteps == 2) {
-	    p0 = 0.5f*(p0+mesh->vertex(ofs+0,1));
-	    p1 = 0.5f*(p1+mesh->vertex(ofs+1,1));
-	    p2 = 0.5f*(p2+mesh->vertex(ofs+2,1));
-	    p3 = 0.5f*(p3+mesh->vertex(ofs+3,1));
-	  }
           if (!isvalid((vfloat4)p0) || !isvalid((vfloat4)p1) || !isvalid((vfloat4)p2) || !isvalid((vfloat4)p3))
               continue;
 
@@ -240,12 +233,6 @@ namespace embree
             Vec3fa p1 = mesh->vertex(ofs+1,0);
             Vec3fa p2 = mesh->vertex(ofs+2,0);
             Vec3fa p3 = mesh->vertex(ofs+3,0);
-            if (timeSteps == 2) {
-              p0 = 0.5f*(p0+mesh->vertex(ofs+0,1));
-              p1 = 0.5f*(p1+mesh->vertex(ofs+1,1));
-              p2 = 0.5f*(p2+mesh->vertex(ofs+2,1));
-              p3 = 0.5f*(p3+mesh->vertex(ofs+3,1));
-            }
             if (!isvalid((vfloat4)p0) || !isvalid((vfloat4)p1) || !isvalid((vfloat4)p2) || !isvalid((vfloat4)p3))
               continue;
             
@@ -263,7 +250,7 @@ namespace embree
     PrimInfo createBezierRefArrayMBlur(size_t timeSegment, Scene* scene, mvector<BezierPrim>& prims, BuildProgressMonitor& progressMonitor)
     {
       ParallelForForPrefixSumState<PrimInfo> pstate;
-      Scene::Iterator<BezierCurves,2> iter(scene);
+      Scene::Iterator<BezierCurves,true> iter(scene);
 
       /* first try */
       progressMonitor(0);
@@ -310,16 +297,16 @@ namespace embree
     template PrimInfo createPrimRefArray<LineSegments>(LineSegments* mesh, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
     template PrimInfo createPrimRefArray<AccelSet>(AccelSet* mesh, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
 
-    template PrimInfo createPrimRefArray<TriangleMesh,1>(Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
-    template PrimInfo createPrimRefArray<TriangleMesh,2>(Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
-    template PrimInfo createPrimRefArray<QuadMesh,1>(Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
-    template PrimInfo createPrimRefArray<QuadMesh,2>(Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
-    template PrimInfo createPrimRefArray<BezierCurves,1>(Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
-    template PrimInfo createPrimRefArray<LineSegments,1>(Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
-    template PrimInfo createPrimRefArray<LineSegments,2>(Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
-    //template PrimInfo createPrimRefArray<SubdivMesh,1>(Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
-    template PrimInfo createPrimRefArray<AccelSet,1>(Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
-    template PrimInfo createPrimRefArray<AccelSet,2>(Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
+    template PrimInfo createPrimRefArray<TriangleMesh,false>(Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
+    template PrimInfo createPrimRefArray<TriangleMesh,true>(Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
+    template PrimInfo createPrimRefArray<QuadMesh,false>(Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
+    template PrimInfo createPrimRefArray<QuadMesh,true>(Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
+    template PrimInfo createPrimRefArray<BezierCurves,false>(Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
+    template PrimInfo createPrimRefArray<LineSegments,false>(Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
+    template PrimInfo createPrimRefArray<LineSegments,true>(Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
+    //template PrimInfo createPrimRefArray<SubdivMesh,false>(Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
+    template PrimInfo createPrimRefArray<AccelSet,false>(Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
+    template PrimInfo createPrimRefArray<AccelSet,true>(Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
 
     template PrimInfo createPrimRefArrayMBlur<TriangleMesh>(size_t timeSegment, Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
     template PrimInfo createPrimRefArrayMBlur<QuadMesh>(size_t timeSegment, Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
@@ -328,10 +315,7 @@ namespace embree
     //template PrimInfo createPrimRefArrayMBlur<SubdivMesh>(size_t timeSegment, Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
     template PrimInfo createPrimRefArrayMBlur<AccelSet>(size_t timeSegment, Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
 
-    template PrimInfo createBezierRefArray<1>(Scene* scene, mvector<BezierPrim>& prims, BuildProgressMonitor& progressMonitor);
-    template PrimInfo createBezierRefArray<2>(Scene* scene, mvector<BezierPrim>& prims, BuildProgressMonitor& progressMonitor);
-
-    template PrimInfo createPrimRefList<TriangleMesh,1>(Scene* scene, PrimRefList& prims, BuildProgressMonitor& progressMonitor);
+    template PrimInfo createPrimRefList<TriangleMesh,false>(Scene* scene, PrimRefList& prims, BuildProgressMonitor& progressMonitor);
   }
 }
 

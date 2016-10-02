@@ -61,15 +61,15 @@ namespace embree
   void SubdivMesh::enabling() 
   { 
     parent->numSubdivEnableDisableEvents++;
-    if (numTimeSteps == 1) parent->world1.numSubdivPatches += numFaces; 
-    else                   parent->world2.numSubdivPatches += numFaces; 
+    if (numTimeSteps == 1) parent->world.numSubdivPatches += numFaces; 
+    else                   parent->worldMB.numSubdivPatches += numFaces; 
   }
   
   void SubdivMesh::disabling() 
   { 
     parent->numSubdivEnableDisableEvents++;
-    if (numTimeSteps == 1) parent->world1.numSubdivPatches -= numFaces; 
-    else                   parent->world2.numSubdivPatches -= numFaces;
+    if (numTimeSteps == 1) parent->world.numSubdivPatches -= numFaces; 
+    else                   parent->worldMB.numSubdivPatches -= numFaces;
   }
 
   void SubdivMesh::setMask (unsigned mask) 

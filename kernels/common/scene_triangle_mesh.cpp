@@ -33,14 +33,14 @@ namespace embree
 
   void TriangleMesh::enabling() 
   { 
-    if (numTimeSteps == 1) parent->world1.numTriangles += triangles.size();
-    else                   parent->world2.numTriangles += triangles.size();
+    if (numTimeSteps == 1) parent->world.numTriangles += triangles.size();
+    else                   parent->worldMB.numTriangles += triangles.size();
   }
   
   void TriangleMesh::disabling() 
   { 
-    if (numTimeSteps == 1) parent->world1.numTriangles -= triangles.size();
-    else                   parent->world2.numTriangles -= triangles.size();
+    if (numTimeSteps == 1) parent->world.numTriangles -= triangles.size();
+    else                   parent->worldMB.numTriangles -= triangles.size();
   }
 
   void TriangleMesh::setMask (unsigned mask) 

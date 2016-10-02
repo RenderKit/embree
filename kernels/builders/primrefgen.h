@@ -28,18 +28,16 @@ namespace embree
     template<typename Mesh>
       PrimInfo createPrimRefArray(Mesh* mesh, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
 
-    template<typename Mesh, size_t timeSteps>
+    template<typename Mesh, bool mblur>
       PrimInfo createPrimRefArray(Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
 
     template<typename Mesh>
       PrimInfo createPrimRefArrayMBlur(size_t timeSegment, Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
 
-    template<typename Mesh, size_t timeSteps>
+    template<typename Mesh, bool mblur>
       PrimInfo createPrimRefList(Scene* scene, PrimRefList& prims, BuildProgressMonitor& progressMonitor);
 
-    template<size_t timeSteps>
-      PrimInfo createBezierRefArray(Scene* scene, mvector<BezierPrim>& prims, BuildProgressMonitor& progressMonitor);
-
+    PrimInfo createBezierRefArray(Scene* scene, mvector<BezierPrim>& prims, BuildProgressMonitor& progressMonitor);
     PrimInfo createBezierRefArrayMBlur(size_t timeSegment, Scene* scene, mvector<BezierPrim>& prims, BuildProgressMonitor& progressMonitor);
   }
 }

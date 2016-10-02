@@ -32,14 +32,14 @@ namespace embree
 
   void LineSegments::enabling()
   {
-    if (numTimeSteps == 1) parent->world1.numLineSegments += numPrimitives;
-    else                   parent->world2.numLineSegments += numPrimitives;
+    if (numTimeSteps == 1) parent->world.numLineSegments += numPrimitives;
+    else                   parent->worldMB.numLineSegments += numPrimitives;
   }
 
   void LineSegments::disabling()
   {
-    if (numTimeSteps == 1) parent->world1.numLineSegments -= numPrimitives;
-    else                   parent->world2.numLineSegments -= numPrimitives;
+    if (numTimeSteps == 1) parent->world.numLineSegments -= numPrimitives;
+    else                   parent->worldMB.numLineSegments -= numPrimitives;
   }
 
   void LineSegments::setMask (unsigned mask)
