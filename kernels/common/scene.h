@@ -81,6 +81,17 @@ namespace embree
         }
         return ret;
       }
+
+      __forceinline unsigned maxTimeStepsPerGeometry() const
+      {
+        unsigned ret = 0;
+        for (size_t i=0; i<scene->size(); i++) {
+          Ty* mesh = at(i);
+          if (mesh == nullptr) continue;
+          ret = max(ret,mesh->numTimeSteps);
+        }
+        return ret;
+      }
       
     private:
       Scene* scene;
@@ -364,7 +375,14 @@ namespace embree
       return world.size() + worldMB.size();
     }
 
-    template<typename Mesh, int timeSteps> __forceinline size_t getNumPrimitives() const;
+    template<typename Mesh, bool mblur> __forceinline size_t getNumPrimitives() const;
+
+    template<typename Mesh, bool mblur>
+    __forceinline unsigned getNumTimeSteps() const
+    {
+      Scene::Iterator<Mesh,mblur> iter(*this);
+      return iter.maxTimeStepsPerGeometry();
+    }
    
     std::atomic<size_t> numIntersectionFilters1;   //!< number of enabled intersection/occlusion filters for single rays
     std::atomic<size_t> numIntersectionFilters4;   //!< number of enabled intersection/occlusion filters for 4-wide ray packets
