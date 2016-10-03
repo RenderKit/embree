@@ -144,14 +144,14 @@ namespace embree
       return vertices0.getPtr(i);
     }
 
-    /*! returns i'th vertex of j'th timestep */
-    __forceinline const Vec3fa vertex(size_t i, size_t j) const {
-      return vertices[j][i];
+    /*! returns i'th vertex of itime'th timestep */
+    __forceinline const Vec3fa vertex(size_t i, size_t itime) const {
+      return vertices[itime][i];
     }
 
-    /*! returns i'th vertex of j'th timestep */
-    __forceinline const char* vertexPtr(size_t i, size_t j) const {
-      return vertices[j].getPtr(i);
+    /*! returns i'th vertex of itime'th timestep */
+    __forceinline const char* vertexPtr(size_t i, size_t itime) const {
+      return vertices[itime].getPtr(i);
     }
 
     /*! calculates the bounds of the i'th triangle */
@@ -164,13 +164,13 @@ namespace embree
       return BBox3fa(min(v0,v1,v2),max(v0,v1,v2));
     }
 
-    /*! calculates the bounds of the i'th triangle at the j'th timestep */
-    __forceinline BBox3fa bounds(size_t i, size_t j) const 
+    /*! calculates the bounds of the i'th triangle at the itime'th timestep */
+    __forceinline BBox3fa bounds(size_t i, size_t itime) const
     {
       const Triangle& tri = triangle(i);
-      const Vec3fa v0 = vertex(tri.v[0],j);
-      const Vec3fa v1 = vertex(tri.v[1],j);
-      const Vec3fa v2 = vertex(tri.v[2],j);
+      const Vec3fa v0 = vertex(tri.v[0],itime);
+      const Vec3fa v1 = vertex(tri.v[1],itime);
+      const Vec3fa v2 = vertex(tri.v[2],itime);
       return BBox3fa(min(v0,v1,v2),max(v0,v1,v2));
     }
 
@@ -182,11 +182,11 @@ namespace embree
       if (unlikely(tri.v[1] >= numVertices())) return false;
       if (unlikely(tri.v[2] >= numVertices())) return false;
 
-      for (size_t j=0; j<numTimeSteps; j++) 
+      for (size_t t=0; t<numTimeSteps; t++)
       {
-        const Vec3fa v0 = vertex(tri.v[0],j);
-        const Vec3fa v1 = vertex(tri.v[1],j);
-        const Vec3fa v2 = vertex(tri.v[2],j);
+        const Vec3fa v0 = vertex(tri.v[0],t);
+        const Vec3fa v1 = vertex(tri.v[1],t);
+        const Vec3fa v2 = vertex(tri.v[2],t);
         if (unlikely(!isvalid(v0) || !isvalid(v1) || !isvalid(v2)))
           return false;
       }
@@ -197,21 +197,21 @@ namespace embree
       return true;
     }
 
-    /*! check if the i'th primitive is valid at j'th time segment */
-    __forceinline bool valid2(size_t i, size_t j, BBox3fa& bbox) const 
+    /*! check if the i'th primitive is valid at itime'th time segment */
+    __forceinline bool valid2(size_t i, size_t itime, BBox3fa& bbox) const
     {
       const Triangle& tri = triangle(i);
       if (unlikely(tri.v[0] >= numVertices())) return false;
       if (unlikely(tri.v[1] >= numVertices())) return false;
       if (unlikely(tri.v[2] >= numVertices())) return false;
 
-      assert(j+1 < numTimeSteps);
-      const Vec3fa a0 = vertex(tri.v[0],j+0); if (unlikely(!isvalid(a0))) return false;
-      const Vec3fa a1 = vertex(tri.v[1],j+0); if (unlikely(!isvalid(a1))) return false;
-      const Vec3fa a2 = vertex(tri.v[2],j+0); if (unlikely(!isvalid(a2))) return false;
-      const Vec3fa b0 = vertex(tri.v[0],j+1); if (unlikely(!isvalid(b0))) return false;
-      const Vec3fa b1 = vertex(tri.v[1],j+1); if (unlikely(!isvalid(b1))) return false;
-      const Vec3fa b2 = vertex(tri.v[2],j+1); if (unlikely(!isvalid(b2))) return false;
+      assert(itime+1 < numTimeSteps);
+      const Vec3fa a0 = vertex(tri.v[0],itime+0); if (unlikely(!isvalid(a0))) return false;
+      const Vec3fa a1 = vertex(tri.v[1],itime+0); if (unlikely(!isvalid(a1))) return false;
+      const Vec3fa a2 = vertex(tri.v[2],itime+0); if (unlikely(!isvalid(a2))) return false;
+      const Vec3fa b0 = vertex(tri.v[0],itime+1); if (unlikely(!isvalid(b0))) return false;
+      const Vec3fa b1 = vertex(tri.v[1],itime+1); if (unlikely(!isvalid(b1))) return false;
+      const Vec3fa b2 = vertex(tri.v[2],itime+1); if (unlikely(!isvalid(b2))) return false;
       
       /* use bounds of first time step in builder */
       bbox = BBox3fa(min(a0,a1,a2),max(a0,a1,a2));
