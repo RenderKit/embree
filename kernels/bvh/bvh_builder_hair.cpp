@@ -160,6 +160,7 @@ namespace embree
         //profile(1,5,numPrimitives,[&] (ProfileTimer& timer) {
 
         /* create primref array */
+        bvh->numTimeSteps = scene->getNumTimeSteps<BezierCurves,true>();
         const size_t numTimeSegments = scene->numTimeSteps-1; assert(scene->numTimeSteps > 1);
         prims.resize(numPrimitives);
         bvh->alloc.init_estimate(numPrimitives*sizeof(Primitive)*numTimeSegments);

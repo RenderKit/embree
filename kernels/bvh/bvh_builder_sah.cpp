@@ -491,7 +491,8 @@ namespace embree
           return;
         }      
         double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + toString(N) + "BuilderMblurSAH");
-	    
+
+        bvh->numTimeSteps = 2;
         //bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef));
         prims.resize(numPrimitives);
         const PrimInfo pinfo = mesh ? 
@@ -578,6 +579,7 @@ namespace embree
         double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "BuilderMSMBlurSAH");
 	
         /* allocate buffers */
+        bvh->numTimeSteps = scene->getNumTimeSteps<Mesh,true>();
         const size_t numTimeSegments = scene->numTimeSteps-1; assert(scene->numTimeSteps > 1);
         prims.resize(numPrimitives);
         bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef)*numTimeSegments);

@@ -38,7 +38,7 @@ namespace embree
     float A = max(0.0f,halfArea(bvh->bounds));
     if (bvh->msmblur) {
       NodeRef* roots = (NodeRef*)(size_t)bvh->root;
-      for (size_t i=0; i<bvh->scene->numTimeSteps-1; i++) {
+      for (size_t i=0; i<bvh->numTimeSteps-1; i++) {
         size_t cdepth; statistics(roots[i],A,cdepth);
         depth=max(depth,cdepth);
       }

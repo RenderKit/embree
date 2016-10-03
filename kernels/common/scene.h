@@ -82,7 +82,7 @@ namespace embree
         return ret;
       }
 
-      __forceinline unsigned maxTimeStepsPerGeometry() const
+      __forceinline unsigned maxTimeStepsPerGeometry()
       {
         unsigned ret = 0;
         for (size_t i=0; i<scene->size(); i++) {
@@ -378,9 +378,12 @@ namespace embree
     template<typename Mesh, bool mblur> __forceinline size_t getNumPrimitives() const;
 
     template<typename Mesh, bool mblur>
-    __forceinline unsigned getNumTimeSteps() const
+    __forceinline unsigned getNumTimeSteps()
     {
-      Scene::Iterator<Mesh,mblur> iter(*this);
+      if (!mblur)
+        return 1;
+
+      Scene::Iterator<Mesh,mblur> iter(this);
       return iter.maxTimeStepsPerGeometry();
     }
    

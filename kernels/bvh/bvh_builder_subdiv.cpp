@@ -436,7 +436,9 @@ namespace embree
 
       void build(size_t, size_t) 
       {
-        numTimeSteps = mblur ? scene->numTimeSteps : 1;
+        //numTimeSteps = mblur ? scene->numTimeSteps : 1;
+        bvh->numTimeSteps = scene->getNumTimeSteps<SubdivMesh,mblur>();
+        numTimeSteps = bvh->numTimeSteps;
 
         /* initialize all half edge structures */
         size_t numPatches;
