@@ -29,13 +29,11 @@ namespace embree
       intersectionFilterN(nullptr), occlusionFilterN(nullptr),
       hasIntersectionFilterMask(0), hasOcclusionFilterMask(0), ispcIntersectionFilterMask(0), ispcOcclusionFilterMask(0)
   {
-    parent->updateMotionBlurTimeSteps(unsigned(numTimeSteps),+1);
     id = parent->add(this);
     parent->setModified();
   }
 
   Geometry::~Geometry() {
-    parent->updateMotionBlurTimeSteps(numTimeSteps,-1);
   }
 
   void Geometry::write(std::ofstream& file) {

@@ -60,7 +60,7 @@ namespace embree
       assert(!(types & BVH_MB) || all(valid,(ray.time >= 0.0f) & (ray.time <= 1.0f)));
 
       /* if the rays belong to different time segments, immediately switch to single ray traversal */
-      Precalculations pre(valid,ray,bvh->scene);
+      Precalculations pre(valid,ray,bvh->numTimeSteps);
       size_t valid_bits = movemask(valid);
       const size_t valid_first = __bsf(valid_bits);
       if (unlikely((types & BVH_MB) && valid_bits && (movemask(pre.itime() == pre.itime(valid_first)) != valid_bits)))
@@ -271,7 +271,7 @@ namespace embree
       assert(!(types & BVH_MB) || all(valid,(ray.time >= 0.0f) & (ray.time <= 1.0f)));
 
       /* if the rays belong to different time segments, immediately switch to single ray traversal */
-      Precalculations pre(valid,ray,bvh->scene);
+      Precalculations pre(valid,ray,bvh->numTimeSteps);
       size_t valid_bits = movemask(valid);
       const size_t valid_first = __bsf(valid_bits);
       if (unlikely((types & BVH_MB) && valid_bits && (movemask(pre.itime() == pre.itime(valid_first)) != valid_bits)))

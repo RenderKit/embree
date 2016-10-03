@@ -42,7 +42,7 @@ namespace embree
   {
   public:
     __forceinline RayPrecalculations() {}
-    __forceinline RayPrecalculations(const Ray& ray, const void* ptr, const Scene* scene) {}
+    __forceinline RayPrecalculations(const Ray& ray, const void* ptr, unsigned numTimeSteps) {}
 
     __forceinline int itime() const { return 0; }
     __forceinline float ftime() const { return 0.0f; }
@@ -53,10 +53,10 @@ namespace embree
   public:
     __forceinline RayPrecalculationsMB() {}
 
-    __forceinline RayPrecalculationsMB(const Ray& ray, const void* ptr, const Scene* scene)
+    __forceinline RayPrecalculationsMB(const Ray& ray, const void* ptr, unsigned numTimeSteps)
     {
       /* calculate time segment itime and fractional time ftime */
-      const int time_segments = (int)scene->numTimeSteps-1;
+      const int time_segments = (int)numTimeSteps-1;
       const float time = ray.time*float(time_segments);
       itime_ = clamp(int(floor(time)),0,time_segments-1);
       ftime_ = time - float(itime_);
@@ -76,7 +76,7 @@ namespace embree
   {
   public:
     __forceinline RayKPrecalculations() {}
-    __forceinline RayKPrecalculations(const vbool<K>& valid, const RayK<K>& ray, const Scene* scene) {}
+    __forceinline RayKPrecalculations(const vbool<K>& valid, const RayK<K>& ray, unsigned numTimeSteps) {}
 
     __forceinline vint<K> itime() const { return zero; }
     __forceinline vfloat<K> ftime() const { return zero; }
@@ -90,11 +90,10 @@ namespace embree
   {
   public:
     __forceinline RayKPrecalculationsMB() {}
-
-    __forceinline RayKPrecalculationsMB(const vbool<K>& valid, const RayK<K>& ray, const Scene* scene)
+    __forceinline RayKPrecalculationsMB(const vbool<K>& valid, const RayK<K>& ray, unsigned numTimeSteps)
     {
       /* calculate time segment itime and fractional time ftime */
-      const int time_segments = (int)scene->numTimeSteps-1;
+      const int time_segments = (int)numTimeSteps-1;
       const vfloat<K> time = ray.time*float(time_segments);
       itime_ = clamp(vint<K>(floor(time)),vint<K>(0),vint<K>(time_segments-1));
       ftime_ = time - vfloat<K>(itime_);
@@ -117,8 +116,8 @@ namespace embree
   {
     __forceinline Intersector1Precalculations() {}
 
-    __forceinline Intersector1Precalculations(const Ray& ray, const void* ptr, const Scene* scene)
-      : RayPrecalculations(ray, ptr, scene), Precalculations(ray, ptr) {}
+    __forceinline Intersector1Precalculations(const Ray& ray, const void* ptr, unsigned numTimeSteps)
+      : RayPrecalculations(ray, ptr, numTimeSteps), Precalculations(ray, ptr) {}
   };
 
   template<typename Precalculations>
@@ -126,8 +125,8 @@ namespace embree
   {
     __forceinline Intersector1PrecalculationsMB() {}
 
-    __forceinline Intersector1PrecalculationsMB(const Ray& ray, const void* ptr, const Scene* scene)
-      : RayPrecalculationsMB(ray, ptr, scene), Precalculations(ray, ptr) {}
+    __forceinline Intersector1PrecalculationsMB(const Ray& ray, const void* ptr, unsigned numTimeSteps)
+      : RayPrecalculationsMB(ray, ptr, numTimeSteps), Precalculations(ray, ptr) {}
   };
 
   template<int K, typename Precalculations>
@@ -135,8 +134,8 @@ namespace embree
   {
     __forceinline IntersectorKPrecalculations() {}
 
-    __forceinline IntersectorKPrecalculations(const vbool<K>& valid, const RayK<K>& ray, const Scene* scene)
-      : RayKPrecalculations<K>(valid, ray, scene), Precalculations(valid, ray) {}
+    __forceinline IntersectorKPrecalculations(const vbool<K>& valid, const RayK<K>& ray, unsigned numTimeSteps)
+      : RayKPrecalculations<K>(valid, ray, numTimeSteps), Precalculations(valid, ray) {}
   };
 
   template<int K, typename Precalculations>
@@ -144,7 +143,7 @@ namespace embree
   {
     __forceinline IntersectorKPrecalculationsMB() {}
 
-    __forceinline IntersectorKPrecalculationsMB(const vbool<K>& valid, const RayK<K>& ray, const Scene* scene)
-      : RayKPrecalculationsMB<K>(valid, ray, scene), Precalculations(valid, ray) {}
+    __forceinline IntersectorKPrecalculationsMB(const vbool<K>& valid, const RayK<K>& ray, unsigned numTimeSteps)
+      : RayKPrecalculationsMB<K>(valid, ray, numTimeSteps), Precalculations(valid, ray) {}
   };
 }

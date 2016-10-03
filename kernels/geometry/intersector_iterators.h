@@ -102,8 +102,8 @@ namespace embree
 
         struct Precalculations : public Precalculations2
         {
-          __forceinline Precalculations (const Ray& ray, const void* ptr, const Scene* scene)
-            : Precalculations2(ray,ptr,scene), pre1(ray,ptr,scene) {}
+          __forceinline Precalculations (const Ray& ray, const void* ptr, unsigned numTimeSteps)
+            : Precalculations2(ray,ptr,numTimeSteps), pre1(ray,ptr,numTimeSteps) {}
 
           Precalculations1 pre1;
         };
@@ -194,7 +194,7 @@ namespace embree
         
         static __forceinline void intersectK(const vbool<K>& valid, /* PrecalculationsK& pre, */ RayK<K>& ray, IntersectContext* context, const PrimitiveK* prim, size_t num, Scene* scene, size_t& lazy_node)
         {
-          PrecalculationsK pre(valid,ray,scene); //todo: might cause trouble
+          PrecalculationsK pre(valid,ray,1); //todo: might cause trouble
 
           for (size_t i=0; i<num; i++) {
             IntersectorK::intersect(valid,pre,ray,context,prim[i],scene);
@@ -203,7 +203,7 @@ namespace embree
         
         static __forceinline vbool<K> occludedK(const vbool<K>& valid, /* PrecalculationsK& pre, */ RayK<K>& ray, IntersectContext* context, const PrimitiveK* prim, size_t num, Scene* scene, size_t& lazy_node)
         {
-          PrecalculationsK pre(valid,ray,scene); //todo: might cause trouble
+          PrecalculationsK pre(valid,ray,1); //todo: might cause trouble
           vbool<K> valid0 = valid;
           for (size_t i=0; i<num; i++) {
             valid0 &= !IntersectorK::occluded(valid0,pre,ray,context,prim[i],scene);

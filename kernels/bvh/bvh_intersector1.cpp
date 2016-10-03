@@ -49,7 +49,7 @@ namespace embree
     void BVHNIntersector1<N,types,robust,PrimitiveIntersector1>::intersect(const BVH* __restrict__ bvh, Ray& __restrict__ ray, IntersectContext* context)
     {
       /*! perform per ray precalculations required by the primitive intersector */
-      Precalculations pre(ray,bvh,bvh->scene);
+      Precalculations pre(ray,bvh,bvh->numTimeSteps);
 
       /*! stack state */
       StackItemT<NodeRef> stack[stackSize];           //!< stack of nodes 
@@ -149,7 +149,7 @@ namespace embree
         return;
 
       /*! perform per ray precalculations required by the primitive intersector */
-      Precalculations pre(ray,bvh,bvh->scene);
+      Precalculations pre(ray,bvh,bvh->numTimeSteps);
 
       /*! stack state */
       NodeRef stack[stackSize];  //!< stack of nodes that still need to get traversed

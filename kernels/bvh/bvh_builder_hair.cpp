@@ -161,7 +161,7 @@ namespace embree
 
         /* create primref array */
         bvh->numTimeSteps = scene->getNumTimeSteps<BezierCurves,true>();
-        const size_t numTimeSegments = scene->numTimeSteps-1; assert(scene->numTimeSteps > 1);
+        const size_t numTimeSegments = bvh->numTimeSteps-1; assert(bvh->numTimeSteps > 1);
         prims.resize(numPrimitives);
         bvh->alloc.init_estimate(numPrimitives*sizeof(Primitive)*numTimeSegments);
         NodeRef* roots = (NodeRef*) bvh->alloc.threadLocal2()->alloc0.malloc(sizeof(NodeRef)*numTimeSegments,BVH::byteNodeAlignment);

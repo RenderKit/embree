@@ -360,7 +360,7 @@ namespace embree
           //BVHNBuilderMblur<N>::build(bvh,createLeaf,virtualprogress,prims.data(),pinfo,N,1,1,1.0f,1.0f);
 
            /* allocate buffers */
-          const size_t numTimeSegments = scene->numTimeSteps-1; assert(scene->numTimeSteps > 1);
+          const size_t numTimeSegments = bvh->numTimeSteps-1; assert(bvh->numTimeSteps > 1);
           //bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef)*numTimeSegments);
           NodeRef* roots = (NodeRef*) bvh->alloc.threadLocal2()->alloc0.malloc(sizeof(NodeRef)*numTimeSegments,BVH::byteNodeAlignment);
           
@@ -436,7 +436,6 @@ namespace embree
 
       void build(size_t, size_t) 
       {
-        //numTimeSteps = mblur ? scene->numTimeSteps : 1;
         bvh->numTimeSteps = scene->getNumTimeSteps<SubdivMesh,mblur>();
         numTimeSteps = bvh->numTimeSteps;
 

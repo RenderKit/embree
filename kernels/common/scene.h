@@ -392,25 +392,6 @@ namespace embree
     std::atomic<size_t> numIntersectionFilters8;   //!< number of enabled intersection/occlusion filters for 8-wide ray packets
     std::atomic<size_t> numIntersectionFilters16;  //!< number of enabled intersection/occlusion filters for 16-wide ray packets
     std::atomic<size_t> numIntersectionFiltersN;   //!< number of enabled intersection/occlusion filters for N-wide ray packets
-
-  public:
-
-    /* global mblur timesteps */
-    unsigned numTimeSteps;
-    unsigned numMBlurGeometries;
-    SpinLock updateMotionBlurTimeStepsLock;
-    void updateMotionBlurTimeSteps(unsigned N, int count)
-    {
-      if (N == 1) return;
-      Lock<SpinLock> lock(updateMotionBlurTimeStepsLock);
-
-      if (numMBlurGeometries == 0)
-        numTimeSteps = N;
-      else
-        numTimeSteps = max(numTimeSteps, N);
-
-      numMBlurGeometries += count;
-    }
   };
 
   template<> __forceinline size_t Scene::getNumPrimitives<TriangleMesh,false>() const { return world.numTriangles; }

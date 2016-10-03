@@ -29,16 +29,16 @@ namespace embree
       class SubdivPatch1EagerPrecalculations : public T
     { 
     public:
-      __forceinline SubdivPatch1EagerPrecalculations (const Ray& ray, const void* ptr, const Scene* scene)
-        : T(ray,ptr,scene) {}
+      __forceinline SubdivPatch1EagerPrecalculations (const Ray& ray, const void* ptr, unsigned numTimeSteps)
+        : T(ray,ptr,numTimeSteps) {}
     };
 
     template<int K, typename T>
       class SubdivPatch1EagerPrecalculationsK : public T
     { 
     public:
-      __forceinline SubdivPatch1EagerPrecalculationsK (const vbool<K>& valid, RayK<K>& ray, const Scene* scene)
-        : T(valid,ray,scene) {}
+      __forceinline SubdivPatch1EagerPrecalculationsK (const vbool<K>& valid, RayK<K>& ray, unsigned numTimeSteps)
+        : T(valid,ray,numTimeSteps) {}
     };
 
     class SubdivPatch1EagerIntersector1
