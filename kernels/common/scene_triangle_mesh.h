@@ -174,6 +174,23 @@ namespace embree
       return BBox3fa(min(v0,v1,v2),max(v0,v1,v2));
     }
 
+    /*! check if the i'th primitive is valid at the itime'th timestep */
+    __forceinline bool valid(size_t i, size_t itime) const
+    {
+      const Triangle& tri = triangle(i);
+      if (unlikely(tri.v[0] >= numVertices())) return false;
+      if (unlikely(tri.v[1] >= numVertices())) return false;
+      if (unlikely(tri.v[2] >= numVertices())) return false;
+
+      const Vec3fa v0 = vertex(tri.v[0],itime);
+      const Vec3fa v1 = vertex(tri.v[1],itime);
+      const Vec3fa v2 = vertex(tri.v[2],itime);
+      if (unlikely(!isvalid(v0) || !isvalid(v1) || !isvalid(v2)))
+        return false;
+
+      return true;
+    }
+
     /*! check if the i'th primitive is valid */
     __forceinline bool valid(size_t i, BBox3fa* bbox = nullptr) const 
     {
@@ -199,7 +216,12 @@ namespace embree
 
     __forceinline std::pair<BBox3fa,BBox3fa> bounds2(size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal) const
     {
-      return Geometry::bounds2(this, i, itimeGlobal, numTimeStepsGlobal);
+      std::pair<BBox3fa,BBox3fa> bbox2;
+      Geometry::bounds2(itimeGlobal, numTimeStepsGlobal, numTimeSteps,
+                        [&] (size_t itime) { return bounds(i, itime); },
+                        [&] (size_t itime) { return true; },
+                        bbox2);
+      return bbox2;
     }
 
     /*! check if the i'th primitive is valid at itime'th time segment */
@@ -225,7 +247,15 @@ namespace embree
 
     __forceinline bool valid2(size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal, BBox3fa& bbox) const
     {
-      return Geometry::valid2(this, i, itimeGlobal, numTimeStepsGlobal, bbox);
+      std::pair<BBox3fa,BBox3fa> bbox2;
+      if (!Geometry::bounds2(itimeGlobal, numTimeStepsGlobal, numTimeSteps,
+                             [&] (size_t itime) { return bounds(i, itime); },
+                             [&] (size_t itime) { return valid(i, itime); },
+                             bbox2))
+        return false;
+
+      bbox = 0.5f * (bbox2.first + bbox2.second);
+      return true;
     }
     
   public:

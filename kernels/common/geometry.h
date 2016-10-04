@@ -297,17 +297,22 @@ namespace embree
     template<typename simd> __forceinline bool hasISPCOcclusionFilter() const;
 
   public:
-    template<typename GeometryT>
-    __forceinline static std::pair<BBox3fa,BBox3fa> bounds2(const GeometryT* geom, size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal)
+    template<typename BoundsFunc, typename ValidFunc>
+    __forceinline static bool bounds2(size_t itimeGlobal, size_t numTimeStepsGlobal, size_t numTimeSteps, const BoundsFunc& bounds, const ValidFunc& valid, std::pair<BBox3fa,BBox3fa>& bbox2)
     {
-      if (numTimeStepsGlobal == geom->numTimeSteps)
+      if (numTimeStepsGlobal == numTimeSteps)
       {
-        const BBox3fa bounds0 = geom->bounds(i, itimeGlobal);
-        const BBox3fa bounds1 = geom->bounds(i, itimeGlobal+1);
-        return std::make_pair(bounds0, bounds1);
+        if (unlikely(!valid(itimeGlobal+0))) return false;
+        if (unlikely(!valid(itimeGlobal+1))) return false;
+
+        const BBox3fa bounds0 = bounds(itimeGlobal+0);
+        const BBox3fa bounds1 = bounds(itimeGlobal+1);
+
+        bbox2 = std::make_pair(bounds0, bounds1);
+        return true;
       }
 
-      const int timeSegments = int(geom->numTimeSteps-1);
+      const int timeSegments = int(numTimeSteps-1);
       const int timeSegmentsGlobal = int(numTimeStepsGlobal-1);
       const float invTimeSegmentsGlobal = rcp(float(timeSegmentsGlobal));
 
@@ -322,16 +327,25 @@ namespace embree
       {
         const float ftime1 = float(rtime1) * invTimeSegmentsGlobal;
 
-        const BBox3fa b0 = geom->bounds(i, itime0);
-        const BBox3fa b1 = geom->bounds(i, itime0+1);
-        return std::make_pair(lerp(b0, b1, ftime0), lerp(b0, b1, ftime1));
+        if (unlikely(!valid(itime0+0))) return false;
+        if (unlikely(!valid(itime0+1))) return false;
+
+        const BBox3fa b0 = bounds(itime0+0);
+        const BBox3fa b1 = bounds(itime0+1);
+
+        bbox2 = std::make_pair(lerp(b0, b1, ftime0), lerp(b0, b1, ftime1));
+        return true;
       }
 
       const float ftime1 = float(rtime1-timeSegmentsGlobal) * invTimeSegmentsGlobal;
 
-      const BBox3fa b0 = geom->bounds(i, itime0);
-      const BBox3fa b1 = geom->bounds(i, itime0+1);
-      const BBox3fa b2 = geom->bounds(i, itime0+2);
+      if (unlikely(!valid(itime0+0))) return false;
+      if (unlikely(!valid(itime0+1))) return false;
+      if (unlikely(!valid(itime0+2))) return false;
+
+      const BBox3fa b0 = bounds(itime0+0);
+      const BBox3fa b1 = bounds(itime0+1);
+      const BBox3fa b2 = bounds(itime0+2);
 
       BBox3fa bounds0 = lerp(b0, b1, ftime0);
       BBox3fa bounds1 = lerp(b1, b2, ftime1);
@@ -344,13 +358,7 @@ namespace embree
       bounds0.upper = max(bounds0.upper, bounds0.upper + (b1.upper - b1Lerp.upper));
       bounds1.upper = max(bounds1.upper, bounds1.upper + (b1.upper - b1Lerp.upper));
 
-      return std::make_pair(bounds0, bounds1);
-    }
-
-    template<typename GeometryT>
-    __forceinline static bool valid2(const GeometryT* geom, size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal, BBox3fa& bbox) {
-      std::pair<BBox3fa,BBox3fa> bbox2 = bounds2(geom, i, itimeGlobal, numTimeStepsGlobal);
-      bbox = 0.5f * (bbox2.first + bbox2.second);
+      bbox2 = std::make_pair(bounds0, bounds1);
       return true;
     }
 
