@@ -20,7 +20,7 @@ namespace embree
 { 
   namespace isa
   {
-#define CSTAT(x) x
+#define CSTAT(x)
 
     size_t parallel_depth_threshold = 5;
     std::atomic<size_t> bvh_collide_traversal_steps(0);
