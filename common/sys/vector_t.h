@@ -37,7 +37,7 @@ namespace embree
       vector_t () 
         : size_active(0), size_alloced(0), items(nullptr) {}
     
-      vector_t (size_t sz) 
+      explicit vector_t (size_t sz) 
         : size_active(0), size_alloced(0), items(nullptr) { internal_resize_init(sz); }
 #endif
       

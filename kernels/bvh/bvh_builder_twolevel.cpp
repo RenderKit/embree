@@ -118,14 +118,14 @@ namespace embree
             builder->build(0,0);
           
           /* create build primitive */
-          if (!object->bounds.empty())
-            refs[nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->bounds,object->root);
+          if (!object->getBounds().empty())
+            refs[nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->getBounds(),object->root);
         }
       });
       
       /* fast path for single geometry scenes */
       if (nextRef == 1) { 
-        bvh->set(refs[0].node,refs[0].bounds(),numPrimitives);
+        bvh->set(refs[0].node,LBBox3fa(refs[0].bounds()),numPrimitives);
         return;
       }
 
@@ -135,7 +135,7 @@ namespace embree
       
       /* fast path for small geometries */
       if (refs.size() == 1) { 
-        bvh->set(refs[0].node,refs[0].bounds(),numPrimitives);
+        bvh->set(refs[0].node,LBBox3fa(refs[0].bounds()),numPrimitives);
         return;
       }
 
@@ -181,7 +181,7 @@ namespace embree
            [&] (size_t dn) { bvh->scene->progressMonitor(0); },
            prims.data(),pinfo,N,BVH::maxBuildDepthLeaf,N,1,1,1.0f,1.0f);
         
-        bvh->set(root,pinfo.geomBounds,numPrimitives);
+        bvh->set(root,LBBox3fa(pinfo.geomBounds),numPrimitives);
       }
 
 #if PROFILE

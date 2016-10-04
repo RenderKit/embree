@@ -359,15 +359,13 @@ namespace embree
         /* build MBlur BVH over patches */
         else
         {
-          //BVHNBuilderMblur<N>::build(bvh,createLeaf,virtualprogress,prims.data(),pinfo,N,1,1,1.0f,1.0f);
-
-           /* allocate buffers */
+          /* allocate buffers */
           const size_t numTimeSegments = scene->numTimeSteps-1; assert(scene->numTimeSteps > 1);
           //bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef)*numTimeSegments);
           NodeRef* roots = (NodeRef*) bvh->alloc.threadLocal2()->alloc0.malloc(sizeof(NodeRef)*numTimeSegments,BVH::byteNodeAlignment);
           
           /* build BVH for each timestep */
-          BBox3fa box = empty;
+          avector<BBox3fa> boxes(scene->numTimeSteps);
           size_t num_bvh_primitives = 0;
           for (size_t t=0; t<numTimeSegments; t++)
           {
@@ -385,10 +383,11 @@ namespace embree
             NodeRef root; std::pair<BBox3fa,BBox3fa> tbounds;
             std::tie(root, tbounds) = BVHNBuilderMblur<N>::build(bvh,createLeaf,bvh->scene->progressInterface,prims.data(),pinfo,N,1,1,1.0f,1.0f);
             roots[t] = root;
-            box.extend(merge(tbounds.first,tbounds.second));
+            boxes[t+0] = tbounds.first;
+            boxes[t+1] = tbounds.second;
             num_bvh_primitives = max(num_bvh_primitives,pinfo.size());
           }
-          bvh->set(NodeRef((size_t)roots),box,num_bvh_primitives);
+          bvh->set(NodeRef((size_t)roots),LBBox3fa(boxes),num_bvh_primitives);
           bvh->msmblur = true;
         }
       }

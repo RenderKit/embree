@@ -210,9 +210,9 @@ namespace embree
             if (!instance->isEnabled()) continue;
             BVH* object = objects[instance->geom->id];
             if (object == nullptr) continue;
-            if (object->bounds.empty()) continue;
+            if (object->getBounds().empty()) continue;
             int s = slot(geom->getType() & ~Geometry::INSTANCE, geom->numTimeSteps);
-            refs[nextRef++] = BVHNBuilderInstancing::BuildRef(instance->local2world,object->bounds,object->root,instance->mask,unsigned(objectID),hash(instance->local2world),s);
+            refs[nextRef++] = BVHNBuilderInstancing::BuildRef(instance->local2world,object->getBounds(),object->root,instance->mask,unsigned(objectID),hash(instance->local2world),s);
           }
         });
       refs.resize(nextRef);
@@ -265,9 +265,9 @@ namespace embree
         BuildRef* ref = (BuildRef*) prims[0].ID();
         //const BBox3fa bounds = xfmBounds(ref->local2world,ref->localBounds);
         const BBox3fa bounds = xfmDeepBounds<N>(ref->local2world,ref->localBounds,ref->node,2);
-        bvh->set(ref->node,bounds,numPrimitives);
+        bvh->set(ref->node,LBBox3fa(bounds),numPrimitives);
       }
-
+      
       /* otherwise build toplevel hierarchy */
       else
       {
@@ -299,7 +299,7 @@ namespace embree
            [&] (size_t dn) { bvh->scene->progressMonitor(0); },
            prims.data(),pinfo,N,BVH::maxBuildDepthLeaf,4,1,1,1.0f,1.0f);
         
-        bvh->set(root,pinfo.geomBounds,numPrimitives);
+        bvh->set(root,LBBox3fa(pinfo.geomBounds),numPrimitives);
         numCollapsedTransformNodes = refs.size();
         //bvh->root = collapse(bvh->root);
         //if (scene->device->verbosity(1))

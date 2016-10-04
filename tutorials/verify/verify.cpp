@@ -655,8 +655,10 @@ namespace embree
 
   struct GetBoundsTest : public VerifyApplication::Test
   {
-    GetBoundsTest (std::string name, int isa)
-      : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS) {}
+    GeometryType gtype;
+
+    GetBoundsTest (std::string name, int isa, GeometryType gtype)
+      : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), gtype(gtype) {}
 
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
     {
@@ -665,7 +667,18 @@ namespace embree
       error_handler(rtcDeviceGetError(device));
       VerifyScene scene(device,RTC_SCENE_STATIC,RTC_INTERSECT1);
       AssertNoError(device);
-      Ref<SceneGraph::Node> node = SceneGraph::createTriangleSphere(zero,1.0f,50);
+
+      Ref<SceneGraph::Node> node = nullptr;
+      switch (gtype) {
+      case TRIANGLE_MESH   : node = SceneGraph::createTriangleSphere(zero,1.0f,50); break;
+      case TRIANGLE_MESH_MB: node = SceneGraph::createTriangleSphere(zero,1.0f,5)->set_motion_vector(Vec3fa(1.0f)); break;
+      case QUAD_MESH       : node = SceneGraph::createQuadSphere(zero,1.0f,50); break;
+      case QUAD_MESH_MB    : node = SceneGraph::createQuadSphere(zero,1.0f,50)->set_motion_vector(Vec3fa(1.0f)); break;
+        //case SUBDIV_MESH:
+        //case SUBDIV_MESH_MB:
+      default: return VerifyApplication::SKIPPED;
+      }
+
       BBox3fa bounds0 = node->bounds();
       scene.addGeometry(RTC_GEOMETRY_STATIC,node);
       AssertNoError(device);
@@ -673,6 +686,44 @@ namespace embree
       AssertNoError(device);
       BBox3fa bounds1;
       rtcGetBounds(scene,(RTCBounds&)bounds1);
+      AssertNoError(device);
+      return (VerifyApplication::TestReturnValue)(bounds0 == bounds1);
+    }
+  };
+  
+  struct GetLinearBoundsTest : public VerifyApplication::Test
+  {
+    GeometryType gtype;
+
+    GetLinearBoundsTest (std::string name, int isa, GeometryType gtype)
+      : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), gtype(gtype) {}
+
+    VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
+    {
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
+      error_handler(rtcDeviceGetError(device));
+      VerifyScene scene(device,RTC_SCENE_STATIC,RTC_INTERSECT1);
+      AssertNoError(device);
+
+      Ref<SceneGraph::Node> node = nullptr;
+      switch (gtype) {
+      case TRIANGLE_MESH   : node = SceneGraph::createTriangleSphere(zero,1.0f,50); break;
+      case TRIANGLE_MESH_MB: node = SceneGraph::createTriangleSphere(zero,1.0f,50)->set_motion_vector(Vec3fa(1.0f)); break;
+      case QUAD_MESH       : node = SceneGraph::createQuadSphere(zero,1.0f,50); break;
+      case QUAD_MESH_MB    : node = SceneGraph::createQuadSphere(zero,1.0f,50)->set_motion_vector(Vec3fa(1.0f)); break;
+        //case SUBDIV_MESH:
+        //case SUBDIV_MESH_MB:
+      default: return VerifyApplication::SKIPPED;
+      }
+
+      LBBox3fa bounds0 = node->lbounds();
+      scene.addGeometry(RTC_GEOMETRY_STATIC,node);
+      AssertNoError(device);
+      rtcCommit (scene);
+      AssertNoError(device);
+      LBBox3fa bounds1;
+      rtcGetLinearBounds(scene,(RTCBounds*)&bounds1);
       AssertNoError(device);
       return (VerifyApplication::TestReturnValue)(bounds0 == bounds1);
     }
@@ -2513,8 +2564,8 @@ namespace embree
 
   struct RegressionTask
   {
-    RegressionTask (unsigned int sceneIndex, unsigned int sceneCount, unsigned int threadCount, bool cancelBuild)
-      : sceneIndex(sceneIndex), sceneCount(sceneCount), scene(nullptr), numActiveThreads(0), cancelBuild(cancelBuild), errorCounter(0) 
+    RegressionTask (VerifyApplication::Test* test, unsigned int sceneIndex, unsigned int sceneCount, unsigned int threadCount, bool cancelBuild)
+      : sceneIndex(sceneIndex), sceneCount(sceneCount), test(test), scene(nullptr), numActiveThreads(0), cancelBuild(cancelBuild), errorCounter(0) 
     { 
       barrier.init(threadCount); 
       RandomSampler_init(sampler,0);
@@ -2522,6 +2573,7 @@ namespace embree
 
     unsigned int sceneIndex;
     unsigned int sceneCount;
+    VerifyApplication::Test* test;
     VerifyApplication* state;
     Ref<VerifyScene> scene;
     BarrierSys barrier;
@@ -2614,14 +2666,14 @@ namespace embree
         size_t numTriangles = 2*2*numPhi*(numPhi-1);
 	numTriangles = RandomSampler_getInt(task->sampler)%(numTriangles+1);
         switch (type) {
-        case 0: task->scene->addSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
-	case 1: task->scene->addSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
-        case 2: task->scene->addQuadSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
-	case 3: task->scene->addQuadSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
-	case 4: task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
-        case 5: task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,4,numTriangles,1.0f); break;
-	case 6: task->scene->addHair  (task->sampler,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,numTriangles,0.0f); break;
-	case 7: task->scene->addHair  (task->sampler,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,numTriangles,1.0f); break; 
+        case 0: task->scene->addSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles); break;
+	case 1: task->scene->addSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,task->test->random_motion_vector(1.0f)); break;
+        case 2: task->scene->addQuadSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles); break;
+	case 3: task->scene->addQuadSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,task->test->random_motion_vector(1.0f)); break;
+	case 4: task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,4,numTriangles); break;
+        case 5: task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,4,numTriangles,task->test->random_motion_vector(1.0f)); break;
+	case 6: task->scene->addHair  (task->sampler,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,numTriangles); break;
+	case 7: task->scene->addHair  (task->sampler,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,numTriangles,task->test->random_motion_vector(1.0f)); break; 
 
         case 8: {
 	  Sphere* sphere = new Sphere(pos,2.0f); spheres.push_back(sphere); 
@@ -2744,29 +2796,29 @@ namespace embree
           types[index] = type;
           numVertices[index] = 2*numPhi*(numPhi+1);
           switch (type) {
-          case 0: geom[index] = task->scene->addSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
-          case 1: geom[index] = task->scene->addSphere(task->sampler,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles,0.0f); break;
-          case 2: geom[index] = task->scene->addSphere(task->sampler,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
+          case 0: geom[index] = task->scene->addSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles); break;
+          case 1: geom[index] = task->scene->addSphere(task->sampler,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles); break;
+          case 2: geom[index] = task->scene->addSphere(task->sampler,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles); break;
 
-          case 3: geom[index] = task->scene->addSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
-          case 4: geom[index] = task->scene->addSphere(task->sampler,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles,1.0f); break;
-          case 5: geom[index] = task->scene->addSphere(task->sampler,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
+          case 3: geom[index] = task->scene->addSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,task->test->random_motion_vector(1.0f)); break;
+          case 4: geom[index] = task->scene->addSphere(task->sampler,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles,task->test->random_motion_vector(1.0f)); break;
+          case 5: geom[index] = task->scene->addSphere(task->sampler,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles,task->test->random_motion_vector(1.0f)); break;
 
-          case 6: geom[index] = task->scene->addQuadSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
-          case 7: geom[index] = task->scene->addQuadSphere(task->sampler,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles,0.0f); break;
-          case 8: geom[index] = task->scene->addQuadSphere(task->sampler,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
+          case 6: geom[index] = task->scene->addQuadSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles); break;
+          case 7: geom[index] = task->scene->addQuadSphere(task->sampler,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles); break;
+          case 8: geom[index] = task->scene->addQuadSphere(task->sampler,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles); break;
 
-          case 9: geom[index] = task->scene->addQuadSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
-          case 10: geom[index] = task->scene->addQuadSphere(task->sampler,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles,1.0f); break;
-          case 11: geom[index] = task->scene->addQuadSphere(task->sampler,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
+          case 9: geom[index] = task->scene->addQuadSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,task->test->random_motion_vector(1.0f)); break;
+          case 10: geom[index] = task->scene->addQuadSphere(task->sampler,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles,task->test->random_motion_vector(1.0f)); break;
+          case 11: geom[index] = task->scene->addQuadSphere(task->sampler,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles,task->test->random_motion_vector(1.0f)); break;
 
-          case 12: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
-	  case 13: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
-	  case 14: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
+          case 12: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,4,numTriangles); break;
+	  case 13: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,4,numTriangles); break;
+	  case 14: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,4,numTriangles); break;
 
-          case 15: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,4,numTriangles,1.0f); break;
-	  case 16: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,4,numTriangles,1.0f); break;
-	  case 17: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,4,numTriangles,1.0f); break;
+          case 15: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,4,numTriangles,task->test->random_motion_vector(1.0f)); break;
+	  case 16: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,4,numTriangles,task->test->random_motion_vector(1.0f)); break;
+	  case 17: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,4,numTriangles,task->test->random_motion_vector(1.0f)); break;
 
           case 18: spheres[index] = Sphere(pos,2.0f); geom[index] = task->scene->addUserGeometryEmpty(task->sampler,&spheres[index]); break;
           }; 
@@ -2909,7 +2961,7 @@ namespace embree
           while (numThreads) 
           {
             unsigned int N = max(unsigned(1),random_int()%numThreads); numThreads -= N;
-            RegressionTask* task = new RegressionTask(sceneIndex++,5,N,false);
+            RegressionTask* task = new RegressionTask(this,sceneIndex++,5,N,false);
             tasks.push_back(task);
             
             for (unsigned int i=0; i<N; i++) 
@@ -2927,7 +2979,7 @@ namespace embree
         }
         else
         {
-          RegressionTask task(sceneIndex++,5,0,false);
+          RegressionTask task(this,sceneIndex++,5,0,false);
           func(new ThreadRegressionTask(0,0,state,device,intersectModes,&task));
         }	
       }
@@ -2991,7 +3043,7 @@ namespace embree
         monitorMemoryInvokations = 0;
         monitorProgressBreak = std::numeric_limits<size_t>::max();
         monitorProgressInvokations = 0;
-        RegressionTask task1(sceneIndex,1,0,true);
+        RegressionTask task1(this,sceneIndex,1,0,true);
         func(new ThreadRegressionTask(0,0,state,device,intersectModes,&task1));
         if (monitorMemoryBytesUsed) {
           rtcDeviceSetMemoryMonitorFunction(device,nullptr);
@@ -3002,7 +3054,7 @@ namespace embree
         monitorMemoryInvokations = 0;
         monitorProgressBreak = size_t(float(monitorProgressInvokations) * 2.0f * random_float());
         monitorProgressInvokations = 0;
-        RegressionTask task2(sceneIndex,1,0,true);
+        RegressionTask task2(this,sceneIndex,1,0,true);
         func(new ThreadRegressionTask(0,0,state,device,intersectModes,&task2));
         if (monitorMemoryBytesUsed || (monitorMemoryInvokations != 0 && task2.errorCounter != 1)) {
           rtcDeviceSetMemoryMonitorFunction(device,nullptr);
@@ -3522,6 +3574,8 @@ namespace embree
 #endif
 
     GeometryType gtypes[] = { TRIANGLE_MESH, TRIANGLE_MESH_MB, QUAD_MESH, QUAD_MESH_MB, SUBDIV_MESH, SUBDIV_MESH_MB };
+    GeometryType gtypes_all[] = { TRIANGLE_MESH, TRIANGLE_MESH_MB, QUAD_MESH, QUAD_MESH_MB, SUBDIV_MESH, SUBDIV_MESH_MB, 
+                                  HAIR_GEOMETRY, HAIR_GEOMETRY_MB, CURVE_GEOMETRY, CURVE_GEOMETRY_MB, LINE_GEOMETRY, LINE_GEOMETRY_MB };
 
     /* create list of all ISAs to test */
     if (hasISA(SSE2)) isas.push_back(SSE2);
@@ -3604,7 +3658,17 @@ namespace embree
       groups.pop();
 
       groups.top()->add(new UnmappedBeforeCommitTest("unmapped_before_commit",isa));
-      groups.top()->add(new GetBoundsTest("get_bounds",isa));
+
+      push(new TestGroup("get_bounds",true,true));
+      for (auto gtype : gtypes_all)
+        groups.top()->add(new GetBoundsTest(to_string(gtype),isa,gtype));
+      groups.pop();
+
+      push(new TestGroup("get_linear_bounds",true,true));
+      for (auto gtype : gtypes_all)
+        groups.top()->add(new GetLinearBoundsTest(to_string(gtype),isa,gtype));
+      groups.pop();
+      
       groups.top()->add(new GetUserDataTest("get_user_data",isa));
 
       push(new TestGroup("buffer_stride",true,true));

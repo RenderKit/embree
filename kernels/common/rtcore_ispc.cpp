@@ -119,6 +119,10 @@ namespace embree
   extern "C" void ispcGetBounds(RTCScene scene, RTCBounds& bounds_o) {
     rtcGetBounds(scene,bounds_o);
   }
+
+  extern "C" void ispcGetLinearBounds(RTCScene scene, RTCBounds* bounds_o) {
+    rtcGetLinearBounds(scene,bounds_o);
+  }
   
   extern "C" void ispcIntersect1 (RTCScene scene, RTCRay& ray) {
     rtcIntersect(scene,ray);

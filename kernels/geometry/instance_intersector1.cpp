@@ -24,7 +24,15 @@ namespace embree
     void InstanceBoundsFunction(void* userPtr, const Instance* instance, size_t item, size_t itime, BBox3fa& bounds_o)
     {
       assert(itime < instance->numTimeSteps);
-      bounds_o = xfmBounds(instance->local2world[itime],instance->object->bounds);
+      unsigned num_time_segments = instance->numTimeSegments();
+      if (num_time_segments == 0) {
+        bounds_o = xfmBounds(instance->local2world[itime],instance->object->bounds.bounds());
+      }
+      else {
+        const float ftime = float(itime) / float(num_time_segments);
+        const BBox3fa obounds = instance->object->bounds.interpolate(ftime);
+        bounds_o = xfmBounds(instance->local2world[itime],obounds);
+      }
     }
 
     RTCBoundsFunc3 InstanceBoundsFunc = (RTCBoundsFunc3) InstanceBoundsFunction;

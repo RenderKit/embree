@@ -104,9 +104,14 @@ RTCORE_API void rtcCommit (RTCScene scene);
  *  coprocessor. */
 RTCORE_API void rtcCommitThread(RTCScene scene, unsigned int threadID, unsigned int numThreads);
 
-/*! Returns to AABB of the scene. rtcCommit has to get called
+/*! Returns AABB of the scene. rtcCommit has to get called
  *  previously to this function. */
 RTCORE_API void rtcGetBounds(RTCScene scene, RTCBounds& bounds_o);
+
+/*! Returns linear AABBs of the scene. The result bounds_o gets filled
+ *  with AABBs for time 0 and time 1. rtcCommit has to get called
+ *  previously to this function. */
+RTCORE_API void rtcGetLinearBounds(RTCScene scene, RTCBounds* bounds_o);
 
 /*! Intersects a single ray with the scene. The ray has to be aligned
  *  to 16 bytes. This function can only be called for scenes with the

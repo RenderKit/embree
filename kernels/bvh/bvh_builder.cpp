@@ -73,7 +73,7 @@ namespace embree
         (root,typename BVH::CreateAlloc(bvh),size_t(0),typename BVH::CreateNode(bvh),rotate<N>,createLeafFunc,progressFunc,
          prims,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
-      bvh->set(root,pinfo.geomBounds,pinfo.size());
+      bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
       
 #if ROTATE_TREE
       if (N == 4)
@@ -109,7 +109,7 @@ namespace embree
       // todo: COPY LAYOUT FOR LARGE NODES !!!
       //bvh->layoutLargeNodes(pinfo.size()*0.005f);
       assert(new_root.isQuantizedNode());
-      bvh->set(new_root,pinfo.geomBounds,pinfo.size());
+      bvh->set(new_root,LBBox3fa(pinfo.geomBounds),pinfo.size());
     }
 
     template<int N>
@@ -167,7 +167,7 @@ namespace embree
          prims,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
       /* set bounding box to merge bounds of all time steps */
-      bvh->set(root,merge(root_bounds.first,root_bounds.second),pinfo.size()); // FIXME: remove later
+      bvh->set(root,LBBox3fa(root_bounds.first,root_bounds.second),pinfo.size()); // FIXME: remove later
 
 #if ROTATE_TREE
       if (N == 4)
@@ -212,7 +212,7 @@ namespace embree
          createLeafFunc,splitPrimitiveFunc,progressFunc,
          prims,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
       
-      bvh->set(root,pinfo.geomBounds,pinfo.size());
+      bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
       
 #if ROTATE_TREE
       if (N == 4)
@@ -260,7 +260,7 @@ namespace embree
         (root,typename BVH::CreateAlloc(bvh),size_t(0),typename BVH::CreateNode(bvh),rotate<N>,createLeafFunc,splitPrimitiveFunc,binnerSplitPrimitiveFunc, progressFunc,
          prims0,extSize,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
-      bvh->set(root,pinfo.geomBounds,pinfo.size());      
+      bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());      
       bvh->layoutLargeNodes(size_t(pinfo.size()*0.005f));
     }
 
