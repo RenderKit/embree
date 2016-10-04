@@ -61,12 +61,14 @@ namespace embree
         Primitive* prim = (Primitive*) prim_i;
         GridSOA* grid = nullptr;
         if (cached) 
-        {
+        {          
           if (pre.grid) SharedLazyTessellationCache::sharedLazyTessellationCache.unlock();
-          grid = (GridSOA*) SharedLazyTessellationCache::lookup(prim->entry(),scene->commitCounterSubdiv,[&] () {
-              auto alloc = [] (const size_t bytes) { return SharedLazyTessellationCache::sharedLazyTessellationCache.malloc(bytes); };
-              return GridSOA::create((SubdivPatch1Base*)prim,1,scene,alloc);
-            });
+          do {
+            grid = (GridSOA*) SharedLazyTessellationCache::lookup(prim->entry(),scene->commitCounterSubdiv,[&] () {
+                auto alloc = [] (const size_t bytes) { return SharedLazyTessellationCache::sharedLazyTessellationCache.malloc(bytes); };
+                return GridSOA::create((SubdivPatch1Base*)prim,1,scene,alloc);
+              });
+          } while(grid == nullptr);
         }
         else {
           grid = (GridSOA*) prim->root_ref.data;
@@ -111,14 +113,20 @@ namespace embree
         if (cached) 
         {
           if (pre.grid) SharedLazyTessellationCache::sharedLazyTessellationCache.unlock();
-          grid = (GridSOA*) SharedLazyTessellationCache::lookup(prim->entry(),scene->commitCounterSubdiv,[&] () {
-              auto alloc = [] (const size_t bytes) { return SharedLazyTessellationCache::sharedLazyTessellationCache.malloc(bytes); };
-              return GridSOA::create((SubdivPatch1Base*)prim,(unsigned)scene->numTimeSteps,scene,alloc);
-            });
+          do {
+            grid = (GridSOA*) SharedLazyTessellationCache::lookup(prim->entry(),scene->commitCounterSubdiv,[&] () {
+                auto alloc = [] (const size_t bytes) { return SharedLazyTessellationCache::sharedLazyTessellationCache.malloc(bytes); };
+                return GridSOA::create((SubdivPatch1Base*)prim,(unsigned)scene->numTimeSteps,scene,alloc);
+              });
+            if (grid == nullptr)
+              SharedLazyTessellationCache::sharedLazyTessellationCache.unlock();
+
+          } while(grid == nullptr);
         }
         else {
           grid = (GridSOA*) prim->root_ref.data;
         }
+        assert(grid);
         lazy_node = grid->root(pre.itime());
         pre.grid = grid;
         return false;
