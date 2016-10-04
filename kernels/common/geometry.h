@@ -297,6 +297,36 @@ namespace embree
     template<typename simd> __forceinline bool hasISPCOcclusionFilter() const;
 
   public:
+    template<typename GeometryT>
+    __forceinline static std::pair<BBox3fa,BBox3fa> bounds2(const GeometryT* geom, size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal)
+    {
+      if (numTimeStepsGlobal == geom->numTimeSteps)
+      {
+        const BBox3fa bounds0 = geom->bounds(i, itimeGlobal);
+        const BBox3fa bounds1 = geom->bounds(i, itimeGlobal+1);
+        return std::make_pair(bounds0, bounds1);
+      }
+
+      const int timeSegmentRatio = int(numTimeStepsGlobal-1) / int(geom->numTimeSteps-1);
+      const int itime = int(itimeGlobal) / timeSegmentRatio;
+      const int rtime = int(itimeGlobal) % timeSegmentRatio;
+      const float invTimeSegmentRatio = rcp(float(timeSegmentRatio));
+      const float ftime0 = float(rtime) * invTimeSegmentRatio;
+      const float ftime1 = float(rtime+1) * invTimeSegmentRatio;
+
+      const BBox3fa bounds0 = geom->bounds(i, itime);
+      const BBox3fa bounds1 = geom->bounds(i, itime+1);
+      return std::make_pair(lerp(bounds0, bounds1, ftime0), lerp(bounds0, bounds1, ftime1));
+    }
+
+    template<typename GeometryT>
+    __forceinline static bool valid2(const GeometryT* geom, size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal, BBox3fa& bbox) {
+      std::pair<BBox3fa,BBox3fa> bbox2 = bounds2(geom, i, itimeGlobal, numTimeStepsGlobal);
+      bbox = 0.5f * (bbox2.first + bbox2.second);
+      return true;
+    }
+
+  public:
     Scene* parent;             //!< pointer to scene this mesh belongs to
     unsigned id;               //!< internal geometry ID
     Type type;                 //!< geometry type 

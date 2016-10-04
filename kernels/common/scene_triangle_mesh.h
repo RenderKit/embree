@@ -197,6 +197,11 @@ namespace embree
       return true;
     }
 
+    __forceinline std::pair<BBox3fa,BBox3fa> bounds2(size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal) const
+    {
+      return Geometry::bounds2(this, i, itimeGlobal, numTimeStepsGlobal);
+    }
+
     /*! check if the i'th primitive is valid at itime'th time segment */
     __forceinline bool valid2(size_t i, size_t itime, BBox3fa& bbox) const
     {
@@ -216,6 +221,11 @@ namespace embree
       /* use bounds of first time step in builder */
       bbox = BBox3fa(min(a0,a1,a2),max(a0,a1,a2));
       return true;
+    }
+
+    __forceinline bool valid2(size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal, BBox3fa& bbox) const
+    {
+      return Geometry::valid2(this, i, itimeGlobal, numTimeStepsGlobal, bbox);
     }
     
   public:

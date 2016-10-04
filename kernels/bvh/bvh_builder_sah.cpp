@@ -535,7 +535,7 @@ namespace embree
 	BBox3fa bounds0 = empty;
 	BBox3fa bounds1 = empty;
         for (size_t i=0; i<items; i++) {
-          auto bounds = accel[i].fill_mblur(prims,start,current.prims.end(),bvh->scene,false,time);
+          auto bounds = accel[i].fill_mblur(prims,start,current.prims.end(),bvh->scene,false,time,bvh->numTimeSteps);
 	  bounds0.extend(bounds.first);
 	  bounds1.extend(bounds.second);
         }
@@ -592,7 +592,7 @@ namespace embree
         {
           /* call BVH builder */
           NodeRef root; std::pair<BBox3fa,BBox3fa> tbounds;
-          const PrimInfo pinfo = createPrimRefArrayMBlur<Mesh>(t,scene,prims,bvh->scene->progressInterface);
+          const PrimInfo pinfo = createPrimRefArrayMBlur<Mesh>(t,bvh->numTimeSteps,scene,prims,bvh->scene->progressInterface);
           std::tie(root, tbounds) = BVHNBuilderMblur<N>::build(bvh,CreateMSMBlurLeaf<N,Primitive>(bvh,prims.data(),t),bvh->scene->progressInterface,prims.data(),pinfo,
                                                               sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
           roots[t] = root;

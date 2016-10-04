@@ -130,8 +130,21 @@ namespace embree
       return std::make_pair(bounds(scene,itime+0),bounds(scene,itime+1));
     }
 
+    __forceinline std::pair<BBox3fa,BBox3fa> bounds2(const Scene *const scene, size_t itime, size_t numTimeSteps) {
+      BBox3fa bounds0 = empty;
+      BBox3fa bounds1 = empty;
+      for (size_t i=0; i<M && valid(i); i++)
+      {
+        const TriangleMesh* mesh = scene->getTriangleMesh(geomID(i));
+        std::pair<BBox3fa,BBox3fa> b = mesh->bounds2(primID(i), itime, numTimeSteps);
+        bounds0.extend(b.first);
+        bounds1.extend(b.second);
+      }
+      return std::make_pair(bounds0, bounds1);
+    }
+
     /* Fill triangle from triangle list */
-    __forceinline std::pair<BBox3fa,BBox3fa> fill_mblur(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list, size_t itime)
+    __forceinline std::pair<BBox3fa,BBox3fa> fill_mblur(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list, size_t itime, size_t numTimeSteps)
     {
       vint<M> geomID = -1, primID = -1;
       vint<M> v0 = zero, v1 = zero, v2 = zero;
@@ -160,7 +173,7 @@ namespace embree
       }
 
       new (this) TriangleMiMB(v0,v1,v2,geomID,primID); // FIXME: use non temporal store
-      return bounds2(scene,itime);
+      return bounds2(scene,itime,numTimeSteps);
     }
 
     /* Updates the primitive */
