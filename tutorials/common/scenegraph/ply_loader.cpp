@@ -64,12 +64,19 @@ namespace embree
     /* compute the type of a string */
     Type::Tag typeTagOfString(const std::string& ty) {
       if (ty == "char") return Type::PTY_CHAR;
+      if (ty == "int8") return Type::PTY_CHAR;
       if (ty == "uchar") return Type::PTY_UCHAR;
+      if (ty == "uint8") return Type::PTY_UCHAR;
       if (ty == "short") return Type::PTY_SHORT;
+      if (ty == "int16") return Type::PTY_SHORT;
       if (ty == "ushort") return Type::PTY_USHORT;
+      if (ty == "uint16") return Type::PTY_USHORT;
       if (ty == "int") return Type::PTY_INT;
+      if (ty == "int32") return Type::PTY_INT;
       if (ty == "uint") return Type::PTY_UINT;
+      if (ty == "uint32") return Type::PTY_UINT;
       if (ty == "float") return Type::PTY_FLOAT;
+      if (ty == "float32") return Type::PTY_FLOAT;
       if (ty == "double") return Type::PTY_DOUBLE;
       throw std::runtime_error("invalid type " + ty);
       return Type::PTY_NONE;
@@ -148,8 +155,12 @@ namespace embree
           
           std::string tag; line >> tag;
           
+          /* ignore comments */
+          if (tag == "comment") {
+          }
+          
           /* parse format */
-          if (tag == "format")  
+          else if (tag == "format")  
           {
             std::string fmt; line >> fmt;
             if (fmt == "ascii") format = ASCII;
