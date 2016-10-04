@@ -174,6 +174,17 @@ namespace embree
       return BBox3fa(min(v0,v1,v2),max(v0,v1,v2));
     }
 
+    /*! calculates the bounds of the i'th triangle at the itime'th time segment */
+    __forceinline std::pair<BBox3fa,BBox3fa> bounds2(size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal) const
+    {
+      std::pair<BBox3fa,BBox3fa> bbox2;
+      Geometry::bounds2(itimeGlobal, numTimeStepsGlobal, numTimeSteps,
+                        [&] (size_t itime) { return bounds(i, itime); },
+                        [&] (size_t itime) { return true; },
+                        bbox2);
+      return bbox2;
+    }
+
     /*! check if the i'th primitive is valid at the itime'th timestep */
     __forceinline bool valid(size_t i, size_t itime) const
     {
@@ -214,16 +225,6 @@ namespace embree
       return true;
     }
 
-    __forceinline std::pair<BBox3fa,BBox3fa> bounds2(size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal) const
-    {
-      std::pair<BBox3fa,BBox3fa> bbox2;
-      Geometry::bounds2(itimeGlobal, numTimeStepsGlobal, numTimeSteps,
-                        [&] (size_t itime) { return bounds(i, itime); },
-                        [&] (size_t itime) { return true; },
-                        bbox2);
-      return bbox2;
-    }
-
     /*! check if the i'th primitive is valid at itime'th time segment */
     __forceinline bool valid2(size_t i, size_t itime, BBox3fa& bbox) const
     {
@@ -245,6 +246,7 @@ namespace embree
       return true;
     }
 
+    /*! check if the i'th primitive is valid at itime'th time segment */
     __forceinline bool valid2(size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal, BBox3fa& bbox) const
     {
       std::pair<BBox3fa,BBox3fa> bbox2;

@@ -76,46 +76,77 @@ namespace embree
       return quads[i];
     }
 
-    /*! returns i'th vertex of j'th timestep */
+    /*! returns i'th vertex of itime'th timestep */
     __forceinline const Vec3fa vertex(size_t i) const {
       return vertices0[i];
     }
 
-    /*! returns i'th vertex of j'th timestep */
+    /*! returns i'th vertex of itime'th timestep */
     __forceinline const char* vertexPtr(size_t i) const {
       return vertices0.getPtr(i);
     }
 
-    /*! returns i'th vertex of j'th timestep */
-    __forceinline const Vec3fa vertex(size_t i, size_t j) const {
-      return vertices[j][i];
+    /*! returns i'th vertex of itime'th timestep */
+    __forceinline const Vec3fa vertex(size_t i, size_t itime) const {
+      return vertices[itime][i];
     }
 
-    /*! returns i'th vertex of j'th timestep */
-    __forceinline const char* vertexPtr(size_t i, size_t j) const {
-      return vertices[j].getPtr(i);
+    /*! returns i'th vertex of itime'th timestep */
+    __forceinline const char* vertexPtr(size_t i, size_t itime) const {
+      return vertices[itime].getPtr(i);
     }
 
     /*! calculates the bounds of the i'th quad */
     __forceinline BBox3fa bounds(size_t i) const 
     {
       const Quad& q = quad(i);
-      const Vec3fa v0  = vertex(q.v[0]);
-      const Vec3fa v1  = vertex(q.v[1]);
-      const Vec3fa v2  = vertex(q.v[2]);
-      const Vec3fa v3  = vertex(q.v[3]);
+      const Vec3fa v0 = vertex(q.v[0]);
+      const Vec3fa v1 = vertex(q.v[1]);
+      const Vec3fa v2 = vertex(q.v[2]);
+      const Vec3fa v3 = vertex(q.v[3]);
       return BBox3fa(min(v0,v1,v2,v3),max(v0,v1,v2,v3));
     }
 
-    /*! calculates the bounds of the i'th triangle at the j'th timestep */
-    __forceinline BBox3fa bounds(size_t i, size_t j) const 
+    /*! calculates the bounds of the i'th triangle at the itime'th timestep */
+    __forceinline BBox3fa bounds(size_t i, size_t itime) const
     {
       const Quad& q = quad(i);
-      const Vec3fa v0  = vertex(q.v[0],j);
-      const Vec3fa v1  = vertex(q.v[1],j);
-      const Vec3fa v2  = vertex(q.v[2],j);
-      const Vec3fa v3  = vertex(q.v[3],j);
+      const Vec3fa v0 = vertex(q.v[0],itime);
+      const Vec3fa v1 = vertex(q.v[1],itime);
+      const Vec3fa v2 = vertex(q.v[2],itime);
+      const Vec3fa v3 = vertex(q.v[3],itime);
       return BBox3fa(min(v0,v1,v2,v3),max(v0,v1,v2,v3));
+    }
+
+    /*! calculates the bounds of the i'th triangle at the itime'th time segment */
+    __forceinline std::pair<BBox3fa,BBox3fa> bounds2(size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal) const
+    {
+      std::pair<BBox3fa,BBox3fa> bbox2;
+      Geometry::bounds2(itimeGlobal, numTimeStepsGlobal, numTimeSteps,
+                        [&] (size_t itime) { return bounds(i, itime); },
+                        [&] (size_t itime) { return true; },
+                        bbox2);
+      return bbox2;
+    }
+
+    /*! check if the i'th primitive is valid at the itime'th timestep */
+    __forceinline bool valid(size_t i, size_t itime) const
+    {
+      const Quad& q = quad(i);
+      if (q.v[0] >= numVertices()) return false;
+      if (q.v[1] >= numVertices()) return false;
+      if (q.v[2] >= numVertices()) return false;
+      if (q.v[3] >= numVertices()) return false;
+
+      const Vec3fa v0 = vertex(q.v[0],itime);
+      const Vec3fa v1 = vertex(q.v[1],itime);
+      const Vec3fa v2 = vertex(q.v[2],itime);
+      const Vec3fa v3 = vertex(q.v[3],itime);
+
+      if (unlikely(!isvalid(v0) || !isvalid(v1) || !isvalid(v2) || !isvalid(v3)))
+        return false;
+
+      return true;
     }
 
     /*! check if the i'th primitive is valid */
@@ -144,8 +175,8 @@ namespace embree
       return true;
     }
 
-     /*! check if the i'th primitive is valid at j'th timesegment */
-    __forceinline bool valid2(size_t i, size_t j, BBox3fa& bbox) const 
+    /*! check if the i'th primitive is valid at itime'th timesegment */
+    __forceinline bool valid2(size_t i, size_t itime, BBox3fa& bbox) const
     {
       const Quad& q = quad(i);
       if (unlikely(q.v[0] >= numVertices())) return false;
@@ -153,18 +184,32 @@ namespace embree
       if (unlikely(q.v[2] >= numVertices())) return false;
       if (unlikely(q.v[3] >= numVertices())) return false;
 
-      assert(j+1 < numTimeSteps);
-      const Vec3fa a0 = vertex(q.v[0],j+0); if (unlikely(!isvalid(a0))) return false;
-      const Vec3fa a1 = vertex(q.v[1],j+0); if (unlikely(!isvalid(a1))) return false;
-      const Vec3fa a2 = vertex(q.v[2],j+0); if (unlikely(!isvalid(a2))) return false;
-      const Vec3fa a3 = vertex(q.v[3],j+0); if (unlikely(!isvalid(a3))) return false;
-      const Vec3fa b0 = vertex(q.v[0],j+1); if (unlikely(!isvalid(b0))) return false;
-      const Vec3fa b1 = vertex(q.v[1],j+1); if (unlikely(!isvalid(b1))) return false;
-      const Vec3fa b2 = vertex(q.v[2],j+1); if (unlikely(!isvalid(b2))) return false;
-      const Vec3fa b3 = vertex(q.v[3],j+1); if (unlikely(!isvalid(b3))) return false;
+      assert(itime+1 < numTimeSteps);
+      const Vec3fa a0 = vertex(q.v[0],itime+0); if (unlikely(!isvalid(a0))) return false;
+      const Vec3fa a1 = vertex(q.v[1],itime+0); if (unlikely(!isvalid(a1))) return false;
+      const Vec3fa a2 = vertex(q.v[2],itime+0); if (unlikely(!isvalid(a2))) return false;
+      const Vec3fa a3 = vertex(q.v[3],itime+0); if (unlikely(!isvalid(a3))) return false;
+      const Vec3fa b0 = vertex(q.v[0],itime+1); if (unlikely(!isvalid(b0))) return false;
+      const Vec3fa b1 = vertex(q.v[1],itime+1); if (unlikely(!isvalid(b1))) return false;
+      const Vec3fa b2 = vertex(q.v[2],itime+1); if (unlikely(!isvalid(b2))) return false;
+      const Vec3fa b3 = vertex(q.v[3],itime+1); if (unlikely(!isvalid(b3))) return false;
       
       /* use bounds of first time step in builder */
       bbox = BBox3fa(min(a0,a1,a2,a3),max(a0,a1,a2,a3));
+      return true;
+    }
+
+    /*! check if the i'th primitive is valid at itime'th time segment */
+    __forceinline bool valid2(size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal, BBox3fa& bbox) const
+    {
+      std::pair<BBox3fa,BBox3fa> bbox2;
+      if (!Geometry::bounds2(itimeGlobal, numTimeStepsGlobal, numTimeSteps,
+                             [&] (size_t itime) { return bounds(i, itime); },
+                             [&] (size_t itime) { return valid(i, itime); },
+                             bbox2))
+        return false;
+
+      bbox = 0.5f * (bbox2.first + bbox2.second);
       return true;
     }
     
