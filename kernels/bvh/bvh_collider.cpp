@@ -49,6 +49,10 @@ namespace embree
       unsigned primID1;
     };
 
+    __forceinline float T(float pa0, float pa1, float da0, float da1) {
+      return pa0 + (pa1-pa0)*da0/(da0-da1);
+    }
+
     bool intersect_triangle_triangle (const Vec3fa& a0, const Vec3fa& a1, const Vec3fa& a2,
                                       const Vec3fa& b0, const Vec3fa& b1, const Vec3fa& b2)
     {
@@ -61,22 +65,40 @@ namespace embree
       const float  Cb = dot(Nb,b0);
       
       /* project triangle A onto plane B */
-      const float a0Nb = dot(Nb,a0)-Cb;
-      const float a1Nb = dot(Nb,a1)-Cb;
-      const float a2Nb = dot(Nb,a2)-Cb;
-      if (max(a0Nb,a1Nb,a2Nb) < -eps) return false;
-      if (min(a0Nb,a1Nb,a2Nb) > +eps) return false;
+      const float da0 = dot(Nb,a0)-Cb;
+      const float da1 = dot(Nb,a1)-Cb;
+      const float da2 = dot(Nb,a2)-Cb;
+      if (max(da0,da1,da2) < -eps) return false;
+      if (min(da0,da1,da2) > +eps) return false;
       CSTAT(bvh_collide_prim_intersections4++);
 
       /* project triangle B onto plane A */
-      const float b0Nb = dot(Na,b0)-Ca;
-      const float b1Nb = dot(Na,b1)-Ca;
-      const float b2Nb = dot(Na,b2)-Ca;
-      if (max(b0Nb,b1Nb,b2Nb) < -eps) return false;
-      if (min(b0Nb,b1Nb,b2Nb) > +eps) return false;
+      const float db0 = dot(Na,b0)-Ca;
+      const float db1 = dot(Na,b1)-Ca;
+      const float db2 = dot(Na,b2)-Ca;
+      if (max(db0,db1,db2) < -eps) return false;
+      if (min(db0,db1,db2) > +eps) return false;
       CSTAT(bvh_collide_prim_intersections5++);
 
-      return true;
+      const Vec3fa D = cross(Na,Nb);
+      const float pa0 = dot(D,a0);
+      const float pa1 = dot(D,a1);
+      const float pa2 = dot(D,a2);
+      const float pb0 = dot(D,b0);
+      const float pb1 = dot(D,b1);
+      const float pb2 = dot(D,b2);
+
+      BBox1f ba = empty;
+      if (da0*da1 < 0.0f) ba.extend(T(pa0,pa1,da0,da1));
+      if (da1*da2 < 0.0f) ba.extend(T(pa1,pa2,da1,da2));
+      if (da2*da0 < 0.0f) ba.extend(T(pa2,pa0,da2,da0));
+
+      BBox1f bb = empty;
+      if (db0*db1 < 0.0f) bb.extend(T(pb0,pb1,db0,db1));
+      if (db1*db2 < 0.0f) bb.extend(T(pb1,pb2,db1,db2));
+      if (db2*db0 < 0.0f) bb.extend(T(pb2,pb0,db2,db0));
+
+      return conjoint(ba,bb);
     }                              
 
     bool intersect_triangle_triangle (Scene* scene0, unsigned geomID0, unsigned primID0, Scene* scene1, unsigned geomID1, unsigned primID1)
