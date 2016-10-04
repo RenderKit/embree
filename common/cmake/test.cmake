@@ -126,7 +126,7 @@ ENDMACRO()
 
 IF (EMBREE_TESTING_MEMCHECK)
   find_program( EMBREE_MEMORYCHECK_COMMAND valgrind )
-  set( EMBREE_MEMORYCHECK_COMMAND_OPTIONS "--trace-children=yes --leak-check=full" )
+  set( EMBREE_MEMORYCHECK_COMMAND_OPTIONS "--trace-children=yes --leak-check=full --error-exitcode=1" )
 
   FUNCTION(ADD_MEMCHECK_TEST name binary)
     set(memcheck_command "${EMBREE_MEMORYCHECK_COMMAND} ${EMBREE_MEMORYCHECK_COMMAND_OPTIONS}")
