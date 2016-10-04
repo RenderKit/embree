@@ -28,7 +28,7 @@ IF (EMBREE_TESTING_MEMCHECK AND EMBREE_MEMORYCHECK_COMMAND)
      --skip .*AVX512KNL.*         # valgrind does not support AVX512KNL
      --skip .*AVX512SKX.*         # valgrind does not support AVX512SKX
   )
-  set_tests_properties(verify_memcheck PROPERTIES TIMEOUT 3000)
+  set_tests_properties(verify_memcheck PROPERTIES TIMEOUT 10800)
 ENDIF()
 
 IF (EMBREE_TESTING_BENCHMARK)
