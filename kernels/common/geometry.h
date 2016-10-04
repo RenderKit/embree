@@ -307,16 +307,44 @@ namespace embree
         return std::make_pair(bounds0, bounds1);
       }
 
-      const int timeSegmentRatio = int(numTimeStepsGlobal-1) / int(geom->numTimeSteps-1);
-      const int itime = int(itimeGlobal) / timeSegmentRatio;
-      const int rtime = int(itimeGlobal) % timeSegmentRatio;
-      const float invTimeSegmentRatio = rcp(float(timeSegmentRatio));
-      const float ftime0 = float(rtime) * invTimeSegmentRatio;
-      const float ftime1 = float(rtime+1) * invTimeSegmentRatio;
+      const int timeSegments = int(geom->numTimeSteps-1);
+      const int timeSegmentsGlobal = int(numTimeStepsGlobal-1);
+      const float invTimeSegmentsGlobal = rcp(float(timeSegmentsGlobal));
 
-      const BBox3fa bounds0 = geom->bounds(i, itime);
-      const BBox3fa bounds1 = geom->bounds(i, itime+1);
-      return std::make_pair(lerp(bounds0, bounds1, ftime0), lerp(bounds0, bounds1, ftime1));
+      const int itimeScaled = int(itimeGlobal) * timeSegments;
+
+      const int itime0 = itimeScaled / timeSegmentsGlobal;
+      const int rtime0 = itimeScaled % timeSegmentsGlobal;
+      const float ftime0 = float(rtime0) * invTimeSegmentsGlobal;
+
+      const int rtime1 = rtime0 + timeSegments;
+      if (rtime1 <= timeSegmentsGlobal)
+      {
+        const float ftime1 = float(rtime1) * invTimeSegmentsGlobal;
+
+        const BBox3fa b0 = geom->bounds(i, itime0);
+        const BBox3fa b1 = geom->bounds(i, itime0+1);
+        return std::make_pair(lerp(b0, b1, ftime0), lerp(b0, b1, ftime1));
+      }
+
+      const float ftime1 = float(rtime1-timeSegmentsGlobal) * invTimeSegmentsGlobal;
+
+      const BBox3fa b0 = geom->bounds(i, itime0);
+      const BBox3fa b1 = geom->bounds(i, itime0+1);
+      const BBox3fa b2 = geom->bounds(i, itime0+2);
+
+      BBox3fa bounds0 = lerp(b0, b1, ftime0);
+      BBox3fa bounds1 = lerp(b1, b2, ftime1);
+
+      const BBox3fa b1Lerp = lerp(bounds0, bounds1, float(timeSegmentsGlobal-rtime0) * rcp(float(timeSegments)));
+
+      bounds0.lower = min(bounds0.lower, bounds0.lower - (b1Lerp.lower - b1.lower));
+      bounds1.lower = min(bounds1.lower, bounds1.lower - (b1Lerp.lower - b1.lower));
+
+      bounds0.upper = max(bounds0.upper, bounds0.upper + (b1.upper - b1Lerp.upper));
+      bounds1.upper = max(bounds1.upper, bounds1.upper + (b1.upper - b1Lerp.upper));
+
+      return std::make_pair(bounds0, bounds1);
     }
 
     template<typename GeometryT>
