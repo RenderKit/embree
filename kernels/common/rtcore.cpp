@@ -392,6 +392,39 @@ namespace embree
     RTCORE_CATCH_END(scene->device);
   }
 
+  RTCORE_API void rtcIntersect1Mp (RTCScene hscene, const RTCIntersectContext* user_context, RTCRay** rays, const size_t M) 
+  {
+    Scene* scene = (Scene*) hscene;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcIntersect1Mp);
+
+#if defined (EMBREE_RAY_PACKETS)
+#if defined(DEBUG)
+    RTCORE_VERIFY_HANDLE(hscene);
+    if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)rays ) & 0x03) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 4 bytes");   
+#endif
+    STAT3(normal.travs,M,M,M);
+    IntersectContext context(user_context);
+
+    /* fast codepath for single rays */
+    if (likely(M == 1)) {
+      if (likely(rays[0]->tnear <= rays[0]->tfar)) 
+        scene->intersect(*rays[0],&context);
+    } 
+
+    /* codepath for streams */
+    else {
+      scene->device->rayStreamFilters.filterAOP(scene,rays,M,&context,true);   
+    }
+#else
+    throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect1Mp not supported");
+#endif
+    RTCORE_CATCH_END(scene->device);
+  }
+
+
+
   RTCORE_API void rtcIntersectNM (RTCScene hscene, const RTCIntersectContext* user_context, struct RTCRayN* rays, const size_t N, const size_t M, const size_t stride) 
   {
     Scene* scene = (Scene*) hscene;
@@ -582,6 +615,38 @@ namespace embree
 #endif
     RTCORE_CATCH_END(scene->device);
   }
+
+
+  RTCORE_API void rtcOccluded1Mp(RTCScene hscene, const RTCIntersectContext* user_context, RTCRay** rays, const size_t M) 
+  {
+    Scene* scene = (Scene*) hscene;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcOccluded1Mp);
+
+#if defined (EMBREE_RAY_PACKETS)
+#if defined(DEBUG)
+    RTCORE_VERIFY_HANDLE(hscene);
+    if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)rays ) & 0x03) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 4 bytes");   
+#endif
+    STAT3(shadow.travs,M,M,M);
+    IntersectContext context(user_context);
+
+    /* fast codepath for streams of size 1 */
+    if (likely(M == 1)) {
+      if (likely(rays[0]->tnear <= rays[0]->tfar)) 
+        scene->occluded (*rays[0],&context);
+    } 
+    /* codepath for normal streams */
+    else {
+      scene->device->rayStreamFilters.filterAOP(scene,rays,M,&context,false);
+    }
+#else
+    throw_RTCError(RTC_INVALID_OPERATION,"rtcOccluded1Mp not supported");
+#endif
+    RTCORE_CATCH_END(scene->device);
+  }
+
 
   RTCORE_API void rtcOccludedNM(RTCScene hscene, const RTCIntersectContext* user_context, RTCRayN* rays, const size_t N, const size_t M, const size_t stride) 
   {
