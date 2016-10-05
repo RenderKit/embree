@@ -81,19 +81,19 @@ namespace embree
       return vertices0[i].w;
     }
 
-    /*! returns i'th vertex of j'th timestep */
-    __forceinline Vec3fa vertex(size_t i, size_t j) const {
-      return vertices[j][i];
+    /*! returns i'th vertex of itime'th timestep */
+    __forceinline Vec3fa vertex(size_t i, size_t itime) const {
+      return vertices[itime][i];
     }
 
-    /*! returns i'th vertex of j'th timestep */
-    __forceinline const char* vertexPtr(size_t i, size_t j) const {
-      return vertices[j].getPtr(i);
+    /*! returns i'th vertex of itime'th timestep */
+    __forceinline const char* vertexPtr(size_t i, size_t itime) const {
+      return vertices[itime].getPtr(i);
     }
 
-    /*! returns i'th radius of j'th timestep */
-    __forceinline float radius(size_t i, size_t j) const {
-      return vertices[j][i].w;
+    /*! returns i'th radius of itime'th timestep */
+    __forceinline float radius(size_t i, size_t itime) const {
+      return vertices[itime][i].w;
     }
 
     /*! calculates bounding box of i'th line segment */
@@ -108,25 +108,36 @@ namespace embree
       return enlarge(b,Vec3fa(max(r0,r1)));
     }
 
-    /*! calculates bounding box of i'th line segment for the j'th time step */
-    __forceinline BBox3fa bounds(size_t i, size_t j) const
+    /*! calculates bounding box of i'th line segment for the itime'th time step */
+    __forceinline BBox3fa bounds(size_t i, size_t itime) const
     {
       const unsigned int index = segment(i);
-      const float r0 = radius(index+0,j);
-      const float r1 = radius(index+1,j);
-      const Vec3fa v0 = vertex(index+0,j);
-      const Vec3fa v1 = vertex(index+1,j);
+      const float r0 = radius(index+0,itime);
+      const float r1 = radius(index+1,itime);
+      const Vec3fa v0 = vertex(index+0,itime);
+      const Vec3fa v1 = vertex(index+1,itime);
       const BBox3fa b = merge(BBox3fa(v0),BBox3fa(v1));
       return enlarge(b,Vec3fa(max(r0,r1)));
     }
 
-    /*! check if the i'th primitive is valid at the j'th time step */
-    __forceinline bool valid1(size_t i, size_t j) const
+    /*! calculates the bounds of the i'th line segment at the itime'th time segment */
+    __forceinline std::pair<BBox3fa,BBox3fa> bounds2(size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal) const
+    {
+      std::pair<BBox3fa,BBox3fa> bbox2;
+      Geometry::bounds2(itimeGlobal, numTimeStepsGlobal, numTimeSteps,
+                        [&] (size_t itime) { return bounds(i, itime); },
+                        [&] (size_t itime) { return true; },
+                        bbox2);
+      return bbox2;
+    }
+
+    /*! check if the i'th primitive is valid at the itime'th time step */
+    __forceinline bool valid1(size_t i, size_t itime) const
     {
       const unsigned int index = segment(i);
       if (index+1 >= numVertices()) return false;
-      const Vec3fa v0 = vertex(index+0,j); if (unlikely(!isvalid((vfloat4)v0))) return false;
-      const Vec3fa v1 = vertex(index+1,j); if (unlikely(!isvalid((vfloat4)v1))) return false;
+      const Vec3fa v0 = vertex(index+0,itime); if (unlikely(!isvalid((vfloat4)v0))) return false;
+      const Vec3fa v1 = vertex(index+1,itime); if (unlikely(!isvalid((vfloat4)v1))) return false;
       if (min(v0.w,v1.w) < 0.0f) return false;
       return true;
     }
@@ -139,11 +150,25 @@ namespace embree
       return true;
     }
 
-    /*! check if the i'th primitive is valid at the j'th time segment */
-    __forceinline bool valid2(size_t i, size_t j, BBox3fa& bbox) const 
+    /*! check if the i'th primitive is valid at the itime'th time segment */
+    __forceinline bool valid2(size_t i, size_t itime, BBox3fa& bbox) const
     {
-      if (!valid1(i,j+0) || !valid1(i,j+1)) return false;
-      bbox = bounds(i,j);  // use bounds of first time step in builder
+      if (!valid1(i,itime+0) || !valid1(i,itime+1)) return false;
+      bbox = bounds(i,itime);  // use bounds of first time step in builder
+      return true;
+    }
+
+    /*! check if the i'th primitive is valid at itime'th time segment */
+    __forceinline bool valid2(size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal, BBox3fa& bbox) const
+    {
+      std::pair<BBox3fa,BBox3fa> bbox2;
+      if (!Geometry::bounds2(itimeGlobal, numTimeStepsGlobal, numTimeSteps,
+                             [&] (size_t itime) { return bounds(i, itime); },
+                             [&] (size_t itime) { return valid1(i, itime); },
+                             bbox2))
+        return false;
+
+      bbox = 0.5f * (bbox2.first + bbox2.second);
       return true;
     }
 
