@@ -524,7 +524,7 @@ namespace embree
     if (state == GLUT_UP) 
     {
       mouseMode = 0;
-      if (button == GLUT_LEFT_BUTTON && glutGetModifiers() == GLUT_ACTIVE_SHIFT) 
+      if (button == GLUT_LEFT_BUTTON && glutGetModifiers() == (GLUT_ACTIVE_CTRL | GLUT_ACTIVE_SHIFT)) 
       {
         ISPCCamera ispccamera = camera.getISPCCamera(width,height);
         Vec3fa p; bool hit = device_pick(float(x),float(y),ispccamera,p);

@@ -169,7 +169,9 @@ namespace embree
 
     void render(unsigned* pixels, const unsigned width, const unsigned height, const float time, const ISPCCamera& camera) 
     {
+      //for (volatile int i=0; i<10000000; i++);
       if (!pause) updateScene();
+      else PRINT(cur_time);
       collision_candidates.clear();
       rtcCollide(g_scene,g_scene,CollideFunc,nullptr);
       device_render(pixels,width,height,time,camera);
