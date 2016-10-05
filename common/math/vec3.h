@@ -162,10 +162,11 @@ namespace embree
 
   template<typename T> __forceinline int maxDim ( const Vec3<T>& a )
   {
-    if (a.x > a.y) {
-      if (a.x > a.z) return 0; else return 2;
+    const Vec3<T> b = abs(a);
+    if (b.x > b.y) {
+      if (b.x > b.z) return 0; else return 2;
     } else {
-      if (a.y > a.z) return 1; else return 2;
+      if (b.y > b.z) return 1; else return 2;
     }
   }
 
