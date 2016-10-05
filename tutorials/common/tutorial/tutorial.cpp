@@ -377,7 +377,7 @@ namespace embree
       for (size_t i=0; i<skipBenchmarkFrames; i++) 
       {
         double t0 = getSeconds();
-        device_render(pixels,width,height,0.0f,ispccamera);
+        render(pixels,width,height,0.0f,ispccamera);
         double t1 = getSeconds();
         std::cout << "frame [" << std::setw(3) << i << " / " << std::setw(3) << numTotalFrames << "]: " <<  std::setw(8) << 1.0/(t1-t0) << " fps (skipped)" << std::endl << std::flush;
         if (benchmarkSleep) sleepSeconds(0.1);
@@ -386,7 +386,7 @@ namespace embree
       for (size_t i=skipBenchmarkFrames; i<numTotalFrames; i++) 
       {
         double t0 = getSeconds();
-        device_render(pixels,width,height,0.0f,ispccamera);
+        render(pixels,width,height,0.0f,ispccamera);
         double t1 = getSeconds();
 
         float fr = float(1.0/(t1-t0));
@@ -431,7 +431,7 @@ namespace embree
   {
     resize(width,height);
     ISPCCamera ispccamera = camera.getISPCCamera(width,height);
-    device_render(pixels,width,height,0.0f,ispccamera);
+    render(pixels,width,height,0.0f,ispccamera);
     Ref<Image> image = new Image4uc(width, height, (Col4uc*)pixels);
     storeImage(image, fileName);
   }
@@ -574,7 +574,7 @@ namespace embree
     
     /* render image using ISPC */
     double t0 = getSeconds();
-    device_render(pixels,width,height,float(time0-t0),ispccamera);
+    render(pixels,width,height,float(time0-t0),ispccamera);
     double dt0 = getSeconds()-t0;
 
     /* draw pixels to screen */
@@ -657,6 +657,10 @@ namespace embree
   }
   void idleFunc() {
     TutorialApplication::instance->idleFunc();
+  }
+
+  void TutorialApplication::render(unsigned* pixels, const unsigned width, const unsigned height, const float time, const ISPCCamera& camera) {
+    device_render(pixels,width,height,time,camera);
   }
 
   void TutorialApplication::run(int argc, char** argv)

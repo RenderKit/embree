@@ -22,16 +22,9 @@
 
 namespace embree {
 
-extern TutorialScene g_tutorial_scene0;
-extern TutorialScene g_tutorial_scene1;
-
-extern RTCScene g_scene; // unused
 extern RTCDevice g_device;
-extern RTCScene g_scene0;
-extern RTCScene g_scene1;
-
-extern std::set<std::pair<unsigned,unsigned>> set0;
-extern std::set<std::pair<unsigned,unsigned>> set1;
+extern RTCScene g_scene;
+extern std::set<std::pair<unsigned,unsigned>> collision_candidates;
 
 /* task that renders a single screen tile */
 Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
@@ -48,21 +41,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
   ray.time = 0.0f;
 
   /* intersect ray with scene */
-  unsigned sceneID = 0;
-  rtcIntersect(g_scene0,ray);
-  if (g_scene1) {
-    unsigned geomID0 = ray.geomID; 
-    ray.geomID = RTC_INVALID_GEOMETRY_ID;
-    rtcIntersect(g_scene1,ray);
-    if (ray.geomID != RTC_INVALID_GEOMETRY_ID) {
-      sceneID = 1;
-    } else {
-      ray.geomID = geomID0;
-      if (ray.geomID != RTC_INVALID_GEOMETRY_ID) {
-        sceneID = 0;
-      }
-    }
-  }
+  rtcIntersect(g_scene,ray);
 
   /* shade background black */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
@@ -71,15 +50,9 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
 
   /* shade all rays that hit something */
   Vec3fa color(0,0,0);
-  if (sceneID == 0) {
-    color = Vec3fa(1.0f,0.0f,0.0f);
-    if (set0.find(std::make_pair(ray.geomID,ray.primID)) != set0.end())
-      color = Vec3fa(1.0f,1.0f,0.0f);
-  } else {
-    color = Vec3fa(0.0f,0.0f,1.0f);
-    if (set1.find(std::make_pair(ray.geomID,ray.primID)) != set1.end())
-      color = Vec3fa(0.0f,1.0f,1.0f);
-  }
+  color = Vec3fa(1.0f,0.0f,0.0f);
+  if (collision_candidates.find(std::make_pair(ray.geomID,ray.primID)) != collision_candidates.end())
+    color = Vec3fa(1.0f,1.0f,0.0f);
 
   return color*abs(dot(neg(ray.dir),normalize(ray.Ng)));
 }
@@ -129,10 +102,6 @@ void renderTileTask (int taskIndex, int* pixels,
 /* called by the C++ code for initialization */
 extern "C" void device_init (char* cfg)
 {
-  /* create new Embree device */
-  //g_device = rtcNewDevice(cfg);
-  //error_handler(rtcDeviceGetError(g_device));
-
   /* set error handler */
   rtcDeviceSetErrorFunction(g_device,error_handler);
 
@@ -159,8 +128,7 @@ extern "C" void device_render (int* pixels,
 /* called by the C++ code for cleanup */
 extern "C" void device_cleanup ()
 {
-  rtcDeleteScene (g_scene0); g_scene0 = nullptr;
-  rtcDeleteScene (g_scene1); g_scene1 = nullptr;
+  rtcDeleteScene (g_scene); g_scene = nullptr;
   rtcDeleteDevice(g_device); g_device = nullptr;
 }
 

@@ -23,12 +23,16 @@ namespace embree
 {
   RTCDevice g_device = nullptr;
   RTCScene g_scene = nullptr;
-  RTCScene g_scene0 = nullptr;
-  RTCScene g_scene1 = nullptr;
-  TutorialScene g_tutorial_scene0;
-  TutorialScene g_tutorial_scene1;
-  std::set<std::pair<unsigned,unsigned>> set0;
-  std::set<std::pair<unsigned,unsigned>> set1;
+  std::shared_ptr<TutorialScene> g_tutorial_scene = nullptr;
+  size_t cur_time = 0;
+  std::vector<std::shared_ptr<TutorialScene>> g_animation;
+  std::set<std::pair<unsigned,unsigned>> collision_candidates;
+  //RTCScene g_scene0 = nullptr;
+  //RTCScene g_scene1 = nullptr;
+  //TutorialScene g_tutorial_scene0;
+  //TutorialScene g_tutorial_scene1;
+  //std::set<std::pair<unsigned,unsigned>> set0;
+  //std::set<std::pair<unsigned,unsigned>> set1;
 
   size_t skipBenchmarkRounds = 0;
   size_t numBenchmarkRounds = 0;
@@ -48,22 +52,20 @@ namespace embree
       const unsigned geomID1 = collisions[i].geomID1;
       const unsigned primID1 = collisions[i].primID1;
       //PRINT4(geomID0,primID0,geomID1,primID1);
-      set0.insert(std::make_pair(geomID0,primID0));
-      set1.insert(std::make_pair(geomID1,primID1));
+      collision_candidates.insert(std::make_pair(geomID0,primID0));
+      collision_candidates.insert(std::make_pair(geomID1,primID1));
+      //set0.insert(std::make_pair(geomID0,primID0));
+      //set1.insert(std::make_pair(geomID1,primID1));
 
       /* verify result */
-      Ref<TutorialScene::TriangleMesh> mesh0 = g_tutorial_scene0.geometries[geomID0].dynamicCast<TutorialScene::TriangleMesh>();
+      Ref<TutorialScene::TriangleMesh> mesh0 = g_tutorial_scene->geometries[geomID0].dynamicCast<TutorialScene::TriangleMesh>();
       TutorialScene::Triangle tri0 = mesh0->triangles[primID0];
       BBox3fa bounds0 = empty;
       bounds0.extend(mesh0->positions[tri0.v0]);
       bounds0.extend(mesh0->positions[tri0.v1]);
       bounds0.extend(mesh0->positions[tri0.v2]);
 
-      Ref<TutorialScene::TriangleMesh> mesh1 = 
-        g_scene1 ? 
-        g_tutorial_scene1.geometries[geomID1].dynamicCast<TutorialScene::TriangleMesh>() :
-        g_tutorial_scene0.geometries[geomID1].dynamicCast<TutorialScene::TriangleMesh>();
-
+      Ref<TutorialScene::TriangleMesh> mesh1 = g_tutorial_scene->geometries[geomID1].dynamicCast<TutorialScene::TriangleMesh>();
       TutorialScene::Triangle tri1 = mesh1->triangles[primID1];
       BBox3fa bounds1 = empty;
       bounds1.extend(mesh1->positions[tri1.v0]);
@@ -83,13 +85,12 @@ namespace embree
     Tutorial()
       : TutorialApplication("collide",FEATURE_RTCORE)
     {
-      rtcore += ",tri_accel=bvh4.triangle4v";
-
       registerOption("i", [this] (Ref<ParseStream> cin, const FileName& path) {
           FileName filename = path + cin->getFileName();
           Ref<SceneGraph::Node> scene = SceneGraph::load(filename);
-          if (scene0 && scene1) throw std::runtime_error("maximally two scenes can get collided");
-          if (scene0) scene1 = scene; else scene0 = scene;
+          std::shared_ptr<TutorialScene> tscene(new TutorialScene);
+          tscene->add(scene,TutorialScene::INSTANCING_NONE); 
+          g_animation.push_back(tscene);
         }, "-i <filename>: parses scene from <filename>");
 
       registerOption("benchmark", [this] (Ref<ParseStream> cin, const FileName& path) {
@@ -101,19 +102,25 @@ namespace embree
  
     unsigned int convertTriangleMesh(Ref<TutorialScene::TriangleMesh> mesh, RTCScene scene_out)
     {
-      unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->triangles.size(), mesh->numVertices, 1);
+      RTCGeometryFlags gflags;
+      if (g_animation.size() == 1) gflags = RTC_GEOMETRY_STATIC;
+      else                         gflags = RTC_GEOMETRY_DYNAMIC;
+      unsigned int geomID = rtcNewTriangleMesh (scene_out, gflags, mesh->triangles.size(), mesh->numVertices, 1);
       rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER, mesh->positions.data(), 0, sizeof(Vec3fa      ));
       rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER , mesh->triangles.data(), 0, sizeof(TutorialScene::Triangle));
       return geomID;
     }
     
-    RTCScene convertScene(TutorialScene& scene_in)
+    RTCScene convertScene(std::shared_ptr<TutorialScene> scene_in)
     {
-      RTCScene scene_out = rtcDeviceNewScene(g_device,RTC_SCENE_STATIC,RTC_INTERSECT1);
+      RTCSceneFlags sflags;
+      if (g_animation.size() == 1) sflags = RTC_SCENE_STATIC;
+      else                         sflags = RTC_SCENE_DYNAMIC;
+      RTCScene scene_out = rtcDeviceNewScene(g_device,sflags,RTC_INTERSECT1);
       
-      for (unsigned int i=0; i<scene_in.geometries.size(); i++)
+      for (unsigned int i=0; i<scene_in->geometries.size(); i++)
       {
-        if (Ref<TutorialScene::TriangleMesh> mesh = scene_in.geometries[i].dynamicCast<TutorialScene::TriangleMesh>()) {
+        if (Ref<TutorialScene::TriangleMesh> mesh = scene_in->geometries[i].dynamicCast<TutorialScene::TriangleMesh>()) {
           unsigned int geomID MAYBE_UNUSED = convertTriangleMesh(mesh, scene_out);
           assert(geomID == i);
         }
@@ -122,6 +129,42 @@ namespace embree
       
       rtcCommit(scene_out);
       return scene_out;
+    }
+
+    void updateTriangleMesh(Ref<TutorialScene::TriangleMesh> mesh, RTCScene scene_out, unsigned geomID)
+    {
+      rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER, mesh->positions.data(), 0, sizeof(Vec3fa      ));
+      rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER , mesh->triangles.data(), 0, sizeof(TutorialScene::Triangle));
+      rtcUpdate(scene_out, geomID);
+    }
+
+    void updateScene(std::shared_ptr<TutorialScene> scene_in, RTCScene scene_out)
+    {
+      for (unsigned int i=0; i<scene_in->geometries.size(); i++)
+      {
+        if (Ref<TutorialScene::TriangleMesh> mesh = scene_in->geometries[i].dynamicCast<TutorialScene::TriangleMesh>()) {
+          updateTriangleMesh(mesh, scene_out, i);
+        }
+        else assert(false);
+      }
+      
+      rtcCommit(scene_out);
+    }
+
+    void render(unsigned* pixels, const unsigned width, const unsigned height, const float time, const ISPCCamera& camera) 
+    {
+      g_tutorial_scene = g_animation[cur_time];
+      cur_time = (cur_time+1)%g_animation.size();
+
+      if (g_scene == nullptr)  
+        g_scene = convertScene(g_tutorial_scene);
+      else if (g_animation.size() > 1)
+        updateScene(g_tutorial_scene,g_scene);
+
+      collision_candidates.clear();
+      rtcCollide(g_scene,g_scene,CollideFunc,nullptr);
+
+      device_render(pixels,width,height,time,camera);
     }
 
     void benchmark()
@@ -133,8 +176,7 @@ namespace embree
       {
         //double t0 = getSeconds();
         numTotalCollisions = 0;
-        if (g_scene1) rtcCollide(g_scene0,g_scene1,CollideFunc,nullptr);
-        else          rtcCollide(g_scene0,g_scene0,CollideFunc,nullptr);
+        rtcCollide(g_scene,g_scene,CollideFunc,nullptr);
         //double t1 = getSeconds();
         //float dt = float(t1-t0);
         //std::cout << "round [" << std::setw(3) << i << " / " << std::setw(3) << numTotalRounds << "]: " <<  std::setw(8) << 1000.0f*dt << " ms (skipped)" << std::endl << std::flush;
@@ -145,8 +187,7 @@ namespace embree
       {
         double t0 = getSeconds();
         numTotalCollisions = 0;
-        if (g_scene1) rtcCollide(g_scene0,g_scene1,CollideFunc,nullptr);
-        else          rtcCollide(g_scene0,g_scene0,CollideFunc,nullptr);
+        rtcCollide(g_scene,g_scene,CollideFunc,nullptr);
         double t1 = getSeconds();
         
         float dt = float(t1-t0);
@@ -170,33 +211,21 @@ namespace embree
       parseCommandLine(argc,argv);
 
       /* test if user has set two scenes */
-      if (!scene0 && !scene1)
-        throw std::runtime_error("you have to specify one or two scenes to collide");
-
-      /* convert model */
-      g_tutorial_scene0.add(scene0,TutorialScene::INSTANCING_NONE); 
-      if (scene1) g_tutorial_scene1.add(scene1,TutorialScene::INSTANCING_NONE); 
-      
-      Ref<TutorialScene::TriangleMesh> mesh = g_tutorial_scene0.geometries[0].dynamicCast<TutorialScene::TriangleMesh>();
+      if (g_animation.size() == 0)
+        throw std::runtime_error("you have to specify at least one scene");
 
       /* initialize ray tracing core */
+      rtcore += ",tri_accel=bvh4.triangle4v";
+      if (g_animation.size() > 1) rtcore += ",tri_builder=morton";
       g_device = rtcNewDevice(rtcore.c_str());
       //error_handler(rtcDeviceGetError(g_device));
-      //device_init(rtcore.c_str());
-      g_scene0 = convertScene(g_tutorial_scene0);
-      if (scene1) g_scene1 = convertScene(g_tutorial_scene1);
-      g_scene = g_scene0;
 
       if (numBenchmarkRounds)
         benchmark();
-      else if (g_scene1)
-        rtcCollide(g_scene0,g_scene1,CollideFunc,nullptr);
-      else 
-        rtcCollide(g_scene0,g_scene0,CollideFunc,nullptr);
 
       if (interactive)
         run(argc,argv);
-      
+
       return 0;
     }  
     catch (const std::exception& e) {

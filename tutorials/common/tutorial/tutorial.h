@@ -72,6 +72,9 @@ namespace embree
     virtual void displayFunc(void);
     virtual void reshapeFunc(int width, int height);
     virtual void idleFunc();
+
+  public:
+    virtual void render(unsigned* pixels, const unsigned width, const unsigned height, const float time, const ISPCCamera& camera);
     
   public:
     std::string tutorialName;
