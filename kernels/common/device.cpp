@@ -109,7 +109,6 @@ namespace embree
     bvh8_factory = new BVH8Factory(enabled_cpu_features);
 #endif
 
-
     /* setup tasking system */
     initTaskingSystem(numThreads);
 
