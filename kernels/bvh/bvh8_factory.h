@@ -220,5 +220,7 @@ namespace embree
 
     DEFINE_BUILDER2(void,Scene,size_t,BVH8Quad4vSceneBuilderFastSpatialSAH);
 
+    DEFINE_BUILDER2(void,Scene,size_t,BVH8Triangle4SceneBuilderSweepSAH);
+
   };
 }

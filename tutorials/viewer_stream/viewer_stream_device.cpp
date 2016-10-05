@@ -21,14 +21,14 @@
 
 namespace embree {
 
-#define USE_INTERFACE 0 // 0 = stream, 1 = single rays/packets, 2 = single rays/packets using stream interface
+#define USE_INTERFACE 0 // 0 = stream, 1 = single rays/packets, 2 = single rays/packets using stream interface, 3 = stream with pointers
 #define AMBIENT_OCCLUSION_SAMPLES 64
 //#define rtcOccluded rtcIntersect
 //#define rtcOccluded1M rtcIntersect1M
 #define RAYN_FLAGS RTC_INTERSECT_COHERENT
 //#define RAYN_FLAGS RTC_INTERSECT_INCOHERENT
 
-#define SIMPLE_SHADING 1
+#define SIMPLE_SHADING 0
 #define DYNAMIC_BENCHMARK 0
 #define HIGH_QUALITY 0
 
@@ -236,9 +236,14 @@ Vec3fa ambientOcclusionShading(int x, int y, RTCRay& ray)
 #elif USE_INTERFACE == 1
   for (size_t i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
     rtcOccluded(g_scene,rays[i]);
-#else
+#elif USE_INTERFACE == 2
   for (size_t i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
     rtcOccluded1M(g_scene,&context,&rays[i],1,sizeof(RTCRay));
+#elif USE_INTERFACE == 3
+  RTCRay *rays_ptr[AMBIENT_OCCLUSION_SAMPLES];
+  for (size_t i=0;i<AMBIENT_OCCLUSION_SAMPLES;i++)
+    rays_ptr[i] = &rays[i];
+  rtcOccluded1Mp(g_scene,&context,rays_ptr,AMBIENT_OCCLUSION_SAMPLES);
 #endif
 
   /* accumulate illumination */
@@ -304,9 +309,14 @@ void renderTileStandard(int taskIndex,
 #elif USE_INTERFACE == 1
   for (size_t i=0; i<N; i++)
     rtcIntersect(g_scene,rays[i]);
-#else
+#elif USE_INTERFACE == 2
   for (size_t i=0; i<N; i++)
     rtcIntersect1M(g_scene,&context,&rays[i],1,sizeof(RTCRay));
+#else
+  RTCRay *rays_ptr[AMBIENT_OCCLUSION_SAMPLES];
+  for (size_t i=0;i<AMBIENT_OCCLUSION_SAMPLES;i++)
+    rays_ptr[i] = &rays[i];
+  rtcIntersect1Mp(g_scene,&context,rays_ptr,N);
 #endif
 
   /* shade stream of rays */
