@@ -345,7 +345,7 @@ namespace embree
 #if defined(__WIN32__)
 	size_t loopIndex = 1;
 #endif
-#define LOOP_YIELD_THRESHOLD (16*4096)
+#define LOOP_YIELD_THRESHOLD (4096)
 	while (threadCounter > 0) {
 #if defined(__WIN32__)
           if ((loopIndex % LOOP_YIELD_THRESHOLD) == 0)
