@@ -20,7 +20,7 @@ namespace embree
 { 
   namespace isa
   {
-#define CSTAT(x)
+#define CSTAT(x) 
 
     size_t parallel_depth_threshold = 6;
     std::atomic<size_t> bvh_collide_traversal_steps(0);
@@ -316,10 +316,17 @@ namespace embree
         if (unlikely(ref1.isLeaf())) {
           goto recurse_node0;
         } else {
-          if (area(bounds0) > area(bounds1)) {
-            goto recurse_node0;
-          } else {
-            goto recurse_node1;
+          //if (area(bounds0) > area(bounds1)) {
+          if (depth < parallel_depth_threshold) { 
+            goto recurse_node0; // for some reason this parallel work distribution works well
+          }
+          else
+          {
+            if (depth % 2) {
+              goto recurse_node0;
+            } else {
+              goto recurse_node1;
+            }
           }
         }
       }
@@ -378,6 +385,15 @@ namespace embree
     template<int N>
     void BVHNCollider<N>::collide(BVH* __restrict__ bvh0, BVH* __restrict__ bvh1, RTCCollideFunc callback, void* userPtr)
     { 
+      CSTAT(bvh_collide_traversal_steps = 0);
+      CSTAT(bvh_collide_leaf_pairs = 0);
+      CSTAT(bvh_collide_leaf_iterations = 0);
+      CSTAT(bvh_collide_prim_intersections1 = 0);
+      CSTAT(bvh_collide_prim_intersections2 = 0);
+      CSTAT(bvh_collide_prim_intersections3 = 0);
+      CSTAT(bvh_collide_prim_intersections4 = 0);
+      CSTAT(bvh_collide_prim_intersections5 = 0);
+      CSTAT(bvh_collide_prim_intersections = 0);
       scene0 = bvh0->scene;
       scene1 = bvh1->scene;
       collide_recurse(bvh0->root,bvh0->bounds,bvh1->root,bvh1->bounds,callback,userPtr,0);
