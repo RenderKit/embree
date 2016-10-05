@@ -71,9 +71,9 @@ namespace embree
       const bool different_sides1 = point_line_side(a0,b0,b1) != point_line_side(a1,b0,b1);
       return different_sides0 && different_sides1;
     }
-
-    bool intersect_triangle_triangle (const Vec2f& a0, const Vec2f& a1, const Vec2f& a2, 
-                                      const Vec2f& b0, const Vec2f& b1, const Vec2f& b2)
+    
+    __forceinline bool intersect_triangle_triangle (const Vec2f& a0, const Vec2f& a1, const Vec2f& a2, 
+                                                    const Vec2f& b0, const Vec2f& b1, const Vec2f& b2)
     {
       const bool a01_b01 = intersect_line_line(a0,a1,b0,b1); 
       if (a01_b01) return true;
@@ -130,8 +130,8 @@ namespace embree
       if (min(db0,db1,db2) > +eps) return false;
       CSTAT(bvh_collide_prim_intersections5++);
 
-      if ((da0 == 0.0f && da1 == 0.0f && da2 == 0.0f) ||
-          (db0 == 0.0f && db1 == 0.0f && db2 == 0.0f))
+      if (unlikely((da0 == 0.0f && da1 == 0.0f && da2 == 0.0f) ||
+                   (db0 == 0.0f && db1 == 0.0f && db2 == 0.0f)))
       {
         const size_t dz = maxDim(Na);
         const size_t dx = (dz+1)%3;
@@ -202,7 +202,6 @@ namespace embree
 
       return intersect_triangle_triangle(a0,a1,a2,b0,b1,b2);
     }
-
     
     template<int N>
     __forceinline size_t overlap(const BBox3fa& box0, const typename BVHN<N>::Node& node1)
