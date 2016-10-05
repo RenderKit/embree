@@ -93,6 +93,21 @@ namespace embree
       return (T(one)-ftime)*p0 + ftime*p1;
     }
 
+    template<int K>
+      __forceinline Vec3<vfloat<K>> getVertex(const vbool<K>& valid, const vint<M>& v, const size_t index, const Scene* const scene, const vfloat<K>& time) const
+    {
+      const QuadMesh* mesh = scene->getQuadMesh(geomID(index));
+
+      const vfloat<K> timeSegments = mesh->numTimeSegments;
+      const vfloat<K> timeScaled = time * timeSegments;
+      const vfloat<K> itimef = clamp(floor(timeScaled), vfloat<K>(zero), timeSegments-1.0f);
+      const vint<K> itime = vint<K>(itimef);
+      const vfloat<K> ftime = timeScaled - itimef;
+
+      const size_t first = __bsf(movemask(valid)); // assume itime is uniform
+      return getVertex(v, index, scene, itime[first], ftime);
+    }
+
     /* gather the quads */
     __forceinline void gather(Vec3<vfloat<M>>& p0, 
                               Vec3<vfloat<M>>& p1, 
@@ -236,8 +251,6 @@ namespace embree
     transpose(d0,d1,d2,d3,p3.x,p3.y,p3.z);
   }
 
-
-
   template<>
     __forceinline void QuadMiMB<4>::gather(Vec3vf4& p0, 
                                            Vec3vf4& p1, 
@@ -251,11 +264,11 @@ namespace embree
     const QuadMesh* mesh2 = scene->getQuadMesh(geomIDs[2]);
     const QuadMesh* mesh3 = scene->getQuadMesh(geomIDs[3]);
 
-    const vfloat4 time_segments(mesh0->numTimeSegments, mesh1->numTimeSegments, mesh2->numTimeSegments, mesh3->numTimeSegments);
-    const vfloat4 time_scaled = time*time_segments;
-    const vfloat4 itimef = clamp(floor(time_scaled),vfloat4(zero),time_segments-1.0f);
+    const vfloat4 timeSegments(mesh0->numTimeSegments, mesh1->numTimeSegments, mesh2->numTimeSegments, mesh3->numTimeSegments);
+    const vfloat4 timeScaled = time * timeSegments;
+    const vfloat4 itimef = clamp(floor(timeScaled), vfloat4(zero), timeSegments-1.0f);
     const vint4 itime = vint4(itimef);
-    const vfloat4 ftime = time_scaled - itimef;
+    const vfloat4 ftime = timeScaled - itimef;
 
     const vfloat4 t0 = 1.0f - ftime;
     const vfloat4 t1 = ftime;
