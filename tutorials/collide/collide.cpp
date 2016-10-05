@@ -151,7 +151,7 @@ namespace embree
       rtcCommit(scene_out);
     }
 
-    void render(unsigned* pixels, const unsigned width, const unsigned height, const float time, const ISPCCamera& camera) 
+    void updateScene()
     {
       g_tutorial_scene = g_animation[cur_time];
       cur_time = (cur_time+1)%g_animation.size();
@@ -160,20 +160,24 @@ namespace embree
         g_scene = convertScene(g_tutorial_scene);
       else if (g_animation.size() > 1)
         updateScene(g_tutorial_scene,g_scene);
+    }
 
+    void render(unsigned* pixels, const unsigned width, const unsigned height, const float time, const ISPCCamera& camera) 
+    {
+      updateScene();
       collision_candidates.clear();
       rtcCollide(g_scene,g_scene,CollideFunc,nullptr);
-
       device_render(pixels,width,height,time,camera);
     }
 
     void benchmark()
     {
-      Statistics stat;
-      //FilteredStatistics stat(0.5f,0.0f);
+      Statistics stat0;
+      Statistics stat1;
       size_t numTotalRounds = skipBenchmarkRounds + numBenchmarkRounds;
       for (size_t i=0; i<skipBenchmarkRounds; i++) 
       {
+        updateScene();
         //double t0 = getSeconds();
         numTotalCollisions = 0;
         rtcCollide(g_scene,g_scene,CollideFunc,nullptr);
@@ -186,23 +190,31 @@ namespace embree
       for (size_t i=skipBenchmarkRounds; i<numTotalRounds; i++) 
       {
         double t0 = getSeconds();
+        updateScene();
+        double t1 = getSeconds();
         numTotalCollisions = 0;
         rtcCollide(g_scene,g_scene,CollideFunc,nullptr);
-        double t1 = getSeconds();
+        double t2 = getSeconds();
         
-        float dt = float(t1-t0);
-        stat.add(dt);
+        float dt0 = float(t1-t0);
+        float dt1 = float(t2-t1);
+        stat0.add(dt0);
+        stat1.add(dt1);
         //if (benchmarkSleep) sleepSeconds(0.1);
       }
 
-      std::cout << "Absolute:" << std::endl;
-      std::cout << "  min = " << std::setw(8) << 1000.0f*stat.getMin() << " ms, " 
-                << "avg = " << std::setw(8) << 1000.0f*stat.getAvg() << " ms, "
-                << "max = " << std::setw(8) << 1000.0f*stat.getMax() << " ms " << std::endl;
-      std::cout << "Per Collision ( " << numTotalCollisions << " collisions ):" << std::endl;
+      std::cout << "Scene Update:" << std::endl;
+      std::cout << "  min = " << std::setw(8) << 1000.0f*stat0.getMin() << " ms, " 
+                << "avg = " << std::setw(8) << 1000.0f*stat0.getAvg() << " ms, "
+                << "max = " << std::setw(8) << 1000.0f*stat0.getMax() << " ms " << std::endl;
+      std::cout << "Collision Detection:" << std::endl;
+      std::cout << "  min = " << std::setw(8) << 1000.0f*stat1.getMin() << " ms, " 
+                << "avg = " << std::setw(8) << 1000.0f*stat1.getAvg() << " ms, "
+                << "max = " << std::setw(8) << 1000.0f*stat1.getMax() << " ms " << std::endl;
+      /*std::cout << "Per Collision ( " << numTotalCollisions << " collisions ):" << std::endl;
       std::cout << "  min = " << std::setw(8) << 1E9f*stat.getMin()/float(numTotalCollisions) << " ns, " 
                 << "avg = " << std::setw(8) << 1E9f*stat.getAvg()/float(numTotalCollisions) << " ns, "
-                << "max = " << std::setw(8) << 1E9f*stat.getMax()/float(numTotalCollisions) << " ns" << std::endl;
+                << "max = " << std::setw(8) << 1E9f*stat.getMax()/float(numTotalCollisions) << " ns" << std::endl;*/
     }
         
     int main(int argc, char** argv) try
