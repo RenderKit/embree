@@ -79,11 +79,10 @@ namespace embree
 
   struct Tutorial : public TutorialApplication
   {
-    Ref<SceneGraph::Node> scene0;
-    Ref<SceneGraph::Node> scene1;
+    bool pause;
 
     Tutorial()
-      : TutorialApplication("collide",FEATURE_RTCORE)
+      : TutorialApplication("collide",FEATURE_RTCORE), pause(false)
     {
       registerOption("i", [this] (Ref<ParseStream> cin, const FileName& path) {
           FileName filename = path + cin->getFileName();
@@ -162,9 +161,15 @@ namespace embree
         updateScene(g_tutorial_scene,g_scene);
     }
 
+    void keyboardFunc(unsigned char key, int x, int y)
+    {
+      if (key == ' ') pause = !pause;
+      else TutorialApplication::keyboardFunc(key,x,y);
+    }
+
     void render(unsigned* pixels, const unsigned width, const unsigned height, const float time, const ISPCCamera& camera) 
     {
-      updateScene();
+      if (!pause) updateScene();
       collision_candidates.clear();
       rtcCollide(g_scene,g_scene,CollideFunc,nullptr);
       device_render(pixels,width,height,time,camera);
