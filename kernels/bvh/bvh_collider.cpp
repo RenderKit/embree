@@ -22,7 +22,7 @@ namespace embree
   {
 #define CSTAT(x)
 
-    size_t parallel_depth_threshold = 5;
+    size_t parallel_depth_threshold = 6;
     std::atomic<size_t> bvh_collide_traversal_steps(0);
     std::atomic<size_t> bvh_collide_leaf_pairs(0);
     std::atomic<size_t> bvh_collide_leaf_iterations(0);
