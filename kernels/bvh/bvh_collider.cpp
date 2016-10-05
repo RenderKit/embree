@@ -378,23 +378,7 @@ namespace embree
 
     template<int N>
     void BVHNCollider<N>::collide(BVH* __restrict__ bvh0, BVH* __restrict__ bvh1, RTCCollideFunc callback, void* userPtr)
-    {
-      assert(intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0)) == true);
-      assert(intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa(0,0,1),Vec3fa(1,0,1),Vec3fa(0,1,1)) == false);
-      assert(intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa(0,0,1),Vec3fa(1,0,0),Vec3fa(0,1,0)) == true);
-      assert(intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa(0,0,0),Vec3fa(1,0,1),Vec3fa(0,1,1)) == true);
-      assert(intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa(0.1,0.1,0),Vec3fa(1,0,1),Vec3fa(0,1,1)) == true);
-      assert(intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa(0.1,0.1,-0.1),Vec3fa(1,0,1),Vec3fa(0,1,1)) == true);
-      assert(intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0)) == true);
-      assert(intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa(0,0,0),Vec3fa(0.5,0,0),Vec3fa(0,0.5,0)) == true);
-      assert(intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa(0.1,0.1,0),Vec3fa(0.5,0,0),Vec3fa(0,0.5,0)) == true);
-      assert(intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa(0.1,0.1,0),Vec3fa(0.5,0.1,0),Vec3fa(0.1,0.5,0)) == true);
-      assert(intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa(0.1,-0.1,0),Vec3fa(0.5,0.1,0),Vec3fa(0.1,0.5,0)) == true);
-      assert(intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa(-0.1,0.1,0),Vec3fa(0.5,0.1,0),Vec3fa(0.1,0.5,0)) == true);
-      assert(intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa(-1,1,0) + Vec3fa(0,0,0),Vec3fa(-1,1,0) + Vec3fa(0.1,0,0),Vec3fa(-1,1,0) + Vec3fa(0,0.1,0)) == false);
-      assert(intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa( 2,0.5,0) + Vec3fa(0,0,0),Vec3fa( 2,0.5,0) + Vec3fa(0.1,0,0),Vec3fa( 2,0.5,0) + Vec3fa(0,0.1,0)) == false);
-      assert(intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa(0.5,-2.0f,0) + Vec3fa(0,0,0),Vec3fa(0.5f,-2.0f,0) + Vec3fa(0.1,0,0),Vec3fa(0.5f,-2.0f,0) + Vec3fa(0,0.1,0)) == false);
-      
+    { 
       scene0 = bvh0->scene;
       scene1 = bvh1->scene;
       collide_recurse(bvh0->root,bvh0->bounds,bvh1->root,bvh1->bounds,callback,userPtr,0);
@@ -409,6 +393,38 @@ namespace embree
       CSTAT(PRINT(bvh_collide_prim_intersections));
       AVX_ZERO_UPPER();
     }
+
+#if !defined (__SSE4_1__)
+    struct collision_regression_test : public RegressionTest
+    {
+      collision_regression_test(const char* name) : RegressionTest(name) {
+        registerRegressionTest(this);
+      }
+    
+      bool run ()
+      {
+        bool passed = true;
+        passed &= intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0)) == true;
+        passed &= intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa(0,0,1),Vec3fa(1,0,1),Vec3fa(0,1,1)) == false;
+        passed &= intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa(0,0,1),Vec3fa(1,0,0),Vec3fa(0,1,0)) == true;
+        passed &= intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa(0,0,0),Vec3fa(1,0,1),Vec3fa(0,1,1)) == true;
+        passed &= intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa(0.1,0.1,0),Vec3fa(1,0,1),Vec3fa(0,1,1)) == true;
+        passed &= intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa(0.1,0.1,-0.1),Vec3fa(1,0,1),Vec3fa(0,1,1)) == true;
+        passed &= intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0)) == true;
+        passed &= intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa(0,0,0),Vec3fa(0.5,0,0),Vec3fa(0,0.5,0)) == true;
+        passed &= intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa(0.1,0.1,0),Vec3fa(0.5,0,0),Vec3fa(0,0.5,0)) == true;
+        passed &= intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa(0.1,0.1,0),Vec3fa(0.5,0.1,0),Vec3fa(0.1,0.5,0)) == true;
+        passed &= intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa(0.1,-0.1,0),Vec3fa(0.5,0.1,0),Vec3fa(0.1,0.5,0)) == true;
+        passed &= intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa(-0.1,0.1,0),Vec3fa(0.5,0.1,0),Vec3fa(0.1,0.5,0)) == true;
+        passed &= intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa(-1,1,0) + Vec3fa(0,0,0),Vec3fa(-1,1,0) + Vec3fa(0.1,0,0),Vec3fa(-1,1,0) + Vec3fa(0,0.1,0)) == false;
+        passed &= intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa( 2,0.5,0) + Vec3fa(0,0,0),Vec3fa( 2,0.5,0) + Vec3fa(0.1,0,0),Vec3fa( 2,0.5,0) + Vec3fa(0,0.1,0)) == false;
+        passed &= intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa(0.5,-2.0f,0) + Vec3fa(0,0,0),Vec3fa(0.5f,-2.0f,0) + Vec3fa(0.1,0,0),Vec3fa(0.5f,-2.0f,0) + Vec3fa(0,0.1,0)) == false;
+        return passed;
+      }
+    };
+
+    collision_regression_test collision_regression("collision_regression_test");
+#endif
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Collider Definitions
