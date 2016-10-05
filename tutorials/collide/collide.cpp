@@ -203,12 +203,10 @@ namespace embree
         //if (benchmarkSleep) sleepSeconds(0.1);
       }
 
-      std::cout << "Scene Update:" << std::endl;
-      std::cout << "  min = " << std::setw(8) << 1000.0f*stat0.getMin() << " ms, " 
+      std::cout << "Scene Update:        min = " << std::setw(8) << 1000.0f*stat0.getMin() << " ms, " 
                 << "avg = " << std::setw(8) << 1000.0f*stat0.getAvg() << " ms, "
                 << "max = " << std::setw(8) << 1000.0f*stat0.getMax() << " ms " << std::endl;
-      std::cout << "Collision Detection:" << std::endl;
-      std::cout << "  min = " << std::setw(8) << 1000.0f*stat1.getMin() << " ms, " 
+      std::cout << "Collision Detection: min = " << std::setw(8) << 1000.0f*stat1.getMin() << " ms, " 
                 << "avg = " << std::setw(8) << 1000.0f*stat1.getAvg() << " ms, "
                 << "max = " << std::setw(8) << 1000.0f*stat1.getMax() << " ms " << std::endl;
       /*std::cout << "Per Collision ( " << numTotalCollisions << " collisions ):" << std::endl;
