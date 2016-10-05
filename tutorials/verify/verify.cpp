@@ -562,49 +562,6 @@ namespace embree
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
 
-  struct BarrierSysTest : public VerifyApplication::Test
-  {
-    BarrierSysTest (std::string name)
-      : VerifyApplication::Test(name,0,VerifyApplication::TEST_SHOULD_PASS) {}
-
-    static bool passed;
-    static BarrierSys g_barrier;
-
-    static void threadPoolFunction(size_t* ptr)
-    {
-      if (*ptr != 0xFF55) passed = false;
-      g_barrier.wait();
-    }
-
-    VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
-    {
-      passed = true;
-      g_barrier.init(2);
-
-      for (size_t i=0; i<200; i++)
-      {
-        std::vector<thread_t> threads;
-        
-        volatile size_t val = 0xFF55;
-        for (size_t t=0; t<8; t++) {
-          threads.push_back(createThread((thread_func)threadPoolFunction,(void*)&val,4*1024*1024,-1));
-          g_barrier.wait();
-        }
-        val = 0;
-        
-        for (size_t t=0; t<8; t++)
-          embree::join(threads[t]);
-      
-        threads.clear();
-      }
-      
-      return passed ? VerifyApplication::PASSED : VerifyApplication::FAILED;
-    }
-  };
-
-  bool BarrierSysTest::passed = true;
-  BarrierSys BarrierSysTest::g_barrier(2);
-
   struct InitExitTest : public VerifyApplication::Test
   {
     InitExitTest (std::string name)
@@ -3629,7 +3586,7 @@ namespace embree
     /**************************************************************************/
     /*                      Smaller API Tests                                 */
     /**************************************************************************/
-      
+
     std::stack<Ref<TestGroup>> groups;
     groups.push(tests.dynamicCast<TestGroup>());
     auto push = [&] (Ref<TestGroup> group) {
@@ -3639,8 +3596,6 @@ namespace embree
 
     groups.top()->add(new InitExitTest("init_exit"));
 
-    groups.top()->add(new BarrierSysTest("barrier_sys"));
-    
     /* add Embree internal tests */
     for (size_t i=2000000; i<3000000; i++) {
       const char* testName = (const char*) rtcDeviceGetParameter1i(device,(RTCParameter)i);
