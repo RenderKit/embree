@@ -156,7 +156,7 @@ namespace embree
     };
 
     FastAllocator (MemoryMonitorInterface* device) 
-      : device(device), slotMask(0), usedBlocks(nullptr), freeBlocks(nullptr), growSize(defaultBlockSize), log2_grow_size_scale(0), bytesUsed(0), thread_local_allocators(this), thread_local_allocators2(this)
+      : device(device), slotMask(0), usedBlocks(nullptr), freeBlocks(nullptr), growSize(defaultBlockSize), log2_grow_size_scale(0), bytesUsed(0), bytesWasted(0), thread_local_allocators(this), thread_local_allocators2(this)
     {
       for (size_t i=0; i<MAX_THREAD_USED_BLOCK_SLOTS; i++)
       {
@@ -219,11 +219,15 @@ namespace embree
       }
 #endif
       
-      for (size_t t=0; t<thread_local_allocators.threads.size(); t++)
+      for (size_t t=0; t<thread_local_allocators.threads.size(); t++){
         bytesUsed += thread_local_allocators.threads[t]->getUsedBytes();
+        bytesWasted += thread_local_allocators.threads[t]->getWastedBytes();
+      }
 
-      for (size_t t=0; t<thread_local_allocators2.threads.size(); t++)
+      for (size_t t=0; t<thread_local_allocators2.threads.size(); t++) {
 	bytesUsed += thread_local_allocators2.threads[t]->getUsedBytes();
+        bytesWasted += thread_local_allocators2.threads[t]->getWastedBytes();
+      }
 
       thread_local_allocators.clear();
       thread_local_allocators2.clear();
@@ -242,6 +246,7 @@ namespace embree
     void reset () 
     {
       bytesUsed = 0;
+      bytesWasted = 0;
 
       /* first reset all used blocks */
       if (usedBlocks.load() != nullptr) usedBlocks.load()->reset();
@@ -270,6 +275,7 @@ namespace embree
     {
       cleanup();
       bytesUsed = 0;
+      bytesWasted = 0;
       if (usedBlocks.load() != nullptr) usedBlocks.load()->clear(device); usedBlocks = nullptr;
       if (freeBlocks.load() != nullptr) freeBlocks.load()->clear(device); freeBlocks = nullptr;
       for (size_t i=0; i<MAX_THREAD_USED_BLOCK_SLOTS; i++) {
@@ -382,26 +388,21 @@ namespace embree
     {
       size_t bytesFree = 0;
       if (freeBlocks.load()) bytesFree += freeBlocks.load()->getAllocatedBytes();
-      if (usedBlocks.load()) bytesFree += usedBlocks.load()->getFreeBytes();
       return bytesFree;
     }
 
     size_t getWastedBytes() const 
     {
-      size_t bytesWasted = 0;
-      if (usedBlocks.load()) {
-	Block* cur = usedBlocks;
-	while ((cur = cur->next) != nullptr)
-	  bytesWasted += cur->getFreeBytes();
-      }
-      
+      size_t bytes = bytesWasted;
+      if (usedBlocks.load()) bytes += usedBlocks.load()->getFreeBytes();
+
       for (size_t t=0; t<thread_local_allocators.threads.size(); t++)
-	bytesWasted += thread_local_allocators.threads[t]->getWastedBytes();
+	bytes += thread_local_allocators.threads[t]->getWastedBytes();
 
       for (size_t t=0; t<thread_local_allocators2.threads.size(); t++)
-	bytesWasted += thread_local_allocators2.threads[t]->getWastedBytes();
+	bytes += thread_local_allocators2.threads[t]->getWastedBytes();
       
-      return bytesWasted;
+      return bytes;
     }
 
     void print_statistics()
@@ -488,18 +489,26 @@ namespace embree
       void shrink (MemoryMonitorInterface* device) 
       {
         const size_t sizeof_Header = offsetof(Block,data[0]);
-        size_t newSize = os_shrink(this,sizeof_Header+getRequiredBytes(),reserveEnd+sizeof_Header);
+        size_t newSize = os_shrink(this,sizeof_Header+getUsedBytes(),reserveEnd+sizeof_Header);
         if (device) device->memoryMonitor(newSize-sizeof_Header-allocEnd,true);
         reserveEnd = allocEnd = newSize-sizeof_Header;
         if (next) next->shrink(device);
       }
 
-      size_t getRequiredBytes() const {
+      size_t getUsedBytes() const {
         return min(size_t(cur),reserveEnd);
       }
 
       size_t getBlockAllocatedBytes() const {
-	return min(max(allocEnd,size_t(cur)),reserveEnd);
+        return min(max(allocEnd,size_t(cur)),reserveEnd);
+      }
+
+      size_t getBlockReservedBytes() const {
+        return reserveEnd;
+      }
+
+      size_t getBlockFreeBytes() const {
+	return max(allocEnd,size_t(cur))-cur;
       }
 
       size_t getAllocatedBytes() const {
@@ -507,15 +516,15 @@ namespace embree
       }
 
       size_t getReservedBytes() const {
-	return reserveEnd + (next ? next->getReservedBytes() : 0);
+	return getBlockReservedBytes() + (next ? next->getReservedBytes() : 0);
       }
 
       size_t getFreeBytes() const {
-	return max(allocEnd,size_t(cur))-cur;
+	return getBlockFreeBytes() + (next ? next->getFreeBytes() : 0);
       }
 
       void print() const {
-        std::cout << "[" << cur << ", " << max(size_t(cur),allocEnd) << ", " << reserveEnd << "] ";
+        std::cout << "[" << getUsedBytes() << ", " << getBlockAllocatedBytes() << ", " << getBlockReservedBytes() << "] ";
         if (next) next->print();
       }
 
@@ -543,6 +552,7 @@ namespace embree
     size_t growSize;
     std::atomic<size_t> log2_grow_size_scale; //!< log2 of scaling factor for grow size
     size_t bytesUsed;            //!< number of total bytes used
+    size_t bytesWasted;          //!< number of total wasted bytes
 
     ThreadLocalData<ThreadLocal> thread_local_allocators; //!< thread local allocators
     ThreadLocalData<ThreadLocal2> thread_local_allocators2; //!< thread local allocators

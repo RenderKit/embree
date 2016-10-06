@@ -181,7 +181,7 @@ namespace embree
       return bytesOld;
 
     if (munmap((char*)ptr+bytesNew,bytesOld-bytesNew) != -1)
-      return bytesNew;
+      return bytesNew; // this may be too small in case we really used 2MB pages
 
     throw std::bad_alloc();
   }
