@@ -80,14 +80,14 @@ namespace embree
       return vertices0[i].w;
     }
 
-    /*! returns i'th vertex of j'th timestep */
-    __forceinline Vec3fa vertex(size_t i, size_t j) const {
-      return vertices[j][i];
+    /*! returns i'th vertex of itime'th timestep */
+    __forceinline Vec3fa vertex(size_t i, size_t itime) const {
+      return vertices[itime][i];
     }
     
-    /*! returns i'th radius of j'th timestep */
-    __forceinline float radius(size_t i, size_t j) const {
-      return vertices[j][i].w;
+    /*! returns i'th radius of itime'th timestep */
+    __forceinline float radius(size_t i, size_t itime) const {
+      return vertices[itime][i].w;
     }
     
     /*! check if the i'th primitive is valid */
@@ -96,21 +96,21 @@ namespace embree
       const unsigned int index = curve(i);
       if (index+3 >= numVertices()) return false;
       
-      for (size_t j=0; j<numTimeSteps; j++) 
+      for (size_t t=0; t<numTimeSteps; t++)
       {
-        const float r0 = radius(index+0,j);
-        const float r1 = radius(index+1,j);
-        const float r2 = radius(index+2,j);
-        const float r3 = radius(index+3,j);
+        const float r0 = radius(index+0,t);
+        const float r1 = radius(index+1,t);
+        const float r2 = radius(index+2,t);
+        const float r3 = radius(index+3,t);
         if (!isvalid(r0) || !isvalid(r1) || !isvalid(r2) || !isvalid(r3))
           return false;
         if (min(r0,r1,r2,r3) < 0.0f)
           return false;
         
-        const Vec3fa v0 = vertex(index+0,j);
-        const Vec3fa v1 = vertex(index+1,j);
-        const Vec3fa v2 = vertex(index+2,j);
-        const Vec3fa v3 = vertex(index+3,j);
+        const Vec3fa v0 = vertex(index+0,t);
+        const Vec3fa v1 = vertex(index+1,t);
+        const Vec3fa v2 = vertex(index+2,t);
+        const Vec3fa v3 = vertex(index+3,t);
         if (!isvalid(v0) || !isvalid(v1) || !isvalid(v2) || !isvalid(v3))
           return false;
       }
@@ -119,19 +119,19 @@ namespace embree
       return true;
     }
 
-    /*! check if the i'th primitive is valid at the j'th timerange */
-    __forceinline bool valid(size_t i, size_t j, Vec3fa& c0, Vec3fa& c1, Vec3fa& c2, Vec3fa& c3) const 
+    /*! check if the i'th primitive is valid at the itime'th timerange */
+    __forceinline bool valid(size_t i, size_t itime, Vec3fa& c0, Vec3fa& c1, Vec3fa& c2, Vec3fa& c3) const
     {
       const unsigned int index = curve(i);
       if (index+3 >= numVertices()) return false;
-      const Vec3fa a0 = vertex(index+0,j+0); if (unlikely(!isvalid((vfloat4)a0))) return false;
-      const Vec3fa a1 = vertex(index+1,j+0); if (unlikely(!isvalid((vfloat4)a1))) return false;
-      const Vec3fa a2 = vertex(index+2,j+0); if (unlikely(!isvalid((vfloat4)a2))) return false;
-      const Vec3fa a3 = vertex(index+3,j+0); if (unlikely(!isvalid((vfloat4)a3))) return false;
-      const Vec3fa b0 = vertex(index+0,j+1); if (unlikely(!isvalid((vfloat4)b0))) return false;
-      const Vec3fa b1 = vertex(index+1,j+1); if (unlikely(!isvalid((vfloat4)b1))) return false;
-      const Vec3fa b2 = vertex(index+2,j+1); if (unlikely(!isvalid((vfloat4)b2))) return false;
-      const Vec3fa b3 = vertex(index+3,j+1); if (unlikely(!isvalid((vfloat4)b3))) return false;
+      const Vec3fa a0 = vertex(index+0,itime+0); if (unlikely(!isvalid((vfloat4)a0))) return false;
+      const Vec3fa a1 = vertex(index+1,itime+0); if (unlikely(!isvalid((vfloat4)a1))) return false;
+      const Vec3fa a2 = vertex(index+2,itime+0); if (unlikely(!isvalid((vfloat4)a2))) return false;
+      const Vec3fa a3 = vertex(index+3,itime+0); if (unlikely(!isvalid((vfloat4)a3))) return false;
+      const Vec3fa b0 = vertex(index+0,itime+1); if (unlikely(!isvalid((vfloat4)b0))) return false;
+      const Vec3fa b1 = vertex(index+1,itime+1); if (unlikely(!isvalid((vfloat4)b1))) return false;
+      const Vec3fa b2 = vertex(index+2,itime+1); if (unlikely(!isvalid((vfloat4)b2))) return false;
+      const Vec3fa b3 = vertex(index+3,itime+1); if (unlikely(!isvalid((vfloat4)b3))) return false;
       if (unlikely(min(a0.w,a1.w,a2.w,a3.w) < 0.0f)) return false;
       if (unlikely(min(b0.w,b1.w,b2.w,b3.w) < 0.0f)) return false;
       c0 = 0.5f*(a0+b0);
@@ -142,33 +142,33 @@ namespace embree
     }
     
     /*! calculates bounding box of i'th bezier curve */
-    __forceinline BBox3fa bounds(size_t i, size_t j = 0) const 
+    __forceinline BBox3fa bounds(size_t i, size_t itime = 0) const
     {
       const unsigned int index = curve(i);
-      const float r0 = radius(index+0,j);
-      const float r1 = radius(index+1,j);
-      const float r2 = radius(index+2,j);
-      const float r3 = radius(index+3,j);
-      const Vec3fa v0 = vertex(index+0,j);
-      const Vec3fa v1 = vertex(index+1,j);
-      const Vec3fa v2 = vertex(index+2,j);
-      const Vec3fa v3 = vertex(index+3,j);
+      const float r0 = radius(index+0,itime);
+      const float r1 = radius(index+1,itime);
+      const float r2 = radius(index+2,itime);
+      const float r3 = radius(index+3,itime);
+      const Vec3fa v0 = vertex(index+0,itime);
+      const Vec3fa v1 = vertex(index+1,itime);
+      const Vec3fa v2 = vertex(index+2,itime);
+      const Vec3fa v3 = vertex(index+3,itime);
       const BBox3fa b = merge(BBox3fa(v0),BBox3fa(v1),BBox3fa(v2),BBox3fa(v3));
       return enlarge(b,Vec3fa(max(r0,r1,r2,r3)));
     }
     
     /*! calculates bounding box of i'th bezier curve */
-    __forceinline BBox3fa bounds(const AffineSpace3fa& space, size_t i, size_t j = 0) const 
+    __forceinline BBox3fa bounds(const AffineSpace3fa& space, size_t i, size_t itime = 0) const
     {
       const unsigned int index = curve(i);
-      const float r0 = radius(index+0,j);
-      const float r1 = radius(index+1,j);
-      const float r2 = radius(index+2,j);
-      const float r3 = radius(index+3,j);
-      const Vec3fa v0 = xfmPoint(space,vertex(index+0,j));
-      const Vec3fa v1 = xfmPoint(space,vertex(index+1,j));
-      const Vec3fa v2 = xfmPoint(space,vertex(index+2,j));
-      const Vec3fa v3 = xfmPoint(space,vertex(index+3,j));
+      const float r0 = radius(index+0,itime);
+      const float r1 = radius(index+1,itime);
+      const float r2 = radius(index+2,itime);
+      const float r3 = radius(index+3,itime);
+      const Vec3fa v0 = xfmPoint(space,vertex(index+0,itime));
+      const Vec3fa v1 = xfmPoint(space,vertex(index+1,itime));
+      const Vec3fa v2 = xfmPoint(space,vertex(index+2,itime));
+      const Vec3fa v3 = xfmPoint(space,vertex(index+3,itime));
       const BBox3fa b = merge(BBox3fa(v0),BBox3fa(v1),BBox3fa(v2),BBox3fa(v3));
       return enlarge(b,Vec3fa(max(r0,r1,r2,r3)));
     }
