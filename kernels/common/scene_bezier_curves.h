@@ -89,9 +89,48 @@ namespace embree
     __forceinline float radius(size_t i, size_t itime) const {
       return vertices[itime][i].w;
     }
+
+    /*! gathers the curve starting with i'th vertex of itime'th timestep */
+    __forceinline void gather(Vec3fa& p0,
+                              Vec3fa& p1,
+                              Vec3fa& p2,
+                              Vec3fa& p3,
+                              size_t i,
+                              size_t itime = 0) const
+    {
+      p0 = vertex(i+0,itime);
+      p1 = vertex(i+1,itime);
+      p2 = vertex(i+2,itime);
+      p3 = vertex(i+3,itime);
+    }
+
+    __forceinline void gather(Vec3fa& p0,
+                              Vec3fa& p1,
+                              Vec3fa& p2,
+                              Vec3fa& p3,
+                              size_t i,
+                              float time) const
+    {
+      const float timeSegments = numTimeSegments;
+      const float timeScaled = time * timeSegments;
+      const float itimef = clamp(floor(timeScaled), 0.0f, timeSegments-1.0f);
+      const size_t itime = int(itimef);
+      const float ftime = timeScaled - itimef;
+
+      const vfloat4 t0 = 1.0f - ftime;
+      const vfloat4 t1 = ftime;
+      Vec3fa a0,a1,a2,a3;
+      gather(a0,a1,a2,a3,i,itime);
+      Vec3fa b0,b1,b2,b3;
+      gather(b0,b1,b2,b3,i,itime+1);
+      p0 = t0 * a0 + t1 * b0;
+      p1 = t0 * a1 + t1 * b1;
+      p2 = t0 * a2 + t1 * b2;
+      p3 = t0 * a3 + t1 * b3;
+    }
     
     /*! check if the i'th primitive is valid */
-    __forceinline bool valid(size_t i, BBox3fa* bbox = nullptr) const 
+    __forceinline bool valid(size_t i, BBox3fa* bbox = nullptr) const
     {
       const unsigned int index = curve(i);
       if (index+3 >= numVertices()) return false;
@@ -119,8 +158,33 @@ namespace embree
       return true;
     }
 
+    /*! check if the i'th primitive is valid at the itime'th time step */
+    __forceinline bool valid1(size_t i, size_t itime) const
+    {
+      const unsigned int index = curve(i);
+      if (index+3 >= numVertices()) return false;
+
+      const float r0 = radius(index+0,itime);
+      const float r1 = radius(index+1,itime);
+      const float r2 = radius(index+2,itime);
+      const float r3 = radius(index+3,itime);
+      if (!isvalid(r0) || !isvalid(r1) || !isvalid(r2) || !isvalid(r3))
+        return false;
+      if (min(r0,r1,r2,r3) < 0.0f)
+        return false;
+
+      const Vec3fa v0 = vertex(index+0,itime);
+      const Vec3fa v1 = vertex(index+1,itime);
+      const Vec3fa v2 = vertex(index+2,itime);
+      const Vec3fa v3 = vertex(index+3,itime);
+      if (!isvalid(v0) || !isvalid(v1) || !isvalid(v2) || !isvalid(v3))
+        return false;
+
+      return true;
+    }
+
     /*! check if the i'th primitive is valid at the itime'th timerange */
-    __forceinline bool valid(size_t i, size_t itime, Vec3fa& c0, Vec3fa& c1, Vec3fa& c2, Vec3fa& c3) const
+    __forceinline bool valid2(size_t i, size_t itime, Vec3fa& c0, Vec3fa& c1, Vec3fa& c2, Vec3fa& c3) const
     {
       const unsigned int index = curve(i);
       if (index+3 >= numVertices()) return false;
@@ -138,6 +202,18 @@ namespace embree
       c1 = 0.5f*(a1+b1);
       c2 = 0.5f*(a2+b2);
       c3 = 0.5f*(a3+b3);
+      return true;
+    }
+
+    __forceinline bool valid2(size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal, Vec3fa& c0, Vec3fa& c1, Vec3fa& c2, Vec3fa& c3) const
+    {
+      if (!Geometry::valid2(itimeGlobal, numTimeStepsGlobal, numTimeSteps,
+                           [&] (size_t itime) { return valid1(i, itime); }))
+        return false;
+
+      const unsigned int index = curve(i);
+      float time = (float(int(itimeGlobal)) + 0.5f) / float(int(numTimeStepsGlobal-1));
+      gather(c0,c1,c2,c3,index,time);
       return true;
     }
     
@@ -171,6 +247,27 @@ namespace embree
       const Vec3fa v3 = xfmPoint(space,vertex(index+3,itime));
       const BBox3fa b = merge(BBox3fa(v0),BBox3fa(v1),BBox3fa(v2),BBox3fa(v3));
       return enlarge(b,Vec3fa(max(r0,r1,r2,r3)));
+    }
+
+    /*! calculates the bounds of the i'th curve at the itime'th time segment */
+    __forceinline std::pair<BBox3fa,BBox3fa> bounds2(size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal) const
+    {
+      std::pair<BBox3fa,BBox3fa> bbox2;
+      Geometry::bounds2(itimeGlobal, numTimeStepsGlobal, numTimeSteps,
+                        [&] (size_t itime) { return bounds(i, itime); },
+                        [&] (size_t itime) { return true; },
+                        bbox2);
+      return bbox2;
+    }
+
+    __forceinline std::pair<BBox3fa,BBox3fa> bounds2(const AffineSpace3fa& space, size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal) const
+    {
+      std::pair<BBox3fa,BBox3fa> bbox2;
+      Geometry::bounds2(itimeGlobal, numTimeStepsGlobal, numTimeSteps,
+                        [&] (size_t itime) { return bounds(space, i, itime); },
+                        [&] (size_t itime) { return true; },
+                        bbox2);
+      return bbox2;
     }
 
   public:

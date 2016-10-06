@@ -44,10 +44,7 @@ namespace embree
       {
         STAT3(normal.trav_prims,1,1,1);
         const BezierCurves* geom = (BezierCurves*) scene->get(prim.geomID());
-        const Vec3fa a0 = geom->vertex(prim.vertexID+0,0);
-        const Vec3fa a1 = geom->vertex(prim.vertexID+1,0);
-        const Vec3fa a2 = geom->vertex(prim.vertexID+2,0);
-        const Vec3fa a3 = geom->vertex(prim.vertexID+3,0);
+        Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,prim.vertexID);
         if (likely(geom->subtype == BezierCurves::HAIR))
           pre.intersectorHair.intersect(ray,a0,a1,a2,a3,geom->tessellationRate,Intersect1EpilogMU<VSIZEX,true>(ray,context,prim.geomID(),prim.primID(),scene,geomID_to_instID));
         else 
@@ -58,10 +55,7 @@ namespace embree
       {
         STAT3(shadow.trav_prims,1,1,1);
         const BezierCurves* geom = (BezierCurves*) scene->get(prim.geomID());
-        const Vec3fa a0 = geom->vertex(prim.vertexID+0,0);
-        const Vec3fa a1 = geom->vertex(prim.vertexID+1,0);
-        const Vec3fa a2 = geom->vertex(prim.vertexID+2,0);
-        const Vec3fa a3 = geom->vertex(prim.vertexID+3,0);
+        Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,prim.vertexID);
         if (likely(geom->subtype == BezierCurves::HAIR))
           return pre.intersectorHair.intersect(ray,a0,a1,a2,a3,geom->tessellationRate,Occluded1EpilogMU<VSIZEX,true>(ray,context,prim.geomID(),prim.primID(),scene,geomID_to_instID));
         else
@@ -108,10 +102,7 @@ namespace embree
       {
         STAT3(normal.trav_prims,1,1,1);
         const BezierCurves* geom = (BezierCurves*) scene->get(prim.geomID());
-        const Vec3fa a0 = geom->vertex(prim.vertexID+0,0);
-        const Vec3fa a1 = geom->vertex(prim.vertexID+1,0);
-        const Vec3fa a2 = geom->vertex(prim.vertexID+2,0);
-        const Vec3fa a3 = geom->vertex(prim.vertexID+3,0);
+        Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,prim.vertexID);
         if (likely(geom->subtype == BezierCurves::HAIR))
           pre.intersectorHair.intersect(ray,k,a0,a1,a2,a3,geom->tessellationRate,Intersect1KEpilogMU<VSIZEX,K,true>(ray,k,context,prim.geomID(),prim.primID(),scene));
         else 
@@ -128,10 +119,7 @@ namespace embree
       {
         STAT3(shadow.trav_prims,1,1,1);
         const BezierCurves* geom = (BezierCurves*) scene->get(prim.geomID());
-        const Vec3fa a0 = geom->vertex(prim.vertexID+0,0);
-        const Vec3fa a1 = geom->vertex(prim.vertexID+1,0);
-        const Vec3fa a2 = geom->vertex(prim.vertexID+2,0);
-        const Vec3fa a3 = geom->vertex(prim.vertexID+3,0);
+        Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,prim.vertexID);
         if (likely(geom->subtype == BezierCurves::HAIR))
           return pre.intersectorHair.intersect(ray,k,a0,a1,a2,a3,geom->tessellationRate,Occluded1KEpilogMU<VSIZEX,K,true>(ray,k,context,prim.geomID(),prim.primID(),scene));
         else
@@ -172,21 +160,7 @@ namespace embree
       {
         STAT3(normal.trav_prims,1,1,1);
         const BezierCurves* geom = (BezierCurves*) scene->get(prim.geomID());
-        const int   itime = pre.itime();
-        const float ftime = pre.ftime();
-        const Vec3fa a0 = geom->vertex(prim.vertexID+0,itime+0);
-        const Vec3fa a1 = geom->vertex(prim.vertexID+1,itime+0);
-        const Vec3fa a2 = geom->vertex(prim.vertexID+2,itime+0);
-        const Vec3fa a3 = geom->vertex(prim.vertexID+3,itime+0);
-        const Vec3fa b0 = geom->vertex(prim.vertexID+0,itime+1);
-        const Vec3fa b1 = geom->vertex(prim.vertexID+1,itime+1);
-        const Vec3fa b2 = geom->vertex(prim.vertexID+2,itime+1);
-        const Vec3fa b3 = geom->vertex(prim.vertexID+3,itime+1);
-        const float t0 = 1.0f-ftime, t1 = ftime;
-        const Vec3fa p0 = t0*a0 + t1*b0;
-        const Vec3fa p1 = t0*a1 + t1*b1;
-        const Vec3fa p2 = t0*a2 + t1*b2;
-        const Vec3fa p3 = t0*a3 + t1*b3;
+        Vec3fa p0,p1,p2,p3; geom->gather(p0,p1,p2,p3,prim.vertexID,ray.time);
         if (likely(geom->subtype == BezierCurves::HAIR))
           pre.intersectorHair.intersect(ray,p0,p1,p2,p3,geom->tessellationRate,Intersect1EpilogMU<VSIZEX,true>(ray,context,prim.geomID(),prim.primID(),scene,geomID_to_instID));
         else 
@@ -197,21 +171,7 @@ namespace embree
       {
         STAT3(shadow.trav_prims,1,1,1);
         const BezierCurves* geom = (BezierCurves*) scene->get(prim.geomID());
-        const int   itime = pre.itime();
-        const float ftime = pre.ftime();
-        const Vec3fa a0 = geom->vertex(prim.vertexID+0,itime+0);
-        const Vec3fa a1 = geom->vertex(prim.vertexID+1,itime+0);
-        const Vec3fa a2 = geom->vertex(prim.vertexID+2,itime+0);
-        const Vec3fa a3 = geom->vertex(prim.vertexID+3,itime+0);
-        const Vec3fa b0 = geom->vertex(prim.vertexID+0,itime+1);
-        const Vec3fa b1 = geom->vertex(prim.vertexID+1,itime+1);
-        const Vec3fa b2 = geom->vertex(prim.vertexID+2,itime+1);
-        const Vec3fa b3 = geom->vertex(prim.vertexID+3,itime+1);
-        const float t0 = 1.0f-ftime, t1 = ftime;
-        const Vec3fa p0 = t0*a0 + t1*b0;
-        const Vec3fa p1 = t0*a1 + t1*b1;
-        const Vec3fa p2 = t0*a2 + t1*b2;
-        const Vec3fa p3 = t0*a3 + t1*b3;
+        Vec3fa p0,p1,p2,p3; geom->gather(p0,p1,p2,p3,prim.vertexID,ray.time);
         if (likely(geom->subtype == BezierCurves::HAIR))
           return pre.intersectorHair.intersect(ray,p0,p1,p2,p3,geom->tessellationRate,Occluded1EpilogMU<VSIZEX,true>(ray,context,prim.geomID(),prim.primID(),scene,geomID_to_instID));
         else
@@ -244,21 +204,7 @@ namespace embree
       {
         STAT3(normal.trav_prims,1,1,1);
         const BezierCurves* geom = (BezierCurves*) scene->get(prim.geomID());        
-        const int   itime = pre.itime(k);
-        const float ftime = pre.ftime(k);
-        const Vec3fa a0 = geom->vertex(prim.vertexID+0,itime+0);
-        const Vec3fa a1 = geom->vertex(prim.vertexID+1,itime+0);
-        const Vec3fa a2 = geom->vertex(prim.vertexID+2,itime+0);
-        const Vec3fa a3 = geom->vertex(prim.vertexID+3,itime+0);
-        const Vec3fa b0 = geom->vertex(prim.vertexID+0,itime+1);
-        const Vec3fa b1 = geom->vertex(prim.vertexID+1,itime+1);
-        const Vec3fa b2 = geom->vertex(prim.vertexID+2,itime+1);
-        const Vec3fa b3 = geom->vertex(prim.vertexID+3,itime+1);
-        const float t0 = 1.0f-ftime, t1 = ftime;
-        const Vec3fa p0 = t0*a0 + t1*b0;
-        const Vec3fa p1 = t0*a1 + t1*b1;
-        const Vec3fa p2 = t0*a2 + t1*b2;
-        const Vec3fa p3 = t0*a3 + t1*b3;
+        Vec3fa p0,p1,p2,p3; geom->gather(p0,p1,p2,p3,prim.vertexID,ray.time[k]);
         if (likely(geom->subtype == BezierCurves::HAIR))
           pre.intersectorHair.intersect(ray,k,p0,p1,p2,p3,geom->tessellationRate,Intersect1KEpilogMU<VSIZEX,K,true>(ray,k,context,prim.geomID(),prim.primID(),scene));
         else 
@@ -269,21 +215,7 @@ namespace embree
       {
         STAT3(shadow.trav_prims,1,1,1);
         const BezierCurves* geom = (BezierCurves*) scene->get(prim.geomID());
-        const int   itime = pre.itime(k);
-        const float ftime = pre.ftime(k);
-        const Vec3fa a0 = geom->vertex(prim.vertexID+0,itime+0);
-        const Vec3fa a1 = geom->vertex(prim.vertexID+1,itime+0);
-        const Vec3fa a2 = geom->vertex(prim.vertexID+2,itime+0);
-        const Vec3fa a3 = geom->vertex(prim.vertexID+3,itime+0);
-        const Vec3fa b0 = geom->vertex(prim.vertexID+0,itime+1);
-        const Vec3fa b1 = geom->vertex(prim.vertexID+1,itime+1);
-        const Vec3fa b2 = geom->vertex(prim.vertexID+2,itime+1);
-        const Vec3fa b3 = geom->vertex(prim.vertexID+3,itime+1);
-        const float t0 = 1.0f-ftime, t1 = ftime;
-        const Vec3fa p0 = t0*a0 + t1*b0;
-        const Vec3fa p1 = t0*a1 + t1*b1;
-        const Vec3fa p2 = t0*a2 + t1*b2;
-        const Vec3fa p3 = t0*a3 + t1*b3;
+        Vec3fa p0,p1,p2,p3; geom->gather(p0,p1,p2,p3,prim.vertexID,ray.time[k]);
         if (likely(geom->subtype == BezierCurves::HAIR))
           return pre.intersectorHair.intersect(ray,k,p0,p1,p2,p3,geom->tessellationRate,Occluded1KEpilogMU<VSIZEX,K,true>(ray,k,context,prim.geomID(),prim.primID(),scene));
         else

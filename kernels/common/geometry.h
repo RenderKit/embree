@@ -321,14 +321,14 @@ namespace embree
       const int itime0 = itimeScaled / timeSegmentsGlobal;
       const int rtime0 = itimeScaled % timeSegmentsGlobal;
       const float ftime0 = float(rtime0) * invTimeSegmentsGlobal;
-
       const int rtime1 = rtime0 + timeSegments;
+
       if (rtime1 <= timeSegmentsGlobal)
       {
-        const float ftime1 = float(rtime1) * invTimeSegmentsGlobal;
-
         if (unlikely(!valid(itime0+0))) return false;
         if (unlikely(!valid(itime0+1))) return false;
+
+        const float ftime1 = float(rtime1) * invTimeSegmentsGlobal;
 
         const BBox3fa b0 = bounds(itime0+0);
         const BBox3fa b1 = bounds(itime0+1);
@@ -337,11 +337,11 @@ namespace embree
         return true;
       }
 
-      const float ftime1 = float(rtime1-timeSegmentsGlobal) * invTimeSegmentsGlobal;
-
       if (unlikely(!valid(itime0+0))) return false;
       if (unlikely(!valid(itime0+1))) return false;
       if (unlikely(!valid(itime0+2))) return false;
+
+      const float ftime1 = float(rtime1-timeSegmentsGlobal) * invTimeSegmentsGlobal;
 
       const BBox3fa b0 = bounds(itime0+0);
       const BBox3fa b1 = bounds(itime0+1);
@@ -359,6 +359,38 @@ namespace embree
       bounds1.upper = max(bounds1.upper, bounds1.upper + (b1.upper - b1Lerp.upper));
 
       bbox2 = std::make_pair(bounds0, bounds1);
+      return true;
+    }
+
+    template<typename ValidFunc>
+    __forceinline static bool valid2(size_t itimeGlobal, size_t numTimeStepsGlobal, size_t numTimeSteps, const ValidFunc& valid)
+    {
+      if (numTimeStepsGlobal == numTimeSteps)
+      {
+        if (unlikely(!valid(itimeGlobal+0))) return false;
+        if (unlikely(!valid(itimeGlobal+1))) return false;
+        return true;
+      }
+
+      const int timeSegments = int(numTimeSteps-1);
+      const int timeSegmentsGlobal = int(numTimeStepsGlobal-1);
+
+      const int itimeScaled = int(itimeGlobal) * timeSegments;
+
+      const int itime0 = itimeScaled / timeSegmentsGlobal;
+      const int rtime0 = itimeScaled % timeSegmentsGlobal;
+      const int rtime1 = rtime0 + timeSegments;
+
+      if (rtime1 <= timeSegmentsGlobal)
+      {
+        if (unlikely(!valid(itime0+0))) return false;
+        if (unlikely(!valid(itime0+1))) return false;
+        return true;
+      }
+
+      if (unlikely(!valid(itime0+0))) return false;
+      if (unlikely(!valid(itime0+1))) return false;
+      if (unlikely(!valid(itime0+2))) return false;
       return true;
     }
 

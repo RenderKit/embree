@@ -247,7 +247,7 @@ namespace embree
       return pinfo;
     }
 
-    PrimInfo createBezierRefArrayMBlur(size_t timeSegment, Scene* scene, mvector<BezierPrim>& prims, BuildProgressMonitor& progressMonitor)
+    PrimInfo createBezierRefArrayMBlur(size_t timeSegment, size_t numTimeSteps, Scene* scene, mvector<BezierPrim>& prims, BuildProgressMonitor& progressMonitor)
     {
       ParallelForForPrefixSumState<PrimInfo> pstate;
       Scene::Iterator<BezierCurves,true> iter(scene);
@@ -261,7 +261,7 @@ namespace embree
         for (size_t j=r.begin(); j<r.end(); j++)
         {
           Vec3fa c0,c1,c2,c3;
-          if (!mesh->valid(j,timeSegment,c0,c1,c2,c3)) continue;
+          if (!mesh->valid2(j,timeSegment,numTimeSteps,c0,c1,c2,c3)) continue;
           const BezierPrim bezier(mesh->subtype,c0,c1,c2,c3,mesh->tessellationRate,mesh->id,unsigned(j));
           pinfo.add(bezier.bounds());
           prims[k++] = bezier;
@@ -280,7 +280,7 @@ namespace embree
           for (size_t j=r.begin(); j<r.end(); j++)
           {
             Vec3fa c0,c1,c2,c3;
-            if (!mesh->valid(j,timeSegment,c0,c1,c2,c3)) continue;
+            if (!mesh->valid2(j,timeSegment,numTimeSteps,c0,c1,c2,c3)) continue;
             const BezierPrim bezier(mesh->subtype,c0,c1,c2,c3,mesh->tessellationRate,mesh->id,unsigned(j));
             pinfo.add(bezier.bounds());
             prims[k++] = bezier;
