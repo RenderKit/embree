@@ -82,19 +82,27 @@ namespace embree
       return *(Vec3fa*)mesh->vertexPtr(v[index]);
     }
 
-     template<typename T>
-     __forceinline Vec3<T> getVertex(const vint<M> &v, const size_t index, const Scene *const scene, const size_t itime, const T& ftime) const
+    template<typename T>
+      __forceinline Vec3<T> getVertex(const vint<M> &v, const size_t index, const Scene *const scene, const size_t itime, const T& ftime) const
     {
       const QuadMesh* mesh = scene->getQuadMesh(geomID(index));
-      const Vec3fa v0  = *(Vec3fa*)mesh->vertexPtr(v[index],itime+0);
-      const Vec3fa v1  = *(Vec3fa*)mesh->vertexPtr(v[index],itime+1);
+      const Vec3fa v0 = *(Vec3fa*)mesh->vertexPtr(v[index],itime+0);
+      const Vec3fa v1 = *(Vec3fa*)mesh->vertexPtr(v[index],itime+1);
       const Vec3<T> p0(v0.x,v0.y,v0.z);
       const Vec3<T> p1(v1.x,v1.y,v1.z);
       return (T(one)-ftime)*p0 + ftime*p1;
     }
 
+    /* gather the quads */
     template<int K>
-      __forceinline Vec3<vfloat<K>> getVertex(const vbool<K>& valid, const vint<M>& v, const size_t index, const Scene* const scene, const vfloat<K>& time) const
+      __forceinline void gather(const vbool<K>& valid,
+                                Vec3<vfloat<K>>& p0,
+                                Vec3<vfloat<K>>& p1,
+                                Vec3<vfloat<K>>& p2,
+                                Vec3<vfloat<K>>& p3,
+                                const size_t index,
+                                const Scene* const scene,
+                                const vfloat<K>& time) const
     {
       const QuadMesh* mesh = scene->getQuadMesh(geomID(index));
 
@@ -105,10 +113,12 @@ namespace embree
       const vfloat<K> ftime = timeScaled - itimef;
 
       const size_t first = __bsf(movemask(valid)); // assume itime is uniform
-      return getVertex(v, index, scene, itime[first], ftime);
+      p0 = getVertex(v0, index, scene, itime[first], ftime);
+      p1 = getVertex(v1, index, scene, itime[first], ftime);
+      p2 = getVertex(v2, index, scene, itime[first], ftime);
+      p3 = getVertex(v3, index, scene, itime[first], ftime);
     }
 
-    /* gather the quads */
     __forceinline void gather(Vec3<vfloat<M>>& p0, 
                               Vec3<vfloat<M>>& p1, 
                               Vec3<vfloat<M>>& p2, 

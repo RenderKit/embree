@@ -158,12 +158,12 @@ namespace embree
       if (q.v[2] >= numVertices()) return false;
       if (q.v[3] >= numVertices()) return false;
 
-      for (size_t j=0; j<numTimeSteps; j++) 
+      for (size_t t=0; t<numTimeSteps; t++)
       {
-        const Vec3fa v0 = vertex(q.v[0],j);
-        const Vec3fa v1 = vertex(q.v[1],j);
-        const Vec3fa v2 = vertex(q.v[2],j);
-        const Vec3fa v3 = vertex(q.v[3],j);
+        const Vec3fa v0 = vertex(q.v[0],t);
+        const Vec3fa v1 = vertex(q.v[1],t);
+        const Vec3fa v2 = vertex(q.v[2],t);
+        const Vec3fa v3 = vertex(q.v[3],t);
 
         if (unlikely(!isvalid(v0) || !isvalid(v1) || !isvalid(v2) || !isvalid(v3)))
           return false;

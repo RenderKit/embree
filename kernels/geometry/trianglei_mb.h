@@ -92,8 +92,15 @@ namespace embree
       return (T(one)-ftime)*p0 + ftime*p1;
     }
 
+    /* gather the triangles */
     template<int K>
-      __forceinline Vec3<vfloat<K>> getVertex(const vbool<K>& valid, const vint<M>& v, const size_t index, const Scene* const scene, const vfloat<K>& time) const
+      __forceinline void gather(const vbool<K>& valid,
+                                Vec3<vfloat<K>>& p0,
+                                Vec3<vfloat<K>>& p1,
+                                Vec3<vfloat<K>>& p2,
+                                const size_t index,
+                                const Scene* const scene,
+                                const vfloat<K>& time) const
     {
       const TriangleMesh* mesh = scene->getTriangleMesh(geomID(index));
 
@@ -104,10 +111,11 @@ namespace embree
       const vfloat<K> ftime = timeScaled - itimef;
 
       const size_t first = __bsf(movemask(valid)); // assume itime is uniform
-      return getVertex(v, index, scene, itime[first], ftime);
+      p0 = getVertex(v0, index, scene, itime[first], ftime);
+      p1 = getVertex(v1, index, scene, itime[first], ftime);
+      p2 = getVertex(v2, index, scene, itime[first], ftime);
     }
 
-    /* gather the triangles */
     __forceinline void gather(Vec3<vfloat<M>>& p0,
                               Vec3<vfloat<M>>& p1,
                               Vec3<vfloat<M>>& p2,
