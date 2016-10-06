@@ -412,7 +412,7 @@ namespace embree
       size_t bytesReserved = getReservedBytes();
       size_t bytesUsed = getUsedBytes();
       size_t bytesWasted = getWastedBytes();
-      printf("  allocated = %3.2fMB, reserved = %3.2fMB, used = %3.2fMB (%3.2f%%), wasted = %3.2fMB (%3.2f%%), free = %3.2fMB (%3.2f%%)\n",
+      printf("  allocated = %3.3fMB, reserved = %3.3fMB, used = %3.3fMB (%3.2f%%), wasted = %3.3fMB (%3.2f%%), free = %3.3fMB (%3.2f%%)\n",
 	     1E-6f*bytesAllocated, 1E-6f*bytesReserved,
 	     1E-6f*bytesUsed, 100.0f*bytesUsed/bytesAllocated,
 	     1E-6f*bytesWasted, 100.0f*bytesWasted/bytesAllocated,
@@ -489,13 +489,13 @@ namespace embree
       void shrink (MemoryMonitorInterface* device) 
       {
         const size_t sizeof_Header = offsetof(Block,data[0]);
-        size_t newSize = os_shrink(this,sizeof_Header+getUsedBytes(),reserveEnd+sizeof_Header);
+        size_t newSize = os_shrink(this,sizeof_Header+getBlockUsedBytes(),reserveEnd+sizeof_Header);
         if (device) device->memoryMonitor(newSize-sizeof_Header-allocEnd,true);
         reserveEnd = allocEnd = newSize-sizeof_Header;
         if (next) next->shrink(device);
       }
 
-      size_t getUsedBytes() const {
+      size_t getBlockUsedBytes() const {
         return min(size_t(cur),reserveEnd);
       }
 
@@ -511,6 +511,10 @@ namespace embree
 	return max(allocEnd,size_t(cur))-cur;
       }
 
+      size_t getUsedBytes() const {
+	return getBlockUsedBytes() + (next ? next->getUsedBytes() : 0);
+      }
+
       size_t getAllocatedBytes() const {
 	return getBlockAllocatedBytes() + (next ? next->getAllocatedBytes() : 0);
       }
@@ -524,7 +528,7 @@ namespace embree
       }
 
       void print() const {
-        std::cout << "[" << getUsedBytes() << ", " << getBlockAllocatedBytes() << ", " << getBlockReservedBytes() << "] ";
+        std::cout << "[" << getBlockUsedBytes() << ", " << getBlockAllocatedBytes() << ", " << getBlockReservedBytes() << "] ";
         if (next) next->print();
       }
 
