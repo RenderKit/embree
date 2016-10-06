@@ -130,8 +130,8 @@ namespace embree
   {
     TaskScheduler::ThreadPool* pool = pair->first;
     size_t threadIndex = pair->second;
+    delete pair;
     pool->thread_loop(threadIndex);
-	delete pair;
   }
 
   TaskScheduler::ThreadPool::ThreadPool(bool set_affinity)
