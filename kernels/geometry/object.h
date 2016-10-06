@@ -51,14 +51,14 @@ namespace embree
     }
 
     /*! fill triangle from triangle list */
-    __forceinline std::pair<BBox3fa,BBox3fa> fill_mblur(const PrimRef* prims, size_t& i, size_t end, Scene* scene, const bool list, size_t itime)
+    __forceinline std::pair<BBox3fa,BBox3fa> fill_mblur(const PrimRef* prims, size_t& i, size_t end, Scene* scene, const bool list, size_t itime, size_t numTimeSteps)
     {
       const PrimRef& prim = prims[i]; i++;
       const unsigned geomID = prim.geomID();
       const unsigned primID = prim.primID();
       new (this) Object(geomID, primID);
       AccelSet* accel = (AccelSet*) scene->get(geomID);
-      return accel->bounds_mblur(primID,itime);
+      return accel->bounds_mblur(primID,itime,numTimeSteps);
     }
 
   public:
