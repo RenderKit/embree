@@ -36,7 +36,7 @@ namespace embree
 
     /* default settings */
     static const size_t defaultBlockSize = 4096;
-    static const size_t maxAllocationSize = 4*1024*1024-maxAlignment;
+#define maxAllocationSize size_t(4*1024*1024-maxAlignment)
     static const size_t MAX_THREAD_USED_BLOCK_SLOTS = 8;
     
   public:
@@ -156,7 +156,7 @@ namespace embree
     };
 
     FastAllocator (MemoryMonitorInterface* device) 
-      : device(device), slotMask(0), usedBlocks(nullptr), freeBlocks(nullptr), growSize(defaultBlockSize), bytesUsed(0), thread_local_allocators(this), thread_local_allocators2(this)
+      : device(device), slotMask(0), usedBlocks(nullptr), freeBlocks(nullptr), growSize(defaultBlockSize), log2_grow_size_scale(0), bytesUsed(0), thread_local_allocators(this), thread_local_allocators2(this)
     {
       for (size_t i=0; i<MAX_THREAD_USED_BLOCK_SLOTS; i++)
       {
@@ -188,14 +188,16 @@ namespace embree
       if (usedBlocks.load() || freeBlocks.load()) { reset(); return; }
       if (bytesReserve == 0) bytesReserve = bytesAllocate;
       freeBlocks = Block::create(device,bytesAllocate,bytesReserve);
-      growSize = max(size_t(defaultBlockSize),bytesReserve);
+      growSize = clamp(size_t(defaultBlockSize),bytesReserve,maxAllocationSize);
+      log2_grow_size_scale = 0;
     }
 
     /*! initializes the allocator */
     void init_estimate(size_t bytesAllocate) 
     {
       if (usedBlocks.load() || freeBlocks.load()) { reset(); return; }
-      growSize = max(size_t(defaultBlockSize),bytesAllocate);
+      growSize = clamp(size_t(defaultBlockSize),bytesAllocate,maxAllocationSize);
+      log2_grow_size_scale = 0;
       if (bytesAllocate > 4*maxAllocationSize) slotMask = 0x1;
       if (bytesAllocate > 16*maxAllocationSize) slotMask = MAX_THREAD_USED_BLOCK_SLOTS-1;
     }
@@ -276,6 +278,12 @@ namespace embree
       }
     }
 
+    __forceinline size_t incGrowSizeScale()
+    {
+      size_t scale = log2_grow_size_scale.fetch_add(1)+1;
+      return size_t(1) << min(size_t(16),scale);
+    }
+
     /*! thread safe allocation of memory */
     __noinline void* malloc(size_t bytes, size_t align) 
     {
@@ -301,8 +309,10 @@ namespace embree
         if (likely(freeBlocks.load() == nullptr)) 
         {
           Lock<SpinLock> lock(slotMutex[slot]);
-          if (myUsedBlocks == threadUsedBlocks[slot])
-            threadBlocks[slot] = threadUsedBlocks[slot] = Block::create(device,maxAllocationSize-maxAlignment, maxAllocationSize-maxAlignment, threadBlocks[slot]);              
+          if (myUsedBlocks == threadUsedBlocks[slot]) {
+            const size_t allocSize = min(growSize * incGrowSizeScale(),size_t(maxAllocationSize+maxAlignment))-maxAlignment;
+            threadBlocks[slot] = threadUsedBlocks[slot] = Block::create(device,allocSize,allocSize,threadBlocks[slot]);              
+          }
           continue;
         }        
 #endif
@@ -320,8 +330,9 @@ namespace embree
               threadUsedBlocks[slot] = freeBlocks.load();
 	      freeBlocks = nextFreeBlock;
 	    } else {
-	      growSize = min(2*growSize,size_t(maxAllocationSize+maxAlignment));
-	      usedBlocks = threadUsedBlocks[slot] = Block::create(device,growSize-maxAlignment, growSize-maxAlignment, usedBlocks);
+	      //growSize = min(2*growSize,size_t(maxAllocationSize+maxAlignment));
+              const size_t allocSize = min(growSize * incGrowSizeScale(),size_t(maxAllocationSize+maxAlignment))-maxAlignment;
+	      usedBlocks = threadUsedBlocks[slot] = Block::create(device,allocSize,allocSize,usedBlocks);
 	    }
 	  }
         }
@@ -530,7 +541,8 @@ namespace embree
     SpinLock slotMutex[MAX_THREAD_USED_BLOCK_SLOTS];
 
     size_t growSize;
-    size_t bytesUsed;            //!< bumber of total bytes used
+    std::atomic<size_t> log2_grow_size_scale; //!< log2 of scaling factor for grow size
+    size_t bytesUsed;            //!< number of total bytes used
 
     ThreadLocalData<ThreadLocal> thread_local_allocators; //!< thread local allocators
     ThreadLocalData<ThreadLocal2> thread_local_allocators2; //!< thread local allocators
