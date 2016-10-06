@@ -117,8 +117,8 @@ namespace embree
       const size_t itime = int(itimef);
       const float ftime = timeScaled - itimef;
 
-      const vfloat4 t0 = 1.0f - ftime;
-      const vfloat4 t1 = ftime;
+      const float t0 = 1.0f - ftime;
+      const float t1 = ftime;
       Vec3fa a0,a1,a2,a3;
       gather(a0,a1,a2,a3,i,itime);
       Vec3fa b0,b1,b2,b3;
