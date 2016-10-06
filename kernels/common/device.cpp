@@ -302,6 +302,24 @@ namespace embree
       }
     }
   }
+
+  size_t getMaxNumThreads()
+  {
+    size_t maxNumThreads = 0;
+    for (std::map<Device*,size_t>::iterator i=g_num_threads_map.begin(); i != g_num_threads_map.end(); i++)
+      maxNumThreads = max(maxNumThreads, (*i).second);
+    if (maxNumThreads == std::numeric_limits<size_t>::max()) 
+      maxNumThreads = 0;
+    return maxNumThreads;
+  }
+
+  size_t getMaxCacheSize()
+  {
+    size_t maxCacheSize = 0;
+    for (std::map<Device*,size_t>::iterator i=g_cache_size_map.begin(); i!= g_cache_size_map.end(); i++)
+      maxCacheSize = max(maxCacheSize, (*i).second);
+    return maxCacheSize;
+  }
  
   void Device::setCacheSize(size_t bytes) 
   {
@@ -309,10 +327,7 @@ namespace embree
     if (bytes == 0) g_cache_size_map.erase(this);
     else            g_cache_size_map[this] = bytes;
     
-    size_t maxCacheSize = 0;
-    for (std::map<Device*,size_t>::iterator i=g_cache_size_map.begin(); i!= g_cache_size_map.end(); i++)
-      maxCacheSize = max(maxCacheSize, (*i).second);
-    
+    size_t maxCacheSize = getMaxCacheSize();
     resizeTessellationCache(maxCacheSize);
   }
 
@@ -332,14 +347,8 @@ namespace embree
       return;
     }
 
-    /*! get maximal configured number of threads */
-    size_t maxNumThreads = 0;
-    for (std::map<Device*,size_t>::iterator i=g_num_threads_map.begin(); i != g_num_threads_map.end(); i++)
-      maxNumThreads = max(maxNumThreads, (*i).second);
-    if (maxNumThreads == std::numeric_limits<size_t>::max()) 
-      maxNumThreads = 0;
-
     /* create task scheduler */
+    size_t maxNumThreads = getMaxNumThreads();
     TaskScheduler::create(maxNumThreads,State::set_affinity);
 #if USE_TASK_ARENA
     arena = new tbb::task_arena(int(maxNumThreads));
@@ -350,7 +359,16 @@ namespace embree
   {
     Lock<MutexSys> lock(g_mutex);
     g_num_threads_map.erase(this);
-    configureTaskingSystem();
+
+    /* terminate tasking system */
+    if (g_num_threads_map.size() == 0) {
+      TaskScheduler::destroy();
+    } 
+    /* or configure new number of threads */
+    else {
+      size_t maxNumThreads = getMaxNumThreads();
+      TaskScheduler::create(maxNumThreads,State::set_affinity);
+    }
 #if USE_TASK_ARENA
     delete arena; arena = nullptr;
 #endif
