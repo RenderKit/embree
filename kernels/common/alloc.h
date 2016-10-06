@@ -203,10 +203,9 @@ namespace embree
     /*! frees state not required after build */
     __forceinline void cleanup() 
     {
-
 #if ENABLE_PARALLEL_BLOCK_ALLOCATION == 1
       /* move thread local blocks to global block list */
-      for (size_t i=0;i<MAX_THREAD_USED_BLOCK_SLOTS;i++)
+      for (size_t i=0; i<MAX_THREAD_USED_BLOCK_SLOTS; i++)
       {
         while (threadBlocks[i].load() != nullptr) {
           Block* nextUsedBlock = threadBlocks[i].load()->next;
@@ -229,11 +228,13 @@ namespace embree
     }
 
     /*! shrinks all memory blocks to the actually used size */
-    void shrink () {
+    void shrink () 
+    {
+      for (size_t i=0; i<MAX_THREAD_USED_BLOCK_SLOTS; i++)
+        if (threadUsedBlocks[i].load() != nullptr) threadUsedBlocks[i].load()->shrink(device);
       if (usedBlocks.load() != nullptr) usedBlocks.load()->shrink(device);
       if (freeBlocks.load() != nullptr) freeBlocks.load()->clear(device); freeBlocks = nullptr;
     }
-
 
     /*! resets the allocator, memory blocks get reused */
     void reset () 
@@ -275,8 +276,6 @@ namespace embree
       }
     }
 
-
-
     /*! thread safe allocation of memory */
     __noinline void* malloc(size_t bytes, size_t align) 
     {
@@ -293,7 +292,6 @@ namespace embree
           if (ptr) return ptr;
         }
         
-
         /* throw error if allocation is too large */
         if (bytes > maxAllocationSize)
           throw_RTCError(RTC_UNKNOWN_ERROR,"allocation is too large");
@@ -301,16 +299,12 @@ namespace embree
 #if ENABLE_PARALLEL_BLOCK_ALLOCATION == 1
         /* parallel block creation in case of no freeBlocks, avoids single global mutex */
         if (likely(freeBlocks.load() == nullptr)) 
-          {
-            {
-              Lock<SpinLock> lock(slotMutex[slot]);
-              if (myUsedBlocks == threadUsedBlocks[slot])
-              {
-                threadBlocks[slot] = threadUsedBlocks[slot] = Block::create(device,maxAllocationSize-maxAlignment, maxAllocationSize-maxAlignment, threadBlocks[slot]);              
-              }    
-            }
-            continue;
-          }        
+        {
+          Lock<SpinLock> lock(slotMutex[slot]);
+          if (myUsedBlocks == threadUsedBlocks[slot])
+            threadBlocks[slot] = threadUsedBlocks[slot] = Block::create(device,maxAllocationSize-maxAlignment, maxAllocationSize-maxAlignment, threadBlocks[slot]);              
+          continue;
+        }        
 #endif
 
         /* if this fails allocate new block */
