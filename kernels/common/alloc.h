@@ -405,7 +405,7 @@ namespace embree
       return bytes;
     }
 
-    void print_statistics()
+    void print_statistics(bool verbose = false)
     {
       size_t bytesFree = getFreeBytes();
       size_t bytesAllocated = getAllocatedBytes();
@@ -418,7 +418,7 @@ namespace embree
 	     1E-6f*bytesWasted, 100.0f*bytesWasted/bytesAllocated,
 	     1E-6f*bytesFree, 100.0f*bytesFree/bytesAllocated);
       
-      //if (State::instance()->verbosity(3)) 
+      if (verbose) 
       {
         std::cout << "  used blocks = ";
         if (usedBlocks.load() != nullptr) usedBlocks.load()->print();
