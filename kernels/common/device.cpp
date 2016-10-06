@@ -101,12 +101,12 @@ namespace embree
       State::print();
 
     /* register all algorithms */
-    instance_factory = new InstanceFactory(enabled_cpu_features);
+    instance_factory.reset(new InstanceFactory(enabled_cpu_features));
 
-    bvh4_factory = new BVH4Factory(enabled_cpu_features);
+    bvh4_factory.reset(new BVH4Factory(enabled_cpu_features));
 
 #if defined(__TARGET_AVX__)
-    bvh8_factory = new BVH8Factory(enabled_cpu_features);
+    bvh8_factory.reset(new BVH8Factory(enabled_cpu_features));
 #endif
 
     /* setup tasking system */
@@ -120,11 +120,6 @@ namespace embree
 
   Device::~Device ()
   {
-    delete instance_factory;
-    delete bvh4_factory;
-#if defined(__TARGET_AVX__)
-    delete bvh8_factory;
-#endif
     setCacheSize(0);
     exitTaskingSystem();
   }
@@ -334,24 +329,16 @@ namespace embree
   void Device::initTaskingSystem(size_t numThreads) 
   {
     Lock<MutexSys> lock(g_mutex);
-    if (numThreads == 0) g_num_threads_map[this] = std::numeric_limits<size_t>::max();
-    else                 g_num_threads_map[this] = numThreads;
-    configureTaskingSystem();
-  }
-
-  void Device::configureTaskingSystem() 
-  {
-    /* terminate tasking system */
-    if (g_num_threads_map.size() == 0) {
-      TaskScheduler::destroy();
-      return;
-    }
+    if (numThreads == 0) 
+      g_num_threads_map[this] = std::numeric_limits<size_t>::max();
+    else 
+      g_num_threads_map[this] = numThreads;
 
     /* create task scheduler */
     size_t maxNumThreads = getMaxNumThreads();
     TaskScheduler::create(maxNumThreads,State::set_affinity);
 #if USE_TASK_ARENA
-    arena = new tbb::task_arena(int(maxNumThreads));
+    arena.reset(new tbb::task_arena(int(maxNumThreads)));
 #endif
   }
 
@@ -370,7 +357,7 @@ namespace embree
       TaskScheduler::create(maxNumThreads,State::set_affinity);
     }
 #if USE_TASK_ARENA
-    delete arena; arena = nullptr;
+    arena.reset();
 #endif
   }
 

@@ -73,9 +73,6 @@ namespace embree
     /*! initializes the tasking system */
     void initTaskingSystem(size_t numThreads);
 
-    /*! configures tasking system with maximal number of thread set by any device */
-    void configureTaskingSystem();
-
     /*! shuts down the tasking system */
     void exitTaskingSystem();
 
@@ -89,14 +86,14 @@ namespace embree
   public:
     bool singledevice;      //!< true if this is the device created implicitely through rtcInit
 
-    InstanceFactory* instance_factory; // FIXME: use managed pointers here
-    BVH4Factory* bvh4_factory;
+    std::unique_ptr<InstanceFactory> instance_factory;
+    std::unique_ptr<BVH4Factory> bvh4_factory;
 #if defined(__TARGET_AVX__)
-    BVH8Factory* bvh8_factory;
+    std::unique_ptr<BVH8Factory> bvh8_factory;
 #endif
     
 #if USE_TASK_ARENA
-    tbb::task_arena* arena;
+    std::unique_ptr<tbb::task_arena> arena;
 #endif
     
     /* ray streams filter */

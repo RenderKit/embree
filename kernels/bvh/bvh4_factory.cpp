@@ -692,7 +692,7 @@ namespace embree
 
   void BVH4Factory::createLineSegmentsLine4i(LineSegments* mesh, AccelData*& accel, Builder*& builder)
   {
-    BVH4Factory* factory = mesh->parent->device->bvh4_factory;
+    BVH4Factory* factory = mesh->parent->device->bvh4_factory.get();
     accel = new BVH4(Line4i::type,mesh->parent);
     switch (mesh->flags) {
     case RTC_GEOMETRY_STATIC:     builder = factory->BVH4Line4iMeshBuilderSAH(accel,mesh,0); break;
@@ -704,28 +704,28 @@ namespace embree
 
   void BVH4Factory::createTriangleMeshTriangle4Morton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
-    BVH4Factory* factory = mesh->parent->device->bvh4_factory;
+    BVH4Factory* factory = mesh->parent->device->bvh4_factory.get();
     accel = new BVH4(Triangle4::type,mesh->parent);
     builder = factory->BVH4Triangle4MeshBuilderMortonGeneral(accel,mesh,0);
   }
 
   void BVH4Factory::createTriangleMeshTriangle4vMorton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
-    BVH4Factory* factory = mesh->parent->device->bvh4_factory;
+    BVH4Factory* factory = mesh->parent->device->bvh4_factory.get();
     accel = new BVH4(Triangle4v::type,mesh->parent);
     builder = factory->BVH4Triangle4vMeshBuilderMortonGeneral(accel,mesh,0);
   }
 
   void BVH4Factory::createTriangleMeshTriangle4iMorton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
-    BVH4Factory* factory = mesh->parent->device->bvh4_factory;
+    BVH4Factory* factory = mesh->parent->device->bvh4_factory.get();
     accel = new BVH4(Triangle4i::type,mesh->parent);
     builder = factory->BVH4Triangle4iMeshBuilderMortonGeneral(accel,mesh,0); 
   }
 
   void BVH4Factory::createQuadMeshQuad4vMorton(QuadMesh* mesh, AccelData*& accel, Builder*& builder)
   {
-    BVH4Factory* factory = mesh->parent->device->bvh4_factory;
+    BVH4Factory* factory = mesh->parent->device->bvh4_factory.get();
     accel = new BVH4(Quad4v::type,mesh->parent);
     builder = factory->BVH4Quad4vMeshBuilderMortonGeneral(accel,mesh,0);
   }
@@ -733,7 +733,7 @@ namespace embree
 
   void BVH4Factory::createTriangleMeshTriangle4(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
-    BVH4Factory* factory = mesh->parent->device->bvh4_factory;
+    BVH4Factory* factory = mesh->parent->device->bvh4_factory.get();
     accel = new BVH4(Triangle4::type,mesh->parent);
     switch (mesh->flags) {
     case RTC_GEOMETRY_STATIC:     builder = factory->BVH4Triangle4MeshBuilderSAH(accel,mesh,0); break;
@@ -745,7 +745,7 @@ namespace embree
 
   void BVH4Factory::createTriangleMeshTriangle4v(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
-    BVH4Factory* factory = mesh->parent->device->bvh4_factory;
+    BVH4Factory* factory = mesh->parent->device->bvh4_factory.get();
     accel = new BVH4(Triangle4v::type,mesh->parent);
     switch (mesh->flags) {
     case RTC_GEOMETRY_STATIC:     builder = factory->BVH4Triangle4vMeshBuilderSAH(accel,mesh,0); break;
@@ -757,7 +757,7 @@ namespace embree
 
   void BVH4Factory::createTriangleMeshTriangle4i(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
-    BVH4Factory* factory = mesh->parent->device->bvh4_factory;
+    BVH4Factory* factory = mesh->parent->device->bvh4_factory.get();
     accel = new BVH4(Triangle4i::type,mesh->parent);
     switch (mesh->flags) {
     case RTC_GEOMETRY_STATIC:     builder = factory->BVH4Triangle4iMeshBuilderSAH(accel,mesh,0); break;
@@ -769,7 +769,7 @@ namespace embree
 
   void BVH4Factory::createQuadMeshQuad4v(QuadMesh* mesh, AccelData*& accel, Builder*& builder)
   {
-    BVH4Factory* factory = mesh->parent->device->bvh4_factory;
+    BVH4Factory* factory = mesh->parent->device->bvh4_factory.get();
     accel = new BVH4(Quad4v::type,mesh->parent);
     switch (mesh->flags) {
     case RTC_GEOMETRY_STATIC:     builder = factory->BVH4Quad4vMeshBuilderSAH(accel,mesh,0); break;
