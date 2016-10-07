@@ -205,7 +205,7 @@ namespace embree
       if (usedBlocks.load() || freeBlocks.load()) { reset(); return; }
       if (bytesReserve == 0) bytesReserve = bytesAllocate;
       freeBlocks = Block::create(device,bytesAllocate,bytesReserve);
-      use_single_mode = bytesAllocate < 8*PAGE_SIZE;
+      use_single_mode = false; //bytesAllocate < 8*PAGE_SIZE;
       defaultBlockSize = clamp(bytesAllocate/4,size_t(128),size_t(PAGE_SIZE));
       growSize = clamp(bytesReserve,size_t(PAGE_SIZE),maxAllocationSize);
       log2_grow_size_scale = 0;
@@ -215,12 +215,14 @@ namespace embree
     void init_estimate(size_t bytesAllocate) 
     {
       if (usedBlocks.load() || freeBlocks.load()) { reset(); return; }
-      use_single_mode = bytesAllocate < 8*PAGE_SIZE;
+      use_single_mode = false; //bytesAllocate < 8*PAGE_SIZE;
       defaultBlockSize = clamp(bytesAllocate/4,size_t(128),size_t(PAGE_SIZE));
       growSize = clamp(bytesAllocate,size_t(PAGE_SIZE),maxAllocationSize);
       log2_grow_size_scale = 0;
-      if (bytesAllocate > 4*maxAllocationSize) slotMask = 0x1;
-      if (bytesAllocate > 16*maxAllocationSize) slotMask = MAX_THREAD_USED_BLOCK_SLOTS-1;
+      if (MAX_THREAD_USED_BLOCK_SLOTS >= 0                                        ) slotMask = 0x0;
+      if (MAX_THREAD_USED_BLOCK_SLOTS >= 2 && bytesAllocate >  4*maxAllocationSize) slotMask = 0x1;
+      if (MAX_THREAD_USED_BLOCK_SLOTS >= 4 && bytesAllocate >  8*maxAllocationSize) slotMask = 0x3;
+      if (MAX_THREAD_USED_BLOCK_SLOTS >= 8 && bytesAllocate > 16*maxAllocationSize) slotMask = 0x7;
     }
 
     /*! frees state not required after build */
@@ -428,6 +430,9 @@ namespace embree
       
       if (verbose) 
       {
+        std::cout << "  slotMask = " << slotMask << std::endl;
+        std::cout << "  use_single_mode = " << use_single_mode << std::endl;
+        std::cout << "  defaultBlockSize = " << defaultBlockSize << std::endl;
         std::cout << "  used blocks = ";
         if (usedBlocks.load() != nullptr) usedBlocks.load()->print();
         std::cout << "[END]" << std::endl;
@@ -479,6 +484,7 @@ namespace embree
 	if (unlikely(i+bytes > reserveEnd && !partial)) return nullptr;
         if (unlikely(i > reserveEnd)) return nullptr;
         bytes_in = bytes = min(bytes,reserveEnd-i);
+        
 	if (i+bytes > allocEnd) {
           if (device) device->memoryMonitor(i+bytes-max(i,allocEnd),true);
           os_commit(&data[i],bytes); // FIXME: optimize, may get called frequently
