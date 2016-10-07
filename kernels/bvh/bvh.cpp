@@ -157,8 +157,10 @@ namespace embree
     if (device->verbosity(2))
       printStatistics();
 
-    if (device->verbosity(2))
+    if (device->verbosity(2)) {
+      std::cout << "  primitives = " << numPrimitives << ",";
       alloc.print_statistics(device->verbosity(3));
+    }
 
     /* benchmark mode */
     if (device->benchmark) {

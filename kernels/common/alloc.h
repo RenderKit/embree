@@ -188,7 +188,7 @@ namespace embree
       if (usedBlocks.load() || freeBlocks.load()) { reset(); return; }
       if (bytesReserve == 0) bytesReserve = bytesAllocate;
       freeBlocks = Block::create(device,bytesAllocate,bytesReserve);
-      growSize = clamp(size_t(defaultBlockSize),bytesReserve,maxAllocationSize);
+      growSize = clamp(bytesReserve,size_t(defaultBlockSize),maxAllocationSize);
       log2_grow_size_scale = 0;
     }
 
@@ -196,7 +196,7 @@ namespace embree
     void init_estimate(size_t bytesAllocate) 
     {
       if (usedBlocks.load() || freeBlocks.load()) { reset(); return; }
-      growSize = clamp(size_t(defaultBlockSize),bytesAllocate,maxAllocationSize);
+      growSize = clamp(bytesAllocate,size_t(defaultBlockSize),maxAllocationSize);
       log2_grow_size_scale = 0;
       if (bytesAllocate > 4*maxAllocationSize) slotMask = 0x1;
       if (bytesAllocate > 16*maxAllocationSize) slotMask = MAX_THREAD_USED_BLOCK_SLOTS-1;
