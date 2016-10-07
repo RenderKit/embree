@@ -59,7 +59,7 @@ namespace embree
         size_t n = current.prims.size();
         size_t items = Primitive::blocks(n);
         size_t start = current.prims.begin();
-        Primitive* accel = (Primitive*) alloc->alloc1.malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
+        Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
         typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,items);
         for (size_t i=0; i<items; i++) {
           accel[i].fill(prims,start,current.prims.end(),bvh->scene,false);
@@ -86,7 +86,7 @@ namespace embree
         size_t items = Primitive::blocks(n);
         size_t start = current.prims.begin();
         // todo alloc0/1 or alloc
-        Primitive* accel = (Primitive*) alloc->alloc0.malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
+        Primitive* accel = (Primitive*) alloc->alloc0->malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
         typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,items);
         for (size_t i=0; i<items; i++) {
           accel[i].fill(prims,start,current.prims.end(),bvh->scene,false);
@@ -123,7 +123,7 @@ namespace embree
         for (size_t i=0; i<n; i++) 
           source[start+i].lower.a &= 0x00FFFFFF;
 
-        Primitive* accel = (Primitive*) alloc->alloc1.malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
+        Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
         typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,items);
         for (size_t i=0; i<items; i++) {
           accel[i].fill(source,start,current.prims.end(),bvh->scene,false);
@@ -175,7 +175,7 @@ namespace embree
           bvh->clear();
           return;
         }
-
+        
         double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + toString(N) + "BuilderSAH");
 
 #if PROFILE
@@ -310,7 +310,7 @@ namespace embree
       {
         size_t n = current.pinfo.size();
         size_t num = Primitive::blocks(n);
-        Primitive* leaf = (Primitive*) alloc->alloc1.malloc(num*sizeof(Primitive),BVH::byteNodeAlignment);
+        Primitive* leaf = (Primitive*) alloc->alloc1->malloc(num*sizeof(Primitive),BVH::byteNodeAlignment);
         typename BVH::NodeRef node = bvh->encodeLeaf((char*)leaf,num);
 
         PrimRefList::block_iterator_unsafe iter1(current.prims);
@@ -444,7 +444,7 @@ namespace embree
       {
         size_t items = Primitive::blocks(current.prims.size());
         size_t start = current.prims.begin();
-        Primitive* accel = (Primitive*) alloc->alloc1.malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
+        Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
         typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,items);
 	BBox3fa bounds0 = empty;
 	BBox3fa bounds1 = empty;

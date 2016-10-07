@@ -47,6 +47,8 @@ namespace embree
       ALIGNED_CLASS_(64);
     public:
 
+      __forceinline ThreadLocal() {}
+
       /*! Constructor for usage with ThreadLocalData */
       __forceinline ThreadLocal (void* alloc) 
 	: alloc((FastAllocator*)alloc), ptr(nullptr), cur(0), end(0), allocBlockSize(defaultBlockSize), bytesUsed(0), bytesWasted(0) {}
@@ -71,6 +73,7 @@ namespace embree
       /* Allocate aligned memory from the threads memory block. */
       __forceinline void* malloc(size_t bytes, size_t align = 16) 
       {
+        //PRINT3("malloc",cur,bytes);
         assert(align <= maxAlignment);
 	bytesUsed += bytes;
 	
@@ -82,9 +85,11 @@ namespace embree
 
         /* if allocation is too large allocate with parent allocator */
         if (4*bytes > allocBlockSize) {
+          //PRINT("fallback");
           return alloc->malloc(bytes,maxAlignment);
 	}
 
+        //PRINT("get new block");
         /* get new full block if allocation failed */
         size_t blockSize = allocBlockSize;
 	ptr = (char*) alloc->malloc(blockSize,maxAlignment);
@@ -132,31 +137,38 @@ namespace embree
 
       /*! Constructor for usage with ThreadLocalData */
       __forceinline ThreadLocal2 (void* alloc) 
-        : alloc0(alloc), alloc1(alloc) {}
-
+      {
+        ::new (&allocators[0]) ThreadLocal(alloc); alloc0 = &allocators[0];
+        ::new (&allocators[1]) ThreadLocal(alloc); alloc1 = &allocators[1];
+      }
+      
       /*! Default constructor. */
       __forceinline ThreadLocal2 (FastAllocator* alloc, const size_t allocBlockSize = defaultBlockSize) 
-        : alloc0(alloc,allocBlockSize), alloc1(alloc,allocBlockSize) {}
+      {
+        ::new (&allocators[0]) ThreadLocal(alloc,allocBlockSize); alloc0 = &allocators[0];
+        ::new (&allocators[1]) ThreadLocal(alloc,allocBlockSize); alloc1 = &allocators[1];
+      }
 
       /*! resets the allocator */
       __forceinline void reset() {
-        alloc0.reset();
-        alloc1.reset();
+        allocators[0].reset();
+        allocators[1].reset();
       }
 
       /*! returns amount of used bytes */
-      size_t getUsedBytes() const { return alloc0.getUsedBytes() + alloc1.getUsedBytes(); }
+      size_t getUsedBytes() const { return allocators[0].getUsedBytes() + allocators[1].getUsedBytes(); }
       
       /*! returns amount of wasted bytes */
-      size_t getWastedBytes() const { return alloc0.getWastedBytes() + alloc1.getWastedBytes(); }
+      size_t getWastedBytes() const { return allocators[0].getWastedBytes() + allocators[1].getWastedBytes(); }
     
     public:  
-      ThreadLocal alloc0;
-      ThreadLocal alloc1;
+      ThreadLocal allocators[2];
+      ThreadLocal* alloc0;
+      ThreadLocal* alloc1;
     };
 
     FastAllocator (MemoryMonitorInterface* device) 
-      : device(device), slotMask(0), usedBlocks(nullptr), freeBlocks(nullptr), growSize(defaultBlockSize), log2_grow_size_scale(0), bytesUsed(0), bytesWasted(0), thread_local_allocators(this), thread_local_allocators2(this)
+      : device(device), slotMask(0), usedBlocks(nullptr), freeBlocks(nullptr), growSize(defaultBlockSize), log2_grow_size_scale(0), bytesUsed(0), bytesWasted(0), thread_local_allocators2(this)
     {
       for (size_t i=0; i<MAX_THREAD_USED_BLOCK_SLOTS; i++)
       {
@@ -171,8 +183,9 @@ namespace embree
     }
 
     /*! returns a fast thread local allocator */
-    __forceinline ThreadLocal* threadLocal() {
-      return thread_local_allocators.get();
+    __forceinline ThreadLocal* threadLocal(size_t slot = 0) {
+      assert(slot < 2);
+      return &thread_local_allocators2.get()->allocators[slot];
     }
 
     /*! returns a fast thread local allocator */
@@ -219,17 +232,11 @@ namespace embree
       }
 #endif
       
-      for (size_t t=0; t<thread_local_allocators.threads.size(); t++){
-        bytesUsed += thread_local_allocators.threads[t]->getUsedBytes();
-        bytesWasted += thread_local_allocators.threads[t]->getWastedBytes();
-      }
-
       for (size_t t=0; t<thread_local_allocators2.threads.size(); t++) {
 	bytesUsed += thread_local_allocators2.threads[t]->getUsedBytes();
         bytesWasted += thread_local_allocators2.threads[t]->getWastedBytes();
       }
 
-      thread_local_allocators.clear();
       thread_local_allocators2.clear();
     }
 
@@ -266,7 +273,6 @@ namespace embree
       }
       
       /* reset all thread local allocators */
-      thread_local_allocators.reset();
       thread_local_allocators2.reset();
     }
 
@@ -375,9 +381,6 @@ namespace embree
     {
       size_t bytes = bytesUsed;
 
-      for (size_t t=0; t<thread_local_allocators.threads.size(); t++)
-	bytes += thread_local_allocators.threads[t]->getUsedBytes();
-
       for (size_t t=0; t<thread_local_allocators2.threads.size(); t++)
 	bytes += thread_local_allocators2.threads[t]->getUsedBytes();
 
@@ -395,9 +398,6 @@ namespace embree
     {
       size_t bytes = bytesWasted;
       if (usedBlocks.load()) bytes += usedBlocks.load()->getFreeBytes();
-
-      for (size_t t=0; t<thread_local_allocators.threads.size(); t++)
-	bytes += thread_local_allocators.threads[t]->getWastedBytes();
 
       for (size_t t=0; t<thread_local_allocators2.threads.size(); t++)
 	bytes += thread_local_allocators2.threads[t]->getWastedBytes();
@@ -436,6 +436,7 @@ namespace embree
     {
       static Block* create(MemoryMonitorInterface* device, size_t bytesAllocate, size_t bytesReserve, Block* next = nullptr)
       {
+        //PRINT3("allocating block",bytesAllocate,bytesReserve);
         const size_t sizeof_Header = offsetof(Block,data[0]);
         bytesAllocate = ((sizeof_Header+bytesAllocate+defaultBlockSize-1) & ~(defaultBlockSize-1)); // always consume full pages
         bytesReserve  = ((sizeof_Header+bytesReserve +defaultBlockSize-1) & ~(defaultBlockSize-1)); // always consume full pages
@@ -463,6 +464,7 @@ namespace embree
       
       void* malloc(MemoryMonitorInterface* device, size_t bytes, size_t align = 16) 
       {
+        //PRINT3("Block::malloc",allocEnd,bytes);
         assert(align <= maxAlignment);
         bytes = (bytes+(align-1)) & ~(align-1);
 	if (unlikely(cur+bytes > reserveEnd)) return nullptr;
@@ -558,7 +560,6 @@ namespace embree
     size_t bytesUsed;            //!< number of total bytes used
     size_t bytesWasted;          //!< number of total wasted bytes
 
-    ThreadLocalData<ThreadLocal> thread_local_allocators; //!< thread local allocators
     ThreadLocalData<ThreadLocal2> thread_local_allocators2; //!< thread local allocators
   };
 }

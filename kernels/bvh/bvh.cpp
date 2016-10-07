@@ -102,7 +102,7 @@ namespace embree
     for (size_t i=0; i<lst.size(); i++)
       lst[i].node->setBarrier();
       
-    root = layoutLargeNodesRecursion(root,alloc.threadLocal2()->alloc0);
+    root = layoutLargeNodesRecursion(root,*alloc.threadLocal2()->alloc0);
   }
   
   template<int N>

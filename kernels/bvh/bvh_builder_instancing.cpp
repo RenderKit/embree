@@ -277,7 +277,7 @@ namespace embree
            [&] { return bvh->alloc.threadLocal2(); },
            [&] (const isa::BVHBuilderBinnedSAH::BuildRecord& current, BVHBuilderBinnedSAH::BuildRecord* children, const size_t num, FastAllocator::ThreadLocal2* alloc) -> int
           {
-            Node* node = (Node*) alloc->alloc0.malloc(sizeof(Node)); node->clear();
+            Node* node = (Node*) alloc->alloc0->malloc(sizeof(Node)); node->clear();
             for (size_t i=0; i<num; i++) {
               node->set(i,children[i].pinfo.geomBounds);
               children[i].parent = (size_t*)&node->child(i);
@@ -289,7 +289,7 @@ namespace embree
           {
             assert(current.prims.size() == 1);
             BuildRef* ref = (BuildRef*) prims[current.prims.begin()].ID();
-            TransformNode* node = (TransformNode*) alloc->alloc0.malloc(sizeof(TransformNode));
+            TransformNode* node = (TransformNode*) alloc->alloc0->malloc(sizeof(TransformNode));
             new (node) TransformNode(ref->local2world,ref->localBounds,ref->node,ref->mask,ref->instID,ref->xfmID,ref->type); // FIXME: rcp should be precalculated somewhere
             *current.parent = BVH::encodeNode(node);
             //*current.parent = ref->node;

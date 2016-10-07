@@ -122,7 +122,7 @@ namespace embree
       
       __forceinline NodeMB* operator() (const isa::BVHBuilderBinnedSAH::BuildRecord& current, BVHBuilderBinnedSAH::BuildRecord* children, const size_t num, FastAllocator::ThreadLocal2* alloc)
       {
-        NodeMB* node = (NodeMB*) alloc->alloc0.malloc(sizeof(NodeMB)); node->clear();
+        NodeMB* node = (NodeMB*) alloc->alloc0->malloc(sizeof(NodeMB)); node->clear();
         for (size_t i=0; i<num; i++) {
           children[i].parent = (size_t*)&node->child(i);
         }

@@ -164,7 +164,7 @@ namespace embree
            [&] { return bvh->alloc.threadLocal2(); },
            [&] (const isa::BVHBuilderBinnedSAH::BuildRecord& current, BVHBuilderBinnedSAH::BuildRecord* children, const size_t n, FastAllocator::ThreadLocal2* alloc) -> int
            {
-             Node* node = (Node*) alloc->alloc0.malloc(sizeof(Node)); node->clear();
+             Node* node = (Node*) alloc->alloc0->malloc(sizeof(Node)); node->clear();
              for (size_t i=0; i<n; i++) {
                node->set(i,children[i].pinfo.geomBounds);
                children[i].parent = (size_t*)&node->child(i);
