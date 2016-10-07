@@ -208,12 +208,8 @@ namespace embree
 
       __forceinline std::pair<BBox3fa,BBox3fa> bounds_mblur (size_t item, size_t itimeGlobal, size_t numTimeStepsGlobal) const
       {
-        std::pair<BBox3fa,BBox3fa> bbox2;
-        Geometry::bounds2(itimeGlobal, numTimeStepsGlobal, numTimeSteps,
-                          [&] (size_t itime) { return bounds(item, itime); },
-                          [&] (size_t itime) { return true; },
-                          bbox2);
-        return bbox2;
+        return Geometry::bounds2(itimeGlobal, numTimeStepsGlobal, numTimeSteps,
+                                 [&] (size_t itime) { return bounds(item, itime); });
       }
 
       /*! check if the i'th primitive is valid */
@@ -242,11 +238,13 @@ namespace embree
 
       __forceinline bool valid2(size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal, BBox3fa& bbox) const
       {
-        // FIXME: avoid calling bounds twice
         std::pair<BBox3fa,BBox3fa> bbox2;
         if (!Geometry::bounds2(itimeGlobal, numTimeStepsGlobal, numTimeSteps,
-                               [&] (size_t itime) { return bounds(i, itime); },
-                               [&] (size_t itime) { return valid(i, itime); },
+                               [&] (size_t itime, BBox3fa& bbox) -> bool
+                               {
+                                 bbox = bounds(i, itime);
+                                 return isvalid(bbox);
+                               },
                                bbox2))
           return false;
 

@@ -252,22 +252,14 @@ namespace embree
     /*! calculates the bounds of the i'th curve at the itime'th time segment */
     __forceinline std::pair<BBox3fa,BBox3fa> bounds2(size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal) const
     {
-      std::pair<BBox3fa,BBox3fa> bbox2;
-      Geometry::bounds2(itimeGlobal, numTimeStepsGlobal, numTimeSteps,
-                        [&] (size_t itime) { return bounds(i, itime); },
-                        [&] (size_t itime) { return true; },
-                        bbox2);
-      return bbox2;
+      return Geometry::bounds2(itimeGlobal, numTimeStepsGlobal, numTimeSteps,
+                               [&] (size_t itime) { return bounds(i, itime); });
     }
 
     __forceinline std::pair<BBox3fa,BBox3fa> bounds2(const AffineSpace3fa& space, size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal) const
     {
-      std::pair<BBox3fa,BBox3fa> bbox2;
-      Geometry::bounds2(itimeGlobal, numTimeStepsGlobal, numTimeSteps,
-                        [&] (size_t itime) { return bounds(space, i, itime); },
-                        [&] (size_t itime) { return true; },
-                        bbox2);
-      return bbox2;
+      return Geometry::bounds2(itimeGlobal, numTimeStepsGlobal, numTimeSteps,
+                               [&] (size_t itime) { return bounds(space, i, itime); });
     }
 
   public:

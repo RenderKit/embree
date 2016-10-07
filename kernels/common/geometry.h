@@ -297,16 +297,65 @@ namespace embree
     template<typename simd> __forceinline bool hasISPCOcclusionFilter() const;
 
   public:
-    template<typename BoundsFunc, typename ValidFunc>
-    __forceinline static bool bounds2(size_t itimeGlobal, size_t numTimeStepsGlobal, size_t numTimeSteps, const BoundsFunc& bounds, const ValidFunc& valid, std::pair<BBox3fa,BBox3fa>& bbox2)
+    template<typename BoundsFunc>
+    __forceinline static std::pair<BBox3fa,BBox3fa> bounds2(size_t itimeGlobal, size_t numTimeStepsGlobal, size_t numTimeSteps, const BoundsFunc& bounds)
     {
       if (numTimeStepsGlobal == numTimeSteps)
       {
-        if (unlikely(!valid(itimeGlobal+0))) return false;
-        if (unlikely(!valid(itimeGlobal+1))) return false;
-
         const BBox3fa bounds0 = bounds(itimeGlobal+0);
         const BBox3fa bounds1 = bounds(itimeGlobal+1);
+
+        return std::make_pair(bounds0, bounds1);
+      }
+
+      const int timeSegments = int(numTimeSteps-1);
+      const int timeSegmentsGlobal = int(numTimeStepsGlobal-1);
+      const float invTimeSegmentsGlobal = rcp(float(timeSegmentsGlobal));
+
+      const int itimeScaled = int(itimeGlobal) * timeSegments;
+
+      const int itime0 = itimeScaled / timeSegmentsGlobal;
+      const int rtime0 = itimeScaled % timeSegmentsGlobal;
+      const float ftime0 = float(rtime0) * invTimeSegmentsGlobal;
+      const int rtime1 = rtime0 + timeSegments;
+
+      if (rtime1 <= timeSegmentsGlobal)
+      {
+        const BBox3fa b0 = bounds(itime0+0);
+        const BBox3fa b1 = bounds(itime0+1);
+
+        const float ftime1 = float(rtime1) * invTimeSegmentsGlobal;
+
+        return std::make_pair(lerp(b0, b1, ftime0), lerp(b0, b1, ftime1));
+      }
+
+      const BBox3fa b0 = bounds(itime0+0);
+      const BBox3fa b1 = bounds(itime0+1);
+      const BBox3fa b2 = bounds(itime0+2);
+
+      const float ftime1 = float(rtime1-timeSegmentsGlobal) * invTimeSegmentsGlobal;
+
+      BBox3fa bounds0 = lerp(b0, b1, ftime0);
+      BBox3fa bounds1 = lerp(b1, b2, ftime1);
+
+      const BBox3fa b1Lerp = lerp(bounds0, bounds1, float(timeSegmentsGlobal-rtime0) * rcp(float(timeSegments)));
+
+      bounds0.lower = min(bounds0.lower, bounds0.lower - (b1Lerp.lower - b1.lower));
+      bounds1.lower = min(bounds1.lower, bounds1.lower - (b1Lerp.lower - b1.lower));
+
+      bounds0.upper = max(bounds0.upper, bounds0.upper + (b1.upper - b1Lerp.upper));
+      bounds1.upper = max(bounds1.upper, bounds1.upper + (b1.upper - b1Lerp.upper));
+
+      return std::make_pair(bounds0, bounds1);
+    }
+
+    template<typename BoundsFunc>
+    __forceinline static bool bounds2(size_t itimeGlobal, size_t numTimeStepsGlobal, size_t numTimeSteps, const BoundsFunc& bounds, std::pair<BBox3fa,BBox3fa>& bbox2)
+    {
+      if (numTimeStepsGlobal == numTimeSteps)
+      {
+        BBox3fa bounds0; if (unlikely(!bounds(itimeGlobal+0, bounds0))) return false;
+        BBox3fa bounds1; if (unlikely(!bounds(itimeGlobal+1, bounds1))) return false;
 
         bbox2 = std::make_pair(bounds0, bounds1);
         return true;
@@ -324,28 +373,21 @@ namespace embree
       const int rtime1 = rtime0 + timeSegments;
 
       if (rtime1 <= timeSegmentsGlobal)
-      {
-        if (unlikely(!valid(itime0+0))) return false;
-        if (unlikely(!valid(itime0+1))) return false;
+      { 
+        BBox3fa b0; if (unlikely(!bounds(itime0+0, b0))) return false;
+        BBox3fa b1; if (unlikely(!bounds(itime0+1, b1))) return false;
 
         const float ftime1 = float(rtime1) * invTimeSegmentsGlobal;
-
-        const BBox3fa b0 = bounds(itime0+0);
-        const BBox3fa b1 = bounds(itime0+1);
 
         bbox2 = std::make_pair(lerp(b0, b1, ftime0), lerp(b0, b1, ftime1));
         return true;
       }
 
-      if (unlikely(!valid(itime0+0))) return false;
-      if (unlikely(!valid(itime0+1))) return false;
-      if (unlikely(!valid(itime0+2))) return false;
+      BBox3fa b0; if (unlikely(!bounds(itime0+0, b0))) return false;
+      BBox3fa b1; if (unlikely(!bounds(itime0+1, b1))) return false;
+      BBox3fa b2; if (unlikely(!bounds(itime0+2, b2))) return false;
 
       const float ftime1 = float(rtime1-timeSegmentsGlobal) * invTimeSegmentsGlobal;
-
-      const BBox3fa b0 = bounds(itime0+0);
-      const BBox3fa b1 = bounds(itime0+1);
-      const BBox3fa b2 = bounds(itime0+2);
 
       BBox3fa bounds0 = lerp(b0, b1, ftime0);
       BBox3fa bounds1 = lerp(b1, b2, ftime1);
