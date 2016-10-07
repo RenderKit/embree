@@ -111,7 +111,7 @@ namespace embree
                               size_t i,
                               float time) const
     {
-      const float timeSegments = numTimeSegments;
+      const float timeSegments = fnumTimeSegments;
       const float timeScaled = time * timeSegments;
       const float itimef = clamp(floor(timeScaled), 0.0f, timeSegments-1.0f);
       const size_t itime = int(itimef);

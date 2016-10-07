@@ -18,6 +18,7 @@
 #include "xml_loader.h"
 #include "xml_writer.h"
 #include "obj_loader.h"
+#include "ply_loader.h"
 #include "hair_loader.h"
 #include "cy_hair_loader.h"
 #include "corona_loader.h"
@@ -27,6 +28,7 @@ namespace embree
   Ref<SceneGraph::Node> SceneGraph::load(const FileName& filename)
   {
     if      (toLowerCase(filename.ext()) == std::string("obj" )) return loadOBJ(filename);
+    else if (toLowerCase(filename.ext()) == std::string("ply" )) return loadPLY(filename);
     else if (toLowerCase(filename.ext()) == std::string("xml" )) return loadXML(filename);
     else if (toLowerCase(filename.ext()) == std::string("hair")) return loadCYHair(filename);
     else if (toLowerCase(filename.ext()) == std::string("txt" )) return loadTxtHair(filename);

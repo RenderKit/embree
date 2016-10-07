@@ -40,7 +40,7 @@ namespace embree
   }
 
   template<int N>
-  void BVHN<N>::set (NodeRef root, const BBox3fa& bounds, size_t numPrimitives)
+  void BVHN<N>::set (NodeRef root, const LBBox3fa& bounds, size_t numPrimitives)
   {
     this->root = root;
     this->bounds = bounds;

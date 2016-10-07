@@ -41,6 +41,7 @@ extern "C" void ispcSetProgressMonitorFunction (RTCScene scene, void* uniform fu
 extern "C" void ispcCommit (RTCScene scene);
 extern "C" void ispcCommitThread (RTCScene scene, uniform unsigned int threadID, uniform unsigned int numThreads);
 extern "C" void ispcGetBounds(RTCScene scene, uniform RTCBounds& bounds_o);
+extern "C" void ispcGetLinearBounds(RTCScene scene, uniform RTCBounds* uniform bounds_o);
 extern "C" void ispcIntersect1 (RTCScene scene, uniform RTCRay1& ray);
 extern "C" void ispcIntersect4 (void* uniform valid, RTCScene scene, void* uniform ray);
 extern "C" void ispcIntersect8 (void* uniform valid, RTCScene scene, void* uniform ray);
@@ -264,6 +265,10 @@ void rtcCommitThread (RTCScene scene, uniform unsigned int threadID, uniform uns
 
 void rtcGetBounds(RTCScene scene, uniform RTCBounds& bounds_o) {
   ispcGetBounds(scene,bounds_o);
+}
+
+void rtcGetLinearBounds(RTCScene scene, uniform RTCBounds* uniform bounds_o) {
+  ispcGetLinearBounds(scene,bounds_o);
 }
 
 void rtcIntersect1 (RTCScene scene, uniform RTCRay1& ray) {

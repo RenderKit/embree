@@ -586,7 +586,7 @@ namespace embree
         NodeRef* roots = (NodeRef*) bvh->alloc.threadLocal2()->alloc0.malloc(sizeof(NodeRef)*numTimeSegments,BVH::byteNodeAlignment);
 
         /* build BVH for each timestep */
-        BBox3fa bounds = empty;
+        avector<BBox3fa> bounds(bvh->numTimeSteps);
         size_t num_bvh_primitives = 0;
         for (size_t t=0; t<numTimeSegments; t++)
         {
@@ -596,10 +596,11 @@ namespace embree
           std::tie(root, tbounds) = BVHNBuilderMblur<N>::build(bvh,CreateMSMBlurLeaf<N,Primitive>(bvh,prims.data(),t),bvh->scene->progressInterface,prims.data(),pinfo,
                                                               sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
           roots[t] = root;
-          bounds.extend(merge(tbounds.first,tbounds.second));
+          bounds[t+0] = tbounds.first;
+          bounds[t+1] = tbounds.second;
           num_bvh_primitives = max(num_bvh_primitives,pinfo.size());
         }
-        bvh->set(NodeRef((size_t)roots),bounds,num_bvh_primitives);
+        bvh->set(NodeRef((size_t)roots),LBBox3fa(bounds),num_bvh_primitives);
         bvh->msmblur = true;
 
 	/* clear temporary data for static geometry */

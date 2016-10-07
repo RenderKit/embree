@@ -35,7 +35,7 @@ namespace embree
     childrenAlignedNodesMB = childrenUnalignedNodesMB = 0;
     childrenQuantizedNodes = 0;
     bvhSAH = 0.0f; leafSAH = 0.0f;
-    float A = max(0.0f,halfArea(bvh->bounds));
+    float A = max(0.0f,halfArea(bvh->getBounds()));
     if (bvh->msmblur) {
       NodeRef* roots = (NodeRef*)(size_t)bvh->root;
       for (size_t i=0; i<bvh->numTimeSteps-1; i++) {
@@ -46,8 +46,8 @@ namespace embree
     else {
       statistics(bvh->root,A,depth);
     }
-    bvhSAH /= halfArea(bvh->bounds);
-    leafSAH /= halfArea(bvh->bounds);
+    bvhSAH /= halfArea(bvh->getBounds());
+    leafSAH /= halfArea(bvh->getBounds());
     assert(depth <= BVH::maxDepth);
   }
   

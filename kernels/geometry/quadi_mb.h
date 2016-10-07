@@ -106,7 +106,7 @@ namespace embree
     {
       const QuadMesh* mesh = scene->getQuadMesh(geomID(index));
 
-      const vfloat<K> timeSegments = mesh->numTimeSegments;
+      const vfloat<K> timeSegments = mesh->fnumTimeSegments;
       const vfloat<K> timeScaled = time * timeSegments;
       const vfloat<K> itimef = clamp(floor(timeScaled), vfloat<K>(zero), timeSegments-1.0f);
       const vint<K> itime = vint<K>(itimef);
@@ -274,7 +274,7 @@ namespace embree
     const QuadMesh* mesh2 = scene->getQuadMesh(geomIDs[2]);
     const QuadMesh* mesh3 = scene->getQuadMesh(geomIDs[3]);
 
-    const vfloat4 timeSegments(mesh0->numTimeSegments, mesh1->numTimeSegments, mesh2->numTimeSegments, mesh3->numTimeSegments);
+    const vfloat4 timeSegments(mesh0->fnumTimeSegments, mesh1->fnumTimeSegments, mesh2->fnumTimeSegments, mesh3->fnumTimeSegments);
     const vfloat4 timeScaled = time * timeSegments;
     const vfloat4 itimef = clamp(floor(timeScaled), vfloat4(zero), timeSegments-1.0f);
     const vint4 itime = vint4(itimef);

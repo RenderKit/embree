@@ -470,7 +470,7 @@ namespace embree
           allocNode,setBounds,createLeaf,calculateBounds,progress,
           morton.data(),dest,numPrimitivesGen,N,BVH::maxBuildDepth,minLeafSize,maxLeafSize);
         
-        bvh->set(node_bounds.first,node_bounds.second,numPrimitives);
+        bvh->set(node_bounds.first,LBBox3fa(node_bounds.second),numPrimitives);
         
 #if ROTATE_TREE
         if (N == 4)

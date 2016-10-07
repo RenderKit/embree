@@ -287,6 +287,11 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
+    /*! returns number of time segments */
+    __forceinline unsigned numTimeSegments () const {
+      return numTimeSteps-1;
+    }
+
   public:
     __forceinline bool hasIntersectionFilter1() const { return (hasIntersectionFilterMask & (HAS_FILTER1 | HAS_FILTERN)) != 0;  }
     __forceinline bool hasOcclusionFilter1   () const { return (hasOcclusionFilterMask    & (HAS_FILTER1 | HAS_FILTERN)) != 0; }
@@ -442,7 +447,7 @@ namespace embree
     Type type;                 //!< geometry type 
     size_t numPrimitives;      //!< number of primitives of this geometry
     unsigned numTimeSteps;     //!< number of time steps
-    float numTimeSegments;     //!< number of time segments (precalculation)
+    float fnumTimeSegments;    //!< number of time segments (precalculation)
     RTCGeometryFlags flags;    //!< flags of geometry
     bool enabled;              //!< true if geometry is enabled
     bool modified;             //!< true if geometry is modified

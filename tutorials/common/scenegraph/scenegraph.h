@@ -88,6 +88,11 @@ namespace embree
         return empty;
       }
 
+      /* calculates linear bounding box of node */
+      virtual LBBox3fa lbounds() const {
+        return empty;
+      }
+
       /* calculates number of primitives */
       virtual size_t numPrimitives() const = 0;
 
@@ -111,6 +116,9 @@ namespace embree
       __forceinline Transformations(OneTy) {
         spaces.push_back(one);
       }
+
+      __forceinline Transformations( size_t N ) 
+        : spaces(N) {}
       
       __forceinline Transformations(const AffineSpace3fa& space) {
         spaces.push_back(space);
@@ -137,6 +145,25 @@ namespace embree
         for (size_t i=0; i<spaces.size(); i++)
           r.extend(xfmBounds(spaces[i],cbounds));
         return r;
+      }
+
+      LBBox3fa lbounds ( const LBBox3fa& cbounds ) const 
+      {
+        assert(spaces.size());
+        if (spaces.size() == 1) 
+        {
+          return LBBox3fa(xfmBounds(spaces[0],cbounds.bounds0),
+                          xfmBounds(spaces[0],cbounds.bounds1));
+        }
+        else
+        {
+          avector<BBox3fa> bounds(spaces.size());
+          for (size_t i=0; i<spaces.size(); i++) {
+            const float f = float(i)/float(spaces.size()-1);
+            bounds[i] = xfmBounds(spaces[i],cbounds.interpolate(f));
+          }
+          return LBBox3fa(bounds);
+        }
       }
 
       void add (const Transformations& other) {
@@ -208,6 +235,10 @@ namespace embree
         return spaces.bounds(child->bounds());
       }
 
+      virtual LBBox3fa lbounds() const {
+        return spaces.lbounds(child->lbounds());
+      }
+
       virtual size_t numPrimitives() const {
         return child->numPrimitives();
       }
@@ -238,8 +269,14 @@ namespace embree
       virtual BBox3fa bounds() const
       {
         BBox3fa b = empty;
-        for (auto c : children)
-          b.extend(c->bounds());
+        for (auto c : children) b.extend(c->bounds());
+        return b;
+      }
+
+      virtual LBBox3fa lbounds() const
+      {
+        LBBox3fa b = empty;
+        for (auto c : children) b.extend(c->lbounds());
         return b;
       }
 
@@ -348,6 +385,17 @@ namespace embree
         return b;
       }
 
+      virtual LBBox3fa lbounds() const
+      {
+        avector<BBox3fa> bboxes(positions.size());
+        for (size_t t=0; t<positions.size(); t++) {
+          BBox3fa b = empty;
+          for (auto x : positions[t]) b.extend(x);
+          bboxes[t] = b;
+        }
+        return LBBox3fa(bboxes);
+      }
+
       virtual size_t numPrimitives() const {
         return triangles.size();
       }
@@ -406,6 +454,17 @@ namespace embree
             b.extend(x);
         return b;
       }
+
+      virtual LBBox3fa lbounds() const
+      {
+        avector<BBox3fa> bboxes(positions.size());
+        for (size_t t=0; t<positions.size(); t++) {
+          BBox3fa b = empty;
+          for (auto x : positions[t]) b.extend(x);
+          bboxes[t] = b;
+        }
+        return LBBox3fa(bboxes);
+      }
       
       virtual size_t numPrimitives() const {
         return quads.size();
@@ -453,6 +512,17 @@ namespace embree
           for (auto x : p)
             b.extend(x);
         return b;
+      }
+
+      virtual LBBox3fa lbounds() const
+      {
+        avector<BBox3fa> bboxes(positions.size());
+        for (size_t t=0; t<positions.size(); t++) {
+          BBox3fa b = empty;
+          for (auto x : positions[t]) b.extend(x);
+          bboxes[t] = b;
+        }
+        return LBBox3fa(bboxes);
       }
 
       virtual size_t numPrimitives() const {
@@ -514,6 +584,17 @@ namespace embree
         return b;
       }
 
+      virtual LBBox3fa lbounds() const
+      {
+        avector<BBox3fa> bboxes(positions.size());
+        for (size_t t=0; t<positions.size(); t++) {
+          BBox3fa b = empty;
+          for (auto x : positions[t]) b.extend(x);
+          bboxes[t] = b;
+        }
+        return LBBox3fa(bboxes);
+      }
+
       virtual size_t numPrimitives() const {
         return indices.size();
       }
@@ -570,6 +651,17 @@ namespace embree
           for (auto x : p)
             b.extend(x);
         return b;
+      }
+
+      virtual LBBox3fa lbounds() const
+      {
+        avector<BBox3fa> bboxes(positions.size());
+        for (size_t t=0; t<positions.size(); t++) {
+          BBox3fa b = empty;
+          for (auto x : positions[t]) b.extend(x);
+          bboxes[t] = b;
+        }
+        return LBBox3fa(bboxes);
       }
 
       virtual size_t numPrimitives() const {
