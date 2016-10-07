@@ -20,7 +20,8 @@ namespace embree
 {
   extern "C" float g_time = -1.0f;
   extern "C" unsigned g_num_time_steps = 8;
-  extern "C" unsigned g_num_time_steps2 = 30;
+  //extern "C" unsigned g_num_time_steps2 = 30;
+  extern "C" unsigned g_num_time_steps2 = 8;
 
   struct Tutorial : public TutorialApplication 
   {
