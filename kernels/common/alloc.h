@@ -35,7 +35,7 @@ namespace embree
     /*! maximal allocation size */
 
     /* default settings */
-    static const size_t defaultBlockSize = 4096;
+    //static const size_t defaultBlockSize = 4096;
 #define maxAllocationSize size_t(4*1024*1024-maxAlignment)
     static const size_t MAX_THREAD_USED_BLOCK_SLOTS = 8;
     
@@ -51,11 +51,11 @@ namespace embree
 
       /*! Constructor for usage with ThreadLocalData */
       __forceinline ThreadLocal (void* alloc) 
-	: alloc((FastAllocator*)alloc), ptr(nullptr), cur(0), end(0), allocBlockSize(defaultBlockSize), bytesUsed(0), bytesWasted(0) {}
+	: alloc((FastAllocator*)alloc), ptr(nullptr), cur(0), end(0), allocBlockSize(((FastAllocator*)alloc)->defaultBlockSize), bytesUsed(0), bytesWasted(0) {}
 
       /*! Default constructor. */
-      __forceinline ThreadLocal (FastAllocator* alloc, const size_t allocBlockSize = defaultBlockSize) 
-	: alloc(alloc), ptr(nullptr), cur(0), end(0), allocBlockSize(allocBlockSize), bytesUsed(0), bytesWasted(0)  {}
+      //__forceinline ThreadLocal (FastAllocator* alloc, const size_t allocBlockSize = PAGE_SIZE) 
+//	: alloc(alloc), ptr(nullptr), cur(0), end(0), allocBlockSize(allocBlockSize), bytesUsed(0), bytesWasted(0)  {}
 
       /*! resets the allocator */
       __forceinline void reset() 
@@ -73,7 +73,6 @@ namespace embree
       /* Allocate aligned memory from the threads memory block. */
       __forceinline void* malloc(size_t bytes, size_t align = 16) 
       {
-        //PRINT3("malloc",cur,bytes);
         assert(align <= maxAlignment);
 	bytesUsed += bytes;
 	
@@ -85,14 +84,24 @@ namespace embree
 
         /* if allocation is too large allocate with parent allocator */
         if (4*bytes > allocBlockSize) {
-          //PRINT("fallback");
-          return alloc->malloc(bytes,maxAlignment);
+          return alloc->malloc(bytes,maxAlignment,false);
 	}
 
-        //PRINT("get new block");
-        /* get new full block if allocation failed */
+        /* get new partial block if allocation failed */
         size_t blockSize = allocBlockSize;
-	ptr = (char*) alloc->malloc(blockSize,maxAlignment);
+        ptr = (char*) alloc->malloc(blockSize,maxAlignment,true);
+ 	bytesWasted += end-cur;
+	cur = 0; end = blockSize;
+	
+        /* retry allocation */
+	ofs = (align - cur) & (align-1); 
+        cur += bytes + ofs;
+        if (likely(cur <= end)) { bytesWasted += ofs; return &ptr[cur - bytes]; }
+	cur -= bytes + ofs;
+
+        /* get new full block if allocation failed */
+        blockSize = allocBlockSize;
+        ptr = (char*) alloc->malloc(blockSize,maxAlignment,false);
 	bytesWasted += end-cur;
 	cur = 0; end = blockSize;
 	
@@ -105,12 +114,6 @@ namespace embree
         /* should never happen as large allocations get handled specially above */
         assert(false);
         return nullptr;
-      }
-
-      /* returns current address */
-      __forceinline void* curPtr() {
-        if (ptr == nullptr) ptr = (char*) alloc->malloc(allocBlockSize,maxAlignment);
-        return &ptr[bytesUsed];
       }
 
       /*! returns amount of used bytes */
@@ -140,14 +143,15 @@ namespace embree
       {
         ::new (&allocators[0]) ThreadLocal(alloc); alloc0 = &allocators[0];
         ::new (&allocators[1]) ThreadLocal(alloc); alloc1 = &allocators[1];
+        if (((FastAllocator*)alloc)->use_single_mode) alloc1 = &allocators[0];
       }
       
       /*! Default constructor. */
-      __forceinline ThreadLocal2 (FastAllocator* alloc, const size_t allocBlockSize = defaultBlockSize) 
+      /*__forceinline ThreadLocal2 (FastAllocator* alloc, const size_t allocBlockSize = PAGE_SIZE) 
       {
         ::new (&allocators[0]) ThreadLocal(alloc,allocBlockSize); alloc0 = &allocators[0];
-        ::new (&allocators[1]) ThreadLocal(alloc,allocBlockSize); alloc1 = &allocators[1];
-      }
+        ::new (&allocators[1]) ThreadLocal(alloc,allocBlockSize); alloc1 = &allocators[0];
+        }*/
 
       /*! resets the allocator */
       __forceinline void reset() {
@@ -168,7 +172,7 @@ namespace embree
     };
 
     FastAllocator (MemoryMonitorInterface* device) 
-      : device(device), slotMask(0), usedBlocks(nullptr), freeBlocks(nullptr), growSize(defaultBlockSize), log2_grow_size_scale(0), bytesUsed(0), bytesWasted(0), thread_local_allocators2(this)
+      : device(device), slotMask(0), usedBlocks(nullptr), freeBlocks(nullptr), use_single_mode(false), defaultBlockSize(PAGE_SIZE), growSize(PAGE_SIZE), log2_grow_size_scale(0), bytesUsed(0), bytesWasted(0), thread_local_allocators2(this)
     {
       for (size_t i=0; i<MAX_THREAD_USED_BLOCK_SLOTS; i++)
       {
@@ -201,7 +205,9 @@ namespace embree
       if (usedBlocks.load() || freeBlocks.load()) { reset(); return; }
       if (bytesReserve == 0) bytesReserve = bytesAllocate;
       freeBlocks = Block::create(device,bytesAllocate,bytesReserve);
-      growSize = clamp(bytesReserve,size_t(defaultBlockSize),maxAllocationSize);
+      use_single_mode = bytesAllocate < 8*PAGE_SIZE;
+      defaultBlockSize = clamp(bytesAllocate/4,size_t(128),size_t(PAGE_SIZE));
+      growSize = clamp(bytesReserve,size_t(PAGE_SIZE),maxAllocationSize);
       log2_grow_size_scale = 0;
     }
 
@@ -209,7 +215,9 @@ namespace embree
     void init_estimate(size_t bytesAllocate) 
     {
       if (usedBlocks.load() || freeBlocks.load()) { reset(); return; }
-      growSize = clamp(bytesAllocate,size_t(defaultBlockSize),maxAllocationSize);
+      use_single_mode = bytesAllocate < 8*PAGE_SIZE;
+      defaultBlockSize = clamp(bytesAllocate/4,size_t(128),size_t(PAGE_SIZE));
+      growSize = clamp(bytesAllocate,size_t(PAGE_SIZE),maxAllocationSize);
       log2_grow_size_scale = 0;
       if (bytesAllocate > 4*maxAllocationSize) slotMask = 0x1;
       if (bytesAllocate > 16*maxAllocationSize) slotMask = MAX_THREAD_USED_BLOCK_SLOTS-1;
@@ -297,7 +305,7 @@ namespace embree
     }
 
     /*! thread safe allocation of memory */
-    __noinline void* malloc(size_t bytes, size_t align) 
+    __noinline void* malloc(size_t& bytes, size_t align, bool partial) 
     {
       assert(align <= maxAlignment);
 
@@ -308,7 +316,7 @@ namespace embree
         size_t slot = threadIndex & slotMask;
 	Block* myUsedBlocks = threadUsedBlocks[slot];
         if (myUsedBlocks) {
-          void* ptr = myUsedBlocks->malloc(device,bytes,align); 
+          void* ptr = myUsedBlocks->malloc(device,bytes,align,partial); 
           if (ptr) return ptr;
         }
         
@@ -436,10 +444,9 @@ namespace embree
     {
       static Block* create(MemoryMonitorInterface* device, size_t bytesAllocate, size_t bytesReserve, Block* next = nullptr)
       {
-        //PRINT3("allocating block",bytesAllocate,bytesReserve);
         const size_t sizeof_Header = offsetof(Block,data[0]);
-        bytesAllocate = ((sizeof_Header+bytesAllocate+defaultBlockSize-1) & ~(defaultBlockSize-1)); // always consume full pages
-        bytesReserve  = ((sizeof_Header+bytesReserve +defaultBlockSize-1) & ~(defaultBlockSize-1)); // always consume full pages
+        bytesAllocate = ((sizeof_Header+bytesAllocate+PAGE_SIZE-1) & ~(PAGE_SIZE-1)); // always consume full pages
+        bytesReserve  = ((sizeof_Header+bytesReserve +PAGE_SIZE-1) & ~(PAGE_SIZE-1)); // always consume full pages
         if (device) device->memoryMonitor(bytesAllocate,false);
         void* ptr = os_reserve(bytesReserve);
         os_commit(ptr,bytesAllocate);
@@ -462,14 +469,16 @@ namespace embree
         if (device) device->memoryMonitor(-sizeof_Alloced,true);
       }
       
-      void* malloc(MemoryMonitorInterface* device, size_t bytes, size_t align = 16) 
+      void* malloc(MemoryMonitorInterface* device, size_t& bytes_in, size_t align, bool partial) 
       {
-        //PRINT3("Block::malloc",allocEnd,bytes);
+        size_t bytes = bytes_in;
         assert(align <= maxAlignment);
         bytes = (bytes+(align-1)) & ~(align-1);
-	if (unlikely(cur+bytes > reserveEnd)) return nullptr;
+	if (unlikely(cur+bytes > reserveEnd && !partial)) return nullptr;
 	const size_t i = cur.fetch_add(bytes);
-	if (unlikely(i+bytes > reserveEnd)) return nullptr;
+	if (unlikely(i+bytes > reserveEnd && !partial)) return nullptr;
+        if (unlikely(i > reserveEnd)) return nullptr;
+        bytes_in = bytes = min(bytes,reserveEnd-i);
 	if (i+bytes > allocEnd) {
           if (device) device->memoryMonitor(i+bytes-max(i,allocEnd),true);
           os_commit(&data[i],bytes); // FIXME: optimize, may get called frequently
@@ -554,7 +563,9 @@ namespace embree
 
     std::atomic<Block*> threadBlocks[MAX_THREAD_USED_BLOCK_SLOTS];
     SpinLock slotMutex[MAX_THREAD_USED_BLOCK_SLOTS];
-
+    
+    bool use_single_mode;
+    size_t defaultBlockSize;
     size_t growSize;
     std::atomic<size_t> log2_grow_size_scale; //!< log2 of scaling factor for grow size
     size_t bytesUsed;            //!< number of total bytes used
