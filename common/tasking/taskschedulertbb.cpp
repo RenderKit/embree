@@ -23,6 +23,7 @@ namespace embree
   
   class TBBAffinity: public tbb::task_scheduler_observer
   {
+  public:
     tbb::atomic<int> threadCount;
     
     void on_scheduler_entry( bool ) {
@@ -67,6 +68,13 @@ namespace embree
       g_tbb_threads_initialized = true;
       g_tbb_threads.initialize(int(numThreads));
       g_numThreads = numThreads;
+    }
+
+    /* also start worker threads in affinity mode */
+    if (set_affinity) {
+      tbb::parallel_for(size_t(0), size_t(g_numThreads), size_t(1), [] ( size_t i ) {
+          while (tbb_affinity.threadCount != g_numThreads) {};
+        });
     }
   }
   
