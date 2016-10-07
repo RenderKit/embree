@@ -30,6 +30,7 @@ namespace embree {
 
 #define SIMPLE_SHADING 0
 #define DYNAMIC_BENCHMARK 0
+#define STATIC_BENCHMARK 1
 #define HIGH_QUALITY 0
 
 extern "C" ISPCScene* g_ispc_scene;
@@ -369,7 +370,7 @@ extern "C" void device_init (char* cfg)
   /* create scene */
   g_scene = convertScene(g_ispc_scene);
 
-#if DYNAMIC_BENCHMARK == 1 || HIGH_QUALITY == 1
+#if DYNAMIC_BENCHMARK == 1 || HIGH_QUALITY == 1 || STATIC_BENCHMARK == 1
   while(1)
   {
 #if DYNAMIC_BENCHMARK == 1
