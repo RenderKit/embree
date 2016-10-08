@@ -106,7 +106,7 @@ namespace embree
       typedef SubdivPatch1Cached Primitive;
       typedef SubdivPatch1CachedPrecalculations<GridSOAMBlurIntersector1::Precalculations,cached> Precalculations;
       
-      static __forceinline bool processLazyNode(Precalculations& pre, IntersectContext* context, const Primitive* prim_i, Scene* scene, size_t& lazy_node)
+      static __forceinline bool processLazyNode(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim_i, Scene* scene, size_t& lazy_node)
       {
         Primitive* prim = (Primitive*) prim_i;
         GridSOA* grid = nullptr;
@@ -127,7 +127,12 @@ namespace embree
           grid = (GridSOA*) prim->root_ref.data;
         }
         assert(grid);
-        lazy_node = grid->root(pre.itime());
+
+        const float timeSegments = float(grid->time_steps-1);
+        const float timeScaled = ray.time * timeSegments;
+        const size_t itime = int(clamp(floor(timeScaled), 0.0f, timeSegments-1.0f));
+
+        lazy_node = grid->root(itime);
         pre.grid = grid;
         return false;
       }
@@ -136,7 +141,7 @@ namespace embree
       static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t ty, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) 
       {
         if (likely(ty == 0)) GridSOAMBlurIntersector1::intersect(pre,ray,context,prim,ty,scene,lazy_node);
-        else                 processLazyNode(pre,context,prim,scene,lazy_node);
+        else                 processLazyNode(pre,ray,context,prim,scene,lazy_node);
       }
       static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, size_t ty0, const Primitive* prim, size_t ty, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) {
         intersect(pre,ray,context,prim,ty,scene,geomID_to_instID,lazy_node);
@@ -146,7 +151,7 @@ namespace embree
       static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t ty, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) 
       {
         if (likely(ty == 0)) return GridSOAMBlurIntersector1::occluded(pre,ray,context,prim,ty,scene,lazy_node);
-        else                 return processLazyNode(pre,context,prim,scene,lazy_node);
+        else                 return processLazyNode(pre,ray,context,prim,scene,lazy_node);
       }
       static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, size_t ty0, const Primitive* prim, size_t ty, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) {
         return occluded(pre,ray,context,prim,ty,scene,geomID_to_instID,lazy_node);
@@ -218,7 +223,7 @@ namespace embree
       typedef SubdivPatch1Cached Primitive;
       typedef SubdivPatch1CachedPrecalculationsK<K,typename GridSOAMBlurIntersectorK<K>::Precalculations,cached> Precalculations;
       
-      static __forceinline bool processLazyNode(Precalculations& pre, size_t k, IntersectContext* context, const Primitive* prim_i, Scene* scene, size_t& lazy_node)
+      static __forceinline bool processLazyNode(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim_i, Scene* scene, size_t& lazy_node)
       {
         Primitive* prim = (Primitive*) prim_i;
         GridSOA* grid = nullptr;
@@ -233,7 +238,12 @@ namespace embree
         else {
           grid = (GridSOA*) prim->root_ref.data;
         }
-        lazy_node = grid->root(pre.itime(k));
+
+        const float timeSegments = float(grid->time_steps-1);
+        const float timeScaled = ray.time[k] * timeSegments;
+        const size_t itime = int(clamp(floor(timeScaled), 0.0f, timeSegments-1.0f));
+
+        lazy_node = grid->root(itime);
         pre.grid = grid;
         return false;
       }
@@ -241,13 +251,13 @@ namespace embree
       static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
       {
         if (likely(ty == 0)) GridSOAMBlurIntersectorK<K>::intersect(pre,ray,k,context,prim,ty,scene,lazy_node);
-        else                 processLazyNode(pre,k,context,prim,scene,lazy_node);
+        else                 processLazyNode(pre,ray,k,context,prim,scene,lazy_node);
       }
       
       static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
       {
         if (likely(ty == 0)) return GridSOAMBlurIntersectorK<K>::occluded(pre,ray,k,context,prim,ty,scene,lazy_node);
-        else                 return processLazyNode(pre,k,context,prim,scene,lazy_node);
+        else                 return processLazyNode(pre,ray,k,context,prim,scene,lazy_node);
       }
     };
 
