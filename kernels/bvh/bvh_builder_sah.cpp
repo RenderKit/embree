@@ -448,7 +448,7 @@ namespace embree
         typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,items);
         LBBox3fa allBounds = empty;
         for (size_t i=0; i<items; i++) {
-          auto bounds = accel[i].fill_mblur(prims,start,current.prims.end(),bvh->scene,false,0);
+          auto bounds = accel[i].fillMB(prims,start,current.prims.end(),bvh->scene,false,0);
           allBounds.extend(bounds);
         }
         *current.parent = node;
@@ -532,7 +532,7 @@ namespace embree
         typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,items);
         LBBox3fa allBounds = empty;
         for (size_t i=0; i<items; i++) {
-          auto bounds = accel[i].fill_mblur(prims,start,current.prims.end(),bvh->scene,false,time,bvh->numTimeSteps);
+          auto bounds = accel[i].fillMB(prims,start,current.prims.end(),bvh->scene,false,time,bvh->numTimeSteps);
           allBounds.extend(bounds);
         }
         *current.parent = node;

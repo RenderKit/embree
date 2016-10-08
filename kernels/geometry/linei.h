@@ -175,7 +175,7 @@ namespace embree
     }
 
     /* Fill line segment from line segment list */
-    __forceinline LBBox3fa fill_mblur(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list, size_t itime, size_t numTimeSteps)
+    __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list, size_t itime, size_t numTimeSteps)
     {
       fill(prims,begin,end,scene,list);
       return linearBounds(scene,itime,numTimeSteps);
