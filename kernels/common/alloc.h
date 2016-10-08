@@ -17,8 +17,9 @@
 #pragma once
 
 #include "default.h"
-
+#if defined(__X86_64__)
 #define ENABLE_PARALLEL_BLOCK_ALLOCATION 1
+#endif
 
 namespace embree
 {
