@@ -59,7 +59,7 @@ namespace embree
             BezierPrim& prim = prims[i];
             const size_t geomID = prim.geomID();
             const BezierCurves* curves = scene->getBezierCurves(geomID);
-            const std::pair<BBox3fa,BBox3fa> primBounds = curves->bounds2(prim.primID(),timeSegment,numTimeSteps);
+            const std::pair<BBox3fa,BBox3fa> primBounds = curves->linearBounds(prim.primID(),timeSegment,numTimeSteps);
             bounds0.extend(primBounds.first);
             bounds1.extend(primBounds.second);
           }

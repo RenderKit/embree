@@ -58,7 +58,7 @@ namespace embree
       const unsigned primID = prim.primID();
       new (this) Object(geomID, primID);
       AccelSet* accel = (AccelSet*) scene->get(geomID);
-      return accel->bounds_mblur(primID,itime,numTimeSteps);
+      return accel->linearBounds(primID,itime,numTimeSteps);
     }
 
   public:

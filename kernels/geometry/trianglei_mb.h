@@ -148,18 +148,18 @@ namespace embree
       return bounds;
     }
 
-    /* Calculate primitive bounds */
-    __forceinline std::pair<BBox3fa,BBox3fa> bounds2(const Scene *const scene, size_t itime) {
+    /* Calculate the linear bounds of the primitive */
+    __forceinline std::pair<BBox3fa,BBox3fa> linearBounds(const Scene *const scene, size_t itime) {
       return std::make_pair(bounds(scene,itime+0),bounds(scene,itime+1));
     }
 
-    __forceinline std::pair<BBox3fa,BBox3fa> bounds2(const Scene *const scene, size_t itime, size_t numTimeSteps) {
+    __forceinline std::pair<BBox3fa,BBox3fa> linearBounds(const Scene *const scene, size_t itime, size_t numTimeSteps) {
       BBox3fa bounds0 = empty;
       BBox3fa bounds1 = empty;
       for (size_t i=0; i<M && valid(i); i++)
       {
         const TriangleMesh* mesh = scene->getTriangleMesh(geomID(i));
-        std::pair<BBox3fa,BBox3fa> b = mesh->bounds2(primID(i), itime, numTimeSteps);
+        std::pair<BBox3fa,BBox3fa> b = mesh->linearBounds(primID(i), itime, numTimeSteps);
         bounds0.extend(b.first);
         bounds1.extend(b.second);
       }
@@ -196,7 +196,7 @@ namespace embree
       }
 
       new (this) TriangleMiMB(v0,v1,v2,geomID,primID); // FIXME: use non temporal store
-      return bounds2(scene,itime,numTimeSteps);
+      return linearBounds(scene,itime,numTimeSteps);
     }
 
     /* Updates the primitive */

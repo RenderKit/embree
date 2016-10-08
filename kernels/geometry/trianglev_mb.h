@@ -107,8 +107,8 @@ namespace embree
 		     Vec3fa(reduce_max(upper.x),reduce_max(upper.y),reduce_max(upper.z)));
     }
 
-    /* Calculate primitive bounds */
-    __forceinline std::pair<BBox3fa,BBox3fa> bounds2() const {
+    /* Calculate the linear bounds of the primitive */
+    __forceinline std::pair<BBox3fa,BBox3fa> linearBounds() const {
       return std::make_pair(bounds0(),bounds1());
     }
 

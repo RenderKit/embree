@@ -120,15 +120,8 @@ namespace embree
       return enlarge(b,Vec3fa(max(r0,r1)));
     }
 
-    /*! calculates the bounds of the i'th line segment at the itime'th time segment */
-    __forceinline std::pair<BBox3fa,BBox3fa> bounds2(size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal) const
-    {
-      return Geometry::bounds2(itimeGlobal, numTimeStepsGlobal, numTimeSteps,
-                               [&] (size_t itime) { return bounds(i, itime); });
-    }
-
     /*! check if the i'th primitive is valid at the itime'th time step */
-    __forceinline bool valid1(size_t i, size_t itime) const
+    __forceinline bool valid(size_t i, size_t itime) const
     {
       const unsigned int index = segment(i);
       if (index+1 >= numVertices()) return false;
@@ -138,38 +131,40 @@ namespace embree
       return true;
     }
 
-    /*! check if the i'th primitive is valid */
-    __forceinline bool valid(size_t i, BBox3fa* bbox) const 
+    /*! calculates the linear bounds of the i'th primitive at the itimeGlobal'th time segment */
+    __forceinline std::pair<BBox3fa,BBox3fa> linearBounds(size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal) const
     {
-      if (!valid1(i,0)) return false;
+      return Geometry::linearBounds(itimeGlobal, numTimeStepsGlobal, numTimeSteps,
+                                    [&] (size_t itime) { return bounds(i, itime); });
+    }
+
+    /*! calculates the build bounds of the i'th primitive, if it's valid */
+    __forceinline bool buildBounds(size_t i, BBox3fa* bbox) const
+    {
+      if (!valid(i,0)) return false;
       *bbox = bounds(i); 
       return true;
     }
 
-    /*! check if the i'th primitive is valid at the itime'th time segment */
-    __forceinline bool valid2(size_t i, size_t itime, BBox3fa& bbox) const
+    /*! calculates the build bounds of the i'th primitive at the itime'th time segment, if it's valid */
+    __forceinline bool buildBounds(size_t i, size_t itime, BBox3fa& bbox) const
     {
-      if (!valid1(i,itime+0) || !valid1(i,itime+1)) return false;
+      if (!valid(i,itime+0) || !valid(i,itime+1)) return false;
       bbox = bounds(i,itime);  // use bounds of first time step in builder
       return true;
     }
 
-    /*! check if the i'th primitive is valid at itime'th time segment */
-    __forceinline bool valid2(size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal, BBox3fa& bbox) const
+    /*! calculates the build bounds of the i'th primitive at the itimeGlobal'th time segment, if it's valid */
+    __forceinline bool buildBounds(size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal, BBox3fa& bbox) const
     {
-      std::pair<BBox3fa,BBox3fa> bbox2;
-      if (!Geometry::bounds2(itimeGlobal, numTimeStepsGlobal, numTimeSteps,
-                             [&] (size_t itime, BBox3fa& bbox) -> bool
-                             {
-                               if (unlikely(!valid1(i, itime))) return false;
-                               bbox = bounds(i, itime);
-                               return true;
-                             },
-                             bbox2))
-        return false;
-
-      bbox = 0.5f * (bbox2.first + bbox2.second);
-      return true;
+      return Geometry::buildBounds(itimeGlobal, numTimeStepsGlobal, numTimeSteps,
+                                   [&] (size_t itime, BBox3fa& bbox) -> bool
+                                   {
+                                     if (unlikely(!valid(i, itime))) return false;
+                                     bbox = bounds(i, itime);
+                                     return true;
+                                   },
+                                   bbox);
     }
 
   public:

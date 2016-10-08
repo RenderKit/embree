@@ -129,7 +129,7 @@ namespace embree
             centBounds.extend(center2(bounds));
 
             const BezierCurves* curves = scene->getBezierCurves(geomID);
-            const std::pair<BBox3fa,BBox3fa> primBounds = curves->bounds2(space,primID,timeSegment,numTimeSteps);
+            const std::pair<BBox3fa,BBox3fa> primBounds = curves->linearBounds(space,primID,timeSegment,numTimeSteps);
             s0t0.extend(primBounds.first);
             s1t1.extend(primBounds.second);
           }

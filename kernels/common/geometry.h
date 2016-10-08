@@ -302,8 +302,10 @@ namespace embree
     template<typename simd> __forceinline bool hasISPCOcclusionFilter() const;
 
   public:
+
+    /*! calculates the linear bounds of a primitive at the itimeGlobal'th time segment */
     template<typename BoundsFunc>
-    __forceinline static std::pair<BBox3fa,BBox3fa> bounds2(size_t itimeGlobal, size_t numTimeStepsGlobal, size_t numTimeSteps, const BoundsFunc& bounds)
+    __forceinline static std::pair<BBox3fa,BBox3fa> linearBounds(size_t itimeGlobal, size_t numTimeStepsGlobal, size_t numTimeSteps, const BoundsFunc& bounds)
     {
       if (numTimeStepsGlobal == numTimeSteps)
       {
@@ -354,15 +356,16 @@ namespace embree
       return std::make_pair(bounds0, bounds1);
     }
 
+    /*! calculates the linear bounds of a primitive at the itimeGlobal'th time segment, if it's valid */
     template<typename BoundsFunc>
-    __forceinline static bool bounds2(size_t itimeGlobal, size_t numTimeStepsGlobal, size_t numTimeSteps, const BoundsFunc& bounds, std::pair<BBox3fa,BBox3fa>& bbox2)
+    __forceinline static bool linearBounds(size_t itimeGlobal, size_t numTimeStepsGlobal, size_t numTimeSteps, const BoundsFunc& bounds, std::pair<BBox3fa,BBox3fa>& lbbox)
     {
       if (numTimeStepsGlobal == numTimeSteps)
       {
         BBox3fa bounds0; if (unlikely(!bounds(itimeGlobal+0, bounds0))) return false;
         BBox3fa bounds1; if (unlikely(!bounds(itimeGlobal+1, bounds1))) return false;
 
-        bbox2 = std::make_pair(bounds0, bounds1);
+        lbbox = std::make_pair(bounds0, bounds1);
         return true;
       }
 
@@ -384,7 +387,7 @@ namespace embree
 
         const float ftime1 = float(rtime1) * invTimeSegmentsGlobal;
 
-        bbox2 = std::make_pair(lerp(b0, b1, ftime0), lerp(b0, b1, ftime1));
+        lbbox = std::make_pair(lerp(b0, b1, ftime0), lerp(b0, b1, ftime1));
         return true;
       }
 
@@ -405,12 +408,25 @@ namespace embree
       bounds0.upper = max(bounds0.upper, bounds0.upper + (b1.upper - b1Lerp.upper));
       bounds1.upper = max(bounds1.upper, bounds1.upper + (b1.upper - b1Lerp.upper));
 
-      bbox2 = std::make_pair(bounds0, bounds1);
+      lbbox = std::make_pair(bounds0, bounds1);
       return true;
     }
 
+    /*! calculates the build bounds of a primitive at the itimeGlobal'th time segment, if it's valid */
+    template<typename BoundsFunc>
+    __forceinline static bool buildBounds(size_t itimeGlobal, size_t numTimeStepsGlobal, size_t numTimeSteps, const BoundsFunc& bounds, BBox3fa& bbox)
+    {
+      std::pair<BBox3fa,BBox3fa> lbbox;
+      if (!linearBounds(itimeGlobal, numTimeStepsGlobal, numTimeSteps, bounds, lbbox))
+        return false;
+
+      bbox = 0.5f * (lbbox.first + lbbox.second);
+      return true;
+    }
+
+    /*! checks if a primitive is valid at the itimeGlobal'th time segment */
     template<typename ValidFunc>
-    __forceinline static bool valid2(size_t itimeGlobal, size_t numTimeStepsGlobal, size_t numTimeSteps, const ValidFunc& valid)
+    __forceinline static bool validLinearBounds(size_t itimeGlobal, size_t numTimeStepsGlobal, size_t numTimeSteps, const ValidFunc& valid)
     {
       if (numTimeStepsGlobal == numTimeSteps)
       {

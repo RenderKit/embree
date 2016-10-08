@@ -180,55 +180,49 @@ namespace embree
       virtual void build (size_t threadIndex, size_t threadCount) = 0;
 
       /*! Calculates the bounds of an item */
-      __forceinline BBox3fa bounds (size_t item, size_t itime = 0) const
+      __forceinline BBox3fa bounds(size_t i, size_t itime = 0) const
       {
         BBox3fa box[2]; // have to always use 2 boxes as the geometry might have motion blur
-        assert(item < size());
-        if      (likely(boundsFunc3)) boundsFunc3(boundsFuncUserPtr,intersectors.ptr,item,itime,(RTCBounds&)box[0]);
-        else if (likely(boundsFunc2)) boundsFunc2(boundsFuncUserPtr,intersectors.ptr,item,(RTCBounds*)box);
-        else                          boundsFunc (intersectors.ptr,item,(RTCBounds&)box[0]);
+        assert(i < size());
+        if      (likely(boundsFunc3)) boundsFunc3(boundsFuncUserPtr,intersectors.ptr,i,itime,(RTCBounds&)box[0]);
+        else if (likely(boundsFunc2)) boundsFunc2(boundsFuncUserPtr,intersectors.ptr,i,(RTCBounds*)box);
+        else                          boundsFunc (intersectors.ptr,i,(RTCBounds&)box[0]);
         return box[0];
       }
 
-      /*! Calculates the bounds of an item */
-      __forceinline std::pair<BBox3fa,BBox3fa> bounds_mblur (size_t item, size_t itime) const
+      /*! calculates the linear bounds of the i'th item at the itime'th time segment */
+      __forceinline std::pair<BBox3fa,BBox3fa> linearBounds(size_t i, size_t itime) const
       {
         BBox3fa box[2]; 
-        assert(item < size());
+        assert(i < size());
         if (likely(boundsFunc3)) {
-          boundsFunc3(boundsFuncUserPtr,intersectors.ptr,item,itime+0,(RTCBounds&)box[0]);
-          boundsFunc3(boundsFuncUserPtr,intersectors.ptr,item,itime+1,(RTCBounds&)box[1]);
+          boundsFunc3(boundsFuncUserPtr,intersectors.ptr,i,itime+0,(RTCBounds&)box[0]);
+          boundsFunc3(boundsFuncUserPtr,intersectors.ptr,i,itime+1,(RTCBounds&)box[1]);
         }
         else if (likely(boundsFunc2))
-          boundsFunc2(boundsFuncUserPtr,intersectors.ptr,item,(RTCBounds*)box);
+          boundsFunc2(boundsFuncUserPtr,intersectors.ptr,i,(RTCBounds*)box);
         else                  
-          boundsFunc(intersectors.ptr,item,(RTCBounds&)box[0]);
+          boundsFunc(intersectors.ptr,i,(RTCBounds&)box[0]);
         return std::make_pair(box[0],box[1]);
       }
 
-      __forceinline std::pair<BBox3fa,BBox3fa> bounds_mblur (size_t item, size_t itimeGlobal, size_t numTimeStepsGlobal) const
+      /*! calculates the linear bounds of the i'th item at the itimeGlobal'th time segment */
+      __forceinline std::pair<BBox3fa,BBox3fa> linearBounds(size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal) const
       {
-        return Geometry::bounds2(itimeGlobal, numTimeStepsGlobal, numTimeSteps,
-                                 [&] (size_t itime) { return bounds(item, itime); });
+        return Geometry::linearBounds(itimeGlobal, numTimeStepsGlobal, numTimeSteps,
+                                      [&] (size_t itime) { return bounds(i, itime); });
       }
 
-      /*! check if the i'th primitive is valid */
-      __forceinline bool valid(size_t i, BBox3fa* bbox = nullptr) const 
+      /*! calculates the build bounds of the i'th item, if it's valid */
+      __forceinline bool buildBounds(size_t i, BBox3fa* bbox = nullptr) const
       {
         const BBox3fa b = bounds(i);
         if (bbox) *bbox = b;
         return isvalid(b);
       }
 
-      __forceinline bool valid(size_t i, size_t itime, BBox3fa* bbox = nullptr) const
-      {
-        const BBox3fa b = bounds(i,itime);
-        if (bbox) *bbox = b;
-        return isvalid(b);
-      }
-
-      /*! check if the i'th primitive is valid for the itime'th time segment */
-      __forceinline bool valid2(size_t i, size_t itime, BBox3fa& bbox) const
+      /*! calculates the build bounds of the i'th item at the itime'th time segment, if it's valid */
+      __forceinline bool buildBounds(size_t i, size_t itime, BBox3fa& bbox) const
       {
         const BBox3fa bounds0 = bounds(i,itime+0);
         const BBox3fa bounds1 = bounds(i,itime+1);
@@ -236,20 +230,16 @@ namespace embree
         return isvalid(bounds0) && isvalid(bounds1);
       }
 
-      __forceinline bool valid2(size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal, BBox3fa& bbox) const
+      /*! calculates the build bounds of the i'th item at the itimeGlobal'th time segment, if it's valid */
+      __forceinline bool buildBounds(size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal, BBox3fa& bbox) const
       {
-        std::pair<BBox3fa,BBox3fa> bbox2;
-        if (!Geometry::bounds2(itimeGlobal, numTimeStepsGlobal, numTimeSteps,
-                               [&] (size_t itime, BBox3fa& bbox) -> bool
-                               {
-                                 bbox = bounds(i, itime);
-                                 return isvalid(bbox);
-                               },
-                               bbox2))
-          return false;
-
-        bbox = 0.5f * (bbox2.first + bbox2.second);
-        return true;
+        return Geometry::buildBounds(itimeGlobal, numTimeStepsGlobal, numTimeSteps,
+                                     [&] (size_t itime, BBox3fa& bbox) -> bool
+                                     {
+                                       bbox = bounds(i, itime);
+                                       return isvalid(bbox);
+                                     },
+                                     bbox);
       }
       
       void enabling ();

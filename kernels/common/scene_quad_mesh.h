@@ -71,7 +71,7 @@ namespace embree
       return vertices[0].size();
     }
     
-    /*! returns i'th quad*/
+    /*! returns i'th quad */
     __forceinline const Quad& quad(size_t i) const {
       return quads[i];
     }
@@ -107,7 +107,7 @@ namespace embree
       return BBox3fa(min(v0,v1,v2,v3),max(v0,v1,v2,v3));
     }
 
-    /*! calculates the bounds of the i'th triangle at the itime'th timestep */
+    /*! calculates the bounds of the i'th quad at the itime'th timestep */
     __forceinline BBox3fa bounds(size_t i, size_t itime) const
     {
       const Quad& q = quad(i);
@@ -116,13 +116,6 @@ namespace embree
       const Vec3fa v2 = vertex(q.v[2],itime);
       const Vec3fa v3 = vertex(q.v[3],itime);
       return BBox3fa(min(v0,v1,v2,v3),max(v0,v1,v2,v3));
-    }
-
-    /*! calculates the bounds of the i'th triangle at the itime'th time segment */
-    __forceinline std::pair<BBox3fa,BBox3fa> bounds2(size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal) const
-    {
-      return Geometry::bounds2(itimeGlobal, numTimeStepsGlobal, numTimeSteps,
-                               [&] (size_t itime) { return bounds(i, itime); });
     }
 
     /*! check if the i'th primitive is valid at the itime'th timestep */
@@ -145,8 +138,15 @@ namespace embree
       return true;
     }
 
-    /*! check if the i'th primitive is valid */
-    __forceinline bool valid(size_t i, BBox3fa* bbox = nullptr) const 
+    /*! calculates the linear bounds of the i'th quad at the itimeGlobal'th time segment */
+    __forceinline std::pair<BBox3fa,BBox3fa> linearBounds(size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal) const
+    {
+      return Geometry::linearBounds(itimeGlobal, numTimeStepsGlobal, numTimeSteps,
+                                    [&] (size_t itime) { return bounds(i, itime); });
+    }
+
+    /*! calculates the build bounds of the i'th primitive, if it's valid */
+    __forceinline bool buildBounds(size_t i, BBox3fa* bbox = nullptr) const
     {
       const Quad& q = quad(i);
       if (q.v[0] >= numVertices()) return false;
@@ -171,8 +171,8 @@ namespace embree
       return true;
     }
 
-    /*! check if the i'th primitive is valid at itime'th timesegment */
-    __forceinline bool valid2(size_t i, size_t itime, BBox3fa& bbox) const
+    /*! calculates the build bounds of the i'th primitive at the itime'th time segment, if it's valid */
+    __forceinline bool buildBounds(size_t i, size_t itime, BBox3fa& bbox) const
     {
       const Quad& q = quad(i);
       if (unlikely(q.v[0] >= numVertices())) return false;
@@ -195,22 +195,17 @@ namespace embree
       return true;
     }
 
-    /*! check if the i'th primitive is valid at itime'th time segment */
-    __forceinline bool valid2(size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal, BBox3fa& bbox) const
+    /*! calculates the build bounds of the i'th primitive at the itimeGlobal'th time segment, if it's valid */
+    __forceinline bool buildBounds(size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal, BBox3fa& bbox) const
     {
-      std::pair<BBox3fa,BBox3fa> bbox2;
-      if (!Geometry::bounds2(itimeGlobal, numTimeStepsGlobal, numTimeSteps,
-                             [&] (size_t itime, BBox3fa& bbox) -> bool
-                             {
-                               if (unlikely(!valid(i, itime))) return false;
-                               bbox = bounds(i, itime);
-                               return true;
-                             },
-                             bbox2))
-        return false;
-
-      bbox = 0.5f * (bbox2.first + bbox2.second);
-      return true;
+      return Geometry::buildBounds(itimeGlobal, numTimeStepsGlobal, numTimeSteps,
+                                   [&] (size_t itime, BBox3fa& bbox) -> bool
+                                   {
+                                     if (unlikely(!valid(i, itime))) return false;
+                                     bbox = bounds(i, itime);
+                                     return true;
+                                   },
+                                   bbox);
     }
     
   public:
