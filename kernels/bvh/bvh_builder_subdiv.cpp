@@ -367,22 +367,22 @@ namespace embree
           size_t num_bvh_primitives = 0;
           for (size_t t=0; t<numTimeSegments; t++)
           {
-            auto createLeaf = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> std::pair<BBox3fa,BBox3fa> {
+            auto createLeaf = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> LBBox3fa {
               size_t items MAYBE_UNUSED = current.pinfo.size();
               assert(items == 1);
               const size_t patchIndex = prims[current.prims.begin()].ID();
               *current.parent = bvh->encodeLeaf((char*)&subdiv_patches[numTimeSteps*patchIndex+0],1);
               const BBox3fa bounds0 = bounds[numTimeSteps*patchIndex+t+0];
               const BBox3fa bounds1 = bounds[numTimeSteps*patchIndex+t+1];
-              return std::make_pair(bounds0,bounds1);
+              return LBBox3fa(bounds0,bounds1);
             };
 
             /* call BVH builder */
-            NodeRef root; std::pair<BBox3fa,BBox3fa> tbounds;
+            NodeRef root; LBBox3fa tbounds;
             std::tie(root, tbounds) = BVHNBuilderMblur<N>::build(bvh,createLeaf,bvh->scene->progressInterface,prims.data(),pinfo,N,1,1,1.0f,1.0f);
             roots[t] = root;
-            boxes[t+0] = tbounds.first;
-            boxes[t+1] = tbounds.second;
+            boxes[t+0] = tbounds.bounds0;
+            boxes[t+1] = tbounds.bounds1;
             num_bvh_primitives = max(num_bvh_primitives,pinfo.size());
           }
           bvh->set(NodeRef((size_t)roots),LBBox3fa(boxes),num_bvh_primitives);

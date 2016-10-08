@@ -99,9 +99,9 @@ namespace embree
         typedef FastAllocator::ThreadLocal2 Allocator;
       
         struct BVHNBuilderV {
-          std::tuple<NodeRef,std::pair<BBox3fa,BBox3fa>> build(BVH* bvh, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, 
+          std::tuple<NodeRef,LBBox3fa> build(BVH* bvh, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, 
                      const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost);
-          virtual std::pair<BBox3fa,BBox3fa> createLeaf (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) = 0;
+          virtual LBBox3fa createLeaf (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) = 0;
         };
 
         template<typename CreateLeafFunc>
@@ -110,7 +110,7 @@ namespace embree
           BVHNBuilderT (CreateLeafFunc createLeafFunc)
             : createLeafFunc(createLeafFunc) {}
 
-          std::pair<BBox3fa,BBox3fa> createLeaf (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) {
+          LBBox3fa createLeaf (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) {
             return createLeafFunc(current,alloc);
           }
 
@@ -119,7 +119,7 @@ namespace embree
         };
 
         template<typename CreateLeafFunc>
-        static std::tuple<NodeRef,std::pair<BBox3fa,BBox3fa>>  build(BVH* bvh, CreateLeafFunc createLeaf, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, 
+        static std::tuple<NodeRef,LBBox3fa>  build(BVH* bvh, CreateLeafFunc createLeaf, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, 
                           const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost) {
           return BVHNBuilderT<CreateLeafFunc>(createLeaf).build(bvh,progress,prims,pinfo,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
         }

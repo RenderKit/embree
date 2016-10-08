@@ -305,14 +305,14 @@ namespace embree
 
     /*! calculates the linear bounds of a primitive at the itimeGlobal'th time segment */
     template<typename BoundsFunc>
-    __forceinline static std::pair<BBox3fa,BBox3fa> linearBounds(size_t itimeGlobal, size_t numTimeStepsGlobal, size_t numTimeSteps, const BoundsFunc& bounds)
+    __forceinline static LBBox3fa linearBounds(size_t itimeGlobal, size_t numTimeStepsGlobal, size_t numTimeSteps, const BoundsFunc& bounds)
     {
       if (numTimeStepsGlobal == numTimeSteps)
       {
         const BBox3fa bounds0 = bounds(itimeGlobal+0);
         const BBox3fa bounds1 = bounds(itimeGlobal+1);
 
-        return std::make_pair(bounds0, bounds1);
+        return LBBox3fa(bounds0, bounds1);
       }
 
       const int timeSegments = int(numTimeSteps-1);
@@ -333,7 +333,7 @@ namespace embree
 
         const float ftime1 = float(rtime1) * invTimeSegmentsGlobal;
 
-        return std::make_pair(lerp(b0, b1, ftime0), lerp(b0, b1, ftime1));
+        return LBBox3fa(lerp(b0, b1, ftime0), lerp(b0, b1, ftime1));
       }
 
       const BBox3fa b0 = bounds(itime0+0);
@@ -353,19 +353,19 @@ namespace embree
       bounds0.upper = max(bounds0.upper, bounds0.upper + (b1.upper - b1Lerp.upper));
       bounds1.upper = max(bounds1.upper, bounds1.upper + (b1.upper - b1Lerp.upper));
 
-      return std::make_pair(bounds0, bounds1);
+      return LBBox3fa(bounds0, bounds1);
     }
 
     /*! calculates the linear bounds of a primitive at the itimeGlobal'th time segment, if it's valid */
     template<typename BoundsFunc>
-    __forceinline static bool linearBounds(size_t itimeGlobal, size_t numTimeStepsGlobal, size_t numTimeSteps, const BoundsFunc& bounds, std::pair<BBox3fa,BBox3fa>& lbbox)
+    __forceinline static bool linearBounds(size_t itimeGlobal, size_t numTimeStepsGlobal, size_t numTimeSteps, const BoundsFunc& bounds, LBBox3fa& lbbox)
     {
       if (numTimeStepsGlobal == numTimeSteps)
       {
         BBox3fa bounds0; if (unlikely(!bounds(itimeGlobal+0, bounds0))) return false;
         BBox3fa bounds1; if (unlikely(!bounds(itimeGlobal+1, bounds1))) return false;
 
-        lbbox = std::make_pair(bounds0, bounds1);
+        lbbox = LBBox3fa(bounds0, bounds1);
         return true;
       }
 
@@ -387,7 +387,7 @@ namespace embree
 
         const float ftime1 = float(rtime1) * invTimeSegmentsGlobal;
 
-        lbbox = std::make_pair(lerp(b0, b1, ftime0), lerp(b0, b1, ftime1));
+        lbbox = LBBox3fa(lerp(b0, b1, ftime0), lerp(b0, b1, ftime1));
         return true;
       }
 
@@ -408,7 +408,7 @@ namespace embree
       bounds0.upper = max(bounds0.upper, bounds0.upper + (b1.upper - b1Lerp.upper));
       bounds1.upper = max(bounds1.upper, bounds1.upper + (b1.upper - b1Lerp.upper));
 
-      lbbox = std::make_pair(bounds0, bounds1);
+      lbbox = LBBox3fa(bounds0, bounds1);
       return true;
     }
 
@@ -416,11 +416,11 @@ namespace embree
     template<typename BoundsFunc>
     __forceinline static bool buildBounds(size_t itimeGlobal, size_t numTimeStepsGlobal, size_t numTimeSteps, const BoundsFunc& bounds, BBox3fa& bbox)
     {
-      std::pair<BBox3fa,BBox3fa> lbbox;
+      LBBox3fa lbbox;
       if (!linearBounds(itimeGlobal, numTimeStepsGlobal, numTimeSteps, bounds, lbbox))
         return false;
 
-      bbox = 0.5f * (lbbox.first + lbbox.second);
+      bbox = 0.5f * (lbbox.bounds0 + lbbox.bounds1);
       return true;
     }
 

@@ -102,21 +102,18 @@ namespace embree
     }
 
     /* Calculate the linear bounds of the primitive */
-    __forceinline std::pair<BBox3fa,BBox3fa> linearBounds(const Scene* scene, size_t itime) {
-      return std::make_pair(bounds(scene,itime+0), bounds(scene,itime+1));
+    __forceinline LBBox3fa linearBounds(const Scene* scene, size_t itime) {
+      return LBBox3fa(bounds(scene,itime+0), bounds(scene,itime+1));
     }
 
-    __forceinline std::pair<BBox3fa,BBox3fa> linearBounds(const Scene *const scene, size_t itime, size_t numTimeSteps) {
-      BBox3fa bounds0 = empty;
-      BBox3fa bounds1 = empty;
+    __forceinline LBBox3fa linearBounds(const Scene *const scene, size_t itime, size_t numTimeSteps) {
+      LBBox3fa allBounds = empty;
       for (size_t i=0; i<M && valid(i); i++)
       {
         const LineSegments* geom = scene->getLineSegments(geomID(i));
-        std::pair<BBox3fa,BBox3fa> b = geom->linearBounds(primID(i), itime, numTimeSteps);
-        bounds0.extend(b.first);
-        bounds1.extend(b.second);
+        allBounds.extend(geom->linearBounds(primID(i), itime, numTimeSteps));
       }
-      return std::make_pair(bounds0, bounds1);
+      return allBounds;
     }
 
     /* Fill line segment from line segment list */
@@ -178,7 +175,7 @@ namespace embree
     }
 
     /* Fill line segment from line segment list */
-    __forceinline std::pair<BBox3fa,BBox3fa> fill_mblur(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list, size_t itime, size_t numTimeSteps)
+    __forceinline LBBox3fa fill_mblur(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list, size_t itime, size_t numTimeSteps)
     {
       fill(prims,begin,end,scene,list);
       return linearBounds(scene,itime,numTimeSteps);

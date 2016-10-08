@@ -440,21 +440,19 @@ namespace embree
       typedef BVHN<N> BVH;
       __forceinline CreateLeafMB (BVH* bvh, PrimRef* prims) : bvh(bvh), prims(prims) {}
       
-      __forceinline std::pair<BBox3fa,BBox3fa> operator() (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc)
+      __forceinline LBBox3fa operator() (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc)
       {
         size_t items = Primitive::blocks(current.prims.size());
         size_t start = current.prims.begin();
         Primitive* accel = (Primitive*) alloc->alloc1.malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
         typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,items);
-	BBox3fa bounds0 = empty;
-	BBox3fa bounds1 = empty;
+        LBBox3fa allBounds = empty;
         for (size_t i=0; i<items; i++) {
           auto bounds = accel[i].fill_mblur(prims,start,current.prims.end(),bvh->scene,false,0);
-	  bounds0.extend(bounds.first);
-	  bounds1.extend(bounds.second);
+          allBounds.extend(bounds);
         }
         *current.parent = node;
-	return std::make_pair(bounds0,bounds1);
+        return allBounds;
       }
 
       BVH* bvh;
@@ -526,21 +524,19 @@ namespace embree
       typedef BVHN<N> BVH;
       __forceinline CreateMSMBlurLeaf (BVH* bvh, PrimRef* prims, size_t time) : bvh(bvh), prims(prims), time(time) {}
       
-      __forceinline std::pair<BBox3fa,BBox3fa> operator() (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc)
+      __forceinline LBBox3fa operator() (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc)
       {
         size_t items = Primitive::blocks(current.prims.size());
         size_t start = current.prims.begin();
         Primitive* accel = (Primitive*) alloc->alloc1.malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
         typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,items);
-	BBox3fa bounds0 = empty;
-	BBox3fa bounds1 = empty;
+        LBBox3fa allBounds = empty;
         for (size_t i=0; i<items; i++) {
           auto bounds = accel[i].fill_mblur(prims,start,current.prims.end(),bvh->scene,false,time,bvh->numTimeSteps);
-	  bounds0.extend(bounds.first);
-	  bounds1.extend(bounds.second);
+          allBounds.extend(bounds);
         }
         *current.parent = node;
-	return std::make_pair(bounds0,bounds1);
+        return allBounds;
       }
 
       BVH* bvh;
@@ -591,13 +587,13 @@ namespace embree
         for (size_t t=0; t<numTimeSegments; t++)
         {
           /* call BVH builder */
-          NodeRef root; std::pair<BBox3fa,BBox3fa> tbounds;
+          NodeRef root; LBBox3fa tbounds;
           const PrimInfo pinfo = createPrimRefArrayMBlur<Mesh>(t,bvh->numTimeSteps,scene,prims,bvh->scene->progressInterface);
           std::tie(root, tbounds) = BVHNBuilderMblur<N>::build(bvh,CreateMSMBlurLeaf<N,Primitive>(bvh,prims.data(),t),bvh->scene->progressInterface,prims.data(),pinfo,
                                                               sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
           roots[t] = root;
-          bounds[t+0] = tbounds.first;
-          bounds[t+1] = tbounds.second;
+          bounds[t+0] = tbounds.bounds0;
+          bounds[t+1] = tbounds.bounds1;
           num_bvh_primitives = max(num_bvh_primitives,pinfo.size());
         }
         bvh->set(NodeRef((size_t)roots),LBBox3fa(bounds),num_bvh_primitives);

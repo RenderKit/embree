@@ -50,20 +50,17 @@ namespace embree
         __forceinline HeuristicArrayBinningSAH (PrimRef* prims)
           : prims(prims) {}
 
-        const std::pair<BBox3fa,BBox3fa> computePrimInfoMB(size_t timeSegment, size_t numTimeSteps, Scene* scene, const PrimInfo& pinfo)
+        const LBBox3fa computePrimInfoMB(size_t timeSegment, size_t numTimeSteps, Scene* scene, const PrimInfo& pinfo)
         {
-          BBox3fa bounds0 = empty;
-          BBox3fa bounds1 = empty;
+          LBBox3fa allBounds = empty;
           for (size_t i=pinfo.begin; i<pinfo.end; i++) // FIXME: parallelize
           {
             BezierPrim& prim = prims[i];
             const size_t geomID = prim.geomID();
             const BezierCurves* curves = scene->getBezierCurves(geomID);
-            const std::pair<BBox3fa,BBox3fa> primBounds = curves->linearBounds(prim.primID(),timeSegment,numTimeSteps);
-            bounds0.extend(primBounds.first);
-            bounds1.extend(primBounds.second);
+            allBounds.extend(curves->linearBounds(prim.primID(),timeSegment,numTimeSteps));
           }
-          return std::pair<BBox3fa,BBox3fa>(bounds0,bounds1);
+          return allBounds;
         }
 
         /*! finds the best split */

@@ -187,14 +187,14 @@ namespace embree
     }
 
     /*! calculates the linear bounds of the i'th primitive at the itimeGlobal'th time segment */
-    __forceinline std::pair<BBox3fa,BBox3fa> linearBounds(size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal) const
+    __forceinline LBBox3fa linearBounds(size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal) const
     {
       return Geometry::linearBounds(itimeGlobal, numTimeStepsGlobal, numTimeSteps,
                                     [&] (size_t itime) { return bounds(i, itime); });
     }
 
     /*! calculates the linear bounds of the i'th primitive at the itimeGlobal'th time segment */
-    __forceinline std::pair<BBox3fa,BBox3fa> linearBounds(const AffineSpace3fa& space, size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal) const
+    __forceinline LBBox3fa linearBounds(const AffineSpace3fa& space, size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal) const
     {
       return Geometry::linearBounds(itimeGlobal, numTimeStepsGlobal, numTimeSteps,
                                     [&] (size_t itime) { return bounds(space, i, itime); });

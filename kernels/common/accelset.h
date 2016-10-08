@@ -191,7 +191,7 @@ namespace embree
       }
 
       /*! calculates the linear bounds of the i'th item at the itime'th time segment */
-      __forceinline std::pair<BBox3fa,BBox3fa> linearBounds(size_t i, size_t itime) const
+      __forceinline LBBox3fa linearBounds(size_t i, size_t itime) const
       {
         BBox3fa box[2]; 
         assert(i < size());
@@ -203,11 +203,11 @@ namespace embree
           boundsFunc2(boundsFuncUserPtr,intersectors.ptr,i,(RTCBounds*)box);
         else                  
           boundsFunc(intersectors.ptr,i,(RTCBounds&)box[0]);
-        return std::make_pair(box[0],box[1]);
+        return LBBox3fa(box[0],box[1]);
       }
 
       /*! calculates the linear bounds of the i'th item at the itimeGlobal'th time segment */
-      __forceinline std::pair<BBox3fa,BBox3fa> linearBounds(size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal) const
+      __forceinline LBBox3fa linearBounds(size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal) const
       {
         return Geometry::linearBounds(itimeGlobal, numTimeStepsGlobal, numTimeSteps,
                                       [&] (size_t itime) { return bounds(i, itime); });

@@ -134,40 +134,36 @@ namespace embree
     };
 
     template<int N>
-    std::tuple<typename BVHN<N>::NodeRef,std::pair<BBox3fa,BBox3fa>> BVHNBuilderMblur<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progress_in, PrimRef* prims, const PrimInfo& pinfo, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost)
+    std::tuple<typename BVHN<N>::NodeRef,LBBox3fa> BVHNBuilderMblur<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progress_in, PrimRef* prims, const PrimInfo& pinfo, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost)
     {
       auto progressFunc = [&] (size_t dn) { 
         progress_in(dn); 
       };
             
-      auto createLeafFunc = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> std::pair<BBox3fa,BBox3fa> {
+      auto createLeafFunc = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> LBBox3fa {
         return createLeaf(current,alloc);
       };
 
       /* reduction function */
-      auto reduce = [] (NodeMB* node, const std::pair<BBox3fa,BBox3fa>* bounds, const size_t num) -> std::pair<BBox3fa,BBox3fa>
+      auto reduce = [] (NodeMB* node, const LBBox3fa* bounds, const size_t num) -> LBBox3fa
       {
         assert(num <= N);
-        BBox3fa bounds0 = empty;
-        BBox3fa bounds1 = empty;
+        LBBox3fa allBounds = empty;
         for (size_t i=0; i<num; i++) {
-          const BBox3fa b0 = bounds[i].first;
-          const BBox3fa b1 = bounds[i].second;
-          node->set(i,b0,b1);
-          bounds0 = merge(bounds0,b0);
-          bounds1 = merge(bounds1,b1);
+          node->set(i, bounds[i]);
+          allBounds.extend(bounds[i]);
         }
-        return std::pair<BBox3fa,BBox3fa>(bounds0,bounds1);
+        return allBounds;
       };
-      auto identity = std::make_pair(BBox3fa(empty),BBox3fa(empty));
+      auto identity = LBBox3fa(empty);
       
       NodeRef root;
-      std::pair<BBox3fa,BBox3fa> root_bounds = BVHBuilderBinnedSAH::build_reduce<NodeRef>
+      LBBox3fa root_bounds = BVHBuilderBinnedSAH::build_reduce<NodeRef>
         (root,typename BVH::CreateAlloc(bvh),identity,CreateNodeMB<N>(bvh),reduce,createLeafFunc,progressFunc,
          prims,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
       /* set bounding box to merge bounds of all time steps */
-      bvh->set(root,LBBox3fa(root_bounds.first,root_bounds.second),pinfo.size()); // FIXME: remove later
+      bvh->set(root,root_bounds,pinfo.size()); // FIXME: remove later
 
 #if ROTATE_TREE
       if (N == 4)

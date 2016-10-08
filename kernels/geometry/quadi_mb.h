@@ -156,25 +156,22 @@ namespace embree
     }
     
     /* Calculate the linear bounds of the primitive */
-    __forceinline std::pair<BBox3fa,BBox3fa> linearBounds(const Scene* const scene, const size_t itime) {
-      return std::make_pair(bounds(scene,itime+0),bounds(scene,itime+1));
+    __forceinline LBBox3fa linearBounds(const Scene* const scene, const size_t itime) {
+      return LBBox3fa(bounds(scene,itime+0),bounds(scene,itime+1));
     }
 
-    __forceinline std::pair<BBox3fa,BBox3fa> linearBounds(const Scene *const scene, size_t itime, size_t numTimeSteps) {
-      BBox3fa bounds0 = empty;
-      BBox3fa bounds1 = empty;
+    __forceinline LBBox3fa linearBounds(const Scene *const scene, size_t itime, size_t numTimeSteps) {
+      LBBox3fa allBounds = empty;
       for (size_t i=0; i<M && valid(i); i++)
       {
         const QuadMesh* mesh = scene->getQuadMesh(geomID(i));
-        std::pair<BBox3fa,BBox3fa> b = mesh->linearBounds(primID(i), itime, numTimeSteps);
-        bounds0.extend(b.first);
-        bounds1.extend(b.second);
+        allBounds.extend(mesh->linearBounds(primID(i), itime, numTimeSteps));
       }
-      return std::make_pair(bounds0, bounds1);
+      return allBounds;
     }
     
     /* Fill quad from quad list */
-    __forceinline std::pair<BBox3fa,BBox3fa> fill_mblur(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list, size_t itime, size_t numTimeSteps)
+    __forceinline LBBox3fa fill_mblur(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list, size_t itime, size_t numTimeSteps)
     {
       vint<M> geomID = -1, primID = -1;
       vint<M> v0 = zero, v1 = zero, v2 = zero, v3 = zero;

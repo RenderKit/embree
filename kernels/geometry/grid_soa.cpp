@@ -71,11 +71,11 @@ namespace embree
       {
         for (size_t t=0; t<time_steps-1; t++)
         {
-          std::pair<BBox3fa,BBox3fa> bounds;
+          LBBox3fa bounds;
           root(t) = buildMBlurBVH(t,&bounds);
           if (bounds_o) {
-            bounds_o[t+0] = bounds.first;
-            bounds_o[t+1] = bounds.second;
+            bounds_o[t+0] = bounds.bounds0;
+            bounds_o[t+1] = bounds.bounds1;
           }
         }
       }
@@ -152,17 +152,17 @@ namespace embree
       }
     }
 
-    BVH4::NodeRef GridSOA::buildMBlurBVH(size_t time, std::pair<BBox3fa,BBox3fa>* bounds_o)
+    BVH4::NodeRef GridSOA::buildMBlurBVH(size_t time, LBBox3fa* bounds_o)
     {
       BVH4::NodeRef root = 0; size_t allocator = 0;
       GridRange range(0,width-1,0,height-1);
-      std::pair<BBox3fa,BBox3fa> bounds = buildMBlurBVH(root,time,range,allocator);
+      LBBox3fa bounds = buildMBlurBVH(root,time,range,allocator);
       if (bounds_o) *bounds_o = bounds;
       assert(allocator == bvhBytes);
       return root;
     }
 
-    std::pair<BBox3fa,BBox3fa> GridSOA::buildMBlurBVH(BVH4::NodeRef& curNode, size_t time, const GridRange& range, size_t& allocator)
+    LBBox3fa GridSOA::buildMBlurBVH(BVH4::NodeRef& curNode, size_t time, const GridRange& range, size_t& allocator)
     {
       /*! create leaf node */
       if (unlikely(range.hasLeafSize()))
@@ -182,7 +182,7 @@ namespace embree
         /* return bounding box */
         const BBox3fa bounds0 = calculateBounds(time+0,range);
         const BBox3fa bounds1 = calculateBounds(time+1,range);
-        return std::make_pair(bounds0,bounds1);
+        return LBBox3fa(bounds0,bounds1);
       }
       
       /* create internal node */
@@ -198,13 +198,12 @@ namespace embree
         const unsigned children = range.splitIntoSubRanges(r);
       
         /* recurse into subtrees */
-        std::pair<BBox3fa,BBox3fa> bounds(empty,empty);
+        LBBox3fa bounds(empty);
         for (unsigned i=0; i<children; i++)
         {
-          std::pair<BBox3fa,BBox3fa> box = buildMBlurBVH( node->child(i), time, r[i], allocator);
-          node->set(i,box.first,box.second);
-          bounds.first. extend(box.first);
-          bounds.second.extend(box.second);
+          LBBox3fa box = buildMBlurBVH(node->child(i), time, r[i], allocator);
+          node->set(i, box);
+          bounds.extend(box);
         }
         
         curNode = BVH4::encodeNode(node);

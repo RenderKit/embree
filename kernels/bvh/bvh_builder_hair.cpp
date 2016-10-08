@@ -173,7 +173,7 @@ namespace embree
         {
           /* call BVH builder */
           const PrimInfo pinfo = createBezierRefArrayMBlur(t,bvh->numTimeSteps,scene,prims,virtualprogress);
-          const std::pair<BBox3fa,BBox3fa> lbbox = HeuristicArrayBinningSAH<BezierPrim>(prims.begin()).computePrimInfoMB(t,bvh->numTimeSteps,scene,pinfo);
+          const LBBox3fa lbbox = HeuristicArrayBinningSAH<BezierPrim>(prims.begin()).computePrimInfoMB(t,bvh->numTimeSteps,scene,pinfo);
         
           NodeRef root = bvh_obb_builder_binned_sah<N>
           (
@@ -184,8 +184,8 @@ namespace embree
               NodeMB* node = (NodeMB*) alloc->alloc0.malloc(sizeof(NodeMB),16); node->clear();
               for (size_t i=0; i<numChildren; i++) 
               {
-                std::pair<BBox3fa,BBox3fa> bounds = alignedHeuristic.computePrimInfoMB(t,bvh->numTimeSteps,scene,children[i]);
-                node->set(i,bounds.first,bounds.second);
+                LBBox3fa bounds = alignedHeuristic.computePrimInfoMB(t,bvh->numTimeSteps,scene,children[i]);
+                node->set(i,bounds);
               }
               return node;
             },
@@ -217,8 +217,8 @@ namespace embree
             prims.data(),pinfo,N,BVH::maxBuildDepthLeaf,1,1,BVH::maxLeafBlocks);
 
           roots[t] = root;
-          bounds[t+0] = lbbox.first;
-          bounds[t+1] = lbbox.second;
+          bounds[t+0] = lbbox.bounds0;
+          bounds[t+1] = lbbox.bounds1;
           num_bvh_primitives = max(num_bvh_primitives,pinfo.size());
         }
         bvh->set(NodeRef((size_t)roots),LBBox3fa(bounds),num_bvh_primitives);

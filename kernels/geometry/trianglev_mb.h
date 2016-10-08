@@ -108,8 +108,8 @@ namespace embree
     }
 
     /* Calculate the linear bounds of the primitive */
-    __forceinline std::pair<BBox3fa,BBox3fa> linearBounds() const {
-      return std::make_pair(bounds0(),bounds1());
+    __forceinline LBBox3fa linearBounds() const {
+      return LBBox3fa(bounds0(),bounds1());
     }
 
     /* Fill triangle from triangle list */
@@ -145,7 +145,7 @@ namespace embree
     }
     
     /* Fill triangle from triangle list */
-    __forceinline std::pair<BBox3fa,BBox3fa> fill_mblur(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list, size_t itime, size_t numTimeSteps)
+    __forceinline LBBox3fa fill_mblur(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list, size_t itime, size_t numTimeSteps)
     {
       vint<M> vgeomID = -1, vprimID = -1;
       Vec3vfM va0 = zero, vb0 = zero, vc0 = zero;
@@ -177,7 +177,7 @@ namespace embree
 	vc1.x[i] = c1.x; vc1.y[i] = c1.y; vc1.z[i] = c1.z;
       }
       new (this) TriangleMvMB(va0,va1,vb0,vb1,vc0,vc1,vgeomID,vprimID);
-      return std::make_pair(bounds0,bounds1);
+      return LBBox3fa(bounds0,bounds1);
     }
    
   public:

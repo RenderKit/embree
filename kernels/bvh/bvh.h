@@ -570,6 +570,12 @@ namespace embree
         }
       }
 
+      /*! Sets bounding box and ID of child. */
+      __forceinline void set(size_t i, const LBBox3fa& bounds)
+      {
+        set(i, bounds.bounds0, bounds.bounds1);
+      }
+
       /*! tests if the node has valid bounds */
       __forceinline bool hasBounds() const {
         return lower_dx.i[0] != cast_f2i(float(nan));
@@ -578,13 +584,13 @@ namespace embree
       /*! Return bounding box for time 0 */
       __forceinline BBox3fa bounds0(size_t i) const {
         return BBox3fa(Vec3fa(lower_x[i],lower_y[i],lower_z[i]),
-                      Vec3fa(upper_x[i],upper_y[i],upper_z[i]));
+                       Vec3fa(upper_x[i],upper_y[i],upper_z[i]));
       }
 
       /*! Return bounding box for time 1 */
       __forceinline BBox3fa bounds1(size_t i) const {
         return BBox3fa(Vec3fa(lower_x[i]+lower_dx[i],lower_y[i]+lower_dy[i],lower_z[i]+lower_dz[i]),
-                      Vec3fa(upper_x[i]+upper_dx[i],upper_y[i]+upper_dy[i],upper_z[i]+upper_dz[i]));
+                       Vec3fa(upper_x[i]+upper_dx[i],upper_y[i]+upper_dy[i],upper_z[i]+upper_dz[i]));
       }
 
       /*! Returns extent of bounds of specified child. */
