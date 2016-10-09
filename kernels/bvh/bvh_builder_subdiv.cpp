@@ -276,15 +276,32 @@ namespace embree
         return pinfo.size();
       }
 
+      PrimInfo updatePrimRefArray(size_t t)
+      {
+        const PrimInfo pinfo = parallel_reduce(size_t(0), prims.size(), PrimInfo(empty), [&] (const range<size_t>& r) -> PrimInfo
+        {
+          PrimInfo pinfo(empty);
+          for (size_t i = r.begin(); i < r.end(); i++) {
+            size_t patchIndex = prims[i].ID();
+            const BBox3fa bound = bounds[numTimeSteps*patchIndex+t];
+            prims[i] = PrimRef(bound,patchIndex);
+            pinfo.add(bound);
+          }
+          return pinfo;
+        }, [] (const PrimInfo& a, const PrimInfo& b) { return PrimInfo::merge(a,b); });
+
+        return pinfo;
+      }
+
       void rebuild(size_t numPrimitives)
       {
         SubdivPatch1Cached* const subdiv_patches = (SubdivPatch1Cached*) bvh->subdiv_patches.data();
         bvh->alloc.reset();
 
         Scene::Iterator<SubdivMesh,mblur> iter(scene);
-        PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
+        parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
         {
-          PrimInfo s(empty);
+          size_t s = 0;
           for (size_t f=r.begin(); f!=r.end(); ++f) 
           {
             if (!mesh->valid(f)) continue;
@@ -295,7 +312,7 @@ namespace embree
 
             patch_eval_subdivision(mesh->getHalfEdge(f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch)
             {
-              const size_t patchIndex = base.size()+s.size();
+              const size_t patchIndex = base.size()+s;
               assert(patchIndex < numPrimitives);
 
               for (size_t t=0; t<numTimeSteps; t++)
@@ -311,9 +328,6 @@ namespace embree
                   SubdivPatch1Base& patch = subdiv_patches[numTimeSteps*patchIndex+t];
                   BBox3fa bound = evalGridBounds(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,mesh);
                   bounds[numTimeSteps*patchIndex+t] = bound;
-                  if (t != 0) continue;
-                  prims[patchIndex] = PrimRef(bound,patchIndex);
-                  s.add(bound);
                 }
               }
               else
@@ -326,15 +340,15 @@ namespace embree
                 {
                   BBox3fa bound = mybounds[t];
                   bounds[numTimeSteps*patchIndex+t] = bound;
-                  if (t != 0) continue;
-                  prims[patchIndex] = PrimRef(bound,patchIndex);
-                  s.add(bound);
                 }
               }
+
+              prims[patchIndex] = PrimRef(empty,patchIndex);
+              s++;
             });
           }
-          return s;
-        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a, b); });
+          return PrimInfo(s,empty,empty);
+        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });
 
         auto virtualprogress = BuildProgressMonitorFromClosure([&] (size_t dn) { 
             //bvh->scene->progressMonitor(double(dn)); // FIXME: triggers GCC compiler bug
@@ -350,7 +364,11 @@ namespace embree
             *current.parent = bvh->encodeLeaf((char*)&subdiv_patches[patchIndex],1);
             return 0;
           };
-          
+
+          /* create primrefs */
+          const PrimInfo pinfo = updatePrimRefArray(0);
+
+          /* call BVH builder */
           BVHNBuilder<N>::build(bvh,createLeaf,virtualprogress,prims.data(),pinfo,N,1,1,1.0f,1.0f);
         }
 
@@ -376,6 +394,9 @@ namespace embree
               const BBox3fa bounds1 = bounds[numTimeSteps*patchIndex+t+1];
               return LBBox3fa(bounds0,bounds1);
             };
+
+            /* create primrefs */
+            const PrimInfo pinfo = updatePrimRefArray(t);
 
             /* call BVH builder */
             NodeRef root; LBBox3fa tbounds;
