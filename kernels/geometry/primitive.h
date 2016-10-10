@@ -46,6 +46,8 @@ namespace embree
 
     __forceinline int itime() const { return 0; }
     __forceinline float ftime() const { return 0.0f; }
+
+    __forceinline unsigned numTimeSteps() const { return 1; }
   };
 
   class RayPrecalculationsMB
@@ -54,21 +56,26 @@ namespace embree
     __forceinline RayPrecalculationsMB() {}
 
     __forceinline RayPrecalculationsMB(const Ray& ray, const void* ptr, unsigned numTimeSteps)
-    {
+    {     
       /* calculate time segment itime and fractional time ftime */
       const int time_segments = (int)numTimeSteps-1;
       const float time = ray.time*float(time_segments);
       itime_ = clamp(int(floor(time)),0,time_segments-1);
       ftime_ = time - float(itime_);
+
+      numTimeSteps_ = numTimeSteps;
     }
 
     __forceinline int itime() const { return itime_; }
     __forceinline float ftime() const { return ftime_; }
 
+    __forceinline unsigned numTimeSteps() const { return numTimeSteps_; }
+
   private:
     /* used for msmblur implementation */
     int itime_;
     float ftime_;
+    int numTimeSteps_;
   };
 
   template<int K>
@@ -83,6 +90,8 @@ namespace embree
 
     __forceinline int itime(size_t k) const { return 0; }
     __forceinline float ftime(size_t k) const { return 0.0f; }
+
+    __forceinline unsigned numTimeSteps() const { return 1; }
   };
 
   template<int K>
@@ -97,6 +106,8 @@ namespace embree
       const vfloat<K> time = ray.time*float(time_segments);
       itime_ = clamp(vint<K>(floor(time)),vint<K>(0),vint<K>(time_segments-1));
       ftime_ = time - vfloat<K>(itime_);
+
+      numTimeSteps_ = numTimeSteps;
     }
 
     __forceinline vint<K> itime() const { return itime_; }
@@ -105,10 +116,13 @@ namespace embree
     __forceinline int itime(size_t k) const { return itime_[k]; }
     __forceinline float ftime(size_t k) const { return ftime_[k]; }
 
+    __forceinline unsigned numTimeSteps() const { return numTimeSteps_; }
+
   private:
     /* used for msmblur implementation */
     vint<K> itime_;
     vfloat<K> ftime_;
+    unsigned numTimeSteps_;
   };
 
   template<typename Precalculations>

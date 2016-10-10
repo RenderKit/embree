@@ -33,13 +33,13 @@ namespace embree
     public:
 
       /*! GridSOA constructor */
-      GridSOA(const SubdivPatch1Base* patches, const unsigned time_steps,
+      GridSOA(const SubdivPatch1Base* patches, const unsigned time_steps, const unsigned time_steps_global,
               const unsigned x0, const unsigned x1, const unsigned y0, const unsigned y1, const unsigned swidth, const unsigned sheight,
               const SubdivMesh* const geom, const size_t bvhBytes, const size_t gridBytes, BBox3fa* bounds_o = nullptr);
 
       /*! Subgrid creation */
       template<typename Allocator>
-        static GridSOA* create(const SubdivPatch1Base* patches, const unsigned time_steps,
+        static GridSOA* create(const SubdivPatch1Base* patches, const unsigned time_steps, const unsigned time_steps_global,
                                unsigned x0, unsigned x1, unsigned y0, unsigned y1, 
                                const Scene* scene, Allocator& alloc, BBox3fa* bounds_o = nullptr)
       {
@@ -48,20 +48,20 @@ namespace embree
         const unsigned width = x1-x0+1;  assert(width >= 3);
         const unsigned height = y1-y0+1; assert(height >= 3);
         const GridRange range(0,width-1,0,height-1);
-        const size_t nodeBytes = time_steps == 1 ? sizeof(BVH4::Node) : sizeof(BVH4::NodeMB);
+        const size_t nodeBytes = time_steps_global == 1 ? sizeof(BVH4::Node) : sizeof(BVH4::NodeMB);
         const size_t bvhBytes  = getBVHBytes(range,nodeBytes,0);
         const size_t gridBytes = 4*size_t(width)*size_t(height)*sizeof(float);  // 4 bytes of padding after grid required because of off by 1 read below
-        const size_t rootBytes = time_steps*sizeof(BVH4::NodeRef);
-        void* data = alloc(offsetof(GridSOA,data)+max(1u,time_steps-1)*bvhBytes+time_steps*gridBytes+rootBytes);
-        return new (data) GridSOA(patches,time_steps,x0,x1,y0,y1,patches->grid_u_res,patches->grid_v_res,scene->getSubdivMesh(patches->geom),bvhBytes,gridBytes,bounds_o);  
+        const size_t rootBytes = time_steps_global*sizeof(BVH4::NodeRef);
+        void* data = alloc(offsetof(GridSOA,data)+max(1u,time_steps_global-1)*bvhBytes+time_steps*gridBytes+rootBytes);
+        return new (data) GridSOA(patches,time_steps,time_steps_global,x0,x1,y0,y1,patches->grid_u_res,patches->grid_v_res,scene->getSubdivMesh(patches->geom),bvhBytes,gridBytes,bounds_o);
       }
 
       /*! Grid creation */
       template<typename Allocator>
-        static GridSOA* create(const SubdivPatch1Base* const patches, const unsigned time_steps,
+        static GridSOA* create(const SubdivPatch1Base* const patches, const unsigned time_steps, const unsigned time_steps_global,
                                const Scene* scene, const Allocator& alloc, BBox3fa* bounds_o = nullptr) 
       {
-        return create(patches,time_steps,0,patches->grid_u_res-1,0,patches->grid_v_res-1,scene,alloc,bounds_o);
+        return create(patches,time_steps,time_steps_global,0,patches->grid_u_res-1,0,patches->grid_v_res-1,scene,alloc,bounds_o);
       }
 
        /*! returns reference to root */
@@ -226,7 +226,7 @@ namespace embree
 
     public:
       unsigned align0;
-      unsigned align1;
+      unsigned time_steps_global;
       unsigned time_steps;
       unsigned width;
 

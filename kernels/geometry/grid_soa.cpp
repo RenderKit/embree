@@ -20,12 +20,12 @@ namespace embree
 {
   namespace isa
   {  
-    GridSOA::GridSOA(const SubdivPatch1Base* patches, unsigned time_steps, 
+    GridSOA::GridSOA(const SubdivPatch1Base* patches, unsigned time_steps, unsigned time_steps_global,
                      const unsigned x0, const unsigned x1, const unsigned y0, const unsigned y1, const unsigned swidth, const unsigned sheight,
                      const SubdivMesh* const geom, const size_t bvhBytes, const size_t gridBytes, BBox3fa* bounds_o)
-      : time_steps(time_steps), width(x1-x0+1), height(y1-y0+1), dim_offset(width*height), 
+      : time_steps_global(time_steps_global),time_steps(time_steps), width(x1-x0+1), height(y1-y0+1), dim_offset(width*height),
         geomID(patches->geom), primID(patches->prim), 
-        bvhBytes(unsigned(bvhBytes)), gridOffset(max(1u,time_steps-1)*unsigned(bvhBytes)), gridBytes(unsigned(gridBytes)), rootOffset(unsigned(gridOffset+time_steps*gridBytes))
+        bvhBytes(unsigned(bvhBytes)), gridOffset(max(1u,time_steps_global-1)*unsigned(bvhBytes)), gridBytes(unsigned(gridBytes)), rootOffset(unsigned(gridOffset+time_steps*gridBytes))
     {      
       /* the generate loops need padded arrays, thus first store into these temporary arrays */
       unsigned temp_size = width*height+VSIZEX;
@@ -69,7 +69,7 @@ namespace embree
       /* otherwise build MBlur BVH */
       else
       {
-        for (size_t t=0; t<time_steps-1; t++)
+        for (size_t t=0; t<time_steps_global-1; t++)
         {
           LBBox3fa bounds;
           root(t) = buildMBlurBVH(t,&bounds);
@@ -180,9 +180,8 @@ namespace embree
         curNode = BVH4::encodeTypedLeaf((void*)value,0);
 
         /* return bounding box */
-        const BBox3fa bounds0 = calculateBounds(time+0,range);
-        const BBox3fa bounds1 = calculateBounds(time+1,range);
-        return LBBox3fa(bounds0,bounds1);
+        return Geometry::linearBounds(time, time_steps_global, time_steps,
+                                      [&] (size_t itime) { return calculateBounds(itime,range); });
       }
       
       /* create internal node */
