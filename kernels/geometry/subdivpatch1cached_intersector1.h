@@ -127,12 +127,7 @@ namespace embree
           grid = (GridSOA*) prim->root_ref.data;
         }
         assert(grid);
-
-        const float timeSegments = float(int(pre.numTimeSteps()-1));
-        const float timeScaled = ray.time * timeSegments;
-        const size_t itime = int(clamp(floor(timeScaled), 0.0f, timeSegments-1.0f));
-
-        lazy_node = grid->root(itime);
+        lazy_node = grid->root(pre.itime());
         pre.grid = grid;
         return false;
       }
@@ -238,12 +233,7 @@ namespace embree
         else {
           grid = (GridSOA*) prim->root_ref.data;
         }
-
-        const float timeSegments = float(int(pre.numTimeSteps()-1));
-        const float timeScaled = ray.time[k] * timeSegments;
-        const size_t itime = int(clamp(floor(timeScaled), 0.0f, timeSegments-1.0f));
-
-        lazy_node = grid->root(itime);
+        lazy_node = grid->root(pre.itime(k));
         pre.grid = grid;
         return false;
       }
