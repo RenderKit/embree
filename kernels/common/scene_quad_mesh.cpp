@@ -200,24 +200,4 @@ namespace embree
       }
     }
   }
-
-  void QuadMesh::write(std::ofstream& file)
-  {
-    int type = QUAD_MESH;
-    file.write((char*)&type,sizeof(int));
-    file.write((char*)&numTimeSteps,sizeof(int));
-    size_t numVerts = numVertices();
-    file.write((char*)&numVerts,sizeof(int));
-    size_t numQuads = quads.size();
-    file.write((char*)&numQuads,sizeof(int));
-
-    for (size_t j=0; j<numTimeSteps; j++) {
-      while ((file.tellp() % 16) != 0) { char c = 0; file.write(&c,1); }
-      for (size_t i=0; i<numVerts; i++) file.write((char*)vertexPtr(i,j),sizeof(Vec3fa));  
-    }
-
-    while ((file.tellp() % 16) != 0) { char c = 0; file.write(&c,1); }
-    for (size_t i=0; i<numQuads; i++) file.write((char*)&quad(i),sizeof(Quad));  
-
-  }
 }

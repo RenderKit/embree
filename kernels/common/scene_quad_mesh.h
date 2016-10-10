@@ -43,9 +43,6 @@ namespace embree
     /*! quad mesh construction */
     QuadMesh (Scene* parent, RTCGeometryFlags flags, size_t numQuads, size_t numVertices, size_t numTimeSteps); 
   
-    /*! writes the quad mesh geometry to disk */
-    void write(std::ofstream& file);
-
     /* geometry interface */
   public:
     void enabling();
