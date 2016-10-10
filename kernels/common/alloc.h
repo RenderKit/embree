@@ -17,9 +17,8 @@
 #pragma once
 
 #include "default.h"
-#if defined(__X86_64__)
+
 #define ENABLE_PARALLEL_BLOCK_ALLOCATION 1
-#endif
 
 namespace embree
 {
@@ -221,22 +220,27 @@ namespace embree
       if (MAX_THREAD_USED_BLOCK_SLOTS >= 8 && bytesAllocate > 16*maxAllocationSize) slotMask = 0x7;
     }
 
+	void internal_fix_used_blocks()
+	{
+#if ENABLE_PARALLEL_BLOCK_ALLOCATION == 1
+		/* move thread local blocks to global block list */
+		for (size_t i = 0; i < MAX_THREAD_USED_BLOCK_SLOTS; i++)
+		{
+			while (threadBlocks[i].load() != nullptr) {
+				Block* nextUsedBlock = threadBlocks[i].load()->next;
+				threadBlocks[i].load()->next = usedBlocks.load();
+				usedBlocks = threadBlocks[i].load();
+				threadBlocks[i] = nextUsedBlock;
+			}
+			threadBlocks[i] = nullptr;
+		}
+#endif
+	}
+
     /*! frees state not required after build */
     __forceinline void cleanup() 
     {
-#if ENABLE_PARALLEL_BLOCK_ALLOCATION == 1
-      /* move thread local blocks to global block list */
-      for (size_t i=0; i<MAX_THREAD_USED_BLOCK_SLOTS; i++)
-      {
-        while (threadBlocks[i].load() != nullptr) {
-          Block* nextUsedBlock = threadBlocks[i].load()->next;
-          threadBlocks[i].load()->next = usedBlocks.load();
-          usedBlocks = threadBlocks[i].load();
-          threadBlocks[i] = nextUsedBlock;
-        }
-        threadBlocks[i] = nullptr;
-      }
-#endif
+		internal_fix_used_blocks();
       
       for (size_t t=0; t<thread_local_allocators2.threads.size(); t++) {
 	bytesUsed += thread_local_allocators2.threads[t]->getUsedBytes();
@@ -258,6 +262,8 @@ namespace embree
     /*! resets the allocator, memory blocks get reused */
     void reset () 
     {
+		internal_fix_used_blocks();
+
       bytesUsed = 0;
       bytesWasted = 0;
 
