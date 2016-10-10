@@ -16,7 +16,6 @@
 
 #include "tessellation_cache.h"
 
-
 namespace embree
 {
   SharedLazyTessellationCache SharedLazyTessellationCache::sharedLazyTessellationCache;
