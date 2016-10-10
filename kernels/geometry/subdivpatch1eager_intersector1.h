@@ -80,11 +80,7 @@ namespace embree
       
       static __forceinline bool processLazyNode(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, Scene* scene, size_t& lazy_node)
       {
-        const float timeSegments = float(prim->time_steps-1);
-        const float timeScaled = ray.time * timeSegments;
-        const size_t itime = int(clamp(floor(timeScaled), 0.0f, timeSegments-1.0f));
-
-        lazy_node = prim->root(itime); pre.grid = (Primitive*) prim; return false;
+        lazy_node = prim->root(pre.itime()); pre.grid = (Primitive*) prim; return false;
       }
 
       /*! Intersect a ray with the primitive. */
