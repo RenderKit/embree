@@ -206,8 +206,8 @@ namespace embree
         }
         
         curNode = BVH4::encodeNode(node);
-        assert(is_finite(bounds.first));
-        assert(is_finite(bounds.second));
+        assert(is_finite(bounds.bounds0));
+        assert(is_finite(bounds.bounds1));
         return bounds;
       }
     }
