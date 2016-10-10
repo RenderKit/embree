@@ -2901,6 +2901,7 @@ namespace embree
       if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT16)) intersectModes.push_back(MODE_INTERSECT16);
       if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM)) {
         intersectModes.push_back(MODE_INTERSECT1M);
+        intersectModes.push_back(MODE_INTERSECT1Mp);
         intersectModes.push_back(MODE_INTERSECTNM1);
         intersectModes.push_back(MODE_INTERSECTNM3);
         intersectModes.push_back(MODE_INTERSECTNM4);
@@ -2986,6 +2987,7 @@ namespace embree
       if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT16)) intersectModes.push_back(MODE_INTERSECT16);
       if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM)) {
         intersectModes.push_back(MODE_INTERSECT1M);
+        intersectModes.push_back(MODE_INTERSECT1Mp);
         intersectModes.push_back(MODE_INTERSECTNM1);
         intersectModes.push_back(MODE_INTERSECTNM3);
         intersectModes.push_back(MODE_INTERSECTNM4);
@@ -3552,6 +3554,7 @@ namespace embree
     intersectModes.push_back(MODE_INTERSECT8);
     intersectModes.push_back(MODE_INTERSECT16);
     intersectModes.push_back(MODE_INTERSECT1M);
+    intersectModes.push_back(MODE_INTERSECT1Mp);
     intersectModes.push_back(MODE_INTERSECTNM1);
     intersectModes.push_back(MODE_INTERSECTNM3);
     intersectModes.push_back(MODE_INTERSECTNM4);
