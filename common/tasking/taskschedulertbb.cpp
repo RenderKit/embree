@@ -38,9 +38,6 @@ namespace embree
     
     TBBAffinity() { threadCount = 0; }
     
-    int  get_concurrency()      { return threadCount; }
-    void set_concurrency(int i) { threadCount = i; }
-    
   } tbb_affinity;
   
   size_t TaskScheduler::g_numThreads = 0;
@@ -54,10 +51,8 @@ namespace embree
     }
     
     /* only set affinity if requested by the user */
-    if (set_affinity) {
-      tbb_affinity.set_concurrency(0);
+    if (set_affinity)
       tbb_affinity.observe(true); 
-    }
     
     /* now either keep default settings or configure number of threads */
     if (numThreads == 0) 
