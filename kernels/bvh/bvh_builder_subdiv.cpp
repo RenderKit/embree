@@ -322,12 +322,10 @@ namespace embree
                 BBox3fa mybounds[RTC_MAX_TIME_STEPS];
                 SubdivPatch1Base& patch = subdiv_patches[patchIndexMB];
                 patch.root_ref.data = (int64_t) GridSOA::create(&patch,(unsigned)mesh->numTimeSteps,(unsigned)numTimeSteps,scene,alloc,mybounds);
-            
+
                 for (size_t t=0; t<mesh->numTimeSteps; t++)
                 {
-                  //BBox3fa bound = mybounds[t];
-                  SubdivPatch1Base& patch = subdiv_patches[patchIndexMB+t];
-                  BBox3fa bound = evalGridBounds(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,mesh);
+                  BBox3fa bound = mybounds[t];
                   bounds[patchIndexMB+t] = bound;
                   if (t != 0) continue;
                   prims[patchIndex] = PrimRef(bound,patchIndexMB);
@@ -444,7 +442,7 @@ namespace embree
       {
         bvh->numTimeSteps = scene->getNumTimeSteps<SubdivMesh,mblur>();
         numTimeSteps = bvh->numTimeSteps;
-        
+
         /* initialize all half edge structures */
         size_t numPatches;
         bool fastUpdateMode = initializeHalfEdges(numPatches);
