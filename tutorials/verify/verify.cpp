@@ -2599,11 +2599,15 @@ namespace embree
 
   size_t monitorProgressBreak = 0;
   std::atomic<size_t> monitorProgressInvokations(0);
+  std::atomic<size_t> monitorProgressBreakExecuted(0);
 
   bool monitorProgressFunction(void* ptr, double dn) 
   {
     size_t n = monitorProgressInvokations++;
-    if (n == monitorProgressBreak) return false;
+    if (n == monitorProgressBreak) {
+      monitorProgressBreakExecuted++;
+      return false;
+    }
     return true;
   }
 
@@ -2990,6 +2994,7 @@ namespace embree
   size_t monitorMemoryBreak = 0;
   std::atomic<size_t> monitorMemoryBytesUsed(0);
   std::atomic<size_t> monitorMemoryInvokations(0);
+  std::atomic<size_t> monitorMemoryBreakExecuted(0);
 
   bool monitorMemoryFunction(ssize_t bytes, bool post) 
   {
@@ -2997,6 +3002,7 @@ namespace embree
     if (bytes > 0) {
       size_t n = monitorMemoryInvokations++;
       if (n == monitorMemoryBreak) {
+        monitorMemoryBreakExecuted++;
         if (!post) monitorMemoryBytesUsed -= bytes;
         return false;
       }
@@ -3041,25 +3047,32 @@ namespace embree
         monitorMemoryBreak = std::numeric_limits<size_t>::max();
         monitorMemoryBytesUsed = 0;
         monitorMemoryInvokations = 0;
+        monitorMemoryBreakExecuted = 0;
         monitorProgressBreak = std::numeric_limits<size_t>::max();
         monitorProgressInvokations = 0;
+        monitorProgressBreakExecuted = 0;
         RegressionTask task1(this,sceneIndex,1,0,true);
         func(new ThreadRegressionTask(0,0,state,device,intersectModes,&task1));
-        if (monitorMemoryBytesUsed) {
-          rtcDeviceSetMemoryMonitorFunction(device,nullptr);
+        if (monitorMemoryBytesUsed) 
           return VerifyApplication::FAILED;
-        }
+
         monitorMemoryBreak = size_t(float(monitorMemoryInvokations) * random_float());
         monitorMemoryBytesUsed = 0;
         monitorMemoryInvokations = 0;
+        monitorMemoryBreakExecuted = 0;
         monitorProgressBreak = size_t(float(monitorProgressInvokations) * 2.0f * random_float());
         monitorProgressInvokations = 0;
+        monitorProgressBreakExecuted = 0;
         RegressionTask task2(this,sceneIndex,1,0,true);
         func(new ThreadRegressionTask(0,0,state,device,intersectModes,&task2));
-        if (monitorMemoryBytesUsed || (monitorMemoryInvokations != 0 && task2.errorCounter != 1)) {
-          rtcDeviceSetMemoryMonitorFunction(device,nullptr);
+        if (monitorMemoryBytesUsed) 
           return VerifyApplication::FAILED;
-        }
+        if (monitorMemoryBreakExecuted && task2.errorCounter != 1) 
+          return VerifyApplication::FAILED;
+        if (monitorProgressBreakExecuted && task2.errorCounter != 1) 
+          return VerifyApplication::FAILED;
+        if (!monitorMemoryBreakExecuted && !monitorProgressBreakExecuted && task2.errorCounter != 0) 
+          return VerifyApplication::FAILED;
         sceneIndex++;
       }
       rtcDeviceSetMemoryMonitorFunction(device,nullptr);
