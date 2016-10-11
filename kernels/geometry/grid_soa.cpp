@@ -73,10 +73,17 @@ namespace embree
         {
           LBBox3fa bounds;
           root(t) = buildMBlurBVH(t,&bounds);
-          if (bounds_o) {
+          if (bounds_o && time_steps == time_steps_global) {
             bounds_o[t+0] = bounds.bounds0;
             bounds_o[t+1] = bounds.bounds1;
           }
+        }
+
+        if (bounds_o && time_steps != time_steps_global)
+        {
+          GridRange range(0,width-1,0,height-1);
+          for (size_t t=0; t<time_steps; t++)
+            bounds_o[t] = calculateBounds(t,range);
         }
       }
     }

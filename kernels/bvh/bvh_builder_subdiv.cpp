@@ -341,15 +341,21 @@ namespace embree
               {
                 SubdivPatch1Base& patch = subdiv_patches[patchIndexMB+t];
                 new (&patch) SubdivPatch1Cached(mesh->id,unsigned(f),subPatch,mesh,t,uv,edge_level,subdiv,VSIZEX);
-
-                BBox3fa bound = evalGridBounds(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,mesh);
-                bounds[patchIndexMB+t] = bound;
               }
-              
-              if (!cached)
+
+              if (cached)
+              {
+                for (size_t t=0; t<mesh->numTimeSteps; t++)
+                {
+                  SubdivPatch1Base& patch = subdiv_patches[patchIndexMB+t];
+                  BBox3fa bound = evalGridBounds(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,mesh);
+                  bounds[patchIndexMB+t] = bound;
+                }
+              }
+              else
               {
                 SubdivPatch1Base& patch0 = subdiv_patches[patchIndexMB];
-                patch0.root_ref.data = (int64_t) GridSOA::create(&patch0,(unsigned)mesh->numTimeSteps,(unsigned)numTimeSteps,scene,alloc,nullptr);
+                patch0.root_ref.data = (int64_t) GridSOA::create(&patch0,(unsigned)mesh->numTimeSteps,(unsigned)numTimeSteps,scene,alloc,&bounds[patchIndexMB]);
               }
 
               prims[patchIndex] = PrimRef(empty,patchIndexMB);
