@@ -428,6 +428,7 @@ namespace embree
     MODE_INTERSECT8,
     MODE_INTERSECT16,
     MODE_INTERSECT1M,
+    MODE_INTERSECT1Mp,
     MODE_INTERSECTNM1,
     MODE_INTERSECTNM3,
     MODE_INTERSECTNM4,
@@ -445,6 +446,7 @@ namespace embree
     case MODE_INTERSECT8: return "8";
     case MODE_INTERSECT16: return "16";
     case MODE_INTERSECT1M: return "1M";
+    case MODE_INTERSECT1Mp: return "1Mp";
     case MODE_INTERSECTNM1: return "NM1";
     case MODE_INTERSECTNM3: return "NM3";
     case MODE_INTERSECTNM4: return "NM4";
@@ -464,6 +466,7 @@ namespace embree
     case MODE_INTERSECT8: return 32;
     case MODE_INTERSECT16: return 64;
     case MODE_INTERSECT1M: return 16;
+    case MODE_INTERSECT1Mp: return 16;
     case MODE_INTERSECTNM1: return 16;
     case MODE_INTERSECTNM3: return 16;
     case MODE_INTERSECTNM4: return 16;
@@ -550,6 +553,7 @@ namespace embree
     case MODE_INTERSECT8: return RTC_INTERSECT8;
     case MODE_INTERSECT16: return RTC_INTERSECT16;
     case MODE_INTERSECT1M: return RTC_INTERSECT_STREAM;
+    case MODE_INTERSECT1Mp: return RTC_INTERSECT_STREAM;
     case MODE_INTERSECTNM1: return RTC_INTERSECT_STREAM;
     case MODE_INTERSECTNM3: return RTC_INTERSECT_STREAM;
     case MODE_INTERSECTNM4: return RTC_INTERSECT_STREAM;
@@ -621,6 +625,7 @@ namespace embree
     case MODE_INTERSECT8:   return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT8);
     case MODE_INTERSECT16:  return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT16);
     case MODE_INTERSECT1M:  return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
+    case MODE_INTERSECT1Mp: return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
     case MODE_INTERSECTNM1: return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
     case MODE_INTERSECTNM3: return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
     case MODE_INTERSECTNM4: return rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM);
@@ -745,6 +750,18 @@ namespace embree
       switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
       case VARIANT_INTERSECT: rtcIntersect1M(scene,&context,rays,N,sizeof(RTCRay)); break;
       case VARIANT_OCCLUDED : rtcOccluded1M (scene,&context,rays,N,sizeof(RTCRay)); break;
+      default: assert(false);
+      }
+      break;
+    }
+    case MODE_INTERSECT1Mp: 
+    {
+      assert(N<1024);
+      RTCRay* rptrs[1024];
+      for (size_t i=0; i<N; i++) rptrs[i] = &rays[i];
+      switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
+      case VARIANT_INTERSECT: rtcIntersect1Mp(scene,&context,rptrs,N); break;
+      case VARIANT_OCCLUDED : rtcOccluded1Mp (scene,&context,rptrs,N); break;
       default: assert(false);
       }
       break;

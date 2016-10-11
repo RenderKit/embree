@@ -394,7 +394,7 @@ namespace embree
           /* allocate buffers */
           const size_t numTimeSegments = bvh->numTimeSteps-1; assert(bvh->numTimeSteps > 1);
           //bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef)*numTimeSegments);
-          NodeRef* roots = (NodeRef*) bvh->alloc.threadLocal2()->alloc0.malloc(sizeof(NodeRef)*numTimeSegments,BVH::byteNodeAlignment);
+          NodeRef* roots = (NodeRef*) bvh->alloc.threadLocal2()->alloc0->malloc(sizeof(NodeRef)*numTimeSegments,BVH::byteNodeAlignment);
           
           /* build BVH for each timestep */
           avector<BBox3fa> boxes(bvh->numTimeSteps);

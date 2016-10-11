@@ -73,7 +73,7 @@ namespace embree
                  HeuristicArrayBinningSAH<BezierPrim> alignedHeuristic, 
                  FastAllocator::ThreadLocal2* alloc) -> Node*
             {
-              Node* node = (Node*) alloc->alloc0.malloc(sizeof(Node),16); node->clear();
+              Node* node = (Node*) alloc->alloc0->malloc(sizeof(Node),16); node->clear();
               for (size_t i=0; i<numChildren; i++)
                 node->set(i,children[i].geomBounds);
               return node;
@@ -83,7 +83,7 @@ namespace embree
                  UnalignedHeuristicArrayBinningSAH<BezierPrim> unalignedHeuristic, 
                  FastAllocator::ThreadLocal2* alloc) -> UnalignedNode*
             {
-              UnalignedNode* node = (UnalignedNode*) alloc->alloc0.malloc(sizeof(UnalignedNode),16); node->clear();
+              UnalignedNode* node = (UnalignedNode*) alloc->alloc0->malloc(sizeof(UnalignedNode),16); node->clear();
               for (size_t i=0; i<numChildren; i++) 
               {
                 const LinearSpace3fa space = unalignedHeuristic.computeAlignedSpace(children[i]); 
@@ -97,7 +97,7 @@ namespace embree
             {
               size_t items = pinfo.size();
               size_t start = pinfo.begin;
-              Primitive* accel = (Primitive*) alloc->alloc1.malloc(items*sizeof(Primitive));
+              Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive));
               NodeRef node = bvh->encodeLeaf((char*)accel,items);
               for (size_t i=0; i<items; i++) {
                 accel[i].fill(prims.data(),start,pinfo.end,bvh->scene,false);
@@ -164,7 +164,7 @@ namespace embree
         const size_t numTimeSegments = bvh->numTimeSteps-1; assert(bvh->numTimeSteps > 1);
         prims.resize(numPrimitives);
         bvh->alloc.init_estimate(numPrimitives*sizeof(Primitive)*numTimeSegments);
-        NodeRef* roots = (NodeRef*) bvh->alloc.threadLocal2()->alloc0.malloc(sizeof(NodeRef)*numTimeSegments,BVH::byteNodeAlignment);
+        NodeRef* roots = (NodeRef*) bvh->alloc.threadLocal2()->alloc0->malloc(sizeof(NodeRef)*numTimeSegments,BVH::byteNodeAlignment);
 
         /* build BVH for each timestep */
         avector<BBox3fa> bounds(bvh->numTimeSteps);
@@ -181,7 +181,7 @@ namespace embree
 
             [&] (const PrimInfo* children, const size_t numChildren, HeuristicArrayBinningSAH<BezierPrim> alignedHeuristic, FastAllocator::ThreadLocal2* alloc) -> NodeMB*
             {
-              NodeMB* node = (NodeMB*) alloc->alloc0.malloc(sizeof(NodeMB),16); node->clear();
+              NodeMB* node = (NodeMB*) alloc->alloc0->malloc(sizeof(NodeMB),16); node->clear();
               for (size_t i=0; i<numChildren; i++) 
               {
                 LBBox3fa bounds = alignedHeuristic.computePrimInfoMB(t,bvh->numTimeSteps,scene,children[i]);
@@ -192,7 +192,7 @@ namespace embree
             
             [&] (const PrimInfo* children, const size_t numChildren, UnalignedHeuristicArrayBinningSAH<BezierPrim> unalignedHeuristic, FastAllocator::ThreadLocal2* alloc) -> UnalignedNodeMB*
             {
-              UnalignedNodeMB* node = (UnalignedNodeMB*) alloc->alloc0.malloc(sizeof(UnalignedNodeMB),16); node->clear();
+              UnalignedNodeMB* node = (UnalignedNodeMB*) alloc->alloc0->malloc(sizeof(UnalignedNodeMB),16); node->clear();
               for (size_t i=0; i<numChildren; i++) 
               {
                 const AffineSpace3fa space = unalignedHeuristic.computeAlignedSpaceMB(scene,children[i]); 
@@ -206,7 +206,7 @@ namespace embree
             {
               size_t items = pinfo.size();
               size_t start = pinfo.begin;
-              Primitive* accel = (Primitive*) alloc->alloc1.malloc(items*sizeof(Primitive));
+              Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive));
               NodeRef node = bvh->encodeLeaf((char*)accel,items);
               for (size_t i=0; i<items; i++) {
                 accel[i].fill(prims.data(),start,pinfo.end,bvh->scene,false);

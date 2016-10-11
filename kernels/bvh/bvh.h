@@ -130,7 +130,7 @@ namespace embree
       template<typename BuildRecord>
       __forceinline Node* operator() (const BuildRecord& current, BuildRecord* children, const size_t n, FastAllocator::ThreadLocal2* alloc)
       {
-        Node* node = (Node*) alloc->alloc0.malloc(sizeof(Node), byteNodeAlignment); node->clear();
+        Node* node = (Node*) alloc->alloc0->malloc(sizeof(Node), byteNodeAlignment); node->clear();
         for (size_t i=0; i<n; i++) {
           node->set(i,children[i].bounds());
           children[i].parent = (size_t*)&node->child(i);
@@ -155,7 +155,7 @@ namespace embree
         for (size_t i=0; i<n; i++) {
           node.set(i,children[i].bounds());
         }
-        QuantizedNode *qnode = (QuantizedNode*) alloc->alloc0.malloc(sizeof(QuantizedNode), byteNodeAlignment);
+        QuantizedNode *qnode = (QuantizedNode*) alloc->alloc0->malloc(sizeof(QuantizedNode), byteNodeAlignment);
 
         assert(((size_t)qnode & 0x7) == 0);
 

@@ -102,7 +102,7 @@ namespace embree
     for (size_t i=0; i<lst.size(); i++)
       lst[i].node->setBarrier();
       
-    root = layoutLargeNodesRecursion(root,alloc.threadLocal2()->alloc0);
+    root = layoutLargeNodesRecursion(root,*alloc.threadLocal2()->alloc0);
   }
   
   template<int N>
@@ -157,8 +157,10 @@ namespace embree
     if (device->verbosity(2))
       printStatistics();
 
-    if (device->verbosity(2))
-      alloc.print_statistics();
+    if (device->verbosity(2)) {
+      std::cout << "  primitives = " << numPrimitives << ",";
+      alloc.print_statistics(device->verbosity(3));
+    }
 
     /* benchmark mode */
     if (device->benchmark) {

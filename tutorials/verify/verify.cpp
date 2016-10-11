@@ -2944,6 +2944,7 @@ namespace embree
       if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT16)) intersectModes.push_back(MODE_INTERSECT16);
       if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM)) {
         intersectModes.push_back(MODE_INTERSECT1M);
+        intersectModes.push_back(MODE_INTERSECT1Mp);
         intersectModes.push_back(MODE_INTERSECTNM1);
         intersectModes.push_back(MODE_INTERSECTNM3);
         intersectModes.push_back(MODE_INTERSECTNM4);
@@ -3031,6 +3032,7 @@ namespace embree
       if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT16)) intersectModes.push_back(MODE_INTERSECT16);
       if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT_STREAM)) {
         intersectModes.push_back(MODE_INTERSECT1M);
+        intersectModes.push_back(MODE_INTERSECT1Mp);
         intersectModes.push_back(MODE_INTERSECTNM1);
         intersectModes.push_back(MODE_INTERSECTNM3);
         intersectModes.push_back(MODE_INTERSECTNM4);
@@ -3592,11 +3594,21 @@ namespace embree
 
     /* create list of all ISAs to test */
     if (hasISA(SSE2)) isas.push_back(SSE2);
+#if defined(__TARGET_SSE42__)
     if (hasISA(SSE42)) isas.push_back(SSE42);
+#endif
+#if defined(__TARGET_AVX__)
     if (hasISA(AVX)) isas.push_back(AVX);
+#endif
+#if defined(__TARGET_AVX2__)
     if (hasISA(AVX2)) isas.push_back(AVX2);
+#endif
+#if defined(__TARGET_AVX512KNL__)
     if (hasISA(AVX512KNL)) isas.push_back(AVX512KNL);
+#endif
+#if defined(__TARGET_AVX512SKX__)
     if (hasISA(AVX512SKX)) isas.push_back(AVX512SKX);
+#endif
     
     /* create list of all intersect modes to test */
     intersectModes.push_back(MODE_INTERSECT1);
@@ -3604,6 +3616,7 @@ namespace embree
     intersectModes.push_back(MODE_INTERSECT8);
     intersectModes.push_back(MODE_INTERSECT16);
     intersectModes.push_back(MODE_INTERSECT1M);
+    intersectModes.push_back(MODE_INTERSECT1Mp);
     intersectModes.push_back(MODE_INTERSECTNM1);
     intersectModes.push_back(MODE_INTERSECTNM3);
     intersectModes.push_back(MODE_INTERSECTNM4);

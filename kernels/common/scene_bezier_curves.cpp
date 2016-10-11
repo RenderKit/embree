@@ -207,25 +207,4 @@ namespace embree
       if (ddPdudu) vfloatx::storeu(valid,ddPdudu+i,bezier.eval_dudu(u));
     }
   }
-
-  void BezierCurves::write(std::ofstream& file)
-  {
-    int type = BEZIER_CURVES;
-    file.write((char*)&type,sizeof(int));
-    file.write((char*)&numTimeSteps,sizeof(int));
-    size_t numVerts = numVertices();
-    file.write((char*)&numVerts,sizeof(int));
-    file.write((char*)&numPrimitives,sizeof(int));
-
-    for (size_t j=0; j<numTimeSteps; j++) {
-      while ((file.tellp() % 16) != 0) { char c = 0; file.write(&c,1); }
-      for (size_t i=0; i<vertices[j].size(); i++) {
-        Vec3fa v = vertex(i,j);
-        file.write((char*)&v,sizeof(Vec3fa)); 
-      }
-    }
-
-    while ((file.tellp() % 16) != 0) { char c = 0; file.write(&c,1); }
-    for (size_t i=0; i<numPrimitives; i++) file.write((char*)&curve(i),sizeof(int));  
-  }
 }

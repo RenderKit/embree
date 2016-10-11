@@ -163,6 +163,7 @@ namespace embree
   DECLARE_BUILDER2(void,QuadMesh,size_t,BVH8Quad4vMeshBuilderMortonGeneral);
 
   DECLARE_BUILDER2(void,Scene,size_t,BVH8Quad4vSceneBuilderFastSpatialSAH);
+  DECLARE_BUILDER2(void,Scene,size_t,BVH8Triangle4SceneBuilderSweepSAH);
 
   BVH8Factory::BVH8Factory (int features)
   {
@@ -206,8 +207,8 @@ namespace embree
    
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX(features,BVH8Triangle4SceneBuilderSpatialSAH));
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX512KNL_AVX512SKX(features,BVH8Triangle4SceneBuilderFastSpatialSAH));
-
     IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_AVX_AVX512KNL_AVX512SKX(features,BVH8Quad4vSceneBuilderFastSpatialSAH));
+    IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX512KNL_AVX512SKX(features,BVH8Triangle4SceneBuilderSweepSAH));
 
     IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8Line4iIntersector1));
     IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH8Line4iMBIntersector1));
@@ -306,28 +307,28 @@ namespace embree
 
   void BVH8Factory::createTriangleMeshTriangle4Morton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
-    BVH8Factory* factory = mesh->parent->device->bvh8_factory;
+    BVH8Factory* factory = mesh->parent->device->bvh8_factory.get();
     accel = new BVH8(Triangle4::type,mesh->parent);
     builder = factory->BVH8Triangle4MeshBuilderMortonGeneral(accel,mesh,0);
   }
 
   void BVH8Factory::createTriangleMeshTriangle4vMorton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
-    BVH8Factory* factory = mesh->parent->device->bvh8_factory;
+    BVH8Factory* factory = mesh->parent->device->bvh8_factory.get();
     accel = new BVH8(Triangle4v::type,mesh->parent);
     builder = factory->BVH8Triangle4vMeshBuilderMortonGeneral(accel,mesh,0);
   }
 
   void BVH8Factory::createTriangleMeshTriangle4iMorton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
-    BVH8Factory* factory = mesh->parent->device->bvh8_factory;
+    BVH8Factory* factory = mesh->parent->device->bvh8_factory.get();
     accel = new BVH8(Triangle4i::type,mesh->parent);
     builder = factory->BVH8Triangle4iMeshBuilderMortonGeneral(accel,mesh,0); 
   }
 
   void BVH8Factory::createTriangleMeshTriangle4(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
-    BVH8Factory* factory = mesh->parent->device->bvh8_factory;
+    BVH8Factory* factory = mesh->parent->device->bvh8_factory.get();
     accel = new BVH8(Triangle4::type,mesh->parent);
     switch (mesh->flags) {
     case RTC_GEOMETRY_STATIC:     builder = factory->BVH8Triangle4MeshBuilderSAH(accel,mesh,0); break;
@@ -339,7 +340,7 @@ namespace embree
 
   void BVH8Factory::createTriangleMeshTriangle4v(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
-    BVH8Factory* factory = mesh->parent->device->bvh8_factory;
+    BVH8Factory* factory = mesh->parent->device->bvh8_factory.get();
     accel = new BVH8(Triangle4v::type,mesh->parent);
     switch (mesh->flags) {
     case RTC_GEOMETRY_STATIC:     builder = factory->BVH8Triangle4vMeshBuilderSAH(accel,mesh,0); break;
@@ -351,7 +352,7 @@ namespace embree
 
   void BVH8Factory::createTriangleMeshTriangle4i(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
-    BVH8Factory* factory = mesh->parent->device->bvh8_factory;
+    BVH8Factory* factory = mesh->parent->device->bvh8_factory.get();
     accel = new BVH8(Triangle4i::type,mesh->parent);
     switch (mesh->flags) {
     case RTC_GEOMETRY_STATIC:     builder = factory->BVH8Triangle4iMeshBuilderSAH(accel,mesh,0); break;
@@ -361,10 +362,9 @@ namespace embree
     }
   }
 
-
   void BVH8Factory::createQuadMeshQuad4v(QuadMesh* mesh, AccelData*& accel, Builder*& builder)
   {
-    BVH8Factory* factory = mesh->parent->device->bvh8_factory;
+    BVH8Factory* factory = mesh->parent->device->bvh8_factory.get();
     accel = new BVH8(Quad4v::type,mesh->parent);
     switch (mesh->flags) {
     case RTC_GEOMETRY_STATIC:     builder = factory->BVH8Quad4vMeshBuilderSAH(accel,mesh,0); break;
@@ -376,12 +376,10 @@ namespace embree
 
   void BVH8Factory::createQuadMeshQuad4vMorton(QuadMesh* mesh, AccelData*& accel, Builder*& builder)
   {
-    BVH8Factory* factory = mesh->parent->device->bvh8_factory;
+    BVH8Factory* factory = mesh->parent->device->bvh8_factory.get();
     accel = new BVH8(Quad4v::type,mesh->parent);
     builder = factory->BVH8Quad4vMeshBuilderMortonGeneral(accel,mesh,0);
   }
-
-
 
   Accel::Intersectors BVH8Factory::BVH8Bezier1vIntersectors_OBB(BVH8* bvh)
   {
@@ -629,6 +627,7 @@ namespace embree
     else if (scene->device->tri_builder == "sah_presplit")     builder = BVH8Triangle4SceneBuilderSAH(accel,scene,MODE_HIGH_QUALITY);
     else if (scene->device->tri_builder == "dynamic"     ) builder = BVH8BuilderTwoLevelTriangleMeshSAH(accel,scene,&createTriangleMeshTriangle4);
     else if (scene->device->tri_builder == "morton"     ) builder = BVH8BuilderTwoLevelTriangleMeshSAH(accel,scene,&createTriangleMeshTriangle4Morton);
+    else if (scene->device->tri_builder == "sweep"      )  builder = BVH8Triangle4SceneBuilderSweepSAH(accel,scene,0);
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH8<Triangle4>");
 
     return new AccelInstance(accel,builder,intersectors);

@@ -18,8 +18,6 @@
 
 #include "../common/default.h"
 
-#define CACHE_DBG(x) 
-
 /* force a complete cache invalidation when running out of allocation space */
 #define FORCE_SIMPLE_FLUSH 0
 
@@ -31,37 +29,29 @@
 #define CACHE_STATS(x) 
 #endif
 
-
 namespace embree
 {
-////////////////////////////////////////////////////////////////////////////////
- ////////////////////////////////////////////////////////////////////////////////
- ////////////////////////////////////////////////////////////////////////////////
-
-
- class SharedTessellationCacheStats
- {
- public:
+  class SharedTessellationCacheStats
+  {
+  public:
     /* stats */
-   static std::atomic<size_t> cache_accesses;
-   static std::atomic<size_t> cache_hits;
-   static std::atomic<size_t> cache_misses;
-   static std::atomic<size_t> cache_flushes;                
-   static std::atomic<size_t> *cache_patch_builds;                
-   static size_t        cache_num_patches;
-   __aligned(64) static SpinLock mtx;
-
+    static std::atomic<size_t> cache_accesses;
+    static std::atomic<size_t> cache_hits;
+    static std::atomic<size_t> cache_misses;
+    static std::atomic<size_t> cache_flushes;                
+    static std::atomic<size_t> *cache_patch_builds;                
+    static size_t        cache_num_patches;
+    __aligned(64) static SpinLock mtx;
+    
     /* print stats for debugging */                 
     static void printStats();
     static void clearStats();
     static void incPatchBuild(const size_t ID, const size_t numPatches);
-
- };
-
+  };
+  
   void resizeTessellationCache(size_t new_size);
   void resetTessellationCache();
-
-
+  
  ////////////////////////////////////////////////////////////////////////////////
  ////////////////////////////////////////////////////////////////////////////////
  ////////////////////////////////////////////////////////////////////////////////
@@ -80,7 +70,6 @@ namespace embree
      assert( ((size_t)this % 64) == 0 ); 
    }   
  };
-
 
  class __aligned(64) SharedLazyTessellationCache 
  {
@@ -258,29 +247,6 @@ namespace embree
      }
    }
    
-   static __forceinline size_t lookupIndex(volatile Tag* tag, size_t globalTime)
-   {
-     const int64_t subdiv_patch_root_ref = tag->data; 
-     
-     CACHE_STATS(SharedTessellationCacheStats::cache_accesses++);
-     if (likely(subdiv_patch_root_ref != 0)) 
-     {
-       const size_t subdiv_patch_root = (subdiv_patch_root_ref & REF_TAG_MASK);
-       const size_t subdiv_patch_cache_index = extractCommitIndex(subdiv_patch_root_ref);
-       
-       if (likely( sharedLazyTessellationCache.validCacheIndex(subdiv_patch_cache_index,globalTime) ))
-       {
-         CACHE_STATS(SharedTessellationCacheStats::cache_hits++);
-         return subdiv_patch_root;
-       }
-     }
-     CACHE_STATS(SharedTessellationCacheStats::cache_misses++);
-     return -1;
-   }
-
-   __forceinline void prefetchThread(ThreadWorkState *const t_state) {  // FIXME: remove
-   }
-
    __forceinline bool validCacheIndex(const size_t i, const size_t globalTime)
    {
 #if FORCE_SIMPLE_FLUSH == 1
@@ -304,49 +270,12 @@ namespace embree
    __forceinline size_t alloc(const size_t blocks)
    {
      if (unlikely(blocks >= switch_block_threshold))
-     {
        throw_RTCError(RTC_INVALID_OPERATION,"allocation exceeds size of tessellation cache segment");
-     }
+
      assert(blocks < switch_block_threshold);
      size_t index = next_block.fetch_add(blocks);
      if (unlikely(index + blocks >= switch_block_threshold)) return (size_t)-1;
      return index;
-   }
-
-   static __forceinline size_t allocIndexLoop(ThreadWorkState *const t_state, const size_t blocks)
-   {
-     size_t block_index = -1;
-     while (true)
-     {
-       block_index = sharedLazyTessellationCache.alloc(blocks);
-       if (block_index == (size_t)-1)
-       {
-         sharedLazyTessellationCache.unlockThread(t_state);		  
-         sharedLazyTessellationCache.allocNextSegment();
-         sharedLazyTessellationCache.lockThread(t_state);
-         continue; 
-       }
-       break;
-     }
-     return block_index;
-   }
-
-   static __forceinline void* allocLoop(ThreadWorkState *const t_state, const size_t bytes)
-   {
-     size_t block_index = -1;
-     while (true)
-     {
-       block_index = sharedLazyTessellationCache.alloc((bytes+63)/64);
-       if (block_index == (size_t)-1)
-       {
-         sharedLazyTessellationCache.unlockThread(t_state);		  
-         sharedLazyTessellationCache.allocNextSegment();
-         sharedLazyTessellationCache.lockThread(t_state);
-         continue; 
-       }
-       break;
-     }
-     return sharedLazyTessellationCache.getBlockPtr(block_index);
    }
 
    static __forceinline void* malloc(const size_t bytes)
@@ -385,11 +314,5 @@ namespace embree
    void reset();
 
    static SharedLazyTessellationCache sharedLazyTessellationCache;
-    
  };
-
-  // =========================================================================================================
-  // =========================================================================================================
-  // =========================================================================================================
-
-};
+}

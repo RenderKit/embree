@@ -34,9 +34,6 @@ namespace embree
     /*! line segments construction */
     LineSegments (Scene* parent, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps);
 
-    /*! writes the bezier segment geometry to disk */
-    void write(std::ofstream& file);
-
   public:
     void enabling();
     void disabling();

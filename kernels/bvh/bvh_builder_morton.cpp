@@ -48,7 +48,7 @@ namespace embree
 
       __forceinline Node* operator() (MortonBuildRecord<NodeRef>& current, MortonBuildRecord<NodeRef>* children, size_t numChildren, FastAllocator::ThreadLocal2* alloc)
       {
-        Node* node = (Node*) alloc->alloc0.malloc(sizeof(Node),BVH::byteNodeAlignment); 
+        Node* node = (Node*) alloc->alloc0->malloc(sizeof(Node),BVH::byteNodeAlignment); 
         *current.parent = BVH::encodeNode(node);
         node->clear();
         for (size_t i=0; i<numChildren; i++)
@@ -120,7 +120,7 @@ namespace embree
         assert(items<=4);
         
         /* allocate leaf node */
-        Triangle4* accel = (Triangle4*) alloc->alloc1.malloc(sizeof(Triangle4));
+        Triangle4* accel = (Triangle4*) alloc->alloc1->malloc(sizeof(Triangle4));
         *current.parent = BVH::encodeLeaf((char*)accel,1);
         vint4 vgeomID = -1, vprimID = -1;
         Vec3vf4 v0 = zero, v1 = zero, v2 = zero;
@@ -175,7 +175,7 @@ namespace embree
         assert(items<=4);
         
         /* allocate leaf node */
-        Triangle4v* accel = (Triangle4v*) alloc->alloc1.malloc(sizeof(Triangle4v));
+        Triangle4v* accel = (Triangle4v*) alloc->alloc1->malloc(sizeof(Triangle4v));
         *current.parent = BVH::encodeLeaf((char*)accel,1);
         
         vint4 vgeomID = -1, vprimID = -1;
@@ -229,7 +229,7 @@ namespace embree
         assert(items<=4);
         
         /* allocate leaf node */
-        Triangle4i* accel = (Triangle4i*) alloc->alloc1.malloc(sizeof(Triangle4i));
+        Triangle4i* accel = (Triangle4i*) alloc->alloc1->malloc(sizeof(Triangle4i));
         *current.parent = BVH::encodeLeaf((char*)accel,1);
         
         vint4 vgeomID = -1, vprimID = -1;
@@ -294,7 +294,7 @@ namespace embree
         assert(items<=4);
         
         /* allocate leaf node */
-        Quad4v* accel = (Quad4v*) alloc->alloc1.malloc(sizeof(Quad4v));
+        Quad4v* accel = (Quad4v*) alloc->alloc1->malloc(sizeof(Quad4v));
         *current.parent = BVH::encodeLeaf((char*)accel,1);
         
         vint4 vgeomID = -1, vprimID = -1;

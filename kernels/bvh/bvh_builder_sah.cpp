@@ -59,7 +59,7 @@ namespace embree
         size_t n = current.prims.size();
         size_t items = Primitive::blocks(n);
         size_t start = current.prims.begin();
-        Primitive* accel = (Primitive*) alloc->alloc1.malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
+        Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
         typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,items);
         for (size_t i=0; i<items; i++) {
           accel[i].fill(prims,start,current.prims.end(),bvh->scene,false);
@@ -86,7 +86,7 @@ namespace embree
         size_t items = Primitive::blocks(n);
         size_t start = current.prims.begin();
         // todo alloc0/1 or alloc
-        Primitive* accel = (Primitive*) alloc->alloc0.malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
+        Primitive* accel = (Primitive*) alloc->alloc0->malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
         typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,items);
         for (size_t i=0; i<items; i++) {
           accel[i].fill(prims,start,current.prims.end(),bvh->scene,false);
@@ -123,7 +123,7 @@ namespace embree
         for (size_t i=0; i<n; i++) 
           source[start+i].lower.a &= 0x00FFFFFF;
 
-        Primitive* accel = (Primitive*) alloc->alloc1.malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
+        Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
         typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,items);
         for (size_t i=0; i<items; i++) {
           accel[i].fill(source,start,current.prims.end(),bvh->scene,false);
@@ -175,7 +175,7 @@ namespace embree
           bvh->clear();
           return;
         }
-
+        
         double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + toString(N) + "BuilderSAH");
 
 #if PROFILE
@@ -310,7 +310,7 @@ namespace embree
       {
         size_t n = current.pinfo.size();
         size_t num = Primitive::blocks(n);
-        Primitive* leaf = (Primitive*) alloc->alloc1.malloc(num*sizeof(Primitive),BVH::byteNodeAlignment);
+        Primitive* leaf = (Primitive*) alloc->alloc1->malloc(num*sizeof(Primitive),BVH::byteNodeAlignment);
         typename BVH::NodeRef node = bvh->encodeLeaf((char*)leaf,num);
 
         PrimRefList::block_iterator_unsafe iter1(current.prims);
@@ -444,7 +444,7 @@ namespace embree
       {
         size_t items = Primitive::blocks(current.prims.size());
         size_t start = current.prims.begin();
-        Primitive* accel = (Primitive*) alloc->alloc1.malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
+        Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
         typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,items);
         LBBox3fa allBounds = empty;
         for (size_t i=0; i<items; i++) {
@@ -528,7 +528,7 @@ namespace embree
       {
         size_t items = Primitive::blocks(current.prims.size());
         size_t start = current.prims.begin();
-        Primitive* accel = (Primitive*) alloc->alloc1.malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
+        Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
         typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,items);
         LBBox3fa allBounds = empty;
         for (size_t i=0; i<items; i++) {
@@ -579,7 +579,7 @@ namespace embree
         const size_t numTimeSegments = bvh->numTimeSteps-1; assert(bvh->numTimeSteps > 1);
         prims.resize(numPrimitives);
         bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef)*numTimeSegments);
-        NodeRef* roots = (NodeRef*) bvh->alloc.threadLocal2()->alloc0.malloc(sizeof(NodeRef)*numTimeSegments,BVH::byteNodeAlignment);
+        NodeRef* roots = (NodeRef*) bvh->alloc.threadLocal2()->alloc0->malloc(sizeof(NodeRef)*numTimeSegments,BVH::byteNodeAlignment);
 
         /* build BVH for each timestep */
         avector<BBox3fa> bounds(bvh->numTimeSteps);
@@ -973,6 +973,84 @@ namespace embree
     };
 
 
+    /************************************************************************************/ 
+    /************************************************************************************/
+    /************************************************************************************/
+    /************************************************************************************/
+
+    template<int N, typename Mesh, typename Primitive>
+    struct BVHNBuilderSweepSAH : public Builder
+    {
+      typedef BVHN<N> BVH;
+      BVH* bvh;
+      Scene* scene;
+      Mesh* mesh;
+      mvector<PrimRef> prims;
+      const size_t sahBlockSize;
+      const float intCost;
+      const size_t minLeafSize;
+      const size_t maxLeafSize;
+      const float presplitFactor;
+
+      BVHNBuilderSweepSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
+        : bvh(bvh), scene(scene), mesh(nullptr), prims(scene->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)),
+          presplitFactor((mode & MODE_HIGH_QUALITY) ? defaultPresplitFactor : 1.0f) {}
+
+
+      BVHNBuilderSweepSAH (BVH* bvh, Mesh* mesh, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
+        : bvh(bvh), scene(nullptr), mesh(mesh), prims(bvh->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)),
+          presplitFactor((mode & MODE_HIGH_QUALITY ) ? defaultPresplitFactor : 1.0f) {}
+
+      // FIXME: shrink bvh->alloc in destructor here and in other builders too
+
+      void build(size_t, size_t) 
+      {
+	/* skip build for empty scene */
+	const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,1>();
+        if (numPrimitives == 0) {
+          prims.clear();
+          bvh->clear();
+          return;
+        }
+
+        double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + toString(N) + "BuilderSAH");
+
+        /* create primref array */
+        const size_t numSplitPrimitives = max(numPrimitives,size_t(presplitFactor*numPrimitives));
+        prims.resize(numSplitPrimitives);
+        PrimInfo pinfo = mesh ? 
+          createPrimRefArray<Mesh>  (mesh ,prims,bvh->scene->progressInterface) : 
+          createPrimRefArray<Mesh,1>(scene,prims,bvh->scene->progressInterface);
+        
+        /* perform pre-splitting */
+        if (presplitFactor > 1.0f) 
+          pinfo = presplit<Mesh>(scene, pinfo, prims);
+        
+        /* call BVH builder */
+        bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
+        BVHNBuilder<N>::build(bvh,CreateLeaf<N,Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
+
+	/* clear temporary data for static geometry */
+	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
+	if (staticGeom) {
+          prims.clear();
+          bvh->shrink();
+        }
+	bvh->cleanup();
+        bvh->postBuild(t0);
+      }
+
+      void clear() {
+        prims.clear();
+      }
+    };
+
+    /************************************************************************************/ 
+    /************************************************************************************/
+    /************************************************************************************/
+    /************************************************************************************/
+
+
 #if defined(EMBREE_GEOMETRY_LINES)
     Builder* BVH4Line4iMeshBuilderSAH     (void* bvh, LineSegments* mesh, size_t mode) { return new BVHNBuilderSAH<4,LineSegments,Line4i>((BVH4*)bvh,mesh,4,1.0f,4,inf,mode); }
     Builder* BVH4Line4iSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,LineSegments,Line4i>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
@@ -1029,6 +1107,9 @@ namespace embree
 
     /* new fast spatial split builder */
     Builder* BVH8Triangle4SceneBuilderFastSpatialSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderFastSpatialSAH<8,TriangleMesh,Triangle4>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
+
+    /* experimental full sweep builder */
+    Builder* BVH8Triangle4SceneBuilderSweepSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSweepSAH<8,TriangleMesh,Triangle4>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
 
 #endif
 #endif

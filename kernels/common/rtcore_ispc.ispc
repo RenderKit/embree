@@ -46,14 +46,18 @@ extern "C" void ispcIntersect1 (RTCScene scene, uniform RTCRay1& ray);
 extern "C" void ispcIntersect4 (void* uniform valid, RTCScene scene, void* uniform ray);
 extern "C" void ispcIntersect8 (void* uniform valid, RTCScene scene, void* uniform ray);
 extern "C" void ispcIntersect16 (void* uniform valid, RTCScene scene, void* uniform ray);
-extern "C" void ispcIntersectNM (RTCScene scene, const uniform RTCIntersectContext* uniform context, struct RTCRayN* uniform rays, const uniform size_t M, const uniform size_t N, const uniform size_t stride);
-extern "C" void ispcIntersectNp (RTCScene scene, const uniform RTCIntersectContext* uniform context, const uniform RTCRayNp& rays, const uniform size_t N);
+extern "C" void ispcIntersect1M  (RTCScene scene, const uniform RTCIntersectContext* uniform context, uniform RTCRay1* uniform rays, const uniform size_t M, const uniform size_t stride);
+extern "C" void ispcIntersect1Mp (RTCScene scene, const uniform RTCIntersectContext* uniform context, uniform RTCRay1** uniform rays, const uniform size_t M);
+extern "C" void ispcIntersectNM  (RTCScene scene, const uniform RTCIntersectContext* uniform context, struct RTCRayN* uniform rays, const uniform size_t M, const uniform size_t N, const uniform size_t stride);
+extern "C" void ispcIntersectNp  (RTCScene scene, const uniform RTCIntersectContext* uniform context, const uniform RTCRayNp& rays, const uniform size_t N);
 
 
 extern "C" void ispcOccluded1 (RTCScene scene, uniform RTCRay1& ray);
 extern "C" void ispcOccluded4 (void* uniform valid, RTCScene scene, void* uniform ray);
 extern "C" void ispcOccluded8 (void* uniform valid, RTCScene scene, void* uniform ray);
 extern "C" void ispcOccluded16 (void* uniform valid, RTCScene scene, void* uniform ray);
+extern "C" void ispcOccluded1M  (RTCScene scene, const uniform RTCIntersectContext* uniform context, uniform RTCRay1* uniform rays, const uniform size_t M, const uniform size_t stride);
+extern "C" void ispcOccluded1Mp (RTCScene scene, const uniform RTCIntersectContext* uniform context, uniform RTCRay1** uniform rays, const uniform size_t M);
 extern "C" void ispcOccludedNM (RTCScene scene, const uniform RTCIntersectContext* uniform context, struct RTCRayN* uniform rays, const uniform size_t M, const uniform size_t N, const uniform size_t stride);
 extern "C" void ispcOccludedNp (RTCScene scene, const uniform RTCIntersectContext* uniform context, const uniform RTCRayNp& rays, const uniform size_t N);
 
@@ -291,7 +295,12 @@ void rtcIntersect (RTCScene scene, varying RTCRay& ray)
 }
 
 void rtcIntersect1M (RTCScene scene, const uniform RTCIntersectContext* uniform context, uniform RTCRay1* uniform rays, const uniform size_t M, const uniform size_t stride) {
-  ispcIntersectNM(scene,context,(struct RTCRayN*)rays,1,M,stride);
+  //ispcIntersectNM(scene,context,(struct RTCRayN*)rays,1,M,stride);
+  ispcIntersect1M(scene,context,rays,M,stride);
+}
+
+void rtcIntersect1M (RTCScene scene, const uniform RTCIntersectContext* uniform context, uniform RTCRay1** uniform rays, const uniform size_t M, const uniform size_t stride) {
+  ispcIntersect1Mp(scene,context,rays,M);
 }
 
 void rtcIntersectVM (RTCScene scene, const uniform RTCIntersectContext* uniform context, varying RTCRay* uniform rays, const uniform size_t M, const uniform size_t stride) {
@@ -326,7 +335,12 @@ void rtcOccluded (RTCScene scene, varying RTCRay& ray)
 }
 
 void rtcOccluded1M (RTCScene scene, const uniform RTCIntersectContext* uniform context, uniform RTCRay1* uniform rays, const uniform size_t M, const uniform size_t stride) {
-  ispcOccludedNM(scene,context,(struct RTCRayN*)rays,1,M,stride);
+  //ispcOccludedNM(scene,context,(struct RTCRayN*)rays,1,M,stride);
+  ispcOccluded1M(scene,context,rays,M,stride);
+}
+
+void rtcOccluded1Mp(RTCScene scene, const uniform RTCIntersectContext* uniform context, uniform RTCRay1** uniform rays, const uniform size_t M, const uniform size_t stride) {
+  ispcOccluded1Mp(scene,context,rays,M);
 }
 
 void rtcOccludedVM (RTCScene scene, const uniform RTCIntersectContext* uniform context, varying RTCRay* uniform rays, const uniform size_t M, const uniform size_t stride) {
