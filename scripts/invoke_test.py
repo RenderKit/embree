@@ -34,7 +34,7 @@ def compareImages(image0,image1,dimage):
   try: line = subprocess.check_output("compare -metric MAE "+image0+" "+image1+" -compose Src "+dimage, stderr=subprocess.STDOUT, shell=True)
   except subprocess.CalledProcessError, e: line = e.output
   error = float(line[line.index('(')+1:line.index(')')])
-  return error < 0.001
+  return error < 0.005
 
 def printUsage():
   sys.stderr.write('Usage: ' + sys.argv[0] + ' --name testname --modeldir path --model path/model.ecs --execute executable args\n')
