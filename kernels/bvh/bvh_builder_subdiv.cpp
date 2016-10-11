@@ -289,10 +289,10 @@ namespace embree
           PrimInfo pinfo(empty);
           for (size_t i = r.begin(); i < r.end(); i++) {
             size_t patchIndexMB = prims[i].ID();
-            size_t patchNumTimeSteps = scene->getSubdivMesh(subdiv_patches[patchIndexMB].geom)->numTimeSteps;
 
             BBox3fa bound;
             if (mblur) {
+              size_t patchNumTimeSteps = scene->getSubdivMesh(subdiv_patches[patchIndexMB].geom)->numTimeSteps;
               Geometry::buildBounds(t, numTimeSteps, patchNumTimeSteps,
                                     [&] (size_t itime, BBox3fa& bbox) -> bool
                                     {
@@ -429,14 +429,14 @@ namespace embree
         Scene::Iterator<SubdivMesh,mblur> iter(scene);
         parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
         {
-          PrimInfo s(empty);
+          size_t s = 0;
           for (size_t f=r.begin(); f!=r.end(); ++f) 
           {
             if (!mesh->valid(f)) continue;
             
             patch_eval_subdivision(mesh->getHalfEdge(f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch)
             {
-              const size_t patchIndex = base.size()+s.size();
+              const size_t patchIndex = base.begin+s;
               assert(patchIndex < numPrimitives);
               SubdivPatch1Base& patch = subdiv_patches[patchIndex];
               BBox3fa bound = empty;
@@ -452,11 +452,11 @@ namespace embree
 
               bounds[patchIndex] = bound;
               prims[patchIndex] = PrimRef(bound,patchIndex);
-              s.add(bound);
+              s++;
             });
           }
-          return s;
-        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a, b); });
+          return PrimInfo(s,s,empty,empty);
+        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.begin+b.begin,a.end+b.end,empty,empty); });
 
         /* refit BVH over patches */
         if (!refitter)
