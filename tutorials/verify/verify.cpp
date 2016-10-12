@@ -2944,11 +2944,12 @@ namespace embree
   {
     thread_func func;
     int mode;
+    float intensity;
     std::vector<IntersectMode> intersectModes;
     std::vector<thread_t> threads;
     
-    IntensiveRegressionTest (std::string name, int isa, thread_func func, int mode)
-      : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), func(func), mode(mode) {}
+    IntensiveRegressionTest (std::string name, int isa, thread_func func, int mode, float intensity)
+      : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), func(func), mode(mode), intensity(intensity) {}
     
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
     {
@@ -2974,7 +2975,7 @@ namespace embree
 
       size_t errorCounter = 0;
       unsigned int sceneIndex = 0;
-      while (sceneIndex < size_t(30*state->intensity)) 
+      while (sceneIndex < size_t(intensity*state->intensity)) 
       {
         if (mode)
         {
@@ -3033,10 +3034,11 @@ namespace embree
   struct MemoryMonitorTest : public VerifyApplication::Test
   {
     thread_func func;
+    float intensity;
     std::vector<IntersectMode> intersectModes;
     
-    MemoryMonitorTest (std::string name, int isa, thread_func func)
-      : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), func(func) {}
+    MemoryMonitorTest (std::string name, int isa, thread_func func, float intensity)
+      : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), func(func), intensity(intensity) {}
     
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
     {
@@ -3063,7 +3065,7 @@ namespace embree
       rtcDeviceSetMemoryMonitorFunction(device,monitorMemoryFunction);
       
       unsigned int sceneIndex = 0;
-      while (sceneIndex < size_t(30*state->intensity)) 
+      while (sceneIndex < size_t(intensity*state->intensity)) 
       {
         monitorMemoryBreak = std::numeric_limits<size_t>::max();
         monitorMemoryBytesUsed = 0;
@@ -3937,17 +3939,17 @@ namespace embree
       /*                  Randomized Stress Testing                             */
       /**************************************************************************/
       
-      groups.top()->add(new IntensiveRegressionTest("regression_static",isa,rtcore_regression_static_thread,0));
-      groups.top()->add(new IntensiveRegressionTest("regression_dynamic",isa,rtcore_regression_dynamic_thread,0));
+      groups.top()->add(new IntensiveRegressionTest("regression_static",isa,rtcore_regression_static_thread,0,30));
+      groups.top()->add(new IntensiveRegressionTest("regression_dynamic",isa,rtcore_regression_dynamic_thread,0,300));
       
-      groups.top()->add(new IntensiveRegressionTest("regression_static_user_threads", isa,rtcore_regression_static_thread,1));
-      groups.top()->add(new IntensiveRegressionTest("regression_dynamic_user_threads",isa,rtcore_regression_dynamic_thread,1));
+      groups.top()->add(new IntensiveRegressionTest("regression_static_user_threads", isa,rtcore_regression_static_thread,1,30));
+      groups.top()->add(new IntensiveRegressionTest("regression_dynamic_user_threads",isa,rtcore_regression_dynamic_thread,1,300));
       
-      groups.top()->add(new IntensiveRegressionTest("regression_static_build_join", isa,rtcore_regression_static_thread,2));
-      groups.top()->add(new IntensiveRegressionTest("regression_dynamic_build_join",isa,rtcore_regression_dynamic_thread,2));
+      groups.top()->add(new IntensiveRegressionTest("regression_static_build_join", isa,rtcore_regression_static_thread,2,30));
+      groups.top()->add(new IntensiveRegressionTest("regression_dynamic_build_join",isa,rtcore_regression_dynamic_thread,2,300));
       
-      groups.top()->add(new MemoryMonitorTest("regression_static_memory_monitor", isa,rtcore_regression_static_thread));
-      groups.top()->add(new MemoryMonitorTest("regression_dynamic_memory_monitor",isa,rtcore_regression_dynamic_thread));
+      groups.top()->add(new MemoryMonitorTest("regression_static_memory_monitor", isa,rtcore_regression_static_thread,30));
+      groups.top()->add(new MemoryMonitorTest("regression_dynamic_memory_monitor",isa,rtcore_regression_dynamic_thread,300));
 
       /**************************************************************************/
       /*                           Benchmarks                                   */
