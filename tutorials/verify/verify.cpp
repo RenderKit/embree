@@ -4315,11 +4315,6 @@ namespace embree
     _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
     _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
 
-#if defined(TASKING_TBB)
-    /* initialize the task scheduler */
-    tbb::task_scheduler_init tbb_threads;
-#endif
-
     /* parse command line options */
     parseCommandLine(argc,argv);
 
