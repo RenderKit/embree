@@ -462,13 +462,14 @@ namespace embree
     bool passed = false;
     
     /* retry if benchmark failed */
-    static size_t numRetries = 0;
-    for (size_t i=0; i<10 && !passed; i++)
+    //static size_t numRetries = 0;
+    size_t i=0;
+    for (; i<10 && !passed; i++)
     {
       if (i != 0) {
         cleanup(state);
-        if (numRetries++ > 1000) break;
-        std::cout << state->yellow(" [RETRY]" ) << " (" << 100.0f*(curStat.getAvg()-avgdb)/avgdb << "%)" << std::flush;
+        //if (numRetries++ > 1000) break;
+        //std::cout << state->yellow(" [RETRY]" ) << " (" << 100.0f*(curStat.getAvg()-avgdb)/avgdb << "%)" << std::flush;
         setup(state);
       }
 
@@ -482,7 +483,7 @@ namespace embree
 
       /* check against database to see if test passed */
       if (state->database != "")
-        passed = curStat.getAvg()-avgdb >= -state->benchmark_tolerance*avgdb;
+        passed = !(curStat.getAvg()-avgdb < -state->benchmark_tolerance*avgdb); // !(a < b) on purpose for nan case
       else
         passed = true;
     }
@@ -496,8 +497,8 @@ namespace embree
       
     /* print test result */
     std::cout << std::setw(8) << std::setprecision(3) << std::fixed << bestStat.getAvg() << " " << unit << " (+/-" << 100.0f*bestStat.getAvgSigma()/bestStat.getAvg() << "%)";
-    if (passed) std::cout << state->green(" [PASSED]" ) << " (" << 100.0f*(bestStat.getAvg()-avgdb)/avgdb << "%)" << std::endl << std::flush;
-    else        std::cout << state->red  (" [FAILED]" ) << " (" << 100.0f*(bestStat.getAvg()-avgdb)/avgdb << "%)" << std::endl << std::flush;
+    if (passed) std::cout << state->green(" [PASSED]" ) << " (" << 100.0f*(bestStat.getAvg()-avgdb)/avgdb << "%) (" << i << " attempts)" << std::endl << std::flush;
+    else        std::cout << state->red  (" [FAILED]" ) << " (" << 100.0f*(bestStat.getAvg()-avgdb)/avgdb << "%) (" << i << " attempts)" << std::endl << std::flush;
     if (state->database != "")
       plotDatabase(state);
 
