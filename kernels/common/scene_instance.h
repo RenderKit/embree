@@ -55,11 +55,8 @@ namespace embree
 
     __forceinline AffineSpace3fa getWorld2Local(float t) const 
     {
-      /* calculate time segment itime and fractional time ftime */
-      const int time_segments = numTimeSteps-1;
-      const float time = t*float(time_segments);
-      const int itime = clamp(int(floor(time)),0,time_segments-1);
-      const float ftime = time - float(itime);
+      float ftime;
+      const size_t itime = getTimeSegment(t, fnumTimeSegments, ftime);
       return rcp(lerp(local2world[itime+0],local2world[itime+1],ftime));
     }
 
@@ -68,11 +65,8 @@ namespace embree
     {
       typedef AffineSpaceT<LinearSpace3<Vec3<vfloat<K>>>> AffineSpace3vfK;
       
-      /* calculate time segment itime and fractional time ftime */
-      const int time_segments = numTimeSteps-1;
-      const vfloat<K> time = t*vfloat<K>(float(time_segments));
-      const vint<K> itime_k = clamp(vint<K>(floor(time)),vint<K>(0),vint<K>(time_segments-1));
-      const vfloat<K> ftime = time - vfloat<K>(itime_k);
+      vfloat<K> ftime;
+      const vint<K> itime_k = getTimeSegment(t, vfloat<K>(fnumTimeSegments), ftime);
 #if 1
       assert(any(valid));
       const size_t index = __bsf(movemask(valid));

@@ -198,7 +198,7 @@ namespace embree
       {
         if (spaces.size() == 1) return spaces[0];
 
-         /* calculate time segment itime and fractional time ftime */
+        /* calculate time segment itime and fractional time ftime */
         const int time_segments = int(spaces.size()-1);
         const float time = gtime*float(time_segments);
         const int itime = clamp(int(floor(time)),0,time_segments-1);

@@ -104,11 +104,8 @@ namespace embree
     {
       const TriangleMesh* mesh = scene->getTriangleMesh(geomID(index));
 
-      const vfloat<K> timeSegments = mesh->fnumTimeSegments;
-      const vfloat<K> timeScaled = time * timeSegments;
-      const vfloat<K> itimef = clamp(floor(timeScaled), vfloat<K>(zero), timeSegments-1.0f);
-      const vint<K> itime = vint<K>(itimef);
-      const vfloat<K> ftime = timeScaled - itimef;
+      vfloat<K> ftime;
+      const vint<K> itime = getTimeSegment(time, vfloat<K>(mesh->fnumTimeSegments), ftime);
 
       const size_t first = __bsf(movemask(valid)); // assume itime is uniform
       p0 = getVertex(v0, index, scene, itime[first], ftime);
@@ -265,11 +262,9 @@ namespace embree
     const TriangleMesh* mesh2 = scene->getTriangleMesh(geomIDs[2]);
     const TriangleMesh* mesh3 = scene->getTriangleMesh(geomIDs[3]);
 
-    const vfloat4 timeSegments(mesh0->fnumTimeSegments, mesh1->fnumTimeSegments, mesh2->fnumTimeSegments, mesh3->fnumTimeSegments);
-    const vfloat4 timeScaled = time * timeSegments;
-    const vfloat4 itimef = clamp(floor(timeScaled), vfloat4(zero), timeSegments-1.0f);
-    const vint4 itime = vint4(itimef);
-    const vfloat4 ftime = timeScaled - itimef;
+    const vfloat4 numTimeSegments(mesh0->fnumTimeSegments, mesh1->fnumTimeSegments, mesh2->fnumTimeSegments, mesh3->fnumTimeSegments);
+    vfloat4 ftime;
+    const vint4 itime = getTimeSegment(vfloat4(time), numTimeSegments, ftime);
 
     const vfloat4 t0 = 1.0f - ftime;
     const vfloat4 t1 = ftime;

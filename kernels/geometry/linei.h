@@ -267,11 +267,9 @@ namespace embree
     const LineSegments* geom2 = scene->getLineSegments(geomIDs[2]);
     const LineSegments* geom3 = scene->getLineSegments(geomIDs[3]);
 
-    const vfloat4 timeSegments(geom0->fnumTimeSegments, geom1->fnumTimeSegments, geom2->fnumTimeSegments, geom3->fnumTimeSegments);
-    const vfloat4 timeScaled = time * timeSegments;
-    const vfloat4 itimef = clamp(floor(timeScaled), vfloat4(zero), timeSegments-1.0f);
-    const vint4 itime = vint4(itimef);
-    const vfloat4 ftime = timeScaled - itimef;
+    const vfloat4 numTimeSegments(geom0->fnumTimeSegments, geom1->fnumTimeSegments, geom2->fnumTimeSegments, geom3->fnumTimeSegments);
+    vfloat4 ftime;
+    const vint4 itime = getTimeSegment(vfloat4(time), numTimeSegments, ftime);
 
     const vfloat4 t0 = 1.0f - ftime;
     const vfloat4 t1 = ftime;
