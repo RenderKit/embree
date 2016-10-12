@@ -429,7 +429,7 @@ namespace embree
     if (device->subdiv_accel == "default") 
     {
       if (isIncoherent(flags) && isStatic())
-        accels.add(device->bvh4_factory->BVH4SubdivPatch1(this,false));
+        accels.add(device->bvh4_factory->BVH4SubdivPatch1Eager(this));
       else
         accels.add(device->bvh4_factory->BVH4SubdivPatch1(this,true));
     }
