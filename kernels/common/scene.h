@@ -151,9 +151,6 @@ namespace embree
     void build (size_t threadIndex, size_t threadCount);
     void build_task ();
 
-    /*! stores scene into binary file */
-    void write(std::ofstream& file);
-
     void updateInterface();
 
     /* return number of geometries */

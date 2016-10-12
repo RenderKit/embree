@@ -840,18 +840,6 @@ namespace embree
   }
 #endif
 
-  void Scene::write(std::ofstream& file)
-  {
-    int magick = 0x35238765LL;
-    file.write((char*)&magick,sizeof(magick));
-    size_t numGroups = size();
-    file.write((char*)&numGroups,sizeof(numGroups));
-    for (size_t i=0; i<numGroups; i++) {
-      if (geometries[i]) geometries[i]->write(file);
-      else { int type = -1; file.write((char*)&type,sizeof(type)); }
-    }
-  }
-
   void Scene::setProgressMonitorFunction(RTCProgressMonitorFunc func, void* ptr) 
   {
     static MutexSys mutex;
