@@ -286,8 +286,8 @@ namespace embree
       if (device->hasISA(AVX2)) // BVH8 reduces performance on AVX only-machines
       {
         switch (mode) {
-        case /*0b00*/ 0: accels.add(device->bvh8_factory->BVH8Triangle4vMB(this)); break;
-        case /*0b01*/ 1: accels.add(device->bvh8_factory->BVH8Triangle4vMB(this)); break;
+        case /*0b00*/ 0: accels.add(device->bvh8_factory->BVH8Triangle4iMB(this)); break;
+        case /*0b01*/ 1: accels.add(device->bvh8_factory->BVH8Triangle4iMB(this)); break;
         case /*0b10*/ 2: accels.add(device->bvh8_factory->BVH8Triangle4iMB(this)); break;
         case /*0b11*/ 3: accels.add(device->bvh8_factory->BVH8Triangle4iMB(this)); break;
         }
@@ -296,8 +296,8 @@ namespace embree
 #endif
       {
         switch (mode) {
-        case /*0b00*/ 0: accels.add(device->bvh4_factory->BVH4Triangle4vMB(this)); break;
-        case /*0b01*/ 1: accels.add(device->bvh4_factory->BVH4Triangle4vMB(this)); break;
+        case /*0b00*/ 0: accels.add(device->bvh4_factory->BVH4Triangle4iMB(this)); break;
+        case /*0b01*/ 1: accels.add(device->bvh4_factory->BVH4Triangle4iMB(this)); break;
         case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4Triangle4iMB(this)); break;
         case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4Triangle4iMB(this)); break;
         }
