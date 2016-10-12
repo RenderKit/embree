@@ -23,6 +23,7 @@ namespace embree
     : Geometry(parent,LINE_SEGMENTS,numPrimitives,numTimeSteps,flags)
   {
     segments.init(parent->device,numPrimitives,sizeof(int));
+    vertices.resize(numTimeSteps);
     for (size_t i=0; i<numTimeSteps; i++) {
       vertices[i].init(parent->device,numVertices,sizeof(Vec3fa));
     }
@@ -31,14 +32,14 @@ namespace embree
 
   void LineSegments::enabling()
   {
-    if (numTimeSteps == 1) parent->world1.numLineSegments += numPrimitives;
-    else                   parent->world2.numLineSegments += numPrimitives;
+    if (numTimeSteps == 1) parent->world.numLineSegments += numPrimitives;
+    else                   parent->worldMB.numLineSegments += numPrimitives;
   }
 
   void LineSegments::disabling()
   {
-    if (numTimeSteps == 1) parent->world1.numLineSegments -= numPrimitives;
-    else                   parent->world2.numLineSegments -= numPrimitives;
+    if (numTimeSteps == 1) parent->world.numLineSegments -= numPrimitives;
+    else                   parent->worldMB.numLineSegments -= numPrimitives;
   }
 
   void LineSegments::setMask (unsigned mask)
@@ -59,31 +60,33 @@ namespace embree
     if (((size_t(ptr) + offset) & 0x3) || (stride & 0x3))
       throw_RTCError(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
 
-    switch (type) {
-    case RTC_INDEX_BUFFER  :
-      segments.set(ptr,offset,stride);
-      break;
-    case RTC_VERTEX_BUFFER0:
-      vertices[0].set(ptr,offset,stride);
-      vertices[0].checkPadding16();
-      break;
-    case RTC_VERTEX_BUFFER1:
-      vertices[1].set(ptr,offset,stride);
-      vertices[1].checkPadding16();
-      break;
-    case RTC_USER_VERTEX_BUFFER0  :
-      if (userbuffers[0] == nullptr) userbuffers[0].reset(new Buffer(parent->device,numVertices(),stride));
-      userbuffers[0]->set(ptr,offset,stride);
-      userbuffers[0]->checkPadding16();
-      break;
-    case RTC_USER_VERTEX_BUFFER1  :
-      if (userbuffers[1] == nullptr) userbuffers[1].reset(new Buffer(parent->device,numVertices(),stride));
-      userbuffers[1]->set(ptr,offset,stride);
-      userbuffers[1]->checkPadding16();
-      break;
-    default:
-      throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
-      break;
+    if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) 
+    {
+      size_t t = type - RTC_VERTEX_BUFFER0;
+      vertices[t].set(ptr,offset,stride); 
+      vertices[t].checkPadding16();
+      vertices0 = vertices[0];
+    } 
+    else 
+    {
+      switch (type) {
+      case RTC_INDEX_BUFFER  : 
+        segments.set(ptr,offset,stride); 
+        break;
+      case RTC_USER_VERTEX_BUFFER0: 
+        if (userbuffers[0] == nullptr) userbuffers[0].reset(new APIBuffer<char>(parent->device,numVertices(),stride)); 
+        userbuffers[0]->set(ptr,offset,stride);  
+        userbuffers[0]->checkPadding16();
+        break;
+      case RTC_USER_VERTEX_BUFFER1: 
+        if (userbuffers[1] == nullptr) userbuffers[1].reset(new APIBuffer<char>(parent->device,numVertices(),stride)); 
+        userbuffers[1]->set(ptr,offset,stride);  
+        userbuffers[1]->checkPadding16();
+        break;
+        
+      default: 
+        throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
+      }
     }
   }
 
@@ -94,11 +97,15 @@ namespace embree
       return nullptr;
     }
 
-    switch (type) {
-    case RTC_INDEX_BUFFER  : return segments.map(parent->numMappedBuffers);
-    case RTC_VERTEX_BUFFER0: return vertices[0].map(parent->numMappedBuffers);
-    case RTC_VERTEX_BUFFER1: return vertices[1].map(parent->numMappedBuffers);
-    default: throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); return nullptr;
+    if (type == RTC_INDEX_BUFFER) {
+      return segments.map(parent->numMappedBuffers);
+    }
+    else if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) {
+      return vertices[type - RTC_VERTEX_BUFFER0].map(parent->numMappedBuffers);
+    }
+    else {
+      throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); 
+      return nullptr;
     }
   }
 
@@ -107,11 +114,15 @@ namespace embree
     if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
 
-    switch (type) {
-    case RTC_INDEX_BUFFER  : segments.unmap(parent->numMappedBuffers); break;
-    case RTC_VERTEX_BUFFER0: vertices[0].unmap(parent->numMappedBuffers); break;
-    case RTC_VERTEX_BUFFER1: vertices[1].unmap(parent->numMappedBuffers); break;
-    default: throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); break;
+    if (type == RTC_INDEX_BUFFER) {
+      segments.unmap(parent->numMappedBuffers);
+    }
+    else if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) {
+      vertices[type - RTC_VERTEX_BUFFER0].unmap(parent->numMappedBuffers);
+      vertices0 = vertices[0];
+    }
+    else {
+      throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); 
     }
   }
 
@@ -120,25 +131,31 @@ namespace embree
     const bool freeIndices  = !parent->needLineIndices;
     const bool freeVertices = !parent->needLineVertices;
     if (freeIndices) segments.free();
-    if (freeVertices ) vertices[0].free();
-    if (freeVertices ) vertices[1].free();
+    if (freeVertices )
+      for (auto& buffer : vertices)
+        buffer.free();
   }
 
   bool LineSegments::verify ()
-  {
-    if (numTimeSteps == 2 && vertices[0].size() != vertices[1].size())
+  { 
+    /*! verify consistent size of vertex arrays */
+    if (vertices.size() == 0) return false;
+    for (const auto& buffer : vertices)
+      if (vertices[0].size() != buffer.size())
         return false;
 
+    /*! verify segment indices */
     for (size_t i=0; i<numPrimitives; i++) {
-      if (segments[i]+3 >= numVertices()) return false;
+      if (segments[i]+1 >= numVertices()) return false;
     }
-    for (size_t j=0; j<numTimeSteps; j++) {
-      BufferT<Vec3fa>& verts = vertices[j];
-      for (size_t i=0; i<verts.size(); i++) {
-        if (!isvalid(verts[i].x)) return false;
-        if (!isvalid(verts[i].y)) return false;
-        if (!isvalid(verts[i].z)) return false;
-        if (!isvalid(verts[i].w)) return false;
+
+    /*! verify vertices */
+    for (const auto& buffer : vertices) {
+      for (size_t i=0; i<buffer.size(); i++) {
+	if (!isvalid(buffer[i].x)) return false;
+        if (!isvalid(buffer[i].y)) return false;
+        if (!isvalid(buffer[i].z)) return false;
+        if (!isvalid(buffer[i].w)) return false;
       }
     }
     return true;
@@ -154,7 +171,7 @@ namespace embree
 
 
     /* calculate base pointer and stride */
-    assert((buffer >= RTC_VERTEX_BUFFER0 && buffer <= RTC_VERTEX_BUFFER1) ||
+    assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) ||
            (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
     const char* src = nullptr;
     size_t stride = 0;

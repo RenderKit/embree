@@ -21,21 +21,26 @@ namespace embree
 {
   namespace isa
   {
-    void InstanceBoundsFunction(void* userPtr, const Instance* instance, size_t item, BBox3fa* bounds_o) 
+    void InstanceBoundsFunction(void* userPtr, const Instance* instance, size_t item, size_t itime, BBox3fa& bounds_o)
     {
-      if (instance->numTimeSteps == 1) {
-        bounds_o[0] = xfmBounds(instance->local2world[0],instance->object->bounds);
-      } else {
-        bounds_o[0] = xfmBounds(instance->local2world[0],instance->object->bounds);
-        bounds_o[1] = xfmBounds(instance->local2world[1],instance->object->bounds);
+      assert(itime < instance->numTimeSteps);
+      unsigned num_time_segments = instance->numTimeSegments();
+      if (num_time_segments == 0) {
+        bounds_o = xfmBounds(instance->local2world[itime],instance->object->bounds.bounds());
+      }
+      else {
+        const float ftime = float(itime) / float(num_time_segments);
+        const BBox3fa obounds = instance->object->bounds.interpolate(ftime);
+        bounds_o = xfmBounds(instance->local2world[itime],obounds);
       }
     }
 
-    RTCBoundsFunc2 InstanceBoundsFunc = (RTCBoundsFunc2) InstanceBoundsFunction;
+    RTCBoundsFunc3 InstanceBoundsFunc = (RTCBoundsFunc3) InstanceBoundsFunction;
 
     void FastInstanceIntersector1::intersect(const Instance* instance, Ray& ray, size_t item)
     {
-      const AffineSpace3fa world2local = instance->getWorld2LocalSpecial(ray.time);
+      const AffineSpace3fa world2local = 
+        likely(instance->numTimeSteps == 1) ? instance->getWorld2Local() : instance->getWorld2Local(ray.time);
       const Vec3fa ray_org = ray.org;
       const Vec3fa ray_dir = ray.dir;
       const int ray_geomID = ray.geomID;
@@ -55,7 +60,8 @@ namespace embree
     
     void FastInstanceIntersector1::occluded (const Instance* instance, Ray& ray, size_t item)
     {
-      const AffineSpace3fa world2local = instance->getWorld2LocalSpecial(ray.time);
+      const AffineSpace3fa world2local = 
+        likely(instance->numTimeSteps == 1) ? instance->getWorld2Local() : instance->getWorld2Local(ray.time);
       const Vec3fa ray_org = ray.org;
       const Vec3fa ray_dir = ray.dir;
       ray.org = xfmPoint (world2local,ray_org);

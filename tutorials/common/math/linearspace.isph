@@ -48,6 +48,10 @@ inline uniform LinearSpace3f make_LinearSpace3f(const uniform LinearSpace3fa s) 
   uniform LinearSpace3f l; l.vx = make_Vec3f(s.vx); l.vy = make_Vec3f(s.vy); l.vz = make_Vec3f(s.vz); return l; 
 }
 
+inline varying LinearSpace3f make_LinearSpace3f(const varying LinearSpace3fa s) { 
+  varying LinearSpace3f l; l.vx = make_Vec3f(s.vx); l.vy = make_Vec3f(s.vy); l.vz = make_Vec3f(s.vz); return l; 
+}
+
 inline LinearSpace3f make_LinearSpace3f_identity()
 {
   return make_LinearSpace3f(make_Vec3f(1.f,0.f,0.f),
@@ -55,7 +59,15 @@ inline LinearSpace3f make_LinearSpace3f_identity()
                             make_Vec3f(0.f,0.f,1.f));
 }
 
- /*! return matrix for rotation around arbitrary axis */
+/*! return scale matrix */
+inline uniform LinearSpace3f make_LinearSpace3f_scale(const uniform Vec3f& s) 
+{
+  return make_LinearSpace3f( make_Vec3f( s.x, 0.0f, 0.0f),
+                             make_Vec3f(0.0f,  s.y, 0.0f),
+                             make_Vec3f(0.0f, 0.0f,  s.z));
+}
+
+/*! return matrix for rotation around arbitrary axis */
 inline uniform LinearSpace3f make_LinearSpace3f_rotate(const uniform Vec3f& _u, const uniform float& r) 
 {
   uniform Vec3f u = normalize(_u);

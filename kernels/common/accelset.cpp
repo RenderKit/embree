@@ -20,19 +20,19 @@
 namespace embree
 {
   AccelSet::AccelSet (Scene* parent, size_t numItems, size_t numTimeSteps) 
-    : Geometry(parent,Geometry::USER_GEOMETRY,numItems,numTimeSteps,RTC_GEOMETRY_STATIC), boundsFunc(nullptr), boundsFunc2(nullptr), boundsFunc2UserPtr(nullptr)
+    : Geometry(parent,Geometry::USER_GEOMETRY,numItems,numTimeSteps,RTC_GEOMETRY_STATIC), boundsFunc(nullptr), boundsFunc2(nullptr), boundsFunc3(nullptr), boundsFuncUserPtr(nullptr)
   {
     intersectors.ptr = nullptr; 
     enabling();
   }
 
   void AccelSet::enabling () {
-    if (numTimeSteps == 1) parent->world1.numUserGeometries += numPrimitives;
-    else                   parent->world2.numUserGeometries += numPrimitives;
+    if (numTimeSteps == 1) parent->world.numUserGeometries += numPrimitives;
+    else                   parent->worldMB.numUserGeometries += numPrimitives;
   }
   
   void AccelSet::disabling() { 
-    if (numTimeSteps == 1) parent->world1.numUserGeometries -= numPrimitives;
-    else                   parent->world2.numUserGeometries -= numPrimitives;
+    if (numTimeSteps == 1) parent->world.numUserGeometries -= numPrimitives;
+    else                   parent->worldMB.numUserGeometries -= numPrimitives;
   }
 }

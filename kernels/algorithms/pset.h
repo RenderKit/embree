@@ -32,7 +32,7 @@ namespace embree
     /*! constructors for the parallel set */
     pset () {}
     pset (const std::vector<T>& in) { init(in); }
-    pset (const BufferT<T>    & in) { init(in); }
+    pset (const BufferRefT<T>    & in) { init(in); }
 
     /*! initialized the parallel set from a vector */
     void init(const std::vector<T>& in) 
@@ -54,7 +54,7 @@ namespace embree
 
 
     /*! initialized the parallel set from a user buffer */
-    void init(const BufferT<T>& in) 
+    void init(const BufferRefT<T>& in) 
     {
       /* reserve sufficient space for all data */
       vec.resize(in.size());

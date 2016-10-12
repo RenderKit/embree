@@ -107,9 +107,20 @@ namespace embree
 		     Vec3fa(reduce_max(upper.x),reduce_max(upper.y),reduce_max(upper.z)));
     }
 
-    /* Calculate primitive bounds */
-    __forceinline std::pair<BBox3fa,BBox3fa> bounds() {
-      return std::make_pair(bounds0(),bounds1());
+    /* Calculate the linear bounds of the primitive */
+    __forceinline LBBox3fa linearBounds() const {
+      return LBBox3fa(bounds0(),bounds1());
+    }
+
+    __forceinline LBBox3fa linearBounds(const Scene *const scene, size_t itime, size_t numTimeSteps) 
+    {
+      LBBox3fa allBounds = empty;
+      for (size_t i=0; i<M && valid(i); i++)
+      {
+        const TriangleMesh* mesh = scene->getTriangleMesh(geomID(i));
+        allBounds.extend(mesh->linearBounds(primID(i), itime, numTimeSteps));
+      }
+      return allBounds;
     }
 
     /* Fill triangle from triangle list */
@@ -145,7 +156,7 @@ namespace embree
     }
     
     /* Fill triangle from triangle list */
-    __forceinline std::pair<BBox3fa,BBox3fa> fill_mblur(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list)
+    __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list, size_t itime, size_t numTimeSteps)
     {
       vint<M> vgeomID = -1, vprimID = -1;
       Vec3vfM va0 = zero, vb0 = zero, vc0 = zero;
@@ -161,12 +172,12 @@ namespace embree
         const unsigned primID = prim.primID();
         const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
         const TriangleMesh::Triangle& tri = mesh->triangle(primID);
-	const Vec3fa& a0 = mesh->vertex(tri.v[0],0); bounds0.extend(a0);
-	const Vec3fa& a1 = mesh->vertex(tri.v[0],1); bounds1.extend(a1);
-        const Vec3fa& b0 = mesh->vertex(tri.v[1],0); bounds0.extend(b0);
-	const Vec3fa& b1 = mesh->vertex(tri.v[1],1); bounds1.extend(b1);
-        const Vec3fa& c0 = mesh->vertex(tri.v[2],0); bounds0.extend(c0);
-	const Vec3fa& c1 = mesh->vertex(tri.v[2],1); bounds1.extend(c1);
+        const Vec3fa& a0 = mesh->vertex(tri.v[0],itime+0); bounds0.extend(a0);
+        const Vec3fa& a1 = mesh->vertex(tri.v[0],itime+1); bounds1.extend(a1);
+        const Vec3fa& b0 = mesh->vertex(tri.v[1],itime+0); bounds0.extend(b0);
+        const Vec3fa& b1 = mesh->vertex(tri.v[1],itime+1); bounds1.extend(b1);
+        const Vec3fa& c0 = mesh->vertex(tri.v[2],itime+0); bounds0.extend(c0);
+        const Vec3fa& c1 = mesh->vertex(tri.v[2],itime+1); bounds1.extend(c1);
         vgeomID [i] = geomID;
         vprimID [i] = primID;
         va0.x[i] = a0.x; va0.y[i] = a0.y; va0.z[i] = a0.z;
@@ -177,7 +188,8 @@ namespace embree
 	vc1.x[i] = c1.x; vc1.y[i] = c1.y; vc1.z[i] = c1.z;
       }
       new (this) TriangleMvMB(va0,va1,vb0,vb1,vc0,vc1,vgeomID,vprimID);
-      return std::make_pair(bounds0,bounds1);
+      //return LBBox3fa(bounds0,bounds1);
+      return linearBounds(scene,itime,numTimeSteps);
     }
    
   public:

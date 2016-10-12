@@ -31,6 +31,13 @@ typedef unmasked void (*RTCBoundsFunc2)(void* uniform userPtr,            /*!< p
                                         uniform size_t item,              /*!< item to calculate bounds for */
                                         RTCBounds* uniform bounds_o       /*!< returns calculated bounds */);
 
+/*! Type of bounding function. */
+typedef unmasked void (*RTCBoundsFunc3)(void* uniform userPtr,            /*!< pointer to user data */
+                                        void* uniform geomUserPtr,        /*!< pointer to geometry user data */
+                                        uniform size_t item,              /*!< item to calculate bounds for */
+                                        uniform size_t time,              /*!< time to calculate bounds for */
+                                        uniform RTCBounds& bounds_o       /*!< returns calculated bounds */);
+
 /*! Type of intersect function pointer for uniform rays. */
 typedef unmasked void (*RTCIntersectFuncUniform)(void* uniform ptr,       /*!< pointer to user data */
                                                  uniform RTCRay1& ray,    /*!< ray to intersect */
@@ -114,6 +121,12 @@ void rtcSetBoundsFunction (RTCScene scene, uniform unsigned int geomID, uniform 
  *  tight.*/
 void rtcSetBoundsFunction2 (RTCScene scene, uniform unsigned int geomID, uniform RTCBoundsFunc2 bounds, void* uniform userPtr);
 
+/*! Sets the bounding function to calculate bounding boxes of the user
+ *  geometry items when building spatial index structures. The
+ *  calculated bounding box have to be conservative and should be
+ *  tight.*/
+void rtcSetBoundsFunction3 (RTCScene scene, uniform unsigned int geomID, uniform RTCBoundsFunc3 bounds, void* uniform userPtr);
+
 /*! Set intersect function for uniform rays. The rtcIntersect1
  *  function will call the passed function for intersecting the user
  *  geometry. */
@@ -153,9 +166,6 @@ void rtcSetOccludedFunction1Mp (RTCScene scene, uniform unsigned geomID, uniform
  *  will call the passed function for intersecting the user
  *  geometry. */
 void rtcSetOccludedFunctionN (RTCScene scene, uniform unsigned geomID, uniform RTCOccludedFuncN occluded);
-
-/*! \brief Sets the displacement function. */
-void rtcSetDisplacementFunction (RTCScene scene, uniform unsigned int geomID, uniform RTCDisplacementFunc func, uniform RTCBounds *uniform bounds);
 
 /*! @} */
 

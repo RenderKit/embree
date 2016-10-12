@@ -50,7 +50,16 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
     this->boundsFunc2 = bounds;
-    this->boundsFunc2UserPtr = userPtr;
+    this->boundsFuncUserPtr = userPtr;
+  }
+
+  void UserGeometry::setBoundsFunction3 (RTCBoundsFunc3 bounds, void* userPtr) 
+  {
+    if (parent->isStatic() && parent->isBuild())
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
+
+    this->boundsFunc3 = bounds;
+    this->boundsFuncUserPtr = userPtr;
   }
 
   void UserGeometry::setIntersectFunction (RTCIntersectFunc intersect1, bool ispc) 

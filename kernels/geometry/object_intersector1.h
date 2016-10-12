@@ -23,16 +23,21 @@ namespace embree
 {
   namespace isa
   {
-    struct ObjectIntersector1
+    template<bool mblur>
+      struct ObjectIntersector1
     {
       typedef Object Primitive;
      
-      static const bool validChunkIntersector = false;
+      static const bool validIntersectorK = false;
 
-      struct Precalculations {
-        __forceinline Precalculations() {}
-        __forceinline Precalculations (const Ray& ray, const void *ptr) {}
+      struct PrecalculationsBase {
+        __forceinline PrecalculationsBase() {}
+        __forceinline PrecalculationsBase (const Ray& ray, const void *ptr) {}
       };
+
+      typedef typename std::conditional<mblur, 
+        Intersector1PrecalculationsMB<PrecalculationsBase>,
+        Intersector1Precalculations<PrecalculationsBase>>::type Precalculations;
       
       static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim, Scene* scene, const unsigned* geomID_to_instID) 
       {
@@ -45,7 +50,7 @@ namespace embree
           return;
 #endif
 
-        accel->intersect((RTCRay&)ray,prim.primID,context);
+        accel->intersect(ray,prim.primID,context);
       }
       
       static __forceinline bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim, Scene* scene, const unsigned* geomID_to_instID) 
@@ -59,7 +64,7 @@ namespace embree
           return false;
 #endif
 
-        accel->occluded((RTCRay&)ray,prim.primID,context);
+        accel->occluded(ray,prim.primID,context);
         return ray.geomID == 0;
       }
       
@@ -91,7 +96,7 @@ namespace embree
           if (unlikely(N == 0)) continue;
 
           /* call user stream intersection function */
-          accel->intersect1M((RTCRay**)rays_filtered,N,prim.primID,context);
+          accel->intersect1M(rays_filtered,N,prim.primID,context);
         }
 
         /* /\* update all contexts *\/ */
@@ -134,7 +139,7 @@ namespace embree
           if (unlikely(N == 0)) continue;
 
           /* call user stream occluded function */
-          accel->occluded1M((RTCRay**)rays_filtered,N,prim.primID,context);
+          accel->occluded1M(rays_filtered,N,prim.primID,context);
 
           /* mark occluded rays */
           for (size_t i=0; i<N; i++)
@@ -148,17 +153,16 @@ namespace embree
         return hit;
       }
 
-        template<int K>
-        static __forceinline void intersectChunk(const vbool<K>& valid, /* PrecalculationsChunk& pre, */ RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node)
-        {
-        }
+      template<int K>
+      static __forceinline void intersectK(const vbool<K>& valid, /* PrecalculationsK& pre, */ RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node)
+      {
+      }
 
-        template<int K>        
-        static __forceinline vbool<K> occludedChunk(const vbool<K>& valid, /* PrecalculationsChunk& pre, */ RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node) 
-        {
-          return valid;
-        }
-
+      template<int K>
+      static __forceinline vbool<K> occludedK(const vbool<K>& valid, /* PrecalculationsK& pre, */ RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node)
+      {
+        return valid;
+      }
     };
   }
 }

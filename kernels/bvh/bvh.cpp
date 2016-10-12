@@ -23,7 +23,7 @@ namespace embree
   BVHN<N>::BVHN (const PrimitiveType& primTy, Scene* scene)
     : AccelData((N==4) ? AccelData::TY_BVH4 : (N==8) ? AccelData::TY_BVH8 : AccelData::TY_UNKNOWN),
       primTy(primTy), device(scene->device), scene(scene),
-      root(emptyNode), alloc(scene->device), numPrimitives(0), numVertices(0) {}
+      root(emptyNode), msmblur(false), numTimeSteps(1), alloc(scene->device), numPrimitives(0), numVertices(0) {}
 
   template<int N>
   BVHN<N>::~BVHN ()
@@ -40,7 +40,7 @@ namespace embree
   }
 
   template<int N>
-  void BVHN<N>::set (NodeRef root, const BBox3fa& bounds, size_t numPrimitives)
+  void BVHN<N>::set (NodeRef root, const LBBox3fa& bounds, size_t numPrimitives)
   {
     this->root = root;
     this->bounds = bounds;

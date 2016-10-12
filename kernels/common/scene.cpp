@@ -41,9 +41,9 @@ namespace embree
       needBezierIndices(false), needBezierVertices(false),
       needLineIndices(false), needLineVertices(false),
       needSubdivIndices(false), needSubdivVertices(false),
-    is_build(false), modified(true),
-    progressInterface(this), progress_monitor_function(nullptr), progress_monitor_ptr(nullptr), progress_monitor_counter(0), 
-    numIntersectionFilters1(0), numIntersectionFilters4(0), numIntersectionFilters8(0), numIntersectionFilters16(0), numIntersectionFiltersN(0)
+      is_build(false), modified(true),
+      progressInterface(this), progress_monitor_function(nullptr), progress_monitor_ptr(nullptr), progress_monitor_counter(0), 
+      numIntersectionFilters1(0), numIntersectionFilters4(0), numIntersectionFilters8(0), numIntersectionFilters16(0), numIntersectionFiltersN(0)
   {
 #if defined(TASKING_INTERNAL) 
     scheduler = nullptr;
@@ -280,15 +280,27 @@ namespace embree
 #if defined(EMBREE_GEOMETRY_TRIANGLES)
     if (device->tri_accel_mb == "default")
     {
+      int mode =  2*(int)isCompact() + 1*(int)isRobust(); 
+      
 #if defined (__TARGET_AVX__)
-      if (device->hasISA(AVX))
+      if (device->hasISA(AVX2)) // BVH8 reduces performance on AVX only-machines
       {
-        accels.add(device->bvh8_factory->BVH8Triangle4vMB(this));
+        switch (mode) {
+        case /*0b00*/ 0: accels.add(device->bvh8_factory->BVH8Triangle4iMB(this)); break;
+        case /*0b01*/ 1: accels.add(device->bvh8_factory->BVH8Triangle4iMB(this)); break;
+        case /*0b10*/ 2: accels.add(device->bvh8_factory->BVH8Triangle4iMB(this)); break;
+        case /*0b11*/ 3: accels.add(device->bvh8_factory->BVH8Triangle4iMB(this)); break;
+        }
       }
       else
 #endif
       {
-        accels.add(device->bvh4_factory->BVH4Triangle4vMB(this));
+        switch (mode) {
+        case /*0b00*/ 0: accels.add(device->bvh4_factory->BVH4Triangle4iMB(this)); break;
+        case /*0b01*/ 1: accels.add(device->bvh4_factory->BVH4Triangle4iMB(this)); break;
+        case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4Triangle4iMB(this)); break;
+        case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4Triangle4iMB(this)); break;
+        }
       }
     }
     else if (device->tri_accel_mb == "bvh4.triangle4vmb") accels.add(device->bvh4_factory->BVH4Triangle4vMB(this));
@@ -429,10 +441,11 @@ namespace embree
     if (device->subdiv_accel == "default") 
     {
       if (isIncoherent(flags) && isStatic())
-        accels.add(device->bvh4_factory->BVH4SubdivPatch1(this,false));
+        accels.add(device->bvh4_factory->BVH4SubdivPatch1Eager(this));
       else
         accels.add(device->bvh4_factory->BVH4SubdivPatch1(this,true));
     }
+    else if (device->subdiv_accel == "bvh4.subdivpatch1eager" ) accels.add(device->bvh4_factory->BVH4SubdivPatch1Eager(this));
     else if (device->subdiv_accel == "bvh4.subdivpatch1"      ) accels.add(device->bvh4_factory->BVH4SubdivPatch1(this,false));
     else if (device->subdiv_accel == "bvh4.subdivpatch1cached") accels.add(device->bvh4_factory->BVH4SubdivPatch1(this,true));
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown subdiv accel "+device->subdiv_accel);
@@ -470,17 +483,28 @@ namespace embree
 
   unsigned Scene::newUserGeometry (size_t items, size_t numTimeSteps) 
   {
+    if (numTimeSteps == 0 || numTimeSteps > RTC_MAX_TIME_STEPS) {
+      throw_RTCError(RTC_INVALID_OPERATION,"maximal number of timesteps exceeded");
+      return -1;
+    }
+
     Geometry* geom = new UserGeometry(this,items,numTimeSteps);
     return geom->id;
   }
 
   unsigned Scene::newInstance (Scene* scene, size_t numTimeSteps) 
   {
-    Geometry* geom = new Instance(this,scene,numTimeSteps);
+    if (numTimeSteps == 0 || numTimeSteps > RTC_MAX_TIME_STEPS) {
+      throw_RTCError(RTC_INVALID_OPERATION,"maximal number of timesteps exceeded");
+      return -1;
+    }
+
+    Geometry* geom = Instance::create(this,scene,numTimeSteps);
     return geom->id;
   }
   
-  unsigned Scene::newGeometryInstance (Geometry* geom) {
+  unsigned Scene::newGeometryInstance (Geometry* geom) 
+  {
     Geometry* instance = new GeometryInstance(this,geom);
     return instance->id;
   }
@@ -492,8 +516,8 @@ namespace embree
       return -1;
     }
 
-    if (numTimeSteps == 0 || numTimeSteps > 2) {
-      throw_RTCError(RTC_INVALID_OPERATION,"only 1 or 2 time steps supported");
+    if (numTimeSteps == 0 || numTimeSteps > RTC_MAX_TIME_STEPS) {
+      throw_RTCError(RTC_INVALID_OPERATION,"maximal number of timesteps exceeded");
       return -1;
     }
     
@@ -508,8 +532,8 @@ namespace embree
       return -1;
     }
 
-    if (numTimeSteps == 0 || numTimeSteps > 2) {
-      throw_RTCError(RTC_INVALID_OPERATION,"only 1 or 2 time steps supported");
+    if (numTimeSteps == 0 || numTimeSteps > RTC_MAX_TIME_STEPS) {
+      throw_RTCError(RTC_INVALID_OPERATION,"maximal number of timesteps exceeded");
       return -1;
     }
     
@@ -524,8 +548,8 @@ namespace embree
       return -1;
     }
 
-    if (numTimeSteps == 0 || numTimeSteps > 2) {
-      throw_RTCError(RTC_INVALID_OPERATION,"only 1 or 2 time steps supported");
+    if (numTimeSteps == 0 || numTimeSteps > RTC_MAX_TIME_STEPS) {
+      throw_RTCError(RTC_INVALID_OPERATION,"maximal number of timesteps exceeded");
       return -1;
     }
 
@@ -547,8 +571,8 @@ namespace embree
       return -1;
     }
 
-    if (numTimeSteps == 0 || numTimeSteps > 2) {
-      throw_RTCError(RTC_INVALID_OPERATION,"only 1 or 2 time steps supported");
+    if (numTimeSteps == 0 || numTimeSteps > RTC_MAX_TIME_STEPS) {
+      throw_RTCError(RTC_INVALID_OPERATION,"maximal number of timesteps exceeded");
       return -1;
     }
     
@@ -563,8 +587,8 @@ namespace embree
       return -1;
     }
 
-    if (numTimeSteps == 0 || numTimeSteps > 2) {
-      throw_RTCError(RTC_INVALID_OPERATION,"only 1 or 2 time steps supported");
+    if (numTimeSteps == 0 || numTimeSteps > RTC_MAX_TIME_STEPS) {
+      throw_RTCError(RTC_INVALID_OPERATION,"maximal number of timesteps exceeded");
       return -1;
     }
 
@@ -640,7 +664,7 @@ namespace embree
   
     /* build all hierarchies of this scene */
     accels.build(0,0);
-    
+
     /* make static geometry immutable */
     if (isStatic()) 
     {

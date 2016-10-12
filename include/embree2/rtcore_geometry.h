@@ -23,6 +23,9 @@
 /*! invalid geometry ID */
 #define RTC_INVALID_GEOMETRY_ID ((unsigned)-1)
 
+/*! maximal number of time steps */
+#define RTC_MAX_TIME_STEPS 129
+
 /*! \brief Specifies the type of buffers when mapping buffers */
 enum RTCBufferType {
   RTC_INDEX_BUFFER         = 0x01000000,
@@ -110,6 +113,21 @@ typedef void (*RTCDisplacementFunc)(void* ptr,           /*!< pointer to user da
                                     float* py,           /*!< y coordinates of points to displace (source and target) */
                                     float* pz,           /*!< z coordinates of points to displace (source and target) */
                                     size_t N             /*!< number of points to displace */ );
+
+/*! Displacement mapping function. */
+typedef void (*RTCDisplacementFunc2)(void* ptr,           /*!< pointer to user data of geometry */
+                                     unsigned geomID,     /*!< ID of geometry to displace */
+                                     unsigned primID,     /*!< ID of primitive of geometry to displace */
+                                     unsigned time,       /*!< time step to calculate displacement for */
+                                     const float* u,      /*!< u coordinates (source) */
+                                     const float* v,      /*!< v coordinates (source) */
+                                     const float* nx,     /*!< x coordinates of normalized normal at point to displace (source) */
+                                     const float* ny,     /*!< y coordinates of normalized normal at point to displace (source) */
+                                     const float* nz,     /*!< z coordinates of normalized normal at point to displace (source) */
+                                     float* px,           /*!< x coordinates of points to displace (source and target) */
+                                     float* py,           /*!< y coordinates of points to displace (source and target) */
+                                     float* pz,           /*!< z coordinates of points to displace (source and target) */
+                                     size_t N             /*!< number of points to displace */ );
 
 /*! \brief Creates a new scene instance. 
 
@@ -395,6 +413,9 @@ RTCORE_API void rtcDisable (RTCScene scene, unsigned geomID);
 
 /*! \brief Sets the displacement function. */
 RTCORE_API void rtcSetDisplacementFunction (RTCScene scene, unsigned geomID, RTCDisplacementFunc func, RTCBounds* bounds);
+
+/*! \brief Sets the displacement function. */
+RTCORE_API void rtcSetDisplacementFunction2 (RTCScene scene, unsigned geomID, RTCDisplacementFunc2 func, RTCBounds* bounds);
 
 /*! \brief Sets the intersection filter function for single rays. */
 RTCORE_API void rtcSetIntersectionFilterFunction (RTCScene scene, unsigned geomID, RTCFilterFunc func);

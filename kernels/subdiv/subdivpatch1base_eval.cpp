@@ -85,7 +85,7 @@ namespace embree
 
       if (unlikely(patch.type == SubdivPatch1Base::EVAL_PATCH))
       {
-        const bool displ = geom->displFunc;
+        const bool displ = geom->displFunc || geom->displFunc2;
         const unsigned N = displ ? M : 0;
         dynamic_large_stack_array(float,grid_Ng_x,N,64*64*sizeof(float));
         dynamic_large_stack_array(float,grid_Ng_y,N,64*64*sizeof(float));
@@ -128,8 +128,10 @@ namespace embree
         }
 
         /* call displacement shader */
-        if (geom->displFunc) 
+        if (unlikely(geom->displFunc))
           geom->displFunc(geom->userPtr,patch.geom,patch.prim,grid_u,grid_v,grid_Ng_x,grid_Ng_y,grid_Ng_z,grid_x,grid_y,grid_z,dwidth*dheight);
+        else if (unlikely(geom->displFunc2))
+          geom->displFunc2(geom->userPtr,patch.geom,patch.prim,patch.time(),grid_u,grid_v,grid_Ng_x,grid_Ng_y,grid_Ng_z,grid_x,grid_y,grid_z,dwidth*dheight);
 
         /* set last elements in u,v array to 1.0f */
         const float last_u = grid_u[dwidth*dheight-1];
@@ -178,7 +180,15 @@ namespace embree
                             &u[0],&v[0],&normal.x[0],&normal.y[0],&normal.z[0],
                             &vtx.x[0],&vtx.y[0],&vtx.z[0],VSIZEX);
           
+          } 
+          else if (unlikely(geom->displFunc2 != nullptr))
+          {
+            const Vec3<vfloatx> normal = normalize_safe(patchNormal(patch, u, v));
+            geom->displFunc2(geom->userPtr,patch.geom,patch.prim,patch.time(),
+                             &u[0],&v[0],&normal.x[0],&normal.y[0],&normal.z[0],
+                             &vtx.x[0],&vtx.y[0],&vtx.z[0],VSIZEX);
           }
+
           vfloatx::store(&grid_x[i*VSIZEX],vtx.x);
           vfloatx::store(&grid_y[i*VSIZEX],vtx.y);
           vfloatx::store(&grid_z[i*VSIZEX],vtx.z);
@@ -204,7 +214,7 @@ namespace embree
 
       if (unlikely(patch.type == SubdivPatch1Base::EVAL_PATCH))
       {
-        const bool displ = geom->displFunc;
+        const bool displ = geom->displFunc || geom->displFunc2;
         dynamic_large_stack_array(float,grid_x,M,64*64*sizeof(float));
         dynamic_large_stack_array(float,grid_y,M,64*64*sizeof(float));
         dynamic_large_stack_array(float,grid_z,M,64*64*sizeof(float));
@@ -234,8 +244,10 @@ namespace embree
         }
 
         /* call displacement shader */
-        if (geom->displFunc) 
+        if (unlikely(geom->displFunc))
           geom->displFunc(geom->userPtr,patch.geom,patch.prim,grid_u,grid_v,grid_Ng_x,grid_Ng_y,grid_Ng_z,grid_x,grid_y,grid_z,dwidth*dheight);
+        else if (unlikely(geom->displFunc2))
+          geom->displFunc2(geom->userPtr,patch.geom,patch.prim,patch.time(),grid_u,grid_v,grid_Ng_x,grid_Ng_y,grid_Ng_z,grid_x,grid_y,grid_z,dwidth*dheight);
 
         /* set last elements in u,v array to 1.0f */
         const float last_u = grid_u[dwidth*dheight-1];
@@ -325,6 +337,14 @@ namespace embree
                             &vtx.x[0],&vtx.y[0],&vtx.z[0],VSIZEX);
           
           }
+          else if (unlikely(geom->displFunc2 != nullptr))
+          {
+            const Vec3<vfloatx> normal = normalize_safe(patchNormal(patch,u,v));
+            geom->displFunc2(geom->userPtr,patch.geom,patch.prim,patch.time(),
+                            &u[0],&v[0],&normal.x[0],&normal.y[0],&normal.z[0],
+                            &vtx.x[0],&vtx.y[0],&vtx.z[0],VSIZEX);
+          }
+
           bounds_min[0] = min(bounds_min[0],vtx.x);
           bounds_max[0] = max(bounds_max[0],vtx.x);
           bounds_min[1] = min(bounds_min[1],vtx.y);

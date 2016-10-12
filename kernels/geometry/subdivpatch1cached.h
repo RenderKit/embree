@@ -32,6 +32,14 @@ namespace embree
     
     static Type type;
 
+    struct TypeCached : public PrimitiveType 
+    {
+      TypeCached ();
+      size_t size(const char* This) const;
+    };
+    
+    static TypeCached type_cached;
+
   public:
 
     /*! constructor for cached subdiv patch */
@@ -46,22 +54,4 @@ namespace embree
                         const int simd_width) 
       : SubdivPatch1Base(gID,pID,subPatch,mesh,time,uv,edge_level,subdiv,simd_width) {}
   };
-
-
-  struct SubdivPatch1Eager 
-  {
-    struct Type : public PrimitiveType 
-    {
-      Type ();
-      size_t size(const char* This) const;
-      size_t blocks(size_t x) const { return x; }
-    };
-    
-    static Type type;
-
-  public:
-    SubdivPatch1Eager() {}
-  };
-
-
 }

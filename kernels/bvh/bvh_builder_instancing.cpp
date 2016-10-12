@@ -29,10 +29,10 @@ namespace embree
   {
     //Builder* BVH4Triangle4SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode = 0);
     Builder* BVH4Triangle4MeshBuilderSAH    (void* bvh, TriangleMesh* mesh, size_t mode = 0);
-    Builder* BVH4Triangle4vMBMeshBuilderSAH (void* bvh, TriangleMesh* mesh, size_t mode = 0);
+    //Builder* BVH4Triangle4vMBMeshBuilderSAH (void* bvh, TriangleMesh* mesh, size_t mode = 0);
 
     Builder* BVH4Quad4vMeshBuilderSAH        (void* bvh, QuadMesh* mesh,     size_t mode = 0);
-    Builder* BVH4Quad4iMBMeshBuilderSAH     (void* bvh, QuadMesh* mesh,     size_t mode = 0);
+    //Builder* BVH4Quad4iMBMeshBuilderSAH     (void* bvh, QuadMesh* mesh,     size_t mode = 0);
 
     template<int N>
     BVHNBuilderInstancing<N>::BVHNBuilderInstancing (BVH* bvh, Scene* scene)
@@ -107,9 +107,9 @@ namespace embree
       
       /* skip build for empty scene */
       size_t numPrimitives = 0;
-      //numPrimitives += scene->getNumPrimitives<TriangleMesh,1>();
-      numPrimitives += scene->instanced1.numTriangles;
-      numPrimitives += scene->instanced2.numTriangles;
+      //numPrimitives += scene->getNumPrimitives<TriangleMesh,false>();
+      numPrimitives += scene->instanced.numTriangles;
+      numPrimitives += scene->instancedMB.numTriangles;
       if (numPrimitives == 0) {
         prims.resize(0);
         bvh->set(BVH::emptyNode,empty,0);
@@ -162,8 +162,8 @@ namespace embree
                 default                     : break; 
                 }
               } else {
-                 switch (geom->type) {
-#if defined(EMBREE_GEOMETRY_TRIANGLES)
+                switch (geom->type) {
+/*#if defined(EMBREE_GEOMETRY_TRIANGLES)
                  case Geometry::TRIANGLE_MESH:
                    objects[objectID] = new BVH4(Triangle4vMB::type,geom->parent);
                    builders[objectID] = BVH4Triangle4vMBMeshBuilderSAH((BVH4*)objects[objectID],(TriangleMesh*)geom);
@@ -175,7 +175,7 @@ namespace embree
                    objects[objectID] = new BVH4(Quad4iMB::type,geom->parent);
                    builders[objectID] = BVH4Quad4iMBMeshBuilderSAH((BVH4*)objects[objectID],(QuadMesh*)geom);
                    break;
-#endif
+                   #endif*/
                  case Geometry::USER_GEOMETRY: break;
                  case Geometry::BEZIER_CURVES: break;
                  case Geometry::SUBDIV_MESH  : break;
@@ -210,9 +210,9 @@ namespace embree
             if (!instance->isEnabled()) continue;
             BVH* object = objects[instance->geom->id];
             if (object == nullptr) continue;
-            if (object->bounds.empty()) continue;
+            if (object->getBounds().empty()) continue;
             int s = slot(geom->getType() & ~Geometry::INSTANCE, geom->numTimeSteps);
-            refs[nextRef++] = BVHNBuilderInstancing::BuildRef(instance->local2world,object->bounds,object->root,instance->mask,unsigned(objectID),hash(instance->local2world),s);
+            refs[nextRef++] = BVHNBuilderInstancing::BuildRef(instance->local2world,object->getBounds(),object->root,instance->mask,unsigned(objectID),hash(instance->local2world),s);
           }
         });
       refs.resize(nextRef);
@@ -265,9 +265,9 @@ namespace embree
         BuildRef* ref = (BuildRef*) prims[0].ID();
         //const BBox3fa bounds = xfmBounds(ref->local2world,ref->localBounds);
         const BBox3fa bounds = xfmDeepBounds<N>(ref->local2world,ref->localBounds,ref->node,2);
-        bvh->set(ref->node,bounds,numPrimitives);
+        bvh->set(ref->node,LBBox3fa(bounds),numPrimitives);
       }
-
+      
       /* otherwise build toplevel hierarchy */
       else
       {
@@ -299,7 +299,7 @@ namespace embree
            [&] (size_t dn) { bvh->scene->progressMonitor(0); },
            prims.data(),pinfo,N,BVH::maxBuildDepthLeaf,4,1,1,1.0f,1.0f);
         
-        bvh->set(root,pinfo.geomBounds,numPrimitives);
+        bvh->set(root,LBBox3fa(pinfo.geomBounds),numPrimitives);
         numCollapsedTransformNodes = refs.size();
         //bvh->root = collapse(bvh->root);
         //if (scene->device->verbosity(1))

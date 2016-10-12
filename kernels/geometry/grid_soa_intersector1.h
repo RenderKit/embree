@@ -27,17 +27,19 @@ namespace embree
     class GridSOAIntersector1
     {
     public:
-      typedef SubdivPatch1Cached Primitive;
+      typedef void Primitive;
       
-      class Precalculations 
+      class PrecalculationsBase
       { 
       public:
-        __forceinline Precalculations (Ray& ray, const void* ptr) 
+        __forceinline PrecalculationsBase (const Ray& ray, const void* ptr)
           : grid(nullptr) {}
         
       public:
         GridSOA* grid;
       };
+
+      typedef Intersector1Precalculations<PrecalculationsBase> Precalculations;
       
       template<typename Loader>
         static __forceinline void intersect(Ray& ray,
@@ -116,8 +118,9 @@ namespace embree
     class GridSOAMBlurIntersector1
     {
     public:
-      typedef SubdivPatch1Cached Primitive;
-      typedef GridSOAIntersector1::Precalculations Precalculations;
+      typedef void Primitive;
+      typedef GridSOAIntersector1::PrecalculationsBase PrecalculationsBase;
+      typedef Intersector1PrecalculationsMB<PrecalculationsBase> Precalculations;
       
       template<typename Loader>
         static __forceinline void intersect(Ray& ray, const float ftime,
@@ -181,12 +184,9 @@ namespace embree
       
       /*! Intersect a ray with the primitive. */
       static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) 
-      {
-        /* calculate time segment itime and fractional time ftime */
-        const int time_segments = pre.grid->time_steps-1;
-        const float time = ray.time*float(time_segments);
-        const int   itime = clamp(int(floor(time)),0,time_segments-1);
-        const float ftime = time - float(itime);
+      { 
+        float ftime;
+        const size_t itime = getTimeSegment(ray.time, float(pre.grid->time_steps-1), ftime);
 
         const size_t line_offset   = pre.grid->width;
         const float* const grid_x  = pre.grid->decodeLeaf(itime,prim);
@@ -202,11 +202,8 @@ namespace embree
       /*! Test if the ray is occluded by the primitive */
       static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) 
       {
-        /* calculate time segment itime and fractional time ftime */
-        const int time_segments = pre.grid->time_steps-1;
-        const float time = ray.time*float(time_segments);
-        const int   itime = clamp(int(floor(time)),0,time_segments-1);
-        const float ftime = time - float(itime);
+        float ftime;
+        const size_t itime = getTimeSegment(ray.time, float(pre.grid->time_steps-1), ftime);
 
         const size_t line_offset   = pre.grid->width;
         const float* const grid_x  = pre.grid->decodeLeaf(itime,prim);

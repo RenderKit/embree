@@ -111,7 +111,7 @@ namespace embree
           return PrimInfo(pinfo.begin,pinfo.end,geomBounds,centBounds);
         }
         
-        const PrimInfoMB computePrimInfoMB(Scene* scene, const PrimInfo& pinfo, const AffineSpace3fa& space)
+        const PrimInfoMB computePrimInfoMB(size_t timeSegment, size_t numTimeSteps, Scene* scene, const PrimInfo& pinfo, const AffineSpace3fa& space)
         {
           size_t N = 0;
           BBox3fa centBounds = empty;
@@ -129,8 +129,9 @@ namespace embree
             centBounds.extend(center2(bounds));
 
             const BezierCurves* curves = scene->getBezierCurves(geomID);
-            s0t0.extend(curves->bounds(space,primID,0));
-            s1t1.extend(curves->bounds(space,primID,1));
+            const LBBox3fa linearBounds = curves->linearBounds(space,primID,timeSegment,numTimeSteps);
+            s0t0.extend(linearBounds.bounds0);
+            s1t1.extend(linearBounds.bounds1);
           }
           
           PrimInfoMB ret;

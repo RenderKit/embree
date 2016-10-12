@@ -40,8 +40,18 @@ namespace embree
     /*! clears the acceleration structure data */
     virtual void clear() = 0;
 
+    /*! returns normal bounds */
+    __forceinline BBox3fa getBounds() const {
+      return bounds.bounds();
+    }
+
+    /*! returns linear bounds */
+    __forceinline LBBox3fa getLinearBounds() const {
+      return bounds;
+    }
+
   public:
-    BBox3fa bounds;
+    LBBox3fa bounds; // linear bounds
     Type type;
   };
 

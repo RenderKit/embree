@@ -265,14 +265,41 @@ namespace embree
     RTCORE_TRACE(rtcGetBounds);
     RTCORE_VERIFY_HANDLE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
-    bounds_o.lower_x = scene->bounds.lower.x;
-    bounds_o.lower_y = scene->bounds.lower.y;
-    bounds_o.lower_z = scene->bounds.lower.z;
+    BBox3fa bounds = scene->bounds.bounds();
+    bounds_o.lower_x = bounds.lower.x;
+    bounds_o.lower_y = bounds.lower.y;
+    bounds_o.lower_z = bounds.lower.z;
     bounds_o.align0  = 0;
-    bounds_o.upper_x = scene->bounds.upper.x;
-    bounds_o.upper_y = scene->bounds.upper.y;
-    bounds_o.upper_z = scene->bounds.upper.z;
+    bounds_o.upper_x = bounds.upper.x;
+    bounds_o.upper_y = bounds.upper.y;
+    bounds_o.upper_z = bounds.upper.z;
     bounds_o.align1  = 0;
+    RTCORE_CATCH_END(scene->device);
+  }
+
+  RTCORE_API void rtcGetLinearBounds(RTCScene hscene, RTCBounds* bounds_o)
+  {
+    Scene* scene = (Scene*) hscene;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcGetBounds);
+    RTCORE_VERIFY_HANDLE(hscene);
+    if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
+    bounds_o[0].lower_x = scene->bounds.bounds0.lower.x;
+    bounds_o[0].lower_y = scene->bounds.bounds0.lower.y;
+    bounds_o[0].lower_z = scene->bounds.bounds0.lower.z;
+    bounds_o[0].align0  = 0;
+    bounds_o[0].upper_x = scene->bounds.bounds0.upper.x;
+    bounds_o[0].upper_y = scene->bounds.bounds0.upper.y;
+    bounds_o[0].upper_z = scene->bounds.bounds0.upper.z;
+    bounds_o[0].align1  = 0;
+    bounds_o[1].lower_x = scene->bounds.bounds1.lower.x;
+    bounds_o[1].lower_y = scene->bounds.bounds1.lower.y;
+    bounds_o[1].lower_z = scene->bounds.bounds1.lower.z;
+    bounds_o[1].align0  = 0;
+    bounds_o[1].upper_x = scene->bounds.bounds1.upper.x;
+    bounds_o[1].upper_y = scene->bounds.bounds1.upper.y;
+    bounds_o[1].upper_z = scene->bounds.bounds1.upper.z;
+    bounds_o[1].align1  = 0;
     RTCORE_CATCH_END(scene->device);
   }
   
@@ -1091,6 +1118,17 @@ namespace embree
     RTCORE_CATCH_END(scene->device);
   }
 
+  RTCORE_API void rtcSetBoundsFunction3 (RTCScene hscene, unsigned geomID, RTCBoundsFunc3 bounds, void* userPtr)
+  {
+    Scene* scene = (Scene*) hscene;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetBoundsFunction3);
+    RTCORE_VERIFY_HANDLE(hscene);
+    RTCORE_VERIFY_GEOMID(geomID);
+    scene->get_locked(geomID)->setBoundsFunction3(bounds,userPtr);
+    RTCORE_CATCH_END(scene->device);
+  }
+
   RTCORE_API void rtcSetDisplacementFunction (RTCScene hscene, unsigned geomID, RTCDisplacementFunc func, RTCBounds* bounds)
   {
     Scene* scene = (Scene*) hscene;
@@ -1099,6 +1137,17 @@ namespace embree
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
     scene->get_locked(geomID)->setDisplacementFunction(func,bounds);
+    RTCORE_CATCH_END(scene->device);
+  }
+
+  RTCORE_API void rtcSetDisplacementFunction2 (RTCScene hscene, unsigned geomID, RTCDisplacementFunc2 func, RTCBounds* bounds)
+  {
+    Scene* scene = (Scene*) hscene;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetDisplacementFunction2);
+    RTCORE_VERIFY_HANDLE(hscene);
+    RTCORE_VERIFY_GEOMID(geomID);
+    scene->get_locked(geomID)->setDisplacementFunction2(func,bounds);
     RTCORE_CATCH_END(scene->device);
   }
 

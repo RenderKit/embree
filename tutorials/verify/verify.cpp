@@ -179,7 +179,7 @@ namespace embree
       return scene;
     }
     
-    unsigned addGeometry(const RTCGeometryFlags gflag, const Ref<SceneGraph::Node>& node, bool mblur = false)
+    unsigned addGeometry(const RTCGeometryFlags gflag, const Ref<SceneGraph::Node>& node)
     {
       mutex.lock();
       nodes.push_back(node);
@@ -187,34 +187,31 @@ namespace embree
       
       if (Ref<SceneGraph::TriangleMeshNode> mesh = node.dynamicCast<SceneGraph::TriangleMeshNode>()) 
       {
-        int numTimeSteps = mblur ? 2 : 1;
-        unsigned geomID = rtcNewTriangleMesh (scene, gflag, mesh->triangles.size(), mesh->numVertices(), numTimeSteps);
+        unsigned geomID = rtcNewTriangleMesh (scene, gflag, mesh->triangles.size(), mesh->numVertices(), mesh->numTimeSteps());
         rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER ,mesh->triangles.data(),0,sizeof(SceneGraph::TriangleMeshNode::Triangle));
-        if (mesh->numTimeSteps() >= 1) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER0,mesh->positions[0].data(),0,sizeof(SceneGraph::TriangleMeshNode::Vertex));
-        if (mesh->numTimeSteps() >= 2) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER1,mesh->positions[1].data(),0,sizeof(SceneGraph::TriangleMeshNode::Vertex));
+        for (size_t t=0; t<mesh->numTimeSteps(); t++)
+          rtcSetBuffer(scene,geomID,RTCBufferType(RTC_VERTEX_BUFFER0+t),mesh->positions[t].data(),0,sizeof(SceneGraph::TriangleMeshNode::Vertex));
         AssertNoError(device);
         return geomID;
       }
       else if (Ref<SceneGraph::QuadMeshNode> mesh = node.dynamicCast<SceneGraph::QuadMeshNode>())
       {
-        int numTimeSteps = mblur ? 2 : 1;
-        unsigned geomID = rtcNewQuadMesh (scene, gflag, mesh->quads.size(), mesh->numVertices(), numTimeSteps);
+        unsigned geomID = rtcNewQuadMesh (scene, gflag, mesh->quads.size(), mesh->numVertices(), mesh->numTimeSteps());
         rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER ,mesh->quads.data(),0,sizeof(SceneGraph::QuadMeshNode::Quad  ));
-        if (mesh->numTimeSteps() >= 1) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER0,mesh->positions[0].data(),0,sizeof(SceneGraph::QuadMeshNode::Vertex));
-        if (mesh->numTimeSteps() >= 2) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER1,mesh->positions[1].data(),0,sizeof(SceneGraph::QuadMeshNode::Vertex));
+        for (size_t t=0; t<mesh->numTimeSteps(); t++)
+          rtcSetBuffer(scene,geomID,RTCBufferType(RTC_VERTEX_BUFFER0+t),mesh->positions[t].data(),0,sizeof(SceneGraph::QuadMeshNode::Vertex));
         AssertNoError(device);
         return geomID;
       } 
       else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>())
       {
-        int numTimeSteps = mblur ? 2 : 1;
         unsigned geomID = rtcNewSubdivisionMesh (scene, gflag, 
                                                  mesh->verticesPerFace.size(), mesh->position_indices.size(), mesh->numPositions(), 
-                                                 mesh->edge_creases.size(), mesh->vertex_creases.size(), mesh->holes.size(), numTimeSteps);
+                                                 mesh->edge_creases.size(), mesh->vertex_creases.size(), mesh->holes.size(), mesh->numTimeSteps());
         rtcSetBuffer(scene,geomID,RTC_FACE_BUFFER  ,mesh->verticesPerFace.data(), 0,sizeof(int));
         rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER ,mesh->position_indices.data(),0,sizeof(int));
-        if (mesh->numTimeSteps() >= 1) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER0,mesh->positions[0].data(),0,sizeof(SceneGraph::SubdivMeshNode::Vertex));
-        if (mesh->numTimeSteps() >= 2) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER1,mesh->positions[1].data(),0,sizeof(SceneGraph::SubdivMeshNode::Vertex));
+        for (size_t t=0; t<mesh->numTimeSteps(); t++)
+          rtcSetBuffer(scene,geomID,RTCBufferType(RTC_VERTEX_BUFFER0+t),mesh->positions[t].data(),0,sizeof(SceneGraph::SubdivMeshNode::Vertex));
         if (mesh->edge_creases.size()) rtcSetBuffer(scene,geomID,RTC_EDGE_CREASE_INDEX_BUFFER,mesh->edge_creases.data(),0,2*sizeof(int));
         if (mesh->edge_crease_weights.size()) rtcSetBuffer(scene,geomID,RTC_EDGE_CREASE_WEIGHT_BUFFER,mesh->edge_crease_weights.data(),0,sizeof(float));
         if (mesh->vertex_creases.size()) rtcSetBuffer(scene,geomID,RTC_VERTEX_CREASE_INDEX_BUFFER,mesh->vertex_creases.data(),0,sizeof(int));
@@ -227,18 +224,18 @@ namespace embree
       }
       else if (Ref<SceneGraph::HairSetNode> mesh = node.dynamicCast<SceneGraph::HairSetNode>())
       {
-        unsigned int geomID = rtcNewHairGeometry (scene, gflag, mesh->hairs.size(), mesh->numVertices(), mblur ? 2 : 1);
-        rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER,mesh->positions[0].data(),0,sizeof(SceneGraph::HairSetNode::Vertex));
-        if (mblur) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER1,mesh->positions[1].data(),0,sizeof(SceneGraph::HairSetNode::Vertex));
+        unsigned int geomID = rtcNewHairGeometry (scene, gflag, mesh->hairs.size(), mesh->numVertices(), mesh->numTimeSteps());
+        for (size_t t=0; t<mesh->numTimeSteps(); t++)
+          rtcSetBuffer(scene,geomID,RTCBufferType(RTC_VERTEX_BUFFER0+t),mesh->positions[t].data(),0,sizeof(SceneGraph::HairSetNode::Vertex));
         rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER,mesh->hairs.data(),0,sizeof(SceneGraph::HairSetNode::Hair));
         AssertNoError(device);
         return geomID;
       } 
       else if (Ref<SceneGraph::LineSegmentsNode> mesh = node.dynamicCast<SceneGraph::LineSegmentsNode>())
       {
-        unsigned int geomID = rtcNewLineSegments (scene, gflag, mesh->indices.size(), mesh->numVertices(), mblur ? 2 : 1);
-        rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER,mesh->positions[0].data(),0,sizeof(SceneGraph::LineSegmentsNode::Vertex));
-        if (mblur) rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER1,mesh->positions[1].data(),0,sizeof(SceneGraph::LineSegmentsNode::Vertex));
+        unsigned int geomID = rtcNewLineSegments (scene, gflag, mesh->indices.size(), mesh->numVertices(), mesh->numTimeSteps());
+        for (size_t t=0; t<mesh->numTimeSteps(); t++)
+          rtcSetBuffer(scene,geomID,RTCBufferType(RTC_VERTEX_BUFFER0+t),mesh->positions[t].data(),0,sizeof(SceneGraph::LineSegmentsNode::Vertex));
         rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER,mesh->indices.data(),0,sizeof(int));
         AssertNoError(device);
         return geomID;
@@ -257,48 +254,43 @@ namespace embree
       return addGeometry(gflag,SceneGraph::createSubdivPlane(p0,dx,dy,num,num,2.0f));
     }
     
-    unsigned addSphere (RandomSampler& sampler, RTCGeometryFlags gflag, const Vec3fa& pos, const float r, size_t numPhi, size_t maxTriangles = -1, float motion = 0.0f)
+    unsigned addSphere (RandomSampler& sampler, RTCGeometryFlags gflag, const Vec3fa& pos, const float r, size_t numPhi, size_t maxTriangles = -1, const avector<Vec3fa>& motion_vector = avector<Vec3fa>())
     {
-      bool mblur = motion != 0.0f;
       Ref<SceneGraph::Node> node = SceneGraph::createTriangleSphere(pos,r,numPhi);
-      if (mblur) SceneGraph::set_motion_vector(node,Vec3fa(motion));
+      if (motion_vector.size()) SceneGraph::set_motion_vector(node,motion_vector);
       if (maxTriangles != size_t(-1)) SceneGraph::resize_randomly(sampler,node,maxTriangles);
-      return addGeometry(gflag,node,mblur);
+      return addGeometry(gflag,node);
     }
 
-    unsigned addQuadSphere (RandomSampler& sampler, RTCGeometryFlags gflag, const Vec3fa& pos, const float r, size_t numPhi, size_t maxQuads = -1, float motion = 0.0f)
+    unsigned addQuadSphere (RandomSampler& sampler, RTCGeometryFlags gflag, const Vec3fa& pos, const float r, size_t numPhi, size_t maxQuads = -1, const avector<Vec3fa>& motion_vector = avector<Vec3fa>())
     {
-      bool mblur = motion != 0.0f;
       Ref<SceneGraph::Node> node = SceneGraph::createQuadSphere(pos,r,numPhi);
-      if (mblur) SceneGraph::set_motion_vector(node,Vec3fa(motion));
+      if (motion_vector.size()) SceneGraph::set_motion_vector(node,motion_vector);
       if (maxQuads != size_t(-1)) SceneGraph::resize_randomly(sampler,node,maxQuads);
-      return addGeometry(gflag,node,mblur);
+      return addGeometry(gflag,node);
     }
 
-    unsigned int addSubdivSphere (RandomSampler& sampler, RTCGeometryFlags gflag, const Vec3fa& pos, const float r, size_t numPhi, float level, size_t maxFaces = -1, float motion = 0.0f)
+    unsigned int addSubdivSphere (RandomSampler& sampler, RTCGeometryFlags gflag, const Vec3fa& pos, const float r, size_t numPhi, float level, size_t maxFaces = -1, const avector<Vec3fa>& motion_vector = avector<Vec3fa>())
     {
-      bool mblur = motion != 0.0f;
       Ref<SceneGraph::Node> node = SceneGraph::createSubdivSphere(pos,r,numPhi,level);
-      if (mblur) SceneGraph::set_motion_vector(node,Vec3fa(motion));
+      if (motion_vector.size()) SceneGraph::set_motion_vector(node,motion_vector);
       if (maxFaces != size_t(-1)) SceneGraph::resize_randomly(sampler,node,maxFaces);
       addRandomSubdivFeatures(sampler,node.dynamicCast<SceneGraph::SubdivMeshNode>(),10,10,0);
-      return addGeometry(gflag,node,mblur);
+      return addGeometry(gflag,node);
     }
     
-    unsigned addSphereHair (RandomSampler& sampler, RTCGeometryFlags gflag, const Vec3fa& center, const float radius, float motion = 0.0f)
+    unsigned addSphereHair (RandomSampler& sampler, RTCGeometryFlags gflag, const Vec3fa& center, const float radius, const avector<Vec3fa>& motion_vector = avector<Vec3fa>())
     {
-      bool mblur = motion != 0.0f;
       Ref<SceneGraph::Node> node = SceneGraph::createSphereShapedHair(center,radius);
-      if (mblur) SceneGraph::set_motion_vector(node,Vec3fa(motion));
-      return addGeometry(gflag,node,mblur);
+      if (motion_vector.size()) SceneGraph::set_motion_vector(node,motion_vector);
+      return addGeometry(gflag,node);
     }
     
-    unsigned addHair (RandomSampler& sampler, RTCGeometryFlags gflag, const Vec3fa& pos, const float scale, const float r, size_t numHairs = 1, float motion = 0.0f)
+    unsigned addHair (RandomSampler& sampler, RTCGeometryFlags gflag, const Vec3fa& pos, const float scale, const float r, size_t numHairs = 1, const avector<Vec3fa>& motion_vector = avector<Vec3fa>())
     {
-      bool mblur = motion != 0.0f;
       Ref<SceneGraph::Node> node = SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),pos,Vec3fa(1,0,0),Vec3fa(0,0,1),scale,r,numHairs,true);
-      if (mblur) SceneGraph::set_motion_vector(node,Vec3fa(motion));
-      return addGeometry(gflag,node,mblur);
+      if (motion_vector.size()) SceneGraph::set_motion_vector(node,motion_vector);
+      return addGeometry(gflag,node);
     }
 
     unsigned addUserGeometryEmpty (RandomSampler& sampler, Sphere* sphere)
@@ -681,8 +673,10 @@ namespace embree
 
   struct GetBoundsTest : public VerifyApplication::Test
   {
-    GetBoundsTest (std::string name, int isa)
-      : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS) {}
+    GeometryType gtype;
+
+    GetBoundsTest (std::string name, int isa, GeometryType gtype)
+      : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), gtype(gtype) {}
 
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
     {
@@ -691,7 +685,18 @@ namespace embree
       errorHandler(rtcDeviceGetError(device));
       VerifyScene scene(device,RTC_SCENE_STATIC,RTC_INTERSECT1);
       AssertNoError(device);
-      Ref<SceneGraph::Node> node = SceneGraph::createTriangleSphere(zero,1.0f,50);
+
+      Ref<SceneGraph::Node> node = nullptr;
+      switch (gtype) {
+      case TRIANGLE_MESH   : node = SceneGraph::createTriangleSphere(zero,1.0f,50); break;
+      case TRIANGLE_MESH_MB: node = SceneGraph::createTriangleSphere(zero,1.0f,5)->set_motion_vector(Vec3fa(1.0f)); break;
+      case QUAD_MESH       : node = SceneGraph::createQuadSphere(zero,1.0f,50); break;
+      case QUAD_MESH_MB    : node = SceneGraph::createQuadSphere(zero,1.0f,50)->set_motion_vector(Vec3fa(1.0f)); break;
+        //case SUBDIV_MESH:
+        //case SUBDIV_MESH_MB:
+      default: return VerifyApplication::SKIPPED;
+      }
+
       BBox3fa bounds0 = node->bounds();
       scene.addGeometry(RTC_GEOMETRY_STATIC,node);
       AssertNoError(device);
@@ -699,6 +704,44 @@ namespace embree
       AssertNoError(device);
       BBox3fa bounds1;
       rtcGetBounds(scene,(RTCBounds&)bounds1);
+      AssertNoError(device);
+      return (VerifyApplication::TestReturnValue)(bounds0 == bounds1);
+    }
+  };
+  
+  struct GetLinearBoundsTest : public VerifyApplication::Test
+  {
+    GeometryType gtype;
+
+    GetLinearBoundsTest (std::string name, int isa, GeometryType gtype)
+      : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), gtype(gtype) {}
+
+    VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
+    {
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
+      error_handler(rtcDeviceGetError(device));
+      VerifyScene scene(device,RTC_SCENE_STATIC,RTC_INTERSECT1);
+      AssertNoError(device);
+
+      Ref<SceneGraph::Node> node = nullptr;
+      switch (gtype) {
+      case TRIANGLE_MESH   : node = SceneGraph::createTriangleSphere(zero,1.0f,50); break;
+      case TRIANGLE_MESH_MB: node = SceneGraph::createTriangleSphere(zero,1.0f,50)->set_motion_vector(Vec3fa(1.0f)); break;
+      case QUAD_MESH       : node = SceneGraph::createQuadSphere(zero,1.0f,50); break;
+      case QUAD_MESH_MB    : node = SceneGraph::createQuadSphere(zero,1.0f,50)->set_motion_vector(Vec3fa(1.0f)); break;
+        //case SUBDIV_MESH:
+        //case SUBDIV_MESH_MB:
+      default: return VerifyApplication::SKIPPED;
+      }
+
+      LBBox3fa bounds0 = node->lbounds();
+      scene.addGeometry(RTC_GEOMETRY_STATIC,node);
+      AssertNoError(device);
+      rtcCommit (scene);
+      AssertNoError(device);
+      LBBox3fa bounds1;
+      rtcGetLinearBounds(scene,(RTCBounds*)&bounds1);
       AssertNoError(device);
       return (VerifyApplication::TestReturnValue)(bounds0 == bounds1);
     }
@@ -909,22 +952,20 @@ namespace embree
       const float radius = 1.0f;
       const Vec3fa dx(1,0,0);
       const Vec3fa dy(0,1,0);
-      scene.addGeometry(gflags,SceneGraph::createTriangleSphere(center,radius,50),false);
-      scene.addGeometry(gflags,SceneGraph::createTriangleSphere(center,radius,50)->set_motion_vector(Vec3fa(1)),true);
-      scene.addGeometry(gflags,SceneGraph::createQuadSphere(center,radius,50),false);
-      scene.addGeometry(gflags,SceneGraph::createQuadSphere(center,radius,50)->set_motion_vector(Vec3fa(1)),true);
-      scene.addGeometry(gflags,SceneGraph::createSubdivSphere(center,radius,8,20),false);
-      scene.addGeometry(gflags,SceneGraph::createSubdivSphere(center,radius,8,20)->set_motion_vector(Vec3fa(1)),true);
-      scene.addGeometry(gflags,SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),center,dx,dy,0.1f,0.01f,100,true),false);
-      scene.addGeometry(gflags,SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),center,dx,dy,0.1f,0.01f,100,true)->set_motion_vector(Vec3fa(1)),true);
-      scene.addGeometry(gflags,SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),center,dx,dy,0.1f,0.01f,100,false),false);
-      scene.addGeometry(gflags,SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),center,dx,dy,0.1f,0.01f,100,false)->set_motion_vector(Vec3fa(1)),true);
+      scene.addGeometry(gflags,SceneGraph::createTriangleSphere(center,radius,50));
+      scene.addGeometry(gflags,SceneGraph::createTriangleSphere(center,radius,50)->set_motion_vector(random_motion_vector(1.0f)));
+      scene.addGeometry(gflags,SceneGraph::createQuadSphere(center,radius,50));
+      scene.addGeometry(gflags,SceneGraph::createQuadSphere(center,radius,50)->set_motion_vector(random_motion_vector(1.0f)));
+      scene.addGeometry(gflags,SceneGraph::createSubdivSphere(center,radius,8,20));
+      scene.addGeometry(gflags,SceneGraph::createSubdivSphere(center,radius,8,20)->set_motion_vector(random_motion_vector(1.0f)));
+      scene.addGeometry(gflags,SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),center,dx,dy,0.1f,0.01f,100,true));
+      scene.addGeometry(gflags,SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),center,dx,dy,0.1f,0.01f,100,true)->set_motion_vector(random_motion_vector(1.0f)));
       rtcCommit (scene);
       AssertNoError(device);
 
       if ((sflags & RTC_SCENE_DYNAMIC) == 0) 
       {
-        for (unsigned int i=0; i<10; i++) {
+        for (unsigned int i=0; i<8; i++) {
           rtcDisable(scene,i);
           AssertAnyError(device);
         }
@@ -958,19 +999,19 @@ namespace embree
       
       Ref<SceneGraph::TriangleMeshNode> trimesh = SceneGraph::createTrianglePlane(p,dx,dy,1,1).dynamicCast<SceneGraph::TriangleMeshNode>();
       for (size_t i=0; i<N; i++) trimesh->triangles.push_back(trimesh->triangles.back());
-      scene.addGeometry(gflags,trimesh.dynamicCast<SceneGraph::Node>(),false);
+      scene.addGeometry(gflags,trimesh.dynamicCast<SceneGraph::Node>());
 
-      Ref<SceneGraph::TriangleMeshNode> trimesh2 = SceneGraph::createTrianglePlane(p,dx,dy,1,1)->set_motion_vector(Vec3fa(1)).dynamicCast<SceneGraph::TriangleMeshNode>();
+      Ref<SceneGraph::TriangleMeshNode> trimesh2 = SceneGraph::createTrianglePlane(p,dx,dy,1,1)->set_motion_vector(random_motion_vector(1.0f)).dynamicCast<SceneGraph::TriangleMeshNode>();
       for (size_t i=0; i<N; i++) trimesh2->triangles.push_back(trimesh2->triangles.back());
-      scene.addGeometry(gflags,trimesh2.dynamicCast<SceneGraph::Node>(),true);
+      scene.addGeometry(gflags,trimesh2.dynamicCast<SceneGraph::Node>());
 
       Ref<SceneGraph::QuadMeshNode> quadmesh = SceneGraph::createQuadPlane(p,dx,dy,1,1).dynamicCast<SceneGraph::QuadMeshNode>();
       for (size_t i=0; i<N; i++) quadmesh->quads.push_back(quadmesh->quads.back());
-      scene.addGeometry(gflags,quadmesh.dynamicCast<SceneGraph::Node>(),false);
+      scene.addGeometry(gflags,quadmesh.dynamicCast<SceneGraph::Node>());
 
-      Ref<SceneGraph::QuadMeshNode> quadmesh2 = SceneGraph::createQuadPlane(p,dx,dy,1,1)->set_motion_vector(Vec3fa(1)).dynamicCast<SceneGraph::QuadMeshNode>();
+      Ref<SceneGraph::QuadMeshNode> quadmesh2 = SceneGraph::createQuadPlane(p,dx,dy,1,1)->set_motion_vector(random_motion_vector(1.0f)).dynamicCast<SceneGraph::QuadMeshNode>();
       for (size_t i=0; i<N; i++) quadmesh2->quads.push_back(quadmesh2->quads.back());
-      scene.addGeometry(gflags,quadmesh2.dynamicCast<SceneGraph::Node>(),true);
+      scene.addGeometry(gflags,quadmesh2.dynamicCast<SceneGraph::Node>());
 
       Ref<SceneGraph::SubdivMeshNode> subdivmesh = new SceneGraph::SubdivMeshNode(nullptr,1);
       for (unsigned i=0; i<unsigned(N); i++) {
@@ -984,9 +1025,9 @@ namespace embree
         subdivmesh->positions[0].push_back(Vec3fa(1,1,0));
         subdivmesh->positions[0].push_back(Vec3fa(1,0,0));
       }
-      scene.addGeometry(gflags,subdivmesh.dynamicCast<SceneGraph::Node>(),false);
+      scene.addGeometry(gflags,subdivmesh.dynamicCast<SceneGraph::Node>());
 
-      Ref<SceneGraph::SubdivMeshNode> subdivmesh2 = new SceneGraph::SubdivMeshNode(nullptr,2);
+      Ref<SceneGraph::SubdivMeshNode> subdivmesh2 = new SceneGraph::SubdivMeshNode(nullptr,1);
       for (unsigned i=0; i<unsigned(N); i++) {
         subdivmesh2->verticesPerFace.push_back(4);
         subdivmesh2->position_indices.push_back(4*i+0);
@@ -997,32 +1038,29 @@ namespace embree
         subdivmesh2->positions[0].push_back(Vec3fa(0,1,0));
         subdivmesh2->positions[0].push_back(Vec3fa(1,1,0));
         subdivmesh2->positions[0].push_back(Vec3fa(1,0,0));
-        subdivmesh2->positions[1].push_back(Vec3fa(0,0,0));
-        subdivmesh2->positions[1].push_back(Vec3fa(0,1,1));
-        subdivmesh2->positions[1].push_back(Vec3fa(1,1,1));
-        subdivmesh2->positions[1].push_back(Vec3fa(1,0,1));
       }
-      scene.addGeometry(gflags,subdivmesh2.dynamicCast<SceneGraph::Node>(),true);
+      subdivmesh2->set_motion_vector(random_motion_vector(1.0f));
+      scene.addGeometry(gflags,subdivmesh2.dynamicCast<SceneGraph::Node>());
       
       Ref<SceneGraph::HairSetNode> hairgeom = SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),p,dx,dy,0.2f,0.01f,1,true).dynamicCast<SceneGraph::HairSetNode>();
       for (size_t i=0; i<N; i++) hairgeom->hairs.push_back(hairgeom->hairs.back());
-      scene.addGeometry(gflags,hairgeom.dynamicCast<SceneGraph::Node>(),false);
+      scene.addGeometry(gflags,hairgeom.dynamicCast<SceneGraph::Node>());
 
-      Ref<SceneGraph::HairSetNode> hairgeom2 = SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),p,dx,dy,0.2f,0.01f,1,true)->set_motion_vector(Vec3fa(1)).dynamicCast<SceneGraph::HairSetNode>();
+      Ref<SceneGraph::HairSetNode> hairgeom2 = SceneGraph::createHairyPlane(RandomSampler_getInt(sampler),p,dx,dy,0.2f,0.01f,1,true)->set_motion_vector(random_motion_vector(1.0f)).dynamicCast<SceneGraph::HairSetNode>();
       for (size_t i=0; i<N; i++) hairgeom2->hairs.push_back(hairgeom2->hairs.back());
-      scene.addGeometry(gflags,hairgeom2.dynamicCast<SceneGraph::Node>(),true);
+      scene.addGeometry(gflags,hairgeom2.dynamicCast<SceneGraph::Node>());
 
       Ref<SceneGraph::Node> curvegeom = SceneGraph::convert_hair_to_curves(hairgeom.dynamicCast<SceneGraph::Node>());
-      scene.addGeometry(gflags,curvegeom,false);
+      scene.addGeometry(gflags,curvegeom);
 
       Ref<SceneGraph::Node> curvegeom2 = SceneGraph::convert_hair_to_curves(hairgeom2.dynamicCast<SceneGraph::Node>());
-      scene.addGeometry(gflags,curvegeom2,true);
+      scene.addGeometry(gflags,curvegeom2);
 
       Ref<SceneGraph::Node> linegeom = SceneGraph::convert_bezier_to_lines(hairgeom.dynamicCast<SceneGraph::Node>());
-      scene.addGeometry(gflags,linegeom,false);
+      scene.addGeometry(gflags,linegeom);
 
       Ref<SceneGraph::Node> linegeom2 = SceneGraph::convert_bezier_to_lines(hairgeom2.dynamicCast<SceneGraph::Node>());
-      scene.addGeometry(gflags,linegeom2,true);
+      scene.addGeometry(gflags,linegeom2);
       
       rtcCommit (scene);
       AssertNoError(device);
@@ -1057,13 +1095,13 @@ namespace embree
           if (geom[index] == -1) {
             switch (random_int()%9) {
             case 0: geom[index] = scene.addSphere(sampler,RTC_GEOMETRY_STATIC,pos,2.0f,10); break;
-            case 1: geom[index] = scene.addSphere(sampler,RTC_GEOMETRY_STATIC,pos,2.0f,10,-1,1.0f); break;
+            case 1: geom[index] = scene.addSphere(sampler,RTC_GEOMETRY_STATIC,pos,2.0f,10,-1,random_motion_vector(1.0f)); break;
             case 2: geom[index] = scene.addQuadSphere(sampler,RTC_GEOMETRY_STATIC,pos,2.0f,10); break;
-            case 3: geom[index] = scene.addQuadSphere(sampler,RTC_GEOMETRY_STATIC,pos,2.0f,10,-1,1.0f); break;
+            case 3: geom[index] = scene.addQuadSphere(sampler,RTC_GEOMETRY_STATIC,pos,2.0f,10,-1,random_motion_vector(1.0f)); break;
             case 4: geom[index] = scene.addHair  (sampler,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,10); break;
-            case 5: geom[index] = scene.addHair  (sampler,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,10,1.0f); break;
+            case 5: geom[index] = scene.addHair  (sampler,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,10,random_motion_vector(1.0f)); break;
             case 6: geom[index] = scene.addSubdivSphere(sampler,RTC_GEOMETRY_STATIC,pos,2.0f,4,4); break;
-            case 7: geom[index] = scene.addSubdivSphere(sampler,RTC_GEOMETRY_STATIC,pos,2.0f,4,4,-1,1.0f); break;
+            case 7: geom[index] = scene.addSubdivSphere(sampler,RTC_GEOMETRY_STATIC,pos,2.0f,4,4,-1,random_motion_vector(1.0f)); break;
             case 8: 
               spheres[index] = Sphere(pos,2.0f);
               geom[index] = scene.addUserGeometryEmpty(sampler,&spheres[index]); break;
@@ -1240,16 +1278,16 @@ namespace embree
         {
           size_t numPrimitives = random_int()%256;
           switch (random_int()%8) {
-          case 0: scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createGarbageTriangleMesh(random_int(),numPrimitives,false),false); break;
-          case 1: scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createGarbageTriangleMesh(random_int(),numPrimitives,true ),true); break;
-          case 2: scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createGarbageQuadMesh(random_int(),numPrimitives,false),false); break;
-          case 3: scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createGarbageQuadMesh(random_int(),numPrimitives,true ),true); break;
-          case 4: scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createGarbageHair(random_int(),numPrimitives,false),false); break;
-          case 5: scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createGarbageHair(random_int(),numPrimitives,true ),true); break;
-          case 6: scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createGarbageLineSegments(random_int(),numPrimitives,false),false); break;
-          case 7: scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createGarbageLineSegments(random_int(),numPrimitives,true ),true); break;
-            //case 8: scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createGarbageSubdivMesh(random_int(),numPrimitives,false),false); break; // FIXME: not working yet
-            //case 9: scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createGarbageSubdivMesh(random_int(),numPrimitives,true ),true); break;
+          case 0: scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createGarbageTriangleMesh(random_int(),numPrimitives,false)); break;
+          case 1: scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createGarbageTriangleMesh(random_int(),numPrimitives,true )); break;
+          case 2: scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createGarbageQuadMesh(random_int(),numPrimitives,false)); break;
+          case 3: scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createGarbageQuadMesh(random_int(),numPrimitives,true )); break;
+          case 4: scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createGarbageHair(random_int(),numPrimitives,false)); break;
+          case 5: scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createGarbageHair(random_int(),numPrimitives,true )); break;
+          case 6: scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createGarbageLineSegments(random_int(),numPrimitives,false)); break;
+          case 7: scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createGarbageLineSegments(random_int(),numPrimitives,true )); break;
+            //case 8: scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createGarbageSubdivMesh(random_int(),numPrimitives,false)); break; // FIXME: not working yet
+            //case 9: scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createGarbageSubdivMesh(random_int(),numPrimitives,true )); break;
           }
           AssertNoError(device);
         }
@@ -1914,12 +1952,12 @@ namespace embree
       const Vec3fa dx = Vec3fa(1.0f,0.0f,0.0f);
       const Vec3fa dy = Vec3fa(0.0f,1.0f,0.0f);
       switch (gtype) {
-      case TRIANGLE_MESH:    scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createTrianglePlane(p0,dx,dy,1,1),false); break;
-      case TRIANGLE_MESH_MB: scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createTrianglePlane(p0,dx,dy,1,1)->set_motion_vector(Vec3fa(1)),true); break;
-      case QUAD_MESH:        scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createQuadPlane(p0,dx,dy,1,1),false); break;
-      case QUAD_MESH_MB:     scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createQuadPlane(p0,dx,dy,1,1)->set_motion_vector(Vec3fa(1)),true); break;
-      case SUBDIV_MESH:      scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createSubdivPlane(p0,dx,dy,1,1,4.0f),false); break;
-      case SUBDIV_MESH_MB:   scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createSubdivPlane(p0,dx,dy,1,1,4.0f)->set_motion_vector(Vec3fa(1)),true); break;
+      case TRIANGLE_MESH:    scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createTrianglePlane(p0,dx,dy,1,1)); break;
+      case TRIANGLE_MESH_MB: scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createTrianglePlane(p0,dx,dy,1,1)->set_motion_vector(random_motion_vector(1.0f))); break;
+      case QUAD_MESH:        scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createQuadPlane(p0,dx,dy,1,1)); break;
+      case QUAD_MESH_MB:     scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createQuadPlane(p0,dx,dy,1,1)->set_motion_vector(random_motion_vector(1.0f))); break;
+      case SUBDIV_MESH:      scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createSubdivPlane(p0,dx,dy,1,1,4.0f)); break;
+      case SUBDIV_MESH_MB:   scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createSubdivPlane(p0,dx,dy,1,1,4.0f)->set_motion_vector(random_motion_vector(1.0f))); break;
       default:               throw std::runtime_error("unsupported geometry type: "+to_string(gtype)); 
       }
       
@@ -2199,12 +2237,12 @@ namespace embree
 
       VerifyScene scene(device,sflags,to_aflags(imode));
       size_t size = state->intensity < 1.0f ? 50 : 500;
-      if      (model == "sphere.triangles") scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createTriangleSphere(pos,2.0f,size),false);
-      else if (model == "sphere.quads"    ) scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createQuadSphere    (pos,2.0f,size),false);
-      else if (model == "sphere.subdiv"   ) scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createSubdivSphere  (pos,2.0f,4,64),false);
-      else if (model == "plane.triangles" ) scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createTrianglePlane (Vec3fa(pos.x,-6.0f,-6.0f),Vec3fa(0.0f,0.0f,12.0f),Vec3fa(0.0f,12.0f,0.0f),size,size),false);
-      else if (model == "plane.quads"     ) scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createQuadPlane     (Vec3fa(pos.x,-6.0f,-6.0f),Vec3fa(0.0f,0.0f,12.0f),Vec3fa(0.0f,12.0f,0.0f),size,size),false);
-      else if (model == "plane.subdiv"    ) scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createSubdivPlane   (Vec3fa(pos.x,-6.0f,-6.0f),Vec3fa(0.0f,0.0f,12.0f),Vec3fa(0.0f,12.0f,0.0f),size,size,2),false);
+      if      (model == "sphere.triangles") scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createTriangleSphere(pos,2.0f,size));
+      else if (model == "sphere.quads"    ) scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createQuadSphere    (pos,2.0f,size));
+      else if (model == "sphere.subdiv"   ) scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createSubdivSphere  (pos,2.0f,4,64));
+      else if (model == "plane.triangles" ) scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createTrianglePlane (Vec3fa(pos.x,-6.0f,-6.0f),Vec3fa(0.0f,0.0f,12.0f),Vec3fa(0.0f,12.0f,0.0f),size,size));
+      else if (model == "plane.quads"     ) scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createQuadPlane     (Vec3fa(pos.x,-6.0f,-6.0f),Vec3fa(0.0f,0.0f,12.0f),Vec3fa(0.0f,12.0f,0.0f),size,size));
+      else if (model == "plane.subdiv"    ) scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createSubdivPlane   (Vec3fa(pos.x,-6.0f,-6.0f),Vec3fa(0.0f,0.0f,12.0f),Vec3fa(0.0f,12.0f,0.0f),size,size,2));
       bool plane = model.compare(0,5,"plane") == 0;
       rtcCommit (scene);
       AssertNoError(device);
@@ -2271,7 +2309,7 @@ namespace embree
       const Vec3fa dy = 100.0f*normalize(space.vy);
       const Vec3fa p = pos-0.5f*(dx+dy);
       Ref<SceneGraph::TriangleMeshNode> plane = SceneGraph::createTrianglePlane (p,dx,dy,100,100).dynamicCast<SceneGraph::TriangleMeshNode>();
-      scene.addGeometry(RTC_GEOMETRY_STATIC,plane.dynamicCast<SceneGraph::Node>(),false);
+      scene.addGeometry(RTC_GEOMETRY_STATIC,plane.dynamicCast<SceneGraph::Node>());
       rtcCommit (scene);
       AssertNoError(device);
       
@@ -2333,9 +2371,9 @@ namespace embree
         return VerifyApplication::SKIPPED;
 
       VerifyScene scene(device,sflags,to_aflags(imode));
-      if      (model == "sphere.triangles") scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createTriangleSphere(zero,2.0f,50),false);
-      else if (model == "sphere.quads"    ) scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createQuadSphere    (zero,2.0f,50),false);
-      else if (model == "sphere.subdiv"   ) scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createSubdivSphere  (zero,2.0f,4,4),false);
+      if      (model == "sphere.triangles") scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createTriangleSphere(zero,2.0f,50));
+      else if (model == "sphere.quads"    ) scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createQuadSphere    (zero,2.0f,50));
+      else if (model == "sphere.subdiv"   ) scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createSubdivSphere  (zero,2.0f,4,4));
       // FIXME: test more geometry types
       rtcCommit (scene);
       AssertNoError(device);
@@ -2544,8 +2582,8 @@ namespace embree
 
   struct RegressionTask
   {
-    RegressionTask (unsigned int sceneIndex, unsigned int sceneCount, unsigned int threadCount, bool cancelBuild)
-      : sceneIndex(sceneIndex), sceneCount(sceneCount), scene(nullptr), numActiveThreads(0), cancelBuild(cancelBuild), errorCounter(0) 
+    RegressionTask (VerifyApplication::Test* test, unsigned int sceneIndex, unsigned int sceneCount, unsigned int threadCount, bool cancelBuild)
+      : sceneIndex(sceneIndex), sceneCount(sceneCount), test(test), scene(nullptr), numActiveThreads(0), cancelBuild(cancelBuild), errorCounter(0) 
     { 
       barrier.init(threadCount); 
       RandomSampler_init(sampler,0);
@@ -2553,6 +2591,7 @@ namespace embree
 
     unsigned int sceneIndex;
     unsigned int sceneCount;
+    VerifyApplication::Test* test;
     VerifyApplication* state;
     Ref<VerifyScene> scene;
     BarrierSys barrier;
@@ -2578,11 +2617,15 @@ namespace embree
 
   size_t monitorProgressBreak = 0;
   std::atomic<size_t> monitorProgressInvokations(0);
+  std::atomic<size_t> monitorProgressBreakExecuted(0);
 
   bool monitorProgressFunction(void* ptr, double dn) 
   {
     size_t n = monitorProgressInvokations++;
-    if (n == monitorProgressBreak) return false;
+    if (n == monitorProgressBreak) {
+      monitorProgressBreakExecuted++;
+      return false;
+    }
     return true;
   }
 
@@ -2645,14 +2688,14 @@ namespace embree
         size_t numTriangles = 2*2*numPhi*(numPhi-1);
 	numTriangles = RandomSampler_getInt(task->sampler)%(numTriangles+1);
         switch (type) {
-        case 0: task->scene->addSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
-	case 1: task->scene->addSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
-        case 2: task->scene->addQuadSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
-	case 3: task->scene->addQuadSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
-	case 4: task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
-        case 5: task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,4,numTriangles,1.0f); break;
-	case 6: task->scene->addHair  (task->sampler,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,numTriangles,0.0f); break;
-	case 7: task->scene->addHair  (task->sampler,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,numTriangles,1.0f); break; 
+        case 0: task->scene->addSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles); break;
+	case 1: task->scene->addSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,task->test->random_motion_vector(1.0f)); break;
+        case 2: task->scene->addQuadSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles); break;
+	case 3: task->scene->addQuadSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,task->test->random_motion_vector(1.0f)); break;
+	case 4: task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,4,numTriangles); break;
+        case 5: task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,4,numTriangles,task->test->random_motion_vector(1.0f)); break;
+	case 6: task->scene->addHair  (task->sampler,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,numTriangles); break;
+	case 7: task->scene->addHair  (task->sampler,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,numTriangles,task->test->random_motion_vector(1.0f)); break; 
 
         case 8: {
 	  Sphere* sphere = new Sphere(pos,2.0f); spheres.push_back(sphere); 
@@ -2775,29 +2818,29 @@ namespace embree
           types[index] = type;
           numVertices[index] = 2*numPhi*(numPhi+1);
           switch (type) {
-          case 0: geom[index] = task->scene->addSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
-          case 1: geom[index] = task->scene->addSphere(task->sampler,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles,0.0f); break;
-          case 2: geom[index] = task->scene->addSphere(task->sampler,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
+          case 0: geom[index] = task->scene->addSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles); break;
+          case 1: geom[index] = task->scene->addSphere(task->sampler,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles); break;
+          case 2: geom[index] = task->scene->addSphere(task->sampler,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles); break;
 
-          case 3: geom[index] = task->scene->addSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
-          case 4: geom[index] = task->scene->addSphere(task->sampler,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles,1.0f); break;
-          case 5: geom[index] = task->scene->addSphere(task->sampler,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
+          case 3: geom[index] = task->scene->addSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,task->test->random_motion_vector(1.0f)); break;
+          case 4: geom[index] = task->scene->addSphere(task->sampler,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles,task->test->random_motion_vector(1.0f)); break;
+          case 5: geom[index] = task->scene->addSphere(task->sampler,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles,task->test->random_motion_vector(1.0f)); break;
 
-          case 6: geom[index] = task->scene->addQuadSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
-          case 7: geom[index] = task->scene->addQuadSphere(task->sampler,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles,0.0f); break;
-          case 8: geom[index] = task->scene->addQuadSphere(task->sampler,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
+          case 6: geom[index] = task->scene->addQuadSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles); break;
+          case 7: geom[index] = task->scene->addQuadSphere(task->sampler,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles); break;
+          case 8: geom[index] = task->scene->addQuadSphere(task->sampler,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles); break;
 
-          case 9: geom[index] = task->scene->addQuadSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
-          case 10: geom[index] = task->scene->addQuadSphere(task->sampler,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles,1.0f); break;
-          case 11: geom[index] = task->scene->addQuadSphere(task->sampler,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
+          case 9: geom[index] = task->scene->addQuadSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,task->test->random_motion_vector(1.0f)); break;
+          case 10: geom[index] = task->scene->addQuadSphere(task->sampler,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles,task->test->random_motion_vector(1.0f)); break;
+          case 11: geom[index] = task->scene->addQuadSphere(task->sampler,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles,task->test->random_motion_vector(1.0f)); break;
 
-          case 12: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
-	  case 13: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
-	  case 14: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
+          case 12: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,4,numTriangles); break;
+	  case 13: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,4,numTriangles); break;
+	  case 14: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,4,numTriangles); break;
 
-          case 15: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,4,numTriangles,1.0f); break;
-	  case 16: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,4,numTriangles,1.0f); break;
-	  case 17: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,4,numTriangles,1.0f); break;
+          case 15: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,4,numTriangles,task->test->random_motion_vector(1.0f)); break;
+	  case 16: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,4,numTriangles,task->test->random_motion_vector(1.0f)); break;
+	  case 17: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,4,numTriangles,task->test->random_motion_vector(1.0f)); break;
 
           case 18: spheres[index] = Sphere(pos,2.0f); geom[index] = task->scene->addUserGeometryEmpty(task->sampler,&spheres[index]); break;
           }; 
@@ -2941,7 +2984,7 @@ namespace embree
           while (numThreads) 
           {
             unsigned int N = max(unsigned(1),random_int()%numThreads); numThreads -= N;
-            RegressionTask* task = new RegressionTask(sceneIndex++,5,N,false);
+            RegressionTask* task = new RegressionTask(this,sceneIndex++,5,N,false);
             tasks.push_back(task);
             
             for (unsigned int i=0; i<N; i++) 
@@ -2959,7 +3002,7 @@ namespace embree
         }
         else
         {
-          RegressionTask task(sceneIndex++,5,0,false);
+          RegressionTask task(this,sceneIndex++,5,0,false);
           func(new ThreadRegressionTask(0,0,state,device,intersectModes,&task));
         }	
       }
@@ -2970,6 +3013,7 @@ namespace embree
   size_t monitorMemoryBreak = 0;
   std::atomic<size_t> monitorMemoryBytesUsed(0);
   std::atomic<size_t> monitorMemoryInvokations(0);
+  std::atomic<size_t> monitorMemoryBreakExecuted(0);
 
   bool monitorMemoryFunction(ssize_t bytes, bool post) 
   {
@@ -2977,6 +3021,7 @@ namespace embree
     if (bytes > 0) {
       size_t n = monitorMemoryInvokations++;
       if (n == monitorMemoryBreak) {
+        monitorMemoryBreakExecuted++;
         if (!post) monitorMemoryBytesUsed -= bytes;
         return false;
       }
@@ -3022,25 +3067,32 @@ namespace embree
         monitorMemoryBreak = std::numeric_limits<size_t>::max();
         monitorMemoryBytesUsed = 0;
         monitorMemoryInvokations = 0;
+        monitorMemoryBreakExecuted = 0;
         monitorProgressBreak = std::numeric_limits<size_t>::max();
         monitorProgressInvokations = 0;
-        RegressionTask task1(sceneIndex,1,0,true);
+        monitorProgressBreakExecuted = 0;
+        RegressionTask task1(this,sceneIndex,1,0,true);
         func(new ThreadRegressionTask(0,0,state,device,intersectModes,&task1));
-        if (monitorMemoryBytesUsed) {
-          rtcDeviceSetMemoryMonitorFunction(device,nullptr);
+        if (monitorMemoryBytesUsed) 
           return VerifyApplication::FAILED;
-        }
+
         monitorMemoryBreak = size_t(float(monitorMemoryInvokations) * random_float());
         monitorMemoryBytesUsed = 0;
         monitorMemoryInvokations = 0;
+        monitorMemoryBreakExecuted = 0;
         monitorProgressBreak = size_t(float(monitorProgressInvokations) * 2.0f * random_float());
         monitorProgressInvokations = 0;
-        RegressionTask task2(sceneIndex,1,0,true);
+        monitorProgressBreakExecuted = 0;
+        RegressionTask task2(this,sceneIndex,1,0,true);
         func(new ThreadRegressionTask(0,0,state,device,intersectModes,&task2));
-        if (monitorMemoryBytesUsed || (monitorMemoryInvokations != 0 && task2.errorCounter != 1)) {
-          rtcDeviceSetMemoryMonitorFunction(device,nullptr);
+        if (monitorMemoryBytesUsed) 
           return VerifyApplication::FAILED;
-        }
+        if (monitorMemoryBreakExecuted && task2.errorCounter != 1) 
+          return VerifyApplication::FAILED;
+        if (monitorProgressBreakExecuted && task2.errorCounter != 1) 
+          return VerifyApplication::FAILED;
+        if (!monitorMemoryBreakExecuted && !monitorProgressBreakExecuted && task2.errorCounter != 0) 
+          return VerifyApplication::FAILED;
         sceneIndex++;
       }
       rtcDeviceSetMemoryMonitorFunction(device,nullptr);
@@ -3137,12 +3189,12 @@ namespace embree
 
       scene = new VerifyScene(device,sflags,aflags_all);
       switch (gtype) {
-      case TRIANGLE_MESH:    scene->addGeometry(gflags,SceneGraph::createTriangleSphere(zero,one,numPhi),false); break;
-      case TRIANGLE_MESH_MB: scene->addGeometry(gflags,SceneGraph::createTriangleSphere(zero,one,numPhi)->set_motion_vector(Vec3fa(0.01f)),true); break;
-      case QUAD_MESH:        scene->addGeometry(gflags,SceneGraph::createQuadSphere(zero,one,numPhi),false); break;
-      case QUAD_MESH_MB:     scene->addGeometry(gflags,SceneGraph::createQuadSphere(zero,one,numPhi)->set_motion_vector(Vec3fa(0.01f)),true); break;
-      case SUBDIV_MESH:      scene->addGeometry(gflags,SceneGraph::createSubdivSphere(zero,one,8,float(numPhi)/8.0f),false); break;
-      case SUBDIV_MESH_MB:   scene->addGeometry(gflags,SceneGraph::createSubdivSphere(zero,one,8,float(numPhi)/8.0f)->set_motion_vector(Vec3fa(0.01f)),true); break;
+      case TRIANGLE_MESH:    scene->addGeometry(gflags,SceneGraph::createTriangleSphere(zero,one,numPhi)); break;
+      case TRIANGLE_MESH_MB: scene->addGeometry(gflags,SceneGraph::createTriangleSphere(zero,one,numPhi)->set_motion_vector(random_motion_vector2(0.01f))); break;
+      case QUAD_MESH:        scene->addGeometry(gflags,SceneGraph::createQuadSphere(zero,one,numPhi)); break;
+      case QUAD_MESH_MB:     scene->addGeometry(gflags,SceneGraph::createQuadSphere(zero,one,numPhi)->set_motion_vector(random_motion_vector2(0.01f))); break;
+      case SUBDIV_MESH:      scene->addGeometry(gflags,SceneGraph::createSubdivSphere(zero,one,8,float(numPhi)/8.0f)); break;
+      case SUBDIV_MESH_MB:   scene->addGeometry(gflags,SceneGraph::createSubdivSphere(zero,one,8,float(numPhi)/8.0f)->set_motion_vector(random_motion_vector2(0.01f))); break;
       default:               throw std::runtime_error("invalid geometry for benchmark");
       }
       rtcCommit (*scene);
@@ -3309,12 +3361,12 @@ namespace embree
 
       scene = new VerifyScene(device,sflags,aflags_all);
       switch (gtype) {
-      case TRIANGLE_MESH:    scene->addGeometry(gflags,SceneGraph::createTriangleSphere(zero,one,numPhi),false); break;
-      case TRIANGLE_MESH_MB: scene->addGeometry(gflags,SceneGraph::createTriangleSphere(zero,one,numPhi)->set_motion_vector(Vec3fa(0.01f)),true); break;
-      case QUAD_MESH:        scene->addGeometry(gflags,SceneGraph::createQuadSphere(zero,one,numPhi),false); break;
-      case QUAD_MESH_MB:     scene->addGeometry(gflags,SceneGraph::createQuadSphere(zero,one,numPhi)->set_motion_vector(Vec3fa(0.01f)),true); break;
-      case SUBDIV_MESH:      scene->addGeometry(gflags,SceneGraph::createSubdivSphere(zero,one,8,float(numPhi)/8.0f),false); break;
-      case SUBDIV_MESH_MB:   scene->addGeometry(gflags,SceneGraph::createSubdivSphere(zero,one,8,float(numPhi)/8.0f)->set_motion_vector(Vec3fa(0.01f)),true); break;
+      case TRIANGLE_MESH:    scene->addGeometry(gflags,SceneGraph::createTriangleSphere(zero,one,numPhi)); break;
+      case TRIANGLE_MESH_MB: scene->addGeometry(gflags,SceneGraph::createTriangleSphere(zero,one,numPhi)->set_motion_vector(random_motion_vector2(0.01f))); break;
+      case QUAD_MESH:        scene->addGeometry(gflags,SceneGraph::createQuadSphere(zero,one,numPhi)); break;
+      case QUAD_MESH_MB:     scene->addGeometry(gflags,SceneGraph::createQuadSphere(zero,one,numPhi)->set_motion_vector(random_motion_vector2(0.01f))); break;
+      case SUBDIV_MESH:      scene->addGeometry(gflags,SceneGraph::createSubdivSphere(zero,one,8,float(numPhi)/8.0f)); break;
+      case SUBDIV_MESH_MB:   scene->addGeometry(gflags,SceneGraph::createSubdivSphere(zero,one,8,float(numPhi)/8.0f)->set_motion_vector(random_motion_vector2(0.01f))); break;
       default:               throw std::runtime_error("invalid geometry for benchmark");
       }
       rtcCommit (*scene);
@@ -3454,14 +3506,12 @@ namespace embree
         case SUBDIV_MESH:      
         case HAIR_GEOMETRY:
         case LINE_GEOMETRY:
-          scene->addGeometry(gflags,geometries[i],false); // FIXME: scene graph meshes should store if mesh is mblur mesh
-          break;
         case TRIANGLE_MESH_MB: 
         case QUAD_MESH_MB:     
         case SUBDIV_MESH_MB:   
         case HAIR_GEOMETRY_MB:
         case LINE_GEOMETRY_MB:
-          scene->addGeometry(gflags,geometries[i],true); 
+          scene->addGeometry(gflags,geometries[i]); 
           break;
         default: 
           throw std::runtime_error("invalid geometry for benchmark");
@@ -3503,7 +3553,7 @@ namespace embree
         case QUAD_MESH_MB:     
         case SUBDIV_MESH_MB:   
         case HAIR_GEOMETRY_MB: 
-        case LINE_GEOMETRY_MB: geometries.back() = geometries.back()->set_motion_vector(Vec3fa(0.0001f)); break;
+        case LINE_GEOMETRY_MB: geometries.back() = geometries.back()->set_motion_vector(random_motion_vector2(0.0001f)); break;
         default: break;
         }
       }
@@ -3560,6 +3610,8 @@ namespace embree
 #endif
 
     GeometryType gtypes[] = { TRIANGLE_MESH, TRIANGLE_MESH_MB, QUAD_MESH, QUAD_MESH_MB, SUBDIV_MESH, SUBDIV_MESH_MB };
+    GeometryType gtypes_all[] = { TRIANGLE_MESH, TRIANGLE_MESH_MB, QUAD_MESH, QUAD_MESH_MB, SUBDIV_MESH, SUBDIV_MESH_MB, 
+                                  HAIR_GEOMETRY, HAIR_GEOMETRY_MB, CURVE_GEOMETRY, CURVE_GEOMETRY_MB, LINE_GEOMETRY, LINE_GEOMETRY_MB };
 
     /* create list of all ISAs to test */
     if (hasISA(SSE2)) isas.push_back(SSE2);
@@ -3653,7 +3705,17 @@ namespace embree
       groups.pop();
 
       groups.top()->add(new UnmappedBeforeCommitTest("unmapped_before_commit",isa));
-      groups.top()->add(new GetBoundsTest("get_bounds",isa));
+
+      push(new TestGroup("get_bounds",true,true));
+      for (auto gtype : gtypes_all)
+        groups.top()->add(new GetBoundsTest(to_string(gtype),isa,gtype));
+      groups.pop();
+
+      push(new TestGroup("get_linear_bounds",true,true));
+      for (auto gtype : gtypes_all)
+        groups.top()->add(new GetLinearBoundsTest(to_string(gtype),isa,gtype));
+      groups.pop();
+      
       groups.top()->add(new GetUserDataTest("get_user_data",isa));
 
       push(new TestGroup("buffer_stride",true,true));

@@ -119,6 +119,10 @@ namespace embree
   extern "C" void ispcGetBounds(RTCScene scene, RTCBounds& bounds_o) {
     rtcGetBounds(scene,bounds_o);
   }
+
+  extern "C" void ispcGetLinearBounds(RTCScene scene, RTCBounds* bounds_o) {
+    rtcGetLinearBounds(scene,bounds_o);
+  }
   
   extern "C" void ispcIntersect1 (RTCScene scene, RTCRay& ray) {
     rtcIntersect(scene,ray);
@@ -315,6 +319,10 @@ namespace embree
 
   extern "C" void ispcSetBoundsFunction2 (RTCScene scene, unsigned geomID, RTCBoundsFunc2 bounds, void* userPtr) {
     rtcSetBoundsFunction2(scene,geomID,bounds,userPtr);
+  }
+
+  extern "C" void ispcSetBoundsFunction3 (RTCScene scene, unsigned geomID, RTCBoundsFunc3 bounds, void* userPtr) {
+    rtcSetBoundsFunction3(scene,geomID,bounds,userPtr);
   }
 
   extern "C" void ispcSetIntersectFunction1 (RTCScene hscene, unsigned geomID, RTCIntersectFunc intersect) 
@@ -567,6 +575,17 @@ namespace embree
     RTCORE_VERIFY_HANDLE(scene);
     RTCORE_VERIFY_GEOMID(geomID);
     ((Scene*)scene)->get_locked(geomID)->setDisplacementFunction((RTCDisplacementFunc)func,bounds);
+    RTCORE_CATCH_END(scene->device);
+  }
+
+  extern "C" void ispcSetDisplacementFunction2 (RTCScene hscene, unsigned int geomID, void* func, RTCBounds* bounds)
+  {
+    Scene* scene = (Scene*) hscene;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetDisplacementFunction2);
+    RTCORE_VERIFY_HANDLE(scene);
+    RTCORE_VERIFY_GEOMID(geomID);
+    ((Scene*)scene)->get_locked(geomID)->setDisplacementFunction2((RTCDisplacementFunc2)func,bounds);
     RTCORE_CATCH_END(scene->device);
   }
   

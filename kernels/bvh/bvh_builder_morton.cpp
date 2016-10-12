@@ -403,7 +403,7 @@ namespace embree
               for (size_t j=r.begin(); j<r.end(); j++)
               {
                 BBox3fa prim_bounds = empty;
-                if (unlikely(!mesh->valid(j,&prim_bounds))) continue;
+                if (unlikely(!mesh->buildBounds(j,&prim_bounds))) continue;
                 bounds.extend(center2(prim_bounds));
                 num++;
               }
@@ -439,7 +439,7 @@ namespace embree
               for (size_t j=r.begin(); j<r.end(); j++)
               {
                 BBox3fa bounds = empty;
-                if (unlikely(!mesh->valid(j,&bounds))) continue;
+                if (unlikely(!mesh->buildBounds(j,&bounds))) continue;
                 generator(bounds,unsigned(j));
                 num++;
               }
@@ -452,7 +452,7 @@ namespace embree
               for (size_t j=r.begin(); j<r.end(); j++)
               {
                 BBox3fa bounds = empty;
-                if (!mesh->valid(j,&bounds)) continue;
+                if (!mesh->buildBounds(j,&bounds)) continue;
                 generator(bounds,unsigned(j));
                 num++;
               }
@@ -470,7 +470,7 @@ namespace embree
           allocNode,setBounds,createLeaf,calculateBounds,progress,
           morton.data(),dest,numPrimitivesGen,N,BVH::maxBuildDepth,minLeafSize,maxLeafSize);
         
-        bvh->set(node_bounds.first,node_bounds.second,numPrimitives);
+        bvh->set(node_bounds.first,LBBox3fa(node_bounds.second),numPrimitives);
         
 #if ROTATE_TREE
         if (N == 4)

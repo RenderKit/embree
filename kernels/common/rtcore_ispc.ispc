@@ -41,6 +41,7 @@ extern "C" void ispcSetProgressMonitorFunction (RTCScene scene, void* uniform fu
 extern "C" void ispcCommit (RTCScene scene);
 extern "C" void ispcCommitThread (RTCScene scene, uniform unsigned int threadID, uniform unsigned int numThreads);
 extern "C" void ispcGetBounds(RTCScene scene, uniform RTCBounds& bounds_o);
+extern "C" void ispcGetLinearBounds(RTCScene scene, uniform RTCBounds* uniform bounds_o);
 extern "C" void ispcIntersect1 (RTCScene scene, uniform RTCRay1& ray);
 extern "C" void ispcIntersect4 (void* uniform valid, RTCScene scene, void* uniform ray);
 extern "C" void ispcIntersect8 (void* uniform valid, RTCScene scene, void* uniform ray);
@@ -120,6 +121,7 @@ extern "C" void ispcDeleteGeometry (RTCScene scene, uniform unsigned int geomID)
 
 extern "C" void ispcSetBoundsFunction (RTCScene scene, uniform unsigned int geomID, void* uniform bounds);
 extern "C" void ispcSetBoundsFunction2 (RTCScene scene, uniform unsigned int geomID, void* uniform bounds, void* uniform userPtr);
+extern "C" void ispcSetBoundsFunction3 (RTCScene scene, uniform unsigned int geomID, void* uniform bounds, void* uniform userPtr);
 extern "C" void ispcSetTessellationRate (RTCScene hscene, uniform unsigned geomID, uniform float tessellationRate);
 extern "C" void ispcSetUserData (RTCScene scene, uniform unsigned int geomID, void* uniform ptr);
 extern "C" void* uniform ispcGetUserData (RTCScene scene, uniform unsigned int geomID);
@@ -151,6 +153,7 @@ extern "C" void ispcSetOcclusionFilterFunction16 (RTCScene scene, uniform unsign
 extern "C" void ispcSetOcclusionFilterFunctionN (RTCScene scene, uniform unsigned int geomID, void* uniform filter);
 
 extern "C" void ispcSetDisplacementFunction (RTCScene scene, uniform unsigned int geomID, void *uniform func, uniform RTCBounds* uniform bounds);
+extern "C" void ispcSetDisplacementFunction2 (RTCScene scene, uniform unsigned int geomID, void *uniform func, uniform RTCBounds* uniform bounds);
 
 extern "C" void ispcInterpolateN(RTCScene scene, uniform unsigned int geomID, 
                                  const void* uniform valid, const uniform unsigned int* uniform primIDs, const uniform float* uniform u, const uniform float* uniform v, uniform size_tt numUVs, 
@@ -266,6 +269,10 @@ void rtcCommitThread (RTCScene scene, uniform unsigned int threadID, uniform uns
 
 void rtcGetBounds(RTCScene scene, uniform RTCBounds& bounds_o) {
   ispcGetBounds(scene,bounds_o);
+}
+
+void rtcGetLinearBounds(RTCScene scene, uniform RTCBounds* uniform bounds_o) {
+  ispcGetLinearBounds(scene,bounds_o);
 }
 
 void rtcIntersect1 (RTCScene scene, uniform RTCRay1& ray) {
@@ -495,8 +502,12 @@ void rtcSetBoundsFunction (RTCScene scene, uniform unsigned int geomID, uniform 
   ispcSetBoundsFunction(scene,geomID,bounds);
 }
 
-void rtcSetBoundsFunction2 (RTCScene scene, uniform unsigned int geomID, uniform RTCBoundsFunc bounds, void* uniform userPtr) {
+void rtcSetBoundsFunction2 (RTCScene scene, uniform unsigned int geomID, uniform RTCBoundsFunc2 bounds, void* uniform userPtr) {
   ispcSetBoundsFunction2(scene,geomID,bounds,userPtr);
+}
+
+void rtcSetBoundsFunction3 (RTCScene scene, uniform unsigned int geomID, uniform RTCBoundsFunc3 bounds, void* uniform userPtr) {
+  ispcSetBoundsFunction3(scene,geomID,bounds,userPtr);
 }
 
 void rtcSetIntersectFunction1 (RTCScene scene, uniform unsigned int geomID, uniform RTCIntersectFuncUniform intersect) {
@@ -581,6 +592,10 @@ void rtcSetOcclusionFilterFunctionN (RTCScene scene, uniform unsigned int geomID
 
 void rtcSetDisplacementFunction (RTCScene scene, uniform unsigned int geomID, uniform RTCDisplacementFunc func, uniform RTCBounds* uniform bounds) {
   ispcSetDisplacementFunction(scene,geomID,func,bounds);
+}
+
+void rtcSetDisplacementFunction2 (RTCScene scene, uniform unsigned int geomID, uniform RTCDisplacementFunc2 func, uniform RTCBounds* uniform bounds) {
+  ispcSetDisplacementFunction2(scene,geomID,func,bounds);
 }
 
 void rtcInterpolate(RTCScene scene, uniform unsigned int geomID, varying unsigned int primID, varying float u, varying float v, 

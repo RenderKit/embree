@@ -75,29 +75,52 @@ namespace embree
     __forceinline vint<M> primID() const { return primIDs; }
     __forceinline int primID(const size_t i) const { assert(i<M); return primIDs[i]; }
 
-     __forceinline Vec3fa& getVertex(const vint<M> &v, const size_t index, const Scene *const scene) const
+    __forceinline Vec3fa& getVertex(const vint<M> &v, const size_t index, const Scene *const scene) const
     {
       const TriangleMesh* mesh = scene->getTriangleMesh(geomID(index));
       return *(Vec3fa*)mesh->vertexPtr(v[index]);
     }
 
-     template<typename T>
-     __forceinline Vec3<T> getVertex(const vint<M> &v, const size_t index, const Scene *const scene, const T& time) const
+    template<typename T>
+      __forceinline Vec3<T> getVertex(const vint<M> &v, const size_t index, const Scene *const scene, const size_t itime, const T& ftime) const
     {
       const TriangleMesh* mesh = scene->getTriangleMesh(geomID(index));
-      const Vec3fa v0 = *(Vec3fa*)mesh->vertexPtr(v[index],0);
-      const Vec3fa v1 = *(Vec3fa*)mesh->vertexPtr(v[index],1);
+      const Vec3fa v0 = *(Vec3fa*)mesh->vertexPtr(v[index],itime+0);
+      const Vec3fa v1 = *(Vec3fa*)mesh->vertexPtr(v[index],itime+1);
       const Vec3<T> p0(v0.x,v0.y,v0.z);
       const Vec3<T> p1(v1.x,v1.y,v1.z);
-      return (T(one)-time)*p0 + time*p1;
+      return (T(one)-ftime)*p0 + ftime*p1;
     }
 
     /* gather the triangles */
+    template<int K>
+      __forceinline void gather(const vbool<K>& valid,
+                                Vec3<vfloat<K>>& p0,
+                                Vec3<vfloat<K>>& p1,
+                                Vec3<vfloat<K>>& p2,
+                                const size_t index,
+                                const Scene* const scene,
+                                const vfloat<K>& time) const
+    {
+      const TriangleMesh* mesh = scene->getTriangleMesh(geomID(index));
+
+      vfloat<K> ftime;
+      const vint<K> itime = getTimeSegment(time, vfloat<K>(mesh->fnumTimeSegments), ftime);
+
+      const size_t first = __bsf(movemask(valid)); // assume itime is uniform
+      p0 = getVertex(v0, index, scene, itime[first], ftime);
+      p1 = getVertex(v1, index, scene, itime[first], ftime);
+      p2 = getVertex(v2, index, scene, itime[first], ftime);
+    }
+
     __forceinline void gather(Vec3<vfloat<M>>& p0,
                               Vec3<vfloat<M>>& p1,
                               Vec3<vfloat<M>>& p2,
-                              const Scene *const scene,
-                              const size_t j) const;
+                              const TriangleMesh* mesh0,
+                              const TriangleMesh* mesh1,
+                              const TriangleMesh* mesh2,
+                              const TriangleMesh* mesh3,
+                              const vint<M>& itime) const;
 
     __forceinline void gather(Vec3<vfloat<M>>& p0,
                               Vec3<vfloat<M>>& p1,
@@ -106,15 +129,15 @@ namespace embree
                               const float time) const;
 
     /* Calculate the bounds of the triangles */
-    __forceinline const BBox3fa bounds(const Scene *const scene, const size_t j=0) const
+    __forceinline const BBox3fa bounds(const Scene *const scene, const size_t itime=0) const
     {
       BBox3fa bounds = empty;
       for (size_t i=0; i<M && valid(i); i++)
       {
         const TriangleMesh* mesh = scene->getTriangleMesh(geomID(i));
-        const Vec3fa &p0 = mesh->vertex(v0[i],j);
-        const Vec3fa &p1 = mesh->vertex(v1[i],j);
-        const Vec3fa &p2 = mesh->vertex(v2[i],j);
+        const Vec3fa &p0 = mesh->vertex(v0[i],itime);
+        const Vec3fa &p1 = mesh->vertex(v1[i],itime);
+        const Vec3fa &p2 = mesh->vertex(v2[i],itime);
         bounds.extend(p0);
         bounds.extend(p1);
         bounds.extend(p2);
@@ -122,26 +145,23 @@ namespace embree
       return bounds;
     }
 
-    /* Calculate the bounds of the triangles at t0 */
-    __forceinline BBox3fa bounds0(const Scene *const scene) const
-    {
-      return bounds(scene,0);
+    /* Calculate the linear bounds of the primitive */
+    __forceinline LBBox3fa linearBounds(const Scene *const scene, size_t itime) {
+      return LBBox3fa(bounds(scene,itime+0),bounds(scene,itime+1));
     }
 
-    /* Calculate the bounds of the triangles at t1 */
-    __forceinline BBox3fa bounds1(const Scene *const scene) const
-    {
-      return bounds(scene,1);
+    __forceinline LBBox3fa linearBounds(const Scene *const scene, size_t itime, size_t numTimeSteps) {
+      LBBox3fa allBounds = empty;
+      for (size_t i=0; i<M && valid(i); i++)
+      {
+        const TriangleMesh* mesh = scene->getTriangleMesh(geomID(i));
+        allBounds.extend(mesh->linearBounds(primID(i), itime, numTimeSteps));
+      }
+      return allBounds;
     }
-
-    /* Calculate primitive bounds */
-    __forceinline std::pair<BBox3fa,BBox3fa> bounds(const Scene *const scene) {
-      return std::make_pair(bounds0(scene),bounds1(scene));
-    }
-
 
     /* Fill triangle from triangle list */
-    __forceinline std::pair<BBox3fa,BBox3fa> fill_mblur(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list)
+    __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list, size_t itime, size_t numTimeSteps)
     {
       vint<M> geomID = -1, primID = -1;
       vint<M> v0 = zero, v1 = zero, v2 = zero;
@@ -170,7 +190,7 @@ namespace embree
       }
 
       new (this) TriangleMiMB(v0,v1,v2,geomID,primID); // FIXME: use non temporal store
-      return bounds(scene);
+      return linearBounds(scene,itime,numTimeSteps);
     }
 
     /* Updates the primitive */
@@ -202,51 +222,56 @@ namespace embree
     __forceinline void TriangleMiMB<4>::gather(Vec3vf4& p0,
                                                Vec3vf4& p1,
                                                Vec3vf4& p2,
-                                               const Scene *const scene,
-                                               const size_t j) const
+                                               const TriangleMesh* mesh0,
+                                               const TriangleMesh* mesh1,
+                                               const TriangleMesh* mesh2,
+                                               const TriangleMesh* mesh3,
+                                               const vint4& itime) const
   {
-    const TriangleMesh* mesh0 = scene->getTriangleMesh(geomIDs[0]);
-    const TriangleMesh* mesh1 = scene->getTriangleMesh(geomIDs[1]);
-    const TriangleMesh* mesh2 = scene->getTriangleMesh(geomIDs[2]);
-    const TriangleMesh* mesh3 = scene->getTriangleMesh(geomIDs[3]);
-
-    const vfloat4 a0 = vfloat4::loadu(mesh0->vertexPtr(v0[0],j));
-    const vfloat4 a1 = vfloat4::loadu(mesh1->vertexPtr(v0[1],j));
-    const vfloat4 a2 = vfloat4::loadu(mesh2->vertexPtr(v0[2],j));
-    const vfloat4 a3 = vfloat4::loadu(mesh3->vertexPtr(v0[3],j));
+    const vfloat4 a0 = vfloat4::loadu(mesh0->vertexPtr(v0[0],itime[0]));
+    const vfloat4 a1 = vfloat4::loadu(mesh1->vertexPtr(v0[1],itime[1]));
+    const vfloat4 a2 = vfloat4::loadu(mesh2->vertexPtr(v0[2],itime[2]));
+    const vfloat4 a3 = vfloat4::loadu(mesh3->vertexPtr(v0[3],itime[3]));
 
     transpose(a0,a1,a2,a3,p0.x,p0.y,p0.z);
 
-    const vfloat4 b0 = vfloat4::loadu(mesh0->vertexPtr(v1[0],j));
-    const vfloat4 b1 = vfloat4::loadu(mesh1->vertexPtr(v1[1],j));
-    const vfloat4 b2 = vfloat4::loadu(mesh2->vertexPtr(v1[2],j));
-    const vfloat4 b3 = vfloat4::loadu(mesh3->vertexPtr(v1[3],j));
+    const vfloat4 b0 = vfloat4::loadu(mesh0->vertexPtr(v1[0],itime[0]));
+    const vfloat4 b1 = vfloat4::loadu(mesh1->vertexPtr(v1[1],itime[1]));
+    const vfloat4 b2 = vfloat4::loadu(mesh2->vertexPtr(v1[2],itime[2]));
+    const vfloat4 b3 = vfloat4::loadu(mesh3->vertexPtr(v1[3],itime[3]));
 
     transpose(b0,b1,b2,b3,p1.x,p1.y,p1.z);
 
-    const vfloat4 c0 = vfloat4::loadu(mesh0->vertexPtr(v2[0],j));
-    const vfloat4 c1 = vfloat4::loadu(mesh1->vertexPtr(v2[1],j));
-    const vfloat4 c2 = vfloat4::loadu(mesh2->vertexPtr(v2[2],j));
-    const vfloat4 c3 = vfloat4::loadu(mesh3->vertexPtr(v2[3],j));
+    const vfloat4 c0 = vfloat4::loadu(mesh0->vertexPtr(v2[0],itime[0]));
+    const vfloat4 c1 = vfloat4::loadu(mesh1->vertexPtr(v2[1],itime[1]));
+    const vfloat4 c2 = vfloat4::loadu(mesh2->vertexPtr(v2[2],itime[2]));
+    const vfloat4 c3 = vfloat4::loadu(mesh3->vertexPtr(v2[3],itime[3]));
 
     transpose(c0,c1,c2,c3,p2.x,p2.y,p2.z);
   }
-
-
 
   template<>
     __forceinline void TriangleMiMB<4>::gather(Vec3vf4& p0,
                                                Vec3vf4& p1,
                                                Vec3vf4& p2,
                                                const Scene *const scene,
-                                               const float t) const
+                                               const float time) const
   {
-    const vfloat4 t0 = 1.0f - t;
-    const vfloat4 t1 = t;
+    const TriangleMesh* mesh0 = scene->getTriangleMesh(geomIDs[0]);
+    const TriangleMesh* mesh1 = scene->getTriangleMesh(geomIDs[1]);
+    const TriangleMesh* mesh2 = scene->getTriangleMesh(geomIDs[2]);
+    const TriangleMesh* mesh3 = scene->getTriangleMesh(geomIDs[3]);
+
+    const vfloat4 numTimeSegments(mesh0->fnumTimeSegments, mesh1->fnumTimeSegments, mesh2->fnumTimeSegments, mesh3->fnumTimeSegments);
+    vfloat4 ftime;
+    const vint4 itime = getTimeSegment(vfloat4(time), numTimeSegments, ftime);
+
+    const vfloat4 t0 = 1.0f - ftime;
+    const vfloat4 t1 = ftime;
     Vec3vf4 a0,a1,a2;
-    gather(a0,a1,a2,scene,(size_t)0);
+    gather(a0,a1,a2,mesh0,mesh1,mesh2,mesh3,itime);
     Vec3vf4 b0,b1,b2;
-    gather(b0,b1,b2,scene,(size_t)1);
+    gather(b0,b1,b2,mesh0,mesh1,mesh2,mesh3,itime+1);
     p0 = t0 * a0 + t1 * b0;
     p1 = t0 * a1 + t1 * b1;
     p2 = t0 * a2 + t1 * b2;

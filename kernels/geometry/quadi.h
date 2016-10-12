@@ -74,7 +74,7 @@ namespace embree
     __forceinline Vec3fa& getVertex(const vint<M> &v, const size_t index, const Scene *const scene) const
     {
       const QuadMesh* mesh = scene->getQuadMesh(geomID(index));
-      return *(Vec3fa*)mesh->vertexPtr(v[index]);
+      return *(Vec3fa*)mesh->vertexPtr(v[index]); // FIMXE: should use loadu
     }
 
     /* gather the quads */

@@ -166,6 +166,11 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
+    /*! Set displacement function. */
+    virtual void setDisplacementFunction2 (RTCDisplacementFunc2 filter, RTCBounds* bounds) {
+      throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
+    }
+
     /*! Set intersection filter function for single rays. */
     virtual void setIntersectionFilterFunction (RTCFilterFunc filter, bool ispc = false);
     
@@ -214,6 +219,11 @@ namespace embree
 
     /*! Set bounds function. */
     virtual void setBoundsFunction2 (RTCBoundsFunc2 bounds, void* userPtr) { 
+      throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
+    }
+
+    /*! Set bounds function. */
+    virtual void setBoundsFunction3 (RTCBoundsFunc3 bounds, void* userPtr) { 
       throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
@@ -277,6 +287,11 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
+    /*! returns number of time segments */
+    __forceinline unsigned numTimeSegments () const {
+      return numTimeSteps-1;
+    }
+
   public:
     __forceinline bool hasIntersectionFilter1() const { return (hasIntersectionFilterMask & (HAS_FILTER1 | HAS_FILTERN)) != 0;  }
     __forceinline bool hasOcclusionFilter1   () const { return (hasOcclusionFilterMask    & (HAS_FILTER1 | HAS_FILTERN)) != 0; }
@@ -287,17 +302,174 @@ namespace embree
     template<typename simd> __forceinline bool hasISPCOcclusionFilter() const;
 
   public:
+
+    /*! calculates the linear bounds of a primitive at the itimeGlobal'th time segment */
+    template<typename BoundsFunc>
+    __forceinline static LBBox3fa linearBounds(size_t itimeGlobal, size_t numTimeStepsGlobal, size_t numTimeSteps, const BoundsFunc& bounds)
+    {
+      if (numTimeStepsGlobal == numTimeSteps)
+      {
+        const BBox3fa bounds0 = bounds(itimeGlobal+0);
+        const BBox3fa bounds1 = bounds(itimeGlobal+1);
+
+        return LBBox3fa(bounds0, bounds1);
+      }
+
+      const int timeSegments = int(numTimeSteps-1);
+      const int timeSegmentsGlobal = int(numTimeStepsGlobal-1);
+      const float invTimeSegmentsGlobal = rcp(float(timeSegmentsGlobal));
+
+      const int itimeScaled = int(itimeGlobal) * timeSegments;
+
+      const int itime0 = itimeScaled / timeSegmentsGlobal;
+      const int rtime0 = itimeScaled % timeSegmentsGlobal;
+      const float ftime0 = float(rtime0) * invTimeSegmentsGlobal;
+      const int rtime1 = rtime0 + timeSegments;
+
+      if (rtime1 <= timeSegmentsGlobal)
+      {
+        const BBox3fa b0 = bounds(itime0+0);
+        const BBox3fa b1 = bounds(itime0+1);
+
+        const float ftime1 = float(rtime1) * invTimeSegmentsGlobal;
+
+        return LBBox3fa(lerp(b0, b1, ftime0), lerp(b0, b1, ftime1));
+      }
+
+      const BBox3fa b0 = bounds(itime0+0);
+      const BBox3fa b1 = bounds(itime0+1);
+      const BBox3fa b2 = bounds(itime0+2);
+
+      const float ftime1 = float(rtime1-timeSegmentsGlobal) * invTimeSegmentsGlobal;
+
+      BBox3fa bounds0 = lerp(b0, b1, ftime0);
+      BBox3fa bounds1 = lerp(b1, b2, ftime1);
+
+      const BBox3fa b1Lerp = lerp(bounds0, bounds1, float(timeSegmentsGlobal-rtime0) * rcp(float(timeSegments)));
+
+      bounds0.lower = min(bounds0.lower, bounds0.lower - (b1Lerp.lower - b1.lower));
+      bounds1.lower = min(bounds1.lower, bounds1.lower - (b1Lerp.lower - b1.lower));
+
+      bounds0.upper = max(bounds0.upper, bounds0.upper + (b1.upper - b1Lerp.upper));
+      bounds1.upper = max(bounds1.upper, bounds1.upper + (b1.upper - b1Lerp.upper));
+
+      return LBBox3fa(bounds0, bounds1);
+    }
+
+    /*! calculates the linear bounds of a primitive at the itimeGlobal'th time segment, if it's valid */
+    template<typename BoundsFunc>
+    __forceinline static bool linearBounds(size_t itimeGlobal, size_t numTimeStepsGlobal, size_t numTimeSteps, const BoundsFunc& bounds, LBBox3fa& lbbox)
+    {
+      if (numTimeStepsGlobal == numTimeSteps)
+      {
+        BBox3fa bounds0; if (unlikely(!bounds(itimeGlobal+0, bounds0))) return false;
+        BBox3fa bounds1; if (unlikely(!bounds(itimeGlobal+1, bounds1))) return false;
+
+        lbbox = LBBox3fa(bounds0, bounds1);
+        return true;
+      }
+
+      const int timeSegments = int(numTimeSteps-1);
+      const int timeSegmentsGlobal = int(numTimeStepsGlobal-1);
+      const float invTimeSegmentsGlobal = rcp(float(timeSegmentsGlobal));
+
+      const int itimeScaled = int(itimeGlobal) * timeSegments;
+
+      const int itime0 = itimeScaled / timeSegmentsGlobal;
+      const int rtime0 = itimeScaled % timeSegmentsGlobal;
+      const float ftime0 = float(rtime0) * invTimeSegmentsGlobal;
+      const int rtime1 = rtime0 + timeSegments;
+
+      if (rtime1 <= timeSegmentsGlobal)
+      { 
+        BBox3fa b0; if (unlikely(!bounds(itime0+0, b0))) return false;
+        BBox3fa b1; if (unlikely(!bounds(itime0+1, b1))) return false;
+
+        const float ftime1 = float(rtime1) * invTimeSegmentsGlobal;
+
+        lbbox = LBBox3fa(lerp(b0, b1, ftime0), lerp(b0, b1, ftime1));
+        return true;
+      }
+
+      BBox3fa b0; if (unlikely(!bounds(itime0+0, b0))) return false;
+      BBox3fa b1; if (unlikely(!bounds(itime0+1, b1))) return false;
+      BBox3fa b2; if (unlikely(!bounds(itime0+2, b2))) return false;
+
+      const float ftime1 = float(rtime1-timeSegmentsGlobal) * invTimeSegmentsGlobal;
+
+      BBox3fa bounds0 = lerp(b0, b1, ftime0);
+      BBox3fa bounds1 = lerp(b1, b2, ftime1);
+
+      const BBox3fa b1Lerp = lerp(bounds0, bounds1, float(timeSegmentsGlobal-rtime0) * rcp(float(timeSegments)));
+
+      bounds0.lower = min(bounds0.lower, bounds0.lower - (b1Lerp.lower - b1.lower));
+      bounds1.lower = min(bounds1.lower, bounds1.lower - (b1Lerp.lower - b1.lower));
+
+      bounds0.upper = max(bounds0.upper, bounds0.upper + (b1.upper - b1Lerp.upper));
+      bounds1.upper = max(bounds1.upper, bounds1.upper + (b1.upper - b1Lerp.upper));
+
+      lbbox = LBBox3fa(bounds0, bounds1);
+      return true;
+    }
+
+    /*! calculates the build bounds of a primitive at the itimeGlobal'th time segment, if it's valid */
+    template<typename BoundsFunc>
+    __forceinline static bool buildBounds(size_t itimeGlobal, size_t numTimeStepsGlobal, size_t numTimeSteps, const BoundsFunc& bounds, BBox3fa& bbox)
+    {
+      LBBox3fa lbbox;
+      if (!linearBounds(itimeGlobal, numTimeStepsGlobal, numTimeSteps, bounds, lbbox))
+        return false;
+
+      bbox = 0.5f * (lbbox.bounds0 + lbbox.bounds1);
+      return true;
+    }
+
+    /*! checks if a primitive is valid at the itimeGlobal'th time segment */
+    template<typename ValidFunc>
+    __forceinline static bool validLinearBounds(size_t itimeGlobal, size_t numTimeStepsGlobal, size_t numTimeSteps, const ValidFunc& valid)
+    {
+      if (numTimeStepsGlobal == numTimeSteps)
+      {
+        if (unlikely(!valid(itimeGlobal+0))) return false;
+        if (unlikely(!valid(itimeGlobal+1))) return false;
+        return true;
+      }
+
+      const int timeSegments = int(numTimeSteps-1);
+      const int timeSegmentsGlobal = int(numTimeStepsGlobal-1);
+
+      const int itimeScaled = int(itimeGlobal) * timeSegments;
+
+      const int itime0 = itimeScaled / timeSegmentsGlobal;
+      const int rtime0 = itimeScaled % timeSegmentsGlobal;
+      const int rtime1 = rtime0 + timeSegments;
+
+      if (rtime1 <= timeSegmentsGlobal)
+      {
+        if (unlikely(!valid(itime0+0))) return false;
+        if (unlikely(!valid(itime0+1))) return false;
+        return true;
+      }
+
+      if (unlikely(!valid(itime0+0))) return false;
+      if (unlikely(!valid(itime0+1))) return false;
+      if (unlikely(!valid(itime0+2))) return false;
+      return true;
+    }
+
+  public:
     Scene* parent;             //!< pointer to scene this mesh belongs to
     unsigned id;               //!< internal geometry ID
     Type type;                 //!< geometry type 
     size_t numPrimitives;      //!< number of primitives of this geometry
-    unsigned numTimeSteps;     //!< number of time steps (1 or 2)
+    unsigned numTimeSteps;     //!< number of time steps
+    float fnumTimeSegments;    //!< number of time segments (precalculation)
     RTCGeometryFlags flags;    //!< flags of geometry
     bool enabled;              //!< true if geometry is enabled
     bool modified;             //!< true if geometry is modified
     void* userPtr;             //!< user pointer
     unsigned mask;             //!< for masking out geometry
-    std::atomic<size_t> used;   //!< counts by how many enabled instances this geometry is used
+    std::atomic<size_t> used;  //!< counts by how many enabled instances this geometry is used
     
   public:
     RTCFilterFunc intersectionFilter1;
@@ -343,4 +515,22 @@ namespace embree
   template<> __forceinline bool Geometry::hasISPCIntersectionFilter<vfloat16>() const { return (ispcIntersectionFilterMask & HAS_FILTER16) != 0; }
   template<> __forceinline bool Geometry::hasISPCOcclusionFilter   <vfloat16>() const { return (ispcOcclusionFilterMask    & HAS_FILTER16) != 0; }
 #endif
+
+  /* calculate time segment itime and fractional time ftime */
+  __forceinline int getTimeSegment(float time, float numTimeSegments, float& ftime)
+  {
+    const float timeScaled = time * numTimeSegments;
+    const float itimef = clamp(floor(timeScaled), 0.0f, numTimeSegments-1.0f);
+    ftime = timeScaled - itimef;
+    return int(itimef);
+  }
+
+  template<int N>
+  __forceinline vint<N> getTimeSegment(const vfloat<N>& time, const vfloat<N>& numTimeSegments, vfloat<N>& ftime)
+  {
+    const vfloat<N> timeScaled = time * numTimeSegments;
+    const vfloat<N> itimef = clamp(floor(timeScaled), vfloat<N>(zero), numTimeSegments-1.0f);
+    ftime = timeScaled - itimef;
+    return vint<N>(itimef);
+  }
 }

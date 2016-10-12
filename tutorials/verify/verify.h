@@ -46,6 +46,26 @@ namespace embree
       float  random_float () { return RandomSampler_getFloat(sampler); }
       int    random_int   () { return RandomSampler_getInt  (sampler); }
       Vec3fa random_Vec3fa() { return RandomSampler_get3D   (sampler); }
+
+      avector<Vec3fa> random_motion_vector2(float f = 1.0f)
+      {
+        avector<Vec3fa> motion_vector(2);
+        motion_vector[0] = f*random_Vec3fa();
+        motion_vector[1] = f*random_Vec3fa();
+        return motion_vector;
+      }
+
+      avector<Vec3fa> random_motion_vector(float f = 1.0f)
+      {
+        float v = random_float();
+        int numTimeSteps = clamp(int(v*v*v*130),2,129); // samples small number of time steps more frequently
+
+        avector<Vec3fa> motion_vector(numTimeSteps);
+        for (size_t i=0; i<numTimeSteps; i++)
+          motion_vector[i] = f*random_Vec3fa();
+        return motion_vector;
+      }
+
       bool isEnabled() { return enabled; }
       virtual TestReturnValue run(VerifyApplication* state, bool silent) { return SKIPPED; }
       virtual TestReturnValue execute(VerifyApplication* state, bool silent);

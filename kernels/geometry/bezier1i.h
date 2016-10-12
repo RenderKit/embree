@@ -63,7 +63,7 @@ namespace embree
       new (this) Bezier1i(vertexID,geomID,primID);
     }
 
-    /*! fill triangle from triangle list */
+    /*! fill curve from curve list */
     __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene, const bool list)
     {
       const PrimRef& prim = prims[i];
@@ -75,7 +75,7 @@ namespace embree
       new (this) Bezier1i(vertexID,geomID,primID);
     }
 
-    /*! fill triangle from triangle list */
+    /*! fill curve from curve list */
     __forceinline void fill(const BezierPrim* prims, size_t& i, size_t end, Scene* scene, const bool list)
     {
       const BezierPrim& curve = prims[i]; i++;

@@ -324,7 +324,7 @@ namespace embree
           bits &= ~m_isec;
 
           vbool<K> m_valid = (inputPackets[i]->tnear <= inputPackets[i]->tfar);
-          PrimitiveIntersector::intersectChunk(m_valid, *inputPackets[i], context, prim, num, bvh->scene, lazy_node);
+          PrimitiveIntersector::intersectK(m_valid, *inputPackets[i], context, prim, num, bvh->scene, lazy_node);
           Packet &p = packet[i]; 
           p.max_dist = min(p.max_dist, inputPackets[i]->tfar);
         } while(bits);
@@ -431,7 +431,7 @@ namespace embree
           bits &= ~m_isec;
 
           vbool<K> m_valid = (inputPackets[i]->tnear <= inputPackets[i]->tfar);
-          vbool<K> m_hit = PrimitiveIntersector::occludedChunk(m_valid, *inputPackets[i], context, prim, num, bvh->scene, lazy_node);
+          vbool<K> m_hit = PrimitiveIntersector::occludedK(m_valid, *inputPackets[i], context, prim, num, bvh->scene, lazy_node);
           inputPackets[i]->geomID = select(m_hit, vint<K>(zero), inputPackets[i]->geomID);
           m_active &= ~((size_t)movemask(m_hit) << (i*K));
         } 
@@ -451,7 +451,7 @@ namespace embree
       __aligned(64) StackItemMask stack[stackSizeSingle];  //!< stack of nodes
 
 #if ENABLE_COHERENT_STREAM_PATH == 1 
-      if (unlikely(PrimitiveIntersector::validChunkIntersector && !robust && isCoherent(context->context->flags)))
+      if (unlikely(PrimitiveIntersector::validIntersectorK && !robust && isCoherent(context->user->flags)))
       {
         /* AOS to SOA conversion */
         RayK<K> rayK[MAX_RAYS / K];
@@ -488,7 +488,7 @@ namespace embree
         /* do per ray precalculations */
         for (size_t i = 0; i < numOctantRays; i++) {
           new (&ray_ctx[i]) RayCtx(rays[i]);
-          new (&pre[i]) Precalculations(*rays[i], bvh);
+          new (&pre[i]) Precalculations(*rays[i], bvh, bvh->numTimeSteps);
         }
 
         stack[0].ptr  = BVH::invalidNode;
@@ -626,7 +626,7 @@ namespace embree
       __aligned(64) StackItemMask stack[stackSizeSingle];  //!< stack of nodes
 
 #if ENABLE_COHERENT_STREAM_PATH == 1 
-      if (unlikely(PrimitiveIntersector::validChunkIntersector && !robust && isCoherent(context->context->flags)))
+      if (unlikely(PrimitiveIntersector::validIntersectorK && !robust && isCoherent(context->user->flags)))
       {
         /* AOS to SOA conversion */
         RayK<K> rayK[MAX_RAYS / K];
@@ -660,7 +660,7 @@ namespace embree
         /* do per ray precalculations */
         for (size_t i = 0; i < numOctantRays; i++) {
           new (&ray_ctx[i]) RayCtx(rays[i]);
-          new (&pre[i]) Precalculations(*rays[i],bvh);
+          new (&pre[i]) Precalculations(*rays[i], bvh, bvh->numTimeSteps);
         }
 
         stack[0].ptr  = BVH::invalidNode;
@@ -823,7 +823,7 @@ namespace embree
     IF_ENABLED_QUADS(DEFINE_INTERSECTORN(BVH4Quad4vIntersectorStreamMoellerNoFilter,BVHNIntersectorStream<SIMD_MODE(4) COMMA VSIZEX COMMA BVH_AN1 COMMA false COMMA Quad4vIntersectorStreamMoellerTrumboreNoFilter>));
     IF_ENABLED_QUADS(DEFINE_INTERSECTORN(BVH4Quad4iIntersectorStreamPluecker,BVHNIntersectorStream<SIMD_MODE(4) COMMA VSIZEX COMMA BVH_AN1 COMMA true COMMA Quad4iIntersectorStreamPluecker>));
     
-    IF_ENABLED_USER(DEFINE_INTERSECTORN(BVH4VirtualIntersectorStream,BVHNIntersectorStream<SIMD_MODE(4) COMMA VSIZEX COMMA BVH_AN1 COMMA false COMMA ObjectIntersector1>));
+    IF_ENABLED_USER(DEFINE_INTERSECTORN(BVH4VirtualIntersectorStream,BVHNIntersectorStream<SIMD_MODE(4) COMMA VSIZEX COMMA BVH_AN1 COMMA false COMMA ObjectIntersector1<false>>));
 
 
     //IF_ENABLED_LINES(DEFINE_INTERSECTORN(BVH4Line4iMBIntersectorStream,BVHNIntersectorStream<4 COMMA BVH_AN2 COMMA false COMMA ArrayIntersector1<LineMiMBIntersector1<SIMD_MODE(4) COMMA true> > >));

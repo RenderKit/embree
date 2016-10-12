@@ -24,10 +24,10 @@ namespace embree
   struct IntersectContext
   {
   public:
-    __forceinline IntersectContext(const RTCIntersectContext* context = nullptr)
-      : context(context) {}
+    __forceinline IntersectContext(const RTCIntersectContext* user_context = nullptr)
+      : user(user_context) {}
 
   public:
-    const RTCIntersectContext* context;
+    const RTCIntersectContext* user;
   };
 }

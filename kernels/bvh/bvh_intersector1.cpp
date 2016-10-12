@@ -30,6 +30,7 @@
 #include "../geometry/triangle_intersector_moeller.h"
 #include "../geometry/triangle_intersector_pluecker.h"
 #include "../geometry/trianglei_intersector_pluecker.h"
+#include "../geometry/subdivpatch1eager_intersector1.h"
 #include "../geometry/subdivpatch1cached_intersector1.h"
 #include "../geometry/object_intersector1.h"
 #include "../geometry/quadv_intersector_moeller.h"
@@ -48,20 +49,19 @@ namespace embree
     void BVHNIntersector1<N,types,robust,PrimitiveIntersector1>::intersect(const BVH* __restrict__ bvh, Ray& __restrict__ ray, IntersectContext* context)
     {
       /*! perform per ray precalculations required by the primitive intersector */
-      Precalculations pre(ray,bvh);
+      Precalculations pre(ray,bvh,bvh->numTimeSteps);
 
       /*! stack state */
       StackItemT<NodeRef> stack[stackSize];           //!< stack of nodes 
       StackItemT<NodeRef>* stackPtr = stack+1;        //!< current stack pointer
       StackItemT<NodeRef>* stackEnd = stack+stackSize;
-      stack[0].ptr  = bvh->root;
+      stack[0].ptr  = bvh->getRoot(pre);
       stack[0].dist = neg_inf;
 
       /* filter out invalid rays */
 #if defined(EMBREE_IGNORE_INVALID_RAYS)
       if (!ray.valid()) return;
 #endif
-
       /* verify correct input */
       assert(ray.valid());
       assert(ray.tnear >= 0.0f);
@@ -99,7 +99,7 @@ namespace embree
           /* intersect node */
           size_t mask = 0;
           vfloat<Nx> tNear;
-          bool nodeIntersected = BVHNNodeIntersector1<N,Nx,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time,tNear,mask);
+          bool nodeIntersected = BVHNNodeIntersector1<N,Nx,types,robust>::intersect(cur,vray,ray_near,ray_far,pre.ftime(),tNear,mask);
           if (unlikely(!nodeIntersected)) break;
 
           /*! if no child is hit, pop next node */
@@ -149,13 +149,13 @@ namespace embree
         return;
 
       /*! perform per ray precalculations required by the primitive intersector */
-      Precalculations pre(ray,bvh);
+      Precalculations pre(ray,bvh,bvh->numTimeSteps);
 
       /*! stack state */
       NodeRef stack[stackSize];  //!< stack of nodes that still need to get traversed
       NodeRef* stackPtr = stack+1;        //!< current stack pointer
       NodeRef* stackEnd = stack+stackSize;
-      stack[0] = bvh->root;
+      stack[0] = bvh->getRoot(pre);
       
       /* filter out invalid rays */
 #if defined(EMBREE_IGNORE_INVALID_RAYS)
@@ -195,7 +195,7 @@ namespace embree
           /* intersect node */
           size_t mask = 0;
           vfloat<Nx> tNear;
-          bool nodeIntersected = BVHNNodeIntersector1<N,Nx,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time,tNear,mask);
+          bool nodeIntersected = BVHNNodeIntersector1<N,Nx,types,robust>::intersect(cur,vray,ray_near,ray_far,pre.ftime(),tNear,mask);
           if (unlikely(!nodeIntersected)) break;
 
           /*! if no child is hit, pop next node */
@@ -258,12 +258,13 @@ namespace embree
     IF_ENABLED_TRIS(DEFINE_INTERSECTOR1(BVH4Triangle4iMBIntersector1Pluecker,BVHNIntersector1<4 COMMA BVH_AN2 COMMA false COMMA ArrayIntersector1<TriangleMiMBIntersector1Pluecker<SIMD_MODE(4) COMMA true> > >));
 
     IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR1(BVH4Subdivpatch1Intersector1,BVHNIntersector1<4 COMMA BVH_AN1 COMMA true COMMA SubdivPatch1CachedIntersector1<false>>));
+    IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR1(BVH4Subdivpatch1EagerIntersector1,BVHNIntersector1<4 COMMA BVH_AN1 COMMA true COMMA SubdivPatch1EagerIntersector1>));
     IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR1(BVH4Subdivpatch1CachedIntersector1,BVHNIntersector1<4 COMMA BVH_AN1 COMMA true COMMA SubdivPatch1CachedIntersector1<true>>));
     IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR1(BVH4Subdivpatch1MBlurIntersector1,BVHNIntersector1<4 COMMA BVH_AN2 COMMA false COMMA SubdivPatch1MBlurCachedIntersector1<false>>)); // FIXME: robust mode not compiling
     IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR1(BVH4Subdivpatch1MBlurCachedIntersector1,BVHNIntersector1<4 COMMA BVH_AN2 COMMA false COMMA SubdivPatch1MBlurCachedIntersector1<true>>)); // FIXME: robust mode not compiling
 
-    IF_ENABLED_USER(DEFINE_INTERSECTOR1(BVH4VirtualIntersector1,BVHNIntersector1<4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<ObjectIntersector1> >));
-    IF_ENABLED_USER(DEFINE_INTERSECTOR1(BVH4VirtualMBIntersector1,BVHNIntersector1<4 COMMA BVH_AN2 COMMA false COMMA ArrayIntersector1<ObjectIntersector1> >));
+    IF_ENABLED_USER(DEFINE_INTERSECTOR1(BVH4VirtualIntersector1,BVHNIntersector1<4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<ObjectIntersector1<false>> >));
+    IF_ENABLED_USER(DEFINE_INTERSECTOR1(BVH4VirtualMBIntersector1,BVHNIntersector1<4 COMMA BVH_AN2 COMMA false COMMA ArrayIntersector1<ObjectIntersector1<true>> >));
 
     IF_ENABLED_QUADS(DEFINE_INTERSECTOR1(BVH4Quad4vIntersector1Moeller,BVHNIntersector1<4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<QuadMvIntersector1MoellerTrumbore<4 COMMA true> > >));
     IF_ENABLED_QUADS(DEFINE_INTERSECTOR1(BVH4Quad4iIntersector1Pluecker,BVHNIntersector1<4 COMMA BVH_AN1 COMMA true COMMA ArrayIntersector1<QuadMiIntersector1Pluecker<4 COMMA true> > >));

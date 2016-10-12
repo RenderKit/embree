@@ -247,14 +247,24 @@ namespace embree
     struct ISPCInstance
     {
       ALIGNED_STRUCT;
+      
+      static ISPCInstance* create (Ref<TutorialScene::Instance> in) {
+        return ::new (alignedMalloc(sizeof(ISPCInstance)+(in->spaces.size()-1)*sizeof(AffineSpace3fa))) ISPCInstance(in);
+      }
 
+    private:
       ISPCInstance (Ref<TutorialScene::Instance> in)
-      : geom(INSTANCE), space0(in->space0), space1(in->space1), geomID(in->geomID) {}
+      : geom(INSTANCE), geomID(in->geomID), numTimeSteps(unsigned(in->spaces.size())) 
+      {
+        for (size_t i=0; i<numTimeSteps; i++)
+          spaces[i] = in->spaces[i];
+      }
 
+    public:
       ISPCGeometry geom;
-      AffineSpace3fa space0;
-      AffineSpace3fa space1;
       unsigned int geomID;
+      unsigned int numTimeSteps;
+      AffineSpace3fa spaces[1];
     };
 
     struct ISPCGroup
@@ -315,7 +325,7 @@ namespace embree
       else if (in->type == TutorialScene::Geometry::CURVES)
         return (ISPCGeometry*) new ISPCHairSet(false,in.dynamicCast<TutorialScene::HairSet>());
       else if (in->type == TutorialScene::Geometry::INSTANCE)
-        return (ISPCGeometry*) new ISPCInstance(in.dynamicCast<TutorialScene::Instance>());
+        return (ISPCGeometry*) ISPCInstance::create(in.dynamicCast<TutorialScene::Instance>());
       else if (in->type == TutorialScene::Geometry::GROUP)
         return (ISPCGeometry*) new ISPCGroup(in.dynamicCast<TutorialScene::Group>());
       else

@@ -169,7 +169,7 @@ namespace embree
       void build(size_t, size_t) 
       {
 	/* skip build for empty scene */
-	const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,1>();
+        const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,false>();
         if (numPrimitives == 0) {
           prims.clear();
           bvh->clear();
@@ -187,7 +187,7 @@ namespace embree
             prims.resize(numSplitPrimitives);
             PrimInfo pinfo = mesh ? 
               createPrimRefArray<Mesh>  (mesh ,prims,bvh->scene->progressInterface) : 
-              createPrimRefArray<Mesh,1>(scene,prims,bvh->scene->progressInterface);
+              createPrimRefArray<Mesh,false>(scene,prims,bvh->scene->progressInterface);
         
             /* perform pre-splitting */
             if (presplitFactor > 1.0f) 
@@ -248,7 +248,7 @@ namespace embree
       void build(size_t, size_t) 
       {
 	/* skip build for empty scene */
-	const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,1>();
+        const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,false>();
         if (numPrimitives == 0) {
           prims.clear();
           bvh->clear();
@@ -265,7 +265,7 @@ namespace embree
             prims.resize(numSplitPrimitives);
             PrimInfo pinfo = mesh ? 
               createPrimRefArray<Mesh>  (mesh ,prims,bvh->scene->progressInterface) : 
-              createPrimRefArray<Mesh,1>(scene,prims,bvh->scene->progressInterface);
+              createPrimRefArray<Mesh,false>(scene,prims,bvh->scene->progressInterface);
         
             /* perform pre-splitting */
             if (presplitFactor > 1.0f) 
@@ -355,7 +355,7 @@ namespace embree
       void build(size_t, size_t) 
       {
 	/* skip build for empty scene */
-	const size_t numPrimitives = scene->getNumPrimitives<Mesh,1>();
+        const size_t numPrimitives = scene->getNumPrimitives<Mesh,false>();
         if (numPrimitives == 0) {
           bvh->clear();
           return;
@@ -364,7 +364,7 @@ namespace embree
         
         /* create primref list */
         PrimRefList prims;
-        PrimInfo pinfo = createPrimRefList<Mesh,1>(scene,prims,bvh->scene->progressInterface);
+        PrimInfo pinfo = createPrimRefList<Mesh,false>(scene,prims,bvh->scene->progressInterface);
         
         /* calculate total surface area */
         PrimRefList::iterator iter = prims;
@@ -440,21 +440,19 @@ namespace embree
       typedef BVHN<N> BVH;
       __forceinline CreateLeafMB (BVH* bvh, PrimRef* prims) : bvh(bvh), prims(prims) {}
       
-      __forceinline std::pair<BBox3fa,BBox3fa> operator() (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc)
+      __forceinline LBBox3fa operator() (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc)
       {
         size_t items = Primitive::blocks(current.prims.size());
         size_t start = current.prims.begin();
         Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
         typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,items);
-	BBox3fa bounds0 = empty;
-	BBox3fa bounds1 = empty;
+        LBBox3fa allBounds = empty;
         for (size_t i=0; i<items; i++) {
-          auto bounds = accel[i].fill_mblur(prims,start,current.prims.end(),bvh->scene,false);
-	  bounds0.extend(bounds.first);
-	  bounds1.extend(bounds.second);
+          auto bounds = accel[i].fillMB(prims,start,current.prims.end(),bvh->scene,false,0);
+          allBounds.extend(bounds);
         }
         *current.parent = node;
-	return std::make_pair(bounds0,bounds1);
+        return allBounds;
       }
 
       BVH* bvh;
@@ -483,7 +481,7 @@ namespace embree
       void build(size_t, size_t) 
       {
 	/* skip build for empty scene */
-	const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,2>();
+        const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,true>();
 
         if (numPrimitives == 0) {
           prims.clear();
@@ -491,12 +489,13 @@ namespace embree
           return;
         }      
         double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + toString(N) + "BuilderMblurSAH");
-	    
+
+        bvh->numTimeSteps = 2;
         //bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef));
         prims.resize(numPrimitives);
         const PrimInfo pinfo = mesh ? 
           createPrimRefArray<Mesh>(mesh,prims,bvh->scene->progressInterface) : 
-          createPrimRefArray<Mesh,2>(scene,prims,bvh->scene->progressInterface);
+          createPrimRefArray<Mesh,true>(scene,prims,bvh->scene->progressInterface);
 
         /* call BVH builder */
         bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
@@ -518,6 +517,102 @@ namespace embree
       }
     };
 
+
+    template<int N, typename Primitive>
+    struct CreateMSMBlurLeaf
+    {
+      typedef BVHN<N> BVH;
+      __forceinline CreateMSMBlurLeaf (BVH* bvh, PrimRef* prims, size_t time) : bvh(bvh), prims(prims), time(time) {}
+      
+      __forceinline LBBox3fa operator() (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc)
+      {
+        size_t items = Primitive::blocks(current.prims.size());
+        size_t start = current.prims.begin();
+        Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
+        typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,items);
+        LBBox3fa allBounds = empty;
+        for (size_t i=0; i<items; i++) {
+          auto bounds = accel[i].fillMB(prims,start,current.prims.end(),bvh->scene,false,time,bvh->numTimeSteps);
+          allBounds.extend(bounds);
+        }
+        *current.parent = node;
+        return allBounds;
+      }
+
+      BVH* bvh;
+      PrimRef* prims;
+      size_t time;
+    };
+
+    template<int N, typename Mesh, typename Primitive>
+    struct BVHNBuilderMSMBlurSAH : public Builder
+    {
+      typedef BVHN<N> BVH;
+      typedef typename BVHN<N>::NodeRef NodeRef;
+      BVH* bvh;
+      Scene* scene;
+      mvector<PrimRef> prims; 
+      const size_t sahBlockSize;
+      const float intCost;
+      const size_t minLeafSize;
+      const size_t maxLeafSize;
+
+      BVHNBuilderMSMBlurSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize)
+        : bvh(bvh), scene(scene), prims(scene->device), 
+          sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)) {}
+
+      void build(size_t, size_t) 
+      {
+	/* skip build for empty scene */
+        const size_t numPrimitives = scene->getNumPrimitives<Mesh,true>();
+        
+        if (numPrimitives == 0) {
+          prims.clear();
+          bvh->clear();
+          return;
+        }      
+
+        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "BuilderMSMBlurSAH");
+	
+        /* allocate buffers */
+        bvh->numTimeSteps = scene->getNumTimeSteps<Mesh,true>();
+        const size_t numTimeSegments = bvh->numTimeSteps-1; assert(bvh->numTimeSteps > 1);
+        prims.resize(numPrimitives);
+        bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef)*numTimeSegments);
+        NodeRef* roots = (NodeRef*) bvh->alloc.threadLocal2()->alloc0->malloc(sizeof(NodeRef)*numTimeSegments,BVH::byteNodeAlignment);
+
+        /* build BVH for each timestep */
+        avector<BBox3fa> bounds(bvh->numTimeSteps);
+        size_t num_bvh_primitives = 0;
+        for (size_t t=0; t<numTimeSegments; t++)
+        {
+          /* call BVH builder */
+          NodeRef root; LBBox3fa tbounds;
+          const PrimInfo pinfo = createPrimRefArrayMBlur<Mesh>(t,bvh->numTimeSteps,scene,prims,bvh->scene->progressInterface);
+          std::tie(root, tbounds) = BVHNBuilderMblur<N>::build(bvh,CreateMSMBlurLeaf<N,Primitive>(bvh,prims.data(),t),bvh->scene->progressInterface,prims.data(),pinfo,
+                                                              sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
+          roots[t] = root;
+          bounds[t+0] = tbounds.bounds0;
+          bounds[t+1] = tbounds.bounds1;
+          num_bvh_primitives = max(num_bvh_primitives,pinfo.size());
+        }
+        bvh->set(NodeRef((size_t)roots),LBBox3fa(bounds),num_bvh_primitives);
+        bvh->msmblur = true;
+
+	/* clear temporary data for static geometry */
+	if (scene->isStatic()) 
+        {
+          prims.clear();
+          bvh->shrink();
+        }
+	bvh->cleanup();
+        bvh->postBuild(t0);
+      }
+
+      void clear() {
+        prims.clear();
+      }
+    };
 
     /************************************************************************************/ 
     /************************************************************************************/
@@ -551,7 +646,7 @@ namespace embree
       void build(size_t, size_t) 
       {
 	/* skip build for empty scene */
-	const size_t numOriginalPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,1>();
+        const size_t numOriginalPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,false>();
         if (numOriginalPrimitives == 0) {
           prims0.clear();
           bvh->clear();
@@ -565,7 +660,7 @@ namespace embree
         prims0.resize(numSplitPrimitives);
         PrimInfo pinfo = mesh ? 
           createPrimRefArray<Mesh>  (mesh ,prims0,bvh->scene->progressInterface) : 
-          createPrimRefArray<Mesh,1>(scene,prims0,bvh->scene->progressInterface);
+          createPrimRefArray<Mesh,false>(scene,prims0,bvh->scene->progressInterface);
 
         /* primref array could be smaller due to invalid geometry */
         const size_t numPrimitives = pinfo.size();
@@ -730,7 +825,7 @@ namespace embree
       void build(size_t, size_t) 
       {
 	/* skip build for empty scene */
-	const size_t numOriginalPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,1>();
+        const size_t numOriginalPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,false>();
         if (numOriginalPrimitives == 0) {
           prims0.clear();
           bvh->clear();
@@ -744,7 +839,7 @@ namespace embree
         prims0.resize(numSplitPrimitives);
         PrimInfo pinfo = mesh ? 
           createPrimRefArray<Mesh>  (mesh ,prims0,bvh->scene->progressInterface) : 
-          createPrimRefArray<Mesh,1>(scene,prims0,bvh->scene->progressInterface);
+          createPrimRefArray<Mesh,false>(scene,prims0,bvh->scene->progressInterface);
 
         /* primref array could be smaller due to invalid geometry */
         const size_t numPrimitives = pinfo.size();
@@ -959,11 +1054,10 @@ namespace embree
 #if defined(EMBREE_GEOMETRY_LINES)
     Builder* BVH4Line4iMeshBuilderSAH     (void* bvh, LineSegments* mesh, size_t mode) { return new BVHNBuilderSAH<4,LineSegments,Line4i>((BVH4*)bvh,mesh,4,1.0f,4,inf,mode); }
     Builder* BVH4Line4iSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,LineSegments,Line4i>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
-    Builder* BVH4Line4iMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMblurSAH<4,LineSegments,Line4i>((BVH4*)bvh,scene ,4,1.0f,4,inf); }
-    Builder* BVH4Line4iMBMeshBuilderSAH  (void* bvh, LineSegments* mesh, size_t mode) { return new BVHNBuilderMblurSAH<4,LineSegments,Line4i>((BVH4*)bvh,mesh ,4,1.0f,4,inf); }
+    Builder* BVH4Line4iMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMSMBlurSAH<4,LineSegments,Line4i>((BVH4*)bvh,scene ,4,1.0f,4,inf); }
 #if defined(__AVX__)
     Builder* BVH8Line4iSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<8,LineSegments,Line4i>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
-    Builder* BVH8Line4iMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMblurSAH<8,LineSegments,Line4i>((BVH8*)bvh,scene,4,1.0f,4,inf); }
+    Builder* BVH8Line4iMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMSMBlurSAH<8,LineSegments,Line4i>((BVH8*)bvh,scene,4,1.0f,4,inf); }
 #endif
 #endif
 
@@ -981,10 +1075,10 @@ namespace embree
     Builder* BVH4Triangle4vSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,TriangleMesh,Triangle4v>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
     Builder* BVH4Triangle4iSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,TriangleMesh,Triangle4i>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
 
-    Builder* BVH4Triangle4vMBMeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVHNBuilderMblurSAH<4,TriangleMesh,Triangle4vMB>((BVH4*)bvh,mesh ,4,1.0f,4,inf); }
-    Builder* BVH4Triangle4vMBSceneBuilderSAH (void* bvh, Scene* scene,       size_t mode) { return new BVHNBuilderMblurSAH<4,TriangleMesh,Triangle4vMB>((BVH4*)bvh,scene,4,1.0f,4,inf); }
-    Builder* BVH4Triangle4iMBMeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVHNBuilderMblurSAH<4,TriangleMesh,Triangle4iMB>((BVH4*)bvh,mesh ,4,1.0f,4,inf); }
-    Builder* BVH4Triangle4iMBSceneBuilderSAH (void* bvh, Scene* scene,       size_t mode) { return new BVHNBuilderMblurSAH<4,TriangleMesh,Triangle4iMB>((BVH4*)bvh,scene,4,1.0f,4,inf); }
+    //Builder* BVH4Triangle4vMBMeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVHNBuilderMSMBlurSAH<4,TriangleMesh,Triangle4vMB>((BVH4*)bvh,mesh ,4,1.0f,4,inf); }
+    Builder* BVH4Triangle4vMBSceneBuilderSAH (void* bvh, Scene* scene,       size_t mode) { return new BVHNBuilderMSMBlurSAH<4,TriangleMesh,Triangle4vMB>((BVH4*)bvh,scene,4,1.0f,4,inf); }
+    //Builder* BVH4Triangle4iMBMeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVHNBuilderMSMBlurSAH<4,TriangleMesh,Triangle4iMB>((BVH4*)bvh,mesh ,4,1.0f,4,inf); }
+    Builder* BVH4Triangle4iMBSceneBuilderSAH (void* bvh, Scene* scene,       size_t mode) { return new BVHNBuilderMSMBlurSAH<4,TriangleMesh,Triangle4iMB>((BVH4*)bvh,scene,4,1.0f,4,inf); }
 
     Builder* BVH4Triangle4SceneBuilderSpatialSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSpatialSAH<4,TriangleMesh,Triangle4>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
     Builder* BVH4Triangle4vSceneBuilderSpatialSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSpatialSAH<4,TriangleMesh,Triangle4v>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
@@ -1004,10 +1098,10 @@ namespace embree
 
     Builder* BVH8Triangle4SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<8,TriangleMesh,Triangle4>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
     Builder* BVH8Triangle4iSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<8,TriangleMesh,Triangle4i>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
-    Builder* BVH8Triangle4vMBMeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVHNBuilderMblurSAH<8,TriangleMesh,Triangle4vMB>((BVH8*)bvh,mesh ,4,1.0f,4,inf); }
-    Builder* BVH8Triangle4vMBSceneBuilderSAH (void* bvh, Scene* scene,       size_t mode) { return new BVHNBuilderMblurSAH<8,TriangleMesh,Triangle4vMB>((BVH8*)bvh,scene,4,1.0f,4,inf); }
-    Builder* BVH8Triangle4iMBMeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVHNBuilderMblurSAH<8,TriangleMesh,Triangle4iMB>((BVH8*)bvh,mesh ,4,1.0f,4,inf); }
-    Builder* BVH8Triangle4iMBSceneBuilderSAH (void* bvh, Scene* scene,       size_t mode) { return new BVHNBuilderMblurSAH<8,TriangleMesh,Triangle4iMB>((BVH8*)bvh,scene,4,1.0f,4,inf); }
+    //Builder* BVH8Triangle4vMBMeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVHNBuilderMSMBlurSAH<8,TriangleMesh,Triangle4vMB>((BVH8*)bvh,mesh ,4,1.0f,4,inf); }
+    Builder* BVH8Triangle4vMBSceneBuilderSAH (void* bvh, Scene* scene,       size_t mode) { return new BVHNBuilderMSMBlurSAH<8,TriangleMesh,Triangle4vMB>((BVH8*)bvh,scene,4,1.0f,4,inf); }
+    //Builder* BVH8Triangle4iMBMeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVHNBuilderMSMBlurSAH<8,TriangleMesh,Triangle4iMB>((BVH8*)bvh,mesh ,4,1.0f,4,inf); }
+    Builder* BVH8Triangle4iMBSceneBuilderSAH (void* bvh, Scene* scene,       size_t mode) { return new BVHNBuilderMSMBlurSAH<8,TriangleMesh,Triangle4iMB>((BVH8*)bvh,scene,4,1.0f,4,inf); }
     Builder* BVH8Triangle4SceneBuilderSpatialSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSpatialSAH<8,TriangleMesh,Triangle4>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
     Builder* BVH8QuantizedTriangle4iSceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHQuantized<8,TriangleMesh,Triangle4i>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
 
@@ -1025,8 +1119,8 @@ namespace embree
     Builder* BVH4Quad4iMeshBuilderSAH     (void* bvh, QuadMesh* mesh, size_t mode)     { return new BVHNBuilderSAH<4,QuadMesh,Quad4i>((BVH4*)bvh,mesh,4,1.0f,4,inf,mode); }
     Builder* BVH4Quad4vSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,QuadMesh,Quad4v>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
     Builder* BVH4Quad4iSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,QuadMesh,Quad4i>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
-    Builder* BVH4Quad4iMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMblurSAH<4,QuadMesh,Quad4iMB>((BVH4*)bvh,scene ,4,1.0f,4,inf); }
-    Builder* BVH4Quad4iMBMeshBuilderSAH  (void* bvh, QuadMesh* mesh, size_t mode) { return new BVHNBuilderMblurSAH<4,QuadMesh,Quad4iMB>((BVH4*)bvh,mesh ,4,1.0f,4,inf); }
+    Builder* BVH4Quad4iMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMSMBlurSAH<4,QuadMesh,Quad4iMB>((BVH4*)bvh,scene ,4,1.0f,4,inf); }
+    //Builder* BVH4Quad4iMBMeshBuilderSAH  (void* bvh, QuadMesh* mesh, size_t mode) { return new BVHNBuilderMSMBlurSAH<4,QuadMesh,Quad4iMB>((BVH4*)bvh,mesh ,4,1.0f,4,inf); }
     Builder* BVH4QuantizedQuad4vSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHQuantized<4,QuadMesh,Quad4v>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
     Builder* BVH4QuantizedQuad4iSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHQuantized<4,QuadMesh,Quad4i>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
 
@@ -1036,7 +1130,7 @@ namespace embree
 #if defined(__AVX__)
     Builder* BVH8Quad4vSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<8,QuadMesh,Quad4v>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
     Builder* BVH8Quad4iSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<8,QuadMesh,Quad4i>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
-    Builder* BVH8Quad4iMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMblurSAH<8,QuadMesh,Quad4iMB>((BVH8*)bvh,scene,4,1.0f,4,inf); }
+    Builder* BVH8Quad4iMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMSMBlurSAH<8,QuadMesh,Quad4iMB>((BVH8*)bvh,scene,4,1.0f,4,inf); }
     Builder* BVH8QuantizedQuad4vSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHQuantized<8,QuadMesh,Quad4v>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
     Builder* BVH8QuantizedQuad4iSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHQuantized<8,QuadMesh,Quad4i>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
     Builder* BVH8Quad4vMeshBuilderSAH     (void* bvh, QuadMesh* mesh, size_t mode)     { return new BVHNBuilderSAH<8,QuadMesh,Quad4v>((BVH8*)bvh,mesh,4,1.0f,4,inf,mode); }
@@ -1058,7 +1152,7 @@ namespace embree
     Builder* BVH4VirtualMBSceneBuilderSAH    (void* bvh, Scene* scene, size_t mode) {
       int minLeafSize = scene->device->object_accel_mb_min_leaf_size;
       int maxLeafSize = scene->device->object_accel_mb_max_leaf_size;
-      return new BVHNBuilderMblurSAH<4,AccelSet,Object>((BVH4*)bvh,scene,4,1.0f,minLeafSize,maxLeafSize);
+      return new BVHNBuilderMSMBlurSAH<4,AccelSet,Object>((BVH4*)bvh,scene,4,1.0f,minLeafSize,maxLeafSize);
     }
 #endif
   }

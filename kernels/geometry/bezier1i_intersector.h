@@ -26,21 +26,25 @@ namespace embree
     struct Bezier1iIntersector1
     {
       typedef Bezier1i Primitive;
-      typedef Bezier1iIntersector1 Precalculations;
 
-      __forceinline Bezier1iIntersector1() {}
+      struct PrecalculationsBase
+      {
+        __forceinline PrecalculationsBase() {}
 
-      __forceinline Bezier1iIntersector1(const Ray& ray, const void* ptr)
-        : intersectorHair(ray,ptr), intersectorCurve(ray,ptr) {}
+        __forceinline PrecalculationsBase(const Ray& ray, const void* ptr)
+          : intersectorHair(ray,ptr), intersectorCurve(ray,ptr) {}
+
+        Bezier1Intersector1 intersectorHair;
+        BezierGeometry1Intersector1 intersectorCurve;
+      };
+
+      typedef Intersector1Precalculations<PrecalculationsBase> Precalculations;
 
       static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim, Scene* scene, const unsigned* geomID_to_instID)
       {
         STAT3(normal.trav_prims,1,1,1);
         const BezierCurves* geom = (BezierCurves*) scene->get(prim.geomID());
-        const Vec3fa a0 = geom->vertex(prim.vertexID+0,0);
-        const Vec3fa a1 = geom->vertex(prim.vertexID+1,0);
-        const Vec3fa a2 = geom->vertex(prim.vertexID+2,0);
-        const Vec3fa a3 = geom->vertex(prim.vertexID+3,0);
+        Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,prim.vertexID);
         if (likely(geom->subtype == BezierCurves::HAIR))
           pre.intersectorHair.intersect(ray,a0,a1,a2,a3,geom->tessellationRate,Intersect1EpilogMU<VSIZEX,true>(ray,context,prim.geomID(),prim.primID(),scene,geomID_to_instID));
         else 
@@ -51,10 +55,7 @@ namespace embree
       {
         STAT3(shadow.trav_prims,1,1,1);
         const BezierCurves* geom = (BezierCurves*) scene->get(prim.geomID());
-        const Vec3fa a0 = geom->vertex(prim.vertexID+0,0);
-        const Vec3fa a1 = geom->vertex(prim.vertexID+1,0);
-        const Vec3fa a2 = geom->vertex(prim.vertexID+2,0);
-        const Vec3fa a3 = geom->vertex(prim.vertexID+3,0);
+        Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,prim.vertexID);
         if (likely(geom->subtype == BezierCurves::HAIR))
           return pre.intersectorHair.intersect(ray,a0,a1,a2,a3,geom->tessellationRate,Occluded1EpilogMU<VSIZEX,true>(ray,context,prim.geomID(),prim.primID(),scene,geomID_to_instID));
         else
@@ -74,33 +75,34 @@ namespace embree
         } while(unlikely(valid));
         return valid_isec;
       }
-
-
-    public:
-      Bezier1Intersector1 intersectorHair;
-      BezierGeometry1Intersector1 intersectorCurve;
     };
 
     template<int K>
       struct Bezier1iIntersectorK
     {
       typedef Bezier1i Primitive;
-      typedef Bezier1iIntersectorK Precalculations;
 
-      __forceinline Bezier1iIntersectorK(const vbool<K>& valid, const RayK<K>& ray) 
-        : intersectorHair(valid,ray), intersectorCurve(valid,ray) {}
+      struct PrecalculationsBase
+      {
+        __forceinline PrecalculationsBase() {}
 
-      __forceinline Bezier1iIntersectorK (const RayK<K>& ray, size_t k) 
-        : intersectorHair(ray,k), intersectorCurve(ray,k) {}
+        __forceinline PrecalculationsBase(const vbool<K>& valid, const RayK<K>& ray)
+          : intersectorHair(valid,ray), intersectorCurve(valid,ray) {}
+
+        __forceinline PrecalculationsBase(const RayK<K>& ray, size_t k)
+          : intersectorHair(ray,k), intersectorCurve(ray,k) {}
+
+        Bezier1IntersectorK<K> intersectorHair;
+        BezierGeometry1IntersectorK<K> intersectorCurve;
+      };
+
+      typedef IntersectorKPrecalculations<K,PrecalculationsBase> Precalculations;
       
       static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, const size_t k, IntersectContext* context, const Primitive& prim, Scene* scene)
       {
         STAT3(normal.trav_prims,1,1,1);
         const BezierCurves* geom = (BezierCurves*) scene->get(prim.geomID());
-        const Vec3fa a0 = geom->vertex(prim.vertexID+0,0);
-        const Vec3fa a1 = geom->vertex(prim.vertexID+1,0);
-        const Vec3fa a2 = geom->vertex(prim.vertexID+2,0);
-        const Vec3fa a3 = geom->vertex(prim.vertexID+3,0);
+        Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,prim.vertexID);
         if (likely(geom->subtype == BezierCurves::HAIR))
           pre.intersectorHair.intersect(ray,k,a0,a1,a2,a3,geom->tessellationRate,Intersect1KEpilogMU<VSIZEX,K,true>(ray,k,context,prim.geomID(),prim.primID(),scene));
         else 
@@ -117,10 +119,7 @@ namespace embree
       {
         STAT3(shadow.trav_prims,1,1,1);
         const BezierCurves* geom = (BezierCurves*) scene->get(prim.geomID());
-        const Vec3fa a0 = geom->vertex(prim.vertexID+0,0);
-        const Vec3fa a1 = geom->vertex(prim.vertexID+1,0);
-        const Vec3fa a2 = geom->vertex(prim.vertexID+2,0);
-        const Vec3fa a3 = geom->vertex(prim.vertexID+3,0);
+        Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,prim.vertexID);
         if (likely(geom->subtype == BezierCurves::HAIR))
           return pre.intersectorHair.intersect(ray,k,a0,a1,a2,a3,geom->tessellationRate,Occluded1KEpilogMU<VSIZEX,K,true>(ray,k,context,prim.geomID(),prim.primID(),scene));
         else
@@ -138,39 +137,30 @@ namespace embree
         }
         return valid_o;
       }
-
-    public:
-      Bezier1IntersectorK<K> intersectorHair;
-      BezierGeometry1IntersectorK<K> intersectorCurve;
     };
     
     struct Bezier1iIntersector1MB
     {
       typedef Bezier1i Primitive;
-      typedef Bezier1iIntersector1MB Precalculations;
       
-      __forceinline Bezier1iIntersector1MB() {}
+      struct PrecalculationsBase
+      {
+        __forceinline PrecalculationsBase() {}
 
-      __forceinline Bezier1iIntersector1MB(const Ray& ray, const void* ptr)
-        : intersectorHair(ray,ptr), intersectorCurve(ray,ptr) {}
+        __forceinline PrecalculationsBase(const Ray& ray, const void* ptr)
+          : intersectorHair(ray,ptr), intersectorCurve(ray,ptr) {}
+
+        Bezier1Intersector1 intersectorHair;
+        BezierGeometry1Intersector1 intersectorCurve;
+      };
+
+      typedef Intersector1PrecalculationsMB<PrecalculationsBase> Precalculations;
             
       static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim, Scene* scene, const unsigned* geomID_to_instID)
       {
         STAT3(normal.trav_prims,1,1,1);
         const BezierCurves* geom = (BezierCurves*) scene->get(prim.geomID());
-        const Vec3fa a0 = geom->vertex(prim.vertexID+0,0);
-        const Vec3fa a1 = geom->vertex(prim.vertexID+1,0);
-        const Vec3fa a2 = geom->vertex(prim.vertexID+2,0);
-        const Vec3fa a3 = geom->vertex(prim.vertexID+3,0);
-        const Vec3fa b0 = geom->vertex(prim.vertexID+0,1);
-        const Vec3fa b1 = geom->vertex(prim.vertexID+1,1);
-        const Vec3fa b2 = geom->vertex(prim.vertexID+2,1);
-        const Vec3fa b3 = geom->vertex(prim.vertexID+3,1);
-        const float t0 = 1.0f-ray.time, t1 = ray.time;
-        const Vec3fa p0 = t0*a0 + t1*b0;
-        const Vec3fa p1 = t0*a1 + t1*b1;
-        const Vec3fa p2 = t0*a2 + t1*b2;
-        const Vec3fa p3 = t0*a3 + t1*b3;
+        Vec3fa p0,p1,p2,p3; geom->gather(p0,p1,p2,p3,prim.vertexID,ray.time);
         if (likely(geom->subtype == BezierCurves::HAIR))
           pre.intersectorHair.intersect(ray,p0,p1,p2,p3,geom->tessellationRate,Intersect1EpilogMU<VSIZEX,true>(ray,context,prim.geomID(),prim.primID(),scene,geomID_to_instID));
         else 
@@ -181,59 +171,40 @@ namespace embree
       {
         STAT3(shadow.trav_prims,1,1,1);
         const BezierCurves* geom = (BezierCurves*) scene->get(prim.geomID());
-        const Vec3fa a0 = geom->vertex(prim.vertexID+0,0);
-        const Vec3fa a1 = geom->vertex(prim.vertexID+1,0);
-        const Vec3fa a2 = geom->vertex(prim.vertexID+2,0);
-        const Vec3fa a3 = geom->vertex(prim.vertexID+3,0);
-        const Vec3fa b0 = geom->vertex(prim.vertexID+0,1);
-        const Vec3fa b1 = geom->vertex(prim.vertexID+1,1);
-        const Vec3fa b2 = geom->vertex(prim.vertexID+2,1);
-        const Vec3fa b3 = geom->vertex(prim.vertexID+3,1);
-        const float t0 = 1.0f-ray.time, t1 = ray.time;
-        const Vec3fa p0 = t0*a0 + t1*b0;
-        const Vec3fa p1 = t0*a1 + t1*b1;
-        const Vec3fa p2 = t0*a2 + t1*b2;
-        const Vec3fa p3 = t0*a3 + t1*b3;
+        Vec3fa p0,p1,p2,p3; geom->gather(p0,p1,p2,p3,prim.vertexID,ray.time);
         if (likely(geom->subtype == BezierCurves::HAIR))
           return pre.intersectorHair.intersect(ray,p0,p1,p2,p3,geom->tessellationRate,Occluded1EpilogMU<VSIZEX,true>(ray,context,prim.geomID(),prim.primID(),scene,geomID_to_instID));
         else
           return pre.intersectorCurve.intersect(ray,p0,p1,p2,p3,Occluded1Epilog1<true>(ray,context,prim.geomID(),prim.primID(),scene,geomID_to_instID));
       }
-
-    public:
-      Bezier1Intersector1 intersectorHair;
-      BezierGeometry1Intersector1 intersectorCurve;
     };
 
     template<int K>
     struct Bezier1iIntersectorKMB
     {
       typedef Bezier1i Primitive;
-      typedef Bezier1iIntersectorKMB Precalculations;
 
-      __forceinline Bezier1iIntersectorKMB (const vbool<K>& valid, const RayK<K>& ray) 
-        : intersectorHair(valid,ray), intersectorCurve(valid,ray) {}
+      struct PrecalculationsBase
+      {
+        __forceinline PrecalculationsBase() {}
 
-      __forceinline Bezier1iIntersectorKMB (const RayK<K>& ray, size_t k) 
-        : intersectorHair(ray,k), intersectorCurve(ray,k) {}
+        __forceinline PrecalculationsBase(const vbool<K>& valid, const RayK<K>& ray)
+          : intersectorHair(valid,ray), intersectorCurve(valid,ray) {}
+
+        __forceinline PrecalculationsBase(const RayK<K>& ray, size_t k)
+          : intersectorHair(ray,k), intersectorCurve(ray,k) {}
+
+        Bezier1IntersectorK<K> intersectorHair;
+        BezierGeometry1IntersectorK<K> intersectorCurve;
+      };
+
+      typedef IntersectorKPrecalculationsMB<K,PrecalculationsBase> Precalculations;
       
       static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, const size_t k, IntersectContext* context, const Primitive& prim, Scene* scene)
       {
         STAT3(normal.trav_prims,1,1,1);
-        const BezierCurves* geom = (BezierCurves*) scene->get(prim.geomID());
-        const Vec3fa a0 = geom->vertex(prim.vertexID+0,0);
-        const Vec3fa a1 = geom->vertex(prim.vertexID+1,0);
-        const Vec3fa a2 = geom->vertex(prim.vertexID+2,0);
-        const Vec3fa a3 = geom->vertex(prim.vertexID+3,0);
-        const Vec3fa b0 = geom->vertex(prim.vertexID+0,1);
-        const Vec3fa b1 = geom->vertex(prim.vertexID+1,1);
-        const Vec3fa b2 = geom->vertex(prim.vertexID+2,1);
-        const Vec3fa b3 = geom->vertex(prim.vertexID+3,1);
-        const float t0 = 1.0f-ray.time[k], t1 = ray.time[k];
-        const Vec3fa p0 = t0*a0 + t1*b0;
-        const Vec3fa p1 = t0*a1 + t1*b1;
-        const Vec3fa p2 = t0*a2 + t1*b2;
-        const Vec3fa p3 = t0*a3 + t1*b3;
+        const BezierCurves* geom = (BezierCurves*) scene->get(prim.geomID());        
+        Vec3fa p0,p1,p2,p3; geom->gather(p0,p1,p2,p3,prim.vertexID,ray.time[k]);
         if (likely(geom->subtype == BezierCurves::HAIR))
           pre.intersectorHair.intersect(ray,k,p0,p1,p2,p3,geom->tessellationRate,Intersect1KEpilogMU<VSIZEX,K,true>(ray,k,context,prim.geomID(),prim.primID(),scene));
         else 
@@ -244,28 +215,12 @@ namespace embree
       {
         STAT3(shadow.trav_prims,1,1,1);
         const BezierCurves* geom = (BezierCurves*) scene->get(prim.geomID());
-        const Vec3fa a0 = geom->vertex(prim.vertexID+0,0);
-        const Vec3fa a1 = geom->vertex(prim.vertexID+1,0);
-        const Vec3fa a2 = geom->vertex(prim.vertexID+2,0);
-        const Vec3fa a3 = geom->vertex(prim.vertexID+3,0);
-        const Vec3fa b0 = geom->vertex(prim.vertexID+0,1);
-        const Vec3fa b1 = geom->vertex(prim.vertexID+1,1);
-        const Vec3fa b2 = geom->vertex(prim.vertexID+2,1);
-        const Vec3fa b3 = geom->vertex(prim.vertexID+3,1);
-        const float t0 = 1.0f-ray.time[k], t1 = ray.time[k];
-        const Vec3fa p0 = t0*a0 + t1*b0;
-        const Vec3fa p1 = t0*a1 + t1*b1;
-        const Vec3fa p2 = t0*a2 + t1*b2;
-        const Vec3fa p3 = t0*a3 + t1*b3;
+        Vec3fa p0,p1,p2,p3; geom->gather(p0,p1,p2,p3,prim.vertexID,ray.time[k]);
         if (likely(geom->subtype == BezierCurves::HAIR))
           return pre.intersectorHair.intersect(ray,k,p0,p1,p2,p3,geom->tessellationRate,Occluded1KEpilogMU<VSIZEX,K,true>(ray,k,context,prim.geomID(),prim.primID(),scene));
         else
-          return pre.intersectorCurve.intersect(ray,k,a0,a1,a2,a3,Occluded1KEpilog1<K,true>(ray,k,context,prim.geomID(),prim.primID(),scene));
+          return pre.intersectorCurve.intersect(ray,k,p0,p1,p2,p3,Occluded1KEpilog1<K,true>(ray,k,context,prim.geomID(),prim.primID(),scene));
       }
-
-    public:
-      Bezier1IntersectorK<K> intersectorHair;
-      BezierGeometry1IntersectorK<K> intersectorCurve;
     };
   }
 }
