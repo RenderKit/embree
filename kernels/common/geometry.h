@@ -45,6 +45,9 @@ namespace embree
     /*! updates intersection filter function counts in scene */
     void updateIntersectionFilters(bool enable);
 
+    /*! inserts a primitve into the primitive order */
+    virtual void updatePrimitiveOrder(unsigned primID) {};
+
   public:
 
     /*! tests if geometry is enabled */

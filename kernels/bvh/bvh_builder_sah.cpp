@@ -201,6 +201,12 @@ namespace embree
           }); 
 #endif	
 
+        for (const auto& prim : prims) {
+          const unsigned geomID = prim.geomID();
+          const unsigned primID = prim.primID();
+          scene->get(geomID)->updatePrimitiveOrder(primID);
+        }
+
 	/* clear temporary data for static geometry */
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
 	if (staticGeom) {

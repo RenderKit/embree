@@ -76,6 +76,13 @@ namespace embree
       : BufferRef(num,stride) {}
 
     /*! access to the ith element of the buffer stream */
+    __forceinline T& operator[](size_t i)
+    {
+      assert(i<num);
+      return *(T*)(ptr_ofs + i*stride);
+    }
+
+    /*! access to the ith element of the buffer stream */
     __forceinline const T& operator[](size_t i) const 
     {
       assert(i<num);
@@ -151,7 +158,7 @@ namespace embree
   public:
     
     /* inits the buffer */
-    void init(MemoryMonitorInterface* device_in, size_t num_in, size_t stride_in) 
+    void init(MemoryMonitorInterface* device_in, size_t num_in, size_t stride_in = sizeof(T)) 
     {
       device = device_in;
       ptr = nullptr;
