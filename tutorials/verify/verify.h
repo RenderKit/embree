@@ -47,6 +47,14 @@ namespace embree
       int    random_int   () { return RandomSampler_getInt  (sampler); }
       Vec3fa random_Vec3fa() { return RandomSampler_get3D   (sampler); }
 
+      avector<Vec3fa> random_motion_vector2(float f = 1.0f)
+      {
+        avector<Vec3fa> motion_vector(2);
+        motion_vector[0] = f*random_Vec3fa();
+        motion_vector[1] = f*random_Vec3fa();
+        return motion_vector;
+      }
+
       avector<Vec3fa> random_motion_vector(float f = 1.0f)
       {
         float v = random_float();
