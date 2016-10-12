@@ -40,6 +40,23 @@
 
 namespace embree
 {
+  /* error reporting function */
+  void errorHandler(const RTCError code, const char* str = nullptr)
+  {
+    if (code == RTC_NO_ERROR)
+      return;
+    
+    switch (code) {
+    case RTC_UNKNOWN_ERROR    : throw std::runtime_error("RTC_UNKNOWN_ERROR");
+    case RTC_INVALID_ARGUMENT : throw std::runtime_error("RTC_INVALID_ARGUMENT"); break;
+    case RTC_INVALID_OPERATION: throw std::runtime_error("RTC_INVALID_OPERATION"); break;
+    case RTC_OUT_OF_MEMORY    : throw std::runtime_error("RTC_OUT_OF_MEMORY"); break;
+    case RTC_UNSUPPORTED_CPU  : throw std::runtime_error("RTC_UNSUPPORTED_CPU"); break;
+    case RTC_CANCELLED        : throw std::runtime_error("RTC_CANCELLED"); break;
+    default                   : throw std::runtime_error("invalid error code"); break;
+    }
+  }
+
   bool hasISA(const int isa) 
   {
     int cpu_features = getCPUFeatures();
@@ -518,7 +535,8 @@ namespace embree
   }
   catch (...)
   {
-    std::cout << state->red   (" [FAILED]" ) << std::endl << std::flush;
+    std::cout << std::setw(TEXT_ALIGN) << name << ": " << std::flush;
+    std::cout << state->red   (" [FAILED] (internal error)" ) << std::endl << std::flush;
     state->numFailedTests++;
     return VerifyApplication::FAILED;
   }
@@ -570,7 +588,7 @@ namespace embree
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
     {
       rtcInit("verbose=1");
-      error_handler(rtcGetError());
+      errorHandler(rtcGetError());
       rtcExit();
       return VerifyApplication::PASSED;
     }
@@ -624,7 +642,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      error_handler(rtcDeviceGetError(device));
+      errorHandler(rtcDeviceGetError(device));
       RTCSceneRef scene = rtcDeviceNewScene(device,sceneFlags,aflags);
       AssertNoError(device);
       rtcNewTriangleMesh (scene, geomFlags, 0, 0);
@@ -646,7 +664,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      error_handler(rtcDeviceGetError(device));
+      errorHandler(rtcDeviceGetError(device));
       VerifyScene scene(device,RTC_SCENE_STATIC,aflags);
       AssertNoError(device);
       unsigned geom0 = scene.addSphere(sampler,RTC_GEOMETRY_STATIC,zero,1.0f,50);
@@ -670,7 +688,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      error_handler(rtcDeviceGetError(device));
+      errorHandler(rtcDeviceGetError(device));
       VerifyScene scene(device,RTC_SCENE_STATIC,RTC_INTERSECT1);
       AssertNoError(device);
       Ref<SceneGraph::Node> node = SceneGraph::createTriangleSphere(zero,1.0f,50);
@@ -695,7 +713,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      error_handler(rtcDeviceGetError(device));
+      errorHandler(rtcDeviceGetError(device));
       RTCSceneRef scene = rtcDeviceNewScene(device,RTC_SCENE_STATIC,RTC_INTERSECT1);
       AssertNoError(device);
 
@@ -761,7 +779,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      error_handler(rtcDeviceGetError(device));
+      errorHandler(rtcDeviceGetError(device));
       RTCSceneRef scene = rtcDeviceNewScene(device,RTC_SCENE_STATIC,aflags);
       AssertNoError(device);
 
@@ -828,7 +846,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      error_handler(rtcDeviceGetError(device));
+      errorHandler(rtcDeviceGetError(device));
       RTCSceneRef scene = rtcDeviceNewScene(device,sflags,aflags);
       AssertNoError(device);
       rtcCommit (scene);
@@ -852,7 +870,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      error_handler(rtcDeviceGetError(device));
+      errorHandler(rtcDeviceGetError(device));
       RTCSceneRef scene = rtcDeviceNewScene(device,sflags,aflags);
       rtcNewTriangleMesh (scene,gflags,0,0,1);
       rtcNewTriangleMesh (scene,gflags,0,0,2);
@@ -884,7 +902,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      error_handler(rtcDeviceGetError(device));
+      errorHandler(rtcDeviceGetError(device));
       VerifyScene scene(device,sflags,aflags);
 
       const Vec3fa center = zero;
@@ -930,7 +948,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      error_handler(rtcDeviceGetError(device));
+      errorHandler(rtcDeviceGetError(device));
       VerifyScene scene(device,sflags,aflags);
       AssertNoError(device);
 
@@ -1023,7 +1041,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      error_handler(rtcDeviceGetError(device));
+      errorHandler(rtcDeviceGetError(device));
       VerifyScene scene(device,sflags,aflags_all);
       AssertNoError(device);
       int geom[128];
@@ -1089,7 +1107,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      error_handler(rtcDeviceGetError(device));
+      errorHandler(rtcDeviceGetError(device));
       VerifyScene scene(device,sflags,aflags);
       AssertNoError(device);
       unsigned geom0 = scene.addSphere      (sampler,RTC_GEOMETRY_STATIC,Vec3fa(-1,0,-1),1.0f,50);
@@ -1149,7 +1167,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      error_handler(rtcDeviceGetError(device));
+      errorHandler(rtcDeviceGetError(device));
       if (!supportsIntersectMode(device,imode))
         return VerifyApplication::SKIPPED;
       
@@ -1207,7 +1225,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + "isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      error_handler(rtcDeviceGetError(device));
+      errorHandler(rtcDeviceGetError(device));
 
       for (size_t i=0; i<size_t(1000*state->intensity); i++) 
       {
@@ -1405,7 +1423,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      error_handler(rtcDeviceGetError(device));
+      errorHandler(rtcDeviceGetError(device));
       size_t M = num_interpolation_vertices*N+16; // padds the arrays with some valid data
       
       RTCSceneRef scene = rtcDeviceNewScene(device,RTC_SCENE_DYNAMIC,RTC_INTERPOLATE);
@@ -1499,7 +1517,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      error_handler(rtcDeviceGetError(device));
+      errorHandler(rtcDeviceGetError(device));
 
       size_t M = num_interpolation_vertices*N+16; // padds the arrays with some valid data
       
@@ -1608,7 +1626,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      error_handler(rtcDeviceGetError(device));
+      errorHandler(rtcDeviceGetError(device));
 
       size_t M = num_interpolation_vertices*N+16; // padds the arrays with some valid data
       
@@ -1692,7 +1710,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      error_handler(rtcDeviceGetError(device));
+      errorHandler(rtcDeviceGetError(device));
       if (!supportsIntersectMode(device,imode))
         return VerifyApplication::SKIPPED;
      
@@ -1759,7 +1777,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      error_handler(rtcDeviceGetError(device));
+      errorHandler(rtcDeviceGetError(device));
       if (!supportsIntersectMode(device,imode))
         return VerifyApplication::SKIPPED;
      
@@ -1827,7 +1845,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      error_handler(rtcDeviceGetError(device));
+      errorHandler(rtcDeviceGetError(device));
       if (!supportsIntersectMode(device,imode))
         return VerifyApplication::SKIPPED;
 
@@ -1884,7 +1902,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      error_handler(rtcDeviceGetError(device));
+      errorHandler(rtcDeviceGetError(device));
       if (!supportsIntersectMode(device,imode))
         return VerifyApplication::SKIPPED;
        
@@ -2033,7 +2051,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      error_handler(rtcDeviceGetError(device));
+      errorHandler(rtcDeviceGetError(device));
       if (!supportsIntersectMode(device,imode))
         return VerifyApplication::SKIPPED;
 
@@ -2112,7 +2130,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      error_handler(rtcDeviceGetError(device));
+      errorHandler(rtcDeviceGetError(device));
       if (!supportsIntersectMode(device,imode))
         return VerifyApplication::SKIPPED;
 
@@ -2175,7 +2193,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      error_handler(rtcDeviceGetError(device));
+      errorHandler(rtcDeviceGetError(device));
       if (!supportsIntersectMode(device,imode))
         return VerifyApplication::SKIPPED;
 
@@ -2242,7 +2260,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      error_handler(rtcDeviceGetError(device));
+      errorHandler(rtcDeviceGetError(device));
       if (!supportsIntersectMode(device,imode))
         return VerifyApplication::SKIPPED;
 
@@ -2310,7 +2328,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      error_handler(rtcDeviceGetError(device));
+      errorHandler(rtcDeviceGetError(device));
       if (!supportsIntersectMode(device,imode))
         return VerifyApplication::SKIPPED;
 
@@ -2357,7 +2375,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      error_handler(rtcDeviceGetError(device));
+      errorHandler(rtcDeviceGetError(device));
       if (!supportsIntersectMode(device,imode))
         return VerifyApplication::SKIPPED;
 
@@ -2427,7 +2445,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      error_handler(rtcDeviceGetError(device));
+      errorHandler(rtcDeviceGetError(device));
       if (!supportsIntersectMode(device,imode))
         return VerifyApplication::SKIPPED;
 
@@ -2892,7 +2910,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      error_handler(rtcDeviceGetError(device));
+      errorHandler(rtcDeviceGetError(device));
 
       /* only test supported intersect modes */
       if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT1)) intersectModes.push_back(MODE_INTERSECT1);
@@ -2978,7 +2996,7 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
-      error_handler(rtcDeviceGetError(device));
+      errorHandler(rtcDeviceGetError(device));
       
       /* only test supported intersect modes */
       if (rtcDeviceGetParameter1i(device,RTC_CONFIG_INTERSECT1)) intersectModes.push_back(MODE_INTERSECT1);
@@ -3112,7 +3130,8 @@ namespace embree
 
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       device = rtcNewDevice(cfg.c_str());
-      error_handler(rtcDeviceGetError(device));
+      errorHandler(rtcDeviceGetError(device));
+      rtcDeviceSetErrorFunction(device,errorHandler);
       if (!supportsIntersectMode(device,imode))
         return false;
 
@@ -3283,7 +3302,8 @@ namespace embree
 
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       device = rtcNewDevice(cfg.c_str());
-      error_handler(rtcDeviceGetError(device));
+      errorHandler(rtcDeviceGetError(device));
+      rtcDeviceSetErrorFunction(device,errorHandler);
       if (!supportsIntersectMode(device,imode))
         return false;
 
@@ -3453,7 +3473,8 @@ namespace embree
     {
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa) + ",threads=" + std::to_string((long long)numThreads);
       device = rtcNewDevice(cfg.c_str());
-      error_handler(rtcDeviceGetError(device));
+      errorHandler(rtcDeviceGetError(device));
+      rtcDeviceSetErrorFunction(device,errorHandler);
 
       for (unsigned int i=0; i<numMeshes; i++)
       {
