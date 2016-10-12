@@ -160,6 +160,8 @@ namespace embree
         const unsigned geomID = prim.geomID();
         const unsigned primID = prim.primID();
         const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
+        if (unlikely(mesh->numTimeSteps != numTimeSteps))
+          throw_RTCError(RTC_INVALID_OPERATION, "TriangleMvMB is not supported for different number of time steps per mesh");
         const TriangleMesh::Triangle& tri = mesh->triangle(primID);
         const Vec3fa& a0 = mesh->vertex(tri.v[0],itime+0); bounds0.extend(a0);
         const Vec3fa& a1 = mesh->vertex(tri.v[0],itime+1); bounds1.extend(a1);
