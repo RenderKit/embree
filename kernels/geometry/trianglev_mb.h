@@ -112,6 +112,17 @@ namespace embree
       return LBBox3fa(bounds0(),bounds1());
     }
 
+    __forceinline LBBox3fa linearBounds(const Scene *const scene, size_t itime, size_t numTimeSteps) 
+    {
+      LBBox3fa allBounds = empty;
+      for (size_t i=0; i<M && valid(i); i++)
+      {
+        const TriangleMesh* mesh = scene->getTriangleMesh(geomID(i));
+        allBounds.extend(mesh->linearBounds(primID(i), itime, numTimeSteps));
+      }
+      return allBounds;
+    }
+
     /* Fill triangle from triangle list */
     __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene, const bool list)
     {
@@ -177,7 +188,8 @@ namespace embree
 	vc1.x[i] = c1.x; vc1.y[i] = c1.y; vc1.z[i] = c1.z;
       }
       new (this) TriangleMvMB(va0,va1,vb0,vb1,vc0,vc1,vgeomID,vprimID);
-      return LBBox3fa(bounds0,bounds1);
+      //return LBBox3fa(bounds0,bounds1);
+      return linearBounds(scene,itime,numTimeSteps);
     }
    
   public:

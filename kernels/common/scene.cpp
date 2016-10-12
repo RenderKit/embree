@@ -280,15 +280,27 @@ namespace embree
 #if defined(EMBREE_GEOMETRY_TRIANGLES)
     if (device->tri_accel_mb == "default")
     {
+      int mode =  2*(int)isCompact() + 1*(int)isRobust(); 
+      
 #if defined (__TARGET_AVX__)
-      if (device->hasISA(AVX))
+      if (device->hasISA(AVX2)) // BVH8 reduces performance on AVX only-machines
       {
-        accels.add(device->bvh8_factory->BVH8Triangle4iMB(this));
+        switch (mode) {
+        case /*0b00*/ 0: accels.add(device->bvh8_factory->BVH8Triangle4iMB(this)); break;
+        case /*0b01*/ 1: accels.add(device->bvh8_factory->BVH8Triangle4iMB(this)); break;
+        case /*0b10*/ 2: accels.add(device->bvh8_factory->BVH8Triangle4iMB(this)); break;
+        case /*0b11*/ 3: accels.add(device->bvh8_factory->BVH8Triangle4iMB(this)); break;
+        }
       }
       else
 #endif
       {
-        accels.add(device->bvh4_factory->BVH4Triangle4iMB(this));
+        switch (mode) {
+        case /*0b00*/ 0: accels.add(device->bvh4_factory->BVH4Triangle4iMB(this)); break;
+        case /*0b01*/ 1: accels.add(device->bvh4_factory->BVH4Triangle4iMB(this)); break;
+        case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4Triangle4iMB(this)); break;
+        case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4Triangle4iMB(this)); break;
+        }
       }
     }
     else if (device->tri_accel_mb == "bvh4.triangle4vmb") accels.add(device->bvh4_factory->BVH4Triangle4vMB(this));
