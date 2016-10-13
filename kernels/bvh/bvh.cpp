@@ -66,6 +66,23 @@ namespace embree
   }
 
   template<int N>
+  void BVHN<N>::sort(NodeRef& node)
+  {
+    if (node.isLeaf())
+    {
+      size_t num; char* prim = node.leaf(num);
+      for (size_t i=0; i<num; i++)
+        primTy.sort(prim+i*primTy.bytes,scene);
+    }
+    else 
+    {
+      Node* n = node.node();
+      for (size_t c=0; c<N; c++)
+        sort(n->child(c));
+    }
+  }
+  
+  template<int N>
   void BVHN<N>::layoutLargeNodes(size_t num)
   {
     struct NodeArea 

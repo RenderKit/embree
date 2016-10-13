@@ -996,6 +996,9 @@ namespace embree
     /*! Clears the barrier bits of a subtree. */
     void clearBarrier(NodeRef& node);
 
+    /*! sort the leaves */
+    void sort(NodeRef& node);
+
     /*! lays out num large nodes of the BVH */
     void layoutLargeNodes(size_t num);
     NodeRef layoutLargeNodesRecursion(NodeRef& node, FastAllocator::ThreadLocal& allocator);

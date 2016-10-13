@@ -31,6 +31,7 @@ namespace embree
     {
       Type();
       size_t size(const char* This) const;
+      void sort(char* This, const Scene* scene) const;
     };
     static Type type;
 
@@ -63,7 +64,29 @@ namespace embree
     
     /* Returns the number of stored triangles */
     __forceinline size_t size() const { return __bsf(~movemask(valid())); }
-    
+
+    __forceinline void sort(const Scene* scene) 
+    {
+      for (size_t i=0; i<size(); i++)
+      {
+        const TriangleMesh* mesh = scene->getTriangleMesh(geomID(i));
+       
+        if (mesh->vertex_order) 
+        {
+          const TriangleMesh::Triangle& tri = mesh->triangles[primIDs[i]];
+          const unsigned i0 = mesh->vertex_order[tri.v[0]];
+          const unsigned i1 = mesh->vertex_order[tri.v[1]];
+          const unsigned i2 = mesh->vertex_order[tri.v[2]];
+          v0[i] = (Vec3f*) mesh->vertexPtr(i0); 
+	  v1[i] = int(size_t((int*)mesh->vertexPtr(i1)-(int*)v0[i])); 
+	  v2[i] = int(size_t((int*)mesh->vertexPtr(i2)-(int*)v0[i])); 
+          primIDs[i] = mesh->primitive_order[primIDs[i]];
+        }
+        if (mesh->primitive_order) 
+          primIDs[i] = mesh->primitive_order[primIDs[i]];
+      }
+    }
+
     /* Returns the geometry IDs */
     __forceinline vint<M> geomID() const { return geomIDs; }
     __forceinline int geomID(const size_t i) const { assert(i<M); return geomIDs[i]; }

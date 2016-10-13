@@ -32,6 +32,9 @@ namespace embree
     /*! Returns the number of stored primitives in a block. */
     virtual size_t size(const char* This) const = 0;
 
+    /*! fixes indices to the sorted version */
+    virtual void sort(char* This, const Scene* scene) const {}
+
   public:
     std::string name;       //!< name of this primitive type
     size_t bytes;           //!< number of bytes of the triangle data

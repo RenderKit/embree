@@ -97,6 +97,11 @@ namespace embree
     return ((Triangle4i*)This)->size();
   }
 
+  template<>
+  void Triangle4i::Type::sort(char* This, const Scene* scene) const {
+    ((Triangle4i*)This)->sort(scene);
+  }
+
   /********************** Triangle4vMB **************************/
 
   template<>

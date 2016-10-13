@@ -114,6 +114,7 @@ namespace embree
     void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, size_t numFloats);
     // FIXME: implement interpolateN
     virtual void updatePrimitiveOrder(unsigned primID);
+    virtual void updateVertexOrder(unsigned primID);
 
   public:
 
@@ -261,6 +262,7 @@ namespace embree
 
   public:
     unsigned primitive_order_counter;
+    unsigned vertex_order_counter;
     APIBuffer<unsigned> primitive_order;
     APIBuffer<unsigned> vertex_order;
   };

@@ -46,7 +46,10 @@ namespace embree
     void updateIntersectionFilters(bool enable);
 
     /*! inserts a primitve into the primitive order */
-    virtual void updatePrimitiveOrder(unsigned primID) {};
+    virtual void updatePrimitiveOrder(unsigned primID) {}
+
+    /*! inserts a primitve into the vertex order */
+    virtual void updateVertexOrder(unsigned primID) {}
 
   public:
 

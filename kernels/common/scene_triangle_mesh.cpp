@@ -20,7 +20,7 @@
 namespace embree
 {
   TriangleMesh::TriangleMesh (Scene* parent, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps)
-    : Geometry(parent,TRIANGLE_MESH,numTriangles,numTimeSteps,flags), primitive_order_counter(0)
+    : Geometry(parent,TRIANGLE_MESH,numTriangles,numTimeSteps,flags), primitive_order_counter(0), vertex_order_counter(0)
   {
     triangles.init(parent->device,numTriangles,sizeof(Triangle));
     primitive_order.init(parent->device,numTriangles);
@@ -211,5 +211,15 @@ namespace embree
     if (!primitive_order) return;
     if (primitive_order[primID] != -1) return;
     primitive_order[primID] = primitive_order_counter++;
+  }
+
+  void TriangleMesh::updateVertexOrder(unsigned primID)
+  {
+    if (!primitive_order) return;
+    if (!vertex_order) return;
+    Triangle& tri = triangles[primID];
+    if (vertex_order[tri.v[0]] == -1) vertex_order[tri.v[0]] = vertex_order_counter++;
+    if (vertex_order[tri.v[1]] == -1) vertex_order[tri.v[1]] = vertex_order_counter++;
+    if (vertex_order[tri.v[2]] == -1) vertex_order[tri.v[2]] = vertex_order_counter++;
   }
 }
