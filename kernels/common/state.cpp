@@ -330,6 +330,8 @@ namespace embree
 
       else if (tok == Token::Id("tessellation_cache_size") && cin->trySymbol("="))
         tessellation_cache_size = size_t(cin->get().Float()*1024.0f*1024.0f);
+      else if (tok == Token::Id("cache_size") && cin->trySymbol("="))
+        tessellation_cache_size = size_t(cin->get().Float()*1024.0f*1024.0f);
 
       cin->trySymbol(","); // optional , separator
     }
@@ -345,6 +347,7 @@ namespace embree
     std::cout << "  build threads = " << numThreads   << std::endl;
     std::cout << "  affinity      = " << set_affinity << std::endl;
     std::cout << "  verbosity     = " << verbose << std::endl;
+    std::cout << "  cache_size    = " << float(tessellation_cache_size)*1E-6 << " MB" << std::endl;
     
     std::cout << "triangles:" << std::endl;
     std::cout << "  accel         = " << tri_accel << std::endl;
