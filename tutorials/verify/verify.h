@@ -58,7 +58,7 @@ namespace embree
       avector<Vec3fa> random_motion_vector(float f = 1.0f)
       {
         float v = random_float();
-        int numTimeSteps = clamp(int(v*v*9),2,8); // samples small number of time steps more frequently
+        size_t numTimeSteps = clamp(int(v*v*9),2,8); // samples small number of time steps more frequently
 
         avector<Vec3fa> motion_vector(numTimeSteps);
         for (size_t i=0; i<numTimeSteps; i++)
