@@ -355,7 +355,7 @@ namespace embree
               else
               {
                 SubdivPatch1Base& patch0 = subdiv_patches[patchIndexMB];
-                patch0.root_ref.data = (int64_t) GridSOA::create(&patch0,(unsigned)mesh->numTimeSteps,(unsigned)numTimeSteps,scene,alloc,&bounds[patchIndexMB]);
+                patch0.root_ref.set((int64_t) GridSOA::create(&patch0,(unsigned)mesh->numTimeSteps,(unsigned)numTimeSteps,scene,alloc,&bounds[patchIndexMB]));
               }
 
               prims[patchIndex] = PrimRef(empty,patchIndexMB);
