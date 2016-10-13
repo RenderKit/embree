@@ -19,7 +19,7 @@
 namespace embree
 {
   Application::Application(int features)
-    : rtcore("")
+    : rtcore("start_threads=1,set_affinity=1")
   {
     registerOption("help", [this] (Ref<ParseStream> cin, const FileName& path) {
         printCommandLineHelp();

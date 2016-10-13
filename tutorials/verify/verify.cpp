@@ -3183,7 +3183,7 @@ namespace embree
       if (!ParallelIntersectBenchmark::setup(state))
         return false;
 
-      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      std::string cfg = state->rtcore + "start_threads=1,set_affinity=1,isa="+stringOfISA(isa);
       device = rtcNewDevice(cfg.c_str());
       errorHandler(rtcDeviceGetError(device));
       rtcDeviceSetErrorFunction(device,errorHandler);
@@ -3355,7 +3355,7 @@ namespace embree
       if (!ParallelIntersectBenchmark::setup(state))
         return false;
 
-      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      std::string cfg = state->rtcore + "start_threads=1,set_affinity=1,isa="+stringOfISA(isa);
       device = rtcNewDevice(cfg.c_str());
       errorHandler(rtcDeviceGetError(device));
       rtcDeviceSetErrorFunction(device,errorHandler);
@@ -3524,7 +3524,7 @@ namespace embree
 
     bool setup(VerifyApplication* state) 
     {
-      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa) + ",threads=" + std::to_string((long long)numThreads);
+      std::string cfg = state->rtcore + "start_threads=1,set_affinity=1,isa="+stringOfISA(isa) + ",threads=" + std::to_string((long long)numThreads);
       device = rtcNewDevice(cfg.c_str());
       errorHandler(rtcDeviceGetError(device));
       rtcDeviceSetErrorFunction(device,errorHandler);
@@ -3603,11 +3603,14 @@ namespace embree
       intensity(1.0f), 
       numPassedTests(0), numFailedTests(0), numFailedAndIgnoredTests(0),
       tests(new TestGroup("",false,false)), 
-      device(rtcNewDevice(rtcore.c_str())),
+      device(nullptr),
       user_specified_tests(false), flatten(true), parallel(true), cdash(false), 
       database(""), benchmark_tolerance(0.05f),
       usecolors(true)
   {
+    rtcore = ""; // do not start threads nor set affinty for normal tests 
+    device = rtcNewDevice(rtcore.c_str());
+
 #if defined(__WIN32__)
     usecolors = false;
 #endif
