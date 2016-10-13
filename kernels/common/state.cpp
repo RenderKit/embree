@@ -349,6 +349,7 @@ namespace embree
   {
     std::cout << "general:" << std::endl;
     std::cout << "  build threads = " << numThreads   << std::endl;
+    std::cout << "  start_threads = " << start_threads << std::endl;
     std::cout << "  affinity      = " << set_affinity << std::endl;
     std::cout << "  verbosity     = " << verbose << std::endl;
     std::cout << "  cache_size    = " << float(tessellation_cache_size)*1E-6 << " MB" << std::endl;

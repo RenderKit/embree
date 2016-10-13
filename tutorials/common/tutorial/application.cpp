@@ -40,9 +40,14 @@ namespace embree
           rtcore += ",set_affinity=1";
         }, "--affinity: affinitize threads");
 
+      registerOption("set_affinity", [this] (Ref<ParseStream> cin, const FileName& path) {
+          rtcore += ",set_affinity=" + cin->getString();
+        }, "--set_affinity <0/1>: enables or disables affinitizing of threads");
+      registerOptionAlias("set_affinity","set-affinity");
+
       registerOption("start_threads", [this] (Ref<ParseStream> cin, const FileName& path) {
-          rtcore += ",start_threads=1";
-        }, "--start_threads: starts threads at device creation time");
+          rtcore += ",start_threads=" + cin->getString();
+        }, "--start_threads <0/1>: starts threads at device creation time if set to 1");
       registerOptionAlias("start_threads","start-threads");
       
       registerOption("verbose", [this] (Ref<ParseStream> cin, const FileName& path) {
