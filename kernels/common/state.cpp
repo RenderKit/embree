@@ -109,6 +109,9 @@ namespace embree
 #else
     set_affinity = false;
 #endif
+    /* per default enable affinity on KNL */
+    if (hasISA(AVX512KNL)) set_affinity = true;
+
     start_threads = false;
 
     error_function = nullptr;
