@@ -109,6 +109,7 @@ namespace embree
 #else
     set_affinity = false;
 #endif
+    start_threads = false;
 
     error_function = nullptr;
     memory_monitor_function = nullptr;
@@ -222,6 +223,9 @@ namespace embree
 
       else if (tok == Token::Id("affinity")&& cin->trySymbol("=")) 
         set_affinity = cin->get().Int();
+      
+      else if (tok == Token::Id("start_threads")&& cin->trySymbol("=")) 
+        start_threads = cin->get().Int();
       
       else if (tok == Token::Id("isa") && cin->trySymbol("=")) {
         std::string isa = toLowerCase(cin->get().Identifier());

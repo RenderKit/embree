@@ -42,7 +42,7 @@ namespace embree
   
   size_t TaskScheduler::g_numThreads = 0;
   
-  void TaskScheduler::create(size_t numThreads, bool set_affinity)
+  void TaskScheduler::create(size_t numThreads, bool set_affinity, bool start_threads)
   {
     /* first terminate threads in case we configured them */
     if (g_tbb_threads_initialized) {
@@ -65,8 +65,8 @@ namespace embree
       g_numThreads = numThreads;
     }
 
-    /* also start worker threads in affinity mode */
-    if (set_affinity) {
+    /* start worker threads */
+    if (start_threads) {
       BarrierSys barrier(g_numThreads);
       tbb::parallel_for(size_t(0), size_t(g_numThreads), size_t(1), [&] ( size_t i ) {
           barrier.wait();

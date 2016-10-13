@@ -332,7 +332,7 @@ namespace embree
 
     /* create task scheduler */
     size_t maxNumThreads = getMaxNumThreads();
-    TaskScheduler::create(maxNumThreads,State::set_affinity);
+    TaskScheduler::create(maxNumThreads,State::set_affinity,State::start_threads);
 #if USE_TASK_ARENA
     arena.reset(new tbb::task_arena(int(maxNumThreads)));
 #endif
@@ -350,7 +350,7 @@ namespace embree
     /* or configure new number of threads */
     else {
       size_t maxNumThreads = getMaxNumThreads();
-      TaskScheduler::create(maxNumThreads,State::set_affinity);
+      TaskScheduler::create(maxNumThreads,State::set_affinity,State::start_threads);
     }
 #if USE_TASK_ARENA
     arena.reset();

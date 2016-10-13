@@ -253,7 +253,7 @@ namespace embree
     ~TaskScheduler ();
 
     /*! initializes the task scheduler */
-    static void create(size_t numThreads, bool set_affinity);
+    static void create(size_t numThreads, bool set_affinity, bool start_threads);
 
     /*! destroys the task scheduler again */
     static void destroy();

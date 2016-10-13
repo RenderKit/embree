@@ -258,10 +258,10 @@ namespace embree
     return g_instance;
   }
 
-  void TaskScheduler::create(size_t numThreads, bool set_affinity)
+  void TaskScheduler::create(size_t numThreads, bool set_affinity, bool start_threads)
   {
     if (!threadPool) threadPool = new TaskScheduler::ThreadPool(set_affinity);
-    threadPool->setNumThreads(numThreads,false);
+    threadPool->setNumThreads(numThreads,start_threads);
   }
 
   void TaskScheduler::destroy() {
