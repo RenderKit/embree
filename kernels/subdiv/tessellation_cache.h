@@ -124,7 +124,11 @@ namespace embree
        data = new_root_ref;
      }
 
-     volatile int64_t data;
+	 __forceinline int64_t get() const { return data.load(); }
+	 __forceinline void set( int64_t v ) { data.store(v); }
+
+   private:
+     atomic<int64_t> data;
    };
 
    static __forceinline size_t extractCommitIndex(const int64_t v) { return v >> SharedLazyTessellationCache::COMMIT_INDEX_SHIFT; }
@@ -192,13 +196,7 @@ namespace embree
 
    static __forceinline void* lookup(CacheEntry& entry, size_t globalTime)
    {   
-#if defined(__X86_64__)
-     const int64_t subdiv_patch_root_ref = entry.tag.data; 
-#else
-     entry.mutex.lock();
-     const int64_t subdiv_patch_root_ref = entry.tag.data; 
-     entry.mutex.unlock();
-#endif
+     const int64_t subdiv_patch_root_ref = entry.tag.get(); 
      CACHE_STATS(SharedTessellationCacheStats::cache_accesses++);
      
      if (likely(subdiv_patch_root_ref != 0)) 
@@ -258,7 +256,7 @@ namespace embree
 
     static __forceinline bool validTag(const Tag& tag, size_t globalTime)
     {
-      const int64_t subdiv_patch_root_ref = tag.data; 
+      const int64_t subdiv_patch_root_ref = tag.get(); 
       if (subdiv_patch_root_ref == 0) return false;
       const size_t subdiv_patch_cache_index = extractCommitIndex(subdiv_patch_root_ref);
       return sharedLazyTessellationCache.validCacheIndex(subdiv_patch_cache_index,globalTime);

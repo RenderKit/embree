@@ -70,7 +70,7 @@ namespace embree
 #else
 
 #if defined(__GNUC__) && !defined(__clang__)
-#if (_GNUC__ <= 4) && (__GNUC_MINOR__ < 8) // workaround for older gcc version
+#if (__GNUC__ <= 4) && (__GNUC_MINOR__ < 8) // workaround for older gcc version
     return str == regex; 
 #endif
 #endif
