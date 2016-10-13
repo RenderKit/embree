@@ -86,8 +86,7 @@ namespace embree
     }
     
     __forceinline explicit vfloat(const __m512i& a) {
-      // round to nearest is standard
-      v = _mm512_cvt_roundepi32_ps(a,_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC); 
+      v = _mm512_cvtepi32_ps(a);
     }
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -397,23 +396,23 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
   
   __forceinline vfloat16 floor(const vfloat16& a) {
-    return _mm512_add_round_ps(a,_mm512_setzero_ps(),_MM_FROUND_TO_NEG_INF | _MM_FROUND_NO_EXC); 
+    return _mm512_floor_ps(a);
   }
   __forceinline vfloat16 ceil (const vfloat16& a) {
-    return _mm512_add_round_ps(a,_mm512_setzero_ps(),_MM_FROUND_TO_POS_INF | _MM_FROUND_NO_EXC); 
+    return _mm512_ceil_ps(a);
   }
   __forceinline vfloat16 trunc(const vfloat16& a) {
-    return _mm512_add_round_ps(a,_mm512_setzero_ps(),_MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC); 
+    return _mm512_trunc_ps(a);
   } 
 
   __forceinline vint16 floori (const vfloat16& a) {
-    return _mm512_cvt_roundps_epi32(a,_MM_FROUND_TO_NEG_INF |_MM_FROUND_NO_EXC);
+    return _mm512_cvt_roundps_epi32(a, _MM_FROUND_TO_NEG_INF | _MM_FROUND_NO_EXC);
   }
 
 
   __forceinline vfloat16 frac( const vfloat16& a ) { return a-trunc(a); }
 
-  __forceinline const vfloat16 rcp_nr  ( const vfloat16& a ) {
+  __forceinline const vfloat16 rcp_nr( const vfloat16& a ) {
     const vfloat16 ra = rcp(a);
     return (ra+ra) - (ra * a * ra);
   };

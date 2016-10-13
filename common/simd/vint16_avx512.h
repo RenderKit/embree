@@ -60,17 +60,16 @@ namespace embree
       v = _mm512_set_16to16_epi32(a15,a14,a13,a12,a11,a10,a9,a8,a7,a6,a5,a4,a3,a2,a1,a0);
     }
 
-    __forceinline vint(const vint4 i) {
+    __forceinline vint(const vint4& i) {
       v = _mm512_broadcast_i32x4(i);
     }
 
-    __forceinline vint(const vint8 i) {
+    __forceinline vint(const vint8& i) {
       v = _mm512_castps_si512(_mm512_castpd_ps(_mm512_broadcast_f64x4(_mm256_castsi256_pd(i))));
     }
    
-    __forceinline explicit vint(const __m512 f) {
-      // round to nearest is standard
-      v = _mm512_cvt_roundps_epi32(f,_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC); 
+    __forceinline explicit vint(const __m512& f) {
+      v = _mm512_cvtps_epi32(f);
     }
     
     ////////////////////////////////////////////////////////////////////////////////
@@ -480,8 +479,8 @@ namespace embree
   }
   
 
-  __forceinline vint16 convert_uint32_t(const __m512 f) {
-    return _mm512_cvt_roundps_epu32(f,_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC); 
+  __forceinline vint16 convert_uint32_t(const __m512& f) {
+    return _mm512_cvtps_epu32(f);
   }
 
   __forceinline vint16 permute(vint16 v,vint16 index)

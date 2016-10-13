@@ -60,9 +60,8 @@ namespace embree
       v = _mm512_set_16to16_epi32(a15,a14,a13,a12,a11,a10,a9,a8,a7,a6,a5,a4,a3,a2,a1,a0);
     }
    
-    __forceinline explicit vuint(const __m512 f) {
-      // round to nearest is standard
-      v = _mm512_cvt_roundps_epu32(f,_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC); 
+    __forceinline explicit vuint(const __m512& f) {
+      v = _mm512_cvtps_epu32(f);
     }
     
     ////////////////////////////////////////////////////////////////////////////////
