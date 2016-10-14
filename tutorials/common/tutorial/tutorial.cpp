@@ -46,6 +46,7 @@ namespace embree
     float g_debug = 0.0f;
     Mode g_mode = MODE_NORMAL;
     ISPCScene* g_ispc_scene = nullptr;
+    TutorialScene* g_tutorial_scene = nullptr;
 
     /* intensity scaling for traversal cost visualization */
     float scale = 1.0f / 1000000.0f;
@@ -214,7 +215,8 @@ namespace embree
       convert_hair_to_curves(false),
       sceneFilename(""),
       instancing_mode(0),
-      subdiv_mode("")
+      subdiv_mode(""),
+      sort_geometry(false)
   {
     registerOption("i", [this] (Ref<ParseStream> cin, const FileName& path) {
         sceneFilename = path + cin->getFileName();
@@ -358,6 +360,11 @@ namespace embree
         subdiv_mode = ",subdiv_accel=bvh4.grid.eager";
         rtcore += subdiv_mode;
       }, "--pregenerate: enabled pregenerate subdiv mode");    
+
+    registerOption("sort-geometry", [this] (Ref<ParseStream> cin, const FileName& path) {
+        sort_geometry = true;
+      }, "--sort-geometry: sorts primitives and vertices for more coherent memory access");
+    
   }
 
   void TutorialApplication::renderBenchmark()
@@ -451,8 +458,14 @@ namespace embree
     pixels = (unsigned*) alignedMalloc(width*height*sizeof(unsigned),64);
   }
 
-  void TutorialApplication::set_scene (TutorialScene* in) {
+  void TutorialApplication::set_scene (TutorialScene* in) 
+  {
+    g_tutorial_scene = in;
     g_ispc_scene = new ISPCScene(in);
+  }
+  
+  extern "C" void sort_scene() {
+    g_tutorial_scene->sort();
   }
 
   void TutorialApplication::keyboardFunc(unsigned char key, int x, int y)
@@ -756,6 +769,10 @@ namespace embree
     /* convert model */
     obj_scene.add(scene.dynamicCast<SceneGraph::Node>(),(TutorialScene::InstancingMode)instancing_mode); 
     scene = nullptr;
+
+    /* create order buffers if we need to sort the geometry */
+    if (sort_geometry)
+      obj_scene.create_order_buffers();
 
     /* send model */
     set_scene(&obj_scene);

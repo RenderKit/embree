@@ -31,6 +31,15 @@ namespace embree
     SHADER_AMBIENT_OCCLUSION = 6
   };
 
+  template<typename Vector>
+    void sort_vector(Vector& in, std::vector<unsigned> order)
+  {
+    if (in.size() == 0) return;
+    Vector tmp = in;
+    for (size_t i=0; i<in.size(); i++)
+      in[order[i]] = tmp[i];
+  }
+
   /*! Scene representing the OBJ file */
   struct TutorialScene
   {
@@ -84,6 +93,8 @@ namespace embree
       Type type;
 
       Geometry (Type type) : type(type) {}
+      virtual void create_order_buffers() {}
+      virtual void sort() {}
     };
 
     /*! Triangle Mesh. */
@@ -117,12 +128,37 @@ namespace embree
         }
       }
 
+      void create_order_buffers()
+      {
+        vertex_order.resize(positions.size(),-1);
+        primitive_order.resize(triangles.size(),-1);
+      }
+
+      void sort() 
+      {
+        if (primitive_order.size()) {
+          sort_vector(triangles,primitive_order);
+        }
+        if (vertex_order.size()) {
+          sort_vector(positions,vertex_order);
+          sort_vector(normals,vertex_order);
+          sort_vector(texcoords,vertex_order);
+          for (size_t i=0; i<triangles.size(); i++) {
+            Triangle& tri = triangles[i];
+            tri = Triangle(vertex_order[tri.v0],vertex_order[tri.v1],vertex_order[tri.v1],tri.materialID);
+          }
+        }
+        primitive_order.clear();
+        vertex_order.clear();
+      }
+
     public:
       avector<Vec3fa> positions;        //!< vertex positions for all time steps
       avector<Vec3fa> normals;          //!< vertex normals
       std::vector<Vec2f> texcoords;     //!< texture coordinates
       std::vector<Triangle> triangles;  //!< triangle indices
-
+      std::vector<unsigned> primitive_order;
+      std::vector<unsigned> vertex_order;
       unsigned numTimeSteps;
       unsigned numVertices;
       unsigned materialID;
@@ -306,6 +342,18 @@ namespace embree
 
     bool empty() const {
       return geometries.size() == 0;
+    }
+
+    void create_order_buffers()
+    {
+      for (Ref<Geometry> geometry : geometries)
+        geometry->create_order_buffers();
+    }
+
+    void sort()
+    {
+      for (Ref<Geometry> geometry : geometries)
+        geometry->sort();
     }
 
   public:

@@ -85,6 +85,12 @@ namespace embree
         userbuffers[1]->set(ptr,offset,stride);  
         userbuffers[1]->checkPadding16();
         break;
+      case RTC_PRIMITIVE_ORDER_BUFFER:
+        primitive_order.set(ptr,offset,stride);
+        break;
+      case RTC_VERTEX_ORDER_BUFFER:
+        vertex_order.set(ptr,offset,stride);
+        break;
         
       default: 
         throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");

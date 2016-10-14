@@ -53,6 +53,8 @@ enum Mode {
 
 extern "C" Mode g_mode;
 
+extern "C" void sort_scene();
+
 /* error reporting function */
 void error_handler(const RTCError code, const char* str = nullptr);
 

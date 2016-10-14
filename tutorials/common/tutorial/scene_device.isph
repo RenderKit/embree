@@ -48,6 +48,8 @@ struct ISPCTriangleMesh
   uniform Vec3fa* normals;       //!< vertex normal array
   uniform Vec2f* texcoords;     //!< vertex texcoord array
   uniform ISPCTriangle* triangles;  //!< list of triangles
+  uniform unsigned int* primitive_order;
+  uniform unsigned int* vertex_order;
   unsigned int numTimeSteps;
   unsigned int numVertices;
   unsigned int numTriangles;

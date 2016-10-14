@@ -84,6 +84,8 @@ namespace embree
         numTimeSteps = in->numTimeSteps;
         numVertices = in->numVertices;
         numTriangles = unsigned(in->triangles.size());
+        primitive_order = in->primitive_order.data();
+        vertex_order = in->vertex_order.data();
         geomID = -1;
         materialID = in->materialID;
       }
@@ -94,6 +96,8 @@ namespace embree
       Vec3fa* normals;       //!< vertex normal array
       Vec2f* texcoords;      //!< vertex texcoord array
       ISPCTriangle* triangles;  //!< list of triangles
+      unsigned* primitive_order;
+      unsigned* vertex_order;
 
       unsigned int numTimeSteps;
       unsigned int numVertices;

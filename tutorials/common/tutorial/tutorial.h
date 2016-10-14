@@ -130,5 +130,6 @@ namespace embree
     FileName sceneFilename;
     int instancing_mode;
     std::string subdiv_mode;
+    bool sort_geometry;
   };
 }

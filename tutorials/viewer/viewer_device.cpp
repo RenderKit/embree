@@ -132,6 +132,8 @@ unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
     rtcSetBuffer(scene_out, geomID, (RTCBufferType)(RTC_VERTEX_BUFFER+t), mesh->positions+t*mesh->numVertices, 0, sizeof(Vec3fa      ));
   }
   rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(ISPCTriangle));
+  rtcSetBuffer(scene_out, geomID, RTC_PRIMITIVE_ORDER_BUFFER, mesh->primitive_order, 0, sizeof(unsigned));
+  rtcSetBuffer(scene_out, geomID, RTC_VERTEX_ORDER_BUFFER, mesh->vertex_order, 0, sizeof(unsigned));
   mesh->geomID = geomID;
   return geomID;
 }
@@ -635,6 +637,7 @@ extern "C" void device_render (int* pixels,
     g_scene = convertScene(g_ispc_scene);
     if (g_subdiv_mode) updateEdgeLevels(g_ispc_scene, camera.xfm.p);
     rtcCommit (g_scene);
+    sort_scene();
     old_p = camera.xfm.p;
   }
 

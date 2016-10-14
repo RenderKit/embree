@@ -48,6 +48,9 @@ enum RTCBufferType {
   RTC_VERTEX_CREASE_WEIGHT_BUFFER = 0x08000000,
 
   RTC_HOLE_BUFFER          = 0x09000001,
+
+  RTC_PRIMITIVE_ORDER_BUFFER = 0x0A000000,
+  RTC_VERTEX_ORDER_BUFFER    = 0x0B000000,
 };
 
 /*! \brief Supported types of matrix layout for functions involving matrices */

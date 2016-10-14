@@ -201,6 +201,7 @@ namespace embree
           }); 
 #endif	
 
+#if 1
         for (const auto& prim : prims) {
           const unsigned geomID = prim.geomID();
           const unsigned primID = prim.primID();
@@ -214,6 +215,7 @@ namespace embree
         }
 
         bvh->sort(bvh->root);
+#endif
 
 	/* clear temporary data for static geometry */
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();

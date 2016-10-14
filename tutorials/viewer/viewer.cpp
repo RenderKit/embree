@@ -36,7 +36,6 @@ namespace embree
       g_instancing_mode = instancing_mode;
     }
   };
-
 }
 
 int main(int argc, char** argv) {
