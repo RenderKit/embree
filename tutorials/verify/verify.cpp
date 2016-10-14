@@ -4083,7 +4083,7 @@ namespace embree
       /*                        Memory Consumption                              */
       /**************************************************************************/
    
-      push(new TestGroup("memory",false,false));
+      push(new TestGroup("embree_reported_memory",false,false));
 
       for (auto gtype : benchmark_create_gtypes)
         for (auto sflags : benchmark_create_sflags_gflags)
@@ -4091,7 +4091,7 @@ namespace embree
             groups.top()->add(new CreateGeometryBenchmark(to_string(gtype)+"_"+std::get<0>(num_prims)+"."+to_string(sflags.first,sflags.second),
                                                           isa,gtype,sflags.first,sflags.second,std::get<1>(num_prims),std::get<2>(num_prims),false,false));
 
-      groups.pop(); // memory
+      groups.pop(); // embree_reported_memory
 
       groups.pop(); // isa
     }

@@ -38,6 +38,7 @@ IF (EMBREE_TESTING_BENCHMARK)
     --database "${EMBREE_TESTING_BENCHMARK_DATABASE}"
     --run .*benchmarks.*
     --skip .*_120.* --skip .*_1k.* --skip .*_10k.* --skip .*100k.*  # skip all smaller build benchmarks
+    --run .*embree_reported_memory.*
   )
   set_tests_properties(verify_benchmarks PROPERTIES TIMEOUT 10800)
 ENDIF()
