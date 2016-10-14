@@ -132,6 +132,18 @@ namespace embree
       {
         vertex_order.resize(positions.size(),-1);
         primitive_order.resize(triangles.size(),-1);
+#if 0
+        for (size_t i=0; i<primitive_order.size(); i++) 
+          primitive_order[i] = i;
+        for (size_t i=0; i<primitive_order.size(); i++) 
+          std::swap(primitive_order[i],primitive_order[rand()%primitive_order.size()]);
+        for (size_t i=0; i<vertex_order.size(); i++) 
+          vertex_order[i] = i;
+        for (size_t i=0; i<vertex_order.size(); i++) 
+          std::swap(vertex_order[i],vertex_order[rand()%vertex_order.size()]);
+
+        sort();
+#endif       
       }
 
       void sort() 
@@ -139,13 +151,14 @@ namespace embree
         if (primitive_order.size()) {
           sort_vector(triangles,primitive_order);
         }
-        if (vertex_order.size()) {
+        if (vertex_order.size()) 
+        {
           sort_vector(positions,vertex_order);
           sort_vector(normals,vertex_order);
           sort_vector(texcoords,vertex_order);
           for (size_t i=0; i<triangles.size(); i++) {
             Triangle& tri = triangles[i];
-            tri = Triangle(vertex_order[tri.v0],vertex_order[tri.v1],vertex_order[tri.v1],tri.materialID);
+            tri = Triangle(vertex_order[tri.v0],vertex_order[tri.v1],vertex_order[tri.v2],tri.materialID);
           }
         }
         primitive_order.clear();
