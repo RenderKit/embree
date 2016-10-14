@@ -46,14 +46,15 @@ namespace embree
     if (code == RTC_NO_ERROR)
       return;
     
+    std::string descr = str ? ": " + std::string(str) : "";
     switch (code) {
-    case RTC_UNKNOWN_ERROR    : throw std::runtime_error("RTC_UNKNOWN_ERROR");
-    case RTC_INVALID_ARGUMENT : throw std::runtime_error("RTC_INVALID_ARGUMENT"); break;
-    case RTC_INVALID_OPERATION: throw std::runtime_error("RTC_INVALID_OPERATION"); break;
-    case RTC_OUT_OF_MEMORY    : throw std::runtime_error("RTC_OUT_OF_MEMORY"); break;
-    case RTC_UNSUPPORTED_CPU  : throw std::runtime_error("RTC_UNSUPPORTED_CPU"); break;
-    case RTC_CANCELLED        : throw std::runtime_error("RTC_CANCELLED"); break;
-    default                   : throw std::runtime_error("invalid error code"); break;
+    case RTC_UNKNOWN_ERROR    : throw std::runtime_error("RTC_UNKNOWN_ERROR"+descr);
+    case RTC_INVALID_ARGUMENT : throw std::runtime_error("RTC_INVALID_ARGUMENT"+descr); break;
+    case RTC_INVALID_OPERATION: throw std::runtime_error("RTC_INVALID_OPERATION"+descr); break;
+    case RTC_OUT_OF_MEMORY    : throw std::runtime_error("RTC_OUT_OF_MEMORY"+descr); break;
+    case RTC_UNSUPPORTED_CPU  : throw std::runtime_error("RTC_UNSUPPORTED_CPU"+descr); break;
+    case RTC_CANCELLED        : throw std::runtime_error("RTC_CANCELLED"+descr); break;
+    default                   : throw std::runtime_error("invalid error code"+descr); break;
     }
   }
 
@@ -361,22 +362,22 @@ namespace embree
     std::fstream db;
     FileName base = state->database+FileName(name);
     db.open(base.addExt(".txt"), std::fstream::in);
-    if (!db.is_open()) 
-      return neg_inf;
+    double start_value = higher_is_better ? double(neg_inf) : double(pos_inf);
+    if (!db.is_open()) return start_value;
 
-    double bestAvg = neg_inf;
+    double bestAvg = start_value;
     while (true) 
     {
       std::string line; std::getline(db,line);
       if (db.eof()) break;
-      if (line == "") {
-        bestAvg = neg_inf;
-      }
+      if (line == "") bestAvg = start_value;
       std::stringstream linestream(line); 
       std::string hash; linestream >> hash;
       double avg; linestream >> avg;
-      if (avg > bestAvg) {
-        bestAvg = avg;
+      if (higher_is_better) {
+        if (avg > bestAvg) bestAvg = avg;
+      } else {
+        if (avg < bestAvg) bestAvg = avg;
       }
     }
     db.close();
@@ -464,7 +465,7 @@ namespace embree
     /* retry if benchmark failed */
     //static size_t numRetries = 0;
     size_t i=0;
-    for (; i<10 && !passed; i++)
+    for (; i<max_attempts && !passed; i++)
     {
       if (i != 0) {
         cleanup(state);
@@ -476,14 +477,22 @@ namespace embree
       try {
         curStat = benchmark_loop(state);
         if (i == 0) bestStat = curStat;
-        if (curStat.getAvg() > bestStat.getAvg()) bestStat = curStat;
+        if (higher_is_better) {
+          if (curStat.getAvg() > bestStat.getAvg()) bestStat = curStat;
+        } else {
+          if (curStat.getAvg() < bestStat.getAvg()) bestStat = curStat;
+        }
       } catch (TestReturnValue v) {
         return v;
       }
 
       /* check against database to see if test passed */
-      if (state->database != "")
-        passed = !(curStat.getAvg()-avgdb < -state->benchmark_tolerance*avgdb); // !(a < b) on purpose for nan case
+      if (state->database != "") {
+        if (higher_is_better)
+          passed = !(curStat.getAvg()-avgdb < -state->benchmark_tolerance*avgdb); // !(a < b) on purpose for nan case
+        else
+          passed = !(curStat.getAvg()-avgdb > +state->benchmark_tolerance*avgdb); // !(a > b) on purpose for nan case
+      }
       else
         passed = true;
     }
@@ -526,10 +535,17 @@ namespace embree
     state->numFailedTests += !passed;
     return passed ? PASSED : FAILED;
   }
+  catch (const std::exception& e)
+  {
+    std::cout << std::setw(TEXT_ALIGN) << name << ": " << std::flush;
+    std::cout << state->red(" [FAILED] ") << "(" << e.what() << ")" << std::endl << std::flush;
+    state->numFailedTests++;
+    return VerifyApplication::FAILED;
+  }
   catch (...)
   {
     std::cout << std::setw(TEXT_ALIGN) << name << ": " << std::flush;
-    std::cout << state->red   (" [FAILED] (internal error)" ) << std::endl << std::flush;
+    std::cout << state->red(" [FAILED] ") << " (unknown error)" << std::endl << std::flush;
     state->numFailedTests++;
     return VerifyApplication::FAILED;
   }
@@ -3112,7 +3128,7 @@ namespace embree
   struct SimpleBenchmark : public VerifyApplication::Benchmark
   {
     SimpleBenchmark (std::string name, int isa)
-      : VerifyApplication::Benchmark(name,isa,"1/s") {}
+      : VerifyApplication::Benchmark(name,isa,"1/s",true,10) {}
     
     float benchmark(VerifyApplication* state)
     {
@@ -3128,7 +3144,7 @@ namespace embree
     unsigned int N, dN;
     
     ParallelIntersectBenchmark (std::string name, int isa, unsigned int N, unsigned int dN)
-      : VerifyApplication::Benchmark(name,isa,"Mrps"), N(N), dN(dN) {}
+      : VerifyApplication::Benchmark(name,isa,"Mrps",true,10), N(N), dN(dN) {}
 
     bool setup(VerifyApplication* state) 
     {
@@ -3183,7 +3199,7 @@ namespace embree
       if (!ParallelIntersectBenchmark::setup(state))
         return false;
 
-      std::string cfg = state->rtcore + "start_threads=1,set_affinity=1,isa="+stringOfISA(isa);
+      std::string cfg = state->rtcore + ",start_threads=1,set_affinity=1,isa="+stringOfISA(isa);
       device = rtcNewDevice(cfg.c_str());
       errorHandler(rtcDeviceGetError(device));
       rtcDeviceSetErrorFunction(device,errorHandler);
@@ -3355,7 +3371,7 @@ namespace embree
       if (!ParallelIntersectBenchmark::setup(state))
         return false;
 
-      std::string cfg = state->rtcore + "start_threads=1,set_affinity=1,isa="+stringOfISA(isa);
+      std::string cfg = state->rtcore + ",start_threads=1,set_affinity=1,isa="+stringOfISA(isa);
       device = rtcNewDevice(cfg.c_str());
       errorHandler(rtcDeviceGetError(device));
       rtcDeviceSetErrorFunction(device,errorHandler);
@@ -3471,6 +3487,8 @@ namespace embree
     }
   };
 
+  static std::atomic<ssize_t> bytes_used(0);
+
   struct CreateGeometryBenchmark : public VerifyApplication::Benchmark
   {
     GeometryType gtype;
@@ -3479,13 +3497,15 @@ namespace embree
     size_t numPhi;
     size_t numMeshes;
     bool update;
+    bool dobenchmark; // true = measure build performance, false = measure memory consumption
     size_t numPrimitives;
     RTCDeviceRef device;
     Ref<VerifyScene> scene;
     std::vector<Ref<SceneGraph::Node>> geometries;
     
-    CreateGeometryBenchmark (std::string name, int isa, GeometryType gtype, RTCSceneFlags sflags, RTCGeometryFlags gflags, size_t numPhi, size_t numMeshes, bool update)
-      : VerifyApplication::Benchmark(name,isa,"Mprims/s"), gtype(gtype), sflags(sflags), gflags(gflags), numPhi(numPhi), numMeshes(numMeshes), update(update), 
+    CreateGeometryBenchmark (std::string name, int isa, GeometryType gtype, RTCSceneFlags sflags, RTCGeometryFlags gflags, size_t numPhi, size_t numMeshes, bool update, bool dobenchmark)
+      : VerifyApplication::Benchmark(name,isa,dobenchmark ? "Mprims/s" : "MB",dobenchmark,dobenchmark?10:1), gtype(gtype), sflags(sflags), gflags(gflags), 
+        numPhi(numPhi), numMeshes(numMeshes), update(update), dobenchmark(dobenchmark),
         numPrimitives(0), device(nullptr), scene(nullptr) {}
 
     size_t setNumPrimitives(size_t N) 
@@ -3522,12 +3542,19 @@ namespace embree
       }
     }
 
+    static bool memoryMonitor(const ssize_t bytes, const bool /*post*/)
+    {
+      bytes_used += bytes;
+      return true;
+    }
+
     bool setup(VerifyApplication* state) 
     {
-      std::string cfg = state->rtcore + "start_threads=1,set_affinity=1,isa="+stringOfISA(isa) + ",threads=" + std::to_string((long long)numThreads);
+      std::string cfg = state->rtcore + ",start_threads=1,set_affinity=1,isa="+stringOfISA(isa) + ",threads=" + std::to_string((long long)numThreads);
       device = rtcNewDevice(cfg.c_str());
       errorHandler(rtcDeviceGetError(device));
       rtcDeviceSetErrorFunction(device,errorHandler);
+      if (!dobenchmark) rtcDeviceSetMemoryMonitorFunction(device,memoryMonitor);
 
       for (unsigned int i=0; i<numMeshes; i++)
       {
@@ -3561,7 +3588,7 @@ namespace embree
         }
       }
 
-      if (update) 
+      if (update)
         create_scene();
 
       return true;
@@ -3570,21 +3597,25 @@ namespace embree
     float benchmark(VerifyApplication* state)
     {
       if (!update) create_scene();
-
+      
       double t0 = getSeconds();
-
+      
       if (update)
         for (unsigned int i=0; i<numMeshes; i++) 
           rtcUpdate(*scene,i);
-
+      
+      bytes_used = 0;
       rtcCommit (*scene);
       AssertNoError(device);
-
+      
       double t1 = getSeconds();
 
-      return 1E-6f*float(numPrimitives)/float(t1-t0);
+      if (dobenchmark)
+        return 1E-6f*float(numPrimitives)/float(t1-t0);
+      else
+        return 1E-6f*bytes_used;
     }
-
+      
     virtual void cleanup(VerifyApplication* state) 
     {
       scene = nullptr;
@@ -4033,7 +4064,7 @@ namespace embree
         for (auto sflags : benchmark_create_sflags_gflags)
           for (auto num_prims : num_primitives)
             groups.top()->add(new CreateGeometryBenchmark("create."+to_string(gtype)+"_"+std::get<0>(num_prims)+"."+to_string(sflags.first,sflags.second),
-                                                          isa,gtype,sflags.first,sflags.second,std::get<1>(num_prims),std::get<2>(num_prims),false));
+                                                          isa,gtype,sflags.first,sflags.second,std::get<1>(num_prims),std::get<2>(num_prims),false,true));
 
       std::vector<std::pair<RTCSceneFlags,RTCGeometryFlags>> benchmark_update_sflags_gflags;
       benchmark_update_sflags_gflags.push_back(std::make_pair(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC));
@@ -4044,11 +4075,25 @@ namespace embree
         for (auto sflags : benchmark_update_sflags_gflags)
           for (auto num_prims : num_primitives)
             groups.top()->add(new CreateGeometryBenchmark("update."+to_string(gtype)+"_"+std::get<0>(num_prims)+"."+to_string(sflags.first,sflags.second),
-                                                          isa,gtype,sflags.first,sflags.second,std::get<1>(num_prims),std::get<2>(num_prims),true));
+                                                          isa,gtype,sflags.first,sflags.second,std::get<1>(num_prims),std::get<2>(num_prims),true,true));
 
-      groups.pop();
+      groups.pop(); // benchmarks
 
-      groups.pop();
+      /**************************************************************************/
+      /*                        Memory Consumption                              */
+      /**************************************************************************/
+   
+      push(new TestGroup("memory",false,false));
+
+      for (auto gtype : benchmark_create_gtypes)
+        for (auto sflags : benchmark_create_sflags_gflags)
+          for (auto num_prims : num_primitives)
+            groups.top()->add(new CreateGeometryBenchmark(to_string(gtype)+"_"+std::get<0>(num_prims)+"."+to_string(sflags.first,sflags.second),
+                                                          isa,gtype,sflags.first,sflags.second,std::get<1>(num_prims),std::get<2>(num_prims),false,false));
+
+      groups.pop(); // memory
+
+      groups.pop(); // isa
     }
 
     prefix_test_names(tests);

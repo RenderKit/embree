@@ -83,8 +83,8 @@ namespace embree
     {
     public:
       const std::string unit;
-      Benchmark (const std::string& name, int isa, const std::string& unit)
-        : Test(name,isa,BENCHMARK,false), unit(unit), numThreads(getNumberOfLogicalThreads()) {}
+      Benchmark (const std::string& name, int isa, const std::string& unit, bool higher_is_better, size_t max_attempts)
+        : Test(name,isa,BENCHMARK,false), unit(unit), numThreads(getNumberOfLogicalThreads()), higher_is_better(higher_is_better), max_attempts(max_attempts) {}
       
       virtual size_t setNumPrimitives(size_t N) { return 0; }
       virtual void setNumThreads(size_t N) { numThreads = N; }
@@ -99,6 +99,8 @@ namespace embree
 
     public:
       size_t numThreads;
+      bool higher_is_better;
+      size_t max_attempts;
     };
 
     struct TestGroup : public Test
