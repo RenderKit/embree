@@ -17,6 +17,7 @@
 ADD_EXECUTABLE(verify verify.cpp ../common/tutorial/application.cpp)
 TARGET_LINK_LIBRARIES(verify sys scenegraph embree)
 SET_PROPERTY(TARGET verify PROPERTY FOLDER tutorials)
+SET_TESTS_PROPERTIES(verify PROPERTIES TIMEOUT 5000)
 INSTALL(TARGETS verify DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT examples)
 
 ADD_TEST(NAME verify COMMAND verify --no-colors)
