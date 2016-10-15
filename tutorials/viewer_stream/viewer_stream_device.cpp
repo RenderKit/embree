@@ -320,6 +320,7 @@ extern "C" void device_init (char* cfg)
 
   /* create scene */
   g_scene = convertScene(g_ispc_scene);
+
   rtcCommit (g_scene);
 
   /* set render tile function to use */
