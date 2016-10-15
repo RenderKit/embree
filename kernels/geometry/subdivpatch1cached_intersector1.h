@@ -118,9 +118,6 @@ namespace embree
                 auto alloc = [] (const size_t bytes) { return SharedLazyTessellationCache::sharedLazyTessellationCache.malloc(bytes); };
                 return GridSOA::create((SubdivPatch1Base*)prim,(unsigned)scene->getSubdivMesh(prim->geom)->numTimeSteps,pre.numTimeSteps(),scene,alloc);
               });
-            if (grid == nullptr)
-              SharedLazyTessellationCache::sharedLazyTessellationCache.unlock();
-
           } while(grid == nullptr);
         }
         else {
