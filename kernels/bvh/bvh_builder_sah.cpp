@@ -447,10 +447,8 @@ namespace embree
         Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
         typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,items);
         LBBox3fa allBounds = empty;
-        for (size_t i=0; i<items; i++) {
-          auto bounds = accel[i].fillMB(prims,start,current.prims.end(),bvh->scene,false,0);
-          allBounds.extend(bounds);
-        }
+        for (size_t i=0; i<items; i++)
+          allBounds.extend(accel[i].fillMB(prims, start, current.prims.end(), bvh->scene, false, 0));
         *current.parent = node;
         return allBounds;
       }
@@ -531,10 +529,8 @@ namespace embree
         Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
         typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,items);
         LBBox3fa allBounds = empty;
-        for (size_t i=0; i<items; i++) {
-          auto bounds = accel[i].fillMB(prims,start,current.prims.end(),bvh->scene,false,time,bvh->numTimeSteps);
-          allBounds.extend(bounds);
-        }
+        for (size_t i=0; i<items; i++)
+          allBounds.extend(accel[i].fillMB(prims, start, current.prims.end(), bvh->scene, false, time, bvh->numTimeSteps));
         *current.parent = node;
         return allBounds;
       }
