@@ -163,10 +163,12 @@ namespace embree
         if (cached)
         {
           if (pre.grid) SharedLazyTessellationCache::sharedLazyTessellationCache.unlock();
-          grid = (GridSOA*) SharedLazyTessellationCache::lookup(prim->entry(),scene->commitCounterSubdiv,[&] () {
-              auto alloc = [] (const size_t bytes) { return SharedLazyTessellationCache::sharedLazyTessellationCache.malloc(bytes); };
-              return GridSOA::create((SubdivPatch1Base*)prim,1,1,scene,alloc);
-            });
+          do {
+            grid = (GridSOA*) SharedLazyTessellationCache::lookup(prim->entry(),scene->commitCounterSubdiv,[&] () {
+                auto alloc = [] (const size_t bytes) { return SharedLazyTessellationCache::sharedLazyTessellationCache.malloc(bytes); };
+                return GridSOA::create((SubdivPatch1Base*)prim,1,1,scene,alloc);
+              });
+          } while(grid == nullptr);
         }
         else {
           grid = (GridSOA*) prim->root_ref.get();
@@ -222,10 +224,12 @@ namespace embree
         if (cached)
         {
           if (pre.grid) SharedLazyTessellationCache::sharedLazyTessellationCache.unlock();
-          grid = (GridSOA*) SharedLazyTessellationCache::lookup(prim->entry(),scene->commitCounterSubdiv,[&] () {
-              auto alloc = [] (const size_t bytes) { return SharedLazyTessellationCache::sharedLazyTessellationCache.malloc(bytes); };
-              return GridSOA::create((SubdivPatch1Base*)prim,(unsigned)scene->getSubdivMesh(prim->geom)->numTimeSteps,pre.numTimeSteps(),scene,alloc);
-            });
+          do {
+            grid = (GridSOA*) SharedLazyTessellationCache::lookup(prim->entry(),scene->commitCounterSubdiv,[&] () {
+                auto alloc = [] (const size_t bytes) { return SharedLazyTessellationCache::sharedLazyTessellationCache.malloc(bytes); };
+                return GridSOA::create((SubdivPatch1Base*)prim,(unsigned)scene->getSubdivMesh(prim->geom)->numTimeSteps,pre.numTimeSteps(),scene,alloc);
+              });
+          } while(grid == nullptr);
         }
         else {
           grid = (GridSOA*) prim->root_ref.get();
