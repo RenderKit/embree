@@ -370,7 +370,7 @@ namespace embree
     {
       std::string line; std::getline(db,line);
       if (db.eof()) break;
-      if (line == "") bestAvg = start_value;
+      if (line == "") { bestAvg = start_value; continue; }
       std::stringstream linestream(line); 
       std::string hash; linestream >> hash;
       double avg; linestream >> avg;
