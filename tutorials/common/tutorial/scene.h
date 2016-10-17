@@ -169,8 +169,8 @@ namespace embree
             tri = Triangle(vertex_order[tri.v0],vertex_order[tri.v1],vertex_order[tri.v2],tri.materialID);
           }
         }
-        primitive_order.clear();
-        vertex_order.clear();
+        primitive_order.clear(); primitive_order.shrink_to_fit();
+        vertex_order.clear();    vertex_order.shrink_to_fit();
       }
 
       std::pair<size_t,size_t> distance() 
