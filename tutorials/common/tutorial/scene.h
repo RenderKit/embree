@@ -95,6 +95,10 @@ namespace embree
       Geometry (Type type) : type(type) {}
       virtual void create_order_buffers() {}
       virtual void sort() {}
+      virtual void randomize() {}
+      virtual std::pair<size_t,size_t> distance() { 
+        return std::make_pair(size_t(0),size_t(0)); 
+      }
     };
 
     /*! Triangle Mesh. */
@@ -132,7 +136,12 @@ namespace embree
       {
         vertex_order.resize(positions.size(),-1);
         primitive_order.resize(triangles.size(),-1);
-#if 0
+      }
+      
+      void randomize() 
+      {
+        create_order_buffers();
+
         for (size_t i=0; i<primitive_order.size(); i++) 
           primitive_order[i] = i;
         for (size_t i=0; i<primitive_order.size(); i++) 
@@ -143,7 +152,6 @@ namespace embree
           std::swap(vertex_order[i],vertex_order[rand()%vertex_order.size()]);
 
         sort();
-#endif       
       }
 
       void sort() 
@@ -163,6 +171,21 @@ namespace embree
         }
         primitive_order.clear();
         vertex_order.clear();
+      }
+
+      std::pair<size_t,size_t> distance() 
+      {
+        size_t vertex_distance = 0;
+        size_t vertex_distance_den = 0;
+        for (size_t i=0; i<triangles.size(); i++) 
+        {
+          Triangle& tri = triangles[i];
+          vertex_distance += std::abs(int(tri.v0-tri.v1));
+          vertex_distance += std::abs(int(tri.v1-tri.v2));
+          vertex_distance += std::abs(int(tri.v2-tri.v0));
+          vertex_distance_den += 3;
+        }
+        return std::make_pair(vertex_distance,vertex_distance_den);
       }
 
     public:
@@ -367,6 +390,24 @@ namespace embree
     {
       for (Ref<Geometry> geometry : geometries)
         geometry->sort();
+    }
+
+    void randomize()
+    {
+      for (Ref<Geometry> geometry : geometries)
+        geometry->randomize();
+    }
+
+    double distance()
+    {
+      size_t vertex_distance = 0;
+      size_t vertex_distance_den = 0;
+      for (Ref<Geometry> geometry : geometries) {
+        auto p = geometry->distance();
+        vertex_distance += p.first;
+        vertex_distance_den += p.second;
+      }
+      return double(vertex_distance)/double(vertex_distance_den);
     }
 
   public:

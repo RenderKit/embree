@@ -1221,6 +1221,7 @@ RTCScene convertScene(ISPCScene* scene_in)
   progressStart();
   rtcSetProgressMonitorFunction(scene_out,(RTCProgressMonitorFunc)&progressMonitor,nullptr);
   rtcCommit (scene_out);
+  sort_scene();
   rtcSetProgressMonitorFunction(scene_out,nullptr,nullptr);
   progressEnd();
 

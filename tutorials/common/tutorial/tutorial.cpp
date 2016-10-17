@@ -216,7 +216,8 @@ namespace embree
       sceneFilename(""),
       instancing_mode(0),
       subdiv_mode(""),
-      sort_geometry(false)
+      sort_geometry(false),
+      randomize_geometry(false)
   {
     registerOption("i", [this] (Ref<ParseStream> cin, const FileName& path) {
         sceneFilename = path + cin->getFileName();
@@ -363,8 +364,13 @@ namespace embree
 
     registerOption("sort-geometry", [this] (Ref<ParseStream> cin, const FileName& path) {
         sort_geometry = true;
+        randomize_geometry = false;
       }, "--sort-geometry: sorts primitives and vertices for more coherent memory access");
     
+    registerOption("randomize-geometry", [this] (Ref<ParseStream> cin, const FileName& path) {
+        sort_geometry = false;
+        randomize_geometry = true;
+      }, "--randomize-geometry: randomizes primitives and vertices");
   }
 
   void TutorialApplication::renderBenchmark()
@@ -464,8 +470,11 @@ namespace embree
     g_ispc_scene = new ISPCScene(in);
   }
   
-  extern "C" void sort_scene() {
+  extern "C" void sort_scene() 
+  {
     g_tutorial_scene->sort();
+    double distance = g_tutorial_scene->distance();
+    std::cout << "average vertex distance = " << distance / 4.0f << " vertices " << std::endl;
   }
 
   void TutorialApplication::keyboardFunc(unsigned char key, int x, int y)
@@ -773,6 +782,10 @@ namespace embree
     /* create order buffers if we need to sort the geometry */
     if (sort_geometry)
       obj_scene.create_order_buffers();
+
+    /* randomize geometry */
+    if (randomize_geometry)
+      obj_scene.randomize();
 
     /* send model */
     set_scene(&obj_scene);
