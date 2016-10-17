@@ -20,6 +20,7 @@
 
 #include "../geometry/triangle.h"
 #include "../geometry/trianglev.h"
+#include "../geometry/trianglev_intersector.h"
 #include "../geometry/trianglev_mb.h"
 #include "../geometry/trianglei.h"
 #include "../geometry/trianglei_mb.h"
