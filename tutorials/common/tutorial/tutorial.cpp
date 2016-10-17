@@ -779,13 +779,13 @@ namespace embree
     obj_scene.add(scene.dynamicCast<SceneGraph::Node>(),(TutorialScene::InstancingMode)instancing_mode); 
     scene = nullptr;
 
-    /* create order buffers if we need to sort the geometry */
-    if (sort_geometry)
-      obj_scene.create_order_buffers();
-
     /* randomize geometry */
     if (randomize_geometry)
       obj_scene.randomize();
+
+    /* create order buffers if we need to sort the geometry */
+    if (sort_geometry)
+      obj_scene.create_order_buffers();
 
     /* send model */
     set_scene(&obj_scene);
