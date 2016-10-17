@@ -85,6 +85,7 @@ namespace embree
    static const size_t REF_TAG_MASK                    = 0x7FFFFFFF;
 #endif
    static const size_t MAX_TESSELLATION_CACHE_SIZE     = REF_TAG_MASK+1;
+   static const size_t BLOCK_SIZE                      = 64;
    
 
     /*! Per thread tessellation ref cache */
@@ -161,6 +162,10 @@ namespace embree
    ~SharedLazyTessellationCache();
 
    void getNextRenderThreadWorkState();
+
+   __forceinline size_t maxAllocSize() const {
+     return switch_block_threshold;
+   }
 
    //__forceinline size_t getCurrentIndex() { return localTime; }
    __forceinline void   addCurrentIndex(const size_t i=1) { localTime.fetch_add(i); }
@@ -282,7 +287,7 @@ namespace embree
      ThreadWorkState *const t_state = threadState();
      while (true)
      {
-       block_index = sharedLazyTessellationCache.alloc((bytes+63)/64);
+       block_index = sharedLazyTessellationCache.alloc((bytes+BLOCK_SIZE-1)/BLOCK_SIZE);
        if (block_index == (size_t)-1)
        {
          sharedLazyTessellationCache.unlockThread(t_state);		  
@@ -302,7 +307,7 @@ namespace embree
    }
 
    __forceinline void*  getDataPtr()      { return data; }
-   __forceinline size_t getNumUsedBytes() { return next_block * 64; }
+   __forceinline size_t getNumUsedBytes() { return next_block * BLOCK_SIZE; }
    __forceinline size_t getMaxBlocks()    { return maxBlocks; }
    __forceinline size_t getSize()         { return size; }
 

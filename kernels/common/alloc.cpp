@@ -26,7 +26,7 @@ namespace embree
     FastAllocator alloc;
 
     fast_allocator_regression_test() 
-      : RegressionTest("fast_allocator_regression_test"), alloc(nullptr) 
+      : RegressionTest("fast_allocator_regression_test"), numFailed(0), alloc(nullptr) 
     {
       registerRegressionTest(this);
     }
