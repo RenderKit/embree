@@ -903,6 +903,8 @@ unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
     rtcSetBuffer(scene_out, geomID, (RTCBufferType)(RTC_VERTEX_BUFFER+t), mesh->positions+t*mesh->numVertices, 0, sizeof(Vec3fa      ));
   }
   rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(ISPCTriangle));
+  rtcSetBuffer(scene_out, geomID, RTC_PRIMITIVE_ORDER_BUFFER, mesh->primitive_order, 0, sizeof(unsigned));
+  rtcSetBuffer(scene_out, geomID, RTC_VERTEX_ORDER_BUFFER, mesh->vertex_order, 0, sizeof(unsigned));
   mesh->geomID = geomID;
 #if ENABLE_FILTER_FUNCTION == 1
   rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&occlusionFilterOpaque);
@@ -1221,9 +1223,10 @@ RTCScene convertScene(ISPCScene* scene_in)
   progressStart();
   rtcSetProgressMonitorFunction(scene_out,(RTCProgressMonitorFunc)&progressMonitor,nullptr);
   rtcCommit (scene_out);
-  sort_scene();
   rtcSetProgressMonitorFunction(scene_out,nullptr,nullptr);
   progressEnd();
+
+  sort_scene();
 
   return scene_out;
 } // convertScene
