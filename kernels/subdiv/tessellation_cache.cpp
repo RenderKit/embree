@@ -345,7 +345,7 @@ namespace embree
       /* create threads */
       std::vector<thread_t> threads;
       for (size_t i=0; i<numThreads; i++)
-        threads.push_back(createThread((thread_func)thread_alloc,this));
+        threads.push_back(createThread((thread_func)thread_alloc,this,0,i));
 
       /* run test */ 
       barrier.wait();
