@@ -369,7 +369,7 @@ namespace embree
       }
       
       template<typename Epilog>
-      __forceinline bool intersect1(RayK<K>& ray, 
+      __forceinline bool intersect(RayK<K>& ray, 
                                     size_t k,
                                     const Vec3<vfloat<M>>& v0, 
                                     const Vec3<vfloat<M>>& v1, 
