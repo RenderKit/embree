@@ -15,13 +15,22 @@
 // ======================================================================== //
 
 #include "bvh_intersector_single.h"
+
 #include "../geometry/intersector_iterators.h"
-#include "../geometry/trianglei_intersector_pluecker.h"
-#include "../geometry/quadi_intersector_pluecker.h"
-#include "../geometry/linei_intersector.h"
+#include "../geometry/triangle_intersector.h"
+#include "../geometry/trianglev_intersector.h"
+#include "../geometry/trianglev_mb_intersector.h"
+#include "../geometry/trianglei_intersector.h"
+#include "../geometry/trianglei_mb_intersector.h"
+#include "../geometry/quadv_intersector.h"
+#include "../geometry/quadi_intersector.h"
+#include "../geometry/quadi_mb_intersector.h"
 #include "../geometry/bezier1v_intersector.h"
 #include "../geometry/bezier1i_intersector.h"
-#include "../geometry/subdivpatch1cached_intersector1.h"
+#include "../geometry/linei_intersector.h"
+#include "../geometry/subdivpatch1eager_intersector.h"
+#include "../geometry/subdivpatch1cached_intersector.h"
+#include "../geometry/object_intersector.h"
 
 namespace embree
 {
