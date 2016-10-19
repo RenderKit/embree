@@ -501,7 +501,7 @@ namespace embree
       avgdb = bestStat.getAvg();
 
     /* update database */
-    if (state->database != "")
+    if (state->database != "" && state->update_database)
       updateDatabase(state,bestStat,avgdb);
       
     /* print test result */
@@ -3644,7 +3644,7 @@ namespace embree
       tests(new TestGroup("",false,false)), 
       device(nullptr),
       user_specified_tests(false), flatten(true), parallel(true), cdash(false), 
-      database(""), benchmark_tolerance(0.05f),
+      database(""), update_database(false), benchmark_tolerance(0.05f),
       usecolors(true)
   {
     rtcore = ""; // do not start threads nor set affinty for normal tests 
@@ -4196,11 +4196,18 @@ namespace embree
 
     registerOption("database", [this] (Ref<ParseStream> cin, const FileName& path) {
         database = cin->getString();
+        update_database = true;
       }, "--database: location to folder containing the measurement database");
+
+    registerOption("compare", [this] (Ref<ParseStream> cin, const FileName& path) {
+        database = cin->getString();
+        update_database = false;
+      }, "--compare: compares with database, but does not update database");
 
     registerOption("benchmark-tolerance", [this] (Ref<ParseStream> cin, const FileName& path) {
         benchmark_tolerance = cin->getFloat();
       }, "--benchmark-tolerance: maximal relative slowdown to let a test pass");
+    registerOptionAlias("benchmark-tolerance","tolerance");
 
     registerOption("print-tests", [this] (Ref<ParseStream> cin, const FileName& path) {
         print_tests(tests,0);

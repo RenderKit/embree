@@ -176,6 +176,7 @@ namespace embree
     bool parallel;
     bool cdash;
     FileName database;
+    bool update_database;
     float benchmark_tolerance;
 
     /* sets terminal colors */
