@@ -35,14 +35,14 @@ namespace embree
       static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& quad, Scene* scene)
       {
         STAT3(normal.trav_prims,1,1,1);
-        pre.intersect(ray,context,quad.v0,quad.v1,quad.v2,quad.v3,quad.geomIDs,quad.primIDs,scene,geomID_to_instID);
+        pre.intersect(ray,context,quad.v0,quad.v1,quad.v2,quad.v3,quad.geomIDs,quad.primIDs,scene);
       }
         
       /*! Test if the ray is occluded by one of M quads. */
       static __forceinline bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& quad, Scene* scene)
       {
         STAT3(shadow.trav_prims,1,1,1);
-        return pre.occluded(ray,context, quad.v0,quad.v1,quad.v2,quad.v3,quad.geomIDs,quad.primIDs,scene,geomID_to_instID);
+        return pre.occluded(ray,context, quad.v0,quad.v1,quad.v2,quad.v3,quad.geomIDs,quad.primIDs,scene);
       }
 
       /*! Intersect an array of rays with an array of M primitives. */
@@ -53,7 +53,7 @@ namespace embree
           const size_t i = __bscf(valid);
           const float old_far = rays[i]->tfar;
           for (size_t n=0; n<num; n++)
-            intersect(pre[i],*rays[i],context,prim[n],scene,geomID_to_instID);
+            intersect(pre[i],*rays[i],context,prim[n],scene);
           valid_isec |= (rays[i]->tfar < old_far) ? ((size_t)1 << i) : 0;            
         } while(unlikely(valid));
         return valid_isec;
@@ -128,14 +128,14 @@ namespace embree
       static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& quad, Scene* scene)
       {
         STAT3(normal.trav_prims,1,1,1);
-        pre.intersect(ray,context,quad.v0,quad.v1,quad.v2,quad.v3,quad.geomIDs,quad.primIDs,scene,geomID_to_instID);
+        pre.intersect(ray,context,quad.v0,quad.v1,quad.v2,quad.v3,quad.geomIDs,quad.primIDs,scene);
       }
         
       /*! Test if the ray is occluded by one of M quads. */
       static __forceinline bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& quad, Scene* scene)
       {
         STAT3(shadow.trav_prims,1,1,1);
-        return pre.occluded(ray,context, quad.v0,quad.v1,quad.v2,quad.v3,quad.geomIDs,quad.primIDs,scene,geomID_to_instID);
+        return pre.occluded(ray,context, quad.v0,quad.v1,quad.v2,quad.v3,quad.geomIDs,quad.primIDs,scene);
       }
 
       /*! Intersect an array of rays with an array of M primitives. */
@@ -146,7 +146,7 @@ namespace embree
           const size_t i = __bscf(valid);
           const float old_far = rays[i]->tfar;
           for (size_t n=0; n<num; n++)
-            intersect(pre[i],*rays[i],context,prim[n],scene,geomID_to_instID);
+            intersect(pre[i],*rays[i],context,prim[n],scene);
           valid_isec |= (rays[i]->tfar < old_far) ? ((size_t)1 << i) : 0;            
         } while(unlikely(valid));
         return valid_isec;

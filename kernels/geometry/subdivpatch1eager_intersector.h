@@ -58,7 +58,7 @@ namespace embree
         else                 processLazyNode(pre,context,prim,scene,lazy_node);
       }
       static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, size_t ty0, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) {
-        intersect(pre,ray,context,prim,ty,scene,geomID_to_instID,lazy_node);
+        intersect(pre,ray,context,prim,ty,scene,lazy_node);
       }
       
       /*! Test if the ray is occluded by the primitive */
@@ -68,7 +68,7 @@ namespace embree
         else                 return processLazyNode(pre,context,prim,scene,lazy_node);
       }
       static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, size_t ty0, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) {
-        return occluded(pre,ray,context,prim,ty,scene,geomID_to_instID,lazy_node);
+        return occluded(pre,ray,context,prim,ty,scene,lazy_node);
       }
     };
 
@@ -90,7 +90,7 @@ namespace embree
         else                 processLazyNode(pre,ray,context,prim,scene,lazy_node);
       }
       static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, size_t ty0, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) {
-        intersect(pre,ray,context,prim,ty,scene,geomID_to_instID,lazy_node);
+        intersect(pre,ray,context,prim,ty,scene,lazy_node);
       }
       
       /*! Test if the ray is occluded by the primitive */
@@ -100,7 +100,7 @@ namespace embree
         else                 return processLazyNode(pre,ray,context,prim,scene,lazy_node);
       }
       static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, size_t ty0, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) {
-        return occluded(pre,ray,context,prim,ty,scene,geomID_to_instID,lazy_node);
+        return occluded(pre,ray,context,prim,ty,scene,lazy_node);
       }
     };
 

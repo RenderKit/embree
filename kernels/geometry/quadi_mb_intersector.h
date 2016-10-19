@@ -36,7 +36,7 @@ namespace embree
       {
         STAT3(normal.trav_prims,1,1,1);
         Vec3<vfloat<M>> v0,v1,v2,v3; quad.gather(v0,v1,v2,v3,scene,ray.time);
-        pre.intersect(ray,context,v0,v1,v2,v3,quad.geomIDs,quad.primIDs,scene,geomID_to_instID); 
+        pre.intersect(ray,context,v0,v1,v2,v3,quad.geomIDs,quad.primIDs,scene); 
       }
         
       /*! Test if the ray is occluded by one of M quads. */
@@ -44,7 +44,7 @@ namespace embree
       {
         STAT3(shadow.trav_prims,1,1,1);
         Vec3<vfloat<M>> v0,v1,v2,v3; quad.gather(v0,v1,v2,v3,scene,ray.time);
-        return pre.occluded(ray,context,v0,v1,v2,v3,quad.geomIDs,quad.primIDs,scene,geomID_to_instID); 
+        return pre.occluded(ray,context,v0,v1,v2,v3,quad.geomIDs,quad.primIDs,scene); 
       }
     };
     
@@ -111,7 +111,7 @@ namespace embree
       {
         STAT3(normal.trav_prims,1,1,1);
         Vec3<vfloat<M>> v0,v1,v2,v3; quad.gather(v0,v1,v2,v3,scene,ray.time);
-        pre.intersect(ray,context,v0,v1,v2,v3,quad.geomIDs,quad.primIDs,scene,geomID_to_instID); 
+        pre.intersect(ray,context,v0,v1,v2,v3,quad.geomIDs,quad.primIDs,scene); 
       }
         
       /*! Test if the ray is occluded by one of M quads. */
@@ -119,7 +119,7 @@ namespace embree
       {
         STAT3(shadow.trav_prims,1,1,1);
         Vec3<vfloat<M>> v0,v1,v2,v3; quad.gather(v0,v1,v2,v3,scene,ray.time);
-        return pre.occluded(ray,context,v0,v1,v2,v3,quad.geomIDs,quad.primIDs,scene,geomID_to_instID); 
+        return pre.occluded(ray,context,v0,v1,v2,v3,quad.geomIDs,quad.primIDs,scene); 
       }
     };
     

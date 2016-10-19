@@ -36,7 +36,7 @@ namespace embree
         {
           STAT3(normal.trav_prims,1,1,1);
           Vec3<vfloat<M>> v0,v1,v2; tri.gather(v0,v1,v2,scene,ray.time);
-          pre.intersect(ray,v0,v1,v2,/*UVIdentity<Mx>(),*/Intersect1EpilogM<M,Mx,filter>(ray,context,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
+          pre.intersect(ray,v0,v1,v2,/*UVIdentity<Mx>(),*/Intersect1EpilogM<M,Mx,filter>(ray,context,tri.geomIDs,tri.primIDs,scene));
         }
         
         /*! Test if the ray is occluded by one of M triangles. */
@@ -44,7 +44,7 @@ namespace embree
         {
           STAT3(shadow.trav_prims,1,1,1);
           Vec3<vfloat<M>> v0,v1,v2; tri.gather(v0,v1,v2,scene,ray.time);
-          return pre.intersect(ray,v0,v1,v2,/*UVIdentity<Mx>(),*/Occluded1EpilogM<M,Mx,filter>(ray,context,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
+          return pre.intersect(ray,v0,v1,v2,/*UVIdentity<Mx>(),*/Occluded1EpilogM<M,Mx,filter>(ray,context,tri.geomIDs,tri.primIDs,scene));
         }
       };
     
@@ -111,7 +111,7 @@ namespace embree
         {
           STAT3(normal.trav_prims,1,1,1);
           Vec3<vfloat<M>> v0,v1,v2; tri.gather(v0,v1,v2,scene,ray.time);
-          pre.intersect(ray,v0,v1,v2,UVIdentity<Mx>(),Intersect1EpilogM<M,Mx,filter>(ray,context,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
+          pre.intersect(ray,v0,v1,v2,UVIdentity<Mx>(),Intersect1EpilogM<M,Mx,filter>(ray,context,tri.geomIDs,tri.primIDs,scene));
         }
         
         /*! Test if the ray is occluded by one of M triangles. */
@@ -119,7 +119,7 @@ namespace embree
         {
           STAT3(shadow.trav_prims,1,1,1);
           Vec3<vfloat<M>> v0,v1,v2; tri.gather(v0,v1,v2,scene,ray.time);
-          return pre.intersect(ray,v0,v1,v2,UVIdentity<Mx>(),Occluded1EpilogM<M,Mx,filter>(ray,context,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
+          return pre.intersect(ray,v0,v1,v2,UVIdentity<Mx>(),Occluded1EpilogM<M,Mx,filter>(ray,context,tri.geomIDs,tri.primIDs,scene));
         }
       };
     

@@ -25,7 +25,7 @@ namespace embree
   {
   public:
     __forceinline IntersectContext(const RTCIntersectContext* user_context)
-      : user(user_context) {}
+      : user(user_context), geomID_to_instID(nullptr) {}
 
   public:
     const RTCIntersectContext* user;

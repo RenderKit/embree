@@ -314,7 +314,7 @@ namespace embree
     if (((size_t)&ray) & 0x0F        ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 16 bytes");   
 #endif
     STAT3(normal.travs,1,1,1);
-    IntersectContext context;
+    IntersectContext context(nullptr);
     scene->intersect(ray,&context);
     RTCORE_CATCH_END(scene->device);
   }
@@ -334,7 +334,7 @@ namespace embree
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<4; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(normal.travs,1,cnt,4);
-    IntersectContext context;
+    IntersectContext context(nullptr);
     scene->intersect4(valid,ray,&context);
 #else
     throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect4 not supported");  
@@ -357,7 +357,7 @@ namespace embree
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<8; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(normal.travs,1,cnt,8);
-    IntersectContext context;
+    IntersectContext context(nullptr);
     scene->intersect8(valid,ray,&context);
 #else
     throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect8 not supported");      
@@ -380,7 +380,7 @@ namespace embree
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<16; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(normal.travs,1,cnt,16);
-    IntersectContext context;
+    IntersectContext context(nullptr);
     scene->intersect16(valid,ray,&context);
 #else
     throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect16 not supported");
@@ -539,7 +539,7 @@ namespace embree
     if (scene->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
     if (((size_t)&ray) & 0x0F        ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 16 bytes");   
 #endif
-    IntersectContext context;
+    IntersectContext context(nullptr);
     scene->occluded(ray,&context);
     RTCORE_CATCH_END(scene->device);
   }
@@ -559,7 +559,7 @@ namespace embree
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<4; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(shadow.travs,1,cnt,4);
-    IntersectContext context;
+    IntersectContext context(nullptr);
     scene->occluded4(valid,ray,&context);
 #else
     throw_RTCError(RTC_INVALID_OPERATION,"rtcOccluded4 not supported");
@@ -582,7 +582,7 @@ namespace embree
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<8; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(shadow.travs,1,cnt,8);
-    IntersectContext context;
+    IntersectContext context(nullptr);
     scene->occluded8(valid,ray,&context);
 #else
     throw_RTCError(RTC_INVALID_OPERATION,"rtcOccluded8 not supported");
@@ -605,7 +605,7 @@ namespace embree
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<16; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(shadow.travs,1,cnt,16);
-    IntersectContext context;
+    IntersectContext context(nullptr);
     scene->occluded16(valid,ray,&context);
 #else
     throw_RTCError(RTC_INVALID_OPERATION,"rtcOccluded16 not supported");

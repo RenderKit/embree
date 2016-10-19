@@ -139,7 +139,7 @@ namespace embree
       {
         MoellerTrumboreHitM<M> hit;
         MoellerTrumboreIntersector1<M> intersector(ray,nullptr);
-        Intersect1EpilogM<M,M,filter> epilog(ray,context,geomID,primID,scene,geomID_to_instID);
+        Intersect1EpilogM<M,M,filter> epilog(ray,context,geomID,primID,scene);
 
         /* intersect first triangle */
         if (intersector.intersect(ray,v0,v1,v3,hit)) 
@@ -160,7 +160,7 @@ namespace embree
       {
         MoellerTrumboreHitM<M> hit;
         MoellerTrumboreIntersector1<M> intersector(ray,nullptr);
-        Occluded1EpilogM<M,M,filter> epilog(ray,context,geomID,primID,scene,geomID_to_instID);
+        Occluded1EpilogM<M,M,filter> epilog(ray,context,geomID,primID,scene);
 
         /* intersect first triangle */
         if (intersector.intersect(ray,v0,v1,v3,hit)) 
@@ -233,14 +233,14 @@ namespace embree
                                    const Vec3vf4& v0, const Vec3vf4& v1, const Vec3vf4& v2, const Vec3vf4& v3, 
                                    const vint4& geomID, const vint4& primID, Scene* scene) const
       {
-        return intersect(ray,v0,v1,v2,v3,Intersect1EpilogM<8,16,filter>(ray,context,vint8(geomID),vint8(primID),scene,geomID_to_instID));
+        return intersect(ray,v0,v1,v2,v3,Intersect1EpilogM<8,16,filter>(ray,context,vint8(geomID),vint8(primID),scene));
       }
       
       __forceinline bool occluded(Ray& ray, IntersectContext* context,
                                   const Vec3vf4& v0, const Vec3vf4& v1, const Vec3vf4& v2, const Vec3vf4& v3, 
                                   const vint4& geomID, const vint4& primID, Scene* scene) const
       {
-        return intersect(ray,v0,v1,v2,v3,Occluded1EpilogM<8,16,filter>(ray,context,vint8(geomID),vint8(primID),scene,geomID_to_instID));
+        return intersect(ray,v0,v1,v2,v3,Occluded1EpilogM<8,16,filter>(ray,context,vint8(geomID),vint8(primID),scene));
       }
     };
 
@@ -290,14 +290,14 @@ namespace embree
                                    const Vec3vf4& v0, const Vec3vf4& v1, const Vec3vf4& v2, const Vec3vf4& v3, 
                                    const vint4& geomID, const vint4& primID, Scene* scene) const
       {
-        return intersect(ray,v0,v1,v2,v3,Intersect1EpilogM<8,8,filter>(ray,context,vint8(geomID),vint8(primID),scene,geomID_to_instID));
+        return intersect(ray,v0,v1,v2,v3,Intersect1EpilogM<8,8,filter>(ray,context,vint8(geomID),vint8(primID),scene));
       }
       
       __forceinline bool occluded(Ray& ray, IntersectContext* context,
                                   const Vec3vf4& v0, const Vec3vf4& v1, const Vec3vf4& v2, const Vec3vf4& v3, 
                                   const vint4& geomID, const vint4& primID, Scene* scene) const
       {
-        return intersect(ray,v0,v1,v2,v3,Occluded1EpilogM<8,8,filter>(ray,context,vint8(geomID),vint8(primID),scene,geomID_to_instID));
+        return intersect(ray,v0,v1,v2,v3,Occluded1EpilogM<8,8,filter>(ray,context,vint8(geomID),vint8(primID),scene));
       }
     };
 

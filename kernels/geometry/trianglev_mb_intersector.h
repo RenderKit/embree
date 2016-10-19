@@ -38,7 +38,7 @@ namespace embree
           const Vec3<vfloat<Mx>> v0 = madd(time,Vec3<vfloat<Mx>>(tri.dv0),Vec3<vfloat<Mx>>(tri.v0));
           const Vec3<vfloat<Mx>> v1 = madd(time,Vec3<vfloat<Mx>>(tri.dv1),Vec3<vfloat<Mx>>(tri.v1));
           const Vec3<vfloat<Mx>> v2 = madd(time,Vec3<vfloat<Mx>>(tri.dv2),Vec3<vfloat<Mx>>(tri.v2));
-          pre.intersect(ray,v0,v1,v2,Intersect1EpilogM<M,Mx,filter>(ray,context,tri.geomIDs,tri.primIDs,scene,geomID_to_instID)); 
+          pre.intersect(ray,v0,v1,v2,Intersect1EpilogM<M,Mx,filter>(ray,context,tri.geomIDs,tri.primIDs,scene)); 
         }
         
         /*! Test if the ray is occluded by one of M triangles. */
@@ -49,7 +49,7 @@ namespace embree
           const Vec3<vfloat<Mx>> v0 = madd(time,Vec3<vfloat<Mx>>(tri.dv0),Vec3<vfloat<Mx>>(tri.v0));
           const Vec3<vfloat<Mx>> v1 = madd(time,Vec3<vfloat<Mx>>(tri.dv1),Vec3<vfloat<Mx>>(tri.v1));
           const Vec3<vfloat<Mx>> v2 = madd(time,Vec3<vfloat<Mx>>(tri.dv2),Vec3<vfloat<Mx>>(tri.v2));
-          return pre.intersect(ray,v0,v1,v2,Occluded1EpilogM<M,Mx,filter>(ray,context,tri.geomIDs,tri.primIDs,scene,geomID_to_instID)); 
+          return pre.intersect(ray,v0,v1,v2,Occluded1EpilogM<M,Mx,filter>(ray,context,tri.geomIDs,tri.primIDs,scene)); 
         }
       };
     
@@ -132,7 +132,7 @@ namespace embree
           const Vec3<vfloat<Mx>> v0 = madd(time,Vec3<vfloat<Mx>>(tri.dv0),Vec3<vfloat<Mx>>(tri.v0));
           const Vec3<vfloat<Mx>> v1 = madd(time,Vec3<vfloat<Mx>>(tri.dv1),Vec3<vfloat<Mx>>(tri.v1));
           const Vec3<vfloat<Mx>> v2 = madd(time,Vec3<vfloat<Mx>>(tri.dv2),Vec3<vfloat<Mx>>(tri.v2));
-          pre.intersect(ray,v0,v1,v2,UVIdentity<Mx>(),Intersect1EpilogM<M,Mx,filter>(ray,context,tri.geomIDs,tri.primIDs,scene,geomID_to_instID)); 
+          pre.intersect(ray,v0,v1,v2,UVIdentity<Mx>(),Intersect1EpilogM<M,Mx,filter>(ray,context,tri.geomIDs,tri.primIDs,scene)); 
         }
         
         /*! Test if the ray is occluded by one of M triangles. */
@@ -143,7 +143,7 @@ namespace embree
           const Vec3<vfloat<Mx>> v0 = madd(time,Vec3<vfloat<Mx>>(tri.dv0),Vec3<vfloat<Mx>>(tri.v0));
           const Vec3<vfloat<Mx>> v1 = madd(time,Vec3<vfloat<Mx>>(tri.dv1),Vec3<vfloat<Mx>>(tri.v1));
           const Vec3<vfloat<Mx>> v2 = madd(time,Vec3<vfloat<Mx>>(tri.dv2),Vec3<vfloat<Mx>>(tri.v2));
-          return pre.intersect(ray,v0,v1,v2,UVIdentity<Mx>(),Occluded1EpilogM<M,Mx,filter>(ray,context,tri.geomIDs,tri.primIDs,scene,geomID_to_instID)); 
+          return pre.intersect(ray,v0,v1,v2,UVIdentity<Mx>(),Occluded1EpilogM<M,Mx,filter>(ray,context,tri.geomIDs,tri.primIDs,scene)); 
         }
       };
     

@@ -60,7 +60,7 @@ namespace embree
        
         GridSOA::MapUV<Loader> mapUV(grid_uv,line_offset);
         PlueckerIntersector1<Loader::M> intersector(ray,nullptr);
-        intersector.intersect(ray,v0,v1,v2,mapUV,Intersect1EpilogMU<Loader::M,true>(ray,context,pre.grid->geomID,pre.grid->primID,scene,nullptr));
+        intersector.intersect(ray,v0,v1,v2,mapUV,Intersect1EpilogMU<Loader::M,true>(ray,context,pre.grid->geomID,pre.grid->primID,scene));
       };
       
       template<typename Loader>
@@ -82,7 +82,7 @@ namespace embree
         
         GridSOA::MapUV<Loader> mapUV(grid_uv,line_offset);
         PlueckerIntersector1<Loader::M> intersector(ray,nullptr);
-        return intersector.intersect(ray,v0,v1,v2,mapUV,Occluded1EpilogMU<Loader::M,true>(ray,context,pre.grid->geomID,pre.grid->primID,scene,nullptr));
+        return intersector.intersect(ray,v0,v1,v2,mapUV,Occluded1EpilogMU<Loader::M,true>(ray,context,pre.grid->geomID,pre.grid->primID,scene));
       }
       
       /*! Intersect a ray with the primitive. */
@@ -149,7 +149,7 @@ namespace embree
 
         GridSOA::MapUV<Loader> mapUV(grid_uv,line_offset);
         PlueckerIntersector1<Loader::M> intersector(ray,nullptr);
-        intersector.intersect(ray,v0,v1,v2,mapUV,Intersect1EpilogMU<Loader::M,true>(ray,context,pre.grid->geomID,pre.grid->primID,scene,nullptr));
+        intersector.intersect(ray,v0,v1,v2,mapUV,Intersect1EpilogMU<Loader::M,true>(ray,context,pre.grid->geomID,pre.grid->primID,scene));
       };
       
       template<typename Loader>
@@ -179,7 +179,7 @@ namespace embree
         
         GridSOA::MapUV<Loader> mapUV(grid_uv,line_offset);
         PlueckerIntersector1<Loader::M> intersector(ray,nullptr);
-        return intersector.intersect(ray,v0,v1,v2,mapUV,Occluded1EpilogMU<Loader::M,true>(ray,context,pre.grid->geomID,pre.grid->primID,scene,nullptr));
+        return intersector.intersect(ray,v0,v1,v2,mapUV,Occluded1EpilogMU<Loader::M,true>(ray,context,pre.grid->geomID,pre.grid->primID,scene));
       }
       
       /*! Intersect a ray with the primitive. */

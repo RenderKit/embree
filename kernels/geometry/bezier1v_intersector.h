@@ -48,9 +48,9 @@ namespace embree
         STAT3(normal.trav_prims,1,1,1);
         const BezierCurves* geom = (BezierCurves*)scene->get(prim.geomID());
         if (likely(geom->subtype == BezierCurves::HAIR))
-          pre.intersectorHair.intersect(ray,prim.p0,prim.p1,prim.p2,prim.p3,geom->tessellationRate,Intersect1EpilogMU<VSIZEX,true>(ray,context,prim.geomID(),prim.primID(),scene,geomID_to_instID));
+          pre.intersectorHair.intersect(ray,prim.p0,prim.p1,prim.p2,prim.p3,geom->tessellationRate,Intersect1EpilogMU<VSIZEX,true>(ray,context,prim.geomID(),prim.primID(),scene));
         else 
-          pre.intersectorCurve.intersect(ray,prim.p0,prim.p1,prim.p2,prim.p3,Intersect1Epilog1<true>(ray,context,prim.geomID(),prim.primID(),scene,geomID_to_instID));
+          pre.intersectorCurve.intersect(ray,prim.p0,prim.p1,prim.p2,prim.p3,Intersect1Epilog1<true>(ray,context,prim.geomID(),prim.primID(),scene));
       }
       
       static __forceinline bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim, Scene* scene)
@@ -58,9 +58,9 @@ namespace embree
         STAT3(shadow.trav_prims,1,1,1);
         const BezierCurves* geom = (BezierCurves*)scene->get(prim.geomID());
         if (likely(geom->subtype == BezierCurves::HAIR))
-          return pre.intersectorHair.intersect(ray,prim.p0,prim.p1,prim.p2,prim.p3,geom->tessellationRate,Occluded1EpilogMU<VSIZEX,true>(ray,context,prim.geomID(),prim.primID(),scene,geomID_to_instID));
+          return pre.intersectorHair.intersect(ray,prim.p0,prim.p1,prim.p2,prim.p3,geom->tessellationRate,Occluded1EpilogMU<VSIZEX,true>(ray,context,prim.geomID(),prim.primID(),scene));
         else
-          return pre.intersectorCurve.intersect(ray,prim.p0,prim.p1,prim.p2,prim.p3,Occluded1Epilog1<true>(ray,context,prim.geomID(),prim.primID(),scene,geomID_to_instID));
+          return pre.intersectorCurve.intersect(ray,prim.p0,prim.p1,prim.p2,prim.p3,Occluded1Epilog1<true>(ray,context,prim.geomID(),prim.primID(),scene));
       }
 
       /*! Intersect an array of rays with an array of M primitives. */
@@ -71,7 +71,7 @@ namespace embree
           const size_t i = __bscf(valid);
           const float old_far = rays[i]->tfar;
           for (size_t n=0; n<num; n++)
-            intersect(pre[i],*rays[i],context,prim[n],scene,geomID_to_instID);
+            intersect(pre[i],*rays[i],context,prim[n],scene);
           valid_isec |= (rays[i]->tfar < old_far) ? ((size_t)1 << i) : 0;            
         } while(unlikely(valid));
         return valid_isec;
