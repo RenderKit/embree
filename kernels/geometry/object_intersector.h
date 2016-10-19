@@ -39,10 +39,10 @@ namespace embree
         Intersector1PrecalculationsMB<PrecalculationsBase>,
         Intersector1Precalculations<PrecalculationsBase>>::type Precalculations;
       
-      static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim, Scene* scene) 
+      static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim) 
       {
         AVX_ZERO_UPPER();
-        AccelSet* accel = (AccelSet*) scene->get(prim.geomID);
+        AccelSet* accel = (AccelSet*) context->scene->get(prim.geomID);
 
         /* perform ray mask test */
 #if defined(EMBREE_RAY_MASK)
@@ -53,10 +53,10 @@ namespace embree
         accel->intersect(ray,prim.primID,context);
       }
       
-      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim, Scene* scene) 
+      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim) 
       {
         AVX_ZERO_UPPER();
-        AccelSet* accel = (AccelSet*) scene->get(prim.geomID);
+        AccelSet* accel = (AccelSet*) context->scene->get(prim.geomID);
 
         /* perform ray mask test */
 #if defined(EMBREE_RAY_MASK)
@@ -69,7 +69,7 @@ namespace embree
       }
       
       //template<typename Context>
-      static __forceinline size_t intersect(Precalculations* pre, size_t valid_in, Ray** rays, IntersectContext* context, size_t ty, const Primitive* prims, size_t num, Scene* scene, size_t& lazy_node)
+      static __forceinline size_t intersect(Precalculations* pre, size_t valid_in, Ray** rays, IntersectContext* context, size_t ty, const Primitive* prims, size_t num, size_t& lazy_node)
       {
         AVX_ZERO_UPPER();
         
@@ -77,7 +77,7 @@ namespace embree
         for (size_t i=0; i<num; i++)
         {
           const Primitive& prim = prims[i];
-          AccelSet* accel = (AccelSet*) scene->get(prim.geomID);
+          AccelSet* accel = (AccelSet*) context->scene->get(prim.geomID);
 
           size_t N = 0, valid = valid_in;
           Ray* rays_filtered[64];
@@ -108,7 +108,7 @@ namespace embree
         return valid_in;
       }
 
-      static __forceinline size_t occluded(Precalculations* pre, size_t valid_in, Ray** rays, IntersectContext* context, size_t ty, const Primitive* prims, size_t num, Scene* scene, size_t& lazy_node)
+      static __forceinline size_t occluded(Precalculations* pre, size_t valid_in, Ray** rays, IntersectContext* context, size_t ty, const Primitive* prims, size_t num, size_t& lazy_node)
       {
         AVX_ZERO_UPPER();
         size_t hit = 0;
@@ -117,7 +117,7 @@ namespace embree
         for (size_t i=0; i<num; i++)
         {
           const Primitive& prim = prims[i];
-          AccelSet* accel = (AccelSet*) scene->get(prim.geomID);
+          AccelSet* accel = (AccelSet*) context->scene->get(prim.geomID);
 
           size_t N = 0, valid = valid_in;
           Ray* rays_filtered[64];
@@ -154,12 +154,12 @@ namespace embree
       }
 
       template<int K>
-      static __forceinline void intersectK(const vbool<K>& valid, /* PrecalculationsK& pre, */ RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node)
+      static __forceinline void intersectK(const vbool<K>& valid, /* PrecalculationsK& pre, */ RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node)
       {
       }
 
       template<int K>
-      static __forceinline vbool<K> occludedK(const vbool<K>& valid, /* PrecalculationsK& pre, */ RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node)
+      static __forceinline vbool<K> occludedK(const vbool<K>& valid, /* PrecalculationsK& pre, */ RayK<K>& ray, IntersectContext* context, const Primitive* prim, size_t num, size_t& lazy_node)
       {
         return valid;
       }
@@ -178,11 +178,11 @@ namespace embree
         IntersectorKPrecalculationsMB<K,PrecalculationsBase>,
         IntersectorKPrecalculations<K,PrecalculationsBase>>::type Precalculations;
       
-      static __forceinline void intersect(const vbool<K>& valid_i, const Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive& prim, Scene* scene)
+      static __forceinline void intersect(const vbool<K>& valid_i, const Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive& prim)
       {
         AVX_ZERO_UPPER();
         vbool<K> valid = valid_i;
-        AccelSet* accel = (AccelSet*) scene->get(prim.geomID);
+        AccelSet* accel = (AccelSet*) context->scene->get(prim.geomID);
         
         /* perform ray mask test */
 #if defined(EMBREE_RAY_MASK)
@@ -192,10 +192,10 @@ namespace embree
         accel->intersect(valid,ray,prim.primID,context);
       }
 
-      static __forceinline vbool<K> occluded(const vbool<K>& valid_i, const Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive& prim, Scene* scene)
+      static __forceinline vbool<K> occluded(const vbool<K>& valid_i, const Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive& prim)
       {
         vbool<K> valid = valid_i;
-        AccelSet* accel = (AccelSet*) scene->get(prim.geomID);
+        AccelSet* accel = (AccelSet*) context->scene->get(prim.geomID);
         
         /* perform ray mask test */
 #if defined(EMBREE_RAY_MASK)
@@ -206,12 +206,12 @@ namespace embree
         return ray.geomID == 0;
       }
 
-      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive& prim, Scene* scene) {
-        intersect(vbool<K>(1<<int(k)),pre,ray,context,prim,scene);
+      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive& prim) {
+        intersect(vbool<K>(1<<int(k)),pre,ray,context,prim);
       }
       
-      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive& prim, Scene* scene) {
-        occluded(vbool<K>(1<<int(k)),pre,ray,context,prim,scene);
+      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive& prim) {
+        occluded(vbool<K>(1<<int(k)),pre,ray,context,prim);
         return ray.geomID[k] == 0; 
       }
     };

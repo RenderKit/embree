@@ -116,7 +116,7 @@ namespace embree
         STAT3(normal.trav_leaves,1,1,1);
         size_t num; Primitive* prim = (Primitive*) cur.leaf(num);
         size_t lazy_node = 0;
-        PrimitiveIntersector1::intersect(pre,ray,context,leafType,prim,num,bvh->scene,lazy_node);
+        PrimitiveIntersector1::intersect(pre,ray,context,leafType,prim,num,lazy_node);
         ray_far = ray.tfar;
 
         /*! push lazy node onto stack */
@@ -212,7 +212,7 @@ namespace embree
         STAT3(shadow.trav_leaves,1,1,1);
         size_t num; Primitive* prim = (Primitive*) cur.leaf(num);
         size_t lazy_node = 0;
-        if (PrimitiveIntersector1::occluded(pre,ray,context,leafType,prim,num,bvh->scene,lazy_node)) {
+        if (PrimitiveIntersector1::occluded(pre,ray,context,leafType,prim,num,lazy_node)) {
           ray.geomID = 0;
           break;
         }

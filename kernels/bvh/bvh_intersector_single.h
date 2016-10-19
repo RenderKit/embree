@@ -109,7 +109,7 @@ namespace embree
 	  size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
 
           size_t lazy_node = 0;
-          PrimitiveIntersectorK::intersect(pre, ray, k, context, prim, num, bvh->scene, lazy_node);
+          PrimitiveIntersectorK::intersect(pre, ray, k, context, prim, num, lazy_node);
 	  ray_far = ray.tfar[k];
 
           if (unlikely(lazy_node)) {
@@ -168,7 +168,7 @@ namespace embree
 	  size_t num; Primitive* prim = (Primitive*) cur.leaf(num);
 
           size_t lazy_node = 0;
-          if (PrimitiveIntersectorK::occluded(pre,ray,k,context,prim,num,bvh->scene,lazy_node)) {
+          if (PrimitiveIntersectorK::occluded(pre,ray,k,context,prim,num,lazy_node)) {
 	    ray.geomID[k] = 0;
 	    return true;
 	  }

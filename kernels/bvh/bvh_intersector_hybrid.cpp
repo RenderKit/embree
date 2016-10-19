@@ -210,7 +210,7 @@ namespace embree
         size_t items; const Primitive* prim = (Primitive*) cur.leaf(items);
 
         size_t lazy_node = 0;
-        PrimitiveIntersectorK::intersect(valid_leaf,pre,ray,context,prim,items,bvh->scene,lazy_node);
+        PrimitiveIntersectorK::intersect(valid_leaf,pre,ray,context,prim,items,lazy_node);
         ray_tfar = select(valid_leaf,ray.tfar,ray_tfar);
 
         if (unlikely(lazy_node)) {
@@ -420,7 +420,7 @@ namespace embree
         size_t items; const Primitive* prim = (Primitive*) cur.leaf(items);
 
         size_t lazy_node = 0;
-        terminated |= PrimitiveIntersectorK::occluded(!terminated,pre,ray,context,prim,items,bvh->scene,lazy_node);
+        terminated |= PrimitiveIntersectorK::occluded(!terminated,pre,ray,context,prim,items,lazy_node);
         if (all(terminated)) break;
         ray_tfar = select(terminated,vfloat<K>(neg_inf),ray_tfar);
 

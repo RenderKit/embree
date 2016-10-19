@@ -323,7 +323,7 @@ namespace embree
           bits &= ~m_isec;
 
           vbool<K> m_valid = (inputPackets[i]->tnear <= inputPackets[i]->tfar);
-          PrimitiveIntersector::intersectK(m_valid, *inputPackets[i], context, prim, num, bvh->scene, lazy_node);
+          PrimitiveIntersector::intersectK(m_valid, *inputPackets[i], context, prim, num, lazy_node);
           Packet &p = packet[i]; 
           p.max_dist = min(p.max_dist, inputPackets[i]->tfar);
         } while(bits);
@@ -430,7 +430,7 @@ namespace embree
           bits &= ~m_isec;
 
           vbool<K> m_valid = (inputPackets[i]->tnear <= inputPackets[i]->tfar);
-          vbool<K> m_hit = PrimitiveIntersector::occludedK(m_valid, *inputPackets[i], context, prim, num, bvh->scene, lazy_node);
+          vbool<K> m_hit = PrimitiveIntersector::occludedK(m_valid, *inputPackets[i], context, prim, num, lazy_node);
           inputPackets[i]->geomID = select(m_hit, vint<K>(zero), inputPackets[i]->geomID);
           m_active &= ~((size_t)movemask(m_hit) << (i*K));
         } 
@@ -603,7 +603,7 @@ namespace embree
 
           /*! intersect stream of rays with all primitives */
           size_t lazy_node = 0;
-          size_t valid_isec MAYBE_UNUSED = PrimitiveIntersector::intersect(pre, bits, rays, context, 0, prim, num, bvh->scene, lazy_node);
+          size_t valid_isec MAYBE_UNUSED = PrimitiveIntersector::intersect(pre, bits, rays, context, 0, prim, num, lazy_node);
 
           /* update tfar in ray context on successful hit */
           size_t isec_bits = valid_isec;
@@ -766,7 +766,7 @@ namespace embree
           size_t bits = m_trav_active & m_active;          
 
           assert(bits);
-          m_active &= ~PrimitiveIntersector::occluded(pre, bits, rays, context, 0, prim, num, bvh->scene, lazy_node);
+          m_active &= ~PrimitiveIntersector::occluded(pre, bits, rays, context, 0, prim, num, lazy_node);
           if (unlikely(m_active == 0)) break;
         } // traversal + intersection        
       }      

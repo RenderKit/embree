@@ -40,37 +40,37 @@ namespace embree
 
       typedef Intersector1Precalculations<PrecalculationsBase> Precalculations;
 
-      static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim, Scene* scene)
+      static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim)
       {
         STAT3(normal.trav_prims,1,1,1);
-        const BezierCurves* geom = (BezierCurves*) scene->get(prim.geomID());
+        const BezierCurves* geom = (BezierCurves*) context->scene->get(prim.geomID());
         Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,prim.vertexID);
         if (likely(geom->subtype == BezierCurves::HAIR))
-          pre.intersectorHair.intersect(ray,a0,a1,a2,a3,geom->tessellationRate,Intersect1EpilogMU<VSIZEX,true>(ray,context,prim.geomID(),prim.primID(),scene));
+          pre.intersectorHair.intersect(ray,a0,a1,a2,a3,geom->tessellationRate,Intersect1EpilogMU<VSIZEX,true>(ray,context,prim.geomID(),prim.primID()));
         else 
-          pre.intersectorCurve.intersect(ray,a0,a1,a2,a3,Intersect1Epilog1<true>(ray,context,prim.geomID(),prim.primID(),scene));
+          pre.intersectorCurve.intersect(ray,a0,a1,a2,a3,Intersect1Epilog1<true>(ray,context,prim.geomID(),prim.primID()));
       }
       
-      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim, Scene* scene)
+      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim)
       {
         STAT3(shadow.trav_prims,1,1,1);
-        const BezierCurves* geom = (BezierCurves*) scene->get(prim.geomID());
+        const BezierCurves* geom = (BezierCurves*) context->scene->get(prim.geomID());
         Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,prim.vertexID);
         if (likely(geom->subtype == BezierCurves::HAIR))
-          return pre.intersectorHair.intersect(ray,a0,a1,a2,a3,geom->tessellationRate,Occluded1EpilogMU<VSIZEX,true>(ray,context,prim.geomID(),prim.primID(),scene));
+          return pre.intersectorHair.intersect(ray,a0,a1,a2,a3,geom->tessellationRate,Occluded1EpilogMU<VSIZEX,true>(ray,context,prim.geomID(),prim.primID()));
         else
-          return pre.intersectorCurve.intersect(ray,a0,a1,a2,a3,Occluded1Epilog1<true>(ray,context,prim.geomID(),prim.primID(),scene));
+          return pre.intersectorCurve.intersect(ray,a0,a1,a2,a3,Occluded1Epilog1<true>(ray,context,prim.geomID(),prim.primID()));
       }
 
       /*! Intersect an array of rays with an array of M primitives. */
-      static __forceinline size_t intersect(Precalculations* pre, size_t valid, Ray** rays, IntersectContext* context,  size_t ty, const Primitive* prim, size_t num, Scene* scene)
+      static __forceinline size_t intersect(Precalculations* pre, size_t valid, Ray** rays, IntersectContext* context,  size_t ty, const Primitive* prim, size_t num)
       {
         size_t valid_isec = 0;
         do {
           const size_t i = __bscf(valid);
           const float old_far = rays[i]->tfar;
           for (size_t n=0; n<num; n++)
-            intersect(pre[i],*rays[i],context,prim[n],scene);
+            intersect(pre[i],*rays[i],context,prim[n]);
           valid_isec |= (rays[i]->tfar < old_far) ? ((size_t)1 << i) : 0;            
         } while(unlikely(valid));
         return valid_isec;
@@ -98,41 +98,41 @@ namespace embree
 
       typedef IntersectorKPrecalculations<K,PrecalculationsBase> Precalculations;
       
-      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, const size_t k, IntersectContext* context, const Primitive& prim, Scene* scene)
+      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, const size_t k, IntersectContext* context, const Primitive& prim)
       {
         STAT3(normal.trav_prims,1,1,1);
-        const BezierCurves* geom = (BezierCurves*) scene->get(prim.geomID());
+        const BezierCurves* geom = (BezierCurves*) context->scene->get(prim.geomID());
         Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,prim.vertexID);
         if (likely(geom->subtype == BezierCurves::HAIR))
-          pre.intersectorHair.intersect(ray,k,a0,a1,a2,a3,geom->tessellationRate,Intersect1KEpilogMU<VSIZEX,K,true>(ray,k,context,prim.geomID(),prim.primID(),scene));
+          pre.intersectorHair.intersect(ray,k,a0,a1,a2,a3,geom->tessellationRate,Intersect1KEpilogMU<VSIZEX,K,true>(ray,k,context,prim.geomID(),prim.primID()));
         else 
-          pre.intersectorCurve.intersect(ray,k,a0,a1,a2,a3,Intersect1KEpilog1<K,true>(ray,k,context,prim.geomID(),prim.primID(),scene));
+          pre.intersectorCurve.intersect(ray,k,a0,a1,a2,a3,Intersect1KEpilog1<K,true>(ray,k,context,prim.geomID(),prim.primID()));
       }
       
-      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive& prim, Scene* scene)
+      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive& prim)
       {
         int mask = movemask(valid_i);
-        while (mask) intersect(pre,ray,context,__bscf(mask),prim,scene);
+        while (mask) intersect(pre,ray,context,__bscf(mask),prim);
       }
       
-      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, const size_t k, IntersectContext* context, const Primitive& prim, Scene* scene)
+      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, const size_t k, IntersectContext* context, const Primitive& prim)
       {
         STAT3(shadow.trav_prims,1,1,1);
-        const BezierCurves* geom = (BezierCurves*) scene->get(prim.geomID());
+        const BezierCurves* geom = (BezierCurves*) context->scene->get(prim.geomID());
         Vec3fa a0,a1,a2,a3; geom->gather(a0,a1,a2,a3,prim.vertexID);
         if (likely(geom->subtype == BezierCurves::HAIR))
-          return pre.intersectorHair.intersect(ray,k,a0,a1,a2,a3,geom->tessellationRate,Occluded1KEpilogMU<VSIZEX,K,true>(ray,k,context,prim.geomID(),prim.primID(),scene));
+          return pre.intersectorHair.intersect(ray,k,a0,a1,a2,a3,geom->tessellationRate,Occluded1KEpilogMU<VSIZEX,K,true>(ray,k,context,prim.geomID(),prim.primID()));
         else
-          return pre.intersectorCurve.intersect(ray,k,a0,a1,a2,a3,Occluded1KEpilog1<K,true>(ray,k,context,prim.geomID(),prim.primID(),scene));
+          return pre.intersectorCurve.intersect(ray,k,a0,a1,a2,a3,Occluded1KEpilog1<K,true>(ray,k,context,prim.geomID(),prim.primID()));
       }
       
-      static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive& prim, Scene* scene)
+      static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive& prim)
       {
         vbool<K> valid_o = false;
         int mask = movemask(valid_i);
         while (mask) {
           size_t k = __bscf(mask);
-          if (occluded(pre,ray,k,context,prim,scene))
+          if (occluded(pre,ray,k,context,prim))
             set(valid_o, k);
         }
         return valid_o;
@@ -156,26 +156,26 @@ namespace embree
 
       typedef Intersector1PrecalculationsMB<PrecalculationsBase> Precalculations;
             
-      static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim, Scene* scene)
+      static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim)
       {
         STAT3(normal.trav_prims,1,1,1);
-        const BezierCurves* geom = (BezierCurves*) scene->get(prim.geomID());
+        const BezierCurves* geom = (BezierCurves*) context->scene->get(prim.geomID());
         Vec3fa p0,p1,p2,p3; geom->gather(p0,p1,p2,p3,prim.vertexID,ray.time);
         if (likely(geom->subtype == BezierCurves::HAIR))
-          pre.intersectorHair.intersect(ray,p0,p1,p2,p3,geom->tessellationRate,Intersect1EpilogMU<VSIZEX,true>(ray,context,prim.geomID(),prim.primID(),scene));
+          pre.intersectorHair.intersect(ray,p0,p1,p2,p3,geom->tessellationRate,Intersect1EpilogMU<VSIZEX,true>(ray,context,prim.geomID(),prim.primID()));
         else 
-          pre.intersectorCurve.intersect(ray,p0,p1,p2,p3,Intersect1Epilog1<true>(ray,context,prim.geomID(),prim.primID(),scene));
+          pre.intersectorCurve.intersect(ray,p0,p1,p2,p3,Intersect1Epilog1<true>(ray,context,prim.geomID(),prim.primID()));
       }
       
-      static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim, Scene* scene) 
+      static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim) 
       {
         STAT3(shadow.trav_prims,1,1,1);
-        const BezierCurves* geom = (BezierCurves*) scene->get(prim.geomID());
+        const BezierCurves* geom = (BezierCurves*) context->scene->get(prim.geomID());
         Vec3fa p0,p1,p2,p3; geom->gather(p0,p1,p2,p3,prim.vertexID,ray.time);
         if (likely(geom->subtype == BezierCurves::HAIR))
-          return pre.intersectorHair.intersect(ray,p0,p1,p2,p3,geom->tessellationRate,Occluded1EpilogMU<VSIZEX,true>(ray,context,prim.geomID(),prim.primID(),scene));
+          return pre.intersectorHair.intersect(ray,p0,p1,p2,p3,geom->tessellationRate,Occluded1EpilogMU<VSIZEX,true>(ray,context,prim.geomID(),prim.primID()));
         else
-          return pre.intersectorCurve.intersect(ray,p0,p1,p2,p3,Occluded1Epilog1<true>(ray,context,prim.geomID(),prim.primID(),scene));
+          return pre.intersectorCurve.intersect(ray,p0,p1,p2,p3,Occluded1Epilog1<true>(ray,context,prim.geomID(),prim.primID()));
       }
     };
 
@@ -200,26 +200,26 @@ namespace embree
 
       typedef IntersectorKPrecalculationsMB<K,PrecalculationsBase> Precalculations;
       
-      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, const size_t k, IntersectContext* context, const Primitive& prim, Scene* scene)
+      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, const size_t k, IntersectContext* context, const Primitive& prim)
       {
         STAT3(normal.trav_prims,1,1,1);
-        const BezierCurves* geom = (BezierCurves*) scene->get(prim.geomID());        
+        const BezierCurves* geom = (BezierCurves*) context->scene->get(prim.geomID());        
         Vec3fa p0,p1,p2,p3; geom->gather(p0,p1,p2,p3,prim.vertexID,ray.time[k]);
         if (likely(geom->subtype == BezierCurves::HAIR))
-          pre.intersectorHair.intersect(ray,k,p0,p1,p2,p3,geom->tessellationRate,Intersect1KEpilogMU<VSIZEX,K,true>(ray,k,context,prim.geomID(),prim.primID(),scene));
+          pre.intersectorHair.intersect(ray,k,p0,p1,p2,p3,geom->tessellationRate,Intersect1KEpilogMU<VSIZEX,K,true>(ray,k,context,prim.geomID(),prim.primID()));
         else 
-          pre.intersectorCurve.intersect(ray,k,p0,p1,p2,p3,Intersect1KEpilog1<K,true>(ray,k,context,prim.geomID(),prim.primID(),scene));
+          pre.intersectorCurve.intersect(ray,k,p0,p1,p2,p3,Intersect1KEpilog1<K,true>(ray,k,context,prim.geomID(),prim.primID()));
       }
       
-      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, const size_t k, IntersectContext* context, const Primitive& prim, Scene* scene)
+      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, const size_t k, IntersectContext* context, const Primitive& prim)
       {
         STAT3(shadow.trav_prims,1,1,1);
-        const BezierCurves* geom = (BezierCurves*) scene->get(prim.geomID());
+        const BezierCurves* geom = (BezierCurves*) context->scene->get(prim.geomID());
         Vec3fa p0,p1,p2,p3; geom->gather(p0,p1,p2,p3,prim.vertexID,ray.time[k]);
         if (likely(geom->subtype == BezierCurves::HAIR))
-          return pre.intersectorHair.intersect(ray,k,p0,p1,p2,p3,geom->tessellationRate,Occluded1KEpilogMU<VSIZEX,K,true>(ray,k,context,prim.geomID(),prim.primID(),scene));
+          return pre.intersectorHair.intersect(ray,k,p0,p1,p2,p3,geom->tessellationRate,Occluded1KEpilogMU<VSIZEX,K,true>(ray,k,context,prim.geomID(),prim.primID()));
         else
-          return pre.intersectorCurve.intersect(ray,k,p0,p1,p2,p3,Occluded1KEpilog1<K,true>(ray,k,context,prim.geomID(),prim.primID(),scene));
+          return pre.intersectorCurve.intersect(ray,k,p0,p1,p2,p3,Occluded1KEpilog1<K,true>(ray,k,context,prim.geomID(),prim.primID()));
       }
     };
   }
