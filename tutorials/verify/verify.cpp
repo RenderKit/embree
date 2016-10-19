@@ -2252,6 +2252,10 @@ namespace embree
       if (!supportsIntersectMode(device,imode))
         return VerifyApplication::SKIPPED;
 
+      avector<Vec3fa> motion_vector;
+      motion_vector.push_back(Vec3fa(0.0f));
+      motion_vector.push_back(Vec3fa(0.0f));
+
       VerifyScene scene(device,sflags,to_aflags(imode));
       size_t size = state->intensity < 1.0f ? 50 : 500;
       if      (model == "sphere.triangles") scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createTriangleSphere(pos,2.0f,size));
@@ -2260,6 +2264,10 @@ namespace embree
       else if (model == "plane.triangles" ) scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createTrianglePlane (Vec3fa(pos.x,-6.0f,-6.0f),Vec3fa(0.0f,0.0f,12.0f),Vec3fa(0.0f,12.0f,0.0f),size,size));
       else if (model == "plane.quads"     ) scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createQuadPlane     (Vec3fa(pos.x,-6.0f,-6.0f),Vec3fa(0.0f,0.0f,12.0f),Vec3fa(0.0f,12.0f,0.0f),size,size));
       else if (model == "plane.subdiv"    ) scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createSubdivPlane   (Vec3fa(pos.x,-6.0f,-6.0f),Vec3fa(0.0f,0.0f,12.0f),Vec3fa(0.0f,12.0f,0.0f),size,size,2));
+      else if (model == "sphere.triangles_mb") scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createTriangleSphere(pos,2.0f,size)->set_motion_vector(motion_vector));
+      else if (model == "sphere.quads_mb"    ) scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createQuadSphere    (pos,2.0f,size)->set_motion_vector(motion_vector));
+      else if (model == "plane.triangles_mb" ) scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createTrianglePlane (Vec3fa(pos.x,-6.0f,-6.0f),Vec3fa(0.0f,0.0f,12.0f),Vec3fa(0.0f,12.0f,0.0f),size,size)->set_motion_vector(motion_vector));
+      else if (model == "plane.quads_mb"     ) scene.addGeometry(RTC_GEOMETRY_STATIC,SceneGraph::createQuadPlane     (Vec3fa(pos.x,-6.0f,-6.0f),Vec3fa(0.0f,0.0f,12.0f),Vec3fa(0.0f,12.0f,0.0f),size,size)->set_motion_vector(motion_vector));
       bool plane = model.compare(0,5,"plane") == 0;
       rtcCommit (scene);
       AssertNoError(device);
@@ -3912,8 +3920,28 @@ namespace embree
         groups.pop();
       }
 
+      push(new TestGroup("watertight_triangles_mb",true,true)); {
+        std::string watertightModels [] = {"sphere.triangles_mb", "plane.triangles_mb"};
+        const Vec3fa watertight_pos = Vec3fa(148376.0f,1234.0f,-223423.0f);
+        for (auto sflags : sceneFlagsRobust) 
+          for (auto imode : intersectModes) 
+            for (std::string model : watertightModels) 
+              groups.top()->add(new WatertightTest(to_string(sflags,imode)+"."+model,isa,sflags,imode,model,watertight_pos));
+        groups.pop();
+      }
+
       push(new TestGroup("watertight_quads",true,true)); {
         std::string watertightModels [] = {"sphere.quads", "plane.quads"};
+        const Vec3fa watertight_pos = Vec3fa(148376.0f,1234.0f,-223423.0f);
+        for (auto sflags : sceneFlagsRobust) 
+          for (auto imode : intersectModes) 
+            for (std::string model : watertightModels) 
+              groups.top()->add(new WatertightTest(to_string(sflags,imode)+"."+model,isa,sflags,imode,model,watertight_pos));
+        groups.pop();
+      }
+
+      push(new TestGroup("watertight_quads_mb",true,true)); {
+        std::string watertightModels [] = {"sphere.quads_mb", "plane.quads_mb"};
         const Vec3fa watertight_pos = Vec3fa(148376.0f,1234.0f,-223423.0f);
         for (auto sflags : sceneFlagsRobust) 
           for (auto imode : intersectModes) 
