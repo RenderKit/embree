@@ -43,15 +43,15 @@ namespace embree
     Accel* BVH4OBBBezier1i(Scene* scene, bool highQuality);
     Accel* BVH4OBBBezier1iMB(Scene* scene, bool highQuality);
     
-    Accel* BVH4Triangle4(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant);
-    Accel* BVH4Triangle4v(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant);
-    Accel* BVH4Triangle4i(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant);
-    Accel* BVH4Triangle4vMB(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant);
-    Accel* BVH4Triangle4iMB(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant);
+    Accel* BVH4Triangle4   (Scene* scene, BuildVariant bvariant = BuildVariant::STATIC, IntersectVariant ivariant = IntersectVariant::FAST);
+    Accel* BVH4Triangle4v  (Scene* scene, BuildVariant bvariant = BuildVariant::STATIC, IntersectVariant ivariant = IntersectVariant::ROBUST);
+    Accel* BVH4Triangle4i  (Scene* scene, BuildVariant bvariant = BuildVariant::STATIC, IntersectVariant ivariant = IntersectVariant::FAST);
+    Accel* BVH4Triangle4vMB(Scene* scene, BuildVariant bvariant = BuildVariant::STATIC, IntersectVariant ivariant = IntersectVariant::FAST);
+    Accel* BVH4Triangle4iMB(Scene* scene, BuildVariant bvariant = BuildVariant::STATIC, IntersectVariant ivariant = IntersectVariant::FAST);
 
-    Accel* BVH4Quad4v(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant);
-    Accel* BVH4Quad4i(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant);
-    Accel* BVH4Quad4iMB(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant);
+    Accel* BVH4Quad4v  (Scene* scene, BuildVariant bvariant = BuildVariant::STATIC, IntersectVariant ivariant = IntersectVariant::FAST);
+    Accel* BVH4Quad4i  (Scene* scene, BuildVariant bvariant = BuildVariant::STATIC, IntersectVariant ivariant = IntersectVariant::FAST);
+    Accel* BVH4Quad4iMB(Scene* scene, BuildVariant bvariant = BuildVariant::STATIC, IntersectVariant ivariant = IntersectVariant::FAST);
 
     Accel* BVH4QuantizedTriangle4i(Scene* scene);
     Accel* BVH4QuantizedQuad4i(Scene* scene);

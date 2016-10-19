@@ -40,14 +40,14 @@ namespace embree
     Accel* BVH8Line4i(Scene* scene);
     Accel* BVH8Line4iMB(Scene* scene);
 
-    Accel* BVH8Triangle4(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant);
-    Accel* BVH8Triangle4i(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant);
-    Accel* BVH8Triangle4vMB(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant);
-    Accel* BVH8Triangle4iMB(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant);
+    Accel* BVH8Triangle4   (Scene* scene, BuildVariant bvariant = BuildVariant::STATIC, IntersectVariant ivariant = IntersectVariant::FAST);
+    Accel* BVH8Triangle4i  (Scene* scene, BuildVariant bvariant = BuildVariant::STATIC, IntersectVariant ivariant = IntersectVariant::FAST);
+    Accel* BVH8Triangle4vMB(Scene* scene, BuildVariant bvariant = BuildVariant::STATIC, IntersectVariant ivariant = IntersectVariant::FAST);
+    Accel* BVH8Triangle4iMB(Scene* scene, BuildVariant bvariant = BuildVariant::STATIC, IntersectVariant ivariant = IntersectVariant::FAST);
 
-    Accel* BVH8Quad4v(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant);
-    Accel* BVH8Quad4i(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant);
-    Accel* BVH8Quad4iMB(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant);
+    Accel* BVH8Quad4v  (Scene* scene, BuildVariant bvariant = BuildVariant::STATIC, IntersectVariant ivariant = IntersectVariant::FAST);
+    Accel* BVH8Quad4i  (Scene* scene, BuildVariant bvariant = BuildVariant::STATIC, IntersectVariant ivariant = IntersectVariant::FAST);
+    Accel* BVH8Quad4iMB(Scene* scene, BuildVariant bvariant = BuildVariant::STATIC, IntersectVariant ivariant = IntersectVariant::FAST);
 
     Accel* BVH8QuantizedTriangle4i(Scene* scene);
     Accel* BVH8QuantizedQuad4i(Scene* scene);
