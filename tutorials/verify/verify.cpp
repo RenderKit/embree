@@ -3701,9 +3701,11 @@ namespace embree
     sceneFlags.push_back(RTC_SCENE_STATIC);
     sceneFlags.push_back(RTC_SCENE_STATIC | RTC_SCENE_ROBUST);
     sceneFlags.push_back(RTC_SCENE_STATIC | RTC_SCENE_COMPACT);
+    sceneFlags.push_back(RTC_SCENE_STATIC | RTC_SCENE_COMPACT | RTC_SCENE_ROBUST);
     sceneFlags.push_back(RTC_SCENE_DYNAMIC);
     sceneFlags.push_back(RTC_SCENE_DYNAMIC | RTC_SCENE_ROBUST);
     sceneFlags.push_back(RTC_SCENE_DYNAMIC | RTC_SCENE_COMPACT);
+    sceneFlags.push_back(RTC_SCENE_DYNAMIC | RTC_SCENE_COMPACT | RTC_SCENE_ROBUST);
 
     sceneFlagsRobust.push_back(RTC_SCENE_STATIC  | RTC_SCENE_ROBUST);
     sceneFlagsRobust.push_back(RTC_SCENE_STATIC  | RTC_SCENE_ROBUST | RTC_SCENE_COMPACT);
@@ -3713,6 +3715,7 @@ namespace embree
     sceneFlagsDynamic.push_back(RTC_SCENE_DYNAMIC);
     sceneFlagsDynamic.push_back(RTC_SCENE_DYNAMIC | RTC_SCENE_ROBUST);
     sceneFlagsDynamic.push_back(RTC_SCENE_DYNAMIC | RTC_SCENE_COMPACT);
+    sceneFlagsDynamic.push_back(RTC_SCENE_DYNAMIC | RTC_SCENE_COMPACT | RTC_SCENE_ROBUST);
 
     /**************************************************************************/
     /*                      Smaller API Tests                                 */
@@ -4023,6 +4026,7 @@ namespace embree
       benchmark_sflags_gflags.push_back(std::make_pair(RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC));
       benchmark_sflags_gflags.push_back(std::make_pair(RTC_SCENE_STATIC | RTC_SCENE_ROBUST,RTC_GEOMETRY_STATIC));
       benchmark_sflags_gflags.push_back(std::make_pair(RTC_SCENE_STATIC | RTC_SCENE_COMPACT,RTC_GEOMETRY_STATIC));
+      benchmark_sflags_gflags.push_back(std::make_pair(RTC_SCENE_STATIC | RTC_SCENE_COMPACT | RTC_SCENE_ROBUST,RTC_GEOMETRY_STATIC));
       benchmark_sflags_gflags.push_back(std::make_pair(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DYNAMIC));
 
       std::vector<std::pair<IntersectMode,IntersectVariant>> benchmark_imodes_ivariants;
