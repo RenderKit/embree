@@ -51,7 +51,7 @@ namespace embree
   };
 
   /*! Multi BVH with N children. Each node stores the bounding box of
-   * it's N children as well as N child pointers. */
+   * it's N children as well as N child references. */
   template<int N>
   class BVHN : public AccelData
   {
@@ -508,6 +508,23 @@ namespace embree
       /*! Returns reference to specified child */
       __forceinline       NodeRef& child(size_t i)       { assert(i<N); return children[i]; }
       __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
+
+      /*! output operator */
+      friend std::ostream& operator<<(std::ostream& o, const typename BVHN<N>::Node& n)
+      {
+        o << "AlignedNode { " << std::endl;
+        o << "  lower_x " << n.lower_x << std::endl;
+        o << "  upper_x " << n.upper_x << std::endl;
+        o << "  lower_y " << n.lower_y << std::endl;
+        o << "  upper_y " << n.upper_y << std::endl;
+        o << "  lower_z " << n.lower_z << std::endl;
+        o << "  upper_z " << n.upper_z << std::endl;
+        o << "  children = ";
+        for (size_t i=0; i<N; i++) o << n.children[i] << " ";
+        o << std::endl;
+        o << "}" << std::endl;
+        return o;
+      }
 
     public:
       vfloat<N> lower_x;           //!< X dimension of lower bounds of all N children.
@@ -1136,21 +1153,6 @@ namespace embree
   __forceinline void BVHN<4>::Node::bounds(BBox<vfloat4>& bounds0, BBox<vfloat4>& bounds1, BBox<vfloat4>& bounds2, BBox<vfloat4>& bounds3) const {
     transpose(lower_x,lower_y,lower_z,vfloat4(zero),bounds0.lower,bounds1.lower,bounds2.lower,bounds3.lower);
     transpose(upper_x,upper_y,upper_z,vfloat4(zero),bounds0.upper,bounds1.upper,bounds2.upper,bounds3.upper);
-  }
-
-  template<int N>
-  __forceinline std::ostream &operator<<(std::ostream &o, const typename BVHN<N>::Node &n)
-  {
-    o << "lower_x " << n.lower_x << std::endl;
-    o << "upper_x " << n.upper_x << std::endl;
-    o << "lower_y " << n.lower_y << std::endl;
-    o << "upper_y " << n.upper_y << std::endl;
-    o << "lower_z " << n.lower_z << std::endl;
-    o << "upper_z " << n.upper_z << std::endl;
-    o << "children ";
-    for (size_t i=0;i<N;i++) o << n.children[i] << " ";
-    o << std::endl;
-    return o;
   }
 
   typedef BVHN<4> BVH4;
