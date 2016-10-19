@@ -31,7 +31,7 @@ namespace embree
         typedef Intersector1PrecalculationsMB<MoellerTrumboreIntersector1<Mx>> Precalculations;
         
         /*! Intersect a ray with the M triangles and updates the hit. */
-        static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const TriangleMvMB<M>& tri, Scene* scene, const unsigned* geomID_to_instID)
+        static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const TriangleMvMB<M>& tri, Scene* scene)
         {
           STAT3(normal.trav_prims,1,1,1);
           const Vec3<vfloat<Mx>> time(pre.ftime());
@@ -42,7 +42,7 @@ namespace embree
         }
         
         /*! Test if the ray is occluded by one of M triangles. */
-        static __forceinline bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const TriangleMvMB<M>& tri, Scene* scene, const unsigned* geomID_to_instID)
+        static __forceinline bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const TriangleMvMB<M>& tri, Scene* scene)
         {
           STAT3(shadow.trav_prims,1,1,1);
           const Vec3<vfloat<Mx>> time(pre.ftime());
@@ -125,7 +125,7 @@ namespace embree
         typedef Intersector1PrecalculationsMB<PlueckerIntersector1<Mx>> Precalculations;
         
         /*! Intersect a ray with the M triangles and updates the hit. */
-        static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const TriangleMvMB<M>& tri, Scene* scene, const unsigned* geomID_to_instID)
+        static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const TriangleMvMB<M>& tri, Scene* scene)
         {
           STAT3(normal.trav_prims,1,1,1);
           const Vec3<vfloat<Mx>> time(pre.ftime());
@@ -136,7 +136,7 @@ namespace embree
         }
         
         /*! Test if the ray is occluded by one of M triangles. */
-        static __forceinline bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const TriangleMvMB<M>& tri, Scene* scene, const unsigned* geomID_to_instID)
+        static __forceinline bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const TriangleMvMB<M>& tri, Scene* scene)
         {
           STAT3(shadow.trav_prims,1,1,1);
           const Vec3<vfloat<Mx>> time(pre.ftime());

@@ -39,7 +39,7 @@ namespace embree
         Intersector1PrecalculationsMB<PrecalculationsBase>,
         Intersector1Precalculations<PrecalculationsBase>>::type Precalculations;
       
-      static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim, Scene* scene, const unsigned* geomID_to_instID) 
+      static __forceinline void intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim, Scene* scene) 
       {
         AVX_ZERO_UPPER();
         AccelSet* accel = (AccelSet*) scene->get(prim.geomID);
@@ -53,7 +53,7 @@ namespace embree
         accel->intersect(ray,prim.primID,context);
       }
       
-      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim, Scene* scene, const unsigned* geomID_to_instID) 
+      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim, Scene* scene) 
       {
         AVX_ZERO_UPPER();
         AccelSet* accel = (AccelSet*) scene->get(prim.geomID);
@@ -69,7 +69,7 @@ namespace embree
       }
       
       //template<typename Context>
-      static __forceinline size_t intersect(Precalculations* pre, size_t valid_in, Ray** rays, IntersectContext* context, size_t ty, const Primitive* prims, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node)
+      static __forceinline size_t intersect(Precalculations* pre, size_t valid_in, Ray** rays, IntersectContext* context, size_t ty, const Primitive* prims, size_t num, Scene* scene, size_t& lazy_node)
       {
         AVX_ZERO_UPPER();
         
@@ -108,7 +108,7 @@ namespace embree
         return valid_in;
       }
 
-      static __forceinline size_t occluded(Precalculations* pre, size_t valid_in, Ray** rays, IntersectContext* context, size_t ty, const Primitive* prims, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node)
+      static __forceinline size_t occluded(Precalculations* pre, size_t valid_in, Ray** rays, IntersectContext* context, size_t ty, const Primitive* prims, size_t num, Scene* scene, size_t& lazy_node)
       {
         AVX_ZERO_UPPER();
         size_t hit = 0;

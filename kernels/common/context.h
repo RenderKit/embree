@@ -24,10 +24,11 @@ namespace embree
   struct IntersectContext
   {
   public:
-    __forceinline IntersectContext(const RTCIntersectContext* user_context = nullptr)
+    __forceinline IntersectContext(const RTCIntersectContext* user_context)
       : user(user_context) {}
 
   public:
     const RTCIntersectContext* user;
+    const unsigned* geomID_to_instID; // required for xfm node handling
   };
 }

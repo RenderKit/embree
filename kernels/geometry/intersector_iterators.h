@@ -31,13 +31,13 @@ namespace embree
 
         static const bool validIntersectorK = false;
 
-        static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, size_t ty, const Primitive* prim, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node)
+        static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, size_t ty, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node)
         {
           for (size_t i=0; i<num; i++)
             Intersector::intersect(pre,ray,context,prim[i],scene,geomID_to_instID);
         }
         
-        static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, size_t ty, const Primitive* prim, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) 
+        static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, size_t ty, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node) 
         {
           for (size_t i=0; i<num; i++) {
             if (Intersector::occluded(pre,ray,context,prim[i],scene,geomID_to_instID))
@@ -46,7 +46,7 @@ namespace embree
           return false;
         }
 
-        static __forceinline size_t intersect(Precalculations* pre, size_t valid, Ray** rays, IntersectContext* context,  size_t ty, const Primitive* prim, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node)
+        static __forceinline size_t intersect(Precalculations* pre, size_t valid, Ray** rays, IntersectContext* context,  size_t ty, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node)
         {
 #if 0
           size_t valid_isec = 0;
@@ -63,7 +63,7 @@ namespace embree
 #endif
         }
 
-        static __forceinline size_t occluded(Precalculations* pre, size_t valid, Ray** rays, IntersectContext* context, size_t ty, const Primitive* prim, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) 
+        static __forceinline size_t occluded(Precalculations* pre, size_t valid, Ray** rays, IntersectContext* context, size_t ty, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node) 
         {
           size_t hit = 0;
           do {
@@ -108,7 +108,7 @@ namespace embree
           Precalculations1 pre1;
         };
         
-        static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, size_t ty, const Primitive* prim_i, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node)
+        static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, size_t ty, const Primitive* prim_i, size_t num, Scene* scene, size_t& lazy_node)
         {
           if (likely(ty == 0)) {
             Primitive1 prim = (Primitive1) prim_i;
@@ -121,7 +121,7 @@ namespace embree
           }
         }
         
-        static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, size_t ty, const Primitive* prim_i, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) 
+        static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, size_t ty, const Primitive* prim_i, size_t num, Scene* scene, size_t& lazy_node) 
         {
           if (likely(ty == 0)) {
             Primitive1 prim = (Primitive1) prim_i;
@@ -212,13 +212,13 @@ namespace embree
           return !valid0;
         }
 
-        static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, size_t ty, const Primitive* prim, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node)
+        static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, size_t ty, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node)
         {
           for (size_t i=0; i<num; i++)
             Intersector1::intersect(pre,ray,context,prim[i],scene,geomID_to_instID);
         }
         
-        static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, size_t ty, const Primitive* prim, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) 
+        static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, size_t ty, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node) 
         {
           for (size_t i=0; i<num; i++) {
             if (Intersector1::occluded(pre,ray,context,prim[i],scene,geomID_to_instID))
@@ -227,12 +227,12 @@ namespace embree
           return false;
         }
 
-        static __forceinline size_t intersect(Precalculations* pre, size_t valid, Ray** rays, IntersectContext* context,  size_t ty, const Primitive* prim, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node)
+        static __forceinline size_t intersect(Precalculations* pre, size_t valid, Ray** rays, IntersectContext* context,  size_t ty, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node)
         {
           return Intersector1::intersect(pre,valid,rays,context,ty,prim,num,scene,geomID_to_instID);
         }
 
-        static __forceinline size_t occluded(Precalculations* pre, size_t valid, Ray** rays, IntersectContext* context, size_t ty, const Primitive* prim, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) 
+        static __forceinline size_t occluded(Precalculations* pre, size_t valid, Ray** rays, IntersectContext* context, size_t ty, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node) 
         {
           //todo : fix
           size_t hit = 0;

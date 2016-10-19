@@ -77,22 +77,22 @@ namespace embree
       }
 
       /*! Intersect a ray with the primitive. */
-      static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t ty, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) 
+      static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) 
       {
         if (likely(ty == 0)) GridSOAIntersector1::intersect(pre,ray,context,prim,ty,scene,lazy_node);
         else                 processLazyNode(pre,context,prim,scene,lazy_node);
       }
-      static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, size_t ty0, const Primitive* prim, size_t ty, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) {
+      static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, size_t ty0, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) {
         intersect(pre,ray,context,prim,ty,scene,geomID_to_instID,lazy_node);
       }
       
       /*! Test if the ray is occluded by the primitive */
-      static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t ty, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) 
+      static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) 
       {
         if (likely(ty == 0)) return GridSOAIntersector1::occluded(pre,ray,context,prim,ty,scene,lazy_node);
         else                 return processLazyNode(pre,context,prim,scene,lazy_node);
       }
-      static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, size_t ty0, const Primitive* prim, size_t ty, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) {
+      static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, size_t ty0, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) {
         return occluded(pre,ray,context,prim,ty,scene,geomID_to_instID,lazy_node);
       }
     };
@@ -125,22 +125,22 @@ namespace embree
       }
 
       /*! Intersect a ray with the primitive. */
-      static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t ty, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) 
+      static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) 
       {
         if (likely(ty == 0)) GridSOAMBlurIntersector1::intersect(pre,ray,context,prim,ty,scene,lazy_node);
         else                 processLazyNode(pre,ray,context,prim,scene,lazy_node);
       }
-      static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, size_t ty0, const Primitive* prim, size_t ty, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) {
+      static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, size_t ty0, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) {
         intersect(pre,ray,context,prim,ty,scene,geomID_to_instID,lazy_node);
       }
       
       /*! Test if the ray is occluded by the primitive */
-      static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t ty, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) 
+      static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) 
       {
         if (likely(ty == 0)) return GridSOAMBlurIntersector1::occluded(pre,ray,context,prim,ty,scene,lazy_node);
         else                 return processLazyNode(pre,ray,context,prim,scene,lazy_node);
       }
-      static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, size_t ty0, const Primitive* prim, size_t ty, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) {
+      static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, size_t ty0, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) {
         return occluded(pre,ray,context,prim,ty,scene,geomID_to_instID,lazy_node);
       }
     };

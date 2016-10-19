@@ -30,14 +30,14 @@ namespace embree
       typedef LineMi<M> Primitive;
       typedef Intersector1Precalculations<typename LineIntersector1<Mx>::Precalculations> Precalculations;
 
-      static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& line, Scene* scene, const unsigned* geomID_to_instID)
+      static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& line, Scene* scene)
       {
         STAT3(normal.trav_prims,1,1,1);
         Vec4<vfloat<M>> v0,v1; line.gather(v0,v1,scene);
         LineIntersector1<Mx>::intersect(ray,pre,v0,v1,Intersect1EpilogM<M,Mx,filter>(ray,context,line.geomIDs,line.primIDs,scene,geomID_to_instID));
       }
 
-      static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& line, Scene* scene, const unsigned* geomID_to_instID)
+      static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& line, Scene* scene)
       {
         STAT3(shadow.trav_prims,1,1,1);
         Vec4<vfloat<M>> v0,v1; line.gather(v0,v1,scene);
@@ -45,7 +45,7 @@ namespace embree
       }
 
       /*! Intersect an array of rays with an array of M primitives. */
-      static __forceinline size_t intersect(Precalculations* pre, size_t valid, Ray** rays, IntersectContext* context,  size_t ty, const Primitive* prim, size_t num, Scene* scene, const unsigned* geomID_to_instID)
+      static __forceinline size_t intersect(Precalculations* pre, size_t valid, Ray** rays, IntersectContext* context,  size_t ty, const Primitive* prim, size_t num, Scene* scene)
       {
         size_t valid_isec = 0;
         do {
@@ -66,14 +66,14 @@ namespace embree
       typedef LineMi<M> Primitive;
       typedef Intersector1PrecalculationsMB<typename LineIntersector1<Mx>::Precalculations> Precalculations;
 
-      static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& line, Scene* scene, const unsigned* geomID_to_instID)
+      static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& line, Scene* scene)
       {
         STAT3(normal.trav_prims,1,1,1);
         Vec4<vfloat<M>> v0,v1; line.gather(v0,v1,scene,ray.time);
         LineIntersector1<Mx>::intersect(ray,pre,v0,v1,Intersect1EpilogM<M,Mx,filter>(ray,context,line.geomIDs,line.primIDs,scene,geomID_to_instID));
       }
 
-      static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& line, Scene* scene, const unsigned* geomID_to_instID)
+      static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& line, Scene* scene)
       {
         STAT3(shadow.trav_prims,1,1,1);
         Vec4<vfloat<M>> v0,v1; line.gather(v0,v1,scene,ray.time);
@@ -81,7 +81,7 @@ namespace embree
       }
 
       /*! Intersect an array of rays with an array of M primitives. */
-      static __forceinline size_t intersect(Precalculations* pre, size_t valid, Ray** rays, IntersectContext* context,  size_t ty, const Primitive* prim, size_t num, Scene* scene, const unsigned* geomID_to_instID)
+      static __forceinline size_t intersect(Precalculations* pre, size_t valid, Ray** rays, IntersectContext* context,  size_t ty, const Primitive* prim, size_t num, Scene* scene)
       {
         size_t valid_isec = 0;
         do {
