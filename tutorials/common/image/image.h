@@ -74,16 +74,37 @@ namespace embree
     }
 
     /*! initialize image from color data */
-    ImageT (size_t width, size_t height, T* color, const bool copy = true, const std::string& name = "")
+    ImageT (size_t width, size_t height, T* color, const bool copy = true, const std::string& name = "", const bool flip_y = false)
       : Image(width,height,name)
     {
-      if (copy) {
+      if (copy)
+      {
         data = new T[width*height];
-        for (size_t i=0; i<width*height; i++) data[i] = color[i];
+
+        if (flip_y)
+        {
+          const T* in = color + (height-1) * width;
+          T* out = data;
+
+          for (size_t y=0; y<height; y++)
+          {
+            for (size_t x=0; x<width; x++)
+              out[x] = in[x];
+
+            in -= width;
+            out += width;
+          }
+        }
+        else
+        {
+          for (size_t i=0; i<width*height; i++)
+            data[i] = color[i];
+        }
       } 
-      else {
+      else
+      {
         data = color;
-      } 
+      }
     }
 
     /*! image destruction */
