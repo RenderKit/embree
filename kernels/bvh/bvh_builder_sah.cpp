@@ -710,8 +710,8 @@ namespace embree
             for (size_t i=begin; i<end; i++)
             {
               const PrimRef &prim = source[i];
-              const unsigned int splits = prim.geomID() >> 24;
-              assert(splits != 1);
+              //const unsigned int splits = prim.geomID() >> 24;
+              //assert(splits != 1);
               const vint4 bin0 = mapping.bin(prim.bounds().lower);
               const vint4 bin1 = mapping.bin(prim.bounds().upper);
 
