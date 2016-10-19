@@ -49,7 +49,8 @@ namespace embree
       ray.dir = xfmVector(world2local,ray_dir);
       ray.geomID = RTC_INVALID_GEOMETRY_ID;
       ray.instID = instance->id;
-      instance->object->intersect((RTCRay&)ray,nullptr);
+      IntersectContext context(nullptr);
+      instance->object->intersect((RTCRay&)ray,&context);
       ray.org = ray_org;
       ray.dir = ray_dir;
       if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
@@ -67,7 +68,8 @@ namespace embree
       ray.org = xfmPoint (world2local,ray_org);
       ray.dir = xfmVector(world2local,ray_dir);
       ray.instID = instance->id;
-      instance->object->occluded((RTCRay&)ray,nullptr);
+      IntersectContext context(nullptr);
+      instance->object->occluded((RTCRay&)ray,&context);
       ray.org = ray_org;
       ray.dir = ray_dir;
     }
