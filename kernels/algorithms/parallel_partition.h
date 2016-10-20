@@ -109,9 +109,6 @@ namespace embree
     const Reduction_V& reduction_v;
     const Vi& init;
 
-    size_t numMisplacedRangesLeft;
-    size_t numMisplacedRangesRight;
-
     size_t numTasks; 
     __aligned(64) size_t counter_start[MAX_TASKS+1]; 
     __aligned(64) size_t counter_left[MAX_TASKS+1];  
@@ -131,7 +128,6 @@ namespace embree
                                                  const Reduction_V& reduction_v) 
 
       : array(array), N(N), is_left(is_left), reduction_t(reduction_t), reduction_v(reduction_v), init(init),
-      numMisplacedRangesLeft(0), numMisplacedRangesRight(0),
       numTasks(min((N+BLOCK_SIZE-1)/BLOCK_SIZE,min(maxNumThreads,MAX_TASKS))) {}
 
     __forceinline const Range* findStartRange(size_t& index, const Range* const r, const size_t numRanges)
@@ -235,8 +231,8 @@ namespace embree
       const Range globalRight(mid,N-1);
 
       /* calculate all left and right ranges that are on the wrong global side */
-      numMisplacedRangesLeft  = 0;
-      numMisplacedRangesRight = 0;
+      size_t numMisplacedRangesLeft  = 0;
+      size_t numMisplacedRangesRight = 0;
       size_t numMisplacedItemsLeft   = 0;
       size_t numMisplacedItemsRight  = 0;
 
