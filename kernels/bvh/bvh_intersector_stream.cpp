@@ -542,7 +542,7 @@ namespace embree
               const RayCtx& ray = ray_ctx[i];
               const vlong<N> bitmask = one << vlong<N>(i);
 
-              const vbool<N*2> vmask = intersectNode<N, true, robust>(ray, bminmaxX, bminmaxY, bminmaxZ, dist);
+              const vbool<N*2> vmask = intersectAlignedNode<N, true, robust>(ray, bminmaxX, bminmaxY, bminmaxZ, dist);
 
               maskK = mask_or((vboold<N>)vmask, maskK, maskK, bitmask);
             } while(bits);              
