@@ -485,7 +485,6 @@ namespace embree
                                                         const Compare& cmp, 
                                                         const Reduction_T& reduction_t,
                                                         const Reduction_V& reduction_v)
-  //							Scheduler &scheduler)
   {
 #if defined(__X86_64__) 
     parallel_partition<BLOCK_SIZE,T,V,Compare,Reduction_T,Reduction_V> p(array,N,init,cmp,reduction_t,reduction_v);
@@ -696,8 +695,8 @@ namespace embree
         const size_t right_start = counter_start[i] + counter_left[i];
         const size_t right_end   = counter_start[i+1]-1;
 
-        Range left_range (left_start,left_end); // counter[i].start,counter[i].start+counter[i].left-1);
-        Range right_range(right_start,right_end); // counter[i].start+counter[i].left,counter[i].start+counter[i].size-1);
+        Range left_range (left_start,left_end);
+        Range right_range(right_start,right_end);
 
         Range left_misplaced = globalLeft.intersect(right_range);
         Range right_misplaced = globalRight.intersect(left_range);
