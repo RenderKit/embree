@@ -142,9 +142,7 @@ namespace embree
       return &r[i];
     }
 
-    __forceinline void swapItemsInMisplacedRanges(const Range* const leftMisplacedRanges,
-                                                  const size_t numLeftMisplacedRanges,
-                                                  const Range* const rightMisplacedRanges,
+    __forceinline void swapItemsInMisplacedRanges(const size_t numLeftMisplacedRanges,
                                                   const size_t numRightMisplacedRanges,
                                                   const size_t startID,
                                                   const size_t endID)
@@ -256,21 +254,17 @@ namespace embree
         }
       }
       assert( numMisplacedItemsLeft == numMisplacedItemsRight );
-	
-      if (numMisplacedItemsLeft)
-      {
 
-        parallel_for(numTasks,[&] (const size_t taskID) {
-            const size_t startID = (taskID+0)*numMisplacedItemsLeft/numTasks;
-            const size_t endID   = (taskID+1)*numMisplacedItemsLeft/numTasks;
-            swapItemsInMisplacedRanges(leftMisplacedRanges,
-                                       numMisplacedRangesLeft,
-                                       rightMisplacedRanges,
-                                       numMisplacedRangesRight,
-                                       startID,
-                                       endID);	                             
-          });
-      }
+      /* if no items are misplaced we are done */
+      if (numMisplacedItemsLeft == 0)
+        return mid;
+
+      /* otherwise we copy the items to the right place in parallel */
+      parallel_for(numTasks,[&] (const size_t taskID) {
+          const size_t startID = (taskID+0)*numMisplacedItemsLeft/numTasks;
+          const size_t endID   = (taskID+1)*numMisplacedItemsLeft/numTasks;
+          swapItemsInMisplacedRanges(numMisplacedRangesLeft,numMisplacedRangesRight,startID,endID);	                             
+        });
 
       return mid;
     }
