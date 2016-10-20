@@ -91,15 +91,14 @@ namespace embree
   public:
      
     __forceinline parallel_partition_task(T* array, 
-                                                 const size_t N, 
-                                                 const size_t maxNumThreads,
-                                                 const Vi& init, 
-                                                 const IsLeft& is_left, 
-                                                 const Reduction_T& reduction_t, 
-                                                 const Reduction_V& reduction_v) 
+                                          const size_t N, 
+                                          const Vi& init, 
+                                          const IsLeft& is_left, 
+                                          const Reduction_T& reduction_t, 
+                                          const Reduction_V& reduction_v) 
 
       : array(array), N(N), is_left(is_left), reduction_t(reduction_t), reduction_v(reduction_v), init(init),
-      numTasks(min((N+BLOCK_SIZE-1)/BLOCK_SIZE,min(maxNumThreads,MAX_TASKS))) {}
+      numTasks(min((N+BLOCK_SIZE-1)/BLOCK_SIZE,min(TaskScheduler::threadCount(),MAX_TASKS))) {}
 
     __forceinline const range<ssize_t>* findStartRange(size_t& index, const range<ssize_t>* const r, const size_t numRanges)
     {
@@ -243,12 +242,11 @@ namespace embree
                                                V &rightReduction,
                                                const IsLeft& is_left, 
                                                const Reduction_T& reduction_t,
-                                               const Reduction_V& reduction_v,
-                                               const size_t numThreads = TaskScheduler::threadCount())
+                                               const Reduction_V& reduction_v)
   {
 #if defined(__X86_64__) 
     typedef parallel_partition_task<BLOCK_SIZE, T,V,Vi,IsLeft,Reduction_T,Reduction_V> partition_task;
-    std::unique_ptr<partition_task> p(new partition_task(array,N,numThreads,init,is_left,reduction_t,reduction_v));
+    std::unique_ptr<partition_task> p(new partition_task(array,N,init,is_left,reduction_t,reduction_v));
     return p->partition(leftReduction,rightReduction);    
 #else
     return serial_partitioning(array,size_t(0),N,leftReduction,rightReduction,is_left,reduction_t);
