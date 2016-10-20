@@ -111,7 +111,6 @@ namespace embree
 
     size_t numMisplacedRangesLeft;
     size_t numMisplacedRangesRight;
-    size_t numMisplacedItems;
 
     size_t numTasks; 
     __aligned(64) size_t counter_start[MAX_TASKS+1]; 
@@ -132,7 +131,7 @@ namespace embree
                                                  const Reduction_V& reduction_v) 
 
       : array(array), N(N), is_left(is_left), reduction_t(reduction_t), reduction_v(reduction_v), init(init),
-      numMisplacedRangesLeft(0), numMisplacedRangesRight(0), numMisplacedItems(0),
+      numMisplacedRangesLeft(0), numMisplacedRangesRight(0),
       numTasks(min((N+BLOCK_SIZE-1)/BLOCK_SIZE,min(maxNumThreads,MAX_TASKS))) {}
 
     __forceinline const Range* findStartRange(size_t& index, const Range* const r, const size_t numRanges)
@@ -223,41 +222,34 @@ namespace embree
       counter_left[numTasks]  = 0;
       
       /* finalize the reductions */
-      for (size_t i=0; i<numTasks; i++)
-      {
+      for (size_t i=0; i<numTasks; i++) {
         reduction_v(leftReduction,leftReductions[i]);
         reduction_v(rightReduction,rightReductions[i]);
       }
 
-      numMisplacedRangesLeft  = 0;
-      numMisplacedRangesRight = 0;
-      size_t numMisplacedItemsLeft   = 0;
-      size_t numMisplacedItemsRight  = 0;
-	
       /* calculate mid point for partitioning */
       size_t mid = counter_left[0];
       for (size_t i=1; i<numTasks; i++)
         mid += counter_left[i];
-
       const Range globalLeft (0,mid-1);
       const Range globalRight(mid,N-1);
 
+      /* calculate all left and right ranges that are on the wrong global side */
+      numMisplacedRangesLeft  = 0;
+      numMisplacedRangesRight = 0;
+      size_t numMisplacedItemsLeft   = 0;
+      size_t numMisplacedItemsRight  = 0;
+
       for (size_t i=0; i<numTasks; i++)
       {	    
-        const size_t left_start  = counter_start[i];
-        const size_t left_end    = counter_start[i] + counter_left[i]-1;
-        const size_t right_start = counter_start[i] + counter_left[i];
-        const size_t right_end   = counter_start[i+1]-1;
-
-        Range left_range (left_start,left_end);
-        Range right_range(right_start,right_end);
-
-        Range left_misplaced = globalLeft.intersect(right_range);
-        Range right_misplaced = globalRight.intersect(left_range);
+        const Range left_range (counter_start[i], counter_start[i] + counter_left[i]-1);
+        const Range right_range(counter_start[i] + counter_left[i], counter_start[i+1]-1);
+        const Range left_misplaced  = globalLeft. intersect(right_range);
+        const Range right_misplaced = globalRight.intersect(left_range);
 
         if (!left_misplaced.empty())  
         {
-          numMisplacedItemsLeft  += left_misplaced.size();
+          numMisplacedItemsLeft += left_misplaced.size();
           leftMisplacedRanges[numMisplacedRangesLeft++] = left_misplaced;
         }
 
@@ -267,10 +259,9 @@ namespace embree
           rightMisplacedRanges[numMisplacedRangesRight++] = right_misplaced;
         }
       }
-
       assert( numMisplacedItemsLeft == numMisplacedItemsRight );
 	
-      numMisplacedItems = numMisplacedItemsLeft;
+      size_t numMisplacedItems = numMisplacedItemsLeft;
 
       const size_t global_mid = mid;
 
