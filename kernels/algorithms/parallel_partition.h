@@ -147,24 +147,19 @@ namespace embree
                                                   const size_t startID,
                                                   const size_t endID)
     {
-
       size_t leftLocalIndex  = startID;
       size_t rightLocalIndex = startID;
-
       const Range* l_range = findStartRange(leftLocalIndex,leftMisplacedRanges,numLeftMisplacedRanges);
       const Range* r_range = findStartRange(rightLocalIndex,rightMisplacedRanges,numRightMisplacedRanges);
-
+      
       size_t l_left = l_range->size() - leftLocalIndex;
       size_t r_left = r_range->size() - rightLocalIndex;
-
-      size_t size = endID - startID;
-
       T *__restrict__ l = &array[l_range->start + leftLocalIndex];
       T *__restrict__ r = &array[r_range->start + rightLocalIndex];
-
+      size_t size = endID - startID;
       size_t items = min(size,min(l_left,r_left)); 
-
-      while(size)
+     
+      while (size)
       {
         if (unlikely(l_left == 0))
         {
@@ -172,7 +167,6 @@ namespace embree
           l_left = l_range->size();
           l = &array[l_range->start];
           items = min(size,min(l_left,r_left));
-
         }
 
         if (unlikely(r_left == 0))
