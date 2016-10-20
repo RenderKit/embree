@@ -40,15 +40,15 @@ namespace embree
   namespace isa
   {
     template<int N>
-    struct AllocBVHNNode
+    struct AllocBVHNAlignedNode
     {
       typedef BVHN<N> BVH;
-      typedef typename BVH::Node Node;
+      typedef typename BVH::AlignedNode AlignedNode;
       typedef typename BVH::NodeRef NodeRef;
 
-      __forceinline Node* operator() (MortonBuildRecord<NodeRef>& current, MortonBuildRecord<NodeRef>* children, size_t numChildren, FastAllocator::ThreadLocal2* alloc)
+      __forceinline AlignedNode* operator() (MortonBuildRecord<NodeRef>& current, MortonBuildRecord<NodeRef>* children, size_t numChildren, FastAllocator::ThreadLocal2* alloc)
       {
-        Node* node = (Node*) alloc->alloc0->malloc(sizeof(Node),BVH::byteNodeAlignment); 
+        AlignedNode* node = (AlignedNode*) alloc->alloc0->malloc(sizeof(AlignedNode),BVH::byteNodeAlignment); 
         *current.parent = BVH::encodeNode(node);
         node->clear();
         for (size_t i=0; i<numChildren; i++)
@@ -61,12 +61,12 @@ namespace embree
     struct SetBVHNBounds
     {
       typedef BVHN<N> BVH;
-      typedef typename BVH::Node Node;
+      typedef typename BVH::AlignedNode AlignedNode;
 
       BVH* bvh;
       __forceinline SetBVHNBounds (BVH* bvh) : bvh(bvh) {}
 
-      __forceinline BBox3fa operator() (Node* node, const BBox3fa* bounds, size_t num)
+      __forceinline BBox3fa operator() (AlignedNode* node, const BBox3fa* bounds, size_t num)
       {
         BBox3fa res = empty;
         for (size_t i=0; i<num; i++) {
@@ -351,7 +351,7 @@ namespace embree
     class BVHNMeshBuilderMorton : public Builder
     {
       typedef BVHN<N> BVH;
-      typedef typename BVH::Node Node;
+      typedef typename BVH::AlignedNode AlignedNode;
       typedef typename BVH::NodeRef NodeRef;
 
     public:
@@ -385,7 +385,7 @@ namespace embree
         
         /* preallocate arrays */
         morton.resize(numPrimitives);
-        size_t bytesAllocated = numPrimitives*sizeof(Node)/(4*N) + size_t(1.2f*Primitive::blocks(numPrimitives)*sizeof(Primitive));
+        size_t bytesAllocated = numPrimitives*sizeof(AlignedNode)/(4*N) + size_t(1.2f*Primitive::blocks(numPrimitives)*sizeof(Primitive));
         size_t bytesMortonCodes = numPrimitives*sizeof(MortonID32Bit);
         bytesAllocated = max(bytesAllocated,bytesMortonCodes); // the first allocation block is reused to sort the morton codes
         bvh->alloc.init(bytesAllocated,2*bytesAllocated);
@@ -461,13 +461,13 @@ namespace embree
         }
 
         /* create BVH */
-        AllocBVHNNode<N> allocNode;
+        AllocBVHNAlignedNode<N> allocAlignedNode;
         SetBVHNBounds<N> setBounds(bvh);
         CreateMortonLeaf<N,Primitive> createLeaf(mesh,morton.data());
         CalculateMeshBounds<Mesh> calculateBounds(mesh);
         auto node_bounds = bvh_builder_morton_internal<NodeRef>(
           typename BVH::CreateAlloc(bvh), BBox3fa(empty),
-          allocNode,setBounds,createLeaf,calculateBounds,progress,
+          allocAlignedNode,setBounds,createLeaf,calculateBounds,progress,
           morton.data(),dest,numPrimitivesGen,N,BVH::maxBuildDepth,minLeafSize,maxLeafSize);
         
         bvh->set(node_bounds.first,LBBox3fa(node_bounds.second),numPrimitives);

@@ -59,7 +59,7 @@ namespace embree
     if (node.isBarrier())
       node.clearBarrier();
     else if (!node.isLeaf()) {
-      Node* n = node.node();
+      BaseNode* n = node.baseNode(BVH_FLAG_ALIGNED_NODE); // FIXME: flags should be stored in BVH
       for (size_t c=0; c<N; c++)
         clearBarrier(n->child(c));
     }
@@ -90,8 +90,8 @@ namespace embree
     {
       std::pop_heap(lst.begin(), lst.end());
       NodeArea n = lst.back(); lst.pop_back();
-      if (!n.node->isNode()) break;
-      Node* node = n.node->node();
+      if (!n.node->isAlignedNode()) break;
+      AlignedNode* node = n.node->alignedNode();
       for (size_t i=0; i<N; i++) {
         if (node->child(i) == BVHN::emptyNode) continue;
         lst.push_back(NodeArea(node->child(i),node->bounds(i)));
@@ -112,10 +112,10 @@ namespace embree
       node.clearBarrier();
       return node;
     }
-    else if (node.isNode()) 
+    else if (node.isAlignedNode()) 
     {
-      Node* oldnode = node.node();
-      Node* newnode = (BVHN::Node*) allocator.malloc(sizeof(BVHN::Node),byteNodeAlignment);
+      AlignedNode* oldnode = node.alignedNode();
+      AlignedNode* newnode = (BVHN::AlignedNode*) allocator.malloc(sizeof(BVHN::AlignedNode),byteNodeAlignment);
       *newnode = *oldnode;
       for (size_t c=0; c<N; c++)
         newnode->child(c) = layoutLargeNodesRecursion(oldnode->child(c),allocator);

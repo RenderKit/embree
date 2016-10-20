@@ -24,9 +24,9 @@ namespace embree
   class BVHNStatistics
   {
     typedef BVHN<N> BVH;
-    typedef typename BVH::Node AlignedNode;
+    typedef typename BVH::AlignedNode AlignedNode;
     typedef typename BVH::UnalignedNode UnalignedNode;
-    typedef typename BVH::NodeMB AlignedNodeMB;
+    typedef typename BVH::AlignedNodeMB AlignedNodeMB;
     typedef typename BVH::UnalignedNodeMB UnalignedNodeMB;
     typedef typename BVH::TransformNode TransformNode;
     typedef typename BVH::QuantizedNode QuantizedNode;

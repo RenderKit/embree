@@ -164,7 +164,7 @@ namespace embree
            [&] { return bvh->alloc.threadLocal2(); },
            [&] (const isa::BVHBuilderBinnedSAH::BuildRecord& current, BVHBuilderBinnedSAH::BuildRecord* children, const size_t n, FastAllocator::ThreadLocal2* alloc) -> int
            {
-             Node* node = (Node*) alloc->alloc0->malloc(sizeof(Node)); node->clear();
+             AlignedNode* node = (AlignedNode*) alloc->alloc0->malloc(sizeof(AlignedNode)); node->clear();
              for (size_t i=0; i<n; i++) {
                node->set(i,children[i].pinfo.geomBounds);
                children[i].parent = (size_t*)&node->child(i);
@@ -225,7 +225,7 @@ namespace embree
       for (size_t i=0;i<refs.size();i++)
       {
         NodeRef ref = refs.back().node;
-        if (ref.isNode())
+        if (ref.isAlignedNode())
           ref.prefetch();
       }
 #endif
@@ -238,14 +238,14 @@ namespace embree
         if (ref.isLeaf()) break;
         refs.pop_back();    
         
-        Node* node = ref.node();
+        AlignedNode* node = ref.alignedNode();
         for (size_t i=0; i<N; i++) {
           if (node->child(i) == BVH::emptyNode) continue;
           refs.push_back(BuildRef(node->bounds(i),node->child(i)));
          
 #if 1
           NodeRef ref_pre = node->child(i);
-          if (ref_pre.isNode())
+          if (ref_pre.isAlignedNode())
             ref_pre.prefetch();
 #endif
           std::push_heap (refs.begin(),refs.end()); 
