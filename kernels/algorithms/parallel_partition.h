@@ -17,6 +17,7 @@
 #pragma once
 
 #include "parallel_for.h"
+#include "range.h"
 
 namespace embree
 {
@@ -70,36 +71,6 @@ namespace embree
     ALIGNED_CLASS;
   private:
 
-    struct Range 
-    {
-      ssize_t start;
-      ssize_t end;
-
-      __forceinline Range() {}
-
-      __forceinline Range (ssize_t start, ssize_t end) 
-      : start(start), end(end) {}
-
-      __forceinline void reset() { 
-        start = 0; end = -1; 
-      } 
-	
-      __forceinline Range intersect(const Range& r) const {
-        return Range (max(start,r.start),min(end,r.end));
-      }
-
-      __forceinline bool empty() const { 
-        return end < start; 
-      } 
-	
-      __forceinline size_t size() const { 
-        assert(!empty());
-        return end-start+1; 
-      }
-    };
-
-  private:
-
     static const size_t MAX_TASKS = 512;
 
     T* array;
@@ -112,8 +83,8 @@ namespace embree
     size_t numTasks; 
     __aligned(64) size_t counter_start[MAX_TASKS+1]; 
     __aligned(64) size_t counter_left[MAX_TASKS+1];  
-    __aligned(64) Range leftMisplacedRanges[MAX_TASKS];  
-    __aligned(64) Range rightMisplacedRanges[MAX_TASKS]; 
+    __aligned(64) range<ssize_t> leftMisplacedRanges[MAX_TASKS];  
+    __aligned(64) range<ssize_t> rightMisplacedRanges[MAX_TASKS]; 
     __aligned(64) V leftReductions[MAX_TASKS];           
     __aligned(64) V rightReductions[MAX_TASKS];    
 
@@ -130,7 +101,7 @@ namespace embree
       : array(array), N(N), is_left(is_left), reduction_t(reduction_t), reduction_v(reduction_v), init(init),
       numTasks(min((N+BLOCK_SIZE-1)/BLOCK_SIZE,min(maxNumThreads,MAX_TASKS))) {}
 
-    __forceinline const Range* findStartRange(size_t& index, const Range* const r, const size_t numRanges)
+    __forceinline const range<ssize_t>* findStartRange(size_t& index, const range<ssize_t>* const r, const size_t numRanges)
     {
       size_t i = 0;
       while(index >= r[i].size())
@@ -149,13 +120,13 @@ namespace embree
     {
       size_t leftLocalIndex  = startID;
       size_t rightLocalIndex = startID;
-      const Range* l_range = findStartRange(leftLocalIndex,leftMisplacedRanges,numLeftMisplacedRanges);
-      const Range* r_range = findStartRange(rightLocalIndex,rightMisplacedRanges,numRightMisplacedRanges);
+      const range<ssize_t>* l_range = findStartRange(leftLocalIndex,leftMisplacedRanges,numLeftMisplacedRanges);
+      const range<ssize_t>* r_range = findStartRange(rightLocalIndex,rightMisplacedRanges,numRightMisplacedRanges);
       
       size_t l_left = l_range->size() - leftLocalIndex;
       size_t r_left = r_range->size() - rightLocalIndex;
-      T *__restrict__ l = &array[l_range->start + leftLocalIndex];
-      T *__restrict__ r = &array[r_range->start + rightLocalIndex];
+      T *__restrict__ l = &array[l_range->begin() + leftLocalIndex];
+      T *__restrict__ r = &array[r_range->begin() + rightLocalIndex];
       size_t size = endID - startID;
       size_t items = min(size,min(l_left,r_left)); 
      
@@ -165,7 +136,7 @@ namespace embree
         {
           l_range++;
           l_left = l_range->size();
-          l = &array[l_range->start];
+          l = &array[l_range->begin()];
           items = min(size,min(l_left,r_left));
         }
 
@@ -173,7 +144,7 @@ namespace embree
         {		
           r_range++;
           r_left = r_range->size();
-          r = &array[r_range->start];          
+          r = &array[r_range->begin()];          
           items = min(size,min(l_left,r_left));
         }
 
@@ -219,8 +190,8 @@ namespace embree
       size_t mid = counter_left[0];
       for (size_t i=1; i<numTasks; i++)
         mid += counter_left[i];
-      const Range globalLeft (0,mid-1);
-      const Range globalRight(mid,N-1);
+      const range<ssize_t> globalLeft (0,mid);
+      const range<ssize_t> globalRight(mid,N);
 
       /* calculate all left and right ranges that are on the wrong global side */
       size_t numMisplacedRangesLeft  = 0;
@@ -230,10 +201,10 @@ namespace embree
 
       for (size_t i=0; i<numTasks; i++)
       {	    
-        const Range left_range (counter_start[i], counter_start[i] + counter_left[i]-1);
-        const Range right_range(counter_start[i] + counter_left[i], counter_start[i+1]-1);
-        const Range left_misplaced  = globalLeft. intersect(right_range);
-        const Range right_misplaced = globalRight.intersect(left_range);
+        const range<ssize_t> left_range (counter_start[i], counter_start[i] + counter_left[i]);
+        const range<ssize_t> right_range(counter_start[i] + counter_left[i], counter_start[i+1]);
+        const range<ssize_t> left_misplaced  = globalLeft. intersect(right_range);
+        const range<ssize_t> right_misplaced = globalRight.intersect(left_range);
 
         if (!left_misplaced.empty())  
         {
