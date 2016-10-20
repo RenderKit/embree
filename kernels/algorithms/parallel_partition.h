@@ -684,10 +684,6 @@ namespace embree
       const Range globalLeft (0,mid-1);
       const Range globalRight(mid,N-1);
 
-      // without pragma the compiler makes a mess out of this loop
-#if defined(__INTEL_COMPILER)
-#pragma novector // FIXME: does this make a performance difference at all?
-#endif
       for (size_t i=0;i<tasks;i++)
       {	    
         const size_t left_start  = counter_start[i];
