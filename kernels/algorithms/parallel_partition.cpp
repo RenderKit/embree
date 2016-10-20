@@ -33,7 +33,7 @@ namespace embree
         /* create random permutation */
         size_t N = std::rand() % 1000000;
         std::vector<int> array(N);
-        std::iota(array.begin(),array.end(),0);
+        for (size_t i=0; i<N; i++) array[i] = i;
         for (auto& v : array) std::swap(v,array[std::rand()%array.size()]);
         size_t split = std::rand() % (N+1);
 
