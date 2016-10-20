@@ -21,13 +21,13 @@
 namespace embree
 {
   /* serial partitioning */
-  template<typename T, typename V, typename Compare, typename Reduction_T>
+  template<typename T, typename V, typename IsLeft, typename Reduction_T>
     __forceinline size_t serial_partitioning(T* array, 
                                              const size_t begin,
                                              const size_t end, 
                                              V& leftReduction,
                                              V& rightReduction,
-                                             const Compare& cmp, 
+                                             const IsLeft& is_left, 
                                              const Reduction_T& reduction_t)
   {
     T* l = array + begin;
@@ -36,7 +36,7 @@ namespace embree
     while(1)
     {
       /* *l < pivot */
-      while (likely(l <= r && cmp(*l) )) 
+      while (likely(l <= r && is_left(*l) )) 
       {
 #if defined(__AVX512F__)
         prefetch<PFHINT_L1EX>(l+4);	  
@@ -45,7 +45,7 @@ namespace embree
         ++l;
       }
       /* *r >= pivot) */
-      while (likely(l <= r && !cmp(*r)))
+      while (likely(l <= r && !is_left(*r)))
       {
 #if defined(__AVX512F__)
         prefetch<PFHINT_L1EX>(r-4);	  
@@ -64,7 +64,7 @@ namespace embree
     return l - array;        
   }
   
-  template<size_t BLOCK_SIZE, typename T, typename V, typename Vi, typename Compare, typename Reduction_T, typename Reduction_V>
+  template<size_t BLOCK_SIZE, typename T, typename V, typename Vi, typename IsLeft, typename Reduction_T, typename Reduction_V>
     class __aligned(64) parallel_partition_static_task
   {
     ALIGNED_CLASS;
@@ -85,7 +85,7 @@ namespace embree
       } 
 	
       __forceinline Range intersect(const Range& r) const {
-        return Range (max(start,r.start),min(end,r.end)); // carefull with ssize_t here
+        return Range (max(start,r.start),min(end,r.end));
       }
 
       __forceinline bool empty() const { 
@@ -104,16 +104,16 @@ namespace embree
 
     T* array;
     size_t N;
-    size_t tasks; 
-    const Compare& cmp;
+    const IsLeft& is_left;
     const Reduction_T& reduction_t;
     const Reduction_V& reduction_v;
-    const Vi &init;
+    const Vi& init;
 
     size_t numMisplacedRangesLeft;
     size_t numMisplacedRangesRight;
     size_t numMisplacedItems;
 
+    size_t numTasks; 
     __aligned(64) size_t counter_start[MAX_TASKS]; 
     __aligned(64) size_t counter_left[MAX_TASKS];  
     __aligned(64) Range leftMisplacedRanges[MAX_TASKS];  
@@ -123,21 +123,17 @@ namespace embree
 
   public:
      
-    __forceinline parallel_partition_static_task(T *array, 
+    __forceinline parallel_partition_static_task(T* array, 
                                                  const size_t N, 
                                                  const size_t maxNumThreads,
                                                  const Vi& init, 
-                                                 const Compare& cmp, 
+                                                 const IsLeft& is_left, 
                                                  const Reduction_T& reduction_t, 
                                                  const Reduction_V& reduction_v) 
-      : array(array), N(N), cmp(cmp), reduction_t(reduction_t), reduction_v(reduction_v), init(init)
-    {
-      numMisplacedRangesLeft  = 0;
-      numMisplacedRangesRight = 0;
-      numMisplacedItems  = 0;
-      tasks = (N+maxNumThreads-1)/maxNumThreads >= BLOCK_SIZE ? maxNumThreads : (N+BLOCK_SIZE-1)/BLOCK_SIZE;
-      tasks = min(tasks,MAX_TASKS);
-    }
+
+      : array(array), N(N), is_left(is_left), reduction_t(reduction_t), reduction_v(reduction_v), init(init),
+      numMisplacedRangesLeft(0), numMisplacedRangesRight(0), numMisplacedItems(0),
+      numTasks(min((N+BLOCK_SIZE-1)/BLOCK_SIZE,min(maxNumThreads,MAX_TASKS))) {}
 
     __forceinline const Range *findStartRange(size_t &index,const Range *const r,const size_t numRanges)
     {
@@ -213,15 +209,15 @@ namespace embree
       {
         leftReduction = init;
         rightReduction = init;
-        return serial_partitioning(array,0,N,leftReduction,rightReduction,cmp,reduction_t);
+        return serial_partitioning(array,0,N,leftReduction,rightReduction,is_left,reduction_t);
       }
 
-      parallel_for(tasks,[&] (const size_t taskID) {
-          const size_t startID = (taskID+0)*N/tasks;
-          const size_t endID   = (taskID+1)*N/tasks;
+      parallel_for(numTasks,[&] (const size_t taskID) {
+          const size_t startID = (taskID+0)*N/numTasks;
+          const size_t endID   = (taskID+1)*N/numTasks;
           V local_left(init);
           V local_right(init);
-          const size_t mid = serial_partitioning(array,startID,endID,local_left,local_right,cmp,reduction_t);
+          const size_t mid = serial_partitioning(array,startID,endID,local_left,local_right,is_left,reduction_t);
           counter_start[taskID] = startID;
           counter_left [taskID] = mid-startID;
           leftReductions[taskID]  = local_left;
@@ -231,7 +227,7 @@ namespace embree
       leftReduction = init;
       rightReduction = init;
 
-      for (size_t i=0;i<tasks;i++)
+      for (size_t i=0;i<numTasks;i++)
       {
         reduction_v(leftReduction,leftReductions[i]);
         reduction_v(rightReduction,rightReductions[i]);
@@ -242,17 +238,17 @@ namespace embree
       size_t numMisplacedItemsLeft   = 0;
       size_t numMisplacedItemsRight  = 0;
 	
-      counter_start[tasks] = N;
-      counter_left[tasks]  = 0;
+      counter_start[numTasks] = N;
+      counter_left[numTasks]  = 0;
 
       size_t mid = counter_left[0];
-      for (size_t i=1;i<tasks;i++)
+      for (size_t i=1;i<numTasks;i++)
         mid += counter_left[i];
 
       const Range globalLeft (0,mid-1);
       const Range globalRight(mid,N-1);
 
-      for (size_t i=0;i<tasks;i++)
+      for (size_t i=0;i<numTasks;i++)
       {	    
         const size_t left_start  = counter_start[i];
         const size_t left_end    = counter_start[i] + counter_left[i]-1;
@@ -292,9 +288,9 @@ namespace embree
       if (numMisplacedItems)
       {
 
-        parallel_for(tasks,[&] (const size_t taskID) {
-            const size_t startID = (taskID+0)*numMisplacedItems/tasks;
-            const size_t endID   = (taskID+1)*numMisplacedItems/tasks;
+        parallel_for(numTasks,[&] (const size_t taskID) {
+            const size_t startID = (taskID+0)*numMisplacedItems/numTasks;
+            const size_t endID   = (taskID+1)*numMisplacedItems/numTasks;
             swapItemsInMisplacedRanges(leftMisplacedRanges,
                                        numMisplacedRangesLeft,
                                        rightMisplacedRanges,
@@ -309,23 +305,23 @@ namespace embree
 
   };
 
-  template<size_t BLOCK_SIZE, typename T, typename V, typename Vi, typename Compare, typename Reduction_T, typename Reduction_V>
+  template<size_t BLOCK_SIZE, typename T, typename V, typename Vi, typename IsLeft, typename Reduction_T, typename Reduction_V>
     __forceinline size_t parallel_in_place_partitioning_static(T *array, 
                                                                const size_t N, 
                                                                const Vi &init,
                                                                V &leftReduction,
                                                                V &rightReduction,
-                                                               const Compare& cmp, 
+                                                               const IsLeft& is_left, 
                                                                const Reduction_T& reduction_t,
                                                                const Reduction_V& reduction_v,
                                                                const size_t numThreads = TaskScheduler::threadCount())
   {
 #if defined(__X86_64__) 
-    typedef parallel_partition_static_task<BLOCK_SIZE, T,V,Vi,Compare,Reduction_T,Reduction_V> partition_task;
-    std::unique_ptr<partition_task> p(new partition_task(array,N,numThreads,init,cmp,reduction_t,reduction_v));
+    typedef parallel_partition_static_task<BLOCK_SIZE, T,V,Vi,IsLeft,Reduction_T,Reduction_V> partition_task;
+    std::unique_ptr<partition_task> p(new partition_task(array,N,numThreads,init,is_left,reduction_t,reduction_v));
     return p->partition(leftReduction,rightReduction);    
 #else
-    return serial_partitioning(array,size_t(0),N,leftReduction,rightReduction,cmp,reduction_t);
+    return serial_partitioning(array,size_t(0),N,leftReduction,rightReduction,is_left,reduction_t);
 #endif
   }
 
