@@ -235,7 +235,7 @@ namespace embree
           const int splitPos = split.pos;
           const int splitDim = split.dim;
           
-          const size_t mid = parallel_in_place_partitioning_static<128,PrimRef,PrimInfo>
+          const size_t mid = parallel_partitioning<128,PrimRef,PrimInfo>
 	  (&prims[begin],end-begin,init,left,right,
 	   [&] (const PrimRef &ref) { return split.mapping.bin_unsafe(center2(ref.bounds(space)))[splitDim] < splitPos; },
 	   [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.add(ref.bounds()); },

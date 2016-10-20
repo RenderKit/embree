@@ -66,7 +66,7 @@ namespace embree
   }
   
   template<size_t BLOCK_SIZE, typename T, typename V, typename Vi, typename IsLeft, typename Reduction_T, typename Reduction_V>
-    class __aligned(64) parallel_partition_static_task
+    class __aligned(64) parallel_partition_task
   {
     ALIGNED_CLASS;
   private:
@@ -90,7 +90,7 @@ namespace embree
 
   public:
      
-    __forceinline parallel_partition_static_task(T* array, 
+    __forceinline parallel_partition_task(T* array, 
                                                  const size_t N, 
                                                  const size_t maxNumThreads,
                                                  const Vi& init, 
@@ -236,18 +236,18 @@ namespace embree
   };
 
   template<size_t BLOCK_SIZE, typename T, typename V, typename Vi, typename IsLeft, typename Reduction_T, typename Reduction_V>
-    __forceinline size_t parallel_in_place_partitioning_static(T *array, 
-                                                               const size_t N, 
-                                                               const Vi &init,
-                                                               V &leftReduction,
-                                                               V &rightReduction,
-                                                               const IsLeft& is_left, 
-                                                               const Reduction_T& reduction_t,
-                                                               const Reduction_V& reduction_v,
-                                                               const size_t numThreads = TaskScheduler::threadCount())
+    __forceinline size_t parallel_partitioning(T *array, 
+                                               const size_t N, 
+                                               const Vi &init,
+                                               V &leftReduction,
+                                               V &rightReduction,
+                                               const IsLeft& is_left, 
+                                               const Reduction_T& reduction_t,
+                                               const Reduction_V& reduction_v,
+                                               const size_t numThreads = TaskScheduler::threadCount())
   {
 #if defined(__X86_64__) 
-    typedef parallel_partition_static_task<BLOCK_SIZE, T,V,Vi,IsLeft,Reduction_T,Reduction_V> partition_task;
+    typedef parallel_partition_task<BLOCK_SIZE, T,V,Vi,IsLeft,Reduction_T,Reduction_V> partition_task;
     std::unique_ptr<partition_task> p(new partition_task(array,N,numThreads,init,is_left,reduction_t,reduction_v));
     return p->partition(leftReduction,rightReduction);    
 #else
