@@ -64,438 +64,6 @@ namespace embree
     return l - array;        
   }
   
-
-  template<size_t BLOCK_SIZE, typename T, typename V, typename Compare, typename Reduction_T, typename Reduction_V>
-    class __aligned(64) parallel_partition
-  {
-  private:
-
-    static const size_t MAX_TASKS = 256;
-
-    const Compare& cmp;
-    const Reduction_T& reduction_t;
-    const Reduction_V& reduction_v;
-      
-    const V &init;
-
-    size_t N;
-    size_t blocks;
-    T* array;
-     
-
-    __aligned(64) std::atomic<uint64_t> blockID;
-    __aligned(64) std::atomic<uint64_t> numLeftRemainderBlocks; 
-    __aligned(64) std::atomic<uint64_t> numRightRemainderBlocks; 
-    __aligned(64) std::atomic<uint32_t> maxLeftBlockID;
-    __aligned(64) std::atomic<uint32_t> maxRightBlockID;
-      
-    unsigned int  leftRemainderBlockIDs[MAX_TASKS]; 
-    unsigned int rightRemainderBlockIDs[MAX_TASKS];
-
-    V leftReductions[MAX_TASKS]; // FIXME: remove explicit storage
-    V rightReductions[MAX_TASKS];
-
-
-    enum {
-      NEED_LEFT_BLOCK           = 1,
-      NEED_RIGHT_BLOCK          = 2
-    };
-
-    /* do we need a left block? */
-    __forceinline bool needLeftBlock(const size_t mode)  { return (mode & NEED_LEFT_BLOCK)  == NEED_LEFT_BLOCK; }
-
-    /* do we need a right block? */
-    __forceinline bool needRightBlock(const size_t mode) { return (mode & NEED_RIGHT_BLOCK) == NEED_RIGHT_BLOCK; }
-
-    /* do we need both blocks? */
-    __forceinline bool needBothBlocks(const size_t mode) { return needLeftBlock(mode) && needRightBlock(mode); }
-      
-    /* get left/right atomic block id */
-    __forceinline int64_t getBlockID(const size_t mode)
-    {
-      int64_t v = 0;
-      if (needLeftBlock(mode))  v |= 1;
-      if (needRightBlock(mode)) v |= (int64_t)1 << 32;
-      int64_t val = blockID.fetch_add(v);
-      return val;
-    }
-
-    /* get left index from block id */
-    __forceinline int32_t getLeftBlockIndex(const int64_t id) { return id & 0xffffffff; }
-
-    /* get right index from block id */
-    __forceinline int32_t getRightBlockIndex(const int64_t id) { return id >> 32; }
- 
-    /* get left array index from block index */
-    __forceinline void getLeftArrayIndex(const size_t blockIndex, size_t &begin, size_t &end) 
-    { 
-      begin = blockIndex * BLOCK_SIZE; 
-      end   = begin + BLOCK_SIZE; 
-    }
-
-    /* get right array index from block index */
-    __forceinline void getRightArrayIndex(const size_t blockIndex, size_t &begin, size_t &end) 
-    { 
-      begin = N - (blockIndex+1) * BLOCK_SIZE; 
-      end   = begin + BLOCK_SIZE; 
-    }
-
-    /* is block id valid? */
-    __forceinline bool validBlockID(const int64_t id)
-    {
-      const size_t numLeftBlocks  = getLeftBlockIndex(id) + 1;
-      const size_t numRightBlocks = getRightBlockIndex(id) + 1;
-      return numLeftBlocks+numRightBlocks <= blocks;
-    }
-
-    /* swap to blocks */
-    __forceinline void swapTwoBlocks(const size_t index0, const size_t index1)
-    {
-      assert(index0 != index1);
-      for (size_t i=0;i<BLOCK_SIZE;i++)
-        xchg(array[index0+i],array[index1+i]);                
-    }
-
-    /* swap to left blocks */
-    __forceinline void swapTwoLeftBlocks(const size_t leftID0, const size_t leftID1)
-    {
-      assert( leftID0 != leftID1 );
-      size_t left0_begin, left0_end;
-      size_t left1_begin, left1_end;
-
-      getLeftArrayIndex(leftID0, left0_begin, left0_end);
-      getLeftArrayIndex(leftID1, left1_begin, left1_end);
-
-      swapTwoBlocks(left0_begin,left1_begin);
-    }
-
-    /* swap to right blocks */
-    __forceinline void swapTwoRightBlocks(const size_t rightID0, const size_t rightID1)
-    {
-      assert( rightID0 != rightID1 );
-      size_t right0_begin, right0_end;
-      size_t right1_begin, right1_end;
-
-      getRightArrayIndex(rightID0, right0_begin, right0_end);
-      getRightArrayIndex(rightID1, right1_begin, right1_end);
-
-      swapTwoBlocks(right0_begin,right1_begin);
-    }
-
-    /* serial partitioning */
-    __forceinline size_t serialPartitioning(const size_t begin, 
-                                            const size_t end, 
-                                            V &leftReduc, 
-                                            V &rightReduc)
-    {
-      T* l = array + begin;
-      T* r = array + end - 1;
-
-      while(1)
-      {
-        /* *l < pivot */
-        while (likely(l <= r && cmp(*l) )) 
-        {
-#if defined(__AVX512F__)
-          prefetch<PFHINT_L1EX>(l+4);	  
-#endif
-          //if (!cmp(*l)) break;
-          reduction_t(leftReduc,*l);
-          ++l;
-        }
-        /* *r >= pivot) */
-        while (likely(l <= r && !cmp(*r)))
-        {
-#if defined(__AVX512F__)
-          prefetch<PFHINT_L1EX>(r-4);	  
-#endif
-          //if (cmp(*r)) break;
-
-          reduction_t(rightReduc,*r);
-          --r;
-        }
-        if (r<l) break;
-
-        reduction_t(leftReduc ,*r);
-        reduction_t(rightReduc,*l);
-        xchg(*l,*r);
-        l++; r--;
-      }
-      
-      return l - array;        
-    }
-
-    /* neutralize left and right block */
-    __forceinline size_t neutralizeBlocks(size_t &left_begin,
-                                          const size_t &left_end,
-                                          size_t &right_begin,
-                                          const size_t &right_end,
-                                          V &leftReduc, 
-                                          V &rightReduc)
-    {
-      while(left_begin < left_end && right_begin < right_end)
-      {
-        while(cmp(array[left_begin]) /* array[left_begin] < pivot */)
-        {
-#if defined(__AVX512F__)
-          prefetch<PFHINT_L1EX>(&array[left_begin] + 2);	  
-#endif
-
-
-          left_begin++;
-          if (left_begin >= left_end) break;
-        }
-
-        while(!cmp(array[right_begin]) /* array[right_begin] >= pivot */)
-        {
-#if defined(__AVX512F__)
-          prefetch<PFHINT_L1EX>(&array[right_begin] - 2);	  
-#endif
-
-          right_begin++;
-          if (right_begin >= right_end) break;
-        }
-
-        if (unlikely(left_begin == left_end || right_begin == right_end)) break;
-            
-        xchg(array[left_begin++],array[right_begin++]);
-      }
-
-      size_t mode = 0;
-      if (unlikely(left_begin == left_end))
-      {
-        for (size_t i=left_end-BLOCK_SIZE;i<left_end;i++)
-          reduction_t(leftReduc,array[i]);
-
-        mode |= NEED_LEFT_BLOCK;
-      }
-
-      if (unlikely(right_begin == right_end))
-      {
-        for (size_t i=right_end-BLOCK_SIZE;i<right_end;i++)
-          reduction_t(rightReduc,array[i]);
-
-        mode |= NEED_RIGHT_BLOCK;
-      }
-
-      assert(mode != 0);
-      return mode;
-    }
-
-  public:
-
-    /* initialize atomic counters */
-    __forceinline parallel_partition(T *array, size_t N, const V& init, const Compare& cmp, const Reduction_T& reduction_t, const Reduction_V& reduction_v) : array(array), N(N), init(init), cmp(cmp), reduction_t(reduction_t) , reduction_v(reduction_v)
-    {
-      blockID.store(0);
-      numLeftRemainderBlocks  = 0;
-      numRightRemainderBlocks = 0;
-      maxLeftBlockID          = 0;
-      maxRightBlockID         = 0;
-        
-      blocks = N/BLOCK_SIZE;
-    }
-
-    /* each thread neutralizes blocks taken from left and right */
-    void thread_partition(V &leftReduction,
-                          V &rightReduction)
-    {
-      size_t mode = NEED_LEFT_BLOCK | NEED_RIGHT_BLOCK;
-        
-      size_t left_begin  = (size_t)-1;
-      size_t left_end    = (size_t)-1;
-      size_t right_begin = (size_t)-1;
-      size_t right_end   = (size_t)-1;
-
-      size_t currentLeftBlock  = (size_t)-1;
-      size_t currentRightBlock = (size_t)-1;
-
-      leftReduction  = init;
-      rightReduction = init;
-
-      while(1)
-      {
-        int64_t id = getBlockID(mode);
-        if (!validBlockID(id)) break;
-
-        /* need a left block? */
-        if (needLeftBlock(mode))
-        {
-
-          const size_t blockIndex = getLeftBlockIndex(id);
-          getLeftArrayIndex(blockIndex,left_begin,left_end);                
-          currentLeftBlock = blockIndex;
-        }
-
-        /* need a right block? */
-        if (needRightBlock(mode))
-        {
-          const size_t blockIndex = getRightBlockIndex(id);
-          getRightArrayIndex(blockIndex,right_begin,right_end);
-          currentRightBlock = blockIndex;
-        }
-            
-        assert(left_begin  < left_end);
-        assert(right_begin < right_end);
-        assert(left_end <= right_begin);
-
-        mode = neutralizeBlocks(left_begin,left_end,right_begin,right_end,leftReduction,rightReduction);
-      }        
-
-      assert(left_end <= right_begin);
-
-      if (left_begin != left_end)
-      {
-        const size_t index = numLeftRemainderBlocks++;
-        leftRemainderBlockIDs[index] = currentLeftBlock;
-      }
-
-      if (currentLeftBlock != (size_t)-1)
-        atomic_max(maxLeftBlockID,(uint32_t)currentLeftBlock);
-
-      if (right_begin != right_end)
-      {
-        const size_t index = numRightRemainderBlocks++;
-        rightRemainderBlockIDs[index] = currentRightBlock;
-      }
-
-      if (currentRightBlock != (size_t)-1)
-        atomic_max(maxRightBlockID,(uint32_t)currentRightBlock);
-
-    }
-
-    static void task_thread_partition(void* data, const size_t threadIndex, const size_t threadCount) {
-      parallel_partition<BLOCK_SIZE,T,V,Compare,Reduction_T,Reduction_V>* p = (parallel_partition<BLOCK_SIZE,T,V,Compare,Reduction_T,Reduction_V>*)data;
-      V left;
-      V right;
-      p->thread_partition(left,right);
-      p->leftReductions[threadIndex]  = left;
-      p->rightReductions[threadIndex] = right;
-    } 
-
-    /* main function for parallel in-place partitioning */
-    size_t partition_parallel(V &leftReduction,
-                              V &rightReduction)
-    //				Scheduler &scheduler)
-    {    
-      leftReduction = init;
-      rightReduction = init;
-      const size_t numThreads = min(TaskScheduler::threadCount(),MAX_TASKS);
-
-      if (N <= 2 * BLOCK_SIZE * numThreads) // need at least 1 block from the left and 1 block from the right per thread
-      {
-        size_t mid = serialPartitioning(0,N,leftReduction,rightReduction);
-        return mid;
-      }
-
-      parallel_for(numThreads,[&] (const size_t threadIndex) {
-          task_thread_partition(this,threadIndex,numThreads);
-        });
-
-      /* ---------------------------------- */
-      /* ------ serial cleanup phase ------ */
-      /* ---------------------------------- */
-
-      size_t left_begin = (size_t)-1;
-      size_t left_end   = (size_t)-1;
-      size_t right_begin = (size_t)-1;
-      size_t right_end   = (size_t)-1;
-        
-      if (maxLeftBlockID != 0 || maxRightBlockID != 0) // has any thread done anything?
-      {
-        /* sort remainder blocks */
-        insertionsort_ascending<unsigned int>(leftRemainderBlockIDs,(unsigned int)numLeftRemainderBlocks);
-        insertionsort_ascending<unsigned int>(rightRemainderBlockIDs,(unsigned int)numRightRemainderBlocks);
-
-        /* compact left remaining blocks */        
-        for (size_t i=0;i<numLeftRemainderBlocks;i++)
-        {
-          assert(i<=maxLeftBlockID);
-          const unsigned int index0 = leftRemainderBlockIDs[numLeftRemainderBlocks-1-i];
-          const unsigned int index1 = maxLeftBlockID-i;
-          if (index0 != index1)
-            swapTwoLeftBlocks(index0,index1);
-        }
-        assert(numLeftRemainderBlocks-1 <= maxLeftBlockID);
-
-        const size_t left_border_index = maxLeftBlockID-(numLeftRemainderBlocks-1);
-
-
-        getLeftArrayIndex(left_border_index,left_begin,left_end);
-
-        assert(left_begin != (size_t)-1);
-
-        /* compact right remaining blocks */
-
-
-        for (size_t i=0;i<numRightRemainderBlocks;i++)
-        {
-          assert(i<=maxRightBlockID);
-          const unsigned int index0 = rightRemainderBlockIDs[numRightRemainderBlocks-1-i];
-          const unsigned int index1 = maxRightBlockID-i;
-          if (index0 != index1)
-            swapTwoRightBlocks(index0,index1);
-        }
-        assert(numRightRemainderBlocks-1 <= maxRightBlockID);
-
-        const size_t right_border_index = maxRightBlockID-(numRightRemainderBlocks-1);
-
-
-        getRightArrayIndex(right_border_index,right_begin,right_end);
-
-        assert(right_end  != (size_t)-1);
-
-      }
-      else
-      {
-        left_begin = 0;
-        right_end  = N;
-      }
-
-      const size_t mid = serialPartitioning(left_begin,right_end,leftReduction,rightReduction);
-
-      for (size_t i=0;i<numThreads;i++)
-      {
-        reduction_v(leftReduction,leftReductions[i]);
-        reduction_v(rightReduction,rightReductions[i]);
-      }
-        
-
-      return mid;
-    }
-
-
-    size_t partition_serial(V &leftReduction,
-                            V &rightReduction)
-    {
-      leftReduction = init;
-      rightReduction = init;
-      const size_t mid = serialPartitioning(0,N,leftReduction,rightReduction);      
-      return mid;
-    }
-
-  };
-
-  template<size_t BLOCK_SIZE, typename T, typename V, typename Compare, typename Reduction_T, typename Reduction_V>
-    __forceinline size_t parallel_in_place_partitioning_dynamic(T *array, 
-                                                        size_t N, 
-                                                        const V &init,
-                                                        V &leftReduction,
-                                                        V &rightReduction,
-                                                        const Compare& cmp, 
-                                                        const Reduction_T& reduction_t,
-                                                        const Reduction_V& reduction_v)
-  {
-#if defined(__X86_64__) 
-    parallel_partition<BLOCK_SIZE,T,V,Compare,Reduction_T,Reduction_V> p(array,N,init,cmp,reduction_t,reduction_v);
-    return p.partition_parallel(leftReduction,rightReduction);    
-#else
-    return serial_partitioning(array,size_t(0),N,leftReduction,rightReduction,cmp,reduction_t);
-#endif
-  }
-
-  /////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
   template<size_t BLOCK_SIZE, typename T, typename V, typename Compare, typename Reduction_T, typename Reduction_V>
     class __aligned(64) parallel_partition_static_task
   {
@@ -506,9 +74,10 @@ namespace embree
     {
       ssize_t start;
       ssize_t end;
-      Range() {}
 
-      Range (ssize_t start, ssize_t end) 
+      __forceinline Range() {}
+
+      __forceinline Range (ssize_t start, ssize_t end) 
       : start(start), end(end) {}
 
       __forceinline void reset() { 
@@ -647,19 +216,18 @@ namespace embree
         return serial_partitioning(array,0,N,leftReduction,rightReduction,cmp,reduction_t);
       }
 
-      parallel_for(tasks,[&] (const size_t taskID) 
-                   {
-                     const size_t startID = (taskID+0)*N/tasks;
-                     const size_t endID   = (taskID+1)*N/tasks;
-                     V local_left(empty);
-                     V local_right(empty);
-                     const size_t mid = serial_partitioning(array,startID,endID,local_left,local_right,cmp,reduction_t);
-                     counter_start[taskID] = startID;
-                     counter_left [taskID] = mid-startID;
-                     leftReductions[taskID]  = local_left;
-                     rightReductions[taskID] = local_right;
-                   });
-
+      parallel_for(tasks,[&] (const size_t taskID) {
+          const size_t startID = (taskID+0)*N/tasks;
+          const size_t endID   = (taskID+1)*N/tasks;
+          V local_left(empty);
+          V local_right(empty);
+          const size_t mid = serial_partitioning(array,startID,endID,local_left,local_right,cmp,reduction_t);
+          counter_start[taskID] = startID;
+          counter_left [taskID] = mid-startID;
+          leftReductions[taskID]  = local_left;
+          rightReductions[taskID] = local_right;
+        });
+      
       leftReduction = empty;
       rightReduction = empty;
 
@@ -724,17 +292,16 @@ namespace embree
       if (numMisplacedItems)
       {
 
-        parallel_for(tasks,[&] (const size_t taskID) 
-                     {
-                       const size_t startID = (taskID+0)*numMisplacedItems/tasks;
-                       const size_t endID   = (taskID+1)*numMisplacedItems/tasks;
-                       swapItemsInMisplacedRanges(leftMisplacedRanges,
-                                                  numMisplacedRangesLeft,
-                                                  rightMisplacedRanges,
-                                                  numMisplacedRangesRight,
-                                                  startID,
-                                                  endID);	                             
-                     });
+        parallel_for(tasks,[&] (const size_t taskID) {
+            const size_t startID = (taskID+0)*numMisplacedItems/tasks;
+            const size_t endID   = (taskID+1)*numMisplacedItems/tasks;
+            swapItemsInMisplacedRanges(leftMisplacedRanges,
+                                       numMisplacedRangesLeft,
+                                       rightMisplacedRanges,
+                                       numMisplacedRangesRight,
+                                       startID,
+                                       endID);	                             
+          });
       }
 
       return global_mid;
