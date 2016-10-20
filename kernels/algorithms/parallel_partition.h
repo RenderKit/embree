@@ -257,21 +257,12 @@ namespace embree
       }
       assert( numMisplacedItemsLeft == numMisplacedItemsRight );
 	
-      size_t numMisplacedItems = numMisplacedItemsLeft;
-
-      const size_t global_mid = mid;
-
-
-      ////////////////////////////////////////////////////////////////////////////
-      ////////////////////////////////////////////////////////////////////////////
-      ////////////////////////////////////////////////////////////////////////////
-
-      if (numMisplacedItems)
+      if (numMisplacedItemsLeft)
       {
 
         parallel_for(numTasks,[&] (const size_t taskID) {
-            const size_t startID = (taskID+0)*numMisplacedItems/numTasks;
-            const size_t endID   = (taskID+1)*numMisplacedItems/numTasks;
+            const size_t startID = (taskID+0)*numMisplacedItemsLeft/numTasks;
+            const size_t endID   = (taskID+1)*numMisplacedItemsLeft/numTasks;
             swapItemsInMisplacedRanges(leftMisplacedRanges,
                                        numMisplacedRangesLeft,
                                        rightMisplacedRanges,
@@ -281,9 +272,8 @@ namespace embree
           });
       }
 
-      return global_mid;
+      return mid;
     }
-
   };
 
   template<size_t BLOCK_SIZE, typename T, typename V, typename Vi, typename IsLeft, typename Reduction_T, typename Reduction_V>

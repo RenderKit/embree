@@ -39,16 +39,17 @@ namespace embree
 
         /* perform parallel partitioning */
         size_t left_sum = 0, right_sum = 0;
-        parallel_in_place_partitioning_static<1024>(array.data(),array.size(),0,left_sum,right_sum,
-                                                    [&] ( size_t i ) { return i < split; },
-                                                    []  ( size_t& sum, int v) { sum += v; },
-                                                    []  ( size_t& sum, size_t v) { sum += v; });
+        size_t mid = parallel_in_place_partitioning_static<1024>(array.data(),array.size(),0,left_sum,right_sum,
+                                                                 [&] ( size_t i ) { return i < split; },
+                                                                 []  ( size_t& sum, int v) { sum += v; },
+                                                                 []  ( size_t& sum, size_t v) { sum += v; });
 
         /*serial_partitioning(array.data(),0,array.size(),left_sum,right_sum,
                             [&] ( size_t i ) { return i < split; },
                             []  ( size_t& left_sum, int v) { left_sum += v; });*/
 
         /* verify result */
+        passed &= mid == split;
         passed &= left_sum == split*(split-1)/2;
         passed &= right_sum == N*(N-1)/2-left_sum;
         for (size_t i=0; i<split; i++) passed &= array[i] < split;
