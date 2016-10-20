@@ -30,7 +30,7 @@ namespace embree
     struct BVHNHairBuilderSAH : public Builder
     {
       typedef BVHN<N> BVH;
-      typedef typename BVH::Node Node;
+      typedef typename BVH::AlignedNode AlignedNode;
       typedef typename BVH::UnalignedNode UnalignedNode;
       typedef typename BVH::NodeRef NodeRef;
 
@@ -71,9 +71,9 @@ namespace embree
 
             [&] (const PrimInfo* children, const size_t numChildren, 
                  HeuristicArrayBinningSAH<BezierPrim> alignedHeuristic, 
-                 FastAllocator::ThreadLocal2* alloc) -> Node*
+                 FastAllocator::ThreadLocal2* alloc) -> AlignedNode*
             {
-              Node* node = (Node*) alloc->alloc0->malloc(sizeof(Node),BVH::byteNodeAlignment); node->clear();
+              AlignedNode* node = (AlignedNode*) alloc->alloc0->malloc(sizeof(AlignedNode),BVH::byteNodeAlignment); node->clear();
               for (size_t i=0; i<numChildren; i++)
                 node->set(i,children[i].geomBounds);
               return node;
@@ -130,7 +130,7 @@ namespace embree
     struct BVHNHairMBBuilderSAH : public Builder
     {
       typedef BVHN<N> BVH;
-      typedef typename BVH::NodeMB NodeMB;
+      typedef typename BVH::AlignedNodeMB AlignedNodeMB;
       typedef typename BVH::UnalignedNodeMB UnalignedNodeMB;
       typedef typename BVH::NodeRef NodeRef;
 
@@ -179,9 +179,9 @@ namespace embree
           (
             [&] () { return bvh->alloc.threadLocal2(); },
 
-            [&] (const PrimInfo* children, const size_t numChildren, HeuristicArrayBinningSAH<BezierPrim> alignedHeuristic, FastAllocator::ThreadLocal2* alloc) -> NodeMB*
+            [&] (const PrimInfo* children, const size_t numChildren, HeuristicArrayBinningSAH<BezierPrim> alignedHeuristic, FastAllocator::ThreadLocal2* alloc) -> AlignedNodeMB*
             {
-              NodeMB* node = (NodeMB*) alloc->alloc0->malloc(sizeof(NodeMB),BVH::byteNodeAlignment); node->clear();
+              AlignedNodeMB* node = (AlignedNodeMB*) alloc->alloc0->malloc(sizeof(AlignedNodeMB),BVH::byteNodeAlignment); node->clear();
               for (size_t i=0; i<numChildren; i++) 
               {
                 LBBox3fa bounds = alignedHeuristic.computePrimInfoMB(t,bvh->numTimeSteps,scene,children[i]);

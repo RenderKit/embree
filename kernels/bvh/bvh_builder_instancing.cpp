@@ -79,8 +79,8 @@ namespace embree
     const BBox3fa xfmDeepBounds(const AffineSpace3fa& xfm, const BBox3fa& bounds, typename BVHN<N>::NodeRef ref, size_t depth)
     {
       if (ref == BVHN<N>::emptyNode) return empty;
-      if (depth == 0 || !ref.isNode()) return xfmBounds(xfm,bounds);
-      typename BVHN<N>::Node* node = ref.node();
+      if (depth == 0 || !ref.isAlignedNode()) return xfmBounds(xfm,bounds);
+      typename BVHN<N>::AlignedNode* node = ref.alignedNode();
 
       BBox3fa box = empty;
       for (size_t i=0; i<N; i++)
@@ -277,7 +277,7 @@ namespace embree
            [&] { return bvh->alloc.threadLocal2(); },
            [&] (const isa::BVHBuilderBinnedSAH::BuildRecord& current, BVHBuilderBinnedSAH::BuildRecord* children, const size_t num, FastAllocator::ThreadLocal2* alloc) -> int
           {
-            Node* node = (Node*) alloc->alloc0->malloc(sizeof(Node)); node->clear();
+            AlignedNode* node = (AlignedNode*) alloc->alloc0->malloc(sizeof(AlignedNode)); node->clear();
             for (size_t i=0; i<num; i++) {
               node->set(i,children[i].pinfo.geomBounds);
               children[i].parent = (size_t*)&node->child(i);

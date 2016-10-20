@@ -34,8 +34,8 @@ namespace embree
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
       typedef typename BVH::BaseNode BaseNode;
-      typedef typename BVH::Node Node;
-      typedef typename BVH::NodeMB NodeMB;
+      typedef typename BVH::AlignedNode AlignedNode;
+      typedef typename BVH::AlignedNodeMB AlignedNodeMB;
       typedef Vec3<vfloat<K>> Vec3vfK;
       typedef Vec3<vint<K>> Vec3viK;
 

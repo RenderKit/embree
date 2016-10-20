@@ -39,10 +39,18 @@ namespace embree
 	return _end;
       }
 
+      __forceinline range intersect(const range& r) const {
+        return range (max(_begin,r._begin),min(_end,r._end));
+      }
+
       __forceinline Ty size() const {
         return _end - _begin;
       }
 
+      __forceinline bool empty() const { 
+        return _end <= _begin; 
+      } 
+	
       friend std::ostream& operator<<(std::ostream& cout, const range& r) {
         return cout << "range [" << r.begin() << ", " << r.end() << "]";
       }

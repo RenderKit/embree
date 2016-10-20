@@ -192,9 +192,27 @@ namespace embree
       return thread_local_allocators2.get();
     }
 
+    void internal_fix_used_blocks()
+    {
+#if ENABLE_PARALLEL_BLOCK_ALLOCATION == 1
+      /* move thread local blocks to global block list */
+      for (size_t i = 0; i < MAX_THREAD_USED_BLOCK_SLOTS; i++)
+      {
+        while (threadBlocks[i].load() != nullptr) {
+          Block* nextUsedBlock = threadBlocks[i].load()->next;
+          threadBlocks[i].load()->next = usedBlocks.load();
+          usedBlocks = threadBlocks[i].load();
+          threadBlocks[i] = nextUsedBlock;
+        }
+        threadBlocks[i] = nullptr;
+      }
+#endif
+    }
+
     /*! initializes the allocator */
     void init(size_t bytesAllocate, size_t bytesReserve = 0) 
     {     
+      internal_fix_used_blocks();
       /* distribute the allocation to multiple thread block slots */
       slotMask = MAX_THREAD_USED_BLOCK_SLOTS-1;      
       if (usedBlocks.load() || freeBlocks.load()) { reset(); return; }
@@ -209,6 +227,7 @@ namespace embree
     /*! initializes the allocator */
     void init_estimate(size_t bytesAllocate) 
     {
+      internal_fix_used_blocks();
       if (usedBlocks.load() || freeBlocks.load()) { reset(); return; }
       use_single_mode = false; //bytesAllocate < 8*PAGE_SIZE;
       defaultBlockSize = clamp(bytesAllocate/4,size_t(128),size_t(PAGE_SIZE));
@@ -220,27 +239,10 @@ namespace embree
       if (MAX_THREAD_USED_BLOCK_SLOTS >= 8 && bytesAllocate > 16*maxAllocationSize) slotMask = 0x7;
     }
 
-	void internal_fix_used_blocks()
-	{
-#if ENABLE_PARALLEL_BLOCK_ALLOCATION == 1
-		/* move thread local blocks to global block list */
-		for (size_t i = 0; i < MAX_THREAD_USED_BLOCK_SLOTS; i++)
-		{
-			while (threadBlocks[i].load() != nullptr) {
-				Block* nextUsedBlock = threadBlocks[i].load()->next;
-				threadBlocks[i].load()->next = usedBlocks.load();
-				usedBlocks = threadBlocks[i].load();
-				threadBlocks[i] = nextUsedBlock;
-			}
-			threadBlocks[i] = nullptr;
-		}
-#endif
-	}
-
     /*! frees state not required after build */
     __forceinline void cleanup() 
     {
-		internal_fix_used_blocks();
+      internal_fix_used_blocks();
       
       for (size_t t=0; t<thread_local_allocators2.threads.size(); t++) {
 	bytesUsed += thread_local_allocators2.threads[t]->getUsedBytes();
@@ -262,7 +264,7 @@ namespace embree
     /*! resets the allocator, memory blocks get reused */
     void reset () 
     {
-		internal_fix_used_blocks();
+      internal_fix_used_blocks();
 
       bytesUsed = 0;
       bytesWasted = 0;

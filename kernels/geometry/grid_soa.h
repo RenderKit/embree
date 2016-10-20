@@ -48,7 +48,7 @@ namespace embree
         const unsigned width = x1-x0+1;  assert(width >= 3);
         const unsigned height = y1-y0+1; assert(height >= 3);
         const GridRange range(0,width-1,0,height-1);
-        const size_t nodeBytes = time_steps_global == 1 ? sizeof(BVH4::Node) : sizeof(BVH4::NodeMB);
+        const size_t nodeBytes = time_steps_global == 1 ? sizeof(BVH4::AlignedNode) : sizeof(BVH4::AlignedNodeMB);
         const size_t bvhBytes  = getBVHBytes(range,nodeBytes,0);
         const size_t gridBytes = 4*size_t(width)*size_t(height)*sizeof(float);  // 4 bytes of padding after grid required because of off by 1 read below
         const size_t rootBytes = time_steps_global*sizeof(BVH4::NodeRef);

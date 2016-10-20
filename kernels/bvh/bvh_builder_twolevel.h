@@ -28,7 +28,7 @@ namespace embree
       ALIGNED_CLASS;
 
       typedef BVHN<N> BVH;
-      typedef typename BVH::Node Node;
+      typedef typename BVH::AlignedNode AlignedNode;
       typedef typename BVH::NodeRef NodeRef;
 
     public:

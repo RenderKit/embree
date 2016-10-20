@@ -148,10 +148,10 @@ namespace embree
   template<int N>
   void BVHNStatistics<N>::statistics(NodeRef node, const float A, size_t& depth)
   {
-    if (node.isNode())
+    if (node.isAlignedNode())
     {
       numAlignedNodes++;
-      AlignedNode* n = node.node();
+      AlignedNode* n = node.alignedNode();
       bvhSAH += A*travCostAligned;
       depth = 0;
       for (size_t i=0; i<N; i++) {
@@ -179,10 +179,10 @@ namespace embree
       }
       depth++;
     }
-    else if (node.isNodeMB())
+    else if (node.isAlignedNodeMB())
     {
       numAlignedNodesMB++;
-      AlignedNodeMB* n = node.nodeMB();
+      AlignedNodeMB* n = node.alignedNodeMB();
       bvhSAH += A*travCostAligned;
       
       depth = 0;

@@ -30,8 +30,8 @@ namespace embree
 
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
-      typedef typename BVH::Node Node;
-      typedef typename BVH::NodeMB NodeMB;
+      typedef typename BVH::AlignedNode AlignedNode;
+      typedef typename BVH::AlignedNodeMB AlignedNodeMB;
       typedef typename BVH::TransformNode TransformNode;
 
     public:
@@ -44,8 +44,8 @@ namespace embree
         __forceinline BuildRef (const AffineSpace3fa& local2world, const BBox3fa& localBounds_in, NodeRef node, unsigned mask, int instID, int xfmID, int type, int depth = 0)
           : local2world(local2world), localBounds(localBounds_in), node(node), mask(mask), instID(instID), xfmID(xfmID), type(type), depth(depth)
         {
-          if (node.isNode()) {
-          //if (node.isNode() || node.isNodeMB()) {
+          if (node.isAlignedNode()) {
+          //if (node.isAlignedNode() || node.isAlignedNodeMB()) {
             const BBox3fa worldBounds = xfmBounds(local2world,localBounds);
             localBounds.lower.w = area(worldBounds);
           } else {

@@ -62,7 +62,7 @@ namespace embree
 
 #if defined(__AVX512F__)
     template<int N, bool dist_update, bool robust>
-    __forceinline vbool<N*2> intersectNode(const RayContext<robust>& ctx,
+    __forceinline vbool<N*2> intersectAlignedNode(const RayContext<robust>& ctx,
                                            const vfloat<N*2>& bminmaxX,
                                            const vfloat<N*2>& bminmaxY,
                                            const vfloat<N*2>& bminmaxZ,
@@ -97,7 +97,7 @@ namespace embree
 #endif
 
     template<int N, int Nx, bool dist_update, bool robust>
-    __forceinline vbool<Nx> intersectNode(const RayContext<robust>& ctx,
+    __forceinline vbool<Nx> intersectAlignedNode(const RayContext<robust>& ctx,
                                           const vfloat<Nx>& bminX,
                                           const vfloat<Nx>& bminY,
                                           const vfloat<Nx>& bminZ,
@@ -274,7 +274,7 @@ namespace embree
         if (unlikely(stackPtr->parent != 0 && cur.isLeaf()))
         {
           NodeRef parent = NodeRef(stackPtr->parent);
-          const Node* __restrict__ const node = parent.node();
+          const AlignedNode* __restrict__ const node = parent.alignedNode();
           const size_t b = stackPtr->childID;
           char *ptr = (char*)&node->lower_x + b*sizeof(float);
           assert(cur == node->child(b));
@@ -286,14 +286,14 @@ namespace embree
           const vfloat<K> maxY = vfloat<K>(*(const float*)((const char*)ptr + pc.farY));
           const vfloat<K> maxZ = vfloat<K>(*(const float*)((const char*)ptr + pc.farZ));
 
-          m_trav_active = intersectNodePacket(packet, minX, minY, minZ, maxX, maxY, maxZ, m_trav_active);
+          m_trav_active = intersectAlignedNodePacket(packet, minX, minY, minZ, maxX, maxY, maxZ, m_trav_active);
           if (m_trav_active == 0) goto pop;
         }
 
         while (1)
         {
           if (unlikely(cur.isLeaf())) break;
-          const Node* __restrict__ const node = cur.node();
+          const AlignedNode* __restrict__ const node = cur.alignedNode();
 
           __aligned(64) size_t maskK[N];
           for (size_t i = 0; i < N; i++) maskK[i] = m_trav_active;
@@ -379,7 +379,7 @@ namespace embree
         if (unlikely(stackPtr->parent != 0 && cur.isLeaf()))
         {
           NodeRef parent = NodeRef(stackPtr->parent);
-          const Node* __restrict__ const node = parent.node();
+          const AlignedNode* __restrict__ const node = parent.alignedNode();
           const size_t b   = stackPtr->childID;
           char *ptr = (char*)&node->lower_x + b*sizeof(float);
           assert(cur == node->child(b));
@@ -391,7 +391,7 @@ namespace embree
           const vfloat<K> maxY = vfloat<K>(*(const float*)((const char*)ptr + pc.farY));
           const vfloat<K> maxZ = vfloat<K>(*(const float*)((const char*)ptr + pc.farZ));
           
-          m_trav_active = intersectNodePacket(packet, minX, minY, minZ, maxX, maxY, maxZ, m_trav_active);
+          m_trav_active = intersectAlignedNodePacket(packet, minX, minY, minZ, maxX, maxY, maxZ, m_trav_active);
 
           if (m_trav_active == 0) goto pop;
         }
@@ -399,7 +399,7 @@ namespace embree
         while (1)
         {
           if (unlikely(cur.isLeaf())) break;
-          const Node* __restrict__ const node = cur.node();
+          const AlignedNode* __restrict__ const node = cur.alignedNode();
 
           __aligned(64) size_t maskK[N];
           for (size_t i = 0; i < N; i++) maskK[i] = m_trav_active;
@@ -520,7 +520,7 @@ namespace embree
           while (1)
           {
             if (unlikely(cur.isLeaf())) break;
-            const Node* __restrict__ const node = cur.node();
+            const AlignedNode* __restrict__ const node = cur.alignedNode();
             //STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);
             assert(m_trav_active);
 
@@ -542,7 +542,7 @@ namespace embree
               const RayCtx& ray = ray_ctx[i];
               const vlong<N> bitmask = one << vlong<N>(i);
 
-              const vbool<N*2> vmask = intersectNode<N, true, robust>(ray, bminmaxX, bminmaxY, bminmaxZ, dist);
+              const vbool<N*2> vmask = intersectAlignedNode<N, true, robust>(ray, bminmaxX, bminmaxY, bminmaxZ, dist);
 
               maskK = mask_or((vboold<N>)vmask, maskK, maskK, bitmask);
             } while(bits);              
@@ -572,7 +572,7 @@ namespace embree
               const size_t i = __bscf(bits);
               const RayCtx& ray = cur_ray_ctx[i];
               const vint<Nx> bitmask = vint<Nx>((int)1 << i);
-              const vbool<Nx> vmask = intersectNode<N, Nx, true, robust>(ray, bminX, bminY, bminZ, bmaxX, bmaxY, bmaxZ, dist);
+              const vbool<Nx> vmask = intersectAlignedNode<N, Nx, true, robust>(ray, bminX, bminY, bminZ, bmaxX, bmaxY, bmaxZ, dist);
 
 #if defined(__AVX2__)
               maskK = maskK | (bitmask & vint<Nx>(vmask));
@@ -688,7 +688,7 @@ namespace embree
             if (likely(cur.isLeaf())) break;
             assert(m_trav_active);
 
-            const Node* __restrict__ const node = cur.node();
+            const AlignedNode* __restrict__ const node = cur.alignedNode();
             //STAT3(shadow.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);
 
 #if defined(__AVX512F__) 
@@ -708,7 +708,7 @@ namespace embree
               assert(i<MAX_RAYS_PER_OCTANT);
               RayCtx &ray = ray_ctx[i];
               const vlong<N> bitmask = one << vlong<N>(i);
-              const vbool<N*2> vmask = intersectNode<N, false, robust>(ray, bminmaxX, bminmaxY, bminmaxZ, dist);
+              const vbool<N*2> vmask = intersectAlignedNode<N, false, robust>(ray, bminmaxX, bminmaxY, bminmaxZ, dist);
               maskK = mask_or((vboold<N>)vmask, maskK, maskK, bitmask);
             } while(bits);          
             const vboold<N> vmask = (maskK != vlong<N>(zero));
@@ -737,7 +737,7 @@ namespace embree
               const RayCtx& ray = cur_ray_ctx[i];
               const vint<Nx> bitmask = vint<Nx>((int)1 << i);
 
-              const vbool<Nx> vmask = intersectNode<N, Nx, false, robust>(ray, bminX, bminY, bminZ, bmaxX, bmaxY, bmaxZ, dist);
+              const vbool<Nx> vmask = intersectAlignedNode<N, Nx, false, robust>(ray, bminX, bminY, bminZ, bmaxX, bmaxY, bmaxZ, dist);
 
 #if defined(__AVX2__)
               maskK = maskK | (bitmask & vint<Nx>(vmask));

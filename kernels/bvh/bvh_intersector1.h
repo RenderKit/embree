@@ -32,7 +32,7 @@ namespace embree
       typedef typename PrimitiveIntersector1::Primitive Primitive;
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
-      typedef typename BVH::Node Node;
+      typedef typename BVH::AlignedNode AlignedNode;
       typedef typename BVH::TransformNode TransformNode;
 
       static const size_t stackSize = 
