@@ -274,10 +274,11 @@ namespace embree
         };
 
         PrimInfo init; init.reset();
-        const size_t mid = parallel_partitioning<PARALLEL_PARITION_BLOCK_SIZE,BezierPrim,PrimInfo>
+        const size_t mid = parallel_partitioning<BezierPrim,PrimInfo>
 	  (&prims[begin],end-begin,init,left,right,primOnLeftSide,
 	   [] (PrimInfo &pinfo, const BezierPrim& ref) { pinfo.add(ref.bounds()); },
-	   [] (PrimInfo &pinfo0,const PrimInfo& pinfo1) { pinfo0.merge(pinfo1); });
+	   [] (PrimInfo &pinfo0,const PrimInfo& pinfo1) { pinfo0.merge(pinfo1); },
+           PARALLEL_PARITION_BLOCK_SIZE);
         
         const size_t center = begin+mid;
         left.begin  = begin;  left.end  = center; // FIXME: remove?

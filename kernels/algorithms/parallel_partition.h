@@ -65,7 +65,7 @@ namespace embree
     return l - array;        
   }
   
-  template<size_t BLOCK_SIZE, typename T, typename V, typename Vi, typename IsLeft, typename Reduction_T, typename Reduction_V>
+  template<typename T, typename V, typename Vi, typename IsLeft, typename Reduction_T, typename Reduction_V>
     class __aligned(64) parallel_partition_task
   {
     ALIGNED_CLASS;
@@ -95,7 +95,8 @@ namespace embree
                                           const Vi& init, 
                                           const IsLeft& is_left, 
                                           const Reduction_T& reduction_t, 
-                                          const Reduction_V& reduction_v) 
+                                          const Reduction_V& reduction_v,
+                                          const size_t BLOCK_SIZE) 
 
       : array(array), N(N), is_left(is_left), reduction_t(reduction_t), reduction_v(reduction_v), init(init),
       numTasks(min((N+BLOCK_SIZE-1)/BLOCK_SIZE,min(TaskScheduler::threadCount(),MAX_TASKS))) {}
@@ -160,10 +161,6 @@ namespace embree
 
     __forceinline size_t partition(V& leftReduction, V& rightReduction)
     {
-      /* fall back to single threaded partition for small N */
-      if (unlikely(N < BLOCK_SIZE))
-        return serial_partitioning(array,0,N,leftReduction,rightReduction,is_left,reduction_t);
-
       /* partition the individual ranges for each task */
       parallel_for(numTasks,[&] (const size_t taskID) {
           const size_t startID = (taskID+0)*N/numTasks;
@@ -234,20 +231,29 @@ namespace embree
     }
   };
 
-  template<size_t BLOCK_SIZE, typename T, typename V, typename Vi, typename IsLeft, typename Reduction_T, typename Reduction_V>
-    __forceinline size_t parallel_partitioning(T *array, 
+  template<typename T, typename V, typename Vi, typename IsLeft, typename Reduction_T, typename Reduction_V>
+    __forceinline size_t parallel_partitioning(T* array, 
                                                const size_t N, 
                                                const Vi &init,
                                                V &leftReduction,
                                                V &rightReduction,
                                                const IsLeft& is_left, 
                                                const Reduction_T& reduction_t,
-                                               const Reduction_V& reduction_v)
+                                               const Reduction_V& reduction_v,
+                                               size_t BLOCK_SIZE = 128)
   {
 #if defined(__X86_64__) 
-    typedef parallel_partition_task<BLOCK_SIZE, T,V,Vi,IsLeft,Reduction_T,Reduction_V> partition_task;
-    std::unique_ptr<partition_task> p(new partition_task(array,N,init,is_left,reduction_t,reduction_v));
-    return p->partition(leftReduction,rightReduction);    
+
+    /* fall back to single threaded partitioning for small N */
+    if (unlikely(N < BLOCK_SIZE))
+      return serial_partitioning(array,0,N,leftReduction,rightReduction,is_left,reduction_t);
+
+    /* otherwise use parallel code */
+    else {
+      typedef parallel_partition_task<T,V,Vi,IsLeft,Reduction_T,Reduction_V> partition_task;
+      std::unique_ptr<partition_task> p(new partition_task(array,N,init,is_left,reduction_t,reduction_v,BLOCK_SIZE));
+      return p->partition(leftReduction,rightReduction);    
+    }
 #else
     return serial_partitioning(array,size_t(0),N,leftReduction,rightReduction,is_left,reduction_t);
 #endif
