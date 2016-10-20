@@ -459,7 +459,7 @@ namespace embree
           auto isLeft = [&] (const PrimRef &ref) { return any(((vint4)split.mapping.bin_unsafe(center2(ref.bounds())) < vSplitPos) & vSplitMask); };
 
 #endif
-          const size_t mid = parallel_partitioning<PrimRef,PrimInfo>(
+          const size_t mid = parallel_partitioning(
             &prims0[begin],end-begin,init,left,right,isLeft,
             [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.add(ref.bounds(),ref.lower.a >> 24); },
             [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); },
@@ -510,7 +510,7 @@ namespace embree
             const Vec3fa c = ref.bounds().center();
             return any(((vint4)mapping.bin(c) < vSplitPos) & vSplitMask); };
 
-          const size_t mid = parallel_partitioning<PrimRef,PrimInfo>(
+          const size_t mid = parallel_partitioning(
             &prims0[begin],end-begin,init,left,right,isLeft,
             [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.add(ref.bounds(),ref.lower.a >> 24); },
             [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); },

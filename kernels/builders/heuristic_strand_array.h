@@ -274,7 +274,7 @@ namespace embree
         };
 
         PrimInfo init; init.reset();
-        const size_t mid = parallel_partitioning<BezierPrim,PrimInfo>
+        const size_t mid = parallel_partitioning
 	  (&prims[begin],end-begin,init,left,right,primOnLeftSide,
 	   [] (PrimInfo &pinfo, const BezierPrim& ref) { pinfo.add(ref.bounds()); },
 	   [] (PrimInfo &pinfo0,const PrimInfo& pinfo1) { pinfo0.merge(pinfo1); },
