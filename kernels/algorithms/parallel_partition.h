@@ -114,8 +114,8 @@ namespace embree
     size_t numMisplacedItems;
 
     size_t numTasks; 
-    __aligned(64) size_t counter_start[MAX_TASKS]; 
-    __aligned(64) size_t counter_left[MAX_TASKS];  
+    __aligned(64) size_t counter_start[MAX_TASKS+1]; 
+    __aligned(64) size_t counter_left[MAX_TASKS+1];  
     __aligned(64) Range leftMisplacedRanges[MAX_TASKS];  
     __aligned(64) Range rightMisplacedRanges[MAX_TASKS]; 
     __aligned(64) V leftReductions[MAX_TASKS];           
@@ -135,7 +135,7 @@ namespace embree
       numMisplacedRangesLeft(0), numMisplacedRangesRight(0), numMisplacedItems(0),
       numTasks(min((N+BLOCK_SIZE-1)/BLOCK_SIZE,min(maxNumThreads,MAX_TASKS))) {}
 
-    __forceinline const Range *findStartRange(size_t &index,const Range *const r,const size_t numRanges)
+    __forceinline const Range* findStartRange(size_t& index, const Range* const r, const size_t numRanges)
     {
       size_t i = 0;
       while(index >= r[i].size())
@@ -147,9 +147,9 @@ namespace embree
       return &r[i];
     }
 
-    __forceinline void swapItemsInMisplacedRanges(const Range * const leftMisplacedRanges,
+    __forceinline void swapItemsInMisplacedRanges(const Range* const leftMisplacedRanges,
                                                   const size_t numLeftMisplacedRanges,
-                                                  const Range * const rightMisplacedRanges,
+                                                  const Range* const rightMisplacedRanges,
                                                   const size_t numRightMisplacedRanges,
                                                   const size_t startID,
                                                   const size_t endID)
@@ -201,17 +201,13 @@ namespace embree
       }
     }
 
-
-    __forceinline size_t partition(V &leftReduction,
-                                   V &rightReduction)
+    __forceinline size_t partition(V& leftReduction, V& rightReduction)
     {
+      /* fall back to single threaded partition for small N */
       if (unlikely(N < BLOCK_SIZE))
-      {
-        leftReduction = init;
-        rightReduction = init;
         return serial_partitioning(array,0,N,leftReduction,rightReduction,is_left,reduction_t);
-      }
 
+      /* partition the individual ranges for each task */
       parallel_for(numTasks,[&] (const size_t taskID) {
           const size_t startID = (taskID+0)*N/numTasks;
           const size_t endID   = (taskID+1)*N/numTasks;
@@ -223,11 +219,11 @@ namespace embree
           leftReductions[taskID]  = local_left;
           rightReductions[taskID] = local_right;
         });
+      counter_start[numTasks] = N;
+      counter_left[numTasks]  = 0;
       
-      leftReduction = init;
-      rightReduction = init;
-
-      for (size_t i=0;i<numTasks;i++)
+      /* finalize the reductions */
+      for (size_t i=0; i<numTasks; i++)
       {
         reduction_v(leftReduction,leftReductions[i]);
         reduction_v(rightReduction,rightReductions[i]);
@@ -238,17 +234,15 @@ namespace embree
       size_t numMisplacedItemsLeft   = 0;
       size_t numMisplacedItemsRight  = 0;
 	
-      counter_start[numTasks] = N;
-      counter_left[numTasks]  = 0;
-
+      /* calculate mid point for partitioning */
       size_t mid = counter_left[0];
-      for (size_t i=1;i<numTasks;i++)
+      for (size_t i=1; i<numTasks; i++)
         mid += counter_left[i];
 
       const Range globalLeft (0,mid-1);
       const Range globalRight(mid,N-1);
 
-      for (size_t i=0;i<numTasks;i++)
+      for (size_t i=0; i<numTasks; i++)
       {	    
         const size_t left_start  = counter_start[i];
         const size_t left_end    = counter_start[i] + counter_left[i]-1;
