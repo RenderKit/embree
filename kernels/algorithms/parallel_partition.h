@@ -78,7 +78,7 @@ namespace embree
     const IsLeft& is_left;
     const Reduction_T& reduction_t;
     const Reduction_V& reduction_v;
-    const Vi& init;
+    const Vi& identity;
 
     size_t numTasks; 
     __aligned(64) size_t counter_start[MAX_TASKS+1]; 
@@ -92,13 +92,13 @@ namespace embree
      
     __forceinline parallel_partition_task(T* array, 
                                           const size_t N, 
-                                          const Vi& init, 
+                                          const Vi& identity, 
                                           const IsLeft& is_left, 
                                           const Reduction_T& reduction_t, 
                                           const Reduction_V& reduction_v,
                                           const size_t BLOCK_SIZE) 
 
-      : array(array), N(N), is_left(is_left), reduction_t(reduction_t), reduction_v(reduction_v), init(init),
+      : array(array), N(N), is_left(is_left), reduction_t(reduction_t), reduction_v(reduction_v), identity(identity),
       numTasks(min((N+BLOCK_SIZE-1)/BLOCK_SIZE,min(TaskScheduler::threadCount(),MAX_TASKS))) {}
 
     __forceinline const range<ssize_t>* findStartRange(size_t& index, const range<ssize_t>* const r, const size_t numRanges)
@@ -165,8 +165,8 @@ namespace embree
       parallel_for(numTasks,[&] (const size_t taskID) {
           const size_t startID = (taskID+0)*N/numTasks;
           const size_t endID   = (taskID+1)*N/numTasks;
-          V local_left(init);
-          V local_right(init);
+          V local_left(identity);
+          V local_right(identity);
           const size_t mid = serial_partitioning(array,startID,endID,local_left,local_right,is_left,reduction_t);
           counter_start[taskID] = startID;
           counter_left [taskID] = mid-startID;
@@ -235,7 +235,7 @@ namespace embree
     __noinline size_t parallel_partitioning(T* array, 
                                             const size_t begin,
                                             const size_t end, 
-                                            const Vi &init,
+                                            const Vi &identity,
                                             V &leftReduction,
                                             V &rightReduction,
                                             const IsLeft& is_left, 
@@ -252,7 +252,7 @@ namespace embree
     /* otherwise use parallel code */
     else {
       typedef parallel_partition_task<T,V,Vi,IsLeft,Reduction_T,Reduction_V> partition_task;
-      std::unique_ptr<partition_task> p(new partition_task(&array[begin],end-begin,init,is_left,reduction_t,reduction_v,BLOCK_SIZE));
+      std::unique_ptr<partition_task> p(new partition_task(&array[begin],end-begin,identity,is_left,reduction_t,reduction_v,BLOCK_SIZE));
       return begin+p->partition(leftReduction,rightReduction);    
     }
 #else

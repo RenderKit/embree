@@ -149,14 +149,12 @@ namespace embree
           if (!parallel)
             center = serial_partitioning(prims,begin,end,local_left,local_right,isLeft,
                                          [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend(ref.bounds()); });          
-          else {
-            CentGeomBBox3fa init = empty;
+          else
             center = parallel_partitioning(
-              prims,begin,end,init,local_left,local_right,isLeft,
+              prims,begin,end,empty,local_left,local_right,isLeft,
               [] (CentGeomBBox3fa& pinfo,const PrimRef &ref) { pinfo.extend(ref.bounds()); },
               [] (CentGeomBBox3fa& pinfo0,const CentGeomBBox3fa &pinfo1) { pinfo0.merge(pinfo1); },
               PARALLEL_PARITION_BLOCK_SIZE);
-          }
           
           new (&left ) PrimInfo(begin,center,local_left.geomBounds,local_left.centBounds);
           new (&right) PrimInfo(center,end,local_right.geomBounds,local_right.centBounds);

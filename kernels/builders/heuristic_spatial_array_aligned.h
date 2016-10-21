@@ -444,7 +444,6 @@ namespace embree
           const size_t end   = set.end();
           left.reset(); 
           right.reset();
-          PrimInfo init; init.reset();
           const unsigned int splitPos = split.pos;
           const unsigned int splitDim = split.dim;
           const unsigned int splitDimMask = (unsigned int)1 << splitDim;
@@ -460,7 +459,7 @@ namespace embree
 
 #endif
           const size_t center = parallel_partitioning(
-            prims0,begin,end,init,left,right,isLeft,
+            prims0,begin,end,empty,left,right,isLeft,
             [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.add(ref.bounds(),ref.lower.a >> 24); },
             [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); },
             PARALLEL_PARITION_BLOCK_SIZE);
@@ -495,7 +494,6 @@ namespace embree
           const size_t end   = set.end();
           left.reset(); 
           right.reset();
-          PrimInfo init; init.reset();
           const unsigned int splitPos = split.pos;
           const unsigned int splitDim = split.dim;
           const unsigned int splitDimMask = (unsigned int)1 << splitDim;
@@ -510,7 +508,7 @@ namespace embree
             return any(((vint4)mapping.bin(c) < vSplitPos) & vSplitMask); };
 
           const size_t center = parallel_partitioning(
-            prims0,begin,end,init,left,right,isLeft,
+            prims0,begin,end,empty,left,right,isLeft,
             [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.add(ref.bounds(),ref.lower.a >> 24); },
             [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); },
             PARALLEL_PARITION_BLOCK_SIZE);
