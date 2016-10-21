@@ -182,19 +182,17 @@ namespace embree
         {
           Set lset,rset;
           Set set(pinfo.begin,pinfo.end);
-          if (likely(pinfo.size() < 10000)) sequential_split(spliti,space,set,left,lset,right,rset);
-          else                                parallel_split(spliti,space,set,left,lset,right,rset);
+          split_helper(spliti,space,set,left,lset,right,rset);
         }
 
         /*! array partitioning */
         void split(const Split& split, const LinearSpace3fa& space, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
         {
-          if (likely(set.size() < 10000)) sequential_split(split,space,set,left,lset,right,rset);
-          else                              parallel_split(split,space,set,left,lset,right,rset);
+          split_helper(split,space,set,left,lset,right,rset);
         }
-        
+
         /*! array partitioning */
-        void sequential_split(const Split& split, const LinearSpace3fa& space, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
+        __forceinline void split_helper(const Split& split, const LinearSpace3fa& space, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
         {
           if (!split.valid()) {
             deterministic_order(set);
@@ -207,9 +205,17 @@ namespace embree
           CentGeomBBox3fa local_right(empty);
           const int splitPos = split.pos;
           const int splitDim = split.dim;
-          size_t center = serial_partitioning(prims,begin,end,local_left,local_right,
-                                              [&] (const PrimRef& ref) { return split.mapping.bin_unsafe(center2(ref.bounds(space)))[splitDim] < splitPos; },
-                                              [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend(ref.bounds()); });
+          size_t center = 0;
+          if (likely(set.size() < 10000))
+            center = serial_partitioning(prims,begin,end,local_left,local_right,
+                                         [&] (const PrimRef& ref) { return split.mapping.bin_unsafe(center2(ref.bounds(space)))[splitDim] < splitPos; },
+                                         [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend(ref.bounds()); });
+          else
+            center = parallel_partitioning(prims,begin,end,empty,local_left,local_right,
+                                           [&] (const PrimRef& ref) { return split.mapping.bin_unsafe(center2(ref.bounds(space)))[splitDim] < splitPos; },
+                                           [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend(ref.bounds()); },
+                                           [] (CentGeomBBox3fa& pinfo0,const CentGeomBBox3fa& pinfo1) { pinfo0.merge(pinfo1); },
+                                           128);
           
           new (&left ) PrimInfo(begin,center,local_left.geomBounds,local_left.centBounds);
           new (&right) PrimInfo(center,end,local_right.geomBounds,local_right.centBounds);
@@ -217,36 +223,6 @@ namespace embree
           new (&rset) range<size_t>(center,end);
           assert(area(left.geomBounds) >= 0.0f);
           assert(area(right.geomBounds) >= 0.0f);
-        }
-        
-        /*! array partitioning */
-        void parallel_split(const Split& split, const LinearSpace3fa& space, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset)
-        {
-          if (!split.valid()) {
-            deterministic_order(set);
-            return splitFallback(set,left,lset,right,rset);
-          }
-          
-          const size_t begin = set.begin();
-          const size_t end   = set.end();
-          left.reset(); 
-          right.reset();
-          PrimInfo init; init.reset();
-          const int splitPos = split.pos;
-          const int splitDim = split.dim;
-          
-          const size_t center = parallel_partitioning(
-            prims,begin,end,init,left,right,
-            [&] (const PrimRef &ref) { return split.mapping.bin_unsafe(center2(ref.bounds(space)))[splitDim] < splitPos; },
-            [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.add(ref.bounds()); },
-            [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); },
-            128);
-          
-          left.begin  = begin;  left.end  = center; // FIXME: remove?
-          right.begin = center; right.end = end;
-          
-          new (&lset) range<size_t>(begin,center);
-          new (&rset) range<size_t>(center,end);
         }
         
         void deterministic_order(const Set& set) 
