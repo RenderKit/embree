@@ -16,14 +16,7 @@
 
 #pragma once
 
-#include "../common/sys/platform.h"
-#include "../common/sys/sysinfo.h"
-#include "../common/math/math.h"
 #include "parallel_for.h"
-#include <algorithm>
-
-/* the higher the less core-2-core synchronization required */
-#define RADIX_SORT_MIN_BLOCK_SIZE 8096
 
 namespace embree
 {
@@ -331,24 +324,24 @@ namespace embree
   };
 
   template<typename Ty>
-    void radix_sort(Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize = RADIX_SORT_MIN_BLOCK_SIZE)
+    void radix_sort(Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize = 8192)
   {
     ParallelRadixSort<Ty,Ty>(src,tmp,N,blockSize);
   }
   
   template<typename Ty, typename Key>
-    void radix_sort(Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize = RADIX_SORT_MIN_BLOCK_SIZE)
+    void radix_sort(Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize = 8192)
   {
     ParallelRadixSort<Ty,Key>(src,tmp,N,blockSize);
   }
   
   template<typename Ty>
-    void radix_sort_u32(Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize = RADIX_SORT_MIN_BLOCK_SIZE) {
+    void radix_sort_u32(Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize = 8192) {
     radix_sort<Ty,uint32_t>(src,tmp,N,blockSize);
   }
   
   template<typename Ty>
-    void radix_sort_u64(Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize = RADIX_SORT_MIN_BLOCK_SIZE) {
+    void radix_sort_u64(Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize = 8192) {
     radix_sort<Ty,uint64_t>(src,tmp,N,blockSize);
   }
 }
