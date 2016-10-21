@@ -234,14 +234,19 @@ namespace embree
        {
          if (!validTag(entry.tag,globalTime)) 
          {
-           auto time = sharedLazyTessellationCache.getTime(globalTime);
            auto ret = constructor();
+           auto time = sharedLazyTessellationCache.getTime(globalTime);
            __memory_barrier();
            //const size_t commitIndex = SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex();
            entry.tag = SharedLazyTessellationCache::Tag(ret,time);
            __memory_barrier();
            entry.mutex.unlock();
-           if (!validTag(entry.tag,globalTime)) return nullptr;
+           if (!validTag(entry.tag,globalTime)) 
+           {
+             /* this should not happen when "time" is captured after the constructor() call */
+             SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(t_state);
+             return nullptr;
+           }
            else return ret;
          }
          entry.mutex.unlock();

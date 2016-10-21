@@ -53,6 +53,7 @@ namespace embree
         const size_t gridBytes = 4*size_t(width)*size_t(height)*sizeof(float);  // 4 bytes of padding after grid required because of off by 1 read below
         const size_t rootBytes = time_steps_global*sizeof(BVH4::NodeRef);
         void* data = alloc(offsetof(GridSOA,data)+max(1u,time_steps_global-1)*bvhBytes+time_steps*gridBytes+rootBytes);
+        assert(data);
         return new (data) GridSOA(patches,time_steps,time_steps_global,x0,x1,y0,y1,patches->grid_u_res,patches->grid_v_res,scene->getSubdivMesh(patches->geom),bvhBytes,gridBytes,bounds_o);
       }
 
