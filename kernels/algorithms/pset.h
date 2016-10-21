@@ -16,10 +16,7 @@
 
 #pragma once
 
-#include "../common/default.h"
-#include "../common/buffer.h"
 #include "sort.h"
-#include "parallel_for.h"
 
 namespace embree
 {
@@ -29,45 +26,28 @@ namespace embree
   {
   public:
 
-    /*! constructors for the parallel set */
+    /*! default constructor for the parallel set */
     pset () {}
-    pset (const std::vector<T>& in) { init(in); }
-    pset (const BufferRefT<T>    & in) { init(in); }
+
+    /*! construction from vector */
+    template<typename Vector>
+      pset (const Vector& in) { init(in); }
 
     /*! initialized the parallel set from a vector */
-    void init(const std::vector<T>& in) 
+    template<typename Vector>
+      void init(const Vector& in) 
     {
       /* reserve sufficient space for all data */
       vec.resize(in.size());
       temp.resize(in.size());
 
-      /* copy data to temporary array */
-      parallel_for( size_t(0), in.size(), size_t(4*4096), [&](const range<size_t>& r) 
-      {
+      /* copy data to internal vector */
+      parallel_for( size_t(0), in.size(), size_t(4*4096), [&](const range<size_t>& r) {
 	for (size_t i=r.begin(); i<r.end(); i++) 
 	  vec[i] = in[i];
       });
 
       /* sort the data */
-      radix_sort<T>(vec.data(),temp.data(),vec.size());
-    }
-
-
-    /*! initialized the parallel set from a user buffer */
-    void init(const BufferRefT<T>& in) 
-    {
-      /* reserve sufficient space for all data */
-      vec.resize(in.size());
-      temp.resize(in.size());
-
-      /* copy data to temporary array */
-      parallel_for( size_t(0), in.size(), size_t(4*4096), [&](const range<size_t>& r) 
-      {
-	for (size_t i=r.begin(); i<r.end(); i++) 
-	  vec[i] = in[i];
-      });
-
-      /* parallel radix sort of the data */
       radix_sort<T>(vec.data(),temp.data(),vec.size());
     }
 

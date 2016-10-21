@@ -25,7 +25,7 @@ SOURCE_GROUP("" FILES embree.rc)
 
 SET(EMBREE_LIBRARY_FILES
  
-   embree.rc
+  embree.rc
 
   algorithms/parallel_for.cpp
   algorithms/parallel_reduce.cpp
