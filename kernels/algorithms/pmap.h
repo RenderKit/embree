@@ -16,17 +16,15 @@
 
 #pragma once
 
-#include "../common/default.h"
-#include "../common/buffer.h"
 #include "sort.h"
-#include "parallel_for.h"
 
 namespace embree
 {
-  /*! implementation of a map key/value map with parallel construction */
+  /*! implementation of a key/value map with parallel construction */
   template<typename Key, typename Val>
   class pmap
   {
+    /* key/value pair to build the map */
     struct KeyValue
     {
       __forceinline KeyValue () {}
@@ -48,15 +46,13 @@ namespace embree
     /*! parallel map constructors */
     pmap () {}
 
-    template<typename SourceKey>
-      pmap (const std::vector<SourceKey>& keys, const std::vector<Val>& values) { init(keys,values); }
-
-    template<typename SourceKey>
-      pmap (const BufferRefT<SourceKey>& keys, const BufferRefT<Val>& values) { init(keys,values); }
+    /*! construction from pair of vectors */
+    template<typename KeyVector, typename ValVector>
+      pmap (const KeyVector& keys, const ValVector& values) { init(keys,values); }
 
     /*! initialized the parallel map from a vector with keys and values */
-    template<typename SourceKey>
-      void init(const std::vector<SourceKey>& keys, const std::vector<Val>& values) 
+    template<typename KeyVector, typename ValVector>
+      void init(const KeyVector& keys, const ValVector& values) 
     {
       /* reserve sufficient space for all data */
       assert(keys.size() == values.size());
@@ -66,26 +62,7 @@ namespace embree
       /* generate key/value pairs */
       parallel_for( size_t(0), keys.size(), size_t(4*4096), [&](const range<size_t>& r) {
 	for (size_t i=r.begin(); i<r.end(); i++)
-	  vec[i] = pmap<Key,Val>::KeyValue((Key)keys[i],values[i]);
-      });
-
-      /* perform parallel radix sort of the key/value pairs */
-      radix_sort<KeyValue,Key>(vec.data(),temp.data(),keys.size());
-    }
-
-    /*! initialized the parallel map from user buffers with keys and values */
-    template<typename SourceKey>
-      void init(const BufferRefT<SourceKey>& keys, const BufferRefT<Val>& values) 
-    {
-      /* reserve sufficient space for all data */
-      assert(keys.size() == values.size());
-      vec.resize(keys.size());
-      temp.resize(keys.size());
-      
-      /* generate key/value pairs */
-      parallel_for( size_t(0), keys.size(), size_t(4*4096), [&](const range<size_t>& r) {
-	for (size_t i=r.begin(); i<r.end(); i++)
-	  vec[i] = pmap<Key,Val>::KeyValue((Key)keys[i],values[i]);
+	  vec[i] = KeyValue((Key)keys[i],values[i]);
       });
 
       /* perform parallel radix sort of the key/value pairs */
