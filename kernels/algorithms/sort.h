@@ -18,7 +18,6 @@
 
 #include "../common/sys/platform.h"
 #include "../common/sys/sysinfo.h"
-#include "../common/sys/barrier.h"
 #include "../common/math/math.h"
 #include "parallel_for.h"
 #include <algorithm>
@@ -294,7 +293,6 @@ namespace embree
           const Ty elt = src[i];
           const Key index = ((Key)src[i] >> shift) & mask;
           dst[offset[index]++] = elt;
-          //prefetchEX(((char*)&dst[offset[index]]) + 64);
         }
       }
       
@@ -344,35 +342,18 @@ namespace embree
     TyRadixCount* radixCount;
   };
   
-  /*! parallel radix sort */
-  template<typename Key>
-    struct ParallelRadixSortT
-    {
-      ParallelRadixSortT (ParallelRadixSort& state) 
-      : state(state) {} 
-      
-      template<typename Ty>
-      void operator() (Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize = RADIX_SORT_MIN_BLOCK_SIZE) {
-        ParallelRadixSort::Task<Ty,Key>(&state,src,tmp,N,blockSize);
-      }
-      
-      ParallelRadixSort& state;
-    };
-  
   template<typename Ty>
     void radix_sort(Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize = RADIX_SORT_MIN_BLOCK_SIZE)
   {
-    ParallelRadixSort radix_sort_state;
-    ParallelRadixSortT<Ty> sort(radix_sort_state);
-    sort(src,tmp,N,blockSize);
+    ParallelRadixSort state;
+    ParallelRadixSort::Task<Ty,Ty>(&state,src,tmp,N,blockSize);
   }
   
   template<typename Ty, typename Key>
     void radix_sort(Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize = RADIX_SORT_MIN_BLOCK_SIZE)
   {
-    ParallelRadixSort radix_sort_state;
-    ParallelRadixSortT<Key> sort(radix_sort_state);
-    sort(src,tmp,N,blockSize);
+    ParallelRadixSort state;
+    ParallelRadixSort::Task<Ty,Key>(&state,src,tmp,N,blockSize);
   }
   
   template<typename Ty>

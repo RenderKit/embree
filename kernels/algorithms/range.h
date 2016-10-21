@@ -112,12 +112,10 @@ namespace embree
         _ext_end += plus;
       }
 
-
       friend std::ostream& operator<<(std::ostream& cout, const extended_range& r) {
         return cout << "extended_range [" << r.begin() << ", " << r.end() <<  " (" << r.ext_end() << ")]";
       }
       
       Ty _begin, _end, _ext_end;
     };
-
 }
