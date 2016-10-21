@@ -3702,6 +3702,7 @@ namespace embree
     sceneFlags.push_back(RTC_SCENE_STATIC | RTC_SCENE_ROBUST);
     sceneFlags.push_back(RTC_SCENE_STATIC | RTC_SCENE_COMPACT);
     sceneFlags.push_back(RTC_SCENE_STATIC | RTC_SCENE_COMPACT | RTC_SCENE_ROBUST);
+    sceneFlags.push_back(RTC_SCENE_STATIC | RTC_SCENE_HIGH_QUALITY);
     sceneFlags.push_back(RTC_SCENE_DYNAMIC);
     sceneFlags.push_back(RTC_SCENE_DYNAMIC | RTC_SCENE_ROBUST);
     sceneFlags.push_back(RTC_SCENE_DYNAMIC | RTC_SCENE_COMPACT);

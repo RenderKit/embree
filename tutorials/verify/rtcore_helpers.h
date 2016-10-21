@@ -570,6 +570,7 @@ namespace embree
     if (sflags & RTC_SCENE_DYNAMIC) str += "Dynamic"; else str += "Static";
     if (sflags & RTC_SCENE_COMPACT) str += "Compact";
     if (sflags & RTC_SCENE_ROBUST ) str += "Robust";
+    if (sflags & RTC_SCENE_HIGH_QUALITY) str += "HighQuality";
     return str;
   }
 
