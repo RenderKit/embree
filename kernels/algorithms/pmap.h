@@ -57,8 +57,7 @@ namespace embree
       /* reserve sufficient space for all data */
       assert(keys.size() == values.size());
       vec.resize(keys.size());
-      temp.resize(keys.size());
-
+      
       /* generate key/value pairs */
       parallel_for( size_t(0), keys.size(), size_t(4*4096), [&](const range<size_t>& r) {
 	for (size_t i=r.begin(); i<r.end(); i++)
@@ -66,6 +65,7 @@ namespace embree
       });
 
       /* perform parallel radix sort of the key/value pairs */
+      std::vector<KeyValue> temp(keys.size());
       radix_sort<KeyValue,Key>(vec.data(),temp.data(),keys.size());
     }
 
@@ -87,19 +87,12 @@ namespace embree
       return i->val;
     }
 
-    /*! cleans temporary state required for re-construction */
-    void cleanup() {
-      temp.clear();
-    }
-
     /*! clears all state */
     void clear() {
       vec.clear();
-      temp.clear();
     }
 
   private:
     std::vector<KeyValue> vec;    //!< vector containing sorted elements
-    std::vector<KeyValue> temp;   //!< temporary vector required during construction only
   };
 }

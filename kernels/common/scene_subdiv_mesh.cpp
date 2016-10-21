@@ -507,7 +507,6 @@ namespace embree
     /* cleanup some state for static scenes */
     if (parent->isStatic()) 
     {
-      holeSet.cleanup();
       halfEdges0.clear();
       halfEdges1.clear();
       vertexCreaseMap.clear();

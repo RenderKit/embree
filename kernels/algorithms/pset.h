@@ -37,17 +37,15 @@ namespace embree
     template<typename Vector>
       void init(const Vector& in) 
     {
-      /* reserve sufficient space for all data */
-      vec.resize(in.size());
-      temp.resize(in.size());
-
       /* copy data to internal vector */
+      vec.resize(in.size());
       parallel_for( size_t(0), in.size(), size_t(4*4096), [&](const range<size_t>& r) {
 	for (size_t i=r.begin(); i<r.end(); i++) 
 	  vec[i] = in[i];
       });
 
       /* sort the data */
+      std::vector<T> temp(in.size());
       radix_sort<T>(vec.data(),temp.data(),vec.size());
     }
 
@@ -56,19 +54,12 @@ namespace embree
       return std::binary_search(vec.begin(), vec.end(), elt);
     }
 
-    /*! cleans temporary state required for re-construction */
-    void cleanup() {
-      temp.clear();
-    }
-
     /*! clears all state */
     void clear() {
       vec.clear();
-      temp.clear();
     }
 
   private:
     std::vector<T> vec;   //!< vector containing sorted elements
-    std::vector<T> temp;  //!< temporary vector required during construction only
   };
 }
