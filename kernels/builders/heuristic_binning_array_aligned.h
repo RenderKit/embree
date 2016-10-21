@@ -106,22 +106,23 @@ namespace embree
           Set lset,rset;
           Set set(pinfo.begin,pinfo.end);
           if (likely(pinfo.size() < PARALLEL_THRESHOLD)) 
-            sequential_split(spliti,set,left,lset,right,rset);
+            split_helper<false>(spliti,pinfo,set,left,lset,right,rset);
           else
-            parallel_split(spliti,set,left,lset,right,rset);
+            split_helper<true>(spliti,pinfo,set,left,lset,right,rset);
         }
         
         /*! array partitioning */
         __forceinline void split(const Split& split, const PrimInfo& pinfo, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
         {
-#if 1
           if (likely(pinfo.size() < PARALLEL_THRESHOLD)) 
-            sequential_split(split,set,left,lset,right,rset);
+            split_helper<false>(split,pinfo,set,left,lset,right,rset);
           else                                
-            parallel_split(split,set,left,lset,right,rset);
+            split_helper<true>(split,pinfo,set,left,lset,right,rset);
+        }
 
-#else
-
+        template<bool parallel>
+        __forceinline void split_helper(const Split& split, const PrimInfo& pinfo, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
+        {
           if (!split.valid()) {
             deterministic_order(set);
             return splitFallback(set,left,lset,right,rset);
@@ -145,7 +146,7 @@ namespace embree
           auto isLeft = [&] (const PrimRef &ref) { return any(((vint4)split.mapping.bin_unsafe(center2(ref.bounds())) < vSplitPos) & vSplitMask); };
 #endif
           size_t center = 0;
-          if (likely(pinfo.size() < PARALLEL_THRESHOLD))
+          if (!parallel)
             center = serial_partitioning(prims,begin,end,local_left,local_right,isLeft,
                                          [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend(ref.bounds()); });          
           else {
@@ -163,91 +164,8 @@ namespace embree
           new (&rset) range<size_t>(center,end);
           assert(area(left.geomBounds) >= 0.0f);
           assert(area(right.geomBounds) >= 0.0f);
-
-#endif
         }
 
-        /*! array partitioning */
-        void sequential_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
-        {
-          if (!split.valid()) {
-            deterministic_order(set);
-            return splitFallback(set,left,lset,right,rset);
-          }
-          
-          const size_t begin = set.begin();
-          const size_t end   = set.end();
-          CentGeomBBox3fa local_left(empty);
-          CentGeomBBox3fa local_right(empty);
-          const unsigned int splitPos = split.pos;
-          const unsigned int splitDim = split.dim;
-          const unsigned int splitDimMask = (unsigned int)1 << splitDim; 
-
-#if defined(__AVX512F__)
-          const vint16 vSplitPos(splitPos);
-          const vbool16 vSplitMask( splitDimMask );
-#else
-          const vint4 vSplitPos(splitPos);
-          const vbool4 vSplitMask( (int)splitDimMask );
-#endif
-          size_t center = serial_partitioning(prims,begin,end,local_left,local_right,
-                                              [&] (const PrimRef& ref) { 
-#if defined(__AVX512F__)
-                                                return split.mapping.bin_unsafe(ref,vSplitPos,vSplitMask);                                                 
-#else
-                                                return any(((vint4)split.mapping.bin_unsafe(center2(ref.bounds())) < vSplitPos) & vSplitMask); 
-#endif
-                                              },
-                                              [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend(ref.bounds()); });          
-          
-          new (&left ) PrimInfo(begin,center,local_left.geomBounds,local_left.centBounds);
-          new (&right) PrimInfo(center,end,local_right.geomBounds,local_right.centBounds);
-          new (&lset) range<size_t>(begin,center);
-          new (&rset) range<size_t>(center,end);
-          assert(area(left.geomBounds) >= 0.0f);
-          assert(area(right.geomBounds) >= 0.0f);
-        }
-        
-        /*! array partitioning */
-        __noinline void parallel_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset)
-        {
-          if (!split.valid()) {
-            deterministic_order(set);
-            return splitFallback(set,left,lset,right,rset);
-          }
-          
-          const size_t begin = set.begin();
-          const size_t end   = set.end();
-          left.reset(); 
-          right.reset();
-          PrimInfo init; init.reset();
-          const unsigned int splitPos = split.pos;
-          const unsigned int splitDim = split.dim;
-          const unsigned int splitDimMask = (unsigned int)1 << splitDim;
-
-#if defined(__AVX512F__)
-          const vint16 vSplitPos(splitPos);
-          const vbool16 vSplitMask( (int)splitDimMask );
-          auto isLeft = [&] (const PrimRef &ref) { return split.mapping.bin_unsafe(ref,vSplitPos,vSplitMask); };
-#else
-          const vint4 vSplitPos(splitPos);
-          const vbool4 vSplitMask( (int)splitDimMask );
-          auto isLeft = [&] (const PrimRef &ref) { return any(((vint4)split.mapping.bin_unsafe(center2(ref.bounds())) < vSplitPos) & vSplitMask); };
-
-#endif
-          const size_t center = parallel_partitioning(
-            prims,begin,end,init,left,right,isLeft,
-            [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.add(ref.bounds()); },
-            [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); },
-            PARALLEL_PARITION_BLOCK_SIZE);
-          
-          left.begin  = begin;  left.end  = center; 
-          right.begin = center; right.end = end;
-          
-          new (&lset) range<size_t>(begin,center);
-          new (&rset) range<size_t>(center,end);
-        }
-        
         void deterministic_order(const Set& set) 
         {
           /* required as parallel partition destroys original primitive order */
