@@ -23,7 +23,7 @@
 
 #define PROFILE 0
 #define MAX_OPEN_SIZE 10000
-#define PROFILE_ITERATIONS 2000
+#define PROFILE_ITERATIONS 200
 
 namespace embree
 {

@@ -202,9 +202,6 @@ namespace embree
     static const size_t BUCKETS = (1 << BITS);
     typedef unsigned int TyRadixCount[BUCKETS];
     
-    ParallelRadixSort() 
-      : radixCount(nullptr) {}
-
     template<typename Ty, typename Key>
       class Task
     {
@@ -214,8 +211,8 @@ namespace embree
       }
       
     public:
-      Task (ParallelRadixSort* parent, Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize)
-        : parent(parent), src(src), tmp(tmp), N(N)
+      Task (Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize)
+        : radixCount(nullptr), src(src), tmp(tmp), N(N)
       {
         assert(blockSize > 0);
         
@@ -249,11 +246,11 @@ namespace embree
         
         /* count how many items go into the buckets */
         for (size_t i=0; i<BUCKETS; i++)
-          parent->radixCount[threadIndex][i] = 0;
+          radixCount[threadIndex][i] = 0;
         
         for (size_t i=startID; i<endID; i++) {
           const Key index = ((Key)src[i] >> shift) & mask;
-          parent->radixCount[threadIndex][index]++;
+          radixCount[threadIndex][index]++;
         }
       }
       
@@ -275,7 +272,7 @@ namespace embree
         
         for (size_t i=0; i<threadCount; i++)
           for (size_t j=0; j<BUCKETS; j++)
-            total[j] += parent->radixCount[i][j];
+            total[j] += radixCount[i][j];
         
         /* calculate start offset of each bucket */
         __aligned(64) unsigned int offset[BUCKETS];
@@ -286,7 +283,7 @@ namespace embree
         /* calculate start offset of each bucket for this thread */
         for (size_t i=0; i<threadIndex; i++)
           for (size_t j=0; j<BUCKETS; j++)
-            offset[j] += parent->radixCount[i][j];
+            offset[j] += radixCount[i][j];
         
         /* copy items into their buckets */
         for (size_t i=startID; i<endID; i++) {
@@ -306,9 +303,9 @@ namespace embree
       
       void tbbRadixSort(const size_t numTasks)
       {
-        assert(parent->radixCount == nullptr);
+        assert(radixCount == nullptr);
 
-        parent->radixCount = (TyRadixCount*) alignedMalloc(MAX_TASKS*sizeof(TyRadixCount));
+        radixCount = (TyRadixCount*) alignedMalloc(MAX_TASKS*sizeof(TyRadixCount));
 
         if (sizeof(Key) == sizeof(uint32_t)) {
           tbbRadixIteration(0*BITS,0,src,tmp,numTasks);
@@ -327,33 +324,28 @@ namespace embree
           tbbRadixIteration(6*BITS,0,src,tmp,numTasks);
           tbbRadixIteration(7*BITS,1,tmp,src,numTasks);
         }
-        alignedFree(parent->radixCount); 
-        parent->radixCount = nullptr;
+        alignedFree(radixCount); 
+        radixCount = nullptr;
       }
       
     private:
-      ParallelRadixSort* const parent;
+      TyRadixCount* radixCount;
       Ty* const src;
       Ty* const tmp;
       const size_t N;
     };
-
-  private:
-    TyRadixCount* radixCount;
   };
   
   template<typename Ty>
     void radix_sort(Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize = RADIX_SORT_MIN_BLOCK_SIZE)
   {
-    ParallelRadixSort state;
-    ParallelRadixSort::Task<Ty,Ty>(&state,src,tmp,N,blockSize);
+    ParallelRadixSort::Task<Ty,Ty>(src,tmp,N,blockSize);
   }
   
   template<typename Ty, typename Key>
     void radix_sort(Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize = RADIX_SORT_MIN_BLOCK_SIZE)
   {
-    ParallelRadixSort state;
-    ParallelRadixSort::Task<Ty,Key>(&state,src,tmp,N,blockSize);
+    ParallelRadixSort::Task<Ty,Key>(src,tmp,N,blockSize);
   }
   
   template<typename Ty>
