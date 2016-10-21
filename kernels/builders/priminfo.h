@@ -70,7 +70,7 @@ namespace embree
 
       __forceinline void reset() {
 	CentGeomBBox3fa::reset();
-	begin = end;
+	begin = end = 0;
       }
       
       __forceinline PrimInfo (size_t num, const BBox3fa& geomBounds, const BBox3fa& centBounds) 
