@@ -194,158 +194,152 @@ namespace embree
     }
   }
   
-  class __aligned(64) ParallelRadixSort
+  template<typename Ty, typename Key>
+    class ParallelRadixSort
   {
-  public:
     static const size_t MAX_TASKS = MAX_THREADS;
     static const size_t BITS = 8;
     static const size_t BUCKETS = (1 << BITS);
     typedef unsigned int TyRadixCount[BUCKETS];
     
-    template<typename Ty, typename Key>
-      class Task
+    template<typename T>
+      static bool compare(const T& v0, const T& v1) {
+      return (Key)v0 < (Key)v1;
+    }
+    
+  public:
+    ParallelRadixSort (Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize)
+      : radixCount(nullptr), src(src), tmp(tmp), N(N)
     {
-      template<typename T>
-        static bool compare(const T& v0, const T& v1) {
-        return (Key)v0 < (Key)v1;
+      assert(blockSize > 0);
+      
+      /* perform single threaded sort for small N */
+      if (N<=blockSize) // handles also special case of 0!
+      {	  
+        /* do inplace sort inside destination array */
+        std::sort(src,src+N,compare<Ty>);
       }
       
-    public:
-      Task (Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize)
-        : radixCount(nullptr), src(src), tmp(tmp), N(N)
+      /* perform parallel sort for large N */
+      else 
       {
-        assert(blockSize > 0);
-        
-        /* perform single threaded sort for small N */
-        if (N<=blockSize) // handles also special case of 0!
-        {	  
-          /* do inplace sort inside destination array */
-          std::sort(src,src+N,compare<Ty>);
-        }
-        
-        /* perform parallel sort for large N */
-        else 
-        {
-          const size_t numThreads = min((N+blockSize-1)/blockSize,TaskScheduler::threadCount(),size_t(MAX_TASKS));
-          tbbRadixSort(numThreads);
-        }
+        const size_t numThreads = min((N+blockSize-1)/blockSize,TaskScheduler::threadCount(),size_t(MAX_TASKS));
+        tbbRadixSort(numThreads);
       }
+    }
+    
+  private:
+    
+    void tbbRadixIteration0(const Key shift, 
+                            const Ty* __restrict const src, 
+                            Ty* __restrict const dst, 
+                            const size_t threadIndex, const size_t threadCount)
+    {
+      const size_t startID = (threadIndex+0)*N/threadCount;
+      const size_t endID   = (threadIndex+1)*N/threadCount;
       
-    private:
+      /* mask to extract some number of bits */
+      const Key mask = BUCKETS-1;
       
-      void tbbRadixIteration0(const Key shift, 
-                              const Ty* __restrict const src, 
-                              Ty* __restrict const dst, 
-                              const size_t threadIndex, const size_t threadCount)
+      /* count how many items go into the buckets */
+      for (size_t i=0; i<BUCKETS; i++)
+        radixCount[threadIndex][i] = 0;
+      
+      for (size_t i=startID; i<endID; i++) {
+        const Key index = ((Key)src[i] >> shift) & mask;
+        radixCount[threadIndex][index]++;
+      }
+    }
+    
+    void tbbRadixIteration1(const Key shift, 
+                            const Ty* __restrict const src, 
+                            Ty* __restrict const dst, 
+                            const size_t threadIndex, const size_t threadCount)
+    {
+      const size_t startID = (threadIndex+0)*N/threadCount;
+      const size_t endID   = (threadIndex+1)*N/threadCount;
+      
+      /* mask to extract some number of bits */
+      const Key mask = BUCKETS-1;
+      
+      /* calculate total number of items for each bucket */
+      __aligned(64) unsigned int total[BUCKETS];
+      for (size_t i=0; i<BUCKETS; i++)
+        total[i] = 0;
+      
+      for (size_t i=0; i<threadCount; i++)
+        for (size_t j=0; j<BUCKETS; j++)
+          total[j] += radixCount[i][j];
+      
+      /* calculate start offset of each bucket */
+      __aligned(64) unsigned int offset[BUCKETS];
+      offset[0] = 0;
+      for (size_t i=1; i<BUCKETS; i++)    
+        offset[i] = offset[i-1] + total[i-1];
+      
+      /* calculate start offset of each bucket for this thread */
+      for (size_t i=0; i<threadIndex; i++)
+        for (size_t j=0; j<BUCKETS; j++)
+          offset[j] += radixCount[i][j];
+      
+      /* copy items into their buckets */
+      for (size_t i=startID; i<endID; i++) {
+        const Ty elt = src[i];
+        const Key index = ((Key)src[i] >> shift) & mask;
+        dst[offset[index]++] = elt;
+      }
+    }
+    
+    void tbbRadixIteration(const Key shift, const bool last,
+                           const Ty* __restrict src, Ty* __restrict dst,
+                           const size_t numTasks)
+    {
+      parallel_for(numTasks,[&] (size_t taskIndex) { tbbRadixIteration0(shift,src,dst,taskIndex,numTasks); });
+      parallel_for(numTasks,[&] (size_t taskIndex) { tbbRadixIteration1(shift,src,dst,taskIndex,numTasks); });
+    }
+    
+    void tbbRadixSort(const size_t numTasks)
+    {
+      radixCount = (TyRadixCount*) alignedMalloc(MAX_TASKS*sizeof(TyRadixCount));
+      
+      if (sizeof(Key) == sizeof(uint32_t)) {
+        tbbRadixIteration(0*BITS,0,src,tmp,numTasks);
+        tbbRadixIteration(1*BITS,0,tmp,src,numTasks);
+        tbbRadixIteration(2*BITS,0,src,tmp,numTasks);
+        tbbRadixIteration(3*BITS,1,tmp,src,numTasks);
+      }
+      else if (sizeof(Key) == sizeof(uint64_t))
       {
-        const size_t startID = (threadIndex+0)*N/threadCount;
-        const size_t endID   = (threadIndex+1)*N/threadCount;
-        
-        /* mask to extract some number of bits */
-        const Key mask = BUCKETS-1;
-        
-        /* count how many items go into the buckets */
-        for (size_t i=0; i<BUCKETS; i++)
-          radixCount[threadIndex][i] = 0;
-        
-        for (size_t i=startID; i<endID; i++) {
-          const Key index = ((Key)src[i] >> shift) & mask;
-          radixCount[threadIndex][index]++;
-        }
+        tbbRadixIteration(0*BITS,0,src,tmp,numTasks);
+        tbbRadixIteration(1*BITS,0,tmp,src,numTasks);
+        tbbRadixIteration(2*BITS,0,src,tmp,numTasks);
+        tbbRadixIteration(3*BITS,0,tmp,src,numTasks);
+        tbbRadixIteration(4*BITS,0,src,tmp,numTasks);
+        tbbRadixIteration(5*BITS,0,tmp,src,numTasks);
+        tbbRadixIteration(6*BITS,0,src,tmp,numTasks);
+        tbbRadixIteration(7*BITS,1,tmp,src,numTasks);
       }
-      
-      void tbbRadixIteration1(const Key shift, 
-                              const Ty* __restrict const src, 
-                              Ty* __restrict const dst, 
-                              const size_t threadIndex, const size_t threadCount)
-      {
-        const size_t startID = (threadIndex+0)*N/threadCount;
-        const size_t endID   = (threadIndex+1)*N/threadCount;
-        
-        /* mask to extract some number of bits */
-        const Key mask = BUCKETS-1;
-        
-        /* calculate total number of items for each bucket */
-        __aligned(64) unsigned int total[BUCKETS];
-        for (size_t i=0; i<BUCKETS; i++)
-          total[i] = 0;
-        
-        for (size_t i=0; i<threadCount; i++)
-          for (size_t j=0; j<BUCKETS; j++)
-            total[j] += radixCount[i][j];
-        
-        /* calculate start offset of each bucket */
-        __aligned(64) unsigned int offset[BUCKETS];
-        offset[0] = 0;
-        for (size_t i=1; i<BUCKETS; i++)    
-          offset[i] = offset[i-1] + total[i-1];
-        
-        /* calculate start offset of each bucket for this thread */
-        for (size_t i=0; i<threadIndex; i++)
-          for (size_t j=0; j<BUCKETS; j++)
-            offset[j] += radixCount[i][j];
-        
-        /* copy items into their buckets */
-        for (size_t i=startID; i<endID; i++) {
-          const Ty elt = src[i];
-          const Key index = ((Key)src[i] >> shift) & mask;
-          dst[offset[index]++] = elt;
-        }
-      }
-      
-      void tbbRadixIteration(const Key shift, const bool last,
-                             const Ty* __restrict src, Ty* __restrict dst,
-                             const size_t numTasks)
-      {
-        parallel_for(numTasks,[&] (size_t taskIndex) { tbbRadixIteration0(shift,src,dst,taskIndex,numTasks); });
-        parallel_for(numTasks,[&] (size_t taskIndex) { tbbRadixIteration1(shift,src,dst,taskIndex,numTasks); });
-      }
-      
-      void tbbRadixSort(const size_t numTasks)
-      {
-        assert(radixCount == nullptr);
-
-        radixCount = (TyRadixCount*) alignedMalloc(MAX_TASKS*sizeof(TyRadixCount));
-
-        if (sizeof(Key) == sizeof(uint32_t)) {
-          tbbRadixIteration(0*BITS,0,src,tmp,numTasks);
-          tbbRadixIteration(1*BITS,0,tmp,src,numTasks);
-          tbbRadixIteration(2*BITS,0,src,tmp,numTasks);
-          tbbRadixIteration(3*BITS,1,tmp,src,numTasks);
-        }
-        else if (sizeof(Key) == sizeof(uint64_t))
-        {
-          tbbRadixIteration(0*BITS,0,src,tmp,numTasks);
-          tbbRadixIteration(1*BITS,0,tmp,src,numTasks);
-          tbbRadixIteration(2*BITS,0,src,tmp,numTasks);
-          tbbRadixIteration(3*BITS,0,tmp,src,numTasks);
-          tbbRadixIteration(4*BITS,0,src,tmp,numTasks);
-          tbbRadixIteration(5*BITS,0,tmp,src,numTasks);
-          tbbRadixIteration(6*BITS,0,src,tmp,numTasks);
-          tbbRadixIteration(7*BITS,1,tmp,src,numTasks);
-        }
-        alignedFree(radixCount); 
-        radixCount = nullptr;
-      }
-      
-    private:
-      TyRadixCount* radixCount;
-      Ty* const src;
-      Ty* const tmp;
-      const size_t N;
-    };
+      alignedFree(radixCount); 
+      radixCount = nullptr;
+    }
+    
+  private:
+    TyRadixCount* radixCount;
+    Ty* const src;
+    Ty* const tmp;
+    const size_t N;
   };
-  
+
   template<typename Ty>
     void radix_sort(Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize = RADIX_SORT_MIN_BLOCK_SIZE)
   {
-    ParallelRadixSort::Task<Ty,Ty>(src,tmp,N,blockSize);
+    ParallelRadixSort<Ty,Ty>(src,tmp,N,blockSize);
   }
   
   template<typename Ty, typename Key>
     void radix_sort(Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize = RADIX_SORT_MIN_BLOCK_SIZE)
   {
-    ParallelRadixSort::Task<Ty,Key>(src,tmp,N,blockSize);
+    ParallelRadixSort<Ty,Key>(src,tmp,N,blockSize);
   }
   
   template<typename Ty>
