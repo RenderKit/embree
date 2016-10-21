@@ -36,7 +36,6 @@ SET(EMBREE_LIBRARY_FILES
   algorithms/sort.cpp
   algorithms/pset.cpp
   algorithms/pmap.cpp
-  algorithms/prefix.cpp
 
   common/device.cpp
   common/stat.cpp

@@ -20,7 +20,7 @@
 #include "../subdiv/patch_eval_simd.h"
 
 #include "../algorithms/sort.h"
-#include "../algorithms/prefix.h"
+#include "../algorithms/parallel_prefix_sum.h"
 #include "../algorithms/parallel_for.h"
 
 namespace embree
@@ -451,7 +451,7 @@ namespace embree
     /* calculate start edge of each face */
     faceStartEdge.resize(numFaces);
     if (faceVertices.isModified()) 
-      numHalfEdges = parallel_prefix_sum(faceVertices,faceStartEdge,numFaces,std::plus<int>());
+      numHalfEdges = parallel_prefix_sum(faceVertices,faceStartEdge,numFaces,0,std::plus<int>());
 
     /* create set with all holes */
     if (holes.isModified())

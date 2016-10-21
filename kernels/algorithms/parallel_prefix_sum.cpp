@@ -27,48 +27,34 @@ namespace embree
     bool run ()
     {
       bool passed = true;
-
-      /* create vector with random numbers */
-      const size_t N = 100;
-      std::vector<size_t> array(N);
-      std::vector<atomic<size_t>> prefix_sum(N);
-      for (size_t j=0; j<N; j++)
-	array[j] = rand() % 10;
-  
-      /* dry run only counts */
-      ParallelPrefixSumState<size_t> state;
-      size_t S0 = parallel_prefix_sum( state, size_t(0), size_t(N), size_t(1024), size_t(0), [&](const range<size_t>& r, const size_t sum)  -> size_t
-      {
-        size_t s = 0;
-	for (size_t i=r.begin(); i<r.end(); i++)
-          s += array[i];
-	
-        return s;
-      }, [](size_t v0, size_t v1) { return v0+v1; });
+      const size_t M = 10;
       
-      /* final run calculates prefix sum */
-      size_t S1 = parallel_prefix_sum( state, size_t(0), size_t(N), size_t(1024), size_t(0), [&](const range<size_t>& r, const size_t sum) -> size_t
+      for (size_t N=10; N<10000000; N=size_t(2.1*N))
       {
-        size_t s = 0;
-	for (size_t i=r.begin(); i<r.end(); i++) {
-	  prefix_sum[i].store(sum+s);
-          s += array[i];
+	/* initialize array with random numbers */
+        uint32_t sum0 = 0;
+	std::vector<uint32_t> src(N);
+	for (size_t i=0; i<N; i++) {
+	  sum0 += src[i] = rand();
         }
-        return s;
-      }, [](size_t v0, size_t v1) { return v0+v1; });
-
-      /* check calculated prefix sum */
-      size_t sum=0;
-      for (size_t i=0; i<N; sum+=array[i++]) {
-        passed &= (prefix_sum[i] == sum);
+        
+	/* calculate parallel prefix sum */
+	std::vector<uint32_t> dst(N);
+	memset(dst.data(),0,N*sizeof(uint32_t));
+	
+	for (size_t i=0; i<M; i++) {
+	  uint32_t sum1 = parallel_prefix_sum(src,dst,N,0,std::plus<uint32_t>());
+          passed &= (sum0 == sum1);
+        }
+        
+	/* check if prefix sum is correct */
+	for (size_t i=0, sum=0; i<N; sum+=src[i++])
+	  passed &= ((uint32_t)sum == dst[i]);
       }
-
-      passed &= (S0 == sum);
-      passed &= (S1 == sum);
-
+      
       return passed;
     }
   };
 
-  parallel_prefix_sum_regression_test parallel_prefix_sum_regression("parallel_prefix_sum_regression_test");
+  parallel_prefix_sum_regression_test parallel_prefix_sum_regression("parallel_prefix_sum_regression");
 }

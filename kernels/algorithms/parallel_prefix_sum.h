@@ -55,4 +55,44 @@ namespace embree
 
     return sum;
   }
+
+  /*! parallel calculation of prefix sums */
+  template<typename SrcArray, typename DstArray, typename Value, typename Add>
+    __forceinline Value parallel_prefix_sum(const SrcArray& src, DstArray& dst, size_t N, const Value& identity, const Add& add, const size_t SINGLE_THREAD_THRESHOLD = 4096) 
+  {
+    /* perform single threaded prefix operation for small N */
+    if (N < SINGLE_THREAD_THRESHOLD) 
+    {
+      Value sum=identity;
+      for (size_t i=0; i<N; sum=add(sum,src[i++])) dst[i] = sum;
+      return sum;
+    }
+    
+    /* perform parallel prefix operation for large N */
+    else 
+    {
+      ParallelPrefixSumState<Value> state;
+      
+      /* initial run just sets up start values for subtasks */
+      parallel_prefix_sum( state, size_t(0), size_t(N), size_t(1024), identity, [&](const range<size_t>& r, const Value& sum) -> Value {
+          
+          Value s = identity;
+          for (size_t i=r.begin(); i<r.end(); i++) s = add(s,src[i]);
+          return s;
+          
+        }, add);
+      
+      /* final run calculates prefix sum */
+      return parallel_prefix_sum( state, size_t(0), size_t(N), size_t(1024), identity, [&](const range<size_t>& r, const Value& sum) -> Value {
+          
+          size_t s = identity;
+          for (size_t i=r.begin(); i<r.end(); i++) {
+            dst[i] = add(sum,s);
+            s = add(s,src[i]);
+          }
+          return s;
+          
+        }, add);
+    }
+  }
 }
