@@ -36,7 +36,7 @@
 #include "../common/state.h"
 
 #define PROFILE 0
-#define PROFILE_RUNS 20
+#define PROFILE_RUNS 4
 
 namespace embree
 {

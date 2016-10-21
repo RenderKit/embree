@@ -235,14 +235,13 @@ namespace embree
           const int splitPos = split.pos;
           const int splitDim = split.dim;
           
-          const size_t mid = parallel_partitioning(
-            &prims[begin],end-begin,init,left,right,
+          const size_t center = parallel_partitioning(
+            prims,begin,end,init,left,right,
             [&] (const PrimRef &ref) { return split.mapping.bin_unsafe(center2(ref.bounds(space)))[splitDim] < splitPos; },
             [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.add(ref.bounds()); },
             [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); },
             128);
           
-          const size_t center = begin+mid;
           left.begin  = begin;  left.end  = center; // FIXME: remove?
           right.begin = center; right.end = end;
           
