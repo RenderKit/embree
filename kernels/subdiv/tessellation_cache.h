@@ -125,8 +125,9 @@ namespace embree
        data = new_root_ref;
      }
 
-	 __forceinline int64_t get() const { return data.load(); }
-	 __forceinline void set( int64_t v ) { data.store(v); }
+     __forceinline int64_t get() const { return data.load(); }
+     __forceinline void set( int64_t v ) { data.store(v); }
+     __forceinline void reset() { data.store(0); }
 
    private:
      atomic<int64_t> data;
@@ -174,6 +175,7 @@ namespace embree
      return localTime.load()+NUM_CACHE_SEGMENTS*globalTime;
    }
 
+
    __forceinline size_t lockThread  (ThreadWorkState *const t_state, const ssize_t plus=1) { return t_state->counter.fetch_add(plus);  }
    __forceinline size_t unlockThread(ThreadWorkState *const t_state, const ssize_t plus=-1) { assert(isLocked(t_state)); return t_state->counter.fetch_add(plus); }
 
@@ -181,6 +183,13 @@ namespace embree
 
    static __forceinline void lock  () { sharedLazyTessellationCache.lockThread(threadState()); }
    static __forceinline void unlock() { sharedLazyTessellationCache.unlockThread(threadState()); }
+   static __forceinline bool isLocked() { return sharedLazyTessellationCache.isLocked(threadState()); }
+   static __forceinline size_t getState() { return threadState()->counter.load(); }
+   static __forceinline void lockThreadLoop() { sharedLazyTessellationCache.lockThreadLoop(threadState()); }
+
+   static __forceinline size_t getTCacheTime(const size_t globalTime) {
+     return sharedLazyTessellationCache.getTime(globalTime);
+   }
 
    /* per thread lock */
    __forceinline void lockThreadLoop (ThreadWorkState *const t_state) 
@@ -220,7 +229,7 @@ namespace embree
    }
 
    template<typename Constructor>
-     static __forceinline auto lookup (CacheEntry& entry, size_t globalTime, const Constructor constructor) -> decltype(constructor())
+     static __forceinline auto lookup (CacheEntry& entry, size_t globalTime, const Constructor constructor, const bool before=false) -> decltype(constructor())
    {
      ThreadWorkState *t_state = SharedLazyTessellationCache::threadState();
 
@@ -234,22 +243,16 @@ namespace embree
        {
          if (!validTag(entry.tag,globalTime)) 
          {
+           auto timeBefore = sharedLazyTessellationCache.getTime(globalTime);
            auto ret = constructor(); // thread is locked here!
            assert(ret);
            /* this should never return nullptr */
-           auto time = sharedLazyTessellationCache.getTime(globalTime);
+           auto timeAfter = sharedLazyTessellationCache.getTime(globalTime);
+           auto time = before ? timeBefore : timeAfter;
            __memory_barrier();
            entry.tag = SharedLazyTessellationCache::Tag(ret,time);
            __memory_barrier();
            entry.mutex.unlock();
-           assert(validTag(entry.tag,globalTime));
-
-           //if (!validTag(entry.tag,globalTime)) 
-           //{
-           //  SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(t_state);
-           //  return nullptr;
-           //}
-           //else return ret;
            return ret;
          }
          entry.mutex.unlock();
@@ -317,6 +320,8 @@ namespace embree
    __forceinline void *getBlockPtr(const size_t block_index)
    {
      assert(block_index < maxBlocks);
+     assert(data);
+     assert(block_index*16 <= size);
      return (void*)&data[block_index*16];
    }
 

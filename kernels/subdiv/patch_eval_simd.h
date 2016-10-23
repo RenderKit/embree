@@ -43,10 +43,11 @@ namespace embree
           Ref patch = SharedLazyTessellationCache::lookup(entry,commitCounter,[&] () {
               auto alloc = [](size_t bytes) { return SharedLazyTessellationCache::malloc(bytes); };
               return Patch::create(alloc,edge,vertices,stride);
-            });
-          
-          const bool allAllocationsValid = SharedLazyTessellationCache::sharedLazyTessellationCache.validTime(time,commitCounter);
+            }, true);
 
+          auto curTime = SharedLazyTessellationCache::sharedLazyTessellationCache.getTime(commitCounter);
+          const bool allAllocationsValid = SharedLazyTessellationCache::validTime(time,curTime);
+          
           patch = allAllocationsValid ? patch : nullptr;
 
           /* use cached data structure for calculations */

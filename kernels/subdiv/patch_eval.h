@@ -39,17 +39,21 @@ namespace embree
         {
           /* conservative time for the very first allocation */
           auto time = SharedLazyTessellationCache::sharedLazyTessellationCache.getTime(commitCounter);
-          __memory_barrier();
+#if 0
+          SharedLazyTessellationCache::lockThreadLoop();
+          auto alloc = [&](size_t bytes) { 
+            return SharedLazyTessellationCache::malloc(bytes); 
+          };
+          Ref patch = Patch::create(alloc,edge,vertices,stride);
+#else
           Ref patch = SharedLazyTessellationCache::lookup(entry,commitCounter,[&] () {
-              auto alloc = [](size_t bytes) { return SharedLazyTessellationCache::malloc(bytes); };
-              assert(alloc);
+              auto alloc = [&](size_t bytes) { return SharedLazyTessellationCache::malloc(bytes); };
               return Patch::create(alloc,edge,vertices,stride);
-            });
-          __memory_barrier();
+            },true);
+#endif
           auto curTime = SharedLazyTessellationCache::sharedLazyTessellationCache.getTime(commitCounter);
 
           const bool allAllocationsValid = SharedLazyTessellationCache::validTime(time,curTime);
-          assert(SharedLazyTessellationCache::sharedLazyTessellationCache.validTag(entry.tag,commitCounter));
 
           if (patch && allAllocationsValid &&  eval(patch,u,v,1.0f,0)) {
             SharedLazyTessellationCache::unlock();
