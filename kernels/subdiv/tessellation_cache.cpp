@@ -324,7 +324,7 @@ namespace embree
             
         /* check memory block */
         for (size_t k=0; k<N; k++) {
-          if (data[k] != elt) {
+          if (data[k] != (int)elt) {
             This->numFailed++;
             break;
           }
