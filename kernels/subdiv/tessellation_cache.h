@@ -267,9 +267,9 @@ namespace embree
 #endif
    }
 
-   __forceinline bool validTime(const size_t oldtime, const size_t globalTime)
+   static __forceinline bool validTime(const size_t oldtime, const size_t newTime)
    {
-     return validCacheIndex(oldtime,globalTime);
+     return oldtime+(NUM_CACHE_SEGMENTS-1) >= newTime;
    }
 
 

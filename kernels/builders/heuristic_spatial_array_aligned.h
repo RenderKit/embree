@@ -279,18 +279,18 @@ namespace embree
 
                   /* break if the number of subdivided elements are greater than the maximal allowed size */
                   if (unlikely(ID >= max_ext_range_size)) break;
-                  assert(ID <= max_ext_range_size);
+                  /* only write within the correct bounds */
+                  assert(ID < max_ext_range_size);
                   prims0[i] = left;
                   prims0[ext_range_start+ID] = right;     
                 }
               }
             });
-          
-          assert(ext_elements.load() <= max_ext_range_size);
-          assert(max_ext_range_size >= ext_elements);     
-          assert(set.end()+ext_elements.load()<=set.ext_end());
-          
-          return Set(set.begin(),set.end()+min(ext_elements.load(),max_ext_range_size),set.ext_end());
+
+          const size_t numExtElements = min(max_ext_range_size,ext_elements.load());          
+          //assert(numExtElements <= max_ext_range_size);
+          assert(set.end()+numExtElements<=set.ext_end());
+          return Set(set.begin(),set.end()+numExtElements,set.ext_end());
         }
                         
         
