@@ -132,10 +132,7 @@ namespace embree
               if (spatial_split.sah <= USE_SPATIAL_SPLIT_SAH_THRESHOLD*object_split.sah &&
                   spatial_split.left + spatial_split.right - set.size() <= set.ext_range_size())
               {          
-                set = create_spatial_splits(set, spatial_split, spatial_split.mapping);
-                /* set new range in priminfo */
-                pinfo.begin = set.begin();
-                pinfo.end   = set.end();
+                set = create_spatial_splits(set,pinfo,spatial_split, spatial_split.mapping);             
                 return Split(spatial_split,spatial_split.splitSAH());
               }
             }
@@ -210,7 +207,7 @@ namespace embree
 
 
         /*! subdivides primitives based on a spatial split */
-        __noinline Set create_spatial_splits(const Set& set, const SpatialSplit &split, const SpatialBinMapping<SPATIAL_BINS> &mapping)
+        __noinline Set create_spatial_splits(const Set& set, PrimInfo& pinfo, const SpatialSplit &split, const SpatialBinMapping<SPATIAL_BINS> &mapping)
         {
           assert(set.has_ext_range());
           const size_t max_ext_range_size = set.ext_range_size();
@@ -262,7 +259,10 @@ namespace embree
           const size_t numExtElements = min(max_ext_range_size,ext_elements.load());          
           //assert(numExtElements <= max_ext_range_size);
           assert(set.end()+numExtElements<=set.ext_end());
-          return Set(set.begin(),set.end()+numExtElements,set.ext_end());
+          Set nset(set.begin(),set.end()+numExtElements,set.ext_end());
+          pinfo.begin = nset.begin();
+          pinfo.end   = nset.end();
+          return nset;
         }
         
         /*! array partitioning */
