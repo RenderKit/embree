@@ -888,6 +888,32 @@ namespace embree
     /************************************************************************************/
     /************************************************************************************/
 
+    // FIXME: merge with standard class
+    template<int N, typename Primitive>
+    struct CreateLeafSweep
+    {
+      typedef BVHN<N> BVH;
+
+      __forceinline CreateLeafSweep (BVH* bvh, PrimRef* prims) : bvh(bvh), prims(prims) {}
+      
+      __forceinline size_t operator() (const BVHBuilderSweepSAH::BuildRecord& current, Allocator* alloc)
+      {
+        size_t n = current.prims.size();
+        size_t items = Primitive::blocks(n);
+        size_t start = current.prims.begin();
+        Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
+        typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,items);
+        for (size_t i=0; i<items; i++) {
+          accel[i].fill(prims,start,current.prims.end(),bvh->scene,false);
+        }
+        *current.parent = node;
+	return n;
+      }
+
+      BVH* bvh;
+      PrimRef* prims;
+    };
+
     template<int N, typename Mesh, typename Primitive>
     struct BVHNBuilderSweepSAH : public Builder
     {
@@ -942,7 +968,7 @@ namespace embree
         
             /* call BVH builder */
             bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
-            BVHNBuilderSweep<N>::build(bvh,CreateLeaf<N,Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
+            BVHNBuilderSweep<N>::build(bvh,CreateLeafSweep<N,Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
 #if PROFILE
           }); 

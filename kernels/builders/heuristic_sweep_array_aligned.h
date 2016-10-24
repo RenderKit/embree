@@ -23,15 +23,38 @@ namespace embree
   namespace isa
   { 
     /*! Performs standard object binning */
-#if defined(__AVX512F__)
-    template<typename PrimRef, size_t BINS = 16>
-#else
-    template<typename PrimRef, size_t BINS = 32>
-#endif
+    template<typename PrimRef>
       struct HeuristicArraySweepSAH
       {
-        typedef BinSplit<BINS> Split;
-        typedef BinInfo<BINS,PrimRef> Binner;
+        /*! stores all information to perform some split */
+        struct Split
+        {
+          /*! construct an invalid split by default */
+          __forceinline Split()
+            : sah(inf), dim(-1), pos(0), data(0) {}
+        
+          /*! constructs specified split */
+          __forceinline Split(float sah, int dim, int pos)
+            : sah(sah), dim(dim), pos(pos), data(0) {}
+        
+          /*! tests if this split is valid */
+          __forceinline bool valid() const { return dim != -1; }
+        
+          /*! calculates surface area heuristic for performing the split */
+          __forceinline float splitSAH() const { return sah; }
+        
+          /*! stream output */
+          friend std::ostream& operator<<(std::ostream& cout, const Split& split) {
+            return cout << "Split { sah = " << split.sah << ", dim = " << split.dim << ", pos = " << split.pos << "}";
+          }
+        
+        public:
+          float sah;                //!< SAH cost of the split
+          int dim;                  //!< split dimension
+          int pos;                  //!< bin index for splitting
+          unsigned int data;        //!< extra optional split data
+        };
+
         typedef range<size_t> Set;
 
 #if defined(__AVX512F__)
@@ -39,10 +62,22 @@ namespace embree
         static const size_t PARALLEL_FIND_BLOCK_SIZE = 768;
         static const size_t PARALLEL_PARITION_BLOCK_SIZE = 128;
 #else
-		static const size_t PARALLEL_THRESHOLD = 3 * 1024;
+        static const size_t PARALLEL_THRESHOLD = 3 * 1024;
         static const size_t PARALLEL_FIND_BLOCK_SIZE = 1024;
         static const size_t PARALLEL_PARITION_BLOCK_SIZE = 128;
 #endif
+
+        struct Centroid
+        {
+          float v;
+          unsigned int id;
+          __forceinline Centroid() {}
+          __forceinline Centroid(const float v, const unsigned int id) : v(v), id(id) {}
+
+          __forceinline bool operator<(const Centroid &m) const { return v < m.v; } 
+
+        };
+
         __forceinline HeuristicArraySweepSAH ()
           : prims(nullptr) {}
         
@@ -80,24 +115,92 @@ namespace embree
         }
         
         /*! finds the best split */
-        const Split sequential_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
+        __noinline const Split sequential_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
-          Binner binner(empty); // FIXME: this clear can be optimized away
-          const BinMapping<BINS> mapping(pinfo);
-          binner.bin(prims,set.begin(),set.end(),mapping);
-          return binner.best(mapping,logBlockSize);
+          assert(pinfo.size() == set.size());
+          const size_t numPrims = pinfo.size();
+          PRINT(numPrims);
+          assert(numPrims);
+
+          /* create temporary arrays */
+          Centroid *centroid[3] = {
+            new Centroid[numPrims],
+            new Centroid[numPrims],
+            new Centroid[numPrims]
+          };          
+          float *right_area = new float[numPrims];
+
+          /* init & sort arrays */
+          const size_t begin = set.begin();
+          for (size_t i = 0;i<numPrims;i++)
+          {
+            const Vec3fa center = prims[begin+i].bounds().center();
+            new (&centroid[0][i]) Centroid(center.x,begin+i);
+            new (&centroid[1][i]) Centroid(center.y,begin+i);
+            new (&centroid[2][i]) Centroid(center.z,begin+i);
+          }          
+          std::sort(&centroid[0][0],&centroid[0][numPrims]);
+          std::sort(&centroid[1][0],&centroid[1][numPrims]);
+          std::sort(&centroid[2][0],&centroid[2][numPrims]);
+
+          /* scan and compute best sah split */
+          const vfloat4 diag = (vfloat4)pinfo.centBounds.size();
+          const vfloat4 scale = select(diag > vfloat4(1E-34f),diag,vfloat4(0.0f));
+
+          float bestSAH = inf;
+          int   bestDim = -1;
+          int   bestPos = 0;
+
+          for (size_t dim = 0;dim<3;dim++)
+          {
+            if (unlikely(scale[dim] == 0.0f)) continue;
+
+            /* compute area from right to left */
+            BBox3fa right_bounds(empty);
+            for (ssize_t i = numPrims-1;i>=0;i--)
+            {
+              right_bounds = right_bounds.extend(prims[centroid[dim][i].id].bounds());
+              right_area[i] = area(right_bounds);
+            }
+
+            /* compute sah */
+            BBox3fa left_bounds(empty);
+            for (size_t i = 0;i<numPrims-1;i++)
+            {
+              const size_t numLeft = i;
+              const size_t numRight = numPrims-i;
+              left_bounds = left_bounds.extend(prims[centroid[dim][i].id].bounds());
+              
+              const float lArea = area(left_bounds);
+              const float rArea = right_area[i+1];
+              const size_t blocks_add = (1 << logBlockSize)-1;
+              const size_t lCount = (numLeft +blocks_add) >> logBlockSize;
+              const size_t rCount = (numRight+blocks_add) >> logBlockSize;
+              const float sah =  lArea*lCount + rArea*rCount;
+
+              if (unlikely(sah < bestSAH)) {
+                bestDim = (int)dim;
+                bestPos = i+1;
+                bestSAH = sah;
+              }
+            }
+
+          }                    
+                 
+          /* delete temporary arrays */
+          delete [] right_area;
+          delete [] centroid[0];
+          delete [] centroid[1];
+          delete [] centroid[2];
+
+          PRINT(Split(bestSAH,bestDim,bestPos));
+          return Split(bestSAH,bestDim,bestPos);
         }
         
         /*! finds the best split */
         __noinline const Split parallel_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
-          Binner binner(empty);
-          const BinMapping<BINS> mapping(pinfo);
-          const BinMapping<BINS>& _mapping = mapping; // CLANG 3.4 parser bug workaround
-          binner = parallel_reduce(set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,binner,
-			  [&](const range<size_t>& r) -> Binner { Binner binner(empty); binner.bin(prims + r.begin(), r.size(), _mapping); return binner; },
-			  [&](const Binner& b0, const Binner& b1) -> Binner { Binner r = b0; r.merge(b1, _mapping.size()); return r; });
-		  return binner.best(mapping,logBlockSize);
+          return sequential_find(set,pinfo,logBlockSize);
         }
         
         /*! array partitioning */
@@ -134,28 +237,27 @@ namespace embree
           CentGeomBBox3fa local_right(empty);
           const unsigned int splitPos = split.pos;
           const unsigned int splitDim = split.dim;
-          const unsigned int splitDimMask = (unsigned int)1 << splitDim; 
 
-#if defined(__AVX512F__)
-          const vint16 vSplitPos(splitPos);
-          const vbool16 vSplitMask( splitDimMask );
-          auto isLeft = [&] (const PrimRef &ref) { return split.mapping.bin_unsafe(ref,vSplitPos,vSplitMask); };
-#else
-          const vint4 vSplitPos(splitPos);
-          const vbool4 vSplitMask( (int)splitDimMask );
-          auto isLeft = [&] (const PrimRef &ref) { return any(((vint4)split.mapping.bin_unsafe(center2(ref.bounds())) < vSplitPos) & vSplitMask); };
-#endif
-          size_t center = 0;
-          if (!parallel)
-            center = serial_partitioning(prims,begin,end,local_left,local_right,isLeft,
-                                         [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend(ref.bounds()); });          
-          else
-            center = parallel_partitioning(
-              prims,begin,end,empty,local_left,local_right,isLeft,
-              [] (CentGeomBBox3fa& pinfo,const PrimRef &ref) { pinfo.extend(ref.bounds()); },
-              [] (CentGeomBBox3fa& pinfo0,const CentGeomBBox3fa &pinfo1) { pinfo0.merge(pinfo1); },
-              PARALLEL_PARITION_BLOCK_SIZE);
-          
+          PRINT(splitPos);
+          PRINT(splitDim);
+
+          /* sort prims according to best split dimension */
+          std::sort(&prims[begin],&prims[end], [&](const PrimRef &a, const PrimRef &b) -> bool { 
+              const Vec3fa centerA = a.bounds().center();
+              const Vec3fa centerB = b.bounds().center();
+              return centerA[splitDim] < centerB[splitDim];
+            });
+
+          const size_t center = begin + splitPos;
+          assert(begin < center);
+          assert(center < end);
+
+          /* compute left, right pinfos */
+          for (size_t i = begin;i<center;i++)
+            local_left.extend(prims[i].bounds());
+          for (size_t i = center;i<end;i++)
+            local_right.extend(prims[i].bounds());
+
           new (&left ) PrimInfo(begin,center,local_left.geomBounds,local_left.centBounds);
           new (&right) PrimInfo(center,end,local_right.geomBounds,local_right.centBounds);
           new (&lset) range<size_t>(begin,center);
