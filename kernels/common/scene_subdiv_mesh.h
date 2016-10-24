@@ -22,8 +22,8 @@
 #include "../subdiv/tessellation_cache.h"
 #include "../subdiv/catmullclark_coefficients.h"
 #include "../subdiv/patch.h"
-#include "../algorithms/pmap.h"
-#include "../algorithms/pset.h"
+#include "../algorithms/parallel_map.h"
+#include "../algorithms/parallel_set.h"
 
 namespace embree
 {
@@ -220,7 +220,7 @@ namespace embree
     mvector<HalfEdge> halfEdges;
 
     /*! set with all holes */
-    pset<uint32_t> holeSet;
+    parallel_set<uint32_t> holeSet;
 
     /*! fast lookup table to detect invalid faces */
     mvector<char> invalid_face;
@@ -259,10 +259,10 @@ namespace embree
     std::vector<KeyHalfEdge> halfEdges1;
 
     /*! map with all vertex creases */
-    pmap<uint32_t,float> vertexCreaseMap;
+    parallel_map<uint32_t,float> vertexCreaseMap;
 
     /*! map with all edge creases */
-    pmap<uint64_t,float> edgeCreaseMap;
+    parallel_map<uint64_t,float> edgeCreaseMap;
   };
 
   class SubdivMeshAVX : public SubdivMesh

@@ -14,52 +14,46 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
-
-#include "sort.h"
+#include "parallel_map.h"
 
 namespace embree
 {
-  /* implementation of a set of values with parallel construction */
-  template<typename T>
-  class pset
+  struct parallel_map_regression_test : public RegressionTest
   {
-  public:
-
-    /*! default constructor for the parallel set */
-    pset () {}
-
-    /*! construction from vector */
-    template<typename Vector>
-      pset (const Vector& in) { init(in); }
-
-    /*! initialized the parallel set from a vector */
-    template<typename Vector>
-      void init(const Vector& in) 
+    parallel_map_regression_test(const char* name) : RegressionTest(name) {
+      registerRegressionTest(this);
+    }
+    
+    bool run ()
     {
-      /* copy data to internal vector */
-      vec.resize(in.size());
-      parallel_for( size_t(0), in.size(), size_t(4*4096), [&](const range<size_t>& r) {
-	for (size_t i=r.begin(); i<r.end(); i++) 
-	  vec[i] = in[i];
-      });
+      bool passed = true;
 
-      /* sort the data */
-      std::vector<T> temp(in.size());
-      radix_sort<T>(vec.data(),temp.data(),vec.size());
+      /* create key/value vectors with random numbers */
+      const size_t N = 10000;
+      std::vector<uint32_t> keys(N);
+      std::vector<uint32_t> vals(N);
+      for (size_t i=0; i<N; i++) keys[i] = 2*unsigned(i)*647382649;
+      for (size_t i=0; i<N; i++) std::swap(keys[i],keys[rand()%N]);
+      for (size_t i=0; i<N; i++) vals[i] = 2*rand();
+      
+      /* create map */
+      parallel_map<uint32_t,uint32_t> map;
+      map.init(keys,vals);
+
+      /* check that all keys are properly mapped */
+      for (size_t i=0; i<N; i++) {
+        const uint32_t* val = map.lookup(keys[i]);
+        passed &= val && (*val == vals[i]);
+      }
+
+      /* check that these keys are not in the map */
+      for (size_t i=0; i<N; i++) {
+        passed &= !map.lookup(keys[i]+1);
+      }
+
+      return passed;
     }
-
-    /*! tests if some element is in the set */
-    __forceinline bool lookup(const T& elt) const {
-      return std::binary_search(vec.begin(), vec.end(), elt);
-    }
-
-    /*! clears all state */
-    void clear() {
-      vec.clear();
-    }
-
-  private:
-    std::vector<T> vec;   //!< vector containing sorted elements
   };
+
+  parallel_map_regression_test parallel_map_regression("parallel_map_regression_test");
 }

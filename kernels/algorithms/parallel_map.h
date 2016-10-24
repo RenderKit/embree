@@ -16,13 +16,13 @@
 
 #pragma once
 
-#include "sort.h"
+#include "parallel_sort.h"
 
 namespace embree
 {
   /*! implementation of a key/value map with parallel construction */
   template<typename Key, typename Val>
-  class pmap
+  class parallel_map
   {
     /* key/value pair to build the map */
     struct KeyValue
@@ -44,11 +44,11 @@ namespace embree
   public:
     
     /*! parallel map constructors */
-    pmap () {}
+    parallel_map () {}
 
     /*! construction from pair of vectors */
     template<typename KeyVector, typename ValVector>
-      pmap (const KeyVector& keys, const ValVector& values) { init(keys,values); }
+      parallel_map (const KeyVector& keys, const ValVector& values) { init(keys,values); }
 
     /*! initialized the parallel map from a vector with keys and values */
     template<typename KeyVector, typename ValVector>

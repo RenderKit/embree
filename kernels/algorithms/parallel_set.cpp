@@ -14,13 +14,13 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "pset.h"
+#include "parallel_set.h"
 
 namespace embree
 {
-  struct pset_regression_test : public RegressionTest
+  struct parallel_set_regression_test : public RegressionTest
   {
-    pset_regression_test(const char* name) : RegressionTest(name) {
+    parallel_set_regression_test(const char* name) : RegressionTest(name) {
       registerRegressionTest(this);
     }
     
@@ -34,7 +34,7 @@ namespace embree
       for (size_t i=0; i<N; i++) unsorted[i] = 2*rand();
       
       /* created set from numbers */
-      pset<uint32_t> sorted;
+      parallel_set<uint32_t> sorted;
       sorted.init(unsorted);
 
       /* check that all elements are in the set */
@@ -51,5 +51,5 @@ namespace embree
     }
   };
 
-  pset_regression_test pset_regression("pset_regression_test");
+  parallel_set_regression_test parallel_set_regression("parallel_set_regression_test");
 }

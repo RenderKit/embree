@@ -14,46 +14,49 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "pmap.h"
+#include "parallel_sort.h"
 
 namespace embree
 {
-  struct pmap_regression_test : public RegressionTest
+  template<typename Key>
+  struct RadixSortRegressionTest : public RegressionTest
   {
-    pmap_regression_test(const char* name) : RegressionTest(name) {
+    RadixSortRegressionTest(const char* name) : RegressionTest(name) {
       registerRegressionTest(this);
     }
     
     bool run ()
     {
       bool passed = true;
+      const size_t M = 10;
 
-      /* create key/value vectors with random numbers */
-      const size_t N = 10000;
-      std::vector<uint32_t> keys(N);
-      std::vector<uint32_t> vals(N);
-      for (size_t i=0; i<N; i++) keys[i] = 2*unsigned(i)*647382649;
-      for (size_t i=0; i<N; i++) std::swap(keys[i],keys[rand()%N]);
-      for (size_t i=0; i<N; i++) vals[i] = 2*rand();
+      for (size_t N=10; N<1000000; N=size_t(2.1*N))
+      {
+	std::vector<Key> src(N); memset(src.data(),0,N*sizeof(Key));
+	std::vector<Key> tmp(N); memset(tmp.data(),0,N*sizeof(Key));
+	for (size_t i=0; i<N; i++) src[i] = uint64_t(rand())*uint64_t(rand());
+	
+	/* calculate checksum */
+	Key sum0 = 0; for (size_t i=0; i<N; i++) sum0 += src[i];
+        
+	/* sort numbers */
+	for (size_t i=0; i<M; i++) {
+          radix_sort<Key>(src.data(),tmp.data(),N);
+        }
+	
+	/* calculate checksum */
+	Key sum1 = 0; for (size_t i=0; i<N; i++) sum1 += src[i];
+	if (sum0 != sum1) passed = false;
+        
+	/* check if numbers are sorted */
+	for (size_t i=1; i<N; i++)
+	  passed &= src[i-1] <= src[i];
+      }
       
-      /* create map */
-      pmap<uint32_t,uint32_t> map;
-      map.init(keys,vals);
-
-      /* check that all keys are properly mapped */
-      for (size_t i=0; i<N; i++) {
-        const uint32_t* val = map.lookup(keys[i]);
-        passed &= val && (*val == vals[i]);
-      }
-
-      /* check that these keys are not in the map */
-      for (size_t i=0; i<N; i++) {
-        passed &= !map.lookup(keys[i]+1);
-      }
-
       return passed;
     }
   };
 
-  pmap_regression_test pmap_regression("pmap_regression_test");
+  RadixSortRegressionTest<uint32_t> test_u32("RadixSortRegressionTestU32");
+  RadixSortRegressionTest<uint64_t> test_u64("RadixSortRegressionTestU64");
 }
