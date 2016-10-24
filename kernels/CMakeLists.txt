@@ -75,29 +75,6 @@ SET(EMBREE_LIBRARY_FILES
   bvh/bvh_intersector1.cpp
   )
 
-IF (TASKING_INTERNAL)
-  SET(EMBREE_LIBRARY_FILES 
-    ../common/tasking/taskschedulerinternal.cpp
-    ../common/tasking/tasksys.cpp
-    ${EMBREE_LIBRARY_FILES})
-ENDIF()
-
-IF (TASKING_TBB)
-  SET(EMBREE_LIBRARY_FILES 
-    ../common/tasking/taskschedulertbb.cpp
-    ../common/tasking/tasksys.cpp
-    ${EMBREE_LIBRARY_FILES})
-  SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} ${TBB_LIBRARIES})
-ENDIF()
-
-IF (TASKING_PPL)
-  SET(EMBREE_LIBRARY_FILES 
-    ../common/tasking/taskschedulerppl.cpp
-    ../common/tasking/tasksys.cpp
-    ${EMBREE_LIBRARY_FILES})
-  SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} ${PPL_LIBRARIES})
-ENDIF()
-
 IF (EMBREE_RAY_PACKETS)
   SET(EMBREE_LIBRARY_FILES ${EMBREE_LIBRARY_FILES}
 
@@ -271,7 +248,7 @@ IF (TARGET_AVX512SKX AND EMBREE_LIBRARY_FILES_AVX512SKX)
   SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_avx512skx)
 ENDIF()
 
-TARGET_LINK_LIBRARIES(embree ${EMBREE_LIBRARIES} sys simd lexers)
+TARGET_LINK_LIBRARIES(embree ${EMBREE_LIBRARIES} sys simd lexers tasking)
 
 IF (WIN32)
 ELSEIF (APPLE)

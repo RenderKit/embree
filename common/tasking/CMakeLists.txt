@@ -14,25 +14,18 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-# FIXME: have to add these CPP files directly in libembree as otherwise globals of the tasking system exist twice under VS2012 Win32
+IF (TASKING_INTERNAL)
+  ADD_LIBRARY(tasking STATIC taskschedulerinternal.cpp tasksys.cpp)
+ENDIF()
 
-#  IF (TASKING_INTERNAL)
-#    ADD_DEFINITIONS(-DTASKING_INTERNAL)
-#  ENDIF()
+IF (TASKING_TBB)
+  ADD_LIBRARY(tasking STATIC taskschedulertbb.cpp tasksys.cpp)
+  TARGET_LINK_LIBRARIES(tasking sys ${TBB_LIBRARIES})
+ENDIF()
 
-#  IF (TASKING_TBB)
-#    ADD_DEFINITIONS(-DTASKING_TBB)
-#  ENDIF()
+IF (TASKING_PPL)
+  ADD_LIBRARY(tasking STATIC taskschedulerppl.cpp tasksys.cpp)
+  TARGET_LINK_LIBRARIES(tasking sys ${PPL_LIBRARIES})
+ENDIF()
 
-#  ADD_LIBRARY(tasking STATIC
-#    taskscheduler_tbb.cpp
-#    tasksys.cpp
-#  )
-
-#  IF (TASKING_TBB)
-#    TARGET_LINK_LIBRARIES(tasking sys ${TBB_LIBRARIES})
-#  ELSE()
-#    TARGET_LINK_LIBRARIES(tasking sys)
-#  ENDIF()
-
-#  SET_PROPERTY(TARGET tasking PROPERTY FOLDER kernels)
+SET_PROPERTY(TARGET tasking PROPERTY FOLDER common)
