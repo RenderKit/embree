@@ -76,10 +76,6 @@ namespace embree
         bool spatial;
         float sah;
         __aligned(16) char data[sizeof(ObjectSplit) > sizeof(SpatialSplit) ? sizeof(ObjectSplit) : sizeof(SpatialSplit)];
-        /*union {
-          ObjectSplit objectSplit;
-          SpatialSplit spatialSplit;
-          };*/
       };
 
     /*! Performs standard object binning */
