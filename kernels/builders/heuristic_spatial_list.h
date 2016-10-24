@@ -83,17 +83,16 @@ namespace embree
       };
 
     /*! Performs standard object binning */
-    template<typename PrimRef, typename SplitPrimitive, size_t OBINS, size_t SBINS>
+    template<typename PrimRef, typename SplitPrimitive, size_t OBJECT_BINS, size_t SPATIAL_BINS>
       struct HeuristicListSpatialSAH
       {
-        typedef BinSplit<OBINS> ObjectSplit;
-        typedef BinInfo<OBINS,PrimRef> ObjectBinner;
+        typedef BinSplit<OBJECT_BINS> ObjectSplit;
+        typedef BinInfo<OBJECT_BINS,PrimRef> ObjectBinner;
 
-        typedef SpatialBinSplit<SBINS> SpatialSplit;
-        typedef SpatialBinInfo<SBINS,PrimRef> SpatialBinner;
+        typedef SpatialBinSplit<SPATIAL_BINS> SpatialSplit;
+        typedef SpatialBinInfo<SPATIAL_BINS,PrimRef> SpatialBinner;
 
         typedef atomic_set<PrimRefBlockT<PrimRef> > Set;
-        typedef typename atomic_set<PrimRefBlockT<PrimRef> >::item Set_item;
         typedef Split2<ObjectSplit,SpatialSplit> Split;
         
         __forceinline HeuristicListSpatialSAH () {
@@ -131,7 +130,7 @@ namespace embree
         const ObjectSplit object_sequential_find(Set& set, const PrimInfo& pinfo, const size_t logBlockSize, SplitInfo& sinfo_o)
         {
           ObjectBinner binner(empty);
-          const BinMapping<OBINS> mapping(pinfo);
+          const BinMapping<OBJECT_BINS> mapping(pinfo);
           typename Set::iterator i=set;
           while (typename Set::item* block = i.next()) {
             binner.bin(block->base(),block->size(),mapping);
@@ -144,14 +143,14 @@ namespace embree
         /*! finds the best split */
         const ObjectSplit object_parallel_find(Set& set, const PrimInfo& pinfo, const size_t logBlockSize, SplitInfo& sinfo_o)
         {
-          const BinMapping<OBINS> mapping(pinfo);
-          const BinMapping<OBINS>& _mapping = mapping; // CLANG 3.4 parser bug workaround
+          const BinMapping<OBJECT_BINS> mapping(pinfo);
+          const BinMapping<OBJECT_BINS>& _mapping = mapping; // CLANG 3.4 parser bug workaround
           typename Set::iterator i=set;
           const size_t threadCount = TaskScheduler::threadCount();
           const ObjectBinner binner = parallel_reduce(size_t(0),threadCount,ObjectBinner(empty), [&] (const range<size_t>& r) -> ObjectBinner
           {
             ObjectBinner binner(empty);
-            while (Set_item* block = i.next()) {
+            while (PrimRefList::item* block = i.next()) {
               binner.bin(block->base(),block->size(),_mapping);
             }
             return binner;
@@ -173,7 +172,7 @@ namespace embree
         const SpatialSplit spatial_sequential_find(Set& prims, const PrimInfo& pinfo, const size_t logBlockSize)
         {
           SpatialBinner binner(empty);
-          const SpatialBinMapping<SBINS> mapping(pinfo);
+          const SpatialBinMapping<SPATIAL_BINS> mapping(pinfo);
           PrimRefList::iterator i=prims;
           while (PrimRefList::item* block = i.next())
             binner.bin(splitPrimitive,block->base(),block->size(),mapping);
@@ -183,8 +182,8 @@ namespace embree
         /*! finds the best split */
         const SpatialSplit spatial_parallel_find(Set& prims, const PrimInfo& pinfo, const size_t logBlockSize)
         {
-          const SpatialBinMapping<SBINS> mapping(pinfo);
-          const SpatialBinMapping<SBINS>& _mapping = mapping; // CLANG 3.4 parser bug workaround
+          const SpatialBinMapping<SPATIAL_BINS> mapping(pinfo);
+          const SpatialBinMapping<SPATIAL_BINS>& _mapping = mapping; // CLANG 3.4 parser bug workaround
           PrimRefList::iterator i=prims;
 
           const size_t threadCount = TaskScheduler::threadCount();
