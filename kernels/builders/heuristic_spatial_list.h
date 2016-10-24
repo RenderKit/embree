@@ -110,13 +110,14 @@ namespace embree
           const float objectSplitSAH = objectSplit.splitSAH();
 
           const BBox3fa overlap = intersect(oinfo.leftBounds,oinfo.rightBounds);
-          if (safeArea(overlap) < 0.2f*safeArea(pinfo.geomBounds)) 
-            return Split(objectSplit,objectSplitSAH);
-
-          const SpatialSplit spatialSplit = spatial_find(set,pinfo,logBlockSize);
-          const float spatialSplitSAH = spatialSplit.splitSAH();
-          if (objectSplitSAH < spatialSplitSAH) return Split(objectSplit,objectSplitSAH);
-          else                                  return Split(spatialSplit,spatialSplitSAH);
+          if (safeArea(overlap) >= 0.2f*safeArea(pinfo.geomBounds)) 
+          {
+            const SpatialSplit spatialSplit = spatial_find(set,pinfo,logBlockSize);
+            const float spatialSplitSAH = spatialSplit.splitSAH();
+            if (spatialSplitSAH < objectSplitSAH) 
+              return Split(spatialSplit,spatialSplitSAH);
+          }
+          return Split(objectSplit,objectSplitSAH);
         }
 
         /*! finds the best split */
