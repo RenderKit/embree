@@ -17,8 +17,8 @@
 #pragma once
 
 #include "heuristic_binning_array_aligned.h"
-#include "heuristic_spatial_array_aligned.h"
-#include "heuristic_spatial_binning_list.h"
+#include "heuristic_spatial_array.h"
+#include "heuristic_spatial_list.h"
 
 namespace embree
 {
@@ -467,7 +467,7 @@ namespace embree
         assert((blockSize ^ (size_t(1) << logBlockSize)) == 0);
         
         /* instantiate spatial binning heuristic */
-        typedef HeuristicObjectSplitAndSpatialSplitBlockListBinningSAH<PrimRef,SplitPrimitiveFunc,OBINS,SBINS> Heuristic;
+        typedef HeuristicListSpatialSAH<PrimRef,SplitPrimitiveFunc,OBINS,SBINS> Heuristic;
         Heuristic heuristic(splitPrimitive);
         
         typedef GeneralBVHBuilder<

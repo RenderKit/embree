@@ -84,7 +84,7 @@ namespace embree
 
     /*! Performs standard object binning */
     template<typename PrimRef, typename SplitPrimitive, size_t OBINS, size_t SBINS>
-      struct HeuristicObjectSplitAndSpatialSplitBlockListBinningSAH
+      struct HeuristicListSpatialSAH
       {
         typedef BinSplit<OBINS> ObjectSplit;
         typedef BinInfo<OBINS,PrimRef> ObjectBinner;
@@ -96,11 +96,11 @@ namespace embree
         typedef typename atomic_set<PrimRefBlockT<PrimRef> >::item Set_item;
         typedef Split2<ObjectSplit,SpatialSplit> Split;
         
-        __forceinline HeuristicObjectSplitAndSpatialSplitBlockListBinningSAH () {
+        __forceinline HeuristicListSpatialSAH () {
         }
 
         /*! remember scene for later splits */
-        __forceinline HeuristicObjectSplitAndSpatialSplitBlockListBinningSAH (const SplitPrimitive& splitPrimitive) 
+        __forceinline HeuristicListSpatialSAH (const SplitPrimitive& splitPrimitive) 
           : splitPrimitive(splitPrimitive) {}
         
         /*! finds the best split */

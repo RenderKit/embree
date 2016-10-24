@@ -18,7 +18,7 @@
 
 #include "heuristic_binning.h"
 #include "heuristic_spatial.h"
-#include "heuristic_spatial_binning_list.h"
+#include "heuristic_spatial_list.h"
 
 namespace embree
 {
