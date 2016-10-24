@@ -117,6 +117,7 @@ namespace embree
         {
           SplitInfo oinfo;
           const ObjectSplit object_split = object_find(set,pinfo,logBlockSize,oinfo);
+          const float object_split_sah = object_split.splitSAH();
 
           if (unlikely(set.has_ext_range()))
           {
@@ -127,18 +128,19 @@ namespace embree
                 safeArea(overlap) >= OVERLAP_THRESHOLD*safeArea(pinfo.geomBounds))
             {              
               const SpatialSplit spatial_split = spatial_find(set, pinfo, logBlockSize);
+              const float spatial_split_sah = spatial_split.splitSAH();
 
               /* valid spatial split, better SAH and number of splits do not exceed extended range */
-              if (spatial_split.sah <= USE_SPATIAL_SPLIT_SAH_THRESHOLD*object_split.sah &&
+              if (spatial_split_sah <= USE_SPATIAL_SPLIT_SAH_THRESHOLD*object_split_sah &&
                   spatial_split.left + spatial_split.right - set.size() <= set.ext_range_size())
               {          
-                set = create_spatial_splits(set,pinfo,spatial_split, spatial_split.mapping);             
-                return Split(spatial_split,spatial_split.splitSAH());
+                create_spatial_splits(set,pinfo,spatial_split, spatial_split.mapping);             
+                return Split(spatial_split,spatial_split_sah);
               }
             }
           }
 
-          return Split(object_split,object_split.splitSAH());
+          return Split(object_split,object_split_sah);
         }
 
         /*! finds the best object split */
@@ -207,7 +209,7 @@ namespace embree
 
 
         /*! subdivides primitives based on a spatial split */
-        __noinline Set create_spatial_splits(const Set& set, PrimInfo& pinfo, const SpatialSplit &split, const SpatialBinMapping<SPATIAL_BINS> &mapping)
+        __noinline void create_spatial_splits(Set& set, PrimInfo& pinfo, const SpatialSplit &split, const SpatialBinMapping<SPATIAL_BINS> &mapping)
         {
           assert(set.has_ext_range());
           const size_t max_ext_range_size = set.ext_range_size();
@@ -262,7 +264,7 @@ namespace embree
           Set nset(set.begin(),set.end()+numExtElements,set.ext_end());
           pinfo.begin = nset.begin();
           pinfo.end   = nset.end();
-          return nset;
+          set = nset;
         }
         
         /*! array partitioning */
