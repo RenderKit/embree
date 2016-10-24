@@ -190,11 +190,8 @@ SET(EMBREE_LIBRARY_FILES_AVX512SKX ${EMBREE_LIBRARY_FILES_AVX512})
 MACRO (CreateISADummyFiles list isa)
   SET(${list})
   FOREACH(src ${ARGN})
-    GET_FILENAME_COMPONENT(src_dir  ${src} DIRECTORY)
-    GET_FILENAME_COMPONENT(src_name ${src} NAME_WE)
-    GET_FILENAME_COMPONENT(src_ext  ${src} EXT)
     SET(src_file ${CMAKE_CURRENT_SOURCE_DIR}/${src})
-    SET(dst_file ${CMAKE_BINARY_DIR}/${src_dir}/${src_name}.${isa}${src_ext})
+    SET(dst_file ${CMAKE_BINARY_DIR}/${src}.${isa}.cpp)
     SET(${list} ${${list}} ${dst_file})
     ADD_CUSTOM_COMMAND(OUTPUT ${dst_file}
       COMMAND ${CMAKE_COMMAND} 
