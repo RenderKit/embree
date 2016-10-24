@@ -220,6 +220,44 @@ namespace embree
         }
       };
 
+    // =======================================================================================
+    // =======================================================================================
+    // =======================================================================================
+
+    template<int N>
+      struct BVHNBuilderSweep
+      {
+        typedef BVHN<N> BVH;
+        typedef typename BVH::NodeRef NodeRef;
+        typedef FastAllocator::ThreadLocal2 Allocator;
+      
+        struct BVHNBuilderV {
+          void build(BVH* bvh, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, 
+                     const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost);
+          virtual size_t createLeaf (const BVHBuilderSweepSAH::BuildRecord& current, Allocator* alloc) = 0;
+        };
+
+        template<typename CreateLeafFunc>
+        struct BVHNBuilderT : public BVHNBuilderV
+        {
+          BVHNBuilderT (CreateLeafFunc createLeafFunc)
+            : createLeafFunc(createLeafFunc) {}
+
+          size_t createLeaf (const BVHBuilderSweepSAH::BuildRecord& current, Allocator* alloc) {
+            return createLeafFunc(current,alloc);
+          }
+
+        private:
+          CreateLeafFunc createLeafFunc;
+        };
+
+        template<typename CreateLeafFunc>
+        static void build(BVH* bvh, CreateLeafFunc createLeaf, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, 
+                          const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost) {
+          BVHNBuilderT<CreateLeafFunc>(createLeaf).build(bvh,progress,prims,pinfo,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
+        }
+      };
+
 
   }
 }

@@ -916,29 +916,37 @@ namespace embree
       void build(size_t, size_t) 
       {
 	/* skip build for empty scene */
-	const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,1>();
+        const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,false>();
         if (numPrimitives == 0) {
           prims.clear();
           bvh->clear();
           return;
         }
-
-        double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + toString(N) + "BuilderSAH");
-
-        /* create primref array */
-        const size_t numSplitPrimitives = max(numPrimitives,size_t(presplitFactor*numPrimitives));
-        prims.resize(numSplitPrimitives);
-        PrimInfo pinfo = mesh ? 
-          createPrimRefArray<Mesh>  (mesh ,prims,bvh->scene->progressInterface) : 
-          createPrimRefArray<Mesh,1>(scene,prims,bvh->scene->progressInterface);
         
-        /* perform pre-splitting */
-        if (presplitFactor > 1.0f) 
-          pinfo = presplit<Mesh>(scene, pinfo, prims);
+        double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + toString(N) + "BuilderSweepSAH");
+
+#if PROFILE
+        profile(2,PROFILE_RUNS,numPrimitives,[&] (ProfileTimer& timer) {
+#endif
+
+            /* create primref array */
+            const size_t numSplitPrimitives = max(numPrimitives,size_t(presplitFactor*numPrimitives));
+            prims.resize(numSplitPrimitives);
+            PrimInfo pinfo = mesh ? 
+              createPrimRefArray<Mesh>  (mesh ,prims,bvh->scene->progressInterface) : 
+              createPrimRefArray<Mesh,false>(scene,prims,bvh->scene->progressInterface);
         
-        /* call BVH builder */
-        bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
-        BVHNBuilder<N>::build(bvh,CreateLeaf<N,Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
+            /* perform pre-splitting */
+            if (presplitFactor > 1.0f) 
+              pinfo = presplit<Mesh>(scene, pinfo, prims);
+        
+            /* call BVH builder */
+            bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
+            BVHNBuilderSweep<N>::build(bvh,CreateLeaf<N,Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
+
+#if PROFILE
+          }); 
+#endif	
 
 	/* clear temporary data for static geometry */
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
