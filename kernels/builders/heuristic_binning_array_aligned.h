@@ -74,7 +74,6 @@ namespace embree
         /*! finds the best split */
         const Split find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
-
           if (likely(pinfo.size() < PARALLEL_THRESHOLD)) return sequential_find(set,pinfo,logBlockSize);
           else                                           return   parallel_find(set,pinfo,logBlockSize);
         }

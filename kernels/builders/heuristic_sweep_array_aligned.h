@@ -18,6 +18,9 @@
 
 #include "heuristic_binning.h"
 
+//#define DBG_PRINT(x) PRINT(x)
+#define DBG_PRINT(x) 
+
 namespace embree
 {
   namespace isa
@@ -109,7 +112,10 @@ namespace embree
         /*! finds the best split */
         const Split find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
-
+          /* std::cout << std::endl; */
+          /* PING; */
+          DBG_PRINT(pinfo);
+          DBG_PRINT(area(pinfo.geomBounds));
           if (likely(pinfo.size() < PARALLEL_THRESHOLD)) return sequential_find(set,pinfo,logBlockSize);
           else                                           return   parallel_find(set,pinfo,logBlockSize);
         }
@@ -119,7 +125,7 @@ namespace embree
         {
           assert(pinfo.size() == set.size());
           const size_t numPrims = pinfo.size();
-          PRINT(numPrims);
+          DBG_PRINT(numPrims);
           assert(numPrims);
 
           /* create temporary arrays */
@@ -150,29 +156,28 @@ namespace embree
           float bestSAH = inf;
           int   bestDim = -1;
           int   bestPos = 0;
-
           for (size_t dim = 0;dim<3;dim++)
           {
             if (unlikely(scale[dim] == 0.0f)) continue;
 
             /* compute area from right to left */
             BBox3fa right_bounds(empty);
-            for (ssize_t i = numPrims-1;i>=0;i--)
+            for (size_t i = numPrims-1;i>0;i--)
             {
               right_bounds = right_bounds.extend(prims[centroid[dim][i].id].bounds());
-              right_area[i] = area(right_bounds);
+              right_area[i] = halfArea(right_bounds);
             }
+            right_area[0] = halfArea(right_bounds);
 
             /* compute sah */
             BBox3fa left_bounds(empty);
-            for (size_t i = 0;i<numPrims-1;i++)
+            for (size_t i = 1;i<numPrims;i++)
             {
+              left_bounds = left_bounds.extend(prims[centroid[dim][i-1].id].bounds());
               const size_t numLeft = i;
-              const size_t numRight = numPrims-i;
-              left_bounds = left_bounds.extend(prims[centroid[dim][i].id].bounds());
-              
-              const float lArea = area(left_bounds);
-              const float rArea = right_area[i+1];
+              const size_t numRight = numPrims-numLeft;              
+              const float lArea = halfArea(left_bounds);
+              const float rArea = right_area[i];
               const size_t blocks_add = (1 << logBlockSize)-1;
               const size_t lCount = (numLeft +blocks_add) >> logBlockSize;
               const size_t rCount = (numRight+blocks_add) >> logBlockSize;
@@ -180,7 +185,7 @@ namespace embree
 
               if (unlikely(sah < bestSAH)) {
                 bestDim = (int)dim;
-                bestPos = i+1;
+                bestPos = i;
                 bestSAH = sah;
               }
             }
@@ -193,7 +198,7 @@ namespace embree
           delete [] centroid[1];
           delete [] centroid[2];
 
-          PRINT(Split(bestSAH,bestDim,bestPos));
+          DBG_PRINT(Split(bestSAH,bestDim,bestPos));
           return Split(bestSAH,bestDim,bestPos);
         }
         
@@ -238,9 +243,6 @@ namespace embree
           const unsigned int splitPos = split.pos;
           const unsigned int splitDim = split.dim;
 
-          PRINT(splitPos);
-          PRINT(splitDim);
-
           /* sort prims according to best split dimension */
           std::sort(&prims[begin],&prims[end], [&](const PrimRef &a, const PrimRef &b) -> bool { 
               const Vec3fa centerA = a.bounds().center();
@@ -264,6 +266,12 @@ namespace embree
           new (&rset) range<size_t>(center,end);
           assert(area(left.geomBounds) >= 0.0f);
           assert(area(right.geomBounds) >= 0.0f);
+          DBG_PRINT(center);
+          DBG_PRINT(area(local_left.geomBounds));
+          DBG_PRINT(left);
+          DBG_PRINT(area(local_right.geomBounds));
+          DBG_PRINT(right);
+
         }
 
         void deterministic_order(const Set& set) 

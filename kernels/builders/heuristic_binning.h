@@ -384,7 +384,6 @@ namespace embree
             bestSAH = vbestSAH[dim];
           }
         }
-	
 	return Split(bestSAH,bestDim,bestPos,mapping);
       }
       
