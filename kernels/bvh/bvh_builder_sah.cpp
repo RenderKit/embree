@@ -504,7 +504,7 @@ namespace embree
           NodeRef root; LBBox3fa tbounds;
           const PrimInfo pinfo = createPrimRefArrayMBlur<Mesh>(t,bvh->numTimeSteps,scene,prims,bvh->scene->progressInterface);
           std::tie(root, tbounds) = BVHNBuilderMblur<N>::build(bvh,CreateMSMBlurLeaf<N,Primitive>(bvh,prims.data(),t),bvh->scene->progressInterface,prims.data(),pinfo,
-                                                              sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
+                                                               sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
           roots[t] = root;
           bounds[t+0] = tbounds.bounds0;
           bounds[t+1] = tbounds.bounds1;
@@ -622,14 +622,12 @@ namespace embree
         };
 
         auto splitPrimitiveBinning = [&] (SpatialBinInfo<FAST_SPATIAL_BUILDER_NUM_SPATIAL_SPLITS,PrimRef> &binner, 
-                                    const PrimRef* const source, const size_t begin, const size_t end, 
-                                    const SpatialBinMapping<FAST_SPATIAL_BUILDER_NUM_SPATIAL_SPLITS> &mapping)
+                                          const PrimRef* const source, const size_t begin, const size_t end, 
+                                          const SpatialBinMapping<FAST_SPATIAL_BUILDER_NUM_SPATIAL_SPLITS> &mapping)
           {
             for (size_t i=begin; i<end; i++)
             {
               const PrimRef &prim = source[i];
-              //const unsigned int splits = prim.geomID() >> 24;
-              //assert(splits != 1);
               const vint4 bin0 = mapping.bin(prim.bounds().lower);
               const vint4 bin1 = mapping.bin(prim.bounds().upper);
 
@@ -802,14 +800,12 @@ namespace embree
         };
 
         auto splitPrimitiveBinning = [&] (SpatialBinInfo<FAST_SPATIAL_BUILDER_NUM_SPATIAL_SPLITS,PrimRef> &binner, 
-                                    const PrimRef* const source, const size_t begin, const size_t end, 
-                                    const SpatialBinMapping<FAST_SPATIAL_BUILDER_NUM_SPATIAL_SPLITS> &mapping)
+                                          const PrimRef* const source, const size_t begin, const size_t end, 
+                                          const SpatialBinMapping<FAST_SPATIAL_BUILDER_NUM_SPATIAL_SPLITS> &mapping)
           {
             for (size_t i=begin; i<end; i++)
             {
               const PrimRef &prim = source[i];
-              const unsigned int splits = prim.geomID() >> 24;
-              assert(splits != 1);
               const vint4 bin0 = mapping.bin(prim.bounds().lower);
               const vint4 bin1 = mapping.bin(prim.bounds().upper);
 

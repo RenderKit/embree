@@ -792,7 +792,9 @@ namespace embree
                                     TriangleMiIntersector1Moeller<SIMD_MODE(4) COMMA true >,
                                     TriangleMiIntersectorKMoeller<4 COMMA VSIZEX COMMA VSIZEX COMMA true > > Triangle4iIntersectorStreamMoeller;
 
-    typedef ArrayIntersector1<TriangleMiIntersector1Pluecker<SIMD_MODE(4) COMMA true> > Triangle4iIntersectorStreamPluecker;
+    typedef ArrayIntersectorKStream<VSIZEX,
+                                    TriangleMiIntersector1Pluecker<SIMD_MODE(4) COMMA true >,
+                                    TriangleMiIntersectorKPluecker<4 COMMA VSIZEX COMMA VSIZEX COMMA true > > Triangle4iIntersectorStreamPluecker;
 
     typedef ArrayIntersectorKStream<VSIZEX,
                                     QuadMvIntersector1Moeller<4 COMMA true >,

@@ -319,9 +319,21 @@ extern "C" void device_init (char* cfg)
   rtcDeviceSetErrorFunction(g_device,error_handler);
 
   /* create scene */
+#if 1
   g_scene = convertScene(g_ispc_scene);
-
   rtcCommit (g_scene);
+#else
+  /* quick hack to benchmark build performance */
+  while(1)
+  {
+    g_scene = convertScene(g_ispc_scene);
+    double t0 = getSeconds();
+    rtcCommit (g_scene);
+    double t1 = getSeconds();
+    PRINT(t1-t0);
+    rtcDeleteScene(g_scene);
+  }
+#endif
 
   /* set render tile function to use */
   renderTile = renderTileStandard;
