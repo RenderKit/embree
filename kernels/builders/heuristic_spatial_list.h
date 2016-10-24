@@ -24,6 +24,10 @@ namespace embree
 {
   namespace isa
   {
+#define SPATIAL_SPLIT_OVERLAP_THRESHOLD 0.1f
+#define SPATIAL_SPLIT_SAH_THRESHOLD 0.99f
+#define SPATIAL_SPLIT_AREA_THRESHOLD 0.000005f
+
     template<typename ObjectSplit, typename SpatialSplit>
       struct Split2
       {
