@@ -511,7 +511,7 @@ namespace embree
       static const size_t SPATIAL_BINS = FAST_SPATIAL_BUILDER_NUM_SPATIAL_SPLITS;
 
       typedef extended_range<size_t> Set;
-      typedef BinSplit<OBJECT_BINS> Split;
+      typedef Split2<BinSplit<OBJECT_BINS>,SpatialBinSplit<SPATIAL_BINS> > Split;
       typedef GeneralBuildRecord<Set,Split> BuildRecord;
 
       /*! standard build without reduction */

@@ -67,6 +67,10 @@ namespace embree
         __forceinline float splitSAH() const { 
           return sah; 
         }
+
+        __forceinline bool valid() const {
+          return sah < float(inf);
+        }
         
       public:
         bool spatial;

@@ -18,6 +18,7 @@
 
 #include "heuristic_binning.h"
 #include "heuristic_spatial.h"
+#include "heuristic_spatial_binning_list.h"
 
 namespace embree
 {
@@ -38,12 +39,15 @@ namespace embree
 #endif
       struct HeuristicArraySpatialSAH
       {
-        typedef BinSplit<OBJECT_BINS> Split;
+        typedef BinSplit<OBJECT_BINS> ObjectSplit;
         typedef BinInfo<OBJECT_BINS,PrimRef> ObjectBinner;
-        typedef SpatialBinInfo<SPATIAL_BINS,PrimRef> SpatialBinner;
-        typedef extended_range<size_t> Set;
-        typedef SpatialBinSplit<SPATIAL_BINS> SpatialSplit;
 
+        typedef SpatialBinSplit<SPATIAL_BINS> SpatialSplit;
+        typedef SpatialBinInfo<SPATIAL_BINS,PrimRef> SpatialBinner;
+
+        typedef extended_range<size_t> Set;
+        typedef Split2<ObjectSplit,SpatialSplit> Split;
+        
 #if defined(__AVX512F__)
         static const size_t PARALLEL_THRESHOLD = 3*1024; 
         static const size_t PARALLEL_FIND_BLOCK_SIZE = 768;
@@ -138,8 +142,9 @@ namespace embree
           SplitInfo info;
           
           /* sequential or parallel */ 
-          Split object_split = pinfo.size() < PARALLEL_THRESHOLD ? sequential_object_find(set,pinfo,logBlockSize,info) : parallel_object_find(set,pinfo,logBlockSize,info);
-          object_split.data = 0;
+          ObjectSplit object_split = pinfo.size() < PARALLEL_THRESHOLD ? 
+            sequential_object_find(set,pinfo,logBlockSize,info) : 
+            parallel_object_find(set,pinfo,logBlockSize,info);
 
 #if ENABLE_SPATIAL_SPLITS == 1
           if (unlikely(set.has_ext_range()))
@@ -151,7 +156,9 @@ namespace embree
                 safeArea(overlap) >= OVERLAP_THRESHOLD*safeArea(pinfo.geomBounds))
             {              
               /* sequential or parallel */ 
-              SpatialSplit spatial_split = pinfo.size() < PARALLEL_THRESHOLD ? sequential_spatial_find(set, pinfo, logBlockSize) : parallel_spatial_find(set, pinfo, logBlockSize);
+              SpatialSplit spatial_split = pinfo.size() < PARALLEL_THRESHOLD ? 
+                sequential_spatial_find(set, pinfo, logBlockSize) : 
+                parallel_spatial_find(set, pinfo, logBlockSize);
 
               /* valid spatial split, better SAH and number of splits do not exceed extended range */
               if (spatial_split.sah/object_split.sah <= USE_SPATIAL_SPLIT_SAH_THRESHOLD &&
@@ -161,34 +168,27 @@ namespace embree
                 /* set new range in priminfo */
                 pinfo.begin = set.begin();
                 pinfo.end   = set.end();
-                /* mark that we have a spatial split during partitioning */
-                object_split.data = (unsigned int)-1;
-                object_split.sah = spatial_split.sah;
-                object_split.dim = spatial_split.dim;
-                object_split.pos = spatial_split.pos;
-                object_split.mapping.ofs = spatial_split.mapping.ofs;
-                object_split.mapping.scale = spatial_split.mapping.scale;
+                return Split(spatial_split,spatial_split.splitSAH());
               }
             }
           }
 #endif
-          return object_split;
-
+          return Split(object_split,object_split.splitSAH());
         }
 
         /*! finds the best object split */
-        __noinline const Split sequential_object_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize, SplitInfo &info)
+        __noinline const ObjectSplit sequential_object_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize, SplitInfo &info)
         {
           ObjectBinner binner(empty); 
           const BinMapping<OBJECT_BINS> mapping(pinfo);
           binner.bin(prims0,set.begin(),set.end(),mapping);
-          Split s = binner.best(mapping,logBlockSize);
+          ObjectSplit s = binner.best(mapping,logBlockSize);
           binner.getSplitInfo(mapping, s, info);
           return s;
         }
 
         /*! finds the best split */
-        __noinline const Split parallel_object_find(Set& set, const PrimInfo& pinfo, const size_t logBlockSize, SplitInfo &info)
+        __noinline const ObjectSplit parallel_object_find(Set& set, const PrimInfo& pinfo, const size_t logBlockSize, SplitInfo &info)
         {
           ObjectBinner binner(empty);
           const BinMapping<OBJECT_BINS> mapping(pinfo);
@@ -196,7 +196,7 @@ namespace embree
           binner = parallel_reduce(set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,binner,
                                    [&] (const range<size_t>& r) -> ObjectBinner { ObjectBinner binner(empty); binner.bin(prims0+r.begin(),r.size(),_mapping); return binner; },
                                    [&] (const ObjectBinner& b0, const ObjectBinner& b1) -> ObjectBinner { ObjectBinner r = b0; r.merge(b1,_mapping.size()); return r; });
-          Split s = binner.best(mapping,logBlockSize);
+          ObjectSplit s = binner.best(mapping,logBlockSize);
           binner.getSplitInfo(mapping, s, info);
           return s;
         }
@@ -292,7 +292,6 @@ namespace embree
           assert(set.end()+numExtElements<=set.ext_end());
           return Set(set.begin(),set.end()+numExtElements,set.ext_end());
         }
-                        
         
         /*! array partitioning */
         void split(const Split& split, const PrimInfo& pinfo, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
@@ -305,21 +304,21 @@ namespace embree
 
           std::pair<size_t,size_t> ext_weights(0,0);
 
-          if (unlikely(split.data == (unsigned int)-1))
+          if (unlikely(split.spatial))
           {
             /* spatial split */
             if (likely(pinfo.size() < PARALLEL_THRESHOLD)) 
-              ext_weights = sequential_spatial_split(split,set,left,lset,right,rset);
+              ext_weights = sequential_spatial_split(split.spatialSplit(),set,left,lset,right,rset);
             else
-              ext_weights = parallel_spatial_split(split,set,left,lset,right,rset);
+              ext_weights = parallel_spatial_split(split.spatialSplit(),set,left,lset,right,rset);
           }
           else
           {
             /* object split */
             if (likely(pinfo.size() < PARALLEL_THRESHOLD)) 
-              ext_weights = sequential_object_split(split,set,left,lset,right,rset);
+              ext_weights = sequential_object_split(split.objectSplit(),set,left,lset,right,rset);
             else
-              ext_weights = parallel_object_split(split,set,left,lset,right,rset);
+              ext_weights = parallel_object_split(split.objectSplit(),set,left,lset,right,rset);
           }
 
           /* if we have an extended range, set extended child ranges and move right split range */
@@ -338,7 +337,7 @@ namespace embree
         }
 
         /*! array partitioning */
-        std::pair<size_t,size_t> sequential_object_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
+        std::pair<size_t,size_t> sequential_object_split(const ObjectSplit& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
         {
           const size_t begin = set.begin();
           const size_t end   = set.end();
@@ -370,7 +369,6 @@ namespace embree
           const size_t left_weight  = local_left.end;
           const size_t right_weight = local_right.end;
 
-          //assert(center == begin + split.data);
           new (&left ) PrimInfo(begin,center,local_left.geomBounds,local_left.centBounds);
           new (&right) PrimInfo(center,end,local_right.geomBounds,local_right.centBounds);
           new (&lset) extended_range<size_t>(begin,center,center);
@@ -391,9 +389,8 @@ namespace embree
 
 
         /*! array partitioning */
-        __noinline std::pair<size_t,size_t> sequential_spatial_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
+        __noinline std::pair<size_t,size_t> sequential_spatial_split(const SpatialSplit& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
         {
-          assert(split.data == (unsigned int)-1);
           const size_t begin = set.begin();
           const size_t end   = set.end();
           PrimInfo local_left(empty);
@@ -438,7 +435,7 @@ namespace embree
 
         
         /*! array partitioning */
-        __noinline std::pair<size_t,size_t> parallel_object_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset)
+        __noinline std::pair<size_t,size_t> parallel_object_split(const ObjectSplit& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset)
         {
           const size_t begin = set.begin();
           const size_t end   = set.end();
@@ -487,9 +484,8 @@ namespace embree
         }
 
         /*! array partitioning */
-        __noinline std::pair<size_t,size_t> parallel_spatial_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset)
+        __noinline std::pair<size_t,size_t> parallel_spatial_split(const SpatialSplit& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset)
         {
-          assert(split.data == (unsigned int)-1);
           const size_t begin = set.begin();
           const size_t end   = set.end();
           left.reset(); 
