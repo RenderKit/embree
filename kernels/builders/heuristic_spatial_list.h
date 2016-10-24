@@ -24,10 +24,11 @@ namespace embree
 {
   namespace isa
   {
-#define SPATIAL_SPLIT_OVERLAP_THRESHOLD 0.1f
+#if 1
+#define SPATIAL_SPLIT_OVERLAP_THRESHOLD 0.2f
 #define SPATIAL_SPLIT_SAH_THRESHOLD 0.99f
-#define SPATIAL_SPLIT_AREA_THRESHOLD 0.000005f
-
+#define SPATIAL_SPLIT_AREA_THRESHOLD 0.0f
+#endif
     template<typename ObjectSplit, typename SpatialSplit>
       struct Split2
       {
@@ -99,8 +100,8 @@ namespace embree
         }
 
         /*! remember scene for later splits */
-        __forceinline HeuristicListSpatialSAH (const SplitPrimitive& splitPrimitive) 
-          : splitPrimitive(splitPrimitive) {}
+        __forceinline HeuristicListSpatialSAH (const SplitPrimitive& splitPrimitive, const PrimInfo& root_info) 
+          : splitPrimitive(splitPrimitive), root_info(root_info) {}
         
         /*! finds the best split */
         const Split find(Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
@@ -110,11 +111,12 @@ namespace embree
           const float objectSplitSAH = objectSplit.splitSAH();
 
           const BBox3fa overlap = intersect(oinfo.leftBounds,oinfo.rightBounds);
-          if (safeArea(overlap) >= 0.2f*safeArea(pinfo.geomBounds)) 
+          if (safeArea(overlap) >= SPATIAL_SPLIT_AREA_THRESHOLD*safeArea(root_info.geomBounds) &&
+              safeArea(overlap) >= SPATIAL_SPLIT_OVERLAP_THRESHOLD*safeArea(pinfo.geomBounds)) 
           {
             const SpatialSplit spatialSplit = spatial_find(set,pinfo,logBlockSize);
             const float spatialSplitSAH = spatialSplit.splitSAH();
-            if (spatialSplitSAH < objectSplitSAH) 
+            if (spatialSplitSAH < SPATIAL_SPLIT_SAH_THRESHOLD*objectSplitSAH) 
               return Split(spatialSplit,spatialSplitSAH);
           }
           return Split(objectSplit,objectSplitSAH);
@@ -538,6 +540,7 @@ namespace embree
 
       private:
         const SplitPrimitive& splitPrimitive;
+        const PrimInfo& root_info;
       };
   }
 }
