@@ -24,9 +24,6 @@ namespace embree
 {
   namespace isa
   { 
-#define ENABLE_SPATIAL_SPLITS 1
-#define ENABLE_ARRAY_CHECKS 0
-
 #define OVERLAP_THRESHOLD 0.1f
 #define USE_SPATIAL_SPLIT_SAH_THRESHOLD 0.99f
 #define SPATIAL_SPLIT_AREA_THRESHOLD 0.000005f
@@ -73,23 +70,6 @@ namespace embree
         __noinline void setExtentedRanges(const Set& set, Set& lset, Set& rset, const size_t lweight, const size_t rweight)
         {
           assert(set.ext_range_size() > 0);
-#if ENABLE_ARRAY_CHECKS == 1
-          size_t weight_left  = 0;
-          size_t weight_right = 0;
-          for (size_t i = lset.begin(); i < lset.end(); i++)
-            weight_left += prims0[i].lower.a >> 24;
-          for (size_t i = rset.begin(); i < rset.end(); i++)
-            weight_right += prims0[i].lower.a >> 24;
-
-          assert(lweight == weight_left);
-          assert(rweight == weight_right);
-#endif
-          //const float new_left_factor = (float)weight_left / (weight_left + weight_right);
-          //const size_t parent_size    = set.size();
-          //const size_t left_size      = lset.size();
-          //const float left_factor     = new_left_factor;
-          //const float left_factor     = (float)left_size / parent_size;
-
           const float left_factor           = (float)lweight / (lweight + rweight);
           const size_t ext_range_size       = set.ext_range_size();
           const size_t left_ext_range_size  = min((size_t)(floorf(left_factor * ext_range_size)),ext_range_size);
@@ -135,10 +115,6 @@ namespace embree
         /*! finds the best split */
         const Split find(Set& set, PrimInfo& pinfo, const size_t logBlockSize)
         {
-#if ENABLE_ARRAY_CHECKS == 1
-          for (size_t i=set.begin();i<set.end();i++)
-            assert(subset(prims0[i].bounds(),pinfo.geomBounds));
-#endif
           SplitInfo info;
           
           /* sequential or parallel */ 
@@ -146,7 +122,6 @@ namespace embree
             sequential_object_find(set,pinfo,logBlockSize,info) : 
             parallel_object_find(set,pinfo,logBlockSize,info);
 
-#if ENABLE_SPATIAL_SPLITS == 1
           if (unlikely(set.has_ext_range()))
           {
             const BBox3fa overlap = intersect(info.leftBounds, info.rightBounds);
@@ -172,7 +147,7 @@ namespace embree
               }
             }
           }
-#endif
+
           return Split(object_split,object_split.splitSAH());
         }
 
@@ -261,15 +236,6 @@ namespace embree
                   // no empty splits
                   if (unlikely(left.bounds().empty() || right.bounds().empty())) continue;
                 
-#if ENABLE_ARRAY_CHECKS == 1
-                  assert(left.lower.x <= left.upper.x);
-                  assert(left.lower.y <= left.upper.y);
-                  assert(left.lower.z <= left.upper.z);
-                
-                  assert(right.lower.x <= right.upper.x);
-                  assert(right.lower.y <= right.upper.y);
-                  assert(right.lower.z <= right.upper.z);
-#endif
                   //left.lower.a  = (left.lower.a & 0x00FFFFFF) | ((splits-1) << 24);
                   //right.lower.a = (right.lower.a & 0x00FFFFFF) | ((splits-1) << 24);
                   left.lower.a  = (left.lower.a & 0x00FFFFFF) | (splits << 24);
@@ -376,14 +342,6 @@ namespace embree
 
           assert(area(left.geomBounds) >= 0.0f);
           assert(area(right.geomBounds) >= 0.0f);
-
-#if ENABLE_ARRAY_CHECKS == 1
-          /*  verify that the left and right ranges are correct */
-          for (size_t i=lset.begin();i<lset.end();i++)
-            assert(subset(prims0[i].bounds(),local_left.geomBounds));
-          for (size_t i=rset.begin();i<rset.end();i++)
-            assert(subset(prims0[i].bounds(),local_right.geomBounds));
-#endif
           return std::pair<size_t,size_t>(left_weight,right_weight);
         }
 
@@ -421,14 +379,6 @@ namespace embree
           new (&rset) extended_range<size_t>(center,end,end);
           assert(area(left.geomBounds) >= 0.0f);
           assert(area(right.geomBounds) >= 0.0f);
-
-          /* verify that the left and right ranges are correct */
-#if ENABLE_ARRAY_CHECKS == 1
-          for (size_t i=lset.begin();i<lset.end();i++)
-            assert(subset(prims0[i].bounds(),local_left.geomBounds));
-          for (size_t i=rset.begin();i<rset.end();i++)
-            assert(subset(prims0[i].bounds(),local_right.geomBounds));
-#endif
           return std::pair<size_t,size_t>(left_weight,right_weight);
         }
 
@@ -472,14 +422,6 @@ namespace embree
 
           assert(area(left.geomBounds) >= 0.0f);
           assert(area(right.geomBounds) >= 0.0f);
-
-#if ENABLE_ARRAY_CHECKS == 1
-          // verify that the left and right ranges are correct
-          for (size_t i=lset.begin();i<lset.end();i++)
-            assert(subset(prims0[i].bounds(),left.geomBounds));
-          for (size_t i=rset.begin();i<rset.end();i++)
-            assert(subset(prims0[i].bounds(),right.geomBounds));
-#endif
           return std::pair<size_t,size_t>(left_weight,right_weight);
         }
 
@@ -520,17 +462,8 @@ namespace embree
 
           assert(area(left.geomBounds) >= 0.0f);
           assert(area(right.geomBounds) >= 0.0f);
-
-#if ENABLE_ARRAY_CHECKS == 1
-          /* verify that the left and right ranges are correct */
-          for (size_t i=lset.begin();i<lset.end();i++)
-            assert(subset(prims0[i].bounds(),left.geomBounds));
-          for (size_t i=rset.begin();i<rset.end();i++)
-            assert(subset(prims0[i].bounds(),right.geomBounds));
-#endif
           return std::pair<size_t,size_t>(left_weight,right_weight);
         }
-
 
         void deterministic_order(const Set& set) 
         {
