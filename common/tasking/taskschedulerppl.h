@@ -23,7 +23,6 @@
 #include "../sys/mutex.h"
 #include "../sys/condition.h"
 #include "../sys/ref.h"
-#include "../../kernels/algorithms/range.h"
 
 #if !defined(__WIN32__)
 #error PPL tasking system only available under windows

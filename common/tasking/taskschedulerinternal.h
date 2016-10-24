@@ -24,7 +24,7 @@
 #include "../sys/condition.h"
 #include "../sys/ref.h"
 #include "../sys/atomic.h"
-#include "../../kernels/algorithms/range.h"
+#include "../math/range.h"
 
 #include <list>
 

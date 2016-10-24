@@ -17,7 +17,7 @@
 #pragma once
 
 #include "../common/default.h"
-#include "range.h"
+#include "../common/math/range.h"
 
 #include "../common/tasking/taskscheduler.h"
 
