@@ -19,8 +19,8 @@
 #include "priminfo.h"
 #include "../geometry/bezier1v.h"
 
-#include "../algorithms/parallel_reduce.h"
-#include "../algorithms/parallel_partition.h"
+#include "../../common/algorithms/parallel_reduce.h"
+#include "../../common/algorithms/parallel_partition.h"
 
 namespace embree
 {

@@ -17,7 +17,7 @@
 #include "acceln.h"
 #include "ray.h"
 #include "../../include/embree2/rtcore_ray.h"
-#include "../algorithms/parallel_for.h"
+#include "../../common/algorithms/parallel_for.h"
 
 namespace embree
 {

@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "parallel_partition.h"
+#include "../sys/regression.h"
 
 namespace embree
 {

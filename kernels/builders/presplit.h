@@ -21,8 +21,8 @@
 #include "priminfo.h"
 #include "../geometry/bezier1v.h"
 
-#include "../algorithms/parallel_reduce.h"
-#include "../algorithms/parallel_prefix_sum.h"
+#include "../../common/algorithms/parallel_reduce.h"
+#include "../../common/algorithms/parallel_prefix_sum.h"
 
 namespace embree
 {

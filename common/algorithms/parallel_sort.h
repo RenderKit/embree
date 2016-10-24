@@ -17,6 +17,7 @@
 #pragma once
 
 #include "parallel_for.h"
+#include <algorithm>
 
 namespace embree
 {

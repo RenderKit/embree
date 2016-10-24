@@ -14,47 +14,48 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "parallel_for.h"
+#include "parallel_prefix_sum.h"
+#include "../sys/regression.h"
 
 namespace embree
 {
-  struct parallel_for_regression_test : public RegressionTest
+  struct parallel_prefix_sum_regression_test : public RegressionTest
   {
-    parallel_for_regression_test(const char* name) : RegressionTest(name) {
+    parallel_prefix_sum_regression_test(const char* name) : RegressionTest(name) {
       registerRegressionTest(this);
     }
     
     bool run ()
     {
       bool passed = true;
-
       const size_t M = 10;
+      
       for (size_t N=10; N<10000000; N=size_t(2.1*N))
       {
-        /* sequentially calculate sum of squares */
-        size_t sum0 = 0;
-        for (size_t i=0; i<N; i++) {
-          sum0 += i*i;
+	/* initialize array with random numbers */
+        uint32_t sum0 = 0;
+	std::vector<uint32_t> src(N);
+	for (size_t i=0; i<N; i++) {
+	  sum0 += src[i] = rand();
         }
-
-        /* parallel calculation of sum of squares */
-        for (size_t m=0; m<M; m++)
-        {
-          std::atomic<size_t> sum1(0);
-          parallel_for( size_t(0), size_t(N), size_t(1024), [&](const range<size_t>& r) 
-          {
-            size_t s = 0;
-            for (size_t i=r.begin(); i<r.end(); i++) 
-              s += i*i;
-            sum1 += s;
-          });
-          passed = sum0 == sum1;
+        
+	/* calculate parallel prefix sum */
+	std::vector<uint32_t> dst(N);
+	memset(dst.data(),0,N*sizeof(uint32_t));
+	
+	for (size_t i=0; i<M; i++) {
+	  uint32_t sum1 = parallel_prefix_sum(src,dst,N,0,std::plus<uint32_t>());
+          passed &= (sum0 == sum1);
         }
+        
+	/* check if prefix sum is correct */
+	for (size_t i=0, sum=0; i<N; sum+=src[i++])
+	  passed &= ((uint32_t)sum == dst[i]);
       }
       
       return passed;
     }
   };
 
-  parallel_for_regression_test parallel_for_regression("parallel_for_regression_test");
+  parallel_prefix_sum_regression_test parallel_prefix_sum_regression("parallel_prefix_sum_regression");
 }

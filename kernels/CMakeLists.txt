@@ -27,16 +27,6 @@ SET(EMBREE_LIBRARY_FILES
  
   embree.rc
 
-  algorithms/parallel_for.cpp
-  algorithms/parallel_reduce.cpp
-  algorithms/parallel_prefix_sum.cpp
-  algorithms/parallel_for_for.cpp
-  algorithms/parallel_for_for_prefix_sum.cpp
-  algorithms/parallel_partition.cpp
-  algorithms/parallel_sort.cpp
-  algorithms/parallel_set.cpp
-  algorithms/parallel_map.cpp
-
   common/device.cpp
   common/stat.cpp
   common/acceln.cpp
@@ -243,7 +233,7 @@ CreateISADummyFiles(EMBREE_LIBRARY_FILES_AVX2      avx2      ${EMBREE_LIBRARY_FI
 CreateISADummyFiles(EMBREE_LIBRARY_FILES_AVX512KNL avx512knl ${EMBREE_LIBRARY_FILES_AVX512KNL})
 CreateISADummyFiles(EMBREE_LIBRARY_FILES_AVX512SKX avx512skx ${EMBREE_LIBRARY_FILES_AVX512SKX})
 
-ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE} ${EMBREE_LIBRARY_FILES})
+ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE} ${EMBREE_LIBRARY_FILES} $<TARGET_OBJECTS:algorithms>)
 SET_PROPERTY(TARGET embree PROPERTY FOLDER kernels)
 
 IF (TARGET_SSE42 AND EMBREE_LIBRARY_FILES_SSE42)

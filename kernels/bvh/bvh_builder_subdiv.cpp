@@ -24,11 +24,10 @@
 #include "../builders/primrefgen.h"
 #include "../builders/bvh_builder_sah.h"
 
-#include "../algorithms/parallel_for_for.h"
-#include "../algorithms/parallel_for_for_prefix_sum.h"
+#include "../../common/algorithms/parallel_for_for.h"
+#include "../../common/algorithms/parallel_for_for_prefix_sum.h"
 
 #include "../subdiv/bezier_curve.h"
-//#include "../geometry/subdivpatch1cached_intersector1.h"
 
 #include "../geometry/subdivpatch1cached.h"
 #include "../geometry/grid_soa.h"

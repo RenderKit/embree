@@ -14,8 +14,18 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-ADD_SUBDIRECTORY(sys)
-ADD_SUBDIRECTORY(simd)
-ADD_SUBDIRECTORY(lexers)
-ADD_SUBDIRECTORY(tasking)
-ADD_SUBDIRECTORY(algorithms)
+ADD_LIBRARY(algorithms OBJECT
+ parallel_for.cpp
+ parallel_reduce.cpp
+ parallel_prefix_sum.cpp
+ parallel_for_for.cpp
+ parallel_for_for_prefix_sum.cpp
+ parallel_partition.cpp
+ parallel_sort.cpp
+ parallel_set.cpp
+ parallel_map.cpp
+)
+
+SET_PROPERTY(TARGET algorithms PROPERTY FOLDER common)
+
+ 

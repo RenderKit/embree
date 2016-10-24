@@ -14,13 +14,14 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "parallel_map.h"
+#include "parallel_set.h"
+#include "../sys/regression.h"
 
 namespace embree
 {
-  struct parallel_map_regression_test : public RegressionTest
+  struct parallel_set_regression_test : public RegressionTest
   {
-    parallel_map_regression_test(const char* name) : RegressionTest(name) {
+    parallel_set_regression_test(const char* name) : RegressionTest(name) {
       registerRegressionTest(this);
     }
     
@@ -28,32 +29,28 @@ namespace embree
     {
       bool passed = true;
 
-      /* create key/value vectors with random numbers */
+      /* create vector with random numbers */
       const size_t N = 10000;
-      std::vector<uint32_t> keys(N);
-      std::vector<uint32_t> vals(N);
-      for (size_t i=0; i<N; i++) keys[i] = 2*unsigned(i)*647382649;
-      for (size_t i=0; i<N; i++) std::swap(keys[i],keys[rand()%N]);
-      for (size_t i=0; i<N; i++) vals[i] = 2*rand();
+      std::vector<uint32_t> unsorted(N);
+      for (size_t i=0; i<N; i++) unsorted[i] = 2*rand();
       
-      /* create map */
-      parallel_map<uint32_t,uint32_t> map;
-      map.init(keys,vals);
+      /* created set from numbers */
+      parallel_set<uint32_t> sorted;
+      sorted.init(unsorted);
 
-      /* check that all keys are properly mapped */
+      /* check that all elements are in the set */
       for (size_t i=0; i<N; i++) {
-        const uint32_t* val = map.lookup(keys[i]);
-        passed &= val && (*val == vals[i]);
+	passed &= sorted.lookup(unsorted[i]);
       }
 
-      /* check that these keys are not in the map */
+      /* check that these elements are not in the set */
       for (size_t i=0; i<N; i++) {
-        passed &= !map.lookup(keys[i]+1);
+	passed &= !sorted.lookup(unsorted[i]+1);
       }
 
       return passed;
     }
   };
 
-  parallel_map_regression_test parallel_map_regression("parallel_map_regression_test");
+  parallel_set_regression_test parallel_set_regression("parallel_set_regression_test");
 }

@@ -16,7 +16,7 @@
 
 #include "mutex.h"
 #include "regression.h"
-#include "../../kernels/algorithms/parallel_for.h"
+#include "../algorithms/parallel_for.h"
 
 #if defined(__WIN32__) && !defined(PTHREADS_WIN32)
 

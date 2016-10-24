@@ -14,10 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "../sys/platform.h"
-#include "../../kernels/algorithms/parallel_for.h" 
-
-#include "taskscheduler.h"
+#include "../algorithms/parallel_for.h" 
 
 namespace embree
 {

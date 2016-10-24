@@ -18,7 +18,7 @@
 #include "bvh_statistics.h"
 #include "bvh_rotate.h"
 #include "../common/profile.h"
-#include "../algorithms/parallel_prefix_sum.h"
+#include "../../common/algorithms/parallel_prefix_sum.h"
 
 #include "../builders/primrefgen.h"
 #include "../builders/bvh_builder_morton.h"

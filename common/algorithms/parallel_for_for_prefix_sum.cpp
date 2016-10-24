@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "parallel_for_for_prefix_sum.h"
+#include "../sys/regression.h"
 
 namespace embree
 {

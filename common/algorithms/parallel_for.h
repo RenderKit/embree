@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include "../common/default.h"
+#include "../sys/array.h"
+#include "../math/math.h"
 #include "../common/math/range.h"
-
 #include "../common/tasking/taskscheduler.h"
 
 namespace embree
@@ -82,8 +82,7 @@ namespace embree
     if (tbb::task::self().is_cancelled())
       throw std::runtime_error("task cancelled");
 #else  // TASKING_PPL
-	//FIXME optimize
-	//PRINT("PPL PARALLEL_FOR");
+	// FIXME: optimize
 	//const size_t num = last - first;
 	concurrency::static_partitioner part;
 	//concurrency::parallel_for(first,last,Index(1),[&](Index i) { 

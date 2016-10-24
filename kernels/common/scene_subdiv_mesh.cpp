@@ -19,9 +19,9 @@
 #include "../subdiv/patch_eval.h"
 #include "../subdiv/patch_eval_simd.h"
 
-#include "../algorithms/parallel_sort.h"
-#include "../algorithms/parallel_prefix_sum.h"
-#include "../algorithms/parallel_for.h"
+#include "../../common/algorithms/parallel_sort.h"
+#include "../../common/algorithms/parallel_prefix_sum.h"
+#include "../../common/algorithms/parallel_for.h"
 
 namespace embree
 {
