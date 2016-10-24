@@ -129,7 +129,7 @@ namespace embree
               const SpatialSplit spatial_split = spatial_find(set, pinfo, logBlockSize);
 
               /* valid spatial split, better SAH and number of splits do not exceed extended range */
-              if (spatial_split.sah/object_split.sah <= USE_SPATIAL_SPLIT_SAH_THRESHOLD &&
+              if (spatial_split.sah <= USE_SPATIAL_SPLIT_SAH_THRESHOLD*object_split.sah &&
                   spatial_split.left + spatial_split.right - set.size() <= set.ext_range_size())
               {          
                 set = create_spatial_splits(set, spatial_split, spatial_split.mapping);
