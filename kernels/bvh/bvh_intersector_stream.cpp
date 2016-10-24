@@ -777,25 +777,21 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
 
     typedef ArrayIntersectorKStream<VSIZEX,
-                                    TriangleMIntersector1Moeller<4 COMMA VSIZEX COMMA true >,
+                                    TriangleMIntersector1Moeller<SIMD_MODE(4) COMMA true >,
                                     TriangleMIntersectorKMoeller<4 COMMA VSIZEX COMMA VSIZEX COMMA true > > Triangle4IntersectorStreamMoeller;
 
     typedef ArrayIntersectorKStream<VSIZEX,
-                                    TriangleMIntersector1Moeller<4 COMMA VSIZEX COMMA false >,
+                                    TriangleMIntersector1Moeller<SIMD_MODE(4) COMMA false >,
                                     TriangleMIntersectorKMoeller<4 COMMA VSIZEX COMMA VSIZEX COMMA false > > Triangle4IntersectorStreamMoellerNoFilter;
 
-    /*typedef ArrayIntersectorKStream<VSIZEX,
-                                    TriangleMvIntersector1Pluecker<4 COMMA VSIZEX COMMA true >,
-                                    TriangleMvIntersectorKPluecker<4 COMMA VSIZEX COMMA VSIZEX COMMA true > > Triangle4vIntersectorStreamPluecker;*/
-    typedef ArrayIntersector1<TriangleMvIntersector1Pluecker<SIMD_MODE(4) COMMA true> > Triangle4vIntersectorStreamPluecker;
+    typedef ArrayIntersectorKStream<VSIZEX,
+                                    TriangleMvIntersector1Pluecker<SIMD_MODE(4) COMMA true >,
+                                    TriangleMvIntersectorKPluecker<4 COMMA VSIZEX COMMA VSIZEX COMMA true > > Triangle4vIntersectorStreamPluecker;
 
     typedef ArrayIntersectorKStream<VSIZEX,
-                                    TriangleMiIntersector1Moeller<4 COMMA VSIZEX COMMA true >,
+                                    TriangleMiIntersector1Moeller<SIMD_MODE(4) COMMA true >,
                                     TriangleMiIntersectorKMoeller<4 COMMA VSIZEX COMMA VSIZEX COMMA true > > Triangle4iIntersectorStreamMoeller;
 
-    /*typedef ArrayIntersectorKStream<VSIZEX,
-                                    TriangleMiIntersector1Pluecker<4 COMMA VSIZEX COMMA true >,
-                                    TriangleMiIntersectorKPluecker<4 COMMA VSIZEX COMMA VSIZEX COMMA true > > Triangle4iIntersectorStreamPluecker;*/
     typedef ArrayIntersector1<TriangleMiIntersector1Pluecker<SIMD_MODE(4) COMMA true> > Triangle4iIntersectorStreamPluecker;
 
     typedef ArrayIntersectorKStream<VSIZEX,
