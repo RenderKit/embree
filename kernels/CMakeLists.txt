@@ -140,17 +140,17 @@ SET(EMBREE_LIBRARY_FILES_AVX
     
     geometry/grid_soa.cpp
     subdiv/subdivpatch1base_eval.cpp
-    builders/primrefgen.avx.cpp
+    builders/primrefgen.cpp
 
     bvh/bvh_rotate.cpp
-    bvh/bvh_refit.avx.cpp
-    bvh/bvh_builder.avx.cpp
-    bvh/bvh_builder_hair.avx.cpp
-    bvh/bvh_builder_morton.avx.cpp
-    bvh/bvh_builder_sah.avx.cpp
-    bvh/bvh_builder_twolevel.avx.cpp
-    bvh/bvh_builder_instancing.avx.cpp
-    bvh/bvh_builder_subdiv.avx.cpp
+    bvh/bvh_refit.cpp
+    bvh/bvh_builder.cpp
+    bvh/bvh_builder_hair.cpp
+    bvh/bvh_builder_morton.cpp
+    bvh/bvh_builder_sah.cpp
+    bvh/bvh_builder_twolevel.cpp
+    bvh/bvh_builder_instancing.cpp
+    bvh/bvh_builder_subdiv.cpp
     bvh/bvh_intersector1.cpp
     
     bvh/bvh.cpp
@@ -193,8 +193,16 @@ SET(EMBREE_LIBRARY_FILES_AVX512
 
     bvh/bvh_refit.cpp
     bvh/bvh_rotate.cpp
-    bvh/bvh_builder_subdiv.avx512knl.cpp
-    bvh/bvh_intersector1.cpp)
+    bvh/bvh_builder_subdiv.cpp
+    bvh/bvh_intersector1.cpp
+
+    builders/primrefgen.cpp
+    bvh/bvh_builder.cpp
+    bvh/bvh_builder_sah.cpp
+    bvh/bvh_builder_twolevel.cpp
+    bvh/bvh_builder_instancing.cpp
+    bvh/bvh_builder_morton.cpp
+    bvh/bvh_builder_subdiv.cpp)
 
 IF (EMBREE_RAY_PACKETS)
   SET(EMBREE_LIBRARY_FILES_AVX512 ${EMBREE_LIBRARY_FILES_AVX512}
@@ -207,25 +215,33 @@ IF (EMBREE_RAY_PACKETS)
     bvh/bvh_intersector_stream_filters.cpp)
 ENDIF()
 
-SET(EMBREE_LIBRARY_FILES_AVX512KNL ${EMBREE_LIBRARY_FILES_AVX512}
+SET(EMBREE_LIBRARY_FILES_AVX512KNL ${EMBREE_LIBRARY_FILES_AVX512})
+SET(EMBREE_LIBRARY_FILES_AVX512SKX ${EMBREE_LIBRARY_FILES_AVX512})
 
-    builders/primrefgen.avx512knl.cpp
-    bvh/bvh_builder.avx512knl.cpp
-    bvh/bvh_builder_sah.avx512knl.cpp
-    bvh/bvh_builder_twolevel.avx512knl.cpp
-    bvh/bvh_builder_instancing.avx512knl.cpp
-    bvh/bvh_builder_morton.avx512knl.cpp
-    bvh/bvh_builder_subdiv.avx512knl.cpp)
-
-SET(EMBREE_LIBRARY_FILES_AVX512SKX ${EMBREE_LIBRARY_FILES_AVX512}
-
-    builders/primrefgen.avx512skx.cpp
-    bvh/bvh_builder.avx512skx.cpp
-    bvh/bvh_builder_sah.avx512skx.cpp
-    bvh/bvh_builder_twolevel.avx512skx.cpp
-    bvh/bvh_builder_instancing.avx512skx.cpp
-    bvh/bvh_builder_morton.avx512skx.cpp
-    bvh/bvh_builder_subdiv.avx512skx.cpp)
+# replaces all .cpp files with a dummy file that includes that .cpp file
+# this is to work around an ICC name mangling issue related to lambda functions under windows
+MACRO (CreateISADummyFiles list isa)
+  SET(${list})
+  FOREACH(src ${ARGN})
+    GET_FILENAME_COMPONENT(src_dir  ${src} DIRECTORY)
+    GET_FILENAME_COMPONENT(src_name ${src} NAME_WE)
+    GET_FILENAME_COMPONENT(src_ext  ${src} EXT)
+    SET(src_file ${CMAKE_CURRENT_SOURCE_DIR}/${src})
+    SET(dst_file ${CMAKE_BINARY_DIR}/${src_dir}/${src_name}.${isa}${src_ext})
+    SET(${list} ${${list}} ${dst_file})
+    ADD_CUSTOM_COMMAND(OUTPUT ${dst_file}
+      COMMAND ${CMAKE_COMMAND} 
+       -D src=${src_file}
+       -D dst=${dst_file}
+       -P ${PROJECT_SOURCE_DIR}/common/cmake/create_isa_dummy_file.cmake
+      DEPENDS ${src_file})
+  ENDFOREACH()
+ENDMACRO()
+CreateISADummyFiles(EMBREE_LIBRARY_FILES_SSE42     sse42     ${EMBREE_LIBRARY_FILES_SSE42})
+CreateISADummyFiles(EMBREE_LIBRARY_FILES_AVX       avx       ${EMBREE_LIBRARY_FILES_AVX})
+CreateISADummyFiles(EMBREE_LIBRARY_FILES_AVX2      avx2      ${EMBREE_LIBRARY_FILES_AVX2})
+CreateISADummyFiles(EMBREE_LIBRARY_FILES_AVX512KNL avx512knl ${EMBREE_LIBRARY_FILES_AVX512KNL})
+CreateISADummyFiles(EMBREE_LIBRARY_FILES_AVX512SKX avx512skx ${EMBREE_LIBRARY_FILES_AVX512SKX})
 
 ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE} ${EMBREE_LIBRARY_FILES})
 SET_PROPERTY(TARGET embree PROPERTY FOLDER kernels)
