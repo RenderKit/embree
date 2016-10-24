@@ -468,7 +468,7 @@ namespace embree
         
         /* instantiate spatial binning heuristic */
         typedef HeuristicListSpatialSAH<PrimRef,SplitPrimitiveFunc,OBINS,SBINS> Heuristic;
-        Heuristic heuristic(splitPrimitive);
+        Heuristic heuristic(splitPrimitive,pinfo);
         
         typedef GeneralBVHBuilder<
           BuildRecord,

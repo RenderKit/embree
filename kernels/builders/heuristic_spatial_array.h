@@ -24,9 +24,11 @@ namespace embree
 {
   namespace isa
   { 
-#define OVERLAP_THRESHOLD 0.1f
-#define USE_SPATIAL_SPLIT_SAH_THRESHOLD 0.99f
-#define SPATIAL_SPLIT_AREA_THRESHOLD 0.000005f
+#if 1
+#define SPATIAL_ASPLIT_OVERLAP_THRESHOLD 0.1f
+#define SPATIAL_ASPLIT_SAH_THRESHOLD 0.99f
+#define SPATIAL_ASPLIT_AREA_THRESHOLD 0.000005f
+#endif
 
     /*! Performs standard object binning */
 #if defined(__AVX512F__)
@@ -124,14 +126,14 @@ namespace embree
             const BBox3fa overlap = intersect(oinfo.leftBounds, oinfo.rightBounds);
             
             /* do only spatial splits if the child bounds overlap */
-            if (safeArea(overlap) >= SPATIAL_SPLIT_AREA_THRESHOLD*safeArea(root_info.geomBounds) &&
-                safeArea(overlap) >= OVERLAP_THRESHOLD*safeArea(pinfo.geomBounds))
+            if (safeArea(overlap) >= SPATIAL_ASPLIT_AREA_THRESHOLD*safeArea(root_info.geomBounds) &&
+                safeArea(overlap) >= SPATIAL_ASPLIT_OVERLAP_THRESHOLD*safeArea(pinfo.geomBounds))
             {              
               const SpatialSplit spatial_split = spatial_find(set, pinfo, logBlockSize);
               const float spatial_split_sah = spatial_split.splitSAH();
 
               /* valid spatial split, better SAH and number of splits do not exceed extended range */
-              if (spatial_split_sah <= USE_SPATIAL_SPLIT_SAH_THRESHOLD*object_split_sah &&
+              if (spatial_split_sah < SPATIAL_ASPLIT_SAH_THRESHOLD*object_split_sah &&
                   spatial_split.left + spatial_split.right - set.size() <= set.ext_range_size())
               {          
                 create_spatial_splits(set,pinfo,spatial_split, spatial_split.mapping);             
@@ -518,7 +520,7 @@ namespace embree
         PrimRef* const prims0;
         const SplitPrimitive& splitPrimitive;
         const SplitPrimitiveBinner& splitPrimitiveBinner;
-        const PrimInfo &root_info;
+        const PrimInfo& root_info;
       };
   }
 }
