@@ -312,7 +312,7 @@ namespace embree
           
         volatile int* data = (volatile int*) SharedLazyTessellationCache::lookup(This->entry[elt],0,[&] () {
             int* data = (int*) SharedLazyTessellationCache::sharedLazyTessellationCache.malloc(4*N);
-            for (size_t k=0; k<N; k++) data[k] = elt;
+            for (size_t k=0; k<N; k++) data[k] = (int)elt;
             return data;
           });
         
