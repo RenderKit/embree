@@ -50,6 +50,7 @@ namespace embree
 
         typedef extended_range<size_t> Set;
         typedef Split2<ObjectSplit,SpatialSplit> Split;
+        typedef typename SplitPrimitive::Instance SplitPrimitiveInstance;
         
 #if defined(__AVX512F__)
         static const size_t PARALLEL_THRESHOLD = 3*1024; 
@@ -241,7 +242,7 @@ namespace embree
                   assert(splits > 1);
 
                   PrimRef left,right;
-                  typename SplitPrimitive::Instance splitter(splitPrimitive,prims0[i]);
+                  SplitPrimitiveInstance splitter(splitPrimitive,prims0[i]);
                   splitter.split(prims0[i],split.dim,fpos,left,right);
                 
                   // no empty splits
