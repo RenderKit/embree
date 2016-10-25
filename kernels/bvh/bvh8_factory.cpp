@@ -169,6 +169,7 @@ namespace embree
   DECLARE_BUILDER2(void,Scene,size_t,BVH8Line4iMBSceneBuilderSAH);
 
   DECLARE_BUILDER2(void,Scene,size_t,BVH8Triangle4SceneBuilderSAH);
+  DECLARE_BUILDER2(void,Scene,size_t,BVH8Triangle4vSceneBuilderSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH8Triangle4iSceneBuilderSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH8Triangle4vMBSceneBuilderSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH8Triangle4iMBSceneBuilderSAH);
@@ -188,7 +189,9 @@ namespace embree
   DECLARE_BUILDER2(void,QuadMesh,size_t,BVH8Quad4vMeshRefitSAH);
 
   DECLARE_BUILDER2(void,Scene,size_t,BVH8Triangle4SceneBuilderSpatialSAH);
+
   DECLARE_BUILDER2(void,Scene,size_t,BVH8Triangle4SceneBuilderFastSpatialSAH);
+  DECLARE_BUILDER2(void,Scene,size_t,BVH8Triangle4vSceneBuilderFastSpatialSAH);
 
   DECLARE_BUILDER2(void,Scene,size_t,BVH8QuantizedTriangle4iSceneBuilderSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH8QuantizedQuad4iSceneBuilderSAH);
@@ -215,6 +218,7 @@ namespace embree
     IF_ENABLED_LINES(SELECT_SYMBOL_INIT_AVX_AVX512KNL_AVX512SKX(features,BVH8Line4iMBSceneBuilderSAH));
 
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX512KNL_AVX512SKX(features,BVH8Triangle4SceneBuilderSAH));
+    IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX512KNL_AVX512SKX(features,BVH8Triangle4vSceneBuilderSAH));
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX512KNL_AVX512SKX(features,BVH8Triangle4iSceneBuilderSAH));
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX512KNL_AVX512SKX(features,BVH8Triangle4vMBSceneBuilderSAH));
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX512KNL_AVX512SKX(features,BVH8Triangle4iMBSceneBuilderSAH));
@@ -244,6 +248,8 @@ namespace embree
    
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX(features,BVH8Triangle4SceneBuilderSpatialSAH));
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX512KNL_AVX512SKX(features,BVH8Triangle4SceneBuilderFastSpatialSAH));
+    IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX512KNL_AVX512SKX(features,BVH8Triangle4vSceneBuilderFastSpatialSAH));
+
     IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_AVX_AVX512KNL_AVX512SKX(features,BVH8Quad4vSceneBuilderFastSpatialSAH));
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX512KNL_AVX512SKX(features,BVH8Triangle4SceneBuilderSweepSAH));
 
@@ -813,6 +819,22 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
+  Accel* BVH8Factory::BVH8Triangle4v(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant)
+  {
+    BVH8* accel = new BVH8(Triangle4v::type,scene);
+    Accel::Intersectors intersectors= BVH8Triangle4vIntersectors(accel,ivariant);
+    Builder* builder = nullptr;
+    if (scene->device->tri_builder == "default")  {
+      switch (bvariant) {
+      case BuildVariant::STATIC      : builder = BVH8Triangle4vSceneBuilderSAH(accel,scene,0); break;
+      case BuildVariant::DYNAMIC     : builder = BVH8BuilderTwoLevelTriangleMeshSAH(accel,scene,&createTriangleMeshTriangle4v); break;
+      case BuildVariant::HIGH_QUALITY: builder = BVH8Triangle4vSceneBuilderFastSpatialSAH(accel,scene,0); break;
+      }
+    }
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH8<Triangle4v>");
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
   Accel* BVH8Factory::BVH8Triangle4i(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant)
   {
     BVH8* accel = new BVH8(Triangle4i::type,scene);
@@ -831,6 +853,8 @@ namespace embree
     scene->needTriangleVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
+
+
 
   Accel* BVH8Factory::BVH8Triangle4vMB(Scene* scene, BuildVariant bvariant, IntersectVariant ivariant)
   {

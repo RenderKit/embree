@@ -132,7 +132,7 @@ namespace embree
             int mode =  2*(int)isCompact() + 1*(int)isRobust();
             switch (mode) {
             case /*0b00*/ 0: accels.add(device->bvh8_factory->BVH8Triangle4 (this,BVH8Factory::BuildVariant::DYNAMIC,BVH8Factory::IntersectVariant::FAST  )); break;
-            case /*0b01*/ 1: accels.add(device->bvh4_factory->BVH4Triangle4v(this,BVH4Factory::BuildVariant::DYNAMIC,BVH4Factory::IntersectVariant::ROBUST)); break; // FIXME: there is no BVH8Triangle4v
+            case /*0b01*/ 1: accels.add(device->bvh8_factory->BVH8Triangle4v(this,BVH8Factory::BuildVariant::DYNAMIC,BVH8Factory::IntersectVariant::ROBUST)); break; 
             case /*0b10*/ 2: accels.add(device->bvh8_factory->BVH8Triangle4i(this,BVH8Factory::BuildVariant::DYNAMIC,BVH8Factory::IntersectVariant::FAST  )); break;
             case /*0b11*/ 3: accels.add(device->bvh8_factory->BVH8Triangle4i(this,BVH8Factory::BuildVariant::DYNAMIC,BVH8Factory::IntersectVariant::ROBUST)); break;
             }
