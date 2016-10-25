@@ -33,6 +33,7 @@ namespace embree
       typedef typename BVH::AlignedNode AlignedNode;
       typedef typename BVH::UnalignedNode UnalignedNode;
       typedef typename BVH::NodeRef NodeRef;
+      typedef HeuristicArrayBinningSAH<BezierPrim,NUM_OBJECT_BINS> HeuristicBinningSAH;
 
       BVH* bvh;
       Scene* scene;
@@ -70,7 +71,7 @@ namespace embree
             [&] () { return bvh->alloc.threadLocal2(); },
 
             [&] (const PrimInfo* children, const size_t numChildren, 
-                 HeuristicArrayBinningSAH<BezierPrim> alignedHeuristic, 
+                 HeuristicBinningSAH alignedHeuristic, 
                  FastAllocator::ThreadLocal2* alloc) -> AlignedNode*
             {
               AlignedNode* node = (AlignedNode*) alloc->alloc0->malloc(sizeof(AlignedNode),BVH::byteNodeAlignment); node->clear();
@@ -133,6 +134,7 @@ namespace embree
       typedef typename BVH::AlignedNodeMB AlignedNodeMB;
       typedef typename BVH::UnalignedNodeMB UnalignedNodeMB;
       typedef typename BVH::NodeRef NodeRef;
+      typedef HeuristicArrayBinningSAH<BezierPrim,NUM_OBJECT_BINS> HeuristicBinningSAH;
 
       BVH* bvh;
       Scene* scene;
@@ -173,13 +175,13 @@ namespace embree
         {
           /* call BVH builder */
           const PrimInfo pinfo = createBezierRefArrayMBlur(t,bvh->numTimeSteps,scene,prims,virtualprogress);
-          const LBBox3fa lbbox = HeuristicArrayBinningSAH<BezierPrim>(prims.begin()).computePrimInfoMB(t,bvh->numTimeSteps,scene,pinfo);
+          const LBBox3fa lbbox = HeuristicBinningSAH(prims.begin()).computePrimInfoMB(t,bvh->numTimeSteps,scene,pinfo);
         
           NodeRef root = bvh_obb_builder_binned_sah<N>
           (
             [&] () { return bvh->alloc.threadLocal2(); },
 
-            [&] (const PrimInfo* children, const size_t numChildren, HeuristicArrayBinningSAH<BezierPrim> alignedHeuristic, FastAllocator::ThreadLocal2* alloc) -> AlignedNodeMB*
+            [&] (const PrimInfo* children, const size_t numChildren, HeuristicBinningSAH alignedHeuristic, FastAllocator::ThreadLocal2* alloc) -> AlignedNodeMB*
             {
               AlignedNodeMB* node = (AlignedNodeMB*) alloc->alloc0->malloc(sizeof(AlignedNodeMB),BVH::byteNodeAlignment); node->clear();
               for (size_t i=0; i<numChildren; i++) 

@@ -23,11 +23,7 @@ namespace embree
   namespace isa
   { 
     /*! Performs standard object binning */
-#if defined(__AVX512F__)
-    template<typename PrimRef, size_t BINS = 16>
-#else
-    template<typename PrimRef, size_t BINS = 32>
-#endif
+    template<typename PrimRef, size_t BINS>
       struct HeuristicArrayBinningSAH
       {
         typedef BinSplit<BINS> Split;

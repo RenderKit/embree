@@ -21,6 +21,12 @@
 #include "heuristic_spatial_list.h"
 #include "heuristic_sweep_array_aligned.h"
 
+#if defined(__AVX512F__)
+#define NUM_OBJECT_BINS 16
+#else
+#define NUM_OBJECT_BINS 32
+#endif
+
 namespace embree
 {
   namespace isa
@@ -300,7 +306,7 @@ namespace embree
     struct BVHBuilderBinnedSAH
     {
       typedef range<size_t> Set;
-      typedef HeuristicArrayBinningSAH<PrimRef> Heuristic;
+      typedef HeuristicArrayBinningSAH<PrimRef,NUM_OBJECT_BINS> Heuristic;
       typedef GeneralBuildRecord<Set,typename Heuristic::Split> BuildRecord;
       
       /*! standard build without reduction */
