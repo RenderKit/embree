@@ -140,7 +140,6 @@ namespace embree
               if (spatial_split_sah < SPATIAL_ASPLIT_SAH_THRESHOLD*object_split_sah &&
                   spatial_split.left + spatial_split.right - set.size() <= set.ext_range_size())
               {          
-                create_spatial_splits(set,pinfo,spatial_split, spatial_split.mapping);             
                 return Split(spatial_split,spatial_split_sah);
               }
             }
@@ -275,8 +274,11 @@ namespace embree
         }
         
         /*! array partitioning */
-        void split(const Split& split, const PrimInfo& pinfo, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
+        void split(const Split& split, const PrimInfo& pinfo_i, const Set& set_i, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
         {
+          Set set = set_i;
+          PrimInfo pinfo = pinfo_i; 
+          
           /* valid split */
           if (unlikely(!split.valid())) {
             deterministic_order(set);
@@ -287,6 +289,8 @@ namespace embree
 
           if (unlikely(split.spatial))
           {
+            create_spatial_splits(set,pinfo,split.spatialSplit(), split.spatialSplit().mapping); 
+
             /* spatial split */
             if (likely(pinfo.size() < PARALLEL_THRESHOLD)) 
               ext_weights = sequential_spatial_split(split.spatialSplit(),set,left,lset,right,rset);
