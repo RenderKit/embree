@@ -36,32 +36,12 @@ namespace embree
         /*! calculates the mapping */
         __forceinline BinMapping(const PrimInfo& pinfo) 
         {
-#if defined(__AVX512F__) // FIXME: should only be active if the AVX512 binner is used
-          num = BINS;
-          assert(num == 16);
-#else
           num = min(BINS,size_t(4.0f + 0.05f*pinfo.size()));
-          //num = BINS;
-#endif
           const vfloat4 diag = (vfloat4) pinfo.centBounds.size();
           scale = select(diag > vfloat4(1E-34f),vfloat4(0.99f*num)/diag,vfloat4(0.0f));
           ofs  = (vfloat4) pinfo.centBounds.lower;
-#if defined(__AVX512F__)
-          scale16 = scale;
-          ofs16 = ofs;
-#endif          
         }
 
-        __forceinline BinMapping(const size_t &num, const vfloat4 &ofs, const vfloat4 &scale)  : num(num), ofs(ofs), scale(scale)
-        {
-#if defined(__AVX512F__)
-          ofs16 = ofs;
-          scale16 = scale;    
-#endif          
-        }
-
-
-        
         /*! returns number of bins */
         __forceinline size_t size() const { return num; }
         
@@ -84,28 +64,6 @@ namespace embree
           return Vec3ia(floori((vfloat4(p)-ofs)*scale));
         }
 
-#if defined(__AVX512F__)
-        __forceinline vint16 bin16(const Vec3fa& p) const {
-          return vint16(vint4(floori((vfloat4(p)-ofs)*scale)));
-        }
-
-        __forceinline vint16 bin16(const vfloat16& p) const {
-          return floori((p-ofs16)*scale16);
-        }
-
-        __forceinline int bin_unsafe(const PrimRef &ref,
-                                     const vint16  vSplitPos,
-                                     const vbool16 splitDimMask) const
-          {
-            const vfloat16 lower(*(vfloat4*)&ref.lower);
-            const vfloat16 upper(*(vfloat4*)&ref.upper);
-            const vfloat16 p = lower + upper;
-            const vint16 i = floori((p-ofs16)*scale16);
-            return lt(splitDimMask,i,vSplitPos);
-          }
-#endif
-        
-        
         /*! returns true if the mapping is invalid in some dimension */
         __forceinline bool invalid(const size_t dim) const {
           return scale[dim] == 0.0f;
@@ -119,9 +77,6 @@ namespace embree
       public:
         size_t num;
         vfloat4 ofs,scale;        //!< linear function that maps to bin ID
-#if defined(__AVX512F__)
-        vfloat16 ofs16,scale16;        //!< linear function that maps to bin ID
-#endif
       };
     
     /*! stores all information to perform some split */
@@ -441,6 +396,57 @@ namespace embree
     };
 
 #if defined(__AVX512F__)
+
+   /*! mapping into bins */
+   template<>
+     struct BinMapping<16>
+   {
+    public:
+      __forceinline BinMapping() {}
+      
+      /*! calculates the mapping */
+        __forceinline BinMapping(const PrimInfo& pinfo) 
+        {
+          num = 16;
+          const vfloat4 diag = (vfloat4) pinfo.centBounds.size();
+          scale = select(diag > vfloat4(1E-34f),vfloat4(0.99f*num)/diag,vfloat4(0.0f));
+          ofs  = (vfloat4) pinfo.centBounds.lower;
+          scale16 = scale;
+          ofs16 = ofs;
+        }
+
+        /*! returns number of bins */
+        __forceinline size_t size() const { return num; }
+
+        __forceinline vint16 bin16(const Vec3fa& p) const {
+          return vint16(vint4(floori((vfloat4(p)-ofs)*scale)));
+        }
+
+        __forceinline vint16 bin16(const vfloat16& p) const {
+          return floori((p-ofs16)*scale16);
+        }
+
+        __forceinline int bin_unsafe(const PrimRef &ref,
+                                     const vint16  vSplitPos,
+                                     const vbool16 splitDimMask) const
+        {
+          const vfloat16 lower(*(vfloat4*)&ref.lower);
+          const vfloat16 upper(*(vfloat4*)&ref.upper);
+          const vfloat16 p = lower + upper;
+          const vint16 i = floori((p-ofs16)*scale16);
+          return lt(splitDimMask,i,vSplitPos);
+        }
+        
+        /*! returns true if the mapping is invalid in some dimension */
+        __forceinline bool invalid(const size_t dim) const {
+          return scale[dim] == 0.0f;
+        }
+        
+      public:
+        size_t num;
+        vfloat4 ofs,scale;         //!< linear function that maps to bin ID
+        vfloat16 ofs16,scale16;    //!< linear function that maps to bin ID
+      };
 
     /* 16 bins in-register binner */
     template<typename PrimRef>
