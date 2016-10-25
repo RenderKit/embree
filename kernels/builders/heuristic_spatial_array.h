@@ -136,7 +136,6 @@ namespace embree
               if (spatial_split_sah < SPATIAL_ASPLIT_SAH_THRESHOLD*object_split_sah &&
                   spatial_split.left + spatial_split.right - set.size() <= set.ext_range_size())
               {          
-                //PRINT(spatial_split_sah);
                 create_spatial_splits(set,pinfo,spatial_split, spatial_split.mapping);             
                 return Split(spatial_split,spatial_split_sah);
               }

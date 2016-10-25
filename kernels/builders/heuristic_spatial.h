@@ -373,6 +373,7 @@ namespace embree
             bestrCount = vbestrCount[dim];
           }
         }
+        assert(bestSAH >= 0.0f);
         
         /* return invalid split if no split found */
         if (bestDim == -1) 
