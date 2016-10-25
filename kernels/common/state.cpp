@@ -76,7 +76,6 @@ namespace embree
     hair_accel = "default";
     hair_builder = "default";
     hair_traverser = "default";
-    hair_builder_replication_factor = 3.0f;
 
     hair_accel_mb = "default";
     hair_builder_mb = "default";
@@ -295,8 +294,6 @@ namespace embree
         hair_builder = cin->get().Identifier();
       else if (tok == Token::Id("hair_traverser") && cin->trySymbol("="))
         hair_traverser = cin->get().Identifier();
-      else if (tok == Token::Id("hair_builder_replication_factor") && cin->trySymbol("="))
-        hair_builder_replication_factor = cin->get().Int();
 
       else if (tok == Token::Id("hair_accel_mb") && cin->trySymbol("="))
         hair_accel_mb = cin->get().Identifier();
@@ -398,10 +395,11 @@ namespace embree
     std::cout << "  accel         = " << hair_accel << std::endl;
     std::cout << "  builder       = " << hair_builder << std::endl;
     std::cout << "  traverser     = " << hair_traverser << std::endl;
-    std::cout << "  replications  = " << hair_builder_replication_factor << std::endl;
 
     std::cout << "motion blur hair:" << std::endl;
     std::cout << "  accel         = " << hair_accel_mb << std::endl;
+    std::cout << "  builder       = " << hair_builder_mb << std::endl;
+    std::cout << "  traverser     = " << hair_traverser_mb << std::endl;
     
     std::cout << "subdivision surfaces:" << std::endl;
     std::cout << "  accel         = " << subdiv_accel << std::endl;

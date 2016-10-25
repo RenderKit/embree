@@ -85,7 +85,6 @@ namespace embree
     std::string hair_accel;                //!< hair acceleration structure to use
     std::string hair_builder;              //!< builder to use for hair
     std::string hair_traverser;            //!< traverser to use for hair
-    double      hair_builder_replication_factor; //!< maximally factor*N many primitives in accel
 
   public:
     std::string hair_accel_mb;             //!< acceleration structure to use for motion blur hair
