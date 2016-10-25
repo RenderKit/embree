@@ -32,9 +32,9 @@ namespace embree
 
     /*! Performs standard object binning */
 #if defined(__AVX512F__)
-    template<typename SplitPrimitive, typename SplitPrimitiveBinner, typename PrimRef, size_t OBJECT_BINS = 16, size_t SPATIAL_BINS = 16>
+    template<typename SplitPrimitive, typename PrimRef, size_t OBJECT_BINS = 16, size_t SPATIAL_BINS = 16>
 #else
-      template<typename SplitPrimitive, typename SplitPrimitiveBinner, typename PrimRef, size_t OBJECT_BINS = 32, size_t SPATIAL_BINS = 16>
+      template<typename SplitPrimitive, typename PrimRef, size_t OBJECT_BINS = 32, size_t SPATIAL_BINS = 16>
 #endif
       struct HeuristicArraySpatialSAH
       {
@@ -64,8 +64,8 @@ namespace embree
           : prims0(nullptr) {}
         
         /*! remember prim array */
-        __forceinline HeuristicArraySpatialSAH (const SplitPrimitive& splitPrimitive, const SplitPrimitiveBinner& splitPrimitiveBinner, PrimRef* prims0, const PrimInfo &root_info)
-          : prims0(prims0), splitPrimitive(splitPrimitive), splitPrimitiveBinner(splitPrimitiveBinner), root_info(root_info) {}
+        __forceinline HeuristicArraySpatialSAH (const SplitPrimitive& splitPrimitive, PrimRef* prims0, const PrimInfo &root_info)
+          : prims0(prims0), splitPrimitive(splitPrimitive), root_info(root_info) {}
 
 
         /*! compute extended ranges */
@@ -136,6 +136,7 @@ namespace embree
               if (spatial_split_sah < SPATIAL_ASPLIT_SAH_THRESHOLD*object_split_sah &&
                   spatial_split.left + spatial_split.right - set.size() <= set.ext_range_size())
               {          
+                //PRINT(spatial_split_sah);
                 create_spatial_splits(set,pinfo,spatial_split, spatial_split.mapping);             
                 return Split(spatial_split,spatial_split_sah);
               }
@@ -189,7 +190,7 @@ namespace embree
         {
           SpatialBinner binner(empty); 
           const SpatialBinMapping<SPATIAL_BINS> mapping(pinfo);
-          splitPrimitiveBinner(binner,prims0,set.begin(),set.end(),mapping);
+          binner.bin2(splitPrimitive,prims0,set.begin(),set.end(),mapping);
           /* todo: best spatial split not exeeding the extended range does not provide any benefit ?*/
           return binner.best(pinfo,mapping,logBlockSize); //,set.ext_size());
         }
@@ -202,7 +203,7 @@ namespace embree
           binner = parallel_reduce(set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,binner,
                                    [&] (const range<size_t>& r) -> SpatialBinner { 
                                      SpatialBinner binner(empty); 
-                                     splitPrimitiveBinner(binner,prims0,r.begin(),r.end(),_mapping);
+                                     binner.bin2(splitPrimitive,prims0,r.begin(),r.end(),_mapping);
                                      return binner; },
                                    [&] (const SpatialBinner& b0, const SpatialBinner& b1) -> SpatialBinner { return SpatialBinner::reduce(b0,b1); });
           /* todo: best spatial split not exeeding the extended range does not provide any benefit ?*/
@@ -238,7 +239,8 @@ namespace embree
                   assert(splits > 1);
 
                   PrimRef left,right;
-                  splitPrimitive(prims0[i],split.dim,fpos,left,right);
+                  typename SplitPrimitive::Instance splitter(splitPrimitive,prims0[i]);
+                  splitter.split(prims0[i],split.dim,fpos,left,right);
                 
                   // no empty splits
                   if (unlikely(left.bounds().empty() || right.bounds().empty())) continue;
@@ -519,7 +521,6 @@ namespace embree
       private:
         PrimRef* const prims0;
         const SplitPrimitive& splitPrimitive;
-        const SplitPrimitiveBinner& splitPrimitiveBinner;
         const PrimInfo& root_info;
       };
   }

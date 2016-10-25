@@ -303,8 +303,8 @@ namespace embree
 
       __forceinline void bin(const PrimRef* prims, size_t begin, size_t end, const BinMapping<BINS>& mapping, const AffineSpace3fa& space) {
 	bin(prims+begin,end-begin,mapping,space);
-      }
-      
+      }   
+
       /*! merges in other binning information */
       __forceinline void merge (const BinInfo& other, size_t numBins)
       {

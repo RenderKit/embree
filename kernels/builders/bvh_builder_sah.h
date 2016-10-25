@@ -178,6 +178,11 @@ namespace embree
           /*! compute leaf and split cost */
           const float leafSAH  = intCost*current.pinfo.leafSAH(logBlockSize);
           const float splitSAH = travCost*halfArea(current.pinfo.geomBounds)+intCost*current.split.splitSAH();
+          /*if (!((current.pinfo.size() == 0) || ((leafSAH >= 0) && (splitSAH >= 0)))) {
+            PRINT(current.pinfo.size());
+            PRINT(leafSAH);
+            PRINT(splitSAH);
+            }*/
           assert((current.pinfo.size() == 0) || ((leafSAH >= 0) && (splitSAH >= 0)));
           
           /*! create a leaf node when threshold reached or SAH tells us to stop */
@@ -521,7 +526,6 @@ namespace embree
         typename CreateNodeFunc, 
         typename CreateLeafFunc, 
         typename SplitPrimitiveFunc, 
-        typename BinnerSplitPrimitiveFunc, 
         typename ProgressMonitor>
         
         static void build(NodeRef& root,
@@ -529,7 +533,6 @@ namespace embree
                           CreateNodeFunc createNode, 
                           CreateLeafFunc createLeaf, 
                           SplitPrimitiveFunc splitPrimitive,
-                          BinnerSplitPrimitiveFunc binnerSplitPrimitive,
                           ProgressMonitor progressMonitor, 
                           PrimRef* prims, const PrimInfo& pinfo, 
                           const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, 
@@ -548,7 +551,6 @@ namespace embree
                      updateNode,
                      createLeaf,
                      splitPrimitive,
-                     binnerSplitPrimitive,
                      progressMonitor,
                      prims,
                      pinfo,
@@ -564,7 +566,6 @@ namespace embree
         typename UpdateNodeFunc, 
         typename CreateLeafFunc, 
         typename SplitPrimitiveFunc, 
-        typename BinnerSplitPrimitiveFunc, 
         typename ProgressMonitor>
         
         static ReductionTy build_reduce(NodeRef& root,
@@ -574,7 +575,6 @@ namespace embree
                                         UpdateNodeFunc updateNode, 
                                         CreateLeafFunc createLeaf, 
                                         SplitPrimitiveFunc splitPrimitive,
-                                        BinnerSplitPrimitiveFunc binnerSplitPrimitive,
                                         ProgressMonitor progressMonitor,
                                         PrimRef* prims0, 
                                         const size_t extSize,
@@ -589,10 +589,10 @@ namespace embree
         assert((blockSize ^ (size_t(1) << logBlockSize)) == 0);
 
 
-        typedef HeuristicArraySpatialSAH<SplitPrimitiveFunc,BinnerSplitPrimitiveFunc, PrimRef,OBJECT_BINS, SPATIAL_BINS> Heuristic;
+        typedef HeuristicArraySpatialSAH<SplitPrimitiveFunc, PrimRef,OBJECT_BINS, SPATIAL_BINS> Heuristic;
 
         /* instantiate array binning heuristic */
-        Heuristic heuristic(splitPrimitive,binnerSplitPrimitive,prims0,pinfo);
+        Heuristic heuristic(splitPrimitive,prims0,pinfo);
         
         typedef GeneralBVHBuilder<
           BuildRecord,

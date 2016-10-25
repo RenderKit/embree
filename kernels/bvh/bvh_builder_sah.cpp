@@ -533,10 +533,16 @@ namespace embree
     /************************************************************************************/
     /************************************************************************************/
 
+    template<int N>
+    __forceinline size_t norotate(typename BVHN<N>::AlignedNode* node, const size_t* counts, const size_t num) {
+      return 0;
+    }
+
     template<int N, typename Mesh, typename Primitive>
     struct BVHNBuilderFastSpatialSAH : public Builder
     {
       typedef BVHN<N> BVH;
+      typedef typename BVH::NodeRef NodeRef;
       BVH* bvh;
       Scene* scene;
       Mesh* mesh;
@@ -607,88 +613,32 @@ namespace embree
                         }
                       });
         
-        /* function that splits a primitive at some position and dimension */
-        auto splitPrimitivePartition = [&] (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o) {
-          TriangleMesh* mesh = (TriangleMesh*) scene->get(prim.geomID() & 0x00FFFFFF );  
-          TriangleMesh::Triangle tri = mesh->triangle(prim.primID());
-          const Vec3fa& a = mesh->vertex(tri.v[0]);
-          const Vec3fa& b = mesh->vertex(tri.v[1]);
-          const Vec3fa& c = mesh->vertex(tri.v[2]);          
-          const Vec3fa v[4] = { a,b,c,a };
-          const vfloat4 v1(b[dim],c[dim],a[dim],b[dim]);
-          const vfloat4 v0(a[dim],b[dim],c[dim],a[dim]);
-          const vfloat4 inv_length = 1.0f / (v1-v0);
-          splitTriQuadFast<3>(prim,dim,pos,v,inv_length,left_o,right_o);
-        };
-
-        auto splitPrimitiveBinning = [&] (SpatialBinInfo<FAST_SPATIAL_BUILDER_NUM_SPATIAL_SPLITS,PrimRef> &binner, 
-                                          const PrimRef* const source, const size_t begin, const size_t end, 
-                                          const SpatialBinMapping<FAST_SPATIAL_BUILDER_NUM_SPATIAL_SPLITS> &mapping)
-          {
-            for (size_t i=begin; i<end; i++)
-            {
-              const PrimRef &prim = source[i];
-              const vint4 bin0 = mapping.bin(prim.bounds().lower);
-              const vint4 bin1 = mapping.bin(prim.bounds().upper);
-
-              for (size_t dim=0; dim<3; dim++) 
-              {
-                if (unlikely(mapping.invalid(dim))) { continue; }
-                size_t bin;
-                size_t l = bin0[dim];
-                size_t r = bin1[dim];
-
-                // same bin optimization
-                if (likely(l == r)) 
-                {
-                  binner.add(dim,l,l,l,prim.bounds());
-                  continue;
-                }
-                const size_t bin_start = bin0[dim];
-                const size_t bin_end   = bin1[dim];
-                BBox3fa rest = prim.bounds();
-                TriangleMesh* mesh = (TriangleMesh*) scene->get(prim.geomID() & 0x00FFFFFF );  
-                TriangleMesh::Triangle tri = mesh->triangle(prim.primID());
-                const Vec3fa v[4] = { mesh->vertex(tri.v[0]), 
-                                      mesh->vertex(tri.v[1]), 
-                                      mesh->vertex(tri.v[2]),
-                                      mesh->vertex(tri.v[0]) };
-                const Vec3fa inv_length[4] = { 
-                  Vec3fa(1.0f) / (v[1]-v[0]),
-                  Vec3fa(1.0f) / (v[2]-v[1]),
-                  Vec3fa(1.0f) / (v[0]-v[2]),
-                  Vec3fa(1.0f)
-                };
-                for (bin=bin_start; bin<bin_end; bin++) 
-                {
-                  const float pos = mapping.pos(bin+1,dim);
-                  BBox3fa left,right;
-                  splitTriQuadFast<3>(rest,dim,pos,v,inv_length,left,right);
-                  if (unlikely(left.empty())) l++;                
-                  binner.extend(dim,bin,left);
-                  rest = right;
-                }
-                if (unlikely(rest.empty())) r--;
-                binner.add(dim,l,r,bin,rest);
-              }
-            }              
-          };
+        TriangleSplitter splitter(scene);
 
 
-
-        /* call BVH builder */
         bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
-        BVHNBuilderFastSpatial<N,FAST_SPATIAL_BUILDER_NUM_SPATIAL_SPLITS>::build(bvh,
-                                                                                 splitPrimitivePartition,
-                                                                                 splitPrimitiveBinning,
-                                                                                 CreateLeafSpatial<N,Primitive>(bvh,prims0.data()),
-                                                                                 bvh->scene->progressInterface,
-                                                                                 prims0.data(),
-                                                                                 numSplitPrimitives,
-                                                                                 pinfo,
-                                                                                 sahBlockSize,minLeafSize,maxLeafSize,
-                                                                                 travCost,intCost);
+
+        NodeRef root;
+        BVHBuilderBinnedFastSpatialSAH::build_reduce<NodeRef>(
+          root,
+          typename BVH::CreateAlloc(bvh),
+          size_t(0),
+          typename BVH::CreateAlignedNode(bvh),
+          norotate<N>,
+          CreateLeafSpatial<N,Primitive>(bvh,prims0.data()),
+          splitter,
+          bvh->scene->progressInterface,
+          prims0.data(),
+          numSplitPrimitives,
+          pinfo,
+          N,BVH::maxBuildDepthLeaf,
+          sahBlockSize,minLeafSize,maxLeafSize,
+          travCost,intCost);
         
+
+        bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());      
+        bvh->layoutLargeNodes(size_t(pinfo.size()*0.005f));
+
 	/* clear temporary data for static geometry */
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
 	if (staticGeom) {
@@ -714,6 +664,7 @@ namespace embree
     struct BVHNBuilderQuadFastSpatialSAH : public Builder
     {
       typedef BVHN<N> BVH;
+      typedef typename BVHN<N>::NodeRef NodeRef;
       BVH* bvh;
       Scene* scene;
       Mesh* mesh;
@@ -784,89 +735,32 @@ namespace embree
                         }
                       });
         
-        /* function that splits a primitive at some position and dimension */
-        auto splitPrimitivePartition = [&] (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o) {
-          QuadMesh* mesh = (QuadMesh*) scene->get(prim.geomID() & 0x00FFFFFF );  
-          QuadMesh::Quad tri = mesh->quad(prim.primID());
-          const Vec3fa& a = mesh->vertex(tri.v[0]);
-          const Vec3fa& b = mesh->vertex(tri.v[1]);
-          const Vec3fa& c = mesh->vertex(tri.v[2]);          
-          const Vec3fa& d = mesh->vertex(tri.v[3]);          
-          const Vec3fa v[4] = { a,b,c,d };
-          const vfloat4 v1(b[dim],c[dim],d[dim],a[dim]);
-          const vfloat4 v0(a[dim],b[dim],c[dim],d[dim]);
-          const vfloat4 inv_length = 1.0f / (v1-v0);
-          splitTriQuadFast<4>(prim,dim,pos,v,inv_length,left_o,right_o);
-        };
-
-        auto splitPrimitiveBinning = [&] (SpatialBinInfo<FAST_SPATIAL_BUILDER_NUM_SPATIAL_SPLITS,PrimRef> &binner, 
-                                          const PrimRef* const source, const size_t begin, const size_t end, 
-                                          const SpatialBinMapping<FAST_SPATIAL_BUILDER_NUM_SPATIAL_SPLITS> &mapping)
-          {
-            for (size_t i=begin; i<end; i++)
-            {
-              const PrimRef &prim = source[i];
-              const vint4 bin0 = mapping.bin(prim.bounds().lower);
-              const vint4 bin1 = mapping.bin(prim.bounds().upper);
-
-              for (size_t dim=0; dim<3; dim++) 
-              {
-                if (unlikely(mapping.invalid(dim))) { continue; }
-                size_t bin;
-                size_t l = bin0[dim];
-                size_t r = bin1[dim];
-
-                // same bin optimization
-                if (likely(l == r)) 
-                {
-                  binner.add(dim,l,l,l,prim.bounds());
-                  continue;
-                }
-                const size_t bin_start = bin0[dim];
-                const size_t bin_end   = bin1[dim];
-                BBox3fa rest = prim.bounds();
-                QuadMesh* mesh = (QuadMesh*) scene->get(prim.geomID() & 0x00FFFFFF );  
-                QuadMesh::Quad tri = mesh->quad(prim.primID());
-                const Vec3fa v[4] = { mesh->vertex(tri.v[0]), 
-                                      mesh->vertex(tri.v[1]), 
-                                      mesh->vertex(tri.v[2]),
-                                      mesh->vertex(tri.v[3]) };
-                const Vec3fa inv_length[4] = { 
-                  Vec3fa(1.0f) / (v[1]-v[0]),
-                  Vec3fa(1.0f) / (v[2]-v[1]),
-                  Vec3fa(1.0f) / (v[3]-v[2]),
-                  Vec3fa(1.0f) / (v[0]-v[3])
-                };
-                for (bin=bin_start; bin<bin_end; bin++) 
-                {
-                  const float pos = mapping.pos(bin+1,dim);
-                  BBox3fa left,right;
-                  splitTriQuadFast<4>(rest,dim,pos,v,inv_length,left,right);
-                  if (unlikely(left.empty())) l++;                
-                  binner.extend(dim,bin,left);
-                  rest = right;
-                }
-                if (unlikely(rest.empty())) r--;
-                binner.add(dim,l,r,bin,rest);
-              }
-            }              
-          };
-
-
+        QuadSplitter splitter(scene);
 
         /* call BVH builder */
         bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
-        BVHNBuilderFastSpatial<N,FAST_SPATIAL_BUILDER_NUM_SPATIAL_SPLITS>::build(bvh,
-                                                                                 splitPrimitivePartition,
-                                                                                 splitPrimitiveBinning,
-                                                                                 CreateLeafSpatial<N,Primitive>(bvh,prims0.data()),
-                                                                                 bvh->scene->progressInterface,
-                                                                                 prims0.data(),
-                                                                                 numSplitPrimitives,
-                                                                                 pinfo,
-                                                                                 sahBlockSize,minLeafSize,maxLeafSize,
-                                                                                 travCost,intCost);
+
+        NodeRef root;
+        BVHBuilderBinnedFastSpatialSAH::build_reduce<NodeRef>(
+          root,
+          typename BVH::CreateAlloc(bvh),
+          size_t(0),
+          typename BVH::CreateAlignedNode(bvh),
+          norotate<N>,
+          CreateLeafSpatial<N,Primitive>(bvh,prims0.data()),
+          splitter,
+          bvh->scene->progressInterface,
+          prims0.data(),
+          numSplitPrimitives,
+          pinfo,
+          N,BVH::maxBuildDepthLeaf,
+          sahBlockSize,minLeafSize,maxLeafSize,
+          travCost,intCost);
         
+
+        bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());      
+        bvh->layoutLargeNodes(size_t(pinfo.size()*0.005f));
+
 	/* clear temporary data for static geometry */
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
 	if (staticGeom) {

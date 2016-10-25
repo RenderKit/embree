@@ -95,6 +95,7 @@ namespace embree
         {
           assert((v1d-v0d) != 0.0f);
           const Vec3fa c = v0 + (pos-v0d)*inv_length[i][dim]*(v1-v0);
+          //const Vec3fa c = v0 + (pos-v0d)/(v1d-v0d)*(v1-v0);
           left.extend(c);
           right.extend(c);
         }
@@ -112,10 +113,55 @@ namespace embree
                                         const size_t dim, 
                                         const float pos, 
                                         const Vec3fa v[4],
+                                        PrimRef& left_o, 
+                                        PrimRef& right_o)
+    {
+      /*const vfloat4 v1(v[1][dim],v[2][dim],v[3][dim],v[0][dim]);
+      const vfloat4 v0(v[0][dim],v[1][dim],v[2][dim],v[3][dim]);
+      const vfloat4 inv_length4 = 1.0f / (v1-v0);*/
+
+      BBox3fa left = empty, right = empty;
+      for (size_t i=0; i<N; i++)
+      {
+        const Vec3fa &v0 = v[i]; 
+        const Vec3fa &v1 = v[i+1]; 
+        const float v0d = v0[dim];
+        const float v1d = v1[dim];
+        //const float inv_length = inv_length4[i];
+
+        if (v0d <= pos) left. extend(v0); // this point is on left side
+        if (v0d >= pos) right.extend(v0); // this point is on right side
+        
+        if ((v0d < pos && pos < v1d) || (v1d < pos && pos < v0d)) // the edge crosses the splitting location
+        {
+          assert((v1d-v0d) != 0.0f);
+          const float inv_length = 1.0f/(v1d-v0d);
+          const Vec3fa c = v0 + (pos-v0d)*inv_length*(v1-v0);
+          //const Vec3fa c = v0 + (pos-v0d)/(v1d-v0d)*(v1-v0);
+          left.extend(c);
+          right.extend(c);
+        }
+      }
+      /* clip against current bounds */
+      new (&left_o ) PrimRef(intersect(left ,prim.bounds()),prim.geomID(), prim.primID());
+      new (&right_o) PrimRef(intersect(right,prim.bounds()),prim.geomID(), prim.primID());
+    }
+
+    template<size_t N>
+    __forceinline void splitTriQuadFast(const PrimRef& prim, 
+                                        const size_t dim, 
+                                        const float pos, 
+                                        const Vec3fa v[4],
                                         const vfloat4 &inv_length4,
                                         PrimRef& left_o, 
                                         PrimRef& right_o)
     {
+      /*Vec3fa a = v[0], b = v[1], c = v[2], d = v[3];
+      const vfloat4 v1(b[dim],c[dim],d[dim],a[dim]);
+      const vfloat4 v0(a[dim],b[dim],c[dim],d[dim]);
+      const vfloat4 inv_length4b = 1.0f / (v1-v0);*/
+      //assert(all(inv_length4 == inv_length4b));
+      
       BBox3fa left = empty, right = empty;
       for (size_t i=0; i<N; i++)
       {
@@ -140,6 +186,112 @@ namespace embree
       new (&left_o ) PrimRef(intersect(left ,prim.bounds()),prim.geomID(), prim.primID());
       new (&right_o) PrimRef(intersect(right,prim.bounds()),prim.geomID(), prim.primID());
     }
+
+    struct TriangleSplitter
+    {
+      __forceinline TriangleSplitter(const Scene* scene)
+        : scene(scene) {}
+
+      struct Instance
+      {
+        __forceinline Instance(const TriangleSplitter& splitter, const PrimRef& prim)
+        {
+          const TriangleMesh* mesh = (const TriangleMesh*) splitter.scene->get(prim.geomID() & 0x00FFFFFF );  
+          TriangleMesh::Triangle tri = mesh->triangle(prim.primID());
+          v[0] = mesh->vertex(tri.v[0]);
+          v[1] = mesh->vertex(tri.v[1]);
+          v[2] = mesh->vertex(tri.v[2]);
+          v[3] = mesh->vertex(tri.v[0]);
+          inv_length[0] = Vec3fa(1.0f) / (v[1]-v[0]);
+          inv_length[1] = Vec3fa(1.0f) / (v[2]-v[1]);
+          inv_length[2] = Vec3fa(1.0f) / (v[0]-v[2]);
+          inv_length[3] = Vec3fa(1.0f);
+        }
+        
+        __forceinline void split(const PrimRef& prim, const size_t dim, const float pos, PrimRef& left_o, PrimRef& right_o) const {
+          splitTriQuadFast<3>(prim,dim,pos,v,left_o,right_o);
+        }
+        
+        __forceinline void split(const BBox3fa& prim, const size_t dim, const float pos, BBox3fa& left_o, BBox3fa& right_o) const {
+          splitTriQuadFast<3>(prim,dim,pos,v,inv_length,left_o,right_o);
+        }
+      
+      private:
+        Vec3fa v[4];
+        Vec3fa inv_length[4];
+      };
+
+    private:
+      const Scene* scene;
+    };
+
+    struct QuadSplitter
+    {
+      __forceinline QuadSplitter(const Scene* scene)
+        : scene(scene) {}
+
+      struct Instance
+      {
+        __forceinline Instance(const QuadSplitter& splitter, const PrimRef& prim)
+          : splitter(splitter), prim0(prim)
+        {
+          const QuadMesh* mesh = (const QuadMesh*) splitter.scene->get(prim.geomID() & 0x00FFFFFF );  
+          QuadMesh::Quad quad = mesh->quad(prim.primID());
+          v[0] = mesh->vertex(quad.v[0]);
+          v[1] = mesh->vertex(quad.v[1]);
+          v[2] = mesh->vertex(quad.v[2]);
+          v[3] = mesh->vertex(quad.v[3]);
+          inv_length[0] = Vec3fa(1.0f) / (v[1]-v[0]);
+          inv_length[1] = Vec3fa(1.0f) / (v[2]-v[1]);
+          inv_length[2] = Vec3fa(1.0f) / (v[3]-v[2]);
+          inv_length[3] = Vec3fa(1.0f) / (v[0]-v[3]);
+        }
+        
+        __forceinline void split(const PrimRef& prim, const size_t dim, const float pos, PrimRef& left_o, PrimRef& right_o) const 
+        {
+          /*const QuadMesh* mesh = (const QuadMesh*) splitter.scene->get(prim.geomID() & 0x00FFFFFF );  
+          QuadMesh::Quad tri = mesh->quad(prim.primID());
+          const Vec3fa& a = mesh->vertex(tri.v[0]);
+          const Vec3fa& b = mesh->vertex(tri.v[1]);
+          const Vec3fa& c = mesh->vertex(tri.v[2]);          
+          const Vec3fa& d = mesh->vertex(tri.v[3]);          
+          const Vec3fa v[4] = { a,b,c,d };
+          const vfloat4 v1(b[dim],c[dim],d[dim],a[dim]);
+          const vfloat4 v0(a[dim],b[dim],c[dim],d[dim]);
+          const vfloat4 inv_length = 1.0f / (v1-v0);
+          splitTriQuadFast<4>(prim,dim,pos,v,inv_length,left_o,right_o);*/
+          splitTriQuadFast<4>(prim,dim,pos,v,left_o,right_o);
+        }
+        
+        __forceinline void split(const BBox3fa& prim, const size_t dim, const float pos, BBox3fa& left_o, BBox3fa& right_o) const 
+        {
+          /*QuadMesh* mesh = (QuadMesh*) splitter.scene->get(prim0.geomID() & 0x00FFFFFF );  
+          QuadMesh::Quad tri = mesh->quad(prim0.primID());
+          const Vec3fa v[4] = { mesh->vertex(tri.v[0]), 
+                                mesh->vertex(tri.v[1]), 
+                                mesh->vertex(tri.v[2]),
+                                mesh->vertex(tri.v[3]) };
+          const Vec3fa inv_length[4] = { 
+            Vec3fa(1.0f) / (v[1]-v[0]),
+            Vec3fa(1.0f) / (v[2]-v[1]),
+            Vec3fa(1.0f) / (v[3]-v[2]),
+            Vec3fa(1.0f) / (v[0]-v[3])
+          };
+          splitTriQuadFast<4>(prim,dim,pos,v,inv_length,left_o,right_o);*/
+          splitTriQuadFast<4>(prim,dim,pos,v,inv_length,left_o,right_o);
+        }
+        
+      private:
+        const QuadSplitter& splitter;
+        const PrimRef& prim0;
+        Vec3fa v[4];
+        Vec3fa inv_length[4];
+      };
+
+    private:
+      const Scene* scene;
+    };
+
 
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
