@@ -33,8 +33,8 @@ namespace embree
       {
         /* create random permutation */
         size_t N = std::rand() % 1000000;
-        std::vector<int> array(N);
-        for (size_t i=0; i<N; i++) array[i] = i;
+        std::vector<unsigned> array(N);
+        for (unsigned i=0; i<N; i++) array[i] = i;
         for (auto& v : array) std::swap(v,array[std::rand()%array.size()]);
         size_t split = std::rand() % (N+1);
 
@@ -42,7 +42,7 @@ namespace embree
         size_t left_sum = 0, right_sum = 0;
         size_t mid = parallel_partitioning(array.data(),0,array.size(),0,left_sum,right_sum,
                                            [&] ( size_t i ) { return i < split; },
-                                           []  ( size_t& sum, int v) { sum += v; },
+                                           []  ( size_t& sum, unsigned v) { sum += v; },
                                            []  ( size_t& sum, size_t v) { sum += v; },
                                            128);
         
