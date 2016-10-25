@@ -71,7 +71,7 @@ namespace embree
     //////////////////////////////////////////////////////////////////////////////////
 
     template<size_t N>
-    __forceinline void splitTriQuadFast(const BBox3fa& bounds, 
+    __forceinline void splitPolygon(const BBox3fa& bounds, 
                                         const size_t dim, 
                                         const float pos, 
                                         const Vec3fa v[N+1],
@@ -108,7 +108,7 @@ namespace embree
     }
 
     template<size_t N>
-    __forceinline void splitTriQuadFast(const PrimRef& prim, 
+    __forceinline void splitPolygon(const PrimRef& prim, 
                                         const size_t dim, 
                                         const float pos, 
                                         const Vec3fa v[N+1],
@@ -164,11 +164,11 @@ namespace embree
         }
         
         __forceinline void split(const PrimRef& prim, const size_t dim, const float pos, PrimRef& left_o, PrimRef& right_o) const {
-          splitTriQuadFast<3>(prim,dim,pos,v,left_o,right_o);
+          splitPolygon<3>(prim,dim,pos,v,left_o,right_o);
         }
         
         __forceinline void split(const BBox3fa& prim, const size_t dim, const float pos, BBox3fa& left_o, BBox3fa& right_o) const {
-          splitTriQuadFast<3>(prim,dim,pos,v,inv_length,left_o,right_o);
+          splitPolygon<3>(prim,dim,pos,v,inv_length,left_o,right_o);
         }
       
       private:
@@ -203,11 +203,11 @@ namespace embree
         }
         
         __forceinline void split(const PrimRef& prim, const size_t dim, const float pos, PrimRef& left_o, PrimRef& right_o) const {
-          splitTriQuadFast<4>(prim,dim,pos,v,left_o,right_o);
+          splitPolygon<4>(prim,dim,pos,v,left_o,right_o);
         }
         
         __forceinline void split(const BBox3fa& prim, const size_t dim, const float pos, BBox3fa& left_o, BBox3fa& right_o) const {
-          splitTriQuadFast<4>(prim,dim,pos,v,inv_length,left_o,right_o);
+          splitPolygon<4>(prim,dim,pos,v,inv_length,left_o,right_o);
         }
         
       private:
