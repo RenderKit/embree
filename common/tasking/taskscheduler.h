@@ -18,12 +18,11 @@
 
 #if defined(TASKING_INTERNAL)
 #  include "taskschedulerinternal.h"
-#endif
-      
-#if defined(TASKING_TBB)
+#elif defined(TASKING_TBB)
 #  include "taskschedulertbb.h"
+#elif defined(TASKING_PPL)
+#  include "taskschedulerppl.h"
+#else
+#  error "no tasking system enabled"
 #endif
 
-#if defined(TASKING_PPL)
-#  include "taskschedulerppl.h"
-#endif

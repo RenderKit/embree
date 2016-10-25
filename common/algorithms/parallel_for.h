@@ -16,14 +16,14 @@
 
 #pragma once
 
+#include "../common/tasking/taskscheduler.h"
 #include "../sys/array.h"
 #include "../math/math.h"
 #include "../common/math/range.h"
-#include "../common/tasking/taskscheduler.h"
 
 namespace embree
 {
-  /* simple parallel_for without range optimization (similar to a task set) */
+  /* parallel_for without range */
   template<typename Index, typename Func>
     __forceinline void parallel_for( const Index N, const Func& func)
   {
@@ -36,37 +36,24 @@ namespace embree
       if (!TaskScheduler::wait())
         throw std::runtime_error("task cancelled");
     }
-
+    
 #elif defined(TASKING_TBB)
     tbb::parallel_for(Index(0),N,Index(1),[&](Index i) { 
 	func(i);
       });
     if (tbb::task::self().is_cancelled())
       throw std::runtime_error("task cancelled");
-#else // TASKING_PPL
-	  concurrency::parallel_for(Index(0),N,Index(1),[&](Index i) { 
-		  func(i);
-	});
+
+#elif defined(TASKING_PPL)
+    concurrency::parallel_for(Index(0),N,Index(1),[&](Index i) { 
+        func(i);
+      });
+#else
+#  error "no tasking system enabled"
 #endif
   }
-
-  /* sequential for with range optimization */
-  template<typename Index, typename Func>
-    __forceinline void sequential_for( const Index first, const Index last, const Func& func) 
-  {
-    assert(first <= last);
-    func(range<Index>(first,last));
-  }
- 
-  /* sequential for with range optimization and minimal granularity per thread */
-  template<typename Index, typename Func>
-    __forceinline void sequential_for( const Index first, const Index last, const Index minStepSize, const Func& func)
-  {
-    assert(first <= last);
-    func(range<Index>(first,last));
-  }
-
-  /* parallel for with range optimization */
+  
+  /* parallel for with range and granulatity */
   template<typename Index, typename Func>
     __forceinline void parallel_for( const Index first, const Index last, const Index minStepSize, const Func& func)
   {
@@ -74,20 +61,26 @@ namespace embree
 #if defined(TASKING_INTERNAL)
     TaskScheduler::spawn(first,last,minStepSize,func);
     if (!TaskScheduler::wait())
-        throw std::runtime_error("task cancelled");
+      throw std::runtime_error("task cancelled");
+
 #elif defined(TASKING_TBB)
     tbb::parallel_for(tbb::blocked_range<Index>(first,last,minStepSize),[&](const tbb::blocked_range<Index>& r) { 
-      func(range<Index>(r.begin(),r.end()));
+        func(range<Index>(r.begin(),r.end()));
       });
     if (tbb::task::self().is_cancelled())
       throw std::runtime_error("task cancelled");
-#else  // TASKING_PPL
-    concurrency::static_partitioner part;
-    concurrency::parallel_for(first, last, [&](Index i) { func(i); }, part);	
+
+#elif defined(TASKING_PPL)
+    concurrency::parallel_for(first, last, minStepSize, [&](Index i) { 
+        func(range<Index>(i,i+1)); 
+      });
+
+#else
+#  error "no tasking system enabled"
 #endif
   }
-
-  /* parallel for with range optimization and minimal granularity per thread */
+  
+  /* parallel for with range */
   template<typename Index, typename Func>
     __forceinline void parallel_for( const Index first, const Index last, const Func& func)
   {
