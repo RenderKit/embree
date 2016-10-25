@@ -19,10 +19,8 @@
 namespace embree
 {
   /* Signature of ispc-generated 'task' functions */
-  typedef void (*TaskFuncType)(void* data, int threadIndex, int threadCount, int taskIndex, int taskCount);
-
-#if defined(TASKING_TBB) || defined(TASKING_INTERNAL) || defined(TASKING_PPL)
-
+  typedef void (*ISPCTaskFunc)(void* data, int threadIndex, int threadCount, int taskIndex, int taskCount);
+  
   extern "C" __dllexport void* ISPCAlloc(void** taskPtr, int64_t size, int32_t alignment) 
   {
     if (*taskPtr == nullptr) *taskPtr = new std::vector<void*>;
@@ -31,39 +29,21 @@ namespace embree
     lst->push_back(ptr);
     return ptr;
   }
-
- extern "C" __dllexport void ISPCSync(void* task) 
+  
+  extern "C" __dllexport void ISPCSync(void* task) 
   {
     std::vector<void*>* lst = (std::vector<void*>*)task;
     for (size_t i=0; i<lst->size(); i++) alignedFree((*lst)[i]);
     delete lst;
   }
-
-#endif
-
-#if defined(TASKING_TBB) || defined(TASKING_PPL)
-
+  
   extern "C" __dllexport void ISPCLaunch(void** taskPtr, void* func, void* data, int count) 
   {      
-    parallel_for(size_t(0), size_t(count),[&] (const range<size_t>& r) {
-        const size_t threadIndex = TaskScheduler::threadIndex();
-        const size_t threadCount = TaskScheduler::threadCount();
-        for (size_t i=r.begin(); i<r.end(); i++) ((TaskFuncType)func)(data,int(threadIndex),int(threadCount),int(i),count);
-      });
-  }
-#endif  
- 
-#if defined(TASKING_INTERNAL)
-
-  extern "C" __dllexport void ISPCLaunch(void** taskPtr, void* func, void* data, int count) 
-  {      
-    parallel_for(size_t(0), size_t(count), [&] (const range<size_t>& r) {
-        const size_t threadIndex = TaskScheduler::threadIndex();
-        const size_t threadCount = TaskScheduler::threadCount();
+    parallel_for(0, count,[&] (const range<int>& r) {
+        const int threadIndex = (int) TaskScheduler::threadIndex();
+        const int threadCount = (int) TaskScheduler::threadCount();
         for (size_t i=r.begin(); i<r.end(); i++) 
-          ((TaskFuncType)func)(data,threadIndex,threadCount,i,count);
+          ((ISPCTaskFunc)func)(data,threadIndex,threadCount,i,count);
       });
   }
-
-#endif
 }
