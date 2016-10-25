@@ -15,16 +15,16 @@
 ## ======================================================================== ##
 
 IF (TASKING_INTERNAL)
-  ADD_LIBRARY(tasking STATIC taskschedulerinternal.cpp tasksys.cpp)
+  ADD_LIBRARY(tasking STATIC taskschedulerinternal.cpp)
 ENDIF()
 
 IF (TASKING_TBB)
-  ADD_LIBRARY(tasking STATIC taskschedulertbb.cpp tasksys.cpp)
+  ADD_LIBRARY(tasking STATIC taskschedulertbb.cpp)
   TARGET_LINK_LIBRARIES(tasking sys ${TBB_LIBRARIES})
 ENDIF()
 
 IF (TASKING_PPL)
-  ADD_LIBRARY(tasking STATIC taskschedulerppl.cpp tasksys.cpp)
+  ADD_LIBRARY(tasking STATIC taskschedulerppl.cpp)
   TARGET_LINK_LIBRARIES(tasking sys ${PPL_LIBRARIES})
 ENDIF()
 

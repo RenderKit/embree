@@ -37,6 +37,7 @@ SET(EMBREE_LIBRARY_FILES
   common/scene.cpp
   common/alloc.cpp
   common/geometry.cpp
+  common/tasksys.cpp
   common/scene_user_geometry.cpp
   common/scene_instance.cpp
   common/scene_geometry_instance.cpp

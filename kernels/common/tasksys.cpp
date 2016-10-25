@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "../algorithms/parallel_for.h" 
+#include "../../common/algorithms/parallel_for.h" 
 
 namespace embree
 {

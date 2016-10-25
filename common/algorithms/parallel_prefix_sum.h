@@ -85,7 +85,7 @@ namespace embree
       /* final run calculates prefix sum */
       return parallel_prefix_sum( state, size_t(0), size_t(N), size_t(1024), identity, [&](const range<size_t>& r, const Value& sum) -> Value {
           
-          size_t s = identity;
+          Value s = identity;
           for (size_t i=r.begin(); i<r.end(); i++) {
             dst[i] = add(sum,s);
             s = add(s,src[i]);
