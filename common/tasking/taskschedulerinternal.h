@@ -317,15 +317,15 @@ namespace embree
     }
 
     /* spawn a new task set  */
-    template<typename Closure>
-    static void spawn(const size_t begin, const size_t end, const size_t blockSize, const Closure& closure) 
+    template<typename Index, typename Closure>
+    static void spawn(const Index begin, const Index end, const Index blockSize, const Closure& closure) 
     {
       spawn(end-begin, [=,&closure]() 
         {
 	  if (end-begin <= blockSize) {
-	    return closure(range<size_t>(begin,end));
+	    return closure(range<Index>(begin,end));
 	  }
-	  const size_t center = (begin+end)/2;
+	  const Index center = (begin+end)/2;
 	  spawn(begin,center,blockSize,closure);
 	  spawn(center,end  ,blockSize,closure);
 	  wait();

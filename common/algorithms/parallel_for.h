@@ -82,13 +82,8 @@ namespace embree
     if (tbb::task::self().is_cancelled())
       throw std::runtime_error("task cancelled");
 #else  // TASKING_PPL
-	// FIXME: optimize
-	//const size_t num = last - first;
-	concurrency::static_partitioner part;
-	//concurrency::parallel_for(first,last,Index(1),[&](Index i) { 
-	concurrency::parallel_for(first, last, [&](Index i) {
-		func(i);
-	}, part);	
+    concurrency::static_partitioner part;
+    concurrency::parallel_for(first, last, [&](Index i) { func(i); }, part);	
 #endif
   }
 
