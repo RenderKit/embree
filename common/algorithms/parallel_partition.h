@@ -104,10 +104,10 @@ namespace embree
     __forceinline const range<ssize_t>* findStartRange(size_t& index, const range<ssize_t>* const r, const size_t numRanges)
     {
       size_t i = 0;
-      while(index >= r[i].size())
+      while(index >= (size_t)r[i].size())
       {
         assert(i < numRanges);
-        index -= r[i].size();
+        index -= (size_t)r[i].size();
         i++;
       }	    
       return &r[i];

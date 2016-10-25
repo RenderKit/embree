@@ -75,7 +75,7 @@ namespace embree
           float v;
           unsigned int id;
           __forceinline Centroid() {}
-          __forceinline Centroid(const float v, const unsigned int id) : v(v), id(id) {}
+          __forceinline Centroid(const float v, const size_t id) : v(v), id((unsigned int)id) {}
 
           __forceinline bool operator<(const Centroid &m) const { return v < m.v; } 
 
@@ -185,7 +185,7 @@ namespace embree
 
               if (unlikely(sah < bestSAH)) {
                 bestDim = (int)dim;
-                bestPos = i;
+                bestPos = (int)i;
                 bestSAH = sah;
               }
             }
