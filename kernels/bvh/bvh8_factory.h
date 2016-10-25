@@ -33,9 +33,9 @@ namespace embree
     BVH8Factory(int features);
 
   public:
-    Accel* BVH8OBBBezier1v(Scene* scene, bool highQuality);
-    Accel* BVH8OBBBezier1i(Scene* scene, bool highQuality);
-    Accel* BVH8OBBBezier1iMB(Scene* scene, bool highQuality);
+    Accel* BVH8OBBBezier1v(Scene* scene);
+    Accel* BVH8OBBBezier1i(Scene* scene);
+    Accel* BVH8OBBBezier1iMB(Scene* scene);
 
     Accel* BVH8Line4i(Scene* scene);
     Accel* BVH8Line4iMB(Scene* scene);

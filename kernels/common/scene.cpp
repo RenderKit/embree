@@ -316,20 +316,20 @@ namespace embree
         if (device->hasISA(AVX2)) // only enable on HSW machines, for SNB this codepath is slower
         {
           switch (mode) {
-          case /*0b00*/ 0: accels.add(device->bvh8_factory->BVH8OBBBezier1v(this,isHighQuality())); break;
-          case /*0b01*/ 1: accels.add(device->bvh8_factory->BVH8OBBBezier1v(this,isHighQuality())); break;
-          case /*0b10*/ 2: accels.add(device->bvh8_factory->BVH8OBBBezier1i(this,isHighQuality())); break;
-          case /*0b11*/ 3: accels.add(device->bvh8_factory->BVH8OBBBezier1i(this,isHighQuality())); break;
+          case /*0b00*/ 0: accels.add(device->bvh8_factory->BVH8OBBBezier1v(this)); break;
+          case /*0b01*/ 1: accels.add(device->bvh8_factory->BVH8OBBBezier1v(this)); break;
+          case /*0b10*/ 2: accels.add(device->bvh8_factory->BVH8OBBBezier1i(this)); break;
+          case /*0b11*/ 3: accels.add(device->bvh8_factory->BVH8OBBBezier1i(this)); break;
           }
         }
         else
 #endif
         {
           switch (mode) {
-          case /*0b00*/ 0: accels.add(device->bvh4_factory->BVH4OBBBezier1v(this,isHighQuality())); break;
-          case /*0b01*/ 1: accels.add(device->bvh4_factory->BVH4OBBBezier1v(this,isHighQuality())); break;
-          case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4OBBBezier1i(this,isHighQuality())); break;
-          case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4OBBBezier1i(this,isHighQuality())); break;
+          case /*0b00*/ 0: accels.add(device->bvh4_factory->BVH4OBBBezier1v(this)); break;
+          case /*0b01*/ 1: accels.add(device->bvh4_factory->BVH4OBBBezier1v(this)); break;
+          case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4OBBBezier1i(this)); break;
+          case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4OBBBezier1i(this)); break;
           }
         }
       }
@@ -345,11 +345,11 @@ namespace embree
     }
     else if (device->hair_accel == "bvh4.bezier1v"    ) accels.add(device->bvh4_factory->BVH4Bezier1v(this));
     else if (device->hair_accel == "bvh4.bezier1i"    ) accels.add(device->bvh4_factory->BVH4Bezier1i(this));
-    else if (device->hair_accel == "bvh4obb.bezier1v" ) accels.add(device->bvh4_factory->BVH4OBBBezier1v(this,false));
-    else if (device->hair_accel == "bvh4obb.bezier1i" ) accels.add(device->bvh4_factory->BVH4OBBBezier1i(this,false));
+    else if (device->hair_accel == "bvh4obb.bezier1v" ) accels.add(device->bvh4_factory->BVH4OBBBezier1v(this));
+    else if (device->hair_accel == "bvh4obb.bezier1i" ) accels.add(device->bvh4_factory->BVH4OBBBezier1i(this));
 #if defined (__TARGET_AVX__)
-    else if (device->hair_accel == "bvh8obb.bezier1v" ) accels.add(device->bvh8_factory->BVH8OBBBezier1v(this,false));
-    else if (device->hair_accel == "bvh8obb.bezier1i" ) accels.add(device->bvh8_factory->BVH8OBBBezier1i(this,false));
+    else if (device->hair_accel == "bvh8obb.bezier1v" ) accels.add(device->bvh8_factory->BVH8OBBBezier1v(this));
+    else if (device->hair_accel == "bvh8obb.bezier1i" ) accels.add(device->bvh8_factory->BVH8OBBBezier1i(this));
 #endif
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown hair acceleration structure "+device->hair_accel);
 #endif
@@ -363,17 +363,17 @@ namespace embree
 #if defined (__TARGET_AVX__)
       if (device->hasISA(AVX2)) // only enable on HSW machines, on SNB this codepath is slower
       {
-        accels.add(device->bvh8_factory->BVH8OBBBezier1iMB(this,false));
+        accels.add(device->bvh8_factory->BVH8OBBBezier1iMB(this));
       }
       else
 #endif
       {
-        accels.add(device->bvh4_factory->BVH4OBBBezier1iMB(this,false));
+        accels.add(device->bvh4_factory->BVH4OBBBezier1iMB(this));
       }
     }
-    else if (device->hair_accel_mb == "bvh4obb.bezier1imb") accels.add(device->bvh4_factory->BVH4OBBBezier1iMB(this,false));
+    else if (device->hair_accel_mb == "bvh4obb.bezier1imb") accels.add(device->bvh4_factory->BVH4OBBBezier1iMB(this));
 #if defined (__TARGET_AVX__)
-    else if (device->hair_accel_mb == "bvh8obb.bezier1imb") accels.add(device->bvh8_factory->BVH8OBBBezier1iMB(this,false));
+    else if (device->hair_accel_mb == "bvh8obb.bezier1imb") accels.add(device->bvh8_factory->BVH8OBBBezier1iMB(this));
 #endif
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown motion blur hair acceleration structure "+device->tri_accel_mb);
 #endif

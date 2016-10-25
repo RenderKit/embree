@@ -1062,7 +1062,7 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  Accel* BVH4Factory::BVH4OBBBezier1v(Scene* scene, bool highQuality)
+  Accel* BVH4Factory::BVH4OBBBezier1v(Scene* scene)
   {
     BVH4* accel = new BVH4(Bezier1v::type,scene);
     Accel::Intersectors intersectors = BVH4Bezier1vIntersectors_OBB(accel);
@@ -1070,7 +1070,7 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  Accel* BVH4Factory::BVH4OBBBezier1i(Scene* scene, bool highQuality)
+  Accel* BVH4Factory::BVH4OBBBezier1i(Scene* scene)
   {
     BVH4* accel = new BVH4(Bezier1i::type,scene);
     Accel::Intersectors intersectors = BVH4Bezier1iIntersectors_OBB(accel);
@@ -1079,7 +1079,7 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  Accel* BVH4Factory::BVH4OBBBezier1iMB(Scene* scene, bool highQuality)
+  Accel* BVH4Factory::BVH4OBBBezier1iMB(Scene* scene)
   {
     BVH4* accel = new BVH4(Bezier1i::type,scene);
     Accel::Intersectors intersectors = BVH4Bezier1iMBIntersectors_OBB(accel);

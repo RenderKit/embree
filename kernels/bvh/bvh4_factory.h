@@ -39,9 +39,9 @@ namespace embree
     Accel* BVH4Line4i(Scene* scene, BuildVariant bvariant = BuildVariant::STATIC);
     Accel* BVH4Line4iMB(Scene* scene);
 
-    Accel* BVH4OBBBezier1v(Scene* scene, bool highQuality);
-    Accel* BVH4OBBBezier1i(Scene* scene, bool highQuality);
-    Accel* BVH4OBBBezier1iMB(Scene* scene, bool highQuality);
+    Accel* BVH4OBBBezier1v(Scene* scene);
+    Accel* BVH4OBBBezier1i(Scene* scene);
+    Accel* BVH4OBBBezier1iMB(Scene* scene);
     
     Accel* BVH4Triangle4   (Scene* scene, BuildVariant bvariant = BuildVariant::STATIC, IntersectVariant ivariant = IntersectVariant::FAST);
     Accel* BVH4Triangle4v  (Scene* scene, BuildVariant bvariant = BuildVariant::STATIC, IntersectVariant ivariant = IntersectVariant::ROBUST);
