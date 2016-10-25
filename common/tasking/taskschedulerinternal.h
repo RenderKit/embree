@@ -67,25 +67,6 @@ namespace embree
       void execute() { closure(); };
     };
 
-    /*! virtual interface for all tasks */
-    struct TaskSetFunction 
-    {
-      __forceinline TaskSetFunction(size_t begin, size_t end, size_t blockSize) 
-        : begin(begin), end(end), blockSize(blockSize) {}
-      virtual void execute(const range<size_t>& r) = 0;
-      size_t begin,end,blockSize;
-    };
-
-    /*! builds a task interface from a closure */
-    template<typename Closure>
-    struct ClosureTaskSetFunction : public TaskSetFunction
-    {
-      Closure closure;
-      __forceinline ClosureTaskSetFunction (const Closure& closure, size_t begin, size_t end, size_t blockSize) 
-        : closure(closure), TaskSetFunction(begin,end,blockSize) {}
-      void execute(const range<size_t>& r) { closure(r); };
-    };
-
     struct __aligned(64) Task 
     {
       /*! states a task can be in */
@@ -279,8 +260,7 @@ namespace embree
 
     /* spawn a new task at the top of the threads task stack */
     template<typename Closure>
-    __noinline void spawn_root(const Closure& closure, size_t size = 1, bool useThreadPool = true) 
-    // important: has to be noinline as it allocates large thread structure on stack
+      void spawn_root(const Closure& closure, size_t size = 1, bool useThreadPool = true) 
     {
       if (useThreadPool) startThreads();
       
