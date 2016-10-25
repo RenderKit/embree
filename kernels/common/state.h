@@ -54,8 +54,7 @@ namespace embree
     std::string tri_accel;                 //!< acceleration structure to use for triangles
     std::string tri_builder;               //!< builder to use for triangles
     std::string tri_traverser;             //!< traverser to use for triangles
-    float      tri_builder_replication_factor; //!< maximally factor*N many primitives in accel
-
+    
   public:
     std::string tri_accel_mb;              //!< acceleration structure to use for motion blur triangles
     std::string tri_builder_mb;            //!< builder to use for motion blur triangles
@@ -100,16 +99,19 @@ namespace embree
     int object_accel_mb_max_leaf_size;         //!< maximal leaf size for mblur object acceleration structure
 
   public:
-    size_t tessellation_cache_size;        //!< size of the shared tessellation cache 
     std::string subdiv_accel;              //!< acceleration structure to use for subdivision surfaces
     std::string subdiv_accel_mb;           //!< acceleration structure to use for subdivision surfaces
+
+  public:
+    float max_spatial_split_replications;  //!< maximally replications*N many primitives in accel for spatial splits
+    size_t tessellation_cache_size;        //!< size of the shared tessellation cache 
 
   public:
     bool float_exceptions;                 //!< enable floating point exceptions
     int scene_flags;                       //!< scene flags to use
     size_t verbose;                        //!< verbosity of output
     size_t benchmark;                      //!< true
-
+    
   public:
     size_t numThreads;                     //!< number of threads to use in builders
     bool set_affinity;                     //!< sets affinity for worker threads
