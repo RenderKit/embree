@@ -36,7 +36,7 @@ namespace embree
     
     Accel* BVH4Bezier1v(Scene* scene);
     Accel* BVH4Bezier1i(Scene* scene);
-    Accel* BVH4Line4i(Scene* scene);
+    Accel* BVH4Line4i(Scene* scene, BuildVariant bvariant = BuildVariant::STATIC);
     Accel* BVH4Line4iMB(Scene* scene);
 
     Accel* BVH4OBBBezier1v(Scene* scene, bool highQuality);
@@ -63,22 +63,6 @@ namespace embree
     Accel* BVH4UserGeometryMB(Scene* scene);
     Accel* BVH4InstancedBVH4Triangle4ObjectSplit(Scene* scene);
     
-    Accel* BVH4Line4iTwolevel(Scene* scene);
-    //Accel* BVH4Triangle4Twolevel(Scene* scene);
-    //Accel* BVH4Triangle4vTwolevel(Scene* scene);
-    //Accel* BVH4Triangle4iTwolevel(Scene* scene);
-
-    //Accel* BVH4Quad4vTwolevel(Scene* scene);
-
-    //Accel* BVH4Triangle4SpatialSplit(Scene* scene);
-    //Accel* BVH4Triangle4ObjectSplit(Scene* scene);
-    //Accel* BVH4Triangle4vObjectSplit(Scene* scene);
-    //Accel* BVH4Triangle4iObjectSplit(Scene* scene);
-  
-    //Accel* BVH4Quad4vSpatialSplit(Scene* scene);
-    //Accel* BVH4Quad4vObjectSplit(Scene* scene);
-
-
   private:
     
     Accel::Intersectors BVH4Line4iIntersectors(BVH4* bvh);

@@ -391,11 +391,11 @@ namespace embree
           accels.add(device->bvh8_factory->BVH8Line4i(this));
         else
 #endif
-          accels.add(device->bvh4_factory->BVH4Line4i(this));
+          accels.add(device->bvh4_factory->BVH4Line4i(this,BVH4Factory::BuildVariant::STATIC));
       }
       else
       {
-        accels.add(device->bvh4_factory->BVH4Line4iTwolevel(this));
+        accels.add(device->bvh4_factory->BVH4Line4i(this,BVH4Factory::BuildVariant::DYNAMIC));
       }
     }
     else if (device->line_accel == "bvh4.line4i") accels.add(device->bvh4_factory->BVH4Line4i(this));

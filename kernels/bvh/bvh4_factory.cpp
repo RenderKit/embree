@@ -952,7 +952,6 @@ namespace embree
     builder = factory->BVH4Quad4vMeshBuilderMortonGeneral(accel,mesh,0);
   }
 
-
   void BVH4Factory::createTriangleMeshTriangle4(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
     BVH4Factory* factory = mesh->parent->device->bvh4_factory.get();
@@ -1005,7 +1004,12 @@ namespace embree
   {
     BVH4* accel = new BVH4(Bezier1v::type,scene);
     Accel::Intersectors intersectors = BVH4Bezier1vIntersectors(accel);
-    Builder* builder = BVH4Bezier1vSceneBuilderSAH(accel,scene,0);
+
+    Builder* builder = nullptr;
+    if      (scene->device->hair_builder == "default"     ) builder = BVH4Bezier1vSceneBuilderSAH(accel,scene,0);
+    else if (scene->device->hair_builder == "sah"         ) builder = BVH4Bezier1vSceneBuilderSAH(accel,scene,0);
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->hair_builder+" for BVH4<Bezier1v>");
+
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -1013,18 +1017,29 @@ namespace embree
   {
     BVH4* accel = new BVH4(Bezier1i::type,scene);
     Accel::Intersectors intersectors = BVH4Bezier1iIntersectors(accel);
-    Builder* builder = BVH4Bezier1iSceneBuilderSAH(accel,scene,0);
+
+    Builder* builder = nullptr;
+    if      (scene->device->hair_builder == "default"     ) builder = BVH4Bezier1iSceneBuilderSAH(accel,scene,0);
+    else if (scene->device->hair_builder == "sah"         ) builder = BVH4Bezier1iSceneBuilderSAH(accel,scene,0);
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->hair_builder+" for BVH4<Bezier1i>");
+
     scene->needBezierVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  Accel* BVH4Factory::BVH4Line4i(Scene* scene)
+  Accel* BVH4Factory::BVH4Line4i(Scene* scene, BuildVariant bvariant)
   {
     BVH4* accel = new BVH4(Line4i::type,scene);
     Accel::Intersectors intersectors = BVH4Line4iIntersectors(accel);
 
     Builder* builder = nullptr;
-    if      (scene->device->line_builder == "default"     ) builder = BVH4Line4iSceneBuilderSAH(accel,scene,0);
+    if (scene->device->line_builder == "default"     ) {
+      switch (bvariant) {
+      case BuildVariant::STATIC      : builder = BVH4Line4iSceneBuilderSAH(accel,scene,0); break;
+      case BuildVariant::DYNAMIC     : builder = BVH4BuilderTwoLevelLineSegmentsSAH(accel,scene,&createLineSegmentsLine4i); break;
+      case BuildVariant::HIGH_QUALITY: assert(false); break;
+      }
+    }
     else if (scene->device->line_builder == "sah"         ) builder = BVH4Line4iSceneBuilderSAH(accel,scene,0);
     else if (scene->device->line_builder == "dynamic"     ) builder = BVH4BuilderTwoLevelLineSegmentsSAH(accel,scene,&createLineSegmentsLine4i);
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->line_builder+" for BVH4<Line4i>");
@@ -1037,16 +1052,13 @@ namespace embree
   {
     BVH4* accel = new BVH4(Line4i::type,scene);
     Accel::Intersectors intersectors = BVH4Line4iMBIntersectors(accel);
-    Builder* builder = BVH4Line4iMBSceneBuilderSAH(accel,scene,0);
-    scene->needLineVertices = true;
-    return new AccelInstance(accel,builder,intersectors);
-  }
 
-  Accel* BVH4Factory::BVH4Line4iTwolevel(Scene* scene)
-  {
-    BVH4* accel = new BVH4(Line4i::type,scene);
-    Accel::Intersectors intersectors = BVH4Line4iIntersectors(accel);
-    Builder* builder = BVH4BuilderTwoLevelLineSegmentsSAH(accel,scene,&createLineSegmentsLine4i);
+    Builder* builder = nullptr;
+    if      (scene->device->line_builder_mb == "default"     ) builder = BVH4Line4iMBSceneBuilderSAH(accel,scene,0);
+    else if (scene->device->line_builder_mb == "sah"         ) builder = BVH4Line4iMBSceneBuilderSAH(accel,scene,0);
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->line_builder_mb+" for BVH4<Line4iMB>");
+
+    scene->needLineVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
 
