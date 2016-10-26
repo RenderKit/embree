@@ -67,7 +67,7 @@ def renderLoop():
     fps_gain [avgBase] = 0
     printHeader()
     for model in models:
-      sys.stdout.write('  ' + '{0:<35}'.format(model) + ' | ')
+      sys.stdout.write('  ' + '{0:<55}'.format(model) + ' | ')
       render(name,model)
       extract(name,model,'')
       printData(name,model)
