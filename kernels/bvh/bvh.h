@@ -712,6 +712,22 @@ namespace embree
       __forceinline       NodeRef& child(size_t i)       { assert(i<N); return children[i]; }
       __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
 
+      friend std::ostream& operator<<(std::ostream& cout, const AlignedNodeMB4D& n) 
+      {
+        cout << "AlignedNodeMB4D {" << std::endl;
+        for (size_t i=0; i<N; i++) 
+        {
+          const BBox3fa b0 = n.bounds0(i);
+          const BBox3fa b1 = n.bounds1(i);
+          cout << "  child" << i << ": ";
+          cout << "bounds0 = " << b0 << ", ";
+          cout << "bounds1 = " << b1 << ", ";
+          cout << "time_bounds = " << n.lower_t[i] << ", " << n.upper_t[i] << std::endl;
+        }
+        cout << "}" << std::endl;
+        return cout;
+  }
+
     public:
       vfloat<N> lower_t;        //!< time dimension of lower bouds of all N children
       vfloat<N> upper_t;        //!< time dimension of upper bouds of all N children

@@ -483,8 +483,8 @@ namespace embree
           {
             NodeRef cnode; LBBox3fa cbounds;
             std::tie(cnode,cbounds) = recurse(c[i]);
-            const BBox1f dt(float(c[i].begin())/float(bvh->numTimeSteps),
-                            float(c[i].end  ())/float(bvh->numTimeSteps));
+            const BBox1f dt(float(c[i].begin())/float(bvh->numTimeSteps-1),
+                            float(c[i].end  ())/float(bvh->numTimeSteps-1));
             node->set(i,cnode,cbounds,dt);
             lbounds.extend(cbounds.global(dt));
           }
