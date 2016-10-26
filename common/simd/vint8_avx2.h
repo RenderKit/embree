@@ -115,8 +115,8 @@ namespace embree
 #if defined(__X86_64__)
       *(size_t*)ptr = _mm_cvtsi128_si64(_mm256_castsi256_si128(x));
 #else
-	  for (size_t i = 0; i < 8; i++)
-		  ptr[i] = ((unsigned char*)&x)[i];
+      for (size_t i = 0; i < 8; i++)
+        ptr[i] = ((unsigned char*)&x)[i];
 #endif
     }
 

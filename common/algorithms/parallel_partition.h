@@ -243,8 +243,6 @@ namespace embree
                                             const Reduction_V& reduction_v,
                                             size_t BLOCK_SIZE = 128)
   {
-#if defined(__X86_64__) 
-
     /* fall back to single threaded partitioning for small N */
     if (unlikely(end-begin < BLOCK_SIZE))
       return serial_partitioning(array,begin,end,leftReduction,rightReduction,is_left,reduction_t);
@@ -255,8 +253,5 @@ namespace embree
       std::unique_ptr<partition_task> p(new partition_task(&array[begin],end-begin,identity,is_left,reduction_t,reduction_v,BLOCK_SIZE));
       return begin+p->partition(leftReduction,rightReduction);    
     }
-#else
-    return serial_partitioning(array,begin,end,leftReduction,rightReduction,is_left,reduction_t);
-#endif
   }
 }
