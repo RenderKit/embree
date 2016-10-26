@@ -28,54 +28,14 @@ namespace embree
 {
   namespace isa
   {
-    /* deprecated code */
-    __forceinline void splitTriangle(const PrimRef& prim, int dim, float pos, 
-                                     const Vec3fa& a, const Vec3fa& b, const Vec3fa& c, PrimRef& left_o, PrimRef& right_o)
-    {
-      BBox3fa left = empty, right = empty;
-      const Vec3fa v[3] = { a,b,c };
-      
-      /* clip triangle to left and right box by processing all edges */
-      Vec3fa v1 = v[2];
-      for (size_t i=0; i<3; i++)
-      {
-        Vec3fa v0 = v1; v1 = v[i];
-        float v0d = v0[dim], v1d = v1[dim];
-
-        if (v0d <= pos) left. extend(v0); // this point is on left side
-        if (v0d >= pos) right.extend(v0); // this point is on right side
-        
-        if ((v0d < pos && pos < v1d) || (v1d < pos && pos < v0d)) // the edge crosses the splitting location
-        {
-          assert((v1d-v0d) != 0.0f);
-          Vec3fa c = v0 + (pos-v0d)/(v1d-v0d)*(v1-v0);
-          left.extend(c);
-          right.extend(c);
-        }
-      }
-      
-      /* clip against current bounds */
-      BBox3fa bounds = prim.bounds();
-      BBox3fa cleft (max(left .lower,bounds.lower),min(left .upper,bounds.upper));
-      BBox3fa cright(max(right.lower,bounds.lower),min(right.upper,bounds.upper));
-
-
-      new (&left_o ) PrimRef(cleft, prim.geomID(), prim.primID());
-      new (&right_o) PrimRef(cright,prim.geomID(), prim.primID());
-    }
-
-    //////////////////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////////////////
-
     template<size_t N>
     __forceinline void splitPolygon(const BBox3fa& bounds, 
-                                        const size_t dim, 
-                                        const float pos, 
-                                        const Vec3fa v[N+1],
-                                        const Vec3fa inv_length[N],
-                                        BBox3fa& left_o, 
-                                        BBox3fa& right_o)
+                                    const size_t dim, 
+                                    const float pos, 
+                                    const Vec3fa v[N+1],
+                                    const Vec3fa inv_length[N],
+                                    BBox3fa& left_o, 
+                                    BBox3fa& right_o)
     {
       BBox3fa left = empty, right = empty;
       /* clip triangle to left and right box by processing all edges */
@@ -85,7 +45,7 @@ namespace embree
         const Vec3fa &v1 = v[i+1]; 
         const float v0d = v0[dim];
         const float v1d = v1[dim];
-
+        
         if (v0d <= pos) left. extend(v0); // this point is on left side
         if (v0d >= pos) right.extend(v0); // this point is on right side
         
@@ -102,14 +62,14 @@ namespace embree
       left_o  = intersect(left,bounds);
       right_o = intersect(right,bounds);
     }
-
+    
     template<size_t N>
-    __forceinline void splitPolygon(const PrimRef& prim, 
-                                        const size_t dim, 
-                                        const float pos, 
-                                        const Vec3fa v[N+1],
-                                        PrimRef& left_o, 
-                                        PrimRef& right_o)
+      __forceinline void splitPolygon(const PrimRef& prim, 
+                                      const size_t dim, 
+                                      const float pos, 
+                                      const Vec3fa v[N+1],
+                                      PrimRef& left_o, 
+                                      PrimRef& right_o)
     {
       BBox3fa left = empty, right = empty;
       for (size_t i=0; i<N; i++)
@@ -118,7 +78,7 @@ namespace embree
         const Vec3fa &v1 = v[i+1]; 
         const float v0d = v0[dim];
         const float v1d = v1[dim];
-
+        
         if (v0d <= pos) left. extend(v0); // this point is on left side
         if (v0d >= pos) right.extend(v0); // this point is on right side
         
@@ -136,132 +96,91 @@ namespace embree
       new (&left_o ) PrimRef(intersect(left ,prim.bounds()),prim.geomID(), prim.primID());
       new (&right_o) PrimRef(intersect(right,prim.bounds()),prim.geomID(), prim.primID());
     }
-
+    
     struct TriangleSplitter
     {
-      __forceinline TriangleSplitter(const Scene* scene)
-        : scene(scene) {}
-
-      struct Instance
+      __forceinline TriangleSplitter(const Scene* scene, const PrimRef& prim)
       {
-        __forceinline Instance(const TriangleSplitter& splitter, const PrimRef& prim)
-        {
-          const TriangleMesh* mesh = (const TriangleMesh*) splitter.scene->get(prim.geomID() & 0x00FFFFFF );  
-          TriangleMesh::Triangle tri = mesh->triangle(prim.primID());
-          v[0] = mesh->vertex(tri.v[0]);
-          v[1] = mesh->vertex(tri.v[1]);
-          v[2] = mesh->vertex(tri.v[2]);
-          v[3] = mesh->vertex(tri.v[0]);
-          inv_length[0] = Vec3fa(1.0f) / (v[1]-v[0]);
-          inv_length[1] = Vec3fa(1.0f) / (v[2]-v[1]);
-          inv_length[2] = Vec3fa(1.0f) / (v[0]-v[2]);
-        }
-        
-        __forceinline void split(const PrimRef& prim, const size_t dim, const float pos, PrimRef& left_o, PrimRef& right_o) const {
-          splitPolygon<3>(prim,dim,pos,v,left_o,right_o);
-        }
-        
-        __forceinline void split(const BBox3fa& prim, const size_t dim, const float pos, BBox3fa& left_o, BBox3fa& right_o) const {
-          splitPolygon<3>(prim,dim,pos,v,inv_length,left_o,right_o);
-        }
+        const TriangleMesh* mesh = (const TriangleMesh*) scene->get(prim.geomID() & 0x00FFFFFF );  
+        TriangleMesh::Triangle tri = mesh->triangle(prim.primID());
+        v[0] = mesh->vertex(tri.v[0]);
+        v[1] = mesh->vertex(tri.v[1]);
+        v[2] = mesh->vertex(tri.v[2]);
+        v[3] = mesh->vertex(tri.v[0]);
+        inv_length[0] = Vec3fa(1.0f) / (v[1]-v[0]);
+        inv_length[1] = Vec3fa(1.0f) / (v[2]-v[1]);
+        inv_length[2] = Vec3fa(1.0f) / (v[0]-v[2]);
+      }
       
-      private:
-        Vec3fa v[4];
-        Vec3fa inv_length[3];
-      };
-
+      __forceinline void split(const PrimRef& prim, const size_t dim, const float pos, PrimRef& left_o, PrimRef& right_o) const {
+        splitPolygon<3>(prim,dim,pos,v,left_o,right_o);
+      }
+      
+      __forceinline void split(const BBox3fa& prim, const size_t dim, const float pos, BBox3fa& left_o, BBox3fa& right_o) const {
+        splitPolygon<3>(prim,dim,pos,v,inv_length,left_o,right_o);
+      }
+      
+    private:
+      Vec3fa v[4];
+      Vec3fa inv_length[3];
+    };
+    
+    struct TriangleSplitterFactory
+    {
+      __forceinline TriangleSplitterFactory(const Scene* scene)
+        : scene(scene) {}
+      
+      __forceinline TriangleSplitter create(const PrimRef& prim) const {
+        return TriangleSplitter(scene,prim);
+      }
+      
     private:
       const Scene* scene;
     };
-
+    
     struct QuadSplitter
     {
-      __forceinline QuadSplitter(const Scene* scene)
-        : scene(scene) {}
-
-      struct Instance
+      __forceinline QuadSplitter(const Scene* scene, const PrimRef& prim)
       {
-        __forceinline Instance(const QuadSplitter& splitter, const PrimRef& prim)
-        {
-          const QuadMesh* mesh = (const QuadMesh*) splitter.scene->get(prim.geomID() & 0x00FFFFFF );  
-          QuadMesh::Quad quad = mesh->quad(prim.primID());
-          v[0] = mesh->vertex(quad.v[0]);
-          v[1] = mesh->vertex(quad.v[1]);
-          v[2] = mesh->vertex(quad.v[2]);
-          v[3] = mesh->vertex(quad.v[3]);
-          v[4] = mesh->vertex(quad.v[0]);
-          inv_length[0] = Vec3fa(1.0f) / (v[1]-v[0]);
-          inv_length[1] = Vec3fa(1.0f) / (v[2]-v[1]);
-          inv_length[2] = Vec3fa(1.0f) / (v[3]-v[2]);
-          inv_length[3] = Vec3fa(1.0f) / (v[0]-v[3]);
-        }
-        
-        __forceinline void split(const PrimRef& prim, const size_t dim, const float pos, PrimRef& left_o, PrimRef& right_o) const {
-          splitPolygon<4>(prim,dim,pos,v,left_o,right_o);
-        }
-        
-        __forceinline void split(const BBox3fa& prim, const size_t dim, const float pos, BBox3fa& left_o, BBox3fa& right_o) const {
-          splitPolygon<4>(prim,dim,pos,v,inv_length,left_o,right_o);
-        }
-        
-      private:
-        Vec3fa v[5];
-        Vec3fa inv_length[4];
-      };
-
+        const QuadMesh* mesh = (const QuadMesh*) scene->get(prim.geomID() & 0x00FFFFFF );  
+        QuadMesh::Quad quad = mesh->quad(prim.primID());
+        v[0] = mesh->vertex(quad.v[0]);
+        v[1] = mesh->vertex(quad.v[1]);
+        v[2] = mesh->vertex(quad.v[2]);
+        v[3] = mesh->vertex(quad.v[3]);
+        v[4] = mesh->vertex(quad.v[0]);
+        inv_length[0] = Vec3fa(1.0f) / (v[1]-v[0]);
+        inv_length[1] = Vec3fa(1.0f) / (v[2]-v[1]);
+        inv_length[2] = Vec3fa(1.0f) / (v[3]-v[2]);
+        inv_length[3] = Vec3fa(1.0f) / (v[0]-v[3]);
+      }
+      
+      __forceinline void split(const PrimRef& prim, const size_t dim, const float pos, PrimRef& left_o, PrimRef& right_o) const {
+        splitPolygon<4>(prim,dim,pos,v,left_o,right_o);
+      }
+      
+      __forceinline void split(const BBox3fa& prim, const size_t dim, const float pos, BBox3fa& left_o, BBox3fa& right_o) const {
+        splitPolygon<4>(prim,dim,pos,v,inv_length,left_o,right_o);
+      }
+      
+    private:
+      Vec3fa v[5];
+      Vec3fa inv_length[4];
+    };
+    
+    struct QuadSplitterFactory
+    {
+      __forceinline QuadSplitterFactory(const Scene* scene)
+        : scene(scene) {}
+      
+      __forceinline QuadSplitter create(const PrimRef& prim) const {
+        return QuadSplitter(scene,prim);
+      }
+      
     private:
       const Scene* scene;
     };
-
-
-    //////////////////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////////////////
-
-
-
-
-    template<size_t N>
-      struct PrimRefBoundsN {
-        Vec3<vfloat<N>> lower;
-        Vec3<vfloat<N>> upper;
-
-        __forceinline PrimRefBoundsN() {}
-
-        __forceinline PrimRefBoundsN(const Vec3<vfloat<N>> &v)
-        {
-          lower = upper = v;
-        }
-
-        __forceinline PrimRefBoundsN(const PrimRefBoundsN<N> &o)
-        {
-          lower = o.lower;
-          upper = o.upper;
-        }
-
-        __forceinline void extend(const Vec3<vfloat<N>> &v)
-        {
-          lower = min(lower,v);
-          upper = max(upper,v);
-        }
-
-        __forceinline void clip(const BBox3fa &bounds)
-        {
-          Vec3<vfloat<N>> b_lower(bounds.lower.x,bounds.lower.y,bounds.lower.z);
-          Vec3<vfloat<N>> b_upper(bounds.upper.x,bounds.upper.y,bounds.upper.z);
-          lower = max(lower,b_lower);
-          upper = min(upper,b_upper);
-        }
-
-        __forceinline BBox3fa extract(const size_t i)
-        {
-          return BBox3fa(Vec3fa(lower.x[i],lower.y[i],lower.z[i]),
-                         Vec3fa(upper.x[i],upper.y[i],upper.z[i]));
-        }
-
-      };
-
-
+    
     template<typename Split>
       inline void split_primref(const PrimInfo& pinfo, Split& split, PrimRef& prim, PrimRef* prims_o, size_t N)
     {
@@ -411,40 +330,15 @@ namespace embree
       return pinfo;
     }
 
-    __forceinline float parallelogramArea(const Vec2f& v0, const Vec2f& v1, const Vec2f& v2)
-    {
-      return abs((v1.x-v0.x)*(v2.y-v0.y)-(v2.x-v0.x)*(v1.y-v0.y));
-    }
-
     template<>
       inline const PrimInfo presplit<TriangleMesh>(Scene* scene, const PrimInfo& pinfo, mvector<PrimRef>& prims)
     {
       return presplit(pinfo,prims, 
                       [&] (const PrimRef& prim) -> float { 
-                        //const size_t geomID = prim.geomID();
-                        //const size_t primID = prim.primID();
-                        //const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
-                        //const TriangleMesh::Triangle& tri = mesh->triangle(primID);
-                        //const Vec3fa v0 = mesh->vertex(tri.v[0]);
-                        //const Vec3fa v1 = mesh->vertex(tri.v[1]);
-                        //const Vec3fa v2 = mesh->vertex(tri.v[2]);
-                        //const float triAreaX = parallelogramArea(Vec2f(v0.y,v0.z),Vec2f(v1.y,v1.z),Vec2f(v2.y,v2.z));
-                        //const float triAreaY = parallelogramArea(Vec2f(v0.x,v0.z),Vec2f(v1.x,v1.z),Vec2f(v2.x,v2.z));
-                        //const float triAreaZ = parallelogramArea(Vec2f(v0.x,v0.y),Vec2f(v1.x,v1.y),Vec2f(v2.x,v2.y));
-                        //const float triBoxArea = triAreaX+triAreaY+triAreaZ;
-                        const float boxArea = area(prim.bounds());
-                        //return max(0.0f,boxArea-2.0f*triBoxArea);
-                        return boxArea;
+                        return area(prim.bounds());
                       },
                       [&] (const PrimRef& prim, const int dim, const float pos, PrimRef& lprim, PrimRef& rprim) {
-                        const size_t geomID = prim.geomID();
-                        const size_t primID = prim.primID();
-                        const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
-                        const TriangleMesh::Triangle& tri = mesh->triangle(primID);
-                        const Vec3fa v0 = mesh->vertex(tri.v[0]);
-                        const Vec3fa v1 = mesh->vertex(tri.v[1]);
-                        const Vec3fa v2 = mesh->vertex(tri.v[2]);
-                        splitTriangle(prim,dim,pos,v0,v1,v2,lprim,rprim);
+                        TriangleSplitter(scene,prim).split(prim,dim,pos,lprim,rprim);
                       });
     }
   }

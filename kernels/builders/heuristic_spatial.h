@@ -238,8 +238,8 @@ namespace embree
       }
 
       /*! bins an array of primitives */
-      template<typename SplitPrimitive>
-        __forceinline void bin2(const SplitPrimitive& splitPrimitive, const PrimRef* source, size_t begin, size_t end, const SpatialBinMapping<BINS>& mapping)
+      template<typename PrimitiveSplitterFactory>
+        __forceinline void bin2(const PrimitiveSplitterFactory& splitterFactory, const PrimRef* source, size_t begin, size_t end, const SpatialBinMapping<BINS>& mapping)
       {
         for (size_t i=begin; i<end; i++)
         {
@@ -265,7 +265,7 @@ namespace embree
             const size_t bin_start = bin0[dim];
             const size_t bin_end   = bin1[dim];
             BBox3fa rest = prim.bounds();
-            const typename SplitPrimitive::Instance splitter(splitPrimitive,prim);
+            const auto splitter = splitterFactory.create(prim);
             for (bin=bin_start; bin<bin_end; bin++) 
             {
               const float pos = mapping.pos(bin+1,dim);
