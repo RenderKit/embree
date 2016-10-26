@@ -461,7 +461,7 @@ namespace embree
 	
         /* allocate buffers */
         const size_t numTimeSteps = scene->getNumTimeSteps<Mesh,true>();
-        const size_t numTimeSegments = bvh->numTimeSteps-1; assert(bvh->numTimeSteps > 1);
+        const size_t numTimeSegments = bvh->numTimeSteps-1; assert(numTimeSteps > 1);
         prims.resize(numPrimitives);
         bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef)*numTimeSegments);
         bvh->numTimeSteps = numTimeSteps;
