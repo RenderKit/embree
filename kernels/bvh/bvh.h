@@ -694,12 +694,18 @@ namespace embree
       }
 
       /*! Sets bounding box of child. */
-      __forceinline void set(size_t i, NodeRef childID, const LBBox3fa& bounds, const BBox1f& tbounds) 
+      __forceinline void set(size_t i, const LBBox3fa& bounds, const BBox1f& tbounds) 
       {
-        AlignedNodeMB::set(i,childID);
         AlignedNodeMB::set(i,bounds.global(tbounds));
         lower_t[i] = tbounds.lower;
         upper_t[i] = tbounds.upper == 1.0f ? 1.0f+float(ulp) : tbounds.upper;
+      }
+
+      /*! Sets bounding box of child. */
+      __forceinline void set(size_t i, NodeRef childID, const LBBox3fa& bounds, const BBox1f& tbounds) 
+      {
+        AlignedNodeMB::set(i,childID);
+        set(i,bounds,tbounds);
       }
 
       /*! Returns reference to specified child */
@@ -1094,8 +1100,12 @@ namespace embree
     }
 
     __forceinline NodeRef getRoot(const RayPrecalculationsMB& pre) const {
-      NodeRef* roots = (NodeRef*)(size_t)root;
-      return roots[pre.itime()];
+      if (msmblur) { // FIXME: workaround to get BVHMB4D working
+        NodeRef* roots = (NodeRef*)(size_t)root;
+        return roots[pre.itime()];
+      } else {
+        return root;
+      }
     }
 
     template<int K>
@@ -1131,10 +1141,14 @@ namespace embree
       return (int)leaf_offset;
     }
 
-    /*! Encodes a node */
     static __forceinline NodeRef encodeNode(AlignedNodeMB* node) {
       assert(!((size_t)node & align_mask));
       return NodeRef((size_t) node | tyAlignedNodeMB);
+    }
+
+    static __forceinline NodeRef encodeNode(AlignedNodeMB4D* node) {
+      assert(!((size_t)node & align_mask));
+      return NodeRef((size_t) node | tyAlignedNodeMB4D);
     }
 
     /*! Encodes an unaligned node */
