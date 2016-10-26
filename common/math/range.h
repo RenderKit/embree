@@ -57,6 +57,10 @@ namespace embree
         const Ty _center = (_begin+_end)/2;
         return std::make_pair(range(_begin,_center),range(_center,_end));
       }
+
+      __forceinline friend bool operator< (const range& r0, const range& r1) {
+        return r0.size() < r1.size();
+      }
 	
       friend std::ostream& operator<<(std::ostream& cout, const range& r) {
         return cout << "range [" << r.begin() << ", " << r.end() << "]";
