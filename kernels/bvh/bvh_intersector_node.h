@@ -435,7 +435,7 @@ namespace embree
       const vfloat<N> tFarY  = (madd(time,pFarY [6],vfloat<N>(pFarY [0])) - ray.org.y) * ray.rdir.y;
       const vfloat<N> tFarZ  = (madd(time,pFarZ [6],vfloat<N>(pFarZ [0])) - ray.org.z) * ray.rdir.z;
 #endif
-      const vbool<N> tmask = (node->lower_t <= time) & (time <= node->upper_t);
+      const vbool<N> tmask = (node->lower_t <= time) & (time < node->upper_t);
 #if defined(__AVX2__) && !defined(__AVX512F__)
       const vfloat<N> tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tnear));
       const vfloat<N> tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tfar ));
@@ -480,7 +480,7 @@ namespace embree
       const vfloat<K> lnearP = maxi(maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY)), mini(lclipMinZ, lclipMaxZ));
       const vfloat<K> lfarP  = mini(mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY)), maxi(lclipMinZ, lclipMaxZ));
       const vbool<K>  lhit   = maxi(lnearP,tnear) <= mini(lfarP,tfar);
-      const vbool<K>  thit   = (vfloat<K>(node->lower_t[i]) <= time) & (time <= vfloat<K>(node->upper_t[i]));
+      const vbool<K>  thit   = (vfloat<K>(node->lower_t[i]) <= time) & (time < vfloat<K>(node->upper_t[i]));
       dist = lnearP;
       return lhit & thit;
     }

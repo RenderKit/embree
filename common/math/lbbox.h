@@ -78,6 +78,15 @@ namespace embree
       bounds1.extend(other.bounds1);
     }
 
+    /* calculates bounds for [0,1] time range from bounds in dt time range */
+    __forceinline LBBox global(const BBox1f& dt) const 
+    {
+      const float rcp_dt_size = 1.0f/dt.size();
+      const BBox<T> b0 = interpolate(-dt.lower*rcp_dt_size);
+      const BBox<T> b1 = interpolate((1.0f-dt.lower)*rcp_dt_size);
+      return LBBox(b0,b1);
+    }
+
     /*! Comparison Operators */
     template<typename TT> friend __forceinline bool operator==( const LBBox<TT>& a, const LBBox<TT>& b ) { return a.bounds0 == b.bounds0 && a.bounds1 == b.bounds1; }
     template<typename TT> friend __forceinline bool operator!=( const LBBox<TT>& a, const LBBox<TT>& b ) { return a.bounds0 != b.bounds0 || a.bounds1 != b.bounds1; }

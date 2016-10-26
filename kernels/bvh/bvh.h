@@ -688,17 +688,18 @@ namespace embree
 
       /*! Clears the node. */
       __forceinline void clear()  {
-        lower_t = vfloat<N>(nan); // FIXME: do we want NaN's here too?
-        upper_t = vfloat<N>(nan);
+        lower_t = vfloat<N>(pos_inf);
+        upper_t = vfloat<N>(neg_inf);
         AlignedNodeMB::clear();
       }
 
       /*! Sets bounding box of child. */
-      __forceinline void set(size_t i, const LBBox3fa& bounds, const BBox1f& tbounds) 
+      __forceinline void set(size_t i, NodeRef childID, const LBBox3fa& bounds, const BBox1f& tbounds) 
       {
+        AlignedNodeMB::set(i,childID);
+        AlignedNodeMB::set(i,bounds.global(tbounds));
         lower_t[i] = tbounds.lower;
-        upper_t[i] = tbounds.upper;
-        AlignedNodeMB::set(i,bounds);
+        upper_t[i] = tbounds.upper == 1.0f ? 1.0f+float(ulp) : tbounds.upper;
       }
 
       /*! Returns reference to specified child */
