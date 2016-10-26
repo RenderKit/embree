@@ -53,8 +53,6 @@ namespace embree
           right.extend(c);
         }
       }
-      //assert(!left.empty());  // happens if split does not hit triangle
-      //assert(!right.empty()); // happens if split does not hit triangle
       
       /* clip against current bounds */
       BBox3fa bounds = prim.bounds();
@@ -99,8 +97,6 @@ namespace embree
           right.extend(c);
         }
       }
-      assert(!left.empty());  // happens if split does not hit
-      assert(!right.empty()); // happens if split does not hit
       
       /* clip against current bounds */
       left_o  = intersect(left,bounds);
@@ -135,8 +131,6 @@ namespace embree
           right.extend(c);
         }
       }
-      assert(!left.empty());  // happens if split does not hit
-      assert(!right.empty()); // happens if split does not hit
       
       /* clip against current bounds */
       new (&left_o ) PrimRef(intersect(left ,prim.bounds()),prim.geomID(), prim.primID());

@@ -37,17 +37,11 @@ namespace embree
           const vfloat4 upper = (vfloat4) pinfo.geomBounds.upper;
           const vbool4 ulpsized = upper - lower <= max(vfloat4(1E-19f),128.0f*vfloat4(ulp)*max(abs(lower),abs(upper)));
           const vfloat4 diag = (vfloat4) pinfo.geomBounds.size();
-          scale = select(ulpsized,vfloat4(0.0f),vfloat4(BINS * 0.99f)/diag);
+          scale = select(ulpsized,vfloat4(0.0f),vfloat4(BINS)/diag);
           ofs  = (vfloat4) pinfo.geomBounds.lower;
           inv_scale = 1.0f / scale; 
         }
 
-        /*! inits the mapping */
-        __forceinline SpatialBinMapping(const vfloat4& ofs, const vfloat4 &scale) : ofs(ofs), scale(scale)
-        {
-          inv_scale = 1.0f / scale; 
-        }
-        
         /*! slower but safe binning */
         __forceinline vint4 bin(const Vec3fa& p) const
         {
@@ -255,7 +249,9 @@ namespace embree
           
           for (size_t dim=0; dim<3; dim++) 
           {
-            if (unlikely(mapping.invalid(dim))) { continue; }
+            if (unlikely(mapping.invalid(dim))) 
+              continue;
+            
             size_t bin;
             size_t l = bin0[dim];
             size_t r = bin1[dim];
