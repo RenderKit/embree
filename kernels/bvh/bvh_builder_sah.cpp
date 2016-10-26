@@ -461,13 +461,13 @@ namespace embree
 	
         /* allocate buffers */
         const size_t numTimeSteps = scene->getNumTimeSteps<Mesh,true>();
-        const size_t numTimeSegments = bvh->numTimeSteps-1; assert(numTimeSteps > 1);
+        const size_t numTimeSegments = numTimeSteps-1; assert(numTimeSteps > 1);
         prims.resize(numPrimitives);
         bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef)*numTimeSegments);
         bvh->numTimeSteps = numTimeSteps;
         
         NodeRef root; LBBox3fa lbounds;
-        std::tie(root, lbounds) = recurse(make_range(size_t(0),numTimeSteps));
+        std::tie(root, lbounds) = recurse(make_range(size_t(0),numTimeSegments));
         bvh->set(root,lbounds,numPrimitives);
         
         /* clear temporary data for static geometry */
