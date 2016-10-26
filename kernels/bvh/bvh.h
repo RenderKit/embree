@@ -665,6 +665,23 @@ namespace embree
       __forceinline       NodeRef& child(size_t i)       { assert(i<N); return children[i]; }
       __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
 
+      /*! stream output operator */
+      friend std::ostream& operator<<(std::ostream& cout, const AlignedNodeMB& n) 
+      {
+        cout << "AlignedNodeMB {" << std::endl;
+        for (size_t i=0; i<N; i++) 
+        {
+          const BBox3fa b0 = n.bounds0(i);
+          const BBox3fa b1 = n.bounds1(i);
+          cout << "  child" << i << " { " << std::endl;
+          cout << "    bounds0 = " << b0 << ", " << std::endl;
+          cout << "    bounds1 = " << b1 << ", " << std::endl;
+          cout << "  }";
+        }
+        cout << "}";
+        return cout;
+  }
+
     public:
       vfloat<N> lower_x;        //!< X dimension of lower bounds of all N children.
       vfloat<N> upper_x;        //!< X dimension of upper bounds of all N children.
@@ -685,6 +702,18 @@ namespace embree
     struct AlignedNodeMB4D : public AlignedNodeMB
     {
       using BaseNode::children;
+      using AlignedNodeMB::lower_x;
+      using AlignedNodeMB::lower_y;
+      using AlignedNodeMB::lower_z;
+      using AlignedNodeMB::upper_x;
+      using AlignedNodeMB::upper_y;
+      using AlignedNodeMB::upper_z;
+      using AlignedNodeMB::lower_dx;
+      using AlignedNodeMB::lower_dy;
+      using AlignedNodeMB::lower_dz;
+      using AlignedNodeMB::upper_dx;
+      using AlignedNodeMB::upper_dy;
+      using AlignedNodeMB::upper_dz;
 
       /*! Clears the node. */
       __forceinline void clear()  {
@@ -693,10 +722,28 @@ namespace embree
         AlignedNodeMB::clear();
       }
 
+      /*! Sets bounding box and ID of child. */
+      __forceinline void set(size_t i, const BBox3fa& bounds0_i, const BBox3fa& bounds1_i)
+      {
+        /*! for empty bounds we have to avoid inf-inf=nan */
+        const BBox3fa bounds0(min(bounds0_i.lower,Vec3fa(+FLT_MAX)),max(bounds0_i.upper,Vec3fa(-FLT_MAX)));
+        const BBox3fa bounds1(min(bounds1_i.lower,Vec3fa(+FLT_MAX)),max(bounds1_i.upper,Vec3fa(-FLT_MAX)));
+
+        lower_x[i] = bounds0.lower.x; lower_y[i] = bounds0.lower.y; lower_z[i] = bounds0.lower.z;
+        upper_x[i] = bounds0.upper.x; upper_y[i] = bounds0.upper.y; upper_z[i] = bounds0.upper.z;
+
+        /*! standard case */
+        const Vec3fa dlower = bounds1.lower-bounds0.lower;
+        const Vec3fa dupper = bounds1.upper-bounds0.upper;
+        lower_dx[i] = dlower.x; lower_dy[i] = dlower.y; lower_dz[i] = dlower.z;
+        upper_dx[i] = dupper.x; upper_dy[i] = dupper.y; upper_dz[i] = dupper.z;
+      }
+
       /*! Sets bounding box of child. */
       __forceinline void set(size_t i, const LBBox3fa& bounds, const BBox1f& tbounds) 
       {
-        AlignedNodeMB::set(i,bounds.global(tbounds));
+        const LBBox3fa gbounds = bounds.global(tbounds);
+        set(i,gbounds.bounds0,gbounds.bounds1);
         lower_t[i] = tbounds.lower;
         upper_t[i] = tbounds.upper == 1.0f ? 1.0f+float(ulp) : tbounds.upper;
       }
@@ -712,6 +759,7 @@ namespace embree
       __forceinline       NodeRef& child(size_t i)       { assert(i<N); return children[i]; }
       __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
 
+      /*! stream output operator */
       friend std::ostream& operator<<(std::ostream& cout, const AlignedNodeMB4D& n) 
       {
         cout << "AlignedNodeMB4D {" << std::endl;
@@ -719,14 +767,15 @@ namespace embree
         {
           const BBox3fa b0 = n.bounds0(i);
           const BBox3fa b1 = n.bounds1(i);
-          cout << "  child" << i << ": ";
-          cout << "bounds0 = " << b0 << ", ";
-          cout << "bounds1 = " << b1 << ", ";
-          cout << "time_bounds = " << n.lower_t[i] << ", " << n.upper_t[i] << std::endl;
+          cout << "  child" << i << " { " << std::endl;
+          cout << "    bounds0 = " << lerp(b0,b1,n.lower_t[i]) << ", " << std::endl;
+          cout << "    bounds1 = " << lerp(b0,b1,n.upper_t[i]) << ", " << std::endl;
+          cout << "    time_bounds = " << n.lower_t[i] << ", " << n.upper_t[i] << std::endl;
+          cout << "  }";
         }
-        cout << "}" << std::endl;
+        cout << "}";
         return cout;
-  }
+      }
 
     public:
       vfloat<N> lower_t;        //!< time dimension of lower bouds of all N children

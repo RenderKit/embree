@@ -438,17 +438,20 @@ namespace embree
         assert(dti.size() > 0);
         if (dti.size() == 1)
         {
+          const BBox1f dt(float(dti.begin())/float(bvh->numTimeSteps-1),
+                          float(dti.end  ())/float(bvh->numTimeSteps-1));
+
           const PrimInfo pinfo = createPrimRefArrayMBlur<Mesh>(dti.begin(),bvh->numTimeSteps,scene,prims,bvh->scene->progressInterface);
           //return BVHNBuilderMblur<N>::build(bvh,CreateMSMBlurLeaf<N,Primitive>(bvh,prims.data(),dti.begin()),bvh->scene->progressInterface,prims.data(),pinfo,
           //                                  sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
           /* reduction function */
-          auto reduce = [] (AlignedNodeMB4D* node, const LBBox3fa* bounds, const size_t num) -> LBBox3fa
+          auto reduce = [&] (AlignedNodeMB4D* node, const LBBox3fa* bounds, const size_t num) -> LBBox3fa
           {
             assert(num <= N);
             LBBox3fa allBounds = empty;
             for (size_t i=0; i<num; i++) {
-              node->set(i, bounds[i], BBox1f(0.0f,1.0f));
+              node->set(i, bounds[i], dt);
               allBounds.extend(bounds[i]);
             }
             return allBounds;
