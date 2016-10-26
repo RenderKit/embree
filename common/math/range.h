@@ -50,7 +50,13 @@ namespace embree
 
       __forceinline bool empty() const { 
         return _end <= _begin; 
-      } 
+      }
+
+      __forceinline std::pair<range,range> split() const 
+      {
+        const Ty _center = (_begin+_end)/2;
+        return std::make_pair(range(_begin,_center),range(_center,_end));
+      }
 	
       friend std::ostream& operator<<(std::ostream& cout, const range& r) {
         return cout << "range [" << r.begin() << ", " << r.end() << "]";
@@ -58,6 +64,11 @@ namespace embree
       
       Ty _begin, _end;
     };
+
+  template<typename Ty>
+    range<Ty> make_range(const Ty& begin, const Ty& end) {
+    return range<Ty>(begin,end);
+  }
 
   template<typename Ty>
     struct extended_range 
