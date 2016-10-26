@@ -1095,28 +1095,36 @@ namespace embree
 
 
     /*! return the true root */
-    __forceinline NodeRef getRoot(const RayPrecalculations& pre) const {
+    __forceinline NodeRef getRoot(const RayPrecalculations& pre, const Ray& ray) const {
       return root;
     }
 
-    __forceinline NodeRef getRoot(const RayPrecalculationsMB& pre) const {
-      if (msmblur) { // FIXME: workaround to get BVHMB4D working
+    __forceinline NodeRef getRoot(RayPrecalculationsMB& pre, const Ray& ray) const {
+      if (msmblur) { 
         NodeRef* roots = (NodeRef*)(size_t)root;
         return roots[pre.itime()];
-      } else {
+      } else { // FIXME: workaround to get BVHMB4D working
+        pre.itime_ = 0;
+        pre.ftime_ = ray.time;
         return root;
       }
     }
 
     template<int K>
-    __forceinline NodeRef getRoot(const RayKPrecalculations<K>& pre, size_t k) const {
+      __forceinline NodeRef getRoot(const RayKPrecalculations<K>& pre, const RayK<K> ray, size_t k) const {
       return root;
     }
 
     template<int K>
-    __forceinline NodeRef getRoot(const RayKPrecalculationsMB<K>& pre, size_t k) const {
-      NodeRef* roots = (NodeRef*)(size_t)root;
-      return roots[pre.itime(k)];
+      __forceinline NodeRef getRoot(RayKPrecalculationsMB<K>& pre, const RayK<K> ray, size_t k) const {
+      if (msmblur) {
+        NodeRef* roots = (NodeRef*)(size_t)root;
+        return roots[pre.itime(k)];
+      } else { // FIXME: workaround to get BVHMB4D working
+        pre.itime_ = 0;
+        pre.ftime_ = ray.time;
+        return root;
+      }
     }
 
   public:

@@ -91,7 +91,7 @@ namespace embree
       NodeRef stack_node[stackSizeChunk];
       stack_node[0] = BVH::invalidNode;
       stack_near[0] = inf;
-      stack_node[1] = bvh->getRoot(pre, valid_first);
+      stack_node[1] = bvh->getRoot(pre, ray, valid_first);
       stack_near[1] = ray_tnear; 
       NodeRef* stackEnd MAYBE_UNUSED = stack_node+stackSizeChunk;
       NodeRef* __restrict__ sptr_node = stack_node + 2;
@@ -243,7 +243,7 @@ namespace embree
       /* iterates over all rays in the packet using single ray traversal */
       size_t bits = movemask(valid);
       for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
-        BVHNIntersectorKSingle<N,K,types,robust,PrimitiveIntersectorK>::intersect1(bvh, bvh->getRoot(pre,i), i, pre, ray, ray_org, ray_dir, rdir, ray_tnear, ray_tfar, nearXYZ, context);
+        BVHNIntersectorKSingle<N,K,types,robust,PrimitiveIntersectorK>::intersect1(bvh, bvh->getRoot(pre,ray,i), i, pre, ray, ray_org, ray_dir, rdir, ray_tnear, ray_tfar, nearXYZ, context);
       }
     }
 
@@ -302,7 +302,7 @@ namespace embree
       NodeRef stack_node[stackSizeChunk];
       stack_node[0] = BVH::invalidNode;
       stack_near[0] = inf;
-      stack_node[1] = bvh->getRoot(pre, valid_first);
+      stack_node[1] = bvh->getRoot(pre, ray, valid_first);
       stack_near[1] = ray_tnear; 
       NodeRef* stackEnd MAYBE_UNUSED = stack_node+stackSizeChunk;
       NodeRef* __restrict__ sptr_node = stack_node + 2;
@@ -454,7 +454,7 @@ namespace embree
       /* iterates over all rays in the packet using single ray traversal */
       size_t bits = movemask(valid);
       for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
-        if (BVHNIntersectorKSingle<N,K,types,robust,PrimitiveIntersectorK>::occluded1(bvh,bvh->getRoot(pre,i),i,pre,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar,nearXYZ,context))
+        if (BVHNIntersectorKSingle<N,K,types,robust,PrimitiveIntersectorK>::occluded1(bvh,bvh->getRoot(pre,ray,i),i,pre,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar,nearXYZ,context))
           set(terminated, i);
       }
       vint<K>::store(valid & terminated,&ray.geomID,0);

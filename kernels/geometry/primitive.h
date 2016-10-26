@@ -65,7 +65,7 @@ namespace embree
 
     __forceinline unsigned numTimeSteps() const { return numTimeSteps_; }
 
-  private:
+  public:
     /* used for msmblur implementation */
     int itime_;
     float ftime_;
@@ -107,7 +107,7 @@ namespace embree
 
     __forceinline unsigned numTimeSteps() const { return numTimeSteps_; }
 
-  private:
+  public:
     /* used for msmblur implementation */
     vint<K> itime_;
     vfloat<K> ftime_;

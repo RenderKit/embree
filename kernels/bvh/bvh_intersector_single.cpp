@@ -69,7 +69,7 @@ namespace embree
       /* iterates over all rays in the packet using single ray traversal */
       size_t bits = movemask(valid);
       for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
-        intersect1(bvh, bvh->getRoot(pre,i), i, pre, ray, ray_org, ray_dir, rdir, ray_tnear, ray_tfar, nearXYZ, context);
+        intersect1(bvh, bvh->getRoot(pre,ray,i), i, pre, ray, ray_org, ray_dir, rdir, ray_tnear, ray_tfar, nearXYZ, context);
       }
       AVX_ZERO_UPPER();
     }
@@ -109,7 +109,7 @@ namespace embree
       /* iterates over all rays in the packet using single ray traversal */
       size_t bits = movemask(valid);
       for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
-        if (occluded1(bvh,bvh->getRoot(pre,i),i,pre,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar,nearXYZ,context))
+        if (occluded1(bvh,bvh->getRoot(pre,ray,i),i,pre,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar,nearXYZ,context))
           set(terminated, i);
       }
       vint<K>::store(valid & terminated,&ray.geomID,0);

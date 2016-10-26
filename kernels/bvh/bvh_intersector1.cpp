@@ -52,7 +52,7 @@ namespace embree
       StackItemT<NodeRef> stack[stackSize];           //!< stack of nodes 
       StackItemT<NodeRef>* stackPtr = stack+1;        //!< current stack pointer
       StackItemT<NodeRef>* stackEnd = stack+stackSize;
-      stack[0].ptr  = bvh->getRoot(pre);
+      stack[0].ptr  = bvh->getRoot(pre,ray);
       stack[0].dist = neg_inf;
 
       /* filter out invalid rays */
@@ -152,7 +152,7 @@ namespace embree
       NodeRef stack[stackSize];  //!< stack of nodes that still need to get traversed
       NodeRef* stackPtr = stack+1;        //!< current stack pointer
       NodeRef* stackEnd = stack+stackSize;
-      stack[0] = bvh->getRoot(pre);
+      stack[0] = bvh->getRoot(pre,ray);
       
       /* filter out invalid rays */
 #if defined(EMBREE_IGNORE_INVALID_RAYS)
