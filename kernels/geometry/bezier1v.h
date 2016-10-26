@@ -139,11 +139,6 @@ namespace embree
       return geom; 
     }
 
-    /*! fill from list */
-    __forceinline void fill(atomic_set<PrimRefBlockT<Bezier1v> >::block_iterator_unsafe& iter, Scene* scene, const bool list) {
-      *this = *iter; iter++; this->prim |= (list && !iter) << 31;
-    }
-
     /*! fill triangle from triangle list */
     __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene, const bool list)
     {

@@ -117,35 +117,6 @@ namespace embree
     }
 
     /* Fill line segment from line segment list */
-    __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene, const bool list)
-    {
-      vint<M> geomID, primID;
-      vint<M> v0;
-      PrimRef& prim = *prims;
-
-      for (size_t i=0; i<M; i++)
-      {
-        const LineSegments* geom = scene->getLineSegments(prim.geomID());
-        if (prims) {
-          geomID[i] = prim.geomID();
-          primID[i] = prim.primID();
-          v0[i] = geom->segment(primID);
-          prims++;
-        } else {
-          assert(i);
-          if (i>0) {
-            geomID[i] = geomID[i-1];
-            primID[i] = -1;
-            v0[i] = v0[i-1];
-          }
-        }
-        if (prims) prim = *prims;
-      }
-
-      new (this) LineMi(v0,geomID,primID); // FIXME: use non temporal store
-    }
-
-    /* Fill line segment from line segment list */
     __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list)
     {
       vint<M> geomID, primID;

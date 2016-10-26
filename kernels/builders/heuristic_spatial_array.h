@@ -18,7 +18,6 @@
 
 #include "heuristic_binning.h"
 #include "heuristic_spatial.h"
-#include "heuristic_spatial_list.h"
 
 namespace embree
 {
@@ -34,6 +33,60 @@ namespace embree
 #define SPATIAL_ASPLIT_AREA_THRESHOLD 0.000005f
 #endif
 
+    template<typename ObjectSplit, typename SpatialSplit>
+      struct Split2
+      {
+        __forceinline Split2 () {}
+        
+        __forceinline Split2 (const Split2& other) 
+        {
+          spatial = other.spatial;
+          sah = other.sah;
+          if (spatial) spatialSplit() = other.spatialSplit();
+          else         objectSplit()  = other.objectSplit();
+        }
+        
+        __forceinline Split2& operator= (const Split2& other) 
+        {
+          spatial = other.spatial;
+          sah = other.sah;
+          if (spatial) spatialSplit() = other.spatialSplit();
+          else         objectSplit()  = other.objectSplit();
+          return *this;
+        }
+          
+          __forceinline     ObjectSplit&  objectSplit()        { return *(      ObjectSplit*)data; }
+        __forceinline const ObjectSplit&  objectSplit() const  { return *(const ObjectSplit*)data; }
+        
+        __forceinline       SpatialSplit& spatialSplit()       { return *(      SpatialSplit*)data; }
+        __forceinline const SpatialSplit& spatialSplit() const { return *(const SpatialSplit*)data; }
+        
+        __forceinline Split2 (const ObjectSplit& objectSplit, float sah)
+          : spatial(false), sah(sah) 
+        {
+          new (data) ObjectSplit(objectSplit);
+        }
+        
+        __forceinline Split2 (const SpatialSplit& spatialSplit, float sah)
+          : spatial(true), sah(sah) 
+        {
+          new (data) SpatialSplit(spatialSplit);
+        }
+        
+        __forceinline float splitSAH() const { 
+          return sah; 
+        }
+        
+        __forceinline bool valid() const {
+          return sah < float(inf);
+        }
+        
+      public:
+        bool spatial;
+        float sah;
+        __aligned(16) char data[sizeof(ObjectSplit) > sizeof(SpatialSplit) ? sizeof(ObjectSplit) : sizeof(SpatialSplit)];
+      };
+    
     /*! Performs standard object binning */
 #if defined(__AVX512F__)
     template<typename SplitPrimitive, typename PrimRef, size_t OBJECT_BINS = 16, size_t SPATIAL_BINS = 16>

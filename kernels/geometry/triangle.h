@@ -109,31 +109,6 @@ namespace embree
     }
 
     /* Fill triangle from triangle list */
-    __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene, const bool list)
-    {
-      vint<M> vgeomID = -1, vprimID = -1;
-      Vec3vfM v0 = zero, v1 = zero, v2 = zero;
-      
-      for (size_t i=0; i<M && prims; i++, prims++)
-      {
-	const PrimRef& prim = *prims;
-	const unsigned geomID = prim.geomID();
-        const unsigned primID = prim.primID();
-        const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
-        const TriangleMesh::Triangle& tri = mesh->triangle(primID);
-        const Vec3fa& p0 = mesh->vertex(tri.v[0]);
-        const Vec3fa& p1 = mesh->vertex(tri.v[1]);
-        const Vec3fa& p2 = mesh->vertex(tri.v[2]);
-        vgeomID [i] = geomID;
-        vprimID [i] = primID;
-        v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
-        v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
-        v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
-      }
-      TriangleM::store_nt(this,TriangleM(v0,v1,v2,vgeomID,vprimID));
-    }
-
-    /* Fill triangle from triangle list */
     __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list)
     {
       vint<M> vgeomID = -1, vprimID = -1;

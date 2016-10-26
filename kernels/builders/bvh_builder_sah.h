@@ -18,7 +18,6 @@
 
 #include "heuristic_binning_array_aligned.h"
 #include "heuristic_spatial_array.h"
-#include "heuristic_spatial_list.h"
 #include "heuristic_sweep_array_aligned.h"
 
 #if defined(__AVX512F__)
@@ -399,112 +398,6 @@ namespace embree
       }
     };
     
-    /* Spatial Split SAH builder that operates on lists of blocks of BuildRecords */
-    struct BVHBuilderBinnedSpatialSAH
-    {
-      enum { OBINS = 32, SBINS = 16 };
-      typedef PrimRefList Set;
-      typedef Split2<BinSplit<OBINS>,SpatialBinSplit<SBINS> > Split;
-      typedef GeneralBuildRecord<Set,Split> BuildRecord;
-      
-      /*! standard spatial build without reduction */
-      template<typename NodeRef, 
-        typename CreateAllocFunc, 
-        typename CreateNodeFunc, 
-        typename CreateLeafFunc, 
-        typename SplitPrimitiveFunc, 
-        typename ProgressMonitor>
-        
-        static void build(NodeRef& root, 
-                          CreateAllocFunc createAlloc, 
-                          CreateNodeFunc createNode, 
-                          CreateLeafFunc createLeaf, 
-                          SplitPrimitiveFunc splitPrimitive,
-                          ProgressMonitor progressMonitor,
-                          PrimRefList& prims, const PrimInfo& pinfo, 
-                          const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, 
-                          const size_t minLeafSize, const size_t maxLeafSize,
-                          const float travCost, const float intCost) // FIXME: move these constants into struct!
-      {
-        /* use dummy reduction over integers */
-        int identity = 0;
-        auto updateNode = [] (int node, int*, size_t) -> int { return 0; };
-        
-        /* initiate builder */
-        build_reduce(root, 
-                     createAlloc, 
-                     identity, 
-                     createNode, 
-                     updateNode, 
-                     createLeaf, 
-                     splitPrimitive,
-                     progressMonitor,
-                     prims, 
-                     pinfo, 
-                     branchingFactor, maxDepth, blockSize, 
-                     minLeafSize, maxLeafSize, travCost, intCost);
-      }
-      
-      /*! special builder that propagates reduction over the tree */
-      template<typename NodeRef, 
-        typename CreateAllocFunc, 
-        typename ReductionTy, 
-        typename CreateNodeFunc, 
-        typename UpdateNodeFunc, 
-        typename CreateLeafFunc, 
-        typename SplitPrimitiveFunc, 
-        typename ProgressMonitor>
-        
-        static ReductionTy build_reduce(NodeRef& root, 
-                                        CreateAllocFunc createAlloc, 
-                                        const ReductionTy& identity, 
-                                        CreateNodeFunc createNode, 
-                                        UpdateNodeFunc updateNode, 
-                                        CreateLeafFunc createLeaf, 
-                                        SplitPrimitiveFunc splitPrimitive,
-                                        ProgressMonitor progressMonitor,
-                                        PrimRefList& prims, 
-                                        const PrimInfo& pinfo, 
-                                        const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, 
-                                        const size_t minLeafSize, const size_t maxLeafSize,
-                                        const float travCost, const float intCost)
-      {
-        /* builder wants log2 of blockSize as input */
-        const size_t logBlockSize = __bsr(blockSize);
-        assert((blockSize ^ (size_t(1) << logBlockSize)) == 0);
-        
-        /* instantiate spatial binning heuristic */
-        typedef HeuristicListSpatialSAH<PrimRef,SplitPrimitiveFunc,OBINS,SBINS> Heuristic;
-        Heuristic heuristic(splitPrimitive,pinfo);
-        
-        typedef GeneralBVHBuilder<
-          BuildRecord,
-          Heuristic,
-          ReductionTy,
-          decltype(createAlloc()),
-          CreateAllocFunc,
-          CreateNodeFunc,
-          UpdateNodeFunc,
-          CreateLeafFunc,
-          ProgressMonitor> Builder;
-        
-        /* instantiate builder */
-        Builder builder(heuristic,
-                        identity,
-                        createAlloc,
-                        createNode,
-                        updateNode,
-                        createLeaf,
-                        progressMonitor,
-                        pinfo,branchingFactor,maxDepth,logBlockSize,
-                        minLeafSize,maxLeafSize,travCost,intCost);
-        
-        /* build hierarchy */
-        BuildRecord br(pinfo,1,(size_t*)&root,prims);
-        return builder(br);
-      }
-    };
-
 #define FAST_SPATIAL_BUILDER_NUM_SPATIAL_SPLITS 16
 
     /* Spatial SAH builder that operates on an double-buffered array of BuildRecords */

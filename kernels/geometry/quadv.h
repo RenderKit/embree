@@ -104,33 +104,6 @@ namespace embree
     }
 
     /* Fill quad from quad list */
-    __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene, const bool list)
-    {
-      vint<M> vgeomID = -1, vprimID = -1;
-      Vec3vfM v0 = zero, v1 = zero, v2 = zero, v3 = zero;
-      
-      for (size_t i=0; i<M && prims; i++, prims++)
-      {
-	const PrimRef& prim = *prims;
-	const size_t geomID = prim.geomID();
-        const size_t primID = prim.primID();
-        const QuadMesh* __restrict__ const mesh = scene->getQuadMesh(geomID);
-        const QuadMesh::Quad& quad = mesh->quad(primID);
-        const Vec3fa& p0 = mesh->vertex(quad.v[0]);
-        const Vec3fa& p1 = mesh->vertex(quad.v[1]);
-        const Vec3fa& p2 = mesh->vertex(quad.v[2]);
-        const Vec3fa& p3 = mesh->vertex(quad.v[3]);
-        vgeomID [i] = geomID;
-        vprimID [i] = primID;
-        v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
-        v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
-        v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
-        v3.x[i] = p3.x; v3.y[i] = p3.y; v3.z[i] = p3.z;
-      }
-      QuadMv::store_nt(this,QuadMv(v0,v1,v2,v3,vgeomID,vprimID));
-    }
-
-    /* Fill quad from quad list */
     __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list)
     {
       vint<M> vgeomID = -1, vprimID = -1;

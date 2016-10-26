@@ -125,46 +125,6 @@ namespace embree
         }
       };
 
-    template<int N>
-      struct BVHNBuilderSpatial
-      {
-        typedef BVHN<N> BVH;
-        typedef typename BVH::NodeRef NodeRef;
-        typedef FastAllocator::ThreadLocal2 Allocator;
-      
-        struct BVHNBuilderV {
-          void build(BVH* bvh, BuildProgressMonitor& progress, PrimRefList& prims, const PrimInfo& pinfo, 
-                     const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost);
-          virtual void splitPrimitive (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o) = 0;
-          virtual size_t createLeaf (BVHBuilderBinnedSpatialSAH::BuildRecord& current, Allocator* alloc) = 0;
-        };
-
-        template<typename SplitPrimitiveFunc, typename CreateLeafFunc>
-          struct BVHNBuilderT : public BVHNBuilderV
-        {
-          BVHNBuilderT (SplitPrimitiveFunc splitPrimitiveFunc, CreateLeafFunc createLeafFunc)
-            : splitPrimitiveFunc(splitPrimitiveFunc), createLeafFunc(createLeafFunc) {}
-
-          void splitPrimitive (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o) {
-            splitPrimitiveFunc(prim,dim,pos,left_o,right_o);
-          }
-
-          size_t createLeaf (BVHBuilderBinnedSpatialSAH::BuildRecord& current, Allocator* alloc) {
-            return createLeafFunc(current,alloc);
-          }
-
-        private:
-          SplitPrimitiveFunc splitPrimitiveFunc;
-          CreateLeafFunc createLeafFunc;
-        };
-
-        template<typename SplitPrimitiveFunc, typename CreateLeafFunc>
-          static void build(BVH* bvh, SplitPrimitiveFunc splitPrimitive, CreateLeafFunc createLeaf, BuildProgressMonitor& progress, PrimRefList& prims, const PrimInfo& pinfo, 
-                            const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost) {
-          BVHNBuilderT<SplitPrimitiveFunc,CreateLeafFunc>(splitPrimitive,createLeaf).build(bvh,progress,prims,pinfo,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
-        }
-      };
-
     // =======================================================================================
     // =======================================================================================
     // =======================================================================================

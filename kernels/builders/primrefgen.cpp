@@ -157,32 +157,6 @@ namespace embree
       return pinfo;
     }
 
-    template<typename Mesh, bool mblur>
-      PrimInfo createPrimRefList(Scene* scene, PrimRefList& prims_o, BuildProgressMonitor& progressMonitor)
-    {
-      progressMonitor(0);
-      Scene::Iterator<Mesh,mblur> iter(scene);
-      PrimInfo pinfo = parallel_for_for_reduce( iter, PrimInfo(empty), [&](Mesh* mesh, const range<size_t>& r, size_t k) -> PrimInfo
-      {
-        PrimInfo pinfo(empty);
-        PrimRefList::item* block = prims_o.insert(new PrimRefList::item); // FIXME: should store last block in thread local variable!?
-        for (size_t j=r.begin(); j<r.end(); j++)
-        {
-          BBox3fa bounds = empty;
-          if (!mesh->buildBounds(j,&bounds)) continue;
-          const PrimRef prim(bounds,mesh->id,unsigned(j));
-          pinfo.add(bounds,bounds.center2());
-          if (likely(block->insert(prim))) continue; 
-          block = prims_o.insert(new PrimRefList::item);
-          block->insert(prim);
-        }
-        return pinfo;
-      }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
-      
-      return pinfo;
-    }
-
-
     PrimInfo createBezierRefArray(Scene* scene, mvector<BezierPrim>& prims, BuildProgressMonitor& progressMonitor)
     {
       ParallelForForPrefixSumState<PrimInfo> pstate;
@@ -314,8 +288,6 @@ namespace embree
     template PrimInfo createPrimRefArrayMBlur<LineSegments>(size_t timeSegment, size_t numTimeSteps, Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
     //template PrimInfo createPrimRefArrayMBlur<SubdivMesh>(size_t timeSegment, size_t numTimeSteps, Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
     template PrimInfo createPrimRefArrayMBlur<AccelSet>(size_t timeSegment, size_t numTimeSteps, Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
-
-    template PrimInfo createPrimRefList<TriangleMesh,false>(Scene* scene, PrimRefList& prims, BuildProgressMonitor& progressMonitor);
   }
 }
 

@@ -179,49 +179,6 @@ namespace embree
       return std::make_tuple(root,root_bounds);
     }
 
-    template<int N>
-    void BVHNBuilderSpatial<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progress_in, 
-                                                    PrimRefList& prims, const PrimInfo& pinfo, 
-                                                    const size_t blockSize, const size_t minLeafSize, 
-                                                    const size_t maxLeafSize, const float travCost, 
-                                                    const float intCost)
-    {
-      //bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
-      
-      auto progressFunc = [&] (size_t dn) { 
-        progress_in(dn); 
-      };
-
-      auto splitPrimitiveFunc = [&] (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o) -> void {
-        splitPrimitive(prim,dim,pos,left_o,right_o);
-      };
-
-      auto createLeafFunc = [&] (BVHBuilderBinnedSpatialSAH::BuildRecord& current, Allocator* alloc) -> size_t {
-        return createLeaf(current,alloc);
-      };
-      
-      NodeRef root;
-
-
-      BVHBuilderBinnedSpatialSAH::build_reduce<NodeRef>
-        (root,typename BVH::CreateAlloc(bvh),size_t(0),typename BVH::CreateAlignedNode(bvh),rotate<N>,
-         createLeafFunc,splitPrimitiveFunc,progressFunc,
-         prims,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
-      
-      bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
-      
-#if ROTATE_TREE
-      if (N == 4)
-      {
-        for (int i=0; i<ROTATE_TREE; i++)
-          BVHNRotate<N>::rotate(bvh->root);
-        bvh->clearBarrier(bvh->root);
-      }
-#endif
-      
-      bvh->layoutLargeNodes(size_t(pinfo.size()*0.005f));
-    }
-
     // ========================================================================================================================================================
     // ========================================================================================================================================================
     // ========================================================================================================================================================
@@ -260,14 +217,12 @@ namespace embree
     template struct BVHNBuilder<4>;
     template struct BVHNBuilderQuantized<4>;
     template struct BVHNBuilderMblur<4>;    
-    template struct BVHNBuilderSpatial<4>;
     template struct BVHNBuilderSweep<4>;
 
 #if defined(__AVX__)
     template struct BVHNBuilder<8>;
     template struct BVHNBuilderQuantized<8>;
     template struct BVHNBuilderMblur<8>;
-    template struct BVHNBuilderSpatial<8>;
     template struct BVHNBuilderSweep<8>;
 #endif
   }
