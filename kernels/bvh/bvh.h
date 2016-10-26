@@ -35,10 +35,12 @@ namespace embree
     BVH_FLAG_UNALIGNED_NODE_MB = 0x01000,
     BVH_FLAG_TRANSFORM_NODE = 0x10000,
     BVH_FLAG_QUANTIZED_NODE = 0x100000,
+    BVH_FLAG_ALIGNED_NODE_MB4D = 0x1000000,
 
     /* short versions */
     BVH_AN1 = BVH_FLAG_ALIGNED_NODE,
     BVH_AN2 = BVH_FLAG_ALIGNED_NODE_MB,
+    BVH_AN_4D = BVH_FLAG_ALIGNED_NODE_MB4D,
     BVH_UN1 = BVH_FLAG_UNALIGNED_NODE,
     BVH_UN2 = BVH_FLAG_UNALIGNED_NODE_MB,
     BVH_MB = BVH_FLAG_ALIGNED_NODE_MB | BVH_FLAG_UNALIGNED_NODE_MB,
@@ -61,6 +63,7 @@ namespace embree
     struct BaseNode;
     struct AlignedNode;
     struct AlignedNodeMB;
+    struct AlignedNodeMB4D;
     struct UnalignedNode;
     struct UnalignedNodeMB;
     struct TransformNode;
@@ -80,6 +83,7 @@ namespace embree
     /*! different supported node types */
     static const size_t tyAlignedNode = 0;
     static const size_t tyAlignedNodeMB = 1;
+    static const size_t tyAlignedNodeMB4D = 6;
     static const size_t tyUnalignedNode = 2;
     static const size_t tyUnalignedNodeMB = 3;
     static const size_t tyTransformNode = 4;
@@ -329,6 +333,9 @@ namespace embree
       /*! checks if this is a motion blur node */
       __forceinline int isAlignedNodeMB() const { return (ptr & (size_t)align_mask) == tyAlignedNodeMB; }
 
+      /*! checks if this is a 4D motion blur node */
+      __forceinline int isAlignedNodeMB4D() const { return (ptr & (size_t)align_mask) == tyAlignedNodeMB4D; }
+
       /*! checks if this is a node with unaligned bounding boxes */
       __forceinline int isUnalignedNode() const { return (ptr & (size_t)align_mask) == tyUnalignedNode; }
 
@@ -372,6 +379,10 @@ namespace embree
       /*! returns motion blur node pointer */
       __forceinline       AlignedNodeMB* alignedNodeMB()       { assert(isAlignedNodeMB()); return (      AlignedNodeMB*)(ptr & ~(size_t)align_mask); }
       __forceinline const AlignedNodeMB* alignedNodeMB() const { assert(isAlignedNodeMB()); return (const AlignedNodeMB*)(ptr & ~(size_t)align_mask); }
+
+      /*! returns 4D motion blur node pointer */
+      __forceinline       AlignedNodeMB4D* alignedNodeMB4D()       { assert(isAlignedNodeMB4D()); return (      AlignedNodeMB4D*)(ptr & ~(size_t)align_mask); }
+      __forceinline const AlignedNodeMB4D* alignedNodeMB4D() const { assert(isAlignedNodeMB4D()); return (const AlignedNodeMB4D*)(ptr & ~(size_t)align_mask); }
 
       /*! returns unaligned node pointer */
       __forceinline       UnalignedNode* unalignedNode()       { assert(isUnalignedNode()); return (      UnalignedNode*)(ptr & ~(size_t)align_mask); }
@@ -668,6 +679,35 @@ namespace embree
       vfloat<N> upper_dy;        //!< Y dimension of upper bounds of all N children.
       vfloat<N> lower_dz;        //!< Z dimension of lower bounds of all N children.
       vfloat<N> upper_dz;        //!< Z dimension of upper bounds of all N children.
+    };
+
+    /*! Aligned 4D Motion Blur Node */
+    struct AlignedNodeMB4D : public AlignedNodeMB
+    {
+      using BaseNode::children;
+
+      /*! Clears the node. */
+      __forceinline void clear()  {
+        lower_t = vfloat<N>(nan); // FIXME: do we want NaN's here too?
+        upper_t = vfloat<N>(nan);
+        AlignedNodeMB::clear();
+      }
+
+      /*! Sets bounding box of child. */
+      __forceinline void set(size_t i, const LBBox3fa& bounds, const BBox1f& tbounds) 
+      {
+        lower_t[i] = tbounds.lower;
+        upper_t[i] = tbounds.upper;
+        AlignedNodeMB::set(i,bounds);
+      }
+
+      /*! Returns reference to specified child */
+      __forceinline       NodeRef& child(size_t i)       { assert(i<N); return children[i]; }
+      __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
+
+    public:
+      vfloat<N> lower_t;        //!< time dimension of lower bouds of all N children
+      vfloat<N> upper_t;        //!< time dimension of upper bouds of all N children
     };
 
     /*! Node with unaligned bounds */
