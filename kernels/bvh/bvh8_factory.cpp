@@ -816,7 +816,7 @@ namespace embree
     Accel::Intersectors intersectors = BVH8Line4iMBIntersectors(accel);
     Builder* builder = nullptr;
     if      (scene->device->line_builder_mb == "default"     ) builder = BVH8Line4iMBSceneBuilderSAH(accel,scene,0);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->line_builder_mb+" for BVH8<Line4i>");
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->line_builder_mb+" for BVH8MB<Line4i>");
     scene->needLineVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -895,7 +895,7 @@ namespace embree
       }
     }
     else if (scene->device->tri_builder_mb == "sah")  builder = BVH8Triangle4vMBSceneBuilderSAH(accel,scene,0);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder_mb+" for BVH8<Triangle4vMB>");
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder_mb+" for BVH8MB<Triangle4vMB>");
 
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -914,7 +914,7 @@ namespace embree
       }
     }
     else if (scene->device->tri_builder_mb == "sah")  builder = BVH8Triangle4iMBSceneBuilderSAH(accel,scene,0);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder_mb+" for BVH8<Triangle4iMB>");
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder_mb+" for BVH8MB<Triangle4iMB>");
     scene->needTriangleVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -1001,7 +1001,7 @@ namespace embree
       case BuildVariant::HIGH_QUALITY: assert(false); break;
       }
     }
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->quad_builder_mb+" for BVH8<Quad4i>");
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->quad_builder_mb+" for BVH8MB<Quad4i>");
 
     scene->needQuadVertices = true;
     return new AccelInstance(accel,builder,intersectors);

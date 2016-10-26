@@ -959,7 +959,7 @@ namespace embree
       __forceinline vfloat<N> dequantizeUpperZ() const { return vfloat<N>(start.z) + vfloat<N>(vint<N>::load(upper_z)) * scale.z; }
 
       template <int M>
-      __forceinline vfloat<M> dequantize(const size_t offset) const { return vfloat<M>(vint<M>::load(all_planes+offset)); }
+      __forceinline vfloat<M> dequantize(const size_t offset) const { return vfloat<M>(vint<M>::loadu(all_planes+offset)); }
 
 
       union {

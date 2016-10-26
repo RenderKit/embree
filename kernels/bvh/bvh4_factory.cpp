@@ -1077,7 +1077,7 @@ namespace embree
     Builder* builder = nullptr;
     if      (scene->device->line_builder_mb == "default"     ) builder = BVH4Line4iMBSceneBuilderSAH(accel,scene,0);
     else if (scene->device->line_builder_mb == "sah"         ) builder = BVH4Line4iMBSceneBuilderSAH(accel,scene,0);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->line_builder_mb+" for BVH4<Line4iMB>");
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->line_builder_mb+" for BVH4MB<Line4iMB>");
 
     scene->needLineVertices = true;
     return new AccelInstance(accel,builder,intersectors);
@@ -1118,7 +1118,7 @@ namespace embree
     Builder* builder = nullptr;
     if      (scene->device->hair_builder_mb == "default"     ) builder = BVH4Bezier1iMBBuilder_OBB_New(accel,scene,0);
     else if (scene->device->hair_builder_mb == "sah"         ) builder = BVH4Bezier1iMBBuilder_OBB_New(accel,scene,0);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->hair_builder_mb+" for BVH4OBB<Bezier1iMB>");   
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->hair_builder_mb+" for BVH4MBOBB<Bezier1iMB>");   
 
     scene->needBezierVertices = true;
     return new AccelInstance(accel,builder,intersectors);
@@ -1221,10 +1221,10 @@ namespace embree
     BVH4* accel = new BVH4(Triangle4vMB::type,scene);
 
     Accel::Intersectors intersectors;
-    if      (scene->device->tri_traverser == "default") intersectors = BVH4Triangle4vMBIntersectors(accel,ivariant);
-    else if (scene->device->tri_traverser == "fast"   ) intersectors = BVH4Triangle4vMBIntersectors(accel,IntersectVariant::FAST);
-    else if (scene->device->tri_traverser == "robust" ) intersectors = BVH4Triangle4vMBIntersectors(accel,IntersectVariant::ROBUST);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown traverser "+scene->device->tri_traverser+" for BVH4<Triangle4vMB>");
+    if      (scene->device->tri_traverser_mb == "default") intersectors = BVH4Triangle4vMBIntersectors(accel,ivariant);
+    else if (scene->device->tri_traverser_mb == "fast"   ) intersectors = BVH4Triangle4vMBIntersectors(accel,IntersectVariant::FAST);
+    else if (scene->device->tri_traverser_mb == "robust" ) intersectors = BVH4Triangle4vMBIntersectors(accel,IntersectVariant::ROBUST);
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown traverser "+scene->device->tri_traverser_mb+" for BVH4MB<Triangle4vMB>");
 
     Builder* builder = nullptr;
     if (scene->device->tri_builder_mb == "default") {
@@ -1244,10 +1244,10 @@ namespace embree
     BVH4* accel = new BVH4(Triangle4iMB::type,scene);
 
     Accel::Intersectors intersectors;
-    if      (scene->device->tri_traverser == "default") intersectors = BVH4Triangle4iMBIntersectors(accel,ivariant);
-    else if (scene->device->tri_traverser == "fast"   ) intersectors = BVH4Triangle4iMBIntersectors(accel,IntersectVariant::FAST);
-    else if (scene->device->tri_traverser == "robust" ) intersectors = BVH4Triangle4iMBIntersectors(accel,IntersectVariant::ROBUST);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown traverser "+scene->device->tri_traverser+" for BVH4<Triangle4iMB>");
+    if      (scene->device->tri_traverser_mb == "default") intersectors = BVH4Triangle4iMBIntersectors(accel,ivariant);
+    else if (scene->device->tri_traverser_mb == "fast"   ) intersectors = BVH4Triangle4iMBIntersectors(accel,IntersectVariant::FAST);
+    else if (scene->device->tri_traverser_mb == "robust" ) intersectors = BVH4Triangle4iMBIntersectors(accel,IntersectVariant::ROBUST);
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown traverser "+scene->device->tri_traverser_mb+" for BVH4MB<Triangle4iMB>");
 
     Builder* builder = nullptr;
     if (scene->device->tri_builder_mb == "default") {
@@ -1258,7 +1258,7 @@ namespace embree
       }
     }
     else  if (scene->device->tri_builder_mb == "sah") builder = BVH4Triangle4iMBSceneBuilderSAH(accel,scene,0);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder_mb+" for BVH4<Triangle4iMB>");
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder_mb+" for BVH4MB<Triangle4iMB>");
 
     scene->needTriangleVertices = true;
     return new AccelInstance(accel,builder,intersectors);
@@ -1343,7 +1343,7 @@ namespace embree
       }
     }
     else if (scene->device->quad_builder_mb == "sah") builder = BVH4Quad4iMBSceneBuilderSAH(accel,scene,0);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->quad_builder_mb+" for BVH4<Quad4iMB>");
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->quad_builder_mb+" for BVH4MB<Quad4iMB>");
     
     scene->needQuadVertices = true;
     return new AccelInstance(accel,builder,intersectors);
