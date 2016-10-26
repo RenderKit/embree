@@ -93,6 +93,12 @@ namespace embree
       return vint8(il,ih);
     }
 
+    static __forceinline vint8 loadu( const unsigned char* const ptr ) {
+      vint4 il = vint4::loadu(ptr+0);
+      vint4 ih = vint4::loadu(ptr+4);
+      return vint8(il,ih);
+    }
+
     static __forceinline void store_uchar( unsigned char* const ptr, const vint8& i ) {
       vint4 il(i.vl);
       vint4 ih(i.vh);
