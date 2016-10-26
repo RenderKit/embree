@@ -104,6 +104,11 @@ namespace embree
     static __forceinline vint4 load( const unsigned char* const ptr ) {
       return _mm_cvtepu8_epi32(_mm_load_si128((__m128i*)ptr));
     }
+
+    static __forceinline vint4 loadu( const unsigned char* const ptr ) {
+      return  _mm_cvtepu8_epi32(_mm_loadu_si128((__m128i*)ptr));
+    }
+
 #endif
 
     static __forceinline vint4 load(const unsigned short* const ptr) {

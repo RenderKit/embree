@@ -42,7 +42,7 @@ namespace embree
     parallel_for(0, count,[&] (const range<int>& r) {
         const int threadIndex = (int) TaskScheduler::threadIndex();
         const int threadCount = (int) TaskScheduler::threadCount();
-        for (size_t i=r.begin(); i<r.end(); i++) 
+        for (int i=r.begin(); i<r.end(); i++) 
           ((ISPCTaskFunc)func)(data,threadIndex,threadCount,i,count);
       });
   }

@@ -484,6 +484,7 @@ namespace embree
       const vfloat4 scale_z(node->scale.z);
       const vfloat4 lower_z = node->dequantize<4>(ray.nearZ >> 2) * scale_z + start_z;
       const vfloat4 upper_z = node->dequantize<4>(ray.farZ  >> 2) * scale_z + start_z;
+
 #if defined (__AVX2__)
       const vfloat4 tNearX = msub(lower_x, ray.rdir.x, ray.org_rdir.x);
       const vfloat4 tNearY = msub(lower_y, ray.rdir.y, ray.org_rdir.y);
