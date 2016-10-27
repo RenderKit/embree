@@ -969,7 +969,7 @@ namespace embree
       }
 
       /*! Sets bounding box and ID of child. */
-      __forceinline void set(size_t i, const BBox1f& tbounds, const NodeRef& childID) {
+      __forceinline void set(size_t i, const NodeRef& childID, const BBox1f& tbounds) {
         set(i,tbounds);
         children[i] = childID;
       }
@@ -1309,6 +1309,11 @@ namespace embree
     /*! Encodes a transformation node */
     static __forceinline NodeRef encodeNode(TransformNode* node) {
       return NodeRef((size_t) node | tyTransformNode);
+    }
+
+    /*! Encodes a time split node */
+    static __forceinline NodeRef encodeNode(TimeSplitNode* node) {
+      return NodeRef((size_t) node | tyTimeSplitNode);
     }
 
     /*! Encodes a leaf */

@@ -486,6 +486,31 @@ namespace embree
     }
 
     //////////////////////////////////////////////////////////////////////////////////////
+    // fast ray/BVHN::TimeSplitNode intersection
+    //////////////////////////////////////////////////////////////////////////////////////
+
+    template<int N>
+      __forceinline size_t intersectNode(const typename BVHN<N>::TimeSplitNode* node, const TravRay<N,N>& ray, 
+                                         const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist)
+    {
+      const vbool<N> tmask = (node->lower_t <= time) & (time < node->upper_t);
+      const size_t mask = movemask(tmask);
+      assert((mask & (mask-1)) == 0); // only one bit should be set
+      dist = zero;
+      return mask;
+    }
+
+    template<int N, int K>
+      __forceinline vbool<K> intersectNode(const typename BVHN<N>::TimeSplitNode* node, const size_t i, 
+                                         const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
+                                         const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist)
+    {
+      const vbool<K> thit = (vfloat<K>(node->lower_t[i]) <= time) & (time < vfloat<K>(node->upper_t[i]));
+      dist = zero;
+      return thit;
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////
     // robust ray/BVHN::AlignedNodeMB intersection
     //////////////////////////////////////////////////////////////////////////////////////
 
@@ -835,6 +860,17 @@ namespace embree
     };
 
     template<int N, int Nx>
+      struct BVHNNodeIntersector1<N,Nx,BVH_AN2_TS,false>
+    {
+      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N,Nx>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist, size_t& mask)
+      {
+        if (likely(node.isAlignedNodeMB()))   mask = intersectNode<N>(node.alignedNodeMB(),ray,tnear,tfar,time,dist);
+        else /*if (node.isTimeSplitNode())*/  mask = intersectNode<N>(node.timeSplitNode(),ray,tnear,tfar,time,dist);
+        return true;
+      }
+    };
+
+    template<int N, int Nx>
       struct BVHNNodeIntersector1<N,Nx,BVH_AN1_UN1,false>
     {
       static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N,Nx>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist, size_t& mask)
@@ -944,6 +980,19 @@ namespace embree
                                           const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist, vbool<K>& vmask)
       {
         vmask = intersectNode<N,K>(node.alignedNodeMB4D(),i,org,rdir,org_rdir,tnear,tfar,time,dist);
+        return true;
+      }
+    };
+
+    template<int N, int K>
+    struct BVHNNodeIntersectorK<N,K,BVH_AN2_TS,false>
+    {
+      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const size_t i, 
+                                          const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
+                                          const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist, vbool<K>& vmask)
+      {
+        if (likely(node.isAlignedNodeMB()))   vmask = intersectNode<N,K>(node.alignedNodeMB(),i,org,rdir,org_rdir,tnear,tfar,time,dist);
+        else /*if (node.isTimeSplitNode())*/  vmask = intersectNode<N,K>(node.timeSplitNode(),i,org,rdir,org_rdir,tnear,tfar,time,dist);
         return true;
       }
     };
