@@ -588,23 +588,20 @@ namespace embree
       }
 
       /*! Sets bounding box and ID of child. */
-      __forceinline void set(size_t i, const BBox3fa& bounds0, const BBox3fa& bounds1)
+      __forceinline void set(size_t i, const BBox3fa& bounds0_i, const BBox3fa& bounds1_i)
       {
+        /*! for empty bounds we have to avoid inf-inf=nan */
+        const BBox3fa bounds0(min(bounds0_i.lower,Vec3fa(+FLT_MAX)),max(bounds0_i.upper,Vec3fa(-FLT_MAX)));
+        const BBox3fa bounds1(min(bounds1_i.lower,Vec3fa(+FLT_MAX)),max(bounds1_i.upper,Vec3fa(-FLT_MAX)));
+
         lower_x[i] = bounds0.lower.x; lower_y[i] = bounds0.lower.y; lower_z[i] = bounds0.lower.z;
         upper_x[i] = bounds0.upper.x; upper_y[i] = bounds0.upper.y; upper_z[i] = bounds0.upper.z;
 
-        /*! for empty bounds we have to avoid inf-inf=nan */
-        if (unlikely(bounds0.empty())) {
-          lower_dx[i] = lower_dy[i] = lower_dz[i] = zero;
-          upper_dx[i] = upper_dy[i] = upper_dz[i] = zero;
-        }
         /*! standard case */
-        else {
-          const Vec3fa dlower = bounds1.lower-bounds0.lower;
-          const Vec3fa dupper = bounds1.upper-bounds0.upper;
-          lower_dx[i] = dlower.x; lower_dy[i] = dlower.y; lower_dz[i] = dlower.z;
-          upper_dx[i] = dupper.x; upper_dy[i] = dupper.y; upper_dz[i] = dupper.z;
-        }
+        const Vec3fa dlower = bounds1.lower-bounds0.lower;
+        const Vec3fa dupper = bounds1.upper-bounds0.upper;
+        lower_dx[i] = dlower.x; lower_dy[i] = dlower.y; lower_dz[i] = dlower.z;
+        upper_dx[i] = dupper.x; upper_dy[i] = dupper.y; upper_dz[i] = dupper.z;
       }
 
       /*! Sets bounding box and ID of child. */
@@ -965,7 +962,7 @@ namespace embree
       {
         assert(i < N);
         lower_t[i] = tbounds.lower;
-        upper_t[i] = tbounds.upper;
+        upper_t[i] = tbounds.upper == 1.0f ? 1.0f+float(ulp) : tbounds.upper;
       }
 
       /*! Sets bounding box and ID of child. */
