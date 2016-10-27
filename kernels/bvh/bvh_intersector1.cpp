@@ -87,10 +87,10 @@ namespace embree
           continue;
 
         /* downtraversal loop */
-        while (true)
+        while (true) cont:
         {
           /*! stop if we found a leaf node */
-          if (unlikely(cur.isLeaf())) break;
+          if (unlikely(cur.isLeaf(types))) break;
           STAT3(normal.trav_nodes,1,1,1);
 
           /* intersect node */
@@ -105,6 +105,17 @@ namespace embree
 
           /* select next child and push other children */
           nodeTraverser.traverseClosestHit(cur,mask,tNear,stackPtr,stackEnd);
+        }
+
+        /* time split node support */
+        if (unlikely(cur.isTimeSplitNode())) 
+        {
+          const TimeSplitNode* node = cur.timeSplitNode();
+          vfloat<N> dist = zero;
+          size_t mask = intersectNode<N>(node,vray,ray_near,ray_far,pre.ftime(),dist);
+          if (mask == 0) goto pop;
+          cur = node->child(__bsf(mask));
+          goto cont;
         }
 
         /* ray transformation support */
@@ -183,10 +194,10 @@ namespace embree
         NodeRef cur = (NodeRef) *stackPtr;
         
         /* downtraversal loop */
-        while (true)
+        while (true) cont:
         {
           /*! stop if we found a leaf node */
-          if (unlikely(cur.isLeaf())) break;
+          if (unlikely(cur.isLeaf(types))) break;
           STAT3(shadow.trav_nodes,1,1,1);
 
           /* intersect node */
@@ -203,6 +214,17 @@ namespace embree
           nodeTraverser.traverseAnyHit(cur,mask,tNear,stackPtr,stackEnd);
         }
         
+        /* time split node support */
+        if (unlikely(cur.isTimeSplitNode())) 
+        {
+          const TimeSplitNode* node = cur.timeSplitNode();
+          vfloat<N> dist = zero;
+          size_t mask = intersectNode<N>(node,vray,ray_near,ray_far,pre.ftime(),dist);
+          if (mask == 0) goto pop;
+          cur = node->child(__bsf(mask));
+          goto cont;
+        }
+
         /* ray transformation support */
         if (unlikely(nodeTraverser.traverseTransform(cur,ray,vray,leafType,context,stackPtr,stackEnd)))
           goto pop;
