@@ -864,7 +864,7 @@ namespace embree
     {
       static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N,Nx>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist, size_t& mask)
       {
-        if (unlikely(!node.isAlignedNodeMB())) return false;
+        //if (unlikely(!node.isAlignedNodeMB())) return false;
         //if (likely(node.isAlignedNodeMB()))   
         mask = intersectNode<N>(node.alignedNodeMB(),ray,tnear,tfar,time,dist);
         //else /*if (node.isTimeSplitNode())*/  mask = intersectNode<N>(node.timeSplitNode(),ray,tnear,tfar,time,dist);

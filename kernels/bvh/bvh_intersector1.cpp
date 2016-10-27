@@ -110,6 +110,7 @@ namespace embree
         /* time split node support */
         if (unlikely(cur.isTimeSplitNode())) 
         {
+          STAT3(normal.trav_nodes,1,1,1);
           const TimeSplitNode* node = cur.timeSplitNode();
           vfloat<N> dist = zero;
           size_t mask = intersectNode<N>(node,vray,ray_near,ray_far,pre.ftime(),dist);
@@ -217,6 +218,7 @@ namespace embree
         /* time split node support */
         if (unlikely(cur.isTimeSplitNode())) 
         {
+          STAT3(shadow.trav_nodes,1,1,1);
           const TimeSplitNode* node = cur.timeSplitNode();
           vfloat<N> dist = zero;
           size_t mask = intersectNode<N>(node,vray,ray_near,ray_far,pre.ftime(),dist);

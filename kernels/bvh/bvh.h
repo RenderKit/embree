@@ -330,7 +330,7 @@ namespace embree
 
       __forceinline size_t isLeaf(int types) const 
       { 
-        if (types == BVH_AN2_TS) return false;
+        if (types == BVH_AN2_TS) return !isAlignedNodeMB();
         else return ptr & tyLeaf; 
       }
 

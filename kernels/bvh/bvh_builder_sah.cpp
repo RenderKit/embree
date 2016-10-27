@@ -598,6 +598,7 @@ namespace embree
              prims.data(),pinfo,N,BVH::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
           
           return std::make_tuple(root,root_bounds.global(dt));
+          //NodeRef node = BVH4::emptyNode; return std::make_tuple(node,root_bounds);
         }
         else
         {
