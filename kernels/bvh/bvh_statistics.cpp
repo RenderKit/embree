@@ -257,6 +257,22 @@ namespace embree
       //size_t cdepth; statistics(n->child,Ai,cdepth); 
       //depth=max(depth,cdepth)+1;
     }
+    else if (node.isTimeSplitNode())
+    {
+      numAlignedNodesMB++;
+      TimeSplitNode* n = node.timeSplitNode();
+      bvhSAH += A*travCostAligned;
+      
+      depth = 0;
+      for (size_t i=0; i<N; i++) {
+        if (n->child(i) == BVH::emptyNode) continue;
+        childrenTimeSplitNodes++;
+        const float Ai = 0.0f;//max(0.0f,n->expectedHalfArea(i));
+        size_t cdepth; statistics(n->child(i),Ai,cdepth); 
+        depth=max(depth,cdepth);
+      }
+      depth++;
+    }
     else if (node.isQuantizedNode())
     {
       numQuantizedNodes++;
