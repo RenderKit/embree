@@ -27,8 +27,8 @@ namespace embree
     __forceinline void splitPolygon(const BBox3fa& bounds, 
                                     const size_t dim, 
                                     const float pos, 
-                                    const Vec3fa v[N+1],
-                                    const Vec3fa inv_length[N],
+                                    const Vec3fa (&v)[N+1],
+                                    const Vec3fa (&inv_length)[N],
                                     BBox3fa& left_o, 
                                     BBox3fa& right_o)
     {
@@ -62,7 +62,7 @@ namespace embree
       __forceinline void splitPolygon(const PrimRef& prim, 
                                       const size_t dim, 
                                       const float pos, 
-                                      const Vec3fa v[N+1],
+                                      const Vec3fa (&v)[N+1],
                                       PrimRef& left_o, 
                                       PrimRef& right_o)
     {
