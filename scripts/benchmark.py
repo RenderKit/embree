@@ -23,35 +23,23 @@ import re
 ########################## configuration ##########################
 
 dash = '/'
-#models = [ 'conference' ]
-#models = [ 'conference', 'sponza', 'headlight', 'crown']
-models = [ 'conference', 'sponza', 'bentley', 'xyz_dragon', 'powerplant']
-#models = [ 'conference', 'sponza', 'headlight', 'crown', 'bentley', 'xyz_dragon', 'powerplant' ]
-#models = [ 'sophie', 'sophie_mblur']
-
-arg = ''
-modelDir  = ''
-tutorial = 'tutorial03'
 statDir = 'stat'
 name = ''
-if sys.platform == 'win32':
-  modelDir = '%HOMEPATH%/models/embree/benchmarking'
-else:
-  modelDir = '~/models/embree/benchmarking'
+models = []
 
 ########################## rendering ##########################
 
 def baseName(name,model):
   return name + '_' + model
 
-def render(name,model):
+def render(name,modelname,model):
   executable = tutorial
-  base = baseName(name,model)
+  base = baseName(name,modelname)
   os.system('mkdir -p ' + statDir)
   logFile = statDir + dash + base + '.log'
   if not os.path.exists(logFile):
     command = executable
-    command += ' -c ' + modelDir + dash + model + '_tutorial.ecs'
+    command += ' -c ' + model
     for arg in args:
       command += ' ' + arg
     command += ' -rtcore verbose=2 -benchmark 4 16 > ' + logFile
@@ -66,11 +54,11 @@ def renderLoop():
     fps_sigma[avgBase] = 0
     fps_gain [avgBase] = 0
     printHeader()
-    for model in models:
-      sys.stdout.write('  ' + '{0:<55}'.format(model) + ' | ')
-      render(name,model)
-      extract(name,model,'')
-      printData(name,model)
+    for (modelname,model) in models:
+      sys.stdout.write('  ' + '{0:<55}'.format(modelname) + ' | ')
+      render(name,modelname,model)
+      extract(name,modelname,'')
+      printData(name,modelname)
 
 ########################## data extraction ##########################
 
@@ -82,9 +70,9 @@ fps_sigma  = {}
 fps_gain = {}
 fps_davg = {}
 
-def extract(name,model,prevname):
-  base = baseName(name,model)
-  prevBase = baseName(prevname,model)
+def extract(name,modelname,prevname):
+  base = baseName(name,modelname)
+  prevBase = baseName(prevname,modelname)
   avgBase = baseName(name,'average')
   logFileName = statDir + dash + base + '.log'
   memory   [base] = 0
@@ -135,12 +123,12 @@ def extractLoop():
     fps_sigma[avgBase] = 0
     fps_gain [avgBase] = 0
     fps_davg [avgBase] = 0
-    for model in models:
-      extract(name,model,prevname)
+    for (modelname,model) in models:
+      extract(name,modelname,prevname)
     prevname = name
 
-def printData(name,model):
-  base = baseName(name,model)
+def printData(name,modelname):
+  base = baseName(name,modelname)
   line = (' %#6.1f MB' %  (1E-6*memory[base]))
   line += (' %#6.1f M/s' %  (1E-6*buildperf[base]))
   line += (' %#6.1f ' %  sah[base])
@@ -152,8 +140,8 @@ def printData(name,model):
   sys.stdout.write(line)
 
 def printHeader():
-  tableWidth = 55 + 60
-  line  = '  ' + '{0:<55}'.format('') + ' |     Memory      Build    SAH      Render'
+  tableWidth = 55 + 74
+  line  = '  ' + '{0:<55}'.format('') + ' |     Memory      Build    SAH       Render'
   print(line)
   line = ''
   while (len(line) < tableWidth): line = line + '-'
@@ -162,11 +150,11 @@ def printHeader():
 def printDataLoop():
   print('')
   printHeader()
-  for model in models:
-    print(model)
+  for (modelname,model) in models:
+    print(modelname)
     for name in names:
       sys.stdout.write('  ' + '{0:<55}'.format(name) + ' | ')
-      printData(name,model)
+      printData(name,modelname)
   if len(models) > 1:
     print('average')
     for name in names:
@@ -178,23 +166,46 @@ def printDataLoop():
 ########################## command line parsing ##########################
 
 def printUsage():
-  sys.stderr.write('Usage: ' + sys.argv[0] + ' run name tutorialXX args\n')
-  sys.stderr.write('       ' + sys.argv[0] + ' print name1 name2 ...\n')
+  sys.stderr.write('Usage: ' + sys.argv[0] + ' run models name tutorialXX args\n')
+  sys.stderr.write('       ' + sys.argv[0] + ' print models name1 name2 ...\n')
   sys.exit(1)
 
-if len(sys.argv) < 3:
+def readModelsFile(models_file):
+  global models
+  path, basename = os.path.split(models_file)
+  with open(models_file, 'r') as f:
+    lines = f.readlines()
+    for line in lines:
+      line = line.strip('\n')
+      if line == "": continue;
+      if line.startswith("#"): continue;
+      (name,args) = line.split(' ',1);
+      args2 = os.path.join(path,args.lstrip(' '))
+      models += [(name,args2)]
+
+if len(sys.argv) < 2:
   printUsage()
   sys.exit(1)
 
 if sys.argv[1] == 'run':
-  name = sys.argv[2]
-  tutorial = sys.argv[3]
-  args = sys.argv[4:]
+  if len(sys.argv) < 4:
+    printUsage()
+    sys.exit(1)
+  models_file = sys.argv[2]
+  readModelsFile(models_file)
+  name = sys.argv[3]
+  tutorial = sys.argv[4]
+  args = sys.argv[5:]
   renderLoop()
   sys.exit(1)
 
 if sys.argv[1] == 'print':
-  names = sys.argv[2:]
+  if len(sys.argv) < 5:
+    printUsage()
+    sys.exit(1)
+  models_file = sys.argv[2]
+  readModelsFile(models_file)
+  names = sys.argv[3:]
   extractLoop()
   printDataLoop()
   sys.exit(1)
