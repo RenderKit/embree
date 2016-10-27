@@ -21,11 +21,7 @@
 #include "../common/stack_item.h"
 #include "bvh_traverser1.h"
 
-#if defined(__X86_64__)
 #  define ENABLE_COHERENT_STREAM_PATH 1
-#else
-#  define ENABLE_COHERENT_STREAM_PATH 0
-#endif
 
 namespace embree
 {
@@ -460,6 +456,7 @@ namespace embree
           const vbool<K> m_valid = (tnear <= tfar) & (tnear >= 0.0f);
 
           m_active |= (size_t)movemask(m_valid) << (i*K);
+
           packet[i].min_dist = max(tnear, 0.0f);
           packet[i].max_dist = select(m_valid, tfar, neg_inf);
           tmp_min_dist = min(tmp_min_dist, packet[i].min_dist);
@@ -478,9 +475,7 @@ namespace embree
           tmp_min_org  = min(tmp_min_org , select(m_valid,org , Vec3vfK(pos_inf)));
           tmp_max_org  = max(tmp_max_org , select(m_valid,org , Vec3vfK(neg_inf)));
         }
-
-        m_active &= (numOctantRays == 64) ? (size_t)-1 : (((size_t)1 << numOctantRays)-1);
-
+        m_active &= (numOctantRays == (8 * sizeof(size_t))) ? (size_t)-1 : (((size_t)1 << numOctantRays)-1);
         const Vec3fa reduced_min_rdir( reduce_min(tmp_min_rdir.x), 
                                        reduce_min(tmp_min_rdir.y),
                                        reduce_min(tmp_min_rdir.z) );
