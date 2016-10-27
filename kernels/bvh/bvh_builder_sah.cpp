@@ -451,7 +451,7 @@ namespace embree
             assert(num <= N);
             LBBox3fa allBounds = empty;
             for (size_t i=0; i<num; i++) {
-              node->set(i, bounds[i], dt);
+              node->set(i, bounds[i].global(dt), dt);
               allBounds.extend(bounds[i]);
             }
             return allBounds;
@@ -463,7 +463,7 @@ namespace embree
             (root,typename BVH::CreateAlloc(bvh),identity,CreateAlignedNodeMB4D<N>(bvh),reduce,CreateMSMBlurLeaf<N,Primitive>(bvh,prims.data(),dti.begin()),bvh->scene->progressInterface,
              prims.data(),pinfo,N,BVH::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
           
-          return std::make_tuple(root,root_bounds);
+          return std::make_tuple(root,root_bounds.global(dt));
         }
         else
         {
@@ -489,7 +489,7 @@ namespace embree
             const BBox1f dt(float(c[i].begin())/float(bvh->numTimeSteps-1),
                             float(c[i].end  ())/float(bvh->numTimeSteps-1));
             node->set(i,cnode,cbounds,dt);
-            lbounds.extend(cbounds.global(dt));
+            lbounds.extend(cbounds);
           }
           NodeRef ref = bvh->encodeNode(node);
           return std::make_tuple(ref,lbounds);

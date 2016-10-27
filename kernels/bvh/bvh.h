@@ -756,9 +756,8 @@ namespace embree
       }
 
       /*! Sets bounding box of child. */
-      __forceinline void set(size_t i, const LBBox3fa& bounds, const BBox1f& tbounds) 
+      __forceinline void set(size_t i, const LBBox3fa& gbounds, const BBox1f& tbounds) 
       {
-        const LBBox3fa gbounds = bounds.global(tbounds);
         set(i,gbounds.bounds0,gbounds.bounds1);
         lower_t[i] = tbounds.lower;
         upper_t[i] = tbounds.upper == 1.0f ? 1.0f+float(ulp) : tbounds.upper;
