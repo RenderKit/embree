@@ -36,11 +36,13 @@ namespace embree
     BVH_FLAG_TRANSFORM_NODE = 0x10000,
     BVH_FLAG_QUANTIZED_NODE = 0x100000,
     BVH_FLAG_ALIGNED_NODE_MB4D = 0x1000000,
+    BVH_FLAG_TIME_SPLIT_NODE = 0x10000000,
 
     /* short versions */
     BVH_AN1 = BVH_FLAG_ALIGNED_NODE,
     BVH_AN2 = BVH_FLAG_ALIGNED_NODE_MB,
     BVH_AN_4D = BVH_FLAG_ALIGNED_NODE_MB4D,
+    BVH_AN2_TS = BVH_FLAG_ALIGNED_NODE_MB | BVH_FLAG_TIME_SPLIT_NODE,
     BVH_UN1 = BVH_FLAG_UNALIGNED_NODE,
     BVH_UN2 = BVH_FLAG_UNALIGNED_NODE_MB,
     BVH_MB = BVH_FLAG_ALIGNED_NODE_MB | BVH_FLAG_UNALIGNED_NODE_MB,
@@ -68,6 +70,7 @@ namespace embree
     struct UnalignedNodeMB;
     struct TransformNode;
     struct QuantizedNode;
+    struct TimeSplitNode;
 
     /*! Number of bytes the nodes and primitives are minimally aligned to.*/
     static const size_t byteAlignment = 16;
@@ -88,6 +91,7 @@ namespace embree
     static const size_t tyUnalignedNodeMB = 3;
     static const size_t tyTransformNode = 4;
     static const size_t tyQuantizedNode = 5;
+    static const size_t tyTimeSplitNode = 7;
     static const size_t tyLeaf = 8;
 
     /*! Empty node */
@@ -346,6 +350,8 @@ namespace embree
       __forceinline int isTransformNode() const { return (ptr & (size_t)align_mask) == tyTransformNode; }
       __forceinline int isTransformNode(int types) const { return (types == BVH_FLAG_TRANSFORM_NODE) || ((types & BVH_FLAG_TRANSFORM_NODE) && isTransformNode()); }
 
+      /*! checks if this is a time split node */
+      __forceinline int isTimeSplitNode() const { return (ptr & (size_t)align_mask) == tyTimeSplitNode; }
 
       /*! checks if this is a quantized node */
       __forceinline int isQuantizedNode() const { return (ptr & (size_t)align_mask) == tyQuantizedNode; }
@@ -395,6 +401,10 @@ namespace embree
       /*! returns transformation pointer */
       __forceinline       TransformNode* transformNode()       { assert(isTransformNode()); return (      TransformNode*)(ptr & ~(size_t)align_mask); }
       __forceinline const TransformNode* transformNode() const { assert(isTransformNode()); return (const TransformNode*)(ptr & ~(size_t)align_mask); }
+
+        /*! returns time split node pointer */
+      __forceinline       TimeSplitNode* timeSplitNode()       { assert(isTimeSplitNode()); return (      TimeSplitNode*)(ptr & ~(size_t)align_mask); }
+      __forceinline const TimeSplitNode* timeSplitNode() const { assert(isTimeSplitNode()); return (const TimeSplitNode*)(ptr & ~(size_t)align_mask); }
 
       /*! returns quantized node pointer */
       __forceinline       QuantizedNode* quantizedNode()       { assert(isQuantizedNode()); return (      QuantizedNode*)(ptr & ~(size_t)align_mask); }
@@ -933,6 +943,58 @@ namespace embree
       unsigned int type;
     };
 
+    /*! BVHN time split node */
+    struct TimeSplitNode : public BaseNode
+    {
+      using BaseNode::children;
+
+      /*! Clears the node. */
+      __forceinline void clear() {
+        lower_t = pos_inf;
+        upper_t = neg_inf;
+        BaseNode::clear();
+      }
+
+      /*! Sets bounding box and ID of child. */
+      __forceinline void set(size_t i, const NodeRef& childID) {
+        assert(i < N);
+        children[i] = childID;
+      }
+
+      /*! Sets bounding box of child. */
+      __forceinline void set(size_t i, const BBox1f& tbounds)
+      {
+        assert(i < N);
+        lower_t[i] = tbounds.lower;
+        upper_t[i] = tbounds.upper;
+      }
+
+      /*! Sets bounding box and ID of child. */
+      __forceinline void set(size_t i, const BBox1f& tbounds, const NodeRef& childID) {
+        set(i,tbounds);
+        children[i] = childID;
+      }
+
+      /*! Returns reference to specified child */
+      __forceinline       NodeRef& child(size_t i)       { assert(i<N); return children[i]; }
+      __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
+
+      /*! output operator */
+      friend std::ostream& operator<<(std::ostream& o, const TimeSplitNode& n)
+      {
+        o << "TimeSplitNode { " << std::endl;
+        o << "  lower_t " << n.lower_t << std::endl;
+        o << "  upper_t " << n.upper_t << std::endl;
+        o << "  children = ";
+        for (size_t i=0; i<N; i++) o << n.children[i] << " "; o << std::endl;
+        o << "}" << std::endl;
+        return o;
+      }
+
+    public:
+      vfloat<N> lower_t;           //!< time dimension of lower bounds of all N children.
+      vfloat<N> upper_t;           //!< time dimension of upper bounds of all N children.
+    };
 
     /*! BVHN Quantized Node */
     struct __aligned(16) QuantizedNode : public BaseNode

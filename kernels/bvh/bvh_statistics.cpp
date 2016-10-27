@@ -29,11 +29,11 @@ namespace embree
   {
     numAlignedNodes = numUnalignedNodes = 0;
     numAlignedNodesMB = numAlignedNodesMB4D = numUnalignedNodesMB = 0;
-    numTransformNodes = numQuantizedNodes = 0;
+    numTransformNodes = numTimeSplitNodes = numQuantizedNodes = 0;
     numLeaves = numPrims = numPrimBlocks = depth = 0;
     childrenAlignedNodes = childrenUnalignedNodes = 0;
     childrenAlignedNodesMB = childrenAlignedNodesMB4D = childrenUnalignedNodesMB = 0;
-    childrenQuantizedNodes = 0;
+    childrenQuantizedNodes = childrenTimeSplitNodes = 0;
     bvhSAH = 0.0f; leafSAH = 0.0f;
     float A = max(0.0f,halfArea(bvh->getBounds()));
     if (bvh->msmblur) {
@@ -60,11 +60,12 @@ namespace embree
     size_t bytesAlignedNodesMB4D = numAlignedNodesMB4D*sizeof(AlignedNodeMB4D);
     size_t bytesUnalignedNodesMB = numUnalignedNodesMB*sizeof(UnalignedNodeMB);
     size_t bytesTransformNodes = numTransformNodes*sizeof(TransformNode);
+    size_t bytesTimeSplitNodes = numTimeSplitNodes*sizeof(TimeSplitNode);
     size_t bytesQuantizedNodes = numQuantizedNodes*sizeof(QuantizedNode);
     size_t bytesPrims  = numPrimBlocks*bvh->primTy.bytes;
     size_t numVertices = bvh->numVertices;
     size_t bytesVertices = numVertices*sizeof(Vec3fa); 
-    return bytesAlignedNodes+bytesUnalignedNodes+bytesAlignedNodesMB+bytesAlignedNodesMB4D+bytesUnalignedNodesMB+bytesTransformNodes+bytesQuantizedNodes+bytesPrims+bytesVertices;
+    return bytesAlignedNodes+bytesUnalignedNodes+bytesAlignedNodesMB+bytesAlignedNodesMB4D+bytesUnalignedNodesMB+bytesTransformNodes+bytesTimeSplitNodes+bytesQuantizedNodes+bytesPrims+bytesVertices;
   }
   
   template<int N>
@@ -77,6 +78,7 @@ namespace embree
     size_t bytesAlignedNodesMB4D = numAlignedNodesMB4D*sizeof(AlignedNodeMB4D);
     size_t bytesUnalignedNodesMB = numUnalignedNodesMB*sizeof(UnalignedNodeMB);
     size_t bytesTransformNodes = numTransformNodes*sizeof(TransformNode);
+    size_t bytesTimeSplitNodes = numTimeSplitNodes*sizeof(TimeSplitNode);
     size_t bytesQuantizedNodes = numQuantizedNodes*sizeof(QuantizedNode);
     size_t bytesPrims  = numPrimBlocks*bvh->primTy.bytes;
     size_t numVertices = bvh->numVertices;
@@ -131,6 +133,13 @@ namespace embree
       stream << "  transformNodes = "  << numTransformNodes << " "
 	     << "(" << bytesTransformNodes/1E6  << " MB) " 
 	     << "(" << 100.0*double(bytesTransformNodes)/double(bytesTotal) << "% of total)"
+	     << std::endl;
+    }
+    if (numTimeSplitNodes) {
+      stream << "  timeSplitNodes = "  << numTimeSplitNodes << " "
+             << "(" << 100.0*double(childrenTimeSplitNodes)/double(N*numTimeSplitNodes) << "% filled) "
+	     << "(" << bytesTimeSplitNodes/1E6  << " MB) " 
+	     << "(" << 100.0*double(bytesTimeSplitNodes)/double(bytesTotal) << "% of total)"
 	     << std::endl;
     }
     if (numQuantizedNodes) {
