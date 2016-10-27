@@ -21,7 +21,11 @@
 #include "../common/stack_item.h"
 #include "bvh_traverser1.h"
 
-#define ENABLE_COHERENT_STREAM_PATH 1
+#if defined(__X86_64__)
+#  define ENABLE_COHERENT_STREAM_PATH 1
+#else
+#  define ENABLE_COHERENT_STREAM_PATH 0
+#endif
 
 namespace embree
 {
