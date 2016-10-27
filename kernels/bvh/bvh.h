@@ -620,9 +620,9 @@ namespace embree
                        Vec3fa(upper_x[i]+upper_dx[i],upper_y[i]+upper_dy[i],upper_z[i]+upper_dz[i]));
       }
 
-      /*! Returns extent of bounds of specified child. */
-      __forceinline Vec3fa extend0(size_t i) const {
-        return bounds0(i).size();
+      /*! Returns the expected surface area when randomly sampling the time. */
+      __forceinline float expectedHalfArea(size_t i) const {
+        return 0.5f*(halfArea(bounds0(i))+halfArea(bounds1(i))); // FIXME: only approximative
       }
 
       /*! Returns bounds of node. */
@@ -638,6 +638,11 @@ namespace embree
       /*! Return bounding box of child i */
       __forceinline BBox3fa bounds(size_t i) const {
         return merge(bounds0(i),bounds1(i));
+      }
+
+      /*! Return bounding box of child i at specified time */
+      __forceinline BBox3fa bounds(size_t i, float time) const {
+        return lerp(bounds0(i),bounds1(i),time);
       }
 
       /*! swap two children of the node */
@@ -702,6 +707,7 @@ namespace embree
     struct AlignedNodeMB4D : public AlignedNodeMB
     {
       using BaseNode::children;
+      using AlignedNodeMB::bounds;
       using AlignedNodeMB::lower_x;
       using AlignedNodeMB::lower_y;
       using AlignedNodeMB::lower_z;
@@ -758,6 +764,11 @@ namespace embree
       /*! Returns reference to specified child */
       __forceinline       NodeRef& child(size_t i)       { assert(i<N); return children[i]; }
       __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
+
+      /*! Returns the expected surface area when randomly sampling the time. */
+      __forceinline float expectedHalfArea(size_t i) const {
+        return 0.5f*(upper_t[i]-lower_t[i])*(halfArea(bounds(i,lower_t[i]))+halfArea(bounds(i,upper_t[i]))); // FIXME: only approximative
+      }
 
       /*! stream output operator */
       friend std::ostream& operator<<(std::ostream& cout, const AlignedNodeMB4D& n) 

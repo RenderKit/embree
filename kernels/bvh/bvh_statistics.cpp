@@ -28,11 +28,11 @@ namespace embree
   BVHNStatistics<N>::BVHNStatistics (BVH* bvh) : bvh(bvh)
   {
     numAlignedNodes = numUnalignedNodes = 0;
-    numAlignedNodesMB = numUnalignedNodesMB = 0;
+    numAlignedNodesMB = numAlignedNodesMB4D = numUnalignedNodesMB = 0;
     numTransformNodes = numQuantizedNodes = 0;
     numLeaves = numPrims = numPrimBlocks = depth = 0;
     childrenAlignedNodes = childrenUnalignedNodes = 0;
-    childrenAlignedNodesMB = childrenUnalignedNodesMB = 0;
+    childrenAlignedNodesMB = childrenAlignedNodesMB4D = childrenUnalignedNodesMB = 0;
     childrenQuantizedNodes = 0;
     bvhSAH = 0.0f; leafSAH = 0.0f;
     float A = max(0.0f,halfArea(bvh->getBounds()));
@@ -57,13 +57,14 @@ namespace embree
     size_t bytesAlignedNodes = numAlignedNodes*sizeof(AlignedNode);
     size_t bytesUnalignedNodes = numUnalignedNodes*sizeof(UnalignedNode);
     size_t bytesAlignedNodesMB = numAlignedNodesMB*sizeof(AlignedNodeMB);
+    size_t bytesAlignedNodesMB4D = numAlignedNodesMB4D*sizeof(AlignedNodeMB4D);
     size_t bytesUnalignedNodesMB = numUnalignedNodesMB*sizeof(UnalignedNodeMB);
     size_t bytesTransformNodes = numTransformNodes*sizeof(TransformNode);
     size_t bytesQuantizedNodes = numQuantizedNodes*sizeof(QuantizedNode);
     size_t bytesPrims  = numPrimBlocks*bvh->primTy.bytes;
     size_t numVertices = bvh->numVertices;
     size_t bytesVertices = numVertices*sizeof(Vec3fa); 
-    return bytesAlignedNodes+bytesUnalignedNodes+bytesAlignedNodesMB+bytesUnalignedNodesMB+bytesTransformNodes+bytesQuantizedNodes+bytesPrims+bytesVertices;
+    return bytesAlignedNodes+bytesUnalignedNodes+bytesAlignedNodesMB+bytesAlignedNodesMB4D+bytesUnalignedNodesMB+bytesTransformNodes+bytesQuantizedNodes+bytesPrims+bytesVertices;
   }
   
   template<int N>
@@ -73,13 +74,14 @@ namespace embree
     size_t bytesAlignedNodes = numAlignedNodes*sizeof(AlignedNode);
     size_t bytesUnalignedNodes = numUnalignedNodes*sizeof(UnalignedNode);
     size_t bytesAlignedNodesMB = numAlignedNodesMB*sizeof(AlignedNodeMB);
+    size_t bytesAlignedNodesMB4D = numAlignedNodesMB4D*sizeof(AlignedNodeMB4D);
     size_t bytesUnalignedNodesMB = numUnalignedNodesMB*sizeof(UnalignedNodeMB);
     size_t bytesTransformNodes = numTransformNodes*sizeof(TransformNode);
     size_t bytesQuantizedNodes = numQuantizedNodes*sizeof(QuantizedNode);
     size_t bytesPrims  = numPrimBlocks*bvh->primTy.bytes;
     size_t numVertices = bvh->numVertices;
     size_t bytesVertices = numVertices*sizeof(Vec3fa); 
-    size_t bytesTotal = bytesAlignedNodes+bytesUnalignedNodes+bytesAlignedNodesMB+bytesUnalignedNodesMB+bytesTransformNodes+bytesQuantizedNodes+bytesPrims+bytesVertices;
+    size_t bytesTotal = bytesAlignedNodes+bytesUnalignedNodes+bytesAlignedNodesMB+bytesAlignedNodesMB4D+bytesUnalignedNodesMB+bytesTransformNodes+bytesQuantizedNodes+bytesPrims+bytesVertices;
     //size_t bytesTotalAllocated = bvh->alloc.bytes();
     stream.setf(std::ios::fixed, std::ios::floatfield);
     stream << "  primitives = " << bvh->numPrimitives << ", vertices = " << bvh->numVertices << std::endl;
@@ -109,6 +111,13 @@ namespace embree
              << "(" << 100.0*double(childrenAlignedNodesMB)/double(N*numAlignedNodesMB) << "% filled) "
 	     << "(" << bytesAlignedNodesMB/1E6  << " MB) " 
 	     << "(" << 100.0*double(bytesAlignedNodesMB)/double(bytesTotal) << "% of total)"
+	     << std::endl;
+    }
+    if (numAlignedNodesMB4D) {
+      stream << "  alignedNodesMB4D = "  << numAlignedNodesMB4D << " "
+             << "(" << 100.0*double(childrenAlignedNodesMB4D)/double(N*numAlignedNodesMB4D) << "% filled) "
+	     << "(" << bytesAlignedNodesMB4D/1E6  << " MB) " 
+	     << "(" << 100.0*double(bytesAlignedNodesMB4D)/double(bytesTotal) << "% of total)"
 	     << std::endl;
     }
     if (numUnalignedNodesMB) {
@@ -189,7 +198,23 @@ namespace embree
       for (size_t i=0; i<N; i++) {
         if (n->child(i) == BVH::emptyNode) continue;
         childrenAlignedNodesMB++;
-        const float Ai = max(0.0f,halfArea(n->extend0(i)));
+        const float Ai = max(0.0f,n->expectedHalfArea(i));
+        size_t cdepth; statistics(n->child(i),Ai,cdepth); 
+        depth=max(depth,cdepth);
+      }
+      depth++;
+    }
+    else if (node.isAlignedNodeMB4D())
+    {
+      numAlignedNodesMB4D++;
+      AlignedNodeMB4D* n = node.alignedNodeMB4D();
+      bvhSAH += A*travCostAligned;
+      
+      depth = 0;
+      for (size_t i=0; i<N; i++) {
+        if (n->child(i) == BVH::emptyNode) continue;
+        childrenAlignedNodesMB4D++;
+        const float Ai = max(0.0f,n->expectedHalfArea(i));
         size_t cdepth; statistics(n->child(i),Ai,cdepth); 
         depth=max(depth,cdepth);
       }
