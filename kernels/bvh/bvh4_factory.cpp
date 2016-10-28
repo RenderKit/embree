@@ -231,7 +231,8 @@ namespace embree
   DECLARE_BUILDER2(void,Scene,size_t,BVH4Triangle4iSceneBuilderSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH4Triangle4vMBSceneBuilderSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH4Triangle4iMBSceneBuilderSAH);
-  DECLARE_BUILDER2(void,Scene,size_t,BVH4MB4DTriangle4iMBSceneBuilderSAH);
+  DECLARE_BUILDER2(void,Scene,size_t,BVH4MB4DTriangle4iMBSceneBuildeRootTimeSplits);
+  DECLARE_BUILDER2(void,Scene,size_t,BVH4MB4DTriangle4iMBSceneBuilderInternalTimeSplits);
   DECLARE_BUILDER2(void,Scene,size_t,BVH4MBTSTriangle4iMBSceneBuilderSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH4QuantizedTriangle4iSceneBuilderSAH);
 
@@ -295,7 +296,8 @@ namespace embree
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4Triangle4iSceneBuilderSAH));
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vMBSceneBuilderSAH));
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4iMBSceneBuilderSAH));
-    IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4MB4DTriangle4iMBSceneBuilderSAH));
+    IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4MB4DTriangle4iMBSceneBuilderRootTimeSplits));
+    IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4MB4DTriangle4iMBSceneBuilderInternalTimeSplits));
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4MBTSTriangle4iMBSceneBuilderSAH));
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4QuantizedTriangle4iSceneBuilderSAH));
 
@@ -1306,7 +1308,8 @@ namespace embree
       case BuildVariant::HIGH_QUALITY: assert(false); break;
       }
     }
-    else  if (scene->device->tri_builder_mb == "early_time_splits") builder = BVH4MB4DTriangle4iMBSceneBuilderSAH(accel,scene,0);
+    else  if (scene->device->tri_builder_mb == "root_time_splits"    ) builder = BVH4MB4DTriangle4iMBSceneBuilderRootTimeSplits(accel,scene,0);
+    else  if (scene->device->tri_builder_mb == "internal_time_splits") builder = BVH4MB4DTriangle4iMBSceneBuilderInternalTimeSplits(accel,scene,0);
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder_mb+" for BVH4MB4D<Triangle4iMB>");
 
     scene->needTriangleVertices = true;

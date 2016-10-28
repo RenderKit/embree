@@ -185,7 +185,8 @@ namespace embree
   DECLARE_BUILDER2(void,Scene,size_t,BVH8Triangle4iSceneBuilderSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH8Triangle4vMBSceneBuilderSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH8Triangle4iMBSceneBuilderSAH);
-  DECLARE_BUILDER2(void,Scene,size_t,BVH8MB4DTriangle4iMBSceneBuilderSAH);
+  DECLARE_BUILDER2(void,Scene,size_t,BVH8MB4DTriangle4iMBSceneBuilderRootTimeSplits);
+  DECLARE_BUILDER2(void,Scene,size_t,BVH8MB4DTriangle4iMBSceneBuilderInternalTimeSplits);
   DECLARE_BUILDER2(void,Scene,size_t,BVH8MBTSTriangle4iMBSceneBuilderSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH8Quad4vSceneBuilderSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH8Quad4iSceneBuilderSAH);
@@ -234,7 +235,8 @@ namespace embree
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX512KNL_AVX512SKX(features,BVH8Triangle4iSceneBuilderSAH));
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX512KNL_AVX512SKX(features,BVH8Triangle4vMBSceneBuilderSAH));
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX512KNL_AVX512SKX(features,BVH8Triangle4iMBSceneBuilderSAH)); 
-    IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX512KNL_AVX512SKX(features,BVH8MB4DTriangle4iMBSceneBuilderSAH));
+    IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX512KNL_AVX512SKX(features,BVH8MB4DTriangle4iMBSceneBuilderRootTimeSplits)); 
+    IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX512KNL_AVX512SKX(features,BVH8MB4DTriangle4iMBSceneBuilderInternalTimeSplits));
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX512KNL_AVX512SKX(features,BVH8MBTSTriangle4iMBSceneBuilderSAH));
     IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_AVX_AVX512KNL_AVX512SKX(features,BVH8Quad4vSceneBuilderSAH));
     IF_ENABLED_QUADS(SELECT_SYMBOL_INIT_AVX_AVX512KNL_AVX512SKX(features,BVH8Quad4iSceneBuilderSAH));
@@ -957,7 +959,8 @@ namespace embree
       case BuildVariant::HIGH_QUALITY: assert(false); break;
       }
     }
-    else if (scene->device->tri_builder_mb == "sah")  builder = BVH8MB4DTriangle4iMBSceneBuilderSAH(accel,scene,0);
+    else if (scene->device->tri_builder_mb == "root_time_splits")  builder = BVH8MB4DTriangle4iMBSceneBuilderRootTimeSplits(accel,scene,0);
+    else if (scene->device->tri_builder_mb == "internal_time_splits")  builder = BVH8MB4DTriangle4iMBSceneBuilderInternalTimeSplits(accel,scene,0);
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder_mb+" for BVH8MB4D<Triangle4iMB>");
 
     scene->needTriangleVertices = true;

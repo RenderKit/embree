@@ -86,6 +86,9 @@ namespace embree
         /*! construct an invalid split by default */
         __forceinline BinSplit()
           : sah(inf), dim(-1), pos(0), data(0) {}
+
+        __forceinline BinSplit(float sah, unsigned data)
+          : sah(sah), data(data) {}
         
         /*! constructs specified split */
         __forceinline BinSplit(float sah, int dim, int pos, const BinMapping<BINS>& mapping)

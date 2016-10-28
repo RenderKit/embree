@@ -157,6 +157,51 @@ namespace embree
       return pinfo;
     }
 
+    template<typename Mesh>
+    PrimInfo createPrimRef2ArrayMBlur(Scene* scene, avector<PrimRef>& prims, BuildProgressMonitor& progressMonitor)
+    {
+      ParallelForForPrefixSumState<PrimInfo> pstate;
+      Scene::Iterator<Mesh,true> iter(scene);
+      
+      /* first try */
+      progressMonitor(0);
+      pstate.init(iter,size_t(1024));
+      PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](Mesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
+      {
+        PrimInfo pinfo(empty);
+        for (size_t j=r.begin(); j<r.end(); j++)
+        {
+          LBBox3fa bounds = empty;
+          if (!mesh->linearBuildBounds(j,BBox1f(0.0f,1.0f),bounds)) continue;
+          const PrimRef2 prim(bounds,mesh->id,unsigned(j));
+          pinfo.add(bounds.interpolate(0.5f));
+          prims[k++] = prim;
+        }
+        return pinfo;
+      }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
+      
+      /* if we need to filter out geometry, run again */
+      if (pinfo.size() != prims.size())
+      {
+        progressMonitor(0);
+        pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](Mesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
+        {
+          k = base.size();
+          PrimInfo pinfo(empty);
+          for (size_t j=r.begin(); j<r.end(); j++)
+          {
+            LBBox3fa bounds = empty;
+            if (!mesh->linearBuildBounds(j,BBox1f(0.0f,1.0f),bounds)) continue;
+            const PrimRef2 prim(bounds,mesh->id,unsigned(j));
+            pinfo.add(bounds.interpolate(0.5f));
+            prims[k++] = prim;
+          }
+          return pinfo;
+        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
+      }
+      return pinfo;
+    }
+
     PrimInfo createBezierRefArray(Scene* scene, mvector<BezierPrim>& prims, BuildProgressMonitor& progressMonitor)
     {
       ParallelForForPrefixSumState<PrimInfo> pstate;
