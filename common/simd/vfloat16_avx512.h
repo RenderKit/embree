@@ -559,6 +559,7 @@ namespace embree
     return v;  
   }
 
+#if 0
   __forceinline vfloat16 prefix_min(const vfloat16& a)
   {
     vfloat16 v = a;
@@ -607,6 +608,66 @@ namespace embree
     return v;  
   }
 
+#else
+
+  __forceinline vfloat16 prefix_min(const vfloat16& a)
+  {
+    const vint16 perm0(0,1,2,3,3,3,3,3,8,9,10,11,11,11,11,11);       
+    const vint16 perm1(0,1,2,3,4,5,6,7,7,7,7,7,7,7,7,7);       
+    vfloat16 v = a;
+    v = min(v,shuffle<2,2,0,0>(v));
+    v = min(v,shuffle<1,1,1,0>(v));
+    const vfloat16 shuf_v0 = permute(v,perm0);
+    v = min(v,shuf_v0);
+    const vfloat16 shuf_v1 = permute(v,perm1);
+    v = min(v,shuf_v1);
+    return v;  
+  }
+
+  __forceinline vfloat16 prefix_max(const vfloat16& a)
+  {
+    const vint16 perm0(0,1,2,3,3,3,3,3,8,9,10,11,11,11,11,11);       
+    const vint16 perm1(0,1,2,3,4,5,6,7,7,7,7,7,7,7,7,7);       
+    vfloat16 v = a;
+    v = max(v,shuffle<2,2,0,0>(v));
+    v = max(v,shuffle<1,1,1,0>(v));
+    const vfloat16 shuf_v0 = permute(v,perm0);
+    v = max(v,shuf_v0);
+    const vfloat16 shuf_v1 = permute(v,perm1);
+    v = max(v,shuf_v1);
+    return v;  
+  }
+
+
+  __forceinline vfloat16 reverse_prefix_min(const vfloat16& a)
+  {
+    const vint16 perm0(4,4,4,4,4,5,6,7,12,12,12,12,12,13,14,15);       
+    const vint16 perm1(8,8,8,8,8,8,8,8,8,9,10,11,12,13,14,15);       
+    vfloat16 v = a;
+    v = min(v,shuffle<3,3,1,1>(v));
+    v = min(v,shuffle<3,2,2,2>(v));
+    const vfloat16 shuf_v0 = permute(v,perm0);
+    v = min(v,shuf_v0);
+    const vfloat16 shuf_v1 = permute(v,perm1);
+    v = min(v,shuf_v1);
+    return v;  
+  }
+
+  __forceinline vfloat16 reverse_prefix_max(const vfloat16& a)
+  {
+    const vint16 perm0(4,4,4,4,4,5,6,7,12,12,12,12,12,13,14,15);       
+    const vint16 perm1(8,8,8,8,8,8,8,8,8,9,10,11,12,13,14,15);       
+    vfloat16 v = a;
+    v = max(v,shuffle<3,3,1,1>(v));
+    v = max(v,shuffle<3,2,2,2>(v));
+    const vfloat16 shuf_v0 = permute(v,perm0);
+    v = max(v,shuf_v0);
+    const vfloat16 shuf_v1 = permute(v,perm1);
+    v = max(v,shuf_v1);
+    return v;  
+  }
+
+#endif
 
   __forceinline vfloat16 set_min4(vfloat16 x) {
     x = min(x,shuffle(x,_MM_SWIZ_REG_BADC));

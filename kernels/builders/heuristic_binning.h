@@ -37,6 +37,7 @@ namespace embree
         __forceinline BinMapping(const PrimInfo& pinfo) 
         {
           num = min(BINS,size_t(4.0f + 0.05f*pinfo.size()));
+
           const vfloat4 diag = (vfloat4) pinfo.centBounds.size();
           scale = select(diag > vfloat4(1E-34f),vfloat4(0.99f*num)/diag,vfloat4(0.0f));
           ofs  = (vfloat4) pinfo.centBounds.lower;
@@ -509,6 +510,7 @@ namespace embree
         const vfloat16 area_lr = dx*dy+dx*dz+dy*dz;
         return area_lr;
       }
+
 
       /*! bins an array of primitives */
       __forceinline void bin (const PrimRef* prims, size_t N, const BinMapping<16>& mapping)
