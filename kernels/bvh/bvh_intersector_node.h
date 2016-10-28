@@ -495,7 +495,6 @@ namespace embree
     {
       const vbool<N> tmask = (node->lower_t <= time) & (time < node->upper_t);
       const size_t mask = movemask(tmask);
-      assert((mask & (mask-1)) == 0); // only one bit should be set
       dist = zero;
       return mask;
     }
@@ -850,11 +849,13 @@ namespace embree
     };
 
     template<int N, int Nx>
-      struct BVHNNodeIntersector1<N,Nx,BVH_AN_4D,false>
+      struct BVHNNodeIntersector1<N,Nx,BVH_AN2_AN4D,false>
     {
       static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N,Nx>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist, size_t& mask)
       {
-        mask = intersectNode<N>(node.alignedNodeMB4D(),ray,tnear,tfar,time,dist);
+        //if (likely(node.isAlignedNodeMB()))   
+        mask = intersectNode<N>(node.alignedNodeMB(),ray,tnear,tfar,time,dist);
+        //else /*if (node.isAlignedNodeMB4D())*/  mask = intersectNode<N>(node.alignedNodeMB4D(),ray,tnear,tfar,time,dist); // handled as leaf
         return true;
       }
     };
@@ -864,10 +865,9 @@ namespace embree
     {
       static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N,Nx>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist, size_t& mask)
       {
-        //if (unlikely(!node.isAlignedNodeMB())) return false;
         //if (likely(node.isAlignedNodeMB()))   
         mask = intersectNode<N>(node.alignedNodeMB(),ray,tnear,tfar,time,dist);
-        //else /*if (node.isTimeSplitNode())*/  mask = intersectNode<N>(node.timeSplitNode(),ray,tnear,tfar,time,dist);
+        //else /*if (node.isTimeSplitNode())*/  mask = intersectNode<N>(node.timeSplitNode(),ray,tnear,tfar,time,dist); // handles as leaf
         return true;
       }
     };
@@ -975,13 +975,14 @@ namespace embree
     };
 
     template<int N, int K>
-    struct BVHNNodeIntersectorK<N,K,BVH_AN_4D,false>
+    struct BVHNNodeIntersectorK<N,K,BVH_AN2_AN4D,false>
     {
       static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const size_t i, 
                                           const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
                                           const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist, vbool<K>& vmask)
       {
-        vmask = intersectNode<N,K>(node.alignedNodeMB4D(),i,org,rdir,org_rdir,tnear,tfar,time,dist);
+        if (likely(node.isAlignedNodeMB()))    vmask = intersectNode<N,K>(node.alignedNodeMB(),i,org,rdir,org_rdir,tnear,tfar,time,dist);
+        else /*if (node.isAlignedNodeMB4D())*/ vmask = intersectNode<N,K>(node.alignedNodeMB4D(),i,org,rdir,org_rdir,tnear,tfar,time,dist);
         return true;
       }
     };

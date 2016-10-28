@@ -414,11 +414,33 @@ namespace embree
       BVH* bvh;
     };
 
+    template<int N>
+      struct CreateAlignedNodeMB2
+    {
+      typedef BVHN<N> BVH;
+      typedef typename BVH::AlignedNodeMB AlignedNodeMB;
+
+      __forceinline CreateAlignedNodeMB2 (BVH* bvh) : bvh(bvh) {}
+      
+      __forceinline AlignedNodeMB* operator() (const isa::BVHBuilderBinnedSAH::BuildRecord& current, BVHBuilderBinnedSAH::BuildRecord* children, const size_t num, FastAllocator::ThreadLocal2* alloc)
+      {
+        AlignedNodeMB* node = (AlignedNodeMB*) alloc->alloc0->malloc(sizeof(AlignedNodeMB),BVH::byteNodeAlignment); node->clear();
+        for (size_t i=0; i<num; i++) {
+          children[i].parent = (size_t*)&node->child(i);
+        }
+        *current.parent = bvh->encodeNode(node);
+	return node;
+      }
+
+      BVH* bvh;
+    };
+
     template<int N, typename Mesh, typename Primitive>
     struct BVHNBuilderMSMBlur4DSAH : public Builder
     {
       typedef BVHN<N> BVH;
       typedef typename BVHN<N>::NodeRef NodeRef;
+      typedef typename BVHN<N>::AlignedNodeMB AlignedNodeMB;
       typedef typename BVHN<N>::AlignedNodeMB4D AlignedNodeMB4D;
       BVH* bvh;
       Scene* scene;
@@ -444,12 +466,12 @@ namespace embree
           const PrimInfo pinfo = createPrimRefArrayMBlur<Mesh>(dti.begin(),bvh->numTimeSteps,scene,prims,bvh->scene->progressInterface);
 
           /* reduction function */
-          auto reduce = [&] (AlignedNodeMB4D* node, const LBBox3fa* bounds, const size_t num) -> LBBox3fa
+          auto reduce = [&] (AlignedNodeMB* node, const LBBox3fa* bounds, const size_t num) -> LBBox3fa
           {
             assert(num <= N);
             LBBox3fa allBounds = empty;
             for (size_t i=0; i<num; i++) {
-              node->set(i, bounds[i].global(dt), dt);
+              node->set(i, bounds[i].global(dt));
               allBounds.extend(bounds[i]);
             }
             return allBounds;
@@ -458,7 +480,7 @@ namespace embree
           
           NodeRef root;
           LBBox3fa root_bounds = BVHBuilderBinnedSAH::build_reduce<NodeRef>
-            (root,typename BVH::CreateAlloc(bvh),identity,CreateAlignedNodeMB4D<N>(bvh),reduce,CreateMSMBlurLeaf<N,Primitive>(bvh,prims.data(),dti.begin()),bvh->scene->progressInterface,
+            (root,typename BVH::CreateAlloc(bvh),identity,CreateAlignedNodeMB2<N>(bvh),reduce,CreateMSMBlurLeaf<N,Primitive>(bvh,prims.data(),dti.begin()),bvh->scene->progressInterface,
              prims.data(),pinfo,N,BVH::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
           
           return std::make_tuple(root,root_bounds.global(dt));
@@ -528,27 +550,6 @@ namespace embree
       }
     };
 
-    template<int N>
-      struct CreateAlignedNodeMB2
-    {
-      typedef BVHN<N> BVH;
-      typedef typename BVH::AlignedNodeMB AlignedNodeMB;
-
-      __forceinline CreateAlignedNodeMB2 (BVH* bvh) : bvh(bvh) {}
-      
-      __forceinline AlignedNodeMB* operator() (const isa::BVHBuilderBinnedSAH::BuildRecord& current, BVHBuilderBinnedSAH::BuildRecord* children, const size_t num, FastAllocator::ThreadLocal2* alloc)
-      {
-        AlignedNodeMB* node = (AlignedNodeMB*) alloc->alloc0->malloc(sizeof(AlignedNodeMB),BVH::byteNodeAlignment); node->clear();
-        for (size_t i=0; i<num; i++) {
-          children[i].parent = (size_t*)&node->child(i);
-        }
-        *current.parent = bvh->encodeNode(node);
-	return node;
-      }
-
-      BVH* bvh;
-    };
-
     template<int N, typename Mesh, typename Primitive>
     struct BVHNBuilderMSMBlurTSSAH : public Builder
     {
@@ -598,7 +599,6 @@ namespace embree
              prims.data(),pinfo,N,BVH::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
           
           return std::make_tuple(root,root_bounds.global(dt));
-          //NodeRef node = BVH4::emptyNode; return std::make_tuple(node,root_bounds);
         }
         else
         {

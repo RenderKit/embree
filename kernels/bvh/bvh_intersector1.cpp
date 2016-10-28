@@ -106,17 +106,37 @@ namespace embree
           /* select next child and push other children */
           nodeTraverser.traverseClosestHit(cur,mask,tNear,stackPtr,stackEnd);
         }
-
-        /* time split node support */
-        if (unlikely(cur.isTimeSplitNode())) 
+        
+        /* AlignedNodeMB4D support */
+        if (types & BVH_FLAG_ALIGNED_NODE_MB4D)
         {
-          STAT3(normal.trav_nodes,1,1,1);
-          const TimeSplitNode* node = cur.timeSplitNode();
-          vfloat<N> dist = zero;
-          size_t mask = intersectNode<N>(node,vray,ray_near,ray_far,pre.ftime(),dist);
-          if (mask == 0) goto pop;
-          cur = node->child(__bsf(mask));
-          goto cont;
+          if (unlikely(cur.isAlignedNodeMB4D())) 
+          {
+            STAT3(normal.trav_nodes,1,1,1);
+            const AlignedNodeMB4D* node = cur.alignedNodeMB4D();
+            vfloat<N> dist = zero;
+            size_t mask = intersectNode<N>(node,vray,ray_near,ray_far,pre.ftime(),dist);
+            assert((mask & (mask-1)) == 0);
+            if (mask == 0) goto pop;
+            cur = node->child(__bsf(mask));
+            goto cont;
+          }
+        }
+
+        /* TimeSplitNode support */
+        if (types & BVH_FLAG_TIME_SPLIT_NODE)
+        {
+          if (unlikely(cur.isTimeSplitNode())) 
+          {
+            STAT3(normal.trav_nodes,1,1,1);
+            const TimeSplitNode* node = cur.timeSplitNode();
+            vfloat<N> dist = zero;
+            size_t mask = intersectNode<N>(node,vray,ray_near,ray_far,pre.ftime(),dist);
+            assert((mask & (mask-1)) == 0);
+            if (mask == 0) goto pop;
+            cur = node->child(__bsf(mask));
+            goto cont;
+          }
         }
 
         /* ray transformation support */
@@ -214,17 +234,37 @@ namespace embree
           /* select next child and push other children */
           nodeTraverser.traverseAnyHit(cur,mask,tNear,stackPtr,stackEnd);
         }
-        
-        /* time split node support */
-        if (unlikely(cur.isTimeSplitNode())) 
+
+        /* AlignedNodeMB4D support */
+        if (types & BVH_FLAG_ALIGNED_NODE_MB4D)
         {
-          STAT3(shadow.trav_nodes,1,1,1);
-          const TimeSplitNode* node = cur.timeSplitNode();
-          vfloat<N> dist = zero;
-          size_t mask = intersectNode<N>(node,vray,ray_near,ray_far,pre.ftime(),dist);
-          if (mask == 0) goto pop;
-          cur = node->child(__bsf(mask));
-          goto cont;
+          if (unlikely(cur.isAlignedNodeMB4D())) 
+          {
+            STAT3(normal.trav_nodes,1,1,1);
+            const AlignedNodeMB4D* node = cur.alignedNodeMB4D();
+            vfloat<N> dist = zero;
+            size_t mask = intersectNode<N>(node,vray,ray_near,ray_far,pre.ftime(),dist);
+            assert((mask & (mask-1)) == 0);
+            if (mask == 0) goto pop;
+            cur = node->child(__bsf(mask));
+            goto cont;
+          }
+        }
+
+        /* TimeSplitNode support */
+        if (types & BVH_FLAG_TIME_SPLIT_NODE)
+        {
+          if (unlikely(cur.isTimeSplitNode())) 
+          {
+            STAT3(normal.trav_nodes,1,1,1);
+            const TimeSplitNode* node = cur.timeSplitNode();
+            vfloat<N> dist = zero;
+            size_t mask = intersectNode<N>(node,vray,ray_near,ray_far,pre.ftime(),dist);
+            assert((mask & (mask-1)) == 0);
+            if (mask == 0) goto pop;
+            cur = node->child(__bsf(mask));
+            goto cont;
+          }
         }
 
         /* ray transformation support */
@@ -282,7 +322,7 @@ namespace embree
     IF_ENABLED_TRIS(DEFINE_INTERSECTOR1(BVH4Triangle4vMBIntersector1Pluecker,BVHNIntersector1<4 COMMA BVH_AN2 COMMA true  COMMA ArrayIntersector1<TriangleMvMBIntersector1Pluecker<SIMD_MODE(4) COMMA true> > >));
     IF_ENABLED_TRIS(DEFINE_INTERSECTOR1(BVH4Triangle4iMBIntersector1Pluecker,BVHNIntersector1<4 COMMA BVH_AN2 COMMA true  COMMA ArrayIntersector1<TriangleMiMBIntersector1Pluecker<SIMD_MODE(4) COMMA true> > >));
 
-    IF_ENABLED_TRIS(DEFINE_INTERSECTOR1(BVH4MB4DTriangle4iMBIntersector1Moeller, BVHNIntersector1<4 COMMA BVH_AN_4D COMMA false COMMA ArrayIntersector1<TriangleMiMBIntersector1Moeller <SIMD_MODE(4) COMMA true> > >));
+    IF_ENABLED_TRIS(DEFINE_INTERSECTOR1(BVH4MB4DTriangle4iMBIntersector1Moeller, BVHNIntersector1<4 COMMA BVH_AN2_AN4D COMMA false COMMA ArrayIntersector1<TriangleMiMBIntersector1Moeller <SIMD_MODE(4) COMMA true> > >));
     IF_ENABLED_TRIS(DEFINE_INTERSECTOR1(BVH4MBTSTriangle4iMBIntersector1Moeller, BVHNIntersector1<4 COMMA BVH_AN2_TS COMMA false COMMA ArrayIntersector1<TriangleMiMBIntersector1Moeller <SIMD_MODE(4) COMMA true> > >));
 
     IF_ENABLED_QUADS(DEFINE_INTERSECTOR1(BVH4Quad4vIntersector1Moeller, BVHNIntersector1<4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<QuadMvIntersector1Moeller <4 COMMA true> > >));
@@ -322,7 +362,7 @@ namespace embree
     IF_ENABLED_TRIS(DEFINE_INTERSECTOR1(BVH8Triangle4vMBIntersector1Pluecker,BVHNIntersector1<8 COMMA BVH_AN2 COMMA true  COMMA ArrayIntersector1<TriangleMvMBIntersector1Pluecker<SIMD_MODE(4) COMMA true> > >));
     IF_ENABLED_TRIS(DEFINE_INTERSECTOR1(BVH8Triangle4iMBIntersector1Pluecker,BVHNIntersector1<8 COMMA BVH_AN2 COMMA true  COMMA ArrayIntersector1<TriangleMiMBIntersector1Pluecker<SIMD_MODE(4) COMMA true> > >));
 
-    IF_ENABLED_TRIS(DEFINE_INTERSECTOR1(BVH8MB4DTriangle4iMBIntersector1Moeller, BVHNIntersector1<8 COMMA BVH_AN_4D COMMA false COMMA ArrayIntersector1<TriangleMiMBIntersector1Moeller <SIMD_MODE(4) COMMA true> > >));
+    IF_ENABLED_TRIS(DEFINE_INTERSECTOR1(BVH8MB4DTriangle4iMBIntersector1Moeller, BVHNIntersector1<8 COMMA BVH_AN2_AN4D COMMA false COMMA ArrayIntersector1<TriangleMiMBIntersector1Moeller <SIMD_MODE(4) COMMA true> > >));
     IF_ENABLED_TRIS(DEFINE_INTERSECTOR1(BVH8MBTSTriangle4iMBIntersector1Moeller, BVHNIntersector1<8 COMMA BVH_AN2_TS COMMA false COMMA ArrayIntersector1<TriangleMiMBIntersector1Moeller <SIMD_MODE(4) COMMA true> > >));
 
     IF_ENABLED_QUADS(DEFINE_INTERSECTOR1(BVH8Quad4vIntersector1Moeller, BVHNIntersector1<8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<QuadMvIntersector1Moeller <4 COMMA true> > >));

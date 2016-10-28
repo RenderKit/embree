@@ -41,8 +41,8 @@ namespace embree
     /* short versions */
     BVH_AN1 = BVH_FLAG_ALIGNED_NODE,
     BVH_AN2 = BVH_FLAG_ALIGNED_NODE_MB,
-    BVH_AN_4D = BVH_FLAG_ALIGNED_NODE_MB4D,
     BVH_AN2_TS = BVH_FLAG_ALIGNED_NODE_MB | BVH_FLAG_TIME_SPLIT_NODE,
+    BVH_AN2_AN4D = BVH_FLAG_ALIGNED_NODE_MB | BVH_FLAG_ALIGNED_NODE_MB4D,
     BVH_UN1 = BVH_FLAG_UNALIGNED_NODE,
     BVH_UN2 = BVH_FLAG_UNALIGNED_NODE_MB,
     BVH_MB = BVH_FLAG_ALIGNED_NODE_MB | BVH_FLAG_UNALIGNED_NODE_MB,
@@ -330,7 +330,8 @@ namespace embree
 
       __forceinline size_t isLeaf(int types) const 
       { 
-        if (types == BVH_AN2_TS) return !isAlignedNodeMB();
+        if      (types == BVH_AN2_TS  ) return !isAlignedNodeMB();
+        else if (types == BVH_AN2_AN4D) return !isAlignedNodeMB();
         else return ptr & tyLeaf; 
       }
 
