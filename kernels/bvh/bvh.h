@@ -633,11 +633,6 @@ namespace embree
                        Vec3fa(upper_x[i]+upper_dx[i],upper_y[i]+upper_dy[i],upper_z[i]+upper_dz[i]));
       }
 
-      /*! Returns the expected surface area when randomly sampling the time. */
-      __forceinline float expectedHalfArea(size_t i) const {
-        return 0.5f*(halfArea(bounds0(i))+halfArea(bounds1(i))); // FIXME: only approximative
-      }
-
       /*! Returns bounds of node. */
       __forceinline BBox3fa bounds() const {
         return BBox3fa(Vec3fa(reduce_min(min(lower_x,lower_x+lower_dx)),
@@ -656,6 +651,16 @@ namespace embree
       /*! Return bounding box of child i at specified time */
       __forceinline BBox3fa bounds(size_t i, float time) const {
         return lerp(bounds0(i),bounds1(i),time);
+      }
+
+      /*! Returns the expected surface area when randomly sampling the time. */
+      __forceinline float expectedHalfArea(size_t i) const {
+        return 0.5f*(halfArea(bounds0(i))+halfArea(bounds1(i))); // FIXME: only approximative
+      }
+
+      /*! Returns the expected surface area when randomly sampling the time. */
+      __forceinline float expectedHalfArea(size_t i, const BBox1f& t0t1) const {
+        return 0.5f*(halfArea(bounds(i,t0t1.lower))+halfArea(bounds(i,t0t1.upper))); // FIXME: only approximative
       }
 
       /*! swap two children of the node */
@@ -780,6 +785,11 @@ namespace embree
       /*! Returns the expected surface area when randomly sampling the time. */
       __forceinline float expectedHalfArea(size_t i) const {
         return 0.5f*(upper_t[i]-lower_t[i])*(halfArea(bounds(i,lower_t[i]))+halfArea(bounds(i,upper_t[i]))); // FIXME: only approximative
+      }
+
+      /*! returns time range for specified child */
+      __forceinline BBox1f timeRange(size_t i) const {
+        return BBox1f(lower_t[i],upper_t[i]);
       }
 
       /*! stream output operator */
@@ -980,6 +990,11 @@ namespace embree
       /*! Returns reference to specified child */
       __forceinline       NodeRef& child(size_t i)       { assert(i<N); return children[i]; }
       __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
+
+      /*! returns time range for specified child */
+      __forceinline BBox1f timeRange(size_t i) const {
+        return BBox1f(lower_t[i],upper_t[i]);
+      }
 
       /*! output operator */
       friend std::ostream& operator<<(std::ostream& o, const TimeSplitNode& n)

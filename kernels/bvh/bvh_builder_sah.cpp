@@ -193,7 +193,7 @@ namespace embree
             if (presplitFactor > 1.0f) 
               pinfo = presplit<Mesh>(scene, pinfo, prims);
         
-            /* call BVH builder */
+            /* call BVH builder */            
             bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
             BVHNBuilder<N>::build(bvh,CreateLeaf<N,Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
 

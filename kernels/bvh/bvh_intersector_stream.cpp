@@ -242,7 +242,6 @@ namespace embree
       __aligned(64) Frusta frusta;
 
       const size_t m_active = initPacketsAndFrusta(inputPackets, numOctantRays, packet, frusta);
-
       if (unlikely(m_active == 0)) return; 
 
       stack[0].mask    = m_active;

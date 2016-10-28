@@ -77,7 +77,7 @@ namespace embree
       if (builders.size() < num) builders.resize(num);
       if (refs.size()     < num) refs.resize(num);
       nextRef.store(0);
-      
+
       /* create of acceleration structures */
       parallel_for(size_t(0), num, [&] (const range<size_t>& r)
       {
@@ -122,7 +122,7 @@ namespace embree
             refs[nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->getBounds(),object->root);
         }
       });
-      
+
       /* fast path for single geometry scenes */
       if (nextRef == 1) { 
         bvh->set(refs[0].node,LBBox3fa(refs[0].bounds()),numPrimitives);
