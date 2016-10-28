@@ -108,7 +108,7 @@ namespace embree
         }
         
         /* AlignedNodeMB4D support */
-        if (types & BVH_FLAG_ALIGNED_NODE_MB4D)
+        /*if (types & BVH_FLAG_ALIGNED_NODE_MB4D)
         {
           if (unlikely(cur.isAlignedNodeMB4D())) 
           {
@@ -121,7 +121,7 @@ namespace embree
             cur = node->child(__bsf(mask));
             goto cont;
           }
-        }
+          }*/
 
         /* TimeSplitNode support */
         if (types & BVH_FLAG_TIME_SPLIT_NODE)
@@ -236,7 +236,7 @@ namespace embree
         }
 
         /* AlignedNodeMB4D support */
-        if (types & BVH_FLAG_ALIGNED_NODE_MB4D)
+        /*if (types & BVH_FLAG_ALIGNED_NODE_MB4D)
         {
           if (unlikely(cur.isAlignedNodeMB4D())) 
           {
@@ -249,7 +249,7 @@ namespace embree
             cur = node->child(__bsf(mask));
             goto cont;
           }
-        }
+          }*/
 
         /* TimeSplitNode support */
         if (types & BVH_FLAG_TIME_SPLIT_NODE)
