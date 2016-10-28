@@ -559,57 +559,6 @@ namespace embree
     return v;  
   }
 
-#if 0
-  __forceinline vfloat16 prefix_min(const vfloat16& a)
-  {
-    vfloat16 v = a;
-    v = mask_min(0xaaaa,v,v,shuffle<2,2,0,0>(v));
-    v = mask_min(0xcccc,v,v,shuffle<1,1,1,1>(v));
-    const vfloat16 shuf_v0 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(2,2,0,0),_MM_SWIZ_REG_DDDD);
-    v = mask_min(0xf0f0,v,v,shuf_v0);
-    const vfloat16 shuf_v1 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(1,1,0,0),_MM_SWIZ_REG_DDDD);
-    v = mask_min(0xff00,v,v,shuf_v1);
-    return v;  
-  }
-  
-  __forceinline vfloat16 prefix_max(const vfloat16& a)
-  {
-    vfloat16 v = a;
-    v = mask_max(0xaaaa,v,v,shuffle<2,2,0,0>(v));
-    v = mask_max(0xcccc,v,v,shuffle<1,1,1,1>(v));
-    const vfloat16 shuf_v0 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(2,2,0,0),_MM_SWIZ_REG_DDDD);
-    v = mask_max(0xf0f0,v,v,shuf_v0);
-    const vfloat16 shuf_v1 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(1,1,0,0),_MM_SWIZ_REG_DDDD);
-    v = mask_max(0xff00,v,v,shuf_v1);
-    return v;  
-  }
-
-  __forceinline vfloat16 reverse_prefix_min(const vfloat16& a)
-  {
-    vfloat16 v = a;
-    v = mask_min(0x5555,v,v,shuffle<3,3,1,1>(v));
-    v = mask_min(0x3333,v,v,shuffle<2,2,2,2>(v));
-    const vfloat16 shuf_v0 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(3,3,1,1),_MM_SWIZ_REG_AAAA);
-    v = mask_min(0x0f0f,v,v,shuf_v0);
-    const vfloat16 shuf_v1 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(2,2,2,2),_MM_SWIZ_REG_AAAA);
-    v = mask_min(0x00ff,v,v,shuf_v1);
-    return v;  
-  }
-
-  __forceinline vfloat16 reverse_prefix_max(const vfloat16& a)
-  {
-    vfloat16 v = a;
-    v = mask_max(0x5555,v,v,shuffle<3,3,1,1>(v));
-    v = mask_max(0x3333,v,v,shuffle<2,2,2,2>(v));
-    const vfloat16 shuf_v0 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(3,3,1,1),_MM_SWIZ_REG_AAAA);
-    v = mask_max(0x0f0f,v,v,shuf_v0);
-    const vfloat16 shuf_v1 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(2,2,2,2),_MM_SWIZ_REG_AAAA);
-    v = mask_max(0x00ff,v,v,shuf_v1);
-    return v;  
-  }
-
-#else
-
   __forceinline vfloat16 prefix_min(const vfloat16& a)
   {
     const vint16 perm0(0,1,2,3,3,3,3,3,8,9,10,11,11,11,11,11);       
@@ -617,10 +566,8 @@ namespace embree
     vfloat16 v = a;
     v = min(v,shuffle<2,2,0,0>(v));
     v = min(v,shuffle<1,1,1,0>(v));
-    const vfloat16 shuf_v0 = permute(v,perm0);
-    v = min(v,shuf_v0);
-    const vfloat16 shuf_v1 = permute(v,perm1);
-    v = min(v,shuf_v1);
+    v = min(v,permute(v,perm0));
+    v = min(v,permute(v,perm1));
     return v;  
   }
 
@@ -631,10 +578,8 @@ namespace embree
     vfloat16 v = a;
     v = max(v,shuffle<2,2,0,0>(v));
     v = max(v,shuffle<1,1,1,0>(v));
-    const vfloat16 shuf_v0 = permute(v,perm0);
-    v = max(v,shuf_v0);
-    const vfloat16 shuf_v1 = permute(v,perm1);
-    v = max(v,shuf_v1);
+    v = max(v,permute(v,perm0));
+    v = max(v,permute(v,perm1));
     return v;  
   }
 
@@ -646,10 +591,8 @@ namespace embree
     vfloat16 v = a;
     v = min(v,shuffle<3,3,1,1>(v));
     v = min(v,shuffle<3,2,2,2>(v));
-    const vfloat16 shuf_v0 = permute(v,perm0);
-    v = min(v,shuf_v0);
-    const vfloat16 shuf_v1 = permute(v,perm1);
-    v = min(v,shuf_v1);
+    v = min(v,permute(v,perm0));
+    v = min(v,permute(v,perm1));
     return v;  
   }
 
@@ -660,14 +603,10 @@ namespace embree
     vfloat16 v = a;
     v = max(v,shuffle<3,3,1,1>(v));
     v = max(v,shuffle<3,2,2,2>(v));
-    const vfloat16 shuf_v0 = permute(v,perm0);
-    v = max(v,shuf_v0);
-    const vfloat16 shuf_v1 = permute(v,perm1);
-    v = max(v,shuf_v1);
+    v = max(v,permute(v,perm0));
+    v = max(v,permute(v,perm1));
     return v;  
   }
-
-#endif
 
   __forceinline vfloat16 set_min4(vfloat16 x) {
     x = min(x,shuffle(x,_MM_SWIZ_REG_BADC));
