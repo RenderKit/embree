@@ -19,6 +19,8 @@
 #include "../common/default.h"
 #include "../common/scene.h"
 #include "../common/simd/simd.h"
+#include "../common/primref.h"
+#include "../common/primref2.h"
 
 namespace embree
 {

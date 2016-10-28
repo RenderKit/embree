@@ -174,7 +174,7 @@ namespace embree
      /*! calculates the bounds of the i'th triangle at time ftime */
     __forceinline BBox3fa bounds(size_t i, float time) const
     {
-      float ftime; int itime = getTimeSegment(time,numTimeSegments(),ftime);
+      float ftime; size_t itime = getTimeSegment(time,numTimeSegments(),ftime);
       const BBox3fa b0 = bounds(i,itime+0);
       const BBox3fa b1 = bounds(i,itime+1);
       return lerp(b0,b1,ftime);
@@ -257,7 +257,7 @@ namespace embree
       const int iupper = (int)floor(time_range.upper*numTimeSegments());
       for (size_t i=ilower; i<=iupper; i++) 
       {
-        const float f = float(i)/float(numTimeSegments);
+        const float f = float(i)/float(numTimeSegments());
         const BBox3fa bt = lerp(b0,b1,f);
         const BBox3fa bi = bounds(primID,i);
         const Vec3fa dlower = min(bi.lower-bt.lower,Vec3fa(zero));

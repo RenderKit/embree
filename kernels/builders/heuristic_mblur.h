@@ -27,7 +27,7 @@ namespace embree
   namespace isa
   { 
     /*! Performs standard object binning */
-    template<size_t BINS>
+    template<typename Mesh, size_t BINS>
       struct HeuristicMBlur
       {
         typedef BinSplit<BINS> Split;
@@ -35,8 +35,18 @@ namespace embree
         typedef BinSplit<BINS> TemporalSplit;
         typedef BinInfo<BINS,PrimRef2> ObjectBinner;
 
-        struct Set {
-          std::shared_ptr<std::vector<PrimRef2>> prims;
+        struct Set 
+        {
+          __forceinline Set () {}
+
+          __forceinline Set(const std::shared_ptr<avector<PrimRef2>>& prims, range<size_t> object_range, BBox1f time_range)
+            : prims(prims), object_range(object_range), time_range(time_range) {}
+
+          __forceinline Set(std::shared_ptr<avector<PrimRef2>>& prims, BBox1f time_range = BBox1f(0.0f,1.0f))
+            : prims(prims), object_range(range<size_t>(0,prims->size())), time_range(time_range) {}
+
+        public:
+          std::shared_ptr<avector<PrimRef2>> prims;
           range<size_t> object_range;
           BBox1f time_range;
         };
@@ -45,14 +55,10 @@ namespace embree
         static const size_t PARALLEL_FIND_BLOCK_SIZE = 1024;
         static const size_t PARALLEL_PARITION_BLOCK_SIZE = 128;
 
-        __forceinline HeuristicMBlur ()
-          : prims(nullptr) {}
+        HeuristicMBlur (Scene* scene)
+          : scene(scene) {}
         
-        /*! remember prim array */
-        __forceinline HeuristicMBlur (PrimRef2* prims)
-          : prims(prims) {}
-
-         /*! finds the best split */
+        /*! finds the best split */
         const Split find(Set& set, PrimInfo& pinfo, const size_t logBlockSize)
         {
           /* first try standard object split */
@@ -76,12 +82,14 @@ namespace embree
         }
 
         /*! finds the best split */
-        const ObjectSplit object_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
+        const ObjectSplit object_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize, SplitInfo& sinfo)
         {
           ObjectBinner binner(empty); // FIXME: this clear can be optimized away
           const BinMapping<BINS> mapping(pinfo);
-          binner.bin(set.prims->data(),set.begin(),set.end(),mapping);
-          return binner.best(mapping,logBlockSize);
+          binner.bin(set.prims->data(),set.object_range.begin(),set.object_range.end(),mapping);
+          ObjectSplit split = binner.best(mapping,logBlockSize);
+          binner.getSplitInfo(mapping, split, sinfo);
+          return split;
         }
 
         /*! finds the best split */
@@ -95,19 +103,21 @@ namespace embree
           /* find linear bounds for both time segments */
           LBBox3fa bounds0 = empty;
           LBBox3fa bounds1 = empty;
-          for (size_t i=set.object_range.begin; i<set.object_range.end; i++) {
+          for (size_t i=set.object_range.begin(); i<set.object_range.end(); i++) 
+          {
+            const avector<PrimRef2>& prims = *set.prims;
             const unsigned geomID = prims[i].geomID();
             const unsigned primID = prims[i].primID();
-            const LBBox3fa b0 = scene->linear_bounds(scene->get(geomID)->linearBounds(primID,dt0));
-            const LBBox3fa b1 = scene->linear_bounds(scene->get(geomID)->linearBounds(primID,dt1));
+            const LBBox3fa b0 = ((Mesh*)scene->get(geomID))->linearBounds(primID,dt0);
+            const LBBox3fa b1 = ((Mesh*)scene->get(geomID))->linearBounds(primID,dt1);
             bounds0.extend(b0);
             bounds1.extend(b1);
           }
 
           /* calculate sah */
-          const size_t lCount = (set.size()+(1 << logBlockSize)-1) >> int(blocks_shift), rCount = lCount;
-          const float sah = b0.expectedHalfArea()*float(lCount) + b1.expectedHalfArea()*float(rCount);
-          return TemporalSplit(bestSAH,-1);
+          const size_t lCount = (set.object_range.size()+(1 << logBlockSize)-1) >> int(logBlockSize), rCount = lCount;
+          const float sah = bounds0.expectedApproxHalfArea()*float(lCount) + bounds1.expectedApproxHalfArea()*float(rCount);
+          return TemporalSplit(sah,-1);
         }
         
         /*! array partitioning */
@@ -121,11 +131,11 @@ namespace embree
 
           /* perform temporal split */
           if (unlikely(split.data != 0))
-            temporal_split(split,set,left,lset,right,rset);
+            temporal_split(split,pinfo,set,left,lset,right,rset);
           
           /* perform object split */
           else 
-            object_split(split,set,left,lset,right,rset);
+            object_split(split,pinfo,set,left,lset,right,rset);
 
           assert(lset.begin() == left.begin);
           assert(lset.end()   == left.end);
@@ -138,8 +148,8 @@ namespace embree
         /*! array partitioning */
         __forceinline void object_split(const ObjectSplit& split, const PrimInfo& pinfo, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
         {
-          const size_t begin = set.begin();
-          const size_t end   = set.end();
+          const size_t begin = set.object_range.begin();
+          const size_t end   = set.object_range.end();
           CentGeomBBox3fa local_left(empty);
           CentGeomBBox3fa local_right(empty);
           const unsigned int splitPos = split.pos;
@@ -148,16 +158,15 @@ namespace embree
 
           const vint4 vSplitPos(splitPos);
           const vbool4 vSplitMask( (int)splitDimMask );
-          auto isLeft = [&] (const PrimRef2 &ref) { return any(((vint4)split.mapping.bin_unsafe(center2(ref.bounds())) < vSplitPos) & vSplitMask); };
+          auto isLeft = [&] (const PrimRef2 &ref) { return any(((vint4)split.mapping.bin_unsafe(ref.binBounds().center2()) < vSplitPos) & vSplitMask); };
+          auto reduction = [] (CentGeomBBox3fa& pinfo,const PrimRef2& ref) { pinfo.extend(ref.binBounds()); };
 
           size_t center = 0;
-          center = serial_partitioning(prims,begin,end,local_left,local_right,isLeft,
-                                       [] (CentGeomBBox3fa& pinfo,const PrimRef2& ref) { pinfo.extend(ref.bounds()); });          
-          
+          center = serial_partitioning(set.prims->data(),begin,end,local_left,local_right,isLeft,reduction);
           new (&left ) PrimInfo(begin,center,local_left.geomBounds,local_left.centBounds);
           new (&right) PrimInfo(center,end,local_right.geomBounds,local_right.centBounds);
-          new (&lset) Set(set.prims,begin,center);
-          new (&rset) Set(set.prims,center,end);
+          new (&lset) Set(set.prims,range<size_t>(begin,center),set.time_range);
+          new (&rset) Set(set.prims,range<size_t>(center,end  ),set.time_range);
           assert(area(left.geomBounds) >= 0.0f);
           assert(area(right.geomBounds) >= 0.0f);
         }
@@ -172,24 +181,28 @@ namespace embree
           
           /* calculate primrefs for first time range */
           linfo = empty;
-          std::shared_ptr<std::vector<PrimRef2>> lprims = new std::vector<PrimRef2>(lset.object_range.size());
-          for (size_t i=set.object_range.begin; i<set.object_range.end; i++) {
-            const unsigned geomID = set.prims[i].geomID();
-            const unsigned primID = set.prims[i].primID();
-            const BBox3fa lbounds = scene->linear_bounds(scene->get(geomID)->linearBounds(primID,dt0));
-            (*lprims)[i-set.object_range.begin] = PrimRef2(lbounds,geomID,primID);
+          std::shared_ptr<avector<PrimRef2>> lprims(new avector<PrimRef2>(lset.object_range.size()));
+          for (size_t i=set.object_range.begin(); i<set.object_range.end(); i++) 
+          {
+            const avector<PrimRef2>& prims = *set.prims;
+            const unsigned geomID = prims[i].geomID();
+            const unsigned primID = prims[i].primID();
+            const LBBox3fa lbounds = ((Mesh*)scene->get(geomID))->linearBounds(primID,time_range0);
+            (*lprims)[i-set.object_range.begin()] = PrimRef2(lbounds,geomID,primID);
             linfo.add(lbounds.interpolate(0.5f));
           }
           lset = Set(lprims,time_range0);
 
           /* calculate primrefs for first time range */
           rinfo = empty;
-          std::shared_ptr<std::vector<PrimRef2>> rprims = new std::vector<PrimRef2>(rset.object_range.size());
-          for (size_t i=set.object_range.begin; i<set.object_range.end; i++) {
-            const unsigned geomID = set.prims[i].geomID();
-            const unsigned primID = set.prims[i].primID();
-            const BBox3fa lbounds = scene->linear_bounds(scene->get(geomID)->linearBounds(primID,dt1));
-            (*rprims)[i-set.object_range.begin] = PrimRef2(rbounds,geomID,primID);
+          std::shared_ptr<avector<PrimRef2>> rprims(new avector<PrimRef2>(rset.object_range.size()));
+          for (size_t i=set.object_range.begin(); i<set.object_range.end(); i++) 
+          {
+            const avector<PrimRef2>& prims = *set.prims;
+            const unsigned geomID = prims[i].geomID();
+            const unsigned primID = prims[i].primID();
+            const LBBox3fa lbounds = ((Mesh*)scene->get(geomID))->linearBounds(primID,time_range1);
+            (*rprims)[i-set.object_range.begin()] = PrimRef2(lbounds,geomID,primID);
             rinfo.add(lbounds.interpolate(0.5f));
           }
           rset = Set(rprims,time_range1);
@@ -198,42 +211,34 @@ namespace embree
         void deterministic_order(const Set& set) 
         {
           /* required as parallel partition destroys original primitive order */
-          std::sort(&prims[set.begin()],&prims[set.end()]);
+          avector<PrimRef2>& prims = *set.prims;
+          std::sort(&prims[set.object_range.begin()],&prims[set.object_range.end()]);
         }
 
-        void deterministic_order(const PrimInfo& pinfo) 
+        void splitFallback(const Set& set, PrimInfo& linfo, Set& lset, PrimInfo& rinfo, Set& rset) // FIXME: also perform time split here?
         {
-          /* required as parallel partition destroys original primitive order */
-          std::sort(&prims[pinfo.begin],&prims[pinfo.end]);
-        }
-        
-        /*! array partitioning */
-        void splitFallback(const PrimInfo& pinfo, PrimInfo& left, PrimInfo& right) 
-        {
-          Set lset,rset;
-          Set set(pinfo.begin,pinfo.end);
-          splitFallback(set,left,lset,right,rset);
-        }
-        
-        void splitFallback(const Set& set, PrimInfo& linfo, Set& lset, PrimInfo& rinfo, Set& rset)
-        {
-          const size_t begin = set.begin();
-          const size_t end   = set.end();
+          avector<PrimRef2>& prims = *set.prims;
+
+          const size_t begin = set.object_range.begin();
+          const size_t end   = set.object_range.end();
           const size_t center = (begin + end)/2;
           
           CentGeomBBox3fa left; left.reset();
           for (size_t i=begin; i<center; i++)
-            left.extend(prims[i].bounds());
+            left.extend(prims[i].binBounds());
           new (&linfo) PrimInfo(begin,center,left.geomBounds,left.centBounds);
           
           CentGeomBBox3fa right; right.reset();
           for (size_t i=center; i<end; i++)
-            right.extend(prims[i].bounds());	
+            right.extend(prims[i].binBounds());	
           new (&rinfo) PrimInfo(center,end,right.geomBounds,right.centBounds);
           
-          new (&lset) range<size_t>(begin,center);
-          new (&rset) range<size_t>(center,end);
+          new (&lset) Set(set.prims,range<size_t>(begin,center),set.time_range);
+          new (&rset) Set(set.prims,range<size_t>(center,end  ),set.time_range);
         }
+
+      private:
+        Scene* scene;
       };
   }
 }

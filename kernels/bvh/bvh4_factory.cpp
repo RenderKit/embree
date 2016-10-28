@@ -231,7 +231,7 @@ namespace embree
   DECLARE_BUILDER2(void,Scene,size_t,BVH4Triangle4iSceneBuilderSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH4Triangle4vMBSceneBuilderSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH4Triangle4iMBSceneBuilderSAH);
-  DECLARE_BUILDER2(void,Scene,size_t,BVH4MB4DTriangle4iMBSceneBuildeRootTimeSplits);
+  DECLARE_BUILDER2(void,Scene,size_t,BVH4MB4DTriangle4iMBSceneBuilderRootTimeSplits);
   DECLARE_BUILDER2(void,Scene,size_t,BVH4MB4DTriangle4iMBSceneBuilderInternalTimeSplits);
   DECLARE_BUILDER2(void,Scene,size_t,BVH4MBTSTriangle4iMBSceneBuilderSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH4QuantizedTriangle4iSceneBuilderSAH);
@@ -1303,7 +1303,7 @@ namespace embree
     Builder* builder = nullptr;
     if (scene->device->tri_builder_mb == "default") { // FIXME: implement
       switch (bvariant) {
-      case BuildVariant::STATIC      : builder = BVH4MB4DTriangle4iMBSceneBuilderSAH(accel,scene,0); break;
+      case BuildVariant::STATIC      : builder = BVH4MB4DTriangle4iMBSceneBuilderRootTimeSplits(accel,scene,0); break;
       case BuildVariant::DYNAMIC     : assert(false); break; // FIXME: implement
       case BuildVariant::HIGH_QUALITY: assert(false); break;
       }

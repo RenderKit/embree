@@ -25,11 +25,21 @@ namespace embree
   {
     __forceinline PrimRef2 () {}
 
-    __forceinline PrimRef2 (const LBBox3fa& lbounds, unsigned int geomID, unsigned int primID) 
-      : lbounds(lbounds)
+    __forceinline PrimRef2 (const LBBox3fa& lbounds_i, unsigned int geomID, unsigned int primID) 
+      : lbounds(lbounds_i)
     {
       lbounds.bounds0.lower.a = geomID;
       lbounds.bounds0.upper.a = primID;
+    }
+
+    /*! returns bounds for binning */
+    __forceinline BBox3fa binBounds() const {
+      return lbounds.interpolate(0.5f);
+    }
+
+    /*! returns bounds for binning */
+    __forceinline BBox3fa bounds() const { // FIXME: only use binBounds function
+      return binBounds();
     }
 
     /*! returns the geometry ID */

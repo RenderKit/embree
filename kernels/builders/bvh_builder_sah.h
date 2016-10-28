@@ -18,6 +18,7 @@
 
 #include "heuristic_binning_array_aligned.h"
 #include "heuristic_spatial_array.h"
+#include "heuristic_mblur.h"
 #include "heuristic_sweep_array_aligned.h"
 
 #if defined(__AVX512F__)
@@ -399,11 +400,12 @@ namespace embree
     };
 
     /* SAH builder that operates on an array of BuildRecords */
-    struct BVHNBuilderMBlurBinnedSAH
+    template<typename Mesh>
+      struct BVHNBuilderMBlurBinnedSAH
     {
-      typedef HeuristicMBlur<NUM_OBJECT_BINS> Heuristic;
+      typedef HeuristicMBlur<Mesh,NUM_OBJECT_BINS> Heuristic;
       typedef typename Heuristic::Set Set;
-      typedef typename Heuristic::Set Split;
+      typedef typename Heuristic::Split Split;
       typedef GeneralBuildRecord<Set,Split> BuildRecord;
       
       /*! special builder that propagates reduction over the tree */
@@ -415,12 +417,13 @@ namespace embree
         typename CreateLeafFunc, 
         typename ProgressMonitor>
         
-        static ReductionTy build_reduce(NodeRef& root,
+        static ReductionTy build_reduce(Scene* scene,
+                                        NodeRef& root,
                                         CreateAllocFunc createAlloc, 
                                         const ReductionTy& identity, 
                                         CreateNodeFunc createNode, UpdateNodeFunc updateNode, CreateLeafFunc createLeaf, 
                                         ProgressMonitor progressMonitor,
-                                        std::shared_ptr<std::vector<PrimRef>> prims, const PrimInfo& pinfo, 
+                                        std::shared_ptr<avector<PrimRef2>> prims, const PrimInfo& pinfo, 
                                         const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, 
                                         const size_t minLeafSize, const size_t maxLeafSize,
                                         const float travCost, const float intCost)
@@ -430,7 +433,7 @@ namespace embree
         assert((blockSize ^ (size_t(1) << logBlockSize)) == 0);
 
         /* instantiate array binning heuristic */
-        Heuristic heuristic;
+        Heuristic heuristic(scene);
         
         typedef GeneralBVHBuilder<
           BuildRecord,

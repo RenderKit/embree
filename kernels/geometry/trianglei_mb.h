@@ -150,12 +150,24 @@ namespace embree
       return LBBox3fa(bounds(scene,itime+0),bounds(scene,itime+1));
     }
 
-    __forceinline LBBox3fa linearBounds(const Scene *const scene, size_t itime, size_t numTimeSteps) {
+    __forceinline LBBox3fa linearBounds(const Scene *const scene, size_t itime, size_t numTimeSteps) 
+    {
       LBBox3fa allBounds = empty;
       for (size_t i=0; i<M && valid(i); i++)
       {
         const TriangleMesh* mesh = scene->getTriangleMesh(geomID(i));
         allBounds.extend(mesh->linearBounds(primID(i), itime, numTimeSteps));
+      }
+      return allBounds;
+    }
+
+    __forceinline LBBox3fa linearBounds(const Scene *const scene, const BBox1f time_range) 
+    {
+      LBBox3fa allBounds = empty;
+      for (size_t i=0; i<M && valid(i); i++)
+      {
+        const TriangleMesh* mesh = scene->getTriangleMesh(geomID(i));
+        allBounds.extend(mesh->linearBounds(primID(i), time_range));
       }
       return allBounds;
     }
@@ -191,6 +203,39 @@ namespace embree
 
       new (this) TriangleMiMB(v0,v1,v2,geomID,primID); // FIXME: use non temporal store
       return linearBounds(scene,itime,numTimeSteps);
+    }
+
+    /* Fill triangle from triangle list */
+    __forceinline LBBox3fa fillMB(const PrimRef2* prims, size_t& begin, size_t end, Scene* scene, const BBox1f time_range)
+    {
+      vint<M> geomID = -1, primID = -1;
+      vint<M> v0 = zero, v1 = zero, v2 = zero;
+      const PrimRef2* prim = &prims[begin];
+
+      for (size_t i=0; i<M; i++)
+      {
+        const TriangleMesh* mesh = scene->getTriangleMesh(prim->geomID());
+        const TriangleMesh::Triangle& tri = mesh->triangle(prim->primID());
+        if (begin<end) {
+          geomID[i] = prim->geomID();
+          primID[i] = prim->primID();
+          v0[i] = tri.v[0];
+          v1[i] = tri.v[1];
+          v2[i] = tri.v[2];
+          begin++;
+        } else {
+          assert(i);
+          geomID[i] = geomID[0]; // always valid geomIDs
+          primID[i] = -1;        // indicates invalid data
+          v0[i] = 0;
+          v1[i] = 0;
+          v2[i] = 0;
+        }
+        if (begin<end) prim = &prims[begin];
+      }
+
+      new (this) TriangleMiMB(v0,v1,v2,geomID,primID); // FIXME: use non temporal store
+      return linearBounds(scene,time_range);
     }
 
     /* Updates the primitive */

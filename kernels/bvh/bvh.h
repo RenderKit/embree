@@ -148,7 +148,7 @@ namespace embree
 
       BVHN* bvh;
     };
-
+    
     /*! Builder interface to create Node */
     struct CreateQuantizedNode
     {
@@ -649,6 +649,11 @@ namespace embree
         return merge(bounds0(i),bounds1(i));
       }
 
+      /*! Return linear bounding box of child i */
+      __forceinline LBBox3fa lbounds(size_t i) const {
+        return LBBox3fa(bounds0(i),bounds1(i));
+      }
+
       /*! Return bounding box of child i at specified time */
       __forceinline BBox3fa bounds(size_t i, float time) const {
         return lerp(bounds0(i),bounds1(i),time);
@@ -656,12 +661,12 @@ namespace embree
 
       /*! Returns the expected surface area when randomly sampling the time. */
       __forceinline float expectedHalfArea(size_t i) const {
-        return 0.5f*(halfArea(bounds0(i))+halfArea(bounds1(i))); // FIXME: only approximative
+        return lbounds(i).expectedHalfArea();
       }
 
       /*! Returns the expected surface area when randomly sampling the time. */
       __forceinline float expectedHalfArea(size_t i, const BBox1f& t0t1) const {
-        return 0.5f*(halfArea(bounds(i,t0t1.lower))+halfArea(bounds(i,t0t1.upper))); // FIXME: only approximative
+        return lbounds(i).expectedHalfArea(t0t1); 
       }
 
       /*! swap two children of the node */
@@ -785,7 +790,7 @@ namespace embree
 
       /*! Returns the expected surface area when randomly sampling the time. */
       __forceinline float expectedHalfArea(size_t i) const {
-        return 0.5f*(upper_t[i]-lower_t[i])*(halfArea(bounds(i,lower_t[i]))+halfArea(bounds(i,upper_t[i]))); // FIXME: only approximative
+        return AlignedNodeMB::lbounds(i).expectedHalfArea(timeRange(i));
       }
 
       /*! returns time range for specified child */
