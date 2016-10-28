@@ -34,7 +34,6 @@ namespace embree
     else {
       stat = statistics(bvh->root,A,BBox1f(0.0f,1.0f));
     }
-    assert(depth <= BVH::maxDepth);
   }
   
   template<int N>
