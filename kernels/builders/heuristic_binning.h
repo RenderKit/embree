@@ -681,7 +681,7 @@ namespace embree
           const vfloat16 rArea16 = prefix_area_rl(lower[dim].x,lower[dim].y,lower[dim].z, upper[dim].x,upper[dim].y,upper[dim].z);
           const vfloat16 lArea16 = prefix_area_lr(lower[dim].x,lower[dim].y,lower[dim].z, upper[dim].x,upper[dim].y,upper[dim].z);
           const vint16  lCount16 = prefix_sum(count[dim]);
-          const vint16  rCount16 = reverse_prefix_sum(count[dim]);
+          const vint16  rCount16 = reverse_prefix_sum(count[dim]); 
 
           /* compute best split in this dimension */
           const vfloat16 leftArea  = lArea16;
