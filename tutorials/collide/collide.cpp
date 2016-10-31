@@ -19,6 +19,7 @@
 #include <set>
 #include "../../common/sys/mutex.h"
 #include "../common/core/ray.h"
+#include "../../kernels/geometry/triangle_triangle_intersector.h"
 
 namespace embree
 {
@@ -34,16 +35,65 @@ namespace embree
   //TutorialScene g_tutorial_scene1;
   //std::set<std::pair<unsigned,unsigned>> set0;
   //std::set<std::pair<unsigned,unsigned>> set1;
+  bool use_user_geometry = false;
 
   size_t skipBenchmarkRounds = 0;
   size_t numBenchmarkRounds = 0;
   size_t numTotalCollisions = 0;
   SpinLock mutex;
 
+  bool intersect_triangle_triangle (TutorialScene* scene0, unsigned geomID0, unsigned primID0, TutorialScene* scene1, unsigned geomID1, unsigned primID1)
+  {
+    //CSTAT(bvh_collide_prim_intersections1++);
+    const TutorialScene::TriangleMesh* mesh0 = (TutorialScene::TriangleMesh*) scene0->geometries[geomID0].ptr;
+    const TutorialScene::TriangleMesh* mesh1 = (TutorialScene::TriangleMesh*) scene1->geometries[geomID1].ptr;
+    const TutorialScene::Triangle& tri0 = mesh0->triangles[primID0];
+    const TutorialScene::Triangle& tri1 = mesh1->triangles[primID1];
+    
+    /* special culling for scene intersection with itself */
+    if (scene0 == scene1 && geomID0 == geomID1)
+    {
+      /* ignore self intersections */
+      if (primID0 == primID1)
+        return false;
+    }
+    //CSTAT(bvh_collide_prim_intersections2++);
+    
+    if (scene0 == scene1 && geomID0 == geomID1)
+    {
+      /* ignore intersection with topological neighbors */
+      const vint4 t0(tri0.v0,tri0.v1,tri0.v2,tri0.v2);
+      if (any(vint4(tri1.v0) == t0)) return false;
+      if (any(vint4(tri1.v1) == t0)) return false;
+      if (any(vint4(tri1.v2) == t0)) return false;
+    }
+    //CSTAT(bvh_collide_prim_intersections3++);
+    
+    const Vec3fa a0 = mesh0->positions[tri0.v0];
+    const Vec3fa a1 = mesh0->positions[tri0.v1];
+    const Vec3fa a2 = mesh0->positions[tri0.v2];
+    const Vec3fa b0 = mesh1->positions[tri1.v0];
+    const Vec3fa b1 = mesh1->positions[tri1.v1];
+    const Vec3fa b2 = mesh1->positions[tri1.v2];
+    
+    return isa::TriangleTriangleIntersector::intersect_triangle_triangle(a0,a1,a2,b0,b1,b2);
+  }
+  
   void CollideFunc (void* userPtr, RTCCollision* collisions, size_t num_collisions)
   {
     if (numBenchmarkRounds) return;
     numTotalCollisions++;
+
+    if (use_user_geometry)
+    {
+      for (size_t i=0; i<num_collisions;)
+      {
+        bool intersect = intersect_triangle_triangle(g_tutorial_scene.get(),collisions[i].geomID0,collisions[i].primID0,
+                                                     g_tutorial_scene.get(),collisions[i].geomID1,collisions[i].primID1);
+        if (intersect) i++;
+        else collisions[i] = collisions[--num_collisions];
+      }
+    }
 
     Lock<SpinLock> lock(mutex);
     for (size_t i=0; i<num_collisions; i++)
@@ -138,10 +188,9 @@ namespace embree
   struct Tutorial : public TutorialApplication
   {
     bool pause;
-    bool use_user_geometry;
-
+  
     Tutorial()
-      : TutorialApplication("collide",FEATURE_RTCORE), pause(false), use_user_geometry(false)
+      : TutorialApplication("collide",FEATURE_RTCORE), pause(false)//, use_user_geometry(false)
     {
       registerOption("i", [this] (Ref<ParseStream> cin, const FileName& path) {
           FileName filename = path + cin->getFileName();
