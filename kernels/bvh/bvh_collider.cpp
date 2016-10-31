@@ -33,9 +33,6 @@ namespace embree
     std::atomic<size_t> bvh_collide_prim_intersections5(0);
     std::atomic<size_t> bvh_collide_prim_intersections(0);
 
-    Scene* scene0 = nullptr; // FIXME: hack
-    Scene* scene1 = nullptr;
-
     struct Collision
     {
       __forceinline Collision() {}
@@ -240,7 +237,7 @@ namespace embree
     }
 
     template<int N>
-    __forceinline void BVHNCollider<N>::processLeaf(const Triangle4v& __restrict__ tris0, const Triangle4v& __restrict__ tris1, RTCCollideFunc callback, void* userPtr)
+    __forceinline void BVHNCollider<N>::processLeaf(const Triangle4v& __restrict__ tris0, const Triangle4v& __restrict__ tris1, CollisionContext& context)
     {
       Collision collisions[4*4];
       size_t num_collisions = 0;
@@ -262,7 +259,7 @@ namespace embree
             const unsigned primID0 = tris0.primID(i);
             const unsigned geomID1 = tris1.geomID(j);
             const unsigned primID1 = tris1.primID(j);
-            if (intersect_triangle_triangle(scene0,geomID0,primID0,scene1,geomID1,primID1)) {
+            if (intersect_triangle_triangle(context.scene0,geomID0,primID0,context.scene1,geomID1,primID1)) {
               CSTAT(bvh_collide_prim_intersections++);
               collisions[num_collisions++] = Collision(geomID0,primID0,geomID1,primID1);
             }
@@ -280,7 +277,7 @@ namespace embree
             const unsigned primID0 = tris0.primID(i);
             const unsigned geomID1 = tris1.geomID(j);
             const unsigned primID1 = tris1.primID(j);
-            if (intersect_triangle_triangle(scene0,geomID0,primID0,scene1,geomID1,primID1)) {
+            if (intersect_triangle_triangle(context.scene0,geomID0,primID0,context.scene1,geomID1,primID1)) {
               CSTAT(bvh_collide_prim_intersections++);
               collisions[num_collisions++] = Collision(geomID0,primID0,geomID1,primID1);
             }
@@ -288,27 +285,27 @@ namespace embree
         }
       }
       if (num_collisions)
-        callback(userPtr,(RTCCollision*)&collisions,num_collisions);
+        context.callback(context.userPtr,(RTCCollision*)&collisions,num_collisions);
     }
 
     template<int N>
-    __forceinline void BVHNCollider<N>::processLeaf(NodeRef node0, NodeRef node1, RTCCollideFunc callback, void* userPtr)
+    __forceinline void BVHNCollider<N>::processLeaf(NodeRef node0, NodeRef node1, CollisionContext& context)
     {
       size_t N0; Triangle4v* leaf0 = (Triangle4v*) node0.leaf(N0);
       size_t N1; Triangle4v* leaf1 = (Triangle4v*) node1.leaf(N1);
       for (size_t i=0; i<N0; i++)
         for (size_t j=0; j<N1; j++)
-          processLeaf(leaf0[i],leaf1[j],callback,userPtr);
+          processLeaf(leaf0[i],leaf1[j],context);
     }
 
     template<int N>
-    void BVHNCollider<N>::collide_recurse(NodeRef ref0, const BBox3fa& bounds0, NodeRef ref1, const BBox3fa& bounds1, RTCCollideFunc callback, void* userPtr, size_t depth)
+    void BVHNCollider<N>::collide_recurse(NodeRef ref0, const BBox3fa& bounds0, NodeRef ref1, const BBox3fa& bounds1, CollisionContext& context, size_t depth)
     {
       CSTAT(bvh_collide_traversal_steps++);
       if (unlikely(ref0.isLeaf())) {
         if (unlikely(ref1.isLeaf())) {
           CSTAT(bvh_collide_leaf_pairs++);
-          processLeaf(ref0,ref1,callback,userPtr);
+          processLeaf(ref0,ref1,context);
           return;
         } else goto recurse_node1;
         
@@ -342,7 +339,7 @@ namespace embree
           parallel_for(size_t(N), [&] ( size_t i ) {
               if (mask & ( 1 << i)) {
                 node0->child(i).prefetch(BVH_FLAG_ALIGNED_NODE);
-                collide_recurse(node0->child(i),node0->bounds(i),ref1,bounds1,callback,userPtr,depth+1);
+                collide_recurse(node0->child(i),node0->bounds(i),ref1,bounds1,context,depth+1);
               }
             });
         } 
@@ -350,7 +347,7 @@ namespace embree
         {
           for (size_t m=mask, i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {
             node0->child(i).prefetch(BVH_FLAG_ALIGNED_NODE);
-            collide_recurse(node0->child(i),node0->bounds(i),ref1,bounds1,callback,userPtr,depth+1);
+            collide_recurse(node0->child(i),node0->bounds(i),ref1,bounds1,context,depth+1);
           }
         }
         return;
@@ -367,7 +364,7 @@ namespace embree
           parallel_for(size_t(N), [&] ( size_t i ) {
               if (mask & ( 1 << i)) {
                 node1->child(i).prefetch(BVH_FLAG_ALIGNED_NODE);
-                collide_recurse(ref0,bounds0,node1->child(i),node1->bounds(i),callback,userPtr,depth+1);
+                collide_recurse(ref0,bounds0,node1->child(i),node1->bounds(i),context,depth+1);
               }
             });
         }
@@ -375,7 +372,7 @@ namespace embree
         {
           for (size_t m=mask, i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {
             node1->child(i).prefetch(BVH_FLAG_ALIGNED_NODE);
-            collide_recurse(ref0,bounds0,node1->child(i),node1->bounds(i),callback,userPtr,depth+1);
+            collide_recurse(ref0,bounds0,node1->child(i),node1->bounds(i),context,depth+1);
           }
         }
         return;
@@ -394,9 +391,8 @@ namespace embree
       CSTAT(bvh_collide_prim_intersections4 = 0);
       CSTAT(bvh_collide_prim_intersections5 = 0);
       CSTAT(bvh_collide_prim_intersections = 0);
-      scene0 = bvh0->scene;
-      scene1 = bvh1->scene;
-      collide_recurse(bvh0->root,bvh0->bounds,bvh1->root,bvh1->bounds,callback,userPtr,0);
+      CollisionContext context(bvh0->scene,bvh1->scene,callback,userPtr);
+      collide_recurse(bvh0->root,bvh0->bounds,bvh1->root,bvh1->bounds,context,0);
       CSTAT(PRINT(bvh_collide_traversal_steps));
       CSTAT(PRINT(bvh_collide_leaf_pairs));
       CSTAT(PRINT(bvh_collide_leaf_iterations));
