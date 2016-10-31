@@ -89,7 +89,7 @@ namespace embree
     Accel::Intersectors QBVH8Quad4iIntersectors(BVH8* bvh);
 
   private:
-    DEFINE_SYMBOL2(Accel::Collider,BVH8Collider);
+    DEFINE_SYMBOL2(Accel::Collider,BVH8ColliderTriangle4v);
 
     DEFINE_SYMBOL2(Accel::Intersector1,BVH8Line4iIntersector1);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH8Line4iMBIntersector1);

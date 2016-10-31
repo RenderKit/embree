@@ -34,7 +34,8 @@
 
 namespace embree
 {
-  DECLARE_SYMBOL2(Accel::Collider,BVH4Collider);
+  DECLARE_SYMBOL2(Accel::Collider,BVH4ColliderTriangle4v);
+  DECLARE_SYMBOL2(Accel::Collider,BVH4ColliderUserGeom);
 
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4Line4iIntersector1);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4Line4iMBIntersector1);
@@ -218,7 +219,8 @@ namespace embree
 
   BVH4Factory::BVH4Factory (int features)
   {
-    SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,BVH4Collider);
+    SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,BVH4ColliderTriangle4v);
+    SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,BVH4ColliderUserGeom);
 
     /* select builders */
     IF_ENABLED_LINES(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4BuilderTwoLevelLineSegmentsSAH));
@@ -521,7 +523,7 @@ namespace embree
   {
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
-    intersectors.collider      = BVH4Collider;
+    intersectors.collider      = BVH4ColliderTriangle4v;
     intersectors.intersector1  = BVH4Triangle4vIntersector1Pluecker;
     intersectors.intersector4  = BVH4Triangle4vIntersector4HybridPluecker;
     intersectors.intersector8  = BVH4Triangle4vIntersector8HybridPluecker;
@@ -610,6 +612,7 @@ namespace embree
   {
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
+    intersectors.collider      = BVH4ColliderUserGeom;
     intersectors.intersector1  = BVH4VirtualIntersector1;
     intersectors.intersector4  = BVH4VirtualIntersector4Chunk;
     intersectors.intersector8  = BVH4VirtualIntersector8Chunk;
