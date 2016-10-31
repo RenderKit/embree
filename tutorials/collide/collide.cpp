@@ -18,6 +18,7 @@
 #include "../common/tutorial/statistics.h"
 #include <set>
 #include "../../common/sys/mutex.h"
+#include "../common/core/ray.h"
 
 namespace embree
 {
@@ -77,12 +78,69 @@ namespace embree
     }
   }
 
+  void triangle_bounds_func(void* userPtr,
+                            void* geomUserPtr,
+                            size_t item,
+                            RTCBounds* bounds_o)
+  {
+    const TutorialScene::TriangleMesh* mesh = (TutorialScene::TriangleMesh*) geomUserPtr;
+    const TutorialScene::Triangle& tri = mesh->triangles[item];
+    BBox3fa bounds = empty;
+    bounds.extend(mesh->positions[tri.v0]);
+    bounds.extend(mesh->positions[tri.v1]);
+    bounds.extend(mesh->positions[tri.v2]);
+    *(BBox3fa*) bounds_o = bounds;
+  }
+  
+  void triangle_intersect_func(void* geomUserPtr, RTCRay& ray, size_t primID)
+  {
+    const unsigned geomID = (unsigned) (size_t) geomUserPtr;
+    const TutorialScene::TriangleMesh* mesh = (TutorialScene::TriangleMesh*) g_tutorial_scene->geometries[geomID].ptr;
+    const TutorialScene::Triangle& tri = mesh->triangles[primID];
+    const Vec3fa v0 = mesh->positions[tri.v0];
+    const Vec3fa v1 = mesh->positions[tri.v1];
+    const Vec3fa v2 = mesh->positions[tri.v2];
+    const Vec3fa e1 = v0-v1;
+    const Vec3fa e2 = v2-v0;
+    const Vec3fa Ng = cross(e1,e2);
+
+    /* calculate denominator */
+    const Vec3fa O = Vec3fa(ray.org);
+    const Vec3fa D = Vec3fa(ray.dir);
+    const Vec3fa C = v0 - O;
+    const Vec3fa R = cross(D,C);
+    const float den = dot(Ng,D);
+    const float rcpDen = rcp(den);
+        
+    /* perform edge tests */
+    const float u = dot(R,e2)*rcpDen;
+    const float v = dot(R,e1)*rcpDen;
+            
+    /* perform backface culling */        
+    bool valid = (den != 0.0f) & (u >= 0.0f) & (v >= 0.0f) & (u+v<=1.0f);
+    if (likely(!valid)) return;
+        
+    /* perform depth test */
+    const float t = dot(Vec3fa(Ng),C)*rcpDen;
+    valid &= (t > ray.tnear) & (t < ray.tfar);
+    if (likely(!valid)) return;
+    
+    /* update hit */
+    ray.tfar = t;
+    ray.u = u;
+    ray.v = v;
+    ray.geomID = geomID;
+    ray.primID = primID;
+    ray.Ng = Ng;
+  }
+
   struct Tutorial : public TutorialApplication
   {
     bool pause;
+    bool use_user_geometry;
 
     Tutorial()
-      : TutorialApplication("collide",FEATURE_RTCORE), pause(false)
+      : TutorialApplication("collide",FEATURE_RTCORE), pause(false), use_user_geometry(false)
     {
       registerOption("i", [this] (Ref<ParseStream> cin, const FileName& path) {
           FileName filename = path + cin->getFileName();
@@ -97,6 +155,10 @@ namespace embree
           numBenchmarkRounds = cin->getInt();
           interactive = false;
         }, "--benchmark <N> <M>: enabled benchmark mode, skips N collisions, measures M collisions");
+      
+      registerOption("use-user-geometry", [this] (Ref<ParseStream> cin, const FileName& path) {
+          use_user_geometry = cin->getInt();
+        }, "--use-user-geometry <bool>: use user geometries for collision detection");    
     }
  
     unsigned int convertTriangleMesh(Ref<TutorialScene::TriangleMesh> mesh, RTCScene scene_out)
@@ -104,10 +166,22 @@ namespace embree
       RTCGeometryFlags gflags;
       if (g_animation.size() == 1) gflags = RTC_GEOMETRY_STATIC;
       else                         gflags = RTC_GEOMETRY_DYNAMIC;
-      unsigned int geomID = rtcNewTriangleMesh (scene_out, gflags, mesh->triangles.size(), mesh->numVertices, 1);
-      rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER, mesh->positions.data(), 0, sizeof(Vec3fa      ));
-      rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER , mesh->triangles.data(), 0, sizeof(TutorialScene::Triangle));
-      return geomID;
+
+      if (use_user_geometry)
+      {
+        unsigned int geomID = rtcNewUserGeometry2 (scene_out, /*gflags,*/ mesh->triangles.size(), 1);
+        rtcSetUserData(scene_out,geomID,(void*)(size_t)geomID);
+        rtcSetBoundsFunction2   (scene_out, geomID, triangle_bounds_func, nullptr);
+        rtcSetIntersectFunction (scene_out, geomID, triangle_intersect_func);
+        return geomID;
+      }
+      else
+      {
+        unsigned int geomID = rtcNewTriangleMesh (scene_out, gflags, mesh->triangles.size(), mesh->numVertices, 1);
+        rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER, mesh->positions.data(), 0, sizeof(Vec3fa      ));
+        rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER , mesh->triangles.data(), 0, sizeof(TutorialScene::Triangle));
+        return geomID;
+      }
     }
     
     RTCScene convertScene(std::shared_ptr<TutorialScene> scene_in)
