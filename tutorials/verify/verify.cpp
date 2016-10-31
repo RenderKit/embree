@@ -294,9 +294,9 @@ namespace embree
       return addGeometry(gflag,node);
     }
 
-    unsigned addUserGeometryEmpty (RandomSampler& sampler, Sphere* sphere)
+    unsigned addUserGeometryEmpty (RandomSampler& sampler, RTCGeometryFlags gflag, Sphere* sphere)
     {
-      unsigned geom = rtcNewUserGeometry (scene,1);
+      unsigned geom = rtcNewUserGeometry3 (scene,gflag,1,1);
       rtcSetBoundsFunction(scene,geom,(RTCBoundsFunc)BoundsFunc);
       rtcSetUserData(scene,geom,sphere);
       rtcSetIntersectFunctionN(scene,geom,IntersectFuncN);
@@ -1121,7 +1121,7 @@ namespace embree
             case 7: geom[index] = scene.addSubdivSphere(sampler,RTC_GEOMETRY_STATIC,pos,2.0f,4,4,-1,random_motion_vector(1.0f)); break;
             case 8: 
               spheres[index] = Sphere(pos,2.0f);
-              geom[index] = scene.addUserGeometryEmpty(sampler,&spheres[index]); break;
+              geom[index] = scene.addUserGeometryEmpty(sampler,RTC_GEOMETRY_STATIC,&spheres[index]); break;
             }
             AssertNoError(device);
           }
@@ -2724,7 +2724,7 @@ namespace embree
 
         case 8: {
 	  Sphere* sphere = new Sphere(pos,2.0f); spheres.push_back(sphere); 
-	  task->scene->addUserGeometryEmpty(task->sampler,sphere); break;
+	  task->scene->addUserGeometryEmpty(task->sampler,RTC_GEOMETRY_STATIC,sphere); break;
         }
 	}
         //if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
@@ -2824,7 +2824,7 @@ namespace embree
         int index = RandomSampler_getInt(task->sampler)%1024;
         if (geom[index] == -1) 
         {
-          int type = RandomSampler_getInt(task->sampler)%19;
+          int type = RandomSampler_getInt(task->sampler)%21;
           Vec3fa pos = 100.0f*RandomSampler_get3D(task->sampler);
           switch (RandomSampler_getInt(task->sampler)%16) {
           case 0: pos = Vec3fa(nan); break;
@@ -2867,7 +2867,9 @@ namespace embree
 	  case 16: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,4,numTriangles,task->test->random_motion_vector(1.0f)); break;
 	  case 17: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,4,numTriangles,task->test->random_motion_vector(1.0f)); break;
 
-          case 18: spheres[index] = Sphere(pos,2.0f); geom[index] = task->scene->addUserGeometryEmpty(task->sampler,&spheres[index]); break;
+          case 18: spheres[index] = Sphere(pos,2.0f); geom[index] = task->scene->addUserGeometryEmpty(task->sampler,RTC_GEOMETRY_STATIC,&spheres[index]); break;
+          case 19: spheres[index] = Sphere(pos,2.0f); geom[index] = task->scene->addUserGeometryEmpty(task->sampler,RTC_GEOMETRY_DEFORMABLE,&spheres[index]); break;
+          case 20: spheres[index] = Sphere(pos,2.0f); geom[index] = task->scene->addUserGeometryEmpty(task->sampler,RTC_GEOMETRY_DYNAMIC,&spheres[index]); break;
           }; 
 	  //if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
           if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) {

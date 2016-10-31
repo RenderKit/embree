@@ -86,10 +86,9 @@ namespace embree
     accels.add(device->bvh4_factory->BVH4InstancedBVH4Triangle4ObjectSplit(this));
 #endif
 
-#if defined(EMBREE_GEOMETRY_USER)
-    accels.add(device->bvh4_factory->BVH4UserGeometry(this)); // has to be the last as the instID field of a hit instance is not invalidated by other hit geometry
-    accels.add(device->bvh4_factory->BVH4UserGeometryMB(this)); // has to be the last as the instID field of a hit instance is not invalidated by other hit geometry
-#endif
+    // has to be the last as the instID field of a hit instance is not invalidated by other hit geometry
+    createUserGeometryAccel();
+    createUserGeometryMBAccel();
   }
 
   void Scene::createTriangleAccel()
@@ -459,6 +458,22 @@ namespace embree
 #endif
   }
 
+  void Scene::createUserGeometryAccel()
+  {
+#if defined(EMBREE_GEOMETRY_USER)
+    if      (device->object_accel == "default") accels.add(device->bvh4_factory->BVH4UserGeometry(this)); 
+    else if (device->object_accel == "bvh4.object") accels.add(device->bvh4_factory->BVH4UserGeometry(this)); 
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown user geometry accel "+device->object_accel);
+  }
+#endif
+
+  void Scene::createUserGeometryMBAccel()
+  {
+#if defined(EMBREE_GEOMETRY_USER)
+    accels.add(device->bvh4_factory->BVH4UserGeometryMB(this));
+#endif
+  }
+  
   Scene::~Scene () 
   {
     for (size_t i=0; i<geometries.size(); i++)
@@ -472,14 +487,19 @@ namespace embree
   void Scene::clear() {
   }
 
-  unsigned Scene::newUserGeometry (size_t items, size_t numTimeSteps) 
+  unsigned Scene::newUserGeometry (RTCGeometryFlags gflags, size_t items, size_t numTimeSteps) 
   {
+    if (isStatic() && (gflags != RTC_GEOMETRY_STATIC)) {
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
+      return -1;
+    }
+
     if (numTimeSteps == 0 || numTimeSteps > RTC_MAX_TIME_STEPS) {
       throw_RTCError(RTC_INVALID_OPERATION,"maximal number of timesteps exceeded");
       return -1;
     }
 
-    Geometry* geom = new UserGeometry(this,items,numTimeSteps);
+    Geometry* geom = new UserGeometry(this,gflags,items,numTimeSteps);
     return geom->id;
   }
 

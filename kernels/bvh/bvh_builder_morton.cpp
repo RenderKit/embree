@@ -26,9 +26,9 @@
 #include "../geometry/triangle.h"
 #include "../geometry/trianglev.h"
 #include "../geometry/trianglei.h"
-
 #include "../geometry/quadv.h"
 #include "../geometry/quadi.h"
+#include "../geometry/object.h"
 
 #define ROTATE_TREE 1 // specifies number of tree rotation rounds to perform
 
@@ -331,7 +331,48 @@ namespace embree
       MortonID32Bit* morton;
     };
 
-    
+    template<int N>
+    struct CreateMortonLeaf<N,Object>
+    {
+      typedef BVHN<N> BVH;
+      typedef typename BVH::NodeRef NodeRef;
+
+      __forceinline CreateMortonLeaf (AccelSet* mesh, MortonID32Bit* morton)
+        : mesh(mesh), morton(morton) {}
+      
+      __noinline void operator() (MortonBuildRecord<NodeRef>& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
+      {
+        vfloat4 lower(pos_inf);
+        vfloat4 upper(neg_inf);
+        size_t items = current.size();
+        size_t start = current.begin;
+        assert(items<=4);
+        
+        /* allocate leaf node */
+        Object* accel = (Object*) alloc->alloc1->malloc(items*sizeof(Object));
+        *current.parent = BVH::encodeLeaf((char*)accel,items);
+        
+        BBox3fa bounds = empty;
+        for (size_t i=0; i<items; i++)
+        {
+          const unsigned index = morton[start+i].index;
+          const unsigned primID = index; 
+          const unsigned geomID = this->mesh->id;
+          const AccelSet* mesh = this->mesh;
+          bounds.extend(mesh->bounds(primID));
+          new (&accel[i]) Object(geomID,primID);
+        }
+        box_o = bounds;
+#if ROTATE_TREE
+        if (N == 4)
+          box_o.lower.a = current.size();
+#endif
+      }
+    private:
+      AccelSet* mesh;
+      MortonID32Bit* morton;
+    };
+
     template<typename Mesh>
     struct CalculateMeshBounds
     {
@@ -520,6 +561,9 @@ namespace embree
 #endif
 #endif
 
+#if defined(EMBREE_GEOMETRY_USER)
+    Builder* BVH4VirtualMeshBuilderMortonGeneral (void* bvh, AccelSet* mesh, size_t mode) { return new class BVHNMeshBuilderMorton<4,AccelSet,Object>((BVH4*)bvh,mesh,1,BVH4::maxLeafBlocks); }
+#endif
+
   }
 }
-

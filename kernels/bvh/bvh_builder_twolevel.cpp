@@ -271,6 +271,12 @@ namespace embree
     }
 #endif
 
+#if defined(EMBREE_GEOMETRY_USER)
+    Builder* BVH4BuilderTwoLevelVirtualSAH (void* bvh, Scene* scene, const createAccelSetAccelTy createMeshAccel) {
+    return new BVHNBuilderTwoLevel<4,AccelSet>((BVH4*)bvh,scene,createMeshAccel);
+    }
+#endif
+
 
 #if defined(__AVX__)
 #if defined(EMBREE_GEOMETRY_TRIANGLES)
@@ -282,6 +288,12 @@ namespace embree
 #if defined(EMBREE_GEOMETRY_QUADS)
     Builder* BVH8BuilderTwoLevelQuadMeshSAH (void* bvh, Scene* scene, const createQuadMeshAccelTy createMeshAccel) {
       return new BVHNBuilderTwoLevel<8,QuadMesh>((BVH8*)bvh,scene,createMeshAccel);
+    }
+#endif
+
+#if defined(EMBREE_GEOMETRY_USER)
+    Builder* BVH8BuilderTwoLevelVirtualSAH (void* bvh, Scene* scene, const createAccelSetAccelTy createMeshAccel) {
+      return new BVHNBuilderTwoLevel<8,AccelSet>((BVH8*)bvh,scene,createMeshAccel);
     }
 #endif
 #endif
