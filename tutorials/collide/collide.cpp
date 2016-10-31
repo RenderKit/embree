@@ -211,8 +211,10 @@ namespace embree
 
     void updateTriangleMesh(Ref<TutorialScene::TriangleMesh> mesh, RTCScene scene_out, unsigned geomID)
     {
-      rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER, mesh->positions.data(), 0, sizeof(Vec3fa      ));
-      rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER , mesh->triangles.data(), 0, sizeof(TutorialScene::Triangle));
+      if (!use_user_geometry) {
+        rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER, mesh->positions.data(), 0, sizeof(Vec3fa      ));
+        rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER , mesh->triangles.data(), 0, sizeof(TutorialScene::Triangle));
+      }
       rtcUpdate(scene_out, geomID);
     }
 

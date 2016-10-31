@@ -95,7 +95,9 @@ namespace embree
         accels.add(device->bvh4_factory->BVH4UserGeometry(this));
       }
     }
-    accels.add(device->bvh4_factory->BVH4UserGeometry(this)); // has to be the last as the instID field of a hit instance is not invalidated by other hit geometry
+    else {
+      accels.add(device->bvh4_factory->BVH4UserGeometry(this)); // has to be the last as the instID field of a hit instance is not invalidated by other hit geometry
+    }
     accels.add(device->bvh4_factory->BVH4UserGeometryMB(this)); // has to be the last as the instID field of a hit instance is not invalidated by other hit geometry
 #endif
   }
