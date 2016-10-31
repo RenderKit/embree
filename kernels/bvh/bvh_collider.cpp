@@ -185,7 +185,7 @@ namespace embree
     template<int N>
     __forceinline void BVHNColliderUserGeom<N>::processLeaf(NodeRef node0, NodeRef node1)
     {
-      Collision collisions[4*4];
+      Collision collisions[16];
       size_t num_collisions = 0;
 
       size_t N0; Object* leaf0 = (Object*) node0.leaf(N0);
@@ -198,6 +198,10 @@ namespace embree
           const unsigned primID1 = leaf1[j].primID;
           if (this->scene0 == this->scene1 && geomID0 == geomID1 && primID0 == primID1) continue;
           collisions[num_collisions++] = Collision(geomID0,primID0,geomID1,primID1);
+          if (num_collisions == 16) {
+            this->callback(this->userPtr,(RTCCollision*)&collisions,num_collisions);
+            num_collisions = 0;
+          }
         }
       }
       if (num_collisions)
