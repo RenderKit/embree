@@ -81,8 +81,6 @@ namespace embree
   
   void CollideFunc (void* userPtr, RTCCollision* collisions, size_t num_collisions)
   {
-    if (numBenchmarkRounds) return;
-    
     if (use_user_geometry)
     {
       for (size_t i=0; i<num_collisions;)
@@ -93,7 +91,13 @@ namespace embree
         else collisions[i] = collisions[--num_collisions];
       }
     }
+    
+    if (num_collisions == 0) 
+      return;
 
+    if (numBenchmarkRounds) 
+      return;
+  
     //numTotalCollisions+=num_collisions;
 
     Lock<SpinLock> lock(mutex);
@@ -109,6 +113,7 @@ namespace embree
       //set0.insert(std::make_pair(geomID0,primID0));
       //set1.insert(std::make_pair(geomID1,primID1));
 
+#if 0
       /* verify result */
       Ref<TutorialScene::TriangleMesh> mesh0 = g_tutorial_scene->geometries[geomID0].dynamicCast<TutorialScene::TriangleMesh>();
       TutorialScene::Triangle tri0 = mesh0->triangles[primID0];
@@ -126,6 +131,7 @@ namespace embree
 
       if (disjoint(bounds0,bounds1)) 
         std::cout << "WARNING: bounds do not overlap!" << std::endl;
+#endif
     }
   }
 
