@@ -473,20 +473,20 @@ namespace embree
 
   void XMLWriter::store(Ref<SceneGraph::TransformNode> node, ssize_t id)
   {
-    if (node->xfm0 == node->xfm1)
+    if (node->spaces.size() == 1)
     {
       open("Transform",id);
-      store("AffineSpace",node->xfm0);
+      store("AffineSpace",node->spaces[0]);
       store(node->child);
       close("Transform");
     }
-    else
+    else 
     {
-      open("Transform2",id);
-      store("AffineSpace",node->xfm0);
-      store("AffineSpace",node->xfm1);
+      open("TransformAnimation",id);
+      for (size_t i=0; i<node->spaces.size(); i++)
+        store("AffineSpace",node->spaces[i]);
       store(node->child);
-      close("Transform2");
+      close("TransformAnimation");
     }
   }
 

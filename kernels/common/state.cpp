@@ -51,8 +51,7 @@ namespace embree
     tri_accel = "default";
     tri_builder = "default";
     tri_traverser = "default";
-    tri_builder_replication_factor = 2.0f;
-
+    
     tri_accel_mb = "default";
     tri_builder_mb = "default";
     tri_traverser_mb = "default";
@@ -76,15 +75,18 @@ namespace embree
     hair_accel = "default";
     hair_builder = "default";
     hair_traverser = "default";
-    hair_builder_replication_factor = 3.0f;
 
     hair_accel_mb = "default";
+    hair_builder_mb = "default";
+    hair_traverser_mb = "default";
 
     object_accel_min_leaf_size = 1;
     object_accel_max_leaf_size = 1;
 
     object_accel_mb_min_leaf_size = 1;
     object_accel_mb_max_leaf_size = 1;
+
+    max_spatial_split_replications = 2.0f;
 
     tessellation_cache_size = 128*1024*1024;
 
@@ -109,6 +111,10 @@ namespace embree
 #else
     set_affinity = false;
 #endif
+    /* per default enable affinity on KNL */
+    if (hasISA(AVX512KNL)) set_affinity = true;
+
+    start_threads = false;
 
     error_function = nullptr;
     memory_monitor_function = nullptr;
@@ -223,6 +229,9 @@ namespace embree
       else if (tok == Token::Id("affinity")&& cin->trySymbol("=")) 
         set_affinity = cin->get().Int();
       
+      else if (tok == Token::Id("start_threads")&& cin->trySymbol("=")) 
+        start_threads = cin->get().Int();
+      
       else if (tok == Token::Id("isa") && cin->trySymbol("=")) {
         std::string isa = toLowerCase(cin->get().Identifier());
         enabled_cpu_features = string_to_cpufeatures(isa);
@@ -242,9 +251,7 @@ namespace embree
         tri_builder = cin->get().Identifier();
       else if ((tok == Token::Id("tri_traverser") || tok == Token::Id("traverser")) && cin->trySymbol("="))
         tri_traverser = cin->get().Identifier();
-      else if (tok == Token::Id("tri_builder_replication_factor") && cin->trySymbol("="))
-        tri_builder_replication_factor = cin->get().Float();
-
+     
       else if ((tok == Token::Id("tri_accel_mb") || tok == Token::Id("accel_mb")) && cin->trySymbol("="))
         tri_accel_mb = cin->get().Identifier();
       else if ((tok == Token::Id("tri_builder_mb") || tok == Token::Id("builder_mb")) && cin->trySymbol("="))
@@ -286,11 +293,13 @@ namespace embree
         hair_builder = cin->get().Identifier();
       else if (tok == Token::Id("hair_traverser") && cin->trySymbol("="))
         hair_traverser = cin->get().Identifier();
-      else if (tok == Token::Id("hair_builder_replication_factor") && cin->trySymbol("="))
-        hair_builder_replication_factor = cin->get().Int();
 
       else if (tok == Token::Id("hair_accel_mb") && cin->trySymbol("="))
         hair_accel_mb = cin->get().Identifier();
+      else if (tok == Token::Id("hair_builder_mb") && cin->trySymbol("="))
+        hair_builder_mb = cin->get().Identifier();
+      else if (tok == Token::Id("hair_traverser_mb") && cin->trySymbol("="))
+        hair_traverser_mb = cin->get().Identifier();
 
       else if (tok == Token::Id("object_accel_min_leaf_size") && cin->trySymbol("="))
         object_accel_min_leaf_size = cin->get().Int();
@@ -328,7 +337,12 @@ namespace embree
         }
       }
 
+      else if (tok == Token::Id("max_spatial_split_replications") && cin->trySymbol("="))
+        max_spatial_split_replications = cin->get().Float();
+
       else if (tok == Token::Id("tessellation_cache_size") && cin->trySymbol("="))
+        tessellation_cache_size = size_t(cin->get().Float()*1024.0f*1024.0f);
+      else if (tok == Token::Id("cache_size") && cin->trySymbol("="))
         tessellation_cache_size = size_t(cin->get().Float()*1024.0f*1024.0f);
 
       cin->trySymbol(","); // optional , separator
@@ -343,15 +357,17 @@ namespace embree
   {
     std::cout << "general:" << std::endl;
     std::cout << "  build threads = " << numThreads   << std::endl;
+    std::cout << "  start_threads = " << start_threads << std::endl;
     std::cout << "  affinity      = " << set_affinity << std::endl;
     std::cout << "  verbosity     = " << verbose << std::endl;
+    std::cout << "  cache_size    = " << float(tessellation_cache_size)*1E-6 << " MB" << std::endl;
+    std::cout << "  max_spatial_split_replications = " << max_spatial_split_replications << std::endl;
     
     std::cout << "triangles:" << std::endl;
     std::cout << "  accel         = " << tri_accel << std::endl;
     std::cout << "  builder       = " << tri_builder << std::endl;
     std::cout << "  traverser     = " << tri_traverser << std::endl;
-    std::cout << "  replications  = " << tri_builder_replication_factor << std::endl;
-    
+        
     std::cout << "motion blur triangles:" << std::endl;
     std::cout << "  accel         = " << tri_accel_mb << std::endl;
     std::cout << "  builder       = " << tri_builder_mb << std::endl;
@@ -381,10 +397,11 @@ namespace embree
     std::cout << "  accel         = " << hair_accel << std::endl;
     std::cout << "  builder       = " << hair_builder << std::endl;
     std::cout << "  traverser     = " << hair_traverser << std::endl;
-    std::cout << "  replications  = " << hair_builder_replication_factor << std::endl;
 
     std::cout << "motion blur hair:" << std::endl;
     std::cout << "  accel         = " << hair_accel_mb << std::endl;
+    std::cout << "  builder       = " << hair_builder_mb << std::endl;
+    std::cout << "  traverser     = " << hair_traverser_mb << std::endl;
     
     std::cout << "subdivision surfaces:" << std::endl;
     std::cout << "  accel         = " << subdiv_accel << std::endl;

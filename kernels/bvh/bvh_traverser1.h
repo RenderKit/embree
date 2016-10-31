@@ -275,7 +275,7 @@ namespace embree
                                            Ray& ray,
                                            TravRay<N,Nx>& vray,
                                            size_t& leafType,
-                                           const unsigned int*& geomID_to_instID,
+                                           IntersectContext* context,
                                            StackItemT<NodeRef>*& stackPtr,
                                            StackItemT<NodeRef>* stackEnd)
       {
@@ -288,7 +288,7 @@ namespace embree
           if (unlikely((ray.mask & node->mask) == 0)) return true;
 #endif          
           leafType = node->type;
-          geomID_to_instID = &node->instID;
+          context->geomID_to_instID = &node->instID;
 
 #if ENABLE_TRANSFORM_CACHE
           const vboolx xfm_hit = cacheTag == vintx(node->xfmID);
@@ -322,7 +322,7 @@ namespace embree
         if (cur == BVH::popRay)
         {
           leafType = 0;
-          geomID_to_instID = nullptr;
+          context->geomID_to_instID = nullptr;
           vray = (TravRay<N,Nx>&) tlray;
           ray.org = ((TravRay<N,Nx>&)tlray).org_xyz;
           ray.dir = ((TravRay<N,Nx>&)tlray).dir_xyz;
@@ -337,7 +337,7 @@ namespace embree
                                            Ray& ray,
                                            TravRay<N,Nx>& vray,
                                            size_t& leafType,
-                                           const unsigned int*& geomID_to_instID,
+                                           IntersectContext* context,
                                            NodeRef*& stackPtr,
                                            NodeRef* stackEnd)
       {
@@ -350,7 +350,7 @@ namespace embree
           if (unlikely((ray.mask & node->mask) == 0)) return true;
 #endif
           leafType = node->type;
-          geomID_to_instID = &node->instID;
+          context->geomID_to_instID = &node->instID;
 
 #if ENABLE_TRANSFORM_CACHE
           const vboolx xfm_hit = cacheTag == vintx(node->xfmID);
@@ -384,7 +384,7 @@ namespace embree
         if (cur == BVH::popRay)
         {
           leafType = 0;
-          geomID_to_instID = nullptr;
+          context->geomID_to_instID = nullptr;
           vray = (TravRay<N,Nx>&) tlray;
           ray.org = ((TravRay<N,Nx>&)tlray).org_xyz;
           ray.dir = ((TravRay<N,Nx>&)tlray).dir_xyz;
@@ -418,7 +418,7 @@ namespace embree
                                            Ray& ray,
                                            TravRay<N,Nx>& vray,
                                            size_t& leafType,
-                                           const unsigned int*& geomID_to_instID,
+                                           IntersectContext* context,
                                            StackItemT<NodeRef>*& stackPtr,
                                            StackItemT<NodeRef>* stackEnd)
       {
@@ -429,7 +429,7 @@ namespace embree
                                            Ray& ray,
                                            TravRay<N,Nx>& vray,
                                            size_t& leafType,
-                                           const unsigned int*& geomID_to_instID,
+                                           IntersectContext* context,
                                            NodeRef*& stackPtr,
                                            NodeRef* stackEnd)
       {

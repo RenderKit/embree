@@ -19,8 +19,8 @@
 #include "priminfo.h"
 #include "../geometry/bezier1v.h"
 
-#include "../algorithms/parallel_reduce.h"
-#include "../algorithms/parallel_partition.h"
+#include "../../common/algorithms/parallel_reduce.h"
+#include "../../common/algorithms/parallel_partition.h"
 
 namespace embree
 {
@@ -273,13 +273,12 @@ namespace embree
           return cos0 > cos1;
         };
 
-        PrimInfo init; init.reset();
-        const size_t mid = parallel_in_place_partitioning_static<PARALLEL_PARITION_BLOCK_SIZE,BezierPrim,PrimInfo>
-	  (&prims[begin],end-begin,init,left,right,primOnLeftSide,
-	   [] (PrimInfo &pinfo, const BezierPrim& ref) { pinfo.add(ref.bounds()); },
-	   [] (PrimInfo &pinfo0,const PrimInfo& pinfo1) { pinfo0.merge(pinfo1); });
+        const size_t center = parallel_partitioning(
+          prims,begin,end,empty,left,right,primOnLeftSide,
+          [] (PrimInfo &pinfo, const BezierPrim& ref) { pinfo.add(ref.bounds()); },
+          [] (PrimInfo &pinfo0,const PrimInfo& pinfo1) { pinfo0.merge(pinfo1); },
+          PARALLEL_PARITION_BLOCK_SIZE);
         
-        const size_t center = begin+mid;
         left.begin  = begin;  left.end  = center; // FIXME: remove?
         right.begin = center; right.end = end;
         

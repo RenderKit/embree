@@ -52,9 +52,9 @@ namespace embree
         
         struct Precalculations
         {
-          __forceinline Precalculations () {}
+          __forceinline Precalculations() {}
 
-          __forceinline Precalculations (const Ray& ray, const void* ptr)
+          __forceinline Precalculations(const Ray& ray, const void* ptr)
           {
             const float s = rsqrt(dot(ray.dir,ray.dir));
             depth_scale = s;

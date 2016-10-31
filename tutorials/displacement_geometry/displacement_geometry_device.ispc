@@ -101,7 +101,10 @@ float displacement_dv(const Vec3f& P, const Vec3f& dPdv)
   return (displacement(P+dv*dPdv)-displacement(P))/dv;
 }
 
-unmasked void displacementFunction(void* uniform ptr, uniform unsigned int geomID, uniform int unsigned primID,
+unmasked void displacementFunction(void* uniform ptr, 
+                                   uniform unsigned int geomID, 
+                                   uniform unsigned int primID,
+                                   uniform unsigned int time,
                                    const uniform float* uniform u,      /*!< u coordinates (source) */
                                    const uniform float* uniform v,      /*!< v coordinates (source) */
                                    const uniform float* uniform nx,     /*!< x coordinates of normal at point to displace (source) */
@@ -134,7 +137,7 @@ uniform unsigned int addCube (RTCScene scene_i)
   for (uniform size_t i=0; i<NUM_INDICES; i++) level[i] = EDGE_LEVEL;
   rtcUnmapBuffer(scene_i, geomID, RTC_LEVEL_BUFFER);
 
-  rtcSetDisplacementFunction(scene_i,geomID,(RTCDisplacementFunc)&displacementFunction,NULL);
+  rtcSetDisplacementFunction2(scene_i,geomID,displacementFunction,NULL);
 
   return geomID;
 }

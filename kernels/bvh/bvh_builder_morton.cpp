@@ -18,8 +18,7 @@
 #include "bvh_statistics.h"
 #include "bvh_rotate.h"
 #include "../common/profile.h"
-#include "../algorithms/parallel_prefix_sum.h"
-#include "../algorithms/sort.h"
+#include "../../common/algorithms/parallel_prefix_sum.h"
 
 #include "../builders/primrefgen.h"
 #include "../builders/bvh_builder_morton.h"
@@ -40,15 +39,15 @@ namespace embree
   namespace isa
   {
     template<int N>
-    struct AllocBVHNNode
+    struct AllocBVHNAlignedNode
     {
       typedef BVHN<N> BVH;
-      typedef typename BVH::Node Node;
+      typedef typename BVH::AlignedNode AlignedNode;
       typedef typename BVH::NodeRef NodeRef;
 
-      __forceinline Node* operator() (MortonBuildRecord<NodeRef>& current, MortonBuildRecord<NodeRef>* children, size_t numChildren, FastAllocator::ThreadLocal2* alloc)
+      __forceinline AlignedNode* operator() (MortonBuildRecord<NodeRef>& current, MortonBuildRecord<NodeRef>* children, size_t numChildren, FastAllocator::ThreadLocal2* alloc)
       {
-        Node* node = (Node*) alloc->alloc0.malloc(sizeof(Node),BVH::byteNodeAlignment); 
+        AlignedNode* node = (AlignedNode*) alloc->alloc0->malloc(sizeof(AlignedNode),BVH::byteNodeAlignment); 
         *current.parent = BVH::encodeNode(node);
         node->clear();
         for (size_t i=0; i<numChildren; i++)
@@ -61,12 +60,12 @@ namespace embree
     struct SetBVHNBounds
     {
       typedef BVHN<N> BVH;
-      typedef typename BVH::Node Node;
+      typedef typename BVH::AlignedNode AlignedNode;
 
       BVH* bvh;
       __forceinline SetBVHNBounds (BVH* bvh) : bvh(bvh) {}
 
-      __forceinline BBox3fa operator() (Node* node, const BBox3fa* bounds, size_t num)
+      __forceinline BBox3fa operator() (AlignedNode* node, const BBox3fa* bounds, size_t num)
       {
         BBox3fa res = empty;
         for (size_t i=0; i<num; i++) {
@@ -120,7 +119,7 @@ namespace embree
         assert(items<=4);
         
         /* allocate leaf node */
-        Triangle4* accel = (Triangle4*) alloc->alloc1.malloc(sizeof(Triangle4));
+        Triangle4* accel = (Triangle4*) alloc->alloc1->malloc(sizeof(Triangle4));
         *current.parent = BVH::encodeLeaf((char*)accel,1);
         vint4 vgeomID = -1, vprimID = -1;
         Vec3vf4 v0 = zero, v1 = zero, v2 = zero;
@@ -175,7 +174,7 @@ namespace embree
         assert(items<=4);
         
         /* allocate leaf node */
-        Triangle4v* accel = (Triangle4v*) alloc->alloc1.malloc(sizeof(Triangle4v));
+        Triangle4v* accel = (Triangle4v*) alloc->alloc1->malloc(sizeof(Triangle4v));
         *current.parent = BVH::encodeLeaf((char*)accel,1);
         
         vint4 vgeomID = -1, vprimID = -1;
@@ -229,7 +228,7 @@ namespace embree
         assert(items<=4);
         
         /* allocate leaf node */
-        Triangle4i* accel = (Triangle4i*) alloc->alloc1.malloc(sizeof(Triangle4i));
+        Triangle4i* accel = (Triangle4i*) alloc->alloc1->malloc(sizeof(Triangle4i));
         *current.parent = BVH::encodeLeaf((char*)accel,1);
         
         vint4 vgeomID = -1, vprimID = -1;
@@ -294,7 +293,7 @@ namespace embree
         assert(items<=4);
         
         /* allocate leaf node */
-        Quad4v* accel = (Quad4v*) alloc->alloc1.malloc(sizeof(Quad4v));
+        Quad4v* accel = (Quad4v*) alloc->alloc1->malloc(sizeof(Quad4v));
         *current.parent = BVH::encodeLeaf((char*)accel,1);
         
         vint4 vgeomID = -1, vprimID = -1;
@@ -351,7 +350,7 @@ namespace embree
     class BVHNMeshBuilderMorton : public Builder
     {
       typedef BVHN<N> BVH;
-      typedef typename BVH::Node Node;
+      typedef typename BVH::AlignedNode AlignedNode;
       typedef typename BVH::NodeRef NodeRef;
 
     public:
@@ -385,7 +384,7 @@ namespace embree
         
         /* preallocate arrays */
         morton.resize(numPrimitives);
-        size_t bytesAllocated = numPrimitives*sizeof(Node)/(4*N) + size_t(1.2f*Primitive::blocks(numPrimitives)*sizeof(Primitive));
+        size_t bytesAllocated = numPrimitives*sizeof(AlignedNode)/(4*N) + size_t(1.2f*Primitive::blocks(numPrimitives)*sizeof(Primitive));
         size_t bytesMortonCodes = numPrimitives*sizeof(MortonID32Bit);
         bytesAllocated = max(bytesAllocated,bytesMortonCodes); // the first allocation block is reused to sort the morton codes
         bvh->alloc.init(bytesAllocated,2*bytesAllocated);
@@ -403,7 +402,7 @@ namespace embree
               for (size_t j=r.begin(); j<r.end(); j++)
               {
                 BBox3fa prim_bounds = empty;
-                if (unlikely(!mesh->valid(j,&prim_bounds))) continue;
+                if (unlikely(!mesh->buildBounds(j,&prim_bounds))) continue;
                 bounds.extend(center2(prim_bounds));
                 num++;
               }
@@ -439,7 +438,7 @@ namespace embree
               for (size_t j=r.begin(); j<r.end(); j++)
               {
                 BBox3fa bounds = empty;
-                if (unlikely(!mesh->valid(j,&bounds))) continue;
+                if (unlikely(!mesh->buildBounds(j,&bounds))) continue;
                 generator(bounds,unsigned(j));
                 num++;
               }
@@ -452,7 +451,7 @@ namespace embree
               for (size_t j=r.begin(); j<r.end(); j++)
               {
                 BBox3fa bounds = empty;
-                if (!mesh->valid(j,&bounds)) continue;
+                if (!mesh->buildBounds(j,&bounds)) continue;
                 generator(bounds,unsigned(j));
                 num++;
               }
@@ -461,16 +460,16 @@ namespace embree
         }
 
         /* create BVH */
-        AllocBVHNNode<N> allocNode;
+        AllocBVHNAlignedNode<N> allocAlignedNode;
         SetBVHNBounds<N> setBounds(bvh);
         CreateMortonLeaf<N,Primitive> createLeaf(mesh,morton.data());
         CalculateMeshBounds<Mesh> calculateBounds(mesh);
         auto node_bounds = bvh_builder_morton_internal<NodeRef>(
           typename BVH::CreateAlloc(bvh), BBox3fa(empty),
-          allocNode,setBounds,createLeaf,calculateBounds,progress,
+          allocAlignedNode,setBounds,createLeaf,calculateBounds,progress,
           morton.data(),dest,numPrimitivesGen,N,BVH::maxBuildDepth,minLeafSize,maxLeafSize);
         
-        bvh->set(node_bounds.first,node_bounds.second,numPrimitives);
+        bvh->set(node_bounds.first,LBBox3fa(node_bounds.second),numPrimitives);
         
 #if ROTATE_TREE
         if (N == 4)

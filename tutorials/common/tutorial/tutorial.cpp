@@ -484,6 +484,12 @@ namespace embree
     case '+' : g_debug=clamp(g_debug+0.01f); PRINT(g_debug); break;
     case '-' : g_debug=clamp(g_debug-0.01f); PRINT(g_debug); break;
 
+    case ' ' : {
+      Ref<Image> image = new Image4uc(width, height, (Col4uc*)pixels, true, "", true);
+      storeImage(image, "screenshot.tga");
+      break;
+    }
+
     case '\033': case 'q': case 'Q':
       glutDestroyWindow(windowID);
 #if defined(__MACOSX__)

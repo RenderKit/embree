@@ -1,4 +1,3 @@
-
 // ======================================================================== //
 // Copyright 2009-2016 Intel Corporation                                    //
 //                                                                          //
@@ -51,7 +50,7 @@ namespace embree
   };
 
   /*! Multi BVH with N children. Each node stores the bounding box of
-   * it's N children as well as N child pointers. */
+   * it's N children as well as N child references. */
   template<int N>
   class BVHN : public AccelData
   {
@@ -60,8 +59,8 @@ namespace embree
 
     /*! forward declaration of node type */
     struct BaseNode;
-    struct Node;
-    struct NodeMB;
+    struct AlignedNode;
+    struct AlignedNodeMB;
     struct UnalignedNode;
     struct UnalignedNodeMB;
     struct TransformNode;
@@ -79,8 +78,8 @@ namespace embree
     static const size_t items_mask = byteAlignment-1;
 
     /*! different supported node types */
-    static const size_t tyNode = 0;
-    static const size_t tyNodeMB = 1;
+    static const size_t tyAlignedNode = 0;
+    static const size_t tyAlignedNodeMB = 1;
     static const size_t tyUnalignedNode = 2;
     static const size_t tyUnalignedNodeMB = 3;
     static const size_t tyTransformNode = 4;
@@ -123,14 +122,14 @@ namespace embree
     };
 
     /*! Builder interface to create Node */
-    struct CreateNode
+    struct CreateAlignedNode
     {
-      __forceinline CreateNode (BVHN* bvh) : bvh(bvh) {}
+      __forceinline CreateAlignedNode (BVHN* bvh) : bvh(bvh) {}
 
       template<typename BuildRecord>
-      __forceinline Node* operator() (const BuildRecord& current, BuildRecord* children, const size_t n, FastAllocator::ThreadLocal2* alloc)
+      __forceinline AlignedNode* operator() (const BuildRecord& current, BuildRecord* children, const size_t n, FastAllocator::ThreadLocal2* alloc)
       {
-        Node* node = (Node*) alloc->alloc0.malloc(sizeof(Node), byteNodeAlignment); node->clear();
+        AlignedNode* node = (AlignedNode*) alloc->alloc0->malloc(sizeof(AlignedNode), byteNodeAlignment); node->clear();
         for (size_t i=0; i<n; i++) {
           node->set(i,children[i].bounds());
           children[i].parent = (size_t*)&node->child(i);
@@ -148,14 +147,14 @@ namespace embree
       __forceinline CreateQuantizedNode (BVHN* bvh) : bvh(bvh) {}
 
       template<typename BuildRecord>
-      __forceinline Node* operator() (const BuildRecord& current, BuildRecord* children, const size_t n, FastAllocator::ThreadLocal2* alloc)
+      __forceinline AlignedNode* operator() (const BuildRecord& current, BuildRecord* children, const size_t n, FastAllocator::ThreadLocal2* alloc)
       {
-        __aligned(64) Node node;
+        __aligned(64) AlignedNode node;
         node.clear();
         for (size_t i=0; i<n; i++) {
           node.set(i,children[i].bounds());
         }
-        QuantizedNode *qnode = (QuantizedNode*) alloc->alloc0.malloc(sizeof(QuantizedNode), byteNodeAlignment);
+        QuantizedNode *qnode = (QuantizedNode*) alloc->alloc0->malloc(sizeof(QuantizedNode), byteNodeAlignment);
 
         assert(((size_t)qnode & 0x7) == 0);
 
@@ -176,7 +175,7 @@ namespace embree
 
     struct NoRotate
     {
-      __forceinline size_t operator() (Node* node, const size_t* counts, const size_t n) {
+      __forceinline size_t operator() (AlignedNode* node, const size_t* counts, const size_t n) {
         return 0;
       }
     };
@@ -325,10 +324,10 @@ namespace embree
       __forceinline int type() const { return ptr & (size_t)align_mask; }
 
       /*! checks if this is a node */
-      __forceinline int isNode() const { return (ptr & (size_t)align_mask) == tyNode; }
+      __forceinline int isAlignedNode() const { return (ptr & (size_t)align_mask) == tyAlignedNode; }
 
       /*! checks if this is a motion blur node */
-      __forceinline int isNodeMB() const { return (ptr & (size_t)align_mask) == tyNodeMB; }
+      __forceinline int isAlignedNodeMB() const { return (ptr & (size_t)align_mask) == tyAlignedNodeMB; }
 
       /*! checks if this is a node with unaligned bounding boxes */
       __forceinline int isUnalignedNode() const { return (ptr & (size_t)align_mask) == tyUnalignedNode; }
@@ -367,12 +366,12 @@ namespace embree
       }
 
       /*! returns node pointer */
-      __forceinline       Node* node()       { assert(isNode()); return (      Node*)ptr; }
-      __forceinline const Node* node() const { assert(isNode()); return (const Node*)ptr; }
+      __forceinline       AlignedNode* alignedNode()       { assert(isAlignedNode()); return (      AlignedNode*)ptr; }
+      __forceinline const AlignedNode* alignedNode() const { assert(isAlignedNode()); return (const AlignedNode*)ptr; }
 
       /*! returns motion blur node pointer */
-      __forceinline       NodeMB* nodeMB()       { assert(isNodeMB()); return (      NodeMB*)(ptr & ~(size_t)align_mask); }
-      __forceinline const NodeMB* nodeMB() const { assert(isNodeMB()); return (const NodeMB*)(ptr & ~(size_t)align_mask); }
+      __forceinline       AlignedNodeMB* alignedNodeMB()       { assert(isAlignedNodeMB()); return (      AlignedNodeMB*)(ptr & ~(size_t)align_mask); }
+      __forceinline const AlignedNodeMB* alignedNodeMB() const { assert(isAlignedNodeMB()); return (const AlignedNodeMB*)(ptr & ~(size_t)align_mask); }
 
       /*! returns unaligned node pointer */
       __forceinline       UnalignedNode* unalignedNode()       { assert(isUnalignedNode()); return (      UnalignedNode*)(ptr & ~(size_t)align_mask); }
@@ -436,8 +435,8 @@ namespace embree
       NodeRef children[N];    //!< Pointer to the N children (can be a node or leaf)
     };
 
-    /*! BVHN Node */
-    struct Node : public BaseNode
+    /*! BVHN AlignedNode */
+    struct AlignedNode : public BaseNode
     {
       using BaseNode::children;
 
@@ -509,6 +508,23 @@ namespace embree
       __forceinline       NodeRef& child(size_t i)       { assert(i<N); return children[i]; }
       __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
 
+      /*! output operator */
+      friend std::ostream& operator<<(std::ostream& o, const AlignedNode& n)
+      {
+        o << "AlignedNode { " << std::endl;
+        o << "  lower_x " << n.lower_x << std::endl;
+        o << "  upper_x " << n.upper_x << std::endl;
+        o << "  lower_y " << n.lower_y << std::endl;
+        o << "  upper_y " << n.upper_y << std::endl;
+        o << "  lower_z " << n.lower_z << std::endl;
+        o << "  upper_z " << n.upper_z << std::endl;
+        o << "  children = ";
+        for (size_t i=0; i<N; i++) o << n.children[i] << " ";
+        o << std::endl;
+        o << "}" << std::endl;
+        return o;
+      }
+
     public:
       vfloat<N> lower_x;           //!< X dimension of lower bounds of all N children.
       vfloat<N> upper_x;           //!< X dimension of upper bounds of all N children.
@@ -518,8 +534,8 @@ namespace embree
       vfloat<N> upper_z;           //!< Z dimension of upper bounds of all N children.
     };
 
-    /*! Motion Blur Node */
-    struct NodeMB : public BaseNode
+    /*! Motion Blur AlignedNode */
+    struct AlignedNodeMB : public BaseNode
     {
       using BaseNode::children;
 
@@ -570,6 +586,12 @@ namespace embree
         }
       }
 
+      /*! Sets bounding box and ID of child. */
+      __forceinline void set(size_t i, const LBBox3fa& bounds)
+      {
+        set(i, bounds.bounds0, bounds.bounds1);
+      }
+
       /*! tests if the node has valid bounds */
       __forceinline bool hasBounds() const {
         return lower_dx.i[0] != cast_f2i(float(nan));
@@ -578,13 +600,13 @@ namespace embree
       /*! Return bounding box for time 0 */
       __forceinline BBox3fa bounds0(size_t i) const {
         return BBox3fa(Vec3fa(lower_x[i],lower_y[i],lower_z[i]),
-                      Vec3fa(upper_x[i],upper_y[i],upper_z[i]));
+                       Vec3fa(upper_x[i],upper_y[i],upper_z[i]));
       }
 
       /*! Return bounding box for time 1 */
       __forceinline BBox3fa bounds1(size_t i) const {
         return BBox3fa(Vec3fa(lower_x[i]+lower_dx[i],lower_y[i]+lower_dy[i],lower_z[i]+lower_dz[i]),
-                      Vec3fa(upper_x[i]+upper_dx[i],upper_y[i]+upper_dy[i],upper_z[i]+upper_dz[i]));
+                       Vec3fa(upper_x[i]+upper_dx[i],upper_y[i]+upper_dy[i],upper_z[i]+upper_dz[i]));
       }
 
       /*! Returns extent of bounds of specified child. */
@@ -876,7 +898,7 @@ namespace embree
 #endif
       }
 
-      __forceinline void init(Node &node)
+      __forceinline void init(AlignedNode& node)
       {
         for (size_t i=0;i<N;i++) children[i] = emptyNode;
         init_dim(node.lower_x,node.upper_x,lower_x,upper_x,start.x,scale.x);
@@ -897,7 +919,7 @@ namespace embree
       __forceinline vfloat<N> dequantizeUpperZ() const { return vfloat<N>(start.z) + vfloat<N>(vint<N>::load(upper_z)) * scale.z; }
 
       template <int M>
-      __forceinline vfloat<M> dequantize(const size_t offset) const { return vfloat<M>(vint<M>::load(all_planes+offset)); }
+      __forceinline vfloat<M> dequantize(const size_t offset) const { return vfloat<M>(vint<M>::loadu(all_planes+offset)); }
 
 
       union {
@@ -918,7 +940,7 @@ namespace embree
 
 
     /*! swap the children of two nodes */
-    __forceinline static void swap(Node* a, size_t i, Node* b, size_t j)
+    __forceinline static void swap(AlignedNode* a, size_t i, AlignedNode* b, size_t j)
     {
       assert(i<N && j<N);
       std::swap(a->children[i],b->children[j]);
@@ -931,7 +953,7 @@ namespace embree
     }
 
     /*! compacts a node (moves empty children to the end) */
-    __forceinline static void compact(Node* a)
+    __forceinline static void compact(AlignedNode* a)
     {
       /* find right most filled node */
       ssize_t j=N;
@@ -951,7 +973,7 @@ namespace embree
     }
 
     /*! compacts a node (moves empty children to the end) */
-    __forceinline static void compact(NodeMB* a)
+    __forceinline static void compact(AlignedNodeMB* a)
     {
       /* find right most filled node */
       ssize_t j=N;
@@ -982,7 +1004,7 @@ namespace embree
     void clear();
 
     /*! sets BVH members after build */
-    void set (NodeRef root, const BBox3fa& bounds, size_t numPrimitives);
+    void set (NodeRef root, const LBBox3fa& bounds, size_t numPrimitives);
 
     /*! prints statistics about the BVH */
     void printStatistics();
@@ -1024,10 +1046,32 @@ namespace embree
       alloc.cleanup();
     }
 
+
+    /*! return the true root */
+    __forceinline NodeRef getRoot(const RayPrecalculations& pre) const {
+      return root;
+    }
+
+    __forceinline NodeRef getRoot(const RayPrecalculationsMB& pre) const {
+      NodeRef* roots = (NodeRef*)(size_t)root;
+      return roots[pre.itime()];
+    }
+
+    template<int K>
+    __forceinline NodeRef getRoot(const RayKPrecalculations<K>& pre, size_t k) const {
+      return root;
+    }
+
+    template<int K>
+    __forceinline NodeRef getRoot(const RayKPrecalculationsMB<K>& pre, size_t k) const {
+      NodeRef* roots = (NodeRef*)(size_t)root;
+      return roots[pre.itime(k)];
+    }
+
   public:
 
     /*! Encodes a node */
-    static __forceinline NodeRef encodeNode(Node* node) {
+    static __forceinline NodeRef encodeNode(AlignedNode* node) {
       assert(!((size_t)node & align_mask));
       return NodeRef((size_t) node);
     }
@@ -1047,9 +1091,9 @@ namespace embree
     }
 
     /*! Encodes a node */
-    static __forceinline NodeRef encodeNode(NodeMB* node) {
+    static __forceinline NodeRef encodeNode(AlignedNodeMB* node) {
       assert(!((size_t)node & align_mask));
-      return NodeRef((size_t) node | tyNodeMB);
+      return NodeRef((size_t) node | tyAlignedNodeMB);
     }
 
     /*! Encodes an unaligned node */
@@ -1088,7 +1132,9 @@ namespace embree
   public:
     Device* device;                    //!< device pointer
     Scene* scene;                      //!< scene pointer
-    NodeRef root;                      //!< Root node
+    NodeRef root;                      //!< root node
+    bool msmblur;                      //!< when true root points to array of roots for MSMBlur mode
+    unsigned numTimeSteps;             //!< number of time steps
     FastAllocator alloc;               //!< allocator used to allocate nodes
 
     /*! statistics data */
@@ -1103,24 +1149,9 @@ namespace embree
   };
 
   template<>
-  __forceinline void BVHN<4>::Node::bounds(BBox<vfloat4>& bounds0, BBox<vfloat4>& bounds1, BBox<vfloat4>& bounds2, BBox<vfloat4>& bounds3) const {
+  __forceinline void BVHN<4>::AlignedNode::bounds(BBox<vfloat4>& bounds0, BBox<vfloat4>& bounds1, BBox<vfloat4>& bounds2, BBox<vfloat4>& bounds3) const {
     transpose(lower_x,lower_y,lower_z,vfloat4(zero),bounds0.lower,bounds1.lower,bounds2.lower,bounds3.lower);
     transpose(upper_x,upper_y,upper_z,vfloat4(zero),bounds0.upper,bounds1.upper,bounds2.upper,bounds3.upper);
-  }
-
-  template<int N>
-  __forceinline std::ostream &operator<<(std::ostream &o, const typename BVHN<N>::Node &n)
-  {
-    o << "lower_x " << n.lower_x << std::endl;
-    o << "upper_x " << n.upper_x << std::endl;
-    o << "lower_y " << n.lower_y << std::endl;
-    o << "upper_y " << n.upper_y << std::endl;
-    o << "lower_z " << n.lower_z << std::endl;
-    o << "upper_z " << n.upper_z << std::endl;
-    o << "children ";
-    for (size_t i=0;i<N;i++) o << n.children[i] << " ";
-    o << std::endl;
-    return o;
   }
 
   typedef BVHN<4> BVH4;

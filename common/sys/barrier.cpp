@@ -85,7 +85,7 @@ namespace embree
 
   public:
     HANDLE events[2];
-    volatile size_t i;
+    atomic<size_t> i;
     atomic<size_t> enterCount;
     atomic<size_t> exitCount;
     size_t barrierSize;

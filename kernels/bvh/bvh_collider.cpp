@@ -48,7 +48,7 @@ namespace embree
     };
     
     template<int N>
-    __forceinline size_t overlap(const BBox3fa& box0, const typename BVHN<N>::Node& node1)
+    __forceinline size_t overlap(const BBox3fa& box0, const typename BVHN<N>::AlignedNode& node1)
     {
       const vfloat<N> lower_x = max(vfloat<N>(box0.lower.x),node1.lower_x);
       const vfloat<N> lower_y = max(vfloat<N>(box0.lower.y),node1.lower_y);
@@ -236,7 +236,7 @@ namespace embree
 
       {
       recurse_node0:
-        Node* node0 = ref0.node();
+        AlignedNode* node0 = ref0.alignedNode();
         size_t mask = overlap<N>(bounds1,*node0);
         //for (size_t m=mask, i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {
         //for (size_t i=0; i<N; i++) {
@@ -261,7 +261,7 @@ namespace embree
       
       {
       recurse_node1:
-        Node* node1 = ref1.node();
+        AlignedNode* node1 = ref1.alignedNode();
         size_t mask = overlap<N>(bounds0,*node1);
         //for (size_t m=mask, i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {
         //for (size_t i=0; i<N; i++) {
@@ -315,14 +315,14 @@ namespace embree
     void BVHNColliderTriangle4v<N>::collide(BVH* __restrict__ bvh0, BVH* __restrict__ bvh1, RTCCollideFunc callback, void* userPtr)
     { 
       BVHNColliderTriangle4v<N>(bvh0->scene,bvh1->scene,callback,userPtr).
-        collide_recurse_entry(bvh0->root,bvh0->bounds,bvh1->root,bvh1->bounds,0);
+        collide_recurse_entry(bvh0->root,bvh0->bounds.bounds(),bvh1->root,bvh1->bounds.bounds(),0);
     }
 
     template<int N>
     void BVHNColliderUserGeom<N>::collide(BVH* __restrict__ bvh0, BVH* __restrict__ bvh1, RTCCollideFunc callback, void* userPtr)
     { 
       BVHNColliderUserGeom<N>(bvh0->scene,bvh1->scene,callback,userPtr).
-        collide_recurse_entry(bvh0->root,bvh0->bounds,bvh1->root,bvh1->bounds,0);
+        collide_recurse_entry(bvh0->root,bvh0->bounds.bounds(),bvh1->root,bvh1->bounds.bounds(),0);
     }
 
 #if !defined (__SSE4_1__)

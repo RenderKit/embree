@@ -54,8 +54,7 @@ namespace embree
     std::string tri_accel;                 //!< acceleration structure to use for triangles
     std::string tri_builder;               //!< builder to use for triangles
     std::string tri_traverser;             //!< traverser to use for triangles
-    float      tri_builder_replication_factor; //!< maximally factor*N many primitives in accel
-
+    
   public:
     std::string tri_accel_mb;              //!< acceleration structure to use for motion blur triangles
     std::string tri_builder_mb;            //!< builder to use for motion blur triangles
@@ -85,10 +84,11 @@ namespace embree
     std::string hair_accel;                //!< hair acceleration structure to use
     std::string hair_builder;              //!< builder to use for hair
     std::string hair_traverser;            //!< traverser to use for hair
-    double      hair_builder_replication_factor; //!< maximally factor*N many primitives in accel
 
   public:
     std::string hair_accel_mb;             //!< acceleration structure to use for motion blur hair
+    std::string hair_builder_mb;           //!< builder to use for motion blur hair
+    std::string hair_traverser_mb;         //!< traverser to use for motion blur hair
 
   public:
     int object_accel_min_leaf_size;         //!< minimal leaf size for object acceleration structure
@@ -99,19 +99,23 @@ namespace embree
     int object_accel_mb_max_leaf_size;         //!< maximal leaf size for mblur object acceleration structure
 
   public:
-    size_t tessellation_cache_size;        //!< size of the shared tessellation cache 
     std::string subdiv_accel;              //!< acceleration structure to use for subdivision surfaces
     std::string subdiv_accel_mb;           //!< acceleration structure to use for subdivision surfaces
+
+  public:
+    float max_spatial_split_replications;  //!< maximally replications*N many primitives in accel for spatial splits
+    size_t tessellation_cache_size;        //!< size of the shared tessellation cache 
 
   public:
     bool float_exceptions;                 //!< enable floating point exceptions
     int scene_flags;                       //!< scene flags to use
     size_t verbose;                        //!< verbosity of output
     size_t benchmark;                      //!< true
-
+    
   public:
     size_t numThreads;                     //!< number of threads to use in builders
     bool set_affinity;                     //!< sets affinity for worker threads
+    bool start_threads;                    //!< true when threads should be started at device creation time
     int enabled_cpu_features;              //!< CPU ISA features to use
 
   public:

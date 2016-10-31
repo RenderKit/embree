@@ -86,8 +86,7 @@ namespace embree
     }
     
     __forceinline explicit vfloat(const __m512i& a) {
-      // round to nearest is standard
-      v = _mm512_cvt_roundepi32_ps(a,_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC); 
+      v = _mm512_cvtepi32_ps(a);
     }
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -397,23 +396,23 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
   
   __forceinline vfloat16 floor(const vfloat16& a) {
-    return _mm512_add_round_ps(a,_mm512_setzero_ps(),_MM_FROUND_TO_NEG_INF | _MM_FROUND_NO_EXC); 
+    return _mm512_floor_ps(a);
   }
   __forceinline vfloat16 ceil (const vfloat16& a) {
-    return _mm512_add_round_ps(a,_mm512_setzero_ps(),_MM_FROUND_TO_POS_INF | _MM_FROUND_NO_EXC); 
+    return _mm512_ceil_ps(a);
   }
   __forceinline vfloat16 trunc(const vfloat16& a) {
-    return _mm512_add_round_ps(a,_mm512_setzero_ps(),_MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC); 
+    return _mm512_trunc_ps(a);
   } 
 
   __forceinline vint16 floori (const vfloat16& a) {
-    return _mm512_cvt_roundps_epi32(a,_MM_FROUND_TO_NEG_INF |_MM_FROUND_NO_EXC);
+    return _mm512_cvt_roundps_epi32(a, _MM_FROUND_TO_NEG_INF | _MM_FROUND_NO_EXC);
   }
 
 
   __forceinline vfloat16 frac( const vfloat16& a ) { return a-trunc(a); }
 
-  __forceinline const vfloat16 rcp_nr  ( const vfloat16& a ) {
+  __forceinline const vfloat16 rcp_nr( const vfloat16& a ) {
     const vfloat16 ra = rcp(a);
     return (ra+ra) - (ra * a * ra);
   };
@@ -548,66 +547,76 @@ namespace embree
     return __bsf(movemask(any(valid_max) ? valid_max : valid)); 
   }
   
-  __forceinline vfloat16 prefix_sum(const vfloat16& a)
+  __forceinline vfloat16 prefix_sum(const vfloat16& a) 
   {
+    const vfloat16 z(zero);
     vfloat16 v = a;
-    v = mask_add(0xaaaa,v,v,shuffle<2,2,0,0>(v));
-    v = mask_add(0xcccc,v,v,shuffle<1,1,1,1>(v));
-    const vfloat16 shuf_v0 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(2,2,0,0),_MM_SWIZ_REG_DDDD);
-    v = mask_add(0xf0f0,v,v,shuf_v0);
-    const vfloat16 shuf_v1 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(1,1,0,0),_MM_SWIZ_REG_DDDD);
-    v = mask_add(0xff00,v,v,shuf_v1);
+    v = v + align_shift_right<16-1>(v,z);
+    v = v + align_shift_right<16-2>(v,z);
+    v = v + align_shift_right<16-4>(v,z);
+    v = v + align_shift_right<16-8>(v,z);
+    return v;  
+  }
+
+  __forceinline vfloat16 reverse_prefix_sum(const vfloat16& a) 
+  {
+    const vfloat16 z(zero);
+    vfloat16 v = a;
+    v = v + align_shift_right<1>(z,v);
+    v = v + align_shift_right<2>(z,v);
+    v = v + align_shift_right<4>(z,v);
+    v = v + align_shift_right<8>(z,v);
     return v;  
   }
 
   __forceinline vfloat16 prefix_min(const vfloat16& a)
   {
+    const vint16 perm0(0,1,2,3,3,3,3,3,8,9,10,11,11,11,11,11);       
+    const vint16 perm1(0,1,2,3,4,5,6,7,7,7,7,7,7,7,7,7);       
     vfloat16 v = a;
-    v = mask_min(0xaaaa,v,v,shuffle<2,2,0,0>(v));
-    v = mask_min(0xcccc,v,v,shuffle<1,1,1,1>(v));
-    const vfloat16 shuf_v0 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(2,2,0,0),_MM_SWIZ_REG_DDDD);
-    v = mask_min(0xf0f0,v,v,shuf_v0);
-    const vfloat16 shuf_v1 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(1,1,0,0),_MM_SWIZ_REG_DDDD);
-    v = mask_min(0xff00,v,v,shuf_v1);
-    return v;  
-  }
-  
-  __forceinline vfloat16 prefix_max(const vfloat16& a)
-  {
-    vfloat16 v = a;
-    v = mask_max(0xaaaa,v,v,shuffle<2,2,0,0>(v));
-    v = mask_max(0xcccc,v,v,shuffle<1,1,1,1>(v));
-    const vfloat16 shuf_v0 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(2,2,0,0),_MM_SWIZ_REG_DDDD);
-    v = mask_max(0xf0f0,v,v,shuf_v0);
-    const vfloat16 shuf_v1 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(1,1,0,0),_MM_SWIZ_REG_DDDD);
-    v = mask_max(0xff00,v,v,shuf_v1);
+    v = min(v,shuffle<2,2,0,0>(v));
+    v = min(v,shuffle<1,1,1,0>(v));
+    v = min(v,permute(v,perm0));
+    v = min(v,permute(v,perm1));
     return v;  
   }
 
+  __forceinline vfloat16 prefix_max(const vfloat16& a)
+  {
+    const vint16 perm0(0,1,2,3,3,3,3,3,8,9,10,11,11,11,11,11);       
+    const vint16 perm1(0,1,2,3,4,5,6,7,7,7,7,7,7,7,7,7);       
+    vfloat16 v = a;
+    v = max(v,shuffle<2,2,0,0>(v));
+    v = max(v,shuffle<1,1,1,0>(v));
+    v = max(v,permute(v,perm0));
+    v = max(v,permute(v,perm1));
+    return v;  
+  }
+
+
   __forceinline vfloat16 reverse_prefix_min(const vfloat16& a)
   {
+    const vint16 perm0(4,4,4,4,4,5,6,7,12,12,12,12,12,13,14,15);       
+    const vint16 perm1(8,8,8,8,8,8,8,8,8,9,10,11,12,13,14,15);       
     vfloat16 v = a;
-    v = mask_min(0x5555,v,v,shuffle<3,3,1,1>(v));
-    v = mask_min(0x3333,v,v,shuffle<2,2,2,2>(v));
-    const vfloat16 shuf_v0 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(3,3,1,1),_MM_SWIZ_REG_AAAA);
-    v = mask_min(0x0f0f,v,v,shuf_v0);
-    const vfloat16 shuf_v1 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(2,2,2,2),_MM_SWIZ_REG_AAAA);
-    v = mask_min(0x00ff,v,v,shuf_v1);
+    v = min(v,shuffle<3,3,1,1>(v));
+    v = min(v,shuffle<3,2,2,2>(v));
+    v = min(v,permute(v,perm0));
+    v = min(v,permute(v,perm1));
     return v;  
   }
 
   __forceinline vfloat16 reverse_prefix_max(const vfloat16& a)
   {
+    const vint16 perm0(4,4,4,4,4,5,6,7,12,12,12,12,12,13,14,15);       
+    const vint16 perm1(8,8,8,8,8,8,8,8,8,9,10,11,12,13,14,15);       
     vfloat16 v = a;
-    v = mask_max(0x5555,v,v,shuffle<3,3,1,1>(v));
-    v = mask_max(0x3333,v,v,shuffle<2,2,2,2>(v));
-    const vfloat16 shuf_v0 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(3,3,1,1),_MM_SWIZ_REG_AAAA);
-    v = mask_max(0x0f0f,v,v,shuf_v0);
-    const vfloat16 shuf_v1 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(2,2,2,2),_MM_SWIZ_REG_AAAA);
-    v = mask_max(0x00ff,v,v,shuf_v1);
+    v = max(v,shuffle<3,3,1,1>(v));
+    v = max(v,shuffle<3,2,2,2>(v));
+    v = max(v,permute(v,perm0));
+    v = max(v,permute(v,perm1));
     return v;  
   }
-
 
   __forceinline vfloat16 set_min4(vfloat16 x) {
     x = min(x,shuffle(x,_MM_SWIZ_REG_BADC));

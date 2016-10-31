@@ -1,4 +1,4 @@
-% Embree: High Performance Ray Tracing Kernels 2.11.0
+% Embree: High Performance Ray Tracing Kernels 2.12.0
 % Intel Corporation
 
 Embree Overview
@@ -87,14 +87,14 @@ Windows Installer
 
 You can install the 64 bit version of the Embree library using the
 Windows installer application
-[embree-2.11.0-x64.exe](https://github.com/embree/embree/releases/download/v2.11.0/embree-2.11.0.x64.exe). This
+[embree-2.12.0-x64.exe](https://github.com/embree/embree/releases/download/v2.12.0/embree-2.12.0.x64.exe). This
 will install the 64 bit Embree version by default in `Program
-Files\Intel\Embree v2.11.0 x64`. To install the 32 bit
+Files\Intel\Embree v2.12.0 x64`. To install the 32 bit
 Embree library use the
-[embree-2.11.0-win32.exe](https://github.com/embree/embree/releases/download/v2.11.0/embree-2.11.0.win32.exe)
+[embree-2.12.0-win32.exe](https://github.com/embree/embree/releases/download/v2.12.0/embree-2.12.0.win32.exe)
 installer. This will install the 32 bit Embree version by default in
-`Program Files\Intel\Embree v2.11.0 win32` on 32 bit
-systems and `Program Files (x86)\Intel\Embree v2.11.0 win32`
+`Program Files\Intel\Embree v2.12.0 win32` on 32 bit
+systems and `Program Files (x86)\Intel\Embree v2.12.0 win32`
 on 64 bit systems.
 
 You have to set the path to the `lib` folder manually to your `PATH`
@@ -106,15 +106,15 @@ Embree installation.
 To uninstall Embree again open `Programs and Features` by clicking the
 `Start button`, clicking `Control Panel`, clicking `Programs`, and
 then clicking `Programs and Features`. Select `Embree
-2.11.0` and uninstall it.
+2.12.0` and uninstall it.
 
 Windows ZIP File
 -----------------
 
 Embree is also delivered as a ZIP file for 64 bit
-[embree-2.11.0.x64.windows.zip](https://github.com/embree/embree/releases/download/v2.11.0/embree-2.11.0.x64.windows.zip)
+[embree-2.12.0.x64.windows.zip](https://github.com/embree/embree/releases/download/v2.12.0/embree-2.12.0.x64.windows.zip)
 and 32 bit
-[embree-2.11.0.win32.windows.zip](https://github.com/embree/embree/releases/download/v2.11.0/embree-2.11.0.win32.windows.zip). After
+[embree-2.12.0.win32.windows.zip](https://github.com/embree/embree/releases/download/v2.12.0/embree-2.12.0.win32.windows.zip). After
 unpacking this ZIP file you should set the path to the `lib` folder
 manually to your `PATH` environment variable for applications to find
 Embree. To compile applications with Embree you also have to set the
@@ -128,18 +128,18 @@ Linux RPMs
 ----------
 
 Uncompress the 'tar.gz' file
-[embree-2.11.0.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v2.11.0/embree-2.11.0.x86_64.rpm.tar.gz)
+[embree-2.12.0.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v2.12.0/embree-2.12.0.x86_64.rpm.tar.gz)
 to
 obtain the individual RPM files:
 
-    tar xzf embree-2.11.0.x86_64.rpm.tar.gz
+    tar xzf embree-2.12.0.x86_64.rpm.tar.gz
 
 To install the Embree using the RPM packages on your Linux system type
 the following:
 
-    sudo rpm --install embree-lib-2.11.0-1.x86_64.rpm
-    sudo rpm --install embree-devel-2.11.0-1.x86_64.rpm
-    sudo rpm --install embree-examples-2.11.0-1.x86_64.rpm
+    sudo rpm --install embree-lib-2.12.0-1.x86_64.rpm
+    sudo rpm --install embree-devel-2.12.0-1.x86_64.rpm
+    sudo rpm --install embree-examples-2.12.0-1.x86_64.rpm
 
 You also have to install the Intel® Threading Building Blocks (TBB)
 using `yum`:
@@ -169,21 +169,21 @@ the tutorials to start them.
 
 To uninstall Embree again just execute the following:
 
-    sudo rpm --erase embree-lib-2.11.0-1.x86_64
-    sudo rpm --erase embree-devel-2.11.0-1.x86_64
-    sudo rpm --erase embree-examples-2.11.0-1.x86_64
+    sudo rpm --erase embree-lib-2.12.0-1.x86_64
+    sudo rpm --erase embree-devel-2.12.0-1.x86_64
+    sudo rpm --erase embree-examples-2.12.0-1.x86_64
 
 Linux tar.gz files
 ------------------
 
 The Linux version of Embree is also delivered as a tar.gz file
-[embree-2.11.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v2.11.0/embree-2.11.0.x86_64.linux.tar.gz). Unpack
+[embree-2.12.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v2.12.0/embree-2.12.0.x86_64.linux.tar.gz). Unpack
 this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to setup the environment properly:
 
-    tar xzf embree-2.11.0.x64.linux.tar.gz
-    source embree-2.11.0.x64.linux/embree-vars.sh
+    tar xzf embree-2.12.0.x64.linux.tar.gz
+    source embree-2.12.0.x64.linux/embree-vars.sh
 
 If you want to ship Embree with your application best use the Embree
 version provided through the tar.gz file.
@@ -193,7 +193,7 @@ Mac OS X PKG Installer
 
 To install the Embree library on your Mac OS X system use the
 provided package installer inside
-[embree-2.11.0.x86_64.dmg](https://github.com/embree/embree/releases/download/v2.11.0/embree-2.11.0.x86_64.dmg). This
+[embree-2.12.0.x86_64.dmg](https://github.com/embree/embree/releases/download/v2.12.0/embree-2.12.0.x86_64.dmg). This
 will install Embree by default into `/opt/local/lib` and
 `/opt/local/include` directories. The Embree tutorials are installed
 into the `/Applications/Embree2` folder.
@@ -215,13 +215,13 @@ Mac OS X tar.gz file
 ---------------------
 
 The Mac OS X version of Embree is also delivered as a tar.gz file
-[embree-2.11.0.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v2.11.0/embree-2.11.0.x86_64.macosx.tar.gz). Unpack
+[embree-2.12.0.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v2.12.0/embree-2.12.0.x86_64.macosx.tar.gz). Unpack
 this file using `tar` and and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to setup the environment properly:
 
-    tar xzf embree-2.11.0.x64.macosx.tar.gz
-    source embree-2.11.0.x64.macosx/embree-vars.sh
+    tar xzf embree-2.12.0.x64.macosx.tar.gz
+    source embree-2.12.0.x64.macosx/embree-vars.sh
 
 If you want to ship Embree with your application please use the Embree
 library of the provided tar.gz file. The library name of that Embree
@@ -258,7 +258,7 @@ to use Embree with the Intel® Threading Building Blocks (TBB) and best
 also use TBB inside your application. Optionally you can disable TBB
 in Embree through the `RTCORE_TASKING_SYSTEM` CMake variable.
 
-Embree supported the Intel® SPMD Program Compiler (ISPC), which allows
+Embree supports the Intel® SPMD Program Compiler (ISPC), which allows
 straight forward parallelization of an entire renderer. If you do not
 want to use ISPC then you can disable `ENABLE_ISPC_SUPPORT` in
 CMake. Otherwise, download and install the ISPC binaries (we have
@@ -347,11 +347,12 @@ Windows
 -------
 
 Embree is tested under Windows using the Visual Studio 2015 (Update 1)
-compiler, Visual Studio 2013 (Update 5) compiler, Visual Studio 2012
-(Update 4) compiler, and Intel® Compiler 16.0.1. Using the Visual
-Studio 2015 compiler, Visual Studio 2013 compiler, and Intel Compiler
-you can compile Embree for AVX2, while Visual Studio 2012 supports at
-most AVX.
+compiler (Win32 and x64), Visual Studio 2013 (Update 5) compiler
+(Win32 and x64), Visual Studio 2012 (Update 4) compiler (x64 only),
+and Intel® Compiler 16.0.1 (Win32 and x64). Using the Visual Studio
+2015 compiler, Visual Studio 2013 compiler, and Intel Compiler you can
+compile Embree for AVX2, while Visual Studio 2012 supports at most
+AVX.
 
 Embree supports to use the Intel® Threading Building Blocks (TBB) as
 tasking system. For performance and flexibility reasons we recommend
@@ -368,7 +369,7 @@ to make sure that the libraries tbb.dll and tbb_malloc.dll can be found when
 executing your Embree applications, e.g. by putting the path to these
 libraries into your `PATH` environment variable.
 
-Embree supported the Intel® SPMD Program Compiler (ISPC), which allows
+Embree supports the Intel® SPMD Program Compiler (ISPC), which allows
 straight forward parallelization of an entire renderer. If you do not
 want to use ISPC then you can disable `ENABLE_ISPC_SUPPORT` in
 CMake. Otherwise, download and install the ISPC binaries (we have
@@ -510,23 +511,23 @@ parameters that can be configured in CMake:
                                SSSE3, SSE4.1, SSE4.2, AVX,
                                AVX-I, AVX2, or AVX512KNL).
 
-  EMBREE_GEOMETRY_TRIANGLES   Enables support for triangle      ON
-                              geometries.
+  EMBREE_GEOMETRY_TRIANGLES    Enables support for triangle      ON
+                               geometries.
 
-  EMBREE_GEOMETRY_QUADS       Enables support for quad          ON
-                              geometries.
+  EMBREE_GEOMETRY_QUADS        Enables support for quad          ON
+                               geometries.
 
-  EMBREE_GEOMETRY_LINES       Enables support for line          ON
-                              geometries.
+  EMBREE_GEOMETRY_LINES        Enables support for line          ON
+                               geometries.
 
-  EMBREE_GEOMETRY_HAIR        Enables support for hair          ON
-                              geometries.
+  EMBREE_GEOMETRY_HAIR         Enables support for hair          ON
+                               geometries.
 
-  EMBREE_GEOMETRY_SUBDIV      Enables support for subdiv        ON
-                              geometries.
+  EMBREE_GEOMETRY_SUBDIV       Enables support for subdiv        ON
+                               geometries.
 
-  EMBREE_GEOMETRY_USER        Enables support for user          ON
-                              geometries.
+  EMBREE_GEOMETRY_USER         Enables support for user          ON
+                               geometries.
 
   ---------------------------- -------------------------------- --------
   : CMake build options for Embree.
@@ -537,14 +538,16 @@ Embree API
 The Embree API is a low level ray tracing API that supports defining
 and committing of geometry and performing ray queries of different
 types. Static and dynamic scenes are supported, that may contain
-triangle geometries, quad geometries, hair geometries, line segment
-geometries, subdivision meshes, instanced geometries, and user defined
-geometries. Supported ray queries are, finding the closest scene
-intersection along a ray, and testing a ray segment for any
-intersection with the scene. Single rays, as well as packets of rays
-in a struct of array layout can be used for packet sizes of 1, 4, 8,
-and 16 rays. Using the ray stream interface a stream of an arbitrary
-number `M` of ray packets of arbitrary size `N` can be
+triangle geometries, quad geometries, line segment geometries, hair
+geometries, analytic bezier curves, subdivision meshes, instanced
+geometries, and user defined geometries. For each geometry type
+multi-segment motion blur is supported, including support for
+transformation motion blur of instances. Supported ray queries are,
+finding the closest scene intersection along a ray, and testing a ray
+segment for any intersection with the scene. Single rays, as well as
+packets of rays in a struct of array layout can be used for packet
+sizes of 1, 4, 8, and 16 rays. Using the ray stream interface a stream
+of an arbitrary number `M` of ray packets of arbitrary size `N` can be
 processed. Filter callback functions are supported, that get invoked
 for every intersection encountered during traversal.
 
@@ -778,6 +781,7 @@ if the user enables any ray packet query.
                         scene.
 
   RTC_INTERSECT_STREAM  Enables the `rtcIntersect1M`, `rtcOccluded1M`, 
+                        `rtcIntersect1Mp`, `rtcOccluded1Mp`,
                         `rtcIntersectNM`, `rtcOccludedNM`,
                         `rtcIntersectNp`, and `rtcOccludedNp`
                         functions for this scene.
@@ -791,15 +795,21 @@ if the user enables any ray packet query.
 Embree supports two modes for a scene, the `normal mode` and `stream
 mode`. These modes mainly differ in the kind of callbacks invoked and
 how rays are extended with user data. The normal mode is enabled by
-default, the ray stream mode can be enabled using the `RTC_INTERSECT_STREAM`
-algorithm flag for a scene. Only in ray stream mode, the stream API
-functions `rtcIntersect1M`, `rtcIntersectNM`, and `rtcIntersectNp` as
-well as their occlusion variants can be used.
+default, the ray stream mode can be enabled using the
+`RTC_INTERSECT_STREAM` algorithm flag for a scene. Only in ray stream
+mode, the stream API functions `rtcIntersect1M`, `rtcIntersect1Mp`,
+`rtcIntersectNM`, and `rtcIntersectNp` as well as their occlusion
+variants can be used.
 
 The scene bounding box can get read by the function
 `rtcGetBounds(RTCScene scene, RTCBounds& bounds_o)`. This function
-will write the AABB of the scene to `bounds_o`. Invoking this function
-is only valid when all scene changes got committed using `rtcCommit`.
+will write the AABB of the scene to `bounds_o`. Time varying bounds
+can be obtained usin the `rtcGetLinearBounds(RTCScene scene,
+RTCBounds* bounds_o)` function. This function will write two AABBs to
+`bounds_o`. Linearly interpolating these bounds to a specific time `t`
+yields bounds that bound the geometry at that time. Invoking these
+functions is only valid when all scene changes got committed using
+`rtcCommit`.
 
 Geometries
 ----------
@@ -867,12 +877,12 @@ Triangle meshes are created using the `rtcNewTriangleMesh` function
 call, and potentially deleted using the `rtcDeleteGeometry` function
 call.
 
-The number of triangles, number of vertices, and optionally the
-number of time steps (1 for normal meshes, and 2 for linear motion
-blur) have to get specified at construction time of the mesh. The user
-can also specify additional flags that choose the strategy to handle
-that mesh in dynamic scenes. The following example demonstrates how to
-create a triangle mesh without motion blur:
+The number of triangles, number of vertices, and optionally the number
+of time steps for multi-segment motion blur have to get specified at construction
+time of the mesh. The user can also specify additional flags that
+choose the strategy to handle that mesh in dynamic scenes. The
+following example demonstrates how to create a triangle mesh without
+motion blur:
 
     unsigned geomID = rtcNewTriangleMesh(scene, geomFlags,
        numTriangles, numVertices, 1);
@@ -909,7 +919,7 @@ direction the geometry normal is pointing into.
 Some texture coordinates `t0,t1,t2` can be linearly interpolated over
 the triangle the following way:
 
-    t_uv = (1-u-v)*t0 + u*(t1-t0) + v*(t2-t0)
+    t_uv = (1-u-v)*t0 + u*t1 + v*t2
 
 ### Quad Meshes
 
@@ -917,12 +927,12 @@ Quad meshes are created using the `rtcNewQuadMesh` function
 call, and potentially deleted using the `rtcDeleteGeometry` function
 call.
 
-The number of quads, number of vertices, and optionally the
-number of time steps (1 for normal meshes, and 2 for linear motion
-blur) have to get specified at construction time of the mesh. The user
-can also specify additional flags that choose the strategy to handle
-that mesh in dynamic scenes. The following example demonstrates how to
-create a quad mesh without motion blur:
+The number of quads, number of vertices, and optionally the number of
+time steps for multi-segment motion blur have to get specified at
+construction time of the mesh. The user can also specify additional
+flags that choose the strategy to handle that mesh in dynamic
+scenes. The following example demonstrates how to create a quad mesh
+without motion blur:
 
     unsigned geomID = rtcNewQuadMesh(scene, geomFlags,
        numTriangles, numVertices, 1);
@@ -1098,15 +1108,15 @@ Line segments are created using the `rtcNewLineSegments` function
 call, and potentially deleted using the `rtcDeleteGeometry` function
 call.
 
-The number of line segments, the number of vertices, and optionally the
-number of time steps (1 for normal curves, and 2 for linear motion blur)
-have to get specified at construction time of the line segment geometry.
+The number of line segments, the number of vertices, and optionally
+the number of time steps for multi-segment motion blur have to get
+specified at construction time of the line segment geometry.
 
 The segment indices can be set by mapping and writing to the index buffer
 (`RTC_INDEX_BUFFER`) and the vertices can be set by mapping and
-writing into the vertex buffer (`RTC_VERTEX_BUFFER`). In case of linear
-motion blur, two vertex buffers (`RTC_VERTEX_BUFFER0` and
-`RTC_VERTEX_BUFFER1`) have to get filled, one for each time step.
+writing into the vertex buffer (`RTC_VERTEX_BUFFER`). In case of 
+motion blur, the vertex buffers (`RTC_VERTEX_BUFFER0+t`) have to get
+filled for each time step `t`.
 
 The index buffer contains an array of 32 bit indices pointing to the
 ID of the first of two vertices, while the vertex buffer
@@ -1148,14 +1158,14 @@ call, and potentially deleted using the `rtcDeleteGeometry` function
 call.
 
 The number of hair curves, the number of vertices, and optionally the
-number of time steps (1 for normal curves, and 2 for linear motion blur)
-have to get specified at construction time of the hair geometry.
+number of time steps for multi-segment motion blur have to get
+specified at construction time of the hair geometry.
 
-The curve indices can be set by mapping and writing to the index buffer
-(`RTC_INDEX_BUFFER`) and the control vertices can be set by mapping and
-writing into the vertex buffer (`RTC_VERTEX_BUFFER`). In case of linear
-motion blur, two vertex buffers (`RTC_VERTEX_BUFFER0` and
-`RTC_VERTEX_BUFFER1`) have to get filled, one for each time step.
+The curve indices can be set by mapping and writing to the index
+buffer (`RTC_INDEX_BUFFER`) and the control vertices can be set by
+mapping and writing into the vertex buffer (`RTC_VERTEX_BUFFER`). In
+case of motion blur, the vertex buffers `RTC_VERTEX_BUFFER0+t` have to
+get filled for each time step.
 
 The index buffer contains an array of 32 bit indices pointing to the
 ID of the first of four control vertices, while the vertex buffer
@@ -1205,15 +1215,15 @@ Curve geometries are created using the `rtcNewCurveGeometry` function
 call, and potentially deleted using the `rtcDeleteGeometry` function
 call.
 
-The number of Bézier curves, the number of vertices, and optionally the
-number of time steps (1 for normal curves, and 2 for linear motion blur)
-have to get specified at construction time of the curve geometry.
+The number of Bézier curves, the number of vertices, and optionally
+the number of time steps for multi-segment motion blur have to get
+specified at construction time of the curve geometry.
 
-The curve indices can be set by mapping and writing to the index buffer
-(`RTC_INDEX_BUFFER`) and the control vertices can be set by mapping and
-writing into the vertex buffer (`RTC_VERTEX_BUFFER`). In case of linear
-motion blur, two vertex buffers (`RTC_VERTEX_BUFFER0` and
-`RTC_VERTEX_BUFFER1`) have to get filled, one for each time step.
+The curve indices can be set by mapping and writing to the index
+buffer (`RTC_INDEX_BUFFER`) and the control vertices can be set by
+mapping and writing into the vertex buffer (`RTC_VERTEX_BUFFER`). In
+case of motion blur, the vertex buffers `RTC_VERTEX_BUFFER0+t` have to
+get filled for each time step.
 
 The index buffer contains an array of 32 bit indices pointing to the
 ID of the first of four control vertices, while the vertex buffer
@@ -1239,8 +1249,8 @@ type.
 User geometries are created using the `rtcNewUserGeometry` function
 call, and potentially deleted using the `rtcDeleteGeometry` function
 call. The the `rtcNewUserGeometry2` function additionally gets a
-`numTimeSteps` parameter, which specifies the number of timesteps (1
-or 2) for motion blur.
+`numTimeSteps` parameter, which specifies the number of timesteps for
+multi-segment motion blur.
 
 When creating a user defined geometry, the user has to set a data
 pointer, a bounding function closure (function and user pointer) as
@@ -1251,20 +1261,19 @@ callback functions are called to intersect the primitive with a ray.
 
 The bounding function to register has the following signature
 
-    typedef void (*RTCBoundsFunc2)(void* userPtr, void* geomUserPtr, size_t id, RTCBounds* bounds_o);
+    typedef void (*RTCBoundsFunc3)(void* userPtr, void* geomUserPtr, size_t id, size_t timeStep, RTCBounds& bounds_o);
 
 and can be registered using the `rtcSetBoundsFunction2` API function:
 
-    rtcSetBoundsFunction2(scene, geomID, userBoundsFunction, userPtr);
+    rtcSetBoundsFunction3(scene, geomID, userBoundsFunction, userPtr);
 
 When the bounding callback is called, it is passed a user defined
 pointer specified at registration time of the bounds function
 (`userPtr` parameter), the per geometry user data pointer
 (`geomUserPtr` parameter), the ID of the primitive to calculate the
-bounds for (`id` parameter), and a memory location to write the
-calculated bound to (`bounds_o` parameter). When the user geometry is
-created with 2 time steps enabled, bounds for both timesteps have to
-get written to the output location.
+bounds for (`id` parameter), the time step at which to calculate the
+bounds (`timeStep` parameter) and a memory location to write the
+calculated bound to (`bounds_o` parameter).
 
 The signature of supported user defined intersect and occluded
 function in normal mode is as follows:
@@ -1322,10 +1331,9 @@ geometries:
     int numTimeSteps = 2;
     struct UserObject { ... };
 
-    void userBoundsFunction(void* userPtr, UserObject* userGeomPtr, size_t i, RTCBounds* bounds)
+    void userBoundsFunction(void* userPtr, UserObject* userGeomPtr, size_t i, size_t t, RTCBounds& bounds)
     {
-      for (size_t i=0; i<numTimeSteps; i++)
-        bounds[i] = <bounds of userGeomPtr[i] at time i>;
+        bounds = <bounds of userGeomPtr[i] at time t>;
     }
 
     void userIntersectFunction(UserObject* userGeomPtr, RTCRay& ray, size_t i)
@@ -1349,7 +1357,7 @@ geometries:
     userGeomPtr[1] = ...
     unsigned geomID = rtcNewUserGeometry2(scene, 2, numTimeSteps);
     rtcSetUserData(scene, geomID, userGeomPtr);
-    rtcSetBoundsFunction2(scene, geomID, userBoundsFunction, userPtr);
+    rtcSetBoundsFunction3(scene, geomID, userBoundsFunction, userPtr);
     rtcSetIntersectFunction(scene, geomID, userIntersectFunction);
     rtcSetOccludedFunction(scene, geomID, userOccludedFunction);
 
@@ -1375,12 +1383,13 @@ the following way:
     unsigned instID = rtcNewInstance2(sceneA, sceneB, 1);
     rtcSetTransform2(sceneA, instID, RTC_MATRIX_COLUMN_MAJOR, &column_matrix_3x4, 0);
 
-To create some motion blurred instance just pass 2 as the number of
-timesteps and specify two matrices:
+To create some motion blurred instance just pass the number of time
+steps and specify one matrix for each time step:
 
-    unsigned instID = rtcNewInstance2(sceneA, sceneB, 2);
+    unsigned instID = rtcNewInstance2(sceneA, sceneB, 3);
     rtcSetTransform2(sceneA, instID, RTC_MATRIX_COLUMN_MAJOR, &column_matrix_t0_3x4, 0);
     rtcSetTransform2(sceneA, instID, RTC_MATRIX_COLUMN_MAJOR, &column_matrix_t1_3x4, 1);
+    rtcSetTransform2(sceneA, instID, RTC_MATRIX_COLUMN_MAJOR, &column_matrix_t2_3x4, 2);
 
 Both scenes have to belong to the same device. One has to call
 `rtcCommit` on scene `B` before one calls `rtcCommit` on scene `A`. When
@@ -1447,7 +1456,7 @@ change. The ray contains the following data members:
   dir     in      ray direction (can be unnormalized)
   tnear   in      start of ray segment
   tfar    in/out  end of ray segment, set to hit distance after intersection
-  time    in      time used for motion blur
+  time    in      time used for multi-segment motion blur [0,1]
   mask    in      ray mask to mask out geometries
   Ng      out     unnormalized geometry normal
   u       out     barycentric u-coordinate of hit
@@ -1598,7 +1607,7 @@ valid, but ranges can reach to infinity. The geometry ID (`geomID`
 member) has to get initialized to `RTC_INVALID_GEOMETRY_ID` (-1). If
 the scene contains instances, also the instance ID (`instID`) has to
 get initialized to `RTC_INVALID_GEOMETRY_ID` (-1). If the scene
-contains linear motion blur, also the ray time (`time`) has to get
+contains motion blur geometries, also the ray time (`time`) has to get
 initialized to a value in the range $[0, 1]$.  If ray masks are
 enabled at compile time, also the ray mask (`mask`) has to get
 initialized. After tracing the ray, the hit distance (`tfar`),
@@ -1651,6 +1660,8 @@ streams of rays:
 
     void rtcIntersect1M    (RTCScene scene, const RTCIntersectContext* context,
                             RTCRay* rays, size_t M, size_t stride);
+    void rtcIntersect1Mp   (RTCScene scene, const RTCIntersectContext* context,
+                            RTCRay**rays, size_t M);
     void rtcIntersectNM    (RTCScene scene, const RTCIntersectContext* context,
                             RTCRayN* rays, size_t N, size_t M, size_t stride);
     void rtcIntersectNp    (RTCScene scene, const RTCIntersectContext* context,
@@ -1658,6 +1669,8 @@ streams of rays:
     
     void rtcOccluded1M     (RTCScene scene, const RTCIntersectContext* context,
                             RTCRay* rays, size_t M, size_t stride);
+    void rtcOccluded1Mp    (RTCScene scene, const RTCIntersectContext* context,
+                            RTCRay** rays, size_t M);
     void rtcOccludedNM     (RTCScene scene, const RTCIntersectContext* context,
                             RTCRayN* rays, size_t N, size_t M, size_t stride);
     void rtcOccludedNp     (RTCScene scene, const RTCIntersectContext* context,
@@ -1677,10 +1690,12 @@ value.
 
 The ray streams functions `rtcIntersect1M` and `rtcOccluded1M` are
 just a shortcut for single ray streams with a packet size of
-`N=1`. The `rtcIntersectNp` and `rtcOccludedNp` functions do not
-require the individual components of the SOA ray packets to be stored
-sequentially in memory, but at different adresses as specified in the
-`RTCRayNp` structure.
+`N=1`. `rtcIntersect1Mp` and `rtcOccluded1Mp` are similar to
+`rtcIntersect1M` and `rtcOccluded1M` while taking a stream of pointers
+to single rays as input. The `rtcIntersectNp` and `rtcOccludedNp`
+functions do not require the individual components of the SOA ray
+packets to be stored sequentially in memory, but at different adresses
+as specified in the `RTCRayNp` structure.
 
 The intersection context passed to the stream version of the ray query
 functions, can specify some intersection flags to optimize traversal
@@ -1860,26 +1875,27 @@ application, thus we recommend using this feature. When enabling the
 `RTC_COMPACT` scene flag, the spatial index structures of Embree might
 also share the vertex buffer, resulting in even higher memory savings.
 
-Linear Motion Blur
-------------------
+Multi-Segment Motion Blur
+-------------------------
 
-Triangle meshes and hair geometries with linear motion blur support are
-created by setting the number of time steps to 2 at geometry
-construction time. Specifying a number of time steps of 0 or larger than
-2 is invalid. For a triangle mesh or hair geometry with linear motion
-blur, the user has to set the `RTC_VERTEX_BUFFER0` and
-`RTC_VERTEX_BUFFER1` vertex arrays, one for each time step.
+All geometry types support multi-segment motion blur with equidistant
+time steps and arbitrary number of time steps in the range of 2
+to 129. Each geometry can have a different number of time steps. Some
+motion blur geometry is constructed by passing the number of time
+steps to the geometry construction function and setting the
+vertex arrays `RTC_VERTEX_BUFFER0+t` for each time step `t`:
 
-    unsigned geomID = rtcNewTriangleMesh(scene, geomFlags, numTris, numVertices, 2);
-    rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER0, vertex0Ptr, 0, sizeof(Vertex));
-    rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER1, vertex1Ptr, 0, sizeof(Vertex));
+    unsigned geomID = rtcNewTriangleMesh(scene, geomFlags, numTris, numVertices, 3);
+    rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER0+0, vertex0Ptr, 0, sizeof(Vertex));
+    rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER0+1, vertex1Ptr, 0, sizeof(Vertex));
+    rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER0+2, vertex2Ptr, 0, sizeof(Vertex));
     rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER, indexPtr, 0, sizeof(Triangle));
 
-If a scene contains geometries with linear motion blur, the user has to
-set the `time` member of the ray to a value in the range $[0, 1]$. The ray
-will intersect the scene with the vertices of the two time steps
-linearly interpolated to this specified time. Each ray can specify a
-different time, even inside a ray packet.
+If a scene contains geometries with motion blur, the user has to set
+the `time` member of the ray to a value in the range $[0, 1]$. The
+motion blur geometry is defined by linearly interpolating the
+geometries of neighboring time steps. Each ray can specify a different
+time, even inside a ray packet.
 
 User Data Pointer
 -----------------
@@ -2047,7 +2063,7 @@ The API supports displacement mapping for subdivision meshes. A
 displacement function can be set for some subdivision mesh using the
 `rtcSetDisplacementFunction` API call.
 
-    void rtcSetDisplacementFunction(RTCScene, unsigned geomID, RTCDisplacementFunc, RTCBounds*);
+    void rtcSetDisplacementFunction2(RTCScene, unsigned geomID, RTCDisplacementFunc, RTCBounds*);
 
 A displacement function of `NULL` will delete an already set
 displacement function. The bounds parameter is optional. If `NULL` is
@@ -2060,17 +2076,20 @@ conservative and should be tight for best performance.
 
 The displacement function has to have the following type:
 
-    typedef void (*RTCDisplacementFunc)(void* ptr, unsigned geomID, unsigned primID,   
-                                        const float* u,  const float* v,    
-                                        const float* nx, const float* ny, const float* nz,   
-                                        float* px, float* py, float* pz,         
-                                        size_t N);
+    typedef void (*RTCDisplacementFunc2)(void* ptr,
+                                         unsigned geomID, unsigned primID, unsigned timeStep,   
+                                         const float* u,  const float* v,    
+                                         const float* nx, const float* ny, const float* nz,   
+                                         float* px, float* py, float* pz,         
+                                         size_t N);
 
 The displacement function is called with the user data pointer of the
-geometry (`ptr`), the geometry ID (`geomID`) and primitive ID (`primID`)
-of a patch to displace. For this patch, a number N of points to displace
-are specified in a struct of array layout. For each point to displace
-the local patch UV coordinates (`u` and `v` arrays), the normalized
+geometry (`ptr`), the geometry ID (`geomID`), and primitive ID
+(`primID`) of a patch to displace. For motion blur the time step
+`timeStep` is also specified, such that the function can be time
+varying. For the patch, a number N of points to displace are
+specified in a struct of array layout. For each point to displace the
+local patch UV coordinates (`u` and `v` arrays), the normalized
 geometry normal (`nx`, `ny`, and `nz` arrays), as well as world space
 position (`px`, `py`, and `pz` arrays) are provided. The task of the
 displacement function is to use this information and move the world
@@ -2278,18 +2297,25 @@ parameters from the following table are available to set/query:
   Parameter                              Description                           Read/Write
   -------------------------------------- ------------------------------------- ------------
   RTC_CONFIG_VERSION_MAJOR               returns Embree major version          Read only
+  
   RTC_CONFIG_VERSION_MINOR               returns Embree minor version          Read only
+  
   RTC_CONFIG_VERSION_PATCH               returns Embree patch version          Read only
+  
   RTC_CONFIG_VERSION                     returns Embree version as integer     Read only
                                          e.g. Embree v2.8.2 -> 20802
 
   RTC_CONFIG_INTERSECT1                  checks if rtcIntersect1 is supported  Read only
+
   RTC_CONFIG_INTERSECT4                  checks if rtcIntersect4 is supported  Read only
+
   RTC_CONFIG_INTERSECT8                  checks if rtcIntersect8 is supported  Read only
+
   RTC_CONFIG_INTERSECT16                 checks if rtcIntersect16 is supported Read only
+
   RTC_CONFIG_INTERSECT_STREAM            checks if rtcIntersect1M,             Read only
-                                         rtcIntersectNM, and rtcIntersectNp
-                                         are supported
+                                         rtcIntersect1Mp, rtcIntersectNM, 
+                                         and rtcIntersectNp are supported
 
   RTC_CONFIG_TRIANGLE_GEOMETRY           checks if triangle geometries         Read only
                                          are supported
@@ -2357,6 +2383,26 @@ use:
 
     tbb::task_scheduler_init init(numThreads);
 
+
+Thread Creation and Affinity Settings
+--------------------------------------
+
+Tasking systems like TBB create worker threads on demand which will
+add a runtime overhead for the very first `rtcCommit` call. In case
+you want to benchmark the scene build time, you should start threads
+at application startup. You can let Embree start TBB threads by
+passing `start_threads=1` to the init parameter of `rtcNewDevice`.
+
+On machines with a high thread count (e.g. dual-socket Xeon or Xeon
+Phi machines), affinitizing TBB worker threads increases build and
+rendering performance. You can let Embree affinitize TBB worker
+threads by passing `set_affinity=1` to the init parameter of
+`rtcNewDevice`.
+
+All Embree tutorials automatically start and affinitize TBB worker threads
+by passing `start_threads=1,set_affinity=1` to `rtcNewDevice`.
+
+
 Huge Page Support
 --------------------------------
 
@@ -2367,7 +2413,7 @@ working under Linux with Embree.
 To enable transparent huge page support under Linux execute the
 following as root:
 
-    echo always >/sys/kernel/mm/transparent_hugepage/enabled
+    echo always > /sys/kernel/mm/transparent_hugepage/enabled
 
 When transparent huge pages are enabled, the kernel tries to merge 4k
 pages to 2MB pages when possible as a background job. See the
@@ -2633,8 +2679,16 @@ Motion Blur Geometry
 
 ![][imgMotionBlurGeometry]
 
-This tutorial demonstrates rendering motion blur using the linear
-motion blur feature for triangles and hair geometry.
+This tutorial demonstrates rendering of motion blur using the multi
+segment motion blur feature. Shown is motion blur of a triangle mesh,
+quad mesh, subdivision surface, line segments, hair geometry, bezier
+curves, instantiated triangle mesh where the instance moves,
+instantiated quad mesh where the instance and the quads move, and user
+geometry.
+
+The number of time-steps used can be configured using the --time-steps
+<int> command line parameter and the geomtetry can be rendered at a
+specific time using the the --time <float> command line parameter.
 
 Interpolation
 -------------

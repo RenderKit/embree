@@ -48,6 +48,10 @@ inline uniform AffineSpace3f make_AffineSpace3f(const uniform AffineSpace3fa l) 
   uniform AffineSpace3f xfm; xfm.l = make_LinearSpace3f(l.l); xfm.p = make_Vec3f(l.p); return xfm;
 }
 
+inline varying AffineSpace3f make_AffineSpace3f(const varying AffineSpace3fa l) {
+  varying AffineSpace3f xfm; xfm.l = make_LinearSpace3f(l.l); xfm.p = make_Vec3f(l.p); return xfm;
+}
+
 inline uniform AffineSpace3f make_AffineSpace3f(const uniform Vec3f x, const uniform Vec3f y, const uniform Vec3f z, const uniform Vec3f p) {
   uniform AffineSpace3f xfm; xfm.l.vx = x; xfm.l.vy = y; xfm.l.vz = z; xfm.p = p; return xfm;
 }
@@ -101,11 +105,18 @@ inline varying bool eq(const varying AffineSpace3f a, const varying AffineSpace3
 inline uniform bool ne(const uniform AffineSpace3f a, const uniform AffineSpace3f b) { return ne(a.l,b.l) | ne(a.p,b.p); }
 inline varying bool ne(const varying AffineSpace3f a, const varying AffineSpace3f b) { return ne(a.l,b.l) | ne(a.p,b.p); }
 
-/*! return matrix for rotation around arbitrary axis and point */
+
+/*! return scale matrix */
+inline uniform AffineSpace3f make_AffineSpace3f_scale(const uniform Vec3f& s) {
+  return make_AffineSpace3f(make_LinearSpace3f_scale(s));
+}
+
+/*! return translation matrix */
 inline uniform AffineSpace3f make_AffineSpace3f_translate(const uniform Vec3f& p) { 
   return make_AffineSpace3f(make_Vec3f(1,0,0),make_Vec3f(0,1,0),make_Vec3f(0,0,1),p); 
 }
 
+/*! return matrix for rotation around arbitrary axis and point */
 inline uniform AffineSpace3f make_AffineSpace3f_rotate   (const uniform Vec3f& p, const uniform Vec3f& u, const uniform float& r) { 
   return (make_AffineSpace3f_translate(+p) * make_AffineSpace3f(make_LinearSpace3f_rotate(u,r))) * make_AffineSpace3f_translate(neg(p));  
 }

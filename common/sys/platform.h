@@ -30,6 +30,7 @@
 #include <string>
 #include <cstring>
 #include <stdint.h>
+#include <functional>
 
 ////////////////////////////////////////////////////////////////////////////////
 /// detect platform
@@ -189,6 +190,12 @@
   #define MAYBE_UNUSED __attribute__((unused))
 #else
   #define MAYBE_UNUSED
+#endif
+
+#if defined(_MSC_VER) && (_MSC_VER < 1900) // before VS2015 deleted functions are not supported properly
+  #define DELETED
+#else
+  #define DELETED  = delete
 #endif
 
 #if defined(_MSC_VER) && !defined(__INTEL_COMPILER)

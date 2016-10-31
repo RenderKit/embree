@@ -40,7 +40,7 @@ struct Triangle { int v0, v1, v2; };
 #include "scene_device.h"
 #include "noise.h"
 #if !defined(ISPC)
-#include "../../../kernels/algorithms/parallel_for.h"
+#include "../../../common/algorithms/parallel_for.h"
 
 namespace embree {
 #endif

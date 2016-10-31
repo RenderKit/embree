@@ -96,18 +96,18 @@ namespace embree
       TriangleMesh (avector<Vec3fa>& positions, avector<Vec3fa>& normals, std::vector<Vec2f>& texcoords, std::vector<Triangle>& triangles, unsigned materialID)
         : Geometry(TRIANGLE_MESH), positions(positions), normals(normals), texcoords(texcoords), triangles(triangles), numTimeSteps(1), numVertices((unsigned int)positions.size()), materialID(materialID) {}
 
-      TriangleMesh (Ref<SceneGraph::TriangleMeshNode> mesh, const AffineSpace3fa& space0, const AffineSpace3fa& space1, unsigned materialID)
+      TriangleMesh (Ref<SceneGraph::TriangleMeshNode> mesh, const SceneGraph::Transformations& spaces, unsigned materialID)
         : Geometry(TRIANGLE_MESH), numTimeSteps((unsigned int)mesh->numTimeSteps()), numVertices((unsigned int)mesh->numVertices()), materialID(materialID)
       {
         positions.resize(numTimeSteps*numVertices); 
         for (size_t t=0; t<numTimeSteps; t++) {
           float time = numTimeSteps > 1 ? float(t)/float(numTimeSteps-1) : 0.0f;
-          const AffineSpace3fa space = lerp(space0,space1,time);
+          const AffineSpace3fa space = spaces.interpolate(time);
           for (size_t i=0; i<numVertices; i++) 
             positions[t*numVertices+i] = xfmPoint (space,mesh->positions[t][i]);
         }
 
-        const LinearSpace3fa nspace0 = rcp(space0.l).transposed();
+        const LinearSpace3fa nspace0 = rcp(spaces[0].l).transposed();
         normals.resize(mesh->normals.size()); 
         for (size_t i=0; i<mesh->normals.size(); i++) 
           normals[i] = xfmVector(nspace0,mesh->normals[i]);
@@ -135,18 +135,18 @@ namespace embree
     /*! Quad Mesh. */
     struct QuadMesh : public Geometry
     {
-      QuadMesh (Ref<SceneGraph::QuadMeshNode> mesh, const AffineSpace3fa& space0, const AffineSpace3fa& space1, unsigned materialID)
+      QuadMesh (Ref<SceneGraph::QuadMeshNode> mesh, const SceneGraph::Transformations& spaces, unsigned materialID)
 		  : Geometry(QUAD_MESH), numTimeSteps((unsigned int)mesh->numTimeSteps()), numVertices((unsigned int)mesh->numVertices()), materialID(materialID)
       {
         positions.resize(numTimeSteps*numVertices); 
         for (size_t t=0; t<numTimeSteps; t++) {
           float time = numTimeSteps > 1 ? float(t)/float(numTimeSteps-1) : 0.0f;
-          const AffineSpace3fa space = lerp(space0,space1,time);
+          const AffineSpace3fa space = spaces.interpolate(time);
           for (size_t i=0; i<numVertices; i++) 
             positions[t*numVertices+i] = xfmPoint (space,mesh->positions[t][i]);
         }
 
-        const LinearSpace3fa nspace0 = rcp(space0.l).transposed();
+        const LinearSpace3fa nspace0 = rcp(spaces[0].l).transposed();
         normals.resize(mesh->normals.size()); 
         for (size_t i=0; i<mesh->normals.size(); i++) 
           normals[i] = xfmVector(nspace0,mesh->normals[i]);
@@ -174,18 +174,18 @@ namespace embree
     /*! Subdivision Mesh. */
     struct SubdivMesh : public Geometry
     {
-      SubdivMesh (Ref<SceneGraph::SubdivMeshNode> mesh, const AffineSpace3fa& space0, const AffineSpace3fa& space1, unsigned materialID)
+      SubdivMesh (Ref<SceneGraph::SubdivMeshNode> mesh, const SceneGraph::Transformations& spaces, unsigned materialID)
 		  : Geometry(SUBDIV_MESH), numTimeSteps((unsigned int)mesh->numTimeSteps()), numPositions((unsigned int)mesh->numPositions()), materialID(materialID)
       {
         positions.resize(numTimeSteps*numPositions); 
         for (size_t t=0; t<numTimeSteps; t++) {
           float time = numTimeSteps > 1 ? float(t)/float(numTimeSteps-1) : 0.0f;
-          const AffineSpace3fa space = lerp(space0,space1,time);
+          const AffineSpace3fa space = spaces.interpolate(time);
           for (size_t i=0; i<numPositions; i++) 
             positions[t*numPositions+i] = xfmPoint (space,mesh->positions[t][i]);
         }
 
-        const LinearSpace3fa nspace0 = rcp(space0.l).transposed();
+        const LinearSpace3fa nspace0 = rcp(spaces[0].l).transposed();
         normals.resize(mesh->normals.size()); 
         for (size_t i=0; i<mesh->normals.size(); i++) 
           normals[i] = xfmVector(nspace0,mesh->normals[i]);
@@ -224,13 +224,13 @@ namespace embree
     /*! Line segments. */
     struct LineSegments : public Geometry
     {
-      LineSegments (Ref<SceneGraph::LineSegmentsNode> mesh, const AffineSpace3fa& space0, const AffineSpace3fa& space1, unsigned materialID)
+      LineSegments (Ref<SceneGraph::LineSegmentsNode> mesh, const SceneGraph::Transformations& spaces, unsigned materialID)
 		  : Geometry(LINE_SEGMENTS), numTimeSteps((unsigned int)mesh->numTimeSteps()), numVertices((unsigned int)mesh->numVertices()), materialID(materialID)
       {
         positions.resize(numTimeSteps*numVertices); 
         for (size_t t=0; t<numTimeSteps; t++) {
           float time = numTimeSteps > 1 ? float(t)/float(numTimeSteps-1) : 0.0f;
-          const AffineSpace3fa space = lerp(space0,space1,time);
+          const AffineSpace3fa space = spaces.interpolate(time);
           for (size_t i=0; i<numVertices; i++) {
             positions[t*numVertices+i] = xfmPoint (space,mesh->positions[t][i]);
             positions[t*numVertices+i].w = mesh->positions[t][i].w;
@@ -257,13 +257,13 @@ namespace embree
       HairSet (avector<Vec3fa>& positions, std::vector<Hair>& hairs, unsigned materialID, bool hair)
 		  : Geometry(hair ? HAIR_SET : CURVES), positions(positions), hairs(hairs), numTimeSteps(1), numVertices((unsigned int)positions.size()), materialID(materialID) {}
       
-      HairSet (Ref<SceneGraph::HairSetNode> mesh, const AffineSpace3fa& space0, const AffineSpace3fa& space1, unsigned materialID)
+      HairSet (Ref<SceneGraph::HairSetNode> mesh, const SceneGraph::Transformations& spaces, unsigned materialID)
 		  : Geometry(mesh->hair ? HAIR_SET : CURVES), numTimeSteps((unsigned int)mesh->numTimeSteps()), numVertices((unsigned int)mesh->numVertices()), materialID(materialID)
       {
         positions.resize(numTimeSteps*numVertices); 
         for (size_t t=0; t<numTimeSteps; t++) {
           float time = numTimeSteps > 1 ? float(t)/float(numTimeSteps-1) : 0.0f;
-          const AffineSpace3fa space = lerp(space0,space1,time);
+          const AffineSpace3fa space = spaces.interpolate(time);
           for (size_t i=0; i<numVertices; i++) {
             positions[t*numVertices+i] = xfmPoint (space,mesh->positions[t][i]);
             positions[t*numVertices+i].w = mesh->positions[t][i].w;
@@ -288,12 +288,11 @@ namespace embree
     {
       ALIGNED_STRUCT;
 
-      Instance (const AffineSpace3fa& space0, const AffineSpace3fa& space1, unsigned geomID)
-        : Geometry(INSTANCE), space0(space0), space1(space1), geomID(geomID) {}
+      Instance (const SceneGraph::Transformations& spaces, unsigned geomID)
+        : Geometry(INSTANCE), spaces(spaces), geomID(geomID) {}
       
     public:
-      AffineSpace3fa space0;
-      AffineSpace3fa space1;
+      SceneGraph::Transformations spaces;
       unsigned geomID;
     };
 

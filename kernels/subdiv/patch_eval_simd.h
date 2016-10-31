@@ -37,11 +37,19 @@ namespace embree
                        float* P, float* dPdu, float* dPdv, float* ddPdudu, float* ddPdvdv, float* ddPdudv, const size_t dstride, const size_t N)
         : P(P), dPdu(dPdu), dPdv(dPdv), ddPdudu(ddPdudu), ddPdvdv(ddPdvdv), ddPdudv(ddPdudv), dstride(dstride), N(N)
         {
+          /* conservative time for the very first allocation */
+          auto time = SharedLazyTessellationCache::sharedLazyTessellationCache.getTime(commitCounter);
+
           Ref patch = SharedLazyTessellationCache::lookup(entry,commitCounter,[&] () {
               auto alloc = [](size_t bytes) { return SharedLazyTessellationCache::malloc(bytes); };
               return Patch::create(alloc,edge,vertices,stride);
-            });
+            }, true);
+
+          auto curTime = SharedLazyTessellationCache::sharedLazyTessellationCache.getTime(commitCounter);
+          const bool allAllocationsValid = SharedLazyTessellationCache::validTime(time,curTime);
           
+          patch = allAllocationsValid ? patch : nullptr;
+
           /* use cached data structure for calculations */
           const vbool valid1 = patch ? eval(valid0,patch,u,v,1.0f,0) : vbool(false);
           SharedLazyTessellationCache::unlock();

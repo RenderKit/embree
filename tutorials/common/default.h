@@ -23,6 +23,8 @@
 #include "../../common/math/vec2.h"
 #include "../../common/math/vec3.h"
 #include "../../common/math/vec4.h"
+#include "../../common/math/bbox.h"
+#include "../../common/math/lbbox.h"
 #include "../../common/math/affinespace.h"
 #include "../../common/sys/filename.h"
 #include "../../common/sys/string.h"

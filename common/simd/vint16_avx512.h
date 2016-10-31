@@ -60,17 +60,16 @@ namespace embree
       v = _mm512_set_16to16_epi32(a15,a14,a13,a12,a11,a10,a9,a8,a7,a6,a5,a4,a3,a2,a1,a0);
     }
 
-    __forceinline vint(const vint4 i) {
+    __forceinline vint(const vint4& i) {
       v = _mm512_broadcast_i32x4(i);
     }
 
-    __forceinline vint(const vint8 i) {
+    __forceinline vint(const vint8& i) {
       v = _mm512_castps_si512(_mm512_castpd_ps(_mm512_broadcast_f64x4(_mm256_castsi256_pd(i))));
     }
    
-    __forceinline explicit vint(const __m512 f) {
-      // round to nearest is standard
-      v = _mm512_cvt_roundps_epi32(f,_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC); 
+    __forceinline explicit vint(const __m512& f) {
+      v = _mm512_cvtps_epi32(f);
     }
     
     ////////////////////////////////////////////////////////////////////////////////
@@ -480,8 +479,8 @@ namespace embree
   }
   
 
-  __forceinline vint16 convert_uint32_t(const __m512 f) {
-    return _mm512_cvt_roundps_epu32(f,_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC); 
+  __forceinline vint16 convert_uint32_t(const __m512& f) {
+    return _mm512_cvtps_epu32(f);
   }
 
   __forceinline vint16 permute(vint16 v,vint16 index)
@@ -494,28 +493,25 @@ namespace embree
     return permute(a,vint16(reverse_step));
   }
 
-  __forceinline vint16 prefix_sum(const vint16& a)
+  __forceinline vint16 prefix_sum(const vint16& a) 
   {
+    const vint16 z(zero);
     vint16 v = a;
-    v = mask_add(0xaaaa,v,v,shuffle<2,2,0,0>(v));
-    v = mask_add(0xcccc,v,v,shuffle<1,1,1,1>(v));
-    const vint16 shuf_v0 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(2,2,0,0),_MM_SWIZ_REG_DDDD);
-    v = mask_add(0xf0f0,v,v,shuf_v0);
-    const vint16 shuf_v1 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(1,1,0,0),_MM_SWIZ_REG_DDDD);
-    v = mask_add(0xff00,v,v,shuf_v1);
+    v = v + align_shift_right<16-1>(v,z);
+    v = v + align_shift_right<16-2>(v,z);
+    v = v + align_shift_right<16-4>(v,z);
+    v = v + align_shift_right<16-8>(v,z);
     return v;  
   }
 
-  __forceinline vint16 reverse_prefix_sum(const vint16& a)
+  __forceinline vint16 reverse_prefix_sum(const vint16& a) 
   {
+    const vint16 z(zero);
     vint16 v = a;
-    v = mask_add(0x5555,v,v,shuffle<3,3,1,1>(v));
-    v = mask_add(0x3333,v,v,shuffle<2,2,2,2>(v));
-    const vint16 shuf_v0 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(3,3,1,1),_MM_SWIZ_REG_AAAA);
-    v = mask_add(0x0f0f,v,v,shuf_v0);
-    const vint16 shuf_v1 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(2,2,2,2),_MM_SWIZ_REG_AAAA);
-    v = mask_add(0x00ff,v,v,shuf_v1);
-
+    v = v + align_shift_right<1>(z,v);
+    v = v + align_shift_right<2>(z,v);
+    v = v + align_shift_right<4>(z,v);
+    v = v + align_shift_right<8>(z,v);
     return v;  
   }
 

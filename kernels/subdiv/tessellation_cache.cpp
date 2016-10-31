@@ -16,7 +16,6 @@
 
 #include "tessellation_cache.h"
 
-
 namespace embree
 {
   SharedLazyTessellationCache SharedLazyTessellationCache::sharedLazyTessellationCache;
@@ -42,7 +41,7 @@ namespace embree
   {
     size = 0;
     data = nullptr;
-    maxBlocks              = size/64;
+    maxBlocks              = size/BLOCK_SIZE;
     localTime              = NUM_CACHE_SEGMENTS;
     next_block             = 0;
     numRenderThreads       = 0;
@@ -196,7 +195,7 @@ namespace embree
     size      = new_size;
     data      = nullptr;
     if (size) data = (float*)os_malloc(size); // FIXME: do os_reserve under linux
-    maxBlocks = size/64;    
+    maxBlocks = size/BLOCK_SIZE;    
 
     /* invalidate entire cache */
     localTime += NUM_CACHE_SEGMENTS; 
@@ -285,6 +284,82 @@ namespace embree
     assert(ID < cache_num_patches);
     cache_patch_builds[ID]++;
   }
+
+  struct cache_regression_test : public RegressionTest
+  {
+    BarrierSys barrier;
+    std::atomic<size_t> numFailed;
+    std::atomic<int> threadIDCounter;
+    static const size_t numEntries = 4*1024;
+    SharedLazyTessellationCache::CacheEntry entry[numEntries];
+
+    cache_regression_test() 
+      : RegressionTest("cache_regression_test"), numFailed(0), threadIDCounter(0)
+    {
+      registerRegressionTest(this);
+    }
+
+    static void thread_alloc(cache_regression_test* This)
+    {
+      int threadID = This->threadIDCounter++;
+      size_t maxN = SharedLazyTessellationCache::sharedLazyTessellationCache.maxAllocSize()/4;
+      This->barrier.wait();
+
+      for (size_t j=0; j<100000; j++)
+      {
+        size_t elt = (threadID+j)%numEntries;
+        size_t N = min(1+10*(elt%1000),maxN);
+          
+        volatile int* data = (volatile int*) SharedLazyTessellationCache::lookup(This->entry[elt],0,[&] () {
+            int* data = (int*) SharedLazyTessellationCache::sharedLazyTessellationCache.malloc(4*N);
+            for (size_t k=0; k<N; k++) data[k] = (int)elt;
+            return data;
+          });
+        
+        if (data == nullptr) {
+          SharedLazyTessellationCache::sharedLazyTessellationCache.unlock();
+          This->numFailed++;
+          continue;
+        }
+            
+        /* check memory block */
+        for (size_t k=0; k<N; k++) {
+          if (data[k] != (int)elt) {
+            This->numFailed++;
+            break;
+          }
+        }
+        
+        SharedLazyTessellationCache::sharedLazyTessellationCache.unlock();
+      }
+      This->barrier.wait();
+    }
+    
+    bool run ()
+    {
+      numFailed.store(0);
+
+      size_t numThreads = getNumberOfLogicalThreads();
+      barrier.init(numThreads+1);
+
+      /* create threads */
+      std::vector<thread_t> threads;
+      for (size_t i=0; i<numThreads; i++)
+        threads.push_back(createThread((thread_func)thread_alloc,this,0,i));
+
+      /* run test */ 
+      barrier.wait();
+      barrier.wait();
+
+      /* destroy threads */
+      for (size_t i=0; i<numThreads; i++)
+        join(threads[i]);
+
+      return numFailed == 0;
+    }
+  };
+
+  cache_regression_test cache_regression;
 };
 
 extern "C" void printTessCacheStats()

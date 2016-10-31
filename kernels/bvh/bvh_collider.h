@@ -29,7 +29,7 @@ namespace embree
     {
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
-      typedef typename BVH::Node Node;
+      typedef typename BVH::AlignedNode AlignedNode;
 
     public:
       __forceinline BVHNCollider (Scene* scene0, Scene* scene1, RTCCollideFunc callback, void* userPtr)
@@ -52,7 +52,7 @@ namespace embree
     {
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
-      typedef typename BVH::Node Node;
+      typedef typename BVH::AlignedNode AlignedNode;
 
       __forceinline BVHNColliderTriangle4v (Scene* scene0, Scene* scene1, RTCCollideFunc callback, void* userPtr)
         : BVHNCollider<N>(scene0,scene1,callback,userPtr) {}
@@ -68,7 +68,7 @@ namespace embree
     {
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
-      typedef typename BVH::Node Node;
+      typedef typename BVH::AlignedNode AlignedNode;
 
       __forceinline BVHNColliderUserGeom (Scene* scene0, Scene* scene1, RTCCollideFunc callback, void* userPtr)
         : BVHNCollider<N>(scene0,scene1,callback,userPtr) {}

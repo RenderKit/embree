@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and      //
 // limitations under the License.                                           //
 // ======================================================================== //
-
+ 
 #pragma once
 
 #include "default.h"
@@ -40,7 +40,7 @@ namespace embree
     ALIGNED_CLASS;
 
   public:
-    template<typename Ty, size_t timeSteps = 1>
+    template<typename Ty, bool mblur = false>
       class Iterator
       {
       public:
@@ -55,7 +55,7 @@ namespace embree
         if (geom == nullptr) return nullptr;
         if (!all && !geom->isEnabled()) return nullptr;
         if (geom->getType() != Ty::geom_type) return nullptr;
-        if (geom->numTimeSteps != timeSteps) return nullptr;
+        if ((geom->numTimeSteps != 1) != mblur) return nullptr;
         return (Ty*) geom;
       }
 
@@ -68,7 +68,7 @@ namespace embree
       }
       
       __forceinline size_t numPrimitives() const {
-        return scene->getNumPrimitives<Ty,timeSteps>();
+        return scene->getNumPrimitives<Ty,mblur>();
       }
 
       __forceinline size_t maxPrimitivesPerGeometry() 
@@ -78,6 +78,17 @@ namespace embree
           Ty* mesh = at(i);
           if (mesh == nullptr) continue;
           ret = max(ret,mesh->size());
+        }
+        return ret;
+      }
+
+      __forceinline unsigned maxTimeStepsPerGeometry()
+      {
+        unsigned ret = 0;
+        for (size_t i=0; i<scene->size(); i++) {
+          Ty* mesh = at(i);
+          if (mesh == nullptr) continue;
+          ret = max(ret,mesh->numTimeSteps);
         }
         return ret;
       }
@@ -139,9 +150,6 @@ namespace embree
     /*! Builds acceleration structure for the scene. */
     void build (size_t threadIndex, size_t threadCount);
     void build_task ();
-
-    /*! stores scene into binary file */
-    void write(std::ofstream& file);
 
     void updateInterface();
 
@@ -353,18 +361,28 @@ namespace embree
       std::atomic<size_t> numUserGeometries;        //!< number of enabled user geometries
     };
     
-    GeometryCounts world1;               //!< counts for non-motion blurred geometry
-    GeometryCounts world2;               //!< counts for motion blurred geometry
-    GeometryCounts instanced1;           //!< instance counts for non-motion blurred geometry
-    GeometryCounts instanced2;           //!< instance counts for motion blurred geometry
+    GeometryCounts world;               //!< counts for non-motion blurred geometry
+    GeometryCounts worldMB;             //!< counts for motion blurred geometry
+    GeometryCounts instanced;           //!< instance counts for non-motion blurred geometry
+    GeometryCounts instancedMB;         //!< instance counts for motion blurred geometry
 
     std::atomic<size_t> numSubdivEnableDisableEvents; //!< number of enable/disable calls for any subdiv geometry
 
     __forceinline size_t numPrimitives() const {
-      return world1.size() + world2.size();
+      return world.size() + worldMB.size();
     }
 
-    template<typename Mesh, int timeSteps> __forceinline size_t getNumPrimitives() const;
+    template<typename Mesh, bool mblur> __forceinline size_t getNumPrimitives() const;
+
+    template<typename Mesh, bool mblur>
+    __forceinline unsigned getNumTimeSteps()
+    {
+      if (!mblur)
+        return 1;
+
+      Scene::Iterator<Mesh,mblur> iter(this);
+      return iter.maxTimeStepsPerGeometry();
+    }
    
     std::atomic<size_t> numIntersectionFilters1;   //!< number of enabled intersection/occlusion filters for single rays
     std::atomic<size_t> numIntersectionFilters4;   //!< number of enabled intersection/occlusion filters for 4-wide ray packets
@@ -373,16 +391,16 @@ namespace embree
     std::atomic<size_t> numIntersectionFiltersN;   //!< number of enabled intersection/occlusion filters for N-wide ray packets
   };
 
-  template<> __forceinline size_t Scene::getNumPrimitives<TriangleMesh,1>() const { return world1.numTriangles; } 
-  template<> __forceinline size_t Scene::getNumPrimitives<TriangleMesh,2>() const { return world2.numTriangles; } 
-  template<> __forceinline size_t Scene::getNumPrimitives<QuadMesh,1>() const { return world1.numQuads; } 
-  template<> __forceinline size_t Scene::getNumPrimitives<QuadMesh,2>() const { return world2.numQuads; } 
-  template<> __forceinline size_t Scene::getNumPrimitives<BezierCurves,1>() const { return world1.numBezierCurves; } 
-  template<> __forceinline size_t Scene::getNumPrimitives<BezierCurves,2>() const { return world2.numBezierCurves; } 
-  template<> __forceinline size_t Scene::getNumPrimitives<LineSegments,1>() const { return world1.numLineSegments; }
-  template<> __forceinline size_t Scene::getNumPrimitives<LineSegments,2>() const { return world2.numLineSegments; }
-  template<> __forceinline size_t Scene::getNumPrimitives<SubdivMesh,1>() const { return world1.numSubdivPatches; } 
-  template<> __forceinline size_t Scene::getNumPrimitives<SubdivMesh,2>() const { return world2.numSubdivPatches; } 
-  template<> __forceinline size_t Scene::getNumPrimitives<AccelSet,1>() const { return world1.numUserGeometries; } 
-  template<> __forceinline size_t Scene::getNumPrimitives<AccelSet,2>() const { return world2.numUserGeometries; } 
+  template<> __forceinline size_t Scene::getNumPrimitives<TriangleMesh,false>() const { return world.numTriangles; }
+  template<> __forceinline size_t Scene::getNumPrimitives<TriangleMesh,true>() const { return worldMB.numTriangles; }
+  template<> __forceinline size_t Scene::getNumPrimitives<QuadMesh,false>() const { return world.numQuads; }
+  template<> __forceinline size_t Scene::getNumPrimitives<QuadMesh,true>() const { return worldMB.numQuads; }
+  template<> __forceinline size_t Scene::getNumPrimitives<BezierCurves,false>() const { return world.numBezierCurves; }
+  template<> __forceinline size_t Scene::getNumPrimitives<BezierCurves,true>() const { return worldMB.numBezierCurves; }
+  template<> __forceinline size_t Scene::getNumPrimitives<LineSegments,false>() const { return world.numLineSegments; }
+  template<> __forceinline size_t Scene::getNumPrimitives<LineSegments,true>() const { return worldMB.numLineSegments; }
+  template<> __forceinline size_t Scene::getNumPrimitives<SubdivMesh,false>() const { return world.numSubdivPatches; }
+  template<> __forceinline size_t Scene::getNumPrimitives<SubdivMesh,true>() const { return worldMB.numSubdivPatches; }
+  template<> __forceinline size_t Scene::getNumPrimitives<AccelSet,false>() const { return world.numUserGeometries; }
+  template<> __forceinline size_t Scene::getNumPrimitives<AccelSet,true>() const { return worldMB.numUserGeometries; }
 }

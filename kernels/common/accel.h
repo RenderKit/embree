@@ -40,8 +40,18 @@ namespace embree
     /*! clears the acceleration structure data */
     virtual void clear() = 0;
 
+    /*! returns normal bounds */
+    __forceinline BBox3fa getBounds() const {
+      return bounds.bounds();
+    }
+
+    /*! returns linear bounds */
+    __forceinline LBBox3fa getLinearBounds() const {
+      return bounds;
+    }
+
   public:
-    BBox3fa bounds;
+    LBBox3fa bounds; // linear bounds
     Type type;
   };
 
@@ -460,7 +470,8 @@ namespace embree
                               TOSTRING(isa) "::" TOSTRING(symbol));
 
   /* ray stream filter interface */
-  typedef void (*filterAOS_func)(Scene *scene, RTCRay* _rayN, const size_t N, const size_t stride, IntersectContext* context, const bool intersect);
+  typedef void (*filterAOS_func)(Scene *scene, RTCRay*  _rayN, const size_t N, const size_t stride, IntersectContext* context, const bool intersect);
+  typedef void (*filterAOP_func)(Scene *scene, RTCRay** _rayN, const size_t N, IntersectContext* context, const bool intersect);
   typedef void (*filterSOA_func)(Scene *scene, char* rayN, const size_t N, const size_t streams, const size_t stream_offset, IntersectContext* context, const bool intersect);
   typedef void (*filterSOP_func)(Scene *scene, const RTCRayNp& rayN, const size_t N, IntersectContext* context, const bool intersect);
 
@@ -472,11 +483,12 @@ namespace embree
     __forceinline RayStreamFilterFuncs(void (*ptr) ()) 
       : filterAOS((filterAOS_func) ptr), filterSOA((filterSOA_func) ptr), filterSOP((filterSOP_func) ptr) {}
 
-    __forceinline RayStreamFilterFuncs(filterAOS_func aos, filterSOA_func soa, filterSOP_func sop) 
-      : filterAOS(aos), filterSOA(soa), filterSOP(sop) {}
+    __forceinline RayStreamFilterFuncs(filterAOS_func aos, filterAOP_func aop, filterSOA_func soa, filterSOP_func sop) 
+      : filterAOS(aos), filterAOP(aop), filterSOA(soa), filterSOP(sop) {}
 
   public:
     filterAOS_func filterAOS;
+    filterAOP_func filterAOP;
     filterSOA_func filterSOA;
     filterSOP_func filterSOP;
   }; 

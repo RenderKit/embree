@@ -21,13 +21,17 @@
 
 namespace embree
 {
+  class Scene;
+
   struct IntersectContext
   {
   public:
-    __forceinline IntersectContext(const RTCIntersectContext* context = nullptr)
-      : context(context) {}
+    __forceinline IntersectContext(Scene* scene, const RTCIntersectContext* user_context)
+      : scene(scene), user(user_context), geomID_to_instID(nullptr) {}
 
   public:
-    const RTCIntersectContext* context;
+    Scene* scene;
+    const RTCIntersectContext* user;
+    const unsigned* geomID_to_instID; // required for xfm node handling
   };
 }

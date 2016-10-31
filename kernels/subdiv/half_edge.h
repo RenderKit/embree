@@ -174,7 +174,7 @@ namespace embree
     }
     
     /*! calculates conservative bounds of a catmull clark subdivision face */
-    __forceinline BBox3fa bounds(const BufferT<Vec3fa>& vertices) const
+    __forceinline BBox3fa bounds(const BufferRefT<Vec3fa>& vertices) const
     {
       BBox3fa bounds = this->get1RingBounds(vertices);
       for (const HalfEdge* p=this->next(); p!=this; p=p->next())
@@ -183,7 +183,7 @@ namespace embree
     }
     
     /*! tests if this is a valid patch */
-    __forceinline bool valid(const BufferT<Vec3fa>& vertices) const
+    __forceinline bool valid(const BufferRefT<Vec3fa>& vertices) const
     {
       size_t N = 1;
       if (!this->validRing(vertices)) return false;
@@ -218,7 +218,7 @@ namespace embree
   private:
     
     /*! calculates the bounds of the face associated with the half-edge */
-    __forceinline BBox3fa getFaceBounds(const BufferT<Vec3fa>& vertices) const 
+    __forceinline BBox3fa getFaceBounds(const BufferRefT<Vec3fa>& vertices) const 
     {
       BBox3fa b = vertices[getStartVertexIndex()];
       for (const HalfEdge* p = next(); p!=this; p=p->next()) {
@@ -228,7 +228,7 @@ namespace embree
     }
     
     /*! calculates the bounds of the 1-ring associated with the vertex of the half-edge */
-    __forceinline BBox3fa get1RingBounds(const BufferT<Vec3fa>& vertices) const 
+    __forceinline BBox3fa get1RingBounds(const BufferRefT<Vec3fa>& vertices) const 
     {
       BBox3fa bounds = empty;
       const HalfEdge* p = this;
@@ -255,7 +255,7 @@ namespace embree
     }
     
     /*! tests if this is a valid face */
-    __forceinline bool validFace(const BufferT<Vec3fa>& vertices, size_t& N) const 
+    __forceinline bool validFace(const BufferRefT<Vec3fa>& vertices, size_t& N) const 
     {
       const Vec3fa v = vertices[getStartVertexIndex()];
       if (!isvalid(v)) return false;
@@ -269,7 +269,7 @@ namespace embree
     }
     
     /*! tests if this is a valid ring */
-    __forceinline bool validRing(const BufferT<Vec3fa>& vertices) const 
+    __forceinline bool validRing(const BufferRefT<Vec3fa>& vertices) const 
     {
       size_t faceValence = 0;
       size_t edgeValence = 0;

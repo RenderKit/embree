@@ -37,17 +37,11 @@ namespace embree
           const vfloat4 upper = (vfloat4) pinfo.geomBounds.upper;
           const vbool4 ulpsized = upper - lower <= max(vfloat4(1E-19f),128.0f*vfloat4(ulp)*max(abs(lower),abs(upper)));
           const vfloat4 diag = (vfloat4) pinfo.geomBounds.size();
-          scale = select(ulpsized,vfloat4(0.0f),vfloat4(BINS * 0.99f)/diag);
+          scale = select(ulpsized,vfloat4(0.0f),vfloat4(BINS)/diag);
           ofs  = (vfloat4) pinfo.geomBounds.lower;
           inv_scale = 1.0f / scale; 
         }
 
-        /*! inits the mapping */
-        __forceinline SpatialBinMapping(const vfloat4& ofs, const vfloat4 &scale) : ofs(ofs), scale(scale)
-        {
-          inv_scale = 1.0f / scale; 
-        }
-        
         /*! slower but safe binning */
         __forceinline vint4 bin(const Vec3fa& p) const
         {
@@ -242,6 +236,50 @@ namespace embree
         void bin(const SplitPrimitive& splitPrimitive, const PrimRef* prims, size_t begin, size_t end, const SpatialBinMapping<BINS>& mapping) {
 	bin(splitPrimitive,prims+begin,end-begin,mapping);
       }
+
+      /*! bins an array of primitives */
+      template<typename PrimitiveSplitterFactory>
+        __forceinline void bin2(const PrimitiveSplitterFactory& splitterFactory, const PrimRef* source, size_t begin, size_t end, const SpatialBinMapping<BINS>& mapping)
+      {
+        for (size_t i=begin; i<end; i++)
+        {
+          const PrimRef &prim = source[i];
+          const vint4 bin0 = mapping.bin(prim.bounds().lower);
+          const vint4 bin1 = mapping.bin(prim.bounds().upper);
+          
+          for (size_t dim=0; dim<3; dim++) 
+          {
+            if (unlikely(mapping.invalid(dim))) 
+              continue;
+            
+            size_t bin;
+            size_t l = bin0[dim];
+            size_t r = bin1[dim];
+            
+            // same bin optimization
+            if (likely(l == r)) 
+            {
+              add(dim,l,l,l,prim.bounds());
+              continue;
+            }
+            const size_t bin_start = bin0[dim];
+            const size_t bin_end   = bin1[dim];
+            BBox3fa rest = prim.bounds();
+            const auto splitter = splitterFactory.create(prim);
+            for (bin=bin_start; bin<bin_end; bin++) 
+            {
+              const float pos = mapping.pos(bin+1,dim);
+              BBox3fa left,right;
+              splitter.split(rest,dim,pos,left,right);
+              if (unlikely(left.empty())) l++;                
+              extend(dim,bin,left);
+              rest = right;
+            }
+            if (unlikely(rest.empty())) r--;
+            add(dim,l,r,bin,rest);
+          }
+        }              
+      }
       
       /*! merges in other binning information */
       void merge (const SpatialBinInfo& other)
@@ -331,6 +369,7 @@ namespace embree
             bestrCount = vbestrCount[dim];
           }
         }
+        assert(bestSAH >= 0.0f);
         
         /* return invalid split if no split found */
         if (bestDim == -1) 

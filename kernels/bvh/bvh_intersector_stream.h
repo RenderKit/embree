@@ -21,11 +21,7 @@
 #include "../common/stack_item.h"
 #include "bvh_traverser1.h"
 
-#if defined(__X86_64__)
-#define ENABLE_COHERENT_STREAM_PATH 1
-#else
-#define ENABLE_COHERENT_STREAM_PATH 0
-#endif
+#  define ENABLE_COHERENT_STREAM_PATH 1
 
 namespace embree
 {
@@ -385,8 +381,8 @@ namespace embree
       typedef RayContext<robust> RayCtx;
       typedef typename BVH::NodeRef NodeRef;
       typedef typename BVH::BaseNode BaseNode;
-      typedef typename BVH::Node Node;
-      typedef typename BVH::NodeMB NodeMB;
+      typedef typename BVH::AlignedNode AlignedNode;
+      typedef typename BVH::AlignedNodeMB AlignedNodeMB;
       typedef Vec3<vfloat<K>> Vec3vfK;
       typedef Vec3<vint<K>> Vec3viK;
       static const size_t stackSize = 
@@ -460,6 +456,7 @@ namespace embree
           const vbool<K> m_valid = (tnear <= tfar) & (tnear >= 0.0f);
 
           m_active |= (size_t)movemask(m_valid) << (i*K);
+
           packet[i].min_dist = max(tnear, 0.0f);
           packet[i].max_dist = select(m_valid, tfar, neg_inf);
           tmp_min_dist = min(tmp_min_dist, packet[i].min_dist);
@@ -478,9 +475,7 @@ namespace embree
           tmp_min_org  = min(tmp_min_org , select(m_valid,org , Vec3vfK(pos_inf)));
           tmp_max_org  = max(tmp_max_org , select(m_valid,org , Vec3vfK(neg_inf)));
         }
-
-        m_active &= (numOctantRays == 64) ? (size_t)-1 : (((size_t)1 << numOctantRays)-1);
-
+        m_active &= (numOctantRays == (8 * sizeof(size_t))) ? (size_t)-1 : (((size_t)1 << numOctantRays)-1);
         const Vec3fa reduced_min_rdir( reduce_min(tmp_min_rdir.x), 
                                        reduce_min(tmp_min_rdir.y),
                                        reduce_min(tmp_min_rdir.z) );
@@ -516,14 +511,14 @@ namespace embree
         return m_active;
       }
 
-      __forceinline static size_t intersectNodePacket(const Packet* const packet,
-                                                      const vfloat<K>& minX,
-                                                      const vfloat<K>& minY,
-                                                      const vfloat<K>& minZ,
-                                                      const vfloat<K>& maxX,
-                                                      const vfloat<K>& maxY,
-                                                      const vfloat<K>& maxZ,
-                                                      const size_t m_active)
+      __forceinline static size_t intersectAlignedNodePacket(const Packet* const packet,
+                                                             const vfloat<K>& minX,
+                                                             const vfloat<K>& minY,
+                                                             const vfloat<K>& minZ,
+                                                             const vfloat<K>& maxX,
+                                                             const vfloat<K>& maxY,
+                                                             const vfloat<K>& maxZ,
+                                                             const size_t m_active)
       {
         assert(m_active);
         const size_t startPacketID = __bsf(m_active) / K;
@@ -550,7 +545,7 @@ namespace embree
 
       __forceinline static size_t traverseCoherentStream(const size_t m_trav_active,
                                                          Packet* const packet,
-                                                         const Node* __restrict__ const node,
+                                                         const AlignedNode* __restrict__ const node,
                                                          const NearFarPreCompute& pc,
                                                          const Frusta& frusta,
                                                          size_t* const maskK,
@@ -612,7 +607,7 @@ namespace embree
           const vfloat<K> maxX = vfloat<K>(bmaxX[b]);
           const vfloat<K> maxY = vfloat<K>(bmaxY[b]);
           const vfloat<K> maxZ = vfloat<K>(bmaxZ[b]);
-          const size_t m_current = m_trav_active & intersectNodePacket(packet, minX, minY, minZ, maxX, maxY, maxZ, m_trav_active);
+          const size_t m_current = m_trav_active & intersectAlignedNodePacket(packet, minX, minY, minZ, maxX, maxY, maxZ, m_trav_active);
           m_node_hit ^= m_current ? (size_t)0 : ((size_t)1 << b);
           maskK[b] = m_current;
         }

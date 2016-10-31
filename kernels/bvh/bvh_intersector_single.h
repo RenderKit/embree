@@ -35,7 +35,7 @@ namespace embree
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
       typedef typename BVH::BaseNode BaseNode;
-      typedef typename BVH::Node Node;
+      typedef typename BVH::AlignedNode AlignedNode;
       typedef Vec3<vfloat<N>> Vec3vfN;
       typedef Vec3<vfloat<K>> Vec3vfK;
       typedef Vec3<vint<K>> Vec3viK;
@@ -93,7 +93,7 @@ namespace embree
             /* intersect node */
             size_t mask = 0;
             vfloat<Nx> tNear;
-            BVHNNodeIntersector1<N,Nx,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time[k],tNear,mask);
+            BVHNNodeIntersector1<N,Nx,types,robust>::intersect(cur,vray,ray_near,ray_far,pre.ftime(k),tNear,mask);
 
             /*! if no child is hit, pop next node */
             if (unlikely(mask == 0))
@@ -109,7 +109,7 @@ namespace embree
 	  size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
 
           size_t lazy_node = 0;
-          PrimitiveIntersectorK::intersect(pre, ray, k, context, prim, num, bvh->scene, lazy_node);
+          PrimitiveIntersectorK::intersect(pre, ray, k, context, prim, num, lazy_node);
 	  ray_far = ray.tfar[k];
 
           if (unlikely(lazy_node)) {
@@ -152,7 +152,7 @@ namespace embree
             /* intersect node */
             size_t mask = 0;
             vfloat<Nx> tNear;
-            BVHNNodeIntersector1<N,Nx,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time[k],tNear,mask);
+            BVHNNodeIntersector1<N,Nx,types,robust>::intersect(cur,vray,ray_near,ray_far,pre.ftime(k),tNear,mask);
 
             /*! if no child is hit, pop next node */
             if (unlikely(mask == 0))
@@ -168,7 +168,7 @@ namespace embree
 	  size_t num; Primitive* prim = (Primitive*) cur.leaf(num);
 
           size_t lazy_node = 0;
-          if (PrimitiveIntersectorK::occluded(pre,ray,k,context,prim,num,bvh->scene,lazy_node)) {
+          if (PrimitiveIntersectorK::occluded(pre,ray,k,context,prim,num,lazy_node)) {
 	    ray.geomID[k] = 0;
 	    return true;
 	  }

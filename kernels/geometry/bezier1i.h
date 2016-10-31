@@ -52,18 +52,7 @@ namespace embree
     /*! returns primitive ID */
     __forceinline unsigned primID() const { return prim; }
 
-    /*! fill from list */
-    __forceinline void fill(atomic_set<PrimRefBlockT<BezierPrim> >::block_iterator_unsafe& iter, Scene* scene, const bool list)
-    {
-      const BezierPrim& curve = *iter; iter++;
-      const unsigned geomID = curve.geomID();
-      const unsigned primID = curve.primID();
-      const BezierCurves* in = (BezierCurves*) scene->get(geomID);
-      const unsigned vertexID = in->curve(primID);
-      new (this) Bezier1i(vertexID,geomID,primID);
-    }
-
-    /*! fill triangle from triangle list */
+    /*! fill curve from curve list */
     __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene, const bool list)
     {
       const PrimRef& prim = prims[i];
@@ -75,7 +64,7 @@ namespace embree
       new (this) Bezier1i(vertexID,geomID,primID);
     }
 
-    /*! fill triangle from triangle list */
+    /*! fill curve from curve list */
     __forceinline void fill(const BezierPrim* prims, size_t& i, size_t end, Scene* scene, const bool list)
     {
       const BezierPrim& curve = prims[i]; i++;

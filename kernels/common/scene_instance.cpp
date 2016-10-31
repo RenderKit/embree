@@ -19,7 +19,7 @@
 
 namespace embree
 {
-  DECLARE_SYMBOL2(RTCBoundsFunc2,InstanceBoundsFunc);
+  DECLARE_SYMBOL2(RTCBoundsFunc3,InstanceBoundsFunc);
   DECLARE_SYMBOL2(AccelSet::Intersector1,InstanceIntersector1);
   DECLARE_SYMBOL2(AccelSet::Intersector4,InstanceIntersector4);
   DECLARE_SYMBOL2(AccelSet::Intersector8,InstanceIntersector8);
@@ -41,10 +41,11 @@ namespace embree
   Instance::Instance (Scene* parent, Scene* object, size_t numTimeSteps) 
     : AccelSet(parent,1,numTimeSteps), object(object)
   {
-    local2world[0] = local2world[1] = one;
-    world2local[0] = world2local[1] = one;
+    world2local0 = one;
+    for (size_t i=0; i<numTimeSteps; i++) local2world[i] = one;
     intersectors.ptr = this;
-    boundsFunc2 = parent->device->instance_factory->InstanceBoundsFunc;
+    boundsFunc3 = parent->device->instance_factory->InstanceBoundsFunc;
+    boundsFuncUserPtr = nullptr;
     intersectors.intersector1 = parent->device->instance_factory->InstanceIntersector1;
     intersectors.intersector4 = parent->device->instance_factory->InstanceIntersector4; 
     intersectors.intersector8 = parent->device->instance_factory->InstanceIntersector8; 
@@ -61,7 +62,7 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"invalid timestep");
 
     local2world[timeStep] = xfm;
-    world2local[timeStep] = rcp(xfm);
+    if (timeStep == 0) world2local0 = rcp(xfm);
   }
 
   void Instance::setMask (unsigned mask) 

@@ -27,25 +27,26 @@ namespace embree
     class GridSOAIntersector1
     {
     public:
-      typedef SubdivPatch1Cached Primitive;
+      typedef void Primitive;
       
-      class Precalculations 
+      class PrecalculationsBase
       { 
       public:
-        __forceinline Precalculations (Ray& ray, const void* ptr) 
+        __forceinline PrecalculationsBase (const Ray& ray, const void* ptr)
           : grid(nullptr) {}
         
       public:
         GridSOA* grid;
       };
+
+      typedef Intersector1Precalculations<PrecalculationsBase> Precalculations;
       
       template<typename Loader>
         static __forceinline void intersect(Ray& ray,
                                             IntersectContext* context, 
                                             const float* const grid_x,
                                             const size_t line_offset,
-                                            Precalculations& pre,
-                                            Scene* scene)
+                                            Precalculations& pre)
       {
         typedef typename Loader::vfloat vfloat;
         const size_t dim_offset    = pre.grid->dim_offset;
@@ -58,7 +59,7 @@ namespace embree
        
         GridSOA::MapUV<Loader> mapUV(grid_uv,line_offset);
         PlueckerIntersector1<Loader::M> intersector(ray,nullptr);
-        intersector.intersect(ray,v0,v1,v2,mapUV,Intersect1EpilogMU<Loader::M,true>(ray,context,pre.grid->geomID,pre.grid->primID,scene,nullptr));
+        intersector.intersect(ray,v0,v1,v2,mapUV,Intersect1EpilogMU<Loader::M,true>(ray,context,pre.grid->geomID,pre.grid->primID));
       };
       
       template<typename Loader>
@@ -66,8 +67,7 @@ namespace embree
                                            IntersectContext* context, 
                                            const float* const grid_x,
                                            const size_t line_offset,
-                                           Precalculations& pre,
-                                           Scene* scene)
+                                           Precalculations& pre)
       {
         typedef typename Loader::vfloat vfloat;
         const size_t dim_offset    = pre.grid->dim_offset;
@@ -80,34 +80,34 @@ namespace embree
         
         GridSOA::MapUV<Loader> mapUV(grid_uv,line_offset);
         PlueckerIntersector1<Loader::M> intersector(ray,nullptr);
-        return intersector.intersect(ray,v0,v1,v2,mapUV,Occluded1EpilogMU<Loader::M,true>(ray,context,pre.grid->geomID,pre.grid->primID,scene,nullptr));
+        return intersector.intersect(ray,v0,v1,v2,mapUV,Occluded1EpilogMU<Loader::M,true>(ray,context,pre.grid->geomID,pre.grid->primID));
       }
       
       /*! Intersect a ray with the primitive. */
-      static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) 
+      static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node) 
       {
         const size_t line_offset   = pre.grid->width;
         const float* const grid_x  = pre.grid->decodeLeaf(0,prim);
         
 #if defined(__AVX__)
-        intersect<GridSOA::Gather3x3>( ray, context, grid_x, line_offset, pre, scene);
+        intersect<GridSOA::Gather3x3>( ray, context, grid_x, line_offset, pre);
 #else
-        intersect<GridSOA::Gather2x3>(ray, context, grid_x            , line_offset, pre, scene);
-        intersect<GridSOA::Gather2x3>(ray, context, grid_x+line_offset, line_offset, pre, scene);
+        intersect<GridSOA::Gather2x3>(ray, context, grid_x            , line_offset, pre);
+        intersect<GridSOA::Gather2x3>(ray, context, grid_x+line_offset, line_offset, pre);
 #endif
       }
       
       /*! Test if the ray is occluded by the primitive */
-      static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) 
+      static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node) 
       {
         const size_t line_offset   = pre.grid->width;
         const float* const grid_x  = pre.grid->decodeLeaf(0,prim);
         
 #if defined(__AVX__)
-        return occluded<GridSOA::Gather3x3>( ray, context, grid_x, line_offset, pre, scene);
+        return occluded<GridSOA::Gather3x3>( ray, context, grid_x, line_offset, pre);
 #else
-        if (occluded<GridSOA::Gather2x3>(ray, context, grid_x            , line_offset, pre, scene)) return true;
-        if (occluded<GridSOA::Gather2x3>(ray, context, grid_x+line_offset, line_offset, pre, scene)) return true;
+        if (occluded<GridSOA::Gather2x3>(ray, context, grid_x            , line_offset, pre)) return true;
+        if (occluded<GridSOA::Gather2x3>(ray, context, grid_x+line_offset, line_offset, pre)) return true;
 #endif
         return false;
       }      
@@ -116,16 +116,16 @@ namespace embree
     class GridSOAMBlurIntersector1
     {
     public:
-      typedef SubdivPatch1Cached Primitive;
-      typedef GridSOAIntersector1::Precalculations Precalculations;
+      typedef void Primitive;
+      typedef GridSOAIntersector1::PrecalculationsBase PrecalculationsBase;
+      typedef Intersector1PrecalculationsMB<PrecalculationsBase> Precalculations;
       
       template<typename Loader>
         static __forceinline void intersect(Ray& ray, const float ftime,
                                             IntersectContext* context, 
                                             const float* const grid_x,
                                             const size_t line_offset,
-                                            Precalculations& pre,
-                                            Scene* scene)
+                                            Precalculations& pre)
       {
         typedef typename Loader::vfloat vfloat;
         const size_t dim_offset    = pre.grid->dim_offset;
@@ -146,7 +146,7 @@ namespace embree
 
         GridSOA::MapUV<Loader> mapUV(grid_uv,line_offset);
         PlueckerIntersector1<Loader::M> intersector(ray,nullptr);
-        intersector.intersect(ray,v0,v1,v2,mapUV,Intersect1EpilogMU<Loader::M,true>(ray,context,pre.grid->geomID,pre.grid->primID,scene,nullptr));
+        intersector.intersect(ray,v0,v1,v2,mapUV,Intersect1EpilogMU<Loader::M,true>(ray,context,pre.grid->geomID,pre.grid->primID));
       };
       
       template<typename Loader>
@@ -154,8 +154,7 @@ namespace embree
                                            IntersectContext* context, 
                                            const float* const grid_x,
                                            const size_t line_offset,
-                                           Precalculations& pre,
-                                           Scene* scene)
+                                           Precalculations& pre)
       {
         typedef typename Loader::vfloat vfloat;
         const size_t dim_offset    = pre.grid->dim_offset;
@@ -176,46 +175,40 @@ namespace embree
         
         GridSOA::MapUV<Loader> mapUV(grid_uv,line_offset);
         PlueckerIntersector1<Loader::M> intersector(ray,nullptr);
-        return intersector.intersect(ray,v0,v1,v2,mapUV,Occluded1EpilogMU<Loader::M,true>(ray,context,pre.grid->geomID,pre.grid->primID,scene,nullptr));
+        return intersector.intersect(ray,v0,v1,v2,mapUV,Occluded1EpilogMU<Loader::M,true>(ray,context,pre.grid->geomID,pre.grid->primID));
       }
       
       /*! Intersect a ray with the primitive. */
-      static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) 
-      {
-        /* calculate time segment itime and fractional time ftime */
-        const int time_segments = pre.grid->time_steps-1;
-        const float time = ray.time*float(time_segments);
-        const int   itime = clamp(int(floor(time)),0,time_segments-1);
-        const float ftime = time - float(itime);
+      static __forceinline void intersect(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node) 
+      { 
+        float ftime;
+        const size_t itime = getTimeSegment(ray.time, float(pre.grid->time_steps-1), ftime);
 
         const size_t line_offset   = pre.grid->width;
         const float* const grid_x  = pre.grid->decodeLeaf(itime,prim);
         
 #if defined(__AVX__)
-        intersect<GridSOA::Gather3x3>( ray, ftime, context, grid_x, line_offset, pre, scene);
+        intersect<GridSOA::Gather3x3>( ray, ftime, context, grid_x, line_offset, pre);
 #else
-        intersect<GridSOA::Gather2x3>(ray, ftime, context, grid_x            , line_offset, pre, scene);
-        intersect<GridSOA::Gather2x3>(ray, ftime, context, grid_x+line_offset, line_offset, pre, scene);
+        intersect<GridSOA::Gather2x3>(ray, ftime, context, grid_x            , line_offset, pre);
+        intersect<GridSOA::Gather2x3>(ray, ftime, context, grid_x+line_offset, line_offset, pre);
 #endif
       }
       
       /*! Test if the ray is occluded by the primitive */
-      static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) 
+      static __forceinline bool occluded(Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t ty, size_t& lazy_node) 
       {
-        /* calculate time segment itime and fractional time ftime */
-        const int time_segments = pre.grid->time_steps-1;
-        const float time = ray.time*float(time_segments);
-        const int   itime = clamp(int(floor(time)),0,time_segments-1);
-        const float ftime = time - float(itime);
+        float ftime;
+        const size_t itime = getTimeSegment(ray.time, float(pre.grid->time_steps-1), ftime);
 
         const size_t line_offset   = pre.grid->width;
         const float* const grid_x  = pre.grid->decodeLeaf(itime,prim);
         
 #if defined(__AVX__)
-        return occluded<GridSOA::Gather3x3>( ray, ftime, context, grid_x, line_offset, pre, scene);
+        return occluded<GridSOA::Gather3x3>( ray, ftime, context, grid_x, line_offset, pre);
 #else
-        if (occluded<GridSOA::Gather2x3>(ray, ftime, context, grid_x            , line_offset, pre, scene)) return true;
-        if (occluded<GridSOA::Gather2x3>(ray, ftime, context, grid_x+line_offset, line_offset, pre, scene)) return true;
+        if (occluded<GridSOA::Gather2x3>(ray, ftime, context, grid_x            , line_offset, pre)) return true;
+        if (occluded<GridSOA::Gather2x3>(ray, ftime, context, grid_x+line_offset, line_offset, pre)) return true;
 #endif
         return false;
       }      

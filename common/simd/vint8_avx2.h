@@ -78,6 +78,8 @@ namespace embree
 
     static __forceinline const vint8 load( const unsigned char* const ptr ) { return _mm256_cvtepu8_epi32(_mm_load_si128((__m128i*)ptr)); }
 
+    static __forceinline const vint8 loadu( const unsigned char* const ptr ) { return _mm256_cvtepu8_epi32(_mm_loadu_si128((__m128i*)ptr)); }
+
     static __forceinline const vint8 load( const void* const ptr ) { return _mm256_load_si256((__m256i*)ptr); }
     static __forceinline const vint8 loadu(const void* const ptr ) { return _mm256_loadu_si256((__m256i*)ptr); }
 
@@ -115,8 +117,8 @@ namespace embree
 #if defined(__X86_64__)
       *(size_t*)ptr = _mm_cvtsi128_si64(_mm256_castsi256_si128(x));
 #else
-	  for (size_t i = 0; i < 8; i++)
-		  ptr[i] = ((unsigned char*)&x)[i];
+      for (size_t i = 0; i < 8; i++)
+        ptr[i] = ((unsigned char*)&x)[i];
 #endif
     }
 

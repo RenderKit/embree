@@ -152,10 +152,10 @@ namespace embree
     return ((Quad4iMB*)This)->size();
   }
 
-  /********************** SubdivPatch1Cached **************************/
+  /********************** SubdivPatch1 **************************/
 
   SubdivPatch1Cached::Type::Type () 
-    : PrimitiveType("subdivpatch1cached",sizeof(SubdivPatch1Cached),1) {} 
+    : PrimitiveType("subdivpatch1",sizeof(SubdivPatch1Cached),1) {} 
   
   size_t SubdivPatch1Cached::Type::size(const char* This) const {
     return 1;
@@ -163,16 +163,16 @@ namespace embree
 
   SubdivPatch1Cached::Type SubdivPatch1Cached::type;
 
-  /********************** SubdivPatch1Eager **************************/
+  /********************** SubdivPatch1Cached **************************/
 
-  SubdivPatch1Eager::Type::Type () 
-    : PrimitiveType("subdivpatch1eager",sizeof(SubdivPatch1Eager),1) {} 
+  SubdivPatch1Cached::TypeCached::TypeCached () 
+    : PrimitiveType("subdivpatch1cached",sizeof(SubdivPatch1Cached),1) {} 
   
-  size_t SubdivPatch1Eager::Type::size(const char* This) const {
+  size_t SubdivPatch1Cached::TypeCached::size(const char* This) const {
     return 1;
   }
 
-  SubdivPatch1Eager::Type SubdivPatch1Eager::type;
+  SubdivPatch1Cached::TypeCached SubdivPatch1Cached::type_cached;
 
   /********************** Virtual Object **************************/
 

@@ -109,12 +109,17 @@ RTCORE_API void rtcCommit (RTCScene scene);
  *  coprocessor. */
 RTCORE_API void rtcCommitThread(RTCScene scene, unsigned int threadID, unsigned int numThreads);
 
-/*! Returns to AABB of the scene. rtcCommit has to get called
+/*! Returns AABB of the scene. rtcCommit has to get called
  *  previously to this function. */
 RTCORE_API void rtcGetBounds(RTCScene scene, RTCBounds& bounds_o);
 
 /*! Performs collision detection of two scenes */
 RTCORE_API void rtcCollide (RTCScene scene0, RTCScene scene1, RTCCollideFunc callback, void* userPtr);
+
+/*! Returns linear AABBs of the scene. The result bounds_o gets filled
+ *  with AABBs for time 0 and time 1. rtcCommit has to get called
+ *  previously to this function. */
+RTCORE_API void rtcGetLinearBounds(RTCScene scene, RTCBounds* bounds_o);
 
 /*! Intersects a single ray with the scene. The ray has to be aligned
  *  to 16 bytes. This function can only be called for scenes with the
@@ -144,6 +149,10 @@ RTCORE_API void rtcIntersect16 (const void* valid, RTCScene scene, RTCRay16& ray
  *  only be called for scenes with the RTC_INTERSECT_STREAM flag set. The
  *  stride specifies the offset between rays in bytes. */
 RTCORE_API void rtcIntersect1M (RTCScene scene, const RTCIntersectContext* context, RTCRay* rays, const size_t M, const size_t stride);
+
+/*! Intersects a stream of pointers to M rays with the scene. This function can
+ *  only be called for scenes with the RTC_INTERSECT_STREAM flag set. */
+RTCORE_API void rtcIntersect1Mp (RTCScene scene, const RTCIntersectContext* context, RTCRay** rays, const size_t M);
 
 /*! Intersects a stream of M ray packets of size N in SOA format with the
  *  scene. This function can only be called for scenes with the
@@ -189,6 +198,11 @@ RTCORE_API void rtcOccluded16 (const void* valid, RTCScene scene, RTCRay16& ray)
  *  function can only be called for scenes with the RTC_INTERSECT_STREAM
  *  flag set. The stride specifies the offset between rays in bytes.*/
 RTCORE_API void rtcOccluded1M (RTCScene scene, const RTCIntersectContext* context, RTCRay* rays, const size_t M, const size_t stride);
+
+/*! Tests if a stream of pointers to M rays is occluded by the scene. This
+ *  function can only be called for scenes with the RTC_INTERSECT_STREAM
+ *  flag set. */
+RTCORE_API void rtcOccluded1Mp (RTCScene scene, const RTCIntersectContext* context, RTCRay** rays, const size_t M);
 
 /*! Tests if a stream of M ray packets of size N in SOA format is occluded by
  *  the scene. This function can only be called for scenes with the

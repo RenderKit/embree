@@ -25,17 +25,7 @@ SOURCE_GROUP("" FILES embree.rc)
 
 SET(EMBREE_LIBRARY_FILES
  
-   embree.rc
-
-  algorithms/parallel_for.cpp
-  algorithms/parallel_reduce.cpp
-  algorithms/parallel_prefix_sum.cpp
-  algorithms/parallel_for_for.cpp
-  algorithms/parallel_for_for_prefix_sum.cpp
-  algorithms/sort.cpp
-  algorithms/pset.cpp
-  algorithms/pmap.cpp
-  algorithms/prefix.cpp
+  embree.rc
 
   common/device.cpp
   common/stat.cpp
@@ -47,6 +37,7 @@ SET(EMBREE_LIBRARY_FILES
   common/scene.cpp
   common/alloc.cpp
   common/geometry.cpp
+  common/tasksys.cpp
   common/scene_user_geometry.cpp
   common/scene_instance.cpp
   common/scene_geometry_instance.cpp
@@ -86,29 +77,6 @@ SET(EMBREE_LIBRARY_FILES
   bvh/bvh_collider.cpp
   )
 
-IF (TASKING_INTERNAL)
-  SET(EMBREE_LIBRARY_FILES 
-    ../common/tasking/taskschedulerinternal.cpp
-    ../common/tasking/tasksys.cpp
-    ${EMBREE_LIBRARY_FILES})
-ENDIF()
-
-IF (TASKING_TBB)
-  SET(EMBREE_LIBRARY_FILES 
-    ../common/tasking/taskschedulertbb.cpp
-    ../common/tasking/tasksys.cpp
-    ${EMBREE_LIBRARY_FILES})
-  SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} ${TBB_LIBRARIES})
-ENDIF()
-
-IF (TASKING_PPL)
-  SET(EMBREE_LIBRARY_FILES 
-    ../common/tasking/taskschedulerppl.cpp
-    ../common/tasking/tasksys.cpp
-    ${EMBREE_LIBRARY_FILES})
-  SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} ${PPL_LIBRARIES})
-ENDIF()
-
 IF (EMBREE_RAY_PACKETS)
   SET(EMBREE_LIBRARY_FILES ${EMBREE_LIBRARY_FILES}
 
@@ -142,17 +110,17 @@ SET(EMBREE_LIBRARY_FILES_AVX
     
     geometry/grid_soa.cpp
     subdiv/subdivpatch1base_eval.cpp
-    builders/primrefgen.avx.cpp
+    builders/primrefgen.cpp
 
     bvh/bvh_rotate.cpp
-    bvh/bvh_refit.avx.cpp
-    bvh/bvh_builder.avx.cpp
-    bvh/bvh_builder_hair.avx.cpp
-    bvh/bvh_builder_morton.avx.cpp
-    bvh/bvh_builder_sah.avx.cpp
-    bvh/bvh_builder_twolevel.avx.cpp
-    bvh/bvh_builder_instancing.avx.cpp
-    bvh/bvh_builder_subdiv.avx.cpp
+    bvh/bvh_refit.cpp
+    bvh/bvh_builder.cpp
+    bvh/bvh_builder_hair.cpp
+    bvh/bvh_builder_morton.cpp
+    bvh/bvh_builder_sah.cpp
+    bvh/bvh_builder_twolevel.cpp
+    bvh/bvh_builder_instancing.cpp
+    bvh/bvh_builder_subdiv.cpp
     bvh/bvh_intersector1.cpp
     bvh/bvh_collider.cpp
     
@@ -197,8 +165,16 @@ SET(EMBREE_LIBRARY_FILES_AVX512
 
     bvh/bvh_refit.cpp
     bvh/bvh_rotate.cpp
-    bvh/bvh_builder_subdiv.avx512knl.cpp
-    bvh/bvh_intersector1.cpp)
+    bvh/bvh_builder_subdiv.cpp
+    bvh/bvh_intersector1.cpp
+
+    builders/primrefgen.cpp
+    bvh/bvh_builder.cpp
+    bvh/bvh_builder_sah.cpp
+    bvh/bvh_builder_twolevel.cpp
+    bvh/bvh_builder_instancing.cpp
+    bvh/bvh_builder_morton.cpp
+    bvh/bvh_builder_subdiv.cpp)
 
 IF (EMBREE_RAY_PACKETS)
   SET(EMBREE_LIBRARY_FILES_AVX512 ${EMBREE_LIBRARY_FILES_AVX512}
@@ -211,27 +187,32 @@ IF (EMBREE_RAY_PACKETS)
     bvh/bvh_intersector_stream_filters.cpp)
 ENDIF()
 
-SET(EMBREE_LIBRARY_FILES_AVX512KNL ${EMBREE_LIBRARY_FILES_AVX512}
+SET(EMBREE_LIBRARY_FILES_AVX512KNL ${EMBREE_LIBRARY_FILES_AVX512})
+SET(EMBREE_LIBRARY_FILES_AVX512SKX ${EMBREE_LIBRARY_FILES_AVX512})
 
-    builders/primrefgen.avx512knl.cpp
-    bvh/bvh_builder.avx512knl.cpp
-    bvh/bvh_builder_sah.avx512knl.cpp
-    bvh/bvh_builder_twolevel.avx512knl.cpp
-    bvh/bvh_builder_instancing.avx512knl.cpp
-    bvh/bvh_builder_morton.avx512knl.cpp
-    bvh/bvh_builder_subdiv.avx512knl.cpp)
+# replaces all .cpp files with a dummy file that includes that .cpp file
+# this is to work around an ICC name mangling issue related to lambda functions under windows
+MACRO (CreateISADummyFiles list isa)
+  SET(${list})
+  FOREACH(src ${ARGN})
+    SET(src_file ${CMAKE_CURRENT_SOURCE_DIR}/${src})
+    SET(dst_file ${CMAKE_BINARY_DIR}/${src}.${isa}.cpp)
+    SET(${list} ${${list}} ${dst_file})
+    ADD_CUSTOM_COMMAND(OUTPUT ${dst_file}
+      COMMAND ${CMAKE_COMMAND} 
+       -D src=${src_file}
+       -D dst=${dst_file}
+       -P ${PROJECT_SOURCE_DIR}/common/cmake/create_isa_dummy_file.cmake
+      DEPENDS ${src_file})
+  ENDFOREACH()
+ENDMACRO()
+CreateISADummyFiles(EMBREE_LIBRARY_FILES_SSE42     sse42     ${EMBREE_LIBRARY_FILES_SSE42})
+CreateISADummyFiles(EMBREE_LIBRARY_FILES_AVX       avx       ${EMBREE_LIBRARY_FILES_AVX})
+CreateISADummyFiles(EMBREE_LIBRARY_FILES_AVX2      avx2      ${EMBREE_LIBRARY_FILES_AVX2})
+CreateISADummyFiles(EMBREE_LIBRARY_FILES_AVX512KNL avx512knl ${EMBREE_LIBRARY_FILES_AVX512KNL})
+CreateISADummyFiles(EMBREE_LIBRARY_FILES_AVX512SKX avx512skx ${EMBREE_LIBRARY_FILES_AVX512SKX})
 
-SET(EMBREE_LIBRARY_FILES_AVX512SKX ${EMBREE_LIBRARY_FILES_AVX512}
-
-    builders/primrefgen.avx512skx.cpp
-    bvh/bvh_builder.avx512skx.cpp
-    bvh/bvh_builder_sah.avx512skx.cpp
-    bvh/bvh_builder_twolevel.avx512skx.cpp
-    bvh/bvh_builder_instancing.avx512skx.cpp
-    bvh/bvh_builder_morton.avx512skx.cpp
-    bvh/bvh_builder_subdiv.avx512skx.cpp)
-
-ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE} ${EMBREE_LIBRARY_FILES})
+ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE} ${EMBREE_LIBRARY_FILES} $<TARGET_OBJECTS:algorithms>)
 SET_PROPERTY(TARGET embree PROPERTY FOLDER kernels)
 
 IF (TARGET_SSE42 AND EMBREE_LIBRARY_FILES_SSE42)
@@ -269,7 +250,7 @@ IF (TARGET_AVX512SKX AND EMBREE_LIBRARY_FILES_AVX512SKX)
   SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_avx512skx)
 ENDIF()
 
-TARGET_LINK_LIBRARIES(embree ${EMBREE_LIBRARIES} sys simd lexers)
+TARGET_LINK_LIBRARIES(embree ${EMBREE_LIBRARIES} sys simd lexers tasking)
 
 IF (WIN32)
 ELSEIF (APPLE)

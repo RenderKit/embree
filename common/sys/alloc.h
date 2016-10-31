@@ -24,13 +24,13 @@ namespace embree
   void* operator new(size_t size) { return alignedMalloc(size); }       \
   void operator delete(void* ptr) { alignedFree(ptr); }      \
   void* operator new[](size_t size) { return alignedMalloc(size); }  \
-  void operator delete[](void* ptr) { alignedFree(ptr); }    \
+  void operator delete[](void* ptr) { alignedFree(ptr); }
 
 #define ALIGNED_STRUCT_(align)                                           \
   void* operator new(size_t size) { return alignedMalloc(size,align); } \
   void operator delete(void* ptr) { alignedFree(ptr); }                 \
   void* operator new[](size_t size) { return alignedMalloc(size,align); } \
-  void operator delete[](void* ptr) { alignedFree(ptr); }               \
+  void operator delete[](void* ptr) { alignedFree(ptr); }
 
 #define ALIGNED_CLASS                                                \
   public:                                                            \

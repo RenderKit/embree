@@ -59,7 +59,7 @@ namespace embree
         size_t n = current.prims.size();
         size_t items = Primitive::blocks(n);
         size_t start = current.prims.begin();
-        Primitive* accel = (Primitive*) alloc->alloc1.malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
+        Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
         typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,items);
         for (size_t i=0; i<items; i++) {
           accel[i].fill(prims,start,current.prims.end(),bvh->scene,false);
@@ -86,7 +86,7 @@ namespace embree
         size_t items = Primitive::blocks(n);
         size_t start = current.prims.begin();
         // todo alloc0/1 or alloc
-        Primitive* accel = (Primitive*) alloc->alloc0.malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
+        Primitive* accel = (Primitive*) alloc->alloc0->malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
         typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,items);
         for (size_t i=0; i<items; i++) {
           accel[i].fill(prims,start,current.prims.end(),bvh->scene,false);
@@ -123,7 +123,7 @@ namespace embree
         for (size_t i=0; i<n; i++) 
           source[start+i].lower.a &= 0x00FFFFFF;
 
-        Primitive* accel = (Primitive*) alloc->alloc1.malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
+        Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
         typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,items);
         for (size_t i=0; i<items; i++) {
           accel[i].fill(source,start,current.prims.end(),bvh->scene,false);
@@ -169,13 +169,13 @@ namespace embree
       void build(size_t, size_t) 
       {
 	/* skip build for empty scene */
-	const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,1>();
+        const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,false>();
         if (numPrimitives == 0) {
           prims.clear();
           bvh->clear();
           return;
         }
-
+        
         double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + toString(N) + "BuilderSAH");
 
 #if PROFILE
@@ -187,13 +187,13 @@ namespace embree
             prims.resize(numSplitPrimitives);
             PrimInfo pinfo = mesh ? 
               createPrimRefArray<Mesh>  (mesh ,prims,bvh->scene->progressInterface) : 
-              createPrimRefArray<Mesh,1>(scene,prims,bvh->scene->progressInterface);
+              createPrimRefArray<Mesh,false>(scene,prims,bvh->scene->progressInterface);
         
             /* perform pre-splitting */
             if (presplitFactor > 1.0f) 
               pinfo = presplit<Mesh>(scene, pinfo, prims);
         
-            /* call BVH builder */
+            /* call BVH builder */            
             bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
             BVHNBuilder<N>::build(bvh,CreateLeaf<N,Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
@@ -248,7 +248,7 @@ namespace embree
       void build(size_t, size_t) 
       {
 	/* skip build for empty scene */
-	const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,1>();
+        const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,false>();
         if (numPrimitives == 0) {
           prims.clear();
           bvh->clear();
@@ -265,7 +265,7 @@ namespace embree
             prims.resize(numSplitPrimitives);
             PrimInfo pinfo = mesh ? 
               createPrimRefArray<Mesh>  (mesh ,prims,bvh->scene->progressInterface) : 
-              createPrimRefArray<Mesh,1>(scene,prims,bvh->scene->progressInterface);
+              createPrimRefArray<Mesh,false>(scene,prims,bvh->scene->progressInterface);
         
             /* perform pre-splitting */
             if (presplitFactor > 1.0f) 
@@ -300,131 +300,222 @@ namespace embree
     /************************************************************************************/
 
     template<int N, typename Primitive>
-    struct CreateListLeaf
+    struct CreateMSMBlurLeaf
     {
       typedef BVHN<N> BVH;
-
-      __forceinline CreateListLeaf (BVH* bvh) : bvh(bvh) {}
+      __forceinline CreateMSMBlurLeaf (BVH* bvh, PrimRef* prims, size_t time) : bvh(bvh), prims(prims), time(time) {}
       
-      __forceinline size_t operator() (BVHBuilderBinnedSpatialSAH::BuildRecord& current, Allocator* alloc)
+      __forceinline LBBox3fa operator() (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc)
       {
-        size_t n = current.pinfo.size();
-        size_t num = Primitive::blocks(n);
-        Primitive* leaf = (Primitive*) alloc->alloc1.malloc(num*sizeof(Primitive),BVH::byteNodeAlignment);
-        typename BVH::NodeRef node = bvh->encodeLeaf((char*)leaf,num);
-
-        PrimRefList::block_iterator_unsafe iter1(current.prims);
-        while (iter1) {
-          iter1->lower.a &= 0x00FFFFFF;
-          iter1++;
-        }
-
-        /* insert all triangles */
-        PrimRefList::block_iterator_unsafe iter(current.prims);
-        for (size_t i=0; i<num; i++) leaf[i].fill(iter,bvh->scene,false);
-        assert(!iter);
-        
-        /* free all primitive blocks */
-        while (PrimRefList::item* block = current.prims.take())
-          delete block;
-
+        size_t items = Primitive::blocks(current.prims.size());
+        size_t start = current.prims.begin();
+        Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
+        typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,items);
+        LBBox3fa allBounds = empty;
+        for (size_t i=0; i<items; i++)
+          allBounds.extend(accel[i].fillMB(prims, start, current.prims.end(), bvh->scene, false, time, bvh->numTimeSteps));
         *current.parent = node;
-	return n;
+        return allBounds;
       }
 
       BVH* bvh;
+      PrimRef* prims;
+      size_t time;
     };
 
     template<int N, typename Mesh, typename Primitive>
-    struct BVHNBuilderSpatialSAH : public Builder
+    struct BVHNBuilderMSMBlurSAH : public Builder
     {
       typedef BVHN<N> BVH;
+      typedef typename BVHN<N>::NodeRef NodeRef;
       BVH* bvh;
       Scene* scene;
+      mvector<PrimRef> prims; 
       const size_t sahBlockSize;
       const float intCost;
       const size_t minLeafSize;
       const size_t maxLeafSize;
-      const float presplitFactor;
 
-      BVHNBuilderSpatialSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize,
-                             const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
-        : bvh(bvh), scene(scene), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)),
-          presplitFactor((mode & MODE_HIGH_QUALITY) ? defaultPresplitFactor : 1.0f) {}
+      BVHNBuilderMSMBlurSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize)
+        : bvh(bvh), scene(scene), prims(scene->device), 
+          sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)) {}
 
       void build(size_t, size_t) 
       {
 	/* skip build for empty scene */
-	const size_t numPrimitives = scene->getNumPrimitives<Mesh,1>();
+        const size_t numPrimitives = scene->getNumPrimitives<Mesh,true>();
+        
         if (numPrimitives == 0) {
+          prims.clear();
           bvh->clear();
           return;
+        }      
+
+        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "BuilderMSMBlurSAH");
+	
+        /* allocate buffers */
+        bvh->numTimeSteps = scene->getNumTimeSteps<Mesh,true>();
+        const size_t numTimeSegments = bvh->numTimeSteps-1; assert(bvh->numTimeSteps > 1);
+        prims.resize(numPrimitives);
+        bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef)*numTimeSegments);
+        NodeRef* roots = (NodeRef*) bvh->alloc.threadLocal2()->alloc0->malloc(sizeof(NodeRef)*numTimeSegments,BVH::byteNodeAlignment);
+
+        /* build BVH for each timestep */
+        avector<BBox3fa> bounds(bvh->numTimeSteps);
+        size_t num_bvh_primitives = 0;
+        for (size_t t=0; t<numTimeSegments; t++)
+        {
+          /* call BVH builder */
+          NodeRef root; LBBox3fa tbounds;
+          const PrimInfo pinfo = createPrimRefArrayMBlur<Mesh>(t,bvh->numTimeSteps,scene,prims,bvh->scene->progressInterface);
+          std::tie(root, tbounds) = BVHNBuilderMblur<N>::build(bvh,CreateMSMBlurLeaf<N,Primitive>(bvh,prims.data(),t),bvh->scene->progressInterface,prims.data(),pinfo,
+                                                               sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
+          roots[t] = root;
+          bounds[t+0] = tbounds.bounds0;
+          bounds[t+1] = tbounds.bounds1;
+          num_bvh_primitives = max(num_bvh_primitives,pinfo.size());
         }
-        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "BuilderSpatialSAH");
-        
-        /* create primref list */
-        PrimRefList prims;
-        PrimInfo pinfo = createPrimRefList<Mesh,1>(scene,prims,bvh->scene->progressInterface);
-        
-        /* calculate total surface area */
-        PrimRefList::iterator iter = prims;
-        const size_t threadCount = TaskScheduler::threadCount();
-        const float A = (float) parallel_reduce(size_t(0),threadCount,0.0, [&] (const range<size_t>& r) -> double // FIXME: this sum is not deterministic
-                                                {
-                                                  double A = 0.0f;
-                                                  while (PrimRefList::item* block = iter.next()) {
-                                                    for (size_t i=0; i<block->size(); i++) 
-                                                      A += area(block->at(i).bounds());
-                                                  }
-                                                  return A;
-                                                },std::plus<double>());
-        
-        /* calculate maximal number of spatial splits per primitive */
-        float f = 10.0f;
-        iter = prims;
-        parallel_reduce(size_t(0),threadCount,size_t(0), [&] (const range<size_t>& r) -> size_t
-                        {
-                          size_t num = 0;
-                          while (PrimRefList::item* block = iter.next()) {
-                            for (size_t i=0; i<block->size(); i++) {
-                              PrimRef& prim = block->at(i);
-                              assert((prim.lower.a & 0xFF000000) == 0);
-                              const float nf = ceil(f*pinfo.size()*area(prim.bounds())/A);
-                              //const size_t n = 64;
-                              //const size_t n = min(ssize_t(127), max(ssize_t(1), ssize_t(nf)));
-                              const size_t n = 4+min(ssize_t(127-4), max(ssize_t(1), ssize_t(nf)));
-                              num += n;
-                              prim.lower.a |= n << 24;
-                            }
-                          }
-                          return num;
-                        },std::plus<size_t>());
-        
-        /* function that splits a primitive at some position and dimension */
-        auto splitPrimitive = [&] (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o) {
-          TriangleMesh* mesh = (TriangleMesh*) scene->get(prim.geomID() & 0x00FFFFFF); 
-          TriangleMesh::Triangle tri = mesh->triangle(prim.primID());
-          const Vec3fa v0 = mesh->vertex(tri.v[0]);
-          const Vec3fa v1 = mesh->vertex(tri.v[1]);
-          const Vec3fa v2 = mesh->vertex(tri.v[2]);
-          splitTriangle(prim,dim,pos,v0,v1,v2,left_o,right_o);
-        };
-             
-        /* call BVH builder */
-        bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
-        BVHNBuilderSpatial<N>::build(bvh,
-                                     splitPrimitive,
-                                     CreateListLeaf<N,Primitive>(bvh),
-                                     bvh->scene->progressInterface,prims,pinfo,
-                                     sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
-        
-        /* clear temporary data for static geometry */
-	if (scene->isStatic()) bvh->shrink();
+        bvh->set(NodeRef((size_t)roots),LBBox3fa(bounds),num_bvh_primitives);
+        bvh->msmblur = true;
+
+	/* clear temporary data for static geometry */
+	if (scene->isStatic()) 
+        {
+          prims.clear();
+          bvh->shrink();
+        }
 	bvh->cleanup();
         bvh->postBuild(t0);
       }
 
       void clear() {
+        prims.clear();
+      }
+    };
+
+    /************************************************************************************/ 
+    /************************************************************************************/
+    /************************************************************************************/
+    /************************************************************************************/
+
+    template<int N>
+    __forceinline size_t norotate(typename BVHN<N>::AlignedNode* node, const size_t* counts, const size_t num) {
+      return 0;
+    }
+
+    template<int N, typename Mesh, typename Primitive, typename Splitter>
+    struct BVHNBuilderFastSpatialSAH : public Builder
+    {
+      typedef BVHN<N> BVH;
+      typedef typename BVH::NodeRef NodeRef;
+      BVH* bvh;
+      Scene* scene;
+      Mesh* mesh;
+      mvector<PrimRef> prims0;
+      const size_t sahBlockSize;
+      const float intCost;
+      const size_t minLeafSize;
+      const size_t maxLeafSize;
+      const float splitFactor;
+
+      BVHNBuilderFastSpatialSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
+        : bvh(bvh), scene(scene), mesh(nullptr), prims0(scene->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)),
+          splitFactor(scene->device->max_spatial_split_replications) {}
+
+      BVHNBuilderFastSpatialSAH (BVH* bvh, Mesh* mesh, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
+        : bvh(bvh), scene(nullptr), mesh(mesh), prims0(bvh->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)),
+          splitFactor(scene->device->max_spatial_split_replications) {}
+
+      // FIXME: shrink bvh->alloc in destructor here and in other builders too
+
+      void build(size_t, size_t) 
+      {
+	/* skip build for empty scene */
+        const size_t numOriginalPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,false>();
+        if (numOriginalPrimitives == 0) {
+          prims0.clear();
+          bvh->clear();
+          return;
+        }
+
+        double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + toString(N) + "BuilderFastSpatialSAH");
+
+        /* create primref array */
+        const size_t numSplitPrimitives = max(numOriginalPrimitives,size_t(splitFactor*numOriginalPrimitives));
+        prims0.resize(numSplitPrimitives);
+        PrimInfo pinfo = mesh ? 
+          createPrimRefArray<Mesh>  (mesh ,prims0,bvh->scene->progressInterface) : 
+          createPrimRefArray<Mesh,false>(scene,prims0,bvh->scene->progressInterface);
+
+        /* primref array could be smaller due to invalid geometry */
+        const size_t numPrimitives = pinfo.size();
+
+        /* calculate total surface area */
+        const float A = (float) parallel_reduce(size_t(0),numPrimitives,0.0, [&] (const range<size_t>& r) -> double // FIXME: this sum is not deterministic
+                                                {
+                                                  double A = 0.0f;
+                                                  for (size_t i=r.begin(); i<r.end(); i++)
+                                                  {
+                                                    PrimRef& prim = prims0[i];
+                                                    A += area(prim.bounds());
+                                                  }
+                                                  return A;
+                                                },std::plus<double>());
+
+        const float f = 10.0f;
+        const float invA = 1.0f / A;
+        /* calculate maximal number of spatial splits per primitive */
+        parallel_for( size_t(0), numPrimitives, [&](const range<size_t>& r)
+                      {
+                        for (size_t i=r.begin(); i<r.end(); i++)
+                        {
+                          PrimRef& prim = prims0[i];
+                          assert((prim.lower.a & 0xFF000000) == 0);
+                          const float nf = ceilf(f*pinfo.size()*area(prim.bounds()) * invA);
+                          // FIXME: is there a better general heuristic ?
+                          size_t n = 4+min(ssize_t(127-4), max(ssize_t(1), ssize_t(nf)));
+                          prim.lower.a |= n << 24;              
+                        }
+                      });
+        
+        Splitter splitter(scene);
+
+
+        bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
+
+        NodeRef root;
+        BVHBuilderBinnedFastSpatialSAH::build_reduce<NodeRef>(
+          root,
+          typename BVH::CreateAlloc(bvh),
+          size_t(0),
+          typename BVH::CreateAlignedNode(bvh),
+          norotate<N>,
+          CreateLeafSpatial<N,Primitive>(bvh,prims0.data()),
+          splitter,
+          bvh->scene->progressInterface,
+          prims0.data(),
+          numSplitPrimitives,
+          pinfo,
+          N,BVH::maxBuildDepthLeaf,
+          sahBlockSize,minLeafSize,maxLeafSize,
+          travCost,intCost);
+        
+
+        bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());      
+        bvh->layoutLargeNodes(size_t(pinfo.size()*0.005f));
+
+	/* clear temporary data for static geometry */
+	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
+	if (staticGeom) {
+          prims0.clear();
+          bvh->shrink();
+        }
+	bvh->cleanup();
+        bvh->postBuild(t0);
+      }
+
+      void clear() {
+        prims0.clear();
       }
     };
 
@@ -434,27 +525,26 @@ namespace embree
     /************************************************************************************/
     /************************************************************************************/
 
+    // FIXME: merge with standard class
     template<int N, typename Primitive>
-    struct CreateLeafMB
+    struct CreateLeafSweep
     {
       typedef BVHN<N> BVH;
-      __forceinline CreateLeafMB (BVH* bvh, PrimRef* prims) : bvh(bvh), prims(prims) {}
+
+      __forceinline CreateLeafSweep (BVH* bvh, PrimRef* prims) : bvh(bvh), prims(prims) {}
       
-      __forceinline std::pair<BBox3fa,BBox3fa> operator() (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc)
+      __forceinline size_t operator() (const BVHBuilderSweepSAH::BuildRecord& current, Allocator* alloc)
       {
-        size_t items = Primitive::blocks(current.prims.size());
+        size_t n = current.prims.size();
+        size_t items = Primitive::blocks(n);
         size_t start = current.prims.begin();
-        Primitive* accel = (Primitive*) alloc->alloc1.malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
-        typename BVH::NodeRef node = bvh->encodeLeaf((char*)accel,items);
-	BBox3fa bounds0 = empty;
-	BBox3fa bounds1 = empty;
+        Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
+        typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,items);
         for (size_t i=0; i<items; i++) {
-          auto bounds = accel[i].fill_mblur(prims,start,current.prims.end(),bvh->scene,false);
-	  bounds0.extend(bounds.first);
-	  bounds1.extend(bounds.second);
+          accel[i].fill(prims,start,current.prims.end(),bvh->scene,false);
         }
         *current.parent = node;
-	return std::make_pair(bounds0,bounds1);
+	return n;
       }
 
       BVH* bvh;
@@ -462,46 +552,64 @@ namespace embree
     };
 
     template<int N, typename Mesh, typename Primitive>
-    struct BVHNBuilderMblurSAH : public Builder
+    struct BVHNBuilderSweepSAH : public Builder
     {
       typedef BVHN<N> BVH;
       BVH* bvh;
       Scene* scene;
       Mesh* mesh;
-      mvector<PrimRef> prims; 
+      mvector<PrimRef> prims;
       const size_t sahBlockSize;
       const float intCost;
       const size_t minLeafSize;
       const size_t maxLeafSize;
+      const float presplitFactor;
 
-      BVHNBuilderMblurSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize)
-        : bvh(bvh), scene(scene), mesh(nullptr), prims(scene->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)) {}
+      BVHNBuilderSweepSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
+        : bvh(bvh), scene(scene), mesh(nullptr), prims(scene->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)),
+          presplitFactor((mode & MODE_HIGH_QUALITY) ? defaultPresplitFactor : 1.0f) {}
 
-      BVHNBuilderMblurSAH (BVH* bvh, Mesh* mesh, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize)
-        : bvh(bvh), scene(nullptr), mesh(mesh), prims(mesh->parent->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)) {}
+
+      BVHNBuilderSweepSAH (BVH* bvh, Mesh* mesh, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
+        : bvh(bvh), scene(nullptr), mesh(mesh), prims(bvh->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)),
+          presplitFactor((mode & MODE_HIGH_QUALITY ) ? defaultPresplitFactor : 1.0f) {}
+
+      // FIXME: shrink bvh->alloc in destructor here and in other builders too
 
       void build(size_t, size_t) 
       {
 	/* skip build for empty scene */
-	const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,2>();
-
+        const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,false>();
         if (numPrimitives == 0) {
           prims.clear();
           bvh->clear();
           return;
-        }      
-        double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + toString(N) + "BuilderMblurSAH");
-	    
-        //bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef));
-        prims.resize(numPrimitives);
-        const PrimInfo pinfo = mesh ? 
-          createPrimRefArray<Mesh>(mesh,prims,bvh->scene->progressInterface) : 
-          createPrimRefArray<Mesh,2>(scene,prims,bvh->scene->progressInterface);
+        }
+        
+        double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + toString(N) + "BuilderSweepSAH");
 
-        /* call BVH builder */
-        bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
-        BVHNBuilderMblur<N>::build(bvh,CreateLeafMB<N,Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,
-                                   sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
+#if PROFILE
+        profile(2,PROFILE_RUNS,numPrimitives,[&] (ProfileTimer& timer) {
+#endif
+
+            /* create primref array */
+            const size_t numSplitPrimitives = max(numPrimitives,size_t(presplitFactor*numPrimitives));
+            prims.resize(numSplitPrimitives);
+            PrimInfo pinfo = mesh ? 
+              createPrimRefArray<Mesh>  (mesh ,prims,bvh->scene->progressInterface) : 
+              createPrimRefArray<Mesh,false>(scene,prims,bvh->scene->progressInterface);
+        
+            /* perform pre-splitting */
+            if (presplitFactor > 1.0f) 
+              pinfo = presplit<Mesh>(scene, pinfo, prims);
+        
+            /* call BVH builder */
+            bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
+            BVHNBuilderSweep<N>::build(bvh,CreateLeafSweep<N,Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
+
+#if PROFILE
+          }); 
+#endif	
 
 	/* clear temporary data for static geometry */
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
@@ -518,374 +626,19 @@ namespace embree
       }
     };
 
-
     /************************************************************************************/ 
     /************************************************************************************/
     /************************************************************************************/
     /************************************************************************************/
-
-    template<int N, typename Mesh, typename Primitive>
-    struct BVHNBuilderFastSpatialSAH : public Builder
-    {
-      typedef BVHN<N> BVH;
-      BVH* bvh;
-      Scene* scene;
-      Mesh* mesh;
-      mvector<PrimRef> prims0;
-      const size_t sahBlockSize;
-      const float intCost;
-      const size_t minLeafSize;
-      const size_t maxLeafSize;
-      const float splitFactor;
-
-      BVHNBuilderFastSpatialSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
-        : bvh(bvh), scene(scene), mesh(nullptr), prims0(scene->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)),
-          splitFactor(scene->device->tri_builder_replication_factor) {}
-
-      BVHNBuilderFastSpatialSAH (BVH* bvh, Mesh* mesh, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
-        : bvh(bvh), scene(nullptr), mesh(mesh), prims0(bvh->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)),
-          splitFactor(scene->device->tri_builder_replication_factor) {}
-
-      // FIXME: shrink bvh->alloc in destructor here and in other builders too
-
-      void build(size_t, size_t) 
-      {
-	/* skip build for empty scene */
-	const size_t numOriginalPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,1>();
-        if (numOriginalPrimitives == 0) {
-          prims0.clear();
-          bvh->clear();
-          return;
-        }
-
-        double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + toString(N) + "BuilderFastSpatialSAH");
-
-        /* create primref array */
-        const size_t numSplitPrimitives = max(numOriginalPrimitives,size_t(splitFactor*numOriginalPrimitives));
-        prims0.resize(numSplitPrimitives);
-        PrimInfo pinfo = mesh ? 
-          createPrimRefArray<Mesh>  (mesh ,prims0,bvh->scene->progressInterface) : 
-          createPrimRefArray<Mesh,1>(scene,prims0,bvh->scene->progressInterface);
-
-        /* primref array could be smaller due to invalid geometry */
-        const size_t numPrimitives = pinfo.size();
-
-        /* calculate total surface area */
-        const float A = (float) parallel_reduce(size_t(0),numPrimitives,0.0, [&] (const range<size_t>& r) -> double // FIXME: this sum is not deterministic
-                                                {
-                                                  double A = 0.0f;
-                                                  for (size_t i=r.begin(); i<r.end(); i++)
-                                                  {
-                                                    PrimRef& prim = prims0[i];
-                                                    A += area(prim.bounds());
-                                                  }
-                                                  return A;
-                                                },std::plus<double>());
-
-        const float f = 10.0f;
-        const float invA = 1.0f / A;
-        /* calculate maximal number of spatial splits per primitive */
-        parallel_for( size_t(0), numPrimitives, [&](const range<size_t>& r)
-                      {
-                        for (size_t i=r.begin(); i<r.end(); i++)
-                        {
-                          PrimRef& prim = prims0[i];
-                          assert((prim.lower.a & 0xFF000000) == 0);
-                          const float nf = ceilf(f*pinfo.size()*area(prim.bounds()) * invA);
-                          // FIXME: is there a better general heuristic ?
-                          size_t n = 4+min(ssize_t(127-4), max(ssize_t(1), ssize_t(nf)));
-                          prim.lower.a |= n << 24;              
-                        }
-                      });
-        
-        /* function that splits a primitive at some position and dimension */
-        auto splitPrimitivePartition = [&] (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o) {
-          TriangleMesh* mesh = (TriangleMesh*) scene->get(prim.geomID() & 0x00FFFFFF );  
-          TriangleMesh::Triangle tri = mesh->triangle(prim.primID());
-          const Vec3fa& a = mesh->vertex(tri.v[0]);
-          const Vec3fa& b = mesh->vertex(tri.v[1]);
-          const Vec3fa& c = mesh->vertex(tri.v[2]);          
-          const Vec3fa v[4] = { a,b,c,a };
-          const vfloat4 v1(b[dim],c[dim],a[dim],b[dim]);
-          const vfloat4 v0(a[dim],b[dim],c[dim],a[dim]);
-          const vfloat4 inv_length = 1.0f / (v1-v0);
-          splitTriQuadFast<3>(prim,dim,pos,v,inv_length,left_o,right_o);
-        };
-
-        auto splitPrimitiveBinning = [&] (SpatialBinInfo<FAST_SPATIAL_BUILDER_NUM_SPATIAL_SPLITS,PrimRef> &binner, 
-                                    const PrimRef* const source, const size_t begin, const size_t end, 
-                                    const SpatialBinMapping<FAST_SPATIAL_BUILDER_NUM_SPATIAL_SPLITS> &mapping)
-          {
-            for (size_t i=begin; i<end; i++)
-            {
-              const PrimRef &prim = source[i];
-              const unsigned int splits = prim.geomID() >> 24;
-              assert(splits != 1);
-              const vint4 bin0 = mapping.bin(prim.bounds().lower);
-              const vint4 bin1 = mapping.bin(prim.bounds().upper);
-
-              for (size_t dim=0; dim<3; dim++) 
-              {
-                if (unlikely(mapping.invalid(dim))) { continue; }
-                size_t bin;
-                size_t l = bin0[dim];
-                size_t r = bin1[dim];
-
-                // same bin optimization
-                if (likely(l == r)) 
-                {
-                  binner.add(dim,l,l,l,prim.bounds());
-                  continue;
-                }
-                const size_t bin_start = bin0[dim];
-                const size_t bin_end   = bin1[dim];
-                BBox3fa rest = prim.bounds();
-                TriangleMesh* mesh = (TriangleMesh*) scene->get(prim.geomID() & 0x00FFFFFF );  
-                TriangleMesh::Triangle tri = mesh->triangle(prim.primID());
-                const Vec3fa v[4] = { mesh->vertex(tri.v[0]), 
-                                      mesh->vertex(tri.v[1]), 
-                                      mesh->vertex(tri.v[2]),
-                                      mesh->vertex(tri.v[0]) };
-                const Vec3fa inv_length[4] = { 
-                  Vec3fa(1.0f) / (v[1]-v[0]),
-                  Vec3fa(1.0f) / (v[2]-v[1]),
-                  Vec3fa(1.0f) / (v[0]-v[2]),
-                  Vec3fa(1.0f)
-                };
-                for (bin=bin_start; bin<bin_end; bin++) 
-                {
-                  const float pos = mapping.pos(bin+1,dim);
-                  BBox3fa left,right;
-                  splitTriQuadFast<3>(rest,dim,pos,v,inv_length,left,right);
-                  if (unlikely(left.empty())) l++;                
-                  binner.extend(dim,bin,left);
-                  rest = right;
-                }
-                if (unlikely(rest.empty())) r--;
-                binner.add(dim,l,r,bin,rest);
-              }
-            }              
-          };
-
-
-
-        /* call BVH builder */
-        bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
-        BVHNBuilderFastSpatial<N,FAST_SPATIAL_BUILDER_NUM_SPATIAL_SPLITS>::build(bvh,
-                                                                                 splitPrimitivePartition,
-                                                                                 splitPrimitiveBinning,
-                                                                                 CreateLeafSpatial<N,Primitive>(bvh,prims0.data()),
-                                                                                 bvh->scene->progressInterface,
-                                                                                 prims0.data(),
-                                                                                 numSplitPrimitives,
-                                                                                 pinfo,
-                                                                                 sahBlockSize,minLeafSize,maxLeafSize,
-                                                                                 travCost,intCost);
-        
-	/* clear temporary data for static geometry */
-	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
-	if (staticGeom) {
-          prims0.clear();
-          bvh->shrink();
-        }
-	bvh->cleanup();
-        bvh->postBuild(t0);
-      }
-
-      void clear() {
-        prims0.clear();
-      }
-    };
-
-
-    /************************************************************************************/ 
-    /************************************************************************************/
-    /************************************************************************************/
-    /************************************************************************************/
-
-    template<int N, typename Mesh, typename Primitive>
-    struct BVHNBuilderQuadFastSpatialSAH : public Builder
-    {
-      typedef BVHN<N> BVH;
-      BVH* bvh;
-      Scene* scene;
-      Mesh* mesh;
-      mvector<PrimRef> prims0;
-      const size_t sahBlockSize;
-      const float intCost;
-      const size_t minLeafSize;
-      const size_t maxLeafSize;
-      const float splitFactor;
-
-      BVHNBuilderQuadFastSpatialSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
-        : bvh(bvh), scene(scene), mesh(nullptr), prims0(scene->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)),
-          splitFactor(scene->device->tri_builder_replication_factor) {}
-
-      BVHNBuilderQuadFastSpatialSAH (BVH* bvh, Mesh* mesh, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
-        : bvh(bvh), scene(nullptr), mesh(mesh), prims0(bvh->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)),
-          splitFactor(scene->device->tri_builder_replication_factor) {}
-
-      // FIXME: shrink bvh->alloc in destructor here and in other builders too
-
-      void build(size_t, size_t) 
-      {
-	/* skip build for empty scene */
-	const size_t numOriginalPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,1>();
-        if (numOriginalPrimitives == 0) {
-          prims0.clear();
-          bvh->clear();
-          return;
-        }
-
-        double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + toString(N) + "BuilderFastSpatialSAH");
-
-        /* create primref array */
-        const size_t numSplitPrimitives = max(numOriginalPrimitives,size_t(splitFactor*numOriginalPrimitives));
-        prims0.resize(numSplitPrimitives);
-        PrimInfo pinfo = mesh ? 
-          createPrimRefArray<Mesh>  (mesh ,prims0,bvh->scene->progressInterface) : 
-          createPrimRefArray<Mesh,1>(scene,prims0,bvh->scene->progressInterface);
-
-        /* primref array could be smaller due to invalid geometry */
-        const size_t numPrimitives = pinfo.size();
-
-        /* calculate total surface area */
-        const float A = (float) parallel_reduce(size_t(0),numPrimitives,0.0, [&] (const range<size_t>& r) -> double // FIXME: this sum is not deterministic
-                                                {
-                                                  double A = 0.0f;
-                                                  for (size_t i=r.begin(); i<r.end(); i++)
-                                                  {
-                                                    PrimRef& prim = prims0[i];
-                                                    A += area(prim.bounds());
-                                                  }
-                                                  return A;
-                                                },std::plus<double>());
-
-        const float f = 10.0f;
-        const float invA = 1.0f / A;
-        /* calculate maximal number of spatial splits per primitive */
-        parallel_for( size_t(0), numPrimitives, [&](const range<size_t>& r)
-                      {
-                        for (size_t i=r.begin(); i<r.end(); i++)
-                        {
-                          PrimRef& prim = prims0[i];
-                          assert((prim.lower.a & 0xFF000000) == 0);
-                          const float nf = ceilf(f*pinfo.size()*area(prim.bounds()) * invA);
-                          // FIXME: is there a better general heuristic ?
-                          size_t n = 4+min(ssize_t(127-4), max(ssize_t(1), ssize_t(nf)));
-                          prim.lower.a |= n << 24;              
-                        }
-                      });
-        
-        /* function that splits a primitive at some position and dimension */
-        auto splitPrimitivePartition = [&] (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o) {
-          QuadMesh* mesh = (QuadMesh*) scene->get(prim.geomID() & 0x00FFFFFF );  
-          QuadMesh::Quad tri = mesh->quad(prim.primID());
-          const Vec3fa& a = mesh->vertex(tri.v[0]);
-          const Vec3fa& b = mesh->vertex(tri.v[1]);
-          const Vec3fa& c = mesh->vertex(tri.v[2]);          
-          const Vec3fa& d = mesh->vertex(tri.v[3]);          
-          const Vec3fa v[4] = { a,b,c,d };
-          const vfloat4 v1(b[dim],c[dim],d[dim],a[dim]);
-          const vfloat4 v0(a[dim],b[dim],c[dim],d[dim]);
-          const vfloat4 inv_length = 1.0f / (v1-v0);
-          splitTriQuadFast<4>(prim,dim,pos,v,inv_length,left_o,right_o);
-        };
-
-        auto splitPrimitiveBinning = [&] (SpatialBinInfo<FAST_SPATIAL_BUILDER_NUM_SPATIAL_SPLITS,PrimRef> &binner, 
-                                    const PrimRef* const source, const size_t begin, const size_t end, 
-                                    const SpatialBinMapping<FAST_SPATIAL_BUILDER_NUM_SPATIAL_SPLITS> &mapping)
-          {
-            for (size_t i=begin; i<end; i++)
-            {
-              const PrimRef &prim = source[i];
-              const unsigned int splits = prim.geomID() >> 24;
-              assert(splits != 1);
-              const vint4 bin0 = mapping.bin(prim.bounds().lower);
-              const vint4 bin1 = mapping.bin(prim.bounds().upper);
-
-              for (size_t dim=0; dim<3; dim++) 
-              {
-                if (unlikely(mapping.invalid(dim))) { continue; }
-                size_t bin;
-                size_t l = bin0[dim];
-                size_t r = bin1[dim];
-
-                // same bin optimization
-                if (likely(l == r)) 
-                {
-                  binner.add(dim,l,l,l,prim.bounds());
-                  continue;
-                }
-                const size_t bin_start = bin0[dim];
-                const size_t bin_end   = bin1[dim];
-                BBox3fa rest = prim.bounds();
-                QuadMesh* mesh = (QuadMesh*) scene->get(prim.geomID() & 0x00FFFFFF );  
-                QuadMesh::Quad tri = mesh->quad(prim.primID());
-                const Vec3fa v[4] = { mesh->vertex(tri.v[0]), 
-                                      mesh->vertex(tri.v[1]), 
-                                      mesh->vertex(tri.v[2]),
-                                      mesh->vertex(tri.v[3]) };
-                const Vec3fa inv_length[4] = { 
-                  Vec3fa(1.0f) / (v[1]-v[0]),
-                  Vec3fa(1.0f) / (v[2]-v[1]),
-                  Vec3fa(1.0f) / (v[3]-v[2]),
-                  Vec3fa(1.0f) / (v[0]-v[3])
-                };
-                for (bin=bin_start; bin<bin_end; bin++) 
-                {
-                  const float pos = mapping.pos(bin+1,dim);
-                  BBox3fa left,right;
-                  splitTriQuadFast<4>(rest,dim,pos,v,inv_length,left,right);
-                  if (unlikely(left.empty())) l++;                
-                  binner.extend(dim,bin,left);
-                  rest = right;
-                }
-                if (unlikely(rest.empty())) r--;
-                binner.add(dim,l,r,bin,rest);
-              }
-            }              
-          };
-
-
-
-        /* call BVH builder */
-        bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
-        BVHNBuilderFastSpatial<N,FAST_SPATIAL_BUILDER_NUM_SPATIAL_SPLITS>::build(bvh,
-                                                                                 splitPrimitivePartition,
-                                                                                 splitPrimitiveBinning,
-                                                                                 CreateLeafSpatial<N,Primitive>(bvh,prims0.data()),
-                                                                                 bvh->scene->progressInterface,
-                                                                                 prims0.data(),
-                                                                                 numSplitPrimitives,
-                                                                                 pinfo,
-                                                                                 sahBlockSize,minLeafSize,maxLeafSize,
-                                                                                 travCost,intCost);
-        
-	/* clear temporary data for static geometry */
-	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
-	if (staticGeom) {
-          prims0.clear();
-          bvh->shrink();
-        }
-	bvh->cleanup();
-        bvh->postBuild(t0);
-      }
-
-      void clear() {
-        prims0.clear();
-      }
-    };
 
 
 #if defined(EMBREE_GEOMETRY_LINES)
     Builder* BVH4Line4iMeshBuilderSAH     (void* bvh, LineSegments* mesh, size_t mode) { return new BVHNBuilderSAH<4,LineSegments,Line4i>((BVH4*)bvh,mesh,4,1.0f,4,inf,mode); }
     Builder* BVH4Line4iSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,LineSegments,Line4i>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
-    Builder* BVH4Line4iMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMblurSAH<4,LineSegments,Line4i>((BVH4*)bvh,scene ,4,1.0f,4,inf); }
-    Builder* BVH4Line4iMBMeshBuilderSAH  (void* bvh, LineSegments* mesh, size_t mode) { return new BVHNBuilderMblurSAH<4,LineSegments,Line4i>((BVH4*)bvh,mesh ,4,1.0f,4,inf); }
+    Builder* BVH4Line4iMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMSMBlurSAH<4,LineSegments,Line4i>((BVH4*)bvh,scene ,4,1.0f,4,inf); }
 #if defined(__AVX__)
     Builder* BVH8Line4iSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<8,LineSegments,Line4i>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
-    Builder* BVH8Line4iMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMblurSAH<8,LineSegments,Line4i>((BVH8*)bvh,scene,4,1.0f,4,inf); }
+    Builder* BVH8Line4iMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMSMBlurSAH<8,LineSegments,Line4i>((BVH8*)bvh,scene,4,1.0f,4,inf); }
 #endif
 #endif
 
@@ -903,19 +656,12 @@ namespace embree
     Builder* BVH4Triangle4vSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,TriangleMesh,Triangle4v>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
     Builder* BVH4Triangle4iSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,TriangleMesh,Triangle4i>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
 
-    Builder* BVH4Triangle4vMBMeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVHNBuilderMblurSAH<4,TriangleMesh,Triangle4vMB>((BVH4*)bvh,mesh ,4,1.0f,4,inf); }
-    Builder* BVH4Triangle4vMBSceneBuilderSAH (void* bvh, Scene* scene,       size_t mode) { return new BVHNBuilderMblurSAH<4,TriangleMesh,Triangle4vMB>((BVH4*)bvh,scene,4,1.0f,4,inf); }
-    Builder* BVH4Triangle4iMBMeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVHNBuilderMblurSAH<4,TriangleMesh,Triangle4iMB>((BVH4*)bvh,mesh ,4,1.0f,4,inf); }
-    Builder* BVH4Triangle4iMBSceneBuilderSAH (void* bvh, Scene* scene,       size_t mode) { return new BVHNBuilderMblurSAH<4,TriangleMesh,Triangle4iMB>((BVH4*)bvh,scene,4,1.0f,4,inf); }
+    Builder* BVH4Triangle4vMBSceneBuilderSAH (void* bvh, Scene* scene,       size_t mode) { return new BVHNBuilderMSMBlurSAH<4,TriangleMesh,Triangle4vMB>((BVH4*)bvh,scene,4,1.0f,4,inf); }
+    Builder* BVH4Triangle4iMBSceneBuilderSAH (void* bvh, Scene* scene,       size_t mode) { return new BVHNBuilderMSMBlurSAH<4,TriangleMesh,Triangle4iMB>((BVH4*)bvh,scene,4,1.0f,4,inf); }
 
-    Builder* BVH4Triangle4SceneBuilderSpatialSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSpatialSAH<4,TriangleMesh,Triangle4>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
-    Builder* BVH4Triangle4vSceneBuilderSpatialSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSpatialSAH<4,TriangleMesh,Triangle4v>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
-    Builder* BVH4Triangle4iSceneBuilderSpatialSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSpatialSAH<4,TriangleMesh,Triangle4i>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
-
-
-    Builder* BVH4Triangle4SceneBuilderFastSpatialSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderFastSpatialSAH<4,TriangleMesh,Triangle4>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
-    Builder* BVH4Triangle4vSceneBuilderFastSpatialSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderFastSpatialSAH<4,TriangleMesh,Triangle4v>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
-    Builder* BVH4Triangle4iSceneBuilderFastSpatialSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderFastSpatialSAH<4,TriangleMesh,Triangle4i>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
+    Builder* BVH4Triangle4SceneBuilderFastSpatialSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderFastSpatialSAH<4,TriangleMesh,Triangle4,TriangleSplitterFactory>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
+    Builder* BVH4Triangle4vSceneBuilderFastSpatialSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderFastSpatialSAH<4,TriangleMesh,Triangle4v,TriangleSplitterFactory>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
+    Builder* BVH4Triangle4iSceneBuilderFastSpatialSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderFastSpatialSAH<4,TriangleMesh,Triangle4i,TriangleSplitterFactory>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
 
 
     Builder* BVH4QuantizedTriangle4iSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHQuantized<4,TriangleMesh,Triangle4i>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
@@ -927,15 +673,14 @@ namespace embree
     Builder* BVH8Triangle4SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<8,TriangleMesh,Triangle4>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
     Builder* BVH8Triangle4vSceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<8,TriangleMesh,Triangle4v>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
     Builder* BVH8Triangle4iSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<8,TriangleMesh,Triangle4i>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
-    Builder* BVH8Triangle4vMBMeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVHNBuilderMblurSAH<8,TriangleMesh,Triangle4vMB>((BVH8*)bvh,mesh ,4,1.0f,4,inf); }
-    Builder* BVH8Triangle4vMBSceneBuilderSAH (void* bvh, Scene* scene,       size_t mode) { return new BVHNBuilderMblurSAH<8,TriangleMesh,Triangle4vMB>((BVH8*)bvh,scene,4,1.0f,4,inf); }
-    Builder* BVH8Triangle4iMBMeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVHNBuilderMblurSAH<8,TriangleMesh,Triangle4iMB>((BVH8*)bvh,mesh ,4,1.0f,4,inf); }
-    Builder* BVH8Triangle4iMBSceneBuilderSAH (void* bvh, Scene* scene,       size_t mode) { return new BVHNBuilderMblurSAH<8,TriangleMesh,Triangle4iMB>((BVH8*)bvh,scene,4,1.0f,4,inf); }
-    Builder* BVH8Triangle4SceneBuilderSpatialSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSpatialSAH<8,TriangleMesh,Triangle4>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
+    Builder* BVH8Triangle4vMBSceneBuilderSAH (void* bvh, Scene* scene,       size_t mode) { return new BVHNBuilderMSMBlurSAH<8,TriangleMesh,Triangle4vMB>((BVH8*)bvh,scene,4,1.0f,4,inf); }
+    Builder* BVH8Triangle4iMBSceneBuilderSAH (void* bvh, Scene* scene,       size_t mode) { return new BVHNBuilderMSMBlurSAH<8,TriangleMesh,Triangle4iMB>((BVH8*)bvh,scene,4,1.0f,4,inf); }
     Builder* BVH8QuantizedTriangle4iSceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHQuantized<8,TriangleMesh,Triangle4i>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
+    Builder* BVH8Triangle4SceneBuilderFastSpatialSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderFastSpatialSAH<8,TriangleMesh,Triangle4,TriangleSplitterFactory>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
+    Builder* BVH8Triangle4vSceneBuilderFastSpatialSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderFastSpatialSAH<8,TriangleMesh,Triangle4v,TriangleSplitterFactory>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
 
-    /* new fast spatial split builder */
-    Builder* BVH8Triangle4SceneBuilderFastSpatialSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderFastSpatialSAH<8,TriangleMesh,Triangle4>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
+    /* experimental full sweep builder */
+    Builder* BVH8Triangle4SceneBuilderSweepSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSweepSAH<8,TriangleMesh,Triangle4>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
 
 #endif
 #endif
@@ -945,24 +690,19 @@ namespace embree
     Builder* BVH4Quad4iMeshBuilderSAH     (void* bvh, QuadMesh* mesh, size_t mode)     { return new BVHNBuilderSAH<4,QuadMesh,Quad4i>((BVH4*)bvh,mesh,4,1.0f,4,inf,mode); }
     Builder* BVH4Quad4vSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,QuadMesh,Quad4v>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
     Builder* BVH4Quad4iSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,QuadMesh,Quad4i>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
-    Builder* BVH4Quad4iMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMblurSAH<4,QuadMesh,Quad4iMB>((BVH4*)bvh,scene ,4,1.0f,4,inf); }
-    Builder* BVH4Quad4iMBMeshBuilderSAH  (void* bvh, QuadMesh* mesh, size_t mode) { return new BVHNBuilderMblurSAH<4,QuadMesh,Quad4iMB>((BVH4*)bvh,mesh ,4,1.0f,4,inf); }
+    Builder* BVH4Quad4iMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMSMBlurSAH<4,QuadMesh,Quad4iMB>((BVH4*)bvh,scene ,4,1.0f,4,inf); }
     Builder* BVH4QuantizedQuad4vSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHQuantized<4,QuadMesh,Quad4v>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
     Builder* BVH4QuantizedQuad4iSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHQuantized<4,QuadMesh,Quad4i>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
-
-    /* new fast spatial split builder */
-    Builder* BVH4Quad4vSceneBuilderFastSpatialSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderQuadFastSpatialSAH<4,QuadMesh,Quad4v>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
+    Builder* BVH4Quad4vSceneBuilderFastSpatialSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderFastSpatialSAH<4,QuadMesh,Quad4v,QuadSplitterFactory>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
 
 #if defined(__AVX__)
     Builder* BVH8Quad4vSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<8,QuadMesh,Quad4v>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
     Builder* BVH8Quad4iSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<8,QuadMesh,Quad4i>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
-    Builder* BVH8Quad4iMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMblurSAH<8,QuadMesh,Quad4iMB>((BVH8*)bvh,scene,4,1.0f,4,inf); }
+    Builder* BVH8Quad4iMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMSMBlurSAH<8,QuadMesh,Quad4iMB>((BVH8*)bvh,scene,4,1.0f,4,inf); }
     Builder* BVH8QuantizedQuad4vSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHQuantized<8,QuadMesh,Quad4v>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
     Builder* BVH8QuantizedQuad4iSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHQuantized<8,QuadMesh,Quad4i>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
     Builder* BVH8Quad4vMeshBuilderSAH     (void* bvh, QuadMesh* mesh, size_t mode)     { return new BVHNBuilderSAH<8,QuadMesh,Quad4v>((BVH8*)bvh,mesh,4,1.0f,4,inf,mode); }
-
-    /* new fast spatial split builder */
-    Builder* BVH8Quad4vSceneBuilderFastSpatialSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderQuadFastSpatialSAH<8,QuadMesh,Quad4v>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
+    Builder* BVH8Quad4vSceneBuilderFastSpatialSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderFastSpatialSAH<8,QuadMesh,Quad4v,QuadSplitterFactory>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
 
 #endif
 #endif
@@ -978,7 +718,7 @@ namespace embree
     Builder* BVH4VirtualMBSceneBuilderSAH    (void* bvh, Scene* scene, size_t mode) {
       int minLeafSize = scene->device->object_accel_mb_min_leaf_size;
       int maxLeafSize = scene->device->object_accel_mb_max_leaf_size;
-      return new BVHNBuilderMblurSAH<4,AccelSet,Object>((BVH4*)bvh,scene,4,1.0f,minLeafSize,maxLeafSize);
+      return new BVHNBuilderMSMBlurSAH<4,AccelSet,Object>((BVH4*)bvh,scene,4,1.0f,minLeafSize,maxLeafSize);
     }
 #endif
   }

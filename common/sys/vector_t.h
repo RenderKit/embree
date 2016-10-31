@@ -21,8 +21,9 @@ namespace embree
     {
     public:
       typedef T value_type;
+      typedef T* iterator;
+      typedef const T* const_iterator;
     
-
 #if defined(VECTOR_INIT_ALLOCATOR)
     template<typename M>
     vector_t (M alloc) 
@@ -30,14 +31,14 @@ namespace embree
 
     template<typename M>
     vector_t (M alloc, size_t sz) 
-      : alloc(alloc), size_active(0), size_alloced(0), items(nullptr) { resize(sz); }
+      : alloc(alloc), size_active(0), size_alloced(0), items(nullptr) { internal_resize_init(sz); }
 
 #else
       vector_t () 
         : size_active(0), size_alloced(0), items(nullptr) {}
     
-      vector_t (size_t sz) 
-        : size_active(0), size_alloced(0), items(nullptr) { resize(sz); }
+      explicit vector_t (size_t sz) 
+        : size_active(0), size_alloced(0), items(nullptr) { internal_resize_init(sz); }
 #endif
       
       ~vector_t() {
@@ -77,9 +78,12 @@ namespace embree
       }
 
       /********************** Iterators  ****************************/
+    
+      __forceinline       iterator begin()       { return items; };
+      __forceinline const_iterator begin() const { return items; };
 
-      __forceinline T* begin() const { return items; };
-      __forceinline T* end  () const { return items+size_active; };
+      __forceinline       iterator end  ()       { return items+size_active; };
+      __forceinline const_iterator end  () const { return items+size_active; };
 
 
       /********************** Capacity ****************************/
@@ -164,6 +168,18 @@ namespace embree
 
     private:
 
+      void internal_resize_init(size_t new_active)
+      {
+        assert(size_active == 0); 
+        assert(size_alloced == 0);
+        assert(items == nullptr);
+        if (new_active == 0) return;
+        items = alloc.allocate(new_active);
+        for (size_t i=0; i<new_active; i++) ::new (&items[i]) T();
+        size_active = new_active;
+        size_alloced = new_active;
+      }
+
       void internal_resize(size_t new_active, size_t new_alloced)
       {
         assert(new_active <= new_alloced); 
@@ -182,7 +198,8 @@ namespace embree
         /* reallocate and copy items */
         T* old_items = items;
         items = alloc.allocate(new_alloced);
-        for (size_t i=0; i<size_copy; i++) items[i] = old_items[i];
+        for (size_t i=0; i<size_copy; i++) items[i] = std::move(old_items[i]);
+        for (size_t i=size_copy; i<size_active; i++) ::new (&items[i]) T;
         alloc.deallocate(old_items,size_alloced);
         size_alloced = new_alloced;
       }

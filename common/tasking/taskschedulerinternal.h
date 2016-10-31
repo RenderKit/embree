@@ -24,7 +24,7 @@
 #include "../sys/condition.h"
 #include "../sys/ref.h"
 #include "../sys/atomic.h"
-#include "../../kernels/algorithms/range.h"
+#include "../math/range.h"
 
 #include <list>
 
@@ -65,25 +65,6 @@ namespace embree
       Closure closure;
       __forceinline ClosureTaskFunction (const Closure& closure) : closure(closure) {}
       void execute() { closure(); };
-    };
-
-    /*! virtual interface for all tasks */
-    struct TaskSetFunction 
-    {
-      __forceinline TaskSetFunction(size_t begin, size_t end, size_t blockSize) 
-        : begin(begin), end(end), blockSize(blockSize) {}
-      virtual void execute(const range<size_t>& r) = 0;
-      size_t begin,end,blockSize;
-    };
-
-    /*! builds a task interface from a closure */
-    template<typename Closure>
-    struct ClosureTaskSetFunction : public TaskSetFunction
-    {
-      Closure closure;
-      __forceinline ClosureTaskSetFunction (const Closure& closure, size_t begin, size_t end, size_t blockSize) 
-        : closure(closure), TaskSetFunction(begin,end,blockSize) {}
-      void execute(const range<size_t>& r) { closure(r); };
     };
 
     struct __aligned(64) Task 
@@ -253,7 +234,7 @@ namespace embree
     ~TaskScheduler ();
 
     /*! initializes the task scheduler */
-    static void create(size_t numThreads, bool set_affinity);
+    static void create(size_t numThreads, bool set_affinity, bool start_threads);
 
     /*! destroys the task scheduler again */
     static void destroy();
@@ -279,8 +260,7 @@ namespace embree
 
     /* spawn a new task at the top of the threads task stack */
     template<typename Closure>
-    __noinline void spawn_root(const Closure& closure, size_t size = 1, bool useThreadPool = true) 
-    // important: has to be noinline as it allocates large thread structure on stack
+      void spawn_root(const Closure& closure, size_t size = 1, bool useThreadPool = true) 
     {
       if (useThreadPool) startThreads();
       
@@ -337,15 +317,15 @@ namespace embree
     }
 
     /* spawn a new task set  */
-    template<typename Closure>
-    static void spawn(const size_t begin, const size_t end, const size_t blockSize, const Closure& closure) 
+    template<typename Index, typename Closure>
+    static void spawn(const Index begin, const Index end, const Index blockSize, const Closure& closure) 
     {
       spawn(end-begin, [=,&closure]() 
         {
 	  if (end-begin <= blockSize) {
-	    return closure(range<size_t>(begin,end));
+	    return closure(range<Index>(begin,end));
 	  }
-	  const size_t center = (begin+end)/2;
+	  const Index center = (begin+end)/2;
 	  spawn(begin,center,blockSize,closure);
 	  spawn(center,end  ,blockSize,closure);
 	  wait();

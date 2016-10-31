@@ -56,11 +56,13 @@ namespace embree
           const vfloat<M> U = dot(cross(v2+v0,e0),D);
           const vfloat<M> V = dot(cross(v0+v1,e1),D);
           const vfloat<M> W = dot(cross(v1+v2,e2),D);
-          const vfloat<M> minUVW = min(U,V,W);
+#if defined(EMBREE_BACKFACE_CULLING)
           const vfloat<M> maxUVW = max(U,V,W);
           vbool<M> valid = maxUVW <= 0.0f;
-#if !defined(EMBREE_BACKFACE_CULLING)
-          valid |= minUVW >= 0.0f;
+#else
+          const vfloat<M> minUVW = min(U,V,W);
+          const vfloat<M> maxUVW = max(U,V,W);
+          vbool<M> valid = (maxUVW <= 0.0f) | (minUVW >= 0.0f);
 #endif
           if (unlikely(none(valid))) return false;
           
@@ -98,18 +100,18 @@ namespace embree
 
       __forceinline void intersect(Ray& ray, IntersectContext* context,
                                    const Vec3<vfloat<M>>& v0, const Vec3<vfloat<M>>& v1, const Vec3<vfloat<M>>& v2, const Vec3<vfloat<M>>& v3, 
-                                   const vint<M>& geomID, const vint<M>& primID, Scene* scene, const unsigned* geomID_to_instID) const
+                                   const vint<M>& geomID, const vint<M>& primID) const
       {
-        Intersect1EpilogM<M,M,filter> epilog(ray,context,geomID,primID,scene,geomID_to_instID);
+        Intersect1EpilogM<M,M,filter> epilog(ray,context,geomID,primID);
         PlueckerIntersectorTriangle1::intersect(ray,v0,v1,v3,vbool<M>(false),epilog);
         PlueckerIntersectorTriangle1::intersect(ray,v2,v3,v1,vbool<M>(true),epilog);
       }
       
       __forceinline bool occluded(Ray& ray, IntersectContext* context,
                                   const Vec3<vfloat<M>>& v0, const Vec3<vfloat<M>>& v1, const Vec3<vfloat<M>>& v2, const Vec3<vfloat<M>>& v3, 
-                                  const vint<M>& geomID, const vint<M>& primID, Scene* scene, const unsigned* geomID_to_instID) const
+                                  const vint<M>& geomID, const vint<M>& primID) const
       {
-        Occluded1EpilogM<M,M,filter> epilog(ray,context,geomID,primID,scene,geomID_to_instID);
+        Occluded1EpilogM<M,M,filter> epilog(ray,context,geomID,primID);
         if (PlueckerIntersectorTriangle1::intersect(ray,v0,v1,v3,vbool<M>(false),epilog)) return true;
         if (PlueckerIntersectorTriangle1::intersect(ray,v2,v3,v1,vbool<M>(true ),epilog)) return true;
         return false;
@@ -149,16 +151,16 @@ namespace embree
       
       __forceinline bool intersect(Ray& ray, IntersectContext* context,
                                    const Vec3vf4& v0, const Vec3vf4& v1, const Vec3vf4& v2, const Vec3vf4& v3, 
-                                   const vint4& geomID, const vint4& primID, Scene* scene, const unsigned* geomID_to_instID) const
+                                   const vint4& geomID, const vint4& primID) const
       {
-        return intersect(ray,v0,v1,v2,v3,Intersect1EpilogM<8,16,filter>(ray,context,vint8(geomID),vint8(primID),scene,geomID_to_instID));
+        return intersect(ray,v0,v1,v2,v3,Intersect1EpilogM<8,16,filter>(ray,context,vint8(geomID),vint8(primID)));
       }
       
       __forceinline bool occluded(Ray& ray, IntersectContext* context,
                                   const Vec3vf4& v0, const Vec3vf4& v1, const Vec3vf4& v2, const Vec3vf4& v3, 
-                                  const vint4& geomID, const vint4& primID, Scene* scene, const unsigned* geomID_to_instID) const
+                                  const vint4& geomID, const vint4& primID) const
       {
-        return intersect(ray,v0,v1,v2,v3,Occluded1EpilogM<8,16,filter>(ray,context,vint8(geomID),vint8(primID),scene,geomID_to_instID));
+        return intersect(ray,v0,v1,v2,v3,Occluded1EpilogM<8,16,filter>(ray,context,vint8(geomID),vint8(primID)));
       }
     };
 
@@ -188,15 +190,15 @@ namespace embree
       }
       
       __forceinline bool intersect(Ray& ray, IntersectContext* context, const Vec3vf4& v0, const Vec3vf4& v1, const Vec3vf4& v2, const Vec3vf4& v3, 
-                                   const vint4& geomID, const vint4& primID, Scene* scene, const unsigned* geomID_to_instID) const
+                                   const vint4& geomID, const vint4& primID) const
       {
-        return intersect(ray,v0,v1,v2,v3,Intersect1EpilogM<8,8,filter>(ray,context,vint8(geomID),vint8(primID),scene,geomID_to_instID));
+        return intersect(ray,v0,v1,v2,v3,Intersect1EpilogM<8,8,filter>(ray,context,vint8(geomID),vint8(primID)));
       }
       
       __forceinline bool occluded(Ray& ray, IntersectContext* context, const Vec3vf4& v0, const Vec3vf4& v1, const Vec3vf4& v2, const Vec3vf4& v3, 
-                                  const vint4& geomID, const vint4& primID, Scene* scene, const unsigned* geomID_to_instID) const
+                                  const vint4& geomID, const vint4& primID) const
       {
-        return intersect(ray,v0,v1,v2,v3,Occluded1EpilogM<8,8,filter>(ray,context,vint8(geomID),vint8(primID),scene,geomID_to_instID));
+        return intersect(ray,v0,v1,v2,v3,Occluded1EpilogM<8,8,filter>(ray,context,vint8(geomID),vint8(primID)));
       }
     };
 
@@ -237,7 +239,7 @@ namespace embree
           const vfloat<M> U = dot(cross(v2+v0,e0),D);
           const vfloat<M> V = dot(cross(v0+v1,e1),D);
           const vfloat<M> W = dot(cross(v1+v2,e2),D);
-          const vfloat<M> minUVW = min(U,V,W);
+          const vfloat<M> minUVW MAYBE_UNUSED = min(U,V,W);
           const vfloat<M> maxUVW = max(U,V,W);
 #if defined(EMBREE_BACKFACE_CULLING)
           vbool<M> valid = maxUVW <= 0.0f;
@@ -303,12 +305,13 @@ namespace embree
           const vfloat<K> U = dot(Vec3vfK(cross(v2+v0,e0)),D);
           const vfloat<K> V = dot(Vec3vfK(cross(v0+v1,e1)),D);
           const vfloat<K> W = dot(Vec3vfK(cross(v1+v2,e2)),D);
-          const vfloat<K> minUVW = min(U,V,W);
-          const vfloat<K> maxUVW = max(U,V,W);
 #if defined(EMBREE_BACKFACE_CULLING)
+          const vfloat<K> maxUVW = max(U,V,W);
           valid &= maxUVW <= 0.0f;
 #else
-          valid &= (minUVW >= 0.0f) | (maxUVW <= 0.0f);
+          const vfloat<K> minUVW = min(U,V,W);
+          const vfloat<K> maxUVW = max(U,V,W);
+          valid &= (maxUVW <= 0.0f) | (minUVW >= 0.0f);
 #endif
           if (unlikely(none(valid))) return false;
           
@@ -360,18 +363,18 @@ namespace embree
 
       __forceinline void intersect1(RayK<K>& ray, size_t k, IntersectContext* context,
                                     const Vec3<vfloat<M>>& v0, const Vec3<vfloat<M>>& v1, const Vec3<vfloat<M>>& v2, const Vec3<vfloat<M>>& v3, 
-                                    const vint<M>& geomID, const vint<M>& primID, Scene* scene) const
+                                    const vint<M>& geomID, const vint<M>& primID) const
       {
-        Intersect1KEpilogM<M,M,K,filter> epilog(ray,k,context,geomID,primID,scene);
+        Intersect1KEpilogM<M,M,K,filter> epilog(ray,k,context,geomID,primID);
         PlueckerIntersector1KTriangleM::intersect1(ray,k,v0,v1,v3,vbool<M>(false),epilog);
         PlueckerIntersector1KTriangleM::intersect1(ray,k,v2,v3,v1,vbool<M>(true ),epilog);
       }
       
       __forceinline bool occluded1(RayK<K>& ray, size_t k, IntersectContext* context,
                                    const Vec3<vfloat<M>>& v0, const Vec3<vfloat<M>>& v1, const Vec3<vfloat<M>>& v2, const Vec3<vfloat<M>>& v3, 
-                                   const vint<M>& geomID, const vint<M>& primID, Scene* scene) const
+                                   const vint<M>& geomID, const vint<M>& primID) const
       {
-        Occluded1KEpilogM<M,M,K,filter> epilog(ray,k,context,geomID,primID,scene);
+        Occluded1KEpilogM<M,M,K,filter> epilog(ray,k,context,geomID,primID);
         if (PlueckerIntersector1KTriangleM::intersect1(ray,k,v0,v1,v3,vbool<M>(false),epilog)) return true;
         if (PlueckerIntersector1KTriangleM::intersect1(ray,k,v2,v3,v1,vbool<M>(true ),epilog)) return true;
         return false;
@@ -411,16 +414,16 @@ namespace embree
       
       __forceinline bool intersect1(RayK<K>& ray, size_t k, IntersectContext* context, 
                                     const Vec3vf4& v0, const Vec3vf4& v1, const Vec3vf4& v2, const Vec3vf4& v3, 
-                                    const vint4& geomID, const vint4& primID, Scene* scene) const
+                                    const vint4& geomID, const vint4& primID) const
       {
-        return intersect1(ray,k,v0,v1,v2,v3,Intersect1KEpilogM<8,16,K,filter>(ray,k,context,vint8(geomID),vint8(primID),scene));
+        return intersect1(ray,k,v0,v1,v2,v3,Intersect1KEpilogM<8,16,K,filter>(ray,k,context,vint8(geomID),vint8(primID)));
       }
       
       __forceinline bool occluded1(RayK<K>& ray, size_t k, IntersectContext* context,
                                    const Vec3vf4& v0, const Vec3vf4& v1, const Vec3vf4& v2, const Vec3vf4& v3, 
-                                   const vint4& geomID, const vint4& primID, Scene* scene) const
+                                   const vint4& geomID, const vint4& primID) const
       {
-        return intersect1(ray,k,v0,v1,v2,v3,Occluded1KEpilogM<8,16,K,filter>(ray,k,context,vint8(geomID),vint8(primID),scene));
+        return intersect1(ray,k,v0,v1,v2,v3,Occluded1KEpilogM<8,16,K,filter>(ray,k,context,vint8(geomID),vint8(primID)));
       }
     };
 
@@ -450,16 +453,16 @@ namespace embree
       
       __forceinline bool intersect1(RayK<K>& ray, size_t k, IntersectContext* context,
                                     const Vec3vf4& v0, const Vec3vf4& v1, const Vec3vf4& v2, const Vec3vf4& v3, 
-                                    const vint4& geomID, const vint4& primID, Scene* scene) const
+                                    const vint4& geomID, const vint4& primID) const
       {
-        return intersect1(ray,k,v0,v1,v2,v3,Intersect1KEpilogM<8,8,K,filter>(ray,k,context,vint8(geomID),vint8(primID),scene));
+        return intersect1(ray,k,v0,v1,v2,v3,Intersect1KEpilogM<8,8,K,filter>(ray,k,context,vint8(geomID),vint8(primID)));
       }
       
       __forceinline bool occluded1(RayK<K>& ray, size_t k, IntersectContext* context,
                                    const Vec3vf4& v0, const Vec3vf4& v1, const Vec3vf4& v2, const Vec3vf4& v3, 
-                                   const vint4& geomID, const vint4& primID, Scene* scene) const
+                                   const vint4& geomID, const vint4& primID) const
       {
-        return intersect1(ray,k,v0,v1,v2,v3,Occluded1KEpilogM<8,8,K,filter>(ray,k,context,vint8(geomID),vint8(primID),scene));
+        return intersect1(ray,k,v0,v1,v2,v3,Occluded1KEpilogM<8,8,K,filter>(ray,k,context,vint8(geomID),vint8(primID)));
       }
     };
 

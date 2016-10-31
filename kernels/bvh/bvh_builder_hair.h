@@ -18,6 +18,7 @@
 
 #include "bvh.h"
 #include "../geometry/primitive.h"
+#include "../builders/bvh_builder_sah.h"
 #include "../builders/heuristic_binning_array_aligned.h"
 #include "../builders/heuristic_binning_array_unaligned.h"
 #include "../builders/heuristic_strand_array.h"
@@ -40,6 +41,7 @@ namespace embree
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
       typedef FastAllocator::ThreadLocal2* Allocator;
+      typedef HeuristicArrayBinningSAH<BezierPrim,NUM_OBJECT_BINS> HeuristicBinningSAH;
 
       static const size_t MAX_BRANCHING_FACTOR = 16;         //!< maximal supported BVH branching factor
       static const size_t MIN_LARGE_LEAF_LEVELS = 8;         //!< create balanced tree if we are that many levels before the maximal tree depth
@@ -139,7 +141,7 @@ namespace embree
         
         /* perform standard binning in aligned space */
         float alignedObjectSAH = inf;
-        HeuristicArrayBinningSAH<BezierPrim>::Split alignedObjectSplit;
+        HeuristicBinningSAH::Split alignedObjectSplit;
         alignedObjectSplit = alignedHeuristic.find(pinfo,0);
         alignedObjectSAH = travCostAligned*halfArea(pinfo.geomBounds) + intCost*alignedObjectSplit.splitSAH();
         bestSAH = min(alignedObjectSAH,bestSAH);
@@ -308,7 +310,7 @@ namespace embree
       const size_t maxLeafSize;
   
     private:
-      HeuristicArrayBinningSAH<BezierPrim> alignedHeuristic;
+      HeuristicBinningSAH alignedHeuristic;
       UnalignedHeuristicArrayBinningSAH<BezierPrim> unalignedHeuristic;
       HeuristicStrandSplit strandHeuristic;
     };

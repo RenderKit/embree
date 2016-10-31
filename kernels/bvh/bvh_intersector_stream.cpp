@@ -18,23 +18,22 @@
 #include "bvh_intersector_single.h"
 #include "bvh_intersector_node.h"
 
-#include "../geometry/triangle.h"
-#include "../geometry/trianglev.h"
-#include "../geometry/trianglev_mb.h"
-#include "../geometry/trianglei.h"
-#include "../geometry/trianglei_mb.h"
 #include "../geometry/intersector_iterators.h"
+#include "../geometry/triangle_intersector.h"
+#include "../geometry/trianglev_intersector.h"
+#include "../geometry/trianglev_mb_intersector.h"
+#include "../geometry/trianglei_intersector.h"
+#include "../geometry/trianglei_mb_intersector.h"
+#include "../geometry/quadv_intersector.h"
+#include "../geometry/quadi_intersector.h"
+#include "../geometry/quadi_mb_intersector.h"
 #include "../geometry/bezier1v_intersector.h"
 #include "../geometry/bezier1i_intersector.h"
 #include "../geometry/linei_intersector.h"
-#include "../geometry/triangle_intersector_moeller.h"
-#include "../geometry/triangle_intersector_pluecker.h"
-#include "../geometry/trianglei_intersector_pluecker.h"
-#include "../geometry/subdivpatch1cached_intersector1.h"
-#include "../geometry/object_intersector1.h"
-#include "../geometry/quadv_intersector_moeller.h"
-#include "../geometry/quadi_intersector_moeller.h"
-#include "../geometry/quadi_intersector_pluecker.h"
+#include "../geometry/subdivpatch1eager_intersector.h"
+#include "../geometry/subdivpatch1cached_intersector.h"
+#include "../geometry/object_intersector.h"
+
 #include "../common/scene.h"
 #include <bitset>
 
@@ -63,7 +62,7 @@ namespace embree
 
 #if defined(__AVX512F__)
     template<int N, bool dist_update, bool robust>
-    __forceinline vbool<N*2> intersectNode(const RayContext<robust>& ctx,
+    __forceinline vbool<N*2> intersectAlignedNode(const RayContext<robust>& ctx,
                                            const vfloat<N*2>& bminmaxX,
                                            const vfloat<N*2>& bminmaxY,
                                            const vfloat<N*2>& bminmaxZ,
@@ -98,7 +97,7 @@ namespace embree
 #endif
 
     template<int N, int Nx, bool dist_update, bool robust>
-    __forceinline vbool<Nx> intersectNode(const RayContext<robust>& ctx,
+    __forceinline vbool<Nx> intersectAlignedNode(const RayContext<robust>& ctx,
                                           const vfloat<Nx>& bminX,
                                           const vfloat<Nx>& bminY,
                                           const vfloat<Nx>& bminZ,
@@ -243,7 +242,6 @@ namespace embree
       __aligned(64) Frusta frusta;
 
       const size_t m_active = initPacketsAndFrusta(inputPackets, numOctantRays, packet, frusta);
-
       if (unlikely(m_active == 0)) return; 
 
       stack[0].mask    = m_active;
@@ -275,7 +273,7 @@ namespace embree
         if (unlikely(stackPtr->parent != 0 && cur.isLeaf()))
         {
           NodeRef parent = NodeRef(stackPtr->parent);
-          const Node* __restrict__ const node = parent.node();
+          const AlignedNode* __restrict__ const node = parent.alignedNode();
           const size_t b = stackPtr->childID;
           char *ptr = (char*)&node->lower_x + b*sizeof(float);
           assert(cur == node->child(b));
@@ -287,14 +285,14 @@ namespace embree
           const vfloat<K> maxY = vfloat<K>(*(const float*)((const char*)ptr + pc.farY));
           const vfloat<K> maxZ = vfloat<K>(*(const float*)((const char*)ptr + pc.farZ));
 
-          m_trav_active = intersectNodePacket(packet, minX, minY, minZ, maxX, maxY, maxZ, m_trav_active);
+          m_trav_active = intersectAlignedNodePacket(packet, minX, minY, minZ, maxX, maxY, maxZ, m_trav_active);
           if (m_trav_active == 0) goto pop;
         }
 
         while (1)
         {
           if (unlikely(cur.isLeaf())) break;
-          const Node* __restrict__ const node = cur.node();
+          const AlignedNode* __restrict__ const node = cur.alignedNode();
 
           __aligned(64) size_t maskK[N];
           for (size_t i = 0; i < N; i++) maskK[i] = m_trav_active;
@@ -324,7 +322,7 @@ namespace embree
           bits &= ~m_isec;
 
           vbool<K> m_valid = (inputPackets[i]->tnear <= inputPackets[i]->tfar);
-          PrimitiveIntersector::intersectChunk(m_valid, *inputPackets[i], context, prim, num, bvh->scene, lazy_node);
+          PrimitiveIntersector::intersectK(m_valid, *inputPackets[i], context, prim, num, lazy_node);
           Packet &p = packet[i]; 
           p.max_dist = min(p.max_dist, inputPackets[i]->tfar);
         } while(bits);
@@ -380,7 +378,7 @@ namespace embree
         if (unlikely(stackPtr->parent != 0 && cur.isLeaf()))
         {
           NodeRef parent = NodeRef(stackPtr->parent);
-          const Node* __restrict__ const node = parent.node();
+          const AlignedNode* __restrict__ const node = parent.alignedNode();
           const size_t b   = stackPtr->childID;
           char *ptr = (char*)&node->lower_x + b*sizeof(float);
           assert(cur == node->child(b));
@@ -392,7 +390,7 @@ namespace embree
           const vfloat<K> maxY = vfloat<K>(*(const float*)((const char*)ptr + pc.farY));
           const vfloat<K> maxZ = vfloat<K>(*(const float*)((const char*)ptr + pc.farZ));
           
-          m_trav_active = intersectNodePacket(packet, minX, minY, minZ, maxX, maxY, maxZ, m_trav_active);
+          m_trav_active = intersectAlignedNodePacket(packet, minX, minY, minZ, maxX, maxY, maxZ, m_trav_active);
 
           if (m_trav_active == 0) goto pop;
         }
@@ -400,7 +398,7 @@ namespace embree
         while (1)
         {
           if (unlikely(cur.isLeaf())) break;
-          const Node* __restrict__ const node = cur.node();
+          const AlignedNode* __restrict__ const node = cur.alignedNode();
 
           __aligned(64) size_t maskK[N];
           for (size_t i = 0; i < N; i++) maskK[i] = m_trav_active;
@@ -431,7 +429,7 @@ namespace embree
           bits &= ~m_isec;
 
           vbool<K> m_valid = (inputPackets[i]->tnear <= inputPackets[i]->tfar);
-          vbool<K> m_hit = PrimitiveIntersector::occludedChunk(m_valid, *inputPackets[i], context, prim, num, bvh->scene, lazy_node);
+          vbool<K> m_hit = PrimitiveIntersector::occludedK(m_valid, *inputPackets[i], context, prim, num, lazy_node);
           inputPackets[i]->geomID = select(m_hit, vint<K>(zero), inputPackets[i]->geomID);
           m_active &= ~((size_t)movemask(m_hit) << (i*K));
         } 
@@ -451,7 +449,7 @@ namespace embree
       __aligned(64) StackItemMask stack[stackSizeSingle];  //!< stack of nodes
 
 #if ENABLE_COHERENT_STREAM_PATH == 1 
-      if (unlikely(PrimitiveIntersector::validChunkIntersector && !robust && isCoherent(context->context->flags)))
+      if (unlikely(PrimitiveIntersector::validIntersectorK && !robust && isCoherent(context->user->flags)))
       {
         /* AOS to SOA conversion */
         RayK<K> rayK[MAX_RAYS / K];
@@ -488,7 +486,7 @@ namespace embree
         /* do per ray precalculations */
         for (size_t i = 0; i < numOctantRays; i++) {
           new (&ray_ctx[i]) RayCtx(rays[i]);
-          new (&pre[i]) Precalculations(*rays[i], bvh);
+          new (&pre[i]) Precalculations(*rays[i], bvh, bvh->numTimeSteps);
         }
 
         stack[0].ptr  = BVH::invalidNode;
@@ -521,7 +519,7 @@ namespace embree
           while (1)
           {
             if (unlikely(cur.isLeaf())) break;
-            const Node* __restrict__ const node = cur.node();
+            const AlignedNode* __restrict__ const node = cur.alignedNode();
             //STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);
             assert(m_trav_active);
 
@@ -543,7 +541,7 @@ namespace embree
               const RayCtx& ray = ray_ctx[i];
               const vlong<N> bitmask = one << vlong<N>(i);
 
-              const vbool<N*2> vmask = intersectNode<N, true, robust>(ray, bminmaxX, bminmaxY, bminmaxZ, dist);
+              const vbool<N*2> vmask = intersectAlignedNode<N, true, robust>(ray, bminmaxX, bminmaxY, bminmaxZ, dist);
 
               maskK = mask_or((vboold<N>)vmask, maskK, maskK, bitmask);
             } while(bits);              
@@ -573,7 +571,7 @@ namespace embree
               const size_t i = __bscf(bits);
               const RayCtx& ray = cur_ray_ctx[i];
               const vint<Nx> bitmask = vint<Nx>((int)1 << i);
-              const vbool<Nx> vmask = intersectNode<N, Nx, true, robust>(ray, bminX, bminY, bminZ, bmaxX, bmaxY, bmaxZ, dist);
+              const vbool<Nx> vmask = intersectAlignedNode<N, Nx, true, robust>(ray, bminX, bminY, bminZ, bmaxX, bmaxY, bmaxZ, dist);
 
 #if defined(__AVX2__)
               maskK = maskK | (bitmask & vint<Nx>(vmask));
@@ -604,7 +602,7 @@ namespace embree
 
           /*! intersect stream of rays with all primitives */
           size_t lazy_node = 0;
-          size_t valid_isec MAYBE_UNUSED = PrimitiveIntersector::intersect(pre, bits, rays, context, 0, prim, num, bvh->scene, NULL, lazy_node);
+          size_t valid_isec MAYBE_UNUSED = PrimitiveIntersector::intersect(pre, bits, rays, context, 0, prim, num, lazy_node);
 
           /* update tfar in ray context on successful hit */
           size_t isec_bits = valid_isec;
@@ -626,7 +624,7 @@ namespace embree
       __aligned(64) StackItemMask stack[stackSizeSingle];  //!< stack of nodes
 
 #if ENABLE_COHERENT_STREAM_PATH == 1 
-      if (unlikely(PrimitiveIntersector::validChunkIntersector && !robust && isCoherent(context->context->flags)))
+      if (unlikely(PrimitiveIntersector::validIntersectorK && !robust && isCoherent(context->user->flags)))
       {
         /* AOS to SOA conversion */
         RayK<K> rayK[MAX_RAYS / K];
@@ -660,7 +658,7 @@ namespace embree
         /* do per ray precalculations */
         for (size_t i = 0; i < numOctantRays; i++) {
           new (&ray_ctx[i]) RayCtx(rays[i]);
-          new (&pre[i]) Precalculations(*rays[i],bvh);
+          new (&pre[i]) Precalculations(*rays[i], bvh, bvh->numTimeSteps);
         }
 
         stack[0].ptr  = BVH::invalidNode;
@@ -689,7 +687,7 @@ namespace embree
             if (likely(cur.isLeaf())) break;
             assert(m_trav_active);
 
-            const Node* __restrict__ const node = cur.node();
+            const AlignedNode* __restrict__ const node = cur.alignedNode();
             //STAT3(shadow.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);
 
 #if defined(__AVX512F__) 
@@ -709,7 +707,7 @@ namespace embree
               assert(i<MAX_RAYS_PER_OCTANT);
               RayCtx &ray = ray_ctx[i];
               const vlong<N> bitmask = one << vlong<N>(i);
-              const vbool<N*2> vmask = intersectNode<N, false, robust>(ray, bminmaxX, bminmaxY, bminmaxZ, dist);
+              const vbool<N*2> vmask = intersectAlignedNode<N, false, robust>(ray, bminmaxX, bminmaxY, bminmaxZ, dist);
               maskK = mask_or((vboold<N>)vmask, maskK, maskK, bitmask);
             } while(bits);          
             const vboold<N> vmask = (maskK != vlong<N>(zero));
@@ -738,7 +736,7 @@ namespace embree
               const RayCtx& ray = cur_ray_ctx[i];
               const vint<Nx> bitmask = vint<Nx>((int)1 << i);
 
-              const vbool<Nx> vmask = intersectNode<N, Nx, false, robust>(ray, bminX, bminY, bminZ, bmaxX, bmaxY, bmaxZ, dist);
+              const vbool<Nx> vmask = intersectAlignedNode<N, Nx, false, robust>(ray, bminX, bminY, bminZ, bmaxX, bmaxY, bmaxZ, dist);
 
 #if defined(__AVX2__)
               maskK = maskK | (bitmask & vint<Nx>(vmask));
@@ -767,7 +765,7 @@ namespace embree
           size_t bits = m_trav_active & m_active;          
 
           assert(bits);
-          m_active &= ~PrimitiveIntersector::occluded(pre, bits, rays, context, 0, prim, num, bvh->scene, NULL, lazy_node);
+          m_active &= ~PrimitiveIntersector::occluded(pre, bits, rays, context, 0, prim, num, lazy_node);
           if (unlikely(m_active == 0)) break;
         } // traversal + intersection        
       }      
@@ -778,26 +776,40 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
 
     typedef ArrayIntersectorKStream<VSIZEX,
-                                    TriangleMIntersector1MoellerTrumbore<4 COMMA VSIZEX COMMA true >,
-                                    TriangleMIntersectorKMoellerTrumbore<4 COMMA VSIZEX COMMA VSIZEX COMMA true > > Triangle4IntersectorStreamMoellerTrumbore;
-    typedef ArrayIntersectorKStream<VSIZEX,
-                                    TriangleMIntersector1MoellerTrumbore<4 COMMA VSIZEX COMMA false >,
-                                    TriangleMIntersectorKMoellerTrumbore<4 COMMA VSIZEX COMMA VSIZEX COMMA false > > Triangle4IntersectorStreamMoellerTrumboreNoFilter;
+                                    TriangleMIntersector1Moeller<SIMD_MODE(4) COMMA true >,
+                                    TriangleMIntersectorKMoeller<4 COMMA VSIZEX COMMA VSIZEX COMMA true > > Triangle4IntersectorStreamMoeller;
 
     typedef ArrayIntersectorKStream<VSIZEX,
-                                    TriangleMvIntersector1Pluecker<4 COMMA VSIZEX COMMA true >,
+                                    TriangleMIntersector1Moeller<SIMD_MODE(4) COMMA false >,
+                                    TriangleMIntersectorKMoeller<4 COMMA VSIZEX COMMA VSIZEX COMMA false > > Triangle4IntersectorStreamMoellerNoFilter;
+
+    typedef ArrayIntersectorKStream<VSIZEX,
+                                    TriangleMvIntersector1Pluecker<SIMD_MODE(4) COMMA true >,
                                     TriangleMvIntersectorKPluecker<4 COMMA VSIZEX COMMA VSIZEX COMMA true > > Triangle4vIntersectorStreamPluecker;
 
     typedef ArrayIntersectorKStream<VSIZEX,
-                                    TriangleMiIntersector1Pluecker<4 COMMA VSIZEX COMMA true >,
+                                    TriangleMiIntersector1Moeller<SIMD_MODE(4) COMMA true >,
+                                    TriangleMiIntersectorKMoeller<4 COMMA VSIZEX COMMA VSIZEX COMMA true > > Triangle4iIntersectorStreamMoeller;
+
+    typedef ArrayIntersectorKStream<VSIZEX,
+                                    TriangleMiIntersector1Pluecker<SIMD_MODE(4) COMMA true >,
                                     TriangleMiIntersectorKPluecker<4 COMMA VSIZEX COMMA VSIZEX COMMA true > > Triangle4iIntersectorStreamPluecker;
 
     typedef ArrayIntersectorKStream<VSIZEX,
-                                    QuadMvIntersector1MoellerTrumbore<4 COMMA true >,
-                                    QuadMvIntersectorKMoellerTrumbore<4 COMMA VSIZEX COMMA true > > Quad4vIntersectorStreamMoellerTrumbore;
+                                    QuadMvIntersector1Moeller<4 COMMA true >,
+                                    QuadMvIntersectorKMoeller<4 COMMA VSIZEX COMMA true > > Quad4vIntersectorStreamMoeller;
+
     typedef ArrayIntersectorKStream<VSIZEX,
-                                    QuadMvIntersector1MoellerTrumbore<4 COMMA false >,
-                                    QuadMvIntersectorKMoellerTrumbore<4 COMMA VSIZEX COMMA false > > Quad4vIntersectorStreamMoellerTrumboreNoFilter;
+                                    QuadMvIntersector1Moeller<4 COMMA false >,
+                                    QuadMvIntersectorKMoeller<4 COMMA VSIZEX COMMA false > > Quad4vIntersectorStreamMoellerNoFilter;
+
+    typedef ArrayIntersectorKStream<VSIZEX,
+                                    QuadMiIntersector1Moeller<4 COMMA true >,
+                                    QuadMiIntersectorKMoeller<4 COMMA VSIZEX COMMA true > > Quad4iIntersectorStreamMoeller;
+    
+    typedef ArrayIntersectorKStream<VSIZEX,
+                                    QuadMvIntersector1Pluecker<4 COMMA true >,
+                                    QuadMvIntersectorKPluecker<4 COMMA VSIZEX COMMA true > > Quad4vIntersectorStreamPluecker;
 
     typedef ArrayIntersectorKStream<VSIZEX,
                                     QuadMiIntersector1Pluecker<4 COMMA true >,
@@ -814,16 +826,19 @@ namespace embree
     IF_ENABLED_HAIR(DEFINE_INTERSECTORN(BVH4Bezier1vIntersectorStream,BVHNIntersectorStream<SIMD_MODE(4) COMMA VSIZEX COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<Bezier1vIntersector1> >));
     IF_ENABLED_HAIR(DEFINE_INTERSECTORN(BVH4Bezier1iIntersectorStream,BVHNIntersectorStream<SIMD_MODE(4) COMMA VSIZEX COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<Bezier1iIntersector1> >));
     
-    IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH4Triangle4IntersectorStreamMoeller,         BVHNIntersectorStream<SIMD_MODE(4) COMMA VSIZEX COMMA BVH_AN1 COMMA false COMMA Triangle4IntersectorStreamMoellerTrumbore>));
-    IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH4Triangle4IntersectorStreamMoellerNoFilter, BVHNIntersectorStream<SIMD_MODE(4) COMMA VSIZEX COMMA BVH_AN1 COMMA false COMMA Triangle4IntersectorStreamMoellerTrumboreNoFilter>));
-    IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH4Triangle4vIntersectorStreamPluecker,BVHNIntersectorStream<SIMD_MODE(4) COMMA VSIZEX COMMA BVH_AN1 COMMA true COMMA ArrayIntersector1<TriangleMvIntersector1Pluecker<SIMD_MODE(4) COMMA true> > >));
-    IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH4Triangle4iIntersectorStreamPluecker,BVHNIntersectorStream<SIMD_MODE(4) COMMA VSIZEX COMMA BVH_AN1 COMMA true COMMA ArrayIntersector1<TriangleMiIntersector1Pluecker<SIMD_MODE(4) COMMA true> > >));
+    IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH4Triangle4IntersectorStreamMoeller,         BVHNIntersectorStream<SIMD_MODE(4) COMMA VSIZEX COMMA BVH_AN1 COMMA false COMMA Triangle4IntersectorStreamMoeller>));
+    IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH4Triangle4IntersectorStreamMoellerNoFilter, BVHNIntersectorStream<SIMD_MODE(4) COMMA VSIZEX COMMA BVH_AN1 COMMA false COMMA Triangle4IntersectorStreamMoellerNoFilter>));
+    IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH4Triangle4iIntersectorStreamMoeller,        BVHNIntersectorStream<SIMD_MODE(4) COMMA VSIZEX COMMA BVH_AN1 COMMA false COMMA Triangle4iIntersectorStreamMoeller>));
+    IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH4Triangle4vIntersectorStreamPluecker,       BVHNIntersectorStream<SIMD_MODE(4) COMMA VSIZEX COMMA BVH_AN1 COMMA true  COMMA Triangle4vIntersectorStreamPluecker>));
+    IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH4Triangle4iIntersectorStreamPluecker,       BVHNIntersectorStream<SIMD_MODE(4) COMMA VSIZEX COMMA BVH_AN1 COMMA true  COMMA Triangle4iIntersectorStreamPluecker>));
     
-    IF_ENABLED_QUADS(DEFINE_INTERSECTORN(BVH4Quad4vIntersectorStreamMoeller,        BVHNIntersectorStream<SIMD_MODE(4) COMMA VSIZEX COMMA BVH_AN1 COMMA false COMMA Quad4vIntersectorStreamMoellerTrumbore>));
-    IF_ENABLED_QUADS(DEFINE_INTERSECTORN(BVH4Quad4vIntersectorStreamMoellerNoFilter,BVHNIntersectorStream<SIMD_MODE(4) COMMA VSIZEX COMMA BVH_AN1 COMMA false COMMA Quad4vIntersectorStreamMoellerTrumboreNoFilter>));
-    IF_ENABLED_QUADS(DEFINE_INTERSECTORN(BVH4Quad4iIntersectorStreamPluecker,BVHNIntersectorStream<SIMD_MODE(4) COMMA VSIZEX COMMA BVH_AN1 COMMA true COMMA Quad4iIntersectorStreamPluecker>));
+    IF_ENABLED_QUADS(DEFINE_INTERSECTORN(BVH4Quad4vIntersectorStreamMoeller,        BVHNIntersectorStream<SIMD_MODE(4) COMMA VSIZEX COMMA BVH_AN1 COMMA false COMMA Quad4vIntersectorStreamMoeller>));
+    IF_ENABLED_QUADS(DEFINE_INTERSECTORN(BVH4Quad4vIntersectorStreamMoellerNoFilter,BVHNIntersectorStream<SIMD_MODE(4) COMMA VSIZEX COMMA BVH_AN1 COMMA false COMMA Quad4vIntersectorStreamMoellerNoFilter>));
+    IF_ENABLED_QUADS(DEFINE_INTERSECTORN(BVH4Quad4iIntersectorStreamMoeller,        BVHNIntersectorStream<SIMD_MODE(4) COMMA VSIZEX COMMA BVH_AN1 COMMA false COMMA Quad4iIntersectorStreamMoeller>));
+    IF_ENABLED_QUADS(DEFINE_INTERSECTORN(BVH4Quad4vIntersectorStreamPluecker,       BVHNIntersectorStream<SIMD_MODE(4) COMMA VSIZEX COMMA BVH_AN1 COMMA true  COMMA Quad4vIntersectorStreamPluecker>));
+    IF_ENABLED_QUADS(DEFINE_INTERSECTORN(BVH4Quad4iIntersectorStreamPluecker,       BVHNIntersectorStream<SIMD_MODE(4) COMMA VSIZEX COMMA BVH_AN1 COMMA true  COMMA Quad4iIntersectorStreamPluecker>));
     
-    IF_ENABLED_USER(DEFINE_INTERSECTORN(BVH4VirtualIntersectorStream,BVHNIntersectorStream<SIMD_MODE(4) COMMA VSIZEX COMMA BVH_AN1 COMMA false COMMA ObjectIntersector1>));
+    IF_ENABLED_USER(DEFINE_INTERSECTORN(BVH4VirtualIntersectorStream,BVHNIntersectorStream<SIMD_MODE(4) COMMA VSIZEX COMMA BVH_AN1 COMMA false COMMA ObjectIntersector1<false>>));
 
 
     //IF_ENABLED_LINES(DEFINE_INTERSECTORN(BVH4Line4iMBIntersectorStream,BVHNIntersectorStream<4 COMMA BVH_AN2 COMMA false COMMA ArrayIntersector1<LineMiMBIntersector1<SIMD_MODE(4) COMMA true> > >));
@@ -831,7 +846,7 @@ namespace embree
     //IF_ENABLED_HAIR(DEFINE_INTERSECTORN(BVH4Bezier1iIntersectorStream_OBB,BVHNIntersectorStream<4 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersector1<Bezier1iIntersector1> >));
     //IF_ENABLED_HAIR(DEFINE_INTERSECTORN(BVH4Bezier1iMBIntersectorStream_OBB,BVHNIntersectorStream<4 COMMA BVH_AN2_UN2 COMMA false COMMA ArrayIntersector1<Bezier1iIntersector1MB> >));
 
-    //IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH4Triangle4vMBIntersectorStreamMoeller,BVHNIntersectorStream<SIMD_MODE(4) COMMA BVH_AN2 COMMA false COMMA ArrayIntersector1<TriangleMvMBIntersector1MoellerTrumbore<SIMD_MODE(4) COMMA true> > >));
+    //IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH4Triangle4vMBIntersectorStreamMoeller,BVHNIntersectorStream<SIMD_MODE(4) COMMA BVH_AN2 COMMA false COMMA ArrayIntersector1<TriangleMvMBIntersector1Moeller<SIMD_MODE(4) COMMA true> > >));
     //IF_ENABLED_QUADS(DEFINE_INTERSECTORN(BVH4Quad4iMBIntersectorStreamPluecker,BVHNIntersectorStream<4 COMMA BVH_AN2 COMMA false COMMA ArrayIntersector1<QuadMiMBIntersector1Pluecker<4 COMMA true> > >));
     //IF_ENABLED_SUBDIV(DEFINE_INTERSECTORN(BVH4Subdivpatch1CachedIntersectorStream,BVHNIntersectorStream<4 COMMA BVH_AN1 COMMA true COMMA SubdivPatch1CachedIntersector1>));
     //IF_ENABLED_USER(DEFINE_INTERSECTORN(BVH4VirtualMBIntersectorStream,BVHNIntersectorStream<4 COMMA BVH_AN2 COMMA false COMMA ObjectIntersector1>));
@@ -847,20 +862,21 @@ namespace embree
     // disabled for now
     //IF_ENABLED_LINES(DEFINE_INTERSECTORN(BVH8Line4iIntersectorStream,BVHNIntersectorStream<SIMD_MODE(8) COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<LineMiIntersector1<SIMD_MODE(4) COMMA true> > >));
     
-    IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH8Triangle4IntersectorStreamMoeller,         BVHNIntersectorStream<SIMD_MODE(8) COMMA VSIZEX COMMA BVH_AN1 COMMA false COMMA Triangle4IntersectorStreamMoellerTrumbore>));
-    IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH8Triangle4IntersectorStreamMoellerNoFilter, BVHNIntersectorStream<SIMD_MODE(8) COMMA VSIZEX COMMA BVH_AN1 COMMA false COMMA Triangle4IntersectorStreamMoellerTrumboreNoFilter>));
-    IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH8Triangle4vIntersectorStreamPluecker,       BVHNIntersectorStream<SIMD_MODE(8) COMMA VSIZEX COMMA BVH_AN1 COMMA true COMMA Triangle4vIntersectorStreamPluecker>));
-    IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH8Triangle4iIntersectorStreamPluecker,       BVHNIntersectorStream<SIMD_MODE(8) COMMA VSIZEX COMMA BVH_AN1 COMMA true COMMA Triangle4iIntersectorStreamPluecker>));
+    IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH8Triangle4IntersectorStreamMoeller,         BVHNIntersectorStream<SIMD_MODE(8) COMMA VSIZEX COMMA BVH_AN1 COMMA false COMMA Triangle4IntersectorStreamMoeller>));
+    IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH8Triangle4IntersectorStreamMoellerNoFilter, BVHNIntersectorStream<SIMD_MODE(8) COMMA VSIZEX COMMA BVH_AN1 COMMA false COMMA Triangle4IntersectorStreamMoellerNoFilter>));
+    IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH8Triangle4iIntersectorStreamMoeller,        BVHNIntersectorStream<SIMD_MODE(8) COMMA VSIZEX COMMA BVH_AN1 COMMA false COMMA Triangle4iIntersectorStreamMoeller>));
+    IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH8Triangle4vIntersectorStreamPluecker,       BVHNIntersectorStream<SIMD_MODE(8) COMMA VSIZEX COMMA BVH_AN1 COMMA true  COMMA Triangle4vIntersectorStreamPluecker>));
+    IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH8Triangle4iIntersectorStreamPluecker,       BVHNIntersectorStream<SIMD_MODE(8) COMMA VSIZEX COMMA BVH_AN1 COMMA true  COMMA Triangle4iIntersectorStreamPluecker>));
 
-    IF_ENABLED_QUADS(DEFINE_INTERSECTORN(BVH8Quad4vIntersectorStreamMoeller,         BVHNIntersectorStream<SIMD_MODE(8) COMMA VSIZEX COMMA BVH_AN1 COMMA false COMMA Quad4vIntersectorStreamMoellerTrumbore>));
-    IF_ENABLED_QUADS(DEFINE_INTERSECTORN(BVH8Quad4vIntersectorStreamMoellerNoFilter, BVHNIntersectorStream<SIMD_MODE(8) COMMA VSIZEX COMMA BVH_AN1 COMMA false COMMA Quad4vIntersectorStreamMoellerTrumboreNoFilter>));
-    
-    IF_ENABLED_QUADS(DEFINE_INTERSECTORN(BVH8Quad4iIntersectorStreamPluecker,BVHNIntersectorStream<SIMD_MODE(8) COMMA VSIZEX COMMA BVH_AN1 COMMA true COMMA Quad4iIntersectorStreamPluecker>));
+    IF_ENABLED_QUADS(DEFINE_INTERSECTORN(BVH8Quad4vIntersectorStreamMoeller,         BVHNIntersectorStream<SIMD_MODE(8) COMMA VSIZEX COMMA BVH_AN1 COMMA false COMMA Quad4vIntersectorStreamMoeller>));
+    IF_ENABLED_QUADS(DEFINE_INTERSECTORN(BVH8Quad4vIntersectorStreamMoellerNoFilter, BVHNIntersectorStream<SIMD_MODE(8) COMMA VSIZEX COMMA BVH_AN1 COMMA false COMMA Quad4vIntersectorStreamMoellerNoFilter>));
+    IF_ENABLED_QUADS(DEFINE_INTERSECTORN(BVH8Quad4iIntersectorStreamMoeller,         BVHNIntersectorStream<SIMD_MODE(8) COMMA VSIZEX COMMA BVH_AN1 COMMA false COMMA Quad4iIntersectorStreamMoeller>));
+    IF_ENABLED_QUADS(DEFINE_INTERSECTORN(BVH8Quad4vIntersectorStreamPluecker,        BVHNIntersectorStream<SIMD_MODE(8) COMMA VSIZEX COMMA BVH_AN1 COMMA true  COMMA Quad4vIntersectorStreamPluecker>));
+    IF_ENABLED_QUADS(DEFINE_INTERSECTORN(BVH8Quad4iIntersectorStreamPluecker,        BVHNIntersectorStream<SIMD_MODE(8) COMMA VSIZEX COMMA BVH_AN1 COMMA true  COMMA Quad4iIntersectorStreamPluecker>));
 
+    //IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH8Triangle4vMBIntersectorStreamMoeller,BVHNIntersectorStream<SIMD_MODE(8) COMMA BVH_AN2 COMMA false COMMA ArrayIntersector1<TriangleMvMBIntersector1Moeller<SIMD_MODE(4) COMMA true> > >));
 
-    //IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH8Triangle4vMBIntersectorStreamMoeller,BVHNIntersectorStream<SIMD_MODE(8) COMMA BVH_AN2 COMMA false COMMA ArrayIntersector1<TriangleMvMBIntersector1MoellerTrumbore<SIMD_MODE(4) COMMA true> > >));
-
-    //IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH8Triangle4IntersectorStreamMoellerNoFilter, BVHNIntersectorStream<SIMD_MODE(8) COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<SIMD_MODE(4) COMMA false> > >));
+    //IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH8Triangle4IntersectorStreamMoellerNoFilter, BVHNIntersectorStream<SIMD_MODE(8) COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1Moeller<SIMD_MODE(4) COMMA false> > >));
 
     //IF_ENABLED_LINES(DEFINE_INTERSECTORN(BVH8Line4iMBIntersectorStream,BVHNIntersectorStream<SIMD_MODE(8) COMMA BVH_AN2 COMMA false COMMA ArrayIntersector1<LineMiMBIntersector1<SIMD_MODE(4) COMMA true> > >));
     

@@ -36,6 +36,7 @@
 #include "../common/math/vec4.h"
 #include "../common/math/bbox.h"
 #include "../common/math/obbox.h"
+#include "../common/math/lbbox.h"
 #include "../common/math/linearspace2.h"
 #include "../common/math/linearspace3.h"
 #include "../common/math/affinespace.h"
@@ -57,6 +58,7 @@
 #include <map>
 #include <algorithm>
 #include <functional>
+#include <utility>
 
 namespace embree
 {

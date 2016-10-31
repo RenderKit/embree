@@ -19,9 +19,9 @@
 #include "../subdiv/patch_eval.h"
 #include "../subdiv/patch_eval_simd.h"
 
-#include "../algorithms/sort.h"
-#include "../algorithms/prefix.h"
-#include "../algorithms/parallel_for.h"
+#include "../../common/algorithms/parallel_sort.h"
+#include "../../common/algorithms/parallel_prefix_sum.h"
+#include "../../common/algorithms/parallel_for.h"
 
 namespace embree
 {
@@ -32,15 +32,18 @@ namespace embree
       numEdges(numEdges), 
       numVertices(numVertices),
       boundary(RTC_BOUNDARY_EDGE_ONLY),
-      displFunc(nullptr), 
+      displFunc(nullptr),
+      displFunc2(nullptr),
       displBounds(empty),
       tessellationRate(2.0f),
       numHalfEdges(0),
       faceStartEdge(parent->device),
       halfEdges(parent->device),
-      invalidFace(parent->device),
+      invalid_face(parent->device),
       levelUpdate(false)
   {
+    vertices.resize(numTimeSteps);
+    vertex_buffer_tags.resize(numTimeSteps);
     for (size_t i=0; i<numTimeSteps; i++)
       vertices[i].init(parent->device,numVertices,sizeof(Vec3fa));
 
@@ -58,15 +61,15 @@ namespace embree
   void SubdivMesh::enabling() 
   { 
     parent->numSubdivEnableDisableEvents++;
-    if (numTimeSteps == 1) parent->world1.numSubdivPatches += numFaces; 
-    else                   parent->world2.numSubdivPatches += numFaces; 
+    if (numTimeSteps == 1) parent->world.numSubdivPatches += numFaces; 
+    else                   parent->worldMB.numSubdivPatches += numFaces; 
   }
   
   void SubdivMesh::disabling() 
   { 
     parent->numSubdivEnableDisableEvents++;
-    if (numTimeSteps == 1) parent->world1.numSubdivPatches -= numFaces; 
-    else                   parent->world2.numSubdivPatches -= numFaces;
+    if (numTimeSteps == 1) parent->world.numSubdivPatches -= numFaces; 
+    else                   parent->worldMB.numSubdivPatches -= numFaces;
   }
 
   void SubdivMesh::setMask (unsigned mask) 
@@ -100,39 +103,38 @@ namespace embree
     if (type != RTC_LEVEL_BUFFER)
       parent->commitCounterSubdiv++;
 
-    switch (type) {
-    case RTC_INDEX_BUFFER               : vertexIndices.set(ptr,offset,stride); break;
-    case RTC_FACE_BUFFER                : faceVertices.set(ptr,offset,stride); break;
-    case RTC_HOLE_BUFFER                : holes.set(ptr,offset,stride); break;
-    case RTC_EDGE_CREASE_INDEX_BUFFER   : edge_creases.set(ptr,offset,stride); break;
-    case RTC_EDGE_CREASE_WEIGHT_BUFFER  : edge_crease_weights.set(ptr,offset,stride); break;
-    case RTC_VERTEX_CREASE_INDEX_BUFFER : vertex_creases.set(ptr,offset,stride); break;
-    case RTC_VERTEX_CREASE_WEIGHT_BUFFER: vertex_crease_weights.set(ptr,offset,stride); break;
-    case RTC_LEVEL_BUFFER               : levels.set(ptr,offset,stride); break;
-
-    case RTC_VERTEX_BUFFER0: 
-      vertices[0].set(ptr,offset,stride); 
-      vertices[0].checkPadding16();
-      break;
-
-    case RTC_VERTEX_BUFFER1: 
-      vertices[1].set(ptr,offset,stride); 
-      vertices[1].checkPadding16();
-      break;
-
-    case RTC_USER_VERTEX_BUFFER0: 
-      if (userbuffers[0] == nullptr) userbuffers[0].reset(new Buffer(parent->device,numVertices,stride)); 
-      userbuffers[0]->set(ptr,offset,stride);  
-      userbuffers[0]->checkPadding16();
-      break;
-    case RTC_USER_VERTEX_BUFFER1: 
-      if (userbuffers[1] == nullptr) userbuffers[1].reset(new Buffer(parent->device,numVertices,stride)); 
-      userbuffers[1]->set(ptr,offset,stride);  
-      userbuffers[1]->checkPadding16();
-      break;
-
-    default: 
-      throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
+    if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) 
+    {
+      size_t t = type - RTC_VERTEX_BUFFER0;
+      vertices[t].set(ptr,offset,stride); 
+      vertices[t].checkPadding16();
+    } 
+    else 
+    {
+      switch (type) {
+      case RTC_INDEX_BUFFER               : vertexIndices.set(ptr,offset,stride); break;
+      case RTC_FACE_BUFFER                : faceVertices.set(ptr,offset,stride); break;
+      case RTC_HOLE_BUFFER                : holes.set(ptr,offset,stride); break;
+      case RTC_EDGE_CREASE_INDEX_BUFFER   : edge_creases.set(ptr,offset,stride); break;
+      case RTC_EDGE_CREASE_WEIGHT_BUFFER  : edge_crease_weights.set(ptr,offset,stride); break;
+      case RTC_VERTEX_CREASE_INDEX_BUFFER : vertex_creases.set(ptr,offset,stride); break;
+      case RTC_VERTEX_CREASE_WEIGHT_BUFFER: vertex_crease_weights.set(ptr,offset,stride); break;
+      case RTC_LEVEL_BUFFER               : levels.set(ptr,offset,stride); break;
+        
+      case RTC_USER_VERTEX_BUFFER0: 
+        if (userbuffers[0] == nullptr) userbuffers[0].reset(new APIBuffer<char>(parent->device,numVertices,stride)); 
+        userbuffers[0]->set(ptr,offset,stride);  
+        userbuffers[0]->checkPadding16();
+        break;
+      case RTC_USER_VERTEX_BUFFER1: 
+        if (userbuffers[1] == nullptr) userbuffers[1].reset(new APIBuffer<char>(parent->device,numVertices,stride)); 
+        userbuffers[1]->set(ptr,offset,stride);  
+        userbuffers[1]->checkPadding16();
+        break;
+        
+      default: 
+        throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
+      }
     }
   }
 
@@ -141,18 +143,22 @@ namespace embree
     if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
-    switch (type) {
-    case RTC_INDEX_BUFFER                : return vertexIndices.map(parent->numMappedBuffers);
-    case RTC_FACE_BUFFER                 : return faceVertices.map(parent->numMappedBuffers);
-    case RTC_HOLE_BUFFER                 : return holes.map(parent->numMappedBuffers);
-    case RTC_VERTEX_BUFFER0              : return vertices[0].map(parent->numMappedBuffers);
-    case RTC_VERTEX_BUFFER1              : return vertices[1].map(parent->numMappedBuffers);
-    case RTC_EDGE_CREASE_INDEX_BUFFER    : return edge_creases.map(parent->numMappedBuffers); 
-    case RTC_EDGE_CREASE_WEIGHT_BUFFER   : return edge_crease_weights.map(parent->numMappedBuffers); 
-    case RTC_VERTEX_CREASE_INDEX_BUFFER  : return vertex_creases.map(parent->numMappedBuffers); 
-    case RTC_VERTEX_CREASE_WEIGHT_BUFFER : return vertex_crease_weights.map(parent->numMappedBuffers); 
-    case RTC_LEVEL_BUFFER                : return levels.map(parent->numMappedBuffers); 
-    default                              : throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); return nullptr;
+    if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) {
+      return vertices[type - RTC_VERTEX_BUFFER0].map(parent->numMappedBuffers);
+    } 
+    else
+    {
+      switch (type) {
+      case RTC_INDEX_BUFFER                : return vertexIndices.map(parent->numMappedBuffers);
+      case RTC_FACE_BUFFER                 : return faceVertices.map(parent->numMappedBuffers);
+      case RTC_HOLE_BUFFER                 : return holes.map(parent->numMappedBuffers);
+      case RTC_EDGE_CREASE_INDEX_BUFFER    : return edge_creases.map(parent->numMappedBuffers); 
+      case RTC_EDGE_CREASE_WEIGHT_BUFFER   : return edge_crease_weights.map(parent->numMappedBuffers); 
+      case RTC_VERTEX_CREASE_INDEX_BUFFER  : return vertex_creases.map(parent->numMappedBuffers); 
+      case RTC_VERTEX_CREASE_WEIGHT_BUFFER : return vertex_crease_weights.map(parent->numMappedBuffers); 
+      case RTC_LEVEL_BUFFER                : return levels.map(parent->numMappedBuffers); 
+      default                              : throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); return nullptr;
+      }
     }
   }
 
@@ -161,18 +167,22 @@ namespace embree
     if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
-    switch (type) {
-    case RTC_INDEX_BUFFER               : vertexIndices.unmap(parent->numMappedBuffers); break;
-    case RTC_FACE_BUFFER                : faceVertices.unmap(parent->numMappedBuffers); break;
-    case RTC_HOLE_BUFFER                : holes.unmap(parent->numMappedBuffers); break;
-    case RTC_VERTEX_BUFFER0             : vertices[0].unmap(parent->numMappedBuffers); break;
-    case RTC_VERTEX_BUFFER1             : vertices[1].unmap(parent->numMappedBuffers); break;
-    case RTC_EDGE_CREASE_INDEX_BUFFER   : edge_creases.unmap(parent->numMappedBuffers); break;
-    case RTC_EDGE_CREASE_WEIGHT_BUFFER  : edge_crease_weights.unmap(parent->numMappedBuffers); break;
-    case RTC_VERTEX_CREASE_INDEX_BUFFER : vertex_creases.unmap(parent->numMappedBuffers); break;
-    case RTC_VERTEX_CREASE_WEIGHT_BUFFER: vertex_crease_weights.unmap(parent->numMappedBuffers); break;
-    case RTC_LEVEL_BUFFER               : levels.unmap(parent->numMappedBuffers); break;
-    default                             : throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); break;
+    if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) {
+      vertices[type - RTC_VERTEX_BUFFER0].unmap(parent->numMappedBuffers);
+    }
+    else
+    {
+      switch (type) {
+      case RTC_INDEX_BUFFER               : vertexIndices.unmap(parent->numMappedBuffers); break;
+      case RTC_FACE_BUFFER                : faceVertices.unmap(parent->numMappedBuffers); break;
+      case RTC_HOLE_BUFFER                : holes.unmap(parent->numMappedBuffers); break;
+      case RTC_EDGE_CREASE_INDEX_BUFFER   : edge_creases.unmap(parent->numMappedBuffers); break;
+      case RTC_EDGE_CREASE_WEIGHT_BUFFER  : edge_crease_weights.unmap(parent->numMappedBuffers); break;
+      case RTC_VERTEX_CREASE_INDEX_BUFFER : vertex_creases.unmap(parent->numMappedBuffers); break;
+      case RTC_VERTEX_CREASE_WEIGHT_BUFFER: vertex_crease_weights.unmap(parent->numMappedBuffers); break;
+      case RTC_LEVEL_BUFFER               : levels.unmap(parent->numMappedBuffers); break;
+      default                             : throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); break;
+      }
     }
   }
 
@@ -181,8 +191,7 @@ namespace embree
     faceVertices.setModified(true);
     vertexIndices.setModified(true); 
     holes.setModified(true);
-    vertices[0].setModified(true); 
-    vertices[1].setModified(true); 
+    for (auto& buffer : vertices) buffer.setModified(true); 
     edge_creases.setModified(true);
     edge_crease_weights.setModified(true);
     vertex_creases.setModified(true);
@@ -196,18 +205,22 @@ namespace embree
     if (type != RTC_LEVEL_BUFFER)
       parent->commitCounterSubdiv++;
 
-    switch (type) {
-    case RTC_INDEX_BUFFER               : vertexIndices.setModified(true); break;
-    case RTC_FACE_BUFFER                : faceVertices.setModified(true); break;
-    case RTC_HOLE_BUFFER                : holes.setModified(true); break;
-    case RTC_VERTEX_BUFFER0             : vertices[0].setModified(true); break;
-    case RTC_VERTEX_BUFFER1             : vertices[1].setModified(true); break;
-    case RTC_EDGE_CREASE_INDEX_BUFFER   : edge_creases.setModified(true); break;
-    case RTC_EDGE_CREASE_WEIGHT_BUFFER  : edge_crease_weights.setModified(true); break;
-    case RTC_VERTEX_CREASE_INDEX_BUFFER : vertex_creases.setModified(true); break;
-    case RTC_VERTEX_CREASE_WEIGHT_BUFFER: vertex_crease_weights.setModified(true); break;
-    case RTC_LEVEL_BUFFER               : levels.setModified(true); break;
-    default                             : throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); break;
+    if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) {
+      vertices[type - RTC_VERTEX_BUFFER0].setModified(true);
+    }
+    else
+    {
+      switch (type) {
+      case RTC_INDEX_BUFFER               : vertexIndices.setModified(true); break;
+      case RTC_FACE_BUFFER                : faceVertices.setModified(true); break;
+      case RTC_HOLE_BUFFER                : holes.setModified(true); break;
+      case RTC_EDGE_CREASE_INDEX_BUFFER   : edge_creases.setModified(true); break;
+      case RTC_EDGE_CREASE_WEIGHT_BUFFER  : edge_crease_weights.setModified(true); break;
+      case RTC_VERTEX_CREASE_INDEX_BUFFER : vertex_creases.setModified(true); break;
+      case RTC_VERTEX_CREASE_WEIGHT_BUFFER: vertex_crease_weights.setModified(true); break;
+      case RTC_LEVEL_BUFFER               : levels.setModified(true); break;
+      default                             : throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); break;
+      }
     }
     Geometry::update();
   }
@@ -218,6 +231,16 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
     this->displFunc   = func;
+    if (bounds) this->displBounds = *(BBox3fa*)bounds; 
+    else        this->displBounds = empty;
+  }
+
+  void SubdivMesh::setDisplacementFunction2 (RTCDisplacementFunc2 func, RTCBounds* bounds) 
+  {
+    if (parent->isStatic() && parent->isBuild())
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
+
+    this->displFunc2   = func;
     if (bounds) this->displBounds = *(BBox3fa*)bounds; 
     else        this->displBounds = empty;
   }
@@ -237,8 +260,9 @@ namespace embree
     const bool freeVertices = !parent->needSubdivVertices;
     faceVertices.free();
     if (freeIndices) vertexIndices.free();
-    if (freeVertices) vertices[0].free();
-    if (freeVertices) vertices[1].free();
+    if (freeVertices )
+      for (auto& buffer : vertices)
+        buffer.free();
     edge_creases.free();
     edge_crease_weights.free();
     vertex_creases.free();
@@ -258,7 +282,7 @@ namespace embree
     size_t blockSize = 4096;
 
     /* allocate temporary array */
-    invalidFace.resize(numFaces);
+    invalid_face.resize(numFaces*numTimeSteps);
     halfEdges0.resize(numEdges);
     halfEdges1.resize(numEdges);
 
@@ -360,7 +384,8 @@ namespace embree
       {
         HalfEdge* edge = &halfEdges[faceStartEdge[f]];
         HalfEdge::PatchType patch_type = edge->patchType();
-        invalidFace[f] = !edge->valid(vertices[0]) || holeSet.lookup(unsigned(f));
+        for (size_t t=0; t<numTimeSteps; t++)
+          invalidFace(f,t) = !edge->valid(vertices[t]) || holeSet.lookup(unsigned(f));
           
         for (size_t i=0; i<faceVertices[f]; i++) 
         {
@@ -426,7 +451,7 @@ namespace embree
     /* calculate start edge of each face */
     faceStartEdge.resize(numFaces);
     if (faceVertices.isModified()) 
-      numHalfEdges = parallel_prefix_sum(faceVertices,faceStartEdge,numFaces,std::plus<int>());
+      numHalfEdges = parallel_prefix_sum(faceVertices,faceStartEdge,numFaces,0,std::plus<unsigned>());
 
     /* create set with all holes */
     if (holes.isModified())
@@ -473,16 +498,15 @@ namespace embree
         return numInterpolationSlots4(stride);
       };
 #endif
-      for (size_t i=0; i<2; i++) {
-        if (vertices   [i]) vertex_buffer_tags[i].resize(numFaces*numInterpolationSlots(vertices[i].getStride()));
+      for (size_t i=0; i<numTimeSteps; i++)
+        vertex_buffer_tags[i].resize(numFaces*numInterpolationSlots(vertices[i].getStride()));
+      for (size_t i=0; i<2; i++)
         if (userbuffers[i]) user_buffer_tags  [i].resize(numFaces*numInterpolationSlots(userbuffers[i]->getStride()));
-      }
     }
 
     /* cleanup some state for static scenes */
     if (parent->isStatic()) 
     {
-      holeSet.cleanup();
       halfEdges0.clear();
       halfEdges1.clear();
       vertexCreaseMap.clear();
@@ -493,8 +517,7 @@ namespace embree
     vertexIndices.setModified(false); 
     faceVertices.setModified(false);
     holes.setModified(false);
-    vertices[0].setModified(false); 
-    vertices[1].setModified(false); 
+    for (auto& buffer : vertices) buffer.setModified(false); 
     edge_creases.setModified(false);
     edge_crease_weights.setModified(false);
     vertex_creases.setModified(false);
@@ -530,9 +553,12 @@ namespace embree
 
   bool SubdivMesh::verify () 
   {
-    if (numTimeSteps == 2 && vertices[0].size() != vertices[1].size())
-      return false;
-    
+    /*! verify consistent size of vertex arrays */
+    if (vertices.size() == 0) return false;
+    for (const auto& buffer : vertices)
+      if (vertices[0].size() != buffer.size())
+        return false;
+
     /*! verify vertex indices */
     size_t ofs = 0;
     for (size_t i=0; i<faceVertices.size(); i++) 
@@ -550,12 +576,11 @@ namespace embree
     }
 
     /*! verify vertices */
-    for (size_t j=0; j<numTimeSteps; j++) {
-      BufferT<Vec3fa>& verts = vertices[j];
-      for (size_t i=0; i<numVertices; i++) {
-        if (!isvalid(verts[i])) return false;
-      }
-    }
+    for (const auto& buffer : vertices)
+      for (size_t i=0; i<buffer.size(); i++)
+	if (!isvalid(buffer[i])) 
+	  return false;
+
     return true;
   }
 
@@ -568,7 +593,7 @@ namespace embree
 #endif
 
     /* calculate base pointer and stride */
-    assert((buffer >= RTC_VERTEX_BUFFER0 && buffer <= RTC_VERTEX_BUFFER1) ||
+    assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) ||
            (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
     const char* src = nullptr; 
     size_t stride = 0;
@@ -628,7 +653,7 @@ namespace embree
 #endif
 
     /* calculate base pointer and stride */
-    assert((buffer >= RTC_VERTEX_BUFFER0 && buffer <= RTC_VERTEX_BUFFER1) ||
+    assert((buffer >= RTC_VERTEX_BUFFER0 && buffer < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) ||
            (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
     const char* src = nullptr; 
     size_t stride = 0;

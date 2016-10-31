@@ -165,20 +165,25 @@ namespace embree
 
   size_t os_shrink(void* ptr, size_t bytesNew, size_t bytesOld) 
   {
-    size_t pageSize = PAGE_SIZE_4K;
-    if (isHugePageCandidate(bytesOld)) 
-      pageSize = PAGE_SIZE_2M;
-
-    bytesNew = (bytesNew+pageSize-1) & ~(pageSize-1);
-
+    /* first try with 4KB pages */
+    bytesNew = (bytesNew+PAGE_SIZE_4K-1) & ~(PAGE_SIZE_4K-1);
     assert(bytesNew <= bytesOld);
     if (bytesNew >= bytesOld)
       return bytesOld;
 
-    if (munmap((char*)ptr+bytesNew,bytesOld-bytesNew) == -1)
-      throw std::bad_alloc();
+    if (munmap((char*)ptr+bytesNew,bytesOld-bytesNew) != -1)
+      return bytesNew;
 
-    return bytesNew;
+    /* now try with 2MB pages */
+    bytesNew = (bytesNew+PAGE_SIZE_2M-1) & ~(PAGE_SIZE_2M-1);
+    assert(bytesNew <= bytesOld);
+    if (bytesNew >= bytesOld)
+      return bytesOld;
+
+    if (munmap((char*)ptr+bytesNew,bytesOld-bytesNew) != -1)
+      return bytesNew; // this may be too small in case we really used 2MB pages
+
+    throw std::bad_alloc();
   }
 
   void os_free(void* ptr, size_t bytes) 

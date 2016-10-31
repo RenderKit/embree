@@ -125,13 +125,12 @@ namespace embree
   }
 
   static MutexSys g_mutex;
-  static BarrierSys g_barrier(2);
 
   void threadPoolFunction(std::pair<TaskScheduler::ThreadPool*,size_t>* pair)
   {
     TaskScheduler::ThreadPool* pool = pair->first;
     size_t threadIndex = pair->second;
-    g_barrier.wait();
+    delete pair;
     pool->thread_loop(threadIndex);
   }
 
@@ -165,9 +164,8 @@ namespace embree
     for (size_t t=numThreadsActive; t<numThreads; t++) 
     {
       if (t == 0) continue;
-      auto pair = std::make_pair(this,t);
-      threads.push_back(createThread((thread_func)threadPoolFunction,&pair,4*1024*1024,set_affinity ? t : -1));
-      g_barrier.wait();
+      auto pair = new std::pair<TaskScheduler::ThreadPool*,size_t>(this,t);
+      threads.push_back(createThread((thread_func)threadPoolFunction,pair,4*1024*1024,set_affinity ? t : -1));
     }
 
     /* stop some threads if we reduce the number of threads */
@@ -260,10 +258,10 @@ namespace embree
     return g_instance;
   }
 
-  void TaskScheduler::create(size_t numThreads, bool set_affinity)
+  void TaskScheduler::create(size_t numThreads, bool set_affinity, bool start_threads)
   {
     if (!threadPool) threadPool = new TaskScheduler::ThreadPool(set_affinity);
-    threadPool->setNumThreads(numThreads,false);
+    threadPool->setNumThreads(numThreads,start_threads);
   }
 
   void TaskScheduler::destroy() {
@@ -347,7 +345,7 @@ namespace embree
 #if defined(__WIN32__)
 	size_t loopIndex = 1;
 #endif
-#define LOOP_YIELD_THRESHOLD 4096
+#define LOOP_YIELD_THRESHOLD (4096)
 	while (threadCounter > 0) {
 #if defined(__WIN32__)
           if ((loopIndex % LOOP_YIELD_THRESHOLD) == 0)

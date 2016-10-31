@@ -331,7 +331,7 @@ namespace embree
           size_t i0 = face[0], i1 = 0, i2 = face[1];
           for (size_t k=2; k<face.size(); k++) {
             i1 = i2; i2 = face[k];
-            mesh_o->triangles.push_back(SceneGraph::TriangleMeshNode::Triangle(i0,i1,i2));
+            mesh_o->triangles.push_back(SceneGraph::TriangleMeshNode::Triangle((unsigned int)i0, (unsigned int)i1, (unsigned int)i2));
           }
         }
         return mesh_o.dynamicCast<SceneGraph::Node>();

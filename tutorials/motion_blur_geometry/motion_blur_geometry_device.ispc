@@ -31,74 +31,91 @@ uniform Vec3fa g_accu_vy;
 uniform Vec3fa g_accu_vz;
 uniform Vec3fa g_accu_p;
 extern uniform bool g_changed;
+extern uniform float g_time;
+extern uniform unsigned int g_num_time_steps;
+extern uniform unsigned int g_num_time_steps2;
+
 
 __aligned(16) uniform float cube_vertices[8][4] =
 {
   { -1.0f, -1.0f, -1.0f, 0.0f },
-  { -1.0f, -1.0f, +1.0f, 0.0f },
-  { -1.0f, +1.0f, -1.0f, 0.0f },
-  { -1.0f, +1.0f, +1.0f, 0.0f },
-  { +1.0f, -1.0f, -1.0f, 0.0f },
-  { +1.0f, -1.0f, +1.0f, 0.0f },
-  { +1.0f, +1.0f, -1.0f, 0.0f },
-  { +1.0f, +1.0f, +1.0f, 0.0f }
+  {  1.0f, -1.0f, -1.0f, 0.0f },
+  {  1.0f, -1.0f,  1.0f, 0.0f },
+  { -1.0f, -1.0f,  1.0f, 0.0f },
+  { -1.0f,  1.0f, -1.0f, 0.0f },
+  {  1.0f,  1.0f, -1.0f, 0.0f },
+  {  1.0f,  1.0f,  1.0f, 0.0f },
+  { -1.0f,  1.0f,  1.0f, 0.0f }
 };
 
-uniform unsigned int cube_indices[36] = {
-  0, 2, 1,  1, 2, 3,
-  4, 5, 6,  5, 7, 6,
-  0, 1, 4,  1, 5, 4,
-  2, 6, 3,  3, 6, 7,
-  0, 4, 2,  2, 4, 6,
-  1, 3, 5,  3, 7, 5
+uniform unsigned int cube_triangle_indices[36] = {
+  1, 5, 4,  0, 1, 4,
+  2, 6, 5,  1, 2, 5,
+  3, 7, 6,  2, 3, 6,
+  4, 7, 3,  0, 4, 3,
+  5, 6, 7,  4, 5, 7,
+  3, 2, 1,  0, 3, 1
 };
 
-unsigned int cube_quad_indices[24] = {
-  0, 1, 3, 6,
-  4, 5, 7, 6,
+uniform unsigned int cube_quad_indices[24] = {
   0, 1, 5, 4,
+  1, 2, 6, 5,
   2, 3, 7, 6,
-  0, 2, 6, 4,
-  1, 3, 7, 5,
+  0, 4, 7, 3,
+  4, 5, 6, 7,
+  0, 3, 2, 1,
 };
 
-#define USE_QUADS 0
+__aligned(16) uniform float cube_vertex_crease_weights[8] = {
+  inf, inf,inf, inf, inf, inf, inf, inf
+};
+
+__aligned(16) uniform unsigned int cube_vertex_crease_indices[8] = {
+  0,1,2,3,4,5,6,7
+};
+
+__aligned(16) uniform float cube_edge_crease_weights[12] = {
+  inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf
+};
+
+__aligned(16) uniform unsigned int cube_edge_crease_indices[24] =
+{
+  0,1, 1,2, 2,3, 3,0,
+  4,5, 5,6, 6,7, 7,4,
+  0,4, 1,5, 2,6, 3,7,
+};
+
+#define NUM_INDICES 24
+#define NUM_FACES 6
+#define FACE_SIZE 4
+
+uniform unsigned int cube_quad_faces[6] = {
+  4, 4, 4, 4, 4, 4
+};
 
 /* adds a cube to the scene */
-uniform unsigned int addCube (RTCScene scene)
+uniform unsigned int addTriangleCube (RTCScene scene, const uniform Vec3f& pos, uniform unsigned int num_time_steps)
 {
-#if USE_QUADS == 1
-  /* create a quad cube with 6 quads and 8 vertices */
-  uniform unsigned int geomID = rtcNewQuadMesh (scene, RTC_GEOMETRY_STATIC, 6, 8, 2);
-  rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  cube_quad_indices , 0, 4*sizeof(unsigned int));
-#else
   /* create a triangulated cube with 12 triangles and 8 vertices */
-  uniform unsigned int geomID = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 12, 8, 2);
-  rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  cube_indices , 0, 3*sizeof(uniform unsigned int));
-#endif
-
-  uniform AffineSpace3f rotation = make_AffineSpace3f_rotate(make_Vec3f(0,3,0),make_Vec3f(1,1,0),0.44f);
-  uniform Vec3fa* uniform vertex0 = (uniform Vec3fa* uniform) rtcMapBuffer(scene,geomID,RTC_VERTEX_BUFFER0);
-  uniform Vec3fa* uniform vertex1 = (uniform Vec3fa* uniform) rtcMapBuffer(scene,geomID,RTC_VERTEX_BUFFER1);
-  for (uniform int i=0; i<8; i++)
+  uniform unsigned int geomID = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 12, 8, num_time_steps);
+  rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  cube_triangle_indices , 0, 3*sizeof(uniform unsigned int));
+  
+  for (uniform size_t t=0; t<num_time_steps; t++)
   {
-    uniform Vec3f v = make_Vec3f(cube_vertices[i][0],cube_vertices[i][1],cube_vertices[i][2])+make_Vec3f(0,3,0);
-    vertex0[i] = make_Vec3fa(v);
-    vertex1[i] = make_Vec3fa(xfmPoint(rotation,v));
+    uniform RTCBufferType bufID = (uniform RTCBufferType)(RTC_VERTEX_BUFFER0+t);
+    uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcMapBuffer(scene,geomID,bufID);
+
+    uniform AffineSpace3f rotation = make_AffineSpace3f_rotate(make_Vec3f(0,0,0),make_Vec3f(0,1,0),2.0f*M_PI*(float)t/(float)(num_time_steps-1));
+    uniform AffineSpace3f scale = make_AffineSpace3f_scale(make_Vec3f(2.0f,1.0f,1.0f));
+    
+    for (uniform int i=0; i<8; i++) {
+      uniform Vec3f v = make_Vec3f(cube_vertices[i][0],cube_vertices[i][1],cube_vertices[i][2]);
+      vertices[i] = make_Vec3fa(xfmPoint(rotation*scale,v)+pos);
+    }
+    rtcUnmapBuffer(scene,geomID,bufID);
   }
-  rtcUnmapBuffer(scene,geomID,RTC_VERTEX_BUFFER0);
-  rtcUnmapBuffer(scene,geomID,RTC_VERTEX_BUFFER1);
 
   /* create face color array */
-#if USE_QUADS == 1
-  face_colors = uniform new uniform Vec3f[6];
-  face_colors[0] = make_Vec3f(1,0,0);
-  face_colors[1] = make_Vec3f(0,1,0);
-  face_colors[2] = make_Vec3f(0.5f);
-  face_colors[3] = make_Vec3f(1.0f);
-  face_colors[4] = make_Vec3f(0,0,1);
-  face_colors[5] = make_Vec3f(1,1,0);
-#else
   face_colors = uniform new uniform Vec3f[12];
   face_colors[0] = make_Vec3f(1,0,0);
   face_colors[1] = make_Vec3f(1,0,0);
@@ -112,44 +129,327 @@ uniform unsigned int addCube (RTCScene scene)
   face_colors[9] = make_Vec3f(0,0,1);
   face_colors[10] = make_Vec3f(1,1,0);
   face_colors[11] = make_Vec3f(1,1,0);
-#endif
+  return geomID;
+}
+
+/* adds a cube to the scene */
+uniform unsigned int addQuadCube (RTCScene scene, const uniform Vec3f& pos, uniform unsigned int num_time_steps)
+{
+  /* create a quad cube with 6 quads and 8 vertices */
+  uniform unsigned int geomID = rtcNewQuadMesh (scene, RTC_GEOMETRY_STATIC, 6, 8, num_time_steps);
+  rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  cube_quad_indices , 0, 4*sizeof(uniform unsigned int));
+  
+  for (uniform size_t t=0; t<num_time_steps; t++)
+  {
+    uniform RTCBufferType bufID = (uniform RTCBufferType)(RTC_VERTEX_BUFFER0+t);
+    uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcMapBuffer(scene,geomID,bufID);
+
+    uniform AffineSpace3f rotation = make_AffineSpace3f_rotate(make_Vec3f(0,0,0),make_Vec3f(0,1,0),2.0f*M_PI*(float)t/(float)(num_time_steps-1));
+    uniform AffineSpace3f scale = make_AffineSpace3f_scale(make_Vec3f(2.0f,1.0f,1.0f));
+    
+    for (uniform int i=0; i<8; i++) {
+      uniform Vec3f v = make_Vec3f(cube_vertices[i][0],cube_vertices[i][1],cube_vertices[i][2]);
+      vertices[i] = make_Vec3fa(xfmPoint(rotation*scale,v)+pos);
+    }
+    rtcUnmapBuffer(scene,geomID,bufID);
+  }
+
+  return geomID;
+}
+
+/* adds a subdivision cube to the scene */
+uniform unsigned int addSubdivCube (RTCScene scene, const uniform Vec3f& pos, uniform unsigned int num_time_steps)
+{
+  /* create a triangulated cube with 6 quads and 8 vertices */
+  uniform unsigned int geomID = rtcNewSubdivisionMesh(scene, RTC_GEOMETRY_STATIC, NUM_FACES, NUM_INDICES, 8, 0, 0, 0, num_time_steps);
+
+  //rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER, cube_vertices,  0, sizeof(uniform Vec3fa  ));
+  rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  cube_quad_indices, 0, sizeof(uniform unsigned int));
+  rtcSetBuffer(scene, geomID, RTC_FACE_BUFFER,   cube_quad_faces,0, sizeof(uniform unsigned int));
+
+  rtcSetBuffer(scene, geomID, RTC_EDGE_CREASE_INDEX_BUFFER,   cube_edge_crease_indices,  0, 2*sizeof(uniform unsigned int));
+  rtcSetBuffer(scene, geomID, RTC_EDGE_CREASE_WEIGHT_BUFFER,  cube_edge_crease_weights,  0, sizeof(uniform float));
+
+  rtcSetBuffer(scene, geomID, RTC_VERTEX_CREASE_INDEX_BUFFER, cube_vertex_crease_indices,0, sizeof(uniform unsigned int));
+  rtcSetBuffer(scene, geomID, RTC_VERTEX_CREASE_WEIGHT_BUFFER,cube_vertex_crease_weights,0, sizeof(uniform float));
+
+  uniform float* uniform level = (uniform float* uniform) rtcMapBuffer(scene, geomID, RTC_LEVEL_BUFFER);
+  for (uniform size_t i=0; i<NUM_INDICES; i++) level[i] = 16.0f;
+  rtcUnmapBuffer(scene, geomID, RTC_LEVEL_BUFFER);
+
+  for (uniform size_t t=0; t<num_time_steps; t++)
+  {
+    uniform RTCBufferType bufID = (uniform RTCBufferType)(RTC_VERTEX_BUFFER0+t);
+    uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcMapBuffer(scene,geomID,bufID);
+
+    uniform AffineSpace3f rotation = make_AffineSpace3f_rotate(make_Vec3f(0,0,0),make_Vec3f(0,1,0),2.0f*M_PI*(float)t/(float)(num_time_steps-1));
+    uniform AffineSpace3f scale = make_AffineSpace3f_scale(make_Vec3f(2.0f,1.0f,1.0f));
+    
+    for (uniform int i=0; i<8; i++) {
+      uniform Vec3f v = make_Vec3f(cube_vertices[i][0],cube_vertices[i][1],cube_vertices[i][2]);
+      vertices[i] = make_Vec3fa(xfmPoint(rotation*scale,v)+pos);
+    }
+    rtcUnmapBuffer(scene,geomID,bufID);
+  }
+
   return geomID;
 }
 
 /* add hair geometry */
-uniform unsigned int addHair (RTCScene scene)
+uniform unsigned int addCurveOrHair (RTCScene scene, const uniform Vec3f& pos, bool curve, uniform unsigned int num_time_steps)
 {
-  uniform unsigned int geomID = rtcNewHairGeometry (scene, RTC_GEOMETRY_STATIC, 16, 4*16, 2);
-
-  uniform AffineSpace3f rotation = make_AffineSpace3f_rotate(make_Vec3f(0,3,0),make_Vec3f(1,1,0),0.44f);
-  uniform Vec3fa* uniform vertices0 = (uniform Vec3fa* uniform) rtcMapBuffer(scene,geomID,RTC_VERTEX_BUFFER0);
-  uniform Vec3fa* uniform vertices1 = (uniform Vec3fa* uniform) rtcMapBuffer(scene,geomID,RTC_VERTEX_BUFFER1);
-  for (uniform size_t i=0; i<16; i++)
+  uniform unsigned int geomID = 0;
+  if (curve) 
+    geomID = rtcNewCurveGeometry (scene, RTC_GEOMETRY_STATIC, 13, 4*13, num_time_steps);
+  else 
   {
-    uniform Vec3f org = make_Vec3f((i%4+0.5f)*0.5f-1.0f,2.0f,(i/4+0.5f)*0.5f-1.0f);
-    uniform Vec3f p0 = org + make_Vec3f(0.0f,+0.0f,0.0f);
-    uniform Vec3f p1 = org + make_Vec3f(0.3f,+0.0f,0.0f);
-    uniform Vec3f p2 = org + make_Vec3f(0.3f,-3.0f,0.3f);
-    uniform Vec3f p3 = org + make_Vec3f(0.0f,-3.0f,0.0f);
-    vertices0[4*i+0] = make_Vec3fa(p0,0.02f);
-    vertices0[4*i+1] = make_Vec3fa(p1,0.02f);
-    vertices0[4*i+2] = make_Vec3fa(p2,0.02f);
-    vertices0[4*i+3] = make_Vec3fa(p3,0.02f);
-    vertices1[4*i+0] = make_Vec3fa(xfmPoint(rotation,p0),0.02f);
-    vertices1[4*i+1] = make_Vec3fa(xfmPoint(rotation,p1),0.02f);
-    vertices1[4*i+2] = make_Vec3fa(p2,0.02f);
-    vertices1[4*i+3] = make_Vec3fa(p3,0.02f);
+    geomID = rtcNewHairGeometry (scene, RTC_GEOMETRY_STATIC, 13, 4*13, num_time_steps);
+    rtcSetTessellationRate (scene,geomID,16.0f);
   }
-  rtcUnmapBuffer(scene,geomID,RTC_VERTEX_BUFFER0);
-  rtcUnmapBuffer(scene,geomID,RTC_VERTEX_BUFFER1);
+
+  uniform Vec3f* uniform bspline = uniform new uniform Vec3f[16];
+  for (uniform int i=0; i<16; i++) {
+    uniform float f = (uniform float)(i)/16.0f;
+    bspline[i] = make_Vec3f(2.0f*f-1.0f,sin(12.0f*f),cos(12.0f*f));
+  }
+  uniform Vec3f* uniform bezier = uniform new uniform Vec3f[4*13];
+  for (uniform int i=0; i<13; i++) {
+    bezier[4*i+0] = (1.0f/6.0f)*bspline[i+0] + (2.0f/3.0f)*bspline[i+1] + (1.0f/6.0f)*bspline[i+2];
+    bezier[4*i+1] = (2.0f/3.0f)*bspline[i+1] + (1.0f/3.0f)*bspline[i+2];
+    bezier[4*i+2] = (1.0f/3.0f)*bspline[i+1] + (2.0f/3.0f)*bspline[i+2];
+    bezier[4*i+3] = (1.0f/6.0f)*bspline[i+1] + (2.0f/3.0f)*bspline[i+2] + (1.0f/6.0f)*bspline[i+3];
+  }
+
+  for (uniform size_t t=0; t<num_time_steps; t++)
+  {
+    uniform RTCBufferType bufID = (uniform RTCBufferType)(RTC_VERTEX_BUFFER0+t);
+    uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcMapBuffer(scene,geomID,bufID);
+
+    uniform AffineSpace3f rotation = make_AffineSpace3f_rotate(make_Vec3f(0,0,0),make_Vec3f(0,1,0),2.0f*M_PI*(float)t/(float)(num_time_steps-1));
+    uniform AffineSpace3f scale = make_AffineSpace3f_scale(make_Vec3f(2.0f,1.0f,1.0f));
+    
+    for (uniform int i=0; i<4*13; i++)
+      vertices[i] = make_Vec3fa(xfmPoint(rotation*scale,bezier[i])+pos,0.2f);
+
+    rtcUnmapBuffer(scene,geomID,bufID);
+  }
 
   uniform int* uniform indices = (uniform int* uniform) rtcMapBuffer(scene,geomID,RTC_INDEX_BUFFER);
-  for (uniform int i=0; i<16; i++) {
+  for (uniform int i=0; i<13; i++) {
     indices[i] = 4*i;
   }
   rtcUnmapBuffer(scene,geomID,RTC_INDEX_BUFFER);
 
+  delete[] bspline;
+  delete[] bezier;
   return geomID;
+}
+
+/* add line geometry */
+uniform unsigned int addLines (RTCScene scene, const uniform Vec3f& pos, uniform unsigned int num_time_steps)
+{
+  uniform unsigned int geomID = rtcNewLineSegments (scene, RTC_GEOMETRY_STATIC, 15, 16, num_time_steps);
+
+  uniform Vec3f* uniform bspline = uniform new uniform Vec3f[16];
+  for (uniform int i=0; i<16; i++) {
+    uniform float f = (uniform float)(i)/16.0f;
+    bspline[i] = make_Vec3f(2.0f*f-1.0f,sin(12.0f*f),cos(12.0f*f));
+  }
+
+  for (uniform size_t t=0; t<num_time_steps; t++)
+  {
+    uniform RTCBufferType bufID = (uniform RTCBufferType)(RTC_VERTEX_BUFFER0+t);
+    uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcMapBuffer(scene,geomID,bufID);
+
+    uniform AffineSpace3f rotation = make_AffineSpace3f_rotate(make_Vec3f(0,0,0),make_Vec3f(0,1,0),2.0f*M_PI*(float)t/(float)(num_time_steps-1));
+    uniform AffineSpace3f scale = make_AffineSpace3f_scale(make_Vec3f(2.0f,1.0f,1.0f));
+    
+    for (uniform int i=0; i<16; i++)
+      vertices[i] = make_Vec3fa(xfmPoint(rotation*scale,bspline[i])+pos,0.2f);
+
+    rtcUnmapBuffer(scene,geomID,bufID);
+  }
+
+  uniform int* uniform indices = (uniform int* uniform) rtcMapBuffer(scene,geomID,RTC_INDEX_BUFFER);
+  for (uniform int i=0; i<15; i++) {
+    indices[i] = i;
+  }
+  rtcUnmapBuffer(scene,geomID,RTC_INDEX_BUFFER);
+
+  delete[] bspline;
+  return geomID;
+}
+
+/* adds an instanced triangle cube to the scene, rotate instance */
+uniform unsigned int addInstancedTriangleCube (RTCScene global_scene, const uniform Vec3f& pos, uniform unsigned int num_time_steps)
+{
+  RTCScene scene = rtcDeviceNewScene(g_device, RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
+  uniform unsigned int meshID = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 12, 8, 1);
+  rtcSetBuffer(scene, meshID, RTC_INDEX_BUFFER,  cube_triangle_indices , 0, 3*sizeof(uniform unsigned int));
+  rtcSetBuffer(scene, meshID, RTC_VERTEX_BUFFER, cube_vertices, 0, 4*sizeof(uniform float));
+  rtcCommit(scene);
+  
+  uniform unsigned int instID = rtcNewInstance2(global_scene,scene,num_time_steps);
+
+  for (uniform size_t t=0; t<num_time_steps; t++)
+  {
+    uniform AffineSpace3f rotation = make_AffineSpace3f_rotate(make_Vec3f(0,0,0),make_Vec3f(0,1,0),2.0f*M_PI*(float)t/(float)(num_time_steps-1));
+    uniform AffineSpace3f scale = make_AffineSpace3f_scale(make_Vec3f(2.0f,1.0f,1.0f));
+    uniform AffineSpace3f translation = make_AffineSpace3f_translate(pos);
+    uniform AffineSpace3f xfm = translation*rotation*scale;
+    rtcSetTransform2(global_scene,instID,RTC_MATRIX_COLUMN_MAJOR,(uniform float* uniform)&xfm,t);
+  }
+  return instID;
+}
+
+/* adds an instanced quad cube to the scene, rotate instance and geometry */
+uniform unsigned int addInstancedQuadCube (RTCScene global_scene, const uniform Vec3f& pos, uniform unsigned int num_time_steps)
+{
+  RTCScene scene = rtcDeviceNewScene(g_device, RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
+  uniform unsigned int geomID = rtcNewQuadMesh (scene, RTC_GEOMETRY_STATIC, 6, 8, num_time_steps);
+  rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  cube_quad_indices , 0, 4*sizeof(uniform unsigned int));
+  
+  for (uniform size_t t=0; t<num_time_steps; t++)
+  {
+    uniform RTCBufferType bufID = (uniform RTCBufferType)(RTC_VERTEX_BUFFER0+t);
+    uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcMapBuffer(scene,geomID,bufID);
+
+    uniform AffineSpace3f rotation = make_AffineSpace3f_rotate(make_Vec3f(0,0,0),make_Vec3f(0,1,0),0.5f*2.0f*M_PI*(float)t/(float)(num_time_steps-1));
+    uniform AffineSpace3f scale = make_AffineSpace3f_scale(make_Vec3f(2.0f,1.0f,1.0f));
+    
+    for (uniform int i=0; i<8; i++) {
+      uniform Vec3f v = make_Vec3f(cube_vertices[i][0],cube_vertices[i][1],cube_vertices[i][2]);
+      vertices[i] = make_Vec3fa(xfmPoint(rotation*scale,v));
+    }
+    rtcUnmapBuffer(scene,geomID,bufID);
+  }
+  rtcCommit(scene);
+  
+  uniform unsigned int instID = rtcNewInstance2(global_scene,scene,num_time_steps);
+
+  for (uniform size_t t=0; t<num_time_steps; t++)
+  {
+    uniform AffineSpace3f rotation = make_AffineSpace3f_rotate(make_Vec3f(0,0,0),make_Vec3f(0,1,0),0.5f*2.0f*M_PI*(float)t/(float)(num_time_steps-1));
+    uniform AffineSpace3f translation = make_AffineSpace3f_translate(pos);
+    uniform AffineSpace3f xfm = translation*rotation;
+    rtcSetTransform2(global_scene,instID,RTC_MATRIX_COLUMN_MAJOR,(uniform float* uniform)&xfm,t);
+  }
+  return instID;
+}
+
+// ======================================================================== //
+//                     User defined sphere geometry                         //
+// ======================================================================== //
+
+struct Sphere
+{
+  ALIGNED_STRUCT
+  Vec3f p;                      //!< position of the sphere
+  float r;                      //!< radius of the sphere
+  unsigned int geomID;
+  unsigned int num_time_steps;
+};
+
+unmasked void sphereBoundsFunc(void* uniform userPtr, const uniform Sphere* uniform spheres, uniform size_t item, uniform size_t time, uniform RTCBounds& bounds_o)
+{
+  const uniform Sphere& sphere = spheres[item];
+  uniform float ft = 2.0f*M_PI * (uniform float) time / (uniform float) (sphere.num_time_steps-1);
+  uniform Vec3f p = sphere.p + make_Vec3f(cos(ft),0.0f,sin(ft));
+  bounds_o.lower_x = p.x-sphere.r;
+  bounds_o.lower_y = p.y-sphere.r;
+  bounds_o.lower_z = p.z-sphere.r;
+  bounds_o.upper_x = p.x+sphere.r;
+  bounds_o.upper_y = p.y+sphere.r;
+  bounds_o.upper_z = p.z+sphere.r;
+}
+
+void sphereIntersectFunc(const uniform Sphere* uniform spheres, varying RTCRay& ray, uniform size_t item)
+{
+  const uniform Sphere& sphere = spheres[item];
+
+  const int time_segments = sphere.num_time_steps-1;
+  const float time = ray.time*(float)(time_segments);
+  const int itime = clamp((int)(floor(time)),(varying int)0,time_segments-1);
+  const float ftime = time - (float)(itime);
+  const float ft0 = 2.0f*M_PI * (float) (itime+0) / (float) (sphere.num_time_steps-1);
+  const float ft1 = 2.0f*M_PI * (float) (itime+1) / (float) (sphere.num_time_steps-1);
+  const Vec3f p0 = sphere.p + make_Vec3f(cos(ft0),0.0f,sin(ft0));
+  const Vec3f p1 = sphere.p + make_Vec3f(cos(ft1),0.0f,sin(ft1));
+  const Vec3f sphere_p = (1.0f-ftime)*p0 + ftime*p1;
+
+  const Vec3f v = ray.org-sphere_p;
+  const float A = dot(ray.dir,ray.dir);
+  const float B = 2.0f*dot(v,ray.dir);
+  const float C = dot(v,v) - sqr(sphere.r);
+  const float D = B*B - 4.0f*A*C;
+  if (D < 0.0f) return;
+  const float Q = sqrt(D);
+  const float rcpA = rcp(A);
+  const float t0 = 0.5f*rcpA*(-B-Q);
+  const float t1 = 0.5f*rcpA*(-B+Q);
+  if ((ray.tnear < t0) & (t0 < ray.tfar)) {
+    ray.u = 0.0f;
+    ray.v = 0.0f;
+    ray.tfar = t0;
+    ray.geomID = sphere.geomID;
+    ray.primID = (unsigned int) item;
+    ray.Ng = ray.org+t0*ray.dir-sphere_p;
+  }
+  if ((ray.tnear < t1) & (t1 < ray.tfar)) {
+    ray.u = 0.0f;
+    ray.v = 0.0f;
+    ray.tfar = t1;
+    ray.geomID = sphere.geomID;
+    ray.primID = (unsigned int) item;
+    ray.Ng = ray.org+t1*ray.dir-sphere_p;
+  }
+}
+
+void sphereOccludedFunc(const uniform Sphere* uniform spheres, varying RTCRay& ray, uniform size_t item)
+{
+  const uniform Sphere& sphere = spheres[item];
+
+  const int time_segments = sphere.num_time_steps-1;
+  const float time = ray.time*(float)(time_segments);
+  const int itime = clamp((int)(floor(time)),(varying int)0,time_segments-1);
+  const float ftime = time - (float)(itime);
+  const float ft0 = 2.0f*M_PI * (float) (itime+0) / (float) (sphere.num_time_steps-1);
+  const float ft1 = 2.0f*M_PI * (float) (itime+1) / (float) (sphere.num_time_steps-1);
+  const Vec3f p0 = sphere.p + make_Vec3f(cos(ft0),0.0f,sin(ft0));
+  const Vec3f p1 = sphere.p + make_Vec3f(cos(ft1),0.0f,sin(ft1));
+  const Vec3f sphere_p = (1.0f-ftime)*p0 + ftime*p1;
+
+  const Vec3f v = ray.org-sphere_p;
+  const float A = dot(ray.dir,ray.dir);
+  const float B = 2.0f*dot(v,ray.dir);
+  const float C = dot(v,v) - sqr(sphere.r);
+  const float D = B*B - 4.0f*A*C;
+  if (D < 0.0f) return;
+  const float Q = sqrt(D);
+  const float rcpA = rcp(A);
+  const float t0 = 0.5f*rcpA*(-B-Q);
+  const float t1 = 0.5f*rcpA*(-B+Q);
+  if ((ray.tnear < t0) & (t0 < ray.tfar)) {
+    ray.geomID = 0;
+  }
+  if ((ray.tnear < t1) & (t1 < ray.tfar)) {
+    ray.geomID = 0;
+  }
+}
+
+uniform Sphere* uniform addUserGeometrySphere (RTCScene scene, const uniform Vec3f& p, uniform float r, uniform unsigned int num_time_steps)
+{
+  uniform unsigned int geomID = rtcNewUserGeometry2(scene,1,num_time_steps);
+  uniform Sphere* uniform sphere = uniform new uniform Sphere;
+  sphere->p = p;
+  sphere->r = r;
+  sphere->geomID = geomID;
+  sphere->num_time_steps = num_time_steps;
+  rtcSetUserData(scene,geomID,sphere);
+  rtcSetBoundsFunction3(scene,geomID,(RTCBoundsFunc3)&sphereBoundsFunc,NULL);
+  rtcSetIntersectFunction(scene,geomID,(RTCIntersectFuncVarying)&sphereIntersectFunc);
+  rtcSetOccludedFunction (scene,geomID,(RTCOccludedFuncVarying )&sphereOccludedFunc);
+  return sphere;
 }
 
 /* adds a ground plane to the scene */
@@ -194,13 +494,34 @@ export void device_init (uniform int8* uniform cfg)
   /* create scene */
   g_scene = rtcDeviceNewScene(g_device, RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
 
-  /* add cube */
-  addCube(g_scene);
+  /* add geometry to the scene */
+  addTriangleCube(g_scene,make_Vec3f(-5,1,-5),g_num_time_steps);
+  addTriangleCube(g_scene,make_Vec3f(-5,5,-5),g_num_time_steps2);
 
-  /* add hair */
-  addHair(g_scene);
+  addQuadCube    (g_scene,make_Vec3f( 0,1,-5),g_num_time_steps);
+  addQuadCube    (g_scene,make_Vec3f( 0,5,-5),g_num_time_steps2);
 
-  /* add ground plane */
+  addSubdivCube  (g_scene,make_Vec3f(+5,1,-5),g_num_time_steps);
+  addSubdivCube  (g_scene,make_Vec3f(+5,5,-5),g_num_time_steps2);
+
+  addLines       (g_scene,make_Vec3f(-5,1, 0),g_num_time_steps);
+  addLines       (g_scene,make_Vec3f(-5,5, 0),g_num_time_steps2);
+
+  addCurveOrHair (g_scene,make_Vec3f( 0,1, 0),false,g_num_time_steps);
+  addCurveOrHair (g_scene,make_Vec3f( 0,5, 0),false,g_num_time_steps2);
+
+  addCurveOrHair (g_scene,make_Vec3f(+5,1, 0),true,g_num_time_steps);
+  addCurveOrHair (g_scene,make_Vec3f(+5,5, 0),true,g_num_time_steps2);
+
+  addInstancedTriangleCube(g_scene,make_Vec3f(-5,1,+5),g_num_time_steps);
+  addInstancedTriangleCube(g_scene,make_Vec3f(-5,5,+5),g_num_time_steps2);
+
+  addInstancedQuadCube    (g_scene,make_Vec3f( 0,1,+5),g_num_time_steps);
+  addInstancedQuadCube    (g_scene,make_Vec3f( 0,5,+5),g_num_time_steps2);
+
+  addUserGeometrySphere   (g_scene,make_Vec3f(+5,1,+5),1.0f,g_num_time_steps);
+  addUserGeometrySphere   (g_scene,make_Vec3f(+5,5,+5),1.0f,g_num_time_steps2);
+
   addGroundPlane(g_scene);
 
   /* commit changes to scene */
@@ -217,6 +538,7 @@ uniform int frameID = 50;
 Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
 {
   uniform float time = abs((uniform int)(0.01f*frameID) - 0.01f*frameID);
+  if (g_time != -1) time = g_time;
 
   /* initialize ray */
   RTCRay ray;
@@ -226,20 +548,34 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
+  ray.instID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time = time;
 
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
-
+  
   /* shade pixels */
   Vec3f color = make_Vec3f(0.0f);
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
   {
-    Vec3f diffuse;
-    if (ray.geomID == 0) diffuse = face_colors[ray.primID];
-    else if (ray.geomID == 1) diffuse = make_Vec3f(0.0f,1.0f,0.0f);
-    else diffuse = make_Vec3f(0.5f,0.5f,0.5f);
+    Vec3f diffuse = make_Vec3f(0.5f,0.5f,0.5f);
+    if (ray.instID == RTC_INVALID_GEOMETRY_ID)
+      ray.instID = ray.geomID;
+    switch (ray.instID / 2) {
+    case 0: diffuse = face_colors[ray.primID]; break;
+    case 1: diffuse = face_colors[2*ray.primID]; break;
+    case 2: diffuse = face_colors[2*ray.primID]; break;
+
+    case 3: diffuse = make_Vec3f(0.5f,0.0f,0.0f); break;
+    case 4: diffuse = make_Vec3f(0.0f,0.5f,0.0f); break;
+    case 5: diffuse = make_Vec3f(0.0f,0.0f,0.5f); break;
+
+    case 6: diffuse = face_colors[ray.primID]; break;
+    case 7: diffuse = face_colors[2*ray.primID]; break;
+    case 8: diffuse = make_Vec3f(0.5f,0.5f,0.0f); break;
+    default: diffuse = make_Vec3f(0.5f,0.5f,0.5f); break;
+    }
     color = color + diffuse*0.5f;
     Vec3f lightDir = normalize(make_Vec3f(-1,-4,-1));
 
@@ -251,6 +587,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera)
     shadow.tfar = inf;
     shadow.geomID = 1;
     shadow.primID = 0;
+    shadow.instID = RTC_INVALID_GEOMETRY_ID;
     shadow.mask = -1;
     shadow.time = time;
 

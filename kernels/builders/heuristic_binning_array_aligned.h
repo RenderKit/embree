@@ -23,11 +23,7 @@ namespace embree
   namespace isa
   { 
     /*! Performs standard object binning */
-#if defined(__AVX512F__)
-    template<typename PrimRef, size_t BINS = 16>
-#else
-    template<typename PrimRef, size_t BINS = 32>
-#endif
+    template<typename PrimRef, size_t BINS>
       struct HeuristicArrayBinningSAH
       {
         typedef BinSplit<BINS> Split;
@@ -35,11 +31,11 @@ namespace embree
         typedef range<size_t> Set;
 
 #if defined(__AVX512F__)
-        static const size_t PARALLEL_THRESHOLD = 3*1024; 
+        static const size_t PARALLEL_THRESHOLD = 4*768; 
         static const size_t PARALLEL_FIND_BLOCK_SIZE = 768;
-        static const size_t PARALLEL_PARITION_BLOCK_SIZE = 128;
+        static const size_t PARALLEL_PARITION_BLOCK_SIZE = 768; 
 #else
-		static const size_t PARALLEL_THRESHOLD = 3 * 1024;
+        static const size_t PARALLEL_THRESHOLD = 3 * 1024;
         static const size_t PARALLEL_FIND_BLOCK_SIZE = 1024;
         static const size_t PARALLEL_PARITION_BLOCK_SIZE = 128;
 #endif
@@ -50,19 +46,17 @@ namespace embree
         __forceinline HeuristicArrayBinningSAH (PrimRef* prims)
           : prims(prims) {}
 
-        const std::pair<BBox3fa,BBox3fa> computePrimInfoMB(Scene* scene, const PrimInfo& pinfo)
+        const LBBox3fa computePrimInfoMB(size_t timeSegment, size_t numTimeSteps, Scene* scene, const PrimInfo& pinfo)
         {
-          BBox3fa bounds0 = empty;
-          BBox3fa bounds1 = empty;
+          LBBox3fa allBounds = empty;
           for (size_t i=pinfo.begin; i<pinfo.end; i++) // FIXME: parallelize
           {
             BezierPrim& prim = prims[i];
             const size_t geomID = prim.geomID();
             const BezierCurves* curves = scene->getBezierCurves(geomID);
-            bounds0.extend(curves->bounds(prim.primID(),0));
-            bounds1.extend(curves->bounds(prim.primID(),1));
+            allBounds.extend(curves->linearBounds(prim.primID(),timeSegment,numTimeSteps));
           }
-          return std::pair<BBox3fa,BBox3fa>(bounds0,bounds1);
+          return allBounds;
         }
 
         /*! finds the best split */
@@ -76,7 +70,6 @@ namespace embree
         /*! finds the best split */
         const Split find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
-
           if (likely(pinfo.size() < PARALLEL_THRESHOLD)) return sequential_find(set,pinfo,logBlockSize);
           else                                           return   parallel_find(set,pinfo,logBlockSize);
         }
@@ -108,22 +101,22 @@ namespace embree
           Set lset,rset;
           Set set(pinfo.begin,pinfo.end);
           if (likely(pinfo.size() < PARALLEL_THRESHOLD)) 
-            sequential_split(spliti,set,left,lset,right,rset);
+            split_helper<false>(spliti,pinfo,set,left,lset,right,rset);
           else
-            parallel_split(spliti,set,left,lset,right,rset);
+            split_helper<true>(spliti,pinfo,set,left,lset,right,rset);
         }
         
         /*! array partitioning */
-        void split(const Split& split, const PrimInfo& pinfo, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
+        __forceinline void split(const Split& split, const PrimInfo& pinfo, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
         {
           if (likely(pinfo.size() < PARALLEL_THRESHOLD)) 
-            sequential_split(split,set,left,lset,right,rset);
+            split_helper<false>(split,pinfo,set,left,lset,right,rset);
           else                                
-            parallel_split(split,set,left,lset,right,rset);
+            split_helper<true>(split,pinfo,set,left,lset,right,rset);
         }
 
-        /*! array partitioning */
-        void sequential_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
+        template<bool parallel>
+        __forceinline void split_helper(const Split& split, const PrimInfo& pinfo, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
         {
           if (!split.valid()) {
             deterministic_order(set);
@@ -141,19 +134,22 @@ namespace embree
 #if defined(__AVX512F__)
           const vint16 vSplitPos(splitPos);
           const vbool16 vSplitMask( splitDimMask );
+          auto isLeft = [&] (const PrimRef &ref) { return split.mapping.bin_unsafe(ref,vSplitPos,vSplitMask); };
 #else
           const vint4 vSplitPos(splitPos);
           const vbool4 vSplitMask( (int)splitDimMask );
+          auto isLeft = [&] (const PrimRef &ref) { return any(((vint4)split.mapping.bin_unsafe(center2(ref.bounds())) < vSplitPos) & vSplitMask); };
 #endif
-          size_t center = serial_partitioning(prims,begin,end,local_left,local_right,
-                                              [&] (const PrimRef& ref) { 
-#if defined(__AVX512F__)
-                                                return split.mapping.bin_unsafe(ref,vSplitPos,vSplitMask);                                                 
-#else
-                                                return any(((vint4)split.mapping.bin_unsafe(center2(ref.bounds())) < vSplitPos) & vSplitMask); 
-#endif
-                                              },
-                                              [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend(ref.bounds()); });          
+          size_t center = 0;
+          if (!parallel)
+            center = serial_partitioning(prims,begin,end,local_left,local_right,isLeft,
+                                         [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend(ref.bounds()); });          
+          else
+            center = parallel_partitioning(
+              prims,begin,end,empty,local_left,local_right,isLeft,
+              [] (CentGeomBBox3fa& pinfo,const PrimRef &ref) { pinfo.extend(ref.bounds()); },
+              [] (CentGeomBBox3fa& pinfo0,const CentGeomBBox3fa &pinfo1) { pinfo0.merge(pinfo1); },
+              PARALLEL_PARITION_BLOCK_SIZE);
           
           new (&left ) PrimInfo(begin,center,local_left.geomBounds,local_left.centBounds);
           new (&right) PrimInfo(center,end,local_right.geomBounds,local_right.centBounds);
@@ -162,47 +158,7 @@ namespace embree
           assert(area(left.geomBounds) >= 0.0f);
           assert(area(right.geomBounds) >= 0.0f);
         }
-        
-        /*! array partitioning */
-        __noinline void parallel_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset)
-        {
-          if (!split.valid()) {
-            deterministic_order(set);
-            return splitFallback(set,left,lset,right,rset);
-          }
-          
-          const size_t begin = set.begin();
-          const size_t end   = set.end();
-          left.reset(); 
-          right.reset();
-          PrimInfo init; init.reset();
-          const unsigned int splitPos = split.pos;
-          const unsigned int splitDim = split.dim;
-          const unsigned int splitDimMask = (unsigned int)1 << splitDim;
 
-#if defined(__AVX512F__)
-          const vint16 vSplitPos(splitPos);
-          const vbool16 vSplitMask( (int)splitDimMask );
-          auto isLeft = [&] (const PrimRef &ref) { return split.mapping.bin_unsafe(ref,vSplitPos,vSplitMask); };
-#else
-          const vint4 vSplitPos(splitPos);
-          const vbool4 vSplitMask( (int)splitDimMask );
-          auto isLeft = [&] (const PrimRef &ref) { return any(((vint4)split.mapping.bin_unsafe(center2(ref.bounds())) < vSplitPos) & vSplitMask); };
-
-#endif
-          const size_t mid = parallel_in_place_partitioning_static<PARALLEL_PARITION_BLOCK_SIZE,PrimRef,PrimInfo>(
-            &prims[begin],end-begin,init,left,right,isLeft,
-            [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.add(ref.bounds()); },
-            [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); });
-          
-          const size_t center = begin+mid;
-          left.begin  = begin;  left.end  = center; 
-          right.begin = center; right.end = end;
-          
-          new (&lset) range<size_t>(begin,center);
-          new (&rset) range<size_t>(center,end);
-        }
-        
         void deterministic_order(const Set& set) 
         {
           /* required as parallel partition destroys original primitive order */

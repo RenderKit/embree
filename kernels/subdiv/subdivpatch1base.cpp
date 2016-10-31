@@ -27,10 +27,9 @@ namespace embree
                                       const float edge_level[4],
                                       const int subdiv[4],
                                       const int simd_width)
-    : flags(0), type(INVALID_PATCH), geom(gID), prim(pID)
+  : flags(0), type(INVALID_PATCH), geom(gID), prim(pID), time_(unsigned(time))
   {
     static_assert(sizeof(SubdivPatch1Base) == 5 * 64, "SubdivPatch1Base has wrong size");
-    //mtx.reset();
 
     const HalfEdge* edge = mesh->getHalfEdge(pID);
 
@@ -55,7 +54,6 @@ namespace embree
     {
       type = EVAL_PATCH;
       set_edge(mesh->getHalfEdge(pID));
-      set_time(time);
       set_subPatch(subPatch);
     }
 

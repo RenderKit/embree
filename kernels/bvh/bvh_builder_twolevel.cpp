@@ -23,7 +23,7 @@
 
 #define PROFILE 0
 #define MAX_OPEN_SIZE 10000
-#define PROFILE_ITERATIONS 2000
+#define PROFILE_ITERATIONS 200
 
 namespace embree
 {
@@ -58,7 +58,7 @@ namespace embree
       bvh->alloc.reset();
       
       /* skip build for empty scene */
-      const size_t numPrimitives = scene->getNumPrimitives<Mesh,1>();
+      const size_t numPrimitives = scene->getNumPrimitives<Mesh,false>();
       if (numPrimitives == 0) {
         prims.resize(0);
         bvh->set(BVH::emptyNode,empty,0);
@@ -77,7 +77,7 @@ namespace embree
       if (builders.size() < num) builders.resize(num);
       if (refs.size()     < num) refs.resize(num);
       nextRef.store(0);
-      
+
       /* create of acceleration structures */
       parallel_for(size_t(0), num, [&] (const range<size_t>& r)
       {
@@ -118,14 +118,14 @@ namespace embree
             builder->build(0,0);
           
           /* create build primitive */
-          if (!object->bounds.empty())
-            refs[nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->bounds,object->root);
+          if (!object->getBounds().empty())
+            refs[nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->getBounds(),object->root);
         }
       });
-      
+
       /* fast path for single geometry scenes */
       if (nextRef == 1) { 
-        bvh->set(refs[0].node,refs[0].bounds(),numPrimitives);
+        bvh->set(refs[0].node,LBBox3fa(refs[0].bounds()),numPrimitives);
         return;
       }
 
@@ -135,7 +135,7 @@ namespace embree
       
       /* fast path for small geometries */
       if (refs.size() == 1) { 
-        bvh->set(refs[0].node,refs[0].bounds(),numPrimitives);
+        bvh->set(refs[0].node,LBBox3fa(refs[0].bounds()),numPrimitives);
         return;
       }
 
@@ -164,7 +164,7 @@ namespace embree
            [&] { return bvh->alloc.threadLocal2(); },
            [&] (const isa::BVHBuilderBinnedSAH::BuildRecord& current, BVHBuilderBinnedSAH::BuildRecord* children, const size_t n, FastAllocator::ThreadLocal2* alloc) -> int
            {
-             Node* node = (Node*) alloc->alloc0.malloc(sizeof(Node)); node->clear();
+             AlignedNode* node = (AlignedNode*) alloc->alloc0->malloc(sizeof(AlignedNode)); node->clear();
              for (size_t i=0; i<n; i++) {
                node->set(i,children[i].pinfo.geomBounds);
                children[i].parent = (size_t*)&node->child(i);
@@ -181,7 +181,7 @@ namespace embree
            [&] (size_t dn) { bvh->scene->progressMonitor(0); },
            prims.data(),pinfo,N,BVH::maxBuildDepthLeaf,N,1,1,1.0f,1.0f);
         
-        bvh->set(root,pinfo.geomBounds,numPrimitives);
+        bvh->set(root,LBBox3fa(pinfo.geomBounds),numPrimitives);
       }
 
 #if PROFILE
@@ -225,7 +225,7 @@ namespace embree
       for (size_t i=0;i<refs.size();i++)
       {
         NodeRef ref = refs.back().node;
-        if (ref.isNode())
+        if (ref.isAlignedNode())
           ref.prefetch();
       }
 #endif
@@ -238,14 +238,14 @@ namespace embree
         if (ref.isLeaf()) break;
         refs.pop_back();    
         
-        Node* node = ref.node();
+        AlignedNode* node = ref.alignedNode();
         for (size_t i=0; i<N; i++) {
           if (node->child(i) == BVH::emptyNode) continue;
           refs.push_back(BuildRef(node->bounds(i),node->child(i)));
          
 #if 1
           NodeRef ref_pre = node->child(i);
-          if (ref_pre.isNode())
+          if (ref_pre.isAlignedNode())
             ref_pre.prefetch();
 #endif
           std::push_heap (refs.begin(),refs.end()); 

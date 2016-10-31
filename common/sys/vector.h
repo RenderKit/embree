@@ -18,6 +18,13 @@
 
 #include "alloc.h"
 
+/*! instantiate vector using default allocator */
+#define vector_t vector
+#define allocator_t std::allocator<T>
+#include "vector_t.h"
+#undef vector_t
+#undef allocator_t
+
 /*! instantiate vector using aligned malloc */
 #define vector_t avector
 #define allocator_t aligned_allocator<T,std::alignment_of<T>::value>

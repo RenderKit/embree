@@ -25,7 +25,6 @@ namespace embree
 
     static_assert(MAX_RAYS_PER_OCTANT <= MAX_INTERNAL_STREAM_SIZE,"maximal internal stream size exceeded");
 
-
     __forceinline void RayStream::filterAOS(Scene *scene, RTCRay* _rayN, const size_t N, const size_t stride, IntersectContext* context, const bool intersect)
     {
       Ray* __restrict__ rayN = (Ray*)_rayN;
@@ -96,6 +95,77 @@ namespace embree
         }
     }
 
+    __forceinline void RayStream::filterAOP(Scene *scene, RTCRay** _rayN, const size_t N,IntersectContext* context, const bool intersect)
+    {
+      Ray** __restrict__ rayN = (Ray**)_rayN;
+      __aligned(64) Ray* octants[8][MAX_RAYS_PER_OCTANT];
+      unsigned int rays_in_octant[8];
+
+      for (size_t i=0;i<8;i++) rays_in_octant[i] = 0;
+      size_t inputRayID = 0;
+
+      while(1)
+      {
+        int cur_octant = -1;
+        /* sort rays into octants */
+        for (;inputRayID<N;)
+        {
+          Ray &ray = *rayN[inputRayID];
+          /* skip invalid rays */
+          if (unlikely(ray.tnear > ray.tfar)) { inputRayID++; continue; }
+          if (unlikely(!intersect && ray.geomID == 0)) { inputRayID++; continue; } // ignore already occluded rays
+
+#if defined(EMBREE_IGNORE_INVALID_RAYS)
+          if (unlikely(!ray.valid())) {  inputRayID++; continue; }
+#endif
+
+          const unsigned int octantID = movemask(vfloat4(ray.dir) < 0.0f) & 0x7;
+
+          assert(octantID < 8);
+          octants[octantID][rays_in_octant[octantID]++] = &ray;
+          inputRayID++;
+          if (unlikely(rays_in_octant[octantID] == MAX_RAYS_PER_OCTANT))
+          {
+            cur_octant = octantID;
+            break;
+          }
+        }
+        /* need to flush rays in octant ? */
+        if (unlikely(cur_octant == -1))
+          for (int i=0;i<8;i++)
+            if (rays_in_octant[i])
+            {
+              cur_octant = i;
+              break;
+            }
+
+        /* all rays traced ? */
+        if (unlikely(cur_octant == -1))
+          break;
+
+        
+        Ray** rays = &octants[cur_octant][0];
+        const size_t numOctantRays = rays_in_octant[cur_octant];
+
+        /* special codepath for very small number of rays per octant */
+        if (numOctantRays == 1)
+        {
+          if (intersect) scene->intersect((RTCRay&)*rays[0],context);
+          else           scene->occluded ((RTCRay&)*rays[0],context);
+        }        
+        /* codepath for large number of rays per octant */
+        else
+        {
+          /* incoherent ray stream code path */
+          if (intersect) scene->intersectN((RTCRay**)rays,numOctantRays,context);
+          else           scene->occludedN ((RTCRay**)rays,numOctantRays,context);
+        }
+        rays_in_octant[cur_octant] = 0;
+
+        }
+    }
+
+
     __forceinline void RayStream::filterSOA(Scene *scene, char* rayData, const size_t N, const size_t streams, const size_t stream_offset, IntersectContext* context, const bool intersect)
     {
       RayPacket rayN(rayData,N);
@@ -105,7 +175,7 @@ namespace embree
       const size_t offsetAlignment  = (size_t)stream_offset  % (VSIZEX*sizeof(float));
 
       /* can we use the fast path ? */
-      if (unlikely(isCoherent(context->context->flags) && 
+      if (unlikely(isCoherent(context->user->flags) &&
                    N == VSIZEX                && 
                    !rayDataAlignment          && 
                    !offsetAlignment))
@@ -232,7 +302,7 @@ namespace embree
       size_t rayStartIndex = 0;
 
       /* use packet intersector for coherent ray mode */
-      if (unlikely(isCoherent(context->context->flags)))
+      if (unlikely(isCoherent(context->user->flags)))
       {
         size_t s = 0;
         size_t stream_offset = 0;
@@ -321,6 +391,6 @@ namespace embree
         }
     }
 
-    RayStreamFilterFuncs rayStreamFilters(RayStream::filterAOS,RayStream::filterSOA,RayStream::filterSOP);
+    RayStreamFilterFuncs rayStreamFilters(RayStream::filterAOS,RayStream::filterAOP,RayStream::filterSOA,RayStream::filterSOP);
   };
 };
