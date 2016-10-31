@@ -53,6 +53,7 @@ enum RTCAlgorithmFlags
   RTC_INTERSECT16 = (1 << 3),   //!< enables the rtcIntersect16 and rtcOccluded16 functions for this scene
   RTC_INTERPOLATE = (1 << 4),   //!< enables the rtcInterpolate function for this scene
   RTC_INTERSECT_STREAM = (1 << 5),    //!< enables the rtcIntersectN and rtcOccludedN functions for this scene  
+  RTC_COLLIDE = (1 << 6)        //!< enables the rtcCollide function
 };
 
 /*! intersection flags */

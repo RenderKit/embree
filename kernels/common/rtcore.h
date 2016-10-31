@@ -37,6 +37,7 @@ namespace embree
   __forceinline bool isIntersect4Mode(RTCAlgorithmFlags flags) { return (flags & RTC_INTERSECT4) != 0; }
   __forceinline bool isIntersect8Mode(RTCAlgorithmFlags flags) { return (flags & RTC_INTERSECT8) != 0; }
   __forceinline bool isIntersect16Mode(RTCAlgorithmFlags flags) { return (flags & RTC_INTERSECT16) != 0; }
+  __forceinline bool isCollidable(RTCAlgorithmFlags flags) { return (flags & RTC_COLLIDE) != 0; }
 
    /*! decoding of intersection flags */
   __forceinline bool isCoherent  (RTCIntersectFlags flags) { return (flags & RTC_INTERSECT_INCOHERENT) == 0; }

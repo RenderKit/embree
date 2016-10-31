@@ -87,6 +87,14 @@ namespace embree
 #endif
 
 #if defined(EMBREE_GEOMETRY_USER)
+    if (isCollidable(aflags)) 
+    {
+      if (isStatic()) {
+        accels.add(device->bvh4_factory->BVH4UserGeometry(this));
+      } else {
+        accels.add(device->bvh4_factory->BVH4UserGeometry(this));
+      }
+    }
     accels.add(device->bvh4_factory->BVH4UserGeometry(this)); // has to be the last as the instID field of a hit instance is not invalidated by other hit geometry
     accels.add(device->bvh4_factory->BVH4UserGeometryMB(this)); // has to be the last as the instID field of a hit instance is not invalidated by other hit geometry
 #endif
@@ -97,7 +105,16 @@ namespace embree
 #if defined(EMBREE_GEOMETRY_TRIANGLES)
     if (device->tri_accel == "default") 
     {
-      if (isStatic()) {
+      /* choose special accel if we need to collide the scene */
+      if (isCollidable(aflags)) 
+      {
+        if (isStatic()) {
+          accels.add(device->bvh4_factory->BVH4Triangle4vObjectSplit(this));
+        } else {
+          accels.add(device->bvh4_factory->BVH4Triangle4vTwolevel(this));
+        }
+      }
+      else if (isStatic()) {
         int mode =  2*(int)isCompact() + 1*(int)isRobust(); 
         switch (mode) {
         case /*0b00*/ 0: 

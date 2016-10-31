@@ -115,7 +115,7 @@ namespace embree
       RTCSceneFlags sflags;
       if (g_animation.size() == 1) sflags = RTC_SCENE_STATIC;
       else                         sflags = RTC_SCENE_DYNAMIC;
-      RTCScene scene_out = rtcDeviceNewScene(g_device,sflags,RTC_INTERSECT1);
+      RTCScene scene_out = rtcDeviceNewScene(g_device,sflags,RTC_INTERSECT1 | RTC_COLLIDE);
       
       for (unsigned int i=0; i<scene_in->geometries.size(); i++)
       {
@@ -232,8 +232,6 @@ namespace embree
         throw std::runtime_error("you have to specify at least one scene");
 
       /* initialize ray tracing core */
-      rtcore += ",tri_accel=bvh4.triangle4v";
-      if (g_animation.size() > 1) rtcore += ",tri_builder=morton";
       g_device = rtcNewDevice(rtcore.c_str());
       //error_handler(rtcDeviceGetError(g_device));
 

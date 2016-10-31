@@ -289,6 +289,8 @@ namespace embree
     if (scene1->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
     if (scene0->device != scene1->device) throw_RTCError(RTC_INVALID_OPERATION,"scenes are from different devices");
 #endif
+    if (!isCollidable(scene0->aflags)) throw_RTCError(RTC_INVALID_OPERATION,"rtcCollide not supported for this scene");
+    if (!isCollidable(scene1->aflags)) throw_RTCError(RTC_INVALID_OPERATION,"rtcCollide not supported for this scene");
     scene0->collide(scene0,scene1,callback,userPtr);
     RTCORE_CATCH_END(scene0->device);
   }
