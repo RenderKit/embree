@@ -83,7 +83,8 @@ namespace embree
                             size_t item,
                             RTCBounds* bounds_o)
   {
-    const TutorialScene::TriangleMesh* mesh = (TutorialScene::TriangleMesh*) geomUserPtr;
+    const unsigned geomID = (unsigned) (size_t) geomUserPtr;
+    const TutorialScene::TriangleMesh* mesh = (TutorialScene::TriangleMesh*) g_tutorial_scene->geometries[geomID].ptr;
     const TutorialScene::Triangle& tri = mesh->triangles[item];
     BBox3fa bounds = empty;
     bounds.extend(mesh->positions[tri.v0]);
