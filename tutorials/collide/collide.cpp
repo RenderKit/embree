@@ -157,8 +157,12 @@ namespace embree
         }, "--benchmark <N> <M>: enabled benchmark mode, skips N collisions, measures M collisions");
       
       registerOption("use-user-geometry", [this] (Ref<ParseStream> cin, const FileName& path) {
-          use_user_geometry = cin->getInt();
-        }, "--use-user-geometry <bool>: use user geometries for collision detection");    
+          use_user_geometry = true;
+        }, "--use-user-geometry: use user geometries for collision detection");    
+
+      registerOption("use-triangle-geometry", [this] (Ref<ParseStream> cin, const FileName& path) {
+          use_user_geometry = false;
+        }, "--use-triangle-geometry: use triangle geometries for collision detection");    
     }
  
     unsigned int convertTriangleMesh(Ref<TutorialScene::TriangleMesh> mesh, RTCScene scene_out)
