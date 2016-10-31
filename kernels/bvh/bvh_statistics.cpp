@@ -111,7 +111,7 @@ namespace embree
         if (n->child(i) == BVH::emptyNode) continue;
         s.statAlignedNodesMB4D.numChildren++;
         const BBox1f t0t1i = intersect(t0t1,n->timeRange(i));
-        assert(!t0t1i.isEmpty());
+        assert(!t0t1i.empty());
         const double Ai = n->AlignedNodeMB::expectedHalfArea(i,t0t1i);
         s = s + statistics(n->child(i),Ai,t0t1i);
       }
@@ -145,7 +145,7 @@ namespace embree
         if (n->child(i) == BVH::emptyNode) continue;
         s.statTimeSplitNodes.numChildren++;
         const BBox1f t0t1i = intersect(t0t1,n->timeRange(i));
-        assert(!t0t1i.isEmpty());
+        assert(!t0t1i.empty());
         s = s + statistics(n->child(i),A,t0t1i);
       }
       s.statTimeSplitNodes.numNodes++;

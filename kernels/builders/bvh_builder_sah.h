@@ -460,7 +460,7 @@ namespace embree
         
         /* build hierarchy */
         Set set(prims); 
-        assert(prims.size() == pinfo.size());
+        assert(prims->size() == pinfo.size());
         BuildRecord br(pinfo,1,(size_t*)&root,set);
         return builder(br);
       }

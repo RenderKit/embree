@@ -136,13 +136,6 @@ namespace embree
           /* perform object split */
           else 
             object_split(split,pinfo,set,left,lset,right,rset);
-
-          assert(lset.begin() == left.begin);
-          assert(lset.end()   == left.end);
-          assert(lset.size()  == left.size());
-          assert(rset.begin() == right.begin);
-          assert(rset.end()   == right.end);
-          assert(rset.size()  == right.size());
         }
 
         /*! array partitioning */
