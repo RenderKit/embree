@@ -32,23 +32,21 @@ namespace embree
       typedef typename BVH::Node Node;
       static const size_t stackSize = 2*(1+(N-1)*BVH::maxDepth);
 
-      struct CollisionContext
-      {
-        __forceinline CollisionContext (Scene* scene0, Scene* scene1, RTCCollideFunc callback, void* userPtr)
-          : scene0(scene0), scene1(scene1), callback(callback), userPtr(userPtr) {}
-        
-      public:
-        Scene* scene0;
-        Scene* scene1;
-        RTCCollideFunc callback;
-        void* userPtr;
-      };
+    public:
+      __forceinline BVHNCollider (Scene* scene0, Scene* scene1, RTCCollideFunc callback, void* userPtr)
+        : scene0(scene0), scene1(scene1), callback(callback), userPtr(userPtr) {}
 
     public:
-      static void processLeaf(const Triangle4v& tris0, const Triangle4v& tris1, CollisionContext& context);
-      static void processLeaf(NodeRef leaf0, NodeRef leaf1, CollisionContext& context);
-      static void collide_recurse(NodeRef node0, const BBox3fa& bounds0, NodeRef node1, const BBox3fa& bounds1, CollisionContext& context, size_t depth);
+      void processLeaf(const Triangle4v& tris0, const Triangle4v& tris1);
+      void processLeaf(NodeRef leaf0, NodeRef leaf1);
+      void collide_recurse(NodeRef node0, const BBox3fa& bounds0, NodeRef node1, const BBox3fa& bounds1, size_t depth);
       static void collide(BVH* __restrict__ bvh0, BVH* __restrict__ bvh1, RTCCollideFunc callback, void* userPtr);
+
+    private:
+      Scene* scene0;
+      Scene* scene1;
+      RTCCollideFunc callback;
+      void* userPtr;
     };
   }
 }
