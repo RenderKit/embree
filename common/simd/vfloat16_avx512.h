@@ -571,50 +571,46 @@ namespace embree
 
   __forceinline vfloat16 prefix_min(const vfloat16& a)
   {
-    const vint16 perm0(0,1,2,3,3,3,3,3,8,9,10,11,11,11,11,11);       
-    const vint16 perm1(0,1,2,3,4,5,6,7,7,7,7,7,7,7,7,7);       
+    const vfloat16 z(pos_inf);
     vfloat16 v = a;
-    v = min(v,shuffle<2,2,0,0>(v));
-    v = min(v,shuffle<1,1,1,0>(v));
-    v = min(v,permute(v,perm0));
-    v = min(v,permute(v,perm1));
+    v = min(v,align_shift_right<16-1>(v,z));
+    v = min(v,align_shift_right<16-2>(v,z));
+    v = min(v,align_shift_right<16-4>(v,z));
+    v = min(v,align_shift_right<16-8>(v,z));
     return v;  
   }
 
   __forceinline vfloat16 prefix_max(const vfloat16& a)
   {
-    const vint16 perm0(0,1,2,3,3,3,3,3,8,9,10,11,11,11,11,11);       
-    const vint16 perm1(0,1,2,3,4,5,6,7,7,7,7,7,7,7,7,7);       
+    const vfloat16 z(neg_inf);
     vfloat16 v = a;
-    v = max(v,shuffle<2,2,0,0>(v));
-    v = max(v,shuffle<1,1,1,0>(v));
-    v = max(v,permute(v,perm0));
-    v = max(v,permute(v,perm1));
+    v = max(v,align_shift_right<16-1>(v,z));
+    v = max(v,align_shift_right<16-2>(v,z));
+    v = max(v,align_shift_right<16-4>(v,z));
+    v = max(v,align_shift_right<16-8>(v,z));
     return v;  
   }
 
 
   __forceinline vfloat16 reverse_prefix_min(const vfloat16& a)
   {
-    const vint16 perm0(4,4,4,4,4,5,6,7,12,12,12,12,12,13,14,15);       
-    const vint16 perm1(8,8,8,8,8,8,8,8,8,9,10,11,12,13,14,15);       
+    const vfloat16 z(pos_inf);
     vfloat16 v = a;
-    v = min(v,shuffle<3,3,1,1>(v));
-    v = min(v,shuffle<3,2,2,2>(v));
-    v = min(v,permute(v,perm0));
-    v = min(v,permute(v,perm1));
+    v = min(v,align_shift_right<1>(z,v));
+    v = min(v,align_shift_right<2>(z,v));
+    v = min(v,align_shift_right<4>(z,v));
+    v = min(v,align_shift_right<8>(z,v));
     return v;  
   }
 
   __forceinline vfloat16 reverse_prefix_max(const vfloat16& a)
   {
-    const vint16 perm0(4,4,4,4,4,5,6,7,12,12,12,12,12,13,14,15);       
-    const vint16 perm1(8,8,8,8,8,8,8,8,8,9,10,11,12,13,14,15);       
+    const vfloat16 z(neg_inf);
     vfloat16 v = a;
-    v = max(v,shuffle<3,3,1,1>(v));
-    v = max(v,shuffle<3,2,2,2>(v));
-    v = max(v,permute(v,perm0));
-    v = max(v,permute(v,perm1));
+    v = max(v,align_shift_right<1>(z,v));
+    v = max(v,align_shift_right<2>(z,v));
+    v = max(v,align_shift_right<4>(z,v));
+    v = max(v,align_shift_right<8>(z,v));
     return v;  
   }
 
