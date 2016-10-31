@@ -39,7 +39,7 @@ namespace embree
 
   size_t skipBenchmarkRounds = 0;
   size_t numBenchmarkRounds = 0;
-  size_t numTotalCollisions = 0;
+  std::atomic<size_t> numTotalCollisions(0);
   SpinLock mutex;
 
   bool intersect_triangle_triangle (TutorialScene* scene0, unsigned geomID0, unsigned primID0, TutorialScene* scene1, unsigned geomID1, unsigned primID1)
@@ -82,8 +82,7 @@ namespace embree
   void CollideFunc (void* userPtr, RTCCollision* collisions, size_t num_collisions)
   {
     if (numBenchmarkRounds) return;
-    numTotalCollisions++;
-
+    
     if (use_user_geometry)
     {
       for (size_t i=0; i<num_collisions;)
@@ -94,6 +93,8 @@ namespace embree
         else collisions[i] = collisions[--num_collisions];
       }
     }
+
+    //numTotalCollisions+=num_collisions;
 
     Lock<SpinLock> lock(mutex);
     for (size_t i=0; i<num_collisions; i++)
@@ -367,8 +368,7 @@ namespace embree
 
       if (numBenchmarkRounds)
         benchmark();
-
-      if (interactive)
+      else
         run(argc,argv);
 
       return 0;
