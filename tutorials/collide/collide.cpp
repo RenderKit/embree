@@ -230,7 +230,7 @@ namespace embree
 
       if (use_user_geometry)
       {
-        unsigned int geomID = rtcNewUserGeometry2 (scene_out, /*gflags,*/ mesh->triangles.size(), 1);
+        unsigned int geomID = rtcNewUserGeometry3 (scene_out, gflags, mesh->triangles.size(), 1);
         rtcSetUserData(scene_out,geomID,(void*)(size_t)geomID);
         rtcSetBoundsFunction2   (scene_out, geomID, triangle_bounds_func, nullptr);
         rtcSetIntersectFunction (scene_out, geomID, triangle_intersect_func);
