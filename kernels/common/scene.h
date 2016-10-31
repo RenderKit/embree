@@ -113,6 +113,8 @@ namespace embree
     void createLineMBAccel();
     void createSubdivAccel();
     void createSubdivMBAccel();
+    void createUserGeometryAccel();
+    void createUserGeometryMBAccel();
 
     /*! Scene destruction */
     ~Scene ();
@@ -121,7 +123,7 @@ namespace embree
     void clear();
 
     /*! Creates new user geometry. */
-    unsigned int newUserGeometry (size_t items, size_t numTimeSteps);
+    unsigned int newUserGeometry (RTCGeometryFlags gflags, size_t items, size_t numTimeSteps);
 
     /*! Creates a new scene instance. */
     unsigned int newInstance (Scene* scene, size_t numTimeSteps);

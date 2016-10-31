@@ -69,6 +69,7 @@ extern "C" void ispcSetTransform (RTCScene scene, uniform unsigned int geomID, u
 extern "C" void ispcSetTransform2 (RTCScene scene, uniform unsigned int geomID, uniform RTCMatrixType layout, const uniform float* uniform xfm, uniform size_tt timeStep);
 extern "C" uniform unsigned int ispcNewUserGeometry (RTCScene scene, uniform size_tt numItems);
 extern "C" uniform unsigned int ispcNewUserGeometry2 (RTCScene scene, uniform size_tt numItems, uniform size_tt numTimeSteps);
+extern "C" uniform unsigned int ispcNewUserGeometry3 (RTCScene scene, uniform RTCGeometryFlags gflags, uniform size_tt numItems, uniform size_tt numTimeSteps);
 extern "C" uniform unsigned int ispcNewTriangleMesh (RTCScene scene,
                                                      uniform RTCGeometryFlags flags,
                                                      uniform size_tt numTriangles,
@@ -385,6 +386,10 @@ uniform unsigned int rtcNewUserGeometry (RTCScene scene, uniform size_t numItems
 
 uniform unsigned int rtcNewUserGeometry2 (RTCScene scene, uniform size_t numItems, uniform size_t numTimeSteps) {
   return ispcNewUserGeometry2(scene,numItems,numTimeSteps);
+}
+
+uniform unsigned int rtcNewUserGeometry3 (RTCScene scene, uniform RTCGeometryFlags gflags, uniform size_t numItems, uniform size_t numTimeSteps) {
+  return ispcNewUserGeometry3(scene,gflags,numItems,numTimeSteps);
 }
 
 uniform unsigned int rtcNewTriangleMesh (RTCScene scene,

@@ -39,7 +39,7 @@ namespace embree
   }
 
   Instance::Instance (Scene* parent, Scene* object, size_t numTimeSteps) 
-    : AccelSet(parent,1,numTimeSteps), object(object)
+    : AccelSet(parent,RTC_GEOMETRY_STATIC,1,numTimeSteps), object(object)
   {
     world2local0 = one;
     for (size_t i=0; i<numTimeSteps; i++) local2world[i] = one;

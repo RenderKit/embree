@@ -552,14 +552,126 @@ namespace embree
         count2 = vint16::zero();
 
         const vint16 step16(step);
-
-	for (size_t i=0; i<N; i++)
+        size_t i;
+	for (i=0; i<N-1; i+=2)
         {
           /*! map even and odd primitive to bin */
+          const BBox3fa primA = prims[i+0].bounds();
+          const vfloat16 centerA = vfloat16((vfloat4)primA.lower) + vfloat16((vfloat4)primA.upper); 
+          const vint16 binA = mapping.bin16(centerA);
+
+          const BBox3fa primB = prims[i+1].bounds();
+          const vfloat16 centerB = vfloat16((vfloat4)primB.lower) + vfloat16((vfloat4)primB.upper); 
+          const vint16 binB = mapping.bin16(centerB);
+
+          /* A */
+          {
+            const vfloat16 b_min_x = prims[i+0].lower.x;
+            const vfloat16 b_min_y = prims[i+0].lower.y;
+            const vfloat16 b_min_z = prims[i+0].lower.z;
+            const vfloat16 b_max_x = prims[i+0].upper.x;
+            const vfloat16 b_max_y = prims[i+0].upper.y;
+            const vfloat16 b_max_z = prims[i+0].upper.z;
+
+            const vint16 bin0 = shuffle<0>(binA);
+            const vint16 bin1 = shuffle<1>(binA);
+            const vint16 bin2 = shuffle<2>(binA);
+
+            const vbool16 m_update_x = step16 == bin0;
+            const vbool16 m_update_y = step16 == bin1;
+            const vbool16 m_update_z = step16 == bin2;
+
+            assert(__popcnt((size_t)m_update_x) == 1);
+            assert(__popcnt((size_t)m_update_y) == 1);
+            assert(__popcnt((size_t)m_update_z) == 1);
+
+            min_x0 = mask_min(m_update_x,min_x0,min_x0,b_min_x);
+            min_y0 = mask_min(m_update_x,min_y0,min_y0,b_min_y);
+            min_z0 = mask_min(m_update_x,min_z0,min_z0,b_min_z);
+            // ------------------------------------------------------------------------      
+            max_x0 = mask_max(m_update_x,max_x0,max_x0,b_max_x);
+            max_y0 = mask_max(m_update_x,max_y0,max_y0,b_max_y);
+            max_z0 = mask_max(m_update_x,max_z0,max_z0,b_max_z);
+            // ------------------------------------------------------------------------
+            min_x1 = mask_min(m_update_y,min_x1,min_x1,b_min_x);
+            min_y1 = mask_min(m_update_y,min_y1,min_y1,b_min_y);
+            min_z1 = mask_min(m_update_y,min_z1,min_z1,b_min_z);      
+            // ------------------------------------------------------------------------      
+            max_x1 = mask_max(m_update_y,max_x1,max_x1,b_max_x);
+            max_y1 = mask_max(m_update_y,max_y1,max_y1,b_max_y);
+            max_z1 = mask_max(m_update_y,max_z1,max_z1,b_max_z);
+            // ------------------------------------------------------------------------
+            min_x2 = mask_min(m_update_z,min_x2,min_x2,b_min_x);
+            min_y2 = mask_min(m_update_z,min_y2,min_y2,b_min_y);
+            min_z2 = mask_min(m_update_z,min_z2,min_z2,b_min_z);
+            // ------------------------------------------------------------------------      
+            max_x2 = mask_max(m_update_z,max_x2,max_x2,b_max_x);
+            max_y2 = mask_max(m_update_z,max_y2,max_y2,b_max_y);
+            max_z2 = mask_max(m_update_z,max_z2,max_z2,b_max_z);
+            // ------------------------------------------------------------------------
+            count0 = mask_add(m_update_x,count0,count0,vint16(1));
+            count1 = mask_add(m_update_y,count1,count1,vint16(1));
+            count2 = mask_add(m_update_z,count2,count2,vint16(1));      
+          }
+
+
+          /* B */
+          {
+            const vfloat16 b_min_x = prims[i+1].lower.x;
+            const vfloat16 b_min_y = prims[i+1].lower.y;
+            const vfloat16 b_min_z = prims[i+1].lower.z;
+            const vfloat16 b_max_x = prims[i+1].upper.x;
+            const vfloat16 b_max_y = prims[i+1].upper.y;
+            const vfloat16 b_max_z = prims[i+1].upper.z;
+
+            const vint16 bin0 = shuffle<0>(binB);
+            const vint16 bin1 = shuffle<1>(binB);
+            const vint16 bin2 = shuffle<2>(binB);
+
+            const vbool16 m_update_x = step16 == bin0;
+            const vbool16 m_update_y = step16 == bin1;
+            const vbool16 m_update_z = step16 == bin2;
+
+            assert(__popcnt((size_t)m_update_x) == 1);
+            assert(__popcnt((size_t)m_update_y) == 1);
+            assert(__popcnt((size_t)m_update_z) == 1);
+
+            min_x0 = mask_min(m_update_x,min_x0,min_x0,b_min_x);
+            min_y0 = mask_min(m_update_x,min_y0,min_y0,b_min_y);
+            min_z0 = mask_min(m_update_x,min_z0,min_z0,b_min_z);
+            // ------------------------------------------------------------------------      
+            max_x0 = mask_max(m_update_x,max_x0,max_x0,b_max_x);
+            max_y0 = mask_max(m_update_x,max_y0,max_y0,b_max_y);
+            max_z0 = mask_max(m_update_x,max_z0,max_z0,b_max_z);
+            // ------------------------------------------------------------------------
+            min_x1 = mask_min(m_update_y,min_x1,min_x1,b_min_x);
+            min_y1 = mask_min(m_update_y,min_y1,min_y1,b_min_y);
+            min_z1 = mask_min(m_update_y,min_z1,min_z1,b_min_z);      
+            // ------------------------------------------------------------------------      
+            max_x1 = mask_max(m_update_y,max_x1,max_x1,b_max_x);
+            max_y1 = mask_max(m_update_y,max_y1,max_y1,b_max_y);
+            max_z1 = mask_max(m_update_y,max_z1,max_z1,b_max_z);
+            // ------------------------------------------------------------------------
+            min_x2 = mask_min(m_update_z,min_x2,min_x2,b_min_x);
+            min_y2 = mask_min(m_update_z,min_y2,min_y2,b_min_y);
+            min_z2 = mask_min(m_update_z,min_z2,min_z2,b_min_z);
+            // ------------------------------------------------------------------------      
+            max_x2 = mask_max(m_update_z,max_x2,max_x2,b_max_x);
+            max_y2 = mask_max(m_update_z,max_y2,max_y2,b_max_y);
+            max_z2 = mask_max(m_update_z,max_z2,max_z2,b_max_z);
+            // ------------------------------------------------------------------------
+            count0 = mask_add(m_update_x,count0,count0,vint16(1));
+            count1 = mask_add(m_update_y,count1,count1,vint16(1));
+            count2 = mask_add(m_update_z,count2,count2,vint16(1));      
+          }
+
+        }
+
+        if (i < N)
+        {
           const BBox3fa prim0 = prims[i].bounds();
           const vfloat16 center0 = vfloat16((vfloat4)prim0.lower) + vfloat16((vfloat4)prim0.upper); 
           const vint16 bin = mapping.bin16(center0);
-
           const vfloat16 b_min_x = prims[i].lower.x;
           const vfloat16 b_min_y = prims[i].lower.y;
           const vfloat16 b_min_z = prims[i].lower.z;
@@ -709,7 +821,7 @@ namespace embree
       }
 
       /*! calculates extended split information */
-      __forceinline void getSplitInfo(const BinMapping<16>& mapping, const Split& split, SplitInfo& info) const // FIXME: still required?
+      __forceinline void getSplitInfo(const BinMapping<16>& mapping, const Split& split, SplitInfo& info) const 
       {
 	if (split.dim == -1) {
 	  new (&info) SplitInfo(0,empty,0,empty);

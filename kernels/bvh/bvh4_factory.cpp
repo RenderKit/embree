@@ -212,6 +212,7 @@ namespace embree
   DECLARE_BUILDER2(void,Scene,const createTriangleMeshAccelTy,BVH4BuilderTwoLevelTriangleMeshSAH);
   DECLARE_BUILDER2(void,Scene,const createTriangleMeshAccelTy,BVH4BuilderInstancingTriangleMeshSAH);
   DECLARE_BUILDER2(void,Scene,const createQuadMeshAccelTy,BVH4BuilderTwoLevelQuadMeshSAH);
+  DECLARE_BUILDER2(void,Scene,const createAccelSetAccelTy,BVH4BuilderTwoLevelVirtualSAH);
 
   DECLARE_BUILDER2(void,Scene,size_t,BVH4Bezier1vBuilder_OBB_New);
   DECLARE_BUILDER2(void,Scene,size_t,BVH4Bezier1iBuilder_OBB_New);
@@ -248,6 +249,7 @@ namespace embree
   DECLARE_BUILDER2(void,Scene,size_t,BVH4Line4iSceneBuilderSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH4Line4iMBSceneBuilderSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH4VirtualSceneBuilderSAH);
+  DECLARE_BUILDER2(void,AccelSet,size_t,BVH4VirtualMeshBuilderSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH4VirtualMBSceneBuilderSAH);
 
   DECLARE_BUILDER2(void,Scene,size_t,BVH4SubdivPatch1EagerBuilderBinnedSAH);
@@ -259,11 +261,13 @@ namespace embree
   DECLARE_BUILDER2(void,TriangleMesh,size_t,BVH4Triangle4vMeshRefitSAH);
   DECLARE_BUILDER2(void,TriangleMesh,size_t,BVH4Triangle4iMeshRefitSAH);
   DECLARE_BUILDER2(void,QuadMesh    ,size_t,BVH4Quad4vMeshRefitSAH);
+  DECLARE_BUILDER2(void,AccelSet    ,size_t,BVH4VirtualMeshRefitSAH);
 
   DECLARE_BUILDER2(void,TriangleMesh,size_t,BVH4Triangle4MeshBuilderMortonGeneral);
   DECLARE_BUILDER2(void,TriangleMesh,size_t,BVH4Triangle4vMeshBuilderMortonGeneral);
   DECLARE_BUILDER2(void,TriangleMesh,size_t,BVH4Triangle4iMeshBuilderMortonGeneral);
   DECLARE_BUILDER2(void,QuadMesh    ,size_t,BVH4Quad4vMeshBuilderMortonGeneral);
+  DECLARE_BUILDER2(void,AccelSet    ,size_t,BVH4VirtualMeshBuilderMortonGeneral);
 
   BVH4Factory::BVH4Factory (int features)
   {
@@ -274,8 +278,8 @@ namespace embree
     IF_ENABLED_LINES(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4BuilderTwoLevelLineSegmentsSAH));
     IF_ENABLED_TRIS (SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4BuilderTwoLevelTriangleMeshSAH));
     IF_ENABLED_TRIS (SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4BuilderInstancingTriangleMeshSAH));
-    
     IF_ENABLED_QUADS (SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4BuilderTwoLevelQuadMeshSAH));
+    IF_ENABLED_USER (SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4BuilderTwoLevelVirtualSAH));
     //IF_ENABLED_QUADS (SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4BuilderInstancingQuadMeshSAH));
 
     IF_ENABLED_HAIR(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1vBuilder_OBB_New));
@@ -311,6 +315,7 @@ namespace embree
     IF_ENABLED_HAIR(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1vSceneBuilderSAH));
     IF_ENABLED_HAIR(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1iSceneBuilderSAH));
     IF_ENABLED_USER(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4VirtualSceneBuilderSAH));
+    IF_ENABLED_USER(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4VirtualMeshBuilderSAH));
     IF_ENABLED_USER(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4VirtualMBSceneBuilderSAH));
 
     IF_ENABLED_SUBDIV(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4SubdivPatch1EagerBuilderBinnedSAH));
@@ -322,11 +327,13 @@ namespace embree
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4Triangle4vMeshRefitSAH));
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4Triangle4iMeshRefitSAH));
     IF_ENABLED_QUADS(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4Quad4vMeshRefitSAH));
+    IF_ENABLED_USER(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4VirtualMeshRefitSAH));
 
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4Triangle4MeshBuilderMortonGeneral));
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4Triangle4vMeshBuilderMortonGeneral));
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4Triangle4iMeshBuilderMortonGeneral));
     IF_ENABLED_QUADS(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4Quad4vMeshBuilderMortonGeneral));
+    IF_ENABLED_USER(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL_AVX512SKX(features,BVH4VirtualMeshBuilderMortonGeneral));
 
     /* select intersectors1 */
     IF_ENABLED_LINES(SELECT_SYMBOL_DEFAULT_AVX_AVX2      (features,BVH4Line4iIntersector1));
@@ -1000,6 +1007,18 @@ namespace embree
     }
   }
 
+  void BVH4Factory::createAccelSetMesh(AccelSet* mesh, AccelData*& accel, Builder*& builder)
+  {
+    BVH4Factory* factory = mesh->parent->device->bvh4_factory.get();
+    accel = new BVH4(Object::type,mesh->parent);
+    switch (mesh->flags) {
+    case RTC_GEOMETRY_STATIC:     builder = factory->BVH4VirtualMeshBuilderSAH(accel,mesh,0); break;
+    case RTC_GEOMETRY_DEFORMABLE: builder = factory->BVH4VirtualMeshRefitSAH(accel,mesh,0); break;
+    case RTC_GEOMETRY_DYNAMIC:    builder = factory->BVH4VirtualMeshBuilderMortonGeneral(accel,mesh,0); break;
+    default: throw_RTCError(RTC_UNKNOWN_ERROR,"invalid geometry flag");
+    }
+  }
+
   Accel* BVH4Factory::BVH4Bezier1v(Scene* scene)
   {
     BVH4* accel = new BVH4(Bezier1v::type,scene);
@@ -1370,11 +1389,23 @@ namespace embree
     }
   }
 
-  Accel* BVH4Factory::BVH4UserGeometry(Scene* scene)
+  Accel* BVH4Factory::BVH4UserGeometry(Scene* scene, BuildVariant bvariant)
   {
     BVH4* accel = new BVH4(Object::type,scene);
     Accel::Intersectors intersectors = BVH4UserGeometryIntersectors(accel);
-    Builder* builder = BVH4VirtualSceneBuilderSAH(accel,scene,0);
+
+    Builder* builder = nullptr;
+    if (scene->device->object_builder == "default") {
+      switch (bvariant) {
+      case BuildVariant::STATIC      : builder = BVH4VirtualSceneBuilderSAH(accel,scene,0); break;
+      case BuildVariant::DYNAMIC     : builder = BVH4BuilderTwoLevelVirtualSAH(accel,scene,&createAccelSetMesh); break;
+      case BuildVariant::HIGH_QUALITY: assert(false); break;
+      }
+    } 
+    else if (scene->device->object_builder == "sah") builder = BVH4VirtualSceneBuilderSAH(accel,scene,0);
+    else if (scene->device->object_builder == "dynamic") builder = BVH4BuilderTwoLevelVirtualSAH(accel,scene,&createAccelSetMesh);
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->object_builder+" for BVH4<Object>");
+    
     return new AccelInstance(accel,builder,intersectors);
   }
 
