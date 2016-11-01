@@ -174,7 +174,7 @@ namespace embree
           
           /* calculate primrefs for first time range */
           linfo = empty;
-          std::shared_ptr<avector<PrimRef2>> lprims(new avector<PrimRef2>(lset.object_range.size()));
+          std::shared_ptr<avector<PrimRef2>> lprims(new avector<PrimRef2>(set.object_range.size()));
           for (size_t i=set.object_range.begin(); i<set.object_range.end(); i++) 
           {
             const avector<PrimRef2>& prims = *set.prims;
@@ -186,9 +186,9 @@ namespace embree
           }
           lset = Set(lprims,time_range0);
 
-          /* calculate primrefs for first time range */
+          /* calculate primrefs for second time range */
           rinfo = empty;
-          std::shared_ptr<avector<PrimRef2>> rprims(new avector<PrimRef2>(rset.object_range.size()));
+          std::shared_ptr<avector<PrimRef2>> rprims(new avector<PrimRef2>(set.object_range.size()));
           for (size_t i=set.object_range.begin(); i<set.object_range.end(); i++) 
           {
             const avector<PrimRef2>& prims = *set.prims;
