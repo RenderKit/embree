@@ -257,7 +257,7 @@ namespace embree
       const int iupper = (int)floor(time_range.upper*numTimeSegments());
       for (size_t i=ilower; i<=iupper; i++) 
       {
-        const float f = float(i)/float(numTimeSegments());
+        const float f = (float(i)/float(numTimeSegments()) - time_range.lower) / time_range.size();
         const BBox3fa bt = lerp(b0,b1,f);
         const BBox3fa bi = bounds(primID,i);
         const Vec3fa dlower = min(bi.lower-bt.lower,Vec3fa(zero));
