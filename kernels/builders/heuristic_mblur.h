@@ -67,16 +67,16 @@ namespace embree
           const float object_split_sah = object_split.splitSAH();
   
           /* do temporal splits only if the child bounds overlap */
-          const BBox3fa overlap = intersect(oinfo.leftBounds, oinfo.rightBounds);
-          if (safeArea(overlap) >= MBLUR_SPLIT_OVERLAP_THRESHOLD*safeArea(pinfo.geomBounds))
-          {              
+          //const BBox3fa overlap = intersect(oinfo.leftBounds, oinfo.rightBounds);
+          //if (safeArea(overlap) >= MBLUR_SPLIT_OVERLAP_THRESHOLD*safeArea(pinfo.geomBounds))
+          //{
             const TemporalSplit temporal_split = temporal_find(set, pinfo, logBlockSize);
             const float temporal_split_sah = temporal_split.splitSAH();
             
             /* take temporal split if it improved SAH */
             if (temporal_split_sah < MBLUR_SPLIT_SAH_THRESHOLD*object_split_sah)
               return temporal_split;
-          }
+          //}
 
           return object_split;
         }
