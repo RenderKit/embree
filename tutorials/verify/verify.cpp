@@ -2910,14 +2910,15 @@ namespace embree
                 for (size_t i=0; i<numVertices[index]; i++) vertices[i] += Vec3fa(0.1f);
               }
               rtcUnmapBuffer(*task->scene,geom[index],RTC_VERTEX_BUFFER);
-              
-              if (types[index] == 7 || types[index] == 8) {
-                Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(*task->scene,geom[index],RTC_VERTEX_BUFFER1);
-                if (vertices) {
-                  for (size_t i=0; i<numVertices[index]; i++) vertices[i] += Vec3fa(0.1f);
-                }
-                rtcUnmapBuffer(*task->scene,geom[index],RTC_VERTEX_BUFFER1);
-              }
+#if 0             
+			  if (types[index] == 7 || types[index] == 8) {
+				  Vec3fa* vertices = (Vec3fa*)rtcMapBuffer(*task->scene, geom[index], RTC_VERTEX_BUFFER1);
+				  if (vertices) {
+					  for (size_t i = 0; i < numVertices[index]; i++) vertices[i] += Vec3fa(0.1f);
+				  }
+				  rtcUnmapBuffer(*task->scene, geom[index], RTC_VERTEX_BUFFER1);
+			  }
+#endif
               break;
             }
             }

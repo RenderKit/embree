@@ -96,7 +96,7 @@ namespace embree
     if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
-    if (type == RTC_INDEX_BUFFER) {
+	if (type == RTC_INDEX_BUFFER) {
       return quads.map(parent->numMappedBuffers);
     }
     else if (type >= RTC_VERTEX_BUFFER0 && type < RTCBufferType(RTC_VERTEX_BUFFER0 + numTimeSteps)) {

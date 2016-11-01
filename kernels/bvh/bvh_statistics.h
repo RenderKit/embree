@@ -59,7 +59,7 @@ namespace embree
         }
 
         double fillRateNom () const { return double(numChildren);  }
-        double fillRateDen () const { return numNodes*N;  }
+        double fillRateDen () const { return double(numNodes*N);  }
         double fillRate    () const { return fillRateNom()/fillRateDen(); }
 
         __forceinline friend NodeStat operator+ ( const NodeStat& a, const NodeStat& b)
