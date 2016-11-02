@@ -204,7 +204,7 @@ namespace embree
         void deterministic_order(const Set& set) 
         {
           /* required as parallel partition destroys original primitive order */
-          avector<PrimRef2>& prims = *set.prims;
+          PrimRef2* prims = set.prims->data();
           std::sort(&prims[set.object_range.begin()],&prims[set.object_range.end()]);
         }
 
