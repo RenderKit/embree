@@ -34,10 +34,18 @@ namespace embree
         __forceinline BinMapping() {}
         
         /*! calculates the mapping */
+        __forceinline BinMapping(const BBox3fa& centBounds, size_t N) 
+        {
+          num = min(BINS,size_t(4.0f + 0.05f*N));
+          const vfloat4 diag = (vfloat4) centBounds.size();
+          scale = select(diag > vfloat4(1E-34f),vfloat4(0.99f*num)/diag,vfloat4(0.0f));
+          ofs  = (vfloat4) centBounds.lower;
+        }
+
+        /*! calculates the mapping */
         __forceinline BinMapping(const PrimInfo& pinfo) 
         {
           num = min(BINS,size_t(4.0f + 0.05f*pinfo.size()));
-
           const vfloat4 diag = (vfloat4) pinfo.centBounds.size();
           scale = select(diag > vfloat4(1E-34f),vfloat4(0.99f*num)/diag,vfloat4(0.0f));
           ofs  = (vfloat4) pinfo.centBounds.lower;
@@ -52,8 +60,8 @@ namespace embree
           const vint4 i = floori((vfloat4(p)-ofs)*scale);
 #if 1
           assert(i[0] >= 0 && (size_t)i[0] < num); 
-		  assert(i[1] >= 0 && (size_t)i[1] < num);
-		  assert(i[2] >= 0 && (size_t)i[2] < num);
+          assert(i[1] >= 0 && (size_t)i[1] < num);
+          assert(i[2] >= 0 && (size_t)i[2] < num);
           return Vec3ia(i);
 #else
           return Vec3ia(clamp(i,vint4(0),vint4(num-1)));
@@ -87,6 +95,9 @@ namespace embree
         /*! construct an invalid split by default */
         __forceinline BinSplit()
           : sah(inf), dim(-1), pos(0), data(0) {}
+
+        __forceinline BinSplit(float sah, unsigned data)
+          : sah(sah), data(data) {}
         
         /*! constructs specified split */
         __forceinline BinSplit(float sah, int dim, int pos, const BinMapping<BINS>& mapping)
@@ -336,10 +347,10 @@ namespace embree
       }
       
       /*! calculates extended split information */
-      __forceinline void getSplitInfo(const BinMapping<BINS>& mapping, const Split& split, SplitInfo& info) const 
+      __forceinline void getSplitInfo(const BinMapping<BINS>& mapping, const Split& split, SplitInfoT<BBox>& info) const 
       {
 	if (split.dim == -1) {
-	  new (&info) SplitInfo(0,empty,0,empty);
+	  new (&info) SplitInfoT<BBox>(0,empty,0,empty);
 	  return;
 	}
 	
@@ -355,7 +366,7 @@ namespace embree
 	  rightCount += counts(i,split.dim);
 	  rightBounds.extend(bounds(i,split.dim));
 	}
-	new (&info) SplitInfo(leftCount,leftBounds,rightCount,rightBounds);
+	new (&info) SplitInfoT<BBox>(leftCount,leftBounds,rightCount,rightBounds);
       }
 
       /*! gets the number of primitives left of the split */
