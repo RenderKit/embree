@@ -117,7 +117,7 @@ namespace embree
     {
       ParallelForForPrefixSumState<PrimInfo> pstate;
       Scene::Iterator<Mesh,true> iter(scene);
-      
+
       /* first try */
       progressMonitor(0);
       pstate.init(iter,size_t(1024));
@@ -134,7 +134,7 @@ namespace embree
         }
         return pinfo;
       }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
-      
+
       /* if we need to filter out geometry, run again */
       if (pinfo.size() != prims.size())
       {

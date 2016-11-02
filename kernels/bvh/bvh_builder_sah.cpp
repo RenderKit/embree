@@ -188,7 +188,15 @@ namespace embree
             PrimInfo pinfo = mesh ? 
               createPrimRefArray<Mesh>  (mesh ,prims,bvh->scene->progressInterface) : 
               createPrimRefArray<Mesh,false>(scene,prims,bvh->scene->progressInterface);
-        
+
+            /* pinfo might has zero size due to invalid geometry */
+            if (unlikely(pinfo.size() == 0))
+            {
+              prims.clear();
+              bvh->clear();
+              return;
+            }
+
             /* perform pre-splitting */
             if (presplitFactor > 1.0f) 
               pinfo = presplit<Mesh>(scene, pinfo, prims);
@@ -344,7 +352,7 @@ namespace embree
       {
 	/* skip build for empty scene */
         const size_t numPrimitives = scene->getNumPrimitives<Mesh,true>();
-        
+
         if (numPrimitives == 0) {
           prims.clear();
           bvh->clear();
@@ -368,8 +376,16 @@ namespace embree
           /* call BVH builder */
           NodeRef root; LBBox3fa tbounds;
           const PrimInfo pinfo = createPrimRefArrayMBlur<Mesh>(t,bvh->numTimeSteps,scene,prims,bvh->scene->progressInterface);
-          std::tie(root, tbounds) = BVHNBuilderMblur<N>::build(bvh,CreateMSMBlurLeaf<N,Primitive>(bvh,prims.data(),t),bvh->scene->progressInterface,prims.data(),pinfo,
-                                                               sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
+          if (pinfo.size())
+          {
+            std::tie(root, tbounds) = BVHNBuilderMblur<N>::build(bvh,CreateMSMBlurLeaf<N,Primitive>(bvh,prims.data(),t),bvh->scene->progressInterface,prims.data(),pinfo,
+                                                                 sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
+          }
+          else
+          {
+            tbounds = LBBox3fa(empty);
+            root = BVH::emptyNode;
+          }
           roots[t] = root;
           bounds[t+0] = tbounds.bounds0;
           bounds[t+1] = tbounds.bounds1;
