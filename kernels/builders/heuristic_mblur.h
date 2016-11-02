@@ -20,7 +20,7 @@
 #include "heuristic_binning.h"
 
 #define MBLUR_SPLIT_OVERLAP_THRESHOLD 0.1f
-#define MBLUR_SPLIT_SAH_THRESHOLD 0.99f
+#define MBLUR_TIME_SPLIT_THRESHOLD 1.05f
 
 namespace embree
 {
@@ -78,13 +78,13 @@ namespace embree
             PRINT(temporal_split_sah);*/
 
             //PRINT(pinfo.size());
-            //if (pinfo.size() == 103872)
+            //if (pinfo.size() == 103872 && set.time_range.size() == 1.0f) {
             //return temporal_split;
+            //}
             
             /* take temporal split if it improved SAH */
-            if (temporal_split_sah < MBLUR_SPLIT_SAH_THRESHOLD*object_split_sah) {
+            if (temporal_split_sah < object_split_sah)
               return temporal_split;
-            }
           //}
 
           return object_split;
@@ -122,11 +122,11 @@ namespace embree
             bounds0.extend(b0);
             bounds1.extend(b1);
           }
-
+          
           /* calculate sah */
           const size_t lCount = (set.object_range.size()+(1 << logBlockSize)-1) >> int(logBlockSize), rCount = lCount;
           const float sah = (bounds0.expectedApproxHalfArea()*float(lCount) + bounds1.expectedApproxHalfArea()*float(rCount)) * 0.5f;
-          return TemporalSplit(sah,-1);
+          return TemporalSplit(sah*MBLUR_TIME_SPLIT_THRESHOLD,-1);
         }
         
         /*! array partitioning */
