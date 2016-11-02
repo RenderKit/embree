@@ -73,9 +73,34 @@ namespace embree
       return lerp(bounds0,bounds1,t);
     }
 
+    __forceinline LBBox<T> interpolate( const BBox1f dt ) const {
+      return LBBox<T>(interpolate(dt.lower),interpolate(dt.upper));
+    }
+
     __forceinline void extend( const LBBox& other ) {
       bounds0.extend(other.bounds0);
       bounds1.extend(other.bounds1);
+    }
+
+    __forceinline float expectedHalfArea() const {
+      return 0.5f*(halfArea(bounds0) + halfArea(bounds1));  // FIXME: only approximative
+    }
+
+    __forceinline float expectedHalfArea(const BBox1f dt) const {
+      return interpolate(dt).expectedHalfArea();
+    }
+
+    __forceinline float expectedApproxHalfArea() const {
+      return 0.5f*(halfArea(bounds0) + halfArea(bounds1));
+    }
+
+    /* calculates bounds for [0,1] time range from bounds in dt time range */
+    __forceinline LBBox global(const BBox1f& dt) const 
+    {
+      const float rcp_dt_size = 1.0f/dt.size();
+      const BBox<T> b0 = interpolate(-dt.lower*rcp_dt_size);
+      const BBox<T> b1 = interpolate((1.0f-dt.lower)*rcp_dt_size);
+      return LBBox(b0,b1);
     }
 
     /*! Comparison Operators */
@@ -90,6 +115,14 @@ namespace embree
   public:
     BBox<T> bounds0, bounds1;
   };
+
+  template<typename T> __forceinline float expectedApproxHalfArea(const LBBox<T>& box) {
+    return box.expectedApproxHalfArea(); 
+  }
+
+  /*! computes the center of the box */
+  template<typename T> __forceinline const T center2(const LBBox<T>& box) { return center2(box.interpolate(0.5f)); }
+  template<typename T> __forceinline const T center (const LBBox<T>& box) { return T(0.5f)*center2(box); }
 
   /*! default template instantiations */
   typedef LBBox<float> LBBox1f;
