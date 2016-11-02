@@ -76,10 +76,15 @@ namespace embree
             /*PRINT(pinfo);
             PRINT(object_split_sah);
             PRINT(temporal_split_sah);*/
+
+            //PRINT(pinfo.size());
+            //if (pinfo.size() == 103872)
+            //return temporal_split;
             
             /* take temporal split if it improved SAH */
-            if (temporal_split_sah < MBLUR_SPLIT_SAH_THRESHOLD*object_split_sah)
+            if (temporal_split_sah < MBLUR_SPLIT_SAH_THRESHOLD*object_split_sah) {
               return temporal_split;
+            }
           //}
 
           return object_split;
