@@ -27,7 +27,7 @@ namespace embree
       struct HeuristicArrayBinningSAH
       {
         typedef BinSplit<BINS> Split;
-        typedef BinInfo<BINS,PrimRef> Binner;
+        typedef BinInfoT<BINS,PrimRef,BBox3fa> Binner;
         typedef range<size_t> Set;
 
 #if defined(__AVX512F__)

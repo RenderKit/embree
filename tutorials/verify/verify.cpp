@@ -4106,6 +4106,7 @@ namespace embree
       num_primitives.push_back(std::make_tuple("1k" ,17,1));
       num_primitives.push_back(std::make_tuple("10k",51,1));
       num_primitives.push_back(std::make_tuple("100k",159,1));
+      num_primitives.push_back(std::make_tuple("10000k_1",801,1));
       num_primitives.push_back(std::make_tuple("1000k_1",501,1));
       num_primitives.push_back(std::make_tuple("100k_10",159,10));
       num_primitives.push_back(std::make_tuple("10k_100",51,100));

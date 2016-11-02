@@ -96,7 +96,7 @@ namespace embree
       struct HeuristicArraySpatialSAH
       {
         typedef BinSplit<OBJECT_BINS> ObjectSplit;
-        typedef BinInfo<OBJECT_BINS,PrimRef> ObjectBinner;
+        typedef BinInfoT<OBJECT_BINS,PrimRef,BBox3fa> ObjectBinner;
 
         typedef SpatialBinSplit<SPATIAL_BINS> SpatialSplit;
         typedef SpatialBinInfo<SPATIAL_BINS,PrimRef> SpatialBinner;
