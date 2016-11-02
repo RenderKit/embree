@@ -140,7 +140,6 @@ namespace embree
       }
 
       /*! bin access function */
-
       __forceinline BBox3fa &bounds(const size_t binID, const size_t dimID)             { return _bounds[binID][dimID]; }
       __forceinline const BBox3fa &bounds(const size_t binID, const size_t dimID) const { return _bounds[binID][dimID]; }
 
@@ -153,21 +152,10 @@ namespace embree
       /*! clears the bin info */
       __forceinline void clear() 
       {
-#if defined(__AVX__)
-        const vfloat8 emptyBounds(pos_inf,pos_inf,pos_inf,0.0f,neg_inf,neg_inf,neg_inf,0.0f);
-
-	for (size_t i=0; i<BINS; i++) {
-          vfloat8::store(&bounds(i,0),emptyBounds);
-          vfloat8::store(&bounds(i,1),emptyBounds);
-          vfloat8::store(&bounds(i,2),emptyBounds);
-	  counts(i) = vint4(zero);
-	}
-#else
 	for (size_t i=0; i<BINS; i++) {
 	  bounds(i,0) = bounds(i,1) = bounds(i,2) = empty;
 	  counts(i) = vint4(zero);
 	}
-#endif
       }
       
       /*! bins an array of primitives */
