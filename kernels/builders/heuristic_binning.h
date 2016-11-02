@@ -138,7 +138,7 @@ namespace embree
     };
 
     typedef SplitInfoT<BBox3fa> SplitInfo;
-    typedef SplitInfoT<LBBox3fa> SplitInfo2;
+    //typedef SplitInfoT<LBBox3fa> SplitInfo2;
     
     /*! stores all binning information */
     template<size_t BINS, typename PrimRef, typename BBox>
