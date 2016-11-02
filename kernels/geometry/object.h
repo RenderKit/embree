@@ -61,6 +61,11 @@ namespace embree
       return accel->linearBounds(primID,itime,numTimeSteps);
     }
 
+    /* Updates the primitive */
+    __forceinline BBox3fa update(AccelSet* mesh) {
+      return mesh->bounds(primID);
+    }
+
   public:
     unsigned geomID;  //!< geometry ID
     unsigned primID;  //!< primitive ID

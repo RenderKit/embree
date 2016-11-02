@@ -91,6 +91,8 @@ namespace embree
     std::string hair_traverser_mb;         //!< traverser to use for motion blur hair
 
   public:
+    std::string object_accel;               //!< acceleration structure for user geometries
+    std::string object_builder;             //!< builder for user geometries
     int object_accel_min_leaf_size;         //!< minimal leaf size for object acceleration structure
     int object_accel_max_leaf_size;         //!< maximal leaf size for object acceleration structure
 

@@ -294,9 +294,9 @@ namespace embree
       return addGeometry(gflag,node);
     }
 
-    unsigned addUserGeometryEmpty (RandomSampler& sampler, Sphere* sphere)
+    unsigned addUserGeometryEmpty (RandomSampler& sampler, RTCGeometryFlags gflag, Sphere* sphere)
     {
-      unsigned geom = rtcNewUserGeometry (scene,1);
+      unsigned geom = rtcNewUserGeometry3 (scene,gflag,1,1);
       rtcSetBoundsFunction(scene,geom,(RTCBoundsFunc)BoundsFunc);
       rtcSetUserData(scene,geom,sphere);
       rtcSetIntersectFunctionN(scene,geom,IntersectFuncN);
@@ -1121,7 +1121,7 @@ namespace embree
             case 7: geom[index] = scene.addSubdivSphere(sampler,RTC_GEOMETRY_STATIC,pos,2.0f,4,4,-1,random_motion_vector(1.0f)); break;
             case 8: 
               spheres[index] = Sphere(pos,2.0f);
-              geom[index] = scene.addUserGeometryEmpty(sampler,&spheres[index]); break;
+              geom[index] = scene.addUserGeometryEmpty(sampler,RTC_GEOMETRY_STATIC,&spheres[index]); break;
             }
             AssertNoError(device);
           }
@@ -2724,7 +2724,7 @@ namespace embree
 
         case 8: {
 	  Sphere* sphere = new Sphere(pos,2.0f); spheres.push_back(sphere); 
-	  task->scene->addUserGeometryEmpty(task->sampler,sphere); break;
+	  task->scene->addUserGeometryEmpty(task->sampler,RTC_GEOMETRY_STATIC,sphere); break;
         }
 	}
         //if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
@@ -2802,11 +2802,13 @@ namespace embree
     task->scene = new VerifyScene(thread->device,RTC_SCENE_DYNAMIC,aflags_all);
     if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
     if (task->cancelBuild) rtcSetProgressMonitorFunction(*task->scene,monitorProgressFunction,nullptr);
-    int geom[1024];
-    int types[1024];
-    Sphere spheres[1024];
-    size_t numVertices[1024];
-    for (size_t i=0; i<1024; i++)  {
+    const size_t numSlots = 20;
+    const size_t numIterations = 2*numSlots;
+    int geom[numSlots];
+    int types[numSlots];
+    Sphere spheres[numSlots];
+    size_t numVertices[numSlots];
+    for (size_t i=0; i<numSlots; i++)  {
       geom[i] = -1;
       types[i] = 0;
       numVertices[i] = 0;
@@ -2819,12 +2821,12 @@ namespace embree
       srand(task->sceneIndex*23565+i*2242);
       if (i%20 == 0) std::cout << "." << std::flush;
 
-      for (unsigned int j=0; j<40; j++) 
+      for (unsigned int j=0; j<numIterations; j++) 
       {
-        int index = RandomSampler_getInt(task->sampler)%1024;
+        int index = RandomSampler_getInt(task->sampler)%numSlots;
         if (geom[index] == -1) 
         {
-          int type = RandomSampler_getInt(task->sampler)%19;
+          int type = RandomSampler_getInt(task->sampler)%21;
           Vec3fa pos = 100.0f*RandomSampler_get3D(task->sampler);
           switch (RandomSampler_getInt(task->sampler)%16) {
           case 0: pos = Vec3fa(nan); break;
@@ -2867,7 +2869,9 @@ namespace embree
 	  case 16: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,4,numTriangles,task->test->random_motion_vector(1.0f)); break;
 	  case 17: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,4,numTriangles,task->test->random_motion_vector(1.0f)); break;
 
-          case 18: spheres[index] = Sphere(pos,2.0f); geom[index] = task->scene->addUserGeometryEmpty(task->sampler,&spheres[index]); break;
+          case 18: spheres[index] = Sphere(pos,2.0f); geom[index] = task->scene->addUserGeometryEmpty(task->sampler,RTC_GEOMETRY_STATIC,&spheres[index]); break;
+          case 19: spheres[index] = Sphere(pos,2.0f); geom[index] = task->scene->addUserGeometryEmpty(task->sampler,RTC_GEOMETRY_DEFORMABLE,&spheres[index]); break;
+          case 20: spheres[index] = Sphere(pos,2.0f); geom[index] = task->scene->addUserGeometryEmpty(task->sampler,RTC_GEOMETRY_DYNAMIC,&spheres[index]); break;
           }; 
 	  //if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
           if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) {
@@ -2882,7 +2886,15 @@ namespace embree
           case 0:
           case 3:
           case 6:
-	  case 9: {
+	  case 9:
+          case 12:
+          case 15:
+          case 16:
+          case 17:
+          case 18:
+          case 19:
+          case 20:
+          {
             rtcDeleteGeometry(*task->scene,geom[index]);     
 	    if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;
             geom[index] = -1; 
@@ -2893,7 +2905,12 @@ namespace embree
           case 4: 
           case 5:
 	  case 7: 
-          case 8: {
+          case 8:
+          case 10:
+          case 11:
+          case 13:
+          case 14:
+          {
             int op = RandomSampler_getInt(task->sampler)%2;
             switch (op) {
             case 0: {
@@ -2908,13 +2925,14 @@ namespace embree
                 for (size_t i=0; i<numVertices[index]; i++) vertices[i] += Vec3fa(0.1f);
               }
               rtcUnmapBuffer(*task->scene,geom[index],RTC_VERTEX_BUFFER);
-              
-              if (types[index] == 7 || types[index] == 8) {
-                Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(*task->scene,geom[index],RTC_VERTEX_BUFFER1);
+              switch (types[index])
+              {
+              case 4: case 5: case 10: case 11:
+                Vec3fa* vertices = (Vec3fa*)rtcMapBuffer(*task->scene, geom[index], RTC_VERTEX_BUFFER1);
                 if (vertices) {
-                  for (size_t i=0; i<numVertices[index]; i++) vertices[i] += Vec3fa(0.1f);
+                  for (size_t i = 0; i < numVertices[index]; i++) vertices[i] += Vec3fa(0.1f);
                 }
-                rtcUnmapBuffer(*task->scene,geom[index],RTC_VERTEX_BUFFER1);
+                rtcUnmapBuffer(*task->scene, geom[index], RTC_VERTEX_BUFFER1);
               }
               break;
             }
@@ -2924,9 +2942,9 @@ namespace embree
           }
         }
         
-        /* entirely delete all objects from time to time */
-        if (j%40 == 38) {
-          for (size_t i=0; i<1024; i++) {
+        /* entirely delete all objects at the end */
+        if (j == numIterations-1) {
+          for (size_t i=0; i<numSlots; i++) {
             if (geom[i] != -1) {
               rtcDeleteGeometry(*task->scene,geom[i]);
               if (rtcDeviceGetError(thread->device) != RTC_NO_ERROR) task->errorCounter++;;

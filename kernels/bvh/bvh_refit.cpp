@@ -24,6 +24,7 @@
 #include "../geometry/trianglei.h"
 #include "../geometry/quadv.h"
 #include "../geometry/quadi.h"
+#include "../geometry/object.h"
 
 #include <algorithm>
 
@@ -352,6 +353,10 @@ namespace embree
 #endif
 
 #endif
+
+#if defined(EMBREE_GEOMETRY_USER)
+    Builder* BVH4VirtualMeshBuilderSAH (void* bvh, AccelSet* mesh, size_t mode);
+    Builder* BVH4VirtualMeshRefitSAH (void* accel, AccelSet* mesh, size_t mode) { return new BVHNRefitT<4,AccelSet,Object>((BVH4*)accel,BVH4VirtualMeshBuilderSAH(accel,mesh,mode),mesh,mode); }
+#endif
   }
 }
-

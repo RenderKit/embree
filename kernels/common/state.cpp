@@ -80,6 +80,8 @@ namespace embree
     hair_builder_mb = "default";
     hair_traverser_mb = "default";
 
+    object_accel = "default";
+    object_builder = "default";
     object_accel_min_leaf_size = 1;
     object_accel_max_leaf_size = 1;
 
@@ -301,6 +303,10 @@ namespace embree
       else if (tok == Token::Id("hair_traverser_mb") && cin->trySymbol("="))
         hair_traverser_mb = cin->get().Identifier();
 
+      else if (tok == Token::Id("object_accel") && cin->trySymbol("="))
+        object_accel = cin->get().Identifier();
+      else if (tok == Token::Id("object_builder") && cin->trySymbol("="))
+        object_builder = cin->get().Identifier();
       else if (tok == Token::Id("object_accel_min_leaf_size") && cin->trySymbol("="))
         object_accel_min_leaf_size = cin->get().Int();
       else if (tok == Token::Id("object_accel_max_leaf_size") && cin->trySymbol("="))

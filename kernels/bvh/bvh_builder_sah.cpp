@@ -1114,6 +1114,10 @@ namespace embree
       return new BVHNBuilderSAH<4,AccelSet,Object>((BVH4*)bvh,scene,4,1.0f,minLeafSize,maxLeafSize,mode);
     }
 
+    Builder* BVH4VirtualMeshBuilderSAH    (void* bvh, AccelSet* mesh, size_t mode) {
+      return new BVHNBuilderSAH<4,AccelSet,Object>((BVH4*)bvh,mesh,4,1.0f,1,inf,mode);
+    }
+
     Builder* BVH4VirtualMBSceneBuilderSAH    (void* bvh, Scene* scene, size_t mode) {
       int minLeafSize = scene->device->object_accel_mb_min_leaf_size;
       int maxLeafSize = scene->device->object_accel_mb_max_leaf_size;
