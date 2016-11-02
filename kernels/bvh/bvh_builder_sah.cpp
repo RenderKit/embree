@@ -631,7 +631,6 @@ namespace embree
         auto reduce = [&] (AlignedNodeMB4D* node, const std::pair<LBBox3fa,BBox1f>* bounds, const size_t num) -> std::pair<LBBox3fa,BBox1f> {
 
           assert(num <= N);
-          BBox1f dt(0.0f,1.0f); assert(false); // have to get time bounds here
           auto allBounds = std::make_pair(LBBox3fa(empty),BBox1f(empty));
           for (size_t i=0; i<num; i++) {
             node->set(i, bounds[i].first, bounds[i].second);
