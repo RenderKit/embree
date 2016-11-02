@@ -79,7 +79,7 @@ namespace embree
 
             //PRINT(pinfo.size());
             //if (pinfo.size() == 103872 && set.time_range.size() == 1.0f) {
-            //return temporal_split;
+            //  return temporal_split;
             //}
             
             /* take temporal split if it improved SAH */

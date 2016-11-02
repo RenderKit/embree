@@ -567,6 +567,15 @@ namespace embree
       {
         AlignedNodeMB4D* node = (AlignedNodeMB4D*) alloc->alloc0->malloc(sizeof(AlignedNodeMB4D),BVH::byteNodeAlignment); node->clear();
         for (size_t i=0; i<num; i++) {
+          LBBox3fa cbounds = empty;
+          for (size_t j=children[i].prims.object_range.begin(); j<children[i].prims.object_range.end(); j++) 
+          {
+            PrimRef2& ref = (*children[i].prims.prims)[j];
+            unsigned geomID = ref.geomID();
+            unsigned primID = ref.primID();
+            cbounds.extend(bvh->scene->getTriangleMesh(geomID)->linearBounds(primID,children[i].prims.time_range));
+          }
+          node->set(i,cbounds.global(children[i].prims.time_range),children[i].prims.time_range);
           children[i].parent = (size_t*)&node->child(i);
         }
         *current.parent = bvh->encodeNode(node);
@@ -633,7 +642,7 @@ namespace embree
           assert(num <= N);
           auto allBounds = std::make_pair(LBBox3fa(empty),BBox1f(empty));
           for (size_t i=0; i<num; i++) {
-            node->set(i, bounds[i].first, bounds[i].second);
+            //node->set(i, bounds[i].first, bounds[i].second);
             allBounds.first .extend(bounds[i].first);
             allBounds.second.extend(bounds[i].second);
           }
