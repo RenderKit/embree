@@ -138,7 +138,7 @@ namespace embree
     };
 
     typedef SplitInfoT<BBox3fa> SplitInfo;
-    //typedef SplitInfoT<LBBox3fa> SplitInfo2;
+    typedef SplitInfoT<LBBox3fa> SplitInfo2;
     
     /*! stores all binning information */
     template<size_t BINS, typename PrimRef, typename BBox>
@@ -347,10 +347,10 @@ namespace embree
       }
       
       /*! calculates extended split information */
-      __forceinline void getSplitInfo(const BinMapping<BINS>& mapping, const Split& split, SplitInfo& info) const 
+      __forceinline void getSplitInfo(const BinMapping<BINS>& mapping, const Split& split, SplitInfoT<BBox>& info) const 
       {
 	if (split.dim == -1) {
-	  new (&info) SplitInfo(0,empty,0,empty);
+	  new (&info) SplitInfoT<BBox>(0,empty,0,empty);
 	  return;
 	}
 	
@@ -366,7 +366,7 @@ namespace embree
 	  rightCount += counts(i,split.dim);
 	  rightBounds.extend(bounds(i,split.dim));
 	}
-	new (&info) SplitInfo(leftCount,leftBounds,rightCount,rightBounds);
+	new (&info) SplitInfoT<BBox>(leftCount,leftBounds,rightCount,rightBounds);
       }
 
       /*! gets the number of primitives left of the split */

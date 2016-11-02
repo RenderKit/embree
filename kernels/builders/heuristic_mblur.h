@@ -17,7 +17,7 @@
 #pragma once
 
 #include "../common/primref2.h"
-#include "heuristic_binning_mblur.h"
+#include "heuristic_binning.h"
 
 #define MBLUR_SPLIT_OVERLAP_THRESHOLD 0.1f
 #define MBLUR_SPLIT_SAH_THRESHOLD 0.99f
@@ -33,7 +33,7 @@ namespace embree
         typedef BinSplit<BINS> Split;
         typedef BinSplit<BINS> ObjectSplit;
         typedef BinSplit<BINS> TemporalSplit;
-        typedef BinInfo2<BINS,PrimRef2> ObjectBinner;
+        typedef BinInfoT<BINS,PrimRef2,LBBox3fa> ObjectBinner;
 
         struct Set 
         {
