@@ -34,10 +34,18 @@ namespace embree
         __forceinline BinMapping() {}
         
         /*! calculates the mapping */
+        __forceinline BinMapping(const BBox3fa& centBounds, size_t N) 
+        {
+          num = min(BINS,size_t(4.0f + 0.05f*N));
+          const vfloat4 diag = (vfloat4) centBounds.size();
+          scale = select(diag > vfloat4(1E-34f),vfloat4(0.99f*num)/diag,vfloat4(0.0f));
+          ofs  = (vfloat4) centBounds.lower;
+        }
+
+        /*! calculates the mapping */
         __forceinline BinMapping(const PrimInfo& pinfo) 
         {
           num = min(BINS,size_t(4.0f + 0.05f*pinfo.size()));
-
           const vfloat4 diag = (vfloat4) pinfo.centBounds.size();
           scale = select(diag > vfloat4(1E-34f),vfloat4(0.99f*num)/diag,vfloat4(0.0f));
           ofs  = (vfloat4) pinfo.centBounds.lower;

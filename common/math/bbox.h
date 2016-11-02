@@ -113,6 +113,10 @@ namespace embree
 
   template<typename Vec> __forceinline float safeArea( const BBox<Vec>& b ) { if (b.empty()) return 0.0f; else return area(b); }
 
+  template<typename T> __forceinline float expectedApproxHalfArea(const BBox<T>& box) {
+    return halfArea(box);
+  }
+
   /*! merges bounding boxes and points */
   template<typename T> __forceinline const BBox<T> merge( const BBox<T>& a, const       T& b ) { return BBox<T>(min(a.lower, b    ), max(a.upper, b    )); }
   template<typename T> __forceinline const BBox<T> merge( const       T& a, const BBox<T>& b ) { return BBox<T>(min(a    , b.lower), max(a    , b.upper)); }

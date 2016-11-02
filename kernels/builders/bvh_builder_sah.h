@@ -184,7 +184,7 @@ namespace embree
           
           /*! compute leaf and split cost */
           const float leafSAH  = intCost*current.pinfo.leafSAH(logBlockSize);
-          const float splitSAH = travCost*halfArea(current.pinfo.geomBounds)+intCost*current.split.splitSAH();
+          const float splitSAH = travCost*expectedApproxHalfArea(current.pinfo.geomBounds)+intCost*current.split.splitSAH();
           assert((current.pinfo.size() == 0) || ((leafSAH >= 0) && (splitSAH >= 0)));
           
           /*! create a leaf node when threshold reached or SAH tells us to stop */
@@ -209,7 +209,9 @@ namespace embree
             for (size_t i=0; i<numChildren; i++) 
             {
               if (children[i].pinfo.size() <= minLeafSize) continue; 
-              if (area(children[i].pinfo.geomBounds) > bestSAH) { bestChild = i; bestSAH = area(children[i].pinfo.geomBounds); } // FIXME: measure over all scenes if this line creates better tree
+              if (expectedApproxHalfArea(children[i].pinfo.geomBounds) > bestSAH) { // FIXME: measure over all scenes if this line creates better tree
+                bestChild = i; bestSAH = expectedApproxHalfArea(children[i].pinfo.geomBounds); 
+              } 
             }
 #else
             float bestSAH = 0;
@@ -408,7 +410,7 @@ namespace embree
       typedef HeuristicMBlur<Mesh,NUM_OBJECT_BINS> Heuristic;
       typedef typename Heuristic::Set Set;
       typedef typename Heuristic::Split Split;
-      typedef GeneralBuildRecord<Set,Split,PrimInfo> BuildRecord;
+      typedef GeneralBuildRecord<Set,Split,PrimInfo2> BuildRecord;
       
       /*! special builder that propagates reduction over the tree */
       template<typename NodeRef, 
@@ -425,7 +427,7 @@ namespace embree
                                         const ReductionTy& identity, 
                                         CreateNodeFunc createNode, UpdateNodeFunc updateNode, CreateLeafFunc createLeaf, 
                                         ProgressMonitor progressMonitor,
-                                        std::shared_ptr<avector<PrimRef2>> prims, const PrimInfo& pinfo, 
+                                        std::shared_ptr<avector<PrimRef2>> prims, const PrimInfo2& pinfo, 
                                         const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, 
                                         const size_t minLeafSize, const size_t maxLeafSize,
                                         const float travCost, const float intCost)
@@ -447,7 +449,7 @@ namespace embree
           UpdateNodeFunc,
           CreateLeafFunc,
           ProgressMonitor,
-          PrimInfo> Builder;
+          PrimInfo2> Builder;
         
         /* instantiate builder */
         Builder builder(heuristic,

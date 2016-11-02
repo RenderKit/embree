@@ -625,7 +625,7 @@ namespace embree
 
         /* create primref array */
         std::shared_ptr<avector<PrimRef2>> prims(new avector<PrimRef2>(numPrimitives)); // FIXME: use mvector instead of avector
-        PrimInfo pinfo = createPrimRef2ArrayMBlur<Mesh>(scene,*prims,bvh->scene->progressInterface);
+        PrimInfo2 pinfo = createPrimRef2ArrayMBlur<Mesh>(scene,*prims,bvh->scene->progressInterface);
         
         /* reduction function */
         auto reduce = [&] (AlignedNodeMB4D* node, const std::pair<LBBox3fa,BBox1f>* bounds, const size_t num) -> std::pair<LBBox3fa,BBox1f> {
@@ -644,17 +644,17 @@ namespace embree
         /* call BVH builder */            
         bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
         NodeRef root;
-        auto bounds = BVHNBuilderMBlurBinnedSAH<Mesh>::build_reduce(scene,root,
-                                                                    typename BVH::CreateAlloc(bvh),
-                                                                    identity,
-                                                                    CreateAlignedNodeMB4D2<N,Mesh>(bvh),
-                                                                    reduce,
-                                                                    CreateMSMBlurLeaf2<N,Mesh,Primitive>(bvh),
-                                                                    bvh->scene->progressInterface,
-                                                                    prims,pinfo,
-                                                                    N,BVH::maxDepth,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
+        BVHNBuilderMBlurBinnedSAH<Mesh>::build_reduce(scene,root,
+                                                      typename BVH::CreateAlloc(bvh),
+                                                      identity,
+                                                      CreateAlignedNodeMB4D2<N,Mesh>(bvh),
+                                                      reduce,
+                                                      CreateMSMBlurLeaf2<N,Mesh,Primitive>(bvh),
+                                                      bvh->scene->progressInterface,
+                                                      prims,pinfo,
+                                                      N,BVH::maxDepth,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
         
-        bvh->set(root,bounds.first,pinfo.size());
+        bvh->set(root,pinfo.geomBounds,pinfo.size());
 
 	/* clear temporary data for static geometry */
 	if (scene->isStatic()) bvh->shrink();

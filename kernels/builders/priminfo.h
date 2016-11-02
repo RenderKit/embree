@@ -31,10 +31,10 @@ namespace embree
       __forceinline CentGeom (EmptyTy) 
 	: geomBounds(empty), centBounds(empty) {}
       
-      __forceinline CentGeom (const BBox& geomBounds, const BBox& centBounds) 
+      __forceinline CentGeom (const BBox& geomBounds, const BBox3fa& centBounds) 
 	: geomBounds(geomBounds), centBounds(centBounds) {}
       
-      __forceinline void extend(const BBox& geomBounds_, const BBox& centBounds_) {
+      __forceinline void extend(const BBox& geomBounds_, const BBox3fa& centBounds_) {
 	geomBounds.extend(geomBounds_);
 	centBounds.extend(centBounds_);
       }
@@ -57,7 +57,7 @@ namespace embree
       
     public:
       BBox geomBounds;   //!< geometry bounds of primitives
-      BBox centBounds;   //!< centroid bounds of primitives
+      BBox3fa centBounds;   //!< centroid bounds of primitives
     };
 
     typedef CentGeom<BBox3fa> CentGeomBBox3fa;
@@ -80,14 +80,14 @@ namespace embree
 	begin = end = 0;
       }
       
-      __forceinline PrimInfoT (size_t num, const BBox& geomBounds, const BBox& centBounds) 
+      __forceinline PrimInfoT (size_t num, const BBox& geomBounds, const BBox3fa& centBounds) 
 	: CentGeom<BBox>(geomBounds,centBounds), begin(0), end(num) {}
       
-      __forceinline PrimInfoT (size_t begin, size_t end, const BBox& geomBounds, const BBox& centBounds) 
+      __forceinline PrimInfoT (size_t begin, size_t end, const BBox& geomBounds, const BBox3fa& centBounds) 
 	: CentGeom<BBox>(geomBounds,centBounds), begin(begin), end(end) {}
 
       __forceinline void add(const BBox& geomBounds_) {
-	CentGeom<BBox>::extend(geomBounds_,center2(geomBounds_));
+	CentGeom<BBox>::extend(geomBounds_);
 	end++;
       }
 
@@ -99,8 +99,8 @@ namespace embree
       __forceinline void add(const size_t i=1) {
 	end+=i;
       }
-      
-      __forceinline void add(const BBox& geomBounds_, const BBox& centBounds_, size_t num_ = 1) {
+       
+      __forceinline void add(const BBox& geomBounds_, const BBox3fa& centBounds_, size_t num_ = 1) {
 	CentGeom<BBox>::extend(geomBounds_,centBounds_);
 	end += num_;
       }
@@ -123,12 +123,12 @@ namespace embree
       }
       
       __forceinline float leafSAH() const { 
-	return halfArea(geomBounds)*float(size()); 
+	return expectedApproxHalfArea(geomBounds)*float(size()); 
 	//return halfArea(geomBounds)*blocks(num); 
       }
       
       __forceinline float leafSAH(size_t block_shift) const { 
-	return halfArea(geomBounds)*float((size()+(size_t(1)<<block_shift)-1) >> block_shift);
+	return expectedApproxHalfArea(geomBounds)*float((size()+(size_t(1)<<block_shift)-1) >> block_shift);
 	//return halfArea(geomBounds)*float((num+3) >> 2);
 	//return halfArea(geomBounds)*blocks(num); 
       }
