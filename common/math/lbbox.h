@@ -138,7 +138,7 @@ namespace embree
   }
 
   /*! computes the center of the box */
-  template<typename T> __forceinline const T center2(const LBBox<T>& box) { return center2(box.interpolate(0.5f)); }
+  template<typename T> __forceinline const T center2(const LBBox<T>& box) { return center2(box.bounds0); }
   template<typename T> __forceinline const T center (const LBBox<T>& box) { return T(0.5f)*center2(box); }
 
   /*! default template instantiations */
