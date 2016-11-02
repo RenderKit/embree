@@ -30,7 +30,7 @@ namespace embree
 {
   namespace isa
   {  
-    template<typename Set, typename Split>
+    template<typename Set, typename Split, typename PrimInfo>
       struct GeneralBuildRecord 
       {
       public:
@@ -69,7 +69,8 @@ namespace embree
       typename CreateNodeFunc, 
       typename UpdateNodeFunc, 
       typename CreateLeafFunc, 
-      typename ProgressMonitor>
+      typename ProgressMonitor,
+      typename PrimInfo>
       
       class GeneralBVHBuilder
       {
@@ -306,7 +307,7 @@ namespace embree
     {
       typedef range<size_t> Set;
       typedef HeuristicArrayBinningSAH<PrimRef,NUM_OBJECT_BINS> Heuristic;
-      typedef GeneralBuildRecord<Set,typename Heuristic::Split> BuildRecord;
+      typedef GeneralBuildRecord<Set,typename Heuristic::Split,PrimInfo> BuildRecord;
       
       /*! standard build without reduction */
       template<typename NodeRef, 
@@ -378,7 +379,8 @@ namespace embree
           CreateNodeFunc,
           UpdateNodeFunc,
           CreateLeafFunc,
-          ProgressMonitor> Builder;
+          ProgressMonitor,
+          PrimInfo> Builder;
         
         /* instantiate builder */
         Builder builder(heuristic,
@@ -412,7 +414,7 @@ namespace embree
 
       typedef extended_range<size_t> Set;
       typedef Split2<BinSplit<OBJECT_BINS>,SpatialBinSplit<SPATIAL_BINS> > Split;
-      typedef GeneralBuildRecord<Set,Split> BuildRecord;
+      typedef GeneralBuildRecord<Set,Split,PrimInfo> BuildRecord;
 
       /*! standard build without reduction */
       template<typename NodeRef, 
@@ -497,7 +499,8 @@ namespace embree
           CreateNodeFunc,
           UpdateNodeFunc,
           CreateLeafFunc,
-          ProgressMonitor> Builder;
+          ProgressMonitor,
+          PrimInfo> Builder;
         
         /* instantiate builder */
         Builder builder(heuristic,
@@ -523,7 +526,7 @@ namespace embree
     {
       typedef range<size_t> Set;
       typedef HeuristicArraySweepSAH<PrimRef> Heuristic;
-      typedef GeneralBuildRecord<Set,typename Heuristic::Split> BuildRecord;
+      typedef GeneralBuildRecord<Set,typename Heuristic::Split,PrimInfo> BuildRecord;
       
       /*! standard build without reduction */
       template<typename NodeRef, 
@@ -595,7 +598,8 @@ namespace embree
           CreateNodeFunc,
           UpdateNodeFunc,
           CreateLeafFunc,
-          ProgressMonitor> Builder;
+          ProgressMonitor,
+          PrimInfo> Builder;
         
         /* instantiate builder */
         Builder builder(heuristic,
