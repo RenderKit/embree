@@ -27,7 +27,7 @@ namespace embree
       struct UnalignedHeuristicArrayBinningSAH
       {
         typedef BinSplit<BINS> Split;
-        typedef BinInfo<BINS,PrimRef> Binner;
+        typedef BinInfoT<BINS,PrimRef,BBox3fa> Binner;
         typedef range<size_t> Set;
 
          /*! computes bounding box of bezier curves for motion blur */

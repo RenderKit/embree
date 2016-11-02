@@ -112,36 +112,40 @@ namespace embree
       };
     
     /*! stores extended information about the split */
-    struct SplitInfo
+    template<typename BBox>
+      struct SplitInfoT
     {
 
-      __forceinline SplitInfo () {}
+      __forceinline SplitInfoT () {}
       
-      __forceinline SplitInfo (size_t leftCount, const BBox3fa& leftBounds, size_t rightCount, const BBox3fa& rightBounds)
+      __forceinline SplitInfoT (size_t leftCount, const BBox& leftBounds, size_t rightCount, const BBox& rightBounds)
 	: leftCount(leftCount), rightCount(rightCount), leftBounds(leftBounds), rightBounds(rightBounds) {}
       
     public:
       size_t leftCount,rightCount;
-      BBox3fa leftBounds,rightBounds;
+      BBox leftBounds,rightBounds;
     };
+
+    typedef SplitInfoT<BBox3fa> SplitInfo;
+    typedef SplitInfoT<LBBox3fa> SplitInfo2;
     
     /*! stores all binning information */
-    template<size_t BINS, typename PrimRef>
-      struct __aligned(64) BinInfo
+    template<size_t BINS, typename PrimRef, typename BBox>
+      struct __aligned(64) BinInfoT
     {
 		  
       typedef BinSplit<BINS> Split;
       
-      __forceinline BinInfo() {
+      __forceinline BinInfoT() {
       }
       
-      __forceinline BinInfo(EmptyTy) {
+      __forceinline BinInfoT(EmptyTy) {
 	clear();
       }
 
       /*! bin access function */
-      __forceinline BBox3fa &bounds(const size_t binID, const size_t dimID)             { return _bounds[binID][dimID]; }
-      __forceinline const BBox3fa &bounds(const size_t binID, const size_t dimID) const { return _bounds[binID][dimID]; }
+      __forceinline BBox &bounds(const size_t binID, const size_t dimID)             { return _bounds[binID][dimID]; }
+      __forceinline const BBox &bounds(const size_t binID, const size_t dimID) const { return _bounds[binID][dimID]; }
 
       __forceinline int &counts(const size_t binID, const size_t dimID)             { return _counts[binID][dimID]; }
       __forceinline const int &counts(const size_t binID, const size_t dimID) const { return _counts[binID][dimID]; }
@@ -166,11 +170,11 @@ namespace embree
 	for (i=0; i<N-1; i+=2)
         {
           /*! map even and odd primitive to bin */
-          const BBox3fa prim0 = prims[i+0].bounds(); 
+          const BBox prim0 = prims[i+0].bounds(); 
           const Vec3fa center0 = Vec3fa(center2(prim0)); 
           const vint4 bin0 = (vint4)mapping.bin(center0); 
           
-          const BBox3fa prim1 = prims[i+1].bounds(); 
+          const BBox prim1 = prims[i+1].bounds(); 
           const Vec3fa center1 = Vec3fa(center2(prim1)); 
           const vint4 bin1 = (vint4)mapping.bin(center1); 
           
@@ -196,7 +200,7 @@ namespace embree
 	if (i < N)
         {
           /*! map primitive to bin */
-          const BBox3fa prim0 = prims[i].bounds(); const Vec3fa center0 = Vec3fa(center2(prim0)); const vint4 bin0 = (vint4)mapping.bin(center0); 
+          const BBox prim0 = prims[i].bounds(); const Vec3fa center0 = Vec3fa(center2(prim0)); const vint4 bin0 = (vint4)mapping.bin(center0); 
           
           /*! increase bounds of bins */
           const int b00 = extract<0>(bin0); counts(b00,0)++; bounds(b00,0).extend(prim0);
@@ -214,8 +218,8 @@ namespace embree
 	for (i=0; i<N-1; i+=2)
         {
           /*! map even and odd primitive to bin */
-          const BBox3fa prim0 = prims[i+0].bounds(space); const Vec3fa center0 = Vec3fa(center2(prim0)); const vint4 bin0 = (vint4)mapping.bin(center0); 
-          const BBox3fa prim1 = prims[i+1].bounds(space); const Vec3fa center1 = Vec3fa(center2(prim1)); const vint4 bin1 = (vint4)mapping.bin(center1); 
+          const BBox prim0 = prims[i+0].bounds(space); const Vec3fa center0 = Vec3fa(center2(prim0)); const vint4 bin0 = (vint4)mapping.bin(center0); 
+          const BBox prim1 = prims[i+1].bounds(space); const Vec3fa center1 = Vec3fa(center2(prim1)); const vint4 bin1 = (vint4)mapping.bin(center1); 
           
           /*! increase bounds for bins for even primitive */
           const int b00 = extract<0>(bin0); counts(b00,0)++; bounds(b00,0).extend(prim0);
@@ -232,7 +236,7 @@ namespace embree
 	if (i < N)
         {
           /*! map primitive to bin */
-          const BBox3fa prim0 = prims[i].bounds(space); const Vec3fa center0 = Vec3fa(center2(prim0)); const vint4 bin0 = (vint4)mapping.bin(center0); 
+          const BBox prim0 = prims[i].bounds(space); const Vec3fa center0 = Vec3fa(center2(prim0)); const vint4 bin0 = (vint4)mapping.bin(center0); 
           
           /*! increase bounds of bins */
           const int b00 = extract<0>(bin0); counts(b00,0)++; bounds(b00,0).extend(prim0);
@@ -250,7 +254,7 @@ namespace embree
       }   
 
       /*! merges in other binning information */
-      __forceinline void merge (const BinInfo& other, size_t numBins)
+      __forceinline void merge (const BinInfoT& other, size_t numBins)
       {
 		
 	for (size_t i=0; i<numBins; i++) 
@@ -263,9 +267,9 @@ namespace embree
       }
 
       /*! reduces binning information */
-      static __forceinline const BinInfo reduce (const BinInfo& a, const BinInfo& b, const size_t numBins = BINS)
+      static __forceinline const BinInfoT reduce (const BinInfoT& a, const BinInfoT& b, const size_t numBins = BINS)
       {
-        BinInfo c;
+        BinInfoT c;
 	for (size_t i=0; i<numBins; i++) 
         {
           c.counts(i) = a.counts(i)+b.counts(i);
@@ -282,14 +286,14 @@ namespace embree
 	/* sweep from right to left and compute parallel prefix of merged bounds */
 	vfloat4 rAreas[BINS];
 	vint4 rCounts[BINS];
-	vint4 count = 0; BBox3fa bx = empty; BBox3fa by = empty; BBox3fa bz = empty;
+	vint4 count = 0; BBox bx = empty; BBox by = empty; BBox bz = empty;
 	for (size_t i=mapping.size()-1; i>0; i--)
         {
           count += counts(i);
           rCounts[i] = count;
-          bx.extend(bounds(i,0)); rAreas[i][0] = halfArea(bx);
-          by.extend(bounds(i,1)); rAreas[i][1] = halfArea(by);
-          bz.extend(bounds(i,2)); rAreas[i][2] = halfArea(bz);
+          bx.extend(bounds(i,0)); rAreas[i][0] = expectedApproxHalfArea(bx);
+          by.extend(bounds(i,1)); rAreas[i][1] = expectedApproxHalfArea(by);
+          bz.extend(bounds(i,2)); rAreas[i][2] = expectedApproxHalfArea(bz);
           rAreas[i][3] = 0.0f;
         }
 	/* sweep from left to right and compute SAH */
@@ -299,9 +303,9 @@ namespace embree
 	for (size_t i=1; i<mapping.size(); i++, ii+=1)
         {
           count += counts(i-1);
-          bx.extend(bounds(i-1,0)); float Ax = halfArea(bx);
-          by.extend(bounds(i-1,1)); float Ay = halfArea(by);
-          bz.extend(bounds(i-1,2)); float Az = halfArea(bz);
+          bx.extend(bounds(i-1,0)); float Ax = expectedApproxHalfArea(bx);
+          by.extend(bounds(i-1,1)); float Ay = expectedApproxHalfArea(by);
+          bz.extend(bounds(i-1,2)); float Az = expectedApproxHalfArea(bz);
           const vfloat4 lArea = vfloat4(Ax,Ay,Az,Az);
           const vfloat4 rArea = rAreas[i];
           const vint4 lCount = (count     +blocks_add) >> int(blocks_shift);
@@ -340,13 +344,13 @@ namespace embree
 	}
 	
 	size_t leftCount = 0;
-	BBox3fa leftBounds = empty;
+	BBox leftBounds = empty;
 	for (size_t i=0; i<(size_t)split.pos; i++) {
 	  leftCount += counts(i,split.dim);
 	  leftBounds.extend(bounds(i,split.dim));
 	}
 	size_t rightCount = 0;
-	BBox3fa rightBounds = empty;
+	BBox rightBounds = empty;
 	for (size_t i=split.pos; i<mapping.size(); i++) {
 	  rightCount += counts(i,split.dim);
 	  rightBounds.extend(bounds(i,split.dim));
@@ -379,8 +383,7 @@ namespace embree
       }
 
     private:
-
-      BBox3fa _bounds[BINS][3]; //!< geometry bounds for each bin in each dimension
+      BBox _bounds[BINS][3]; //!< geometry bounds for each bin in each dimension
       vint4   _counts[BINS];    //!< counts number of primitives that map into the bins
     };
 
@@ -439,14 +442,14 @@ namespace embree
 
     /* 16 bins in-register binner */
     template<typename PrimRef>
-      struct __aligned(64) BinInfo<16,PrimRef>
+      struct __aligned(64) BinInfoT<16,PrimRef,BBox3fa>
     {
       typedef BinSplit<16> Split;
       
-      __forceinline BinInfo() {
+      __forceinline BinInfoT() {
       }
       
-      __forceinline BinInfo(EmptyTy) {
+      __forceinline BinInfoT(EmptyTy) {
 	clear();
       }
       
@@ -726,7 +729,7 @@ namespace embree
       }
 
       /*! merges in other binning information */
-      __forceinline void merge (const BinInfo& other, size_t numBins)
+      __forceinline void merge (const BinInfoT& other, size_t numBins)
       {
         for (size_t i=0; i<3; i++)
         {
@@ -737,9 +740,9 @@ namespace embree
       }
 
       /*! reducesr binning information */
-      static __forceinline const BinInfo reduce (const BinInfo& a, const BinInfo& b)
+      static __forceinline const BinInfoT reduce (const BinInfoT& a, const BinInfoT& b)
       {
-        BinInfo c;
+        BinInfoT c;
 	for (size_t i=0; i<3; i++) 
         {
           c.counts[i] = a.counts[i] + b.counts[i];
