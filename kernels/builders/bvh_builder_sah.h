@@ -408,7 +408,7 @@ namespace embree
       typedef HeuristicMBlur<Mesh,NUM_OBJECT_BINS> Heuristic;
       typedef typename Heuristic::Set Set;
       typedef typename Heuristic::Split Split;
-      typedef GeneralBuildRecord<Set,Split> BuildRecord;
+      typedef GeneralBuildRecord<Set,Split,PrimInfo> BuildRecord;
       
       /*! special builder that propagates reduction over the tree */
       template<typename NodeRef, 
@@ -446,7 +446,8 @@ namespace embree
           CreateNodeFunc,
           UpdateNodeFunc,
           CreateLeafFunc,
-          ProgressMonitor> Builder;
+          ProgressMonitor,
+          PrimInfo> Builder;
         
         /* instantiate builder */
         Builder builder(heuristic,
