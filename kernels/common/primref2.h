@@ -35,6 +35,7 @@ namespace embree
     /*! returns bounds for binning */
     __forceinline BBox3fa binBounds() const {
       return lbounds.interpolate(0.5f);
+      //return lbounds.bounds();
     }
 
     /*! returns bounds for binning */

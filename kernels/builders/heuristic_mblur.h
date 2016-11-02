@@ -72,6 +72,10 @@ namespace embree
           //{
             const TemporalSplit temporal_split = temporal_find(set, pinfo, logBlockSize);
             const float temporal_split_sah = temporal_split.splitSAH();
+
+            /*PRINT(pinfo);
+            PRINT(object_split_sah);
+            PRINT(temporal_split_sah);*/
             
             /* take temporal split if it improved SAH */
             if (temporal_split_sah < MBLUR_SPLIT_SAH_THRESHOLD*object_split_sah)
@@ -181,8 +185,9 @@ namespace embree
             const unsigned geomID = prims[i].geomID();
             const unsigned primID = prims[i].primID();
             const LBBox3fa lbounds = ((Mesh*)scene->get(geomID))->linearBounds(primID,time_range0);
-            (*lprims)[i-set.object_range.begin()] = PrimRef2(lbounds,geomID,primID);
-            linfo.add(lbounds.interpolate(0.5f));
+            const PrimRef2 prim(lbounds,geomID,primID);
+            (*lprims)[i-set.object_range.begin()] = prim;
+            linfo.add(prim.binBounds());
           }
           lset = Set(lprims,time_range0);
 
@@ -195,8 +200,9 @@ namespace embree
             const unsigned geomID = prims[i].geomID();
             const unsigned primID = prims[i].primID();
             const LBBox3fa lbounds = ((Mesh*)scene->get(geomID))->linearBounds(primID,time_range1);
-            (*rprims)[i-set.object_range.begin()] = PrimRef2(lbounds,geomID,primID);
-            rinfo.add(lbounds.interpolate(0.5f));
+            const PrimRef2 prim(lbounds,geomID,primID);
+            (*rprims)[i-set.object_range.begin()] = prim;
+            rinfo.add(prim.binBounds());
           }
           rset = Set(rprims,time_range1);
         }
