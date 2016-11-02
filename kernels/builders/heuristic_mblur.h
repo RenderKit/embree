@@ -116,7 +116,7 @@ namespace embree
 
           /* calculate sah */
           const size_t lCount = (set.object_range.size()+(1 << logBlockSize)-1) >> int(logBlockSize), rCount = lCount;
-          const float sah = bounds0.expectedApproxHalfArea()*float(lCount) + bounds1.expectedApproxHalfArea()*float(rCount);
+          const float sah = (bounds0.expectedApproxHalfArea()*float(lCount) + bounds1.expectedApproxHalfArea()*float(rCount)) * 0.5f;
           return TemporalSplit(sah,-1);
         }
         
