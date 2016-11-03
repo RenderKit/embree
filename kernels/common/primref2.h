@@ -33,9 +33,9 @@ namespace embree
     }
 
     /*! returns bounds for binning */
-    /*__forceinline LBBox3fa bounds() const {
+    __forceinline LBBox3fa bounds() const {
       return lbounds;
-      }*/
+    }
 
     /*! returns center for binning */
     __forceinline Vec3fa binCenter() const {
@@ -48,7 +48,7 @@ namespace embree
     /*! returns bounds and centroid used for binning */
     __forceinline void binBoundsAndCenter(LBBox3fa& bounds_o, Vec3fa& center_o) const 
     {
-      bounds_o = lbounds;
+      bounds_o = bounds();
       center_o = binCenter();
     }
 

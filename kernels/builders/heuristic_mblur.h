@@ -71,19 +71,23 @@ namespace embree
 
           /* calculate number of timesegments */
           unsigned numTimeSegments = 0;
+          double Al = 0.0, A0 = 0.0;
           for (size_t i=set.object_range.begin(); i<set.object_range.end(); i++) {
             const PrimRef2& prim = (*set.prims)[i];
             unsigned segments = scene->get(prim.geomID())->numTimeSegments();
             numTimeSegments = max(numTimeSegments,segments);
+            A0 += expectedApproxHalfArea(prim.cbounds);
+            Al += expectedApproxHalfArea(prim.lbounds);
           }
+          //PRINT2(A0,Al);
   
           /* do temporal splits only if the child bounds overlap */
           //const BBox3fa overlap = intersect(oinfo.leftBounds, oinfo.rightBounds);
           //if (safeArea(overlap) >= MBLUR_SPLIT_OVERLAP_THRESHOLD*safeArea(pinfo.geomBounds))
-          //if (set.time_range.size() > 1.99f/float(numTimeSegments))
-          if (set.time_range.size() > 1.01f/float(numTimeSegments))
+          if (set.time_range.size() > 1.99f/float(numTimeSegments))
+          //if (set.time_range.size() > 1.01f/float(numTimeSegments))
           {
-            const TemporalSplit temporal_split = temporal_find(set, pinfo, logBlockSize, numTimeSegments);
+            TemporalSplit temporal_split = temporal_find(set, pinfo, logBlockSize, numTimeSegments);
             const float temporal_split_sah = temporal_split.splitSAH();
 
             /*PRINT(pinfo);
@@ -103,6 +107,19 @@ namespace embree
             float bestSAH = min(temporal_split_sah,object_split_sah);
             if (intCost*pinfo.leafSAH(logBlockSize) < travCost*expectedApproxHalfArea(pinfo.geomBounds)+intCost*bestSAH)
             {
+              temporal_split.sah = float(neg_inf);
+              return temporal_split;
+              }*/
+
+            /* force time split if object partitioning was not very successfull */
+            /*float leafSAH = pinfo.leafSAH(logBlockSize);
+            if (object_split_sah > 0.7f*leafSAH) {
+              temporal_split.sah = float(neg_inf);
+              return temporal_split;
+              }*/
+
+            /* force time split if linear bounds are bad approximation */
+            /*if (Al > 500.0f*A0) {
               temporal_split.sah = float(neg_inf);
               return temporal_split;
               }*/
