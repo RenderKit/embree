@@ -73,6 +73,12 @@ namespace embree
           return Vec3ia(floori((vfloat4(p)-ofs)*scale));
         }
 
+        /*! faster but unsafe binning */
+        template<typename PrimRef>
+        __forceinline Vec3ia bin_unsafe(const PrimRef& p) const {
+          return bin_unsafe(p.binCenter());
+        }
+
         /*! returns true if the mapping is invalid in some dimension */
         __forceinline bool invalid(const size_t dim) const {
           return scale[dim] == 0.0f;

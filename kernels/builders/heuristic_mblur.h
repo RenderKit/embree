@@ -186,8 +186,8 @@ namespace embree
 
           const vint4 vSplitPos(splitPos);
           const vbool4 vSplitMask( (int)splitDimMask );
-          auto isLeft = [&] (const PrimRef2 &ref) { return any(((vint4)split.mapping.bin_unsafe(center2(ref.bounds())) < vSplitPos) & vSplitMask); };
-          auto reduction = [] (CentGeom<LBBox3fa>& pinfo,const PrimRef2& ref) { pinfo.extend(ref.bounds()); };
+          auto isLeft = [&] (const PrimRef2 &ref) { return any(((vint4)split.mapping.bin_unsafe(ref) < vSplitPos) & vSplitMask); };
+          auto reduction = [] (CentGeom<LBBox3fa>& pinfo,const PrimRef2& ref) { pinfo.extend_primref(ref); };
 
           size_t center = 0;
           center = serial_partitioning(set.prims->data(),begin,end,local_left,local_right,isLeft,reduction);
@@ -218,9 +218,10 @@ namespace embree
             const unsigned geomID = prims[i].geomID();
             const unsigned primID = prims[i].primID();
             const LBBox3fa lbounds = ((Mesh*)scene->get(geomID))->linearBounds(primID,time_range0);
-            const PrimRef2 prim(lbounds,geomID,primID);
+            const BBox3fa cbounds = ((Mesh*)scene->get(geomID))->bounds(primID,time_range0.lower);
+            const PrimRef2 prim(lbounds,cbounds,geomID,primID);
             (*lprims)[i-set.object_range.begin()] = prim;
-            linfo.add(prim.bounds());
+            linfo.add_primref(prim);
           }
           lset = Set(lprims,time_range0);
 
@@ -233,9 +234,10 @@ namespace embree
             const unsigned geomID = prims[i].geomID();
             const unsigned primID = prims[i].primID();
             const LBBox3fa lbounds = ((Mesh*)scene->get(geomID))->linearBounds(primID,time_range1);
-            const PrimRef2 prim(lbounds,geomID,primID);
+            const BBox3fa cbounds = ((Mesh*)scene->get(geomID))->bounds(primID,time_range1.lower);
+            const PrimRef2 prim(lbounds,cbounds,geomID,primID);
             (*rprims)[i-set.object_range.begin()] = prim;
-            rinfo.add(prim.bounds());
+            rinfo.add_primref(prim);
           }
           rset = Set(rprims,time_range1);
         }
@@ -257,12 +259,12 @@ namespace embree
           
           CentGeom<LBBox3fa> left; left.reset();
           for (size_t i=begin; i<center; i++)
-            left.extend(prims[i].bounds());
+            left.extend_primref(prims[i]);
           new (&linfo) PrimInfo2(begin,center,left.geomBounds,left.centBounds);
           
           CentGeom<LBBox3fa> right; right.reset();
           for (size_t i=center; i<end; i++)
-            right.extend(prims[i].bounds());	
+            right.extend_primref(prims[i]);	
           new (&rinfo) PrimInfo2(center,end,right.geomBounds,right.centBounds);
           
           new (&lset) Set(set.prims,range<size_t>(begin,center),set.time_range);
