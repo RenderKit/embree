@@ -102,8 +102,8 @@ namespace embree
         __forceinline BinSplit()
           : sah(inf), dim(-1), pos(0), data(0) {}
 
-        __forceinline BinSplit(float sah, unsigned data, int dim = 0, int pos = 0)
-          : sah(sah), dim(dim), pos(pos), data(data) {}
+        __forceinline BinSplit(float sah, unsigned data, int dim = 0, float fpos = 0)
+          : sah(sah), dim(dim), fpos(fpos), data(data) {}
         
         /*! constructs specified split */
         __forceinline BinSplit(float sah, int dim, int pos, const BinMapping<BINS>& mapping)
@@ -123,7 +123,7 @@ namespace embree
       public:
         float sah;                //!< SAH cost of the split
         int dim;                  //!< split dimension
-        int pos;                  //!< bin index for splitting
+        union { int pos; float fpos; };                  //!< bin index for splitting
         unsigned int data;        //!< extra optional split data
         BinMapping<BINS> mapping; //!< mapping into bins
       };

@@ -146,30 +146,45 @@ namespace embree
         /*! finds the best split */
         const TemporalSplit temporal_find(const Set& set, const PrimInfo2& pinfo, const size_t logBlockSize, const unsigned numTimeSegments)
         {
-          /* split time range */
-          //const float center_time = set.time_range.center();
-          const float center_time = round(set.time_range.center() * float(numTimeSegments)) / float(numTimeSegments);
-          const BBox1f dt0(set.time_range.lower,center_time);
-          const BBox1f dt1(center_time,set.time_range.upper);
-          
-          /* find linear bounds for both time segments */
-          LBBox3fa bounds0 = empty;
-          LBBox3fa bounds1 = empty;
-          for (size_t i=set.object_range.begin(); i<set.object_range.end(); i++) 
+          const float dt = 0.5f; 
+          //const float dt = 0.125f;
+          float bestSAH = inf;
+          float bestPos = 0.0f;
+          for (float t=dt; t<1.0f-dt/2.0f; t+=dt)
           {
-            const avector<PrimRef2>& prims = *set.prims;
-            const unsigned geomID = prims[i].geomID();
-            const unsigned primID = prims[i].primID();
-            const LBBox3fa b0 = ((Mesh*)scene->get(geomID))->linearBounds(primID,dt0);
-            const LBBox3fa b1 = ((Mesh*)scene->get(geomID))->linearBounds(primID,dt1);
-            bounds0.extend(b0);
-            bounds1.extend(b1);
-          }
+            /* split time range */
+            //const float center_time = set.time_range.center();
+            float ct = lerp(set.time_range.lower,set.time_range.upper,t);
+            //float ct = set.time_range.center();
+            const float center_time = round(ct * float(numTimeSegments)) / float(numTimeSegments);
+            if (center_time <= set.time_range.lower) continue;
+            if (center_time >= set.time_range.upper) continue;
+            const BBox1f dt0(set.time_range.lower,center_time);
+            const BBox1f dt1(center_time,set.time_range.upper);
           
-          /* calculate sah */
-          const size_t lCount = (set.object_range.size()+(1 << logBlockSize)-1) >> int(logBlockSize), rCount = lCount;
-          const float sah = (bounds0.expectedApproxHalfArea()*float(lCount)*dt0.size() + bounds1.expectedApproxHalfArea()*float(rCount)*dt1.size()) / set.time_range.size();
-          return TemporalSplit(sah*MBLUR_TIME_SPLIT_THRESHOLD,-1,numTimeSegments);
+            /* find linear bounds for both time segments */
+            LBBox3fa bounds0 = empty;
+            LBBox3fa bounds1 = empty;
+            for (size_t i=set.object_range.begin(); i<set.object_range.end(); i++) 
+            {
+              const avector<PrimRef2>& prims = *set.prims;
+              const unsigned geomID = prims[i].geomID();
+              const unsigned primID = prims[i].primID();
+              const LBBox3fa b0 = ((Mesh*)scene->get(geomID))->linearBounds(primID,dt0);
+              const LBBox3fa b1 = ((Mesh*)scene->get(geomID))->linearBounds(primID,dt1);
+              bounds0.extend(b0);
+              bounds1.extend(b1);
+            }
+            
+            /* calculate sah */
+            const size_t lCount = (set.object_range.size()+(1 << logBlockSize)-1) >> int(logBlockSize), rCount = lCount;
+            const float sah = (bounds0.expectedApproxHalfArea()*float(lCount)*dt0.size() + bounds1.expectedApproxHalfArea()*float(rCount)*dt1.size()) / set.time_range.size();
+            if (sah < bestSAH) {
+              bestSAH = sah;
+              bestPos = center_time;
+            }
+          }
+          return TemporalSplit(bestSAH*MBLUR_TIME_SPLIT_THRESHOLD,-1,numTimeSegments,bestPos);
         }
         
         /*! array partitioning */
@@ -219,10 +234,11 @@ namespace embree
         /*! array partitioning */
         __forceinline void temporal_split(const TemporalSplit& split, const PrimInfo2& pinfo, const Set& set, PrimInfo2& linfo, Set& lset, PrimInfo2& rinfo, Set& rset) 
         {
-          unsigned numTimeSegments = split.dim;
+          //unsigned numTimeSegments = split.dim;
+          float center_time = split.fpos;
           /* split time range */
           //const float center_time = set.time_range.center();
-          const float center_time = round(set.time_range.center() * float(numTimeSegments)) / float(numTimeSegments);
+          //const float center_time = round(set.time_range.center() * float(numTimeSegments)) / float(numTimeSegments);
           const BBox1f time_range0(set.time_range.lower,center_time);
           const BBox1f time_range1(center_time,set.time_range.upper);
           
