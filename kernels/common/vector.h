@@ -34,6 +34,8 @@ namespace embree
       typedef const T& const_reference;
       typedef std::size_t size_type;
       typedef std::ptrdiff_t difference_type;
+      
+      static const size_t PAGE_SIZE_2M = 2*1024*1024;
 
       __forceinline aligned_monitored_allocator(MemoryMonitorInterface* device) 
         : device(device) {}
@@ -42,13 +44,32 @@ namespace embree
       {
         assert(device);
         device->memoryMonitor(n*sizeof(T),false);
+#if defined(__LINUX__) && defined(__AVX512F__)
+        if (n*sizeof(value_type) >= 16 * PAGE_SIZE_2M)
+        {
+          pointer p =  (pointer) os_malloc(n*sizeof(value_type));
+          assert(p);
+          return p;
+        }
+#endif
         return (pointer) alignedMalloc(n*sizeof(value_type),alignment);
       }
 
       __forceinline void deallocate( pointer p, size_type n ) 
       {
         assert(device);
-        alignedFree(p);
+        if (p)
+        {
+#if defined(__LINUX__) && defined(__AVX512F__)
+          if (n*sizeof(value_type) >= 16 * PAGE_SIZE_2M)
+           os_free(p,n*sizeof(value_type)); 
+          else
+            alignedFree(p);
+#else
+          alignedFree(p);
+#endif
+        }
+        else assert(n == 0);
         device->memoryMonitor(-ssize_t(n)*sizeof(T),true);
       }
 
