@@ -1140,6 +1140,7 @@ namespace embree
       else if (xml->name == "ConvertQuadsToSubdivs"  ) return convert_quads_to_subdivs  (sceneMap[id] = loadNode(xml->child(0)));
       else if (xml->name == "ConvertBezierToLines"   ) return convert_bezier_to_lines   (sceneMap[id] = loadNode(xml->child(0)));
       else if (xml->name == "ConvertHairToCurves"    ) return convert_hair_to_curves    (sceneMap[id] = loadNode(xml->child(0)));
+      else if (xml->name == "Flatten"                ) return flatten                   (sceneMap[id] = loadNode(xml->child(0)));
 
       else THROW_RUNTIME_ERROR(xml->loc.str()+": unknown tag: "+xml->name);
     }
