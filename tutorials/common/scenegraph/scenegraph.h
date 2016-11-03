@@ -27,6 +27,7 @@ namespace embree
   {
     struct Node;
     struct MaterialNode;
+    struct Transformations;
 
     Ref<Node> load(const FileName& fname);
     void store(Ref<Node> root, const FileName& fname, bool embedTextures);
@@ -39,7 +40,7 @@ namespace embree
     Ref<Node> convert_quads_to_subdivs(Ref<Node> node);
     Ref<Node> convert_bezier_to_lines(Ref<Node> node);
     Ref<Node> convert_hair_to_curves(Ref<Node> node);
-
+    
     Ref<Node> createTrianglePlane (const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy, size_t width, size_t height, Ref<MaterialNode> material = nullptr);
     Ref<Node> createQuadPlane     (const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy, size_t width, size_t height, Ref<MaterialNode> material = nullptr);
     Ref<Node> createSubdivPlane   (const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy, size_t width, size_t height, float tessellationRate, Ref<MaterialNode> material = nullptr);
@@ -371,6 +372,17 @@ namespace embree
         for (size_t i=0; i<numTimeSteps; i++)
           positions.push_back(avector<Vertex>());
       }
+
+      TriangleMeshNode (Ref<SceneGraph::TriangleMeshNode> imesh, const Transformations& spaces)
+        : Node(true), normals(imesh->normals), texcoords(imesh->texcoords), triangles(imesh->triangles), material(imesh->material)
+      {
+        for (size_t i=0; i<spaces.size(); i++) {
+          avector<Vertex> verts(imesh->numVertices());
+          for (size_t j=0; j<imesh->numVertices(); j++) 
+            verts[j] = xfmPoint(spaces[i],imesh->positions[0][j]);
+          positions.push_back(std::move(verts));
+        }
+      }
       
       virtual void setMaterial(Ref<MaterialNode> material) {
         this->material = material;
@@ -441,6 +453,17 @@ namespace embree
         for (size_t i=0; i<numTimeSteps; i++)
           positions.push_back(avector<Vertex>());
       }
+
+      QuadMeshNode (Ref<SceneGraph::QuadMeshNode> imesh, const Transformations& spaces)
+        : Node(true), normals(imesh->normals), texcoords(imesh->texcoords), quads(imesh->quads), material(imesh->material)
+      {
+        for (size_t i=0; i<spaces.size(); i++) {
+          avector<Vertex> verts(imesh->numVertices());
+          for (size_t j=0; j<imesh->numVertices(); j++) 
+            verts[j] = xfmPoint(spaces[i],imesh->positions[0][j]);
+          positions.push_back(std::move(verts));
+        }
+      }
       
       virtual void setMaterial(Ref<MaterialNode> material) {
         this->material = material;
@@ -499,6 +522,31 @@ namespace embree
       {
         for (size_t i=0; i<numTimeSteps; i++)
           positions.push_back(avector<Vertex>());
+      }
+
+      SubdivMeshNode (Ref<SceneGraph::SubdivMeshNode> imesh, const Transformations& spaces)
+        : Node(true), 
+        normals(imesh->normals),
+        texcoords(imesh->texcoords),
+        position_indices(imesh->position_indices),
+        normal_indices(imesh->normal_indices),
+        texcoord_indices(imesh->texcoord_indices),
+        verticesPerFace(imesh->verticesPerFace),
+        holes(imesh->holes),
+        edge_creases(imesh->edge_creases),
+        edge_crease_weights(imesh->edge_crease_weights),
+        vertex_creases(imesh->vertex_creases),
+        vertex_crease_weights(imesh->vertex_crease_weights),
+        material(imesh->material), 
+        boundaryMode(imesh->boundaryMode),
+        tessellationRate(imesh->tessellationRate)
+      {
+        for (size_t i=0; i<spaces.size(); i++) {
+          avector<Vertex> verts(imesh->numPositions());
+          for (size_t j=0; j<imesh->numPositions(); j++) 
+            verts[j] = xfmPoint(spaces[i],imesh->positions[0][j]);
+          positions.push_back(std::move(verts));
+        }
       }
       
       virtual void setMaterial(Ref<MaterialNode> material) {
@@ -570,6 +618,17 @@ namespace embree
         for (size_t i=0; i<numTimeSteps; i++)
           positions.push_back(avector<Vertex>());
       }
+
+      LineSegmentsNode (Ref<SceneGraph::LineSegmentsNode> imesh, const Transformations& spaces)
+        : Node(true), indices(imesh->indices), material(imesh->material)
+      {
+        for (size_t i=0; i<spaces.size(); i++) {
+          avector<Vertex> verts(imesh->numVertices());
+          for (size_t j=0; j<imesh->numVertices(); j++) 
+            verts[j] = xfmPoint(spaces[i],imesh->positions[0][j]);
+          positions.push_back(std::move(verts));
+        }
+      }
       
       virtual void setMaterial(Ref<MaterialNode> material) {
         this->material = material;
@@ -640,6 +699,17 @@ namespace embree
           positions.push_back(avector<Vertex>());
       }
 
+      HairSetNode (Ref<SceneGraph::HairSetNode> imesh, const Transformations& spaces)
+        : Node(true), hair(imesh->hair), hairs(imesh->hairs), material(imesh->material)
+      {
+        for (size_t i=0; i<spaces.size(); i++) {
+          avector<Vertex> verts(imesh->numVertices());
+          for (size_t j=0; j<imesh->numVertices(); j++) 
+            verts[j] = xfmPoint(spaces[i],imesh->positions[0][j]);
+          positions.push_back(std::move(verts));
+        }
+      }
+
       virtual void setMaterial(Ref<MaterialNode> material) {
         this->material = material;
       }
@@ -685,5 +755,7 @@ namespace embree
       std::vector<Hair> hairs;  //!< list of hairs
       Ref<MaterialNode> material;
     };
-  };
+    
+    Ref<Node> flatten(Ref<Node> node, const Transformations& spaces = Transformations(one));
+  }
 }

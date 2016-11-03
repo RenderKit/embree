@@ -44,6 +44,15 @@ namespace embree
 	centBounds = empty;
       }
 
+      template<typename PrimRef> 
+        __forceinline void extend_primref(const PrimRef& prim) 
+      {
+        BBox bounds; Vec3fa center;
+        prim.binBoundsAndCenter(bounds,center);
+        geomBounds.extend(bounds);
+        centBounds.extend(center);
+      }
+
       __forceinline void extend(const BBox& geomBounds_) {
 	geomBounds.extend(geomBounds_);
 	centBounds.extend(center2(geomBounds_));
@@ -85,6 +94,13 @@ namespace embree
       
       __forceinline PrimInfoT (size_t begin, size_t end, const BBox& geomBounds, const BBox3fa& centBounds) 
 	: CentGeom<BBox>(geomBounds,centBounds), begin(begin), end(end) {}
+
+      template<typename PrimRef> 
+        __forceinline void add_primref(const PrimRef& prim) 
+      {
+        CentGeom<BBox>::extend_primref(prim);
+        end++;
+      }
 
       __forceinline void add(const BBox& geomBounds_) {
 	CentGeom<BBox>::extend(geomBounds_);
