@@ -73,6 +73,7 @@ namespace embree
           //const BBox3fa overlap = intersect(oinfo.leftBounds, oinfo.rightBounds);
           //if (safeArea(overlap) >= MBLUR_SPLIT_OVERLAP_THRESHOLD*safeArea(pinfo.geomBounds))
           if (set.time_range.size() > 1.99f/float(numTimeSegments))
+          //if (set.time_range.size() > 1.01f/float(numTimeSegments))
           {
             const TemporalSplit temporal_split = temporal_find(set, pinfo, logBlockSize);
             const float temporal_split_sah = temporal_split.splitSAH();
@@ -86,6 +87,9 @@ namespace embree
             //  return temporal_split;
             //}
             
+            //if (set.time_range.size() > 1.01f/float(numTimeSegments))
+            //return temporal_split;
+
             /* take temporal split if it improved SAH */
             if (temporal_split_sah < object_split_sah)
               return temporal_split;
@@ -109,6 +113,7 @@ namespace embree
         const TemporalSplit temporal_find(const Set& set, const PrimInfo2& pinfo, const size_t logBlockSize)
         {
           /* split time range */
+          //const float center_time = set.time_range.center();
           const float center_time = round(set.time_range.center() * float(numTimeSegments)) / float(numTimeSegments);
           const BBox1f dt0(set.time_range.lower,center_time);
           const BBox1f dt1(center_time,set.time_range.upper);
@@ -181,6 +186,7 @@ namespace embree
         __forceinline void temporal_split(const TemporalSplit& split, const PrimInfo2& pinfo, const Set& set, PrimInfo2& linfo, Set& lset, PrimInfo2& rinfo, Set& rset) 
         {
           /* split time range */
+          //const float center_time = set.time_range.center();
           const float center_time = round(set.time_range.center() * float(numTimeSegments)) / float(numTimeSegments);
           const BBox1f time_range0(set.time_range.lower,center_time);
           const BBox1f time_range1(center_time,set.time_range.upper);

@@ -455,7 +455,7 @@ namespace embree
         : bvh(bvh), scene(scene), prims(scene->device), 
           sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)), mode(mode) {}
       
-      std::tuple<NodeRef,LBBox3fa> recurse(const range<size_t>& dti)
+      NodeRef recurse(const range<size_t>& dti)
       {
         assert(dti.size() > 0);
         if (dti.size() == 1)
@@ -479,11 +479,11 @@ namespace embree
           auto identity = LBBox3fa(empty);
           
           NodeRef root;
-          LBBox3fa root_bounds = BVHBuilderBinnedSAH::build_reduce<NodeRef>
+          BVHBuilderBinnedSAH::build_reduce<NodeRef>
             (root,typename BVH::CreateAlloc(bvh),identity,CreateAlignedNodeMB2<N>(bvh),reduce,CreateMSMBlurLeaf<N,Primitive>(bvh,prims.data(),dti.begin()),bvh->scene->progressInterface,
              prims.data(),pinfo,N,BVH::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
           
-          return std::make_tuple(root,root_bounds.global(dt));
+          return root;
         }
         else
         {
@@ -504,15 +504,20 @@ namespace embree
           AlignedNodeMB4D* node = (AlignedNodeMB4D*) bvh->alloc.threadLocal2()->alloc0->malloc(sizeof(AlignedNodeMB4D), BVH::byteNodeAlignment); node->clear();
           for (size_t i=0; i<c.size(); i++) 
           {
-            NodeRef cnode; LBBox3fa cbounds;
-            std::tie(cnode,cbounds) = recurse(c[i]);
+            NodeRef cnode = recurse(c[i]);
+
             const BBox1f dt(float(c[i].begin())/float(bvh->numTimeSteps-1),
                             float(c[i].end  ())/float(bvh->numTimeSteps-1));
+
+            avector<PrimRef2> prims2(prims.size()); 
+            const PrimInfo2 pinfo = createPrimRef2ArrayMBlur<Mesh>(scene,prims2,bvh->scene->progressInterface,dt);
+            LBBox3fa cbounds = pinfo.geomBounds;
+
             node->set(i,cnode,cbounds,dt);
             lbounds.extend(cbounds);
           }
           NodeRef ref = bvh->encodeNode(node);
-          return std::make_tuple(ref,lbounds);
+          return ref;
         }
       }
       
@@ -531,9 +536,10 @@ namespace embree
         bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef)*numTimeSegments);
         bvh->numTimeSteps = numTimeSteps;
         
-        NodeRef root; LBBox3fa lbounds;
-        std::tie(root, lbounds) = recurse(make_range(size_t(0),numTimeSegments));
-        bvh->set(root,lbounds,numPrimitives);
+        NodeRef root = recurse(make_range(size_t(0),numTimeSegments));
+        avector<PrimRef2> prims2(numPrimitives); 
+        const PrimInfo2 pinfo = createPrimRef2ArrayMBlur<Mesh>(scene,prims2,bvh->scene->progressInterface,BBox1f(0.0f,1.0f));
+        bvh->set(root,pinfo.geomBounds,numPrimitives);
         
         /* clear temporary data for static geometry */
         if (scene->isStatic()) 

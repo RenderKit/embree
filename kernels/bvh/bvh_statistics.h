@@ -49,7 +49,7 @@ namespace embree
           numChildren(numChildren) {}
         
         double sah(BVH* bvh) const {
-          return nodeSAH/halfArea(bvh->getBounds());
+          return nodeSAH/bvh->getLinearBounds().expectedHalfArea();
         }
 
         size_t bytes() const {
@@ -101,7 +101,7 @@ namespace embree
           numPrimBlocks(numPrimBlocks) {}
 
         double sah(BVH* bvh) const {
-          return leafSAH/halfArea(bvh->getBounds());
+          return leafSAH/bvh->getLinearBounds().expectedHalfArea();
         }
 
         size_t bytes(BVH* bvh) const {

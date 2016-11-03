@@ -21,7 +21,7 @@ namespace embree
   template<int N>
   BVHNStatistics<N>::BVHNStatistics (BVH* bvh) : bvh(bvh)
   {
-    double A = max(0.0f,halfArea(bvh->getBounds()));
+    double A = max(0.0f,bvh->getLinearBounds().expectedHalfArea());
     if (bvh->msmblur) 
     {
       NodeRef* roots = (NodeRef*)(size_t)bvh->root;
@@ -64,6 +64,7 @@ namespace embree
   typename BVHNStatistics<N>::Statistics BVHNStatistics<N>::statistics(NodeRef node, const double A, const BBox1f t0t1)
   {
     Statistics s;
+    assert(t0t1.size() > 0.0f);
     double dt = max(0.0f,t0t1.size());
     if (node.isAlignedNode())
     {
