@@ -45,7 +45,7 @@ namespace embree
         assert(device);
         device->memoryMonitor(n*sizeof(T),false);
 #if defined(__LINUX__) && defined(__AVX512F__)
-        if (n*sizeof(value_type) >= 16 * PAGE_SIZE_2M)
+        if (n*sizeof(value_type) >= 14 * PAGE_SIZE_2M)
         {
           pointer p =  (pointer) os_malloc(n*sizeof(value_type));
           assert(p);
@@ -61,7 +61,7 @@ namespace embree
         if (p)
         {
 #if defined(__LINUX__) && defined(__AVX512F__)
-          if (n*sizeof(value_type) >= 16 * PAGE_SIZE_2M)
+          if (n*sizeof(value_type) >= 14 * PAGE_SIZE_2M)
            os_free(p,n*sizeof(value_type)); 
           else
             alignedFree(p);
