@@ -59,7 +59,14 @@ namespace embree
       if (likely(hair)) return curve.bounds(N);
       else              return curve.bounds();
     }
-    
+
+    /*! returns bounds and centroid used for binning */
+    __forceinline void binBoundsAndCenter(BBox3fa& bounds_o, Vec3fa& center_o) const 
+    {
+      bounds_o = bounds();
+      center_o = embree::center2(bounds_o);
+    }
+
     /*! calculate bounds in specified coordinate space */
     __forceinline const BBox3fa bounds(const AffineSpace3fa& space) const 
     {
@@ -72,6 +79,13 @@ namespace embree
       else              return curve.bounds();
     }
     
+    /*! returns bounds and centroid used for binning */
+    __forceinline void binBoundsAndCenter(BBox3fa& bounds_o, Vec3fa& center_o, const AffineSpace3fa& space) const 
+    {
+      bounds_o = bounds(space);
+      center_o = embree::center2(bounds_o);
+    }
+
     __forceinline uint64_t id64() const {
       return (((uint64_t)prim) << 32) + (uint64_t)geom;
     }

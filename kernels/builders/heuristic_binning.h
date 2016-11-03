@@ -181,12 +181,12 @@ namespace embree
 	for (i=0; i<N-1; i+=2)
         {
           /*! map even and odd primitive to bin */
-          const BBox prim0 = prims[i+0].bounds(); 
-          const Vec3fa center0 = Vec3fa(center2(prim0)); 
+          BBox prim0; Vec3fa center0;
+          prims[i+0].binBoundsAndCenter(prim0,center0); 
           const vint4 bin0 = (vint4)mapping.bin(center0); 
           
-          const BBox prim1 = prims[i+1].bounds(); 
-          const Vec3fa center1 = Vec3fa(center2(prim1)); 
+          BBox prim1; Vec3fa center1;
+          prims[i+1].binBoundsAndCenter(prim1,center1); 
           const vint4 bin1 = (vint4)mapping.bin(center1); 
           
           /*! increase bounds for bins for even primitive */
@@ -211,7 +211,9 @@ namespace embree
 	if (i < N)
         {
           /*! map primitive to bin */
-          const BBox prim0 = prims[i].bounds(); const Vec3fa center0 = Vec3fa(center2(prim0)); const vint4 bin0 = (vint4)mapping.bin(center0); 
+          BBox prim0; Vec3fa center0;
+          prims[i].binBoundsAndCenter(prim0,center0); 
+          const vint4 bin0 = (vint4)mapping.bin(center0); 
           
           /*! increase bounds of bins */
           const int b00 = extract<0>(bin0); counts(b00,0)++; bounds(b00,0).extend(prim0);
@@ -229,8 +231,10 @@ namespace embree
 	for (i=0; i<N-1; i+=2)
         {
           /*! map even and odd primitive to bin */
-          const BBox prim0 = prims[i+0].bounds(space); const Vec3fa center0 = Vec3fa(center2(prim0)); const vint4 bin0 = (vint4)mapping.bin(center0); 
-          const BBox prim1 = prims[i+1].bounds(space); const Vec3fa center1 = Vec3fa(center2(prim1)); const vint4 bin1 = (vint4)mapping.bin(center1); 
+          BBox prim0; Vec3fa center0; prims[i+0].binBoundsAndCenter(prim0,center0,space); 
+          const vint4 bin0 = (vint4)mapping.bin(center0); 
+          BBox prim1; Vec3fa center1; prims[i+1].binBoundsAndCenter(prim1,center1,space); 
+          const vint4 bin1 = (vint4)mapping.bin(center1); 
           
           /*! increase bounds for bins for even primitive */
           const int b00 = extract<0>(bin0); counts(b00,0)++; bounds(b00,0).extend(prim0);
@@ -247,7 +251,8 @@ namespace embree
 	if (i < N)
         {
           /*! map primitive to bin */
-          const BBox prim0 = prims[i].bounds(space); const Vec3fa center0 = Vec3fa(center2(prim0)); const vint4 bin0 = (vint4)mapping.bin(center0); 
+          BBox prim0; Vec3fa center0; prims[i+0].binBoundsAndCenter(prim0,center0,space); 
+          const vint4 bin0 = (vint4)mapping.bin(center0); 
           
           /*! increase bounds of bins */
           const int b00 = extract<0>(bin0); counts(b00,0)++; bounds(b00,0).extend(prim0);
