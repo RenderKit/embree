@@ -599,6 +599,10 @@ namespace embree
       
       __forceinline const std::pair<LBBox3fa,BBox1f> operator() (const typename BVHNBuilderMBlurBinnedSAH<Mesh>::BuildRecord& current, Allocator* alloc)
       {
+        //assert(current.prims.time_range.size() == 1.0f/16.0f);
+        //if (current.prims.time_range.size() != 1.0f/16.0f)
+        //PRINT(current.prims.time_range.size());
+
         size_t items = Primitive::blocks(current.prims.object_range.size());
         size_t start = current.prims.object_range.begin();
         Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);

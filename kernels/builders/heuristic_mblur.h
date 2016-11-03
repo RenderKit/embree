@@ -20,7 +20,7 @@
 #include "heuristic_binning.h"
 
 #define MBLUR_SPLIT_OVERLAP_THRESHOLD 0.1f
-#define MBLUR_TIME_SPLIT_THRESHOLD 1.05f
+#define MBLUR_TIME_SPLIT_THRESHOLD 0.90f
 
 namespace embree
 {
@@ -72,8 +72,8 @@ namespace embree
           /* do temporal splits only if the child bounds overlap */
           //const BBox3fa overlap = intersect(oinfo.leftBounds, oinfo.rightBounds);
           //if (safeArea(overlap) >= MBLUR_SPLIT_OVERLAP_THRESHOLD*safeArea(pinfo.geomBounds))
-          if (set.time_range.size() > 1.99f/float(numTimeSegments))
-          //if (set.time_range.size() > 1.01f/float(numTimeSegments))
+          //if (set.time_range.size() > 1.99f/float(numTimeSegments))
+          if (set.time_range.size() > 1.01f/float(numTimeSegments))
           {
             const TemporalSplit temporal_split = temporal_find(set, pinfo, logBlockSize);
             const float temporal_split_sah = temporal_split.splitSAH();
@@ -88,7 +88,16 @@ namespace embree
             //}
             
             //if (set.time_range.size() > 1.01f/float(numTimeSegments))
-            //return temporal_split;
+            //  return temporal_split;
+
+            /*float travCost = 1.0f;
+            float intCost = 1.0f;
+            float bestSAH = min(temporal_split_sah,object_split_sah);
+            if (intCost*pinfo.leafSAH(logBlockSize) < travCost*expectedApproxHalfArea(pinfo.geomBounds)+intCost*bestSAH)
+            {
+              temporal_split.sah = float(neg_inf);
+              return temporal_split;
+              }*/
 
             /* take temporal split if it improved SAH */
             if (temporal_split_sah < object_split_sah)
