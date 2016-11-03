@@ -61,6 +61,13 @@ namespace embree
       return BBox3fa(lower,upper);
     }
 
+    /*! returns bounds and centroid used for binning */
+    __forceinline void binBoundsAndCenter(BBox3fa& bounds_o, Vec3fa& center_o) const 
+    {
+      bounds_o = bounds();
+      center_o = embree::center2(bounds_o);
+    }
+
     /*! returns the geometry ID */
     __forceinline unsigned geomID() const { 
       return lower.a;

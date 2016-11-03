@@ -33,15 +33,15 @@ namespace embree
     }
 
     /*! returns bounds for binning */
-    /*__forceinline BBox3fa binBounds() const {
-      return lbounds.interpolate(0.5f);
-      //return lbounds.bounds();
-      }*/
-
-    /*! returns bounds for binning */
     __forceinline LBBox3fa bounds() const {
-      //return binBounds();
       return lbounds;
+    }
+
+    /*! returns bounds and centroid used for binning */
+    __forceinline void binBoundsAndCenter(LBBox3fa& bounds_o, Vec3fa& center_o) const 
+    {
+      bounds_o = bounds();
+      center_o = center2(bounds_o);
     }
 
     /*! returns the geometry ID */
