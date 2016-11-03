@@ -626,6 +626,35 @@ namespace embree
     return node;
   }
 
+  Ref<SceneGraph::Node> SceneGraph::flatten(Ref<SceneGraph::Node> node, const Transformations& spaces)
+  {
+    if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
+      return flatten(xfmNode->child, spaces*xfmNode->spaces);
+    } 
+    else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) {
+      for (auto& child : groupNode->children) child = flatten(child,spaces);
+    }
+    else if (Ref<SceneGraph::TriangleMeshNode> mesh = node.dynamicCast<SceneGraph::TriangleMeshNode>()) {
+      return new SceneGraph::TriangleMeshNode(mesh,spaces);
+    }
+    else if (Ref<SceneGraph::QuadMeshNode> mesh = node.dynamicCast<SceneGraph::QuadMeshNode>()) {
+      return new SceneGraph::QuadMeshNode(mesh,spaces);
+    }
+    else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>()) {
+      return new SceneGraph::SubdivMeshNode(mesh,spaces);
+    }
+    else if (Ref<SceneGraph::LineSegmentsNode> mesh = node.dynamicCast<SceneGraph::LineSegmentsNode>()) {
+      return new SceneGraph::LineSegmentsNode(mesh,spaces);
+    }
+    else if (Ref<SceneGraph::HairSetNode> mesh = node.dynamicCast<SceneGraph::HairSetNode>()) {
+      return new SceneGraph::HairSetNode(mesh,spaces);
+    }
+    else {
+      throw std::runtime_error("unsupported node type in SceneGraph::flatten");
+    }
+    return node;
+  }
+
   Ref<SceneGraph::Node> SceneGraph::createTrianglePlane (const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy, size_t width, size_t height, Ref<MaterialNode> material)
   {
     SceneGraph::TriangleMeshNode* mesh = new SceneGraph::TriangleMeshNode(material,1);    
