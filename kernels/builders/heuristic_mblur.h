@@ -68,6 +68,14 @@ namespace embree
           SplitInfo2 oinfo;
           const ObjectSplit object_split = object_find(set,pinfo,logBlockSize,oinfo);
           const float object_split_sah = object_split.splitSAH();
+
+          /* calculate number of timesegments */
+          unsigned numTimeSegments = 0;
+          for (size_t i=set.object_range.begin(); i<set.object_range.end(); i++) {
+            const PrimRef2& prim = (*set.prims)[i];
+            unsigned segments = scene->get(prim.geomID())->numTimeSegments();
+            numTimeSegments = max(numTimeSegments,segments);
+          }
   
           /* do temporal splits only if the child bounds overlap */
           //const BBox3fa overlap = intersect(oinfo.leftBounds, oinfo.rightBounds);
@@ -75,7 +83,7 @@ namespace embree
           //if (set.time_range.size() > 1.99f/float(numTimeSegments))
           if (set.time_range.size() > 1.01f/float(numTimeSegments))
           {
-            const TemporalSplit temporal_split = temporal_find(set, pinfo, logBlockSize);
+            const TemporalSplit temporal_split = temporal_find(set, pinfo, logBlockSize, numTimeSegments);
             const float temporal_split_sah = temporal_split.splitSAH();
 
             /*PRINT(pinfo);
@@ -87,7 +95,7 @@ namespace embree
             //  return temporal_split;
             //}
             
-            //if (set.time_range.size() > 1.01f/float(numTimeSegments))
+            //if (set.time_range.size() > 1.01f/float(time_segments))
             //  return temporal_split;
 
             /*float travCost = 1.0f;
@@ -119,7 +127,7 @@ namespace embree
         }
 
         /*! finds the best split */
-        const TemporalSplit temporal_find(const Set& set, const PrimInfo2& pinfo, const size_t logBlockSize)
+        const TemporalSplit temporal_find(const Set& set, const PrimInfo2& pinfo, const size_t logBlockSize, const unsigned numTimeSegments)
         {
           /* split time range */
           //const float center_time = set.time_range.center();
@@ -144,7 +152,7 @@ namespace embree
           /* calculate sah */
           const size_t lCount = (set.object_range.size()+(1 << logBlockSize)-1) >> int(logBlockSize), rCount = lCount;
           const float sah = (bounds0.expectedApproxHalfArea()*float(lCount)*dt0.size() + bounds1.expectedApproxHalfArea()*float(rCount)*dt1.size()) / set.time_range.size();
-          return TemporalSplit(sah*MBLUR_TIME_SPLIT_THRESHOLD,-1);
+          return TemporalSplit(sah*MBLUR_TIME_SPLIT_THRESHOLD,-1,numTimeSegments);
         }
         
         /*! array partitioning */
@@ -194,6 +202,7 @@ namespace embree
         /*! array partitioning */
         __forceinline void temporal_split(const TemporalSplit& split, const PrimInfo2& pinfo, const Set& set, PrimInfo2& linfo, Set& lset, PrimInfo2& rinfo, Set& rset) 
         {
+          unsigned numTimeSegments = split.dim;
           /* split time range */
           //const float center_time = set.time_range.center();
           const float center_time = round(set.time_range.center() * float(numTimeSegments)) / float(numTimeSegments);
