@@ -25,8 +25,8 @@ namespace embree
   {
     __forceinline PrimRef2 () {}
 
-    __forceinline PrimRef2 (const LBBox3fa& lbounds_i, const BBox3fa& cbounds_i, unsigned int geomID, unsigned int primID) 
-      : lbounds(lbounds_i), cbounds(cbounds_i)
+    __forceinline PrimRef2 (const LBBox3fa& lbounds_i, unsigned int geomID, unsigned int primID) 
+      : lbounds(lbounds_i)
     {
       lbounds.bounds0.lower.a = geomID;
       lbounds.bounds0.upper.a = primID;
@@ -39,7 +39,6 @@ namespace embree
 
     /*! returns center for binning */
     __forceinline Vec3fa binCenter() const {
-      //return center2(cbounds);
       //return center2(lbounds.interpolate(0.0f));
       return center2(lbounds.interpolate(0.5f));
       //return center2(lbounds.interpolate(1.0f));
@@ -79,6 +78,5 @@ namespace embree
 
   public:
     LBBox3fa lbounds;
-    BBox3fa cbounds;
   };
 }

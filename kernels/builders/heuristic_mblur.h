@@ -71,15 +71,11 @@ namespace embree
 
           /* calculate number of timesegments */
           unsigned numTimeSegments = 0;
-          double Al = 0.0, A0 = 0.0;
           for (size_t i=set.object_range.begin(); i<set.object_range.end(); i++) {
             const PrimRef2& prim = (*set.prims)[i];
             unsigned segments = scene->get(prim.geomID())->numTimeSegments();
             numTimeSegments = max(numTimeSegments,segments);
-            A0 += expectedApproxHalfArea(prim.cbounds);
-            Al += expectedApproxHalfArea(prim.lbounds);
           }
-          //PRINT2(A0,Al);
   
           /* do temporal splits only if the child bounds overlap */
           //const BBox3fa overlap = intersect(oinfo.leftBounds, oinfo.rightBounds);
@@ -251,8 +247,7 @@ namespace embree
             const unsigned geomID = prims[i].geomID();
             const unsigned primID = prims[i].primID();
             const LBBox3fa lbounds = ((Mesh*)scene->get(geomID))->linearBounds(primID,time_range0);
-            const BBox3fa cbounds = ((Mesh*)scene->get(geomID))->bounds(primID,time_range0.lower);
-            const PrimRef2 prim(lbounds,cbounds,geomID,primID);
+            const PrimRef2 prim(lbounds,geomID,primID);
             (*lprims)[i-set.object_range.begin()] = prim;
             linfo.add_primref(prim);
           }
@@ -267,8 +262,7 @@ namespace embree
             const unsigned geomID = prims[i].geomID();
             const unsigned primID = prims[i].primID();
             const LBBox3fa lbounds = ((Mesh*)scene->get(geomID))->linearBounds(primID,time_range1);
-            const BBox3fa cbounds = ((Mesh*)scene->get(geomID))->bounds(primID,time_range1.lower);
-            const PrimRef2 prim(lbounds,cbounds,geomID,primID);
+            const PrimRef2 prim(lbounds,geomID,primID);
             (*rprims)[i-set.object_range.begin()] = prim;
             rinfo.add_primref(prim);
           }
