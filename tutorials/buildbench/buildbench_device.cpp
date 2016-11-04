@@ -266,7 +266,7 @@ namespace embree {
       time += t1 - t0;
       rtcDeleteScene (g_scene);       
     }
-    std::cout << "Update dynamic scene, static geometry " 
+    std::cout << "Create static scene, static geometry " 
               << " (" << primitives << " primitives)  :  "
               << " avg. time  = " <<  time/benchmark_iterations 
               << " , avg. build perf " << 1.0 / (time/benchmark_iterations) * primitives / 1000000.0 << " Mprims/s" << std::endl;
