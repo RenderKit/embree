@@ -144,7 +144,9 @@ namespace embree
           ObjectBinner binner(empty); // FIXME: this clear can be optimized away
           const BinMapping<BINS> mapping(pinfo.centBounds,pinfo.size());
           binner.bin(set.prims->data(),set.object_range.begin(),set.object_range.end(),mapping);
-          return binner.best(mapping,logBlockSize);
+          ObjectSplit osplit = binner.best(mapping,logBlockSize);
+          osplit.sah *= pinfo.time_range.size();
+          return osplit;
         }
 
         /*! finds the best split */
@@ -183,7 +185,7 @@ namespace embree
             /* calculate sah */
             const size_t lCount = (s0+(1 << logBlockSize)-1) >> int(logBlockSize);
             const size_t rCount = (s1+(1 << logBlockSize)-1) >> int(logBlockSize);
-            const float sah = (bounds0.expectedApproxHalfArea()*float(lCount)*dt0.size() + bounds1.expectedApproxHalfArea()*float(rCount)*dt1.size()) / set.time_range.size();
+            const float sah = bounds0.expectedApproxHalfArea()*float(lCount)*dt0.size() + bounds1.expectedApproxHalfArea()*float(rCount)*dt1.size();
             if (sah < bestSAH) {
               bestSAH = sah;
               bestPos = center_time;
@@ -228,8 +230,8 @@ namespace embree
 
           size_t center = 0;
           center = serial_partitioning(set.prims->data(),begin,end,left,right,isLeft,reduction);
-          left.begin  = begin; left.end = center;
-          right.begin = center; right.end = end;
+          left.begin  = begin; left.end = center; left.time_range = pinfo.time_range;
+          right.begin = center; right.end = end;  right.time_range = pinfo.time_range;
           new (&lset) Set(set.prims,range<size_t>(begin,center),set.time_range);
           new (&rset) Set(set.prims,range<size_t>(center,end  ),set.time_range);
           //assert(area(left.geomBounds) >= 0.0f);
@@ -261,6 +263,7 @@ namespace embree
             (*lprims)[i-set.object_range.begin()] = prim;
             linfo.add_primref(prim);
           }
+          linfo.time_range = time_range0;
           lset = Set(lprims,time_range0);
 
           /* calculate primrefs for second time range */
@@ -277,6 +280,7 @@ namespace embree
             (*rprims)[i-set.object_range.begin()] = prim;
             rinfo.add_primref(prim);
           }
+          rinfo.time_range = time_range1;
           rset = Set(rprims,time_range1);
         }
 
@@ -298,12 +302,12 @@ namespace embree
           linfo = empty;
           for (size_t i=begin; i<center; i++)
             linfo.add_primref(prims[i]);
-          linfo.begin = begin; linfo.end = center;
+          linfo.begin = begin; linfo.end = center; linfo.time_range = set.time_range;
           
           rinfo = empty;
           for (size_t i=center; i<end; i++)
             rinfo.add_primref(prims[i]);	
-          rinfo.begin = center; rinfo.end = end;
+          rinfo.begin = center; rinfo.end = end; rinfo.time_range = set.time_range;
           
           new (&lset) Set(set.prims,range<size_t>(begin,center),set.time_range);
           new (&rset) Set(set.prims,range<size_t>(center,end  ),set.time_range);

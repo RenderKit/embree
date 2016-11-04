@@ -137,7 +137,11 @@ namespace embree
       __forceinline size_t size() const { 
 	return end-begin; 
       }
-      
+
+      __forceinline float halfArea() {
+        return expectedApproxHalfArea(geomBounds);
+      }
+
       __forceinline float leafSAH() const { 
 	return expectedApproxHalfArea(geomBounds)*float(size()); 
 	//return halfArea(geomBounds)*blocks(num); 
@@ -172,7 +176,7 @@ namespace embree
       } 
 
       __forceinline PrimInfo2 (EmptyTy) 
-	: CentGeom<LBBox3fa>(empty), begin(0), end(0), num_time_segments(0) {}
+	: CentGeom<LBBox3fa>(empty), begin(0), end(0), num_time_segments(0), time_range(0.0f,1.0f) {}
 
       template<typename PrimRef> 
         __forceinline void add_primref(const PrimRef& prim) 
@@ -198,14 +202,18 @@ namespace embree
       __forceinline size_t size() const { 
 	return end-begin; 
       }
-      
+
+      __forceinline float halfArea() {
+        return time_range.size()*expectedApproxHalfArea(geomBounds);
+      }
+
       __forceinline float leafSAH() const { 
-	return expectedApproxHalfArea(geomBounds)*float(num_time_segments); 
+	return time_range.size()*expectedApproxHalfArea(geomBounds)*float(num_time_segments); 
 	//return halfArea(geomBounds)*blocks(num); 
       }
       
       __forceinline float leafSAH(size_t block_shift) const { 
-	return expectedApproxHalfArea(geomBounds)*float((num_time_segments+(size_t(1)<<block_shift)-1) >> block_shift);
+	return time_range.size()*expectedApproxHalfArea(geomBounds)*float((num_time_segments+(size_t(1)<<block_shift)-1) >> block_shift);
       }
       
       /*! stream output */
@@ -217,6 +225,7 @@ namespace embree
     public:
       size_t begin,end;          //!< number of primitives
       size_t num_time_segments;  //!< total number of time segments of all added primrefs
+      BBox1f time_range;
     };
   }
 }
