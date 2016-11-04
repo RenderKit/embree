@@ -19,7 +19,9 @@
 
 namespace embree {
 
-  size_t benchmark_iterations = 200;
+  static const size_t iterations_dynamic_dynamic = 200;
+  static const size_t iterations_dynamic_static  = 50;
+  static const size_t iterations_static_static   = 50;
 
   extern "C" ISPCScene* g_ispc_scene;
 
@@ -204,7 +206,7 @@ namespace embree {
     }
   }
 
-  void Benchmark_DynamicDynamic(ISPCScene* scene_in)
+  void Benchmark_DynamicDynamic(ISPCScene* scene_in, size_t benchmark_iterations)
   {
     assert(g_scene == nullptr);
     g_scene = convertScene(scene_in,RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DYNAMIC);
@@ -227,7 +229,7 @@ namespace embree {
   }
 
 
-  void Benchmark_DynamicStatic(ISPCScene* scene_in)
+  void Benchmark_DynamicStatic(ISPCScene* scene_in, size_t benchmark_iterations)
   {
     assert(g_scene == nullptr);
     g_scene = convertScene(scene_in,RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC);
@@ -249,6 +251,29 @@ namespace embree {
     g_scene = nullptr;    
   }
 
+  void Benchmark_StaticStatic(ISPCScene* scene_in, size_t benchmark_iterations)
+  {
+    assert(g_scene == nullptr);
+    size_t primitives = getNumPrimitives(scene_in);
+
+    double time = 0.0;
+    for(size_t i=0;i<benchmark_iterations;i++)
+    {
+      g_scene = convertScene(scene_in,RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC);
+      double t0 = getSeconds();
+      rtcCommit (g_scene);
+      double t1 = getSeconds();
+      time += t1 - t0;
+      rtcDeleteScene (g_scene);       
+    }
+    std::cout << "Update dynamic scene, static geometry " 
+              << "(" << primitives << " primitives) : "
+              << " avg. time  = " <<  time/benchmark_iterations 
+              << " , avg. build perf " << 1.0 / (time/benchmark_iterations) * primitives / 1000000.0 << " Mprims/s" << std::endl;
+
+    g_scene = nullptr;    
+  }
+
 
 /* called by the C++ code for initialization */
   extern "C" void device_init (char* cfg)
@@ -262,8 +287,9 @@ namespace embree {
     /* set error handler */
     rtcDeviceSetErrorFunction(g_device,error_handler);
 
-    Benchmark_DynamicDynamic(g_ispc_scene);
-    Benchmark_DynamicStatic(g_ispc_scene);
+    Benchmark_DynamicDynamic(g_ispc_scene,iterations_dynamic_dynamic);
+    Benchmark_DynamicStatic(g_ispc_scene,iterations_dynamic_static);
+    Benchmark_StaticStatic(g_ispc_scene,iterations_static_static);
 
     rtcDeleteDevice(g_device); g_device = nullptr;
     exit(0);
