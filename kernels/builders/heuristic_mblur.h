@@ -20,7 +20,7 @@
 #include "heuristic_binning.h"
 
 #define MBLUR_SPLIT_OVERLAP_THRESHOLD 0.1f
-#define MBLUR_TIME_SPLIT_THRESHOLD 1.40f
+#define MBLUR_TIME_SPLIT_THRESHOLD 1.10f
 
 namespace embree
 {
