@@ -219,6 +219,7 @@ namespace embree
       unsigned int numVertices;
       unsigned int numSegments;
       unsigned int materialID;
+      unsigned int geomID;
     };
 
     struct ISPCHairSet
@@ -242,6 +243,7 @@ namespace embree
       unsigned int numVertices;
       unsigned int numHairs;
       unsigned int materialID;
+      unsigned int geomID;
     };
 
     struct ISPCInstance

@@ -14,32 +14,17 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-ADD_SUBDIRECTORY(common)
+# additional parameters (beyond the name) are treated as additional dependencies
+# if ADDITIONAL_LIBRARIES is set these will be included during linking
 
-ADD_SUBDIRECTORY(verify)
-ADD_SUBDIRECTORY(triangle_geometry)
-ADD_SUBDIRECTORY(dynamic_scene)
-ADD_SUBDIRECTORY(user_geometry)
-ADD_SUBDIRECTORY(viewer)
-ADD_SUBDIRECTORY(instanced_geometry)
-ADD_SUBDIRECTORY(intersection_filter)
-ADD_SUBDIRECTORY(pathtracer)
-ADD_SUBDIRECTORY(hair_geometry)
-ADD_SUBDIRECTORY(subdivision_geometry)
-ADD_SUBDIRECTORY(displacement_geometry)
-ADD_SUBDIRECTORY(bvh_builder)
-ADD_SUBDIRECTORY(lazy_geometry)
-ADD_SUBDIRECTORY(bvh_access)
-ADD_SUBDIRECTORY(motion_blur_geometry)
-ADD_SUBDIRECTORY(interpolation)
-ADD_SUBDIRECTORY(convert)
-ADD_SUBDIRECTORY(curve_geometry)
-ADD_SUBDIRECTORY(buildbench)
+MACRO (ADD_TUTORIAL TUTORIAL_NAME)
 
-IF (EMBREE_RAY_PACKETS)
-ADD_SUBDIRECTORY(viewer_stream)
-ENDIF()
+  ADD_EXECUTABLE(${TUTORIAL_NAME} ${TUTORIAL_NAME}.cpp ${TUTORIAL_NAME}_device.cpp ${ARGN})
+                                  TARGET_LINK_LIBRARIES(${TUTORIAL_NAME} embree tutorial image tutorial_device noise ${ADDITIONAL_LIBRARIES})
+  SET_PROPERTY(TARGET ${TUTORIAL_NAME} PROPERTY FOLDER tutorials/single)
+  INSTALL(TARGETS ${TUTORIAL_NAME} DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT examples)
+  SET(CPACK_NSIS_MENU_LINKS ${CPACK_NSIS_MENU_LINKS} "${CMAKE_INSTALL_BINDIR}/${TUTORIAL_NAME}" "${TUTORIAL_NAME}")
 
-# propagate menu links up
-SET(CPACK_NSIS_MENU_LINKS ${CPACK_NSIS_MENU_LINKS} PARENT_SCOPE)
+  SET(CPACK_NSIS_MENU_LINKS ${CPACK_NSIS_MENU_LINKS} PARENT_SCOPE)
 
+ENDMACRO ()

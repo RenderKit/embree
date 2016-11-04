@@ -112,6 +112,7 @@ struct ISPCLineSegments
   unsigned int numVertices;
   unsigned int numSegments;
   int materialID;
+  unsigned int geomID;
 };
 
 struct ISPCHairSet
@@ -123,6 +124,7 @@ struct ISPCHairSet
   unsigned int numVertices;
   unsigned int numHairs;
   unsigned int materialID;
+  unsigned int geomID;
 };
 
 struct ISPCInstance
