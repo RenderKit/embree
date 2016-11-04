@@ -199,19 +199,19 @@ namespace embree
           const unsigned int b00 = extract<0>(bin0); bounds(b00,0).extend(prim0); 
           const unsigned int b01 = extract<1>(bin0); bounds(b01,1).extend(prim0); 
           const unsigned int b02 = extract<2>(bin0); bounds(b02,2).extend(prim0); 
-
-          counts(b00,0)++;
-          counts(b01,1)++;
-          counts(b02,2)++;
+          const unsigned int s0 = prims[i+0].size();
+          counts(b00,0)+=s0;
+          counts(b01,1)+=s0;
+          counts(b02,2)+=s0;
 
           /*! increase bounds of bins for odd primitive */
           const unsigned int b10 = extract<0>(bin1);  bounds(b10,0).extend(prim1); 
           const unsigned int b11 = extract<1>(bin1);  bounds(b11,1).extend(prim1); 
           const unsigned int b12 = extract<2>(bin1);  bounds(b12,2).extend(prim1); 
-
-          counts(b10,0)++;
-          counts(b11,1)++;
-          counts(b12,2)++;
+          const unsigned int s1 = prims[i+1].size();
+          counts(b10,0)+=s1;
+          counts(b11,1)+=s1;
+          counts(b12,2)+=s1;
         }
 	/*! for uneven number of primitives */
 	if (i < N)
@@ -222,9 +222,10 @@ namespace embree
           const vint4 bin0 = (vint4)mapping.bin(center0); 
           
           /*! increase bounds of bins */
-          const int b00 = extract<0>(bin0); counts(b00,0)++; bounds(b00,0).extend(prim0);
-          const int b01 = extract<1>(bin0); counts(b01,1)++; bounds(b01,1).extend(prim0);
-          const int b02 = extract<2>(bin0); counts(b02,2)++; bounds(b02,2).extend(prim0);
+          const unsigned int s0 = prims[i].size();
+          const int b00 = extract<0>(bin0); counts(b00,0)+=s0; bounds(b00,0).extend(prim0);
+          const int b01 = extract<1>(bin0); counts(b01,1)+=s0; bounds(b01,1).extend(prim0);
+          const int b02 = extract<2>(bin0); counts(b02,2)+=s0; bounds(b02,2).extend(prim0);
         }
       }
 
@@ -243,14 +244,16 @@ namespace embree
           const vint4 bin1 = (vint4)mapping.bin(center1); 
           
           /*! increase bounds for bins for even primitive */
-          const int b00 = extract<0>(bin0); counts(b00,0)++; bounds(b00,0).extend(prim0);
-          const int b01 = extract<1>(bin0); counts(b01,1)++; bounds(b01,1).extend(prim0);
-          const int b02 = extract<2>(bin0); counts(b02,2)++; bounds(b02,2).extend(prim0);
+          const unsigned int s0 = prims[i+0].size();
+          const int b00 = extract<0>(bin0); counts(b00,0)+=s0; bounds(b00,0).extend(prim0);
+          const int b01 = extract<1>(bin0); counts(b01,1)+=s0; bounds(b01,1).extend(prim0);
+          const int b02 = extract<2>(bin0); counts(b02,2)+=s0; bounds(b02,2).extend(prim0);
           
           /*! increase bounds of bins for odd primitive */
-          const int b10 = extract<0>(bin1); counts(b10,0)++; bounds(b10,0).extend(prim1);
-          const int b11 = extract<1>(bin1); counts(b11,1)++; bounds(b11,1).extend(prim1);
-          const int b12 = extract<2>(bin1); counts(b12,2)++; bounds(b12,2).extend(prim1);
+          const unsigned int s1 = prims[i+1].size();
+          const int b10 = extract<0>(bin1); counts(b10,0)+=s1; bounds(b10,0).extend(prim1);
+          const int b11 = extract<1>(bin1); counts(b11,1)+=s1; bounds(b11,1).extend(prim1);
+          const int b12 = extract<2>(bin1); counts(b12,2)+=s1; bounds(b12,2).extend(prim1);
         }
 	
 	/*! for uneven number of primitives */
@@ -261,9 +264,10 @@ namespace embree
           const vint4 bin0 = (vint4)mapping.bin(center0); 
           
           /*! increase bounds of bins */
-          const int b00 = extract<0>(bin0); counts(b00,0)++; bounds(b00,0).extend(prim0);
-          const int b01 = extract<1>(bin0); counts(b01,1)++; bounds(b01,1).extend(prim0);
-          const int b02 = extract<2>(bin0); counts(b02,2)++; bounds(b02,2).extend(prim0);
+          const unsigned int s0 = prims[i+0].size();
+          const int b00 = extract<0>(bin0); counts(b00,0)+=s0; bounds(b00,0).extend(prim0);
+          const int b01 = extract<1>(bin0); counts(b01,1)+=s0; bounds(b01,1).extend(prim0);
+          const int b02 = extract<2>(bin0); counts(b02,2)+=s0; bounds(b02,2).extend(prim0);
         }
       }
       

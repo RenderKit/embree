@@ -25,16 +25,22 @@ namespace embree
   {
     __forceinline PrimRef2 () {}
 
-    __forceinline PrimRef2 (const LBBox3fa& lbounds_i, unsigned int geomID, unsigned int primID) 
+    __forceinline PrimRef2 (const LBBox3fa& lbounds_i, unsigned int numTimeSegments, unsigned int geomID, unsigned int primID) 
       : lbounds(lbounds_i)
     {
       lbounds.bounds0.lower.a = geomID;
       lbounds.bounds0.upper.a = primID;
+      lbounds.bounds1.lower.a = numTimeSegments;
     }
 
     /*! returns bounds for binning */
     __forceinline LBBox3fa bounds() const {
       return lbounds;
+    }
+
+    /*! returns the number of time segments of this primref */
+    __forceinline unsigned size() const { 
+      return lbounds.bounds1.lower.a;
     }
 
     /*! returns center for binning */

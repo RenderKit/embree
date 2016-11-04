@@ -20,7 +20,7 @@
 #include "heuristic_binning.h"
 
 #define MBLUR_SPLIT_OVERLAP_THRESHOLD 0.1f
-#define MBLUR_TIME_SPLIT_THRESHOLD 0.70f
+#define MBLUR_TIME_SPLIT_THRESHOLD 1.40f
 
 namespace embree
 {
@@ -60,13 +60,23 @@ namespace embree
         {
             numTimeSegments = scene->getNumTimeSteps<Mesh,true>()-1;
         }
-        
+
+        __forceinline unsigned calculateNumOverlappingTimeSegments(unsigned geomID, BBox1f time_range)
+        {
+          const unsigned totalTimeSegments = scene->get(geomID)->numTimeSegments();
+          const unsigned itime_lower = floor(1.0001f*time_range.lower*float(totalTimeSegments));
+          const unsigned itime_upper = ceil (0.9999f*time_range.upper*float(totalTimeSegments));
+          const unsigned numTimeSegments = itime_upper-itime_lower; 
+          assert(numTimeSegments > 0);
+          return numTimeSegments;
+        }
+
         /*! finds the best split */
         const Split find(Set& set, PrimInfo2& pinfo, const size_t logBlockSize)
         {
           /* first try standard object split */
-          SplitInfo2 oinfo;
-          const ObjectSplit object_split = object_find(set,pinfo,logBlockSize,oinfo);
+          //SplitInfo2 oinfo;
+          const ObjectSplit object_split = object_find(set,pinfo,logBlockSize);
           const float object_split_sah = object_split.splitSAH();
 
           /* calculate number of timesegments */
@@ -129,14 +139,12 @@ namespace embree
         }
 
         /*! finds the best split */
-        const ObjectSplit object_find(const Set& set, const PrimInfo2& pinfo, const size_t logBlockSize, SplitInfo2& sinfo)
+        const ObjectSplit object_find(const Set& set, const PrimInfo2& pinfo, const size_t logBlockSize)
         {
           ObjectBinner binner(empty); // FIXME: this clear can be optimized away
           const BinMapping<BINS> mapping(pinfo.centBounds,pinfo.size());
           binner.bin(set.prims->data(),set.object_range.begin(),set.object_range.end(),mapping);
-          ObjectSplit split = binner.best(mapping,logBlockSize);
-          binner.getSplitInfo(mapping, split, sinfo);
-          return split;
+          return binner.best(mapping,logBlockSize);
         }
 
         /*! finds the best split */
@@ -159,21 +167,22 @@ namespace embree
             const BBox1f dt1(center_time,set.time_range.upper);
           
             /* find linear bounds for both time segments */
-            LBBox3fa bounds0 = empty;
-            LBBox3fa bounds1 = empty;
+            size_t s0 = 0; LBBox3fa bounds0 = empty;
+            size_t s1 = 0; LBBox3fa bounds1 = empty;
             for (size_t i=set.object_range.begin(); i<set.object_range.end(); i++) 
             {
               const avector<PrimRef2>& prims = *set.prims;
               const unsigned geomID = prims[i].geomID();
               const unsigned primID = prims[i].primID();
-              const LBBox3fa b0 = ((Mesh*)scene->get(geomID))->linearBounds(primID,dt0);
-              const LBBox3fa b1 = ((Mesh*)scene->get(geomID))->linearBounds(primID,dt1);
-              bounds0.extend(b0);
-              bounds1.extend(b1);
+              bounds0.extend(((Mesh*)scene->get(geomID))->linearBounds(primID,dt0));
+              bounds1.extend(((Mesh*)scene->get(geomID))->linearBounds(primID,dt1));
+              s0 += calculateNumOverlappingTimeSegments(geomID,dt0);
+              s1 += calculateNumOverlappingTimeSegments(geomID,dt1);
             }
             
             /* calculate sah */
-            const size_t lCount = (set.object_range.size()+(1 << logBlockSize)-1) >> int(logBlockSize), rCount = lCount;
+            const size_t lCount = (s0+(1 << logBlockSize)-1) >> int(logBlockSize);
+            const size_t rCount = (s1+(1 << logBlockSize)-1) >> int(logBlockSize);
             const float sah = (bounds0.expectedApproxHalfArea()*float(lCount)*dt0.size() + bounds1.expectedApproxHalfArea()*float(rCount)*dt1.size()) / set.time_range.size();
             if (sah < bestSAH) {
               bestSAH = sah;
@@ -206,8 +215,8 @@ namespace embree
         {
           const size_t begin = set.object_range.begin();
           const size_t end   = set.object_range.end();
-          CentGeom<LBBox3fa> local_left(empty);
-          CentGeom<LBBox3fa> local_right(empty);
+          left = empty;
+          right = empty;
           const unsigned int splitPos = split.pos;
           const unsigned int splitDim = split.dim;
           const unsigned int splitDimMask = (unsigned int)1 << splitDim; 
@@ -215,12 +224,12 @@ namespace embree
           const vint4 vSplitPos(splitPos);
           const vbool4 vSplitMask( (int)splitDimMask );
           auto isLeft = [&] (const PrimRef2 &ref) { return any(((vint4)split.mapping.bin_unsafe(ref) < vSplitPos) & vSplitMask); };
-          auto reduction = [] (CentGeom<LBBox3fa>& pinfo,const PrimRef2& ref) { pinfo.extend_primref(ref); };
+          auto reduction = [] (PrimInfo2& pinfo, const PrimRef2& ref) { pinfo.add_primref(ref); };
 
           size_t center = 0;
-          center = serial_partitioning(set.prims->data(),begin,end,local_left,local_right,isLeft,reduction);
-          new (&left ) PrimInfo2(begin,center,local_left.geomBounds,local_left.centBounds);
-          new (&right) PrimInfo2(center,end,local_right.geomBounds,local_right.centBounds);
+          center = serial_partitioning(set.prims->data(),begin,end,left,right,isLeft,reduction);
+          left.begin  = begin; left.end = center;
+          right.begin = center; right.end = end;
           new (&lset) Set(set.prims,range<size_t>(begin,center),set.time_range);
           new (&rset) Set(set.prims,range<size_t>(center,end  ),set.time_range);
           //assert(area(left.geomBounds) >= 0.0f);
@@ -247,7 +256,8 @@ namespace embree
             const unsigned geomID = prims[i].geomID();
             const unsigned primID = prims[i].primID();
             const LBBox3fa lbounds = ((Mesh*)scene->get(geomID))->linearBounds(primID,time_range0);
-            const PrimRef2 prim(lbounds,geomID,primID);
+            const unsigned num_time_segments = calculateNumOverlappingTimeSegments(geomID,time_range0);
+            const PrimRef2 prim(lbounds,num_time_segments,geomID,primID);
             (*lprims)[i-set.object_range.begin()] = prim;
             linfo.add_primref(prim);
           }
@@ -262,7 +272,8 @@ namespace embree
             const unsigned geomID = prims[i].geomID();
             const unsigned primID = prims[i].primID();
             const LBBox3fa lbounds = ((Mesh*)scene->get(geomID))->linearBounds(primID,time_range1);
-            const PrimRef2 prim(lbounds,geomID,primID);
+            const unsigned num_time_segments = calculateNumOverlappingTimeSegments(geomID,time_range1);
+            const PrimRef2 prim(lbounds,num_time_segments,geomID,primID);
             (*rprims)[i-set.object_range.begin()] = prim;
             rinfo.add_primref(prim);
           }
@@ -284,15 +295,15 @@ namespace embree
           const size_t end   = set.object_range.end();
           const size_t center = (begin + end)/2;
           
-          CentGeom<LBBox3fa> left; left.reset();
+          linfo = empty;
           for (size_t i=begin; i<center; i++)
-            left.extend_primref(prims[i]);
-          new (&linfo) PrimInfo2(begin,center,left.geomBounds,left.centBounds);
+            linfo.add_primref(prims[i]);
+          linfo.begin = begin; linfo.end = center;
           
-          CentGeom<LBBox3fa> right; right.reset();
+          rinfo = empty;
           for (size_t i=center; i<end; i++)
-            right.extend_primref(prims[i]);	
-          new (&rinfo) PrimInfo2(center,end,right.geomBounds,right.centBounds);
+            rinfo.add_primref(prims[i]);	
+          rinfo.begin = center; rinfo.end = end;
           
           new (&lset) Set(set.prims,range<size_t>(begin,center),set.time_range);
           new (&rset) Set(set.prims,range<size_t>(center,end  ),set.time_range);

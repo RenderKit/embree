@@ -173,7 +173,7 @@ namespace embree
         {
           LBBox3fa bounds = empty;
           if (!mesh->linearBuildBounds(j,t0t1,bounds)) continue;
-          const PrimRef2 prim(bounds,mesh->id,unsigned(j));
+          const PrimRef2 prim(bounds,mesh->numTimeSegments(),mesh->id,unsigned(j));
           pinfo.add_primref(prim);
           prims[k++] = prim;
         }
@@ -192,7 +192,7 @@ namespace embree
           {
             LBBox3fa bounds = empty;
             if (!mesh->linearBuildBounds(j,t0t1,bounds)) continue;
-            const PrimRef2 prim(bounds,mesh->id,unsigned(j));
+            const PrimRef2 prim(bounds,mesh->numTimeSegments(),mesh->id,unsigned(j));
             pinfo.add_primref(prim);
             prims[k++] = prim;
           }

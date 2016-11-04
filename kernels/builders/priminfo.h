@@ -159,6 +159,64 @@ namespace embree
     };
 
     typedef PrimInfoT<BBox3fa> PrimInfo;
-    typedef PrimInfoT<LBBox3fa> PrimInfo2;
+    //typedef PrimInfoT<LBBox3fa> PrimInfo2;
+
+    /*! stores bounding information for a set of primitives */
+    class PrimInfo2 : public CentGeom<LBBox3fa>
+    {
+    public:
+      using CentGeom<LBBox3fa>::geomBounds;
+      using CentGeom<LBBox3fa>::centBounds;
+
+      __forceinline PrimInfo2 () {
+      } 
+
+      __forceinline PrimInfo2 (EmptyTy) 
+	: CentGeom<LBBox3fa>(empty), begin(0), end(0), num_time_segments(0) {}
+
+      template<typename PrimRef> 
+        __forceinline void add_primref(const PrimRef& prim) 
+      {
+        CentGeom<LBBox3fa>::extend_primref(prim);
+        end++;
+        num_time_segments += prim.size();
+      }
+
+      __forceinline void merge(const PrimInfo2& other) 
+      {
+	CentGeom<LBBox3fa>::merge(other);
+        begin += other.begin;
+	end += other.end;
+        num_time_segments += other.num_time_segments;
+      }
+
+      static __forceinline const PrimInfo2 merge(const PrimInfo2& a, const PrimInfo2& b) {
+        PrimInfo2 r = a; r.merge(b); return r;
+      }
+      
+      /*! returns the number of primitives */
+      __forceinline size_t size() const { 
+	return end-begin; 
+      }
+      
+      __forceinline float leafSAH() const { 
+	return expectedApproxHalfArea(geomBounds)*float(num_time_segments); 
+	//return halfArea(geomBounds)*blocks(num); 
+      }
+      
+      __forceinline float leafSAH(size_t block_shift) const { 
+	return expectedApproxHalfArea(geomBounds)*float((num_time_segments+(size_t(1)<<block_shift)-1) >> block_shift);
+      }
+      
+      /*! stream output */
+      friend std::ostream& operator<<(std::ostream& cout, const PrimInfo2& pinfo) {
+	return cout << "PrimInfo { begin = " << pinfo.begin << ", end = " << pinfo.end << ", time_segments = " 
+                    << pinfo.num_time_segments << ", geomBounds = " << pinfo.geomBounds << ", centBounds = " << pinfo.centBounds << "}";
+      }
+      
+    public:
+      size_t begin,end;          //!< number of primitives
+      size_t num_time_segments;  //!< total number of time segments of all added primrefs
+    };
   }
 }

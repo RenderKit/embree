@@ -61,6 +61,11 @@ namespace embree
       return BBox3fa(lower,upper);
     }
 
+    /*! size for bin heuristic is 1 */
+    __forceinline unsigned size() const { 
+      return 1;
+    }
+
     /*! returns bounds and centroid used for binning */
     __forceinline void binBoundsAndCenter(BBox3fa& bounds_o, Vec3fa& center_o) const 
     {
