@@ -23,7 +23,10 @@ namespace embree
   struct Tutorial : public SceneLoadingTutorialApplication
   {
     Tutorial()
-      : SceneLoadingTutorialApplication("build_bench",FEATURE_RTCORE) {}
+      : SceneLoadingTutorialApplication("build_bench",FEATURE_RTCORE) 
+    {
+      interactive = false;
+    }
     
     void postParseCommandLine() 
     {

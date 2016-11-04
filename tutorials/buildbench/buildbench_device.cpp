@@ -19,7 +19,7 @@
 
 namespace embree {
 
-  static const size_t iterations_dynamic_dynamic = 200;
+  static const size_t iterations_dynamic_dynamic = 20;
   static const size_t iterations_dynamic_static  = 50;
   static const size_t iterations_static_static   = 50;
 
@@ -220,7 +220,7 @@ namespace embree {
     double t1 = getSeconds();
     double time = t1 - t0;
     std::cout << "Update dynamic scene, dynamic geometry " 
-              << "(" << primitives << " primitives) : "
+              << "(" << primitives << " primitives)  :  "
               << " avg. time  = " <<  time/benchmark_iterations 
               << " , avg. build perf " << 1.0 / (time/benchmark_iterations) * primitives / 1000000.0 << " Mprims/s" << std::endl;
 
@@ -243,7 +243,7 @@ namespace embree {
     double t1 = getSeconds();
     double time = t1 - t0;
     std::cout << "Update dynamic scene, static geometry " 
-              << "(" << primitives << " primitives) : "
+              << " (" << primitives << " primitives)  :  "
               << " avg. time  = " <<  time/benchmark_iterations 
               << " , avg. build perf " << 1.0 / (time/benchmark_iterations) * primitives / 1000000.0 << " Mprims/s" << std::endl;
 
@@ -267,7 +267,7 @@ namespace embree {
       rtcDeleteScene (g_scene);       
     }
     std::cout << "Update dynamic scene, static geometry " 
-              << "(" << primitives << " primitives) : "
+              << " (" << primitives << " primitives)  :  "
               << " avg. time  = " <<  time/benchmark_iterations 
               << " , avg. build perf " << 1.0 / (time/benchmark_iterations) * primitives / 1000000.0 << " Mprims/s" << std::endl;
 
@@ -278,7 +278,7 @@ namespace embree {
 /* called by the C++ code for initialization */
   extern "C" void device_init (char* cfg)
   {
-    std::string init("start_threads=1");
+    std::string init("start_threads=1,affinity=1");
     init += cfg;
     /* create new Embree device */
     g_device = rtcNewDevice(init.c_str());
@@ -292,7 +292,7 @@ namespace embree {
     Benchmark_StaticStatic(g_ispc_scene,iterations_static_static);
 
     rtcDeleteDevice(g_device); g_device = nullptr;
-    exit(0);
+    //exit(0);
   }
 
 /* called by the C++ code to render */
