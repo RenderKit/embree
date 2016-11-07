@@ -313,6 +313,183 @@ namespace embree
           new (&rset) Set(set.prims,range<size_t>(center,end  ),set.time_range);
         }
 
+#if 0
+        struct SplitTree
+        {
+          __forceinline SplitTree ()
+            : numNodes(0), numRoots(0) {}
+
+          __forceinline void invalidateSplit(int split)
+          {
+            while (true) {
+              if (split == -1) break;
+              const bool right = split & 0x8000;
+              const int splitid = split & ~0x8000;
+              if (nodes[splitid].split.user == -1) {
+                if (right) nodes[splitid].split.lvalid = false;
+                else       nodes[splitid].split.rvalid = false;
+              }
+              split = splitRoot[split];
+            }
+          }
+
+          __forceinline std::pair<int,int> addSplit(int root, const PrimInfo& pinfo, const Set& set, const Split& split)
+          {
+            //nodes[numSplits].splitRoot = root;
+            nodes[numSplits].splits = split;
+            nodes[numSplits].pinfo = pinfo;
+            nodes[numSplits].set = set;
+            nodes[numSplits].valid = true;
+            if (root == -1) {
+              roots[numRoots++] = numNodes;
+            } else {
+              bool right = root & 0x8000;
+              int roodid = root & ~0x8000;
+              if (right) nodes[rootid].lchild = numSplits;
+              else       nodes[rootid].rchild = numSplits;
+            }
+            int nodeID = numNodes++;
+            return std::pair<int,int>(nodeID,nodeID|0x8000);
+          }
+
+          bool validateSplit(int split)
+          {
+            if (split == -1) return false;
+            bool right = split & 0x8000;
+            int splitID = split & ~0x8000;
+            SplitNode& node = splits[splitID];
+            bool childOfInvalidTimeSplit = validateSplit(node.root);
+            bool isInvalidTimeSplit = node.data == -1 && !(right ? node.rvalid : node.lvalid)
+            if (childOfInvalidTimeSplit || isInvalidTimeSplit)
+            {
+              Set lprims,rprims;
+              PrimInfo linfo, rinfo;
+              heuristic.split(splits[split],pinfo[split],sets[split],linfo,lprims,rinfo,rprims);
+              validSplit[split] = true;
+              return true;
+            }
+            return false;
+          }
+
+        private:
+          struct SplitNode
+          {
+            PrimInfo pinfo;
+            Split split;
+            Set prims;
+            bool lvalid,rvalid;
+            int lchild,rchild;
+            //int splitRoot[MAX_BRANCHING_FACTOR];
+          } nodes[MAX_BRANCHING_FACTOR];
+          size_t numNodes;
+          int roots[MAX_BRANCHING_FACTOR];
+          size_t numRoots;
+        };
+
+        const ReductionTy recurse(BuildRecord& current, Allocator alloc, bool toplevel)
+        {
+          if (alloc == nullptr)
+            alloc = createAlloc();
+
+          /* call memory monitor function to signal progress */
+          if (toplevel && current.size() <= SINGLE_THREADED_THRESHOLD)
+            progressMonitor(current.size());
+          
+          /*! compute leaf and split cost */
+          const float leafSAH  = intCost*current.pinfo.leafSAH(logBlockSize);
+          const float splitSAH = travCost*current.pinfo.halfArea()+intCost*current.split.splitSAH();
+          assert((current.pinfo.size() == 0) || ((leafSAH >= 0) && (splitSAH >= 0)));
+          
+          /*! create a leaf node when threshold reached or SAH tells us to stop */
+          if (current.pinfo.size() <= minLeafSize || current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || (current.pinfo.size() <= maxLeafSize && leafSAH <= splitSAH)) {
+            heuristic.deterministic_order(current.prims);
+            return createLargeLeaf(current,alloc);
+          }
+          
+          /*! initialize child list */
+          ReductionTy values[MAX_BRANCHING_FACTOR];
+          BuildRecord children[MAX_BRANCHING_FACTOR];
+          int splitOfChild[MAX_BRANCHING_FACTOR];
+          SplitTree splitTree;
+          
+          children[0] = current;
+          splitOfChild[0] = -1;
+          size_t numChildren = 1;
+                    
+          /*! split until node is full or SAH tells us to stop */
+          do {
+            
+            /*! find best child to split */
+            float bestSAH = neg_inf;
+            ssize_t bestChild = -1;
+            for (size_t i=0; i<numChildren; i++) 
+            {
+              if (children[i].pinfo.size() <= minLeafSize) continue; 
+              if (expectedApproxHalfArea(children[i].pinfo.geomBounds) > bestSAH) { // FIXME: measure over all scenes if this line creates better tree
+                bestChild = i; bestSAH = expectedApproxHalfArea(children[i].pinfo.geomBounds); 
+              } 
+            }
+            if (bestChild == -1) break;
+
+            /* perform best found split */
+            BuildRecord& brecord = children[bestChild];
+            BuildRecord lrecord(current.depth+1);
+            BuildRecord rrecord(current.depth+1);
+            splitTree.validateSplit(splitOfChild[bestChild]);
+            partition(brecord,lrecord,rrecord);
+
+            if (likely(splitOfChild[bestChild] == -1 && brecord.split.data == 0)) {
+              splitOfChild[bestChild  ] = -1;
+              splitOfChild[numChildren] = -1;
+            }
+            else {
+              auto split = splitTree.addSplit(splitOfChild[bestChild],brecord.pinfo,brecord.set,brecord.split);
+              splitOfChild[bestChild  ] = split.first;
+              splitOfChild[numChildren] = split.second;
+            }
+            
+            /* find new splits */
+            lrecord.split = find(lrecord);
+            rrecord.split = find(rrecord);
+            children[bestChild  ] = lrecord; 
+            children[numChildren] = rrecord; 
+            numChildren++;
+            
+          } while (numChildren < branchingFactor);
+          
+          /* sort buildrecords for simpler shadow ray traversal */
+          std::sort(&children[0],&children[numChildren],std::greater<BuildRecord>());
+          
+          /*! create an inner node */
+          auto node = createNode(current,children,numChildren,alloc);
+          
+          /* spawn tasks */
+          if (current.size() > SINGLE_THREADED_THRESHOLD) 
+          {
+            /*! parallel_for is faster than spawing sub-tasks */
+            parallel_for(size_t(0), numChildren, [&] (const range<size_t>& r) {
+                for (size_t i=r.begin(); i<r.end(); i++) {
+                  values[i] = recurse(children[i],nullptr,true); 
+                  _mm_mfence(); // to allow non-temporal stores during build
+                }                
+              });
+            /* perform reduction */
+            return updateNode(node,values,numChildren);
+          }
+          /* recurse into each child */
+          else 
+          {
+            //for (size_t i=0; i<numChildren; i++)
+            for (ssize_t i=numChildren-1; i>=0; i--)
+              values[i] = recurse(children[i],alloc,false);
+            
+            /* perform reduction */
+            return updateNode(node,values,numChildren);
+          }
+        }
+
+#endif
+
       private:
         Scene* scene;
         int numTimeSegments;

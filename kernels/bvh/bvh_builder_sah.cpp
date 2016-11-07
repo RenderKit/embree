@@ -582,27 +582,50 @@ namespace embree
       struct CreateAlignedNodeMB4D2
     {
       typedef BVHN<N> BVH;
+      typedef typename BVH::AlignedNodeMB AlignedNodeMB;
       typedef typename BVH::AlignedNodeMB4D AlignedNodeMB4D;
 
       __forceinline CreateAlignedNodeMB4D2 (BVH* bvh) : bvh(bvh) {}
       
-      __forceinline AlignedNodeMB4D* operator() (const typename BVHNBuilderMBlurBinnedSAH<Mesh>::BuildRecord& current, typename BVHNBuilderMBlurBinnedSAH<Mesh>::BuildRecord* children, const size_t num, FastAllocator::ThreadLocal2* alloc)
+      __forceinline int operator() (const typename BVHNBuilderMBlurBinnedSAH<Mesh>::BuildRecord& current, typename BVHNBuilderMBlurBinnedSAH<Mesh>::BuildRecord* children, const size_t num, FastAllocator::ThreadLocal2* alloc)
       {
-        AlignedNodeMB4D* node = (AlignedNodeMB4D*) alloc->alloc0->malloc(sizeof(AlignedNodeMB4D),BVH::byteNodeAlignment); node->clear();
-        for (size_t i=0; i<num; i++) {
-          LBBox3fa cbounds = empty;
-          for (size_t j=children[i].prims.object_range.begin(); j<children[i].prims.object_range.end(); j++) 
+        bool hasTimeSplits = false;
+        for (size_t i=0; i<num && !hasTimeSplits; i++)
+          hasTimeSplits |= current.pinfo.time_range != children[i].pinfo.time_range;
+
+        if (hasTimeSplits)
+        {
+          AlignedNodeMB4D* node = (AlignedNodeMB4D*) alloc->alloc0->malloc(sizeof(AlignedNodeMB4D),BVH::byteNodeAlignment); node->clear();
+          for (size_t i=0; i<num; i++)
           {
-            PrimRef2& ref = (*children[i].prims.prims)[j];
-            unsigned geomID = ref.geomID();
-            unsigned primID = ref.primID();
-            cbounds.extend(bvh->scene->getTriangleMesh(geomID)->linearBounds(primID,children[i].prims.time_range));
+            LBBox3fa cbounds = empty;
+            for (size_t j=children[i].prims.object_range.begin(); j<children[i].prims.object_range.end(); j++) 
+            {
+              PrimRef2& ref = (*children[i].prims.prims)[j];
+              cbounds.extend(bvh->scene->getTriangleMesh(ref.geomID())->linearBounds(ref.primID(),children[i].prims.time_range));
+            }
+            node->set(i,cbounds.global(children[i].prims.time_range),children[i].prims.time_range);
+            children[i].parent = (size_t*)&node->child(i);
           }
-          node->set(i,cbounds.global(children[i].prims.time_range),children[i].prims.time_range);
-          children[i].parent = (size_t*)&node->child(i);
+          *current.parent = bvh->encodeNode(node);
         }
-        *current.parent = bvh->encodeNode(node);
-	return node;
+        else
+        {
+          AlignedNodeMB* node = (AlignedNodeMB*) alloc->alloc0->malloc(sizeof(AlignedNodeMB),BVH::byteNodeAlignment); node->clear();
+          for (size_t i=0; i<num; i++)
+          {
+            LBBox3fa cbounds = empty;
+            for (size_t j=children[i].prims.object_range.begin(); j<children[i].prims.object_range.end(); j++) 
+            {
+              PrimRef2& ref = (*children[i].prims.prims)[j];
+              cbounds.extend(bvh->scene->getTriangleMesh(ref.geomID())->linearBounds(ref.primID(),children[i].prims.time_range));
+            }
+            node->set(i,cbounds.global(children[i].prims.time_range));
+            children[i].parent = (size_t*)&node->child(i);
+          }
+          *current.parent = bvh->encodeNode(node);
+        }
+	return 0;
       }
 
       BVH* bvh;
@@ -616,10 +639,6 @@ namespace embree
       
       __forceinline const std::pair<LBBox3fa,BBox1f> operator() (const typename BVHNBuilderMBlurBinnedSAH<Mesh>::BuildRecord& current, Allocator* alloc)
       {
-        //assert(current.prims.time_range.size() == 1.0f/16.0f);
-        //if (current.prims.time_range.size() != 1.0f/16.0f)
-        //PRINT(current.prims.time_range.size());
-
         size_t items = Primitive::blocks(current.prims.object_range.size());
         size_t start = current.prims.object_range.begin();
         Primitive* accel = (Primitive*) alloc->alloc1->malloc(items*sizeof(Primitive),BVH::byteNodeAlignment);
@@ -664,7 +683,7 @@ namespace embree
         PrimInfo2 pinfo = createPrimRef2ArrayMBlur<Mesh>(scene,*prims,bvh->scene->progressInterface);
         
         /* reduction function */
-        auto reduce = [&] (AlignedNodeMB4D* node, const std::pair<LBBox3fa,BBox1f>* bounds, const size_t num) -> std::pair<LBBox3fa,BBox1f> {
+        auto reduce = [&] (int node, const std::pair<LBBox3fa,BBox1f>* bounds, const size_t num) -> std::pair<LBBox3fa,BBox1f> {
 
           assert(num <= N);
           auto allBounds = std::make_pair(LBBox3fa(empty),BBox1f(empty));
