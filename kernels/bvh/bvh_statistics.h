@@ -89,6 +89,8 @@ namespace embree
 
       struct LeafStat
       {
+        static const int NHIST = 8;
+
         LeafStat ( double leafSAH = 0.0f, 
                    size_t numLeaves = 0,
                    size_t numPrims = 0,
@@ -96,7 +98,11 @@ namespace embree
         : leafSAH(leafSAH),
           numLeaves(numLeaves),
           numPrims(numPrims),
-          numPrimBlocks(numPrimBlocks) {}
+          numPrimBlocks(numPrimBlocks) 
+        {
+          for (size_t i=0; i<NHIST; i++)
+            numPrimBlocksHistogram[i] = 0;
+        }
 
         double sah(BVH* bvh) const {
           return leafSAH/halfArea(bvh->getBounds());
@@ -116,10 +122,15 @@ namespace embree
 
         __forceinline friend LeafStat operator+ ( const LeafStat& a, const LeafStat& b)
         {
-          return LeafStat(a.leafSAH + b.leafSAH,
-                          a.numLeaves+b.numLeaves,
-                          a.numPrims+b.numPrims,
-                          a.numPrimBlocks+b.numPrimBlocks);
+          LeafStat stat(a.leafSAH + b.leafSAH,
+                        a.numLeaves+b.numLeaves,
+                        a.numPrims+b.numPrims,
+                        a.numPrimBlocks+b.numPrimBlocks);
+          for (size_t i=0; i<NHIST; i++) {
+            stat.numPrimBlocksHistogram[i] += a.numPrimBlocksHistogram[i];
+            stat.numPrimBlocksHistogram[i] += b.numPrimBlocksHistogram[i];
+          }
+          return stat;
         }
 
         std::string toString(BVH* bvh, double sahTotal, size_t bytesTotal) const
@@ -133,12 +144,22 @@ namespace embree
           stream << "#nodes = " << std::setw(7) << numLeaves << " (" << std::setw(6) << std::setprecision(2) << 100.0*fillRate(bvh) << "% filled)";
           return stream.str();
         }
+
+        std::string histToString() const
+        {
+          std::ostringstream stream;
+          stream.setf(std::ios::fixed, std::ios::floatfield);
+          for (size_t i=0; i<NHIST; i++)
+            stream << std::setw(6) << std::setprecision(2) << 100.0f*float(numPrimBlocksHistogram[i])/float(numLeaves) << "% ";
+          return stream.str();
+        }
      
       public:
         double leafSAH;                    //!< SAH of the leaves only
         size_t numLeaves;                  //!< Number of leaf nodes.
         size_t numPrims;                   //!< Number of primitives.
         size_t numPrimBlocks;              //!< Number of primitive blocks.
+        size_t numPrimBlocksHistogram[8];
       };
 
     public:

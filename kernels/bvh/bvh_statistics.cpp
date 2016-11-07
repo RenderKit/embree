@@ -48,13 +48,14 @@ namespace embree
     stream << "#bytes = " << std::setw(7) << std::setprecision(2) << totalBytes/1E6 << " MB (100.00%), ";
     stream << "#nodes = " << std::setw(7) << stat.size() << " (" << std::setw(6) << std::setprecision(2) << 100.0*stat.fillRate(bvh) << "% filled), ";
     stream << "#bytes/prim = " << std::setw(6) << std::setprecision(2) << double(totalBytes)/double(bvh->numPrimitives) << std::endl;
-    if (true)                               stream << "  leaves           : "  << stat.statLeaf.toString(bvh,totalSAH,totalBytes) << std::endl;
     if (stat.statAlignedNodes.numNodes    ) stream << "  alignedNodes     : "  << stat.statAlignedNodes.toString(bvh,totalSAH,totalBytes) << std::endl;
     if (stat.statUnalignedNodes.numNodes  ) stream << "  unaligneddNodes  : "  << stat.statUnalignedNodes.toString(bvh,totalSAH,totalBytes) << std::endl;
     if (stat.statAlignedNodesMB.numNodes  ) stream << "  alignedNodesMB   : "  << stat.statAlignedNodesMB.toString(bvh,totalSAH,totalBytes) << std::endl;
     if (stat.statUnalignedNodesMB.numNodes) stream << "  unaligneddNodesMB: "  << stat.statUnalignedNodesMB.toString(bvh,totalSAH,totalBytes) << std::endl;
     if (stat.statTransformNodes.numNodes  ) stream << "  transformNodes   : "  << stat.statTransformNodes.toString(bvh,totalSAH,totalBytes) << std::endl;
     if (stat.statQuantizedNodes.numNodes  ) stream << "  quantizedNodes   : "  << stat.statQuantizedNodes.toString(bvh,totalSAH,totalBytes) << std::endl;
+    if (true)                               stream << "  leaves           : "  << stat.statLeaf.toString(bvh,totalSAH,totalBytes) << std::endl;
+    if (true)                               stream << "    histogram      : "  << stat.statLeaf.histToString() << std::endl;
     return stream.str();
   }
   
@@ -145,6 +146,9 @@ namespace embree
         s.statLeaf.numLeaves++;
         s.statLeaf.numPrimBlocks += num;
         s.statLeaf.leafSAH += dt*A*num;
+        if (num-1 < Statistics::LeafStat::NHIST) {
+          s.statLeaf.numPrimBlocksHistogram[num-1]++;
+        }
       }
     }
     else {
