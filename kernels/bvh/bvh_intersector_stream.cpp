@@ -456,17 +456,8 @@ namespace embree
         RayK<K>* rayK_ptr[MAX_RAYS / K];
         for (size_t i = 0; i < MAX_RAYS / K; i++) rayK_ptr[i] = &rayK[i];
         AOStoSOA(rayK, inputRays, numTotalRays);
-        //const size_t numPackets = (numTotalRays+K-1)/K;
-        //if (unlikely(numPackets == 1)) // FIXME: we cannot call this way into the virtual intersect interface again, this will again iterate over BVHs
-        //{
-        //  /* packet tracer as fallback */
-        //  bvh->scene->intersect(rayK[0].tnear <= rayK[0].tfar, rayK[0], context);
-        //}
-        //else
-        //{          
-          /* stream tracer as fast path */
-          BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersectCoherentSOA(bvh, (RayK<K>**)rayK_ptr, numTotalRays, context);
-          //}
+        /* stream tracer as fast path */
+        BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersectCoherentSOA(bvh, (RayK<K>**)rayK_ptr, numTotalRays, context);
         /* SOA to AOS conversion */
         SOAtoAOS<K, false>(inputRays, rayK, numTotalRays);
         return;
@@ -631,17 +622,8 @@ namespace embree
         RayK<K>* rayK_ptr[MAX_RAYS / K];
         for (size_t i = 0; i < MAX_RAYS / K; i++) rayK_ptr[i] = &rayK[i];
         AOStoSOA(rayK, inputRays, numTotalRays);
-        //const size_t numPackets = (numTotalRays+K-1)/K;
-        //if (unlikely(numPackets == 1)) // FIXME: we cannot call this way into the virtual intersect interface again, this will again iterate over BVHs
-        //{
-        //  /* packet tracer as fallback */
-        //  bvh->scene->occluded(rayK[0].tnear <= rayK[0].tfar, rayK[0], context);
-        //}
-        //else
-        //{
-          /* stream tracer as fast path */
-          BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occludedCoherentSOA(bvh, (RayK<K>**)rayK_ptr, numTotalRays, context);
-          //}
+        /* stream tracer as fast path */
+        BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occludedCoherentSOA(bvh, (RayK<K>**)rayK_ptr, numTotalRays, context);
         /* SOA to AOS conversion */
         SOAtoAOS<K, true>(inputRays, rayK, numTotalRays);
         return;

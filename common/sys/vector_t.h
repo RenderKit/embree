@@ -147,7 +147,8 @@ namespace embree
           alloc.destroy(&items[i]);
         
         /* free memory */
-        alloc.deallocate(items,size_alloced); items = nullptr;
+        alloc.deallocate(items,size_alloced); 
+        items = nullptr;
         size_active = size_alloced = 0;
       }
 

@@ -211,8 +211,9 @@ namespace embree
 
 	/* clear temporary data for static geometry */
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
+
 	if (staticGeom) {
-          prims.clear();
+          prims.clear(); 
           bvh->shrink();
         }
 	bvh->cleanup();

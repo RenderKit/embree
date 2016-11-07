@@ -145,7 +145,7 @@ namespace embree
         if (cin->peek() != "" && cin->peek()[0] != '-')
           numBenchmarkRepetitions = cin->getInt();          
         interactive = false;
-        rtcore += ",benchmark=1";
+        rtcore += ",benchmark=1,start_threads=1";
       }, "--benchmark <N> <M> <R>: enabled benchmark mode, builds scene, skips N frames, renders M frames, and repeats this R times");
 
     registerOption("nodisplay", [this] (Ref<ParseStream> cin, const FileName& path) {
