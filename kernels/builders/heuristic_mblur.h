@@ -317,34 +317,49 @@ namespace embree
         struct SplitTree
         {
           __forceinline SplitTree ()
-            : numSplits(0) {}
-          
+            : numNodes(0), numRoots(0) {}
+
           __forceinline void invalidateSplit(int split)
           {
             while (true) {
-              //validSplit[split] = false;
-              if (splitRoot[split] == -1) break;
+              if (split == -1) break;
+              const bool right = split & 0x8000;
+              const int splitid = split & ~0x8000;
+              if (nodes[splitid].split.user == -1) {
+                if (right) nodes[splitid].split.lvalid = false;
+                else       nodes[splitid].split.rvalid = false;
+              }
               split = splitRoot[split];
             }
           }
 
-          __forceinline int addSplit(int root, const PrimInfo& pinfo, const Set& set, const Split& split)
+          __forceinline std::pair<int,int> addSplit(int root, const PrimInfo& pinfo, const Set& set, const Split& split)
           {
-            splitRoot[numSplits] = splitOfChild[bestChild];
-            splits[numSplits] = split;
-            pinfo[numSplits] = pinfo;
-            set[numSplits] = set;
-            validSplit[numSplits] = true;
-            numSplits++;
+            //nodes[numSplits].splitRoot = root;
+            nodes[numSplits].splits = split;
+            nodes[numSplits].pinfo = pinfo;
+            nodes[numSplits].set = set;
+            nodes[numSplits].valid = true;
+            if (root == -1) {
+              roots[numRoots++] = numNodes;
+            } else {
+              bool right = root & 0x8000;
+              int roodid = root & ~0x8000;
+              if (right) nodes[rootid].lchild = numSplits;
+              else       nodes[rootid].rchild = numSplits;
+            }
+            int nodeID = numNodes++;
+            return std::pair<int,int>(nodeID,nodeID|0x8000);
           }
 
           bool validateSplit(int split)
           {
-            if (split == -1)
-              return false;
-
-            bool childOfInvalidTimeSplit = validateSplit(splitRoot[split]);
-            bool isInvalidTimeSplit = splits[split].data == -1 && !validSplit[split];
+            if (split == -1) return false;
+            bool right = split & 0x8000;
+            int splitID = split & ~0x8000;
+            SplitNode& node = splits[splitID];
+            bool childOfInvalidTimeSplit = validateSplit(node.root);
+            bool isInvalidTimeSplit = node.data == -1 && !(right ? node.rvalid : node.lvalid)
             if (childOfInvalidTimeSplit || isInvalidTimeSplit)
             {
               Set lprims,rprims;
@@ -357,12 +372,18 @@ namespace embree
           }
 
         private:
-          PrimInfo pinfo[MAX_BRANCHING_FACTOR];
-          Split splits[MAX_BRANCHING_FACTOR];
-          Set prims[MAX_BRANCHING_FACTOR];
-          int splitRoot[MAX_BRANCHING_FACTOR];
-          bool validSplit[MAX_BRANCHING_FACTOR];
-          size_t numSplits;
+          struct SplitNode
+          {
+            PrimInfo pinfo;
+            Split split;
+            Set prims;
+            bool lvalid,rvalid;
+            int lchild,rchild;
+            //int splitRoot[MAX_BRANCHING_FACTOR];
+          } nodes[MAX_BRANCHING_FACTOR];
+          size_t numNodes;
+          int roots[MAX_BRANCHING_FACTOR];
+          size_t numRoots;
         };
 
         const ReductionTy recurse(BuildRecord& current, Allocator alloc, bool toplevel)
@@ -422,9 +443,9 @@ namespace embree
               splitOfChild[numChildren] = -1;
             }
             else {
-              const int split = splitTree.addSplit(splitOfChild[bestChild],brecord.pinfo,brecord.set,brecord.split);
-              splitOfChild[bestChild  ] = split;
-              splitOfChild[numChildren] = split;
+              auto split = splitTree.addSplit(splitOfChild[bestChild],brecord.pinfo,brecord.set,brecord.split);
+              splitOfChild[bestChild  ] = split.first;
+              splitOfChild[numChildren] = split.second;
             }
             
             /* find new splits */
