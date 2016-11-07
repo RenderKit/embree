@@ -452,6 +452,7 @@ namespace embree
               return std::make_pair(a.first + b.first,merge(a.second,b.second)); 
             });
 
+
         size_t numPrimitivesGen = cb.first;
         const BBox3fa centBounds = cb.second;
 

@@ -257,7 +257,7 @@ namespace embree
     protected:
       static const size_t MAX_BRANCHING_FACTOR = 16;         //!< maximal supported BVH branching factor
       static const size_t MIN_LARGE_LEAF_LEVELS = 8;         //!< create balanced tree of we are that many levels before the maximal tree depth
-      static const size_t SINGLE_THREADED_THRESHOLD = 4*1024;  //!< threshold to switch to single threaded build
+      static const size_t SINGLE_THREADED_THRESHOLD = 2*1024;  //!< threshold to switch to single threaded build
 
 
     public:
@@ -513,7 +513,8 @@ namespace embree
       {
         /* using 4 phases radix sort */
         morton = src;
-        radix_sort_u32(src,tmp,numPrimitives);
+        radix_sort_u32(src,tmp,numPrimitives,SINGLE_THREADED_THRESHOLD);
+        //InPlace32BitRadixSort(morton,numPrimitives);
 
         /* build BVH */
         NodeRef root;

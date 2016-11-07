@@ -22,7 +22,7 @@ namespace embree {
   static const size_t skip_iterations            = 5;
   static const size_t iterations_dynamic_dynamic = 200;
   static const size_t iterations_dynamic_static  = 50;
-  static const size_t iterations_static_static   = 50;
+  static const size_t iterations_static_static   = 30;
 
   extern "C" ISPCScene* g_ispc_scene;
 
@@ -296,7 +296,11 @@ namespace embree {
   extern "C" void device_init (char* cfg)
   {
     std::string init("start_threads=1,affinity=1");
-    init += cfg;
+    if (cfg)
+    {
+      init += ",";
+      init += cfg;
+    }
     /* create new Embree device */
     g_device = rtcNewDevice(init.c_str());
     error_handler(rtcDeviceGetError(g_device));
