@@ -408,8 +408,8 @@ namespace embree
       {
         if (likely(intersect(ray,k,tri_v0,tri_e1,tri_e2,tri_Ng,hit))) 
         {
-          hit.valid &= time_range.lower <= vfloat<K>(ray.time[k]);
-          hit.valid &= vfloat<K>(ray.time[k]) < time_range.upper;
+          hit.valid &= time_range.lower <= vfloat<M>(ray.time[k]);
+          hit.valid &= vfloat<M>(ray.time[k]) < time_range.upper;
           return any(hit.valid);
         }
         return false;
