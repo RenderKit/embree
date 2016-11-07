@@ -313,6 +313,162 @@ namespace embree
           new (&rset) Set(set.prims,range<size_t>(center,end  ),set.time_range);
         }
 
+#if 0
+        struct SplitTree
+        {
+          __forceinline SplitTree ()
+            : numSplits(0) {}
+          
+          __forceinline void invalidateSplit(int split)
+          {
+            while (true) {
+              //validSplit[split] = false;
+              if (splitRoot[split] == -1) break;
+              split = splitRoot[split];
+            }
+          }
+
+          __forceinline int addSplit(int root, const PrimInfo& pinfo, const Set& set, const Split& split)
+          {
+            splitRoot[numSplits] = splitOfChild[bestChild];
+            splits[numSplits] = split;
+            pinfo[numSplits] = pinfo;
+            set[numSplits] = set;
+            validSplit[numSplits] = true;
+            numSplits++;
+          }
+
+          bool validateSplit(int split)
+          {
+            if (split == -1)
+              return false;
+
+            bool childOfInvalidTimeSplit = validateSplit(splitRoot[split]);
+            bool isInvalidTimeSplit = splits[split].data == -1 && !validSplit[split];
+            if (childOfInvalidTimeSplit || isInvalidTimeSplit)
+            {
+              Set lprims,rprims;
+              PrimInfo linfo, rinfo;
+              heuristic.split(splits[split],pinfo[split],sets[split],linfo,lprims,rinfo,rprims);
+              validSplit[split] = true;
+              return true;
+            }
+            return false;
+          }
+
+        private:
+          PrimInfo pinfo[MAX_BRANCHING_FACTOR];
+          Split splits[MAX_BRANCHING_FACTOR];
+          Set prims[MAX_BRANCHING_FACTOR];
+          int splitRoot[MAX_BRANCHING_FACTOR];
+          bool validSplit[MAX_BRANCHING_FACTOR];
+          size_t numSplits;
+        };
+
+        const ReductionTy recurse(BuildRecord& current, Allocator alloc, bool toplevel)
+        {
+          if (alloc == nullptr)
+            alloc = createAlloc();
+
+          /* call memory monitor function to signal progress */
+          if (toplevel && current.size() <= SINGLE_THREADED_THRESHOLD)
+            progressMonitor(current.size());
+          
+          /*! compute leaf and split cost */
+          const float leafSAH  = intCost*current.pinfo.leafSAH(logBlockSize);
+          const float splitSAH = travCost*current.pinfo.halfArea()+intCost*current.split.splitSAH();
+          assert((current.pinfo.size() == 0) || ((leafSAH >= 0) && (splitSAH >= 0)));
+          
+          /*! create a leaf node when threshold reached or SAH tells us to stop */
+          if (current.pinfo.size() <= minLeafSize || current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || (current.pinfo.size() <= maxLeafSize && leafSAH <= splitSAH)) {
+            heuristic.deterministic_order(current.prims);
+            return createLargeLeaf(current,alloc);
+          }
+          
+          /*! initialize child list */
+          ReductionTy values[MAX_BRANCHING_FACTOR];
+          BuildRecord children[MAX_BRANCHING_FACTOR];
+          int splitOfChild[MAX_BRANCHING_FACTOR];
+          SplitTree splitTree;
+          
+          children[0] = current;
+          splitOfChild[0] = -1;
+          size_t numChildren = 1;
+                    
+          /*! split until node is full or SAH tells us to stop */
+          do {
+            
+            /*! find best child to split */
+            float bestSAH = neg_inf;
+            ssize_t bestChild = -1;
+            for (size_t i=0; i<numChildren; i++) 
+            {
+              if (children[i].pinfo.size() <= minLeafSize) continue; 
+              if (expectedApproxHalfArea(children[i].pinfo.geomBounds) > bestSAH) { // FIXME: measure over all scenes if this line creates better tree
+                bestChild = i; bestSAH = expectedApproxHalfArea(children[i].pinfo.geomBounds); 
+              } 
+            }
+            if (bestChild == -1) break;
+
+            /* perform best found split */
+            BuildRecord& brecord = children[bestChild];
+            BuildRecord lrecord(current.depth+1);
+            BuildRecord rrecord(current.depth+1);
+            splitTree.validateSplit(splitOfChild[bestChild]);
+            partition(brecord,lrecord,rrecord);
+
+            if (likely(splitOfChild[bestChild] == -1 && brecord.split.data == 0)) {
+              splitOfChild[bestChild  ] = -1;
+              splitOfChild[numChildren] = -1;
+            }
+            else {
+              const int split = splitTree.addSplit(splitOfChild[bestChild],brecord.pinfo,brecord.set,brecord.split);
+              splitOfChild[bestChild  ] = split;
+              splitOfChild[numChildren] = split;
+            }
+            
+            /* find new splits */
+            lrecord.split = find(lrecord);
+            rrecord.split = find(rrecord);
+            children[bestChild  ] = lrecord; 
+            children[numChildren] = rrecord; 
+            numChildren++;
+            
+          } while (numChildren < branchingFactor);
+          
+          /* sort buildrecords for simpler shadow ray traversal */
+          std::sort(&children[0],&children[numChildren],std::greater<BuildRecord>());
+          
+          /*! create an inner node */
+          auto node = createNode(current,children,numChildren,alloc);
+          
+          /* spawn tasks */
+          if (current.size() > SINGLE_THREADED_THRESHOLD) 
+          {
+            /*! parallel_for is faster than spawing sub-tasks */
+            parallel_for(size_t(0), numChildren, [&] (const range<size_t>& r) {
+                for (size_t i=r.begin(); i<r.end(); i++) {
+                  values[i] = recurse(children[i],nullptr,true); 
+                  _mm_mfence(); // to allow non-temporal stores during build
+                }                
+              });
+            /* perform reduction */
+            return updateNode(node,values,numChildren);
+          }
+          /* recurse into each child */
+          else 
+          {
+            //for (size_t i=0; i<numChildren; i++)
+            for (ssize_t i=numChildren-1; i>=0; i--)
+              values[i] = recurse(children[i],alloc,false);
+            
+            /* perform reduction */
+            return updateNode(node,values,numChildren);
+          }
+        }
+
+#endif
+
       private:
         Scene* scene;
         int numTimeSegments;
