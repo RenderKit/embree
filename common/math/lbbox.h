@@ -21,6 +21,15 @@
 namespace embree
 {
   template<typename T>
+    __forceinline std::pair<T,T> globalLinear(const std::pair<T,T> v, const BBox1f& dt)
+  {
+    const float rcp_dt_size = float(1.0f)/dt.size();
+    const T g0 = lerp(v.first,v.second,-dt.lower*rcp_dt_size);
+    const T g1 = lerp(v.first,v.second,(1.0f-dt.lower)*rcp_dt_size);
+    return std::make_pair(g0,g1);
+  }
+
+  template<typename T>
   struct LBBox
   {
   public:

@@ -653,6 +653,24 @@ namespace embree
       BVH* bvh;
     };
 
+    template<int N>
+    struct CreateMSMBlurLeaf2<N,TriangleMesh,Triangle4vMB>
+    {
+      typedef BVHN<N> BVH;
+      __forceinline CreateMSMBlurLeaf2 (BVH* bvh) : bvh(bvh) {}
+      
+      __forceinline const std::pair<LBBox3fa,BBox1f> operator() (const typename BVHNBuilderMBlurBinnedSAH<TriangleMesh>::BuildRecord& current, Allocator* alloc)
+      {
+        size_t M = Triangle4vMB::fillMBlurBlocks(current.prims.prims->data(), current.prims.object_range, current.prims.time_range, bvh->scene);
+        Triangle4vMB* accel = (Triangle4vMB*) alloc->alloc1->malloc(M*sizeof(Triangle4vMB),BVH::byteNodeAlignment);
+        Triangle4vMB::fillMBlur(accel, current.prims.prims->data(), current.prims.object_range, current.prims.time_range, bvh->scene);
+        *current.parent = bvh->encodeLeaf((char*)accel,M);
+        return std::make_pair(LBBox3fa(empty),current.prims.time_range); // returns invalid bounds, we do not use bounds currently
+      }
+
+      BVH* bvh;
+    };
+
     template<int N, typename Mesh, typename Primitive>
     struct BVHNBuilderMBlurSAH : public Builder
     {
@@ -1108,6 +1126,7 @@ namespace embree
     Builder* BVH4Triangle4iMBSceneBuilderSAH (void* bvh, Scene* scene,       size_t mode) { return new BVHNBuilderMSMBlurSAH<4,TriangleMesh,Triangle4iMB>((BVH4*)bvh,scene,4,1.0f,4,inf); }
     Builder* BVH4MB4DTriangle4iMBSceneBuilderRootTimeSplits    (void* bvh, Scene* scene,       size_t mode) { return new BVHNBuilderMSMBlur4DSAH<4,TriangleMesh,Triangle4iMB>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
     Builder* BVH4MB4DTriangle4iMBSceneBuilderInternalTimeSplits (void* bvh, Scene* scene,       size_t mode) { return new BVHNBuilderMBlurSAH<4,TriangleMesh,Triangle4iMB>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
+    Builder* BVH4MB4DTriangle4vMBSceneBuilderInternalTimeSplits (void* bvh, Scene* scene,       size_t mode) { return new BVHNBuilderMBlurSAH<4,TriangleMesh,Triangle4vMB>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
     Builder* BVH4MBTSTriangle4iMBSceneBuilderSAH (void* bvh, Scene* scene,       size_t mode) { return new BVHNBuilderMSMBlurTSSAH<4,TriangleMesh,Triangle4iMB>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
     
     Builder* BVH4Triangle4SceneBuilderFastSpatialSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderFastSpatialSAH<4,TriangleMesh,Triangle4,TriangleSplitterFactory>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
@@ -1128,6 +1147,7 @@ namespace embree
     Builder* BVH8Triangle4iMBSceneBuilderSAH (void* bvh, Scene* scene,       size_t mode) { return new BVHNBuilderMSMBlurSAH<8,TriangleMesh,Triangle4iMB>((BVH8*)bvh,scene,4,1.0f,4,inf); }
     Builder* BVH8MB4DTriangle4iMBSceneBuilderRootTimeSplits (void* bvh, Scene* scene,       size_t mode) { return new BVHNBuilderMSMBlur4DSAH<8,TriangleMesh,Triangle4iMB>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
     Builder* BVH8MB4DTriangle4iMBSceneBuilderInternalTimeSplits (void* bvh, Scene* scene,       size_t mode) { return new BVHNBuilderMBlurSAH<8,TriangleMesh,Triangle4iMB>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
+    Builder* BVH8MB4DTriangle4vMBSceneBuilderInternalTimeSplits (void* bvh, Scene* scene,       size_t mode) { return new BVHNBuilderMBlurSAH<8,TriangleMesh,Triangle4vMB>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
     Builder* BVH8MBTSTriangle4iMBSceneBuilderSAH (void* bvh, Scene* scene,       size_t mode) { return new BVHNBuilderMSMBlurTSSAH<8,TriangleMesh,Triangle4iMB>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
     Builder* BVH8QuantizedTriangle4iSceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHQuantized<8,TriangleMesh,Triangle4i>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
     Builder* BVH8Triangle4SceneBuilderFastSpatialSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderFastSpatialSAH<8,TriangleMesh,Triangle4,TriangleSplitterFactory>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }

@@ -24,6 +24,7 @@ namespace embree
   template<int M>
   struct TriangleMvMB
   {
+    typedef BBox<vfloat<M>> BBox1vfM;
     typedef Vec3<vfloat<M>> Vec3vfM;
 
   public:
@@ -53,7 +54,18 @@ namespace embree
                                const Vec3vfM& b0, const Vec3vfM& b1,
                                const Vec3vfM& c0, const Vec3vfM& c1,
                                const vint<M>& geomIDs, const vint<M>& primIDs)
-      : v0(a0), v1(b0), v2(c0), dv0(a1-a0), dv1(b1-b0), dv2(c1-c0), geomIDs(geomIDs), primIDs(primIDs) {}
+      : v0(a0), v1(b0), v2(c0), dv0(a1-a0), dv1(b1-b0), dv2(c1-c0), time_range(BBox1vfM(0.0f,1.0f+float(ulp))), geomIDs(geomIDs), primIDs(primIDs) {}
+
+    __forceinline TriangleMvMB(const Vec3vfM& a0, const Vec3vfM& a1,
+                               const Vec3vfM& b0, const Vec3vfM& b1,
+                               const Vec3vfM& c0, const Vec3vfM& c1,
+                               const BBox1vfM& time_range_i,
+                               const vint<M>& geomIDs, const vint<M>& primIDs)
+      : v0(a0), v1(b0), v2(c0), dv0(a1-a0), dv1(b1-b0), dv2(c1-c0), time_range(time_range_i), geomIDs(geomIDs), primIDs(primIDs)
+    {
+      time_range.upper = select(time_range.upper == 1.0f,vfloat<M>(1.0f+float(ulp)),time_range.upper);
+    }
+
 
     /* Returns a mask that tells which triangles are valid */
     __forceinline vbool<M> valid() const { return geomIDs != vint<M>(-1); }
@@ -149,6 +161,76 @@ namespace embree
       new (this) TriangleMvMB(va0,va1,vb0,vb1,vc0,vc1,vgeomID,vprimID);
       return LBBox3fa(bounds0,bounds1);
     }
+
+    static __forceinline size_t fillMBlurBlocks(const PrimRef2* prims, range<size_t> object_range, BBox1f time_range, Scene* scene)
+    {
+      size_t N = 0;
+      for (size_t i=object_range.begin(); i<object_range.end(); i++) 
+      {
+        const unsigned numTimeSegments = scene->get(prims[i].geomID())->numTimeSegments();
+        const int ilower = (int)ceil (0.9999f*time_range.lower*numTimeSegments);
+        const int iupper = (int)floor(1.0001f*time_range.upper*numTimeSegments);
+        N += iupper-ilower;
+      }
+      return blocks(N);
+    }
+
+    static __forceinline void fillMBlur(TriangleMvMB* triangles, const PrimRef2* prims, range<size_t> object_range, BBox1f time_range, Scene* scene)
+    {
+      size_t bid = 0, lid = 0;
+      
+      Vec3vfM va0 = zero, vb0 = zero, vc0 = zero;
+      Vec3vfM va1 = zero, vb1 = zero, vc1 = zero;
+      BBox1vfM vtr = empty;
+      vint<M> vgeomID = -1, vprimID = -1;
+
+      for (size_t i=object_range.begin(); i<object_range.end(); i++) 
+      {
+        const unsigned numTimeSegments = scene->get(prims[i].geomID())->numTimeSegments();
+        const int ilower = (int)ceil (0.9999f*time_range.lower*numTimeSegments);
+        const int iupper = (int)floor(1.0001f*time_range.upper*numTimeSegments);
+
+        const unsigned geomID = prims[i].geomID();
+        const unsigned primID = prims[i].primID();
+        const TriangleMesh* const mesh = scene->getTriangleMesh(geomID);
+        const TriangleMesh::Triangle& tri = mesh->triangle(primID);
+
+        for (size_t j=ilower; j<iupper; j++)
+        {
+          const Vec3fa& a0 = mesh->vertex(tri.v[0],j+0);
+          const Vec3fa& a1 = mesh->vertex(tri.v[0],j+1);
+          const Vec3fa& b0 = mesh->vertex(tri.v[1],j+0);
+          const Vec3fa& b1 = mesh->vertex(tri.v[1],j+1);
+          const Vec3fa& c0 = mesh->vertex(tri.v[2],j+0);
+          const Vec3fa& c1 = mesh->vertex(tri.v[2],j+1);
+          BBox1f time_range_v(float(j+0)/float(numTimeSegments),
+                              float(j+1)/float(numTimeSegments));
+          auto a01 = globalLinear(std::make_pair(a0,a1),time_range_v);
+          auto b01 = globalLinear(std::make_pair(b0,b1),time_range_v);
+          auto c01 = globalLinear(std::make_pair(c0,c1),time_range_v);
+          BBox1f time_range_p = intersect(time_range, time_range_v);
+          va0.x[lid] = a01.first .x; va0.y[lid] = a01.first .y; va0.z[lid] = a01.first .z;
+          va1.x[lid] = a01.second.x; va1.y[lid] = a01.second.y; va1.z[lid] = a01.second.z;
+          vb0.x[lid] = b01.first .x; vb0.y[lid] = b01.first .y; vb0.z[lid] = b01.first .z;
+          vb1.x[lid] = b01.second.x; vb1.y[lid] = b01.second.y; vb1.z[lid] = b01.second.z;
+          vc0.x[lid] = c01.first .x; vc0.y[lid] = c01.first .y; vc0.z[lid] = c01.first .z;
+          vc1.x[lid] = c01.second.x; vc1.y[lid] = c01.second.y; vc1.z[lid] = c01.second.z;
+          vtr.lower[lid] = time_range_p.lower; 
+          vtr.upper[lid] = time_range_p.upper;
+          vgeomID [lid] = geomID;
+          vprimID [lid] = primID;
+          if (++lid == M) {
+            new (&triangles[bid]) TriangleMvMB(va0,va1,vb0,vb1,vc0,vc1,vtr,vgeomID,vprimID);
+            va0 = zero; vb0 = zero; vc0 = zero;
+            va1 = zero; vb1 = zero; vc1 = zero;
+            vtr = empty; vgeomID = -1; vprimID = -1;
+            bid++; lid = 0;
+          }
+        }
+      }
+      if (lid != 0) 
+        new (&triangles[bid]) TriangleMvMB(va0,va1,vb0,vb1,vc0,vc1,vtr,vgeomID,vprimID);
+    }
    
   public:
     Vec3vfM v0;      // 1st vertex of the triangles
@@ -157,6 +239,7 @@ namespace embree
     Vec3vfM dv0;     // difference vector between time steps t0 and t1 for first vertex
     Vec3vfM dv1;     // difference vector between time steps t0 and t1 for second vertex
     Vec3vfM dv2;     // difference vector between time steps t0 and t1 for third vertex
+    BBox1vfM time_range; // time bounds
     vint<M> geomIDs; // geometry ID
     vint<M> primIDs; // primitive ID
   };
