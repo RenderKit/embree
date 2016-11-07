@@ -19,7 +19,8 @@
 
 namespace embree {
 
-  static const size_t iterations_dynamic_dynamic = 20;
+  static const size_t skip_iterations            = 5;
+  static const size_t iterations_dynamic_dynamic = 200;
   static const size_t iterations_dynamic_static  = 50;
   static const size_t iterations_static_static   = 50;
 
@@ -211,18 +212,24 @@ namespace embree {
     assert(g_scene == nullptr);
     g_scene = convertScene(scene_in,RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DYNAMIC);
     size_t primitives = getNumPrimitives(scene_in);
-    double t0 = getSeconds();
-    for(size_t i=0;i<benchmark_iterations;i++)
+    size_t iterations = 0;
+    double time = 0.0;
+    for(size_t i=0;i<benchmark_iterations+skip_iterations;i++)
     {
       updateScene(scene_in,g_scene);
+      double t0 = getSeconds();
       rtcCommit (g_scene);
+      double t1 = getSeconds();
+      if (i >= skip_iterations)
+      {
+        time += t1 - t0;      
+        iterations++;
+      }
     }
-    double t1 = getSeconds();
-    double time = t1 - t0;
     std::cout << "Update dynamic scene, dynamic geometry " 
               << "(" << primitives << " primitives)  :  "
-              << " avg. time  = " <<  time/benchmark_iterations 
-              << " , avg. build perf " << 1.0 / (time/benchmark_iterations) * primitives / 1000000.0 << " Mprims/s" << std::endl;
+              << " avg. time  = " <<  time/iterations 
+              << " , avg. build perf " << 1.0 / (time/iterations) * primitives / 1000000.0 << " Mprims/s" << std::endl;
 
     rtcDeleteScene (g_scene); 
     g_scene = nullptr;    
@@ -234,18 +241,24 @@ namespace embree {
     assert(g_scene == nullptr);
     g_scene = convertScene(scene_in,RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC);
     size_t primitives = getNumPrimitives(scene_in);
-    double t0 = getSeconds();
-    for(size_t i=0;i<benchmark_iterations;i++)
+    size_t iterations = 0;
+    double time = 0.0;
+    for(size_t i=0;i<benchmark_iterations+skip_iterations;i++)
     {
       updateScene(scene_in,g_scene);
+      double t0 = getSeconds();
       rtcCommit (g_scene);
+      double t1 = getSeconds();
+      if (i >= skip_iterations)
+      {
+        time += t1 - t0;      
+        iterations++;
+      }
     }
-    double t1 = getSeconds();
-    double time = t1 - t0;
     std::cout << "Update dynamic scene, static geometry " 
-              << " (" << primitives << " primitives)  :  "
-              << " avg. time  = " <<  time/benchmark_iterations 
-              << " , avg. build perf " << 1.0 / (time/benchmark_iterations) * primitives / 1000000.0 << " Mprims/s" << std::endl;
+              << "(" << primitives << " primitives)  :  "
+              << " avg. time  = " <<  time/iterations 
+              << " , avg. build perf " << 1.0 / (time/iterations) * primitives / 1000000.0 << " Mprims/s" << std::endl;
 
     rtcDeleteScene (g_scene); 
     g_scene = nullptr;    
@@ -255,21 +268,25 @@ namespace embree {
   {
     assert(g_scene == nullptr);
     size_t primitives = getNumPrimitives(scene_in);
-
+    size_t iterations = 0;
     double time = 0.0;
-    for(size_t i=0;i<benchmark_iterations;i++)
+    for(size_t i=0;i<benchmark_iterations+skip_iterations;i++)
     {
       g_scene = convertScene(scene_in,RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC);
       double t0 = getSeconds();
       rtcCommit (g_scene);
       double t1 = getSeconds();
-      time += t1 - t0;
+      if (i >= skip_iterations)
+      {
+        time += t1 - t0;      
+        iterations++;
+      }
       rtcDeleteScene (g_scene);       
     }
     std::cout << "Create static scene, static geometry " 
               << " (" << primitives << " primitives)  :  "
-              << " avg. time  = " <<  time/benchmark_iterations 
-              << " , avg. build perf " << 1.0 / (time/benchmark_iterations) * primitives / 1000000.0 << " Mprims/s" << std::endl;
+              << " avg. time  = " <<  time/iterations 
+              << " , avg. build perf " << 1.0 / (time/iterations) * primitives / 1000000.0 << " Mprims/s" << std::endl;
 
     g_scene = nullptr;    
   }
