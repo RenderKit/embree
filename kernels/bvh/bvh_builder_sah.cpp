@@ -582,6 +582,7 @@ namespace embree
       struct CreateAlignedNodeMB4D2
     {
       typedef BVHN<N> BVH;
+      typedef typename BVH::NodeRef NodeRef;
       typedef HeuristicMBlur<Mesh,NUM_OBJECT_BINS> Heuristic;
       typedef typename Heuristic::Set Set;
       typedef typename Heuristic::Split Split;
@@ -591,7 +592,7 @@ namespace embree
 
       __forceinline CreateAlignedNodeMB4D2 (BVH* bvh) : bvh(bvh) {}
       
-      __forceinline int operator() (const GeneralBuildRecord<Set,Split,PrimInfo2>& current, GeneralBuildRecord<Set,Split,PrimInfo2>* children, const size_t num, FastAllocator::ThreadLocal2* alloc)
+      __forceinline NodeRef operator() (const GeneralBuildRecord<Set,Split,PrimInfo2>& current, GeneralBuildRecord<Set,Split,PrimInfo2>* children, const size_t num, FastAllocator::ThreadLocal2* alloc)
       {
         bool hasTimeSplits = false;
         for (size_t i=0; i<num && !hasTimeSplits; i++)
@@ -602,6 +603,7 @@ namespace embree
           AlignedNodeMB4D* node = (AlignedNodeMB4D*) alloc->alloc0->malloc(sizeof(AlignedNodeMB4D),BVH::byteNodeAlignment); node->clear();
           for (size_t i=0; i<num; i++)
           {
+#if 1
             LBBox3fa cbounds = empty;
             for (size_t j=children[i].prims.object_range.begin(); j<children[i].prims.object_range.end(); j++) 
             {
@@ -609,15 +611,19 @@ namespace embree
               cbounds.extend(bvh->scene->getTriangleMesh(ref.geomID())->linearBounds(ref.primID(),children[i].prims.time_range));
             }
             node->set(i,cbounds.global(children[i].prims.time_range),children[i].prims.time_range);
+#endif
             children[i].parent = (size_t*)&node->child(i);
           }
-          *current.parent = bvh->encodeNode(node);
+          NodeRef ref = bvh->encodeNode(node);
+          *current.parent = ref;
+          return ref;
         }
         else
         {
           AlignedNodeMB* node = (AlignedNodeMB*) alloc->alloc0->malloc(sizeof(AlignedNodeMB),BVH::byteNodeAlignment); node->clear();
           for (size_t i=0; i<num; i++)
           {
+#if 1
             LBBox3fa cbounds = empty;
             for (size_t j=children[i].prims.object_range.begin(); j<children[i].prims.object_range.end(); j++) 
             {
@@ -625,11 +631,13 @@ namespace embree
               cbounds.extend(bvh->scene->getTriangleMesh(ref.geomID())->linearBounds(ref.primID(),children[i].prims.time_range));
             }
             node->set(i,cbounds.global(children[i].prims.time_range));
+#endif
             children[i].parent = (size_t*)&node->child(i);
           }
-          *current.parent = bvh->encodeNode(node);
+          NodeRef ref = bvh->encodeNode(node);
+          *current.parent = ref;
+          return ref;
         }
-	return 0;
       }
 
       BVH* bvh;
@@ -656,7 +664,7 @@ namespace embree
         for (size_t i=0; i<items; i++)
           allBounds.extend(accel[i].fillMB(current.prims.prims->data(), start, current.prims.object_range.end(), bvh->scene, current.prims.time_range));
         *current.parent = node;
-        return std::make_pair(allBounds.global(current.prims.time_range),current.prims.time_range);
+        return std::make_pair(allBounds,current.prims.time_range);
       }
 
       BVH* bvh;
@@ -690,6 +698,7 @@ namespace embree
     {
       typedef BVHN<N> BVH;
       typedef typename BVHN<N>::NodeRef NodeRef;
+      typedef typename BVHN<N>::AlignedNodeMB AlignedNodeMB;
       typedef typename BVHN<N>::AlignedNodeMB4D AlignedNodeMB4D;
 
       typedef HeuristicMBlur<Mesh,NUM_OBJECT_BINS> Heuristic;
@@ -720,16 +729,26 @@ namespace embree
         PrimInfo2 pinfo = createPrimRef2ArrayMBlur<Mesh>(scene,*prims,bvh->scene->progressInterface);
         
         /* reduction function */
-        auto updateNodeFunc = [&] (int node, const std::pair<LBBox3fa,BBox1f>* bounds, const size_t num) -> std::pair<LBBox3fa,BBox1f> {
+        auto updateNodeFunc = [&] (NodeRef ref, const std::pair<LBBox3fa,BBox1f>* bounds, const size_t num) -> std::pair<LBBox3fa,BBox1f> {
 
           assert(num <= N);
-          auto allBounds = std::make_pair(LBBox3fa(empty),BBox1f(empty));
-          for (size_t i=0; i<num; i++) {
-            //node->set(i, bounds[i].first, bounds[i].second);
-            allBounds.first .extend(bounds[i].first);
-            allBounds.second.extend(bounds[i].second);
+#if 0
+          if (ref.isAlignedNodeMB())
+          {
+            AlignedNodeMB* node = ref.alignedNodeMB();
+            for (size_t i=0; i<num; i++) {
+              assert(bounds[i].second == bounds[0].second);
+              node->set(i, bounds[i].first.global(bounds[i].second));
+            }
           }
-          return allBounds;
+          else
+          {
+            AlignedNodeMB4D* node = ref.alignedNodeMB4D();
+            for (size_t i=0; i<num; i++) 
+              node->set(i, bounds[i].first.global(bounds[i].second), bounds[i].second);
+          }
+#endif     
+          return LBBox3fa::merge_with_time(bounds,num);
         };
         auto identity = std::make_pair(LBBox3fa(empty),BBox1f(empty));
 

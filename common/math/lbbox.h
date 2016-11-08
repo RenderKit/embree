@@ -67,6 +67,52 @@ namespace embree
       bounds0 = b0;
       bounds1 = b1;
     }
+
+    static std::pair<LBBox<T>,BBox<float>> merge_with_time (const std::pair<LBBox<T>,BBox<float>>* bounds, size_t num)
+    {
+      /* find initial bounds */
+      float t_lower = pos_inf;
+      float t_upper = neg_inf;
+      BBox<T> bounds0 = embree::empty;
+      BBox<T> bounds1 = embree::empty;
+      for (size_t i=0; i<num; i++)
+      {
+        if (bounds[i].second.lower < t_lower) {
+          t_lower = bounds[i].second.lower;
+          bounds0 = bounds[i].first.bounds0;
+        }
+        if (bounds[i].second.upper > t_upper) {
+          t_upper = bounds[i].second.upper;
+          bounds1 = bounds[i].first.bounds1;
+        }
+      }
+
+      /* make bounds conservative */
+      for (size_t i=0; i<num; i++) 
+      {
+        {
+          const BBox<T> bounds_i = bounds[i].first.bounds0;
+          const float t_i = bounds[i].second.lower;
+          const float f = float(t_i-t_lower)/float(t_upper-t_lower);
+          const BBox<T> bt = lerp(bounds0,bounds1,f);
+          const T dlower = min(bounds_i.lower-bt.lower,T(zero));
+          const T dupper = max(bounds_i.upper-bt.upper,T(zero));
+          bounds0.lower += dlower; bounds1.lower += dlower;
+          bounds0.upper += dupper; bounds1.upper += dupper;
+        }
+        {
+          const BBox<T> bounds_i = bounds[i].first.bounds1;
+          const float t_i = bounds[i].second.upper;
+          const float f = float(t_i-t_lower)/float(t_upper-t_lower);
+          const BBox<T> bt = lerp(bounds0,bounds1,f);
+          const T dlower = min(bounds_i.lower-bt.lower,T(zero));
+          const T dupper = max(bounds_i.upper-bt.upper,T(zero));
+          bounds0.lower += dlower; bounds1.lower += dlower;
+          bounds0.upper += dupper; bounds1.upper += dupper;
+        }
+      }
+      return std::make_pair(LBBox<T>(bounds0,bounds1),BBox<float>(t_lower,t_upper));
+    }
         
   public:
 
