@@ -275,6 +275,14 @@ namespace embree
 	bin(prims+begin,end-begin,mapping);
       }
 
+      __forceinline void bin_parallel(const PrimRef* prims, size_t begin, size_t end, size_t blockSize, const BinMapping<BINS>& mapping) 
+      {
+        BinInfoT binner(empty);
+        *this = parallel_reduce(begin,end,blockSize,binner,
+                                [&](const range<size_t>& r) -> BinInfoT { BinInfoT binner(empty); binner.bin(prims + r.begin(), r.size(), mapping); return binner; },
+                                [&](const BinInfoT& b0, const BinInfoT& b1) -> BinInfoT { BinInfoT r = b0; r.merge(b1, mapping.size()); return r; });
+      }
+
       __forceinline void bin(const PrimRef* prims, size_t begin, size_t end, const BinMapping<BINS>& mapping, const AffineSpace3fa& space) {
 	bin(prims+begin,end-begin,mapping,space);
       }   

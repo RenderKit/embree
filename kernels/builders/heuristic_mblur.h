@@ -127,7 +127,11 @@ namespace embree
         {
           ObjectBinner binner(empty); // FIXME: this clear can be optimized away
           const BinMapping<BINS> mapping(pinfo.centBounds,pinfo.size());
-          binner.bin(set.prims->data(),set.object_range.begin(),set.object_range.end(),mapping);
+          if (likely(pinfo.size() < PARALLEL_THRESHOLD)) {
+            binner.bin(set.prims->data(),set.object_range.begin(),set.object_range.end(),mapping);
+          } else {
+            binner.bin_parallel(set.prims->data(),set.object_range.begin(),set.object_range.end(),PARALLEL_FIND_BLOCK_SIZE,mapping);
+          }
           ObjectSplit osplit = binner.best(mapping,logBlockSize);
           osplit.sah *= pinfo.time_range.size();
           return osplit;
