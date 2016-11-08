@@ -724,6 +724,10 @@ namespace embree
         
         double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "BuilderMBlurSAH");
 
+#if PROFILE
+        profile(2,PROFILE_RUNS,numPrimitives,[&] (ProfileTimer& timer) {
+#endif
+
         /* create primref array */
         std::shared_ptr<avector<PrimRef2>> prims(new avector<PrimRef2>(numPrimitives)); // FIXME: use mvector instead of avector
         PrimInfo2 pinfo = createPrimRef2ArrayMBlur<Mesh>(scene,*prims,bvh->scene->progressInterface);
@@ -809,6 +813,10 @@ namespace embree
         builder(br);
         
         bvh->set(root,pinfo.geomBounds,pinfo.size());
+
+#if PROFILE
+          });
+#endif
 
 	/* clear temporary data for static geometry */
 	if (scene->isStatic()) bvh->shrink();
