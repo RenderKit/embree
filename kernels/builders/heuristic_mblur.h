@@ -454,7 +454,7 @@ namespace embree
                 }                
               });
             /* perform reduction */
-            return updateNode(node,values,numChildren);
+            return updateNode(node,current.prims,values,numChildren);
           }
           /* recurse into each child */
           else 
@@ -464,7 +464,7 @@ namespace embree
               values[i] = recurse(children[i],alloc,false);
             
             /* perform reduction */
-            return updateNode(node,values,numChildren);
+            return updateNode(node,current.prims,values,numChildren);
           }
         }
 
@@ -576,7 +576,7 @@ namespace embree
             values[i] = createLargeLeaf(children[i],alloc);
           
           /* perform reduction */
-          return updateNode(node,values,numChildren);
+          return updateNode(node,current.prims,values,numChildren);
         }
         
         __forceinline const typename Heuristic::Split find(BuildRecord& current) {
@@ -661,7 +661,7 @@ namespace embree
                 }                
               });
             /* perform reduction */
-            return updateNode(node,values,numChildren);
+            return updateNode(node,current.prims,values,numChildren);
           }
           /* recurse into each child */
           else 
@@ -671,7 +671,7 @@ namespace embree
               values[i] = recurse(children[i],alloc,false);
             
             /* perform reduction */
-            return updateNode(node,values,numChildren);
+            return updateNode(node,current.prims,values,numChildren);
           }
         }
         

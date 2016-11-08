@@ -603,7 +603,7 @@ namespace embree
           AlignedNodeMB4D* node = (AlignedNodeMB4D*) alloc->alloc0->malloc(sizeof(AlignedNodeMB4D),BVH::byteNodeAlignment); node->clear();
           for (size_t i=0; i<num; i++)
           {
-#if 1
+#if 0
             LBBox3fa cbounds = empty;
             for (size_t j=children[i].prims.object_range.begin(); j<children[i].prims.object_range.end(); j++) 
             {
@@ -623,7 +623,7 @@ namespace embree
           AlignedNodeMB* node = (AlignedNodeMB*) alloc->alloc0->malloc(sizeof(AlignedNodeMB),BVH::byteNodeAlignment); node->clear();
           for (size_t i=0; i<num; i++)
           {
-#if 1
+#if 0
             LBBox3fa cbounds = empty;
             for (size_t j=children[i].prims.object_range.begin(); j<children[i].prims.object_range.end(); j++) 
             {
@@ -729,23 +729,34 @@ namespace embree
         PrimInfo2 pinfo = createPrimRef2ArrayMBlur<Mesh>(scene,*prims,bvh->scene->progressInterface);
         
         /* reduction function */
-        auto updateNodeFunc = [&] (NodeRef ref, const std::pair<LBBox3fa,BBox1f>* bounds, const size_t num) -> std::pair<LBBox3fa,BBox1f> {
+        auto updateNodeFunc = [&] (NodeRef ref, Set& prims, const std::pair<LBBox3fa,BBox1f>* bounds, const size_t num) -> std::pair<LBBox3fa,BBox1f> {
 
           assert(num <= N);
-#if 0
+#if 1
           if (ref.isAlignedNodeMB())
           {
+            LBBox3fa cbounds = empty;
             AlignedNodeMB* node = ref.alignedNodeMB();
             for (size_t i=0; i<num; i++) {
               assert(bounds[i].second == bounds[0].second);
               node->set(i, bounds[i].first.global(bounds[i].second));
+              cbounds.extend(bounds[i].first);
             }
+            return std::make_pair(cbounds,bounds[0].second);
           }
           else
           {
             AlignedNodeMB4D* node = ref.alignedNodeMB4D();
             for (size_t i=0; i<num; i++) 
               node->set(i, bounds[i].first.global(bounds[i].second), bounds[i].second);
+
+            LBBox3fa cbounds = empty;
+            for (size_t j=prims.object_range.begin(); j<prims.object_range.end(); j++) 
+            {
+              PrimRef2& ref = (*prims.prims)[j];
+              cbounds.extend(bvh->scene->getTriangleMesh(ref.geomID())->linearBounds(ref.primID(),prims.time_range));
+            }
+            return std::make_pair(cbounds,prims.time_range);
           }
 #endif     
           return LBBox3fa::merge_with_time(bounds,num);
