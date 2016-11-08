@@ -75,7 +75,6 @@ namespace embree
         const Split find(Set& set, PrimInfo2& pinfo, const size_t logBlockSize)
         {
           /* first try standard object split */
-          //SplitInfo2 oinfo;
           const ObjectSplit object_split = object_find(set,pinfo,logBlockSize);
           const float object_split_sah = object_split.splitSAH();
 
@@ -96,15 +95,6 @@ namespace embree
             TemporalSplit temporal_split = temporal_find(set, pinfo, logBlockSize, numTimeSegments);
             const float temporal_split_sah = temporal_split.splitSAH();
 
-            /*PRINT(pinfo);
-            PRINT(object_split_sah);
-            PRINT(temporal_split_sah);*/
-
-            //PRINT(pinfo.size());
-            //if (pinfo.size() == 103872 && set.time_range.size() == 1.0f) {
-            //  return temporal_split;
-            //}
-            
             //if (set.time_range.size() > 1.01f/float(time_segments))
             //  return temporal_split;
 
@@ -120,12 +110,6 @@ namespace embree
             /* force time split if object partitioning was not very successfull */
             /*float leafSAH = pinfo.leafSAH(logBlockSize);
             if (object_split_sah > 0.7f*leafSAH) {
-              temporal_split.sah = float(neg_inf);
-              return temporal_split;
-              }*/
-
-            /* force time split if linear bounds are bad approximation */
-            /*if (Al > 500.0f*A0) {
               temporal_split.sah = float(neg_inf);
               return temporal_split;
               }*/
@@ -241,11 +225,7 @@ namespace embree
         /*! array partitioning */
         __forceinline void temporal_split(const TemporalSplit& split, const PrimInfo2& pinfo, const Set& set, PrimInfo2& linfo, Set& lset, PrimInfo2& rinfo, Set& rset) 
         {
-          //unsigned numTimeSegments = split.dim;
           float center_time = split.fpos;
-          /* split time range */
-          //const float center_time = set.time_range.center();
-          //const float center_time = round(set.time_range.center() * float(numTimeSegments)) / float(numTimeSegments);
           const BBox1f time_range0(set.time_range.lower,center_time);
           const BBox1f time_range1(center_time,set.time_range.upper);
           
