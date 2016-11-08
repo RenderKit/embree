@@ -162,7 +162,7 @@ namespace embree
       return LBBox3fa(bounds0,bounds1);
     }
 
-    static __forceinline size_t fillMBlurBlocks(const PrimRef2* prims, range<size_t> object_range, BBox1f time_range, Scene* scene)
+    static __forceinline size_t fillMBlurBlocks(const PrimRefMB* prims, range<size_t> object_range, BBox1f time_range, Scene* scene)
     {
       size_t N = 0;
       for (size_t i=object_range.begin(); i<object_range.end(); i++) 
@@ -175,7 +175,7 @@ namespace embree
       return blocks(N);
     }
 
-    static __forceinline LBBox3fa fillMBlur(TriangleMvMB* triangles, const PrimRef2* prims, range<size_t> object_range, BBox1f time_range, Scene* scene)
+    static __forceinline LBBox3fa fillMBlur(TriangleMvMB* triangles, const PrimRefMB* prims, range<size_t> object_range, BBox1f time_range, Scene* scene)
     {
       size_t bid = 0, lid = 0;
       

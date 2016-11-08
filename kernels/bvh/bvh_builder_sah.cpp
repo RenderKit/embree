@@ -532,8 +532,8 @@ namespace embree
             const BBox1f dt(float(c[i].begin())/float(bvh->numTimeSteps-1),
                             float(c[i].end  ())/float(bvh->numTimeSteps-1));
 
-            avector<PrimRef2> prims2(prims.size()); 
-            const PrimInfo2 pinfo = createPrimRef2ArrayMBlur<Mesh>(scene,prims2,bvh->scene->progressInterface,dt);
+            avector<PrimRefMB> prims2(prims.size());
+            const PrimInfoMB pinfo = createPrimRef2ArrayMBlur<Mesh>(scene,prims2,bvh->scene->progressInterface,dt);
             LBBox3fa cbounds = pinfo.geomBounds;
 
             node->set(i,cnode,cbounds,dt);
@@ -560,8 +560,8 @@ namespace embree
         bvh->numTimeSteps = numTimeSteps;
         
         NodeRef root = recurse(make_range(size_t(0),numTimeSegments));
-        avector<PrimRef2> prims2(numPrimitives); 
-        const PrimInfo2 pinfo = createPrimRef2ArrayMBlur<Mesh>(scene,prims2,bvh->scene->progressInterface,BBox1f(0.0f,1.0f));
+        avector<PrimRefMB> prims2(numPrimitives);
+        const PrimInfoMB pinfo = createPrimRef2ArrayMBlur<Mesh>(scene,prims2,bvh->scene->progressInterface,BBox1f(0.0f,1.0f));
         bvh->set(root,pinfo.geomBounds,numPrimitives);
         
         /* clear temporary data for static geometry */
@@ -592,13 +592,13 @@ namespace embree
       typedef HeuristicMBlur<Mesh,NUM_OBJECT_BINS> Heuristic;
       typedef typename Heuristic::Set Set;
       typedef typename Heuristic::Split Split;
-      typedef GeneralBuildRecord<Set,Split,PrimInfo2> BuildRecord;
+      typedef GeneralBuildRecord<Set,Split,PrimInfoMB> BuildRecord;
       typedef typename BVH::AlignedNodeMB AlignedNodeMB;
       typedef typename BVH::AlignedNodeMB4D AlignedNodeMB4D;
 
       __forceinline CreateAlignedNodeMB4D2 (BVH* bvh) : bvh(bvh) {}
       
-      __forceinline NodeRef operator() (const GeneralBuildRecord<Set,Split,PrimInfo2>& current, GeneralBuildRecord<Set,Split,PrimInfo2>* children, const size_t num, FastAllocator::ThreadLocal2* alloc)
+      __forceinline NodeRef operator() (const GeneralBuildRecord<Set,Split,PrimInfoMB>& current, GeneralBuildRecord<Set,Split,PrimInfoMB>* children, const size_t num, FastAllocator::ThreadLocal2* alloc)
       {
         bool hasTimeSplits = false;
         for (size_t i=0; i<num && !hasTimeSplits; i++)
@@ -613,7 +613,7 @@ namespace embree
             LBBox3fa cbounds = empty;
             for (size_t j=children[i].prims.object_range.begin(); j<children[i].prims.object_range.end(); j++) 
             {
-              PrimRef2& ref = (*children[i].prims.prims)[j];
+              PrimRefMB& ref = (*children[i].prims.prims)[j];
               cbounds.extend(bvh->scene->getTriangleMesh(ref.geomID())->linearBounds(ref.primID(),children[i].prims.time_range));
             }
             node->set(i,cbounds.global(children[i].prims.time_range),children[i].prims.time_range);
@@ -633,7 +633,7 @@ namespace embree
             LBBox3fa cbounds = empty;
             for (size_t j=children[i].prims.object_range.begin(); j<children[i].prims.object_range.end(); j++) 
             {
-              PrimRef2& ref = (*children[i].prims.prims)[j];
+              PrimRefMB& ref = (*children[i].prims.prims)[j];
               cbounds.extend(bvh->scene->getTriangleMesh(ref.geomID())->linearBounds(ref.primID(),children[i].prims.time_range));
             }
             node->set(i,cbounds.global(children[i].prims.time_range));
@@ -656,7 +656,7 @@ namespace embree
       typedef HeuristicMBlur<Mesh,NUM_OBJECT_BINS> Heuristic;
       typedef typename Heuristic::Set Set;
       typedef typename Heuristic::Split Split;
-      typedef GeneralBuildRecord<Set,Split,PrimInfo2> BuildRecord;
+      typedef GeneralBuildRecord<Set,Split,PrimInfoMB> BuildRecord;
 
       __forceinline CreateMSMBlurLeaf2 (BVH* bvh) : bvh(bvh) {}
       
@@ -683,7 +683,7 @@ namespace embree
       typedef HeuristicMBlur<TriangleMesh,NUM_OBJECT_BINS> Heuristic;
       typedef typename Heuristic::Set Set;
       typedef typename Heuristic::Split Split;
-      typedef GeneralBuildRecord<Set,Split,PrimInfo2> BuildRecord;
+      typedef GeneralBuildRecord<Set,Split,PrimInfoMB> BuildRecord;
 
       __forceinline CreateMSMBlurLeaf2 (BVH* bvh) : bvh(bvh) {}
       
@@ -710,7 +710,7 @@ namespace embree
       typedef HeuristicMBlur<Mesh,NUM_OBJECT_BINS> Heuristic;
       typedef typename Heuristic::Set Set;
       typedef typename Heuristic::Split Split;
-      typedef GeneralBuildRecord<Set,Split,PrimInfo2> BuildRecord;
+      typedef GeneralBuildRecord<Set,Split,PrimInfoMB> BuildRecord;
 
       BVH* bvh;
       Scene* scene;
@@ -735,8 +735,8 @@ namespace embree
 #endif
 
         /* create primref array */
-        std::shared_ptr<avector<PrimRef2>> prims(new avector<PrimRef2>(numPrimitives)); // FIXME: use mvector instead of avector
-        PrimInfo2 pinfo = createPrimRef2ArrayMBlur<Mesh>(scene,*prims,bvh->scene->progressInterface);
+        std::shared_ptr<avector<PrimRefMB>> prims(new avector<PrimRefMB>(numPrimitives)); // FIXME: use mvector instead of avector
+        PrimInfoMB pinfo = createPrimRef2ArrayMBlur<Mesh>(scene,*prims,bvh->scene->progressInterface);
         
         /* reduction function */
         auto updateNodeFunc = [&] (NodeRef ref, Set& prims, const std::pair<LBBox3fa,BBox1f>* bounds, const size_t num) -> std::pair<LBBox3fa,BBox1f> {
@@ -763,7 +763,7 @@ namespace embree
             LBBox3fa cbounds = empty;
             for (size_t j=prims.object_range.begin(); j<prims.object_range.end(); j++) 
             {
-              PrimRef2& ref = (*prims.prims)[j];
+              PrimRefMB& ref = (*prims.prims)[j];
               cbounds.extend(bvh->scene->getTriangleMesh(ref.geomID())->linearBounds(ref.primID(),prims.time_range));
             }
             return std::make_pair(cbounds,prims.time_range);
@@ -797,7 +797,7 @@ namespace embree
           decltype(updateNodeFunc),
           decltype(createLeafFunc),
           decltype(progressMonitor),
-          PrimInfo2> Builder;
+          PrimInfoMB> Builder;
 
         /* instantiate builder */
         Builder builder(scene,

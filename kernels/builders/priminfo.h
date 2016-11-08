@@ -163,19 +163,19 @@ namespace embree
     };
 
     typedef PrimInfoT<BBox3fa> PrimInfo;
-    //typedef PrimInfoT<LBBox3fa> PrimInfo2;
+    //typedef PrimInfoT<LBBox3fa> PrimInfoMB;
 
     /*! stores bounding information for a set of primitives */
-    class PrimInfo2 : public CentGeom<LBBox3fa>
+    class PrimInfoMB : public CentGeom<LBBox3fa>
     {
     public:
       using CentGeom<LBBox3fa>::geomBounds;
       using CentGeom<LBBox3fa>::centBounds;
 
-      __forceinline PrimInfo2 () {
+      __forceinline PrimInfoMB () {
       } 
 
-      __forceinline PrimInfo2 (EmptyTy) 
+      __forceinline PrimInfoMB (EmptyTy)
 	: CentGeom<LBBox3fa>(empty), begin(0), end(0), num_time_segments(0), time_range(0.0f,1.0f) {}
 
       template<typename PrimRef> 
@@ -186,7 +186,7 @@ namespace embree
         num_time_segments += prim.size();
       }
 
-      __forceinline void merge(const PrimInfo2& other) 
+      __forceinline void merge(const PrimInfoMB& other)
       {
 	CentGeom<LBBox3fa>::merge(other);
         begin += other.begin;
@@ -194,8 +194,8 @@ namespace embree
         num_time_segments += other.num_time_segments;
       }
 
-      static __forceinline const PrimInfo2 merge(const PrimInfo2& a, const PrimInfo2& b) {
-        PrimInfo2 r = a; r.merge(b); return r;
+      static __forceinline const PrimInfoMB merge(const PrimInfoMB& a, const PrimInfoMB& b) {
+        PrimInfoMB r = a; r.merge(b); return r;
       }
       
       /*! returns the number of primitives */
@@ -217,7 +217,7 @@ namespace embree
       }
       
       /*! stream output */
-      friend std::ostream& operator<<(std::ostream& cout, const PrimInfo2& pinfo) {
+      friend std::ostream& operator<<(std::ostream& cout, const PrimInfoMB& pinfo) {
 	return cout << "PrimInfo { begin = " << pinfo.begin << ", end = " << pinfo.end << ", time_segments = " 
                     << pinfo.num_time_segments << ", geomBounds = " << pinfo.geomBounds << ", centBounds = " << pinfo.centBounds << "}";
       }

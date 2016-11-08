@@ -206,11 +206,11 @@ namespace embree
     }
 
     /* Fill triangle from triangle list */
-    __forceinline LBBox3fa fillMB(const PrimRef2* prims, size_t& begin, size_t end, Scene* scene, const BBox1f time_range)
+    __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& begin, size_t end, Scene* scene, const BBox1f time_range)
     {
       vint<M> geomID = -1, primID = -1;
       vint<M> v0 = zero, v1 = zero, v2 = zero;
-      const PrimRef2* prim = &prims[begin];
+      const PrimRefMB* prim = &prims[begin];
 
       for (size_t i=0; i<M; i++)
       {

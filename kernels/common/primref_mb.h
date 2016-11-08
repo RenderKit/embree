@@ -21,11 +21,11 @@
 namespace embree
 {
   /*! A primitive reference stores the bounds of the primitive and its ID. */
-  struct __aligned(32) PrimRef2
+  struct __aligned(32) PrimRefMB
   {
-    __forceinline PrimRef2 () {}
+    __forceinline PrimRefMB () {}
 
-    __forceinline PrimRef2 (const LBBox3fa& lbounds_i, unsigned int numTimeSegments, unsigned int geomID, unsigned int primID) 
+    __forceinline PrimRefMB (const LBBox3fa& lbounds_i, unsigned int numTimeSegments, unsigned int geomID, unsigned int primID)
       : lbounds(lbounds_i)
     {
       lbounds.bounds0.lower.a = geomID;
@@ -73,12 +73,12 @@ namespace embree
     }
     
     /*! allows sorting the primrefs by ID */
-    friend __forceinline bool operator<(const PrimRef2& p0, const PrimRef2& p1) {
+    friend __forceinline bool operator<(const PrimRefMB& p0, const PrimRefMB& p1) {
       return p0.ID64() < p1.ID64();
     }
 
     /*! Outputs primitive reference to a stream. */
-    friend __forceinline std::ostream& operator<<(std::ostream& cout, const PrimRef2& ref) {
+    friend __forceinline std::ostream& operator<<(std::ostream& cout, const PrimRefMB& ref) {
       return cout << "{ lbounds = " << ref.lbounds << ", geomID = " << ref.geomID() << ", primID = " << ref.primID() << " }";
     }
 
