@@ -483,12 +483,12 @@ namespace embree
           const PrimInfo pinfo = createPrimRefArrayMBlur<Mesh>(dti.begin(),bvh->numTimeSteps,scene,prims,bvh->scene->progressInterface);
 
           /* reduction function */
-          auto reduce = [&] (AlignedNodeMB4D* node, const LBBox3fa* bounds, const size_t num) -> LBBox3fa
+          auto reduce = [&] (AlignedNodeMB* node, const LBBox3fa* bounds, const size_t num) -> LBBox3fa
           {
             assert(num <= N);
             LBBox3fa allBounds = empty;
             for (size_t i=0; i<num; i++) {
-              node->set(i, bounds[i].global(dt), dt);
+              node->set(i, bounds[i].global(dt));
               allBounds.extend(bounds[i]);
             }
             return allBounds;
@@ -497,7 +497,7 @@ namespace embree
           
           NodeRef root;
           BVHBuilderBinnedSAH::build_reduce<NodeRef>
-            (root,typename BVH::CreateAlloc(bvh),identity,CreateAlignedNodeMB4D<N>(bvh),reduce,CreateMSMBlurLeaf<N,Primitive>(bvh,prims.data(),dti.begin()),bvh->scene->progressInterface,
+            (root,typename BVH::CreateAlloc(bvh),identity,CreateAlignedNodeMB2<N>(bvh),reduce,CreateMSMBlurLeaf<N,Primitive>(bvh,prims.data(),dti.begin()),bvh->scene->progressInterface,
              prims.data(),pinfo,N,BVH::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
           
           return root;
