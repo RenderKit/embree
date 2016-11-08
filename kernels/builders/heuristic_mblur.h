@@ -474,5 +474,234 @@ namespace embree
         Scene* scene;
         int numTimeSegments;
       };
+
+    template<typename BuildRecord, 
+      typename Heuristic, 
+      typename ReductionTy, 
+      typename Allocator, 
+      typename CreateAllocFunc, 
+      typename CreateNodeFunc, 
+      typename UpdateNodeFunc, 
+      typename CreateLeafFunc, 
+      typename ProgressMonitor,
+      typename PrimInfo>
+      
+      class GeneralBVHMBBuilder
+      {
+        static const size_t MAX_BRANCHING_FACTOR = 8;        //!< maximal supported BVH branching factor
+        static const size_t MIN_LARGE_LEAF_LEVELS = 8;        //!< create balanced tree of we are that many levels before the maximal tree depth
+        static const size_t SINGLE_THREADED_THRESHOLD = 1024;  //!< threshold to switch to single threaded build
+        
+      public:
+        
+        GeneralBVHMBBuilder (Heuristic& heuristic, 
+                             const ReductionTy& identity,
+                             CreateAllocFunc& createAlloc, 
+                             CreateNodeFunc& createNode, 
+                             UpdateNodeFunc& updateNode, 
+                             CreateLeafFunc& createLeaf,
+                             ProgressMonitor& progressMonitor,
+                             const PrimInfo& pinfo,
+                             const size_t branchingFactor, const size_t maxDepth, 
+                             const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize,
+                             const float travCost, const float intCost)
+          : heuristic(heuristic), 
+          identity(identity), 
+          createAlloc(createAlloc), createNode(createNode), updateNode(updateNode), createLeaf(createLeaf), 
+          progressMonitor(progressMonitor),
+          pinfo(pinfo), 
+          branchingFactor(branchingFactor), maxDepth(maxDepth),
+          logBlockSize(logBlockSize), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
+          travCost(travCost), intCost(intCost)
+        {
+          if (branchingFactor > MAX_BRANCHING_FACTOR)
+            throw_RTCError(RTC_UNKNOWN_ERROR,"bvh_builder: branching factor too large");
+        }
+        
+        const ReductionTy createLargeLeaf(BuildRecord& current, Allocator alloc)
+        {
+          /* this should never occur but is a fatal error */
+          if (current.depth > maxDepth) 
+            throw_RTCError(RTC_UNKNOWN_ERROR,"depth limit reached");
+
+          /* create leaf for few primitives */
+          if (current.pinfo.size() <= maxLeafSize)
+            return createLeaf(current,alloc);
+          
+          /* fill all children by always splitting the largest one */
+          ReductionTy values[MAX_BRANCHING_FACTOR];
+          BuildRecord children[MAX_BRANCHING_FACTOR];
+          size_t numChildren = 1;
+          children[0] = current;
+          do {
+            
+            /* find best child with largest bounding box area */
+            size_t bestChild = -1;
+            size_t bestSize = 0;
+            for (size_t i=0; i<numChildren; i++)
+            {
+              /* ignore leaves as they cannot get split */
+              if (children[i].pinfo.size() <= maxLeafSize)
+                continue;
+              
+              /* remember child with largest size */
+              if (children[i].pinfo.size() > bestSize) { 
+                bestSize = children[i].pinfo.size();
+                bestChild = i;
+              }
+            }
+            if (bestChild == (size_t)-1) break;
+            
+            /*! split best child into left and right child */
+            BuildRecord left(current.depth+1);
+            BuildRecord right(current.depth+1);
+            heuristic.splitFallback(children[bestChild].prims,left.pinfo,left.prims,right.pinfo,right.prims);
+            left .split = find(left );
+            right.split = find(right);
+            
+            /* add new children left and right */
+            children[bestChild] = children[numChildren-1];
+            children[numChildren-1] = left;
+            children[numChildren+0] = right;
+            numChildren++;
+            
+          } while (numChildren < branchingFactor);
+          
+          /* create node */
+          auto node = createNode(current,children,numChildren,alloc);
+          
+          /* recurse into each child  and perform reduction */
+          for (size_t i=0; i<numChildren; i++)
+            values[i] = createLargeLeaf(children[i],alloc);
+          
+          /* perform reduction */
+          return updateNode(node,values,numChildren);
+        }
+        
+        __forceinline const typename Heuristic::Split find(BuildRecord& current) {
+          return heuristic.find (current.prims,current.pinfo,logBlockSize);
+        }
+        
+        __forceinline void partition(BuildRecord& brecord, BuildRecord& lrecord, BuildRecord& rrecord) {
+          heuristic.split(brecord.split,brecord.pinfo,brecord.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
+        }
+        
+        const ReductionTy recurse(BuildRecord& current, Allocator alloc, bool toplevel)
+        {
+          if (alloc == nullptr)
+            alloc = createAlloc();
+
+          /* call memory monitor function to signal progress */
+          if (toplevel && current.size() <= SINGLE_THREADED_THRESHOLD)
+            progressMonitor(current.size());
+          
+          /*! compute leaf and split cost */
+          const float leafSAH  = intCost*current.pinfo.leafSAH(logBlockSize);
+          const float splitSAH = travCost*current.pinfo.halfArea()+intCost*current.split.splitSAH();
+          assert((current.pinfo.size() == 0) || ((leafSAH >= 0) && (splitSAH >= 0)));
+          
+          /*! create a leaf node when threshold reached or SAH tells us to stop */
+          if (current.pinfo.size() <= minLeafSize || current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || (current.pinfo.size() <= maxLeafSize && leafSAH <= splitSAH)) {
+            heuristic.deterministic_order(current.prims);
+            return createLargeLeaf(current,alloc);
+          }
+          
+          /*! initialize child list */
+          ReductionTy values[MAX_BRANCHING_FACTOR];
+          BuildRecord children[MAX_BRANCHING_FACTOR];
+          children[0] = current;
+          size_t numChildren = 1;
+          
+          /*! split until node is full or SAH tells us to stop */
+          do {
+            
+            /*! find best child to split */
+            float bestSAH = neg_inf;
+            ssize_t bestChild = -1;
+            for (size_t i=0; i<numChildren; i++) 
+            {
+              if (children[i].pinfo.size() <= minLeafSize) continue; 
+              if (expectedApproxHalfArea(children[i].pinfo.geomBounds) > bestSAH) { // FIXME: measure over all scenes if this line creates better tree
+                bestChild = i; bestSAH = expectedApproxHalfArea(children[i].pinfo.geomBounds); 
+              } 
+            }
+            if (bestChild == -1) break;
+
+            
+            /* perform best found split */
+            BuildRecord& brecord = children[bestChild];
+            BuildRecord lrecord(current.depth+1);
+            BuildRecord rrecord(current.depth+1);
+            partition(brecord,lrecord,rrecord);
+            
+            /* find new splits */
+            lrecord.split = find(lrecord);
+            rrecord.split = find(rrecord);
+            children[bestChild  ] = lrecord;
+            children[numChildren] = rrecord;
+            numChildren++;
+            
+          } while (numChildren < branchingFactor);
+          
+          /* sort buildrecords for simpler shadow ray traversal */
+          std::sort(&children[0],&children[numChildren],std::greater<BuildRecord>()); // FIXME: reduces traversal performance of bvh8.triangle4 (need to verified) !!
+          
+          /*! create an inner node */
+          auto node = createNode(current,children,numChildren,alloc);
+          
+          /* spawn tasks */
+          if (current.size() > SINGLE_THREADED_THRESHOLD) 
+          {
+            /*! parallel_for is faster than spawing sub-tasks */
+            parallel_for(size_t(0), numChildren, [&] (const range<size_t>& r) {
+                for (size_t i=r.begin(); i<r.end(); i++) {
+                  values[i] = recurse(children[i],nullptr,true); 
+                  _mm_mfence(); // to allow non-temporal stores during build
+                }                
+              });
+            /* perform reduction */
+            return updateNode(node,values,numChildren);
+          }
+          /* recurse into each child */
+          else 
+          {
+            //for (size_t i=0; i<numChildren; i++)
+            for (ssize_t i=numChildren-1; i>=0; i--)
+              values[i] = recurse(children[i],alloc,false);
+            
+            /* perform reduction */
+            return updateNode(node,values,numChildren);
+          }
+        }
+        
+        /*! builder entry function */
+        __forceinline const ReductionTy operator() (BuildRecord& record)
+        {
+          //BuildRecord br(record);
+          record.split = find(record); 
+          ReductionTy ret = recurse(record,nullptr,true);
+          _mm_mfence(); // to allow non-temporal stores during build
+          return ret;
+        }
+        
+      private:
+        Heuristic& heuristic;
+        const ReductionTy identity;
+        CreateAllocFunc& createAlloc;
+        CreateNodeFunc& createNode;
+        UpdateNodeFunc& updateNode;
+        CreateLeafFunc& createLeaf;
+        ProgressMonitor& progressMonitor;
+        
+      private:
+        const PrimInfo& pinfo;
+        const size_t branchingFactor;
+        const size_t maxDepth;
+        const size_t logBlockSize;
+        const size_t minLeafSize;
+        const size_t maxLeafSize;
+        const float travCost;
+        const float intCost;
+      };
   }
 }

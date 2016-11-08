@@ -747,7 +747,7 @@ namespace embree
         auto createLeafFunc = CreateMSMBlurLeaf2<N,Mesh,Primitive>(bvh);
         auto progressMonitor = bvh->scene->progressInterface;
         
-        typedef GeneralBVHBuilder<
+        typedef GeneralBVHMBBuilder<
           BuildRecord,
           Heuristic,
           decltype(identity),
