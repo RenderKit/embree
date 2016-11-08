@@ -262,10 +262,10 @@ uniform unsigned int addQuadCube (RTCScene scene_i, const uniform Vec3f& pos)
   return geomID;
 }
 
-/* add hair geometry */
-uniform unsigned int addHair (RTCScene scene, const uniform Vec3f& pos)
+/* add curve geometry */
+uniform unsigned int addCurve (RTCScene scene, const uniform Vec3f& pos)
 {
-  uniform unsigned int geomID = rtcNewHairGeometry (scene, RTC_GEOMETRY_DYNAMIC, 1, 4);
+  uniform unsigned int geomID = rtcNewCurveGeometry (scene, RTC_GEOMETRY_DYNAMIC, 1, 4);
 
   //rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER, hair_vertices, 0, sizeof(uniform Vec3fa));
    uniform Vec3fa* uniform vtx = (uniform Vec3fa* uniform) rtcMapBuffer(scene, geomID, RTC_VERTEX_BUFFER);
@@ -322,7 +322,7 @@ export void device_init (uniform int8* uniform cfg)
   addGroundPlane(g_scene);
 
   /* add cubes */
-  addHair(g_scene,make_Vec3f(4.0f,-1.0f,-3.5f));
+  addCurve(g_scene,make_Vec3f(4.0f,-1.0f,-3.5f));
   quadCubeID = addQuadSubdivCube(g_scene,make_Vec3f(4.0f,0.0f,0.0f));
   quadCubeID2 = addQuadSubdivCube(g_scene,make_Vec3f(4.0f,0.0f,0.0f));
   triCubeID  = addTriangleSubdivCube(g_scene,make_Vec3f(4.0f,0.0f,3.5f));
