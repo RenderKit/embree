@@ -403,74 +403,6 @@ namespace embree
       }
     };
 
-    /* SAH builder that operates on an array of BuildRecords */
-    template<typename Mesh>
-      struct BVHNBuilderMBlurBinnedSAH
-    {
-      typedef HeuristicMBlur<Mesh,NUM_OBJECT_BINS> Heuristic;
-      typedef typename Heuristic::Set Set;
-      typedef typename Heuristic::Split Split;
-      typedef GeneralBuildRecord<Set,Split,PrimInfo2> BuildRecord;
-      
-      /*! special builder that propagates reduction over the tree */
-      template<typename NodeRef, 
-        typename CreateAllocFunc, 
-        typename ReductionTy, 
-        typename CreateNodeFunc, 
-        typename UpdateNodeFunc, 
-        typename CreateLeafFunc, 
-        typename ProgressMonitor>
-        
-        static ReductionTy build_reduce(Scene* scene,
-                                        NodeRef& root,
-                                        CreateAllocFunc createAlloc, 
-                                        const ReductionTy& identity, 
-                                        CreateNodeFunc createNode, UpdateNodeFunc updateNode, CreateLeafFunc createLeaf, 
-                                        ProgressMonitor progressMonitor,
-                                        std::shared_ptr<avector<PrimRef2>> prims, const PrimInfo2& pinfo, 
-                                        const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, 
-                                        const size_t minLeafSize, const size_t maxLeafSize,
-                                        const float travCost, const float intCost)
-      {
-        /* builder wants log2 of blockSize as input */		  
-        const size_t logBlockSize = __bsr(blockSize); 
-        assert((blockSize ^ (size_t(1) << logBlockSize)) == 0);
-
-        /* instantiate array binning heuristic */
-        Heuristic heuristic(scene);
-        
-        typedef GeneralBVHBuilder<
-          BuildRecord,
-          Heuristic,
-          ReductionTy,
-          decltype(createAlloc()),
-          CreateAllocFunc,
-          CreateNodeFunc,
-          UpdateNodeFunc,
-          CreateLeafFunc,
-          ProgressMonitor,
-          PrimInfo2> Builder;
-        
-        /* instantiate builder */
-        Builder builder(heuristic,
-                        identity,
-                        createAlloc,
-                        createNode,
-                        updateNode,
-                        createLeaf,
-                        progressMonitor,
-                        pinfo,
-                        branchingFactor,maxDepth,logBlockSize,
-                        minLeafSize,maxLeafSize,travCost,intCost);
-        
-        /* build hierarchy */
-        Set set(prims); 
-        assert(prims->size() == pinfo.size());
-        BuildRecord br(pinfo,1,(size_t*)&root,set);
-        return builder(br);
-      }
-    };
-    
 #define FAST_SPATIAL_BUILDER_NUM_SPATIAL_SPLITS 16
 
     /* Spatial SAH builder that operates on an double-buffered array of BuildRecords */
@@ -590,7 +522,6 @@ namespace embree
         return builder(br);
       }
     };
-
 
     /* SAH builder that operates on an array of BuildRecords */
     struct BVHBuilderSweepSAH

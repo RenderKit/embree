@@ -582,12 +582,16 @@ namespace embree
       struct CreateAlignedNodeMB4D2
     {
       typedef BVHN<N> BVH;
+      typedef HeuristicMBlur<Mesh,NUM_OBJECT_BINS> Heuristic;
+      typedef typename Heuristic::Set Set;
+      typedef typename Heuristic::Split Split;
+      typedef GeneralBuildRecord<Set,Split,PrimInfo2> BuildRecord;
       typedef typename BVH::AlignedNodeMB AlignedNodeMB;
       typedef typename BVH::AlignedNodeMB4D AlignedNodeMB4D;
 
       __forceinline CreateAlignedNodeMB4D2 (BVH* bvh) : bvh(bvh) {}
       
-      __forceinline int operator() (const typename BVHNBuilderMBlurBinnedSAH<Mesh>::BuildRecord& current, typename BVHNBuilderMBlurBinnedSAH<Mesh>::BuildRecord* children, const size_t num, FastAllocator::ThreadLocal2* alloc)
+      __forceinline int operator() (const GeneralBuildRecord<Set,Split,PrimInfo2>& current, GeneralBuildRecord<Set,Split,PrimInfo2>* children, const size_t num, FastAllocator::ThreadLocal2* alloc)
       {
         bool hasTimeSplits = false;
         for (size_t i=0; i<num && !hasTimeSplits; i++)
@@ -635,9 +639,14 @@ namespace embree
     struct CreateMSMBlurLeaf2
     {
       typedef BVHN<N> BVH;
+      typedef HeuristicMBlur<Mesh,NUM_OBJECT_BINS> Heuristic;
+      typedef typename Heuristic::Set Set;
+      typedef typename Heuristic::Split Split;
+      typedef GeneralBuildRecord<Set,Split,PrimInfo2> BuildRecord;
+
       __forceinline CreateMSMBlurLeaf2 (BVH* bvh) : bvh(bvh) {}
       
-      __forceinline const std::pair<LBBox3fa,BBox1f> operator() (const typename BVHNBuilderMBlurBinnedSAH<Mesh>::BuildRecord& current, Allocator* alloc)
+      __forceinline const std::pair<LBBox3fa,BBox1f> operator() (const BuildRecord& current, Allocator* alloc)
       {
         size_t items = Primitive::blocks(current.prims.object_range.size());
         size_t start = current.prims.object_range.begin();
@@ -657,9 +666,14 @@ namespace embree
     struct CreateMSMBlurLeaf2<N,TriangleMesh,Triangle4vMB>
     {
       typedef BVHN<N> BVH;
+      typedef HeuristicMBlur<TriangleMesh,NUM_OBJECT_BINS> Heuristic;
+      typedef typename Heuristic::Set Set;
+      typedef typename Heuristic::Split Split;
+      typedef GeneralBuildRecord<Set,Split,PrimInfo2> BuildRecord;
+
       __forceinline CreateMSMBlurLeaf2 (BVH* bvh) : bvh(bvh) {}
       
-      __forceinline const std::pair<LBBox3fa,BBox1f> operator() (const typename BVHNBuilderMBlurBinnedSAH<TriangleMesh>::BuildRecord& current, Allocator* alloc)
+      __forceinline const std::pair<LBBox3fa,BBox1f> operator() (const BuildRecord& current, Allocator* alloc)
       {
         size_t M = Triangle4vMB::fillMBlurBlocks(current.prims.prims->data(), current.prims.object_range, current.prims.time_range, bvh->scene);
         Triangle4vMB* accel = (Triangle4vMB*) alloc->alloc1->malloc(M*sizeof(Triangle4vMB),BVH::byteNodeAlignment);
@@ -677,6 +691,11 @@ namespace embree
       typedef BVHN<N> BVH;
       typedef typename BVHN<N>::NodeRef NodeRef;
       typedef typename BVHN<N>::AlignedNodeMB4D AlignedNodeMB4D;
+
+      typedef HeuristicMBlur<Mesh,NUM_OBJECT_BINS> Heuristic;
+      typedef typename Heuristic::Set Set;
+      typedef typename Heuristic::Split Split;
+      typedef GeneralBuildRecord<Set,Split,PrimInfo2> BuildRecord;
 
       BVH* bvh;
       Scene* scene;
@@ -701,7 +720,7 @@ namespace embree
         PrimInfo2 pinfo = createPrimRef2ArrayMBlur<Mesh>(scene,*prims,bvh->scene->progressInterface);
         
         /* reduction function */
-        auto reduce = [&] (int node, const std::pair<LBBox3fa,BBox1f>* bounds, const size_t num) -> std::pair<LBBox3fa,BBox1f> {
+        auto updateNodeFunc = [&] (int node, const std::pair<LBBox3fa,BBox1f>* bounds, const size_t num) -> std::pair<LBBox3fa,BBox1f> {
 
           assert(num <= N);
           auto allBounds = std::make_pair(LBBox3fa(empty),BBox1f(empty));
@@ -716,16 +735,48 @@ namespace embree
 
         /* call BVH builder */            
         bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
+
+        /* builder wants log2 of blockSize as input */		  
+        const size_t logBlockSize = __bsr(sahBlockSize); 
+        assert((sahBlockSize ^ (size_t(1) << logBlockSize)) == 0);
+
+        /* instantiate array binning heuristic */
+        Heuristic heuristic(scene);
+        auto createAllocFunc = typename BVH::CreateAlloc(bvh);
+        auto createNodeFunc = CreateAlignedNodeMB4D2<N,Mesh>(bvh);
+        auto createLeafFunc = CreateMSMBlurLeaf2<N,Mesh,Primitive>(bvh);
+        auto progressMonitor = bvh->scene->progressInterface;
+        
+        typedef GeneralBVHBuilder<
+          BuildRecord,
+          Heuristic,
+          decltype(identity),
+          decltype(createAllocFunc()),
+          decltype(createAllocFunc),
+          decltype(createNodeFunc),
+          decltype(updateNodeFunc),
+          decltype(createLeafFunc),
+          decltype(progressMonitor),
+          PrimInfo2> Builder;
+
+        /* instantiate builder */
+        Builder builder(heuristic,
+                        identity,
+                        createAllocFunc,
+                        createNodeFunc,
+                        updateNodeFunc,
+                        createLeafFunc,
+                        progressMonitor,
+                        pinfo,
+                        N,BVH::maxDepth,logBlockSize,
+                        minLeafSize,maxLeafSize,travCost,intCost);
+        
+        /* build hierarchy */
+        Set set(prims); 
+        assert(prims->size() == pinfo.size());
         NodeRef root;
-        BVHNBuilderMBlurBinnedSAH<Mesh>::build_reduce(scene,root,
-                                                      typename BVH::CreateAlloc(bvh),
-                                                      identity,
-                                                      CreateAlignedNodeMB4D2<N,Mesh>(bvh),
-                                                      reduce,
-                                                      CreateMSMBlurLeaf2<N,Mesh,Primitive>(bvh),
-                                                      bvh->scene->progressInterface,
-                                                      prims,pinfo,
-                                                      N,BVH::maxDepth,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
+        BuildRecord br(pinfo,1,(size_t*)&root,set);
+        builder(br);
         
         bvh->set(root,pinfo.geomBounds,pinfo.size());
 
