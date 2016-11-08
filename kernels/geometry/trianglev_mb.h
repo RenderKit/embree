@@ -175,7 +175,7 @@ namespace embree
       return blocks(N);
     }
 
-    static __forceinline void fillMBlur(TriangleMvMB* triangles, const PrimRef2* prims, range<size_t> object_range, BBox1f time_range, Scene* scene)
+    static __forceinline LBBox3fa fillMBlur(TriangleMvMB* triangles, const PrimRef2* prims, range<size_t> object_range, BBox1f time_range, Scene* scene)
     {
       size_t bid = 0, lid = 0;
       
@@ -184,6 +184,7 @@ namespace embree
       BBox1vfM vtr = empty;
       vint<M> vgeomID = -1, vprimID = -1;
 
+      LBBox3fa allBounds = empty;
       for (size_t i=object_range.begin(); i<object_range.end(); i++) 
       {
         const unsigned numTimeSegments = scene->get(prims[i].geomID())->numTimeSegments();
@@ -194,6 +195,7 @@ namespace embree
         const unsigned primID = prims[i].primID();
         const TriangleMesh* const mesh = scene->getTriangleMesh(geomID);
         const TriangleMesh::Triangle& tri = mesh->triangle(primID);
+        allBounds.extend(mesh->linearBounds(primID, time_range));
 
         for (size_t j=ilower; j<iupper; j++)
         {
@@ -230,8 +232,10 @@ namespace embree
       }
       if (lid != 0) 
         new (&triangles[bid]) TriangleMvMB(va0,va1,vb0,vb1,vc0,vc1,vtr,vgeomID,vprimID);
+
+      return allBounds;
     }
-   
+
   public:
     Vec3vfM v0;      // 1st vertex of the triangles
     Vec3vfM v1;      // 2nd vertex of the triangles

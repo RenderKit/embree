@@ -410,6 +410,12 @@ namespace embree
       }
     };
 
+    
+    /************************************************************************************/ 
+    /************************************************************************************/
+    /************************************************************************************/
+    /************************************************************************************/
+
     template<int N>
       struct CreateAlignedNodeMB4D
     {
@@ -685,9 +691,9 @@ namespace embree
       {
         size_t M = Triangle4vMB::fillMBlurBlocks(current.prims.prims->data(), current.prims.object_range, current.prims.time_range, bvh->scene);
         Triangle4vMB* accel = (Triangle4vMB*) alloc->alloc1->malloc(M*sizeof(Triangle4vMB),BVH::byteNodeAlignment);
-        Triangle4vMB::fillMBlur(accel, current.prims.prims->data(), current.prims.object_range, current.prims.time_range, bvh->scene);
+        LBBox3fa lbounds = Triangle4vMB::fillMBlur(accel, current.prims.prims->data(), current.prims.object_range, current.prims.time_range, bvh->scene);
         *current.parent = bvh->encodeLeaf((char*)accel,M);
-        return std::make_pair(LBBox3fa(empty),current.prims.time_range); // returns invalid bounds, we do not use bounds currently
+        return std::make_pair(lbounds,current.prims.time_range);
       }
 
       BVH* bvh;
