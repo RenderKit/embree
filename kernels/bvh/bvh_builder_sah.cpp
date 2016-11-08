@@ -749,7 +749,7 @@ namespace embree
         
         typedef GeneralBVHMBBuilder<
           BuildRecord,
-          Heuristic,
+          Mesh,
           decltype(identity),
           decltype(createAllocFunc()),
           decltype(createAllocFunc),
@@ -760,7 +760,7 @@ namespace embree
           PrimInfo2> Builder;
 
         /* instantiate builder */
-        Builder builder(heuristic,
+        Builder builder(scene,
                         identity,
                         createAllocFunc,
                         createNodeFunc,

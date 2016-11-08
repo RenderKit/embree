@@ -16,16 +16,16 @@
 
 #pragma once
 
-#include "heuristic_binning_array_aligned.h"
-#include "heuristic_spatial_array.h"
-#include "heuristic_mblur.h"
-#include "heuristic_sweep_array_aligned.h"
-
 #if defined(__AVX512F__)
 #define NUM_OBJECT_BINS 16
 #else
 #define NUM_OBJECT_BINS 32
 #endif
+
+#include "heuristic_binning_array_aligned.h"
+#include "heuristic_spatial_array.h"
+#include "heuristic_mblur.h"
+#include "heuristic_sweep_array_aligned.h"
 
 namespace embree
 {

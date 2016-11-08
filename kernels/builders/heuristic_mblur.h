@@ -344,7 +344,7 @@ namespace embree
             {
               Set lprims,rprims;
               PrimInfo linfo, rinfo;
-              heuristic.split(splits[split],pinfo[split],sets[split],linfo,lprims,rinfo,rprims);
+              Heuristic::split(splits[split],pinfo[split],sets[split],linfo,lprims,rinfo,rprims);
               validSplit[split] = true;
               return true;
             }
@@ -382,7 +382,7 @@ namespace embree
           
           /*! create a leaf node when threshold reached or SAH tells us to stop */
           if (current.pinfo.size() <= minLeafSize || current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || (current.pinfo.size() <= maxLeafSize && leafSAH <= splitSAH)) {
-            heuristic.deterministic_order(current.prims);
+            Heuristic::deterministic_order(current.prims);
             return createLargeLeaf(current,alloc);
           }
           
@@ -476,7 +476,7 @@ namespace embree
       };
 
     template<typename BuildRecord, 
-      typename Heuristic, 
+      typename Mesh, 
       typename ReductionTy, 
       typename Allocator, 
       typename CreateAllocFunc, 
@@ -486,15 +486,16 @@ namespace embree
       typename ProgressMonitor,
       typename PrimInfo>
       
-      class GeneralBVHMBBuilder
+      class GeneralBVHMBBuilder : public HeuristicMBlur<Mesh,NUM_OBJECT_BINS>
       {
         static const size_t MAX_BRANCHING_FACTOR = 8;        //!< maximal supported BVH branching factor
         static const size_t MIN_LARGE_LEAF_LEVELS = 8;        //!< create balanced tree of we are that many levels before the maximal tree depth
         static const size_t SINGLE_THREADED_THRESHOLD = 1024;  //!< threshold to switch to single threaded build
+        typedef HeuristicMBlur<Mesh,NUM_OBJECT_BINS> Heuristic;
         
       public:
         
-        GeneralBVHMBBuilder (Heuristic& heuristic, 
+        GeneralBVHMBBuilder (Scene* scene,
                              const ReductionTy& identity,
                              CreateAllocFunc& createAlloc, 
                              CreateNodeFunc& createNode, 
@@ -505,7 +506,7 @@ namespace embree
                              const size_t branchingFactor, const size_t maxDepth, 
                              const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize,
                              const float travCost, const float intCost)
-          : heuristic(heuristic), 
+          : HeuristicMBlur<Mesh,NUM_OBJECT_BINS>(scene), 
           identity(identity), 
           createAlloc(createAlloc), createNode(createNode), updateNode(updateNode), createLeaf(createLeaf), 
           progressMonitor(progressMonitor),
@@ -555,7 +556,7 @@ namespace embree
             /*! split best child into left and right child */
             BuildRecord left(current.depth+1);
             BuildRecord right(current.depth+1);
-            heuristic.splitFallback(children[bestChild].prims,left.pinfo,left.prims,right.pinfo,right.prims);
+            Heuristic::splitFallback(children[bestChild].prims,left.pinfo,left.prims,right.pinfo,right.prims);
             left .split = find(left );
             right.split = find(right);
             
@@ -579,11 +580,11 @@ namespace embree
         }
         
         __forceinline const typename Heuristic::Split find(BuildRecord& current) {
-          return heuristic.find (current.prims,current.pinfo,logBlockSize);
+          return Heuristic::find (current.prims,current.pinfo,logBlockSize);
         }
         
         __forceinline void partition(BuildRecord& brecord, BuildRecord& lrecord, BuildRecord& rrecord) {
-          heuristic.split(brecord.split,brecord.pinfo,brecord.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
+          Heuristic::split(brecord.split,brecord.pinfo,brecord.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
         }
         
         const ReductionTy recurse(BuildRecord& current, Allocator alloc, bool toplevel)
@@ -602,7 +603,7 @@ namespace embree
           
           /*! create a leaf node when threshold reached or SAH tells us to stop */
           if (current.pinfo.size() <= minLeafSize || current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || (current.pinfo.size() <= maxLeafSize && leafSAH <= splitSAH)) {
-            heuristic.deterministic_order(current.prims);
+            Heuristic::deterministic_order(current.prims);
             return createLargeLeaf(current,alloc);
           }
           
@@ -685,7 +686,6 @@ namespace embree
         }
         
       private:
-        Heuristic& heuristic;
         const ReductionTy identity;
         CreateAllocFunc& createAlloc;
         CreateNodeFunc& createNode;
