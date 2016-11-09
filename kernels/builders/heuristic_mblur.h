@@ -59,7 +59,7 @@ namespace embree
         HeuristicMBlur (Scene* scene)
           : scene(scene) {}
 
-        __forceinline unsigned calculateNumOverlappingTimeSegments(unsigned geomID, BBox1f time_range)
+        static __forceinline unsigned calculateNumOverlappingTimeSegments(Scene* scene, unsigned geomID, BBox1f time_range)
         {
           const unsigned totalTimeSegments = scene->get(geomID)->numTimeSegments();
           const unsigned itime_lower = floor(1.0001f*time_range.lower*float(totalTimeSegments));
@@ -131,21 +131,99 @@ namespace embree
           return osplit;
         }
 
+        template<int LOCATIONS>
+        struct TemporalBinInfo
+        {
+          __forceinline TemporalBinInfo () {
+          }
+          
+          __forceinline TemporalBinInfo (EmptyTy)
+          {
+            for (size_t i=0; i<LOCATIONS; i++)
+            {
+              count0[i] = count1[i] = 0;
+              bounds0[i] = bounds1[i] = empty;
+            }
+          }
+          
+          void bin(PrimRefMB* prims, size_t begin, size_t end, BBox1f time_range, size_t numTimeSegments, Scene* scene)
+          {
+            for (int b=0; b<MBLUR_TIME_SPLIT_LOCATIONS; b++)
+            {
+              float t = float(b+1)/float(MBLUR_TIME_SPLIT_LOCATIONS+1);
+              float ct = lerp(time_range.lower,time_range.upper,t);
+              const float center_time = round(ct * float(numTimeSegments)) / float(numTimeSegments);
+              if (center_time <= time_range.lower) continue;
+              if (center_time >= time_range.upper) continue;
+              const BBox1f dt0(time_range.lower,center_time);
+              const BBox1f dt1(center_time,time_range.upper);
+              
+              /* find linear bounds for both time segments */
+              for (size_t i=begin; i<end; i++) 
+              {
+                const unsigned geomID = prims[i].geomID();
+                const unsigned primID = prims[i].primID();
+                bounds0[b].extend(((Mesh*)scene->get(geomID))->linearBounds(primID,dt0));
+                bounds1[b].extend(((Mesh*)scene->get(geomID))->linearBounds(primID,dt1));
+                count0[b] += calculateNumOverlappingTimeSegments(scene,geomID,dt0);
+                count1[b] += calculateNumOverlappingTimeSegments(scene,geomID,dt1);
+              }
+            }
+          }
+          
+          TemporalSplit best(int logBlockSize, BBox1f time_range, size_t numTimeSegments)
+          {
+            float bestSAH = inf;
+            float bestPos = 0.0f;
+            for (int b=0; b<MBLUR_TIME_SPLIT_LOCATIONS; b++)
+            {
+              float t = float(b+1)/float(MBLUR_TIME_SPLIT_LOCATIONS+1);
+              float ct = lerp(time_range.lower,time_range.upper,t);
+              const float center_time = round(ct * float(numTimeSegments)) / float(numTimeSegments);
+              if (center_time <= time_range.lower) continue;
+              if (center_time >= time_range.upper) continue;
+              const BBox1f dt0(time_range.lower,center_time);
+              const BBox1f dt1(center_time,time_range.upper);
+              
+              /* calculate sah */
+              const size_t lCount = (count0[b]+(1 << logBlockSize)-1) >> int(logBlockSize);
+              const size_t rCount = (count1[b]+(1 << logBlockSize)-1) >> int(logBlockSize);
+              const float sah0 = bounds0[b].expectedApproxHalfArea()*float(lCount)*dt0.size();
+              const float sah1 = bounds1[b].expectedApproxHalfArea()*float(rCount)*dt1.size();
+              const float sah = sah0+sah1;
+              if (sah < bestSAH) {
+                bestSAH = sah;
+                bestPos = center_time;
+              }
+            }
+            assert(bestSAH != float(inf));
+            return TemporalSplit(bestSAH*MBLUR_TIME_SPLIT_THRESHOLD,-1,0,bestPos);
+          }
+          
+        public:
+          size_t count0[LOCATIONS];
+          size_t count1[LOCATIONS];
+          LBBox3fa bounds0[LOCATIONS];
+          LBBox3fa bounds1[LOCATIONS];
+        };
+        
         /*! finds the best split */
         const TemporalSplit temporal_find(const Set& set, const PrimInfoMB& pinfo, const size_t logBlockSize, const unsigned numTimeSegments)
         {
-          //const float dt = 0.5f; 
-          //const float dt = 0.125f;
+#if 1
+          assert(set.object_range.size() > 0);
+          TemporalBinInfo<MBLUR_TIME_SPLIT_LOCATIONS> binner(empty);
+          binner.bin(set.prims->data(),set.object_range.begin(),set.object_range.end(),set.time_range,numTimeSegments,scene);
+          return binner.best(logBlockSize,set.time_range,numTimeSegments);
+#else
           float bestSAH = inf;
           float bestPos = 0.0f;
-          //for (float t=dt; t<1.0f-dt/2.0f; t+=dt)
+
           for (int b=0; b<MBLUR_TIME_SPLIT_LOCATIONS; b++)
           {
             float t = float(b+1)/float(MBLUR_TIME_SPLIT_LOCATIONS+1);
             /* split time range */
-            //const float center_time = set.time_range.center();
             float ct = lerp(set.time_range.lower,set.time_range.upper,t);
-            //float ct = set.time_range.center();
             const float center_time = round(ct * float(numTimeSegments)) / float(numTimeSegments);
             if (center_time <= set.time_range.lower) continue;
             if (center_time >= set.time_range.upper) continue;
@@ -162,8 +240,8 @@ namespace embree
               const unsigned primID = prims[i].primID();
               bounds0.extend(((Mesh*)scene->get(geomID))->linearBounds(primID,dt0));
               bounds1.extend(((Mesh*)scene->get(geomID))->linearBounds(primID,dt1));
-              s0 += calculateNumOverlappingTimeSegments(geomID,dt0);
-              s1 += calculateNumOverlappingTimeSegments(geomID,dt1);
+              s0 += calculateNumOverlappingTimeSegments(scene,geomID,dt0);
+              s1 += calculateNumOverlappingTimeSegments(scene,geomID,dt1);
             }
             
             /* calculate sah */
@@ -176,6 +254,7 @@ namespace embree
             }
           }
           return TemporalSplit(bestSAH*MBLUR_TIME_SPLIT_THRESHOLD,-1,numTimeSegments,bestPos);
+#endif
         }
         
         /*! array partitioning */
@@ -238,7 +317,7 @@ namespace embree
             const unsigned geomID = prims[i].geomID();
             const unsigned primID = prims[i].primID();
             const LBBox3fa lbounds = ((Mesh*)scene->get(geomID))->linearBounds(primID,time_range0);
-            const unsigned num_time_segments = calculateNumOverlappingTimeSegments(geomID,time_range0);
+            const unsigned num_time_segments = calculateNumOverlappingTimeSegments(scene,geomID,time_range0);
             const PrimRefMB prim(lbounds,num_time_segments,geomID,primID);
             (*lprims)[i-set.object_range.begin()] = prim;
             linfo.add_primref(prim);
@@ -255,7 +334,7 @@ namespace embree
             const unsigned geomID = prims[i].geomID();
             const unsigned primID = prims[i].primID();
             const LBBox3fa lbounds = ((Mesh*)scene->get(geomID))->linearBounds(primID,time_range1);
-            const unsigned num_time_segments = calculateNumOverlappingTimeSegments(geomID,time_range1);
+            const unsigned num_time_segments = calculateNumOverlappingTimeSegments(scene,geomID,time_range1);
             const PrimRefMB prim(lbounds,num_time_segments,geomID,primID);
             (*rprims)[i-set.object_range.begin()] = prim;
             rinfo.add_primref(prim);
