@@ -265,24 +265,16 @@ namespace embree
           const size_t end   = set.object_range.end();
           left = empty;
           right = empty;
-          const unsigned int splitPos = split.pos;
-          const unsigned int splitDim = split.dim;
-          const unsigned int splitDimMask = (unsigned int)1 << splitDim; 
-
-          const vint4 vSplitPos(splitPos);
-          const vbool4 vSplitMask( (int)splitDimMask );
+          const vint4 vSplitPos(split.pos);
+          const vbool4 vSplitMask(1 << split.dim);
           auto isLeft = [&] (const PrimRefMB &ref) { return any(((vint4)split.mapping.bin_unsafe(ref) < vSplitPos) & vSplitMask); };
           auto reduction = [] (PrimInfoMB& pinfo, const PrimRefMB& ref) { pinfo.add_primref(ref); };
           auto reduction2 = [] (PrimInfoMB& pinfo0,const PrimInfoMB& pinfo1) { pinfo0.merge(pinfo1); };
-
-          size_t center = 0;
-          center = parallel_partitioning(set.prims->data(),begin,end,empty,left,right,isLeft,reduction,reduction2,PARALLEL_PARITION_BLOCK_SIZE,PARALLEL_THRESHOLD);
-          left.begin  = begin; left.end = center; left.time_range = pinfo.time_range;
-          right.begin = center; right.end = end;  right.time_range = pinfo.time_range;
+          size_t center = parallel_partitioning(set.prims->data(),begin,end,empty,left,right,isLeft,reduction,reduction2,PARALLEL_PARITION_BLOCK_SIZE,PARALLEL_THRESHOLD);
+          left.begin  = begin;  left.end = center; left.time_range = pinfo.time_range;
+          right.begin = center; right.end = end;   right.time_range = pinfo.time_range;
           new (&lset) Set(set.prims,range<size_t>(begin,center),set.time_range);
           new (&rset) Set(set.prims,range<size_t>(center,end  ),set.time_range);
-          //assert(area(left.geomBounds) >= 0.0f);
-          //assert(area(right.geomBounds) >= 0.0f);
         }
 
         /*! array partitioning */
