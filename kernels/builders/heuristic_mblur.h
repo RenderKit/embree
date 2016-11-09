@@ -390,7 +390,7 @@ namespace embree
           };
 
           __forceinline LocalTree (GeneralBVHMBBuilder* builder, BuildRecord& record)
-            : builder(builder), numNodes(0), numChildren(0), depth(record.depth), hasTimeSplits(false)
+            : builder(builder), numNodes(0), numChildren(0), depth(record.depth), hasTimeSplit(false)
           {
             children[numChildren++] = add(record);
           }
@@ -409,7 +409,7 @@ namespace embree
             /* temporal split */
             if (brecord.split.data == -1 && brecord.split.valid())
             {
-              hasTimeSplits = true;
+              hasTimeSplit = true;
               builder->temporal_split(brecord.split,brecord.pinfo,brecord.prims,lrecord.pinfo,lrecord.prims,false);
               lrecord.split = builder->find(lrecord);
               builder->temporal_split(brecord.split,brecord.pinfo,brecord.prims,rrecord.pinfo,rrecord.prims,true);
@@ -438,8 +438,8 @@ namespace embree
             return children[i]->record;
           }
           
-          bool timeSplits() const {
-            return hasTimeSplits;
+          bool hasTimeSplits() const {
+            return hasTimeSplit;
           }
 
           bool restore(Node* node, Node* child)
@@ -452,7 +452,7 @@ namespace embree
             /* if the node we came from was invalid and this is a time split node then we have to recalculate the invalid node */
             if (invalid)
             {
-              if (node->split.data == -1) {
+              if (node->record.split.data == -1) {
                 const bool right = node->rchild == child;
                 builder->temporal_split(node->record.split,node->record.pinfo,node->record.prims,child->record.pinfo,child->record.prims,right);
                 node->lchild->valid = !right;
@@ -461,10 +461,11 @@ namespace embree
                 builder->partition(node->record,node->lchild->record,node->rchild->record);
               }
             }
+            return invalid;
           }
-
+          
           __forceinline void restore(size_t childID) {
-            restore(children[childID]->parent,children[childID]);
+            //restore(children[childID]->parent,children[childID]);
           }
 
           __forceinline ssize_t best()
@@ -489,7 +490,7 @@ namespace embree
           Node* children[MAX_BRANCHING_FACTOR];
           size_t numChildren;
           size_t depth;
-          bool hasTimeSplits;
+          bool hasTimeSplit;
         };
 
         struct LocalChildList
@@ -541,7 +542,7 @@ namespace embree
             return children[i];
           }
 
-          bool timeSplits() const {
+          bool hasTimeSplits() const {
             return false;
           }
 
@@ -711,7 +712,7 @@ namespace embree
           //for (size_t i=0; i<children.size(); i++) children[i].parent = records[i].parent;
           
           /* spawn tasks */
-          if (current.size() > SINGLE_THREADED_THRESHOLD) 
+          if (current.size() > SINGLE_THREADED_THRESHOLD && !children.hasTimeSplits()) 
           {
             /*! parallel_for is faster than spawing sub-tasks */
             parallel_for(size_t(0), children.size(), [&] (const range<size_t>& r) {
@@ -727,8 +728,10 @@ namespace embree
           else 
           {
             //for (size_t i=0; i<numChildren; i++)
-            for (ssize_t i=children.size()-1; i>=0; i--)
+            for (ssize_t i=children.size()-1; i>=0; i--) {
+              children.restore(i);
               values[i] = recurse(children[i],alloc,false);
+            }
             
             /* perform reduction */
             return updateNode(node,current.prims,values,children.size());
