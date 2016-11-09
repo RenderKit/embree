@@ -372,8 +372,8 @@ namespace embree
           struct Node
           {
             __forceinline Node () {}
-            __forceinline Node (BuildRecord& record, Node* parent = nullptr, bool right = false)
-              : record(record), valid(true), lchild(nullptr), rchild(nullptr), parent(parent)
+            __forceinline Node (BuildRecord& record, Node* parent = nullptr, bool right = false, bool valid = true)
+              : record(record), valid(valid), lchild(nullptr), rchild(nullptr), parent(parent)
             {
               if (parent) {
                 if (right) parent->rchild = this;
@@ -395,8 +395,8 @@ namespace embree
             children[numChildren++] = add(record);
           }
 
-          __forceinline Node* add(BuildRecord& record, Node* parent = nullptr, bool right = false) {
-            return new (&nodes[numNodes++]) Node(record,parent,right);
+          __forceinline Node* add(BuildRecord& record, Node* parent = nullptr, bool right = false, bool valid = true) {
+            return new (&nodes[numNodes++]) Node(record,parent,right,valid);
           }
 
           __forceinline void split(size_t bestChild)
@@ -405,14 +405,28 @@ namespace embree
             BuildRecord& brecord = node->record;
             BuildRecord lrecord(depth+1);
             BuildRecord rrecord(depth+1);
-            builder->partition(brecord,lrecord,rrecord);
-            
-            /* find new splits */
-            lrecord.split = builder->find(lrecord);
-            rrecord.split = builder->find(rrecord);
-            children[bestChild] = add(lrecord,node,false);
-            children[numChildren] = add(rrecord,node,true);
-            numChildren++;
+
+            /* temporal split */
+            if (brecord.split.data == -1 && brecord.split.valid())
+            {
+              Heuristic::split_temporal(brecord.split,brecord.pinfo,brecord.prims,lrecord.pinfo,lrecord.prims,false);
+              lrecord.split = builder->find(lrecord);
+              Heuristic::split_temporal(brecord.split,brecord.pinfo,brecord.prims,rrecord.pinfo,rrecord.prims,true);
+              rrecord.split = builder->find(rrecord);
+              children[bestChild  ] = add(lrecord,node,false,false);
+              children[numChildren] = add(rrecord,node,true ,true );
+              numChildren++;
+            } 
+            /* object split */
+            else 
+            {
+              builder->partition(brecord,lrecord,rrecord);
+              lrecord.split = builder->find(lrecord);
+              rrecord.split = builder->find(rrecord);
+              children[bestChild  ] = add(lrecord,node,false);
+              children[numChildren] = add(rrecord,node,true);
+              numChildren++;
+            }
           }
 
           __forceinline size_t size() const {
