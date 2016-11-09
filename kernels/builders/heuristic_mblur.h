@@ -146,7 +146,7 @@ namespace embree
             }
           }
           
-          void bin(PrimRefMB* prims, size_t begin, size_t end, BBox1f time_range, size_t numTimeSegments, Scene* scene)
+          void bin(const PrimRefMB* prims, size_t begin, size_t end, BBox1f time_range, size_t numTimeSegments, Scene* scene)
           {
             for (int b=0; b<MBLUR_TIME_SPLIT_LOCATIONS; b++)
             {
@@ -168,6 +168,30 @@ namespace embree
                 count0[b] += calculateNumOverlappingTimeSegments(scene,geomID,dt0);
                 count1[b] += calculateNumOverlappingTimeSegments(scene,geomID,dt1);
               }
+            }
+          }
+
+          __forceinline void bin_parallel(const PrimRefMB* prims, size_t begin, size_t end, size_t blockSize, size_t parallelThreshold, BBox1f time_range, size_t numTimeSegments, Scene* scene) 
+          {
+            if (likely(end-begin < parallelThreshold)) {
+              bin(prims,begin,end,time_range,numTimeSegments,scene);
+            } else {
+              TemporalBinInfo binner(empty);
+              *this = parallel_reduce(begin,end,blockSize,binner,
+                                      [&](const range<size_t>& r) -> TemporalBinInfo { TemporalBinInfo binner(empty); binner.bin(prims, r.begin(), r.end(), time_range, numTimeSegments, scene); return binner; },
+                                      [&](const TemporalBinInfo& b0, const TemporalBinInfo& b1) -> TemporalBinInfo { TemporalBinInfo r = b0; r.merge(b1); return r; });
+            }
+          }
+          
+          /*! merges in other binning information */
+          __forceinline void merge (const TemporalBinInfo& other)
+          {
+            for (size_t i=0; i<LOCATIONS; i++) 
+            {
+              count0[i] += other.count0[i];
+              count1[i] += other.count1[i];
+              bounds0[i].extend(other.bounds0[i]);
+              bounds1[i].extend(other.bounds1[i]);
             }
           }
           
@@ -213,7 +237,7 @@ namespace embree
 #if 1
           assert(set.object_range.size() > 0);
           TemporalBinInfo<MBLUR_TIME_SPLIT_LOCATIONS> binner(empty);
-          binner.bin(set.prims->data(),set.object_range.begin(),set.object_range.end(),set.time_range,numTimeSegments,scene);
+          binner.bin_parallel(set.prims->data(),set.object_range.begin(),set.object_range.end(),PARALLEL_FIND_BLOCK_SIZE,PARALLEL_THRESHOLD,set.time_range,numTimeSegments,scene);
           return binner.best(logBlockSize,set.time_range,numTimeSegments);
 #else
           float bestSAH = inf;
