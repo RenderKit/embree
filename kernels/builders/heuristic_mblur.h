@@ -234,51 +234,10 @@ namespace embree
         /*! finds the best split */
         const TemporalSplit temporal_find(const Set& set, const PrimInfoMB& pinfo, const size_t logBlockSize, const unsigned numTimeSegments)
         {
-#if 1
           assert(set.object_range.size() > 0);
           TemporalBinInfo<MBLUR_TIME_SPLIT_LOCATIONS> binner(empty);
           binner.bin_parallel(set.prims->data(),set.object_range.begin(),set.object_range.end(),PARALLEL_FIND_BLOCK_SIZE,PARALLEL_THRESHOLD,set.time_range,numTimeSegments,scene);
           return binner.best(logBlockSize,set.time_range,numTimeSegments);
-#else
-          float bestSAH = inf;
-          float bestPos = 0.0f;
-
-          for (int b=0; b<MBLUR_TIME_SPLIT_LOCATIONS; b++)
-          {
-            float t = float(b+1)/float(MBLUR_TIME_SPLIT_LOCATIONS+1);
-            /* split time range */
-            float ct = lerp(set.time_range.lower,set.time_range.upper,t);
-            const float center_time = round(ct * float(numTimeSegments)) / float(numTimeSegments);
-            if (center_time <= set.time_range.lower) continue;
-            if (center_time >= set.time_range.upper) continue;
-            const BBox1f dt0(set.time_range.lower,center_time);
-            const BBox1f dt1(center_time,set.time_range.upper);
-          
-            /* find linear bounds for both time segments */
-            size_t s0 = 0; LBBox3fa bounds0 = empty;
-            size_t s1 = 0; LBBox3fa bounds1 = empty;
-            for (size_t i=set.object_range.begin(); i<set.object_range.end(); i++) 
-            {
-              const avector<PrimRefMB>& prims = *set.prims;
-              const unsigned geomID = prims[i].geomID();
-              const unsigned primID = prims[i].primID();
-              bounds0.extend(((Mesh*)scene->get(geomID))->linearBounds(primID,dt0));
-              bounds1.extend(((Mesh*)scene->get(geomID))->linearBounds(primID,dt1));
-              s0 += calculateNumOverlappingTimeSegments(scene,geomID,dt0);
-              s1 += calculateNumOverlappingTimeSegments(scene,geomID,dt1);
-            }
-            
-            /* calculate sah */
-            const size_t lCount = (s0+(1 << logBlockSize)-1) >> int(logBlockSize);
-            const size_t rCount = (s1+(1 << logBlockSize)-1) >> int(logBlockSize);
-            const float sah = bounds0.expectedApproxHalfArea()*float(lCount)*dt0.size() + bounds1.expectedApproxHalfArea()*float(rCount)*dt1.size();
-            if (sah < bestSAH) {
-              bestSAH = sah;
-              bestPos = center_time;
-            }
-          }
-          return TemporalSplit(bestSAH*MBLUR_TIME_SPLIT_THRESHOLD,-1,numTimeSegments,bestPos);
-#endif
         }
         
         /*! array partitioning */
