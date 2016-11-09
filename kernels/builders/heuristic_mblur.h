@@ -503,7 +503,7 @@ namespace embree
             ssize_t bestChild = -1;
             for (size_t i=0; i<numChildren; i++) 
             {
-              if (!active[i]) continue;
+              //if (!active[i]) continue;
               if (children[i].pinfo.size() <= builder->minLeafSize) continue; 
               if (expectedApproxHalfArea(children[i].pinfo.geomBounds) > bestSAH) {
                 bestChild = i; bestSAH = expectedApproxHalfArea(children[i].pinfo.geomBounds); 
