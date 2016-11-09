@@ -278,11 +278,12 @@ namespace embree
         }
 
         /*! array partitioning */
-        __forceinline void temporal_split(const TemporalSplit& split, const PrimInfoMB& pinfo, const Set& set, PrimInfoMB& linfo, Set& lset, PrimInfoMB& rinfo, Set& rset)
+        __forceinline void temporal_split(const TemporalSplit& split, const PrimInfoMB& pinfo, const Set& set, PrimInfoMB& linfo, Set& lset, int side)
         {
           float center_time = split.fpos;
           const BBox1f time_range0(set.time_range.lower,center_time);
           const BBox1f time_range1(center_time,set.time_range.upper);
+          const BBox1f time_range = side ? time_range1 : time_range0;
           
           /* calculate primrefs for first time range */
           std::shared_ptr<avector<PrimRefMB>> lprims(new avector<PrimRefMB>(set.object_range.size()));
@@ -293,8 +294,8 @@ namespace embree
               const avector<PrimRefMB>& prims = *set.prims;
               const unsigned geomID = prims[i].geomID();
               const unsigned primID = prims[i].primID();
-              const LBBox3fa lbounds = ((Mesh*)scene->get(geomID))->linearBounds(primID,time_range0);
-              const unsigned num_time_segments = calculateNumOverlappingTimeSegments(scene,geomID,time_range0);
+              const LBBox3fa lbounds = ((Mesh*)scene->get(geomID))->linearBounds(primID,time_range);
+              const unsigned num_time_segments = calculateNumOverlappingTimeSegments(scene,geomID,time_range);
               const PrimRefMB prim(lbounds,num_time_segments,geomID,primID);
               (*lprims)[i-set.object_range.begin()] = prim;
               pinfo.add_primref(prim);
@@ -303,30 +304,14 @@ namespace embree
           };        
           linfo = parallel_reduce(set.object_range.begin(),set.object_range.end(),PARALLEL_PARITION_BLOCK_SIZE,PARALLEL_THRESHOLD,PrimInfoMB(empty),reduction_func0,
                                   [] (const PrimInfoMB& a, const PrimInfoMB& b) { return PrimInfoMB::merge(a,b); });
-          linfo.time_range = time_range0;
-          lset = Set(lprims,time_range0);
+          linfo.time_range = time_range;
+          lset = Set(lprims,time_range);
+        }
 
-          /* calculate primrefs for second time range */
-          std::shared_ptr<avector<PrimRefMB>> rprims(new avector<PrimRefMB>(set.object_range.size()));
-          auto reduction_func1 = [&] ( const range<size_t>& r) {
-            PrimInfoMB pinfo = empty;
-            for (size_t i=r.begin(); i<r.end(); i++) 
-            {
-              const avector<PrimRefMB>& prims = *set.prims;
-              const unsigned geomID = prims[i].geomID();
-              const unsigned primID = prims[i].primID();
-              const LBBox3fa lbounds = ((Mesh*)scene->get(geomID))->linearBounds(primID,time_range1);
-              const unsigned num_time_segments = calculateNumOverlappingTimeSegments(scene,geomID,time_range1);
-              const PrimRefMB prim(lbounds,num_time_segments,geomID,primID);
-              (*rprims)[i-set.object_range.begin()] = prim;
-              pinfo.add_primref(prim);
-            }
-            return pinfo;
-          };
-          rinfo = parallel_reduce(set.object_range.begin(),set.object_range.end(),PARALLEL_PARITION_BLOCK_SIZE,PARALLEL_THRESHOLD,PrimInfoMB(empty),reduction_func1,
-                                  [] (const PrimInfoMB& a, const PrimInfoMB& b) { return PrimInfoMB::merge(a,b); });
-          rinfo.time_range = time_range1;
-          rset = Set(rprims,time_range1);
+        __forceinline void temporal_split(const TemporalSplit& split, const PrimInfoMB& pinfo, const Set& set, PrimInfoMB& linfo, Set& lset, PrimInfoMB& rinfo, Set& rset)
+        {
+          temporal_split(split,pinfo,set,linfo,lset,0);
+          temporal_split(split,pinfo,set,rinfo,rset,1);
         }
 
         void deterministic_order(const Set& set) 
@@ -497,7 +482,9 @@ namespace embree
           /*! initialize child list */
           ReductionTy values[MAX_BRANCHING_FACTOR];
           BuildRecord children[MAX_BRANCHING_FACTOR];
+          //bool active[MAX_BRANCHING_FACTOR];
           children[0] = current;
+          //active[0] = true;
           size_t numChildren = 1;
           
           /*! split until node is full or SAH tells us to stop */
@@ -508,13 +495,13 @@ namespace embree
             ssize_t bestChild = -1;
             for (size_t i=0; i<numChildren; i++) 
             {
+              //if (!active[i]) continue;
               if (children[i].pinfo.size() <= minLeafSize) continue; 
               if (expectedApproxHalfArea(children[i].pinfo.geomBounds) > bestSAH) { // FIXME: measure over all scenes if this line creates better tree
                 bestChild = i; bestSAH = expectedApproxHalfArea(children[i].pinfo.geomBounds); 
               } 
             }
             if (bestChild == -1) break;
-
             
             /* perform best found split */
             BuildRecord& brecord = children[bestChild];
