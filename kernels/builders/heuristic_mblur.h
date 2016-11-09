@@ -409,9 +409,9 @@ namespace embree
             /* temporal split */
             if (brecord.split.data == -1 && brecord.split.valid())
             {
-              Heuristic::split_temporal(brecord.split,brecord.pinfo,brecord.prims,lrecord.pinfo,lrecord.prims,false);
+              builder->temporal_split(brecord.split,brecord.pinfo,brecord.prims,lrecord.pinfo,lrecord.prims,false);
               lrecord.split = builder->find(lrecord);
-              Heuristic::split_temporal(brecord.split,brecord.pinfo,brecord.prims,rrecord.pinfo,rrecord.prims,true);
+              builder->temporal_split(brecord.split,brecord.pinfo,brecord.prims,rrecord.pinfo,rrecord.prims,true);
               rrecord.split = builder->find(rrecord);
               children[bestChild  ] = add(lrecord,node,false,false);
               children[numChildren] = add(rrecord,node,true ,true );
@@ -651,8 +651,8 @@ namespace embree
           
           /*! initialize child list */
           ReductionTy values[MAX_BRANCHING_FACTOR];
-          //LocalTree children(this,current);
-          LocalChildList children(this,current);
+          LocalTree children(this,current);
+          //LocalChildList children(this,current);
           //children.add(current);
           
           /*! split until node is full or SAH tells us to stop */
