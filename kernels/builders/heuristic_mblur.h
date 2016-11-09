@@ -390,15 +390,15 @@ namespace embree
           };
 
           __forceinline LocalTree (GeneralBVHMBBuilder* builder, size_t depth)
-            : builder(builder), numNodes(0), numLeaves(0), depth(depth) {}
+            : builder(builder), numNodes(0), numChildren(0), depth(depth) {}
 
           __forceinline Node* add(BuildRecord& record, Node* parent = nullptr, bool right = false) {
             return new (&nodes[numNodes++]) Node(record,parent,right);
           }
 
-          __forceinline void split(size_t bestLeaf)
+          __forceinline void split(size_t bestChild)
           {
-            Node* node = leaves[bestLeaf];
+            Node* node = children[bestChild];
             BuildRecord& brecord = node->record;
             BuildRecord lrecord(depth+1);
             BuildRecord rrecord(depth+1);
@@ -407,30 +407,29 @@ namespace embree
             /* find new splits */
             lrecord.split = builder->find(lrecord);
             rrecord.split = builder->find(rrecord);
-            leaves[bestLeaf] = add(lrecord,node,false);
-            leaves[numLeaves] = add(rrecord,node,true);
-            numLeaves++;
+            children[bestChild] = add(lrecord,node,false);
+            children[numChildren] = add(rrecord,node,true);
+            numChildren++;
           }
 
           __forceinline size_t size() const {
-            return numLeaves;
+            return numChildren;
           }
 
           __forceinline BuildRecord& operator[] ( size_t i) {
-            return leaves[i]->record;
+            return children[i]->record;
           }
 
-          __forceinline size_t bestLeaf()
+          __forceinline ssize_t best()
           {
             /*! find best child to split */
             float bestSAH = neg_inf;
             ssize_t bestChild = -1;
-            for (size_t i=0; i<numLeaves; i++) 
+            for (size_t i=0; i<numChildren; i++) 
             {
-              //if (!active[i]) continue;
-              if (leaves[i]->pinfo.size() <= builder->minLeafSize) continue; 
-              if (expectedApproxHalfArea(leaves[i]->pinfo.geomBounds) > bestSAH) {
-                bestChild = i; bestSAH = expectedApproxHalfArea(leaves[i]->pinfo.geomBounds); 
+              if (children[i]->pinfo.size() <= builder->minLeafSize) continue; 
+              if (expectedApproxHalfArea(children[i]->pinfo.geomBounds) > bestSAH) {
+                bestChild = i; bestSAH = expectedApproxHalfArea(children[i]->pinfo.geomBounds); 
               } 
             }
             return bestChild;
@@ -440,8 +439,8 @@ namespace embree
           GeneralBVHMBBuilder* builder;
           Node nodes[2*MAX_BRANCHING_FACTOR];
           size_t numNodes;
-          Node* leaves[MAX_BRANCHING_FACTOR];
-          size_t numLeaves;
+          Node* children[MAX_BRANCHING_FACTOR];
+          size_t numChildren;
           size_t depth;
         };
 
@@ -478,7 +477,7 @@ namespace embree
             return children[i];
           }
 
-          __forceinline size_t best()
+          __forceinline ssize_t best()
           {
             /*! find best child to split */
             float bestSAH = neg_inf;
@@ -575,7 +574,9 @@ namespace embree
           } while (numChildren < branchingFactor);
           
           /* create node */
-          auto node = createNode(current,children,numChildren,alloc);
+          BuildRecord* records[MAX_BRANCHING_FACTOR];
+          for (size_t i=0; i<numChildren; i++) records[i] = &children[i];
+          auto node = createNode(current,records,numChildren,alloc);
           
           /* recurse into each child  and perform reduction */
           for (size_t i=0; i<numChildren; i++)
@@ -630,7 +631,11 @@ namespace embree
           //std::sort(&children[0],&children[children.size()],std::greater<BuildRecord>()); // FIXME: reduces traversal performance of bvh8.triangle4 (need to verified) !!
           
           /*! create an inner node */
-          auto node = createNode(current,children.children,children.size(),alloc);
+          BuildRecord* records[MAX_BRANCHING_FACTOR];
+          for (size_t i=0; i<children.size(); i++) records[i] = &children[i];
+          auto node = createNode(current,records,children.size(),alloc);
+          //auto node = createNode(current,children.children,children.size(),alloc);
+          //for (size_t i=0; i<children.size(); i++) children[i].parent = records[i].parent;
           
           /* spawn tasks */
           if (current.size() > SINGLE_THREADED_THRESHOLD) 

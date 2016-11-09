@@ -598,11 +598,11 @@ namespace embree
 
       __forceinline CreateAlignedNodeMB4D2 (BVH* bvh) : bvh(bvh) {}
       
-      __forceinline NodeRef operator() (const GeneralBuildRecord<Set,Split,PrimInfoMB>& current, GeneralBuildRecord<Set,Split,PrimInfoMB>* children, const size_t num, FastAllocator::ThreadLocal2* alloc)
+      __forceinline NodeRef operator() (const GeneralBuildRecord<Set,Split,PrimInfoMB>& current, GeneralBuildRecord<Set,Split,PrimInfoMB>** children, const size_t num, FastAllocator::ThreadLocal2* alloc)
       {
         bool hasTimeSplits = false;
         for (size_t i=0; i<num && !hasTimeSplits; i++)
-          hasTimeSplits |= current.pinfo.time_range != children[i].pinfo.time_range;
+          hasTimeSplits |= current.pinfo.time_range != children[i]->pinfo.time_range;
 
         if (hasTimeSplits)
         {
@@ -611,14 +611,14 @@ namespace embree
           {
 #if 0
             LBBox3fa cbounds = empty;
-            for (size_t j=children[i].prims.object_range.begin(); j<children[i].prims.object_range.end(); j++) 
+            for (size_t j=children[i]->prims.object_range.begin(); j<children[i]->prims.object_range.end(); j++) 
             {
-              PrimRefMB& ref = (*children[i].prims.prims)[j];
-              cbounds.extend(bvh->scene->getTriangleMesh(ref.geomID())->linearBounds(ref.primID(),children[i].prims.time_range));
+              PrimRefMB& ref = (*children[i]->prims.prims)[j];
+              cbounds.extend(bvh->scene->getTriangleMesh(ref.geomID())->linearBounds(ref.primID(),children[i]->prims.time_range));
             }
-            node->set(i,cbounds.global(children[i].prims.time_range),children[i].prims.time_range);
+            node->set(i,cbounds.global(children[i]->prims.time_range),children[i]->prims.time_range);
 #endif
-            children[i].parent = (size_t*)&node->child(i);
+            children[i]->parent = (size_t*)&node->child(i);
           }
           NodeRef ref = bvh->encodeNode(node);
           *current.parent = ref;
@@ -631,14 +631,14 @@ namespace embree
           {
 #if 0
             LBBox3fa cbounds = empty;
-            for (size_t j=children[i].prims.object_range.begin(); j<children[i].prims.object_range.end(); j++) 
+            for (size_t j=children[i]->prims.object_range.begin(); j<children[i]->prims.object_range.end(); j++) 
             {
-              PrimRefMB& ref = (*children[i].prims.prims)[j];
-              cbounds.extend(bvh->scene->getTriangleMesh(ref.geomID())->linearBounds(ref.primID(),children[i].prims.time_range));
+              PrimRefMB& ref = (*children[i]->prims.prims)[j];
+              cbounds.extend(bvh->scene->getTriangleMesh(ref.geomID())->linearBounds(ref.primID(),children[i]->prims.time_range));
             }
-            node->set(i,cbounds.global(children[i].prims.time_range));
+            node->set(i,cbounds.global(children[i]->prims.time_range));
 #endif
-            children[i].parent = (size_t*)&node->child(i);
+            children[i]->parent = (size_t*)&node->child(i);
           }
           NodeRef ref = bvh->encodeNode(node);
           *current.parent = ref;
