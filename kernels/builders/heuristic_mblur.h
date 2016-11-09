@@ -277,6 +277,8 @@ namespace embree
           new (&rset) Set(set.prims,range<size_t>(center,end  ),set.time_range);
         }
 
+#define MBLUR_NEW_ARRAY 0
+
         /*! array partitioning */
         __forceinline void temporal_split(const TemporalSplit& split, const PrimInfoMB& pinfo, const Set& set, PrimInfoMB& linfo, Set& lset, int side)
         {
@@ -286,26 +288,38 @@ namespace embree
           const BBox1f time_range = side ? time_range1 : time_range0;
           
           /* calculate primrefs for first time range */
+#if MBLUR_NEW_ARRAY
           std::shared_ptr<avector<PrimRefMB>> lprims(new avector<PrimRefMB>(set.object_range.size()));
+#endif
           auto reduction_func0 = [&] ( const range<size_t>& r) {
             PrimInfoMB pinfo = empty;
             for (size_t i=r.begin(); i<r.end(); i++) 
             {
-              const avector<PrimRefMB>& prims = *set.prims;
+              avector<PrimRefMB>& prims = *set.prims;
               const unsigned geomID = prims[i].geomID();
               const unsigned primID = prims[i].primID();
               const LBBox3fa lbounds = ((Mesh*)scene->get(geomID))->linearBounds(primID,time_range);
               const unsigned num_time_segments = calculateNumOverlappingTimeSegments(scene,geomID,time_range);
               const PrimRefMB prim(lbounds,num_time_segments,geomID,primID);
+#if MBLUR_NEW_ARRAY
               (*lprims)[i-set.object_range.begin()] = prim;
+#else
+              prims[i] = prim;
+#endif
               pinfo.add_primref(prim);
             }
             return pinfo;
           };        
           linfo = parallel_reduce(set.object_range.begin(),set.object_range.end(),PARALLEL_PARITION_BLOCK_SIZE,PARALLEL_THRESHOLD,PrimInfoMB(empty),reduction_func0,
                                   [] (const PrimInfoMB& a, const PrimInfoMB& b) { return PrimInfoMB::merge(a,b); });
+   
           linfo.time_range = time_range;
+#if MBLUR_NEW_ARRAY
           lset = Set(lprims,time_range);
+#else
+          lset = Set(set.prims,set.object_range,time_range);
+          linfo.begin = lset.object_range.begin(); linfo.end = lset.object_range.end();
+#endif
         }
 
         __forceinline void temporal_split(const TemporalSplit& split, const PrimInfoMB& pinfo, const Set& set, PrimInfoMB& linfo, Set& lset, PrimInfoMB& rinfo, Set& rset)
@@ -401,6 +415,8 @@ namespace embree
 
           __forceinline void split(size_t bestChild)
           {
+            restore(bestChild);
+
             Node* node = children[bestChild];
             BuildRecord& brecord = node->record;
             BuildRecord lrecord(depth+1);
