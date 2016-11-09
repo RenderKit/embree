@@ -464,8 +464,10 @@ namespace embree
             return invalid;
           }
           
-          __forceinline void restore(size_t childID) {
-            //restore(children[childID]->parent,children[childID]);
+          __forceinline void restore(size_t childID) 
+          {
+            if (children[childID]->parent)
+              restore(children[childID]->parent,children[childID]);
           }
 
           __forceinline ssize_t best()
