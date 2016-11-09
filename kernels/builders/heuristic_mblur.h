@@ -22,7 +22,7 @@
 #define MBLUR_SPLIT_OVERLAP_THRESHOLD 0.1f
 #define MBLUR_TIME_SPLIT_THRESHOLD 1.10f
 #define MBLUR_TIME_SPLIT_LOCATIONS 1
-#define MBLUR_NEW_ARRAY 1
+#define MBLUR_NEW_ARRAY 0
 
 namespace embree
 {
@@ -486,8 +486,9 @@ namespace embree
           
           __forceinline void restore(size_t childID) 
           {
-            if (children[childID]->parent)
-              restore(children[childID]->parent,children[childID]);
+            if (hasTimeSplit)
+              if (children[childID]->parent)
+                restore(children[childID]->parent,children[childID]);
           }
 
           __forceinline ssize_t best()
