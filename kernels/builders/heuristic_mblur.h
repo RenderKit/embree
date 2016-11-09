@@ -285,36 +285,46 @@ namespace embree
           const BBox1f time_range1(center_time,set.time_range.upper);
           
           /* calculate primrefs for first time range */
-          linfo = empty;
           std::shared_ptr<avector<PrimRefMB>> lprims(new avector<PrimRefMB>(set.object_range.size()));
-          for (size_t i=set.object_range.begin(); i<set.object_range.end(); i++) 
-          {
-            const avector<PrimRefMB>& prims = *set.prims;
-            const unsigned geomID = prims[i].geomID();
-            const unsigned primID = prims[i].primID();
-            const LBBox3fa lbounds = ((Mesh*)scene->get(geomID))->linearBounds(primID,time_range0);
-            const unsigned num_time_segments = calculateNumOverlappingTimeSegments(scene,geomID,time_range0);
-            const PrimRefMB prim(lbounds,num_time_segments,geomID,primID);
-            (*lprims)[i-set.object_range.begin()] = prim;
-            linfo.add_primref(prim);
-          }
+          auto reduction_func0 = [&] ( const range<size_t>& r) {
+            PrimInfoMB pinfo = empty;
+            for (size_t i=r.begin(); i<r.end(); i++) 
+            {
+              const avector<PrimRefMB>& prims = *set.prims;
+              const unsigned geomID = prims[i].geomID();
+              const unsigned primID = prims[i].primID();
+              const LBBox3fa lbounds = ((Mesh*)scene->get(geomID))->linearBounds(primID,time_range0);
+              const unsigned num_time_segments = calculateNumOverlappingTimeSegments(scene,geomID,time_range0);
+              const PrimRefMB prim(lbounds,num_time_segments,geomID,primID);
+              (*lprims)[i-set.object_range.begin()] = prim;
+              pinfo.add_primref(prim);
+            }
+            return pinfo;
+          };        
+          linfo = parallel_reduce(set.object_range.begin(),set.object_range.end(),PARALLEL_PARITION_BLOCK_SIZE,PARALLEL_THRESHOLD,PrimInfoMB(empty),reduction_func0,
+                                  [] (const PrimInfoMB& a, const PrimInfoMB& b) { return PrimInfoMB::merge(a,b); });
           linfo.time_range = time_range0;
           lset = Set(lprims,time_range0);
 
           /* calculate primrefs for second time range */
-          rinfo = empty;
           std::shared_ptr<avector<PrimRefMB>> rprims(new avector<PrimRefMB>(set.object_range.size()));
-          for (size_t i=set.object_range.begin(); i<set.object_range.end(); i++) 
-          {
-            const avector<PrimRefMB>& prims = *set.prims;
-            const unsigned geomID = prims[i].geomID();
-            const unsigned primID = prims[i].primID();
-            const LBBox3fa lbounds = ((Mesh*)scene->get(geomID))->linearBounds(primID,time_range1);
-            const unsigned num_time_segments = calculateNumOverlappingTimeSegments(scene,geomID,time_range1);
-            const PrimRefMB prim(lbounds,num_time_segments,geomID,primID);
-            (*rprims)[i-set.object_range.begin()] = prim;
-            rinfo.add_primref(prim);
-          }
+          auto reduction_func1 = [&] ( const range<size_t>& r) {
+            PrimInfoMB pinfo = empty;
+            for (size_t i=r.begin(); i<r.end(); i++) 
+            {
+              const avector<PrimRefMB>& prims = *set.prims;
+              const unsigned geomID = prims[i].geomID();
+              const unsigned primID = prims[i].primID();
+              const LBBox3fa lbounds = ((Mesh*)scene->get(geomID))->linearBounds(primID,time_range1);
+              const unsigned num_time_segments = calculateNumOverlappingTimeSegments(scene,geomID,time_range1);
+              const PrimRefMB prim(lbounds,num_time_segments,geomID,primID);
+              (*rprims)[i-set.object_range.begin()] = prim;
+              pinfo.add_primref(prim);
+            }
+            return pinfo;
+          };
+          rinfo = parallel_reduce(set.object_range.begin(),set.object_range.end(),PARALLEL_PARITION_BLOCK_SIZE,PARALLEL_THRESHOLD,PrimInfoMB(empty),reduction_func1,
+                                  [] (const PrimInfoMB& a, const PrimInfoMB& b) { return PrimInfoMB::merge(a,b); });
           rinfo.time_range = time_range1;
           rset = Set(rprims,time_range1);
         }
