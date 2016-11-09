@@ -56,10 +56,7 @@ namespace embree
         static const size_t PARALLEL_PARITION_BLOCK_SIZE = 128;
 
         HeuristicMBlur (Scene* scene)
-          : scene(scene)
-        {
-            numTimeSegments = scene->getNumTimeSteps<Mesh,true>()-1;
-        }
+          : scene(scene) {}
 
         __forceinline unsigned calculateNumOverlappingTimeSegments(unsigned geomID, BBox1f time_range)
         {
@@ -127,11 +124,7 @@ namespace embree
         {
           ObjectBinner binner(empty); // FIXME: this clear can be optimized away
           const BinMapping<BINS> mapping(pinfo.centBounds,pinfo.size());
-          if (likely(pinfo.size() < PARALLEL_THRESHOLD)) {
-            binner.bin(set.prims->data(),set.object_range.begin(),set.object_range.end(),mapping);
-          } else {
-            binner.bin_parallel(set.prims->data(),set.object_range.begin(),set.object_range.end(),PARALLEL_FIND_BLOCK_SIZE,mapping);
-          }
+          binner.bin_parallel(set.prims->data(),set.object_range.begin(),set.object_range.end(),PARALLEL_FIND_BLOCK_SIZE,PARALLEL_THRESHOLD,mapping);
           ObjectSplit osplit = binner.best(mapping,logBlockSize);
           osplit.sah *= pinfo.time_range.size();
           return osplit;
@@ -476,7 +469,6 @@ namespace embree
 
       private:
         Scene* scene;
-        int numTimeSegments;
       };
 
     template<typename BuildRecord, 
