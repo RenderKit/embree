@@ -273,9 +273,10 @@ namespace embree
           const vbool4 vSplitMask( (int)splitDimMask );
           auto isLeft = [&] (const PrimRefMB &ref) { return any(((vint4)split.mapping.bin_unsafe(ref) < vSplitPos) & vSplitMask); };
           auto reduction = [] (PrimInfoMB& pinfo, const PrimRefMB& ref) { pinfo.add_primref(ref); };
+          auto reduction2 = [] (PrimInfoMB& pinfo0,const PrimInfoMB& pinfo1) { pinfo0.merge(pinfo1); };
 
           size_t center = 0;
-          center = serial_partitioning(set.prims->data(),begin,end,left,right,isLeft,reduction);
+          center = parallel_partitioning(set.prims->data(),begin,end,empty,left,right,isLeft,reduction,reduction2,PARALLEL_PARITION_BLOCK_SIZE,PARALLEL_THRESHOLD);
           left.begin  = begin; left.end = center; left.time_range = pinfo.time_range;
           right.begin = center; right.end = end;  right.time_range = pinfo.time_range;
           new (&lset) Set(set.prims,range<size_t>(begin,center),set.time_range);
