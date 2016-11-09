@@ -21,6 +21,7 @@
 
 #define MBLUR_SPLIT_OVERLAP_THRESHOLD 0.1f
 #define MBLUR_TIME_SPLIT_THRESHOLD 1.10f
+#define MBLUR_TIME_SPLIT_LOCATIONS 1
 
 namespace embree
 {
@@ -133,12 +134,14 @@ namespace embree
         /*! finds the best split */
         const TemporalSplit temporal_find(const Set& set, const PrimInfoMB& pinfo, const size_t logBlockSize, const unsigned numTimeSegments)
         {
-          const float dt = 0.5f; 
+          //const float dt = 0.5f; 
           //const float dt = 0.125f;
           float bestSAH = inf;
           float bestPos = 0.0f;
-          for (float t=dt; t<1.0f-dt/2.0f; t+=dt)
+          //for (float t=dt; t<1.0f-dt/2.0f; t+=dt)
+          for (int b=0; b<MBLUR_TIME_SPLIT_LOCATIONS; b++)
           {
+            float t = float(b+1)/float(MBLUR_TIME_SPLIT_LOCATIONS+1);
             /* split time range */
             //const float center_time = set.time_range.center();
             float ct = lerp(set.time_range.lower,set.time_range.upper,t);
