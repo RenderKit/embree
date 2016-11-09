@@ -25,13 +25,19 @@ namespace embree
 
   struct IntersectContext
   {
+    enum {
+      INPUT_RAY_DATA_AOS = 0,
+      INPUT_RAY_DATA_SOA = 1
+    };
+
   public:
     __forceinline IntersectContext(Scene* scene, const RTCIntersectContext* user_context)
-      : scene(scene), user(user_context), geomID_to_instID(nullptr) {}
+      : scene(scene), user(user_context), flags(INPUT_RAY_DATA_AOS), geomID_to_instID(nullptr) {}
 
   public:
     Scene* scene;
     const RTCIntersectContext* user;
+    size_t flags;
     const unsigned* geomID_to_instID; // required for xfm node handling
   };
 }

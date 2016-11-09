@@ -326,8 +326,19 @@ namespace embree
         intersectors.intersectorN.intersect(intersectors.ptr,rayN,N,context);
       else
       {
-        for (size_t i=0; i<N; i++)
-          intersect(*rayN[i],context);
+        if (likely(context->flags == IntersectContext::INPUT_RAY_DATA_AOS))
+          for (size_t i=0; i<N; i++)
+            intersect(*rayN[i],context);
+        else
+        {
+          const size_t numPackets = (N+VSIZEX-1)/VSIZEX;
+          for (size_t i=0; i<numPackets; i++)
+          {
+            RayK<VSIZEX> &ray = *(RayK<VSIZEX>*)rayN[i];
+            vboolx valid = ray.tnear <= ray.tfar;
+            intersect(valid,ray,context);
+          }
+        }
       }
     }
 
@@ -383,8 +394,19 @@ namespace embree
         intersectors.intersectorN.occluded(intersectors.ptr,rayN,N,context);
       else
       {
-        for (size_t i=0;i<N;i++)
-          occluded(*rayN[i],context);
+        if (likely(context->flags == IntersectContext::INPUT_RAY_DATA_AOS))
+          for (size_t i=0;i<N;i++)
+            occluded(*rayN[i],context);
+        else
+        {
+          const size_t numPackets = (N+VSIZEX-1)/VSIZEX;
+          for (size_t i=0; i<numPackets; i++)
+          {
+            RayK<VSIZEX> &ray = *(RayK<VSIZEX>*)rayN[i];
+            vboolx valid = ray.tnear <= ray.tfar;
+            occluded(valid,ray,context);
+          }
+        }
       }
     }
 
