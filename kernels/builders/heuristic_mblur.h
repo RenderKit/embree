@@ -389,8 +389,11 @@ namespace embree
             Node* parent;
           };
 
-          __forceinline LocalTree (GeneralBVHMBBuilder* builder, size_t depth)
-            : builder(builder), numNodes(0), numChildren(0), depth(depth) {}
+          __forceinline LocalTree (GeneralBVHMBBuilder* builder, BuildRecord& record)
+            : builder(builder), numNodes(0), numChildren(0), depth(record.depth) 
+          {
+            children[numChildren++] = add(record);
+          }
 
           __forceinline Node* add(BuildRecord& record, Node* parent = nullptr, bool right = false) {
             return new (&nodes[numNodes++]) Node(record,parent,right);
@@ -427,9 +430,9 @@ namespace embree
             ssize_t bestChild = -1;
             for (size_t i=0; i<numChildren; i++) 
             {
-              if (children[i]->pinfo.size() <= builder->minLeafSize) continue; 
-              if (expectedApproxHalfArea(children[i]->pinfo.geomBounds) > bestSAH) {
-                bestChild = i; bestSAH = expectedApproxHalfArea(children[i]->pinfo.geomBounds); 
+              if (children[i]->record.pinfo.size() <= builder->minLeafSize) continue; 
+              if (expectedApproxHalfArea(children[i]->record.pinfo.geomBounds) > bestSAH) {
+                bestChild = i; bestSAH = expectedApproxHalfArea(children[i]->record.pinfo.geomBounds); 
               } 
             }
             return bestChild;
@@ -446,8 +449,11 @@ namespace embree
 
         struct LocalChildList
         {
-          __forceinline LocalChildList (GeneralBVHMBBuilder* builder, size_t depth)
-            : builder(builder), numChildren(0), depth(depth) {}
+          __forceinline LocalChildList (GeneralBVHMBBuilder* builder, BuildRecord& record)
+            : builder(builder), numChildren(0), depth(record.depth) 
+          {
+            add(record);
+          }
 
           __forceinline void add(BuildRecord& record) {
             children[numChildren++] = record;
@@ -616,9 +622,9 @@ namespace embree
           
           /*! initialize child list */
           ReductionTy values[MAX_BRANCHING_FACTOR];
-          //LocalTree children(this,current.depth);
-          LocalChildList children(this,current.depth);
-          children.add(current);
+          LocalTree children(this,current);
+          //LocalChildList children(this,current);
+          //children.add(current);
           
           /*! split until node is full or SAH tells us to stop */
           do {
