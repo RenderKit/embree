@@ -735,7 +735,13 @@ namespace embree
 #endif
 
         /* create primref array */
+#if MBLUR_NEW_ARRAY
         std::shared_ptr<avector<PrimRefMB>> prims(new avector<PrimRefMB>(numPrimitives)); // FIXME: use mvector instead of avector
+#else
+        avector<PrimRefMB> prims_vector(numPrimitives); // FIXME: use mvector instead of avector
+        avector<PrimRefMB>* prims = &prims_vector;
+#endif
+        
         PrimInfoMB pinfo = createPrimRef2ArrayMBlur<Mesh>(scene,*prims,bvh->scene->progressInterface);
         
         /* reduction function */

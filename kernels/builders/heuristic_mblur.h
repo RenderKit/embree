@@ -22,6 +22,7 @@
 #define MBLUR_SPLIT_OVERLAP_THRESHOLD 0.1f
 #define MBLUR_TIME_SPLIT_THRESHOLD 1.10f
 #define MBLUR_TIME_SPLIT_LOCATIONS 1
+#define MBLUR_NEW_ARRAY 0
 
 namespace embree
 {
@@ -35,19 +36,24 @@ namespace embree
         typedef BinSplit<BINS> ObjectSplit;
         typedef BinSplit<BINS> TemporalSplit;
         typedef BinInfoT<BINS,PrimRefMB,LBBox3fa> ObjectBinner;
+#if MBLUR_NEW_ARRAY
+        typedef std::shared_ptr<avector<PrimRefMB>> PrimRefVector;
+#else
+        typedef avector<PrimRefMB>* PrimRefVector;
+#endif
 
         struct Set 
         {
           __forceinline Set () {}
 
-          __forceinline Set(const std::shared_ptr<avector<PrimRefMB>>& prims, range<size_t> object_range, BBox1f time_range)
+          __forceinline Set(PrimRefVector prims, range<size_t> object_range, BBox1f time_range)
             : prims(prims), object_range(object_range), time_range(time_range) {}
 
-          __forceinline Set(std::shared_ptr<avector<PrimRefMB>>& prims, BBox1f time_range = BBox1f(0.0f,1.0f))
+          __forceinline Set(PrimRefVector prims, BBox1f time_range = BBox1f(0.0f,1.0f))
             : prims(prims), object_range(range<size_t>(0,prims->size())), time_range(time_range) {}
 
         public:
-          std::shared_ptr<avector<PrimRefMB>> prims;
+          PrimRefVector prims;
           range<size_t> object_range;
           BBox1f time_range;
         };
@@ -276,8 +282,6 @@ namespace embree
           new (&lset) Set(set.prims,range<size_t>(begin,center),set.time_range);
           new (&rset) Set(set.prims,range<size_t>(center,end  ),set.time_range);
         }
-
-#define MBLUR_NEW_ARRAY 0
 
         /*! array partitioning */
         __forceinline void temporal_split(const TemporalSplit& split, const PrimInfoMB& pinfo, const Set& set, PrimInfoMB& linfo, Set& lset, int side)
@@ -708,8 +712,11 @@ namespace embree
           
           /*! initialize child list */
           ReductionTy values[MAX_BRANCHING_FACTOR];
+#if MBLUR_NEW_ARRAY
+          LocalChildList children(this,current);
+#else
           LocalTree children(this,current);
-          //LocalChildList children(this,current);
+#endif     
           //children.add(current);
           
           /*! split until node is full or SAH tells us to stop */
