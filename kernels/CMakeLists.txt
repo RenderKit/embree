@@ -83,7 +83,7 @@ IF (EMBREE_RAY_PACKETS)
   common/rtcore_ispc.ispc
 
   bvh/bvh_intersector_single.cpp
-  bvh/bvh_intersector_hybrid.cpp
+  bvh/bvh_intersector_hybrid_bvh4.cpp
   bvh/bvh_intersector_stream_filters.cpp)
 ENDIF()
 
@@ -95,7 +95,7 @@ SET(EMBREE_LIBRARY_FILES_SSE42
 IF (EMBREE_RAY_PACKETS)
     SET(EMBREE_LIBRARY_FILES_SSE42 ${EMBREE_LIBRARY_FILES_SSE42}
     bvh/bvh_intersector_single.cpp
-    bvh/bvh_intersector_hybrid.cpp
+    bvh/bvh_intersector_hybrid_bvh4.cpp
     bvh/bvh_intersector_stream.cpp
     bvh/bvh_intersector_stream_filters.cpp)
 ENDIF()
@@ -130,7 +130,8 @@ IF (EMBREE_RAY_PACKETS)
     geometry/instance_intersector.cpp
 
     bvh/bvh_intersector_single.cpp
-    bvh/bvh_intersector_hybrid.cpp
+    bvh/bvh_intersector_hybrid_bvh4.cpp
+    bvh/bvh_intersector_hybrid_bvh8.cpp
     bvh/bvh_intersector_stream.cpp
     bvh/bvh_intersector_stream_filters.cpp)
 ENDIF()
@@ -148,7 +149,8 @@ IF (EMBREE_RAY_PACKETS)
     geometry/instance_intersector.cpp
 
     bvh/bvh_intersector_single.cpp
-    bvh/bvh_intersector_hybrid.cpp
+    bvh/bvh_intersector_hybrid_bvh4.cpp
+    bvh/bvh_intersector_hybrid_bvh8.cpp
     bvh/bvh_intersector_stream.cpp
     bvh/bvh_intersector_stream_filters.cpp)
 ENDIF()
@@ -178,7 +180,8 @@ IF (EMBREE_RAY_PACKETS)
     geometry/instance_intersector.cpp
 
     bvh/bvh_intersector_single.cpp
-    bvh/bvh_intersector_hybrid.cpp
+    bvh/bvh_intersector_hybrid_bvh4.cpp
+    bvh/bvh_intersector_hybrid_bvh8.cpp
     bvh/bvh_intersector_stream.cpp
     bvh/bvh_intersector_stream_filters.cpp)
 ENDIF()
