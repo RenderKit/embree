@@ -136,10 +136,11 @@ namespace embree
             {
               const PrimRefMB& prim = (*set.prims)[i];
               unsigned numTimeSegments = scene->get(prim.geomID())->numTimeSegments();
-              const int ilower = (int)ceil (0.9999f*pinfo.time_range.lower*numTimeSegments);
-              const int iupper = (int)floor(1.0001f*pinfo.time_range.upper*numTimeSegments);
+              const int ilower = (int)floor(1.0001f*pinfo.time_range.lower*numTimeSegments);
+              const int iupper = (int)ceil (0.9999f*pinfo.time_range.upper*numTimeSegments);
               const int localTimeSegments = iupper-ilower;
-              if (localTimeSegments != 1) {
+              assert(localTimeSegments > 0);
+              if (localTimeSegments > 1) {
                 const int icenter = (ilower + iupper)/2;
                 const float splitTime = float(icenter)/float(numTimeSegments);
                 return TemporalSplit(1.0f,-1,0,splitTime);

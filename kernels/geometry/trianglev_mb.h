@@ -165,77 +165,46 @@ namespace embree
       return LBBox3fa(bounds0,bounds1);
     }
 
-    static __forceinline size_t fillMBlurBlocks(const PrimRefMB* prims, range<size_t> object_range, BBox1f time_range, Scene* scene)
+    /* Fill triangle from triangle list */
+    __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& begin, size_t end, Scene* scene, const BBox1f time_range)
     {
-      size_t N = 0;
-      for (size_t i=object_range.begin(); i<object_range.end(); i++) 
-      {
-        const unsigned numTimeSegments = scene->get(prims[i].geomID())->numTimeSegments();
-        const int ilower = (int)ceil (0.9999f*time_range.lower*numTimeSegments);
-        const int iupper = (int)floor(1.0001f*time_range.upper*numTimeSegments);
-        N += iupper-ilower;
-      }
-      return blocks(N);
-    }
-
-    static __forceinline LBBox3fa fillMBlur(TriangleMvMB* triangles, const PrimRefMB* prims, range<size_t> object_range, BBox1f time_range, Scene* scene)
-    {
-      size_t bid = 0, lid = 0;
-      
+      vint<M> vgeomID = -1, vprimID = -1;
       Vec3vfM va0 = zero, vb0 = zero, vc0 = zero;
       Vec3vfM va1 = zero, vb1 = zero, vc1 = zero;
-      BBox1vfM vtr = empty;
-      vint<M> vgeomID = -1, vprimID = -1;
 
       LBBox3fa allBounds = empty;
-      for (size_t i=object_range.begin(); i<object_range.end(); i++) 
+      for (size_t i=0; i<M && begin<end; i++, begin++)
       {
-        const unsigned numTimeSegments = scene->get(prims[i].geomID())->numTimeSegments();
-        const int ilower = (int)ceil (0.9999f*time_range.lower*numTimeSegments);
-        const int iupper = (int)floor(1.0001f*time_range.upper*numTimeSegments);
-
-        const unsigned geomID = prims[i].geomID();
-        const unsigned primID = prims[i].primID();
+        const PrimRefMB& prim = prims[begin];
+        const unsigned geomID = prim.geomID();
+        const unsigned primID = prim.primID();
         const TriangleMesh* const mesh = scene->getTriangleMesh(geomID);
+        const unsigned numTimeSegments = mesh->numTimeSegments();
+        const int ilower = (int)floor(1.0001f*time_range.lower*numTimeSegments);
+        const int iupper = (int)ceil (0.9999f*time_range.upper*numTimeSegments);
+        assert(iupper-ilower == 1);
         const TriangleMesh::Triangle& tri = mesh->triangle(primID);
         allBounds.extend(mesh->linearBounds(primID, time_range));
-
-        for (size_t j=ilower; j<iupper; j++)
-        {
-          const Vec3fa& a0 = mesh->vertex(tri.v[0],j+0);
-          const Vec3fa& a1 = mesh->vertex(tri.v[0],j+1);
-          const Vec3fa& b0 = mesh->vertex(tri.v[1],j+0);
-          const Vec3fa& b1 = mesh->vertex(tri.v[1],j+1);
-          const Vec3fa& c0 = mesh->vertex(tri.v[2],j+0);
-          const Vec3fa& c1 = mesh->vertex(tri.v[2],j+1);
-          BBox1f time_range_v(float(j+0)/float(numTimeSegments),
-                              float(j+1)/float(numTimeSegments));
-          auto a01 = globalLinear(std::make_pair(a0,a1),time_range_v);
-          auto b01 = globalLinear(std::make_pair(b0,b1),time_range_v);
-          auto c01 = globalLinear(std::make_pair(c0,c1),time_range_v);
-          BBox1f time_range_p = intersect(time_range, time_range_v);
-          va0.x[lid] = a01.first .x; va0.y[lid] = a01.first .y; va0.z[lid] = a01.first .z;
-          va1.x[lid] = a01.second.x; va1.y[lid] = a01.second.y; va1.z[lid] = a01.second.z;
-          vb0.x[lid] = b01.first .x; vb0.y[lid] = b01.first .y; vb0.z[lid] = b01.first .z;
-          vb1.x[lid] = b01.second.x; vb1.y[lid] = b01.second.y; vb1.z[lid] = b01.second.z;
-          vc0.x[lid] = c01.first .x; vc0.y[lid] = c01.first .y; vc0.z[lid] = c01.first .z;
-          vc1.x[lid] = c01.second.x; vc1.y[lid] = c01.second.y; vc1.z[lid] = c01.second.z;
-          vtr.lower[lid] = time_range_p.lower; 
-          vtr.upper[lid] = time_range_p.upper;
-          vgeomID [lid] = geomID;
-          vprimID [lid] = primID;
-          if (++lid == M) {
-            new (&triangles[bid]) TriangleMvMB(va0,va1,vb0,vb1,vc0,vc1,vtr,vgeomID,vprimID);
-            va0 = zero; vb0 = zero; vc0 = zero;
-            va1 = zero; vb1 = zero; vc1 = zero;
-            vtr = empty; vgeomID = -1; vprimID = -1;
-            bid++; lid = 0;
-          }
-        }
+        const Vec3fa& a0 = mesh->vertex(tri.v[0],ilower+0);
+        const Vec3fa& a1 = mesh->vertex(tri.v[0],ilower+1);
+        const Vec3fa& b0 = mesh->vertex(tri.v[1],ilower+0);
+        const Vec3fa& b1 = mesh->vertex(tri.v[1],ilower+1);
+        const Vec3fa& c0 = mesh->vertex(tri.v[2],ilower+0);
+        const Vec3fa& c1 = mesh->vertex(tri.v[2],ilower+1);
+        const BBox1f time_range_v(float(ilower+0)/float(numTimeSegments),float(ilower+1)/float(numTimeSegments));
+        auto a01 = globalLinear(std::make_pair(a0,a1),time_range_v);
+        auto b01 = globalLinear(std::make_pair(b0,b1),time_range_v);
+        auto c01 = globalLinear(std::make_pair(c0,c1),time_range_v);
+        vgeomID [i] = geomID;
+        vprimID [i] = primID;
+        va0.x[i] = a01.first .x; va0.y[i] = a01.first .y; va0.z[i] = a01.first .z;
+	va1.x[i] = a01.second.x; va1.y[i] = a01.second.y; va1.z[i] = a01.second.z;
+	vb0.x[i] = b01.first .x; vb0.y[i] = b01.first .y; vb0.z[i] = b01.first .z;
+	vb1.x[i] = b01.second.x; vb1.y[i] = b01.second.y; vb1.z[i] = b01.second.z;
+	vc0.x[i] = c01.first .x; vc0.y[i] = c01.first .y; vc0.z[i] = c01.first .z;
+	vc1.x[i] = c01.second.x; vc1.y[i] = c01.second.y; vc1.z[i] = c01.second.z;
       }
-      if (lid != 0) 
-        new (&triangles[bid]) TriangleMvMB(va0,va1,vb0,vb1,vc0,vc1,vtr,vgeomID,vprimID);
-
+      new (this) TriangleMvMB(va0,va1,vb0,vb1,vc0,vc1,vgeomID,vprimID);
       return allBounds;
     }
 

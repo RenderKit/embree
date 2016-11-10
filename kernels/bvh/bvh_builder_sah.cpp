@@ -676,29 +676,6 @@ namespace embree
       BVH* bvh;
     };
 
-    template<int N>
-    struct CreateMSMBlurLeaf2<N,TriangleMesh,Triangle4vMB>
-    {
-      typedef BVHN<N> BVH;
-      typedef HeuristicMBlur<TriangleMesh,NUM_OBJECT_BINS> Heuristic;
-      typedef typename Heuristic::Set Set;
-      typedef typename Heuristic::Split Split;
-      typedef GeneralBuildRecord<Set,Split,PrimInfoMB> BuildRecord;
-
-      __forceinline CreateMSMBlurLeaf2 (BVH* bvh) : bvh(bvh) {}
-      
-      __forceinline const std::pair<LBBox3fa,BBox1f> operator() (const BuildRecord& current, Allocator* alloc)
-      {
-        size_t M = Triangle4vMB::fillMBlurBlocks(current.prims.prims->data(), current.prims.object_range, current.prims.time_range, bvh->scene);
-        Triangle4vMB* accel = (Triangle4vMB*) alloc->alloc1->malloc(M*sizeof(Triangle4vMB),BVH::byteNodeAlignment);
-        LBBox3fa lbounds = Triangle4vMB::fillMBlur(accel, current.prims.prims->data(), current.prims.object_range, current.prims.time_range, bvh->scene);
-        *current.parent = bvh->encodeLeaf((char*)accel,M);
-        return std::make_pair(lbounds,current.prims.time_range);
-      }
-
-      BVH* bvh;
-    };
-
     template<int N, typename Mesh, typename Primitive>
     struct BVHNBuilderMBlurSAH : public Builder
     {
