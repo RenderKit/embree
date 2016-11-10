@@ -815,7 +815,8 @@ namespace embree
                         progressMonitor,
                         pinfo,
                         N,BVH::maxDepth,logBlockSize,
-                        minLeafSize,maxLeafSize,travCost,intCost);
+                        minLeafSize,maxLeafSize,travCost,intCost,
+                        Primitive::singleTimeSegment);
         
         /* build hierarchy */
         Set set(prims); 

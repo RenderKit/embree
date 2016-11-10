@@ -36,6 +36,9 @@ namespace embree
     static Type type;
 
   public:
+    
+    /* primitive supports multiple time segments */
+    static const bool singleTimeSegment = false;
 
     /* Returns maximal number of stored triangles */
     static __forceinline size_t max_size() { return M; }

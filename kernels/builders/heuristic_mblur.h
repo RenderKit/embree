@@ -127,20 +127,23 @@ namespace embree
         }
 
         /*! finds the best split */
-        const Split findFallback(Set& set, PrimInfoMB& pinfo, const size_t logBlockSize)
+        const Split findFallback(Set& set, PrimInfoMB& pinfo, const size_t logBlockSize, const bool singleLeafTimeSegment)
         {
           /* test if one primitive has two time segments in time range, if so split time */
-          for (size_t i=set.object_range.begin(); i<set.object_range.end(); i++) 
+          if (singleLeafTimeSegment)
           {
-            const PrimRefMB& prim = (*set.prims)[i];
-            unsigned numTimeSegments = scene->get(prim.geomID())->numTimeSegments();
-            const int ilower = (int)ceil (0.9999f*pinfo.time_range.lower*numTimeSegments);
-            const int iupper = (int)floor(1.0001f*pinfo.time_range.upper*numTimeSegments);
-            const int localTimeSegments = iupper-ilower;
-            if (localTimeSegments != 1) {
-              const int icenter = (ilower + iupper)/2;
-              const float splitTime = float(icenter)/float(numTimeSegments);
-              return TemporalSplit(1.0f,-1,0,splitTime);
+            for (size_t i=set.object_range.begin(); i<set.object_range.end(); i++) 
+            {
+              const PrimRefMB& prim = (*set.prims)[i];
+              unsigned numTimeSegments = scene->get(prim.geomID())->numTimeSegments();
+              const int ilower = (int)ceil (0.9999f*pinfo.time_range.lower*numTimeSegments);
+              const int iupper = (int)floor(1.0001f*pinfo.time_range.upper*numTimeSegments);
+              const int localTimeSegments = iupper-ilower;
+              if (localTimeSegments != 1) {
+                const int icenter = (ilower + iupper)/2;
+                const float splitTime = float(icenter)/float(numTimeSegments);
+                return TemporalSplit(1.0f,-1,0,splitTime);
+              }
             }
           }
           
@@ -632,7 +635,7 @@ namespace embree
                              const PrimInfo& pinfo,
                              const size_t branchingFactor, const size_t maxDepth, 
                              const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize,
-                             const float travCost, const float intCost)
+                             const float travCost, const float intCost, const bool singleLeafTimeSegment)
           : HeuristicMBlur<Mesh,NUM_OBJECT_BINS>(scene), 
           identity(identity), 
           createAlloc(createAlloc), createNode(createNode), updateNode(updateNode), createLeaf(createLeaf), 
@@ -640,7 +643,7 @@ namespace embree
           pinfo(pinfo), 
           branchingFactor(branchingFactor), maxDepth(maxDepth),
           logBlockSize(logBlockSize), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
-          travCost(travCost), intCost(intCost)
+          travCost(travCost), intCost(intCost), singleLeafTimeSegment(singleLeafTimeSegment)
         {
           if (branchingFactor > MAX_BRANCHING_FACTOR)
             throw_RTCError(RTC_UNKNOWN_ERROR,"bvh_builder: branching factor too large");
@@ -653,7 +656,7 @@ namespace embree
             throw_RTCError(RTC_UNKNOWN_ERROR,"depth limit reached");
 
           /* replace already found split by fallback split */
-          current.split = findFallback(current);
+          current.split = findFallback(current,singleLeafTimeSegment);
 
           /* create leaf for few primitives */
           if (current.pinfo.size() <= maxLeafSize && current.split.data != -1)
@@ -689,8 +692,8 @@ namespace embree
             BuildRecord lrecord(current.depth+1);
             BuildRecord rrecord(current.depth+1);
             partition(brecord,lrecord,rrecord);
-            lrecord.split = findFallback(lrecord);
-            rrecord.split = findFallback(rrecord);
+            lrecord.split = findFallback(lrecord,singleLeafTimeSegment);
+            rrecord.split = findFallback(rrecord,singleLeafTimeSegment);
             
             /* add new children left and right */
             children[bestChild] = children[numChildren-1];
@@ -717,8 +720,8 @@ namespace embree
           return Heuristic::find (current.prims,current.pinfo,logBlockSize);
         }
 
-        __forceinline const typename Heuristic::Split findFallback(BuildRecord& current) {
-          return Heuristic::findFallback (current.prims,current.pinfo,logBlockSize);
+        __forceinline const typename Heuristic::Split findFallback(BuildRecord& current, bool singleLeafTimeSegment) {
+          return Heuristic::findFallback (current.prims,current.pinfo,logBlockSize,singleLeafTimeSegment);
         }
         
         __forceinline void partition(BuildRecord& brecord, BuildRecord& lrecord, BuildRecord& rrecord) {
@@ -825,6 +828,7 @@ namespace embree
         const size_t maxLeafSize;
         const float travCost;
         const float intCost;
+        const bool singleLeafTimeSegment;
       };
   }
 }
