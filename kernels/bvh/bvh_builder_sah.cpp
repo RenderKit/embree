@@ -607,19 +607,7 @@ namespace embree
         if (hasTimeSplits)
         {
           AlignedNodeMB4D* node = (AlignedNodeMB4D*) alloc->alloc0->malloc(sizeof(AlignedNodeMB4D),BVH::byteNodeAlignment); node->clear();
-          for (size_t i=0; i<num; i++)
-          {
-#if 0
-            LBBox3fa cbounds = empty;
-            for (size_t j=children[i]->prims.object_range.begin(); j<children[i]->prims.object_range.end(); j++) 
-            {
-              PrimRefMB& ref = (*children[i]->prims.prims)[j];
-              cbounds.extend(bvh->scene->getTriangleMesh(ref.geomID())->linearBounds(ref.primID(),children[i]->prims.time_range));
-            }
-            node->set(i,cbounds.global(children[i]->prims.time_range),children[i]->prims.time_range);
-#endif
-            children[i]->parent = (size_t*)&node->child(i);
-          }
+          for (size_t i=0; i<num; i++) children[i]->parent = (size_t*)&node->child(i);
           NodeRef ref = bvh->encodeNode(node);
           *current.parent = ref;
           return ref;
@@ -627,19 +615,7 @@ namespace embree
         else
         {
           AlignedNodeMB* node = (AlignedNodeMB*) alloc->alloc0->malloc(sizeof(AlignedNodeMB),BVH::byteNodeAlignment); node->clear();
-          for (size_t i=0; i<num; i++)
-          {
-#if 0
-            LBBox3fa cbounds = empty;
-            for (size_t j=children[i]->prims.object_range.begin(); j<children[i]->prims.object_range.end(); j++) 
-            {
-              PrimRefMB& ref = (*children[i]->prims.prims)[j];
-              cbounds.extend(bvh->scene->getTriangleMesh(ref.geomID())->linearBounds(ref.primID(),children[i]->prims.time_range));
-            }
-            node->set(i,cbounds.global(children[i]->prims.time_range));
-#endif
-            children[i]->parent = (size_t*)&node->child(i);
-          }
+          for (size_t i=0; i<num; i++) children[i]->parent = (size_t*)&node->child(i);
           NodeRef ref = bvh->encodeNode(node);
           *current.parent = ref;
           return ref;
@@ -725,7 +701,7 @@ namespace embree
         auto updateNodeFunc = [&] (NodeRef ref, Set& prims, const std::pair<LBBox3fa,BBox1f>* bounds, const size_t num) -> std::pair<LBBox3fa,BBox1f> {
 
           assert(num <= N);
-#if 1
+
           if (ref.isAlignedNodeMB())
           {
             LBBox3fa cbounds = empty;
@@ -751,7 +727,7 @@ namespace embree
             }
             return std::make_pair(cbounds,prims.time_range);
           }
-#endif     
+
           return LBBox3fa::merge_with_time(bounds,num);
         };
         auto identity = std::make_pair(LBBox3fa(empty),BBox1f(empty));
