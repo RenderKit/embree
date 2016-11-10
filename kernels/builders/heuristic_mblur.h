@@ -421,6 +421,7 @@ namespace embree
 
           __forceinline void split(size_t bestChild)
           {
+            /* make sure the primrefs for this child are valid */
             restore(bestChild);
 
             Node* node = children[bestChild];
@@ -528,7 +529,6 @@ namespace embree
 
           __forceinline void add(BuildRecord& record) {
             children[numChildren] = record;
-            active[numChildren] = true;
             numChildren++;
           }
 
@@ -543,17 +543,6 @@ namespace embree
             /* find new splits */
             lrecord.split = builder->find(lrecord);
             rrecord.split = builder->find(rrecord);
-            
-            /* temporal split */
-            if (brecord.split.data == -1) {
-              active[bestChild] = false;
-              active[numChildren] = true;
-            } 
-            /* standard split */
-            else {
-              active[bestChild] = true;
-              active[numChildren] = true;
-            }
             children[bestChild  ] = lrecord;
             children[numChildren] = rrecord; 
             numChildren++;
@@ -581,7 +570,6 @@ namespace embree
             ssize_t bestChild = -1;
             for (size_t i=0; i<numChildren; i++) 
             {
-              //if (!active[i]) continue;
               if (children[i].pinfo.size() <= builder->minLeafSize) continue; 
               if (expectedApproxHalfArea(children[i].pinfo.geomBounds) > bestSAH) {
                 bestChild = i; bestSAH = expectedApproxHalfArea(children[i].pinfo.geomBounds); 
@@ -593,7 +581,6 @@ namespace embree
         public:
           GeneralBVHMBBuilder* builder;
           BuildRecord children[MAX_BRANCHING_FACTOR];
-          bool active[MAX_BRANCHING_FACTOR];
           size_t numChildren;
           size_t depth;
         };
