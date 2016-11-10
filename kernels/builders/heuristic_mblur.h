@@ -127,6 +127,28 @@ namespace embree
         }
 
         /*! finds the best split */
+        const Split findFallback(Set& set, PrimInfoMB& pinfo, const size_t logBlockSize)
+        {
+          /* test if one primitive has two time segments in time range, if so split time */
+          for (size_t i=set.object_range.begin(); i<set.object_range.end(); i++) 
+          {
+            const PrimRefMB& prim = (*set.prims)[i];
+            unsigned numTimeSegments = scene->get(prim.geomID())->numTimeSegments();
+            const int ilower = (int)ceil (0.9999f*pinfo.time_range.lower*numTimeSegments);
+            const int iupper = (int)floor(1.0001f*pinfo.time_range.upper*numTimeSegments);
+            const int localTimeSegments = iupper-ilower;
+            if (localTimeSegments != 1) {
+              const int icenter = (ilower + iupper)/2;
+              const float splitTime = float(icenter)/float(numTimeSegments);
+              return TemporalSplit(1.0f,-1,0,splitTime);
+            }
+          }
+          
+          /* otherwise return fallback split */
+          return Split(1.0f,-2);
+        }
+
+        /*! finds the best split */
         const ObjectSplit object_find(const Set& set, const PrimInfoMB& pinfo, const size_t logBlockSize)
         {
           ObjectBinner binner(empty); // FIXME: this clear can be optimized away
@@ -134,6 +156,7 @@ namespace embree
           binner.bin_parallel(set.prims->data(),set.object_range.begin(),set.object_range.end(),PARALLEL_FIND_BLOCK_SIZE,PARALLEL_THRESHOLD,mapping);
           ObjectSplit osplit = binner.best(mapping,logBlockSize);
           osplit.sah *= pinfo.time_range.size();
+          if (!osplit.valid()) osplit.data = -2; // use fallback split
           return osplit;
         }
 
@@ -243,25 +266,28 @@ namespace embree
           assert(set.object_range.size() > 0);
           TemporalBinInfo<MBLUR_TIME_SPLIT_LOCATIONS> binner(empty);
           binner.bin_parallel(set.prims->data(),set.object_range.begin(),set.object_range.end(),PARALLEL_FIND_BLOCK_SIZE,PARALLEL_THRESHOLD,set.time_range,numTimeSegments,scene);
-          return binner.best(logBlockSize,set.time_range,numTimeSegments);
+          TemporalSplit tsplit = binner.best(logBlockSize,set.time_range,numTimeSegments);
+          if (!tsplit.valid()) tsplit.data = -2; // use fallback split
+          return tsplit;
         }
         
         /*! array partitioning */
         void split(const Split& split, const PrimInfoMB& pinfo, const Set& set, PrimInfoMB& left, Set& lset, PrimInfoMB& right, Set& rset)
         {
-          /* valid split */
-          if (unlikely(!split.valid())) {
+          /* perform fallback split */
+          //if (unlikely(!split.valid())) {
+          if (unlikely(split.data == -2)) {
             deterministic_order(set);
             return splitFallback(set,left,lset,right,rset);
           }
-
           /* perform temporal split */
-          if (unlikely(split.data != 0))
+          else if (unlikely(split.data == -1)) {
             temporal_split(split,pinfo,set,left,lset,right,rset);
-          
+          }
           /* perform object split */
-          else 
+          else {
             object_split(split,pinfo,set,left,lset,right,rset);
+          }
         }
 
         /*! array partitioning */
@@ -626,8 +652,11 @@ namespace embree
           if (current.depth > maxDepth) 
             throw_RTCError(RTC_UNKNOWN_ERROR,"depth limit reached");
 
+          /* replace already found split by fallback split */
+          current.split = findFallback(current);
+
           /* create leaf for few primitives */
-          if (current.pinfo.size() <= maxLeafSize)
+          if (current.pinfo.size() <= maxLeafSize && current.split.data != -1)
             return createLeaf(current,alloc);
           
           /* fill all children by always splitting the largest one */
@@ -644,7 +673,7 @@ namespace embree
             for (size_t i=0; i<numChildren; i++)
             {
               /* ignore leaves as they cannot get split */
-              if (children[i].pinfo.size() <= maxLeafSize)
+              if (children[i].pinfo.size() <= maxLeafSize && children[i].split.data != -1)
                 continue;
               
               /* remember child with largest size */
@@ -656,16 +685,17 @@ namespace embree
             if (bestChild == (size_t)-1) break;
             
             /*! split best child into left and right child */
-            BuildRecord left(current.depth+1);
-            BuildRecord right(current.depth+1);
-            Heuristic::splitFallback(children[bestChild].prims,left.pinfo,left.prims,right.pinfo,right.prims);
-            left .split = find(left );
-            right.split = find(right);
+            BuildRecord& brecord = children[bestChild];
+            BuildRecord lrecord(current.depth+1);
+            BuildRecord rrecord(current.depth+1);
+            partition(brecord,lrecord,rrecord);
+            lrecord.split = findFallback(lrecord);
+            rrecord.split = findFallback(rrecord);
             
             /* add new children left and right */
             children[bestChild] = children[numChildren-1];
-            children[numChildren-1] = left;
-            children[numChildren+0] = right;
+            children[numChildren-1] = lrecord;
+            children[numChildren+0] = rrecord;
             numChildren++;
             
           } while (numChildren < branchingFactor);
@@ -685,6 +715,10 @@ namespace embree
         
         __forceinline const typename Heuristic::Split find(BuildRecord& current) {
           return Heuristic::find (current.prims,current.pinfo,logBlockSize);
+        }
+
+        __forceinline const typename Heuristic::Split findFallback(BuildRecord& current) {
+          return Heuristic::findFallback (current.prims,current.pinfo,logBlockSize);
         }
         
         __forceinline void partition(BuildRecord& brecord, BuildRecord& lrecord, BuildRecord& rrecord) {
