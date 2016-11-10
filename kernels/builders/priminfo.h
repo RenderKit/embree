@@ -176,7 +176,7 @@ namespace embree
       } 
 
       __forceinline PrimInfoMB (EmptyTy)
-	: CentGeom<LBBox3fa>(empty), begin(0), end(0), num_time_segments(0), time_range(0.0f,1.0f) {}
+	: CentGeom<LBBox3fa>(empty), begin(0), end(0), num_time_segments(0), max_num_time_segments(0), time_range(0.0f,1.0f) {}
 
       template<typename PrimRef> 
         __forceinline void add_primref(const PrimRef& prim) 
@@ -184,6 +184,7 @@ namespace embree
         CentGeom<LBBox3fa>::extend_primref(prim);
         end++;
         num_time_segments += prim.size();
+        max_num_time_segments = max(max_num_time_segments,size_t(prim.totalTimeSegments()));
       }
 
       __forceinline void merge(const PrimInfoMB& other)
@@ -192,6 +193,7 @@ namespace embree
         begin += other.begin;
 	end += other.end;
         num_time_segments += other.num_time_segments;
+        max_num_time_segments = max(max_num_time_segments,other.max_num_time_segments);
       }
 
       static __forceinline const PrimInfoMB merge(const PrimInfoMB& a, const PrimInfoMB& b) {
@@ -225,6 +227,7 @@ namespace embree
     public:
       size_t begin,end;          //!< number of primitives
       size_t num_time_segments;  //!< total number of time segments of all added primrefs
+      size_t max_num_time_segments; //!< maximal number of time segments of a primitive
       BBox1f time_range;
     };
   }

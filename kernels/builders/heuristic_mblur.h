@@ -81,20 +81,12 @@ namespace embree
           /* first try standard object split */
           const ObjectSplit object_split = object_find(set,pinfo,logBlockSize);
           const float object_split_sah = object_split.splitSAH();
-
-          /* calculate number of timesegments */
-          unsigned numTimeSegments = 0;
-          for (size_t i=set.object_range.begin(); i<set.object_range.end(); i++) {
-            const PrimRefMB& prim = (*set.prims)[i];
-            unsigned segments = scene->get(prim.geomID())->numTimeSegments();
-            numTimeSegments = max(numTimeSegments,segments);
-          }
   
           /* do temporal splits only if the child bounds overlap */
-          if (set.time_range.size() > 1.99f/float(numTimeSegments))
-          //if (set.time_range.size() > 1.01f/float(numTimeSegments))
+          if (set.time_range.size() > 1.99f/float(pinfo.max_num_time_segments))
+          //if (set.time_range.size() > 1.01f/float(pinfo.max_num_time_segments))
           {
-            const TemporalSplit temporal_split = temporal_find(set, pinfo, logBlockSize, numTimeSegments);
+            const TemporalSplit temporal_split = temporal_find(set, pinfo, logBlockSize);
             const float temporal_split_sah = temporal_split.splitSAH();
 
             /* take temporal split if it improved SAH */
@@ -244,9 +236,10 @@ namespace embree
         };
         
         /*! finds the best split */
-        const TemporalSplit temporal_find(const Set& set, const PrimInfoMB& pinfo, const size_t logBlockSize, const unsigned numTimeSegments)
+        const TemporalSplit temporal_find(const Set& set, const PrimInfoMB& pinfo, const size_t logBlockSize)
         {
           assert(set.object_range.size() > 0);
+          unsigned numTimeSegments = pinfo.max_num_time_segments;
           TemporalBinInfo<MBLUR_TIME_SPLIT_LOCATIONS> binner(empty);
           binner.bin_parallel(set.prims->data(),set.object_range.begin(),set.object_range.end(),PARALLEL_FIND_BLOCK_SIZE,PARALLEL_THRESHOLD,set.time_range,numTimeSegments,scene);
           TemporalSplit tsplit = binner.best(logBlockSize,set.time_range,numTimeSegments);
@@ -311,9 +304,10 @@ namespace embree
               avector<PrimRefMB>& prims = *set.prims;
               const unsigned geomID = prims[i].geomID();
               const unsigned primID = prims[i].primID();
-              const LBBox3fa lbounds = ((Mesh*)scene->get(geomID))->linearBounds(primID,time_range);
+              Mesh* mesh = (Mesh*)scene->get(geomID);
+              const LBBox3fa lbounds = mesh->linearBounds(primID,time_range);
               const unsigned num_time_segments = calculateNumOverlappingTimeSegments(scene,geomID,time_range);
-              const PrimRefMB prim(lbounds,num_time_segments,geomID,primID);
+              const PrimRefMB prim(lbounds,num_time_segments,mesh->numTimeSegments(),geomID,primID);
 #if MBLUR_NEW_ARRAY
               (*lprims)[i-set.object_range.begin()] = prim;
 #else
