@@ -22,7 +22,7 @@
 #define MBLUR_SPLIT_OVERLAP_THRESHOLD 0.1f
 #define MBLUR_TIME_SPLIT_THRESHOLD 1.25f
 #define MBLUR_TIME_SPLIT_LOCATIONS 1
-#define MBLUR_NEW_ARRAY 1
+#define MBLUR_NEW_ARRAY 0
 
 namespace embree
 {
@@ -402,7 +402,7 @@ namespace embree
             }
 
           public:
-            BuildRecord record;
+            BuildRecord record; // has to be first member
             bool valid;
             Node* lchild;
             Node* rchild;
@@ -461,6 +461,10 @@ namespace embree
             return children[i]->record;
           }
           
+          __forceinline BuildRecord** childrenArray() {
+            return (BuildRecord**) children;
+          }
+
           bool hasTimeSplits() const {
             return hasTimeSplit;
           }
@@ -556,6 +560,13 @@ namespace embree
             return children[i];
           }
 
+          __forceinline BuildRecord** childrenArray() 
+          {
+            for (size_t i=0; i<numChildren; i++) 
+              children_ptrs[i] = &children[i];
+            return children_ptrs;
+          }
+
           bool hasTimeSplits() const {
             return false;
           }
@@ -581,6 +592,7 @@ namespace embree
         public:
           GeneralBVHMBBuilder* builder;
           BuildRecord children[MAX_BRANCHING_FACTOR];
+          BuildRecord* children_ptrs[MAX_BRANCHING_FACTOR];
           size_t numChildren;
           size_t depth;
         };
@@ -728,11 +740,7 @@ namespace embree
           //std::sort(&children[0],&children[children.size()],std::greater<BuildRecord>()); // FIXME: reduces traversal performance of bvh8.triangle4 (need to verified) !!
           
           /*! create an inner node */
-          BuildRecord* records[MAX_BRANCHING_FACTOR];
-          for (size_t i=0; i<children.size(); i++) records[i] = &children[i];
-          auto node = createNode(current,records,children.size(),alloc);
-          //auto node = createNode(current,children.children,children.size(),alloc);
-          //for (size_t i=0; i<children.size(); i++) children[i].parent = records[i].parent;
+          auto node = createNode(current,children.childrenArray(),children.size(),alloc);
           
           /* spawn tasks */
           if (current.size() > SINGLE_THREADED_THRESHOLD && !children.hasTimeSplits()) 
