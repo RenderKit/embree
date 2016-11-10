@@ -22,7 +22,7 @@
 namespace embree
 {
   AccelN::AccelN () 
-    : Accel(AccelData::TY_ACCELN), accels(nullptr), validAccels(nullptr) {}
+    : Accel(AccelData::TY_ACCELN), accels(nullptr), validAccels(nullptr), validIntersectorN(false) {}
 
   AccelN::~AccelN() 
   {
@@ -163,9 +163,11 @@ namespace embree
 
     /* create list of non-empty acceleration structures */
     validAccels.clear();
+    validIntersectorN = true;
     for (size_t i=0; i<accels.size(); i++) {
       if (accels[i]->bounds.empty()) continue;
       validAccels.push_back(accels[i]);
+      if (!accels[i]->intersectors.intersectorN) validIntersectorN = false;
     }
 
     if (validAccels.size() == 1) {
