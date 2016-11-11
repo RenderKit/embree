@@ -183,15 +183,15 @@ namespace embree
     /*! calculates the linear bounds of the i'th primitive at the itimeGlobal'th time segment */
     __forceinline LBBox3fa linearBounds(size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal) const
     {
-      return Geometry::linearBounds([&] (size_t itime) { return bounds(i, itime); },
-                                    itimeGlobal, numTimeStepsGlobal, numTimeSteps);
+      return Geometry::linearBounds(itimeGlobal, numTimeStepsGlobal, numTimeSteps,
+                                    [&] (size_t itime) { return bounds(i, itime); });
     }
 
     /*! calculates the linear bounds of the i'th primitive at the itimeGlobal'th time segment */
     __forceinline LBBox3fa linearBounds(const AffineSpace3fa& space, size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal) const
     {
-      return Geometry::linearBounds([&] (size_t itime) { return bounds(space, i, itime); },
-                                    itimeGlobal, numTimeStepsGlobal, numTimeSteps);
+      return Geometry::linearBounds(itimeGlobal, numTimeStepsGlobal, numTimeSteps,
+                                    [&] (size_t itime) { return bounds(space, i, itime); });
     }
 
     /*! calculates the build bounds of the i'th primitive, if it's valid */
@@ -248,8 +248,8 @@ namespace embree
     /*! calculates the i'th build primitive at the itimeGlobal'th time segment, if it's valid */
     __forceinline bool buildPrim(size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal, Vec3fa& c0, Vec3fa& c1, Vec3fa& c2, Vec3fa& c3) const
     {
-      if (!Geometry::validLinearBounds([&] (size_t itime) { return valid(i, itime); },
-                                       itimeGlobal, numTimeStepsGlobal, numTimeSteps))
+      if (!Geometry::validLinearBounds(itimeGlobal, numTimeStepsGlobal, numTimeSteps,
+                                      [&] (size_t itime) { return valid(i, itime); }))
         return false;
 
       const unsigned int index = curve(i);
