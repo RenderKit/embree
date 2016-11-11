@@ -237,10 +237,6 @@ namespace embree
   /*! computes luminance of a color */
   __forceinline float luminance (const Color& a) { return 0.212671f*a.r + 0.715160f*a.g + 0.072169f*a.b; }
 
-  __forceinline Color exp (const Color& a) { return Color(exp_ps(a.m128)); }
-  __forceinline Color log (const Color& a) { return Color(log_ps(a.m128)); }
-  __forceinline Color pow (const Color& a, const float& b) { return Color(select(vfloat4(a)<=vfloat4(zero),vfloat4(zero),vfloat4(exp_ps(log(a)*b)))); }
-
   /*! output operator */
   inline std::ostream& operator<<(std::ostream& cout, const Color& a) {
     return cout << "(" << a.r << ", " << a.g << ", " << a.b << ")";
