@@ -26,8 +26,10 @@ namespace embree
   struct IntersectContext
   {
     enum {
-      INPUT_RAY_DATA_AOS = 0,
-      INPUT_RAY_DATA_SOA = 1
+      INPUT_RAY_DATA_AOS   = 0,
+      INPUT_RAY_DATA_SOA4  = 4,
+      INPUT_RAY_DATA_SOA8  = 8,
+      INPUT_RAY_DATA_SOA16 = 16
     };
 
   public:
@@ -39,5 +41,17 @@ namespace embree
     const RTCIntersectContext* user;
     size_t flags;
     const unsigned* geomID_to_instID; // required for xfm node handling
+
+    static __forceinline size_t encodeSIMDWidth(const size_t width)
+    {
+      assert(width == 4 || width == 8 || width == 16);
+      return width;
+    }
+
+    __forceinline size_t getInputSIMDWidth()
+    {
+      return flags;
+    }
+    
   };
 }

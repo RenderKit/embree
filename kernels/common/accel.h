@@ -331,13 +331,14 @@ namespace embree
             intersect(*rayN[i],context);
         else
         {
+          assert(context->getInputSIMDWidth() == VSIZEX);
           const size_t numPackets = (N+VSIZEX-1)/VSIZEX;
           for (size_t i=0; i<numPackets; i++)
           {
             RayK<VSIZEX> &ray = *(RayK<VSIZEX>*)rayN[i];
-            vboolx valid = ray.tnear <= ray.tfar;
+            vbool<VSIZEX> valid = ray.tnear <= ray.tfar;
             intersect(valid,ray,context);
-          }
+          }      
         }
       }
     }
@@ -386,6 +387,7 @@ namespace embree
       intersectors.intersector16.occluded(valid,intersectors.ptr,ray,context);
     }
 
+
     /*! Tests if a packet of N rays in SOA layout is occluded by the scene. */
     __forceinline void occludedN (RTCRay** rayN, const size_t N, IntersectContext* context) 
     {
@@ -399,13 +401,14 @@ namespace embree
             occluded(*rayN[i],context);
         else
         {
+          assert(context->getInputSIMDWidth() == VSIZEX);
           const size_t numPackets = (N+VSIZEX-1)/VSIZEX;
           for (size_t i=0; i<numPackets; i++)
           {
             RayK<VSIZEX> &ray = *(RayK<VSIZEX>*)rayN[i];
-            vboolx valid = ray.tnear <= ray.tfar;
+            vbool<VSIZEX> valid = ray.tnear <= ray.tfar;
             occluded(valid,ray,context);
-          }
+          }      
         }
       }
     }
