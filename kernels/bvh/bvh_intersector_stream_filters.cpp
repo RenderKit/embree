@@ -200,7 +200,9 @@ namespace embree
           max_y = max(max_y,ray.dir.y);
           max_z = max(max_z,ray.dir.z);          
           all_active &= ray.tnear <= ray.tfar;
-
+#if defined(EMBREE_IGNORE_INVALID_RAYS)
+          all_active &= ray.valid();
+#endif
         }
         const bool commonDirection =                                    \
           (all(max_x < vfloatx(zero)) || all(min_x >= vfloatx(zero))) && 
