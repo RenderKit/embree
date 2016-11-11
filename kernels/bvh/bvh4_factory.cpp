@@ -835,7 +835,7 @@ namespace embree
     intersectors.intersector4  = BVH4VirtualIntersector4Chunk;
     intersectors.intersector8  = BVH4VirtualIntersector8Chunk;
     intersectors.intersector16 = BVH4VirtualIntersector16Chunk;
-    intersectors.intersectorN  = BVH4VirtualIntersectorStream;
+    //intersectors.intersectorN  = BVH4VirtualIntersectorStream;
     return intersectors;
   }
 
