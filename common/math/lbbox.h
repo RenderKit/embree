@@ -128,7 +128,7 @@ namespace embree
       return lerp(bounds0,bounds1,t);
     }
 
-    __forceinline LBBox<T> interpolate( const BBox1f dt ) const {
+    __forceinline LBBox<T> interpolate( const BBox1f& dt ) const {
       return LBBox<T>(interpolate(dt.lower),interpolate(dt.upper));
     }
 
@@ -139,7 +139,7 @@ namespace embree
 
     __forceinline float expectedHalfArea() const;
 
-    __forceinline float expectedHalfArea(const BBox1f dt) const {
+    __forceinline float expectedHalfArea(const BBox1f& dt) const {
       return interpolate(dt).expectedHalfArea();
     }
 

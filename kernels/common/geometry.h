@@ -22,6 +22,24 @@ namespace embree
 {
   class Scene;
 
+  /* calculate time segment itime and fractional time ftime */
+  __forceinline int getTimeSegment(float time, float numTimeSegments, float& ftime)
+  {
+    const float timeScaled = time * numTimeSegments;
+    const float itimef = clamp(floor(timeScaled), 0.0f, numTimeSegments-1.0f);
+    ftime = timeScaled - itimef;
+    return int(itimef);
+  }
+
+  template<int N>
+  __forceinline vint<N> getTimeSegment(const vfloat<N>& time, const vfloat<N>& numTimeSegments, vfloat<N>& ftime)
+  {
+    const vfloat<N> timeScaled = time * numTimeSegments;
+    const vfloat<N> itimef = clamp(floor(timeScaled), vfloat<N>(zero), numTimeSegments-1.0f);
+    ftime = timeScaled - itimef;
+    return vint<N>(itimef);
+  }
+
   /*! Base class all geometries are derived from */
   class Geometry
   {
@@ -307,7 +325,7 @@ namespace embree
     template<typename BoundsFunc>
     __forceinline BBox3fa interpolateBounds(const BoundsFunc& bounds, float time) const
     {
-      float ftime; size_t itime = getTimeSegment(time, numTimeSegments(), ftime);
+      float ftime; size_t itime = getTimeSegment(time, fnumTimeSegments, ftime);
       const BBox3fa b0 = bounds(itime+0);
       const BBox3fa b1 = bounds(itime+1);
       return lerp(b0, b1, ftime);
@@ -317,7 +335,7 @@ namespace embree
     template<typename BoundsFunc>
     __forceinline bool interpolateBounds(const BoundsFunc& bounds, float time, BBox3fa& bbox) const
     {
-      float ftime; size_t itime = getTimeSegment(time, numTimeSegments(), ftime);
+      float ftime; size_t itime = getTimeSegment(time, fnumTimeSegments, ftime);
       BBox3fa b0; if (unlikely(!bounds(itime+0, b0))) return false;
       BBox3fa b1; if (unlikely(!bounds(itime+1, b1))) return false;
       bbox = lerp(b0, b1, ftime);
@@ -579,22 +597,4 @@ namespace embree
   template<> __forceinline bool Geometry::hasISPCIntersectionFilter<vfloat16>() const { return (ispcIntersectionFilterMask & HAS_FILTER16) != 0; }
   template<> __forceinline bool Geometry::hasISPCOcclusionFilter   <vfloat16>() const { return (ispcOcclusionFilterMask    & HAS_FILTER16) != 0; }
 #endif
-
-  /* calculate time segment itime and fractional time ftime */
-  __forceinline int getTimeSegment(float time, float numTimeSegments, float& ftime)
-  {
-    const float timeScaled = time * numTimeSegments;
-    const float itimef = clamp(floor(timeScaled), 0.0f, numTimeSegments-1.0f);
-    ftime = timeScaled - itimef;
-    return int(itimef);
-  }
-
-  template<int N>
-  __forceinline vint<N> getTimeSegment(const vfloat<N>& time, const vfloat<N>& numTimeSegments, vfloat<N>& ftime)
-  {
-    const vfloat<N> timeScaled = time * numTimeSegments;
-    const vfloat<N> itimef = clamp(floor(timeScaled), vfloat<N>(zero), numTimeSegments-1.0f);
-    ftime = timeScaled - itimef;
-    return vint<N>(itimef);
-  }
 }
