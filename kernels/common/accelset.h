@@ -209,8 +209,8 @@ namespace embree
       /*! calculates the linear bounds of the i'th item at the itimeGlobal'th time segment */
       __forceinline LBBox3fa linearBounds(size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal) const
       {
-        return Geometry::linearBounds(itimeGlobal, numTimeStepsGlobal, numTimeSteps,
-                                      [&] (size_t itime) { return bounds(i, itime); });
+        return Geometry::linearBounds([&] (size_t itime) { return bounds(i, itime); },
+                                      itimeGlobal, numTimeStepsGlobal, numTimeSteps);
       }
 
       /*! calculates the build bounds of the i'th item, if it's valid */
@@ -233,13 +233,12 @@ namespace embree
       /*! calculates the build bounds of the i'th item at the itimeGlobal'th time segment, if it's valid */
       __forceinline bool buildBounds(size_t i, size_t itimeGlobal, size_t numTimeStepsGlobal, BBox3fa& bbox) const
       {
-        return Geometry::buildBounds(itimeGlobal, numTimeStepsGlobal, numTimeSteps,
-                                     [&] (size_t itime, BBox3fa& bbox) -> bool
+        return Geometry::buildBounds([&] (size_t itime, BBox3fa& bbox) -> bool
                                      {
                                        bbox = bounds(i, itime);
                                        return isvalid(bbox);
                                      },
-                                     bbox);
+                                     itimeGlobal, numTimeStepsGlobal, numTimeSteps, bbox);
       }
       
       void enabling ();
