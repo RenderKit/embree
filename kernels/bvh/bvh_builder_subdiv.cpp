@@ -292,13 +292,12 @@ namespace embree
             BBox3fa bound;
             if (mblur) {
               size_t patchNumTimeSteps = scene->getSubdivMesh(subdiv_patches[patchIndexMB].geom)->numTimeSteps;
-              Geometry::buildBounds(t, numTimeSteps, patchNumTimeSteps,
-                                    [&] (size_t itime, BBox3fa& bbox) -> bool
+              Geometry::buildBounds([&] (size_t itime, BBox3fa& bbox) -> bool
                                     {
                                       bbox = bounds[patchIndexMB+itime];
                                       return true;
                                     },
-                                    bound);
+                                    t, numTimeSteps, patchNumTimeSteps, bound);
             } else {
               bound = bounds[patchIndexMB];
             }
@@ -407,8 +406,8 @@ namespace embree
               SubdivPatch1Base& patch = subdiv_patches[patchIndexMB+0];
               *current.parent = bvh->encodeLeaf((char*)&patch,1);
               size_t patchNumTimeSteps = scene->getSubdivMesh(patch.geom)->numTimeSteps;
-              return Geometry::linearBounds(t, numTimeSteps, patchNumTimeSteps,
-                                            [&] (size_t itime) { return bounds[patchIndexMB+itime]; });
+              return Geometry::linearBounds([&] (size_t itime) { return bounds[patchIndexMB+itime]; },
+                                            t, numTimeSteps, patchNumTimeSteps);
             };
 
             /* create primrefs */
