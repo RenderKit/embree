@@ -303,6 +303,70 @@ namespace embree
 
   public:
 
+    /*! calculates the interpolated bounds of a primitive at the specified time */
+    template<typename BoundsFunc>
+    __forceinline BBox3fa interpolateBounds(const BoundsFunc& bounds, float time) const
+    {
+      float ftime; size_t itime = getTimeSegment(time, numTimeSegments(), ftime);
+      const BBox3fa b0 = bounds(itime+0);
+      const BBox3fa b1 = bounds(itime+1);
+      return lerp(b0, b1, ftime);
+    }
+
+    /*! calculates the interpolated bounds of a primitive at the specified time */
+    template<typename BoundsFunc>
+    __forceinline bool interpolateBounds(const BoundsFunc& bounds, float time, BBox3fa& bbox) const
+    {
+      float ftime; size_t itime = getTimeSegment(time, numTimeSegments(), ftime);
+      BBox3fa b0; if (unlikely(!bounds(itime+0, b0))) return false;
+      BBox3fa b1; if (unlikely(!bounds(itime+1, b1))) return false;
+      bbox = lerp(b0, b1, ftime);
+      return true;
+    }
+
+    /*! calculates the linear bounds of the i'th primitive for the specified time range */
+    template<typename BoundsFunc>
+    __forceinline LBBox3fa linearBounds(const BoundsFunc& bounds, const BBox1f& time_range) const
+    {
+      BBox3fa b0 = interpolateBounds(bounds, time_range.lower);
+      BBox3fa b1 = interpolateBounds(bounds, time_range.upper);
+      const int ilower = (int)ceil (time_range.lower*numTimeSegments());
+      const int iupper = (int)floor(time_range.upper*numTimeSegments());
+      for (size_t i = ilower; i <= iupper; i++)
+      {
+        const float f = (float(i)/float(numTimeSegments()) - time_range.lower) / time_range.size();
+        const BBox3fa bt = lerp(b0, b1, f);
+        const BBox3fa bi = bounds(i);
+        const Vec3fa dlower = min(bi.lower - bt.lower, Vec3fa(zero));
+        const Vec3fa dupper = max(bi.upper - bt.upper, Vec3fa(zero));
+        b0.lower += dlower; b1.lower += dlower;
+        b0.upper += dupper; b1.upper += dupper;
+      }
+      return LBBox3fa(b0, b1);
+    }
+
+    /*! calculates the linear bounds of the i'th primitive for the specified time range */
+    template<typename BoundsFunc>
+    __forceinline bool linearBounds(const BoundsFunc& bounds, const BBox1f& time_range, LBBox3fa& bbox) const
+    {
+      BBox3fa b0; if (unlikely(!interpolateBounds(bounds, time_range.lower, b0))) return false;
+      BBox3fa b1; if (unlikely(!interpolateBounds(bounds, time_range.upper, b1))) return false;
+      const int ilower = (int)ceil (time_range.lower*numTimeSegments());
+      const int iupper = (int)floor(time_range.upper*numTimeSegments());
+      for (size_t i = ilower; i <= iupper; i++)
+      {
+        const float f = (float(i)/float(numTimeSegments()) - time_range.lower) / time_range.size();
+        const BBox3fa bt = lerp(b0, b1, f);
+        BBox3fa bi; if (unlikely(!bounds(i, bi))) return false;
+        const Vec3fa dlower = min(bi.lower - bt.lower, Vec3fa(zero));
+        const Vec3fa dupper = max(bi.upper - bt.upper, Vec3fa(zero));
+        b0.lower += dlower; b1.lower += dlower;
+        b0.upper += dupper; b1.upper += dupper;
+      }
+      bbox = LBBox3fa(b0, b1);
+      return true;
+    }
+
     /*! calculates the linear bounds of a primitive at the itimeGlobal'th time segment */
     template<typename BoundsFunc>
     __forceinline static LBBox3fa linearBounds(size_t itimeGlobal, size_t numTimeStepsGlobal, size_t numTimeSteps, const BoundsFunc& bounds)
