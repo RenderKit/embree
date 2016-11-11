@@ -147,9 +147,6 @@ namespace embree
   /*! Generate a JPEG encoded image from a RGB8 buffer in memory. */
   void encodeRGB8_to_JPEG(unsigned char *image, size_t width, size_t height, unsigned char **encoded, unsigned long *capacity);
 
-  /*! Loads image from EXR file. */
-  Ref<Image> loadExr(const FileName& fileName);
-  
   /*! Loads image from file. Format is auto detected. */
   Ref<Image> loadImage(const FileName& filename, bool cache = false);
 
@@ -170,9 +167,6 @@ namespace embree
 
   /*! Loads image from TIFF file. */
 //Ref<Image> loadTIFF(const FileName& fileName);
-  
-  /*! Store image to EXR file. */
-  void storeExr(const Ref<Image>& img, const FileName& fileName);
   
   /*! Store image to file. Format is auto detected. */
   void storeImage(const Ref<Image>& image, const FileName& filename);
