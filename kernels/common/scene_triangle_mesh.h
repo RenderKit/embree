@@ -171,13 +171,13 @@ namespace embree
       return BBox3fa(min(v0,v1,v2),max(v0,v1,v2));
     }
 
-     /*! calculates the bounds of the i'th triangle at time ftime */
+    /*! calculates the interpolated bounds of the i'th triangle at the specified time */
     __forceinline BBox3fa bounds(size_t i, float time) const
     {
-      float ftime; size_t itime = getTimeSegment(time,numTimeSegments(),ftime);
-      const BBox3fa b0 = bounds(i,itime+0);
-      const BBox3fa b1 = bounds(i,itime+1);
-      return lerp(b0,b1,ftime);
+      float ftime; size_t itime = getTimeSegment(time, fnumTimeSegments, ftime);
+      const BBox3fa b0 = bounds(i, itime+0);
+      const BBox3fa b1 = bounds(i, itime+1);
+      return lerp(b0, b1, ftime);
     }
 
     /*! check if the i'th primitive is valid at the itime'th timestep */
@@ -248,28 +248,28 @@ namespace embree
       return true;
     }
 
-    /*! calculates the linear build bounds of the i'th primitive for specified time range */
-    __forceinline LBBox3fa linearBounds(size_t primID, const BBox1f time_range) const
+    /*! calculates the linear bounds of the i'th primitive for the specified time range */
+    __forceinline LBBox3fa linearBounds(size_t primID, const BBox1f& time_range) const
     {
-      BBox3fa b0 = bounds(primID,time_range.lower);
-      BBox3fa b1 = bounds(primID,time_range.upper);
-      const int ilower = (int)ceil (time_range.lower*numTimeSegments());
-      const int iupper = (int)floor(time_range.upper*numTimeSegments());
-      for (size_t i=ilower; i<=iupper; i++) 
+      BBox3fa b0 = bounds(primID, time_range.lower);
+      BBox3fa b1 = bounds(primID, time_range.upper);
+      const int ilower = (int)ceil (time_range.lower*fnumTimeSegments);
+      const int iupper = (int)floor(time_range.upper*fnumTimeSegments);
+      for (size_t i = ilower; i <= iupper; i++)
       {
-        const float f = (float(i)/float(numTimeSegments()) - time_range.lower) / time_range.size();
-        const BBox3fa bt = lerp(b0,b1,f);
-        const BBox3fa bi = bounds(primID,i);
-        const Vec3fa dlower = min(bi.lower-bt.lower,Vec3fa(zero));
-        const Vec3fa dupper = max(bi.upper-bt.upper,Vec3fa(zero));
+        const float f = (float(i)/fnumTimeSegments - time_range.lower) / time_range.size();
+        const BBox3fa bt = lerp(b0, b1, f);
+        const BBox3fa bi = bounds(primID, i);
+        const Vec3fa dlower = min(bi.lower-bt.lower, Vec3fa(zero));
+        const Vec3fa dupper = max(bi.upper-bt.upper, Vec3fa(zero));
         b0.lower += dlower; b1.lower += dlower;
         b0.upper += dupper; b1.upper += dupper;
       }
-      return LBBox3fa(b0,b1);
+      return LBBox3fa(b0, b1);
     }
 
-    /*! calculates the linear build bounds of the i'th primitive for specified time range */
-    __forceinline bool linearBuildBounds(size_t i, const BBox1f time_range, LBBox3fa& bbox) const
+    /*! calculates the linear bounds of the i'th primitive for the specified time range */
+    __forceinline bool linearBounds(size_t i, const BBox1f& time_range, LBBox3fa& bbox) const
     {
       const Triangle& tri = triangle(i);
       if (unlikely(tri.v[0] >= numVertices())) return false;
