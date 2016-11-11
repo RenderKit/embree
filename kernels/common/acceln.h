@@ -51,7 +51,8 @@ namespace embree
     void select(bool filter4, bool filter8, bool filter16, bool filterN);
     void deleteGeometry(size_t geomID);
     void clear ();
-      
+    size_t size() { return accels.size(); }
+
   public:
     darray_t<Accel*,16> accels;
     darray_t<Accel*,16> validAccels;

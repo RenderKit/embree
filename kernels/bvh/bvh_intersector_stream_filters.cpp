@@ -170,30 +170,72 @@ namespace embree
     {
       RayPacket rayN(rayData,N);
 
+      /* can we use the fast path ? */
+#if defined(__AVX__) && ENABLE_COHERENT_STREAM_PATH == 1 
       /* fast path for packet width == SIMD width && correct RayK alignment*/
       const size_t rayDataAlignment = (size_t)rayData        % (VSIZEX*sizeof(float));
       const size_t offsetAlignment  = (size_t)stream_offset  % (VSIZEX*sizeof(float));
 
-      /* can we use the fast path ? */
       if (unlikely(isCoherent(context->user->flags) &&
                    N == VSIZEX                && 
                    !rayDataAlignment          && 
                    !offsetAlignment))
       {
-#if defined(__AVX__) && ENABLE_COHERENT_STREAM_PATH == 1 && 0 // FIXME: deactivated
-        /* the problem here is that we would have to test for non-common ray direction signs               */
-        /* which would make the code quite complicated, or the frusta-cull code would need to deal with it */
+        static const size_t MAX_COHERENT_RAY_PACKETS = MAX_RAYS_PER_OCTANT / VSIZEX;
         __aligned(64) RayK<VSIZEX> *rays_ptr[MAX_RAYS_PER_OCTANT / VSIZEX]; 
+
+        /* check for common direction */
+        vfloatx min_x(pos_inf), max_x(neg_inf);
+        vfloatx min_y(pos_inf), max_y(neg_inf);
+        vfloatx min_z(pos_inf), max_z(neg_inf);
+        vboolx all_active(true);
+        for (size_t s=0; s<streams; s++)
+        {
+          const size_t offset = s*stream_offset;
+          RayK<VSIZEX> &ray = *(RayK<VSIZEX>*)(rayData + offset);
+          min_x = min(min_x,ray.dir.x);
+          min_y = min(min_y,ray.dir.y);
+          min_z = min(min_z,ray.dir.z);
+          max_x = max(max_x,ray.dir.x);
+          max_y = max(max_y,ray.dir.y);
+          max_z = max(max_z,ray.dir.z);          
+          all_active &= ray.tnear <= ray.tfar;
+
+        }
+        const bool commonDirection =                                    \
+          (all(max_x < vfloatx(zero)) || all(min_x >= vfloatx(zero))) && 
+          (all(max_y < vfloatx(zero)) || all(min_y >= vfloatx(zero))) && 
+          (all(max_z < vfloatx(zero)) || all(min_z >= vfloatx(zero))); 
+
+        /* fallback to chunk in case of non-common directions */
+        if (unlikely(commonDirection == false 
+                     || !all(all_active) 
+                     || scene->isRobust()
+                     || scene->accels.size() > 1)) /* FIXME: two-level intersector/acceln will cause problem due to change in SIMD width */
+        {
+          for (size_t s=0; s<streams; s++)
+          {
+            const size_t offset = s*stream_offset;
+            RayK<VSIZEX> &ray = *(RayK<VSIZEX>*)(rayData + offset);
+            vboolx valid = ray.tnear <= ray.tfar;
+            if (intersect) scene->intersect(valid,ray,context);
+            else           scene->occluded (valid,ray,context);
+          }
+          return;
+        }
+        
+        /* prevent SOA to AOS conversion by setting context flag */
+        context->flags = IntersectContext::INPUT_RAY_DATA_SOA;
         size_t numStreams = 0;
+
         for (size_t s=0; s<streams; s++)
         {
           const size_t offset = s*stream_offset;
           RayK<VSIZEX> &ray = *(RayK<VSIZEX>*)(rayData + offset);
           rays_ptr[numStreams++] = &ray;
-          static const size_t MAX_COHERENT_RAY_PACKETS = MAX_RAYS_PER_OCTANT / VSIZEX;
-
+          /* trace as stream */
           if (unlikely(numStreams == MAX_COHERENT_RAY_PACKETS))
-          {
+          {                          
             const size_t size = numStreams*VSIZEX;
             if (intersect)
               scene->intersectN((RTCRay**)rays_ptr,size,context);
@@ -211,18 +253,9 @@ namespace embree
           else
             scene->occludedN((RTCRay**)rays_ptr,size,context);        
         }
-#else
-        for (size_t s=0; s<streams; s++)
-          {
-            const size_t offset = s*stream_offset;
-            RayK<VSIZEX> &ray = *(RayK<VSIZEX>*)(rayData + offset);
-            vboolx valid = ray.tnear <= ray.tfar;
-            if (intersect) scene->intersect(valid,ray,context);
-            else           scene->occluded (valid,ray,context);
-          }
-#endif
         return;
       }
+#endif
 
       /* otherwise use stream intersector */
       __aligned(64) Ray rays[MAX_RAYS_PER_OCTANT];

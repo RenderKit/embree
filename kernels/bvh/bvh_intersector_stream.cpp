@@ -451,18 +451,27 @@ namespace embree
 #if ENABLE_COHERENT_STREAM_PATH == 1 
       if (unlikely(PrimitiveIntersector::validIntersectorK && !robust && isCoherent(context->user->flags)))
       {
-        /* AOS to SOA conversion */
-        RayK<K> rayK[MAX_RAYS / K];
-        RayK<K>* rayK_ptr[MAX_RAYS / K];
-        for (size_t i = 0; i < MAX_RAYS / K; i++) rayK_ptr[i] = &rayK[i];
-        AOStoSOA(rayK, inputRays, numTotalRays);
-        /* stream tracer as fast path */
-        BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersectCoherentSOA(bvh, (RayK<K>**)rayK_ptr, numTotalRays, context);
-        /* SOA to AOS conversion */
-        SOAtoAOS<K, false>(inputRays, rayK, numTotalRays);
+        if (likely(context->flags == IntersectContext::INPUT_RAY_DATA_AOS))
+        {
+          /* AOS to SOA conversion */
+          RayK<K> rayK[MAX_RAYS / K];
+          RayK<K>* rayK_ptr[MAX_RAYS / K];
+          for (size_t i = 0; i < MAX_RAYS / K; i++) rayK_ptr[i] = &rayK[i];
+          AOStoSOA(rayK, inputRays, numTotalRays);
+          /* stream tracer as fast path */
+          BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersectCoherentSOA(bvh, (RayK<K>**)rayK_ptr, numTotalRays, context);
+          /* SOA to AOS conversion */
+          SOAtoAOS<K, false>(inputRays, rayK, numTotalRays);
+        }
+        else
+        {
+          /* stream tracer as fast path */
+          BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::intersectCoherentSOA(bvh, (RayK<K>**)inputRays, numTotalRays, context);
+        }
         return;
       }
 #endif
+      assert(context->flags == IntersectContext::INPUT_RAY_DATA_AOS);
       
       for (size_t r = 0; r < numTotalRays; r += MAX_RAYS_PER_OCTANT)
       {
@@ -617,18 +626,26 @@ namespace embree
 #if ENABLE_COHERENT_STREAM_PATH == 1 
       if (unlikely(PrimitiveIntersector::validIntersectorK && !robust && isCoherent(context->user->flags)))
       {
-        /* AOS to SOA conversion */
-        RayK<K> rayK[MAX_RAYS / K];
-        RayK<K>* rayK_ptr[MAX_RAYS / K];
-        for (size_t i = 0; i < MAX_RAYS / K; i++) rayK_ptr[i] = &rayK[i];
-        AOStoSOA(rayK, inputRays, numTotalRays);
-        /* stream tracer as fast path */
-        BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occludedCoherentSOA(bvh, (RayK<K>**)rayK_ptr, numTotalRays, context);
-        /* SOA to AOS conversion */
-        SOAtoAOS<K, true>(inputRays, rayK, numTotalRays);
+        if (likely(context->flags == IntersectContext::INPUT_RAY_DATA_AOS))
+        {
+          /* AOS to SOA conversion */
+          RayK<K> rayK[MAX_RAYS / K];
+          RayK<K>* rayK_ptr[MAX_RAYS / K];
+          for (size_t i = 0; i < MAX_RAYS / K; i++) rayK_ptr[i] = &rayK[i];
+          AOStoSOA(rayK, inputRays, numTotalRays);
+          /* stream tracer as fast path */
+          BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occludedCoherentSOA(bvh, (RayK<K>**)rayK_ptr, numTotalRays, context);
+          /* SOA to AOS conversion */
+          SOAtoAOS<K, true>(inputRays, rayK, numTotalRays);
+        }
+        else
+        {
+          BVHNIntersectorStream<N, Nx, K, types, robust, PrimitiveIntersector>::occludedCoherentSOA(bvh, (RayK<K>**)inputRays, numTotalRays, context);
+        }
         return;
       }
 #endif
+      assert(context->flags == IntersectContext::INPUT_RAY_DATA_AOS);
 
       for (size_t r = 0; r < numTotalRays; r += MAX_RAYS_PER_OCTANT)
       {

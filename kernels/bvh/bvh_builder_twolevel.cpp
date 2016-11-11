@@ -134,52 +134,63 @@ namespace embree
         /* open all large nodes */
         refs.resize(nextRef);
         open_sequential(numPrimitives); 
-        
         /* compute PrimRefs */
         prims.resize(refs.size());
-        const PrimInfo pinfo = parallel_reduce(size_t(0), refs.size(),  PrimInfo(empty), [&] (const range<size_t>& r) -> PrimInfo {
 
-            PrimInfo pinfo(empty);
-            for (size_t i=r.begin(); i<r.end(); i++) {
-              pinfo.add(refs[i].bounds());
-              prims[i] = PrimRef(refs[i].bounds(),(size_t)refs[i].node);
-            }
-            return pinfo;
-          }, [] (const PrimInfo& a, const PrimInfo& b) { return PrimInfo::merge(a,b); });
-        
-        /* skip if all objects where empty */
-        if (pinfo.size() == 0)
-          bvh->set(BVH::emptyNode,empty,0);
-        
-        /* otherwise build toplevel hierarchy */
-        else
+#if defined(TASKING_TBB) && defined(__AVX512F__)
+        tbb::task_arena limited(32);
+        limited.execute([&]
+#endif
         {
-          NodeRef root;
-          BVHBuilderBinnedSAH::build<NodeRef>
-            (root,
-             [&] { return bvh->alloc.threadLocal2(); },
-             [&] (const isa::BVHBuilderBinnedSAH::BuildRecord& current, BVHBuilderBinnedSAH::BuildRecord* children, const size_t n, FastAllocator::ThreadLocal2* alloc) -> int
-            {
-              AlignedNode* node = (AlignedNode*) alloc->alloc0->malloc(sizeof(AlignedNode)); node->clear();
-              for (size_t i=0; i<n; i++) {
-                node->set(i,children[i].pinfo.geomBounds);
-                children[i].parent = (size_t*)&node->child(i);
+          const PrimInfo pinfo = parallel_reduce(size_t(0), refs.size(),  PrimInfo(empty), [&] (const range<size_t>& r) -> PrimInfo {
+
+              PrimInfo pinfo(empty);
+              for (size_t i=r.begin(); i<r.end(); i++) {
+                pinfo.add(refs[i].bounds());
+                prims[i] = PrimRef(refs[i].bounds(),(size_t)refs[i].node);
               }
-              *current.parent = bvh->encodeNode(node);
-              return 0;
-            },
-             [&] (const BVHBuilderBinnedSAH::BuildRecord& current, FastAllocator::ThreadLocal2* alloc) -> int
-            {
-              assert(current.prims.size() == 1);
-              *current.parent = (NodeRef) prims[current.prims.begin()].ID();
-              return 1;
-            },
-             [&] (size_t dn) { bvh->scene->progressMonitor(0); },
-             prims.data(),pinfo,N,BVH::maxBuildDepthLeaf,N,1,1,1.0f,1.0f);
-          
-          bvh->set(root,LBBox3fa(pinfo.geomBounds),numPrimitives);
+              return pinfo;
+            }, [] (const PrimInfo& a, const PrimInfo& b) { return PrimInfo::merge(a,b); });
+
+          /* skip if all objects where empty */
+          if (pinfo.size() == 0)
+            bvh->set(BVH::emptyNode,empty,0);
+        
+          /* otherwise build toplevel hierarchy */
+          else
+          {
+            NodeRef root;
+
+            BVHBuilderBinnedSAH::build<NodeRef>
+              (root,
+               [&] { return bvh->alloc.threadLocal2(); },
+               [&] (const isa::BVHBuilderBinnedSAH::BuildRecord& current, BVHBuilderBinnedSAH::BuildRecord* children, const size_t n, FastAllocator::ThreadLocal2* alloc) -> int
+              {
+                AlignedNode* node = (AlignedNode*) alloc->alloc0->malloc(sizeof(AlignedNode)); node->clear();
+                for (size_t i=0; i<n; i++) {
+                  node->set(i,children[i].pinfo.geomBounds);
+                  children[i].parent = (size_t*)&node->child(i);
+                }
+                *current.parent = bvh->encodeNode(node);
+                return 0;
+              },
+               [&] (const BVHBuilderBinnedSAH::BuildRecord& current, FastAllocator::ThreadLocal2* alloc) -> int
+              {
+                assert(current.prims.size() == 1);
+                *current.parent = (NodeRef) prims[current.prims.begin()].ID();
+                return 1;
+              },
+               [&] (size_t dn) { bvh->scene->progressMonitor(0); },
+               prims.data(),pinfo,N,BVH::maxBuildDepthLeaf,N,1,1,1.0f,1.0f);
+
+            bvh->set(root,LBBox3fa(pinfo.geomBounds),numPrimitives);
+          }
         }
-      }
+#if defined(TASKING_TBB) && defined(__AVX512F__)
+          );
+#endif
+
+      }  
         
 #if PROFILE
       }); 

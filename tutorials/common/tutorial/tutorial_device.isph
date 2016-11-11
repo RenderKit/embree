@@ -40,7 +40,7 @@ struct Triangle { int v0, v1, v2; };
 #include "scene_device.isph"
 #include "noise.isph"
 #if !defined(ISPC)
-#include "../../../kernels/algorithms/parallel_for.h"
+#include "../../../common/algorithms/parallel_for.h"
 #endif
 
 enum Mode {
