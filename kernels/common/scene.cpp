@@ -118,9 +118,31 @@ namespace embree
           }
           break;
 
-        case /*0b01*/ 1: accels.add(device->bvh4_factory->BVH4Triangle4v(this,BVH4Factory::BuildVariant::STATIC,BVH4Factory::IntersectVariant::ROBUST)); break;
-        case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4Triangle4i(this,BVH4Factory::BuildVariant::STATIC,BVH4Factory::IntersectVariant::FAST  )); break;
-        case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4Triangle4i(this,BVH4Factory::BuildVariant::STATIC,BVH4Factory::IntersectVariant::ROBUST)); break;
+        case /*0b01*/ 1: 
+#if defined (__TARGET_AVX__)
+          if (device->hasISA(AVX)) 
+            accels.add(device->bvh8_factory->BVH8Triangle4v(this,BVH8Factory::BuildVariant::STATIC,BVH8Factory::IntersectVariant::ROBUST)); 
+          else
+#endif
+            accels.add(device->bvh4_factory->BVH4Triangle4v(this,BVH4Factory::BuildVariant::STATIC,BVH4Factory::IntersectVariant::ROBUST)); 
+
+          break;
+        case /*0b10*/ 2: 
+#if defined (__TARGET_AVX__)
+          if (device->hasISA(AVX)) 
+            accels.add(device->bvh8_factory->BVH8Triangle4i(this,BVH8Factory::BuildVariant::STATIC,BVH8Factory::IntersectVariant::FAST  )); 
+          else
+#endif
+            accels.add(device->bvh4_factory->BVH4Triangle4i(this,BVH4Factory::BuildVariant::STATIC,BVH4Factory::IntersectVariant::FAST  )); 
+          break;
+        case /*0b11*/ 3: 
+#if defined (__TARGET_AVX__)
+          if (device->hasISA(AVX)) 
+            accels.add(device->bvh8_factory->BVH8Triangle4i(this,BVH8Factory::BuildVariant::STATIC,BVH8Factory::IntersectVariant::ROBUST)); 
+          else
+#endif
+            accels.add(device->bvh4_factory->BVH4Triangle4i(this,BVH4Factory::BuildVariant::STATIC,BVH4Factory::IntersectVariant::ROBUST)); 
+          break;
         }
       }
       else /* dynamic */

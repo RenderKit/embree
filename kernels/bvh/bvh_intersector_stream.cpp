@@ -447,7 +447,7 @@ namespace embree
       __aligned(64) RayCtx ray_ctx[MAX_RAYS_PER_OCTANT];
       __aligned(64) Precalculations pre[MAX_RAYS_PER_OCTANT]; 
       __aligned(64) StackItemMask stack[stackSizeSingle];  //!< stack of nodes
-
+      
 #if ENABLE_COHERENT_STREAM_PATH == 1 
       if (unlikely(PrimitiveIntersector::validIntersectorK && !robust && isCoherent(context->user->flags)))
       {
