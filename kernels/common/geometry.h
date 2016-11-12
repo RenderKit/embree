@@ -305,7 +305,7 @@ namespace embree
 
     /*! calculates the linear bounds of a primitive at the itimeGlobal'th time segment */
     template<typename BoundsFunc>
-    __forceinline static LBBox3fa linearBounds(size_t itimeGlobal, size_t numTimeStepsGlobal, size_t numTimeSteps, const BoundsFunc& bounds)
+    __forceinline static LBBox3fa linearBounds(const BoundsFunc& bounds, size_t itimeGlobal, size_t numTimeStepsGlobal, size_t numTimeSteps)
     {
       if (numTimeStepsGlobal == numTimeSteps)
       {
@@ -358,7 +358,7 @@ namespace embree
 
     /*! calculates the linear bounds of a primitive at the itimeGlobal'th time segment, if it's valid */
     template<typename BoundsFunc>
-    __forceinline static bool linearBounds(size_t itimeGlobal, size_t numTimeStepsGlobal, size_t numTimeSteps, const BoundsFunc& bounds, LBBox3fa& lbbox)
+    __forceinline static bool linearBounds(const BoundsFunc& bounds, size_t itimeGlobal, size_t numTimeStepsGlobal, size_t numTimeSteps, LBBox3fa& lbbox)
     {
       if (numTimeStepsGlobal == numTimeSteps)
       {
@@ -414,10 +414,10 @@ namespace embree
 
     /*! calculates the build bounds of a primitive at the itimeGlobal'th time segment, if it's valid */
     template<typename BoundsFunc>
-    __forceinline static bool buildBounds(size_t itimeGlobal, size_t numTimeStepsGlobal, size_t numTimeSteps, const BoundsFunc& bounds, BBox3fa& bbox)
+    __forceinline static bool buildBounds(const BoundsFunc& bounds, size_t itimeGlobal, size_t numTimeStepsGlobal, size_t numTimeSteps, BBox3fa& bbox)
     {
       LBBox3fa lbbox;
-      if (!linearBounds(itimeGlobal, numTimeStepsGlobal, numTimeSteps, bounds, lbbox))
+      if (!linearBounds(bounds, itimeGlobal, numTimeStepsGlobal, numTimeSteps, lbbox))
         return false;
 
       bbox = 0.5f * (lbbox.bounds0 + lbbox.bounds1);
@@ -426,7 +426,7 @@ namespace embree
 
     /*! checks if a primitive is valid at the itimeGlobal'th time segment */
     template<typename ValidFunc>
-    __forceinline static bool validLinearBounds(size_t itimeGlobal, size_t numTimeStepsGlobal, size_t numTimeSteps, const ValidFunc& valid)
+    __forceinline static bool validLinearBounds(const ValidFunc& valid, size_t itimeGlobal, size_t numTimeStepsGlobal, size_t numTimeSteps)
     {
       if (numTimeStepsGlobal == numTimeSteps)
       {

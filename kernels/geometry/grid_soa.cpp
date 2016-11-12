@@ -187,8 +187,8 @@ namespace embree
         curNode = BVH4::encodeTypedLeaf((void*)value,0);
 
         /* return bounding box */
-        return Geometry::linearBounds(time, time_steps_global, time_steps,
-                                      [&] (size_t itime) { return calculateBounds(itime,range); });
+        return Geometry::linearBounds([&] (size_t itime) { return calculateBounds(itime,range); },
+                                      time, time_steps_global, time_steps);
       }
       
       /* create internal node */
