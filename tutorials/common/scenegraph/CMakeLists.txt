@@ -21,7 +21,6 @@ ADD_LIBRARY(scenegraph STATIC
     obj_loader.cpp
     ply_loader.cpp
     hair_loader.cpp
-    cy_hair_loader.cpp
     corona_loader.cpp
     texture.cpp
     scenegraph.cpp)
