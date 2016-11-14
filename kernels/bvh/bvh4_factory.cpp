@@ -483,28 +483,28 @@ namespace embree
     IF_ENABLED_USER(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH4VirtualMBIntersector16Chunk));
 
     /* select stream intersectors */
-    IF_ENABLED_LINES(SELECT_SYMBOL_SSE42_AVX_AVX2    (features,BVH4Line4iIntersectorStream));
+    IF_ENABLED_LINES(SELECT_SYMBOL_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX    (features,BVH4Line4iIntersectorStream));
     //IF_ENABLED_LINES(SELECT_SYMBOL_SSE42_AVX_AVX2      (features,BVH4Line4iMBIntersectorStream));
-    IF_ENABLED_HAIR(SELECT_SYMBOL_SSE42_AVX_AVX2      (features,BVH4Bezier1vIntersectorStream));
-    IF_ENABLED_HAIR(SELECT_SYMBOL_SSE42_AVX_AVX2      (features,BVH4Bezier1iIntersectorStream));
+    IF_ENABLED_HAIR(SELECT_SYMBOL_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX      (features,BVH4Bezier1vIntersectorStream));
+    IF_ENABLED_HAIR(SELECT_SYMBOL_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX      (features,BVH4Bezier1iIntersectorStream));
     //IF_ENABLED_HAIR(SELECT_SYMBOL_SSE42_AVX_AVX2      (features,BVH4Bezier1vIntersectorStream_OBB));
     //IF_ENABLED_HAIR(SELECT_SYMBOL_SSE42_AVX_AVX2      (features,BVH4Bezier1iIntersectorStream_OBB));
     //IF_ENABLED_HAIR(SELECT_SYMBOL_SSE42_AVX_AVX2      (features,BVH4Bezier1iMBIntersectorStream_OBB));
 
-    IF_ENABLED_TRIS(SELECT_SYMBOL_SSE42_AVX_AVX2(features,BVH4Triangle4IntersectorStreamMoeller));
-    IF_ENABLED_TRIS(SELECT_SYMBOL_SSE42_AVX_AVX2(features,BVH4Triangle4IntersectorStreamMoellerNoFilter));
-    IF_ENABLED_TRIS(SELECT_SYMBOL_SSE42_AVX_AVX2(features,BVH4Triangle4iIntersectorStreamMoeller));
-    IF_ENABLED_TRIS(SELECT_SYMBOL_SSE42_AVX_AVX2(features,BVH4Triangle4vIntersectorStreamPluecker));
-    IF_ENABLED_TRIS(SELECT_SYMBOL_SSE42_AVX_AVX2(features,BVH4Triangle4iIntersectorStreamPluecker));
+    IF_ENABLED_TRIS(SELECT_SYMBOL_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH4Triangle4IntersectorStreamMoeller));
+    IF_ENABLED_TRIS(SELECT_SYMBOL_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH4Triangle4IntersectorStreamMoellerNoFilter));
+    IF_ENABLED_TRIS(SELECT_SYMBOL_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH4Triangle4iIntersectorStreamMoeller));
+    IF_ENABLED_TRIS(SELECT_SYMBOL_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH4Triangle4vIntersectorStreamPluecker));
+    IF_ENABLED_TRIS(SELECT_SYMBOL_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH4Triangle4iIntersectorStreamPluecker));
         
-    IF_ENABLED_QUADS(SELECT_SYMBOL_SSE42_AVX_AVX2(features,BVH4Quad4vIntersectorStreamMoeller));
-    IF_ENABLED_QUADS(SELECT_SYMBOL_SSE42_AVX_AVX2(features,BVH4Quad4vIntersectorStreamMoellerNoFilter));
-    IF_ENABLED_QUADS(SELECT_SYMBOL_SSE42_AVX_AVX2(features,BVH4Quad4iIntersectorStreamMoeller));
-    IF_ENABLED_QUADS(SELECT_SYMBOL_SSE42_AVX_AVX2(features,BVH4Quad4vIntersectorStreamPluecker));
-    IF_ENABLED_QUADS(SELECT_SYMBOL_SSE42_AVX_AVX2(features,BVH4Quad4iIntersectorStreamPluecker));
+    IF_ENABLED_QUADS(SELECT_SYMBOL_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH4Quad4vIntersectorStreamMoeller));
+    IF_ENABLED_QUADS(SELECT_SYMBOL_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH4Quad4vIntersectorStreamMoellerNoFilter));
+    IF_ENABLED_QUADS(SELECT_SYMBOL_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH4Quad4iIntersectorStreamMoeller));
+    IF_ENABLED_QUADS(SELECT_SYMBOL_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH4Quad4vIntersectorStreamPluecker));
+    IF_ENABLED_QUADS(SELECT_SYMBOL_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH4Quad4iIntersectorStreamPluecker));
 
     //IF_ENABLED_SUBDIV(SELECT_SYMBOL_SSE42_AVX_AVX2(features,BVH4Subdivpatch1CachedIntersectorStream));
-    IF_ENABLED_USER(SELECT_SYMBOL_SSE42_AVX_AVX2(features,BVH4VirtualIntersectorStream));
+    IF_ENABLED_USER(SELECT_SYMBOL_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH4VirtualIntersectorStream));
     //IF_ENABLED_USER(SELECT_SYMBOL_SSE42_AVX_AVX2(features,BVH4VirtualStreamMBIntersector));
     //IF_ENABLED_QUADS(SELECT_SYMBOL_SSE42_AVX_AVX2(features,BVH4Quad4iStreamMBIntersectorPluecker));
 
@@ -835,7 +835,7 @@ namespace embree
     intersectors.intersector4  = BVH4VirtualIntersector4Chunk;
     intersectors.intersector8  = BVH4VirtualIntersector8Chunk;
     intersectors.intersector16 = BVH4VirtualIntersector16Chunk;
-    //intersectors.intersectorN  = BVH4VirtualIntersectorStream;
+    intersectors.intersectorN  = BVH4VirtualIntersectorStream;
     return intersectors;
   }
 

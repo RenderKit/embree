@@ -392,7 +392,7 @@ namespace embree
       struct NearFarPreCompute
       {
 #if defined(__AVX512F__)
-        vint<N*2> permX, permY, permZ;
+        vint16 permX, permY, permZ;
 #endif
         size_t nearX, nearY, nearZ;
         size_t farX, farY, farZ;
@@ -400,11 +400,12 @@ namespace embree
         __forceinline NearFarPreCompute(const Vec3fa& dir)
         {
 #if defined(__AVX512F__)
-          const vint<N*2> id(step);
-          const vint<N*2> id2 = align_shift_right<N>(id, id);
-          permX = select(vfloat<N*2>(dir.x) >= 0.0f, id, id2);
-          permY = select(vfloat<N*2>(dir.y) >= 0.0f, id, id2);
-          permZ = select(vfloat<N*2>(dir.z) >= 0.0f, id, id2);
+          /* optimization works only for 8-wide BVHs witj 16-wide SIMD */
+          const vint<K> id(step);
+          const vint<K> id2 = align_shift_right<K/2>(id, id);
+          permX = select(vfloat<K>(dir.x) >= 0.0f, id, id2);
+          permY = select(vfloat<K>(dir.y) >= 0.0f, id, id2);
+          permZ = select(vfloat<K>(dir.z) >= 0.0f, id, id2);
 #endif
           nearX = (dir.x < 0.0f) ? 1*sizeof(vfloat<N>) : 0*sizeof(vfloat<N>);
           nearY = (dir.y < 0.0f) ? 3*sizeof(vfloat<N>) : 2*sizeof(vfloat<N>);

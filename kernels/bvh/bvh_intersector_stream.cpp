@@ -61,35 +61,35 @@ namespace embree
     // =====================================================================================================
 
 #if defined(__AVX512F__)
-    template<int N, bool dist_update, bool robust>
-    __forceinline vbool<N*2> intersectAlignedNode(const RayContext<robust>& ctx,
-                                                  const vfloat<N*2>& bminmaxX,
-                                                  const vfloat<N*2>& bminmaxY,
-                                                  const vfloat<N*2>& bminmaxZ,
-                                                  vfloat<N*2>& dist)
+    template<int N, int Nx, bool dist_update, bool robust>
+    __forceinline vbool<Nx> intersectAlignedNode(const RayContext<robust>& ctx,
+                                                 const vfloat<Nx>& bminmaxX,
+                                                 const vfloat<Nx>& bminmaxY,
+                                                 const vfloat<Nx>& bminmaxZ,
+                                                 vfloat<Nx>& dist)
     {
       if (!robust)
       {
-        const vfloat<N*2> tNearFarX = msub(bminmaxX, ctx.rdir.x, ctx.org_rdir.x);
-        const vfloat<N*2> tNearFarY = msub(bminmaxY, ctx.rdir.y, ctx.org_rdir.y);
-        const vfloat<N*2> tNearFarZ = msub(bminmaxZ, ctx.rdir.z, ctx.org_rdir.z);
-        const vfloat<N*2> tNear     = max(tNearFarX, tNearFarY, tNearFarZ, vfloat<N*2>(ctx.rdir.w));
-        const vfloat<N*2> tFar      = min(tNearFarX, tNearFarY, tNearFarZ, vfloat<N*2>(ctx.org_rdir.w));
-        const vbool<N*2> vmask      = le(tNear, align_shift_right<N>(tFar, tFar));
+        const vfloat<Nx> tNearFarX = msub(bminmaxX, ctx.rdir.x, ctx.org_rdir.x);
+        const vfloat<Nx> tNearFarY = msub(bminmaxY, ctx.rdir.y, ctx.org_rdir.y);
+        const vfloat<Nx> tNearFarZ = msub(bminmaxZ, ctx.rdir.z, ctx.org_rdir.z);
+        const vfloat<Nx> tNear     = max(tNearFarX, tNearFarY, tNearFarZ, vfloat<Nx>(ctx.rdir.w));
+        const vfloat<Nx> tFar      = min(tNearFarX, tNearFarY, tNearFarZ, vfloat<Nx>(ctx.org_rdir.w));
+        const vbool<Nx> vmask      = le(tNear, align_shift_right<N>(tFar, tFar));
         if (dist_update) dist       = select(vmask, min(tNear, dist), dist);
         return vmask;       
       }
       else
       {
         const Vec3fa &org = ctx.org_rdir;
-        const vfloat<N*2> tNearFarX = (bminmaxX - org.x) * ctx.rdir.x;
-        const vfloat<N*2> tNearFarY = (bminmaxY - org.y) * ctx.rdir.y;
-        const vfloat<N*2> tNearFarZ = (bminmaxZ - org.z) * ctx.rdir.z;
-        const vfloat<N*2> tNear     = max(tNearFarX, tNearFarY, tNearFarZ, vfloat<N*2>(ctx.rdir.w));
-        const vfloat<N*2> tFar      = min(tNearFarX, tNearFarY, tNearFarZ, vfloat<N*2>(org.w));
+        const vfloat<Nx> tNearFarX = (bminmaxX - org.x) * ctx.rdir.x;
+        const vfloat<Nx> tNearFarY = (bminmaxY - org.y) * ctx.rdir.y;
+        const vfloat<Nx> tNearFarZ = (bminmaxZ - org.z) * ctx.rdir.z;
+        const vfloat<Nx> tNear     = max(tNearFarX, tNearFarY, tNearFarZ, vfloat<Nx>(ctx.rdir.w));
+        const vfloat<Nx> tFar      = min(tNearFarX, tNearFarY, tNearFarZ, vfloat<Nx>(org.w));
         const float round_down      = 1.0f-2.0f*float(ulp); // FIXME: use per instruction rounding for AVX512
         const float round_up        = 1.0f+2.0f*float(ulp);
-        const vbool<N*2> vmask      = le(tNear*round_down, align_shift_right<N>(tFar, tFar)*round_up);
+        const vbool<Nx> vmask      = le(tNear*round_down, align_shift_right<N>(tFar, tFar)*round_up);
         if (dist_update) dist       = select(vmask, min(tNear, dist), dist);
         return vmask;       
       }
@@ -527,54 +527,55 @@ namespace embree
 #if defined(__AVX512F__)
             if (N == 8)
             {
-              const vfloat<N*2> bminmaxX = permute(vfloat<N*2>::load((const float*)&node->lower_x), pc.permX);
-              const vfloat<N*2> bminmaxY = permute(vfloat<N*2>::load((const float*)&node->lower_y), pc.permY);
-              const vfloat<N*2> bminmaxZ = permute(vfloat<N*2>::load((const float*)&node->lower_z), pc.permZ);
-              const vlong<N> one((size_t)1);
-              vfloat<N*2> dist(inf);
-              vlong<N> maskK(zero);              
+              /* optimization will only work for 8-wide BVHs and 16-wide SIMD */
+              const vfloat<16> bminmaxX = permute(vfloat<16>::load((const float*)&node->lower_x), pc.permX);
+              const vfloat<16> bminmaxY = permute(vfloat<16>::load((const float*)&node->lower_y), pc.permY);
+              const vfloat<16> bminmaxZ = permute(vfloat<16>::load((const float*)&node->lower_z), pc.permZ);
+              const vlong<8> one((size_t)1);
+              vfloat<16> dist(inf);
+              vlong<8> maskK(zero);              
               size_t bits = m_trav_active;
               do
               {            
                 STAT3(normal.trav_nodes,1,1,1);                          
                 const size_t i = __bscf(bits);
                 const RayCtx& ray = ray_ctx[i];
-                const vlong<N> bitmask = one << vlong<N>(i);
-                const vbool<N*2> vmask = intersectAlignedNode<N, true, robust>(ray, bminmaxX, bminmaxY, bminmaxZ, dist);
-                maskK = mask_or((vboold<N>)vmask, maskK, maskK, bitmask);
+                const vlong<8> bitmask = one << vlong<8>(i);
+                const vbool<16> vmask = intersectAlignedNode<8, 16, true, robust>(ray, bminmaxX, bminmaxY, bminmaxZ, dist);
+                maskK = mask_or((vboold<8>)vmask, maskK, maskK, bitmask);
               } while(bits);              
-              const vboold<N> vmaskN = maskK != vlong<N>(zero);
-              const vbool<N*2> vmask(vmaskN);
+              const vboold<8> vmaskN = maskK != vlong<8>(zero);
+              const vbool<16> vmask(vmaskN);
               if (unlikely(none(vmask))) goto pop;
-
-              BVHNNodeTraverserStreamHit<N, N*2, types>::traverseClosestHit(cur, m_trav_active, vmask, dist, (size_t*)&maskK, stackPtr);
+              BVHNNodeTraverserStreamHit<N, 16, types>::traverseClosestHit(cur, m_trav_active, vmask, dist, (size_t*)&maskK, stackPtr);
             }
             else /* N == 4 */
             {
-              const vfloat<Nx> bminX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.nearX));
-              const vfloat<Nx> bminY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.nearY));
-              const vfloat<Nx> bminZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.nearZ));
-              const vfloat<Nx> bmaxX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.farX));
-              const vfloat<Nx> bmaxY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.farY));
-              const vfloat<Nx> bmaxZ = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.farZ));
+              /* optimization will only work for 4-wide BVHs and 16-wide SIMD */
+              const vfloat<16> bminX = vfloat<16>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.nearX));
+              const vfloat<16> bminY = vfloat<16>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.nearY));
+              const vfloat<16> bminZ = vfloat<16>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.nearZ));
+              const vfloat<16> bmaxX = vfloat<16>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.farX));
+              const vfloat<16> bmaxY = vfloat<16>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.farY));
+              const vfloat<16> bmaxZ = vfloat<16>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.farZ));
 
-              const vlong<Nx/2> one((size_t)1);
-              vfloat<Nx> dist(inf);
-              vlong<Nx/2> maskK(zero);              
+              const vlong<8> one((size_t)1);
+              vfloat<16> dist(inf);
+              vlong<8> maskK(zero);              
               size_t bits = m_trav_active;
               do
               {            
                 STAT3(normal.trav_nodes,1,1,1);                          
                 const size_t i = __bscf(bits);
                 const RayCtx& ray = ray_ctx[i];
-                const vlong<Nx/2> bitmask = one << vlong<Nx/2>(i);
-                const vbool<Nx> vmask = intersectAlignedNode<N, Nx, true, robust>(ray, bminX, bminY, bminZ, bmaxX, bmaxY, bmaxZ, dist);
-                maskK = mask_or((vboold<Nx/2>)vmask, maskK, maskK, bitmask);
+                const vlong<8> bitmask = one << vlong<8>(i);
+                const vbool<16> vmask = intersectAlignedNode<4, 16, true, robust>(ray, bminX, bminY, bminZ, bmaxX, bmaxY, bmaxZ, dist);
+                maskK = mask_or((vboold<8>)vmask, maskK, maskK, bitmask);
               } while(bits);              
-              const vboold<Nx/2> vmaskN = maskK != vlong<Nx/2>(zero);
-              const vbool<Nx> vmask(vmaskN);
+              const vboold<8> vmaskN = maskK != vlong<8>(zero);
+              const vbool<16> vmask(vmaskN);
               if (unlikely(none(vmask))) goto pop;
-              BVHNNodeTraverserStreamHit<N, Nx, types>::traverseClosestHit(cur, m_trav_active, vmask, dist, (size_t*)&maskK, stackPtr);              
+              BVHNNodeTraverserStreamHit<N, 16, types>::traverseClosestHit(cur, m_trav_active, vmask, dist, (size_t*)&maskK, stackPtr);              
             }
 #else
             const vfloat<Nx> bminX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.nearX));
@@ -715,29 +716,60 @@ namespace embree
             //STAT3(shadow.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);
 
 #if defined(__AVX512F__) 
-            const vlong<N> one((size_t)1);
-            const vfloat<N*2> bminmaxX = permute(vfloat<N*2>::load((const float*)&node->lower_x), pc.permX);
-            const vfloat<N*2> bminmaxY = permute(vfloat<N*2>::load((const float*)&node->lower_y), pc.permY);
-            const vfloat<N*2> bminmaxZ = permute(vfloat<N*2>::load((const float*)&node->lower_z), pc.permZ);
+            if (N == 8)
+            {
+              /* optimization will only work for 8-wide BVHs and 16-wide SIMD */
+              const vfloat<16> bminmaxX = permute(vfloat<16>::load((const float*)&node->lower_x), pc.permX);
+              const vfloat<16> bminmaxY = permute(vfloat<16>::load((const float*)&node->lower_y), pc.permY);
+              const vfloat<16> bminmaxZ = permute(vfloat<16>::load((const float*)&node->lower_z), pc.permZ);
+              const vlong<8> one((size_t)1);
+              vfloat<16> dist(inf);
+              vlong<8> maskK(zero);              
+              size_t bits = m_trav_active;
+              do
+              {            
+                STAT3(normal.trav_nodes,1,1,1);                          
+                const size_t i = __bscf(bits);
+                const RayCtx& ray = ray_ctx[i];
+                const vlong<8> bitmask = one << vlong<8>(i);
+                const vbool<16> vmask = intersectAlignedNode<8, 16, false, robust>(ray, bminmaxX, bminmaxY, bminmaxZ, dist);
+                maskK = mask_or((vboold<8>)vmask, maskK, maskK, bitmask);
+              } while(bits);              
+              const vboold<8> vmaskN = maskK != vlong<8>(zero);
+              const vbool<16> vmask(vmaskN);
+              if (unlikely(none(vmask))) goto pop;
+              BVHNNodeTraverserStreamHit<N, 16, types>::traverseAnyHit(cur, m_trav_active, vmask, (size_t*)&maskK, stackPtr);
 
-            vfloat<N*2> dist(inf);
-            vlong<N> maskK(zero);
+            }
+            else /* N == 4 */
+            {
+              /* optimization will only work for 4-wide BVHs and 16-wide SIMD */
+              const vfloat<16> bminX = vfloat<16>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.nearX));
+              const vfloat<16> bminY = vfloat<16>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.nearY));
+              const vfloat<16> bminZ = vfloat<16>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.nearZ));
+              const vfloat<16> bmaxX = vfloat<16>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.farX));
+              const vfloat<16> bmaxY = vfloat<16>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.farY));
+              const vfloat<16> bmaxZ = vfloat<16>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.farZ));
 
-            size_t bits = m_trav_active;
-            do
-            {            
-              STAT3(shadow.trav_nodes,1,1,1);                          
-              const size_t i = __bscf(bits);
-              assert(i<MAX_RAYS_PER_OCTANT);
-              RayCtx &ray = ray_ctx[i];
-              const vlong<N> bitmask = one << vlong<N>(i);
-              const vbool<N*2> vmask = intersectAlignedNode<N, false, robust>(ray, bminmaxX, bminmaxY, bminmaxZ, dist);
-              maskK = mask_or((vboold<N>)vmask, maskK, maskK, bitmask);
-            } while(bits);          
-            const vboold<N> vmask = (maskK != vlong<N>(zero));
-            if (unlikely(none(vmask))) goto pop;            
+              const vlong<8> one((size_t)1);
+              vfloat<16> dist(inf);
+              vlong<8> maskK(zero);              
+              size_t bits = m_trav_active;
+              do
+              {            
+                STAT3(normal.trav_nodes,1,1,1);                          
+                const size_t i = __bscf(bits);
+                const RayCtx& ray = ray_ctx[i];
+                const vlong<8> bitmask = one << vlong<8>(i);
+                const vbool<16> vmask = intersectAlignedNode<4, 16, false, robust>(ray, bminX, bminY, bminZ, bmaxX, bmaxY, bmaxZ, dist);
+                maskK = mask_or((vboold<8>)vmask, maskK, maskK, bitmask);
+              } while(bits);              
+              const vboold<8> vmaskN = maskK != vlong<8>(zero);
+              const vbool<16> vmask(vmaskN);
+              if (unlikely(none(vmask))) goto pop;
 
-            BVHNNodeTraverserStreamHit<N, N*2, types>::traverseAnyHit(cur, m_trav_active, vmask, (size_t*)&maskK, stackPtr);
+              BVHNNodeTraverserStreamHit<N, 16, types>::traverseAnyHit(cur, m_trav_active, vmask, (size_t*)&maskK, stackPtr);
+            }
 #else
             const vfloat<Nx> bminX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.nearX));
             const vfloat<Nx> bminY = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + pc.nearY));
@@ -849,18 +881,17 @@ namespace embree
     /// BVH4IntersectorStream Definitions
     ////////////////////////////////////////////////////////////////////////////////
 
-#if !defined(__AVX512F__) // FIXME: BVH4 with AVX512 does not work correctly
 
     IF_ENABLED_LINES(DEFINE_INTERSECTORN(BVH4Line4iIntersectorStream,BVHNIntersectorStream<SIMD_MODE(4) COMMA VSIZEX COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<LineMiIntersector1<SIMD_MODE(4) COMMA true> > >));
     
     IF_ENABLED_HAIR(DEFINE_INTERSECTORN(BVH4Bezier1vIntersectorStream,BVHNIntersectorStream<SIMD_MODE(4) COMMA VSIZEX COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<Bezier1vIntersector1> >));
     IF_ENABLED_HAIR(DEFINE_INTERSECTORN(BVH4Bezier1iIntersectorStream,BVHNIntersectorStream<SIMD_MODE(4) COMMA VSIZEX COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<Bezier1iIntersector1> >));
     
-    IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH4Triangle4IntersectorStreamMoeller,         BVHNIntersectorStream<SIMD_MODE(4) COMMA VSIZEX COMMA BVH_AN1 COMMA false COMMA Triangle4IntersectorStreamMoeller>));
-    IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH4Triangle4IntersectorStreamMoellerNoFilter, BVHNIntersectorStream<SIMD_MODE(4) COMMA VSIZEX COMMA BVH_AN1 COMMA false COMMA Triangle4IntersectorStreamMoellerNoFilter>));
     IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH4Triangle4iIntersectorStreamMoeller,        BVHNIntersectorStream<SIMD_MODE(4) COMMA VSIZEX COMMA BVH_AN1 COMMA false COMMA Triangle4iIntersectorStreamMoeller>));
     IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH4Triangle4vIntersectorStreamPluecker,       BVHNIntersectorStream<SIMD_MODE(4) COMMA VSIZEX COMMA BVH_AN1 COMMA true  COMMA Triangle4vIntersectorStreamPluecker>));
     IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH4Triangle4iIntersectorStreamPluecker,       BVHNIntersectorStream<SIMD_MODE(4) COMMA VSIZEX COMMA BVH_AN1 COMMA true  COMMA Triangle4iIntersectorStreamPluecker>));
+    IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH4Triangle4IntersectorStreamMoeller,         BVHNIntersectorStream<SIMD_MODE(4) COMMA VSIZEX COMMA BVH_AN1 COMMA false COMMA Triangle4IntersectorStreamMoeller>));
+    IF_ENABLED_TRIS(DEFINE_INTERSECTORN(BVH4Triangle4IntersectorStreamMoellerNoFilter, BVHNIntersectorStream<SIMD_MODE(4) COMMA VSIZEX COMMA BVH_AN1 COMMA false COMMA Triangle4IntersectorStreamMoellerNoFilter>));
     
     IF_ENABLED_QUADS(DEFINE_INTERSECTORN(BVH4Quad4vIntersectorStreamMoeller,        BVHNIntersectorStream<SIMD_MODE(4) COMMA VSIZEX COMMA BVH_AN1 COMMA false COMMA Quad4vIntersectorStreamMoeller>));
     IF_ENABLED_QUADS(DEFINE_INTERSECTORN(BVH4Quad4vIntersectorStreamMoellerNoFilter,BVHNIntersectorStream<SIMD_MODE(4) COMMA VSIZEX COMMA BVH_AN1 COMMA false COMMA Quad4vIntersectorStreamMoellerNoFilter>));
@@ -880,8 +911,6 @@ namespace embree
     //IF_ENABLED_QUADS(DEFINE_INTERSECTORN(BVH4Quad4iMBIntersectorStreamPluecker,BVHNIntersectorStream<4 COMMA BVH_AN2 COMMA false COMMA ArrayIntersector1<QuadMiMBIntersector1Pluecker<4 COMMA true> > >));
     //IF_ENABLED_SUBDIV(DEFINE_INTERSECTORN(BVH4Subdivpatch1CachedIntersectorStream,BVHNIntersectorStream<4 COMMA BVH_AN1 COMMA true COMMA SubdivPatch1CachedIntersector1>));
     //IF_ENABLED_USER(DEFINE_INTERSECTORN(BVH4VirtualMBIntersectorStream,BVHNIntersectorStream<4 COMMA BVH_AN2 COMMA false COMMA ObjectIntersector1>));
-
-#endif
     
     ////////////////////////////////////////////////////////////////////////////////
     /// BVH8IntersectorStream Definitions

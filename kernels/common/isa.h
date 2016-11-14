@@ -213,6 +213,13 @@ namespace embree
   SELECT_SYMBOL_AVX512KNL(features,intersector);                                    \
   SELECT_SYMBOL_AVX512SKX(features,intersector);
 
+#define SELECT_SYMBOL_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX(features,intersector) \
+  SELECT_SYMBOL_SSE42(features,intersector);                                        \
+  SELECT_SYMBOL_AVX(features,intersector);                                          \
+  SELECT_SYMBOL_AVX2(features,intersector);                                         \
+  SELECT_SYMBOL_AVX512KNL(features,intersector);                                    \
+  SELECT_SYMBOL_AVX512SKX(features,intersector);
+
 #define SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(features,intersector) \
   SELECT_SYMBOL_DEFAULT(features,intersector);                                   \
   SELECT_SYMBOL_AVX(features,intersector);                                       \
